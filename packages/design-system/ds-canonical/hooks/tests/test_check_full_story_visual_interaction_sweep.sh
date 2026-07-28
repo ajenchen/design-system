@@ -3,17 +3,17 @@
 #
 # Hook 規則(PreToolUse,Write|Edit|MultiEdit):
 #   - File gate:tool_input.file_path 必 match `(sweep|audit-report)\.json$`,否則 silent。
-#   - Content:tool_input.new_string // tool_input.content。空 → silent。
-#   - Escape:content 含 `_sampling_allowed` → silent。
+#   - Content 必為 schema-valid report JSON；空/壞 JSON → integrity 70。
+#   - Escape:valid report 的 `_sampling_allowed` 非空 rationale → silent。
 #   - Story count:`.storyResults // .results | length`,fallback `.storySummary.total // .summary.total // .total`。
-#   - Manifest:$CLAUDE_PROJECT_DIR/packages/design-system/ds-story-manifest.json .totalStories。
-#       manifest 不存在 / total=0 → silent。STORY_COUNT=0 → silent。
+#   - Manifest:$GOVERNANCE_PROJECT_DIR/packages/design-system/ds-story-manifest.json .totalStories。
+#       manifest 不存在 / malformed / total=0 → integrity 70。STORY_COUNT=0 → policy block 2。
 #   - BLOCKER:STORY_COUNT < MANIFEST_TOTAL → exit 2 + stderr「FULL-STORY-SWEEP BLOCKER」。
 #   - STORY_COUNT >= MANIFEST_TOTAL → silent(全跑通過)。
 #
 # Non-Write/Edit tool / 非 sweep|audit-report 檔名 → silent。
 #
-# Determinism:TMP_DIR + CLAUDE_PROJECT_DIR override(manifest fixture totalStories=916),
+# Determinism:TMP_DIR + GOVERNANCE_PROJECT_DIR override(manifest fixture totalStories=916),
 # 不碰 repo 真 manifest / 不寫 repo logs。
 
 set -u
@@ -33,9 +33,9 @@ FAILED_TESTS=""
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-# Override CLAUDE_PROJECT_DIR so manifest lookup + _log-fire land in TMP_DIR
+# Override GOVERNANCE_PROJECT_DIR so manifest lookup + _log-fire land in TMP_DIR
 # (不污染 repo packages/ 與 .claude/logs/)
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 mkdir -p "$TMP_DIR/.claude/logs"
 mkdir -p "$TMP_DIR/packages/design-system"
 
@@ -86,6 +86,17 @@ expect_block() {
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
     echo "  FAIL  $name (expected BLOCK exit=2 + '$needle', got exit=$EXIT)"
+    echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+  fi
+}
+
+expect_integrity() {
+  local name="$1"; local needle="${2:-GOVERNANCE_INTEGRITY:}"
+  if [ "$EXIT" = "70" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (expected integrity exit=70 + '$needle', got exit=$EXIT)"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
@@ -155,16 +166,15 @@ expect_pass_silent "11. [NEG] unrelated *.json → silent (file gate)"
 run_hook "/tmp/codex-sweep/audit-report.json" "$(sampled_results 1)" "Read"
 expect_pass_silent "12. [NEG] tool=Read → silent (event gate)"
 
-# 13. NEGATIVE: STORY_COUNT=0 (no parseable count) → silent
-#     (hook explicitly exits 0 when count is 0 to avoid false positive on non-sweep payloads)
+# 13. A schema-valid audit report with no coverage is a real policy violation.
 run_hook "/tmp/codex-sweep/audit-report.json" '{"meta":{"note":"warmup"}}'
-expect_pass_silent "13. [NEG] count=0 unparseable → silent"
+expect_block "13. [POS] valid report with count=0 → BLOCK" "FULL-STORY-SWEEP BLOCKER"
 
-# 14. NEGATIVE: empty content → silent
+# 14. Empty report content is invalid enforcement evidence.
 run_hook "/tmp/codex-sweep/audit-report.json" ""
-expect_pass_silent "14. [NEG] empty content → silent"
+expect_integrity "14. empty report → integrity failure" "report is malformed or invalid"
 
-# 15. NEGATIVE: manifest missing → silent (graceful degrade)
+# 15. Missing manifest means the hook cannot evaluate completeness.
 #     Temporarily point at a project dir without a manifest.
 NOMANIFEST_DIR=$(mktemp -d)
 mkdir -p "$NOMANIFEST_DIR/.claude/logs"
@@ -172,12 +182,12 @@ payload=$(jq -n --arg fp "/tmp/codex-sweep/audit-report.json" --arg c "$(sampled
   '{hook_event_name:"PreToolUse", tool_name:"Write", tool_input:{file_path:$fp, content:$c}}')
 STDOUT=$(mktemp); STDERR=$(mktemp)
 set +e
-printf '%s' "$payload" | CLAUDE_PROJECT_DIR="$NOMANIFEST_DIR" bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+printf '%s' "$payload" | GOVERNANCE_PROJECT_DIR="$NOMANIFEST_DIR" bash "$HOOK" >"$STDOUT" 2>"$STDERR"
 EXIT=$?
 set -e
 STDERR_TEXT=$(cat "$STDERR")
 rm -f "$STDOUT" "$STDERR"
-expect_pass_silent "15. [NEG] manifest missing → silent (graceful degrade)"
+expect_integrity "15. manifest missing → integrity failure" "manifest is unavailable or unsafe"
 rm -rf "$NOMANIFEST_DIR"
 
 echo ""

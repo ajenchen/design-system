@@ -11,7 +11,7 @@
 #   BLOCK(exit 2)condition:
 #     - DISTINCT escape-marker types ≥ 3  OR
 #     - TOTAL escape-marker occurrences ≥ 5
-#   Override:CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT=1 → exit 0(audit-logged)。
+#   Override:GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1 → exit 0(audit-logged)。
 #
 # Negative-case 斷言用「EXIT != 2(未 block)」為契約,不假設 stderr 全 silent:
 #   hook clean-input path 有 cosmetic `0\n0: integer expression expected` stderr
@@ -32,10 +32,10 @@ PASS=0
 FAIL=0
 FAILED_TESTS=""
 
-# TMP_DIR for any hook state(_log-fire.sh writes under CLAUDE_PROJECT_DIR)
+# TMP_DIR for any hook state(_log-fire.sh writes under GOVERNANCE_PROJECT_DIR)
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 mkdir -p "$TMP_DIR/.claude/logs"
 
 # run_hook: feed JSON payload to hook via stdin
@@ -54,7 +54,7 @@ run_hook() {
   rm -f "$STDOUT" "$STDERR"
 }
 
-# run_hook_bypass: same but with CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT=1
+# run_hook_bypass: same but with GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1
 run_hook_bypass() {
   local tool="$1"; local fp="$2"; local field="$3"; local content="$4"
   local payload
@@ -62,7 +62,7 @@ run_hook_bypass() {
     '{hook_event_name:"PreToolUse", tool_name:$t, tool_input:({file_path:$fp} + {($f):$c})}')
   STDOUT=$(mktemp); STDERR=$(mktemp)
   set +e
-  printf '%s' "$payload" | CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT=1 bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  printf '%s' "$payload" | GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1 bash "$HOOK" >"$STDOUT" 2>"$STDERR"
   EXIT=$?
   set -e
   STDERR_TEXT=$(cat "$STDERR" 2>/dev/null)
@@ -178,9 +178,19 @@ expect_not_block "N7. tool=Read → not blocked"
 run_hook "Write" "$CONSUMER" "content" ""
 expect_not_block "N8. empty content → not blocked"
 
-# N9. Override env CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT=1 → not blocked
+# N9. Override env GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1 → not blocked
 run_hook_bypass "Write" "$CONSUMER" "content" "$C_3DISTINCT"
-expect_not_block "N9. CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT=1 override → not blocked"
+expect_not_block "N9. GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1 override → not blocked"
+
+# N10. Canonical proxy portal has three separately justified marker families by design. Its
+# threshold is six distinct markers (the ordinary three-marker ceiling would make the shipped
+# template fail its own hard gate).
+C_PORTAL='// @anatomy-exempt: canonical proxy portal
+// @consumer-catalog-allow: imports only, never hand-mocks components
+// @layout-space-magic-ok: debug-only export dump
+export const Portal = 1;'
+run_hook "Write" "/repo/apps/template/src/AllDsComponents.stories.tsx" "content" "$C_PORTAL"
+expect_not_block "N10. sanctioned proxy portal 3 distinct markers (< portal cap 6) → not blocked"
 
 # ── R-series:repo 級累計 ratchet(2026-07-08 WM 戰役 R4)──────────────────────
 # 存量 ≥10(apps/** 全 repo)後,只擋「本次 edit 再新增 marker」;無 marker edit 不 brick。

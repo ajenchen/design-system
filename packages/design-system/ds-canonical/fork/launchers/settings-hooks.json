@@ -1,58 +1,35 @@
 {
   "_generated": "build-fork-governance.mjs",
-  "_source": "template/ds-product-template/.claude/settings.json(hooks + permissions 區塊)",
-  "_merge": "sync-all/refresh-fork-launchers.mjs:strip 舊 launcher 註冊 + append canonical hooks + union permissions.allow",
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/inject_fork_governance_preamble.sh\""
-          }
+  "kind": "provider-hook-merge-policies",
+  "schemaVersion": 1,
+  "sourceDigest": "bfc173b88740292285cb976bf4738a0a356f9eb9b3b25bcc135ff92475a5ebe9",
+  "surfaces": {
+    "claude": {
+      "schemaVersion": 1,
+      "hookArtifact": "providers/claude/hook-config.json",
+      "hookDestination": ".claude/settings.json",
+      "hookMaterializerId": "claude-settings-json-v1",
+      "mergeStrategy": "merge-hook-map-into-base-v1",
+      "baseTemplateContract": "claude-permission-policy-v1",
+      "permissionPolicy": {
+        "source": "packages/design-system/ds-canonical/adapters/claude-settings-base.json",
+        "sha256": "5c21fe94f9822eca6f504f98764503126699373bcda76436acf01336365f1f04",
+        "retiredPermissionAllow": [
+          "Bash(npm install)",
+          "Bash(npm ci)",
+          "Bash(npm run *)",
+          "Bash(npx *)",
+          "Bash(git *)"
         ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/fork-governance-dispatcher.sh\""
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit|Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/fork-governance-dispatcher.sh\""
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/fork-governance-dispatcher.sh\""
-          }
-        ]
-      }
-    ]
-  },
-  "permissions": {
-    "allow": [
-      "Bash(npm install)",
-      "Bash(npm ci)",
-      "Bash(npm run *)",
-      "Bash(npx *)",
-      "Bash(git *)"
-    ]
+      },
+      "retiredHookRegistrations": [
+        {
+          "id": "claude-plugin-bootstrap-blocker",
+          "path": ".claude/hooks/block_production_edit_without_plugin.sh",
+          "provider": "claude",
+          "reasonCode": "PLUGIN_FIRST_BOOTSTRAP_RETIRED"
+        }
+      ]
+    }
   }
 }

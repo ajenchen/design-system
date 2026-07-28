@@ -33,9 +33,9 @@ FAILED_TESTS=""
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-# Override CLAUDE_PROJECT_DIR so _log-fire.sh per-hook log lands in TMP_DIR
+# Override GOVERNANCE_PROJECT_DIR so _log-fire.sh per-hook log lands in TMP_DIR
 # (避免污染 repo .claude/logs/)
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 mkdir -p "$TMP_DIR/.claude/logs"
 
 # run_hook <tool> <file_path> <content_field> <content>

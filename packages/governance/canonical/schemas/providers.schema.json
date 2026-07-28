@@ -1,0 +1,917 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance/providers-v9.json",
+  "title": "Data-driven governance provider adapter registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "canonical", "providers"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 9 },
+    "canonical": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["roots", "hookRegistrations", "skillSemantics", "productSharedInstructionSource", "reviewSelectionPolicies", "materializers", "compatibilityProjections", "reservedDiscovery", "retiredProviders"],
+      "properties": {
+        "roots": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["contextForkAgents", "commands", "hooks", "references", "rules", "skills"],
+          "properties": {
+            "contextForkAgents": { "$ref": "#/$defs/repositoryPath" },
+            "commands": { "$ref": "#/$defs/repositoryPath" },
+            "hooks": { "$ref": "#/$defs/repositoryPath" },
+            "references": { "$ref": "#/$defs/repositoryPath" },
+            "rules": { "$ref": "#/$defs/repositoryPath" },
+            "skills": { "$ref": "#/$defs/repositoryPath" }
+          }
+        },
+        "hookRegistrations": { "$ref": "#/$defs/repositoryPath" },
+        "skillSemantics": { "$ref": "#/$defs/repositoryPath" },
+        "productSharedInstructionSource": { "$ref": "#/$defs/repositoryPath" },
+        "reviewSelectionPolicies": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/reviewSelectionPolicy" }
+        },
+        "materializers": { "$ref": "#/$defs/materializerCatalog" },
+        "compatibilityProjections": { "$ref": "#/$defs/compatibilityProjections" },
+        "reservedDiscovery": { "$ref": "#/$defs/discoveryInventory" },
+        "retiredProviders": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/retiredProvider" }
+        }
+      }
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/provider" }
+    }
+  },
+  "$defs": {
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "^(?:/|[A-Za-z]:|.*(?:^|/)\\.\\.(?:/|$))" }
+    },
+    "adapterOutputPath": {
+      "type": "string",
+      "pattern": "^\\.(?!git(?:hub)?(?:/|$))[A-Za-z0-9_-]+/[A-Za-z0-9_.@/-]+$",
+      "not": { "pattern": "(?:^|/)\\.{1,2}(?:/|$)" }
+    },
+    "stringArray": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "materializerId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*-v[1-9][0-9]*$"
+    },
+    "providerId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "compatibilityProjections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["legacyClaudeInstruction", "legacyCodexCorpus", "marketplacePluginTransport"],
+      "properties": {
+        "legacyClaudeInstruction": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["schemaVersion", "providerId", "discoveryCategories", "legacyProductTreeTombstones"],
+          "properties": {
+            "schemaVersion": { "const": 1 },
+            "providerId": { "$ref": "#/$defs/providerId" },
+            "discoveryCategories": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/compatibilityDiscoveryCategory" }
+            },
+            "legacyProductTreeTombstones": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/adapterOutputPath" }
+            }
+          }
+        },
+        "legacyCodexCorpus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["schemaVersion", "providerId", "hookArtifact", "skillArtifactRoot"],
+          "properties": {
+            "schemaVersion": { "const": 1 },
+            "providerId": { "$ref": "#/$defs/providerId" },
+            "hookArtifact": { "$ref": "#/$defs/repositoryPath" },
+            "skillArtifactRoot": { "$ref": "#/$defs/repositoryPath" }
+          }
+        },
+        "marketplacePluginTransport": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["schemaVersion", "profileId", "pluginFullId", "providerId", "hookOutput", "aliasRegistry", "repositoryRole", "governanceRole", "projection", "targetRoleManifest"],
+          "properties": {
+            "schemaVersion": { "const": 2 },
+            "profileId": { "const": "claude-authority-full" },
+            "pluginFullId": { "const": "design-system@qijenchen-ds" },
+            "providerId": { "$ref": "#/$defs/providerId" },
+            "hookOutput": { "$ref": "#/$defs/repositoryPath" },
+            "aliasRegistry": { "$ref": "#/$defs/repositoryPath" },
+            "repositoryRole": { "const": "authority" },
+            "governanceRole": { "const": "ds-author" },
+            "projection": { "const": "full-canonical-registrations" },
+            "targetRoleManifest": { "const": "packages/governance/canonical/manifest.json" }
+          }
+        }
+      }
+    },
+    "compatibilityDiscoveryCategory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "sourceRoot", "artifactRoot", "destinationRoot", "entries"],
+      "properties": {
+        "name": { "enum": ["agents", "commands"] },
+        "sourceRoot": { "$ref": "#/$defs/repositoryPath" },
+        "artifactRoot": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "destinationRoot": { "$ref": "#/$defs/adapterOutputPath" },
+        "entries": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.@-]*\\.md$"
+          }
+        }
+      }
+    },
+    "jsonField": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"
+    },
+    "instructionMaterializer": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["engine", "ownershipPolicy", "supplementPolicy"],
+          "properties": {
+            "engine": { "const": "markdown-relative-at-import-v1" },
+            "ownershipPolicy": { "const": "provider-generated-projection" },
+            "supplementPolicy": { "enum": ["optional", "required"] }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["engine", "ownershipPolicy", "supplementPolicy"],
+          "properties": {
+            "engine": { "const": "shared-instruction-v1" },
+            "ownershipPolicy": { "const": "common-authority-consumer" },
+            "supplementPolicy": { "const": "forbidden" }
+          }
+        }
+      ]
+    },
+    "hookMapMaterializer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine", "hooksField", "descriptionField", "mergeStrategy", "baseTemplateContract"],
+      "properties": {
+        "engine": { "const": "json-hook-map-v1" },
+        "hooksField": { "$ref": "#/$defs/jsonField" },
+        "descriptionField": {
+          "oneOf": [
+            { "$ref": "#/$defs/jsonField" },
+            { "type": "null" }
+          ]
+        },
+        "mergeStrategy": { "enum": ["merge-hook-map-into-base-v1", "replace-document-v1"] },
+        "baseTemplateContract": {
+          "oneOf": [
+            { "$ref": "#/$defs/materializerId" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "mergeStrategy": { "const": "merge-hook-map-into-base-v1" } }, "required": ["mergeStrategy"] },
+          "then": { "properties": { "baseTemplateContract": { "$ref": "#/$defs/materializerId" } } },
+          "else": { "properties": { "baseTemplateContract": { "type": "null" } } }
+        }
+      ]
+    },
+    "hookEventListMaterializer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine", "eventsField", "eventField", "groupsField", "matcherField", "handlersField", "handlerArgvField", "descriptionField", "mergeStrategy", "baseTemplateContract"],
+      "properties": {
+        "engine": { "const": "json-hook-event-list-v1" },
+        "eventsField": { "$ref": "#/$defs/jsonField" },
+        "eventField": { "$ref": "#/$defs/jsonField" },
+        "groupsField": { "$ref": "#/$defs/jsonField" },
+        "matcherField": { "$ref": "#/$defs/jsonField" },
+        "handlersField": { "$ref": "#/$defs/jsonField" },
+        "handlerArgvField": { "$ref": "#/$defs/jsonField" },
+        "descriptionField": { "$ref": "#/$defs/jsonField" },
+        "mergeStrategy": { "const": "replace-document-v1" },
+        "baseTemplateContract": { "type": "null" }
+      }
+    },
+    "hookBaseTemplateContract": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["engine", "source", "schema"],
+          "properties": {
+            "engine": { "const": "claude-permission-policy-v1" },
+            "source": { "$ref": "#/$defs/repositoryPath" },
+            "schema": { "$ref": "#/$defs/repositoryPath" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["engine"],
+          "properties": {
+            "engine": { "const": "static-json-object-v1" }
+          }
+        }
+      ]
+    },
+    "hookMaterializer": {
+      "oneOf": [
+        { "$ref": "#/$defs/hookMapMaterializer" },
+        { "$ref": "#/$defs/hookEventListMaterializer" }
+      ]
+    },
+    "skillMaterializer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine", "entryFile"],
+      "properties": {
+        "engine": { "const": "skill-directory-v1" },
+        "entryFile": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_-]*\\.md$"
+        }
+      }
+    },
+    "treeMaterializer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine", "transformPolicies"],
+      "properties": {
+        "engine": { "const": "closed-tree-copy-v1" },
+        "transformPolicies": {
+          "type": "array",
+          "prefixItems": [{ "const": "byte-exact" }],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      }
+    },
+    "productManagedTree": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRoot", "destination", "materializerId", "transformPolicy"],
+      "properties": {
+        "sourceRoot": { "$ref": "#/$defs/repositoryPath" },
+        "destination": { "$ref": "#/$defs/adapterOutputPath" },
+        "materializerId": { "$ref": "#/$defs/materializerId" },
+        "transformPolicy": { "const": "byte-exact" }
+      }
+    },
+    "materializerCatalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["instructionViews", "hookBaseTemplateContracts", "hookViews", "skillViews", "treeViews"],
+      "properties": {
+        "instructionViews": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "$ref": "#/$defs/materializerId" },
+          "additionalProperties": { "$ref": "#/$defs/instructionMaterializer" }
+        },
+        "hookViews": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "$ref": "#/$defs/materializerId" },
+          "additionalProperties": { "$ref": "#/$defs/hookMaterializer" }
+        },
+        "hookBaseTemplateContracts": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "$ref": "#/$defs/materializerId" },
+          "additionalProperties": { "$ref": "#/$defs/hookBaseTemplateContract" }
+        },
+        "skillViews": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "$ref": "#/$defs/materializerId" },
+          "additionalProperties": { "$ref": "#/$defs/skillMaterializer" }
+        },
+        "treeViews": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "$ref": "#/$defs/materializerId" },
+          "additionalProperties": { "$ref": "#/$defs/treeMaterializer" }
+        }
+      }
+    },
+    "discoveryRootName": {
+      "type": "string",
+      "pattern": "^\\.(?!git(?:hub)?$)[A-Za-z0-9][A-Za-z0-9_-]*$"
+    },
+    "discoveryInstructionName": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.@-]*\\.md$"
+    },
+    "discoveryConfigPath": {
+      "type": "string",
+      "pattern": "^\\.(?:[A-Za-z0-9][A-Za-z0-9_.@-]*|[A-Za-z0-9][A-Za-z0-9_-]*/[A-Za-z0-9_.@/-]+)$",
+      "not": { "pattern": "(?:^|/)\\.{1,2}(?:/|$)" }
+    },
+    "discoveryInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerRootNames", "instructionNames", "instructionOverrideNames", "configPaths", "pluginRootNames"],
+      "properties": {
+        "providerRootNames": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/discoveryRootName" } },
+        "instructionNames": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/discoveryInstructionName" } },
+        "instructionOverrideNames": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/discoveryInstructionName" } },
+        "configPaths": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/discoveryConfigPath" } },
+        "pluginRootNames": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/discoveryRootName" } }
+      }
+    },
+    "retiredSurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind"],
+      "properties": {
+        "path": { "$ref": "#/$defs/repositoryPath" },
+        "kind": { "enum": ["file", "tree"] }
+      }
+    },
+    "retiredProvider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "replacementProviderId", "retiredInVersion", "reasonCode", "discovery", "surfaces"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "replacementProviderId": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            { "type": "null" }
+          ]
+        },
+        "retiredInVersion": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?(?:\\+[0-9A-Za-z][0-9A-Za-z.-]*)?$"
+        },
+        "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+        "discovery": { "$ref": "#/$defs/discoveryInventory" },
+        "surfaces": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/retiredSurface" }
+        },
+        "transfers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/retiredSurface" }
+        }
+      },
+      "allOf": [
+        {
+          "anyOf": [
+            { "properties": { "surfaces": { "type": "array", "minItems": 1 } } },
+            {
+              "required": ["transfers"],
+              "properties": { "transfers": { "type": "array", "minItems": 1 } }
+            }
+          ]
+        },
+        {
+          "if": {
+            "properties": { "replacementProviderId": { "type": "null" } },
+            "required": ["replacementProviderId"]
+          },
+          "then": { "properties": { "transfers": false } }
+        }
+      ]
+    },
+    "writeTransportId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*-v[1-9][0-9]*$"
+    },
+    "rawToolName": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
+    },
+    "payloadField": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(?:\\.[A-Za-z_][A-Za-z0-9_-]*)*$"
+    },
+    "writeTransport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "rawTools", "engine", "payloadFields"],
+      "properties": {
+        "id": { "$ref": "#/$defs/writeTransportId" },
+        "rawTools": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/rawToolName" }
+        },
+        "engine": {
+          "enum": ["full-file-v1", "exact-replace-v1", "exact-replace-list-v1", "codex-apply-patch-v1", "unified-diff-v1"]
+        },
+        "payloadFields": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/payloadField" }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "engine": { "const": "full-file-v1" } },
+            "required": ["engine"]
+          },
+          "then": {
+            "properties": {
+              "payloadFields": {
+                "type": "array",
+                "prefixItems": [
+                  { "$ref": "#/$defs/payloadField" },
+                  { "$ref": "#/$defs/payloadField" }
+                ],
+                "items": false,
+                "minItems": 2,
+                "maxItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "engine": { "const": "exact-replace-v1" } },
+            "required": ["engine"]
+          },
+          "then": {
+            "properties": {
+              "payloadFields": {
+                "type": "array",
+                "prefixItems": [
+                  { "$ref": "#/$defs/payloadField" },
+                  { "$ref": "#/$defs/payloadField" },
+                  { "$ref": "#/$defs/payloadField" },
+                  { "$ref": "#/$defs/payloadField" }
+                ],
+                "items": false,
+                "minItems": 4,
+                "maxItems": 4
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "engine": { "const": "exact-replace-list-v1" } },
+            "required": ["engine"]
+          },
+          "then": {
+            "properties": {
+              "payloadFields": {
+                "type": "array",
+                "prefixItems": [
+                  { "$ref": "#/$defs/payloadField" },
+                  { "$ref": "#/$defs/payloadField" },
+                  { "$ref": "#/$defs/payloadField" },
+                  { "$ref": "#/$defs/payloadField" },
+                  { "$ref": "#/$defs/payloadField" }
+                ],
+                "items": false,
+                "minItems": 5,
+                "maxItems": 5
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "engine": { "const": "codex-apply-patch-v1" } },
+            "required": ["engine"]
+          },
+          "then": {
+            "properties": {
+              "payloadFields": {
+                "type": "array",
+                "prefixItems": [{ "$ref": "#/$defs/payloadField" }],
+                "items": false,
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "engine": { "const": "unified-diff-v1" } },
+            "required": ["engine"]
+          },
+          "then": {
+            "properties": {
+              "payloadFields": {
+                "type": "array",
+                "prefixItems": [{ "$ref": "#/$defs/payloadField" }],
+                "items": false,
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventFields", "toolFields", "pathFields", "pathArrayFields", "writeTools", "writeTransports", "eventAliases", "toolAliases"],
+      "properties": {
+        "eventFields": { "$ref": "#/$defs/stringArray" },
+        "toolFields": { "$ref": "#/$defs/stringArray" },
+        "pathFields": { "$ref": "#/$defs/stringArray" },
+        "pathArrayFields": { "$ref": "#/$defs/stringArray" },
+        "writeTools": { "$ref": "#/$defs/stringArray" },
+        "writeTransports": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/writeTransport" }
+        },
+        "eventAliases": { "type": "object", "additionalProperties": { "type": "string" } },
+        "toolAliases": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "skillInvocation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["strategy"],
+          "properties": { "strategy": { "const": "main-context" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["strategy", "context", "agent"],
+          "properties": {
+            "strategy": { "const": "native-context-fork" },
+            "context": { "const": "fork" },
+            "agent": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+          }
+        }
+      ]
+    },
+    "reviewSelectionPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "assuranceTierOrder",
+        "reasoningTierOrder",
+        "computeTierOrder",
+        "reviewClasses",
+        "eligibility",
+        "ranking",
+        "costPolicy",
+        "bindingPolicy",
+        "unavailableOutcome"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "assuranceTierOrder": {
+          "const": ["standard", "high", "maximum"]
+        },
+        "reasoningTierOrder": {
+          "const": ["standard", "high", "maximum"]
+        },
+        "computeTierOrder": {
+          "const": ["standard", "high", "maximum"]
+        },
+        "reviewClasses": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tier-0-governance"],
+          "properties": {
+            "tier-0-governance": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["assuranceTier", "reasoningTier", "computeTier"],
+              "properties": {
+                "assuranceTier": { "const": "maximum" },
+                "reasoningTier": { "const": "maximum" },
+                "computeTier": { "const": "maximum" }
+              }
+            }
+          }
+        },
+        "eligibility": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "independentProvider",
+            "independentContext",
+            "immutableTarget",
+            "identicalEvidence",
+            "completeEvidenceVisibility",
+            "certifiedCapability",
+            "policyAllowed",
+            "noSelfReview",
+            "failClosed"
+          ],
+          "properties": {
+            "independentProvider": { "const": true },
+            "independentContext": { "const": true },
+            "immutableTarget": { "const": true },
+            "identicalEvidence": { "const": true },
+            "completeEvidenceVisibility": { "const": true },
+            "certifiedCapability": { "const": true },
+            "policyAllowed": { "const": true },
+            "noSelfReview": { "const": true },
+            "failClosed": { "const": true }
+          }
+        },
+        "ranking": {
+          "const": [
+            "assurance-tier-desc",
+            "reasoning-tier-desc",
+            "compute-tier-desc",
+            "available-required-entitlement-route-first",
+            "provider-local-capability-rank-desc",
+            "provider-id-utf8-asc",
+            "review-profile-id-utf8-asc",
+            "model-release-id-utf8-asc"
+          ]
+        },
+        "costPolicy": { "const": "batch-or-stop-never-capability-downgrade" },
+        "bindingPolicy": { "const": "freeze-exact-provider-profile-model-and-registry-digests-after-selection" },
+        "unavailableOutcome": { "const": "REVIEW-BLOCKED" }
+      }
+    },
+    "skillBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["self", "selectionPolicy", "reviewClass", "transport", "invocation"],
+      "properties": {
+        "self": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "selectionPolicy": { "type": "string", "pattern": "^[a-z][a-z0-9-]*-v[1-9][0-9]*$" },
+        "reviewClass": { "const": "tier-0-governance" },
+        "transport": { "type": "string", "minLength": 1 },
+        "invocation": { "$ref": "#/$defs/skillInvocation" },
+        "certificationContract": { "const": "exact-provider-runtime-surface-role-target-v1" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "certificationContract": {} },
+            "required": ["certificationContract"]
+          },
+          "then": {
+            "properties": {
+              "transport": { "const": "content-addressed-model-broker-exchange-v1" }
+            }
+          }
+        }
+      ]
+    },
+    "providerRuntime": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["cli", "transcript", "contextOutputTransport", "stopDecisionTransport", "branchNamespace", "memorySyncScript"],
+      "properties": {
+        "cli": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["executable", "localExecutable", "briefInvocationMarkers", "discoveryMarkers", "replyArtifactPrefix"],
+          "properties": {
+            "executable": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "localExecutable": { "$ref": "#/$defs/repositoryPath" },
+            "briefInvocationMarkers": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "pattern": "^(?:[a-z][a-z0-9-]*|--?[a-z][a-z0-9-]*)$" }
+            },
+            "discoveryMarkers": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "replyArtifactPrefix": { "type": "string", "pattern": "^[a-z][a-z0-9-]*-reply$" }
+          }
+        },
+        "transcript": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["contract", "stability", "fixture", "access"],
+          "properties": {
+            "contract": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9-]*-jsonl-v[0-9]+$" },
+            "stability": { "enum": ["tested-versioned", "unstable-opaque", "unavailable"] },
+            "fixture": {
+              "oneOf": [
+                { "$ref": "#/$defs/repositoryPath" },
+                { "type": "null" }
+              ]
+            },
+            "access": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["strategy", "pathPolicy", "recordFormat", "emptyState", "maximumRetainedRecordCount", "maximumRecordBytes", "maximumMaterializedBytes"],
+                  "properties": {
+                    "strategy": { "const": "validated-jsonl-tail-v2" },
+                    "pathPolicy": { "const": "canonical-unique-regular-file-no-name-assumption" },
+                    "recordFormat": { "const": "json-lines" },
+                    "emptyState": { "const": "allowed-zero-byte" },
+                    "maximumRetainedRecordCount": { "type": "integer", "minimum": 1, "maximum": 10000 },
+                    "maximumRecordBytes": {
+                      "type": "integer",
+                      "minimum": 1024,
+                      "maximum": 16777216,
+                      "description": "Maximum UTF-8 bytes in one serialized JSON object, excluding its CRLF or LF line terminator."
+                    },
+                    "maximumMaterializedBytes": {
+                      "type": "integer",
+                      "minimum": 4096,
+                      "maximum": 67108864,
+                      "description": "Maximum snapshot bytes after every retained record is normalized to exactly one trailing LF."
+                    }
+                  }
+                },
+                { "type": "null" }
+              ]
+            }
+          }
+        },
+        "contextOutputTransport": { "enum": ["claude-hook-specific", "system-message", "stderr"] },
+        "stopDecisionTransport": { "enum": ["claude-decision-json", "continue-json", "blocking-exit"] },
+        "branchNamespace": { "type": "string", "pattern": "^[a-z][a-z0-9-]*/$" },
+        "memorySyncScript": {
+          "oneOf": [
+            { "$ref": "#/$defs/repositoryPath" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generate", "repositoryInstructionSource", "instructionView", "productInstructionSource", "repositoryManagedTrees", "productManagedTrees", "skillView", "hookView", "environmentMap", "skillBindings", "skillAliases", "discovery"],
+      "properties": {
+        "generate": { "type": "boolean" },
+        "repositoryInstructionSource": {
+          "oneOf": [
+            { "$ref": "#/$defs/repositoryPath" },
+            { "type": "null" }
+          ]
+        },
+        "instructionView": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["materializerId"],
+          "properties": {
+            "materializerId": { "$ref": "#/$defs/materializerId" }
+          }
+        },
+        "productInstructionSource": {
+          "oneOf": [
+            { "$ref": "#/$defs/repositoryPath" },
+            { "type": "null" }
+          ]
+        },
+        "repositoryManagedTrees": { "type": "object", "additionalProperties": { "$ref": "#/$defs/adapterOutputPath" } },
+        "productManagedTrees": { "type": "object", "additionalProperties": { "$ref": "#/$defs/productManagedTree" } },
+        "skillView": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["directory", "materializerId"],
+          "properties": {
+            "directory": { "$ref": "#/$defs/adapterOutputPath" },
+            "materializerId": { "$ref": "#/$defs/materializerId" }
+          }
+        },
+        "hookView": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["output", "materializerId", "settingsTemplate", "supportedEvents", "eventBindings", "matcherAliases", "workingDirectoryPolicy"],
+          "properties": {
+            "output": { "$ref": "#/$defs/adapterOutputPath" },
+            "materializerId": { "$ref": "#/$defs/materializerId" },
+            "settingsTemplate": { "type": ["string", "null"] },
+            "supportedEvents": { "$ref": "#/$defs/stringArray" },
+            "eventBindings": {
+              "type": "object",
+              "propertyNames": { "type": "string", "minLength": 1 },
+              "additionalProperties": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.:@/-]*$" }
+            },
+            "matcherAliases": { "type": "object", "additionalProperties": { "$ref": "#/$defs/stringArray" } },
+            "workingDirectoryPolicy": { "const": "repository-root" }
+          }
+        },
+        "environmentMap": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[A-Z][A-Z0-9_]*$" },
+          "additionalProperties": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }
+        },
+        "skillBindings": { "type": "object", "additionalProperties": { "$ref": "#/$defs/skillBinding" } },
+        "skillAliases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "sourceSkill"],
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              "sourceSkill": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+            }
+          }
+        },
+        "discovery": { "$ref": "#/$defs/discoveryInventory" },
+        "exclusions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["scope", "reasonCode", "detail"],
+            "properties": {
+              "scope": { "type": "string", "minLength": 1 },
+              "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "detail": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "generate": { "const": true } },
+            "required": ["generate"]
+          },
+          "then": {
+            "properties": { "skillView": { "type": "object" } }
+          }
+        }
+      ]
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName", "providerKind", "instructionEntry", "sharedInstructionEntry", "skillDirectory", "hookConfig", "hookConfigFormat", "hookEntrypoint", "blockingExitCode", "capabilities", "runtime", "normalization", "adapter"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "displayName": { "type": "string", "minLength": 1 },
+        "providerKind": { "enum": ["concrete-runtime", "headless-protocol"] },
+        "instructionEntry": { "$ref": "#/$defs/repositoryPath" },
+        "sharedInstructionEntry": { "$ref": "#/$defs/repositoryPath" },
+        "skillDirectory": { "$ref": "#/$defs/adapterOutputPath" },
+        "hookConfig": {
+          "oneOf": [
+            { "$ref": "#/$defs/adapterOutputPath" },
+            { "type": "null" }
+          ]
+        },
+        "hookConfigFormat": { "enum": ["json", null] },
+        "hookEntrypoint": { "type": ["string", "null"] },
+        "blockingExitCode": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255,
+          "not": { "const": 70 }
+        },
+        "capabilities": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["nativeHooks", "hookTrustRequired", "hardGateComplete", "hookEnforcement"],
+          "properties": {
+            "nativeHooks": { "type": "boolean" },
+            "hookTrustRequired": { "type": "boolean" },
+            "hardGateComplete": { "type": "boolean" },
+            "hookEnforcement": { "enum": ["native-feedback-plus-ci", "ci-only"] }
+          }
+        },
+        "runtime": { "$ref": "#/$defs/providerRuntime" },
+        "normalization": { "$ref": "#/$defs/normalization" },
+        "adapter": { "$ref": "#/$defs/adapter" }
+      }
+    }
+  }
+}

@@ -20,16 +20,18 @@ source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -uo pipefail
 INPUT=$(cat 2>/dev/null || echo "{}")
-EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // ""' 2>/dev/null)
-TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // ""' 2>/dev/null)
-PROMPT=$(echo "$INPUT" | jq -r '.prompt // ""' 2>/dev/null)
+EVENT=$(jq -r '.hook_event_name // ""' <<<"$INPUT" 2>/dev/null)
+TRANSCRIPT_PATH=$(jq -r '.transcript_path // ""' <<<"$INPUT" 2>/dev/null)
+PROMPT=$(jq -r '.prompt // ""' <<<"$INPUT" 2>/dev/null)
 
 [ "$EVENT" != "UserPromptSubmit" ] && exit 0
-[ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ] && exit 0
+if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
+  exit 0
+fi
 
 # Heuristic:user prompt 含 specific visual / behavior decision trigger keyword(2026-05-26 tighten — 拿掉「應該/是否/改成/design/behavior/互動」太籠統的 false-positive triggers)
 PROPOSE_TRIGGER_RE='(propose me|give me options|列.{0,5}option|建議.{0,5}方案|建議.{0,5}做法|哪個比較|對齊哪家|比稿|要怎麼設計|該用哪個|design tradeoff|recommend|world-class.{0,10}(對照|比較))'
-if ! echo "$PROMPT" | grep -qE "$PROPOSE_TRIGGER_RE"; then
+if ! grep -qE "$PROPOSE_TRIGGER_RE" <<<"$PROMPT"; then
   exit 0
 fi
 
@@ -48,7 +50,7 @@ if [ "$HAS_FETCH" -ge 2 ]; then
 fi
 
 # P0-directive inject(exit 0 by design — 見檔頭 fail-closed 設計約束)
-cat <<EOF
+MSG=$(cat <<EOF
 🚨 M26 Propose-without-benchmark gate(P0 directive — 未 fetch 就 propose = M26 違規,非建議)
 
 → User prompt 含 propose / visual / behavior decision trigger keyword,但過去 ~20 turns
@@ -64,4 +66,6 @@ Pipeline(propose 前 inline 跑):
 
 對應:meta-patterns.md M26 / propose-options/SKILL.md Step B-3。
 EOF
+)
+jq -n --arg ctx "$MSG" '{governanceContext:{hookEventName:"UserPromptSubmit",message:$ctx}}'
 exit 0

@@ -11,7 +11,7 @@
 // Anti-fake-green:gate 用 process.cwd() 解析 manifest 路徑,故在 isolated temp cwd 造/不造
 //    manifest 即可注入 detection state,完全不動 repo / node_modules。若 detection 被移除
 //    (gate 永遠印同一分支)→ 2a 或 2b 斷言必 FAIL,本 test 隨之 FAIL(非恆綠)。
-import { execSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -19,13 +19,13 @@ import { join, resolve } from 'node:path'
 const SCRIPT = resolve(process.cwd(), 'scripts/check-plugin-installed.mjs')
 const MANIFEST_REL = 'node_modules/@qijenchen/design-system/ds-canonical/fork/manifest.json'
 // 分支唯一標記(注意:「尚未就位」含子字串「就位」,故 present 標記用「治理本體就位」contiguous — 只在 present 分支出現)
-const PRESENT = '治理本體就位'
+const PRESENT = '治理 payload 就位'
 const MISSING = '尚未就位'
 
 // 從指定 cwd 跑 gate,回 {code, out}
 const runIn = (cwd) => {
-  try { return { code: 0, out: execSync(`node ${JSON.stringify(SCRIPT)}`, { cwd, stdio: 'pipe' }).toString() } }
-  catch (e) { return { code: e.status ?? 1, out: (e.stdout ? e.stdout.toString() : '') } }
+  const result = spawnSync(process.execPath, ['--', SCRIPT], { cwd, encoding: 'utf8' })
+  return { code: result.status ?? 1, out: result.stdout || '' }
 }
 
 let ok = true

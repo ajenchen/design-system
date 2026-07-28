@@ -9,19 +9,31 @@
 // 3-bucket: A=annotated-retired(OK) / B=dangling-LIVE(FAIL,--check exit 1) / C=path-deadref。
 // Usage: node scripts/check-dangling-infra-ref.mjs [--check]
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 
-const ROOT = process.cwd()
+const rootIndex = process.argv.indexOf('--root')
+if (rootIndex !== -1 && !process.argv[rootIndex + 1]) {
+  console.error('usage: check-dangling-infra-ref.mjs [--check] [--root <repo>]')
+  process.exit(2)
+}
+const ROOT = rootIndex === -1 ? process.cwd() : resolve(process.argv[rootIndex + 1])
 const CHECK = process.argv.includes('--check')
 
 // ── scan scope(live governance docs;排除 mirror / 歷史凍結檔)──
-// 2026-05-31(infra-audit P1):補 .claude/memory — 原漏掉,memory infra ref 零機械防線
+// 2026-05-31(infra-audit P1):補 governance/memory — 原漏掉,memory infra ref 零機械防線
 // (memory file 可 cite 不存在的 hook 而無人攔)。
 // 2026-07-07(治理進化收尾):補 .github/workflows — CI yml 引用的 scripts/*.mjs|sh 同屬
 // infra-self ref(workflow 引不存在的 script = release/CI 靜默斷鏈),納入同一 3-bucket 檢查。
-const SCAN_DIRS = ['.claude/skills', '.claude/rules', '.claude/references', '.claude/commands', '.claude/memory', '.github/workflows']
-const SCAN_FILES = ['AGENTS.md', 'CLAUDE.md', 'packages/design-system/CLAUDE.md', '.claude/settings.json', '.claude/settings.local.json']
-const EXCLUDE = /ds-canonical|\/planning\/|\/scratch\/|\/retired\/|\/tmp\/|node_modules/
+const SCAN_DIRS = [
+  'packages/design-system/ds-canonical/skills',
+  'packages/design-system/ds-canonical/rules',
+  'packages/design-system/ds-canonical/references',
+  'packages/design-system/ds-canonical/commands',
+  'governance/memory',
+  '.github/workflows',
+]
+const SCAN_FILES = ['AGENTS.md', 'CLAUDE.md']
+const EXCLUDE = /\/planning\/|\/scratch\/|\/retired\/|\/tmp\/|node_modules/
 
 // ── annotation = 同行 marker 明確 disclaim「此 ref 本身故意不對應 live 檔」──
 // 收緊原則(2026-05-30):只認直接 disclaim THIS ref 的 marker,拿掉 example/e.g./範例
@@ -32,19 +44,24 @@ const ANNOTATED = /retired|未實作|planned|待\s*ship|deprecated|mindset enfor
 
 // ── infra name patterns(hook / script)──
 const HOOK_RE = /\b((?:check|stop|inject|pre_edit|post_edit|enforce|auto_regen|block)_[a-z0-9_]+\.(?:sh|py))\b/g
-const MJS_RE = /\b([a-z0-9][a-z0-9-]*\.mjs)\b/g
+// Keep the complete repo-relative path when one is present.  The old pattern
+// matched only the suffix after a dot, so
+// `infra/governance/test/provider-surface.test.mjs` became `test.mjs` and was
+// reported as a dangling script even though the referenced file existed.
+const MJS_RE = /(?<![a-z0-9._/-])((?:[a-z0-9._-]+\/)*[a-z0-9][a-z0-9._-]*\.mjs)\b/gi
 
 // ── where a referenced name could legitimately live on disk ──
 // 含 hook-consolidation lib form:`check_X.sh`/`stop_X.sh` 的 logic 常被搬成 `_X.sh`
 // lib helper(被 post_edit_dispatcher / chrome_header_dispatcher source,降 hook count),
 // 跟 `check_token_hygiene→_token_hygiene` 同 pattern。視 lib form 為 live(functionally 存在)。
 function resolvesOnDisk(name) {
+  if (name.includes('/') && existsSync(join(ROOT, name))) return true
   const variants = [name]
   const libForm = name.replace(/^(?:check|stop|inject|pre_edit|post_edit|enforce|auto_regen|block)_/, '_')
   if (libForm !== name) variants.push(libForm)
   const dirs = name.endsWith('.mjs')
-    ? ['scripts', '.claude/hooks', '.']
-    : ['.claude/hooks', '.claude/hooks/lib', '.claude/hooks/tests', 'hooks/scripts',
+    ? ['scripts', 'packages/design-system/ds-canonical/hooks', '.']
+    : ['packages/design-system/ds-canonical/hooks', 'packages/design-system/ds-canonical/hooks/lib', 'packages/design-system/ds-canonical/hooks/tests', 'hooks/scripts',
        // fork-launcher homes:intentionally fork-shipped hooks(非 ds-source),live on disk
        'template/ds-product-template/.claude/hooks', 'packages/design-system/ds-canonical/fork/launchers', '.']
   if (variants.some((v) => dirs.some((d) => existsSync(join(ROOT, d, v))))) return true
@@ -60,7 +77,7 @@ let _foldCache = null
 function foldedProvenance() {
   if (_foldCache) return _foldCache
   _foldCache = new Set()
-  const hookDirs = ['.claude/hooks', '.claude/hooks/lib']
+  const hookDirs = ['packages/design-system/ds-canonical/hooks', 'packages/design-system/ds-canonical/hooks/lib']
   // 副檔名 optional — fold 註解有寫 `原 check_X.sh` 也有省成 `原 check_X`(eg. principles)。
   // 抓 base name 後同時 index 帶 .sh / .py 兩種 ref 形式,讓 doc 引用 `check_X.sh` 也命中。
   const provRe = /原\s+(?:[a-z0-9_]+\/)*((?:check|stop|inject|pre_edit|post_edit|enforce|auto_regen|block)_[a-z0-9_]+?)(?:\.(?:sh|py))?(?=[\s,，。)）]|$)/g

@@ -1,6 +1,6 @@
 # UI 開發規則 — 深度展開
 
-`.claude/rules/ui-development.md` 的 detail 版本。主章留 meta 規則(必重用既有 / 用 token / 檢查 pattern / `cn()` / 清 imports 後 runtime 驗證 / 一句話 pointer),本檔放 4 個 sub-rule 的完整規格。
+Canonical `packages/design-system/ds-canonical/rules/ui-development.md` 的 detail 版本。主章留 meta 規則(必重用既有 / 用 token / 檢查 pattern / `cn()` / 清 imports 後 runtime 驗證 / 一句話 pointer),本檔放 4 個 sub-rule 的完整規格。
 
 ---
 

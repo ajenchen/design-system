@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/upgrade-evidence-receipt-v2.schema.json",
+  "title": "Qijenchen protected-base upgrade evidence receipt v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "baseSha",
+    "version",
+    "patchSha256",
+    "treeSha256",
+    "paths",
+    "operations",
+    "previousCorpus",
+    "incomingCorpus",
+    "provenance",
+    "authoritySha256",
+    "toolchain"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "baseSha": { "$ref": "#/$defs/gitObject" },
+    "version": { "$ref": "#/$defs/version" },
+    "patchSha256": { "$ref": "#/$defs/sha256" },
+    "treeSha256": { "$ref": "#/$defs/gitObject" },
+    "paths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/repositoryPath" }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/operation" }
+    },
+    "previousCorpus": { "$ref": "#/$defs/corpus" },
+    "incomingCorpus": { "$ref": "#/$defs/corpus" },
+    "provenance": { "$ref": "#/$defs/provenance" },
+    "authoritySha256": { "$ref": "#/$defs/sha256" },
+    "toolchain": { "$ref": "#/$defs/toolchain" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "gitObject": { "type": "string", "pattern": "^[a-f0-9]{40}([a-f0-9]{24})?$" },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?(?:\\+[0-9A-Za-z][0-9A-Za-z.-]*)?$"
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!\\.git(?:/|$))[^\\u0000\\r\\n\\\\]+$"
+    },
+    "corpus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "releaseVersion",
+        "consumerBomSha256",
+        "forkCorpusLockSha256",
+        "manifestSha256",
+        "providerLifecycleSha256"
+      ],
+      "properties": {
+        "releaseVersion": { "$ref": "#/$defs/version" },
+        "consumerBomSha256": { "$ref": "#/$defs/sha256" },
+        "forkCorpusLockSha256": { "$ref": "#/$defs/sha256" },
+        "manifestSha256": { "$ref": "#/$defs/sha256" },
+        "providerLifecycleSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "integrity"],
+      "properties": {
+        "name": { "enum": ["@qijenchen/design-system", "@qijenchen/storybook-config"] },
+        "version": { "$ref": "#/$defs/version" },
+        "integrity": { "type": "string", "pattern": "^sha512-[A-Za-z0-9+/]+={0,2}$" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "workflow",
+        "tag",
+        "tagObject",
+        "gitCommit",
+        "gitTree",
+        "bomSha256",
+        "releaseAssetDigest",
+        "releaseSetSha256",
+        "finalizationReceiptSha256",
+        "releaseTrustEvidenceSha256",
+        "packages"
+      ],
+      "properties": {
+        "repository": { "const": "ajenchen/design-system" },
+        "workflow": { "const": ".github/workflows/release.yml" },
+        "tag": { "type": "string", "pattern": "^v\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?(?:\\+[0-9A-Za-z][0-9A-Za-z.-]*)?$" },
+        "tagObject": { "$ref": "#/$defs/gitObject" },
+        "gitCommit": { "$ref": "#/$defs/gitObject" },
+        "gitTree": { "$ref": "#/$defs/gitObject" },
+        "bomSha256": { "$ref": "#/$defs/sha256" },
+        "releaseAssetDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "releaseSetSha256": { "$ref": "#/$defs/sha256" },
+        "finalizationReceiptSha256": { "$ref": "#/$defs/sha256" },
+        "releaseTrustEvidenceSha256": { "$ref": "#/$defs/sha256" },
+        "packages": {
+          "type": "array",
+          "prefixItems": [
+            { "allOf": [{ "$ref": "#/$defs/package" }, { "type": "object", "properties": { "name": { "const": "@qijenchen/design-system" } } }] },
+            { "allOf": [{ "$ref": "#/$defs/package" }, { "type": "object", "properties": { "name": { "const": "@qijenchen/storybook-config" } } }] }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "status"],
+      "properties": {
+        "path": { "$ref": "#/$defs/repositoryPath" },
+        "status": { "enum": ["A", "M", "D"] }
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node", "npm"],
+      "properties": {
+        "node": { "type": "string", "pattern": "^v\\d+\\.\\d+\\.\\d+$" },
+        "npm": { "const": "11.18.0" }
+      }
+    }
+  }
+}

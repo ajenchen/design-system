@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/memory-contract-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "index", "readme", "maxIndexEntries", "maxLinesPerMemory", "cacheExcluded"],
+  "properties": {
+    "$schema": { "const": "../../infra/governance/schemas/memory-contract.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "index": { "const": "MEMORY.md" },
+    "readme": { "const": "README.md" },
+    "maxIndexEntries": { "type": "integer", "minimum": 1, "maximum": 20 },
+    "maxLinesPerMemory": { "type": "integer", "minimum": 1, "maximum": 100 },
+    "cacheExcluded": {
+      "type": "array",
+      "const": ["README.md"]
+    }
+  }
+}

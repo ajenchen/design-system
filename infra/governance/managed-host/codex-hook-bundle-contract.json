@@ -1,0 +1,81 @@
+{
+  "$schema": "../schemas/codex-managed-hook-bundle.schema.json",
+  "schemaVersion": 2,
+  "id": "qijenchen-codex-managed-hook-bundle",
+  "delivery": {
+    "owner": "endpoint-management",
+    "repositoryMayInstall": false,
+    "requirementsTomlDistributesBundle": false,
+    "externalActivationRequired": true,
+    "activationProofKind": "signed-endpoint-effective-readback"
+  },
+  "releaseBinding": {
+    "releaseRingsPath": "infra/governance/release-rings.json",
+    "candidatePointer": "/candidateRelease",
+    "packageName": "@qijenchen/design-system",
+    "requiredPackageFields": ["name", "version", "integrity"],
+    "requiredSourceCommitField": "sourceCommit",
+    "requiredSourceTreeField": "sourceTree"
+  },
+  "installRoots": {
+    "darwin": "/opt/qijenchen/governance/__DS_RELEASE_SOURCE_COMMIT__",
+    "linux": "/opt/qijenchen/governance/__DS_RELEASE_SOURCE_COMMIT__",
+    "win32": "C:\\Program Files\\Qijenchen\\Governance\\__DS_RELEASE_SOURCE_COMMIT__"
+  },
+  "entrypoint": {
+    "relativePath": "managed-hook-dispatcher.mjs",
+    "protocol": "qijenchen-codex-managed-dispatcher-v2",
+    "mustBeRegularFile": true,
+    "mustNotCrossSymlink": true,
+    "mustMatchDeterministicBytes": true,
+    "policyBlockingExitCode": 2,
+    "integrityExitCode": 70
+  },
+  "bundleLayout": {
+    "payloadPrefix": "payload",
+    "preserveRepositoryPaths": true,
+    "allCanonicalInputsMustBeCopied": true,
+    "unexpectedFilesOutcome": "fail"
+  },
+  "canonicalInputs": [
+    "packages/design-system/ds-canonical"
+  ],
+  "requiredEvents": ["PreToolUse", "PostToolUse", "SessionStart", "UserPromptSubmit", "Stop"],
+  "installedManifest": {
+    "relativePath": "managed-hook-bundle.json",
+    "requiredFields": [
+      "schemaVersion",
+      "sourceCommit",
+      "sourceTree",
+      "package",
+      "contractSha256",
+      "canonicalInputsSha256",
+      "dispatcherSha256",
+      "files",
+      "bundleSha256"
+    ],
+    "fileDigestAlgorithm": "sha256",
+    "packageIntegrityAlgorithm": "sha512",
+    "allFilesMustBeEnumerated": true,
+    "unexpectedFilesOutcome": "fail"
+  },
+  "runtime": {
+    "requiredExecutables": ["node", "shell", "python"],
+    "absoluteExecutableReadbackRequired": true,
+    "executableDigestRequired": true,
+    "regularFileRequired": true,
+    "executableBitRequiredOnUnix": true,
+    "symlinkAncestorsForbidden": true
+  },
+  "verification": {
+    "requireExactCandidateRelease": true,
+    "requireExactContractDigest": true,
+    "requireExactCanonicalInputsDigest": true,
+    "requireExactDeterministicInventory": true,
+    "requireExactDispatcherBytes": true,
+    "requireEveryFileDigest": true,
+    "requireEffectiveRequirementsReadback": true,
+    "localFilesystemAloneIsProof": false,
+    "unknownOrMissingOutcome": "external-activation-required"
+  }
+}

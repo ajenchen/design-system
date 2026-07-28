@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "design-system",
-  "description": "World-class DS governance — skills + hooks + rules + CLAUDE.md instructions + 31 active M-rules + 91 audit dims. Source-of-truth for product workspaces consuming @qijenchen/design-system npm package.",
-  "version": "0.1.0-beta.93",
+  "description": "Generated authority/DS-author Claude Code convenience adapter for canonical skills and hook feedback. Its hooks no-op outside an exact DS-author target, and the plugin must only be assigned to authority-only endpoints because plugin skills and commands are provider-discovered. Product governance comes from the immutable @qijenchen/design-system snapshot and protected hard gates; this plugin is not a policy source of truth.",
+  "version": "0.1.0-beta.95",
   "author": {
     "name": "qijenchen"
   },
@@ -12,17 +12,17 @@
   "_metadata": {
     "createdAt": "2026-05-23",
     "phase": "Phase 3 team-distribution-roadmap real Anthropic schema",
-    "structure_note": "Phase 7 plugin spec migration ✅ DONE 2026-05-23 — `.claude/{skills,commands}/` 透過 root-level symlinks(`skills/` → `.claude/skills/` / `commands/` → `.claude/commands/`)expose at plugin root per Anthropic spec(symlinks 官方支援 per `code.claude.com/docs/en/plugins`「If you need to share files across plugins, use symlinks」)。Hooks 透過 `hooks/hooks.json` config + `hooks/scripts/` symlink到 `.claude/hooks/`,paths 用 `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/<name>.sh`。",
+    "structure_note": "Plugin discovery aliases are deterministic generated views. Their alias paths, provider-owned destination keys, and required entries are declared only in packages/governance/canonical/plugin-aliases.json; exact targets are resolved from providers.json and checked by the governance build graph.",
+    "authority_note": "This full-corpus plugin is scoped to repository role authority / governance role ds-author. Managed deployment must prove authority-only endpoint assignment with mixed-role use disabled; the generated hook launchers additionally verify the target before transcript processing. The hook guard is defense in depth and does not hide provider-discovered plugin skills or commands on an incorrectly assigned endpoint. Claude Code does not load a plugin-root CLAUDE.md as project context. A governed product must instead receive AGENTS.md, CLAUDE.md, product-role provider adapters, the immutable lock, and the hook-independent checker from the authenticated package snapshot.",
     "migration_done": [
-      "skills/ symlink → .claude/skills/(22 skills accessible)",
-      "commands/ symlink → .claude/commands/(commands accessible)",
+      "skill and command discovery aliases generated from the canonical plugin alias registry",
       "hooks/hooks.json generated from .claude/settings.json hooks section + ${CLAUDE_PLUGIN_ROOT} path rewrite",
-      "hooks/scripts/ symlink → .claude/hooks/(59 .sh hook scripts + 4 aux command entries in hooks.json = 63 PreToolUse command slots per snapshot 2026-05-29;sync via sync-governance-counters.mjs;真值以 script 輸出為準避 drift)",
+      "hook script discovery alias generated from the same registry and provider-owned tree",
       ".claude-plugin/plugin.json + marketplace.json real schema(2026-05-23 fix)"
     ],
     "intentional_omissions": [
-      ".claude/rules/ — Anthropic plugin spec 沒明寫 path-scoped rules 機制。本 repo workaround:CLAUDE.md 已 reference 5 rules,plugin install 後 consumer 透過 CLAUDE.md instructions 仍能 reach rules content。",
-      ".claude/references/ — 同上,plugin install 後 consumer 仍可 cite path from CLAUDE.md。",
+      ".claude/rules/ — project policy is delivered by the immutable consumer snapshot; plugin installation alone does not load project instructions or rules.",
+      ".claude/references/ — canonical references stay in the authenticated package/snapshot and are reached through project instructions or an invoked skill, not through plugin-root CLAUDE.md.",
       ".claude/memory/ — by design 不 distribute(memory 是 user-specific / session-specific,跨 user 不該 sync)。"
     ]
   }

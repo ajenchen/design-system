@@ -1,0 +1,291 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/github-mutation-boundary-contract-v1.json",
+  "title": "GitHub mirror mutation-boundary observation contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "kind",
+    "githubApiVersion",
+    "canonicalization",
+    "scope",
+    "fullRulesetProjection",
+    "publicRulesetProjection",
+    "normalizedRulesetProjection",
+    "environmentPolicyProjection",
+    "freshnessPolicy",
+    "credentialBoundary",
+    "desiredBindings"
+  ],
+  "properties": {
+    "$schema": {"const": "../schemas/github-mutation-boundary-contract.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "github-mutation-boundary-contract-v1"},
+    "githubApiVersion": {"const": "2022-11-28"},
+    "canonicalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonicalJson", "hashAlgorithm", "collectionSortKey", "collectionSortOrder"],
+      "properties": {
+        "canonicalJson": {"const": "stable-json"},
+        "hashAlgorithm": {"const": "sha256"},
+        "collectionSortKey": {"const": "id"},
+        "collectionSortOrder": {"const": "numeric-ascending"}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "target"],
+      "properties": {
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository", "environment"],
+          "properties": {
+            "repository": {"const": "ajenchen/design-system"},
+            "environment": {"const": "governance-mirror"}
+          }
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository", "environment"],
+          "properties": {
+            "repository": {"const": "ajenchen/ds-product-template"},
+            "environment": {"type": "null"}
+          }
+        }
+      }
+    },
+    "fullRulesetProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observerAuthority", "fields", "excludedFields", "bypassActorsField", "requiredBypassActors", "emptyBypassActorsDigest"],
+      "properties": {
+        "observerAuthority": {"const": "independently-administered-ruleset-write-observer"},
+        "fields": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "id"},
+            {"const": "name"},
+            {"const": "target"},
+            {"const": "source_type"},
+            {"const": "source"},
+            {"const": "enforcement"},
+            {"const": "created_at"},
+            {"const": "updated_at"},
+            {"const": "node_id"},
+            {"const": "conditions"},
+            {"const": "rules"},
+            {"const": "bypass_actors"}
+          ],
+          "items": false,
+          "minItems": 12,
+          "maxItems": 12
+        },
+        "excludedFields": {
+          "type": "array",
+          "prefixItems": [{"const": "current_user_can_bypass"}, {"const": "_links"}],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "bypassActorsField": {"const": "bypass_actors"},
+        "requiredBypassActors": {"type": "array", "maxItems": 0},
+        "emptyBypassActorsDigest": {"const": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"}
+      }
+    },
+    "publicRulesetProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtimePermission", "fields", "excludedFields", "freshnessFields", "mayReadBypassActors", "mayClaimBypassAbsence"],
+      "properties": {
+        "runtimePermission": {"const": "metadata:read"},
+        "fields": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "id"},
+            {"const": "name"},
+            {"const": "target"},
+            {"const": "source_type"},
+            {"const": "source"},
+            {"const": "enforcement"},
+            {"const": "created_at"},
+            {"const": "updated_at"},
+            {"const": "node_id"},
+            {"const": "conditions"},
+            {"const": "rules"}
+          ],
+          "items": false,
+          "minItems": 11,
+          "maxItems": 11
+        },
+        "excludedFields": {
+          "type": "array",
+          "prefixItems": [{"const": "bypass_actors"}, {"const": "current_user_can_bypass"}, {"const": "_links"}],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "freshnessFields": {
+          "type": "array",
+          "prefixItems": [{"const": "created_at"}, {"const": "updated_at"}],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "mayReadBypassActors": {"const": false},
+        "mayClaimBypassAbsence": {"const": false}
+      }
+    },
+    "normalizedRulesetProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fields", "requiredCheckFields", "flattenedRequiredCheckFields", "integrationIdentity", "managedRulesetPrefix", "managedNameSet", "parentRulesets", "unmanagedRulesets", "rulesetSort", "ruleSort", "requiredCheckSort", "flattenedRequiredCheckSort"],
+      "properties": {
+        "fields": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "name"},
+            {"const": "target"},
+            {"const": "enforcement"},
+            {"const": "conditions"},
+            {"const": "bypass_actors"},
+            {"const": "rules"}
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "requiredCheckFields": {
+          "type": "array",
+          "prefixItems": [{"const": "context"}, {"const": "integration"}],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "flattenedRequiredCheckFields": {
+          "type": "array",
+          "prefixItems": [{"const": "ruleset"}, {"const": "context"}, {"const": "integration"}],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "integrationIdentity": {"const": "slug"},
+        "managedRulesetPrefix": {"const": "fleet/"},
+        "managedNameSet": {"const": "exact"},
+        "parentRulesets": {"const": "forbidden"},
+        "unmanagedRulesets": {"const": "included-in-snapshot-excluded-from-desired-conformance"},
+        "rulesetSort": {"const": "name-codepoint-ascending"},
+        "ruleSort": {"const": "type-then-stable-json-codepoint-ascending"},
+        "requiredCheckSort": {"const": "context-then-integration-codepoint-ascending"},
+        "flattenedRequiredCheckSort": {"const": "ruleset-then-context-then-integration-codepoint-ascending"}
+      }
+    },
+    "environmentPolicyProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fields", "absentValue", "absentValueDigest"],
+      "properties": {
+        "fields": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "name"},
+            {"const": "deploymentBranchPolicy"},
+            {"const": "waitTimer"},
+            {"const": "preventSelfReview"},
+            {"const": "reviewers"}
+          ],
+          "items": false,
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "absentValue": {"type": "null"},
+        "absentValueDigest": {"const": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"}
+      }
+    },
+    "freshnessPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maximumObservationAgeSeconds", "minimumRemainingValiditySeconds", "scopes"],
+      "properties": {
+        "maximumObservationAgeSeconds": {"const": 3600},
+        "minimumRemainingValiditySeconds": {"const": 300},
+        "scopes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "target"],
+          "properties": {
+            "source": {"$ref": "#/$defs/sourceFreshnessClassification"},
+            "target": {"$ref": "#/$defs/targetFreshnessClassification"}
+          }
+        }
+      }
+    },
+    "credentialBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observerCredentialNamespace", "forbiddenNamespaces", "exportedArtifact"],
+      "properties": {
+        "observerCredentialNamespace": {"const": "independent-observer-proxy"},
+        "forbiddenNamespaces": {
+          "type": "array",
+          "prefixItems": [{"const": "github-actions"}, {"const": "model"}, {"const": "candidate"}],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "exportedArtifact": {"const": "signed-claim-output-only"}
+      }
+    },
+    "desiredBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "target"],
+      "properties": {
+        "source": {"$ref": "#/$defs/desiredBinding"},
+        "target": {"$ref": "#/$defs/desiredBinding"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "sourceFreshnessClassification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["directRuntimeRead", "runtimeLiveBoundViaSignedProjection", "contractBound", "signedUnexpired"],
+      "properties": {
+        "directRuntimeRead": {"type": "array", "prefixItems": [{"const": "publicRulesetProjectionDigest"}, {"const": "repositoryIdentityDefaultBranchDigest"}, {"const": "environmentPolicyDigest"}], "items": false, "minItems": 3, "maxItems": 3},
+        "runtimeLiveBoundViaSignedProjection": {"type": "array", "prefixItems": [{"const": "normalizedRulesetsDigest"}, {"const": "requiredChecksDigest"}], "items": false, "minItems": 2, "maxItems": 2},
+        "contractBound": {"type": "array", "prefixItems": [{"const": "projectionContractDigest"}], "items": false, "minItems": 1, "maxItems": 1},
+        "signedUnexpired": {"type": "array", "prefixItems": [{"const": "fullRulesetsDigest"}, {"const": "bypassActorsDigest"}, {"const": "actionsWorkflowPermissionsDigest"}], "items": false, "minItems": 3, "maxItems": 3}
+      }
+    },
+    "targetFreshnessClassification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["directRuntimeRead", "runtimeLiveBoundViaSignedProjection", "contractBound", "signedUnexpired"],
+      "properties": {
+        "directRuntimeRead": {"type": "array", "prefixItems": [{"const": "publicRulesetProjectionDigest"}, {"const": "repositoryIdentityDefaultBranchDigest"}], "items": false, "minItems": 2, "maxItems": 2},
+        "runtimeLiveBoundViaSignedProjection": {"type": "array", "prefixItems": [{"const": "normalizedRulesetsDigest"}, {"const": "requiredChecksDigest"}], "items": false, "minItems": 2, "maxItems": 2},
+        "contractBound": {"type": "array", "prefixItems": [{"const": "projectionContractDigest"}, {"const": "environmentPolicyDigest"}], "items": false, "minItems": 2, "maxItems": 2},
+        "signedUnexpired": {"type": "array", "prefixItems": [{"const": "fullRulesetsDigest"}, {"const": "bypassActorsDigest"}, {"const": "actionsWorkflowPermissionsDigest"}], "items": false, "minItems": 3, "maxItems": 3}
+      }
+    },
+    "desiredBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["normalizedRulesetsDigest", "requiredChecksDigest", "actionsWorkflowPermissionsDigest", "repositoryIdentityDefaultBranchDigest", "environmentPolicyDigest"],
+      "properties": {
+        "normalizedRulesetsDigest": {"$ref": "#/$defs/sha256"},
+        "requiredChecksDigest": {"$ref": "#/$defs/sha256"},
+        "actionsWorkflowPermissionsDigest": {"$ref": "#/$defs/sha256"},
+        "repositoryIdentityDefaultBranchDigest": {"$ref": "#/$defs/sha256"},
+        "environmentPolicyDigest": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

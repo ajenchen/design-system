@@ -3,7 +3,7 @@
 #
 # Hook 規則:Edit/Write/MultiEdit 對 packages/design-system/src/components/*/[a-z-]*.spec.md
 # 偵測 spec.md 寫「固定/寫死/硬寫 h-NN」但對應 tsx 已 migrate to var(--chrome-header-height)
-# token → stderr P1 warn(不 block;exit 0)。
+# token → stdout neutral governanceContext(不 block;exit 0),由 provider adapter 轉譯。
 #
 # Allow escape:NEW_CONTENT 含 `@spec-class-drift-allow:` → silent。
 # 非 spec.md / tsx 不存在 → silent。
@@ -52,13 +52,14 @@ run_hook() {
   printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
   EXIT=$?
   set -e
+  STDOUT_TEXT=$(cat "$STDOUT")
   STDERR_TEXT=$(cat "$STDERR")
   rm -f "$STDOUT" "$STDERR"
 }
 
 expect_pass_silent() {
   local name="$1"
-  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ]; then
+  if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ]; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
     echo "  FAIL  $name (expected silent, exit=$EXIT, stderr=$([ -n "$STDERR_TEXT" ] && echo non-empty || echo empty))"
@@ -67,13 +68,30 @@ expect_pass_silent() {
   fi
 }
 
-expect_warn() {
+expect_context() {
   local name="$1"; local needle="$2"
-  if [ "$EXIT" = "0" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
+  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] \
+    && printf '%s' "$STDOUT_TEXT" | jq -e --arg needle "$needle" '
+      (. | keys) == ["governanceContext"]
+      and .governanceContext.hookEventName == "PreToolUse"
+      and (.governanceContext.message | contains($needle))
+    ' >/dev/null 2>&1; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
-    echo "  FAIL  $name (expected warn '$needle', exit=$EXIT)"
+    echo "  FAIL  $name (expected neutral context '$needle', exit=$EXIT)"
+    echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+  fi
+}
+
+expect_integrity() {
+  local name="$1"
+  if [ "$EXIT" = "70" ] && [ -z "$STDOUT_TEXT" ] \
+    && echo "$STDERR_TEXT" | grep -qF "GOVERNANCE_INTEGRITY:"; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (expected integrity exit 70, got exit=$EXIT)"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
 }
@@ -101,7 +119,7 @@ export const Drifty = () => (
 );
 ")
 run_hook "Edit" "$SPEC_PATH" "header 高度固定 h-14,不可改"
-expect_warn "4. spec '固定 h-14' + tsx token → warn" "SPEC-CODE REVERSE DRIFT"
+expect_context "4. spec '固定 h-14' + tsx token → neutral context" "SPEC-CODE REVERSE DRIFT"
 
 # 5. spec 寫「寫死 h-12」+ tsx 不含 h-12 → P1 warn (phrase mismatch pattern 1)
 SPEC_PATH=$(build_pair "noclass" "
@@ -110,7 +128,7 @@ export const NoClass = () => (
 );
 ")
 run_hook "Edit" "$SPEC_PATH" "container 寫死 h-12 處理"
-expect_warn "5. spec '寫死 h-12' + tsx 不含 h-12 → warn" "SPEC-CODE REVERSE DRIFT"
+expect_context "5. spec '寫死 h-12' + tsx 不含 h-12 → neutral context" "SPEC-CODE REVERSE DRIFT"
 
 # 6. spec 寫「固定 h-14」+ allow marker → silent
 SPEC_PATH=$(build_pair "allowed" "
@@ -125,6 +143,16 @@ expect_pass_silent "6. spec with @spec-class-drift-allow: marker → silent"
 # 7. Wrong tool (Read) → skip
 run_hook "Read" "$SPEC_PATH" "固定 h-14"
 expect_pass_silent "7. tool=Read → skip"
+
+# 8. Malformed canonical input is an integrity fault,never a silent diagnostic.
+STDOUT=$(mktemp); STDERR=$(mktemp)
+set +e
+printf '%s' 'not-json' | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+EXIT=$?
+set -e
+STDOUT_TEXT=$(cat "$STDOUT"); STDERR_TEXT=$(cat "$STDERR")
+rm -f "$STDOUT" "$STDERR"
+expect_integrity "8. malformed input → integrity 70"
 
 echo ""
 echo "=== Summary ==="

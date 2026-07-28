@@ -1,0 +1,421 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/model-invocation-profiles-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "evidenceKind", "profiles", "externalEntitlementProfiles", "legacyUntrustedProfiles", "forbiddenArguments"],
+  "properties": {
+    "$schema": {"const": "../schemas/model-invocation-profiles.schema.json"},
+    "schemaVersion": {"const": 1},
+    "evidenceKind": {"const": "model-invocation-profile-registry"},
+    "profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/brokerProfile"}
+    },
+    "externalEntitlementProfiles": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/externalEntitlementProfile"}
+    },
+    "legacyUntrustedProfiles": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/legacyProfile"}
+    },
+    "forbiddenArguments": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^--[a-z][a-z0-9-]+$"}
+    }
+  },
+  "$defs": {
+    "providerId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "host": {"type": "string", "minLength": 4, "maxLength": 253, "pattern": "^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$"},
+    "jsonPointer": {"type": "string", "pattern": "^/(?:[^/~]|~[01])+(?:/(?:[^/~]|~[01])+)*$"},
+    "egressHosts": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"$ref": "#/$defs/host"}
+    },
+    "brokerProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "providerId", "mode", "transportKind", "repositoryAccess", "toolAccess", "workingDirectory", "modelIdentity",
+        "endpoint", "credential", "staticHeaders", "request", "response", "timeoutSeconds", "egressAllowedHosts"
+      ],
+      "properties": {
+        "providerId": {"$ref": "#/$defs/providerId"},
+        "mode": {"const": "broker-content-only"},
+        "transportKind": {"const": "provider-https-json-api"},
+        "repositoryAccess": {"const": "forbidden"},
+        "toolAccess": {"const": "none-tools-field-omitted"},
+        "workingDirectory": {"const": "not-applicable-repository-unmounted"},
+        "modelIdentity": {
+          "type": "object", "additionalProperties": false,
+          "required": ["policy", "allowedModelReleaseIds", "responseModelPointer"],
+          "properties": {
+            "policy": {"const": "closed-model-release-registry-response-exact-match"},
+            "allowedModelReleaseIds": {
+              "type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true,
+              "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]*/[A-Za-z0-9][A-Za-z0-9._:-]*$"}
+            },
+            "responseModelPointer": {"$ref": "#/$defs/jsonPointer"}
+          }
+        },
+        "endpoint": {
+          "type": "object", "additionalProperties": false,
+          "required": ["scheme", "host", "path", "method", "redirectPolicy"],
+          "properties": {
+            "scheme": {"const": "https"},
+            "host": {"$ref": "#/$defs/host"},
+            "path": {"type": "string", "pattern": "^/v[0-9]+/[a-z][a-z0-9/_-]*$"},
+            "method": {"const": "POST"},
+            "redirectPolicy": {"const": "error"}
+          }
+        },
+        "credential": {
+          "type": "object", "additionalProperties": false,
+          "required": ["mode", "header", "scheme"],
+          "properties": {
+            "mode": {"const": "managed-oidc-secret-broker"},
+            "header": {"enum": ["authorization", "x-api-key"]},
+            "scheme": {"enum": ["bearer", "none"]}
+          },
+          "allOf": [
+            {"if": {"required": ["header"], "properties": {"header": {"const": "authorization"}}}, "then": {"properties": {"scheme": {"const": "bearer"}}}},
+            {"if": {"required": ["header"], "properties": {"header": {"const": "x-api-key"}}}, "then": {"properties": {"scheme": {"const": "none"}}}}
+          ]
+        },
+        "staticHeaders": {
+          "type": "array", "uniqueItems": true,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["name", "value"],
+            "properties": {
+              "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+              "value": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\u0000-\\u001F\\u007F]+$"}
+            }
+          }
+        },
+        "request": {
+          "type": "object", "additionalProperties": false,
+          "required": ["modelPointer", "instructionPointer", "dataPointer", "resultSchemaPointer", "toolsPolicy", "stream", "bodyTopLevelFields", "fixedFields"],
+          "properties": {
+            "modelPointer": {"$ref": "#/$defs/jsonPointer"},
+            "instructionPointer": {"$ref": "#/$defs/jsonPointer"},
+            "dataPointer": {"$ref": "#/$defs/jsonPointer"},
+            "resultSchemaPointer": {"$ref": "#/$defs/jsonPointer"},
+            "toolsPolicy": {"const": "field-omitted"},
+            "stream": {"const": false},
+            "bodyTopLevelFields": {
+              "type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true,
+              "items": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"}
+            },
+            "fixedFields": {
+              "type": "array", "minItems": 1,
+              "items": {
+                "type": "object", "additionalProperties": false, "required": ["pointer", "canonicalJson", "purpose"],
+                "properties": {
+                  "pointer": {"$ref": "#/$defs/jsonPointer"},
+                  "canonicalJson": {"type": "string", "minLength": 1, "maxLength": 500},
+                  "purpose": {"enum": ["output-token-limit", "persistence-disabled", "structured-output-name", "structured-output-strict", "structured-output-type", "user-message-role"]}
+                }
+              }
+            }
+          }
+        },
+        "response": {
+          "type": "object", "additionalProperties": false,
+          "required": ["runIdPointer", "requiredTerminalPredicates", "selection", "valuePointer", "uniqueness", "resultEncoding"],
+          "properties": {
+            "runIdPointer": {"$ref": "#/$defs/jsonPointer"},
+            "requiredTerminalPredicates": {
+              "type": "array", "minItems": 1, "maxItems": 8,
+              "items": {
+                "type": "object", "additionalProperties": false,
+                "required": ["pointer", "canonicalJson"],
+                "properties": {
+                  "pointer": {"$ref": "#/$defs/jsonPointer"},
+                  "canonicalJson": {"type": "string", "minLength": 1, "maxLength": 500}
+                }
+              }
+            },
+            "selection": {
+              "type": "array", "minItems": 1, "maxItems": 3,
+              "items": {
+                "type": "object", "additionalProperties": false,
+                "required": ["collectionPointer", "predicatePointer", "predicateValue"],
+                "properties": {
+                  "collectionPointer": {"$ref": "#/$defs/jsonPointer"},
+                  "predicatePointer": {"$ref": "#/$defs/jsonPointer"},
+                  "predicateValue": {"type": "string", "minLength": 1, "maxLength": 100}
+                }
+              }
+            },
+            "valuePointer": {"$ref": "#/$defs/jsonPointer"},
+            "uniqueness": {"const": "exactly-one-per-level"},
+            "resultEncoding": {"const": "json-string"}
+          }
+        },
+        "timeoutSeconds": {"type": "integer", "minimum": 60, "maximum": 14400},
+        "egressAllowedHosts": {"$ref": "#/$defs/egressHosts"}
+      }
+    },
+    "externalEntitlementProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "providerId",
+        "mode",
+        "routeClass",
+        "entitlementId",
+        "repositoryAccess",
+        "toolAccess",
+        "workingDirectory",
+        "modelIdentity",
+        "availabilityPolicy",
+        "runtimeCertification",
+        "availabilityEvidence",
+        "deploymentAdapter",
+        "costFallbackPolicy",
+        "responseSelector"
+      ],
+      "properties": {
+        "providerId": {"$ref": "#/$defs/providerId"},
+        "mode": {"const": "external-subscription-entitlement"},
+        "routeClass": {"const": "subscription-entitlement"},
+        "entitlementId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "repositoryAccess": {"const": "forbidden-direct-review-bundle-only"},
+        "toolAccess": {"const": "none"},
+        "workingDirectory": {"const": "not-applicable-content-addressed-exchange"},
+        "modelIdentity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["policy", "allowedModelReleaseIds"],
+          "properties": {
+            "policy": {"const": "closed-model-release-registry-response-exact-match"},
+            "allowedModelReleaseIds": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "uniqueItems": true,
+              "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]*/[A-Za-z0-9][A-Za-z0-9._:-]*$"}
+            }
+          }
+        },
+        "availabilityPolicy": {"const": "exact-certified-entitlement-readback-required"},
+        "runtimeCertification": {"const": "required-not-source-certified"},
+        "availabilityEvidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "compatibilityProviderId",
+            "runtimeProviderId",
+            "runtimeProfileId",
+            "runtimeKind",
+            "surface",
+            "repositoryRole",
+            "providerEvidenceId",
+            "checkId",
+            "assertionId"
+          ],
+          "properties": {
+            "kind": {"const": "certified-runtime-evidence-assertion-v1"},
+            "compatibilityProviderId": {"$ref": "#/$defs/providerId"},
+            "runtimeProviderId": {"$ref": "#/$defs/providerId"},
+            "runtimeProfileId": {"$ref": "#/$defs/providerId"},
+            "runtimeKind": {"$ref": "#/$defs/providerId"},
+            "surface": {"$ref": "#/$defs/providerId"},
+            "repositoryRole": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+            "providerEvidenceId": {"$ref": "#/$defs/providerId"},
+            "checkId": {"$ref": "#/$defs/providerId"},
+            "assertionId": {"$ref": "#/$defs/providerId"}
+          }
+        },
+        "deploymentAdapter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schemaVersion",
+            "kind",
+            "executable",
+            "authentication",
+            "authStatusArguments",
+            "versionArguments",
+            "authReadback",
+            "promptTransport",
+            "resultTransport",
+            "arguments",
+            "providerRunIdPointer",
+            "resultPointer",
+            "terminalPredicates",
+            "observedModelPolicy",
+            "modelUsagePointer",
+            "repositoryIsolation",
+            "environmentPolicy",
+            "sessionPersistence",
+            "fallbackPolicy",
+            "effortByComputeTier",
+            "timeoutSeconds"
+          ],
+          "properties": {
+            "schemaVersion": {"const": 1},
+            "kind": {"const": "first-party-subscription-cli-content-exchange-v1"},
+            "executable": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+            "authentication": {"const": "first-party-subscription-account"},
+            "authStatusArguments": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {"type": "string", "minLength": 1, "maxLength": 100}
+            },
+            "versionArguments": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {"type": "string", "minLength": 1, "maxLength": 100}
+            },
+            "authReadback": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "loggedInPointer",
+                "loggedInCanonicalJson",
+                "authMethodPointer",
+                "authMethodCanonicalJson",
+                "entitlementPointer",
+                "entitlementCanonicalJson"
+              ],
+              "properties": {
+                "loggedInPointer": {"$ref": "#/$defs/jsonPointer"},
+                "loggedInCanonicalJson": {"type": "string", "minLength": 1, "maxLength": 100},
+                "authMethodPointer": {"$ref": "#/$defs/jsonPointer"},
+                "authMethodCanonicalJson": {"type": "string", "minLength": 1, "maxLength": 100},
+                "entitlementPointer": {"$ref": "#/$defs/jsonPointer"},
+                "entitlementCanonicalJson": {"type": "string", "minLength": 1, "maxLength": 100}
+              }
+            },
+            "promptTransport": {"const": "stdin"},
+            "resultTransport": {"const": "stdout-json-structured-output"},
+            "arguments": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 64,
+              "items": {"type": "string", "maxLength": 4096}
+            },
+            "providerRunIdPointer": {"$ref": "#/$defs/jsonPointer"},
+            "resultPointer": {"$ref": "#/$defs/jsonPointer"},
+            "terminalPredicates": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["pointer", "canonicalJson"],
+                "properties": {
+                  "pointer": {"$ref": "#/$defs/jsonPointer"},
+                  "canonicalJson": {"type": "string", "minLength": 1, "maxLength": 100}
+                }
+              }
+            },
+            "observedModelPolicy": {"const": "exactly-one-model-usage-key-equals-requested-model"},
+            "modelUsagePointer": {"$ref": "#/$defs/jsonPointer"},
+            "repositoryIsolation": {"const": "private-empty-working-directory-no-repository-mount"},
+            "environmentPolicy": {"const": "closed-first-party-subscription-no-api-credentials"},
+            "sessionPersistence": {"const": "disabled"},
+            "fallbackPolicy": {"const": "forbidden"},
+            "effortByComputeTier": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["standard", "high", "maximum"],
+              "properties": {
+                "standard": {"enum": ["medium", "high", "xhigh", "max"]},
+                "high": {"enum": ["high", "xhigh", "max"]},
+                "maximum": {"const": "max"}
+              }
+            },
+            "timeoutSeconds": {"type": "integer", "minimum": 60, "maximum": 14400}
+          }
+        },
+        "costFallbackPolicy": {"const": "forbidden"},
+        "responseSelector": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schemaVersion",
+            "kind",
+            "carrierShape",
+            "responseModelPointer",
+            "runIdPointer",
+            "requiredTerminalPredicates",
+            "selection",
+            "valuePointer",
+            "uniqueness",
+            "resultEncoding"
+          ],
+          "properties": {
+            "schemaVersion": {"const": 1},
+            "kind": {"const": "provider-review-result-response-selector"},
+            "carrierShape": {"const": "content-addressed-provider-review-result-v1"},
+            "responseModelPointer": {"$ref": "#/$defs/jsonPointer"},
+            "runIdPointer": {"$ref": "#/$defs/jsonPointer"},
+            "requiredTerminalPredicates": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["pointer", "canonicalJson"],
+                "properties": {
+                  "pointer": {"$ref": "#/$defs/jsonPointer"},
+                  "canonicalJson": {"type": "string", "minLength": 1, "maxLength": 500}
+                }
+              }
+            },
+            "selection": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["collectionPointer", "predicatePointer", "predicateValue"],
+                "properties": {
+                  "collectionPointer": {"$ref": "#/$defs/jsonPointer"},
+                  "predicatePointer": {"$ref": "#/$defs/jsonPointer"},
+                  "predicateValue": {"type": "string", "minLength": 1, "maxLength": 100}
+                }
+              }
+            },
+            "valuePointer": {"$ref": "#/$defs/jsonPointer"},
+            "uniqueness": {"const": "exactly-one-per-level"},
+            "resultEncoding": {"const": "json-string"}
+          }
+        }
+      }
+    },
+    "legacyProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "providerId", "mode", "repositoryAccess", "toolAccess", "workingDirectory", "executable",
+        "timeoutSeconds", "promptTransport", "resultTransport", "arguments", "runIdPointer", "resultPointer", "egressAllowedHosts"
+      ],
+      "properties": {
+        "providerId": {"$ref": "#/$defs/providerId"},
+        "mode": {"const": "legacy-untrusted-local"},
+        "repositoryAccess": {"const": "read-only-disposable-snapshot"},
+        "toolAccess": {"const": "read-grep-glob"},
+        "workingDirectory": {"const": "disposable-snapshot"},
+        "executable": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+        "timeoutSeconds": {"type": "integer", "minimum": 60, "maximum": 14400},
+        "promptTransport": {"const": "stdin"},
+        "resultTransport": {"enum": ["stdout-stream-json-structured-output", "output-file-json-plus-stdout-jsonl"]},
+        "arguments": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "runIdPointer": {"type": "string", "pattern": "^/"},
+        "resultPointer": {"type": "string", "pattern": "^/"},
+        "egressAllowedHosts": {"$ref": "#/$defs/egressHosts"}
+      }
+    }
+  }
+}

@@ -1,0 +1,420 @@
+{
+  "$schema": "schemas/staged-rollout.schema.json",
+  "schemaVersion": 1,
+  "kind": "staged-rollout-plan",
+  "defaultMode": "plan",
+  "authorityPolicyRef": "release-rings.json#/attestationPolicy",
+  "activeRunContract": "deep-audit-run-manifest-v3",
+  "candidateValidationLifecycle": {
+    "targetAuthority": "immutable-active-run-manifest-and-git-projection",
+    "targetCreationOrder": "generation-then-freeze-before-all-harness",
+    "allHarnessCardinality": "exactly-once-per-frozen-target",
+    "receiptCompletionGate": "same-target-all-harness-pass",
+    "sourceChangeBehavior": "invalidate-target-validation-and-rebind"
+  },
+  "deploymentProfileBinding": {
+    "externalActivationPolicy": {
+      "path": "infra/governance/external-activation-policy.json",
+      "sha256": "5c9cfa18608b5e22d6a064a26113fa7b2ccd5a8708dc201f9b3509f4ebb1973e"
+    },
+    "profile": {
+      "id": "PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM",
+      "sha256": "a73ea5201176f5c9555738079ffb34673c0a3cd976cc7f72415c4eec4fb38472"
+    },
+    "releaseAuthorization": {
+      "minimumSignerQuorum": 1,
+      "maximumSignerQuorum": 1
+    },
+    "releaseAuthorizationSha256": "005aef5e39c9148aafa27ac3fe9b5fe537a492a14601a2b8d33585160c0ebb33",
+    "releaseTagAuthorizationProfileSha256": "a73ea5201176f5c9555738079ffb34673c0a3cd976cc7f72415c4eec4fb38472",
+    "candidateFreezeActivationOrder": "freeze-before-profile-activation",
+    "activationReadbackPhase": "github-policy-bootstrap"
+  },
+  "bootstrapBoundary": {
+    "kind": "profile-gated-protected-pr-bootstrap",
+    "bootstrapChange": "protected-main-control-plane-only",
+    "bootstrapReleaseAllowed": false,
+    "bootstrapMustPreexistCandidateFreeze": false,
+    "candidateMustUseDistinctPr": true,
+    "candidateSelfCertificationAllowed": false,
+    "githubPolicyConvergence": {
+      "kind": "authority-github-policy-bootstrap-convergence-v1",
+      "position": "after-candidate-freeze-before-protected-pr",
+      "transactionClass": "authority-policy-bootstrap",
+      "repositoryId": "design-system",
+      "repository": "ajenchen/design-system",
+      "profile": "design-system-authority",
+      "actionsWorkflowPermissions": true,
+      "rulesets": ["fleet/base-integrity", "fleet/verified-main"],
+      "environments": ["governance-check-verdict", "governance-external-ledger"],
+      "irreversibleActionsAllowed": false,
+      "staleResourceDeletionAllowed": false,
+      "exactReadbackRequired": true,
+      "crashRecoveryRequired": true,
+      "rollbackRequired": true
+    }
+  },
+  "externalLedgerBootstrapBoundary": {
+    "kind": "protected-default-external-ledger-pr-chain-v1",
+    "position": "after-candidate-freeze-before-protected-pr",
+    "writerCodeSource": "protected-default-only",
+    "handoffValidity": "signed-expiring-exact-base-cas",
+    "handoffValidityScope": "writer-branch-and-pr-materialization-only",
+    "dispatchCardinality": "one-reviewed-handoff-per-run",
+    "openPullRequestCardinality": "at-most-one",
+    "credential": "dedicated-governance-writer-app",
+    "candidateCodeExecutionAllowed": false,
+    "directDefaultBranchWriteAllowed": false,
+    "mergeAllowed": false,
+    "certificationChangedPaths": [
+      "infra/governance/evidence/external-runtime/<sha256>.json",
+      "infra/governance/providers/certifications.json"
+    ],
+    "reviewCapabilityCertificationChangedPaths": [
+      "infra/governance/evidence/provider-runtime/<sha256>.json",
+      "infra/governance/providers/certifications.json",
+      "infra/governance/evidence/review-capability/<sha256>.json",
+      "infra/governance/providers/review-capability-certifications.json"
+    ],
+    "activationChangedPaths": [
+      "infra/governance/external-activation-requirements.json"
+    ],
+    "requiredMergeGate": "protected-base-governance-anchor",
+    "postMaterializationMergeAuthority": "branch-protection-review-and-independently-signed-ledger-content",
+    "expiredTransportHandoffMergeAuthority": "none",
+    "greenCheckMeaning": "exact-head-validation-not-merge-time-handoff-ttl",
+    "workflowReceiptAuthority": "transient-reconstructable-non-authority",
+    "durableAuthority": "protected-git-object-and-merged-ledger-readback"
+  },
+  "consumerBootstrapBoundary": {
+    "kind": "legacy-consumer-reviewed-full-snapshot",
+    "protocolId": "protected-base-reconstruction-v2",
+    "bootstrapMode": "one-time-reviewed-full-snapshot-pr",
+    "planningMutationAuthorized": false,
+    "legacySelfUpdateCompletionAllowed": false,
+    "bootstrapEvidenceContract": "consumer-governance-bootstrap-readback-v1",
+    "ordinarySyncRequiresReadback": true,
+    "postAcceptanceProfile": "reviewed-bootstrap-established-v2",
+    "acceptedReadbackInventoryBindingRequired": true
+  },
+  "prHeadCertificationBoundary": {
+    "kind": "managed-ci-envelope-transcript-closure",
+    "coverageTopology": "frozen-canonical-91-dimension-matrix-and-plans",
+    "dependencyClosure": "one-acquisition-bundle-across-all-execution-classes",
+    "modelArtifactMode": "envelope-and-content-addressed-transcript",
+    "modelReceiptCardinality": "exactly-once",
+    "canonicalTranscriptValidationRequired": true
+  },
+  "phaseOrder": [
+    "candidate-freeze",
+    "github-policy-bootstrap",
+    "commit-pr-open",
+    "pr-head-certification",
+    "merge-post-gates",
+    "immutable-release-bom",
+    "template-fleet-rollout",
+    "wm-canary",
+    "rollout-completion",
+    "soak-72h",
+    "promotion-or-rollback"
+  ],
+  "phases": [
+    {
+      "id": "candidate-freeze",
+      "index": 0,
+      "predecessor": null,
+      "scope": "local",
+      "capabilities": {
+        "standard": ["local-evidence-write"],
+        "promotion": [],
+        "rollback": []
+      },
+      "evidenceContracts": {
+        "standard": ["staged-rollout-prepare-verification-v4"],
+        "promotion": [],
+        "rollback": []
+      },
+      "mechanismRefs": [
+        "scripts/prepare-deep-audit-run.mjs",
+        "scripts/governance-build-graph.mjs",
+        "infra/governance/bin/run-harnesses.mjs",
+        "infra/governance/bin/staged-rollout.mjs",
+        "infra/governance/lib/staged-rollout.mjs",
+        "infra/governance/bin/reconcile-github.mjs",
+        "infra/governance/lib/fleet-reconcile-mirror.mjs",
+        "infra/governance/schemas/fleet-reconcile-journal.schema.json",
+        "infra/governance/schemas/fleet-reconcile-bootstrap-transaction.schema.json",
+        "infra/governance/schemas/fleet-reconcile-bootstrap-replay-receipt.schema.json",
+        "infra/governance/lib/external-activation.mjs",
+        "infra/governance/lib/external-operator.mjs",
+        "infra/governance/bin/external-operator.mjs",
+        ".github/workflows/external-ledger-writer.yml",
+        "infra/governance/lib/external-ledger-writer.mjs",
+        "infra/governance/bin/external-ledger-writer.mjs",
+        "infra/governance/schemas/external-surface-import-receipt.schema.json",
+        "infra/governance/schemas/external-runtime-certification-proposal.schema.json",
+        "infra/governance/schemas/external-ledger-transaction-handoff.schema.json",
+        "infra/governance/schemas/external-ledger-writer-dispatch.schema.json",
+        "infra/governance/schemas/external-ledger-writer-plan.schema.json",
+        "infra/governance/schemas/external-ledger-artifact-identity.schema.json",
+        "infra/governance/schemas/external-ledger-writer-receipt.schema.json",
+        "infra/governance/schemas/external-activation-signing-request.schema.json",
+        "infra/governance/schemas/external-activation-signature-bundle.schema.json",
+        "infra/governance/schemas/external-activation-proposal.schema.json",
+        "infra/governance/schemas/external-operator-block-result.schema.json",
+        ".github/workflows/governance-anchor.yml",
+        "scripts/governance-anchor-preflight.mjs",
+        "scripts/verify-privileged-change.mjs",
+        "infra/governance/external-activation-requirements.json",
+        "infra/governance/providers/runtime-conformance.json",
+        "infra/governance/trust/issuers.json"
+      ]
+    },
+    {
+      "id": "github-policy-bootstrap",
+      "index": 1,
+      "predecessor": "candidate-freeze",
+      "scope": "external",
+      "capabilities": {
+        "standard": ["github-admin-write"],
+        "promotion": [],
+        "rollback": []
+      },
+      "evidenceContracts": {
+        "standard": ["github-policy-bootstrap-readback-v1"],
+        "promotion": [],
+        "rollback": []
+      },
+      "mechanismRefs": [
+        "infra/governance/bin/reconcile-github.mjs",
+        "infra/governance/desired/github.json",
+        "infra/governance/external-activation-policy.json",
+        "scripts/managed-ci-trusted-execution-plan.json",
+        ".github/workflows/deep-audit-managed.yml"
+      ]
+    },
+    {
+      "id": "commit-pr-open",
+      "index": 2,
+      "predecessor": "github-policy-bootstrap",
+      "scope": "external",
+      "capabilities": {
+        "standard": ["git-commit-write", "github-pr-write"],
+        "promotion": [],
+        "rollback": []
+      },
+      "evidenceContracts": {
+        "standard": ["protected-pr-readback-v1"],
+        "promotion": [],
+        "rollback": []
+      },
+      "mechanismRefs": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/governance-anchor.yml",
+        "infra/governance/desired/github.json",
+        "scripts/governance-anchor-preflight.mjs"
+      ]
+    },
+    {
+      "id": "pr-head-certification",
+      "index": 3,
+      "predecessor": "commit-pr-open",
+      "scope": "local",
+      "capabilities": {
+        "standard": ["managed-ci-readback", "model-broker-readback", "trusted-dependency-materialization"],
+        "promotion": [],
+        "rollback": []
+      },
+      "evidenceContracts": {
+        "standard": ["pr-head-certification-v1"],
+        "promotion": [],
+        "rollback": []
+      },
+      "mechanismRefs": [
+        "scripts/audit-coverage-matrix.mjs",
+        "scripts/deep-audit-deterministic-plan.json",
+        "infra/governance/hook-evidence-plan.json",
+        "scripts/prepare-deep-audit-run.mjs",
+        "scripts/verify-deep-audit-coverage.mjs",
+        "scripts/lib/deep-audit-evidence-contract.mjs",
+        "scripts/lib/model-broker-transcript.mjs",
+        "infra/governance/lib/staged-rollout.mjs"
+      ]
+    },
+    {
+      "id": "merge-post-gates",
+      "index": 4,
+      "predecessor": "pr-head-certification",
+      "scope": "external",
+      "capabilities": {
+        "standard": ["github-pr-merge", "github-readback"],
+        "promotion": [],
+        "rollback": []
+      },
+      "evidenceContracts": {
+        "standard": ["github-hard-gates-readback-v1"],
+        "promotion": [],
+        "rollback": []
+      },
+      "mechanismRefs": [
+        "infra/governance/bin/reconcile-github.mjs",
+        "infra/governance/desired/github.json",
+        "infra/governance/external-activation-policy.json"
+      ]
+    },
+    {
+      "id": "immutable-release-bom",
+      "index": 5,
+      "predecessor": "merge-post-gates",
+      "scope": "external",
+      "capabilities": {
+        "standard": ["github-tag-write", "github-release-write", "npm-publish"],
+        "promotion": [],
+        "rollback": []
+      },
+      "evidenceContracts": {
+        "standard": ["release-trust-preflight-v4", "release-bom-v5", "verified-immutable-release-v2"],
+        "promotion": [],
+        "rollback": []
+      },
+      "mechanismRefs": [
+        "scripts/release-preflight.mjs",
+        "scripts/release-trust-preflight.mjs",
+        "scripts/build-release-bom.mjs",
+        "scripts/release-bom-contract.mjs",
+        "infra/governance/lib/release-trust-preflight.mjs",
+        ".github/workflows/release.yml",
+        ".github/workflows/release-finalize.yml"
+      ]
+    },
+    {
+      "id": "template-fleet-rollout",
+      "index": 6,
+      "predecessor": "immutable-release-bom",
+      "scope": "external",
+      "capabilities": {
+        "standard": ["github-pr-write", "fleet-rollout"],
+        "promotion": [],
+        "rollback": []
+      },
+      "evidenceContracts": {
+        "standard": ["template-exact-version-upgrade-v2", "rollout-completion-attestation-v1"],
+        "promotion": [],
+        "rollback": []
+      },
+      "mechanismRefs": [
+        ".github/workflows/mirror-to-published-template.yml",
+        "scripts/verify-mirror-release.mjs",
+        "scripts/verify-upgrade-provenance.mjs",
+        "infra/governance/release-rings.json",
+        "infra/governance/lib/rollout-state-machine.mjs"
+      ]
+    },
+    {
+      "id": "wm-canary",
+      "index": 7,
+      "predecessor": "template-fleet-rollout",
+      "scope": "external",
+      "capabilities": {
+        "standard": ["github-pr-write", "wm-canary"],
+        "promotion": [],
+        "rollback": []
+      },
+      "evidenceContracts": {
+        "standard": ["consumer-governance-bootstrap-readback-v1", "wm-exact-version-canary-v2", "rollout-completion-attestation-v1"],
+        "promotion": [],
+        "rollback": []
+      },
+      "mechanismRefs": [
+        "infra/governance/inventory/managed-repos.json",
+        "infra/governance/consumer-upgrade-protocol.json",
+        "infra/governance/schemas/consumer-upgrade-protocol.schema.json",
+        "infra/governance/lib/consumer-upgrade-protocol.mjs",
+        "infra/governance/lib/consumer-bootstrap.mjs",
+        "infra/governance/schemas/consumer-bootstrap-plan.schema.json",
+        "infra/governance/schemas/consumer-bootstrap-snapshot-verification.schema.json",
+        "infra/governance/schemas/consumer-bootstrap-readback-verification.schema.json",
+        "infra/governance/schemas/consumer-bootstrap-promotion-proposal.schema.json",
+        "infra/governance/schemas/consumer-control-plane-baseline-receipt.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-plan.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-snapshot-verification.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-readback.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-readback-verification.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-acceptance-proposal.schema.json",
+        "infra/governance/schemas/managed-repos.schema.json",
+        "infra/governance/schemas/consumer-fanout-dispatch-evidence.schema.json",
+        "infra/governance/schemas/consumer-fanout-review.schema.json",
+        "infra/governance/bin/consumerctl.mjs",
+        "scripts/lib/consumer-control-plane-policy.mjs",
+        "scripts/verify-upgrade-evidence.mjs",
+        "scripts/verify-upgrade-provenance.mjs",
+        "infra/governance/release-rings.json",
+        "infra/governance/lib/rollout-state-machine.mjs"
+      ]
+    },
+    {
+      "id": "rollout-completion",
+      "index": 8,
+      "predecessor": "wm-canary",
+      "scope": "local",
+      "capabilities": {
+        "standard": ["managed-ci-import", "model-broker-readback", "local-evidence-write"],
+        "promotion": [],
+        "rollback": []
+      },
+      "evidenceContracts": {
+        "standard": ["full-deep-audit-verification-v1"],
+        "promotion": [],
+        "rollback": []
+      },
+      "mechanismRefs": [
+        "scripts/verify-deep-audit-coverage.mjs",
+        "scripts/verify-upgrade-evidence.mjs",
+        "infra/governance/lib/staged-rollout.mjs"
+      ]
+    },
+    {
+      "id": "soak-72h",
+      "index": 9,
+      "predecessor": "rollout-completion",
+      "scope": "local",
+      "capabilities": {
+        "standard": ["soak-observation"],
+        "promotion": [],
+        "rollback": []
+      },
+      "evidenceContracts": {
+        "standard": ["candidate-bound-soak-72h-v1"],
+        "promotion": [],
+        "rollback": []
+      },
+      "mechanismRefs": [
+        "infra/governance/release-rings.json",
+        "infra/governance/lib/rollout-state-machine.mjs"
+      ]
+    },
+    {
+      "id": "promotion-or-rollback",
+      "index": 10,
+      "predecessor": "soak-72h",
+      "scope": "external",
+      "capabilities": {
+        "standard": [],
+        "promotion": ["fleet-promotion"],
+        "rollback": ["fleet-rollback"]
+      },
+      "evidenceContracts": {
+        "standard": [],
+        "promotion": ["rollout-completion-attestation-v1"],
+        "rollback": ["previous-good-release-v1", "fleet-recovery-authorization-v2", "fleet-reconcile-journal-v6"]
+      },
+      "mechanismRefs": [
+        "infra/governance/bin/reconcile-github.mjs",
+        "infra/governance/lib/fleet-recovery-authorization.mjs",
+        "infra/governance/schemas/fleet-reconcile-journal.schema.json",
+        "infra/governance/lib/release-evidence.mjs",
+        "scripts/release-bom-contract.mjs"
+      ]
+    }
+  ]
+}

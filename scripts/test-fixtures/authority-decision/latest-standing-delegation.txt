@@ -1,0 +1,215 @@
+這不是新的 Goal，也不是新的產品 Requirement，而是我既有 Decision Authority／Delegation Policy 的澄清與強制執行。
+
+請先查核目前 canonical governance、release、deployment、activation、authorization 與 completion policies。若其中存在「所有 external writes 都必須逐次取得使用者工程判斷或逐 milestone 核准」的 blanket gate，該規則與我既有權限模型衝突。
+
+不要建立第二套 policy。請找出現有 canonical source，依以下語意做最小必要修正、驗證與接線，讓所有 Claude、Codex、未來 provider、local、cloud、remote 與 CI adapters 都使用同一份 authority policy。
+
+━━━━━━━━━━━━━━━━━━━━
+一、Decision Authority
+━━━━━━━━━━━━━━━━━━━━
+
+使用者只保留以下決策權：
+
+會改變產品或 Design System SSOT 的 UI／UX 決策，包括但不限於：
+
+- 產品需求與使用者行為
+- 資訊架構
+- workflow 與 interaction model
+- UI pattern
+- 元件語意
+- 文案語意
+- 視覺規範
+- 使用者可見的產品取捨
+- 其他會改變產品／UI／UX SSOT 的決策
+
+只有上述事項存在真正選擇或取捨時，才需要由我拍板。
+
+所有純工程與治理決策均已委派給 agent，包括但不限於：
+
+- system architecture
+- provider-neutral architecture
+- SSOT implementation
+- adapters
+- skills
+- hooks／rules
+- security engineering
+- CI／CD
+- testing／Harness
+- model broker
+- capability selection
+- dependency management
+- migration
+- release engineering
+- supply-chain controls
+- GitHub configuration
+- package publishing
+- template adoption
+- WM onboarding
+- rollout
+- rollback
+- runtime certification
+- external-write sequencing
+- failure remediation
+
+上述工程事項不得再要求我判斷「技術上該怎麼做」或在多個工程方案中替 agent 做選擇。
+
+━━━━━━━━━━━━━━━━━━━━
+二、Engineering Decision Policy
+━━━━━━━━━━━━━━━━━━━━
+
+所有工程決策必須由當下可取得的最高 certified model、最高 reasoning capability 與最高 policy-allowed compute 自行判斷。
+
+決策必須依據：
+
+- canonical SSOT
+- frozen scope
+- current repository evidence
+- tests
+- Harness
+- security gates
+- independent cross-provider review
+- least privilege
+- staged rollout
+- rollback
+- external readback
+
+不得以「需要使用者確認」取代工程判斷。
+
+不同模型意見衝突時，依既有 independent second-opinion／cross-provider review protocol、實際證據與 hard gates收斂，不得把純工程爭議轉交給我。
+
+━━━━━━━━━━━━━━━━━━━━
+三、Standing Authorization for Engineering Actions
+━━━━━━━━━━━━━━━━━━━━
+
+我已對完成目前 frozen scope 與原始 Goal 所必要的工程動作提供 Standing Authorization。
+
+只要符合以下條件，請自行判斷並連續執行，不需逐項或逐 milestone 再向我取得工程核准：
+
+- 直接屬於原始 Requirement 或其必要驗證
+- 遵循既有 canonical governance／release／deployment／rollout flow
+- 使用 least privilege
+- 所有必要 preflight 已通過
+- 有完整 evidence、readback、receipt 與 rollback／recovery
+- 沒有擴張 frozen scope
+- 不會自行改變產品／UI／UX SSOT
+
+此 standing authorization 包含必要的：
+
+- source modifications
+- generation
+- tests／Harness
+- freeze／receipts
+- commit
+- branch
+- push
+- PR
+- GitHub workflows／rulesets／Apps／environments
+- package bootstrap／prerelease／release
+- template adoption
+- WM canary
+- runtime certification
+- staged rollout
+- rollback／forward recovery
+- 其他完成原始工程 Goal 必需的外部工程動作
+
+不得因為上述動作屬於 external write，就再次要求我替你做工程判斷。
+
+如既有 governance 明定需記錄 human authorization，請將本訊息的 standing delegation 以 content-addressed、auditable 的 authorization record 納入既有流程，而不是每次重新詢問。
+
+━━━━━━━━━━━━━━━━━━━━
+四、真正需要停止的 Human-only Boundaries
+━━━━━━━━━━━━━━━━━━━━
+
+只有以下情況才允許停止：
+
+1. 存在真正的產品／UI／UX SSOT 決策，需要我選擇產品方向。
+
+2. 平台強制要求只有帳號持有人能完成的互動，例如：
+   - interactive login
+   - MFA
+   - OAuth consent
+   - organization owner confirmation
+   - billing confirmation
+   - 平台不可代理的按鈕或表單
+
+3. 缺少必要 Secret 或 credential，但不得要求我把秘密內容貼進聊天；只能要求：
+   - secret name
+   - credential reference
+   - vault reference
+   - GitHub Environment
+   - Secret Manager location
+   - 或精確的互動登入步驟
+
+4. 動作會產生現有 subscription／plan 以外的額外付費。
+
+Claude second opinion 優先使用我現有 Claude Max entitlement。
+
+不得自行切換到付費 Anthropic API、購買額外 credits 或建立額外付費 infrastructure。若現有 plan 無法完成，才停下並精確說明缺少什麼；不得預設 US$20,000 API budget。
+
+5. 涉及法律、帳號所有權、組織成員權限或非工程商業承諾，且無法由既有 policy 推導。
+
+━━━━━━━━━━━━━━━━━━━━
+五、Human Action 不等於 Human Engineering Decision
+━━━━━━━━━━━━━━━━━━━━
+
+若只因平台限制需要我登入、按按鈕、完成 MFA 或提供 credential reference：
+
+- 你仍必須先自行完成所有工程判斷；
+- 自行選出唯一建議方案；
+- 完成所有可先完成的 preflight；
+- 不得給我多個技術選項要求我自行評估；
+- 只告訴我唯一必要的具體操作；
+- 清楚標示要在哪個平台、哪個頁面、執行哪個動作；
+- 操作完成後自行 readback、驗證並繼續。
+
+我只負責完成不可代理的 human action，不負責重新審查工程方案。
+
+━━━━━━━━━━━━━━━━━━━━
+六、External Authorization Boundary 的重新定義
+━━━━━━━━━━━━━━━━━━━━
+
+External Authorization Boundary 不得再泛指：
+
+- commit
+- push
+- PR
+- GitHub configuration
+- npm publish
+- template update
+- WM rollout
+- release milestone
+
+這些都是已委派的工程工作。
+
+真正的 External Authorization Boundary 只限於前述 human-only boundaries。
+
+若目前 lifecycle、release flow 或 hard gate 使用了較寬泛的定義，請做最小修正，使其符合此 authority model，並建立：
+
+- positive tests
+- negative tests
+- precedence tests
+- provider parity tests
+- cloud／local／CI conformance tests
+- audit receipt
+
+不得移除 fail-closed；應修正的是「誰有工程決策權」與「何時真的需要人類操作」。
+
+━━━━━━━━━━━━━━━━━━━━
+七、執行與停止規則
+━━━━━━━━━━━━━━━━━━━━
+
+本次 Scope 維持固定。
+
+除非新發現會直接導致原始 Requirement 無法成立，否則新的 improvement、optimization、future enhancement、額外 provider 或額外 capability 一律放入 Backlog。
+
+完成上述 policy reconciliation 後，請直接繼續目前 Goal 的所有剩餘工作，直到：
+
+- 原始 Goal 全部完成；或
+- 確實抵達前述 human-only boundary；或
+- 依既定重試與證據規則形成真實 technical blocker。
+
+不得因 milestone、plan、review、status report、closure、progress update 或一般 external write 而停止。
+
+若抵達 human-only boundary，請一次彙整全部不可代理的人類操作；不要分批詢問，也不要要求我做工程判斷。
+
+現在先確認此 delegation 是否已存在於 canonical SSOT、是否有衝突規則，以及需要做哪些最小修正。確認後直接執行，不要等待我再次核准。

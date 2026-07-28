@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/ci-evidence-attestation-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "observationSha256", "nonce", "issuerRegistryDigest", "signatures"],
+  "properties": {
+    "$schema": {"const": "schemas/ci-evidence-attestation.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "ci-enforced-detached-attestation"},
+    "observationSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nonce": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+    "issuerRegistryDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "signatures": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["dim", "issuerKeyId", "observationPayloadSha256", "observationSignature", "receiptPayloadSha256", "receiptSignature"],
+        "properties": {
+          "dim": {"enum": [64, 66]},
+          "issuerKeyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+          "observationPayloadSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "observationSignature": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$", "minLength": 86, "maxLength": 86},
+          "receiptPayloadSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "receiptSignature": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$", "minLength": 86, "maxLength": 86}
+        }
+      }
+    }
+  }
+}

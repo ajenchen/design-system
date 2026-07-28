@@ -1,36 +1,51 @@
 #!/usr/bin/env node
-// meta-test for check-skill-deadref — 注入已知違規 → gate 必 exit 1 → 還原(PNG P4.3 gate-meta-test 家族)
-// check-skill-deadref scans .claude/{skills,rules,references,commands}/**/*.{md,json} for:
-//   Check A: forbidden `CLAUDE.md line N` / `CLAUDE.md L<N>` numeric refs(LINENUM_RE)
-//   Check B: refs to REMOVED_SECTIONS deny-list sections
-// 這裡注入 Check A 違規(最直接、最脆弱的 dead-ref 形式)。
-import { execSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
+// Isolated meta-test for check-skill-deadref.  Never edits live provider views.
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 
-const run = (cmd) => { try { execSync(cmd, { stdio: 'pipe' }); return 0 } catch (e) { return e.status ?? 1 } }
-const GATE = 'node scripts/check-skill-deadref.mjs --check'
+const REPO = process.cwd()
+const CHECKER = resolve(REPO, 'scripts/check-skill-deadref.mjs')
+const run = (root) => spawnSync(process.execPath, ['--', CHECKER, '--check', '--root', root], {
+  cwd: REPO,
+  encoding: 'utf8',
+  stdio: 'pipe',
+}).status ?? 1
+
+if (run(REPO) !== 0) {
+  console.error('✗ baseline run 應 PASS 卻 FAIL(repo 有真 dead-ref)')
+  process.exit(1)
+}
+console.log('✓ caller repo baseline PASS')
+
 let ok = true
-
-// 1) 現況必 PASS
-if (run(GATE) !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL(repo 有真 dead-ref,請先清)'); process.exit(1) }
-console.log('✓ baseline PASS(無 dead CLAUDE.md refs)')
-
-// 2) 注入違規 → 必 FAIL → 還原
-//    target 在被掃描的 .claude/rules 目錄下,append 一行含 `CLAUDE.md line 999` 觸發 Check A LINENUM_RE
-const target = '.claude/rules/self-verify.md'
-const orig = readFileSync(target, 'utf8')
+const fixture = mkdtempSync(join(tmpdir(), 'skill-deadref-meta-'))
 try {
-  writeFileSync(target, orig + '\n<!-- meta-test injected dead ref: see CLAUDE.md line 999 -->\n')
-  const code = run(GATE)
-  if (code === 0) { console.error('✗ 注入 `CLAUDE.md line 999` 後 gate 未 FAIL(detection 失效)'); ok = false }
-  else console.log('✓ 注入違規被抓(exit ' + code + ')')
+  const rules = join(fixture, 'packages/design-system/ds-canonical/rules')
+  mkdirSync(rules, { recursive: true })
+  const target = join(rules, 'self-verify.md')
+  writeFileSync(target, '# Fixture\n')
+  if (run(fixture) !== 0) {
+    console.error('✗ isolated fixture baseline 應 PASS 卻 FAIL')
+    ok = false
+  }
+
+  writeFileSync(target, '# Fixture\nSee CLAUDE.md line 999.\n')
+  const code = run(fixture)
+  if (code === 0) {
+    console.error('✗ 注入 line-number dead ref 後 gate 未 FAIL(detection 失效)')
+    ok = false
+  } else {
+    console.log(`✓ isolated fixture dead ref 被抓(exit ${code})`)
+  }
 } finally {
-  writeFileSync(target, orig)
+  rmSync(fixture, { recursive: true, force: true })
 }
 
-// 3) 還原後必 PASS
-if (run(GATE) !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
-console.log('✓ 還原後 PASS')
-
-console.log(ok ? '✅ meta-test PASS' : '❌ meta-test FAIL')
+if (run(REPO) !== 0) {
+  console.error('✗ isolated test 後 caller repo 應 PASS')
+  process.exit(1)
+}
+console.log(ok ? '✅ meta-test PASS(repo 零寫入)' : '❌ meta-test FAIL')
 process.exit(ok ? 0 : 1)

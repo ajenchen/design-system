@@ -2,7 +2,7 @@
 # PostToolUse hook: flag hardcoded user-facing strings in DS component tsx
 # (CJK ≥ 3 chars or English ≥ 8 chars that look like sentence-case labels).
 #
-# Rationale(CLAUDE.md # Internationalization / 24-checklist #13 gap):
+# Rationale(AGENTS.md shared bootstrap + canonical audit rubric internationalization gap):
 #   DS primitive 的文案若 hardcode,consumer 換語言 / A/B test label 時要 forkDS。
 #   正確路線:prop 接收 + `loadingText` / `emptyText` 等 slot,或走 i18n 層。
 #
@@ -25,10 +25,10 @@ source "$(dirname "$0")/../_log-fire.sh" 2>/dev/null && log_hook_fire
 FILE_PATH=$(jq -r '.tool_input.file_path // empty')
 
 # Scope: only design-system components/patterns .tsx
-if ! echo "$FILE_PATH" | grep -qE 'packages/design-system/src/(components|patterns)/.*\.tsx$'; then
+if ! grep -qE 'packages/design-system/src/(components|patterns)/.*\.tsx$' <<<"$FILE_PATH"; then
   exit 0
 fi
-if echo "$FILE_PATH" | grep -qE '\.(stories|principles|anatomy\.stories)\.tsx$'; then
+if grep -qE '\.(stories|principles|anatomy\.stories)\.tsx$' <<<"$FILE_PATH"; then
   exit 0
 fi
 if [ ! -f "$FILE_PATH" ]; then
@@ -54,6 +54,7 @@ CJK_HITS=$(perl -CSD -ne '
   BEGIN {
     our $jsdoc = 0; our $console_open = 0; our $jsx_comment = 0;
     our $allow_pending = 0; our $allow_depth = 0;
+    our $hit_count = 0;
   }
   # ── block-level i18n-allow:上一行有 `// i18n-allow-block` 或
   # `// i18n-allow`(單獨 comment 行)→ 標記下一個 `{...}` 區塊整個 skip ──
@@ -112,8 +113,10 @@ CJK_HITS=$(perl -CSD -ne '
     $snippet =~ s/^\s+|\s+$//g;
     $snippet = substr($snippet, 0, 80) . "…" if length($snippet) > 80;
     print "$.:$snippet\n";
+    $hit_count++;
+    exit 0 if $hit_count >= 5;
   }
-' "$FILE_PATH" 2>/dev/null | head -5)
+' "$FILE_PATH" 2>/dev/null)
 
 if [ -n "$CJK_HITS" ]; then
   VIOLATIONS="${VIOLATIONS}\n⚠️ Hardcoded CJK strings in DS primitive(consumer 換語言要 fork 元件):\n${CJK_HITS}\n  修法:改成 prop 接收(e.g. \`loadingText / emptyText / label\` slot)。若確實 DS 層預設(如 internal debug),在該行末加 \`// i18n-allow: {rationale}\` 白名單。"
@@ -121,7 +124,7 @@ fi
 
 # English sentence-case labels — narrow detection
 ENG_HITS=$(perl -CSD -ne '
-  BEGIN { our $allow_pending = 0; our $allow_depth = 0; }
+  BEGIN { our $allow_pending = 0; our $allow_depth = 0; our $hit_count = 0; }
   # ── block-level i18n-allow(同 CJK block)─
   if (m{^\s*(?://|/\*+)\s*i18n-allow(-block)?\b}) { $allow_pending = 1; next }
   if ($allow_pending && m{[\{\[]}) {
@@ -145,8 +148,10 @@ ENG_HITS=$(perl -CSD -ne '
   next if m{className=|aria-label=|data-\w+=|href=|key=};
   if (m{>([A-Z][a-z]+ [a-z]+(?: [a-z]+)+)<} || m{[\"\047]([A-Z][a-z]+ [a-z]+(?: [a-z]+)+)[\"\047]}) {
     print "$.:$1\n";
+    $hit_count++;
+    exit 0 if $hit_count >= 3;
   }
-' "$FILE_PATH" 2>/dev/null | head -3)
+' "$FILE_PATH" 2>/dev/null)
 
 if [ -n "$ENG_HITS" ]; then
   VIOLATIONS="${VIOLATIONS}\n⚠️ Hardcoded English sentence-case labels:\n${ENG_HITS}\n  若是 user-facing label,改 prop 接收;若是 internal,加 \`// i18n-allow\` 白名單。"
@@ -154,10 +159,8 @@ fi
 
 # ── Emit warning if any violation ────────────────────────────────────────────
 if [ -n "$VIOLATIONS" ]; then
-  ESCAPED=$(printf "%b" "$VIOLATIONS" | jq -Rs .)
-  cat <<EOJSON
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"i18n hygiene 檢查(24-checklist #13 gap):${ESCAPED}\n\nDS primitive 應 prop-driven,hardcoded 文案讓 consumer 換語言時要 fork。"}}
-EOJSON
+  CTX=$(printf 'i18n hygiene 檢查(24-checklist #13 gap):%b\n\nDS primitive 應 prop-driven,hardcoded 文案讓 consumer 換語言時要 fork。' "$VIOLATIONS")
+  jq -n --arg ctx "$CTX" '{governanceContext:{hookEventName:"PostToolUse",message:$ctx}}'
 fi
 
 exit 0

@@ -1,0 +1,479 @@
+{
+  "$schema": "../schemas/harness-source-inventory.schema.json",
+  "schemaVersion": 2,
+  "kind": "provider-neutral-governance-harness-source-inventory",
+  "roots": [
+    "infra/governance/test/**/*.test.mjs",
+    "packages/governance/test/**/*.test.mjs",
+    "scripts/**/test-*.mjs",
+    "packages/design-system/ds-canonical/hooks/tests/**/test_*.sh{,.broken}",
+    ".claude/hooks/tests/**/test_*.sh{,.broken}"
+  ],
+  "executionBoundary": "Committed test-source plus registered static-execution-fixture closure with structured argv, exact fixture digests, stripped credentials, isolated HOME/TMP and bounded process groups; entrypoint and registered Node fixture AST review is defense-in-depth, not arbitrary imported-dependency containment; this is not an OS sandbox and does not certify containment against arbitrary concurrent worktree or external writes.",
+  "authorityContract": {
+    "path": "infra/governance/providers/harness-authority-contracts.json",
+    "schemaPath": "infra/governance/schemas/harness-authority-contracts.schema.json",
+    "closurePolicy": "claim-contract-and-schema-are-static-all-harness-receipt-inputs"
+  },
+  "gateMetaExclusions": {
+    "path": "scripts/gate-meta-test-exclusions.json",
+    "sha256": "f3fa5a141075f847158cd7a7bc3302c0ab524156c18831233fed0f49b0ef7092"
+  },
+  "generatedMirrors": [
+    {
+      "id": "claude-hook-behavioral-tests",
+      "canonicalRoot": "packages/design-system/ds-canonical/hooks/tests",
+      "mirrorRoot": ".claude/hooks/tests",
+      "include": [
+        "run-all.sh",
+        "**/*.mjs",
+        "**/test_*.sh",
+        "**/test_*.sh.broken"
+      ],
+      "treeSha256": "f3dcaced0aa6e3744dbc09a77c6c252aafdfa8df1fc45768de30bd1272bdb17e"
+    }
+  ],
+  "canonicalHookStaticHelpers": {
+    "root": "packages/design-system/ds-canonical/hooks",
+    "policy": "all-active-mjs-exact-digest-and-consumer-bound;shell-dynamic-node-code-forbidden;generated-test-helper-mirror-bound",
+    "entries": [
+      {
+        "path": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
+        "sha256": "4888a6b513f29be06c09842f53489ee61781cf336b22a3ef0d28b9f36d057c7f",
+        "consumers": [
+          "packages/design-system/ds-canonical/hooks/check_substantive_edit_approval_preflight.sh",
+          "packages/design-system/ds-canonical/hooks/stop_self_audit.sh",
+          "packages/design-system/ds-canonical/hooks/tests/test_check_substantive_edit_approval_preflight.sh"
+        ]
+      },
+      {
+        "path": "packages/design-system/ds-canonical/hooks/lib/audit-report-validator.mjs",
+        "sha256": "72482f9bd744e3c12243795bce581b486f9657fa9392ab6bd03c50b23f8e0ddf",
+        "consumers": [
+          "packages/design-system/ds-canonical/hooks/check_audit_post_report_validator.sh"
+        ]
+      },
+      {
+        "path": "packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs",
+        "sha256": "7395275574a3d3c1b65b6e6fc58aedbbd95caf157e0cd5cf07d0107a4531bd65",
+        "consumers": [
+          "packages/design-system/ds-canonical/hooks/check_codex_brief_invariants.sh",
+          "packages/design-system/ds-canonical/hooks/stop_self_audit.sh"
+        ]
+      },
+      {
+        "path": "packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs",
+        "sha256": "c0860d5e9b84ea8c6350306cb14fd1eb48ada821fe8a0dcccc7b7eeb0300df21",
+        "consumers": [
+          "packages/design-system/ds-canonical/hooks/lib/_app_shell_primary_header_consistency.sh",
+          "packages/design-system/ds-canonical/hooks/lib/_chrome_header_handcraft.sh",
+          "packages/design-system/ds-canonical/hooks/lib/_header_with_tabs_border.sh"
+        ]
+      },
+      {
+        "path": "packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs",
+        "sha256": "701a11169a6b0beab8c484bf901d9d1f9cbd0a72aa0049f9d082b63dfd1085bd",
+        "consumers": [
+          "packages/design-system/ds-canonical/hooks/tests/test_registration_output_contracts.sh"
+        ]
+      }
+    ]
+  },
+  "reviewedDisabled": [],
+  "staticExecutionFixtures": {
+    "root": "scripts/test-fixtures/transitive-execution",
+    "policy": "all-files-exact-digest-and-consumer-bound;node-ast-reviewed;shell-dynamic-node-code-forbidden",
+    "entries": [
+      {
+        "path": "scripts/test-fixtures/transitive-execution/consumer-governance-proposed-replay.mjs",
+        "sha256": "77add42a16cb2c54440b0c31f37aa482b396a06b8745d8dffee46af4d54b479d",
+        "kind": "node",
+        "consumers": [
+          "scripts/test-consumer-governance.mjs"
+        ]
+      },
+      {
+        "path": "scripts/test-fixtures/transitive-execution/consumer-governance-proposed-replay.sh",
+        "sha256": "0610fead964711dad11a709bd4f762e3503d1bf5a25c87819ef5a9d11dbc1ff8",
+        "kind": "bash",
+        "consumers": [
+          "scripts/test-consumer-governance.mjs"
+        ]
+      },
+      {
+        "path": "scripts/test-fixtures/transitive-execution/governance-tamper-concurrent-writer.mjs",
+        "sha256": "c0079ef0349fc4e3e1f57487afc1bf118be0f966811c580391e9d1aba4915169",
+        "kind": "node",
+        "consumers": [
+          "scripts/test-check-governance-tamper.mjs"
+        ]
+      },
+      {
+        "path": "scripts/test-fixtures/transitive-execution/provider-hook-output-blocked.sh",
+        "sha256": "61330cb0b382ba28232c073ee3a9bb00cb0a852e78bbedf9237689960748e3b6",
+        "kind": "bash",
+        "consumers": [
+          "scripts/test-provider-hook-output-transport.mjs"
+        ]
+      },
+      {
+        "path": "scripts/test-fixtures/transitive-execution/provider-hook-output-clean.sh",
+        "sha256": "a1dd5dc7ec3212df85ea88a06ed481e04ed9756db8815439ba01624acc980419",
+        "kind": "bash",
+        "consumers": [
+          "scripts/test-provider-hook-output-transport.mjs"
+        ]
+      },
+      {
+        "path": "scripts/test-fixtures/transitive-execution/provider-hook-output-probe.mjs",
+        "sha256": "9e45a32ca69da370c7ec93e7263f8540f2f93d6dbe9a93833425c4e7a70a2f08",
+        "kind": "node",
+        "consumers": [
+          "scripts/test-provider-hook-output-transport.mjs"
+        ]
+      },
+      {
+        "path": "scripts/test-fixtures/transitive-execution/provider-runtime-probe.mjs",
+        "sha256": "caccc6f7320c1b6dddd619101fa685df6d4306e748115a05b8302bf4dd4c1abf",
+        "kind": "node",
+        "consumers": [
+          "infra/governance/test/provider-runtime-conformance.test.mjs"
+        ]
+      },
+      {
+        "path": "scripts/test-fixtures/transitive-execution/provider-runtime-process-tree-parent.mjs",
+        "sha256": "8b328bdfc6e25d6f354e6039523e34ebcf600497b61dd1805941a8ab6e159add",
+        "kind": "node",
+        "consumers": [
+          "infra/governance/test/provider-runtime-conformance.test.mjs"
+        ]
+      }
+    ]
+  },
+  "suites": [
+    {
+      "id": "canonical-hook-behavioral",
+      "memberTimeoutMs": 1800000,
+      "totalTimeoutMs": 1800000,
+      "execution": {
+        "kind": "aggregate",
+        "command": [
+          "bash",
+          "packages/design-system/ds-canonical/hooks/tests/run-all.sh"
+        ]
+      },
+      "members": [
+        "packages/design-system/ds-canonical/hooks/tests/test_auto_regen_ds_barrel.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_block_prototype_imports.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_addon_subdir_ship.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_app_shell_primary_header_consistency.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_audit_post_report_validator.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_audit_sample_escape.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_benchmark_citation.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_canonical_propagation.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_chrome_header_avatar_canonical.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_chrome_header_handcraft.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_code_quality.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_codex_brief_invariants.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_codex_collab_5step.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_consumer_app_invariants.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_consumer_app_story_title.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_consumer_code_quality.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_consumer_ds_primitive_misuse.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_consumer_no_ds_catalog.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_consumer_story_baseline.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_cva_default_sync.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_data_table_size_num_to_meta_width.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_datatable_invariants.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_dim_count_drift.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_ds_anchor_preflight.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_dynamic_tailwind_class.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_escape_marker_abuse.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_field_controls_contracts.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_field_family_invariants.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_file_size_budget.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_fork_user_plugin_install.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_full_story_visual_interaction_sweep.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_hardcoded_strings.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_header_with_tabs_border.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_item_list_gap.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_layout_space_canonical.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_layout_space_magic_numbers.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_main_branch_workbench.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_naming_and_abstraction.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_opacity_token_usage.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_orphan_ds_css.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_overlay_handcraft.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_overlay_open_focus_escape_probe.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_pattern_invariants.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_peoplepicker_ssot_drift.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_person_data_richness.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_pixel_quantified_audit.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_plugin_fork_health.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_post_main_ssot_propagate.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_propose_cite_required.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_propose_discipline.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_propose_plain_chinese.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_propose_pre_grep_verify.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_propose_without_benchmark.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_select_all_canonical.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_sidebar_menu_button_implicit_wrap.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_solo_workflow.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_spec_class_drift.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_ssot_header_declaration.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_story_anatomy.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_story_category.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_story_compile_drift.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_story_determinism.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_story_invariants.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_story_name_jargon.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_story_slot_split.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_storybook_addon_packaging.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_storybook_addon_preset_cjs.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_substantive_edit_approval_preflight.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_tab_lg_chrome_header_equal.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_tabs_content_chrome_body_double_gap.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_tailwind_wildcard_in_docs.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_token_hygiene.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_check_wrapper_primitive_schema_drift.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_chrome_header_dispatcher.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_enforce_home_charter.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_governance_control_plane.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_governance_coverage_check.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_hook_integrity_classification.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_inject_deploy_url_after_push.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_inject_pending_self_audit.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_log_governance_fires.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_log_skill_invokes.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_post_edit_dispatcher.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_provider_peer_symmetry.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_registration_output_contracts.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_session_start_governance_check.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_stop_audit_content_quality.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_stop_capture_metrics.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_stop_extract_canonical_rules.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_stop_governance_drift_check.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_stop_harvest_corrections.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_stop_passive_logging.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_stop_repository_command_context.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_stop_self_audit.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_stop_tsc_sanity.sh"
+      ]
+    },
+    {
+      "id": "consumer-clean-room",
+      "memberTimeoutMs": 1800000,
+      "totalTimeoutMs": 1800000,
+      "execution": {
+        "kind": "members"
+      },
+      "members": [
+        "scripts/test-consumer-governance.mjs"
+      ]
+    },
+    {
+      "id": "fork-clean-room",
+      "memberTimeoutMs": 1200000,
+      "totalTimeoutMs": 1200000,
+      "execution": {
+        "kind": "members"
+      },
+      "members": [
+        "scripts/test-fork-governance.mjs",
+        "scripts/test-fork-story-invariants-override.mjs"
+      ]
+    },
+    {
+      "id": "governance-infra-remainder",
+      "memberTimeoutMs": 1500000,
+      "totalTimeoutMs": 3000000,
+      "execution": {
+        "kind": "members"
+      },
+      "members": [
+        "infra/governance/test/activation-readiness-canonical-inputs.test.mjs",
+        "infra/governance/test/authority-setup.test.mjs",
+        "infra/governance/test/check-run-trust.test.mjs",
+        "infra/governance/test/completion-readiness.test.mjs",
+        "infra/governance/test/consumerctl.test.mjs",
+        "infra/governance/test/external-activation.test.mjs",
+        "infra/governance/test/external-ledger-writer.test.mjs",
+        "infra/governance/test/external-operator.test.mjs",
+        "infra/governance/test/external-surface-evidence.test.mjs",
+        "infra/governance/test/governance-data.test.mjs",
+        "infra/governance/test/harness-registry.test.mjs",
+        "infra/governance/test/harness-runner.test.mjs",
+        "infra/governance/test/harness-source-inventory.test.mjs",
+        "infra/governance/test/issuer-registry.test.mjs",
+        "infra/governance/test/managed-host-assurance.test.mjs",
+        "infra/governance/test/model-validation.test.mjs",
+        "infra/governance/test/playwright-runtime.test.mjs",
+        "infra/governance/test/provider-runtime-conformance.test.mjs",
+        "infra/governance/test/provider-surface.test.mjs",
+        "infra/governance/test/reconcile-github.test.mjs",
+        "infra/governance/test/release-evidence.test.mjs",
+        "infra/governance/test/release-tag-authorization.test.mjs",
+        "infra/governance/test/release-trust-preflight.test.mjs",
+        "infra/governance/test/repository-path-topology.test.mjs",
+        "infra/governance/test/rollout-state-machine.test.mjs",
+        "infra/governance/test/signed-release-tag.test.mjs",
+        "infra/governance/test/staged-rollout.test.mjs",
+        "infra/governance/test/workflow-identity-sync.test.mjs",
+        "infra/governance/test/workflow-trust.test.mjs"
+      ]
+    },
+    {
+      "id": "governance-package-remainder",
+      "memberTimeoutMs": 600000,
+      "totalTimeoutMs": 900000,
+      "execution": {
+        "kind": "members"
+      },
+      "members": [
+        "packages/governance/test/closed-tool-execution.test.mjs",
+        "packages/governance/test/plugin-hook-runtime.test.mjs",
+        "packages/governance/test/product-launcher-runtime.test.mjs",
+        "packages/governance/test/provider-adapter-generator.test.mjs",
+        "packages/governance/test/provider-hook-normalization.test.mjs",
+        "packages/governance/test/provider-parity.test.mjs",
+        "packages/governance/test/provider-proposed-write-state.test.mjs",
+        "packages/governance/test/provider-write-transport-contract.test.mjs",
+        "packages/governance/test/snapshot.test.mjs",
+        "packages/governance/test/upgrade-attest-cli.test.mjs"
+      ]
+    },
+    {
+      "id": "governance-script-remainder",
+      "memberTimeoutMs": 1800000,
+      "totalTimeoutMs": 2700000,
+      "execution": {
+        "kind": "members"
+      },
+      "members": [
+        "scripts/test-2-scenario-architecture.mjs",
+        "scripts/test-audit-coverage-tier-sync.mjs",
+        "scripts/test-authority-decision-evidence.mjs",
+        "scripts/test-build-fork-filesystem-safety.mjs",
+        "scripts/test-canonical-path-containment.mjs",
+        "scripts/test-check-codex-freshness-authorization.mjs",
+        "scripts/test-claude-permission-policy.mjs",
+        "scripts/test-control-plane-genesis-transition.mjs",
+        "scripts/test-deep-audit-evidence-schema-parity.mjs",
+        "scripts/test-deep-audit-review-archive.mjs",
+        "scripts/test-design-system-codemod.mjs",
+        "scripts/test-devmode-geometry-invariant.mjs",
+        "scripts/test-future-provider-fork-surface.mjs",
+        "scripts/test-gate-meta-test-exclusion-inventory.mjs",
+        "scripts/test-governance-baseline-mirrors.mjs",
+        "scripts/test-governance-build-graph-transaction.mjs",
+        "scripts/test-governance-protected-roots.mjs",
+        "scripts/test-governance-runtime-evidence.mjs",
+        "scripts/test-governance-visual-baselines.mjs",
+        "scripts/test-hook-evidence-plan.mjs",
+        "scripts/test-instruction-mirror-safety.mjs",
+        "scripts/test-managed-ci-trusted-execution.mjs",
+        "scripts/test-managed-envelope-binding.mjs",
+        "scripts/test-model-deep-audit-safety.mjs",
+        "scripts/test-model-evidence-broker-hardening.mjs",
+        "scripts/test-model-release-authority.mjs",
+        "scripts/test-neutral-audit-evidence.mjs",
+        "scripts/test-plugin-alias-contract.mjs",
+        "scripts/test-privileged-change-authorization.mjs",
+        "scripts/test-provider-hook-output-transport.mjs",
+        "scripts/test-provider-lifecycle.mjs",
+        "scripts/test-provider-review-binding.mjs",
+        "scripts/test-release-bom.mjs",
+        "scripts/test-review-capability-selection.mjs",
+        "scripts/test-run-gate-meta-tests-isolation.mjs",
+        "scripts/test-sync-all-transaction.mjs",
+        "scripts/test-sync-atomicity.mjs",
+        "scripts/test-sync-ds-canonical-recovery.mjs",
+        "scripts/test-sync-version-safety.mjs",
+        "scripts/test-verified-exact-npm-runtime.mjs",
+        "scripts/test-visual-baseline-review.mjs",
+        "scripts/test-workflow-security.mjs"
+      ]
+    }
+  ],
+  "pairedMeta": {
+    "command": [
+      "node",
+      "scripts/run-gate-meta-tests.mjs"
+    ],
+    "members": [
+      "scripts/test-audit-a11y.mjs",
+      "scripts/test-audit-consumer-a11y.mjs",
+      "scripts/test-audit-content-quality.mjs",
+      "scripts/test-audit-coverage-matrix.mjs",
+      "scripts/test-audit-data-table-row-mode-ssot.mjs",
+      "scripts/test-audit-failure-class-coverage.mjs",
+      "scripts/test-audit-hook-quality.mjs",
+      "scripts/test-audit-hook-test-coverage.mjs",
+      "scripts/test-audit-layout-family-frontmatter.mjs",
+      "scripts/test-audit-linkto-integrity.mjs",
+      "scripts/test-audit-motion-delay-invariants.mjs",
+      "scripts/test-audit-orphan-tokens.mjs",
+      "scripts/test-audit-preflight.mjs",
+      "scripts/test-audit-spec-deadlinks.mjs",
+      "scripts/test-audit-story-quality.mjs",
+      "scripts/test-audit-workflow-security.mjs",
+      "scripts/test-calc-self-audit-baseline.mjs",
+      "scripts/test-categorical-color-invariants.mjs",
+      "scripts/test-category-classification-invariant.mjs",
+      "scripts/test-check-agents-bootstrap.mjs",
+      "scripts/test-check-branch-protection.mjs",
+      "scripts/test-check-bundle-size.mjs",
+      "scripts/test-check-clean-install-safety.mjs",
+      "scripts/test-check-codex-freshness.mjs",
+      "scripts/test-check-dangling-infra-ref.mjs",
+      "scripts/test-check-field-cascade-resolve.mjs",
+      "scripts/test-check-governance-tamper.mjs",
+      "scripts/test-check-plugin-installed.mjs",
+      "scripts/test-check-provider-neutral-ssot-residue.mjs",
+      "scripts/test-check-skill-deadref.mjs",
+      "scripts/test-check-story-linkto-targets.mjs",
+      "scripts/test-check-three-layer-stories.mjs",
+      "scripts/test-checkbox-group-handcraft-invariant.mjs",
+      "scripts/test-consumer-source-harness.mjs",
+      "scripts/test-data-table-invariants.mjs",
+      "scripts/test-governance-anchor-preflight.mjs",
+      "scripts/test-governance-build-graph.mjs",
+      "scripts/test-inline-edit-view-geometry-invariant.mjs",
+      "scripts/test-install-candidate-dependencies.mjs",
+      "scripts/test-item-content-leading-coherence.mjs",
+      "scripts/test-layout-space-story-coherence.mjs",
+      "scripts/test-layout-space-utility-invariant.mjs",
+      "scripts/test-mirror-run-artifact-identity.mjs",
+      "scripts/test-naming-structure-invariant.mjs",
+      "scripts/test-produce-ci-enforced-evidence.mjs",
+      "scripts/test-produce-hook-enforced-evidence.mjs",
+      "scripts/test-product-template-scaffold-lock.mjs",
+      "scripts/test-propose-provider-cli-package-content.mjs",
+      "scripts/test-release-finalizer-mirror-handoff.mjs",
+      "scripts/test-run-deterministic-deep-audit.mjs",
+      "scripts/test-score-infra-best-practice.mjs",
+      "scripts/test-setup-governance-hooks.mjs",
+      "scripts/test-setup-governance.mjs",
+      "scripts/test-setup-netlify-access.mjs",
+      "scripts/test-setup-provider-cli-toolchain.mjs",
+      "scripts/test-setup-workspace.mjs",
+      "scripts/test-status-color-invariant.mjs",
+      "scripts/test-sync-memory.mjs",
+      "scripts/test-sync-plugin-aliases.mjs",
+      "scripts/test-verify-deep-audit-coverage.mjs",
+      "scripts/test-verify-mirror-activation-boundary.mjs",
+      "scripts/test-verify-mirror-evidence.mjs",
+      "scripts/test-verify-mirror-release.mjs",
+      "scripts/test-verify-upgrade-evidence.mjs"
+    ]
+  },
+  "direct": [
+    "scripts/test-check-src-republish.mjs",
+    "scripts/test-codex-run-guarded.mjs"
+  ],
+  "externalExclusions": [],
+  "nonGovernance": {
+    "path": "infra/governance/providers/harness-non-governance-exclusions.json",
+    "sha256": "f32224c2f919f5defffaad4c635e936786ecd9bc6d9f49a26878435c514e2298"
+  }
+}

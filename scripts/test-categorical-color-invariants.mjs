@@ -3,15 +3,14 @@
 // 驗 I1 名實一致(零 offset):map 的 key X 值只能引用 --color-X-*;把 CAT_SUBTLE.blue 的
 // bg token 從 --color-blue-1 偷換成 --color-red-1(categorical-vs-semantic 混淆的真實故障模式)
 // → gate I1 應抓「引用了 --color-red-*(應為 --color-blue-*)」→ exit 1。finally 還原原檔。
-import { execSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 
-const run = (cmd) => { try { execSync(cmd, { stdio: 'pipe' }); return 0 } catch (e) { return e.status ?? 1 } }
-const GATE = 'node scripts/categorical-color-invariants.mjs'
+const run = () => spawnSync(process.execPath, ['--', 'scripts/categorical-color-invariants.mjs'], { stdio: 'pipe' }).status ?? 1
 let ok = true
 
 // 1) 現況必 PASS
-if (run(GATE) !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL'); process.exit(1) }
+if (run() !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL'); process.exit(1) }
 console.log('✓ baseline PASS')
 
 // 2) 注入違規 → 必 FAIL → 還原
@@ -23,7 +22,7 @@ try {
   const mutated = orig.replace(NEEDLE, POISON)
   if (mutated === orig) { console.error('✗ 注入 no-op(NEEDLE 未命中,injection 失效)'); process.exit(1) }
   writeFileSync(target, mutated)
-  const code = run(GATE)
+  const code = run()
   if (code === 0) { console.error('✗ 注入違規後 gate 未 FAIL(I1 detection 失效)'); ok = false }
   else console.log('✓ 注入違規被抓(exit ' + code + ')')
 } finally {
@@ -31,7 +30,7 @@ try {
 }
 
 // 3) 還原後必 PASS
-if (run(GATE) !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
+if (run() !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
 console.log('✓ 還原後 PASS')
 
 console.log(ok ? '✅ meta-test PASS' : '❌ meta-test FAIL')

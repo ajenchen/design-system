@@ -16,13 +16,13 @@ on:
 #        Add Breadcrumb showHomeIcon prop + storybook-config tooltip delay
 #   2. PR / push main → 此 workflow 偵測 .changeset/ 內 unconsumed entries
 #   3. Auto-open「Version Packages」PR(bump 4 處 version + CHANGELOG.md 自動生成)
-#   4. User review + merge PR → triggers release.yml(if CHANGESET_PUBLISH=true)OR 等 user 手動 tag push
+#   4. Standing-delegated agent review + protected merge → version commit 先通過 protected main gates；發版者建立並推送指向
+#      當前 protected main HEAD 的 remote exact tag，再送 `stage-protected-release` repository_dispatch。
+#      Tag 只是 release identity 資料，不會觸發或提供 privileged workflow bytes。
 #
 # Reference: https://github.com/changesets/action
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 concurrency:
   group: changeset-version
@@ -31,26 +31,32 @@ concurrency:
 jobs:
   version:
     name: Open Version Packages PR
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 22
+          node-version: '24.14.0'
           cache: npm
 
-      - run: npm ci --legacy-peer-deps
+      - run: npm run --silent setup:dependencies
 
       - name: Create Version Packages PR
-        uses: changesets/action@v1
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
         with:
-          version: npm run changeset:version
+          # The pinned action needs repository write authority, but repository
+          # version scripts do not. Strip the token before any package code runs.
+          version: /usr/bin/env -u GITHUB_TOKEN -u GH_TOKEN npm run changeset:version
           commit: 'chore(release): version packages'
           title: 'chore(release): version packages'
-          createGithubReleases: false  # release.yml 已處理(tag push trigger)
+          createGithubReleases: false  # release 只由 protected-default repository_dispatch 進入；tag 只是已綁定 main 的資料
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

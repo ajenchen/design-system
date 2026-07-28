@@ -12,7 +12,7 @@ source "$(dirname "$0")/../_log-fire.sh" 2>/dev/null && log_hook_fire
 set -euo pipefail
 
 INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+FILE_PATH=$(jq -r '.tool_input.file_path // empty' <<<"$INPUT")
 
 [ -z "$FILE_PATH" ] && exit 0
 
@@ -24,10 +24,10 @@ case "$FILE_PATH" in
 esac
 
 # Extract component name from path
-COMP_NAME=$(echo "$FILE_PATH" | grep -oE 'components/[^/]+/' | head -1 | sed 's|components/||' | sed 's|/||')
+COMP_NAME=$(grep -m 1 -oE 'components/[^/]+/' <<<"$FILE_PATH" | sed -n '1p' | sed 's|components/||' | sed 's|/||')
 [ -z "$COMP_NAME" ] && exit 0
 
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+PROJECT_DIR="${GOVERNANCE_PROJECT_DIR:-$(pwd)}"
 COMPILE_SCRIPT="$PROJECT_DIR/scripts/compile-stories.mjs"
 
 # Skip if compile script not yet built(graceful for pre-Phase-4 state)
@@ -38,10 +38,10 @@ cd "$PROJECT_DIR" || exit 0
 OUTPUT=$(node "$COMPILE_SCRIPT" "$COMP_NAME" --check 2>&1 || true)
 
 # Check if drift detected(exit 1 or has 「spec/tsx canonical drift」 in output)
-if echo "$OUTPUT" | grep -qE "spec/tsx canonical drift|spec-only|tsx-only"; then
+if grep -qE "spec/tsx canonical drift|spec-only|tsx-only" <<<"$OUTPUT"; then
   MSG="📐 Story canonical drift detected in ${COMP_NAME}:\n\n${OUTPUT}\n\nFix tsx componentMeta export 或 spec frontmatter 讓 keys 對齊。"
   ESCAPED=$(printf '%s' "$MSG" | jq -Rs .)
-  printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":%s}}\n' "$ESCAPED"
+  printf '{"governanceContext":{"hookEventName":"PostToolUse","message":%s}}\n' "$ESCAPED"
 fi
 
 # Skip graceful(migration 未做的元件)不報

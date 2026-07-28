@@ -2,16 +2,16 @@
 # Tests for check_orphan_ds_css.sh(P0 BLOCKER,2026-05-27 codify)
 #
 # Hook 規則(Stop / SubagentStop event):
-#   Scan $CLAUDE_PROJECT_DIR/packages/design-system/src/**/*.css。
-#   Orphan condition(BLOCK exit 2):
+#   Scan $GOVERNANCE_PROJECT_DIR/packages/design-system/src/**/*.css。
+#   Orphan condition(provider-neutral Stop block decision):
 #     file NOT in styles/tokens.css aggregator(grep -qF rel path)
 #     AND basename NOT imported by any tsx/ts/css in DS(grep -rln 'import.*base|@import.*base')
-#   任一 orphan → exit 2 + stderr 'ORPHAN-DS-CSS BLOCKER'。
+#   任一 orphan → exit 0 + stdout governanceDecision JSON，供 provider runner 轉譯。
 #   非 Stop/SubagentStop event → exit 0 silent。
-#   無 DS_SRC dir / 無 tokens.css aggregator → exit 0 silent。
+#   active canonical root 缺 DS_SRC / tokens.css aggregator → integrity exit 70。
 #   styles/tokens.css aggregator 自身永遠 skip(不算 orphan)。
 #
-# 全部 fixture 走 TMP_DIR + CLAUDE_PROJECT_DIR override,deterministic,無 network。
+# 全部 fixture 走 TMP_DIR + GOVERNANCE_PROJECT_DIR override,deterministic,無 network。
 
 set -u
 
@@ -30,8 +30,8 @@ FAILED_TESTS=""
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-# CLAUDE_PROJECT_DIR override → hook 完全在 TMP_DIR sandbox 內掃,不碰 repo 真 DS。
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+# GOVERNANCE_PROJECT_DIR override → hook 完全在 TMP_DIR sandbox 內掃,不碰 repo 真 DS。
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 DS_SRC="$TMP_DIR/packages/design-system/src"
 
 # ── Fixture helpers ────────────────────────────────────────────────────────
@@ -56,40 +56,57 @@ run_hook() {
   printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
   EXIT=$?
   set -e
+  STDOUT_TEXT=$(cat "$STDOUT" 2>/dev/null)
   STDERR_TEXT=$(cat "$STDERR" 2>/dev/null)
   rm -f "$STDOUT" "$STDERR"
 }
 
 expect_block() {
   local name="$1"; local needle="${2:-ORPHAN-DS-CSS BLOCKER}"
-  if [ "$EXIT" = "2" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
+  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] \
+     && echo "$STDOUT_TEXT" | jq -e --arg needle "$needle" '.governanceDecision == "block" and (.reason | contains($needle))' >/dev/null 2>&1; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
-    echo "  FAIL  $name (expected BLOCK exit=2 + '$needle', got exit=$EXIT)"
+    echo "  FAIL  $name (expected neutral BLOCK decision + '$needle', got exit=$EXIT)"
+    echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
 }
 
-# orphan stderr 必含此 file 的 rel path(guard against 漏報具體檔)
+# neutral reason 必含此 file 的 rel path(guard against 漏報具體檔)
 expect_block_lists() {
   local name="$1"; local rel="$2"
-  if [ "$EXIT" = "2" ] && echo "$STDERR_TEXT" | grep -qF "ORPHAN-DS-CSS BLOCKER" \
-     && echo "$STDERR_TEXT" | grep -qF "$rel"; then
+  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] \
+     && echo "$STDOUT_TEXT" | jq -e --arg rel "$rel" '.governanceDecision == "block" and (.reason | contains("ORPHAN-DS-CSS BLOCKER")) and (.reason | contains($rel))' >/dev/null 2>&1; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
     echo "  FAIL  $name (expected BLOCK listing '$rel', exit=$EXIT)"
-    echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+    echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
 }
 
 expect_pass_silent() {
   local name="$1"
-  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ]; then
+  if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ]; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
     echo "  FAIL  $name (expected silent exit=0, got exit=$EXIT, stderr=$([ -n "$STDERR_TEXT" ] && echo non-empty || echo empty))"
+    echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+  fi
+}
+
+expect_integrity() {
+  local name="$1"; local needle="$2"
+  if [ "$EXIT" = "70" ] && [ -z "$STDOUT_TEXT" ] \
+    && echo "$STDERR_TEXT" | grep -qF "GOVERNANCE_INTEGRITY:" \
+    && echo "$STDERR_TEXT" | grep -qF "$needle"; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (expected integrity exit 70 + '$needle', got exit=$EXIT)"
+    echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
@@ -107,18 +124,18 @@ EOF
 run_hook "PreToolUse"
 expect_pass_silent "1. event=PreToolUse → skip(不掃,即使有 orphan)"
 
-# 2. 無 DS_SRC dir → silent
+# 2. 無 DS_SRC dir → active hook configuration integrity fault
 rm -rf "$TMP_DIR/packages"
 run_hook "Stop"
-expect_pass_silent "2. 無 packages/design-system/src dir → silent"
+expect_integrity "2. 無 packages/design-system/src dir → integrity 70" "canonical DS root or aggregator"
 
-# 3. 有 DS_SRC 但無 tokens.css aggregator → silent
+# 3. 有 DS_SRC 但無 tokens.css aggregator → integrity fault
 mkdir -p "$DS_SRC/components"
 cat > "$DS_SRC/components/x.css" <<'EOF'
 :root { --x: 1px; }
 EOF
 run_hook "Stop"
-expect_pass_silent "3. 無 tokens.css aggregator → silent"
+expect_integrity "3. 無 tokens.css aggregator → integrity 70" "canonical DS root or aggregator"
 
 # ── POSITIVE: real orphan(guards against over-narrow regex)────────────────
 
@@ -140,13 +157,12 @@ cat > "$DS_SRC/components/header-canonical.css" <<'EOF'
 .ds-chrome-header { height: var(--chrome-header-h); }
 EOF
 run_hook "Stop"
-if [ "$EXIT" = "2" ] \
-   && echo "$STDERR_TEXT" | grep -qF "patterns/data-table.css" \
-   && echo "$STDERR_TEXT" | grep -qF "components/header-canonical.css"; then
+if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] \
+   && echo "$STDOUT_TEXT" | jq -e '.governanceDecision == "block" and (.reason | contains("patterns/data-table.css")) and (.reason | contains("components/header-canonical.css"))' >/dev/null 2>&1; then
   echo "  PASS  5. 多 orphan → 兩檔都列出"; PASS=$((PASS+1))
 else
   echo "  FAIL  5. 多 orphan(expected 兩檔都列出, exit=$EXIT)"
-  echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+  echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'; echo "  --- end ---"
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 5. 多 orphan"
 fi
 

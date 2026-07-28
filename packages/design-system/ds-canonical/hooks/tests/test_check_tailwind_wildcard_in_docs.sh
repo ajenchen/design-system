@@ -11,7 +11,7 @@
 #   - 非 Edit/Write/MultiEdit tool → silent
 #   - 空 content → silent
 #
-# 此 hook 不寫 state file(除 _log-fire.sh fire log);仍 override CLAUDE_PROJECT_DIR
+# 此 hook 不寫 state file(除 _log-fire.sh fire log);仍 override GOVERNANCE_PROJECT_DIR
 # 指向 TMP_DIR 以免污染 repo .claude/logs/。
 
 set -u
@@ -32,7 +32,7 @@ TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 # isolate any fire-log writes into TMP_DIR(不污染 repo logs)
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 mkdir -p "$TMP_DIR/.claude/logs"
 
 # run_hook <tool_name> <file_path> <content>

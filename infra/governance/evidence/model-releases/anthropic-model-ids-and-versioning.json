@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "reviewed-provider-documentation-assertion",
+  "providerId": "claude",
+  "sourceUrl": "https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions",
+  "observedAt": "2026-07-21T00:00:00.000Z",
+  "assertions": [
+    "Anthropic documents dated pre-4.6 IDs as snapshots rather than convenience aliases.",
+    "Anthropic documents 4.6-and-later canonical IDs as pinned snapshots whose model weights are not updated in place.",
+    "Anthropic also documents that serving infrastructure can change even when the model ID and weights remain fixed."
+  ],
+  "weightArtifactAvailable": false
+}

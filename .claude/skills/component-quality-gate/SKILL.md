@@ -3,6 +3,8 @@ name: component-quality-gate
 description: Pre-merge quality gate for new or significantly refactored design-system components. Walks through Spec / Code / Stories / Ship checklist (35 items) to ensure world-class discipline before a component enters `packages/design-system/src/components/`. Invoke when user says「元件做完了」「這元件可以收工了嗎」「元件 ready 嗎」「check 這個 element」「要 merge 進 DS 了」or before closing a component PR.
 ---
 
+<!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/component-quality-gate/SKILL.md; provider: claude; do not edit this adapter view. -->
+
 # Component Quality Gate
 
 Purpose: 元件進 `packages/design-system/src/components/` 前的最終 checklist。防止「code 寫完但 spec / stories / token 消費紀律有漂移」的半成品進入系統。
@@ -20,7 +22,7 @@ Purpose: 元件進 `packages/design-system/src/components/` 前的最終 checkli
 
 - 元件 folder 存在於 `packages/design-system/src/components/{Name}/`
 - 該元件的 `.spec.md` / `.tsx` / `.stories.tsx` / `.anatomy.stories.tsx` / `.principles.stories.tsx` 已完成初稿
-- 已讀相關 path-scoped rules(`.claude/rules/spec-rules.md` / `.claude/rules/ui-development.md`(含 Tailwind / Token 命名 / Props 命名 / shadcn 元件規範) / `.claude/rules/story-rules.md`)
+- 已讀相關 path-scoped rules(`packages/design-system/ds-canonical/rules/spec-rules.md` / `packages/design-system/ds-canonical/rules/ui-development.md`(含 Tailwind / Token 命名 / Props 命名 / shadcn 元件規範) / `packages/design-system/ds-canonical/rules/story-rules.md`)
 
 ## Workflow
 
@@ -34,7 +36,7 @@ Purpose: 元件進 `packages/design-system/src/components/` 前的最終 checkli
 
 走 **Code section**(13 項):shadcn 基底完整 / cva() 不條件字串 / data-* selector / 無硬寫 token / Tailwind v4 var() 正確 / 無自包 Provider / Props 命名按「是什麼」/ ARIA 齊 / defaultVariants size=md 若屬 field-height family。
 
-cva `defaultVariants` 異動 → 強制 grep 該元件所有檔案確認三方同步(見 `.claude/skills/story-writing/references/anatomy-standard.md` → 高風險漂移點)。
+cva `defaultVariants` 異動 → 強制 grep 該元件所有檔案確認三方同步(見 `packages/design-system/ds-canonical/skills/story-writing/references/anatomy-standard.md` → 高風險漂移點)。
 
 ### Phase 3 — Stories 審查
 
@@ -53,7 +55,7 @@ cva `defaultVariants` 異動 → 強制 grep 該元件所有檔案確認三方�
 6. **Story canonical-drift 過關**(2026-04-24,Phase 4 story auto-compile)— 若元件已 migration(有 `componentMeta` export + spec frontmatter)→ 跑 `node scripts/compile-stories.mjs {Name} --check` 必 exit 0;migration 未做 → skip 此項(另 new-component skill 推動逐步 migration)
 7. **Code quality 過關**(2026-04-24,Dim 27)— 跑 `node scripts/code-quality-audit.mjs --scope=component:{Name} --check` 必 exit 0(無 P0 clean-code violation)。P1 flag 但不 block;P0(`any` 無 escape / file-size > 800 / circular dep)必修才 ship
 
-### Phase 4.5 — 進階稽核 6 維(強制 chain,對齊 CLAUDE.md `# 稽核 canonical` M6)
+### Phase 4.5 — 進階稽核 6 維(強制 chain,對齊 shared governance `# 稽核 canonical` M6)
 
 **這是 stakeholder-gate,不能跳**。元件 merge = stakeholder-visible 產出,**必過進階模式 6 維**(非高效)。
 
@@ -73,30 +75,30 @@ cva `defaultVariants` 異動 → 強制 grep 該元件所有檔案確認三方�
 3. Chain `/visual-audit`(D5 Layer B):讀 `snapshots/{Name}-*.png` 做 AI judgement
 4. Chain `/performance-audit --scope=component:{Name}`(D3)
 5. Chain `/ux-audit --scope=component:{Name}`(D4)
-6. **D6 真 scan**:讀 `.claude/skills/design-system-audit/references/principle-audit-protocol.md` 對該元件 + 其 spec 跨指的 kin specs 跑 4 子維(合理 / 一致 / 無矛盾 / 完整);先讀「常見 FP 記憶」節避免誤報
-7. 彙整 6 維 findings:**依 protocol 判斷公式 — 動 canonical substantive → STOP;對齊 canonical → AUTO**
-8. **Self-improvement capture**(強制):Phase 結束寫「新 FP / 新 pattern / user 糾正」—見 CLAUDE.md `# 治理 canonical` → Audit skill Phase F 節
+6. **D6 真 scan**:讀 `packages/design-system/ds-canonical/skills/design-system-audit/references/principle-audit-protocol.md` 對該元件 + 其 spec 跨指的 kin specs 跑 4 子維(合理 / 一致 / 無矛盾 / 完整);先讀「常見 FP 記憶」節避免誤報
+7. 彙整 6 維 findings並套用 shared governance authority classifier：**改變產品／UI／UX SSOT 且仍有真取捨 → P2H/STOP；對齊既有 canonical 或純工程／治理 remediation → P2E/AUTO**
+8. **Self-improvement capture**(強制):Phase 結束寫「新 FP / 新 pattern / user 糾正」—見 shared governance `# 治理 canonical` → Audit skill Phase F 節
 
 **為什麼 mandatory**:code / spec 對不夠;效能 / UX / 視覺三維各有歷史 bug(DatePicker 四邊不對稱、DropdownMenu 鍵盤不通、Badge 位置離譜、Rating 邊框、Carousel 箭頭壓文字、inline 物件 prop 造成 render 爆)。merge 前沒過 6 維 = 把 bug 帶進 DS。
 
 **合理跳過情境**(極少):純 spec.md 文字修正(無 tsx 改動)→ 視覺 / 效能 / UX 無變,可跳 Phase 4.5;但 tsx / token / cva / style 任一動 → 必跑全 6 維。
 
-### Phase 5 — 簽結(Checkpoint — STOP 點)
+### Phase 5 — 簽結(receipt，不是 approval checkpoint)
 
 全部打勾後,回報 user:
 - 「元件 {Name} 已過 quality gate,35 項全綠(含 Layer A visual)+ Layer B AI 視覺判斷通過」
 - 列出 Phase 1-4.5 各 section 打勾結果
-- 列出 `snapshots/report.json` 摘要(contrast / geometry violation 數 = 0)
+- 列出 `<absolute-git-dir>/governance-runtime/evidence/visual/visual-audit/report.json` 摘要(contrast / geometry violation 數 = 0)
 - 若任一 phase 有合理例外(documented 在 spec),列出例外清單
 
-**STOP 條件**:任一項不過 + 原因不清楚 → 停下問 user,不默默放行。**Phase 4.5 Layer A 有 violation 絕不放行**。
+**Fail-closed 路由**:任一項不過都不得默默放行。純工程／治理失敗依 Engineering Decision Policy、tests 與 hard gates 自行釐清並 remediation；依既定重試仍無法收斂則回報 technical blocker，不把工程選擇轉問 user。只有改變產品／UI／UX SSOT 且仍有真實選擇或取捨才 P2H/STOP。**Phase 4.5 Layer A 有 violation 絕不放行**。
 
 ## References
 
-- `references/checklist.md` — 完整 35 項 checklist(Spec 12 / Code 13 / Stories 6 / Ship 4 + 各項的 CLAUDE.md pointer)
+- `references/checklist.md` — 完整 35 項 checklist(Spec 12 / Code 13 / Stories 6 / Ship 4 + 各項的 shared-governance pointer)
 
 ## 相關
 
-- `.claude/skills/design-system-audit/` — 本 skill focus 在單元件進 DS 的 gate;design-system-audit 是系統級 full-dim sweep(per design-system-audit SSOT),兩者互補
-- `.claude/skills/story-writing/` — Phase 3 story 深審可 chain 進去
-- `.claude/hooks/pre_edit_spec_check.sh`(retired;改靠 M3 mindset #3「改一處看三處」)— 編輯 tsx 前提醒讀 spec(session 級)
+- `packages/design-system/ds-canonical/skills/design-system-audit/` — 本 skill focus 在單元件進 DS 的 gate;design-system-audit 是系統級 full-dim sweep(per design-system-audit SSOT),兩者互補
+- `packages/design-system/ds-canonical/skills/story-writing/` — Phase 3 story 深審可 chain 進去
+- retired canonical hook `pre_edit_spec_check.sh`(改靠 M3 mindset #3「改一處看三處」)— 編輯 tsx 前提醒讀 spec(session 級)

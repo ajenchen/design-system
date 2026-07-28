@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/consumer-fanout-dispatch-evidence-v2.schema.json",
+  "title": "Bounded non-completion consumer fleet dispatch evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "kind", "planDigest", "reviewReceiptDigest",
+    "candidateReleaseDigest", "runtimeIdentitySnapshotDigest", "startedAt", "finishedAt",
+    "status", "completionClaimed", "authorityRechecks", "authorityValidationFailures",
+    "runtimeRechecks", "runtimeValidationFailures", "requests", "limitations", "evidenceDigest"
+  ],
+  "properties": {
+    "schemaVersion": {"const": 2},
+    "kind": {"const": "consumer-fleet-dispatch-evidence"},
+    "planDigest": {"$ref": "#/$defs/sha256"},
+    "reviewReceiptDigest": {"$ref": "#/$defs/sha256"},
+    "candidateReleaseDigest": {"$ref": "#/$defs/sha256"},
+    "runtimeIdentitySnapshotDigest": {"$ref": "#/$defs/sha256"},
+    "startedAt": {"$ref": "#/$defs/time"},
+    "finishedAt": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/time"}]},
+    "status": {
+      "enum": [
+        "started", "dispatching", "blocked-reviewed-authority-drift",
+        "blocked-runtime-identity-drift", "failed-partial-state-possible",
+        "requests-accepted-readback-required"
+      ]
+    },
+    "completionClaimed": {"const": false},
+    "authorityRechecks": {
+      "type": "array", "maxItems": 4096,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["repositoryId", "verifiedAt", "planDigest", "reviewReceiptDigest", "status"],
+        "properties": {
+          "repositoryId": {"$ref": "#/$defs/repositoryId"},
+          "verifiedAt": {"$ref": "#/$defs/time"},
+          "planDigest": {"$ref": "#/$defs/sha256"},
+          "reviewReceiptDigest": {"$ref": "#/$defs/sha256"},
+          "status": {"const": "current-at-mutation-boundary"}
+        }
+      }
+    },
+    "authorityValidationFailures": {
+      "type": "array", "maxItems": 4096,
+      "items": {"$ref": "#/$defs/failure"}
+    },
+    "runtimeRechecks": {
+      "type": "array", "maxItems": 4096,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["repositoryId", "snapshotDigest", "status"],
+        "properties": {
+          "repositoryId": {"$ref": "#/$defs/repositoryId"},
+          "snapshotDigest": {"$ref": "#/$defs/sha256"},
+          "status": {"const": "current"}
+        }
+      }
+    },
+    "runtimeValidationFailures": {
+      "type": "array", "maxItems": 4096,
+      "items": {"$ref": "#/$defs/failure"}
+    },
+    "requests": {
+      "type": "array", "maxItems": 4096,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": [
+          "repositoryId", "repository", "ring", "wave", "endpoint",
+          "requestSha256", "status", "exitStatus"
+        ],
+        "properties": {
+          "repositoryId": {"$ref": "#/$defs/repositoryId"},
+          "repository": {"type": "string", "minLength": 3, "maxLength": 256, "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+          "ring": {"type": "string", "minLength": 1, "maxLength": 128},
+          "wave": {"type": "string", "minLength": 1, "maxLength": 128},
+          "endpoint": {"type": "string", "minLength": 1, "maxLength": 512, "pattern": "^repos/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/dispatches$"},
+          "requestSha256": {"$ref": "#/$defs/sha256"},
+          "status": {"enum": ["request-accepted-unverified", "request-failed"]},
+          "exitStatus": {"oneOf": [{"type": "integer"}, {"type": "null"}]}
+        }
+      }
+    },
+    "limitations": {
+      "type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+    },
+    "evidenceDigest": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "time": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"},
+    "repositoryId": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "failure": {
+      "type": "object", "additionalProperties": false,
+      "required": ["repositoryId", "code", "message"],
+      "properties": {
+        "repositoryId": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/repositoryId"}]},
+        "code": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "message": {"type": "string", "minLength": 1, "maxLength": 4096}
+      }
+    }
+  }
+}

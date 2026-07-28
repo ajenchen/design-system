@@ -1,0 +1,46 @@
+{
+  "$schema": "../schemas/issuer-registry.schema.json",
+  "schemaVersion": 1,
+  "algorithm": "ed25519",
+  "issuers": [
+    {
+      "keyId": "owner-governance-2026-464784a3db60",
+      "subject": "operator:ajenchen",
+      "publicKeySpki": "MCowBQYDK2VwAyEAYxQbbMNALJqYmszrHet0/BNcnfVg107xRFzCk9IUBeQ=",
+      "roles": [
+        "privileged-change-authorizer",
+        "root-rotator",
+        "apply-authorizer",
+        "completion-attestor"
+      ],
+      "status": "active",
+      "notBefore": "2026-07-27T08:45:45.000Z",
+      "notAfter": "2031-07-27T08:45:45.000Z",
+      "revokedAt": null
+    },
+    {
+      "keyId": "runtime-evidence-2026-11f51ddad406",
+      "subject": "runtime-certifier:ajenchen-local",
+      "publicKeySpki": "MCowBQYDK2VwAyEATLcEHqxZotoMZoyw5KH27cp5bIJuWQSzzEEHA+LxKSU=",
+      "roles": [
+        "runtime-evidence-issuer"
+      ],
+      "status": "active",
+      "notBefore": "2026-07-27T08:45:45.000Z",
+      "notAfter": "2031-07-27T08:45:45.000Z",
+      "revokedAt": null
+    },
+    {
+      "keyId": "release-tag-2026-098cdfe29114",
+      "subject": "release-authorizer:ajenchen",
+      "publicKeySpki": "MCowBQYDK2VwAyEAn2pTfkaanHk2FeVgcHso67azeXmfqEsUFcVw082LaGA=",
+      "roles": [
+        "release-tag-authorizer"
+      ],
+      "status": "active",
+      "notBefore": "2026-07-27T08:45:45.000Z",
+      "notAfter": "2031-07-27T08:45:45.000Z",
+      "revokedAt": null
+    }
+  ]
+}

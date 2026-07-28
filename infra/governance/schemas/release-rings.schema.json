@@ -1,0 +1,397 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/release-rings.schema.json",
+  "title": "Fail-closed fleet rollout state machine",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "attestationPolicy", "candidateRelease", "evidence", "rings", "assignments"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schemaVersion": {"const": 3},
+    "attestationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "algorithm", "maxAuthorizationTtlMinutes", "maxCompletionTtlMinutes", "clockSkewSeconds", "issuerRegistryDigest", "allowedKeyIds", "applyAuthorizationQuorum", "completionAttestationQuorum"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "algorithm": {"const": "ed25519"},
+        "maxAuthorizationTtlMinutes": {"type": "integer", "minimum": 1, "maximum": 1440},
+        "maxCompletionTtlMinutes": {"type": "integer", "minimum": 1, "maximum": 10080},
+        "clockSkewSeconds": {"type": "integer", "minimum": 0, "maximum": 300},
+        "issuerRegistryDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "allowedKeyIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"}},
+        "applyAuthorizationQuorum": {"type": "integer", "minimum": 1, "maximum": 5},
+        "completionAttestationQuorum": {"type": "integer", "minimum": 1, "maximum": 5}
+      }
+    },
+    "candidateRelease": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "version", "sourceCommit", "sourceTree", "bomSha256", "packages", "observedAt"],
+          "properties": {
+            "id": {"type": "string", "pattern": "^ajenchen/design-system@v[0-9]+\\.[0-9]+\\.[0-9]+(?:-(?:beta|next|rc)\\.[0-9]+)?$"},
+            "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-(?:beta|next|rc)\\.[0-9]+)?$"},
+            "sourceCommit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+            "sourceTree": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+            "bomSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            "packages": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "prefixItems": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["name", "version", "integrity"],
+                  "properties": {
+                    "name": {"const": "@qijenchen/design-system"},
+                    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-(?:beta|next|rc)\\.[0-9]+)?$"},
+                    "integrity": {"type": "string", "pattern": "^sha512-[A-Za-z0-9+/]+={0,2}$"}
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["name", "version", "integrity"],
+                  "properties": {
+                    "name": {"const": "@qijenchen/governance"},
+                    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-(?:beta|next|rc)\\.[0-9]+)?$"},
+                    "integrity": {"type": "string", "pattern": "^sha512-[A-Za-z0-9+/]+={0,2}$"}
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["name", "version", "integrity"],
+                  "properties": {
+                    "name": {"const": "@qijenchen/storybook-config"},
+                    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-(?:beta|next|rc)\\.[0-9]+)?$"},
+                    "integrity": {"type": "string", "pattern": "^sha512-[A-Za-z0-9+/]+={0,2}$"}
+                  }
+                }
+              ]
+            },
+            "observedAt": {"type": "string", "format": "date-time"}
+          }
+        }
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "rings": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "order", "purpose", "minimumSoakHours", "maxParallel", "waves", "promotionPredicates"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+          "order": {"type": "integer", "minimum": 0, "maximum": 2},
+          "purpose": {"type": "string", "minLength": 1},
+          "minimumSoakHours": {"type": "integer", "minimum": 1, "maximum": 720},
+          "maxParallel": {"const": 1},
+          "waves": {
+            "type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true,
+            "items": {
+              "type": "object", "additionalProperties": false, "required": ["id", "order", "maxParallel"],
+              "properties": {
+                "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+                "order": {"type": "integer", "minimum": 0},
+                "maxParallel": {"const": 1}
+              }
+            }
+          },
+          "promotionPredicates": {
+            "type": "array", "minItems": 6, "maxItems": 7, "uniqueItems": true,
+            "items": {"$ref": "#/$defs/promotionPredicate"}
+          }
+        },
+        "oneOf": [
+          {
+            "required": ["order", "minimumSoakHours", "promotionPredicates"],
+            "properties": {
+              "order": {"const": 0},
+              "minimumSoakHours": {"type": "integer", "minimum": 24, "maximum": 720},
+              "promotionPredicates": {
+                "type": "array",
+                "minItems": 6,
+                "maxItems": 6,
+                "allOf": [
+                  {"$ref": "#/$defs/containsManualBlockersClear"},
+                  {"$ref": "#/$defs/containsSoakPolicy"},
+                  {"$ref": "#/$defs/containsRequiredChecksGreen"},
+                  {"$ref": "#/$defs/containsProviderSurfacesCertified"},
+                  {"$ref": "#/$defs/containsCriticalWaiverGate"},
+                  {"$ref": "#/$defs/containsPlanConflictFree"}
+                ]
+              }
+            }
+          },
+          {
+            "required": ["order", "minimumSoakHours", "promotionPredicates"],
+            "properties": {
+              "order": {"const": 1},
+              "minimumSoakHours": {"type": "integer", "minimum": 24, "maximum": 720},
+              "promotionPredicates": {
+                "type": "array",
+                "minItems": 7,
+                "maxItems": 7,
+                "allOf": [
+                  {"$ref": "#/$defs/containsUpstreamWavesPromoted"},
+                  {"$ref": "#/$defs/containsManualBlockersClear"},
+                  {"$ref": "#/$defs/containsSoakPolicy"},
+                  {"$ref": "#/$defs/containsRequiredChecksGreen"},
+                  {"$ref": "#/$defs/containsProviderSurfacesCertified"},
+                  {"$ref": "#/$defs/containsHighWaiverGate"},
+                  {"$ref": "#/$defs/containsPlanConflictFree"}
+                ]
+              }
+            }
+          },
+          {
+            "required": ["order", "minimumSoakHours", "promotionPredicates"],
+            "properties": {
+              "order": {"const": 2},
+              "minimumSoakHours": {"type": "integer", "minimum": 72, "maximum": 720},
+              "promotionPredicates": {
+                "type": "array",
+                "minItems": 7,
+                "maxItems": 7,
+                "allOf": [
+                  {"$ref": "#/$defs/containsUpstreamWavesPromoted"},
+                  {"$ref": "#/$defs/containsManualBlockersClear"},
+                  {"$ref": "#/$defs/containsSoakPolicy"},
+                  {"$ref": "#/$defs/containsRequiredChecksGreen"},
+                  {"$ref": "#/$defs/containsProviderSurfacesCertified"},
+                  {"$ref": "#/$defs/containsHighWaiverGate"},
+                  {"$ref": "#/$defs/containsPlanConflictFree"}
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "assignments": {
+      "type": "object", "minProperties": 1,
+      "additionalProperties": {
+        "type": "object", "additionalProperties": false,
+        "required": ["ring", "wave", "enteredAt", "candidateReleaseDigest", "applyAuthorization", "completionAttestation", "manualBlockers"],
+        "properties": {
+          "ring": {"type": "string", "minLength": 1},
+          "wave": {"type": "string", "minLength": 1},
+          "enteredAt": {"type": "string", "format": "date-time"},
+          "candidateReleaseDigest": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+          "manualBlockers": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "applyAuthorization": {
+            "oneOf": [
+              {"type": "null"},
+              {"allOf": [{"$ref": "#/$defs/attestation"}, {"type": "object", "properties": {"kind": {"const": "apply-authorization"}}}]}
+            ]
+          },
+          "completionAttestation": {
+            "oneOf": [
+              {"type": "null"},
+              {"allOf": [{"$ref": "#/$defs/attestation"}, {"type": "object", "properties": {"kind": {"const": "readback-completion"}}}]}
+            ]
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "containsManualBlockersClear": {
+      "type": "array",
+      "contains": {"type": "object", "required": ["type"], "properties": {"type": {"const": "manual-blockers-clear"}}},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsSoakPolicy": {
+      "type": "array",
+      "contains": {"type": "object", "required": ["type"], "properties": {"type": {"enum": ["soak-complete", "soak-observation"]}}},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsRequiredChecksGreen": {
+      "type": "array",
+      "contains": {"type": "object", "required": ["type"], "properties": {"type": {"const": "required-checks-green"}}},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsProviderSurfacesCertified": {
+      "type": "array",
+      "contains": {"type": "object", "required": ["type"], "properties": {"type": {"const": "provider-surfaces-certified"}}},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsCriticalWaiverGate": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "required": ["type", "risk"],
+        "properties": {
+          "type": {"const": "no-active-waiver-at-or-above"},
+          "risk": {"const": "critical"}
+        }
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsHighWaiverGate": {
+      "type": "array",
+      "contains": {
+        "type": "object",
+        "required": ["type", "risk"],
+        "properties": {
+          "type": {"const": "no-active-waiver-at-or-above"},
+          "risk": {"const": "high"}
+        }
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsPlanConflictFree": {
+      "type": "array",
+      "contains": {"type": "object", "required": ["type"], "properties": {"type": {"const": "plan-conflict-free"}}},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "containsUpstreamWavesPromoted": {
+      "type": "array",
+      "contains": {"type": "object", "required": ["type"], "properties": {"type": {"const": "upstream-waves-promoted"}}},
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "promotionPredicate": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "type"],
+          "properties": {
+            "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+            "type": {"const": "manual-blockers-clear"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "type"],
+          "properties": {
+            "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+            "type": {"const": "soak-complete"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "type"],
+          "properties": {
+            "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+            "type": {"const": "soak-observation"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "type"],
+          "properties": {
+            "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+            "type": {"const": "required-checks-green"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "type", "surfaces"],
+          "properties": {
+            "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+            "type": {"const": "provider-surfaces-certified"},
+            "surfaces": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]*/[a-z][a-z0-9-]*/[a-z][a-z0-9-]*$"}
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "type", "risk"],
+          "properties": {
+            "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+            "type": {"const": "no-active-waiver-at-or-above"},
+            "risk": {"enum": ["low", "medium", "high", "critical"]}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "type"],
+          "properties": {
+            "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+            "type": {"const": "plan-conflict-free"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "type"],
+          "properties": {
+            "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+            "type": {"const": "upstream-waves-promoted"}
+          }
+        }
+      ]
+    },
+    "attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "repoId", "github", "ring", "wave", "candidateRelease", "verifiedReleaseEvidenceDigest", "candidatePlanDigest", "predicateDigest", "stateDigest", "defaultBranchHeadSha", "actionsDigest", "issuerRegistryDigest", "issuedAt", "expiresAt", "signerKeyId", "subject", "signature", "coSignatures"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"enum": ["apply-authorization", "readback-completion"]},
+        "repoId": {"type": "string", "minLength": 1},
+        "github": {"type": "string", "minLength": 1},
+        "ring": {"type": "string", "minLength": 1},
+        "wave": {"type": "string", "minLength": 1},
+        "candidateRelease": {"type": "object"},
+        "verifiedReleaseEvidenceDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "candidatePlanDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "predicateDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "stateDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "defaultBranchHeadSha": {"type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"},
+        "actionsDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "issuerRegistryDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "issuedAt": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"},
+        "signerKeyId": {"type": "string", "minLength": 1},
+        "subject": {"type": "string", "minLength": 1},
+        "signature": {"type": "string", "minLength": 1},
+        "coSignatures": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["signerKeyId", "subject", "signature"],
+            "properties": {
+              "signerKeyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+              "subject": {"type": "string", "minLength": 1},
+              "signature": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    }
+  }
+}

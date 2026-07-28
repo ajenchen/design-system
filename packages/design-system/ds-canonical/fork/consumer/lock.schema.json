@@ -1,0 +1,338 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Qijenchen consumer governance lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "role",
+    "release",
+    "upgradeTrust",
+    "upgradeProtocol",
+    "payload",
+    "providers",
+    "authority",
+    "generatedBy"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "./lock.schema.json"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "role": {
+      "const": "template-consumer"
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "designSystem",
+        "storybookConfig"
+      ],
+      "properties": {
+        "designSystem": {
+          "type": "string"
+        },
+        "storybookConfig": {
+          "type": "string"
+        }
+      }
+    },
+    "upgradeTrust": {
+      "const": {
+        "schemaVersion": 1,
+        "repository": "ajenchen/design-system",
+        "workflow": ".github/workflows/release.yml",
+        "workflowRef": "refs/heads/main",
+        "provenancePredicate": "https://slsa.dev/provenance/v1",
+        "builderId": "https://github.com/actions/runner/github-hosted",
+        "immutableRelease": true,
+        "releaseBomAsset": "release-bom.json",
+        "upgradePackages": [
+          "@qijenchen/design-system",
+          "@qijenchen/storybook-config"
+        ],
+        "releasePackages": [
+          "@qijenchen/design-system",
+          "@qijenchen/governance",
+          "@qijenchen/storybook-config"
+        ]
+      }
+    },
+    "upgradeProtocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolId",
+        "legacyEntryMode",
+        "bootstrapEvidenceContract",
+        "controlPlaneUpdateMode",
+        "controlPlaneUpdateEvidenceContract",
+        "controlPlaneUpdatePlanner",
+        "ordinaryUpgradeMode",
+        "protectedBaseVerifier",
+        "candidateCodeExecutionAllowed",
+        "physicalPowerLossDurabilityClaimed",
+        "specificationSha256",
+        "schemaSha256",
+        "implementationSha256"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 2
+        },
+        "protocolId": {
+          "const": "protected-base-reconstruction-v2"
+        },
+        "legacyEntryMode": {
+          "const": "one-time-reviewed-full-snapshot-pr"
+        },
+        "bootstrapEvidenceContract": {
+          "const": "consumer-governance-bootstrap-readback-v1"
+        },
+        "controlPlaneUpdateMode": {
+          "const": "recurring-reviewed-full-snapshot-pr"
+        },
+        "controlPlaneUpdateEvidenceContract": {
+          "const": "consumer-governance-control-plane-update-readback-v1"
+        },
+        "controlPlaneUpdatePlanner": {
+          "const": "infra/governance/bin/consumerctl.mjs"
+        },
+        "ordinaryUpgradeMode": {
+          "const": "protected-base-disposable-reconstruction"
+        },
+        "protectedBaseVerifier": {
+          "const": "scripts/verify-upgrade-evidence.mjs"
+        },
+        "candidateCodeExecutionAllowed": {
+          "const": false
+        },
+        "physicalPowerLossDurabilityClaimed": {
+          "const": false
+        },
+        "specificationSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "schemaSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "implementationSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "forkCorpusLockSha256",
+        "discoveryPolicySha256",
+        "providerMaterializersSha256",
+        "providerLifecycleSha256",
+        "providerInventorySha256",
+        "executionRuntimeSha256",
+        "commonInstructionSha256",
+        "providerArtifactDigests",
+        "mergeSurfaceDigests",
+        "governanceCheckSha256",
+        "utilityRegistrySha256",
+        "sharedSkillsSha256",
+        "sharedSkillCount",
+        "requiredScripts",
+        "managedFiles"
+      ],
+      "properties": {
+        "forkCorpusLockSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "discoveryPolicySha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "providerMaterializersSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "providerLifecycleSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "providerInventorySha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "executionRuntimeSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "commonInstructionSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "providerArtifactDigests": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "instructionSha256",
+              "hookSha256",
+              "skillsSha256",
+              "treeDigests"
+            ],
+            "properties": {
+              "instructionSha256": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "hookSha256": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "skillsSha256": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "treeDigests": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            }
+          }
+        },
+        "mergeSurfaceDigests": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "governanceCheckSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "utilityRegistrySha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sharedSkillsSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sharedSkillCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requiredScripts": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "managedFiles": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "providers": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schemaVersion",
+          "generated",
+          "instruction",
+          "hooks",
+          "skills",
+          "capabilities",
+          "exclusions"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "const": 1
+          },
+          "generated": {
+            "type": "boolean"
+          },
+          "instruction": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hooks": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "skills": {
+            "type": "string",
+            "minLength": 1
+          },
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "nativeHooks",
+              "hookEnforcement",
+              "hardGate"
+            ],
+            "properties": {
+              "nativeHooks": {
+                "type": "boolean"
+              },
+              "hookEnforcement": {
+                "enum": [
+                  "native-feedback-plus-ci",
+                  "ci-only"
+                ]
+              },
+              "hardGate": {
+                "const": "provider-neutral-ci-required"
+              }
+            }
+          },
+          "exclusions": {
+            "type": "array"
+          }
+        }
+      }
+    },
+    "authority": {
+      "const": "provider-neutral governance check + protected CI"
+    },
+    "generatedBy": {
+      "const": "scripts/build-fork-governance.mjs"
+    }
+  }
+}

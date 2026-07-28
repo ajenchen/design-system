@@ -7,8 +7,7 @@
 | 症狀 | 修法 |
 |---|---|
 | `npm ci` ERESOLVE peer dep | 加 `--legacy-peer-deps`(`.npmrc` 已配)|
-| `Failed to resolve "lucide-react"` | DS beta.10 以前 peerDep bug,升 `@qijenchen/design-system@beta` 拿 beta.13+ 修 |
-| `Failed to resolve "react-is"` | DS beta.10 以前 transitive peer 漏,升 beta.13+ |
+| `Failed to resolve "lucide-react"` / `react-is` | 用 `sync-all --apply --to <known-good-exact-version>` 開 upgrade PR；不要安裝 `@beta` |
 | `npm run build` TS5062 path substitution | Root tsconfig 不要 paths 用 `*`,per-app tsconfig 才宣告 `@/*: ./src/*` |
 | Tailwind class 不生效(Button 純文字無樣式)| globals.css 漏 `@source '../node_modules/@qijenchen/design-system/src/**/*'` directive |
 
@@ -22,13 +21,20 @@
 | Dialog content 空 | Dialog 需 `<DialogPrimitive.Trigger>` 或 `open` prop |
 | Chart 不 render(width(-1) warning)| Chart container 要 explicit width / height(或 aspect ratio)|
 
-## Claude session
+## Governance / provider session
 
 | 症狀 | 修法 |
 |---|---|
-| 治理沒生效(AI 沒遵循設計紀律 / hook 沒擋違規)| 確認 `npm install` 完成(`node_modules/@qijenchen/design-system/ds-canonical/fork/manifest.json` 存在)。裝好後:機械強制 hook 即時生效、settings 自動 hot-reload、設計指引跑 `/clear` 或下個 session(見 CLAUDE.md 三軌表,別盲目重啟)。雲端首次 session 還在自動裝時等裝完或重開。**不需 /plugin install**(C-prime committed-config)|
-| 設計紀律 preamble 沒注入 context | SessionStart hook 讀 npm-current preamble;`npm run sync-all` 拉最新後跑 `/clear` 或開新 session 生效(preamble 屬三軌的「設計指引」軌,見 CLAUDE.md)|
-| skills slash command(`/prototype` 等)沒出現 | fork-relevant skills 已 committed 進 `.claude/skills/`,**正常應出現**。沒出現時:(a) 確認 `.claude/skills/prototype/SKILL.md` 存在(新 fork 隨模板帶;既有 fork 跑 `npm run sync-all`)(b) **重開 session**——Claude Code 在 session 開始前掃 skill,剛同步的需重啟一次才載入。(注:DS-author-only 治理 skill 如 `design-system-audit` / `knowledge-prune` 不送,沒出現屬正常。) |
+| 治理狀態不明 / native hook 沒 fire | 先跑 `npm run governance:check -- --hooks-off`。若失敗，依 rule ID 修 lock/BOM/payload；若通過，native hook 只是該 provider 的 trust/discovery 問題，不影響 hard-gate 結果 |
+| `GOVERNANCE-DEPS-MISSING` | session 不會自動修；結束或暫停工作，在 repo root 執行 `npm run setup:all`，任一 install/signature/check/provider-toolchain 階段失敗都不可繼續宣稱 compliant |
+| Claude 每個 prompt 都顯示 `TRANSCRIPT_SIZE_OR_TYPE_INVALID` | 這是舊 DS-author/plugin adapter 對 provider 逐字稿檔名、檔案型別或**整份檔案大小**的錯誤假設；長期 session 即使只輸入 `Hi` 也可能在 prompt 送出前被擋。新版 runner 不讀取整份逐字稿，只會從穩定 regular file 驗證並複製有上限的 JSONL 尾端，過大單筆、替換或非檔案輸入仍 fail closed。不要改名、截斷或手動操作 Claude session 檔；先記錄錯誤中的實際 hook command。若 command 指向 repo 的 `scripts/run-provider-hook.mjs`，以受審 release 執行 `npm run setup:all`（升級走 `npm run sync-all` reviewed 流程）。若 command 含 `${CLAUDE_PLUGIN_ROOT}`，package sync 不會更新獨立的 Claude plugin cache；請把 marketplace/plugin 更新到修正版，或從 product 移除這個不必要的 optional plugin（managed endpoint 由管理員改 policy）。更新後須**完整退出所有 Claude Code 程序再重開**，不可只開新 tab 或沿用舊的 `--continue` process。Product dispatcher 本身不應包含 `check_propose_without_benchmark.sh`。 |
+| Claude/Codex skill 不一致 | 不要手改 generated view；從 canonical release 重跑 exact upgrade。產品自有 skill 必同時提供 `.claude/skills` 與 `.agents/skills` 等價內容 |
+| Codex hooks 未執行 | Codex repo hook 需要信任；完成 trust 後重試。CI/hook-off checker 仍為 authority，不可把未 trust 誤報成 compliant |
+| Upgrade 報 `GOV-UPGRADE-PATH-*` / managed body missing | 不要手抄 workflow 或腳本。該 exact release 的 corpus／BOM 不完整或 patch 超出封閉 materialization policy；停止合併並回 DS authority 修正、重發更高版本 |
+| Upgrade 報 `GOV-UPGRADE-BOOTSTRAP-001/002` | 這兩個是相容性保留的穩定錯誤 ID；代表 exact release 改到 workflow、可執行腳本、`.npmrc`、`governance/bin` 或 `package.json#scripts`。已是 v2 的 consumer 改走 DS authority 的 recurring reviewed control-plane 六階段流程；只有仍在 `legacy-bootstrap-v2` 的舊 consumer 才走一次性 bootstrap |
+| Upgrade 無法建 PR | 確認 `governance-upgrade` environment 已設定 Governance Writer App ID/private key，且 App 只具 contents/PR write；repository Actions 預設需維持 read-only，**Allow GitHub Actions to create and approve pull requests** 維持關閉。Writer App 自動觸發的 candidate runs 非權威；required verdict 必須來自 protected-default dispatch 與獨立 check-only Governance Check App |
+| Upgrade PR 存在但沒有 `Immutable consumer snapshot` | 顯示 live `main`、deterministic branch 或 existing PR base/head/repository 在 writer 過程中移動，或明確 protected-default validation dispatch 失敗。不要重用舊 check；從新 main 重跑 exact upgrade |
+| 已合併的 DS release 有問題 | 不移動 dist-tag、不降版、不只回一包。保留證據並由 DS authority 發布更高的 corrected exact release，再走正常 upgrade PR |
 
 ## Netlify deploy
 
@@ -50,4 +56,4 @@
 
 - DS Storybook: https://ajenchen-design-system.netlify.app/
 - DS repo issues: https://github.com/ajenchen/design-system/issues
-- Claude session `/help` 列 skills
+- Claude/Codex 的 skill 列表應涵蓋 committed classified skills；最終以 `governance:check` 證據為準

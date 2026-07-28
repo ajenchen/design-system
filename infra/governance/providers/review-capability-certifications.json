@@ -1,0 +1,6 @@
+{
+  "$schema": "../schemas/review-capability-certifications.schema.json",
+  "schemaVersion": 1,
+  "kind": "review-capability-certification-ledger",
+  "certifications": []
+}

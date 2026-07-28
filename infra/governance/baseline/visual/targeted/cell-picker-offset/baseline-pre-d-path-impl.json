@@ -1,0 +1,296 @@
+{
+  "generatedAt": "2026-05-08T06:49:05.115Z",
+  "storyId": "design-system-components-datatable-展示--inline-edit",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+  },
+  "pickers": [
+    {
+      "type": "select",
+      "colId": "category",
+      "displayCell": {
+        "x": 427,
+        "y": 140.1875,
+        "width": 150,
+        "height": 39,
+        "label": "display-cell"
+      },
+      "displayInner": {
+        "source": "leaf-text",
+        "x": 439,
+        "y": 149.1875,
+        "width": 58.3125,
+        "height": 21,
+        "sample": "Furniture"
+      },
+      "editEngaged": true,
+      "editSignal": "data-field-mode=edit",
+      "editCell": {
+        "x": 427,
+        "y": 140.1875,
+        "width": 150,
+        "height": 39,
+        "label": "edit-cell"
+      },
+      "editInner": {
+        "source": "data-field-mode",
+        "x": 427,
+        "y": 140.1875,
+        "width": 149,
+        "height": 39
+      },
+      "innerDelta": {
+        "x": -12,
+        "y": -9,
+        "width": 90.6875,
+        "height": 18,
+        "right": 78.6875,
+        "bottom": 9
+      }
+    },
+    {
+      "type": "multiSelect",
+      "colId": "tags",
+      "displayCell": {
+        "x": 717,
+        "y": 140.1875,
+        "width": 180,
+        "height": 39,
+        "label": "display-cell"
+      },
+      "displayInner": {
+        "source": "leaf-text",
+        "x": 734,
+        "y": 149.1875,
+        "width": 36,
+        "height": 21,
+        "sample": "待審"
+      },
+      "editEngaged": true,
+      "editSignal": "data-field-mode=edit",
+      "editCell": {
+        "x": 717,
+        "y": 140.1875,
+        "width": 180,
+        "height": 39,
+        "label": "edit-cell"
+      },
+      "editInner": {
+        "source": "data-field-mode",
+        "x": 717,
+        "y": 140.1875,
+        "width": 179,
+        "height": 39
+      },
+      "innerDelta": {
+        "x": -17,
+        "y": -9,
+        "width": 143,
+        "height": 18,
+        "right": 126,
+        "bottom": 9
+      }
+    },
+    {
+      "type": "date",
+      "error": "page.screenshot: Clipped area is either empty or outside the resulting image\nCall log:\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n"
+    },
+    {
+      "type": "time",
+      "error": "page.screenshot: Clipped area is either empty or outside the resulting image\nCall log:\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n"
+    },
+    {
+      "type": "url",
+      "colId": "url",
+      "displayCell": {
+        "x": 1327,
+        "y": 140.1875,
+        "width": 180,
+        "height": 39,
+        "label": "display-cell"
+      },
+      "displayInner": {
+        "source": "leaf-text",
+        "x": 1339,
+        "y": 149.1875,
+        "width": 127,
+        "height": 21,
+        "sample": "shop.example.com"
+      },
+      "editEngaged": false,
+      "editError": "no edit signal"
+    },
+    {
+      "type": "person",
+      "colId": "owner",
+      "displayCell": {
+        "x": 814,
+        "y": 140.1875,
+        "width": 160,
+        "height": 39,
+        "label": "display-cell"
+      },
+      "displayInner": {
+        "source": "leaf-text",
+        "x": 858,
+        "y": 149.1875,
+        "width": 48.546875,
+        "height": 21,
+        "sample": "Bob Lin"
+      },
+      "editEngaged": true,
+      "editSignal": "data-field-mode=edit",
+      "editCell": {
+        "x": 814,
+        "y": 140.1875,
+        "width": 160,
+        "height": 39,
+        "label": "edit-cell"
+      },
+      "editInner": {
+        "source": "data-field-mode",
+        "x": 814,
+        "y": 140.1875,
+        "width": 159,
+        "height": 39
+      },
+      "innerDelta": {
+        "x": -44,
+        "y": -9,
+        "width": 110.453125,
+        "height": 18,
+        "right": 66.453125,
+        "bottom": 9
+      }
+    },
+    {
+      "type": "multiPerson",
+      "colId": "reviewers",
+      "displayCell": {
+        "x": 974,
+        "y": 140.1875,
+        "width": 180,
+        "height": 39,
+        "label": "display-cell"
+      },
+      "displayInner": {
+        "source": "leaf-text",
+        "x": 1018,
+        "y": 149.1875,
+        "width": 69.125,
+        "height": 21,
+        "sample": "Alice Chen"
+      },
+      "editEngaged": true,
+      "editSignal": "data-field-mode=edit",
+      "editCell": {
+        "x": 974,
+        "y": 140.1875,
+        "width": 180,
+        "height": 39,
+        "label": "edit-cell"
+      },
+      "editInner": {
+        "source": "data-field-mode",
+        "x": 974,
+        "y": 140.1875,
+        "width": 179,
+        "height": 39
+      },
+      "innerDelta": {
+        "x": -44,
+        "y": -9,
+        "width": 109.875,
+        "height": 18,
+        "right": 65.875,
+        "bottom": 9
+      }
+    },
+    {
+      "type": "string",
+      "colId": "name",
+      "displayCell": {
+        "x": 34,
+        "y": 140.1875,
+        "width": 200,
+        "height": 39,
+        "label": "display-cell"
+      },
+      "displayInner": {
+        "source": "data-field-mode",
+        "x": 46,
+        "y": 148.1875,
+        "width": 175,
+        "height": 23
+      },
+      "editEngaged": true,
+      "editSignal": "data-field-mode=edit",
+      "editCell": {
+        "x": 34,
+        "y": 140.1875,
+        "width": 200,
+        "height": 39,
+        "label": "edit-cell"
+      },
+      "editInner": {
+        "source": "data-field-mode",
+        "x": 34,
+        "y": 140.1875,
+        "width": 199,
+        "height": 39
+      },
+      "innerDelta": {
+        "x": -12,
+        "y": -8,
+        "width": 24,
+        "height": 16,
+        "right": 12,
+        "bottom": 8
+      }
+    },
+    {
+      "type": "number",
+      "colId": "qty",
+      "displayCell": {
+        "x": 234,
+        "y": 140.1875,
+        "width": 110,
+        "height": 39,
+        "label": "display-cell"
+      },
+      "displayInner": {
+        "source": "data-field-mode",
+        "x": 308,
+        "y": 148.1875,
+        "width": 23,
+        "height": 23
+      },
+      "editEngaged": true,
+      "editSignal": "data-field-mode=edit",
+      "editCell": {
+        "x": 234,
+        "y": 140.1875,
+        "width": 110,
+        "height": 39,
+        "label": "edit-cell"
+      },
+      "editInner": {
+        "source": "data-field-mode",
+        "x": 234,
+        "y": 140.1875,
+        "width": 109,
+        "height": 39
+      },
+      "innerDelta": {
+        "x": -74,
+        "y": -8,
+        "width": 86,
+        "height": 16,
+        "right": 12,
+        "bottom": 8
+      }
+    }
+  ]
+}

@@ -23,12 +23,13 @@ case "$TOOL" in Edit|Write|MultiEdit) ;; *) exit 0 ;; esac
 [ ! -f "$FILE_PATH" ] && exit 0
 
 VIOLATIONS=""
+FILE_HEAD3=$(sed -n '1,3p' "$FILE_PATH")
 
 # ── Contract (b) Placeholder vocabulary ───────────────────────────────────────
 # Scope: 所有 packages/design-system/src/components/*.tsx
 case "$FILE_PATH" in
   */packages/design-system/src/components/*.tsx)
-    if ! head -3 "$FILE_PATH" | grep -qE '//[[:space:]]*@placeholder-vocabulary-allow:'; then
+    if ! grep -qE '//[[:space:]]*@placeholder-vocabulary-allow:' <<<"$FILE_HEAD3"; then
       HITS=$(grep -nE 'emptyPlaceholder=\{(emptyText|searchEmpty|noResults|notFound)' "$FILE_PATH" 2>/dev/null)
       if [ -n "$HITS" ]; then
         VIOLATIONS="${VIOLATIONS}
@@ -46,18 +47,19 @@ esac
 # Scope:Combobox / Select / PeoplePicker only
 case "$FILE_PATH" in
   */packages/design-system/src/components/Combobox/*.tsx|*/packages/design-system/src/components/Select/*.tsx|*/packages/design-system/src/components/PeoplePicker/*.tsx)
-    if ! head -3 "$FILE_PATH" | grep -qE '//[[:space:]]*@renderer-symmetry-allow:'; then
-      DEFINES_RENDERER=$(grep -cE '(tagRenderer|selectedItemRenderer)\?:\s*\(' "$FILE_PATH" 2>/dev/null | head -1)
+    if ! grep -qE '//[[:space:]]*@renderer-symmetry-allow:' <<<"$FILE_HEAD3"; then
+      DEFINES_RENDERER=$(grep -cE '(tagRenderer|selectedItemRenderer)\?:\s*\(' "$FILE_PATH" 2>/dev/null)
       DEFINES_RENDERER=${DEFINES_RENDERER:-0}
       if [ "$DEFINES_RENDERER" -gt 0 ]; then
-        EDIT_HITS=$(grep -cE 'tagRenderer\(.*\)|selectedItemRenderer\(.*\)' "$FILE_PATH" 2>/dev/null | head -1)
+        EDIT_HITS=$(grep -cE 'tagRenderer\(.*\)|selectedItemRenderer\(.*\)' "$FILE_PATH" 2>/dev/null)
         EDIT_HITS=${EDIT_HITS:-0}
         DISPLAY_LINES=$(grep -nE "mode\s*=*\s*'display'|resolvedMode\s*==*\s*'display'" "$FILE_PATH" 2>/dev/null | cut -d: -f1)
         if [ "$EDIT_HITS" -gt 0 ] && [ -n "$DISPLAY_LINES" ]; then
           HAS_RENDERER_IN_DISPLAY=0
           for LN in $DISPLAY_LINES; do
             END=$((LN + 60))
-            if awk -v s="$LN" -v e="$END" 'NR>=s && NR<=e' "$FILE_PATH" | grep -qE 'tagRenderer|selectedItemRenderer'; then
+            DISPLAY_WINDOW=$(awk -v s="$LN" -v e="$END" 'NR>=s && NR<=e' "$FILE_PATH")
+            if grep -qE 'tagRenderer|selectedItemRenderer' <<<"$DISPLAY_WINDOW"; then
               HAS_RENDERER_IN_DISPLAY=1
               break
             fi
@@ -80,7 +82,7 @@ esac
 # Scope:Combobox / Select / PeoplePicker only
 case "$FILE_PATH" in
   */packages/design-system/src/components/Combobox/*.tsx|*/packages/design-system/src/components/PeoplePicker/*.tsx|*/packages/design-system/src/components/Select/*.tsx)
-    if ! head -3 "$FILE_PATH" | grep -qE '//[[:space:]]*@cell-metric-escape-allow:'; then
+    if ! grep -qE '//[[:space:]]*@cell-metric-escape-allow:' <<<"$FILE_HEAD3"; then
       HARDCODE_HITS=$(grep -nE 'tagAreaPaddingLeftPx=\{[0-9]+\}' "$FILE_PATH" 2>/dev/null)
       COND_NO_SURFACE=$(grep -nE 'tagAreaPaddingLeftPx=\{[^}]*\?[^}]*[0-9]+[^}]*\}' "$FILE_PATH" 2>/dev/null | grep -v "surface")
       WARN=""
@@ -114,7 +116,7 @@ esac
 case "$FILE_PATH" in
   *.stories.tsx) ;;
   */packages/design-system/src/components/Select/*.tsx|*/packages/design-system/src/components/Combobox/*.tsx|*/packages/design-system/src/components/Input/*.tsx|*/packages/design-system/src/components/NumberInput/*.tsx|*/packages/design-system/src/components/Textarea/*.tsx|*/packages/design-system/src/components/DatePicker/*.tsx|*/packages/design-system/src/components/TimePicker/*.tsx|*/packages/design-system/src/components/LinkInput/*.tsx|*/packages/design-system/src/components/PeoplePicker/*.tsx|*/packages/design-system/src/components/Field/*.tsx)
-    if ! head -3 "$FILE_PATH" | grep -qE '//[[:space:]]*@field-px-escape-allow:'; then
+    if ! grep -qE '//[[:space:]]*@field-px-escape-allow:' <<<"$FILE_HEAD3"; then
       FIELDPX_HITS=$(grep -nE "0\.75rem|(^|[^a-zA-Z0-9-])!?(px|pr)-3([^0-9.]|$)" "$FILE_PATH" 2>/dev/null \
         | grep -vE '^[0-9]+:[[:space:]]*(//|\*|/\*)' \
         | grep -vE 'px-\[var')
@@ -132,6 +134,6 @@ esac
 if [ -n "$VIOLATIONS" ]; then
   CTX="⚠️ Field controls shared contracts violation(consolidated check):${VIOLATIONS}"
   jq -n --arg ctx "$CTX" '{
-    hookSpecificOutput: { hookEventName: "PostToolUse", additionalContext: $ctx }
+    governanceContext: { hookEventName: "PostToolUse", message: $ctx }
   }'
 fi

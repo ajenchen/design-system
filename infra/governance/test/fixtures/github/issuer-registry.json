@@ -1,0 +1,17 @@
+{
+  "$schema": "../schemas/issuer-registry.schema.json",
+  "schemaVersion": 1,
+  "algorithm": "ed25519",
+  "issuers": [
+    {
+      "keyId": "fixture-ed25519",
+      "subject": "fixture-governance",
+      "publicKeySpki": "MCowBQYDK2VwAyEAk2uZrtL/IxPATYuuY8Y/MLunvpd6t132J3/c0EM83V8=",
+      "roles": ["apply-authorizer", "completion-attestor", "root-rotator"],
+      "status": "active",
+      "notBefore": "2020-01-01T00:00:00.000Z",
+      "notAfter": "2030-01-01T00:00:00.000Z",
+      "revokedAt": null
+    }
+  ]
+}

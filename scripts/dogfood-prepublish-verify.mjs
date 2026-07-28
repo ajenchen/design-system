@@ -35,7 +35,8 @@ function runCapture(cmd, opts = {}) {
   return execSync(cmd, { encoding: 'utf8', ...opts }).trim()
 }
 
-// Step 0: ds-canonical mirror drift gate (block publish if npm-shipped governance is stale vs .claude SSOT)
+// Step 0: canonical/provider projection drift gate (canonical ds-canonical sources own policy;
+// npm mirrors and provider homes are deterministic outputs only).
 console.log('=== Step 0: ds-canonical mirror drift check ===')
 try {
   run('node scripts/sync-ds-canonical.mjs --check', { cwd: REPO_ROOT, stdio: 'inherit' })
@@ -112,10 +113,11 @@ createRoot(document.getElementById('root')!).render(
 )
 `)
 
-// Step 4.5: verify ds-canonical + CLAUDE.md + spec.md ship
-console.log('=== Step 4.5: verify ds-canonical + CLAUDE.md ship ===')
+// Step 4.5: verify ds-canonical + scoped AGENTS/CLAUDE instructions + spec.md ship
+console.log('=== Step 4.5: verify ds-canonical + scoped AGENTS/CLAUDE instructions ship ===')
 const dsRoot = join(consumerDir, 'node_modules/@qijenchen/design-system')
 const canonicalChecks = [
+  ['AGENTS.md', 'scoped package AGENTS.md'],
   ['CLAUDE.md', 'CLAUDE.md'],
   ['ds-canonical/skills', 'ds-canonical/skills/'],
   ['ds-canonical/hooks', 'ds-canonical/hooks/'],
@@ -124,7 +126,6 @@ const canonicalChecks = [
   ['ds-canonical/commands', 'ds-canonical/commands/'],
   ['src/components/Button/button.spec.md', 'Button spec.md'],
   // C-prime fork 治理 corpus(fork 取得治理的命脈;漏 ship = fork 完全拿不到治理)
-  ['ds-canonical/fork/preamble.md', 'fork preamble(事前設計紀律注入源)'],
   ['ds-canonical/fork/manifest.json', 'fork manifest(dispatcher 清單)'],
   ['ds-canonical/fork/hooks', 'fork hook bodies(機械強制)'],
   ['ds-canonical/fork/launchers/fork-governance-dispatcher.sh', 'fork 接線骨架(sync-all 刷新源)'],

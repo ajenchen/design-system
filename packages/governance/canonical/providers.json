@@ -1,0 +1,455 @@
+{
+  "$schema": "./schemas/providers.schema.json",
+  "schemaVersion": 9,
+  "canonical": {
+    "roots": {
+      "contextForkAgents": "packages/design-system/ds-canonical/adapters/claude/agents",
+      "commands": "packages/design-system/ds-canonical/commands",
+      "hooks": "packages/design-system/ds-canonical/hooks",
+      "references": "packages/design-system/ds-canonical/references",
+      "rules": "packages/design-system/ds-canonical/rules",
+      "skills": "packages/design-system/ds-canonical/skills"
+    },
+    "hookRegistrations": "packages/design-system/ds-canonical/hooks/registrations.json",
+    "skillSemantics": "scripts/provider-skill-semantics.json",
+    "productSharedInstructionSource": "scripts/fork-role-sources/AGENTS.product.md",
+    "reviewSelectionPolicies": {
+      "highest-certified-independent-review-v1": {
+        "schemaVersion": 1,
+        "assuranceTierOrder": ["standard", "high", "maximum"],
+        "reasoningTierOrder": ["standard", "high", "maximum"],
+        "computeTierOrder": ["standard", "high", "maximum"],
+        "reviewClasses": {
+          "tier-0-governance": {
+            "assuranceTier": "maximum",
+            "reasoningTier": "maximum",
+            "computeTier": "maximum"
+          }
+        },
+        "eligibility": {
+          "independentProvider": true,
+          "independentContext": true,
+          "immutableTarget": true,
+          "identicalEvidence": true,
+          "completeEvidenceVisibility": true,
+          "certifiedCapability": true,
+          "policyAllowed": true,
+          "noSelfReview": true,
+          "failClosed": true
+        },
+        "ranking": [
+          "assurance-tier-desc",
+          "reasoning-tier-desc",
+          "compute-tier-desc",
+          "available-required-entitlement-route-first",
+          "provider-local-capability-rank-desc",
+          "provider-id-utf8-asc",
+          "review-profile-id-utf8-asc",
+          "model-release-id-utf8-asc"
+        ],
+        "costPolicy": "batch-or-stop-never-capability-downgrade",
+        "bindingPolicy": "freeze-exact-provider-profile-model-and-registry-digests-after-selection",
+        "unavailableOutcome": "REVIEW-BLOCKED"
+      }
+    },
+    "materializers": {
+      "instructionViews": {
+        "markdown-relative-at-import-v1": {
+          "engine": "markdown-relative-at-import-v1",
+          "ownershipPolicy": "provider-generated-projection",
+          "supplementPolicy": "optional"
+        },
+        "shared-instruction-v1": {
+          "engine": "shared-instruction-v1",
+          "ownershipPolicy": "common-authority-consumer",
+          "supplementPolicy": "forbidden"
+        }
+      },
+      "hookBaseTemplateContracts": {
+        "claude-permission-policy-v1": {
+          "engine": "claude-permission-policy-v1",
+          "source": "packages/design-system/ds-canonical/adapters/claude-settings-base.json",
+          "schema": "scripts/schemas/claude-permission-policy.schema.json"
+        },
+        "static-json-object-v1": {
+          "engine": "static-json-object-v1"
+        }
+      },
+      "hookViews": {
+        "claude-settings-json-v1": {
+          "engine": "json-hook-map-v1",
+          "hooksField": "hooks",
+          "descriptionField": null,
+          "mergeStrategy": "merge-hook-map-into-base-v1",
+          "baseTemplateContract": "claude-permission-policy-v1"
+        },
+        "command-hooks-json-v1": {
+          "engine": "json-hook-map-v1",
+          "hooksField": "hooks",
+          "descriptionField": "description",
+          "mergeStrategy": "replace-document-v1",
+          "baseTemplateContract": null
+        },
+        "portable-event-list-json-v1": {
+          "engine": "json-hook-event-list-v1",
+          "eventsField": "events",
+          "eventField": "event",
+          "groupsField": "groups",
+          "matcherField": "when",
+          "handlersField": "handlers",
+          "handlerArgvField": "argv",
+          "descriptionField": "description",
+          "mergeStrategy": "replace-document-v1",
+          "baseTemplateContract": null
+        }
+      },
+      "skillViews": {
+        "agent-skills-directory-v1": {
+          "engine": "skill-directory-v1",
+          "entryFile": "SKILL.md"
+        },
+        "markdown-workflows-directory-v1": {
+          "engine": "skill-directory-v1",
+          "entryFile": "WORKFLOW.md"
+        }
+      },
+      "treeViews": {
+        "closed-tree-copy-v1": {
+          "engine": "closed-tree-copy-v1",
+          "transformPolicies": ["byte-exact"]
+        }
+      }
+    },
+    "compatibilityProjections": {
+      "legacyClaudeInstruction": {
+        "schemaVersion": 1,
+        "providerId": "claude",
+        "discoveryCategories": [
+          {
+            "name": "agents",
+            "sourceRoot": "packages/design-system/ds-canonical/adapters/claude/agents",
+            "artifactRoot": "agents",
+            "destinationRoot": ".claude/agents",
+            "entries": []
+          },
+          {
+            "name": "commands",
+            "sourceRoot": "packages/design-system/ds-canonical/commands",
+            "artifactRoot": "commands",
+            "destinationRoot": ".claude/commands",
+            "entries": []
+          }
+        ],
+        "legacyProductTreeTombstones": [".claude/hooks"]
+      },
+      "legacyCodexCorpus": {
+        "schemaVersion": 1,
+        "providerId": "codex",
+        "hookArtifact": "codex/hooks.json",
+        "skillArtifactRoot": "codex/agents/skills"
+      },
+      "marketplacePluginTransport": {
+        "schemaVersion": 2,
+        "profileId": "claude-authority-full",
+        "pluginFullId": "design-system@qijenchen-ds",
+        "providerId": "claude",
+        "hookOutput": "hooks/hooks.json",
+        "aliasRegistry": "packages/governance/canonical/plugin-aliases.json",
+        "repositoryRole": "authority",
+        "governanceRole": "ds-author",
+        "projection": "full-canonical-registrations",
+        "targetRoleManifest": "packages/governance/canonical/manifest.json"
+      }
+    },
+    "reservedDiscovery": {
+      "providerRootNames": [".agents", ".claude", ".codex"],
+      "instructionNames": ["AGENTS.md", "CLAUDE.md"],
+      "instructionOverrideNames": ["AGENTS.local.md", "AGENTS.override.md", "CLAUDE.local.md", "CLAUDE.override.md"],
+      "configPaths": [".claude/settings.json", ".claude/settings.local.json", ".codex/config.toml", ".codex/hooks.json", ".mcp.json"],
+      "pluginRootNames": [".claude-plugin", ".codex-plugin"]
+    },
+    "retiredProviders": []
+  },
+  "providers": [
+    {
+      "id": "claude",
+      "displayName": "Claude Code",
+      "providerKind": "concrete-runtime",
+      "instructionEntry": "CLAUDE.md",
+      "sharedInstructionEntry": "AGENTS.md",
+      "skillDirectory": ".claude/skills",
+      "hookConfig": ".claude/settings.json",
+      "hookConfigFormat": "json",
+      "hookEntrypoint": "scripts/run-provider-hook.mjs",
+      "blockingExitCode": 2,
+      "capabilities": { "nativeHooks": true, "hookTrustRequired": false, "hardGateComplete": false, "hookEnforcement": "native-feedback-plus-ci" },
+      "runtime": {
+        "cli": {
+          "executable": "claude",
+          "localExecutable": "node_modules/.bin/claude",
+          "briefInvocationMarkers": ["-p", "--print"],
+          "discoveryMarkers": ["node_modules/.bin/claude", "command -v claude", "which claude"],
+          "replyArtifactPrefix": "claude-reply"
+        },
+        "transcript": {
+          "contract": "claude-transcript-jsonl-v2",
+          "stability": "tested-versioned",
+          "fixture": "packages/design-system/ds-canonical/hooks/tests/fixtures/transcripts/claude-transcript-jsonl-v2.jsonl",
+          "access": {
+            "strategy": "validated-jsonl-tail-v2",
+            "pathPolicy": "canonical-unique-regular-file-no-name-assumption",
+            "recordFormat": "json-lines",
+            "emptyState": "allowed-zero-byte",
+            "maximumRetainedRecordCount": 1200,
+            "maximumRecordBytes": 4194304,
+            "maximumMaterializedBytes": 16777216
+          }
+        },
+        "contextOutputTransport": "claude-hook-specific",
+        "stopDecisionTransport": "claude-decision-json",
+        "branchNamespace": "claude/",
+        "memorySyncScript": "scripts/sync-memory.mjs"
+      },
+      "normalization": {
+        "eventFields": ["hook_event_name", "event"],
+        "toolFields": ["tool_name", "tool"],
+        "pathFields": ["tool_input.file_path", "tool_input.path", "file_path", "path"],
+        "pathArrayFields": ["changed_paths", "tool_input.changed_paths", "changes", "tool_input.changes", "tool_input.edits", "tool_input.files"],
+        "writeTools": ["Edit", "Write", "MultiEdit", "apply_patch"],
+        "writeTransports": [
+          {
+            "id": "claude-edit-v1",
+            "rawTools": ["Edit"],
+            "engine": "exact-replace-v1",
+            "payloadFields": ["tool_input.file_path", "tool_input.old_string", "tool_input.new_string", "tool_input.replace_all"]
+          },
+          {
+            "id": "claude-multi-edit-v1",
+            "rawTools": ["MultiEdit"],
+            "engine": "exact-replace-list-v1",
+            "payloadFields": ["tool_input.file_path", "tool_input.edits", "old_string", "new_string", "replace_all"]
+          },
+          {
+            "id": "claude-write-v1",
+            "rawTools": ["Write"],
+            "engine": "full-file-v1",
+            "payloadFields": ["tool_input.file_path", "tool_input.content"]
+          }
+        ],
+        "eventAliases": { "beforewrite": "PreToolUse", "prewrite": "PreToolUse", "pretooluse": "PreToolUse", "afterwrite": "PostToolUse", "postwrite": "PostToolUse", "posttooluse": "PostToolUse", "sessionstart": "SessionStart", "userpromptsubmit": "UserPromptSubmit", "stop": "Stop" },
+        "toolAliases": { "apply_patch": "MultiEdit", "patch": "MultiEdit", "multiedit": "MultiEdit", "write_file": "Write", "write": "Write", "create_file": "Write", "edit_file": "Edit", "edit": "Edit", "replace": "Edit", "exec_command": "Bash", "shell_command": "Bash", "bash": "Bash" }
+      },
+      "adapter": {
+        "generate": true,
+        "repositoryInstructionSource": "packages/design-system/ds-canonical/adapters/claude-root-instructions.md",
+        "instructionView": { "materializerId": "markdown-relative-at-import-v1" },
+        "productInstructionSource": "scripts/fork-role-sources/CLAUDE.product.md",
+        "repositoryManagedTrees": { "contextForkAgents": ".claude/agents", "commands": ".claude/commands", "hooks": ".claude/hooks", "references": ".claude/references", "rules": ".claude/rules" },
+        "productManagedTrees": {},
+        "skillView": { "directory": ".claude/skills", "materializerId": "agent-skills-directory-v1" },
+        "hookView": {
+          "output": ".claude/settings.json",
+          "materializerId": "claude-settings-json-v1",
+          "settingsTemplate": "packages/design-system/ds-canonical/adapters/claude-settings-base.json",
+          "supportedEvents": ["PreToolUse", "PostToolUse", "Stop", "SessionStart", "UserPromptSubmit"],
+          "eventBindings": {
+            "PreToolUse": "PreToolUse",
+            "PostToolUse": "PostToolUse",
+            "SessionStart": "SessionStart",
+            "Stop": "Stop",
+            "UserPromptSubmit": "UserPromptSubmit"
+          },
+          "matcherAliases": {},
+          "workingDirectoryPolicy": "repository-root"
+        },
+        "environmentMap": {
+          "GOVERNANCE_PROJECT_DIR": "CLAUDE_PROJECT_DIR",
+          "GOVERNANCE_SESSION_ID": "CLAUDE_SESSION_ID",
+          "GOVERNANCE_TRANSCRIPT_PATH": "CLAUDE_TRANSCRIPT_PATH",
+          "GOVERNANCE_PLUGIN_ROOT": "CLAUDE_PLUGIN_ROOT",
+          "GOVERNANCE_TOOL_INPUT": "CLAUDE_TOOL_INPUT",
+          "GOVERNANCE_BYPASS_SOLO_WORKFLOW": "CLAUDE_BYPASS_SOLO_WORKFLOW",
+          "GOVERNANCE_BYPASS_DS_ANCHOR": "CLAUDE_BYPASS_DS_ANCHOR",
+          "GOVERNANCE_BYPASS_MAIN_WORKBENCH": "CLAUDE_BYPASS_MAIN_WORKBENCH",
+          "GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT": "CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT",
+          "GOVERNANCE_BYPASS_CHROME_HEADER_AVATAR": "CLAUDE_BYPASS_CHROME_HEADER_AVATAR",
+          "GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP": "CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP"
+        },
+        "skillBindings": {
+          "codex-collab": { "self": "claude", "selectionPolicy": "highest-certified-independent-review-v1", "reviewClass": "tier-0-governance", "transport": "scripts/run-model-deep-audit.mjs", "invocation": { "strategy": "main-context" } },
+          "deep-audit-cross-codex": { "self": "claude", "selectionPolicy": "highest-certified-independent-review-v1", "reviewClass": "tier-0-governance", "transport": "content-addressed-model-broker-exchange-v1", "invocation": { "strategy": "main-context" }, "certificationContract": "exact-provider-runtime-surface-role-target-v1" },
+          "canonical-reviewer": { "self": "claude", "selectionPolicy": "highest-certified-independent-review-v1", "reviewClass": "tier-0-governance", "transport": "external-or-orchestrator", "invocation": { "strategy": "native-context-fork", "context": "fork", "agent": "canonical-reviewer" } },
+          "independent-review": { "self": "claude", "selectionPolicy": "highest-certified-independent-review-v1", "reviewClass": "tier-0-governance", "transport": "content-addressed-model-broker-exchange-v1", "invocation": { "strategy": "main-context" }, "certificationContract": "exact-provider-runtime-surface-role-target-v1" }
+        },
+        "skillAliases": [],
+        "discovery": {
+          "providerRootNames": [".claude"],
+          "instructionNames": ["CLAUDE.md"],
+          "instructionOverrideNames": ["CLAUDE.local.md", "CLAUDE.override.md"],
+          "configPaths": [".claude/settings.json", ".claude/settings.local.json", ".mcp.json"],
+          "pluginRootNames": [".claude-plugin"]
+        }
+      }
+    },
+    {
+      "id": "codex",
+      "displayName": "Codex",
+      "providerKind": "concrete-runtime",
+      "instructionEntry": "AGENTS.md",
+      "sharedInstructionEntry": "AGENTS.md",
+      "skillDirectory": ".agents/skills",
+      "hookConfig": ".codex/hooks.json",
+      "hookConfigFormat": "json",
+      "hookEntrypoint": "scripts/run-provider-hook.mjs",
+      "blockingExitCode": 2,
+      "capabilities": { "nativeHooks": true, "hookTrustRequired": true, "hardGateComplete": false, "hookEnforcement": "native-feedback-plus-ci" },
+      "runtime": {
+        "cli": {
+          "executable": "codex",
+          "localExecutable": "node_modules/.bin/codex",
+          "briefInvocationMarkers": ["exec", "review"],
+          "discoveryMarkers": ["node_modules/.bin/codex", "command -v codex", "which codex", ".codex/auth.json"],
+          "replyArtifactPrefix": "codex-reply"
+        },
+        "transcript": {
+          "contract": null,
+          "stability": "unstable-opaque",
+          "fixture": null,
+          "access": null
+        },
+        "contextOutputTransport": "system-message",
+        "stopDecisionTransport": "continue-json",
+        "branchNamespace": "codex/",
+        "memorySyncScript": null
+      },
+      "normalization": {
+        "eventFields": ["hook_event_name", "event", "event_name"],
+        "toolFields": ["tool_name", "tool", "operation", "action"],
+        "pathFields": ["tool_input.file_path", "tool_input.path", "file_path", "path"],
+        "pathArrayFields": ["changed_paths", "tool_input.changed_paths", "changes", "tool_input.changes", "tool_input.edits", "tool_input.files"],
+        "writeTools": ["apply_patch", "write_file", "edit_file", "Edit", "Write", "MultiEdit"],
+        "writeTransports": [
+          {
+            "id": "codex-apply-patch-v1",
+            "rawTools": ["apply_patch"],
+            "engine": "codex-apply-patch-v1",
+            "payloadFields": ["tool_input.command"]
+          }
+        ],
+        "eventAliases": { "beforewrite": "PreToolUse", "prewrite": "PreToolUse", "pretooluse": "PreToolUse", "afterwrite": "PostToolUse", "postwrite": "PostToolUse", "posttooluse": "PostToolUse", "sessionstart": "SessionStart", "userpromptsubmit": "UserPromptSubmit", "stop": "Stop" },
+        "toolAliases": { "apply_patch": "MultiEdit", "patch": "MultiEdit", "multiedit": "MultiEdit", "write_file": "Write", "write": "Write", "create_file": "Write", "edit_file": "Edit", "edit": "Edit", "replace": "Edit", "exec_command": "Bash", "shell_command": "Bash", "bash": "Bash" }
+      },
+      "adapter": {
+        "generate": true,
+        "repositoryInstructionSource": null,
+        "instructionView": { "materializerId": "shared-instruction-v1" },
+        "productInstructionSource": "scripts/fork-role-sources/AGENTS.product.md",
+        "repositoryManagedTrees": {},
+        "productManagedTrees": {},
+        "skillView": { "directory": ".agents/skills", "materializerId": "agent-skills-directory-v1" },
+        "hookView": {
+          "output": ".codex/hooks.json",
+          "materializerId": "command-hooks-json-v1",
+          "settingsTemplate": null,
+          "supportedEvents": ["PreToolUse", "PostToolUse", "Stop", "SessionStart", "UserPromptSubmit"],
+          "eventBindings": {
+            "PreToolUse": "PreToolUse",
+            "PostToolUse": "PostToolUse",
+            "SessionStart": "SessionStart",
+            "Stop": "Stop",
+            "UserPromptSubmit": "UserPromptSubmit"
+          },
+          "matcherAliases": {
+            "Edit": ["Edit", "edit_file", "apply_patch"],
+            "Write": ["Write", "write_file", "apply_patch"],
+            "MultiEdit": ["MultiEdit", "apply_patch"],
+            "Bash": ["Bash", "exec_command", "shell_command"]
+          },
+          "workingDirectoryPolicy": "repository-root"
+        },
+        "environmentMap": {},
+        "skillBindings": {
+          "codex-collab": { "self": "codex", "selectionPolicy": "highest-certified-independent-review-v1", "reviewClass": "tier-0-governance", "transport": "external-or-orchestrator", "invocation": { "strategy": "main-context" } },
+          "deep-audit-cross-codex": { "self": "codex", "selectionPolicy": "highest-certified-independent-review-v1", "reviewClass": "tier-0-governance", "transport": "content-addressed-model-broker-exchange-v1", "invocation": { "strategy": "main-context" }, "certificationContract": "exact-provider-runtime-surface-role-target-v1" },
+          "canonical-reviewer": { "self": "codex", "selectionPolicy": "highest-certified-independent-review-v1", "reviewClass": "tier-0-governance", "transport": "external-or-orchestrator", "invocation": { "strategy": "main-context" } },
+          "independent-review": { "self": "codex", "selectionPolicy": "highest-certified-independent-review-v1", "reviewClass": "tier-0-governance", "transport": "content-addressed-model-broker-exchange-v1", "invocation": { "strategy": "main-context" }, "certificationContract": "exact-provider-runtime-surface-role-target-v1" }
+        },
+        "skillAliases": [],
+        "discovery": {
+          "providerRootNames": [".agents", ".codex"],
+          "instructionNames": ["AGENTS.md"],
+          "instructionOverrideNames": ["AGENTS.local.md", "AGENTS.override.md"],
+          "configPaths": [".codex/config.toml", ".codex/hooks.json"],
+          "pluginRootNames": [".codex-plugin"]
+        }
+      }
+    },
+    {
+      "id": "generic",
+      "displayName": "Generic automation",
+      "providerKind": "headless-protocol",
+      "instructionEntry": "AGENTS.md",
+      "sharedInstructionEntry": "AGENTS.md",
+      "skillDirectory": ".agents/skills",
+      "hookConfig": null,
+      "hookConfigFormat": null,
+      "hookEntrypoint": null,
+      "blockingExitCode": 2,
+      "capabilities": { "nativeHooks": false, "hookTrustRequired": false, "hardGateComplete": false, "hookEnforcement": "ci-only" },
+      "runtime": null,
+      "normalization": {
+        "eventFields": ["event"],
+        "toolFields": ["operation", "tool"],
+        "pathFields": ["path", "file_path"],
+        "pathArrayFields": ["paths", "changed_paths"],
+        "writeTools": ["write", "edit", "apply_patch"],
+        "writeTransports": [
+          {
+            "id": "generic-edit-v1",
+            "rawTools": ["edit"],
+            "engine": "exact-replace-v1",
+            "payloadFields": ["path", "old_content", "new_content", "replace_all"]
+          },
+          {
+            "id": "generic-unified-diff-v1",
+            "rawTools": ["apply_patch"],
+            "engine": "unified-diff-v1",
+            "payloadFields": ["diff"]
+          },
+          {
+            "id": "generic-write-v1",
+            "rawTools": ["write"],
+            "engine": "full-file-v1",
+            "payloadFields": ["path", "content"]
+          }
+        ],
+        "eventAliases": { "beforewrite": "PreToolUse", "afterwrite": "PostToolUse" },
+        "toolAliases": { "write": "Write", "edit": "Edit", "apply_patch": "MultiEdit" }
+      },
+      "adapter": {
+        "generate": false,
+        "repositoryInstructionSource": null,
+        "instructionView": { "materializerId": "shared-instruction-v1" },
+        "productInstructionSource": null,
+        "repositoryManagedTrees": {},
+        "productManagedTrees": {},
+        "skillView": null,
+        "hookView": null,
+        "environmentMap": {},
+        "skillBindings": {},
+        "skillAliases": [],
+        "discovery": {
+          "providerRootNames": [".agents"],
+          "instructionNames": ["AGENTS.md"],
+          "instructionOverrideNames": ["AGENTS.local.md", "AGENTS.override.md"],
+          "configPaths": [],
+          "pluginRootNames": []
+        },
+        "exclusions": [
+          { "scope": "native-hooks", "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE", "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative." },
+          { "scope": "provider-skills", "reasonCode": "NO_DISCOVERY_SURFACE_DECLARED", "detail": "This abstract provider has no independent skill discovery surface; a concrete provider must register one before generation." }
+        ]
+      }
+    }
+  ]
+}

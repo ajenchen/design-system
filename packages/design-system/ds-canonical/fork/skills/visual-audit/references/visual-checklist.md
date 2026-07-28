@@ -5,7 +5,7 @@
 **通用量測原則**:
 - 用 image reading 取 screenshot 像素座標(左上為原點 0,0;單位 px)
 - 同一面向的 4 個量測點必須用「同一張 screenshot 的同一縮放比例」;混不同 screenshot 比例會誤判
-- 容器寬度 / viewport / density / theme 必先向 user 確認(SKILL.md Preconditions 項 3)
+- 容器寬度 / viewport / density / theme 必綁定同一 Layer-A capture manifest；不得靠猜測，也不得把可由 registry/capture 解析的工程工作轉問 user
 - 合格標準若為 token → 對照「該元件 spec 宣告的 token 值」或 `tokens/*/` primitive;不是「看起來接近就算對」
 - **容差規範**:px 量測允許 ±1px(螢幕截圖 sub-pixel rounding);ratio 允許 ±5%;明文標「精確」的項目(如對稱)不給容差
 
@@ -60,7 +60,7 @@
 
 ## 3. 水平 gap 實際值 == gap token 宣告值(hover bg 不可吃掉)
 
-**Canonical source**: node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md `# 同 flex 列的互動 slot 幾何鐵律`(gap 鐵律)
+**Canonical source**:`node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md` `# 同 flex 列的互動 slot 幾何鐵律`(gap 鐵律)
 
 **怎麼量**:
 1. 量同一 flex row 相鄰兩 interactive slot 的 **box 邊** 之間距離(不是「視覺中心距離」,是右邊 slot 左緣 - 左邊 slot 右緣)
@@ -70,7 +70,7 @@
 
 **合格標準**:
 - default + hover 兩態的 gap 都 == 宣告值(±1px) → PASS
-- hover 狀態 gap 被 bg overflow 吃掉 → FAIL(違反 node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md「同 flex 列幾何鐵律」)
+- hover 狀態 gap 被 bg overflow 吃掉 → FAIL(違反 `node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md`「同 flex 列幾何鐵律」)
 
 **FAIL 範例**:FileItem 2026-04-19 bug,Button hover-bg 24px 超出 16px box,`gap-2`(8px)實際剩 ~4px
 
@@ -98,7 +98,7 @@
 
 **FAIL 範例**:Carousel prev/next 箭頭覆蓋 carousel item content;Badge 疊 Button 距離離譜用硬寫 px
 
-**對應規則**:對應元件 spec;`node_modules/@qijenchen/design-system/ds-canonical/rules/ui-development.md`「元件 Props 命名」「常用 icon canonical」(若箭頭用錯 icon);`node_modules/@qijenchen/design-system/ds-canonical/rules/ui-development.md`「建立 UI 前必讀」 overlay-surface pattern
+**對應規則**:對應元件 spec;`node_modules/@qijenchen/design-system/ds-canonical/rules/ui-development.md`「元件 Props 命名」「常用 icon canonical」(若箭頭用錯 icon);同檔「建立 UI 前必讀」 overlay-surface pattern
 
 ---
 
@@ -181,7 +181,7 @@
 
 ## 9. 跨 OS 一致 scrollbar
 
-**Canonical source**: `node_modules/@qijenchen/design-system/ds-canonical/rules/ui-development.md`「建立 UI 前必讀」 「overflow 使用三規則」;`components/ScrollArea/`
+**Canonical source**:`node_modules/@qijenchen/design-system/ds-canonical/rules/ui-development.md`「建立 UI 前必讀」 「overflow 使用三規則」;`components/ScrollArea/`
 
 **怎麼量**:
 1. 找 screenshot 內的 scrollable area
@@ -292,6 +292,6 @@
 ## 補充:如何處理「checklist 沒涵蓋但視覺上怪」的情況
 
 - 記為 `額外觀察`,附 screenshot 座標 + 描述(1-2 句)
-- 交 user 決定是否升級為 checklist 項目
+- 依 shared governance authority classifier 路由：純機械 coverage／治理補強由 P2E 自動處理；只有改變產品／UI／UX SSOT 且仍有真取捨才交 P2H 決定是否升級
 - **不直接寫成 FAIL**(checklist 是 SSOT,擴項需正式流程)
 - 若同類觀察累積 3+ 次跨元件出現 → 建議升級為第 14 項 checklist 並更新本 reference

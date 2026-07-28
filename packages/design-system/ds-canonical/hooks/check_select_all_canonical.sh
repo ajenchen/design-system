@@ -28,7 +28,7 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.conte
 # 本 SSOT primitive 檔自己不查
 [[ "$FILE_PATH" == *multi-select-ordering.ts ]] && exit 0
 # Allowlist
-echo "$NEW_CONTENT" | grep -q "@select-all-canonical-allow" && exit 0
+grep -q "@select-all-canonical-allow" <<<"$NEW_CONTENT" && exit 0
 
 # Detect Select-All-like pattern:
 #   - function name contains SelectAll / CheckAll

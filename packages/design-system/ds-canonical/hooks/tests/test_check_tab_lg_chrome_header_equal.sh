@@ -1,141 +1,223 @@
 #!/bin/bash
-# Tests for check_tab_lg_chrome_header_equal.sh
-#
-# Hook (PreToolUse Edit/Write/MultiEdit):編輯
-#   packages/design-system/src/tokens/uiSize/uiSize.css OR src/globals.css
-# 時 assert `--tab-height-lg`(uiSize)與 `--chrome-header-height`(globals)兩 token
-# md/lg 兩 context 都像素相等(rem 值字串等)。
-# 不等 → exit 2 + stderr「🚨 TAB_LG vs CHROME_HEADER_HEIGHT EQUAL BLOCKER」。
-# Out-of-scope file / 非 Edit|Write|MultiEdit tool → silent exit 0。
-#
-# Hook 從自身路徑 cd ../.. 算 PROJECT_ROOT 再 grep 兩 CSS 檔。
-# 測試策略:sandbox temp dir 復刻 .claude/hooks + token css 結構,把 hook 複製進去
-# 跑 — 控制 md/lg 兩值即可造 PASS / FAIL case。
+# Proposed-state regression tests for header-canonical W3 token equality.
 
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_HOOK="$SCRIPT_DIR/../lib/_tab_lg_chrome_header_equal.sh"
 LOG_FIRE_SH="$SCRIPT_DIR/../_log-fire.sh"
-
-if [ ! -f "$SRC_HOOK" ]; then echo "FATAL: hook not found: $SRC_HOOK"; exit 1; fi
+TMPROOT=$(mktemp -d)
+trap 'rm -rf "$TMPROOT"' EXIT
 
 PASS=0
 FAIL=0
 FAILED_TESTS=""
 
-TMPROOT=$(mktemp -d)
-trap 'rm -rf "$TMPROOT"' EXIT
-
-# Setup sandbox: hook 放 .claude/hooks/lib/(對齊 production)。2026-06-01 #18 把 hook 改成
-# `cd $0/../../..` 算 PROJECT_ROOT(因它在 lib/、被 dispatcher 以 $0=lib 路徑呼叫,需 3 層上溯)。
-# test sandbox 必同放 lib/ 深度,否則 `../../..` 多上溯一層 → grep 找不到 CSS → 假 fail(2026-06-02 修)。
-mkdir -p "$TMPROOT/.claude/hooks/lib"
-mkdir -p "$TMPROOT/packages/design-system/src/tokens/uiSize"
-mkdir -p "$TMPROOT/src"
+mkdir -p "$TMPROOT/.claude/hooks/lib" "$TMPROOT/packages/design-system/src/tokens/uiSize" "$TMPROOT/src"
 cp "$SRC_HOOK" "$TMPROOT/.claude/hooks/lib/_tab_lg_chrome_header_equal.sh"
-chmod +x "$TMPROOT/.claude/hooks/lib/_tab_lg_chrome_header_equal.sh"
-# _log-fire.sh shim(hook source `$(dirname $0)/../_log-fire.sh` = .claude/hooks/_log-fire.sh)
 cp "$LOG_FIRE_SH" "$TMPROOT/.claude/hooks/_log-fire.sh" 2>/dev/null || true
+chmod +x "$TMPROOT/.claude/hooks/lib/_tab_lg_chrome_header_equal.sh"
 
-SANDBOX_HOOK="$TMPROOT/.claude/hooks/lib/_tab_lg_chrome_header_equal.sh"
-UISIZE_CSS="$TMPROOT/packages/design-system/src/tokens/uiSize/uiSize.css"
+HOOK="$TMPROOT/.claude/hooks/lib/_tab_lg_chrome_header_equal.sh"
+UISIZE_REL="packages/design-system/src/tokens/uiSize/uiSize.css"
+UISIZE_CSS="$TMPROOT/$UISIZE_REL"
 GLOBALS_CSS="$TMPROOT/src/globals.css"
 
-write_tokens() {
-  # args: tab_lg_md tab_lg_lg ch_md ch_lg
-  # 2026-06-02 修:both token 寫進 uiSize.css —— #18 後 hook 從 uiSize.css 讀 chrome-header
-  # (globals.css 是 22 行 aggregator,token 已搬走,deep-audit Decision 1)。原 test 把
-  # chrome-header 寫 globals.css → hook grep uiSize.css 空值 → set -e 下 exit 1 假 fail。
-  cat > "$UISIZE_CSS" <<EOF
-:root {
-  --tab-height-lg: ${1}rem;
-  --chrome-header-height: ${3}rem;
+token_content() {
+  local tab_root="$1" tab_lg="$2" tab_md="$3"
+  local chrome_root="$4" chrome_lg="$5" chrome_md="$6"
+  printf '%s\n' \
+    ':root {' \
+    "  --tab-height-lg: ${tab_root}rem;" \
+    "  --chrome-header-height: ${chrome_root}rem;" \
+    '}' \
+    '[data-ui-size="lg"],' \
+    '[data-density="lg"] {' \
+    "  --tab-height-lg: ${tab_lg}rem;" \
+    "  --chrome-header-height: ${chrome_lg}rem;" \
+    '}' \
+    '[data-ui-size="md"],' \
+    '[data-density="md"] {' \
+    "  --tab-height-lg: ${tab_md}rem;" \
+    "  --chrome-header-height: ${chrome_md}rem;" \
+    '}'
 }
-[data-density="lg"] {
-  --tab-height-lg: ${2}rem;
-  --chrome-header-height: ${4}rem;
-}
-EOF
-  cat > "$GLOBALS_CSS" <<EOF
-/* aggregator — chrome-header-height 已搬至 uiSize.css(deep-audit Decision 1);此檔僅為 hook trigger-path 測試用 */
-:root {}
-EOF
+
+write_tokens_at() {
+  local root="$1"
+  shift
+  mkdir -p "$root/packages/design-system/src/tokens/uiSize" "$root/src"
+  token_content "$@" >"$root/$UISIZE_REL"
+  printf '%s\n' '/* token aggregator trigger */' ':root {}' >"$root/src/globals.css"
 }
 
 run_hook() {
-  local file_path="$1"
-  local tool="${2:-Edit}"
+  local file_path="$1" tool="$2" project_root="$3" trust_mode="$4"
+  local state_path="${5:-}" proposed_content="${6:-}" state_kind="${7:-text}"
   local payload
-  payload=$(jq -n --arg fp "$file_path" --arg tn "$tool" \
-    '{tool_name: $tn, tool_input: {file_path: $fp, new_string: ""}}')
-  STDOUT=$(mktemp); STDERR=$(mktemp)
+  case "$trust_mode" in
+    yes)
+      if [ "$state_kind" = "text" ]; then
+        payload=$(jq -n \
+          --arg fp "$file_path" --arg tool "$tool" --arg sp "$state_path" --arg content "$proposed_content" \
+          '{tool_name:$tool,tool_input:{file_path:$fp,new_string:"raw-partial-must-not-win",governance_write_state:{schemaVersion:1,path:$sp,kind:"text",content:$content}}}')
+      else
+        payload=$(jq -n \
+          --arg fp "$file_path" --arg tool "$tool" --arg sp "$state_path" --arg kind "$state_kind" \
+          '{tool_name:$tool,tool_input:{file_path:$fp,governance_write_state:{schemaVersion:1,path:$sp,kind:$kind}}}')
+      fi
+      ;;
+    missing)
+      payload=$(jq -n --arg fp "$file_path" --arg tool "$tool" \
+        '{tool_name:$tool,tool_input:{file_path:$fp}}')
+      ;;
+    malformed)
+      payload=$(jq -n --arg fp "$file_path" --arg tool "$tool" \
+        '{tool_name:$tool,tool_input:{file_path:$fp,governance_write_state:{schemaVersion:1,path:7,kind:"text",content:false}}}')
+      ;;
+    none)
+      payload=$(jq -n --arg fp "$file_path" --arg tool "$tool" \
+        '{tool_name:$tool,tool_input:{file_path:$fp}}')
+      ;;
+  esac
+
+  STDOUT_FILE=$(mktemp)
+  STDERR_FILE=$(mktemp)
   set +e
-  printf '%s' "$payload" | bash "$SANDBOX_HOOK" >"$STDOUT" 2>"$STDERR"
+  if [ "$trust_mode" = "none" ]; then
+    printf '%s' "$payload" \
+      | env -u GOVERNANCE_WRITE_STATE_TRUST GOVERNANCE_PROJECT_DIR="$project_root" \
+          bash "$HOOK" >"$STDOUT_FILE" 2>"$STDERR_FILE"
+  else
+    printf '%s' "$payload" \
+      | GOVERNANCE_WRITE_STATE_TRUST=runner-v1 GOVERNANCE_PROJECT_DIR="$project_root" \
+          bash "$HOOK" >"$STDOUT_FILE" 2>"$STDERR_FILE"
+  fi
   EXIT=$?
   set -e
-  STDERR_TEXT=$(cat "$STDERR")
-  rm -f "$STDOUT" "$STDERR"
+  STDOUT_TEXT=$(cat "$STDOUT_FILE")
+  STDERR_TEXT=$(cat "$STDERR_FILE")
+  rm -f "$STDOUT_FILE" "$STDERR_FILE"
 }
 
 expect_pass_silent() {
   local name="$1"
-  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ]; then
-    echo "  PASS  $name"; PASS=$((PASS+1))
+  if [ "$EXIT" -eq 0 ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ]; then
+    PASS=$((PASS + 1)); echo "  PASS  $name"
   else
-    echo "  FAIL  $name (expected silent, exit=$EXIT, stderr non-empty=$([ -n "$STDERR_TEXT" ] && echo yes))"
-    echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
-    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+    FAIL=$((FAIL + 1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+    echo "  FAIL  $name (exit=$EXIT, stdout=${#STDOUT_TEXT}, stderr=${#STDERR_TEXT})"
+    printf '%s\n' "$STDERR_TEXT" | sed 's/^/    /'
   fi
 }
 
 expect_block() {
-  local name="$1"; local needle="$2"
-  if [ "$EXIT" = "2" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
-    echo "  PASS  $name"; PASS=$((PASS+1))
+  local name="$1" needle="$2"
+  if [ "$EXIT" -eq 2 ] && [ -z "$STDOUT_TEXT" ] && [ -n "$STDERR_TEXT" ] \
+    && printf '%s' "$STDERR_TEXT" | grep -qF "$needle"; then
+    PASS=$((PASS + 1)); echo "  PASS  $name"
   else
-    echo "  FAIL  $name (expected exit 2 with '$needle', got exit $EXIT)"
-    echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
-    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+    FAIL=$((FAIL + 1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+    echo "  FAIL  $name (expected stderr-only rc2 + '$needle'; got rc=$EXIT)"
+    printf '%s\n' "$STDERR_TEXT" | sed 's/^/    /'
   fi
 }
 
-echo "=== check_tab_lg_chrome_header_equal tests ==="
+expect_integrity() {
+  local name="$1" needle="$2"
+  if [ "$EXIT" -eq 70 ] && [ -z "$STDOUT_TEXT" ] && [ -n "$STDERR_TEXT" ] \
+    && printf '%s' "$STDERR_TEXT" | grep -qF "$needle"; then
+    PASS=$((PASS + 1)); echo "  PASS  $name"
+  else
+    FAIL=$((FAIL + 1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+    echo "  FAIL  $name (expected stderr-only rc70 + '$needle'; got rc=$EXIT)"
+    printf '%s\n' "$STDERR_TEXT" | sed 's/^/    /'
+  fi
+}
 
-# 1. md + lg both equal → silent pass
-write_tokens "3" "3.5" "3" "3.5"
-run_hook "$UISIZE_CSS" "Edit"
-expect_pass_silent "1. md=3rem lg=3.5rem both equal → silent"
+echo "=== check_tab_lg_chrome_header_equal proposed-state tests ==="
 
-# 2. md mismatch (uiSize 3rem vs globals 2.75rem) → BLOCK
-write_tokens "3" "3.5" "2.75" "3.5"
-run_hook "$UISIZE_CSS" "Edit"
-expect_block "2. md mismatch (3 vs 2.75) → BLOCK" "TAB_LG vs CHROME_HEADER_HEIGHT EQUAL BLOCKER"
+write_tokens_at "$TMPROOT" 3 3.5 3 3 3.5 3
+CLEAN=$(token_content 3 3.5 3 3 3.5 3)
+run_hook "$UISIZE_CSS" Write "$TMPROOT" yes "$UISIZE_REL" "$CLEAN"
+expect_pass_silent "1. all root/lg/md-reset pairs equal → silent"
 
-# 3. lg mismatch (uiSize 3.5rem vs globals 4rem) → BLOCK
-write_tokens "3" "3.5" "3" "4"
-run_hook "$GLOBALS_CSS" "Write"
-expect_block "3. lg mismatch (3.5 vs 4) → BLOCK" "lg: --tab-height-lg=3.5 rem ≠ --chrome-header-height=4 rem"
+ROOT_DRIFT=$(token_content 3 3.5 3 2.75 3.5 3)
+run_hook "$UISIZE_CSS" Write "$TMPROOT" yes "$UISIZE_REL" "$ROOT_DRIFT"
+expect_block "2. proposed Write root mismatch blocks before disk write" "root: --tab-height-lg=3 rem ≠ --chrome-header-height=2.75 rem"
 
-# 4. out-of-scope file → silent pass (even if tokens drift)
-write_tokens "3" "3.5" "9" "9"
-run_hook "$TMPROOT/some/random/file.tsx" "Edit"
-expect_pass_silent "4. out-of-scope file → silent"
+LG_DRIFT=$(token_content 3 3.5 3 3 4 3)
+run_hook "$UISIZE_CSS" Edit "$TMPROOT" yes "$UISIZE_REL" "$LG_DRIFT"
+expect_block "3. proposed Edit lg mismatch blocks" "lg: --tab-height-lg=3.5 rem ≠ --chrome-header-height=4 rem"
 
-# 5. non-Edit tool (Read) → silent pass
-write_tokens "3" "3.5" "9" "9"
-run_hook "$UISIZE_CSS" "Read"
-expect_pass_silent "5. non-Edit tool → silent"
+MD_DRIFT=$(token_content 3 3.5 3 3 3.5 2.5)
+run_hook "$UISIZE_CSS" MultiEdit "$TMPROOT" yes "$UISIZE_REL" "$MD_DRIFT"
+expect_block "4. proposed MultiEdit md-reset mismatch blocks" "md-reset: --tab-height-lg=3 rem ≠ --chrome-header-height=2.5 rem"
 
-# 6. MultiEdit on globals.css with matched values → silent pass
-write_tokens "3" "3.5" "3" "3.5"
-run_hook "$GLOBALS_CSS" "MultiEdit"
-expect_pass_silent "6. MultiEdit on globals.css matched → silent"
+write_tokens_at "$TMPROOT" 9 9 9 8 8 8
+run_hook "$UISIZE_CSS" Edit "$TMPROOT" yes "$UISIZE_REL" "$CLEAN"
+expect_pass_silent "5. trusted full proposed state wins over stale drifting disk"
 
-echo ""
-echo "=== Summary ==="
+write_tokens_at "$TMPROOT" 3 3.5 3 3 3.5 3
+run_hook "$GLOBALS_CSS" Edit "$TMPROOT" yes "src/globals.css" '/* proposed globals */'
+expect_pass_silent "6. globals mutation safely reads unchanged canonical uiSize"
+
+run_hook "$UISIZE_CSS" Write "$TMPROOT" missing
+expect_integrity "7. runner trust marker without state is integrity failure" "trusted proposed write state 缺失或 malformed"
+
+run_hook "$UISIZE_CSS" Write "$TMPROOT" malformed
+expect_integrity "8. malformed trusted state is integrity failure" "trusted proposed write state 缺失或 malformed"
+
+run_hook "$UISIZE_CSS" Write "$TMPROOT" yes "src/not-uiSize.css" "$CLEAN"
+expect_integrity "9. trusted state path mismatch is integrity failure" "與 hook target 不相符"
+
+TOO_FEW="${CLEAN/  --chrome-header-height: 3.5rem;/}"
+run_hook "$UISIZE_CSS" Write "$TMPROOT" yes "$UISIZE_REL" "$TOO_FEW"
+expect_integrity "10. missing declaration is integrity failure" "extraction 不完整、重複或 scope/order"
+
+TOO_MANY=$(printf '%s\n%s\n' "$CLEAN" ':root { --tab-height-lg: 3rem; }')
+run_hook "$UISIZE_CSS" Write "$TMPROOT" yes "$UISIZE_REL" "$TOO_MANY"
+expect_integrity "11. hidden inline duplicate declaration is integrity failure" "extraction 不完整、重複或 scope/order"
+
+MALFORMED_DECIMAL="${CLEAN/  --tab-height-lg: 3rem;/  --tab-height-lg: .3rem;}"
+run_hook "$UISIZE_CSS" Write "$TMPROOT" yes "$UISIZE_REL" "$MALFORMED_DECIMAL"
+expect_integrity "12. non-strict decimal syntax is integrity failure" "scope、順序或 decimal rem syntax"
+
+WRONG_ORDER=$(printf '%s\n' \
+  ':root {' \
+  '  --chrome-header-height: 3rem;' \
+  '  --tab-height-lg: 3rem;' \
+  '}' \
+  '[data-ui-size="lg"],' \
+  '[data-density="lg"] {' \
+  '  --tab-height-lg: 3.5rem;' \
+  '  --chrome-header-height: 3.5rem;' \
+  '}' \
+  '[data-ui-size="md"],' \
+  '[data-density="md"] {' \
+  '  --tab-height-lg: 3rem;' \
+  '  --chrome-header-height: 3rem;' \
+  '}')
+run_hook "$UISIZE_CSS" Edit "$TMPROOT" yes "$UISIZE_REL" "$WRONG_ORDER"
+expect_integrity "13. declaration order drift is integrity failure" "scope、順序或 decimal rem syntax"
+
+COMMENTED_TOKENS=$'/*\n'"$CLEAN"$'\n*/'
+run_hook "$UISIZE_CSS" Write "$TMPROOT" yes "$UISIZE_REL" "$COMMENTED_TOKENS"
+expect_integrity "14. declarations hidden inside CSS comments are integrity failure" "extraction 不完整、重複或 scope/order"
+
+NUMERICALLY_EQUAL=$(token_content 3.0 3.50 3.00 3 3.5 3.000)
+run_hook "$UISIZE_CSS" Write "$TMPROOT" yes "$UISIZE_REL" "$NUMERICALLY_EQUAL"
+expect_pass_silent "15. numerically equal strict decimals compare equal"
+
+run_hook "$UISIZE_CSS" Edit "$TMPROOT" none
+expect_pass_silent "16. direct canonical fallback safely reads regular non-symlink disk"
+
+run_hook "$TMPROOT/random.tsx" Edit "$TMPROOT" missing
+expect_pass_silent "17. out-of-scope path stays silent"
+
+echo
 echo "Passed: $PASS / $((PASS + FAIL))"
 if [ "$FAIL" -gt 0 ]; then
-  echo "Failed:$FAILED_TESTS"
+  printf 'Failed:%b\n' "$FAILED_TESTS"
   exit 1
 fi

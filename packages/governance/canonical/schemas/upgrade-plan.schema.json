@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance-upgrade-plan.schema.json",
+  "title": "Governance upgrade plan",
+  "type": "object",
+  "required": ["schemaVersion", "command", "role", "outputDirectory", "lockFile", "contractDigest", "currentDigest", "expectedDigest", "actions"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "command": { "const": "upgrade.plan" },
+    "role": { "type": "string" },
+    "outputDirectory": { "type": "string" },
+    "lockFile": { "type": "string" },
+    "contractDigest": { "$ref": "#/$defs/digest" },
+    "currentDigest": { "$ref": "#/$defs/digest" },
+    "expectedDigest": { "$ref": "#/$defs/digest" },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["action", "path"],
+        "properties": {
+          "action": { "enum": ["add", "remove", "replace-content", "replace-mode", "replace-type"] },
+          "path": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": { "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" } },
+  "additionalProperties": false
+}

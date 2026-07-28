@@ -1,0 +1,113 @@
+{
+  "$schema": "schemas/consumer-upgrade-protocol.schema.json",
+  "schemaVersion": 2,
+  "kind": "consumer-upgrade-protocol",
+  "protocolId": "protected-base-reconstruction-v2",
+  "lockProjection": {
+    "schemaVersion": 2,
+    "protocolId": "protected-base-reconstruction-v2",
+    "legacyEntryMode": "one-time-reviewed-full-snapshot-pr",
+    "bootstrapEvidenceContract": "consumer-governance-bootstrap-readback-v1",
+    "controlPlaneUpdateMode": "recurring-reviewed-full-snapshot-pr",
+    "controlPlaneUpdateEvidenceContract": "consumer-governance-control-plane-update-readback-v1",
+    "controlPlaneUpdatePlanner": "infra/governance/bin/consumerctl.mjs",
+    "ordinaryUpgradeMode": "protected-base-disposable-reconstruction",
+    "protectedBaseVerifier": "scripts/verify-upgrade-evidence.mjs",
+    "candidateCodeExecutionAllowed": false,
+    "physicalPowerLossDurabilityClaimed": false
+  },
+  "profiles": {
+    "new-snapshot-v2": {
+      "entryMode": "release-bound-new-full-snapshot",
+      "bootstrapRequired": false,
+      "bootstrapEvidenceContract": null,
+      "ordinarySyncAllowedAfter": "release-bound-full-snapshot-readback",
+      "acceptedBootstrapBindingRequired": false,
+      "postAcceptanceProfile": null,
+      "controlPlaneUpdateMode": "recurring-reviewed-full-snapshot-pr",
+      "controlPlaneUpdateEvidenceContract": "consumer-governance-control-plane-update-readback-v1",
+      "controlPlaneUpdateBindingRequired": false,
+      "postControlPlaneUpdateProfile": "new-snapshot-control-plane-established-v2"
+    },
+    "legacy-bootstrap-v2": {
+      "entryMode": "one-time-reviewed-full-snapshot-pr",
+      "bootstrapRequired": true,
+      "bootstrapEvidenceContract": "consumer-governance-bootstrap-readback-v1",
+      "ordinarySyncAllowedAfter": "independent-bootstrap-readback",
+      "acceptedBootstrapBindingRequired": false,
+      "postAcceptanceProfile": "reviewed-bootstrap-established-v2",
+      "controlPlaneUpdateMode": null,
+      "controlPlaneUpdateEvidenceContract": null,
+      "controlPlaneUpdateBindingRequired": false,
+      "postControlPlaneUpdateProfile": null
+    },
+    "reviewed-bootstrap-established-v2": {
+      "entryMode": "accepted-reviewed-full-snapshot-bootstrap",
+      "bootstrapRequired": false,
+      "bootstrapEvidenceContract": "consumer-governance-bootstrap-readback-v1",
+      "ordinarySyncAllowedAfter": "inventory-bound-independent-bootstrap-readback",
+      "acceptedBootstrapBindingRequired": true,
+      "postAcceptanceProfile": null,
+      "controlPlaneUpdateMode": "recurring-reviewed-full-snapshot-pr",
+      "controlPlaneUpdateEvidenceContract": "consumer-governance-control-plane-update-readback-v1",
+      "controlPlaneUpdateBindingRequired": false,
+      "postControlPlaneUpdateProfile": "reviewed-bootstrap-control-plane-established-v2"
+    },
+    "new-snapshot-control-plane-established-v2": {
+      "entryMode": "accepted-reviewed-control-plane-update",
+      "bootstrapRequired": false,
+      "bootstrapEvidenceContract": null,
+      "ordinarySyncAllowedAfter": "inventory-bound-independent-control-plane-readback",
+      "acceptedBootstrapBindingRequired": false,
+      "postAcceptanceProfile": null,
+      "controlPlaneUpdateMode": "recurring-reviewed-full-snapshot-pr",
+      "controlPlaneUpdateEvidenceContract": "consumer-governance-control-plane-update-readback-v1",
+      "controlPlaneUpdateBindingRequired": true,
+      "postControlPlaneUpdateProfile": "new-snapshot-control-plane-established-v2"
+    },
+    "reviewed-bootstrap-control-plane-established-v2": {
+      "entryMode": "accepted-reviewed-bootstrap-and-control-plane-update",
+      "bootstrapRequired": false,
+      "bootstrapEvidenceContract": "consumer-governance-bootstrap-readback-v1",
+      "ordinarySyncAllowedAfter": "inventory-bound-independent-bootstrap-and-control-plane-readback",
+      "acceptedBootstrapBindingRequired": true,
+      "postAcceptanceProfile": null,
+      "controlPlaneUpdateMode": "recurring-reviewed-full-snapshot-pr",
+      "controlPlaneUpdateEvidenceContract": "consumer-governance-control-plane-update-readback-v1",
+      "controlPlaneUpdateBindingRequired": true,
+      "postControlPlaneUpdateProfile": "reviewed-bootstrap-control-plane-established-v2"
+    }
+  },
+  "planning": {
+    "command": "node infra/governance/bin/consumerctl.mjs plan-bootstrap",
+    "readOnly": true,
+    "mutationAuthorized": false,
+    "rolloutCompletionEligible": false
+  },
+  "reviewedControlPlaneUpdate": {
+    "command": "node infra/governance/bin/consumerctl.mjs plan-control-plane-update",
+    "mode": "recurring-reviewed-full-snapshot-pr",
+    "evidenceContract": "consumer-governance-control-plane-update-readback-v1",
+    "entryProfiles": ["new-snapshot-v2", "reviewed-bootstrap-established-v2"],
+    "establishedProfiles": ["new-snapshot-control-plane-established-v2", "reviewed-bootstrap-control-plane-established-v2"],
+    "sourceSnapshotContract": "clean-tracked-git-object-snapshot-v1",
+    "candidateCorpusContract": "release-bom-bound-product-template-scaffold-v1",
+    "firstBaselineContract": "issuer-registry-quorum-signed-baseline-v1",
+    "observerReceiptContract": "issuer-registry-quorum-signed-github-observer-v1",
+    "requiredChecksSource": "signed-full-github-check-run-projection",
+    "requiresIndependentReadback": true,
+    "inventoryBindsLatestAcceptedReadback": true,
+    "candidateCodeExecutionAllowed": false,
+    "liveCheckoutMutationAllowed": false,
+    "rolloutCompletionEligibleBeforeReadback": false
+  },
+  "ordinaryUpgrade": {
+    "command": "npm run sync-all -- --apply --to <exact-version>",
+    "requiresProtocolLock": true,
+    "requiresIndependentBootstrapReadbackForLegacy": true,
+    "legacySelfUpdateMayClaimCompletion": false,
+    "candidateScriptsMayRunInWriter": false,
+    "processCrashRecoveryIncludesCommonInstruction": true,
+    "physicalPowerLossDurabilityClaimed": false
+  }
+}

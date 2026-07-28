@@ -15,13 +15,22 @@
 #   ALLOW:`<SidebarMenuButton asChild>...</SidebarMenuButton>`(consumer 自管 layout)
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
+  exit 70
+}
 
 set -uo pipefail
-INPUT=$(cat 2>/dev/null || echo "{}")
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
-EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // ""' 2>/dev/null)
-NEW=$(echo "$INPUT" | jq -r '.tool_input.content // .tool_input.new_string // ""' 2>/dev/null)
+governance_hook_load_input
+governance_hook_require_commands python3
+TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'sidebar-wrap tool extraction failed'
+FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'sidebar-wrap path extraction failed'
+EVENT=$(printf '%s' "$INPUT" | jq -r '.hook_event_name // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'sidebar-wrap event extraction failed'
+NEW=$(printf '%s' "$INPUT" | jq -r '.tool_input.content // .tool_input.new_string // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'sidebar-wrap content extraction failed'
 
 [ "$EVENT" != "PreToolUse" ] && exit 0
 case "$TOOL" in Edit|Write|MultiEdit) ;; *) exit 0 ;; esac
@@ -43,15 +52,17 @@ for m in re.finditer(r"<SidebarMenuButton\b([^>]*)>(.*?)</SidebarMenuButton>", c
     if re.search(r"<(ItemAvatar|Avatar)\b", body):
         print("DRIFT")
         sys.exit(0)
-' 2>/dev/null)
+' 2>/dev/null) || governance_hook_integrity_fail 'sidebar-wrap parser failed'
 
 [ "$HAS_DRIFT" != "DRIFT" ] && exit 0
 
 # Override env(audit-logged)
-if [ "${CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP:-0}" = "1" ]; then
-  mkdir -p "$(dirname "$0")/../logs" 2>/dev/null
-  printf '{"ts":"%s","event":"sidebar-menu-button-wrap-bypass","file":"%s"}\n' \
-    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$FILE_PATH" >> "$(dirname "$0")/../logs/governance-bypass.jsonl" 2>/dev/null
+if [ "${GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP:-0}" = "1" ]; then
+  if STATE_DIR="$(governance_runtime_state_dir 2>/dev/null)"; then
+    mkdir -p "$STATE_DIR" 2>/dev/null
+    jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg file "$FILE_PATH" \
+      '{ts:$ts,event:"sidebar-menu-button-wrap-bypass",file:$file}' >> "$STATE_DIR/governance-bypass.jsonl" 2>/dev/null || true
+  fi
   exit 0
 fi
 
@@ -75,7 +86,7 @@ cat >&2 <<'EOF'
 Or use startIcon prop(自動 layout,不 wrap):
   ✅ SidebarMenuButton startIcon={SomeLucideIcon} 直接 children 為純文字
 
-Bypass(極罕見):CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 env var(audit-logged)。
+Bypass(極罕見):GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 env var(audit-logged)。
 
 Citation:
   - packages/design-system/src/components/Sidebar/sidebar.tsx:1025-1043(asChild docblock)

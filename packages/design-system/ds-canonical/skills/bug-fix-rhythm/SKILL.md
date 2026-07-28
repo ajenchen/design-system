@@ -10,7 +10,7 @@ description: Batch-end-verify rhythm + parallel tool batch + user-listed N-rule 
 **對齊**:
 - CLAUDE.md mindset #6「大原則吸收瑣碎」+ M14「對話結論 AUTO integrate」
 - Bazel incremental-build / GitHub Actions matrix-batch idiom(per-step incremental = waste,batch-end = canonical)
-- Anthropic Claude Code prompt engineering「single-message multi-tool-call」canonical
+- provider-neutral parallel execution canonical
 - Toyota TPS jidoka(per-station per-item verify,不可 skip 任何 item)
 
 ## When to invoke
@@ -21,7 +21,7 @@ description: Batch-end-verify rhythm + parallel tool batch + user-listed N-rule 
 
 **手動 invoke**:user 明言「批 fix」「一次做完」「跑完再驗」「列規則」
 
-**不 invoke**(對齊 Anthropic Best Practice 小修 skip):
+**不 invoke**(對齊 current provider best practice 小修 skip):
 - 單一 surgical fix(無 numbered rule + 無 cross-component)— per-fix verify 即可
 - pure refactor / typo / import cleanup
 - spec.md docs only
@@ -30,7 +30,8 @@ description: Batch-end-verify rhythm + parallel tool batch + user-listed N-rule 
 
 - 不擴展到「audit full-dim」(那是 `/design-system-audit`)
 - 不取代 `/scan-similar-bugs`(那是 fix 後 root-pattern scan;本 skill 是 fix-過程 rhythm)
-- 不動 canonical 語意(走 audit-vs-execute STOP 提議)
+- 不在本 skill 自行擴張 canonical scope；若發現 canonical finding，依 shared authority
+  classifier 路由(P2E 自主修正，只有真產品／UI／UX SSOT 取捨才 P2H)
 
 ---
 
@@ -72,7 +73,7 @@ Read / Grep / Glob 多檔需求 → **single message multi-tool-call**:
 
 **Heuristic**:任何 tool call 之間**無 dependency**(後一個不需前一個結果) → 必 parallel。
 
-對齊 Anthropic Claude Code best practice:「Maximize use of parallel tool calls where possible」。
+對齊 provider-neutral best practice:「在依賴關係允許時並行執行」。
 
 ### Phase 2 — Batch fix(原 M32(c))
 
@@ -90,9 +91,15 @@ Read / Grep / Glob 多檔需求 → **single message multi-tool-call**:
 每 fix 落地前 inline 判斷:
 
 - **Surgical**(CLAUDE.md「Scope classifier — Surgical visual bug」):pixel / token / class adjustment, no new SSOT / API / cross-component → AUTO ship 此 fix
-- **Substantive**(audit-vs-execute 分權):新 SSOT / 新 prop / 新 canonical meaning / cross-component semantic → **STOP propose**,等 user verbatim 拍板才 ship
+- **P2E engineering substantive**:治理／架構 SSOT、refactor、test、migration、adapter 或
+  不改 public 行為的 cross-component invariant → **AUTO**，依 evidence + independent
+  review + hard gates 自主完成。
+- **P2H product/UI/UX substantive**:新 public prop semantics、產品 workflow／interaction、
+  視覺／文案 canonical meaning 或其他 user-visible tradeoff，且既有 SSOT 無唯一答案
+  → **STOP propose**，只接受 exact target-bound user decision。
 
-混合 batch:surgical 部分 ship,substantive 部分 propose。**禁止**:substantive 偷渡進 surgical batch。
+混合 batch:surgical + P2E 一起自主完成；P2H 保持 proposal-only。**禁止**:把 P2H
+偷渡進 engineering batch，也禁止把 P2E 轉交 user 做工程選擇。
 
 ### Phase 3 — Final batch-end verify(原 M32(c)(h2))
 
@@ -159,7 +166,7 @@ node scripts/visual-audit.mjs --scope=changed # pixel-quantified per M32(a)(或 
 - **Bazel `bazel test //...`**:全 target 並行 + final report,而非 per-target sequential
 - **GitHub Actions matrix**:N 個 job 並行,final aggregate verdict
 - **Toyota TPS jidoka**:每 station per-item verify,**但** verify 是 station-end 而非 in-progress checkpoint
-- **Anthropic Claude Code prompt eng**:「Maximize use of parallel tool calls」
+- **Provider-neutral execution discipline**:「依賴關係允許時並行執行」
 - **Stripe / Linear engineering blog**:「batch deploy + single canary verify」over「per-PR canary」
 
 ---

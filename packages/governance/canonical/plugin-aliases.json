@@ -1,0 +1,25 @@
+{
+  "$schema": "./schemas/plugin-aliases.schema.json",
+  "schemaVersion": 1,
+  "providerId": "claude",
+  "aliases": [
+    {
+      "id": "commands",
+      "alias": "commands",
+      "source": { "kind": "repositoryManagedTree", "key": "commands" },
+      "requiredEntries": ["README.md"]
+    },
+    {
+      "id": "hooks-scripts",
+      "alias": "hooks/scripts",
+      "source": { "kind": "repositoryManagedTree", "key": "hooks" },
+      "requiredEntries": ["README.md"]
+    },
+    {
+      "id": "skills",
+      "alias": "skills",
+      "source": { "kind": "skillView" },
+      "requiredEntries": ["README.md"]
+    }
+  ]
+}

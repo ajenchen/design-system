@@ -39,13 +39,13 @@ paths:
 
 **先 `ls packages/design-system/src/{components,patterns}/`**。必查 spec:Tokens(`tokens/{color|typography|density|uiSize|layoutSpace|elevation|radius}/*.spec.md`)/ Row + List item(`item-anatomy.spec.md` Family 1+2 SSOT)/ Action bar / Overflow / Overlay(`patterns/{action-bar,horizontal-overflow,overlay-surface}/*.spec.md`)/ Field(`components/Field/*.spec.md`)。
 
-**既有 primitive 優先消費**:命中既有 → 必消費不 hand-craft。**自我檢查**:icon+text 垂直 → `<Empty>`;橫向 row → `<MenuItem>` + slot(消費 item-anatomy);chrome header(toolbar / page top bar / panel 標題列)→ `<ChromeHeader>`(消費 header-canonical,讀其 spec + `Patterns/Header Anatomy` story);浮層 → `overlay-surface`;跨 OS 捲軸 → `<ScrollArea>`;鎖長寬比 → `<AspectRatio>`。完整對照 → `.claude/references/build-ui-canonicals.md`。
+**既有 primitive 優先消費**:命中既有 → 必消費不 hand-craft。**自我檢查**:icon+text 垂直 → `<Empty>`;橫向 row → `<MenuItem>` + slot(消費 item-anatomy);chrome header(toolbar / page top bar / panel 標題列)→ `<ChromeHeader>`(消費 header-canonical,讀其 spec + `Patterns/Header Anatomy` story);浮層 → `overlay-surface`;跨 OS 捲軸 → `<ScrollArea>`;鎖長寬比 → `<AspectRatio>`。完整對照 → `packages/design-system/ds-canonical/references/build-ui-canonicals.md`。
 
 ## UI 開發 4 條核心
 
 必重用既有 `components/` / 必用 design tokens(禁硬寫色/字/間距/圓角)/ 建新 UI 前查 pattern / 用 `cn()`(`@/lib/utils`)合併 Tailwind class。
 
-深度規則 → `.claude/references/ui-dev-rules.md`(slot 幾何 / Padding source / Icon size 3 層)。
+深度規則 → `packages/design-system/ds-canonical/references/ui-dev-rules.md`(slot 幾何 / Padding source / Icon size 3 層)。
 
 **一句話 pointer**:
 - 新 row 元件 → `patterns/element-anatomy/item-anatomy.spec.md`「自我檢查」
@@ -54,7 +54,7 @@ paths:
 - 陰影:必 `--elevation-*`;禁 `shadow-sm/md/lg/xl/2xl`
 - 視覺容器 breathing:有邊界 → 必 inner padding
 
-## Tailwind 5 條核心(每條過真實 bug,詳 `.claude/references/tailwind-gotchas.md`)
+## Tailwind 5 條核心(每條過真實 bug,詳 `packages/design-system/ds-canonical/references/tailwind-gotchas.md`)
 
 1. **CSS variable 必 `var()` 包覆** — `w-[var(--foo)]` 而非 `w-[--foo]`(v4 silent 失效)
 2. **自訂 utility 必在 `lib/utils.ts` 註冊 group** — 否則 tailwind-merge 誤判 strip
@@ -75,9 +75,9 @@ paths:
 - slot 只接 icon → `startIcon` / `endIcon`(型別 `LucideIcon`,元件控尺寸)
 - slot 接任意視覺 → 描述內容類型(`avatar`,型別 `ReactNode`)
 - slot 是行為 → callback(`onDismiss`,元件渲染互動 + 樣式)
-- ❌ 禁 `prefix` / `suffix` / `left` / `right` 當**內容插槽** prop(位置名不傳達本質)→ 用 `startIcon`/`endContent`。**例外**:值格式 affix 字串(`NumberInput.prefix='$'`)+ 結構 anatomy 詞彙合法,判準見 `.claude/references/props-naming.md`「prefix/suffix canonical」
+- ❌ 禁 `prefix` / `suffix` / `left` / `right` 當**內容插槽** prop(位置名不傳達本質)→ 用 `startIcon`/`endContent`。**例外**:值格式 affix 字串(`NumberInput.prefix='$'`)+ 結構 anatomy 詞彙合法,判準見 `packages/design-system/ds-canonical/references/props-naming.md`「prefix/suffix canonical」
 
-**4 名關閉 / 移除 callback**(詳 `.claude/references/props-naming.md`):
+**4 名關閉 / 移除 callback**(詳 `packages/design-system/ds-canonical/references/props-naming.md`):
 `onClose` / `onDismiss` / `onRemove` / `onClear` 各有語意不合併。
 
 **Badge 命名按放置**:`badge`(inline)/ `overlayBadge`(疊視覺重心 iconOnly)/ `badgeCount`(Avatar count)/ `status`(presence dot — Avatar / ProfileCard / PeoplePicker;另有 lifecycle value-set 用於 FileItem / FileUpload / ProgressBar,詳 `props-naming.md`)。

@@ -1,0 +1,12 @@
+{
+  "$schema": "../schemas/harness-non-governance-exclusions.schema.json",
+  "schemaVersion": 1,
+  "kind": "reviewed-non-governance-harness-source-exclusions",
+  "entries": [
+    {
+      "path": "scripts/test-devmode-visual.mjs",
+      "category": "interactive-product-visual-exploration",
+      "reason": "Interactive Storybook/Playwright screenshot exploration requires a separately running UI target, permits missing selectors to skip, and is therefore product visual work rather than a deterministic provider-governance Harness result."
+    }
+  ]
+}

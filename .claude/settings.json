@@ -1,123 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install:*)",
-      "Bash(npm uninstall:*)",
-      "Bash(npm run:*)",
-      "Bash(npm run *)",
-      "Bash(npm rebuild:*)",
-      "Bash(npm view:*)",
-      "Bash(npm pack:*)",
-      "Bash(npm ls:*)",
-      "Bash(npm i:*)",
-      "Bash(npx tsc:*)",
-      "Bash(npx vite:*)",
-      "Bash(npx storybook:*)",
-      "Bash(npx shadcn:*)",
-      "Bash(npx --yes tsc --noEmit --pretty false)",
-      "Bash(node scripts/export-tokens.mjs)",
-      "Bash(node scripts/sync-memory.mjs)",
-      "Bash(node scripts/sync-memory.mjs --reverse)",
-      "Bash(node scripts/compile-stories.mjs:*)",
-      "Bash(node scripts/audit-content-quality.mjs:*)",
-      "Bash(node scripts/extract-canonical-rules.mjs:*)",
-      "Bash(node scripts/code-quality-audit.mjs:*)",
-      "Bash(node scripts/visual-audit.mjs:*)",
-      "Bash(node -e \":*)",
-      "Bash(node -e ' *)",
-      "Bash(node -e ':*)",
-      "Bash(python3:*)",
-      "Bash(python3 -c \":*)",
-      "Bash(gh auth:*)",
-      "Bash(gh run:*)",
-      "Bash(gh api:*)",
-      "Bash(gh pr:*)",
-      "Bash(gh issue:*)",
-      "Bash(curl:*)",
-      "Bash(ssh:*)",
-      "Bash(ssh-keygen:*)",
-      "Bash(ssh-add:*)",
-      "Bash(git stash *)",
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(git commit -m ' *)",
-      "Bash(git push *)",
-      "Bash(git reset *)",
-      "Bash(git mv *)",
-      "Bash(git check-ignore *)",
-      "Bash(git status*)",
-      "Bash(git diff*)",
-      "Bash(git log*)",
-      "Bash(git branch*)",
-      "Bash(git checkout*)",
-      "Bash(lsof:*)",
-      "Bash(xargs kill:*)",
-      "Bash(xargs grep:*)",
-      "Bash(xargs sed *)",
-      "Bash(xargs -I*)",
-      "Bash(chmod:*)",
-      "Bash(cd:*)",
-      "Bash(mkdir -p:*)",
-      "Bash(timeout:*)",
-      "Bash(echo *)",
-      "Bash(ls:*)",
-      "Bash(wc:*)",
-      "Bash(xxd)",
-      "Bash(awk *)",
-      "Bash(sed -n*)",
-      "Bash(cat *)",
-      "Bash(head *)",
-      "Bash(tail *)",
-      "Bash(find *)",
-      "Bash(grep *)",
-      "Bash(rg *)",
-      "Bash(tar -xzf:*)",
-      "Bash(bash .claude/hooks/*)",
-      "Bash(bash .claude/hooks/tests/*)",
-      "Bash(bash scripts/*)",
-      "Read(//tmp/**)",
-      "Read(//private/tmp/**)",
-      "WebSearch",
-      "WebFetch(domain:developers.figma.com)",
-      "WebFetch(domain:m3.material.io)",
-      "WebFetch(domain:atlassian.design)",
-      "WebFetch(domain:fluent2.microsoft.design)",
-      "WebFetch(domain:www.radix-ui.com)",
-      "WebFetch(domain:carbondesignsystem.com)",
-      "WebFetch(domain:v10.carbondesignsystem.com)",
-      "WebFetch(domain:blog.tubikstudio.com)",
-      "WebFetch(domain:www.w3.org)",
-      "WebFetch(domain:primer.style)",
-      "WebFetch(domain:www.patternfly.org)",
-      "WebFetch(domain:medium.com)",
-      "WebFetch(domain:spectrum.adobe.com)",
-      "WebFetch(domain:support.microsoft.com)",
-      "WebFetch(domain:www.nngroup.com)",
-      "WebFetch(domain:experience.sap.com)",
-      "WebFetch(domain:react-spectrum.adobe.com)",
-      "WebFetch(domain:www.sap.com)",
-      "WebFetch(domain:designerup.co)",
-      "WebFetch(domain:uxmovement.com)",
-      "WebFetch(domain:design.gitlab.com)",
-      "WebFetch(domain:support.google.com)",
-      "WebFetch(domain:www.ibm.com)",
-      "WebFetch(domain:github.com)",
-      "WebFetch(domain:opensource.adobe.com)",
-      "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:colors.id)",
-      "WebFetch(domain:react.fluentui.dev)",
-      "WebFetch(domain:noahgilmore.com)",
-      "WebFetch(domain:unpkg.com)",
-      "WebFetch(domain:www.lightningdesignsystem.com)",
-      "WebFetch(domain:www.ag-grid.com)",
-      "WebFetch(domain:blog.ag-grid.com)",
-      "WebFetch(domain:tanstack.com)",
-      "WebFetch(domain:ui.shadcn.com)",
-      "WebFetch(domain:chakra-ui.com)",
-      "WebFetch(domain:mantine.dev)",
-      "WebFetch(domain:ant.design)",
-      "WebFetch(domain:netlify.com)",
-      "WebFetch(domain:docs.netlify.com)",
+      "Edit",
       "Skill(knowledge-prune)",
       "Skill(design-system-audit)",
       "Skill(ensure-canonical)",
@@ -135,20 +19,296 @@
       "Skill(delivery-handoff)",
       "Skill(product-ui-audit)",
       "Skill(new-component)"
-    ]
+    ],
+    "ask": [
+      "Bash(claude auth login*)",
+      "Bash(claude login*)",
+      "Bash(gh auth login*)",
+      "Bash(gh auth refresh*)",
+      "Bash(npm access grant *)",
+      "Bash(npm access revoke *)",
+      "Bash(npm access set *)",
+      "Bash(npm adduser*)",
+      "Bash(npm login*)",
+      "Bash(npm org set *)",
+      "Bash(npm org rm *)",
+      "Bash(npm owner add *)",
+      "Bash(npm owner rm *)",
+      "Bash(npm profile *2fa*)",
+      "Bash(docker login*)",
+      "Bash(aws configure*)",
+      "Bash(aws sso login*)",
+      "Bash(gcloud auth *)",
+      "Bash(az login*)",
+      "Bash(netlify login*)",
+      "Bash(vercel login*)"
+    ],
+    "deny": [
+      "Bash(gh auth token*)",
+      "Bash(gh secret set*)",
+      "Bash(gh secret delete*)",
+      "Bash(gh variable set*)",
+      "Bash(gh variable delete*)",
+      "Bash(git credential *)",
+      "Bash(npm token *)",
+      "Bash(ssh-add*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.azure/**)",
+      "Read(~/.config/gcloud/**)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.docker/**)",
+      "Read(~/.git-credentials)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.kube/**)",
+      "Read(~/.netrc)",
+      "Read(~/.npmrc)",
+      "Read(~/.pypirc)",
+      "Read(~/.ssh/**)",
+      "Bash(git reset *)",
+      "Bash(git clean *)",
+      "Bash(git branch -D *)",
+      "Bash(git tag -d *)",
+      "Bash(git commit --amend *)",
+      "Bash(git checkout *)",
+      "Bash(git restore *)",
+      "Bash(git push *--force*)",
+      "Bash(git push -f *)",
+      "Bash(gh api *--method DELETE*)",
+      "Bash(gh api *-X DELETE*)",
+      "Bash(gh issue delete *)",
+      "Bash(gh release delete *)",
+      "Bash(gh repo delete *)",
+      "Bash(gh run delete *)",
+      "Bash(npm unpublish *)",
+      "Bash(npm deprecate *)",
+      "Bash(rm *)",
+      "Bash(find * -delete *)",
+      "Bash(dd *)",
+      "Bash(mkfs *)",
+      "Bash(shred *)",
+      "Bash(*--dangerously-skip-permissions*)",
+      "Bash(*--permission-mode bypassPermissions*)",
+      "Bash(*--dangerously-bypass-approvals-and-sandbox*)"
+    ],
+    "defaultMode": "acceptEdits",
+    "disableBypassPermissionsMode": "disable"
   },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": false,
+    "network": {
+      "allowedDomains": [],
+      "deniedDomains": [],
+      "allowUnixSockets": [],
+      "allowAllUnixSockets": false,
+      "allowLocalBinding": false,
+      "allowMachLookup": []
+    },
+    "filesystem": {
+      "allowWrite": [],
+      "denyWrite": [],
+      "denyRead": [],
+      "allowRead": []
+    },
+    "credentials": {
+      "files": [
+        {
+          "path": "./.env",
+          "mode": "deny"
+        },
+        {
+          "path": "./.env.*",
+          "mode": "deny"
+        },
+        {
+          "path": "./secrets/**",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.aws/config",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.aws/credentials",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.azure/**",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.config/gcloud/**",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.config/gh/hosts.yml",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.docker/config.json",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.git-credentials",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.gnupg/**",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.kube/config",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.netrc",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.npmrc",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.pypirc",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.ssh/**",
+          "mode": "deny"
+        }
+      ],
+      "envVars": [
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "mode": "deny"
+        },
+        {
+          "name": "AWS_ACCESS_KEY_ID",
+          "mode": "deny"
+        },
+        {
+          "name": "AWS_CONTAINER_AUTHORIZATION_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "AWS_CONTAINER_CREDENTIALS_FULL_URI",
+          "mode": "deny"
+        },
+        {
+          "name": "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI",
+          "mode": "deny"
+        },
+        {
+          "name": "AWS_SECRET_ACCESS_KEY",
+          "mode": "deny"
+        },
+        {
+          "name": "AWS_SESSION_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "AWS_WEB_IDENTITY_TOKEN_FILE",
+          "mode": "deny"
+        },
+        {
+          "name": "AZURE_CLIENT_CERTIFICATE_PATH",
+          "mode": "deny"
+        },
+        {
+          "name": "AZURE_CLIENT_SECRET",
+          "mode": "deny"
+        },
+        {
+          "name": "AZURE_FEDERATED_TOKEN_FILE",
+          "mode": "deny"
+        },
+        {
+          "name": "CLAUDE_CODE_OAUTH_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "DOCKER_AUTH_CONFIG",
+          "mode": "deny"
+        },
+        {
+          "name": "GH_ENTERPRISE_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "GH_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "GITHUB_APP_PRIVATE_KEY",
+          "mode": "deny"
+        },
+        {
+          "name": "GITHUB_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "GOOGLE_APPLICATION_CREDENTIALS",
+          "mode": "deny"
+        },
+        {
+          "name": "GOOGLE_GHA_CREDS_PATH",
+          "mode": "deny"
+        },
+        {
+          "name": "NETLIFY_AUTH_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "NODE_AUTH_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "NPM_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "SIGSTORE_ID_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "SSH_AUTH_SOCK",
+          "mode": "deny"
+        },
+        {
+          "name": "VERCEL_TOKEN",
+          "mode": "deny"
+        }
+      ],
+      "allowPlaintextInject": false
+    },
+    "enableWeakerNestedSandbox": false,
+    "enableWeakerNetworkIsolation": false,
+    "allowAppleEvents": false,
+    "excludedCommands": []
+  },
+  "disableAutoMode": "disable",
   "hooks": {
     "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event PreToolUse --group 0"
+          }
+        ]
+      },
       {
         "matcher": "Bash|mcp__github__create_pull_request|mcp__github__merge_pull_request",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_solo_workflow.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_codex_collab_5step.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event PreToolUse --group 1"
           }
         ]
       },
@@ -157,7 +317,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_audit_sample_escape.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event PreToolUse --group 2"
           }
         ]
       },
@@ -166,7 +326,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_codex_brief_invariants.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event PreToolUse --group 3"
           }
         ]
       },
@@ -175,7 +335,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/enforce_home_charter.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event PreToolUse --group 4"
           }
         ]
       },
@@ -184,7 +344,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_file_size_budget.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event PreToolUse --group 5"
           }
         ]
       },
@@ -193,91 +353,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_story_invariants.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_canonical_propagation.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_pattern_invariants.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_naming_and_abstraction.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_benchmark_citation.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_wrapper_primitive_schema_drift.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_field_family_invariants.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_datatable_invariants.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_dynamic_tailwind_class.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_opacity_token_usage.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_substantive_edit_approval_preflight.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_ds_anchor_preflight.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_chrome_header_avatar_canonical.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_sidebar_menu_button_implicit_wrap.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_item_list_gap.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/chrome_header_dispatcher.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_dim_count_drift.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_propose_pre_grep_verify.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_spec_class_drift.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_main_branch_workbench.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_ssot_header_declaration.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_story_determinism.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event PreToolUse --group 6"
           }
         ]
       }
@@ -288,7 +364,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_audit_sample_escape.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event PostToolUse --group 0"
           }
         ]
       },
@@ -297,11 +373,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/inject_deploy_url_after_push.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_post_main_ssot_propagate.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event PostToolUse --group 1"
           }
         ]
       },
@@ -310,31 +382,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/block_prototype_imports.py\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_consumer_app_invariants.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_full_story_visual_interaction_sweep.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_overlay_open_focus_escape_probe.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_escape_marker_abuse.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_tailwind_wildcard_in_docs.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_storybook_addon_packaging.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event PostToolUse --group 2"
           }
         ]
       },
@@ -343,43 +391,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/post_edit_dispatcher.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_story_invariants.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_pixel_quantified_audit.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_layout_space_magic_numbers.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_tabs_content_chrome_body_double_gap.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_field_controls_contracts.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_peoplepicker_ssot_drift.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_select_all_canonical.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_audit_post_report_validator.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/auto_regen_ds_barrel.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event PostToolUse --group 3"
           }
         ]
       },
@@ -388,7 +400,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/log_governance_fires.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event PostToolUse --group 4"
           }
         ]
       },
@@ -397,7 +409,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/log_skill_invokes.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event PostToolUse --group 5"
           }
         ]
       }
@@ -407,27 +419,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop_passive_logging.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop_self_audit.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_propose_discipline.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_orphan_ds_css.sh\""
-          },
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/audit-content-quality.mjs\" --check 2>&1 | grep -E '\\[P[01]\\]|✅|⚠️' | head -10 || true"
-          },
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/extract-canonical-rules.mjs\" 2>&1 | grep -E 'GAPS|✅|keywords missing' | head -8 || true"
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event Stop --group 0"
           }
         ]
       }
@@ -437,11 +429,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_start_governance_check.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_plugin_fork_health.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event SessionStart --group 0"
           }
         ]
       }
@@ -451,11 +439,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/inject_pending_self_audit.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/check_propose_without_benchmark.sh\""
+            "command": "/usr/bin/env -u PATH -u GIT_DIR -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_ALTERNATE_OBJECT_DIRECTORIES -u GIT_INDEX_FILE -u GIT_CONFIG -u GIT_CONFIG_SYSTEM -u GIT_CONFIG_GLOBAL -u GIT_CONFIG_NOSYSTEM -u GIT_CONFIG_COUNT -u BASH_ENV -u ENV -u SHELLOPTS -u BASHOPTS -u CDPATH -u GLOBIGNORE -u NODE_OPTIONS -u NODE_PATH -u PYTHONHOME -u PYTHONPATH -u PYTHONSTARTUP -u PYTHONINSPECT -u PERL5OPT -u RUBYOPT -u LD_PRELOAD -u LD_LIBRARY_PATH -u DYLD_INSERT_LIBRARIES -u DYLD_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FALLBACK_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/home/linuxbrew/.linuxbrew/bin node scripts/run-provider-hook.mjs --provider claude --event UserPromptSubmit --group 0"
           }
         ]
       }

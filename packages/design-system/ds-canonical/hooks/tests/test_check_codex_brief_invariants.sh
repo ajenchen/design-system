@@ -11,7 +11,7 @@
 #   - Brief 必含 7 invariant keyword,缺任一 → exit 2 BLOCKER:
 #       1️⃣ 全盤閱讀  2️⃣ Triple-verify  3️⃣ 禁抽樣  4️⃣ 禁列檔
 #       5️⃣ 輸入對等(A.0 鏡射錨點)  6️⃣ 判準對等(audit-prompts rubric)  7️⃣ A.1b(per-component claim-vs-code)
-#   - Escape:brief 含 `@codex-brief-invariant-skip:` → silent exit 0
+#   - Escape:brief 含 `@peer-brief-invariant-skip:` → silent exit 0
 #
 # Positive(should BLOCK exit 2):缺 invariant 的 brief。
 # Negative(should be silent exit 0):全 4 invariant 齊備 / 非 codex / near-miss word-boundary。
@@ -36,8 +36,14 @@ FAILED_TESTS=""
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-# Override CLAUDE_PROJECT_DIR so _log-fire.sh state lands in TMP_DIR(不污染 repo .claude/logs/)
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+# Override GOVERNANCE_PROJECT_DIR and keep telemetry read-only so tests never write repository runtime state.
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
+export GOVERNANCE_READ_ONLY=1
+export GOVERNANCE_SELF_PROVIDER=claude
+export GOVERNANCE_PEER_PROVIDER=codex
+export GOVERNANCE_PEER_DISPLAY_NAME="Codex"
+export GOVERNANCE_PEER_CLI=codex
+export GOVERNANCE_PEER_BRIEF_MARKERS_JSON='["exec","review"]'
 mkdir -p "$TMP_DIR/.claude/logs"
 
 # ── Brief fixtures ────────────────────────────────────────────────
@@ -49,8 +55,8 @@ cat > "$GOOD_BRIEF" <<'EOF'
 2. triple-verify per finding(grep + Read + canonical exception check)
 3. 禁抽樣 — DS-wide ALL files,sub-agent sampled = reject
 4. 禁列檔 — 只讀 12 file,直接出 verdict
-5. 閱讀清單鏡射 A.0:CLAUDE.md + .claude/rules/meta-patterns.md 等 5 rules + 4 references + 全 spec.md + memory MEMORY.md index
-6. 判準對等:codex 讀 design-system-audit/references/audit-prompts.md 每 dim rubric,逐 dim 套用
+5. 閱讀清單鏡射 A.0:AGENTS.md + packages/design-system/ds-canonical/rules/meta-patterns.md 等 5 rules + 4 references + 全 spec.md + governance/memory/MEMORY.md index
+6. 判準對等:peer 讀 packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md 每 dim rubric,逐 dim 套用
 7. A.1b per-component claim-vs-code 對抗驗證:讀每元件 .tsx + wrap lib 逐句驗宣稱
 EOF
 
@@ -67,7 +73,13 @@ EOF
 SKIP_BRIEF="$TMP_DIR/skip-brief.md"
 cat > "$SKIP_BRIEF" <<'EOF'
 audit the button component padding
-// @codex-brief-invariant-skip: trivial one-line smoke check
+// @peer-brief-invariant-skip: trivial one-line smoke check
+EOF
+
+LEGACY_SKIP_BRIEF="$TMP_DIR/legacy-skip-brief.md"
+cat > "$LEGACY_SKIP_BRIEF" <<'EOF'
+audit the button component padding
+// @codex-brief-invariant-skip: reviewed legacy compatibility exception
 EOF
 
 # ── Harness ───────────────────────────────────────────────────────
@@ -82,6 +94,7 @@ run_hook() {
   printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
   EXIT=$?
   set -e
+  STDOUT_TEXT=$(cat "$STDOUT" 2>/dev/null)
   STDERR_TEXT=$(cat "$STDERR" 2>/dev/null)
   rm -f "$STDOUT" "$STDERR"
 }
@@ -94,13 +107,27 @@ run_hook_raw_payload() {
   printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
   EXIT=$?
   set -e
+  STDOUT_TEXT=$(cat "$STDOUT" 2>/dev/null)
+  STDERR_TEXT=$(cat "$STDERR" 2>/dev/null)
+  rm -f "$STDOUT" "$STDERR"
+}
+
+run_hook_payload_file() {
+  # $1 = path to a full JSON payload. File input avoids ARG_MAX for replay fixtures.
+  local payload_file="$1"
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  bash "$HOOK" <"$payload_file" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDOUT_TEXT=$(cat "$STDOUT" 2>/dev/null)
   STDERR_TEXT=$(cat "$STDERR" 2>/dev/null)
   rm -f "$STDOUT" "$STDERR"
 }
 
 expect_pass_silent() {
   local name="$1"
-  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ]; then
+  if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ]; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
     echo "  FAIL  $name (expected silent exit 0, got exit=$EXIT, stderr=$([ -n "$STDERR_TEXT" ] && echo non-empty || echo empty))"
@@ -111,10 +138,25 @@ expect_pass_silent() {
 
 expect_block() {
   local name="$1"; local needle="$2"
-  if [ "$EXIT" = "2" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
+  if [ "$EXIT" = "2" ] && [ -z "$STDOUT_TEXT" ] \
+    && ! echo "$STDERR_TEXT" | grep -qF 'GOVERNANCE_INTEGRITY:' \
+    && echo "$STDERR_TEXT" | grep -qF "$needle"; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
     echo "  FAIL  $name (expected BLOCK exit=2 + '$needle', got exit=$EXIT)"
+    echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+  fi
+}
+
+expect_integrity() {
+  local name="$1"; local needle="$2"
+  if [ "$EXIT" = "70" ] && [ -z "$STDOUT_TEXT" ] \
+    && echo "$STDERR_TEXT" | grep -qF 'GOVERNANCE_INTEGRITY:' \
+    && echo "$STDERR_TEXT" | grep -qF "$needle"; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (expected integrity exit=70 + '$needle', got exit=$EXIT)"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
@@ -150,7 +192,7 @@ run_hook "git commit -m \"${CX} collab notes\""
 expect_pass_silent "5. git commit msg 含 codex,無 exec/review → silent"
 
 # 6. inline codex exec WITH all 4 invariants → silent
-GOOD_INLINE="${CX} exec \"全盤閱讀全部 source(鏡射 A.0:meta-patterns rules + memory MEMORY.md index)。triple-verify per finding。禁抽樣 DS-wide ALL files。禁列檔 只讀 10 file 直接出 verdict。判準對等:讀 audit-prompts.md 逐 dim rubric。A.1b per-component claim-vs-code 對抗驗證讀 .tsx 逐句驗宣稱。\""
+GOOD_INLINE="${CX} exec \"全盤閱讀全部 source(鏡射 A.0:packages/design-system/ds-canonical/rules/meta-patterns.md + governance/memory/MEMORY.md index)。triple-verify per finding。禁抽樣 DS-wide ALL files。禁列檔 只讀 10 file 直接出 verdict。判準對等:讀 packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md 逐 dim rubric。A.1b per-component claim-vs-code 對抗驗證讀 .tsx 逐句驗宣稱。\""
 run_hook "$GOOD_INLINE"
 expect_pass_silent "6. inline brief 全 4 invariant → silent"
 
@@ -178,7 +220,7 @@ expect_block "8b. 缺輸入對等錨點(泛 glob)→ BLOCK" "5️⃣"
 NORUBRIC_BRIEF="$TMP_DIR/norubric-brief.md"
 cat > "$NORUBRIC_BRIEF" <<'EOF'
 # Codex deep-audit brief
-1. 全盤閱讀全部 source(.claude/rules/meta-patterns.md + memory MEMORY.md,禁憑記憶)
+1. 全盤閱讀全部 source(packages/design-system/ds-canonical/rules/meta-patterns.md + governance/memory/MEMORY.md,禁憑記憶)
 2. triple-verify per finding(grep + Read + canonical exception check)
 3. 禁抽樣 — DS-wide ALL files,sub-agent sampled = reject
 4. 禁列檔 — 只讀 12 file,直接出 verdict
@@ -190,14 +232,27 @@ expect_block "8c. 缺判準對等(無 audit-prompts)→ BLOCK" "6️⃣"
 NOA1B_BRIEF="$TMP_DIR/noa1b-brief.md"
 cat > "$NOA1B_BRIEF" <<'EOF'
 # Codex deep-audit brief
-1. 全盤閱讀全部 source(.claude/rules/meta-patterns.md + memory MEMORY.md,禁憑記憶)
+1. 全盤閱讀全部 source(packages/design-system/ds-canonical/rules/meta-patterns.md + governance/memory/MEMORY.md,禁憑記憶)
 2. triple-verify per finding(grep + Read + canonical exception check)
 3. 禁抽樣 — DS-wide ALL files,sub-agent sampled = reject
 4. 禁列檔 — 只讀 12 file,直接出 verdict
-5. 判準對等:讀 design-system-audit/references/audit-prompts.md 每 dim rubric,逐 dim 套用
+5. 判準對等:讀 packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md 每 dim rubric,逐 dim 套用
 EOF
 run_hook "cat $NOA1B_BRIEF | ${CX} exec"
 expect_block "8d. 缺 A.1b(per-component claim-vs-code)→ 7️⃣ BLOCK" "7️⃣"
+
+# 8e. Generated Claude paths are not acceptable authority evidence for another provider.
+POISON_VIEW_BRIEF="$TMP_DIR/poison-view-brief.md"
+cat > "$POISON_VIEW_BRIEF" <<'EOF'
+1. 全盤閱讀全部 source(.claude/rules/meta-patterns.md + governance/memory/MEMORY.md)
+2. triple-verify per finding
+3. 禁抽樣 DS-wide ALL files
+4. 禁列檔 只讀 12 file,直接出
+5. 判準對等:讀 .claude/skills/design-system-audit/references/audit-prompts.md 逐 dim rubric
+6. A.1b per-component claim-vs-code 對抗驗證
+EOF
+run_hook "cat $POISON_VIEW_BRIEF | ${CX} exec"
+expect_block "8e. poisoned .claude authority paths do not satisfy canonical evidence" "5️⃣"
 
 # 9. stdin redirect full brief → silent
 run_hook "${CX} exec < $GOOD_BRIEF"
@@ -205,13 +260,17 @@ expect_pass_silent "9. stdin redirect full-brief file → silent"
 
 # 10. Escape clause @codex-brief-invariant-skip → silent even when invariants missing
 run_hook "cat $SKIP_BRIEF | ${CX} exec"
-expect_pass_silent "10. @codex-brief-invariant-skip escape → silent"
+expect_pass_silent "10. @peer-brief-invariant-skip escape → silent"
+
+# 10b. Existing Codex briefs keep their historical escape marker during migration.
+run_hook "cat $LEGACY_SKIP_BRIEF | ${CX} exec"
+expect_pass_silent "10b. Codex legacy escape remains provider-gated and compatible"
 
 # ── POSITIVE(should BLOCK exit 2)─────────────────────────────────
 
 # 11. inline brief MISSING all 4 invariants → BLOCK
 run_hook "${CX} exec \"please audit the button component padding\""
-expect_block "11. inline brief 缺全 4 invariant → BLOCK" "CODEX BRIEF MISSING INVARIANTS BLOCKER"
+expect_block "11. inline brief 缺全 4 invariant → BLOCK" "PEER BRIEF MISSING INVARIANTS BLOCKER"
 
 # 12. M34 over-narrow guard(real violation, near-complete brief): cat-pipe file
 #     缺 invariant 3(禁抽樣)only → BLOCK,且 stderr 必指出 3️⃣
@@ -229,15 +288,82 @@ fi
 # 13. M34 over-narrow guard: path-prefixed `node_modules/.bin/codex exec`(真實 local
 #     transport)+ 缺全 invariant → BLOCK(word-boundary `/` 必須匹配)
 run_hook "node_modules/.bin/${CX} exec \"audit the table\""
-expect_block "13. path-prefixed codex exec 缺 invariant → BLOCK" "CODEX BRIEF MISSING INVARIANTS BLOCKER"
+expect_block "13. path-prefixed codex exec 缺 invariant → BLOCK" "PEER BRIEF MISSING INVARIANTS BLOCKER"
 
 # 14. codex review subcommand(非 exec)缺 invariant → BLOCK
 run_hook "${CX} review \"check the current diff\""
-expect_block "14. codex review subcommand 缺 invariant → BLOCK" "CODEX BRIEF MISSING INVARIANTS BLOCKER"
+expect_block "14. codex review subcommand 缺 invariant → BLOCK" "PEER BRIEF MISSING INVARIANTS BLOCKER"
 
-# 15. empty tool_input(robustness)→ silent
+# 15. empty tool_input remains a valid unrelated Bash event.
 run_hook_raw_payload '{"tool_name":"Bash","tool_input":{}}'
 expect_pass_silent "15. empty tool_input → silent"
+
+run_hook_raw_payload '{'
+expect_integrity "15b. malformed input is integrity, not policy" "input envelope is invalid"
+
+SAVED_MARKERS="$GOVERNANCE_PEER_BRIEF_MARKERS_JSON"
+export GOVERNANCE_PEER_BRIEF_MARKERS_JSON='["exec",7]'
+run_hook "echo unrelated"
+expect_integrity "15c. invalid registry marker contract is integrity" "invocation markers"
+export GOVERNANCE_PEER_BRIEF_MARKERS_JSON="$SAVED_MARKERS"
+
+# 15d. A full provider command can exceed a pipe buffer. Keep both the peer invocation and
+# escape marker at the beginning, then append >256 KiB so producer | grep -q regressions would
+# emit raw stderr or invert the silent policy result.
+LARGE_COMMAND="$TMP_DIR/large-inline-command.txt"
+{
+  printf '%s\n' "${CX} exec \"// @peer-brief-invariant-skip: large inline replay"
+  awk 'BEGIN {
+    for (i = 0; i < 12000; i++) {
+      printf "large-brief-filler-%05d abcdefghijklmnopqrstuvwxyz0123456789\n", i
+    }
+  }'
+  printf '%s\n' '"'
+} >"$LARGE_COMMAND"
+if [ "$(wc -c <"$LARGE_COMMAND" | tr -d ' ')" -le 262144 ]; then
+  echo "  FAIL  15d. large command fixture is not larger than 256 KiB"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 15d. fixture size"
+else
+  jq -Rs '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Bash",
+    tool_input:{command:.}
+  }' <"$LARGE_COMMAND" >"$TMP_DIR/large-inline-command.json"
+  run_hook_payload_file "$TMP_DIR/large-inline-command.json"
+  expect_pass_silent "15d. >256 KiB early invocation/escape match remains silent"
+fi
+
+# 16/17. Unknown future provider is fully described by fixture data. The hook has no provider-id
+# branch;the test derives peer executable/markers and canonical paths from the fixture.
+FIXTURE_CORPUS="$TMP_DIR/future-corpus"
+mkdir -p "$FIXTURE_CORPUS"
+cat > "$FIXTURE_CORPUS/providers.json" <<'EOF'
+{
+  "canonical":{"roots":{"rules":"policy/rules","skills":"policy/workflows"}},
+  "providers":[
+    {"id":"orion","adapter":{"skillBindings":{"canonical-reviewer":{"peer":"nebula"}}}},
+    {"id":"nebula","displayName":"Nebula","runtime":{"cli":{"executable":"nebula","briefInvocationMarkers":["audit"]}}}
+  ]
+}
+EOF
+export GOVERNANCE_CORPUS_ROOT="$FIXTURE_CORPUS"
+export GOVERNANCE_PROVIDER_REGISTRY=providers.json
+export GOVERNANCE_SELF_PROVIDER=orion
+export GOVERNANCE_PEER_PROVIDER=$(jq -r '.providers[] | select(.id=="orion") | .adapter.skillBindings["canonical-reviewer"].peer' "$FIXTURE_CORPUS/providers.json")
+export GOVERNANCE_PEER_DISPLAY_NAME=$(jq -r --arg id "$GOVERNANCE_PEER_PROVIDER" '.providers[] | select(.id==$id) | .displayName' "$FIXTURE_CORPUS/providers.json")
+export GOVERNANCE_PEER_CLI=$(jq -r --arg id "$GOVERNANCE_PEER_PROVIDER" '.providers[] | select(.id==$id) | .runtime.cli.executable' "$FIXTURE_CORPUS/providers.json")
+export GOVERNANCE_PEER_BRIEF_MARKERS_JSON=$(jq -c --arg id "$GOVERNANCE_PEER_PROVIDER" '.providers[] | select(.id==$id) | .runtime.cli.briefInvocationMarkers' "$FIXTURE_CORPUS/providers.json")
+FUTURE_GOOD="$TMP_DIR/future-good.md"
+cat > "$FUTURE_GOOD" <<'EOF'
+全盤閱讀全部 source:policy/rules/meta-patterns.md + governance/memory/MEMORY.md
+triple-verify per finding;禁抽樣 DS-wide ALL files;禁列檔 只讀 9 file 直接出 verdict
+判準對等:讀 policy/workflows/design-system-audit/references/audit-prompts.md 逐 dim rubric
+A.1b per-component claim-vs-code 對抗驗證
+EOF
+run_hook "cat $FUTURE_GOOD | ${GOVERNANCE_PEER_CLI} audit"
+expect_pass_silent "16. unknown provider valid brief passes from fixture data only"
+run_hook "${GOVERNANCE_PEER_CLI} audit trivial"
+expect_block "17. unknown provider missing invariants blocks from same fixture data" "PEER BRIEF MISSING INVARIANTS"
 
 echo ""
 echo "=== Summary ==="

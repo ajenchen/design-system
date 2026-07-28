@@ -1,0 +1,149 @@
+{
+  "$schema": "../schemas/provider-cli-toolchain.schema.json",
+  "schemaVersion": 2,
+  "kind": "provider-cli-toolchain",
+  "registry": "https://registry.npmjs.org/",
+  "packageLock": {
+    "path": "infra/governance/providers/provider-cli-toolchain.package-lock.json",
+    "consumerPath": "governance/provider-cli-toolchain.package-lock.json",
+    "sha256": "fe7115dcbb9c096cc9c2aff069282636b942995399ace5dfd9ba68a7280d465f",
+    "lockfileVersion": 3,
+    "rootName": "@qijenchen/provider-cli-toolchain",
+    "rootVersion": "0.0.0",
+    "packageCount": 16
+  },
+  "packageContent": {
+    "protocol": "npm-ustar-package-tree-v1",
+    "modePolicy": "excluded-portable-content-only",
+    "packages": [
+      {
+        "lockPath": "node_modules/@anthropic-ai/claude-code",
+        "platforms": ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64"],
+        "treeSha256": "1dfd2f54a4b271a8eaef8fa3ee762ac99f2ad1ee819a9519478b18d3b8ac8699",
+        "fileCount": 7,
+        "totalBytes": 165282
+      },
+      {
+        "lockPath": "node_modules/@anthropic-ai/claude-code-darwin-arm64",
+        "platforms": ["darwin-arm64"],
+        "treeSha256": "c2ae47e35e9818ad32968d4cc800eed574ed5e0d30ff7cd9b64a45ca44e7c1a4",
+        "fileCount": 4,
+        "totalBytes": 247124913
+      },
+      {
+        "lockPath": "node_modules/@anthropic-ai/claude-code-darwin-x64",
+        "platforms": ["darwin-x64"],
+        "treeSha256": "5a924450c9c1282a761c0269894a2e30086e11eb3f0c523fe6fa3197dc31ecbe",
+        "fileCount": 4,
+        "totalBytes": 256540617
+      },
+      {
+        "lockPath": "node_modules/@anthropic-ai/claude-code-linux-arm64",
+        "platforms": ["linux-arm64"],
+        "treeSha256": "cfaf62cc5c19186a351e5490a545eb94a7a899093320e6f2a41a67ba078fba68",
+        "fileCount": 4,
+        "totalBytes": 262061554
+      },
+      {
+        "lockPath": "node_modules/@anthropic-ai/claude-code-linux-x64",
+        "platforms": ["linux-x64"],
+        "treeSha256": "3c862b2824ad072a7cb0af91b3b20864f5defb0d8ce15472081cf6a8ade400c9",
+        "fileCount": 4,
+        "totalBytes": 265240122
+      },
+      {
+        "lockPath": "node_modules/@openai/codex",
+        "platforms": ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64"],
+        "treeSha256": "65b09d23a8acdfd2f34c071e214bc63c30e1a5ab50133813f04de5b0631e626e",
+        "fileCount": 3,
+        "totalBytes": 11132
+      },
+      {
+        "lockPath": "node_modules/@openai/codex-darwin-arm64",
+        "platforms": ["darwin-arm64"],
+        "treeSha256": "1fe32ee35a7974fda0aff97286ea03f099e494d8049b25751795b6bcbcbb9028",
+        "fileCount": 7,
+        "totalBytes": 311636299
+      },
+      {
+        "lockPath": "node_modules/@openai/codex-darwin-x64",
+        "platforms": ["darwin-x64"],
+        "treeSha256": "aa2482a47de02d5acc5c48ac69573c75567c65a7c68876004f8d8662d5d16ea4",
+        "fileCount": 7,
+        "totalBytes": 337295946
+      },
+      {
+        "lockPath": "node_modules/@openai/codex-linux-arm64",
+        "platforms": ["linux-arm64"],
+        "treeSha256": "0fad650be947c1983b8df8e050fb6cfc6671944cfddc75324f34d11de516db85",
+        "fileCount": 8,
+        "totalBytes": 308594479
+      },
+      {
+        "lockPath": "node_modules/@openai/codex-linux-x64",
+        "platforms": ["linux-x64"],
+        "treeSha256": "c7cfca02906e56f4bfa00a4b23a2696fd7d78b5b64bda9931d1e1705445d61ea",
+        "fileCount": 8,
+        "totalBytes": 351524922
+      }
+    ]
+  },
+  "installPolicy": {
+    "ignoreScripts": true,
+    "signatureAudit": true,
+    "auditLevel": "high",
+    "runtimeDirectory": "node_modules/.provider-cli-toolchain",
+    "shimDirectory": "node_modules/.bin",
+    "supportedPlatforms": [
+      "darwin-arm64",
+      "darwin-x64",
+      "linux-arm64",
+      "linux-x64"
+    ]
+  },
+  "providerBindings": [
+    {
+      "providerId": "codex",
+      "provisioning": "repo-provisioned-cli",
+      "toolProviderId": "codex"
+    },
+    {
+      "providerId": "claude-code",
+      "provisioning": "repo-provisioned-cli",
+      "toolProviderId": "claude-code"
+    },
+    {
+      "providerId": "ci",
+      "provisioning": "external-runtime",
+      "toolProviderId": null
+    }
+  ],
+  "tools": [
+    {
+      "providerId": "claude-code",
+      "packageName": "@anthropic-ai/claude-code",
+      "version": "2.1.215",
+      "executable": "claude",
+      "binKind": "platform-native",
+      "packageBin": "bin/claude.exe",
+      "platformPackage": {
+        "nameTemplate": "@anthropic-ai/claude-code-{platform}",
+        "executablePath": "claude"
+      },
+      "versionProbe": "exact-semver-token"
+    },
+    {
+      "providerId": "codex",
+      "packageName": "@openai/codex",
+      "version": "0.144.6",
+      "executable": "codex",
+      "binKind": "node-entrypoint",
+      "packageBin": "bin/codex.js",
+      "platformPackage": {
+        "nameTemplate": "@openai/codex-{platform}",
+        "executablePath": null
+      },
+      "versionProbe": "exact-semver-token"
+    }
+  ]
+}

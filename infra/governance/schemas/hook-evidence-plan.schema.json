@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/deep-audit-hook-evidence-plan-v1.json",
+  "title": "Provider-neutral production evidence plan for HOOK-ENFORCED audit dimensions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "inventory", "enforcementSuite", "dimensions"],
+  "properties": {
+    "$schema": { "const": "schemas/hook-evidence-plan.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "deep-audit-hook-evidence-plan" },
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "includePrefixes", "minimumFiles"],
+      "properties": {
+        "source": { "const": "active-run-frozen-inventory" },
+        "includePrefixes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/repositoryDirectory" }
+        },
+        "minimumFiles": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "enforcementSuite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "testsRoot"],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "testsRoot": { "$ref": "#/$defs/repositoryDirectory" }
+      }
+    },
+    "dimensions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/dimension" }
+    }
+  },
+  "$defs": {
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\\\)[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "repositoryDirectory": {
+      "allOf": [
+        { "$ref": "#/$defs/repositoryPath" },
+        { "type": "string", "pattern": "/$" }
+      ]
+    },
+    "hookInvocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hook", "event", "tool"],
+      "properties": {
+        "hook": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+$" },
+        "event": { "enum": ["PreToolUse", "PostToolUse"] },
+        "tool": { "enum": ["Edit", "Write", "MultiEdit"] }
+      }
+    },
+    "focusedContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract", "hook", "event", "tool", "test"],
+      "properties": {
+        "contract": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "hook": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+$" },
+        "event": { "enum": ["PreToolUse", "PostToolUse", "Stop", "SessionStart", "UserPromptSubmit"] },
+        "tool": { "type": "string" },
+        "test": { "type": "string", "pattern": "^test_[A-Za-z0-9_.-]+\\.sh$" }
+      }
+    },
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dim", "ruleId", "capability", "mechanismRefs", "enforcementTests", "fileReplays", "focusedContracts"],
+      "properties": {
+        "dim": { "type": "integer", "minimum": 1 },
+        "ruleId": { "type": "string", "pattern": "^DS-DIM-[0-9]{3}$" },
+        "capability": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "mechanismRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 3 }
+        },
+        "enforcementTests": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^test_[A-Za-z0-9_.-]+\\.sh$" }
+        },
+        "fileReplays": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/hookInvocation" }
+        },
+        "focusedContracts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/focusedContract" }
+        }
+      }
+    }
+  }
+}

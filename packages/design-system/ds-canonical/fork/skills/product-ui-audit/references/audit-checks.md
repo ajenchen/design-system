@@ -1,3 +1,4 @@
+> **Product-role projection(build 自動)**:本 skill 的執行步驟已只保留本 product repo 實際存在的指令。DS-author-only executor 會被改寫為 browser/manual/product-CI 等價驗證,不得在 product 中嘗試不存在的腳本。
 # Audit Checks — 7 維度 grep pattern + rule
 
 每個維度的具體 check。AI Phase 1 parallel 執行時依此 grep + rule 判斷。
@@ -12,7 +13,7 @@
 grep -nE '\b(bg-popover|text-popover-foreground|text-muted-foreground|bg-accent|text-accent-foreground|bg-destructive|bg-background|bg-card|text-card-foreground|border-input|text-primary-foreground)\b' {target}
 ```
 
-**Severity**: P0。**Fix**: 對映見 token 防線 `lib/_token_hygiene.sh` + `check_opacity_token_usage.sh`。
+**Severity**: P0。**Fix**: 對映見 token 防線 the installed immutable governance checker + the installed immutable governance checker。
 
 ### Check 1.2: Tailwind default shadow
 
@@ -36,7 +37,7 @@ grep -nE '\[--[a-z][a-z0-9-]*\]' {target} | grep -v '\[&'
 grep -nE '#[0-9a-fA-F]{3,8}\b|rgb\(|rgba\(|hsl\(|hsla\(' {target}
 ```
 
-**Severity**: P0。**Exception**: `#fff` 在 Avatar / Tag 白字變體是 documented cva exception(object map 非 cva,per CLAUDE.md `cva 適用範圍`);anatomy inspector chrome 顏色 highlight(`bg: 'rgba(...)'` in `.anatomy.stories.tsx`)。**Fix**: 改 semantic token(`var(--primary)` / `bg-primary` 等)。
+**Severity**: P0。**Exception**: `#fff` 在 Avatar / Tag 白字變體是 documented cva exception(object map 非 cva,per shared governance `cva 適用範圍`);anatomy inspector chrome 顏色 highlight(`bg: 'rgba(...)'` in `.anatomy.stories.tsx`)。**Fix**: 改 semantic token(`var(--primary)` / `bg-primary` 等)。
 
 ### Check 1.5: 硬寫 px 當應用 token
 
@@ -176,7 +177,10 @@ grep -nE '(Option [A-E]|按鈕[一二三四五]|Rule [A-E]|Variant [A-E]|Placeho
 grep -nE '(TODO:\s*待確認|TODO:\s*decide|FIXME|XXX)' {target}
 ```
 
-**Severity**: P2(必討論)。**Fix**: 若是規格未定應 surface 給 user 決策,不在 code 留模糊 TODO。
+**Severity**:先依 authority classifier 分流。工程 debt、測試缺口、既有 SSOT 落地或可由
+repo evidence 唯一推導的留白 = P2E，自主修復／移除並驗證；只有 TODO 真正代表未決的
+產品／UI／UX SSOT 選擇，且 evidence 收斂後仍有取捨，才是 P2H 並 surface exact target。
+不得把所有 TODO/FIXME/XXX 一律當 user decision。
 
 ### Check 4.3: cva defaultVariants 三方漂移(M3)
 
@@ -192,7 +196,7 @@ grep -nE '(TODO:\s*待確認|TODO:\s*decide|FIXME|XXX)' {target}
 
 例: FileItem `status slot(16px)` + `delete Button sm(28px)` = 不一致 → hover-bg 吃 gap。
 
-**Severity**: P0(世界級 DS 鐵律違反,違反 node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md「同 flex 列的互動 slot 幾何鐵律」)。
+**Severity**: P0(世界級 DS 鐵律違反,違反 `node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md`「同 flex 列的互動 slot 幾何鐵律」)。
 
 ### Check 5.2: 自造 typography tier
 
@@ -236,7 +240,7 @@ grep -nE '<(div|span)[^>]*onClick='
 
 ## 合法例外(documented)
 
-以下 hit 不是 bug,由既有 spec / CLAUDE.md 記錄為合理例外:
+以下 hit 不是 bug,由既有 spec / shared governance 記錄為合理例外:
 
 - **Avatar 白字**(`text: '#fff'`): cva 適用範圍例外(style prop 驅動用 object map 而非 cva),per `cva 適用範圍` 章節。
 - **Anatomy inspector chrome**(`bg: 'rgba(...)'` in `.anatomy.stories.tsx`): dev-tool highlight 非 consumer UI token。

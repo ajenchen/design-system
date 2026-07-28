@@ -2,19 +2,21 @@
 # Tests for check_story_invariants.sh(Cluster A merge dispatcher,2026-05-10)
 #
 # Hook 規則:Pre/PostToolUse + Edit|Write|MultiEdit + *.stories.tsx
-# 內部 8 rule:
+# 內部 10 rules:
 #   R1 anatomy(PreToolUse;raw hand-craft item/table/loading/overlay/dismiss → exit 2)
 #   R2 slot_split(PreToolUse;WithStartIcon+WithEndIcon / Default+AllVariants 拆 → exit 2)
-#   R3 category(PreToolUse;trait-based — 需 spec.md frontmatter,本 test 不 cover)
-#   R4 title_canonical(PreToolUse;non-canonical English name: → P1 stderr warn only)
+#   R3 category(PreToolUse;trait-based — spec/frontmatter cases由 companion focused test cover)
+#   R4 title_canonical(PreToolUse;non-canonical English name: → P1 neutral context)
 #   R5 name_jargon(PostToolUse;reads disk;L<n> layer / canonical / 中英夾雜 jargon)
-#   R6 description_jargon(PostToolUse;TS generic in description: → stderr warn)
-#   R7 story_baseline_reference(PreToolUse;wrap Sidebar/ChromeHeader/DataTable 無 baseline marker → stderr warn)
-#   R8 story_archetype_registry(PreToolUse;讀 .claude/references/story-baseline-registry.json;
+#   R6 description_jargon(PostToolUse;TS generic in description: → neutral context)
+#   R7 story_baseline_reference(PreToolUse;wrap Sidebar/ChromeHeader/DataTable 無 baseline marker → context)
+#   R8 story_archetype_registry(PreToolUse;讀 canonical references/story-baseline-registry.json;
 #      block-severity antiPattern → P0 record_worst 2,2026-06-02 升 P0)
+#   R9 handcraft_overlay_header(PreToolUse;手刻浮層/header chrome → exit 2)
+#   R10 link_canonical(PreToolUse;link hover drift → neutral context)
 #
 # Test 重點:silent skip / 各 rule fire / allowlist marker escape。
-# 不測 R3(需 spec.md frontmatter);R8 P0 block-severity 已測(#11 單行 / #12-14 多行回歸防護,2026-06-03)。
+# R3 spec/frontmatter 與 trusted after-image stale-disk 回歸在 test_check_story_category.sh。
 
 set -u
 
@@ -36,27 +38,122 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 run_hook() {
   local event="$1"; local tool="$2"; local file_path="$3"; local content="$4"
   local payload
+  CURRENT_EVENT="$event"
   if [ "$tool" = "Edit" ]; then
-    payload=$(jq -n \
-      --arg ev "$event" --arg tn "$tool" --arg fp "$file_path" --arg c "$content" \
-      '{hook_event_name:$ev, tool_name:$tn, tool_input:{file_path:$fp, new_string:$c}}')
+    payload=$(printf '%s' "$content" | jq -Rs \
+      --arg ev "$event" --arg tn "$tool" --arg fp "$file_path" \
+      '{hook_event_name:$ev, tool_name:$tn, tool_input:{file_path:$fp, new_string:.}}')
   else
-    payload=$(jq -n \
-      --arg ev "$event" --arg tn "$tool" --arg fp "$file_path" --arg c "$content" \
-      '{hook_event_name:$ev, tool_name:$tn, tool_input:{file_path:$fp, content:$c}}')
+    payload=$(printf '%s' "$content" | jq -Rs \
+      --arg ev "$event" --arg tn "$tool" --arg fp "$file_path" \
+      '{hook_event_name:$ev, tool_name:$tn, tool_input:{file_path:$fp, content:.}}')
   fi
   STDOUT=$(mktemp); STDERR=$(mktemp)
   set +e
-  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  printf '%s' "$payload" | GOVERNANCE_PROJECT_DIR="$TMP_DIR" GOVERNANCE_PROVIDER=codex \
+    GOVERNANCE_READ_ONLY=1 bash "$HOOK" >"$STDOUT" 2>"$STDERR"
   EXIT=$?
   set -e
+  STDOUT_TEXT=$(cat "$STDOUT")
   STDERR_TEXT=$(cat "$STDERR")
   rm -f "$STDOUT" "$STDERR"
 }
 
+run_raw() {
+  local payload="$1"
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | GOVERNANCE_PROJECT_DIR="$TMP_DIR" GOVERNANCE_PROVIDER=codex \
+    GOVERNANCE_READ_ONLY=1 bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDOUT_TEXT=$(cat "$STDOUT")
+  STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR"
+}
+
+run_raw_trusted() {
+  local payload="$1"
+  CURRENT_EVENT="PreToolUse"
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" \
+    | GOVERNANCE_PROJECT_DIR="$TMP_DIR" GOVERNANCE_PROVIDER=codex \
+      GOVERNANCE_READ_ONLY=1 GOVERNANCE_WRITE_STATE_TRUST=runner-v1 \
+      bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDOUT_TEXT=$(cat "$STDOUT")
+  STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR"
+}
+
+run_raw_bounded() {
+  local payload="$1"
+  local input_file="$TMP_DIR/bounded-hook-input.json"
+  CURRENT_EVENT="PreToolUse"
+  printf '%s' "$payload" > "$input_file"
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  python3 - "$HOOK" "$input_file" "$STDOUT" "$STDERR" "$TMP_DIR" <<'PY'
+import os
+import signal
+import subprocess
+import sys
+
+hook, input_path, stdout_path, stderr_path, project_dir = sys.argv[1:]
+environment = {
+    **os.environ,
+    "GOVERNANCE_PROJECT_DIR": project_dir,
+    "GOVERNANCE_PROVIDER": "codex",
+    "GOVERNANCE_READ_ONLY": "1",
+}
+with (
+    open(input_path, "rb") as stdin,
+    open(stdout_path, "wb") as stdout,
+    open(stderr_path, "wb") as stderr,
+):
+    child = subprocess.Popen(
+        ["bash", hook],
+        stdin=stdin,
+        stdout=stdout,
+        stderr=stderr,
+        env=environment,
+        start_new_session=True,
+    )
+    try:
+        exit_code = child.wait(timeout=20)
+    except subprocess.TimeoutExpired:
+        os.killpg(child.pid, signal.SIGKILL)
+        child.wait()
+        exit_code = 124
+sys.exit(exit_code)
+PY
+  EXIT=$?
+  set -e
+  STDOUT_TEXT=$(cat "$STDOUT")
+  STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR" "$input_file"
+}
+
+is_exact_context() {
+  local event="$1" needle="$2" compact
+  compact=$(printf '%s' "$STDOUT_TEXT" | jq -c . 2>/dev/null) || return 1
+  [ "$STDOUT_TEXT" = "$compact" ] || return 1
+  printf '%s' "$STDOUT_TEXT" | jq -se --arg event "$event" --arg needle "$needle" '
+    length == 1
+    and (.[0] | type == "object" and (keys | sort) == ["governanceContext"])
+    and (.[0].governanceContext |
+      type == "object"
+      and (keys | sort) == ["hookEventName", "message"]
+      and .hookEventName == $event
+      and (.message | type == "string" and length > 0 and contains($needle)))
+  ' >/dev/null
+}
+
 expect_pass_silent() {
   local name="$1"
-  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ]; then
+  if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ]; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
     echo "  FAIL  $name (expected silent, exit=$EXIT, stderr=$([ -n "$STDERR_TEXT" ] && echo non-empty || echo empty))"
@@ -67,7 +164,10 @@ expect_pass_silent() {
 
 expect_block() {
   local name="$1"; local needle="$2"
-  if [ "$EXIT" = "2" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
+  if [ "$EXIT" = "2" ] && [ -z "$STDOUT_TEXT" ] \
+    && grep -qF "$needle" <<< "$STDERR_TEXT" \
+    && ! grep -qF "GOVERNANCE_INTEGRITY:" <<< "$STDERR_TEXT" \
+    && ! grep -qiF "broken pipe" <<< "$STDERR_TEXT"; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
     echo "  FAIL  $name (expected BLOCK exit=2 + '$needle', got exit=$EXIT)"
@@ -78,11 +178,25 @@ expect_block() {
 
 expect_warn() {
   local name="$1"; local needle="$2"
-  if [ "$EXIT" = "0" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
+  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] \
+    && is_exact_context "${CURRENT_EVENT:-PreToolUse}" "$needle"; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
-    echo "  FAIL  $name (expected stderr warn '$needle', exit=$EXIT)"
+    echo "  FAIL  $name (expected exact governance context '$needle', exit=$EXIT)"
+    echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+  fi
+}
+
+expect_integrity() {
+  local name="$1"; local needle="$2"
+  if [ "$EXIT" = "70" ] && [ -z "$STDOUT_TEXT" ] \
+    && grep -qF "GOVERNANCE_INTEGRITY:" <<< "$STDERR_TEXT" \
+    && grep -qF "$needle" <<< "$STDERR_TEXT"; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (expected stderr-only integrity failure containing '$needle', exit=$EXIT)"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
 }
@@ -147,7 +261,7 @@ export const Disabled = { args: { disabled: true } };
 '
 expect_pass_silent "7. clean story (AllVariants + Disabled, no anti-patterns) → silent"
 
-# 8. R5 name_jargon (PostToolUse, reads disk): L<n> layer name → stderr warn
+# 8. R5 name_jargon (PostToolUse, reads disk): L<n> layer name → context
 STORIES_DISK="$TMP_DIR/datatable.stories.tsx"
 cat > "$STORIES_DISK" <<'EOF'
 export const Default = {
@@ -155,29 +269,7 @@ export const Default = {
 };
 EOF
 run_hook "PostToolUse" "Edit" "$STORIES_DISK" "(any update marker)"
-# R5 emits 'L<n> layer 代號' warning via stderr-injected context;但實際 hook emit
-# 是 jq stdout JSON,我們檢 STDERR 是否含 violation 或 stdout — 兩種任一即算 hit。
-# 觀察 source:rule_name_jargon 用 jq -n stdout(不是 stderr)。改檢 STDOUT。
-# 重跑 — 拿 stdout
-payload=$(jq -n --arg ev "PostToolUse" --arg fp "$STORIES_DISK" \
-  '{hook_event_name:$ev, tool_name:"Edit", tool_input:{file_path:$fp, new_string:""}}')
-STDOUT_PATH=$(mktemp); STDERR_PATH=$(mktemp)
-set +e
-printf '%s' "$payload" | bash "$HOOK" >"$STDOUT_PATH" 2>"$STDERR_PATH"
-EXIT=$?
-set -e
-STDOUT_TEXT=$(cat "$STDOUT_PATH")
-STDERR_TEXT=$(cat "$STDERR_PATH")
-rm -f "$STDOUT_PATH" "$STDERR_PATH"
-if [ "$EXIT" = "0" ] && echo "$STDOUT_TEXT" | grep -q "L<n>"; then
-  echo "  PASS  8. R5 PostToolUse L<n> layer name → stdout JSON warn"
-  PASS=$((PASS+1))
-else
-  echo "  FAIL  8. R5 PostToolUse L<n> layer name → expected stdout 'L<n>'"
-  echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'
-  echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'
-  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 8. R5"
-fi
+expect_warn "8. R5 PostToolUse L<n> layer name → exact context" "L<n>"
 
 # 9. R4 title_canonical: prop-leak syntax in name → P1 stderr warn (exit 0)
 # Use prop/parameter leak pattern `(prop)` which matches `\([a-zA-Z]+\)` branch — robust on macOS BSD grep
@@ -204,6 +296,8 @@ expect_warn "10. R7 wrap <Sidebar> no @story-baseline → stderr warn" "R7 story
 # 11. R8 archetype registry P0(2026-06-02 升 P0;DS+consumer 零違規確認後升級):
 #     wrap <Sidebar> + simplified <SidebarHeader><span> mock(registry block-severity antiPattern)→ BLOCK
 #     有 @story-baseline marker(R7 missing-marker 不 fire)→ exit 2 純由 R8 record_worst 2 造成
+mkdir -p "$TMP_DIR/.claude/references"
+printf '%s\n' '{"components":{}}' > "$TMP_DIR/.claude/references/story-baseline-registry.json"
 STORIES_R8="/foo/my-project/packages/design-system/src/components/AppShell/app-shell-r8.stories.tsx"
 run_hook "PreToolUse" "Write" "$STORIES_R8" '
 // @story-baseline: @qijenchen/design-system/components/Sidebar/sidebar.stories.tsx#IconCollapse
@@ -213,7 +307,7 @@ export const Default = () => (
   </Sidebar>
 );
 '
-expect_block "11. R8 simplified-mock <SidebarHeader><span> → P0 BLOCK" "R8 story_archetype_registry"
+expect_block "11. R8 canonical registry blocks even when .claude view is poisoned" "R8 story_archetype_registry"
 
 # 12. R8 MULTI-LINE Sidebar drift(2026-06-03 回歸防護;修前 grep -E line-oriented + \s 當字面 's' → 多行靜默漏 = 假 P0):
 #     <SidebarHeader> 與 <span> 分行(真實 JSX 縮排格式)→ 修後(hook tr 換行→空格 + regex [[:space:]])應 BLOCK
@@ -374,6 +468,428 @@ run_hook "PreToolUse" "Edit" "/foo/my-project/packages/design-system/src/compone
 <span className="text-fg-muted font-mono">text-primary · hover:underline · 點擊開啟連結</span>
 '
 expect_pass_silent "28. R10 描述 label(· 分隔)→ 不誤判"
+
+# 29. Multiple PostToolUse warnings from independent rules must become one exact envelope.
+STORIES_MULTI="$TMP_DIR/multi-warning.stories.tsx"
+cat > "$STORIES_MULTI" <<'EOF'
+export const Default = {
+  name: 'L2 API canonical',
+  parameters: {
+    docs: {
+      description: {
+        story: `回傳 Record<string, string>`,
+      },
+    },
+  },
+};
+EOF
+run_hook "PostToolUse" "Edit" "$STORIES_MULTI" "(post update)"
+if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] \
+  && is_exact_context "PostToolUse" "R5 name jargon" \
+  && printf '%s' "$STDOUT_TEXT" | jq -e \
+    '.governanceContext.message | contains("R6 description jargon")' >/dev/null; then
+  echo "  PASS  29. R5+R6 warnings → one exact PostToolUse context"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL  29. PostToolUse warning aggregation contract"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 29. warning aggregation"
+fi
+
+run_raw '{'
+if [ "$EXIT" = "70" ] && [ -z "$STDOUT_TEXT" ] \
+  && grep -qF "GOVERNANCE_INTEGRITY:" <<< "$STDERR_TEXT" \
+  && grep -qF "invalid input envelope" <<< "$STDERR_TEXT"; then
+  echo "  PASS  30. malformed input → stderr-only integrity failure"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL  30. malformed input output contract"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 30. malformed input"
+fi
+
+# 31-33. Large-payload regressions: every payload exceeds 256 KiB and places the
+# decisive allow/policy token before a large trailing body. These caught producer
+# SIGPIPE under `set -o pipefail` when `grep -q` stopped reading early.
+LARGE_FILLER=$(awk 'BEGIN {
+  for (i = 0; i < 5000; i++) {
+    printf "safe_%08d_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", i
+  }
+}')
+if [ "${#LARGE_FILLER}" -le 262144 ]; then
+  echo "FATAL: large story regression fixture must exceed 256 KiB"
+  exit 1
+fi
+
+LARGE_ALLOW_CONTENT="// @story-split-rationale: intentional split for migration
+export const WithStartIcon = { args: { startIcon: true } };
+export const WithEndIcon = { args: { endIcon: true } };
+// ${LARGE_FILLER}"
+run_hook "PreToolUse" "Write" "$STORIES_BTN" "$LARGE_ALLOW_CONTENT"
+expect_pass_silent "31. >256KiB early allow marker → exact silent allow"
+
+LARGE_CLEAN_CONTENT="export const Disabled = { args: { disabled: true } };
+// ${LARGE_FILLER}"
+run_hook "PreToolUse" "Write" "$STORIES_CLEAN" "$LARGE_CLEAN_CONTENT"
+expect_pass_silent "32. >256KiB clean payload → exact silent allow"
+
+LARGE_FINDING_CONTENT="export const Variants = { args: {} };
+// ${LARGE_FILLER}"
+run_hook "PreToolUse" "Write" "$STORIES_CLEAN" "$LARGE_FINDING_CONTENT"
+expect_block "33. >256KiB early policy finding → exact block, no integrity failure" "Variants → AllVariants"
+
+# 34. Provider-neutral normalized envelopes may carry compatibility aliases for
+# the same mutation. The hook must select the tool's authoritative field once,
+# rather than multiplying one finding through content/new_string/edits.
+ALIAS_FINDING='<table><tr><td>x</td></tr></table>'
+ALIAS_PAYLOAD=$(jq -cn \
+  --arg content "$ALIAS_FINDING" \
+  --arg fp "$STORIES_BTN" \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{
+      file_path:$fp,
+      content:$content,
+      new_string:$content,
+      edits:[{new_string:$content}]
+    }
+  }')
+run_raw "$ALIAS_PAYLOAD"
+ALIAS_FINDING_COUNT=$(grep -c '\[A.2 raw <table>\]' <<< "$STDERR_TEXT" || true)
+if [ "$EXIT" = "2" ] && [ "$ALIAS_FINDING_COUNT" = "1" ] \
+  && [ -z "$STDOUT_TEXT" ] \
+  && ! grep -qF "GOVERNANCE_INTEGRITY:" <<< "$STDERR_TEXT"; then
+  echo "  PASS  34. normalized compatibility aliases → authoritative Edit payload scanned once"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL  34. normalized compatibility aliases duplicated or corrupted the finding (exit=$EXIT, count=$ALIAS_FINDING_COUNT)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 34. normalized alias selection"
+fi
+
+# 35. Real stories are line-rich, not just one very long line. Keep an explicit
+# process-group timeout so a regression in flattening/per-line scanning fails
+# promptly instead of hanging the canonical enforcement suite.
+LINE_RICH_CONTENT=$(awk 'BEGIN {
+  for (i = 0; i < 4000; i++) {
+    printf "const safeLine%04d = %d; // inert story fixture padding for linear replay\n", i, i
+  }
+}')
+LINE_RICH_PAYLOAD=$(printf '%s' "$LINE_RICH_CONTENT" | jq -Rs \
+  --arg fp "$STORIES_CLEAN" \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{
+      file_path:$fp,
+      content: .,
+      new_string: .,
+      edits:[{new_string:.}]
+    }
+  }')
+run_raw_bounded "$LINE_RICH_PAYLOAD"
+expect_pass_silent "35. 4,000-line normalized full-file replay → silent within 20s budget"
+
+# 36. event-v1 fallback must ignore a null compatibility alias and select the
+# valid provider materialization instead of silently scanning an empty string.
+NULL_ALIAS_PAYLOAD=$(jq -cn \
+  --arg content "$ALIAS_FINDING" \
+  --arg fp "$STORIES_BTN" \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{file_path:$fp,new_string:null,content:$content}
+  }')
+run_raw "$NULL_ALIAS_PAYLOAD"
+expect_block "36. null Edit alias + valid content fallback → R1 still blocks" "raw <table>"
+
+# 37-38. The event-v1 adapter shape can expose Edit content without a native
+# new_string. R7/R8 must consume the unified mutation text.
+CONTENT_ONLY_R7=$(jq -cn \
+  --arg fp "$STORIES_APP" \
+  --arg content '<Sidebar><WorkspaceBrand /></Sidebar>' \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{file_path:$fp,content:$content}
+  }')
+run_raw "$CONTENT_ONLY_R7"
+expect_warn "37. adapter-shaped Edit content-only → R7 warning survives" "R7 story_baseline_reference"
+
+CONTENT_ONLY_R8=$(jq -cn \
+  --arg fp "$STORIES_R8" \
+  --arg content '<Sidebar><SidebarHeader><span>Acme</span></SidebarHeader></Sidebar>' \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{file_path:$fp,content:$content}
+  }')
+run_raw "$CONTENT_ONLY_R8"
+expect_block "38. adapter-shaped Edit content-only → R8 block survives" "R8 story_archetype_registry"
+
+# 39-43. proposed-text-v1 is the managed PreToolUse contract. The trusted full
+# after-image wins over raw fragments for Edit and MultiEdit; malformed,
+# mismatched, or untrusted states fail closed.
+PROPOSED_REL="packages/design-system/src/components/AppShell/proposed.stories.tsx"
+PROPOSED_FP="$TMP_DIR/$PROPOSED_REL"
+PROPOSED_VIOLATION='<Sidebar><SidebarHeader><span>Acme</span></SidebarHeader></Sidebar>'
+PROPOSED_PAYLOAD=$(jq -cn \
+  --arg fp "$PROPOSED_FP" \
+  --arg rel "$PROPOSED_REL" \
+  --arg proposed "$PROPOSED_VIOLATION" \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{
+      file_path:$fp,
+      new_string:"<Sidebar><WorkspaceBrand /></Sidebar>",
+      governance_write_state:{
+        schemaVersion:1,
+        path:$rel,
+        kind:"text",
+        content:$proposed
+      }
+    }
+  }')
+run_raw_trusted "$PROPOSED_PAYLOAD"
+expect_block "39. proposed-text Edit after-image wins over clean raw fragment" "R8 story_archetype_registry"
+
+PROPOSED_MULTI=$(jq -cn \
+  --arg fp "$PROPOSED_FP" \
+  --arg rel "$PROPOSED_REL" \
+  --arg proposed "$PROPOSED_VIOLATION" \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"MultiEdit",
+    tool_input:{
+      file_path:$fp,
+      edits:[{new_string:"clean fragment"}],
+      governance_write_state:{
+        schemaVersion:1,
+        path:$rel,
+        kind:"text",
+        content:$proposed
+      }
+    }
+  }')
+run_raw_trusted "$PROPOSED_MULTI"
+expect_block "40. proposed-text MultiEdit receives the same R8 enforcement" "R8 story_archetype_registry"
+
+PROPOSED_MISSING=$(jq -cn \
+  --arg fp "$PROPOSED_FP" \
+  '{hook_event_name:"PreToolUse",tool_name:"Edit",tool_input:{file_path:$fp,new_string:"clean"}}')
+run_raw_trusted "$PROPOSED_MISSING"
+expect_integrity "41. runner trust without proposed state → fail closed" "missing or malformed"
+
+PROPOSED_MISMATCH=$(jq -cn \
+  --arg fp "$PROPOSED_FP" \
+  --arg proposed "$PROPOSED_VIOLATION" \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{
+      file_path:$fp,
+      governance_write_state:{
+        schemaVersion:1,
+        path:"packages/design-system/src/components/Other/other.stories.tsx",
+        kind:"text",
+        content:$proposed
+      }
+    }
+  }')
+run_raw_trusted "$PROPOSED_MISMATCH"
+expect_integrity "42. mismatched proposed state path → fail closed" "does not match"
+
+PROPOSED_DELETED=$(jq -cn \
+  --arg fp "$PROPOSED_FP" \
+  --arg rel "$PROPOSED_REL" \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{
+      file_path:$fp,
+      governance_write_state:{schemaVersion:1,path:$rel,kind:"deleted"}
+    }
+  }')
+run_raw_trusted "$PROPOSED_DELETED"
+expect_pass_silent "43. trusted deletion after-image → silent"
+
+# 44. A line-rich story can legitimately contain many harmless divs. Keep this
+# separate from inert text so the R1 candidate prefilter itself stays bounded.
+DIV_HEAVY_CONTENT=$(awk 'BEGIN {
+  for (i = 0; i < 2500; i++) {
+    printf "<div className=\"grid gap-2\">safe-%04d</div>\n", i
+  }
+}')
+DIV_HEAVY_PAYLOAD=$(printf '%s' "$DIV_HEAVY_CONTENT" | jq -Rs \
+  --arg fp "$STORIES_CLEAN" \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{file_path:$fp,new_string:.}
+  }')
+run_raw_bounded "$DIV_HEAVY_PAYLOAD"
+expect_pass_silent "44. 2,500 harmless div lines → silent within 20s budget"
+
+# 45-50. A trusted full after-image is the sole marker authority. Removing an
+# old disk exemption/citation must take effect in the same mutation.
+MARKER_REL="packages/design-system/src/components/Foo/marker-removal.stories.tsx"
+MARKER_FP="$TMP_DIR/$MARKER_REL"
+mkdir -p "$(dirname "$MARKER_FP")"
+
+printf '%s\n' \
+  '// @anatomy-exempt: old exception' \
+  '<table><tr><td>x</td></tr></table>' > "$MARKER_FP"
+MARKER_PAYLOAD=$(jq -cn \
+  --arg fp "$MARKER_FP" --arg rel "$MARKER_REL" \
+  --arg proposed '<table><tr><td>x</td></tr></table>' \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{
+      file_path:$fp,
+      governance_write_state:{schemaVersion:1,path:$rel,kind:"text",content:$proposed}
+    }
+  }')
+run_raw_trusted "$MARKER_PAYLOAD"
+expect_block "45. removing @anatomy-exempt → R1 blocks immediately" "raw <table>"
+
+printf '%s\n' \
+  '// @story-split-rationale: old exception' \
+  'export const WithStartIcon = {};' \
+  'export const WithEndIcon = {};' > "$MARKER_FP"
+MARKER_PAYLOAD=$(jq -cn \
+  --arg fp "$MARKER_FP" --arg rel "$MARKER_REL" \
+  --arg proposed $'export const WithStartIcon = {};\nexport const WithEndIcon = {};' \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{
+      file_path:$fp,
+      governance_write_state:{schemaVersion:1,path:$rel,kind:"text",content:$proposed}
+    }
+  }')
+run_raw_trusted "$MARKER_PAYLOAD"
+expect_block "46. removing @story-split-rationale → R2 blocks immediately" "WithStartIcon + WithEndIcon"
+
+printf '%s\n' \
+  '// @story-name-canonical-allow: old exception' \
+  "export const Default = { name: 'Default (size=md)' };" > "$MARKER_FP"
+MARKER_PAYLOAD=$(jq -cn \
+  --arg fp "$MARKER_FP" --arg rel "$MARKER_REL" \
+  --arg proposed "export const Default = { name: 'Default (size=md)' };" \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{
+      file_path:$fp,
+      governance_write_state:{schemaVersion:1,path:$rel,kind:"text",content:$proposed}
+    }
+  }')
+run_raw_trusted "$MARKER_PAYLOAD"
+expect_warn "47. removing @story-name-canonical-allow → R4 warns immediately" "R4 title_canonical"
+
+printf '%s\n' \
+  '// @story-baseline: old citation being removed' \
+  '<Sidebar><WorkspaceBrand /></Sidebar>' > "$MARKER_FP"
+MARKER_PAYLOAD=$(jq -cn \
+  --arg fp "$MARKER_FP" --arg rel "$MARKER_REL" \
+  --arg proposed '<Sidebar><WorkspaceBrand /></Sidebar>' \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{
+      file_path:$fp,
+      governance_write_state:{schemaVersion:1,path:$rel,kind:"text",content:$proposed}
+    }
+  }')
+run_raw_trusted "$MARKER_PAYLOAD"
+expect_warn "48. removing @story-baseline citation → R7 warns immediately" "R7 story_baseline_reference"
+
+printf '%s\n' \
+  '// @story-baseline-allow: old exception' \
+  '<Sidebar><SidebarHeader><span>Acme</span></SidebarHeader></Sidebar>' > "$MARKER_FP"
+MARKER_PAYLOAD=$(jq -cn \
+  --arg fp "$MARKER_FP" --arg rel "$MARKER_REL" \
+  --arg proposed '<Sidebar><SidebarHeader><span>Acme</span></SidebarHeader></Sidebar>' \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{
+      file_path:$fp,
+      governance_write_state:{schemaVersion:1,path:$rel,kind:"text",content:$proposed}
+    }
+  }')
+run_raw_trusted "$MARKER_PAYLOAD"
+expect_block "49. removing @story-baseline-allow → R8 blocks immediately" "R8 story_archetype_registry"
+
+printf '%s\n' \
+  '// @story-baseline-allow: old exception' \
+  '<div className="px-[var(--layout-space-loose)] border-b border-divider" />' > "$MARKER_FP"
+MARKER_PAYLOAD=$(jq -cn \
+  --arg fp "$MARKER_FP" --arg rel "$MARKER_REL" \
+  --arg proposed '<div className="px-[var(--layout-space-loose)] border-b border-divider" />' \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{
+      file_path:$fp,
+      governance_write_state:{schemaVersion:1,path:$rel,kind:"text",content:$proposed}
+    }
+  }')
+run_raw_trusted "$MARKER_PAYLOAD"
+expect_block "50. removing @story-baseline-allow → R9 blocks immediately" "R9 hand-craft overlay"
+
+# 51. Exercise the actual R1 candidate path at the provider line ceiling. A
+# per-line external-process implementation exceeds the child runtime budget;
+# the canonical single-pass scanner must stay comfortably bounded.
+CANDIDATE_HEAVY_CONTENT=$(awk 'BEGIN {
+  for (i = 0; i < 16000; i++) {
+    printf "<div className=\"absolute inset-0 flex\">safe-%05d</div>\n", i
+  }
+}')
+CANDIDATE_HEAVY_PAYLOAD=$(printf '%s' "$CANDIDATE_HEAVY_CONTENT" | jq -Rs \
+  --arg fp "$STORIES_CLEAN" \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Edit",
+    tool_input:{file_path:$fp,new_string:.}
+  }')
+run_raw_bounded "$CANDIDATE_HEAVY_PAYLOAD"
+expect_pass_silent "51. 16,000 R1 candidate lines → silent within 20s budget"
+
+# 52. TMPDIR is data, not shell source. A valid directory name containing
+# spaces/metacharacters must neither break cleanup nor execute injected text.
+TRICKY_TMPDIR="$TMP_DIR/tmp space;touch\${IFS}trap-sentinel;#"
+TRAP_SENTINEL="$TMP_DIR/trap-sentinel"
+mkdir -p "$TRICKY_TMPDIR"
+TRAP_PAYLOAD=$(jq -cn \
+  --arg fp "$STORIES_CLEAN" \
+  '{
+    hook_event_name:"PreToolUse",
+    tool_name:"Write",
+    tool_input:{file_path:$fp,content:"export const Disabled = {};"}
+  }')
+STDOUT=$(mktemp); STDERR=$(mktemp)
+set +e
+(
+  cd "$TMP_DIR" || exit 71
+  printf '%s' "$TRAP_PAYLOAD" \
+    | TMPDIR="$TRICKY_TMPDIR" GOVERNANCE_PROJECT_DIR="$TMP_DIR" \
+      GOVERNANCE_PROVIDER=codex GOVERNANCE_READ_ONLY=1 \
+      bash "$HOOK"
+) >"$STDOUT" 2>"$STDERR"
+EXIT=$?
+set -e
+STDOUT_TEXT=$(cat "$STDOUT")
+STDERR_TEXT=$(cat "$STDERR")
+rm -f "$STDOUT" "$STDERR"
+if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ] \
+  && [ ! -e "$TRAP_SENTINEL" ]; then
+  echo "  PASS  52. metacharacter TMPDIR → safe cleanup, no command injection"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL  52. metacharacter TMPDIR cleanup contract (exit=$EXIT)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 52. TMPDIR cleanup safety"
+fi
 
 echo ""
 echo "=== Summary ==="

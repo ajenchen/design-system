@@ -5,9 +5,8 @@
 # enforce header-canonical.spec.md sub-invariants(consumption / app-shell / tabs-border / token-equal)。
 # fold pattern 對齊 post_edit_dispatcher.sh 已建立的 lib/_*.sh helper convention(_ prefix 不計 hook 數)。
 #
-# 2026-05-31(folded-hook-audit):block-vs-warn 分流 —— SSOT canonical deterministic 3 helper
-# (app-shell / tabs-border / token-equal)exit 2 傳播(真 P0 block);_chrome_header_handcraft 維持
-# warn(Phase 3 才升 P0,exit 吞)。原全部 `|| true` 吞掉 = 假 enforcement(違 ssot_mechanical_p0_not_p1)。
+# SSOT canonical deterministic 4 helpers 均為 blocking enforcement。helper 缺失、被 symlink
+# 取代或回傳未定義的非零 exit code 都是 enforcement integrity failure，必須 fail closed。
 #
 # 4 lib helpers:
 #   _chrome_header_handcraft.sh        — Layer 3 consumption enforcement(自刻 chrome header className)
@@ -15,42 +14,92 @@
 #   _header_with_tabs_border.sh        — Header + Tabs 必標 withTabs prop(border auto-suppress)
 #   _tab_lg_chrome_header_equal.sh     — `--tab-height-lg` 必等 `--chrome-header-height` token
 #
-# Each helper:reads stdin INPUT,jq-parses tool_input.file_path,scope-filters,
-# 印 stderr soft warn,exit 0。本 dispatcher 把同一 stdin pipe 給 4 helpers 依序跑,
-# 不 aggregate stdout(本系列 helper 不 emit additionalContext,純 stderr 給人讀)。
+# Each helper:reads stdin INPUT,jq-parses tool_input.file_path,scope-filters。
+# 本 dispatcher 把同一 stdin pipe 給 4 helpers 依序跑，不 aggregate stdout。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -uo pipefail
 
-INPUT=$(cat 2>/dev/null || echo "{}")
+INPUT=$(cat 2>/dev/null) || {
+  printf '🚨 GOVERNANCE_INTEGRITY: CHROME HEADER ENFORCEMENT FAILURE: 無法讀取 hook input\n' >&2
+  exit 70
+}
+if ! printf '%s' "$INPUT" | jq -e '
+  type == "object"
+  and (.tool_name | type == "string")
+  and (.tool_input | type == "object")
+  and (.tool_input.file_path | type == "string")
+' >/dev/null 2>&1; then
+  printf '🚨 GOVERNANCE_INTEGRITY: CHROME HEADER ENFORCEMENT FAILURE: hook input 不是有效的 provider-neutral event\n' >&2
+  exit 70
+fi
+
 LIB_DIR="$(dirname "$0")/lib"
 
 WORST=0
+CAPTURE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/chrome-header-dispatch.XXXXXX") || {
+  printf '🚨 GOVERNANCE_INTEGRITY: CHROME HEADER ENFORCEMENT FAILURE: 無法建立 output contract capture\n' >&2
+  exit 70
+}
+trap 'rm -rf "$CAPTURE_DIR"' EXIT
+HELPER_INDEX=0
 
-# 2026-05-31(folded-hook-audit):原 dispatcher 用 `|| true` 吞掉所有 helper exit code → 即使
-# helper 內部 exit 2(SSOT canonical 違反)也不 block = 假 enforcement(違 feedback_ssot_mechanical_p0_not_p1)。
-# 修法:SSOT-canonical deterministic helper 的 exit 2 傳播(WORST=2 → dispatcher exit 2 真 block);
-# _chrome_header_handcraft 維持 warn(自承 Phase 3 才升 P0,migration 未完 → exit 吞掉)。
-
-# ── Blocking helpers(SSOT canonical deterministic:primary-header / withTabs border / token pixel equal)──
+# Blocking helpers(SSOT canonical deterministic:primary-header / withTabs border /
+# token pixel equal / chrome-header handcraft)。
 for helper in \
   "$LIB_DIR/_app_shell_primary_header_consistency.sh" \
   "$LIB_DIR/_header_with_tabs_border.sh" \
-  "$LIB_DIR/_tab_lg_chrome_header_equal.sh"; do
-  [ -f "$helper" ] || continue
-  # stderr 自然傳播到 dispatcher stderr(violation 訊息顯示);stdout 丟棄;捕捉 exit code。
-  printf '%s' "$INPUT" | bash "$helper" 1>/dev/null
+  "$LIB_DIR/_tab_lg_chrome_header_equal.sh" \
+  "$LIB_DIR/_chrome_header_handcraft.sh"; do
+  if [ ! -f "$helper" ] || [ -L "$helper" ]; then
+    printf '🚨 GOVERNANCE_INTEGRITY: CHROME HEADER ENFORCEMENT FAILURE: required helper 缺失或不是一般檔案: %s\n' \
+      "$(basename "$helper")" >&2
+    WORST=70
+    continue
+  fi
+  HELPER_INDEX=$((HELPER_INDEX + 1))
+  CHILD_STDOUT="$CAPTURE_DIR/$HELPER_INDEX.stdout"
+  CHILD_STDERR="$CAPTURE_DIR/$HELPER_INDEX.stderr"
+  printf '%s' "$INPUT" | bash "$helper" >"$CHILD_STDOUT" 2>"$CHILD_STDERR"
   rc=$?
-  [ "$rc" -eq 2 ] && WORST=2
+  case "$rc" in
+    0)
+      if [ -s "$CHILD_STDOUT" ] || [ -s "$CHILD_STDERR" ]; then
+        printf '🚨 GOVERNANCE_INTEGRITY: CHROME HEADER ENFORCEMENT FAILURE: helper %s rc0 必須完全 silent\n' \
+          "$(basename "$helper")" >&2
+        WORST=70
+      fi
+      ;;
+    2)
+      if [ -s "$CHILD_STDERR" ] && [ ! -s "$CHILD_STDOUT" ]; then
+        cat "$CHILD_STDERR" >&2
+        if grep -qF 'GOVERNANCE_INTEGRITY' "$CHILD_STDERR"; then
+          WORST=70
+        else
+          [ "$WORST" -eq 0 ] && WORST=2
+        fi
+      else
+        printf '🚨 GOVERNANCE_INTEGRITY: CHROME HEADER ENFORCEMENT FAILURE: helper %s rc2 必須是 stderr-only nonempty blocker\n' \
+          "$(basename "$helper")" >&2
+        WORST=70
+      fi
+      ;;
+    70)
+      if [ -s "$CHILD_STDERR" ] && [ ! -s "$CHILD_STDOUT" ]; then
+        cat "$CHILD_STDERR" >&2
+      else
+        printf '🚨 GOVERNANCE_INTEGRITY: CHROME HEADER ENFORCEMENT FAILURE: helper %s rc70 必須是 stderr-only nonempty integrity failure\n' \
+          "$(basename "$helper")" >&2
+      fi
+      WORST=70
+      ;;
+    *)
+      printf '🚨 GOVERNANCE_INTEGRITY: CHROME HEADER ENFORCEMENT FAILURE: helper %s 回傳未定義 exit code %s\n' \
+        "$(basename "$helper")" "$rc" >&2
+      WORST=70
+      ;;
+  esac
 done
-
-# ── _chrome_header_handcraft(2026-06-06 升 P0 BLOCKER,跟 item-anatomy C.4 row-handcraft 對稱;
-#    migration 完成 per header-canonical.spec.md L245 + 0 殘留手刻 verified)──
-if [ -f "$LIB_DIR/_chrome_header_handcraft.sh" ]; then
-  printf '%s' "$INPUT" | bash "$LIB_DIR/_chrome_header_handcraft.sh" 1>/dev/null
-  rc=$?
-  [ "$rc" -eq 2 ] && WORST=2
-fi
 
 exit $WORST

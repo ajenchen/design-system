@@ -32,7 +32,7 @@ const asJson = args.has('--json')
 
 const stateFile = resolve(process.cwd(), '.netlify/state.json')
 if (!existsSync(stateFile)) {
-  console.error('❌ .netlify/state.json not found. Run `npm run setup:netlify` first(scaffolds Netlify site link).')
+  console.error('❌ .netlify/state.json not found. `setup:netlify` is Dashboard-only and will not create CLI state; read the real URL from Netlify Dashboard → Deploys.')
   process.exit(1)
 }
 
@@ -49,7 +49,7 @@ if (!siteSlug) {
   } catch { /* no sidecar cache */ }
 }
 if (!siteSlug) {
-  const warning = '.netlify/state.json 無 siteSlug(新版 Netlify CLI 只寫 siteId),且無 .netlify/deploy-meta.json 快取 —— 無法推導正確 subdomain。請重跑 `npm run setup:netlify`(會寫入真實 site name)。'
+  const warning = '.netlify/state.json 無 siteSlug,且無 .netlify/deploy-meta.json 快取 —— 無法推導正確 subdomain。`setup:netlify` 為唯讀 Dashboard 指引，不會寫入 site name；請從 Netlify Dashboard → Deploys 讀取真實 URL。'
   if (asJson) {
     // 吐空 url(不吐 UUID 假網址)讓 consumer(inject_deploy_url hook)fall through 到 curl-verified dashboard 偵測
     console.log(JSON.stringify({ branch: '', isProd: false, url: '', siteSlug: '', siteId, warning }, null, 2))

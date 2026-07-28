@@ -5,15 +5,14 @@
 // <SpaceRow utility mdValue lgValue> 顯示值 vs layoutSpace.css 真實 token 值(tight/loose/bottom × md/lg)。
 // 本 meta-test 把 tight 的 mdValue 由 12px 改成 8px(CSS :root 仍 12px)→ story 顯示 ≠ CSS 真值 → gate exit 1。
 // 這正是 gate 2026-06-15 誕生要抓的 anchor(story 顯示 8/12 但 CSS 真值 12/16)。
-import { execSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 
-const run = (cmd) => { try { execSync(cmd, { stdio: 'pipe' }); return 0 } catch (e) { return e.status ?? 1 } }
-const GATE = 'node scripts/layout-space-story-coherence.mjs'
+const run = () => spawnSync(process.execPath, ['--', 'scripts/layout-space-story-coherence.mjs'], { stdio: 'pipe' }).status ?? 1
 let ok = true
 
 // 1) 現況必 PASS
-if (run(GATE) !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL(repo 已有真實 story-vs-CSS drift)'); process.exit(1) }
+if (run() !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL(repo 已有真實 story-vs-CSS drift)'); process.exit(1) }
 console.log('✓ baseline PASS(exit 0)')
 
 // 2) 注入 drift → 必 FAIL → 還原
@@ -28,7 +27,7 @@ if (!orig.includes(NEEDLE)) {
 }
 try {
   writeFileSync(target, orig.replace(NEEDLE, MUTATED))
-  const code = run(GATE)
+  const code = run()
   if (code === 0) { console.error('✗ 注入 story-vs-CSS drift 後 gate 未 FAIL(detection 失效)'); ok = false }
   else console.log('✓ 注入 story-vs-CSS drift 被抓(exit ' + code + ')')
 } finally {
@@ -36,7 +35,7 @@ try {
 }
 
 // 3) 還原後必 PASS
-if (run(GATE) !== 0) { console.error('✗ 還原後應 PASS 卻 FAIL'); process.exit(1) }
+if (run() !== 0) { console.error('✗ 還原後應 PASS 卻 FAIL'); process.exit(1) }
 console.log('✓ 還原後 PASS(exit 0)')
 
 console.log(ok ? '✅ meta-test PASS' : '❌ meta-test FAIL')

@@ -6,6 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$SCRIPT_DIR/../check_propose_without_benchmark.sh"
 [ ! -f "$HOOK" ] && { echo "FATAL"; exit 1; }
 PASS=0; FAIL=0
+TMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TMP_DIR"' EXIT
 
 run() {
   local prompt="$1"; local transcript="$2"
@@ -48,6 +50,49 @@ rm -f "$TMP_TR"
 echo "Test 5: non-UserPromptSubmit event skip"
 STDOUT=$(echo '{"hook_event_name":"PreToolUse","prompt":"propose me options"}' | bash "$HOOK")
 if [ -z "$STDOUT" ]; then echo "  PASS"; PASS=$((PASS+1)); else echo "  FAIL"; FAIL=$((FAIL+1)); fi
+
+# Test 6:the screenshot failure class — current prompt is a full provider payload larger than a
+# pipe buffer,with the propose trigger at byte zero. Encode from a file to avoid ARG_MAX.
+echo "Test 6: >256 KiB early propose match → one clean context"
+LARGE_PROMPT="$TMP_DIR/large-prompt.txt"
+{
+  printf '%s\n' 'propose me 3 options for sidebar'
+  awk 'BEGIN {
+    for (i = 0; i < 12000; i++) {
+      printf "large-prompt-filler-%05d abcdefghijklmnopqrstuvwxyz0123456789\n", i
+    }
+  }'
+} >"$LARGE_PROMPT"
+printf '%s\n' '{"message":{"role":"user","content":"prior turn without fetch"}}' \
+  >"$TMP_DIR/large-transcript.jsonl"
+if [ "$(wc -c <"$LARGE_PROMPT" | tr -d ' ')" -le 262144 ]; then
+  echo "  FAIL: large prompt fixture is not larger than 256 KiB"
+  FAIL=$((FAIL+1))
+else
+  jq -Rs --arg t "$TMP_DIR/large-transcript.jsonl" '{
+    hook_event_name:"UserPromptSubmit",
+    prompt:.,
+    transcript_path:$t
+  }' <"$LARGE_PROMPT" >"$TMP_DIR/large-prompt.json"
+  set +e
+  bash "$HOOK" <"$TMP_DIR/large-prompt.json" \
+    >"$TMP_DIR/large-prompt.stdout" 2>"$TMP_DIR/large-prompt.stderr"
+  EXIT=$?
+  set -e
+  if [ "$EXIT" -eq 0 ] \
+    && [ ! -s "$TMP_DIR/large-prompt.stderr" ] \
+    && ! grep -qF 'GOVERNANCE_INTEGRITY:' "$TMP_DIR/large-prompt.stdout" \
+    && jq -e -s '
+      length == 1
+      and .[0].governanceContext.hookEventName == "UserPromptSubmit"
+      and (.[0].governanceContext.message | contains("M26 Propose-without-benchmark"))
+    ' "$TMP_DIR/large-prompt.stdout" >/dev/null 2>&1; then
+    echo "  PASS"; PASS=$((PASS+1))
+  else
+    echo "  FAIL: expected rc0, one context object, and empty stderr (exit=$EXIT)"
+    FAIL=$((FAIL+1))
+  fi
+fi
 
 echo ""
 echo "════ Results: $PASS PASS, $FAIL FAIL ════"

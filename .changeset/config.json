@@ -3,7 +3,7 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [],
-  "linked": [["@qijenchen/design-system", "@qijenchen/storybook-config"]],
+  "linked": [["@qijenchen/design-system", "@qijenchen/storybook-config", "@qijenchen/governance"]],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",

@@ -29,27 +29,38 @@
 #   控 false-positive。Escape:`// @tabs-content-gap-ok: <rationale>`(同行或前一註解行)。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
+  exit 70
+}
 
 set -uo pipefail
 
-INPUT=$(cat 2>/dev/null || echo "{}")
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null)
+governance_hook_load_input
+governance_hook_require_commands awk cat grep head sed
+TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'tabs-body tool extraction failed'
 
 case "${TOOL:-}" in
   Edit|Write|MultiEdit) ;;
   *) exit 0 ;;
 esac
 
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.notebook_path // ""' 2>/dev/null)
+FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // .tool_input.notebook_path // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'tabs-body path extraction failed'
 
 # Scope:DS source + apps,.tsx only(INVERSE of check_layout_space_magic_numbers.sh 的 DS-src skip)
-if ! echo "$FILE" | grep -qE '\.tsx$'; then exit 0; fi
-if ! echo "$FILE" | grep -qE '(packages/design-system/src/|/apps/|(^|/)apps/)'; then exit 0; fi
+if ! governance_hook_grep_q 'tabs-body extension matcher failed' "$FILE" -qE '\.tsx$'; then exit 0; fi
+if ! governance_hook_grep_q 'tabs-body scope matcher failed' "$FILE" -qE '(packages/design-system/src/|/apps/|(^|/)apps/)'; then exit 0; fi
 
 # PostToolUse:file 已寫入磁碟,讀「完整檔」做 containment 分析(避免 hunk-only partial-edit 盲區 —
 # 部分 edit 的 new_string 可能只含 TabsContent 行不含外層 DialogBody,window 分析會漏)。
-[ -f "$FILE" ] || exit 0
-CONTENT=$(cat "$FILE" 2>/dev/null)
+FILE=$(governance_hook_project_file_path "$FILE" 2>/dev/null) \
+  || governance_hook_integrity_fail 'tabs-body target escapes the project or crosses a symlink'
+if [ -L "$FILE" ] || [ ! -f "$FILE" ] || [ ! -r "$FILE" ]; then
+  governance_hook_integrity_fail 'tabs-body target is unavailable or unsafe'
+fi
+CONTENT=$(cat "$FILE" 2>/dev/null) || governance_hook_integrity_fail 'tabs-body target read failed'
 [ -z "$CONTENT" ] && exit 0
 
 # ── Check 3(2026-07-08 WM 戰役 R4:root 偵測,不只 symptom)──
@@ -58,10 +69,16 @@ CONTENT=$(cat "$FILE" 2>/dev/null)
 # spacing owner 自組)。偵測兩個 root 簽名(任一 → BLOCK 指路 tabsSlot):
 #   (a) DialogBody/SheetBody/SurfaceBody className 含 `!pt-0`(important 對抗 primitive 的 pt owner)
 #   (b) <TabsList 出現在含 DialogBody 的同段 new content 且無 tabsSlot 字樣
-ROOT_SIG_A=$(printf '%s\n' "$CONTENT" | grep -nE '(DialogBody|SheetBody|SurfaceBody)[^>]*className=[^>]*!pt-0' | grep -v '@tabs-content-gap-ok:' || true)
+governance_hook_grep_capture ROOT_SIG_A_CANDIDATES 'tabs-body root signature matcher failed' \
+  "$CONTENT" -nE '(DialogBody|SheetBody|SurfaceBody)[^>]*className=[^>]*!pt-0'
+governance_hook_grep_capture ROOT_SIG_A 'tabs-body root signature escape filter failed' \
+  "$ROOT_SIG_A_CANDIDATES" -v '@tabs-content-gap-ok:'
 ROOT_SIG_B=""
-if printf '%s\n' "$CONTENT" | grep -q '<TabsList' && printf '%s\n' "$CONTENT" | grep -qE '<(DialogBody|SheetBody|SurfaceBody)\b' && ! printf '%s\n' "$CONTENT" | grep -q 'tabsSlot' && ! printf '%s\n' "$CONTENT" | grep -q '@tabs-content-gap-ok:'; then
-  ROOT_SIG_B=$(printf '%s\n' "$CONTENT" | grep -n '<TabsList' | head -3)
+if governance_hook_grep_q 'tabs-body TabsList matcher failed' "$CONTENT" -q '<TabsList' \
+  && governance_hook_grep_q 'tabs-body chrome-body matcher failed' "$CONTENT" -qE '<(DialogBody|SheetBody|SurfaceBody)\b' \
+  && ! governance_hook_grep_q 'tabs-body tabsSlot matcher failed' "$CONTENT" -q 'tabsSlot' \
+  && ! governance_hook_grep_q 'tabs-body root escape matcher failed' "$CONTENT" -q '@tabs-content-gap-ok:'; then
+  ROOT_SIG_B="found"
 fi
 if [ -n "$ROOT_SIG_A" ] || [ -n "$ROOT_SIG_B" ]; then
   cat >&2 << 'EOF_C3'
@@ -87,17 +104,24 @@ fi
 #   className 的固定 gap-[4-9](macro range;排除 gap-1/2/3 micro + 已 tokenize 的 gap-[var)。
 #   全庫掃證實零現存假陽性(純防未來 drift)。Escape:同行或前一註解行 @overlay-body-gap-ok:。
 GAP_MARKER='@overlay-body-gap-ok:'
-GAP_HITS=$(printf '%s\n' "$CONTENT" | grep -nE '<(DialogBody|SheetBody|PopoverBody|SurfaceBody)[^>]*gap-[4-9]([^0-9]|$)' 2>/dev/null | grep -v 'gap-\[var')
+governance_hook_grep_capture GAP_CANDIDATES 'tabs-body fixed-gap matcher failed' "$CONTENT" -nE \
+  '<(DialogBody|SheetBody|PopoverBody|SurfaceBody)[^>]*gap-[4-9]([^0-9]|$)'
+governance_hook_grep_capture GAP_HITS 'tabs-body tokenized-gap filter failed' \
+  "$GAP_CANDIDATES" -v 'gap-\[var'
 GAP_UNJUSTIFIED=""
 if [ -n "$GAP_HITS" ]; then
   while IFS= read -r hit; do
     [ -z "$hit" ] && continue
     ln="${hit%%:*}"
     cur="${hit#*:}"
-    if echo "$cur" | grep -qF "$GAP_MARKER"; then continue; fi
+    if governance_hook_grep_q 'tabs-body gap escape matcher failed' "$cur" -qF "$GAP_MARKER"; then continue; fi
     if [ "$ln" -gt 1 ] 2>/dev/null; then
-      prev=$(printf '%s\n' "$CONTENT" | sed -n "$((ln-1))p")
-      if echo "$prev" | grep -qF "$GAP_MARKER" && echo "$prev" | grep -qE '^[[:space:]]*(//|\{?/\*|\*)'; then continue; fi
+      prev=$(sed -n "$((ln-1))p" <<< "$CONTENT" 2>/dev/null) \
+        || governance_hook_integrity_fail 'tabs-body gap preceding-line extraction failed'
+      if governance_hook_grep_q 'tabs-body preceding gap escape matcher failed' "$prev" -qF "$GAP_MARKER" \
+        && governance_hook_grep_q 'tabs-body preceding gap comment matcher failed' "$prev" -qE '^[[:space:]]*(//|\{?/\*|\*)'; then
+        continue
+      fi
     fi
     GAP_UNJUSTIFIED="${GAP_UNJUSTIFIED}${ln}: $(echo "$cur" | sed 's/^[[:space:]]*//')\n"
   done <<< "$GAP_HITS"
@@ -107,7 +131,7 @@ if [ -n "$GAP_UNJUSTIFIED" ]; then
 🚨 OVERLAY-BODY FIXED-GAP BLOCKER(P0,2026-07-01 Sheet demo gap-4 錨例)
 
   在 $FILE 偵測到浮層 body(Dialog/Sheet/Popover/Surface Body)自身用固定 macro gap-N:
-$(echo -e "$GAP_UNJUSTIFIED" | sed 's/^/    /' | head -10)
+$(printf '%b' "$GAP_UNJUSTIFIED" | sed 's/^/    /' | awk 'NR <= 10')
 
   ── 為什麼 ──
   浮層 body 直接堆疊內容(並列表單欄位 / 區塊)的垂直 gap 屬 macro layout-space,該用
@@ -125,8 +149,8 @@ fi
 
 # ══ Check 1:<TabsContent> 在 chrome body 內雙重 gap(原 beta.78 邏輯)══
 # Gate:必同時含 chrome body open tag 且 TabsContent 才啟動(narrow surface,絕大多數 edit 靜默)
-if ! echo "$CONTENT" | grep -qE '<(DialogBody|SheetBody|SurfaceBody)[ />]'; then exit 0; fi
-if ! echo "$CONTENT" | grep -q '<TabsContent'; then exit 0; fi
+if ! governance_hook_grep_q 'tabs-body containment gate matcher failed' "$CONTENT" -qE '<(DialogBody|SheetBody|SurfaceBody)[ />]'; then exit 0; fi
+if ! governance_hook_grep_q 'tabs-content gate matcher failed' "$CONTENT" -q '<TabsContent'; then exit 0; fi
 
 ESCAPE_MARKER='@tabs-content-gap-ok:'
 
@@ -167,7 +191,7 @@ CANDIDATES=$(printf '%s\n' "$CONTENT" | awk '
     }
     depth -= c
   }
-')
+') || governance_hook_integrity_fail 'tabs-body containment parser failed'
 
 if [ -z "$CANDIDATES" ]; then exit 0; fi
 
@@ -176,11 +200,16 @@ if [ -z "$CANDIDATES" ]; then exit 0; fi
 UNJUSTIFIED=""
 while IFS= read -r ln; do
   [ -z "$ln" ] && continue
-  cur=$(echo "$CONTENT" | sed -n "${ln}p")
-  if echo "$cur" | grep -qF "$ESCAPE_MARKER"; then continue; fi
+  cur=$(sed -n "${ln}p" <<< "$CONTENT" 2>/dev/null) \
+    || governance_hook_integrity_fail 'tabs-body candidate-line extraction failed'
+  if governance_hook_grep_q 'tabs-body same-line escape matcher failed' "$cur" -qF "$ESCAPE_MARKER"; then continue; fi
   if [ "$ln" -gt 1 ] 2>/dev/null; then
-    prev=$(echo "$CONTENT" | sed -n "$((ln-1))p")
-    if echo "$prev" | grep -qF "$ESCAPE_MARKER" && echo "$prev" | grep -qE '^[[:space:]]*(//|\{?/\*|\*)'; then continue; fi
+    prev=$(sed -n "$((ln-1))p" <<< "$CONTENT" 2>/dev/null) \
+      || governance_hook_integrity_fail 'tabs-body preceding-line extraction failed'
+    if governance_hook_grep_q 'tabs-body preceding escape matcher failed' "$prev" -qF "$ESCAPE_MARKER" \
+      && governance_hook_grep_q 'tabs-body preceding comment matcher failed' "$prev" -qE '^[[:space:]]*(//|\{?/\*|\*)'; then
+      continue
+    fi
   fi
   UNJUSTIFIED="${UNJUSTIFIED}${ln}: $(echo "$cur" | sed 's/^[[:space:]]*//')\n"
 done <<< "$CANDIDATES"
@@ -193,7 +222,7 @@ cat >&2 << EOF
 
   在 $FILE 偵測到 <TabsContent> 放在 chrome scroll body(DialogBody/SheetBody/SurfaceBody)內
   但未 override margin-top:
-$(echo -e "$UNJUSTIFIED" | sed 's/^/    /' | head -10)
+$(printf '%b' "$UNJUSTIFIED" | sed 's/^/    /' | awk 'NR <= 10')
 
   ── 為什麼是 bug ──
   DialogBody/SheetBody/SurfaceBody 內層已用 pt-/py-[var(--layout-space-tight)] 擁有 header→content

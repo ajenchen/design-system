@@ -1,110 +1,1531 @@
 {
   "_generated": "build-fork-governance.mjs",
+  "schemaVersion": 2,
+  "kind": "provider-neutral-fork-manifest",
+  "providerRegistrySchemaVersion": 9,
+  "materializers": {
+    "instructionViews": {
+      "markdown-relative-at-import-v1": {
+        "engine": "markdown-relative-at-import-v1",
+        "ownershipPolicy": "provider-generated-projection",
+        "supplementPolicy": "optional"
+      },
+      "shared-instruction-v1": {
+        "engine": "shared-instruction-v1",
+        "ownershipPolicy": "common-authority-consumer",
+        "supplementPolicy": "forbidden"
+      }
+    },
+    "hookBaseTemplateContracts": {
+      "claude-permission-policy-v1": {
+        "engine": "claude-permission-policy-v1",
+        "source": "packages/design-system/ds-canonical/adapters/claude-settings-base.json",
+        "schema": "scripts/schemas/claude-permission-policy.schema.json"
+      },
+      "static-json-object-v1": {
+        "engine": "static-json-object-v1"
+      }
+    },
+    "hookViews": {
+      "claude-settings-json-v1": {
+        "engine": "json-hook-map-v1",
+        "hooksField": "hooks",
+        "descriptionField": null,
+        "mergeStrategy": "merge-hook-map-into-base-v1",
+        "baseTemplateContract": "claude-permission-policy-v1"
+      },
+      "command-hooks-json-v1": {
+        "engine": "json-hook-map-v1",
+        "hooksField": "hooks",
+        "descriptionField": "description",
+        "mergeStrategy": "replace-document-v1",
+        "baseTemplateContract": null
+      },
+      "portable-event-list-json-v1": {
+        "engine": "json-hook-event-list-v1",
+        "eventsField": "events",
+        "eventField": "event",
+        "groupsField": "groups",
+        "matcherField": "when",
+        "handlersField": "handlers",
+        "handlerArgvField": "argv",
+        "descriptionField": "description",
+        "mergeStrategy": "replace-document-v1",
+        "baseTemplateContract": null
+      }
+    },
+    "skillViews": {
+      "agent-skills-directory-v1": {
+        "engine": "skill-directory-v1",
+        "entryFile": "SKILL.md"
+      },
+      "markdown-workflows-directory-v1": {
+        "engine": "skill-directory-v1",
+        "entryFile": "WORKFLOW.md"
+      }
+    },
+    "treeViews": {
+      "closed-tree-copy-v1": {
+        "engine": "closed-tree-copy-v1",
+        "transformPolicies": [
+          "byte-exact"
+        ]
+      }
+    }
+  },
+  "discoveryPolicy": {
+    "schemaVersion": 1,
+    "providerRootNames": [
+      ".agents",
+      ".claude",
+      ".codex"
+    ],
+    "instructionNames": [
+      "AGENTS.md",
+      "CLAUDE.md"
+    ],
+    "instructionOverrideNames": [
+      "AGENTS.local.md",
+      "AGENTS.override.md",
+      "CLAUDE.local.md",
+      "CLAUDE.override.md"
+    ],
+    "configPaths": [
+      ".claude/settings.json",
+      ".claude/settings.local.json",
+      ".codex/config.toml",
+      ".codex/hooks.json",
+      ".mcp.json"
+    ],
+    "pluginRootNames": [
+      ".claude-plugin",
+      ".codex-plugin"
+    ]
+  },
+  "providerLifecycle": {
+    "schemaVersion": 4,
+    "releaseVersion": "0.1.0-beta.95",
+    "immutableHead": {
+      "releaseVersion": "0.1.0-beta.95",
+      "snapshotSha256": "1095b06a56c48912b3ac1678eb5a94c75199a22f40212db4822be9834495ee7e",
+      "providerInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4"
+    },
+    "ledgerSha256": "208ffc0419661b90f1a6f26d656a78edb3bd9c0be823f3ff8f957c34f0b3c160",
+    "previousSnapshotSha256": null,
+    "currentSnapshotSha256": "1095b06a56c48912b3ac1678eb5a94c75199a22f40212db4822be9834495ee7e",
+    "currentProviderInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
+    "retiredProviders": [],
+    "currentSnapshot": {
+      "releaseVersion": "0.1.0-beta.95",
+      "previousSnapshotSha256": null,
+      "providers": [
+        {
+          "id": "claude",
+          "discovery": {
+            "providerRootNames": [
+              ".claude"
+            ],
+            "instructionNames": [
+              "CLAUDE.md"
+            ],
+            "instructionOverrideNames": [
+              "CLAUDE.local.md",
+              "CLAUDE.override.md"
+            ],
+            "configPaths": [
+              ".claude/settings.json",
+              ".claude/settings.local.json",
+              ".mcp.json"
+            ],
+            "pluginRootNames": [
+              ".claude-plugin"
+            ]
+          },
+          "surfaces": [
+            {
+              "path": ".claude/settings.json",
+              "kind": "file"
+            },
+            {
+              "path": ".claude/skills",
+              "kind": "tree"
+            },
+            {
+              "path": "CLAUDE.md",
+              "kind": "file"
+            }
+          ]
+        },
+        {
+          "id": "codex",
+          "discovery": {
+            "providerRootNames": [
+              ".agents",
+              ".codex"
+            ],
+            "instructionNames": [
+              "AGENTS.md"
+            ],
+            "instructionOverrideNames": [
+              "AGENTS.local.md",
+              "AGENTS.override.md"
+            ],
+            "configPaths": [
+              ".codex/config.toml",
+              ".codex/hooks.json"
+            ],
+            "pluginRootNames": [
+              ".codex-plugin"
+            ]
+          },
+          "surfaces": [
+            {
+              "path": ".agents/skills",
+              "kind": "tree"
+            },
+            {
+              "path": ".codex/hooks.json",
+              "kind": "file"
+            }
+          ]
+        }
+      ],
+      "retiredProviders": []
+    },
+    "immutableHeadSnapshot": {
+      "releaseVersion": "0.1.0-beta.95",
+      "previousSnapshotSha256": null,
+      "providers": [
+        {
+          "id": "claude",
+          "discovery": {
+            "providerRootNames": [
+              ".claude"
+            ],
+            "instructionNames": [
+              "CLAUDE.md"
+            ],
+            "instructionOverrideNames": [
+              "CLAUDE.local.md",
+              "CLAUDE.override.md"
+            ],
+            "configPaths": [
+              ".claude/settings.json",
+              ".claude/settings.local.json",
+              ".mcp.json"
+            ],
+            "pluginRootNames": [
+              ".claude-plugin"
+            ]
+          },
+          "surfaces": [
+            {
+              "path": ".claude/settings.json",
+              "kind": "file"
+            },
+            {
+              "path": ".claude/skills",
+              "kind": "tree"
+            },
+            {
+              "path": "CLAUDE.md",
+              "kind": "file"
+            }
+          ]
+        },
+        {
+          "id": "codex",
+          "discovery": {
+            "providerRootNames": [
+              ".agents",
+              ".codex"
+            ],
+            "instructionNames": [
+              "AGENTS.md"
+            ],
+            "instructionOverrideNames": [
+              "AGENTS.local.md",
+              "AGENTS.override.md"
+            ],
+            "configPaths": [
+              ".codex/config.toml",
+              ".codex/hooks.json"
+            ],
+            "pluginRootNames": [
+              ".codex-plugin"
+            ]
+          },
+          "surfaces": [
+            {
+              "path": ".agents/skills",
+              "kind": "tree"
+            },
+            {
+              "path": ".codex/hooks.json",
+              "kind": "file"
+            }
+          ]
+        }
+      ],
+      "retiredProviders": []
+    }
+  },
+  "providerAdapters": {
+    "claude": {
+      "schemaVersion": 1,
+      "capabilities": {
+        "nativeHooks": true,
+        "hookEnforcement": "native-feedback-plus-ci",
+        "hardGate": "provider-neutral-ci-required"
+      },
+      "environmentMap": {
+        "GOVERNANCE_PROJECT_DIR": "CLAUDE_PROJECT_DIR",
+        "GOVERNANCE_SESSION_ID": "CLAUDE_SESSION_ID",
+        "GOVERNANCE_TRANSCRIPT_PATH": "CLAUDE_TRANSCRIPT_PATH",
+        "GOVERNANCE_PLUGIN_ROOT": "CLAUDE_PLUGIN_ROOT",
+        "GOVERNANCE_TOOL_INPUT": "CLAUDE_TOOL_INPUT",
+        "GOVERNANCE_BYPASS_SOLO_WORKFLOW": "CLAUDE_BYPASS_SOLO_WORKFLOW",
+        "GOVERNANCE_BYPASS_DS_ANCHOR": "CLAUDE_BYPASS_DS_ANCHOR",
+        "GOVERNANCE_BYPASS_MAIN_WORKBENCH": "CLAUDE_BYPASS_MAIN_WORKBENCH",
+        "GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT": "CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT",
+        "GOVERNANCE_BYPASS_CHROME_HEADER_AVATAR": "CLAUDE_BYPASS_CHROME_HEADER_AVATAR",
+        "GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP": "CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP"
+      },
+      "normalization": {
+        "eventFields": [
+          "hook_event_name",
+          "event"
+        ],
+        "toolFields": [
+          "tool_name",
+          "tool"
+        ],
+        "pathFields": [
+          "tool_input.file_path",
+          "tool_input.path",
+          "file_path",
+          "path"
+        ],
+        "pathArrayFields": [
+          "changed_paths",
+          "tool_input.changed_paths",
+          "changes",
+          "tool_input.changes",
+          "tool_input.edits",
+          "tool_input.files"
+        ],
+        "writeTools": [
+          "Edit",
+          "Write",
+          "MultiEdit",
+          "apply_patch"
+        ],
+        "writeTransports": [
+          {
+            "id": "claude-edit-v1",
+            "rawTools": [
+              "Edit"
+            ],
+            "engine": "exact-replace-v1",
+            "payloadFields": [
+              "tool_input.file_path",
+              "tool_input.old_string",
+              "tool_input.new_string",
+              "tool_input.replace_all"
+            ]
+          },
+          {
+            "id": "claude-multi-edit-v1",
+            "rawTools": [
+              "MultiEdit"
+            ],
+            "engine": "exact-replace-list-v1",
+            "payloadFields": [
+              "tool_input.file_path",
+              "tool_input.edits",
+              "old_string",
+              "new_string",
+              "replace_all"
+            ]
+          },
+          {
+            "id": "claude-write-v1",
+            "rawTools": [
+              "Write"
+            ],
+            "engine": "full-file-v1",
+            "payloadFields": [
+              "tool_input.file_path",
+              "tool_input.content"
+            ]
+          }
+        ],
+        "eventAliases": {
+          "beforewrite": "PreToolUse",
+          "prewrite": "PreToolUse",
+          "pretooluse": "PreToolUse",
+          "afterwrite": "PostToolUse",
+          "postwrite": "PostToolUse",
+          "posttooluse": "PostToolUse",
+          "sessionstart": "SessionStart",
+          "userpromptsubmit": "UserPromptSubmit",
+          "stop": "Stop"
+        },
+        "toolAliases": {
+          "apply_patch": "MultiEdit",
+          "patch": "MultiEdit",
+          "multiedit": "MultiEdit",
+          "write_file": "Write",
+          "write": "Write",
+          "create_file": "Write",
+          "edit_file": "Edit",
+          "edit": "Edit",
+          "replace": "Edit",
+          "exec_command": "Bash",
+          "shell_command": "Bash",
+          "bash": "Bash"
+        }
+      },
+      "blockingExitCode": 2,
+      "contextOutputTransport": "claude-hook-specific",
+      "stopDecisionTransport": "claude-decision-json"
+    },
+    "codex": {
+      "schemaVersion": 1,
+      "capabilities": {
+        "nativeHooks": true,
+        "hookEnforcement": "native-feedback-plus-ci",
+        "hardGate": "provider-neutral-ci-required"
+      },
+      "environmentMap": {},
+      "normalization": {
+        "eventFields": [
+          "hook_event_name",
+          "event",
+          "event_name"
+        ],
+        "toolFields": [
+          "tool_name",
+          "tool",
+          "operation",
+          "action"
+        ],
+        "pathFields": [
+          "tool_input.file_path",
+          "tool_input.path",
+          "file_path",
+          "path"
+        ],
+        "pathArrayFields": [
+          "changed_paths",
+          "tool_input.changed_paths",
+          "changes",
+          "tool_input.changes",
+          "tool_input.edits",
+          "tool_input.files"
+        ],
+        "writeTools": [
+          "apply_patch",
+          "write_file",
+          "edit_file",
+          "Edit",
+          "Write",
+          "MultiEdit"
+        ],
+        "writeTransports": [
+          {
+            "id": "codex-apply-patch-v1",
+            "rawTools": [
+              "apply_patch"
+            ],
+            "engine": "codex-apply-patch-v1",
+            "payloadFields": [
+              "tool_input.command"
+            ]
+          }
+        ],
+        "eventAliases": {
+          "beforewrite": "PreToolUse",
+          "prewrite": "PreToolUse",
+          "pretooluse": "PreToolUse",
+          "afterwrite": "PostToolUse",
+          "postwrite": "PostToolUse",
+          "posttooluse": "PostToolUse",
+          "sessionstart": "SessionStart",
+          "userpromptsubmit": "UserPromptSubmit",
+          "stop": "Stop"
+        },
+        "toolAliases": {
+          "apply_patch": "MultiEdit",
+          "patch": "MultiEdit",
+          "multiedit": "MultiEdit",
+          "write_file": "Write",
+          "write": "Write",
+          "create_file": "Write",
+          "edit_file": "Edit",
+          "edit": "Edit",
+          "replace": "Edit",
+          "exec_command": "Bash",
+          "shell_command": "Bash",
+          "bash": "Bash"
+        }
+      },
+      "blockingExitCode": 2,
+      "contextOutputTransport": "system-message",
+      "stopDecisionTransport": "continue-json"
+    },
+    "generic": {
+      "schemaVersion": 1,
+      "capabilities": {
+        "nativeHooks": false,
+        "hookEnforcement": "ci-only",
+        "hardGate": "provider-neutral-ci-required"
+      },
+      "environmentMap": {},
+      "normalization": {
+        "eventFields": [
+          "event"
+        ],
+        "toolFields": [
+          "operation",
+          "tool"
+        ],
+        "pathFields": [
+          "path",
+          "file_path"
+        ],
+        "pathArrayFields": [
+          "paths",
+          "changed_paths"
+        ],
+        "writeTools": [
+          "write",
+          "edit",
+          "apply_patch"
+        ],
+        "writeTransports": [
+          {
+            "id": "generic-edit-v1",
+            "rawTools": [
+              "edit"
+            ],
+            "engine": "exact-replace-v1",
+            "payloadFields": [
+              "path",
+              "old_content",
+              "new_content",
+              "replace_all"
+            ]
+          },
+          {
+            "id": "generic-unified-diff-v1",
+            "rawTools": [
+              "apply_patch"
+            ],
+            "engine": "unified-diff-v1",
+            "payloadFields": [
+              "diff"
+            ]
+          },
+          {
+            "id": "generic-write-v1",
+            "rawTools": [
+              "write"
+            ],
+            "engine": "full-file-v1",
+            "payloadFields": [
+              "path",
+              "content"
+            ]
+          }
+        ],
+        "eventAliases": {
+          "beforewrite": "PreToolUse",
+          "afterwrite": "PostToolUse"
+        },
+        "toolAliases": {
+          "write": "Write",
+          "edit": "Edit",
+          "apply_patch": "MultiEdit"
+        }
+      },
+      "blockingExitCode": 2,
+      "contextOutputTransport": "stderr",
+      "stopDecisionTransport": "blocking-exit"
+    }
+  },
+  "authorityDecision": {
+    "schemaVersion": 1,
+    "policySource": "AGENTS.md#canonical-decision-authority",
+    "classifierSource": "launchers/approval-evidence.mjs",
+    "receiptContractSource": "launchers/authority-decision-evidence.mjs",
+    "runner": "launchers/product-hook-dispatch-runtime.mjs",
+    "prepareArgv": [
+      "--authority-decision",
+      "prepare"
+    ],
+    "verifyArgv": [
+      "--authority-decision",
+      "verify"
+    ],
+    "certificationClaim": "structural-only-not-runtime-certified"
+  },
+  "independentReview": {
+    "schemaVersion": 2,
+    "kind": "provider-neutral-independent-review-projection",
+    "skill": "independent-review",
+    "repositoryRole": "product-consumer",
+    "certificationContract": "exact-provider-runtime-surface-role-target-v1",
+    "bindings": [
+      {
+        "selfProviderId": "claude",
+        "selectionPolicy": "highest-certified-independent-review-v1",
+        "reviewClass": "tier-0-governance",
+        "requiredAssuranceTier": "maximum",
+        "requiredReasoningTier": "maximum",
+        "requiredComputeTier": "maximum",
+        "transport": "content-addressed-model-broker-exchange-v1",
+        "invocation": {
+          "strategy": "main-context"
+        },
+        "certificationContract": "exact-provider-runtime-surface-role-target-v1",
+        "bindingDigest": "005a2e73290063c46870b942dc02ffbc2e2fe7f0e6ea7c2aa176372f68cda47c"
+      },
+      {
+        "selfProviderId": "codex",
+        "selectionPolicy": "highest-certified-independent-review-v1",
+        "reviewClass": "tier-0-governance",
+        "requiredAssuranceTier": "maximum",
+        "requiredReasoningTier": "maximum",
+        "requiredComputeTier": "maximum",
+        "transport": "content-addressed-model-broker-exchange-v1",
+        "invocation": {
+          "strategy": "main-context"
+        },
+        "certificationContract": "exact-provider-runtime-surface-role-target-v1",
+        "bindingDigest": "8e25090f34687213f4d7d0c36b984ce9a2117f4c6c1b559048578cd5d5892dec"
+      }
+    ],
+    "providerCompatibility": [
+      {
+        "providerId": "claude",
+        "compatibilityProviderId": "claude-code"
+      },
+      {
+        "providerId": "codex",
+        "compatibilityProviderId": "codex"
+      }
+    ],
+    "certifications": [
+      {
+        "id": "claude-cloud-product-v1",
+        "provider": "claude-code",
+        "runtimeKind": "claude-code-cloud",
+        "providerVersion": "2.1.215",
+        "adapterVersion": "governance-protocol-1",
+        "surface": "cloud",
+        "repositoryRole": "product-consumer",
+        "status": "not-certified",
+        "platformMatrix": [
+          {
+            "id": "linux-linux-x64-cloud-hosted-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "cloud-hosted",
+            "distributionVersion": "2.1.215",
+            "pathClass": "contains-space",
+            "status": "not-certified",
+            "limitations": [
+              "No fresh-clone product-consumer artifact binds Claude Code Cloud to the exact installed consumer hard gate on this Linux/x64/cloud-hosted/space-path target."
+            ]
+          }
+        ],
+        "checks": [
+          {
+            "id": "product-cloud-installed-hard-gate",
+            "status": "not-tested",
+            "evidence": {
+              "kind": "command-output",
+              "reference": "No Claude Code Cloud product-consumer run has recorded setup, installed hard-gate, and exact snapshot evidence."
+            }
+          }
+        ],
+        "limitations": [
+          "Product-consumer Claude Code Cloud execution remains blocked until target-bound fresh-clone evidence is recorded."
+        ]
+      },
+      {
+        "id": "claude-local-product-v1",
+        "provider": "claude-code",
+        "runtimeKind": "claude-code-cli",
+        "providerVersion": "2.1.215",
+        "adapterVersion": "governance-protocol-1",
+        "surface": "local",
+        "repositoryRole": "product-consumer",
+        "status": "not-certified",
+        "platformMatrix": [
+          {
+            "id": "macos-darwin-arm64-native-no-space",
+            "operatingSystem": "macos",
+            "platform": "darwin",
+            "arch": "arm64",
+            "executionEnvironment": "native",
+            "distributionVersion": "2.1.215",
+            "pathClass": "no-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact macOS/arm64/native/no-space target."
+            ]
+          },
+          {
+            "id": "macos-darwin-arm64-native-space",
+            "operatingSystem": "macos",
+            "platform": "darwin",
+            "arch": "arm64",
+            "executionEnvironment": "native",
+            "distributionVersion": "2.1.215",
+            "pathClass": "contains-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed WM snapshot has produced signed evidence for this exact target."
+            ]
+          },
+          {
+            "id": "linux-linux-x64-native-no-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "native",
+            "distributionVersion": "2.1.215",
+            "pathClass": "no-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/native/no-space target."
+            ]
+          },
+          {
+            "id": "linux-linux-x64-native-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "native",
+            "distributionVersion": "2.1.215",
+            "pathClass": "contains-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/native/space-path target."
+            ]
+          },
+          {
+            "id": "linux-linux-x64-wsl2-no-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "wsl2",
+            "distributionVersion": "2.1.215",
+            "pathClass": "no-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/WSL2/no-space target."
+            ]
+          },
+          {
+            "id": "linux-linux-x64-wsl2-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "wsl2",
+            "distributionVersion": "2.1.215",
+            "pathClass": "contains-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/WSL2/space-path target."
+            ]
+          },
+          {
+            "id": "linux-linux-x64-devcontainer-no-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "devcontainer",
+            "distributionVersion": "2.1.215",
+            "pathClass": "no-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/devcontainer-or-Codespaces/no-space target."
+            ]
+          },
+          {
+            "id": "linux-linux-x64-devcontainer-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "devcontainer",
+            "distributionVersion": "2.1.215",
+            "pathClass": "contains-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/devcontainer-or-Codespaces/space-path target."
+            ]
+          },
+          {
+            "id": "windows-win32-x64-native",
+            "operatingSystem": "windows",
+            "platform": "win32",
+            "arch": "x64",
+            "executionEnvironment": "native",
+            "distributionVersion": "not-applicable",
+            "pathClass": "contains-space",
+            "status": "unsupported",
+            "limitations": [
+              "Native Windows is unsupported; Windows consumers must run the Linux target through WSL2 or devcontainer."
+            ]
+          }
+        ],
+        "checks": [
+          {
+            "id": "wm-clean-snapshot-canary",
+            "status": "not-tested",
+            "evidence": {
+              "kind": "command-output",
+              "reference": "A committed WM exact-snapshot upgrade and clean-worktree rerun are still required."
+            }
+          }
+        ],
+        "limitations": [
+          "Native hook wiring is tested in isolation, but the real WM checkout has not adopted the immutable snapshot."
+        ]
+      },
+      {
+        "id": "claude-remote-control-product-v1",
+        "provider": "claude-code",
+        "runtimeKind": "claude-code-cli",
+        "providerVersion": "2.1.215",
+        "adapterVersion": "governance-protocol-1",
+        "surface": "remote-control",
+        "repositoryRole": "product-consumer",
+        "status": "not-certified",
+        "platformMatrix": [
+          {
+            "id": "macos-darwin-arm64-remote-host-space",
+            "operatingSystem": "macos",
+            "platform": "darwin",
+            "arch": "arm64",
+            "executionEnvironment": "remote-host",
+            "distributionVersion": "2.1.215",
+            "pathClass": "contains-space",
+            "status": "not-certified",
+            "limitations": [
+              "No real phone-to-host run binds the remote session to this host platform, distribution version and path class."
+            ]
+          }
+        ],
+        "checks": [
+          {
+            "id": "remote-control-session-conformance",
+            "status": "not-tested",
+            "evidence": {
+              "kind": "manual-review",
+              "reference": "No phone-to-host remote-control conformance run has been recorded."
+            }
+          }
+        ],
+        "limitations": [
+          "The host-online and device approval path is an external runtime condition, not a repository guarantee."
+        ]
+      },
+      {
+        "id": "codex-cli-local-product-v1",
+        "provider": "codex",
+        "runtimeKind": "codex-cli",
+        "providerVersion": "0.144.6",
+        "adapterVersion": "governance-protocol-1",
+        "surface": "local",
+        "repositoryRole": "product-consumer",
+        "status": "not-certified",
+        "platformMatrix": [
+          {
+            "id": "macos-darwin-arm64-native-no-space",
+            "operatingSystem": "macos",
+            "platform": "darwin",
+            "arch": "arm64",
+            "executionEnvironment": "native",
+            "distributionVersion": "0.144.6",
+            "pathClass": "no-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact macOS/arm64/native/no-space target."
+            ]
+          },
+          {
+            "id": "macos-darwin-arm64-native-space",
+            "operatingSystem": "macos",
+            "platform": "darwin",
+            "arch": "arm64",
+            "executionEnvironment": "native",
+            "distributionVersion": "0.144.6",
+            "pathClass": "contains-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed WM snapshot has produced signed evidence for this exact target."
+            ]
+          },
+          {
+            "id": "linux-linux-x64-native-no-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "native",
+            "distributionVersion": "0.144.6",
+            "pathClass": "no-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/native/no-space target."
+            ]
+          },
+          {
+            "id": "linux-linux-x64-native-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "native",
+            "distributionVersion": "0.144.6",
+            "pathClass": "contains-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/native/space-path target."
+            ]
+          },
+          {
+            "id": "linux-linux-x64-wsl2-no-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "wsl2",
+            "distributionVersion": "0.144.6",
+            "pathClass": "no-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/WSL2/no-space target."
+            ]
+          },
+          {
+            "id": "linux-linux-x64-wsl2-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "wsl2",
+            "distributionVersion": "0.144.6",
+            "pathClass": "contains-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/WSL2/space-path target."
+            ]
+          },
+          {
+            "id": "linux-linux-x64-devcontainer-no-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "devcontainer",
+            "distributionVersion": "0.144.6",
+            "pathClass": "no-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/devcontainer-or-Codespaces/no-space target."
+            ]
+          },
+          {
+            "id": "linux-linux-x64-devcontainer-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "devcontainer",
+            "distributionVersion": "0.144.6",
+            "pathClass": "contains-space",
+            "status": "not-certified",
+            "limitations": [
+              "No clean committed product-consumer snapshot has produced signed evidence for this exact Linux/x64/devcontainer-or-Codespaces/space-path target."
+            ]
+          },
+          {
+            "id": "windows-win32-x64-native",
+            "operatingSystem": "windows",
+            "platform": "win32",
+            "arch": "x64",
+            "executionEnvironment": "native",
+            "distributionVersion": "not-applicable",
+            "pathClass": "contains-space",
+            "status": "unsupported",
+            "limitations": [
+              "Native Windows is unsupported; Windows consumers must run the Linux target through WSL2 or devcontainer."
+            ]
+          }
+        ],
+        "checks": [
+          {
+            "id": "wm-clean-snapshot-canary",
+            "status": "not-tested",
+            "evidence": {
+              "kind": "command-output",
+              "reference": "A committed WM exact-snapshot upgrade and clean-worktree rerun are still required."
+            }
+          }
+        ],
+        "limitations": [
+          "The real WM checkout is intentionally unchanged and still contains pre-existing skill edits."
+        ]
+      },
+      {
+        "id": "codex-cloud-product-v1",
+        "provider": "codex",
+        "runtimeKind": "codex-cloud",
+        "providerVersion": "0.144.6",
+        "adapterVersion": "governance-protocol-1",
+        "surface": "cloud",
+        "repositoryRole": "product-consumer",
+        "status": "not-certified",
+        "platformMatrix": [
+          {
+            "id": "linux-linux-x64-cloud-hosted-space",
+            "operatingSystem": "linux",
+            "platform": "linux",
+            "arch": "x64",
+            "executionEnvironment": "cloud-hosted",
+            "distributionVersion": "0.144.6",
+            "pathClass": "contains-space",
+            "status": "not-certified",
+            "limitations": [
+              "No fresh-clone product-consumer artifact binds Codex Cloud to the exact installed consumer hard gate on this Linux/x64/cloud-hosted/space-path target."
+            ]
+          }
+        ],
+        "checks": [
+          {
+            "id": "product-cloud-installed-hard-gate",
+            "status": "not-tested",
+            "evidence": {
+              "kind": "command-output",
+              "reference": "No Codex Cloud product-consumer run has recorded setup, installed hard-gate, and exact snapshot evidence."
+            }
+          }
+        ],
+        "limitations": [
+          "Product-consumer Codex Cloud execution remains blocked until target-bound fresh-clone evidence is recorded."
+        ]
+      },
+      {
+        "id": "codex-desktop-local-product-v1",
+        "provider": "codex",
+        "runtimeKind": "codex-desktop",
+        "providerVersion": "26.721.30844",
+        "adapterVersion": "governance-protocol-1",
+        "surface": "local",
+        "repositoryRole": "product-consumer",
+        "status": "not-certified",
+        "platformMatrix": [
+          {
+            "id": "macos-darwin-arm64-native-no-space",
+            "operatingSystem": "macos",
+            "platform": "darwin",
+            "arch": "arm64",
+            "executionEnvironment": "native",
+            "distributionVersion": "26.721.30844",
+            "pathClass": "no-space",
+            "status": "not-certified",
+            "limitations": [
+              "The active desktop version and no-space target are declared, but no signed app-bundle distribution identity and exact product-consumer session evidence are recorded."
+            ]
+          },
+          {
+            "id": "macos-darwin-arm64-native-space",
+            "operatingSystem": "macos",
+            "platform": "darwin",
+            "arch": "arm64",
+            "executionEnvironment": "native",
+            "distributionVersion": "26.721.30844",
+            "pathClass": "contains-space",
+            "status": "not-certified",
+            "limitations": [
+              "The active desktop version is declared, but no signed product-consumer session evidence binds this exact contains-space target."
+            ]
+          },
+          {
+            "id": "windows-win32-x64-native",
+            "operatingSystem": "windows",
+            "platform": "win32",
+            "arch": "x64",
+            "executionEnvironment": "native",
+            "distributionVersion": "not-applicable",
+            "pathClass": "contains-space",
+            "status": "unsupported",
+            "limitations": [
+              "Native Windows desktop execution has no declared runtime target or evidence."
+            ]
+          }
+        ],
+        "checks": [
+          {
+            "id": "desktop-wm-runtime-conformance",
+            "status": "not-tested",
+            "evidence": {
+              "kind": "manual-review",
+              "reference": "No Codex desktop app local run against the exact WM snapshot has been recorded."
+            }
+          }
+        ],
+        "limitations": [
+          "Codex CLI local evidence cannot certify the desktop app distribution."
+        ]
+      },
+      {
+        "id": "codex-remote-control-product-v1",
+        "provider": "codex",
+        "runtimeKind": "codex-desktop",
+        "providerVersion": "26.513.31313",
+        "adapterVersion": "governance-protocol-1",
+        "surface": "remote-control",
+        "repositoryRole": "product-consumer",
+        "status": "not-certified",
+        "platformMatrix": [
+          {
+            "id": "macos-darwin-arm64-remote-host-space",
+            "operatingSystem": "macos",
+            "platform": "darwin",
+            "arch": "arm64",
+            "executionEnvironment": "remote-host",
+            "distributionVersion": "26.513.31313",
+            "pathClass": "contains-space",
+            "status": "not-certified",
+            "limitations": [
+              "No signed desktop distribution identity and real device-to-host run bind the remote session to this host platform, version and path class."
+            ]
+          }
+        ],
+        "checks": [
+          {
+            "id": "remote-control-session-conformance",
+            "status": "not-tested",
+            "evidence": {
+              "kind": "manual-review",
+              "reference": "No device-to-host remote-control conformance run has been recorded."
+            }
+          }
+        ],
+        "limitations": [
+          "Host availability, trust state, and exact consumer snapshot must be observed in a real remote session."
+        ]
+      }
+    ],
+    "projectionDigest": "074b86eb93cded1325f444e0c0d688d7626a116f8563741e0a5538581e4ff2e2"
+  },
+  "launchers": [
+    "approval-evidence.mjs",
+    "authority-decision-evidence.mjs",
+    "canonical-order.mjs",
+    "fork-governance-dispatcher.sh",
+    "format-provider-hook-output.mjs",
+    "independent-review.mjs",
+    "inject_fork_governance_preamble.sh",
+    "normalize-provider-event.mjs",
+    "product-hook-dispatch-runtime.mjs",
+    "provider-hook-normalization.mjs",
+    "provider-hook-output-transport.mjs"
+  ],
   "hooks": {
     "PostToolUse": [
       {
         "file": "hooks/check_consumer_app_invariants.sh",
         "sourceHook": "check_consumer_app_invariants.sh",
-        "bucket": "SHIP_AS_IS"
+        "bucket": "SHIP_AS_IS",
+        "matcher": "Write|Edit|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "blocking",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/block_prototype_imports.py",
         "sourceHook": "block_prototype_imports.py",
-        "bucket": "SHIP_AS_IS"
+        "bucket": "SHIP_AS_IS",
+        "matcher": "Write|Edit|MultiEdit",
+        "runtime": "python3",
+        "outputMode": "blocking",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_layout_space_magic_numbers.sh",
         "sourceHook": "check_layout_space_magic_numbers.sh",
-        "bucket": "SHIP_AS_IS"
+        "bucket": "SHIP_AS_IS",
+        "matcher": "Write|Edit|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "blocking",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_tailwind_wildcard_in_docs.sh",
         "sourceHook": "check_tailwind_wildcard_in_docs.sh",
-        "bucket": "SHIP_AS_IS"
+        "bucket": "SHIP_AS_IS",
+        "matcher": "Write|Edit|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "blocking",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_tabs_content_chrome_body_double_gap.sh",
         "sourceHook": "check_tabs_content_chrome_body_double_gap.sh",
-        "bucket": "SHIP_AS_IS"
+        "bucket": "SHIP_AS_IS",
+        "matcher": "Write|Edit|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "blocking",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
+      },
+      {
+        "file": "hooks/check_consumer_code_quality.sh",
+        "sourceHook": "check_consumer_code_quality.sh",
+        "bucket": "SHIP_REWRITTEN",
+        "matcher": "Write|Edit|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "blocking",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_escape_marker_abuse.sh",
         "sourceHook": "check_escape_marker_abuse.sh",
-        "bucket": "SHIP_REWRITTEN"
+        "bucket": "SHIP_REWRITTEN",
+        "matcher": "Write|Edit|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "blocking",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/inject_deploy_url_after_push.sh",
         "sourceHook": "inject_deploy_url_after_push.sh",
-        "bucket": "SHIP_REWRITTEN"
+        "bucket": "SHIP_REWRITTEN",
+        "matcher": "Bash",
+        "runtime": "bash",
+        "outputMode": "governance-context",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_story_invariants.sh",
         "sourceHook": "check_story_invariants.sh",
-        "bucket": "SHIP_REWRITTEN"
+        "bucket": "SHIP_REWRITTEN",
+        "matcher": "Write|Edit|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "governance-context-or-block",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       }
     ],
     "PreToolUse": [
       {
         "file": "hooks/check_item_list_gap.sh",
         "sourceHook": "check_item_list_gap.sh",
-        "bucket": "SHIP_AS_IS"
+        "bucket": "SHIP_AS_IS",
+        "matcher": "Edit|Write|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "governance-context",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_pattern_invariants.sh",
         "sourceHook": "check_pattern_invariants.sh",
-        "bucket": "SHIP_AS_IS"
+        "bucket": "SHIP_AS_IS",
+        "matcher": "Edit|Write|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "governance-context-or-block",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_field_family_invariants.sh",
         "sourceHook": "check_field_family_invariants.sh",
-        "bucket": "SHIP_AS_IS"
+        "bucket": "SHIP_AS_IS",
+        "matcher": "Edit|Write|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "governance-context-or-block",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_sidebar_menu_button_implicit_wrap.sh",
         "sourceHook": "check_sidebar_menu_button_implicit_wrap.sh",
-        "bucket": "SHIP_AS_IS"
+        "bucket": "SHIP_AS_IS",
+        "matcher": "Edit|Write|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "blocking",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_chrome_header_avatar_canonical.sh",
         "sourceHook": "check_chrome_header_avatar_canonical.sh",
-        "bucket": "SHIP_AS_IS"
+        "bucket": "SHIP_AS_IS",
+        "matcher": "Edit|Write|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "blocking",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_story_determinism.sh",
         "sourceHook": "check_story_determinism.sh",
-        "bucket": "SHIP_AS_IS"
+        "bucket": "SHIP_AS_IS",
+        "matcher": "Edit|Write|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "diagnostic",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_dynamic_tailwind_class.sh",
         "sourceHook": "check_dynamic_tailwind_class.sh",
-        "bucket": "SHIP_AS_IS"
+        "bucket": "SHIP_AS_IS",
+        "matcher": "Edit|Write|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "blocking",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_opacity_token_usage.sh",
         "sourceHook": "check_opacity_token_usage.sh",
-        "bucket": "SHIP_REWRITTEN"
+        "bucket": "SHIP_REWRITTEN",
+        "matcher": "Edit|Write|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "governance-context-or-block",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_ds_anchor_preflight.sh",
         "sourceHook": "check_ds_anchor_preflight.sh",
-        "bucket": "SHIP_REWRITTEN"
+        "bucket": "SHIP_REWRITTEN",
+        "matcher": "Edit|Write|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "governance-context-or-block",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "optional"
       },
       {
         "file": "hooks/check_story_invariants.sh",
         "sourceHook": "check_story_invariants.sh",
-        "bucket": "SHIP_REWRITTEN"
+        "bucket": "SHIP_REWRITTEN",
+        "matcher": "Edit|Write|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "governance-context-or-block",
+        "inputContract": "proposed-text-v1",
+        "transcriptRequirement": "none"
       },
       {
         "file": "hooks/check_fork_product_quality.sh",
         "sourceHook": "check_substantive_edit_approval_preflight.sh",
-        "bucket": "REPLACE"
+        "bucket": "REPLACE",
+        "matcher": "Edit|Write|MultiEdit",
+        "runtime": "bash",
+        "outputMode": "governance-context",
+        "inputContract": "event-v1",
+        "transcriptRequirement": "none"
       }
     ]
   },
+  "ciReplay": [
+    {
+      "event": "PostToolUse",
+      "file": "hooks/check_consumer_app_invariants.sh",
+      "sourceHook": "check_consumer_app_invariants.sh",
+      "interpreter": "bash",
+      "matcher": "Write|Edit|MultiEdit",
+      "outputMode": "blocking",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PostToolUse",
+      "file": "hooks/block_prototype_imports.py",
+      "sourceHook": "block_prototype_imports.py",
+      "interpreter": "python3",
+      "matcher": "Write|Edit|MultiEdit",
+      "outputMode": "blocking",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PreToolUse",
+      "file": "hooks/check_item_list_gap.sh",
+      "sourceHook": "check_item_list_gap.sh",
+      "interpreter": "bash",
+      "matcher": "Edit|Write|MultiEdit",
+      "outputMode": "governance-context",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PreToolUse",
+      "file": "hooks/check_pattern_invariants.sh",
+      "sourceHook": "check_pattern_invariants.sh",
+      "interpreter": "bash",
+      "matcher": "Edit|Write|MultiEdit",
+      "outputMode": "governance-context-or-block",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PreToolUse",
+      "file": "hooks/check_field_family_invariants.sh",
+      "sourceHook": "check_field_family_invariants.sh",
+      "interpreter": "bash",
+      "matcher": "Edit|Write|MultiEdit",
+      "outputMode": "governance-context-or-block",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PreToolUse",
+      "file": "hooks/check_sidebar_menu_button_implicit_wrap.sh",
+      "sourceHook": "check_sidebar_menu_button_implicit_wrap.sh",
+      "interpreter": "bash",
+      "matcher": "Edit|Write|MultiEdit",
+      "outputMode": "blocking",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PreToolUse",
+      "file": "hooks/check_chrome_header_avatar_canonical.sh",
+      "sourceHook": "check_chrome_header_avatar_canonical.sh",
+      "interpreter": "bash",
+      "matcher": "Edit|Write|MultiEdit",
+      "outputMode": "blocking",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PostToolUse",
+      "file": "hooks/check_layout_space_magic_numbers.sh",
+      "sourceHook": "check_layout_space_magic_numbers.sh",
+      "interpreter": "bash",
+      "matcher": "Write|Edit|MultiEdit",
+      "outputMode": "blocking",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PostToolUse",
+      "file": "hooks/check_tailwind_wildcard_in_docs.sh",
+      "sourceHook": "check_tailwind_wildcard_in_docs.sh",
+      "interpreter": "bash",
+      "matcher": "Write|Edit|MultiEdit",
+      "outputMode": "blocking",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PostToolUse",
+      "file": "hooks/check_tabs_content_chrome_body_double_gap.sh",
+      "sourceHook": "check_tabs_content_chrome_body_double_gap.sh",
+      "interpreter": "bash",
+      "matcher": "Write|Edit|MultiEdit",
+      "outputMode": "blocking",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PreToolUse",
+      "file": "hooks/check_story_determinism.sh",
+      "sourceHook": "check_story_determinism.sh",
+      "interpreter": "bash",
+      "matcher": "Edit|Write|MultiEdit",
+      "outputMode": "diagnostic",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PreToolUse",
+      "file": "hooks/check_dynamic_tailwind_class.sh",
+      "sourceHook": "check_dynamic_tailwind_class.sh",
+      "interpreter": "bash",
+      "matcher": "Edit|Write|MultiEdit",
+      "outputMode": "blocking",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PostToolUse",
+      "file": "hooks/check_consumer_code_quality.sh",
+      "sourceHook": "check_consumer_code_quality.sh",
+      "interpreter": "bash",
+      "matcher": "Write|Edit|MultiEdit",
+      "outputMode": "blocking",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PreToolUse",
+      "file": "hooks/check_opacity_token_usage.sh",
+      "sourceHook": "check_opacity_token_usage.sh",
+      "interpreter": "bash",
+      "matcher": "Edit|Write|MultiEdit",
+      "outputMode": "governance-context-or-block",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PostToolUse",
+      "file": "hooks/check_escape_marker_abuse.sh",
+      "sourceHook": "check_escape_marker_abuse.sh",
+      "interpreter": "bash",
+      "matcher": "Write|Edit|MultiEdit",
+      "outputMode": "blocking",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PreToolUse",
+      "file": "hooks/check_ds_anchor_preflight.sh",
+      "sourceHook": "check_ds_anchor_preflight.sh",
+      "interpreter": "bash",
+      "matcher": "Edit|Write|MultiEdit",
+      "outputMode": "governance-context-or-block",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "optional"
+    },
+    {
+      "event": "PreToolUse",
+      "file": "hooks/check_story_invariants.sh",
+      "sourceHook": "check_story_invariants.sh",
+      "interpreter": "bash",
+      "matcher": "Edit|Write|MultiEdit",
+      "outputMode": "governance-context-or-block",
+      "inputContract": "proposed-text-v1",
+      "transcriptRequirement": "none"
+    },
+    {
+      "event": "PostToolUse",
+      "file": "hooks/check_story_invariants.sh",
+      "sourceHook": "check_story_invariants.sh",
+      "interpreter": "bash",
+      "matcher": "Write|Edit|MultiEdit",
+      "outputMode": "governance-context-or-block",
+      "inputContract": "event-v1",
+      "transcriptRequirement": "none"
+    }
+  ],
   "skills": [
     "bug-fix-rhythm",
     "code-quality-audit",
     "delivery-handoff",
+    "independent-review",
     "performance-audit",
     "product-ui-audit",
     "propose-options",
@@ -115,13 +1536,450 @@
   ],
   "commands": [],
   "agents": [],
+  "providerSurfaces": {
+    "claude": {
+      "schemaVersion": 3,
+      "generated": true,
+      "capabilities": {
+        "nativeHooks": true,
+        "hookEnforcement": "native-feedback-plus-ci",
+        "hardGate": "provider-neutral-ci-required"
+      },
+      "instructionArtifact": "providers/claude/instruction.md",
+      "instructionDestination": "CLAUDE.md",
+      "instructionMaterializerId": "markdown-relative-at-import-v1",
+      "hookArtifact": "providers/claude/hook-config.json",
+      "hookDestination": ".claude/settings.json",
+      "hookMaterializerId": "claude-settings-json-v1",
+      "skillArtifactRoot": "providers/claude/skills",
+      "skillDestination": ".claude/skills",
+      "skillMaterializerId": "agent-skills-directory-v1",
+      "skillEntryFile": "SKILL.md",
+      "skills": [
+        "bug-fix-rhythm",
+        "code-quality-audit",
+        "delivery-handoff",
+        "independent-review",
+        "performance-audit",
+        "product-ui-audit",
+        "propose-options",
+        "prototype",
+        "scan-similar-bugs",
+        "ux-audit",
+        "visual-audit"
+      ],
+      "trees": [],
+      "managedSurfaces": [
+        {
+          "path": ".claude/settings.json",
+          "kind": "file"
+        },
+        {
+          "path": ".claude/skills",
+          "kind": "tree"
+        },
+        {
+          "path": "CLAUDE.md",
+          "kind": "file"
+        }
+      ],
+      "nativeHookCoverage": {
+        "schemaVersion": 2,
+        "canonicalEvents": [
+          "PostToolUse",
+          "PreToolUse",
+          "SessionStart",
+          "Stop",
+          "UserPromptSubmit"
+        ],
+        "projectedEvents": [
+          "PostToolUse",
+          "PreToolUse",
+          "SessionStart",
+          "Stop",
+          "UserPromptSubmit"
+        ],
+        "projectedNativeEvents": [
+          {
+            "canonicalEvent": "PostToolUse",
+            "nativeEvent": "PostToolUse"
+          },
+          {
+            "canonicalEvent": "PreToolUse",
+            "nativeEvent": "PreToolUse"
+          },
+          {
+            "canonicalEvent": "SessionStart",
+            "nativeEvent": "SessionStart"
+          },
+          {
+            "canonicalEvent": "Stop",
+            "nativeEvent": "Stop"
+          },
+          {
+            "canonicalEvent": "UserPromptSubmit",
+            "nativeEvent": "UserPromptSubmit"
+          }
+        ],
+        "excludedEvents": []
+      },
+      "environmentMap": {
+        "GOVERNANCE_PROJECT_DIR": "CLAUDE_PROJECT_DIR",
+        "GOVERNANCE_SESSION_ID": "CLAUDE_SESSION_ID",
+        "GOVERNANCE_TRANSCRIPT_PATH": "CLAUDE_TRANSCRIPT_PATH",
+        "GOVERNANCE_PLUGIN_ROOT": "CLAUDE_PLUGIN_ROOT",
+        "GOVERNANCE_TOOL_INPUT": "CLAUDE_TOOL_INPUT",
+        "GOVERNANCE_BYPASS_SOLO_WORKFLOW": "CLAUDE_BYPASS_SOLO_WORKFLOW",
+        "GOVERNANCE_BYPASS_DS_ANCHOR": "CLAUDE_BYPASS_DS_ANCHOR",
+        "GOVERNANCE_BYPASS_MAIN_WORKBENCH": "CLAUDE_BYPASS_MAIN_WORKBENCH",
+        "GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT": "CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT",
+        "GOVERNANCE_BYPASS_CHROME_HEADER_AVATAR": "CLAUDE_BYPASS_CHROME_HEADER_AVATAR",
+        "GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP": "CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP"
+      },
+      "exclusions": []
+    },
+    "codex": {
+      "schemaVersion": 3,
+      "generated": true,
+      "capabilities": {
+        "nativeHooks": true,
+        "hookEnforcement": "native-feedback-plus-ci",
+        "hardGate": "provider-neutral-ci-required"
+      },
+      "instructionArtifact": "common/instruction.md",
+      "instructionDestination": "AGENTS.md",
+      "instructionMaterializerId": "shared-instruction-v1",
+      "hookArtifact": "providers/codex/hook-config.json",
+      "hookDestination": ".codex/hooks.json",
+      "hookMaterializerId": "command-hooks-json-v1",
+      "skillArtifactRoot": "providers/codex/skills",
+      "skillDestination": ".agents/skills",
+      "skillMaterializerId": "agent-skills-directory-v1",
+      "skillEntryFile": "SKILL.md",
+      "skills": [
+        "bug-fix-rhythm",
+        "code-quality-audit",
+        "delivery-handoff",
+        "independent-review",
+        "performance-audit",
+        "product-ui-audit",
+        "propose-options",
+        "prototype",
+        "scan-similar-bugs",
+        "ux-audit",
+        "visual-audit"
+      ],
+      "trees": [],
+      "managedSurfaces": [
+        {
+          "path": ".agents/skills",
+          "kind": "tree"
+        },
+        {
+          "path": ".codex/hooks.json",
+          "kind": "file"
+        }
+      ],
+      "nativeHookCoverage": {
+        "schemaVersion": 2,
+        "canonicalEvents": [
+          "PostToolUse",
+          "PreToolUse",
+          "SessionStart",
+          "Stop",
+          "UserPromptSubmit"
+        ],
+        "projectedEvents": [
+          "PostToolUse",
+          "PreToolUse",
+          "SessionStart",
+          "Stop",
+          "UserPromptSubmit"
+        ],
+        "projectedNativeEvents": [
+          {
+            "canonicalEvent": "PostToolUse",
+            "nativeEvent": "PostToolUse"
+          },
+          {
+            "canonicalEvent": "PreToolUse",
+            "nativeEvent": "PreToolUse"
+          },
+          {
+            "canonicalEvent": "SessionStart",
+            "nativeEvent": "SessionStart"
+          },
+          {
+            "canonicalEvent": "Stop",
+            "nativeEvent": "Stop"
+          },
+          {
+            "canonicalEvent": "UserPromptSubmit",
+            "nativeEvent": "UserPromptSubmit"
+          }
+        ],
+        "excludedEvents": []
+      },
+      "environmentMap": {},
+      "exclusions": []
+    },
+    "generic": {
+      "schemaVersion": 3,
+      "generated": false,
+      "capabilities": {
+        "nativeHooks": false,
+        "hookEnforcement": "ci-only",
+        "hardGate": "provider-neutral-ci-required"
+      },
+      "instructionArtifact": null,
+      "instructionDestination": "AGENTS.md",
+      "instructionMaterializerId": null,
+      "hookArtifact": null,
+      "hookDestination": null,
+      "hookMaterializerId": null,
+      "skillArtifactRoot": null,
+      "skillDestination": ".agents/skills",
+      "skillMaterializerId": null,
+      "skillEntryFile": null,
+      "skills": [],
+      "trees": [],
+      "managedSurfaces": [],
+      "nativeHookCoverage": null,
+      "environmentMap": {},
+      "exclusions": [
+        {
+          "scope": "native-hooks",
+          "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
+          "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative."
+        },
+        {
+          "scope": "provider-skills",
+          "reasonCode": "NO_DISCOVERY_SURFACE_DECLARED",
+          "detail": "This abstract provider has no independent skill discovery surface; a concrete provider must register one before generation."
+        }
+      ]
+    }
+  },
   "codex": {
-    "agentsMd": "AGENTS.md",
+    "agentsMd": "common/instruction.md",
+    "instructionDestination": "AGENTS.md",
     "hooksJson": [
-      "check_tailwind_wildcard_in_docs.sh"
+      "fork-governance-dispatcher.sh",
+      "inject_fork_governance_preamble.sh"
     ],
+    "hookArtifact": "codex/hooks.json",
+    "hookDestination": ".codex/hooks.json",
     "agentsSkills": [
-      "independent-review"
-    ]
+      "bug-fix-rhythm",
+      "code-quality-audit",
+      "delivery-handoff",
+      "independent-review",
+      "performance-audit",
+      "product-ui-audit",
+      "propose-options",
+      "prototype",
+      "scan-similar-bugs",
+      "ux-audit",
+      "visual-audit"
+    ],
+    "skillArtifactRoot": "codex/agents/skills",
+    "skillDestination": ".agents/skills",
+    "compatibilityOnly": true
+  },
+  "consumer": {
+    "governanceLock": "consumer/lock.json",
+    "governanceLockSchema": "consumer/lock.schema.json",
+    "governanceCheck": "consumer/governance-check.mjs",
+    "claudeMd": "CLAUDE.md",
+    "compatibilityCategories": [
+      {
+        "schemaVersion": 1,
+        "providerId": "claude",
+        "name": "agents",
+        "artifactRoot": "agents",
+        "destinationRoot": ".claude/agents",
+        "entries": []
+      },
+      {
+        "schemaVersion": 1,
+        "providerId": "claude",
+        "name": "commands",
+        "artifactRoot": "commands",
+        "destinationRoot": ".claude/commands",
+        "entries": []
+      }
+    ],
+    "commonInstruction": {
+      "schemaVersion": 1,
+      "artifact": "common/instruction.md",
+      "destination": "AGENTS.md",
+      "materializerId": "shared-instruction-v1"
+    },
+    "launcherDestination": "governance/bin",
+    "executionRuntime": {
+      "schemaVersion": 2,
+      "engine": "node-posix-toolchain-v2",
+      "minimumNodeVersion": "22.13.0",
+      "exactNpmVersion": "11.18.0",
+      "supportedHostPlatforms": [
+        "darwin",
+        "linux"
+      ],
+      "nativeWindowsPolicy": "unsupported-fail-closed",
+      "windowsCompatibilityEnvironments": [
+        "devcontainer-linux",
+        "wsl2-linux"
+      ],
+      "requiredExecutables": [
+        "bash",
+        "git",
+        "jq",
+        "node",
+        "python3"
+      ],
+      "requiredPathClasses": [
+        "plain",
+        "space-containing"
+      ]
+    },
+    "managedFiles": {
+      ".devcontainer/devcontainer-lock.json": "consumer/managed-files/cd9c61f8ff24fb9bcc3663e346e2cfa419cfb84e02aae18d3dc66dd192681696.blob",
+      ".devcontainer/devcontainer.json": "consumer/managed-files/24ad71c8613ddcf6fd23818cb3bb477a1fb6d83af4550b0bad43099813088686.blob",
+      ".devcontainer/onboard-banner.sh": "consumer/managed-files/da2ad2737315d25a5300905ddefd62f1695056a8a1af155c5b34170ad9923bce.blob",
+      ".devcontainer/post-create.mjs": "consumer/managed-files/3ddedc67b464bdfe3dde9803a2d917920c96d633678b802eee638a44cd47366a.blob",
+      ".github/workflows/audit.yml": "consumer/managed-files/93a89f16f6717d1e4e4e27ec20ef916e3355c7aa890ca74cd9b12db30d8a899f.blob",
+      ".github/workflows/governance-anchor.yml": "consumer/managed-files/e1b11160d6c4043002d2cbff6d9a4ae551698a96137773c4244dadfac152fcb0.blob",
+      ".github/workflows/sync-design-system.yml": "consumer/managed-files/77e06f62670dfee01e9b5e8b0f8dad085ce711d75538c1fb0679d9818acaca82.blob",
+      ".npmrc": "consumer/managed-files/e813096d69c49812e40e00be9ac8fa14d77f0ec1f97ab4c45cb096b3bedd35de.blob",
+      "governance/consumer-governance.md": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
+      "governance/provider-cli-toolchain.json": "consumer/managed-files/189e551431181e4a88783c02130d2787b801ef731c86e35bcde89a7313aa020e.blob",
+      "governance/provider-cli-toolchain.package-lock.json": "consumer/managed-files/e930ebca6fd8eeb30802aac0930efae7bcc44cc0996f24de07c11ca6a081fedf.blob",
+      "governance/schemas/issuer-registry.schema.json": "consumer/managed-files/91f414b9462ddc1e4be1d4c6ca4ac7a7340a6eec9e98ee109cbc049d3b354b6a.blob",
+      "governance/schemas/visual-baseline-review-policy.schema.json": "consumer/managed-files/7b17835d0ceb17cdcdcaf930540a3e5d0943a34a747ac43c12ca8cd485c11581.blob",
+      "governance/trust/issuers.json": "consumer/managed-files/81037efa5b3b9f4a875704005fb268acdc9233bb901f44902e4e37e1da92b8e3.blob",
+      "governance/visual-baseline-review-policy.json": "consumer/managed-files/e68ae1915965d8e17d4b2441c00c2b97fe062ea308ae8535c9eebb2fc16fa245.blob",
+      "schemas/provider-cli-toolchain.schema.json": "consumer/managed-files/6b746628ac11fcccbe277ef6fea94cc2a7b90ea2822e83536eae80d5ee4b3fa5.blob",
+      "scripts/audit-consumer-a11y.mjs": "consumer/managed-files/e71c65f45c6af7ce12b6b3c0d8028f185da5b719e2050c9b2a6b243d41ae4878.blob",
+      "scripts/check-plugin-installed.mjs": "consumer/managed-files/ea94e914d5c8acb84ad7660e5bda0f01b6ccc8cf96b0f6b1ce048f8938d0f5b5.blob",
+      "scripts/consumer-source-harness.mjs": "consumer/managed-files/423729840acdd43c812f17c245b871716c6b60f76e4d3e94864d0e34a815bf8d.blob",
+      "scripts/governance-anchor-preflight.mjs": "consumer/managed-files/6929a3c8bb4d69c507720b4754aeb339c6cbb8ff655e0a381d76606d64695e38.blob",
+      "scripts/lib/a11y-static-server.mjs": "consumer/managed-files/92e4828cdcb96ff0d01daa16f6885f24045a8e72820665650f2a1890dc3a446c.blob",
+      "scripts/lib/canonical-path-containment.mjs": "consumer/managed-files/faa128c26102415dc5345e68698efbbd28a395c35ee278dceae044cf430692b2.blob",
+      "scripts/lib/closed-tool-execution.mjs": "consumer/managed-files/2d1ef5617a5ce3c39ad9aae1c42af7d199f9270c0a0ccb490b63d62dbc6913db.blob",
+      "scripts/lib/consumer-control-plane-policy.mjs": "consumer/managed-files/145aab4b4fc470fc9ba7679b4a1d87d4f6a6d604940bd40f8d675c8af696498f.blob",
+      "scripts/lib/governance-dependency-bootstrap.mjs": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
+      "scripts/lib/provider-lifecycle.mjs": "consumer/managed-files/76d485470d30ff014afacf7ce643763de9f4f956d9fc8128dbc1814774cf2e63.blob",
+      "scripts/lib/verified-exact-npm-runtime.mjs": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
+      "scripts/lib/workspace-post-create.mjs": "consumer/managed-files/c893e9b734b162f4c631fef871128c16a9ab565f796a0e76d7f320f821f220f5.blob",
+      "scripts/lib/worktree-fingerprint.mjs": "consumer/managed-files/61c6aca6d7f04bedbf556eaa9d3043681fe48cbe0e93a8ccb1d69a7c5e23fdcf.blob",
+      "scripts/lint-ds-internal-imports.mjs": "consumer/managed-files/7937321877e5c34c27dae36c0d507d21cd42fa3f46a8f11a284b8b4a52b6faa4.blob",
+      "scripts/product-template-scaffold-lock.mjs": "consumer/managed-files/65410b66e8799a560e07b71779c186fed2a0ef50575ac44745df7a0938a9c2b4.blob",
+      "scripts/refresh-fork-launchers.mjs": "consumer/managed-files/63061e05969667005020166ea2ae7df3c96663f7a928e7dd3eebc1471022df56.blob",
+      "scripts/release-bom-contract.mjs": "consumer/managed-files/a448d2222133335c30e6fda5116e26a40db3283a19d62ccc0663c30d272262a7.blob",
+      "scripts/schemas/product-template-scaffold-lock.schema.json": "consumer/managed-files/974521d6b8fe796ea4c58b3c78b0c2b8a1be262b97100d77aaf4cc9c7724bcab.blob",
+      "scripts/schemas/release-bom.schema.json": "consumer/managed-files/f4db6e616d5229aa7e700c6a3ace022cb9d90baae74e38ca65fce617f18e0d9b.blob",
+      "scripts/schemas/upgrade-evidence-receipt.schema.json": "consumer/managed-files/0235cf6b3fd402a3717881dc205b5bf77aed7632e7d7d6f1811a40e3033bd816.blob",
+      "scripts/setup-governance.mjs": "consumer/managed-files/bc44cabad181f766611dab6a8f52d81100afadd50ac59799015e8ba7bf46d9eb.blob",
+      "scripts/setup-provider-cli-toolchain.mjs": "consumer/managed-files/3625e02235cf166a50649a4d704cfb68fead69d0e168c481df013ebae9f6be25.blob",
+      "scripts/setup-workspace.mjs": "consumer/managed-files/475fba657eaeb8abd88f60635f3eadab27a9d0d3114ba4fffc65f43a2a0fe6e2.blob",
+      "scripts/sync-all.mjs": "consumer/managed-files/ab072e7f2eca51f0e18a5e18c4b333260ee5d219a12cc6df5bb2d683f0b2734d.blob",
+      "scripts/verify-consumer-css-entry.mjs": "consumer/managed-files/c4aa767f11714467de0038a2149cf78074baddc17fc6a9e074b6aed7544c6f3c.blob",
+      "scripts/verify-upgrade-evidence.mjs": "consumer/managed-files/9791c85388d2e2e2bd564e2550fadc3351c4c960a47ce838098afcba7544eb90.blob",
+      "scripts/verify-upgrade-provenance.mjs": "consumer/managed-files/794bb911ba8ebef58ab0d44a55b9968a19d2c62bcfb310b1ee3a84166f087f21.blob",
+      "scripts/workflow-static-validation.mjs": "consumer/managed-files/e26057408661597aac4a57cdf7e30e2f9d0afb1b9a2dbbb692c3805cd9028ca5.blob"
+    },
+    "materialization": {
+      "exactPaths": [
+        ".claude/settings.json",
+        ".codex/hooks.json",
+        ".devcontainer/devcontainer-lock.json",
+        ".devcontainer/devcontainer.json",
+        ".devcontainer/onboard-banner.sh",
+        ".devcontainer/post-create.mjs",
+        ".github/workflows/audit.yml",
+        ".github/workflows/governance-anchor.yml",
+        ".github/workflows/sync-design-system.yml",
+        ".npmrc",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "governance/bin/approval-evidence.mjs",
+        "governance/bin/authority-decision-evidence.mjs",
+        "governance/bin/canonical-order.mjs",
+        "governance/bin/fork-governance-dispatcher.sh",
+        "governance/bin/format-provider-hook-output.mjs",
+        "governance/bin/independent-review.mjs",
+        "governance/bin/inject_fork_governance_preamble.sh",
+        "governance/bin/normalize-provider-event.mjs",
+        "governance/bin/product-hook-dispatch-runtime.mjs",
+        "governance/bin/provider-hook-normalization.mjs",
+        "governance/bin/provider-hook-output-transport.mjs",
+        "governance/consumer-governance.md",
+        "governance/lock.json",
+        "governance/lock.schema.json",
+        "governance/provider-cli-toolchain.json",
+        "governance/provider-cli-toolchain.package-lock.json",
+        "governance/schemas/issuer-registry.schema.json",
+        "governance/schemas/visual-baseline-review-policy.schema.json",
+        "governance/trust/issuers.json",
+        "governance/visual-baseline-review-policy.json",
+        "npm-shrinkwrap.json",
+        "package-lock.json",
+        "package.json",
+        "schemas/provider-cli-toolchain.schema.json",
+        "scripts/audit-consumer-a11y.mjs",
+        "scripts/check-plugin-installed.mjs",
+        "scripts/consumer-source-harness.mjs",
+        "scripts/governance-anchor-preflight.mjs",
+        "scripts/governance-check.mjs",
+        "scripts/lib/a11y-static-server.mjs",
+        "scripts/lib/canonical-path-containment.mjs",
+        "scripts/lib/closed-tool-execution.mjs",
+        "scripts/lib/consumer-control-plane-policy.mjs",
+        "scripts/lib/governance-dependency-bootstrap.mjs",
+        "scripts/lib/provider-lifecycle.mjs",
+        "scripts/lib/verified-exact-npm-runtime.mjs",
+        "scripts/lib/workspace-post-create.mjs",
+        "scripts/lib/worktree-fingerprint.mjs",
+        "scripts/lint-ds-internal-imports.mjs",
+        "scripts/product-template-scaffold-lock.mjs",
+        "scripts/refresh-fork-launchers.mjs",
+        "scripts/release-bom-contract.mjs",
+        "scripts/schemas/product-template-scaffold-lock.schema.json",
+        "scripts/schemas/release-bom.schema.json",
+        "scripts/schemas/upgrade-evidence-receipt.schema.json",
+        "scripts/setup-governance.mjs",
+        "scripts/setup-provider-cli-toolchain.mjs",
+        "scripts/setup-workspace.mjs",
+        "scripts/sync-all.mjs",
+        "scripts/verify-consumer-css-entry.mjs",
+        "scripts/verify-upgrade-evidence.mjs",
+        "scripts/verify-upgrade-provenance.mjs",
+        "scripts/workflow-static-validation.mjs"
+      ],
+      "pathPrefixes": [
+        ".agents/skills/bug-fix-rhythm/",
+        ".agents/skills/code-quality-audit/",
+        ".agents/skills/delivery-handoff/",
+        ".agents/skills/independent-review/",
+        ".agents/skills/performance-audit/",
+        ".agents/skills/product-ui-audit/",
+        ".agents/skills/propose-options/",
+        ".agents/skills/prototype/",
+        ".agents/skills/scan-similar-bugs/",
+        ".agents/skills/ux-audit/",
+        ".agents/skills/visual-audit/",
+        ".claude/skills/bug-fix-rhythm/",
+        ".claude/skills/code-quality-audit/",
+        ".claude/skills/delivery-handoff/",
+        ".claude/skills/independent-review/",
+        ".claude/skills/performance-audit/",
+        ".claude/skills/product-ui-audit/",
+        ".claude/skills/propose-options/",
+        ".claude/skills/prototype/",
+        ".claude/skills/scan-similar-bugs/",
+        ".claude/skills/ux-audit/",
+        ".claude/skills/visual-audit/"
+      ]
+    }
   }
 }

@@ -9,46 +9,85 @@
 # Triggers when audit report JSON is edited/written:
 #   - /tmp/codex-*-sweep/audit-report.json
 #   - /tmp/claude-*-sweep/audit-report.json
-#   - .claude/snapshots/*audit-report.json
+#   - provider-neutral governance runtime evidence/*audit-report.json
 # Verifies storyResults.length === manifest.totalStories(動態讀 manifest)— block if sample.
 #
 # Escape: report frontmatter `"_sampling_allowed": "<rationale>"`(極罕見).
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+source "$(dirname "$0")/lib/_provider_paths.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: full-story sweep provider resolver unavailable\n' >&2
+  exit 70
+}
+source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
+  exit 70
+}
 
 set -uo pipefail
 
-INPUT=$(cat 2>/dev/null || echo "{}")
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null)
+governance_hook_load_input
+TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'full-story sweep tool extraction failed'
 
 case "${TOOL:-}" in
   Write|Edit|MultiEdit) ;;
   *) exit 0 ;;
 esac
 
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
-if ! echo "$FILE" | grep -qE '(sweep|audit-report)\.json$'; then exit 0; fi
+FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'full-story sweep path extraction failed'
+case "$FILE" in *sweep.json|*audit-report.json) ;; *) exit 0 ;; esac
 
-CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // ""' 2>/dev/null)
-[ -z "$CONTENT" ] && exit 0
+CONTENT=$(printf '%s' "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'full-story sweep report extraction failed'
 
-# Check escape
-if echo "$CONTENT" | grep -q '_sampling_allowed'; then exit 0; fi
-
-# Parse story count vs manifest (multi-field fallback)
-STORY_COUNT=$(echo "$CONTENT" | jq -r '.storyResults // .results // [] | length' 2>/dev/null)
-if [ -z "$STORY_COUNT" ] || [ "$STORY_COUNT" = "0" ] || [ "$STORY_COUNT" = "null" ]; then
-  STORY_COUNT=$(echo "$CONTENT" | jq -r '.storySummary.total // .summary.total // .total // 0' 2>/dev/null)
+# The report is enforcement evidence. Invalid JSON/schema is an integrity fault; a valid report
+# with no coverage is a genuine policy failure and is handled by the comparison below.
+if ! printf '%s' "$CONTENT" | jq -e '
+  type == "object"
+  and (._sampling_allowed? == null or (._sampling_allowed | type == "string"))
+  and (.storyResults? == null or (.storyResults | type == "array"))
+  and (.results? == null or (.results | type == "array"))
+  and (.storySummary? == null or (.storySummary | type == "object"))
+  and (.summary? == null or (.summary | type == "object"))
+  and (
+    [.storySummary.total?, .summary.total?, .total?]
+    | all(. == null or (type == "number" and floor == . and . >= 0))
+  )
+' >/dev/null 2>&1; then
+  governance_hook_integrity_fail 'full-story sweep report is malformed or invalid'
 fi
-STORY_COUNT=${STORY_COUNT:-0}
 
-MANIFEST_PATH="${CLAUDE_PROJECT_DIR:-.}/packages/design-system/ds-story-manifest.json"
-if [ ! -f "$MANIFEST_PATH" ]; then exit 0; fi
-MANIFEST_TOTAL=$(jq -r '.totalStories // 0' "$MANIFEST_PATH" 2>/dev/null)
-[ -z "$MANIFEST_TOTAL" ] || [ "$MANIFEST_TOTAL" = "0" ] && exit 0
-[ "$STORY_COUNT" = "0" ] && exit 0
-# numeric compare
-if ! [[ "$STORY_COUNT" =~ ^[0-9]+$ ]]; then exit 0; fi
+# Check the explicit, schema-valid escape only after the report itself has been validated.
+SAMPLING_ESCAPE=$(printf '%s' "$CONTENT" | jq -r '._sampling_allowed // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'full-story sweep escape extraction failed'
+if [ -n "$SAMPLING_ESCAPE" ]; then
+  exit 0
+fi
+
+# Parse story count vs manifest (multi-field fallback).
+STORY_COUNT=$(printf '%s' "$CONTENT" | jq -r '
+  ((.storyResults // .results // []) | length) as $arrayCount
+  | if $arrayCount > 0 then $arrayCount
+    else (.storySummary.total // .summary.total // .total // 0)
+    end
+' 2>/dev/null) || governance_hook_integrity_fail 'full-story sweep count extraction failed'
+
+PROJECT_ROOT=$(governance_project_root 2>/dev/null) \
+  || governance_hook_integrity_fail 'full-story sweep project root could not be resolved'
+MANIFEST_PATH="$PROJECT_ROOT/packages/design-system/ds-story-manifest.json"
+if [ -L "$MANIFEST_PATH" ] || [ ! -f "$MANIFEST_PATH" ] || [ ! -r "$MANIFEST_PATH" ]; then
+  governance_hook_integrity_fail "full-story sweep manifest is unavailable or unsafe:${MANIFEST_PATH}"
+fi
+if ! jq -e '
+  type == "object"
+  and (.totalStories | type == "number" and floor == . and . > 0)
+' "$MANIFEST_PATH" >/dev/null 2>&1; then
+  governance_hook_integrity_fail "full-story sweep manifest is invalid:${MANIFEST_PATH}"
+fi
+MANIFEST_TOTAL=$(jq -r '.totalStories' "$MANIFEST_PATH" 2>/dev/null) \
+  || governance_hook_integrity_fail 'full-story sweep manifest count extraction failed'
 
 if [ "$STORY_COUNT" -lt "$MANIFEST_TOTAL" ]; then
   cat >&2 << EOF

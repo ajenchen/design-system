@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance-lock.schema.json",
+  "title": "Governance snapshot lock",
+  "type": "object",
+  "required": ["_provenance", "schemaVersion", "role", "outputDirectory", "contractDigest", "inputDigest", "snapshotDigest", "sources", "skillParity", "files"],
+  "properties": {
+    "_provenance": { "$ref": "#/$defs/provenance" },
+    "schemaVersion": { "const": 2 },
+    "role": { "type": "string" },
+    "outputDirectory": { "type": "string" },
+    "contractDigest": { "$ref": "#/$defs/digest" },
+    "inputDigest": { "$ref": "#/$defs/digest" },
+    "snapshotDigest": { "$ref": "#/$defs/digest" },
+    "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+    "skillParity": { "type": "array", "items": { "$ref": "#/$defs/skillParity" } },
+    "files": { "type": "array", "items": { "$ref": "#/$defs/file" } }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "provenance": {
+      "type": "object",
+      "required": ["generated", "generator", "generatorVersion", "manifestId", "contractDigest", "role"],
+      "properties": {
+        "generated": { "const": true },
+        "generator": { "const": "@qijenchen/governance" },
+        "generatorVersion": { "type": "string" },
+        "manifestId": { "type": "string" },
+        "contractDigest": { "$ref": "#/$defs/digest" },
+        "role": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["id", "ownerRepo", "path", "type", "mode", "hash", "size"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "ownerRepo": { "type": "string", "minLength": 1 },
+            "path": { "type": "string", "minLength": 1 },
+            "type": { "const": "file" },
+            "mode": { "type": "string", "pattern": "^[0-7]{4}$" },
+            "hash": { "$ref": "#/$defs/digest" },
+            "size": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["id", "ownerRepo", "path", "type", "mode", "hash", "size", "carrierProjection"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "ownerRepo": { "type": "string", "minLength": 1 },
+            "path": { "type": "string", "minLength": 1 },
+            "type": { "const": "file" },
+            "mode": { "type": "string", "pattern": "^[0-7]{4}$" },
+            "hash": { "$ref": "#/$defs/digest" },
+            "size": { "type": "integer", "minimum": 0 },
+            "carrierProjection": { "$ref": "#/$defs/carrierProjection" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["id", "ownerRepo", "path", "excludes", "type", "mode", "hash", "files", "carrierProjections"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "ownerRepo": { "type": "string", "minLength": 1 },
+            "path": { "type": "string", "minLength": 1 },
+            "excludes": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "uniqueItems": true
+            },
+            "type": { "const": "directory" },
+            "mode": { "type": "string", "pattern": "^[0-7]{4}$" },
+            "hash": { "$ref": "#/$defs/digest" },
+            "files": { "type": "integer", "minimum": 0 },
+            "carrierProjections": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["path", "projection"],
+                "properties": {
+                  "path": { "type": "string", "minLength": 1 },
+                  "projection": { "$ref": "#/$defs/carrierProjection" }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "carrierProjection": {
+      "enum": [
+        "external-activation-state-v1",
+        "provider-certification-state-v1",
+        "review-capability-certification-state-v1"
+      ]
+    },
+    "projection": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["module", "export", "files"],
+          "properties": {
+            "module": { "type": "string", "minLength": 1 },
+            "export": { "type": "string", "minLength": 1 },
+            "files": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 },
+              "uniqueItems": true
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "sharedDigest": {
+      "type": "object",
+      "required": ["name", "sourceDigest", "expectedTargetDigest", "targetDigest"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "sourceDigest": { "$ref": "#/$defs/digest" },
+        "expectedTargetDigest": { "$ref": "#/$defs/digest" },
+        "targetDigest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "skillParity": {
+      "type": "object",
+      "required": [
+        "id", "sourceProvider", "targetProvider", "sourceDirectory", "targetDirectory",
+        "compare", "projection", "sourceSkills", "targetSkills", "requiredTargetExtras",
+        "targetEntryFile", "sharedDigests"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "sourceProvider": { "type": "string", "minLength": 1 },
+        "targetProvider": { "type": "string", "minLength": 1 },
+        "sourceDirectory": { "type": "string", "minLength": 1 },
+        "targetDirectory": { "type": "string", "minLength": 1 },
+        "compare": { "enum": ["names", "content", "content-and-mode"] },
+        "projection": { "$ref": "#/$defs/projection" },
+        "sourceSkills": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "targetSkills": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "requiredTargetExtras": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "targetEntryFile": { "type": "string", "minLength": 1 },
+        "sharedDigests": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sharedDigest" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "file": {
+      "type": "object",
+      "required": ["path", "type", "mode", "hash"],
+      "properties": {
+        "path": { "type": "string" },
+        "type": { "enum": ["file", "symlink", "unsupported"] },
+        "mode": { "type": "string", "pattern": "^[0-7]{4}$" },
+        "hash": { "anyOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }] },
+        "size": { "type": "integer", "minimum": 0 },
+        "target": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

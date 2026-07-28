@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/visual-baseline-review-policy-v1.json",
+  "title": "Visual baseline review trust policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "status", "issuerRegistryPath", "issuerRegistrySha256", "human", "managedBroker"],
+  "properties": {
+    "$schema": {"const": "./schemas/visual-baseline-review-policy.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "visual-baseline-review-trust-policy"},
+    "status": {"enum": ["active", "not-activated"]},
+    "issuerRegistryPath": {"const": "trust/issuers.json"},
+    "issuerRegistrySha256": {"$ref": "#/$defs/sha256"},
+    "human": {"$ref": "#/$defs/branch"},
+    "managedBroker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "allowedKeyIds", "activationEvidencePath", "activationEvidenceSha256", "modelAuthorityPolicyDigest", "brokerPolicyDigest"],
+      "properties": {
+        "status": {"const": "not-activated"},
+        "allowedKeyIds": {"type": "array", "maxItems": 0},
+        "activationEvidencePath": {"type": "null"},
+        "activationEvidenceSha256": {"type": "null"},
+        "modelAuthorityPolicyDigest": {"type": "null"},
+        "brokerPolicyDigest": {"type": "null"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableSha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "keyIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"}},
+    "branch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "allowedKeyIds"],
+      "properties": {
+        "status": {"enum": ["active", "not-activated"]},
+        "allowedKeyIds": {"$ref": "#/$defs/keyIds"}
+      }
+    }
+  }
+}

@@ -14,10 +14,10 @@ set -euo pipefail
 FILE_PATH=$(jq -r '.tool_input.file_path // empty')
 
 # Scope: only src/ .tsx / .ts files (not stories, not specs)
-if ! echo "$FILE_PATH" | grep -qE 'src/.*\.tsx?$'; then
+if ! grep -qE 'src/.*\.tsx?$' <<<"$FILE_PATH"; then
   exit 0
 fi
-if echo "$FILE_PATH" | grep -qE '\.(stories|anatomy\.stories|principles\.stories)\.tsx$'; then
+if grep -qE '\.(stories|anatomy\.stories|principles\.stories)\.tsx$' <<<"$FILE_PATH"; then
   exit 0
 fi
 if [ ! -f "$FILE_PATH" ]; then
@@ -30,7 +30,7 @@ VIOLATIONS=""
 # Flag `: any` / `as any` / `<any>` / `any[]` / `Record<X, any>`
 # Skip lines with `any-allow` OR previous line with `any-allow`.
 ANY_HITS=$(perl -ne '
-  BEGIN { our $prev_allow = 0; }
+  BEGIN { our $prev_allow = 0; our $hit_count = 0; }
   my $has_allow = /any-allow/;
   my $line = $_;
   if (!$prev_allow && !$has_allow) {
@@ -42,18 +42,20 @@ ANY_HITS=$(perl -ne '
       # String literal FPs
       unless (/[\x27"](any|many)[\x27"]/i) {
         print "$.:$line";
+        $hit_count++;
+        exit 0 if $hit_count >= 5;
       }
     }
   }
   $prev_allow = $has_allow;
-' "$FILE_PATH" 2>/dev/null | head -5)
+' "$FILE_PATH" 2>/dev/null)
 
 if [ -n "$ANY_HITS" ]; then
   VIOLATIONS="${VIOLATIONS}\n⚠️ TypeScript \`any\` usage(無 \`// any-allow: {rationale}\`):\n${ANY_HITS}\n  修法:改 proper type;真沒辦法(e.g. 3rd-party 類型外部化)→ 在同行或上一行加 \`// any-allow: {具體 rationale}\`"
 fi
 
 # ── Check 2: tsx file size ──────────────────────────────────────────────────
-if echo "$FILE_PATH" | grep -qE '\.tsx$'; then
+if grep -qE '\.tsx$' <<<"$FILE_PATH"; then
   LINES=$(wc -l < "$FILE_PATH" | tr -d ' ')
   # Exemption marker in top 20 lines: `// code-quality-allow: file-size {rationale}`
   EXEMPT=$(head -20 "$FILE_PATH" | grep -cE 'code-quality-allow:\s*file-size' || true)
@@ -64,10 +66,8 @@ fi
 
 # ── Emit warning ─────────────────────────────────────────────────────────
 if [ -n "$VIOLATIONS" ]; then
-  ESCAPED=$(printf "%b" "$VIOLATIONS" | jq -Rs .)
-  cat <<EOJSON
-{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"Code quality lite check(full audit via /code-quality-audit):${ESCAPED}"}}
-EOJSON
+  CTX=$(printf 'Code quality lite check(full audit via /code-quality-audit):%b' "$VIOLATIONS")
+  jq -n --arg ctx "$CTX" '{governanceContext:{hookEventName:"PostToolUse",message:$ctx}}'
 fi
 
 exit 0

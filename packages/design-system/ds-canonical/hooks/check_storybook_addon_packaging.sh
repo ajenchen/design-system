@@ -10,28 +10,35 @@
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -uo pipefail
-INPUT=$(cat 2>/dev/null || echo "{}")
+INPUT=$(cat 2>/dev/null) || {
+  printf '🚨 GOVERNANCE_INTEGRITY: STORYBOOK ADDON PACKAGING FAILURE: 無法讀取 canonical input\n' >&2
+  exit 70
+}
+if ! printf '%s' "$INPUT" | jq -e 'type == "object"' >/dev/null 2>&1; then
+  printf '🚨 GOVERNANCE_INTEGRITY: STORYBOOK ADDON PACKAGING FAILURE: invalid input envelope\n' >&2
+  exit 70
+fi
 
 r1_addon_subdir_ship() {
 set -uo pipefail
 
 INPUT=$(cat 2>/dev/null || echo "{}")
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null)
+TOOL=$(jq -r '.tool_name // ""' <<<"$INPUT" 2>/dev/null)
 
 case "${TOOL:-}" in
   Edit|Write|MultiEdit) ;;
   *) exit 0 ;;
 esac
 
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
+FILE=$(jq -r '.tool_input.file_path // ""' <<<"$INPUT" 2>/dev/null)
 # Only check addon main files
-if ! echo "$FILE" | grep -qE '/(\.storybook|storybook-config)/addons/[^/]+/[a-zA-Z]+\.(ts|tsx)$'; then exit 0; fi
+if ! grep -qE '/(\.storybook|storybook-config)/addons/[^/]+/[a-zA-Z]+\.(ts|tsx)$' <<<"$FILE"; then exit 0; fi
 
-CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // ""' 2>/dev/null)
+CONTENT=$(jq -r '.tool_input.new_string // .tool_input.content // ""' <<<"$INPUT" 2>/dev/null)
 [ -z "$CONTENT" ] && exit 0
 
 # Escape clause
-if echo "$CONTENT" | grep -qE '@addon-subdir-skip:'; then exit 0; fi
+if grep -qE '@addon-subdir-skip:' <<<"$CONTENT"; then exit 0; fi
 
 # Find relative subdir imports `./<dir>/*`
 RELATIVE_IMPORTS=$(echo "$CONTENT" | grep -oE "from[[:space:]]+['\"]\\./[a-zA-Z][a-zA-Z0-9_-]+/[a-zA-Z][a-zA-Z0-9_./-]*['\"]" | sed -E "s|^from[[:space:]]+['\"]\./([^/]+)/.*['\"]\$|\\1|" | sort -u)
@@ -76,22 +83,22 @@ r2_preset_cjs() {
 set -uo pipefail
 
 INPUT=$(cat 2>/dev/null || echo "{}")
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null)
+TOOL=$(jq -r '.tool_name // ""' <<<"$INPUT" 2>/dev/null)
 
 case "${TOOL:-}" in
   Edit|Write|MultiEdit) ;;
   *) exit 0 ;;
 esac
 
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
+FILE=$(jq -r '.tool_input.file_path // ""' <<<"$INPUT" 2>/dev/null)
 # Scope:addons/<name>/preset.ts(stored anywhere — storybook-config or .storybook)
-if ! echo "$FILE" | grep -qE '/addons/[^/]+/preset\.ts$'; then exit 0; fi
+if ! grep -qE '/addons/[^/]+/preset\.ts$' <<<"$FILE"; then exit 0; fi
 
-CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // ""' 2>/dev/null)
+CONTENT=$(jq -r '.tool_input.new_string // .tool_input.content // ""' <<<"$INPUT" 2>/dev/null)
 [ -z "$CONTENT" ] && exit 0
 
 # Escape clause
-if echo "$CONTENT" | grep -qE '@preset-cjs-skip:'; then exit 0; fi
+if grep -qE '@preset-cjs-skip:' <<<"$CONTENT"; then exit 0; fi
 
 # Detect ESM/CJS interop antipatterns
 # 2026-05-30(dim 81 M7/M34 broad-vs-narrow fix + codex Phase B P3 inline-block edge):strip line-level 註解
@@ -100,10 +107,10 @@ if echo "$CONTENT" | grep -qE '@preset-cjs-skip:'; then exit 0; fi
 # (3) 行尾 // 註解。多行 block 的中間行以 * 開頭已被 (1) 覆蓋。極罕見「同行開 /* + keyword 未閉合」→ @preset-cjs-skip: escape。
 CONTENT_CODE=$(echo "$CONTENT" | grep -vE '^[[:space:]]*(//|\*|/\*|\*/)' | sed -E 's@/\*.*\*/@@g; s@//.*@@')
 ANTIPATTERN=""
-if echo "$CONTENT_CODE" | grep -qE 'createRequire|require\.resolve'; then
+if grep -qE 'createRequire|require\.resolve' <<<"$CONTENT_CODE"; then
   ANTIPATTERN="${ANTIPATTERN}  - createRequire / require.resolve(被 Node ESM scope 攔)\n"
 fi
-if echo "$CONTENT_CODE" | grep -qE 'fileURLToPath\s*\(\s*import\.meta\.url'; then
+if grep -qE 'fileURLToPath\s*\(\s*import\.meta\.url' <<<"$CONTENT_CODE"; then
   ANTIPATTERN="${ANTIPATTERN}  - fileURLToPath(import.meta.url)(同被 esbuild-register/ESM 衝突攔)\n"
 fi
 
@@ -143,9 +150,52 @@ fi
 exit 0
 }
 
+_CAPTURE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/check-storybook-addon-packaging.XXXXXX") || {
+  printf '🚨 GOVERNANCE_INTEGRITY: STORYBOOK ADDON PACKAGING FAILURE: output capture unavailable\n' >&2
+  exit 70
+}
+trap 'rm -rf -- "$_CAPTURE_DIR"' EXIT
+_RULE_INDEX=0
+
 for _rule in r1_addon_subdir_ship r2_preset_cjs; do
-  echo "$INPUT" | "$_rule"
+  _RULE_INDEX=$((_RULE_INDEX + 1))
+  _stdout="$_CAPTURE_DIR/$_RULE_INDEX.stdout"
+  _stderr="$_CAPTURE_DIR/$_RULE_INDEX.stderr"
+  printf '%s' "$INPUT" | "$_rule" >"$_stdout" 2>"$_stderr"
   _rc=$?
-  if [ "$_rc" -eq 2 ]; then exit 2; fi
+  case "$_rc" in
+    0)
+      if [ -s "$_stdout" ] || [ -s "$_stderr" ]; then
+        printf '🚨 GOVERNANCE_INTEGRITY: STORYBOOK ADDON PACKAGING FAILURE: rule %s rc0 必須完全 silent\n' \
+          "$_rule" >&2
+        exit 70
+      fi
+      ;;
+    2)
+      if [ ! -s "$_stdout" ] && [ -s "$_stderr" ] \
+        && ! grep -qF 'GOVERNANCE_INTEGRITY:' "$_stderr"; then
+        cat "$_stderr" >&2
+        exit 2
+      fi
+      printf '🚨 GOVERNANCE_INTEGRITY: STORYBOOK ADDON PACKAGING FAILURE: rule %s rc2 必須是 stderr-only nonempty policy blocker\n' \
+        "$_rule" >&2
+      exit 70
+      ;;
+    70)
+      if [ ! -s "$_stdout" ] && [ -s "$_stderr" ] \
+        && grep -qF 'GOVERNANCE_INTEGRITY:' "$_stderr"; then
+        cat "$_stderr" >&2
+      else
+        printf '🚨 GOVERNANCE_INTEGRITY: STORYBOOK ADDON PACKAGING FAILURE: rule %s rc70 必須是 stderr-only marker\n' \
+          "$_rule" >&2
+      fi
+      exit 70
+      ;;
+    *)
+      printf '🚨 GOVERNANCE_INTEGRITY: STORYBOOK ADDON PACKAGING FAILURE: rule %s 回傳未定義 exit code %s\n' \
+        "$_rule" "$_rc" >&2
+      exit 70
+      ;;
+  esac
 done
 exit 0

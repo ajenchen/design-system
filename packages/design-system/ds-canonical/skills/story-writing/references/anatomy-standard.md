@@ -58,7 +58,7 @@ export const Overview = {
 
 **嚴格警告**:曾經被誤用「applicable-where-meaningful」放行大量元件跳 Inspector,造成 anatomy 紙本文件不如世界級。**2026-04-21 audit 重修:policy 改回「6-canonical 預設全建(含 Accessibility),N/A 要硬 rationale」**。N/A 不是省工通行證。
 
-### 允許的偏離(CLAUDE.md `# 稽核 canonical`「Consistency 類稽核」公式;design-system-audit Dim 13 enforce)
+### 允許的偏離(shared governance `# 稽核 canonical`「Consistency 類稽核」公式;design-system-audit Dim 13 enforce)
 
 #### `@anatomy-rationale:` 檔頭註解(scope-N/A 的 canonical escape)
 

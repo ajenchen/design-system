@@ -8,15 +8,15 @@
 
 | Layer | 做什麼 | 由誰做 | 自動化 |
 |-------|-------|--------|--------|
-| **A. Mechanical** | (1) 截圖每個 scenario(retina PNG → `snapshots/`)<br>(2) WCAG 對比度掃描(所有可見文字 / icon vs 底色,flag AA 不過的組合)<br>(3) DOM 幾何 assertion(等高 / 對稱 padding / 正確 gap — 讀 `scripts/visual-assertions.json` 定義) | `scripts/visual-audit.mjs`(Playwright-driven) | **npm run visual-audit** 一鍵跑,產出 `snapshots/report.json` + PNG。CI 可接(exit 1 on violation) |
-| **B. AI judgement** | (1) 設計合理性(badge 位置語意對、carousel 箭頭不壓文字、zoom step 手感)<br>(2) 跨元件視覺一致(同 flex 列幾何鐵律、Family 視覺對齊)<br>(3) 世界級對照(「這跟 Figma/Notion/iOS 相比還差在哪」) | **本 skill**(`/visual-audit`),讀 `snapshots/*.png` + `report.json` 做 pattern recognition | invoke 時 AI 跑 |
+| **A. Mechanical** | (1) 截圖每個 scenario(retina PNG → Git-owned neutral evidence)<br>(2) WCAG 對比度掃描(所有可見文字 / icon vs 底色,flag AA 不過的組合)<br>(3) DOM 幾何 assertion(等高 / 對稱 padding / 正確 gap — 讀 `scripts/visual-assertions.json` 定義) | `scripts/visual-audit.mjs`(Playwright-driven) | **npm run visual-audit** 一鍵跑,產出 `<absolute-git-dir>/governance-runtime/evidence/visual/visual-audit/report.json` + PNG。CI 可接(exit 1 on violation) |
+| **B. AI judgement** | (1) 設計合理性(badge 位置語意對、carousel 箭頭不壓文字、zoom step 手感)<br>(2) 跨元件視覺一致(同 flex 列幾何鐵律、Family 視覺對齊)<br>(3) 世界級對照(「這跟 Figma/Notion/iOS 相比還差在哪」) | **本 skill**(`/visual-audit`),讀 `<absolute-git-dir>/governance-runtime/evidence/visual/visual-audit/*.png` + `report.json` 做 pattern recognition | invoke 時 AI 跑 |
 
 ### Layer A 先跑,Layer B 後補(workflow)
 
 ```
 1. npm run visual-audit                  # Layer A 產 snapshots + report
-2. /visual-audit                         # 本 skill 讀 snapshots/ 做 Layer B 判斷
-   (skill 自動讀 snapshots/report.json 作為 Layer A baseline,
+2. /visual-audit                         # 本 skill 讀 neutral runtime evidence 做 Layer B 判斷
+   (skill 自動讀 <absolute-git-dir>/governance-runtime/evidence/visual/visual-audit/report.json 作為 Layer A evidence,
     重點關注 A 沒 flag 但視覺仍不對的 case)
 ```
 
@@ -35,7 +35,7 @@ npm run visual-audit
 # scoped 跑(快速驗證 — 1 個 component)
 node scripts/visual-audit.mjs --scope=component:Button
 
-# 只跑 changed(git diff)— 對齊 CLAUDE.md「日常 dev」高效模式
+# 只跑 changed(git diff)— 對齊 AGENTS.md provider-neutral「日常 dev」高效模式
 node scripts/visual-audit.mjs --scope=changed
 
 # 不啟 storybook(如果 storybook 已起)
@@ -43,8 +43,8 @@ node scripts/visual-audit.mjs --no-auto-start
 ```
 
 Output:
-- `snapshots/{scenarioId}.png` — retina PNG
-- `snapshots/report.json` — `{ contrast: [], geometryViolations: [], a11yViolations: [], baselineDiff: {} }`
+- `<absolute-git-dir>/governance-runtime/evidence/visual/visual-audit/{scenarioId}.png` — retina PNG
+- `<absolute-git-dir>/governance-runtime/evidence/visual/visual-audit/report.json` — `{ contrast: [], geometryViolations: [], a11yViolations: [], baselineDiff: {} }`
 
 ## Layer A interactive state coverage canonical
 

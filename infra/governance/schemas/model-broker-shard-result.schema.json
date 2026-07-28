@@ -1,0 +1,361 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/model-broker-shard-result-v1.json",
+  "oneOf": [
+    {"$ref": "#/$defs/judgment"},
+    {"$ref": "#/$defs/a1b"},
+    {"$ref": "#/$defs/reviewGraphWork"},
+    {"$ref": "#/$defs/reviewGraphBatch"},
+    {"$ref": "#/$defs/reviewGraphSynthesis"}
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "identity": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "evidenceKind": {"const": "deep-audit-model-shard-result"},
+        "runId": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+        "providerId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "requestModelId": {"type": "string", "minLength": 1},
+        "modelReleaseId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*/[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+        "modelReleaseBindingDigest": {"$ref": "#/$defs/sha256"},
+        "modelReleaseRegistryDigest": {"$ref": "#/$defs/sha256"},
+        "selectedProfileDigest": {"$ref": "#/$defs/sha256"},
+        "subject": {"oneOf": [{"type": "integer", "minimum": 1, "maximum": 91}, {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$"}]},
+        "shardId": {"$ref": "#/$defs/sha256"},
+        "batchDigest": {"$ref": "#/$defs/sha256"},
+        "chunkVerdicts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["chunkId", "status"],
+            "properties": {"chunkId": {"$ref": "#/$defs/sha256"}, "status": {"const": "reviewed"}}
+          }
+        },
+        "summary": {"type": "string", "minLength": 1, "maxLength": 4000}
+      }
+    },
+    "judgmentFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chunkId", "path", "line", "severity", "rule", "problem", "recommendation"],
+      "properties": {
+        "chunkId": {"$ref": "#/$defs/sha256"},
+        "path": {"type": "string", "minLength": 1},
+        "line": {"type": "integer", "minimum": 1},
+        "severity": {"enum": ["blocking", "material", "marginal"]},
+        "rule": {"type": "string", "minLength": 1},
+        "problem": {"type": "string", "minLength": 1},
+        "recommendation": {"type": "string", "minLength": 1}
+      }
+    },
+    "falseClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chunkId", "claimId", "path", "line", "severity", "claim", "actual", "recommendation"],
+      "properties": {
+        "chunkId": {"$ref": "#/$defs/sha256"},
+        "claimId": {"$ref": "#/$defs/sha256"},
+        "path": {"type": "string", "minLength": 1},
+        "line": {"type": "integer", "minimum": 1},
+        "severity": {"enum": ["blocking", "material", "marginal"]},
+        "claim": {"type": "string", "minLength": 1},
+        "actual": {"type": "string", "minLength": 1},
+        "recommendation": {"type": "string", "minLength": 1}
+      }
+    },
+    "claimVerdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimId", "status", "supportingChunkIds"],
+      "properties": {
+        "claimId": {"$ref": "#/$defs/sha256"},
+        "status": {"enum": ["verified", "false", "unverifiable"]},
+        "supportingChunkIds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/sha256"}}
+      }
+    },
+    "judgment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "evidenceKind", "runId", "providerId", "requestModelId", "modelReleaseId", "modelReleaseBindingDigest", "modelReleaseRegistryDigest", "selectedProfileDigest", "taskKind", "subject", "shardId", "batchDigest", "chunkVerdicts", "findings", "summary"],
+      "properties": {
+        "schemaVersion": {"$ref": "#/$defs/identity/properties/schemaVersion"},
+        "evidenceKind": {"$ref": "#/$defs/identity/properties/evidenceKind"},
+        "runId": {"$ref": "#/$defs/identity/properties/runId"},
+        "providerId": {"$ref": "#/$defs/identity/properties/providerId"},
+        "requestModelId": {"$ref": "#/$defs/identity/properties/requestModelId"},
+        "modelReleaseId": {"$ref": "#/$defs/identity/properties/modelReleaseId"},
+        "modelReleaseBindingDigest": {"$ref": "#/$defs/identity/properties/modelReleaseBindingDigest"},
+        "modelReleaseRegistryDigest": {"$ref": "#/$defs/identity/properties/modelReleaseRegistryDigest"},
+        "selectedProfileDigest": {"$ref": "#/$defs/identity/properties/selectedProfileDigest"},
+        "taskKind": {"const": "judgment"},
+        "subject": {"type": "integer", "minimum": 1, "maximum": 91},
+        "shardId": {"$ref": "#/$defs/identity/properties/shardId"},
+        "batchDigest": {"$ref": "#/$defs/identity/properties/batchDigest"},
+        "chunkVerdicts": {"$ref": "#/$defs/identity/properties/chunkVerdicts"},
+        "findings": {"type": "array", "items": {"$ref": "#/$defs/judgmentFinding"}},
+        "summary": {"$ref": "#/$defs/identity/properties/summary"}
+      }
+    },
+    "a1b": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "evidenceKind", "runId", "providerId", "requestModelId", "modelReleaseId", "modelReleaseBindingDigest", "modelReleaseRegistryDigest", "selectedProfileDigest", "taskKind", "subject", "shardId", "batchDigest", "chunkVerdicts", "claimVerdicts", "findings", "summary"],
+      "properties": {
+        "schemaVersion": {"$ref": "#/$defs/identity/properties/schemaVersion"},
+        "evidenceKind": {"$ref": "#/$defs/identity/properties/evidenceKind"},
+        "runId": {"$ref": "#/$defs/identity/properties/runId"},
+        "providerId": {"$ref": "#/$defs/identity/properties/providerId"},
+        "requestModelId": {"$ref": "#/$defs/identity/properties/requestModelId"},
+        "modelReleaseId": {"$ref": "#/$defs/identity/properties/modelReleaseId"},
+        "modelReleaseBindingDigest": {"$ref": "#/$defs/identity/properties/modelReleaseBindingDigest"},
+        "modelReleaseRegistryDigest": {"$ref": "#/$defs/identity/properties/modelReleaseRegistryDigest"},
+        "selectedProfileDigest": {"$ref": "#/$defs/identity/properties/selectedProfileDigest"},
+        "taskKind": {"const": "component-a1b"},
+        "subject": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$"},
+        "shardId": {"$ref": "#/$defs/identity/properties/shardId"},
+        "batchDigest": {"$ref": "#/$defs/identity/properties/batchDigest"},
+        "chunkVerdicts": {"$ref": "#/$defs/identity/properties/chunkVerdicts"},
+        "claimVerdicts": {"type": "array", "items": {"$ref": "#/$defs/claimVerdict"}},
+        "findings": {"type": "array", "items": {"$ref": "#/$defs/falseClaim"}},
+        "summary": {"$ref": "#/$defs/identity/properties/summary"}
+      }
+    },
+    "reviewGraphFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cellId", "leafId", "claimId", "path", "line", "rule",
+        "supportingChunkIds", "severity", "problem", "recommendation"
+      ],
+      "properties": {
+        "cellId": {"$ref": "#/$defs/sha256"},
+        "leafId": {"$ref": "#/$defs/sha256"},
+        "claimId": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "path": {"type": "string", "minLength": 1},
+        "line": {"type": "integer", "minimum": 1},
+        "rule": {"type": "string", "minLength": 1, "maxLength": 128},
+        "supportingChunkIds": {
+          "type": "array", "minItems": 1, "maxItems": 32,
+          "uniqueItems": true, "items": {"$ref": "#/$defs/sha256"}
+        },
+        "severity": {"enum": ["blocking", "material", "marginal"]},
+        "problem": {"type": "string", "minLength": 1, "maxLength": 192},
+        "recommendation": {"type": "string", "minLength": 1, "maxLength": 192}
+      }
+    },
+    "reviewGraphIdentity": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "runId": {"$ref": "#/$defs/identity/properties/runId"},
+        "providerId": {"$ref": "#/$defs/identity/properties/providerId"},
+        "requestModelId": {"$ref": "#/$defs/identity/properties/requestModelId"},
+        "modelReleaseId": {"$ref": "#/$defs/identity/properties/modelReleaseId"},
+        "modelReleaseBindingDigest": {"$ref": "#/$defs/identity/properties/modelReleaseBindingDigest"},
+        "modelReleaseRegistryDigest": {"$ref": "#/$defs/identity/properties/modelReleaseRegistryDigest"},
+        "selectedProfileDigest": {"$ref": "#/$defs/identity/properties/selectedProfileDigest"},
+        "selectionDigest": {"$ref": "#/$defs/sha256"},
+        "reviewProfileId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "invocationProfileId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "selectedInvocationProfileDigest": {"$ref": "#/$defs/sha256"},
+        "capabilityCertificationId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "selectedCapabilityCertificationDigest": {"$ref": "#/$defs/sha256"},
+        "responseSelectorDigest": {"$ref": "#/$defs/sha256"},
+        "inputResultSetDigest": {"$ref": "#/$defs/sha256"},
+        "reviewGraphDigest": {"$ref": "#/$defs/sha256"},
+        "taskSetDigest": {"$ref": "#/$defs/sha256"},
+        "unitId": {"$ref": "#/$defs/sha256"},
+        "unitDigest": {"$ref": "#/$defs/sha256"},
+        "ordinal": {"type": "integer", "minimum": 0},
+        "summary": {"type": "string", "minLength": 1, "maxLength": 384}
+      }
+    },
+    "reviewGraphWork": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion", "evidenceKind", "runId", "providerId", "requestModelId",
+        "modelReleaseId", "modelReleaseBindingDigest", "modelReleaseRegistryDigest",
+        "selectedProfileDigest", "selectionDigest", "reviewProfileId", "invocationProfileId",
+        "selectedInvocationProfileDigest", "capabilityCertificationId",
+        "selectedCapabilityCertificationDigest", "responseSelectorDigest",
+        "inputResultSetDigest", "reviewGraphDigest", "taskSetDigest", "unitKind",
+        "unitId", "unitDigest", "ordinal", "coveredCellIds", "reviewedLeafIds",
+        "cellVerdicts", "claimVerdicts", "findings", "summary"
+      ],
+      "properties": {
+        "schemaVersion": {"$ref": "#/$defs/reviewGraphIdentity/properties/schemaVersion"},
+        "evidenceKind": {"const": "deep-audit-review-graph-model-work-result"},
+        "runId": {"$ref": "#/$defs/reviewGraphIdentity/properties/runId"},
+        "providerId": {"$ref": "#/$defs/reviewGraphIdentity/properties/providerId"},
+        "requestModelId": {"$ref": "#/$defs/reviewGraphIdentity/properties/requestModelId"},
+        "modelReleaseId": {"$ref": "#/$defs/reviewGraphIdentity/properties/modelReleaseId"},
+        "modelReleaseBindingDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/modelReleaseBindingDigest"},
+        "modelReleaseRegistryDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/modelReleaseRegistryDigest"},
+        "selectedProfileDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/selectedProfileDigest"},
+        "selectionDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/selectionDigest"},
+        "reviewProfileId": {"$ref": "#/$defs/reviewGraphIdentity/properties/reviewProfileId"},
+        "invocationProfileId": {"$ref": "#/$defs/reviewGraphIdentity/properties/invocationProfileId"},
+        "selectedInvocationProfileDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/selectedInvocationProfileDigest"},
+        "capabilityCertificationId": {"$ref": "#/$defs/reviewGraphIdentity/properties/capabilityCertificationId"},
+        "selectedCapabilityCertificationDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/selectedCapabilityCertificationDigest"},
+        "responseSelectorDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/responseSelectorDigest"},
+        "inputResultSetDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/inputResultSetDigest"},
+        "reviewGraphDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/reviewGraphDigest"},
+        "taskSetDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/taskSetDigest"},
+        "unitKind": {"enum": ["multiplexed-judgment-review", "component-claim-review", "content-addressed-shared-evidence-review"]},
+        "unitId": {"$ref": "#/$defs/reviewGraphIdentity/properties/unitId"},
+        "unitDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/unitDigest"},
+        "ordinal": {"$ref": "#/$defs/reviewGraphIdentity/properties/ordinal"},
+        "coveredCellIds": {"type": "array", "minItems": 1, "maxItems": 128, "uniqueItems": true, "items": {"$ref": "#/$defs/sha256"}},
+        "reviewedLeafIds": {"type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true, "items": {"$ref": "#/$defs/sha256"}},
+        "cellVerdicts": {
+          "type": "array", "minItems": 1, "maxItems": 128,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["cellId", "reviewSemanticsSetDigest", "supportingLeafIds", "status"],
+            "properties": {
+              "cellId": {"$ref": "#/$defs/sha256"},
+              "reviewSemanticsSetDigest": {"$ref": "#/$defs/sha256"},
+              "supportingLeafIds": {
+                "type": "array", "minItems": 1, "maxItems": 32,
+                "uniqueItems": true, "items": {"$ref": "#/$defs/sha256"}
+              },
+              "status": {"enum": ["verified", "false", "unverifiable"]}
+            }
+          }
+        },
+        "claimVerdicts": {
+          "type": "array", "maxItems": 128,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": [
+              "claimId", "claimTextSha256", "path", "line",
+              "claimEvidenceGraphDigest", "status", "supportingChunkIds"
+            ],
+            "properties": {
+              "claimId": {"$ref": "#/$defs/sha256"},
+              "claimTextSha256": {"$ref": "#/$defs/sha256"},
+              "path": {"type": "string", "minLength": 1},
+              "line": {"type": "integer", "minimum": 1},
+              "claimEvidenceGraphDigest": {"$ref": "#/$defs/sha256"},
+              "status": {"enum": ["verified", "false", "unverifiable"]},
+              "supportingChunkIds": {
+                "type": "array", "minItems": 1, "maxItems": 32,
+                "uniqueItems": true, "items": {"$ref": "#/$defs/sha256"}
+              }
+            }
+          }
+        },
+        "findings": {"type": "array", "maxItems": 8, "items": {"$ref": "#/$defs/reviewGraphFinding"}},
+        "summary": {"$ref": "#/$defs/reviewGraphIdentity/properties/summary"}
+      }
+    },
+    "reviewGraphBatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion", "evidenceKind", "runId", "providerId", "requestModelId",
+        "modelReleaseId", "modelReleaseBindingDigest", "modelReleaseRegistryDigest",
+        "selectedProfileDigest", "selectionDigest", "reviewProfileId",
+        "invocationProfileId", "selectedInvocationProfileDigest",
+        "capabilityCertificationId", "selectedCapabilityCertificationDigest",
+        "responseSelectorDigest", "reviewGraphDigest", "taskSetDigest",
+        "requestDigest", "requestBatchId", "requestBatchDigest",
+        "requestBatchOrdinal", "memberUnitIds", "memberUnitDigests",
+        "memberResultCount", "results", "resultSetDigest", "summary"
+      ],
+      "properties": {
+        "schemaVersion": {"$ref": "#/$defs/reviewGraphIdentity/properties/schemaVersion"},
+        "evidenceKind": {"const": "deep-audit-review-graph-model-batch-result"},
+        "runId": {"$ref": "#/$defs/reviewGraphIdentity/properties/runId"},
+        "providerId": {"$ref": "#/$defs/reviewGraphIdentity/properties/providerId"},
+        "requestModelId": {"$ref": "#/$defs/reviewGraphIdentity/properties/requestModelId"},
+        "modelReleaseId": {"$ref": "#/$defs/reviewGraphIdentity/properties/modelReleaseId"},
+        "modelReleaseBindingDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/modelReleaseBindingDigest"},
+        "modelReleaseRegistryDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/modelReleaseRegistryDigest"},
+        "selectedProfileDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/selectedProfileDigest"},
+        "selectionDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/selectionDigest"},
+        "reviewProfileId": {"$ref": "#/$defs/reviewGraphIdentity/properties/reviewProfileId"},
+        "invocationProfileId": {"$ref": "#/$defs/reviewGraphIdentity/properties/invocationProfileId"},
+        "selectedInvocationProfileDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/selectedInvocationProfileDigest"},
+        "capabilityCertificationId": {"$ref": "#/$defs/reviewGraphIdentity/properties/capabilityCertificationId"},
+        "selectedCapabilityCertificationDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/selectedCapabilityCertificationDigest"},
+        "responseSelectorDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/responseSelectorDigest"},
+        "reviewGraphDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/reviewGraphDigest"},
+        "taskSetDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/taskSetDigest"},
+        "requestDigest": {"$ref": "#/$defs/sha256"},
+        "requestBatchId": {"$ref": "#/$defs/sha256"},
+        "requestBatchDigest": {"$ref": "#/$defs/sha256"},
+        "requestBatchOrdinal": {"type": "integer", "minimum": 0},
+        "memberUnitIds": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {"$ref": "#/$defs/sha256"}
+        },
+        "memberUnitDigests": {
+          "type": "array", "minItems": 1,
+          "items": {"$ref": "#/$defs/sha256"}
+        },
+        "memberResultCount": {"type": "integer", "minimum": 1},
+        "results": {
+          "type": "array", "minItems": 1,
+          "items": {"$ref": "#/$defs/reviewGraphWork"}
+        },
+        "resultSetDigest": {"$ref": "#/$defs/sha256"},
+        "summary": {"$ref": "#/$defs/reviewGraphIdentity/properties/summary"}
+      }
+    },
+    "reviewGraphSynthesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion", "evidenceKind", "runId", "providerId", "requestModelId",
+        "modelReleaseId", "modelReleaseBindingDigest", "modelReleaseRegistryDigest",
+        "selectedProfileDigest", "selectionDigest", "reviewProfileId", "invocationProfileId",
+        "selectedInvocationProfileDigest", "capabilityCertificationId",
+        "selectedCapabilityCertificationDigest", "responseSelectorDigest",
+        "inputResultSetDigest", "reviewGraphDigest", "taskSetDigest", "unitKind",
+        "unitId", "unitDigest", "ordinal", "taskKey", "stage", "inputKind",
+        "inputIds", "verdict", "findingCount", "findingClosureDigest", "findings", "summary"
+      ],
+      "properties": {
+        "schemaVersion": {"$ref": "#/$defs/reviewGraphIdentity/properties/schemaVersion"},
+        "evidenceKind": {"const": "deep-audit-review-graph-model-synthesis-result"},
+        "runId": {"$ref": "#/$defs/reviewGraphIdentity/properties/runId"},
+        "providerId": {"$ref": "#/$defs/reviewGraphIdentity/properties/providerId"},
+        "requestModelId": {"$ref": "#/$defs/reviewGraphIdentity/properties/requestModelId"},
+        "modelReleaseId": {"$ref": "#/$defs/reviewGraphIdentity/properties/modelReleaseId"},
+        "modelReleaseBindingDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/modelReleaseBindingDigest"},
+        "modelReleaseRegistryDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/modelReleaseRegistryDigest"},
+        "selectedProfileDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/selectedProfileDigest"},
+        "selectionDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/selectionDigest"},
+        "reviewProfileId": {"$ref": "#/$defs/reviewGraphIdentity/properties/reviewProfileId"},
+        "invocationProfileId": {"$ref": "#/$defs/reviewGraphIdentity/properties/invocationProfileId"},
+        "selectedInvocationProfileDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/selectedInvocationProfileDigest"},
+        "capabilityCertificationId": {"$ref": "#/$defs/reviewGraphIdentity/properties/capabilityCertificationId"},
+        "selectedCapabilityCertificationDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/selectedCapabilityCertificationDigest"},
+        "responseSelectorDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/responseSelectorDigest"},
+        "inputResultSetDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/inputResultSetDigest"},
+        "reviewGraphDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/reviewGraphDigest"},
+        "taskSetDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/taskSetDigest"},
+        "unitKind": {"const": "task-hierarchical-synthesis"},
+        "unitId": {"$ref": "#/$defs/reviewGraphIdentity/properties/unitId"},
+        "unitDigest": {"$ref": "#/$defs/reviewGraphIdentity/properties/unitDigest"},
+        "ordinal": {"$ref": "#/$defs/reviewGraphIdentity/properties/ordinal"},
+        "taskKey": {"type": "string", "minLength": 1},
+        "stage": {"type": "integer", "minimum": 0},
+        "inputKind": {"enum": ["coverage-cells", "synthesis-units"]},
+        "inputIds": {"type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true, "items": {"$ref": "#/$defs/sha256"}},
+        "verdict": {"enum": ["verified", "findings", "unverifiable"]},
+        "findingCount": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+        "findingClosureDigest": {"$ref": "#/$defs/sha256"},
+        "findings": {"type": "array", "maxItems": 0},
+        "summary": {"$ref": "#/$defs/reviewGraphIdentity/properties/summary"}
+      }
+    }
+  }
+}

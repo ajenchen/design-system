@@ -1,21 +1,69 @@
 #!/bin/bash
-# Smoke test for lib/_token_hygiene.sh (HOOK= resolves to ../lib/_token_hygiene.sh; check_token_hygiene.sh was never a standalone file)
-set -u
+# Focused contract for the advisory token-hygiene helper. The hard PreToolUse registry hook owns
+# blocking enforcement; this PostToolUse helper must still consume the same authenticated registry
+# and emit one provider-neutral context without mutable-project fallbacks.
+
+set -uo pipefail
 HOOK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib/_token_hygiene.sh"
-[ -x "$HOOK" ] || { echo "FATAL"; exit 1; }
-PASS=0; FAIL=0
+REPO_ROOT=$(git -C "$(dirname "$HOOK")" rev-parse --show-toplevel)
+REGISTRY="$REPO_ROOT/packages/design-system/src/tokens/utility-registry.json"
+TMP=$(mktemp -d)
+trap 'rm -rf "$TMP"' EXIT
+PROJECT="$TMP/project"
+FILE="$PROJECT/packages/design-system/src/components/Foo/foo.tsx"
+BAD_CORPUS="$TMP/bad-corpus"
+mkdir -p "$(dirname "$FILE")" "$BAD_CORPUS"
+
 run_hook() {
-  local payload
-  payload=$(jq -n --arg fp "$1" --arg ct "$2" '{tool_name:"Write", tool_input:{file_path:$fp, content:$ct}}')
-  STDOUT=$(echo "$payload" | bash "$HOOK" 2>&1); EXIT=$?
+  local content="$1" corpus="${2:-$REPO_ROOT}" payload
+  printf '%s\n' "$content" > "$FILE"
+  payload=$(jq -nc --arg path "$FILE" \
+    '{hook_event_name:"PostToolUse",tool_name:"Write",tool_input:{file_path:$path}}')
+  STDOUT_FILE="$TMP/stdout"
+  STDERR_FILE="$TMP/stderr"
+  set +e
+  printf '%s' "$payload" \
+    | GOVERNANCE_PROJECT_DIR="$PROJECT" GOVERNANCE_CORPUS_ROOT="$corpus" \
+      GOVERNANCE_READ_ONLY=1 bash "$HOOK" >"$STDOUT_FILE" 2>"$STDERR_FILE"
+  EXIT=$?
+  set -e
 }
-echo "Test 1: clean tsx → pass"
-run_hook "/tmp/foo.tsx" "import { Button } from '@/...'\nexport const X = () => <Button>OK</Button>"
-[ "$EXIT" = "0" ] && { echo "  PASS"; PASS=$((PASS+1)); } || { echo "  FAIL"; FAIL=$((FAIL+1)); }
 
-echo "Test 2: shadcn alias bg-popover → flag"
-run_hook "/tmp/packages/design-system/src/components/Foo/foo.tsx" "<div className='bg-popover'/>"
-echo "$STDOUT" | grep -q "bg-popover\|alias\|hygiene" && { echo "  PASS (alias detected)"; PASS=$((PASS+1)); } || { echo "  PASS (silent — hook tolerant)"; PASS=$((PASS+1)); }
+run_hook 'export const Clean = () => <div className="bg-surface" />'
+if [ "$EXIT" -ne 0 ] || [ -s "$STDOUT_FILE" ] || [ -s "$STDERR_FILE" ]; then
+  echo "FAIL clean helper contract"
+  exit 1
+fi
 
-echo "Results: $PASS PASS, $FAIL FAIL"
-[ "$FAIL" -eq 0 ] || exit 1
+while IFS= read -r ALIAS; do
+  run_hook "export const Bad = () => <div className=\"$ALIAS\" />"
+  if [ "$EXIT" -ne 0 ] || [ -s "$STDERR_FILE" ] \
+    || ! jq -e --arg alias "$ALIAS" '
+      type == "object"
+      and (keys == ["governanceContext"])
+      and .governanceContext.hookEventName == "PostToolUse"
+      and (.governanceContext.message | contains($alias))
+    ' "$STDOUT_FILE" >/dev/null 2>&1; then
+    echo "FAIL registry alias closure:$ALIAS"
+    exit 1
+  fi
+done < <(jq -r '.shadcn_alias.block.color_alias[]' "$REGISTRY")
+
+SHADOW="$PROJECT/packages/design-system/src/tokens/utility-registry.json"
+mkdir -p "$(dirname "$SHADOW")"
+printf '{"schemaVersion":1,"shadcn_alias":{"block":{"color_alias":["shadow-only"]}}}\n' > "$SHADOW"
+run_hook 'export const Bad = () => <div className="bg-card" />'
+if [ "$EXIT" -ne 0 ] || [ -s "$STDERR_FILE" ] \
+  || ! jq -e '.governanceContext.message | contains("bg-card")' "$STDOUT_FILE" >/dev/null 2>&1; then
+  echo "FAIL mutable project registry shadowed authenticated corpus"
+  exit 1
+fi
+
+run_hook 'export const Bad = () => <div className="bg-card" />' "$BAD_CORPUS"
+if [ "$EXIT" -ne 70 ] || [ -s "$STDOUT_FILE" ] \
+  || ! grep -qF 'GOVERNANCE_INTEGRITY:' "$STDERR_FILE"; then
+  echo "FAIL missing authenticated registry did not fail closed"
+  exit 1
+fi
+
+echo '✅ token hygiene helper: authenticated registry closure PASS'

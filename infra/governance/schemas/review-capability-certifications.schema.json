@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance/review-capability-certifications-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "certifications"],
+  "properties": {
+    "$schema": {"const": "../schemas/review-capability-certifications.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "review-capability-certification-ledger"},
+    "certifications": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/certification"}
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "tier": {"enum": ["standard", "high", "maximum"]},
+    "providerId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "profileId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "modelReleaseId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*/[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "sha256"],
+      "properties": {
+        "reference": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "certification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "reviewProfileId",
+        "reviewProfileDigest",
+        "providerId",
+        "modelReleaseId",
+        "entitlementId",
+        "status",
+        "assuranceTier",
+        "reasoningTier",
+        "computeTier",
+        "certifiedAt",
+        "expiresAt",
+        "evidence"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/profileId"},
+        "reviewProfileId": {"$ref": "#/$defs/profileId"},
+        "reviewProfileDigest": {"$ref": "#/$defs/sha256"},
+        "providerId": {"$ref": "#/$defs/providerId"},
+        "modelReleaseId": {"$ref": "#/$defs/modelReleaseId"},
+        "entitlementId": {
+          "oneOf": [
+            {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+            {"type": "null"}
+          ]
+        },
+        "status": {"enum": ["certified", "expired", "revoked"]},
+        "assuranceTier": {"$ref": "#/$defs/tier"},
+        "reasoningTier": {"$ref": "#/$defs/tier"},
+        "computeTier": {"$ref": "#/$defs/tier"},
+        "certifiedAt": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"},
+        "evidence": {"$ref": "#/$defs/evidence"}
+      }
+    }
+  }
+}

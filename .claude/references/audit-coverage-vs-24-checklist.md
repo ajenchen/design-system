@@ -68,7 +68,7 @@
 
 ## Cross-link
 
-- CLAUDE.md `# 稽核 canonical` 3-tier × 6-dim
-- CLAUDE.md Meta-Pattern M1(SSOT)+ M8(benchmark)+ M10(exhaustive scan)
-- `.claude/skills/design-system-audit/SKILL.md` Groups A-J
-- `.claude/skills/ux-audit/SKILL.md` Phase 5
+- AGENTS.md `# 稽核 canonical` 3-tier × 6-dim
+- canonical `packages/design-system/ds-canonical/rules/meta-patterns.md` M1(SSOT)+ M8(benchmark)+ M10(exhaustive scan)
+- `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md` Groups A-J
+- `packages/design-system/ds-canonical/skills/ux-audit/SKILL.md` Phase 5

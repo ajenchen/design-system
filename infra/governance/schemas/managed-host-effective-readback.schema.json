@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/managed-host-effective-readback-v2.json",
+  "title": "Signed endpoint-bound provider effective managed-host readback",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "payload", "attestation"],
+  "properties": {
+    "$schema": {"const": "infra/governance/schemas/managed-host-effective-readback.schema.json"},
+    "schemaVersion": {"const": 2},
+    "kind": {"const": "managed-host-effective-readback-envelope"},
+    "payload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "provider", "hostIdentity", "source", "sourceIdentity", "observedVersion", "canonicalInputs", "controlReadbacks", "runtime", "hookDelivery", "filesystemTrust", "issuedAt", "expiresAt", "nonce", "collector"],
+      "properties": {
+        "schemaVersion": {"const": 2}, "kind": {"const": "managed-host-effective-readback-payload"},
+        "provider": {"enum": ["claude-code", "codex"]},
+        "hostIdentity": {"$ref": "#/$defs/hostIdentity"},
+        "source": {"enum": ["endpoint-management-composed-effective", "provider-status-effective", "configRequirements/read"]},
+        "sourceIdentity": {"type": "string", "minLength": 1},
+        "observedVersion": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"},
+        "canonicalInputs": {
+          "type": "object", "additionalProperties": false,
+          "required": ["desiredSha256", "compatibilitySha256", "releaseRingsSha256", "artifactContractSha256", "materializedPolicySha256", "expectedControlsSha256", "canonicalInputsSha256"],
+          "properties": {
+            "desiredSha256": {"$ref": "#/$defs/sha256"}, "compatibilitySha256": {"$ref": "#/$defs/sha256"},
+            "releaseRingsSha256": {"$ref": "#/$defs/sha256"}, "artifactContractSha256": {"$ref": "#/$defs/sha256"},
+            "materializedPolicySha256": {"$ref": "#/$defs/sha256"}, "expectedControlsSha256": {"$ref": "#/$defs/sha256"},
+            "canonicalInputsSha256": {"$ref": "#/$defs/sha256"}
+          }
+        },
+        "controlReadbacks": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["controlId", "status", "source", "value", "reason"],
+            "properties": {
+              "controlId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+              "status": {"enum": ["observed", "unknown"]}, "source": {"type": "string", "minLength": 1},
+              "value": {}, "reason": {"type": ["string", "null"]}
+            },
+            "allOf": [
+              {"if": {"properties": {"status": {"const": "unknown"}}}, "then": {"properties": {"value": {"type": "null"}, "reason": {"type": "string", "minLength": 1}}}},
+              {"if": {"properties": {"status": {"const": "observed"}}}, "then": {"properties": {"reason": {"type": "null"}}}}
+            ]
+          }
+        },
+        "runtime": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object", "additionalProperties": false, "required": ["node", "shell", "python"],
+              "properties": {
+                "node": {"$ref": "#/$defs/runtimeExecutable"}, "shell": {"$ref": "#/$defs/runtimeExecutable"}, "python": {"$ref": "#/$defs/runtimeExecutable"}
+              }
+            }
+          ]
+        },
+        "hookDelivery": {
+          "oneOf": [
+            {
+              "type": "object", "additionalProperties": false,
+              "required": ["mode", "pluginFullId", "marketplaceName", "marketplaceRef", "marketplaceResolvedCommit", "pluginVersion", "installedRoot", "marketplaceManifestSha256", "pluginManifestSha256", "canonicalHookCorpusSha256", "files", "inventorySha256"],
+              "properties": {
+                "mode": {"const": "force-enabled-release-tagged-plugin-with-installed-inventory"},
+                "pluginFullId": {"const": "design-system@qijenchen-ds"}, "marketplaceName": {"const": "qijenchen-ds"},
+                "marketplaceRef": {"type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+(?:-(?:beta|next|rc)\\.[0-9]+)?$"},
+                "marketplaceResolvedCommit": {"$ref": "#/$defs/sha1"}, "pluginVersion": {"type": "string", "minLength": 1},
+                "installedRoot": {"type": "string", "minLength": 1}, "marketplaceManifestSha256": {"$ref": "#/$defs/sha256"},
+                "pluginManifestSha256": {"$ref": "#/$defs/sha256"}, "canonicalHookCorpusSha256": {"$ref": "#/$defs/sha256"},
+                "files": {"$ref": "#/$defs/fileInventory"}, "inventorySha256": {"$ref": "#/$defs/sha256"}
+              }
+            },
+            {
+              "type": "object", "additionalProperties": false,
+              "required": ["mode", "logicalRoot", "sourceCommit", "sourceTree", "packageVersion", "packageIntegrity", "contractSha256", "canonicalInputsSha256", "dispatcherSha256", "bundleSha256"],
+              "properties": {
+                "mode": {"const": "deterministic-absolute-managed-bundle"}, "logicalRoot": {"type": "string", "minLength": 1},
+                "sourceCommit": {"$ref": "#/$defs/sha1"}, "sourceTree": {"$ref": "#/$defs/sha1"},
+                "packageVersion": {"type": "string", "minLength": 1}, "packageIntegrity": {"type": "string", "pattern": "^sha512-[A-Za-z0-9+/]+={0,2}$"},
+                "contractSha256": {"$ref": "#/$defs/sha256"}, "canonicalInputsSha256": {"$ref": "#/$defs/sha256"},
+                "dispatcherSha256": {"$ref": "#/$defs/sha256"}, "bundleSha256": {"$ref": "#/$defs/sha256"}
+              }
+            }
+          ]
+        },
+        "filesystemTrust": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/filesystemTrust"}]},
+        "issuedAt": {"type": "string", "format": "date-time"}, "expiresAt": {"type": "string", "format": "date-time"},
+        "nonce": {"type": "string", "pattern": "^[A-Za-z0-9_-]{22,86}$"},
+        "collector": {
+          "type": "object", "additionalProperties": false, "required": ["kind", "instanceId"],
+          "properties": {"kind": {"enum": ["endpoint-management", "provider-effective-api"]}, "instanceId": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "attestation": {
+      "type": "object", "additionalProperties": false, "required": ["algorithm", "keyId", "payloadSha256", "signature"],
+      "properties": {
+        "algorithm": {"const": "ed25519"}, "keyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+        "payloadSha256": {"$ref": "#/$defs/sha256"}, "signature": {"type": "string", "pattern": "^[A-Za-z0-9_-]{86}$"}
+      }
+    }
+  },
+  "$defs": {
+    "sha1": {"type": "string", "pattern": "^[a-f0-9]{40}$"}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "runtimeExecutable": {
+      "type": "object", "additionalProperties": false, "required": ["executablePath", "executableSha256"],
+      "properties": {"executablePath": {"type": "string", "minLength": 1}, "executableSha256": {"$ref": "#/$defs/sha256"}}
+    },
+    "filesystemTrust": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "platform", "hostIdentitySha256", "collectorInstanceId", "attestorKeyId", "observedAt", "requirementsSha256", "observations", "observationsSha256"],
+      "properties": {
+        "schemaVersion": {"const": 1}, "kind": {"const": "managed-filesystem-trust"},
+        "platform": {"enum": ["darwin", "linux", "win32"]}, "hostIdentitySha256": {"$ref": "#/$defs/sha256"},
+        "collectorInstanceId": {"type": "string", "minLength": 1}, "attestorKeyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+        "observedAt": {"type": "string", "format": "date-time"}, "requirementsSha256": {"$ref": "#/$defs/sha256"},
+        "observations": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/filesystemObservation"}},
+        "observationsSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "filesystemObservation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["logicalPath", "objectType", "identity", "contentSha256", "unix", "windowsAcl"],
+      "properties": {
+        "logicalPath": {"type": "string", "minLength": 1}, "objectType": {"enum": ["file", "directory"]},
+        "identity": {
+          "type": "object", "additionalProperties": false,
+          "required": ["device", "inode", "linkCount", "size", "modifiedTimeNs", "changedTimeNs"],
+          "properties": {
+            "device": {"type": "string", "pattern": "^\\d+$"}, "inode": {"type": "string", "pattern": "^\\d+$"},
+            "linkCount": {"type": "string", "pattern": "^\\d+$"}, "size": {"type": "string", "pattern": "^\\d+$"},
+            "modifiedTimeNs": {"type": "string", "pattern": "^\\d+$"}, "changedTimeNs": {"type": "string", "pattern": "^\\d+$"}
+          }
+        },
+        "contentSha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]},
+        "unix": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "object", "additionalProperties": false, "required": ["uid", "gid", "mode"], "properties": {"uid": {"type": "integer", "minimum": 0}, "gid": {"type": "integer", "minimum": 0}, "mode": {"type": "integer", "minimum": 0, "maximum": 4095}}}
+          ]
+        },
+        "windowsAcl": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object", "additionalProperties": false,
+              "required": ["ownerSid", "daclProtected", "rawSecurityDescriptorSha256", "aces"],
+              "properties": {
+                "ownerSid": {"type": "string", "pattern": "^S-\\d(?:-\\d+)+$"}, "daclProtected": {"type": "boolean"},
+                "rawSecurityDescriptorSha256": {"$ref": "#/$defs/sha256"},
+                "aces": {
+                  "type": "array",
+                  "items": {
+                    "type": "object", "additionalProperties": false, "required": ["type", "sid", "rights", "inherited"],
+                    "properties": {
+                      "type": {"enum": ["allow", "deny"]}, "sid": {"type": "string", "pattern": "^S-\\d(?:-\\d+)+$"},
+                      "rights": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["append-data", "delete", "delete-child", "execute", "full-control", "generic-all", "generic-read", "generic-write", "read-attributes", "read-control", "read-data", "read-extended-attributes", "synchronize", "write-attributes", "write-dac", "write-data", "write-extended-attributes", "write-owner"]}},
+                      "inherited": {"type": "boolean"}
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "hostIdentity": {
+      "type": "object", "additionalProperties": false, "required": ["hostId", "endpointId", "platform", "deviceIdentitySha256"],
+      "properties": {
+        "hostId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+        "endpointId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+        "platform": {"enum": ["darwin", "linux", "win32"]}, "deviceIdentitySha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "fileInventory": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["path", "sha256"],
+        "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"$ref": "#/$defs/sha256"}}
+      }
+    }
+  }
+}

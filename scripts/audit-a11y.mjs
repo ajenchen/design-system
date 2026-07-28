@@ -13,7 +13,7 @@
  *   5. Aggregate violations + exit code(0 = clean, 1 = WCAG AA violations)
  *
  * Output:
- *   - `.claude/logs/a11y-audit.json` — full report
+ *   - `<absolute-git-dir>/governance-runtime/evidence/audit/a11y-audit.json` — full report
  *   - stderr — pretty print top N violations
  *
  * Usage:
@@ -32,26 +32,41 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright'
 import { AxeBuilder } from '@axe-core/playwright'
+import {
+  createA11yFingerprintMap,
+  createA11yStoryCorpus,
+  evaluateA11yRegressionGate,
+  evaluateA11yScanIntegrity,
+  evaluateA11ySeverityGate,
+  parseA11yAuditArgs,
+} from './lib/a11y-gate.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { prepareRuntimeEvidenceFile, resolveRuntimeEvidencePath } from './lib/governance-runtime-evidence.mjs'
 
 const ROOT = process.cwd()
 const STORYBOOK_DIR = path.join(ROOT, 'storybook-static')
 const INDEX_FILE = path.join(STORYBOOK_DIR, 'index.json')
-const LOG_DIR = path.join(ROOT, '.claude/logs')
-const LOG_FILE = path.join(LOG_DIR, 'a11y-audit.json')
+const LOG_FILE = resolveRuntimeEvidencePath({ repoRoot: ROOT, relativePath: 'audit/a11y-audit.json' })
 
-const args = process.argv.slice(2)
-const LIMIT = parseInt(args.find(a => a.startsWith('--story='))?.split('=')[1] ?? '0', 10)
-const TAG = args.find(a => a.startsWith('--tag='))?.split('=')[1]
-const VERBOSE = args.includes('--verbose')
+let parsedArgs
+try {
+  parsedArgs = parseA11yAuditArgs(process.argv.slice(2))
+} catch (error) {
+  console.error(`❌ ${error.message}`)
+  process.exit(2)
+}
+const { limit: LIMIT, tag: TAG, verbose: VERBOSE, gate: GATE, writeBaseline: WRITE_BASELINE } = parsedArgs
 // 2026-06-04 baseline-diff gate(Carbon AVT pattern,advisory → enforce-on-new transition):
 //   --baseline-write:跑全掃 → 寫 a11y-baseline.json(現存 violation 快照)。建 / 更新 baseline 用。
 //   --gate:跑全掃 → 對照 baseline,只在「新增 / 增量」violation(regression)fail。CI enforce 用。
 //   (不帶旗標:原行為 = critical+serious 任一即 fail,dev spot-check 用。)
 // 指紋粒度:`storyId|ruleId` → nodeCount。regression = 新 key OR count 增加(catch 既有 violating story
-//   再加一個 white-on-bright 元素 → 同 (story,rule) count↑)。audit-error(infra timeout 等)不納指紋(flaky)。
-const GATE = args.includes('--gate')
-const WRITE_BASELINE = args.includes('--baseline-write')
-const BASELINE_FILE = path.join(ROOT, '.claude/baselines/a11y-baseline.json')
+//   再加一個 white-on-bright 元素 → 同 (story,rule) count↑)。audit-error(infra timeout 等)不納指紋，
+//   但一律 fail closed；掃描失敗絕不能被基線吸收或當成 WCAG PASS。
+// This gate baseline is governance authority, not a Claude-local convenience file.
+// Keeping it under the privileged infra closure means any relaxation is digest-bound
+// and must pass the governance-anchor authorization path before merge.
+const BASELINE_FILE = path.join(ROOT, 'infra/governance/baseline/a11y-baseline.json')
 
 if (!fs.existsSync(INDEX_FILE)) {
   console.error('❌ storybook-static/index.json not found. Run `npm run build-storybook` first.')
@@ -83,32 +98,20 @@ if (stories.length === 0) {
   process.exit(1)
 }
 
+const expectedScanCorpus = createA11yStoryCorpus(stories.map(story => story.id))
+
 console.log(`▶ a11y audit:running axe-core against ${stories.length} stories`)
 
-const PORT = 6007
+const server = await startA11yStaticServer({ rootDirectory: STORYBOOK_DIR, defaultFile: 'iframe.html' })
 const browser = await chromium.launch()
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
 
-// Start static http server for storybook-static
-const { createServer } = await import('node:http')
-const { lookup } = await import('node:dns/promises')
-const serverHandler = async (req, res) => {
-  let p = req.url.split('?')[0]
-  if (p === '/' || p === '') p = '/iframe.html'
-  const fp = path.join(STORYBOOK_DIR, p)
-  if (!fs.existsSync(fp) || !fs.statSync(fp).isFile()) { res.statusCode = 404; res.end(); return }
-  const ext = path.extname(fp)
-  const ct = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png' }[ext] || 'application/octet-stream'
-  res.setHeader('Content-Type', ct)
-  res.end(fs.readFileSync(fp))
-}
-const server = createServer(serverHandler).listen(PORT)
-
 const results = { ts: new Date().toISOString(), total: stories.length, violationsByStory: {}, summary: { totalViolations: 0, byRule: {}, bySeverity: { critical: 0, serious: 0, moderate: 0, minor: 0 } } }
+const completedStoryIds = []
 
 for (let i = 0; i < stories.length; i++) {
   const s = stories[i]
-  const url = `http://localhost:${PORT}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`
+  const url = `${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`
   const page = await ctx.newPage()
   try {
     await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 })
@@ -137,13 +140,20 @@ for (let i = 0; i < stories.length; i++) {
     results.violationsByStory[s.id] = [{ id: 'audit-error', impact: 'serious', help: e.message, nodes: 1 }]
   }
   await page.close()
+  completedStoryIds.push(s.id)
 }
 
 await ctx.close()
 await browser.close()
-server.close()
+await server.stop()
 
-if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
+const scanCorpus = createA11yStoryCorpus(completedStoryIds)
+if (scanCorpus.storyIdsSha256 !== expectedScanCorpus.storyIdsSha256) {
+  console.error('❌ completed a11y scan corpus differs from the selected manifest corpus — refusing false-green pass')
+  process.exit(1)
+}
+
+prepareRuntimeEvidenceFile({ repoRoot: ROOT, relativePath: 'audit/a11y-audit.json' })
 // 2026-06-06 idempotent write:violations(排除 ts)無變則沿用既有 ts,避免 CI(a11y-and-size.yml --gate)每次跑 churn git tree
 const __serializeA11y = (o) => JSON.stringify({ ...o, ts: undefined }, null, 2)
 if (fs.existsSync(LOG_FILE)) {
@@ -171,22 +181,27 @@ if (results.summary.totalViolations > 0) {
 }
 
 // ── Baseline fingerprint(storyId|ruleId → nodeCount;排除 flaky audit-error)──
-const curMap = {}
-for (const [sid, vs] of Object.entries(results.violationsByStory)) {
-  for (const v of vs) {
-    if (v.id === 'audit-error') continue
-    const k = `${sid}|${v.id}`
-    curMap[k] = (curMap[k] || 0) + v.nodes
-  }
-}
-const sortedMap = Object.fromEntries(Object.keys(curMap).sort().map(k => [k, curMap[k]]))
+const sortedMap = createA11yFingerprintMap(results.violationsByStory)
+const scanIntegrity = evaluateA11yScanIntegrity(results.violationsByStory)
+const scanErrors = scanIntegrity.auditErrors
 
 // ── --baseline-write:寫 / 更新 baseline 快照 ──
 if (WRITE_BASELINE) {
+  if (scanErrors.length) {
+    console.error(`\n❌ refusing baseline write: ${scanErrors.length} story scan(s) failed:${scanErrors.slice(0, 5).join(', ')}${scanErrors.length > 5 ? ' …' : ''}`)
+    process.exit(1)
+  }
   const dir = path.dirname(BASELINE_FILE)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
   fs.writeFileSync(BASELINE_FILE, JSON.stringify({
-    _meta: { purpose: 'a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)', generatedAt: new Date().toISOString(), stories: results.total, fingerprints: Object.keys(sortedMap).length },
+    _meta: {
+      purpose: 'a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)',
+      generatedAt: new Date().toISOString(),
+      stories: scanCorpus.storyIds.length,
+      storyIds: scanCorpus.storyIds,
+      storyIdsSha256: scanCorpus.storyIdsSha256,
+      fingerprints: Object.keys(sortedMap).length,
+    },
     fingerprints: sortedMap,
   }, null, 2))
   console.log(`\n✅ baseline written: ${BASELINE_FILE}`)
@@ -200,32 +215,39 @@ if (GATE) {
     console.error(`\n❌ --gate 但無 baseline(${BASELINE_FILE})。先跑 npm run a11y:check -- --baseline-write 建立。Refusing false-green.`)
     process.exit(1)
   }
-  const baseline = JSON.parse(fs.readFileSync(BASELINE_FILE, 'utf-8')).fingerprints || {}
-  const regressions = []
-  for (const [k, n] of Object.entries(curMap)) {
-    const base = baseline[k] || 0
-    if (n > base) regressions.push({ k, base, now: n })
+  const baselineDocument = JSON.parse(fs.readFileSync(BASELINE_FILE, 'utf-8'))
+  const decision = evaluateA11yRegressionGate({
+    violationsByStory: results.violationsByStory,
+    baselineDocument,
+    scannedStoryIds: scanCorpus.storyIds,
+  })
+  const { regressions, auditErrors, improved, corpus } = decision
+  if (auditErrors.length) console.error(`\n❌ ${auditErrors.length} story 掃描出錯；refusing false-green:${auditErrors.slice(0, 5).join(', ')}${auditErrors.length > 5 ? ' …' : ''}`)
+  if (!corpus.ok) {
+    console.error(`\n❌ Storybook corpus differs from the governed a11y baseline; refusing subset/replacement false-green.`)
+    if (corpus.missingStoryIds.length) console.error(`   Missing:${corpus.missingStoryIds.slice(0, 10).join(', ')}${corpus.missingStoryIds.length > 10 ? ' …' : ''}`)
+    if (corpus.unexpectedStoryIds.length) console.error(`   Unexpected:${corpus.unexpectedStoryIds.slice(0, 10).join(', ')}${corpus.unexpectedStoryIds.length > 10 ? ' …' : ''}`)
   }
-  // audit-error(infra)單獨列出但不 gate(flaky;非 a11y violation 本身)
-  const auditErrors = Object.entries(results.violationsByStory).filter(([, vs]) => vs.some(v => v.id === 'audit-error')).map(([sid]) => sid)
-  if (auditErrors.length) console.log(`\n⚠️ ${auditErrors.length} story 掃描出錯(infra,不 gate):${auditErrors.slice(0, 5).join(', ')}${auditErrors.length > 5 ? ' …' : ''}`)
-  if (regressions.length > 0) {
-    console.error(`\n❌ a11y GATE FAIL — ${regressions.length} 個新增/增量 violation(regression vs baseline):`)
-    for (const r of regressions.slice(0, 30)) console.error(`   • ${r.k}  (baseline ${r.base} → now ${r.now})`)
-    if (regressions.length > 30) console.error(`   … +${regressions.length - 30} more`)
-    console.error(`\n修:消除新違規;或若為 documented exception(如 green 綠底白字)+ intentional,跑 --baseline-write 更新 baseline 並在 commit 說明理由。`)
+  if (!decision.ok) {
+    if (regressions.length) {
+      console.error(`\n❌ a11y GATE FAIL — ${regressions.length} 個新增/增量 violation(regression vs baseline):`)
+      for (const r of regressions.slice(0, 30)) console.error(`   • ${r.key}  (baseline ${r.base} → now ${r.now})`)
+      if (regressions.length > 30) console.error(`   … +${regressions.length - 30} more`)
+      console.error(`\n修:消除新違規;或若為 documented exception(如 green 綠底白字)+ intentional,跑 --baseline-write 更新 baseline 並在 commit 說明理由。`)
+    }
     process.exit(1)
   }
   // 改善(baseline 有、現在沒了)提示更新
-  const improved = Object.keys(baseline).filter(k => !(k in curMap)).length
-  console.log(`\n✅ a11y GATE PASS — 0 regression vs baseline${improved ? `(且 ${improved} 個已修復,可跑 --baseline-write 收緊 baseline)` : ''}`)
+  console.log(`\n✅ a11y GATE PASS — 0 regression vs baseline${improved.length ? `(且 ${improved.length} 個已修復,可跑 --baseline-write 收緊 baseline)` : ''}`)
   process.exit(0)
 }
 
 // ── 預設(無旗標):critical / serious 任一即 fail(dev spot-check)──
-const hard = results.summary.bySeverity.critical + results.summary.bySeverity.serious
-if (hard > 0) {
-  console.error(`\n❌ ${hard} critical+serious WCAG AA violation(s) — CI fail`)
+const severityDecision = evaluateA11ySeverityGate(results)
+if (!severityDecision.ok) {
+  const { hard, auditErrors } = severityDecision
+  if (hard) console.error(`\n❌ ${hard} critical+serious WCAG AA violation(s) — CI fail`)
+  if (auditErrors.length) console.error(`\n❌ ${auditErrors.length} story scan(s) failed — refusing false-green:${auditErrors.slice(0, 5).join(', ')}`)
   process.exit(1)
 }
 console.log('\n✅ No critical/serious WCAG AA violations')

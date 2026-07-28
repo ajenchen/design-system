@@ -36,4 +36,4 @@ User verbatim 2026-05-17:「每次抓出的問題你他媽要給我基於我們�
 ## 引用
 
 - `tokens/color/color.spec.md`「結構性保留 token canonical」(pointer 段)
-- `.claude/skills/design-system-audit/SKILL.md:305` sub-agent dispatch template triple-verify layer (c)(全 dim findings cross-check 通用;Dim 48 本體已改走 `audit-orphan-tokens.mjs`,分類 SSOT = `tokens/orphan-tokens.spec.md`)
+- `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md` sub-agent dispatch template triple-verify layer (c)(全 dim findings cross-check 通用;Dim 48 本體已改走 `audit-orphan-tokens.mjs`,分類 SSOT = `tokens/orphan-tokens.spec.md`)

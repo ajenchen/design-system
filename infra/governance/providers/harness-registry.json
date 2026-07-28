@@ -1,0 +1,945 @@
+{
+  "$schema": "../schemas/harness-registry.schema.json",
+  "schemaVersion": 2,
+  "kind": "provider-neutral-governance-harness-registry",
+  "requiredDomains": [
+    "install",
+    "upgrade",
+    "rollback",
+    "process-crash",
+    "provider-lifecycle",
+    "cloud",
+    "template-consumer",
+    "second-opinion",
+    "mirror",
+    "release",
+    "fleet",
+    "evidence",
+    "fake-green"
+  ],
+  "domainTaxonomy": {
+    "version": "1.0.0",
+    "mandatoryCoreBinding": "requiredDomains-is-ordered-minimum",
+    "extensionDomainPattern": "^x-[a-z0-9]+(?:-[a-z0-9]+)*$",
+    "extensionPolicy": "append-only-unique-extension-entry-never-replaces-reorders-or-dilutes-core"
+  },
+  "authorityContract": {
+    "path": "infra/governance/providers/harness-authority-contracts.json",
+    "schemaPath": "infra/governance/schemas/harness-authority-contracts.schema.json",
+    "schemaVersion": 2,
+    "kind": "provider-neutral-governance-harness-authority-contracts",
+    "sha256": "7922c77ef65760e740d3dd9bcca80c3dcefd7941188bd3f1ac23b6896086a009",
+    "schemaSha256": "bba73861c87bc3047b70376e891a9464d525e9648fadd6e7d8fb406b57d10dce",
+    "projectionPolicy": "registry-authority-and-claim-fields-are-exact-derived-projections"
+  },
+  "sharedAuthorityPolicy": "shared-closures-live-once-in-the-authority-contract-and-are-not-duplicated-across-domain-authority-paths",
+  "sourceInventory": {
+    "path": "infra/governance/providers/harness-source-inventory.json",
+    "schemaVersion": 2,
+    "kind": "provider-neutral-governance-harness-source-inventory",
+    "sha256": "08060fd94c94170d287b507a6e3ab7d239c1d030c4c84c917a25bd6b95ccf208",
+    "closurePolicy": "every-discovered-source-exactly-one-execution-or-reviewed-exclusion"
+  },
+  "runner": {
+    "id": "all-registered-local-harnesses",
+    "command": [
+      "node",
+      "infra/governance/bin/run-harnesses.mjs"
+    ],
+    "npmScript": "test:governance-harnesses",
+    "npmScriptCommand": "node infra/governance/bin/run-harnesses.mjs",
+    "defaultTimeoutMs": 300000,
+    "failureMode": "run-all",
+    "deduplication": "first-registered-argv",
+    "credentialPolicy": "strip-external-credentials",
+    "certificationPolicy": "preserve-registry-claims-never-certify-external",
+    "timeoutOverrides": [
+      {
+        "command": [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "canonical-hook-behavioral"
+        ],
+        "timeoutMs": 1860000
+      },
+      {
+        "command": [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "consumer-clean-room"
+        ],
+        "timeoutMs": 1860000
+      },
+      {
+        "command": [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "fork-clean-room"
+        ],
+        "timeoutMs": 1260000
+      },
+      {
+        "command": [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ],
+        "timeoutMs": 3060000
+      },
+      {
+        "command": [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-package-remainder"
+        ],
+        "timeoutMs": 960000
+      },
+      {
+        "command": [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        "timeoutMs": 2760000
+      },
+      {
+        "command": [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ],
+        "timeoutMs": 2700000
+      }
+    ],
+    "requiredConsumers": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "invocationKind": "yaml-run-line",
+        "argv": [
+          "npm",
+          "run",
+          "--silent",
+          "test:governance-harnesses"
+        ]
+      },
+      {
+        "path": ".github/workflows/release.yml",
+        "invocationKind": "yaml-run-line",
+        "argv": [
+          "npm",
+          "run",
+          "--silent",
+          "test:governance-harnesses"
+        ]
+      },
+      {
+        "path": "scripts/release-preflight.mjs",
+        "invocationKind": "js-reviewed-shell-wrapper",
+        "argv": [
+          "npm",
+          "run",
+          "--silent",
+          "test:governance-harnesses"
+        ]
+      },
+      {
+        "path": ".devcontainer/post-create.mjs",
+        "invocationKind": "js-authority-setup-wrapper",
+        "argv": [
+          "node",
+          ".devcontainer/post-create.mjs"
+        ]
+      }
+    ]
+  },
+  "entries": [
+    {
+      "id": "fresh-install-and-setup",
+      "domain": "install",
+      "commands": [
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
+      ],
+      "testPaths": [
+        "scripts/test-setup-governance.mjs",
+        "scripts/test-propose-provider-cli-package-content.mjs",
+        "scripts/test-setup-provider-cli-toolchain.mjs",
+        "scripts/test-setup-workspace.mjs",
+        "scripts/test-verified-exact-npm-runtime.mjs",
+        "scripts/test-product-template-scaffold-lock.mjs"
+      ],
+      "authorityPaths": [
+        "package.json",
+        "infra/governance/README.md",
+        "scripts/setup-governance.mjs",
+        "scripts/propose-provider-cli-package-content.mjs",
+        "scripts/test-fixtures/provider-cli-proposal-verifier-child.mjs",
+        "scripts/setup-provider-cli-toolchain.mjs",
+        "scripts/setup-workspace.mjs",
+        "infra/governance/providers/provider-cli-toolchain.json",
+        "infra/governance/providers/provider-cli-toolchain.package-lock.json",
+        "infra/governance/schemas/provider-cli-package-content-proposal.schema.json",
+        "infra/governance/schemas/provider-cli-toolchain.schema.json",
+        "scripts/product-template-scaffold-lock.mjs",
+        "template/ds-product-template/package.json"
+      ],
+      "executionClass": "fixture-integration",
+      "certificationClaim": "local-harness-only",
+      "proves": [
+        "The template, local checkout, hosted setup documentation and devcontainer use setup:all as one closed entrypoint for role governance plus repository-provisioned peer CLIs.",
+        "Installed governance runs from an exact lockfile-bound npm runtime instead of an ambient package copy.",
+        "Claude Code and Codex peer CLIs are materialized atomically from one complete SRI-bound transitive lock and reject unsupported Linux libc, poisoned shims and version drift.",
+        "Provider CLI package-content updates are derived by a deterministic proposal-only flow that downloads the shared resolver's active closure sequentially, delegates authority/lock/plan validation plus SRI and strict tar parsing to the installation SSOT, binds direct derivation-source hashes and the exact input-to-proposed manifest transition, supports independent zero-write pre/post-state verification that refetches and rederives every exact artifact, and has no direct apply mode.",
+        "Static product-template scaffold bytes are closed by the published scaffold lock."
+      ],
+      "doesNotProve": [
+        "A specific cloud vendor image, secret provisioner or provider CLI is externally certified.",
+        "An npm or GitHub release exists until immutable external readback succeeds."
+      ]
+    },
+    {
+      "id": "consumer-transactional-upgrade",
+      "domain": "upgrade",
+      "commands": [
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
+      ],
+      "testPaths": [
+        "scripts/test-sync-all-transaction.mjs",
+        "scripts/test-verify-upgrade-evidence.mjs",
+        "scripts/test-design-system-codemod.mjs",
+        "infra/governance/test/consumerctl.test.mjs"
+      ],
+      "authorityPaths": [
+        "scripts/build-fork-governance.mjs",
+        "scripts/build-published-template-mirror.mjs",
+        "scripts/lib/runtime-dependency-closure.mjs",
+        "scripts/lib/consumer-control-plane-policy.mjs",
+        "scripts/setup-provider-cli-toolchain.mjs",
+        "scripts/sync-all.mjs",
+        "scripts/verify-upgrade-evidence.mjs",
+        "infra/governance/providers/provider-cli-toolchain.json",
+        "infra/governance/providers/provider-cli-toolchain.package-lock.json",
+        "infra/governance/schemas/provider-cli-toolchain.schema.json",
+        "infra/governance/consumer-upgrade-protocol.json",
+        "infra/governance/schemas/consumer-upgrade-protocol.schema.json",
+        "infra/governance/bin/consumerctl.mjs",
+        "infra/governance/lib/consumer-bootstrap.mjs",
+        "infra/governance/lib/consumer-upgrade-protocol.mjs",
+        "infra/governance/schemas/consumer-control-plane-baseline-receipt.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-plan.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-snapshot-verification.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-readback.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-readback-verification.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-acceptance-proposal.schema.json",
+        "infra/governance/schemas/consumer-bootstrap-plan.schema.json",
+        "infra/governance/schemas/consumer-bootstrap-snapshot-verification.schema.json",
+        "infra/governance/schemas/consumer-bootstrap-readback-verification.schema.json",
+        "infra/governance/schemas/consumer-bootstrap-promotion-proposal.schema.json",
+        "infra/governance/schemas/consumer-fanout-review.schema.json",
+        "infra/governance/schemas/consumer-fanout-dispatch-evidence.schema.json",
+        "infra/governance/schemas/managed-repos.schema.json",
+        "infra/governance/inventory/managed-repos.json",
+        "infra/governance/release-rings.json",
+        "packages/design-system/tools/codemods/index.mjs",
+        "packages/design-system/tools/codemods/cli.mjs",
+        "packages/design-system/tools/shared/safe-filesystem.mjs",
+        "packages/design-system/package.json"
+      ],
+      "executionClass": "fixture-integration",
+      "certificationClaim": "local-harness-only",
+      "proves": [
+        "Ordinary consumer upgrade is transactional and validates authenticated governance evidence.",
+        "The protected-base writer statically materializes the exact content-authorized provider CLI runtime in its disposable candidate without executing provider bytes, re-verifies the copied candidate and live replacement with the already-loaded protected-base verifier, reports certification separately, and rolls back the complete node_modules predecessor on failure or interruption.",
+        "Bootstrap, plan and readback paths fail closed when protected-base provenance is absent or forged.",
+        "Pathname-visible concurrent edits are revalidated at publication and recovery boundaries and fail closed instead of being silently overwritten.",
+        "The beta.84 package-shipped codemod changes only TypeScript AST bindings proven to originate from the design-system API, binds its exact parser and source inventory, is idempotent, and rejects ambiguity, dynamic field modes, DataTable meta.disabled, stale modes, links, lock contention, and partial publication."
+      ],
+      "doesNotProve": [
+        "A real consumer repository has merged the reviewed upgrade PR.",
+        "GitHub required checks or App identities are externally active.",
+        "Zero-data-loss against an arbitrary non-cooperative writer that retains an old open file descriptor and writes after pathname replacement.",
+        "The codemod does not infer semantic replacements for unresolved wrappers or DataTable meta.disabled, prove storage power-loss durability, or prove that an external consumer applied its reviewed proposal."
+      ]
+    },
+    {
+      "id": "rollback-and-recovery",
+      "domain": "rollback",
+      "commands": [
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ]
+      ],
+      "testPaths": [
+        "scripts/test-sync-all-transaction.mjs",
+        "infra/governance/test/staged-rollout.test.mjs",
+        "infra/governance/test/reconcile-github.test.mjs"
+      ],
+      "authorityPaths": [
+        "infra/governance/staged-rollout-plan.json",
+        "infra/governance/bin/reconcile-github.mjs",
+        "infra/governance/lib/staged-rollout.mjs"
+      ],
+      "executionClass": "fixture-integration",
+      "certificationClaim": "local-harness-only",
+      "proves": [
+        "Local upgrade rollback restores authenticated before-images byte-for-byte.",
+        "Fleet rollback requires a previous-good immutable release, fresh authorization and remote-state re-observation.",
+        "Partial external mutation is recorded as possible partial state and never mislabeled as automatic rollback."
+      ],
+      "doesNotProve": [
+        "A live GitHub rollback drill or off-host recovery objective has completed.",
+        "Irreversible external provider actions have a safe inverse."
+      ]
+    },
+    {
+      "id": "process-crash-boundary",
+      "domain": "process-crash",
+      "commands": [
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ]
+      ],
+      "testPaths": [
+        "scripts/test-sync-all-transaction.mjs",
+        "scripts/test-run-gate-meta-tests-isolation.mjs"
+      ],
+      "authorityPaths": [
+        "scripts/sync-all.mjs",
+        "scripts/run-gate-meta-tests.mjs",
+        "scripts/lib/disposable-repository-snapshot.mjs"
+      ],
+      "executionClass": "fixture-integration",
+      "certificationClaim": "local-harness-only",
+      "proves": [
+        "Process-crash recovery can use a dead-process journal to restore authenticated upgrade sources, provider surfaces and node_modules exactly.",
+        "A killed mutation probe remains inside a disposable repository/runtime snapshot and leaves the caller fingerprint unchanged.",
+        "Pathname-visible concurrent edits are revalidated and fail closed before recovery or publication can replace them."
+      ],
+      "doesNotProve": [
+        "Filesystem or storage power-loss durability, because the harness claims only process-crash recovery.",
+        "Containment of arbitrary network or operating-system writes outside the declared disposable runtime.",
+        "Zero-data-loss against an arbitrary non-cooperative writer that retains an old open file descriptor and writes after pathname replacement."
+      ]
+    },
+    {
+      "id": "provider-lifecycle-onboarding",
+      "domain": "provider-lifecycle",
+      "commands": [
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-package-remainder"
+        ]
+      ],
+      "testPaths": [
+        "scripts/test-provider-lifecycle.mjs",
+        "scripts/test-future-provider-fork-surface.mjs",
+        "packages/governance/test/provider-parity.test.mjs"
+      ],
+      "authorityPaths": [
+        "packages/governance/canonical/providers.json",
+        "scripts/lib/provider-lifecycle.mjs",
+        "scripts/refresh-fork-launchers.mjs"
+      ],
+      "executionClass": "fixture-integration",
+      "certificationClaim": "local-harness-only",
+      "proves": [
+        "A new provider must join the canonical registry, compatibility inventory, generated surfaces and certification ledger coherently.",
+        "Unknown or partial providers fail ADAPTER-BLOCKED instead of inheriting Claude or Codex semantics.",
+        "Reserved provider namespaces and lifecycle transition capabilities reject forged or broadened changes."
+      ],
+      "doesNotProve": [
+        "A future provider runtime is usable before its own adapter and target-bound certification evidence exist."
+      ]
+    },
+    {
+      "id": "cloud-portability-profile",
+      "domain": "cloud",
+      "commands": [
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ]
+      ],
+      "testPaths": [
+        "scripts/test-setup-governance.mjs",
+        "scripts/test-setup-provider-cli-toolchain.mjs",
+        "scripts/test-setup-workspace.mjs",
+        "infra/governance/test/authority-setup.test.mjs",
+        "infra/governance/test/provider-surface.test.mjs"
+      ],
+      "authorityPaths": [
+        "package.json",
+        "package-lock.json",
+        ".npmrc",
+        "scripts/lib/verified-exact-npm-runtime.mjs",
+        "scripts/lib/governance-dependency-bootstrap.mjs",
+        "scripts/lib/worktree-fingerprint.mjs",
+        "scripts/lib/workspace-post-create.mjs",
+        "infra/governance/providers/compatibility-matrix.json",
+        "infra/governance/providers/role-surface-policy.json",
+        "infra/governance/schemas/role-surface-policy.schema.json",
+        "infra/governance/lib/role-surface-policy.mjs",
+        "infra/governance/inventory/managed-repos.json",
+        "infra/governance/release-rings.json",
+        "infra/governance/providers/harness-registry.json",
+        "infra/governance/providers/harness-source-inventory.json",
+        "infra/governance/bin/run-harnesses.mjs",
+        "infra/governance/lib/playwright-runtime.mjs",
+        "scripts/ensure-playwright-browsers.mjs",
+        "scripts/setup-authority-governance.mjs",
+        "scripts/setup-provider-cli-toolchain.mjs",
+        "scripts/setup-workspace.mjs",
+        "infra/governance/providers/provider-cli-toolchain.json",
+        "infra/governance/providers/provider-cli-toolchain.package-lock.json",
+        "infra/governance/providers/certifications.json",
+        ".devcontainer/devcontainer.json",
+        ".devcontainer/post-create.mjs",
+        "template/ds-product-template/.devcontainer/devcontainer.json",
+        "template/ds-product-template/.devcontainer/devcontainer-lock.json"
+      ],
+      "executionClass": "external-readback-required",
+      "certificationClaim": "not-certified",
+      "proves": [
+        "Local fixtures verify that one committed DS-author setup command ignores user-home npm and Playwright authority, uses the lock-verified exact npm dependency phase, provisions exact Chromium, and resolves the same canonical hard gates before directly executing all registered Harnesses.",
+        "Specialized DS-author GitHub Actions jobs reuse the exact dependency phase without falsely claiming that dependency setup alone is governance certification.",
+        "Provider-native hooks are feedback-only and may vary by cloud environment without weakening deterministic or CI enforcement.",
+        "Repository-provisioned peer CLIs use the same lock on supported local, devcontainer and glibc cloud hosts without claiming control of the vendor-managed host process.",
+        "Cloud and remote certification records stay not-certified without target-bound external evidence."
+      ],
+      "doesNotProve": [
+        "A cloud provider actually honored the committed setup or devcontainer configuration; only target-bound external readback can prove that.",
+        "Codex Cloud, Claude Code Cloud, Codespaces or any other vendor image has passed a real fresh-clone run.",
+        "Secrets, network access, provider authentication or managed-host policy are present."
+      ]
+    },
+    {
+      "id": "product-template-role-boundary",
+      "domain": "template-consumer",
+      "commands": [
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "fork-clean-room"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "consumer-clean-room"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
+      ],
+      "testPaths": [
+        "scripts/test-fork-governance.mjs",
+        "scripts/test-fork-story-invariants-override.mjs",
+        "scripts/test-consumer-governance.mjs",
+        "scripts/test-consumer-source-harness.mjs",
+        "scripts/test-product-template-scaffold-lock.mjs"
+      ],
+      "authorityPaths": [
+        "scripts/fork-governance-classification.json",
+        "scripts/fork-hook-overrides/check_story_invariants.sh",
+        "scripts/build-fork-governance.mjs",
+        "scripts/lib/provider-projection-contract.mjs",
+        "scripts/product-template-scaffold-lock.mjs",
+        "packages/governance/canonical/providers.json",
+        "packages/design-system/ds-canonical/templates",
+        "template/ds-product-template/package.json"
+      ],
+      "executionClass": "fixture-integration",
+      "certificationClaim": "local-harness-only",
+      "proves": [
+        "Product consumers receive the provider-neutral product role, generated provider projections and protected source harness.",
+        "Claude and Codex product skill inventories are symmetric.",
+        "DS-author-only workflows, release commands, audit authority and source-writing skills remain excluded from product consumers."
+      ],
+      "doesNotProve": [
+        "A consumer may publish or mutate Design System canonical source.",
+        "The template mirror or WM canary has adopted an unreleased candidate."
+      ]
+    },
+    {
+      "id": "provider-adaptive-independent-review",
+      "domain": "second-opinion",
+      "commands": [
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "scripts/test-codex-run-guarded.mjs"
+        ]
+      ],
+      "testPaths": [
+        "infra/governance/test/provider-surface.test.mjs",
+        "scripts/test-deep-audit-evidence-schema-parity.mjs",
+        "scripts/test-deep-audit-review-archive.mjs",
+        "scripts/test-model-deep-audit-safety.mjs",
+        "scripts/test-model-evidence-broker-hardening.mjs",
+        "scripts/test-provider-review-binding.mjs",
+        "scripts/test-review-capability-selection.mjs",
+        "scripts/test-codex-run-guarded.mjs"
+      ],
+      "authorityPaths": [
+        "scripts/provider-skill-semantics.json",
+        "packages/governance/canonical/providers.json",
+        "packages/governance/src/provider-review-binding.mjs",
+        "infra/governance/providers/compatibility-matrix.json",
+        "infra/governance/providers/certifications.json",
+        "infra/governance/model-evidence-plan.json",
+        "infra/governance/schemas/model-evidence-plan.schema.json",
+        "infra/governance/model-evidence-broker.json",
+        "infra/governance/schemas/model-evidence-broker.schema.json",
+        "infra/governance/schemas/model-deep-audit-result.schema.json",
+        "infra/governance/providers/model-invocation-profiles.json",
+        "infra/governance/schemas/model-invocation-profiles.schema.json",
+        "infra/governance/providers/review-capability-registry.json",
+        "infra/governance/schemas/review-capability-registry.schema.json",
+        "infra/governance/providers/review-capability-certifications.json",
+        "infra/governance/schemas/review-capability-certifications.schema.json",
+        "infra/governance/providers/model-release-registry.json",
+        "infra/governance/schemas/model-release-registry.schema.json",
+        "infra/governance/schemas/model-release-documentation-assertion.schema.json",
+        "infra/governance/schemas/model-broker-shard-result.schema.json",
+        "infra/governance/schemas/model-broker-transcript.schema.json",
+        "scripts/lib/deep-audit-evidence-contract.mjs",
+        "scripts/lib/deep-audit-review-archive.mjs",
+        "scripts/lib/model-api-transport.mjs",
+        "scripts/lib/model-broker-transcript.mjs",
+        "scripts/lib/model-evidence-plan.mjs",
+        "scripts/lib/model-evidence-broker.mjs",
+        "scripts/lib/component-dependency-source-inventory.mjs",
+        "scripts/lib/component-claim-inventory.mjs",
+        "scripts/lib/model-access-receipt.mjs",
+        "scripts/lib/model-audit-contract.mjs",
+        "scripts/lib/model-release-registry.mjs",
+        "scripts/lib/model-release-authority.mjs",
+        "scripts/run-model-deep-audit.mjs",
+        "packages/design-system/ds-canonical/skills/independent-review/SKILL.md",
+        "packages/design-system/ds-canonical/skills/deep-audit-cross-codex/SKILL.md",
+        "packages/design-system/ds-canonical/templates/product-launchers/independent-review.mjs"
+      ],
+      "executionClass": "fixture-integration",
+      "certificationClaim": "local-harness-only",
+      "proves": [
+        "Deep audit binds explicit author identity to a provider-neutral highest-certified independent-review policy; the selected reviewer provider is distinct from both the author and current provider; source freeze may remain REVIEW-BLOCKED without inventing a peer/model, while prepare and dispatch require an exact distinct provider/profile/model selection receipt.",
+        "The existing canonical broker protocol prepares ordered content-addressed request envelopes, verifies exact carrier and result closure, persists a cycle-safe immutable portable review bundle plus exact All-Harness receipt archive, and reduces the complete registered 26-judgment plus 64-component task graph without sampling; managed execution reuses the same canonical completion core as a deployment wrapper.",
+        "Registered providers resolve the highest policy-eligible certified capability through the provider, capability, certification, invocation and model-release registries; model-backed deep-audit evidence is separately bound to exact selected provider/profile/model authority rather than inferred from the review binding; the same portable content-addressed exchange core accepts either a subscription-entitlement or managed route wrapper without changing canonical semantics.",
+        "Product consumers receive a separate read-only independent-review workflow without DS-author, release, deep-audit-remediation or mutation authority.",
+        "Unknown providers and author/peer collisions fail REVIEW-BLOCKED or ADAPTER-BLOCKED."
+      ],
+      "doesNotProve": [
+        "A second opinion occurred unless immutable, read-only peer evidence from a separate execution context is present.",
+        "One provider reviewing itself is independent review.",
+        "A provider/model is live or promotion-eligible without current signed model-release authority, managed-broker execution evidence and target-bound runtime certification."
+      ]
+    },
+    {
+      "id": "published-template-mirror",
+      "domain": "mirror",
+      "commands": [
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
+      ],
+      "testPaths": [
+        "scripts/test-verify-mirror-evidence.mjs",
+        "scripts/test-verify-mirror-release.mjs",
+        "scripts/test-mirror-run-artifact-identity.mjs",
+        "scripts/test-product-template-scaffold-lock.mjs"
+      ],
+      "authorityPaths": [
+        ".github/workflows/mirror-to-published-template.yml",
+        "scripts/build-published-template-mirror.mjs",
+        "scripts/generate-product-template-package-lock.mjs",
+        "scripts/lib/github-actions-artifact-identity.mjs",
+        "scripts/mirror-run-artifact-identity.mjs",
+        "scripts/published-template-mirror-policy.json",
+        "scripts/product-template-scaffold-lock.mjs",
+        "scripts/release-finalizer-mirror-handoff.mjs",
+        "scripts/verify-mirror-evidence.mjs",
+        "scripts/verify-mirror-release.mjs",
+        "scripts/verify-upgrade-provenance.mjs"
+      ],
+      "executionClass": "fixture-integration",
+      "certificationClaim": "external-readback-required",
+      "proves": [
+        "Mirror evidence binds one completed finalizer run/attempt, its immutable signed release, exact BOM/scaffold bytes, provider-derived managed surfaces and the final tree digest.",
+        "The fresh writer re-resolves the finalizer handoff and same-run artifact ID/digest before credentials; unregistered provider siblings, forged artifacts and stale release identities fail closed."
+      ],
+      "doesNotProve": [
+        "The remote template repository was updated until Writer App mutation and independent readback complete.",
+        "A local mirror fixture is an immutable GitHub Release."
+      ]
+    },
+    {
+      "id": "release-supply-chain",
+      "domain": "release",
+      "commands": [
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ],
+        [
+          "node",
+          "scripts/test-check-src-republish.mjs"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
+      ],
+      "testPaths": [
+        "scripts/test-release-bom.mjs",
+        "scripts/test-release-finalizer-mirror-handoff.mjs",
+        "scripts/test-install-candidate-dependencies.mjs",
+        "scripts/test-workflow-security.mjs",
+        "infra/governance/test/release-trust-preflight.test.mjs",
+        "infra/governance/test/signed-release-tag.test.mjs",
+        "scripts/test-check-src-republish.mjs"
+      ],
+      "authorityPaths": [
+        ".github/workflows/release.yml",
+        ".github/workflows/release-finalize.yml",
+        "scripts/lib/github-actions-artifact-identity.mjs",
+        "scripts/release-bom-contract.mjs",
+        "scripts/release-finalizer-mirror-handoff.mjs",
+        "scripts/release-stage-run-identity.mjs",
+        "scripts/verify-upgrade-provenance.mjs",
+        "scripts/install-candidate-dependencies.mjs",
+        "infra/governance/lib/release-trust-preflight.mjs",
+        "infra/governance/release-tag-authorization-policy.json"
+      ],
+      "executionClass": "fixture-integration",
+      "certificationClaim": "external-readback-required",
+      "proves": [
+        "Release BOM, tag authorization, workflow identity and finalization receipts are closed and digest-bound.",
+        "Candidate bytes cannot self-certify trusted execution or bypass protected-main identity."
+      ],
+      "doesNotProve": [
+        "npm packages, GitHub tags or immutable releases exist before live provider readback.",
+        "Empty or pending issuer policies authorize a release."
+      ]
+    },
+    {
+      "id": "fleet-plan-and-reconcile",
+      "domain": "fleet",
+      "commands": [
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ]
+      ],
+      "testPaths": [
+        "infra/governance/test/consumerctl.test.mjs",
+        "infra/governance/test/rollout-state-machine.test.mjs",
+        "infra/governance/test/reconcile-github.test.mjs",
+        "infra/governance/test/staged-rollout.test.mjs"
+      ],
+      "authorityPaths": [
+        "scripts/build-fork-governance.mjs",
+        "scripts/lib/runtime-dependency-closure.mjs",
+        "scripts/lib/consumer-control-plane-policy.mjs",
+        "infra/governance/consumer-upgrade-protocol.json",
+        "infra/governance/schemas/consumer-upgrade-protocol.schema.json",
+        "infra/governance/bin/consumerctl.mjs",
+        "infra/governance/bin/reconcile-github.mjs",
+        "infra/governance/lib/fleet-reconcile-mirror.mjs",
+        "infra/governance/desired/github.json",
+        "infra/governance/inventory/managed-repos.json",
+        "infra/governance/lib/consumer-bootstrap.mjs",
+        "infra/governance/lib/consumer-upgrade-protocol.mjs",
+        "infra/governance/lib/model-validation.mjs",
+        "infra/governance/release-rings.json",
+        "infra/governance/schemas/consumer-control-plane-baseline-receipt.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-plan.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-snapshot-verification.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-readback.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-readback-verification.schema.json",
+        "infra/governance/schemas/consumer-control-plane-update-acceptance-proposal.schema.json",
+        "infra/governance/schemas/consumer-bootstrap-plan.schema.json",
+        "infra/governance/schemas/consumer-bootstrap-snapshot-verification.schema.json",
+        "infra/governance/schemas/consumer-bootstrap-readback-verification.schema.json",
+        "infra/governance/schemas/consumer-bootstrap-promotion-proposal.schema.json",
+        "infra/governance/schemas/consumer-fanout-review.schema.json",
+        "infra/governance/schemas/consumer-fanout-dispatch-evidence.schema.json",
+        "infra/governance/schemas/managed-repos.schema.json",
+        "infra/governance/schemas/fleet-reconcile-journal.schema.json",
+        "infra/governance/schemas/fleet-reconcile-bootstrap-transaction.schema.json",
+        "infra/governance/schemas/fleet-reconcile-bootstrap-replay-receipt.schema.json",
+        "infra/governance/schemas/github-desired.schema.json",
+        "infra/governance/lib/staged-rollout.mjs",
+        "infra/governance/staged-rollout-plan.json"
+      ],
+      "executionClass": "fixture-integration",
+      "certificationClaim": "external-readback-required",
+      "proves": [
+        "Fleet planning respects repository roles, release rings, waves, evidence predicates and least-privilege mutation boundaries.",
+        "Fleet check and apply require a bounded exact-quorum, canonical-order, externally signed independent-review receipt whose canonical plan bytes and every governance input are reloaded and CAS-checked with monotonic live time immediately before dispatch.",
+        "Fleet dispatch evidence has a closed bounded schema and never converts accepted-but-unread requests into a completion claim.",
+        "Authority-policy bootstrap journals remain local non-promotion evidence; candidate freeze accepts them only after exact ordered event replay through the canonical signed mirror protocol, independent head verification, canonical activation binding, and content-addressed readback.",
+        "Unknown external state, stale receipts and incomplete certification block rollout instead of becoming a green default."
+      ],
+      "doesNotProve": [
+        "Any GitHub repository, App, ruleset, environment or off-host journal is active without signed live readback."
+      ]
+    },
+    {
+      "id": "evidence-provenance-and-parity",
+      "domain": "evidence",
+      "commands": [
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
+      ],
+      "testPaths": [
+        "scripts/test-governance-runtime-evidence.mjs",
+        "scripts/test-deep-audit-evidence-schema-parity.mjs",
+        "scripts/test-visual-baseline-review.mjs",
+        "scripts/test-governance-anchor-preflight.mjs",
+        "scripts/test-workflow-security.mjs",
+        "infra/governance/test/external-surface-evidence.test.mjs",
+        "infra/governance/test/external-operator.test.mjs",
+        "infra/governance/test/external-ledger-writer.test.mjs",
+        "infra/governance/test/model-validation.test.mjs",
+        "infra/governance/test/provider-runtime-conformance.test.mjs",
+        "infra/governance/test/reconcile-github.test.mjs",
+        "scripts/test-produce-ci-enforced-evidence.mjs",
+        "scripts/test-authority-decision-evidence.mjs"
+      ],
+      "authorityPaths": [
+        "scripts/lib/deep-audit-evidence-contract.mjs",
+        "scripts/lib/ci-evidence-pipeline.mjs",
+        "scripts/lib/ci-evidence-live-observer.mjs",
+        "scripts/schemas/ci-evidence-observation.schema.json",
+        "infra/governance/lib/common.mjs",
+        "infra/governance/lib/model-validation.mjs",
+        "infra/governance/lib/provider-runtime-conformance.mjs",
+        "infra/governance/lib/runtime-certification.mjs",
+        "infra/governance/lib/repository-subject-proof.mjs",
+        "infra/governance/lib/external-surface-evidence.mjs",
+        "infra/governance/lib/external-operator.mjs",
+        "infra/governance/bin/conform-provider-runtime.mjs",
+        "infra/governance/bin/external-operator.mjs",
+        "infra/governance/bin/promote-runtime-evidence.mjs",
+        "infra/governance/providers/model-invocation-profiles.json",
+        "infra/governance/providers/runtime-conformance.json",
+        "infra/governance/providers/role-surface-policy.json",
+        "infra/governance/inventory/managed-repos.json",
+        "infra/governance/trust/issuers.json",
+        "infra/governance/visual-baseline-review-policy.json",
+        "infra/governance/schemas/provider-surface-certification.schema.json",
+        "infra/governance/schemas/external-surface-import-receipt.schema.json",
+        "infra/governance/schemas/external-runtime-certification-proposal.schema.json",
+        "infra/governance/schemas/provider-review-capability-certification-proposal.schema.json",
+        "infra/governance/schemas/external-ledger-transaction-handoff.schema.json",
+        "infra/governance/schemas/external-activation-signing-request.schema.json",
+        "infra/governance/schemas/external-activation-signature-bundle.schema.json",
+        "infra/governance/schemas/external-activation-proposal.schema.json",
+        "infra/governance/schemas/external-operator-block-result.schema.json",
+        "infra/governance/schemas/role-surface-policy.schema.json",
+        "infra/governance/schemas/managed-repos.schema.json",
+        "infra/governance/schemas/issuer-registry.schema.json",
+        "infra/governance/schemas/runtime-conformance-evidence.schema.json",
+        "infra/governance/schemas/runtime-conformance-profile.schema.json",
+        "infra/governance/schemas/external-surface-evidence.schema.json",
+        "infra/governance/schemas/visual-baseline-review-policy.schema.json",
+        "packages/design-system/tools/visual-baseline/index.mjs",
+        "packages/design-system/tools/visual-baseline/cli.mjs",
+        "packages/design-system/tools/shared/safe-filesystem.mjs",
+        "scripts/build-fork-governance.mjs",
+        "scripts/lib/runtime-dependency-closure.mjs",
+        ".github/workflows/external-ledger-writer.yml",
+        "infra/governance/lib/external-ledger-writer.mjs",
+        "infra/governance/bin/external-ledger-writer.mjs",
+        "infra/governance/schemas/external-ledger-writer-dispatch.schema.json",
+        "infra/governance/schemas/external-ledger-writer-plan.schema.json",
+        "infra/governance/schemas/external-ledger-artifact-identity.schema.json",
+        "infra/governance/schemas/external-ledger-writer-receipt.schema.json",
+        ".github/workflows/governance-anchor.yml",
+        "scripts/governance-anchor-preflight.mjs",
+        "scripts/verify-privileged-change.mjs",
+        "AGENTS.md",
+        "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
+        "packages/governance/src/authority-decision-evidence.mjs",
+        "packages/governance/canonical/providers.json",
+        "scripts/run-provider-hook.mjs",
+        "scripts/gen-codex-adapter.mjs"
+      ],
+      "executionClass": "fixture-integration",
+      "certificationClaim": "external-readback-required",
+      "proves": [
+        "Deterministic, hook, model, CI and provider-runtime evidence share closed schema and immutable subject bindings; a role-selected canary subject is proven by exact object/ancestry/change-set readback without recursive self-certification.",
+        "Local or unsigned evidence cannot be relabeled as managed or certified evidence.",
+        "Visual-baseline proposals bind the governed Git origin and HEAD commit/tree, fully decoded CRC-valid PNG candidate/baseline inventories, file modes, explicit non-placeholder per-image statements, trust-policy bytes and exact review rows; unsigned approval, cross-repository replay, arbitrary callbacks, policy/issuer/image substitution, links, contention and partial publication fail closed.",
+        "The same role-portable trust-policy bytes resolve under authority and BOM-managed consumer governance roots; this tool version rejects every managed-broker activation attempt until canonical signed broker/model-authority receipt validators are reused.",
+        "Reviewed certification and activation handoffs are serialized into exact protected-default one-parent pull requests: runtime certification atomically adds its content-addressed evidence plus ledger, provider review certification atomically adds the exact runtime and review-capability evidence plus both ledgers, activation changes only its ledger, and same-run artifact/App identity, expiring base CAS, exact tree/commit/PR readback, mutually exclusive protected-base routing and merge-gate replay fail closed.",
+        "Canonical Decision Authority remains one AGENTS.md SSOT; deterministic content-addressed receipts bind its exact policy, classifier, provider registry, provider/surface/session/target/operation scope and shared root/fork adapters. Operation-only Standing Authorization accepts only closed governance-action targets whose exact operation digest matches, while UI/UX, human-only, destructive/bypass, malformed, stale, replayed, substituted, tampered and unknown-provider evidence fails closed across local, cloud, remote and CI structural surfaces without claiming runtime certification."
+      ],
+      "doesNotProve": [
+        "An external signer, managed executor or provider runtime is certified while its ledger remains pending.",
+        "The human signature proves an allowlisted authorized approval, not independence between the proposal author audit label and the human actor.",
+        "The canonical visual-review policy is currently not activated; local fixtures do not prove a live human issuer, managed broker, external readback, malicious-repository-owner resistance, parent-directory-swap resistance, storage power-loss durability, npm installer lifecycle, or adoption by an external consumer.",
+        "A transient workflow artifact, writer receipt, local fixture or open pull request proves neither protected-main merge nor live external activation/certification; durable authority still requires protected Git and merged-ledger readback."
+      ]
+    },
+    {
+      "id": "fake-green-ratchet",
+      "domain": "fake-green",
+      "commands": [
+        [
+          "node",
+          "scripts/audit-gate-meta-test-coverage.mjs",
+          "--check"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "canonical-hook-behavioral"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
+      ],
+      "testPaths": [
+        "scripts/test-run-gate-meta-tests-isolation.mjs",
+        "scripts/test-gate-meta-test-exclusion-inventory.mjs"
+      ],
+      "authorityPaths": [
+        "scripts/audit-gate-meta-test-coverage.mjs",
+        "scripts/audit-gate-meta-test-coverage.baseline.json",
+        "scripts/run-gate-meta-tests.mjs",
+        "scripts/gate-meta-test-exclusions.json",
+        "packages/design-system/ds-canonical/hooks/tests/run-all.sh"
+      ],
+      "executionClass": "fixture-integration",
+      "certificationClaim": "local-harness-only",
+      "proves": [
+        "New checker gates cannot silently appear without a paired meta-test or reviewed ratchet debt.",
+        "Gate meta-tests execute in a disposable snapshot whose caller bytes, modes, types and Git state are fingerprinted before and after.",
+        "Every discovered checker gate executes a paired mutation test; former browser, build, registry and model gaps use closed fixtures while retaining their live E2E or external-readback owners.",
+        "The canonical hook behavioral suite executes the DS-canonical run-all.sh exactly once under one aggregate deadline; generated .claude hook tests are checked only by canonical-to-mirror digest parity and are never executed as a second suite."
+      ],
+      "doesNotProve": [
+        "The presence of a paired test file alone proves the quality of its mutation assertion.",
+        "Fixture-backed paired mutation coverage does not certify live browser, registry, model, CI or managed-host execution.",
+        "Generated-mirror digest parity is not a second behavioral execution and cannot substitute for the canonical hook suite result."
+      ]
+    }
+  ],
+  "metaTestCoverage": {
+    "coverageKind": "discovered-paired-mutation-zero-debt-ratchet",
+    "inventoryCommand": [
+      "node",
+      "scripts/audit-gate-meta-test-coverage.mjs",
+      "--check"
+    ],
+    "isolatedRunnerCommand": [
+      "node",
+      "scripts/run-gate-meta-tests.mjs"
+    ],
+    "isolationTestPath": "scripts/test-run-gate-meta-tests-isolation.mjs",
+    "baselinePath": "scripts/audit-gate-meta-test-coverage.baseline.json",
+    "requiredOutcome": "all-discovered-checker-gates-covered-zero-debt",
+    "statement": "Every discovered checker gate has one canonical paired mutation execution owner; live browser, registry, model, CI and managed-host owners remain required for external certification."
+  }
+}

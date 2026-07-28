@@ -1,11 +1,14 @@
-# Phase Z reference — Cross-repo SSOT propagation(knowledge-prune SKILL.md「Phase Z reference」extract)
+# Cross-repository SSOT propagation
 
-### Phase Z reference — Cross-repo SSOT propagation(2026-05-26 retract skill-specific Phase Z,移到 CLAUDE.md canonical)
+The trigger is not completion of `/knowledge-prune` or any other skill. Propagation begins only after a release-affecting PR passes every required gate and is merged through protected `main` under the standing engineering authorization.
 
-**Per user 2026-05-26 correction**:「不是只要一 knowledge audit deep 之後就要,是等我 push main 後才要」。
+Canonical chain:
 
-Cross-repo SSOT sync trigger 不是「skill 跑完」而是「push main 後 SSOT-affecting diff」— canonical 統一在:
-- `CLAUDE.md` `# Git solo-work canonical` Step 5.5
-- Hook `check_post_main_ssot_propagate.sh`(PostToolUse Bash 偵測 `git push origin main` + diff)
+1. The working branch contains the exact version bump, generated projections, immutable BOM, and a successful `npm run release:preflight` attestation.
+2. Required PR checks, conversation resolution, product preview/canary, attestation, and external protection readback pass; no separate chat trigger or milestone approval is required.
+3. The protected PR is merged. The release tag may target only the attested commit or a squash commit with an identical Git tree.
+4. The Release workflow publishes immutable packages with provenance.
+5. `mirror-to-published-template.yml` consumes the successful Release event, mints a short-lived GitHub App token, and opens a complete template mirror PR.
+6. Fleet rollout advances through release rings. WM is the product canary. For each registered opt-in consumer selected in the current ring/wave, a reviewed fleet plan may issue one exact-version upgrade dispatch; that consumer must pass its own governance/product CI and independent readback before completion is claimed. Unregistered template descendants remain self-service and are not fleet-covered.
 
-→ /knowledge-prune skill 本身**不負責 trigger sync**;Phase 3-4 commit + Phase 6 user 拍板 push main 後,canonical hook 自動偵測 SSOT diff + 提議 npm bump。**整鏈 1 trigger 同時 cover /deep-audit-cross-codex / 一般 dev / 任何 SSOT-affecting 來源**(DRY,不複製到每個 skill)。
+No skill or SessionStart hook may install, bump, dispatch a mutable tag, write a lockfile, push consumer `main`, or silently repair drift. The provider-neutral checker and protected CI are authoritative; native provider hooks only provide earlier feedback.

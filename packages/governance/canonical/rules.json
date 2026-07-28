@@ -1,0 +1,81 @@
+{
+  "$schema": "./schemas/rules.schema.json",
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "ruleId": "GOV-CONTRACT-001",
+      "severity": "critical",
+      "source": "packages/governance/README.md#control-plane-invariants",
+      "appliesToRoles": ["*"],
+      "match": { "kind": "registry-invariant" },
+      "blocking": true,
+      "providerCoverage": {
+        "*": "hard-gate"
+      },
+      "gateIds": ["contract-doctor"]
+    },
+    {
+      "ruleId": "GOV-GENERATED-001",
+      "severity": "critical",
+      "source": "packages/governance/README.md#generated-artifacts-are-read-only",
+      "appliesToRoles": ["*"],
+      "match": {
+        "kind": "protected-generated-path",
+        "pathTemplate": "{outputDirectory}/**"
+      },
+      "blocking": true,
+      "providerCoverage": {
+        "*": "adapter"
+      },
+      "gateIds": ["snapshot-integrity", "hook-independent-ci"]
+    },
+    {
+      "ruleId": "GOV-SNAPSHOT-001",
+      "severity": "critical",
+      "source": "packages/governance/README.md#snapshots-are-exact",
+      "appliesToRoles": ["*"],
+      "match": { "kind": "registry-invariant" },
+      "blocking": true,
+      "providerCoverage": {
+        "*": "hard-gate"
+      },
+      "gateIds": ["snapshot-integrity", "contract-doctor"]
+    },
+    {
+      "ruleId": "GOV-PROVIDER-001",
+      "severity": "critical",
+      "source": "packages/governance/README.md#provider-outcomes-are-equivalent",
+      "appliesToRoles": ["*"],
+      "match": { "kind": "registry-invariant" },
+      "blocking": true,
+      "providerCoverage": {
+        "*": "adapter"
+      },
+      "gateIds": ["provider-parity", "hook-independent-ci"]
+    },
+    {
+      "ruleId": "GOV-ATTEST-001",
+      "severity": "critical",
+      "source": "packages/governance/README.md#attestations-are-evidence-bound",
+      "appliesToRoles": ["*"],
+      "match": { "kind": "registry-invariant" },
+      "blocking": true,
+      "providerCoverage": {
+        "*": "hard-gate"
+      },
+      "gateIds": ["artifact-attestation"]
+    },
+    {
+      "ruleId": "GOV-UPGRADE-001",
+      "severity": "major",
+      "source": "packages/governance/README.md#upgrades-are-optimistic-and-atomic",
+      "appliesToRoles": ["*"],
+      "match": { "kind": "registry-invariant" },
+      "blocking": true,
+      "providerCoverage": {
+        "*": "hard-gate"
+      },
+      "gateIds": ["safe-upgrade"]
+    }
+  ]
+}

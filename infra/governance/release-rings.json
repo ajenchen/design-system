@@ -1,0 +1,102 @@
+{
+  "$schema": "schemas/release-rings.schema.json",
+  "schemaVersion": 3,
+  "attestationPolicy": {
+    "schemaVersion": 1,
+    "algorithm": "ed25519",
+    "maxAuthorizationTtlMinutes": 60,
+    "maxCompletionTtlMinutes": 10080,
+    "clockSkewSeconds": 120,
+    "issuerRegistryDigest": "278cb1935e3b85376fd841b9180d20d47f57fb7dbfc76971e908736e76f0d305",
+    "allowedKeyIds": [
+      "owner-governance-2026-464784a3db60"
+    ],
+    "applyAuthorizationQuorum": 1,
+    "completionAttestationQuorum": 1
+  },
+  "candidateRelease": null,
+  "evidence": [],
+  "rings": [
+    {
+      "id": "ring-0-authority",
+      "order": 0,
+      "purpose": "Validate the governance authority and generated adapters before consumer rollout.",
+      "minimumSoakHours": 24,
+      "maxParallel": 1,
+      "waves": [{"id": "canary", "order": 0, "maxParallel": 1}],
+      "promotionPredicates": [
+        {"id": "manual-blockers-clear", "type": "manual-blockers-clear"},
+        {"id": "post-release-soak-observation", "type": "soak-observation"},
+        {"id": "required-checks-green", "type": "required-checks-green"},
+        {"id": "required-provider-surfaces-certified", "type": "provider-surfaces-certified", "surfaces": ["codex/codex-cli/local", "codex/codex-desktop/local", "codex/codex-desktop/remote-control", "codex/codex-cloud/cloud", "claude-code/claude-code-cli/local", "claude-code/claude-code-cli/remote-control", "claude-code/claude-code-cloud/cloud", "ci/github-actions/github-actions"]},
+        {"id": "no-open-critical-waiver", "type": "no-active-waiver-at-or-above", "risk": "critical"},
+        {"id": "reconcile-plan-conflict-free", "type": "plan-conflict-free"}
+      ]
+    },
+    {
+      "id": "ring-1-template-canary",
+      "order": 1,
+      "purpose": "Prove the published template mirror and clean-clone/cloud path.",
+      "minimumSoakHours": 24,
+      "maxParallel": 1,
+      "waves": [{"id": "canary", "order": 0, "maxParallel": 1}],
+      "promotionPredicates": [
+        {"id": "upstream-promoted", "type": "upstream-waves-promoted"},
+        {"id": "manual-blockers-clear", "type": "manual-blockers-clear"},
+        {"id": "post-release-soak-observation", "type": "soak-observation"},
+        {"id": "required-checks-green", "type": "required-checks-green"},
+        {"id": "required-provider-surfaces-certified", "type": "provider-surfaces-certified", "surfaces": ["codex/codex-desktop/remote-control", "codex/codex-cloud/cloud", "claude-code/claude-code-cli/remote-control", "claude-code/claude-code-cloud/cloud", "ci/github-actions/github-actions"]},
+        {"id": "no-open-high-waiver", "type": "no-active-waiver-at-or-above", "risk": "high"},
+        {"id": "upgrade-plan-conflict-free", "type": "plan-conflict-free"}
+      ]
+    },
+    {
+      "id": "ring-2-product-canary",
+      "order": 2,
+      "purpose": "Use work-management as the real-product canary and root-cause feedback loop.",
+      "minimumSoakHours": 72,
+      "maxParallel": 1,
+      "waves": [{"id": "canary", "order": 0, "maxParallel": 1}],
+      "promotionPredicates": [
+        {"id": "upstream-promoted", "type": "upstream-waves-promoted"},
+        {"id": "manual-blockers-clear", "type": "manual-blockers-clear"},
+        {"id": "post-release-soak-observation", "type": "soak-observation"},
+        {"id": "required-checks-green", "type": "required-checks-green"},
+        {"id": "required-provider-surfaces-certified", "type": "provider-surfaces-certified", "surfaces": ["codex/codex-cli/local", "codex/codex-desktop/local", "codex/codex-desktop/remote-control", "codex/codex-cloud/cloud", "claude-code/claude-code-cli/local", "claude-code/claude-code-cli/remote-control", "claude-code/claude-code-cloud/cloud", "ci/github-actions/github-actions"]},
+        {"id": "no-open-high-waiver", "type": "no-active-waiver-at-or-above", "risk": "high"},
+        {"id": "upgrade-plan-conflict-free", "type": "plan-conflict-free"}
+      ]
+    }
+  ],
+  "assignments": {
+    "design-system": {
+      "ring": "ring-0-authority",
+      "wave": "canary",
+      "enteredAt": "2026-07-20T00:00:00Z",
+      "candidateReleaseDigest": null,
+      "applyAuthorization": null,
+      "completionAttestation": null,
+      "manualBlockers": []
+    },
+    "ds-product-template": {
+      "ring": "ring-1-template-canary",
+      "wave": "canary",
+      "enteredAt": "2026-07-20T00:00:00Z",
+      "candidateReleaseDigest": null,
+      "applyAuthorization": null,
+      "completionAttestation": null,
+      "manualBlockers": []
+    },
+    "work-management": {
+      "ring": "ring-2-product-canary",
+      "wave": "canary",
+      "enteredAt": "2026-07-20T00:00:00Z",
+      "candidateReleaseDigest": null,
+      "applyAuthorization": null,
+      "completionAttestation": null,
+      "manualBlockers": [
+        "Base-trusted governance-anchor and PR-based governance-upgrade workflows must be present on work-management main before ring-2 promotion."
+      ]
+    }
+  }
+}

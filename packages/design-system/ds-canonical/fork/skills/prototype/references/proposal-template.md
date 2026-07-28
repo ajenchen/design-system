@@ -1,10 +1,11 @@
+> **Product-role projection(build 自動)**:本 skill 的執行步驟已只保留本 product repo 實際存在的指令。DS-author-only executor 會被改寫為 browser/manual/product-CI 等價驗證,不得在 product 中嘗試不存在的腳本。
 # Proposal Template — explorations/ 結構 + Storybook 編排
 
 Phase 3 每個 shortlisted candidate 建一個 story + 共用 notes.md。
 
 ---
 
-## 目錄結構(對齊 CLAUDE.md「Exploration 規則」)
+## 目錄結構(對齊 shared governance「Exploration 規則」)
 
 ```
 src/explorations/{topic-slug}/
@@ -19,7 +20,7 @@ src/explorations/{topic-slug}/
 ### 檔名慣例
 
 - **Topic slug**:kebab-case,描述問題(`onboarding-tour` / `bulk-action-confirm` / `empty-state-first-visit`)
-- **Candidate stories filename**:kebab-case + 描述性名稱(`linear-quick-filter.stories.tsx`)—**不用 `CandidateA/B/C`**(違反 CLAUDE.md「範例必須真實」mindset)
+- **Candidate stories filename**:kebab-case + 描述性名稱(`linear-quick-filter.stories.tsx`)—**不用 `CandidateA/B/C`**(違反 shared governance「範例必須真實」mindset)
 
 ### Storybook title 慣例(不與 Components/ 衝突)
 
@@ -210,14 +211,14 @@ export const NewbieOnboardingConcern: Story = {
 
 ---
 
-## DS 使用鐵律(per CLAUDE.md)
+## DS 使用鐵律(per shared governance)
 
 Phase 3 建 exploration 時:
 
 1. **優先用既有元件** `node_modules/@qijenchen/design-system/src/components/`,不自創
-2. **Layout primitives 消費**(per CLAUDE.md 清單):Empty / item-layout / overlay-surface / ScrollArea / AspectRatio
+2. **Layout primitives 消費**(per shared governance 清單):Empty / item-layout / overlay-surface / ScrollArea / AspectRatio
 3. **Token 紀律**:只用 semantic token,不硬寫 hex / rgb / shadow-sm
-4. **token 防線 lib/_token_hygiene.sh 5-check**:shadcn alias / v4 shorthand / hardcoded shadow / primitive-color-as-utility / native overflow — 5 項全過
+4. **token 防線 the installed immutable governance checker 5-check**:shadcn alias / v4 shorthand / hardcoded shadow / primitive-color-as-utility / native overflow — 5 項全過
 5. **新元件需求**:**notes.md 明文標示**,不偷偷 add 到 Components/(Checkpoint 3 專屬)
 
 ---

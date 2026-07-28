@@ -31,6 +31,10 @@ Icon?
 tmp/
 .cache/
 
+# Durable governance transaction pointers are local crash-recovery state, never repository input.
+/.governance-upgrade-journal.json
+/.governance-upgrade-journal.json.tmp-*
+
 # TypeScript build cache(any name,不只 tsconfig)
 *.tsbuildinfo
 

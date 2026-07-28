@@ -1,0 +1,9 @@
+{
+  "$schema": "../../infra/governance/schemas/memory-contract.schema.json",
+  "schemaVersion": 1,
+  "index": "MEMORY.md",
+  "readme": "README.md",
+  "maxIndexEntries": 20,
+  "maxLinesPerMemory": 100,
+  "cacheExcluded": ["README.md"]
+}

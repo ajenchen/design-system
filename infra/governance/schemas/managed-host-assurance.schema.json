@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/managed-host-assurance-v2.json",
+  "title": "Provider managed-host assurance desired state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "id", "scope", "readbackTrust", "activationProtocol", "providerRegistryBinding", "releaseBinding", "providers"],
+  "properties": {
+    "$schema": {"const": "../schemas/managed-host-assurance.schema.json"},
+    "schemaVersion": {"const": 2},
+    "id": {"const": "qijenchen-managed-host-assurance"},
+    "scope": {
+      "type": "object", "additionalProperties": false, "required": ["portableRepoBaseline", "managedHostExclusive"],
+      "properties": {
+        "portableRepoBaseline": {
+          "type": "object", "additionalProperties": false, "required": ["authorityPaths", "assurance", "securityBoundary", "managedHostEquivalent"],
+          "properties": {
+            "authorityPaths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/repoPath"}},
+            "assurance": {"const": "portable-functional-baseline"}, "securityBoundary": {"const": false}, "managedHostEquivalent": {"const": false}
+          }
+        },
+        "managedHostExclusive": {
+          "type": "object", "additionalProperties": false,
+          "required": ["assurance", "coveredControlBoundary", "winningEffectiveStateRequired", "localFileAloneIsProof", "unknownStateFailsClosed", "externalActivationRequired", "certificationRequiresSignedEndpointAttestation", "applicableRepositoryRoles", "repositoryIdentity", "endpointAssignment", "claudeTransportProfileId", "doesNotCertify"],
+          "properties": {
+            "assurance": {"const": "endpoint-admin-enforced-covered-controls"},
+            "coveredControlBoundary": {"const": "only-enforcementControls-listed-per-provider"},
+            "winningEffectiveStateRequired": {"const": true}, "localFileAloneIsProof": {"const": false},
+            "unknownStateFailsClosed": {"const": true}, "externalActivationRequired": {"const": true},
+            "certificationRequiresSignedEndpointAttestation": {"const": true},
+            "applicableRepositoryRoles": {"const": ["authority"]},
+            "repositoryIdentity": {"const": "ajenchen/design-system"},
+            "endpointAssignment": {"const": "authority-only-no-mixed-role"},
+            "claudeTransportProfileId": {"const": "claude-authority-full"},
+            "doesNotCertify": {"type": "array", "minItems": 5, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+          }
+        }
+      }
+    },
+    "readbackTrust": {
+      "type": "object", "additionalProperties": false,
+      "required": ["algorithm", "canonicalization", "maxTtlSeconds", "clockSkewSeconds", "nonceMinBytes", "replayCacheRequiredForCertification", "hostIdentityRequired", "trustedEndpointKeys"],
+      "properties": {
+        "algorithm": {"const": "ed25519"}, "canonicalization": {"const": "stable-json-v1"},
+        "maxTtlSeconds": {"type": "integer", "minimum": 60, "maximum": 3600},
+        "clockSkewSeconds": {"type": "integer", "minimum": 0, "maximum": 300},
+        "nonceMinBytes": {"type": "integer", "minimum": 16, "maximum": 64},
+        "replayCacheRequiredForCertification": {"const": true}, "hostIdentityRequired": {"const": true},
+        "trustedEndpointKeys": {
+          "type": "array", "uniqueItems": true,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["keyId", "publicKeySPKI", "endpointIds"],
+            "properties": {
+              "keyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+              "publicKeySPKI": {"type": "string", "minLength": 32},
+              "endpointIds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"}}
+            }
+          }
+        }
+      }
+    },
+    "activationProtocol": {
+      "type": "object", "additionalProperties": false,
+      "required": ["firstLaunchBootstrapRequired", "freshProcessRequired", "readbackAfterBootstrapRequired", "claude", "codex"],
+      "properties": {
+        "firstLaunchBootstrapRequired": {"const": true}, "freshProcessRequired": {"const": true}, "readbackAfterBootstrapRequired": {"const": true},
+        "claude": {
+          "type": "object", "additionalProperties": false,
+          "required": ["marketplaceRegistration", "pluginActivation", "remoteFetchFailure", "providerStatusReadbackAloneIsCompleteProof"],
+          "properties": {
+            "marketplaceRegistration": {"const": "extraKnownMarketplaces-managed-bootstrap"},
+            "pluginActivation": {"const": "managed-enabledPlugins"},
+            "remoteFetchFailure": {"const": "forceRemoteSettingsRefresh-exits"},
+            "providerStatusReadbackAloneIsCompleteProof": {"const": false}
+          }
+        },
+        "codex": {
+          "type": "object", "additionalProperties": false,
+          "required": ["requirementsBootstrap", "bundleDelivery", "cloudCacheFailureWithoutValidIdentityMatch", "configRequirementsReadAloneIsCompleteProof"],
+          "properties": {
+            "requirementsBootstrap": {"const": "supported-system-cloud-or-mdm-channel"},
+            "bundleDelivery": {"const": "endpoint-management-before-client-launch"},
+            "cloudCacheFailureWithoutValidIdentityMatch": {"const": "client-load-error"},
+            "configRequirementsReadAloneIsCompleteProof": {"const": false}
+          }
+        }
+      }
+    },
+    "providerRegistryBinding": {
+      "type": "object", "additionalProperties": false, "required": ["path", "providersPointer", "outOfScopeProviders", "unregisteredProviderOutcome"],
+      "properties": {
+        "path": {"const": "infra/governance/providers/compatibility-matrix.json"}, "providersPointer": {"const": "/providers"},
+        "outOfScopeProviders": {
+          "type": "array", "uniqueItems": true,
+          "items": {"type": "object", "additionalProperties": false, "required": ["id", "reason"], "properties": {"id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}, "reason": {"type": "string", "minLength": 1}}}
+        },
+        "unregisteredProviderOutcome": {"const": "fail"}
+      }
+    },
+    "releaseBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "candidatePointer", "sourceCommitField", "sourceTreeField", "versionField", "tagPrefix", "packageName", "packageFields", "marketplaceManifest", "pluginManifest", "pluginFullId", "sourceRepository", "missingCandidateOutcome"],
+      "properties": {
+        "path": {"const": "infra/governance/release-rings.json"}, "candidatePointer": {"const": "/candidateRelease"},
+        "sourceCommitField": {"const": "sourceCommit"}, "sourceTreeField": {"const": "sourceTree"}, "versionField": {"const": "version"}, "tagPrefix": {"const": "v"},
+        "packageName": {"const": "@qijenchen/design-system"}, "packageFields": {"const": ["name", "version", "integrity"]},
+        "marketplaceManifest": {"const": ".claude-plugin/marketplace.json"}, "pluginManifest": {"const": ".claude-plugin/plugin.json"},
+        "pluginFullId": {"const": "design-system@qijenchen-ds"}, "sourceRepository": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
+        "missingCandidateOutcome": {"const": "external-activation-required"}
+      }
+    },
+    "providers": {"type": "array", "minItems": 2, "uniqueItems": true, "items": {"$ref": "#/$defs/provider"}}
+  },
+  "$defs": {
+    "repoPath": {"type": "string", "minLength": 1, "not": {"pattern": "^(?:/|[A-Za-z]:|.*(?:^|/)\\.\\.(?:/|$))"}},
+    "systemPaths": {
+      "type": "object", "additionalProperties": false, "required": ["darwin", "linux", "win32"],
+      "properties": {"darwin": {"type": "string", "pattern": "^/"}, "linux": {"type": "string", "pattern": "^/"}, "win32": {"type": "string", "minLength": 3}}
+    },
+    "policyTemplates": {
+      "type": "object", "additionalProperties": false, "required": ["darwin", "linux", "win32"],
+      "properties": {"darwin": {"$ref": "#/$defs/repoPath"}, "linux": {"$ref": "#/$defs/repoPath"}, "win32": {"$ref": "#/$defs/repoPath"}}
+    },
+    "effectiveState": {
+      "type": "object", "additionalProperties": false,
+      "required": ["acceptedReadbackSources", "sourceCapabilities", "requireWinningSourceIdentity", "localFileDiscoveryIsAuthoritative", "unobservableControlOutcome"],
+      "properties": {
+        "acceptedReadbackSources": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "sourceCapabilities": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}},
+        "requireWinningSourceIdentity": {"const": true}, "localFileDiscoveryIsAuthoritative": {"const": false}, "unobservableControlOutcome": {"const": "unknown"}
+      }
+    },
+    "equivalentHookDelivery": {
+      "type": "object", "additionalProperties": false, "required": ["mode", "canonicalSource", "externalActivationRequired"],
+      "properties": {
+        "mode": {"enum": ["force-enabled-release-tagged-plugin-with-installed-inventory", "deterministic-absolute-managed-bundle"]},
+        "canonicalSource": {"const": "packages/design-system/ds-canonical/hooks"}, "externalActivationRequired": {"const": true}
+      }
+    },
+    "provider": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "adapter", "compatibilityMinimumVersionPointer", "assuranceMode", "effectiveState", "systemPaths", "policyTemplates", "enforcementControls", "equivalentHookDelivery", "artifactContract"],
+      "properties": {
+        "id": {"enum": ["claude-code", "codex"]}, "adapter": {"enum": ["claude-managed-settings-v2", "codex-requirements-v2"]},
+        "compatibilityMinimumVersionPointer": {"type": "string", "pattern": "^/providers/(?:claude-code|codex)/minimumVersion$"},
+        "assuranceMode": {"const": "managed-covered-controls"}, "effectiveState": {"$ref": "#/$defs/effectiveState"},
+        "systemPaths": {"$ref": "#/$defs/systemPaths"}, "policyTemplates": {"$ref": "#/$defs/policyTemplates"},
+        "enforcementControls": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"}},
+        "equivalentHookDelivery": {"$ref": "#/$defs/equivalentHookDelivery"},
+        "artifactContract": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/repoPath"}]}
+      }
+    }
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/ci-evidence-plan-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "matrixSource", "observation", "dimensions"],
+  "properties": {
+    "$schema": {"const": "schemas/ci-evidence-plan.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "deep-audit-ci-evidence-plan"},
+    "matrixSource": {"const": "scripts/audit-coverage-matrix.mjs"},
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxAgeSeconds", "noncePattern", "noModelOverrides", "canonicalInputs", "consumerChecks"],
+      "properties": {
+        "maxAgeSeconds": {"type": "integer", "minimum": 60, "maximum": 3600},
+        "noncePattern": {"const": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+        "noModelOverrides": {"const": true},
+        "canonicalInputs": {
+          "type": "array",
+          "minItems": 12,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "path"],
+            "properties": {
+              "name": {"enum": ["inventory", "desired", "rings", "certifications", "compatibility", "issuers", "waivers", "runtimeProfile", "externalActivationRequirements", "externalActivationPolicy", "githubMutationBoundaryContract", "releaseTagAuthorizationPolicy"]},
+              "path": {"type": "string", "pattern": "^infra/governance/[A-Za-z0-9_./-]+\\.json$"}
+            }
+          }
+        },
+        "consumerChecks": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "workflow", "checkName"],
+              "properties": {
+                "id": {"const": "audit"},
+                "workflow": {"const": ".github/workflows/audit.yml"},
+                "checkName": {"const": "audit"}
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "workflow", "checkName"],
+              "properties": {
+                "id": {"const": "visual"},
+                "workflow": {"const": ".github/workflows/audit.yml"},
+                "checkName": {"const": "visual"}
+              }
+            }
+          ],
+          "items": false
+        }
+      }
+    },
+    "dimensions": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {"$ref": "#/$defs/dimension"}
+    }
+  },
+  "$defs": {
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dim", "id", "tier", "mechanism", "capability", "subject", "coverage", "requirements"],
+      "properties": {
+        "dim": {"enum": [64, 66]},
+        "id": {"enum": ["DS-DIM-064", "DS-DIM-066"]},
+        "tier": {"const": "CI-ENFORCED"},
+        "mechanism": {"type": "string", "minLength": 1},
+        "capability": {"enum": ["protected-release-propagation", "cross-repo-visual-parity"]},
+        "subject": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repositoryRole", "workflow", "checkName"],
+          "properties": {
+            "repositoryRole": {"const": "authority"},
+            "workflow": {"enum": [".github/workflows/release.yml", ".github/workflows/mirror-to-published-template.yml"]},
+            "checkName": {"enum": ["Protected release propagation", "Cross-repo visual parity"]}
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["envelope", "requiredPaths"],
+          "properties": {
+            "envelope": {"const": "frozen-rubric"},
+            "requiredPaths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_@./-]+$"}}
+          }
+        },
+        "requirements": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["active-run-head-tree-manifest", "protected-remote-head-tree", "rulesets-required-check-producer", "exact-workflow-run-identity", "immutable-release-bom-tag", "template-fleet-exact-version", "consumer-audit-visual-success"]}
+        }
+      }
+    }
+  }
+}

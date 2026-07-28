@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/runtime-conformance-profile-v4.json",
+  "title": "Provider runtime conformance profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "evidenceOutput", "timeoutMs", "maxOutputBytes", "maxEvidenceAgeSeconds", "issuerRegistryDigest", "allowedKeyIds", "requiredIssuerQuorum", "platformPolicy", "providers"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "schemaVersion": {"const": 4},
+    "evidenceOutput": {"type": "string", "pattern": "^runtime/[a-z0-9][a-z0-9-]*\\.json$"},
+    "timeoutMs": {"type": "integer", "minimum": 1000, "maximum": 60000},
+    "maxOutputBytes": {"type": "integer", "minimum": 1024, "maximum": 10485760},
+    "maxEvidenceAgeSeconds": {"type": "integer", "minimum": 300, "maximum": 604800},
+    "issuerRegistryDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "allowedKeyIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"}},
+    "requiredIssuerQuorum": {"type": "integer", "minimum": 1, "maximum": 5},
+    "platformPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nativeWindows", "windowsLinuxExecutionEnvironments", "pathClasses"],
+      "properties": {
+        "nativeWindows": {"const": "unsupported"},
+        "windowsLinuxExecutionEnvironments": {
+          "type": "array",
+          "prefixItems": [{"const": "wsl2"}, {"const": "devcontainer"}],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "pathClasses": {
+          "type": "array",
+          "prefixItems": [{"const": "no-space"}, {"const": "contains-space"}],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "adapterProviderId", "runtimeKind", "certificationSurface", "executionMode", "evidenceKind", "surfacePolicy", "executable", "distributionVersionAuthority", "versionArguments", "certificationTargets", "checks"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+          "adapterProviderId": {"type": ["string", "null"], "pattern": "^[a-z][a-z0-9-]*$"},
+          "runtimeKind": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+          "certificationSurface": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+          "executionMode": {"enum": ["local-probe", "external-attested"]},
+          "evidenceKind": {"enum": ["provider-runtime-conformance", "external-runtime-surface-conformance"]},
+          "surfacePolicy": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind"],
+                "properties": {"kind": {"const": "local-probe"}}
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind"],
+                "properties": {"kind": {"const": "inventory-repository-readback"}}
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind", "artifactName", "requiredCheckTrustSource", "requiredRulesetName", "protectedRef"],
+                "properties": {
+                  "kind": {"const": "github-protected-workflow-readback"},
+                  "artifactName": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+                  "requiredCheckTrustSource": {"const": "protected-base-workflow"},
+                  "requiredRulesetName": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"},
+                  "protectedRef": {"const": "default-branch"}
+                }
+              }
+            ]
+          },
+          "executable": {"type": ["string", "null"], "pattern": "^[a-z][a-z0-9-]*$"},
+          "distributionVersionAuthority": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind", "path", "providerId"],
+                "properties": {
+                  "kind": {"const": "provider-cli-toolchain"},
+                  "path": {"const": "infra/governance/providers/provider-cli-toolchain.json"},
+                  "providerId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind", "version"],
+                "properties": {
+                  "kind": {"const": "profile-external-certification"},
+                  "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"}
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind", "authority", "productId", "version"],
+                "properties": {
+                  "kind": {"const": "external-runtime-identity"},
+                  "authority": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$"},
+                  "productId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+                  "version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"}
+                }
+              }
+            ]
+          },
+          "versionArguments": {"type": "array", "items": {"type": "string"}},
+          "certificationTargets": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"$ref": "#/$defs/certificationTarget"}
+          },
+          "checks": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "driver", "requiresModel"],
+              "properties": {
+                "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+                "driver": {
+                  "enum": [
+                    "claude-context-fork",
+                    "claude-entitlement-readback",
+                    "claude-native-block",
+                    "claude-review-capability-probe",
+                    "codex-debug-discovery",
+                    "codex-native-hook-lifecycle",
+                    "generated-provider-adapter-block",
+                    "provider-hook-adapter",
+                    "provider-hook-runner-block",
+                    "provider-hook-runner-context",
+                    "provider-hook-runner-pass",
+                    "provider-hook-runner-stop",
+                    "external-distribution-identity",
+                    "external-hard-gate-receipt",
+                    "external-runtime-session-binding",
+                    "github-workflow-run-binding",
+                    "github-ruleset-readback"
+                  ]
+                },
+                "requiresModel": {"type": "boolean"},
+                "certificationImpact": {"enum": ["required", "capability-only"]},
+                "reviewProfileId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}
+              }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"executionMode": {"const": "local-probe"}}},
+            "then": {
+              "properties": {
+                "adapterProviderId": {"type": "string"},
+                "evidenceKind": {"const": "provider-runtime-conformance"},
+                "surfacePolicy": {"type": "object", "properties": {"kind": {"const": "local-probe"}}},
+                "executable": {"type": "string"},
+                "versionArguments": {"type": "array", "minItems": 1}
+              }
+            }
+          },
+          {
+            "if": {"properties": {"executionMode": {"const": "external-attested"}}},
+            "then": {
+              "properties": {
+                "evidenceKind": {"const": "external-runtime-surface-conformance"},
+                "executable": {"const": null},
+                "versionArguments": {"type": "array", "maxItems": 0},
+                "distributionVersionAuthority": {"type": "object", "properties": {"kind": {"const": "external-runtime-identity"}}}
+              }
+            }
+          },
+          {
+            "if": {"properties": {"executionMode": {"const": "external-attested"}, "certificationSurface": {"const": "github-actions"}}},
+            "then": {"properties": {"surfacePolicy": {"type": "object", "properties": {"kind": {"const": "github-protected-workflow-readback"}}}}}
+          },
+          {
+            "if": {"properties": {"executionMode": {"const": "external-attested"}}, "not": {"properties": {"certificationSurface": {"const": "github-actions"}}}},
+            "then": {"properties": {"surfacePolicy": {"type": "object", "properties": {"kind": {"const": "inventory-repository-readback"}}}}}
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "certificationTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "operatingSystem", "platform", "arch", "executionEnvironment", "distributionVersion", "pathClass"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "operatingSystem": {"enum": ["macos", "linux"]},
+        "platform": {"enum": ["darwin", "linux"]},
+        "arch": {"enum": ["arm64", "x64"]},
+        "executionEnvironment": {"enum": ["native", "wsl2", "devcontainer", "remote-host", "cloud-hosted", "github-hosted-runner"]},
+        "distributionVersion": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
+        "pathClass": {"enum": ["no-space", "contains-space"]}
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "operatingSystem": {"const": "macos"},
+            "platform": {"const": "darwin"},
+            "executionEnvironment": {"enum": ["native", "remote-host"]}
+          }
+        },
+        {
+          "properties": {
+            "operatingSystem": {"const": "linux"},
+            "platform": {"const": "linux"},
+            "executionEnvironment": {"enum": ["native", "wsl2", "devcontainer", "remote-host", "cloud-hosted", "github-hosted-runner"]}
+          }
+        }
+      ]
+    }
+  }
+}

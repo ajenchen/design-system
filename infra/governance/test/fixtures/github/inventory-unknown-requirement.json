@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "authority": "fixture",
+  "fleetScope": {
+    "coverage": "registered-opt-in-inventory",
+    "enrollment": "reviewed-registration-only",
+    "unregisteredDescendants": "not-covered"
+  },
+  "workflowIdentitySources": {
+    "design-system-authority": {"repositoryId": "design-system"},
+    "product-consumer": {"repositoryId": "ds-product-template"},
+    "published-template": {"repositoryId": "ds-product-template"}
+  },
+  "certificationCanaries": {
+    "product-consumer": {"repositoryId": "consumer"}
+  },
+  "repositories": [
+    {
+      "id": "consumer",
+      "github": "acme/consumer",
+      "role": "product-consumer",
+      "visibility": "private",
+      "defaultBranch": "main",
+      "desiredProfile": "product-consumer",
+      "releaseRing": "ring-canary",
+      "ownershipPolicy": "product-consumer",
+      "upgradeProtocolProfile": "new-snapshot-v2",
+      "localPathFromGovernanceRoot": ".",
+      "providerSurfacesRequired": ["ci/github-actions/moon-runtime"],
+      "consumes": ["@qijenchen/design-system", "@qijenchen/storybook-config"]
+    }
+  ],
+  "ownershipPolicies": {
+    "product-consumer": {
+      "defaultMode": "consumer-owned",
+      "rules": [
+        {"pattern": ".claude/skills/**", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": ".claude/settings.json", "mode": "three-way", "owner": "shared-governance-and-product"},
+        {"pattern": "package.json", "mode": "three-way", "owner": "shared-release-engineering"},
+        {"pattern": "package-lock.json", "mode": "three-way", "owner": "shared-release-engineering"}
+      ]
+    }
+  }
+}

@@ -1,15 +1,5 @@
 #!/bin/bash
-# Tests for check_app_shell_primary_header_consistency.sh
-#
-# Hook(PreToolUse Edit/Write):偵測 AppShell consumer 3 violations:
-#   V1 layout="primary-header" 缺 globalHeader prop
-#   V2 layout="primary-header" + 同 file 含 <SidebarHeader>(useSidebar/isMobile 豁免)
-#   V3 layout="primary-header" + 同 file 含 <SidebarFooter>(帳號家在 header 右,非 footer;無 isMobile 豁免)
-#
-# Hook 透過 stdin 讀 tool_input(INPUT=$(cat) + jq;2026-05-31 改 env→stdin 對齊 sibling helper + 讓 dispatcher 能呼叫)
-# 且需 TARGET file 真實存在於 disk(`[[ ! -f "$TARGET" ]] && exit 0`)。
-# 排除:.spec.md / *test* / app-shell.tsx 自身 / `@app-shell-primary-header-allow:` escape。
-# Violation 時 stderr「🚨 AppShell primary-header consistency violation」+ exit 2。
+# Proposed-state tests for AppShell primary-header consistency enforcement.
 
 set -u
 
@@ -18,179 +8,327 @@ HOOK="$SCRIPT_DIR/../lib/_app_shell_primary_header_consistency.sh"
 TMPDIR_TEST=$(mktemp -d)
 trap 'rm -rf "$TMPDIR_TEST"' EXIT
 
-if [ ! -x "$HOOK" ]; then chmod +x "$HOOK" 2>/dev/null || true; fi
-if [ ! -f "$HOOK" ]; then echo "FATAL: hook not found: $HOOK"; exit 1; fi
-
 PASS=0
 FAIL=0
 FAILED_TESTS=""
 
-# Helper: write file to test temp dir, run hook with that path
-run_hook_on_file() {
-  local rel="$1"; local content="$2"
+run_hook() {
+  local rel="$1" tool="$2" proposed="$3" disk_mode="${4:-clean}" state_mode="${5:-valid}"
   local fp="$TMPDIR_TEST/$rel"
   mkdir -p "$(dirname "$fp")"
-  printf '%s' "$content" > "$fp"
+  case "$disk_mode" in
+    clean) printf '%s' '<AppShell layout="primary-sidebar" />' >"$fp" ;;
+    violating) printf '%s' '<AppShell layout="primary-header" />' >"$fp" ;;
+    absent) rm -f "$fp" ;;
+  esac
+
   local payload
-  payload=$(jq -n --arg fp "$fp" --arg tn "Edit" \
-    '{tool_name: $tn, tool_input: {file_path: $fp, new_string: ""}}')
-  STDOUT=$(mktemp); STDERR=$(mktemp)
+  case "$state_mode" in
+    valid)
+      payload=$(jq -n --arg fp "$fp" --arg rel "$rel" --arg tool "$tool" --arg content "$proposed" \
+        '{tool_name:$tool,tool_input:{file_path:$fp,new_string:"raw-partial-must-not-win",governance_write_state:{schemaVersion:1,path:$rel,kind:"text",content:$content}}}')
+      ;;
+    deleted)
+      payload=$(jq -n --arg fp "$fp" --arg rel "$rel" --arg tool "$tool" \
+        '{tool_name:$tool,tool_input:{file_path:$fp,governance_write_state:{schemaVersion:1,path:$rel,kind:"deleted"}}}')
+      ;;
+    missing)
+      payload=$(jq -n --arg fp "$fp" --arg tool "$tool" \
+        '{tool_name:$tool,tool_input:{file_path:$fp}}')
+      ;;
+    malformed)
+      payload=$(jq -n --arg fp "$fp" --arg tool "$tool" \
+        '{tool_name:$tool,tool_input:{file_path:$fp,governance_write_state:{schemaVersion:1,path:null,kind:"text",content:3}}}')
+      ;;
+    mismatch)
+      payload=$(jq -n --arg fp "$fp" --arg tool "$tool" --arg content "$proposed" \
+        '{tool_name:$tool,tool_input:{file_path:$fp,governance_write_state:{schemaVersion:1,path:"src/other.tsx",kind:"text",content:$content}}}')
+      ;;
+  esac
+
+  STDOUT_FILE=$(mktemp)
+  STDERR_FILE=$(mktemp)
   set +e
-  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  printf '%s' "$payload" \
+    | GOVERNANCE_WRITE_STATE_TRUST=runner-v1 bash "$HOOK" >"$STDOUT_FILE" 2>"$STDERR_FILE"
   EXIT=$?
   set -e
-  STDERR_TEXT=$(cat "$STDERR")
-  rm -f "$STDOUT" "$STDERR"
+  STDOUT_TEXT=$(cat "$STDOUT_FILE")
+  STDERR_TEXT=$(cat "$STDERR_FILE")
+  rm -f "$STDOUT_FILE" "$STDERR_FILE"
 }
 
-# Helper: run with arbitrary path (non-existent) for skip tests
-run_hook_no_file() {
-  local fp="$1"; local tool="${2:-Edit}"
+run_without_trust() {
+  local rel="$1"
+  local fp="$TMPDIR_TEST/$rel"
   local payload
-  payload=$(jq -n --arg fp "$fp" --arg tn "$tool" \
-    '{tool_name: $tn, tool_input: {file_path: $fp, new_string: ""}}')
-  STDOUT=$(mktemp); STDERR=$(mktemp)
+  payload=$(jq -n --arg fp "$fp" '{tool_name:"Edit",tool_input:{file_path:$fp}}')
+  STDOUT_FILE=$(mktemp)
+  STDERR_FILE=$(mktemp)
   set +e
-  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  printf '%s' "$payload" \
+    | env -u GOVERNANCE_WRITE_STATE_TRUST bash "$HOOK" >"$STDOUT_FILE" 2>"$STDERR_FILE"
   EXIT=$?
   set -e
-  STDERR_TEXT=$(cat "$STDERR")
-  rm -f "$STDOUT" "$STDERR"
+  STDOUT_TEXT=$(cat "$STDOUT_FILE")
+  STDERR_TEXT=$(cat "$STDERR_FILE")
+  rm -f "$STDOUT_FILE" "$STDERR_FILE"
 }
 
 expect_pass_silent() {
   local name="$1"
-  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ]; then
-    echo "  PASS  $name"; PASS=$((PASS+1))
+  if [ "$EXIT" -eq 0 ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ]; then
+    PASS=$((PASS + 1)); echo "  PASS  $name"
   else
-    echo "  FAIL  $name (expected silent, exit=$EXIT, stderr non-empty=$([ -n "$STDERR_TEXT" ] && echo yes))"
-    echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
-    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+    FAIL=$((FAIL + 1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+    echo "  FAIL  $name (exit=$EXIT stdout=${#STDOUT_TEXT} stderr=${#STDERR_TEXT})"
+    printf '%s\n' "$STDERR_TEXT" | sed 's/^/    /'
   fi
 }
 
 expect_block() {
-  local name="$1"; local needle="$2"
-  if [ "$EXIT" = "2" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
-    echo "  PASS  $name"; PASS=$((PASS+1))
+  local name="$1" needle="$2"
+  if [ "$EXIT" -eq 2 ] && [ -z "$STDOUT_TEXT" ] && [ -n "$STDERR_TEXT" ] \
+    && printf '%s' "$STDERR_TEXT" | grep -qF "$needle" \
+    && ! printf '%s' "$STDERR_TEXT" | grep -Eq 'command not found|No such file or directory'; then
+    PASS=$((PASS + 1)); echo "  PASS  $name"
   else
-    echo "  FAIL  $name (expected exit=2 + needle '$needle', got exit $EXIT)"
-    echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
-    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+    FAIL=$((FAIL + 1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+    echo "  FAIL  $name (expected stderr-only rc2 + '$needle'; got rc=$EXIT)"
+    printf '%s\n' "$STDERR_TEXT" | sed 's/^/    /'
   fi
 }
 
-echo "=== check_app_shell_primary_header_consistency tests ==="
+expect_integrity() {
+  local name="$1" needle="$2"
+  if [ "$EXIT" -eq 70 ] && [ -z "$STDOUT_TEXT" ] && [ -n "$STDERR_TEXT" ] \
+    && printf '%s' "$STDERR_TEXT" | grep -qF "$needle"; then
+    PASS=$((PASS + 1)); echo "  PASS  $name"
+  else
+    FAIL=$((FAIL + 1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+    echo "  FAIL  $name (expected stderr-only rc70 + '$needle'; got rc=$EXIT)"
+    printf '%s\n' "$STDERR_TEXT" | sed 's/^/    /'
+  fi
+}
 
-# 1. Non-tsx file → skip
-run_hook_no_file "$TMPDIR_TEST/foo.md" "Edit"
-expect_pass_silent "1. non-tsx file → skip"
+echo "=== check_app_shell_primary_header_consistency proposed-state tests ==="
 
-# 2. Non-Edit/Write tool → skip
-run_hook_no_file "$TMPDIR_TEST/foo.tsx" "Read"
-expect_pass_silent "2. Read tool → skip"
-
-# 3. layout="primary-header" with globalHeader + no SidebarHeader → silent (compliant)
-run_hook_on_file "src/app.tsx" '
+COMPLIANT='
 <AppShell layout="primary-header" globalHeader={<GlobalHeader />}>
   <Sidebar />
 </AppShell>
 '
-expect_pass_silent "3. primary-header + globalHeader + no SidebarHeader → silent"
-
-# 4. layout="primary-header" missing globalHeader → block (V1)
-run_hook_on_file "src/missing-gh.tsx" '
+MISSING_GLOBAL='
 <AppShell layout="primary-header">
   <Sidebar />
 </AppShell>
 '
-expect_block "4. V1 missing globalHeader → block" "V1 缺 globalHeader prop"
-
-# 5. layout="primary-header" + <SidebarHeader> with globalHeader → V2 only block
-run_hook_on_file "src/dup-header.tsx" '
+DUPLICATE_HEADER='
 <AppShell layout="primary-header" globalHeader={<GH />}>
-  <Sidebar>
-    <SidebarHeader>brand</SidebarHeader>
-  </Sidebar>
+  <Sidebar><SidebarHeader>brand</SidebarHeader></Sidebar>
 </AppShell>
 '
-expect_block "5. V2 SidebarHeader duplicate → block" "V2 Sidebar 內含 SidebarHeader"
-
-# 6. Escape allowlist → silent
-run_hook_on_file "src/escape.tsx" '// @app-shell-primary-header-allow: legacy migration in progress
-<AppShell layout="primary-header">
-  <SidebarHeader>brand</SidebarHeader>
-</AppShell>
-'
-expect_pass_silent "6. escape allowlist → silent"
-
-# 7. No primary-header layout at all → skip
-run_hook_on_file "src/other.tsx" '
-<AppShell layout="primary-sidebar">
-  <Sidebar />
-</AppShell>
-'
-expect_pass_silent "7. layout != primary-header → skip"
-
-# 8. responsive mobile-aware fork(useSidebar/isMobile + SidebarHeader + globalHeader)→ silent
-#    (2026-06-18 精修豁免:mobile-only 補品牌不是 desktop 重複)
-run_hook_on_file "src/responsive.tsx" '
-const { isMobile } = useSidebar()
+FOOTER='
 <AppShell layout="primary-header" globalHeader={<GH />}>
-  <Sidebar>
+  <Sidebar><SidebarFooter>account</SidebarFooter></Sidebar>
+</AppShell>
+'
+
+run_hook "src/app.tsx" Write "$COMPLIANT"
+expect_pass_silent "1. proposed Write compliant primary-header → silent"
+
+run_hook "src/missing-gh.tsx" Edit "$MISSING_GLOBAL" clean
+expect_block "2. proposed Edit violation blocks although disk is clean" "V1 缺 globalHeader prop"
+
+run_hook "src/new-app.tsx" Write "$MISSING_GLOBAL" absent
+expect_block "3. new-file proposed Write cannot bypass V1" "V1 缺 globalHeader prop"
+
+run_hook "src/dup-header.tsx" MultiEdit "$DUPLICATE_HEADER"
+expect_block "4. proposed MultiEdit duplicate SidebarHeader blocks" "V2 Sidebar 內含 SidebarHeader"
+
+run_hook "src/footer.tsx" Write "$FOOTER"
+expect_block "5. proposed SidebarFooter blocks" "V3 Sidebar 內含 SidebarFooter"
+
+run_hook "src/escape.tsx" Edit '// @app-shell-primary-header-allow: migration
+<AppShell layout="primary-header"><SidebarHeader /></AppShell>'
+expect_pass_silent "6. proposed escape marker → silent"
+
+run_hook "src/responsive.tsx" Edit '
+export const Responsive = () => {
+  const { isMobile } = useSidebar()
+  return <AppShell layout="primary-header" globalHeader={<GH />}>
     {isMobile && <SidebarHeader>brand</SidebarHeader>}
-  </Sidebar>
-</AppShell>
-'
-expect_pass_silent "8. responsive isMobile + SidebarHeader → silent(mobile-only 補品牌豁免)"
+  </AppShell>
+}'
+expect_pass_silent "7. proposed responsive mobile fork remains allowed"
 
-# 9. layout="primary-header" + <SidebarFooter> → block (V3)
-#    (2026-06-18 beta.74:primary-header 帳號家在 header 右,sidebar footer 是 primary-sidebar 慣例;無 isMobile 豁免)
-run_hook_on_file "src/ph-footer.tsx" '
+run_hook "src/single-quote.tsx" Edit "
+<AppShell layout={'primary-header'}><Sidebar /></AppShell>"
+expect_block "8. single-quote JSX proposed content blocks V1" "V1 缺 globalHeader prop"
+
+run_hook "src/disk-violates.tsx" Write "$COMPLIANT" violating
+expect_pass_silent "9. trusted compliant proposed state wins over violating disk"
+
+run_hook "src/deleted.tsx" Edit "" clean deleted
+expect_pass_silent "10. trusted deletion has no post-write violation"
+
+run_hook "src/missing-state.tsx" Edit "$COMPLIANT" clean missing
+expect_integrity "11. runner marker without proposed state is integrity failure" "trusted proposed write state 缺失或 malformed"
+
+run_hook "src/malformed-state.tsx" Edit "$COMPLIANT" clean malformed
+expect_integrity "12. malformed proposed state is integrity failure" "trusted proposed write state 缺失或 malformed"
+
+run_hook "src/mismatch.tsx" Edit "$COMPLIANT" clean mismatch
+expect_integrity "13. proposed state path mismatch is integrity failure" "與 hook target 不相符"
+
+run_without_trust "src/app.tsx"
+expect_integrity "14. governed mutation without runner trust is integrity failure" "缺少 runner-v1 proposed state"
+
+run_hook "README.md" Edit "$MISSING_GLOBAL" absent missing
+expect_pass_silent "15. non-tsx path skips before proposed-state contract"
+
+run_hook "src/read.tsx" Read "$MISSING_GLOBAL" absent missing
+expect_pass_silent "16. non-write tool skips before proposed-state contract"
+
+run_hook "src/prefix.tsx" Write '
 <AppShell layout="primary-header" globalHeader={<GH />}>
-  <Sidebar>
-    <SidebarFooter>account</SidebarFooter>
-  </Sidebar>
-</AppShell>
-'
-expect_block "9. V3 primary-header + SidebarFooter → block" "V3 Sidebar 內含 SidebarFooter"
+  <SidebarFooterPanel>not SidebarFooter</SidebarFooterPanel>
+</AppShell>'
+expect_pass_silent "17. prefix-extended component remains non-match"
 
-# 10. layout="primary-header" + mobile header-right account(SidebarHeader 補品牌+帳號,無 SidebarFooter)→ silent
-#     (2026-06-18:帳號鏡像 globalHeader 到 Sheet header 右,無 footer = 合規;V2 isMobile 豁免 + V3 無 footer)
-run_hook_on_file "src/ph-header-account.tsx" '
-const { isMobile } = useSidebar()
-<AppShell layout="primary-header" globalHeader={<GH />}>
-  <Sidebar>
-    {isMobile && <SidebarHeader><WorkspaceBrand /><AccountMenu /></SidebarHeader>}
-  </Sidebar>
-</AppShell>
-'
-expect_pass_silent "10. primary-header + header-right account, no footer → silent"
+run_hook "src/whitespace.tsx" Edit '
+<AppShell layout = "primary-header"><Sidebar /></AppShell>'
+expect_block "18. JSX whitespace around layout equals cannot bypass V1" "V1 缺 globalHeader prop"
 
-# 11. single-quote JSX layout={'primary-header'} missing globalHeader → block (V1)
-#     (2026-06-18 beta.74 regression:octal \047 gate bug → 單引號 JSX 整個 hook 靜默 skip;fix 後三種引號形式皆偵測)
-run_hook_on_file "src/single-quote.tsx" "
-<AppShell layout={'primary-header'}>
+run_hook "src/multiline.tsx" Edit '
+<AppShell
+  layout = {
+    "primary-header"
+  }
+>
   <Sidebar />
-</AppShell>
-"
-expect_block "11. single-quote layout JSX gate (octal fix regression) → V1 block" "V1 缺 globalHeader prop"
+</AppShell>'
+expect_block "19. multiline literal layout cannot bypass V1" "V1 缺 globalHeader prop"
 
-# 12. prefix-extended component name <SidebarFooterPanel> with primary-header → silent (tag-boundary guard, V3 no false-positive)
-#     (2026-06-18 beta.74 audit P2#4:`<SidebarFooter` 不該 match `<SidebarFooterPanel`)
-run_hook_on_file "src/prefix-extended.tsx" '
+run_hook "src/comment-decoy.tsx" Edit '
+// globalHeader = <Fake />
+<AppShell layout="primary-header"><Sidebar /></AppShell>'
+expect_block "20. comment globalHeader decoy cannot satisfy V1" "V1 缺 globalHeader prop"
+
+run_hook "src/instance-decoy.tsx" Edit '
+<>
+  <AppShell layout="primary-header"><Sidebar /></AppShell>
+  <AppShell layout="primary-header" globalHeader={<GH />}><Sidebar /></AppShell>
+</>'
+expect_block "21. another compliant AppShell cannot hide violating instance" "V1 缺 globalHeader prop"
+
+run_hook "src/mobile-decoy.tsx" Edit '
+// isMobile
 <AppShell layout="primary-header" globalHeader={<GH />}>
-  <Sidebar>
-    <SidebarFooterPanel>not the DS SidebarFooter</SidebarFooterPanel>
-  </Sidebar>
-</AppShell>
-'
-expect_pass_silent "12. prefix-extended <SidebarFooterPanel> → silent(V3 tag-boundary 不誤觸)"
+  <SidebarHeader>unguarded brand</SidebarHeader>
+</AppShell>'
+expect_block "22. isMobile comment cannot exempt unguarded SidebarHeader" "V2 Sidebar 內含 SidebarHeader"
 
-echo ""
-echo "=== Summary ==="
+run_hook "src/malformed-tsx.tsx" Edit '<AppShell layout="primary-header">' clean
+expect_integrity "23. malformed proposed TSX is integrity failure" "parser unavailable or proposed content malformed"
+
+run_hook "src/empty-escape.tsx" Edit '// @app-shell-primary-header-allow:
+<AppShell layout="primary-header"><Sidebar /></AppShell>'
+expect_block "24. empty escape rationale cannot bypass" "V1 缺 globalHeader prop"
+
+run_hook "src/late-escape.tsx" Edit 'const ready = true
+// @app-shell-primary-header-allow: too late
+export const Example = () => <AppShell layout="primary-header"><Sidebar /></AppShell>'
+expect_block "25. non-leading escape cannot bypass" "V1 缺 globalHeader prop"
+
+run_hook "src/string-escape.tsx" Edit 'const decoy = `// @app-shell-primary-header-allow: template decoy`
+export const Example = () => <AppShell layout="primary-header"><Sidebar /></AppShell>'
+expect_block "26. template escape decoy cannot bypass" "V1 缺 globalHeader prop"
+
+run_hook "src/block-escape.tsx" Edit '/* // @app-shell-primary-header-allow: block decoy */
+<AppShell layout="primary-header"><Sidebar /></AppShell>'
+expect_block "27. block-comment escape decoy cannot bypass" "V1 缺 globalHeader prop"
+
+run_hook "src/mobile-ternary.tsx" Edit '
+export const Responsive = () => {
+  const { isMobile } = useSidebar()
+  return <AppShell layout="primary-header" globalHeader={<GH />}>
+    {isMobile ? <SidebarHeader>brand</SidebarHeader> : null}
+  </AppShell>
+}'
+expect_pass_silent "28. positive isMobile ternary true branch is exempt"
+
+run_hook "src/mobile-parentheses.tsx" Edit '
+export const Responsive = () => {
+  const { isMobile } = useSidebar()
+  return <AppShell layout="primary-header" globalHeader={<GH />}>
+    {((isMobile)) && <SidebarHeader>brand</SidebarHeader>}
+  </AppShell>
+}'
+expect_pass_silent "29. safely parenthesized positive isMobile RHS is exempt"
+
+run_hook "src/mobile-negated.tsx" Edit '
+<AppShell layout="primary-header" globalHeader={<GH />}>
+  {!isMobile && <SidebarHeader>desktop brand</SidebarHeader>}
+</AppShell>'
+expect_block "30. negated isMobile branch is not exempt" "V2 Sidebar 內含 SidebarHeader"
+
+run_hook "src/mobile-false-branch.tsx" Edit '
+<AppShell layout="primary-header" globalHeader={<GH />}>
+  {isMobile ? null : <SidebarHeader>desktop brand</SidebarHeader>}
+</AppShell>'
+expect_block "31. isMobile false branch is not exempt" "V2 Sidebar 內含 SidebarHeader"
+
+run_hook "src/mobile-or.tsx" Edit '
+<AppShell layout="primary-header" globalHeader={<GH />}>
+  {isMobile || <SidebarHeader>desktop brand</SidebarHeader>}
+</AppShell>'
+expect_block "32. OR expression is not a positive mobile guard" "V2 Sidebar 內含 SidebarHeader"
+
+run_hook "src/nested-boundary.tsx" Edit '
+<AppShell layout="primary-header" globalHeader={<GH />}>
+  <AppShell layout="primary-sidebar">
+    <SidebarHeader>nested primary-sidebar brand</SidebarHeader>
+    <SidebarFooter>nested account</SidebarFooter>
+  </AppShell>
+</AppShell>'
+expect_pass_silent "33. outer AppShell does not consume nested AppShell descendants"
+
+run_hook "src/nested-own-violation.tsx" Edit '
+<AppShell layout="primary-header" globalHeader={<GH />}>
+  <AppShell layout="primary-header">
+    <Sidebar />
+  </AppShell>
+</AppShell>'
+expect_block "34. nested primary-header AppShell is inspected independently" "V1 缺 globalHeader prop"
+
+run_hook "src/template-layout.tsx" Edit '
+<AppShell layout={`primary-header`}><Sidebar /></AppShell>'
+expect_block "35. no-substitution template layout is statically enforced" "V1 缺 globalHeader prop"
+
+run_hook "src/concat-layout.tsx" Edit '
+<AppShell layout={"primary-" + "header"}><Sidebar /></AppShell>'
+expect_block "36. simple static string concat layout is enforced" "V1 缺 globalHeader prop"
+
+run_hook "src/dynamic-layout.tsx" Edit '
+<AppShell layout={mode}>
+  <SidebarHeader>cannot infer layout</SidebarHeader>
+</AppShell>'
+expect_pass_silent "37. dynamic layout is not misclassified"
+
+for missing_value in 'null' 'undefined' 'false' 'void 0'; do
+  run_hook "src/global-missing-${missing_value// /-}.tsx" Edit "
+<AppShell layout=\"primary-header\" globalHeader={$missing_value}><Sidebar /></AppShell>"
+  expect_block "38. explicit globalHeader={$missing_value} counts as missing" "V1 缺 globalHeader prop"
+done
+
+run_hook "src/dynamic-global.tsx" Edit '
+<AppShell layout="primary-header" globalHeader={resolvedHeader}><Sidebar /></AppShell>'
+expect_pass_silent "39. dynamic non-obviously-empty globalHeader is not misclassified"
+
+echo
 echo "Passed: $PASS / $((PASS + FAIL))"
 if [ "$FAIL" -gt 0 ]; then
-  echo "Failed:$FAILED_TESTS"
+  printf 'Failed:%b\n' "$FAILED_TESTS"
   exit 1
 fi

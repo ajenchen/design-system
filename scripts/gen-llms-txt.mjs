@@ -17,6 +17,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from '
 import { join, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import yaml from 'js-yaml'
+import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = join(__dirname, '..')
@@ -80,7 +81,7 @@ for (const s of parsed) {
   const cur = byName.get(s.name)
   if (!cur || richness(s) > richness(cur)) byName.set(s.name, s)
 }
-const specs = [...byName.values()].sort((a, b) => a.name.localeCompare(b.name))
+const specs = [...byName.values()].sort((a, b) => compareUtf8Bytes(a.name, b.name))
 
 // ── 3. URL + source 路徑(deterministic,不讀 storybook index → generator 純 spec-frontmatter 驅動,
 //        --check 任何順序/無 storybook 也能跑;rendered 看 Storybook、AI 讀 node_modules src 範例)──

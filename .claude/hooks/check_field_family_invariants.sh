@@ -5,14 +5,14 @@
 #   A.1 naked row-mode propagation(原 check_naked_row_mode_propagation,P0 BLOCKER)
 #   A.2 FieldControlGroup wrapper direct child(原 check_field_control_group_direct_child,P1 WARN)
 #   A.3 Field state ring SSOT(原 check_field_state_token_consume 3 sub-rules,P0 BLOCKER)
-#   A.4 disabled placeholder color(原 check_disabled_placeholder_color,P1 stderr only)
+#   A.4 disabled placeholder color(原 check_disabled_placeholder_color,P1 context)
 #   A.5 _Group child fieldCtx.id 隔離(2026-05-31 折入,M4 AR34 regression detector,P0 BLOCKER)
 #   A.6 空值顯示 SSOT(2026-07-08 user 拍板半形 hyphen,P0 BLOCKER)
 #
 # Why merge:皆 Field 家族 invariant,共用 INPUT parsing + Edit/Write filter pattern,
 #   分散在 4 個 hook 是「散裝 SSOT」(M17 + Anthropic ≤ 15 hook best practice 違反)。
 #
-# Exit code precedence:BLOCK(2)> WARN(1)> INFO(0)。每 rule 可獨立觸發,worst 勝。
+# Output precedence:BLOCK(2,stderr)> WARN(0,單一 governanceContext)> silent(0)。
 #
 # Per-rule allowlist(各自獨立):
 #   A.1: `// @naked-row-mode-allow: <reason>`
@@ -26,9 +26,70 @@ source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -uo pipefail
 
-INPUT=$(cat)
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""')
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
+_HOOK_CONTEXT_EVENT="PreToolUse"
+_HOOK_OUTPUT_CAPTURE=$(mktemp "${TMPDIR:-/tmp}/check-field-family-invariants.XXXXXX") || {
+  printf 'GOVERNANCE_INTEGRITY: field family invariants output capture unavailable\n' >&2
+  exit 70
+}
+exec 3>&1 4>&2
+exec >"$_HOOK_OUTPUT_CAPTURE" 2>&1
+
+_finalize_hook_output() {
+  _hook_rc=$?
+  trap - EXIT
+  exec 1>&3 2>&4
+  _hook_output=$(cat "$_HOOK_OUTPUT_CAPTURE" 2>/dev/null || true)
+  rm -f "$_HOOK_OUTPUT_CAPTURE" 2>/dev/null || true
+
+  case "$_hook_rc" in
+    0)
+      [ -z "$_hook_output" ] && exit 0
+      if ! jq -cn \
+        --arg event "$_HOOK_CONTEXT_EVENT" \
+        --arg message "$_hook_output" \
+        '{governanceContext:{hookEventName:$event,message:$message}}'; then
+        printf 'GOVERNANCE_INTEGRITY: field family invariants warning envelope encoding failed\n' >&2
+        exit 70
+      fi
+      exit 0
+      ;;
+    2)
+      if grep -q 'GOVERNANCE_INTEGRITY:' <<<"$_hook_output"; then
+        printf '%s\n' "$_hook_output" >&2
+        exit 70
+      elif [ -n "$_hook_output" ]; then
+        printf '%s\n' "$_hook_output" >&2
+      else
+        printf 'field family invariants hook blocked without diagnostic\n' >&2
+      fi
+      exit 2
+      ;;
+    70)
+      if [ -n "$_hook_output" ]; then
+        printf '%s\n' "$_hook_output" >&2
+      else
+        printf 'GOVERNANCE_INTEGRITY: field family invariants failed without diagnostic\n' >&2
+      fi
+      exit 70
+      ;;
+    *)
+      printf 'GOVERNANCE_INTEGRITY: field family invariants undefined exit code %s\n' "$_hook_rc" >&2
+      [ -n "$_hook_output" ] && printf '%s\n' "$_hook_output" >&2
+      exit 70
+      ;;
+  esac
+}
+trap _finalize_hook_output EXIT
+
+source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
+  exit 70
+}
+governance_hook_load_input
+TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'field family tool extraction failed'
+FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'field family path extraction failed'
 
 # Tool filter — 只 Edit/Write/MultiEdit 跑
 case "$TOOL" in
@@ -44,20 +105,26 @@ esac
 
 # 讀 merged content(舊檔 + 新 edit 拼起)— A.1 / A.3 需要整檔判 naked variant 存在性
 FILE_CONTENT=""
-if [ -f "$FILE_PATH" ]; then
-  FILE_CONTENT=$(cat "$FILE_PATH")
+if [ -e "$FILE_PATH" ] || [ -L "$FILE_PATH" ]; then
+  FILE_PATH=$(governance_hook_project_file_path "$FILE_PATH" 2>/dev/null) \
+    || governance_hook_integrity_fail 'field family target escapes the project or crosses a symlink'
+  if [ -L "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ] || [ ! -r "$FILE_PATH" ]; then
+    governance_hook_integrity_fail 'field family target is unavailable or unsafe'
+  fi
+  FILE_CONTENT=$(cat "$FILE_PATH" 2>/dev/null) \
+    || governance_hook_integrity_fail 'field family target read failed'
 fi
-NEW_CONTENT=$(echo "$INPUT" | jq -r '
+NEW_CONTENT=$(printf '%s' "$INPUT" | jq -r '
   (.tool_input.content // "") + "\n" +
   (.tool_input.new_string // "") + "\n" +
   ([.tool_input.edits[]? | .new_string] | join("\n"))
-' 2>/dev/null || echo "")
+' 2>/dev/null) || governance_hook_integrity_fail 'field family edit payload extraction failed'
 
 # A.2 / A.4 只看 NEW_CONTENT(diff-level signal),A.1 / A.3 看 MERGED
 MERGED_CONTENT="${FILE_CONTENT}
 ${NEW_CONTENT}"
 
-[ -z "${MERGED_CONTENT//[[:space:]]/}" ] && exit 0
+grep -q '[^[:space:]]' <<<"$MERGED_CONTENT" || exit 0
 
 WORST=0
 record_worst() { local lvl=$1; [ "$lvl" -gt "$WORST" ] && WORST=$lvl; }
@@ -68,10 +135,10 @@ case "$FILE_PATH" in
     case "$FILE_PATH" in
       */field-wrapper.tsx|*/textarea.tsx) ;; # SSOT host skip
       *)
-        if ! echo "$MERGED_CONTENT" | grep -q '@naked-row-mode-allow' \
+        if ! grep -q '@naked-row-mode-allow' <<<"$MERGED_CONTENT" \
            && echo "$MERGED_CONTENT" | grep -E "variant:\s*['\"]naked['\"]|variant=\{?['\"]naked['\"]" >/dev/null \
            && echo "$MERGED_CONTENT" | tr '\n' ' ' | grep -E "(inline-flex|flex)[^\"'\`]*items-center" >/dev/null \
-           && ! echo "$MERGED_CONTENT" | grep -q "nakedCellRowModeAlign"; then
+           && ! grep -q "nakedCellRowModeAlign" <<<"$MERGED_CONTENT"; then
           cat >&2 <<EOF
 
 ┄┄┄ A.1 check_field_family_invariants — naked row-mode propagation BLOCKER ┄┄┄
@@ -99,8 +166,8 @@ esac
 # ── A.2 FieldControlGroup wrapper direct child(P1 WARN)────────────────────────
 case "$FILE_PATH" in
   *.tsx)
-    if echo "$NEW_CONTENT" | grep -q '<FieldControlGroup' \
-       && ! echo "$NEW_CONTENT" | grep -q '@fcg-wrapper-allow'; then
+    if grep -q '<FieldControlGroup' <<<"$NEW_CONTENT" \
+       && ! grep -q '@fcg-wrapper-allow' <<<"$NEW_CONTENT"; then
       SUSPECT=$(printf '%s' "$NEW_CONTENT" | awk '
         /<FieldControlGroup/ { inFCG=1; next }
         /<\/FieldControlGroup>/ { inFCG=0; next }
@@ -123,7 +190,6 @@ ${SUSPECT}
   3. wrapper 用 \`display:contents\` / 加 \`// @fcg-wrapper-allow: <reason>\`
 
 EOF
-        record_worst 1
       fi
     fi
     ;;
@@ -135,7 +201,7 @@ case "$FILE_PATH" in
     case "$FILE_PATH" in
       */field-wrapper.tsx|*/textarea.tsx|*.stories.tsx|*.test.*|*.spec.tsx) ;; # SSOT/test skip
       *)
-        if ! echo "$NEW_CONTENT" | grep -q '@field-state-ring-allow'; then
+        if ! grep -q '@field-state-ring-allow' <<<"$NEW_CONTENT"; then
           # A.3.1 舊 box-shadow inset
           if echo "$NEW_CONTENT" | grep -E "(hover|focus-within|data-\[state=open\]):shadow-\[inset" >/dev/null; then
             cat >&2 <<'EOF'
@@ -189,8 +255,8 @@ EOF
     ;;
 esac
 
-# ── A.4 disabled placeholder color(P1 stderr,exit 0 不 block)──────────────────
-if ! echo "$NEW_CONTENT" | grep -q '@disabled-color-allow'; then
+# ── A.4 disabled placeholder color(P1 context,exit 0 不 block)─────────────────
+if ! grep -q '@disabled-color-allow' <<<"$NEW_CONTENT"; then
   SUSPECT_DP=""
   if echo "$NEW_CONTENT" | grep -E "placeholder:text-fg-muted" >/dev/null \
      && ! echo "$NEW_CONTENT" | grep -E "(disabled:placeholder:text-fg-disabled|group-data-\[field-mode=disabled\].*placeholder:text-fg-disabled|resolvedMode\s*===\s*'disabled'.*text-fg-disabled)" >/dev/null; then
@@ -212,7 +278,7 @@ ${SUSPECT_DP}
 例外:行尾 \`// @disabled-color-allow: <reason>\`
 
 EOF
-    # A.4 原 hook exit 0(stderr only),保持向後兼容不升 WORST
+    # A.4 維持非阻擋 warning,由最外層聚合成 governanceContext。
   fi
 fi
 
@@ -224,10 +290,10 @@ fi
 #   (3) 缺 `insideGroup ? generatedId` / `inGroup ? generatedId` group guard
 case "$FILE_PATH" in
   *components/*.tsx)
-    if ! echo "$MERGED_CONTENT" | grep -q '@group-fieldctx-allow' \
-       && echo "$MERGED_CONTENT" | grep -qE 'useContext\([A-Za-z_]*GroupContext\)' \
-       && echo "$MERGED_CONTENT" | grep -qE 'idProp[[:space:]]*\?\?[[:space:]]*fieldCtx\?\.id[[:space:]]*\?\?[[:space:]]*generatedId' \
-       && ! echo "$MERGED_CONTENT" | grep -qE '(insideGroup|inGroup)[[:space:]]*\?[[:space:]]*generatedId'; then
+    if ! grep -q '@group-fieldctx-allow' <<<"$MERGED_CONTENT" \
+       && grep -qE 'useContext\([A-Za-z_]*GroupContext\)' <<<"$MERGED_CONTENT" \
+       && grep -qE 'idProp[[:space:]]*\?\?[[:space:]]*fieldCtx\?\.id[[:space:]]*\?\?[[:space:]]*generatedId' <<<"$MERGED_CONTENT" \
+       && ! grep -qE '(insideGroup|inGroup)[[:space:]]*\?[[:space:]]*generatedId' <<<"$MERGED_CONTENT"; then
       cat >&2 <<EOF
 
 ┄┄┄ A.5 check_field_family_invariants — _Group child fieldCtx.id 隔離 BLOCKER ┄┄┄
@@ -258,7 +324,7 @@ esac
 #   A.6.2 components/ tsx display 路徑 hardcode 全形 em dash `'—'`/`"—"`(U+2014)字面。
 # M7 broad-vs-narrow:spec wording 廣(「禁 hardcode 空值符號」);hook 取「quoted em dash 字面」
 #   高信號 subset + owner skip + comment 剝離 + `@empty-display-allow` escape,零誤判導向。
-if ! echo "$NEW_CONTENT" | grep -q '@empty-display-allow'; then
+if ! grep -q '@empty-display-allow' <<<"$NEW_CONTENT"; then
   # A.6.1 非 owner 檔 import EMPTY_DISPLAY 常數(剝離註解行)
   case "$FILE_PATH" in
     */field-context.ts|*/field-wrapper.tsx) ;; # SSOT owner(定義 + 分流 hook)skip

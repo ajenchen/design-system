@@ -1,0 +1,6 @@
+{
+  "GET /repos/acme/consumer": {"response": {"full_name": "acme/consumer", "default_branch": "main", "visibility": "private"}},
+  "GET /repos/acme/consumer/commits/main": {"response": {"sha": "2222222222222222222222222222222222222222", "commit": {"committer": {"date": "2026-07-19T23:00:00Z"}}}},
+  "GET /repos/acme/consumer/actions/permissions/workflow": {"response": {"default_workflow_permissions": "read", "can_approve_pull_request_reviews": true}},
+  "GET /repos/acme/consumer/rulesets?per_page=100": {"error": "HTTP 503 upstream unavailable"}
+}

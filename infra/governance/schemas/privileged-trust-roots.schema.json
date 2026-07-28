@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/privileged-trust-roots-v2.json",
+  "title": "Privileged executable-closure trust policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "repository", "algorithm", "externalActivationPolicyDigest", "authorizationProfileId", "authorizationProfileDigest", "maxAuthorizationTtlMinutes", "clockSkewSeconds", "authorizationDirectory", "issuerRegistryDigest", "allowedKeyIds", "trustRootQuorum", "bootstrap", "protectedPaths", "protectedPrefixes"],
+  "properties": {
+    "$schema": {"const": "schemas/privileged-trust-roots.schema.json"},
+    "schemaVersion": {"const": 2},
+    "repository": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
+    "algorithm": {"const": "ed25519"},
+    "externalActivationPolicyDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "authorizationProfileId": {
+      "enum": [
+        "PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM",
+        "MAXIMUM_ASSURANCE_MULTI_CUSTODIAN_WORM"
+      ]
+    },
+    "authorizationProfileDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "maxAuthorizationTtlMinutes": {"type": "integer", "minimum": 1, "maximum": 1440},
+    "clockSkewSeconds": {"type": "integer", "minimum": 0, "maximum": 300},
+    "authorizationDirectory": {"type": "string", "minLength": 1},
+    "issuerRegistryDigest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "allowedKeyIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"}},
+    "trustRootQuorum": {"type": "integer", "minimum": 1, "maximum": 5},
+    "bootstrap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "enabled", "ownerLogins", "nonce", "maxCommentTtlMinutes"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "enabled": {"type": "boolean"},
+        "ownerLogins": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Za-z0-9-]+$"}},
+        "nonce": {"type": "string", "minLength": 16},
+        "maxCommentTtlMinutes": {"type": "integer", "minimum": 1, "maximum": 60}
+      }
+    },
+    "protectedPaths": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "protectedPrefixes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "/$"}}
+  }
+}

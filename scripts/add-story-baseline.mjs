@@ -6,7 +6,7 @@
  * 不是應該自動選 A 嗎?」)
  *
  * Pipeline:
- *   1. Read `.claude/references/story-baseline-registry.json` SSOT(per-primitive baseline)
+ *   1. Read canonical `packages/design-system/ds-canonical/references/story-baseline-registry.json` SSOT
  *   2. Walk `packages/design-system/src/components/**\/*.stories.tsx`(non-anatomy/principles)
  *   3. For each story file:
  *      a. Skip if already has `@story-baseline:` marker
@@ -16,7 +16,7 @@
  *
  * Output:
  *   - Mutates `*.stories.tsx` files in place
- *   - `.claude/logs/story-baseline-batch.json` — log of files updated / skipped
+ *   - `<absolute-git-dir>/governance-runtime/evidence/audit/story-baseline-batch.json` — runtime evidence
  *
  * Usage:
  *   node scripts/add-story-baseline.mjs            # dry-run(default)
@@ -28,10 +28,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { globSync } from 'node:fs'
+import { prepareRuntimeEvidenceFile } from './lib/governance-runtime-evidence.mjs'
 
 const ROOT = process.cwd()
 const APPLY = process.argv.includes('--apply')
-const REGISTRY = JSON.parse(fs.readFileSync(path.join(ROOT, '.claude/references/story-baseline-registry.json'), 'utf-8'))
+const REGISTRY_PATH = path.join(ROOT, 'packages/design-system/ds-canonical/references/story-baseline-registry.json')
+const REGISTRY = JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf-8'))
 
 const targetPrimitives = Object.keys(REGISTRY.components || {})
 console.log(`▶ Story baseline migration — registry primitives: ${targetPrimitives.join(', ')}`)
@@ -86,8 +88,8 @@ for (const rel of storyFiles) {
   const baseline = REGISTRY.components[primaryPrim].baseline
   const markerLine = `// @story-baseline: ${baseline}`
   const noteLine = wrapped.length > 1
-    ? `// (本 stories wrap ${wrapped.join(' + ')};primary baseline cite per .claude/references/story-baseline-registry.json)`
-    : `// (per .claude/references/story-baseline-registry.json#${primaryPrim})`
+    ? `// (本 stories wrap ${wrapped.join(' + ')};primary baseline cite per packages/design-system/ds-canonical/references/story-baseline-registry.json)`
+    : `// (per packages/design-system/ds-canonical/references/story-baseline-registry.json#${primaryPrim})`
 
   // Inject before first `import` line(or at line 1 if no imports)
   const lines = content.split('\n')
@@ -103,9 +105,7 @@ for (const rel of storyFiles) {
   }
 }
 
-const LOG_DIR = path.join(ROOT, '.claude/logs')
-if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
-const logPath = path.join(LOG_DIR, 'story-baseline-batch.json')
+const logPath = prepareRuntimeEvidenceFile({ repoRoot: ROOT, relativePath: 'audit/story-baseline-batch.json' })
 fs.writeFileSync(logPath, JSON.stringify(log, null, 2))
 
 console.log('═══════════════════════════════════════════')

@@ -1,0 +1,729 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/managed-ci-authority-finalization-protocol-v1.json",
+  "title": "Managed CI authority finalization protocol",
+  "description": "Closed request and response wire documents for validating four raw execution-class receipts and materializing one request-bound finalized receipt set.",
+  "oneOf": [
+    {"$ref": "#/$defs/requestEnvelope"},
+    {"$ref": "#/$defs/response"}
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "positiveId": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*$"
+    },
+    "issuer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "keyId",
+        "subject",
+        "publicKeySpki",
+        "roles",
+        "status",
+        "notBefore",
+        "notAfter",
+        "revokedAt"
+      ],
+      "properties": {
+        "keyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+        "subject": {"type": "string", "minLength": 1},
+        "publicKeySpki": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9+/]+={0,2}$"
+        },
+        "roles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "privileged-change-authorizer",
+              "root-rotator",
+              "runtime-evidence-issuer",
+              "apply-authorizer",
+              "completion-attestor",
+              "release-tag-authorizer"
+            ]
+          }
+        },
+        "status": {"enum": ["active", "revoked"]},
+        "notBefore": {"type": "string", "format": "date-time"},
+        "notAfter": {"type": "string", "format": "date-time"},
+        "revokedAt": {
+          "anyOf": [
+            {"type": "null"},
+            {"type": "string", "format": "date-time"}
+          ]
+        }
+      }
+    },
+    "issuerRegistry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["$schema", "schemaVersion", "algorithm", "issuers"],
+      "properties": {
+        "$schema": {"const": "../schemas/issuer-registry.schema.json"},
+        "schemaVersion": {"const": 1},
+        "algorithm": {"const": "ed25519"},
+        "issuers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {"$ref": "#/$defs/issuer"}
+        }
+      }
+    },
+    "issuerMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issuerKeyId",
+        "issuerSubject",
+        "issuerRegistryDigest",
+        "issuerRole",
+        "keyIdentity",
+        "certificateIdentity"
+      ],
+      "properties": {
+        "issuerKeyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+        "issuerSubject": {"const": "spiffe://qijenchen.dev/managed-ci/receipt-signer"},
+        "issuerRegistryDigest": {"$ref": "#/$defs/sha256"},
+        "issuerRole": {"const": "runtime-evidence-issuer"},
+        "keyIdentity": {"const": "qijenchen-managed-ci-receipt-signer-v1"},
+        "certificateIdentity": {"const": "spiffe://qijenchen.dev/managed-ci/receipt-signer"}
+      }
+    },
+    "executionClass": {
+      "enum": [
+        "dependency-acquisition",
+        "deterministic-hook-audit",
+        "model-broker",
+        "github-observer"
+      ]
+    },
+    "evidenceKind": {
+      "enum": [
+        "dependency-bundle",
+        "deep-audit-deterministic",
+        "deep-audit-hook-residue",
+        "deep-audit-judgment",
+        "deep-audit-component-a1b",
+        "deep-audit-ci-enforced"
+      ]
+    },
+    "fileInventoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?/)(?!.*\\\\)(?!.*\\u0000).+$"
+        },
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size": {"type": "integer", "minimum": 1}
+      }
+    },
+    "fileInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files", "inventoryDigest"],
+      "properties": {
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/fileInventoryEntry"}
+        },
+        "inventoryDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "classResultInventory": {
+      "allOf": [
+        {"$ref": "#/$defs/fileInventory"},
+        {
+          "type": "object",
+          "properties": {
+            "files": {
+              "type": "array",
+              "items": {
+                "allOf": [
+                  {"$ref": "#/$defs/fileInventoryEntry"},
+                  {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string",
+                        "pattern": "^(dependency-acquisition|deterministic-hook-audit|model-broker|github-observer)/(output/.+|receipts/(dependency-acquisition|deterministic-hook-audit|model-broker|github-observer)\\.json)$"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "hostObservationInventory": {
+      "allOf": [
+        {"$ref": "#/$defs/fileInventory"},
+        {
+          "type": "object",
+          "properties": {
+            "files": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {
+                "allOf": [
+                  {"$ref": "#/$defs/fileInventoryEntry"},
+                  {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string",
+                        "enum": [
+                          "dependency-acquisition/host/dependency-acquisition.json",
+                          "deterministic-hook-audit/host/deterministic-hook-audit.json",
+                          "model-broker/host/model-broker.json",
+                          "github-observer/host/github-observer.json"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "rawReceiptInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sourceArtifactPath", "sha256", "size", "contentBase64"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(dependency-acquisition|deterministic-hook-audit|model-broker|github-observer)\\.json$"
+        },
+        "sourceArtifactPath": {
+          "type": "string",
+          "pattern": "^(dependency-acquisition|deterministic-hook-audit|model-broker|github-observer)/receipts/(dependency-acquisition|deterministic-hook-audit|model-broker|github-observer)\\.json$"
+        },
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size": {"type": "integer", "minimum": 2, "maximum": 1048576},
+        "contentBase64": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 1398104,
+          "pattern": "^[A-Za-z0-9+/]+={0,2}$"
+        }
+      }
+    },
+    "rawReceiptSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dependency-acquisition",
+        "deterministic-hook-audit",
+        "model-broker",
+        "github-observer"
+      ],
+      "properties": {
+        "dependency-acquisition": {
+          "allOf": [
+            {"$ref": "#/$defs/rawReceiptInput"},
+            {
+              "type": "object",
+              "properties": {
+                "path": {"const": "dependency-acquisition.json"},
+                "sourceArtifactPath": {"const": "dependency-acquisition/receipts/dependency-acquisition.json"}
+              }
+            }
+          ]
+        },
+        "deterministic-hook-audit": {
+          "allOf": [
+            {"$ref": "#/$defs/rawReceiptInput"},
+            {
+              "type": "object",
+              "properties": {
+                "path": {"const": "deterministic-hook-audit.json"},
+                "sourceArtifactPath": {"const": "deterministic-hook-audit/receipts/deterministic-hook-audit.json"}
+              }
+            }
+          ]
+        },
+        "model-broker": {
+          "allOf": [
+            {"$ref": "#/$defs/rawReceiptInput"},
+            {
+              "type": "object",
+              "properties": {
+                "path": {"const": "model-broker.json"},
+                "sourceArtifactPath": {"const": "model-broker/receipts/model-broker.json"}
+              }
+            }
+          ]
+        },
+        "github-observer": {
+          "allOf": [
+            {"$ref": "#/$defs/rawReceiptInput"},
+            {
+              "type": "object",
+              "properties": {
+                "path": {"const": "github-observer.json"},
+                "sourceArtifactPath": {"const": "github-observer/receipts/github-observer.json"}
+              }
+            }
+          ]
+        }
+      }
+    },
+    "transportContract": {
+      "const": {
+        "schemaVersion": 1,
+        "kind": "managed-ci-finalization-transport-contract-v1",
+        "gatewayMode": "oidc-authenticated-transparent-finalization-gateway",
+        "gatewayHoldsSignerPrivateKey": false,
+        "clientToGateway": {
+          "endpointHost": "managed-ci-authority.qijenchen.dev",
+          "endpointPort": 443,
+          "operationPath": "/v1/finalize-receipts",
+          "minimumTlsVersion": "TLSv1.3",
+          "serverAuthentication": "webpki-hostname-verified",
+          "clientAuthentication": "github-oidc-bearer",
+          "oidcAudience": "qijenchen-managed-deep-audit-authority-v1"
+        },
+        "gatewayToSigner": {
+          "endpointHost": "managed-ci-signer.qijenchen.dev",
+          "endpointPort": 443,
+          "transport": "tls1.3-mtls",
+          "minimumTlsVersion": "TLSv1.3",
+          "mutualTlsRequired": true,
+          "gatewayClientCertificateIdentity": "spiffe://qijenchen.dev/managed-ci/receipt-finalizer-gateway",
+          "signerServerCertificateIdentity": "spiffe://qijenchen.dev/managed-ci/receipt-signer",
+          "signerKeyIdentity": "qijenchen-managed-ci-receipt-signer-v1",
+          "candidateCallable": false
+        }
+      }
+    },
+    "finalizationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "operation",
+        "repository",
+        "repositoryId",
+        "repositoryOwnerId",
+        "workflowRef",
+        "workflowSha",
+        "workflowRunId",
+        "runAttempt",
+        "eventName",
+        "protectedRef",
+        "classResultInventory",
+        "rawReceiptSet",
+        "hostObservationInventory",
+        "signerIssuerRegistry",
+        "transportContract",
+        "candidateBytesExecute"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "managed-ci-authority-operation-request-v1"},
+        "operation": {"const": "finalize-receipts"},
+        "repository": {"const": "ajenchen/design-system"},
+        "repositoryId": {"$ref": "#/$defs/positiveId"},
+        "repositoryOwnerId": {"$ref": "#/$defs/positiveId"},
+        "workflowRef": {"const": "ajenchen/design-system/.github/workflows/deep-audit-managed.yml@refs/heads/main"},
+        "workflowSha": {"$ref": "#/$defs/gitSha"},
+        "workflowRunId": {"$ref": "#/$defs/positiveId"},
+        "runAttempt": {"type": "integer", "minimum": 1},
+        "eventName": {"const": "workflow_dispatch"},
+        "protectedRef": {"const": "refs/heads/main"},
+        "classResultInventory": {"$ref": "#/$defs/classResultInventory"},
+        "rawReceiptSet": {"$ref": "#/$defs/rawReceiptSet"},
+        "hostObservationInventory": {"$ref": "#/$defs/hostObservationInventory"},
+        "signerIssuerRegistry": {"$ref": "#/$defs/issuerRegistry"},
+        "transportContract": {"$ref": "#/$defs/transportContract"},
+        "candidateBytesExecute": {"const": false}
+      }
+    },
+    "requestEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "operation", "requestSha256", "request"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "managed-ci-authority-finalization-request-v1"},
+        "operation": {"const": "finalize-receipts"},
+        "requestSha256": {"$ref": "#/$defs/sha256"},
+        "request": {"$ref": "#/$defs/finalizationRequest"}
+      }
+    },
+    "rawReceiptValidationReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "executionClass",
+        "evidenceKind",
+        "workflowRunId",
+        "runAttempt",
+        "rawReceiptPath",
+        "rawReceiptSize",
+        "rawReceiptDigest",
+        "rawReceiptSchemaDigest",
+        "attestationBindingDigest",
+        "evidenceEnvelopeDigest",
+        "oidcClaimsDigest",
+        "generatedOutputClosureDigest",
+        "rawReceiptBindingDigest",
+        "issuerRegistryDigest",
+        "runtimePolicyDigest",
+        "requiredIssuerQuorum",
+        "verifiedIssuerKeyIds",
+        "verifiedIssuerSubjects",
+        "verifiedAt",
+        "checks"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "managed-ci-raw-receipt-validation-readback-v1"},
+        "executionClass": {"$ref": "#/$defs/executionClass"},
+        "evidenceKind": {"$ref": "#/$defs/evidenceKind"},
+        "workflowRunId": {"$ref": "#/$defs/positiveId"},
+        "runAttempt": {"type": "integer", "minimum": 1},
+        "rawReceiptPath": {
+          "type": "string",
+          "pattern": "^(dependency-acquisition|deterministic-hook-audit|model-broker|github-observer)\\.json$"
+        },
+        "rawReceiptSize": {"type": "integer", "minimum": 2, "maximum": 1048576},
+        "rawReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "rawReceiptSchemaDigest": {"$ref": "#/$defs/sha256"},
+        "attestationBindingDigest": {"$ref": "#/$defs/sha256"},
+        "evidenceEnvelopeDigest": {"$ref": "#/$defs/sha256"},
+        "oidcClaimsDigest": {"$ref": "#/$defs/sha256"},
+        "generatedOutputClosureDigest": {"$ref": "#/$defs/sha256"},
+        "rawReceiptBindingDigest": {"$ref": "#/$defs/sha256"},
+        "issuerRegistryDigest": {"$ref": "#/$defs/sha256"},
+        "runtimePolicyDigest": {"$ref": "#/$defs/sha256"},
+        "requiredIssuerQuorum": {"type": "integer", "minimum": 1, "maximum": 5},
+        "verifiedIssuerKeyIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]*$"
+          }
+        },
+        "verifiedIssuerSubjects": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "verifiedAt": {"type": "string", "format": "date-time"},
+        "checks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schema",
+            "dependencyAndClosureBinding",
+            "classAndWorkflowBinding",
+            "runAndEnvelopeBinding",
+            "lifecycle",
+            "signatureQuorum"
+          ],
+          "properties": {
+            "schema": {"const": true},
+            "dependencyAndClosureBinding": {"const": true},
+            "classAndWorkflowBinding": {"const": true},
+            "runAndEnvelopeBinding": {"const": true},
+            "lifecycle": {"const": true},
+            "signatureQuorum": {"const": true}
+          }
+        }
+      }
+    },
+    "finalizedReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "executionClass",
+        "evidenceKind",
+        "workflowRunId",
+        "runAttempt",
+        "rawReceiptDigest",
+        "rawReceiptSchemaDigest",
+        "rawReceiptValidationDigest",
+        "provenanceBindingDigest",
+        "receiptBindingDigest",
+        "frozenSubjectReadbackDigest",
+        "hostObservationReceiptDigest",
+        "imageSupplyChainBindingDigest",
+        "signerAuthorityBindingDigest",
+        "issuerMappingDigest",
+        "signedAt"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "managed-ci-finalized-receipt-v1"},
+        "executionClass": {"$ref": "#/$defs/executionClass"},
+        "evidenceKind": {"$ref": "#/$defs/evidenceKind"},
+        "workflowRunId": {"$ref": "#/$defs/positiveId"},
+        "runAttempt": {"type": "integer", "minimum": 1},
+        "rawReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "rawReceiptSchemaDigest": {"$ref": "#/$defs/sha256"},
+        "rawReceiptValidationDigest": {"$ref": "#/$defs/sha256"},
+        "provenanceBindingDigest": {"$ref": "#/$defs/sha256"},
+        "receiptBindingDigest": {"$ref": "#/$defs/sha256"},
+        "frozenSubjectReadbackDigest": {"$ref": "#/$defs/sha256"},
+        "hostObservationReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "imageSupplyChainBindingDigest": {"$ref": "#/$defs/sha256"},
+        "signerAuthorityBindingDigest": {"$ref": "#/$defs/sha256"},
+        "issuerMappingDigest": {"$ref": "#/$defs/sha256"},
+        "signedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "signerAuditEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eventId",
+        "tenantId",
+        "keyIdentity",
+        "policyDigest",
+        "payloadDigest",
+        "signature",
+        "workflowRunId",
+        "runAttempt",
+        "environment",
+        "signedAt",
+        "executionClass",
+        "rawReceiptDigest",
+        "signerAuthorityBindingDigest",
+        "issuerMappingDigest"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{8,256}$"
+        },
+        "tenantId": {"const": "ajenchen-design-system"},
+        "keyIdentity": {"const": "qijenchen-managed-ci-receipt-signer-v1"},
+        "policyDigest": {"$ref": "#/$defs/sha256"},
+        "payloadDigest": {"$ref": "#/$defs/sha256"},
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{86}$"
+        },
+        "workflowRunId": {"$ref": "#/$defs/positiveId"},
+        "runAttempt": {"type": "integer", "minimum": 1},
+        "environment": {"const": "managed-ci-receipt-finalizer-v1"},
+        "signedAt": {"type": "string", "format": "date-time"},
+        "executionClass": {"$ref": "#/$defs/executionClass"},
+        "rawReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "signerAuthorityBindingDigest": {"$ref": "#/$defs/sha256"},
+        "issuerMappingDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "finalizedReceiptEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rawReceiptPath",
+        "rawReceiptDigest",
+        "rawReceiptValidationReadback",
+        "receiptSigningPayload",
+        "signerAuditEvent"
+      ],
+      "properties": {
+        "rawReceiptPath": {
+          "type": "string",
+          "pattern": "^(dependency-acquisition|deterministic-hook-audit|model-broker|github-observer)\\.json$"
+        },
+        "rawReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "rawReceiptValidationReadback": {"$ref": "#/$defs/rawReceiptValidationReadback"},
+        "receiptSigningPayload": {"$ref": "#/$defs/finalizedReceipt"},
+        "signerAuditEvent": {"$ref": "#/$defs/signerAuditEvent"}
+      }
+    },
+    "finalizedReceiptMap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dependency-acquisition",
+        "deterministic-hook-audit",
+        "model-broker",
+        "github-observer"
+      ],
+      "properties": {
+        "dependency-acquisition": {"$ref": "#/$defs/finalizedReceiptEntry"},
+        "deterministic-hook-audit": {"$ref": "#/$defs/finalizedReceiptEntry"},
+        "model-broker": {"$ref": "#/$defs/finalizedReceiptEntry"},
+        "github-observer": {"$ref": "#/$defs/finalizedReceiptEntry"}
+      }
+    },
+    "finalizedReceiptSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "requestSha256",
+        "workflowRunId",
+        "runAttempt",
+        "rawReceiptSetDigest",
+        "signerIssuerMapping",
+        "receipts",
+        "setDigest"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "managed-ci-finalized-receipt-set-v1"},
+        "requestSha256": {"$ref": "#/$defs/sha256"},
+        "workflowRunId": {"$ref": "#/$defs/positiveId"},
+        "runAttempt": {"type": "integer", "minimum": 1},
+        "rawReceiptSetDigest": {"$ref": "#/$defs/sha256"},
+        "signerIssuerMapping": {"$ref": "#/$defs/issuerMapping"},
+        "receipts": {"$ref": "#/$defs/finalizedReceiptMap"},
+        "setDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "transportReadback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "requestSha256",
+        "finalizedReceiptSetDigest",
+        "transportContractDigest",
+        "clientToGateway",
+        "gatewayToSigner",
+        "observedAt",
+        "attestation",
+        "readbackDigest"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "managed-ci-finalization-transport-readback-v1"},
+        "requestSha256": {"$ref": "#/$defs/sha256"},
+        "finalizedReceiptSetDigest": {"$ref": "#/$defs/sha256"},
+        "transportContractDigest": {"$ref": "#/$defs/sha256"},
+        "clientToGateway": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "endpointHost",
+            "endpointPort",
+            "operationPath",
+            "tlsVersion",
+            "serverHostnameVerified",
+            "clientAuthentication",
+            "oidcAudience",
+            "oidcBearerVerified"
+          ],
+          "properties": {
+            "endpointHost": {"const": "managed-ci-authority.qijenchen.dev"},
+            "endpointPort": {"const": 443},
+            "operationPath": {"const": "/v1/finalize-receipts"},
+            "tlsVersion": {"const": "TLSv1.3"},
+            "serverHostnameVerified": {"const": true},
+            "clientAuthentication": {"const": "github-oidc-bearer"},
+            "oidcAudience": {"const": "qijenchen-managed-deep-audit-authority-v1"},
+            "oidcBearerVerified": {"const": true}
+          }
+        },
+        "gatewayToSigner": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "endpointHost",
+            "endpointPort",
+            "transport",
+            "tlsVersion",
+            "mutualTlsEstablished",
+            "gatewayClientCertificateIdentity",
+            "signerServerCertificateIdentity",
+            "signerKeyIdentity",
+            "signerAuthorityBindingDigest",
+            "gatewayHeldSignerPrivateKey"
+          ],
+          "properties": {
+            "endpointHost": {"const": "managed-ci-signer.qijenchen.dev"},
+            "endpointPort": {"const": 443},
+            "transport": {"const": "tls1.3-mtls"},
+            "tlsVersion": {"const": "TLSv1.3"},
+            "mutualTlsEstablished": {"const": true},
+            "gatewayClientCertificateIdentity": {"const": "spiffe://qijenchen.dev/managed-ci/receipt-finalizer-gateway"},
+            "signerServerCertificateIdentity": {"const": "spiffe://qijenchen.dev/managed-ci/receipt-signer"},
+            "signerKeyIdentity": {"const": "qijenchen-managed-ci-receipt-signer-v1"},
+            "signerAuthorityBindingDigest": {"$ref": "#/$defs/sha256"},
+            "gatewayHeldSignerPrivateKey": {"const": false}
+          }
+        },
+        "observedAt": {"type": "string", "format": "date-time"},
+        "attestation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["issuerMapping", "signedAt", "payloadDigest", "signature"],
+          "properties": {
+            "issuerMapping": {"$ref": "#/$defs/issuerMapping"},
+            "signedAt": {"type": "string", "format": "date-time"},
+            "payloadDigest": {"$ref": "#/$defs/sha256"},
+            "signature": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{86}$"
+            }
+          }
+        },
+        "readbackDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "operation",
+        "status",
+        "requestSha256",
+        "finalizedReceiptSet",
+        "transportReadback"
+      ],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "managed-ci-authority-finalization-response-v1"},
+        "operation": {"const": "finalize-receipts"},
+        "status": {"const": "complete"},
+        "requestSha256": {"$ref": "#/$defs/sha256"},
+        "finalizedReceiptSet": {"$ref": "#/$defs/finalizedReceiptSet"},
+        "transportReadback": {"$ref": "#/$defs/transportReadback"}
+      }
+    }
+  }
+}

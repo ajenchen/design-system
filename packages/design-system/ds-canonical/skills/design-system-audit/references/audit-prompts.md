@@ -1,24 +1,26 @@
 # Audit Subagent Prompts(全 dim per `SKILL.md SSOT`)
 
-> **Count canonical**:本檔 dim 數對齊 `.claude/skills/design-system-audit/SKILL.md` `## The N audit dimensions` 表。歷史標題曾寫「22 audits」,已 deprecated — 真實 dim 數以 SKILL.md 為準。Prompt section 對 PURE-JUDGMENT dims 必備;deterministic-script dims(eg. 84-88)無需 prompt(腳本即檢查)。**誠實註**:prompt 數**非**機械 count-verified(`sync-governance-counters.mjs` 不 parse 本檔)— 靠 audit dim 15 + Phase A 人工對齊(2026-05-30 修正前 frontmatter 誤稱有自動 cross-verify)。
+> **Count canonical**:本檔 dim 數對齊 `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md` `## The N audit dimensions` 表。歷史標題曾寫「22 audits」,已 deprecated — 真實 dim 數以 SKILL.md 為準。Prompt section 對 PURE-JUDGMENT dims 必備;deterministic-script dims(eg. 84-88)無需 prompt(腳本即檢查)。**誠實註**:prompt 數**非**機械 count-verified(`sync-governance-counters.mjs` 不 parse 本檔)— 靠 audit dim 15 + Phase A 人工對齊(2026-05-30 修正前 frontmatter 誤稱有自動 cross-verify)。
 
-Each prompt is self-contained — designed to paste into an `Agent` call with `run_in_background: true` and `subagent_type: ds-dim-auditor`(registered agent since 2026-04-24;scoped Read/Grep/Glob only;fallback to `general-purpose` if agent not available)。
+Each prompt is self-contained and can be dispatched through the current provider's registered isolated-worker mechanism with read-only repository access. If parallel workers are unavailable, execute the same prompts serially without reducing coverage.
 
-All prompts start with:
+All prompts start with the repository root verified and injected by the
+provider-neutral runner. Never copy a developer-specific absolute path into a
+prompt or treat the model's current directory as authority:
 ```
-Working directory: /Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project
+Working directory: <verified-repository-root>
 ```
 
 ## ⚠️ 必先讀的 canonical(所有 sub-agent 跑前強制)
 
 **sub-agent 最常見失誤:不讀 scope defaults + rationale 就判 violation,造成 ~60% false positive**。每個 prompt 執行前**強制**先讀:
 
-1. `CLAUDE.md` 的 `# Meta-Pattern 預警`(**M1-M9** meta-principles,含 M8 Benchmark-First / M9 Predicate Self-Test 2026-04-22)
-2. `CLAUDE.md` 的 `# SSOT 消費 canonical`(做 X 前必查 Y 對照表)
-3. `CLAUDE.md` 的 `# 稽核 canonical`「Audit-vs-execute 分權」(flag 是提議,不是 auto-fix)
-4. `.claude/rules/spec-rules.md` 的「Scope 預設」節(Field 家族 / pure wrapper / semantic token 自動 scope 豁免)
+1. `packages/design-system/ds-canonical/rules/meta-patterns.md`(**M1-M9** meta-principles,含 M8 Benchmark-First / M9 Predicate Self-Test 2026-04-22)
+2. `packages/design-system/ds-canonical/references/ssot-consultation.md`(做 X 前必查 Y 對照表)
+3. `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md` 的 Audit-vs-execute 分權(flag 是提議,不是 auto-fix)
+4. `packages/design-system/ds-canonical/rules/spec-rules.md` 的「Scope 預設」節(Field 家族 / pure wrapper / semantic token 自動 scope 豁免)
 5. 每個 Consistency 類 dim:flag violation 前**必先 grep 元件 spec.md 整個檔案**找 rationale;有任何一段明文(`##`/`###`/「為什麼」/「rationale」/「對照」)觸及 deviation 原因 → 不是 violation 是 `deviation ✓`
-6. **Consistency 類 dim(含 D6b/D6c/D6e)必走 Phase 0 全掃再判**(CLAUDE.md `# 稽核 6 維` 規則 + `principle-audit-protocol.md` D6 scan)— 單元件看無法檢出系統性 drift / 跨 item 矛盾 / predicate membership drift
+6. **Consistency 類 dim(含 D6b/D6c/D6e)必走 Phase 0 全掃再判**(`SKILL.md` canonical audit taxonomy + `principle-audit-protocol.md` D6 scan)— 單元件看無法檢出系統性 drift / 跨 item 矛盾 / predicate membership drift
 
 ### 常見 false positive(記憶)
 
@@ -26,12 +28,12 @@ Working directory: /Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@g
 - **「缺 empty state」** → 若 spec 寫「empty 由 consumer 用 `<Empty>`」= **豁免**
 - **「SSOT reciprocal 缺」** → SSOT pointer 可是 inline prose 不一定是 `##` heading(例:RadioGroup line 24 prose pointer 就足夠)。flag 前 grep 對方 spec 完整,**找不到 target 的 anchor 才是 violation**
 - **「7-dim 7 維度不足」** → scope defaults 豁免「Internal 類 / wrapper 類 / 互動極少類」;flag 前驗證 scope default 是否適用
-- **「anatomy 缺 Inspector / SizeMatrix」** → applicable-where-meaningful policy(見 `.claude/skills/story-writing/references/anatomy-standard.md`);AspectRatio 沒 Inspector / Badge 沒 SizeMatrix 都可能是 N/A + 有 rationale。**先 grep spec 是否有「無 X story,因為...」段**
+- **「anatomy 缺 Inspector / SizeMatrix」** → applicable-where-meaningful policy(見 `packages/design-system/ds-canonical/skills/story-writing/references/anatomy-standard.md`);AspectRatio 沒 Inspector / Badge 沒 SizeMatrix 都可能是 N/A + 有 rationale。**先 grep spec 是否有「無 X story,因為...」段**
 - **「ARIA / tabIndex 不對」** → Radix primitives 內建 roving-tabindex / focus management。flag 前驗證該元件是否 wrap Radix;wrap 就豁免
-- **「decorative indicator 被誤列入 action predicate」(D6e,2026-04-22)** → `pointer-events-none` + `aria-hidden` 的 icon 不該出現在 action example 表。Calendar / status dot / CircularProgress 等被誤收 = P0 flag。對照 CLAUDE.md M9 predicate 自測
+- **「decorative indicator 被誤列入 action predicate」(D6e,2026-04-22)** → `pointer-events-none` + `aria-hidden` 的 icon 不該出現在 action example 表。Calendar / status dot / CircularProgress 等被誤收 = P0 flag。對照 canonical `meta-patterns.md` M9 predicate 自測
 - **「Row action 尺寸 > 24」(D6e cap 違反,2026-04-22)** → row primitive 內 inline action 絕對值 cap = 24,row tier 放大不該讓 action 同步放大。違反 = P0 flag。對照 `patterns/element-anatomy/item-anatomy.spec.md`「Inline Action 設計規格」Row ≤ 24 cap
 
-## Dimension Type Taxonomy (CLAUDE.md`# 稽核 canonical`「Consistency 類稽核」)
+## Dimension Type Taxonomy (`design-system-audit/SKILL.md` canonical「Consistency 類稽核」)
 
 Every dimension below is tagged **Absolute** or **Consistency** so sub-agents apply the right formula:
 
@@ -78,7 +80,7 @@ End: `N components checked, M mismatches.` Under 400 words. Don't fix.
 ## 2. SSOT dead link
 
 **Type**: Absolute
-**Canonical source**: `.claude/rules/spec-rules.md` SSOT anchors list; every pointer must resolve to an actual `##`/`###` heading OR actual filesystem path
+**Canonical source**: `packages/design-system/ds-canonical/rules/spec-rules.md` SSOT anchors list; every pointer must resolve to an actual `##`/`###` heading OR actual filesystem path
 **Rationale home**: N/A — dead link is never acceptable
 
 ```
@@ -125,13 +127,13 @@ End: `N pointers checked, M heading-dead, K path-dead, L self-placement drift.` 
 ## 3. SSOT reciprocal
 
 **Type**: Absolute
-**Canonical source**: `.claude/rules/spec-rules.md` → "reciprocal 必須存在,不可單向"
+**Canonical source**: `packages/design-system/ds-canonical/rules/spec-rules.md` → "reciprocal 必須存在,不可單向"
 **Rationale home**: N/A — single-direction SSOT is a bug
 
 ```
 Your job: verify every cross-spec SSOT pointer has a reciprocal pointer back.
 
-CLAUDE.md rule: "Own 方寫深度 section；被指方寫一行 pointer (reciprocal 必須存在，不可單向)".
+Canonical `rules/spec-rules.md`:"Own 方寫深度 section；被指方寫一行 pointer (reciprocal 必須存在，不可單向)".
 
 For each pointer A → B「section」 found:
 1. Open B.spec.md
@@ -144,7 +146,7 @@ Common patterns of reverse pointer:
 
 Report: `A.spec.md → B.spec.md:N — B 未指回 A`
 
-Focus on current SSOT anchors (`.claude/rules/spec-rules.md` lists them):
+Focus on current SSOT anchors (`packages/design-system/ds-canonical/rules/spec-rules.md` lists them):
 - tabs ↔ segmented-control
 - select ↔ radio-group
 - checkbox ↔ switch
@@ -158,7 +160,7 @@ End: `N pointers checked, M non-reciprocal.` Under 400 words. Don't fix.
 ## 4. Tailwind v4 / tailwind-merge grep
 
 **Type**: Absolute
-**Canonical source**: `.claude/rules/ui-development.md`「Tailwind 5 條核心」 → "Tailwind v4 任意值" + "tailwind-merge 自訂 utility 註冊" bug patterns
+**Canonical source**: `packages/design-system/ds-canonical/rules/ui-development.md`「Tailwind 5 條核心」 → "Tailwind v4 任意值" + "tailwind-merge 自訂 utility 註冊" bug patterns
 **Rationale home**: N/A — these are technical bugs (Sidebar `[--foo]` / `text-body` misclassification)
 
 ```
@@ -185,7 +187,7 @@ End: `N .tsx files checked, M violations.` Under 400 words. Don't fix.
 ## 5. Token 消費紀律
 
 **Type**: Absolute
-**Canonical source**: `.claude/rules/ui-development.md`「Tailwind 5 條核心」 → 禁止清單 (hex / rgb / shadow-md/sm / raw px 等)
+**Canonical source**: `packages/design-system/ds-canonical/rules/ui-development.md`「Tailwind 5 條核心」 → 禁止清單 (hex / rgb / shadow-md/sm / raw px 等)
 **Rationale home**: N/A — tokens bypass breaks dark mode / density / brand-swap
 
 ```
@@ -215,11 +217,11 @@ End: `N component .tsx files checked, M violations.` Under 500 words. Don't fix.
 ## 6. Spec Rule A 文字品質
 
 **Type**: Absolute
-**Canonical source**: `.claude/rules/spec-rules.md` → Spec 文字品質 (不描述視覺形狀 / 實作細節 / 術語一致)
+**Canonical source**: `packages/design-system/ds-canonical/rules/spec-rules.md` → Spec 文字品質 (不描述視覺形狀 / 實作細節 / 術語一致)
 **Rationale home**: N/A — visual metaphors / raw px / Tailwind class dumps in spec are always defects
 
 ```
-Your job: audit all .spec.md under packages/design-system/src/ against Rule A in `.claude/rules/spec-rules.md`.
+Your job: audit all .spec.md under packages/design-system/src/ against Rule A in `packages/design-system/ds-canonical/rules/spec-rules.md`.
 
 Rule A — no visual-form / implementation pollution. Flag:
 - Visual: 「窄長形」/ 「圓圓的」/ 「凸起」/ 「扁平」/ 「跳動」/ 「崩潰」/ 「看不出 X 邊界」/「看起來像 Y」
@@ -238,11 +240,11 @@ End: `N specs checked, V violations, top offenders: [list]` Under 500 words. Don
 ## 7. Spec Rule B 邊界案例
 
 **Type**: Consistency
-**Canonical source**: `.claude/rules/spec-rules.md` → 邊界案例覆蓋 + Scope 預設 (Field family delegates to field-controls, Separator/Skeleton/CircularProgress/ProgressBar claim 無互動狀態, etc.)
+**Canonical source**: `packages/design-system/ds-canonical/rules/spec-rules.md` → 邊界案例覆蓋 + Scope 預設 (Field family delegates to field-controls, Separator/Skeleton/CircularProgress/ProgressBar claim 無互動狀態, etc.)
 **Rationale home**: element .spec.md —「本元件無 X 狀態」/「由 {family} spec 繼承」 one-liner acceptable
 
 ```
-Your job: audit all .spec.md against Rule B in `.claude/rules/spec-rules.md` → 邊界案例覆蓋 (apply Scope 預設).
+Your job: audit all .spec.md against Rule B in `packages/design-system/ds-canonical/rules/spec-rules.md` → 邊界案例覆蓋 (apply Scope 預設).
 
 For each spec check:
 - disabled / loading / empty
@@ -263,11 +265,11 @@ End: `N specs checked, M genuine gaps, L scope-N/A accepted.` Under 500 words. D
 ## 8. 7-維度 對標覆蓋
 
 **Type**: Consistency
-**Canonical source**: `.claude/rules/spec-rules.md` → 對標世界級 DS 七維度 (何時用 / 不用 / 近親分界 / 誤解 / 相關 / 空值 / 驗證時機 / Loading / a11y)
+**Canonical source**: `packages/design-system/ds-canonical/rules/spec-rules.md` → 對標世界級 DS 七維度 (何時用 / 不用 / 近親分界 / 誤解 / 相關 / 空值 / 驗證時機 / Loading / a11y)
 **Rationale home**: element .spec.md — 某維度 N/A 時須一行說明 (「本元件為純版面 primitive,無驗證時機」)
 
 ```
-Your job: for each .spec.md, verify coverage of the 7 world-class DS dimensions (`.claude/rules/spec-rules.md` → 對標世界級 DS).
+Your job: for each .spec.md, verify coverage of the 7 world-class DS dimensions (`packages/design-system/ds-canonical/rules/spec-rules.md` → 對標世界級 DS).
 
 The 7 dimensions:
 1. 何時用 / 何時不用 (when to use / not use)
@@ -294,7 +296,7 @@ End: `N specs checked, average dimensions covered: X/7. Specs needing most atten
 ## 9. shadcn passthrough 完整度
 
 **Type**: Consistency
-**Canonical source**: `.claude/rules/ui-development.md`「shadcn 元件規範」 — forwardRef / displayName / ...props / cva / Radix data-attrs / asChild
+**Canonical source**: `packages/design-system/ds-canonical/rules/ui-development.md`「shadcn 元件規範」 — forwardRef / displayName / ...props / cva / Radix data-attrs / asChild
 **Rationale home**: element .spec.md — internal helper / non-Slot primitives may skip asChild with documented reason
 
 ```
@@ -321,7 +323,7 @@ Report: `N components checked, M with holes.` Under 500 words. Don't fix.
 ## 10. a11y 基本覆蓋
 
 **Type**: Consistency (mostly Absolute)
-**Canonical source**: WCAG + `.claude/rules/ui-development.md` (keyboard handlers / aria-label on icon-only / form labels)
+**Canonical source**: WCAG + `packages/design-system/ds-canonical/rules/ui-development.md` (keyboard handlers / aria-label on icon-only / form labels)
 **Rationale home**: element .spec.md — decorative/internal primitives may document aria-hidden or omitted role with reason
 
 ```
@@ -350,7 +352,7 @@ End: `N files checked, M a11y gaps, top offenders: [list]`. Under 500 words. Don
 ## 11. Story 三層齊全
 
 **Type**: Consistency
-**Canonical source**: `.claude/rules/story-rules.md` 三層定位 (Components: 展示 + anatomy + principles;Internal: 展示 + anatomy)
+**Canonical source**: `packages/design-system/ds-canonical/rules/story-rules.md` 三層定位 (Components: 展示 + anatomy + principles;Internal: 展示 + anatomy)
 **Rationale home**: Storybook title classification (`Internal/` → principles optional by design). Components missing a layer without Internal classification = violation
 
 ```
@@ -374,11 +376,11 @@ End: `N component folders checked, M missing layers.` Under 400 words. Don't fix
 ## 12. Story 人話範例
 
 **Type**: Absolute
-**Canonical source**: `.claude/rules/story-rules.md` → 範例最高準則 + 禁止清單 (「人」test + 舉一反三 test)
+**Canonical source**: `packages/design-system/ds-canonical/rules/story-rules.md` → 範例最高準則 + 禁止清單 (「人」test + 舉一反三 test)
 **Rationale home**: N/A — Lorem ipsum / Option A/B / Variant X / ASCII art have no legitimate use
 
 ```
-Your job: audit all .stories.tsx + .principles.stories.tsx for placeholder / abstract text per `.claude/rules/story-rules.md` → 範例選擇原則 → 明確禁止.
+Your job: audit all .stories.tsx + .principles.stories.tsx for placeholder / abstract text per `packages/design-system/ds-canonical/rules/story-rules.md` → 範例選擇原則 → 明確禁止.
 
 Flag:
 - Placeholder: `Option A/B/C`, `Lorem ipsum`, `foo/bar`, `Item 1/2/3`
@@ -403,7 +405,7 @@ End: `N files checked, V violations.` Under 600 words. Don't fix.
 **Rationale home**: element .spec.md — replacing/omitting a 6-canonical section requires a rationale paragraph explaining why (e.g., "Badge 無互動狀態,不需 StateBehavior"). Renaming identifier is never allowed. **`*.anatomy.stories.tsx` 檔頭 `// @anatomy-rationale:` 註解列出 N/A sections + 一行原因 → legitimately N/A,不報為 violation**(對齊 hook `check_story_anatomy.sh` 同源處理)。
 
 ```
-Your job: audit .anatomy.stories.tsx against `/story-writing` anatomy-standard.md on THREE layers, enforcing CLAUDE.md `# 稽核 canonical`「Consistency 類稽核」.
+Your job: audit .anatomy.stories.tsx against canonical `/story-writing` anatomy-standard.md on THREE layers, enforcing the canonical「Consistency 類稽核」protocol.
 
 **Layer 1 — Canonical `export const` names** (一字不差, in order):
 1. `Overview` / 2. `Inspector` / 3. `ColorMatrix` / 4. `SizeMatrix` / 5. `StateBehavior` / 6. `Accessibility`(互動元件強制,純視覺 indicator N/A)
@@ -425,7 +427,7 @@ Missing 6-canonical → requires rationale paragraph in .spec.md OR `// @anatomy
 帶括號英文 context `name: 'Orientation(horizontal / vertical)'` = VIOLATION(canonical 命名不應混英文 context)。
 
 **Layer 3 — Content hygiene** (only if Layer 1+2 pass):
-- Density dual values (`md density / lg density` columns) — CLAUDE.md forbids
+- Density dual values (`md density / lg density` columns) — canonical story/anatomy rules forbid
 - `rest` instead of `default` — dev language violation
 - Token name shown without live swatch (`var()` inline style)
 - Raw pixels when token exists
@@ -456,11 +458,11 @@ End: `N checked, L1 V1 violations, L2 V2 violations, L3 V3 content issues. Top 5
 ## 14. 命名一致性
 
 **Type**: Absolute
-**Canonical source**: CLAUDE.md `# 命名與語言一致性` 各表格 (PascalCase/kebab-case/camelCase 規則 + suffix 鐵律)
+**Canonical source**: `packages/design-system/ds-canonical/references/naming-conventions.md` (PascalCase/kebab-case/camelCase 規則 + suffix 鐵律)
 **Rationale home**: N/A — naming rules are meta-rules with no legit exemption
 
 ```
-Your job: audit the codebase against CLAUDE.md `# 命名與語言一致性` (Meta 規則).
+Your job: audit the codebase against `packages/design-system/ds-canonical/references/naming-conventions.md`.
 
 Checks:
 1. Component folder = PascalCase (e.g., `DatePicker/`)
@@ -478,13 +480,13 @@ Report: `path — violation — suggested correction`
 End: `N files checked, M violations across C categories.` Under 600 words. Don't fix.
 ```
 
-## 15. Cross-doc 一致性(CLAUDE.md + spec.md + tsx docblock 全域 drift)
+## 15. Cross-doc 一致性(canonical governance + spec.md + tsx docblock + generated instruction projection 全域 drift)
 
 **Type**: Absolute
-**Canonical source**: 各 SSOT home(per `# 治理 canonical` 8-home)
+**Canonical source**:`packages/design-system/ds-canonical/` + owning specs(per `references/rule-placement.md`)
 **Rationale home**: N/A — duplicated / contradictory / drift 永遠是 bug
 
-**2026-04-30 擴 scope**:從原「CLAUDE.md 自身」擴到 cross-doc(CLAUDE.md + spec.md +
+**2026-04-30 擴 scope**:從原「單一 provider instruction 自身」擴到 cross-doc(canonical governance + shared bootstrap + generated provider instruction projection + spec.md +
 tsx docblock + inline comments)— 補本 thread 暴露的 3 個漏洞:
 1. spec.md 兩家描寫同 canonical 不同值(popover 重複 overlay)
 2. tsx docblock claims X 但 spec.md 說 Y(overlay-surface docblock stale 提 xs canonical
@@ -492,11 +494,11 @@ tsx docblock + inline comments)— 補本 thread 暴露的 3 個漏洞:
 3. 元件升級後 docblock 沒同步(stale upgrade marker)
 
 ```
-Your job: audit cross-doc consistency for CLAUDE.md + all spec.md + tsx docblocks.
+Your job: audit cross-doc consistency for `packages/design-system/ds-canonical/`, `AGENTS.md`, every registry-declared generated provider instruction projection, all spec.md, and tsx docblocks. Generated provider instructions are delivery/discovery projections, not authority or edit targets.
 
-Checks(原 CLAUDE.md 7 條 + 新 cross-doc 3 條):
+Checks(原 instruction checks 7 條 + 新 cross-doc 3 條):
 
-# CLAUDE.md 自身
+# Canonical governance + generated instruction projections
 1. No duplicated rules (same rule stated in 2 sections)
 2. No contradictions (section X says "always do A" + Y says "never do A")
 3. Internal section references resolve (`# Story`, `# Spec 規則`等真實存在)
@@ -527,13 +529,16 @@ End: `Total issues found: M. Categories: [breakdown 1-10]`. Under 600 words. Don
 
 ## Running all dimensions in parallel(count per SKILL.md SSOT)
 
-Dispatch per `node scripts/dispatch-audit-dims.mjs --summary`(動態 batch plan,non-hardcoded)— 一 message 內每 batch 一個 `Agent` tool call,`run_in_background: true`。Heavy dims 各獨立 sub-agent。Expected wall time: 3-5 分鐘並行。
+Dispatch per `node scripts/dispatch-audit-dims.mjs --summary`(動態 batch plan,non-hardcoded)— 每 batch 使用一個獨立 worker 與獨立 result artifact。Heavy dims 各用獨立 context;若 provider 無 parallel-worker 能力則串行完整執行。
 
 After all return:
 - Consolidate findings per file with line numbers
 - Build priority matrix (P0 / P1 / P2)
-- Present Checkpoint 1 triage to user
-- DO NOT auto-fix P2 without approval
+- Classify P2 as P2E(engineering/governance, autonomous) or P2H(genuine product/UI/UX
+  SSOT tradeoff)
+- Apply P0/P1/P2E under Standing Authorization; present one batched exact-target checkpoint
+  only when P2H remains
+- DO NOT change a P2H target before its exact decision; do not use generic approval for P2E
 
 ---
 
@@ -542,20 +547,20 @@ After all return:
 ## 16. Layout Family 宣告
 
 **Type**: Consistency
-**Canonical source**: CLAUDE.md `# 4-Family Layout Model`
+**Canonical source**: `packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md`
 **Rationale home**: element .spec.md — 聲明「本元件不屬於 4-Family Model」+ reason (self-contained / composite) is an acceptable rationale
 
 ```
 Your job: verify every component spec.md under packages/design-system/src/components/ has a「Layout Family」declaration in its first section (after 定位/實作基礎, before 何時用).
 
-The 4-Family Model (CLAUDE.md `# 4-Family Layout Model`):
+The 4-Family Model (`packages/design-system/src/patterns/element-anatomy/element-anatomy.spec.md`):
 - Family 1: Menu item layout
 - Family 2: List item layout
 - Family 3: Pill layout
 - Family 4: Field control layout
 
 Acceptable declarations:
-- "Layout Family: CLAUDE.md 4-Family Model **Family N（...）**消費者"
+- "Layout Family: element-anatomy 4-Family Model **Family N（...）**消費者"
 - 「本元件不屬於 4-Family Model」+ reason (self-contained primitive / composite)
 
 Report components missing the declaration:
@@ -571,11 +576,11 @@ End: `N component specs checked, M missing Family declaration, top 5: [list]`. U
 ## 17. Prop value 跨元件認知衝突
 
 **Type**: Absolute
-**Canonical source**: CLAUDE.md `## 命名必過三重 test` → test #3 (跨元件認知衝突)
+**Canonical source**: `packages/design-system/ds-canonical/references/naming-conventions.md` → 命名三重 test #3 (跨元件認知衝突)
 **Rationale home**: N/A — same string with materially different semantic = cognitive dissonance bug (text/rich/picture precedent)
 
 ```
-Your job: find cross-component prop value collisions that create cognitive dissonance (CLAUDE.md `## 命名必過三重 test` test #3).
+Your job: find cross-component prop value collisions that create cognitive dissonance (`packages/design-system/ds-canonical/references/naming-conventions.md` test #3).
 
 Grep approach:
 1. Extract all cva variant values + type prop values from every component .tsx
@@ -595,13 +600,13 @@ End: `N cva/prop definitions scanned, M genuine collisions found. Historical: te
 ## 18. shadcn compat alias 回流檢查
 
 **Type**: Absolute
-**Canonical source**: `.claude/rules/ui-development.md`「Tailwind 5 條核心」 → 「shadcn compat aliases — 不給我們元件用」
+**Canonical source**: `packages/design-system/ds-canonical/rules/ui-development.md`「Tailwind 5 條核心」 → 「shadcn compat aliases — 不給我們元件用」
 **Rationale home**: N/A — aliases are migration safety net only; human-edited / new code must use direct tokens
 
 ```
 Your job: grep component .tsx files for shadcn compat aliases that should have been migrated to our direct tokens. This is a **recurring check** — future `npx shadcn add X` may introduce these and we must catch them early.
 
-Per CLAUDE.md「shadcn compat aliases — 不給我們元件用」:
+Per canonical `rules/ui-development.md`「shadcn compat aliases — 不給我們元件用」:
 
 Forbidden in our code (these SHOULD be migrated to direct tokens):
 - `bg-popover` → `bg-surface-raised`
@@ -633,7 +638,7 @@ End: `N tsx files checked, M alias leakage, typically 0 in clean state`. Under 4
 ## 19. Home-name-vs-scope 一致性
 
 **Type**: Consistency
-**Canonical source**: each folder's charter README (`patterns/*/README.md`, `components/README.md`, `tokens/README.md`, `.claude/skills/*/SKILL.md` description)
+**Canonical source**: each folder's charter README (`patterns/*/README.md`, `components/README.md`, `tokens/README.md`, `packages/design-system/ds-canonical/skills/*/SKILL.md` description)
 **Rationale home**: charter README —「這裡收 X / 不收 Y」明文即可,不符合就 rename folder 或修 charter
 
 ```
@@ -643,7 +648,7 @@ Targets (folders governed by charter READMEs):
 - `packages/design-system/src/patterns/*/`
 - `packages/design-system/src/components/*/`(PascalCase folders)
 - `packages/design-system/src/tokens/*/`
-- `.claude/skills/*/`
+- `packages/design-system/ds-canonical/skills/*/`
 
 For each folder `F`:
 1. Read `F/*.spec.md` or `F/SKILL.md` or the primary doc first paragraph (「定位」or frontmatter description)
@@ -656,7 +661,7 @@ For each folder `F`:
 Flag mismatches: `folder/ declared scope = X, name implies Y, suggest rename to Z`.
 
 Also flag "layout" word collisions:
-- `patterns/*layout*/` at element-level scope MUST use「anatomy」not「layout」(CLAUDE.md 命名鐵律;「layout」保留 page-level)
+- `patterns/*layout*/` at element-level scope MUST use「anatomy」not「layout」(`references/naming-conventions.md` 命名鐵律;「layout」保留 page-level)
 - Exception: primitive file name matching folder name (e.g., `item-anatomy/item-anatomy.tsx` exporting slot components `<ItemIcon>` / `<ItemAvatar>` / etc. following Material/Polaris/Radix compound-component idiom) — allowed and encouraged
 
 Report: `F: scope "..." vs name "..." — rename candidate: Z`
@@ -667,11 +672,11 @@ End: `N folders audited, M rename candidates, top 3: [list]`. Under 400 words. D
 ## 20. Spec 硬寫機械化值檢查
 
 **Type**: Consistency
-**Canonical source**: `.claude/rules/spec-rules.md` →「spec 只記錄設計原則,可程式化規則寫 .tsx」
+**Canonical source**: `packages/design-system/ds-canonical/rules/spec-rules.md` →「spec 只記錄設計原則,可程式化規則寫 .tsx」
 **Rationale home**: element/pattern .spec.md — token spec 本身 / pattern rationale 節 / historical bug anchor 可合法保留具體數值,需有一行說明為何在此
 
 ```
-Your job: grep spec.md files for mechanical values that should live in .tsx, not spec. Per CLAUDE.md 「spec 只記錄設計原則,可程式化規則寫 .tsx」.
+Your job: grep spec.md files for mechanical values that should live in .tsx, not spec. Per canonical `rules/spec-rules.md`「spec 只記錄設計原則,可程式化規則寫 .tsx」.
 
 Forbidden in spec.md(should migrate to tsx/cva):
 - Hardcoded px values: `\d+px` outside of「藍圖」/「尺寸對照表」/ pattern explanation contexts
@@ -698,13 +703,13 @@ End: `N specs checked, M hardcoded violations, top 5: [list]`. Under 400 words. 
 ## L1. Stories / consumer code 手刻繞 DS canonical(視覺對齊盲點的可機械化前哨)(legacy cross-ref — 不在 SKILL.md dim table;原佔 dim 21 slot,renumber 避免與現行 dim 21「連續 item list wrapper gap」撞號)
 
 **Type**: Absolute
-**Canonical source**: `.claude/rules/ui-development.md`「Story / consumer code 禁止手刻既有 DS 元件已支援的 pattern」+ 元件 spec.md(提供的 API)
+**Canonical source**: `packages/design-system/ds-canonical/rules/ui-development.md`「Story / consumer code 禁止手刻既有 DS 元件已支援的 pattern」+ 元件 spec.md(提供的 API)
 **Rationale home**: N/A — hand-craft 繞 DS canonical 是 absolute bug,不容 rationale 例外
 
 **背景**:pixel-level 視覺對齊無法 grep(需 visual regression 工具,長期基建 tech debt)。但「stories 自刻 `absolute + translate-y-1/2` 繞過 DS 元件的 loading / overlay / search 等 pattern」是**強信號**——這類 hand-craft 在不同 size / density 下視覺對齊跑掉,是視覺 bug 的上游。本 dim 抓 hand-craft 反 canonical 路徑,預防視覺 bug 進 production。
 
 ```
-Your job: grep stories (.stories.tsx / .anatomy.stories.tsx / .principles.stories.tsx) and non-DS consumer code for hand-crafted patterns that bypass existing DS component APIs. Per CLAUDE.md 「Story / consumer code 禁止手刻既有 DS 元件已支援的 pattern」.
+Your job: grep stories (.stories.tsx / .anatomy.stories.tsx / .principles.stories.tsx) and non-DS consumer code for hand-crafted patterns that bypass existing DS component APIs. Per canonical `rules/ui-development.md`「Story / consumer code 禁止手刻既有 DS 元件已支援的 pattern」.
 
 Hand-craft 反 canonical 的強信號 pattern(每個違反 → VIOLATION):
 
@@ -753,10 +758,10 @@ End: `N files checked, V violations by signal: A=?, B=?, C=?, D=?, E=?. Top 5 wo
 
 # Group H — Principle self-audit (D6 子維,session-learned 2026-04-22)
 
-## L2. D6e Predicate coherence(對齊 CLAUDE.md Meta-Pattern M9)(legacy cross-ref — 不在 SKILL.md dim table;原佔 dim 22 slot,renumber 避免與現行 dim 22「視覺容器 inner breathing」撞號)
+## L2. D6e Predicate coherence(對齊 canonical Meta-Pattern M9)(legacy cross-ref — 不在 SKILL.md dim table;原佔 dim 22 slot,renumber 避免與現行 dim 22「視覺容器 inner breathing」撞號)
 
 **Type**: Consistency
-**Canonical source**: `.claude/skills/design-system-audit/references/principle-audit-protocol.md` → D6e Predicate coherence scan;CLAUDE.md `# Meta-Pattern 預警` M9(Predicate Self-Test)
+**Canonical source**: `packages/design-system/ds-canonical/skills/design-system-audit/references/principle-audit-protocol.md` → D6e Predicate coherence scan;`packages/design-system/ds-canonical/rules/meta-patterns.md` M9(Predicate Self-Test)
 **Rationale home**: spec.md — 若某 example 故意違反 predicate(教學反例),必在旁邊明示「反例」/「故意違反 X cap」;cap 值本身更動需在 spec 留 rationale + benchmark
 
 ```
@@ -791,10 +796,10 @@ Q4. **Empty category** — predicate 有 category 但 example 表沒 real case?
 End: `N predicate specs scanned, V1/V2/V3/V4 violations by Q. Top offenders: [list]`. Under 600 words. Don't fix.
 ```
 
-## L3. Benchmark-First discipline(對齊 CLAUDE.md Meta-Pattern M8)(legacy cross-ref — 不在 SKILL.md dim table;原佔 dim 23 slot,renumber 避免與現行 dim 23「Controlled / Uncontrolled dual-mode」撞號)
+## L3. Benchmark-First discipline(對齊 canonical Meta-Pattern M8)(legacy cross-ref — 不在 SKILL.md dim table;原佔 dim 23 slot,renumber 避免與現行 dim 23「Controlled / Uncontrolled dual-mode」撞號)
 
 **Type**: Consistency
-**Canonical source**: CLAUDE.md `# Meta-Pattern 預警` M8(訂 canonical 前必 benchmark 至少 3 家 world-class);principle-audit-protocol.md D6e Q3
+**Canonical source**: `packages/design-system/ds-canonical/rules/meta-patterns.md` M8(訂 canonical 前必 benchmark 至少 3 家 world-class);principle-audit-protocol.md D6e Q3
 **Rationale home**: spec.md / memory — 若 canonical 刻意偏離 benchmark 或 benchmark 不適用,需明文 rationale
 
 ```
@@ -803,7 +808,7 @@ Your job: audit「spec 訂 canonical 決策」是否前置 benchmark(M8)。防�
 For each canonical declaration in spec.md(任何「Row action cap = X」「Dismiss 嚴格 = X only」「predicate A vs B 分類」等 canonical 聲明):
 1. 該段落 / 近區有無至少 3 家 world-class DS 對照(Polaris / Material / Atlassian / Apple HIG / Ant / Carbon / Figma / Linear / Notion)
 2. 有對照 → `benchmark ✓`
-3. 無對照但在 memory / CLAUDE.md `# Meta-Pattern` 有 rationale → `rationale ✓`
+3. 無對照但在 governance memory / canonical `meta-patterns.md` 有 rationale → `rationale ✓`
 4. 兩者皆無 → P1 flag「canonical 無 benchmark 根據,疑似憑直覺訂」
 
 Report: `spec.md:L{line} — canonical「{宣告}」無 benchmark 對照 → 補 world-class 至少 3 家 or 降級為 heuristic`
@@ -943,10 +948,10 @@ End: `N components scanned, M violations, by type: V1=X V2=Y V3=Z V4=W`. Under 4
 ## 29. Trait-based展示 stories compliance(2026-04-26 — M19 ensure-canonical pipeline)
 
 **Type**: Absolute
-**Canonical source**: `.claude/skills/story-writing/references/category-templates.md` v2(trait-based typology)
+**Canonical source**: `packages/design-system/ds-canonical/skills/story-writing/references/category-templates.md` v2(trait-based typology)
 **Rationale home**: 元件 spec.md frontmatter + 邊界案例 scope-N/A 段
 
-Working directory: /Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project
+Working directory: <verified-repository-root>
 
 對 `packages/design-system/src/components/*/` 每元件:
 
@@ -979,11 +984,11 @@ End: `N components scanned, M with traits, K P0 violations, J P2 pending migrati
 ## 30. Principles canonical compliance(2026-04-26 — Polaris/Material/Ant aligned;**v3 update 2026-05-01**)
 
 **Type**: Absolute
-**Canonical source**: `.claude/skills/story-writing/references/category-templates.md`「Principles canonical」節 v3(2026-04-26 整合)
+**Canonical source**: `packages/design-system/ds-canonical/skills/story-writing/references/category-templates.md`「Principles canonical」節 v3(2026-04-26 整合)
 **Rationale home**: 元件 spec.md(若需 scope-N/A 例外)
 **Hook**: `check_canonical_propagation.sh`(E.1 principles canonical,原 check_principles_canonical.sh folded 已合入;v3-aware)
 
-Working directory: /Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project
+Working directory: <verified-repository-root>
 
 **v3 schema(2026-04-26)**:`UsageGuidance` 為預設 canonical(整合 WhenTo + WhenNotTo + Vs 為單一 story,對齊 Polaris/Material/Ant 共識)。`WhenToUse` / `WhenNotToUse` / `Vs*Rule` 仍接受(split style),但新元件預設用 `UsageGuidance`。
 
@@ -1040,7 +1045,7 @@ Chain `node scripts/code-quality-audit.mjs --scope=all`(`--deep`)or `--scope=cha
 
 ## 28. Manual story 拆分原則 alignment(對齊 Polaris/Carbon/Storybook)
 
-**Type**: Absolute / **Canonical**: `.claude/rules/story-rules.md`「拆分原則」 / **Home**: 檔首 `// @story-split-rationale: <reason>`
+**Type**: Absolute / **Canonical**: `packages/design-system/ds-canonical/rules/story-rules.md`「拆分原則」 / **Home**: 檔首 `// @story-split-rationale: <reason>`
 
 Per-component grep `*.stories.tsx`(非 anatomy/principles)反 pattern:
 - `WithStartIcon` + `WithEndIcon` 拆兩 story → 該 `WithIcon` 對照 grid
@@ -1112,7 +1117,7 @@ Overlay primitive → SurfaceBody 中間 wrapper 必 `flex flex-col h-full`,斷�
 
 ## 40. Title 命名 quality(story-rules.md L18-22)
 
-**Type**: Absolute / **Canonical**: `.claude/rules/story-rules.md`「Title 命名」 / **Home**: 無 escape
+**Type**: Absolute / **Canonical**: `packages/design-system/ds-canonical/rules/story-rules.md`「Title 命名」 / **Home**: 無 escape
 
 Per-story regex check:`Design System/{Tokens|Patterns|Components|Internal}/{PascalCase Name}/{中文 subpage}` 結構;第一層英 / 子頁中文 / 子頁前**不**加元件名(❌ `MenuItem 展示` → ✓ `展示`)。Tokens/Patterns single-file 3-part exempt(per story-rules canonical)。
 
@@ -1271,28 +1276,32 @@ Enumerate 全 12 hue。Report 任何 mapping 不一致 / 缺 hue / step 錯 with
 
 ## 62. Fork Netlify onboarding canonical(PURE-JUDGMENT,2026-05-31 補 — infra-audit self-finding 漏)
 
-**Type**: Absolute / **Canonical**: `template/ds-product-template/{netlify.toml,.storybook/manager-head.html,CLAUDE.md}` + `scripts/setup-netlify-access.mjs` + `build-published-template-mirror.mjs` / **Home**: scenario-definition.md
+**Type**: Absolute / **Canonical**: `template/ds-product-template/{netlify.toml,.storybook/manager-head.html}` + registry-declared canonical product instruction sources + `scripts/setup-netlify-access.mjs` + `build-published-template-mirror.mjs` / **Home**: `packages/design-system/ds-canonical/references/scenario-definition.md`
 
 ```
 Your job(NO-SAMPLE):驗 fork user 從 published template 起手到首次部署的 onboarding 全鏈完整且正確。
 Enumerate + Read(全部,非 sample):template/ds-product-template/ 全 27 file 中的 netlify.toml / manager-head.html /
-CLAUDE.md Access-control 段 / package.json deploy scripts / setup-netlify-access.mjs。對每環節驗:
+registry-declared generated product instruction delivery view / package.json deploy scripts / setup-netlify-access.mjs。對每環節驗:
 1. netlify.toml build/publish/headers 正確(consumer 直接能 deploy)
-2. Basic Password / Access-control 機制有 documented plain-Chinese 引導
+2. Edge Function Basic Auth / access-control 機制有 plain-Chinese 引導，且 request-level 證據證明：env 未設／格式錯誤回 503 fail closed、設定有效但帳密缺失／錯誤回 401 + WWW-Authenticate、只有正確帳密才放行
 3. mirror build 真把這些 inject 到 published(跑 build-published-template-mirror.mjs --out 驗 0 leak + 檔齊)
-4. CLAUDE.md 對 fork user 的 setup 步驟無斷點 / 斷點有具體中文引導
+4. 每個 generated product instruction delivery view 對 fork user 的 setup 步驟無斷點 / 斷點有具體中文引導，且明定 not authority/do-not-edit
+5. setup script 含 `NETLIFY-CLI-AUTO-INSTALL-BLOCKED-001` + `netlify-cli@26.2.0` + 5 high 診斷，不含全域安裝、自動下載 runner、shell 串接或 Netlify CLI 呼叫；只印 Dashboard import repo / env var / branch deploy 指引，且在 live readback 證明匿名請求 401、有效帳密通過前保持 manual-required / exit 2
 Report file:line gaps。End:`N onboarding 環節 checked, M gaps`。Don't fix.
 ```
 
-## 66. Cross-repo dispatch + visual parity(PURE-JUDGMENT,2026-05-31 補)
+## 66. Immutable cross-repo promotion + visual parity(CI-ENFORCED,2026-07-25 升級)
 
-**Type**: Absolute / **Canonical**: `release.yml` dispatch steps + `template/sync-design-system.yml` + `composition-fidelity.yml` + `dogfood-prepublish-verify.mjs` + `scripts/visual-assertions.json` / **Home**: scenario-definition.md mirror chain
+**Type**: Absolute / **Canonical**: `release.yml` stage + `release-finalize.yml` + `mirror-to-published-template.yml` + `consumerctl plan/check/apply-fanout` + `template/sync-design-system.yml` + `governance-anchor.yml` + `composition-fidelity.yml` + `dogfood-prepublish-verify.mjs` + `scripts/visual-assertions.json` + `ci-evidence-plan.json` / **Home**: scenario-definition.md mirror chain
 
 ```
-Your job(NO-SAMPLE):驗 DS push main → npm publish → fork repo 取得更新 → visual parity 整鏈無斷。
-Enumerate + Read:release.yml(publish + dispatch)/ mirror workflow / sync-design-system.yml(fork 端接收)/
-composition-fidelity visual-diff scenarios(全 N scenario)/ dogfood-prepublish。對每環節驗 trigger event type 正確、
-無 PAT scope 漏、visual parity scenario 覆蓋 stakeholder flow。Report file:line。End:`N 環節, M gaps`。Don't fix.
+Your job(NO-SAMPLE):驗 protected DS PR merge → attested npm publish → template/fleet exact-version PR → consumer required CI/visual parity 整鏈無斷；任何 direct-main、PAT fallback、mutable tag dependency 都是失敗。
+**成立條件**:必須讀回受保護主分支的 ruleset、可信 GitHub App required check、精確 candidate commit、immutable release/BOM、template/fleet exact-version PR 與 consumer required visual checks，並由封閉 schema 的 CI evidence receipt 綁定同一 frozen deep-audit run。只讀 workflow 原始碼、模型判斷或手寫 JSON 不構成通過證據；遠端尚未啟用時必標 pending/fail-closed。
+Enumerate + Read:release stage/finalizer → mirror workflow → consumerctl plan/check/apply-fanout →
+sync-design-system.yml(fork 端只收 exact `governance-release` / manual API path)→ governance-anchor required verdict /
+composition-fidelity visual-diff scenarios(全 N scenario)/ dogfood-prepublish / CI evidence plan。對每環節驗 trigger
+event allowlist、exact version/BOM/candidate/PR/check readback 綁定、無 PAT scope 漏或 direct-main fallback、visual
+parity scenario 覆蓋 stakeholder flow。Report file:line。End:`N 環節, M gaps`。Don't fix.
 ```
 
 ## 68. Stories-vs-spec drift(PURE-JUDGMENT,2026-05-31 補)

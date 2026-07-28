@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "certifications": [
+    {
+      "id": "duplicate-a-ci-product-v1",
+      "provider": "ci",
+      "runtimeKind": "github-actions",
+      "providerVersion": "github-actions-fixture",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "github-actions",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions-fixture", "pathClass": "contains-space", "status": "not-certified", "limitations": ["Fixture duplicate A is not certified."]}
+      ],
+      "checks": [],
+      "limitations": ["Fixture duplicate A."]
+    },
+    {
+      "id": "duplicate-b-ci-product-v1",
+      "provider": "ci",
+      "runtimeKind": "github-actions",
+      "providerVersion": "github-actions-fixture",
+      "adapterVersion": "governance-protocol-1",
+      "surface": "github-actions",
+      "repositoryRole": "product-consumer",
+      "status": "not-certified",
+      "platformMatrix": [
+        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions-fixture", "pathClass": "contains-space", "status": "not-certified", "limitations": ["Fixture duplicate B is not certified."]}
+      ],
+      "checks": [],
+      "limitations": ["Fixture duplicate B."]
+    }
+  ]
+}

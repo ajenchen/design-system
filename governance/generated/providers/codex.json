@@ -1,0 +1,271 @@
+{
+  "_provenance": {
+    "contractDigest": "sha256:b259a4e92a7dd0d3ac29f6eeca6cfb30da04967f29973dba3c229d6e7c1138ce",
+    "generated": true,
+    "generator": "@qijenchen/governance",
+    "generatorVersion": "0.1.0-beta.95",
+    "manifestId": "qijenchen-provider-neutral-governance",
+    "role": "ds-author"
+  },
+  "applicableRules": [
+    {
+      "coverage": "hard-gate",
+      "ruleId": "GOV-ATTEST-001"
+    },
+    {
+      "coverage": "hard-gate",
+      "ruleId": "GOV-CONTRACT-001"
+    },
+    {
+      "coverage": "adapter",
+      "ruleId": "GOV-GENERATED-001"
+    },
+    {
+      "coverage": "adapter",
+      "ruleId": "GOV-PROVIDER-001"
+    },
+    {
+      "coverage": "hard-gate",
+      "ruleId": "GOV-SNAPSHOT-001"
+    },
+    {
+      "coverage": "hard-gate",
+      "ruleId": "GOV-UPGRADE-001"
+    }
+  ],
+  "provider": {
+    "adapter": {
+      "discovery": {
+        "configPaths": [
+          ".codex/config.toml",
+          ".codex/hooks.json"
+        ],
+        "instructionNames": [
+          "AGENTS.md"
+        ],
+        "instructionOverrideNames": [
+          "AGENTS.local.md",
+          "AGENTS.override.md"
+        ],
+        "pluginRootNames": [
+          ".codex-plugin"
+        ],
+        "providerRootNames": [
+          ".agents",
+          ".codex"
+        ]
+      },
+      "environmentMap": {},
+      "generate": true,
+      "hookView": {
+        "eventBindings": {
+          "PostToolUse": "PostToolUse",
+          "PreToolUse": "PreToolUse",
+          "SessionStart": "SessionStart",
+          "Stop": "Stop",
+          "UserPromptSubmit": "UserPromptSubmit"
+        },
+        "matcherAliases": {
+          "Bash": [
+            "Bash",
+            "exec_command",
+            "shell_command"
+          ],
+          "Edit": [
+            "Edit",
+            "edit_file",
+            "apply_patch"
+          ],
+          "MultiEdit": [
+            "MultiEdit",
+            "apply_patch"
+          ],
+          "Write": [
+            "Write",
+            "write_file",
+            "apply_patch"
+          ]
+        },
+        "materializerId": "command-hooks-json-v1",
+        "output": ".codex/hooks.json",
+        "settingsTemplate": null,
+        "supportedEvents": [
+          "PreToolUse",
+          "PostToolUse",
+          "Stop",
+          "SessionStart",
+          "UserPromptSubmit"
+        ],
+        "workingDirectoryPolicy": "repository-root"
+      },
+      "instructionView": {
+        "materializerId": "shared-instruction-v1"
+      },
+      "productInstructionSource": "scripts/fork-role-sources/AGENTS.product.md",
+      "productManagedTrees": {},
+      "repositoryInstructionSource": null,
+      "repositoryManagedTrees": {},
+      "skillAliases": [],
+      "skillBindings": {
+        "canonical-reviewer": {
+          "invocation": {
+            "strategy": "main-context"
+          },
+          "reviewClass": "tier-0-governance",
+          "selectionPolicy": "highest-certified-independent-review-v1",
+          "self": "codex",
+          "transport": "external-or-orchestrator"
+        },
+        "codex-collab": {
+          "invocation": {
+            "strategy": "main-context"
+          },
+          "reviewClass": "tier-0-governance",
+          "selectionPolicy": "highest-certified-independent-review-v1",
+          "self": "codex",
+          "transport": "external-or-orchestrator"
+        },
+        "deep-audit-cross-codex": {
+          "certificationContract": "exact-provider-runtime-surface-role-target-v1",
+          "invocation": {
+            "strategy": "main-context"
+          },
+          "reviewClass": "tier-0-governance",
+          "selectionPolicy": "highest-certified-independent-review-v1",
+          "self": "codex",
+          "transport": "content-addressed-model-broker-exchange-v1"
+        },
+        "independent-review": {
+          "certificationContract": "exact-provider-runtime-surface-role-target-v1",
+          "invocation": {
+            "strategy": "main-context"
+          },
+          "reviewClass": "tier-0-governance",
+          "selectionPolicy": "highest-certified-independent-review-v1",
+          "self": "codex",
+          "transport": "content-addressed-model-broker-exchange-v1"
+        }
+      },
+      "skillView": {
+        "directory": ".agents/skills",
+        "materializerId": "agent-skills-directory-v1"
+      }
+    },
+    "blockingExitCode": 2,
+    "capabilities": {
+      "hardGateComplete": false,
+      "hookEnforcement": "native-feedback-plus-ci",
+      "hookTrustRequired": true,
+      "nativeHooks": true
+    },
+    "displayName": "Codex",
+    "hookConfig": ".codex/hooks.json",
+    "hookConfigFormat": "json",
+    "hookEntrypoint": "scripts/run-provider-hook.mjs",
+    "id": "codex",
+    "instructionEntry": "AGENTS.md",
+    "normalization": {
+      "eventAliases": {
+        "afterwrite": "PostToolUse",
+        "beforewrite": "PreToolUse",
+        "posttooluse": "PostToolUse",
+        "postwrite": "PostToolUse",
+        "pretooluse": "PreToolUse",
+        "prewrite": "PreToolUse",
+        "sessionstart": "SessionStart",
+        "stop": "Stop",
+        "userpromptsubmit": "UserPromptSubmit"
+      },
+      "eventFields": [
+        "hook_event_name",
+        "event",
+        "event_name"
+      ],
+      "pathArrayFields": [
+        "changed_paths",
+        "tool_input.changed_paths",
+        "changes",
+        "tool_input.changes",
+        "tool_input.edits",
+        "tool_input.files"
+      ],
+      "pathFields": [
+        "tool_input.file_path",
+        "tool_input.path",
+        "file_path",
+        "path"
+      ],
+      "toolAliases": {
+        "apply_patch": "MultiEdit",
+        "bash": "Bash",
+        "create_file": "Write",
+        "edit": "Edit",
+        "edit_file": "Edit",
+        "exec_command": "Bash",
+        "multiedit": "MultiEdit",
+        "patch": "MultiEdit",
+        "replace": "Edit",
+        "shell_command": "Bash",
+        "write": "Write",
+        "write_file": "Write"
+      },
+      "toolFields": [
+        "tool_name",
+        "tool",
+        "operation",
+        "action"
+      ],
+      "writeTools": [
+        "apply_patch",
+        "write_file",
+        "edit_file",
+        "Edit",
+        "Write",
+        "MultiEdit"
+      ],
+      "writeTransports": [
+        {
+          "engine": "codex-apply-patch-v1",
+          "id": "codex-apply-patch-v1",
+          "payloadFields": [
+            "tool_input.command"
+          ],
+          "rawTools": [
+            "apply_patch"
+          ]
+        }
+      ]
+    },
+    "providerKind": "concrete-runtime",
+    "runtime": {
+      "branchNamespace": "codex/",
+      "cli": {
+        "briefInvocationMarkers": [
+          "exec",
+          "review"
+        ],
+        "discoveryMarkers": [
+          "node_modules/.bin/codex",
+          "command -v codex",
+          "which codex",
+          ".codex/auth.json"
+        ],
+        "executable": "codex",
+        "localExecutable": "node_modules/.bin/codex",
+        "replyArtifactPrefix": "codex-reply"
+      },
+      "contextOutputTransport": "system-message",
+      "memorySyncScript": null,
+      "stopDecisionTransport": "continue-json",
+      "transcript": {
+        "access": null,
+        "contract": null,
+        "fixture": null,
+        "stability": "unstable-opaque"
+      }
+    },
+    "sharedInstructionEntry": "AGENTS.md",
+    "skillDirectory": ".agents/skills"
+  },
+  "schemaVersion": 1
+}

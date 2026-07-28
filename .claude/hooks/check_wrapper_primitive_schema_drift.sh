@@ -41,18 +41,19 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '
 ')
 
 # Allow escape
-if echo "$NEW_CONTENT" | grep -qE '@wrapper-schema-allow:'; then
+if grep -qE '@wrapper-schema-allow:' <<<"$NEW_CONTENT"; then
   exit 0
 fi
 
 # Check 1: new file declares `export interface XxxOption {` ?
-DECLARES=$(echo "$NEW_CONTENT" | grep -oE 'export interface [A-Z][a-zA-Z]*Option\b[^{]*\{' || true)
+DECLARES=$(grep -oE 'export interface [A-Z][a-zA-Z]*Option\b[^{]*\{' <<<"$NEW_CONTENT" || true)
 if [ -z "$DECLARES" ]; then
   exit 0
 fi
 
 # For each declared OptionLike interface, check if same name declared elsewhere
-DS_COMPONENTS_DIR="$(dirname "$0")/../../packages/design-system/src/components"
+PROJECT_DIR="${GOVERNANCE_PROJECT_DIR:-$(pwd)}"
+DS_COMPONENTS_DIR="$PROJECT_DIR/packages/design-system/src/components"
 
 # normalize FILE_PATH relative to project for self-skip
 SELF_BASENAME="$(basename "$FILE_PATH")"
@@ -61,26 +62,26 @@ WARNINGS=()
 BLOCKERS=()
 
 while IFS= read -r decl; do
-  IFACE_NAME=$(echo "$decl" | grep -oE '[A-Z][a-zA-Z]*Option' | head -1)
+  IFACE_NAME=$(grep -m 1 -oE '[A-Z][a-zA-Z]*Option' <<<"$decl")
   [ -z "$IFACE_NAME" ] && continue
   # Skip if extends another OptionLike interface(M30 compliant)
-  if echo "$NEW_CONTENT" | grep -qE "interface $IFACE_NAME\b.*extends [A-Z][a-zA-Z]*Option"; then
+  if grep -qE "interface $IFACE_NAME\b.*extends [A-Z][a-zA-Z]*Option" <<<"$NEW_CONTENT"; then
     continue
   fi
   # Find other files declaring same name(skip self by basename — imperfect but Edit context is single-file)
   OTHER_DECLS=$(grep -rlE "export interface $IFACE_NAME\b" "$DS_COMPONENTS_DIR" 2>/dev/null | grep -v "/$SELF_BASENAME$" || true)
   if [ -n "$OTHER_DECLS" ]; then
-    BLOCKERS+=("M30 schema drift: \`$IFACE_NAME\` declared in this file (no extends) + also in: $(echo "$OTHER_DECLS" | head -3 | xargs -n1 basename | tr '\n' ',' | sed 's/,$//')")
+    BLOCKERS+=("M30 schema drift: \`$IFACE_NAME\` declared in this file (no extends) + also in: $(sed -n '1,3p' <<<"$OTHER_DECLS" | xargs -n1 basename | tr '\n' ',' | sed 's/,$//')")
   fi
 done <<< "$DECLARES"
 
 # Check 2: imports SelectMenuOption but menuOptions mapping drops fields(WARN)
-if echo "$NEW_CONTENT" | grep -qE 'import.*SelectMenuOption.*from.*SelectMenu'; then
+if grep -qE 'import.*SelectMenuOption.*from.*SelectMenu' <<<"$NEW_CONTENT"; then
   # Look for `menuOptions: SelectMenuOption[]` mapping that misses fields
-  MAP_BLOCK=$(echo "$NEW_CONTENT" | grep -A5 -E 'menuOptions.*SelectMenuOption\[\]' | head -30)
+  MAP_BLOCK=$(grep -A5 -E 'menuOptions.*SelectMenuOption\[\]' <<<"$NEW_CONTENT" | awk 'NR <= 30')
   if [ -n "$MAP_BLOCK" ]; then
     # Heuristic: should forward at least `avatar` OR `description` OR `disabled` field
-    if ! echo "$MAP_BLOCK" | grep -qE '(avatar|description|disabled)'; then
+    if ! grep -qE '(avatar|description|disabled)' <<<"$MAP_BLOCK"; then
       WARNINGS+=("M30 schema partial-forward: \`menuOptions\` mapping seems to drop avatar/description/disabled. Forward 全 SelectMenuOption surface or annotate \`// @wrapper-schema-allow: <reason>\`.")
     fi
   fi
@@ -92,13 +93,15 @@ if [ ${#BLOCKERS[@]} -gt 0 ]; then
   for b in "${BLOCKERS[@]}"; do echo "  • $b" >&2; done
   echo "" >&2
   echo "Fix: declare \`interface $IFACE_NAME extends <PrimitiveSSoT>\` (e.g. \`extends SelectMenuOption\`)" >&2
-  echo "  詳 .claude/rules/meta-patterns.md M30 + Polaris ChoiceList / Material Autocomplete idiom" >&2
+  echo "  詳 packages/design-system/ds-canonical/rules/meta-patterns.md M30 + Polaris ChoiceList / Material Autocomplete idiom" >&2
   exit 2
 fi
 
 if [ ${#WARNINGS[@]} -gt 0 ]; then
-  echo "⚠️  M30 wrapper schema forward warning:" >&2
-  for w in "${WARNINGS[@]}"; do echo "  • $w" >&2; done
+  CONTEXT="⚠️  M30 wrapper schema forward warning:"
+  for w in "${WARNINGS[@]}"; do CONTEXT="${CONTEXT}"$'\n'"  • $w"; done
+  jq -nc --arg ctx "$CONTEXT" \
+    '{governanceContext:{hookEventName:"PreToolUse",message:$ctx}}'
 fi
 
 exit 0

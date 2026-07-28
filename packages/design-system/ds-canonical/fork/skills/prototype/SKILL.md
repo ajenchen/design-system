@@ -3,11 +3,13 @@ name: prototype
 description: Build UI prototypes / MVPs via a structured UX workflow — benchmark world-class, evaluate against DS + business, produce 2-3 shortlisted candidates as Storybook explorations, self-audit via product-ui-audit, let stakeholders decide. Invoke via /prototype ONLY when user explicitly uses the words「prototype」「MVP」「原型」 in their message (e.g.「做 prototype」「做 MVP」「做原型」「prototype 一個 X」). **DO NOT auto-invoke on casual phrases** like「怎麼做世界級」「給我幾個方案」「比版本」「比幾個版本」「還能怎麼做」「有哪些選項」— these are ambient conversation / thought-partnering, not explicit skill requests; instead ask「要走 prototype skill 正式流程嗎?還是只想先口頭討論?」to confirm before invoking.
 ---
 
+> **Product-role projection(build 自動)**:本 skill 的執行步驟已只保留本 product repo 實際存在的指令。DS-author-only executor 會被改寫為 browser/manual/product-CI 等價驗證,不得在 product 中嘗試不存在的腳本。
+
 # Prototype Workflow
 
 Purpose: embody the UX designer's mental model for BUILDING PROTOTYPES — never design by gut; benchmark world-class, filter against DS + business, build multiple shortlisted proposals, self-audit, let stakeholders decide.
 
-This skill is the **structured version** of CLAUDE.md Mindset #1「對標世界級」+ #4「真實業務場景」+ #5「猶豫就問」,and the orchestrator for `src/explorations/` folder usage.
+This skill is the **structured version** of shared-governance Mindset #1「對標世界級」+ #4「真實業務場景」+ #5「猶豫就問」,and the orchestrator for `src/explorations/` folder usage.
 
 ## When to run
 
@@ -23,7 +25,7 @@ This skill is the **structured version** of CLAUDE.md Mindset #1「對標世界�
 
 - User has briefed a feature / problem / user need (will be clarified in Phase 0)
 - Working directory is project root
-- CLAUDE.md read fully(DS 既有 primitives / layout primitives 清單 / mindset)
+- shared governance instructions read fully(DS 既有 primitives / layout primitives 清單 / mindset)
 
 ---
 
@@ -42,9 +44,9 @@ This skill is the **structured version** of CLAUDE.md Mindset #1「對標世界�
 
 **Output**: 一段 1-liner summary 確認 alignment。
 
-### ⚠️ Checkpoint 0 — User confirms framing
+### ⚠️ Checkpoint 0 — Framing decision(conditional P2H)
 
-User approves the problem framing OR clarifies. Do NOT skip to benchmarking without a clean frame.
+Record a clean framing before benchmarking. If the requirement already fixes persona/JTBD/constraints, this is a readback receipt and the workflow continues. Ask only when unresolved framing choices would produce different product／UI／UX outcomes.
 
 ### Phase 1 — Benchmark research
 
@@ -80,14 +82,11 @@ For each reference,收集**兩類資訊**:
 | ...       |          |               |            |
 ```
 
-**Report format**: report back to user as the scan table. Do not advance to evaluation yet.
+**Report format**: retain and report the scan table as an evidence receipt, then continue when canonical benchmark coverage is complete.
 
-### ⚠️ Checkpoint 1 — Research scope confirmation
+### Checkpoint 1 — Research evidence receipt(not a human gate)
 
-User reviews the scan. Options:
-- `(a)` Research is sufficient → proceed to Phase 2
-- `(b)` Add references X, Y → extend Phase 1
-- `(c)` Scope changed → restart Phase 0
+The agent determines research sufficiency from the canonical coverage and evidence rules. Missing evidence is gathered autonomously. Only a newly discovered unresolved product framing trade-off returns to conditional Checkpoint 0.
 
 ### Phase 2 — Evaluate candidates
 
@@ -109,14 +108,14 @@ Narrative 必含:
 - 對齊 Mindset #4:「搭我們的業務情境會不會水土不服」
 - 對齊 Mindset #2:「這個 pattern 我們有對應 primitive 嗎?」
 
-### ⚠️ Checkpoint 2 — Shortlist decision(MUST ASK)
+### ⚠️ Checkpoint 2 — Shortlist product decision(conditional P2H)
 
-這是最關鍵的 checkpoint。presenting 評分後,user 決定:
+當兩個以上可行候選會產生不同產品／UI／UX outcomes 時，presenting 評分後由 user 決定:
 - 哪 2-3 個候選進 shortlist(要實際做原型)
 - 哪些直接 drop(排除理由寫在 exploration notes)
 - 是否需要混搭(A 的 interaction + B 的視覺 = 新候選 C)
 
-**絕對不可**憑 AI 自己評分就挑 shortlist。這是設計決策,stakeholder 要參與。
+若既有 SSOT、明確 requirement 與 evidence 已唯一淘汰其他候選，agent 記錄 selection receipt 後自主接續；不得為了形式詢問而製造不存在的產品選擇。
 
 ### Phase 3.0 — Build Object Map(ORCA,design 前強制)
 
@@ -141,7 +140,7 @@ Narrative 必含:
 
 **Input**: shortlist(2-3 items)+ Phase 3.0 產出的 Object Map
 
-**Phase 3.0a — SSOT 5-step pre-check**:寫任何 candidate code 前必過 CLAUDE.md「SSOT 消費 canonical」+ `node_modules/@qijenchen/design-system/ds-canonical/references/ssot-consultation.md`「5-step pre-check」(SSOT 在 memory + CLAUDE.md,本 skill 不重複)。`check_story_invariants.sh` R1 anatomy(原 check_story_anatomy.sh folded 折入)PreToolUse 是最後安全網,但 5-step 是事前 discipline。
+**Phase 3.0a — SSOT 5-step pre-check**:寫任何 candidate code 前必過 shared governance「SSOT 消費 canonical」+ `node_modules/@qijenchen/design-system/ds-canonical/references/ssot-consultation.md`「5-step pre-check」(本 skill 不重複)。the installed immutable governance checker R1 anatomy(原 check_story_anatomy.sh folded 折入)PreToolUse 是最後安全網,但 5-step 是事前 discipline。
 
 **Process**: 每個 candidate 建一個 exploration story,**各 candidate 共享 Object Map 但差異在 UI shape + CTAs 順序**。see `references/proposal-template.md` for structure。
 
@@ -166,28 +165,29 @@ Storybook title 慣例(不與 Components/ 衝突):
 **DS 一致性鐵律**:
 - 優先用既有 `node_modules/@qijenchen/design-system/src/components/` 元件
 - 若需新元件 / primitive,**notes.md 明文標示**(不偷偷 add 到 components/)
-- 所有 token / layout primitive 按 CLAUDE.md「既有 layout primitives 清單」消費
+- 所有 token / layout primitive 按 shared governance「既有 layout primitives 清單」消費
 
-### ⚠️ Checkpoint 3 — 新元件 / primitive 需求
+### ⚠️ Checkpoint 3 — 新元件 / primitive 需求(conditional P2H)
 
-若任一 candidate 需要新 DS 元件,**必須 ASK**:
+先依 consume-before-invent、public/internal 與 promotion evidence 自主判定。只有 composition 與新 public semantics 皆可行、且代表不同 UI／UX outcomes 時才 ASK:
 - 此新元件是本 candidate 獨有?還是跨 candidate 共用?
 - 若被選中,值得升級到 Components/ 嗎?
-- 三重命名 test 過嗎?(見 CLAUDE.md)
+- 三重命名 test 過嗎?(見 shared governance instructions)
 
 **絕對不可**在 explorations/ 階段就偷偷 add 到 Components/,會污染 DS。
 
 ### Phase 3.5 — Self-audit(stakeholder-gate,強制進階 6 維)
 
 **Input**: Phase 3 完成 + Checkpoint 3 資源決策完畢的 exploration stories
-**核心原則**:exploration code 不該直接進 Phase 4 給 stakeholder 看 — AI 必先掃 6 維(對齊 CLAUDE.md `# 稽核 canonical` M6:stakeholder-visible 產出 → 強制進階模式)。
+**核心原則**:exploration code 不該直接進 Phase 4 給 stakeholder 看 — AI 必先掃 6 維(對齊 shared governance `# 稽核 canonical` M6:stakeholder-visible 產出 → 強制進階模式)。
 **Output**: per candidate 6 維 report,彙整成 Phase 3.5 gate report。
 
 **6 維 + 執行順序 + Gate 規則完整詳細** → `references/audit-checks.md`(SSOT;本 skill 不重複)。重點:
 - D1-D5 chain `/product-ui-audit` / `/performance-audit` / `/ux-audit` / `/visual-audit`
 - D6 chain `principle-audit-protocol.md`(設計原則自檢 4 子維)
 - 前置:M15 Flow snapshot coverage(無 OpenSnapshot story = block audit)
-- Gate 規則:P0 必修 / 高 impact 必修 / D6 疑點 STOP 等 sign-off
+- Gate 規則:P0 必修 / 高 impact 必修 / D6 finding 依 shared authority classifier
+  路由；P2E 以 evidence 自主收斂，只有仍存在真產品／UI／UX outcomes 取捨才 P2H
 
 ### Phase 4 — Present & stakeholder decision
 
@@ -209,7 +209,7 @@ User / stakeholder 決定採用某 candidate 後:
 - `(c)` 混搭 A+B 新 hybrid(新 exploration)
 - `(d)` 全部不採用(保留 explorations/ 作紀錄,也是有價值的 ruled-out)
 
-**Graduation 流程**:若升級到正式,在 `explorations/_archive/` 備份 exploration(per CLAUDE.md `# 元件完成 + Exploration`:比稿定案升級 patterns/ 或 components/,舊比稿保留作紀錄),正式 code 進 design-system/。
+**Graduation 流程**:若升級到正式,在 `explorations/_archive/` 備份 exploration(per shared governance `# 元件完成 + Exploration`:比稿定案升級 patterns/ 或 components/,舊比稿保留作紀錄),正式 code 進 design-system/。
 
 ### Phase 5 — Cleanup
 

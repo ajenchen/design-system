@@ -3,7 +3,7 @@ name: scan-similar-bugs
 description: Auto-invoke after fix commits — extracts root-cause anti-pattern, greps DS-wide for same pattern, runs visual verify, batches related fixes. Closes M10 mechanical gap. Invoke via /scan-similar-bugs.
 ---
 
-> **⚠️ Fork 工具註記(build 自動加)**:本 skill 提到的 `scripts/*.mjs` 或非標準 `npm run <audit>` 是 **DS-author repo 的機械工具,未隨 fork 套件附帶**(Claude Code 不掃 node_modules,fork 也無這些 executor + dep)。你的 product fork 用本 skill 的**方法論**(human / AI judgment)+ 既有 committed governance hook 的機械強制即可;要 mechanical 腳本層(截圖 / CI gate)請自行設置對應工具,或把該檢查 PR 回 DS repo 跑。
+> **Product-role projection(build 自動)**:本 skill 的執行步驟已只保留本 product repo 實際存在的指令。DS-author-only executor 會被改寫為 browser/manual/product-CI 等價驗證,不得在 product 中嘗試不存在的腳本。
 
 # /scan-similar-bugs — Fix-time DS-wide Exhaustive Scan
 
@@ -17,11 +17,11 @@ description: Auto-invoke after fix commits — extracts root-cause anti-pattern,
 **對位其他 skill**:
 - `/design-system-audit` 是**定期 batch** full-dim audit
 - `/visual-audit` 是**單次視覺對齊** check
-- 本 skill 是 **batch-end-only root-pattern scan**(2026-05-12 codex 抓 infra conflict 重構:per-fix → batch-end,對齊 `/bug-fix-rhythm` Phase 2-3 batch fix + single end-verify canonical;M32 split 後 batch-end home 移至 bug-fix-rhythm skill)
+- 本 skill 是 **batch-end-only root-pattern scan**(2026-05-12 independent review 抓 infra conflict 重構:per-fix → batch-end,對齊 `/bug-fix-rhythm` Phase 2-3 batch fix + single end-verify canonical;M32 split 後 batch-end home 移至 bug-fix-rhythm skill)
 
 ## When to invoke
 
-**強制(auto-chain)— batch-end only**(2026-05-12 重構,per codex):
+**強制(auto-chain)— batch-end only**(2026-05-12 重構,per independent review):
 - multi-issue session 結束後**一次**(不是每 fix 一次)
 - session 內 ≥ 2 fix commit 觸發批次 root-pattern scan
 - session_start_governance_check.sh Check 6 偵測 24h 內 ≥1 fix commit 且 skill-invokes log 24h 無 scan-similar-bugs invoke → soft 提醒
@@ -30,7 +30,7 @@ description: Auto-invoke after fix commits — extracts root-cause anti-pattern,
 - user 明言「掃同類 bug / 看其他元件有沒有 / 全 DS scan」
 - multi-issue batch session 結束想驗 root-pattern DS-wide
 
-**不 invoke**(對齊 Anthropic Best Practice 小修 skip plan):
+**不 invoke**(對齊 provider-neutral best practice 小修 skip plan):
 - **Surgical visual bug**(user 列 N 個 visual defects + 無 canonical / API / cross-component → 批 fix + final verify only,不必 scan-similar)
 - pure refactor(無 bug 修復語義)
 - spec.md / docs only commit
@@ -40,7 +40,7 @@ description: Auto-invoke after fix commits — extracts root-cause anti-pattern,
 
 - 不擴展 scope 到「audit full-dim品質」(那是 `/design-system-audit`)
 - 不做視覺 regression baseline diff(那是 `/visual-audit`)
-- 不改 canonical(找到 pattern 後修是 surgical fix,動 canonical 走 audit / Checkpoint)
+- 不在本 skill 擴張成 full canonical redesign；工程治理 canonical remediation 轉交 audit 自主處理，只有產品／UI／UX SSOT 真取捨才是 human boundary
 
 ---
 
@@ -80,40 +80,41 @@ grep -rnE "$ANTI_PATTERN" node_modules/@qijenchen/design-system/src/ --include="
 
 **Playwright visual scan**(慢,適合 geometry / a11y / interaction):
 ```bash
-node scripts/scan-asymmetric-icons.mjs   # 已存在,iconOnly visual scan template
+use the active browser/Storybook screenshot workflow and preserve visual evidence
 # 或 base 同 pattern 自寫 dim-specific scan
 ```
 
 **Output**:候選清單(file:line + 樣本)。
 
-### ⚠️ Checkpoint 1 — Triage
+### Phase 1.5 — Authority classification + triage receipt
 
-向 user present:
+產出:
 ```
 Phase 1 found N candidates of same anti-pattern:
 - node_modules/@qijenchen/design-system/src/components/A/a.tsx:42  > grep match
 - node_modules/@qijenchen/design-system/src/components/B/b.tsx:18  > grep match
 - node_modules/@qijenchen/design-system/src/components/C/c.tsx:55  > 視覺 14×16
 
-Proceed?
-- (a) Auto-fix all N(若修法 deterministic 例 token rename)
-- (b) Review per-file(若 fix 需個別判斷)
-- (c) 留 N 個 tech debt 後續處理(寫 memory + 不修)
+Execution:
+- deterministic fix → Auto-fix all confirmed N
+- engineering judgment → 依 owning spec + highest certified capability + independent review逐檔收斂
+- 不屬 frozen scope → Backlog with evidence；不得用 defer 逃避 scope 內修復
+- 會改產品／UI／UX SSOT 且仍有真取捨 → batch-at-end human-only decision
 ```
 
-不可 silent 跳過 user — fix scope 影響 N 元件,**M10 + 稽核 vs 執行 分權**要求 user 拍板。
+不可 silent 跳過 confirmed scope；影響 N 檔是工程 blast radius，不是 user approval gate。必記錄 scope、evidence、tests 與 rollback。
 
 ### Phase 2 — 批量 / 個別 fix
 
-按 Checkpoint 1 user 選的路執行。每修一檔:
+按 Phase 1.5 authority classifier 執行。每修一檔:
 - 用 Edit(不 Write,降風險)
 - 修完 grep 該 anti-pattern 應 0 match
 - npx tsc --noEmit 必過
 
 ### Phase 3 — Visual / unit verify
 
-- Visual:跑 `npm run icons:scan` 或 dim-specific scan
-- Unit:跑 `npm run hooks:test`
+- Visual:跑 `use the active browser/Storybook screenshot workflow and preserve visual evidence` 或 dim-specific scan
+- Unit:跑 `npm run governance:check`
 - TSC:`npx tsc -b`
 - 全綠才繼續
 
@@ -132,8 +133,8 @@ Proceed?
 - {K} deferred(spec rationale 已記)
 
 ### New defense layer(防 future regression)
-- 加 hook:`.claude/hooks/check_<pattern>.sh`(若 pattern 易 grep)
-- 加 visual test:`scripts/scan-<pattern>.mjs`(若需 Playwright)
+- 加 canonical hook:the installed immutable governance checker(若 pattern 易 grep)，再由 generator 投影到各 provider；禁止直接新增 provider-owned hook。
+- 加 visual test:the product-specific verification workflow (when configured)(若需 Playwright)
 - 加 spec rule:{spec.md anchor}
 
 ## Self-improvement capture
@@ -148,16 +149,16 @@ Proceed?
 
 ---
 
-## ⚠️ Checkpoints(禁止跳)
+## Authority gates(禁止跳 classifier)
 
-### Checkpoint 1 — Phase 1 後 Triage
-N 個 candidate 的修法 scope。**禁止 auto-fix 超過 5 檔不 ask user**。
+### Gate 1 — Phase 1 後 Triage
+N 個 candidate 的修法 scope由 agent 依 frozen scope、canonical、tests 與 rollback 自行收斂；檔案數量不構成人類工程核准門檻。
 
-### Checkpoint 2 — 動 canonical
-若 N candidates 都 violate 同 canonical,但 canonical 本身可能 outdated → 走 audit 重訂(不在本 skill scope)。
+### Gate 2 — 動 canonical
+若 N candidates 都 violate 同 canonical,但 canonical 本身可能 outdated → 走 audit 重訂。工程／治理決策 AUTO；只有重訂會改產品／UI／UX SSOT 且存在真取捨才停。
 
-### Checkpoint 3 — Defer 的 tech debt
-若 user 選 (c) 留 tech debt → 必寫 memory + 標明「deferred at <date>,reason: <reason>」。`/codify-corrections` 季度會 review。
+### Gate 3 — Backlog
+只有不屬 frozen scope 的 improvement 才放 Backlog，必寫 memory + evidence + reason；Scope 內可修復項不得因 milestone 或工程偏好 defer。
 
 ---
 
@@ -169,8 +170,8 @@ N 個 candidate 的修法 scope。**禁止 auto-fix 超過 5 檔不 ask user**�
 | `/visual-audit` | 單次視覺對齊 | Phase 3 verify 用 |
 | `/scan-similar-bugs`(本) | **immediate-after-fix grep + verify** | M10 mechanical 落地 |
 | `/knowledge-prune` | 季度 governance prune | 不重複 |
-| `check_canonical_propagation.sh` E.2(hook;原 check_l3_primitive_import.sh folded 折入,P0 BLOCK) | L3 primitive import 違規 | 即時 detect,本 skill 是 batch retro scan |
-| `pre_write_subsumption_check.sh`(retired 2026-06 → `.claude/hooks/retired/`;新 file / M-row 治理由 `session_start_governance_check.sh` + `enforce_home_charter.sh` 現役防線接手)| 新 file / M-row | 不重複 |
+| the installed immutable governance checker E.2(hook;原 check_l3_primitive_import.sh folded 折入,P0 BLOCK) | L3 primitive import 違規 | 即時 detect,本 skill 是 batch retro scan |
+| the installed immutable governance checker(retired 2026-06 → canonical the installed immutable governance checker history;新 file / M-row 治理由 the installed immutable governance checker + the installed immutable governance checker 現役防線接手)| 新 file / M-row | 不重複 |
 
 **3 層 防線**:
 - Hook(pre/post tool):**寫的瞬間** detect

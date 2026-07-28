@@ -39,7 +39,7 @@ Purpose: design-system-audit audits the **DS itself**(spec / cva / SSOT 三方�
 
 - User 指定 audit target(file path / folder / feature area)
 - Target 是 consumer 層 UI code(`src/app/**` / `src/explorations/**` / `src/pages/**` / `src/features/**` / `apps/**`(含 DS repo 自家 `apps/template` + create-app 產物)等 — **不掃 `packages/design-system/src/`**)
-- CLAUDE.md 全讀(7 維 audit 都依此為基準)
+- shared governance instructions 全讀(7 維 audit 都依此為基準)
 
 ---
 
@@ -57,7 +57,7 @@ Purpose: design-system-audit audits the **DS itself**(spec / cva / SSOT 三方�
 
 此維對齊既有 token 防線(`lib/_token_hygiene.sh` 5-check:shadcn alias / v4 shorthand / hardcoded shadow / primitive-color-as-utility / native overflow，由 `post_edit_dispatcher.sh` source；+ `check_opacity_token_usage.sh` 對齊 utility-registry.json 類別 — pattern hardcode 於 hook,registry 僅存在性 fallback gate)+ 擴充硬色值 / 硬 px 檢查。
 
-### Dim 2 — Layout primitive 消費(per CLAUDE.md 清單)
+### Dim 2 — Layout primitive 消費(per shared governance 清單)
 
 掃是否正確消費既有 layout primitives(非自 roll):
 
@@ -87,7 +87,7 @@ Purpose: design-system-audit audits the **DS itself**(spec / cva / SSOT 三方�
 
 ### Dim 4 — Mindset adherence
 
-對齊 CLAUDE.md 6 條 mindset(逐條檢查 #1-#5;#6「大原則吸收瑣碎」屬 governance meta 層,不在 consumer code audit scope。編號用 mindset #N,避免撞 meta-patterns M-rules 編號):
+對齊 shared governance 6 條 mindset(逐條檢查 #1-#5;#6「大原則吸收瑣碎」屬 governance meta 層,不在 consumer code audit scope。編號用 mindset #N,避免撞 meta-patterns M-rules 編號):
 
 - **mindset #1 對標世界級**:新 pattern 有對標備註? 或找得到對應既有元件?
 - **mindset #2 不憑直覺發明**:新數值(gap / padding / font-size)前有 grep 既有?
@@ -95,7 +95,7 @@ Purpose: design-system-audit audits the **DS itself**(spec / cva / SSOT 三方�
 - **mindset #4 真實業務場景**:stories / examples 用真實場景 (Jira / Stripe / Notion...)?無 `Option A/B/C` / `按鈕一` / `Rule A`?
 - **mindset #5 猶豫就問**:code 裡有 TODO-未確認留白?
 
-### Dim 5 — 視覺幾何(Mindset #1 視覺擴充 + .claude/references/ui-dev-rules.md「同 flex 列互動 slot 幾何鐵律」)
+### Dim 5 — 視覺幾何(Mindset #1 視覺擴充 + `packages/design-system/ds-canonical/references/ui-dev-rules.md`「同 flex 列互動 slot 幾何鐵律」)
 
 - 同 flex 行的互動 slot box 尺寸一致(例:FileItem status / delete 都 h-field-sm)
 - hover-bg / ring / focus outline 不溢出 box 吃 gap token
@@ -114,14 +114,16 @@ Purpose: design-system-audit audits the **DS itself**(spec / cva / SSOT 三方�
 
 ### Dim 7 — D6 設計原則自檢(consumer 是否牴觸 DS canonical)
 
-chain `.claude/skills/design-system-audit/references/principle-audit-protocol.md` 做 4 子維 scoped 對 consumer code:
+chain `packages/design-system/ds-canonical/skills/design-system-audit/references/principle-audit-protocol.md` 做 4 子維 scoped 對 consumer code:
 
 - **D6a 合理性**:consumer 自己的設計判斷是否有 rationale(為什麼這樣用 DS 元件)
 - **D6b 一致性**:跨 feature 同概念處理一致(同 team 兩頁面 dismiss 不應用不同方式)
 - **D6c 無矛盾**:consumer 實作是否牴觸 DS spec 聲明(例:用 Button 作 dismiss 明顯違 item-anatomy SSOT)
 - **D6d 完整性**:state 覆蓋(error / loading / empty)
 
-判斷 auto vs STOP 依 protocol 公式。修 consumer code 一致化 = AUTO;建議修 DS canonical 本身 = STOP 提議。
+判斷 auto vs STOP 依 protocol 的 authority classifier。修 consumer code 一致化、工程 bug、
+a11y、performance 與治理修復 = AUTO；只有建議會改變產品／UI／UX SSOT 且存在真實取捨時
+才 STOP 提議。修改 DS canonical 本身不自動等於 human gate。
 
 ---
 
@@ -129,7 +131,10 @@ chain `.claude/skills/design-system-audit/references/principle-audit-protocol.md
 
 ### Phase 0 — Scope
 
-確認 audit target:file / folder / feature area。提問 user 若模糊。禁止掃整個 repo(失焦)。
+從 explicit request、目前 frozen scope、changed paths 與 registered feature owner 解析 audit
+target(file / folder / feature area)。工程範圍模糊時選最小完整 affected scope 並記錄 rationale；
+只有不同 scope 會導致真正產品／UI／UX SSOT 取捨時才提問 user。禁止無 evidence 掃整個 repo
+(失焦)，也禁止把可由 repository evidence 解出的 scope 轉交 user。
 
 ### Phase 1 — Parallel 7-Dimension audit
 
@@ -148,7 +153,7 @@ chain `.claude/skills/design-system-audit/references/principle-audit-protocol.md
 | ... |
 ```
 
-### ⚠️ Checkpoint 1 — Triage & fix decision
+### Checkpoint 1 — Triage evidence receipt
 
 類似 design-system-audit 的 triage checkpoint:
 
@@ -157,16 +162,18 @@ chain `.claude/skills/design-system-audit/references/principle-audit-protocol.md
 
 P0(必修,無爭議):N 項
 P1(批次修 + review):M 項
-P2(需討論):K 項
+P2E(工程／治理，自主修):K 項
+P2H(產品／UI／UX SSOT 真取捨):J 項
 
-先修 P0?還是全給 user 看?
+P0/P1/P2E 依 frozen scope 自主修；只有 P2H 要 exact target-bound user decision。
 ```
 
 詳見 `references/report-template.md`。
 
-### Phase 3 — Fix(optional)
+### Phase 3 — Fix
 
-若 user 同意 fix,surgical 修復。每批(Dim 1 / Dim 2 / ...)一個 commit。
+P0/P1/P2E 依 Standing Authorization surgical 修復；每批(Dim 1 / Dim 2 / ...)一個
+可驗證 change set。P2H 在 exact decision 前保持 proposal-only。
 
 ### Phase 4 — Verify
 
@@ -175,7 +182,7 @@ P2(需討論):K 項
 
 ### Phase 5 — Visual audit(stakeholder-gate,mandatory on stakeholder-visible work)
 
-對齊 **CLAUDE.md 稽核 canonical Tier 1 stakeholder-gate**:產品 UI 要給 stakeholder / end-user 看之前,**code + visual 雙層都要過**。Phase 1-4 是 code 層;本 Phase 補視覺層。
+對齊 **shared governance 稽核 canonical Tier 1 stakeholder-gate**:產品 UI 要給 stakeholder / end-user 看之前,**code + visual 雙層都要過**。Phase 1-4 是 code 層;本 Phase 補視覺層。
 
 **Input**:Phase 4 verify 過關的產品 UI(screens / routes / embedded widgets)
 
@@ -190,9 +197,12 @@ P2(需討論):K 項
    - Geometry assertion fail → **P0**(機械規則違反)
    - Layer B AI 視覺判斷 finding → 按嚴重度 P0 / P1 / P2
 
-**Gate 規則**:P0 有 → 停下修,不放給 stakeholder;P1 / P2 走跟 Phase 2 Report 同樣 user-decision 流程。
+**Gate 規則**:P0 有 → 停下修,不放給 stakeholder；P1/P2E 自主修復與驗證；只有
+P2H 產品／UI／UX SSOT 真取捨走 exact target-bound user-decision 流程。
 
-**何時可跳**:內部 UI(只給 engineer / admin 看,非 stakeholder / end-user)→ user 明示 skip,但建議跑一次 Layer A 抓 a11y P0。
+**何時可縮窄**:內部 UI(只給 engineer / admin 看,非 stakeholder / end-user)可依
+canonical scope evidence 縮窄 Layer B，但 Layer A a11y P0 不得省略；這是工程判斷，
+不是 user approval gate。
 
 **為什麼 mandatory**:code audit 對 + spec 對,視覺仍可能錯(對比不夠、overlay 疊到文字、跨 OS 捲軸跑版)——這類 bug 只有視覺層抓得到。產品給 stakeholder / user 看時 = stakeholder-visible artifact,必過 Tier 1 gate。
 
@@ -205,14 +215,14 @@ audit 完畢報告應含:
 2. **Summary**:per dimension 的 pass/fail 數
 3. **Findings table**:具體 file:line + severity + fix
 4. **Recommendations**:P0 優先 / 建議修順序
-5. **Next step**:等 user Checkpoint 1 決策
+5. **Next step**:列出已自主處理的 P0/P1/P2E；只有 P2H 才列唯一需要的 user decision
 
 ---
 
 ## Non-goals
 
 - 不 audit DS 本身(走 /design-system-audit)
-- 不改 user 未同意的 P1/P2(僅 P0 可自動修,需 user 決策 P1+)
+- 不把 P1/P2 severity 當成 human gate；依 P2E/P2H authority class 處理。
 - 不 audit 業務邏輯正確性(本 skill 管 UI / DS consumption / design principles,不管 data flow 對不對)
 - 不 replace code review(本 skill 是 pre-review self-check,不是 final QA)
 

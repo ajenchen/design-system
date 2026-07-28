@@ -1,82 +1,24 @@
-name: SSOT sync dispatch(non-version main push)
+name: Retired SSOT sync dispatch compatibility tombstone
 
-# Per user 2026-05-27 verbatim「當 ds repo 有任何增刪改被 push main 之後一律務必自主自動讓
-# PW REPO 同步更新到最新」directive.
-#
-# Existing chain(release.yml + tag push):DS bump version + tag → npm publish → dispatch PW sync.
-# Gap caught:DS main push without tag(spec.md edits / hook ship / governance counter
-# changes / plugin marketplace.json update)不 trigger PW sync,因為 release.yml dispatch
-# 條件 `startsWith(github.ref, 'refs/tags/v')`.
-#
-# This workflow fills gap:on push main 偵測 SSOT-affecting paths changed → dispatch
-# PW `design-system-ssot-changed` event。PW sync workflow 接收 event → npm update +
-# plugin marketplace check + commit + push → Netlify rebuild auto chain.
-#
-# Path filter prevents noise:不 fire on log artifacts / governance counter auto-update.
+# One-time Genesis compatibility file. The provider-neutral release/adoption
+# workflows supersede this cross-repository token path. Keeping an inert,
+# auditable file lets the A/M-only control-plane bootstrap merge before the
+# distinct protected cleanup PR removes the legacy path.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      # SSOT-affecting paths(per CLAUDE.md `# Step 5.5 SSOT propagation gate`)
-      # storybook-config 無 src/ dir — files 在 root(addons/ + addons-preset.ts + preview.tsx)
-      - 'packages/design-system/src/**'
-      - 'packages/storybook-config/addons/**'
-      - 'packages/storybook-config/addons-preset.ts'
-      - 'packages/storybook-config/preview.tsx'
-      - 'packages/storybook-config/package.json'
-      - '.claude/rules/**'
-      - '.claude/hooks/**'
-      - '.claude/skills/**'
-      - '.claude/commands/**'
-      - '.claude/references/**'
-      - '.claude-plugin/**'
-      - 'hooks/hooks.json'
-      - 'CLAUDE.md'
-      # exclude noise
-      - '!**/governance-counters.json'
-      - '!**/hook-fires.jsonl'
-      - '!**/audit-coverage-matrix.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  dispatch-pw-sync:
-    name: Dispatch PW sync(non-version SSOT change)
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
+  retired:
+    name: Retired — no external action
+    if: ${{ false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2  # for diff
-      - name: Identify SSOT diff scope
-        id: scope
+      - name: Explain retirement
+        shell: bash
         run: |
-          DIFF=$(git diff --name-only HEAD~1 HEAD || echo "")
-          echo "diff_files<<EOF" >> $GITHUB_OUTPUT
-          echo "$DIFF" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          echo "Changed files since last push:"
-          echo "$DIFF"
-      - name: Dispatch ds-ssot-changed event to ds-product-template
-        # 2026-07-14 對齊 release.yml R2 canonical(2026-06-11):移除 `|| secrets.GITHUB_TOKEN`
-        # 假 fallback —— GITHUB_TOKEN 對 cross-repo dispatch 必 403(repo-scoped),fallback 形同
-        # 虛設且掩蓋未設 secret 的真相。secret 未設即明確 ::warning:: skip;dispatch 失敗以
-        # ::warning:: 可見(不再靜默 echo 吞掉)。Dependabot daily 為 fallback。
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.PRODUCT_WORKSPACE_DISPATCH_TOKEN }}
-          # 2026-07-14:head_commit.message 不可直接 ${{ }} 內插進 run script —— 本 repo commit
-          # message 幾乎全多行(Co-Authored-By),raw 內插會撕裂 shell 命令(且為 GitHub 官方列名
-          # script-injection anti-pattern)。改走 env var,shell 展開安全。
-          HEAD_MSG: ${{ github.event.head_commit.message }}
-        run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "::warning::PRODUCT_WORKSPACE_DISPATCH_TOKEN 未設 — skip ds-ssot-changed dispatch(Dependabot daily 仍 fallback)"
-            exit 0
-          fi
-          gh api repos/ajenchen/ds-product-template/dispatches \
-            -f "event_type=ds-ssot-changed" \
-            -f "client_payload[commit]=${{ github.sha }}" \
-            -f "client_payload[message]=${HEAD_MSG%%$'\n'*}" \
-            || echo "::warning::ds-ssot-changed dispatch failed(token 權限?)— Dependabot daily 仍 fallback"
+          echo "This compatibility workflow is permanently inert."

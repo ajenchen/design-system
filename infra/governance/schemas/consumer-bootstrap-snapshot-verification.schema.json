@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/consumer-bootstrap-snapshot-verification-v1.schema.json",
+  "title": "Read-only consumer bootstrap snapshot verification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema", "schemaVersion", "kind", "readOnly", "mutationAuthorized", "candidateCodeExecuted",
+    "planDigest", "currentTreeSha256", "actionsDigest", "expectedSnapshotTreeSha256",
+    "materializedSnapshotTreeSha256", "entryCount", "verificationDigest"
+  ],
+  "properties": {
+    "$schema": {"const": "https://qijenchen.dev/schemas/consumer-bootstrap-snapshot-verification-v1.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "consumer-bootstrap-materialized-snapshot-verification"},
+    "readOnly": {"const": true},
+    "mutationAuthorized": {"const": false},
+    "candidateCodeExecuted": {"const": false},
+    "planDigest": {"$ref": "#/$defs/sha256"},
+    "currentTreeSha256": {"$ref": "#/$defs/sha256"},
+    "actionsDigest": {"$ref": "#/$defs/sha256"},
+    "expectedSnapshotTreeSha256": {"$ref": "#/$defs/sha256"},
+    "materializedSnapshotTreeSha256": {"$ref": "#/$defs/sha256"},
+    "entryCount": {"type": "integer", "minimum": 0},
+    "verificationDigest": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}

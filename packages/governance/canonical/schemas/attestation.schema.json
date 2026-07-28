@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance-attestation.schema.json",
+  "title": "Governance attestation",
+  "type": "object",
+  "required": ["_provenance", "schemaVersion", "issuedAt", "subject", "role", "contractDigest", "snapshotDigest", "gitHead", "gitTree", "evidenceDigest", "claims"],
+  "properties": {
+    "_provenance": { "$ref": "#/$defs/provenance" },
+    "schemaVersion": { "const": 1 },
+    "issuedAt": { "type": "string", "format": "date-time" },
+    "subject": { "type": "string", "minLength": 1 },
+    "role": { "type": "string", "minLength": 1 },
+    "contractDigest": { "$ref": "#/$defs/digest" },
+    "snapshotDigest": { "$ref": "#/$defs/digest" },
+    "gitHead": { "$ref": "#/$defs/gitOidOrNull" },
+    "gitTree": { "$ref": "#/$defs/gitOidOrNull" },
+    "evidenceDigest": { "$ref": "#/$defs/digest" },
+    "claims": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 4,
+      "items": {
+        "enum": [
+          "contract-doctor",
+          "hook-independent-check",
+          "provider-skill-parity",
+          "snapshot-integrity"
+        ]
+      },
+      "uniqueItems": true,
+      "allOf": [
+        { "contains": { "const": "contract-doctor" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "const": "provider-skill-parity" }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "const": "snapshot-integrity" }, "minContains": 1, "maxContains": 1 }
+      ]
+    }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "gitOidOrNull": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$" }
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["generated", "generator", "generatorVersion", "manifestId", "contractDigest", "role"],
+      "properties": {
+        "generated": { "const": true },
+        "generator": { "const": "@qijenchen/governance" },
+        "generatorVersion": { "type": "string", "minLength": 1 },
+        "manifestId": { "type": "string", "minLength": 1 },
+        "contractDigest": { "$ref": "#/$defs/digest" },
+        "role": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

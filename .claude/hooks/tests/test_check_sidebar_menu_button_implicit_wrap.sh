@@ -13,7 +13,7 @@
 #     - <AvatarGroup>(word-boundary 排除,非 <Avatar)
 #     - Avatar 在 block 外 / 無 SidebarMenuButton
 #   Gate skip(silent):非 PreToolUse / 非 Edit|Write|MultiEdit / 非 *.tsx / *.test.tsx
-#   Override:CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 → silent(audit-logged)
+#   Override:GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 → silent(audit-logged)
 #
 # NOTE:此 hook 2026-05-31 升 P0 BLOCKER(stderr 訊息 + exit 2)— SSOT canonical per
 #       feedback_ssot_mechanical_p0_not_p1;verified clean on canonical sidebar + env escape 兜 false-positive。
@@ -34,7 +34,7 @@ FAILED_TESTS=""
 
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 
 # Needle present in the hook's DRIFT stderr block
 NEEDLE="SidebarMenuButton implicit-wrap canonical violation"
@@ -55,7 +55,7 @@ run_hook() {
   STDOUT=$(mktemp); STDERR=$(mktemp)
   set +e
   if [ "$bypass" = "1" ]; then
-    printf '%s' "$payload" | CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+    printf '%s' "$payload" | GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 bash "$HOOK" >"$STDOUT" 2>"$STDERR"
   else
     printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
   fi
@@ -210,9 +210,9 @@ expect_silent "11. *.test.tsx excluded → silent"
 run_hook "/repo/apps/template/src/UserFooter.tsx" "$DRIFT_AVATAR" "content" "Read"
 expect_silent "12. tool=Read → skip (silent)"
 
-# 13. CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 override → silent(即使 drift)
+# 13. GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 override → silent(即使 drift)
 run_hook "/repo/apps/template/src/UserFooter.tsx" "$DRIFT_AVATAR" "content" "Write" "PreToolUse" "1"
-expect_silent "13. CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 → silent"
+expect_silent "13. GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 → silent"
 
 echo ""
 echo "=== Summary ==="

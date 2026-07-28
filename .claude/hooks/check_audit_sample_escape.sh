@@ -33,7 +33,7 @@ case "${EVENT:-}" in
     # Sub-agent OUTPUT scan — catch post-fact admission
     OUTPUT=$(echo "$INPUT" | jq -r '.tool_response.content // .tool_response // ""' 2>/dev/null)
     # Only fire on audit-related agent runs(by output keyword)
-    if ! echo "$OUTPUT" | grep -qiE 'audit|Dim [0-9]+|D[0-9]+ CLEAN|DS-wide|sub-agent'; then exit 0; fi
+    if ! grep -qiE 'audit|Dim [0-9]+|D[0-9]+ CLEAN|DS-wide|sub-agent' <<<"$OUTPUT"; then exit 0; fi
     PROMPT="$OUTPUT" # reuse PROMPT var for downstream grep
     ;;
   *)
@@ -44,12 +44,12 @@ case "${EVENT:-}" in
 esac
 
 # Allow escape(極罕見)
-if echo "$PROMPT" | grep -qE '@audit-sample-allow:'; then
+if grep -qE '@audit-sample-allow:' <<<"$PROMPT"; then
   exit 0
 fi
 
 # Only enforce on audit-related dispatch(detect by prompt keyword)
-if ! echo "$PROMPT" | grep -qE 'audit|Dim [0-9]+|DS-wide|sub-agent|sweep'; then
+if ! grep -qE 'audit|Dim [0-9]+|DS-wide|sub-agent|sweep' <<<"$PROMPT"; then
   exit 0
 fi
 
@@ -65,7 +65,7 @@ if [ -n "$ESCAPE_HITS" ]; then
   echo "$ESCAPE_HITS" | while IFS= read -r hit; do
     printf '   • "%s"\n' "$hit" >&2
   done
-  printf '\n  Per CLAUDE.md `# 稽核 canonical` + design-system-audit/SKILL.md Phase 1 NO-SAMPLE invariant:\n' >&2
+  printf '\n  Per AGENTS.md `# 稽核 canonical` + canonical design-system-audit/SKILL.md Phase 1 NO-SAMPLE invariant:\n' >&2
   printf '  禁含「sample / top N / heavy agent needed / full sweep deferred」escape clause。\n' >&2
   printf '  每 dim 必 DS-wide ALL components 全掃,context 不夠拆 stage 分批,**不 sample**。\n' >&2
   printf '\n  修方向:從 prompt 移除 escape clause,改寫「拆 N-stage(每 stage 10-15 元件)所有 stages 必跑完」。\n' >&2

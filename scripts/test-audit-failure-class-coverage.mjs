@@ -1,32 +1,51 @@
 #!/usr/bin/env node
-// meta-test for audit-failure-class-coverage — 注入已知違規 → gate 必 exit 非 0 → 還原(PNG P4.3 gate-meta-test 家族)
-import { execSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
+// Isolated meta-test: never mutates the working tree it is validating.
+import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const run = (cmd) => { try { execSync(cmd, { stdio: 'pipe' }); return 0 } catch (e) { return e.status ?? 1 } }
-const GATE = 'node scripts/audit-failure-class-coverage.mjs --check'
-let ok = true
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const GATE = join(ROOT, 'scripts/audit-failure-class-coverage.mjs')
+const RELATIVE = 'packages/design-system/ds-canonical/references/failure-class-registry.json'
+const SOURCE = join(ROOT, RELATIVE)
 
-// 1) 現況必 PASS
-if (run(GATE) !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL'); process.exit(1) }
-
-// 2) 注入違規 → 必 FAIL → 還原
-//    把第一個 class 的 status 改成非法值(不在 {protected, remediating, judgment})
-//    → gate line 53-55 必 push error → --check 下 exit 1
-const target = '.claude/references/failure-class-registry.json'
-const orig = readFileSync(target, 'utf8')
-try {
-  const reg = JSON.parse(orig)
-  reg.classes[0].status = 'bogus-invalid-status'
-  writeFileSync(target, JSON.stringify(reg, null, 2))
-  const code = run(GATE)
-  if (code === 0) { console.error('✗ 注入違規後 gate 未 FAIL(detection 失效)'); ok = false }
-  else console.log('✓ 注入違規被抓(exit ' + code + ')')
-} finally {
-  writeFileSync(target, orig)
+function run(root) {
+  return spawnSync(process.execPath, ['--', GATE, '--root', root, '--check'], { encoding: 'utf8' })
 }
 
-// 3) 還原後必 PASS
-if (run(GATE) !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
-console.log(ok ? '✅ meta-test PASS' : '❌ meta-test FAIL')
-process.exit(ok ? 0 : 1)
+function install(root) {
+  const target = join(root, RELATIVE)
+  mkdirSync(dirname(target), { recursive: true })
+  copyFileSync(SOURCE, target)
+  return target
+}
+
+const fixture = mkdtempSync(join(tmpdir(), 'failure-class-gate-'))
+const outside = mkdtempSync(join(tmpdir(), 'failure-class-gate-outside-'))
+try {
+  const target = install(fixture)
+
+  // Canonical source passes even when a poisoned Claude projection exists.
+  const legacy = join(fixture, '.claude/references/failure-class-registry.json')
+  mkdirSync(dirname(legacy), { recursive: true })
+  writeFileSync(legacy, '{"classes":[]}', 'utf8')
+  assert.equal(run(fixture).status, 0)
+
+  const registry = JSON.parse(readFileSync(target, 'utf8'))
+  registry.classes[0].status = 'bogus-invalid-status'
+  writeFileSync(target, `${JSON.stringify(registry, null, 2)}\n`)
+  assert.notEqual(run(fixture).status, 0, 'invalid canonical status was accepted')
+
+  rmSync(target)
+  writeFileSync(join(outside, 'registry.json'), readFileSync(SOURCE))
+  symlinkSync(join(outside, 'registry.json'), target)
+  assert.notEqual(run(fixture).status, 0, 'symlinked canonical registry was accepted')
+} finally {
+  rmSync(fixture, { recursive: true, force: true })
+  rmSync(outside, { recursive: true, force: true })
+}
+
+console.log('✅ failure-class gate uses canonical SSOT and isolated fail-closed fixtures')

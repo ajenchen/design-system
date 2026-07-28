@@ -33,11 +33,11 @@ COUNT=${COUNT:-0}
 [ "$COUNT" -lt 2 ] && exit 0
 
 # Has gap-N or space-y-N near the standalone pattern?
-if echo "$NEW" | grep -qE '(gap-[0-9]|space-y-[0-9])'; then
+if grep -qE '(gap-[0-9]|space-y-[0-9])' <<<"$NEW"; then
   exit 0
 fi
 
-cat >&2 <<EOF
+MESSAGE=$(cat <<EOF
 ⚠️ M16 Item-list gap canonical
 
 → 偵測到 $COUNT 個 standalone item(FileItem / MenuItem rich)未見 gap-N / space-y-N parent class。
@@ -50,5 +50,7 @@ M16 要求(per item-anatomy.spec.md):
 修法:parent container 加 \`gap-2\` / \`space-y-2\` 或 codify 連續貼齊 in 元件 spec。
 對應 canonical:meta-patterns.md M16 + patterns/element-anatomy/item-anatomy.spec.md。
 EOF
+)
+printf '{"governanceContext":{"hookEventName":"PreToolUse","message":%s}}\n' "$(printf '%s' "$MESSAGE" | jq -Rs .)"
 
 exit 0

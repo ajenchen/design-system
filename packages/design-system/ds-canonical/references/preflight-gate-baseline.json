@@ -1,5 +1,212 @@
 {
-  "gateCount": 53,
-  "updated": "2026-07-19",
-  "note": "合法 retire gate 需同 commit 更新本檔 + preflight 檔內記 retire 理由"
+  "schemaVersion": 4,
+  "kind": "release-preflight-gate-ratchet",
+  "revision": 3,
+  "gateCount": 48,
+  "gateDigest": "dacffa3ec7d50742848e03c21be769b3ca62c2c6e3778aae40c113161a80e12c",
+  "scaffoldSha256": "7c64fd03052d080db4a3ac17fd032d540bb0b78c0ecfcaefed07fdb5dde5e03f",
+  "behaviorDigest": "8e7374b74c1bc200192ac1eab802681fc6481ca8f344976bd419bf7b06fab57f",
+  "gates": [
+    {
+      "label": "sync version → release manifests + workspace lock entries",
+      "semanticSha256": "37d0e99bd456b7bb5c1ebf179989c96c31a06d7ea647a6fc3c2babf8b0bb4db8"
+    },
+    {
+      "label": "sync provider adapters + fork/template + governance control-plane from one build graph",
+      "semanticSha256": "95af96eb31ed8b80c36bbd8fa341d64935eeca96f3618a40041050d9e3c987b7"
+    },
+    {
+      "label": "sync llms.txt + llms-full.txt(從 spec frontmatter)",
+      "semanticSha256": "ea2a971523098e1ed1f17b1bdc03517d120a6da3a9b6b670a19a3d34d2c0ca5c"
+    },
+    {
+      "label": "sync template canonical App(dashboard-app.tsx ← apps/template App.tsx)",
+      "semanticSha256": "9e927e97357db264cdc085a4f5db986da154ef0d106ec7854d120d08eda3e4ed"
+    },
+    {
+      "label": "provision exact Playwright Chromium runtime",
+      "semanticSha256": "2151cecb468484048e08449264526a78ea730dac9200320def2f0612d6020dc2"
+    },
+    {
+      "label": "all registered local Harness commands(deduplicated; external claims stay pending)",
+      "semanticSha256": "84a905844f47fc1094872f1ef6d7f5858c893d2f9658c63866e84e7ae04cf482"
+    },
+    {
+      "label": "workflow security audit(pinned actions + privileged workflow closure)",
+      "semanticSha256": "49259b5be192ca91d38a3b3d250deb7884769d1ec5fd433ffc23c221cfa4a33c"
+    },
+    {
+      "label": "tsc -b",
+      "semanticSha256": "7b55d9a590b185e9aaad72679772331f4dcc22ec3c2ed521e6f894ca9a6bfc78"
+    },
+    {
+      "label": "typecheck:stories",
+      "semanticSha256": "24fb2ad3c4b13ccd022869d2fc0adcfcc56678a683cf524705d149ec8b68d9b9"
+    },
+    {
+      "label": "audit-orphan-tokens",
+      "semanticSha256": "0ee485644305c09d55d8ab5d43e068ee10d193034fdc95cf3d8921226e3d5f59"
+    },
+    {
+      "label": "categorical-color-invariants",
+      "semanticSha256": "9dae484f85729b9fa4af1f3124b2fd640378589625f702557c148511b562a444"
+    },
+    {
+      "label": "motion-delay-invariants",
+      "semanticSha256": "d5a38dc2ed40c2980e94ac0e22ae9a546f14c411a0a9e780f83bcac2191b00ab"
+    },
+    {
+      "label": "status-color-invariant(progress/step/in-progress → --info)",
+      "semanticSha256": "57d63f5717226455be704199341f42a6fa997b8443ea1a1b457e551f83156548"
+    },
+    {
+      "label": "layout-space-utility-invariant(裸 px-loose silent-fail)",
+      "semanticSha256": "792a38d52d4ef1a96359706be0bc8e6be3eee767b053e4d66fef39544123a8c0"
+    },
+    {
+      "label": "category-classification-invariant(分類三訊號一致)",
+      "semanticSha256": "163729d9b6a740d65c7b7b7461927ccba05859c2ea824d40e4a4f3346e6481f1"
+    },
+    {
+      "label": "item-content-leading-coherence(防 reading-gap+compact-行高 off-grid 偏移,Notice 2026-06-15 anchor)",
+      "semanticSha256": "0499474e4fd2efdccb16423638d8147239c372f3cac44965edb961d5857107a2"
+    },
+    {
+      "label": "checkbox-group-handcraft(防手刻 div 包選項 Checkbox,2026-06-15 popover/sheet/coachmark anchor)",
+      "semanticSha256": "be1ddb3c1280bb76985ef76476ebe9a0de55d6a92660f96daec7ec7584cde84b"
+    },
+    {
+      "label": "layout-space-story-coherence(防 token overview story 顯示值 drift,2026-06-15 tight 8≠12 anchor)",
+      "semanticSha256": "f453b879eb49495ae024027277d0a0ccb89d1a961c3d543a7ed2b32f21f23474"
+    },
+    {
+      "label": "overlay-density-lock-placement(防 density lock 設在 header 非 surface 根,FileViewer 圖二 anchor)",
+      "semanticSha256": "388808113986ddab4b1b21c41887ebdfad849cb67852e146e63fe0c5d3d4ae4b"
+    },
+    {
+      "label": "code-quality-audit",
+      "semanticSha256": "ad3c84c228d972e51db7aa614a86527574ea75d3072c4db1daea6130e7825845"
+    },
+    {
+      "label": "content-quality",
+      "semanticSha256": "0b000f424190bb97585fbd8d56a0b1607431295df71bf9cf456b32c8f05ee6b7"
+    },
+    {
+      "label": "governance-counters",
+      "semanticSha256": "739f29835c5d8ec267bc54ca31566352ee61262e9bdf065b875da48027217ad8"
+    },
+    {
+      "label": "failure-class coverage(dim 91,每類病根必有防線)",
+      "semanticSha256": "9955ee0b76895d990fc494b47954322bb42292a50d2209cc4b9bef7d7f281bf8"
+    },
+    {
+      "label": "hook-test coverage(BLOCKER hook 必有 test 檔)",
+      "semanticSha256": "772e53e5a6b58041c39c4ec4641e44f752f8a4cbce501eb0657f768b5beaf929"
+    },
+    {
+      "label": "clean-install-safety(§14-17/§31:published package 無 preinstall/install/postinstall)",
+      "semanticSha256": "df4a90d769d1ca4e7c99fcf251614a0e60385d41e411bd3f4e9f9be717dea507"
+    },
+    {
+      "label": "gen-figma-make-artifacts",
+      "semanticSha256": "5e403530e34184bdb627f583fbdb8f4360fc0a515f707ef675077094da4c8da1"
+    },
+    {
+      "label": "root barrel internal-exclusion(dim-72)",
+      "semanticSha256": "8b0f0bc01071064365f94cff3272a00f4c66cf5e4aea104addc88038748c6c3a"
+    },
+    {
+      "label": "plugin-structure-validate",
+      "semanticSha256": "ea7c2d025afc1815b3c7089ea4b548605a15826258140ef59f8dbd1f862a4e33"
+    },
+    {
+      "label": "story-quality",
+      "semanticSha256": "e1cb1284380b1bfaeb69d7b12a96aa8c059c449de7f4b31b06464c49dd343fbb"
+    },
+    {
+      "label": "three-layer stories(每 public 元件必備 anatomy+principles;取代 dim-11 AI 假證據)",
+      "semanticSha256": "708fa9a68d8a98ad2b6ece5e76d83d46b8377cd464671f0bb4b50bbf5cd70785"
+    },
+    {
+      "label": "LinkTo integrity(story 改名/retire 反向引用斷鏈;DA3 C.0b 謂詞化)",
+      "semanticSha256": "c9f7ddb59a938734ef57c6ad9f05ac3203e7c8417caed5792913094cc239e643"
+    },
+    {
+      "label": "agents-bootstrap(PNG:root→cwd AGENTS chain ≤32KiB + Claude @import + Rule Index 零死鏈 + scoped npm instructions)",
+      "semanticSha256": "f7c8f5c062b17fc0709ad44e39c9354571bde560831d00250814083cedb9f383"
+    },
+    {
+      "label": "governance build graph drift check(all provider/fork/control-plane outputs)",
+      "semanticSha256": "1cea274848b6775dde26c25b6fd7257860e191332305be1282ffcf5628a15f66"
+    },
+    {
+      "label": "governance-tamper(preflight gate-count ratchet + time-boxed waiver 過期)",
+      "semanticSha256": "35fd2202412d89146abe267d60c8de8712e2a3b6f13d38105523349cb9207329"
+    },
+    {
+      "label": "rule coverage(91 dim 全分類 + 機制檔案存在 + rule-ID;PNG P3.3)",
+      "semanticSha256": "159bc3aebff45977a01593288dbd4b3231d2e12ffbcda17ad13a1c9127bf2e4c"
+    },
+    {
+      "label": "inline-edit view geometry invariant(多行 py == Textarea edit py,read↔edit 零跳鎖)",
+      "semanticSha256": "9f096d68b228d9316db93d4d8a8faafe155164dd9159fceabb34695d369d41a7"
+    },
+    {
+      "label": "template canonical App drift check(防 receiver 覆寫 scaffold App.tsx)",
+      "semanticSha256": "360d56e93884ae5130b448eda841962c7e118dc9362fe29e94f101a57d8cf1d8"
+    },
+    {
+      "label": "DS src republish gate(src 改了必 bump,防 ship stale)",
+      "semanticSha256": "0d80a2c33658313d5ecee12e194ed5a177077bddee91768974fbdfadcb86c1a3"
+    },
+    {
+      "label": "llms.txt drift check(build-time derive,禁手維護)",
+      "semanticSha256": "f6fe9e40cfa0568821f554b38a1a254b888e3fce27e604a40851ad2ac9125fad"
+    },
+    {
+      "label": "Field cascade-resolve gate(防新控件漏讀 size/mode/disabled context — 統一 SSOT)",
+      "semanticSha256": "ec8a4eb95c8517465b9a732c5df06d0d7ff44966e86845cee6a306860f950e58"
+    },
+    {
+      "label": "build:lib",
+      "semanticSha256": "bb95b2eef887265f26c8e71934c3aad6fed3b6b0af317d4d1659983750a16618"
+    },
+    {
+      "label": "bundle-size gate",
+      "semanticSha256": "206acb1e71999a9790eb87a098f3dc3b25da9e0a537bdfa227de2a2c8702622d"
+    },
+    {
+      "label": "naming-structure invariant",
+      "semanticSha256": "508171c96444e4ad6b0f84f2f711f37727c349aab38cf4a2226f1a33d8622a81"
+    },
+    {
+      "label": "build apps/template(React19 receiver build — 防 root tsc 漏掉的 receiver-only TS2503)",
+      "semanticSha256": "500c8ad868b3caa386cfd1a2d319248b9d159fd3d3c9523c3667bb55456f445d"
+    },
+    {
+      "label": "build-storybook",
+      "semanticSha256": "ed22a699d74880140860e65416498d5d0ad393ba29cac71335ac5ee2448ee7ba"
+    },
+    {
+      "label": "FULL storybook runtime smoke — 分 8 shard 串跑(全 961 story 零抽樣;每 shard 資源歸零防拖垮)",
+      "semanticSha256": "aed5b5fc7d3442420c3379bc42cd3fe4111990857c9289e78ffd4c82c90d24cd"
+    },
+    {
+      "label": "InlineEdit 對齊 + blur exit pixel invariant",
+      "semanticSha256": "f898d89208319509e2f430bc70ac57b8242db65ea484171364fefbdf60585543"
+    },
+    {
+      "label": "dogfood pre-publish verify",
+      "semanticSha256": "9fa4916238f1122bcdbdb00eac111ffc421a7cfaeac8b4f9c29fa24f112493b8"
+    }
+  ],
+  "transition": {
+    "fromRevision": 2,
+    "fromBehaviorDigest": "0de935282c46790db59fcb87f4cd385eaa81264be3f01ef7add2cf47d8c816f8",
+    "toBehaviorDigest": "8e7374b74c1bc200192ac1eab802681fc6481ca8f344976bd419bf7b06fab57f",
+    "auditRef": "png-bounded-de-overengineering-2026-07-28",
+    "reason": "retire-16-duplicate-and-enterprise-only-preflight-gates-covered-once-by-registered-all-harness"
+  },
+  "updated": "2026-07-27",
+  "note": "Transition markers are immutable audit metadata only; they do not authenticate a reviewer or grant approval. When external trust is activated, authorization is enforced separately by the protected-base privileged-change verifier against a valid commit-bound privileged-change authorization. Every behavior change requires one header marker @preflight-transition(from-revision:<old revision> from:<old behavior digest> to:<new behavior digest> audit-ref:<change reference> reason:<why>)."
 }

@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/governance/review-capability-registry-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "selectionSemantics", "providerCapabilityPrecedence", "reviewProfiles"],
+  "properties": {
+    "$schema": {"const": "../schemas/review-capability-registry.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "provider-neutral-review-capability-registry"},
+    "selectionSemantics": {"const": "exact-candidates-only-capability-values-require-separate-certification"},
+    "providerCapabilityPrecedence": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-z][a-z0-9-]*$": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/providerCapability"}
+        }
+      }
+    },
+    "reviewProfiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/reviewProfile"}
+    }
+  },
+  "$defs": {
+    "providerId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "profileId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "modelReleaseId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*/[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "modelId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "exchangeBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxInputBytes", "maxOutputBytes", "maxPayloadBytes"],
+      "properties": {
+        "maxInputBytes": {"type": "integer", "minimum": 1},
+        "maxOutputBytes": {"type": "integer", "minimum": 1},
+        "maxPayloadBytes": {"type": "integer", "minimum": 2}
+      }
+    },
+    "providerCapability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modelReleaseId",
+        "capabilityRank",
+        "assuranceTier",
+        "reasoningTier",
+        "computeTier",
+        "exchangeBudget"
+      ],
+      "properties": {
+        "modelReleaseId": {"$ref": "#/$defs/modelReleaseId"},
+        "capabilityRank": {"type": "integer", "minimum": 1, "maximum": 1000000},
+        "assuranceTier": {"enum": ["standard", "high", "maximum"]},
+        "reasoningTier": {"enum": ["standard", "high", "maximum"]},
+        "computeTier": {"enum": ["standard", "high", "maximum"]},
+        "exchangeBudget": {"$ref": "#/$defs/exchangeBudget"}
+      }
+    },
+    "reviewProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "providerId",
+        "routeClass",
+        "invocationProfileId",
+        "entitlementId",
+        "modelReleaseId",
+        "requestModelId",
+        "modelIdentityPolicy"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/profileId"},
+        "providerId": {"$ref": "#/$defs/providerId"},
+        "routeClass": {"enum": ["managed-api", "subscription-entitlement"]},
+        "invocationProfileId": {"$ref": "#/$defs/profileId"},
+        "entitlementId": {
+          "oneOf": [
+            {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+            {"type": "null"}
+          ]
+        },
+        "modelReleaseId": {"$ref": "#/$defs/modelReleaseId"},
+        "requestModelId": {"$ref": "#/$defs/modelId"},
+        "modelIdentityPolicy": {"const": "exact-model-release-response-match-no-mutable-alias"}
+      },
+      "allOf": [
+        {
+          "if": {"required": ["routeClass"], "properties": {"routeClass": {"const": "subscription-entitlement"}}},
+          "then": {"properties": {"entitlementId": {"type": "string"}}}
+        },
+        {
+          "if": {"required": ["routeClass"], "properties": {"routeClass": {"const": "managed-api"}}},
+          "then": {"properties": {"entitlementId": {"type": "null"}}}
+        }
+      ]
+    }
+  }
+}

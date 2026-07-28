@@ -1,0 +1,156 @@
+<!-- Authority/status: governance/planning/registry.json -->
+# Provider-Neutral Governance(PNG)— Master Plan(2026-07-16,user 拍板動工) — SUPERSEDED
+
+> **Historical migration record only.** `governance/planning/registry.json` 已將本檔標為 `superseded` / `executable:false`。現行執行 authority 是 `packages/governance/canonical/manifest.json`、`scripts/governance-build-graph.json`、`infra/governance/` 內的 evidence/release/rollout contracts；下方內容只保留當時遷移來源與決策脈絡，不得繼續執行或作為當前能力宣稱。
+
+**目標(user verbatim 濃縮)**:「確保我能夠在各種 AI 服務下都能產出完美品質的產出…兩者都能被同樣嚴格的鞭策…確保 SSOT,讓我未來增刪改任何都必定能同步而不會偏移」。
+**正式定義(採 codex 規格)**:Claude 與 Codex 同等治理 = **相同 SSOT、相同 applicable rule coverage、相同證據要求、相同 blocking outcome**——不要求兩者用相同原生機制;provider 能力不足 → provider-neutral verifier/CI 補足,否則該 surface = Unsupported(fail-closed,禁靜默降級)。
+
+**本檔地位**:PNG 工程的執行軌道 SSOT。後續任何 session/executor 從本檔接續;每完成一項就地打勾 + 記 commit。codex 產出的 27 節規格(user 貼於 2026-07-16 對話)為 requirements 參照;本檔為「映射到本 repo 真實現況」的執行版。
+
+---
+
+## 0. Ground-truth 現況(2026-07-16 盤點,file:line 級)
+
+### 已存在且符合目標架構的資產(消費不重造 — M23)
+| 資產 | 現況 | PNG 角色 |
+|---|---|---|
+| `.claude/{rules,skills,hooks,references,commands}` + `*.spec.md` + `CLAUDE.md` | canonical 治理內容 | **SSOT 本體**(內容不動,結構重整) |
+| `scripts/sync-ds-canonical.mjs` | repo `.claude` → `ds-canonical/` mirror + `--check` drift gate | 既有 projection 引擎(加 codex target) |
+| `scripts/build-fork-governance.mjs` | .claude SSOT → fork 治理 corpus(hooks+preamble),**classify 漏接閘 + drift gate + 假 fork harness** | 既有 adapter 生成器 + 三重保證鏈範本 |
+| `scripts/sync-all.mjs` / `npm run sync-all` | consumer 端一鍵同步 | 既有 sync 入口(擴充) |
+| `scripts/release-preflight.mjs` | ~30 deterministic gates,fail-fast,HEAD-bound pass-marker | **provider-neutral 最終 authority 已存在**(純 node,無 provider 依賴) |
+| `.github/workflows/release.yml` audit gates + ci.yml | CI 強制 | 不可繞過層(需驗 branch-protection = 未驗項) |
+| `ds-canonical/`(npm ship)+ `cli-init.mjs` | consumer 治理 payload + init | npm 投影(加 AGENTS/codex 內容) |
+| `verify-published-deploy.mjs` / `dogfood-prepublish-verify.mjs` | 發佈後/前驗證 | 既有 clean-room 驗證(擴 codex 斷言) |
+| `check-codex-freshness.mjs` / `codex-run-guarded.mjs` | codex CLI 版本/模型/effort 自動最新 + 失敗守衛 | 既有 codex transport 基建 |
+| `audit-prompts.md`(per-dim rubric)+ `audit-coverage-matrix.mjs`(91 dim 三級分類)+ `verify-deep-audit-coverage.mjs` | 判準 SSOT + coverage 機械帳 | **rule registry 的雛形**(補 rule-ID 化) |
+| deep-audit-cross-codex B.1 三重對等(brief 注入) | codex 吃相同任務/資訊/判準 | second-opinion 現行 transport(升級為 native discovery 後保留為深稽核模式) |
+
+### 缺口(codex 規格 §3-4 疑點逐項 ground-truth)
+| # | 缺口 | 證據 |
+|---|---|---|
+| G1 | **AGENTS.md / .codex/ / .agents/ 全不存在**(repo + npm + template + fork corpus)| `ls` 0 hit(2026-07-16)|
+| G2 | npm `files` 只帶 CLAUDE.md + ds-canonical(Claude-oriented)| package.json files field |
+| G3 | codex 治理靠 per-brief 注入(deep-audit B.1),**非 repo-native discovery**;user 直接開 codex CLI 在本 repo = 裸奔(僅 ~/.codex 全域 config) | codex-collab SKILL 全鏈 |
+| G4 | fork/template consumer 的 codex surface = 0(fork corpus 只生成 Claude hooks/preamble)| build-fork-governance.mjs targets |
+| G5 | rule 無穩定 ID(91 dim 有號但 spec 條文無 rule-ID;waiver=escape marker 無 expiry/owner schema)| audit-coverage-matrix |
+| G6 | branch protection / required checks 未機械驗證(release.yml 存在≠enforced)| codex 規格 §16;現無 probe |
+| G7 | Certified Surface Registry 不存在(cloud/local 支援度散在 memory)| reference_cloud_governance_loading.md 有實證但非 registry 格式 |
+| G8 | CLAUDE.md 混 provider-neutral 治理內容與 Claude 專屬機制敘述 | CLAUDE.md 全文 |
+
+### 官方文件研究(M26,2026-07-16 fetch)
+1. **AGENTS.md 標準**(https://agents.md):root + nested(closest wins)、純 Markdown、60k+ 專案、Codex/Cursor/Copilot/Jules 等支援。
+2. **Codex 官方**(https://learn.chatgpt.com/docs/agent-configuration/agents-md):discovery = `~/.codex/AGENTS{.override,}.md` → git-root→cwd 逐層串接(近者後讀=優先);合併上限 `project_doc_max_bytes` 預設 32KiB;fallback 檔名可設。hooks/skills 另文件(Phase 2 補研究;**不得假設 PreToolUse 可 block**)。
+3. **Anthropic 官方**(https://code.claude.com/docs/en/memory):CLAUDE.md 支援 `@AGENTS.md` import(**官方明文推薦此模式共用**);import 遞迴 4 層、launch 時全載;`.claude/rules` 為 Claude 專屬 discovery;managed policy 不可被排除。
+4. 補充既有實證:memory `reference_cloud_governance_loading.md` — Claude cloud committed `.claude` 4 hook events 會 fire、plugin 不可靠;C-prime fork 治理雲端端到端已蓋章。
+
+---
+
+## 1. 目標架構(ADR)
+
+### ADR-1:Bootstrap 統一 = AGENTS.md(canonical)+ CLAUDE.md(=@AGENTS.md + Claude 段)
+- 新 `AGENTS.md`(repo root,手維護 canonical):**provider-neutral 治理核心** = 6 mindset、治理/稽核/SSOT canonical、命名、任務導航、rule index pointer、autonomous canonical、「找不到→問」協議。**≤32KiB**(Codex cap;現 CLAUDE.md ~200 行遠低於)。
+- `CLAUDE.md` 改為:`@AGENTS.md` + **Claude 專屬段**(hook 機制細節、.claude/rules 說明、plugin/skill 路徑、memory 機制)——Anthropic 官方 pattern,Claude 載入內容**零損失**(import launch 全載),Codex 原生吃到同一份核心。
+- **禁 symlink 作唯一機制**(Windows/tarball/zip;官方亦標注)。
+- 遷移判準:CLAUDE.md 每一段標 N(neutral→AGENTS.md)或 C(Claude-specific→留 CLAUDE.md);不確定 = N(嚴格度不弱化)。
+
+### ADR-2:Codex 原生層 = AGENTS.md + 指路式 progressive disclosure(非復制 rules)
+- `.claude/rules/*.md` 是 Claude 專屬 discovery;**不複製**成第二份。AGENTS.md 內建「Rule Index」段:列每條 rule 檔案路徑 + 一行摘要 + 觸發情境(「編 *.spec.md 前必讀 .claude/rules/spec-rules.md」)——Codex 有檔案讀取能力,index 即 progressive disclosure(對齊 Codex 官方 size 建議)。
+- `.codex/config.toml`(repo-level 若 Codex 支援 project config;Phase 2 研究確認,不支援則記 Unsupported 不虛構)。
+- Codex hooks:**Phase 2 研究後定**;短期 blocking 由 preflight/CI 兜底(= Certified with equivalent controls 路徑)。
+
+### ADR-3:最終 authority = 既有 provider-neutral gates(不新造引擎)
+- `release-preflight.mjs` + release.yml/ci.yml **已是** codex 規格 §16 要求的「不可繞過層」(純 node scripts,任何 provider 寫的 code 都被同一套擋)。
+- PNG 增量:(a) AGENTS/CLAUDE 一致性 drift gate 進 preflight;(b) branch-protection probe(可讀權限→機械驗;不可讀→doctor 顯 Unverified,**不宣稱 enforced**);(c) governance-tamper 偵測(改 gate 本身需獨立 review 的 CI 規則)。
+
+### ADR-4:Second opinion = provider-neutral 概念,deep-audit-cross-codex 為 alias
+- Canonical 概念改名 `independent second opinion`:author provider ≠ reviewer provider(family 級);rubric = audit-prompts.md(已 SSOT ✓);記錄雙方 provider/model/version(codex-run-guarded 已記 ✓);backend 不可用→fail-closed 標 pending,**禁同 agent 假扮**(已 canonical ✓)。
+- skill 保留現名(user 慣用入口),SKILL.md 補「本 skill = independent-second-opinion 的 Claude-side driver;Codex-side driver = 對稱 brief(未來 AGENTS.md skill)」。
+
+### ADR-5:Certified Surface Registry = 檔案化 + 誠實三態
+- 新 `.claude/references/certified-surfaces.md`(SSOT)+ 機械投影進 doctor。三態:Certified / Certified-equivalent / Uncertified。**只有實測證據能升級狀態**;cloud 未測 = Uncertified,不推定。
+
+### ADR-6:rule-ID 化採漸進(不 big-bang)
+- 既有 91 dim = 事實上的 rule registry(有分類/機制/coverage 帳)。Phase 3 給 dim 補穩定 ID(`DS-<domain>-<nnn>`)+ severity(Critical 標記)+ waiver schema(owner/expiry/scope),**不重寫內容**。escape markers 升級為 waiver 格式(向下相容,舊 marker 過渡期 ratchet)。
+
+---
+
+## 2. 分階段執行(每階段有驗收;按序;可跨 session)
+
+### Phase 1 — Bootstrap 統一 + drift gate(本 session 動工)
+- [x] P1.1 建 `AGENTS.md`:從 CLAUDE.md 遷移 N 段(mindset/治理/稽核/SSOT/命名/導航/autonomous/協議/失敗記憶索引)+ 新增「Rule Index」段(指路 .claude/rules + audit-prompts + spec 家族)+「Independent second opinion」段 +「最終 authority = preflight/CI」宣告。
+- [x] P1.2 改 `CLAUDE.md` = `@AGENTS.md` + Claude 專屬段(hooks 機制、rules 載入說明、skills/commands 路徑、memory、plugin 邊界)。
+- [x] P1.3 新 `scripts/check-agents-bootstrap.mjs`:斷言 (a) AGENTS.md 存在且 ≤32KiB;(b) CLAUDE.md 首個非註解內容 = `@AGENTS.md`;(c) AGENTS.md 的 Rule Index 路徑全部存在(死鏈 = fail);(d) 兩檔無重複 normative 段(標題級 dedup 掃描)。wire 進 release:preflight + breadth-test。
+- [x] P1.4a npm files 加 `AGENTS.md` + `sync-ds-canonical.mjs` 發佈 instruction projection— commit d88ceac2；2026-07-21 由 P1.4b 取代 root 全量 mirror
+- [x] P1.4b nested instruction hardening：package AGENTS/CLAUDE 改由獨立 concise scope source 生成；root→package 累積 32KiB gate、禁止 byte-equal root duplicate、exact projection/symlink/recovery meta-tests
+- [x] P1.4b(移入 P2.4,2026-07-16 done)`cli-init.mjs` AGENTS.md pointer-stub 投影(存在則 skip 不覆蓋)+ **§4 疑點證實為 bug 並修**:`PACKAGE_ROOT = join(__dirname,'..')` 指到 `node_modules/@qijenchen/` → 全 source not-found → init 靜默全 skip(clean-room 舊版重現 `⚠️ source not found`);修 `= __dirname` 後 fixture 斷言 symlink + stub 全建、rerun 冪等
+- [x] P1.5 驗收:battery 全綠(tsc/agents-bootstrap/mirror/counters/content-quality/linkto/hook smoke/dangling-ref);**codex canary probe 實測 PASS**(不讀檔答出「release:preflight與CI」= 原生 discovery 生效);**Claude 端 live canary PASS(2026-07-17)**:headless `claude -p` 全新 session、禁用全工具,答出「release:preflight+CI」+「6 條 mindset」並自述內容來自啟動時載入的 AGENTS.md(cite AGENTS.md:4)= @import 實測生效,與 codex canary 對稱 — commit d88ceac2
+
+### Phase 2 — Codex surface 研究 + adapter(需 codex 官方 hooks/skills/config 文件研究)
+- [x] P2.1 研究 + live 實測完成 → `governance/planning/2026-07-16-png-p2-codex-research.md`(Q1-Q5 官方 verbatim + probe A/B/C;summarizer 幻覺一例抓出丟棄)。
+- [x] P2.2(2026-07-16)`scripts/gen-codex-adapter.mjs`:生成 `.codex/hooks.json` — 3 支 provider-neutral hook 投影(tailwind_wildcard / benchmark_citation / main_branch_workbench;候選逐支讀 source 全過,main_branch 的 transcript 僅 escape-phrase 用、缺失 fail-closed 更嚴 → 合格),command **直指 `.claude/hooks/*.sh` SSOT 零複製**,event/matcher derive 自 settings.json;`_generated` banner(source/digest/告誡)+ eligibility 機械鎖;`--check` drift + breadth(手改兩生成物 → fail → regen 綠)PASS;wire release:preflight(SYNCS 段 + agents-bootstrap 後 gate;tamper baseline 51)+ `.gitignore` 驗 `.codex`/`.agents` 未 ignore。**Live 實測 ×2**:(a) codex hooks 檔 schema strict — top-level 只准 `description`/`hooks`,`_generated` unknown field → 「failed to parse hooks config」整檔靜默不載 → banner 收進 schema-native `description`;(b) 生成版行為驗證 — codex 檔案寫入工具觸發投影 hook(fire-log 122→123,bypass-hook-trust)= Edit/Write matcher 對 codex 檔案工具真命中。
+- [x] P2.3(2026-07-16)`.agents/skills/independent-review/SKILL.md`(gen-codex-adapter 生成):review 另一 provider 所著變更;rubric 指路 audit-prompts.md 同判準(禁自建規範);輸出 rule-ID/severity/evidence/resolution;fail-closed(`REVIEW-BLOCKED` / 禁 self-review 假扮)。**skills discovery live PASS**:probe 列出 `design-system:independent-review`(/tmp/png-p22-skills-probe-out.txt,CODEX-OUTCOME:SUCCESS)。
+- [x] P2.4 主體(2026-07-16)corpus 加 codex targets:`fork/AGENTS.md`(fork-context banner + preambleTransform)/ `fork/codex/hooks.json`(= PROJECTED ∩ fork-shipped,1 支)/ `fork/codex/agents/skills/independent-review` — 全進 governance.lock drift gate;template checked-in `AGENTS.md`(byte-copy scaffold);假 fork harness 新增 codex 5a-5d 斷言(banner / template byte-equal / hooks.json 指標不死鏈 / rubric shipped)全綠;cli-init 修+投影見 P1.4b。
+- [x] P2.4b(2026-07-17)`.codex`/`.agents` 安裝到既有 fork root 的 sync-all 接線 + §15 契約補齊:`refresh-fork-launchers.mjs` 新增 step 4 codex surface(manifest.codex 驅動;marker 政策 = generated(`build-fork-governance.mjs`/`gen-codex-adapter.mjs` marker)→ clobber 刷新 / consumer-owned(cli-init stub、手寫)→ 不碰 + codexSkipped 回報;`.agents/skills` 只 clobber 治理名)。§15 對照:deterministic ✓(輸出只依 corpus+dest)/ idempotent ✓(重跑 byte 收斂,harness 4h 斷言)/ atomic ✓(settings 走 tmp+rename;檔案 copy = per-file overwrite 重跑收斂,誠實標註非 transactional)/ dry-run ✓(`opts.dryRun` + CLI `--dry-run`,sync-all 用 `npm install --dry-run`)/ json ✓(CLI `--json` machine-readable)。送達通道 = `npm run sync-all`(主)+ SessionStart self-heal(僅 skills 未裝初次情境)。Harness 4h 六斷言全綠(送達 / user `.agents` 保留 / 竄改還原 / consumer-owned skip / 冪等 / dry-run 不寫);mirror 無 committed drift(release 時重建)。
+- [x] P2.5 Certified Surface Registry 建檔 → `.claude/references/certified-surfaces.md`(三態+證據;Codex cloud/IDE = Uncertified):Claude local(Certified,證據=本 repo 日常)/ Claude cloud(Certified-equivalent,證據=memory 2026-07-14 端到端蓋章;範圍=committed .claude)/ Codex CLI local(目標 Certified-equivalent:AGENTS.md discovery 實測 + preflight/CI 兜底)/ Codex cloud、IDE surfaces(Uncertified until tested)。
+
+### Phase 3 — rule-ID 化 + waiver schema + coverage 100%
+- [x] P3.1 rule-ID:coverage-matrix 輸出層 derive `DS-DIM-001..091` 穩定 ID + critical 初始指派(機械強制 tier=critical 64/91;judgment 初始 non-critical,細化只升不降)。
+- [x] P3.2 waiver 雙軌制:既有 ~10 家 rationale-marker = 永久誠實標記(各 hook 驗 rationale,不改);**暫時性例外新格式 `@waiver(owner: expiry: reason:)`** + check-governance-tamper R2 驗過期(存量 0 乾淨起步)。
+- [x] P3.3 rule coverage gate 進 preflight(audit:coverage-matrix:91 dim 全分類 + 機制檔存在 + rule-ID,缺任一 = fail)。
+- [x] P3.4 attestation:pass-marker 擴充(repo/SHA/version/governanceDigest{AGENTS,CLAUDE,coverage-matrix,gate-baseline sha256}/gatesPassed/surface/ruleIds/ts)。
+
+### Phase 4 — 測試矩陣 + clean-room + 供應鏈
+- [x] P4.1 測試矩陣映射完成(38 項:✅24 / ◑9 / ❌2,詳下表;❌ = Codex cloud + Windows 誠實列 Uncertified/Unsupported)
+### P4.1 測試矩陣映射(2026-07-16;§24 38 項 → 既有/缺)
+| §24 項 | 狀態 | 既有機制 / 缺口 |
+|---|---|---|
+| 1 schema / 2 rule coverage | ✅ | audit:coverage-matrix(91 全分類,preflight)|
+| 3 deterministic gen / 5 drift | ✅ | sync-ds-canonical --check / build-fork-governance --check / gen-*-barrel --check / agents-bootstrap A5 |
+| 4 golden adapter | ✅(等效)| drift gate = golden 比對(重生成 byte-diff)|
+| 6 positive / 7 negative fixtures | ✅ | hook tests(run-all.sh)+ breadth-tests(linkto/tamper/agents-bootstrap)+ 假 fork harness |
+| 8 mutation tests | ◑ | tamper ratchet(gate 移除)+ mirror drift;per-rule mutation 未全建(P4 殘)|
+| 9-11 CLI unit/idempotence/rollback | ◑ | sync 家族 idempotent 有正式 test(harness 4a-4h:冪等/竄改還原/consumer-owned/dry-run,2026-07-17);rollback 未建 |
+| 12 dirty-worktree | ✅ | sync-ds-canonical rsync --checksum + fail-closed |
+| 13 npm pack tarball | ✅ | dogfood-prepublish-verify(pack + 內容斷言)|
+| 14-17 clean install 家族(npm/pnpm/ignore-scripts)| ◑ | npm 有(dogfood);pnpm/ignore-scripts 未測(P4 殘;pnpm 非官方支援 pm → 列 Unsupported 候選)|
+| 18 template smoke | ✅ | create-app + e2e verify-flow-test |
+| 19 DS repo 自我治理 | ✅ | Tier-0:本 repo 全 gate 自吃(preflight 每 release)|
+| 20-23 Claude/Codex local/cloud discovery | ◑ | Claude local ✅ 日常 / Claude cloud ✅ memory 蓋章 / Codex local ✅ canary+skills probe / **Codex cloud ❌ 未測** |
+| 24 plugin-disabled | ✅ | C-prime npm-only 鏈(plugin 非 critical)|
+| 25 hook-disabled | ✅(定位)| hooks = 加速器;blocking 靠 preflight/CI(ADR-3)|
+| 26 direct build/publish bypass | ◑ | publish 靠 tag→CI(release.yml);**main branch protection 未啟 = 已列 user 拍板** |
+| 27 CI required-gate | ◑ | workflow 存在 + 實跑;required check 綁定待 branch-protection 啟用 |
+| 28 waiver expiry | ✅ | governance-tamper R2 |
+| 29 upgrade/migration | ✅ | Dependabot auto-PR + verify-published-deploy |
+| 30 Windows/paths | ❌ | 未測(單人 macOS;列 Unsupported until tested)|
+| 31 offline-after-install | ◑ | ds-canonical 全 checked-in(理論可離線);未正式測 |
+| 32 semantic review evidence | ✅ | A.1b per-component JSON + codex 雙軌 findings |
+| 33 attestation reproducibility | ✅ | P3.4 pass-marker(digest 綁 HEAD)|
+| 34 governance weakening | ✅ | tamper ratchet + gate-meta-test + hook-test coverage |
+| 35 incompatible version | ✅ | sync-version-to-all-manifests + 5-manifest verify |
+| 36 interrupted/concurrent sync | ◑ | rsync 原子性部分 + settings.json 已 tmp+rename 原子替換(P2.4b);正式中斷測試未建 |
+| 37 user-owned config conflict | ✅ | cli-init 不覆蓋 + merge 提示 |
+| 38 fleet update PR | ✅ | Dependabot daily auto-PR 鏈 |
+結論:✅ 24 / ◑ 9 / ❌ 2(Codex cloud、Windows — 均已誠實列 Uncertified/Unsupported,不虛稱)。◑ 項若需補全屬 P4 長尾,依 user 優先序排。
+
+- [x] P4.2 branch-protection probe → `scripts/check-branch-protection.mjs`(preflight 資訊模式)。**實測發現 main UNPROTECTED(無 required checks,direct push 可繞 CI)→ 列 user 拍板**(啟用會改 solo-work 直推 main 流程,tradeoff 需 user 決定;啟用後 probe 轉 --check enforcing)。CODEOWNERS 同題一併拍板。
+- [x] P4.3 governance-tamper:check-governance-tamper.mjs R1 preflight gate-count ratchet(拔 gate = fail,breadth-tested;合法 retire 需 --update-baseline 同 commit)+ R2 waiver 過期;generated 檔 tamper 由既有 mirror --check 家族覆蓋。preflight wired(48 gates baseline)。
+- [ ] P4.4 cloud clean-room:Claude cloud(已有實證,補 registry 格式)+ Codex cloud(排程;未測前 Uncertified)。
+
+### 明文不做 / 邊界
+- 不弱化任何既有規範遷就共用(codex 規格鐵律)。
+- 不 plugin-only governance(已符:plugin 已非 critical path,memory 實證)。
+- 不虛構 Codex hooks 能力;研究+實測前一律走 equivalent-controls。
+- 不動 push/publish/branch-protection(user gate)。
+- `deep-audit-cross-codex` 名稱保留(alias);內容漸進對齊 ADR-4。
+
+## 3. Definition of Done(對照 codex 規格 §25 裁剪為可驗版)
+唯一 SSOT(AGENTS.md+.claude 家族)/ adapters 全生成+drift gate / applicable rules 100% coverage 帳 / DS repo Tier-0 自我治理(已有,補 AGENTS gate)/ template+consumer 一鍵 setup(既有 cli-init+sync-all 擴充)/ npm tarball 正確(dogfood 斷言擴充)/ 故意違規全被擋(negative fixtures)/ Claude+Codex local 實測證據 / cloud 誠實標態 / second opinion fail-closed / 全部宣稱有測試證據。
+
+## 4. 風險與備註
+- **Codex hooks 能力未知** = 最大不確定;架構已按「hooks 是加速器非信任邊界」設計,故不阻塞(blocking 由 CI 兜底)。
+- CLAUDE.md 重構觸及每 session 載入內容 → P1 驗收必含「下 session Claude 行為無退化」人工確認點。
+- AGENTS.md 32KiB cap:現核心內容 ~15KiB,餘裕足;Rule Index 用一行式。
+- quota:agent 艦隊受 session 限額;本工程主體可由 main-loop 直接執行(檔案生成+gate 為主)。

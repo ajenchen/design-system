@@ -19,6 +19,7 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { prepareRuntimeEvidenceFile } from './lib/governance-runtime-evidence.mjs'
 
 const ROOT = process.cwd()
 const CHECK = process.argv.includes('--check')
@@ -52,9 +53,8 @@ for (const name of fs.readdirSync(COMPONENTS_DIR).sort()) {
 }
 
 if (!CHECK) {
-  const LOG_DIR = path.join(ROOT, '.claude/logs')
-  if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
-  fs.writeFileSync(path.join(LOG_DIR, 'three-layer-stories.json'), JSON.stringify({ scanned, missing }, null, 2))
+  const reportPath = prepareRuntimeEvidenceFile({ repoRoot: ROOT, relativePath: 'audit/three-layer-stories.json' })
+  fs.writeFileSync(reportPath, JSON.stringify({ scanned, missing }, null, 2))
 }
 
 console.log('═════════════════════════════════════════════════')

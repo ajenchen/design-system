@@ -2,15 +2,14 @@
 // meta-test for naming-structure-invariant — 注入已知違規 → gate 必 exit 1 → 還原(PNG P4.3 gate-meta-test 家族)
 // 此 gate 是純結構謂詞(掃 packages/design-system/src/components 的資料夾/檔名),無 --check flag、不看檔案內容,
 // 只看 R1 資料夾 PascalCase / R2 檔名 kebab-case / R3 主檔對應。故注入 = 臨時建一個違 R2 的檔名,finally 刪除還原。
-import { execSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { existsSync, writeFileSync, rmSync } from 'node:fs'
 
-const run = (cmd) => { try { execSync(cmd, { stdio: 'pipe' }); return 0 } catch (e) { return e.status ?? 1 } }
-const GATE = 'node scripts/naming-structure-invariant.mjs'
+const run = () => spawnSync(process.execPath, ['--', 'scripts/naming-structure-invariant.mjs'], { stdio: 'pipe' }).status ?? 1
 let ok = true
 
 // 1) 現況必 PASS
-if (run(GATE) !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL(repo 已有真實命名違規,請先清乾淨)'); process.exit(1) }
+if (run() !== 0) { console.error('✗ baseline run 應 PASS 卻 FAIL(repo 已有真實命名違規,請先清乾淨)'); process.exit(1) }
 console.log('✓ baseline PASS')
 
 // 2) 注入違規 → 必 FAIL → 還原
@@ -19,7 +18,7 @@ const target = 'packages/design-system/src/components/Button/ZZ-meta-test-BAD.ts
 if (existsSync(target)) { console.error('✗ 注入目標已存在,拒絕覆蓋:' + target); process.exit(1) }
 try {
   writeFileSync(target, '// temporary meta-test injection — should be removed by finally\nexport {}\n')
-  const code = run(GATE)
+  const code = run()
   if (code === 0) { console.error('✗ 注入違規後 gate 未 FAIL(R2 detection 失效)'); ok = false }
   else console.log('✓ 注入違規被抓(exit ' + code + ')')
 } finally {
@@ -27,7 +26,7 @@ try {
 }
 
 // 3) 還原後必 PASS
-if (run(GATE) !== 0) { console.error('✗ 還原後應 PASS(臨時檔未清乾淨?)'); process.exit(1) }
+if (run() !== 0) { console.error('✗ 還原後應 PASS(臨時檔未清乾淨?)'); process.exit(1) }
 console.log('✓ 還原後 PASS')
 console.log(ok ? '✅ meta-test PASS' : '❌ meta-test FAIL')
 process.exit(ok ? 0 : 1)

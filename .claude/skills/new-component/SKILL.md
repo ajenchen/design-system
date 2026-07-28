@@ -3,6 +3,17 @@ name: new-component
 description: Create-phase workflow for building a new design-system component from scratch. Walks through 6 phases (近親 spec → Family 判定 → 7-dim spec → tsx → 3 stories → self quality-gate) with checkpoints, ensuring world-class discipline is applied *while building*, not discovered in review. Complements /component-quality-gate (review-phase gate). Invoke when user says「我要做新元件 X」「新增 X 元件」「create new X component」or is about to `mkdir packages/design-system/src/components/Xyz`.
 ---
 
+<!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/new-component/SKILL.md; provider: claude; do not edit this adapter view. -->
+
+<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=claude; strategy=generated-binding-header; assumptionCount=27; assumptionFingerprint=sha256:71f78a9d04cc05968e8d305f9324ae0b225a117cae65d521a625a6026e7b332d; evidence=packages/governance/canonical/providers.json#claude -->
+
+## Provider binding contract
+
+This canonical workflow contains a committed inventory of legacy assumptions. Resolve them exactly as follows; an unavailable resolution or inventory drift is `ADAPTER-BLOCKED`:
+
+- `provider-identity`: Treat historical provider names as provenance labels, never as the current runtime identity.
+- `provider-surface-path`: Resolve legacy repository paths through generated views while treating ds-canonical as the semantic owner.
+
 # New Component 建立流程(create-phase workflow)
 
 ## 存在意義
@@ -34,7 +45,7 @@ description: Create-phase workflow for building a new design-system component fr
 
 ### Phase 1 — 近親 spec 掃讀(不憑直覺發明)
 
-對齊 CLAUDE.md mindset #2 + `# 遇不確定時的協議` Step 2 + `.claude/references/ssot-consultation.md`「5-step pre-check」(寫 tsx 前必含 CLAUDE.md SSOT 清單 + tsx 開頭「── 消費的 SSOT ──」段)。
+對齊 AGENTS.md mindset #2 + `# 遇不確定時的協議` Step 2 + `packages/design-system/ds-canonical/references/ssot-consultation.md`「5-step pre-check」(寫 tsx 前必含 repository instruction SSOT 清單 + tsx 開頭「── 消費的 SSOT ──」段)。
 
 1. **識別 2-3 個近親元件**(同 family、同 pattern、同職責):
    - 視覺相似?(例:新 `StatusChip` → 近親 `Tag` / `Badge` / `Chip`)
@@ -49,16 +60,18 @@ description: Create-phase workflow for building a new design-system component fr
 4. **查 baseline 狀況**:`ls packages/design-system/src/components/` 確認名字衝突;`grep` CLAUDE.md「失敗記憶索引」看有沒同類別的歷史 bug。
 5. **產出「primitive 覆蓋對照表」artifact**(2026-07-07 治理進化方向 3 洞 c,強制產物非心算):逐 anatomy 段列「這段 × 消費哪個既有 primitive」——row → item-anatomy、浮層 → overlay-surface、chrome 標題列 → ChromeHeader、橫向溢出 → horizontal-overflow、輸入 chrome → field-wrapper、pill → Button「Pill Layout」。**每段必有著落;對不上的段才准自建,且必附「自建 + 理由」**(進 spec 定位段)。寫 tsx 時此表轉錄為檔頭「── 消費的 SSOT ──」段(hook `check_ssot_header_declaration.sh` P0 驗新檔必有)。
 
-### Checkpoint 1 — 定位 Proposal(STOP 點)
+### Checkpoint 1 — 定位 receipt / conditional P2H
 
-回報 user:
+記錄:
 - 元件名稱(按 CLAUDE.md `# 命名與語言一致性` 三重 test)
 - 近親元件清單 + 跟本元件的異同一句話
 - 世界級對照 2 個(Ant Design 叫 X / Material 叫 Y)
 - **primitive 覆蓋對照表**(Phase 1 step 5 artifact;自建段落 + 理由醒目標出)
-- **問 user**:「這個 positioning 對嗎?要不要改名 / 重 scope?」
 
-**User 點頭才進 Phase 2。** 定位錯的話在此階段轉向最便宜。
+若名稱、scope 或 public component semantics 仍有多個可行選擇，且會導向不同產品／
+UI／UX outcomes，才把唯一剩餘取捨整理成 exact target-bound P2H decision。若 user
+requirement、近親 SSOT 與 benchmark 已唯一決定 positioning，直接記錄 selection receipt
+並進 Phase 2；不得把 checkpoint 本身當成 user approval gate。
 
 ### Phase 2 — Layout Family 判定
 
@@ -79,7 +92,7 @@ description: Create-phase workflow for building a new design-system component fr
 
 ### Phase 3 — 寫 spec.md 7 維度(先 spec 後 code,spec 是 judgment home)
 
-對齊 `.claude/rules/spec-rules.md`。7 維度缺一不可(除非元件本質無該面向,寫「本元件無 X 狀態」):
+對齊 `packages/design-system/ds-canonical/rules/spec-rules.md`。7 維度缺一不可(除非元件本質無該面向,寫「本元件無 X 狀態」):
 
 1. **定位**(positioning + 實作基礎 + Layout Family + 世界級對照)
 2. **何時用**(3-5 個情境,真實業務,不 generic)
@@ -89,19 +102,22 @@ description: Create-phase workflow for building a new design-system component fr
 6. **空值呈現 / 驗證時機**(Field 家族必寫 / 非 Field 可簡答)
 7. **Loading / 無障礙**(async 場景的 state / a11y 預設)
 
-**Checkpoint 2**:spec 寫完,回報 user → 請 user 看 spec 判定 positioning 是否 lock in。改 positioning 比改 code 便宜得多。
+**Positioning receipt / conditional P2H checkpoint**:spec 寫完先以近親 SSOT、benchmark
+與 user 已明示 requirement 驗證 positioning。若答案唯一或 user 已 exact 指定，記錄 receipt
+後直接進 Phase 4；只有仍有多個可行 public component semantics／UI outcomes 時，才請 user
+做 exact target-bound P2H decision。不得把 spec milestone 本身當 approval gate。
 
 ### Phase 4 — 寫 tsx(shadcn 結構 + cva + 對齊 spec)
 
-對齊 `.claude/rules/ui-development.md`「shadcn 元件規範」 + `.claude/references/cva-patterns.md`。
+對齊 `packages/design-system/ds-canonical/rules/ui-development.md`「shadcn 元件規範」 + `packages/design-system/ds-canonical/references/cva-patterns.md`。
 
 1. **結構**:`forwardRef + cva + VariantProps + cn() + { Component, componentVariants } export`
 2. **cva 適用法**:className variant 用 cva;style prop variant 用 object map;結構 variant 用 conditional rendering(見 cva-patterns.md)
-3. **Props 命名**:按 `.claude/rules/ui-development.md`「元件 Props 命名」:
+3. **Props 命名**:按 `packages/design-system/ds-canonical/rules/ui-development.md`「元件 Props 命名」:
    - 行為 → `onDismiss` / `onClose` / `onClear` / `onRemove`(語意分層,見 CLAUDE.md)
    - Slot icon → `startIcon` / `endIcon`(type `LucideIcon`)
    - Slot media → `avatar`(type `ReactNode`)
-4. **Token 消費**:Padding / icon size / hover bg / shadow 全走 token(見 `.claude/rules/ui-development.md` 三層分層)
+4. **Token 消費**:Padding / icon size / hover bg / shadow 全走 token(見 `packages/design-system/ds-canonical/rules/ui-development.md` 三層分層)
 5. **禁止 shadcn compat alias**(`bg-popover` / `text-muted-foreground` 等)—— 用 direct token
 6. **Field 家族元件**:default `size="md"` 對齊 field-height family(見 `tokens/uiSize/uiSize.spec.md`)
 7. **cva defaultVariants 異動**:改之後必 grep 元件所有檔案同步三方(spec / docblock / anatomy story)
@@ -157,8 +173,9 @@ traits:
 ## Non-goals
 
 - 不自動進入 `packages/design-system/src/components/`(explorations/ 才是實驗場;prototype 階段跑 `/prototype` skill)
-- 不替 user 決定 positioning(Checkpoint 1 必須 user 點頭)
-- 不跳過 spec(`.claude/rules/spec-rules.md`:先 spec 後 code,spec 是 judgment home)
+- 不替 user 決定真正產品／UI／UX positioning tradeoff；但既有 SSOT／明確 requirement
+  已唯一決定的 positioning 必自主落地，不得重問。
+- 不跳過 spec(`packages/design-system/ds-canonical/rules/spec-rules.md`:先 spec 後 code,spec 是 judgment home)
 - 不省略 quality-gate(Phase 6 chain mandatory,merge 前必過)
 
 ## References

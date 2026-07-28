@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/model-release-registry-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "evidenceKind", "claimScope", "records"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "evidenceKind": {"const": "model-release-registry"},
+    "claimScope": {"const": "provider-release-identity-only-no-cryptographic-weight-or-serving-infrastructure-proof"},
+    "records": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/record"}
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "providerId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+    "modelId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "safePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\u0000\\\\]+$"},
+    "responseModelPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "expectedModelId"],
+      "properties": {
+        "kind": {"const": "exact"},
+        "expectedModelId": {"$ref": "#/$defs/modelId"}
+      }
+    },
+    "reviewedDocumentationAssertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "artifactPath", "artifactSha256"],
+      "properties": {
+        "reference": {"type": "string", "format": "uri", "pattern": "^https://"},
+        "artifactPath": {"$ref": "#/$defs/safePath"},
+        "artifactSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "providerId", "requestModelId", "responseModelPolicy", "identityAssurance", "promotionEligible", "reviewedDocumentationAssertion", "validFrom", "validUntil", "weightProof", "reproducibilityScope"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*/[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+        "providerId": {"$ref": "#/$defs/providerId"},
+        "requestModelId": {"$ref": "#/$defs/modelId"},
+        "responseModelPolicy": {"$ref": "#/$defs/responseModelPolicy"},
+        "identityAssurance": {"const": "reviewed-provider-documentation-assertion"},
+        "promotionEligible": {"const": false},
+        "reviewedDocumentationAssertion": {"$ref": "#/$defs/reviewedDocumentationAssertion"},
+        "validFrom": {"type": "string", "format": "date-time"},
+        "validUntil": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]},
+        "weightProof": {"const": "not-provided"},
+        "reproducibilityScope": {"const": "request-response-evidence-only-serving-infrastructure-may-vary"}
+      }
+    }
+  }
+}

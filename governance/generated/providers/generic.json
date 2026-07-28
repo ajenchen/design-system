@@ -1,0 +1,164 @@
+{
+  "_provenance": {
+    "contractDigest": "sha256:b259a4e92a7dd0d3ac29f6eeca6cfb30da04967f29973dba3c229d6e7c1138ce",
+    "generated": true,
+    "generator": "@qijenchen/governance",
+    "generatorVersion": "0.1.0-beta.95",
+    "manifestId": "qijenchen-provider-neutral-governance",
+    "role": "ds-author"
+  },
+  "applicableRules": [
+    {
+      "coverage": "hard-gate",
+      "ruleId": "GOV-ATTEST-001"
+    },
+    {
+      "coverage": "hard-gate",
+      "ruleId": "GOV-CONTRACT-001"
+    },
+    {
+      "coverage": "adapter",
+      "ruleId": "GOV-GENERATED-001"
+    },
+    {
+      "coverage": "adapter",
+      "ruleId": "GOV-PROVIDER-001"
+    },
+    {
+      "coverage": "hard-gate",
+      "ruleId": "GOV-SNAPSHOT-001"
+    },
+    {
+      "coverage": "hard-gate",
+      "ruleId": "GOV-UPGRADE-001"
+    }
+  ],
+  "provider": {
+    "adapter": {
+      "discovery": {
+        "configPaths": [],
+        "instructionNames": [
+          "AGENTS.md"
+        ],
+        "instructionOverrideNames": [
+          "AGENTS.local.md",
+          "AGENTS.override.md"
+        ],
+        "pluginRootNames": [],
+        "providerRootNames": [
+          ".agents"
+        ]
+      },
+      "environmentMap": {},
+      "exclusions": [
+        {
+          "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative.",
+          "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
+          "scope": "native-hooks"
+        },
+        {
+          "detail": "This abstract provider has no independent skill discovery surface; a concrete provider must register one before generation.",
+          "reasonCode": "NO_DISCOVERY_SURFACE_DECLARED",
+          "scope": "provider-skills"
+        }
+      ],
+      "generate": false,
+      "hookView": null,
+      "instructionView": {
+        "materializerId": "shared-instruction-v1"
+      },
+      "productInstructionSource": null,
+      "productManagedTrees": {},
+      "repositoryInstructionSource": null,
+      "repositoryManagedTrees": {},
+      "skillAliases": [],
+      "skillBindings": {},
+      "skillView": null
+    },
+    "blockingExitCode": 2,
+    "capabilities": {
+      "hardGateComplete": false,
+      "hookEnforcement": "ci-only",
+      "hookTrustRequired": false,
+      "nativeHooks": false
+    },
+    "displayName": "Generic automation",
+    "hookConfig": null,
+    "hookConfigFormat": null,
+    "hookEntrypoint": null,
+    "id": "generic",
+    "instructionEntry": "AGENTS.md",
+    "normalization": {
+      "eventAliases": {
+        "afterwrite": "PostToolUse",
+        "beforewrite": "PreToolUse"
+      },
+      "eventFields": [
+        "event"
+      ],
+      "pathArrayFields": [
+        "paths",
+        "changed_paths"
+      ],
+      "pathFields": [
+        "path",
+        "file_path"
+      ],
+      "toolAliases": {
+        "apply_patch": "MultiEdit",
+        "edit": "Edit",
+        "write": "Write"
+      },
+      "toolFields": [
+        "operation",
+        "tool"
+      ],
+      "writeTools": [
+        "write",
+        "edit",
+        "apply_patch"
+      ],
+      "writeTransports": [
+        {
+          "engine": "exact-replace-v1",
+          "id": "generic-edit-v1",
+          "payloadFields": [
+            "path",
+            "old_content",
+            "new_content",
+            "replace_all"
+          ],
+          "rawTools": [
+            "edit"
+          ]
+        },
+        {
+          "engine": "unified-diff-v1",
+          "id": "generic-unified-diff-v1",
+          "payloadFields": [
+            "diff"
+          ],
+          "rawTools": [
+            "apply_patch"
+          ]
+        },
+        {
+          "engine": "full-file-v1",
+          "id": "generic-write-v1",
+          "payloadFields": [
+            "path",
+            "content"
+          ],
+          "rawTools": [
+            "write"
+          ]
+        }
+      ]
+    },
+    "providerKind": "headless-protocol",
+    "runtime": null,
+    "sharedInstructionEntry": "AGENTS.md",
+    "skillDirectory": ".agents/skills"
+  },
+  "schemaVersion": 1
+}

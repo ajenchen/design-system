@@ -20,6 +20,10 @@ on:
       - '.claude-plugin/**'
       - 'apps/template/**'
       - 'template/ds-product-template/**'
+  pull_request:
+    # This check is required by the main ruleset, so it must report on every PR.
+    # A path filter would leave the required context permanently pending.
+    branches: [main]
 
 permissions:
   contents: read
@@ -27,20 +31,31 @@ permissions:
 jobs:
   packaging-integrity:
     name: Packaging integrity(dims 84/85/86/88 light checks)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          node-version: 22
+          persist-credentials: false
+          # ds-canonical freshness runs governance-build-graph --check, whose
+          # genesis-transition residue checker rev-parses the pinned base commit.
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
           cache: npm
-      - name: Install
-        run: npm ci --legacy-peer-deps
+      - name: Install and audit with the lock-verified npm runtime
+        run: npm run --silent setup:dependencies
 
       # Dim 85 — ds-canonical npm mirror 新鮮度(== live .claude SSOT)
       - name: ds-canonical freshness
-        run: node scripts/sync-ds-canonical.mjs --check
+        run: node scripts/governance-build-graph.mjs --check
+
+      - name: Workflow trust-boundary policy
+        run: |
+          npm run --silent audit:workflow-security
+          npm run --silent test:workflow-security
+          npm run --silent test:governance-anchor
 
       # Dim 86 — plugin manifest + symlink-vs-source 一致
       - name: plugin structure validate
@@ -48,9 +63,7 @@ jobs:
 
       # C-prime fork governance(C3 future-SSOT):classify 漏接閘 + 生成物 drift + 假 fork harness
       - name: fork-governance corpus + harness
-        run: |
-          node scripts/build-fork-governance.mjs --check
-          node scripts/test-fork-governance.mjs
+        run: node scripts/test-fork-governance.mjs
 
       # Dim 84 — mirror-build integrity + 2-scenario E2E
       - name: 2-scenario architecture

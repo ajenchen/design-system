@@ -12,19 +12,28 @@
 
 import { chromium } from 'playwright'
 import http from 'node:http'
-import { existsSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, extname } from 'node:path'
 import { PNG } from 'pngjs'
 import pixelmatch from 'pixelmatch'
+import {
+  ensureRuntimeEvidenceDirectory,
+  ensureRuntimeEvidenceRoot,
+  prepareRuntimeEvidenceFile,
+} from './lib/governance-runtime-evidence.mjs'
 
 const arg = (k, d) => { const m = process.argv.find(a => a.startsWith(`--${k}=`)); return m ? m.split('=')[1] : d }
 const BASELINE = arg('baseline', 'storybook-static-baseline')
 const AFTER = arg('after', 'storybook-static')
-const OUT = arg('out', '.claude/snapshots/q2-field-size')
+const OUT_ARG = arg('out', null)
+const ROOT = process.cwd()
+const OUT = OUT_ARG
+  ? ensureRuntimeEvidenceRoot({ repoRoot: ROOT, explicitRoot: OUT_ARG })
+  : ensureRuntimeEvidenceDirectory({ repoRoot: ROOT, relativePath: 'visual/q2-field-size' })
 const PCT_BUDGET = parseFloat(arg('budget', '0.02'))  // % 像素差預算(吸收 rebuild AA noise);真 font 改動遠超此
 
 for (const d of [BASELINE, AFTER]) if (!existsSync(join(d, 'index.json'))) { console.error(`✗ ${d}/index.json 不存在(先 build-storybook)`); process.exit(2) }
-mkdirSync(OUT, { recursive: true })
+const evidenceFile = (relativePath) => prepareRuntimeEvidenceFile({ repoRoot: ROOT, explicitRoot: OUT, relativePath })
 
 const MIME = { '.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.woff':'font/woff','.woff2':'font/woff2','.ttf':'font/ttf' }
 function serve(dir, port) {
@@ -89,13 +98,13 @@ for (const id of DIFF_IDS) {
   results.push({ id, diffPx, pct: +pct.toFixed(4), verdict: ok ? 'OK' : 'CHANGED' })
   if (!ok) {
     fails.push(`${id}: diff ${diffPx}px (${pct.toFixed(4)}%) > 預算 ${PCT_BUDGET}%`)
-    writeFileSync(join(OUT, id.replace(/[^a-z0-9-]/gi, '_') + '.diff.png'), PNG.sync.write(diff))
-    writeFileSync(join(OUT, id.replace(/[^a-z0-9-]/gi, '_') + '.after.png'), PNG.sync.write(a))
+    writeFileSync(evidenceFile(id.replace(/[^a-z0-9-]/gi, '_') + '.diff.png'), PNG.sync.write(diff))
+    writeFileSync(evidenceFile(id.replace(/[^a-z0-9-]/gi, '_') + '.after.png'), PNG.sync.write(a))
   }
 }
 
 await browser.close(); srvB.close(); srvA.close()
-writeFileSync(join(OUT, 'report.json'), JSON.stringify({ baseline: BASELINE, after: AFTER, budget: PCT_BUDGET, results }, null, 2) + '\n')
+writeFileSync(evidenceFile('report.json'), JSON.stringify({ baseline: BASELINE, after: AFTER, budget: PCT_BUDGET, results }, null, 2) + '\n')
 
 console.log(`\n=== Q2 field-size 視覺回歸(${DIFF_IDS.length} stories,預算 ${PCT_BUDGET}%)===`)
 for (const r of results) console.log(`  ${r.verdict === 'OK' ? '✓' : '✗'} ${r.id}  ${r.verdict}${r.diffPx != null ? ` (${r.diffPx}px / ${r.pct}%)` : ''}`)

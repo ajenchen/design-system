@@ -18,7 +18,24 @@ run_hook() {
     | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
   EXIT=$?
   set -e
+  STDOUT_TEXT=$(cat "$STDOUT")
   STDERR_TEXT=$(cat "$STDERR"); rm -f "$STDOUT" "$STDERR"
+}
+
+expect_context() {
+  local name="$1" needle="$2"
+  local context
+  context=$(printf '%s' "$STDOUT_TEXT" | jq -er \
+    'select(keys == ["governanceContext"]) | .governanceContext
+     | select(.hookEventName == "PreToolUse") | .message' 2>/dev/null || true)
+  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] && printf '%s' "$context" | grep -qF "$needle"; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (expected exact governance context containing '$needle', got exit $EXIT)"
+    echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'
+    echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+  fi
 }
 
 expect_exit() {
@@ -100,11 +117,11 @@ expect_exit "D.2.3 no DS title → silent" 0 ""
 echo ""
 echo "=== D.3 primitive color var in tsx ==="
 
-# 8. tsx with var(--color-neutral-5) → WARN stderr
+# 8. tsx with var(--color-neutral-5) → neutral governance context
 run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
 const cls = "border-[var(--color-neutral-5)]"
 ' Write
-expect_exit "D.3.1 primitive var color → WARN stderr" 0 "primitive color var"
+expect_context "D.3.1 primitive var color → governance context" "primitive color var"
 
 # 9. tsx with semantic alias → silent
 run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '

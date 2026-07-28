@@ -29,6 +29,7 @@
 import { readdirSync, readFileSync, writeFileSync, statSync, existsSync, mkdirSync } from 'node:fs'
 import { join, relative, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = join(__dirname, '..')
@@ -84,7 +85,7 @@ function sortCanonical(files) {
     if (idxA !== -1 && idxB !== -1) return idxA - idxB
     if (idxA !== -1) return -1
     if (idxB !== -1) return 1
-    return catA.localeCompare(catB)
+    return compareUtf8Bytes(catA, catB)
   })
 }
 
@@ -126,7 +127,7 @@ function generate() {
     catFiles.sort((a, b) => {
       const isPrimA = a.endsWith('primitives.css') ? -1 : 0
       const isPrimB = b.endsWith('primitives.css') ? -1 : 0
-      return isPrimA - isPrimB || a.localeCompare(b)
+      return isPrimA - isPrimB || compareUtf8Bytes(a, b)
     })
     ordered.push(...catFiles)
   }
@@ -135,7 +136,7 @@ function generate() {
   const extras = [
     ...findExtraCssFiles(PATTERNS_DIR),
     ...findExtraCssFiles(COMPONENTS_DIR),
-  ].sort((a, b) => relative(DS_SRC, a).localeCompare(relative(DS_SRC, b)))
+  ].sort((a, b) => compareUtf8Bytes(relative(DS_SRC, a), relative(DS_SRC, b)))
 
   const header = `/* ═══════════════════════════════════════════════════════════════════════
    @qijenchen/design-system — Consolidated Token Stylesheet

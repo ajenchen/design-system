@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/codex-managed-hook-bundle-v2.json",
+  "title": "Codex deterministic absolute managed hook bundle delivery contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "id", "delivery", "releaseBinding", "installRoots", "entrypoint", "bundleLayout", "canonicalInputs", "requiredEvents", "installedManifest", "runtime", "verification"],
+  "properties": {
+    "$schema": {"const": "../schemas/codex-managed-hook-bundle.schema.json"},
+    "schemaVersion": {"const": 2},
+    "id": {"const": "qijenchen-codex-managed-hook-bundle"},
+    "delivery": {
+      "type": "object", "additionalProperties": false,
+      "required": ["owner", "repositoryMayInstall", "requirementsTomlDistributesBundle", "externalActivationRequired", "activationProofKind"],
+      "properties": {
+        "owner": {"const": "endpoint-management"}, "repositoryMayInstall": {"const": false}, "requirementsTomlDistributesBundle": {"const": false},
+        "externalActivationRequired": {"const": true}, "activationProofKind": {"const": "signed-endpoint-effective-readback"}
+      }
+    },
+    "releaseBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["releaseRingsPath", "candidatePointer", "packageName", "requiredPackageFields", "requiredSourceCommitField", "requiredSourceTreeField"],
+      "properties": {
+        "releaseRingsPath": {"const": "infra/governance/release-rings.json"}, "candidatePointer": {"const": "/candidateRelease"},
+        "packageName": {"const": "@qijenchen/design-system"}, "requiredPackageFields": {"const": ["name", "version", "integrity"]},
+        "requiredSourceCommitField": {"const": "sourceCommit"}, "requiredSourceTreeField": {"const": "sourceTree"}
+      }
+    },
+    "installRoots": {"$ref": "#/$defs/platformStrings"},
+    "entrypoint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["relativePath", "protocol", "mustBeRegularFile", "mustNotCrossSymlink", "mustMatchDeterministicBytes", "policyBlockingExitCode", "integrityExitCode"],
+      "properties": {
+        "relativePath": {"const": "managed-hook-dispatcher.mjs"}, "protocol": {"const": "qijenchen-codex-managed-dispatcher-v2"},
+        "mustBeRegularFile": {"const": true}, "mustNotCrossSymlink": {"const": true}, "mustMatchDeterministicBytes": {"const": true},
+        "policyBlockingExitCode": {"const": 2}, "integrityExitCode": {"const": 70}
+      }
+    },
+    "bundleLayout": {
+      "type": "object", "additionalProperties": false,
+      "required": ["payloadPrefix", "preserveRepositoryPaths", "allCanonicalInputsMustBeCopied", "unexpectedFilesOutcome"],
+      "properties": {
+        "payloadPrefix": {"const": "payload"}, "preserveRepositoryPaths": {"const": true},
+        "allCanonicalInputsMustBeCopied": {"const": true}, "unexpectedFilesOutcome": {"const": "fail"}
+      }
+    },
+    "canonicalInputs": {"const": ["packages/design-system/ds-canonical"]},
+    "requiredEvents": {"const": ["PreToolUse", "PostToolUse", "SessionStart", "UserPromptSubmit", "Stop"]},
+    "installedManifest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["relativePath", "requiredFields", "fileDigestAlgorithm", "packageIntegrityAlgorithm", "allFilesMustBeEnumerated", "unexpectedFilesOutcome"],
+      "properties": {
+        "relativePath": {"const": "managed-hook-bundle.json"},
+        "requiredFields": {"const": ["schemaVersion", "sourceCommit", "sourceTree", "package", "contractSha256", "canonicalInputsSha256", "dispatcherSha256", "files", "bundleSha256"]},
+        "fileDigestAlgorithm": {"const": "sha256"}, "packageIntegrityAlgorithm": {"const": "sha512"},
+        "allFilesMustBeEnumerated": {"const": true}, "unexpectedFilesOutcome": {"const": "fail"}
+      }
+    },
+    "runtime": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requiredExecutables", "absoluteExecutableReadbackRequired", "executableDigestRequired", "regularFileRequired", "executableBitRequiredOnUnix", "symlinkAncestorsForbidden"],
+      "properties": {
+        "requiredExecutables": {"const": ["node", "shell", "python"]},
+        "absoluteExecutableReadbackRequired": {"const": true}, "executableDigestRequired": {"const": true},
+        "regularFileRequired": {"const": true}, "executableBitRequiredOnUnix": {"const": true}, "symlinkAncestorsForbidden": {"const": true}
+      }
+    },
+    "verification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requireExactCandidateRelease", "requireExactContractDigest", "requireExactCanonicalInputsDigest", "requireExactDeterministicInventory", "requireExactDispatcherBytes", "requireEveryFileDigest", "requireEffectiveRequirementsReadback", "localFilesystemAloneIsProof", "unknownOrMissingOutcome"],
+      "properties": {
+        "requireExactCandidateRelease": {"const": true}, "requireExactContractDigest": {"const": true},
+        "requireExactCanonicalInputsDigest": {"const": true}, "requireExactDeterministicInventory": {"const": true},
+        "requireExactDispatcherBytes": {"const": true}, "requireEveryFileDigest": {"const": true},
+        "requireEffectiveRequirementsReadback": {"const": true}, "localFilesystemAloneIsProof": {"const": false},
+        "unknownOrMissingOutcome": {"const": "external-activation-required"}
+      }
+    }
+  },
+  "$defs": {
+    "platformStrings": {
+      "type": "object", "additionalProperties": false, "required": ["darwin", "linux", "win32"],
+      "properties": {"darwin": {"type": "string", "minLength": 1}, "linux": {"type": "string", "minLength": 1}, "win32": {"type": "string", "minLength": 1}}
+    }
+  }
+}

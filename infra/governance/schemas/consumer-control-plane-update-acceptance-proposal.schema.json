@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/consumer-control-plane-update-acceptance-proposal-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema", "schemaVersion", "kind", "mode", "readOnly", "mutationAuthorized",
+    "repositoryId", "before", "binding", "proposedInventory", "proposedInventorySha256",
+    "reviewRequirements", "proposalDigest"
+  ],
+  "properties": {
+    "$schema": {"const": "https://qijenchen.dev/schemas/consumer-control-plane-update-acceptance-proposal-v1.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "consumer-control-plane-update-inventory-acceptance-proposal"},
+    "mode": {"const": "closed-no-mutation-proposal"},
+    "readOnly": {"const": true},
+    "mutationAuthorized": {"const": false},
+    "repositoryId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "before": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inventorySha256", "upgradeProtocolProfile", "acceptedControlPlaneUpdate"],
+      "properties": {
+        "inventorySha256": {"$ref": "#/$defs/sha256"},
+        "upgradeProtocolProfile": {"type": "string", "minLength": 1},
+        "acceptedControlPlaneUpdate": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/acceptedControlPlaneUpdate"}]}
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acceptedControlPlaneReadbackSha256", "independentReadbackVerificationDigest",
+        "planDigest", "materializedSnapshotTreeSha256", "candidateReleaseSha256",
+        "baselineEvidenceSha256", "baseSnapshotTreeSha256", "incomingSnapshotTreeSha256",
+        "candidateCorpusReceiptSha256", "releaseBomSha256", "mergeCommitSha",
+        "mergeTreeSha", "issuerRegistryDigest", "protocolId", "sourceProfile", "postUpdateProfile",
+        "sequence", "predecessorReadbackSha256"
+      ],
+      "properties": {
+        "acceptedControlPlaneReadbackSha256": {"$ref": "#/$defs/sha256"},
+        "independentReadbackVerificationDigest": {"$ref": "#/$defs/sha256"},
+        "planDigest": {"$ref": "#/$defs/sha256"},
+        "materializedSnapshotTreeSha256": {"$ref": "#/$defs/sha256"},
+        "candidateReleaseSha256": {"$ref": "#/$defs/sha256"},
+        "baselineEvidenceSha256": {"$ref": "#/$defs/sha256"},
+        "baseSnapshotTreeSha256": {"$ref": "#/$defs/sha256"},
+        "incomingSnapshotTreeSha256": {"$ref": "#/$defs/sha256"},
+        "candidateCorpusReceiptSha256": {"$ref": "#/$defs/sha256"},
+        "releaseBomSha256": {"$ref": "#/$defs/sha256"},
+        "mergeCommitSha": {"$ref": "#/$defs/gitOid"},
+        "mergeTreeSha": {"$ref": "#/$defs/gitOid"},
+        "issuerRegistryDigest": {"$ref": "#/$defs/sha256"},
+        "protocolId": {"const": "protected-base-reconstruction-v2"},
+        "sourceProfile": {"type": "string", "minLength": 1},
+        "postUpdateProfile": {"type": "string", "minLength": 1},
+        "sequence": {"type": "integer", "minimum": 1},
+        "predecessorReadbackSha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]}
+      }
+    },
+    "proposedInventory": {"$ref": "https://qijenchen.dev/schemas/managed-repos.schema.json"},
+    "proposedInventorySha256": {"$ref": "#/$defs/sha256"},
+    "reviewRequirements": {
+      "const": [
+        "review-full-control-plane-snapshot-diff",
+        "verify-independent-control-plane-readback",
+        "merge-protected-inventory-pr"
+      ]
+    },
+    "proposalDigest": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "gitOid": {"type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"},
+    "acceptedControlPlaneUpdate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence", "readbackSha256", "predecessorReadbackSha256",
+        "candidateReleaseSha256", "version", "baselineEvidenceSha256",
+        "baseSnapshotTreeSha256", "incomingSnapshotTreeSha256",
+        "materializedSnapshotTreeSha256", "candidateCorpusReceiptSha256",
+        "mergeCommitSha", "mergeTreeSha", "issuerRegistryDigest"
+      ],
+      "properties": {
+        "sequence": {"type": "integer", "minimum": 1},
+        "readbackSha256": {"$ref": "#/$defs/sha256"},
+        "predecessorReadbackSha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]},
+        "candidateReleaseSha256": {"$ref": "#/$defs/sha256"},
+        "version": {"type": "string", "minLength": 1},
+        "baselineEvidenceSha256": {"$ref": "#/$defs/sha256"},
+        "baseSnapshotTreeSha256": {"$ref": "#/$defs/sha256"},
+        "incomingSnapshotTreeSha256": {"$ref": "#/$defs/sha256"},
+        "materializedSnapshotTreeSha256": {"$ref": "#/$defs/sha256"},
+        "candidateCorpusReceiptSha256": {"$ref": "#/$defs/sha256"},
+        "mergeCommitSha": {"$ref": "#/$defs/gitOid"},
+        "mergeTreeSha": {"$ref": "#/$defs/gitOid"},
+        "issuerRegistryDigest": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

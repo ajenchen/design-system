@@ -1,10 +1,11 @@
-# Checkpoints — MUST ASK 時機(skill 內的 user 決策點)
+# Checkpoints — authority-classified product decisions
 
-5 個不可略過的 checkpoint。past 失敗都因 AI 自行決定了該問的事。
+只在真正產品／UI／UX SSOT 取捨時 MUST ASK。Research、工程成本評估、報告、milestone
+與 cleanup 都是 evidence receipts，不得升格成 user engineering-decision gate。
 
 ---
 
-## Checkpoint 0 — Problem framing(Phase 0 後)
+## Checkpoint 0 — Problem framing(conditional P2H)
 
 **格式範本**:
 
@@ -22,13 +23,16 @@ Constraints:{mobile? a11y? 時程?}
 (c) 情境不同 — 改: ...
 ```
 
+若 user requirement 已清楚提供 persona/JTBD/constraints，以上內容是 readback receipt，直接
+進 Phase 1；只有 framing 會導向不同產品行為且無法由現有 evidence 決定時才詢問。
+
 **絕對不可**:
 - ❌ 跳過 framing 直接開始 benchmark
 - ❌ 假設 user 的 primary user persona(沒問就 "general user")
 
 ---
 
-## Checkpoint 1 — Research scope(Phase 1 後)
+## Checkpoint 1 — Research evidence receipt(非 human gate)
 
 **格式範本**:
 
@@ -42,20 +46,19 @@ Constraints:{mobile? a11y? 時程?}
 | Notion    | ...      | ...           | link       |
 | ...       |          |               |            |
 
-上面 N 家研究足夠嗎?
-(a) 足夠,進 Phase 2 評估
-(b) 還想加:___ (指定 tier / 產品)
-(c) 對整個 Phase 0 framing 重新思考
+依 canonical benchmark coverage 與 evidence quality 自主判定是否足夠；達標直接進
+Phase 2，未達標自行補足。若研究揭露新的產品 framing 真取捨，回 conditional
+Checkpoint 0。
 ```
 
 **絕對不可**:
 - ❌ 只掃 3 家同 DS 就收工(違反 benchmark-sources.md「至少 5 家跨 tier」)
-- ❌ 直接跳 Phase 2(user 未確認 research 代表)
+- ❌ 用 user confirmation 代替 research coverage/evidence 判定
 - ❌ 抓 demo video / 口述而非 screenshot 或 link(失真)
 
 ---
 
-## Checkpoint 2 — Shortlist decision(Phase 2 後,最關鍵)
+## Checkpoint 2 — Shortlist product decision(conditional P2H,最關鍵)
 
 **格式範本**:
 
@@ -79,6 +82,9 @@ Constraints:{mobile? a11y? 時程?}
 (f) 直接 drop 全部 — 回 Phase 0
 ```
 
+只有兩個以上可行候選導向不同產品／UI／UX outcomes 時詢問；若既有 SSOT、明確
+requirement 與 evidence 已唯一淘汰其他候選，記 receipt 後自主接續。
+
 **絕對不可**:
 - ❌ AI 自己 shortlist 不問 user(user 最終 accountability)
 - ❌ 跳過 8 分以下 candidate 的 drop 說明(記入 notes.md 是學習價值)
@@ -86,9 +92,11 @@ Constraints:{mobile? a11y? 時程?}
 
 ---
 
-## Checkpoint 3 — 新元件 / primitive 需求(Phase 3 中)
+## Checkpoint 3 — 新元件 / primitive 需求(conditional P2H)
 
-若任一 candidate 需要**新 DS 元件或 primitive**,必 pause:
+若任一 candidate 可能需要**新 DS 元件或 primitive**，先依 consume-before-invent、
+public/internal 與 promotion evidence 判定。只有 composition 與新 public semantics
+皆為可行且代表不同 UI/UX outcomes 時才 pause:
 
 **格式範本**:
 
@@ -108,13 +116,13 @@ Constraints:{mobile? a11y? 時程?}
 ```
 
 **絕對不可**:
-- ❌ Phase 3 階段偷偷 add 到 Components/(違反 CLAUDE.md 規則分層)
+- ❌ Phase 3 階段偷偷 add 到 Components/(違反 shared governance 規則分層)
 - ❌ 不 surface 新元件需求(stakeholder 看不到成本)
 - ❌ 混「新 primitive」與「新 variant」(前者 promotion 門檻高,後者在既有元件加)
 
 ---
 
-## Checkpoint 4 — Final decision & graduation(Phase 4 後)
+## Checkpoint 4 — Final product decision & graduation(P2H)
 
 **格式範本**:
 
@@ -155,7 +163,7 @@ AI 推薦:Linear Quick-Filter(業務 fit 最強 + DS 一致性 100%)。
 
 ---
 
-## Checkpoint 5 — Cleanup(Phase 5)
+## Checkpoint 5 — Cleanup receipt(非 human gate)
 
 決策定案後整理:
 
@@ -172,11 +180,12 @@ AI 推薦:Linear Quick-Filter(業務 fit 最強 + DS 一致性 100%)。
 
 exploration notes.md 更新最終決策理由。
 
-確認?
+依已完成的產品決策，自主 archive/保留並更新 notes；有 unresolved future product
+roadmap 取捨時才列 P2H，否則不再詢問。
 ```
 
 **絕對不可**:
-- ❌ 自動刪除未採用 candidate(user 可能有未來計畫)
+- ❌ 無已定產品決策或可恢復 archive 就破壞唯一候選 evidence
 - ❌ 不更新 notes.md 最終決策記錄(未來會忘記為何沒選)
 
 ---

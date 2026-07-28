@@ -1,0 +1,20 @@
+name: Managed deep-audit activation gate
+
+# Safe scaffold only: no automatic trigger, OIDC permission, provider secret, or
+# evidence publication exists while the canonical activation bindings are null.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  activation-blocked:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Refuse execution until every managed class is externally activated
+        run: node scripts/verify-managed-ci-trusted-execution.mjs --check

@@ -5,7 +5,7 @@
  * Mandate(memory/feedback_audit_preflight_全盤查.md SSOT):
  * - `/design-system-audit --deep` Phase 1 前必先跑本 script,確認 baseline
  * - 輸出 3 件:檔案 enumeration / 設計原則 enumeration / coverage matrix(gap 標記)
- * - 結果存 `.claude/logs/audit-preflight-{date}.json` 供 Phase 1 sub-agent 引用
+ * - 結果存 provider-neutral runtime evidence 供 Phase 1 sub-agent 引用
  *
  * Exit:
  *  0 = preflight 完成 + 無 gap
@@ -16,15 +16,26 @@
  *   node scripts/audit-preflight.mjs        # 預設輸出 JSON
  *   node scripts/audit-preflight.mjs --verbose
  *   node scripts/audit-preflight.mjs --check # 只 exit code,不 dump JSON
+ *   node scripts/audit-preflight.mjs --check --json # 唯讀 machine report(stdout)
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
 import { globSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { prepareRuntimeEvidenceFile } from './lib/governance-runtime-evidence.mjs'
 
 const ROOT = process.cwd()
 const VERBOSE = process.argv.includes('--verbose')
 const CHECK_ONLY = process.argv.includes('--check')
+const JSON_OUT = process.argv.includes('--json')
+const valueOf = (name) => {
+  const index = process.argv.indexOf(name)
+  if (index === -1) return null
+  if (!process.argv[index + 1] || process.argv[index + 1].startsWith('--')) throw new Error(`${name} requires a value`)
+  return process.argv[index + 1]
+}
+const EXPLICIT_EVIDENCE_ROOT = valueOf('--evidence-root') || process.env.GOVERNANCE_EVIDENCE_ROOT || null
 
 // ── 1. 檔案 enumeration ─────────────────────────────────────────────
 const dsFiles = globSync('packages/design-system/src/**/*.{tsx,ts,css,md}', { cwd: ROOT })
@@ -43,7 +54,8 @@ const fileBuckets = {
 //   (a) table-row: `| **M<N>** | ...`(原 pattern,大宗 M1-M33)
 //   (b) heading:   `## M<N> ...`(M34 升 heading 型 codify per user gap finding)
 // 任一 match 都 abstract 成 `M<N>`,避免 abstract drift hide audit gap。
-const metaPatternsPath = path.join(ROOT, '.claude/rules/meta-patterns.md')
+const CANONICAL = path.join(ROOT, 'packages/design-system/ds-canonical')
+const metaPatternsPath = path.join(CANONICAL, 'rules/meta-patterns.md')
 const metaContent = fs.existsSync(metaPatternsPath) ? fs.readFileSync(metaPatternsPath, 'utf-8') : ''
 const mRulesSet = new Set()
 for (const m of metaContent.matchAll(/\|\s*\*\*M(\d+)\*\*\s*\|/g)) mRulesSet.add(`M${m[1]}`)
@@ -63,14 +75,14 @@ for (const specFile of fileBuckets.specMd) {
 }
 
 // 2.3 Hook invariants
-const hookFiles = globSync('.claude/hooks/check_*.sh', { cwd: ROOT })
+const hookFiles = globSync('packages/design-system/ds-canonical/hooks/check_*.sh', { cwd: ROOT })
 const hookInvariants = hookFiles.map(f => path.basename(f, '.sh').replace('check_', ''))
 
 // 2.4 Rules
-const ruleFiles = globSync('.claude/rules/*.md', { cwd: ROOT })
+const ruleFiles = globSync('packages/design-system/ds-canonical/rules/*.md', { cwd: ROOT })
 
 // ── 3. Audit dim coverage matrix ─────────────────────────────────────
-const auditSkillPath = path.join(ROOT, '.claude/skills/design-system-audit/SKILL.md')
+const auditSkillPath = path.join(CANONICAL, 'skills/design-system-audit/SKILL.md')
 const auditSkillContent = fs.existsSync(auditSkillPath) ? fs.readFileSync(auditSkillPath, 'utf-8') : ''
 const dimRows = [...auditSkillContent.matchAll(/^\|\s*(\d+)\s*\|\s*\*\*([^*]+)\*\*/gm)].map(m => ({
   num: parseInt(m[1]),
@@ -80,8 +92,8 @@ const dimRows = [...auditSkillContent.matchAll(/^\|\s*(\d+)\s*\|\s*\*\*([^*]+)\*
 // 2026-05-15 Fix 1(per sub-agent a9e6d53c audit + user mission「全面涵蓋」):
 // 原 heuristic `d.title.toLowerCase().includes(p.name.toLowerCase())` 對 M-rule
 // 失效(M1/M2 substring 永遠不在 dim title)→ 86% false-positive gap。
-// 改 explicit map SSOT:`.claude/references/principle-dim-map.json`。
-const MAP_PATH = path.join(ROOT, '.claude/references/principle-dim-map.json')
+// 改 explicit map SSOT:`packages/design-system/ds-canonical/references/principle-dim-map.json`。
+const MAP_PATH = path.join(CANONICAL, 'references/principle-dim-map.json')
 const principleDimMap = fs.existsSync(MAP_PATH) ? JSON.parse(fs.readFileSync(MAP_PATH, 'utf-8')) : {}
 
 const coverageMap = {}
@@ -119,6 +131,8 @@ for (const p of allPrinciples) {
 
 // ── Output ───────────────────────────────────────────────────────────
 const report = {
+  schemaVersion: 1,
+  evidenceKind: 'audit-preflight',
   ts: new Date().toISOString(),
   filesCount: {
     total: dsFiles.length,
@@ -142,34 +156,48 @@ const report = {
   coverageMap: VERBOSE ? coverageMap : undefined,
 }
 
-// Persist log(2026-05-18 fix per codex Phase B audit:--check usage 宣稱「只 exit code,不 dump JSON」
-// 但程式無條件 writeFileSync → 對齊 usage 寫 log gated by !CHECK_ONLY)
+// `--check` is byte-for-byte read-only. Machine consumers request the report from this exact run
+// with `--json`; they never read a dated stale report from a prior run.
 const date = new Date().toISOString().slice(0, 10)
 if (!CHECK_ONLY) {
-  const logsDir = path.join(ROOT, '.claude/logs')
+  const logPath = prepareRuntimeEvidenceFile({
+    repoRoot: ROOT,
+    explicitRoot: EXPLICIT_EVIDENCE_ROOT,
+    relativePath: `audit/preflight/audit-preflight-${date}.json`,
+  })
+  const logsDir = path.dirname(logPath)
   if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true })
-  const logPath = path.join(logsDir, `audit-preflight-${date}.json`)
-  fs.writeFileSync(logPath, JSON.stringify(report, null, 2))
-
-  console.log('=== Audit Preflight Report ===')
-  console.log(`Files total: ${report.filesCount.total}`)
-  console.log(`  - component tsx: ${report.filesCount.componentTsx}`)
-  console.log(`  - showcase stories: ${report.filesCount.storiesShowcase}`)
-  console.log(`  - anatomy stories: ${report.filesCount.storiesAnatomy}`)
-  console.log(`  - principles stories: ${report.filesCount.storiesPrinciples}`)
-  console.log(`  - spec.md: ${report.filesCount.specMd}`)
-  console.log('')
-  console.log(`Principles: M-rules ${report.principles.mRules} / traits ${report.principles.specTraits} / hooks ${report.principles.hookInvariants}`)
-  console.log(`Audit dims: ${report.auditDims}`)
-  console.log(`Coverage gaps: ${gaps.length}`)
-  if (gaps.length) {
-    console.log('')
-    console.log('⚠️  Gaps(原則無對應 audit dim):')
-    gaps.slice(0, 20).forEach(g => console.log(`  - ${g}`))
-    if (gaps.length > 20) console.log(`  ... ${gaps.length - 20} more`)
+  const temporary = `${logPath}.${process.pid}.${randomUUID()}.tmp`
+  try {
+    fs.writeFileSync(temporary, JSON.stringify(report, null, 2), { flag: 'wx', mode: 0o600 })
+    fs.renameSync(temporary, logPath)
+  } finally {
+    if (fs.existsSync(temporary)) fs.unlinkSync(temporary)
   }
-  console.log('')
-  console.log(`Log: ${logPath}`)
+
+  if (!JSON_OUT) {
+    console.log('=== Audit Preflight Report ===')
+    console.log(`Files total: ${report.filesCount.total}`)
+    console.log(`  - component tsx: ${report.filesCount.componentTsx}`)
+    console.log(`  - showcase stories: ${report.filesCount.storiesShowcase}`)
+    console.log(`  - anatomy stories: ${report.filesCount.storiesAnatomy}`)
+    console.log(`  - principles stories: ${report.filesCount.storiesPrinciples}`)
+    console.log(`  - spec.md: ${report.filesCount.specMd}`)
+    console.log('')
+    console.log(`Principles: M-rules ${report.principles.mRules} / traits ${report.principles.specTraits} / hooks ${report.principles.hookInvariants}`)
+    console.log(`Audit dims: ${report.auditDims}`)
+    console.log(`Coverage gaps: ${gaps.length}`)
+    if (gaps.length) {
+      console.log('')
+      console.log('⚠️  Gaps(原則無對應 audit dim):')
+      gaps.slice(0, 20).forEach(g => console.log(`  - ${g}`))
+      if (gaps.length > 20) console.log(`  ... ${gaps.length - 20} more`)
+    }
+    console.log('')
+    console.log(`Log: ${logPath}`)
+  }
 }
+
+if (JSON_OUT) process.stdout.write(`${JSON.stringify(report)}\n`)
 
 process.exit(gaps.length > 0 ? 1 : 0)

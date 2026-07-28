@@ -1,7 +1,8 @@
 {
   "_meta": {
+    "owner": "packages/design-system/ds-canonical/references/failure-class-registry.json",
     "invariant": "每類被抓過的 failure class 必須終有 ship 到 consumer 的機械防線(user 2026-07-10 verbatim「建立治理的基本原則」)。status 三態:protected(已有 MECHANICAL_CONSUMER / DS_API_FIXED 防線)/ remediating(必帶 plan 指標)/ judgment(regex 不可判,必帶 auditDim 兜底)。gate = scripts/audit-failure-class-coverage.mjs --check(deep-audit dim 91 chain)。",
-    "source": ".claude/logs/failure-class-coverage-matrix.json(2026-07-10 41-agent 對抗 workflow,每 verdict cite 驗證)",
+    "legacyProvenance": ".claude/logs/failure-class-coverage-matrix.json(2026-07-10 historical snapshot,non-authority；41-agent 對抗 workflow,每 verdict cite 驗證)",
     "addRule": "新 failure class(deep-audit / user 抓 / codex 抓)→ 本 registry 加 row;沒 row 或 status 缺 = gate 紅燈。remediation 落地後把 status 升 protected 並記 landedAt。"
   },
   "classes": [

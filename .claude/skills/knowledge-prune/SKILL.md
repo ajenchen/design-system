@@ -1,21 +1,32 @@
 ---
 name: knowledge-prune
-description: Prune governance sprawl across CLAUDE.md / specs / skills / hooks / memory / settings. Finds duplicate rules (Rule-of-3), dead hooks (6mo 0 fire via `.claude/logs/hook-fires-per-hook.jsonl`), stale memories, over-concrete bug case studies that should abstract to meta, and contradictions across homes. Enforces per-file budget (CLAUDE.md target ≤ 200 / transition ≤ 400, spec ≤ 300, SKILL ≤ 250, memory ≤ 100) and retire rate ≥ 5% / quarter. Invoke via /knowledge-prune quarterly or when CLAUDE.md > 800 / MEMORY.md > 20 entries / audit Phase F reports sprawl. Auto-chained by /design-system-audit --deep Phase 4.5.
+description: Prune governance sprawl across provider-neutral instructions / specs / skills / hooks / memory / settings. Finds duplicate rules (Rule-of-3), dead hooks from the Git-owned provider telemetry state, stale memories, over-concrete bug case studies that should abstract to meta, and contradictions across homes. Enforces per-file budgets and retire rate ≥ 5% / quarter. Invoke quarterly or when governance exceeds its documented budgets. Auto-chained by /design-system-audit --deep Phase 4.5.
 ---
+
+<!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/knowledge-prune/SKILL.md; provider: claude; do not edit this adapter view. -->
+
+<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=claude; strategy=generated-binding-header; assumptionCount=20; assumptionFingerprint=sha256:b6d2f15093f874c95f57f621efc8ae45cba0c71f375adc949aad9daa5ba84145; evidence=packages/governance/canonical/providers.json#claude -->
+
+## Provider binding contract
+
+This canonical workflow contains a committed inventory of legacy assumptions. Resolve them exactly as follows; an unavailable resolution or inventory drift is `ADAPTER-BLOCKED`:
+
+- `provider-identity`: Treat historical provider names as provenance labels, never as the current runtime identity.
+- `provider-surface-path`: Resolve legacy repository paths through generated views while treating ds-canonical as the semantic owner.
 
 # Knowledge Prune — 治理反膨脹 skill
 
-**目的**:本 DS governance 自身是活的知識庫,若只 append 會讓 CLAUDE.md 載入成本失控、MEMORY.md 條目爆炸、hook 變殭屍、spec.md 重複。本 skill 掃 8 個 home 找冗贅,提議 retire 候選,加嚴執行 Rule-of-3 SSOT + 行數預算。
+**目的**:本 DS governance 自身是活的知識庫,若只 append 會讓 provider-neutral canonical 載入成本失控、MEMORY.md 條目爆炸、hook 變殭屍、spec.md 重複。本 skill 掃 8 個 canonical home 找冗贅,提議 retire 候選,加嚴執行 Rule-of-3 SSOT + 行數預算;`.claude/**` / `.agents/**` 只是 generated provider delivery/discovery view,不參與 authority 枚舉或 retire 決策。
 
 **🔒 核心前提(每次必遵,不需 user 提醒 — mindset #6「tell me once」)**:prune 唯一目的是**移除噪音以銳化 signal、提升遵循正確率**,**絕不以犧牲品質換行數 / 條目下降**。每次跑同時必滿足:(a) 品質不可因 prune 打折;(b) 以**提升品質**(清晰度↑ / drift 風險↓ / recall 精度↑)為目標。故:① 只 retire 真冗餘 / stale / 已被上游完整吸收的條目(這類本身是噪音,清掉反提升正確率);② consolidate 重複(同概念多 home → 選 SSOT + pointer);③ **每條真實 invariant / 機械防線必完整保留 — retire 前必 grep 確認保護已被別處覆蓋,否則不動**;④ distinct 條目強合成大條目會降 recall 精度 = 反 pattern,不做。**retire rate 是結果指標非目標**:湊 % 傷品質 = 違本前提;寧可 retire rate < 5% + report 明寫「成熟無冗餘」rationale,也不強刪真保護。本前提 override 下方所有 Phase / Checkpoint 的數值 target。
 
-**對齊 CLAUDE.md `# 治理 canonical`**:本 skill 是 L3(Periodic deep)實作。L1(pre-write hook)+ L2(fire log)自動執行,L3 需人決策 canonical retire,走 checkpoint。
+**對齊 `AGENTS.md` `# 治理 canonical`**:本 skill 是 L3(Periodic deep)實作。L1(pre-write hook)+ L2(fire log)自動執行；L3 的純工程治理 retire／consolidate 決策已 standing-delegated，依 evidence + highest-assurance independent review 自主收斂。
 
-**對齊 CLAUDE.md `# 稽核 canonical`「Audit-vs-execute 分權」**:動 canonical substantive meaning → **STOP 提議**;對齊 / 清 duplicate / 回填 pointer → **AUTO**。
+**Authority boundary**:canonical substantive 本身不是 human gate。只有 resolution 會改變產品／UI／UX SSOT 且仍存在真實取捨才 **STOP**；治理 ownership、hook/skill lifecycle、架構與表達／duplicate／pointer 都依 `AGENTS.md # 自主執行 canonical` **AUTO**。
 
 ## When to run
 
-- CLAUDE.md 超過 800 行(hook 硬 cap 觸發)
+- Bootstrap instructions(`AGENTS.md` + provider import shell) 超過 800 行(hook 硬 cap 觸發)
 - MEMORY.md 超過 20 條 index
 - 季度健檢(每 3 個月跑 1 次)
 - `/design-system-audit --deep` Phase 4.5 自動 chain
@@ -28,8 +39,6 @@ description: Prune governance sprawl across CLAUDE.md / specs / skills / hooks /
 - 不刪歷史 commit / git log
 - 不 rewrite spec.md 內容(只刪 duplicate / 提議合併,實質改寫走 `/design-system-audit`)
 
----
-
 ## Workflow(5 phases)
 
 ### Phase 0 — Baseline scan(AUTO)
@@ -39,23 +48,23 @@ description: Prune governance sprawl across CLAUDE.md / specs / skills / hooks /
 ```
 Home              Size           Over-budget?
 ─────────────────────────────────────────────
-CLAUDE.md         N lines        [target ≤ 200 / transition ≤ 400 / hard cap 800]
+Bootstrap         N lines        [AGENTS.md + provider import shell;target ≤ 250 / transition ≤ 400 / hard cap 800]
 MEMORY.md         N entries      [≤20]
 spec.md total     N files        per-file ≤300
 SKILL.md total    N files        per-file ≤250
 hooks             N scripts      (count only, Phase 3 看 fire log)
 memory files      N              per-file ≤100
-.claude/logs/     parse existing  (feed Phase 3)
+<absolute-git-dir>/governance-runtime/evidence/ parse existing evidence(feed Phase 3)
 ```
 
 **Output**:`phase0-baseline.md`(session-local,不 commit)
 
 ### Phase 0.5 — 讀 external signal(AUTO)
 
-讀 `.claude/logs/` + `.claude/benchmarks/`(Commit 5 後):
+讀 Git-owned provider-neutral evidence `<absolute-git-dir>/governance-runtime/evidence/` + provider telemetry `${GOVERNANCE_STATE_DIR}` + benchmark policy `governance/benchmarks/`:
 
 - `hook-fires.jsonl` — governance-file edits(tool/path per event);用於 hot governance files 分析
-- `hook-fires-per-hook.jsonl` — per-hook fire count(2026-04-25 起);via shared helper `.claude/hooks/_log-fire.sh`;啟用 D2 dead-hook detection
+- `hook-fires-per-hook.jsonl` — per-hook fire count(2026-04-25 起);via canonical shared helper `packages/design-system/ds-canonical/hooks/_log-fire.sh`;啟用 D2 dead-hook detection
 - `skill-invokes.jsonl`(若存在)— 過去 3 月每 skill invoke 次數
 - `user-corrections.jsonl`(若存在)— pending codification 清單
 - `benchmarks/claude-code-features.jsonl` — 新 CC feature 採用提議
@@ -73,19 +82,19 @@ Scan:同概念(同 keyword / 同 canonical)出現在 ≥ 3 個不同 home 寫完
 
 Example violations(historic — 2026-05-22 prune verify 後均已收斂為 pointer 模式,僅留作教學範例):
 - `Portal 逃脫 theme`:過去在 hover-card.spec.md / avatar.spec.md / color.spec.md 各重述;現只 M3 SSOT + 各 spec pointer。2026-05-22 audit verify 為已對齊(僅 ui-development.md / meta-patterns.md 2 home 涉及,clean pointer)
-- `Inline Action vs Button predicate`:過去 CLAUDE.md / item-anatomy.spec.md / button.spec.md 各完整;現 `inline-action.spec.md` 為 SSOT,其他 cross-link
-- 新範例(2026-05-22 抓):**hook count threshold** 在 CLAUDE.md `# 治理 canonical` 行數預算表 / meta-patterns M14 / M20 / `session_start_governance_check.sh` 4 處 drift 3 值(40/35/30)→ M14/M20 strip 數字改 pointer SSOT 修
+- `Inline Action vs Button predicate`:過去 `AGENTS.md` / item-anatomy.spec.md / button.spec.md 各完整;現 `inline-action.spec.md` 為 SSOT,其他 cross-link
+- 新範例(2026-05-22 抓):**hook count threshold** 在 `AGENTS.md` `# 治理 canonical` 行數預算表 / meta-patterns M14 / M20 / `session_start_governance_check.sh` 4 處 drift 3 值(40/35/30)→ M14/M20 strip 數字改 pointer SSOT 修
 
 **Output**:duplicate cluster 清單 + 建議 SSOT home。
 
 #### D2 — Dead & stale(fire / edit recency)
 
-- **Dead hooks**:跑 `npm run audit:hook-quality`(= `scripts/audit-hook-quality.mjs`,讀 `.claude/logs/hook-fires-per-hook.jsonl` 自動產 per-hook signal-to-noise report → `.claude/logs/hook-quality-report.json`:fire_count_6mo / fire_per_day / hot-warm-cool-dead 分類 / file_exists orphan signal / retire_candidate flag)。6 月 0 fire 的 hook 名 → retire 提名(report 已標 `dead`)
-- **Stale memories**:`ls -la ~/.claude/.../memory/*.md`,6 月無 git log 變動且不在 MEMORY.md index head = stale
+- **Dead hooks**:跑 `npm run audit:hook-quality`(= `scripts/audit-hook-quality.mjs`,讀 Git-owned provider telemetry `${GOVERNANCE_STATE_DIR}/hook-fires-per-hook.jsonl`,產 report → `<absolute-git-dir>/governance-runtime/evidence/audit/hook-quality-report.json`:fire_count_6mo / fire_per_day / hot-warm-cool-dead / orphan / retire_candidate)。6 月 0 fire 的 hook 名 → retire 提名(report 已標 `dead`)
+- **Stale memories**:只枚舉 repository SSOT `governance/memory/*.md`；以 `git log -- governance/memory/<file>`、`governance/memory/MEMORY.md` index 與 `governance/memory/contract.json` 判斷。不得讀取或回寫任何 provider home/cache 來決定 authority。
 - **Unused skills**:`skill-invokes.jsonl` 3 月 0 invoke(除非是 rare-event skill,例 `delivery-handoff`)
-- **Commands / agents**(2026-07-10 hunt 補,原零掃描):`.claude/commands/*.md` 對照 `skill-invokes.jsonl`(slash command 同走 Skill tool log);`.claude/agents/*.md` 無 invoke log → 用 git log recency + transcript grep 判 dead
-- **References orphan**(2026-07-10 hunt 補):枚舉 `.claude/references/*.md`,rg 檔名 across `.claude/skills/` + `CLAUDE.md` + `packages/**/*.spec.md` + hooks;0 cite = retire 候選
-- **Stale marker 兌現**(2026-07-10 hunt 補,anchor drag-canonical 標了 6 次 prune 沒人讀):`rg -l 'stale-pending-prune' .claude/` → 命中即列 update/retire 候選
+- **Commands / context-fork agents**(2026-07-10 hunt 補,原零掃描):先讀 `packages/governance/canonical/providers.json` 的 `canonical.roots.commands` 與 `canonical.roots.contextForkAgents`,再對這兩個 canonical tree 做 enumeration。Commands 對照 `skill-invokes.jsonl`(命令同走 registered skill invocation log);context-fork agents 無 invoke log → 用 canonical file 的 git log recency + transcript grep 判 dead。Provider views 只驗 generated projection,不參與 dead/retire 決策。
+- **References orphan**(2026-07-10 hunt 補):枚舉 `packages/design-system/ds-canonical/references/*.md`,rg 檔名 across `packages/design-system/ds-canonical/skills/` + `AGENTS.md` + `packages/**/*.spec.md` + `packages/design-system/ds-canonical/hooks/`;0 cite = retire 候選。Provider views 僅可用 mirror-check 驗交付完整性,不能反向證明 canonical 在使用。
+- **Stale marker 兌現**(2026-07-10 hunt 補,anchor drag-canonical 標了 6 次 prune 沒人讀):`rg -l 'stale-pending-prune' packages/design-system/ds-canonical/ governance/ AGENTS.md` → 命中即列 update/retire 候選;generated provider view 的同源命中不重複計數。
 
 **Output**:retire 候選 + rationale(`fire=0 / last_edit=2025-10 / 被 M14 吸收`)
 
@@ -101,11 +110,11 @@ Example:
 
 #### D4 — Cross-home contradiction
 
-Scan:CLAUDE.md canonical vs spec.md vs skill reference 描述同概念時**語義衝突**(非表達差異)?
+Scan:`AGENTS.md` canonical vs spec.md vs skill reference 描述同概念時**語義衝突**(非表達差異)?
 
 Example:
-- CLAUDE.md M3 說「Portal 必繼承 data-theme」;但 avatar.spec.md 說「Portal 必繼承 data-theme + data-density」— 差 `data-density`,看誰真 SSOT
-- CLAUDE.md `# 稽核 canonical` 列 D4 UX 同時也談 3-tier scope — 2026-04-24 已合併為一章(原本 2 章重疊)
+- `AGENTS.md` M3 說「Portal 必繼承 data-theme」;但 avatar.spec.md 說「Portal 必繼承 data-theme + data-density」— 差 `data-density`,看誰真 SSOT
+- `AGENTS.md` `# 稽核 canonical` 列 D4 UX 同時也談 3-tier scope — 2026-04-24 已合併為一章(原本 2 章重疊)
 
 **Output**:matrix of 衝突點 + 誰該讓步
 
@@ -113,7 +122,7 @@ Example:
 
 D5 Canonical drift(spec vs code)/ D6 Hook-fire health / D7 Skill-invoke health / D8 Memory recency-orphan / D9 Benchmark-citation debt(M22)/ D10 Verification artifact rot(M32)。
 
-### Phase 2 — Triage + Checkpoint 1(MUST ASK)
+### Phase 2 — Triage + authority classification
 
 ```
 Phase 1 findings(D1-D10):
@@ -126,12 +135,13 @@ Phase 1 findings(D1-D10):
 Priority:
 - P0 (AUTO): 對齊 SSOT / 補 pointer / 刪 confirmed dead hook / retire unused skill — 表達層調整,不動 canonical 意思
 - P1 (AUTO with brief report): 合併 duplicate(保 semantic)/ 刪 6+ 月 stale memory(非 critical)/ 編號 renumber
-- P2 (STOP / CHECKPOINT): 抽新 meta / 合併 contradiction 要選哪邊 / 撤 Meta-Pattern / 改 SSOT ownership
+- P2E (AUTO + maximum-assurance review):抽工程治理 meta / 解 governance contradiction / 撤工程 Meta-Pattern / 改治理 SSOT ownership
+- P2H (HUMAN-ONLY):resolution 會改變產品／UI／UX SSOT，且 evidence 收斂後仍有真實選擇或取捨
 
-Proceed with P0+P1 as atomic commit? Then discuss P2?
+Execution receipt:P0/P1/P2E 的分組、evidence、review binding、rollback；P2H 若有則 batch-at-end 一次列出。
 ```
 
-**Do NOT skip**:P2 動 canonical substantive,per `# 稽核 vs 執行 分權`,必 user sign-off。
+**Do NOT skip authority classification**:純工程 canonical substantive 必自主執行，不能用 user sign-off 代替工程判斷；只有 P2H 停下。
 
 ### Phase 3 — Apply P0 + P1 fixes(分組 commit)
 
@@ -139,27 +149,25 @@ Proceed with P0+P1 as atomic commit? Then discuss P2?
 - 每次 commit 後 `npx tsc -b` 驗證(prune 不動 code,但防 spec path 斷)
 - 每 commit 後重跑 Phase 0 baseline,確認 size 有下降
 
-### Phase 4 — P2 discussion + apply(user sign-off 後)
+### Phase 4 — P2 resolution + apply
 
-- 每 P2 item 一個獨立 commit(animation trail 可回溯)
-- 新 meta-pattern 加進 CLAUDE.md `# Meta-Pattern 預警` → 同時**必檢討哪些下游條目冗餘**(上游加 = 下游減)
+- 每 P2 item 一個獨立 commit(animation trail 可回溯)；P2E 依最高 certified capability + independent review 自主收斂，P2H 只在取得產品／UI／UX決策後執行
+- 新 meta-pattern 加進 `AGENTS.md` `# Meta-Pattern 預警` → 同時**必檢討哪些下游條目冗餘**(上游加 = 下游減)
 
 ### Phase Z reference — Cross-repo SSOT propagation
 
-詳 references/phase-z-cross-repo-ssot-propagation.md(2026-05-26 retract skill-specific Phase Z;sync trigger = push main 後 SSOT-affecting diff,canonical 在 CLAUDE.md `# Git solo-work canonical` Step 5.5 + hook check_post_main_ssot_propagate.sh)。
-
----
+詳 references/phase-z-cross-repo-ssot-propagation.md。跨 repo 傳播由 protected PR merge 後的 immutable release workflow + GitHub App upgrade PR 統一觸發；skill 不自行 dispatch、直寫 main 或解析 mutable tag。
 
 ### Phase 5 — Final report + **quantified retire rate** + baseline update
 
 **Retire rate 計算公式**(從 aspirational 轉 quantified,2026-04-24):
 
 ```
-total_governance_items_before = 
-  count(CLAUDE.md 章節) 
+total_governance_items_before =
+  count(AGENTS.md 章節)
   + count(Meta-Pattern 條目)
-  + count(.claude/skills/)
-  + count(.claude/hooks/)
+  + count(packages/design-system/ds-canonical/skills/)
+  + count(packages/design-system/ds-canonical/hooks/)
   + count(MEMORY.md entries)
   + count(memory files)
   + count(spec.md SSOT anchors)
@@ -175,7 +183,7 @@ retire_rate = retired_this_quarter / total_governance_items_before
 ## Prune report(N 日期)
 
 ### Metric delta
-- CLAUDE.md: B → A(-X 行)
+- Bootstrap instructions: B → A(-X 行)
 - MEMORY.md: B → A(-Y 條目 / -Z 檔)
 - Total spec.md: B → A(-Z 行)
 - Hooks: B → A(-N 個 hook retired)
@@ -190,8 +198,8 @@ retire_rate = retired_this_quarter / total_governance_items_before
 ### 未達 retire target rationale(若 < 5%)
 - {e.g. "governance ecosystem stable, 上季已大幅 prune,本季無重大冗贅"}
 
-### Still deferred(P2 pending user sign-off)
-- {list}
+### Human-only pending(只限產品／UI／UX SSOT 真取捨)
+- {list or 無}
 
 ## Self-improvement capture
 - 新發現 prune pattern: {...} OR "無"
@@ -199,33 +207,29 @@ retire_rate = retired_this_quarter / total_governance_items_before
 - 下次 prune trigger 建議: {...}
 ```
 
-Update `.claude/logs/metric-snapshots.jsonl`:
+Update `${GOVERNANCE_STATE_DIR}/metric-snapshots.jsonl`(provider-neutral Git telemetry state):
 
 ```json
-{"ts":"2026-04-24","retire_rate":0.07,"retired":5,"total_before":71,"claude_md_lines":612,"hooks_total":18,"skills_total":13,"memory_entries":29}
+{"ts":"2026-04-24","retire_rate":0.07,"retired":5,"total_before":71,"bootstrap_instruction_lines":238,"hooks_total":18,"skills_total":13,"memory_entries":29}
 ```
 
 **本 snapshot 讓 `/governance-health` trend 分析:**若 3 季連續 retire rate < 5% 且 governance 行數仍增 → auto-propose「有隱性冗贅未抓,考慮換 /knowledge-prune 掃描策略」。
 
----
+## Authority gates(禁止把 milestone 變成人類工程核准)
 
-## Checkpoints(禁止跳)
+### Gate 1 — Phase 2 triage(見上)
 
-### ⚠️ Checkpoint 1 — Phase 2 triage(見上)
+### Gate 2 — 動 Meta-Pattern(P2)
 
-### ⚠️ Checkpoint 2 — 動 Meta-Pattern(P2)
+撤／合併／改寫工程治理 Meta-Pattern 由最高 certified capability 依全 repo evidence、tests、independent review 與 rollback 自主決定；若條目本身定義產品／UI／UX SSOT 且存在真取捨，才列 P2H 給 user 拍板。
 
-提議撤 / 合併 / 改寫 Meta-Pattern 條目前 STOP。Meta-Pattern 是 CLAUDE.md 最上游,動意思必 user 拍板。
+### Gate 3 — 抽新 canonical
 
-### ⚠️ Checkpoint 3 — 抽新 canonical
+Phase 1 D3 發現 5+ 條下游條目可被新 meta 吸收 → 建立新 Meta-Pattern 前走命名三 test + world-class benchmark + independent review(對齊 `AGENTS.md` M8 / M12)，工程 governance 直接落地。
 
-Phase 1 D3 發現 5+ 條下游條目可被新 meta 吸收 → 提議新 Meta-Pattern 前走命名三 test + world-class benchmark(對齊 CLAUDE.md M8 / M12)。
+### Gate 4 — Retire 率 < 5%
 
-### ⚠️ Checkpoint 4 — Retire 率 < 5%
-
-季度 prune 若 retire 不到 5%,表示:(a) 真沒冗餘(罕見),OR (b) judgment 太保守。STOP 跟 user 確認哪邊。
-
----
+季度 prune 若 retire 不到 5%,由 evidence 判定是(a)成熟無冗餘或(b)judgment 太保守，report rationale；不得為達數字強刪，也不得把純工程判斷轉交 user。
 
 ## Retire rules(執行規則)
 

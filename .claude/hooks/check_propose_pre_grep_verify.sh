@@ -10,7 +10,8 @@ set -uo pipefail
 # 決策 N / 我推 A/B/C / 選項」keywords,**但 content 內無 file:line cite 證據**
 # → P1 warn(stderr exit 0,Claude 自決撤回 OR 在 reply 補 cite)。
 #
-# SSOT: `.claude/skills/propose-options/SKILL.md` Q0 段 + meta-patterns.md M18。
+# SSOT: `packages/design-system/ds-canonical/skills/propose-options/SKILL.md` Q0 段 +
+# `packages/design-system/ds-canonical/rules/meta-patterns.md` M18。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
@@ -38,7 +39,7 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '
   ([.tool_input.edits[]? | .new_string] | join("\n"))
 ' 2>/dev/null || echo "")
 
-[ -z "${NEW_CONTENT//[[:space:]]/}" ] && exit 0
+grep -q '[^[:space:]]' <<<"$NEW_CONTENT" || exit 0
 
 # Detect propose keywords
 HAS_PROPOSE=$(echo "$NEW_CONTENT" | grep -cE '(請拍板|等你拍板|待你拍板|決策 [0-9N]|我推 [ABC]|選項[::]|propose for user|你決定|讓我判斷決策)' || true)
@@ -46,7 +47,8 @@ HAS_PROPOSE=$(echo "$NEW_CONTENT" | grep -cE '(請拍板|等你拍板|待你拍�
 [ "$HAS_PROPOSE" = "0" ] && exit 0
 
 # Allowed escape:檔頭 `<!-- @propose-pre-verified -->` 例外
-if echo "$NEW_CONTENT" | head -3 | grep -qE '@propose-pre-verified'; then
+FIRST_THREE=$(sed -n '1,3p' <<<"$NEW_CONTENT")
+if grep -qE '@propose-pre-verified' <<<"$FIRST_THREE"; then
   exit 0
 fi
 
@@ -63,7 +65,7 @@ if [ "$HAS_CITE" = "0" ]; then
   printf '   3. Read consumer usage 確認該 pattern 已在 N 處 work fine\n' >&2
   printf '   4. propose 給 user 前列具體 file:line 證據\n' >&2
   printf '\n  錨例:2026-05-18 Sheet/inline-action/SurfaceBody 三題誤判 propose 浪費 user 時間\n' >&2
-  printf '  SSOT: .claude/skills/propose-options/SKILL.md Q0 段\n' >&2
+  printf '  SSOT: packages/design-system/ds-canonical/skills/propose-options/SKILL.md Q0 段\n' >&2
   printf '  Escape: 檔頭加 <!-- @propose-pre-verified --> 若已 verify(rationale 必明示)\n' >&2
 fi
 

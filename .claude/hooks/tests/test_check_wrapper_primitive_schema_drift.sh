@@ -5,7 +5,7 @@
 #   (a) NEW content declares `export interface XxxOption { ... }` + same name declared
 #       in OTHER component file + no `extends <Other>Option` → exit 2 BLOCKER
 #   (b) imports SelectMenuOption + has `menuOptions: SelectMenuOption[]` mapping that
-#       drops avatar/description/disabled → soft WARN(exit 0)
+#       drops avatar/description/disabled → neutral governance context(exit 0)
 #   Allow escape:檔頭 `// @wrapper-schema-allow: <reason>` 整檔豁免
 #   Out-of-scope file / 非 Edit|Write|MultiEdit → silent exit 0
 #
@@ -58,9 +58,10 @@ run_hook() {
     '{tool_name: $tn, tool_input: ({file_path: $fp} + {($k): $v})}')
   STDOUT=$(mktemp); STDERR=$(mktemp)
   set +e
-  printf '%s' "$payload" | bash "$SANDBOX_HOOK" >"$STDOUT" 2>"$STDERR"
+  printf '%s' "$payload" | GOVERNANCE_PROJECT_DIR="$TMPROOT" bash "$SANDBOX_HOOK" >"$STDOUT" 2>"$STDERR"
   EXIT=$?
   set -e
+  STDOUT_TEXT=$(cat "$STDOUT")
   STDERR_TEXT=$(cat "$STDERR")
   rm -f "$STDOUT" "$STDERR"
 }
@@ -89,10 +90,15 @@ expect_block() {
 
 expect_warn_exit0() {
   local name="$1"; local needle="$2"
-  if [ "$EXIT" = "0" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
+  local context
+  context=$(printf '%s' "$STDOUT_TEXT" | jq -er \
+    'select(keys == ["governanceContext"]) | .governanceContext
+     | select(.hookEventName == "PreToolUse") | .message' 2>/dev/null || true)
+  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] && printf '%s' "$context" | grep -qF "$needle"; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
-    echo "  FAIL  $name (expected exit 0 with '$needle', got exit $EXIT)"
+    echo "  FAIL  $name (expected exact governance context with '$needle', got exit $EXIT)"
+    echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
@@ -140,7 +146,7 @@ expect_pass_silent "4. no Option interface → silent"
 run_hook "$TMPROOT/some/other/file.tsx" "Write" "$WEAK_SCHEMA"
 expect_pass_silent "5. out-of-scope file → silent"
 
-# 6. menuOptions mapping drops avatar/description/disabled → soft WARN exit 0
+# 6. menuOptions mapping drops avatar/description/disabled → neutral context
 # Hook reaches Check 2 only when an Option interface IS declared (DECLARES non-empty)
 # AND no BLOCKER. We declare PickerOption + extends BaseOption (compliant), then import
 # SelectMenuOption + menuOptions mapping that drops fields → WARN trigger.
@@ -158,7 +164,7 @@ export const PeoplePicker = ({ options }: { options: any[] }) => {
 };'
 mkdir -p "$COMPONENTS_DIR/PeoplePicker"
 run_hook "$COMPONENTS_DIR/PeoplePicker/people-picker.tsx" "Write" "$MAP_DROPS_FIELDS"
-expect_warn_exit0 "6. menuOptions mapping drops fields → soft WARN" "M30 schema partial-forward"
+expect_warn_exit0 "6. menuOptions mapping drops fields → governance context" "M30 schema partial-forward"
 
 echo ""
 echo "=== Summary ==="

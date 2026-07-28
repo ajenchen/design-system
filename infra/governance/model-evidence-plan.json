@@ -1,0 +1,57 @@
+{
+  "$schema": "schemas/model-evidence-plan.schema.json",
+  "schemaVersion": 1,
+  "evidenceKind": "deep-audit-model-evidence-plan",
+  "matrixSource": "scripts/audit-coverage-matrix.mjs",
+  "judgment": {
+    "coveragePolicy": "all-design-system-and-rubric",
+    "dimensions": [
+      { "dim": 6, "ruleId": "DS-DIM-006" },
+      { "dim": 7, "ruleId": "DS-DIM-007" },
+      { "dim": 8, "ruleId": "DS-DIM-008" },
+      { "dim": 9, "ruleId": "DS-DIM-009" },
+      { "dim": 10, "ruleId": "DS-DIM-010" },
+      { "dim": 12, "ruleId": "DS-DIM-012" },
+      { "dim": 14, "ruleId": "DS-DIM-014" },
+      { "dim": 17, "ruleId": "DS-DIM-017" },
+      { "dim": 19, "ruleId": "DS-DIM-019" },
+      { "dim": 20, "ruleId": "DS-DIM-020" },
+      { "dim": 22, "ruleId": "DS-DIM-022" },
+      { "dim": 24, "ruleId": "DS-DIM-024" },
+      { "dim": 25, "ruleId": "DS-DIM-025" },
+      { "dim": 26, "ruleId": "DS-DIM-026" },
+      { "dim": 28, "ruleId": "DS-DIM-028" },
+      { "dim": 32, "ruleId": "DS-DIM-032" },
+      { "dim": 33, "ruleId": "DS-DIM-033" },
+      { "dim": 38, "ruleId": "DS-DIM-038" },
+      { "dim": 43, "ruleId": "DS-DIM-043" },
+      { "dim": 44, "ruleId": "DS-DIM-044" },
+      { "dim": 46, "ruleId": "DS-DIM-046" },
+      { "dim": 55, "ruleId": "DS-DIM-055" },
+      { "dim": 62, "ruleId": "DS-DIM-062" },
+      { "dim": 68, "ruleId": "DS-DIM-068" },
+      { "dim": 72, "ruleId": "DS-DIM-072" },
+      { "dim": 90, "ruleId": "DS-DIM-090" }
+    ]
+  },
+  "componentA1b": {
+    "componentSource": "active-run-manifest-components",
+    "coveragePolicy": "exact-component-inventory"
+  },
+  "reviewGraph": {
+    "coverageUnit": "deterministic-applicability-cell-v1",
+    "rawCorpusDisposition": "complete-applicable-not-applicable-unknown-ledger",
+    "unknownApplicability": "fail-closed",
+    "modelWork": "judgment-claim-and-shared-review-cells-no-zero-claim-calls",
+    "sharedEvidence": "content-addressed-deduplicated-review-cells",
+    "dependencyClosure": "frozen-reachable-or-conservative-fail-closed",
+    "synthesis": "content-addressed-deterministic-hierarchical-all-cells-before-task-and-run-verdict"
+  },
+  "promptContract": {
+    "sampling": "forbidden",
+    "coverageAssertion": "exact-inventory-list-and-digest",
+    "findingLocation": "repository-relative-path-and-positive-line",
+    "sourceEcho": "forbidden",
+    "emptyResultPolicy": "explicit-covered-clean-result-only"
+  }
+}

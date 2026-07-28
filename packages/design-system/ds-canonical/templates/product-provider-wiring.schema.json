@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/product-provider-wiring-v7.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "launcherDirectory", "executionRuntime", "requiredPackageScripts", "settings", "hooks", "retiredHookRegistrations"],
+  "properties": {
+    "$schema": { "const": "./product-provider-wiring.schema.json" },
+    "schemaVersion": { "const": 7 },
+    "launcherDirectory": {
+      "type": "string",
+      "pattern": "^(?!\\.git(?:hub)?(?:/|$))(?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]+$",
+      "not": { "pattern": "(?:^|/)\\.{1,2}(?:/|$)" }
+    },
+    "executionRuntime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "engine", "minimumNodeVersion", "exactNpmVersion", "supportedHostPlatforms", "nativeWindowsPolicy", "windowsCompatibilityEnvironments", "requiredExecutables", "requiredPathClasses"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "engine": { "const": "node-posix-toolchain-v2" },
+        "minimumNodeVersion": { "const": "22.13.0" },
+        "exactNpmVersion": { "const": "11.18.0" },
+        "supportedHostPlatforms": {
+          "type": "array",
+          "prefixItems": [{ "const": "darwin" }, { "const": "linux" }],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "nativeWindowsPolicy": { "const": "unsupported-fail-closed" },
+        "windowsCompatibilityEnvironments": {
+          "type": "array",
+          "prefixItems": [{ "const": "devcontainer-linux" }, { "const": "wsl2-linux" }],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "requiredExecutables": {
+          "type": "array",
+          "prefixItems": [
+            { "const": "bash" },
+            { "const": "git" },
+            { "const": "jq" },
+            { "const": "node" },
+            { "const": "python3" }
+          ],
+          "items": false,
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "requiredPathClasses": {
+          "type": "array",
+          "prefixItems": [{ "const": "plain" }, { "const": "space-containing" }],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    },
+    "requiredPackageScripts": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "audit:a11y" },
+        { "const": "governance:check" },
+        { "const": "lint:imports" },
+        { "const": "setup:all" },
+        { "const": "setup:governance" },
+        { "const": "setup:provider-cli" },
+        { "const": "sync-all" }
+      ],
+      "items": false,
+      "minItems": 7,
+      "maxItems": 7
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["comment", "permissionPolicy", "permissions", "retiredPermissionAllow"],
+      "properties": {
+        "comment": { "type": "string", "minLength": 1 },
+        "permissionPolicy": { "const": "packages/design-system/ds-canonical/adapters/claude-settings-base.json" },
+        "permissions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["allow", "defaultMode"],
+          "properties": {
+            "allow": { "type": "array", "maxItems": 0 },
+            "defaultMode": { "const": "default" }
+          }
+        },
+        "retiredPermissionAllow": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^Bash\\(.+\\)$" }
+        }
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "required": ["SessionStart", "PreToolUse", "PostToolUse", "Stop", "UserPromptSubmit"],
+      "minProperties": 5,
+      "maxProperties": 5,
+      "additionalProperties": false,
+      "properties": {
+        "SessionStart": { "$ref": "#/$defs/hookEntries" },
+        "PreToolUse": { "$ref": "#/$defs/hookEntries" },
+        "PostToolUse": { "$ref": "#/$defs/hookEntries" },
+        "Stop": { "$ref": "#/$defs/hookEntries" },
+        "UserPromptSubmit": { "$ref": "#/$defs/hookEntries" }
+      }
+    },
+    "retiredHookRegistrations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "path", "provider", "reasonCode"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "path": {
+            "type": "string",
+            "pattern": "^(?!\\.git(?:hub)?(?:/|$))(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*/)?(?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]+\\.(?:sh|mjs|py)$",
+            "not": { "pattern": "(?:^|/)\\.{1,2}(?:/|$)" }
+          },
+          "provider": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hookEntries": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["matcher", "launcher"],
+        "properties": {
+          "matcher": { "type": "string", "pattern": "^(?:[A-Za-z0-9_.:-]+(?:\\|[A-Za-z0-9_.:-]+)*)?$" },
+          "launcher": { "enum": ["fork-governance-dispatcher.sh", "inject_fork_governance_preamble.sh"] }
+        }
+      }
+    }
+  }
+}

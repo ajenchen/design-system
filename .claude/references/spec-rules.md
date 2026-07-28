@@ -1,6 +1,6 @@
 # Spec 規則 — 詳細展開
 
-`.claude/rules/spec-rules.md` 的詳表。主章留核心原則,本檔放 SSOT 判斷 + 邊界案例 scope default + 禁止清單。
+Canonical `packages/design-system/ds-canonical/rules/spec-rules.md` 的詳表。主章留核心原則,本檔放 SSOT 判斷 + 邊界案例 scope default + 禁止清單。
 
 ## SSOT 結構規則
 

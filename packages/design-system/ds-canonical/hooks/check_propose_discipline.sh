@@ -10,21 +10,29 @@
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -uo pipefail
-INPUT=$(cat 2>/dev/null || echo "{}")
+INPUT=$(cat 2>/dev/null) || {
+  printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: 無法讀取 canonical input\n' >&2
+  exit 70
+}
+if ! printf '%s' "$INPUT" | jq -e 'type == "object"' >/dev/null 2>&1; then
+  printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: invalid input envelope\n' >&2
+  exit 70
+fi
 
 r1_plain_chinese() {
 set -uo pipefail
 INPUT=$(cat 2>/dev/null || echo "{}")
-TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // ""' 2>/dev/null)
-
-[ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ] && exit 0
-
-# 找最新 user msg line 之後的 assistant text(本 turn AI reply)
-LAST_USER_LINE=$(grep -n '"role":"user"' "$TRANSCRIPT_PATH" 2>/dev/null | tail -1 | cut -d: -f1)
-[ -z "$LAST_USER_LINE" ] && exit 0
-
-AI_REPLY_TEXT=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null | \
-  jq -r 'select(.message.role=="assistant") | .message.content // empty | if type=="string" then . else (.[]? | select(.type=="text") | .text // empty) end' 2>/dev/null)
+TRANSCRIPT_PATH=$(jq -r '.transcript_path // ""' <<<"$INPUT" 2>/dev/null)
+AI_REPLY_TEXT=$(jq -r '.last_assistant_message // ""' <<<"$INPUT" 2>/dev/null)
+if [ -z "$AI_REPLY_TEXT" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+  # Legacy/versioned transcript fallback.  Native Stop last_assistant_message is the primary,
+  # provider-neutral contract and does not require an unstable transcript.
+  LAST_USER_LINE=$(grep -n '"role":"user"' "$TRANSCRIPT_PATH" 2>/dev/null | tail -1 | cut -d: -f1)
+  if [ -n "$LAST_USER_LINE" ]; then
+    AI_REPLY_TEXT=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null | \
+      jq -r 'select(.message.role=="assistant") | .message.content // empty | if type=="string" then . else (.[]? | select(.type=="text") | .text // empty) end' 2>/dev/null)
+  fi
+fi
 
 [ -z "$AI_REPLY_TEXT" ] && exit 0
 
@@ -59,13 +67,8 @@ JARGON_COUNT=${JARGON_COUNT:-0}
 THRESHOLD=10
 
 if [ "$JARGON_COUNT" -ge "$THRESHOLD" ]; then
-  echo "🟡 check_propose_plain_chinese WARN:本 turn reply 含 user 決策 prompt + jargon 密度 ${JARGON_COUNT}(threshold ${THRESHOLD})" >&2
-  echo "" >&2
-  echo "→ 違反 propose-in-plain-chinese canonical(memory/feedback_propose_discipline.md SSOT)" >&2
-  echo "→ User 原話「請講具體人話,為何又跟智障一樣講人聽不懂的話」" >&2
-  echo "→ Rewrite reply:必含 3 段(發生什麼 / 影響什麼 / 各選項 outcome — 全中文具體,禁 jargon)" >&2
-  echo "" >&2
-  # Soft warn,不 BLOCK turn(exit 0)— 讓 AI 看到 stderr 後 self-correct
+  MESSAGE=$(printf '🟡 check_propose_plain_chinese WARN:本 turn reply 含 user 決策 prompt + jargon 密度 %s(threshold %s)\n\n→ 違反 propose-in-plain-chinese canonical(memory/feedback_propose_discipline.md SSOT)\n→ User 原話「請講具體人話,為何又跟智障一樣講人聽不懂的話」\n→ Rewrite reply:必含 3 段(發生什麼 / 影響什麼 / 各選項 outcome — 全中文具體,禁 jargon)' "$JARGON_COUNT" "$THRESHOLD")
+  printf '{"governanceContext":{"hookEventName":"Stop","message":%s}}\n' "$(printf '%s' "$MESSAGE" | jq -Rs .)"
 fi
 
 exit 0
@@ -75,7 +78,7 @@ r2_cite_required() {
 set -uo pipefail
 
 INPUT=$(cat 2>/dev/null || echo "{}")
-EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // ""' 2>/dev/null)
+EVENT=$(jq -r '.hook_event_name // ""' <<<"$INPUT" 2>/dev/null)
 
 # Only fire on stop events (post-assistant turn)
 case "${EVENT:-}" in
@@ -83,21 +86,24 @@ case "${EVENT:-}" in
   *) exit 0 ;;
 esac
 
-# Read last assistant message
-TRANSCRIPT=$(echo "$INPUT" | jq -r '.transcript_path // ""' 2>/dev/null)
-[ -z "$TRANSCRIPT" ] || [ ! -f "$TRANSCRIPT" ] && exit 0
-
-LAST_REPLY=$(tail -200 "$TRANSCRIPT" 2>/dev/null | grep -E '"role":"assistant"|"type":"text"' | tail -50 | tr -d '\n' | head -c 8000)
+# Read the native provider-neutral final reply first; only use a versioned transcript as fallback.
+TRANSCRIPT=$(jq -r '.transcript_path // ""' <<<"$INPUT" 2>/dev/null)
+LAST_REPLY=$(jq -r '.last_assistant_message // ""' <<<"$INPUT" 2>/dev/null)
+if [ -z "$LAST_REPLY" ] && [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ]; then
+  LAST_REPLY_RAW=$(tail -200 "$TRANSCRIPT" 2>/dev/null | grep -E '"role":"assistant"|"type":"text"' | tail -50 | tr -d '\n')
+  LAST_REPLY="${LAST_REPLY_RAW:0:8000}"
+fi
+[ -z "$LAST_REPLY" ] && exit 0
 
 # Escape clause
-if echo "$LAST_REPLY" | grep -q 'propose-cite-skip'; then
+if grep -q 'propose-cite-skip' <<<"$LAST_REPLY"; then
   exit 0
 fi
 
 # Detect claim keywords
 HAS_CLAIM=""
 for kw in '規定' '必配' '必須用' '必須是' '一定要' 'canonical 寫' 'spec 寫' '強制' 'DS spec 規定' '明文' 'mandate'; do
-  if echo "$LAST_REPLY" | grep -qF "$kw"; then
+  if grep -qF "$kw" <<<"$LAST_REPLY"; then
     HAS_CLAIM="$kw"
     break
   fi
@@ -110,7 +116,7 @@ fi
 # Detect cite patterns
 # Accept: file.spec.md:42 | file.css:42 | file.tsx:42 | file.ts:42 | L42 | line 42 | semantic.css#L42
 HAS_CITE=""
-if echo "$LAST_REPLY" | grep -qE '\.(spec\.md|css|tsx|ts|json):[0-9]+|#L[0-9]+|line[[:space:]]+[0-9]+|L[0-9]+-[0-9]+|L[0-9]+'; then
+if grep -qE '\.(spec\.md|css|tsx|ts|json):[0-9]+|#L[0-9]+|line[[:space:]]+[0-9]+|L[0-9]+-[0-9]+|L[0-9]+' <<<"$LAST_REPLY"; then
   HAS_CITE="found"
 fi
 
@@ -139,9 +145,90 @@ fi
 exit 0
 }
 
+_CAPTURE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/check-propose-discipline.XXXXXX") || {
+  printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: output capture unavailable\n' >&2
+  exit 70
+}
+trap 'rm -rf -- "$_CAPTURE_DIR"' EXIT
+_CONTEXTS=""
+_RULE_INDEX=0
+
 for _rule in r1_plain_chinese r2_cite_required; do
-  echo "$INPUT" | "$_rule"
+  _RULE_INDEX=$((_RULE_INDEX + 1))
+  _stdout="$_CAPTURE_DIR/$_RULE_INDEX.stdout"
+  _stderr="$_CAPTURE_DIR/$_RULE_INDEX.stderr"
+  printf '%s' "$INPUT" | "$_rule" >"$_stdout" 2>"$_stderr"
   _rc=$?
-  if [ "$_rc" -eq 2 ]; then exit 2; fi
+  case "$_rc" in
+    0)
+      if [ -s "$_stderr" ]; then
+        printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: rule %s rc0 產生 raw stderr\n' \
+          "$_rule" >&2
+        exit 70
+      fi
+      if [ -s "$_stdout" ]; then
+        if ! jq -e -s '
+          length == 1
+          and (.[0] |
+            type == "object"
+            and keys == ["governanceContext"]
+            and (.governanceContext |
+              type == "object"
+              and (keys | sort) == ["hookEventName", "message"]
+              and .hookEventName == "Stop"
+              and (.message | type == "string" and length > 0)
+            )
+          )
+        ' "$_stdout" >/dev/null 2>&1; then
+          printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: rule %s 輸出 malformed context\n' \
+            "$_rule" >&2
+          exit 70
+        fi
+        _ctx=$(jq -er '.governanceContext.message' "$_stdout") || {
+          printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: rule %s context 無法解碼\n' \
+            "$_rule" >&2
+          exit 70
+        }
+        if [ -n "$_CONTEXTS" ]; then
+          _CONTEXTS="${_CONTEXTS}"$'\n\n────────\n\n'"$_ctx"
+        else
+          _CONTEXTS="$_ctx"
+        fi
+      fi
+      ;;
+    2)
+      if [ ! -s "$_stdout" ] && [ -s "$_stderr" ] \
+        && ! grep -qF 'GOVERNANCE_INTEGRITY:' "$_stderr"; then
+        cat "$_stderr" >&2
+        exit 2
+      fi
+      printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: rule %s rc2 必須是 stderr-only nonempty policy blocker\n' \
+        "$_rule" >&2
+      exit 70
+      ;;
+    70)
+      if [ ! -s "$_stdout" ] && [ -s "$_stderr" ] \
+        && grep -qF 'GOVERNANCE_INTEGRITY:' "$_stderr"; then
+        cat "$_stderr" >&2
+      else
+        printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: rule %s rc70 必須是 stderr-only marker\n' \
+          "$_rule" >&2
+      fi
+      exit 70
+      ;;
+    *)
+      printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: rule %s 回傳未定義 exit code %s\n' \
+        "$_rule" "$_rc" >&2
+      exit 70
+      ;;
+  esac
 done
+
+if [ -n "$_CONTEXTS" ]; then
+  _encoded=$(printf '%s' "$_CONTEXTS" | jq -Rs .) || {
+    printf '🚨 GOVERNANCE_INTEGRITY: PROPOSE DISCIPLINE FAILURE: combined context 無法編碼\n' >&2
+    exit 70
+  }
+  printf '{"governanceContext":{"hookEventName":"Stop","message":%s}}\n' "$_encoded"
+fi
 exit 0

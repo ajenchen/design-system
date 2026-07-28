@@ -5,7 +5,7 @@
  * Per user 2026-05-27「不該為砍而砍 — 跑 6 月 fire-log audit:每 hook fire frequency /
  * signal-to-noise / false-positive 報告」directive。
  *
- * Output:.claude/logs/hook-quality-report.json
+ * Output:<absolute-git-dir>/governance-runtime/evidence/audit/hook-quality-report.json
  *   - per-hook: fire_count_total / fire_count_6mo / fire_per_day / first_fire / last_fire
  *   - classification: hot (>50/day) / warm (5-50/day) / cool (<5/day) / dead (0 fire 6mo)
  *   - file_exists: yes/no(orphan signal:fire log mentions hook no longer exists)
@@ -21,12 +21,14 @@
 import { readFileSync, existsSync, writeFileSync, readdirSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { prepareRuntimeEvidenceFile, resolveProviderTelemetryStateRoot } from './lib/governance-runtime-evidence.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
-const FIRE_LOG = join(ROOT, '.claude/logs/hook-fires-per-hook.jsonl')
-const HOOK_DIR = join(ROOT, '.claude/hooks')
-const OUT = join(ROOT, '.claude/logs/hook-quality-report.json')
+const TELEMETRY_STATE = resolveProviderTelemetryStateRoot({ repoRoot: ROOT })
+const FIRE_LOG = join(TELEMETRY_STATE, 'hook-fires-per-hook.jsonl')
+const HOOK_DIR = join(ROOT, 'packages/design-system/ds-canonical/hooks')
+const OUT = prepareRuntimeEvidenceFile({ repoRoot: ROOT, relativePath: 'audit/hook-quality-report.json' })
 
 if (!existsSync(FIRE_LOG)) {
   console.error('❌ fire log missing:', FIRE_LOG)
@@ -162,6 +164,6 @@ writeFileSync(OUT, JSON.stringify({ summary, hooks: report }, null, 2))
 console.log('\n=== Hook Quality Report ===')
 console.log(JSON.stringify(summary, null, 2))
 console.log(`\nFull report: ${OUT}`)
-console.log('\nNote: This report is OBSERVABILITY only. Retire decisions need human review per knowledge-prune skill Checkpoint workflow.')
+console.log('\nNote: This report is OBSERVABILITY only. Route retire decisions through the knowledge-prune authority classifier: engineering/governance retirement is autonomous; only a genuine product/UI/UX SSOT tradeoff requires an exact human decision.')
 
 process.exit(0)

@@ -1,0 +1,222 @@
+name: Governance anchor
+
+# This workflow is loaded from protected base. Candidate code runs only in the
+# credential-free verify job. A separate fresh runner, restricted to the
+# protected-branches-only governance-check-verdict environment, publishes the
+# verdict with the dedicated check-only App. Rulesets pin that App integration
+# ID, never the spoofable github-actions job context.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  repository_dispatch:
+    # The dedicated Writer App may trigger ordinary candidate workflows, but those
+    # runs are never the required trust anchor. This explicit event reloads only the
+    # protected-default workflow and binds the automatic Check App validation path.
+    types: [governance-upgrade-candidate-validation]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-candidate:
+    name: Base-trusted candidate verification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    outputs:
+      base_sha: ${{ steps.request.outputs.base_sha }}
+      candidate_repo: ${{ steps.request.outputs.candidate_repo }}
+      head_sha: ${{ steps.request.outputs.head_sha }}
+      pull_number: ${{ steps.request.outputs.pull_number }}
+    steps:
+      - name: Resolve live PR and bind explicit dispatch to protected main
+        id: request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SOURCE: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.source || 'pull-request-target-v1' }}
+          EVENT_PR_NUMBER: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.pull_number || github.event.pull_request.number }}
+          EVENT_HEAD_SHA: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha || github.event.pull_request.head.sha }}
+          EVENT_BASE_SHA: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.base_sha || github.event.pull_request.base.sha }}
+        run: |
+          test -n "$GH_TOKEN"
+          [[ "$EVENT_PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          [[ "$EVENT_HEAD_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$EVENT_BASE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          if [ "$EVENT_NAME" = repository_dispatch ]; then
+            test "$EVENT_SOURCE" = governance-upgrade-writer-v1
+            jq -e '(.client_payload | keys | sort) == ["base_sha","head_sha","pull_number","source"]' "$GITHUB_EVENT_PATH" >/dev/null
+          fi
+
+          PR_JSON=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$EVENT_PR_NUMBER")
+          test "$(jq -r '.state' <<<"$PR_JSON")" = open
+          test "$(jq -r '.base.ref' <<<"$PR_JSON")" = main
+          test "$(jq -r '.base.sha' <<<"$PR_JSON")" = "$EVENT_BASE_SHA"
+          test "$(jq -r '.head.sha' <<<"$PR_JSON")" = "$EVENT_HEAD_SHA"
+          CANDIDATE_REPO=$(jq -r '.head.repo.full_name' <<<"$PR_JSON")
+          HEAD_REF=$(jq -r '.head.ref' <<<"$PR_JSON")
+          [[ "$CANDIDATE_REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]
+          [[ "$HEAD_REF" =~ ^[A-Za-z0-9._/-]+$ ]]
+          if [ "$EVENT_NAME" = repository_dispatch ]; then
+            test "$CANDIDATE_REPO" = "$GITHUB_REPOSITORY"
+            [[ "$HEAD_REF" =~ ^governance/upgrade- ]]
+          fi
+          LIVE_MAIN_SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          test "$LIVE_MAIN_SHA" = "$EVENT_BASE_SHA" || {
+            echo 'GOV-ANCHOR-SOURCE-001: protected main moved before candidate validation'
+            exit 1
+          }
+          echo "base_sha=$EVENT_BASE_SHA" >> "$GITHUB_OUTPUT"
+          echo "candidate_repo=$CANDIDATE_REPO" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$EVENT_HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "pull_number=$EVENT_PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout protected base verifier
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ steps.request.outputs.base_sha }}
+          path: trusted
+          persist-credentials: false
+
+      - name: Checkout candidate as untrusted data
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: ${{ steps.request.outputs.candidate_repo }}
+          ref: ${{ steps.request.outputs.head_sha }}
+          path: candidate
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+
+      - name: Install protected-base verifier dependencies without lifecycle execution
+        working-directory: trusted
+        env:
+          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/empty-user.npmrc
+          NPM_CONFIG_GLOBALCONFIG: ${{ runner.temp }}/empty-global.npmrc
+        run: |
+          npm run setup:governance
+
+      - name: Stage protected product-check tools and exact Playwright runtime before candidate execution
+        run: |
+          node trusted/scripts/consumer-source-harness.mjs \
+            --stage-trusted-product-checks trusted/.governance-tools \
+            --trusted trusted
+          node trusted/node_modules/playwright/cli.js install --with-deps chromium
+
+      - name: Reject downgrade, alternate registry, lock and provenance substitution
+        run: >-
+          node trusted/scripts/governance-anchor-preflight.mjs
+          --trusted trusted --candidate candidate --lock-only
+          --evidence-out "$RUNNER_TEMP/candidate-preinstall-evidence.json"
+
+      - name: Install and audit candidate dependencies without executing installed code
+        working-directory: candidate
+        env:
+          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/empty-user.npmrc
+          NPM_CONFIG_GLOBALCONFIG: ${{ runner.temp }}/empty-global.npmrc
+        run: >-
+          node ../trusted/scripts/setup-governance.mjs
+          --dependencies-only --root .
+
+      - name: Verify every registry signature
+        working-directory: candidate
+        env:
+          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/empty-user.npmrc
+          NPM_CONFIG_GLOBALCONFIG: ${{ runner.temp }}/empty-global.npmrc
+        run: |
+          EXPECTED_NPM=$(node ../trusted/scripts/workflow-static-validation.mjs \
+            print-exact-npm-version --manifest ../trusted/package.json)
+          ACTUAL_NPM=$(node ../trusted/node_modules/npm/bin/npm-cli.js --version)
+          test "$ACTUAL_NPM" = "$EXPECTED_NPM"
+          node ../trusted/node_modules/npm/bin/npm-cli.js audit signatures \
+            --json --include-attestations --registry=https://registry.npmjs.org/ \
+            > "$RUNNER_TEMP/verified-attestations.json"
+
+      - name: Bind verified provenance to immutable GitHub Release BOM
+        run: >-
+          node trusted/scripts/governance-anchor-preflight.mjs
+          --trusted trusted --candidate candidate
+          --verified-attestations "$RUNNER_TEMP/verified-attestations.json"
+          --preinstall-evidence "$RUNNER_TEMP/candidate-preinstall-evidence.json"
+
+      - name: Execute only the authenticated immutable checker
+        working-directory: candidate
+        run: >-
+          node ../trusted/scripts/setup-governance.mjs
+          --installed-check-only --root .
+
+      - name: Base-owned exhaustive workspace type/build harness under a candidate-only identity
+        run: |
+          sudo useradd --system --user-group --no-create-home --shell /usr/sbin/nologin governance-candidate
+          sudo install -d -o governance-candidate -g governance-candidate -m 0700 "$RUNNER_TEMP/governance-candidate-home"
+          sudo chown -R governance-candidate:governance-candidate candidate
+          NODE_BIN=$(command -v node)
+          test -n "$NODE_BIN"
+          NODE_DIR=$(dirname "$NODE_BIN")
+          sudo -u governance-candidate env -i \
+            HOME="$RUNNER_TEMP/governance-candidate-home" \
+            PATH="$NODE_DIR:/usr/bin:/bin" \
+            CI=true \
+            "$NODE_BIN" trusted/.governance-tools/scripts/consumer-source-harness.mjs --repo candidate
+          set +e
+          sudo pkill -KILL -u governance-candidate
+          PKILL_STATUS=$?
+          set -e
+          test "$PKILL_STATUS" = 0 || test "$PKILL_STATUS" = 1
+          sudo chmod -R a-w candidate
+
+      - name: Reverify protected tools then treat the frozen candidate only as product-check input
+        run: |
+          node trusted/scripts/consumer-source-harness.mjs \
+            --verify-trusted-product-checks trusted/.governance-tools \
+            --trusted trusted
+          node trusted/.governance-tools/scripts/lint-ds-internal-imports.mjs --repo candidate
+          node trusted/.governance-tools/scripts/audit-consumer-a11y.mjs --repo candidate
+
+  publish-app-verdict:
+    name: Publish Governance App verdict
+    if: ${{ always() && needs.verify-candidate.outputs.head_sha != '' }}
+    needs: verify-candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment:
+      name: governance-check-verdict
+    steps:
+      - name: Mint check-only Governance App token on a fresh runner
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        with:
+          app-id: ${{ secrets.GOVERNANCE_CHECK_APP_ID }}
+          private-key: ${{ secrets.GOVERNANCE_CHECK_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-checks: write
+
+      - name: Publish non-spoofable aggregate check
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          HEAD_SHA: ${{ needs.verify-candidate.outputs.head_sha }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          DETAILS_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          VERIFY_RESULT: ${{ needs.verify-candidate.result }}
+        run: |
+          if [ "$VERIFY_RESULT" = success ]; then
+            CONCLUSION=success
+            SUMMARY='Base-trusted preflight, signed immutable governance, typecheck, build and accessibility audit passed.'
+          else
+            CONCLUSION=failure
+            SUMMARY="Base-trusted verification ended with: $VERIFY_RESULT"
+          fi
+          jq -n \
+            --arg name 'Immutable consumer snapshot' \
+            --arg head_sha "$HEAD_SHA" \
+            --arg external_id "governance-check-v1|$WORKFLOW_REF|$WORKFLOW_SHA|$HEAD_SHA|$RUN_ID|$RUN_ATTEMPT" \
+            --arg details_url "$DETAILS_URL" \
+            --arg conclusion "$CONCLUSION" \
+            --arg summary "$SUMMARY" \
+            '{name:$name,head_sha:$head_sha,external_id:$external_id,details_url:$details_url,status:"completed",conclusion:$conclusion,output:{title:$name,summary:$summary}}' \
+            | gh api --method POST "repos/$GITHUB_REPOSITORY/check-runs" --input -

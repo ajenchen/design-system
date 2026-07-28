@@ -1,76 +1,492 @@
 #!/usr/bin/env node
-// verify-deep-audit-coverage.mjs — 機械閘:deep audit「完成」前必證 91 dim 每個都有證據(Claude + codex 雙軌)。
-//
-// 為何存在(2026-07-12 user verbatim「不抽樣不偷懶不是老早就跟你講過了…現在和未來可以確保嗎」):
-//   deep-audit-cross-codex 有 91-dim SSOT + 反抽樣契約,但**無 gate 擋「宣稱完成卻漏跑 dim」**。
-//   AI 自律不可靠(本 session 實證漏跑 deterministic 24 + judgment 27 + hook 40)。此 gate = 唯一可靠保證:
-//   宣稱「deep audit / Phase A 完成」前必跑本 script,任何 dim 缺證據 → exit 1 BLOCK,機械上偷懶不了。
-//
-// 證據定義(per tier,SSOT = scripts/audit-coverage-matrix.mjs):
-//   DETERMINISTIC(24):`.claude/logs/dim-audit/_deterministic-results.txt` 含「dim <N>:」跑過行 + exit 記錄。
-//   PURE-JUDGMENT(27):Claude = `.claude/logs/dim-audit/dim-<N>.json`;codex = `.claude/logs/codex-dim-audit/dim-<N>.json`。**雙軌都要**。
-//   HOOK-ENFORCED(40):`.claude/logs/dim-audit/_hook-residue-verified.json` 列出已驗 residue 的 dim。
-//
-// 用法:node scripts/verify-deep-audit-coverage.mjs [--json]
-//   exit 0 = 91 dim 全有證據(Claude+codex 雙軌完整);exit 1 = 有 gap(印缺哪些)。
+// Completion gate for one immutable, Git-owned deep-audit run.  Flat legacy
+// JSON/logs are intentionally never upgraded or inferred as evidence.
 
-import { readFileSync, existsSync, readdirSync } from 'node:fs'
+import { existsSync, lstatSync, readFileSync, readdirSync, realpathSync } from 'node:fs'
+import { dirname, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
-import { execSync } from 'node:child_process'
+import {
+  digestInventorySelection,
+  loadActiveDeepAuditRun,
+  stableStringify,
+  validateDeepAuditEvidenceEnvelope,
+  validateDeepAuditModelTranscriptArtifact,
+  validateDeepAuditRunProviderBindings,
+} from './lib/deep-audit-evidence-contract.mjs'
+import { resolveRuntimeEvidencePath } from './lib/governance-runtime-evidence.mjs'
+import {
+  assertDeterministicMatrixParity,
+  canonicalDeterministicRunnerArgv,
+  deterministicCapabilitiesForDimension,
+  expandDeterministicCoverage,
+  loadDeterministicDeepAuditPlan,
+} from './lib/deep-audit-deterministic-plan.mjs'
+import { loadHookEvidencePlan, selectFrozenHookInventory } from './lib/hook-evidence-plan.mjs'
+import {
+  loadCanonicalCiModels,
+  loadCiEvidencePlan,
+} from './lib/ci-evidence-plan.mjs'
+import { validateCiObservationDocument } from './lib/ci-evidence-pipeline.mjs'
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const L = (p) => join(ROOT, '.claude/logs', p)
-const JSON_OUT = process.argv.includes('--json')
+const DEFAULT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const REQUIRED_DIMENSION_COUNT = 91
+const SUPPORTED_TIERS = new Set(['DETERMINISTIC', 'PURE-JUDGMENT', 'HOOK-ENFORCED', 'CI-ENFORCED'])
 
-// tier map from SSOT (audit-coverage-matrix.mjs)
-const src = readFileSync(join(ROOT, 'scripts/audit-coverage-matrix.mjs'), 'utf8')
-const tiers = {}
-for (const m of src.matchAll(/(\d+):\s*\{\s*tier:\s*'([^']+)'/g)) tiers[+m[1]] = m[2]
-const DET = Object.keys(tiers).filter((n) => tiers[n] === 'DETERMINISTIC').map(Number)
-const PJ = Object.keys(tiers).filter((n) => tiers[n] === 'PURE-JUDGMENT').map(Number)
-const HOOK = Object.keys(tiers).filter((n) => tiers[n] === 'HOOK-ENFORCED').map(Number)
-
-// evidence readers
-const detLog = existsSync(L('dim-audit/_deterministic-results.txt')) ? readFileSync(L('dim-audit/_deterministic-results.txt'), 'utf8') : ''
-// 「ran」= 有 dim 行 AND 該行下方結果非 node-crash(Cannot find module / SyntaxError = 我的 runner bug,非真跑,不可信 2026-07-12)
-const detRan = (n) => {
-  const m = detLog.match(new RegExp(`── dim ${n}(b|:| )[^\\n]*\\n[^\\n]*`))
-  if (!m) return false
-  return !/Cannot find module|SyntaxError|ReferenceError|is not a function/.test(m[0])
+function fail(message) {
+  throw new Error(`deep-audit coverage verification failed closed:${message}`)
 }
-const claudeJudged = (n) => existsSync(L(`dim-audit/dim-${n}.json`))
-const codexJudged = (n) => existsSync(L(`codex-dim-audit/dim-${n}.json`))
-// hook residue evidence: per-dim file .claude/logs/hook-residue/dim-<N>.json(verified: true)
-const hookVerifiedDim = (n) => existsSync(L(`hook-residue/dim-${n}.json`))
 
-// A.1b dual-model per-component tracks(2026-07-12 user「所有 timeout 都要重跑完整」— Phase B / Claude-deep 也 gate,
-// 不只 91 dim。timeout→無 genuine json→gap→gate 擋 done,任何 track 的 timeout 都無法被靜默當完成)
-const COMPONENTS = readdirSync(join(ROOT, 'packages/design-system/src/components')).filter((c) => !c.includes('.'))
-const PRIOR_A1B = new Set(['Tooltip', 'HoverCard', 'Popover', 'Accordion', 'Alert', 'AppShell']) // 前期 codex batch,不在 codex-phaseB dir
-const claudeA1bGap = COMPONENTS.filter((c) => !existsSync(L(`claude-a1b-deep/${c}.json`)))
-const codexA1bGap = COMPONENTS.filter((c) => !existsSync(L(`codex-phaseB/${c}.json`)) && !PRIOR_A1B.has(c))
-
-const gaps = { deterministic: [], judgmentClaude: [], judgmentCodex: [], hookResidue: [], claudeA1b: claudeA1bGap, codexA1b: codexA1bGap }
-for (const n of DET) if (!detRan(n)) gaps.deterministic.push(n)
-for (const n of PJ) { if (!claudeJudged(n)) gaps.judgmentClaude.push(n); if (!codexJudged(n)) gaps.judgmentCodex.push(n) }
-for (const n of HOOK) if (!hookVerifiedDim(n)) gaps.hookResidue.push(n)
-
-const totalGaps = gaps.deterministic.length + gaps.judgmentClaude.length + gaps.judgmentCodex.length + gaps.hookResidue.length + gaps.claudeA1b.length + gaps.codexA1b.length
-
-if (JSON_OUT) { console.log(JSON.stringify({ tiers: { DET: DET.length, PJ: PJ.length, HOOK: HOOK.length }, gaps, totalGaps }, null, 1)); process.exit(totalGaps ? 1 : 0) }
-
-console.log('═══ Deep-Audit Coverage Ledger(91 dim × Claude+codex 雙軌)═══')
-console.log(`DETERMINISTIC(${DET.length}): ran ${DET.length - gaps.deterministic.length}/${DET.length}` + (gaps.deterministic.length ? `  ❌ 缺跑: ${gaps.deterministic.join(',')}` : '  ✅'))
-console.log(`PURE-JUDGMENT Claude(${PJ.length}): ${PJ.length - gaps.judgmentClaude.length}/${PJ.length}` + (gaps.judgmentClaude.length ? `  ❌ 缺: ${gaps.judgmentClaude.join(',')}` : '  ✅'))
-console.log(`PURE-JUDGMENT codex(${PJ.length}): ${PJ.length - gaps.judgmentCodex.length}/${PJ.length}` + (gaps.judgmentCodex.length ? `  ❌ 缺: ${gaps.judgmentCodex.join(',')}` : '  ✅'))
-console.log(`HOOK-ENFORCED residue-verify(${HOOK.length}): ${HOOK.length - gaps.hookResidue.length}/${HOOK.length}` + (gaps.hookResidue.length ? `  ❌ 缺: ${gaps.hookResidue.join(',')}` : '  ✅'))
-console.log(`A.1b Claude-deep(${COMPONENTS.length} 元件): ${COMPONENTS.length - gaps.claudeA1b.length}/${COMPONENTS.length}` + (gaps.claudeA1b.length ? `  ❌ 缺: ${gaps.claudeA1b.join(',')}` : '  ✅'))
-console.log(`A.1b codex Phase B(${COMPONENTS.length} 元件): ${COMPONENTS.length - gaps.codexA1b.length}/${COMPONENTS.length}` + (gaps.codexA1b.length ? `  ❌ 缺: ${gaps.codexA1b.join(',')}` : '  ✅'))
-console.log('───────────────────────────────────────────')
-if (totalGaps) {
-  console.log(`❌ ${totalGaps} 個 dim-證據缺口 → deep audit **未完成**,禁宣稱 done。填完所有缺口才可宣稱。`)
-  process.exit(1)
+function parseArgs(argv) {
+  const result = { json: false }
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index]
+    if (token === '--json') { result.json = true; continue }
+    if (!['--repo-root', '--evidence-root', '--self-provider', '--peer-provider', '--author-provider'].includes(token)) fail(`unknown option:${token}`)
+    const value = argv[index + 1]
+    if (!value || value.startsWith('--')) fail(`${token} requires a value`)
+    result[token.slice(2)] = value
+    index += 1
+  }
+  return result
 }
-console.log('✅ 91 dim × 雙軌全有證據 — deep audit 覆蓋完整,可宣稱 done。')
-process.exit(0)
+
+function matrixTiers(repoRoot) {
+  const source = readFileSync(resolve(repoRoot, 'scripts/audit-coverage-matrix.mjs'), 'utf8')
+  const entries = [...source.matchAll(/(\d+):\s*\{\s*tier:\s*'([^']+)'/g)].map((match) => [Number(match[1]), match[2]])
+  const expected = Array.from({ length: REQUIRED_DIMENSION_COUNT }, (_, index) => index + 1)
+  const numbers = entries.map(([number]) => number).sort((left, right) => left - right)
+  if (entries.length !== REQUIRED_DIMENSION_COUNT || new Set(numbers).size !== REQUIRED_DIMENSION_COUNT
+    || numbers.some((number, index) => number !== expected[index])
+    || entries.some(([, tier]) => !SUPPORTED_TIERS.has(tier))) {
+    fail(`audit coverage matrix must enumerate dimensions 1..${REQUIRED_DIMENSION_COUNT} exactly once`)
+  }
+  const byTier = Object.fromEntries([...SUPPORTED_TIERS].map((tier) => [tier, []]))
+  for (const [number, tier] of entries) byTier[tier].push(number)
+  for (const values of Object.values(byTier)) values.sort((left, right) => left - right)
+  return byTier
+}
+
+function exact(value, expected, label) {
+  if (stableStringify(value) !== stableStringify(expected)) fail(`${label} differs from the canonical execution plan`)
+}
+
+export function hookDimensionNumbers(hookState) {
+  if (!Array.isArray(hookState?.hookDimensions)) fail('hook plan dimension index is missing')
+  const dimensions = hookState.hookDimensions.map((record, index) => {
+    if (!record || typeof record !== 'object' || Array.isArray(record) || !Number.isInteger(record.dim)) {
+      fail(`hook plan dimension index entry ${index} is invalid`)
+    }
+    return record.dim
+  })
+  if (new Set(dimensions).size !== dimensions.length
+    || dimensions.some((dim, index) => index > 0 && dim <= dimensions[index - 1])) fail('hook plan dimension index must be unique and sorted')
+  return dimensions
+}
+
+function expectedDeterministicRunner(payload, command, planState) {
+  const dimsArg = command.argv.find((arg) => /^--dims=/.test(arg))
+  if (!dimsArg) fail(`deterministic dim ${payload.dim} runner argv lacks --dims`)
+  const dims = dimsArg.slice('--dims='.length).split(',').map(Number)
+  if (!dims.includes(payload.dim) || dims.some((dim) => !planState.dimensionByNumber.has(dim))) fail(`deterministic dim ${payload.dim} runner dim set is invalid`)
+  const capabilities = new Set(dims.flatMap((dim) => deterministicCapabilitiesForDimension(planState, dim)))
+  const allowBuild = capabilities.has('build')
+  const allowNetwork = capabilities.has('network')
+  const allowPublishedRelease = capabilities.has('published-release')
+  exact(command.argv, canonicalDeterministicRunnerArgv({ dims, allowBuild, allowNetwork, allowPublishedRelease }), `deterministic dim ${payload.dim} runner argv`)
+}
+
+function validateDeterministicReceipt(envelope, dim, active, planState) {
+  const dimension = planState.dimensionByNumber.get(dim)
+  if (!dimension) fail(`deterministic dim ${dim} is absent from the canonical execution plan`)
+  const payload = envelope.payload
+  if (payload.dim !== dim || payload.name !== dimension.name || payload.planDigest !== planState.planDigest) fail(`deterministic dim ${dim} plan identity mismatches`)
+  exact(payload.capabilities, deterministicCapabilitiesForDimension(planState, dim), `deterministic dim ${dim} capabilities`)
+  exact(payload.commandIds, dimension.commandIds, `deterministic dim ${dim} command ids`)
+  if (payload.commands.length !== dimension.commandIds.length) fail(`deterministic dim ${dim} command receipt count mismatches`)
+  for (let index = 0; index < dimension.commandIds.length; index += 1) {
+    const planned = planState.commandById.get(dimension.commandIds[index])
+    const observed = payload.commands[index]
+    exact(observed.argv, planned.argv, `deterministic dim ${dim} command ${planned.id} argv`)
+    if (!planned.completion.acceptedExitCodes.includes(observed.exitCode)) fail(`deterministic dim ${dim} command ${planned.id} exit was not accepted`)
+  }
+  expectedDeterministicRunner(payload, envelope.command, planState)
+  exact(envelope.coverage, expandDeterministicCoverage(planState, active.manifest, dim), `deterministic dim ${dim} coverage`)
+}
+
+function judgmentCoverage(manifest) {
+  const rubric = new Set(manifest.rubricPaths)
+  const inventoryPaths = manifest.inventory
+    .filter((row) => row.kind !== 'missing'
+      && (row.path.startsWith('packages/design-system/') || rubric.has(row.path)))
+    .map((row) => row.path)
+    .sort()
+  if (inventoryPaths.length === 0) fail('canonical judgment coverage is empty')
+  return {
+    inventoryPaths,
+    inventoryDigest: digestInventorySelection(manifest, inventoryPaths),
+    filesScanned: inventoryPaths.length,
+  }
+}
+
+function componentCoverage(manifest, component) {
+  const record = manifest.components.find((item) => item.name === component)
+  if (!record) fail(`A1b component is absent from frozen inventory:${component}`)
+  return { inventoryPaths: record.paths, inventoryDigest: record.digest, filesScanned: record.paths.length }
+}
+
+function validateHookReceipt(envelope, dim, active, hookState, hookCoverage) {
+  const dimension = hookState.plan.dimensions.find((item) => item.dim === dim)
+  if (!dimension) fail(`hook dim ${dim} is absent from canonical hook evidence plan`)
+  if (envelope.payload.dim !== dim || envelope.payload.capability !== dimension.capability) fail(`hook dim ${dim} capability mismatches canonical plan`)
+  if (envelope.payload.enforcementSuiteReceipt.planSha256 !== hookState.digests.planSha256
+    || envelope.payload.replayReceipt.planSha256 !== hookState.digests.planSha256) fail(`hook dim ${dim} plan digest mismatches`)
+  exact(envelope.payload.enforcementSuiteReceipt.tests, dimension.enforcementTests.map((test) => ({ test, observed: true })), `hook dim ${dim} enforcement tests`)
+  exact(envelope.coverage, hookCoverage, `hook dim ${dim} coverage`)
+  const expectedInvocations = hookCoverage.filesScanned * dimension.fileReplays.length
+  if (envelope.payload.replayReceipt.invocationCount !== expectedInvocations) fail(`hook dim ${dim} invocation coverage is incomplete`)
+  const expectedFocused = dimension.focusedContracts.map((contract) => ({
+    contract: contract.contract,
+    hook: contract.hook,
+    event: contract.event,
+    tool: contract.tool,
+    test: contract.test,
+    observed: true,
+  }))
+  exact(envelope.payload.replayReceipt.focusedContracts, expectedFocused, `hook dim ${dim} focused contracts`)
+}
+
+function expectedPathSet(tiers, providers, components) {
+  const paths = new Set(['run-manifest.json'])
+  for (const dim of tiers.DETERMINISTIC) paths.add(`deterministic/dim-${dim}.json`)
+  for (const provider of providers) for (const dim of tiers['PURE-JUDGMENT']) paths.add(`judgment/${provider}/dim-${dim}.json`)
+  for (const dim of tiers['HOOK-ENFORCED']) paths.add(`hook-residue/dim-${dim}.json`)
+  for (const dim of tiers['CI-ENFORCED']) paths.add(`ci-enforced/dim-${dim}.json`)
+  for (const provider of providers) for (const component of components) paths.add(`component-a1b/${provider}/${component}.json`)
+  return paths
+}
+
+function scanClosedRunTree(active, expectedFiles, providers) {
+  const allowedDirectories = new Set([''])
+  for (const path of expectedFiles) {
+    const segments = path.split('/')
+    for (let index = 1; index < segments.length; index += 1) allowedDirectories.add(segments.slice(0, index).join('/'))
+  }
+  for (const provider of providers) {
+    allowedDirectories.add(`judgment/${provider}/_transcripts`)
+    allowedDirectories.add(`component-a1b/${provider}/_transcripts`)
+  }
+  const escapedProviders = providers.map((provider) => provider.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
+  const transcriptPattern = new RegExp(`^(?:judgment|component-a1b)/(?:${escapedProviders})/_transcripts/[a-f0-9]{64}\\.json$`)
+  const discoveredTranscripts = new Set()
+  const walk = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const absolute = resolve(directory, entry.name)
+      const path = relative(active.runRoot, absolute).split(sep).join('/')
+      const info = lstatSync(absolute)
+      if (info.isSymbolicLink()) fail(`active run contains symbolic-link evidence:${path}`)
+      if (info.isDirectory()) {
+        if (!allowedDirectories.has(path)) fail(`active run contains an unknown evidence directory:${path}`)
+        walk(absolute)
+      } else if (info.isFile()) {
+        if (info.nlink !== 1) fail(`active run contains hard-link evidence:${path}`)
+        if (!expectedFiles.has(path) && !transcriptPattern.test(path)) fail(`active run contains an unknown/mixed evidence file:${path}`)
+        if (transcriptPattern.test(path)) discoveredTranscripts.add(path)
+      } else fail(`active run contains unsupported evidence type:${path}`)
+    }
+  }
+  walk(active.runRoot)
+  return discoveredTranscripts
+}
+
+function rejectLegacyOrPoisonedRoot(active) {
+  const entries = readdirSync(active.deepAuditRoot, { withFileTypes: true })
+  for (const entry of entries) {
+    const absolute = resolve(active.deepAuditRoot, entry.name)
+    const info = lstatSync(absolute)
+    if (info.isSymbolicLink()) fail(`deep-audit root contains a symbolic link:${entry.name}`)
+    if (!['active-run.json', 'runs'].includes(entry.name)) fail(`legacy/poisoned flat evidence is forbidden:${entry.name}`)
+    if (entry.name === 'active-run.json' && (!info.isFile() || info.nlink !== 1)) fail('active run pointer is not a unique regular file')
+    if (entry.name === 'runs' && !info.isDirectory()) fail('deep-audit runs root is not a directory')
+  }
+  const runsRoot = resolve(active.deepAuditRoot, 'runs')
+  for (const entry of readdirSync(runsRoot, { withFileTypes: true })) {
+    const info = lstatSync(resolve(runsRoot, entry.name))
+    if (info.isSymbolicLink() || !info.isDirectory()) fail(`deep-audit run entry is unsafe:${entry.name}`)
+  }
+}
+
+function readEnvelope(active, explicitRoot, relativePath) {
+  const fullRelative = `deep-audit/runs/${active.manifest.runId}/${relativePath}`
+  const path = resolveRuntimeEvidencePath({ repoRoot: active.repository, explicitRoot, relativePath: fullRelative })
+  if (!existsSync(path)) return null
+  let envelope
+  try { envelope = JSON.parse(readFileSync(path, 'utf8')) } catch (error) { fail(`evidence is invalid JSON:${relativePath}:${error.message}`) }
+  validateDeepAuditEvidenceEnvelope(envelope, {
+    manifest: active.manifest,
+    manifestSha256: active.manifestSha256,
+    relativePath,
+    requireCurrentEnvironment: false,
+    repoRoot: active.repository,
+  })
+  return envelope
+}
+
+function verifyModelTranscriptClosure(active, explicitRoot, modelEnvelopes, discoveredTranscripts) {
+  const referencedTranscripts = new Set()
+  for (const envelope of modelEnvelopes) {
+    const reference = (envelope.payload.brokerReceipt ?? envelope.payload.transportReceipt).transcriptReference
+    const category = envelope.evidenceKind === 'deep-audit-judgment' ? 'judgment' : 'component-a1b'
+    const expectedPrefix = `${category}/${envelope.producer.providerId}/_transcripts/`
+    if (!reference.startsWith(expectedPrefix)) fail(`model transcript reference crosses its provider/category boundary:${reference}`)
+    if (referencedTranscripts.has(reference)) fail(`model transcript is referenced by multiple evidence envelopes:${reference}`)
+    referencedTranscripts.add(reference)
+    if (!discoveredTranscripts.has(reference)) fail(`referenced model transcript is missing:${reference}`)
+    const transcriptPath = resolveRuntimeEvidencePath({
+      repoRoot: active.repository,
+      explicitRoot,
+      relativePath: `deep-audit/runs/${active.manifest.runId}/${reference}`,
+    })
+    validateDeepAuditModelTranscriptArtifact({
+      bytes: readFileSync(transcriptPath),
+      relativePath: reference,
+      envelope,
+      repoRoot: active.repository,
+      manifest: active.manifest,
+    })
+  }
+  for (const transcript of discoveredTranscripts) {
+    if (!referencedTranscripts.has(transcript)) fail(`active run contains an unreferenced model transcript:${transcript}`)
+  }
+}
+
+export function summarizeDeepAuditCompliance({ totalGaps, envelopes } = {}) {
+  if (!Number.isSafeInteger(totalGaps) || totalGaps < 0 || !Array.isArray(envelopes)) {
+    fail('compliance summary inputs are invalid')
+  }
+  const findings = {
+    judgment: 0,
+    componentA1b: 0,
+    hookWarnings: 0,
+    hookBlocking: 0,
+  }
+  const trustDowngrades = {
+    untrustedDependencies: 0,
+    unverifiedContainment: 0,
+    unverifiedModelCoverage: 0,
+  }
+  for (const envelope of envelopes) {
+    if (envelope.evidenceKind === 'deep-audit-judgment') findings.judgment += envelope.payload.findings.length
+    if (envelope.evidenceKind === 'deep-audit-component-a1b') findings.componentA1b += envelope.payload.falseClaims.length
+    if (envelope.evidenceKind === 'deep-audit-hook-residue') {
+      findings.hookWarnings += envelope.payload.replayReceipt.warningCount
+      findings.hookBlocking += envelope.payload.replayReceipt.blockingCount
+    }
+    const sandbox = envelope.payload?.sandboxReceipt
+    if (sandbox?.dependencyTrust === 'untrusted-local-copy') trustDowngrades.untrustedDependencies += 1
+    if (sandbox?.externalWriteContainment === 'unverified') trustDowngrades.unverifiedContainment += 1
+    if (['deep-audit-judgment', 'deep-audit-component-a1b'].includes(envelope.evidenceKind)
+      && !envelope.payload.brokerReceipt && envelope.payload.accessReceipt?.status !== 'verified') {
+      trustDowngrades.unverifiedModelCoverage += 1
+    }
+  }
+  const coverageStatus = totalGaps === 0 ? 'complete' : 'incomplete'
+  const findingCount = Object.values(findings).reduce((sum, count) => sum + count, 0)
+  const trustDowngradeCount = Object.values(trustDowngrades).reduce((sum, count) => sum + count, 0)
+  const complianceStatus = trustDowngradeCount > 0
+    ? 'blocked'
+    : findingCount > 0 ? 'findings-present' : 'clean'
+  const promotionEligible = coverageStatus === 'complete' && complianceStatus === 'clean'
+  return {
+    coverageStatus,
+    complianceStatus,
+    promotionEligible,
+    status: coverageStatus === 'incomplete'
+      ? 'incomplete'
+      : complianceStatus === 'clean' ? 'complete-clean' : 'complete-with-findings',
+    findings,
+    trustDowngrades,
+  }
+}
+
+export function verifyDeepAuditCoverage({
+  repoRoot = DEFAULT_ROOT,
+  explicitRoot = null,
+  selfProvider = null,
+  peerProvider = null,
+  authorProvider = null,
+} = {}) {
+  const active = loadActiveDeepAuditRun({ repoRoot, explicitRoot, requireCurrent: true })
+  validateDeepAuditRunProviderBindings(active.manifest, { repoRoot: active.repository })
+  if (active.manifest.providers.peer === null) {
+    fail(`active run review selection is ${active.manifest.reviewSelection.selectionStatus}:${active.manifest.reviewSelection.selectionReasonCode}`)
+  }
+  const manifestProviders = [active.manifest.providers.self.id, active.manifest.providers.peer.id]
+  if (selfProvider !== null && selfProvider !== manifestProviders[0]) fail('--self-provider differs from the active run manifest')
+  if (peerProvider !== null && peerProvider !== manifestProviders[1]) fail('--peer-provider differs from the active run manifest')
+  if (authorProvider !== null && authorProvider !== active.manifest.authorProvider) fail('--author-provider differs from the active run manifest')
+  if (active.manifest.authorProvider !== manifestProviders[0] || active.manifest.authorProvider === manifestProviders[1]) {
+    fail('active run author provider is not the current/self provider or collides with the independent peer')
+  }
+  const providers = manifestProviders
+  const tiers = matrixTiers(active.repository)
+  rejectLegacyOrPoisonedRoot(active)
+  const components = active.manifest.components.map((item) => item.name)
+  const expectedFiles = expectedPathSet(tiers, providers, components)
+  const discoveredTranscripts = scanClosedRunTree(active, expectedFiles, providers)
+  const planState = loadDeterministicDeepAuditPlan({ repoRoot: active.repository })
+  assertDeterministicMatrixParity(planState, { repoRoot: active.repository })
+  const hookState = loadHookEvidencePlan({ repoRoot: active.repository })
+  exact(hookDimensionNumbers(hookState), tiers['HOOK-ENFORCED'], 'hook plan/matrix dimensions')
+  const hookPaths = selectFrozenHookInventory(active.manifest, hookState.plan.inventory)
+  const hookCoverage = {
+    inventoryPaths: hookPaths,
+    inventoryDigest: digestInventorySelection(active.manifest, hookPaths),
+    filesScanned: hookPaths.length,
+  }
+  const gaps = {
+    deterministic: [],
+    judgment: Object.fromEntries(providers.map((provider) => [provider, []])),
+    hookResidue: [],
+    ciEnforced: [],
+    componentA1b: Object.fromEntries(providers.map((provider) => [provider, []])),
+  }
+  const envelopes = []
+  const modelEnvelopes = []
+  for (const dim of tiers.DETERMINISTIC) {
+    const envelope = readEnvelope(active, explicitRoot, `deterministic/dim-${dim}.json`)
+    if (!envelope) gaps.deterministic.push(dim)
+    else {
+      validateDeterministicReceipt(envelope, dim, active, planState)
+      envelopes.push(envelope)
+    }
+  }
+  const expectedJudgmentCoverage = judgmentCoverage(active.manifest)
+  for (const provider of providers) {
+    for (const dim of tiers['PURE-JUDGMENT']) {
+      const envelope = readEnvelope(active, explicitRoot, `judgment/${provider}/dim-${dim}.json`)
+      if (!envelope) gaps.judgment[provider].push(dim)
+      else {
+        if (envelope.producer.providerId !== provider || envelope.payload.dim !== dim || envelope.command.exitCode !== 0) fail(`judgment receipt identity/completion mismatches:${provider}/dim-${dim}`)
+        exact(envelope.coverage, expectedJudgmentCoverage, `judgment ${provider} dim ${dim} coverage`)
+        envelopes.push(envelope)
+        modelEnvelopes.push(envelope)
+      }
+    }
+  }
+  for (const dim of tiers['HOOK-ENFORCED']) {
+    const envelope = readEnvelope(active, explicitRoot, `hook-residue/dim-${dim}.json`)
+    if (!envelope) gaps.hookResidue.push(dim)
+    else {
+      validateHookReceipt(envelope, dim, active, hookState, hookCoverage)
+      envelopes.push(envelope)
+    }
+  }
+  const ciPlanState = loadCiEvidencePlan({ repoRoot: active.repository })
+  const canonicalCi = loadCanonicalCiModels(ciPlanState, { repoRoot: active.repository })
+  const ciObservationDigests = new Set()
+  for (const dim of tiers['CI-ENFORCED']) {
+    const envelope = readEnvelope(active, explicitRoot, `ci-enforced/dim-${dim}.json`)
+    if (!envelope) gaps.ciEnforced.push(dim)
+    else {
+      if (envelope.payload.dim !== dim) fail(`CI receipt identity mismatches:dim-${dim}`)
+      exact(envelope.coverage, { inventoryPaths: active.manifest.rubricPaths, inventoryDigest: active.manifest.rubricDigest, filesScanned: active.manifest.rubricPaths.length }, `CI dim ${dim} coverage`)
+      const observationPayload = envelope.payload.receipt.observationPayload
+      const payloadSha256 = envelope.payload.receipt.observation.apiPayloadSha256
+      validateCiObservationDocument({
+        $schema: 'schemas/ci-evidence-observation.schema.json',
+        schemaVersion: 1,
+        kind: 'ci-enforced-content-addressed-observation',
+        payloadSha256,
+        payload: observationPayload,
+      }, {
+        repoRoot: active.repository,
+        planState: ciPlanState,
+        activeRun: active,
+        models: canonicalCi.models,
+        modelBindings: canonicalCi.bindings,
+        now: new Date(),
+      })
+      ciObservationDigests.add(payloadSha256)
+      envelopes.push(envelope)
+    }
+  }
+  if (ciObservationDigests.size > 1) fail('CI dimension receipts mix different full observation payloads')
+  for (const provider of providers) {
+    for (const component of components) {
+      const envelope = readEnvelope(active, explicitRoot, `component-a1b/${provider}/${component}.json`)
+      if (!envelope) gaps.componentA1b[provider].push(component)
+      else {
+        if (envelope.producer.providerId !== provider || envelope.payload.component !== component || envelope.command.exitCode !== 0) fail(`A1b receipt identity/completion mismatches:${provider}/${component}`)
+        exact(envelope.coverage, componentCoverage(active.manifest, component), `A1b ${provider}/${component} coverage`)
+        envelopes.push(envelope)
+        modelEnvelopes.push(envelope)
+      }
+    }
+  }
+  verifyModelTranscriptClosure(active, explicitRoot, modelEnvelopes, discoveredTranscripts)
+  const totalGaps = gaps.deterministic.length + gaps.hookResidue.length + gaps.ciEnforced.length
+    + Object.values(gaps.judgment).reduce((sum, values) => sum + values.length, 0)
+    + Object.values(gaps.componentA1b).reduce((sum, values) => sum + values.length, 0)
+  const compliance = summarizeDeepAuditCompliance({ totalGaps, envelopes })
+  return {
+    schemaVersion: 4,
+    evidenceKind: 'deep-audit-coverage-verification',
+    runId: active.manifest.runId,
+    manifestSha256: active.manifestSha256,
+    head: active.manifest.head,
+    tree: active.manifest.tree,
+    inventoryDigest: active.manifest.inventoryDigest,
+    rubricDigest: active.manifest.rubricDigest,
+    worktreeFingerprint: active.manifest.worktreeFingerprint,
+    authorProvider: active.manifest.authorProvider,
+    providerIdentityDigest: active.manifest.providerIdentityDigest,
+    providers: { self: providers[0], peer: providers[1] },
+    tiers: {
+      deterministic: tiers.DETERMINISTIC.length,
+      pureJudgment: tiers['PURE-JUDGMENT'].length,
+      hookEnforced: tiers['HOOK-ENFORCED'].length,
+      ciEnforced: tiers['CI-ENFORCED'].length,
+    },
+    componentCount: components.length,
+    gaps,
+    totalGaps,
+    ...compliance,
+  }
+}
+
+function printHuman(result) {
+  console.log(`═══ Immutable Deep-Audit Run ${result.runId} ═══`)
+  console.log(`author:${result.authorProvider}; providers:${result.providers.self}+${result.providers.peer}; HEAD:${result.head}`)
+  console.log(`deterministic gaps:${result.gaps.deterministic.join(',') || 'none'}`)
+  for (const provider of Object.keys(result.gaps.judgment)) console.log(`judgment ${provider} gaps:${result.gaps.judgment[provider].join(',') || 'none'}`)
+  console.log(`hook gaps:${result.gaps.hookResidue.join(',') || 'none'}`)
+  console.log(`CI gaps:${result.gaps.ciEnforced.join(',') || 'none'}`)
+  for (const provider of Object.keys(result.gaps.componentA1b)) console.log(`A1b ${provider} gaps:${result.gaps.componentA1b[provider].join(',') || 'none'}`)
+  console.log(`coverage:${result.coverageStatus}; compliance:${result.complianceStatus}; promotion:${result.promotionEligible ? 'eligible' : 'blocked'}`)
+  console.log(`findings:judgment=${result.findings.judgment}, A1b=${result.findings.componentA1b}, hook-warning=${result.findings.hookWarnings}, hook-blocking=${result.findings.hookBlocking}`)
+  console.log(`trust downgrades:dependencies=${result.trustDowngrades.untrustedDependencies}, containment=${result.trustDowngrades.unverifiedContainment}, model-coverage=${result.trustDowngrades.unverifiedModelCoverage}`)
+  console.log(result.promotionEligible ? '✅ immutable run evidence is complete, clean, and promotion-eligible' : '❌ immutable run is not promotion-eligible')
+}
+
+export function main(argv = process.argv.slice(2)) {
+  const args = parseArgs(argv)
+  const result = verifyDeepAuditCoverage({
+    repoRoot: args['repo-root'] ?? DEFAULT_ROOT,
+    explicitRoot: args['evidence-root'] ?? process.env.GOVERNANCE_EVIDENCE_ROOT ?? null,
+    selfProvider: args['self-provider'] ?? process.env.GOVERNANCE_SELF_PROVIDER ?? null,
+    peerProvider: args['peer-provider'] ?? process.env.GOVERNANCE_PEER_PROVIDER ?? null,
+    authorProvider: args['author-provider'] ?? process.env.GOVERNANCE_AUTHOR_PROVIDER ?? null,
+  })
+  if (args.json) process.stdout.write(`${stableStringify(result, 2)}\n`)
+  else printHuman(result)
+  return result.promotionEligible ? 0 : 1
+}
+
+const IS_MAIN = (() => {
+  if (!process.argv[1]) return false
+  try { return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url)) } catch { return false }
+})()
+
+if (IS_MAIN) {
+  try { process.exitCode = main() } catch (error) { process.stderr.write(`${error.message}\n`); process.exitCode = 2 }
+}

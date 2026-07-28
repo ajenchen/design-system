@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/npm-stage-receipt.schema.json",
+  "title": "Attempt-bound npm native-stage receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "state", "source", "releaseTrust", "releaseSetSha256", "bomSha256", "targetTag", "stagingTag", "publishOrder", "packages", "createdAt", "updatedAt"],
+  "properties": {
+    "schemaVersion": {"const": 2},
+    "state": {"enum": ["staging", "recovery-required", "awaiting-platform-confirmation"]},
+    "source": {"$ref": "#/$defs/source"},
+    "releaseTrust": {"$ref": "#/$defs/releaseTrust"},
+    "releaseSetSha256": {"$ref": "#/$defs/sha256"},
+    "bomSha256": {"$ref": "#/$defs/sha256"},
+    "targetTag": {"enum": ["beta", "latest"]},
+    "stagingTag": {"type": "string", "pattern": "^governance-stage-[0-9A-Za-z._-]+$"},
+    "publishOrder": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "packages": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "version", "file", "integrity", "shasum", "status", "stageId"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "version": {"$ref": "#/$defs/semver"},
+          "file": {"type": "string", "pattern": "^[^/\\\\]+\\.tgz$"},
+          "integrity": {"type": "string", "pattern": "^sha512-[A-Za-z0-9+/]+={0,2}$"},
+          "shasum": {"$ref": "#/$defs/sha1"},
+          "status": {"enum": ["planned", "submitting", "staged", "ambiguous"]},
+          "stageId": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/uuid"}]},
+          "attemptedAt": {"$ref": "#/$defs/timestamp"},
+          "failure": {"type": "string", "minLength": 1, "maxLength": 2000},
+          "stagedAt": {"$ref": "#/$defs/timestamp"},
+          "recoveredAt": {"$ref": "#/$defs/timestamp"}
+        }
+      }
+    },
+    "createdAt": {"$ref": "#/$defs/timestamp"},
+    "updatedAt": {"$ref": "#/$defs/timestamp"},
+    "awaitingPlatformConfirmationAt": {"$ref": "#/$defs/timestamp"}
+  },
+  "$defs": {
+    "sha1": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "sha256Prefixed": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "positiveIntegerString": {"type": "string", "pattern": "^[1-9][0-9]*$"},
+    "semver": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"},
+    "timestamp": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"},
+    "uuid": {"type": "string", "pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[1-8][0-9A-Fa-f]{3}-[89ABab][0-9A-Fa-f]{3}-[0-9A-Fa-f]{12}$"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "tag", "gitHead", "gitTree"],
+      "properties": {
+        "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "tag": {"type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+(?:-(?:beta|next|rc)\\.[0-9]+)?$"},
+        "gitHead": {"$ref": "#/$defs/sha1"},
+        "gitTree": {"$ref": "#/$defs/sha1"}
+      }
+    },
+    "releaseTrust": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorizationDigest", "evidenceSha256", "evidenceFileSha256", "tagObject", "artifact"],
+      "properties": {
+        "authorizationDigest": {"$ref": "#/$defs/sha256"},
+        "evidenceSha256": {"$ref": "#/$defs/sha256"},
+        "evidenceFileSha256": {"$ref": "#/$defs/sha256"},
+        "tagObject": {"$ref": "#/$defs/sha1"},
+        "artifact": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "digest", "workflow"],
+          "properties": {
+            "name": {"type": "string", "pattern": "^release-trust-[1-9][0-9]*-[1-9][0-9]*$"},
+            "digest": {"$ref": "#/$defs/sha256Prefixed"},
+            "workflow": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "event", "headBranch", "headSha", "runId", "runAttempt"],
+              "properties": {
+                "path": {"const": ".github/workflows/release.yml"},
+                "event": {"const": "repository_dispatch"},
+                "headBranch": {"const": "main"},
+                "headSha": {"$ref": "#/$defs/sha1"},
+                "runId": {"$ref": "#/$defs/positiveIntegerString"},
+                "runAttempt": {"type": "integer", "minimum": 1}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

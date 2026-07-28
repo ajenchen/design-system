@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/harness-non-governance-exclusions-v1.json",
+  "title": "Reviewed non-governance test-source exclusions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "entries"],
+  "properties": {
+    "$schema": {"const": "../schemas/harness-non-governance-exclusions.schema.json"},
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "reviewed-non-governance-harness-source-exclusions"},
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "category", "reason"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^(?:infra/governance/test/.+\\.test\\.mjs|packages/governance/test/.+\\.test\\.mjs|scripts/test-.+\\.mjs)$"
+          },
+          "category": {"const": "interactive-product-visual-exploration"},
+          "reason": {"type": "string", "minLength": 40}
+        }
+      }
+    }
+  }
+}

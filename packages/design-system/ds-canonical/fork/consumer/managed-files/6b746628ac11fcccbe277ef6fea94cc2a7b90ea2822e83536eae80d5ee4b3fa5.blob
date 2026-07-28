@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/provider-cli-toolchain-v2.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "kind", "registry", "packageLock", "packageContent", "installPolicy", "providerBindings", "tools"],
+  "properties": {
+    "$schema": {"const": "../schemas/provider-cli-toolchain.schema.json"},
+    "schemaVersion": {"const": 2},
+    "kind": {"const": "provider-cli-toolchain"},
+    "registry": {"const": "https://registry.npmjs.org/"},
+    "packageLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "consumerPath", "sha256", "lockfileVersion", "rootName", "rootVersion", "packageCount"],
+      "properties": {
+        "path": {"const": "infra/governance/providers/provider-cli-toolchain.package-lock.json"},
+        "consumerPath": {"const": "governance/provider-cli-toolchain.package-lock.json"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "lockfileVersion": {"const": 3},
+        "rootName": {"const": "@qijenchen/provider-cli-toolchain"},
+        "rootVersion": {"const": "0.0.0"},
+        "packageCount": {"type": "integer", "minimum": 0}
+      }
+    },
+    "packageContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "modePolicy", "packages"],
+      "properties": {
+        "protocol": {"const": "npm-ustar-package-tree-v1"},
+        "modePolicy": {"const": "excluded-portable-content-only"},
+        "packages": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/packageContent"}
+        }
+      }
+    },
+    "installPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ignoreScripts", "signatureAudit", "auditLevel", "runtimeDirectory", "shimDirectory", "supportedPlatforms"],
+      "properties": {
+        "ignoreScripts": {"const": true},
+        "signatureAudit": {"const": true},
+        "auditLevel": {"const": "high"},
+        "runtimeDirectory": {"const": "node_modules/.provider-cli-toolchain"},
+        "shimDirectory": {"const": "node_modules/.bin"},
+        "supportedPlatforms": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "prefixItems": [
+            {"const": "darwin-arm64"},
+            {"const": "darwin-x64"},
+            {"const": "linux-arm64"},
+            {"const": "linux-x64"}
+          ],
+          "items": false
+        }
+      }
+    },
+    "providerBindings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/providerBinding"}
+    },
+    "tools": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/tool"}
+    }
+  },
+  "$defs": {
+    "packageContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lockPath", "platforms", "treeSha256", "fileCount", "totalBytes"],
+      "properties": {
+        "lockPath": {"type": "string", "pattern": "^node_modules/@[a-z0-9-]+/[a-z0-9-]+$"},
+        "platforms": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {"enum": ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64"]}
+        },
+        "treeSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "fileCount": {"type": "integer", "minimum": 1, "maximum": 100000},
+        "totalBytes": {"type": "integer", "minimum": 1, "maximum": 1073741824}
+      }
+    },
+    "providerBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerId", "provisioning", "toolProviderId"],
+      "properties": {
+        "providerId": {"type": "string", "pattern": "^[a-z][a-z0-9-]+$"},
+        "provisioning": {"enum": ["repo-provisioned-cli", "external-runtime"]},
+        "toolProviderId": {
+          "oneOf": [
+            {"type": "string", "pattern": "^[a-z][a-z0-9-]+$"},
+            {"type": "null"}
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"provisioning": {"const": "repo-provisioned-cli"}}, "required": ["provisioning"]},
+          "then": {"properties": {"toolProviderId": {"type": "string"}}},
+          "else": {"properties": {"toolProviderId": {"type": "null"}}}
+        }
+      ]
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerId", "packageName", "version", "executable", "binKind", "packageBin", "platformPackage", "versionProbe"],
+      "properties": {
+        "providerId": {"type": "string", "pattern": "^[a-z][a-z0-9-]+$"},
+        "packageName": {"type": "string", "pattern": "^@[a-z0-9-]+/[a-z0-9-]+$"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "executable": {"type": "string", "pattern": "^[a-z][a-z0-9-]+$"},
+        "binKind": {"enum": ["platform-native", "node-entrypoint"]},
+        "packageBin": {"type": "string", "pattern": "^[a-z0-9.-]+(?:/[a-z0-9.-]+)+$"},
+        "platformPackage": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["nameTemplate", "executablePath"],
+              "properties": {
+                "nameTemplate": {"type": "string", "pattern": "^@[a-z0-9-]+/[a-z0-9-]+\\{platform\\}[a-z0-9-]*$"},
+                "executablePath": {
+                  "oneOf": [
+                    {"type": "string", "pattern": "^[a-z0-9.-]+(?:/[a-z0-9.-]+)*$"},
+                    {"type": "null"}
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "versionProbe": {"const": "exact-semver-token"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"binKind": {"const": "platform-native"}}, "required": ["binKind"]},
+          "then": {
+            "properties": {
+              "platformPackage": {
+                "type": "object",
+                "properties": {"executablePath": {"type": "string"}},
+                "required": ["executablePath"]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

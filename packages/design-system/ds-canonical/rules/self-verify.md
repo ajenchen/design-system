@@ -1,6 +1,11 @@
+---
+paths:
+  - "**/*"
+---
+
 # Self-verify canonical(path-scoped)
 
-僅在編輯任何 file(`src/**` / `.claude/**` / `*.spec.md` / `*.tsx` / `*.css`)時 load。
+僅在編輯任何 file(`src/**` / canonical governance paths / `*.spec.md` / `*.tsx` / `*.css`)時 load。
 
 **Why**:M10/M11/M20/M32 散在 meta-patterns,缺單一「改檔前中後該驗什麼」canonical。本 rule SSOT。對齊 Linux kernel patch checklist / Toyota TPS 自働化 / Google CL pre-submit。
 
@@ -8,17 +13,17 @@
 
 | 階段 | 動作 | 工具 / cmd |
 |---|---|---|
-| **Pre-edit** | (1) M29 3-column owner table(grep `*.spec.md` 找 anchor)(2) M23 既有 canonical 優先(`# SSOT 消費 canonical` 清單)(3) Touched file inventory + Read 真讀(非憑記憶)(4) 若 SSOT-UI/UX substantive → STOP 用中文 propose 等 user 拍板 | grep / Read / propose-options skill |
-| **Mid-edit** | (1) 每 5-8 個檔案或跨新 domain 跑 scoped invariant grep(2) 發現 spec/code 衝突 STOP,不選邊(3) Hook 自動 intercept(check_substantive_edit_approval_preflight / check_solo_workflow / check_story_invariants 等)| auto-fire hooks |
-| **Post-edit** | (1) `npx tsc -b`(任何 tsx/ts 改);**⚠️ 動 export/型別 surface(interface/type/cva variant union/discriminated union/新 export)必加跑 `npm run build:lib`** —— `tsc -b`(composite/build mode)**不做 declaration emit**,漏 TS4023「cannot be named」等 declaration-emit 錯;Netlify build.command = `build:lib && build-storybook`(`build:lib` 含 `build:dts` = `tsc -p` emit .d.ts)才會炸。**tsc -b PASS ≠ deploy-safe**(2026-06-05 anchor:Badge discriminated union BadgeDotProps 沒 export → Sidebar SidebarMenuBadge .d.ts TS4023 → Netlify build 連掛 3 commit,tsc -b 全綠騙過)。type-surface deploy-safety 證明 = `build:lib` exit 0,非 tsc -b。(2) 相關 invariant script(`node scripts/data-table-invariants.mjs` 若動 DataTable / `node scripts/audit-content-quality.mjs --check` 若動 spec)(3) M10 proactive scan(`/scan-similar-bugs` 或 manual grep 同 pattern DS-wide)(4) UI 改動加 visual probe(`/visual-audit --scope=changed` 或 Playwright screenshot)(5) M14 5-layer pipeline(spec / hook / SKILL / CLAUDE.md / memory 該動的同步)| `tsc` / `*.mjs` 腳本 / visual-audit |
+| **Pre-edit** | (1) M29 3-column owner table(grep `*.spec.md` 找 anchor)(2) M23 既有 canonical 優先(`# SSOT 消費 canonical` 清單)(3) Touched file inventory + Read 真讀(非憑記憶)(4) 以 target-bound authority classifier 區分：純工程 AUTO；只有產品／UI／UX SSOT 真取捨才 STOP、用中文提出 exact decision | grep / Read / propose-options skill |
+| **Mid-edit** | (1) 每 5-8 個檔案或跨新 domain 跑 scoped invariant grep(2) 發現 spec/code 衝突先以 owner/evidence/tests/independent review 收斂；唯一工程解 AUTO，產品／UI／UX真取捨才 STOP，unknown fail closed(3) Hook 自動 intercept(check_substantive_edit_approval_preflight / check_solo_workflow / check_story_invariants 等)| auto-fire hooks |
+| **Post-edit** | (1) `npx tsc -b`(任何 tsx/ts 改);**⚠️ 動 export/型別 surface(interface/type/cva variant union/discriminated union/新 export)必加跑 `npm run build:lib`** —— `tsc -b`(composite/build mode)**不做 declaration emit**,漏 TS4023「cannot be named」等 declaration-emit 錯;Netlify build.command = `build:lib && build-storybook`(`build:lib` 含 `build:dts` = `tsc -p` emit .d.ts)才會炸。**tsc -b PASS ≠ deploy-safe**(2026-06-05 anchor:Badge discriminated union BadgeDotProps 沒 export → Sidebar SidebarMenuBadge .d.ts TS4023 → Netlify build 連掛 3 commit,tsc -b 全綠騙過)。type-surface deploy-safety 證明 = `build:lib` exit 0,非 tsc -b。(2) 相關 invariant script(`node scripts/data-table-invariants.mjs` 若動 DataTable / `node scripts/audit-content-quality.mjs --check` 若動 spec)(3) M10 proactive scan(`/scan-similar-bugs` 或 manual grep 同 pattern DS-wide)(4) UI 改動加 visual probe(`/visual-audit --scope=changed` 或 Playwright screenshot)(5) M14 5-layer pipeline(spec / hook / SKILL / AGENTS.md / memory 該動的同步)| `tsc` / `*.mjs` 腳本 / visual-audit |
 | **Pre-commit / Pre-final** | (1) Claim-verify table:每「已修」「已驗」對應具體 command + artifact + file:line(2) 過 `scripts/audit-content-quality.mjs --check`(3) Stop hook BLOCKER 紅燈通過(claim-verify-gap / codex-verify / codex-transport)(4) Commit message 含 cite + verdict keyword 滿足 `check_codex_collab_5step.sh` | claim-verify table + content-quality + stop hook |
 
 ## 強制 trigger condition(滿足任一 → 整 4 階段必跑)
 
 - 動 `packages/design-system/src/**`(production code)
 - 動 `*.spec.md`(canonical text)
-- 動 `.claude/{rules,skills,hooks,memory,commands}/**`(governance)
-- 動 `CLAUDE.md`
+- 動 `packages/design-system/ds-canonical/{rules,skills,hooks,references,commands}/**` 或 `governance/memory/**`(governance canonical owner；generated provider views 禁手改)
+- 動 `AGENTS.md`
 - 動 token(`packages/design-system/src/tokens/**`)
 - 動 component primitive consumer 行為
 
@@ -54,4 +59,4 @@
 - Google CL:LGTM + 必跑 presubmit(對應 Pre-commit table)
 - Atlassian RFC:cite + counter-example scan 必過 reviewer round
 
-對應 CLAUDE.md `# 自主執行 canonical` + meta-patterns M10/M11/M20/M32。
+對應 AGENTS.md `# 自主執行 canonical` + meta-patterns M10/M11/M20/M32。

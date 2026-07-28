@@ -3,6 +3,17 @@ name: propose-options
 description: Auto-invoke when listing options / 建議 / 候選方案. Forces inline 7-Q principle check(M8 benchmark / M17 SSOT / Rule-of-3 / M10 subsumption)per option BEFORE listing. Failures filtered or labeled. Codifies「verify before propose」runtime discipline.
 ---
 
+<!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/propose-options/SKILL.md; provider: claude; do not edit this adapter view. -->
+
+<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=claude; strategy=generated-binding-header; assumptionCount=6; assumptionFingerprint=sha256:fc1fe71bd891a774d11183a0f72e67565e1a635560f0db11e8738d5596795561; evidence=packages/governance/canonical/providers.json#claude -->
+
+## Provider binding contract
+
+This canonical workflow contains a committed inventory of legacy assumptions. Resolve them exactly as follows; an unavailable resolution or inventory drift is `ADAPTER-BLOCKED`:
+
+- `provider-identity`: Treat historical provider names as provenance labels, never as the current runtime identity.
+- `provider-surface-path`: Resolve legacy repository paths through generated views while treating ds-canonical as the semantic owner.
+
 # /propose-options — Propose-time 7-Q Gate
 
 **目的**:Claude 對 user 提建議 / 列 option list 時,**先跑 7 題原則自檢**,通過才寫進回覆。Reject 的不列 OR 列出時標 fail 原因。
@@ -169,7 +180,7 @@ User 已就「為什麼會給錯誤建議」糾正 ≥ 3 次:
 
 | Skill | scope |
 |---|---|
-| `pre_write_subsumption_check.sh`(retired 2026-06 → `.claude/hooks/retired/` — write 前層由 `check_file_size_budget.sh` + `enforce_home_charter.sh` 等現役 pre-write hook 部分補位)| Edit/Write 已發生時 |
+| `pre_write_subsumption_check.sh`(retired 2026-06 → canonical `packages/design-system/ds-canonical/hooks/retired/` — write 前層由 `check_file_size_budget.sh` + `enforce_home_charter.sh` 等現役 pre-write hook 部分補位)| Edit/Write 已發生時 |
 | `post_edit_canonical_interrogate.sh`(retired/未實作 — mindset enforcement)| 寫完 canonical 後 3 題 |
 | `check_governance_compliance.sh`(retired/未實作 — 靠 `check_propose_pre_grep_verify.sh` + 加 hook 前 3 題)| 寫新 hook 7 題 |
 | **本 skill** `/propose-options` | **propose-time(寫進 user 回覆前)7 題** |

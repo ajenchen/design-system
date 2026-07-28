@@ -1,6 +1,6 @@
 #!/bin/bash
 set -uo pipefail
-# PreToolUse Edit/Write: PeoplePicker SSOT drift guard(2026-05-15 user verbatim「避免下次再度偏移」)
+# PostToolUse Edit/Write: PeoplePicker SSOT drift guard(2026-05-15 user verbatim「避免下次再度偏移」)
 #
 # 攔截:`people-picker.tsx` / `person-display.tsx` / `combobox.tsx` 動以下 PeoplePicker SSOT-bearing
 # code 路徑時,要求 commit message / new content 包含 cite 對應 spec.md SSOT table row 的 marker。
@@ -31,9 +31,9 @@ esac
 # Patterns that touch SSOT-bearing render logic
 SSOT_KEYWORDS='tagRenderer|overflowShape|tagWrapperClassName|selectedItemRenderer|MultiPersonDisplay|PersonAvatarTag|PersonDisplay|searchIn|searchPlaceholder|placeholder=\\{'
 
-if echo "$NEW_CONTENT" | grep -qE "$SSOT_KEYWORDS"; then
+if grep -qE "$SSOT_KEYWORDS" <<<"$NEW_CONTENT"; then
   # Check if new content cites spec.md SSOT table
-  if ! echo "$NEW_CONTENT" | grep -qE "(spec\\.md.*(§[A-F]|canonical table|Trigger display SSOT)|people-picker\\.spec\\.md.*L9[0-9])"; then
+  if ! grep -qE "(spec\\.md.*(§[A-F]|canonical table|Trigger display SSOT)|people-picker\\.spec\\.md.*L9[0-9])" <<<"$NEW_CONTENT"; then
     MSG="⚠️ PeoplePicker SSOT-bearing edit detected at ${FILE_PATH}
 
 動到 (tagRenderer / overflowShape / tagWrapperClassName / placeholder logic / MultiPersonDisplay 等) — 這些是 PeoplePicker SSOT-bearing API,不是 Combobox / Select 純繼承。
@@ -49,7 +49,7 @@ if echo "$NEW_CONTENT" | grep -qE "$SSOT_KEYWORDS"; then
   §F Cell-edit ↔ Field-edit 一致性 - 動 cell-registry MultiPersonCell / form PeoplePicker → 此處"
 
     ESCAPED=$(printf '%s' "$MSG" | jq -Rs .)
-    printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":%s}}\n' "$ESCAPED"
+    printf '{"governanceContext":{"hookEventName":"PostToolUse","message":%s}}\n' "$ESCAPED"
   fi
 fi
 

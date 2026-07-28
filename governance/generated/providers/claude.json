@@ -1,0 +1,301 @@
+{
+  "_provenance": {
+    "contractDigest": "sha256:b259a4e92a7dd0d3ac29f6eeca6cfb30da04967f29973dba3c229d6e7c1138ce",
+    "generated": true,
+    "generator": "@qijenchen/governance",
+    "generatorVersion": "0.1.0-beta.95",
+    "manifestId": "qijenchen-provider-neutral-governance",
+    "role": "ds-author"
+  },
+  "applicableRules": [
+    {
+      "coverage": "hard-gate",
+      "ruleId": "GOV-ATTEST-001"
+    },
+    {
+      "coverage": "hard-gate",
+      "ruleId": "GOV-CONTRACT-001"
+    },
+    {
+      "coverage": "adapter",
+      "ruleId": "GOV-GENERATED-001"
+    },
+    {
+      "coverage": "adapter",
+      "ruleId": "GOV-PROVIDER-001"
+    },
+    {
+      "coverage": "hard-gate",
+      "ruleId": "GOV-SNAPSHOT-001"
+    },
+    {
+      "coverage": "hard-gate",
+      "ruleId": "GOV-UPGRADE-001"
+    }
+  ],
+  "provider": {
+    "adapter": {
+      "discovery": {
+        "configPaths": [
+          ".claude/settings.json",
+          ".claude/settings.local.json",
+          ".mcp.json"
+        ],
+        "instructionNames": [
+          "CLAUDE.md"
+        ],
+        "instructionOverrideNames": [
+          "CLAUDE.local.md",
+          "CLAUDE.override.md"
+        ],
+        "pluginRootNames": [
+          ".claude-plugin"
+        ],
+        "providerRootNames": [
+          ".claude"
+        ]
+      },
+      "environmentMap": {
+        "GOVERNANCE_BYPASS_CHROME_HEADER_AVATAR": "CLAUDE_BYPASS_CHROME_HEADER_AVATAR",
+        "GOVERNANCE_BYPASS_DS_ANCHOR": "CLAUDE_BYPASS_DS_ANCHOR",
+        "GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT": "CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT",
+        "GOVERNANCE_BYPASS_MAIN_WORKBENCH": "CLAUDE_BYPASS_MAIN_WORKBENCH",
+        "GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP": "CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP",
+        "GOVERNANCE_BYPASS_SOLO_WORKFLOW": "CLAUDE_BYPASS_SOLO_WORKFLOW",
+        "GOVERNANCE_PLUGIN_ROOT": "CLAUDE_PLUGIN_ROOT",
+        "GOVERNANCE_PROJECT_DIR": "CLAUDE_PROJECT_DIR",
+        "GOVERNANCE_SESSION_ID": "CLAUDE_SESSION_ID",
+        "GOVERNANCE_TOOL_INPUT": "CLAUDE_TOOL_INPUT",
+        "GOVERNANCE_TRANSCRIPT_PATH": "CLAUDE_TRANSCRIPT_PATH"
+      },
+      "generate": true,
+      "hookView": {
+        "eventBindings": {
+          "PostToolUse": "PostToolUse",
+          "PreToolUse": "PreToolUse",
+          "SessionStart": "SessionStart",
+          "Stop": "Stop",
+          "UserPromptSubmit": "UserPromptSubmit"
+        },
+        "matcherAliases": {},
+        "materializerId": "claude-settings-json-v1",
+        "output": ".claude/settings.json",
+        "settingsTemplate": "packages/design-system/ds-canonical/adapters/claude-settings-base.json",
+        "supportedEvents": [
+          "PreToolUse",
+          "PostToolUse",
+          "Stop",
+          "SessionStart",
+          "UserPromptSubmit"
+        ],
+        "workingDirectoryPolicy": "repository-root"
+      },
+      "instructionView": {
+        "materializerId": "markdown-relative-at-import-v1"
+      },
+      "productInstructionSource": "scripts/fork-role-sources/CLAUDE.product.md",
+      "productManagedTrees": {},
+      "repositoryInstructionSource": "packages/design-system/ds-canonical/adapters/claude-root-instructions.md",
+      "repositoryManagedTrees": {
+        "commands": ".claude/commands",
+        "contextForkAgents": ".claude/agents",
+        "hooks": ".claude/hooks",
+        "references": ".claude/references",
+        "rules": ".claude/rules"
+      },
+      "skillAliases": [],
+      "skillBindings": {
+        "canonical-reviewer": {
+          "invocation": {
+            "agent": "canonical-reviewer",
+            "context": "fork",
+            "strategy": "native-context-fork"
+          },
+          "reviewClass": "tier-0-governance",
+          "selectionPolicy": "highest-certified-independent-review-v1",
+          "self": "claude",
+          "transport": "external-or-orchestrator"
+        },
+        "codex-collab": {
+          "invocation": {
+            "strategy": "main-context"
+          },
+          "reviewClass": "tier-0-governance",
+          "selectionPolicy": "highest-certified-independent-review-v1",
+          "self": "claude",
+          "transport": "scripts/run-model-deep-audit.mjs"
+        },
+        "deep-audit-cross-codex": {
+          "certificationContract": "exact-provider-runtime-surface-role-target-v1",
+          "invocation": {
+            "strategy": "main-context"
+          },
+          "reviewClass": "tier-0-governance",
+          "selectionPolicy": "highest-certified-independent-review-v1",
+          "self": "claude",
+          "transport": "content-addressed-model-broker-exchange-v1"
+        },
+        "independent-review": {
+          "certificationContract": "exact-provider-runtime-surface-role-target-v1",
+          "invocation": {
+            "strategy": "main-context"
+          },
+          "reviewClass": "tier-0-governance",
+          "selectionPolicy": "highest-certified-independent-review-v1",
+          "self": "claude",
+          "transport": "content-addressed-model-broker-exchange-v1"
+        }
+      },
+      "skillView": {
+        "directory": ".claude/skills",
+        "materializerId": "agent-skills-directory-v1"
+      }
+    },
+    "blockingExitCode": 2,
+    "capabilities": {
+      "hardGateComplete": false,
+      "hookEnforcement": "native-feedback-plus-ci",
+      "hookTrustRequired": false,
+      "nativeHooks": true
+    },
+    "displayName": "Claude Code",
+    "hookConfig": ".claude/settings.json",
+    "hookConfigFormat": "json",
+    "hookEntrypoint": "scripts/run-provider-hook.mjs",
+    "id": "claude",
+    "instructionEntry": "CLAUDE.md",
+    "normalization": {
+      "eventAliases": {
+        "afterwrite": "PostToolUse",
+        "beforewrite": "PreToolUse",
+        "posttooluse": "PostToolUse",
+        "postwrite": "PostToolUse",
+        "pretooluse": "PreToolUse",
+        "prewrite": "PreToolUse",
+        "sessionstart": "SessionStart",
+        "stop": "Stop",
+        "userpromptsubmit": "UserPromptSubmit"
+      },
+      "eventFields": [
+        "hook_event_name",
+        "event"
+      ],
+      "pathArrayFields": [
+        "changed_paths",
+        "tool_input.changed_paths",
+        "changes",
+        "tool_input.changes",
+        "tool_input.edits",
+        "tool_input.files"
+      ],
+      "pathFields": [
+        "tool_input.file_path",
+        "tool_input.path",
+        "file_path",
+        "path"
+      ],
+      "toolAliases": {
+        "apply_patch": "MultiEdit",
+        "bash": "Bash",
+        "create_file": "Write",
+        "edit": "Edit",
+        "edit_file": "Edit",
+        "exec_command": "Bash",
+        "multiedit": "MultiEdit",
+        "patch": "MultiEdit",
+        "replace": "Edit",
+        "shell_command": "Bash",
+        "write": "Write",
+        "write_file": "Write"
+      },
+      "toolFields": [
+        "tool_name",
+        "tool"
+      ],
+      "writeTools": [
+        "Edit",
+        "Write",
+        "MultiEdit",
+        "apply_patch"
+      ],
+      "writeTransports": [
+        {
+          "engine": "exact-replace-v1",
+          "id": "claude-edit-v1",
+          "payloadFields": [
+            "tool_input.file_path",
+            "tool_input.old_string",
+            "tool_input.new_string",
+            "tool_input.replace_all"
+          ],
+          "rawTools": [
+            "Edit"
+          ]
+        },
+        {
+          "engine": "exact-replace-list-v1",
+          "id": "claude-multi-edit-v1",
+          "payloadFields": [
+            "tool_input.file_path",
+            "tool_input.edits",
+            "old_string",
+            "new_string",
+            "replace_all"
+          ],
+          "rawTools": [
+            "MultiEdit"
+          ]
+        },
+        {
+          "engine": "full-file-v1",
+          "id": "claude-write-v1",
+          "payloadFields": [
+            "tool_input.file_path",
+            "tool_input.content"
+          ],
+          "rawTools": [
+            "Write"
+          ]
+        }
+      ]
+    },
+    "providerKind": "concrete-runtime",
+    "runtime": {
+      "branchNamespace": "claude/",
+      "cli": {
+        "briefInvocationMarkers": [
+          "-p",
+          "--print"
+        ],
+        "discoveryMarkers": [
+          "node_modules/.bin/claude",
+          "command -v claude",
+          "which claude"
+        ],
+        "executable": "claude",
+        "localExecutable": "node_modules/.bin/claude",
+        "replyArtifactPrefix": "claude-reply"
+      },
+      "contextOutputTransport": "claude-hook-specific",
+      "memorySyncScript": "scripts/sync-memory.mjs",
+      "stopDecisionTransport": "claude-decision-json",
+      "transcript": {
+        "access": {
+          "emptyState": "allowed-zero-byte",
+          "maximumMaterializedBytes": 16777216,
+          "maximumRecordBytes": 4194304,
+          "maximumRetainedRecordCount": 1200,
+          "pathPolicy": "canonical-unique-regular-file-no-name-assumption",
+          "recordFormat": "json-lines",
+          "strategy": "validated-jsonl-tail-v2"
+        },
+        "contract": "claude-transcript-jsonl-v2",
+        "fixture": "packages/design-system/ds-canonical/hooks/tests/fixtures/transcripts/claude-transcript-jsonl-v2.jsonl",
+        "stability": "tested-versioned"
+      }
+    },
+    "sharedInstructionEntry": "AGENTS.md",
+    "skillDirectory": ".claude/skills"
+  },
+  "schemaVersion": 1
+}

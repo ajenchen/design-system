@@ -4,7 +4,7 @@
 #
 # Hook 規則:Stop hook,tail transcript 取最後 assistant text。
 # 若 reply 含「決策 prompt」pattern(回 A / → 選 A / 等你拍板 / 一字回 / etc)
-# **且** Python jargon count ≥ 10 → stderr 警告
+# **且** Python jargon count ≥ 10 → provider-native stdout JSON 警告
 # 「🟡 check_propose_plain_chinese WARN」(non-blocking,exit 0)。
 #
 # Decision pattern + low jargon → silent。
@@ -56,10 +56,11 @@ run_hook() {
 
 expect_pass_silent() {
   local name="$1"
-  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ]; then
+  if [ "$EXIT" = "0" ] && [ -z "$STDOUT_TEXT" ] && [ -z "$STDERR_TEXT" ]; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
-    echo "  FAIL  $name (exit=$EXIT, stderr non-empty=$([ -n "$STDERR_TEXT" ] && echo yes))"
+    echo "  FAIL  $name (exit=$EXIT, stdout non-empty=$([ -n "$STDOUT_TEXT" ] && echo yes), stderr non-empty=$([ -n "$STDERR_TEXT" ] && echo yes))"
+    echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
@@ -67,10 +68,11 @@ expect_pass_silent() {
 
 expect_warn() {
   local name="$1"; local needle="$2"
-  if [ "$EXIT" = "0" ] && echo "$STDERR_TEXT" | grep -qF "$needle"; then
+  if [ "$EXIT" = "0" ] && [ -z "$STDERR_TEXT" ] && echo "$STDOUT_TEXT" | grep -qF "$needle"; then
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
-    echo "  FAIL  $name (expected stderr warn '$needle', got exit $EXIT)"
+    echo "  FAIL  $name (expected provider-native stdout warn '$needle', got exit $EXIT)"
+    echo "  --- stdout ---"; echo "$STDOUT_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi

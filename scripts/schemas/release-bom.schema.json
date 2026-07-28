@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/release-bom-v5.schema.json",
+  "title": "Qijenchen closed release BOM v5",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "releaseVersion", "npmDistTag", "publishOrder", "source", "supplyChain", "packages", "governance"],
+  "properties": {
+    "schemaVersion": {"const": 5},
+    "releaseVersion": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+(?:-(?:beta|next|rc)\\.\\d+)?$"},
+    "npmDistTag": {"enum": ["beta", "latest"]},
+    "publishOrder": {"const": ["@qijenchen/governance", "@qijenchen/storybook-config", "@qijenchen/design-system"]},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "repositoryUrl", "gitCommit", "gitTree", "tag"],
+      "properties": {
+        "repository": {"type": "string"},
+        "repositoryUrl": {"type": "string"},
+        "gitCommit": {"type": "string"},
+        "gitTree": {"type": "string"},
+        "tag": {"type": "string"}
+      }
+    },
+    "supplyChain": {
+      "const": {
+        "npmProvenance": {
+          "predicateType": "https://slsa.dev/provenance/v1",
+          "builderId": "https://github.com/actions/runner/github-hosted",
+          "workflow": ".github/workflows/release.yml",
+          "workflowRef": "refs/heads/main"
+        },
+        "immutableGitHubRelease": {"required": true, "bomAsset": "release-bom.json"}
+      }
+    },
+    "packages": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "version", "file", "size", "entryCount", "shasum", "sha256", "integrity", "packageJsonSha256", "sourceManifest", "sourceManifestSha256"],
+        "properties": {
+          "name": {}, "version": {}, "file": {}, "size": {}, "entryCount": {}, "shasum": {},
+          "sha256": {}, "integrity": {}, "packageJsonSha256": {}, "sourceManifest": {}, "sourceManifestSha256": {}
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["controlPlane", "consumer", "forkCorpus", "productTemplateScaffold"],
+      "properties": {
+        "controlPlane": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256", "role", "inputDigest", "contractDigest", "snapshotDigest", "generatorVersion"],
+          "properties": {"path": {}, "sha256": {}, "role": {}, "inputDigest": {}, "contractDigest": {}, "snapshotDigest": {}, "generatorVersion": {}}
+        },
+        "consumer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256", "role", "release"],
+          "properties": {
+            "path": {"type": "string"},
+            "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            "role": {"type": "string"},
+            "release": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["designSystem", "storybookConfig"],
+              "properties": {"designSystem": {"type": "string"}, "storybookConfig": {"type": "string"}}
+            }
+          }
+        },
+        "forkCorpus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256"],
+          "properties": {"path": {"type": "string"}, "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}
+        },
+        "productTemplateScaffold": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "size", "sha256", "schemaVersion", "releaseVersion", "staticTreeSha256", "publishedPathCount"],
+          "properties": {
+            "path": {"type": "string"},
+            "size": {"type": "integer", "minimum": 1},
+            "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            "schemaVersion": {"const": 1},
+            "releaseVersion": {"type": "string"},
+            "staticTreeSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            "publishedPathCount": {"type": "integer", "minimum": 2}
+          }
+        }
+      }
+    },
+    "sbom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "size", "sha256"],
+      "properties": {
+        "file": {"type": "string"},
+        "size": {"type": "integer", "minimum": 1},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    }
+  }
+}

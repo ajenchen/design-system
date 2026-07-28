@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/claude-permission-policy-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["permissions", "sandbox", "disableAutoMode"],
+  "properties": {
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allow", "ask", "deny", "defaultMode", "disableBypassPermissionsMode"],
+      "properties": {
+        "allow": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "ask": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^Bash\\(.+\\)$" }
+        },
+        "deny": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^(?:Bash|Read)\\(.+\\)$" }
+        },
+        "defaultMode": { "const": "acceptEdits" },
+        "disableBypassPermissionsMode": { "const": "disable" }
+      }
+    },
+    "sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "failIfUnavailable",
+        "autoAllowBashIfSandboxed",
+        "allowUnsandboxedCommands",
+        "network",
+        "filesystem",
+        "credentials",
+        "enableWeakerNestedSandbox",
+        "enableWeakerNetworkIsolation",
+        "allowAppleEvents",
+        "excludedCommands"
+      ],
+      "properties": {
+        "enabled": { "const": true },
+        "failIfUnavailable": { "const": true },
+        "autoAllowBashIfSandboxed": { "const": true },
+        "allowUnsandboxedCommands": { "const": false },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "allowedDomains",
+            "deniedDomains",
+            "allowUnixSockets",
+            "allowAllUnixSockets",
+            "allowLocalBinding",
+            "allowMachLookup"
+          ],
+          "properties": {
+            "allowedDomains": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "deniedDomains": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "allowUnixSockets": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "allowAllUnixSockets": { "const": false },
+            "allowLocalBinding": { "const": false },
+            "allowMachLookup": {
+              "type": "array",
+              "maxItems": 0
+            }
+          }
+        },
+        "filesystem": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["allowWrite", "denyWrite", "denyRead", "allowRead"],
+          "properties": {
+            "allowWrite": { "type": "array", "maxItems": 0 },
+            "denyWrite": { "type": "array", "maxItems": 0 },
+            "denyRead": { "type": "array", "maxItems": 0 },
+            "allowRead": { "type": "array", "maxItems": 0 }
+          }
+        },
+        "credentials": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["files", "envVars", "allowPlaintextInject"],
+          "properties": {
+            "files": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["path", "mode"],
+                "properties": {
+                  "path": { "type": "string", "minLength": 1 },
+                  "mode": { "const": "deny" }
+                }
+              }
+            },
+            "envVars": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "mode"],
+                "properties": {
+                  "name": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "mode": { "const": "deny" }
+                }
+              }
+            },
+            "allowPlaintextInject": { "const": false }
+          }
+        },
+        "enableWeakerNestedSandbox": { "const": false },
+        "enableWeakerNetworkIsolation": { "const": false },
+        "allowAppleEvents": { "const": false },
+        "excludedCommands": {
+          "type": "array",
+          "maxItems": 0
+        }
+      }
+    },
+    "disableAutoMode": { "const": "disable" }
+  }
+}

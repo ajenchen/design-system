@@ -2,13 +2,13 @@
 # test_check_dynamic_tailwind_class.sh — 動態 Tailwind class 哨測試
 # (2026-07-10 補 hook-test-coverage debt;hook 2026-07-09 建,anchor = h-table-row-${size} row 塌)
 set -uo pipefail
-cd "$(dirname "$0")/../../.."
-HOOK=".claude/hooks/check_dynamic_tailwind_class.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOOK="$SCRIPT_DIR/../check_dynamic_tailwind_class.sh"
 PASS=0; FAIL=0; FAILED_TESTS=""
 
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
-export CLAUDE_PROJECT_DIR="$TMP_DIR"
+export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 mkdir -p "$TMP_DIR/.claude/logs"
 
 PROD_TSX="/Users/x/proj/packages/design-system/src/components/DataTable/data-table.tsx"

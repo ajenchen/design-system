@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-07-20T13:55:00+08:00",
+  "observer": "read-only gh api",
+  "repositories": [
+    {
+      "id": "design-system",
+      "github": "ajenchen/design-system",
+      "mainSha": "25b39558cbf352f053948190bb28326a78562f43",
+      "visibility": "public",
+      "isTemplate": false,
+      "rulesets": [],
+      "branchProtection": "absent",
+      "environments": ["github-pages"],
+      "security": {
+        "secretScanning": "enabled",
+        "pushProtection": "enabled",
+        "dependabotSecurityUpdates": "disabled"
+      },
+      "observedChecks": [
+        {"context": "Verify(tsc + tests + compile + build)", "app": "github-actions", "conclusion": "success"},
+        {"context": "a11y(axe-core WCAG 2A+AA, Dim 49)", "app": "github-actions", "conclusion": "success"},
+        {"context": "Bundle size budget(Dim 50)", "app": "github-actions", "conclusion": "success"},
+        {"context": "Visual Regression Diff(curated scenarios pixel match)", "app": "github-actions", "conclusion": "success"},
+        {"context": "Composition Fidelity Diff", "app": "github-actions", "conclusion": "success"}
+      ]
+    },
+    {
+      "id": "ds-product-template",
+      "github": "ajenchen/ds-product-template",
+      "mainSha": "41a3428932d6c5c8205ca49c7b1fb4acd3f68f93",
+      "visibility": "public",
+      "isTemplate": true,
+      "rulesets": [],
+      "branchProtection": "absent",
+      "environments": [],
+      "security": {
+        "secretScanning": "disabled",
+        "pushProtection": "disabled",
+        "dependabotSecurityUpdates": "disabled"
+      },
+      "observedChecks": [
+        {"context": "audit", "app": "github-actions", "conclusion": "success"}
+      ]
+    },
+    {
+      "id": "work-management",
+      "github": "ajenchen/work-management",
+      "mainSha": "4e834028cd7dbb552e44d7c590d7c0a615c19d19",
+      "visibility": "private",
+      "isTemplate": false,
+      "rulesets": [],
+      "branchProtection": "absent",
+      "environments": [],
+      "security": {
+        "secretScanning": "not-reported-by-api",
+        "pushProtection": "not-reported-by-api",
+        "dependabotSecurityUpdates": "not-reported-by-api"
+      },
+      "observedChecks": [
+        {"context": "audit", "app": "github-actions", "conclusion": "failure"}
+      ]
+    }
+  ],
+  "interpretation": [
+    "No repository had a ruleset at observation time.",
+    "GET branch protection returned GitHub 404 Branch not protected for all three main branches.",
+    "This snapshot contains repository metadata and check conclusions only; it contains no credentials or secret values."
+  ]
+}
