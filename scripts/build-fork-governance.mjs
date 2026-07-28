@@ -582,11 +582,16 @@ assertRuntimeDependencyClosureEntries(consumerRuntimeDelivery, {
 
 function snapshotTree(root) {
   const entries = new Map()
+  // Git 只保存 100644/100755/120000 三種 mode——寫入時的 read-only(444)位在任何
+  // fresh clone 都會還原成 umask 結果(644),因此 mode 比對只能取「git 可傳輸語意」
+  // = executable bit;比對完整 0o777 會讓本 gate 在所有全新 checkout 上永遠不可滿足
+  // (2026-07-28 CI 錨例:fork/common/closed-tool-execution.mjs mode 644 != 444)。
+  const gitMode = (mode) => ((mode & 0o111) !== 0 ? 0o755 : 0o644)
   const walk = (absolute, rel = '') => {
     if (!existsSync(absolute)) return
     const stat = lstatSync(absolute)
     if (stat.isSymbolicLink()) {
-      entries.set(rel || '.', { kind: 'symlink', target: readlinkSync(absolute), mode: stat.mode & 0o777 })
+      entries.set(rel || '.', { kind: 'symlink', target: readlinkSync(absolute), mode: gitMode(stat.mode) })
       return
     }
     if (stat.isDirectory()) {
@@ -594,12 +599,12 @@ function snapshotTree(root) {
       return
     }
     if (!stat.isFile()) {
-      entries.set(rel || '.', { kind: 'unsupported', mode: stat.mode & 0o777 })
+      entries.set(rel || '.', { kind: 'unsupported', mode: gitMode(stat.mode) })
       return
     }
     entries.set(rel, {
       kind: 'file',
-      mode: stat.mode & 0o777,
+      mode: gitMode(stat.mode),
       sha256: createHash('sha256').update(readFileSync(absolute)).digest('hex'),
     })
   }

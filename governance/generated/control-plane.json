@@ -1125,12 +1125,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b0e9e54c4f04074c114765b3a4e38a264e3b3933ed1772abdf53cfd4964bc2ab",
+      "hash": "sha256:319fec7d607dc831aa98e9db595807249a97426e912e9c6b2d28e1403b472cb0",
       "id": "exact-fork-governance-builder",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/build-fork-governance.mjs",
-      "size": 120709,
+      "size": 121168,
       "type": "file"
     },
     {
@@ -1992,7 +1992,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:3927940ab27af502b0b4acbc369a3b5c59e2a59fa3d8622a14144496a82313d1",
+      "hash": "sha256:823983a36aaec282690f5d9075ee24bd3d42752e986833da65f46bea4b8eed07",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3795,12 +3795,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:904a597d499958492c9dea0141f965bebb9d5838da129fe67a8db6ec731baeb6",
+      "hash": "sha256:1c5dded1b06fcacded36d2525e72a03b4ba3a0796185079deb72917189304666",
       "id": "release-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": ".github/workflows/release.yml",
-      "size": 23287,
+      "size": 23903,
       "type": "file"
     },
     {
@@ -3827,7 +3827,7 @@
         "scripts/generated/"
       ],
       "files": 376,
-      "hash": "sha256:2a0b97f51632397c940b6d67eb205d64a0bfbfba85804a144ddb198c4e51e72f",
+      "hash": "sha256:a2169eb3cab593fe5dd0b3a31c213ae58bebbb5fad5cb31c1990ff6788a689d9",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

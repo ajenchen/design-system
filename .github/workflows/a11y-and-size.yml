@@ -22,6 +22,11 @@ jobs:
   a11y-axe:
     name: a11y(axe-core WCAG 2A+AA, Dim 49)
     runs-on: ubuntu-24.04
+    env:
+      # setup:playwright 以 PLAYWRIGHT_BROWSERS_PATH=0 安裝到 repo-local
+      # node_modules/playwright-core/.local-browsers;消費步驟必須帶同一 pin,
+      # 否則 playwright 落回 ~/.cache/ms-playwright 找不到瀏覽器(2026-07-28 CI 錨例)。
+      PLAYWRIGHT_BROWSERS_PATH: '0'
     timeout-minutes: 30
     # 2026-06-04 轉 ENFORCE(移除 continue-on-error):baseline-diff gate 已建立。
     # 原假綠三重病(缺 build:lib → axe 早夭 / pipefail-mask / continue-on-error)全修:

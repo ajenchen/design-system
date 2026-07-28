@@ -134,7 +134,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-fleet-reconcile-cli | `infra/governance/bin/reconcile-github.mjs` | `sha256:54e4139ac81fde56bfdbe787a07daad4fac576196b444a39b2b2b0ae02c6aff4` |
 | exact-fleet-reconcile-journal-schema | `infra/governance/schemas/fleet-reconcile-journal.schema.json` | `sha256:de04515c017baa22320bb98b0bf32ad50e97467aa2dd6141ad6a6b67acc36961` |
 | exact-fleet-reconcile-mirror-library | `infra/governance/lib/fleet-reconcile-mirror.mjs` | `sha256:3f475d3847fee3e4dff4ac7d7f6cd4accf9dbfb8ed9087c3a1712e4544c99f0c` |
-| exact-fork-governance-builder | `scripts/build-fork-governance.mjs` | `sha256:b0e9e54c4f04074c114765b3a4e38a264e3b3933ed1772abdf53cfd4964bc2ab` |
+| exact-fork-governance-builder | `scripts/build-fork-governance.mjs` | `sha256:319fec7d607dc831aa98e9db595807249a97426e912e9c6b2d28e1403b472cb0` |
 | exact-fork-governance-classification | `scripts/fork-governance-classification.json` | `sha256:675c1ef398da96d846f0a31ec64ebca649d0ab32a8fae8b330d3582eedc3f633` |
 | exact-fork-launcher-refresher | `scripts/refresh-fork-launchers.mjs` | `sha256:1ac397214b92b088c22dbca52495feca2382aa220ad647d93c8c077d1f9148bd` |
 | exact-gate-meta-test-auditor | `scripts/audit-gate-meta-test-coverage.mjs` | `sha256:39dfed9ec321d1e696a2ea03390ef897bc90d82a624cf0b41bded917b61fd930` |
@@ -230,7 +230,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | github-mutation-boundary-library | `scripts/lib/github-mutation-boundary.mjs` | `sha256:5f403db0db88d9b2c30221c23d6217c535ea9bd78c7c1ace67ddbcfd4fc48023` |
 | github-mutation-boundary-tests | `scripts/test-verify-mirror-activation-boundary.mjs` | `sha256:1e55febe0d823493d086c184a413e9422ff966f70e196224fb1c14ba69b839c2` |
 | github-mutation-boundary-verifier | `scripts/verify-mirror-activation-boundary.mjs` | `sha256:711c94d82c5eb3bbbfca79fc8399fc168956ba532a090912416e7957efe126db` |
-| github-repository-governance | `.github/` | `sha256:3927940ab27af502b0b4acbc369a3b5c59e2a59fa3d8622a14144496a82313d1` |
+| github-repository-governance | `.github/` | `sha256:823983a36aaec282690f5d9075ee24bd3d42752e986833da65f46bea4b8eed07` |
 | governance-anchor-preflight | `scripts/governance-anchor-preflight.mjs` | `sha256:3f87bcdcf95f85c73351646a5f818b088d6528cc6bd3c811054087fd58b4fdfa` |
 | governance-anchor-preflight-tests | `scripts/test-governance-anchor-preflight.mjs` | `sha256:c28b15015cdc46bc8a460d6e724709e05a0fe334c3532b6f4e2fc482ae18a7dd` |
 | governance-anchor-workflow | `.github/workflows/governance-anchor.yml` | `sha256:c0443eb26977add3968acbe5644f503268c909f27f75b696cc08a5220c8466a8` |
@@ -426,10 +426,10 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-trust-preflight-cli | `scripts/release-trust-preflight.mjs` | `sha256:1b672afb9c57da231f6a0d9d51c5eb5f7c940cc94ad9c58d9f9031ac31ba46fd` |
 | release-trust-preflight-schema | `infra/governance/schemas/release-trust-preflight-evidence.schema.json` | `sha256:5f961295fe6519b8d6560e5c904d12d78f94af4d757bc05e202d420bf092bbba` |
 | release-trust-preflight-verifier | `infra/governance/lib/release-trust-preflight.mjs` | `sha256:f6b652c9bfeb4095d61d5647198d774a2ec84e3769af79ccad1ae10bba39e662` |
-| release-workflow | `.github/workflows/release.yml` | `sha256:904a597d499958492c9dea0141f965bebb9d5838da129fe67a8db6ec731baeb6` |
+| release-workflow | `.github/workflows/release.yml` | `sha256:1c5dded1b06fcacded36d2525e72a03b4ba3a0796185079deb72917189304666` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:168a4b773d93f4cadb132545b65d2baa1c4c4d6b924ddcb3ac19c2a057b606e4` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:6d487221cc6838c8d4cbcc5ecaaa9cc79eaa70114641ef18e09243f2e86eebec` |
-| repository-automation-corpus | `scripts` | `sha256:2a0b97f51632397c940b6d67eb205d64a0bfbfba85804a144ddb198c4e51e72f` |
+| repository-automation-corpus | `scripts` | `sha256:a2169eb3cab593fe5dd0b3a31c213ae58bebbb5fad5cb31c1990ff6788a689d9` |
 | repository-ignore-boundary | `.gitignore` | `sha256:8a7ce326c91a0696697109af370ad4b12db0856d12f857d270da8dba95f1aec7` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

@@ -138,6 +138,11 @@ jobs:
     name: Storybook full smoke ${{ matrix.shard }}/4
     needs: resolve-release-request
     runs-on: ubuntu-24.04
+    env:
+      # setup:playwright 以 PLAYWRIGHT_BROWSERS_PATH=0 安裝到 repo-local
+      # node_modules/playwright-core/.local-browsers;消費步驟必須帶同一 pin,
+      # 否則 playwright 落回 ~/.cache/ms-playwright 找不到瀏覽器(2026-07-28 CI 錨例)。
+      PLAYWRIGHT_BROWSERS_PATH: '0'
     timeout-minutes: 25
     permissions:
       contents: read
@@ -177,6 +182,11 @@ jobs:
     name: Build and verify exact release evidence(no publish authority)
     needs: [resolve-release-request, smoke-shard]
     runs-on: ubuntu-24.04
+    env:
+      # setup:playwright 以 PLAYWRIGHT_BROWSERS_PATH=0 安裝到 repo-local
+      # node_modules/playwright-core/.local-browsers;消費步驟必須帶同一 pin,
+      # 否則 playwright 落回 ~/.cache/ms-playwright 找不到瀏覽器(2026-07-28 CI 錨例)。
+      PLAYWRIGHT_BROWSERS_PATH: '0'
     timeout-minutes: 330
     permissions:
       contents: read

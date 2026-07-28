@@ -30,6 +30,11 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-24.04
+    env:
+      # setup:playwright 以 PLAYWRIGHT_BROWSERS_PATH=0 安裝到 repo-local
+      # node_modules/playwright-core/.local-browsers;消費步驟必須帶同一 pin,
+      # 否則 playwright 落回 ~/.cache/ms-playwright 找不到瀏覽器(2026-07-28 CI 錨例)。
+      PLAYWRIGHT_BROWSERS_PATH: '0'
     timeout-minutes: 330
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
