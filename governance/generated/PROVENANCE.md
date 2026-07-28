@@ -141,7 +141,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-gate-meta-test-baseline | `scripts/audit-gate-meta-test-coverage.baseline.json` | `sha256:b0531d619c9baac6954030ef96794a147c4a884ed05a1fb17846334633b8dc43` |
 | exact-github-actions-artifact-identity-library | `scripts/lib/github-actions-artifact-identity.mjs` | `sha256:e52927799aba992425c94f75dc27871c9ac822cf7ec862e1dd8c443b11eb506a` |
 | exact-github-desired-schema | `infra/governance/schemas/github-desired.schema.json` | `sha256:abfda2645abb6f00a3a9b9153a696a7ffdb51261da5b72ec28382a574273c6da` |
-| exact-github-desired-state | `infra/governance/desired/github.json` | `sha256:a53ae7ad9a063acbaf687ae9f1612614554be02dc5e4b8cdc347794db973197b` |
+| exact-github-desired-state | `infra/governance/desired/github.json` | `sha256:f0a93f391225653534c9191091363a1bb908087d8bf9528ecd29a19fe0756060` |
 | exact-governance-canonical-order-module | `packages/governance/src/canonical-order.mjs` | `sha256:9d8afcfdb7486189e08c3077bd5eaf85ba05070c90910694d407e39bbdd533bd` |
 | exact-governance-common-library | `infra/governance/lib/common.mjs` | `sha256:6bac480e46e1060acefb7324753f0074eda7e47146584025b71141fdee14fc36` |
 | exact-governance-common-module | `packages/governance/src/common.mjs` | `sha256:9e60e0c4fc1d8f0ee0bd0f6da2172a154c268c3aae2ac1b366bf21de826fcbe0` |
@@ -230,10 +230,10 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | github-mutation-boundary-library | `scripts/lib/github-mutation-boundary.mjs` | `sha256:5f403db0db88d9b2c30221c23d6217c535ea9bd78c7c1ace67ddbcfd4fc48023` |
 | github-mutation-boundary-tests | `scripts/test-verify-mirror-activation-boundary.mjs` | `sha256:1e55febe0d823493d086c184a413e9422ff966f70e196224fb1c14ba69b839c2` |
 | github-mutation-boundary-verifier | `scripts/verify-mirror-activation-boundary.mjs` | `sha256:711c94d82c5eb3bbbfca79fc8399fc168956ba532a090912416e7957efe126db` |
-| github-repository-governance | `.github/` | `sha256:8454c46b7cf3be85a57ae9af0d7e36a6759a08a1f55d3304a36fb0d21845b611` |
+| github-repository-governance | `.github/` | `sha256:dc11ad80cf159c1fd8e843de8948b886f1952010cf2b215b5fb7f88724143f0a` |
 | governance-anchor-preflight | `scripts/governance-anchor-preflight.mjs` | `sha256:3f87bcdcf95f85c73351646a5f818b088d6528cc6bd3c811054087fd58b4fdfa` |
 | governance-anchor-preflight-tests | `scripts/test-governance-anchor-preflight.mjs` | `sha256:c28b15015cdc46bc8a460d6e724709e05a0fe334c3532b6f4e2fc482ae18a7dd` |
-| governance-anchor-workflow | `.github/workflows/governance-anchor.yml` | `sha256:c0443eb26977add3968acbe5644f503268c909f27f75b696cc08a5220c8466a8` |
+| governance-anchor-workflow | `.github/workflows/governance-anchor.yml` | `sha256:ecd087fa659564ebe296b8ad00cc4c24a91ed8773e751655fafcafa556141957` |
 | governance-audit-coverage-metadata | `generated/governance/audit-coverage-matrix.json` | `sha256:1d95f6b7d96c4ceb9fe42b2cab5ab4ca97ce65442cb6defbe234fe9a5c4ad26f` |
 | governance-authority-setup-cli | `scripts/setup-authority-governance.mjs` | `sha256:5c04e2a38d41f7cd5f9d5621aae8db8f8e6f72b7c30ae5d4054b54abd14cfc37` |
 | governance-authority-setup-tests | `infra/governance/test/authority-setup.test.mjs` | `sha256:eadeb197ec6e7eef70e098d61958c25f27ae43955463fc75c9c9ecbefa7d09c6` |
@@ -248,7 +248,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-control-plane-tests | `infra/governance/test/` | `sha256:f0bfa0eca723fa746f4d0d6bf508cb6931d030367546f67e6f74261a2258e7bd` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:67eb2bf140dbf16451e767685dd8bcde7f4083148e7c67566bad48337598d922` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:6ee4764cd2e230f3a6ff3ba75c3e00b7f9488152bc3bd3d8aae065b7b9da760f` |
-| governance-github-desired-state | `infra/governance/desired/` | `sha256:4971b911139476e32782744937d646f0679c45b3a98239e4b7ddebfcbd600343` |
+| governance-github-desired-state | `infra/governance/desired/` | `sha256:0ae0dc5118bd66b2b5d06654bf2a4ebacd06291ebebaba6c9bb4a0c87efb8c0d` |
 | governance-harness-authority-contracts | `infra/governance/providers/harness-authority-contracts.json` | `sha256:7922c77ef65760e740d3dd9bcca80c3dcefd7941188bd3f1ac23b6896086a009` |
 | governance-harness-authority-contracts-schema | `infra/governance/schemas/harness-authority-contracts.schema.json` | `sha256:bba73861c87bc3047b70376e891a9464d525e9648fadd6e7d8fb406b57d10dce` |
 | governance-harness-non-governance-exclusions | `infra/governance/providers/harness-non-governance-exclusions.json` | `sha256:f32224c2f919f5defffaad4c635e936786ecd9bc6d9f49a26878435c514e2298` |
