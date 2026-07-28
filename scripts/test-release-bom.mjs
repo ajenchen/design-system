@@ -190,7 +190,7 @@ must(!/contents: write|environment:/.test(attestBlock), 'attestation job gained 
 mustMatch(npmBlock, /environment:\s*\n\s*name: npm-release/, 'npm publish job lost its protected environment')
 mustMatch(npmBlock, /contents: read[\s\S]*id-token: write/, 'npm publish job permissions drifted')
 must(!/contents: write|attestations: write/.test(npmBlock), 'npm publish job gained repository/attestation write authority')
-mustMatch(npmBlock, /npm publish "\$tarball" --provenance --access public/, 'publication must go through tokenless OIDC Trusted Publishing with provenance')
+mustMatch(npmBlock, /npm publish "\$tarball" --provenance --access public --tag latest/, 'publication must go through tokenless OIDC Trusted Publishing with provenance')
 mustMatch(npmBlock, /npm view "\$\{name\}@\$\{version\}" version/, 'publication must read back the exact published registry versions')
 mustMatch(releaseGithubBlock, /needs: \[resolve-release-request, build-release-evidence, publish-npm\]/, 'GitHub Release publication must depend on the completed npm publish')
 mustMatch(releaseGithubBlock, /permissions:\s*\n\s*contents: write/, 'GitHub Release job needs contents write')
