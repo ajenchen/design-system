@@ -57,9 +57,11 @@ for (const [label, referenceValue, tagObjectValue, pattern] of [
   ['wrong tag object', reference, { ...tagObject, sha: 'c'.repeat(40) }, /does not match the exact ref object/],
   ['wrong tag name', reference, { ...tagObject, tag: 'v9.9.9' }, /tag name mismatch/],
   ['nested tag target', reference, { ...tagObject, object: { type: 'tag', sha: commit } }, /directly target a commit/],
-  ['unsigned tag', reference, { ...tagObject, verification: { verified: false, reason: 'unsigned', signature: null, payload: null, verified_at: null } }, /did not verify.*unsigned/],
-  ['bad signature', reference, { ...tagObject, verification: { ...tagObject.verification, verified: false, reason: 'invalid' } }, /did not verify.*invalid/],
-  ['unknown key', reference, { ...tagObject, verification: { ...tagObject.verification, verified: false, reason: 'unknown_key' } }, /did not verify.*unknown_key/],
+  // 預設 requireSignature=true 維持 fail-closed(高保證 finalizer 消費);
+  // ordinary 入口(release-remote-tag)顯式 requireSignature:false。
+  ['unsigned tag (default strict)', reference, { ...tagObject, verification: { verified: false, reason: 'unsigned', signature: null, payload: null, verified_at: null } }, /not acceptable for release.*unsigned/],
+  ['bad signature', reference, { ...tagObject, verification: { ...tagObject.verification, verified: false, reason: 'invalid' } }, /not acceptable for release.*invalid/],
+  ['unknown key', reference, { ...tagObject, verification: { ...tagObject.verification, verified: false, reason: 'unknown_key' } }, /not acceptable for release.*unknown_key/],
   ['missing signed payload', reference, { ...tagObject, verification: { ...tagObject.verification, payload: null } }, /missing the signed payload/],
 ]) {
   test(`rejects ${label}`, () => {
@@ -99,4 +101,18 @@ test('rejects a tag ref that changes during the two-read verification window', a
       return structuredClone(tagObject)
     },
   }), /changed while.*verified/)
+})
+
+test('ordinary lane accepts an unsigned annotated tag and preserves its verification state', () => {
+  const snapshot = validateVerifiedReleaseTagSnapshot({
+    repository,
+    tag,
+    reference,
+    tagObject: { ...tagObject, verification: { verified: false, reason: 'unsigned', signature: null, payload: null, verified_at: null } },
+    requireSignature: false,
+  })
+  assert.equal(snapshot.verification.verified, false)
+  assert.equal(snapshot.verification.reason, 'unsigned')
+  assert.equal(snapshot.verification.verifiedAt, null)
+  assertVerifiedReleaseTag({ identity: snapshot, expectedCommit: snapshot.commit, requireSignature: false })
 })

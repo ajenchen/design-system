@@ -2115,7 +2115,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 33,
-      "hash": "sha256:14adf3b7c7466e2c3f37f68e7234edfc5aa32345790b9b932853fbcf29aa55cc",
+      "hash": "sha256:f740c553f55bd11fe59bb1d75521890dca78fa01ea6b4f535266f3e293a32ade",
       "id": "governance-control-plane-libraries",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2137,7 +2137,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 63,
-      "hash": "sha256:f0bfa0eca723fa746f4d0d6bf508cb6931d030367546f67e6f74261a2258e7bd",
+      "hash": "sha256:cf6ab24261bc128a3336d49ab575e3ea6cf01e787edd352d1c3e375246890bda",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3651,12 +3651,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:bb3757eaa22dad86555bb2f04b6e103c66e0cf0daea8f0de4844bc58a8457eb1",
+      "hash": "sha256:cda43e56fe8213ae00fc07425f72a9587bc533865ffd163a5b85a083e4885025",
       "id": "release-remote-tag-guard",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-remote-tag.mjs",
-      "size": 3760,
+      "size": 4159,
       "type": "file"
     },
     {
@@ -3759,12 +3759,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:5fed8a1a83864be372bee6542ff01840e5a809233e94276438563f38f6b6197c",
+      "hash": "sha256:1103caacad05710e3dd283f75f8620cb996ff68a98d71443ae8c64d7777cb135",
       "id": "release-trust-preflight-adversarial-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/release-trust-preflight.test.mjs",
-      "size": 61192,
+      "size": 61204,
       "type": "file"
     },
     {
@@ -3827,7 +3827,7 @@
         "scripts/generated/"
       ],
       "files": 376,
-      "hash": "sha256:e04364d8225766c17e7056831d8de6332d3d1096a982c5419bae8b71c6ef49a1",
+      "hash": "sha256:4fb8eec79e3f4280c21fae56827f7af6cac3afc179b5cb0b49cf36aad88230cf",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3890,21 +3890,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:64dac890e273b71ba52cfcdd41ebe71231750264cdeeecc2552d80080acc6be2",
+      "hash": "sha256:3db02827a0d9edce2a07b559131836e3a0efa5ac45537a8388f7f97c37203587",
       "id": "signed-release-tag-adversarial-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/signed-release-tag.test.mjs",
-      "size": 4287,
+      "size": 5144,
       "type": "file"
     },
     {
-      "hash": "sha256:05a01de28d4ff71cf9368a8b4d28c71197b2218a45e1c0d3a2e201cfaac95096",
+      "hash": "sha256:d081048b17171cc3f469f2e460fb254023d3c866d35033cb689b366d2ddb8230",
       "id": "signed-release-tag-verifier",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/lib/signed-release-tag.mjs",
-      "size": 5187,
+      "size": 6560,
       "type": "file"
     },
     {
