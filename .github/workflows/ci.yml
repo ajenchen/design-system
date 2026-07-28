@@ -55,6 +55,16 @@ jobs:
       - name: Install and audit with the lock-verified npm runtime
         run: npm run --silent setup:dependencies
 
+      # 2026-07-28 CI 錨例:test-review-capability-selection(All-Harness member)靜態驗證
+      # node_modules/.provider-cli-toolchain/content-v2/<platform>/<authorityDigest> 的真實
+      # runtime binding(shim/target sha256),GOV-PROVIDER-CLI-TOOLCHAIN-001 fail-closed。
+      # setup-workspace.mjs 把 provider CLI toolchain 列為 workspace bootstrap 第 3 步;CI 只跑
+      # setup:dependencies = bootstrap 不完整 → linux-x64 content 缺失。本步補齊同一 hermetic
+      # 安裝:exact-npm runtime + npm ci --ignore-scripts 對 manifest 鎖定 lock(sha256 pin)+
+      # audit signatures + per-package treeSha256 驗證 + staged atomic rename,非浮動安裝。
+      - name: Provision provider CLI toolchain(lock-pinned hermetic;harness runtime-binding 驗證需要)
+        run: npm run --silent setup:provider-cli
+
       - name: Install Playwright Chromium explicitly(no lifecycle scripts)
         run: npm run --silent setup:playwright -- --with-deps
 

@@ -246,6 +246,11 @@ jobs:
       - name: Provision exact Playwright Chromium runtime for isolated Harnesses
         run: npm run --silent setup:playwright -- --with-deps
 
+      # 同 ci.yml:harness member test-review-capability-selection 驗真實 provider CLI
+      # runtime binding,缺 linux-x64 toolchain content 即 GOV-PROVIDER-CLI-TOOLCHAIN-001。
+      - name: Provision provider CLI toolchain(lock-pinned hermetic;harness runtime-binding 驗證需要)
+        run: npm run --silent setup:provider-cli
+
       - name: Deterministic governance and product gates
         run: |
           npm run --silent test:governance-harnesses

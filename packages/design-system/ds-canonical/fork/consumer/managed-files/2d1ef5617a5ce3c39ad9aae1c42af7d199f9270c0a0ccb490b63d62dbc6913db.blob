@@ -271,6 +271,56 @@ function validateClosedHookExecutableSource({
   })
 }
 
+function validateClosedRunningNodeExecutable({ candidate, repoRoot, runtimePlatform }) {
+  invariant(
+    typeof candidate === 'string' && isAbsolute(candidate) && resolve(candidate) === candidate,
+    'Closed node executable candidate must be one absolute normalized path',
+  )
+  const source = realpathSync(candidate)
+  // The coherent provenance invariant for the hook-child interpreter is IDENTITY with the
+  // interpreter already executing this governance code: realpath(candidate) ==
+  // realpath(process.execPath), TOCTOU-bound below by inode identity plus a full content
+  // digest of exactly the bytes that will run. A blessed ownership/mode class is the wrong
+  // invariant for the running interpreter: managed GitHub runners ship node world-writable
+  // by image design (actions/runner-images install-nodejs.sh runs `chmod -R 777
+  // /usr/local/bin`; configure-system.sh runs `chmod -R 777 /opt`, covering the
+  // setup-node toolcache), so no ownership/mode class can admit the actual interpreter
+  // there — and rejecting the very binary whose in-process code performs the check adds no
+  // assurance, because a compromised running interpreter could bypass any in-process
+  // check. Foreign node candidates (explicitly configured paths that are NOT the running
+  // interpreter) keep the full blessed-provenance validation.
+  if (source !== realpathSync(process.execPath)) {
+    return validateClosedHookExecutableSource({
+      candidate,
+      label: 'node',
+      repoRoot,
+      runtimePlatform,
+      allowCurrentOwner: true,
+    })
+  }
+  const authenticated = stableExecutableDigest(source)
+  const info = authenticated.info
+  invariant(
+    info.isFile()
+      && !info.isSymbolicLink()
+      && (info.mode & 0o111n) !== 0n,
+    `Closed node executable source is unsafe at ${source}`,
+  )
+  if (repoRoot) {
+    invariant(
+      !isContained(repoRoot, source),
+      'Closed node executable source cannot be inside the governed repository',
+    )
+  }
+  return Object.freeze({
+    label: 'node',
+    runtimePlatform,
+    sha256: authenticated.sha256,
+    source,
+    sourceInfo: info,
+  })
+}
+
 function resolveClosedHookExecutable({
   label,
   nodeExecutable,
@@ -278,12 +328,10 @@ function resolveClosedHookExecutable({
   runtimePlatform,
 }) {
   if (label === 'node') {
-    return validateClosedHookExecutableSource({
+    return validateClosedRunningNodeExecutable({
       candidate: nodeExecutable,
-      label,
       repoRoot,
       runtimePlatform,
-      allowCurrentOwner: true,
     })
   }
   const candidates = CLOSED_HOOK_EXECUTABLE_CANDIDATES[runtimePlatform]?.[label]

@@ -142,8 +142,23 @@ function workflowIdentityProjection(content) {
   }
 }
 
+// Git >= 2.54 runs the "geometric" auto-maintenance strategy by default
+// (maintenance.geometric-repack.auto = 100 loose objects), so a fixture commit of this
+// multi-thousand-file tree spawns a DETACHED background repack that deletes loose-object
+// fan-out directories while loadManagedCiTrustedExecutionPlan is still verifying — the
+// immutable Git repository identity gate then correctly fails closed ("identity changed
+// during immutable verification"). The gate's invariant (no concurrent object-database
+// mutation during verification) is intact; the fixture must simply never spawn an
+// asynchronous writer. Disable every auto-maintenance route on fixture Git commands so
+// fixture repositories stay byte- and inode-stable across all Git versions.
 function fixtureGit(root, args) {
-  return execFileSync('/usr/bin/git', ['--no-replace-objects', ...args], {
+  return execFileSync('/usr/bin/git', [
+    '--no-replace-objects',
+    '-c', 'maintenance.auto=false',
+    '-c', 'gc.auto=0',
+    '-c', 'gc.autoDetach=false',
+    ...args,
+  ], {
     cwd: root,
     encoding: 'utf8',
     shell: false,

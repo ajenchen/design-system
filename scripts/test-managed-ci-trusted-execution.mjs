@@ -126,6 +126,12 @@ function poisonClosedBuilderWorkflow(source, before, after) {
   return changed
 }
 
+// Git >= 2.54 auto-maintenance ("geometric" strategy, 100-loose-object threshold) would
+// otherwise let each fixture commit spawn a detached background repack that mutates
+// .git/objects while the immutable identity gate is verifying — the gate then correctly
+// fails closed ("Git repository identity changed during immutable verification").
+// Fixture Git must never spawn asynchronous writers, so every commit disables all
+// auto-maintenance routes (maintenance.auto / gc.auto / gc.autoDetach) inline.
 function commitManagedCiFixture(root, message) {
   const environment = {
     ...process.env,
@@ -136,6 +142,9 @@ function commitManagedCiFixture(root, message) {
     ['--no-replace-objects', 'add', '--all'],
     [
       '--no-replace-objects',
+      '-c', 'maintenance.auto=false',
+      '-c', 'gc.auto=0',
+      '-c', 'gc.autoDetach=false',
       '-c', 'user.name=Managed CI Carrier Fixture',
       '-c', 'user.email=managed-ci-carrier@example.invalid',
       'commit', '--quiet', '--no-gpg-sign', '-m', message,
@@ -1060,6 +1069,9 @@ test('activation receipt v2 requires current policy quorum, exact closure, bound
   assert.equal(controlAdd.status, 0, controlAdd.stderr)
   const controlCommit = spawnSync('/usr/bin/git', [
     '--no-replace-objects',
+    '-c', 'maintenance.auto=false',
+    '-c', 'gc.auto=0',
+    '-c', 'gc.autoDetach=false',
     '-c', 'user.name=Managed CI Attack Test',
     '-c', 'user.email=managed-ci-attack@example.invalid',
     'commit', '--quiet', '--no-gpg-sign', '-m', 'control path attack',

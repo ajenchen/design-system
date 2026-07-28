@@ -1374,7 +1374,12 @@ function closedProcessEnvironment({ command, args, cwd, env, metadata }) {
     }
   }
   const closedPath = unique([dirname(process.execPath), '/usr/bin', '/bin']).join(':')
-  return { PATH: closedPath, NO_COLOR: '1', FORCE_COLOR: '0', ...env }
+  // Bounded probe children (canonical hooks run mktemp) need one explicit writable
+  // temp directory: env -i would otherwise drop TMPDIR entirely and children fall back
+  // to /tmp, which sandboxed hosts may not allow writes to. The value is the runner's
+  // own platform temp path injected as closed baseline (like PATH); TMPDIR deliberately
+  // stays outside CLOSED_RUNNER_ENVIRONMENT_KEYS so callers can never substitute it.
+  return { PATH: closedPath, NO_COLOR: '1', FORCE_COLOR: '0', TMPDIR: tmpdir(), ...env }
 }
 
 export function defaultProcessRunner({

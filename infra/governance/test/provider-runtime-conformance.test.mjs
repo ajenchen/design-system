@@ -811,9 +811,17 @@ test('default process runner ignores ambient PATH and credentials and rejects un
     })
     assert.equal(environmentProbe.exitCode, 0)
     const observedEnvironment = JSON.parse(environmentProbe.stdout)
-    const expectedEnvironmentNames = ['FORCE_COLOR', 'NO_COLOR', 'PATH']
+    // TMPDIR is part of the closed baseline (like PATH): env -i would otherwise strip it
+    // and bounded probe children calling mktemp fall back to /tmp, which sandboxed hosts
+    // may not allow. It is runner-derived, never caller-declared (not allowlisted).
+    const expectedEnvironmentNames = ['FORCE_COLOR', 'NO_COLOR', 'PATH', 'TMPDIR']
     if (process.platform === 'darwin') expectedEnvironmentNames.push('__CF_USER_TEXT_ENCODING')
     assert.deepEqual(Object.keys(observedEnvironment).sort(), expectedEnvironmentNames.sort())
+    assert.equal(
+      observedEnvironment.TMPDIR,
+      tmpdir(),
+      'closed runner must carry one explicit runner-derived temp directory for bounded probe children',
+    )
     if (process.platform === 'darwin') {
       assert.match(observedEnvironment.__CF_USER_TEXT_ENCODING, /^0x[0-9A-F]+:0x[0-9A-F]+:0x[0-9A-F]+$/)
     }
@@ -1129,6 +1137,27 @@ test('production runner isolates Claude version and limits local-account access 
     writeEvidence: false,
   }
   const accountHome = operatingSystemUserInfo().homedir
+  // Headless CI and remote hosts (github-hosted-runner / remote-host / cloud-hosted) are a
+  // recognized-but-rejected class for local conformance probes: with the production runner
+  // the default host identity resolver is mandatory, and runRuntimeConformance validates
+  // that ambient host identity before any subject or local-account resolution, so on such
+  // hosts the run must fail closed with the unsupported-environment error and zero provider
+  // invocations. That is the exact invariant the dedicated "remote or CI hosts fail before
+  // local execution" test asserts; classifying GitHub runners as a supported local class
+  // would weaken that lane, so this ambient-detection test accepts the earlier fail-closed
+  // rejection and only exercises the HOME-mismatch and full local paths on supported hosts.
+  if (!['native', 'wsl2', 'devcontainer'].includes(detectExecutionEnvironment(process.platform, process.env))) {
+    await assert.rejects(
+      () => runRuntimeConformance(options),
+      /Runtime conformance host environment executionEnvironment is unsupported/,
+    )
+    assert.deepEqual(
+      providerInvocations,
+      [],
+      'Unsupported host classes must fail before invoking the local Claude account',
+    )
+    return
+  }
   if (
     process.env.GOVERNANCE_HARNESS_MODE === 'offline-local-only'
     && resolve(process.env.HOME ?? '') !== resolve(accountHome)
@@ -1415,6 +1444,10 @@ test('Claude model-backed probes require an explicit opt-in and are never silent
     gitIdentityResolver: () => IDENTITY,
     contractIdentityResolver: async () => CONTRACT,
     runtimeCertificationResolver: certificationIdentity,
+    // Explicit host fixture: this test verifies the model-execution opt-in gate, not
+    // ambient host classification. Ambient detection correctly fails closed on headless
+    // CI (github-hosted-runner), which would mask the gating assertions under test.
+    hostIdentityResolver: () => HOST,
     writeEvidence: false,
   })
 
@@ -1470,6 +1503,9 @@ test('Codex native hook lifecycle probe also requires explicit model execution',
     gitIdentityResolver: () => IDENTITY,
     contractIdentityResolver: async () => CONTRACT,
     runtimeCertificationResolver: certificationIdentity,
+    // Explicit host fixture for the same reason as the Claude opt-in test above:
+    // ambient detection fails closed on headless CI and would mask the gate under test.
+    hostIdentityResolver: () => HOST,
     writeEvidence: false,
   })
 

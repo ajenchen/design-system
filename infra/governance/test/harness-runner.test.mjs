@@ -441,11 +441,25 @@ test('real executor has a bounded timeout and strips external credentials/proces
 
   const childPoisonedHome = mkdtempSync(resolve(tmpdir(), 'governance-harness-child-poison-home-'))
   writeFileSync(join(childPoisonedHome, '.netrc'), 'machine example.test login poison password poison\n')
+  // PLAYWRIGHT_BROWSERS_PATH is intentionally NOT in the probe's forbidden-presence list:
+  // executeHarnessCommand forwards the validated, lock-matched provisioned runtime into
+  // every child by design (asserted positively by the next test), so on hosts where the
+  // repo-local browser cache is provisioned — CI installs with PLAYWRIGHT_BROWSERS_PATH=0 —
+  // the child legitimately sees the executor's own validated value. The injection
+  // invariant is that no CALLER-supplied browser path reaches the child: an explicit
+  // poison value is refused outright (assert.throws above), and here the child value must
+  // byte-match the executor's validated forwarding (EXPECTED_PLAYWRIGHT_BROWSERS_PATH,
+  // computed from the same inputs) or be absent when nothing is provisioned.
+  const expectedChildPlaywrightRuntime = resolveProvisionedPlaywrightRuntime({
+    repoRoot: DEFAULT_REPO_ROOT,
+    environment: { PATH: process.env.PATH, HOME: childPoisonedHome },
+  })
   const environmentProbe = join(childPoisonedHome, 'environment-probe.cjs')
   writeFileSync(environmentProbe, [
     "const fs = require('node:fs')",
     "const path = require('node:path')",
-    "const forbidden = ['GH_TOKEN','OPENAI_API_KEY','NODE_OPTIONS','SSH_AUTH_SOCK','GIT_ASKPASS','AWS_WEB_IDENTITY_TOKEN_FILE','ACTIONS_ID_TOKEN_REQUEST_URL','HTTPS_PROXY','PLAYWRIGHT_BROWSERS_PATH']",
+    "const forbidden = ['GH_TOKEN','OPENAI_API_KEY','NODE_OPTIONS','SSH_AUTH_SOCK','GIT_ASKPASS','AWS_WEB_IDENTITY_TOKEN_FILE','ACTIONS_ID_TOKEN_REQUEST_URL','HTTPS_PROXY']",
+    "if ((process.env.PLAYWRIGHT_BROWSERS_PATH ?? '') !== (process.env.EXPECTED_PLAYWRIGHT_BROWSERS_PATH ?? '')) process.exit(19)",
     "if (process.env.HOME === process.env.ORIGINAL_HOME_SENTINEL) process.exit(11)",
     "if (process.env.CODEX_HOME !== path.join(process.env.HOME, '.codex')) process.exit(17)",
     "if (process.env.CLAUDE_CONFIG_DIR !== path.join(process.env.HOME, '.claude')) process.exit(18)",
@@ -472,6 +486,9 @@ test('real executor has a bounded timeout and strips external credentials/proces
         PATH: process.env.PATH,
         HOME: childPoisonedHome,
         ORIGINAL_HOME_SENTINEL: childPoisonedHome,
+        ...(expectedChildPlaywrightRuntime
+          ? { EXPECTED_PLAYWRIGHT_BROWSERS_PATH: expectedChildPlaywrightRuntime.environmentValue }
+          : {}),
         GH_TOKEN: 'secret',
         OPENAI_API_KEY: 'secret',
         CODEX_HOME: '/tmp/poison-codex-home',
