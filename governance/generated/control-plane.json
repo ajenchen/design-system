@@ -1992,7 +1992,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:071b7653549bab1beb9ca66d7df6ca95996e5a0cdda7a169bae33dea12075f59",
+      "hash": "sha256:3927940ab27af502b0b4acbc369a3b5c59e2a59fa3d8622a14144496a82313d1",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2416,12 +2416,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:71f718e42d7e638a95256812e2cab5973fb77d0fde5ab1aff78fcc879c0dc366",
+      "hash": "sha256:375000570853b0540b16b2da3b75e79be9865877c19e88fd0b5a0d4015837d9e",
       "id": "governance-playwright-setup-cli",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/ensure-playwright-browsers.mjs",
-      "size": 4965,
+      "size": 5640,
       "type": "file"
     },
     {
@@ -3827,7 +3827,7 @@
         "scripts/generated/"
       ],
       "files": 376,
-      "hash": "sha256:b3bd411a0f40207b9fb748edd80944e4151b86b9d98b9967e15252819eec6cc4",
+      "hash": "sha256:2a0b97f51632397c940b6d67eb205d64a0bfbfba85804a144ddb198c4e51e72f",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

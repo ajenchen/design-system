@@ -69,7 +69,19 @@ export function ensurePlaywrightBrowsers({
     PLAYWRIGHT_BROWSERS_PATH: '0',
   }
   const currentRuntime = () => resolver({ repoRoot: root, environment: setupEnvironment })
-  let runtime = currentRuntime()
+  // Provisioner semantics:this script's job is to CREATE the pinned runtime, so a
+  // missing .local-browsers before the first install is work-to-do, not tampering.
+  // The resolver (correctly) fails closed on the explicit PLAYWRIGHT_BROWSERS_PATH pin,
+  // which deadlocked every fresh CI checkout — install could never run. Only this exact
+  // "not provisioned yet" shape is tolerated; every other resolver error still throws,
+  // and the post-install resolution + version readback below keep full strictness.
+  let runtime
+  try {
+    runtime = currentRuntime()
+  } catch (error) {
+    if (!String(error?.message).includes('explicit browser runtime is invalid')) throw error
+    runtime = null
+  }
   if (!runtime || args.includes('--with-deps')) {
     const cli = join(root, 'node_modules', 'playwright', 'cli.js')
     const cliInfo = lstatSync(cli)

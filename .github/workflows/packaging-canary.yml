@@ -37,6 +37,9 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           persist-credentials: false
+          # ds-canonical freshness runs governance-build-graph --check, whose
+          # genesis-transition residue checker rev-parses the pinned base commit.
+          fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24.14.0'

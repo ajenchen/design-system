@@ -10,7 +10,7 @@
   "contractDigest": "sha256:b259a4e92a7dd0d3ac29f6eeca6cfb30da04967f29973dba3c229d6e7c1138ce",
   "files": [
     {
-      "hash": "sha256:a83a11bed9c984eec3374a6332b2ed9fdb7e6ac5b105373a4627d27b08836f0b",
+      "hash": "sha256:fe426d3f59ac6e3025e22726690def0b82adc4184e07dab0b1e284764bd58588",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 73865,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:2514c2c83aa5e33c5b3e08c527ee0aeb2c37c405c66f806c0d6ea7af3abce2fa",
+      "hash": "sha256:c01ca3467e005cb903a3166092c943eb1f954f73c64ffab722150546af55580b",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 167324,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:125e52410a2f4f509a3cda786321c042f502d4f054ab3875dbc65b7fa52e742e",
+  "inputDigest": "sha256:bebf494fa5f0553ed0739375c1f3b1c7d13846795c684c32c8ab25b429da03c6",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:2a4817b3fcf5d14e52122239b7899428fa27618e74e18cdfa433afa24fa29577",
+  "snapshotDigest": "sha256:d6e1a7ace3451ab9cbbfbdf2d230353fb86cf7888a1e592a71fa20a9f55eeb2a",
   "sources": [
     {
       "hash": "sha256:9d9bcd381c060751680eec29c37bd3bc36bae69a269a9fba52fcbcf8d743e7a3",
@@ -2504,7 +2504,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:071b7653549bab1beb9ca66d7df6ca95996e5a0cdda7a169bae33dea12075f59",
+      "hash": "sha256:3927940ab27af502b0b4acbc369a3b5c59e2a59fa3d8622a14144496a82313d1",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2928,12 +2928,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:71f718e42d7e638a95256812e2cab5973fb77d0fde5ab1aff78fcc879c0dc366",
+      "hash": "sha256:375000570853b0540b16b2da3b75e79be9865877c19e88fd0b5a0d4015837d9e",
       "id": "governance-playwright-setup-cli",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/ensure-playwright-browsers.mjs",
-      "size": 4965,
+      "size": 5640,
       "type": "file"
     },
     {
@@ -4339,7 +4339,7 @@
         "scripts/generated/"
       ],
       "files": 376,
-      "hash": "sha256:b3bd411a0f40207b9fb748edd80944e4151b86b9d98b9967e15252819eec6cc4",
+      "hash": "sha256:2a0b97f51632397c940b6d67eb205d64a0bfbfba85804a144ddb198c4e51e72f",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
