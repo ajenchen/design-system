@@ -299,7 +299,16 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/run-verified-npm.mjs -- sbom --workspaces --package-lock-only --sbom-format=cyclonedx > "$RUNNER_TEMP/release.sbom.raw.json"
-          /usr/bin/jq 'del(.serialNumber, .metadata.timestamp)' "$RUNNER_TEMP/release.sbom.raw.json" > release-artifacts/release.sbom.cdx.json
+          # 確定性 serialNumber:actions/attest 的 CycloneDX 判定硬性要求 serialNumber
+          # (attest src/sbom.ts checkIsCycloneDX),直接刪除會 Unsupported SBOM format;
+          # 改為由 tag+tree 導出的 UUIDv5 —— 逐位確定、跨重跑穩定、可證明來源。
+          sbom_serial="$(RELEASE_TREE='${{ needs.resolve-release-request.outputs.release_tree }}' node -p '
+            const c = require("crypto");
+            const h = c.createHash("sha1").update(`${process.env.RELEASE_TAG}:${process.env.RELEASE_TREE}`).digest();
+            h[6] = (h[6] & 0x0f) | 0x50; h[8] = (h[8] & 0x3f) | 0x80;
+            const x = h.subarray(0, 16).toString("hex");
+            `urn:uuid:${x.slice(0,8)}-${x.slice(8,12)}-${x.slice(12,16)}-${x.slice(16,20)}-${x.slice(20,32)}`')"
+          /usr/bin/jq --arg sn "$sbom_serial" '.serialNumber = $sn | del(.metadata.timestamp)' "$RUNNER_TEMP/release.sbom.raw.json" > release-artifacts/release.sbom.cdx.json
 
       - name: Lock every published product-template scaffold path and mode
         shell: bash
