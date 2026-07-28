@@ -3,7 +3,7 @@ name: visual-audit
 description: Pixel-level visual audit for design-system components based on user-provided screenshots. Catches bug classes that code/spec audits cannot see — asymmetric padding / broken overlay positioning / gap-eaten-by-hover-bg / baseline misalignment / overflow indicator obscuring content / wrong zoom step / dark-mode token mismatch. Requires a screenshot to run; refuses to proceed on guesses. Invoke via /visual-audit when user says「視覺對齊不對」「排版有問題」「gap 好像錯了」「看起來歪了」or uploads a Storybook screenshot asking「這樣對嗎」,auto-invoked by `/design-system-audit` Phase 3 (post-fix visual verify) and `/component-quality-gate` Ship phase.
 ---
 
-> **⚠️ Fork 工具註記(build 自動加)**:本 skill 提到的 `scripts/*.mjs` 或非標準 `npm run <audit>` 是 **DS-author repo 的機械工具,未隨 fork 套件附帶**(Claude Code 不掃 node_modules,fork 也無這些 executor + dep)。你的 product fork 用本 skill 的**方法論**(human / AI judgment)+ 既有 committed governance hook 的機械強制即可;要 mechanical 腳本層(截圖 / CI gate)請自行設置對應工具,或把該檢查 PR 回 DS repo 跑。
+> **Product-role projection(build 自動)**:本 skill 的執行步驟已只保留本 product repo 實際存在的指令。DS-author-only executor 會被改寫為 browser/manual/product-CI 等價驗證,不得在 product 中嘗試不存在的腳本。
 
 # Visual Audit — screenshot-based pixel-level 稽核
 
@@ -17,7 +17,7 @@ description: Pixel-level visual audit for design-system components based on user
 - **Carousel** prev/next 箭頭覆蓋 content
 - **Rating** 星星有多餘邊框
 - **Image viewer** 滾輪縮放跳大步(對標 Figma 該每 notch ~1.1×)
-- **Button 群 gap** 被 hover bg overflow 吃掉(node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md 有「同 flex 列互動 slot 幾何鐵律」但缺視覺 audit gate 鎖住)
+- **Button 群 gap** 被 hover bg overflow 吃掉(`node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md` 有「同 flex 列互動 slot 幾何鐵律」但缺視覺 audit gate 鎖住)
 - **FileViewer 工具列** dark mode 切換後對比跑掉
 - **FileUpload / FileItem** 沒 fill container
 
@@ -25,7 +25,7 @@ description: Pixel-level visual audit for design-system components based on user
 
 ## 兩層架構 + state coverage canonical
 
-**Layer A mechanical**(`npm run visual-audit`):截圖 + WCAG + geometry。**Layer B AI**(本 skill):合理 / 一致 / 世界級對照。**Workflow**:`npm run visual-audit` → `/visual-audit` 讀 `snapshots/report.json`。詳 → [`references/audit-architecture.md`](references/audit-architecture.md)(兩層架構 + hover / focus-visible / play() coverage roadmap)。
+**Layer A mechanical**(`use the active browser/Storybook screenshot workflow and preserve visual evidence`):截圖 + WCAG + geometry。**Layer B AI**(本 skill):合理 / 一致 / 世界級對照。**Workflow**:`use the active browser/Storybook screenshot workflow and preserve visual evidence` → `/visual-audit` 讀 `<absolute-git-dir>/governance-runtime/evidence/visual/visual-audit/report.json`。詳 → [`references/audit-architecture.md`](references/audit-architecture.md)(兩層架構 + hover / focus-visible / play() coverage roadmap)。
 
 ## Skill 生態位
 
@@ -56,33 +56,27 @@ description: Pixel-level visual audit for design-system components based on user
 
 ## Baseline 更新鐵律(2026-07-07 軌道 5 codify)
 
-**覆蓋任何 snapshots-baseline/*.png 前,模型必 Read 新舊兩張圖並寫出「觀察到的具體差異」**
+**覆蓋任何 `infra/governance/baseline/visual/{curated,targeted}/*.png` 前,模型必 Read 新舊兩張圖並寫出「觀察到的具體差異」**。所有 provider-specific baseline compatibility path 都僅是 deterministic generated delivery/discovery projection,not authority,do not edit,禁止當 reverse SSOT 寫入。
 (diff 百分比是訊號、圖才是真相)。禁只看 pct 就 cp。錨例:2026-07-07 VR 換日 bug——釘日期後
 pct 一模一樣,只有看圖才發現 today 圈仍在真實日期(元件內部時間);FileViewer 40.3% 只有看圖
 才知道是 zoom 94→100(fit 被凍壞)非渲染炸裂。配套:roadmap 方向 7 accept-baseline workflow
 (script 化時「看圖步驟」不可省)。
 
-## Preconditions(硬規則)
+## Evidence preflight(硬規則)
 
-**本 skill 在下列任一缺失下拒跑,回報 user 補齊後再 invoke**:
+先從 explicit target、目前 frozen scope／changed paths、Layer-A report、story registry 與
+capture manifest 解析 audit target。缺 screenshot 時，優先用既有 Storybook／product capture
+流程自行產生；viewport、density、theme 與 size 必取自同一 capture manifest，不靠猜測或
+另問 user。元件 token 由 owning spec 與 token registry 解析。
 
-1. **screenshot 缺失** — user 未上傳 Storybook 或元件實際 render 的截圖
-2. **audit target 未明** — 沒指定要稽核哪個元件 / 哪個 story / 哪個頁面
-3. **容器尺寸 / viewport 未知** — screenshot 沒附上容器寬度 / viewport size / 元件 size prop,無法 mechanical 量
-4. **token 聲明未知** — 該元件 spec 沒宣告該看哪些 token(本 skill 不推測,只比對)
+只有在本機／既有受治理環境確實無法取得 target 或影像，且原因是不可代理的登入、MFA、
+OAuth 或 private surface access 時，才形成 shared-governance human-only action；此時先完成
+所有其他 preflight，只回報唯一必要操作。若 owning spec 缺 token，記為 P2E governance
+evidence gap 並交 canonical owner；若補值會創造產品／UI／UX SSOT 真取捨才列 P2H。
 
-**拒跑回報範例**:
-
-```
-本 skill 需要以下資訊才能跑,目前缺:
-- [x] screenshot(Storybook 或實際 render)
-- [ ] 稽核 target(哪個元件 / 哪個 story 或 URL)
-- [ ] 容器 / viewport 資訊(container width / density / theme)
-
-補齊後請 re-invoke /visual-audit,不要讓我用猜的跑 audit。
-```
-
-**絕不**在資訊不足下憑感覺判斷——「看起來有點歪」不是 audit,是直覺。本 skill 產出必須全部是 mechanical 可驗證的結論。
+**絕不**在 evidence 不足下憑感覺判斷——「看起來有點歪」不是 audit,是直覺。本 skill
+產出必須全部是 mechanical 可驗證的結論；無法取得的項目記為 fail-closed evidence gap，
+不能用 blanket user checkpoint 取代。
 
 ---
 
@@ -94,7 +88,7 @@ pct 一模一樣,只有看圖才發現 today 圈仍在真實日期(元件內部�
 |---|------|---------|
 | 1 | **4 邊邊距對稱** | 容器 top / right / bottom / left padding 實測值相等(除明文 asymmetric spec 外) |
 | 2 | **垂直對稱(to-top ↔ to-bottom)** | 最外層 element 到容器頂 = 最內層 element 到容器底(DatePicker 箭頭 vs 最後排日期) |
-| 3 | **水平 gap 實際值 == gap token 宣告值** | hover bg / ring / focus outline 不可溢出 box 吃掉宣告 gap(node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md「同 flex 列互動 slot 幾何鐵律」) |
+| 3 | **水平 gap 實際值 == gap token 宣告值** | hover bg / ring / focus outline 不可溢出 box 吃掉宣告 gap(`node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md`「同 flex 列互動 slot 幾何鐵律」) |
 | 4 | **Overlay 定位(badge / popover / hover-card)** | anchor-offset / side-offset 對稱;不覆蓋 anchor 內容 |
 | 5 | **Typography baseline 對齊** | icon 與同行 text 的 baseline 對齊(非 geometric center 誤植) |
 | 6 | **Icon ↔ text gap 一致** | 同類型 row 裡所有 icon-to-text 距離相等 |
@@ -112,15 +106,12 @@ pct 一模一樣,只有看圖才發現 today 圈仍在真實日期(元件內部�
 
 ## Workflow
 
-### Phase 0 — Setup + 拒跑 gate
+### Phase 0 — Setup + evidence gate
 
-1. 讀 CLAUDE.md 完整(最新 token / 最新 layout primitive 規則)
-2. 檢查 user 是否提供 4 項必要資訊(見 Preconditions):
-   - screenshot
-   - audit target(元件 / story / URL)
-   - 容器 / viewport 資訊
-   - 該元件對應的 spec.md path
-3. **任一缺失 → 停下,按 Preconditions 範例回報,不 proceed**
+1. 讀 `AGENTS.md` 與 `node_modules/@qijenchen/design-system/ds-canonical/rules/ui-development.md`(最新 token / 最新 layout primitive 規則);provider view 只用於 discovery,不能反向當 authority
+2. 依 Evidence preflight 從 frozen scope／changed paths、Layer-A report 與 registry 定 target。
+3. 取得或自行 capture screenshot，並綁定同一份 viewport／density／theme／size manifest；
+   缺 evidence 時依上節 fail closed，不把工程查找工作轉交 user。
 4. 讀該元件的 `{name}.spec.md`——記下 spec 宣告的 token 值(e.g.「field-height-md = 36px」「gap-2 = 8px」「layout-space-loose = 16px」),作為 mechanical 對照基準
 5. Create TaskList entries(13 個 checklist item 各一)
 
@@ -140,15 +131,17 @@ pct 一模一樣,只有看圖才發現 today 圈仍在真實日期(元件內部�
 - **不寫主觀描述**(「看起來鬆散」「感覺歪」不算 audit 結論)——只寫可 mechanical 驗證的數字 / ratio
 - **不推測 code**(「應該是 cva size 錯」不是本 skill 結論;code 的事走 `/design-system-audit`)
 - **不修 code**(本 skill 只報告,不 Edit 任何檔)
-- **超出 checklist 的視覺問題** → 記為 `額外觀察`,附 screenshot 座標 + 描述,交 user 決定要不要升級為 checklist 項
+- **超出 checklist 的視覺問題** → 記為 `額外觀察`,附 screenshot 座標 + 描述；依 shared governance authority classifier 路由：純機械 coverage／治理補強是 P2E/AUTO，只有升級會改變產品／UI／UX SSOT 且仍有真取捨才 P2H
 
 ### Phase 2 — 輸出 report(固定格式)
 
 產出檔案路徑:
 
 ```
-node_modules/@qijenchen/design-system/ds-canonical/skills/visual-audit/output/{YYYYMMDD}-{component}-visual-audit.md
+<absolute-git-dir>/governance-runtime/evidence/visual/manual-audit/{YYYYMMDD}-{component}-visual-audit.md
 ```
+
+寫入前必須以 `node scripts/lib/governance-runtime-evidence.mjs --repo-root "$PWD" --path "visual/manual-audit/{filename}" --prepare-file` 取得經驗證的 exact destination;不得自行推導 `.git` 路徑,不得寫 provider home。
 
 **檔名規則**:同一天同元件多次跑 → 加 `-v2` / `-v3`。`{component}` 用 kebab-case(對齊專案慣例),例:`20260421-date-picker-visual-audit.md`。
 
@@ -195,12 +188,12 @@ Spec 依據: {node_modules/@qijenchen/design-system/src/components/{Name}/{name}
 - 本 report 不改 code;fix 請走 `/design-system-audit` 或直接 edit
 ```
 
-### Phase 3 — Checkpoint(必停,STOP 點)
+### Phase 3 — Read-only handoff(skill boundary，不是 user approval checkpoint)
 
-Report 寫完後**停下來**,不 auto-fix。回報 user:
+Report 寫完後，本唯讀 skill 不直接改 source；將 evidence 交回 primary context 並依 shared governance authority classifier 繼續：
 
 ```
-Visual audit 寫到 node_modules/@qijenchen/design-system/ds-canonical/skills/visual-audit/output/{YYYYMMDD}-{component}-visual-audit.md
+Visual audit 寫到 <absolute-git-dir>/governance-runtime/evidence/visual/manual-audit/{YYYYMMDD}-{component}-visual-audit.md
 
 - PASS: N / 13
 - FAIL: M / 13
@@ -211,12 +204,13 @@ FAIL 項摘要:
 - #3 gap 吃掉: hover bg 溢出 ~4px(違反「同 flex 列幾何鐵律」)
 - ...
 
-下一步選項:
-1. 依 FAIL 清單去改 code / spec(我可以 chain 進 /design-system-audit 或手動 edit)
-2. 對某項 FAIL 有爭議 → 討論是否為 spec 明文例外(可加 rationale)
-3. 本輪 audit 就結束,user 自行處理
+後續路由:
+1. FAIL 可由既有 canonical 決定 → P2E，由 primary context 依 Standing Authorization remediation + verify
+2. 純工程／治理原因尚未收斂 → P2E，依 Engineering Decision Policy、tests、independent review 與 hard gates 收斂；無法收斂則 fail closed 回報 technical blocker
+3. 必須改變產品／UI／UX SSOT 且仍有真實選擇或取捨 → P2H，batch-at-end 請 user 拍板
+4. 證據不足 → 補足 screenshot／量測，不以猜測結案
 
-(本 skill 不 auto-proceed;改 code 由其他 skill 或 user 決定。)
+(本 skill 保持 read-only；primary implementation 不需另取 user 工程授權。)
 ```
 
 ---
@@ -229,7 +223,7 @@ FAIL 項摘要:
 - **不做主觀審美**(「看起來比較漂亮」不是 audit 結論)
 - **不改 code / spec / story**(純 read-only report)
 - **不推斷沒截到的部分**(screenshot 沒含某 state 不做推測)
-- **不 auto-fix**(Phase 3 STOP 交 user 決策)
+- **不在本 read-only skill 內 auto-fix**(Phase 3 將 evidence 交回 primary context；依 P2E/P2H classifier 繼續)
 
 ## Common failure modes(watch for these)
 
@@ -250,5 +244,5 @@ FAIL 項摘要:
 - `node_modules/@qijenchen/design-system/ds-canonical/skills/design-system-audit/SKILL.md` — 全 dim code/spec audit(per design-system-audit SSOT);本 skill 是其 pixel-level 補位
 - `node_modules/@qijenchen/design-system/ds-canonical/skills/product-ui-audit/SKILL.md` — consumer UI 對 DS 消費 audit(code 層),不處理視覺
 - `node_modules/@qijenchen/design-system/ds-canonical/skills/component-quality-gate/SKILL.md` — 元件合入 DS 前的 35 項 checklist;Ship phase 可 chain 本 skill
-- node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md `# 同 flex 列的互動 slot 幾何鐵律` — 本 skill checklist #3 的主要 canonical 來源
+- `node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md` `# 同 flex 列的互動 slot 幾何鐵律` — 本 skill checklist #3 的主要 canonical 來源
 - `node_modules/@qijenchen/design-system/ds-canonical/rules/ui-development.md`「建立 UI 前必讀」 → layout primitive / token spec 清單 — 本 skill「合格標準」的對照錨

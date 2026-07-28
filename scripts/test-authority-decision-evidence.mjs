@@ -15,6 +15,9 @@ import {
 import { buildCorpus } from './build-fork-governance.mjs'
 
 const repoRoot = resolve(import.meta.dirname, '..')
+// This suite asserts the fail-closed integrity lane of the adapter's authority-decision
+// transport; the production default is fail-open.
+Object.assign(process.env, { GOVERNANCE_HOOK_STRICT: '1' })
 const authorityPolicyBytes = readFileSync(resolve(repoRoot, 'AGENTS.md'))
 const classifierPath = resolve(
   repoRoot,

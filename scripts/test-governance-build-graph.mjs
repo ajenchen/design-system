@@ -99,7 +99,7 @@ const allIds = (path) => affectedStages(graph, [path]).map((stage) => stage.id).
 // Preserve the focused producer/consumer assertions below; governance-metadata
 // intentionally observes broad repository inputs and is asserted separately.
 const ids = (path) => allIds(path).filter((id) => id !== 'governance-metadata')
-assert.deepEqual(graph.stages.map((stage) => stage.id), ['release-version', 'provider-adapters', 'plugin-aliases', 'fork-template', 'baseline-mirrors', 'governance-metadata', 'control-plane'])
+assert.deepEqual(graph.stages.map((stage) => stage.id), ['release-version', 'provider-adapters', 'plugin-aliases', 'harness-authority-bindings', 'fork-template', 'baseline-mirrors', 'governance-metadata', 'control-plane'])
 assert.equal(graph.schemaVersion, 5)
 assert.deepEqual(missingForkTemplateExactSources(graph.stages), [])
 assert.deepEqual(validateForkTemplateRuntimeBoundary(graph.stages), { missing: [], forbidden: [], generated: [] })
@@ -456,7 +456,7 @@ const explicitEvidenceControlPlaneSources = {
   'deep-audit-review-archive-tests': 'scripts/test-deep-audit-review-archive.mjs',
   'deep-audit-model-safety-tests': 'scripts/test-model-deep-audit-safety.mjs',
   'deep-audit-model-evidence-broker-hardening-tests': 'scripts/test-model-evidence-broker-hardening.mjs',
-  'provider-neutral-review-core-tests': 'scripts/test-provider-neutral-review-core.mjs',
+  'provider-neutral-review-core-tests': 'scripts/review-core-parity-optin.mjs',
   'deep-audit-managed-envelope-binding-tests': 'scripts/test-managed-envelope-binding.mjs',
   'deep-audit-evidence-schema-parity-tests': 'scripts/test-deep-audit-evidence-schema-parity.mjs',
   'managed-ci-deep-audit-workflow': '.github/workflows/deep-audit-managed.yml',
@@ -612,17 +612,19 @@ assert.deepEqual(
 for (const providerAdapterSource of providerAdapterRuntimeSources.filter(source => source !== 'scripts/lib/provider-lifecycle.mjs')) {
   assert.deepEqual(ids(providerAdapterSource), ['control-plane', 'fork-template', 'provider-adapters'])
 }
-assert.deepEqual(ids('scripts/lib/provider-lifecycle.mjs'), ['control-plane', 'fork-template', 'provider-adapters', 'release-version'])
+assert.deepEqual(ids('scripts/lib/provider-lifecycle.mjs'), ['control-plane', 'fork-template', 'harness-authority-bindings', 'provider-adapters', 'release-version'])
 for (const providerAdapterSource of providerAdapterSchemaSources) {
   assert.deepEqual(ids(providerAdapterSource), ['control-plane', 'fork-template', 'provider-adapters'])
 }
 assert.deepEqual(ids('scripts/lib/consumer-control-plane-policy.mjs'), ['control-plane', 'fork-template'])
 assert.deepEqual(ids('scripts/schemas/npm-stage-receipt.schema.json'), ['control-plane', 'fork-template'])
-assert.deepEqual(ids('infra/governance/providers/compatibility-matrix.json'), ['control-plane', 'fork-template'])
+assert.deepEqual(ids('infra/governance/providers/compatibility-matrix.json'), ['control-plane', 'fork-template', 'harness-authority-bindings'])
 assert.deepEqual(ids('infra/governance/providers/certifications.json'), ['control-plane', 'fork-template'])
-assert.deepEqual(ids('packages/design-system/src/tokens/utility-registry.json'), ['fork-template'])
-assert.deepEqual(ids('packages/design-system/src/tokens/utility-registry.schema.json'), ['fork-template'])
-assert.deepEqual(ids('infra/governance/lib/managed-repository-ownership.mjs'), ['control-plane', 'fork-template'])
+assert.deepEqual(ids('infra/governance/providers/harness-registry.json'), ['control-plane', 'harness-authority-bindings'])
+assert.deepEqual(ids('infra/governance/providers/harness-source-inventory.json'), ['control-plane', 'harness-authority-bindings'])
+assert.deepEqual(ids('packages/design-system/src/tokens/utility-registry.json'), ['control-plane', 'fork-template'])
+assert.deepEqual(ids('packages/design-system/src/tokens/utility-registry.schema.json'), ['control-plane', 'fork-template'])
+assert.deepEqual(ids('infra/governance/lib/managed-repository-ownership.mjs'), ['control-plane', 'fork-template', 'harness-authority-bindings'])
 assert.deepEqual(ids('infra/governance/schemas/managed-host-assurance.schema.json'), ['control-plane'])
 assert.deepEqual(ids('infra/governance/schemas/managed-host-assurance-evidence.schema.json'), ['control-plane'])
 assert.deepEqual(ids('infra/governance/schemas/managed-host-effective-readback.schema.json'), ['control-plane'])
@@ -703,13 +705,16 @@ assert.deepEqual(ids('.claude/hooks/check_consumer_code_quality.sh'), ['control-
 assert.deepEqual(ids('.claude/commands/README.md'), ['control-plane', 'plugin-aliases', 'provider-adapters'])
 assert.deepEqual(ids('.claude/skills/prototype/SKILL.md'), ['control-plane', 'plugin-aliases', 'provider-adapters'])
 assert.deepEqual(ids('.claude/agents/canonical-reviewer.md'), ['control-plane', 'provider-adapters'])
-// Generated provider views may feed the narrowly-scoped plugin alias materializer and the
-// downstream control-plane contract inspector. They remain producer-owned graph outputs, so
-// neither consumer promotes `.claude`/`.codex`/`.agents` to an SSOT.
+// Generated provider views may feed the narrowly-scoped plugin alias materializer,
+// the exact Harness mirror-binding projection, and the downstream control-plane
+// contract inspector. They remain producer-owned graph outputs, so none of these
+// consumers promotes `.claude`/`.codex`/`.agents` to an SSOT.
 for (const stage of graph.stages.filter((candidate) => candidate.id !== 'provider-adapters')) {
   const providerViewSources = stage.sources.filter((source) => /^(?:\.claude|\.codex|\.agents)(?:\/|$)/.test(source))
   if (stage.id === 'plugin-aliases') {
     assert.deepEqual(providerViewSources, ['.claude/commands/', '.claude/hooks/', '.claude/skills/'])
+  } else if (stage.id === 'harness-authority-bindings') {
+    assert.deepEqual(providerViewSources, ['.claude/hooks/tests/'])
   } else if (stage.id === 'control-plane') {
     assert.deepEqual(providerViewSources, [
       '.agents/skills/',
@@ -735,9 +740,9 @@ assert.deepEqual(
   'plugin alias graph outputs must resolve directly from the canonical registry',
 )
 assert.deepEqual(ids('packages/governance/canonical/plugin-aliases.json'), ['control-plane', 'plugin-aliases'])
-assert.deepEqual(ids('template/ds-product-template/.codex/hooks.json'), ['fork-template'])
-assert.deepEqual(ids('template/ds-product-template/.agents/skills/canonical-reviewer/SKILL.md'), ['fork-template'])
-assert.deepEqual(ids('template/ds-product-template/schemas/provider-cli-toolchain.schema.json'), ['fork-template'])
+assert.deepEqual(ids('template/ds-product-template/.codex/hooks.json'), ['control-plane', 'fork-template'])
+assert.deepEqual(ids('template/ds-product-template/.agents/skills/canonical-reviewer/SKILL.md'), ['control-plane', 'fork-template'])
+assert.deepEqual(ids('template/ds-product-template/schemas/provider-cli-toolchain.schema.json'), ['control-plane', 'fork-template'])
 assert.equal(
   graph.stages.find(stage => stage.id === 'fork-template').outputs.includes('template/ds-product-template/schemas/provider-cli-toolchain.schema.json'),
   true,
@@ -755,10 +760,14 @@ assert.deepEqual(ids('infra/governance/schemas/managed-repos.schema.json'), ['co
 for (const recurringProjectionSource of [
   'infra/governance/consumer-upgrade-protocol.json',
   'infra/governance/schemas/consumer-upgrade-protocol.schema.json',
-  'infra/governance/lib/consumer-upgrade-protocol.mjs',
   'scripts/lib/consumer-control-plane-policy.mjs',
   'infra/governance/inventory/managed-repos.json',
 ]) assert.deepEqual(ids(recurringProjectionSource), ['control-plane', 'fork-template'], `recurring consumer projection source must invalidate authority and fork-template:${recurringProjectionSource}`)
+assert.deepEqual(
+  ids('infra/governance/lib/consumer-upgrade-protocol.mjs'),
+  ['control-plane', 'fork-template', 'harness-authority-bindings'],
+  'the recurring consumer projection library is also an exact runtime dependency of the Harness authority projection',
+)
 for (const recurringAuthoritySource of [
   'infra/governance/bin/consumerctl.mjs',
   'infra/governance/test/consumerctl.test.mjs',
@@ -789,8 +798,8 @@ assert.equal(
 )
 assert.deepEqual(ids('governance/generated/control-plane.json'), ['control-plane'])
 assert.deepEqual(ids('governance/control-plane.lock.json'), ['control-plane'])
-assert.deepEqual(ids('scripts/governance-build-graph.json'), ['baseline-mirrors', 'control-plane', 'fork-template', 'plugin-aliases', 'provider-adapters', 'release-version'])
-assert.deepEqual(ids('scripts/test-governance-build-graph.mjs'), ['baseline-mirrors', 'control-plane', 'fork-template', 'plugin-aliases', 'provider-adapters', 'release-version'])
+assert.deepEqual(ids('scripts/governance-build-graph.json'), ['baseline-mirrors', 'control-plane', 'fork-template', 'harness-authority-bindings', 'plugin-aliases', 'provider-adapters', 'release-version'])
+assert.deepEqual(ids('scripts/test-governance-build-graph.mjs'), ['baseline-mirrors', 'control-plane', 'fork-template', 'harness-authority-bindings', 'plugin-aliases', 'provider-adapters', 'release-version'])
 assert.deepEqual(allIds('packages/governance/node_modules/fixture/index.js'), [])
 assert.deepEqual(allIds('packages/design-system/dist/index.js'), [])
 assert.deepEqual(allIds('scripts/generated/obsolete.mjs'), [])
@@ -835,6 +844,23 @@ assert.throws(() => validateStageTopology([
 assert.doesNotThrow(() => validateStageTopology([
   { id: 'release-version', sources: ['one.json'], outputs: ['one.json'], sourceOutputOverlaps: ['one.json'] },
 ]))
+const derivedHarnessAuthorityPaths = [
+  'infra/governance/providers/compatibility-matrix.json',
+  'infra/governance/providers/harness-registry.json',
+  'infra/governance/providers/harness-source-inventory.json',
+]
+assert.doesNotThrow(() => validateStageTopology([{
+  id: 'harness-authority-bindings',
+  sources: derivedHarnessAuthorityPaths,
+  outputs: derivedHarnessAuthorityPaths,
+  sourceOutputOverlaps: derivedHarnessAuthorityPaths,
+}]))
+assert.throws(() => validateStageTopology([{
+  id: 'harness-authority-bindings',
+  sources: [...derivedHarnessAuthorityPaths, 'infra/governance/providers/unreviewed.json'],
+  outputs: [...derivedHarnessAuthorityPaths, 'infra/governance/providers/unreviewed.json'],
+  sourceOutputOverlaps: [...derivedHarnessAuthorityPaths, 'infra/governance/providers/unreviewed.json'],
+}]), /exact derived Harness authority projections/)
 assert.throws(() => validateGovernanceInfrastructureClosure([
   { id: 'control-plane', sources: ['infra/governance/providers/'] },
 ], ['infra/governance/bin/new-governance-command.mjs']), /outside the canonical control-plane corpus/)

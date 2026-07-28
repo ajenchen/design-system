@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "npm@11.18.0",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.13.0"
   },
   "workspaces": [
     "packages/*",
@@ -58,13 +58,15 @@
     "audit:staged-rollout-check": "node infra/governance/bin/staged-rollout.mjs --check --json",
     "audit:provider-neutral-residue": "node scripts/check-provider-neutral-ssot-residue.mjs",
     "test:ci-evidence": "node --test scripts/test-produce-ci-enforced-evidence.mjs",
-    "test:model-evidence": "node scripts/test-model-evidence-broker-hardening.mjs && node scripts/test-model-deep-audit-safety.mjs && node scripts/test-managed-envelope-binding.mjs && node scripts/test-deep-audit-evidence-schema-parity.mjs && node scripts/test-model-release-authority.mjs",
+    "test:model-evidence": "node scripts/test-model-evidence-broker-hardening.mjs && node scripts/test-model-deep-audit-safety.mjs && node scripts/test-deep-audit-evidence-schema-parity.mjs",
+    "test:model-evidence:managed": "node scripts/test-managed-envelope-binding.mjs && node scripts/test-model-release-authority.mjs",
     "test:managed-ci-trusted-execution": "node --test scripts/test-managed-ci-trusted-execution.mjs",
     "test:staged-rollout": "node --test infra/governance/test/staged-rollout.test.mjs",
     "test:external-ledger-writer": "node --test infra/governance/test/external-ledger-writer.test.mjs",
     "test:provider-neutral-residue": "node scripts/test-check-provider-neutral-ssot-residue.mjs && node scripts/check-provider-neutral-ssot-residue.mjs",
     "test:audit-coverage-tier-sync": "node scripts/test-audit-coverage-tier-sync.mjs",
-    "test:governance-evidence-control-plane": "npm run --silent test:audit-coverage-tier-sync && npm run --silent test:deterministic-deep-audit && npm run --silent test:hook-evidence && npm run --silent test:ci-evidence && npm run --silent test:model-evidence && npm run --silent test:managed-ci-trusted-execution && npm run --silent test:staged-rollout && npm run --silent test:external-ledger-writer && npm run --silent test:provider-neutral-residue",
+    "test:governance-evidence-control-plane": "npm run --silent test:audit-coverage-tier-sync && npm run --silent test:deterministic-deep-audit && npm run --silent test:hook-evidence && npm run --silent test:ci-evidence && npm run --silent test:model-evidence && npm run --silent test:provider-neutral-residue",
+    "test:governance-evidence-control-plane:enterprise": "npm run --silent test:model-evidence:managed && npm run --silent test:managed-ci-trusted-execution && npm run --silent test:staged-rollout && npm run --silent test:external-ledger-writer",
     "audit:datatable-row-mode": "node scripts/audit-data-table-row-mode-ssot.mjs",
     "audit:spec-deadlinks": "node scripts/audit-spec-deadlinks.mjs",
     "audit:hook-test-coverage": "node scripts/audit-hook-test-coverage.mjs",
@@ -122,8 +124,6 @@
     "governance:snapshot:check": "node scripts/governance-snapshot.mjs --check",
     "governance:generate": "node scripts/governance-build-graph.mjs --generate",
     "governance:check": "node scripts/governance-build-graph.mjs --check",
-    "governance:graph:generate": "node scripts/governance-build-graph.mjs --generate",
-    "governance:graph:check": "node scripts/governance-build-graph.mjs --check",
     "governance:baseline-mirrors:generate": "node scripts/sync-governance-baseline-mirrors.mjs",
     "governance:baseline-mirrors:check": "node scripts/sync-governance-baseline-mirrors.mjs --check",
     "governance:metadata:generate": "node scripts/generate-governance-metadata.mjs",
@@ -134,7 +134,8 @@
     "governance:attest": "node packages/governance/bin/governance.mjs attest --repo . --role ds-author --hooks-off",
     "test:governance-control-plane": "npm -w @qijenchen/governance test",
     "test:governance-harnesses": "node infra/governance/bin/run-harnesses.mjs",
-    "test:governance-fleet": "node --test infra/governance/test/*.test.mjs",
+    "test:governance-fleet": "node --test infra/governance/test/authority-setup.test.mjs infra/governance/test/check-run-trust.test.mjs infra/governance/test/consumerctl.test.mjs infra/governance/test/governance-data.test.mjs infra/governance/test/harness-registry.test.mjs infra/governance/test/harness-runner.test.mjs infra/governance/test/harness-source-inventory.test.mjs infra/governance/test/model-validation.test.mjs infra/governance/test/playwright-runtime.test.mjs infra/governance/test/provider-runtime-conformance.test.mjs infra/governance/test/provider-surface.test.mjs infra/governance/test/release-evidence.test.mjs infra/governance/test/repository-path-topology.test.mjs infra/governance/test/signed-release-tag.test.mjs infra/governance/test/workflow-identity-sync.test.mjs infra/governance/test/workflow-trust.test.mjs",
+    "test:governance-fleet:enterprise": "node --test infra/governance/test/activation-readiness-canonical-inputs.test.mjs infra/governance/test/completion-readiness.test.mjs infra/governance/test/external-activation.test.mjs infra/governance/test/external-ledger-writer.test.mjs infra/governance/test/external-operator.test.mjs infra/governance/test/external-surface-evidence.test.mjs infra/governance/test/issuer-registry.test.mjs infra/governance/test/managed-host-assurance.test.mjs infra/governance/test/reconcile-github.test.mjs infra/governance/test/release-tag-authorization.test.mjs infra/governance/test/release-trust-preflight.test.mjs infra/governance/test/rollout-state-machine.test.mjs infra/governance/test/staged-rollout.test.mjs",
     "test:governance-portability-safety": "node scripts/test-governance-build-graph.mjs && node --test scripts/test-governance-protected-roots.mjs scripts/test-plugin-alias-contract.mjs scripts/test-sync-plugin-aliases.mjs scripts/test-score-infra-best-practice.mjs scripts/test-check-codex-freshness-authorization.mjs scripts/test-design-system-codemod.mjs scripts/test-visual-baseline-review.mjs && node scripts/test-canonical-path-containment.mjs && node scripts/test-claude-permission-policy.mjs && node scripts/test-governance-runtime-evidence.mjs && node scripts/test-calc-self-audit-baseline.mjs && node scripts/test-audit-preflight.mjs && node scripts/test-verify-deep-audit-coverage.mjs && node scripts/test-governance-visual-baselines.mjs && node scripts/test-governance-baseline-mirrors.mjs && node scripts/test-neutral-audit-evidence.mjs && node scripts/test-run-gate-meta-tests-isolation.mjs && npm run --silent test:excluded-gate-meta-tests && npm run --silent test:gate-meta-exclusion-inventory && node scripts/test-provider-lifecycle.mjs && node scripts/test-sync-version-safety.mjs && node scripts/test-instruction-mirror-safety.mjs && node scripts/test-build-fork-filesystem-safety.mjs && node scripts/test-sync-ds-canonical-recovery.mjs && node scripts/test-sync-atomicity.mjs && node scripts/test-sync-memory.mjs && node scripts/test-future-provider-fork-surface.mjs && npm run --silent test:setup-governance && npm run --silent test:governance-evidence-control-plane",
     "test:gate-meta-isolation": "node scripts/test-run-gate-meta-tests-isolation.mjs",
     "test:excluded-gate-meta-tests": "node scripts/test-codex-run-guarded.mjs && node scripts/test-check-src-republish.mjs",
@@ -156,7 +157,8 @@
     "test:privileged-change-authorization": "node --test scripts/test-privileged-change-authorization.mjs",
     "test:consumer-source-harness": "node --test scripts/test-consumer-source-harness.mjs",
     "test:product-template-scaffold": "node --test scripts/test-product-template-scaffold-lock.mjs",
-    "test:writer-evidence": "node --test scripts/test-product-template-scaffold-lock.mjs scripts/test-verify-upgrade-evidence.mjs scripts/test-verify-mirror-evidence.mjs scripts/test-verify-mirror-release.mjs"
+    "test:writer-evidence": "node --test scripts/test-product-template-scaffold-lock.mjs scripts/test-verify-upgrade-evidence.mjs scripts/test-verify-mirror-evidence.mjs scripts/test-verify-mirror-release.mjs",
+    "test:review-core": "node scripts/review-core-parity-optin.mjs"
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",
@@ -221,6 +223,7 @@
     "husky": "^9.1.7",
     "js-yaml": "^4.1.1",
     "npm": "11.18.0",
+    "npm-runtime-brace-expansion-patch": "npm:brace-expansion@5.0.8",
     "pixelmatch": "^7.1.0",
     "playwright": "^1.59.1",
     "pngjs": "^7.0.0",
@@ -233,7 +236,9 @@
   "overrides": {
     "@storybook/addon-actions": {
       "uuid": "11.1.1"
-    }
+    },
+    "@joshwooding/vite-plugin-react-docgen-typescript": "0.6.4",
+    "postcss": "8.5.23"
   },
   "size-limit": [
     {

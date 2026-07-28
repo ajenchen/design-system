@@ -3,10 +3,11 @@
   "$id": "https://qijenchen.dev/schemas/governance-build-graph-v5.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "schemaVersion", "stages"],
+  "required": ["$schema", "schemaVersion", "controlPlaneGenesisTransition", "stages"],
   "properties": {
     "$schema": { "const": "./schemas/governance-build-graph.schema.json" },
     "schemaVersion": { "const": 5 },
+    "controlPlaneGenesisTransition": { "$ref": "#/$defs/controlPlaneGenesisTransition" },
     "stages": {
       "type": "array",
       "minItems": 6,
@@ -39,6 +40,181 @@
   },
   "$defs": {
     "command": { "type": "array", "minItems": 2, "items": { "type": "string", "minLength": 1 } },
-    "paths": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Za-z0-9_.@/-]+$" } }
+    "paths": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Za-z0-9_.@/-]+$" } },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "fileMode": { "enum": ["100644", "100755"] },
+    "treePreservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "leafCount", "path", "sha256"],
+      "properties": {
+        "kind": { "const": "tree" },
+        "leafCount": { "type": "integer", "minimum": 1 },
+        "path": { "type": "string", "pattern": "^[A-Za-z0-9_.@/-]+$" },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "filePreservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "mode", "path", "sha256"],
+      "properties": {
+        "kind": { "const": "file" },
+        "mode": { "$ref": "#/$defs/fileMode" },
+        "path": { "type": "string", "pattern": "^[A-Za-z0-9_.@/-]+$" },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "symlinkPreservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "mode", "path", "sha256", "target"],
+      "properties": {
+        "kind": { "const": "symlink" },
+        "mode": { "const": "120000" },
+        "path": { "type": "string", "pattern": "^[A-Za-z0-9_.@/-]+$" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "target": { "type": "string", "minLength": 1 }
+      }
+    },
+    "tombstone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "path", "sha256"],
+      "properties": {
+        "mode": { "$ref": "#/$defs/fileMode" },
+        "path": { "type": "string", "pattern": "^[A-Za-z0-9_.@/-]+$" },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "controlPlaneGenesisTransition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseCommit",
+        "baseTree",
+        "cleanupRequiresDistinctProtectedPr",
+        "contentDigest",
+        "deploymentProfile",
+        "id",
+        "phase",
+        "preservations",
+        "releaseAllowed",
+        "schemaVersion",
+        "state",
+        "tombstones"
+      ],
+      "properties": {
+        "baseCommit": { "const": "25b39558cbf352f053948190bb28326a78562f43" },
+        "baseTree": { "const": "92e090f9500fb14b8b05895a43c217f604cb5338" },
+        "cleanupRequiresDistinctProtectedPr": { "const": true },
+        "contentDigest": { "$ref": "#/$defs/sha256" },
+        "deploymentProfile": { "const": "PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM" },
+        "id": { "const": "control-plane-genesis-am-only-v1" },
+        "phase": { "const": "control-plane-genesis" },
+        "preservations": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "prefixItems": [
+            {
+              "type": "object",
+              "$ref": "#/$defs/treePreservation",
+              "properties": { "path": { "const": ".claude/snapshots-baseline" } }
+            },
+            {
+              "type": "object",
+              "$ref": "#/$defs/filePreservation",
+              "properties": { "path": { "const": "packages/design-system/ds-canonical/fork/preamble.md" } }
+            },
+            {
+              "type": "object",
+              "$ref": "#/$defs/symlinkPreservation",
+              "properties": {
+                "path": { "const": "packages/design-system/scripts" },
+                "target": { "const": "../../scripts" }
+              }
+            },
+            {
+              "type": "object",
+              "$ref": "#/$defs/treePreservation",
+              "properties": { "path": { "const": "snapshots-baseline" } }
+            },
+            {
+              "type": "object",
+              "$ref": "#/$defs/treePreservation",
+              "properties": { "path": { "const": "template/ds-product-template/.claude/hooks" } }
+            }
+          ],
+          "items": false
+        },
+        "releaseAllowed": { "type": "boolean" },
+        "schemaVersion": { "const": 1 },
+        "state": { "enum": ["open", "closed"] },
+        "tombstones": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "prefixItems": [
+            {
+              "type": "object",
+              "$ref": "#/$defs/tombstone",
+              "properties": {
+                "mode": { "const": "100644" },
+                "path": { "const": ".claude/commands/gov-status.md" },
+                "sha256": { "const": "3475107aa215446c413498ce22a5908afe4cf9ee0c30c42bb41af72d06a91b83" }
+              }
+            },
+            {
+              "type": "object",
+              "$ref": "#/$defs/tombstone",
+              "properties": {
+                "mode": { "const": "100755" },
+                "path": { "const": ".claude/hooks/check_post_main_ssot_propagate.sh" },
+                "sha256": { "const": "d91d1d9c36311f1e77d46b387f2f39c0add7b075acf4af8b08f7c6a218ef5676" }
+              }
+            },
+            {
+              "type": "object",
+              "$ref": "#/$defs/tombstone",
+              "properties": {
+                "mode": { "const": "100644" },
+                "path": { "const": ".github/workflows/ssot-sync-dispatch.yml" },
+                "sha256": { "const": "0f3f8000b10e3abad7ace2d73ada9f3fc5deefa885ab4263f7016f69f0161184" }
+              }
+            },
+            {
+              "type": "object",
+              "$ref": "#/$defs/tombstone",
+              "properties": {
+                "mode": { "const": "100644" },
+                "path": { "const": "packages/design-system/ds-canonical/commands/gov-status.md" },
+                "sha256": { "const": "3475107aa215446c413498ce22a5908afe4cf9ee0c30c42bb41af72d06a91b83" }
+              }
+            },
+            {
+              "type": "object",
+              "$ref": "#/$defs/tombstone",
+              "properties": {
+                "mode": { "const": "100755" },
+                "path": { "const": "packages/design-system/ds-canonical/hooks/check_post_main_ssot_propagate.sh" },
+                "sha256": { "const": "d91d1d9c36311f1e77d46b387f2f39c0add7b075acf4af8b08f7c6a218ef5676" }
+              }
+            }
+          ],
+          "items": false
+        }
+      },
+      "allOf": [
+        {
+          "if": { "type": "object", "properties": { "state": { "const": "open" } }, "required": ["state"] },
+          "then": { "type": "object", "properties": { "releaseAllowed": { "const": false } } }
+        },
+        {
+          "if": { "type": "object", "properties": { "state": { "const": "closed" } }, "required": ["state"] },
+          "then": { "type": "object", "properties": { "releaseAllowed": { "const": true } } }
+        }
+      ]
+    }
   }
 }

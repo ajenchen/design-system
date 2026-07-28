@@ -13,7 +13,7 @@ description: UX behavior audit for design-system components and product UI. Chec
 
 本 skill 是稽核 6 維度的 **D4 UX 行為** canonical home。
 
-## 觸發時機(對齊 CLAUDE.md 稽核 canonical)
+## 觸發時機(對齊 shared governance 稽核 canonical)
 
 | 情境 | 模式 | 本 skill 跑什麼 |
 |------|------|----------------|
@@ -91,7 +91,7 @@ description: UX behavior audit for design-system components and product UI. Chec
 - 從 uncontrolled 中途變 controlled(React warning 必出,或元件明文不支援)
 - Modal 關閉瞬間 async 回調仍 setState(unmount 後 setState warning)
 
-### Phase F — Report(必 STOP,對齊分權 canonical)
+### Phase F — Report and route
 
 產出:
 
@@ -110,11 +110,14 @@ description: UX behavior audit for design-system components and product UI. Chec
 ### P1(嚴重影響 UX)
 ### P2(建議改善)
 
-## 提議討論(待 user sign-off)
-- {若發現 DS canonical 本身有問題,列於此,不自改}
+## Authority classification
+- P2E:{工程／治理 finding，交 canonical owner 自主修復}
+- P2H:{只有真正產品／UI／UX SSOT 取捨才列 exact target-bound decision}
 ```
 
-**STOP 點**:report 寫完**不自動修**。分權對齊 CLAUDE.md `# 稽核 canonical`(內含「Audit-vs-execute 分權」inline rule)。
+本 skill 保持 read-only，report 是 evidence receipt；caller／canonical owner 對 P2E 直接接續
+修復與驗證，不把 read-only skill boundary 誤當 user checkpoint。只有 P2H 或
+shared-governance human-only boundary 才停止。
 
 ## Non-goals
 

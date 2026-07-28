@@ -82,14 +82,14 @@ export function captureGeometryDiagnostic(targetEl?: Element | null): GeometryDi
 
   let deltaTopLeft: GeometryDiagnostic['deltaTopLeft'] = null
   if (overlayRect && targetRect) {
-    // Outline 視覺 1px border + offset -1 →在 width/height 比 target 多 2px
-    // (per overlay.ts:339 left/top: rect.left-1, width: rect.width)。
-    // 對齊判斷:overlay.left ≈ target.left - 1,overlay.width ≈ target.width + 2,所以 delta 算「rectified」。
+    // Outline 視覺 2px border + offset -1 →在 width/height 比 target 多 4px
+    // (per overlay.ts left/top: rect.left-1, width: rect.width, box-sizing:content-box)。
+    // 對齊判斷:overlay.left ≈ target.left - 1,overlay.width ≈ target.width + 4,所以 delta 算「rectified」。
     deltaTopLeft = {
       top: Math.abs(targetRect.top - (overlayRect.top + 1)),
       left: Math.abs(targetRect.left - (overlayRect.left + 1)),
-      width: Math.abs(targetRect.width - (overlayRect.width - 2)),
-      height: Math.abs(targetRect.height - (overlayRect.height - 2)),
+      width: Math.abs(targetRect.width - (overlayRect.width - 4)),
+      height: Math.abs(targetRect.height - (overlayRect.height - 4)),
     }
   }
 

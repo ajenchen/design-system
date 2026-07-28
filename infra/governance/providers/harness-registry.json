@@ -28,7 +28,7 @@
     "schemaPath": "infra/governance/schemas/harness-authority-contracts.schema.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-authority-contracts",
-    "sha256": "16434e52c18c941b8b0692a59d3f568c8fda2ffe1a1022354560e6b1e52c5dea",
+    "sha256": "7922c77ef65760e740d3dd9bcca80c3dcefd7941188bd3f1ac23b6896086a009",
     "schemaSha256": "bba73861c87bc3047b70376e891a9464d525e9648fadd6e7d8fb406b57d10dce",
     "projectionPolicy": "registry-authority-and-claim-fields-are-exact-derived-projections"
   },
@@ -37,12 +37,15 @@
     "path": "infra/governance/providers/harness-source-inventory.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-source-inventory",
-    "sha256": "c5e64d53a99bbaec5f8ed9b398c6756d4edef698b9a9e09d59e35f2727ff9d18",
+    "sha256": "08060fd94c94170d287b507a6e3ab7d239c1d030c4c84c917a25bd6b95ccf208",
     "closurePolicy": "every-discovered-source-exactly-one-execution-or-reviewed-exclusion"
   },
   "runner": {
     "id": "all-registered-local-harnesses",
-    "command": ["node", "infra/governance/bin/run-harnesses.mjs"],
+    "command": [
+      "node",
+      "infra/governance/bin/run-harnesses.mjs"
+    ],
     "npmScript": "test:governance-harnesses",
     "npmScriptCommand": "node infra/governance/bin/run-harnesses.mjs",
     "defaultTimeoutMs": 300000,
@@ -52,31 +55,64 @@
     "certificationPolicy": "preserve-registry-claims-never-certify-external",
     "timeoutOverrides": [
       {
-        "command": ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "canonical-hook-behavioral"],
+        "command": [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "canonical-hook-behavioral"
+        ],
         "timeoutMs": 1860000
       },
       {
-        "command": ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "consumer-clean-room"],
+        "command": [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "consumer-clean-room"
+        ],
         "timeoutMs": 1860000
       },
       {
-        "command": ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "fork-clean-room"],
+        "command": [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "fork-clean-room"
+        ],
         "timeoutMs": 1260000
       },
       {
-        "command": ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-infra-remainder"],
+        "command": [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ],
         "timeoutMs": 3060000
       },
       {
-        "command": ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-package-remainder"],
+        "command": [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-package-remainder"
+        ],
         "timeoutMs": 960000
       },
       {
-        "command": ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-script-remainder"],
+        "command": [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
         "timeoutMs": 2760000
       },
       {
-        "command": ["node", "scripts/run-gate-meta-tests.mjs"],
+        "command": [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ],
         "timeoutMs": 2700000
       }
     ],
@@ -84,22 +120,40 @@
       {
         "path": ".github/workflows/ci.yml",
         "invocationKind": "yaml-run-line",
-        "argv": ["npm", "run", "--silent", "test:governance-harnesses"]
+        "argv": [
+          "npm",
+          "run",
+          "--silent",
+          "test:governance-harnesses"
+        ]
       },
       {
         "path": ".github/workflows/release.yml",
         "invocationKind": "yaml-run-line",
-        "argv": ["npm", "run", "--silent", "test:governance-harnesses"]
+        "argv": [
+          "npm",
+          "run",
+          "--silent",
+          "test:governance-harnesses"
+        ]
       },
       {
         "path": "scripts/release-preflight.mjs",
         "invocationKind": "js-reviewed-shell-wrapper",
-        "argv": ["npm", "run", "--silent", "test:governance-harnesses"]
+        "argv": [
+          "npm",
+          "run",
+          "--silent",
+          "test:governance-harnesses"
+        ]
       },
       {
         "path": ".devcontainer/post-create.mjs",
         "invocationKind": "js-authority-setup-wrapper",
-        "argv": ["node", ".devcontainer/post-create.mjs"]
+        "argv": [
+          "node",
+          ".devcontainer/post-create.mjs"
+        ]
       }
     ]
   },
@@ -108,8 +162,16 @@
       "id": "fresh-install-and-setup",
       "domain": "install",
       "commands": [
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-script-remainder"],
-        ["node", "scripts/run-gate-meta-tests.mjs"]
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
       ],
       "testPaths": [
         "scripts/test-setup-governance.mjs",
@@ -152,9 +214,22 @@
       "id": "consumer-transactional-upgrade",
       "domain": "upgrade",
       "commands": [
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-script-remainder"],
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-infra-remainder"],
-        ["node", "scripts/run-gate-meta-tests.mjs"]
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
       ],
       "testPaths": [
         "scripts/test-sync-all-transaction.mjs",
@@ -187,10 +262,10 @@
         "infra/governance/schemas/consumer-bootstrap-plan.schema.json",
         "infra/governance/schemas/consumer-bootstrap-snapshot-verification.schema.json",
         "infra/governance/schemas/consumer-bootstrap-readback-verification.schema.json",
-          "infra/governance/schemas/consumer-bootstrap-promotion-proposal.schema.json",
-          "infra/governance/schemas/consumer-fanout-review.schema.json",
-          "infra/governance/schemas/consumer-fanout-dispatch-evidence.schema.json",
-          "infra/governance/schemas/managed-repos.schema.json",
+        "infra/governance/schemas/consumer-bootstrap-promotion-proposal.schema.json",
+        "infra/governance/schemas/consumer-fanout-review.schema.json",
+        "infra/governance/schemas/consumer-fanout-dispatch-evidence.schema.json",
+        "infra/governance/schemas/managed-repos.schema.json",
         "infra/governance/inventory/managed-repos.json",
         "infra/governance/release-rings.json",
         "packages/design-system/tools/codemods/index.mjs",
@@ -218,8 +293,18 @@
       "id": "rollback-and-recovery",
       "domain": "rollback",
       "commands": [
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-script-remainder"],
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-infra-remainder"]
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ]
       ],
       "testPaths": [
         "scripts/test-sync-all-transaction.mjs",
@@ -247,7 +332,12 @@
       "id": "process-crash-boundary",
       "domain": "process-crash",
       "commands": [
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-script-remainder"]
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ]
       ],
       "testPaths": [
         "scripts/test-sync-all-transaction.mjs",
@@ -275,8 +365,18 @@
       "id": "provider-lifecycle-onboarding",
       "domain": "provider-lifecycle",
       "commands": [
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-script-remainder"],
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-package-remainder"]
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-package-remainder"
+        ]
       ],
       "testPaths": [
         "scripts/test-provider-lifecycle.mjs",
@@ -303,8 +403,16 @@
       "id": "cloud-portability-profile",
       "domain": "cloud",
       "commands": [
-        ["node", "scripts/run-gate-meta-tests.mjs"],
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-infra-remainder"]
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ]
       ],
       "testPaths": [
         "scripts/test-setup-governance.mjs",
@@ -313,21 +421,21 @@
         "infra/governance/test/authority-setup.test.mjs",
         "infra/governance/test/provider-surface.test.mjs"
       ],
-    "authorityPaths": [
-      "package.json",
-      "package-lock.json",
-      ".npmrc",
-      "scripts/lib/verified-exact-npm-runtime.mjs",
-      "scripts/lib/governance-dependency-bootstrap.mjs",
-      "scripts/lib/worktree-fingerprint.mjs",
-      "scripts/lib/workspace-post-create.mjs",
-      "infra/governance/providers/compatibility-matrix.json",
-      "infra/governance/providers/role-surface-policy.json",
-      "infra/governance/schemas/role-surface-policy.schema.json",
-      "infra/governance/lib/role-surface-policy.mjs",
-      "infra/governance/inventory/managed-repos.json",
-      "infra/governance/release-rings.json",
-      "infra/governance/providers/harness-registry.json",
+      "authorityPaths": [
+        "package.json",
+        "package-lock.json",
+        ".npmrc",
+        "scripts/lib/verified-exact-npm-runtime.mjs",
+        "scripts/lib/governance-dependency-bootstrap.mjs",
+        "scripts/lib/worktree-fingerprint.mjs",
+        "scripts/lib/workspace-post-create.mjs",
+        "infra/governance/providers/compatibility-matrix.json",
+        "infra/governance/providers/role-surface-policy.json",
+        "infra/governance/schemas/role-surface-policy.schema.json",
+        "infra/governance/lib/role-surface-policy.mjs",
+        "infra/governance/inventory/managed-repos.json",
+        "infra/governance/release-rings.json",
+        "infra/governance/providers/harness-registry.json",
         "infra/governance/providers/harness-source-inventory.json",
         "infra/governance/bin/run-harnesses.mjs",
         "infra/governance/lib/playwright-runtime.mjs",
@@ -362,9 +470,22 @@
       "id": "product-template-role-boundary",
       "domain": "template-consumer",
       "commands": [
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "fork-clean-room"],
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "consumer-clean-room"],
-        ["node", "scripts/run-gate-meta-tests.mjs"]
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "fork-clean-room"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "consumer-clean-room"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
       ],
       "testPaths": [
         "scripts/test-fork-governance.mjs",
@@ -399,9 +520,22 @@
       "id": "provider-adaptive-independent-review",
       "domain": "second-opinion",
       "commands": [
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-infra-remainder"],
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-script-remainder"],
-        ["node", "scripts/test-codex-run-guarded.mjs"]
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "scripts/test-codex-run-guarded.mjs"
+        ]
       ],
       "testPaths": [
         "infra/governance/test/provider-surface.test.mjs",
@@ -409,7 +543,6 @@
         "scripts/test-deep-audit-review-archive.mjs",
         "scripts/test-model-deep-audit-safety.mjs",
         "scripts/test-model-evidence-broker-hardening.mjs",
-        "scripts/test-provider-neutral-review-core.mjs",
         "scripts/test-provider-review-binding.mjs",
         "scripts/test-review-capability-selection.mjs",
         "scripts/test-codex-run-guarded.mjs"
@@ -472,7 +605,10 @@
       "id": "published-template-mirror",
       "domain": "mirror",
       "commands": [
-        ["node", "scripts/run-gate-meta-tests.mjs"]
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
       ],
       "testPaths": [
         "scripts/test-verify-mirror-evidence.mjs",
@@ -508,10 +644,26 @@
       "id": "release-supply-chain",
       "domain": "release",
       "commands": [
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-script-remainder"],
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-infra-remainder"],
-        ["node", "scripts/test-check-src-republish.mjs"],
-        ["node", "scripts/run-gate-meta-tests.mjs"]
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ],
+        [
+          "node",
+          "scripts/test-check-src-republish.mjs"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
       ],
       "testPaths": [
         "scripts/test-release-bom.mjs",
@@ -549,7 +701,12 @@
       "id": "fleet-plan-and-reconcile",
       "domain": "fleet",
       "commands": [
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-infra-remainder"]
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ]
       ],
       "testPaths": [
         "infra/governance/test/consumerctl.test.mjs",
@@ -609,9 +766,22 @@
       "id": "evidence-provenance-and-parity",
       "domain": "evidence",
       "commands": [
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-script-remainder"],
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-infra-remainder"],
-        ["node", "scripts/run-gate-meta-tests.mjs"]
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-infra-remainder"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
       ],
       "testPaths": [
         "scripts/test-governance-runtime-evidence.mjs",
@@ -678,14 +848,14 @@
         "infra/governance/schemas/external-ledger-artifact-identity.schema.json",
         "infra/governance/schemas/external-ledger-writer-receipt.schema.json",
         ".github/workflows/governance-anchor.yml",
-    "scripts/governance-anchor-preflight.mjs",
-    "scripts/verify-privileged-change.mjs",
-    "AGENTS.md",
-    "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
-    "packages/governance/src/authority-decision-evidence.mjs",
-    "packages/governance/canonical/providers.json",
-    "scripts/run-provider-hook.mjs",
-    "scripts/gen-codex-adapter.mjs"
+        "scripts/governance-anchor-preflight.mjs",
+        "scripts/verify-privileged-change.mjs",
+        "AGENTS.md",
+        "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
+        "packages/governance/src/authority-decision-evidence.mjs",
+        "packages/governance/canonical/providers.json",
+        "scripts/run-provider-hook.mjs",
+        "scripts/gen-codex-adapter.mjs"
       ],
       "executionClass": "fixture-integration",
       "certificationClaim": "external-readback-required",
@@ -694,9 +864,8 @@
         "Local or unsigned evidence cannot be relabeled as managed or certified evidence.",
         "Visual-baseline proposals bind the governed Git origin and HEAD commit/tree, fully decoded CRC-valid PNG candidate/baseline inventories, file modes, explicit non-placeholder per-image statements, trust-policy bytes and exact review rows; unsigned approval, cross-repository replay, arbitrary callbacks, policy/issuer/image substitution, links, contention and partial publication fail closed.",
         "The same role-portable trust-policy bytes resolve under authority and BOM-managed consumer governance roots; this tool version rejects every managed-broker activation attempt until canonical signed broker/model-authority receipt validators are reused.",
-    "Reviewed certification and activation handoffs are serialized into exact protected-default one-parent pull requests: runtime certification atomically adds its content-addressed evidence plus ledger, provider review certification atomically adds the exact runtime and review-capability evidence plus both ledgers, activation changes only its ledger, and same-run artifact/App identity, expiring base CAS, exact tree/commit/PR readback, mutually exclusive protected-base routing and merge-gate replay fail closed."
-    ,
-    "Canonical Decision Authority remains one AGENTS.md SSOT; deterministic content-addressed receipts bind its exact policy, classifier, provider registry, provider/surface/session/target/operation scope and shared root/fork adapters. Operation-only Standing Authorization accepts only closed governance-action targets whose exact operation digest matches, while UI/UX, human-only, destructive/bypass, malformed, stale, replayed, substituted, tampered and unknown-provider evidence fails closed across local, cloud, remote and CI structural surfaces without claiming runtime certification."
+        "Reviewed certification and activation handoffs are serialized into exact protected-default one-parent pull requests: runtime certification atomically adds its content-addressed evidence plus ledger, provider review certification atomically adds the exact runtime and review-capability evidence plus both ledgers, activation changes only its ledger, and same-run artifact/App identity, expiring base CAS, exact tree/commit/PR readback, mutually exclusive protected-base routing and merge-gate replay fail closed.",
+        "Canonical Decision Authority remains one AGENTS.md SSOT; deterministic content-addressed receipts bind its exact policy, classifier, provider registry, provider/surface/session/target/operation scope and shared root/fork adapters. Operation-only Standing Authorization accepts only closed governance-action targets whose exact operation digest matches, while UI/UX, human-only, destructive/bypass, malformed, stale, replayed, substituted, tampered and unknown-provider evidence fails closed across local, cloud, remote and CI structural surfaces without claiming runtime certification."
       ],
       "doesNotProve": [
         "An external signer, managed executor or provider runtime is certified while its ledger remains pending.",
@@ -709,10 +878,27 @@
       "id": "fake-green-ratchet",
       "domain": "fake-green",
       "commands": [
-        ["node", "scripts/audit-gate-meta-test-coverage.mjs", "--check"],
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "canonical-hook-behavioral"],
-        ["node", "infra/governance/bin/run-harness-suite.mjs", "--suite", "governance-script-remainder"],
-        ["node", "scripts/run-gate-meta-tests.mjs"]
+        [
+          "node",
+          "scripts/audit-gate-meta-test-coverage.mjs",
+          "--check"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "canonical-hook-behavioral"
+        ],
+        [
+          "node",
+          "infra/governance/bin/run-harness-suite.mjs",
+          "--suite",
+          "governance-script-remainder"
+        ],
+        [
+          "node",
+          "scripts/run-gate-meta-tests.mjs"
+        ]
       ],
       "testPaths": [
         "scripts/test-run-gate-meta-tests-isolation.mjs",
@@ -742,8 +928,15 @@
   ],
   "metaTestCoverage": {
     "coverageKind": "discovered-paired-mutation-zero-debt-ratchet",
-    "inventoryCommand": ["node", "scripts/audit-gate-meta-test-coverage.mjs", "--check"],
-    "isolatedRunnerCommand": ["node", "scripts/run-gate-meta-tests.mjs"],
+    "inventoryCommand": [
+      "node",
+      "scripts/audit-gate-meta-test-coverage.mjs",
+      "--check"
+    ],
+    "isolatedRunnerCommand": [
+      "node",
+      "scripts/run-gate-meta-tests.mjs"
+    ],
     "isolationTestPath": "scripts/test-run-gate-meta-tests-isolation.mjs",
     "baselinePath": "scripts/audit-gate-meta-test-coverage.baseline.json",
     "requiredOutcome": "all-discovered-checker-gates-covered-zero-debt",

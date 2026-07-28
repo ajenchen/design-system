@@ -10,7 +10,10 @@ import { readJson } from '../lib/common.mjs'
 import { validateProtectedRootClassification } from '../../../scripts/lib/governance-protected-roots.mjs'
 
 const GOVERNANCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const NOW = new Date('2026-07-21T00:00:00.000Z')
+const CANONICAL_ISSUER_REGISTRY = readJson(resolve(GOVERNANCE_ROOT, 'trust/issuers.json'))
+const NOW = new Date(Math.max(
+  ...CANONICAL_ISSUER_REGISTRY.issuers.map(issuer => Date.parse(issuer.notBefore)),
+) + 1)
 const permissiveSchema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   type: 'object',

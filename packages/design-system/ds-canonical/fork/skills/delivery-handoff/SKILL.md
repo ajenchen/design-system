@@ -3,7 +3,7 @@ name: delivery-handoff
 description: Generate stakeholder-ready handoff documentation when a product / feature is confirmed final. Produces Storybook handoff page + UI flow diagram + component usage inventory + token consumption report + a11y checklist + per-screen spec — a Figma-like inspectable delivery package. Invoke via /delivery-handoff when user says「要交付」「handoff」「交付文件」「給 X 團隊的文件」「產品確認要上線了」. **只在產品確認 final 後才 invoke**,非 prototype 階段。
 ---
 
-> **⚠️ Fork 工具註記(build 自動加)**:本 skill 提到的 `scripts/*.mjs` 或非標準 `npm run <audit>` 是 **DS-author repo 的機械工具,未隨 fork 套件附帶**(Claude Code 不掃 node_modules,fork 也無這些 executor + dep)。你的 product fork 用本 skill 的**方法論**(human / AI judgment)+ 既有 committed governance hook 的機械強制即可;要 mechanical 腳本層(截圖 / CI gate)請自行設置對應工具,或把該檢查 PR 回 DS repo 跑。
+> **Product-role projection(build 自動)**:本 skill 的執行步驟已只保留本 product repo 實際存在的指令。DS-author-only executor 會被改寫為 browser/manual/product-CI 等價驗證,不得在 product 中嘗試不存在的腳本。
 
 # Delivery Handoff Workflow
 
@@ -63,9 +63,9 @@ Purpose: 產品 / feature 通過 prototype → audit → stakeholder 決策後�
 ### Phase 1 — Inventory 生成
 
 **Deterministic 源優先(2026-07-07 治理進化收尾:本 skill 原「幾乎零機械依賴」列冊補強)**:
-- Component / story 母集 = `node scripts/gen-ds-story-manifest.mjs` 產出的 manifest(禁憑記憶列)
+- Component / story 母集 = `inspect the installed package public exports and shipped stories` 產出的 manifest(禁憑記憶列)
 - Token 使用 = `rg -o -- '--[a-z][a-z0-9-]*' <feature files> | sort | uniq -c`(機械計數,非印象;字元類含 0-9 — DS token 名 46% 含數字如 `--chart-1`/`--black-a02`,缺數字會截斷合併成假 key)
-- 消費統計交叉驗 `scripts/audit-orphan-tokens.mjs` 的消費通道邏輯(同一套 5 通道定義)
+- 消費統計交叉驗 `search product token usage and compare it with the installed token documentation` 的消費通道邏輯(同一套 5 通道定義)
 
 scan 目標 feature 的 code,自動 inventory:
 
@@ -115,7 +115,9 @@ flowchart TD
   Confirm -->|取消| Review
 ```
 
-AI 根據 code(route / onClick / navigation)auto-generate,user review 後微調。
+AI 根據 code(route / onClick / navigation)auto-generate，並以 source/readback 驗證。
+若 flow 可由既有 requirement 與實作唯一重建，直接修正 evidence drift；只有仍存在會改變
+產品／UI／UX SSOT 的真實 flow 取捨才 P2H。
 
 ### Phase 3 — Per-screen spec sheet
 
@@ -173,9 +175,9 @@ Storybook title: `Features/{FeatureName}/Handoff`
 
 此 page 就是「Figma-like 的 inspectable 交付」— stakeholder 打開就看到全景。
 
-### ⚠️ Checkpoint — User review handoff package
+### Checkpoint — Handoff evidence/readback receipt
 
-Phase 4 產出後 pause,讓 user review:
+Phase 4 產出後記錄並驗證:
 
 ```
 📦 Handoff Package Ready
@@ -193,12 +195,16 @@ Export formats:
 - Storybook URL: {link}
 - Markdown(可 export PDF): {path}
 
-請 review:
-(a) 通過,準備 share 給 {audience}
-(b) 需要修改: ...
-(c) 還缺 ... 補齊
-(d) Audience 換人,調整語氣 / 深度
+Readback:
+- requirement／source coverage: {complete / findings}
+- links／screens／states／a11y evidence: {verified / findings}
+- audience binding: {source / exact requirement}
 ```
+
+可由 requirement、source、tests 與既有 audience 唯一判定的 finding 由 agent 自主修正並
+繼續。只有 handoff 揭露新的產品／UI／UX outcomes 取捨，或對外分享會構成無法從既有
+requirement 推導的 business commitment，才停在 shared governance 定義的 human-only
+boundary；handoff milestone 本身不是 user engineering-approval gate。
 
 ---
 

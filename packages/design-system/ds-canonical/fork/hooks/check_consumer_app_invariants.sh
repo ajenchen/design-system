@@ -12,7 +12,14 @@
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -uo pipefail
-INPUT=$(cat 2>/dev/null || echo "{}")
+INPUT=$(cat 2>/dev/null) || {
+  printf '🚨 GOVERNANCE_INTEGRITY: CONSUMER APP INVARIANTS FAILURE: 無法讀取 canonical input\n' >&2
+  exit 70
+}
+if ! printf '%s' "$INPUT" | jq -e 'type == "object"' >/dev/null 2>&1; then
+  printf '🚨 GOVERNANCE_INTEGRITY: CONSUMER APP INVARIANTS FAILURE: invalid input envelope\n' >&2
+  exit 70
+fi
 
 # ── Shared: 中和 consumer 自有 local 元件的裸 tag(named-import 除鏽的反向保護,2026-07-10 N6 根治)──
 # 多數 r2/r3 pattern 用 `<(DS\.)?X`(named-import 除鏽,抓 fork 用 named import `<Dialog>` 繞過
@@ -62,7 +69,7 @@ CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content /
 # Escape clause — 2026-06-03 修(同 R8 fragment-vs-file bug class):Edit 只送 new_string 片段,
 # 但 @consumer-catalog-allow marker 在檔頭(不在每次 edit 的片段裡)→ 編輯有 marker 的 portal 檔
 # 任一非 marker 行就被誤擋。本 hook 是 PostToolUse(檔已落 disk)→ 補查整檔 marker。
-if echo "$CONTENT" | grep -q '@consumer-catalog-allow:'; then exit 0; fi
+if grep -q '@consumer-catalog-allow:' <<<"$CONTENT"; then exit 0; fi
 if [ -f "$FILE" ] && grep -q '@consumer-catalog-allow:' "$FILE" 2>/dev/null; then exit 0; fi
 
 VIOLATIONS=""
@@ -71,7 +78,7 @@ VIOLATIONS=""
 basename=$(basename "$FILE" .stories.tsx)
 if echo "$basename" | grep -qE '^(EveryDsComponent|AllDsComponents|AllComponents|DsCatalog|EveryComponent)$'; then
   # AllDsComponents allowed IF it's only portal proxy (check title)
-  if [ "$basename" = "AllDsComponents" ] && echo "$CONTENT" | grep -qE 'DsCanonicalPortal|iframe.*design-system|@consumer-catalog-allow'; then
+  if [ "$basename" = "AllDsComponents" ] && grep -qE 'DsCanonicalPortal|iframe.*design-system|@consumer-catalog-allow' <<<"$CONTENT"; then
     : # portal proxy OK
   else
     VIOLATIONS="${VIOLATIONS}  - File basename '$basename' = catalog pattern. PW 不該重寫 DS catalog.\n"
@@ -79,13 +86,13 @@ if echo "$basename" | grep -qE '^(EveryDsComponent|AllDsComponents|AllComponents
 fi
 
 # Pattern 2: title claims per-component default
-if echo "$CONTENT" | grep -qE "title:.*['\"](所有 DS 元件|Every DS Component|All DS Components.*render|每元件 default)"; then
+if grep -qE "title:.*['\"](所有 DS 元件|Every DS Component|All DS Components.*render|每元件 default)" <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - Story title claims per-component default render. PW catalog 只可 import smoke + DS portal proxy.\n"
 fi
 
 # Pattern 3: iterate-render anti-pattern
-if echo "$CONTENT" | grep -qE 'Object\.keys\(DS\)\.(map|forEach)' || \
-   echo "$CONTENT" | grep -qE 'Object\.entries\(DS\)\.(map|forEach)'; then
+if grep -qE 'Object\.keys\(DS\)\.(map|forEach)' <<<"$CONTENT" || \
+   grep -qE 'Object\.entries\(DS\)\.(map|forEach)' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - Detected Object.keys/entries(DS).map iterate-render pattern. 禁 iterate render DS exports.\n"
 fi
 
@@ -140,7 +147,7 @@ CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content /
 [ -z "$CONTENT" ] && exit 0
 
 # Escape clauses
-if echo "$CONTENT" | grep -qE '@story-baseline-allow:|@consumer-catalog-allow:'; then exit 0; fi
+if grep -qE '@story-baseline-allow:|@consumer-catalog-allow:' <<<"$CONTENT"; then exit 0; fi
 
 # 中和 consumer 自有 local 元件的裸 tag(N6 over-broad guard;shared helper SSOT)
 CONTENT=$(neutralize_local_tags "$CONTENT")
@@ -150,12 +157,12 @@ HIGH_RISK_PRIMITIVES='DataTable|Dialog|Sheet|Popover|DropdownMenu|Tooltip|HoverC
 
 # Detect usage(named-import 除鏽:namespace <DS.X> + DS-named-import 的裸 <X> 皆計入;
 # consumer 自有 local 元件已由 neutralize_local_tags 中和成 <LOCAL_X 不會誤匹配)
-USED=$(echo "$CONTENT" | grep -oE "<(DS\.)?($HIGH_RISK_PRIMITIVES)\\b" | sort -u | head -10)
+USED=$(grep -oE "<(DS\.)?($HIGH_RISK_PRIMITIVES)\\b" <<<"$CONTENT" | sort -u | awk 'NR <= 10')
 
 if [ -z "$USED" ]; then exit 0; fi
 
 # Check for @story-baseline: marker
-if echo "$CONTENT" | grep -qE '@story-baseline:[[:space:]]*\S'; then exit 0; fi
+if grep -qE '@story-baseline:[[:space:]]*\S' <<<"$CONTENT"; then exit 0; fi
 
 cat >&2 << EOF
 🚨 CONSUMER-STORY-BASELINE BLOCKER(P0,2026-05-27 M31 codex synthesis)
@@ -206,7 +213,7 @@ CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content /
 CONTENT=$(echo "$CONTENT" | tr '\n' ' ')
 
 # Global escape — file-wide allowlist
-if echo "$CONTENT" | grep -q '@ds-misuse-allow:'; then exit 0; fi
+if grep -q '@ds-misuse-allow:' <<<"$CONTENT"; then exit 0; fi
 
 # 中和 consumer 自有 local 元件的裸 tag(N6 over-broad guard;shared helper SSOT,對齊 r2_story_baseline)
 CONTENT=$(neutralize_local_tags "$CONTENT")
@@ -214,30 +221,30 @@ CONTENT=$(neutralize_local_tags "$CONTENT")
 VIOLATIONS=""
 
 # Pattern 1: <CircularProgress size={N}> with literal number (override default 24)
-if echo "$CONTENT" | grep -qE '<(DS\.)?CircularProgress[^>]+size=\{[0-9]+\}'; then
+if grep -qE '<(DS\.)?CircularProgress[^>]+size=\{[0-9]+\}' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - <CircularProgress size={N}> hardcoded number override default 24 (per circular-progress.spec.md:101)\n"
 fi
 
 # Pattern 2: <RadioGroupItem> NOT wrapped in <SelectionItem control={...}>
 # Approximation: file uses RadioGroupItem but doesn't reference SelectionItem
-if echo "$CONTENT" | grep -qE '<(DS\.)?RadioGroupItem\b' && ! echo "$CONTENT" | grep -qE 'SelectionItem|<(DS\.)?RadioGroupItem[^>]+label='; then
+if grep -qE '<(DS\.)?RadioGroupItem\b' <<<"$CONTENT" && ! grep -qE 'SelectionItem|<(DS\.)?RadioGroupItem[^>]+label=' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - <RadioGroupItem> 沒 wrap <SelectionItem control={<RadioGroupItem>}> (per selection-item.spec.md:23 SSOT spacing/padding)\n"
 fi
 
 # Pattern 3: <DataTable columns={[…]}> with literal single column
-if echo "$CONTENT" | grep -qE '<(DS\.)?DataTable[^>]+columns=\{\[\s*\{[^}]+\}\s*\]\}' && ! echo "$CONTENT" | grep -qE 'columns=\{[^}]*\},\s*\{'; then
+if grep -qE '<(DS\.)?DataTable[^>]+columns=\{\[\s*\{[^}]+\}\s*\]\}' <<<"$CONTENT" && ! grep -qE 'columns=\{[^}]*\},\s*\{' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - <DataTable columns={[single-col]}> minimal one-column = 違反 data-table.spec.md canonical(min 2 cols for meaningful render)\n"
 fi
 
 # Pattern 4: <LinkInput placeholder=...> without value prop
-if echo "$CONTENT" | grep -qE '<(DS\.)?LinkInput[^>]+placeholder=' && ! echo "$CONTENT" | grep -qE '<(DS\.)?LinkInput[^>]+(value|defaultValue)='; then
+if grep -qE '<(DS\.)?LinkInput[^>]+placeholder=' <<<"$CONTENT" && ! grep -qE '<(DS\.)?LinkInput[^>]+(value|defaultValue)=' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - <LinkInput placeholder=...> 沒 value prop = placeholder-only mode 抹平 link/edit canonical (per link-input.spec.md:18,48-58)\n"
 fi
 
 # Pattern 5: <Empty title=...> without icon and without description
-if echo "$CONTENT" | grep -qE '<(DS\.)?Empty[^>]+title=' && \
-   ! echo "$CONTENT" | grep -qE '<(DS\.)?Empty[^>]+icon=' && \
-   ! echo "$CONTENT" | grep -qE '<(DS\.)?Empty[^>]+description='; then
+if grep -qE '<(DS\.)?Empty[^>]+title=' <<<"$CONTENT" && \
+   ! grep -qE '<(DS\.)?Empty[^>]+icon=' <<<"$CONTENT" && \
+   ! grep -qE '<(DS\.)?Empty[^>]+description=' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - <Empty title=...> 無 icon 無 description = 違反 Empty.tsx:11「預設只需 description」minimal mock looks weird\n"
 fi
 
@@ -246,7 +253,7 @@ fi
 # conformance 防線保證,對齊 Polaris stylelint-polaris / Atlassian eslint-plugin / Carbon stylelint。
 # 既有 check_layout_space_magic_numbers 守「間距」;此 pattern 補「色值/字級/shadow」缺口。
 # 零誤判優先:只抓 hardcoded(`-[var(--...)]` token 用法不匹配)。
-if echo "$CONTENT" | grep -qE '\b[a-z][a-z-]*-\[(#[0-9a-fA-F]{3,8}|rgb|rgba|hsl|hsla)[(]?|\btext-\[[0-9]|\bshadow-(sm|md|lg|xl|2xl)\b'; then
+if grep -qE '\b[a-z][a-z-]*-\[(#[0-9a-fA-F]{3,8}|rgb|rgba|hsl|hsla)[(]?|\btext-\[[0-9]|\bshadow-(sm|md|lg|xl|2xl)\b' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 硬寫色值/字級/shadow 繞過 DS token(bg-[#hex] / text-[14px] / shadow-md)→ 改 semantic color token / text-body 等 typography token / shadow-[var(--elevation-N)](per ui-development.md「Tailwind 5 條核心」rule 3)\n"
 fi
 
@@ -254,8 +261,8 @@ fi
 # app-shell.spec.md「Consumer 紀律」段明文禁 sidebar={<div>}/header={<header>},原註「靠 audit 把關」
 # 無機械閘 → 兌現成 P0(per memory feedback_ssot_mechanical_p0_not_p1_warn)。
 # 零誤判:雙條件 = 同檔有 <DS.AppShell> + slot 屬性直接餵 raw tag(div/header/nav/aside/section)。
-if echo "$CONTENT" | grep -qE '<(DS\.)?AppShell\b' && \
-   echo "$CONTENT" | grep -qE '\b(header|sidebar|aside)=\{ *<(div|header|nav|aside|section)\b'; then
+if grep -qE '<(DS\.)?AppShell\b' <<<"$CONTENT" && \
+   grep -qE '\b(header|sidebar|aside)=\{ *<(div|header|nav|aside|section)\b' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - <AppShell header/sidebar/aside={<raw element>}> — slot 必餵 DS 元件(ChromeHeader / Sidebar / AppShellAside),raw div/header 漏接 border/scroll/responsive canonical(per app-shell.spec.md「Consumer 紀律」段)\n"
 fi
 
@@ -265,29 +272,29 @@ fi
 # → 必消費,不 hand-craft raw HTML 繞過」這條**必定遵循大原則**的機械閘缺口。反 pattern 由
 # build-ui-canonicals.md ❌→✅ 對照表(SSOT)驅動。零誤判:只抓高信心 raw-tag 訊號;<DS.X> 元件是
 # PascalCase + DS. prefix 不匹配小寫 raw tag;node_modules 已於上方排除;有理由可 @ds-misuse-allow escape。
-if echo "$CONTENT" | grep -qE '<table\b' && echo "$CONTENT" | grep -qE '<thead\b|<tbody\b|<th\b'; then
+if grep -qE '<table\b' <<<"$CONTENT" && grep -qE '<thead\b|<tbody\b|<th\b' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 手刻 raw <table><thead>/<tbody> 資料表 → 必用 <DataTable columns={...} data={...} />(build-ui-canonicals.md:18 ❌→✅ SSOT;這是「優先消費既有元件」大原則,無理由不得手刻)\n"
 fi
 # 2026-07-08 WM 戰役 R4:偽表格視覺簽名(div-grid 表格繞過字面 <table> 偵測 — WM 5 檔
 # MINI_TABLE grid-cols + header bg + row 常數重複宣告實證,spec broad / hook narrow M34 gap)。
 # 簽名 = 同段 content 有 grid-cols-[ 且(bg-muted|bg-neutral-selected 當 header 底 或 自創
 # ROW_PAD 類常數)。escape:@handcraft-table-ok:(真非表格的 grid 佈局)。
-if echo "$CONTENT" | grep -qE 'grid-cols-\[' && echo "$CONTENT" | grep -qE '(bg-muted|bg-neutral-selected)[^a-z-]' && echo "$CONTENT" | grep -qiE 'ROW_PAD|MINI_TABLE|<div[^>]*grid[^>]*font-medium' && ! echo "$CONTENT" | grep -q '@handcraft-table-ok:'; then
+if grep -qE 'grid-cols-\[' <<<"$CONTENT" && grep -qE '(bg-muted|bg-neutral-selected)[^a-z-]' <<<"$CONTENT" && grep -qiE 'ROW_PAD|MINI_TABLE|<div[^>]*grid[^>]*font-medium' <<<"$CONTENT" && ! grep -q '@handcraft-table-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 偽表格簽名(div grid-cols + header bg + row 常數):div-grid 手刻資料表 → 必用 <DataTable size=\"sm\" height=\"auto\">(data-table.spec「嵌入式表格」canonical;WM MembersTab 等 5 檔錨例)。真非表格 grid 佈局 → 行內 @handcraft-table-ok: <rationale>\n"
 fi
-if echo "$CONTENT" | grep -qE '<img\b[^>]*rounded-full'; then
+if grep -qE '<img\b[^>]*rounded-full' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 手刻 <img ... rounded-full> 頭像 → 必用 <Avatar>(build-ui-canonicals.md:25)\n"
 fi
-if echo "$CONTENT" | grep -qE '<select\b'; then
+if grep -qE '<select\b' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - native <select> 手刻下拉 → 必用 <Select> / <DropdownMenu>(build-ui-canonicals.md:15)\n"
 fi
 # 2026-07-08 WM 戰役 R4:手刻表單 validation 簽名(WM CreateWorkItemDialog 註解引 canonical
 # 卻手刻 showErrors state = M23(d)「cite 存在 ≠ consume」;useFormValidation hook 零消費偵測缺口)。
 # 簽名 = 檔內有 showErrors/submitAttempt 類 state + FieldError 渲染,但無 useFormValidation import。
-if echo "$CONTENT" | grep -q 'useState' && echo "$CONTENT" | grep -qE '\b(showErrors|showError|submitAttempt|attemptedSubmit)\b' && echo "$CONTENT" | grep -q 'FieldError' && ! echo "$CONTENT" | grep -q 'useFormValidation' && ! echo "$CONTENT" | grep -q '@form-validation-ok:'; then
+if grep -q 'useState' <<<"$CONTENT" && grep -qE '\b(showErrors|showError|submitAttempt|attemptedSubmit)\b' <<<"$CONTENT" && grep -q 'FieldError' <<<"$CONTENT" && ! grep -q 'useFormValidation' <<<"$CONTENT" && ! grep -q '@form-validation-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 手刻表單 validation state(showErrors/submitAttempt + FieldError)→ 必消費 useFormValidation hook(form-validation.spec 規則 1 blur/7 全驗/8 DOM 序 anchor 隨 hook 自帶;root barrel 有 export)。特殊表單 → 行內 @form-validation-ok: <rationale>\n"
 fi
-if echo "$CONTENT" | grep -qE '<hr\b'; then
+if grep -qE '<hr\b' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 手刻 <hr> 分隔線 → 用 <Separator>(或 separator.spec 允許的 CSS border)(build-ui-canonicals.md:23)\n"
 fi
 # 2026-07-10 WM 戰役收官:手刻 menu-item 可點列簽名(WM TypeSettingsDialog 左 rail 錨例 —
@@ -297,84 +304,84 @@ fi
 # (= menu-item family 狀態語義)+ 可點訊號(<button/<a/onClick),且沒在消費 <MenuItem。
 # 注意:不 tag-anchor className(WM 錨例把 class 抽 const 再 className={cls} 引用,
 # tag-anchored regex 會漏 — test 27 抓到的真實 shape)。
-if echo "$CONTENT" | grep -q 'hover:bg-neutral-hover' && \
-   echo "$CONTENT" | grep -q 'bg-neutral-selected' && \
-   echo "$CONTENT" | grep -qE '<button\b|<a\b|onClick=' && \
-   ! echo "$CONTENT" | grep -q '<MenuItem' && \
-   ! echo "$CONTENT" | grep -q '@nav-row-handcraft-ok:'; then
+if grep -q 'hover:bg-neutral-hover' <<<"$CONTENT" && \
+   grep -q 'bg-neutral-selected' <<<"$CONTENT" && \
+   grep -qE '<button\b|<a\b|onClick=' <<<"$CONTENT" && \
+   ! grep -q '<MenuItem' <<<"$CONTENT" && \
+   ! grep -q '@nav-row-handcraft-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 手刻 menu-item 可點列(hover:bg-neutral-hover + bg-neutral-selected 成對)→ 必包 <MenuItem>(subpath @qijenchen/design-system/components/Menu;selected prop + startIcon/avatar/startContent slot;menu-item.spec.md「結構」)。非 menu-item 語義 → 行內 @nav-row-handcraft-ok: <rationale>\n"
 fi
 
-# ── 2026-07-10 批次 A(治理覆蓋 matrix 收官;來源 .claude/planning/2026-07-10-consumer-coverage-remediation.md)──
+# ── 2026-07-10 批次 A(治理覆蓋 matrix 收官;來源 governance/planning/2026-07-10-consumer-coverage-remediation.md)──
 # C5 對比配對:深字桶 hue(yellow/amber/orange/lime step-6)配 text-white — 各自合法、組合對比違規
 # (tag.spec.md 深字桶 = text-on-emphasis-dark)。修 → 消費 CAT_SOLID token pair。
-if echo "$CONTENT" | grep -q 'text-white' && \
-   echo "$CONTENT" | grep -qE 'bg-\[var\(--color-(yellow|amber|orange|lime)-[0-9]' && \
-   ! echo "$CONTENT" | grep -q '@cat-solid-ok:'; then
+if grep -q 'text-white' <<<"$CONTENT" && \
+   grep -qE 'bg-\[var\(--color-(yellow|amber|orange|lime)-[0-9]' <<<"$CONTENT" && \
+   ! grep -q '@cat-solid-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 亮色底(yellow/amber/orange/lime step-6)配 text-white = 對比違規 → 消費 CAT_SOLID / CAT_SOLID_TOKENS pair(深字桶自帶 text-on-emphasis-dark;tokens/categorical-color.ts)。特例 → @cat-solid-ok: <rationale>\n"
 fi
 # C18 計數串接:element children 出現 {label} ({count/length/total})。attr(aria-label)字串層合法
 # — regex 錨 children 的 > 前綴,attribute 不中(item-anatomy.spec.md:176 禁括號串接)。
-if echo "$CONTENT" | grep -qE '>[^<]*\{[a-zA-Z0-9_.]+\} *\(\{[a-zA-Z0-9_.]*(count|Count|length|total)[a-zA-Z0-9_.]*\}\)' && \
-   ! echo "$CONTENT" | grep -q '@count-in-label-ok:'; then
+if grep -qE '>[^<]*\{[a-zA-Z0-9_.]+\} *\(\{[a-zA-Z0-9_.]*(count|Count|length|total)[a-zA-Z0-9_.]*\}\)' <<<"$CONTENT" && \
+   ! grep -q '@count-in-label-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 計數括號串接 {label} ({count}) → row header 用「標題左、純數字右 space-between + tabular-nums」(item-anatomy.spec.md:176);互動元素(tab/chip/button)用 badge slot。aria/純文字匯出層 → @count-in-label-ok: <rationale>\n"
 fi
 # C17 分隔線幾何:vertical Separator 無 mx- = 黏按鈕(action-bar.spec.md「分隔線幾何」h-6 mx-1;
 # ButtonGroup 內用 <ButtonDivider/>(mx built-in))。
 SEP_TAGS=$(echo "$CONTENT" | grep -oE '<(DS\.)?Separator[^>]*orientation=["'"'"']vertical["'"'"'][^>]*' || true)
-if [ -n "$SEP_TAGS" ] && echo "$SEP_TAGS" | grep -qv 'mx-' && \
-   ! echo "$CONTENT" | grep -q '@separator-geometry-ok:'; then
+if [ -n "$SEP_TAGS" ] && grep -qv 'mx-' <<<"$SEP_TAGS" && \
+   ! grep -q '@separator-geometry-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - vertical <Separator> 無 mx- = 分隔線黏按鈕 → toolbar 用 className=\"h-6 mx-1\"(dense h-5 mx-1);ButtonGroup 內用 <ButtonDivider/>(action-bar.spec.md「分隔線幾何」)。版面切分 divider → @separator-geometry-ok: <rationale>\n"
 fi
 # C20 連結字手刻 underline:color.spec.md「Action — Primary」= hover 換色不用底線;
 # dropzone 連結走 FileUpload children slot。no-underline / hover:underline 皆不中此 regex 形。
-if echo "$CONTENT" | grep -qE '<(span|a|button|div)[^>]*className="([^"]* )?underline( [^"]*)?"'; then
+if grep -qE '<(span|a|button|div)[^>]*className="([^"]* )?underline( [^"]*)?"' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 手刻 underline 連結字 → Action—Primary canonical = text-primary + hover 換色(text-primary-hover),不用底線(color.spec.md「Action — Primary」);dropzone 連結走 <FileUpload> children slot\n"
 fi
 # C10 業務 search 被推最右:spacer(flex-1 自閉合 / ml-auto)緊接 Search Input。
 # 過濾當前檢視的 search = 業務層,與其他操作同區(action-bar.spec.md:69/76);無標題 toolbar 靠左(:109)。
-if echo "$CONTENT" | grep -qE '(flex-1[^>]*/>|ml-auto)[^<]{0,80}<(DS\.)?Input[^>]{0,200}placeholder="(Search|搜尋)' && \
-   ! echo "$CONTENT" | grep -q '@search-right-ok:'; then
+if grep -qE '(flex-1[^>]*/>|ml-auto)[^<]{0,80}<(DS\.)?Input[^>]{0,200}placeholder="(Search|搜尋)' <<<"$CONTENT" && \
+   ! grep -q '@search-right-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 業務 search(過濾當前檢視)被 spacer 推到最右 → 歸業務層與其他操作同區(action-bar.spec.md:69/76;無標題 toolbar 業務層靠左 :109)。工具型跨頁 search 置最右合法 → @search-right-ok: <rationale>\n"
 fi
 # C11 dialog chrome 雙 X:DialogHeader 之後 250 字窗內手放 startIcon={X} 且窗內無 actions=
 # (DialogHeader 自帶 Close;header 操作走 actions slot — action-bar.spec.md:281)。
 DH_WIN=$(echo "$CONTENT" | grep -oE '<(DS\.)?DialogHeader.{0,250}' || true)  # BSD grep bound 上限 255
-if [ -n "$DH_WIN" ] && echo "$DH_WIN" | grep -qE 'startIcon=\{X\}' && ! echo "$DH_WIN" | grep -q 'actions=' && \
-   ! echo "$CONTENT" | grep -q '@dialog-chrome-ok:'; then
+if [ -n "$DH_WIN" ] && grep -qE 'startIcon=\{X\}' <<<"$DH_WIN" && ! grep -q 'actions=' <<<"$DH_WIN" && \
+   ! grep -q '@dialog-chrome-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - DialogHeader 內手放 X 關閉鈕(DialogHeader 已自帶 Close = 雙 X)→ header 操作走 actions slot(自動 ButtonDivider 分隔,action-bar.spec.md:281)。特例 → @dialog-chrome-ok: <rationale>\n"
 fi
 # C7 SelectMenu internal 直用(select-menu.spec.md:53 明文禁 consumer 直用 — 它是 Select/
 # Combobox 的內部選單面,consumer 用 <Select>/<Combobox>;此為「internal 且 spec 明文禁直用」
 # 特例,非一般 internal 包裝即可)。
-if echo "$CONTENT" | grep -qE '<SelectMenu\b' && \
-   ! echo "$CONTENT" | grep -q '@selectmenu-direct-ok:'; then
+if grep -qE '<SelectMenu\b' <<<"$CONTENT" && \
+   ! grep -q '@selectmenu-direct-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - <SelectMenu> 直用(internal 選單面,select-menu.spec.md:53 明文禁)→ 用 <Select> / <Combobox>(自帶 trigger + 選單接線)。極特例 → @selectmenu-direct-ok: <rationale>\n"
 fi
 # C13 手刻可收合 section header(2026-07-10 收官:R3-7 拍板 SectionHeader 留產品客製、但 layout
 # 全消費 canonical — 組合鐵律 codify 於 item-anatomy.spec.md「可收合 section header」;簽名 =
 # Chevron toggle + justify-between + 可點,且檔內無 SectionHeader 共用元件)。
-if echo "$CONTENT" | grep -qE 'Chevron(Down|Right|Up)' && \
-   echo "$CONTENT" | grep -q 'justify-between' && \
-   echo "$CONTENT" | grep -qE '<button\b|onClick=' && \
-   ! echo "$CONTENT" | grep -q 'SectionHeader' && \
-   ! echo "$CONTENT" | grep -q '@section-header-ok:'; then
+if grep -qE 'Chevron(Down|Right|Up)' <<<"$CONTENT" && \
+   grep -q 'justify-between' <<<"$CONTENT" && \
+   grep -qE '<button\b|onClick=' <<<"$CONTENT" && \
+   ! grep -q 'SectionHeader' <<<"$CONTENT" && \
+   ! grep -q '@section-header-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 手刻可收合 section 標題列(Chevron + justify-between + 可點)→ 抽共用 SectionHeader 元件並照 item-anatomy.spec.md「可收合 section header 組合 canonical」(chevron = title 後 suffix inline action / desc 用 item-gap token / endSlot 垂直置中;WM SectionHeader 錨例)。非 section 標題語義 → @section-header-ok: <rationale>\n"
 fi
 # C19 兩欄 dialog 共用捲軸(2026-07-10 user 拍板:兩欄是組合非元件;組合鐵律 = 各欄自帶
 # ScrollArea,overlay-surface.spec.md「兩欄 dialog 組合 canonical」)。簽名 = Dialog body +
 # 欄分隔 border-l + ScrollArea 少於 2 = 兩欄共用單一捲軸。
-if echo "$CONTENT" | grep -qE '<(DS\.)?Dialog(Body|Content)\b' && \
-   echo "$CONTENT" | grep -q 'border-l' && \
-   echo "$CONTENT" | grep -qE 'className="[^"]*flex[^"]*"' && \
+if grep -qE '<(DS\.)?Dialog(Body|Content)\b' <<<"$CONTENT" && \
+   grep -q 'border-l' <<<"$CONTENT" && \
+   grep -qE 'className="[^"]*flex[^"]*"' <<<"$CONTENT" && \
    [ "$(echo "$CONTENT" | grep -o '<ScrollArea' | wc -l | tr -d ' ')" -lt 2 ] && \
-   ! echo "$CONTENT" | grep -q '@two-pane-dialog-ok:'; then
+   ! grep -q '@two-pane-dialog-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 兩欄 dialog(border-l 欄分隔)但 ScrollArea < 2 = 共用單一捲軸 → 各欄自帶 <ScrollArea> 獨立捲(overlay-surface.spec.md「兩欄 dialog 組合 canonical」;archetype = WM WorkItemDetailDialog / FileViewer InfoPanel)。非兩欄語義 → @two-pane-dialog-ok: <rationale>\n"
 fi
 # C12 Field family 硬寬:Select/Combobox/DatePicker/PeoplePicker 帶 w-N / w-[Npx] 硬寬
 # → width="hug"/"fill" 語義軸(field-controls.spec.md「寬度」)。
-if echo "$CONTENT" | grep -qE '<(DS\.)?(Select|Combobox|DatePicker|PeoplePicker)\b[^>]*className="[^"]*\bw-([0-9]+|\[[0-9]+(px|rem)\])' && \
-   ! echo "$CONTENT" | grep -q '@field-width-ok:'; then
+if grep -qE '<(DS\.)?(Select|Combobox|DatePicker|PeoplePicker)\b[^>]*className="[^"]*\bw-([0-9]+|\[[0-9]+(px|rem)\])' <<<"$CONTENT" && \
+   ! grep -q '@field-width-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - Field 家族控件 className 硬寬(w-N / w-[Npx])→ 用 width=\"hug\"(內容自適)或預設 fill(field-controls.spec.md「寬度」;WM 詳情 metadata 全 hug 拍板錨例)。特例 → @field-width-ok: <rationale>\n"
 fi
 
@@ -382,8 +389,8 @@ fi
 # (Skip in production .tsx; only enforce in .stories.tsx where visual snapshot matters)
 if echo "$FILE" | grep -qE '\.stories\.tsx$'; then
   for overlay in Tooltip Popover Dialog Sheet DropdownMenu; do
-    if echo "$CONTENT" | grep -qE "<(DS\.)?${overlay}\b" && \
-       ! echo "$CONTENT" | grep -qE "(defaultOpen|open=\{(true|isOpen)\})"; then
+    if grep -qE "<(DS\.)?${overlay}\b" <<<"$CONTENT" && \
+       ! grep -qE "(defaultOpen|open=\{(true|isOpen)\})" <<<"$CONTENT"; then
       VIOLATIONS="${VIOLATIONS}  - Story uses <${overlay}> without defaultOpen — visual audit can't see overlay content\n"
     fi
   done
@@ -431,14 +438,14 @@ CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content /
 [ -z "$CONTENT" ] && exit 0
 
 # Escape clause
-if echo "$CONTENT" | grep -qE '@app-story-title-skip:'; then exit 0; fi
+if grep -qE '@app-story-title-skip:' <<<"$CONTENT"; then exit 0; fi
 
 # Extract expected app name from file path
 APP_NAME=$(echo "$FILE" | sed -E 's|.*/apps/([^/]+)/.*|\1|')
 [ -z "$APP_NAME" ] && exit 0
 
 # Find title field(支援 single/double/backtick quote)
-TITLE_LINE=$(echo "$CONTENT" | grep -oE "title:\s*['\"\`][^'\"\`]+['\"\`]" | head -1)
+TITLE_LINE=$(grep -m 1 -oE "title:\s*['\"\`][^'\"\`]+['\"\`]" <<<"$CONTENT")
 
 # 若無 title field,skip(no-op stories OK)
 [ -z "$TITLE_LINE" ] && exit 0
@@ -446,7 +453,7 @@ TITLE_LINE=$(echo "$CONTENT" | grep -oE "title:\s*['\"\`][^'\"\`]+['\"\`]" | hea
 EXPECTED_PREFIX="Apps/${APP_NAME}/"
 
 # Check title 是否開頭 `Apps/<app-name>/`
-if ! echo "$TITLE_LINE" | grep -qE "title:\s*['\"\`]Apps/${APP_NAME}/"; then
+if ! grep -qE "title:\s*['\"\`]Apps/${APP_NAME}/" <<<"$TITLE_LINE"; then
   cat >&2 << EOF
 🚨 CONSUMER APP STORY TITLE BLOCKER(P0,2026-05-28 codify per create-app duplicate-id anchor)
 
@@ -456,7 +463,8 @@ if ! echo "$TITLE_LINE" | grep -qE "title:\s*['\"\`]Apps/${APP_NAME}/"; then
 
   Why blocked:
     Consumer apps 內 stories 必用 \`Apps/<app-name>/<page-purpose>\` 開頭 namespace
-    (per .claude/rules/story-rules.md「Title 命名 2-namespace canonical」)。
+    (per packages/design-system/ds-canonical/rules/story-rules.md
+    「Title 命名 2-namespace canonical」)。
     錯 prefix → Storybook glob 撈到後與 template/其他 app 撞 id → build duplicate
     warning + 只顯第一個 → 新 app 在 sidebar 不可見。
 
@@ -473,9 +481,52 @@ fi
 exit 0
 }
 
+_CAPTURE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/check-consumer-app-invariants.XXXXXX") || {
+  printf '🚨 GOVERNANCE_INTEGRITY: CONSUMER APP INVARIANTS FAILURE: output capture unavailable\n' >&2
+  exit 70
+}
+trap 'rm -rf -- "$_CAPTURE_DIR"' EXIT
+_RULE_INDEX=0
+
 for _rule in r1_no_ds_catalog r2_story_baseline r3_ds_primitive_misuse r4_app_story_title; do
-  echo "$INPUT" | "$_rule"
+  _RULE_INDEX=$((_RULE_INDEX + 1))
+  _stdout="$_CAPTURE_DIR/$_RULE_INDEX.stdout"
+  _stderr="$_CAPTURE_DIR/$_RULE_INDEX.stderr"
+  printf '%s' "$INPUT" | "$_rule" >"$_stdout" 2>"$_stderr"
   _rc=$?
-  if [ "$_rc" -eq 2 ]; then exit 2; fi
+  case "$_rc" in
+    0)
+      if [ -s "$_stdout" ] || [ -s "$_stderr" ]; then
+        printf '🚨 GOVERNANCE_INTEGRITY: CONSUMER APP INVARIANTS FAILURE: rule %s rc0 必須完全 silent\n' \
+          "$_rule" >&2
+        exit 70
+      fi
+      ;;
+    2)
+      if [ ! -s "$_stdout" ] && [ -s "$_stderr" ] \
+        && ! grep -qF 'GOVERNANCE_INTEGRITY:' "$_stderr"; then
+        cat "$_stderr" >&2
+        exit 2
+      fi
+      printf '🚨 GOVERNANCE_INTEGRITY: CONSUMER APP INVARIANTS FAILURE: rule %s rc2 必須是 stderr-only nonempty policy blocker\n' \
+        "$_rule" >&2
+      exit 70
+      ;;
+    70)
+      if [ ! -s "$_stdout" ] && [ -s "$_stderr" ] \
+        && grep -qF 'GOVERNANCE_INTEGRITY:' "$_stderr"; then
+        cat "$_stderr" >&2
+      else
+        printf '🚨 GOVERNANCE_INTEGRITY: CONSUMER APP INVARIANTS FAILURE: rule %s rc70 必須是 stderr-only marker\n' \
+          "$_rule" >&2
+      fi
+      exit 70
+      ;;
+    *)
+      printf '🚨 GOVERNANCE_INTEGRITY: CONSUMER APP INVARIANTS FAILURE: rule %s 回傳未定義 exit code %s\n' \
+        "$_rule" "$_rc" >&2
+      exit 70
+      ;;
+  esac
 done
 exit 0

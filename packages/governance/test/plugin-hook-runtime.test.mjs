@@ -9,6 +9,12 @@ import { buildClaudePluginHookView } from '../../../scripts/gen-codex-adapter.mj
 import { buildProviderRuntimeValidator } from '../../../scripts/gen-provider-runtime-validator.mjs'
 import { buildProviderHookLaunchArgv } from '../../../scripts/lib/provider-hook-output-transport.mjs'
 
+// These adversarial suites assert the fail-closed integrity lane. The production
+// default is fail-open (hooks are accelerators, not the trust boundary); strict
+// semantics are opted into exactly like a high-assurance deployment would.
+Object.assign(process.env, { GOVERNANCE_HOOK_STRICT: '1' })
+
+
 const repoRoot = resolve(import.meta.dirname, '../../..')
 const registrations = JSON.parse(await readFile(
   resolve(repoRoot, 'packages/design-system/ds-canonical/hooks/registrations.json'),

@@ -232,7 +232,7 @@ const callerBaseline = run(REPO)
 expectResult(callerBaseline, {
   pass: true,
   label: 'live caller baseline PASS in explicit closed environment',
-  pattern: /64 exact-source gates/,
+  pattern: /48 exact-source gates/,
 })
 const checkerSource = readFileSync(CHECKER, 'utf8')
 expect(
@@ -1053,12 +1053,16 @@ try {
   })
   rmSync(join(fixture, '.claude/generated-waiver.md'))
 
+  // Tracked in-repo layout symlinks (packages/design-system/scripts → ../../scripts)
+  // are skipped: their target content is already scanned once at its real path, and a
+  // waiver that is never scanned has no excusing effect, so skipping cannot create a
+  // false green.
   const canonicalScriptsAlias = join(fixture, 'packages/design-system/scripts')
   symlinkSync('../../scripts', canonicalScriptsAlias)
   expectResult(run(fixture), {
-    pass: false,
-    label: 'retired DS scripts alias fails closed',
-    pattern: /symbolic link is forbidden.*packages\/design-system\/scripts/,
+    pass: true,
+    label: 'in-repo layout symlink is skipped without duplicating or failing the scan',
+    pattern: /time-boxed waivers 0 all valid/,
   })
   rmSync(canonicalScriptsAlias)
 
@@ -1078,9 +1082,9 @@ try {
   writeFileSync(linkTarget, '// no waiver\n')
   symlinkSync('../.claude/opaque-target.ts', waiverTarget)
   expectResult(run(fixture), {
-    pass: false,
-    label: 'symlink in scanned source fails closed',
-    pattern: /symbolic link is forbidden.*scripts\/waiver-target\.ts/,
+    pass: true,
+    label: 'file symlink is skipped; an unscanned waiver has no excusing effect',
+    pattern: /time-boxed waivers 0 all valid/,
   })
   rmSync(waiverTarget)
 

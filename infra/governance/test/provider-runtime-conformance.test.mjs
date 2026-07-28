@@ -24,6 +24,7 @@ import {
   defaultProcessRunner,
   detectExecutionEnvironment,
   localRuntimeProviderIds,
+  prepareClaudeReviewCapabilityProbe,
   redactText,
   requiredRuntimeChecksPass,
   resolveGitIdentity,
@@ -84,6 +85,7 @@ const CONTRACT = {
   registeredProviderIds: ['claude', 'codex', 'generic'],
 }
 const RUN_AT = new Date('2026-07-27T09:00:00.000Z')
+const PROMOTION_AT = new Date('2026-07-27T10:00:00.000Z')
 const RUN_ID = '11111111-1111-4111-8111-111111111111'
 const HOST = {
   operatingSystem: 'macos',
@@ -1431,6 +1433,26 @@ test('Claude model-backed probes require an explicit opt-in and are never silent
     ['claude-context-fork', 'claude-native-block'].includes(check.driver)
   ))
   assert.ok(modelChecks.every(check => check.result.assertions.some(item => item.id === 'explicit-model-execution-authorized' && !item.pass)))
+  const profile = readJson(PROFILE_PATH)
+  const claude = profile.providers.find(provider => provider.id === 'claude')
+  const capabilityChecks = evidence.providers[0].checks.filter(
+    check => check.driver === 'claude-review-capability-probe',
+  )
+  assert.ok(capabilityChecks.length > 0)
+  for (const capabilityCheck of capabilityChecks) {
+    const profileCheck = claude.checks.find(check => check.id === capabilityCheck.id)
+    const planned = prepareClaudeReviewCapabilityProbe({
+      repoRoot: REPO_ROOT,
+      provider: claude,
+      check: profileCheck,
+      environmentNames: ['HOME'],
+    })
+    assert.deepEqual(capabilityCheck.command, planned.command)
+    assert.equal(planned.arguments.includes('--max-budget-usd'), false)
+    assert.equal(planned.arguments.includes('--fallback-model'), false)
+    assert.equal(planned.arguments[planned.arguments.indexOf('--effort') + 1], 'max')
+    assert.equal(planned.arguments[planned.arguments.indexOf('--tools') + 1], '')
+  }
 })
 
 test('Codex native hook lifecycle probe also requires explicit model execution', async () => {
@@ -1781,6 +1803,13 @@ test('one canonical runtime harness identity covers every generation and certifi
     'packages/design-system/ds-canonical/adapters/claude/agents/canonical-reviewer.md',
     '.claude/skills/canonical-reviewer/SKILL.md',
     '.claude/agents/canonical-reviewer.md',
+    'infra/governance/providers/review-capability-registry.json',
+    'infra/governance/schemas/review-capability-registry.schema.json',
+    'infra/governance/providers/model-invocation-profiles.json',
+    'infra/governance/schemas/model-invocation-profiles.schema.json',
+    'infra/governance/providers/model-release-registry.json',
+    'infra/governance/schemas/model-release-registry.schema.json',
+    'infra/governance/evidence/model-releases/anthropic-claude-5-capability-precedence.json',
     'packages/design-system/ds-canonical/hooks/governance_control_plane.sh',
     'packages/design-system/ds-canonical/hooks/check_canonical_propagation.sh',
     'packages/design-system/ds-canonical/hooks/_log-fire.sh',
@@ -1797,6 +1826,9 @@ test('one canonical runtime harness identity covers every generation and certifi
   const canonicalManifest = readJson(resolve(REPO_ROOT, 'packages/governance/canonical/manifest.json'))
   const canonicalSources = new Map(canonicalManifest.sources.map(source => [source.id, source.path]))
   const exactCanonicalSourcePaths = new Set(canonicalManifest.sources.map(source => source.path))
+  const canonicalSourceDirectories = canonicalManifest.sources
+    .map(source => source.path)
+    .filter(path => path.endsWith('/'))
   const runtimeHarnessRepoPaths = paths.map(path => relative(REPO_ROOT, path).split('\\').join('/'))
   const intentionallyFamilyOwnedRuntimeInput = path => (
     path.startsWith('packages/design-system/ds-canonical/hooks/')
@@ -1809,7 +1841,10 @@ test('one canonical runtime harness identity covers every generation and certifi
   assert.deepEqual(
     runtimeHarnessRepoPaths
       .filter(path => !intentionallyFamilyOwnedRuntimeInput(path))
-      .filter(path => !exactCanonicalSourcePaths.has(path)),
+      .filter(path => (
+        !exactCanonicalSourcePaths.has(path)
+        && !canonicalSourceDirectories.some(directory => path.startsWith(directory))
+      )),
     [],
     'every non-generated runtime harness input must have exact canonical manifest ownership',
   )
@@ -2006,7 +2041,7 @@ test('real generation to signed promotion to certification validation is closed,
       evidence,
       attestation,
       runtimeProfile,
-      { issuerRegistry, now: new Date('2026-07-20T01:00:00.000Z') },
+      { issuerRegistry, now: PROMOTION_AT },
     )
     const signedNonProductionBytes = Buffer.from(`${stableStringify(signedNonProductionEvidence)}\n`)
     const signedNonProductionArtifactSha256 = sha256(signedNonProductionBytes)
@@ -2022,7 +2057,7 @@ test('real generation to signed promotion to certification validation is closed,
       runtimeProfile,
       issuerRegistry,
       attestation,
-      now: new Date('2026-07-20T01:00:00.000Z'),
+      now: PROMOTION_AT,
     }), /requires an explicit expected scope/)
 
     assert.throws(() => promoteRuntimeEvidence({
@@ -2033,7 +2068,7 @@ test('real generation to signed promotion to certification validation is closed,
       runtimeProfile,
       issuerRegistry,
       expectedScope: 'provider',
-      now: new Date('2026-07-20T01:00:00.000Z'),
+      now: PROMOTION_AT,
     }), /attestation is pending/)
 
     assert.throws(() => promoteRuntimeEvidence({
@@ -2045,7 +2080,7 @@ test('real generation to signed promotion to certification validation is closed,
       issuerRegistry,
       attestation,
       expectedScope: 'local-fleet',
-      now: new Date('2026-07-20T01:00:00.000Z'),
+      now: PROMOTION_AT,
     }), /does not match explicit promotion scope local-fleet/)
 
     assert.throws(() => promoteRuntimeEvidence({
@@ -2057,7 +2092,7 @@ test('real generation to signed promotion to certification validation is closed,
       issuerRegistry,
       attestation,
       expectedScope: 'provider',
-      now: new Date('2026-07-20T01:00:00.000Z'),
+      now: PROMOTION_AT,
     }), /non-production test seams cannot be promoted/)
 
     // The remaining signing/promotion assertions use an explicitly constructed issuer fixture
@@ -2085,7 +2120,7 @@ test('real generation to signed promotion to certification validation is closed,
       issuerRegistry,
       attestation: productionAttestation,
       expectedScope: 'provider',
-      now: new Date('2026-07-20T01:00:00.000Z'),
+      now: PROMOTION_AT,
     }), /must be the canonical repository content-addressed directory/)
     assert.equal(existsSync(escapedOutputDirectory), false, 'an out-of-bound promotion directory must not be created')
 
@@ -2104,7 +2139,7 @@ test('real generation to signed promotion to certification validation is closed,
       issuerRegistry,
       attestation: productionAttestation,
       expectedScope: 'provider',
-      now: new Date('2026-07-20T01:00:00.000Z'),
+      now: PROMOTION_AT,
     }), /parent chain contains a symlink or non-directory/)
     assert.equal(
       existsSync(resolve(symlinkTarget, 'provider-runtime')),
@@ -2121,7 +2156,7 @@ test('real generation to signed promotion to certification validation is closed,
       issuerRegistry,
       attestation: productionAttestation,
       expectedScope: 'provider',
-      now: new Date('2026-07-20T01:00:00.000Z'),
+      now: PROMOTION_AT,
     }), /requires the current worktree to remain clean/)
     const promoted = promoteRuntimeEvidence({
       source: stagingPath,
@@ -2133,7 +2168,7 @@ test('real generation to signed promotion to certification validation is closed,
       issuerRegistry,
       attestation: productionAttestation,
       expectedScope: 'provider',
-      now: new Date('2026-07-20T01:00:00.000Z'),
+      now: PROMOTION_AT,
     })
     assert.equal(promoted.scope, 'provider')
     const providerBinding = promoted.providerBindings.find(item => item.providerId === 'codex')
@@ -2178,7 +2213,7 @@ test('real generation to signed promotion to certification validation is closed,
       issuerRegistry,
       attestation: localFleetAttestation,
       expectedScope: 'local-fleet',
-      now: new Date('2026-07-20T01:00:00.000Z'),
+      now: PROMOTION_AT,
     }), /non-production test seams cannot be promoted/)
 
     const productionLocalFleetEvidence = productionSafetyFixtureFromTestSeamEvidence(localFleetEvidence)
@@ -2212,7 +2247,7 @@ test('real generation to signed promotion to certification validation is closed,
       issuerRegistry,
       attestation: productionLocalFleetAttestation,
       expectedScope: 'local-fleet',
-      now: new Date('2026-07-20T01:00:00.000Z'),
+      now: PROMOTION_AT,
     })
     assert.equal(promotedLocalFleet.scope, 'local-fleet')
     assert.deepEqual(promotedLocalFleet.providerBindings.map(item => item.providerId).sort(), ['claude', 'codex'])
@@ -2231,8 +2266,8 @@ test('real generation to signed promotion to certification validation is closed,
       surface: 'local',
       repositoryRole: 'authority',
       status: 'certified',
-      certifiedAt: '2026-07-20T00:01:00.000Z',
-      expiresAt: '2026-07-20T12:00:00.000Z',
+      certifiedAt: '2026-07-27T09:15:00.000Z',
+      expiresAt: '2026-07-27T20:00:00.000Z',
       platformMatrix: [{
         id: providerBinding.targetId,
         operatingSystem: providerBinding.operatingSystem,
@@ -2294,7 +2329,7 @@ test('real generation to signed promotion to certification validation is closed,
       },
     }]))
     const certificationValidationOptions = {
-      now: new Date('2026-07-20T01:00:00.000Z'),
+      now: PROMOTION_AT,
       repoRoot: promotedRepo,
       runtimeIdentity: identity,
       runtimeProfile,
@@ -2360,7 +2395,7 @@ test('real generation to signed promotion to certification validation is closed,
       issuerRegistry,
       attestation: productionAttestation,
       expectedScope: 'provider',
-      now: new Date('2026-07-21T00:00:01.000Z'),
+      now: new Date('2026-07-28T09:00:01.000Z'),
     }), /expired/)
 
     const replayed = structuredClone(certification)
@@ -2373,7 +2408,7 @@ test('real generation to signed promotion to certification validation is closed,
     const { attestation: ignoredAttestation, evidenceDigest: ignoredDigest, ...unsigned } = substituted
     substituted.evidenceDigest = `sha256:${sha256(stableStringify(unsigned, 0))}`
     substituted.attestation.evidenceDigest = substituted.evidenceDigest
-    assert.throws(() => verifyRuntimeEvidenceAttestation(substituted, runtimeProfile, { issuerRegistry, now: new Date('2026-07-20T01:00:00.000Z') }), /signature verification failed/)
+    assert.throws(() => verifyRuntimeEvidenceAttestation(substituted, runtimeProfile, { issuerRegistry, now: PROMOTION_AT }), /signature verification failed/)
   } finally {
     rmSync(profilePath, { force: true })
     rmSync(promotedRepo, { recursive: true, force: true })

@@ -1,0 +1,373 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/design-system/utility-registry-v1.json",
+  "title": "Design-system utility policy registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "_meta",
+    "enforcement",
+    "typography",
+    "radius",
+    "opacity",
+    "elevation",
+    "spacing",
+    "sizing",
+    "shadcn_alias",
+    "primitive_color_as_utility"
+  ],
+  "properties": {
+    "$schema": { "const": "./utility-registry.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "_meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "purpose",
+        "owner",
+        "consumed_by",
+        "provider_view_policy",
+        "spec_sources",
+        "rationale",
+        "exceptions"
+      ],
+      "properties": {
+        "purpose": { "$ref": "#/$defs/nonEmptyString" },
+        "owner": {
+          "const": "packages/design-system/src/tokens/utility-registry.json"
+        },
+        "consumed_by": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/canonicalReference" }
+        },
+        "provider_view_policy": { "$ref": "#/$defs/nonEmptyString" },
+        "spec_sources": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "rationale": { "$ref": "#/$defs/nonEmptyString" },
+        "exceptions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "_added",
+            "anatomy_stories_inspector",
+            "token_stories_section_label",
+            "principles_stories_codepre",
+            "icon_as_text_and_numeric_in_circle"
+          ],
+          "properties": {
+            "_added": { "$ref": "#/$defs/nonEmptyString" },
+            "anatomy_stories_inspector": {
+              "allOf": [
+                { "$ref": "#/$defs/exceptionBase" },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["scope", "allowed_utilities", "rationale", "audit_dim_53_fix"],
+                  "properties": {
+                    "scope": { "$ref": "#/$defs/nonEmptyString" },
+                    "allowed_utilities": { "$ref": "#/$defs/tokenArray" },
+                    "rationale": { "$ref": "#/$defs/nonEmptyString" },
+                    "audit_dim_53_fix": { "$ref": "#/$defs/nonEmptyString" }
+                  }
+                }
+              ]
+            },
+            "token_stories_section_label": { "$ref": "#/$defs/standardException" },
+            "principles_stories_codepre": { "$ref": "#/$defs/standardException" },
+            "icon_as_text_and_numeric_in_circle": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "scope",
+                "allowed_utilities",
+                "rule_one_liner",
+                "rationale",
+                "current_consumers",
+                "non_goal"
+              ],
+              "properties": {
+                "scope": { "$ref": "#/$defs/nonEmptyString" },
+                "allowed_utilities": { "$ref": "#/$defs/tokenArray" },
+                "rule_one_liner": { "$ref": "#/$defs/nonEmptyString" },
+                "rationale": { "$ref": "#/$defs/nonEmptyString" },
+                "current_consumers": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": { "$ref": "#/$defs/nonEmptyString" }
+                },
+                "non_goal": { "$ref": "#/$defs/nonEmptyString" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "enforcement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "engine", "block", "warn"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "engine": { "const": "utility-registry-rules-v1" },
+        "block": {
+          "type": "array",
+          "minItems": 18,
+          "maxItems": 18,
+          "items": { "$ref": "#/$defs/enforcementRule" }
+        },
+        "warn": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "$ref": "#/$defs/enforcementRule" }
+        }
+      }
+    },
+    "typography": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allow", "block"],
+      "properties": {
+        "allow": { "$ref": "#/$defs/tokenArray" },
+        "block": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "size_raw",
+            "weight_raw",
+            "leading_numeric",
+            "tracking_raw",
+            "tracking_raw_rationale",
+            "inline_style",
+            "rationale_path"
+          ],
+          "properties": {
+            "size_raw": { "$ref": "#/$defs/tokenArray" },
+            "weight_raw": { "$ref": "#/$defs/tokenArray" },
+            "leading_numeric": { "$ref": "#/$defs/nonEmptyString" },
+            "tracking_raw": { "$ref": "#/$defs/tokenArray" },
+            "tracking_raw_rationale": { "$ref": "#/$defs/nonEmptyString" },
+            "inline_style": { "$ref": "#/$defs/nonEmptyString" },
+            "rationale_path": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        }
+      }
+    },
+    "radius": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allow", "allow_note", "block"],
+      "properties": {
+        "allow": { "$ref": "#/$defs/tokenArray" },
+        "allow_note": { "$ref": "#/$defs/nonEmptyString" },
+        "block": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "out_of_range",
+            "ambiguous_default",
+            "arbitrary_value",
+            "inline_style",
+            "rationale_path"
+          ],
+          "properties": {
+            "out_of_range": { "$ref": "#/$defs/tokenArray" },
+            "ambiguous_default": { "$ref": "#/$defs/tokenArray" },
+            "arbitrary_value": { "$ref": "#/$defs/tokenArray" },
+            "inline_style": { "$ref": "#/$defs/nonEmptyString" },
+            "rationale_path": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        }
+      }
+    },
+    "opacity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allow", "block"],
+      "properties": {
+        "allow": { "$ref": "#/$defs/tokenArray" },
+        "block": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["numeric_tier", "arbitrary_value", "rationale_path", "philosophy"],
+          "properties": {
+            "numeric_tier": { "$ref": "#/$defs/tokenArray" },
+            "arbitrary_value": { "$ref": "#/$defs/nonEmptyString" },
+            "rationale_path": { "$ref": "#/$defs/nonEmptyString" },
+            "philosophy": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        }
+      }
+    },
+    "elevation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allow", "block"],
+      "properties": {
+        "allow": { "$ref": "#/$defs/tokenArray" },
+        "block": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tailwind_size", "rationale_path", "philosophy"],
+          "properties": {
+            "tailwind_size": { "$ref": "#/$defs/tokenArray" },
+            "rationale_path": { "$ref": "#/$defs/nonEmptyString" },
+            "philosophy": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        }
+      }
+    },
+    "spacing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allow_canonical", "warn"],
+      "properties": {
+        "allow_canonical": { "$ref": "#/$defs/nonEmptyString" },
+        "warn": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["micro_gap", "rationale"],
+          "properties": {
+            "micro_gap": { "$ref": "#/$defs/tokenArray" },
+            "rationale": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        }
+      }
+    },
+    "sizing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["warn"],
+      "properties": {
+        "warn": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fraction", "rationale"],
+          "properties": {
+            "fraction": { "$ref": "#/$defs/tokenArray" },
+            "rationale": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        }
+      }
+    },
+    "shadcn_alias": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["block"],
+      "properties": {
+        "block": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["color_alias", "rationale", "rationale_path"],
+          "properties": {
+            "color_alias": { "$ref": "#/$defs/tokenArray" },
+            "rationale": { "$ref": "#/$defs/nonEmptyString" },
+            "rationale_path": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        }
+      }
+    },
+    "primitive_color_as_utility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["block"],
+      "properties": {
+        "block": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["primitive_class", "rationale"],
+          "properties": {
+            "primitive_class": { "$ref": "#/$defs/tokenArray" },
+            "rationale": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+    },
+    "canonicalReference": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!\\.claude(?:/|$)|\\.agents(?:/|$)|\\.codex(?:/|$))(?!/)(?!.*(?:^|/)\\.\\.?/)(?!.*\\\\)[A-Za-z0-9_.@/#-]+(?: [A-Za-z0-9_.@/#()-]+)*$"
+    },
+    "tokenArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[^\\s\\u0000-\\u001F\\u007F]+$"
+      }
+    },
+    "exceptionBase": {
+      "type": "object"
+    },
+    "standardException": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "allowed_utilities", "rationale"],
+      "properties": {
+        "scope": { "$ref": "#/$defs/nonEmptyString" },
+        "allowed_utilities": { "$ref": "#/$defs/tokenArray" },
+        "rationale": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "enforcementRule": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "label", "tokenListPointer"],
+          "properties": {
+            "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "label": { "$ref": "#/$defs/nonEmptyString" },
+            "tokenListPointer": {
+              "enum": [
+                "/typography/block/size_raw",
+                "/typography/block/weight_raw",
+                "/typography/block/tracking_raw",
+                "/radius/block/out_of_range",
+                "/radius/block/ambiguous_default",
+                "/radius/block/arbitrary_value",
+                "/opacity/block/numeric_tier",
+                "/elevation/block/tailwind_size",
+                "/shadcn_alias/block/color_alias",
+                "/primitive_color_as_utility/block/primitive_class",
+                "/spacing/warn/micro_gap",
+                "/sizing/warn/fraction"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "label", "pattern"],
+          "properties": {
+            "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "label": { "$ref": "#/$defs/nonEmptyString" },
+            "pattern": { "$ref": "#/$defs/nonEmptyString" },
+            "excludeTokenListPointer": {
+              "enum": ["/radius/allow", "/opacity/allow"]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

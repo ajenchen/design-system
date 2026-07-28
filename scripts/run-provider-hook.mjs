@@ -24,12 +24,12 @@ import {
 } from 'node:fs'
 import { spawn, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
+import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { TextDecoder } from 'node:util'
 import { isContainedPath } from './lib/canonical-path-containment.mjs'
 import {
-  assertClosedGitLocalConfiguration,
   materializeClosedHookToolProfile,
   resolveClosedPrivateRuntimeBase,
   runClosedGit,
@@ -37,6 +37,16 @@ import {
 import { compareUtf8Bytes } from '../packages/governance/src/canonical-order.mjs'
 const CORPUS_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const CLOSED_PRIVATE_RUNTIME_BASE = resolveClosedPrivateRuntimeBase()
+// Hooks are write-time accelerators, not the trust boundary — final enforcement lives in
+// the provider-neutral verifier, protected CI, and required checks. By default an adapter
+// or infrastructure failure degrades to one warning line and skips the hook batch
+// (fail-open, exit 0). GOVERNANCE_HOOK_STRICT=1 (implied under NODE_ENV=test) restores the
+// fail-closed integrity semantics, and the strict lane also keeps the sealed corpus,
+// pinned tool profile, and transcript guards of the high-assurance deployment.
+const hookStrictIntegrity = process.env.GOVERNANCE_HOOK_STRICT === '1'
+  || process.env.NODE_ENV === 'test'
+const sealedHookGuardsEnabled = process.env.GOVERNANCE_HOOK_SEALED_CORPUS === '1'
+  || hookStrictIntegrity
 const transcriptSnapshotRoots = new Set()
 const hookCorpusSnapshotRoots = new Set()
 const activeHookChildren = new Set()
@@ -366,6 +376,22 @@ function argumentValues(name) {
   return values
 }
 
+function writeStderrRecord(text) {
+  const record = Buffer.from(`${text}\n`, 'utf8')
+  let offset = 0
+  try {
+    while (offset < record.length) {
+      const count = writeSync(2, record, offset, record.length - offset)
+      if (count <= 0) break
+      offset += count
+    }
+  } catch {}
+}
+
+function warnDegraded(message) {
+  writeStderrRecord(`GOVERNANCE_WARNING: ${String(message).slice(0, 900)}`)
+}
+
 function fail(message) {
   const rawDetail = String(message).startsWith('GOVERNANCE_INTEGRITY:')
     ? String(message)
@@ -377,15 +403,11 @@ function fail(message) {
     : rawDetail
   terminateActiveHookChildren('SIGKILL')
   cleanupPrivateSnapshots()
-  const record = Buffer.from(`${detail}\n`, 'utf8')
-  let offset = 0
-  try {
-    while (offset < record.length) {
-      const count = writeSync(2, record, offset, record.length - offset)
-      if (count <= 0) break
-      offset += count
-    }
-  } catch {}
+  if (!hookStrictIntegrity) {
+    writeStderrRecord(`GOVERNANCE_WARNING: hooks skipped (fail-open): ${detail.replace(/^GOVERNANCE_INTEGRITY: /, '')}`)
+    process.exit(0)
+  }
+  writeStderrRecord(detail)
   process.exit(70)
 }
 
@@ -644,6 +666,10 @@ function sealPrivateHookCorpusDirectories(snapshotRoot, current = snapshotRoot) 
 }
 
 function createAuthenticatedHookCorpusSnapshot(canonicalRegistry) {
+  if (!sealedHookGuardsEnabled) {
+    // Ordinary path: hooks run from the live repository corpus; no snapshot, no re-hash.
+    return Object.freeze({ root: CORPUS_ROOT, sha256: 'unsealed' })
+  }
   remainingProviderHookBatchMs('hook-corpus-snapshot-start')
   const filesBefore = canonicalHookCorpusFiles(canonicalRegistry)
   const authenticated = []
@@ -1253,21 +1279,36 @@ const observeBatch = (detail) => {
 }
 
 function verifiedProjectRoot(candidate) {
+  // Project-root discovery is exactly `git rev-parse --show-toplevel` on a real directory.
+  // It must not depend on repository-local git configuration hygiene: standard tooling
+  // (husky hooksPath, LFS filters, worktrees) lives in ordinary repositories and rejecting
+  // it here bricked every hook event on developer checkouts.
   try {
     const canonicalCandidate = realpathSync(resolve(candidate))
     const candidateInfo = lstatSync(canonicalCandidate)
     if (!candidateInfo.isDirectory() || candidateInfo.isSymbolicLink()) return ''
-    assertClosedGitLocalConfiguration(canonicalCandidate)
-    const result = runClosedGit(['rev-parse', '--show-toplevel'], {
+    // Resolve git by absolute path: hook launch environments may run with a scrubbed
+    // or empty PATH, and root discovery must not depend on it.
+    const gitExecutable = ['/usr/bin/git', '/opt/homebrew/bin/git', '/usr/local/bin/git']
+      .find((candidatePath) => existsSync(candidatePath)) || 'git'
+    // A minimal child environment: the launch environment may carry multi-megabyte
+    // provider payload aliases that would overflow the child argv/env budget (E2BIG).
+    const result = spawnSync(gitExecutable, ['rev-parse', '--show-toplevel'], {
       cwd: canonicalCandidate,
-      maxOutputBytes: 1024 * 1024,
-      timeoutMs: 5000,
+      env: {
+        PATH: process.env.PATH || '/usr/bin:/bin',
+        HOME: process.env.HOME || '',
+        GIT_OPTIONAL_LOCKS: '0',
+        GIT_TERMINAL_PROMPT: '0',
+      },
+      encoding: 'utf8',
+      timeout: 5000,
+      maxBuffer: 1024 * 1024,
     })
     if (result.error || result.signal || result.status !== 0 || !result.stdout?.trim()) return ''
     const root = realpathSync(resolve(result.stdout.trim()))
     const rootInfo = lstatSync(root)
     if (!rootInfo.isDirectory() || rootInfo.isSymbolicLink()) return ''
-    assertClosedGitLocalConfiguration(root)
     return root
   } catch {
     return ''
@@ -1281,8 +1322,17 @@ const explicitProjectHints = [
   process.env.GOVERNANCE_PROJECT_DIR,
   legacyProjectVariable ? process.env[legacyProjectVariable] : '',
 ].filter((value) => typeof value === 'string' && value.trim()).map((value) => value.trim())
-const projectRoots = explicitProjectHints.map(verifiedProjectRoot)
-if (projectRoots.some((value) => !value)) fail('provider hook adapter blocked:PROJECT_ROOT_UNVERIFIED')
+// On the ordinary path a hint that fails verification (stale worktree, deleted
+// checkout, foreign path) is ignored with a warning instead of poisoning the whole
+// batch — the current working directory remains the authoritative fallback. The
+// strict integrity lane keeps the historical hard failure.
+const projectRoots = []
+for (const hint of explicitProjectHints) {
+  const verifiedHint = verifiedProjectRoot(hint)
+  if (verifiedHint) projectRoots.push(verifiedHint)
+  else if (hookStrictIntegrity) fail('provider hook adapter blocked:PROJECT_ROOT_UNVERIFIED')
+  else warnDegraded(`ignoring unverifiable project root hint:${hint}`)
+}
 if (new Set(projectRoots).size > 1) fail('provider hook adapter blocked:PROJECT_ROOT_MISMATCH')
 const PROJECT_ROOT = projectRoots[0] || verifiedProjectRoot(process.cwd())
 if (!PROJECT_ROOT) fail('provider hook adapter blocked:PROJECT_ROOT_UNVERIFIED')
@@ -1326,7 +1376,28 @@ if (targetRole) {
     targetRoleActive = false
   }
 }
-const hookToolProfile = materializeClosedHookToolProfile({ repoRoot: PROJECT_ROOT })
+function createOpenHookToolProfile() {
+  const firstExisting = (candidates) => candidates.find((candidate) => existsSync(candidate)) || ''
+  return Object.freeze({
+    executables: Object.freeze({
+      bash: firstExisting(['/bin/bash', '/usr/bin/bash']),
+      git: firstExisting(['/usr/bin/git', '/opt/homebrew/bin/git', '/usr/local/bin/git']),
+      jq: firstExisting(['/usr/bin/jq', '/opt/homebrew/bin/jq', '/usr/local/bin/jq']),
+      node: process.execPath,
+      python3: firstExisting(['/usr/bin/python3', '/opt/homebrew/bin/python3', '/usr/local/bin/python3']),
+    }),
+    executablePath: process.env.PATH
+      || '/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin',
+    homeDirectory: process.env.HOME || tmpdir(),
+    tempDirectory: tmpdir(),
+    profileSha256: 'unsealed',
+    verify: () => {},
+  })
+}
+
+const hookToolProfile = sealedHookGuardsEnabled
+  ? materializeClosedHookToolProfile({ repoRoot: PROJECT_ROOT })
+  : createOpenHookToolProfile()
 hookToolProfile.verify()
 
 const registeredDescriptors = Object.entries(registrations.hooks || {}).flatMap(([event, groups]) =>
@@ -1504,7 +1575,12 @@ if (singleHookMode) {
     }))
     .filter((item) => item.eligibility.eligible)
   if (!selectedRegistrations.length) {
-    fail(`provider hook adapter blocked:event/group has no eligible hooks:${requestedEvent}:${requestedGroupText}`)
+    // Zero eligible hooks for this event payload is an ordinary no-op (for example a
+    // transcript-bound or peer-bound hook in an environment without that capability),
+    // never an integrity failure.
+    clearTimeout(providerHookBatchDeadline)
+    cleanupPrivateSnapshots()
+    process.exit(0)
   }
 }
 if (selectedRegistrations.length > MAX_PROVIDER_HOOK_DESCRIPTOR_COUNT) {

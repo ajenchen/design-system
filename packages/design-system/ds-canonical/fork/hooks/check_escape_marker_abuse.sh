@@ -36,38 +36,51 @@
 #   3. MARKER_RE 廣化(M7/M34 broad):@<x>-allow 家族用廣義 regex 自動納管,免 enum drift。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
+source "$(dirname "$0")/lib/_provider_paths.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: escape-marker project resolver unavailable\n' >&2
+  exit 70
+}
+source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
+  exit 70
+}
 
 set -uo pipefail
 
-INPUT=$(cat 2>/dev/null || echo "{}")
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null)
+governance_hook_load_input
+governance_hook_require_commands grep sed sort tr wc
+TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'escape-marker tool extraction failed'
 
 case "${TOOL:-}" in
   Edit|Write|MultiEdit) ;;
   *) exit 0 ;;
 esac
 
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
+FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'escape-marker path extraction failed'
 # Scope 分流(2026-05-31 加 DS source — 原整段 skip 讓 DS 內 143 個 marker 不受任何 justification 約束):
 #   IS_CONSUMER=apps/consumer tsx/ts → 跑 justification gate + 數量 gate(≥3/≥5)
 #   IS_DS=node_modules/@qijenchen/design-system/src tsx/ts → 只跑 justification gate(DS 有大量 legit exception,不套數量上限避免誤殺)
 IS_CONSUMER=0; IS_DS=0
-if echo "$FILE" | grep -qE '/(apps|consumer)/.*\.(tsx|ts)$'; then IS_CONSUMER=1; fi
-if echo "$FILE" | grep -qE 'node_modules/@qijenchen/design-system/src/.*\.(tsx|ts)$'; then IS_DS=1; fi
+if governance_hook_grep_q 'escape-marker consumer scope matcher failed' "$FILE" -qE '/(apps|consumer)/.*\.(tsx|ts)$'; then IS_CONSUMER=1; fi
+if governance_hook_grep_q 'escape-marker DS scope matcher failed' "$FILE" -qE 'node_modules/@qijenchen/design-system/src/.*\.(tsx|ts)$'; then IS_DS=1; fi
 if [ "$IS_CONSUMER" -eq 0 ] && [ "$IS_DS" -eq 0 ]; then exit 0; fi
 
-CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // ""' 2>/dev/null)
+CONTENT=$(printf '%s' "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // ""' 2>/dev/null) \
+  || governance_hook_integrity_fail 'escape-marker content extraction failed'
 [ -z "$CONTENT" ] && exit 0
 
 # Global escape — meta-skip(env override OR explicit comment)
-if [ "${CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT:-0}" = "1" ]; then exit 0; fi
+if [ "${GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT:-0}" = "1" ]; then exit 0; fi
 
 # ── Justification gate(2026-05-31,折進本 hook;核心 real gap)──────────────────
 # Escape marker 必帶 per-line rationale。空理由 = 靜默繞過 SSOT enforcement。
 #   (a) @<x>-allow: 後純空白到行尾(有 marker 有冒號但無理由)
 #   (b) bare @benchmark-unverified 後純空白到行尾(非 -blanket / 非 ": 理由" / 非後接說明文字)
 # 對齊 ESLint eslint-comments/require-description + Google NOLINT(category) 必帶說明。
-EMPTY_RATIONALE=$(echo "$CONTENT" | grep -nE '@[a-z][a-z-]+-allow:[[:space:]]*$|@benchmark-unverified[[:space:]]*$' || true)
+governance_hook_grep_capture EMPTY_RATIONALE 'escape-marker rationale matcher failed' "$CONTENT" -nE \
+  '@[a-z][a-z-]+-allow:[[:space:]]*$|@benchmark-unverified[[:space:]]*$'
 if [ -n "$EMPTY_RATIONALE" ]; then
   cat >&2 << EOF
 🚨 ESCAPE-MARKER-NO-RATIONALE BLOCKER(P0,2026-05-31 folded into check_escape_marker_abuse)
@@ -103,20 +116,26 @@ if [ "$IS_CONSUMER" -eq 1 ]; then
   # 2026-05-31 廣化 MARKER_RE(M7/M34:spec wording broad「任何 escape marker」→ hook regex 不該 narrow 只 16 種):
   # @<x>-allow 家族用廣義 [a-z][a-z-]*-allow 自動納管(免每次補 enum drift)+ 非 -allow markers 顯式列。
   MARKER_RE='@([a-z][a-z-]*-allow|benchmark-unverified(-blanket)?|template-customized|anatomy-exempt(-next)?|overlay-open-skip|layout-space-magic-ok|propose-cite-skip|story-(trait|split)-rationale)'
-  MARKERS_FOUND=$(echo "$CONTENT" | grep -oE "$MARKER_RE" | sort -u)
+  governance_hook_grep_capture MARKERS_UNSORTED 'escape-marker matcher failed' "$CONTENT" -oE "$MARKER_RE"
+  MARKERS_FOUND=$(sort -u <<< "$MARKERS_UNSORTED" 2>/dev/null) \
+    || governance_hook_integrity_fail 'escape-marker sorter failed'
   # 2026-05-30 fix(test-surfaced):空 MARKERS_FOUND 時 grep -c 印 "0" 已 exit 1,原 `|| echo 0`
   # 會再 append 一個 "0" → "0\n0" → 下方 `[ -ge "$DISTINCT_CAP" ]` integer-expression error。改 `|| true` 不重複。
-  DISTINCT_COUNT=$(echo "$MARKERS_FOUND" | grep -c . || true)
+  governance_hook_grep_capture DISTINCT_COUNT 'escape-marker distinct counter failed' "$MARKERS_FOUND" -c .
   [ -z "$DISTINCT_COUNT" ] && DISTINCT_COUNT=0
-  TOTAL_COUNT=$(echo "$CONTENT" | grep -oE "$MARKER_RE" | wc -l | tr -d ' ')
+  if [ -n "$MARKERS_UNSORTED" ]; then
+    governance_hook_grep_capture TOTAL_COUNT 'escape-marker occurrence counter failed' "$MARKERS_UNSORTED" -c .
+  else
+    TOTAL_COUNT=0
+  fi
 
   # Threshold: ≥3 distinct types OR ≥5 total
-  if [ "$DISTINCT_COUNT" -ge 3 ] || [ "$TOTAL_COUNT" -ge 5 ]; then
+  if [ "$DISTINCT_COUNT" -ge "$DISTINCT_CAP" ] || [ "$TOTAL_COUNT" -ge 5 ]; then
     cat >&2 << EOF
 🚨 ESCAPE-MARKER-ABUSE BLOCKER(P0,user 2026-05-27 verbatim「不亂加 escape markers — 加就跳 enforcement」)
 
   File $FILE:
-    Distinct escape markers: $DISTINCT_COUNT(threshold ≥3)
+    Distinct escape markers: $DISTINCT_COUNT(threshold ≥$DISTINCT_CAP)
     Total occurrences: $TOTAL_COUNT(threshold ≥5)
 
   Markers detected:
@@ -129,7 +148,7 @@ $(echo "$MARKERS_FOUND" | sed 's/^/    /')
     (a) **重構 code** 走 DS canonical pattern(消除根因,不繞)
     (b) **拆 file**:1 個 escape 對應 1 個 specific case,分散到不同 file
     (c) **Override env**(極罕見,documented in commit msg):
-        CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT=1 git commit -m "<rationale>"
+        GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1 git commit -m "<rationale>"
 
   per check_consumer_*.sh hooks SSOT — escape 是 emergency exit,不是 daily tool.
 EOF
@@ -140,13 +159,39 @@ EOF
   # per-file gate(≥3 distinct/≥5 total)可被「每檔 1-2 個、散多檔」繞過 → repo 級 ceiling。
   # Ratchet 精神(Polaris stylelint migrator):存量 ≥ cap 後只擋「本次 edit 再新增 marker」,
   # 不因存量 brick 無關 edit(本次內容無 marker → 直接放行)。
-  EDIT_ADDS_MARKER=$(echo "$CONTENT" | grep -cE "$MARKER_RE" || true)
+  governance_hook_grep_capture EDIT_ADDS_MARKER 'escape-marker edit counter failed' "$CONTENT" -cE "$MARKER_RE"
+  EDIT_ADDS_MARKER=${EDIT_ADDS_MARKER:-0}
   if [ "${EDIT_ADDS_MARKER:-0}" -gt 0 ]; then
-    APPS_ROOT="${CLAUDE_PROJECT_DIR:-.}/apps"
+    PROJECT_ROOT=$(governance_project_root 2>/dev/null) \
+      || governance_hook_integrity_fail 'escape-marker project root could not be resolved'
+    APPS_ROOT="$PROJECT_ROOT/apps"
     REPO_CAP=10
-    if [ -d "$APPS_ROOT" ]; then
-      REPO_TOTAL=$(grep -rhoE "$MARKER_RE" "$APPS_ROOT" --include='*.tsx' --include='*.ts' 2>/dev/null | wc -l | tr -d ' ')
-      if [ "${REPO_TOTAL:-0}" -ge "$REPO_CAP" ]; then
+    if [ -L "$APPS_ROOT" ] || [ ! -d "$APPS_ROOT" ] || [ ! -r "$APPS_ROOT" ]; then
+      governance_hook_integrity_fail 'escape-marker repository scan root is unavailable or unsafe'
+    fi
+    if REPO_MARKERS=$(grep -rhoE "$MARKER_RE" "$APPS_ROOT" --include='*.tsx' --include='*.ts' 2>/dev/null); then
+      _MATCH_RC=0
+    else
+      _MATCH_RC=$?
+    fi
+    if [ "$_MATCH_RC" -gt 1 ]; then
+      governance_hook_integrity_fail 'escape-marker repository scan failed'
+    fi
+    if [ -n "$REPO_MARKERS" ]; then
+      governance_hook_grep_capture REPO_TOTAL 'escape-marker repository counter failed' "$REPO_MARKERS" -c .
+    else
+      REPO_TOTAL=0
+    fi
+      # Exhaustive CI replays committed full files, not a prospective edit fragment. In that mode
+      # the current snapshot is valid at the ceiling and fails only when it already exceeds it.
+      # Native write-time mode keeps the ratchet semantics:once at cap, any marker-bearing edit
+      # is blocked so the count cannot grow.
+      if [ "${GOVERNANCE_STATIC_REPLAY:-0}" = "1" ]; then
+        [ "${REPO_TOTAL:-0}" -le "$REPO_CAP" ] && exit 0
+      elif [ "${REPO_TOTAL:-0}" -lt "$REPO_CAP" ]; then
+        exit 0
+      fi
+      if [ "${REPO_TOTAL:-0}" -gt "$REPO_CAP" ] || [ "${GOVERNANCE_STATIC_REPLAY:-0}" != "1" ]; then
         cat >&2 << EOF
 🚨 ESCAPE-MARKER-REPO-RATCHET BLOCKER(P0,2026-07-08 WM 戰役 R4)
 
@@ -156,11 +201,10 @@ EOF
   修法 2 選 1:
     (a) 先清既有 escape 的根因(重構走 DS canonical),存量 < $REPO_CAP 後再加真必要的
     (b) Override env(極罕見,commit msg 必記 rationale):
-        CLAUDE_BYPASS_ESCAPE_MARKER_AUDIT=1
+        GOVERNANCE_BYPASS_ESCAPE_MARKER_AUDIT=1
 EOF
         exit 2
       fi
-    fi
   fi
 fi
 

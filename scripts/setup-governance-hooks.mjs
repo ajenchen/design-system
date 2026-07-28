@@ -41,10 +41,12 @@ export function setupGovernanceHooks({
     ...(runner === undefined ? {} : { runner }),
   })
   const before = captureGitVisibleWorktree(root, runner === undefined ? {} : { runner })
-  execute(['config', '--local', '--replace-all', 'core.hooksPath', hookRoot])
+  // Write the repo-relative binding, never a machine-absolute path: an absolute value
+  // breaks linked worktrees (which share this config), re-clones, and mount renames.
+  execute(['config', '--local', '--replace-all', 'core.hooksPath', '.husky'])
   assertClosedGitLocalConfiguration(root, runner === undefined ? {} : { runner })
   const observed = execute(['config', '--local', '--no-includes', '--get-all', 'core.hooksPath']).split(/\r?\n/).filter(Boolean)
-  invariant(observed.length === 1 && observed[0] === hookRoot, 'canonical hook path readback failed')
+  invariant(observed.length === 1 && observed[0] === '.husky', 'canonical hook path readback failed')
   assertGitVisibleWorktreeUnchanged(root, before, {
     label: 'governance hook setup',
     ...(runner === undefined ? {} : { runner }),

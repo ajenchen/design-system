@@ -845,11 +845,11 @@ test('meta-test inventory derives full zero-debt checker coverage while preservi
     executionClass: 'environmental-observation',
     portabilityPolicy: 'excluded',
     harness: 'scripts/test-check-branch-protection.mjs',
-    fallback: 'scripts/release-preflight.mjs:node scripts/check-branch-protection.mjs --check --repository ajenchen/design-system',
+    fallback: 'manual opt-in live readback: node scripts/check-branch-protection.mjs --check --repository ajenchen/design-system',
     executionOwner: {
       kind: 'source-reference',
-      path: 'scripts/release-preflight.mjs',
-      evidence: 'node scripts/check-branch-protection.mjs --check --repository ajenchen/design-system',
+      path: 'scripts/check-branch-protection.mjs',
+      evidence: 'check-branch-protection',
     },
     reason: 'Mutation fixture deliberately reclassifies one deterministic policy evaluator as an external-only observation.',
   })

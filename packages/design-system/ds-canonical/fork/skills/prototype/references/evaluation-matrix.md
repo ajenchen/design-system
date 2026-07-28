@@ -1,3 +1,4 @@
+> **Product-role projection(build 自動)**:本 skill 的執行步驟已只保留本 product repo 實際存在的指令。DS-author-only executor 會被改寫為 browser/manual/product-CI 等價驗證,不得在 product 中嘗試不存在的腳本。
 # Evaluation Matrix — 4 軸評分 + 決策規則
 
 Phase 2 將 Phase 1 scan 結果變成可決策的評分表。
@@ -38,7 +39,7 @@ Phase 2 將 Phase 1 scan 結果變成可決策的評分表。
 **扣分場景**:
 - 候選需要覆蓋 `--chart-*` token 家族 → DS 一致性扣
 - 需要 hack Popover / Dialog 基底 → DS 一致性扣
-- 違反 token 防線 lib/_token_hygiene.sh 5 條守則 → 直接 1(這是 bug,不是 DS 選擇)
+- 違反 token 防線 the installed immutable governance checker 5 條守則 → 直接 1(這是 bug,不是 DS 選擇)
 
 ### 業務 fit(1-5,5 最高)
 

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import {
   closeSync,
   constants as fsConstants,
+  existsSync,
   fstatSync,
   lstatSync,
   openSync,
@@ -14,6 +15,11 @@ import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { createGateMetaTestInventory } from '../../../scripts/lib/gate-meta-test-inventory.mjs'
+import {
+  assertControlPlaneGenesisTombstones,
+  CONTROL_PLANE_GENESIS_OPEN_STATE,
+  loadControlPlaneGenesisTransition,
+} from '../../../scripts/lib/control-plane-genesis-transition.mjs'
 import { compareUtf8Bytes } from './common.mjs'
 
 const GOVERNANCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -397,14 +403,28 @@ function isActiveHookTestPath(path) {
   return basename(path).startsWith('test_') && path.endsWith('.sh')
 }
 
+function transitionInactiveCanonicalHookNames(repoRoot) {
+  const root = canonicalRepoRoot(repoRoot)
+  if (!existsSync(resolve(root, 'scripts/governance-build-graph.json'))) return new Set()
+  const transition = loadControlPlaneGenesisTransition({ root })
+  if (transition.state !== CONTROL_PLANE_GENESIS_OPEN_STATE) return new Set()
+  const prefix = `${CANONICAL_HOOK_ROOT}/`
+  return new Set(assertControlPlaneGenesisTombstones({ root, transition })
+    .map(item => item.path)
+    .filter(path => path.startsWith(prefix) && !path.slice(prefix.length).includes('/'))
+    .map(path => path.slice(prefix.length)))
+}
+
 function validateCanonicalActiveHookCoverage(repoRoot, canonicalHookTree) {
   const root = canonicalRepoRoot(repoRoot)
   const absoluteRoot = resolveRegularRepoDirectory(root, CANONICAL_HOOK_ROOT, 'Harness canonical hook root')
+  const transitionInactive = transitionInactiveCanonicalHookNames(root)
   const active = []
   for (const entry of readdirSync(absoluteRoot, { withFileTypes: true }).sort((left, right) => compareUtf8Bytes(left.name, right.name))) {
     const repoPath = `${CANONICAL_HOOK_ROOT}/${entry.name}`
     invariant(!entry.isSymbolicLink(), `Harness canonical hook root contains a symbolic link:${repoPath}`)
     if (!entry.isFile() || !/\.(?:sh|py)$/.test(entry.name) || /^(?:_log-fire|log_.+)\.sh$/.test(entry.name)) continue
+    if (transitionInactive.has(entry.name)) continue
     resolveRegularRepoFile(root, repoPath, 'Harness canonical active hook')
     active.push(entry.name.replace(/\.(?:sh|py)$/, ''))
   }
@@ -2002,6 +2022,36 @@ export function discoverHarnessSources(repoRoot = DEFAULT_HARNESS_SOURCE_REPO_RO
   return discovered.sort(compareUtf8Bytes)
 }
 
+export function deriveHarnessGeneratedMirrorBinding(inventory, {
+  repoRoot = DEFAULT_HARNESS_SOURCE_REPO_ROOT,
+} = {}) {
+  invariant(Array.isArray(inventory?.generatedMirrors) && inventory.generatedMirrors.length === 1, 'Harness source inventory must bind the generated hook-test mirror exactly once')
+  const mirror = inventory.generatedMirrors[0]
+  exactKeys(mirror, ['id', 'canonicalRoot', 'mirrorRoot', 'include', 'treeSha256'], 'Harness generated mirror binding')
+  invariant(mirror.id === 'claude-hook-behavioral-tests', 'Harness generated mirror identity is invalid')
+  invariant(mirror.canonicalRoot === CANONICAL_HOOK_TEST_ROOT, 'Harness generated mirror canonical root is invalid')
+  invariant(mirror.mirrorRoot === CLAUDE_HOOK_TEST_MIRROR_ROOT, 'Harness generated mirror root is invalid')
+  invariant(
+    JSON.stringify(mirror.include) === JSON.stringify(['run-all.sh', '**/*.mjs', '**/test_*.sh', '**/test_*.sh.broken']),
+    'Harness generated mirror include policy is invalid',
+  )
+  invariant(/^[a-f0-9]{64}$/.test(mirror.treeSha256), 'Harness generated mirror tree digest is invalid')
+  const canonicalHookTree = hookTreeManifest(repoRoot, mirror.canonicalRoot, 'Harness canonical hook-test tree')
+  const generatedHookTree = hookTreeManifest(repoRoot, mirror.mirrorRoot, 'Harness generated hook-test mirror')
+  invariant(
+    JSON.stringify(generatedHookTree.records) === JSON.stringify(canonicalHookTree.records),
+    'Harness generated hook-test mirror differs from its canonical tree',
+  )
+  return Object.freeze({
+    binding: Object.freeze({
+      ...mirror,
+      treeSha256: canonicalHookTree.treeSha256,
+    }),
+    canonicalHookTree,
+    generatedHookTree,
+  })
+}
+
 export function validateHarnessSourceInventory(inventory, {
   repoRoot = DEFAULT_HARNESS_SOURCE_REPO_ROOT,
   registry,
@@ -2229,24 +2279,10 @@ export function validateHarnessSourceInventory(inventory, {
     classified.add(path)
   }
 
-  invariant(Array.isArray(inventory.generatedMirrors) && inventory.generatedMirrors.length === 1, 'Harness source inventory must bind the generated hook-test mirror exactly once')
+  const generatedMirror = deriveHarnessGeneratedMirrorBinding(inventory, { repoRoot })
   const mirror = inventory.generatedMirrors[0]
-  exactKeys(mirror, ['id', 'canonicalRoot', 'mirrorRoot', 'include', 'treeSha256'], 'Harness generated mirror binding')
-  invariant(mirror.id === 'claude-hook-behavioral-tests', 'Harness generated mirror identity is invalid')
-  invariant(mirror.canonicalRoot === CANONICAL_HOOK_TEST_ROOT, 'Harness generated mirror canonical root is invalid')
-  invariant(mirror.mirrorRoot === CLAUDE_HOOK_TEST_MIRROR_ROOT, 'Harness generated mirror root is invalid')
-  invariant(
-    JSON.stringify(mirror.include) === JSON.stringify(['run-all.sh', '**/*.mjs', '**/test_*.sh', '**/test_*.sh.broken']),
-    'Harness generated mirror include policy is invalid',
-  )
-  invariant(/^[a-f0-9]{64}$/.test(mirror.treeSha256), 'Harness generated mirror tree digest is invalid')
-  const canonicalHookTree = hookTreeManifest(repoRoot, mirror.canonicalRoot, 'Harness canonical hook-test tree')
-  const generatedHookTree = hookTreeManifest(repoRoot, mirror.mirrorRoot, 'Harness generated hook-test mirror')
-  invariant(
-    JSON.stringify(generatedHookTree.records) === JSON.stringify(canonicalHookTree.records),
-    'Harness generated hook-test mirror differs from its canonical tree',
-  )
-  invariant(mirror.treeSha256 === canonicalHookTree.treeSha256, 'Harness generated hook-test mirror digest drifted')
+  const { canonicalHookTree, generatedHookTree } = generatedMirror
+  invariant(mirror.treeSha256 === generatedMirror.binding.treeSha256, 'Harness generated hook-test mirror digest drifted')
   validateCanonicalActiveHookCoverage(repoRoot, canonicalHookTree)
   for (const record of generatedHookTree.records) {
     if (!isActiveHookTestPath(record.path)) continue

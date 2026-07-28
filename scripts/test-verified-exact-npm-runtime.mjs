@@ -22,6 +22,7 @@ import {
   materializeVerifiedExactNpmRuntime,
   prepareVerifiedExactNpmRuntime,
   resolveExactNpmArtifact,
+  resolveExactNpmRuntimeContract,
 } from './lib/verified-exact-npm-runtime.mjs'
 import {
   buildDeterministicNpmRuntimeArchive,
@@ -99,6 +100,51 @@ function npmEntries({
   return entries
 }
 
+function npmEntriesWithSecurityOverlayPreimage() {
+  return [
+    ...npmEntries(),
+    {
+      path: 'package/node_modules/brace-expansion/package.json',
+      body: `${JSON.stringify({ name: 'brace-expansion', version: '5.0.7' })}\n`,
+    },
+    {
+      path: 'package/node_modules/brace-expansion/index.js',
+      body: 'exports.expand = value => [value]\n',
+    },
+    {
+      path: 'package/node_modules/minimatch/package.json',
+      body: `${JSON.stringify({
+        name: 'minimatch',
+        version: '10.2.5',
+        main: 'index.js',
+        dependencies: { 'brace-expansion': '^5.0.5' },
+      })}\n`,
+    },
+    {
+      path: 'package/node_modules/minimatch/index.js',
+      body: "const { expand } = require('brace-expansion')\nexports.minimatch = (value, pattern) => expand(pattern).includes(value)\n",
+    },
+  ]
+}
+
+function securityOverlayArchive() {
+  return tarball([
+    {
+      path: 'package/package.json',
+      body: `${JSON.stringify({
+        name: 'brace-expansion',
+        version: '5.0.8',
+        main: './dist/commonjs/index.js',
+        exports: { '.': { require: './dist/commonjs/index.js' } },
+      })}\n`,
+    },
+    {
+      path: 'package/dist/commonjs/index.js',
+      body: "exports.expand = value => value === '{a,b}' ? ['a', 'b'] : [value]\n",
+    },
+  ])
+}
+
 function artifact(bytes, artifactVersion = version) {
   return Object.freeze({
     version: artifactVersion,
@@ -107,10 +153,21 @@ function artifact(bytes, artifactVersion = version) {
   })
 }
 
-function repositoryFixture(bytes) {
+function repositoryFixture(bytes, { overlayBytes } = {}) {
   const root = join(temporaryDirectory(), 'consumer')
   const npmArtifact = artifact(bytes)
-  const devDependencies = { npm: version }
+  const overlayArtifact = overlayBytes
+    ? {
+        name: 'brace-expansion',
+        version: '5.0.8',
+        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.8.tgz',
+        integrity: `sha512-${createHash('sha512').update(overlayBytes).digest('base64')}`,
+      }
+    : null
+  const devDependencies = {
+    npm: version,
+    ...(overlayArtifact ? { 'npm-runtime-brace-expansion-patch': 'npm:brace-expansion@5.0.8' } : {}),
+  }
   write(join(root, 'package.json'), `${JSON.stringify({ name: 'consumer', version: '0.0.0', devDependencies }, null, 2)}\n`)
   write(join(root, 'package-lock.json'), `${JSON.stringify({
     name: 'consumer',
@@ -124,9 +181,10 @@ function repositoryFixture(bytes) {
         integrity: npmArtifact.integrity,
         bin: { npm: 'bin/npm-cli.js' },
       },
+      ...(overlayArtifact ? { 'node_modules/npm-runtime-brace-expansion-patch': overlayArtifact } : {}),
     },
   }, null, 2)}\n`)
-  return { artifact: npmArtifact, root: realpathSync(root) }
+  return { artifact: npmArtifact, overlayArtifact, root: realpathSync(root) }
 }
 
 function assertMaterializationRejects(entries, pattern, { mutateArtifact } = {}) {
@@ -166,8 +224,9 @@ test('valid lock-digested archive materializes outside the repository and cleanu
 })
 
 test('prepare downloads only the canonical lock URL and ignores perfect-looking project npm poison', async () => {
-  const bytes = tarball(npmEntries())
-  const repository = repositoryFixture(bytes)
+  const bytes = tarball(npmEntriesWithSecurityOverlayPreimage())
+  const overlayBytes = securityOverlayArchive()
+  const repository = repositoryFixture(bytes, { overlayBytes })
   const poisonMarker = join(dirname(repository.root), 'poisoned-installed-npm-ran')
   write(join(repository.root, 'node_modules/npm/package.json'), `${JSON.stringify({ name: 'npm', version, bin: { npm: 'bin/npm-cli.js' } })}\n`)
   write(join(repository.root, 'node_modules/npm/bin/npm-cli.js'), `import { writeFileSync } from 'node:fs'\nwriteFileSync(${JSON.stringify(poisonMarker)}, 'ran')\nif (process.argv[2] === '--version') console.log('${version}')\n`, 0o755)
@@ -176,14 +235,30 @@ test('prepare downloads only the canonical lock URL and ignores perfect-looking 
     repositoryRoot: repository.root,
     parentDirectory: temporaryDirectory(),
     download: async (url) => { urls.push(url); return bytes },
+    downloadSecurityOverlay: async (url) => { urls.push(url); return overlayBytes },
   })
   try {
-    assert.deepEqual(urls, [repository.artifact.resolved])
+    assert.deepEqual(urls, [repository.artifact.resolved, repository.overlayArtifact.resolved])
+    assert.equal(runtime.securityOverlay.status, 'applied')
+    assert.equal(runtime.securityOverlay.version, '5.0.8')
+    assert.equal(
+      JSON.parse(readFileSync(join(runtime.packageRoot, 'node_modules/brace-expansion/package.json'), 'utf8')).version,
+      '5.0.8',
+    )
     assert.notEqual(runtime.cli, join(repository.root, 'node_modules/npm/bin/npm-cli.js'))
     assert.equal(existsSync(poisonMarker), false)
   } finally {
     runtime.cleanup()
   }
+})
+
+test('runtime contract fails closed when the content-addressed security overlay alias is absent', () => {
+  const bytes = tarball(npmEntriesWithSecurityOverlayPreimage())
+  const repository = repositoryFixture(bytes)
+  assert.throws(
+    () => resolveExactNpmRuntimeContract(repository.root),
+    /must pin npm-runtime-brace-expansion-patch/,
+  )
 })
 
 test('wrong compressed SHA-512 fails before extraction', () => {

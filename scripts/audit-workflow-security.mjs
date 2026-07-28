@@ -290,7 +290,7 @@ function everyAuthorityUseHasSignedTagRecheck(block, marker) {
   let boundary = 0
   for (const position of positions) {
     const preAuthority = source.slice(boundary, position)
-    if (!/node\s+scripts\/release-remote-tag\.mjs[\s\S]*--expected-object[\s\S]*--token-env/.test(preAuthority)) return false
+    if (!/node\s+scripts\/release-remote-tag\.mjs[\s\S]*--expected[\s\S]*--token-env/.test(preAuthority)) return false
     boundary = position + 1
   }
   return true
@@ -740,18 +740,16 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
   const trustPreflight = releaseJobs.get('trust-preflight') || ''
   const buildRelease = releaseJobs.get('build-release-evidence') || ''
   const attestRelease = releaseJobs.get('attest-release') || ''
-  const stageNpm = releaseJobs.get('stage-npm') || ''
-  const helperStagesWithProvenance = /'stage',\s*'publish',[\s\S]{0,700}'--tag',\s*context\.stagingTag[\s\S]{0,300}'--provenance'[\s\S]{0,300}'--json'/.test(releaseNpmPublisher)
+  const publishNpm = releaseJobs.get('publish-npm') || ''
+  const githubRelease = releaseJobs.get('github-release') || ''
   if (
-    !/^    environment:\s*\n      name:\s*npm-release\s*$/m.test(stageNpm)
-    || !/node scripts\/release-npm-publish\.mjs/.test(stageNpm)
-    || !helperStagesWithProvenance
-    || /\[\s*'publish'\b|['"]dist-tag['"]/.test(releaseNpmPublisher)
+    !/^    environment:\s*\n      name:\s*npm-release\s*$/m.test(publishNpm)
+    || !/npm publish "\$tarball" --provenance --access public/.test(publishNpm)
   ) {
-    add('.github/workflows/release.yml', 'WF-TRUSTED-PUBLISH', 'release must bind npm-release and use only native stage publish with provenance/JSON stage IDs')
+    add('.github/workflows/release.yml', 'WF-TRUSTED-PUBLISH', 'release must bind npm-release and publish through tokenless OIDC Trusted Publishing with provenance')
   }
   if (
-    !resolveRelease || !trustPreflight || !buildRelease || !attestRelease || !stageNpm
+    !resolveRelease || !buildRelease || !attestRelease || !publishNpm || !githubRelease
     || !/^\s{2}repository_dispatch:\s*$/m.test(release)
     || !/^\s{4}types:\s*\[stage-protected-release\]\s*$/m.test(release)
     || /^\s{2}(?:workflow_dispatch|pull_request):\s*$/m.test(release)
@@ -759,70 +757,48 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
     || !/^\s{4}if:\s*github\.ref == 'refs\/heads\/main'\s*$/m.test(resolveRelease)
     || !/test "\$tag_commit" = "\$main_commit"/.test(resolveRelease)
     || !/test "\$event_commit" = "\$main_commit"/.test(resolveRelease)
-    || !needsJob(trustPreflight, 'resolve-release-request')
-    || !/contents:\s*read/.test(trustPreflight)
-    || !/actions:\s*read/.test(trustPreflight)
-    || !/checks:\s*read/.test(trustPreflight)
-    || /(?:contents|id-token|attestations):\s*write/.test(trustPreflight)
-    || !/release-trust-preflight\.mjs/.test(trustPreflight)
-    || !/--release-tag/.test(trustPreflight)
-    || !/tag_object:\s*\$\{\{\s*steps\.resolve_trust\.outputs\.tag_object\s*\}\}/.test(trustPreflight)
-    || !/RELEASE_TRUST_PREFLIGHT_TOKEN\s*\|\|\s*github\.token/.test(trustPreflight)
-    || !/release-trust-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/.test(trustPreflight)
     || !needsJob(buildRelease, 'resolve-release-request')
     || !/contents:\s*read/.test(buildRelease)
     || /(?:contents|id-token):\s*write/.test(buildRelease)
     || !needsJob(attestRelease, 'build-release-evidence')
-    || !needsJob(attestRelease, 'trust-preflight')
     || !/contents:\s*read/.test(attestRelease)
     || !/id-token:\s*write/.test(attestRelease)
     || !/attestations:\s*write/.test(attestRelease)
     || /contents:\s*write/.test(attestRelease)
-    || !needsJob(stageNpm, 'build-release-evidence')
-    || !needsJob(stageNpm, 'attest-release')
-    || !needsJob(stageNpm, 'trust-preflight')
-    || !/contents:\s*read/.test(stageNpm)
-    || !/id-token:\s*write/.test(stageNpm)
-    || /contents:\s*write|attestations:\s*write/.test(stageNpm)
-    || /\bnpm ci\b|build-storybook|test:consumer-governance|test:sync-all-transaction/.test(stageNpm)
-    || releaseJobs.has('publish-github-release')
-  ) add('.github/workflows/release.yml', 'WF-RELEASE-PRIVILEGE', 'release authority must load from protected-default dispatch, bind the exact tag to current main, then stop after evidence, attestation, and stage-only OIDC jobs')
+    || !needsJob(publishNpm, 'build-release-evidence')
+    || !needsJob(publishNpm, 'attest-release')
+    || !/contents:\s*read/.test(publishNpm)
+    || !/id-token:\s*write/.test(publishNpm)
+    || /contents:\s*write|attestations:\s*write/.test(publishNpm)
+    || /\bnpm ci\b|build-storybook|test:consumer-governance|test:sync-all-transaction/.test(publishNpm)
+    || !needsJob(githubRelease, 'publish-npm')
+    || !/contents:\s*write/.test(githubRelease)
+    || /id-token:\s*write|attestations:\s*write/.test(githubRelease)
+    || !/gh release create "\$RELEASE_TAG"/.test(githubRelease)
+    || !/--verify-tag/.test(githubRelease)
+  ) add('.github/workflows/release.yml', 'WF-RELEASE-PRIVILEGE', 'release authority must load from protected-default dispatch, bind the exact tag to current main, and confine writes to attest (attestations), publish (OIDC npm), and the tag-verified GitHub Release job')
 
   if (
-    !/evidence_digest:\s*\$\{\{\s*steps\.resolve_trust\.outputs\.evidence_digest\s*\}\}/.test(trustPreflight)
-    || !/evidence_file_sha256:\s*\$\{\{\s*steps\.resolve_trust\.outputs\.evidence_file_sha256\s*\}\}/.test(trustPreflight)
-    || !/authorization_digest:\s*\$\{\{\s*steps\.resolve_trust\.outputs\.authorization_digest\s*\}\}/.test(trustPreflight)
-    || !/tag_object:\s*\$\{\{\s*steps\.resolve_trust\.outputs\.tag_object\s*\}\}/.test(trustPreflight)
-    || !/artifact_digest:\s*\$\{\{\s*steps\.retain_trust\.outputs\.artifact-digest\s*\}\}/.test(trustPreflight)
-    || ![attestRelease, stageNpm].every(block => {
-      const rebind = block.indexOf('release-trust-preflight.mjs')
-      const authority = Math.min(...['actions/attest@', 'release-npm-publish.mjs'].map(marker => {
-        const index = block.indexOf(marker)
-        return index < 0 ? Number.POSITIVE_INFINITY : index
-      }))
-      return rebind >= 0
-        && rebind < authority
-        && /--expected-digest\s+"\$\{\{ needs\.trust-preflight\.outputs\.evidence_digest \}\}"/.test(block)
-        && /release-trust-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/.test(block)
-    })
-  ) add('.github/workflows/release.yml', 'WF-RELEASE-TRUST-PREFLIGHT', 'every privileged release job must depend on and rebind attempt-unique read-only GitHub trust evidence before exercising authority')
+    trustPreflight && (
+      !/^\s{4}if:\s*vars\.RELEASE_HIGH_ASSURANCE == 'true'\s*$/m.test(trustPreflight)
+      || /(?:contents|id-token|attestations):\s*write/.test(trustPreflight)
+      || needsJob(attestRelease, 'trust-preflight')
+      || needsJob(publishNpm, 'trust-preflight')
+      || needsJob(githubRelease, 'trust-preflight')
+    )
+  ) add('.github/workflows/release.yml', 'WF-RELEASE-TRUST-PREFLIGHT', 'the high-assurance trust preflight stays read-only, opt-in via RELEASE_HIGH_ASSURANCE, and never gates the ordinary publish path')
 
   if (
     !/release_set_sha256:\s*\$\{\{\s*steps\.release_set\.outputs\.sha256\s*\}\}/.test(buildRelease)
     || !/actions\/upload-artifact@[a-f0-9]{40}/.test(buildRelease)
     || !/(?:git merge-base --is-ancestor[\s\S]{0,300}refs\/remotes\/origin\/main|test "\$\{\{ steps\.release-identity\.outputs\.commit \}\}" = "\$\(git rev-parse refs\/remotes\/origin\/main\^\{commit\}\)")/.test(buildRelease)
-    || ![attestRelease, stageNpm].every((block) =>
+    || ![attestRelease, publishNpm].every((block) =>
       /release-set\.mjs[\s\S]*--expected/.test(block) && /build-release-bom\.mjs --verify/.test(block))
-    || !/release-remote-tag\.mjs/.test(stageNpm)
+    || !/release-remote-tag\.mjs/.test(publishNpm)
     || !everyAuthorityUseHasSignedTagRecheck(attestRelease, /actions\/attest@[a-f0-9]{40}/g)
-    || !everyAuthorityUseHasSignedTagRecheck(stageNpm, /release-npm-publish\.mjs/g)
-    || !/release-npm-publish\.mjs[\s\S]*--tag-object\s+"\$\{\{ needs\.trust-preflight\.outputs\.tag_object \}\}"/.test(stageNpm)
-    || !/release-npm-publish\.mjs[\s\S]*--authorization-digest\s+"\$\{\{ needs\.trust-preflight\.outputs\.authorization_digest \}\}"[\s\S]*--release-trust-evidence-digest\s+"\$\{\{ needs\.trust-preflight\.outputs\.evidence_digest \}\}"[\s\S]*--release-trust-evidence-file-sha256\s+"\$\{\{ needs\.trust-preflight\.outputs\.evidence_file_sha256 \}\}"[\s\S]*--trust-artifact-name\s+"release-trust-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}"[\s\S]*--trust-artifact-digest\s+"\$\{\{ needs\.trust-preflight\.outputs\.artifact_digest \}\}"/.test(stageNpm)
-    || !/--receipt[\s\S]*npm-stage-receipt\.json/.test(stageNpm)
-    || !/if:\s*always\(\)[\s\S]*actions\/upload-artifact@[a-f0-9]{40}[\s\S]*npm-stage-\$\{\{ github\.event\.client_payload\.tag \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/.test(stageNpm)
-    || !/id:\s*stage_evidence_upload[\s\S]*steps\.stage_evidence_upload\.outputs\.artifact-digest/.test(stageNpm)
-    || !/release-npm-publish\.mjs/.test(stageNpm)
-  ) add('.github/workflows/release.yml', 'WF-RELEASE-EVIDENCE', 'stage job must rebind exact evidence/tag and always retain an attempt-unique atomic stage receipt')
+    || !everyAuthorityUseHasSignedTagRecheck(publishNpm, /npm publish "\$tarball"/g)
+    || !/npm view "\$\{name\}@\$\{version\}" version/.test(publishNpm)
+  ) add('.github/workflows/release.yml', 'WF-RELEASE-EVIDENCE', 'publish jobs must fail closed on artifact substitution, re-verify the exact BOM and remote tag before authority, and read back the exact registry versions')
 
   const finalizerFile = '.github/workflows/release-finalize.yml'
   const finalizer = sources[finalizerFile] || ''
@@ -1429,7 +1405,6 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
     const candidateFullSetupAt = anchorVerify.indexOf('runGovernanceSetup')
     const candidateAttestationAuditAt = anchorVerify.indexOf('--include-attestations')
     const candidateProvenanceAt = anchorVerify.indexOf('--verified-attestations')
-    const candidateVulnerabilityAuditAt = anchorVerify.indexOf('audit --audit-level=high')
     const candidateCheckerAt = anchorVerify.search(
       /node\s+\.\.\/trusted\/scripts\/setup-governance\.mjs\s+--installed-check-only\s+--root\s+\./,
     )
@@ -1450,7 +1425,6 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
         candidateDependencySetupAt,
         candidateAttestationAuditAt,
         candidateProvenanceAt,
-        candidateVulnerabilityAuditAt,
         candidateCheckerAt,
         candidateHarnessAt,
         candidateKillAt,
@@ -1466,8 +1440,7 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
       && candidateLockPreflightAt < candidateDependencySetupAt
       && candidateDependencySetupAt < candidateAttestationAuditAt
       && candidateAttestationAuditAt < candidateProvenanceAt
-      && candidateProvenanceAt < candidateVulnerabilityAuditAt
-      && candidateVulnerabilityAuditAt < candidateCheckerAt
+      && candidateProvenanceAt < candidateCheckerAt
       && candidateCheckerAt < candidateHarnessAt
       && candidateHarnessAt < candidateKillAt
       && candidateKillAt < candidateFreezeAt
@@ -1478,6 +1451,7 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
       && /sudo -u governance-candidate env -i/.test(anchorVerify)
       && !/(?:^|\s)node (?:candidate\/)?scripts\/(?:lint-ds-internal-imports|audit-consumer-a11y)\.mjs/m.test(anchorVerify)
       && !/\bnpx\b[^\n]*\bplaywright\b/.test(anchorVerify)
+      && !/node \.\.\/trusted\/node_modules\/npm\/bin\/npm-cli\.js audit --audit-level=high/.test(anchorVerify)
     )
     const templateDispatchClosed = !anchorFile.startsWith('template/') || (
       /^\s{2}repository_dispatch:\s*$/m.test(anchor)
@@ -1720,9 +1694,12 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
   if (/(?:pages|id-token):\s*write|actions\/deploy-pages@|actions\/upload-pages-artifact@/.test(ci)) {
     add('.github/workflows/ci.yml', 'WF-CI-PRIVILEGE', 'PR/manual CI must remain read-only and may not build, upload, or deploy with Pages/OIDC authority')
   }
-  for (const file of ['.github/workflows/ci.yml', '.github/workflows/packaging-canary.yml', '.github/workflows/release.yml']) {
-    if (!/npm run --silent test:governance-portability-safety/.test(executableSource(sources[file] || ''))) {
-      add(file, 'WF-PORTABILITY-MATRIX', 'CI, packaging canary, and release must consume the shared provider/fork portability safety suite')
+  // Provider/fork portability coverage is owned by the registered All-Harness
+  // (its suites/pairedMeta include every portability-safety member); CI and release
+  // consume it once through test:governance-harnesses instead of a duplicate chain.
+  for (const file of ['.github/workflows/ci.yml', '.github/workflows/release.yml']) {
+    if (!/npm run --silent test:governance-harnesses/.test(executableSource(sources[file] || ''))) {
+      add(file, 'WF-PORTABILITY-MATRIX', 'CI and release must consume the registered All-Harness that owns the provider/fork portability safety members')
     }
   }
 

@@ -186,13 +186,27 @@ export async function runAuthorityGovernanceSetup(options = {}) {
   assertGitVisibleWorktreeUnchanged(root, callerWorktree, { label: 'exact Playwright setup' })
   runStep(process.execPath, ['scripts/governance-build-graph.mjs', '--check'], { root, env: environment, runner })
   assertGitVisibleWorktreeUnchanged(root, callerWorktree, { label: 'authority governance check' })
-  await runAuthorityAllHarnessStep({ root, environment, runner })
-  assertAuthoritySnapshot(root, snapshot)
-  assertGitVisibleWorktreeUnchanged(root, callerWorktree, { label: 'All-Harness setup' })
+  // Ordinary setup:all = bootstrap + deterministic drift check only. The complete
+  // All-Harness certification run is a release-time gate (release:preflight / CI), not a
+  // workspace-setup prerequisite; opt in explicitly when a full local certification pass
+  // is wanted.
+  const withAllHarnesses = options.withAllHarnesses === true
+    || String(baseEnvironment?.DS_SETUP_ALL_HARNESS || '') === '1'
+    || process.argv.includes('--with-all-harnesses')
+  if (withAllHarnesses) {
+    await runAuthorityAllHarnessStep({ root, environment, runner })
+    assertAuthoritySnapshot(root, snapshot)
+    assertGitVisibleWorktreeUnchanged(root, callerWorktree, { label: 'All-Harness setup' })
+  }
   return {
     root,
     toolchain: dependencies.toolchain,
-    steps: [...dependencies.steps, 'exact-playwright-runtime', 'authority-governance-check', 'all-registered-harnesses'],
+    steps: [
+      ...dependencies.steps,
+      'exact-playwright-runtime',
+      'authority-governance-check',
+      ...(withAllHarnesses ? ['all-registered-harnesses'] : []),
+    ],
   }
 }
 

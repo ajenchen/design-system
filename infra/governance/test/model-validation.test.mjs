@@ -11,7 +11,11 @@ import { FixtureApiClient, reconcileFixtureTestHarness } from '../bin/reconcile-
 import { readJson, validateInventory } from '../lib/common.mjs'
 import { validateCertifications, validateDesiredGithub, validateGovernanceModel, validateProviderRegistry, validateReleaseRings } from '../lib/model-validation.mjs'
 import { compareUtf8Bytes, sha256, stableStringify } from '../lib/common.mjs'
-import { runtimeEvidenceSigningPayload, runtimeTargetDigest } from '../lib/provider-runtime-conformance.mjs'
+import {
+  prepareClaudeReviewCapabilityProbe,
+  runtimeEvidenceSigningPayload,
+  runtimeTargetDigest,
+} from '../lib/provider-runtime-conformance.mjs'
 import { issuerRegistryDigest } from '../lib/issuer-registry.mjs'
 import { PROVIDER_REGISTRY } from '../../../scripts/gen-codex-adapter.mjs'
 import { createExternalRuntimeCertificationFixture } from './fixtures/external-runtime-certification-fixture.mjs'
@@ -29,6 +33,7 @@ import {
 
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), 'fixtures/github')
 const GOVERNANCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const REPO_ROOT = resolve(GOVERNANCE_ROOT, '../..')
 const inventory = readJson(resolve(FIXTURES, 'inventory.json'))
 const desired = readJson(resolve(FIXTURES, 'desired.json'))
 const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
@@ -114,8 +119,17 @@ certifications.certifications = [
 const providerMatrix = readJson(resolve(dirname(fileURLToPath(import.meta.url)), '../providers/compatibility-matrix.json'))
 const runtimeProfile = readJson(resolve(dirname(fileURLToPath(import.meta.url)), '../providers/runtime-conformance.json'))
 const issuerRegistry = readJson(resolve(FIXTURES, 'issuer-registry.json'))
+const fixtureIssuer = issuerRegistry.issuers.find(issuer => issuer.keyId === 'fixture-ed25519')
+fixtureIssuer.roles = [...new Set([
+  ...fixtureIssuer.roles,
+  'runtime-evidence-issuer',
+])].sort()
+const fixtureIssuerRegistryDigest = issuerRegistryDigest(issuerRegistry)
+rings.attestationPolicy.issuerRegistryDigest = fixtureIssuerRegistryDigest
 const fixtureRuntimeProfile = structuredClone(runtimeProfile)
-fixtureRuntimeProfile.issuerRegistryDigest = issuerRegistryDigest(issuerRegistry)
+fixtureRuntimeProfile.issuerRegistryDigest = fixtureIssuerRegistryDigest
+fixtureRuntimeProfile.allowedKeyIds = [fixtureIssuer.keyId]
+fixtureRuntimeProfile.requiredIssuerQuorum = 1
 const waivers = { schemaVersion: 1, waivers: [] }
 const now = new Date('2026-07-20T00:00:00Z')
 const externalRuntimeKeys = generateKeyPairSync('ed25519')
@@ -163,6 +177,16 @@ function validRuntimeGovernanceOptions(overrides = {}) {
   }
 }
 
+function validateFixtureCertifications(document, overrides = {}) {
+  return validateCertifications(document, {
+    now,
+    matrix: providerMatrix,
+    runtimeProfile: fixtureRuntimeProfile,
+    issuerRegistry,
+    ...overrides,
+  })
+}
+
 function productReleaseRing(document) {
   const ring = document.rings.find(candidate => candidate.order === 2)
   assert.ok(ring, 'fixture must contain one product-consumer release ring')
@@ -172,6 +196,28 @@ function productReleaseRing(document) {
 // Certification tests must be reproducible in a clean clone. Staging runtime evidence is
 // intentionally gitignored and host-specific, so construct a redacted, schema-complete fixture
 // from the committed runtime profile instead of borrowing a developer machine's last probe.
+function runtimeEvidenceCheckCommand(provider, check) {
+  if (check.driver === 'claude-review-capability-probe') {
+    return prepareClaudeReviewCapabilityProbe({
+      repoRoot: REPO_ROOT,
+      provider,
+      check,
+      environmentNames: ['HOME'],
+    }).command
+  }
+  return {
+    executable: provider.executable,
+    arguments: check.driver === 'claude-entitlement-readback'
+      ? ['auth', 'status', '--json']
+      : [`<${check.driver}>`],
+    cwd: '<fixture>',
+    stdin: 'none',
+    environmentNames: check.driver === 'claude-entitlement-readback'
+      ? ['HOME', 'USER']
+      : [],
+  }
+}
+
 function runtimeEvidenceFixtureSource() {
   const operatingSystem = 'macos'
   const platform = 'darwin'
@@ -221,17 +267,7 @@ function runtimeEvidenceFixtureSource() {
         driver: check.driver,
         certificationImpact: check.certificationImpact ?? 'required',
         status: 'fail',
-        command: {
-          executable: provider.executable,
-          arguments: check.driver === 'claude-entitlement-readback'
-            ? ['auth', 'status', '--json']
-            : [`<${check.driver}>`],
-          cwd: '<fixture>',
-          stdin: 'none',
-          environmentNames: check.driver === 'claude-entitlement-readback'
-            ? ['HOME', 'USER']
-            : [],
-        },
+        command: runtimeEvidenceCheckCommand(provider, check),
         result: {
           exitCode: null,
           timedOut: false,
@@ -561,15 +597,24 @@ test('release-ring policy rejects omitted gates, weakened soak and parallelism, 
   const liveInventory = readJson(resolve(governanceRoot, 'inventory/managed-repos.json'))
   const reordered = readJson(resolve(governanceRoot, 'release-rings.json'))
   const liveIssuerRegistry = readJson(resolve(governanceRoot, 'trust/issuers.json'))
+  const liveNow = new Date(Math.max(...liveIssuerRegistry.issuers
+    .filter(issuer => issuer.status === 'active')
+    .map(issuer => Date.parse(issuer.notBefore))) + 60_000)
   reordered.rings.reverse()
   assert.throws(
-    () => validateReleaseRings(liveInventory, reordered, { now, issuerRegistry: liveIssuerRegistry }),
+    () => validateReleaseRings(liveInventory, reordered, {
+      now: liveNow,
+      issuerRegistry: liveIssuerRegistry,
+    }),
     /strictly increasing order/,
   )
   const mixedRoles = readJson(resolve(governanceRoot, 'release-rings.json'))
   mixedRoles.assignments['work-management'].ring = 'ring-1-template-canary'
   assert.throws(
-    () => validateReleaseRings(liveInventory, mixedRoles, { now, issuerRegistry: liveIssuerRegistry }),
+    () => validateReleaseRings(liveInventory, mixedRoles, {
+      now: liveNow,
+      issuerRegistry: liveIssuerRegistry,
+    }),
     /must contain exactly one managed repository role/,
   )
 })
@@ -903,20 +948,20 @@ test('a forged certified record with a failed required check is rejected before 
 
 test('certified records require a valid future expiry and complete timestamps', () => {
   const missingExpiry = readJson(resolve(FIXTURES, 'certification-missing-expiry.json'))
-  assert.throws(() => validateCertifications(missingExpiry, { now }), /must have a valid expiresAt/)
+  assert.throws(() => validateFixtureCertifications(missingExpiry), /must have a valid expiresAt/)
 
   const expired = structuredClone(certifications)
   expired.certifications[0].expiresAt = '2026-07-19T00:00:00Z'
-  assert.throws(() => validateCertifications(expired, { now }), /target status expired/)
+  assert.throws(() => validateFixtureCertifications(expired), /target status expired/)
 
   const impossibleDate = structuredClone(certifications)
   impossibleDate.certifications[0].certifiedAt = '2026-02-31T00:00:00Z'
-  assert.throws(() => validateCertifications(impossibleDate, { now }), /valid certifiedAt/)
+  assert.throws(() => validateFixtureCertifications(impossibleDate), /valid certifiedAt/)
 })
 
 test('provider surface and certification identities are unique and known', () => {
   const duplicate = readJson(resolve(FIXTURES, 'certification-duplicate-key.json'))
-  assert.throws(() => validateCertifications(duplicate, { now }), /Duplicate provider certification key/)
+  assert.throws(() => validateFixtureCertifications(duplicate), /Duplicate provider certification key/)
 
   const crossedCertification = structuredClone(certifications)
   const crossedRecord = crossedCertification.certifications.find(record => (
@@ -928,7 +973,7 @@ test('provider surface and certification identities are unique and known', () =>
     ...crossedCertification.certifications.filter(record => record !== crossedRecord),
   ]
   assert.throws(
-    () => validateCertifications(crossedCertification, { now }),
+    () => validateFixtureCertifications(crossedCertification),
     /Unknown certification tuple codex\/codex-cli\/cloud/,
   )
 
@@ -958,7 +1003,7 @@ test('future providers are registry-driven, while unknown and unregistered alias
   const unknown = structuredClone(certifications)
   unknown.certifications[0].provider = 'future-model'
   assert.throws(
-    () => validateCertifications(unknown, { now, matrix: providerMatrix, runtimeProfile }),
+    () => validateFixtureCertifications(unknown),
     /Unknown certification provider future-model/,
   )
 
@@ -1018,7 +1063,7 @@ test('future providers are registry-driven, while unknown and unregistered alias
     /adapter coverage must exactly equal registered concrete runtimes|Canonical provider CLI bindings must exactly enumerate/,
   )
 
-  const extendedProfile = structuredClone(runtimeProfile)
+  const extendedProfile = structuredClone(fixtureRuntimeProfile)
   extendedProfile.providers.push({
     id: 'future-model-local',
     adapterProviderId: 'future-adapter',
@@ -1059,18 +1104,30 @@ test('future providers are registry-driven, while unknown and unregistered alias
   }
   const extendedToolchain = readJson(resolve(dirname(fileURLToPath(import.meta.url)), '../providers/provider-cli-toolchain.json'))
   extendedToolchain.providerBindings.push({ providerId: 'future-model', provisioning: 'external-runtime', toolProviderId: null })
-  assert.equal(validateProviderRegistry(extendedMatrix, extendedProfile, { adapterRegistry: extendedAdapterRegistry, providerCliToolchain: extendedToolchain }).aliases.get('future-model-local'), 'future-model/future-model-cli/local')
-  assert.equal(validateCertifications(futureLedger, { now, matrix: extendedMatrix, runtimeProfile: extendedProfile, adapterRegistry: extendedAdapterRegistry, providerCliToolchain: extendedToolchain }), true)
+  assert.equal(validateProviderRegistry(extendedMatrix, extendedProfile, {
+    adapterRegistry: extendedAdapterRegistry,
+    issuerRegistry,
+    now,
+    providerCliToolchain: extendedToolchain,
+  }).aliases.get('future-model-local'), 'future-model/future-model-cli/local')
+  assert.equal(validateCertifications(futureLedger, {
+    now,
+    matrix: extendedMatrix,
+    runtimeProfile: extendedProfile,
+    adapterRegistry: extendedAdapterRegistry,
+    issuerRegistry,
+    providerCliToolchain: extendedToolchain,
+  }), true)
 })
 
 test('certification versions and evidence are mandatory even when a record is not certified', () => {
   const missingVersion = structuredClone(certifications)
   delete missingVersion.certifications[0].adapterVersion
-  assert.throws(() => validateCertifications(missingVersion, { now }), /must declare adapterVersion/)
+  assert.throws(() => validateFixtureCertifications(missingVersion), /must declare adapterVersion/)
 
   const missingEvidence = structuredClone(certifications)
   delete missingEvidence.certifications[0].checks[0].evidence.reference
-  assert.throws(() => validateCertifications(missingEvidence, { now }), /missing evidence reference/)
+  assert.throws(() => validateFixtureCertifications(missingEvidence), /missing evidence reference/)
 })
 
 test('consumer doctor validates all control-plane ledgers before inspecting a checkout', () => {

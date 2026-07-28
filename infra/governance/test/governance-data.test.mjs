@@ -16,13 +16,17 @@ const providerToolchain = readJson(resolve(ROOT, 'providers/provider-cli-toolcha
 const runtimeProfile = readJson(resolve(ROOT, 'providers/runtime-conformance.json'))
 const certifications = readJson(resolve(ROOT, 'providers/certifications.json'))
 const waivers = readJson(resolve(ROOT, 'waivers.json'))
+const issuerRegistry = readJson(resolve(ROOT, 'trust/issuers.json'))
+const NOW = new Date(Math.max(
+  ...issuerRegistry.issuers.map(issuer => Date.parse(issuer.notBefore)),
+) + 1)
 const templateConsumerLock = readJson(resolve(ROOT, '../../template/ds-product-template/governance/lock.json'))
 const templateUpgradeWorkflow = readFileSync(resolve(ROOT, '../../template/ds-product-template/.github/workflows/sync-design-system.yml'), 'utf8')
 const authorityVersionWorkflow = readFileSync(resolve(ROOT, '../../.github/workflows/changeset-version.yml'), 'utf8')
 const authorityReleaseWorkflow = readFileSync(resolve(ROOT, '../../.github/workflows/release.yml'), 'utf8')
 
 test('live governance model encodes exact trust anchors, solo review settings, tags, and environments', () => {
-  assert.equal(validateModel(inventory, desired, rings, certifications, waivers, new Date('2026-07-20T00:00:00Z')), true)
+  assert.equal(validateModel(inventory, desired, rings, certifications, waivers, NOW), true)
   assert.deepEqual(inventory.fleetScope, {
     coverage: 'registered-opt-in-inventory',
     enrollment: 'reviewed-registration-only',
@@ -31,7 +35,7 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   const globalFleetClaim = structuredClone(inventory)
   globalFleetClaim.fleetScope.unregisteredDescendants = 'implicitly-covered'
   assert.throws(
-    () => validateModel(globalFleetClaim, desired, rings, certifications, waivers, new Date('2026-07-20T00:00:00Z')),
+    () => validateModel(globalFleetClaim, desired, rings, certifications, waivers, NOW),
     /inventory schema validation failed:.*unregisteredDescendants must be equal to constant/,
   )
   assert.equal(desired.integrations.githubActions.id, 15368)
@@ -67,7 +71,7 @@ test('live governance model encodes exact trust anchors, solo review settings, t
     const broadenedApp = structuredClone(desired)
     mutate(broadenedApp)
     assert.throws(
-      () => validateModel(inventory, broadenedApp, rings, certifications, waivers, new Date('2026-07-20T00:00:00Z')),
+      () => validateModel(inventory, broadenedApp, rings, certifications, waivers, NOW),
       /desired schema validation failed|Governance .* App permissions|selected-repository/,
     )
   }
@@ -117,12 +121,12 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   }
   const npmRelease = desired.profiles['design-system-authority'].environments.find(environment => environment.name === 'npm-release')
   assert.equal(Object.hasOwn(npmRelease, 'credentialIntegration'), false)
-  const stageNpmOffset = authorityReleaseWorkflow.indexOf('\n  stage-npm:\n')
-  const stageNpm = stageNpmOffset >= 0 ? authorityReleaseWorkflow.slice(stageNpmOffset + 1) : null
-  assert.ok(stageNpm, 'release workflow lacks the npm-release job')
-  assert.match(stageNpm, /environment:\s*\n\s*name: npm-release/)
-  assert.match(stageNpm, /id-token: write/)
-  assert.doesNotMatch(stageNpm, /create-github-app-token|GOVERNANCE_WRITER_APP|permission-contents|permission-pull-requests/)
+  const publishNpmOffset = authorityReleaseWorkflow.indexOf('\n  publish-npm:\n')
+  const publishNpm = publishNpmOffset >= 0 ? authorityReleaseWorkflow.slice(publishNpmOffset + 1) : null
+  assert.ok(publishNpm, 'release workflow lacks the npm-release publish job')
+  assert.match(publishNpm, /environment:\s*\n\s*name: npm-release/)
+  assert.match(publishNpm, /id-token: write/)
+  assert.doesNotMatch(publishNpm, /create-github-app-token|GOVERNANCE_WRITER_APP|permission-contents|permission-pull-requests/)
   assert.ok(desired.profiles['design-system-authority'].requiredChecks.some(check => check.context === 'Packaging integrity(dims 84/85/86/88 light checks)'))
   assert.ok(desired.profiles['design-system-authority'].requiredChecks.some(check => check.baseTrusted && check.integration === 'governanceCheckApp'))
   for (const profile of Object.values(desired.profiles)) {
@@ -164,19 +168,19 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   const overlyBroad = structuredClone(desired)
   overlyBroad.profiles['product-consumer'].actionsWorkflowPermissions.default_workflow_permissions = 'write'
   assert.throws(
-    () => validateModel(inventory, overlyBroad, rings, certifications, waivers, new Date('2026-07-20T00:00:00Z')),
+    () => validateModel(inventory, overlyBroad, rings, certifications, waivers, NOW),
     /desired schema validation failed:.*default_workflow_permissions must be equal to constant/,
   )
   const missingWriterApp = structuredClone(desired)
   delete missingWriterApp.profiles['product-consumer'].environments.find(environment => environment.name === 'governance-upgrade').credentialIntegration
   assert.throws(
-    () => validateModel(inventory, missingWriterApp, rings, certifications, waivers, new Date('2026-07-20T00:00:00Z')),
+    () => validateModel(inventory, missingWriterApp, rings, certifications, waivers, NOW),
     /desired schema validation failed:.*credentialIntegration/,
   )
   const builtInWriterFallback = structuredClone(desired)
   builtInWriterFallback.profiles['product-consumer'].actionsWorkflowPermissions.can_approve_pull_request_reviews = true
   assert.throws(
-    () => validateModel(inventory, builtInWriterFallback, rings, certifications, waivers, new Date('2026-07-20T00:00:00Z')),
+    () => validateModel(inventory, builtInWriterFallback, rings, certifications, waivers, NOW),
     /desired schema validation failed:.*can_approve_pull_request_reviews must be equal to constant/,
   )
   const desiredValidatorContract = validateDesiredGithub.toString()
@@ -191,7 +195,7 @@ test('live governance model encodes exact trust anchors, solo review settings, t
     )
   )
   assert.throws(
-    () => validateModel(inventory, missingExternalLedgerEnvironment, rings, certifications, waivers, new Date('2026-07-20T00:00:00Z')),
+    () => validateModel(inventory, missingExternalLedgerEnvironment, rings, certifications, waivers, NOW),
     /desired schema validation failed|must declare exactly one governance-external-ledger environment/,
   )
   const wrongExternalLedgerWorkflow = structuredClone(desired)
@@ -199,7 +203,7 @@ test('live governance model encodes exact trust anchors, solo review settings, t
     environment => environment.name === 'governance-external-ledger',
   ).workflow = '.github/workflows/mirror-to-published-template.yml'
   assert.throws(
-    () => validateModel(inventory, wrongExternalLedgerWorkflow, rings, certifications, waivers, new Date('2026-07-20T00:00:00Z')),
+    () => validateModel(inventory, wrongExternalLedgerWorkflow, rings, certifications, waivers, NOW),
     /desired schema validation failed|must bind the protected external-ledger writer workflow/,
   )
   const externalLedgerCandidateOnly = structuredClone(desired)
@@ -207,13 +211,13 @@ test('live governance model encodes exact trust anchors, solo review settings, t
     environment => environment.name === 'governance-external-ledger',
   ).rollout = 'on-promotion'
   assert.throws(
-    () => validateModel(inventory, externalLedgerCandidateOnly, rings, certifications, waivers, new Date('2026-07-20T00:00:00Z')),
+    () => validateModel(inventory, externalLedgerCandidateOnly, rings, certifications, waivers, NOW),
     /desired schema validation failed|must exist before candidate freeze and external activation/,
   )
   const npmWriterInjection = structuredClone(desired)
   npmWriterInjection.profiles['design-system-authority'].environments.find(environment => environment.name === 'npm-release').credentialIntegration = 'governanceWriterApp'
   assert.throws(
-    () => validateModel(inventory, npmWriterInjection, rings, certifications, waivers, new Date('2026-07-20T00:00:00Z')),
+    () => validateModel(inventory, npmWriterInjection, rings, certifications, waivers, NOW),
     /desired schema validation failed:.*design-system-authority\/environments/,
   )
   assert.match(desiredValidatorContract, /environment\.name === 'npm-release'[\s\S]*npm-release must remain OIDC-only/)

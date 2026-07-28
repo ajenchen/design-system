@@ -24,6 +24,13 @@ PASS=0
 FAIL=0
 FAILED_TESTS=""
 TMP_DIR=$(mktemp -d)
+# A failed mktemp leaves TMP_DIR empty, and `cd "" && pwd -P` resolves to the CURRENT
+# directory — which run-all.sh has already set to this test corpus. The EXIT trap below
+# would then delete the corpus itself. Fail loudly before the value can be weaponized.
+if [ -z "${TMP_DIR:-}" ] || [ ! -d "$TMP_DIR" ]; then
+  echo "❌ mktemp -d failed(TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2
+  exit 1
+fi
 TMP_DIR="$(cd "$TMP_DIR" && pwd -P)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 

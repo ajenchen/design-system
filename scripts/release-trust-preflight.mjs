@@ -19,6 +19,7 @@ import {
   loadExternalActivationPolicy,
   validateExternalActivationRequirements,
 } from '../infra/governance/lib/external-activation.mjs'
+import { assertControlPlaneGenesisTransitionClosed } from './lib/control-plane-genesis-transition.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const DEFAULTS = {
@@ -189,6 +190,7 @@ export async function run(argv = process.argv.slice(2), {
   invariant(client !== null || managedCiValidationContext === null, 'CLI release trust preflight refuses an injected managed CI validation context')
   invariant(client !== null || runtimeValidationContext === null, 'CLI release trust preflight refuses an injected runtime validation context')
   const values = args(argv)
+  if (!client) assertControlPlaneGenesisTransitionClosed({ root: ROOT })
   const issuedAt = values['--verify-issued']
     ? new Date(readRegularJson(values['--verify-issued'], 'issued release trust evidence').verifiedAt)
     : now

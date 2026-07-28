@@ -3,12 +3,12 @@
     "purpose": "C-prime fork-mode governance corpus 分類 SSOT。build-fork-governance.mjs 消費此檔，從 packages/design-system/ds-canonical/hooks 生成 ds-canonical/fork/。--check 若任何 canonical hook *.{sh,py} 未分類則 FAIL(防漏接新 hook)。",
     "source": "legacy workflow wf_4070529c-5af critic agent 的 inventory 對抗分類 + 2026-06-16 組裝；現役 hook inventory authority = packages/design-system/ds-canonical/hooks",
     "authority": "packages/design-system/ds-canonical/hooks/**；fork corpus 與 provider hook homes 皆為 generated/materialized outputs",
-    "total": 60,
+    "total": 61,
     "tally": {
       "SHIP_AS_IS": 12,
       "SHIP_REWRITTEN": 6,
       "REPLACE": 1,
-      "DROP": 41
+      "DROP": 42
     },
     "known_coverage_gaps": [],
     "buckets_def": {
@@ -115,6 +115,10 @@
     }
   ],
   "DROP": [
+    {
+      "hook": "check_post_main_ssot_propagate.sh",
+      "reason": "One-time inert Genesis compatibility tombstone; provider-neutral release/adoption owns propagation and the distinct protected cleanup PR removes this path."
+    },
     {
       "hook": "governance_control_plane.sh",
       "reason": "DS-author generated control-plane artifact guard;products receive the immutable fork consumer checker/BOM instead."

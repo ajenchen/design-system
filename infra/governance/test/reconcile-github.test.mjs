@@ -253,6 +253,9 @@ const certifications = externalRuntimeFixture.certifications
 const runtimeValidationContext = externalRuntimeFixture.runtimeValidationContext
 const waivers = { schemaVersion: 1, waivers: [] }
 const NOW = new Date('2026-07-20T00:00:00Z')
+const issuerValidationTime = registry => new Date(
+  Math.max(...registry.issuers.map(issuer => Date.parse(issuer.notBefore))) + 1,
+)
 const PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
 MC4CAQAwBQYDK2VwBCIEIONNr2Y1hDSWkLyinTTfdEU1ilmYox3tHunig5bPsrEp
 -----END PRIVATE KEY-----
@@ -2407,6 +2410,7 @@ test('live certification context proves authority subject ancestry and rejects f
 test('partial inventory validation is confined to the fixture harness while production stays fail closed', () => {
   const rings = readJsonFile(resolve(FIXTURES, 'rings-hold.json'))
   const canonicalIssuerRegistry = readJsonFile(resolve(REPO_ROOT, 'infra/governance/trust/issuers.json'))
+  const canonicalNow = issuerValidationTime(canonicalIssuerRegistry)
   rings.attestationPolicy.issuerRegistryDigest = issuerRegistryDigest(canonicalIssuerRegistry)
   rings.attestationPolicy.allowedKeyIds = []
 
@@ -2417,7 +2421,7 @@ test('partial inventory validation is confined to the fixture harness while prod
       rings,
       uncertifiedRuntimeLedger(),
       waivers,
-      NOW,
+      canonicalNow,
       canonicalIssuerRegistry,
       baseRuntimeProfile,
       runtimeValidationContext,
@@ -2431,7 +2435,7 @@ test('partial inventory validation is confined to the fixture harness while prod
       rings,
       uncertifiedRuntimeLedger(),
       waivers,
-      NOW,
+      canonicalNow,
       canonicalIssuerRegistry,
       baseRuntimeProfile,
       runtimeValidationContext,
@@ -2454,7 +2458,7 @@ test('partial inventory validation is confined to the fixture harness while prod
       verifiedReleaseEvidence: verifiedEvidenceFor(rings),
       issuerRegistry: canonicalIssuerRegistry,
       runtimeProfile: baseRuntimeProfile,
-      now: NOW,
+      now: canonicalNow,
     }),
     /Workflow identity source design-system-authority references unknown repository design-system/,
   )
@@ -3334,6 +3338,7 @@ test('single-owner local journal supports exact rollback and forward recovery th
   assert.equal(rolledBackJournal.evidenceDurabilityClass, 'local-content-addressed-fsync-v1')
   assert.deepEqual(rolledBackJournal.offHostReceipts, [])
 
+  const forwardAt = new Date('2026-07-20T00:05:00.000Z')
   const forwardAuthorized = authorizeCurrentWave(
     rings,
     () => base,
@@ -3351,21 +3356,20 @@ test('single-owner local journal supports exact rollback and forward recovery th
     certifications,
     waivers,
     client: base,
-    now: NOW,
+    now: forwardAt,
   })
   assert.equal(forwardPlan.candidatePlanDigest, initialPlan.candidatePlanDigest)
   const forwardJournalPath = resolve(
     mkdtempSync(resolve(tmpdir(), 'gov-local-forward-recovery-next-')),
     'journal.json',
   )
-  const forwardAt = new Date('2026-07-20T00:05:00.000Z')
   const forward = applyPlan(forwardPlan, base, {
     issuerRegistry,
     journalPath: forwardJournalPath,
     inventory,
     desired,
     rings: forwardAuthorized,
-    now: NOW,
+    now: forwardAt,
     clock: () => forwardAt,
   })
   assert.equal(forward.applied, true)

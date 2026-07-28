@@ -302,12 +302,25 @@ test('routes workflow-executed package script changes to recurring reviewed cont
 test('protected-base reconstruction uses the independent lock-digested npm runtime', () => {
   const source = readFileSync(join(import.meta.dirname, 'verify-upgrade-evidence.mjs'), 'utf8')
   assert.match(source, /runtimeFactory = prepareVerifiedExactNpmRuntime/)
+  assert.match(source, /resolveExactNpmRuntimeContract\(repo\)/)
+  assert.match(source, /assertVerifiedExactNpmRuntimeCapability\(npmRuntime, expectedNpmArtifact\)/)
   assert.match(source, /cli, 'ci', '--legacy-peer-deps', '--ignore-scripts'/)
   assert.doesNotMatch(source, /protectedNpmToolchain|node_modules\/npm\/bin\/npm-cli\.js/)
   const baseInstall = source.indexOf("cli, 'ci', '--legacy-peer-deps'")
   const previousValidation = source.indexOf('const previousCorpus = validateInstalledForkCorpus(sandbox)')
   const targetInstall = source.indexOf("cli, 'install',", previousValidation)
-  assert.ok(baseInstall > 0 && baseInstall < previousValidation && previousValidation < targetInstall)
+  const overlayApply = source.indexOf('npmRuntime.applyInstalledSecurityOverlay(sandbox)', targetInstall)
+  const signatureAudit = source.indexOf("cli, 'audit', 'signatures'", overlayApply)
+  const vulnerabilityAudit = source.indexOf('runVerifiedHighVulnerabilityAudit(process.execPath', signatureAudit)
+  assert.ok(
+    baseInstall > 0
+      && baseInstall < previousValidation
+      && previousValidation < targetInstall
+      && targetInstall < overlayApply
+      && overlayApply < signatureAudit
+      && signatureAudit < vulnerabilityAudit,
+  )
+  assert.match(source.slice(vulnerabilityAudit), /cli, 'audit', '--audit-level=high', '--json'/)
 })
 
 const git = (cwd, args, input = undefined) => {

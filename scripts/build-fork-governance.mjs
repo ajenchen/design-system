@@ -20,7 +20,21 @@
 //   node scripts/build-fork-governance.mjs            # 生成 ds-canonical/fork/
 //   node scripts/build-fork-governance.mjs --check    # 驗:(1) 全 hook 已分類(漏接=FAIL)(2) 生成物與 SSOT 無 drift
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync, rmSync, statSync, lstatSync, readlinkSync, cpSync, mkdtempSync } from 'node:fs'
+import {
+  cpSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readlinkSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { join, dirname, relative, resolve, sep, isAbsolute } from 'node:path'
 import { tmpdir } from 'node:os'
 import { createHash } from 'node:crypto'
@@ -77,6 +91,12 @@ import {
   resolveOwnership,
 } from '../infra/governance/lib/managed-repository-ownership.mjs'
 import { buildProviderHookLaunchArgv } from './lib/provider-hook-output-transport.mjs'
+import {
+  assertControlPlaneGenesisPreservation,
+  CONTROL_PLANE_GENESIS_OPEN_STATE,
+  loadControlPlaneGenesisTransition,
+  readAllControlPlaneGenesisBasePreservations,
+} from './lib/control-plane-genesis-transition.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const CANONICAL_ROOT = join(ROOT, 'packages/design-system/ds-canonical')
@@ -129,6 +149,59 @@ const LAUNCHER_SOURCE_BY_NAME = Object.freeze({
 const LAUNCHER_FILES = Object.keys(LAUNCHER_SOURCE_BY_NAME).sort()
 
 const CHECK = process.argv.includes('--check')
+
+function genesisPreservationMap(transition) {
+  if (transition.state !== CONTROL_PLANE_GENESIS_OPEN_STATE) return new Map()
+  return new Map(readAllControlPlaneGenesisBasePreservations({
+    root: ROOT,
+    transition,
+  }).map(item => [item.path, item]))
+}
+
+function assertGenesisScriptsAlias(transition) {
+  const path = 'packages/design-system/scripts'
+  if (transition.state !== CONTROL_PLANE_GENESIS_OPEN_STATE) {
+    if (pathEntryExists(join(ROOT, path))) throw new Error(`closed Genesis transition retains stale output:${path}`)
+    return
+  }
+  assertControlPlaneGenesisPreservation({
+    root: ROOT,
+    transition,
+    path,
+  })
+}
+
+function generateGenesisScriptsAlias(transition, materializations) {
+  const path = 'packages/design-system/scripts'
+  const absolute = join(ROOT, path)
+  const parent = dirname(absolute)
+  assertNoSymlinkPath(ROOT, parent, 'Genesis scripts alias parent', { allowMissing: false })
+  if (transition.state !== CONTROL_PLANE_GENESIS_OPEN_STATE) {
+    if (pathEntryExists(absolute)) rmSync(absolute, { recursive: true, force: true })
+    return
+  }
+  const source = materializations.get(path)
+  if (!source || source.kind !== 'symlink' || source.mode !== '120000') {
+    throw new Error(`Genesis scripts alias is absent from the authenticated transition:${path}`)
+  }
+  if (pathEntryExists(absolute)) {
+    const info = lstatSync(absolute)
+    if (info.isSymbolicLink() && readlinkSync(absolute) === source.target) {
+      assertGenesisScriptsAlias(transition)
+      return
+    }
+    rmSync(absolute, { recursive: true, force: true })
+  }
+  const temporary = join(parent, `.scripts.genesis-${process.pid}`)
+  if (pathEntryExists(temporary)) throw new Error('Genesis scripts alias temporary path collision')
+  symlinkSync(source.target, temporary)
+  try {
+    renameSync(temporary, absolute)
+  } finally {
+    if (pathEntryExists(temporary)) rmSync(temporary, { force: true })
+  }
+  assertGenesisScriptsAlias(transition)
+}
 
 function assertRegularSource(path, label) {
   assertNoSymlinkPath(ROOT, path, label, { allowMissing: false })
@@ -879,6 +952,8 @@ export function buildCorpus({
   providerCertifications = JSON.parse(readFileSync(PROVIDER_CERTIFICATIONS_PATH, 'utf8')),
   releaseVersion = declaredDesignSystemVersion,
 } = {}) {
+  const genesisTransition = loadControlPlaneGenesisTransition({ root: ROOT })
+  const genesisMaterializations = genesisPreservationMap(genesisTransition)
   validateProviderRegistry(providerRegistry)
   assertCanonicalInventoryClean(providerRegistry)
   validateProviderSkillSemantics(providerSkillSemantics)
@@ -1299,6 +1374,18 @@ export function buildCorpus({
       if (info.nlink !== 1) throw new Error(`provider surface source contains hard-link alias:${srcPath}`)
       emitRaw(outRel, readFileSync(srcPath), source, { mode: info.mode & 0o777 })
     } else throw new Error(`provider surface source contains unsupported entry:${relative(outDir, srcPath)}`)
+  }
+  if (genesisTransition.state === CONTROL_PLANE_GENESIS_OPEN_STATE) {
+    const preamble = genesisMaterializations.get('packages/design-system/ds-canonical/fork/preamble.md')
+    if (!preamble || preamble.kind !== 'file' || preamble.mode !== '100644') {
+      throw new Error('Genesis fork preamble is absent from the authenticated transition')
+    }
+    emitRaw(
+      'preamble.md',
+      preamble.bytes,
+      `${genesisTransition.id}:${genesisTransition.baseCommit}:packages/design-system/ds-canonical/fork/preamble.md`,
+      { mode: 0o644 },
+    )
   }
   const providerWiringDigest = createHash('sha256')
     .update(JSON.stringify(productWiring))
@@ -2029,6 +2116,21 @@ export function buildCorpus({
     const tombstone = join(templateRoot, path)
     if (existsSync(tombstone)) rmSync(tombstone, { recursive: true, force: true })
   }
+  if (
+    genesisTransition.state === CONTROL_PLANE_GENESIS_OPEN_STATE
+    && compatibilityTreeTombstones.includes('.claude/hooks')
+  ) {
+    const hooks = genesisMaterializations.get('template/ds-product-template/.claude/hooks')
+    if (!hooks || hooks.kind !== 'tree' || hooks.leaves.length !== hooks.leafCount) {
+      throw new Error('Genesis template hook tree is absent from the authenticated transition')
+    }
+    const hookRoot = join(templateRoot, '.claude/hooks')
+    for (const leaf of hooks.leaves) {
+      const target = join(hookRoot, leaf.relativePath)
+      mkdirSync(dirname(target), { recursive: true })
+      writeFileSync(target, leaf.bytes, { mode: leaf.mode === '100755' ? 0o755 : 0o644 })
+    }
+  }
   const templateLaunchers = join(templateRoot, PRODUCT_LAUNCHER_DESTINATION)
   if (existsSync(templateLaunchers)) rmSync(templateLaunchers, { recursive: true, force: true })
   mkdirSync(templateLaunchers, { recursive: true })
@@ -2084,6 +2186,8 @@ export function collectForkGovernanceDrift({
 
 const IS_MAIN = process.argv[1] && resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1])
 if (IS_MAIN && CHECK) {
+  const genesisTransition = loadControlPlaneGenesisTransition({ root: ROOT })
+  assertGenesisScriptsAlias(genesisTransition)
   // Pure check:只在系統 temp tree 生成，絕不先覆寫真實 generated outputs。
   // 比對完整檔案集合、內容與 mode；missing / extra / tamper 任一都 fail。
   const tempRoot = canonicalRepositoryRoot(mkdtempSync(join(tmpdir(), 'fork-governance-check-')))
@@ -2111,6 +2215,8 @@ if (IS_MAIN && CHECK) {
     rmSync(tempRoot, { recursive: true, force: true })
   }
 } else if (IS_MAIN) {
+  const genesisTransition = loadControlPlaneGenesisTransition({ root: ROOT })
+  generateGenesisScriptsAlias(genesisTransition, genesisPreservationMap(genesisTransition))
   const r = buildCorpus()
   const tally = cls._meta.tally
   console.log(`✅ fork governance corpus 生成 → packages/design-system/ds-canonical/fork/`)

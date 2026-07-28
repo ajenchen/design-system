@@ -12,6 +12,10 @@ REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)" || {
 REPO_ROOT="$(cd "$REPO_ROOT" && pwd -P)"
 
 TMPDIR=$(mktemp -d)
+if [ -z "${TMPDIR:-}" ] || [ ! -d "$TMPDIR" ]; then
+  echo "❌ mktemp -d failed;fixture unavailable" >&2
+  exit 1
+fi
 trap 'rm -rf "$TMPDIR"' EXIT
 PROJECT_DIR="$TMPDIR/project"
 mkdir -p "$PROJECT_DIR/scripts/lib" \

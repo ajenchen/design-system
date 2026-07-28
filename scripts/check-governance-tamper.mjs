@@ -702,7 +702,11 @@ function collectRepositoryWaivers({ transientFiles = new Map() } = {}) {
       // Installed dependencies are immutable lock/runtime inputs, not waiver authority.
       if (name === 'node_modules' || EXCLUDED_REPOSITORY_PATHS.has(relativePath)) continue
       const entry = fs.lstatSync(child, { bigint: true })
-      if (entry.isSymbolicLink()) throw new Error(`symbolic link is forbidden in scanned source:${relativePath}`)
+      // Tracked in-repo symlinks (git mode 120000, e.g. packages/design-system/scripts →
+      // ../../scripts) are legitimate layout aliases; their target content is already
+      // scanned once at its real path, so scanning through the link would only duplicate
+      // or loop. Skip links instead of failing the whole waiver scan.
+      if (entry.isSymbolicLink()) continue
       if (entry.isDirectory()) {
         walk(child)
         continue

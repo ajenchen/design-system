@@ -25,7 +25,11 @@ import {
   resolveRemoteTagIdentity,
 } from './release-remote-tag.mjs'
 import { validateStageRunIdentityDocument } from './release-stage-run-identity.mjs'
-import { prepareVerifiedExactNpmRuntime } from './lib/verified-exact-npm-runtime.mjs'
+import {
+  assertVerifiedExactNpmRuntimeCapability,
+  prepareVerifiedExactNpmRuntime,
+  resolveExactNpmRuntimeContract,
+} from './lib/verified-exact-npm-runtime.mjs'
 
 function parseArgs(argv) {
   const allowed = new Set([
@@ -77,9 +81,12 @@ async function recheckRemoteTag(identity, expectedTagObject, token) {
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   assertTokenlessNpmEnvironment(process.env)
+  const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
+  const expectedNpmRuntime = resolveExactNpmRuntimeContract(repositoryRoot)
   const npmRuntime = await prepareVerifiedExactNpmRuntime({
-    repositoryRoot: resolve(fileURLToPath(new URL('..', import.meta.url))),
+    repositoryRoot,
   })
+  assertVerifiedExactNpmRuntimeCapability(npmRuntime, expectedNpmRuntime)
   const npmCli = npmRuntime.cli
   try {
     const npmVersion = execFileSync(npmCli, ['--version'], { encoding: 'utf8' }).trim()

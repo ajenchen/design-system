@@ -326,11 +326,17 @@ test('symlink can only be an exact generated-output leaf', t => {
   t.after(() => rmSync(data.root, { recursive: true, force: true }))
   symlinkSync('../generated', join(data.root, 'policy', 'source-link'))
   data.stages[0].sources.push('policy/source-link')
-  assert.throws(() => validateProtectedRootClassification({ ...data, schema }), /only exact generated outputs may be symlinks/)
+  assert.throws(
+    () => validateProtectedRootClassification({ ...data, schema }),
+    /only exact generated files or reviewed Genesis baseline aliases may be symlinks/,
+  )
 
   rmSync(join(data.root, 'policy', 'source-link'))
   symlinkSync('missing-target', join(data.root, 'generated', 'dangling-link'))
-  assert.throws(() => validateProtectedRootClassification({ ...data, schema }), /only exact generated outputs may be symlinks/)
+  assert.throws(
+    () => validateProtectedRootClassification({ ...data, schema }),
+    /only exact generated files or reviewed Genesis baseline aliases may be symlinks/,
+  )
   data.stages[0].outputs.push('generated/dangling-link')
   assert.doesNotThrow(() => validateProtectedRootClassification({ ...data, schema }))
 })
@@ -350,7 +356,10 @@ test('an existing non-authority symlink is still rejected', t => {
   data.document.entries.push({ id: 'local-link', path: 'policy/local-link', match: 'file', classification: 'non-authority-exclusion', excludes: [], allowAbsent: false, reason: 'fixture non-authority alias' })
   symlinkSync('../generated', join(data.root, 'policy', 'local-link'))
   data.trackedPaths.push({ path: 'policy/local-link', mode: '120000' })
-  assert.throws(() => validateProtectedRootClassification({ ...data, schema }), /only exact generated outputs may be symlinks.*policy\/local-link/)
+  assert.throws(
+    () => validateProtectedRootClassification({ ...data, schema }),
+    /only exact generated files or reviewed Genesis baseline aliases may be symlinks.*policy\/local-link/,
+  )
 })
 
 test('graph declarations are classified even when their outputs do not exist yet', t => {
@@ -435,7 +444,68 @@ test('an exact generated symlink may replace an unstaged tracked tree without cl
   data.stages[0].outputs = ['generated']
   assert.doesNotThrow(() => validateProtectedRootClassification({ ...data, schema }))
   data.stages[0].outputs = ['generated/recreated-view.json']
-  assert.throws(() => validateProtectedRootClassification({ ...data, schema }), /only exact generated outputs may be symlinks|output declaration/)
+  assert.throws(
+    () => validateProtectedRootClassification({ ...data, schema }),
+    /only exact generated files or reviewed Genesis baseline aliases may be symlinks|output declaration/,
+  )
+})
+
+test('only reviewed Genesis baseline tree roots may become exact output symlinks', t => {
+  const data = fixture()
+  t.after(() => rmSync(data.root, { recursive: true, force: true }))
+  rmSync(join(data.root, 'generated'), { recursive: true })
+  symlinkSync('policy', join(data.root, 'generated'))
+  data.stages[0].outputs = ['generated/']
+  assert.throws(
+    () => validateProtectedRootClassification({ ...data, schema }),
+    /only exact generated files or reviewed Genesis baseline aliases may be symlinks/,
+  )
+
+  const root = mkdtempSync(join(tmpdir(), 'protected-genesis-baseline-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  mkdirSync(join(root, '.claude'), { recursive: true })
+  mkdirSync(join(root, 'authority'), { recursive: true })
+  writeFileSync(join(root, 'authority', 'view.json'), '{}\n')
+  symlinkSync('../authority', join(root, '.claude', 'snapshots-baseline'))
+  const document = {
+    $schema: 'schemas/protected-root-classification.schema.json',
+    schemaVersion: 1,
+    protectedRoots: ['.claude/snapshots-baseline', 'authority'],
+    entries: [{
+      id: 'genesis-baseline',
+      path: '.claude/snapshots-baseline',
+      match: 'tree',
+      classification: 'generated-output',
+      excludes: [],
+      allowAbsent: false,
+      reason: 'reviewed Genesis baseline alias',
+    }, {
+      id: 'baseline-authority',
+      path: 'authority',
+      match: 'tree',
+      classification: 'canonical-source',
+      excludes: [],
+      allowAbsent: false,
+      reason: 'fixture baseline authority',
+    }],
+  }
+  const stages = [{
+    id: 'baseline-mirrors',
+    sources: ['authority/'],
+    sourceExcludes: [],
+    outputs: ['.claude/snapshots-baseline/'],
+  }]
+  assert.doesNotThrow(() => validateProtectedRootClassification({
+    root,
+    document,
+    schema,
+    stages,
+    trackedPaths: [
+      { path: '.claude/snapshots-baseline/legacy.json', mode: '100644' },
+      { path: 'authority/view.json', mode: '100644' },
+    ],
+    ignoredPaths: [],
+  }))
 })
 
 test('ignored leaves require an explicit non-authority owner', t => {

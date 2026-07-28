@@ -1,0 +1,189 @@
+{
+  "$schema": "./lock.schema.json",
+  "schemaVersion": 1,
+  "role": "template-consumer",
+  "release": {
+    "designSystem": "0.1.0-beta.95",
+    "storybookConfig": "0.1.0-beta.95"
+  },
+  "upgradeTrust": {
+    "schemaVersion": 1,
+    "repository": "ajenchen/design-system",
+    "workflow": ".github/workflows/release.yml",
+    "workflowRef": "refs/heads/main",
+    "provenancePredicate": "https://slsa.dev/provenance/v1",
+    "builderId": "https://github.com/actions/runner/github-hosted",
+    "immutableRelease": true,
+    "releaseBomAsset": "release-bom.json",
+    "upgradePackages": [
+      "@qijenchen/design-system",
+      "@qijenchen/storybook-config"
+    ],
+    "releasePackages": [
+      "@qijenchen/design-system",
+      "@qijenchen/governance",
+      "@qijenchen/storybook-config"
+    ]
+  },
+  "upgradeProtocol": {
+    "schemaVersion": 2,
+    "protocolId": "protected-base-reconstruction-v2",
+    "legacyEntryMode": "one-time-reviewed-full-snapshot-pr",
+    "bootstrapEvidenceContract": "consumer-governance-bootstrap-readback-v1",
+    "controlPlaneUpdateMode": "recurring-reviewed-full-snapshot-pr",
+    "controlPlaneUpdateEvidenceContract": "consumer-governance-control-plane-update-readback-v1",
+    "controlPlaneUpdatePlanner": "infra/governance/bin/consumerctl.mjs",
+    "ordinaryUpgradeMode": "protected-base-disposable-reconstruction",
+    "protectedBaseVerifier": "scripts/verify-upgrade-evidence.mjs",
+    "candidateCodeExecutionAllowed": false,
+    "physicalPowerLossDurabilityClaimed": false,
+    "specificationSha256": "230c59f39901dc7bf1fb44c14b56c8b4bb6666db3ef2e6182fa85433e57b1f44",
+    "schemaSha256": "b443dbcf314f50e315b2d5376416b57e1b1c1f1a6231ddc8983283219c62dfad",
+    "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
+  },
+  "payload": {
+    "forkCorpusLockSha256": "737d9edb54c9e7f346a205fa73058e4e93ebbc4f3f7c1c519c6c47be66494260",
+    "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
+    "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
+    "providerLifecycleSha256": "916c040fc796ce937c3de4030db0e441d01f6602d79b2bc12e02b9d7613c7261",
+    "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
+    "executionRuntimeSha256": "3fca4ba4094e855412a22308e13f2b5f91dcfeb009512eb8318b3bd1bace8d9a",
+    "commonInstructionSha256": "1f7bfe4d5e50a002d3f735176cadc52536fe946c49e6e9be3b70cdadc07bc644",
+    "providerArtifactDigests": {
+      "claude": {
+        "instructionSha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
+        "hookSha256": "10ef17ced1b1b4dcb55672a24e880296d39b9cf0a6d7e354af633c3ff0e03d4f",
+        "skillsSha256": "163e473a872d5fa11db9ba7df27f9d316a3c20f89d1ea1cbd002e5f9ada92321",
+        "treeDigests": {}
+      },
+      "codex": {
+        "instructionSha256": "1f7bfe4d5e50a002d3f735176cadc52536fe946c49e6e9be3b70cdadc07bc644",
+        "hookSha256": "83d373ba11636fd6941f80f9a298056e5c862730275daf623690bf0d6be3582a",
+        "skillsSha256": "b80eadd9559d29a50bb7c59ca5f431077174135de79081bbc716cdf64b25bee7",
+        "treeDigests": {}
+      },
+      "generic": {
+        "instructionSha256": null,
+        "hookSha256": null,
+        "skillsSha256": null,
+        "treeDigests": {}
+      }
+    },
+    "mergeSurfaceDigests": {
+      "claude": "10ef17ced1b1b4dcb55672a24e880296d39b9cf0a6d7e354af633c3ff0e03d4f"
+    },
+    "governanceCheckSha256": "d0b1f050e4adcf1cb8717d4a890cc03921301107b2f53e820e5e4bdda693c122",
+    "utilityRegistrySha256": "310f92cc9aa57880d8f81464ac4191907bda9c9af31847a450497e6a9f97dce3",
+    "sharedSkillsSha256": "138d3bec5497e8109c47788c181f7d2ee3c856f5a84b696eb9364b73ba647bf4",
+    "sharedSkillCount": 11,
+    "requiredScripts": {
+      "audit:a11y": "node scripts/audit-consumer-a11y.mjs",
+      "governance:check": "node node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/governance-check.mjs --repo . --hooks-off",
+      "lint:imports": "node scripts/lint-ds-internal-imports.mjs",
+      "setup:all": "node scripts/setup-workspace.mjs",
+      "setup:governance": "node scripts/setup-governance.mjs",
+      "setup:provider-cli": "node scripts/setup-provider-cli-toolchain.mjs",
+      "sync-all": "node scripts/sync-all.mjs"
+    },
+    "managedFiles": {
+      ".devcontainer/devcontainer-lock.json": "f2ba8f75963ada855fef0707be6313fec9dce6742d32f414f79c4c370d8de3f3",
+      ".devcontainer/devcontainer.json": "1668412229466b1e5092218606817711c46c5307b7fc7b77abf6fff089b9b4c7",
+      ".devcontainer/onboard-banner.sh": "fd87b372e48ff079afb0b257c5e5c28fcf58637b2589a508987460a66c2b8b75",
+      ".devcontainer/post-create.mjs": "6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b",
+      ".github/workflows/audit.yml": "66bcee0a60de93a992131b92c20d1e397297fa109a2fe8c72dbfd62ebbbe9680",
+      ".github/workflows/governance-anchor.yml": "3e280e67fd72886b0686a6d296947ee3270b4899e9914c1e3a9c61c951dcc2ee",
+      ".github/workflows/sync-design-system.yml": "f25e4d348daf1d98a0c8d0d9c1546d6b8340683ba59ed22aeb0f001378000483",
+      ".npmrc": "79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63",
+      "governance/consumer-governance.md": "abbded0a31cf3a6fb0de62975b749d10f27ac0adcc9bbf5e95ef410b64073396",
+      "governance/provider-cli-toolchain.json": "6bc607cb6ac299b332d35ca871c838b54e367d96775ad0e759c827a0e3ca10cc",
+      "governance/provider-cli-toolchain.package-lock.json": "fe7115dcbb9c096cc9c2aff069282636b942995399ace5dfd9ba68a7280d465f",
+      "governance/schemas/issuer-registry.schema.json": "52616f59420942b96b33001e00d2c9a23ca3aa14dc236d8cb2aa9756787bfb90",
+      "governance/schemas/visual-baseline-review-policy.schema.json": "29eb02c844515e6e94a063503c4682e8a1a87a3976b26067e725e5491cc6bc45",
+      "governance/trust/issuers.json": "b4da935a9d39239f99fdb15f9ee0a05b538ac0c427b32b77fce8010560fdef2b",
+      "governance/visual-baseline-review-policy.json": "339179f3bb7805f067c40cb22509734fa3f1cf2834129e64f6e0bf08aa70b334",
+      "schemas/provider-cli-toolchain.schema.json": "7e5c6c14c8a9295373f56df968afdb8cb8888764ce1b060993a655ccec8ac61d",
+      "scripts/audit-consumer-a11y.mjs": "a2ca30c164ef55277cc783a79450eb1bff203b936acbfad3bc94a8c644cfd173",
+      "scripts/check-plugin-installed.mjs": "f2a673cc011743fe51f87746b9aebbd3332378cd2732088eda621e16a3c74386",
+      "scripts/consumer-source-harness.mjs": "725072155d0b15b373bf6befb333cd2085dc8a38fff8538b4f4c8ea56f9c5308",
+      "scripts/governance-anchor-preflight.mjs": "3f87bcdcf95f85c73351646a5f818b088d6528cc6bd3c811054087fd58b4fdfa",
+      "scripts/lib/a11y-static-server.mjs": "3ae8ca74a66ca5f155d1a1d0c97280d41f07556274c8c077705a489ebe6a7018",
+      "scripts/lib/canonical-path-containment.mjs": "0244e31dc3be5015bed3efd65a5a77086a2e4676e9ac79cd0801c8cde6a74fcd",
+      "scripts/lib/closed-tool-execution.mjs": "12ec9e26eb29b0004ca52c5ce364688c5bd3e6dcf07a16560a98d1d6018f11e6",
+      "scripts/lib/consumer-control-plane-policy.mjs": "ea8b11ddc5c964ea742ccba5e6a3bc2f215db5d165afe2cca96192812287750c",
+      "scripts/lib/governance-dependency-bootstrap.mjs": "6779f0e06b01fde7be74ff07be125405808d124811df3cfd77da428e6f618df2",
+      "scripts/lib/provider-lifecycle.mjs": "9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7",
+      "scripts/lib/verified-exact-npm-runtime.mjs": "50f54769a7a32fdc5b97036410018bed87808c2dbdffc47cc292967e5de3da8f",
+      "scripts/lib/workspace-post-create.mjs": "f3ddc6db740d5c4d48b1c6e16c55222325e4d1c16fe6644a455e7b7e5bea0a0d",
+      "scripts/lib/worktree-fingerprint.mjs": "70a8bdbceade964d009f6a46c9e57a93bc9fd58c28971ea14ad1b5ffeaaf7250",
+      "scripts/lint-ds-internal-imports.mjs": "86edd952fb5c3871896515440693abeb08c1d1da9f887fa073b9ddda1363f572",
+      "scripts/product-template-scaffold-lock.mjs": "9134dabf11af7a2445a6a026fc23201e8aba3ef5aeb7da1d2159e92956dd32d2",
+      "scripts/refresh-fork-launchers.mjs": "1ac397214b92b088c22dbca52495feca2382aa220ad647d93c8c077d1f9148bd",
+      "scripts/release-bom-contract.mjs": "75d736f86c7f695dc88a1982d547998d510e8050c4847abe387227b6662b87c2",
+      "scripts/schemas/product-template-scaffold-lock.schema.json": "1318af59f12546b3cda059a1d94923d9a969bef4c5a476ebb46e42f8c853d19a",
+      "scripts/schemas/release-bom.schema.json": "6969482588a25533dc1896be63c3c9629aced1cbeb745b99822db764682dc4a4",
+      "scripts/schemas/upgrade-evidence-receipt.schema.json": "e2da0a86241d8d019545b63e6285d2ca049ce95fe6aed4264149df2108c4ade0",
+      "scripts/setup-governance.mjs": "134dd20f0dee07258866c807a827785a3b96c31a6cb821e6b30ce4fe2c680db9",
+      "scripts/setup-provider-cli-toolchain.mjs": "b34e11d02a7aa71d001ef8f1a42af4cf97d1b8b82360f5779cb927370f5ee15a",
+      "scripts/setup-workspace.mjs": "95dc0fef1f7570efe277a66f7edf4640055ad6abbae0245615eceb9b041560e9",
+      "scripts/sync-all.mjs": "938c706cad79a4bd538359c9b74cb9253a4c74b5f1342cbfc1625600425d8bfd",
+      "scripts/verify-consumer-css-entry.mjs": "a16545ea8d4f5224d8133f0bb0b68d5489d8e106fe7594488a78e0e5718b99cc",
+      "scripts/verify-upgrade-evidence.mjs": "86fcea662483008921f37feb96dd5bac6ed972c25790a3f15e70a8a1dc034dd4",
+      "scripts/verify-upgrade-provenance.mjs": "d3adc9d8dcc89b111295102d15b75f40c4eb22891cdc59463a7fc1302309fd63",
+      "scripts/workflow-static-validation.mjs": "8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305"
+    }
+  },
+  "providers": {
+    "claude": {
+      "schemaVersion": 1,
+      "generated": true,
+      "instruction": "CLAUDE.md",
+      "hooks": ".claude/settings.json",
+      "skills": ".claude/skills",
+      "capabilities": {
+        "nativeHooks": true,
+        "hookEnforcement": "native-feedback-plus-ci",
+        "hardGate": "provider-neutral-ci-required"
+      },
+      "exclusions": []
+    },
+    "codex": {
+      "schemaVersion": 1,
+      "generated": true,
+      "instruction": "AGENTS.md",
+      "hooks": ".codex/hooks.json",
+      "skills": ".agents/skills",
+      "capabilities": {
+        "nativeHooks": true,
+        "hookEnforcement": "native-feedback-plus-ci",
+        "hardGate": "provider-neutral-ci-required"
+      },
+      "exclusions": []
+    },
+    "generic": {
+      "schemaVersion": 1,
+      "generated": false,
+      "instruction": "AGENTS.md",
+      "hooks": null,
+      "skills": ".agents/skills",
+      "capabilities": {
+        "nativeHooks": false,
+        "hookEnforcement": "ci-only",
+        "hardGate": "provider-neutral-ci-required"
+      },
+      "exclusions": [
+        {
+          "scope": "native-hooks",
+          "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
+          "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative."
+        },
+        {
+          "scope": "provider-skills",
+          "reasonCode": "NO_DISCOVERY_SURFACE_DECLARED",
+          "detail": "This abstract provider has no independent skill discovery surface; a concrete provider must register one before generation."
+        }
+      ]
+    }
+  },
+  "authority": "provider-neutral governance check + protected CI",
+  "generatedBy": "scripts/build-fork-governance.mjs"
+}

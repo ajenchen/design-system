@@ -1,0 +1,117 @@
+{
+  "$schema": "./story-baseline-registry.schema.json",
+  "schemaVersion": 1,
+  "_meta": {
+    "purpose": "Anti-drift registry for stories wrap既有 primitive(Sidebar / ChromeHeader / DataTable / Dialog / Sheet / Popover)— machine-readable canonical archetype。Hook `check_story_invariants.sh R8` reads this(not grep spec.md / not憑 Claude judgment)to enforce nearest same-purpose canonical usage(per codex Layer B D4 2026-05-20)。新增 primitive entry 必先寫 baseline + helper list + antiPatterns regex + buttonCanonical。",
+    "owner": "packages/design-system/ds-canonical/references/story-baseline-registry.json",
+    "consumed_by": [
+      "packages/design-system/ds-canonical/hooks/check_story_invariants.sh#R8(story_archetype_registry)",
+      "packages/design-system/ds-canonical/skills/story-writing/SKILL.md#Phase-0.0(load registry + read baseline + produce diff table)"
+    ],
+    "provider_view_policy": ".claude/.agents/.codex projections are generated discovery adapters only; they are never registry owners or edit targets.",
+    "rollout": "ship as warn mode first;確認 zero existing violation → 升 P0 BLOCKER"
+  },
+  "components": {
+    "Sidebar": {
+      "baseline": "packages/design-system/src/components/Sidebar/sidebar.stories.tsx#IconCollapse",
+      "requiredHelpers": [
+        "WorkspaceBrand",
+        "MAIN_NAV",
+        "SidebarHeader",
+        "SidebarFooter"
+      ],
+      "antiPatterns": [
+        {
+          "id": "sidebar-header-simplified-span",
+          "regex": "<SidebarHeader[^>]*>[[:space:]]*<span",
+          "severity": "block",
+          "rationale": "SidebarHeader 必 wrap WorkspaceBrand-like ItemAvatar block(per sidebar.stories#IconCollapse baseline);simplified <span> mock = drift"
+        },
+        {
+          "id": "sidebar-menu-button-inline-icon",
+          "regex": "<SidebarMenuButton[^>]*>[^<]*<[A-Z][a-zA-Z]+[[:space:]]+className=\"size-",
+          "severity": "block",
+          "rationale": "SidebarMenuButton 必用 startIcon prop + tooltip prop;children inline icon = drift"
+        },
+        {
+          "id": "sidebar-header-subtitle-second-line",
+          "regex": "<SidebarHeader[^>]*>[[:space:]]*<div[^>]*flex-col",
+          "severity": "block",
+          "rationale": "SidebarHeader brand 必單行(Fixed-h chrome 不可成長,sidebar.spec.md SidebarHeader 段 2026-06-12 明文)。flex-col 直接子層 = logo name 下加副標的結構簽名 — shadcn TeamSwitcher demo prior 滲漏;plan/org 資訊歸 workspace switcher dropdown row,非常駐 header"
+        },
+        {
+          "id": "sidebar-footer-two-line",
+          "regex": "<SidebarFooter[^>]*>.{0,255}(text-xs|leading-tight)",
+          "severity": "block",
+          "rationale": "SidebarFooter user 區必單行(名字 only;職稱/email 等身份資訊歸 ItemAvatar hoverCard 的 ProfileCard,sidebar.stories.tsx UserFooter canonical)。shadcn nav-user 的「name + email text-xs 兩行」是強 LLM 先驗,且 text-xs 違反 chrome typography canonical(sidebar.spec『chrome 內 text 一律 text-body-lg』);255 字元窗符合 POSIX ERE RE_DUP_MAX 並限制 greediness"
+        }
+      ]
+    },
+    "DataTable": {
+      "baseline": "packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions",
+      "toolbar": {
+        "requiredHelpers": [
+          "Popover",
+          "PopoverTrigger",
+          "PopoverContent",
+          "Input"
+        ],
+        "filterPanel": "DataTableFilterPanel",
+        "sortManager": "DataTableSortManager",
+        "buttonCanonical": {
+          "variant": "text",
+          "size": "sm",
+          "iconOnly": true,
+          "pressed": "required(state expression)",
+          "rationale": "per codex D2 verdict 2026-05-20 + action-bar.spec.md narrow scope:dense always-visible toolbar = low visual weight + pressed/chips/badges 顯示 state;tertiary 只用 standalone/labeled context"
+        }
+      },
+      "antiPatterns": [
+        {
+          "id": "datatable-toolbar-tertiary-filter-sort",
+          "regex": "startIcon=\\{(Filter|ArrowUpDown)\\}[^>]*variant=\"tertiary\"|variant=\"tertiary\"[^>]*startIcon=\\{(Filter|ArrowUpDown)\\}",
+          "severity": "block",
+          "rationale": "DataTable toolbar filter/sort 必 variant=text(per data-table.stories#WithBulkActions L998 canonical)"
+        },
+        {
+          "id": "datatable-toolbar-button-with-label",
+          "regex": "startIcon=\\{(Filter|ArrowUpDown)\\}[^>]*>[^<]+(篩選|排序|Filter|Sort)[^<]*</Button>",
+          "severity": "block",
+          "rationale": "DataTable toolbar 必 iconOnly(per WithBulkActions L998 canonical),不掛 label"
+        },
+        {
+          "id": "datatable-toolbar-no-popover-wrap",
+          "regex": "startIcon=\\{(Filter|ArrowUpDown)\\}",
+          "severity": "warn",
+          "rationale": "DataTable toolbar filter/sort button 必包在 Popover 內,內含真 DataTableFilterPanel / DataTableSortManager primitive(2026-07-04 dim 54:原 PCRE lookahead 在 ERE grep exit 2 永不 fire → 改兩段式 regex+unlessRegex)",
+          "unlessRegex": "DataTableFilterPanel|DataTableSortManager"
+        },
+        {
+          "id": "datatable-always-edit-cell",
+          "regex": "cell:[^;]{0,160}<(DS\\.)?(Select|Combobox|PeoplePicker|DatePicker|TimePicker)\\b",
+          "unlessRegex": "onCellCommit|editable|mode=[\"']view",
+          "severity": "block",
+          "rationale": "cell: 直接渲染恆-edit 控件 = view 態渲染 edit chrome,違 data-table.spec.md:373 indicator A 案(view 零恆顯 + hover outline + meta.editable/onCellCommit)。custom cell 元件包裹的同違規 regex 看不進去 → 由 product-ui-audit judgment 兜底(failure-class registry always-edit-cell)。2026-07-16 dim 54:mode display→view 更名後 unlessRegex stale(0 hit)→ 對齊 view"
+        }
+      ]
+    },
+    "ChromeHeader": {
+      "baseline": "packages/design-system/src/components/Sidebar/sidebar.stories.tsx#IconCollapse (PageContent helper)",
+      "requiredStructure": "SidebarTrigger + h1.text-body-lg.font-medium 緊鄰 gap-2",
+      "antiPatterns": [
+        {
+          "id": "chromeheader-span-flex-1",
+          "regex": "<ChromeHeader[^>]*>.{0,160}<span[[:space:]]+className=\"[^\"]*flex-1[^\"]*\">",
+          "severity": "block",
+          "rationale": "ChromeHeader title 該用 <h1 className=\"text-body-lg font-medium\"> 緊鄰 SidebarTrigger,不該用 <span flex-1> 撐空間造成 toggle + title 巨大間距"
+        },
+        {
+          "id": "chromeheader-subtitle-second-line",
+          "regex": "<(ChromeHeader|PageHeader)[^>]*>[[:space:]]*<div[^>]*flex-col",
+          "severity": "block",
+          "rationale": "Chrome 家族永遠 single-row(header-canonical.spec.md:47,剛性 --chrome-header-height);title 下加副標/description = LLM 先驗回填(Polaris Page subtitle / Tailwind UI page heading 先驗),頁面說明文字歸 content 區,非 chrome。flex-col 直接子層 = 兩行結構簽名"
+        }
+      ]
+    }
+  }
+}

@@ -30,7 +30,7 @@ import {
   verifyProviderCliRuntimeForCertification,
   verifyProviderCliToolchainStatic,
 } from './setup-provider-cli-toolchain.mjs'
-import { resolveExactNpmArtifact } from './lib/verified-exact-npm-runtime.mjs'
+import { resolveExactNpmRuntimeContract } from './lib/verified-exact-npm-runtime.mjs'
 import { captureGitVisibleWorktree } from './lib/worktree-fingerprint.mjs'
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -40,6 +40,10 @@ const CANONICAL_AUTHORITY_MANIFEST = readFileSync(join(REPOSITORY_ROOT, 'infra/g
 const CANONICAL_AUTHORITY_LOCK = readFileSync(join(REPOSITORY_ROOT, 'infra/governance/providers/provider-cli-toolchain.package-lock.json'))
 const CALLER_LOCK = JSON.parse(readFileSync(join(REPOSITORY_ROOT, 'package-lock.json'), 'utf8'))
 const NPM_ARTIFACT = CALLER_LOCK.packages['node_modules/npm']
+const NPM_RUNTIME_CONTRACT = resolveExactNpmRuntimeContract(REPOSITORY_ROOT)
+const NPM_OVERLAY = NPM_RUNTIME_CONTRACT.securityOverlay
+const NPM_OVERLAY_SPEC = `npm:${NPM_OVERLAY.package}@${NPM_OVERLAY.version}`
+const NPM_OVERLAY_ARTIFACT = CALLER_LOCK.packages[`node_modules/${NPM_OVERLAY.alias}`]
 const TEST_PLATFORM = process.platform === 'darwin' ? 'darwin' : 'linux'
 const TEST_ARCH = process.arch === 'arm64' ? 'arm64' : 'x64'
 const TEST_PLATFORM_ID = `${TEST_PLATFORM}-${TEST_ARCH}`
@@ -262,7 +266,10 @@ function fixture(t, { role = 'authority', manifestBytes = AUTHORITY_MANIFEST, lo
     name: 'provider-cli-toolchain-fixture',
     private: true,
     version: '0.0.0',
-    devDependencies: { npm: NPM_ARTIFACT.version },
+    devDependencies: {
+      npm: NPM_ARTIFACT.version,
+      [NPM_OVERLAY.alias]: NPM_OVERLAY_SPEC,
+    },
   }
   const packageLock = {
     name: packageManifest.name,
@@ -273,7 +280,10 @@ function fixture(t, { role = 'authority', manifestBytes = AUTHORITY_MANIFEST, lo
       '': {
         name: packageManifest.name,
         version: packageManifest.version,
-        devDependencies: { npm: NPM_ARTIFACT.version },
+        devDependencies: {
+          npm: NPM_ARTIFACT.version,
+          [NPM_OVERLAY.alias]: NPM_OVERLAY_SPEC,
+        },
       },
       'node_modules/npm': {
         version: NPM_ARTIFACT.version,
@@ -281,6 +291,9 @@ function fixture(t, { role = 'authority', manifestBytes = AUTHORITY_MANIFEST, lo
         integrity: NPM_ARTIFACT.integrity,
         dev: true,
         bin: { npm: 'bin/npm-cli.js' },
+      },
+      [`node_modules/${NPM_OVERLAY.alias}`]: {
+        ...NPM_OVERLAY_ARTIFACT,
       },
     },
   }
@@ -386,10 +399,18 @@ function harness(root, {
       globalConfig: readFileSync(env.NPM_CONFIG_GLOBALCONFIG, 'utf8'),
       userConfig: readFileSync(env.NPM_CONFIG_USERCONFIG, 'utf8'),
     })
-    const artifact = resolveExactNpmArtifact(repositoryRoot)
+    const artifact = resolveExactNpmRuntimeContract(repositoryRoot)
+    const securityOverlay = Object.freeze({
+      schemaVersion: 1,
+      kind: 'verified-npm-runtime-security-overlay-receipt',
+      status: 'applied',
+      ...artifact.securityOverlay,
+      treeDigest: 'a'.repeat(64),
+    })
     return {
       cli: '/verified/npm-cli.js',
       artifact,
+      securityOverlay,
       toolchain: { node: process.version, npm: artifact.version },
       cleanup() { cleanupCount += 1 },
     }
@@ -683,6 +704,30 @@ test('writer-safe setup installs and statically verifies runtime and shims witho
   assert.equal(verified.versions, null)
   assert.equal(verified.target, result.target)
   assert.equal(testHarness.calls.length, 3, 'zero-spawn static verification called the injected runner')
+})
+
+test('rejects missing and stale verified npm security overlays before the first npm call', async (t) => {
+  for (const overlayState of ['missing', 'stale']) {
+    const root = fixture(t)
+    const testHarness = harness(root)
+    await assert.rejects(
+      setupProviderCliToolchain(setupOptions(root, testHarness, {
+        runtimeFactory: async (options) => {
+          const runtime = await testHarness.runtimeFactory(options)
+          return {
+            ...runtime,
+            securityOverlay: overlayState === 'missing'
+              ? undefined
+              : { ...runtime.securityOverlay, identityDigest: 'f'.repeat(64) },
+          }
+        },
+      })),
+      /verified exact npm runtime security overlay is missing, stale, or substituted/,
+    )
+    assert.equal(testHarness.npmCalls().length, 0)
+    assert.equal(testHarness.cleanupCount, 1)
+    assertNoStageDirectories(root)
+  }
 })
 
 test('static authority rejects writable shim, target, package entry, and replaceable ancestor', async (t) => {

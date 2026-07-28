@@ -56,6 +56,7 @@ function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         {/* Chrome header avatar canonical(per header-canonical.spec.md:57-72):chrome header 不是 row context → raw <Avatar size={24}>,禁用 <ItemAvatar>(會誤啟動 row anatomy lookup)*/}
+        {/* @layout-space-magic-ok: Sidebar#IconCollapse chrome-header-brand baseline owns fixed 8px Avatar-to-label micro spacing; layout-space tokens govern macro spacing */}
         <div className="flex items-center gap-2 min-w-0 group-data-[collapsible=icon]:justify-center">
           <Avatar alt="Acme Product" size={24} shape="square" color="blue" solid />
           <span className="text-body-lg font-medium truncate group-data-[collapsible=icon]:hidden">Acme Product</span>
@@ -118,7 +119,7 @@ function DashboardPage() {
   return (
     <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] space-y-[var(--layout-space-loose)]">
       <section>
-        <h2 className="text-h5 mb-2">Today</h2>
+        <h2 className="text-h5 mb-[var(--layout-space-tight)]">Today</h2>
         <p className="text-body text-fg-secondary">
           替換為真實業務 — 訂單 / 收入 / 待處理任務等 dashboard widgets。Consume DS components
           (DataTable / Chart / Card / Stat 等),never modify DS source。
@@ -128,6 +129,7 @@ function DashboardPage() {
         {['Revenue', 'Active customers', 'Pending orders'].map((label) => (
           <div key={label} className="rounded-lg border border-divider bg-surface p-[var(--layout-space-loose)]">
             <div className="text-caption text-fg-secondary">{label}</div>
+            {/* @layout-space-magic-ok: Sidebar#IconCollapse PageContent metric-card baseline owns fixed 4px label-to-value micro spacing; not macro layout */}
             <div className="text-h3 mt-1">—</div>
           </div>
         ))}

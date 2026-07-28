@@ -20,8 +20,8 @@ git push -u origin feat/<your-feature-name>
 
 ## CI 自動跑(每 PR / push)
 
-- `audit.yml`:tsc + lint:imports + build all apps
-- `sync-design-system.yml`:`repository_dispatch`(DS publish 後 auto dispatch `design-system-published` / `ds-ssot-changed`)+ `workflow_dispatch`(fork user 主動觸發)。**2026-05-27 拿掉 daily cron** per user verbatim「只要確保主動更新時能同步到最新就好」。Fallback:Dependabot daily auto-PR(若 DS dispatch 失敗)
+- `audit.yml`:hooks-off governance hard gate + tsc + lint:imports + build all apps + a11y
+- `sync-design-system.yml`:只接受 exact release version；read-only runner 獨立重建後，`governance-upgrade` environment-gated Governance Writer App 只取得 contents/PR 與完整 snapshot 更新 `.github/workflows/**` 所必需的 workflows write，並建立 deterministic PR。它觸發的 candidate runs 全部是 non-authoritative；明確 repository dispatch 重新載入 protected-default validation，再由獨立 check-only Governance Check App 發布 required verdict。不直推 main、不 review/approve/merge、不解析 dist-tag；repository Actions 預設維持 read-only 且 create/approve PR 設定維持關閉
 - Storybook deploy 走 `netlify.toml` Git integration auto-build,不需 workflow file
 
 ## Code review(CODEOWNERS)
@@ -57,7 +57,7 @@ git push --force-with-lease
 
 - **禁** 改 `node_modules/@qijenchen/design-system/`(直接改 node_modules 是 antipattern)
 - **禁** import DS internal paths(`/src/...` / `/dist/...`)— hook 攔
-- **禁** force-push main(branch protection 應該攔)
+- **禁** force-push/direct-push main(branch ruleset 必須攔)
 
 ## Next
 

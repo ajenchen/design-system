@@ -14,6 +14,12 @@ import {
   ProviderWriteStateError,
 } from '../src/provider-hook-normalization.mjs'
 
+// These adversarial suites assert the fail-closed integrity lane. The production
+// default is fail-open (hooks are accelerators, not the trust boundary); strict
+// semantics are opted into exactly like a high-assurance deployment would.
+Object.assign(process.env, { GOVERNANCE_HOOK_STRICT: '1' })
+
+
 const authorityRoot = resolve(import.meta.dirname, '../../..')
 const registry = JSON.parse(await readFile(
   resolve(authorityRoot, 'packages/governance/canonical/providers.json'),

@@ -4,7 +4,8 @@
  *
  * Provider roots may appear as generated adapter destinations or explicitly labelled historical
  * provenance. They may not appear in owner/ssot/consumer metadata, canonical read paths, or build
- * graph sources except for the narrow plugin-alias materializer dependency.
+ * graph sources except for the narrow plugin-alias materializer dependency and
+ * the exact canonical-to-generated Harness mirror parity projection.
  * Bare CLAUDE.md mentions likewise require same-line adapter/provider-specific or provenance
  * disclosure whenever the line uses active SSOT, required-read, canonical, or authority language.
  */
@@ -16,6 +17,13 @@ import {
   realpathSync,
 } from 'node:fs'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
+import {
+  CONTROL_PLANE_GENESIS_CLOSED_STATE,
+  CONTROL_PLANE_GENESIS_OPEN_STATE,
+  CONTROL_PLANE_GENESIS_TOMBSTONES,
+  assertControlPlaneGenesisTombstones,
+  loadControlPlaneGenesisTransition,
+} from './lib/control-plane-genesis-transition.mjs'
 import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
 
 function valueOf(flag) {
@@ -99,11 +107,21 @@ function pathEntryExists(relativePath) {
   }
 }
 
-for (const retiredPath of [
-  '.github/workflows/ssot-sync-dispatch.yml',
-  'packages/design-system/ds-canonical/hooks/check_post_main_ssot_propagate.sh',
-]) {
-  record(!pathEntryExists(retiredPath), `retired SSOT transport tombstone must remain absent:${retiredPath}`)
+const genesisTransition = loadControlPlaneGenesisTransition({ root: ROOT })
+if (genesisTransition.state === CONTROL_PLANE_GENESIS_OPEN_STATE) {
+  try {
+    assertControlPlaneGenesisTombstones({
+      root: ROOT,
+      materializationRoot: ROOT,
+      transition: genesisTransition,
+    })
+  } catch (error) {
+    errors.push(error.message)
+  }
+} else if (genesisTransition.state === CONTROL_PLANE_GENESIS_CLOSED_STATE) {
+  for (const { path } of CONTROL_PLANE_GENESIS_TOMBSTONES) {
+    record(!pathEntryExists(path), `closed transition legacy tombstone must remain absent:${path}`)
+  }
 }
 
 const agents = text('AGENTS.md')
@@ -319,6 +337,7 @@ record(!/\.claude\/\{logs,memory\}[^\n]*\[ -d \]/.test(JSON.stringify(hookClassi
 const graph = json('scripts/governance-build-graph.json')
 const pluginAliases = json('packages/governance/canonical/plugin-aliases.json')
 const pluginAliasProvider = providerRegistry.providers.find((provider) => provider.id === pluginAliases.providerId)
+const harnessMirrorProviderSources = ['.claude/hooks/tests/']
 const expectedPluginProviderSources = (pluginAliases.aliases || []).map((alias) => {
   const destination = alias.source?.kind === 'repositoryManagedTree'
     ? pluginAliasProvider?.adapter?.repositoryManagedTrees?.[alias.source.key]
@@ -331,6 +350,11 @@ for (const stage of graph.stages || []) {
   const providerSources = (stage.sources || []).filter(isProviderSource).sort()
   if (stage.id === 'plugin-aliases') {
     record(JSON.stringify(providerSources) === JSON.stringify([...new Set(expectedPluginProviderSources)]), 'plugin-aliases must be the sole registry-derived narrow adapter-to-alias materializer input')
+  } else if (stage.id === 'harness-authority-bindings') {
+    record(
+      JSON.stringify(providerSources) === JSON.stringify(harnessMirrorProviderSources),
+      `harness-authority-bindings may consume only the exact generated hook-test mirror:${providerSources.join(', ')}`,
+    )
   } else {
     record(providerSources.length === 0, `${stage.id} consumes generated provider views as build sources:${providerSources.join(', ')}`)
   }

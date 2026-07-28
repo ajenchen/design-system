@@ -1,11 +1,11 @@
 {
   "schemaVersion": 4,
   "kind": "release-preflight-gate-ratchet",
-  "revision": 2,
-  "gateCount": 64,
-  "gateDigest": "a41c5a19fe3fd65a56f340419eb67f2e596e2ce093349b3af6a2ef561d7bf9b8",
-  "scaffoldSha256": "c3d65de797ee667c9fd4566f5849c81a4ad959b907a72e1ad6d46fd431603fe3",
-  "behaviorDigest": "0de935282c46790db59fcb87f4cd385eaa81264be3f01ef7add2cf47d8c816f8",
+  "revision": 3,
+  "gateCount": 48,
+  "gateDigest": "dacffa3ec7d50742848e03c21be769b3ca62c2c6e3778aae40c113161a80e12c",
+  "scaffoldSha256": "7c64fd03052d080db4a3ac17fd032d540bb0b78c0ecfcaefed07fdb5dde5e03f",
+  "behaviorDigest": "8e7374b74c1bc200192ac1eab802681fc6481ca8f344976bd419bf7b06fab57f",
   "gates": [
     {
       "label": "sync version → release manifests + workspace lock entries",
@@ -34,34 +34,6 @@
     {
       "label": "workflow security audit(pinned actions + privileged workflow closure)",
       "semanticSha256": "49259b5be192ca91d38a3b3d250deb7884769d1ec5fd433ffc23c221cfa4a33c"
-    },
-    {
-      "label": "reviewed workflow identity bindings",
-      "semanticSha256": "e68ce4ef00e800c3b8679b548ae6a5d3b9bf1f9464dc44600b96abd6563079e2"
-    },
-    {
-      "label": "workflow security adversarial tests",
-      "semanticSha256": "03003e3b382cb4be0142bed7f2b86a77a2a8259f2920fe3aabcac348a583be7c"
-    },
-    {
-      "label": "governance anchor trust tests",
-      "semanticSha256": "5d48bd4d8e72cc2b2972f79ff475b52aebd28d6f24b36f2cf6f2ed4812bcb254"
-    },
-    {
-      "label": "privileged change authorization + bootstrap/rotation tests",
-      "semanticSha256": "735e709183616ab27fe047028f5286f9c08225d0e37360f368f94458c9ce689d"
-    },
-    {
-      "label": "exhaustive consumer-source harness",
-      "semanticSha256": "bcb2a74970aa12138bd3202193b105ce2d285426d7beedc55985db791047ff3b"
-    },
-    {
-      "label": "fresh-writer evidence + immutable mirror release tests",
-      "semanticSha256": "b4ec652b638bc8ad80397ae01a510fc549d3dc5fc81ba12cebef03dc7a404a11"
-    },
-    {
-      "label": "fleet/runtime/release-ring control-plane tests",
-      "semanticSha256": "3eecc976425ddea5f839b2b6d0b7b46a93229eed1e2d417d475bc1f544c7cacd"
     },
     {
       "label": "tsc -b",
@@ -132,14 +104,6 @@
       "semanticSha256": "772e53e5a6b58041c39c4ec4641e44f752f8a4cbce501eb0657f768b5beaf929"
     },
     {
-      "label": "gate meta-test coverage(checker gate 必有 meta-test;ratchet 只擋新洞)",
-      "semanticSha256": "089b9edc9993a3cbbf692600bedff601321eaa2bea0309394e51a9fd9b3be8cc"
-    },
-    {
-      "label": "gate meta-tests 實跑(§8:每支 gate inject-真違規偵測活性自證)",
-      "semanticSha256": "48d39ca031edf3138efc57b2a6820ec457d392ba23f6b5896abbd46a8a3d415f"
-    },
-    {
       "label": "clean-install-safety(§14-17/§31:published package 無 preinstall/install/postinstall)",
       "semanticSha256": "df4a90d769d1ca4e7c99fcf251614a0e60385d41e411bd3f4e9f9be717dea507"
     },
@@ -176,18 +140,6 @@
       "semanticSha256": "1cea274848b6775dde26c25b6fd7257860e191332305be1282ffcf5628a15f66"
     },
     {
-      "label": "provider/fork portability safety(build graph + symlink/recovery/atomicity/memory + future provider)",
-      "semanticSha256": "259091ba3b579828395b1c9a9e8b22bae80d43e222213d41fc06cde1212c464d"
-    },
-    {
-      "label": "governance control-plane tests",
-      "semanticSha256": "c64ea8ed1da75c2b0b613ac95d444689a0eaa39dcac33855409bf3cffcc15630"
-    },
-    {
-      "label": "branch-protection exact live readback(fail-closed)",
-      "semanticSha256": "b817affe5fa9e4fba4d94bb64ca1ca976ec91554f5bc995d411163eb771af2f7"
-    },
-    {
       "label": "governance-tamper(preflight gate-count ratchet + time-boxed waiver 過期)",
       "semanticSha256": "35fd2202412d89146abe267d60c8de8712e2a3b6f13d38105523349cb9207329"
     },
@@ -198,22 +150,6 @@
     {
       "label": "inline-edit view geometry invariant(多行 py == Textarea edit py,read↔edit 零跳鎖)",
       "semanticSha256": "9f096d68b228d9316db93d4d8a8faafe155164dd9159fceabb34695d369d41a7"
-    },
-    {
-      "label": "fork-governance harness(假 fork 防 false-green/brick/crash)",
-      "semanticSha256": "566af2a2de4a0feb14cccf51048e1385f29134ad372e9c958a755773bc445229"
-    },
-    {
-      "label": "consumer governance clean-room(hooks-off + immutable BOM + Claude/Codex parity + tamper negatives)",
-      "semanticSha256": "f6cf90c658ef700ba3ca30c5dea577cb4689accdb775b87b67d2a970ebbd1727"
-    },
-    {
-      "label": "consumer exact-upgrade transaction(post-check + tracked rollback)",
-      "semanticSha256": "34dc176abdacd05a86478e904f27d9bb83929fe239eb98a7c82a59bf98bf34a7"
-    },
-    {
-      "label": "release BOM + supply-chain adversarial tests",
-      "semanticSha256": "ecc4a05279ad3983bc05bd186b5070ce48b18a2fd8a512d6172edda153a30884"
     },
     {
       "label": "template canonical App drift check(防 receiver 覆寫 scaffold App.tsx)",
@@ -265,12 +201,12 @@
     }
   ],
   "transition": {
-    "fromRevision": 1,
-    "fromBehaviorDigest": "c6b693dfabe8080b056136c5d3909b48adb92a372cf02885e8fdcf4abb19518d",
-    "toBehaviorDigest": "0de935282c46790db59fcb87f4cd385eaa81264be3f01ef7add2cf47d8c816f8",
-    "auditRef": "candidate:386536327e91eb58d78ffd4420936891512eeac983992dbfedda7f73709b3900",
-    "reason": "signed-finalizer-trust-boundary-wording"
+    "fromRevision": 2,
+    "fromBehaviorDigest": "0de935282c46790db59fcb87f4cd385eaa81264be3f01ef7add2cf47d8c816f8",
+    "toBehaviorDigest": "8e7374b74c1bc200192ac1eab802681fc6481ca8f344976bd419bf7b06fab57f",
+    "auditRef": "png-bounded-de-overengineering-2026-07-28",
+    "reason": "retire-16-duplicate-and-enterprise-only-preflight-gates-covered-once-by-registered-all-harness"
   },
-  "updated": "2026-07-26",
+  "updated": "2026-07-27",
   "note": "Transition markers are immutable audit metadata only; they do not authenticate a reviewer or grant approval. When external trust is activated, authorization is enforced separately by the protected-base privileged-change verifier against a valid commit-bound privileged-change authorization. Every behavior change requires one header marker @preflight-transition(from-revision:<old revision> from:<old behavior digest> to:<new behavior digest> audit-ref:<change reference> reason:<why>)."
 }

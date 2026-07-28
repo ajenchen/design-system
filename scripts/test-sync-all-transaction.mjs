@@ -309,8 +309,25 @@ if (process.argv[2] === 'audit' && process.argv[3] === 'signatures') {
 }
 if (process.argv[2] === 'audit' && process.argv.includes('--audit-level=high')) {
   if (mode === 'high-audit-failure') {
-    process.stderr.write('fixture high vulnerability detected\\n')
-    process.exit(20)
+    process.stdout.write(JSON.stringify({
+      auditReportVersion: 2,
+      vulnerabilities: {
+        unknown: {
+          name: 'unknown',
+          severity: 'high',
+          isDirect: false,
+          via: [],
+          effects: [],
+          range: '*',
+          nodes: ['node_modules/unknown'],
+          fixAvailable: false,
+        },
+      },
+      metadata: {
+        vulnerabilities: { info: 0, low: 0, moderate: 0, high: 1, critical: 0, total: 1 },
+      },
+    }))
+    process.exit(1)
   }
   process.stdout.write(JSON.stringify({ auditReportVersion: 2, vulnerabilities: {}, metadata: { vulnerabilities: { high: 0, critical: 0 } } }))
   process.exit(0)
@@ -359,6 +376,28 @@ fs.mkdirSync(path.join(npm, 'bin'), { recursive: true })
 fs.copyFileSync(__filename, path.join(npm, 'bin/npm-cli.js'))
 fs.chmodSync(path.join(npm, 'bin/npm-cli.js'), 0o755)
 fs.writeFileSync(path.join(npm, 'package.json'), JSON.stringify({ name: 'npm', version: fixture.FAKE_NPM_VERSION, type: 'commonjs' }) + '\\n')
+const installedBrace = path.join(npm, 'node_modules/brace-expansion')
+const installedMinimatch = path.join(npm, 'node_modules/minimatch')
+fs.mkdirSync(installedBrace, { recursive: true })
+fs.mkdirSync(installedMinimatch, { recursive: true })
+fs.writeFileSync(path.join(installedBrace, 'package.json'), JSON.stringify({ name: 'brace-expansion', version: '5.0.7' }) + '\\n')
+fs.writeFileSync(path.join(installedBrace, 'index.js'), 'exports.expand = value => [value]\\n')
+fs.writeFileSync(path.join(installedMinimatch, 'package.json'), JSON.stringify({
+  name: 'minimatch',
+  version: '10.2.5',
+  main: 'index.js',
+  dependencies: { 'brace-expansion': '^5.0.5' },
+}) + '\\n')
+fs.writeFileSync(path.join(installedMinimatch, 'index.js'), "const { expand } = require('brace-expansion')\\nexports.minimatch = (value, pattern) => expand(pattern).includes(value)\\n")
+for (const [directory, manifest] of [
+  ['brace-expansion', { name: 'brace-expansion', version: '5.0.8' }],
+  ['minimatch', { name: 'minimatch', version: '10.2.5', dependencies: { 'brace-expansion': '^5.0.5' } }],
+  ['npm-runtime-brace-expansion-patch', { name: 'brace-expansion', version: '5.0.8' }],
+]) {
+  const target = path.join(process.cwd(), 'node_modules', directory)
+  fs.mkdirSync(target, { recursive: true })
+  fs.writeFileSync(path.join(target, 'package.json'), JSON.stringify(manifest) + '\\n')
+}
 const npmBin = path.join(process.cwd(), 'node_modules/.bin')
 fs.mkdirSync(npmBin, { recursive: true })
 const fixtureLink = path.join(npmBin, 'npm-fixture')
@@ -388,9 +427,12 @@ import { createHash } from 'node:crypto'
 import { installCanonicalNpmHttpsFixture } from ${JSON.stringify(verifiedNpmFixtureHelperUrl)}
 import { immutableReleaseFixture } from ${JSON.stringify(immutableReleaseFixtureHelperUrl)}
 const npmRuntimeArtifact = JSON.parse(Buffer.from(process.env.FAKE_NPM_RUNTIME_ARTIFACT, 'base64').toString('utf8'))
+const npmRuntimeSecurityOverlayArtifact = JSON.parse(Buffer.from(process.env.FAKE_NPM_RUNTIME_SECURITY_OVERLAY_ARTIFACT, 'base64').toString('utf8'))
 installCanonicalNpmHttpsFixture({
   artifact: npmRuntimeArtifact,
   tarballBytes: Buffer.from(process.env.FAKE_NPM_RUNTIME_TARBALL, 'base64'),
+  securityOverlayArtifact: npmRuntimeSecurityOverlayArtifact,
+  securityOverlayTarballBytes: Buffer.from(process.env.FAKE_NPM_RUNTIME_SECURITY_OVERLAY_TARBALL, 'base64'),
 })
 const repository = 'ajenchen/design-system'
 const version = process.env.FAKE_RELEASE_VERSION
@@ -587,6 +629,7 @@ try {
   const verifiedNpmRuntime = buildDeterministicNpmRuntimeArchive({
     version: exactNpmVersion,
     cliSource: fakeNpmSource,
+    includeSecurityOverlay: true,
   })
   writeFileSync(join(repo, 'package-lock.json'), JSON.stringify({
     name: pkg.name, version: pkg.version, lockfileVersion: 3, requires: true,
@@ -614,6 +657,10 @@ try {
         integrity: verifiedNpmRuntime.artifact.integrity,
         dev: true,
         bin: { npm: 'bin/npm-cli.js' },
+      },
+      'node_modules/npm-runtime-brace-expansion-patch': {
+        ...verifiedNpmRuntime.securityOverlayArtifact,
+        dev: true,
       },
     },
   }, null, 2) + '\n')
@@ -767,6 +814,8 @@ try {
     FAKE_NPM_VERSION: exactNpmVersion,
     FAKE_NPM_RUNTIME_ARTIFACT: Buffer.from(JSON.stringify(verifiedNpmRuntime.artifact)).toString('base64'),
     FAKE_NPM_RUNTIME_TARBALL: verifiedNpmRuntime.tarballBytes.toString('base64'),
+    FAKE_NPM_RUNTIME_SECURITY_OVERLAY_ARTIFACT: Buffer.from(JSON.stringify(verifiedNpmRuntime.securityOverlayArtifact)).toString('base64'),
+    FAKE_NPM_RUNTIME_SECURITY_OVERLAY_TARBALL: verifiedNpmRuntime.securityOverlayTarballBytes.toString('base64'),
     FAKE_RELEASE_VERSION: dsVersion,
     FAKE_RELEASE_COMMIT: '1234567890abcdef1234567890abcdef12345678',
     FAKE_DS_SRI: dsSri,

@@ -547,14 +547,14 @@ for (const [label, mutate, pattern] of [
   }, /npm SRI does not match/],
   ['missing scaffold-lock release asset', (value) => {
     value.snapshot.release.assets = value.snapshot.release.assets.filter(item => item.name !== PRODUCT_TEMPLATE_SCAFFOLD_LOCK_ASSET)
-  }, /closed eight-asset set/],
+  }, /closed release asset set/],
   ['substituted scaffold-lock bytes', (value) => {
     value.snapshot.assetBodies[PRODUCT_TEMPLATE_SCAFFOLD_LOCK_ASSET] = Buffer.from('{}\n')
   }, /failed exact metadata\/byte readback/],
   ['missing permanent receipt asset', (value) => {
     delete value.snapshot.assetBodies[NPM_FINALIZATION_RECEIPT_ASSET]
     value.snapshot.release.assets = value.snapshot.release.assets.filter(item => item.name !== NPM_FINALIZATION_RECEIPT_ASSET)
-  }, /exactly|closed eight-asset set/],
+  }, /exactly|closed release asset set/],
   ['rogue ninth release asset', (value) => {
     value.snapshot.assetBodies['rogue.txt'] = Buffer.from('rogue\n')
     value.snapshot.release.assets.push({
@@ -565,7 +565,7 @@ for (const [label, mutate, pattern] of [
       digest: `sha256:${sha256('rogue\n')}`,
       browser_download_url: `https://github.com/${TRUSTED_UPGRADE_POLICY.repository}/releases/download/v${value.pkg.dependencies[DS]}/rogue.txt`,
     })
-  }, /exactly|closed eight-asset set/],
+  }, /exactly|closed release asset set/],
   ['receipt tag-object substitution', (value) => {
     rewriteJsonAsset(value.snapshot, NPM_FINALIZATION_RECEIPT_ASSET, receipt => { receipt.releaseTrust.tagObject = 'a'.repeat(40) })
   }, /same exact tag object/],

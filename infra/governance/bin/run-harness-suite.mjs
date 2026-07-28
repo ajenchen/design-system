@@ -149,9 +149,15 @@ export function runHarnessSuite({
   const started = Date.now()
   const deadlineAt = started + suite.totalTimeoutMs
   const units = executionUnits(suite)
-  const canonicalHookClosurePaths = suite.id === 'canonical-hook-behavioral'
-    ? inventory.canonicalHookStaticHelpers.entries.flatMap(entry => [entry.path, ...entry.consumers])
-    : []
+  // Every member is bound to the canonical hook corpus, not only the aggregate suite.
+  // A member that deletes or rewrites another suite's sources used to go undetected
+  // until that suite tried to run, which misattributed the failure to an innocent
+  // later suite instead of the member that actually mutated the worktree.
+  const canonicalHookSuite = inventory.suites.find(candidate => candidate.id === 'canonical-hook-behavioral')
+  const canonicalHookClosurePaths = [...new Set([
+    ...inventory.canonicalHookStaticHelpers.entries.flatMap(entry => [entry.path, ...entry.consumers]),
+    ...(canonicalHookSuite?.members ?? []),
+  ])]
   for (let index = 0; index < units.length; index += 1) {
     const unit = units[index]
     const { path, argv } = unit

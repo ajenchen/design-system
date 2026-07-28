@@ -1,213 +1,192 @@
 # DS Product Template
 
-> **GitHub Template Repository** for product team apps consuming [`@qijenchen/design-system`](https://github.com/ajenchen/design-system)。
->
-> **Use this template** on GitHub → fork 為你自己的 repo,跑 `npm install` + `npm run create-app <product-name>` 就上線。
->
-> **設計治理(item-anatomy / layout-space / 命名 / SSOT 消費 / 防手刻 primitive)由 C-prime committed-config 自動送達 —— 不需裝 plugin。** 詳 `CLAUDE.md`「治理怎麼到你手上」。
+GitHub template for product apps that consume [`@qijenchen/design-system`](https://github.com/ajenchen/design-system). Use this repository when the product should receive the design system and its governance without carrying DS source.
 
-## Status
+## What is guaranteed at Day 0
 
-- **2026-06-17** 治理改 C-prime committed-config-first(免 /plugin install;治理本體隨 npm + committed hooks 自動生效)
-- Seed app: `apps/template/`(預設範例,fork user 跑 create-app 後可刪)
-- Add a new product app: `npm run create-app <kebab-case-name>` → 在 `apps/<name>/` 開新 app
+The repository snapshot already contains the provider-neutral bootstrap and generated adapters before any AI session or npm lifecycle runs:
 
-## Template Usage(Day 0 onboarding,fork user 必讀)
+- `AGENTS.md` — shared instructions and SSOT pointers for Codex and other compatible agents.
+- `CLAUDE.md` — thin Claude Code adapter importing `AGENTS.md`; no duplicate shared policy.
+- `.claude/` and `.codex/` — native hook wiring generated from one event authority and routed through the same dispatcher/corpus; each provider's supported subset and every missing-event hard-gate fallback are locked in the manifest.
+- `.claude/skills/` and `.agents/skills/` — equivalent generated views of every classified consumer skill.
+- `governance/lock.json` — immutable BOM binding exact package versions to instruction, hook, and skill digests.
+- `governance/consumer-governance.md` — upstream-managed explanatory guide delivered and hash-checked by the same BOM; it does not replace the machine authority.
+- The same lock binds `protected-base-reconstruction-v2` plus the exact protocol specification, closed schema, and validator implementation digests; an old consumer without this complete marker is not eligible for ordinary `sync-all`.
+- `npm run governance:check` — invokes the exact installed read-only hard gate at
+  `node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/governance-check.mjs`; it
+  remains authoritative with native hooks disabled.
 
-### Step 1 — Fork
+No Claude plugin is required. Session startup never installs packages, resolves `@beta`/`latest`, or rewrites the checkout. Native hooks provide fast feedback; the provider-neutral check supplies the deterministic decision. Merge enforcement comes from protected `main` requiring that check.
 
-**Owner setup once**(本 repo 擁有者):GitHub `Settings → General → Template repository ✓` 勾選 + `Settings → General → Danger Zone → Change visibility: Public`(讓 fork user 看到「Use this template」按鈕)。
+The authenticated consumer predicate corpus currently requires Node 22.12.0+, Git, Bash, `jq`, and
+Python 3. The provider-neutral checker verifies these tools and fails closed if one is absent. On
+Windows, use the committed Linux dev container or WSL2. Native Windows is explicitly unsupported
+and fails closed; it may not be relabelled as WSL2/devcontainer or as an unspecified "equivalent"
+runtime. Native hook absence never counts as certification and protected CI remains required.
 
-**Fork user**:GitHub「Use this template」按鈕 → Create new repo from template。或:`git clone <this-repo>` + `git remote set-url origin <your-new-repo>`。
+## First setup
 
-### Step 2 — npm install(治理本體隨 npm 落地)
+1. Click **Use this template** on GitHub, then clone the new product repository.
+2. Install the committed snapshot:
 
-```bash
-npm install   # 拉 @qijenchen/design-system + storybook-config;
-              # 治理本體(fork hooks + 設計紀律 preamble + 接線骨架)隨 npm 落地
-              # node_modules/@qijenchen/design-system/ds-canonical/fork/
+   ```text
+   npm run setup:all
+   ```
+
+3. Open the repository with Claude Code, Codex, or another agent that reads `AGENTS.md`/Agent Skills.
+4. Create the first product app:
+
+   ```text
+   npm run create-app order-dashboard
+   npm install --legacy-peer-deps --ignore-scripts
+   npm run storybook
+   ```
+
+5. Before a PR, run `npm run governance:check -- --hooks-off`, `npm run typecheck`, `npm run lint:imports`, and `npm run build`.
+
+### Local, cloud, and container setup
+
+Use the same canonical fresh-checkout bootstrap everywhere; run it locally and configure it explicitly in each hosted environment:
+
+- Local macOS/Linux: run `npm run setup:all` from the repository root.
+- Codex Cloud: set both the environment **Setup script** and **Maintenance script** to
+  `npm run setup:all`. Codex runs setup after checkout and maintenance after restoring a
+  cached container, as described in the [official Codex Cloud environment guide](https://developers.openai.com/codex/cloud/environments).
+- Claude Code on the web: set the environment **Setup script** to `npm run setup:all`.
+  Anthropic caches successful environment setup; when the committed lock changes, rebuild the
+  environment cache or run the same command explicitly before work. See the
+  [official Claude Code web setup guide](https://code.claude.com/docs/en/claude-code-on-the-web#setup-scripts).
+- GitHub Codespaces/devcontainer: the committed `postCreateCommand` invokes the same
+  `setup:all` implementation after checking the pinned system tools.
+
+The environment's npm is only the launcher for `npm run setup:all`. Once the committed Node
+script starts, it reads the canonical npm tarball URL and SHA-512 from the committed lock, downloads
+those bytes with Node HTTPS, closed-parses them into a disposable root, probes that exact CLI, and
+uses the same independent runtime for both the lifecycle-disabled install and registry-signature
+verification. Neither PATH npm nor an ignored `node_modules/npm` is executed as authority. It then
+calls the exact installed provider-neutral checker with hooks off. This repository proof assumes the
+committed Git snapshot, Node runtime/TLS, and canonical registry endpoint are not malicious; it
+cannot certify a hostile host. Any step failing stops setup. Repository SessionStart remains verification-only; it never installs
+or repairs dependencies. The same `setup:all` works on local macOS/Linux, Codex Cloud, Claude Code
+on the web, Codespaces, and other Linux devcontainer hosts. Native Windows is unsupported; use
+WSL2 or the committed Linux dev container.
+
+Successful `setup:all` output is intentionally scoped as `scope=local-bootstrap`,
+`providerCertification=not-checked`, and `externalActivationRequired=false`. Ordinary bootstrap is
+complete on its own; per-surface certification and external activation are opt-in hardening lanes,
+not preconditions.
+
+## Exact, reviewed upgrades
+
+Dependencies are exact semvers, not ranges or dist-tags. Planning is syntax-only and read-only:
+
+```text
+npm run sync-all -- --to X.Y.Z
 ```
 
-postinstall 會印一行 notice 確認治理本體就位(或缺時提示——**不需 /plugin install**)。
+It reports `ok=false`, `targetVerification=deferred`, `targetVerified=false`, and `ready=false`
+until immutable release/provenance evidence is actually checked. A syntactically exact target,
+including one that does not exist, is never presented as ready.
 
-### Step 3 — 開 Claude Code session → 治理自動生效
+Apply only on a clean dedicated branch:
 
-committed `.claude/settings.json` 的 hook 自動 fire(全環境含雲端,已實證):
-- **SessionStart**:注入 npm-current 設計紀律 preamble(寫產品 code 前主動遵循)+ dispatcher 跑官方治理 + bootstrap(雲端 fresh-clone 缺本體時自動 `npm install @beta`)。
-- **PreToolUse / PostToolUse**:編輯被官方 fork hook 機械把關(手刻 table / 硬寫間距色值 / 誤用 primitive 被擋)。
-
-不需 `/plugin install`、不需 `@import`、不需 path-scoped rules(那幾個官方證實在雲端不可靠)。
-
-### Step 4 — Spawn your first product app
-
-```bash
-npm run create-app order-dashboard   # 在 apps/order-dashboard/ 開新 app
-npm install                          # ← 必跑:重新 link workspace symlinks 讓新 app 拿 DS deps
-cd apps/order-dashboard
-npm run dev                          # localhost vite 啟動
+```text
+npm run sync-all -- --apply --to X.Y.Z
 ```
 
-**為何 `npm run create-app` 後要再跑 `npm install`?** npm workspaces 在新增 workspace dir 後需重新 `npm install` 才能把 `@qijenchen/design-system` symlink 到 `apps/order-dashboard/node_modules/`。漏跑 → vite 起來抓不到 DS package。
+One `sync-all --apply` command authenticates and reconstructs the complete incoming snapshot before mutation. An ordinary upgrade may update exact dependencies plus authenticated non-executable governance data, instructions, and provider views. If the reconstructed release changes `.github/**`, `.npmrc`, `governance/bin/**`, `scripts/**`, or `package.json#scripts`, the same command fails closed with the stable compatibility IDs `GOV-UPGRADE-BOOTSTRAP-001/002`, restores the original state, and routes those control-plane changes to a separately reviewed full-snapshot PR; it never activates incoming control-plane code automatically. Its process-crash journal covers every path that the transaction might stage, the common instruction (`AGENTS.md`), and the prior installed tree; a failed install/materialization/check or a later invocation after SIGKILL restores the original snapshot. Run upgrades with editors and other writers quiesced: no filesystem transaction can promise to capture a non-cooperative process that keeps writing through an already-open old file descriptor. Review every permitted diff and merge through a protected PR.
 
-Storybook root config `.storybook/main.ts` 自動 glob `apps/**/*.stories.tsx`,**每加新 app stories 自動現身 storybook**,不用手動 register。
+`.github/workflows/sync-design-system.yml` implements the same contract with three isolated jobs: a credential-free certifier emits a base/paths/patch/tree/operation receipt; a fresh read-only verifier independently authenticates provenance, reconstructs the complete incoming exact tree, rejects protected control-plane changes from the ordinary path, rechecks live `main`, and emits a digest for the exact approved bytes; only then may a fresh `governance-upgrade` environment-gated writer apply those digest-bound bytes. Repository Actions defaults remain read-only and **Allow GitHub Actions to create and approve pull requests** remains disabled. The writer mints a short-lived Governance Writer App token limited to contents, pull-request, and workflow writes because the authenticated full snapshot itself manages `.github/workflows/**`, then opens or strictly validates one deterministic PR. Writer App pushes may start ordinary candidate workflows, but those runs are non-authoritative. The required automatic path is an explicit `governance-upgrade-candidate-validation` repository dispatch that reloads protected-default workflow code; only a separate check-only Governance Check App may publish the required verdict. The writer cannot publish checks, approve/merge, bypass protection, or push directly to `main`.
 
-### Step 5 — Setup Netlify(自動 site + 免費密碼,3 分鐘)
+Legacy consumers that predate this v2 boundary are intentionally different from new template users: they first complete a one-time separately reviewed full-snapshot bootstrap PR (they cannot bootstrap themselves through the old updater). Later control-plane changes for every consumer go through the same separately reviewed full-snapshot PR route. The optional fleet/readback-chain machinery in `docs/04-ds-upgrade.md` is an opt-in hardening lane, never a precondition for ordinary `sync-all`.
 
-```bash
-npm run setup:netlify   # 自動:CLI install + GitHub OAuth login + site 建 + 連 repo
-                        # 最後印 dashboard URL + 教你 30 秒設 STORYBOOK_BASIC_AUTH env var
+### Breaking API migration and reviewed visual baselines
+
+The exact installed DS package provides both tools in local, devcontainer, Codex Cloud, Claude Code web, and future provider environments; no model-specific plugin is required. `sync-all` delivers their package version plus the BOM-managed visual-review policy, issuer registry, and schemas to existing consumers.
+
+```text
+npm run ds:migrate -- beta.84-breaking-api plan --root . --source src --output codemod.json
+npm run ds:migrate -- beta.84-breaking-api check --root . --proposal codemod.json
+npm run ds:migrate -- beta.84-breaking-api apply --root . --proposal codemod.json --expected-proposal-digest <sha256>
+
+npm run visual-baseline:review -- plan --root . --author <audit-label> --candidate <dir> --baseline <dir> --statements statements.json --output visual-proposal.json
+npm run visual-baseline:review -- check --root . --proposal visual-proposal.json --review signed-review.json
+npm run visual-baseline:review -- apply-reviewed --root . --proposal visual-proposal.json --review signed-review.json --expected-proposal-digest <sha256>
 ```
 
-**為何要密碼?** Storybook 含內部 product UI,Netlify deploy 預設公開,要擋陌生人。**免費做法 = Netlify Edge Function 自做 HTTP Basic Auth**(Edge Functions 免費方案可用、`.netlify.app` 預設網址直接生效、無需自訂網域,瀏覽器原生帳密彈窗)。本 template 已內建:`netlify/edge-functions/basic-auth.ts` 讀 Authorization header、比對 Netlify env var `STORYBOOK_BASIC_AUTH`(格式 `user:password`,多組空格分隔),缺/錯回 401 + WWW-Authenticate;`netlify.toml` 已 wire `[[edge_functions]]` path="/*";未設 env var = 站台公開(pass-through)。
+Codemod ambiguity and `DataTable meta.disabled` are manual blockers, never guessed edits. A visual proposal binds the governed Git origin, HEAD commit/tree, exact images, and explicit non-placeholder per-image statements; the signed human review cannot replay into another repository identity. The managed-model-broker branch is reserved but forced `not-activated` in this tool version until it directly reuses the canonical signed broker/model-authority receipt validators; digest-only pseudo activation is rejected. The shipped human policy is also currently `not-activated`, so planning works everywhere while apply intentionally fails closed until protected human issuer/policy activation exists. Neither tool commits or pushes. Transactions cover cooperating writers honoring the same lock and observed per-file pathname CAS; they do not claim parent-directory-swap resistance, storage power-loss durability, or protection from a non-cooperative old open descriptor. Git identity is a governed-workspace replay boundary, not an unbypassable identity proof against a malicious repository owner.
 
-> Netlify 內建密碼 —— Dashboard 的「Password protection / Basic protection」(Site settings → Access & security)**與** `_headers` 的 Basic-Auth header —— **兩個都是 Pro 方案專屬**($20/mo,官方 docs + support forum 證實;且 `_headers` basic-auth 不套用到 edge function),free-tier 都沒有——所以免費路徑走上面的 edge function,不走 dashboard、也不靠 `_headers`。
+## Governance model
 
-**fork user 設定(30 秒,免費)**:Netlify → Site configuration → Environment variables → 加 `STORYBOOK_BASIC_AUTH` = `user:password` → 下次 deploy(push main / Trigger deploy)站台自動跳帳密彈窗。密碼只存 Netlify 後台 env var,**不進 public repo**。
+| Layer | Canonical behavior |
+|---|---|
+| Shared instructions | `AGENTS.md`; shared rules are not copied into provider files |
+| Claude adapter | `CLAUDE.md` import + `.claude/settings.json` |
+| Codex adapter | `AGENTS.md` + `.codex/hooks.json` + `.agents/skills` |
+| Future provider | Enabled only after registering instruction, hook/exclusion, and skill materializers; otherwise it remains explicitly disabled and only the CLI/CI hard gate is usable |
+| Native hooks | Feedback accelerator; the locked coverage record permits only declared events and gives every missing event the immutable checker/protected-CI fallback |
+| Hard authority | exact installed checker + the protected-main `Governance anchor / Immutable consumer snapshot` required check |
+| Managed guide | `governance/consumer-governance.md`; explanatory, exact-hash upstream-managed, and updated for existing consumers by `sync-all` |
+| Product-specific policy | Add stricter, non-executable neutral rules in `governance/overlay.md`; never edit generated governance views or root product documentation through upstream sync |
 
-### Step 6 — 預覽 → 確認 → 上線
+Provider-native hooks and skills are a closed projection of the authenticated governance package. A product may not add a Claude-only hook or matching Claude/Codex skill pair: both create an unsigned executable policy source. Promote reusable executable behavior to the provider-neutral DS package and regenerate every provider view; keep product-only judgment in `governance/overlay.md`.
 
-**不用為了看而手動 push**:AI 做完一段會**自動推草稿分支** → Netlify 出**草稿預覽網址**(治理 hook 在 push 後自動把連結吐進 Claude reply;此 hook 經 **npm 治理 corpus**〔`ds-canonical/fork`〕送達,非直接 committed 在 `.claude/hooks/`)。你看 OK → 說「push / 合 main」→ AI 合併 main → **正式站(密碼保護)rebuild**。
+This closure includes sibling discovery files and aliases: do not add `.claude/settings.local.json`, another `.codex` hook file, undeclared entries under any generated skill directory, or a skill name borrowed from another provider. A disabled provider does not grant extension rights to a destination it shares with an enabled provider. `governance/` may contain only the generated guide, generated lock files, declared launcher substrate, BOM-declared non-executable trust policy/issuer/schema projections, and an optional regular, non-executable, non-symlink `overlay.md`; additional policy homes are rejected.
 
-```bash
-# 你只在「確認上正式」時做(或讓 AI 代勞):
-git push origin main   # → Netlify production rebuild
+Discovery is closed across the whole repository, not only at its root. The installed manifest carries a BOM-digested `discoveryPolicy` generated from the canonical provider registry; it reserves instruction, config/MCP, provider-root, and plugin surfaces for every registered provider without consumer-side model names. Nested `AGENTS.md`/`CLAUDE.md`, local or override instruction files, nested `.claude`/`.codex`/`.agents` roots, project `.mcp.json`, and repository-local `.claude-plugin`/`.codex-plugin` packages are therefore rejected unless an authenticated release explicitly declares them. Product-only semantics still belong in `governance/overlay.md`.
+
+Names such as `build`, `dist`, or `node_modules` are not blanket exemptions: only their exact generated locations at the protected repository/workspace roots are excluded. A same-named directory nested inside product source remains subject to exhaustive replay and discovery checks.
+
+Do not modify `node_modules/@qijenchen/design-system/`. Propose canonical DS corrections in the DS repo. Product imports must use public package exports; `npm run lint:imports` blocks `src/` or `dist/` internals.
+
+Before composing a DS component, read its shipped story and specification:
+
+```text
+node_modules/@qijenchen/design-system/src/components/<Name>/<name>.stories.tsx
+node_modules/@qijenchen/design-system/src/components/<Name>/<name>.spec.md
+node_modules/@qijenchen/design-system/ds-story-manifest.json
 ```
 
-> 草稿預覽需 Netlify「branch deploys」啟用(`npm run setup:netlify` 設定;或後台開「Deploy all branches」)。詳套件內 CLAUDE.md「🚦 預覽 → 確認 → 上線」段。
+## Preview → verify → production
 
-### Step 7 — Keep 治理 + npm deps 永遠最新(auto-sync chain)
+Work on a branch and push it for a Netlify branch preview. Use the preview, required checks, and protected-PR readback as engineering evidence. P2E engineering changes merge under Standing Authorization after every required gate passes. Stop for a stakeholder decision only when an unresolved product/UI/UX SSOT tradeoff or a non-derivable external business commitment remains. Production is rebuilt from `main`.
 
-DS repo 任何 push main → fork repo 自動同步,不偏移。兩層都同步:
+Run `npm run setup:netlify` for a read-only diagnostic and the official Dashboard steps. It intentionally exits with code 2 (`MANUAL ACTION REQUIRED`): the reviewed Netlify CLI candidate is blocked, so the script never installs or invokes it. In the Dashboard, import this GitHub repository, then enable **Project configuration → Build & deploy → Continuous Deployment → Branches and deploy contexts → Branch deploys: All**. Netlify does not enable branch deploys by default.
 
-**內容層(hook 邏輯 / 設計紀律 preamble / manifest)——自動**:
-- DS bump version + tag push → `release.yml` npm publish → `repository_dispatch ds-published`
-- DS push main(non-version SSOT change)→ `ssot-sync-dispatch.yml` → `repository_dispatch ds-ssot-changed`
-- 本 repo `.github/workflows/sync-design-system.yml` 收 event → `npm install @qijenchen/*@^version --save` + commit + push
-- Netlify auto rebuild → DataTable / 全 token / 全 component / 設計紀律永遠最新
+## Free password protection on Netlify
 
-**接線骨架層(settings.json hooks 區塊 + 3 個啟動器)——一個指令**:
+This template includes `netlify/edge-functions/basic-auth.ts`. In Netlify, add:
 
-```bash
-npm run sync-all   # npm install @beta(內容層最新)+ 從 npm idempotent 刷新接線骨架
+```text
+STORYBOOK_BASIC_AUTH=user:password
 ```
 
-`sync-all` 純 npm(不需 `claude plugin` 指令)。骨架刷新帶 `.github/no-governance-sync` opt-out、不 clobber 你自有的非治理 hook。生效分軌(別盲目重啟):機械 hook 即時 / settings 自動 hot-reload / 設計指引 preamble + skills 跑 `/clear` 或下個 session(見 CLAUDE.md 三軌表)。
+The edge function protects all routes. Keep credentials in Netlify environment variables, never in Git. Netlify dashboard Password Protection and `_headers` Basic Auth require a paid plan; the included edge function is the free path. `netlify.toml` also sets no-index/security headers, but those headers do not replace authentication.
 
-## Layout
+## Repository layout
 
-```
-ds-product-template/
-├── apps/                       ← Product apps (each is independent Vite + React)
-│   └── template/              ← Copy this via `npm run create-app <name>`
-│       ├── src/
-│       │   ├── main.tsx        ← React root + TooltipProvider
-│       │   ├── App.tsx         ← Replace with your product UI
-│       │   └── globals.css     ← @import tailwindcss + DS tokens
-│       ├── index.html
-│       ├── package.json
-│       ├── tsconfig.json
-│       └── vite.config.ts
-├── packages/                   ← Cross-app shared utilities (if any)
-├── scripts/
-│   ├── create-app.mjs          ← `npm run create-app <name>` generator
-│   ├── sync-all.mjs            ← 一鍵同步治理(npm + 接線骨架)
-│   ├── refresh-fork-launchers.mjs ← sync-all 用:從 npm 刷新接線骨架
-│   └── lint-ds-internal-imports.mjs  ← Guard against importing DS internals
-├── .claude/
-│   ├── settings.json           ← C-prime committed 治理(dispatcher hooks + fail-open bootstrap)
-│   └── hooks/                  ← 3 個極穩定啟動器(bootstrap / dispatcher / inject preamble)
-├── .storybook/                 ← Shared Storybook config (imports @qijenchen/storybook-config)
-├── netlify/
-│   └── edge-functions/
-│       └── basic-auth.ts       ← FREE HTTP Basic Auth (reads STORYBOOK_BASIC_AUTH env var)
-├── netlify.toml                ← build storybook-static + wire edge function + SEO headers
-├── .github/
-│   ├── CODEOWNERS              ← Code review routing
-│   └── workflows/
-│       ├── audit.yml           ← tsc + lint + build per push/PR
-│       └── sync-design-system.yml ← Dependabot + DS 版本同步(repository_dispatch)
-├── package.json                ← workspaces + DS deps
-├── tsconfig.json               ← Base TS config (apps extend)
-└── README.md                   ← You are here
+```text
+apps/template/                  product seed copied by create-app
+scripts/                        create, deploy, exact upgrade, governance check
+.claude/                        generated Claude adapter and shared-skill view
+.codex/                         generated Codex hook adapter
+.agents/skills/                 generated Agent Skills view
+governance/lock.json            immutable release BOM
+governance/consumer-governance.md upstream-managed cross-provider/cloud guide
+.storybook/                     product-story configuration
+.github/workflows/audit.yml     governance + typecheck + build + a11y gate
+.github/workflows/sync-design-system.yml
+netlify/edge-functions/         free HTTP Basic Auth
 ```
 
-## 治理怎麼到你手上(C-prime,免 plugin)
+## CI and delivery
 
-治理本體全在 npm 套件(`npm install` 覆蓋 = 官方控管、改不動);`.claude/` 只 commit 極穩定的啟動器:
-- **事前主動指引** → committed SessionStart hook 讀 npm-current `ds-canonical/fork/preamble.md` 注入 context(可靠 + 最新 + 零 drift)。
-- **機械強制** → committed dispatcher 跑 npm fork-corpus hook(轉發攔截)。
-- **本體 SSOT** 全在 npm;`npm run sync-all` 更到最新。
+- `audit.yml` runs the provider-neutral governance check with hooks off, then typecheck, import lint, all builds, and consumer a11y.
+- `sync-design-system.yml` proposes exact-version upgrade PRs with a least-privilege Governance Writer App. Automatic candidate runs are non-authoritative; explicit protected-default dispatch plus the separate check-only Governance Check App produce the required verdict.
+- Netlify builds Storybook from protected `main` and branch previews from working branches.
 
-詳細在套件內 `CLAUDE.md`「🧭 治理怎麼到你手上」段。
-
-## Important rules(詳 node_modules/@qijenchen/design-system/CLAUDE.md)
-
-- **Never modify** `node_modules/@qijenchen/design-system/`(含治理本體;要改 file PR 回 DS repo,本機改 npm install 會覆蓋)
-- Import only from public surface: `@qijenchen/design-system` top barrel,`@qijenchen/design-system/styles/tokens`,`@qijenchen/design-system/hooks/<name>`
-- Run `npm run lint:imports` before commit to catch internal-path leaks
-- 寫某元件 UI 前先讀官方範例:`node_modules/@qijenchen/design-system/src/components/<Name>/<name>.stories.tsx` + `.spec.md`
-
-## Cloud-dev paths(全雲端,3 條路選一條走)
-
-**Path 1 — Claude Code 直連 repo(推薦,真正零地端依賴)**:在 claude.ai/code(或 Claude 桌面 / VS Code extension)直接連你的 GitHub fork repo;Claude 把 repo clone 進 ephemeral sandbox,committed 治理 hook + npm + git ops 在 sandbox 內跑。雲端 fresh-clone 沒 node_modules → SessionStart bootstrap 自動 `npm install @beta` 啟用治理。寫完 commit / push 回 GitHub。**這是 user 目前實際工作流**;不需 Codespaces 也不需本地 IDE。
-
-**Path 2 — GitHub Codespaces(`.devcontainer/` 已配)**:fork repo → `<> Code → Codespaces → Create codespace on main` → container 自動裝 Node 22 + gh CLI + jq + `@anthropic-ai/claude-code` + `netlify-cli` + `npm install`(via `postCreateCommand`)。免費 60h/月。
-
-**Path 3 — 本地**:`git clone` + `npm install` + `claude`(本地 macOS/Linux/WSL)。
-
-**3 path 共通上工步驟**(無論 sandbox / Codespaces / 本地):
-```bash
-npm install                 # ① 拉 DS + 治理本體(雲端由 bootstrap 自動跑)
-claude                      # ② 啟動 Claude Code → committed 治理 hook 自動生效(免 /plugin install)
-npm run setup:netlify       # ③ Netlify OAuth + 印 dashboard URL
-# Netlify Dashboard → Environment variables → 加 STORYBOOK_BASIC_AUTH=user:password(免費上密碼)
-```
-
-Deploy URL 在 push 後 committed hook `inject_deploy_url_after_push.sh` 自動 inject 進 Claude reply(`https://<branch>--<owner>-<repo>.netlify.app` 推導 + curl 200 verify + Storybook content sniff)。
-
-## Storybook deploy(無需 GitHub secret)
-
-**Step 1 — Connect Netlify**:
-1. Netlify Dashboard → **Add new project** → 連 fork 後的 `ds-product-template` repo
-2. Netlify 自動讀根目錄 `netlify.toml` → build `storybook-static` → deploy
-3. 每次 push main → Netlify auto rebuild。Per-branch preview 自動啟用。
-
-**Step 2 — 🔒 設 STORYBOOK_BASIC_AUTH 上密碼**(免費,Edge Functions 免費方案可用):
-
-免費的 access control = **Netlify Edge Function 自做 HTTP Basic Auth**(edge 層擋,瀏覽器原生帳密彈窗)。本 template 已內建:`netlify/edge-functions/basic-auth.ts` 讀 Authorization header、比對 Netlify env var `STORYBOOK_BASIC_AUTH`,缺/錯回 401;`netlify.toml` 已 wire `[[edge_functions]]` path="/*"。fork user 設定 30 秒:
-
-1. Netlify → **Site configuration → Environment variables → Add a variable**
-2. Key = `STORYBOOK_BASIC_AUTH`,Value = `user:password`(多組帳密空格分隔:`alice:pw1 bob:pw2`)
-3. 下次 deploy(push main / Trigger deploy)→ 站台自動跳帳密彈窗。把 site URL + 帳密私訊 stakeholder(team Slack / DM)
-
-> 密碼只存 Netlify 後台 env var,**不進 public repo**(public repo 不能 commit 明文帳密);未設 env var = 站台公開(pass-through)。
-
-**為何不走 Dashboard 的 Password Protection?**(2026-06-05 官方 docs + support forum 三重證實):
-- ❌ **Dashboard「Password protection / Basic protection」**(Site settings → Access & security)= **Pro 方案專屬**($20/mo);free-tier 沒這個開關,按下去會被要求升級付費
-- ❌ **`_headers` 的 Basic-Auth header** = 同樣 **Pro 方案專屬**($20/mo);且官方限制頁載明 `_headers` basic-auth **不會套用到 edge function**——免費寫進 `_headers` 不會生效
-- ❌ **Identity** = 完整 signup/login 系統(要自己接 login UI widget),對「上個簡單密碼」是 overkill
-- ✅ **`STORYBOOK_BASIC_AUTH` env var → Edge Function `netlify/edge-functions/basic-auth.ts`** = 免費、`.netlify.app` 預設網址直接生效、無需自訂網域,本 template 已內建
-
-**Defense-in-depth**(`netlify.toml` 已 ship):X-Robots-Tag noindex(搜尋引擎不收錄 URL)+ Referrer strict-origin + X-Frame SAMEORIGIN — 只防 SEO 索引,不擋直接訪問;**真實擋人**靠上面的 `STORYBOOK_BASIC_AUTH` Edge Function Basic Auth 那一層。
-
-**要更好體驗才升級**(非必須):
-- 升 **Netlify Pro** $20/mo → Dashboard Password Protection(美化密碼頁、可只擋 deploy preview 放行 production、團隊登入)
-- 自架 **Cloudflare Access**(免費 50 user 真 SSO;需在 Netlify 前架 Cloudflare proxy,setup 較複雜)
-- 公開 site,只防 SEO(`X-Robots-Tag noindex`)— 若 stakeholder 不介意 URL 知道就能看
-
-### Workflow 機制總覽
-
-本 repo `.github/workflows/` 實際只有 2 個 workflow,deploy 不走 GitHub Actions:
-
-| 機制 | 觸發 | 做什麼 |
-|---|---|---|
-| `audit.yml` | push / PR | tsc + `lint:imports` + build CI gate |
-| `sync-design-system.yml` | Dependabot daily + `repository_dispatch`(DS release/SSOT change)| `npm install @qijenchen/*@^version --save` + commit + push,讓 DS deps + 治理永遠最新 |
-| `netlify.toml`(Netlify Git integration)| push main / per-branch | build `storybook-static` → deploy(無需 GitHub secret)|
-
-Storybook(含真實 product UI demo)透過 `netlify.toml` 的 Netlify Git integration 直接 deploy,push main 即 auto rebuild;不需要 `NETLIFY_AUTH_TOKEN` / site ID secret。
-
-完整 step-by-step 詳 `docs/01-first-time-setup.md`。
+See `docs/01-first-time-setup.md` through `docs/05-troubleshooting.md` for task-specific details.
 
 ## License
 

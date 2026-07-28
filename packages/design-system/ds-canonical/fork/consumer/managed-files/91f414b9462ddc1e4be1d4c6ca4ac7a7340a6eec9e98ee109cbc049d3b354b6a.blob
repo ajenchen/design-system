@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/issuer-registry-v1.json",
+  "title": "Canonical governance issuer registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "algorithm", "issuers"],
+  "properties": {
+    "$schema": {"const": "../schemas/issuer-registry.schema.json"},
+    "schemaVersion": {"const": 1},
+    "algorithm": {"const": "ed25519"},
+    "issuers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["keyId", "subject", "publicKeySpki", "roles", "status", "notBefore", "notAfter", "revokedAt"],
+        "properties": {
+          "keyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+          "subject": {"type": "string", "minLength": 1},
+          "publicKeySpki": {"type": "string", "pattern": "^[A-Za-z0-9+/]+={0,2}$"},
+          "roles": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"enum": ["privileged-change-authorizer", "root-rotator", "runtime-evidence-issuer", "apply-authorizer", "completion-attestor", "release-tag-authorizer", "visual-baseline-reviewer"]}
+          },
+          "status": {"enum": ["active", "revoked"]},
+          "notBefore": {"type": "string", "format": "date-time"},
+          "notAfter": {"type": "string", "format": "date-time"},
+          "revokedAt": {"type": ["string", "null"], "format": "date-time"}
+        }
+      }
+    }
+  }
+}

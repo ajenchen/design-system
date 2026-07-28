@@ -130,7 +130,7 @@ test('missing release or BOM fails closed before plan materialization', async ()
   }
   await assert.rejects(
     resolveVerifiedCandidateRelease(value.candidateRelease, { releaseLookup: async () => missingBom }),
-    /closed eight-asset set/,
+    /closed release asset set/,
   )
 })
 
@@ -140,7 +140,7 @@ for (const [label, mutate, pattern] of [
   ['wrong peeled commit', value => { value.snapshot.tagIdentity.commit = '4'.repeat(40) }, /repository, tag object, commit, and tree/],
   ['wrong commit tree', value => { value.snapshot.tagIdentity.tree = '5'.repeat(40) }, /repository, tag object, commit, and tree/],
   ['wrong npm SRI', value => { value.candidateRelease.packages[0].integrity = sri(42) }, /npm SRI does not match/],
-  ['missing scaffold-lock asset', value => { value.snapshot.release.assets = value.snapshot.release.assets.filter(item => item.name !== PRODUCT_TEMPLATE_SCAFFOLD_LOCK_ASSET) }, /closed eight-asset set/],
+  ['missing scaffold-lock asset', value => { value.snapshot.release.assets = value.snapshot.release.assets.filter(item => item.name !== PRODUCT_TEMPLATE_SCAFFOLD_LOCK_ASSET) }, /closed release asset set/],
   ['scaffold-lock byte substitution', value => { value.snapshot.assetBodies[PRODUCT_TEMPLATE_SCAFFOLD_LOCK_ASSET] = Buffer.from('{}\n') }, /failed exact metadata\/byte readback/],
   ['cross-repository replay', value => {
     value.snapshot.release.assets.find(item => item.name === 'release-bom.json').browser_download_url = `https://github.com/attacker/design-system/releases/download/${tag}/release-bom.json`

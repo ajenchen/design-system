@@ -57,7 +57,7 @@ for (const [role, command, expected] of [
     assert.equal(result.roleSetup, `scripts/${expected}`)
     assert.equal(result.scope, 'local-bootstrap')
     assert.equal(result.providerCertification, 'not-checked')
-    assert.equal(result.externalActivationRequired, true)
+    assert.equal(result.externalActivationRequired, false)
     assert.deepEqual(
       {
         scope: result.scope,
@@ -70,7 +70,7 @@ for (const [role, command, expected] of [
     assert.match(output, /^✅ local workspace bootstrap verified:/)
     assert.match(output, /^scope=local-bootstrap$/m)
     assert.match(output, /^providerCertification=not-checked$/m)
-    assert.match(output, /^externalActivationRequired=true$/m)
+    assert.match(output, /^externalActivationRequired=false$/m)
     assert.doesNotMatch(output, /cloud[- ]?ready|provider[- ]?certified|complete workspace setup/i)
     assert.deepEqual(
       calls.map(({ args }) => args[0].split('/').at(-1)),

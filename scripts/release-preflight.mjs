@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// @preflight-transition(from-revision:1 from:c6b693dfabe8080b056136c5d3909b48adb92a372cf02885e8fdcf4abb19518d to:0de935282c46790db59fcb87f4cd385eaa81264be3f01ef7add2cf47d8c816f8 audit-ref:candidate:386536327e91eb58d78ffd4420936891512eeac983992dbfedda7f73709b3900 reason:signed-finalizer-trust-boundary-wording)
+// @preflight-transition(from-revision:2 from:0de935282c46790db59fcb87f4cd385eaa81264be3f01ef7add2cf47d8c816f8 to:8e7374b74c1bc200192ac1eab802681fc6481ca8f344976bd419bf7b06fab57f audit-ref:png-bounded-de-overengineering-2026-07-28 reason:retire-16-duplicate-and-enterprise-only-preflight-gates-covered-once-by-registered-all-harness)
 // release-preflight.mjs — 單一指令跑本機可重播的 release gate，並以 live GitHub policy
 // readback 收口；npm/OIDC/environment/independent signed finalizer 等外部 trust 仍只由 release.yml 的
 // protected trust-preflight 與 completion-readiness 證明，不宣稱本機與整個 release workflow 1:1。
@@ -389,13 +389,13 @@ run(
 )
 run('all registered local Harness commands(deduplicated; external claims stay pending)', 'npm run --silent test:governance-harnesses')
 run('workflow security audit(pinned actions + privileged workflow closure)', 'npm run --silent audit:workflow-security')
-run('reviewed workflow identity bindings', 'npm run --silent governance:workflow-identities:check')
-run('workflow security adversarial tests', 'npm run --silent test:workflow-security')
-run('governance anchor trust tests', 'npm run --silent test:governance-anchor')
-run('privileged change authorization + bootstrap/rotation tests', 'npm run --silent test:privileged-change-authorization')
-run('exhaustive consumer-source harness', 'npm run --silent test:consumer-source-harness')
-run('fresh-writer evidence + immutable mirror release tests', 'npm run --silent test:writer-evidence')
-run('fleet/runtime/release-ring control-plane tests', 'node --test infra/governance/test/*.test.mjs')
+// ⚙️ GATE RETIRE(2026-07-28 bounded de-overengineering,baseline 64→48,同 commit 更新 preflight-gate-baseline.json):
+//   刪除 14 個「registered All-Harness 內完全重複執行」的 gate(workflow-security / governance-anchor /
+//   privileged-change / consumer-source / writer-evidence / infra-test 萬用字元 / gate-meta coverage+實跑 /
+//   portability chain / governance package suite / fork+consumer clean-room / sync-all transaction / release BOM)
+//   — 每支測試檔仍是上方 All-Harness 的 suite/pairedMeta 成員,單次 preflight 不再付兩到三次同套件時間,
+//   覆蓋零損失。另刪 2 個 enterprise-only gate:reviewed workflow identity bindings(CI 仍強制)與
+//   branch-protection live readback(真正防線是 GitHub ruleset 本身;script 保留供手動 opt-in)。
 run('tsc -b', 'npx --no-install tsc -b')
 run('typecheck:stories', 'npm run --silent typecheck:stories')
 run('audit-orphan-tokens', 'node scripts/audit-orphan-tokens.mjs --check')
@@ -415,10 +415,8 @@ run('governance-counters', 'node scripts/sync-governance-counters.mjs --check')
 // registry 每 failure class 必 protected / remediating+plan / judgment+auditDim,缺 = 擋發版。
 run('failure-class coverage(dim 91,每類病根必有防線)', 'node scripts/audit-failure-class-coverage.mjs --check')
 run('hook-test coverage(BLOCKER hook 必有 test 檔)', 'node scripts/audit-hook-test-coverage.mjs --check')
-run('gate meta-test coverage(checker gate 必有 meta-test;ratchet 只擋新洞)', 'node scripts/audit-gate-meta-test-coverage.mjs --check')
-// §8 執行層:實跑全部 gate meta-test(inject 真違規 → 斷言 gate exit≠0 → restore),自證每支 gate 偵測活性。
-// coverage 只驗檔存在;本步驗「meta-test 真跑得過」,防某 gate 偵測邏輯被改壞卻靜默 exit 0。
-run('gate meta-tests 實跑(§8:每支 gate inject-真違規偵測活性自證)', 'node scripts/run-gate-meta-tests.mjs')
+// gate meta-test coverage 與 gate meta-tests 實跑:已由上方 All-Harness 的 registered runner(R9/R2)
+// 各執行一次,此處重複 gate 已 retire(見上方 GATE RETIRE 記錄)。
 // PNG §14-17/§31:published package 無 consumer-install lifecycle script → --ignore-scripts / 離線安裝恆等普通安裝
 run('clean-install-safety(§14-17/§31:published package 無 preinstall/install/postinstall)', 'node scripts/check-clean-install-safety.mjs --check')
 run('gen-figma-make-artifacts', 'node scripts/gen-figma-make-artifacts.mjs --check')
@@ -430,25 +428,11 @@ run('LinkTo integrity(story 改名/retire 反向引用斷鏈;DA3 C.0b 謂詞化)
 run('agents-bootstrap(PNG:root→cwd AGENTS chain ≤32KiB + Claude @import + Rule Index 零死鏈 + scoped npm instructions)', 'node scripts/check-agents-bootstrap.mjs --check')
 // One graph checks every generated provider/fork/control-plane view and its instruction mirrors.
 run('governance build graph drift check(all provider/fork/control-plane outputs)', 'node scripts/governance-build-graph.mjs --check')
-run('provider/fork portability safety(build graph + symlink/recovery/atomicity/memory + future provider)', 'npm run --silent test:governance-portability-safety')
-run('governance control-plane tests', 'npm -w @qijenchen/governance test')
-// Branch policy is part of release trust. Missing observation authority, unresolved App IDs, or
-// drift must block the marker; an informational probe would create a locally green false claim.
-run(
-  'branch-protection exact live readback(fail-closed)',
-  'node scripts/check-branch-protection.mjs --check --repository ajenchen/design-system',
-  { authority: 'github-read' },
-)
 run('governance-tamper(preflight gate-count ratchet + time-boxed waiver 過期)', 'node scripts/check-governance-tamper.mjs --check')
 run('rule coverage(91 dim 全分類 + 機制檔案存在 + rule-ID;PNG P3.3)', 'npm run --silent audit:coverage-matrix')
 run('inline-edit view geometry invariant(多行 py == Textarea edit py,read↔edit 零跳鎖)', 'node scripts/inline-edit-view-geometry-invariant.mjs')
-// C-prime #5(2026-06-17 codex 共識 C3 future-SSOT 閘):fork 治理 corpus 必過(a) classify 漏接閘
-// (新增 hook 未分類 = FAIL)+(b) 生成物 vs SSOT drift gate,且(c) 假 fork harness 防假生效。
-// 這把「未來 DS 治理增刪改 → fork 同步」從『靠記得』變『機械強制』(漏分類/drift/假生效 = 擋發版)。
-run('fork-governance harness(假 fork 防 false-green/brick/crash)', 'node scripts/test-fork-governance.mjs')
-run('consumer governance clean-room(hooks-off + immutable BOM + Claude/Codex parity + tamper negatives)', 'node scripts/test-consumer-governance.mjs')
-run('consumer exact-upgrade transaction(post-check + tracked rollback)', 'node scripts/test-sync-all-transaction.mjs')
-run('release BOM + supply-chain adversarial tests', 'npm run --silent test:release-supply-chain')
+// fork/consumer clean-room、sync-all transaction、release BOM 測試:皆為上方 All-Harness 的
+// registered suite 成員(R5/R6/R1),重複 gate 已 retire(見上方 GATE RETIRE 記錄)。
 run('template canonical App drift check(防 receiver 覆寫 scaffold App.tsx)', 'node scripts/sync-template-canonical-app.mjs --check')
 // 2026-06-08:DS src 改了必 bump 才 republish(補「republish 靠 AI 記得 bump」非機械斷點)。
 // preflight 此時 version 已 bump → gate 見「bumped → OK」綠;若忘 bump 直 push 則 ci.yml 同道 gate 擋。

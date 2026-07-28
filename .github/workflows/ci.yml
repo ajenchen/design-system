@@ -121,23 +121,12 @@ jobs:
           if [ "$fail" -eq 1 ]; then exit 1; fi
           echo "✅ all hook tests passed"
 
-      - name: Fork-governance corpus + harness(C-prime PR-gate;原只在 release/canary → 加 PR-gate defense-in-depth)
+      - name: Fork-governance corpus + harness(C-prime PR-gate;registered All-Harness 一次 + 非重複 direct gates)
         run: |
           npm run --silent test:governance-harnesses
           npm run --silent audit:workflow-security
           npm run --silent governance:workflow-identities:check
-          npm run --silent test:workflow-security
-          npm run --silent test:governance-anchor
-          npm run --silent test:privileged-change-authorization
-          npm run --silent test:consumer-source-harness
-          npm run --silent test:writer-evidence
-          npm -w @qijenchen/governance test
-          npm run --silent test:governance-fleet
           node scripts/governance-build-graph.mjs --check
-          npm run --silent test:governance-portability-safety
-          node scripts/test-fork-governance.mjs
-          node scripts/test-consumer-governance.mjs
-          node scripts/test-sync-all-transaction.mjs
 
       - name: Story compile-drift check
         run: |

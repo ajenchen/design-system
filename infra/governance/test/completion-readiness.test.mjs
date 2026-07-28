@@ -12,7 +12,10 @@ import { issuerRegistryDigest } from '../lib/issuer-registry.mjs'
 import { createExternalRuntimeCertificationFixture } from './fixtures/external-runtime-certification-fixture.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const NOW = new Date('2026-07-21T00:00:00.000Z')
+const CANONICAL_ISSUER_REGISTRY = readJson(resolve(ROOT, 'trust/issuers.json'))
+const NOW = new Date(Math.max(
+  ...CANONICAL_ISSUER_REGISTRY.issuers.map(issuer => Date.parse(issuer.notBefore)),
+) + 1)
 const currentHarnessReceipt = {
   pass: true,
   detail: 'fixture receipt verified against exact subject',
@@ -20,8 +23,8 @@ const currentHarnessReceipt = {
   receiptSha256: 'a'.repeat(64),
   head: '1'.repeat(40),
   tree: '2'.repeat(40),
-  completedAt: '2026-07-20T23:00:00.000Z',
-  expiresAt: '2026-07-21T23:00:00.000Z',
+  completedAt: new Date(NOW.getTime() - 60 * 60 * 1000).toISOString(),
+  expiresAt: new Date(NOW.getTime() + 24 * 60 * 60 * 1000).toISOString(),
   runnerArgv: ['node', 'infra/governance/bin/run-harnesses.mjs'],
 }
 

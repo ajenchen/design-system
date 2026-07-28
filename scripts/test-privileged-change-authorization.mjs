@@ -2,9 +2,21 @@
 
 import assert from 'node:assert/strict'
 import { createHash, generateKeyPairSync } from 'node:crypto'
-import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
+import {
+  chmodSync,
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readlinkSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
+import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 import {
   externalActivationPolicyDigest,
@@ -17,8 +29,17 @@ import {
   cosignPrivilegedChangeAuthorization,
   issuePrivilegedChangeAuthorization,
   privilegedChangeSet,
+  validateControlPlaneGenesisChallengeTransition,
   verifyPrivilegedChange,
 } from './verify-privileged-change.mjs'
+import {
+  CONTROL_PLANE_GENESIS_BASE_COMMIT,
+  CONTROL_PLANE_GENESIS_BASE_TREE,
+  CONTROL_PLANE_GENESIS_CLOSED_STATE,
+  CONTROL_PLANE_GENESIS_OPEN_STATE,
+  CONTROL_PLANE_GENESIS_TOMBSTONES,
+  controlPlaneGenesisTransitionDigest,
+} from './lib/control-plane-genesis-transition.mjs'
 
 const BASE_SHA = '1'.repeat(40)
 const HEAD_SHA = '2'.repeat(40)
@@ -42,6 +63,25 @@ const protectedFiles = [
   '.github/workflows/changeset-version.yml',
   'scripts/release-npm-publish.mjs',
 ]
+
+function genesisCandidateFixture() {
+  const outer = mkdtempSync(join(tmpdir(), 'control-plane-genesis-candidate-'))
+  const repository = join(outer, 'repository')
+  const clone = spawnSync('git', ['clone', '--shared', '--quiet', process.cwd(), repository], {
+    encoding: 'utf8',
+  })
+  assert.equal(clone.status, 0, clone.stderr)
+  for (const tombstone of CONTROL_PLANE_GENESIS_TOMBSTONES) {
+    const target = join(repository, tombstone.path)
+    mkdirSync(dirname(target), { recursive: true })
+    copyFileSync(join(process.cwd(), tombstone.path), target)
+    chmodSync(target, tombstone.mode === '100755' ? 0o755 : 0o644)
+  }
+  return {
+    repository,
+    cleanup: () => rmSync(outer, { recursive: true, force: true }),
+  }
+}
 
 function issuer(name, roles = ['privileged-change-authorizer', 'root-rotator', 'runtime-evidence-issuer', 'apply-authorizer', 'completion-attestor']) {
   const keys = generateKeyPairSync('ed25519')
@@ -347,6 +387,104 @@ test('canonical source keeps genesis and ordinary bootstrap free of a raw two-re
   const policy = JSON.parse(readFileSync(join(process.cwd(), 'infra/governance/privileged-trust-roots.json'), 'utf8'))
   assert.equal(policy.authorizationProfileId, PRODUCTION_PROFILE)
   assert.equal(policy.trustRootQuorum, 1)
+})
+
+test('control-plane genesis requires the open transition and verifies its exact base binding', () => {
+  const repository = process.cwd()
+  const graph = JSON.parse(readFileSync(join(repository, 'scripts/governance-build-graph.json'), 'utf8'))
+  const transition = graph.controlPlaneGenesisTransition
+  const validated = validateControlPlaneGenesisChallengeTransition({
+    candidateRoot: repository,
+    transition,
+    baseSha: CONTROL_PLANE_GENESIS_BASE_COMMIT,
+    baseTree: CONTROL_PLANE_GENESIS_BASE_TREE,
+  })
+  assert.equal(validated.state, CONTROL_PLANE_GENESIS_OPEN_STATE)
+  assert.equal(validated.releaseAllowed, false)
+})
+
+test('control-plane genesis challenge binds exact transition after-images', t => {
+  const fixture = genesisCandidateFixture()
+  t.after(fixture.cleanup)
+  const graph = JSON.parse(readFileSync(join(process.cwd(), 'scripts/governance-build-graph.json'), 'utf8'))
+  const transition = graph.controlPlaneGenesisTransition
+  const verify = () => validateControlPlaneGenesisChallengeTransition({
+    candidateRoot: fixture.repository,
+    transition,
+    baseSha: CONTROL_PLANE_GENESIS_BASE_COMMIT,
+    baseTree: CONTROL_PLANE_GENESIS_BASE_TREE,
+  })
+  assert.doesNotThrow(verify)
+
+  const command = join(fixture.repository, '.claude/commands/gov-status.md')
+  const commandBytes = readFileSync(command)
+  writeFileSync(command, Buffer.concat([commandBytes, Buffer.from('\n')]))
+  assert.throws(verify, /tombstone digest drift/)
+  writeFileSync(command, commandBytes)
+
+  const hook = join(fixture.repository, '.claude/hooks/check_post_main_ssot_propagate.sh')
+  chmodSync(hook, 0o644)
+  assert.throws(verify, /tombstone mode drift/)
+  chmodSync(hook, 0o755)
+  unlinkSync(hook)
+  symlinkSync('../commands/gov-status.md', hook)
+  assert.throws(verify, /tombstone is not one regular file/)
+  unlinkSync(hook)
+  copyFileSync(join(process.cwd(), '.claude/hooks/check_post_main_ssot_propagate.sh'), hook)
+  chmodSync(hook, 0o755)
+
+  const baselineLeaf = join(
+    fixture.repository,
+    '.claude/snapshots-baseline/cell-picker-final-post-select-canary/select-display-hover.png',
+  )
+  const baselineBytes = readFileSync(baselineLeaf)
+  writeFileSync(baselineLeaf, Buffer.concat([baselineBytes, Buffer.from('\n')]))
+  assert.throws(verify, /preserved tree digest drift/)
+  writeFileSync(baselineLeaf, baselineBytes)
+
+  const preamble = join(fixture.repository, 'packages/design-system/ds-canonical/fork/preamble.md')
+  chmodSync(preamble, 0o755)
+  assert.throws(verify, /preserved file mode drift/)
+  chmodSync(preamble, 0o644)
+
+  const scriptsAlias = join(fixture.repository, 'packages/design-system/scripts')
+  assert.equal(readlinkSync(scriptsAlias), '../../scripts')
+  unlinkSync(scriptsAlias)
+  symlinkSync('../scripts', scriptsAlias)
+  assert.throws(verify, /preserved symlink target drift/)
+})
+
+test('control-plane genesis rejects a closed transition and a substituted challenge base', () => {
+  const repository = process.cwd()
+  const graph = JSON.parse(readFileSync(join(repository, 'scripts/governance-build-graph.json'), 'utf8'))
+  const transition = graph.controlPlaneGenesisTransition
+  const closed = structuredClone(transition)
+  closed.state = CONTROL_PLANE_GENESIS_CLOSED_STATE
+  closed.releaseAllowed = true
+  closed.contentDigest = controlPlaneGenesisTransitionDigest(closed)
+  assert.throws(
+    () => validateControlPlaneGenesisChallengeTransition({
+      candidateRoot: repository,
+      transition: closed,
+      baseSha: CONTROL_PLANE_GENESIS_BASE_COMMIT,
+      baseTree: CONTROL_PLANE_GENESIS_BASE_TREE,
+    }),
+    /transition must remain open/,
+  )
+  for (const [baseSha, baseTree] of [
+    ['0'.repeat(40), CONTROL_PLANE_GENESIS_BASE_TREE],
+    [CONTROL_PLANE_GENESIS_BASE_COMMIT, '0'.repeat(40)],
+  ]) {
+    assert.throws(
+      () => validateControlPlaneGenesisChallengeTransition({
+        candidateRoot: repository,
+        transition,
+        baseSha,
+        baseTree,
+      }),
+      /transition base commit\/tree differs from the exact challenge base/,
+    )
+  }
 })
 
 test('maximum-assurance registry rotation and revocation require the existing multi-signer root-rotator quorum', async () => {

@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import {
+  chmodSync,
   copyFileSync,
   mkdirSync,
   mkdtempSync,
@@ -13,6 +14,10 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  CONTROL_PLANE_GENESIS_TOMBSTONES,
+  controlPlaneGenesisTransitionDigest,
+} from './lib/control-plane-genesis-transition.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const GATE = join(ROOT, 'scripts/check-provider-neutral-ssot-residue.mjs')
@@ -24,6 +29,8 @@ const FAILURE = 'packages/design-system/ds-canonical/references/failure-class-re
 const GRAPH = 'scripts/governance-build-graph.json'
 const HOOK_CLASSIFICATION = 'scripts/fork-hook-classification.json'
 const MEMORY = 'governance/memory/MEMORY.md'
+const TOMBSTONES = CONTROL_PLANE_GENESIS_TOMBSTONES.map(item => item.path)
+const TOMBSTONE_BY_PATH = new Map(CONTROL_PLANE_GENESIS_TOMBSTONES.map(item => [item.path, item]))
 
 function indexedMemoryFiles(root = ROOT) {
   const index = readFileSync(join(root, MEMORY), 'utf8').split(/\n---\s*\n/u, 1)[0]
@@ -55,6 +62,8 @@ const required = [
   'packages/governance/canonical/plugin-aliases.json',
   HOOK_CLASSIFICATION,
   GRAPH,
+  'scripts/lib/control-plane-genesis-transition.mjs',
+  ...TOMBSTONES,
 ]
 
 function activateMemory(root, filename, body) {
@@ -74,7 +83,17 @@ function install(root) {
     const destination = join(root, relativePath)
     mkdirSync(dirname(destination), { recursive: true })
     copyFileSync(join(ROOT, relativePath), destination)
+    const tombstone = TOMBSTONE_BY_PATH.get(relativePath)
+    if (tombstone) chmodSync(destination, tombstone.mode === '100755' ? 0o755 : 0o644)
   }
+}
+
+function restoreTombstone(root, relativePath) {
+  const destination = join(root, relativePath)
+  const tombstone = TOMBSTONE_BY_PATH.get(relativePath)
+  assert(tombstone, `unknown Genesis tombstone:${relativePath}`)
+  copyFileSync(join(ROOT, relativePath), destination)
+  chmodSync(destination, tombstone.mode === '100755' ? 0o755 : 0o644)
 }
 
 function run(root) {
@@ -108,25 +127,56 @@ try {
   writeFileSync(join(fixture, '.codex/hooks.json'), '{"poison":true}\n')
   assert.equal(run(fixture).status, 0, 'poisoned provider views changed the verdict')
 
-  for (const retiredPath of [
-    '.github/workflows/ssot-sync-dispatch.yml',
-    'packages/design-system/ds-canonical/hooks/check_post_main_ssot_propagate.sh',
-  ]) {
-    const absolute = join(fixture, retiredPath)
-    mkdirSync(dirname(absolute), { recursive: true })
+  for (const tombstonePath of TOMBSTONES) {
+    const absolute = join(fixture, tombstonePath)
+    const expected = TOMBSTONE_BY_PATH.get(tombstonePath)
+    assert(expected, `missing Genesis tombstone fixture metadata:${tombstonePath}`)
+
     writeFileSync(absolute, 'retired transport poison\n')
     let tombstone = run(fixture)
-    assert.notEqual(tombstone.status, 0, `regular-file tombstone was accepted:${retiredPath}`)
-    assert.match(tombstone.stderr, /retired SSOT transport tombstone must remain absent/)
+    assert.notEqual(tombstone.status, 0, `modified Genesis tombstone was accepted:${tombstonePath}`)
+    assert.match(tombstone.stderr, /tombstone digest drift/)
+    restoreTombstone(fixture, tombstonePath)
+
+    chmodSync(absolute, expected.mode === '100755' ? 0o644 : 0o755)
+    tombstone = run(fixture)
+    assert.notEqual(tombstone.status, 0, `wrong-mode Genesis tombstone was accepted:${tombstonePath}`)
+    assert.match(tombstone.stderr, /tombstone mode drift/)
+    restoreTombstone(fixture, tombstonePath)
+
     rmSync(absolute)
+    tombstone = run(fixture)
+    assert.notEqual(tombstone.status, 0, `missing Genesis tombstone was accepted:${tombstonePath}`)
+    assert.match(tombstone.stderr, /tombstone is missing/)
 
     symlinkSync(join(fixture, AGENTS), absolute)
     tombstone = run(fixture)
-    assert.notEqual(tombstone.status, 0, `symlink tombstone was accepted:${retiredPath}`)
-    assert.match(tombstone.stderr, /retired SSOT transport tombstone must remain absent/)
+    assert.notEqual(tombstone.status, 0, `symlink Genesis tombstone was accepted:${tombstonePath}`)
+    assert.match(tombstone.stderr, /tombstone is not one regular file/)
+    rmSync(absolute)
+    restoreTombstone(fixture, tombstonePath)
+  }
+  assert.equal(run(fixture).status, 0, 'restored Genesis tombstones did not restore the open fixture')
+
+  mutateJson(fixture, GRAPH, value => {
+    value.controlPlaneGenesisTransition.state = 'closed'
+    value.controlPlaneGenesisTransition.releaseAllowed = true
+    value.controlPlaneGenesisTransition.contentDigest = controlPlaneGenesisTransitionDigest(
+      value.controlPlaneGenesisTransition,
+    )
+  })
+  for (const tombstonePath of TOMBSTONES) rmSync(join(fixture, tombstonePath))
+  assert.equal(run(fixture).status, 0, 'closed transition with absent tombstones must pass')
+  for (const tombstonePath of TOMBSTONES) {
+    const absolute = join(fixture, tombstonePath)
+    mkdirSync(dirname(absolute), { recursive: true })
+    writeFileSync(absolute, 'closed transition poison\n')
+    const residue = run(fixture)
+    assert.notEqual(residue.status, 0, `closed transition accepted a remaining tombstone:${tombstonePath}`)
+    assert.match(residue.stderr, /closed transition legacy tombstone must remain absent/)
     rmSync(absolute)
   }
-  assert.equal(run(fixture).status, 0, 'retired transport tombstone cleanup did not restore the fixture')
+  install(fixture)
 
   mutateText(fixture, AGENTS, value => value.replace(
     /^- \*\*路由 authority\*\*:.*$/m,
@@ -208,6 +258,23 @@ try {
     value.stages.find(stage => stage.id === 'fork-template').sources.unshift('.codex/hooks.json')
   })
   assert.notEqual(run(fixture).status, 0, 'non-materializer build stage consumed a provider view')
+
+  install(fixture)
+  mutateJson(fixture, GRAPH, value => {
+    const stage = value.stages.find(item => item.id === 'harness-authority-bindings')
+    stage.sources = stage.sources.map(source => source === '.claude/hooks/tests/' ? '.claude/hooks/' : source)
+  })
+  const widenedHarnessMirror = run(fixture)
+  assert.notEqual(widenedHarnessMirror.status, 0, 'Harness authority projection accepted a widened generated provider source')
+  assert.match(widenedHarnessMirror.stderr, /may consume only the exact generated hook-test mirror/)
+
+  install(fixture)
+  mutateJson(fixture, GRAPH, value => {
+    value.stages.find(stage => stage.id === 'harness-authority-bindings').sources.push('.codex/hooks.json')
+  })
+  const substitutedHarnessMirror = run(fixture)
+  assert.notEqual(substitutedHarnessMirror.status, 0, 'Harness authority projection accepted an additional provider source')
+  assert.match(substitutedHarnessMirror.stderr, /may consume only the exact generated hook-test mirror/)
 
   install(fixture)
   mutateJson(fixture, 'packages/governance/canonical/providers.json', value => {

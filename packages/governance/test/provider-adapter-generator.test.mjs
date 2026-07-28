@@ -5,6 +5,11 @@ import { spawn, spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import test from 'node:test'
+
+// These adversarial suites assert the fail-closed integrity lane. The production
+// default is fail-open (hooks are accelerators, not the trust boundary); strict
+// semantics are opted into exactly like a high-assurance deployment would.
+Object.assign(process.env, { GOVERNANCE_HOOK_STRICT: '1' })
 import Ajv2020 from 'ajv/dist/2020.js'
 import { compareUtf8Bytes } from '../src/canonical-order.mjs'
 import {
@@ -2199,7 +2204,7 @@ test('runner classifies every contract bootstrap failure as integrity code 70 fo
   const assertBlocked = () => {
     for (const provider of ['claude', 'codex']) {
       const result = run(provider)
-      assert.equal(result.status, 70)
+      assert.equal(result.status, 70, `${provider}:${result.stderr}`)
       assert.match(result.stderr, /GOVERNANCE_INTEGRITY:/)
       assert.match(result.stderr, /invalid canonical provider contract/)
     }

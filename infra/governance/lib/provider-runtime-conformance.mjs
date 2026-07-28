@@ -1935,58 +1935,20 @@ async function runClaudeReviewCapabilityProbe({
   fixture,
   runner,
 }) {
-  const { profile: reviewProfile, invocation } =
-    resolveClaudeReviewCapabilityProbe(repoRoot, check)
-  const adapter = invocation.deploymentAdapter
-  const resultSchema = {
-    type: 'object',
-    additionalProperties: false,
-    required: ['availability'],
-    properties: { availability: { const: 'observed' } },
-  }
-  const systemPrompt = stableStringify({
-    schemaVersion: 1,
-    kind: 'provider-review-capability-probe',
-    reviewProfileId: reviewProfile.id,
-    requestModelId: reviewProfile.requestModelId,
-    instruction:
-      'Return the exact structured object only. Do not use tools, persist a session, or access repository content.',
-  }, 0)
-  const replacements = {
-    model: reviewProfile.requestModelId,
-    effort: adapter.effortByComputeTier.maximum,
-    emptyTools: '',
-    resultSchemaJson: stableStringify(resultSchema, 0),
-    systemPrompt,
-    emptyMcpConfig: '{"mcpServers":{}}',
-  }
-  const args = adapter.arguments.map((token) => {
-    const match = token.match(/^\{([A-Za-z][A-Za-z0-9]*)\}$/)
-    return match ? replacements[match[1]] : token
-  })
-  const unresolvedPlaceholders = new Set(
-    Object.keys(replacements).map((key) => `{${key}}`),
-  )
-  invariant(
-    args.every((token) => typeof token === 'string')
-      && !args.some((token) => unresolvedPlaceholders.has(token)),
-    `Claude review capability probe ${check.reviewProfileId} has unresolved adapter arguments`,
-  )
-  const input = `${stableStringify({
-    schemaVersion: 1,
-    kind: 'provider-review-capability-probe-input',
-    reviewProfileId: reviewProfile.id,
-    requestModelId: reviewProfile.requestModelId,
-    expected: { availability: 'observed' },
-  }, 0)}\n`
   const environment = claudeProcessEnvironment(provider, fixture)
-  const command = commandEvidence({
-    executable: provider.executable,
+  const {
     arguments: args,
-    cwd: '<fixture>',
+    command,
     input,
+    invocation,
+    reviewProfile,
+  } = prepareClaudeReviewCapabilityProbe({
+    repoRoot,
+    provider,
+    check,
     environmentNames: Object.keys(environment),
   })
+  const adapter = invocation.deploymentAdapter
   const isolatedDirectory = mkdtempSync(resolve(
     fixture.root,
     '.review-capability-probe-',
@@ -2078,26 +2040,26 @@ async function runClaudeReviewCapabilityProbe({
   })
 }
 
-function skippedClaudeReviewCapabilityProbe({
+export function prepareClaudeReviewCapabilityProbe({
   repoRoot,
   provider,
   check,
-  fixture,
-  reason,
+  environmentNames = ['HOME'],
 }) {
   const { profile: reviewProfile, invocation } =
     resolveClaudeReviewCapabilityProbe(repoRoot, check)
   const adapter = invocation.deploymentAdapter
+  const resultSchema = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['availability'],
+    properties: { availability: { const: 'observed' } },
+  }
   const replacements = {
     model: reviewProfile.requestModelId,
     effort: adapter.effortByComputeTier.maximum,
     emptyTools: '',
-    resultSchemaJson: stableStringify({
-      type: 'object',
-      additionalProperties: false,
-      required: ['availability'],
-      properties: { availability: { const: 'observed' } },
-    }, 0),
+    resultSchemaJson: stableStringify(resultSchema, 0),
     systemPrompt: stableStringify({
       schemaVersion: 1,
       kind: 'provider-review-capability-probe',
@@ -2112,6 +2074,14 @@ function skippedClaudeReviewCapabilityProbe({
     const match = token.match(/^\{([A-Za-z][A-Za-z0-9]*)\}$/)
     return match ? replacements[match[1]] : token
   })
+  const unresolvedPlaceholders = new Set(
+    Object.keys(replacements).map((key) => `{${key}}`),
+  )
+  invariant(
+    args.every((token) => typeof token === 'string')
+      && !args.some((token) => unresolvedPlaceholders.has(token)),
+    `Claude review capability probe ${check.reviewProfileId} has unresolved adapter arguments`,
+  )
   const input = `${stableStringify({
     schemaVersion: 1,
     kind: 'provider-review-capability-probe-input',
@@ -2119,31 +2089,67 @@ function skippedClaudeReviewCapabilityProbe({
     requestModelId: reviewProfile.requestModelId,
     expected: { availability: 'observed' },
   }, 0)}\n`
-  const environment = claudeProcessEnvironment(provider, fixture)
-  return checkEvidence({
-    id: check.id,
-    driver: check.driver,
+  return {
+    arguments: args,
     command: commandEvidence({
       executable: provider.executable,
       arguments: args,
       cwd: '<fixture>',
       input,
-      environmentNames: Object.keys(environment),
+      environmentNames,
     }),
+    input,
+    invocation,
+    reviewProfile,
+  }
+}
+
+function skippedClaudeReviewCapabilityProbe({
+  repoRoot,
+  provider,
+  check,
+  fixture,
+  localAccountAvailable = false,
+  entitlementVerified = false,
+  reason,
+}) {
+  const environment = claudeProcessEnvironment(provider, fixture)
+  const { command } = prepareClaudeReviewCapabilityProbe({
+    repoRoot,
+    provider,
+    check,
+    environmentNames: Object.keys(environment),
+  })
+  const assertions = {
+    'below-selected': [
+      assertion('review-capability-outcome-not-probed-below-selected', true),
+      assertion('provider-model-process-remained-unstarted', true),
+    ],
+    'higher-unverified': [
+      assertion('review-capability-outcome-not-probed-higher-unverified', false),
+      assertion('provider-model-process-remained-unstarted', true),
+    ],
+    'model-execution-not-authorized': [
+      assertion('explicit-model-execution-authorized', false),
+      assertion('provider-model-process-remained-unstarted', true),
+    ],
+    'local-account-unavailable': [
+      assertion('os-derived-local-account-capability-available', localAccountAvailable),
+      assertion('claude-max-entitlement-readback-verified', entitlementVerified),
+      assertion('provider-model-process-remained-unstarted', true),
+    ],
+  }[reason]
+  invariant(assertions, `Unknown Claude review capability probe skip reason ${reason}`)
+  return checkEvidence({
+    id: check.id,
+    driver: check.driver,
+    command,
     processResult: {
       exitCode: null,
       timedOut: false,
       outputExceeded: false,
     },
-    assertions: reason === 'below-selected'
-      ? [
-          assertion('review-capability-outcome-not-probed-below-selected', true),
-          assertion('provider-model-process-remained-unstarted', true),
-        ]
-      : [
-          assertion('review-capability-outcome-not-probed-higher-unverified', false),
-          assertion('provider-model-process-remained-unstarted', true),
-        ],
+    assertions,
   })
 }
 
@@ -3036,7 +3042,17 @@ export async function runRuntimeConformance({
       let claudeCapabilityProbeStop = null
       for (const check of provider.checks) {
         if (check.requiresModel && allowModel !== true) {
-          checks.push(bindCheckCertificationImpact(check, skippedModelCheck(check, provider)))
+          const value = provider.id === 'claude'
+            && check.driver === 'claude-review-capability-probe'
+            ? skippedClaudeReviewCapabilityProbe({
+                repoRoot: absoluteRepoRoot,
+                provider: runtimeProvider,
+                check,
+                fixture,
+                reason: 'model-execution-not-authorized',
+              })
+            : skippedModelCheck(check, provider)
+          checks.push(bindCheckCertificationImpact(check, value))
           continue
         }
         if (
@@ -3054,10 +3070,21 @@ export async function runRuntimeConformance({
           && check.requiresModel
           && (!localAccountCapability || !claudeEntitlementVerified)
         ) {
-          checks.push(bindCheckCertificationImpact(check, unavailableLocalAccountCheck(check, provider, {
-            localAccountAvailable: Boolean(localAccountCapability),
-            entitlementVerified: claudeEntitlementVerified,
-          })))
+          const value = check.driver === 'claude-review-capability-probe'
+            ? skippedClaudeReviewCapabilityProbe({
+                repoRoot: absoluteRepoRoot,
+                provider: runtimeProvider,
+                check,
+                fixture,
+                localAccountAvailable: Boolean(localAccountCapability),
+                entitlementVerified: claudeEntitlementVerified,
+                reason: 'local-account-unavailable',
+              })
+            : unavailableLocalAccountCheck(check, provider, {
+                localAccountAvailable: Boolean(localAccountCapability),
+                entitlementVerified: claudeEntitlementVerified,
+              })
+          checks.push(bindCheckCertificationImpact(check, value))
           continue
         }
         if (provider.id === 'claude'

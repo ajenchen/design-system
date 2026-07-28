@@ -34,6 +34,8 @@ const runtimeConformance = readJson(resolve(GOVERNANCE_ROOT, 'providers/runtime-
 const inventory = readJson(resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json'))
 const roleSurfacePolicy = readJson(resolve(GOVERNANCE_ROOT, 'providers/role-surface-policy.json'))
 const releaseRings = readJson(resolve(GOVERNANCE_ROOT, 'release-rings.json'))
+const issuerRegistry = readJson(resolve(GOVERNANCE_ROOT, 'trust/issuers.json'))
+const issuerValidationTime = new Date(Math.max(...issuerRegistry.issuers.map(issuer => Date.parse(issuer.notBefore))) + 1)
 
 test('provider CLI toolchain schema is data-driven while keeping a closed provider/provisioning shape', () => {
   const schema = readJson(resolve(GOVERNANCE_ROOT, 'schemas/provider-cli-toolchain.schema.json'))
@@ -81,8 +83,9 @@ test('role-surface policy is the closed cloud/GitHub-Actions SSOT for inventory,
   const validate = ajv.compile(schema)
   const registry = validateProviderRegistry(matrix, runtimeConformance, {
     adapterRegistry: PROVIDER_REGISTRY,
+    issuerRegistry,
     providerCliToolchain,
-    now: new Date('2026-07-20T00:00:00.000Z'),
+    now: issuerValidationTime,
   })
   assert.equal(validate(roleSurfacePolicy), true, ajv.errorsText(validate.errors))
   assert.equal(validateRoleSurfacePolicy(roleSurfacePolicy, registry), roleSurfacePolicy)

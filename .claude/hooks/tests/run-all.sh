@@ -24,6 +24,17 @@ unset GOVERNANCE_RUNTIME_ROOT GOVERNANCE_STATE_DIR \
 export GOVERNANCE_TELEMETRY_OPT_IN=0
 cd "$SCRIPT_DIR" || exit 1
 
+# Every suite builds its fixtures with `mktemp -d`. When TMPDIR is unwritable mktemp
+# returns empty, and the classic `VAR="$(cd "$VAR" && pwd -P)"` normalization then
+# resolves to this directory — turning a cleanup trap into corpus deletion. Prove the
+# temporary directory works once, here, instead of discovering it 60 tests later.
+TMPDIR_PROBE="$(mktemp -d 2>/dev/null || true)"
+if [ -z "$TMPDIR_PROBE" ] || [ ! -d "$TMPDIR_PROBE" ]; then
+  echo "❌ mktemp -d is unusable(TMPDIR=${TMPDIR:-unset});hook tests cannot build fixtures" >&2
+  exit 1
+fi
+rm -rf "$TMPDIR_PROBE"
+
 TOTAL_SUITES=0
 PASSED_SUITES=0
 FAILED_SUITES=""
@@ -42,6 +53,14 @@ for test_file in test_*.sh; do
     PASSED_SUITES=$((PASSED_SUITES+1))
   else
     FAILED_SUITES="${FAILED_SUITES}\n  - $test_file"
+  fi
+  # Name the destroyer immediately. Without this a suite that deletes shared sources
+  # stays silent and the failure surfaces much later as an unrelated ENOENT, blaming
+  # whichever consumer reads the corpus next.
+  if [ ! -f "$SCRIPT_DIR/run-all.sh" ]; then
+    echo "" >&2
+    echo "❌ FATAL: $test_file destroyed the canonical hook test corpus at $SCRIPT_DIR" >&2
+    exit 1
   fi
 done
 

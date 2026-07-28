@@ -8,10 +8,12 @@ import {
   assertClosedProjectNpmConfig,
   assertNoRootNpmShrinkwrap,
   createIsolatedGovernanceNpmEnvironment,
+  runVerifiedHighVulnerabilityAudit,
 } from './lib/governance-dependency-bootstrap.mjs'
 import {
+  assertVerifiedExactNpmRuntimeCapability,
   prepareVerifiedExactNpmRuntime,
-  resolveExactNpmArtifact,
+  resolveExactNpmRuntimeContract,
 } from './lib/verified-exact-npm-runtime.mjs'
 import {
   assertGitVisibleWorktreeUnchanged,
@@ -74,31 +76,50 @@ export async function installCandidateDependencies({
 
   const trustedBefore = captureGitVisibleWorktree(trustedRoot)
   const candidateBefore = captureGitVisibleWorktree(candidate)
-  const expectedNpm = resolveExactNpmArtifact(trustedRoot)
+  const expectedNpm = resolveExactNpmRuntimeContract(trustedRoot)
   const isolated = createIsolatedGovernanceNpmEnvironment(environment, {
     errorPrefix: 'GOV-CANDIDATE-DEPS-001',
   })
   let runtime = null
+  let installedOverlayReceipt = null
+  let auditReceipt = null
   try {
     runtime = await runtimeFactory({ repositoryRoot: trustedRoot, env: isolated.env, runner })
-    invariant(
-      runtime?.cli
-        && runtime?.toolchain?.npm === expectedNpm.version
-        && runtime?.artifact?.version === expectedNpm.version
-        && runtime?.artifact?.resolved === expectedNpm.resolved
-        && runtime?.artifact?.integrity === expectedNpm.integrity,
-      `verified npm ${expectedNpm.version} capability is required`,
-    )
+    try {
+      assertVerifiedExactNpmRuntimeCapability(runtime, expectedNpm)
+    } catch {
+      invariant(false, `verified npm ${expectedNpm.version} capability with the exact security overlay is required`)
+    }
     runNpm(runtime.cli, ['ci', '--legacy-peer-deps', '--ignore-scripts', `--registry=${REGISTRY}`], { candidate, environment: isolated.env, runner })
+    runtime.applyInstalledSecurityOverlay(candidate)
+    installedOverlayReceipt = runtime.verifyInstalledSecurityOverlay(candidate)
     assertClosedProjectNpmConfig(candidate, ['legacy-peer-deps=true', 'ignore-scripts=true'], { errorPrefix: 'GOV-CANDIDATE-DEPS-001' })
     assertGitVisibleWorktreeUnchanged(trustedRoot, trustedBefore, { label: 'trusted verifier after candidate install' })
     assertGitVisibleWorktreeUnchanged(candidate, candidateBefore, { label: 'candidate after dependency install' })
     runNpm(runtime.cli, ['audit', 'signatures', `--registry=${REGISTRY}`], { candidate, environment: isolated.env, runner })
-    runNpm(runtime.cli, ['audit', '--audit-level=high', `--registry=${REGISTRY}`], { candidate, environment: isolated.env, runner })
+    auditReceipt = runVerifiedHighVulnerabilityAudit(
+      process.execPath,
+      [runtime.cli, 'audit', '--audit-level=high', '--json', `--registry=${REGISTRY}`],
+      {
+        root: candidate,
+        environment: isolated.env,
+        runner,
+        npmRuntime: runtime,
+        installedOverlayReceipt,
+        errorPrefix: 'GOV-CANDIDATE-DEPS-001',
+        timeoutMs: 30 * 60 * 1_000,
+      },
+    )
     assertClosedProjectNpmConfig(candidate, ['legacy-peer-deps=true', 'ignore-scripts=true'], { errorPrefix: 'GOV-CANDIDATE-DEPS-001' })
     assertGitVisibleWorktreeUnchanged(trustedRoot, trustedBefore, { label: 'trusted verifier after candidate audit' })
     assertGitVisibleWorktreeUnchanged(candidate, candidateBefore, { label: 'candidate after dependency audit' })
-    return { candidate, npm: runtime.toolchain.npm, status: 'passed' }
+    return {
+      candidate,
+      npm: runtime.toolchain.npm,
+      securityOverlay: installedOverlayReceipt,
+      vulnerabilityAudit: auditReceipt,
+      status: 'passed',
+    }
   } finally {
     try { runtime?.cleanup?.() } finally { isolated.cleanup() }
   }

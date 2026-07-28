@@ -28,7 +28,9 @@ type Story = StoryObj<typeof Button>
 export const IconOnlyReplica: Story = {
   name: 'Button 純圖示 — DS canonical 忠實複製',
   render: () => (
+    /* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 16px outer story rhythm; density remapping would change the opt-in pixel/DOM baseline */
     <div className="flex flex-col gap-4">
+      {/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 12px row rhythm; density remapping would change the opt-in pixel/DOM baseline */}
       <div className="flex flex-wrap items-center gap-3">
         <p className="w-full text-caption text-fg-muted">variants — size="sm"</p>
         <Button size="sm" iconOnly variant="primary"   startIcon={Plus}     aria-label="新增" />
@@ -37,12 +39,14 @@ export const IconOnlyReplica: Story = {
         <Button size="sm" iconOnly variant="text"      startIcon={Settings}  aria-label="設定" />
         <Button size="sm" iconOnly variant="text" pressed startIcon={Maximize2} aria-label="全螢幕（開啟中）" />
       </div>
+      {/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 12px row rhythm; density remapping would change the opt-in pixel/DOM baseline */}
       <div className="flex flex-wrap items-center gap-3">
         <p className="w-full text-caption text-fg-muted">danger — size="sm"</p>
         <Button size="sm" iconOnly variant="primary"    danger startIcon={Trash2} aria-label="永久刪除" />
         <Button size="sm" iconOnly variant="secondary" danger startIcon={Trash2} aria-label="刪除（有確認）" />
         <Button size="sm" iconOnly variant="text"      danger startIcon={Trash2} aria-label="刪除" />
       </div>
+      {/* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 12px row rhythm; density remapping would change the opt-in pixel/DOM baseline */}
       <div className="flex flex-wrap items-center gap-3">
         <p className="w-full text-caption text-fg-muted">sizes — variant="text"</p>
         <Button size="xs" iconOnly variant="text" startIcon={Settings} aria-label="設定 xs" />

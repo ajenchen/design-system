@@ -127,9 +127,7 @@ mustMatch(stagedReleaseRunbook, /required_signatures[\s\S]{0,500}Require signed 
 mustMatch(stagedReleaseRunbook, /verification\.verified=true[\s\S]*trust-preflight/, 'release runbook must carry exact signed-tag verification into trust preflight')
 mustMatch(stagedReleaseRunbook, /release-tag-authorizer[\s\S]*releaseTagAuthorization[\s\S]*used-authorization-digest ledger/, 'release runbook must require independent authorization and state the exact-replay boundary')
 const localPreflight = readFileSync(join(root, 'scripts/release-preflight.mjs'), 'utf8')
-mustMatch(localPreflight, /governance:workflow-identities:check/, 'local release preflight must reject reviewed workflow identity drift')
-mustMatch(localPreflight, /test:governance-portability-safety/, 'local release preflight must consume the shared provider/fork portability safety suite')
-mustMatch(localPreflight, /test:release-supply-chain/, 'local release preflight must run release supply-chain adversarial tests')
+mustMatch(localPreflight, /npm run --silent test:governance-harnesses/, 'local release preflight must run the one registered All-Harness that owns the governance/supply-chain suites')
 mustMatch(localPreflight, /npx --no-install tsc -b/, 'local release preflight must not allow npx registry fallback')
 
 // The static workflow contract proves authority separation before any fixture is built.
@@ -143,7 +141,8 @@ const resolveBlock = jobBlock('resolve-release-request')
 const trustBlock = jobBlock('trust-preflight')
 const buildBlock = jobBlock('build-release-evidence')
 const attestBlock = jobBlock('attest-release')
-const npmBlock = jobBlock('stage-npm')
+const npmBlock = jobBlock('publish-npm')
+const releaseGithubBlock = jobBlock('github-release')
 const finalizeWorkflow = readFileSync(join(root, '.github/workflows/release-finalize.yml'), 'utf8')
 const finalizerJobBlock = (name) => {
   const match = finalizeWorkflow.match(new RegExp(`(?:^|\\n)  ${name}:\\n[\\s\\S]*?(?=\\n  [a-z0-9][a-z0-9-]*:\\n|$)`))
@@ -178,8 +177,9 @@ mustMatch(trustBlock, /--event "\$GITHUB_EVENT_PATH"/, 'release trust preflight 
 mustMatch(trustBlock, /tag_object: \$\{\{ steps\.resolve_trust\.outputs\.tag_object \}\}[\s\S]*--release-tag/, 'release trust preflight must emit a digest-bound verified annotated tag object')
 mustMatch(trustBlock, /evidence_file_sha256: \$\{\{ steps\.resolve_trust\.outputs\.evidence_file_sha256 \}\}/, 'release trust preflight must expose the exact evidence-file digest')
 mustMatch(buildBlock, /needs: \[resolve-release-request, smoke-shard\]/, 'evidence build must depend on the protected-main resolver and smoke matrix')
-mustMatch(attestBlock, /needs: \[resolve-release-request, trust-preflight, build-release-evidence\]/, 'attestation must depend on protected-main resolution, trust readback, and unprivileged evidence build')
-mustMatch(npmBlock, /needs: \[resolve-release-request, trust-preflight, build-release-evidence, attest-release\]/, 'npm staging must depend on protected-main resolution, trust readback, evidence, and attestation')
+mustMatch(trustBlock, /if: vars\.RELEASE_HIGH_ASSURANCE == 'true'/, 'the high-assurance trust preflight must stay an explicit opt-in lane')
+mustMatch(attestBlock, /needs: \[resolve-release-request, build-release-evidence\]/, 'attestation must depend on protected-main resolution and the unprivileged evidence build')
+mustMatch(npmBlock, /needs: \[resolve-release-request, build-release-evidence, attest-release\]/, 'npm publication must depend on protected-main resolution, evidence, and attestation')
 mustMatch(githubBlock, /needs: certify-finalization/, 'GitHub Release writer must depend on independent finalization certification')
 mustMatch(buildBlock, /permissions:\s*\n\s*contents: read/, 'evidence builder must remain read-only')
 must(!/contents: write|id-token: write|attestations: write|environment:/.test(buildBlock), 'evidence builder gained authority')
@@ -187,15 +187,15 @@ mustMatch(buildBlock, /test "\$\{\{ steps\.release-identity\.outputs\.commit \}\
 mustMatch(buildBlock, /--allow-repository-dispatch/, 'evidence builder must use the guarded protected-default dispatch verifier')
 mustMatch(attestBlock, /contents: read[\s\S]*id-token: write[\s\S]*attestations: write/, 'attestation job permissions drifted')
 must(!/contents: write|environment:/.test(attestBlock), 'attestation job gained publish authority')
-must(attestBlock.indexOf('release-trust-preflight.mjs') < attestBlock.indexOf('actions/attest@'), 'attestation authority is reachable before trust evidence rebind')
-mustMatch(npmBlock, /environment:\s*\n\s*name: npm-release/, 'npm stage job lost its protected environment')
-mustMatch(npmBlock, /contents: read[\s\S]*id-token: write/, 'npm stage job permissions drifted')
-must(!/contents: write|attestations: write/.test(npmBlock), 'npm stage job gained repository/attestation write authority')
-must(npmBlock.indexOf('release-trust-preflight.mjs') < npmBlock.indexOf('release-npm-publish.mjs'), 'npm authority is reachable before trust evidence rebind')
-mustMatch(npmBlock, /release-npm-publish\.mjs[\s\S]*--github-token-env GH_TOKEN/, 'npm helper must recheck the remote tag around irreversible publishes')
-mustMatch(npmBlock, /--release-trust-evidence-file-sha256 "\$\{\{ needs\.trust-preflight\.outputs\.evidence_file_sha256 \}\}"/, 'stage receipt must bind the exact trust-evidence bytes')
-mustMatch(npmBlock, /if: always\(\)[\s\S]*npm-stage-\$\{\{ github\.event\.client_payload\.tag \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/, 'stage receipt must always be retained with an attempt-unique dispatch tag name')
-mustMatch(npmBlock, /id: stage_evidence_upload[\s\S]*Stage artifact SHA-256:.*steps\.stage_evidence_upload\.outputs\.artifact-digest/, 'stage handoff must expose the v4 stage artifact SHA-256')
+mustMatch(npmBlock, /environment:\s*\n\s*name: npm-release/, 'npm publish job lost its protected environment')
+mustMatch(npmBlock, /contents: read[\s\S]*id-token: write/, 'npm publish job permissions drifted')
+must(!/contents: write|attestations: write/.test(npmBlock), 'npm publish job gained repository/attestation write authority')
+mustMatch(npmBlock, /npm publish "\$tarball" --provenance --access public/, 'publication must go through tokenless OIDC Trusted Publishing with provenance')
+mustMatch(npmBlock, /npm view "\$\{name\}@\$\{version\}" version/, 'publication must read back the exact published registry versions')
+mustMatch(releaseGithubBlock, /needs: \[resolve-release-request, build-release-evidence, publish-npm\]/, 'GitHub Release publication must depend on the completed npm publish')
+mustMatch(releaseGithubBlock, /permissions:\s*\n\s*contents: write/, 'GitHub Release job needs contents write')
+must(!/id-token: write|attestations: write/.test(releaseGithubBlock), 'GitHub Release job gained npm/attestation authority')
+mustMatch(releaseGithubBlock, /gh release create "\$RELEASE_TAG"[\s\S]*--verify-tag/, 'GitHub Release must bind the verified tag')
 mustMatch(githubBlock, /permissions:\s*\n\s*contents: write/, 'GitHub Release job needs contents write')
 must(!/id-token: write|attestations: write/.test(githubBlock), 'GitHub Release job gained npm/attestation authority')
 mustMatch(githubBlock, /environment:\s*\n\s*name: release-finalize/, 'GitHub Release writer lost its independently protected environment')
@@ -211,14 +211,12 @@ must(
   'each attestation must have its own immediately preceding remote signed-tag recheck',
 )
 const stagingTagChecks = indexesOf(npmBlock, 'scripts/release-remote-tag.mjs')
-const stagingAuthorityUses = indexesOf(npmBlock, 'scripts/release-npm-publish.mjs')
+const stagingAuthorityUses = indexesOf(npmBlock, 'npm publish "$tarball"')
 must(
   stagingTagChecks.length === 1 && stagingAuthorityUses.length === 1
   && stagingTagChecks[0] < stagingAuthorityUses[0],
-  'npm staging authority must have its own preceding remote signed-tag recheck',
+  'npm publication authority must have its own preceding remote tag recheck',
 )
-must((attestBlock.match(/--expected-object "\$\{\{ needs\.trust-preflight\.outputs\.tag_object \}\}"/g) || []).length === 2, 'both attestation tag rechecks must bind the trust-preflight tag object')
-must((npmBlock.match(/--expected-object "\$\{\{ needs\.trust-preflight\.outputs\.tag_object \}\}"/g) || []).length === 1, 'the staging tag recheck must bind the trust-preflight tag object')
 must((workflow.match(/--expected "\$\{\{ needs\.build-release-evidence\.outputs\.release_set_sha256 \}\}"/g) || []).length === 2, 'attestation and staging must bind the same independent release-set digest')
 must((workflow.match(/node scripts\/run-verified-npm\.mjs -- pack \.\/packages\//g) || []).length === 3, 'each publishable package must be packed exactly once through the verified npm runtime')
 must(!/npm install --global|\bnpx\s+-y\b/.test(workflow), 'release workflow must not bootstrap mutable ambient npm tooling')
@@ -244,7 +242,7 @@ const npmPromotionHelper = readFileSync(join(root, 'scripts/release-npm-promote.
 mustMatch(npmPromotionHelper, /assertInteractivePromotionEnvironment[\s\S]*verifyAuthorizedTrain[\s\S]*'dist-tag', 'add'/, 'promotion must validate the platform-interactive session and the entire authorized train before channel mutation')
 must(!/createInterface|PROMOTE \$\{context\.identity\.tag\}|human confirmation phrase|approved-awaiting-human-confirmation|awaiting-approval/.test(npmPromotionHelper), 'promotion must not add a second human engineering-decision confirmation gate')
 must(!/complete digest-bound human handoff|inspect all stage IDs/.test(workflow), 'release handoff must request only npm account-holder login/2FA, never human engineering inspection')
-mustMatch(workflow, /Account-holder action only:[^\n]*canonical release-npm-approve helper[^\n]*npm login\/2FA[^\n]*No engineering decision is requested/, 'release handoff must identify the sole platform-enforced human action')
+must(!/Account-holder action only:/.test(workflow), 'the ordinary publish path must not require a per-release human npm handoff')
 mustMatch(npmPromotionHelper, /assertExpectedChannelProgress[\s\S]*publishOrder/, 'promotion must use exact-plan prefix/resume drift checks')
 mustMatch(npmPromotionHelper, /args\['--tag-object'\] !== receipt\.releaseTrust\.tagObject[\s\S]*assertRemoteTag\(context, receipt\.releaseTrust\.tagObject/, 'promotion must reject a tag object that differs from the stage receipt')
 mustMatch(npmPromotionHelper, /resolveRemoteTagIdentity[\s\S]*expectedTagObject[\s\S]*'dist-tag', 'add'/, 'promotion must re-read the same GitHub-verified tag object before channel mutation')
@@ -281,8 +279,8 @@ must((finalizeWorkflow.match(/release-finalize-\$\{\{ github\.event\.client_payl
 mustMatch(githubBlock, /actions: read[\s\S]*release-stage-run-identity\.mjs[\s\S]*release-npm-finalization-receipt\.mjs/, 'fresh contents writer must re-resolve and rebind stage identity')
 mustMatch(
   npmFinalizeHelper,
-  /prepareVerifiedExactNpmRuntime[\s\S]*npmVersion !== '11\.18\.0'[\s\S]*npmRuntime\.cleanup/,
-  'finalizer registry certification must use and clean up the lock-bound npm 11.18.0 runtime',
+  /resolveExactNpmRuntimeContract[\s\S]*prepareVerifiedExactNpmRuntime[\s\S]*assertVerifiedExactNpmRuntimeCapability\(npmRuntime, expectedNpmRuntime\)[\s\S]*npmVersion !== '11\.18\.0'[\s\S]*npmRuntime\.cleanup/,
+  'finalizer registry certification must verify and clean up the exact overlay-bound npm 11.18.0 runtime',
 )
 must(!/args\['--npm'\]|\|\| 'npm'/.test(npmFinalizeHelper), 'finalizer may not accept or fall back to an ambient npm executable')
 mustMatch(finalizeCertBlock, /run-verified-npm\.mjs -- pack \.\/packages\/design-system[\s\S]*run-verified-npm\.mjs -- pack \.\/packages\/storybook-config[\s\S]*run-verified-npm\.mjs -- pack \.\/packages\/governance/, 'finalizer must rebuild all three archives from the exact tag through the verified npm runtime')
@@ -310,6 +308,14 @@ for (const [label, pattern] of [
 }
 
 // Build two real, independently packed release sets to prove byte-deterministic BOMs.
+// The standalone governance remainder must be order-independent: release workflows
+// build these publishable workspaces before packing, so reproduce that prerequisite
+// here instead of accepting archives that silently omit required dist entries.
+execFileSync('npm', ['run', '--silent', 'build:lib'], {
+  cwd: root,
+  env: process.env,
+  stdio: 'pipe',
+})
 const packageSources = [
   ['@qijenchen/design-system', 'packages/design-system'],
   ['@qijenchen/storybook-config', 'packages/storybook-config'],

@@ -1,36 +1,83 @@
 # Day 0 — First-Time Setup
 
-5 min to ready-to-code state.
-
 ## Prerequisites
 
-- Node 22+ (`node -v`)
-- npm 10+ (`npm -v`)
-- Git
-- Claude Code CLI installed
+- Node 22.12.0+, npm 10+ as the launcher, Git, Bash, `jq`, and Python 3. Governance npm operations use exact lock-verified npm 11.18.0.
+- Claude Code, Codex, or another agent that can read `AGENTS.md`
 
-## Steps
+The exact governance checker intentionally fails closed when Bash, `jq`, or Python 3 is unavailable,
+because the authenticated hook corpus currently contains both shell and Python predicates. On
+Windows, use the committed Linux dev container or WSL2. Native Windows is unsupported and the
+checker fails closed; an unregistered environment that merely has similarly named executables is
+not an approved substitute. Do not treat a skipped native-hook run as certified governance.
 
-```bash
-# 1. Create from template or clone
-git clone git@github.com:ajenchen/ds-product-template.git
-cd ds-product-template
+## Setup
 
-# 2. Install workspace deps
-npm install
-
-# 3. Open in Claude Code
-claude
+```text
+git clone <your-template-derived-repository>
+cd <repository>
+npm run setup:all
 ```
 
-治理自動生效,**不需 /plugin install**:committed `.claude/settings.json` 的 SessionStart hook 在你開 session 時自動注入設計紀律 preamble(寫 code 前主動遵循 item-anatomy / SSOT 消費 / Tailwind / 命名 / 4-Family)+ 編輯時 dispatcher 跑官方 fork hook 機械把關(手刻 table / 硬寫間距色值 / 誤用 primitive 被擋)。雲端 fresh-clone 缺治理本體時,SessionStart 會自動 `npm install @beta` 補上。
+`setup:all` is the single local, devcontainer, and hosted-setup entrypoint. It first executes the
+role-specific `setup:governance` primitive, then installs and version-probes the lock-bound CLI
+capabilities declared by the provider toolchain registry. CLI provisioning is not independent-review
+activation or certification. A usable review still requires an activated managed broker, an exact
+provider/runtime/surface/product-consumer certification tuple, author/reviewer separation, and the
+required external evidence/readback. Until those bindings exist, the launcher remains plan-only and
+must report `REVIEW-BLOCKED`. The host provider process remains vendor-managed; repository tooling
+never claims to replace or certify that host runtime.
 
-## Verify
+A successful command prints `scope=local-bootstrap`, `providerCertification=not-checked`, and
+`externalActivationRequired=true`. Treat these as an explicit boundary: the checkout bootstrap is
+verified, but cloud/provider runtime certification and external activation still require their
+independent target-bound evidence and readback.
 
-- `npm run create-app test-app` creates `apps/test-app/`.
-- `cd apps/test-app && npm run dev` opens a styled Vite app.
-- 開 Claude Code session 後,AI context 含設計紀律(問它「有沒有 item-anatomy 的設計原則?」應答得出);叫它手刻 `<table>` 或硬寫 `gap-13` 會被官方 hook 擋。(注:`/prototype` 等 fork-relevant slash command **已** committed 進 `.claude/skills/`,**session-1 可直接叫用**;DS-author-only 治理 skill 不送。詳 CLAUDE.md。)
+The environment's npm only launches committed Node scripts. The governance phase resolves the canonical
+npm tarball URL and SHA-512 from the committed lock, downloads those bytes with Node HTTPS,
+closed-parses them into a disposable root, probes the exact CLI, and uses that same independent
+runtime for the lifecycle-disabled install and signature audit. It never executes PATH npm or an
+ignored `node_modules/npm` as authority. It then runs the exact installed hooks-off governance check;
+any failed step stops setup. A malicious committed Git snapshot, host, Node/TLS runtime, or canonical
+registry endpoint is outside this repository-only proof. The last stage is the local deterministic conformance boundary, not provider runtime
+certification. It verifies the exact package/lock/BOM, installed governance corpus, each provider's
+declared native-event projection and explicit hard-gate fallback, shared skills, and generated
+digests without relying on native hooks or changing the checkout. Runtime certification remains
+`not-certified` until independently signed target-bound evidence and external enforcement readback
+are activated.
 
-## Next
+## Hosted setup
 
-Run `npm run setup:netlify`, then continue with `docs/02-create-new-product.md`.
+- In Codex Cloud, configure both the environment **Setup script** and cached-container
+  **Maintenance script** as `npm run setup:all`. The ordering and cache behavior are defined
+  by the [official Codex Cloud environment guide](https://developers.openai.com/codex/cloud/environments).
+- In Claude Code on the web, configure the environment **Setup script** as
+  `npm run setup:all`. Anthropic may reuse a cached successful setup, so rebuild the cache or
+  run the same command explicitly after a committed-lock change. See the
+  [official Claude Code web setup guide](https://code.claude.com/docs/en/claude-code-on-the-web#setup-scripts).
+- Codespaces and other devcontainer clients invoke the same setup implementation from the committed
+  `.devcontainer/devcontainer.json`.
+
+Do not move installation into SessionStart. The repository SessionStart adapter is deliberately
+read-only so opening or resuming any local/cloud agent cannot mutate the checkout.
+
+Now start the provider you prefer (`claude`, `codex`, or another registered interface). `AGENTS.md`, provider adapters, and skill views already exist before the session starts. No plugin or session-time install is required. A future provider is admitted through the registry, adapter, compatibility, review-binding, and target-bound certification contracts; an unknown executable is never silently treated as supported.
+
+## Verify product creation
+
+```text
+npm run create-app test-app
+cd apps/test-app
+npm run dev
+```
+
+Before opening a PR, return to the repository root and run:
+
+```text
+npm run governance:check -- --hooks-off
+npm run typecheck
+npm run lint:imports
+npm run build
+```
+
+Next: run `npm run setup:netlify`. It performs no Netlify CLI installation or login; it prints the Dashboard/manual steps and intentionally exits 2 because a local script cannot verify the Netlify-side setup. Complete those steps in a browser, then continue with `docs/02-create-new-product.md`.

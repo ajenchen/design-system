@@ -9,6 +9,10 @@ ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)" || {
 }
 ROOT="$(cd "$ROOT" && pwd -P)"
 FIXTURE=$(mktemp -d)
+if [ -z "${FIXTURE:-}" ] || [ ! -d "$FIXTURE" ]; then
+  echo "❌ mktemp -d failed(TMPDIR=${TMPDIR:-unset});fixture unavailable" >&2
+  exit 1
+fi
 trap 'rm -rf "$FIXTURE"' EXIT
 
 write_file() {

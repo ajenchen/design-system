@@ -1857,8 +1857,8 @@ for (const fixture of poison.cases) {
     else if (fixture.mutation === 'replace-phase-id') ledger.receipts[1].phaseId = 'post-merge-hard-gates'
     else if (fixture.mutation === 'replace-prior-receipt-digest') ledger.receipts[1].priorReceiptSha256 = '0'.repeat(64)
     else if (fixture.mutation === 'shorten-soak-to-71h') {
-      ledger.receipts[9].observedAt = '2026-07-24T07:00:00.000Z'
-      ledger.receipts[10].observedAt = '2026-07-24T07:30:00.000Z'
+      ledger.receipts[9].observedAt = '2026-07-31T07:00:00.000Z'
+      ledger.receipts[10].observedAt = '2026-07-31T07:30:00.000Z'
       const soak = evidenceValue(ledger.receipts[9], 'candidate-bound-soak-72h-v1')
       soak.completedAt = ledger.receipts[9].observedAt
       soak.elapsedHours = 71
@@ -1872,6 +1872,8 @@ for (const fixture of poison.cases) {
     } else if (fixture.mutation === 'null-managed-ci-activation') {
       const bootstrap = evidenceValue(ledger.receipts[1], 'github-policy-bootstrap-readback-v1')
       bootstrap.activation.requirements[0].status = 'not-activated'
+      bootstrap.activation.requirements[0].observedAt = null
+      bootstrap.activation.requirements[0].expiresAt = null
       bootstrap.activation.requirements[0].evidence = null
       bootstrap.activationDigest = sha256(stableStringify(bootstrap.activation, 0))
       replaceEvidenceValue(ledger.receipts[1], 'github-policy-bootstrap-readback-v1', bootstrap)
@@ -2094,11 +2096,13 @@ test('generic validators, forged registries, active-run loaders, and repo roots 
     canonicalBindings: { attacker: true },
   })
   assert.equal(forgedRegistryValidation.productionEligible, false)
-  const forgedRepoValidation = validateStagedRolloutLedger(PLAN, ledger, {
-    activeRun: ACTIVE_RUN, issuerRegistry: REGISTRY, attestationPolicy: POLICY, now: NOW,
-    repoRoot: resolve(tmpdir(), 'attacker-repo'), verifyMechanisms: false,
-  })
-  assert.equal(forgedRepoValidation.productionEligible, false)
+  assert.throws(
+    () => validateStagedRolloutLedger(PLAN, ledger, {
+      activeRun: ACTIVE_RUN, issuerRegistry: REGISTRY, attestationPolicy: POLICY, now: NOW,
+      repoRoot: resolve(tmpdir(), 'attacker-repo'), verifyMechanisms: false,
+    }),
+    /Cannot read valid JSON .*external-activation-policy\.json/,
+  )
   assert.throws(() => buildStagedRolloutExecutionPackage({
     plan: PLAN, ledger, phaseId: 'prepare', capabilities: ['local-evidence-write'], validation: JSON.parse(JSON.stringify(validation)),
   }), /non-serializable validator capability/)
@@ -2214,7 +2218,7 @@ test('strict generic validation recomputes the canonical bootstrap prerequisite'
     issuerRegistry: REGISTRY,
     attestationPolicy: POLICY,
     now: NOW,
-  }), /requires current release-scope external activation|allowedKeyIds cannot be empty after trust activation/)
+  }), /requires current release-scope external activation|allowedKeyIds cannot be empty after trust activation|Issuer owner-governance-[a-z0-9-]+ is not active yet/)
 })
 
 test('fixture validation cannot mint a rollout package and the soak predecessor remains explicit', () => {
@@ -3410,6 +3414,8 @@ test('production-grade managed-CI activation cannot be substituted to predate th
   const ledger = ledgerFixture({ receiptCount: 2 })
   const bootstrap = evidenceValue(ledger.receipts[1], 'github-policy-bootstrap-readback-v1')
   bootstrap.activation.requirements[0].observedAt = '2026-07-20T00:30:00.000Z'
+  bootstrap.activation.requirements[0].evidence.payload.observedResource.protectedMainMergedAt = '2026-07-20T00:20:00.000Z'
+  bootstrap.managedCiBootstrap.protectedMainMergedAt = '2026-07-20T00:20:00.000Z'
   bootstrap.managedCiBootstrap.activationObservedAt = '2026-07-20T00:30:00.000Z'
   bootstrap.activationDigest = sha256(stableStringify(bootstrap.activation, 0))
   replaceEvidenceValue(ledger.receipts[1], 'github-policy-bootstrap-readback-v1', bootstrap)

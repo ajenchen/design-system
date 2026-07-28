@@ -5,12 +5,16 @@ import { lstatSync, readdirSync, realpathSync } from 'node:fs'
 import { dirname, isAbsolute, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  GOVERNANCE_DEPENDENCY_EXACT_NPM_VERSION,
   assertNoRootNpmShrinkwrap,
+  runVerifiedHighVulnerabilityAudit,
   sanitizeGovernanceBootstrapEnvironment,
 } from './lib/governance-dependency-bootstrap.mjs'
 import { isContainedPath } from './lib/canonical-path-containment.mjs'
-import { prepareVerifiedExactNpmRuntime } from './lib/verified-exact-npm-runtime.mjs'
+import {
+  assertVerifiedExactNpmRuntimeCapability,
+  prepareVerifiedExactNpmRuntime,
+  resolveExactNpmRuntimeContract,
+} from './lib/verified-exact-npm-runtime.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const REGISTRY = 'https://registry.npmjs.org/'
@@ -120,9 +124,37 @@ function validateArgs(args, environment, root) {
   ])
   invariant(args.every((value) => allowed.has(value)), `npm ${command} contains an unreviewed option`)
   invariant(args.includes('--ignore-scripts') || command === 'audit', `npm ${command} must disable lifecycle scripts`)
+  invariant(command === 'install' || !args.includes('--package-lock-only'), `npm ${command} cannot use the install-only package-lock contract`)
+  if (command === 'audit') {
+    const auditModes = args.filter((value) => value === 'signatures' || value === '--audit-level=high')
+    invariant(auditModes.length === 1, 'npm audit must select exactly one closed audit mode')
+    const optionalRegistryCount = args.filter((value) => value === `--registry=${REGISTRY}`).length
+    invariant(
+      optionalRegistryCount <= 1 && args.length === 4 + optionalRegistryCount,
+      'npm audit argv differs from the closed signature or high-vulnerability contract',
+    )
+  }
   const normalized = [...args]
   normalized[prefixIndex + 1] = canonicalPrefix
   return normalized
+}
+
+function installedTreeTarget(args) {
+  const prefixIndex = args.indexOf('--prefix')
+  return prefixIndex >= 0 ? args[prefixIndex + 1] : null
+}
+
+function assertInstalledOverlayReceipt(runtime, receipt) {
+  invariant(
+    receipt?.status === 'verified'
+      && receipt.identityDigest === runtime.securityOverlay.identityDigest
+      && /^[a-f0-9]{64}$/.test(runtime.securityOverlay.treeDigest || '')
+      && receipt.treeDigest === runtime.securityOverlay.treeDigest
+      && /^[a-f0-9]{64}$/.test(receipt.auditClosureDigest || '')
+      && Array.isArray(receipt.auditClosure),
+    'installed npm security overlay receipt is missing, stale, or substituted',
+  )
+  return receipt
 }
 
 export async function runVerifiedNpm({
@@ -140,24 +172,63 @@ export async function runVerifiedNpm({
     assertNoRootNpmShrinkwrap(verifiedArgs[prefixIndex + 1], { errorPrefix: 'GOV-VERIFIED-NPM-001' })
   }
   const sanitized = sanitizeGovernanceBootstrapEnvironment(environment)
+  const npmEnvironment = {
+    ...sanitized,
+    NPM_CONFIG_REGISTRY: REGISTRY,
+    NPM_CONFIG_IGNORE_SCRIPTS: 'true',
+    NPM_CONFIG_STRICT_SSL: 'true',
+  }
+  const expectedRuntime = resolveExactNpmRuntimeContract(root)
   let runtime = null
   try {
     runtime = await runtimeFactory({ repositoryRoot: root, env: sanitized, runner })
-    invariant(runtime?.cli && runtime?.toolchain?.npm === GOVERNANCE_DEPENDENCY_EXACT_NPM_VERSION, 'verified npm runtime capability is invalid')
+    assertVerifiedExactNpmRuntimeCapability(runtime, expectedRuntime)
     invariant(realpathSync(resolve(rootPath)) === root, 'repository root changed before npm execution')
     verifiedArgs = validateArgs(args, environment, root)
     const verifiedPrefixIndex = verifiedArgs.indexOf('--prefix')
     if (verifiedPrefixIndex >= 0) {
       assertNoRootNpmShrinkwrap(verifiedArgs[verifiedPrefixIndex + 1], { errorPrefix: 'GOV-VERIFIED-NPM-001' })
     }
+    const command = verifiedArgs[0]
+    const target = installedTreeTarget(verifiedArgs)
+    let installedOverlayReceipt = null
+    if (command === 'audit') {
+      installedOverlayReceipt = assertInstalledOverlayReceipt(
+        runtime,
+        runtime.verifyInstalledSecurityOverlay(target),
+      )
+    }
+    if (command === 'audit' && verifiedArgs.includes('--audit-level=high')) {
+      const vulnerabilityAudit = runVerifiedHighVulnerabilityAudit(
+        process.execPath,
+        [
+          runtime.cli,
+          'audit',
+          '--audit-level=high',
+          '--json',
+          `--registry=${REGISTRY}`,
+        ],
+        {
+          root: target,
+          environment: npmEnvironment,
+          runner,
+          npmRuntime: runtime,
+          installedOverlayReceipt,
+          errorPrefix: 'GOV-VERIFIED-NPM-001',
+          timeoutMs: 30 * 60 * 1_000,
+        },
+      )
+      return {
+        command,
+        npm: runtime.toolchain.npm,
+        securityOverlay: installedOverlayReceipt,
+        status: 'passed',
+        vulnerabilityAudit,
+      }
+    }
     const result = runner(process.execPath, [runtime.cli, ...verifiedArgs], {
       cwd: root,
-      env: {
-        ...sanitized,
-        NPM_CONFIG_REGISTRY: REGISTRY,
-        NPM_CONFIG_IGNORE_SCRIPTS: 'true',
-        NPM_CONFIG_STRICT_SSL: 'true',
-      },
+      env: npmEnvironment,
       shell: false,
       stdio: 'inherit',
       timeout: 30 * 60 * 1_000,
@@ -165,7 +236,35 @@ export async function runVerifiedNpm({
     })
     if (result?.error) throw result.error
     invariant(Number.isInteger(result?.status) && result.status === 0, `verified npm command failed with exit ${String(result?.status)}`)
-    return { command: verifiedArgs[0], npm: runtime.toolchain.npm, status: 'passed' }
+    if (command === 'ci' || command === 'install') {
+      const postInstallArgs = validateArgs(args, environment, root)
+      invariant(
+        JSON.stringify(postInstallArgs) === JSON.stringify(verifiedArgs),
+        `npm ${command} target changed during execution`,
+      )
+      assertNoRootNpmShrinkwrap(target, { errorPrefix: 'GOV-VERIFIED-NPM-001' })
+    }
+    if (command === 'install' && verifiedArgs.includes('--package-lock-only')) {
+      const generatedContract = resolveExactNpmRuntimeContract(target)
+      invariant(
+        generatedContract.version === expectedRuntime.version
+          && generatedContract.integrity === expectedRuntime.integrity
+          && generatedContract.securityOverlay.identityDigest === expectedRuntime.securityOverlay.identityDigest,
+        'package-lock-only install produced a stale or substituted npm security overlay contract',
+      )
+    } else if (command === 'ci' || command === 'install') {
+      assertInstalledOverlayReceipt(runtime, runtime.applyInstalledSecurityOverlay(target))
+      installedOverlayReceipt = assertInstalledOverlayReceipt(
+        runtime,
+        runtime.verifyInstalledSecurityOverlay(target),
+      )
+    }
+    return {
+      command,
+      npm: runtime.toolchain.npm,
+      ...(installedOverlayReceipt ? { securityOverlay: installedOverlayReceipt } : {}),
+      status: 'passed',
+    }
   } finally {
     runtime?.cleanup?.()
   }

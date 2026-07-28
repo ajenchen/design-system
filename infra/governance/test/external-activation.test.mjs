@@ -47,6 +47,10 @@ import { createManagedCiActivationFixture } from './fixtures/managed-ci-activati
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const NOW = new Date('2026-07-21T00:00:00.000Z')
 
+function issuerValidationTime(registry) {
+  return new Date(Math.max(...registry.issuers.map(issuer => Date.parse(issuer.notBefore))) + 1)
+}
+
 function signingContext() {
   const { publicKey, privateKey } = generateKeyPairSync('ed25519')
   const mirrorKeys = generateKeyPairSync('ed25519')
@@ -604,7 +608,16 @@ test('committed external activation ledger is truthful, typed, and covers every 
   const policy = readJson(resolve(ROOT, 'external-activation-policy.json'))
   const rings = readJson(resolve(ROOT, 'release-rings.json'))
   const issuerRegistry = readJson(resolve(ROOT, 'trust/issuers.json'))
-  assert.equal(validateExternalActivationRequirements(ledger, { inventory, desired, policy, mutationBoundaryContract, rings, issuerRegistry, now: NOW }), true)
+  const canonicalNow = issuerValidationTime(issuerRegistry)
+  assert.equal(validateExternalActivationRequirements(ledger, {
+    inventory,
+    desired,
+    policy,
+    mutationBoundaryContract,
+    rings,
+    issuerRegistry,
+    now: canonicalNow,
+  }), true)
   assert.equal(ledger.requirements.every(item => item.status === 'not-activated'), true)
   assert.equal(ledger.requirements.every(item => item.evidence === null && item.observedAt === null && item.expiresAt === null), true)
   for (const packageName of ['@qijenchen/governance', '@qijenchen/storybook-config', '@qijenchen/design-system']) {
@@ -612,7 +625,7 @@ test('committed external activation ledger is truthful, typed, and covers every 
       assert.equal(ledger.requirements.filter(item => item.kind === kind && item.packageName === packageName).length, 1)
     }
   }
-  const release = externalActivationReadiness(ledger, { inventory, desired, policy, mutationBoundaryContract, rings, issuerRegistry, now: NOW, scope: 'release' })
+  const release = externalActivationReadiness(ledger, { inventory, desired, policy, mutationBoundaryContract, rings, issuerRegistry, now: canonicalNow, scope: 'release' })
   assert.equal(release.ready, false)
   assert.equal(release.profileId, 'PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM')
   assert.equal(release.profileDigest, externalActivationProfileDigest(policy.profiles[0]))
@@ -625,7 +638,7 @@ test('committed external activation ledger is truthful, typed, and covers every 
   assert.equal(release.blockers.some(item => item.id === 'activate-managed-ci-trusted-execution'), false)
   assert(release.blockers.some(item => item.id === 'activate-design-system-mirror-mutation-boundary'))
   assert(release.blockers.some(item => item.id === 'activate-product-template-mirror-mutation-boundary'))
-  const objective = externalActivationReadiness(ledger, { inventory, desired, policy, mutationBoundaryContract, rings, issuerRegistry, now: NOW, scope: 'objective-completion' })
+  const objective = externalActivationReadiness(ledger, { inventory, desired, policy, mutationBoundaryContract, rings, issuerRegistry, now: canonicalNow, scope: 'objective-completion' })
   assert.equal(objective.ready, false)
   assert.deepEqual(objective.optionalRequirementIds, [
     'activate-claude-managed-host-assurance',
@@ -637,7 +650,7 @@ test('committed external activation ledger is truthful, typed, and covers every 
   assert.equal(objective.blockers.some(item => item.id === 'activate-managed-ci-trusted-execution'), false)
   assert(objective.blockers.some(item => item.id === 'activate-design-system-mirror-mutation-boundary'))
   assert(objective.blockers.some(item => item.id === 'activate-product-template-mirror-mutation-boundary'))
-  const managedHost = externalActivationReadiness(ledger, { inventory, desired, policy, mutationBoundaryContract, rings, issuerRegistry, now: NOW, scope: 'managed-host' })
+  const managedHost = externalActivationReadiness(ledger, { inventory, desired, policy, mutationBoundaryContract, rings, issuerRegistry, now: canonicalNow, scope: 'managed-host' })
   assert.equal(managedHost.ready, true)
   assert.equal(managedHost.requiredCount, 0)
   assert.deepEqual(managedHost.optionalRequirementIds, [
@@ -1635,7 +1648,15 @@ test('not-activated status forbids fabricated evidence and npm policy coverage f
   const issuerRegistry = readJson(resolve(ROOT, 'trust/issuers.json'))
   committed.requirements = committed.requirements.filter(item => item.id !== 'activate-governance-stage-only-trusted-publisher')
   assert.throws(
-    () => validateExternalActivationRequirements(committed, { inventory, desired, policy, mutationBoundaryContract, rings, issuerRegistry, now: NOW }),
+    () => validateExternalActivationRequirements(committed, {
+      inventory,
+      desired,
+      policy,
+      mutationBoundaryContract,
+      rings,
+      issuerRegistry,
+      now: issuerValidationTime(issuerRegistry),
+    }),
     /does not exactly cover the immutable policy catalog/,
   )
 })

@@ -12,8 +12,12 @@ import {
   assertClosedGitLocalConfiguration,
   runClosedGit,
 } from './closed-tool-execution.mjs'
+import {
+  CONTROL_PLANE_GENESIS_CLOSED_BASELINE_PATHS,
+} from './control-plane-genesis-transition.mjs'
 
 const CLASSIFICATIONS = new Set(['canonical-source', 'generated-output', 'non-authority-exclusion'])
+const GENESIS_TREE_TO_SYMLINK_OUTPUTS = new Set(CONTROL_PLANE_GENESIS_CLOSED_BASELINE_PATHS)
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message)
@@ -329,16 +333,28 @@ export function validateProtectedRootClassification({
   const observed = observedPaths.map((path, index) => repositoryPath(path, `observedPaths[${index}]`))
   const filesystem = roots.flatMap(protectedRoot => filesystemLeaves(root, protectedRoot))
   const filesystemByPath = new Map(filesystem.map(entry => [entry.path, entry]))
-  // During an intentional generated tree -> exact symlink migration, the worktree generator
-  // has already replaced the tree while the unstaged index still enumerates its former children.
-  // Ignore only those stale descendants whose parent is both an exact generated-output file
-  // classification and an exact stage output. No canonical/non-authority symlink gains this
-  // exception, and the exact symlink itself remains fully validated below.
+  // During the one reviewed Genesis baseline tree -> exact symlink migration, the
+  // worktree generator has already replaced the tree while the unstaged index
+  // still enumerates its former children. The ordinary rule remains exact-file
+  // only; the only tree roots admitted here are the two content-addressed
+  // transition paths exported by the canonical transition contract.
   const generatedSymlinkTransitions = filesystem
     .filter(entry => entry.type === 'symlink')
     .map(entry => entry.path)
-    .filter(path => document.entries.some(entry => entry.path === path && entry.match === 'file' && entry.classification === 'generated-output'))
-    .filter(path => stages.some(stage => stage.outputs.includes(path)))
+    .filter(path => document.entries.some(entry => (
+      entryMatches(path, entry)
+        && entry.classification === 'generated-output'
+        && (
+          entry.path !== path
+            || entry.match === 'file'
+            || GENESIS_TREE_TO_SYMLINK_OUTPUTS.has(path)
+        )
+    )))
+    .filter(path => stages.some(stage => stage.outputs.some(output => repositoryPath(
+      output,
+      `${stage.id} output declaration`,
+      { allowTrailingSlash: true },
+    ) === path)))
   const leaves = [...new Set([
     ...filesystem.map(entry => entry.path),
     ...tracked.map((entry) => entry.path)
@@ -394,8 +410,21 @@ export function validateProtectedRootClassification({
     }
     const isFilesystemSymlink = filesystemEntry?.type === 'symlink'
     if (isFilesystemSymlink) {
-      const exactOutputStages = stages.filter(stage => stage.outputs.includes(path)).map(stage => stage.id)
-      invariant(entry.classification === 'generated-output' && exactOutputStages.length > 0, `only exact generated outputs may be symlinks inside protected roots:${path}`)
+      const exactOutputStages = stages.filter(stage => stage.outputs.some(output => repositoryPath(
+        output,
+        `${stage.id} output declaration`,
+        { allowTrailingSlash: true },
+      ) === path)).map(stage => stage.id)
+      invariant(
+        entry.classification === 'generated-output'
+          && (
+            entry.path !== path
+              || entry.match === 'file'
+              || GENESIS_TREE_TO_SYMLINK_OUTPUTS.has(path)
+          )
+          && exactOutputStages.length > 0,
+        `only exact generated files or reviewed Genesis baseline aliases may be symlinks inside protected roots:${path}`,
+      )
     }
     records.push({ path, classification: entry.classification, entryId: entry.id, sourceStages, outputStages })
   }

@@ -25,7 +25,7 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '
   (.tool_input.new_string // "") + "\n" +
   ([.tool_input.edits[]? | .new_string] | join("\n"))
 ' 2>/dev/null || echo "")
-[ -z "${NEW_CONTENT//[[:space:]]/}" ] && exit 0
+grep -q '[^[:space:]]' <<<"$NEW_CONTENT" || exit 0
 
 HITS=$(printf '%s\n' "$NEW_CONTENT" | grep -v '@nondeterministic-ok:' | grep -nE 'new Date\(\)|Date\.now\(\)|Math\.random\(\)' || true)
 [ -z "$HITS" ] && exit 0

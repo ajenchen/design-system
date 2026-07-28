@@ -1,0 +1,4 @@
+interface:
+  display_name: "Independent Review"
+  short_description: "Read-only cross-provider product second opinion"
+  default_prompt: "Use $independent-review to obtain an evidence-bound read-only second opinion from a distinct provider."

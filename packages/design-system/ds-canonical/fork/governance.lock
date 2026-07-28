@@ -1,255 +1,1704 @@
 {
+  "schemaVersion": 1,
+  "kind": "fork-governance-corpus-lock",
+  "hashAlgorithm": "sha256",
   "_purpose": "sha256 of every shipped fork governance body + manifest (tamper-detect baseline)",
   "entries": [
     {
+      "schemaVersion": 1,
       "file": "AGENTS.md",
-      "sha256": "52414efa4289281a6070a0fabdf08a97045197a90a072ca0a7550f01e79203c3",
-      "source": "AGENTS.md(root)"
+      "sha256": "1f7bfe4d5e50a002d3f735176cadc52536fe946c49e6e9be3b70cdadc07bc644",
+      "source": "common instruction compatibility alias",
+      "classification": null,
+      "destination": null
     },
     {
+      "schemaVersion": 1,
+      "file": "CLAUDE.md",
+      "sha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
+      "source": "provider instruction compatibility alias",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/bug-fix-rhythm/SKILL.md",
+      "sha256": "85b65f17243a6000a417d011144c1dd966cebb6bd050bbe713b3b22b426df015",
+      "source": "providers/codex/skills/bug-fix-rhythm",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/code-quality-audit/SKILL.md",
+      "sha256": "f969d2fde816532cf77efdf6e6c364131b67ea9bc64666289f692016748755a6",
+      "source": "providers/codex/skills/code-quality-audit",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/delivery-handoff/SKILL.md",
+      "sha256": "2287987440ad40fd7b2a27963b1cf8df9d8df83cb92dbd406e35f6b839426186",
+      "source": "providers/codex/skills/delivery-handoff",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/delivery-handoff/references/flow-diagram.md",
+      "sha256": "b750d5117c92a1d0cde53283951a6848a1d3baa69ef6253cdc308a49720281df",
+      "source": "providers/codex/skills/delivery-handoff",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/delivery-handoff/references/handoff-template.md",
+      "sha256": "7985469e96766da72032c7aad84e00efbbe0223dcaf7eb6df680b2f31c4d6a6e",
+      "source": "providers/codex/skills/delivery-handoff",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/delivery-handoff/references/inventory-checklist.md",
+      "sha256": "7be9cbe37788183aad8032373e22f5ca63e05f94f4232784a79f20bc3d122b75",
+      "source": "providers/codex/skills/delivery-handoff",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "codex/agents/skills/independent-review/SKILL.md",
-      "sha256": "4e0505a31083d5f07500ef0ea68726d7fe4986ef5541edddad5b10b5bbb2dc20",
-      "source": "gen-codex-adapter.mjs"
+      "sha256": "213882103632801bec9e4a165e259c7c52f05c6e8ee83f473637c2aa714364f8",
+      "source": "providers/codex/skills/independent-review",
+      "classification": null,
+      "destination": null
     },
     {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/independent-review/agents/openai.yaml",
+      "sha256": "e73b2afa7a983753b2cc373f36d4b0d8f8c66031eb517886531e70e38f738824",
+      "source": "providers/codex/skills/independent-review",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/independent-review/references/evidence-contract.md",
+      "sha256": "f61c9368b92486cd2aab46e24a825a67394360201d93b9bb1025944280b88c28",
+      "source": "providers/codex/skills/independent-review",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/performance-audit/SKILL.md",
+      "sha256": "7cf7e2a728222b9942de866ffa7c5133ecb6e8809364442376f934b83335c350",
+      "source": "providers/codex/skills/performance-audit",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/product-ui-audit/SKILL.md",
+      "sha256": "4447736c652302399e10c1a6852b163e778f749615e68bd486f09d2068334c74",
+      "source": "providers/codex/skills/product-ui-audit",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/product-ui-audit/references/audit-checks.md",
+      "sha256": "fd2bc8474609806a36ed09fff4db7b92b1069775528395c1de2e79f72887a946",
+      "source": "providers/codex/skills/product-ui-audit",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/product-ui-audit/references/common-misuses.md",
+      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942",
+      "source": "providers/codex/skills/product-ui-audit",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/product-ui-audit/references/report-template.md",
+      "sha256": "6b982b8c85f43c3629d58cebb3e1ec09b3941c7a583db42a78f66ece73430a55",
+      "source": "providers/codex/skills/product-ui-audit",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/propose-options/SKILL.md",
+      "sha256": "ea67781973daf106fb65b3fe47899cca8ac0e6c5ed179846814ae896170ff432",
+      "source": "providers/codex/skills/propose-options",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/prototype/SKILL.md",
+      "sha256": "61fc06fe1b465545f25ea5d38c4e6938ee01d2f8c8f071f0ff48dbc1e2fbd3a6",
+      "source": "providers/codex/skills/prototype",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/prototype/references/audit-checks.md",
+      "sha256": "55a4286e3d9b4c1b966df4d7c4078fde6071c030f2a859a443d59cd600d26f05",
+      "source": "providers/codex/skills/prototype",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/prototype/references/benchmark-sources.md",
+      "sha256": "5bf8b038d2476c38c72cbb808f75e023655eaa7735d72c3e6071e199307e594b",
+      "source": "providers/codex/skills/prototype",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/prototype/references/checkpoints.md",
+      "sha256": "2dcfc11d9c6f2f579de0fea3bd94d6f79de40fe2c1a699605fb260b9af573807",
+      "source": "providers/codex/skills/prototype",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/prototype/references/evaluation-matrix.md",
+      "sha256": "08c9110bd82a131a3d224e5087033502b6d23d485be269cdc67c2fa02dafdb4d",
+      "source": "providers/codex/skills/prototype",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/prototype/references/ooux-template.md",
+      "sha256": "f3792fd05e68091198e1edd4b2d60411adce36cb1ada5b53f1e58061d38eaff4",
+      "source": "providers/codex/skills/prototype",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/prototype/references/proposal-template.md",
+      "sha256": "dd6291ccc090436665e0f13b2cc2d4ff4ab41116df51e121ef9e3f9c8dfc3f38",
+      "source": "providers/codex/skills/prototype",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/scan-similar-bugs/SKILL.md",
+      "sha256": "deb79db56da754256f6447920a8daf204bdfc92c209d163437bcafa7cbead3b2",
+      "source": "providers/codex/skills/scan-similar-bugs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/ux-audit/SKILL.md",
+      "sha256": "a92311c318509c45aa13c600fbaf6474c1e9bd6d3961f09e551df82b5e4c51a4",
+      "source": "providers/codex/skills/ux-audit",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/visual-audit/SKILL.md",
+      "sha256": "76fc323b9e996993c5bfd6d46d0a326372220b55ff8a8911440270770701ef29",
+      "source": "providers/codex/skills/visual-audit",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/visual-audit/output/.gitkeep",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "providers/codex/skills/visual-audit",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/visual-audit/references/audit-architecture.md",
+      "sha256": "43c12bc10b294b29a8788c7351098ce18fb2edd926b5299318bb983e59bb6285",
+      "source": "providers/codex/skills/visual-audit",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/visual-audit/references/visual-checklist.md",
+      "sha256": "95cd3b88212a1b194bde271a1573d6e459cb254125352332f2521542a7a520fc",
+      "source": "providers/codex/skills/visual-audit",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "codex/agents/skills/visual-audit/references/world-class-benchmarks.md",
+      "sha256": "4aaa29c4b12b6da16111429dcb107017ff015f9c96196e0ec0baa6939641f472",
+      "source": "providers/codex/skills/visual-audit",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "3b09d8d4a1dab1213842ede807b0473e3521ad5b7b7536967da320db8f34ed85",
-      "source": "gen-codex-adapter.mjs PROJECTED ∩ fork classification"
+      "sha256": "83d373ba11636fd6941f80f9a298056e5c862730275daf623690bf0d6be3582a",
+      "source": "providers/codex/hook-config.json",
+      "classification": null,
+      "destination": null
     },
     {
+      "schemaVersion": 1,
+      "file": "common/closed-tool-execution.mjs",
+      "sha256": "12ec9e26eb29b0004ca52c5ce364688c5bd3e6dcf07a16560a98d1d6018f11e6",
+      "source": "packages/governance/src/closed-tool-execution.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "common/instruction.md",
+      "sha256": "1f7bfe4d5e50a002d3f735176cadc52536fe946c49e6e9be3b70cdadc07bc644",
+      "source": "scripts/fork-role-sources/AGENTS.product.md + AGENTS.md#canonical-decision-authority",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/governance-check.mjs",
+      "sha256": "d0b1f050e4adcf1cb8717d4a890cc03921301107b2f53e820e5e4bdda693c122",
+      "source": "scripts/governance-check.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/lib/closed-tool-execution.mjs",
+      "sha256": "12ec9e26eb29b0004ca52c5ce364688c5bd3e6dcf07a16560a98d1d6018f11e6",
+      "source": "packages/governance/src/closed-tool-execution.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/0235cf6b3fd402a3717881dc205b5bf77aed7632e7d7d6f1811a40e3033bd816.blob",
+      "sha256": "e2da0a86241d8d019545b63e6285d2ca049ce95fe6aed4264149df2108c4ade0",
+      "source": "scripts/schemas/upgrade-evidence-receipt.schema.json",
+      "classification": null,
+      "destination": "scripts/schemas/upgrade-evidence-receipt.schema.json"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/145aab4b4fc470fc9ba7679b4a1d87d4f6a6d604940bd40f8d675c8af696498f.blob",
+      "sha256": "ea8b11ddc5c964ea742ccba5e6a3bc2f215db5d165afe2cca96192812287750c",
+      "source": "scripts/lib/consumer-control-plane-policy.mjs",
+      "classification": null,
+      "destination": "scripts/lib/consumer-control-plane-policy.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/189e551431181e4a88783c02130d2787b801ef731c86e35bcde89a7313aa020e.blob",
+      "sha256": "6bc607cb6ac299b332d35ca871c838b54e367d96775ad0e759c827a0e3ca10cc",
+      "source": "infra/governance/providers/provider-cli-toolchain.json",
+      "classification": null,
+      "destination": "governance/provider-cli-toolchain.json"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/24ad71c8613ddcf6fd23818cb3bb477a1fb6d83af4550b0bad43099813088686.blob",
+      "sha256": "1668412229466b1e5092218606817711c46c5307b7fc7b77abf6fff089b9b4c7",
+      "source": "template/ds-product-template/.devcontainer/devcontainer.json",
+      "classification": null,
+      "destination": ".devcontainer/devcontainer.json"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/2d1ef5617a5ce3c39ad9aae1c42af7d199f9270c0a0ccb490b63d62dbc6913db.blob",
+      "sha256": "12ec9e26eb29b0004ca52c5ce364688c5bd3e6dcf07a16560a98d1d6018f11e6",
+      "source": "packages/governance/src/closed-tool-execution.mjs",
+      "classification": null,
+      "destination": "scripts/lib/closed-tool-execution.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/3625e02235cf166a50649a4d704cfb68fead69d0e168c481df013ebae9f6be25.blob",
+      "sha256": "b34e11d02a7aa71d001ef8f1a42af4cf97d1b8b82360f5779cb927370f5ee15a",
+      "source": "scripts/setup-provider-cli-toolchain.mjs",
+      "classification": null,
+      "destination": "scripts/setup-provider-cli-toolchain.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/3ddedc67b464bdfe3dde9803a2d917920c96d633678b802eee638a44cd47366a.blob",
+      "sha256": "6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b",
+      "source": "template/ds-product-template/.devcontainer/post-create.mjs",
+      "classification": null,
+      "destination": ".devcontainer/post-create.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/423729840acdd43c812f17c245b871716c6b60f76e4d3e94864d0e34a815bf8d.blob",
+      "sha256": "725072155d0b15b373bf6befb333cd2085dc8a38fff8538b4f4c8ea56f9c5308",
+      "source": "scripts/consumer-source-harness.mjs",
+      "classification": null,
+      "destination": "scripts/consumer-source-harness.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
+      "sha256": "6779f0e06b01fde7be74ff07be125405808d124811df3cfd77da428e6f618df2",
+      "source": "scripts/lib/governance-dependency-bootstrap.mjs",
+      "classification": null,
+      "destination": "scripts/lib/governance-dependency-bootstrap.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/475fba657eaeb8abd88f60635f3eadab27a9d0d3114ba4fffc65f43a2a0fe6e2.blob",
+      "sha256": "95dc0fef1f7570efe277a66f7edf4640055ad6abbae0245615eceb9b041560e9",
+      "source": "scripts/setup-workspace.mjs",
+      "classification": null,
+      "destination": "scripts/setup-workspace.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/61c6aca6d7f04bedbf556eaa9d3043681fe48cbe0e93a8ccb1d69a7c5e23fdcf.blob",
+      "sha256": "70a8bdbceade964d009f6a46c9e57a93bc9fd58c28971ea14ad1b5ffeaaf7250",
+      "source": "scripts/lib/worktree-fingerprint.mjs",
+      "classification": null,
+      "destination": "scripts/lib/worktree-fingerprint.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/63061e05969667005020166ea2ae7df3c96663f7a928e7dd3eebc1471022df56.blob",
+      "sha256": "1ac397214b92b088c22dbca52495feca2382aa220ad647d93c8c077d1f9148bd",
+      "source": "scripts/refresh-fork-launchers.mjs",
+      "classification": null,
+      "destination": "scripts/refresh-fork-launchers.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/65410b66e8799a560e07b71779c186fed2a0ef50575ac44745df7a0938a9c2b4.blob",
+      "sha256": "9134dabf11af7a2445a6a026fc23201e8aba3ef5aeb7da1d2159e92956dd32d2",
+      "source": "scripts/product-template-scaffold-lock.mjs",
+      "classification": null,
+      "destination": "scripts/product-template-scaffold-lock.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/6929a3c8bb4d69c507720b4754aeb339c6cbb8ff655e0a381d76606d64695e38.blob",
+      "sha256": "3f87bcdcf95f85c73351646a5f818b088d6528cc6bd3c811054087fd58b4fdfa",
+      "source": "scripts/governance-anchor-preflight.mjs",
+      "classification": null,
+      "destination": "scripts/governance-anchor-preflight.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/6b746628ac11fcccbe277ef6fea94cc2a7b90ea2822e83536eae80d5ee4b3fa5.blob",
+      "sha256": "7e5c6c14c8a9295373f56df968afdb8cb8888764ce1b060993a655ccec8ac61d",
+      "source": "infra/governance/schemas/provider-cli-toolchain.schema.json",
+      "classification": null,
+      "destination": "schemas/provider-cli-toolchain.schema.json"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/76d485470d30ff014afacf7ce643763de9f4f956d9fc8128dbc1814774cf2e63.blob",
+      "sha256": "9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7",
+      "source": "scripts/lib/provider-lifecycle.mjs",
+      "classification": null,
+      "destination": "scripts/lib/provider-lifecycle.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/77e06f62670dfee01e9b5e8b0f8dad085ce711d75538c1fb0679d9818acaca82.blob",
+      "sha256": "f25e4d348daf1d98a0c8d0d9c1546d6b8340683ba59ed22aeb0f001378000483",
+      "source": "template/ds-product-template/.github/workflows/sync-design-system.yml",
+      "classification": null,
+      "destination": ".github/workflows/sync-design-system.yml"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/7937321877e5c34c27dae36c0d507d21cd42fa3f46a8f11a284b8b4a52b6faa4.blob",
+      "sha256": "86edd952fb5c3871896515440693abeb08c1d1da9f887fa073b9ddda1363f572",
+      "source": "scripts/lint-ds-internal-imports.mjs",
+      "classification": null,
+      "destination": "scripts/lint-ds-internal-imports.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/794bb911ba8ebef58ab0d44a55b9968a19d2c62bcfb310b1ee3a84166f087f21.blob",
+      "sha256": "d3adc9d8dcc89b111295102d15b75f40c4eb22891cdc59463a7fc1302309fd63",
+      "source": "scripts/verify-upgrade-provenance.mjs",
+      "classification": null,
+      "destination": "scripts/verify-upgrade-provenance.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/7b17835d0ceb17cdcdcaf930540a3e5d0943a34a747ac43c12ca8cd485c11581.blob",
+      "sha256": "29eb02c844515e6e94a063503c4682e8a1a87a3976b26067e725e5491cc6bc45",
+      "source": "infra/governance/schemas/visual-baseline-review-policy.schema.json",
+      "classification": null,
+      "destination": "governance/schemas/visual-baseline-review-policy.schema.json"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
+      "sha256": "50f54769a7a32fdc5b97036410018bed87808c2dbdffc47cc292967e5de3da8f",
+      "source": "scripts/lib/verified-exact-npm-runtime.mjs",
+      "classification": null,
+      "destination": "scripts/lib/verified-exact-npm-runtime.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/81037efa5b3b9f4a875704005fb268acdc9233bb901f44902e4e37e1da92b8e3.blob",
+      "sha256": "b4da935a9d39239f99fdb15f9ee0a05b538ac0c427b32b77fce8010560fdef2b",
+      "source": "infra/governance/trust/issuers.json",
+      "classification": null,
+      "destination": "governance/trust/issuers.json"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
+      "sha256": "abbded0a31cf3a6fb0de62975b749d10f27ac0adcc9bbf5e95ef410b64073396",
+      "source": "packages/design-system/ds-canonical/templates/consumer-governance.md",
+      "classification": null,
+      "destination": "governance/consumer-governance.md"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/91f414b9462ddc1e4be1d4c6ca4ac7a7340a6eec9e98ee109cbc049d3b354b6a.blob",
+      "sha256": "52616f59420942b96b33001e00d2c9a23ca3aa14dc236d8cb2aa9756787bfb90",
+      "source": "infra/governance/schemas/issuer-registry.schema.json",
+      "classification": null,
+      "destination": "governance/schemas/issuer-registry.schema.json"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/92e4828cdcb96ff0d01daa16f6885f24045a8e72820665650f2a1890dc3a446c.blob",
+      "sha256": "3ae8ca74a66ca5f155d1a1d0c97280d41f07556274c8c077705a489ebe6a7018",
+      "source": "scripts/lib/a11y-static-server.mjs",
+      "classification": null,
+      "destination": "scripts/lib/a11y-static-server.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/93a89f16f6717d1e4e4e27ec20ef916e3355c7aa890ca74cd9b12db30d8a899f.blob",
+      "sha256": "66bcee0a60de93a992131b92c20d1e397297fa109a2fe8c72dbfd62ebbbe9680",
+      "source": "template/ds-product-template/.github/workflows/audit.yml",
+      "classification": null,
+      "destination": ".github/workflows/audit.yml"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/974521d6b8fe796ea4c58b3c78b0c2b8a1be262b97100d77aaf4cc9c7724bcab.blob",
+      "sha256": "1318af59f12546b3cda059a1d94923d9a969bef4c5a476ebb46e42f8c853d19a",
+      "source": "scripts/schemas/product-template-scaffold-lock.schema.json",
+      "classification": null,
+      "destination": "scripts/schemas/product-template-scaffold-lock.schema.json"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/9791c85388d2e2e2bd564e2550fadc3351c4c960a47ce838098afcba7544eb90.blob",
+      "sha256": "86fcea662483008921f37feb96dd5bac6ed972c25790a3f15e70a8a1dc034dd4",
+      "source": "scripts/verify-upgrade-evidence.mjs",
+      "classification": null,
+      "destination": "scripts/verify-upgrade-evidence.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/a448d2222133335c30e6fda5116e26a40db3283a19d62ccc0663c30d272262a7.blob",
+      "sha256": "75d736f86c7f695dc88a1982d547998d510e8050c4847abe387227b6662b87c2",
+      "source": "scripts/release-bom-contract.mjs",
+      "classification": null,
+      "destination": "scripts/release-bom-contract.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/ab072e7f2eca51f0e18a5e18c4b333260ee5d219a12cc6df5bb2d683f0b2734d.blob",
+      "sha256": "938c706cad79a4bd538359c9b74cb9253a4c74b5f1342cbfc1625600425d8bfd",
+      "source": "scripts/sync-all.mjs",
+      "classification": null,
+      "destination": "scripts/sync-all.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/bc44cabad181f766611dab6a8f52d81100afadd50ac59799015e8ba7bf46d9eb.blob",
+      "sha256": "134dd20f0dee07258866c807a827785a3b96c31a6cb821e6b30ce4fe2c680db9",
+      "source": "scripts/setup-governance.mjs",
+      "classification": null,
+      "destination": "scripts/setup-governance.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/c4aa767f11714467de0038a2149cf78074baddc17fc6a9e074b6aed7544c6f3c.blob",
+      "sha256": "a16545ea8d4f5224d8133f0bb0b68d5489d8e106fe7594488a78e0e5718b99cc",
+      "source": "scripts/verify-consumer-css-entry.mjs",
+      "classification": null,
+      "destination": "scripts/verify-consumer-css-entry.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/c893e9b734b162f4c631fef871128c16a9ab565f796a0e76d7f320f821f220f5.blob",
+      "sha256": "f3ddc6db740d5c4d48b1c6e16c55222325e4d1c16fe6644a455e7b7e5bea0a0d",
+      "source": "scripts/lib/workspace-post-create.mjs",
+      "classification": null,
+      "destination": "scripts/lib/workspace-post-create.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/cd9c61f8ff24fb9bcc3663e346e2cfa419cfb84e02aae18d3dc66dd192681696.blob",
+      "sha256": "f2ba8f75963ada855fef0707be6313fec9dce6742d32f414f79c4c370d8de3f3",
+      "source": "template/ds-product-template/.devcontainer/devcontainer-lock.json",
+      "classification": null,
+      "destination": ".devcontainer/devcontainer-lock.json"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/da2ad2737315d25a5300905ddefd62f1695056a8a1af155c5b34170ad9923bce.blob",
+      "sha256": "fd87b372e48ff079afb0b257c5e5c28fcf58637b2589a508987460a66c2b8b75",
+      "source": "template/ds-product-template/.devcontainer/onboard-banner.sh",
+      "classification": null,
+      "destination": ".devcontainer/onboard-banner.sh"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/e1b11160d6c4043002d2cbff6d9a4ae551698a96137773c4244dadfac152fcb0.blob",
+      "sha256": "3e280e67fd72886b0686a6d296947ee3270b4899e9914c1e3a9c61c951dcc2ee",
+      "source": "template/ds-product-template/.github/workflows/governance-anchor.yml",
+      "classification": null,
+      "destination": ".github/workflows/governance-anchor.yml"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/e26057408661597aac4a57cdf7e30e2f9d0afb1b9a2dbbb692c3805cd9028ca5.blob",
+      "sha256": "8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305",
+      "source": "scripts/workflow-static-validation.mjs",
+      "classification": null,
+      "destination": "scripts/workflow-static-validation.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/e68ae1915965d8e17d4b2441c00c2b97fe062ea308ae8535c9eebb2fc16fa245.blob",
+      "sha256": "339179f3bb7805f067c40cb22509734fa3f1cf2834129e64f6e0bf08aa70b334",
+      "source": "infra/governance/visual-baseline-review-policy.json",
+      "classification": null,
+      "destination": "governance/visual-baseline-review-policy.json"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/e71c65f45c6af7ce12b6b3c0d8028f185da5b719e2050c9b2a6b243d41ae4878.blob",
+      "sha256": "a2ca30c164ef55277cc783a79450eb1bff203b936acbfad3bc94a8c644cfd173",
+      "source": "scripts/audit-consumer-a11y.mjs",
+      "classification": null,
+      "destination": "scripts/audit-consumer-a11y.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/e813096d69c49812e40e00be9ac8fa14d77f0ec1f97ab4c45cb096b3bedd35de.blob",
+      "sha256": "79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63",
+      "source": "template/ds-product-template/.npmrc",
+      "classification": null,
+      "destination": ".npmrc"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/e930ebca6fd8eeb30802aac0930efae7bcc44cc0996f24de07c11ca6a081fedf.blob",
+      "sha256": "fe7115dcbb9c096cc9c2aff069282636b942995399ace5dfd9ba68a7280d465f",
+      "source": "infra/governance/providers/provider-cli-toolchain.package-lock.json",
+      "classification": null,
+      "destination": "governance/provider-cli-toolchain.package-lock.json"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/ea94e914d5c8acb84ad7660e5bda0f01b6ccc8cf96b0f6b1ce048f8938d0f5b5.blob",
+      "sha256": "f2a673cc011743fe51f87746b9aebbd3332378cd2732088eda621e16a3c74386",
+      "source": "scripts/check-plugin-installed.mjs",
+      "classification": null,
+      "destination": "scripts/check-plugin-installed.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/f4db6e616d5229aa7e700c6a3ace022cb9d90baae74e38ca65fce617f18e0d9b.blob",
+      "sha256": "6969482588a25533dc1896be63c3c9629aced1cbeb745b99822db764682dc4a4",
+      "source": "scripts/schemas/release-bom.schema.json",
+      "classification": null,
+      "destination": "scripts/schemas/release-bom.schema.json"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/faa128c26102415dc5345e68698efbbd28a395c35ee278dceae044cf430692b2.blob",
+      "sha256": "0244e31dc3be5015bed3efd65a5a77086a2e4676e9ac79cd0801c8cde6a74fcd",
+      "source": "scripts/lib/canonical-path-containment.mjs",
+      "classification": null,
+      "destination": "scripts/lib/canonical-path-containment.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "hooks/_log-fire.sh",
+      "sha256": "4a7e19dc9877f2ee9b5d02922de4d0f792a244cd04f134d84b29e79d76360d4a",
+      "source": "_log-fire.sh",
+      "classification": "HELPER",
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "hooks/block_prototype_imports.py",
-      "sha256": "ee24825dc67147f38acdd7006ff8ed370079d30205425ebd38fadb1ec0e31331",
-      "sourceHook": "block_prototype_imports.py",
-      "bucket": "SHIP_AS_IS"
+      "sha256": "f7d87dcc8dde09966c057ff1872fd67921e9f3a33d210cbc63115ff15b3ab05c",
+      "source": "block_prototype_imports.py",
+      "classification": "SHIP_AS_IS",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_chrome_header_avatar_canonical.sh",
-      "sha256": "ffa91559c19d3f2aab50c69c4b247c15a29376d10b116f6223afb3289b4f91a2",
-      "sourceHook": "check_chrome_header_avatar_canonical.sh",
-      "bucket": "SHIP_AS_IS"
+      "sha256": "e7b98b05f947fa12ff01baa201ca388d71e55aa735bd3307285840ccb8fb2efd",
+      "source": "check_chrome_header_avatar_canonical.sh",
+      "classification": "SHIP_AS_IS",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "aff11b68728f47313452a1a03563075f36c9911494dd99b7d182b40936e0a5b4",
-      "sourceHook": "check_consumer_app_invariants.sh",
-      "bucket": "SHIP_AS_IS"
+      "sha256": "65f1169bd378a9fdba8155cd6c02ca6b66008088ce0c1ae36bc32035a1dd7a79",
+      "source": "check_consumer_app_invariants.sh",
+      "classification": "SHIP_AS_IS",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
+      "file": "hooks/check_consumer_code_quality.sh",
+      "sha256": "70a415fc8c8ee7676426a4f59c24352225ae77145b8cff7199bda32c0e6d70e9",
+      "source": "check_consumer_code_quality.sh",
+      "classification": "SHIP_REWRITTEN",
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "hooks/check_ds_anchor_preflight.sh",
-      "sha256": "df682a95a88b52f8278722907c5ed29e61d31c0cd13d7c2112a3f9cae4bc38b1",
-      "sourceHook": "check_ds_anchor_preflight.sh",
-      "bucket": "SHIP_REWRITTEN"
+      "sha256": "0a6113d30c63901459b0776fda167d5ee1aeba4beb2a711028ae058f5190d5c1",
+      "source": "check_ds_anchor_preflight.sh",
+      "classification": "SHIP_REWRITTEN",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_dynamic_tailwind_class.sh",
-      "sha256": "b90127463aa9efeda646b400d5534a7cf1ce2fa0467bbd46a7c3c76e9ef0232b",
-      "sourceHook": "check_dynamic_tailwind_class.sh",
-      "bucket": "SHIP_AS_IS"
+      "sha256": "34fd55dd1195d0cf36ffab3168547dd84a6f58a7f6bcfa9dde88194c1b8dca25",
+      "source": "check_dynamic_tailwind_class.sh",
+      "classification": "SHIP_AS_IS",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_escape_marker_abuse.sh",
-      "sha256": "acf5669cd31b97aa59bc66b045187292743b1330530b6eddb677458f707efca1",
-      "sourceHook": "check_escape_marker_abuse.sh",
-      "bucket": "SHIP_REWRITTEN"
+      "sha256": "936a634c28b348e90ab4faa57cd8d392a46156a769eedb106758cecb53c07650",
+      "source": "check_escape_marker_abuse.sh",
+      "classification": "SHIP_REWRITTEN",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_field_family_invariants.sh",
-      "sha256": "9646c15d877a262870be0928760187cff8d8327e50e302276ae73709848f48e1",
-      "sourceHook": "check_field_family_invariants.sh",
-      "bucket": "SHIP_AS_IS"
+      "sha256": "ab57140b97f6e3d23967e0986c262e8f81a3cb70e655341d1047fd98256b9ea0",
+      "source": "check_field_family_invariants.sh",
+      "classification": "SHIP_AS_IS",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_fork_product_quality.sh",
-      "sha256": "1985d7607de85ae71b07b4b302c27b3dbb51670bbe68421489e27c75a2b64ffa",
-      "sourceHook": "check_substantive_edit_approval_preflight.sh",
-      "bucket": "REPLACE"
+      "sha256": "bb6699994d4a3123145e84ecca4ed39ff42c3efea1848cada5502da8d123509b",
+      "source": "check_substantive_edit_approval_preflight.sh",
+      "classification": "REPLACE",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_item_list_gap.sh",
-      "sha256": "4e779e5894f16873f1bc322f64571a7ff869d3b75ed5383a5b0f662c7b533d99",
-      "sourceHook": "check_item_list_gap.sh",
-      "bucket": "SHIP_AS_IS"
+      "sha256": "be9d7a92f638be88c539c65c248adee2d3fc733959bea8976fcfe8ae16281571",
+      "source": "check_item_list_gap.sh",
+      "classification": "SHIP_AS_IS",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_layout_space_magic_numbers.sh",
-      "sha256": "24526e2ac3af5d97307232d572578c56ab8a1674db4666f903a770c2b8099863",
-      "sourceHook": "check_layout_space_magic_numbers.sh",
-      "bucket": "SHIP_AS_IS"
+      "sha256": "ff4588eaf79e83e2cc8a7071ebab0ec09c29aa54bef0f97f77663295e0632018",
+      "source": "check_layout_space_magic_numbers.sh",
+      "classification": "SHIP_AS_IS",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_opacity_token_usage.sh",
-      "sha256": "2fb9e94653540d596948683a5a8522a1286722eeb7b4297baaea852836a847fc",
-      "sourceHook": "check_opacity_token_usage.sh",
-      "bucket": "SHIP_REWRITTEN"
+      "sha256": "05cc5e8f48dd5428fcb5d6dd5b8c9524b54b130854b769924155636a89cd78a6",
+      "source": "check_opacity_token_usage.sh",
+      "classification": "SHIP_REWRITTEN",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_pattern_invariants.sh",
-      "sha256": "c6cf3288cbc2bdb689091aef678073470f58b7f1bf98cdefb55afc9724ad277b",
-      "sourceHook": "check_pattern_invariants.sh",
-      "bucket": "SHIP_AS_IS"
+      "sha256": "470bb101b61a6280670315b710b955be8fd4007f642ea1d98cbf3ade40ded326",
+      "source": "check_pattern_invariants.sh",
+      "classification": "SHIP_AS_IS",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_sidebar_menu_button_implicit_wrap.sh",
-      "sha256": "240807737e9c75bd137a8abd9a7194ffcb4a92b1015f626f14539fd8dbf73ea8",
-      "sourceHook": "check_sidebar_menu_button_implicit_wrap.sh",
-      "bucket": "SHIP_AS_IS"
+      "sha256": "ee890af41da3ca7981dd7dde3d86c635e507541b3a7c8ed131db39d26a5d971c",
+      "source": "check_sidebar_menu_button_implicit_wrap.sh",
+      "classification": "SHIP_AS_IS",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_story_determinism.sh",
-      "sha256": "5ba8c0da0680528241772b90d38b7e4ebe3886b9fa2703b9237bdc62ef9d8720",
-      "sourceHook": "check_story_determinism.sh",
-      "bucket": "SHIP_AS_IS"
+      "sha256": "4b893c8b37136c5fa4caad5f9a7548304f144800078f4a749d30210d9cd56ac3",
+      "source": "check_story_determinism.sh",
+      "classification": "SHIP_AS_IS",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_story_invariants.sh",
-      "sha256": "913b84ff4a84f100c7fe31b3ba570af0fd408ccffb3a6ed68952b0e117552322",
-      "sourceHook": "check_story_invariants.sh",
-      "bucket": "SHIP_REWRITTEN"
+      "sha256": "f7e7a17d4ee6f335d2c9088cd6d815767bf76cf54906fd0c238d36ef01e4101c",
+      "source": "check_story_invariants.sh",
+      "classification": "SHIP_REWRITTEN",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_tabs_content_chrome_body_double_gap.sh",
-      "sha256": "56e54c8383a12ae489f1747a96d8b7deafb591498c2d596fc2e955b35c04bfc7",
-      "sourceHook": "check_tabs_content_chrome_body_double_gap.sh",
-      "bucket": "SHIP_AS_IS"
+      "sha256": "30535b4023fc9a3837bfe3023cfe94df5b49bb367b4d9ffd0443e51ef5c56f86",
+      "source": "check_tabs_content_chrome_body_double_gap.sh",
+      "classification": "SHIP_AS_IS",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/check_tailwind_wildcard_in_docs.sh",
-      "sha256": "51fcf04d3adc2a15b6c06312753e51412ed8ff88d088a5e8fe4ec0c784c7aa96",
-      "sourceHook": "check_tailwind_wildcard_in_docs.sh",
-      "bucket": "SHIP_AS_IS"
+      "sha256": "c092d716135c905da757b8c3ac9508091b24e5f58dada132e0c6d08349f43410",
+      "source": "check_tailwind_wildcard_in_docs.sh",
+      "classification": "SHIP_AS_IS",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "hooks/inject_deploy_url_after_push.sh",
-      "sha256": "091ab70b5088bc25f947eea42915d91df3eb73bd6137df8a8c235093c25ff567",
-      "sourceHook": "inject_deploy_url_after_push.sh",
-      "bucket": "SHIP_REWRITTEN"
+      "sha256": "77588a88a395bae34dea76a51101bd020a13c80175149fb723ff27bf2f6ff66f",
+      "source": "inject_deploy_url_after_push.sh",
+      "classification": "SHIP_REWRITTEN",
+      "destination": null
     },
     {
+      "schemaVersion": 1,
+      "file": "hooks/lib/_hook_integrity.sh",
+      "sha256": "59043fe211ca17e0fe0e8f2712b273678bfd6fcc9c30944c6677731ff08877ed",
+      "source": "lib/_hook_integrity.sh",
+      "classification": "HELPER",
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "hooks/lib/_provider_paths.sh",
+      "sha256": "b4d9d661d2875d390f0214b49901c62aa95272528dee86cce73ee7f505472648",
+      "source": "lib/_provider_paths.sh",
+      "classification": "HELPER",
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "launchers/approval-evidence.mjs",
+      "sha256": "4888a6b513f29be06c09842f53489ee61781cf336b22a3ef0d28b9f36d057c7f",
+      "source": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "launchers/authority-decision-evidence.mjs",
+      "sha256": "6bf0a2394ad9df7dc3117b17a175c1e14bb16073b11dbd6ff11b4e6a94800781",
+      "source": "packages/governance/src/authority-decision-evidence.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "launchers/canonical-order.mjs",
+      "sha256": "9d8afcfdb7486189e08c3077bd5eaf85ba05070c90910694d407e39bbdd533bd",
+      "source": "packages/governance/src/canonical-order.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "launchers/fork-governance-dispatcher.sh",
-      "sha256": "6a99ad2d7404a4d721a611a19e4537ebfe8cf5e2ddba99edc7f6b386d86e8b5d",
-      "source": "template/.claude/hooks"
+      "sha256": "fc6d10f711ad8209ffbeb9af7b06938fd097166c3f0f8457e8689eb6cdd48885",
+      "source": "packages/design-system/ds-canonical/templates/product-launchers/fork-governance-dispatcher.sh",
+      "classification": null,
+      "destination": null
     },
     {
+      "schemaVersion": 1,
+      "file": "launchers/format-provider-hook-output.mjs",
+      "sha256": "83e5b935a3b96e6405fe660c8e17ccdbdfa41d78ed60f31de5f14ec624083b9b",
+      "source": "packages/design-system/ds-canonical/templates/product-launchers/format-provider-hook-output.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "launchers/independent-review.mjs",
+      "sha256": "94a6c891efccf389dbc5cf9f6505b8b85bfc759fe500e81589d934fbf16dc9cc",
+      "source": "packages/design-system/ds-canonical/templates/product-launchers/independent-review.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "launchers/inject_fork_governance_preamble.sh",
-      "sha256": "06bc80989782d15704a562cd9a7b2c13c063c89f1ee3a6bbfc807056825b20c7",
-      "source": "template/.claude/hooks"
+      "sha256": "d35cba07ea988a73f5ce1a152784f1859ab00c5f8602d72d301f8c122a6c1801",
+      "source": "packages/design-system/ds-canonical/templates/product-launchers/inject_fork_governance_preamble.sh",
+      "classification": null,
+      "destination": null
     },
     {
+      "schemaVersion": 1,
+      "file": "launchers/normalize-provider-event.mjs",
+      "sha256": "80e2c063beb8f406b9417ac6108b518c06a7543119c531c4558d607b18228eaa",
+      "source": "packages/design-system/ds-canonical/templates/product-launchers/normalize-provider-event.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "launchers/product-hook-dispatch-runtime.mjs",
+      "sha256": "8fafbb86542d6f5ff7b8e1f99f64bd875dea2387a04ad6d84b19236a87027489",
+      "source": "packages/design-system/ds-canonical/templates/product-launchers/product-hook-dispatch-runtime.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "launchers/provider-hook-normalization.mjs",
+      "sha256": "3b574773dda4b383aaeb8dc8263f0d12735445073b2b0ccb996b473eaa297278",
+      "source": "packages/governance/src/provider-hook-normalization.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "launchers/provider-hook-output-transport.mjs",
+      "sha256": "f490fa55be0a865b28b18d81c415577849b23ab5c03f678093c2037579d4728b",
+      "source": "scripts/lib/provider-hook-output-transport.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "04f328ae97687e112995288bff2c1fa8c9feecf25335f4b63036964209e7b402",
-      "source": "template/.claude/settings.json"
+      "sha256": "84b9191b34cb371fa7829eb846cef043ae8612b04cac6e5683395017708cf020",
+      "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
+      "classification": null,
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "843d8d8ecd8536e9524e944e68602fa3b802f4a5aa40d6a77e0ff381d1bd3940"
+      "sha256": "9cacf3be73cf7c29805a37035bcbf370a6811bd910157b17f6fece5f8b19371c",
+      "source": null,
+      "classification": null,
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "preamble.md",
-      "sha256": "70f3402061f420c9026d5cd69ac3f070fd3457cb8ad506685372fcda1b2be1fb"
+      "sha256": "70f3402061f420c9026d5cd69ac3f070fd3457cb8ad506685372fcda1b2be1fb",
+      "source": "control-plane-genesis-am-only-v1:25b39558cbf352f053948190bb28326a78562f43:packages/design-system/ds-canonical/fork/preamble.md",
+      "classification": null,
+      "destination": null
     },
     {
+      "schemaVersion": 1,
+      "file": "providers/claude/hook-config.json",
+      "sha256": "10ef17ced1b1b4dcb55672a24e880296d39b9cf0a6d7e354af633c3ff0e03d4f",
+      "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:claude",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/instruction.md",
+      "sha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
+      "source": "scripts/fork-role-sources/CLAUDE.product.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/bug-fix-rhythm/SKILL.md",
+      "sha256": "d2c1fa7ea3762545b1b8bd6e4a1504b7690eaa0f724d2dad3a78b9046864e26f",
+      "source": "skills/bug-fix-rhythm/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/code-quality-audit/SKILL.md",
+      "sha256": "a1fade9335e6ba9a6043dc16a65104cf0732c2852227b7361cc1135b83438282",
+      "source": "skills/code-quality-audit/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/delivery-handoff/SKILL.md",
+      "sha256": "03489b1c736c7e540800b251aa0d9d327ef01cf25a3bc12145f5cac543655edd",
+      "source": "skills/delivery-handoff/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/delivery-handoff/references/flow-diagram.md",
+      "sha256": "b750d5117c92a1d0cde53283951a6848a1d3baa69ef6253cdc308a49720281df",
+      "source": "skills/delivery-handoff/references/flow-diagram.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/delivery-handoff/references/handoff-template.md",
+      "sha256": "7985469e96766da72032c7aad84e00efbbe0223dcaf7eb6df680b2f31c4d6a6e",
+      "source": "skills/delivery-handoff/references/handoff-template.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/delivery-handoff/references/inventory-checklist.md",
+      "sha256": "7be9cbe37788183aad8032373e22f5ca63e05f94f4232784a79f20bc3d122b75",
+      "source": "skills/delivery-handoff/references/inventory-checklist.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/independent-review/SKILL.md",
+      "sha256": "13d44e01abf51c615c045b775ec4217b5e585b7e448f77396694904dd300be3a",
+      "source": "skills/independent-review/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/independent-review/agents/openai.yaml",
+      "sha256": "e73b2afa7a983753b2cc373f36d4b0d8f8c66031eb517886531e70e38f738824",
+      "source": "skills/independent-review/agents/openai.yaml",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/independent-review/references/evidence-contract.md",
+      "sha256": "f61c9368b92486cd2aab46e24a825a67394360201d93b9bb1025944280b88c28",
+      "source": "skills/independent-review/references/evidence-contract.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/performance-audit/SKILL.md",
+      "sha256": "aa78ebdf7b3413ca0fdcd9d16f81c22ce15ade59fc89f5dab31fb382b202905d",
+      "source": "skills/performance-audit/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/product-ui-audit/SKILL.md",
+      "sha256": "94e29fcf2ffa8cdc293aa2cc6b3237f1ac2886bd35623a7a00b0d64ef4a734e7",
+      "source": "skills/product-ui-audit/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/product-ui-audit/references/audit-checks.md",
+      "sha256": "fd2bc8474609806a36ed09fff4db7b92b1069775528395c1de2e79f72887a946",
+      "source": "skills/product-ui-audit/references/audit-checks.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/product-ui-audit/references/common-misuses.md",
+      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942",
+      "source": "skills/product-ui-audit/references/common-misuses.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/product-ui-audit/references/report-template.md",
+      "sha256": "6b982b8c85f43c3629d58cebb3e1ec09b3941c7a583db42a78f66ece73430a55",
+      "source": "skills/product-ui-audit/references/report-template.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/propose-options/SKILL.md",
+      "sha256": "2c2649ab5e561d1b3e7a04119497987f145c7ceaa32cd2868c1accb85d60e7f6",
+      "source": "skills/propose-options/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/prototype/SKILL.md",
+      "sha256": "b8d5b2ea1207005ae0367a9a9cf8ffd5dc786b34f3fe33847066ce15214759aa",
+      "source": "skills/prototype/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/prototype/references/audit-checks.md",
+      "sha256": "55a4286e3d9b4c1b966df4d7c4078fde6071c030f2a859a443d59cd600d26f05",
+      "source": "skills/prototype/references/audit-checks.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/prototype/references/benchmark-sources.md",
+      "sha256": "5bf8b038d2476c38c72cbb808f75e023655eaa7735d72c3e6071e199307e594b",
+      "source": "skills/prototype/references/benchmark-sources.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/prototype/references/checkpoints.md",
+      "sha256": "2dcfc11d9c6f2f579de0fea3bd94d6f79de40fe2c1a699605fb260b9af573807",
+      "source": "skills/prototype/references/checkpoints.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/prototype/references/evaluation-matrix.md",
+      "sha256": "08c9110bd82a131a3d224e5087033502b6d23d485be269cdc67c2fa02dafdb4d",
+      "source": "skills/prototype/references/evaluation-matrix.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/prototype/references/ooux-template.md",
+      "sha256": "f3792fd05e68091198e1edd4b2d60411adce36cb1ada5b53f1e58061d38eaff4",
+      "source": "skills/prototype/references/ooux-template.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/prototype/references/proposal-template.md",
+      "sha256": "dd6291ccc090436665e0f13b2cc2d4ff4ab41116df51e121ef9e3f9c8dfc3f38",
+      "source": "skills/prototype/references/proposal-template.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/scan-similar-bugs/SKILL.md",
+      "sha256": "f4dd1ed1a76ff43953b9ee911f071cff80873ae5fc5dae04792f8ce20996c019",
+      "source": "skills/scan-similar-bugs/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/ux-audit/SKILL.md",
+      "sha256": "1ed6c2b782d20b0b72c67ce4cae328e94d10dbc6aab3cdd651e05a51b8aff867",
+      "source": "skills/ux-audit/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/visual-audit/SKILL.md",
+      "sha256": "dba0f1a8ad4e5f27b045adfc61657af10d90f18f80a65a13804c0b08a0480990",
+      "source": "skills/visual-audit/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/visual-audit/output/.gitkeep",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "skills/visual-audit/output/.gitkeep",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/visual-audit/references/audit-architecture.md",
+      "sha256": "43c12bc10b294b29a8788c7351098ce18fb2edd926b5299318bb983e59bb6285",
+      "source": "skills/visual-audit/references/audit-architecture.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/visual-audit/references/visual-checklist.md",
+      "sha256": "95cd3b88212a1b194bde271a1573d6e459cb254125352332f2521542a7a520fc",
+      "source": "skills/visual-audit/references/visual-checklist.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/claude/skills/visual-audit/references/world-class-benchmarks.md",
+      "sha256": "4aaa29c4b12b6da16111429dcb107017ff015f9c96196e0ec0baa6939641f472",
+      "source": "skills/visual-audit/references/world-class-benchmarks.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/hook-config.json",
+      "sha256": "83d373ba11636fd6941f80f9a298056e5c862730275daf623690bf0d6be3582a",
+      "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/bug-fix-rhythm/SKILL.md",
+      "sha256": "85b65f17243a6000a417d011144c1dd966cebb6bd050bbe713b3b22b426df015",
+      "source": "skills/bug-fix-rhythm/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/code-quality-audit/SKILL.md",
+      "sha256": "f969d2fde816532cf77efdf6e6c364131b67ea9bc64666289f692016748755a6",
+      "source": "skills/code-quality-audit/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/delivery-handoff/SKILL.md",
+      "sha256": "2287987440ad40fd7b2a27963b1cf8df9d8df83cb92dbd406e35f6b839426186",
+      "source": "skills/delivery-handoff/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/delivery-handoff/references/flow-diagram.md",
+      "sha256": "b750d5117c92a1d0cde53283951a6848a1d3baa69ef6253cdc308a49720281df",
+      "source": "skills/delivery-handoff/references/flow-diagram.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/delivery-handoff/references/handoff-template.md",
+      "sha256": "7985469e96766da72032c7aad84e00efbbe0223dcaf7eb6df680b2f31c4d6a6e",
+      "source": "skills/delivery-handoff/references/handoff-template.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/delivery-handoff/references/inventory-checklist.md",
+      "sha256": "7be9cbe37788183aad8032373e22f5ca63e05f94f4232784a79f20bc3d122b75",
+      "source": "skills/delivery-handoff/references/inventory-checklist.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/independent-review/SKILL.md",
+      "sha256": "213882103632801bec9e4a165e259c7c52f05c6e8ee83f473637c2aa714364f8",
+      "source": "skills/independent-review/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/independent-review/agents/openai.yaml",
+      "sha256": "e73b2afa7a983753b2cc373f36d4b0d8f8c66031eb517886531e70e38f738824",
+      "source": "skills/independent-review/agents/openai.yaml",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/independent-review/references/evidence-contract.md",
+      "sha256": "f61c9368b92486cd2aab46e24a825a67394360201d93b9bb1025944280b88c28",
+      "source": "skills/independent-review/references/evidence-contract.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/performance-audit/SKILL.md",
+      "sha256": "7cf7e2a728222b9942de866ffa7c5133ecb6e8809364442376f934b83335c350",
+      "source": "skills/performance-audit/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/product-ui-audit/SKILL.md",
+      "sha256": "4447736c652302399e10c1a6852b163e778f749615e68bd486f09d2068334c74",
+      "source": "skills/product-ui-audit/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/product-ui-audit/references/audit-checks.md",
+      "sha256": "fd2bc8474609806a36ed09fff4db7b92b1069775528395c1de2e79f72887a946",
+      "source": "skills/product-ui-audit/references/audit-checks.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/product-ui-audit/references/common-misuses.md",
+      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942",
+      "source": "skills/product-ui-audit/references/common-misuses.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/product-ui-audit/references/report-template.md",
+      "sha256": "6b982b8c85f43c3629d58cebb3e1ec09b3941c7a583db42a78f66ece73430a55",
+      "source": "skills/product-ui-audit/references/report-template.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/propose-options/SKILL.md",
+      "sha256": "ea67781973daf106fb65b3fe47899cca8ac0e6c5ed179846814ae896170ff432",
+      "source": "skills/propose-options/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/prototype/SKILL.md",
+      "sha256": "61fc06fe1b465545f25ea5d38c4e6938ee01d2f8c8f071f0ff48dbc1e2fbd3a6",
+      "source": "skills/prototype/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/prototype/references/audit-checks.md",
+      "sha256": "55a4286e3d9b4c1b966df4d7c4078fde6071c030f2a859a443d59cd600d26f05",
+      "source": "skills/prototype/references/audit-checks.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/prototype/references/benchmark-sources.md",
+      "sha256": "5bf8b038d2476c38c72cbb808f75e023655eaa7735d72c3e6071e199307e594b",
+      "source": "skills/prototype/references/benchmark-sources.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/prototype/references/checkpoints.md",
+      "sha256": "2dcfc11d9c6f2f579de0fea3bd94d6f79de40fe2c1a699605fb260b9af573807",
+      "source": "skills/prototype/references/checkpoints.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/prototype/references/evaluation-matrix.md",
+      "sha256": "08c9110bd82a131a3d224e5087033502b6d23d485be269cdc67c2fa02dafdb4d",
+      "source": "skills/prototype/references/evaluation-matrix.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/prototype/references/ooux-template.md",
+      "sha256": "f3792fd05e68091198e1edd4b2d60411adce36cb1ada5b53f1e58061d38eaff4",
+      "source": "skills/prototype/references/ooux-template.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/prototype/references/proposal-template.md",
+      "sha256": "dd6291ccc090436665e0f13b2cc2d4ff4ab41116df51e121ef9e3f9c8dfc3f38",
+      "source": "skills/prototype/references/proposal-template.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/scan-similar-bugs/SKILL.md",
+      "sha256": "deb79db56da754256f6447920a8daf204bdfc92c209d163437bcafa7cbead3b2",
+      "source": "skills/scan-similar-bugs/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/ux-audit/SKILL.md",
+      "sha256": "a92311c318509c45aa13c600fbaf6474c1e9bd6d3961f09e551df82b5e4c51a4",
+      "source": "skills/ux-audit/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/visual-audit/SKILL.md",
+      "sha256": "76fc323b9e996993c5bfd6d46d0a326372220b55ff8a8911440270770701ef29",
+      "source": "skills/visual-audit/SKILL.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/visual-audit/output/.gitkeep",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "skills/visual-audit/output/.gitkeep",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/visual-audit/references/audit-architecture.md",
+      "sha256": "43c12bc10b294b29a8788c7351098ce18fb2edd926b5299318bb983e59bb6285",
+      "source": "skills/visual-audit/references/audit-architecture.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/visual-audit/references/visual-checklist.md",
+      "sha256": "95cd3b88212a1b194bde271a1573d6e459cb254125352332f2521542a7a520fc",
+      "source": "skills/visual-audit/references/visual-checklist.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "providers/codex/skills/visual-audit/references/world-class-benchmarks.md",
+      "sha256": "4aaa29c4b12b6da16111429dcb107017ff015f9c96196e0ec0baa6939641f472",
+      "source": "skills/visual-audit/references/world-class-benchmarks.md",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "references/story-baseline-registry.json",
+      "sha256": "2d24dcee790d72742e91a4f49c2303da02c27fca6733131d235ea29551a80f5a",
+      "source": "packages/design-system/ds-canonical/references/story-baseline-registry.json",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "references/story-baseline-registry.schema.json",
+      "sha256": "0935f8b93ee3109ec7b054b1716d7323a37556cd88069c4e9dbde6edd6b5060e",
+      "source": "packages/design-system/ds-canonical/references/story-baseline-registry.schema.json",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "references/utility-registry.json",
+      "sha256": "310f92cc9aa57880d8f81464ac4191907bda9c9af31847a450497e6a9f97dce3",
+      "source": "packages/design-system/src/tokens/utility-registry.json",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "references/utility-registry.schema.json",
+      "sha256": "0a3672076abc8154e17f66f67d41a3ce2d10b014c8c51078ba0a81958bfaba62",
+      "source": "packages/design-system/src/tokens/utility-registry.schema.json",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "review/canonical-order.mjs",
+      "sha256": "9d8afcfdb7486189e08c3077bd5eaf85ba05070c90910694d407e39bbdd533bd",
+      "source": "packages/governance/src/canonical-order.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "review/provider-review-binding.mjs",
+      "sha256": "00fd8e1f7193dc0d76b8c3d586889c51b8f8ff47e991a4682e6105937f3a3514",
+      "source": "packages/governance/src/provider-review-binding.mjs",
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "aada1314d2b85ba8e866da75f7ff56f3922197d5a738956aa3cb7b469e40ae45"
+      "sha256": "b239c7731dbd6e7b21e6c6bcdfacab78f9f21830b639940a2b240492cfdc4d17",
+      "source": null,
+      "classification": null,
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "skills/code-quality-audit/SKILL.md",
-      "sha256": "376120afbbea7052ec84ab04a36d93ee14671d9d430ec72642a8b53dd87c148c"
+      "sha256": "ec0703d59ae16ad24f5b6ec3291432258fbd4543252b4dedcadcc779fa047ab3",
+      "source": null,
+      "classification": null,
+      "destination": null
     },
     {
-      "file": "skills/delivery-handoff/references/flow-diagram.md",
-      "sha256": "b750d5117c92a1d0cde53283951a6848a1d3baa69ef6253cdc308a49720281df"
-    },
-    {
-      "file": "skills/delivery-handoff/references/handoff-template.md",
-      "sha256": "7985469e96766da72032c7aad84e00efbbe0223dcaf7eb6df680b2f31c4d6a6e"
-    },
-    {
-      "file": "skills/delivery-handoff/references/inventory-checklist.md",
-      "sha256": "7be9cbe37788183aad8032373e22f5ca63e05f94f4232784a79f20bc3d122b75"
-    },
-    {
+      "schemaVersion": 1,
       "file": "skills/delivery-handoff/SKILL.md",
-      "sha256": "ef82a6d8f0dbefb3ff6e48042a3346ef96d263a60477cdcd43d46628f5632e68"
+      "sha256": "1edebc6aa9406b6d57490867a7a0c1f6fedc705f766d00bd172c8bbd3ade3ad7",
+      "source": null,
+      "classification": null,
+      "destination": null
     },
     {
+      "schemaVersion": 1,
+      "file": "skills/delivery-handoff/references/flow-diagram.md",
+      "sha256": "b750d5117c92a1d0cde53283951a6848a1d3baa69ef6253cdc308a49720281df",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/delivery-handoff/references/handoff-template.md",
+      "sha256": "7985469e96766da72032c7aad84e00efbbe0223dcaf7eb6df680b2f31c4d6a6e",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/delivery-handoff/references/inventory-checklist.md",
+      "sha256": "7be9cbe37788183aad8032373e22f5ca63e05f94f4232784a79f20bc3d122b75",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/independent-review/SKILL.md",
+      "sha256": "d12c1782496c6beea5300cde74cf7591603c2a234bbdae2d947c5839d07d5997",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/independent-review/agents/openai.yaml",
+      "sha256": "e73b2afa7a983753b2cc373f36d4b0d8f8c66031eb517886531e70e38f738824",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/independent-review/references/evidence-contract.md",
+      "sha256": "f61c9368b92486cd2aab46e24a825a67394360201d93b9bb1025944280b88c28",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "skills/performance-audit/SKILL.md",
-      "sha256": "71b63f44f90fa0bfeb1c63e589757bdb917f2d57ea9cf754c9c1b47808716061"
+      "sha256": "4dc8b663ba9f4f373c81b34c996a6ba1972e81c5610acc93c239e397c1f9d128",
+      "source": null,
+      "classification": null,
+      "destination": null
     },
     {
-      "file": "skills/product-ui-audit/references/audit-checks.md",
-      "sha256": "4dd879a1c983dedc29520762313b22e3b4d38cb395afe8ca1ecb43eb5e52ef83"
-    },
-    {
-      "file": "skills/product-ui-audit/references/common-misuses.md",
-      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942"
-    },
-    {
-      "file": "skills/product-ui-audit/references/report-template.md",
-      "sha256": "a847aba70e7c8f8cd620420f8d34d7f818070253ece5cdb1010bec16f71f5f57"
-    },
-    {
+      "schemaVersion": 1,
       "file": "skills/product-ui-audit/SKILL.md",
-      "sha256": "1664a8ecb327469056182f0e3bb9951379165210e19a13b8a90714a6ddce4b18"
+      "sha256": "ca8967bc60dedc57043a340ebe37cb176b5075063b749ecaf0a61999f8011fff",
+      "source": null,
+      "classification": null,
+      "destination": null
     },
     {
+      "schemaVersion": 1,
+      "file": "skills/product-ui-audit/references/audit-checks.md",
+      "sha256": "fd2bc8474609806a36ed09fff4db7b92b1069775528395c1de2e79f72887a946",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/product-ui-audit/references/common-misuses.md",
+      "sha256": "5afa85d18b559d1ccb182b50489bd1744968d07203558f8efbccf4444b46b942",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/product-ui-audit/references/report-template.md",
+      "sha256": "6b982b8c85f43c3629d58cebb3e1ec09b3941c7a583db42a78f66ece73430a55",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "skills/propose-options/SKILL.md",
-      "sha256": "6b8bdf866d45e25a620d1ea8cb0da9292cf3d80c7788d14508325a7d8d11d267"
+      "sha256": "e56749958ada0515c1e9a0f0e876b31eeb2bfb3c3bde0af4ffa69dd7475de769",
+      "source": null,
+      "classification": null,
+      "destination": null
     },
     {
-      "file": "skills/prototype/references/audit-checks.md",
-      "sha256": "6f17d6b4bc6ae94eedef8c39b68d4ab1baec92ef1035eeab462e17239c2803e3"
-    },
-    {
-      "file": "skills/prototype/references/benchmark-sources.md",
-      "sha256": "5bf8b038d2476c38c72cbb808f75e023655eaa7735d72c3e6071e199307e594b"
-    },
-    {
-      "file": "skills/prototype/references/checkpoints.md",
-      "sha256": "b37d72ad57392a6dbc75398bd9f9b92868346245530b8bddfbda4729744def33"
-    },
-    {
-      "file": "skills/prototype/references/evaluation-matrix.md",
-      "sha256": "575385e5250ecbe96068a94f71521e5d0bf9a1a33873c79500708ab620067be8"
-    },
-    {
-      "file": "skills/prototype/references/ooux-template.md",
-      "sha256": "7fda191d66844a765a67c4eae6c5c5cd54c45a2b40feff68fa54d33e24639486"
-    },
-    {
-      "file": "skills/prototype/references/proposal-template.md",
-      "sha256": "ec54bb412c255be03dd0269b708be8e8d4797f8bd58f4954a6dc52f955a9a8c6"
-    },
-    {
+      "schemaVersion": 1,
       "file": "skills/prototype/SKILL.md",
-      "sha256": "c4b09bf7481d5f14375a5f22a4da2411047405811bc42490c0711b740265bd7f"
+      "sha256": "87b0712991513235a49a69d33ce9662780a79f578a24cab88b20c111649dc123",
+      "source": null,
+      "classification": null,
+      "destination": null
     },
     {
+      "schemaVersion": 1,
+      "file": "skills/prototype/references/audit-checks.md",
+      "sha256": "55a4286e3d9b4c1b966df4d7c4078fde6071c030f2a859a443d59cd600d26f05",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/prototype/references/benchmark-sources.md",
+      "sha256": "5bf8b038d2476c38c72cbb808f75e023655eaa7735d72c3e6071e199307e594b",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/prototype/references/checkpoints.md",
+      "sha256": "2dcfc11d9c6f2f579de0fea3bd94d6f79de40fe2c1a699605fb260b9af573807",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/prototype/references/evaluation-matrix.md",
+      "sha256": "08c9110bd82a131a3d224e5087033502b6d23d485be269cdc67c2fa02dafdb4d",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/prototype/references/ooux-template.md",
+      "sha256": "f3792fd05e68091198e1edd4b2d60411adce36cb1ada5b53f1e58061d38eaff4",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/prototype/references/proposal-template.md",
+      "sha256": "dd6291ccc090436665e0f13b2cc2d4ff4ab41116df51e121ef9e3f9c8dfc3f38",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
       "file": "skills/scan-similar-bugs/SKILL.md",
-      "sha256": "4a47af39ee04a7ee7aee0f92f00c09296b083b9310a55e01c85538798ed31593"
+      "sha256": "c2c5bb0ad389d3682dffaaf6eeb67b044eaf427da1672cbb0fda8373c575bb98",
+      "source": null,
+      "classification": null,
+      "destination": null
     },
     {
+      "schemaVersion": 1,
       "file": "skills/ux-audit/SKILL.md",
-      "sha256": "833d90921a8b5c51a4a93d17525d51cd81f75d6dc00c7c40f1872d5329088a13"
+      "sha256": "926e85bdb426df3498fe4d6b7d4d0db363e9d85c8b821fa23a2beff8d9114880",
+      "source": null,
+      "classification": null,
+      "destination": null
     },
     {
-      "file": "skills/visual-audit/output/.gitkeep",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "file": "skills/visual-audit/references/audit-architecture.md",
-      "sha256": "48c931ad559c1e37ecebd08d289509692c79d9c92d2574f65e89bf286b7c95cf"
-    },
-    {
-      "file": "skills/visual-audit/references/visual-checklist.md",
-      "sha256": "1d2d366122227b0665135c9a9f3138385d369996ad870ffa1c58402753b22bd0"
-    },
-    {
-      "file": "skills/visual-audit/references/world-class-benchmarks.md",
-      "sha256": "bdb46cb8d1f164c141e0e7092932a787674fe5bd4defe88ad2ca91d2cfb76bdf"
-    },
-    {
+      "schemaVersion": 1,
       "file": "skills/visual-audit/SKILL.md",
-      "sha256": "ccf7065ff856f1de095506fb41223c17b31b5602bc94a1c71e6d1871ef2c5a8e"
+      "sha256": "e0cec52fbacf39c90d84747836b87c35eeca3b33529acde2e88f395ab45f0c5a",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/visual-audit/output/.gitkeep",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/visual-audit/references/audit-architecture.md",
+      "sha256": "43c12bc10b294b29a8788c7351098ce18fb2edd926b5299318bb983e59bb6285",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/visual-audit/references/visual-checklist.md",
+      "sha256": "95cd3b88212a1b194bde271a1573d6e459cb254125352332f2521542a7a520fc",
+      "source": null,
+      "classification": null,
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "skills/visual-audit/references/world-class-benchmarks.md",
+      "sha256": "4aaa29c4b12b6da16111429dcb107017ff015f9c96196e0ec0baa6939641f472",
+      "source": null,
+      "classification": null,
+      "destination": null
     }
   ]
 }

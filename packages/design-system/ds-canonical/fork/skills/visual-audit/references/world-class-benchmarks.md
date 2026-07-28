@@ -6,7 +6,7 @@
 - 合格標準優先走 DS 內 spec / token(actual == canonical)
 - DS spec 沒寫時,本檔提供世界級 idiom 作「可類推的合理區間」
 - 本檔數值**不可取代** DS 規則,只提供「世界級通常怎麼做」的事實陳述
-- 看到 FAIL 但 DS 無明文 canonical → 用本檔指出「世界級通常 X,本元件偏離 X」,交 user 決定是補 spec 還是改 code
+- 看到 FAIL 但 DS 無明文 canonical → 用本檔指出「世界級通常 X,本元件偏離 X」並套用 shared governance authority classifier：純工程／治理的 spec/code home 與 remediation 由 P2E 自動收斂；只有改變產品／UI／UX SSOT 且仍有真取捨才 P2H
 
 ---
 
@@ -32,7 +32,7 @@
 | **Atlassian Button group** | 8px gap;ring/focus outline 限制在 box 內,不 overflow |
 | **Ant Design Space** | default `gap-8`,hover bg 限制 box 內 |
 
-**世界級 idiom**:**hover bg / ring / focus outline 不超出 slot box**,保護 gap token 如實呈現。這對齊 node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md`# 同 flex 列的互動 slot 幾何鐵律`。
+**世界級 idiom**:**hover bg / ring / focus outline 不超出 slot box**,保護 gap token 如實呈現。這對齊 `node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md#同-flex-列的互動-slot-幾何鐵律`。
 
 ---
 

@@ -36,11 +36,14 @@ import {
   PROTECTED_CONTROL_PLANE_EXACT_PATHS,
   PROTECTED_CONTROL_PLANE_PATH_PREFIXES,
 } from './lib/consumer-control-plane-policy.mjs'
+import { evaluateVerifiedHighVulnerabilityAudit } from './lib/governance-dependency-bootstrap.mjs'
 
 const temporary = []
 const version = '1.2.3-beta.4'
 const exactNpmVersion = '11.18.0'
 const exactNpmIntegrity = 'sha512-T67M4L5wNm0cZ7EBLErcEkY1SmzEW/WJ+SADBzsFUY1UdAPfFHXFQtZ6SEXiK0+vzXysCvAsepbMaBTwnrAD+w=='
+const exactNpmOverlaySpec = 'npm:brace-expansion@5.0.8'
+const exactNpmOverlayIntegrity = 'sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg=='
 
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex')
@@ -85,7 +88,10 @@ function fixture({
     '@qijenchen/design-system': version,
     '@qijenchen/storybook-config': version,
   }
-  const devDependencies = { npm: exactNpmVersion }
+  const devDependencies = {
+    npm: exactNpmVersion,
+    'npm-runtime-brace-expansion-patch': exactNpmOverlaySpec,
+  }
   const engines = { node: `>=${SETUP_GOVERNANCE_MINIMUM_NODE_VERSION}`, npm: '>=10.0.0' }
   write(join(root, 'package.json'), `${JSON.stringify({
     name: 'clean-room-product',
@@ -110,6 +116,13 @@ function fixture({
         integrity: exactNpmIntegrity,
         dev: true,
         bin: { npm: 'bin/npm-cli.js', npx: 'bin/npx-cli.js' },
+      },
+      'node_modules/npm-runtime-brace-expansion-patch': {
+        name: 'brace-expansion',
+        version: '5.0.8',
+        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.8.tgz',
+        integrity: exactNpmOverlayIntegrity,
+        dev: true,
       },
     },
   }, null, 2)}\n`)
@@ -189,7 +202,18 @@ const stage = args[0] === 'ci'
       ? 'vulnerability'
       : 'unexpected'
 if (stage === process.env.FAKE_SETUP_FAIL_STAGE) process.exit(stage === 'install' ? 31 : stage === 'signature' ? 32 : 33)
-if (stage === 'signature' || stage === 'vulnerability') process.exit(0)
+if (stage === 'signature') process.exit(0)
+if (stage === 'vulnerability') {
+  console.log(JSON.stringify({
+    auditReportVersion: 2,
+    vulnerabilities: {},
+    metadata: {
+      vulnerabilities: { info: 0, low: 0, moderate: 0, high: 0, critical: 0, total: 0 },
+      dependencies: { prod: 0, dev: 0, optional: 0, peer: 0, peerOptional: 0, total: 0 },
+    },
+  }))
+  process.exit(0)
+}
 if (stage !== 'install') process.exit(91)
 
 // Deliberately install a perfect-looking but malicious project-local npm. Setup must never execute it.
@@ -252,17 +276,54 @@ import { spawnSync } from 'node:child_process'
 import { appendFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ${dependencyOnly ? 'runGovernanceDependencySetup' : 'runGovernanceSetup'} as runSetup } from './scripts/setup-governance.mjs'
+import { resolveExactNpmRuntimeContract } from './scripts/lib/verified-exact-npm-runtime.mjs'
 const runtimeFactory = async () => {
   appendFileSync(process.env.FAKE_SETUP_LOG, 'runtime-factory\\n')
   if (process.env.FAKE_SETUP_FAIL_STAGE === 'runtime') throw new Error('deliberate verified runtime failure')
+  const contract = resolveExactNpmRuntimeContract(process.cwd())
+  const overlay = {
+    schemaVersion: 1,
+    kind: 'verified-npm-runtime-security-overlay-receipt',
+    status: 'applied',
+    identityDigest: contract.securityOverlay.identityDigest,
+    npmVersion: contract.version,
+    package: contract.securityOverlay.package,
+    version: contract.securityOverlay.version,
+    integrity: contract.securityOverlay.integrity,
+    target: contract.securityOverlay.target,
+    replacedVersion: contract.securityOverlay.replacedVersion,
+    consumer: contract.securityOverlay.consumer,
+    consumerVersion: contract.securityOverlay.consumerVersion,
+    treeDigest: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  }
+  const installedOverlay = {
+    schemaVersion: 1,
+    kind: 'verified-installed-npm-security-overlay-receipt',
+    status: 'verified',
+    identityDigest: overlay.identityDigest,
+    npmVersion: overlay.npmVersion,
+    package: overlay.package,
+    version: overlay.version,
+    integrity: overlay.integrity,
+    target: overlay.target,
+    treeDigest: overlay.treeDigest,
+    auditClosureDigest: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    auditClosure: [
+      { path: 'node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.8', dependency: null },
+      { path: 'node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
+      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.8', dependency: null },
+    ],
+  }
   return {
     artifact: {
-      version: process.env.FAKE_SETUP_NPM_VERSION,
-      resolved: 'https://registry.npmjs.org/npm/-/npm-' + process.env.FAKE_SETUP_NPM_VERSION + '.tgz',
-      integrity: process.env.FAKE_SETUP_FAIL_STAGE === 'runtime-artifact' ? 'sha512-AAAAAAAA' : ${JSON.stringify(exactNpmIntegrity)},
+      ...contract,
+      integrity: process.env.FAKE_SETUP_FAIL_STAGE === 'runtime-artifact' ? 'sha512-AAAAAAAA' : contract.integrity,
     },
     cli: process.env.FAKE_SETUP_RUNTIME_CLI,
+    securityOverlay: overlay,
     toolchain: { node: process.version, npm: process.env.FAKE_SETUP_NPM_VERSION },
+    applyInstalledSecurityOverlay() { return installedOverlay },
+    verifyInstalledSecurityOverlay() { return installedOverlay },
     cleanup() { appendFileSync(process.env.FAKE_SETUP_LOG, 'runtime-cleanup\\n') },
   }
 }
@@ -357,7 +418,7 @@ test('verified runtime performs install, signature audit and high-vulnerability 
     'runtime-factory',
     'verified-npm:ci --legacy-peer-deps --ignore-scripts --registry=https://registry.npmjs.org/',
     'verified-npm:audit signatures --registry=https://registry.npmjs.org/',
-    'verified-npm:audit --audit-level=high --registry=https://registry.npmjs.org/',
+    'verified-npm:audit --audit-level=high --json --registry=https://registry.npmjs.org/',
     'runtime-cleanup',
     `check:--repo ${value.root} --hooks-off`,
   ])
@@ -377,7 +438,7 @@ test('dependency-only setup authenticates dependencies without executing install
     'runtime-factory',
     'verified-npm:ci --legacy-peer-deps --ignore-scripts --registry=https://registry.npmjs.org/',
     'verified-npm:audit signatures --registry=https://registry.npmjs.org/',
-    'verified-npm:audit --audit-level=high --registry=https://registry.npmjs.org/',
+    'verified-npm:audit --audit-level=high --json --registry=https://registry.npmjs.org/',
     'runtime-cleanup',
   ])
   assert.equal(value.ordered().some(step => step.startsWith('check:')), false)
@@ -449,7 +510,7 @@ for (const [stage, expected] of [
     'runtime-factory',
     'verified-npm:ci --legacy-peer-deps --ignore-scripts --registry=https://registry.npmjs.org/',
     'verified-npm:audit signatures --registry=https://registry.npmjs.org/',
-    'verified-npm:audit --audit-level=high --registry=https://registry.npmjs.org/',
+    'verified-npm:audit --audit-level=high --json --registry=https://registry.npmjs.org/',
     'runtime-cleanup',
   ]],
   ['check', null],
@@ -462,7 +523,7 @@ for (const [stage, expected] of [
       'runtime-factory',
       'verified-npm:ci --legacy-peer-deps --ignore-scripts --registry=https://registry.npmjs.org/',
       'verified-npm:audit signatures --registry=https://registry.npmjs.org/',
-      'verified-npm:audit --audit-level=high --registry=https://registry.npmjs.org/',
+      'verified-npm:audit --audit-level=high --json --registry=https://registry.npmjs.org/',
       'runtime-cleanup',
       `check:--repo ${value.root} --hooks-off`,
     ]
@@ -560,7 +621,7 @@ test('platform and command contract is closed and native Windows is unsupported'
   assert.deepEqual(SETUP_GOVERNANCE_NPM_STEPS, [
     ['ci', '--legacy-peer-deps', '--ignore-scripts', '--registry=https://registry.npmjs.org/'],
     ['audit', 'signatures', '--registry=https://registry.npmjs.org/'],
-    ['audit', '--audit-level=high', '--registry=https://registry.npmjs.org/'],
+    ['audit', '--audit-level=high', '--json', '--registry=https://registry.npmjs.org/'],
   ])
   const source = readFileSync('scripts/setup-governance.mjs', 'utf8')
   const bootstrapSource = readFileSync('scripts/lib/governance-dependency-bootstrap.mjs', 'utf8')
@@ -568,8 +629,99 @@ test('platform and command contract is closed and native Windows is unsupported'
   assert.match(source, /runVerifiedGovernanceDependencyBootstrap/)
   assert.match(bootstrapSource, /prepareVerifiedExactNpmRuntime/)
   assert.match(bootstrapSource, /for \(let index = 0; index < GOVERNANCE_DEPENDENCY_NPM_STEPS\.length; index \+= 1\)/)
-  assert.match(bootstrapSource, /runClosedBootstrapStep\(process\.execPath, \[npmRuntime\.cli, \.\.\.args\]/)
+  assert.match(bootstrapSource, /runVerifiedHighVulnerabilityAudit\(process\.execPath, \[npmRuntime\.cli, \.\.\.args\]/)
   assert.doesNotMatch(source, /node_modules\/npm\/bin\/npm-cli\.js/)
+})
+
+test('overlay-aware high audit excludes only the exact verified bundled preimage and otherwise fails closed', () => {
+  const identityDigest = 'a'.repeat(64)
+  const treeDigest = 'b'.repeat(64)
+  const npmRuntime = {
+    securityOverlay: {
+      status: 'applied',
+      identityDigest,
+      treeDigest,
+    },
+  }
+  const installedOverlayReceipt = {
+    status: 'verified',
+    identityDigest,
+    treeDigest,
+    auditClosureDigest: 'c'.repeat(64),
+    auditClosure: [
+      { path: 'node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.8', dependency: null },
+      { path: 'node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
+      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.8', dependency: null },
+      { path: 'node_modules/eslint', name: 'eslint', version: '10.8.0', dependency: { name: 'minimatch', range: '^10.2.5' } },
+    ],
+  }
+  const finding = {
+    name: 'brace-expansion',
+    severity: 'high',
+    isDirect: false,
+    via: [{
+      source: 1124334,
+      name: 'brace-expansion',
+      dependency: 'brace-expansion',
+      title: 'fixture title is non-authoritative',
+      url: 'https://github.com/advisories/GHSA-mh99-v99m-4gvg',
+      severity: 'high',
+      range: '<=5.0.7',
+    }],
+    effects: [],
+    range: '<=5.0.7',
+    nodes: ['node_modules/npm/node_modules/brace-expansion'],
+    fixAvailable: true,
+  }
+  const report = {
+    auditReportVersion: 2,
+    vulnerabilities: { 'brace-expansion': finding },
+    metadata: {
+      vulnerabilities: { info: 0, low: 0, moderate: 2, high: 1, critical: 0, total: 3 },
+      dependencies: { prod: 0, dev: 0, optional: 0, peer: 0, peerOptional: 0, total: 0 },
+    },
+  }
+  const evaluate = (value = report, options = {}) => evaluateVerifiedHighVulnerabilityAudit({
+    stdout: typeof value === 'string' ? value : JSON.stringify(value),
+    exitStatus: options.exitStatus ?? 1,
+    npmRuntime: options.npmRuntime ?? npmRuntime,
+    installedOverlayReceipt: options.installedOverlayReceipt ?? installedOverlayReceipt,
+  })
+  const receipt = evaluate()
+  assert.deepEqual(receipt.remediatedFindings, ['brace-expansion'])
+  assert.equal(receipt.effectiveHigh, 0)
+  assert.equal(receipt.effectiveCritical, 0)
+
+  const wrongPath = structuredClone(report)
+  wrongPath.vulnerabilities['brace-expansion'].nodes = ['node_modules/brace-expansion']
+  assert.throws(() => evaluate(wrongPath), /exact remediated bundled preimage/)
+
+  const wrongSource = structuredClone(report)
+  wrongSource.vulnerabilities['brace-expansion'].via[0].source = 999
+  assert.throws(() => evaluate(wrongSource), /exact remediated bundled preimage/)
+
+  const extraHigh = structuredClone(report)
+  extraHigh.vulnerabilities.unknown = {
+    name: 'unknown',
+    severity: 'high',
+    isDirect: false,
+    via: [],
+    effects: [],
+    range: '*',
+    nodes: ['node_modules/unknown'],
+  }
+  extraHigh.metadata.vulnerabilities.high = 2
+  extraHigh.metadata.vulnerabilities.total = 4
+  assert.throws(() => evaluate(extraHigh), /unremediated high finding:unknown/)
+
+  assert.throws(() => evaluate('not-json'), /did not produce closed JSON/)
+  assert.throws(() => evaluate(report, { exitStatus: 0 }), /exit status differs/)
+  assert.throws(
+    () => evaluate(report, {
+      installedOverlayReceipt: { ...installedOverlayReceipt, identityDigest: 'd'.repeat(64) },
+    }),
+    /matching runtime and installed-tree receipts/,
+  )
 })
 
 test('runtime prerequisites fail before any verified-runtime acquisition or repository mutation', async () => {
@@ -577,19 +729,19 @@ test('runtime prerequisites fail before any verified-runtime acquisition or repo
     assert.equal(options.shell, false)
     return { status: 0 }
   }
-  assert.deepEqual(assertSupportedSetupRuntime({ platform: 'linux', nodeVersion: '22.12.0', runner: present }), {
+  assert.deepEqual(assertSupportedSetupRuntime({ platform: 'linux', nodeVersion: '22.13.0', runner: present }), {
     platform: 'linux',
-    nodeVersion: '22.12.0',
+    nodeVersion: '22.13.0',
     executables: [...SETUP_GOVERNANCE_REQUIRED_EXECUTABLES],
   })
   assert.deepEqual(assertSupportedSetupRuntime({ platform: 'linux', nodeVersion: '23.0.0', runner: present }).nodeVersion, '23.0.0')
-  assert.throws(() => assertSupportedSetupRuntime({ platform: 'linux', nodeVersion: '22.11.99', runner: present }), /Node\.js 22\.12\.0 or newer/)
-  assert.throws(() => assertSupportedSetupRuntime({ platform: 'linux', nodeVersion: '22.12.0-rc.1', runner: present }), /Node\.js 22\.12\.0 or newer/)
-  assert.throws(() => assertSupportedSetupRuntime({ platform: 'linux', nodeVersion: 'not-a-version', runner: present }), /Node\.js 22\.12\.0 or newer/)
+  assert.throws(() => assertSupportedSetupRuntime({ platform: 'linux', nodeVersion: '22.12.99', runner: present }), /Node\.js 22\.13\.0 or newer/)
+  assert.throws(() => assertSupportedSetupRuntime({ platform: 'linux', nodeVersion: '22.13.0-rc.1', runner: present }), /Node\.js 22\.13\.0 or newer/)
+  assert.throws(() => assertSupportedSetupRuntime({ platform: 'linux', nodeVersion: 'not-a-version', runner: present }), /Node\.js 22\.13\.0 or newer/)
   assert.throws(
     () => assertSupportedSetupRuntime({
       platform: 'linux',
-      nodeVersion: '22.12.0',
+      nodeVersion: '22.13.0',
       runner: command => ({ status: command.endsWith('/jq') || command.endsWith('/python3') ? 127 : 0 }),
     }),
     /missing required setup executables: jq, python3/,
@@ -599,11 +751,11 @@ test('runtime prerequisites fail before any verified-runtime acquisition or repo
     () => runGovernanceSetup({
       root: process.cwd(),
       platform: 'linux',
-      nodeVersion: '22.11.0',
+      nodeVersion: '22.12.0',
       runner: present,
       runtimeFactory: async () => { runtimeFactoryCalled = true },
     }),
-    /Node\.js 22\.12\.0 or newer/,
+    /Node\.js 22\.13\.0 or newer/,
   )
   assert.equal(runtimeFactoryCalled, false)
 })
@@ -618,7 +770,7 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
   assert.deepEqual(runtime, {
     schemaVersion: 2,
     engine: 'node-posix-toolchain-v2',
-    minimumNodeVersion: '22.12.0',
+    minimumNodeVersion: '22.13.0',
     exactNpmVersion: '11.18.0',
     supportedHostPlatforms: ['darwin', 'linux'],
     nativeWindowsPolicy: 'unsupported-fail-closed',
@@ -669,11 +821,12 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
 
   const lockedToolchain = [
     authorityLock.packages['node_modules/npm'],
+    authorityLock.packages['node_modules/eslint'],
     authorityLock.packages['apps/template/node_modules/vite'],
     authorityLock.packages['apps/template/node_modules/@vitejs/plugin-react'],
   ]
   const lockedNode22Minima = lockedToolchain.flatMap(tool => (
-    [...tool.engines.node.matchAll(/>=\s*(22\.\d+\.\d+)/g)].map(match => match[1])
+    [...tool.engines.node.matchAll(/(?:>=|\^)\s*(22\.\d+\.\d+)/g)].map(match => match[1])
   ))
   assert.equal(lockedNode22Minima.length, lockedToolchain.length)
   const lockedToolchainMinimum = lockedNode22Minima.sort(compare).at(-1)
@@ -704,6 +857,7 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
   assert.match(governanceAnchor, /^\s*npm run setup:governance\s*$/m)
   assert.match(governanceAnchor, /node \.\.\/trusted\/scripts\/setup-governance\.mjs\s*\n\s*--dependencies-only --root \./)
   assert.match(governanceAnchor, /node \.\.\/trusted\/scripts\/setup-governance\.mjs\s*\n\s*--installed-check-only --root \./)
+  assert.doesNotMatch(governanceAnchor, /node \.\.\/trusted\/node_modules\/npm\/bin\/npm-cli\.js audit --audit-level=high/)
   assert.doesNotMatch(governanceAnchor, /\bnode\s+(?:-e|--eval|--input-type)\b/)
   assert.doesNotMatch(governanceAnchor, /runGovernance(?:Dependency)?Setup/)
   assert.match(readFileSync(workflowPaths[2], 'utf8'), /npm run setup:governance/)
@@ -732,13 +886,13 @@ test('consumer governance guide is canonical, protected, exact-hash managed and 
   assert.match(guide, /upstream-managed, release-authenticated guide/)
   assert.match(guide, /Consumers already established on the current runtime\/bootstrap contract receive later guide updates/)
   assert.match(guide, /legacy v1 consumer[^\n]*cannot use its old updater/)
-  assert.match(guide, /reviewed full-snapshot bootstrap PR plus\nindependent readback/)
+  assert.match(guide, /reviewed full-snapshot bootstrap PR/)
   assert.match(guide, /Product-owned root documentation stays product-owned/)
-  assert.match(guide, /Node\.js 22\.12\.0 or newer/)
+  assert.match(guide, /Node\.js 22\.13\.0 or newer/)
   assert.match(guide, /exact npm 11\.18\.0 runtime/)
   assert.match(guide, /scope=local-bootstrap/)
   assert.match(guide, /providerCertification=not-checked/)
-  assert.match(guide, /externalActivationRequired=true/)
+  assert.match(guide, /externalActivationRequired=false/)
   assert.match(guide, /targetVerification=deferred/)
   assert.match(guide, /targetVerified=false/)
   assert.match(guide, /ready=false/)

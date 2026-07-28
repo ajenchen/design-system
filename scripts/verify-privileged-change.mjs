@@ -25,6 +25,14 @@ import {
   pathMatches as buildGraphPathMatches,
   stageSourceMatches,
 } from './governance-build-graph.mjs'
+import {
+  assertAllControlPlaneGenesisPreservations,
+  assertControlPlaneGenesisBaseBinding,
+  assertControlPlaneGenesisTombstones,
+  CONTROL_PLANE_GENESIS_OPEN_STATE,
+  loadControlPlaneGenesisTransition,
+  validateControlPlaneGenesisTransition,
+} from './lib/control-plane-genesis-transition.mjs'
 
 const AUTH_KEYS = [
   'schemaVersion', 'kind', 'repository', 'baseSha', 'candidateHeadSha',
@@ -557,6 +565,40 @@ function exactGitChangedPaths(candidateRoot, { baseSha, baseTree, candidateHeadS
   return paths.sort()
 }
 
+export function validateControlPlaneGenesisChallengeTransition({
+  candidateRoot,
+  transition,
+  baseSha,
+  baseTree,
+}) {
+  const value = validateControlPlaneGenesisTransition(transition)
+  invariant(
+    value.state === CONTROL_PLANE_GENESIS_OPEN_STATE,
+    'control-plane genesis transition must remain open until the distinct protected cleanup PR',
+  )
+  invariant(
+    value.releaseAllowed === false,
+    'control-plane genesis transition must keep candidate freeze/release blocked',
+  )
+  invariant(
+    value.baseCommit === baseSha && value.baseTree === baseTree,
+    'control-plane genesis transition base commit/tree differs from the exact challenge base',
+  )
+  assertControlPlaneGenesisBaseBinding({
+    root: candidateRoot,
+    transition: value,
+  })
+  assertAllControlPlaneGenesisPreservations({
+    root: candidateRoot,
+    transition: value,
+  })
+  assertControlPlaneGenesisTombstones({
+    root: candidateRoot,
+    transition: value,
+  })
+  return value
+}
+
 export async function prepareControlPlaneGenesisChallenge({
   trustedRoot,
   candidateRoot,
@@ -594,6 +636,12 @@ export async function prepareControlPlaneGenesisChallenge({
   })), 'control-plane genesis changed paths do not equal the complete base-to-candidate Git tree diff')
   const graph = loadGovernanceBuildGraphSemanticDefinition({
     repoRoot: candidateRoot,
+  })
+  validateControlPlaneGenesisChallengeTransition({
+    candidateRoot,
+    transition: loadControlPlaneGenesisTransition({ root: candidateRoot }),
+    baseSha,
+    baseTree,
   })
   const stage = graph.stages.find(candidate => candidate.id === 'control-plane')
   invariant(stage, 'canonical build graph has no control-plane stage')

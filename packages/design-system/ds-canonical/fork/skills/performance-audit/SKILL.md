@@ -3,7 +3,7 @@ name: performance-audit
 description: Performance audit for design-system components and product UI. Checks render count, unnecessary re-renders, memoization gaps, bundle size impact, useEffect chains, context thrashing. Invoke when user says「這元件效能如何」「為什麼很卡」「bundle 變大」「re-render 太多」, auto-invoked by `/component-quality-gate` Phase 4.5 (advanced mode) and `/design-system-audit` Dimension D3.
 ---
 
-> **⚠️ Fork 工具註記(build 自動加)**:本 skill 提到的 `scripts/*.mjs` 或非標準 `npm run <audit>` 是 **DS-author repo 的機械工具,未隨 fork 套件附帶**(Claude Code 不掃 node_modules,fork 也無這些 executor + dep)。你的 product fork 用本 skill 的**方法論**(human / AI judgment)+ 既有 committed governance hook 的機械強制即可;要 mechanical 腳本層(截圖 / CI gate)請自行設置對應工具,或把該檢查 PR 回 DS repo 跑。
+> **Product-role projection(build 自動)**:本 skill 的執行步驟已只保留本 product repo 實際存在的指令。DS-author-only executor 會被改寫為 browser/manual/product-CI 等價驗證,不得在 product 中嘗試不存在的腳本。
 
 # Performance Audit — 元件效能稽核
 
@@ -16,7 +16,7 @@ description: Performance audit for design-system components and product UI. Chec
 
 本 skill 作為稽核 6 維度的 **D3 元件效能** canonical home。
 
-## 觸發時機(對齊 CLAUDE.md 稽核 canonical)
+## 觸發時機(對齊 shared governance 稽核 canonical)
 
 | 情境 | 模式 | 本 skill 跑什麼 |
 |------|------|----------------|
@@ -68,9 +68,9 @@ description: Performance audit for design-system components and product UI. Chec
 
 **工具**:
 - `npx vite build --report`(vite bundle visualizer)
-- **bundle-size gate(已落地 2026-07-07)**:`npm run check:bundle-size`(budget SSOT = `packages/design-system/bundle-budget.json`,total + top-8 entry 各 +10% headroom;release-preflight 內建必跑;蓄意增大 → `--init` 更新 budget + commit 說明)
+- **bundle-size gate(已落地 2026-07-07)**:`npm run build`(budget SSOT = the product build/bundle budget configuration,total + top-8 entry 各 +10% headroom;governance check and protected product CI 內建必跑;蓄意增大 → `--init` 更新 budget + commit 說明)
 
-### Phase F — Report(必 STOP,對齊分權 canonical)
+### Phase F — Report and route
 
 產出:
 
@@ -87,13 +87,16 @@ description: Performance audit for design-system components and product UI. Chec
 - 位置: {file:line}
 - 現況: {render count / bundle contribution}
 - 建議: {具體修法}
-- 是 canonical 修實作(auto),還是原則待討論(STOP)?
+- 是工程／治理修實作(P2E auto)，還是產品／UI／UX SSOT 真取捨(P2H)?
 
-## 提議討論(待 user sign-off)
-- {若發現 canonical 本身有問題,列於此,不自改}
+## Authority classification
+- P2E:{工程／治理 finding，交 canonical owner 自主修復}
+- P2H:{只有真正產品／UI／UX SSOT 取捨才列 exact target-bound decision}
 ```
 
-**STOP 點**:report 寫完**不自動修**。分權對齊 CLAUDE.md `# 稽核 canonical`(內含「Audit-vs-execute 分權」inline rule)。
+本 skill 保持 read-only，report 是 evidence receipt；caller／canonical owner 對 P2E 直接接續
+修復與驗證，不把 read-only skill boundary 誤當 user checkpoint。只有 P2H 或
+shared-governance human-only boundary 才停止。
 
 ## Non-goals
 
