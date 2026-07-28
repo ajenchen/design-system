@@ -547,7 +547,23 @@ jobs:
           test "${#tarballs[@]}" -gt 0 || { echo "no release tarballs found"; exit 1; }
           # prerelease 必須顯式 --tag(npm 硬性要求;2026-07-28 attempt-6 錨例)。
           # 本專案歷史慣例 latest 與 beta 皆指最新 beta(npm view 實證 beta.84/93),照舊。
+          # 冪等 rerun 合約(2026-07-29 attempt-7 錨例):npm 版本不可覆蓋發布,
+          # 多包 loop 部分成功後的重跑必須能越過已發包,否則整個 release tag 永久卡死。
+          # 已發版本只有位元組完全一致(registry integrity == 本地 tarball sha512)才 skip;
+          # 同版不同位元組 = 外來 artifact,fail-closed。
+          version="${RELEASE_TAG#v}"
           for tarball in "${tarballs[@]}"; do
+            name="$(tar -xOzf "$tarball" package/package.json | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).name')"
+            local_integrity="sha512-$(openssl dgst -sha512 -binary "$tarball" | openssl base64 -A)"
+            published_integrity="$(curl -fsS "https://registry.npmjs.org/${name/\//%2f}/${version}" 2>/dev/null | node -p 'try{JSON.parse(require("fs").readFileSync(0,"utf8")).dist.integrity||""}catch{""}' || true)"
+            if test -n "$published_integrity"; then
+              test "$published_integrity" = "$local_integrity" || {
+                echo "registry already holds ${name}@${version} with DIFFERENT bytes: refusing to continue"
+                exit 1
+              }
+              echo "skip ${name}@${version}: already published with identical integrity"
+              continue
+            fi
             echo "publishing ${tarball##*/}"
             npm publish "$tarball" --provenance --access public --tag latest
           done

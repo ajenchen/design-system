@@ -191,6 +191,8 @@ mustMatch(npmBlock, /environment:\s*\n\s*name: npm-release/, 'npm publish job lo
 mustMatch(npmBlock, /contents: read[\s\S]*id-token: write/, 'npm publish job permissions drifted')
 must(!/contents: write|attestations: write/.test(npmBlock), 'npm publish job gained repository/attestation write authority')
 mustMatch(npmBlock, /npm publish "\$tarball" --provenance --access public --tag latest/, 'publication must go through tokenless OIDC Trusted Publishing with provenance')
+mustMatch(npmBlock, /DIFFERENT bytes: refusing to continue/, 'publish rerun must fail closed when the registry already holds different bytes for the same version')
+mustMatch(npmBlock, /already published with identical integrity/, 'publish loop must be idempotent across reruns for byte-identical already-published versions')
 mustMatch(npmBlock, /npm view "\$\{name\}@\$\{version\}" version/, 'publication must read back the exact published registry versions')
 mustMatch(releaseGithubBlock, /needs: \[resolve-release-request, build-release-evidence, publish-npm\]/, 'GitHub Release publication must depend on the completed npm publish')
 mustMatch(releaseGithubBlock, /permissions:\s*\n\s*contents: write/, 'GitHub Release job needs contents write')
