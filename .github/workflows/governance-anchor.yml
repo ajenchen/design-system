@@ -41,9 +41,14 @@ jobs:
       - name: Install protected-base verifier dependencies without lifecycle execution
         working-directory: trusted
         env:
-          NPM_CONFIG_USERCONFIG: /dev/null
-          NPM_CONFIG_GLOBALCONFIG: /dev/null
-        run: npm run --silent setup:dependencies
+          # 兩個 config 不可同指一檔:npm(Node 24 bundled)對同一路徑雙載
+          # 直接 error「double-loading config」(2026-07-28 anchor 首航錨例)。
+          NPM_CONFIG_USERCONFIG: ${{ runner.temp }}/npmrc-user-empty
+          NPM_CONFIG_GLOBALCONFIG: ${{ runner.temp }}/npmrc-global-empty
+        run: |
+          : > "$RUNNER_TEMP/npmrc-user-empty"
+          : > "$RUNNER_TEMP/npmrc-global-empty"
+          npm run --silent setup:dependencies
 
       - name: Fetch authenticated bootstrap comments as untrusted evidence
         if: ${{ !startsWith(github.event.pull_request.head.ref, 'governance/external-ledger/') }}

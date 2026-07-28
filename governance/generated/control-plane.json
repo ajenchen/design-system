@@ -1188,7 +1188,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:1d37306d6cb403cf06edbed873b6c423abf2f23d16fc8cc872f96c6322b9bf60",
+      "hash": "sha256:f0a93f391225653534c9191091363a1bb908087d8bf9528ecd29a19fe0756060",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1992,7 +1992,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:b3cfbc6b2858d0b667f8d4079dc1e86c3d7b51898735ddb6b24ff9b0997fa4cd",
+      "hash": "sha256:dc11ad80cf159c1fd8e843de8948b886f1952010cf2b215b5fb7f88724143f0a",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2018,12 +2018,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c0443eb26977add3968acbe5644f503268c909f27f75b696cc08a5220c8466a8",
+      "hash": "sha256:ecd087fa659564ebe296b8ad00cc4c24a91ed8773e751655fafcafa556141957",
       "id": "governance-anchor-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": ".github/workflows/governance-anchor.yml",
-      "size": 8384,
+      "size": 8718,
       "type": "file"
     },
     {
@@ -2168,7 +2168,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:71e45baf183e92c613fa884705dc81eb8b428107c6166779c622eaacfd1a5544",
+      "hash": "sha256:0ae0dc5118bd66b2b5d06654bf2a4ebacd06291ebebaba6c9bb4a0c87efb8c0d",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3795,12 +3795,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:bf4a8977506239c77fbe22a4387bcd37d021a93f61a8d3345732bbd71f75e6e7",
+      "hash": "sha256:7d1dcc480c515aa613f88a84f18b575403cfa8aec5f87eb437c2955aabadc88d",
       "id": "release-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": ".github/workflows/release.yml",
-      "size": 24243,
+      "size": 24841,
       "type": "file"
     },
     {

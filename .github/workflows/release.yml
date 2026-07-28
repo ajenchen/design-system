@@ -398,6 +398,11 @@ jobs:
           --artifacts "$GITHUB_WORKSPACE/release-artifacts"
           --expected "${{ needs.build-release-evidence.outputs.release_set_sha256 }}"
 
+      # build-release-bom --verify 載入 consumer-upgrade-protocol(ajv schema 驗證)
+      # → 需要 lock-bound node_modules;缺裝依賴 = MODULE_NOT_FOUND(2026-07-28 發版錨例)。
+      - name: Install the locked verification dependencies
+        run: npm run --silent setup:dependencies
+
       - name: Re-verify exact BOM before attestation
         run: >-
           node scripts/build-release-bom.mjs --verify
@@ -493,6 +498,11 @@ jobs:
           node scripts/release-set.mjs
           --artifacts "$GITHUB_WORKSPACE/release-artifacts"
           --expected "${{ needs.build-release-evidence.outputs.release_set_sha256 }}"
+
+      # build-release-bom --verify 載入 consumer-upgrade-protocol(ajv schema 驗證)
+      # → 需要 lock-bound node_modules;缺裝依賴 = MODULE_NOT_FOUND(2026-07-28 發版錨例)。
+      - name: Install the locked verification dependencies
+        run: npm run --silent setup:dependencies
 
       - name: Re-verify exact BOM before npm authority is used
         run: >-
