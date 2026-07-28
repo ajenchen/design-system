@@ -1188,7 +1188,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:1d37306d6cb403cf06edbed873b6c423abf2f23d16fc8cc872f96c6322b9bf60",
+      "hash": "sha256:a53ae7ad9a063acbaf687ae9f1612614554be02dc5e4b8cdc347794db973197b",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1992,7 +1992,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:b3cfbc6b2858d0b667f8d4079dc1e86c3d7b51898735ddb6b24ff9b0997fa4cd",
+      "hash": "sha256:8454c46b7cf3be85a57ae9af0d7e36a6759a08a1f55d3304a36fb0d21845b611",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2168,7 +2168,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:71e45baf183e92c613fa884705dc81eb8b428107c6166779c622eaacfd1a5544",
+      "hash": "sha256:4971b911139476e32782744937d646f0679c45b3a98239e4b7ddebfcbd600343",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3795,12 +3795,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:bf4a8977506239c77fbe22a4387bcd37d021a93f61a8d3345732bbd71f75e6e7",
+      "hash": "sha256:7d1dcc480c515aa613f88a84f18b575403cfa8aec5f87eb437c2955aabadc88d",
       "id": "release-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": ".github/workflows/release.yml",
-      "size": 24243,
+      "size": 24841,
       "type": "file"
     },
     {
