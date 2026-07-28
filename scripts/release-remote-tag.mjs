@@ -68,18 +68,23 @@ async function main() {
   const args = parseArgs(process.argv.slice(2))
   const token = process.env[args['--token-env']]
   if (!token) throw new Error(`GitHub token environment variable is empty: ${args['--token-env']}`)
-  const identity = await resolveRemoteTagIdentity({
+  // Ordinary release 車道入口:tag authority = exact 綁定 + BOM + SLSA provenance;
+  // 簽章為 opt-in 加值(高保證 finalizer 走 release-trust-preflight,維持預設嚴格)。
+  const identity = await resolveVerifiedReleaseTag({
     repository: args['--repository'],
     tag: args['--tag'],
     requestJson: (path) => requestGitHubJson({ token, path }),
+    requireSignature: false,
   })
   assertVerifiedReleaseTag({
     identity,
     expectedCommit: args['--expected'],
     expectedTagObject: args['--expected-object'] || null,
+    requireSignature: false,
   })
   if (args['--github-output']) appendFileSync(resolve(args['--github-output']), `tag_object=${identity.tagObject}\n`)
-  console.log(`✅ GitHub-verified signed annotated tag is exact: ${identity.tag} (${identity.tagObject}) -> ${identity.commit}`)
+  const signatureState = identity.verification?.verified === true ? 'GitHub-verified signed' : `annotated(${identity.verification?.reason})`
+  console.log(`✅ release tag is exact and acceptable [${signatureState}]: ${identity.tag} (${identity.tagObject}) -> ${identity.commit}`)
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -1256,7 +1256,10 @@ try {
   expectResult(concurrentResult, {
     pass: false,
     label: 'same-size concurrent rewrites with restored mtime cannot pass stable scan',
-    pattern: /source changed/,
+    // 閘有兩條等價偵測路徑:逐源 ctime 比對(source changed)與全清單連續快照比對
+    // (stable readback failed)——寫入者與掃描的相位決定哪條先觸發,兩者皆為正確攔截
+    // (2026-07-29 CI 錨例:ctimeNs 漂移走了 stable-readback 路徑)。
+    pattern: /source changed|stable readback failed/,
   })
   rmSync(concurrentTarget)
   rmSync(writerReady, { force: true })

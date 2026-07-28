@@ -1298,7 +1298,7 @@ test('unsigned or lightweight remote tags fail before trust evidence can be issu
   const context = models()
   for (const [label, mutate, pattern] of [
     ['lightweight', (path, value) => path.includes('/git/ref/tags/') ? { ...value, object: { type: 'commit', sha: RELEASE_COMMIT } } : value, /annotated tag object/],
-    ['unsigned', (path, value) => path.includes('/git/tags/') ? { ...value, verification: { verified: false, reason: 'unsigned', signature: null, payload: null, verified_at: null } } : value, /did not verify.*unsigned/],
+    ['unsigned', (path, value) => path.includes('/git/tags/') ? { ...value, verification: { verified: false, reason: 'unsigned', signature: null, payload: null, verified_at: null } } : value, /not acceptable for release.*unsigned/],
     ['wrong name', (path, value) => path.includes('/git/tags/') ? { ...value, tag: 'v9.9.9' } : value, /tag name mismatch/],
     ['moved target', (path, value) => path.includes('/git/tags/') ? { ...value, object: { type: 'commit', sha: '6'.repeat(40) } } : value, /remote tag moved/],
   ]) {
