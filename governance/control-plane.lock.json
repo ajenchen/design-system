@@ -10,7 +10,7 @@
   "contractDigest": "sha256:b259a4e92a7dd0d3ac29f6eeca6cfb30da04967f29973dba3c229d6e7c1138ce",
   "files": [
     {
-      "hash": "sha256:8c12e71e92464a35857b023995c50d5cf4f60f7f056cc5658097fbe8af4f0774",
+      "hash": "sha256:6a08abe7d75f77b08e7299d5e57d91f2641d2af637f53f5f9b4d13e86878b4be",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 73865,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a5a5641057ba6b49650398cd03e281f26443d61b15049a2c7deb403cff73d3ba",
+      "hash": "sha256:13f180772d2a876c7854eeaa849a4cd8673fb2373a3af101f0cca8bbe03d4cd5",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 167324,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:c3b8db39cb22bea3db74c87ba593d9aff6738a29afca15fc805f88486134359c",
+  "inputDigest": "sha256:42bd36e083e5cb925b8fd29adb4c18d817ce3d6716aea6c62d7d5b7ce9ba76bd",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:4e23033e41243d7abaa45c9279b9d01a8146b02f77a27bdea928377beae87413",
+  "snapshotDigest": "sha256:9536285e900e931256f12f900a634afc21bcce6a852c89a911dd2d10b06dd788",
   "sources": [
     {
       "hash": "sha256:9d9bcd381c060751680eec29c37bd3bc36bae69a269a9fba52fcbcf8d743e7a3",
@@ -1835,12 +1835,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:45b10839f2feee73d34acedce590750a587de0d91f69615a487b929fad3b109b",
+      "hash": "sha256:f27171749a78c1c1a9fc6a18bc0eda40d4ca5bf7e05fa5b4baaaa58b5da8f87e",
       "id": "exact-mirror-release-verifier",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/verify-mirror-release.mjs",
-      "size": 5797,
+      "size": 6007,
       "type": "file"
     },
     {
@@ -2141,21 +2141,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:86fcea662483008921f37feb96dd5bac6ed972c25790a3f15e70a8a1dc034dd4",
+      "hash": "sha256:f4452640d34cb28dbddbca9919f4bc5d3caec7c35879f9e69fd5f6c8485b2ffc",
       "id": "exact-upgrade-evidence-verifier",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/verify-upgrade-evidence.mjs",
-      "size": 47317,
+      "size": 47551,
       "type": "file"
     },
     {
-      "hash": "sha256:d3adc9d8dcc89b111295102d15b75f40c4eb22891cdc59463a7fc1302309fd63",
+      "hash": "sha256:be8be9b993199d0eb01da1b57cd0e395a4bfceea70a78ff45e436f626c290ed3",
       "id": "exact-upgrade-provenance-verifier",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/verify-upgrade-provenance.mjs",
-      "size": 42788,
+      "size": 43808,
       "type": "file"
     },
     {
@@ -4339,7 +4339,7 @@
         "scripts/generated/"
       ],
       "files": 376,
-      "hash": "sha256:a2169eb3cab593fe5dd0b3a31c213ae58bebbb5fad5cb31c1990ff6788a689d9",
+      "hash": "sha256:d3bd573d5592484eb229943453334ac3dad7cdc037d782c0ddde6069660db614",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

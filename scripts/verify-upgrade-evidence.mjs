@@ -608,6 +608,9 @@ export async function reconstructExpectedUpgrade({
       packages,
       version: expectedVersion,
       policy: trustPolicy,
+      // Consumer 升級走 ordinary 車道:tag→commit→tree + BOM + npm SLSA provenance;
+      // GitHub-verified 簽章與 finalizer evidence 屬 opt-in 高保證 finalizer(RELEASE_HIGH_ASSURANCE)。
+      ordinaryRelease: true,
       ...(releaseLookup ? { releaseLookup } : {}),
     })
     const incomingCorpus = validateInstalledForkCorpus(sandbox)

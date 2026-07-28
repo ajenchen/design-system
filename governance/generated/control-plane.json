@@ -1323,12 +1323,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:45b10839f2feee73d34acedce590750a587de0d91f69615a487b929fad3b109b",
+      "hash": "sha256:f27171749a78c1c1a9fc6a18bc0eda40d4ca5bf7e05fa5b4baaaa58b5da8f87e",
       "id": "exact-mirror-release-verifier",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/verify-mirror-release.mjs",
-      "size": 5797,
+      "size": 6007,
       "type": "file"
     },
     {
@@ -1629,21 +1629,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:86fcea662483008921f37feb96dd5bac6ed972c25790a3f15e70a8a1dc034dd4",
+      "hash": "sha256:f4452640d34cb28dbddbca9919f4bc5d3caec7c35879f9e69fd5f6c8485b2ffc",
       "id": "exact-upgrade-evidence-verifier",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/verify-upgrade-evidence.mjs",
-      "size": 47317,
+      "size": 47551,
       "type": "file"
     },
     {
-      "hash": "sha256:d3adc9d8dcc89b111295102d15b75f40c4eb22891cdc59463a7fc1302309fd63",
+      "hash": "sha256:be8be9b993199d0eb01da1b57cd0e395a4bfceea70a78ff45e436f626c290ed3",
       "id": "exact-upgrade-provenance-verifier",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/verify-upgrade-provenance.mjs",
-      "size": 42788,
+      "size": 43808,
       "type": "file"
     },
     {
@@ -3827,7 +3827,7 @@
         "scripts/generated/"
       ],
       "files": 376,
-      "hash": "sha256:a2169eb3cab593fe5dd0b3a31c213ae58bebbb5fad5cb31c1990ff6788a689d9",
+      "hash": "sha256:d3bd573d5592484eb229943453334ac3dad7cdc037d782c0ddde6069660db614",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

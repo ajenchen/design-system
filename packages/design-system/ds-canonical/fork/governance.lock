@@ -439,7 +439,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/794bb911ba8ebef58ab0d44a55b9968a19d2c62bcfb310b1ee3a84166f087f21.blob",
-      "sha256": "d3adc9d8dcc89b111295102d15b75f40c4eb22891cdc59463a7fc1302309fd63",
+      "sha256": "be8be9b993199d0eb01da1b57cd0e395a4bfceea70a78ff45e436f626c290ed3",
       "source": "scripts/verify-upgrade-provenance.mjs",
       "classification": null,
       "destination": "scripts/verify-upgrade-provenance.mjs"
@@ -511,7 +511,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/9791c85388d2e2e2bd564e2550fadc3351c4c960a47ce838098afcba7544eb90.blob",
-      "sha256": "86fcea662483008921f37feb96dd5bac6ed972c25790a3f15e70a8a1dc034dd4",
+      "sha256": "f4452640d34cb28dbddbca9919f4bc5d3caec7c35879f9e69fd5f6c8485b2ffc",
       "source": "scripts/verify-upgrade-evidence.mjs",
       "classification": null,
       "destination": "scripts/verify-upgrade-evidence.mjs"

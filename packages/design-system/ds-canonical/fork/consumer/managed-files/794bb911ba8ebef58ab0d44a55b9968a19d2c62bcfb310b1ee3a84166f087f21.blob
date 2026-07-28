@@ -465,6 +465,11 @@ export function validateImmutableReleaseSnapshot({
   version,
   policy,
   expectedFinalizerRun = null,
+  // Lane selector, fail-closed by default:false = high-assurance(governance anchor /
+  // enterprise finalizer)— GitHub-verified signed tag + full 8-asset closure required。
+  // true = ordinary consumer upgrade lane(tag→commit→tree + BOM + SLSA provenance;
+  // 簽章與 finalizer evidence assets 是 opt-in 加值)。Ordinary 入口必須顯式傳 true。
+  ordinaryRelease = false,
 }) {
   validateUpgradeTrustPolicy(policy)
   const tag = `v${version}`
@@ -494,13 +499,16 @@ export function validateImmutableReleaseSnapshot({
     && tagIdentity.verification.reason === 'valid'
     && SHA256_RE.test(tagIdentity.verification.signatureSha256 || '')
     && SHA256_RE.test(tagIdentity.verification.payloadSha256 || '')
-  const identityUnsignedOrdinary = tagIdentity.verification.verified === false
+  const identityUnsignedOrdinary = ordinaryRelease
+    && tagIdentity.verification.verified === false
     && ['unsigned', 'unknown_signature_type'].includes(tagIdentity.verification.reason)
     && tagIdentity.verification.verifiedAt === null
     && tagIdentity.verification.signatureSha256 === null
     && tagIdentity.verification.payloadSha256 === null
   if (!identitySigned && !identityUnsignedOrdinary) {
-    throw new Error('release tag identity verification state is invalid')
+    throw new Error(ordinaryRelease
+      ? 'release tag identity verification state is invalid'
+      : 'release tag identity is not a direct GitHub-verified signed annotated tag object')
   }
   if (identitySigned) canonicalTimestamp(tagIdentity.verification.verifiedAt, 'GitHub release tag verifiedAt')
 
@@ -514,7 +522,9 @@ export function validateImmutableReleaseSnapshot({
   const bom = parseJsonAsset(bomBody, `GitHub immutable release ${tag} BOM`)
   validateReleaseBom(bom, { requireSbom: true })
   const releaseAssets = releaseAssetMap(release, `GitHub immutable release ${tag}`)
-  const expectedAssets = bomReleaseAssets(bom, [...releaseAssets.keys()])
+  // High-assurance lane 要求完整 8-asset closure(finalizer evidence 不可缺);
+  // ordinary lane 才允許 evidence assets 依實際存在過濾。
+  const expectedAssets = bomReleaseAssets(bom, ordinaryRelease ? [...releaseAssets.keys()] : null)
   exactReleaseAssetBodies(assetBodies, expectedAssets)
   const expectedNames = expectedAssets.map(item => item.name)
   if (releaseAssets.size !== expectedAssets.length
@@ -669,6 +679,9 @@ export async function resolveImmutableReleaseSnapshot({
   assetName,
   fetchImpl = fetch,
   token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN,
+  // 同 validateImmutableReleaseSnapshot:false = 高保證車道(簽章 + 8-asset 全集必要),
+  // true = ordinary consumer 車道。預設 fail-closed。
+  ordinaryRelease = false,
 }) {
   const apiBase = `https://api.github.com/repos/${repository}`
   if (assetName !== TRUSTED_UPGRADE_POLICY.releaseBomAsset) {
@@ -698,7 +711,7 @@ export async function resolveImmutableReleaseSnapshot({
   if (bom.source?.repository !== repository || bom.source?.tag !== tag) {
     throw new Error(`GitHub Release ${tag} BOM repository/tag identity mismatch`)
   }
-  const expectedAssets = bomReleaseAssets(bom, [...releaseAssets.keys()])
+  const expectedAssets = bomReleaseAssets(bom, ordinaryRelease ? [...releaseAssets.keys()] : null)
   const expectedNames = expectedAssets.map(item => item.name)
   if (releaseAssets.size !== expectedAssets.length
     || JSON.stringify([...releaseAssets.keys()].sort()) !== JSON.stringify(expectedNames)) {
@@ -755,10 +768,11 @@ export async function resolveImmutableReleaseSnapshot({
   // high-assurance finalizer's extra guarantee, not an ordinary requirement — but a
   // BROKEN signature claim (bad_signature etc. on a signed tag) still fails closed.
   const signedAndValid = verification?.verified === true && verification?.reason === 'valid'
-  const unsignedOrdinary = verification?.verified === false
+  const unsignedOrdinary = ordinaryRelease
+    && verification?.verified === false
     && ['unsigned', 'unknown_signature_type'].includes(verification?.reason)
   if (!signedAndValid && !unsignedOrdinary) {
-    throw new Error(`GitHub tag ${tag} annotated tag verification state is invalid:${verification?.reason || '<missing>'}`)
+    throw new Error(`GitHub tag ${tag} is not a directly verified signed annotated tag object:${verification?.reason || '<missing>'}`)
   }
   if (signedAndValid) {
     if (typeof verification.signature !== 'string' || !verification.signature
@@ -818,7 +832,7 @@ export async function resolveImmutableReleaseSnapshot({
   }
 }
 
-export async function verifyUpgradeProvenance({ auditReport, packages, version, policy, releaseLookup = resolveImmutableReleaseSnapshot }) {
+export async function verifyUpgradeProvenance({ auditReport, packages, version, policy, releaseLookup = resolveImmutableReleaseSnapshot, ordinaryRelease = false }) {
   validateUpgradeTrustPolicy(policy)
   if (!Array.isArray(packages) || packages.length !== policy.upgradePackages.length) {
     throw new Error('upgrade provenance requires the exact trusted package set')
@@ -834,8 +848,9 @@ export async function verifyUpgradeProvenance({ auditReport, packages, version, 
     repository: policy.repository,
     tag: `v${version}`,
     assetName: policy.releaseBomAsset,
+    ordinaryRelease,
   })
-  const immutable = validateImmutableReleaseSnapshot({ ...snapshot, packages, version, policy })
+  const immutable = validateImmutableReleaseSnapshot({ ...snapshot, packages, version, policy, ordinaryRelease })
   for (const item of packages) {
     const statement = verifiedProvenanceStatement(auditReport, item)
     validateProvenanceStatement(statement, {

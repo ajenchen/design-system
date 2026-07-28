@@ -156,7 +156,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-independent-review-skill | `packages/design-system/ds-canonical/skills/independent-review/SKILL.md` | `sha256:d12c1782496c6beea5300cde74cf7591603c2a234bbdae2d947c5839d07d5997` |
 | exact-memory-contract-validator | `scripts/validate-memory-contract.mjs` | `sha256:932aeac01b66e697d712489c6efbddb42e63deaac76192777ced139e8c45a757` |
 | exact-mirror-evidence-verifier | `scripts/verify-mirror-evidence.mjs` | `sha256:22b6ae249e07b5ee2d05563dbd46d4c2ba90973d098925624490cd816e88c6d8` |
-| exact-mirror-release-verifier | `scripts/verify-mirror-release.mjs` | `sha256:45b10839f2feee73d34acedce590750a587de0d91f69615a487b929fad3b109b` |
+| exact-mirror-release-verifier | `scripts/verify-mirror-release.mjs` | `sha256:f27171749a78c1c1a9fc6a18bc0eda40d4ca5bf7e05fa5b4baaaa58b5da8f87e` |
 | exact-mirror-run-artifact-identity | `scripts/mirror-run-artifact-identity.mjs` | `sha256:f7f8ea089c5ab766f45415c8138f3a3809d238f8e1118035d5afa8f7dc34cc8b` |
 | exact-mirror-workflow | `.github/workflows/mirror-to-published-template.yml` | `sha256:895308c4ace1ca94125b9ca7908351badbb6d3e21a080230d1a241ad94adb2cf` |
 | exact-model-validation-library | `infra/governance/lib/model-validation.mjs` | `sha256:307dd9dfe27ee1455d9abcbe0d7ddb1a0d9313189faddab5df9d8327cdb6b356` |
@@ -190,8 +190,8 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-template-devcontainer-config | `template/ds-product-template/.devcontainer/devcontainer.json` | `sha256:1668412229466b1e5092218606817711c46c5307b7fc7b77abf6fff089b9b4c7` |
 | exact-template-devcontainer-lock | `template/ds-product-template/.devcontainer/devcontainer-lock.json` | `sha256:f2ba8f75963ada855fef0707be6313fec9dce6742d32f414f79c4c370d8de3f3` |
 | exact-template-package-lock-generator | `scripts/generate-product-template-package-lock.mjs` | `sha256:cec901fec72ad0635179a3d88397c26520b60764d14f2068a423ae6d89011c47` |
-| exact-upgrade-evidence-verifier | `scripts/verify-upgrade-evidence.mjs` | `sha256:86fcea662483008921f37feb96dd5bac6ed972c25790a3f15e70a8a1dc034dd4` |
-| exact-upgrade-provenance-verifier | `scripts/verify-upgrade-provenance.mjs` | `sha256:d3adc9d8dcc89b111295102d15b75f40c4eb22891cdc59463a7fc1302309fd63` |
+| exact-upgrade-evidence-verifier | `scripts/verify-upgrade-evidence.mjs` | `sha256:f4452640d34cb28dbddbca9919f4bc5d3caec7c35879f9e69fd5f6c8485b2ffc` |
+| exact-upgrade-provenance-verifier | `scripts/verify-upgrade-provenance.mjs` | `sha256:be8be9b993199d0eb01da1b57cd0e395a4bfceea70a78ff45e436f626c290ed3` |
 | exact-verified-npm-runtime-library | `scripts/lib/verified-exact-npm-runtime.mjs` | `sha256:50f54769a7a32fdc5b97036410018bed87808c2dbdffc47cc292967e5de3da8f` |
 | exact-visual-baseline-cli | `packages/design-system/tools/visual-baseline/cli.mjs` | `sha256:1351eeee34180c44174f3436b6a984008f69752146d93c39c9cdf5cbac4b6889` |
 | exact-visual-baseline-library | `packages/design-system/tools/visual-baseline/index.mjs` | `sha256:4a18e1dfbb6f96761506e4bb72d60f8b7514a6b3458472c9e6ef1b130dfaad0a` |
@@ -429,7 +429,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:1c5dded1b06fcacded36d2525e72a03b4ba3a0796185079deb72917189304666` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:168a4b773d93f4cadb132545b65d2baa1c4c4d6b924ddcb3ac19c2a057b606e4` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:6d487221cc6838c8d4cbcc5ecaaa9cc79eaa70114641ef18e09243f2e86eebec` |
-| repository-automation-corpus | `scripts` | `sha256:a2169eb3cab593fe5dd0b3a31c213ae58bebbb5fad5cb31c1990ff6788a689d9` |
+| repository-automation-corpus | `scripts` | `sha256:d3bd573d5592484eb229943453334ac3dad7cdc037d782c0ddde6069660db614` |
 | repository-ignore-boundary | `.gitignore` | `sha256:8a7ce326c91a0696697109af370ad4b12db0856d12f857d270da8dba95f1aec7` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

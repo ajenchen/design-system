@@ -36,6 +36,9 @@ export function verifyMirrorRelease({ bomBytes, scaffoldLockBytes, snapshot, rep
     packages: npmPackages,
     version,
     policy: TRUSTED_UPGRADE_POLICY,
+    // Mirror 認證的是 ordinary release(tag→commit→tree + BOM + SLSA provenance;
+    // 簽章與 finalizer evidence 是 opt-in 高保證車道)。
+    ordinaryRelease: true,
   })
   invariant(immutable.bom.source.gitCommit === sourceSha
     && immutable.bom.source.gitTree === sourceTree
@@ -93,6 +96,7 @@ async function main() {
     repository,
     tag: `v${version}`,
     assetName: TRUSTED_UPGRADE_POLICY.releaseBomAsset,
+    ordinaryRelease: true,
   })
   const result = verifyMirrorRelease({
     bomBytes,

@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "84509f7c10f4d40cc146ef0fc5a09db9c7ab8df025edc71a108de446051c103b",
+    "forkCorpusLockSha256": "8b8c92449ac65a26f03aac752589641bd8b3c1c2652565678a9b154cfe064bff",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "916c040fc796ce937c3de4030db0e441d01f6602d79b2bc12e02b9d7613c7261",
@@ -127,8 +127,8 @@
       "scripts/setup-workspace.mjs": "95dc0fef1f7570efe277a66f7edf4640055ad6abbae0245615eceb9b041560e9",
       "scripts/sync-all.mjs": "938c706cad79a4bd538359c9b74cb9253a4c74b5f1342cbfc1625600425d8bfd",
       "scripts/verify-consumer-css-entry.mjs": "a16545ea8d4f5224d8133f0bb0b68d5489d8e106fe7594488a78e0e5718b99cc",
-      "scripts/verify-upgrade-evidence.mjs": "86fcea662483008921f37feb96dd5bac6ed972c25790a3f15e70a8a1dc034dd4",
-      "scripts/verify-upgrade-provenance.mjs": "d3adc9d8dcc89b111295102d15b75f40c4eb22891cdc59463a7fc1302309fd63",
+      "scripts/verify-upgrade-evidence.mjs": "f4452640d34cb28dbddbca9919f4bc5d3caec7c35879f9e69fd5f6c8485b2ffc",
+      "scripts/verify-upgrade-provenance.mjs": "be8be9b993199d0eb01da1b57cd0e395a4bfceea70a78ff45e436f626c290ed3",
       "scripts/workflow-static-validation.mjs": "8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305"
     }
   },
