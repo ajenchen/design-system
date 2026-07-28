@@ -41,7 +41,7 @@ function fixture(t) {
   return { root, hookRoot, hook }
 }
 
-test('authority hook setup migrates arbitrary Husky state to one absolute canonical binding without worktree drift', t => {
+test('authority hook setup migrates arbitrary Husky state to one relative canonical binding without worktree drift', t => {
   const fx = fixture(t)
   git(fx.root, ['config', '--local', '--add', 'core.hooksPath', '.husky/_'])
   git(fx.root, ['config', '--local', '--add', 'core.hooksPath', '/tmp/attacker-hooks'])
@@ -59,7 +59,10 @@ test('authority hook setup migrates arbitrary Husky state to one absolute canoni
     configured: true,
   })
   assert.deepEqual(before, after)
-  assert.equal(git(fx.root, ['config', '--local', '--get-all', 'core.hooksPath']), fx.hookRoot)
+  // 2026-07-28 contract:canonical binding = RELATIVE '.husky'。絕對路徑會在 worktree /
+  // 重新 clone / 路徑搬移後指向舊位置,正是 PROJECT_ROOT_UNVERIFIED 全 session 磚化的根因;
+  // 相對值由 git 以 repo root 起算,天生 worktree-safe。attacker/多重 entry 仍必收斂成單一值。
+  assert.equal(git(fx.root, ['config', '--local', '--get-all', 'core.hooksPath']), '.husky')
 })
 
 test('authority hook setup rejects unrelated executable Git config before changing the hook binding', t => {

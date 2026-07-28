@@ -12,7 +12,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 
 | ID | Owner path | Digest |
 |---|---|---|
-| agent-bootstrap | `AGENTS.md` | `sha256:9d9bcd381c060751680eec29c37bd3bc36bae69a269a9fba52fcbcf8d743e7a3` |
+| agent-bootstrap | `AGENTS.md` | `sha256:b844a18c72365e2c0a65caf07f6328fd8037e3d00be681bc26830eea117b7a6a` |
 | audit-coverage-matrix-source | `scripts/audit-coverage-matrix.mjs` | `sha256:f921b954d3c7fa9be1422ce80d9f593a5ccde8428968265389cba5969193d708` |
 | audit-rubric | `packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md` | `sha256:4a1140172b541247eef594323266d545fed906ed953425521f8927a82160ee06` |
 | authority-decision-evidence-library | `packages/governance/src/authority-decision-evidence.mjs` | `sha256:6bf0a2394ad9df7dc3117b17a175c1e14bb16073b11dbd6ff11b4e6a94800781` |
@@ -69,7 +69,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | deep-audit-ci-evidence-tests | `scripts/test-produce-ci-enforced-evidence.mjs` | `sha256:a31e51ea36e7948557e7eb7d2239460dc7768c297ef46eb74f94d2852427c577` |
 | deep-audit-ci-live-observer | `scripts/lib/ci-evidence-live-observer.mjs` | `sha256:02c3a7f725e83cb77dcee4436cc35be3c58e4216e48e6745c30ef2df82143eb2` |
 | deep-audit-ci-observation-schema | `scripts/schemas/ci-evidence-observation.schema.json` | `sha256:770f54aecf0426a7dfce16b326c151a6b16f14015d138ac7323d552e9b367e70` |
-| deep-audit-coverage-tests | `scripts/test-verify-deep-audit-coverage.mjs` | `sha256:66e701dcc1c5b1faf393028cfd83c993e9b7f0370e95b7060db6f8eb83a40bd4` |
+| deep-audit-coverage-tests | `scripts/test-verify-deep-audit-coverage.mjs` | `sha256:628bad95c7fff918786b8c035d31256f3a8cd243fe4d0be6653665eb8ae2b7c6` |
 | deep-audit-coverage-verifier | `scripts/verify-deep-audit-coverage.mjs` | `sha256:56397111103863ebe54ca364e951fd5700cf3688c4968fbeac0e21fab70abb19` |
 | deep-audit-deterministic-plan | `scripts/deep-audit-deterministic-plan.json` | `sha256:e125912905e061d6b69dee671e209bf8686c65faae9c75847159de71e2c21ab6` |
 | deep-audit-deterministic-plan-library | `scripts/lib/deep-audit-deterministic-plan.mjs` | `sha256:f88d5aea6949689ff2742d17880e02522b551170f1d32b56fadd385d6357aeb5` |
@@ -84,7 +84,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | deep-audit-hook-evidence-plan-schema | `infra/governance/schemas/hook-evidence-plan.schema.json` | `sha256:d9d91baaca164a373ea2302a607fe5809977fb9c29c33c562e593bbf151059f2` |
 | deep-audit-hook-evidence-plan-tests | `scripts/test-hook-evidence-plan.mjs` | `sha256:a22a0a3b2ac2c29d8650ecc66858fa462551ff954506a157b432aeb42327274b` |
 | deep-audit-hook-evidence-producer | `scripts/produce-hook-enforced-evidence.mjs` | `sha256:806b953e0299f1a0f16b6735eaaa772924c1c39b03d49dc211b1038ced22a64e` |
-| deep-audit-hook-evidence-producer-tests | `scripts/test-produce-hook-enforced-evidence.mjs` | `sha256:b0e2e068620c45fdd85619253578a66fb43164a22e97b6c2b204288bb79de485` |
+| deep-audit-hook-evidence-producer-tests | `scripts/test-produce-hook-enforced-evidence.mjs` | `sha256:d8e831e96aa3ea8934f7b1664256f75646e7d190bff19a805a4efd349ef82ca0` |
 | deep-audit-managed-envelope-binding-tests | `scripts/test-managed-envelope-binding.mjs` | `sha256:d373816a257b8d1449c9d70692468ce635115d3b21999553492712ef577deb88` |
 | deep-audit-model-access-receipt-library | `scripts/lib/model-access-receipt.mjs` | `sha256:015ca4e4840ad249d708283686123ca38842cc3b9fe6fbfc6d64633985f4f28a` |
 | deep-audit-model-api-transport | `scripts/lib/model-api-transport.mjs` | `sha256:df7aa7d04fe3f30781c53cf4ec85a0702b4615cab90f6cc97d579e8efea97854` |
@@ -266,7 +266,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-harness-source-inventory-tests | `infra/governance/test/harness-source-inventory.test.mjs` | `sha256:03d26d89843deb86a4670b6afe94785c8dd13b066ecf1f0a357e1835efd01bd2` |
 | governance-harness-suite-runner-cli | `infra/governance/bin/run-harness-suite.mjs` | `sha256:96be4be01ae2bb086ebd35229b0348e7fba46baac46216201ed1e9b319f50b64` |
 | governance-hook-setup-cli | `scripts/setup-governance-hooks.mjs` | `sha256:7de57502444019f3f5f7bd8e1a31795d24ba2c1e673a5217f49a7853db5a447e` |
-| governance-hook-setup-tests | `scripts/test-setup-governance-hooks.mjs` | `sha256:adaeb0166c40b8ef1b52709ae8282f7036f5f8226a8b844c93deecb6a57cec2e` |
+| governance-hook-setup-tests | `scripts/test-setup-governance-hooks.mjs` | `sha256:d1ba16d2938a93b0cf7b9aa77201576eb2bafe5d965183ea6cad1c0c09f43507` |
 | governance-infrastructure-runbook | `infra/governance/README.md` | `sha256:d4bd7bcf77d3620a186e03e1a582a0917b35bca70750bc27e2bbc7c57d1fc4eb` |
 | governance-package-cli-corpus | `packages/governance/bin/` | `sha256:f8b353bf7bf71a9c3cf3ad13f1927fff908a459b1e2bb396fa37c46e12b8c0b0` |
 | governance-package-contract | `packages/governance/package.json` | `sha256:0cd1fa59b5c689315278c513b02f2a3d32bedb735bf586790fdbfe36c26f0591` |
@@ -429,7 +429,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:1c5dded1b06fcacded36d2525e72a03b4ba3a0796185079deb72917189304666` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:168a4b773d93f4cadb132545b65d2baa1c4c4d6b924ddcb3ac19c2a057b606e4` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:6d487221cc6838c8d4cbcc5ecaaa9cc79eaa70114641ef18e09243f2e86eebec` |
-| repository-automation-corpus | `scripts` | `sha256:d3bd573d5592484eb229943453334ac3dad7cdc037d782c0ddde6069660db614` |
+| repository-automation-corpus | `scripts` | `sha256:0d1031d54a35ac742c1c0d658a01c9bdc8720d392cb543d578d6efeb4f5d398f` |
 | repository-ignore-boundary | `.gitignore` | `sha256:8a7ce326c91a0696697109af370ad4b12db0856d12f857d270da8dba95f1aec7` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

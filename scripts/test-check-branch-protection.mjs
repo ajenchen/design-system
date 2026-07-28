@@ -168,8 +168,8 @@ assert.throws(
 
 const integrationIds = {
   'github-actions': desired.integrations.githubActions.id,
-  'qijenchen-governance-check': 424241,
-  'qijenchen-governance-writer': 424242,
+  'qijenchen-governance-check': desired.integrations.governanceCheckApp.id ?? 424241,
+  'qijenchen-governance-writer': desired.integrations.governanceWriterApp.id ?? 424242,
 }
 
 function materializePublicRulesets(profile, resolved, repository) {

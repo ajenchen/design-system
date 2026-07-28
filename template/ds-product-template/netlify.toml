@@ -17,7 +17,7 @@
   NODE_VERSION = "22"
 
 # 免費密碼保護 — Edge Function 自己做 HTTP Basic Auth(見下方「Access control」+ netlify/edge-functions/basic-auth.ts)。
-# 設 env var STORYBOOK_BASIC_AUTH="user:password"(多組空格分隔)→ 站台跳帳密彈窗;未設 = 公開 pass-through。
+# 設 env var STORYBOOK_BASIC_AUTH="user:password"(多組空格分隔)→ 站台跳帳密彈窗;fail-closed-v1:未設或格式壞 → 503 鎖站。
 [[edge_functions]]
   path = "/*"
   function = "basic-auth"
@@ -38,7 +38,7 @@
 #    免費要擋陌生人 → `netlify/edge-functions/basic-auth.ts` 讀 Authorization header 自己做 Basic Auth
 #    (Edge Functions 免費方案可用、`.netlify.app` 預設網址直接生效、無需自訂網域)。已 wire 上方 [[edge_functions]]。
 #      fork user 在 Netlify 設 env var `STORYBOOK_BASIC_AUTH` = "user:password"(多組空格分隔)→ deploy 後跳帳密彈窗。
-#      密碼只存 Netlify 後台 env var(不進 public repo);未設 = 公開 pass-through。
+#      密碼只存 Netlify 後台 env var(不進 public repo);fail-closed-v1:未設或格式壞 → 503 鎖站。
 #    進階(要更好體驗才升級,非必須):Pro Password Protection($20/mo,美化密碼頁/只擋 preview 放行 production)
 #      OR Cloudflare Access(免費 50 user 真 SSO,需自訂網域 + proxy)。
 #

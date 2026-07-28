@@ -10,7 +10,7 @@
   "contractDigest": "sha256:b259a4e92a7dd0d3ac29f6eeca6cfb30da04967f29973dba3c229d6e7c1138ce",
   "files": [
     {
-      "hash": "sha256:6a08abe7d75f77b08e7299d5e57d91f2641d2af637f53f5f9b4d13e86878b4be",
+      "hash": "sha256:94ba627d8c36c165b71c703965acd74d719212aa61be2aaaa57bab5dfe9821df",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 73865,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:13f180772d2a876c7854eeaa849a4cd8673fb2373a3af101f0cca8bbe03d4cd5",
+      "hash": "sha256:d969899bfe1862700dee40b01aa5a36b3181e2c3b1fb1c532545782a780e98a7",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 167324,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:42bd36e083e5cb925b8fd29adb4c18d817ce3d6716aea6c62d7d5b7ce9ba76bd",
+  "inputDigest": "sha256:4ca0f1be35d0cdd6cd55742df91143cfda99e0e99805d4951fe715a97e850c84",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,15 +518,15 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:9536285e900e931256f12f900a634afc21bcce6a852c89a911dd2d10b06dd788",
+  "snapshotDigest": "sha256:6fc08c775738b98c4e58c6c1a3a7acecd17baba68d994f0783b2a8d3a33aa1cb",
   "sources": [
     {
-      "hash": "sha256:9d9bcd381c060751680eec29c37bd3bc36bae69a269a9fba52fcbcf8d743e7a3",
+      "hash": "sha256:b844a18c72365e2c0a65caf07f6328fd8037e3d00be681bc26830eea117b7a6a",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 23322,
+      "size": 23416,
       "type": "file"
     },
     {
@@ -1048,12 +1048,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:66e701dcc1c5b1faf393028cfd83c993e9b7f0370e95b7060db6f8eb83a40bd4",
+      "hash": "sha256:628bad95c7fff918786b8c035d31256f3a8cd243fe4d0be6653665eb8ae2b7c6",
       "id": "deep-audit-coverage-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-verify-deep-audit-coverage.mjs",
-      "size": 39634,
+      "size": 40109,
       "type": "file"
     },
     {
@@ -1183,12 +1183,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b0e2e068620c45fdd85619253578a66fb43164a22e97b6c2b204288bb79de485",
+      "hash": "sha256:d8e831e96aa3ea8934f7b1664256f75646e7d190bff19a805a4efd349ef82ca0",
       "id": "deep-audit-hook-evidence-producer-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-produce-hook-enforced-evidence.mjs",
-      "size": 16526,
+      "size": 17336,
       "type": "file"
     },
     {
@@ -2841,12 +2841,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:adaeb0166c40b8ef1b52709ae8282f7036f5f8226a8b844c93deecb6a57cec2e",
+      "hash": "sha256:d1ba16d2938a93b0cf7b9aa77201576eb2bafe5d965183ea6cad1c0c09f43507",
       "id": "governance-hook-setup-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-setup-governance-hooks.mjs",
-      "size": 3391,
+      "size": 3710,
       "type": "file"
     },
     {
@@ -4339,7 +4339,7 @@
         "scripts/generated/"
       ],
       "files": 376,
-      "hash": "sha256:d3bd573d5592484eb229943453334ac3dad7cdc037d782c0ddde6069660db614",
+      "hash": "sha256:0d1031d54a35ac742c1c0d658a01c9bdc8720d392cb543d578d6efeb4f5d398f",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

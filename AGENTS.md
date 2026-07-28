@@ -121,14 +121,14 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 | **Tailwind 出怪事** | canonical `rules/ui-development.md`「Tailwind 5 條核心」+ `# 失敗記憶索引` |
 | **Stakeholder 產出 / 稽核** | `# 稽核 canonical` |
 | **User 糾正後** | `# 治理 canonical`(home 判斷) |
-| **跨 provider 討論 / 多輪震盪 / 任何 peer 輸出** | `# Independent second opinion`(選 peer、workflow、fail-closed 全在該章) |
+| **跨 provider 討論 / 多輪震盪 / 任何 peer 輸出** | 由 `packages/governance/src/provider-review-binding.mjs` `resolveProviderReviewBinding` 依 `packages/governance/canonical/providers.json` 選 peer;產品第二意見 → `/independent-review`;重大 governance/release → `/deep-audit-cross-codex`;詳 `# Independent second opinion` |
 | **PR merge 後 / session start branch 健檢** | `# Git solo-work canonical` |
 
 **找不到** → 進 `# 遇不確定時的協議`；產品／UI／UX SSOT 真取捨不自決，純工程由最高 certified capability 依證據自決並驗證。
 
 # Git solo-work canonical(SSOT → `governance/memory/feedback_solo_dev_workflow.md`)
 
-**1 chat = 1 working branch + 1 PR**;**protected main + required CI 是不可繞過 hard gate**。**Session-start 必先 grep canonical + 開 working branch，禁直接在 main 上 edit 或 push**(M28 sub-rule)。PR 在 solo repo 不要求作者自我 approval；CODEOWNERS 只表達 ownership，真正強制的是 required checks、conversation resolution、preview／canary、immutable attestation 與 external readback。這些 gate 全綠後，merge 是已 standing-delegated 的工程動作，不另等 user trigger。
+**1 chat = 1 working branch + 1 PR**;**protected main + required CI 是不可繞過 hard gate**。**Session-start 必先 grep canonical + 開 working branch，禁直接在 main 上 edit 或 push**(M28 sub-rule)。真正強制的是 required checks、conversation resolution、preview／canary、attestation 與 external readback(非自我 approval/CODEOWNERS);gate 全綠後 merge 是 standing-delegated 工程動作，不另等 user trigger。
 
 | 步驟 | 動作 |
 |------|------|
@@ -203,7 +203,7 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 | shadcn compat alias 回流 | dark mode 不聯動 |
 | `asChild ? Slot : Native` 內部 JSX 仍渲染多 children | React.Children.only runtime fail;asChild 分支 render 只傳 consumer child |
 | `tsc -b` 不 emit declaration | TS4023 漏抓;型別 surface 改動必 `npm run build:lib` |
-| 工具靜默陷阱:`rsync -a` 等長同秒跳過(必 `--checksum`)/ `rg` 黏寫 `-rn` 的 `-r`=replace / `V=$(mktemp -d)` 失敗回空 → `cd "" && pwd -P`=cwd → `trap rm -rf` 刪掉 cwd | 寫後斷言 + flag 分開寫 + mktemp 後必 `[ -n ]`&`[ -d ]` 守衛 |
+| 工具靜默陷阱:`rsync -a` 等長同秒跳過(必 `--checksum`)/ `rg` 黏寫 `-rn` 的 `-r`=replace / `mktemp -d` 失敗回空 → `cd ""`=原地 → trap 刪掉 cwd | 寫後斷言 + flag 分開寫 + mktemp 必 `[ -d ]` 守衛 |
 | DS css 不在 tokens.css aggregator 也沒被 tsx import = orphan | consumer 靜默拿不到 |
 | storybook-smoke 驗舊 build = 假綠 | smoke script 已加 stale-build guard |
 | `V=$(mktemp -d)` 失敗回空字串,`cd "" && pwd -P` 在 bash 解析成**當前目錄** → `trap 'rm -rf "$V"'` 刪掉 cwd | mktemp 後必 `[ -n ]`+`[ -d ]` 硬守衛才可正規化;2026-07-28 刪光 99 檔 hook corpus anchor |

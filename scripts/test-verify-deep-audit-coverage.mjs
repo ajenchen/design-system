@@ -178,9 +178,16 @@ try {
     outputResolvers: [],
     sourceOutputOverlaps: [],
   })
+  // The build-graph schema (copied verbatim from the repository below) now requires the
+  // pinned control-plane genesis transition block at the document root; reuse the
+  // repository's exact block so fixture documents satisfy the same closed contract.
+  const genesisTransition = JSON.parse(
+    readFileSync(resolve(repositoryRoot, 'scripts/governance-build-graph.json'), 'utf8'),
+  ).controlPlaneGenesisTransition
   write('scripts/governance-build-graph.json', `${JSON.stringify({
     $schema: './schemas/governance-build-graph.schema.json',
     schemaVersion: 5,
+    controlPlaneGenesisTransition: genesisTransition,
     stages: [
       stage('audit-rubric', 'deep-audit-rubric', ['governance-manifest']),
       stage('fixture-two'), stage('fixture-three'), stage('fixture-four'), stage('fixture-five'), stage('fixture-six'),

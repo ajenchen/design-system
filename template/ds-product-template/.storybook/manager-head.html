@@ -3,7 +3,8 @@
      Access control 走 Netlify Edge Function 自做 HTTP Basic Auth(免費,在 edge 層擋,client 不需 widget):
        1. `npm run setup:netlify` 完成自動部分(CLI + site + 連 repo)
        2. Netlify → Site configuration → Environment variables → 加 `STORYBOOK_BASIC_AUTH` = `user:password`
-       3. 下次 deploy → edge function `netlify/edge-functions/basic-auth.ts` 比對 env var,缺/錯回 401 + WWW-Authenticate(瀏覽器原生帳密彈窗)
+       3. 下次 deploy → edge function `netlify/edge-functions/basic-auth.ts` 比對 env var(fail-closed-v1:
+          env var 未設或格式壞 → 503 鎖站;env var 正確、帳密缺或錯 → 401 + WWW-Authenticate 瀏覽器原生帳密彈窗)
 
      為何走 edge function(而非 Netlify 內建密碼):
        - Dashboard Password Protection 與 `_headers` Basic-Auth 都是 Pro 專屬($20/mo);free-tier 都沒有

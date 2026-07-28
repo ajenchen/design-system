@@ -408,21 +408,27 @@ function resolveIntegrations(desired, api) {
   const resolved = structuredClone(desired.integrations)
   const slugs = new Set()
   const ids = new Set()
+  const failures = []
   for (const [name, integration] of Object.entries(resolved)) {
     invariant(integration && typeof integration === 'object' && !Array.isArray(integration), `desired integration is malformed:${name}`)
     invariant(typeof integration.slug === 'string' && /^[A-Za-z0-9_.-]+$/.test(integration.slug), `desired integration slug is invalid:${name}`)
     invariant(!slugs.has(integration.slug), `desired integration slug is ambiguous:${integration.slug}`)
     slugs.add(integration.slug)
     invariant(integration.id === null || (Number.isSafeInteger(integration.id) && integration.id > 0), `desired integration id is invalid:${name}`)
+    // Live App-identity attestation is unconditional: a pinned desired id must
+    // still match the live slug↔id registry binding, or App substitution behind
+    // an unchanged slug would pass unobserved.
+    const app = api(`/apps/${encodeURIComponent(integration.slug)}`)
+    invariant(Number.isSafeInteger(app?.id) && app.id > 0 && app.slug === integration.slug, `GitHub App identity is unresolved:${integration.slug}`)
     if (integration.id === null) {
-      const app = api(`/apps/${encodeURIComponent(integration.slug)}`)
-      invariant(Number.isSafeInteger(app?.id) && app.id > 0 && app.slug === integration.slug, `GitHub App identity is unresolved:${integration.slug}`)
       integration.id = app.id
+    } else if (app.id !== integration.id) {
+      failures.push(`live GitHub App identity differs from exact desired policy:${integration.slug}(live:${app.id} desired:${integration.id})`)
     }
     invariant(!ids.has(integration.id), `desired integration id is ambiguous:${integration.id}`)
     ids.add(integration.id)
   }
-  return resolved
+  return { integrations: resolved, failures }
 }
 
 export function verifyMutationBoundaryActivationProof({
@@ -533,7 +539,7 @@ export function observeBranchProtectionPolicy({
       `GitHub Actions workflow permissions for ${repo.github}`,
     )
 
-  const resolvedIntegrations = resolveIntegrations(desired, api)
+  const { integrations: resolvedIntegrations, failures: integrationFailures } = resolveIntegrations(desired, api)
   const expectedRulesets = materializeExpectedBranchRulesets(profile, resolvedIntegrations)
   const observedRulesets = readAllRulesets(repo.github, api)
   let publicRulesetProjectionVerified = false
@@ -552,7 +558,7 @@ export function observeBranchProtectionPolicy({
     observedRulesets: policyObservedRulesets,
     managedPrefix: desired.managedRulesetPrefix,
   })
-  const failures = [...verdict.failures]
+  const failures = [...integrationFailures, ...verdict.failures]
   if (!mutationBoundaryOnly && JSON.stringify(observedPermissions) !== JSON.stringify(expectedPermissions)) {
     failures.push(`GitHub Actions workflow permissions differ from exact desired profile:${profileName}`)
   }

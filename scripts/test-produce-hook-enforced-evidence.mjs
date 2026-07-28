@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { delimiter, dirname, join, resolve } from 'node:path'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import {
@@ -28,6 +28,7 @@ import {
   verifySnapshotAgainstManifest,
 } from './lib/disposable-repository-snapshot.mjs'
 import { selectFrozenHookInventory } from './lib/hook-evidence-plan.mjs'
+import { materializeClosedHookToolProfile } from './lib/closed-tool-execution.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const PRODUCER = resolve(ROOT, 'scripts/produce-hook-enforced-evidence.mjs')
@@ -378,10 +379,22 @@ try {
     true,
     'hook evidence execute mode must prepend the authenticated dependency bin',
   )
-  assert.match(
+  // The closed tool profile canonicalizes and dedupes system directories
+  // (usr-merged Linux resolves /bin -> /usr/bin), so the contract is exact
+  // equality with the authenticated profile PATH — never a platform-specific
+  // literal such as "/usr/bin:/bin".
+  const expectedToolProfile = materializeClosedHookToolProfile({
+    repoRoot: realpathSync(poisonSnapshot.snapshotRoot),
+  })
+  assert.equal(
     producerEnvironment.PATH,
-    /(?:^|:)\/usr\/bin:\/bin(?:$|:)/,
-    'hook evidence execute mode must restore the canonical fixed system executable path',
+    [join(poisonSnapshot.dependencyView, '.bin'), expectedToolProfile.executablePath].join(delimiter),
+    'hook evidence execute mode must expose exactly the authenticated dependency bin plus the closed fixed system executable path',
+  )
+  assert.equal(
+    producerEnvironment.PATH.split(delimiter).includes(realpathSync('/usr/bin')),
+    true,
+    'hook evidence execute mode must retain the canonical system executable directory',
   )
   environment.GOVERNANCE_PROJECT_DIR = poisonSnapshot.snapshotRoot
   environment.GOVERNANCE_READ_ONLY = '1'
