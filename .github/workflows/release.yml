@@ -563,8 +563,11 @@ jobs:
               exit 1
             }
             echo "registry readback OK: ${name}@${version}"
-            npm dist-tag add "${name}@${version}" beta
           done
+          # beta channel 指標不在此變異:release 合約禁 workflow 內 dist-tag mutation
+          # (test-release-bom L240;promotion 走獨立受治理 helper,含互動 session +
+          # tag 重讀驗證)。publish --tag latest 是 npm 對 prerelease 的必要 publish
+          # 參數,非事後 channel 變異;與歷史慣例(latest=最新 beta)一致。
 
   github-release:
     name: Publish the GitHub Release for the exact tag
