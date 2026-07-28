@@ -1188,7 +1188,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:2fb9f189796cc5a99a6a0c6e5ece64a8b222ba9b549b16d67d3d1192903a8480",
+      "hash": "sha256:1328e715ac3af36ca65a669482ca34a45b677cad20e5a174daf6438c740092b6",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1992,7 +1992,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:9d449368218e15684d4ee48f8cb0fd21f4008dff08c88d6388a8f2267e0afde6",
+      "hash": "sha256:4720c975e267f53579518fb924de256df0f8702f20e9805c8164f982838394d9",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2168,7 +2168,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:546618da88ea176d8aa298a1e2ca0d89f9967a69d2e555e402df9249ece9e5e2",
+      "hash": "sha256:af39aa571d1d1576326e3348479fcda95599cd0bc296f6ce14addf8262dfcee6",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3696,12 +3696,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ee337ba806f3caa61554df27bdb9880a81f92fb8a3b921747fa435e16cc0b27e",
+      "hash": "sha256:688464fc36bbba1802c6d28200baf4149cb389f11ebba263cd5d14b27d0efcd3",
       "id": "release-supply-chain-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-release-bom.mjs",
-      "size": 84447,
+      "size": 84460,
       "type": "file"
     },
     {
@@ -3795,12 +3795,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c01d1da93f2d67905b592628eeda856f1dec4423228d2e2c28aca84f4e3631ea",
+      "hash": "sha256:7278b1b3d5c58a436f845e83d62262a863e8d75456306fc1994c5b9e68a0026e",
       "id": "release-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": ".github/workflows/release.yml",
-      "size": 25673,
+      "size": 26253,
       "type": "file"
     },
     {
@@ -3827,7 +3827,7 @@
         "scripts/generated/"
       ],
       "files": 376,
-      "hash": "sha256:52f4e702dfcfac90261c1a997b6b344632c22f9bd41bf4a602f653a96be8b966",
+      "hash": "sha256:c21141e56692db1900cb012f113c64287ae04ebe04acdb6b11ff8479e1caef7f",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

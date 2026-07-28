@@ -545,9 +545,11 @@ jobs:
           shopt -s nullglob
           tarballs=("$GITHUB_WORKSPACE"/release-artifacts/*.tgz)
           test "${#tarballs[@]}" -gt 0 || { echo "no release tarballs found"; exit 1; }
+          # prerelease 必須顯式 --tag(npm 硬性要求;2026-07-28 attempt-6 錨例)。
+          # 本專案歷史慣例 latest 與 beta 皆指最新 beta(npm view 實證 beta.84/93),照舊。
           for tarball in "${tarballs[@]}"; do
             echo "publishing ${tarball##*/}"
-            npm publish "$tarball" --provenance --access public
+            npm publish "$tarball" --provenance --access public --tag latest
           done
 
       - name: Read back the exact published versions from the registry
@@ -562,6 +564,10 @@ jobs:
             }
             echo "registry readback OK: ${name}@${version}"
           done
+          # beta channel 指標不在此變異:release 合約禁 workflow 內 dist-tag mutation
+          # (test-release-bom L240;promotion 走獨立受治理 helper,含互動 session +
+          # tag 重讀驗證)。publish --tag latest 是 npm 對 prerelease 的必要 publish
+          # 參數,非事後 channel 變異;與歷史慣例(latest=最新 beta)一致。
 
   github-release:
     name: Publish the GitHub Release for the exact tag
