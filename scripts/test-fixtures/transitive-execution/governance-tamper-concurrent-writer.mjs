@@ -58,7 +58,10 @@ if (
   || !Number.isFinite(mtimeMs)
   || !Number.isInteger(durationMs)
   || durationMs < 100
-  || durationMs > 10_000
+  // 上限是 runaway 保險,不是活性參數:caller 在掃描結束後立即 SIGTERM。
+  // 60s 讓寫入窗必定罩住重載 CI 上的完整掃描(2026-07-29 release-9 flake 錨例:
+  // 舊 5s 窗被併行 harness 的 node 冷啟動吃掉 → 掃描全程看到穩定檔案 → 假綠)。
+  || durationMs > 120_000
 ) fail('time arguments are invalid')
 if (!Number.isInteger(constants.O_NOFOLLOW)) fail('O_NOFOLLOW is required')
 

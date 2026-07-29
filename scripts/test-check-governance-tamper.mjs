@@ -1221,7 +1221,9 @@ try {
       '.claude/concurrent-writer-ready',
       String(concurrentInfo.atimeMs),
       String(concurrentInfo.mtimeMs),
-      '5000',
+      // 寫入窗必須罩住整段掃描(掃描後立即 SIGTERM,60s 只是保險上限):
+      // 2026-07-29 release-9 flake — 5s 窗在重載 CI 被掃描前置吃掉 → 假綠。
+      '60000',
     ],
     { env: CLOSED_ENVIRONMENT, stdio: 'ignore' },
   )
@@ -1244,10 +1246,9 @@ try {
       resolveWriter()
       return
     }
-    const timeout = setTimeout(() => {
-      writer.kill('SIGTERM')
-      resolveWriter()
-    }, 5_000)
+    // 掃描結束 → 立即終止 writer(不等它自跑完 60s 保險窗)。
+    writer.kill('SIGTERM')
+    const timeout = setTimeout(resolveWriter, 5_000)
     writer.once('exit', () => {
       clearTimeout(timeout)
       resolveWriter()

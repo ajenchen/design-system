@@ -568,11 +568,20 @@ jobs:
           set -euo pipefail
           version="${RELEASE_TAG#v}"
           for name in @qijenchen/design-system @qijenchen/storybook-config @qijenchen/governance; do
-            observed="$(npm view "${name}@${version}" version)"
-            test "$observed" = "$version" || {
-              echo "registry readback failed for ${name}: observed '${observed}', expected '${version}'"
-              exit 1
-            }
+            # 新發版本有數秒~數十秒 registry 傳播延遲(2026-07-29 attempt-8 錨例:
+            # 發布成功後 4 秒 readback E404)→ 有界重試,上限後 fail-closed 語意不變。
+            attempt=1
+            while :; do
+              observed="$(npm view "${name}@${version}" version 2>/dev/null || true)"
+              test "$observed" = "$version" && break
+              if test "$attempt" -ge 12; then
+                echo "registry readback failed for ${name}: observed '${observed:-<absent>}', expected '${version}'"
+                exit 1
+              fi
+              echo "registry readback pending for ${name}@${version}(attempt ${attempt}/12); retrying in 10s"
+              attempt=$((attempt+1))
+              sleep 10
+            done
             echo "registry readback OK: ${name}@${version}"
           done
           # beta channel 指標不在此變異:release 合約禁 workflow 內 dist-tag mutation
