@@ -2704,8 +2704,15 @@ function DataTableInner<TData>(
           // (非 enabled / spreadsheet)outer table 也不 focusable → 這裡補 tabIndex=0 + 具名 +
           // inset focus ring,讓鍵盤可聚焦後方向鍵捲動;互動模式已由 outer table keyboard handler
           // + focusable cells 覆蓋,不重複加 tab stop。
-          tabIndex={enabled || spreadsheetMode ? undefined : 0}
-          aria-label={enabled || spreadsheetMode ? undefined : '表格內容,可捲動'}
+          // **role="rowgroup" 必要**(2026-07-29 WM beta.95 axe 錨例):focusable 的無 role
+          // 中間層會被 axe aria-required-children 視為 role="table" 的不合法 owned child,
+          // 打斷 table→row ownership(修 scrollable-region-focusable 反引爆 required-children,
+          // 與 Tabs 2026-07-18 決策1 同型)。rowgroup = W3C ARIA 1.2 合法 table 子代 + 可具名
+          // (Name from author §5.2.8.4)+ 容納 rows,兩規則唯一同時滿足解。
+          // 空表例外:Empty 塊非 row → 不掛 rowgroup;空表無 overflow 也無需 tabIndex/名稱。
+          role={isEmpty ? undefined : 'rowgroup'}
+          tabIndex={enabled || spreadsheetMode || isEmpty ? undefined : 0}
+          aria-label={enabled || spreadsheetMode || isEmpty ? undefined : '表格內容,可捲動'}
           // overflow-x/y: auto — 沒 overflow 就不顯 bar。wrapper minWidth 仍 trigger H 真 overflow。
           // **不**用 scrollbar-gutter: stable — 那會永遠保留 V 軸 15px 空間,
           // content fit 時看起來像「永遠有 V 捲軸」(Image #5 bug)。
