@@ -17,7 +17,9 @@
   "bootstrap": {
     "schemaVersion": 1,
     "enabled": false,
-    "ownerLogins": ["ajenchen"],
+    "ownerLogins": [
+      "ajenchen"
+    ],
     "nonce": "ds-governance-trust-root-bootstrap-v1",
     "maxCommentTtlMinutes": 30
   },
@@ -30,11 +32,17 @@
     ".npmrc",
     "AGENTS.md",
     "CLAUDE.md",
+    "apps/template/package.json",
     "docs/npm-native-staged-release.md",
     "package-lock.json",
     "package.json",
     "packages/design-system/package.json",
+    "packages/design-system/src/tokens/utility-registry.json",
+    "packages/design-system/src/tokens/utility-registry.schema.json",
+    "packages/eslint-plugin/package.json",
     "packages/storybook-config/package.json",
+    "template/ds-product-template/.npmrc",
+    "template/ds-product-template/README.md",
     "template/ds-product-template/package.json"
   ],
   "protectedPrefixes": [
@@ -49,6 +57,7 @@
     "packages/governance/",
     "scripts/",
     "template/ds-product-template/.devcontainer/",
-    "template/ds-product-template/.github/workflows/"
+    "template/ds-product-template/.github/workflows/",
+    "template/ds-product-template/docs/"
   ]
 }
