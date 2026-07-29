@@ -8,7 +8,7 @@ metadata:
   modified: 2026-07-29T12:49:57.081Z
 ---
 
-**目標達成**:Claude/Codex 同 SSOT(AGENTS.md 核心 + CLAUDE.md @import)、最終 authority = provider-neutral verifier + 受保護 CI;**2026-07-29 全鏈出貨**。
+**目標達成**:Claude/Codex 同 SSOT(AGENTS.md 核心;CLAUDE.md 為 provider-specific adapter 經 @import 載入,非 authority)、最終 authority = provider-neutral verifier + 受保護 CI;**2026-07-29 全鏈出貨**。
 
 - **P1-P4 done**(細節見 git 史 + `governance/planning/2026-07-16-provider-neutral-governance.md`);codex 原生 discovery 實測 PASS;Certified Surface Registry 三態制。
 - **收官戰役(2026-07-28~29,PR 12-20)**:codex 交接 → 有界去過度工程化 → PR 12 七輪收綠 merge → 發版鏈 13 棒每棒燒一閘(OIDC 信任/ajv 依賴/簽章車道/SBOM serialNumber/prerelease --tag/npm 傳播延遲/tamper 時序),**beta.95 + beta.96 三包(design-system/storybook-config/governance)OIDC Trusted Publishing + provenance + GitHub Release 全到位**;beta.96 = DataTable a11y rowgroup + InlineEdit 四語意 + 22 處截斷 tooltip。
