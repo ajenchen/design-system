@@ -89,8 +89,10 @@ for (const [label, mutate, pattern] of mutations) {
   assert.match(result.failures.join('\n'), pattern, `${label} mutation returned the wrong failure`)
 }
 
+// 1B(2026-07-29):authority profile 已不引用 governanceCheckApp;負例改 null 掉
+// 仍被全部 required checks 引用的 githubActions,invariant 覆蓋不變。
 const unresolved = structuredClone(integrations)
-unresolved.governanceCheckApp.id = null
+unresolved.githubActions.id = null
 assert.throws(
   () => materializeExpectedBranchRulesets(desired.profiles['design-system-authority'], unresolved),
   /required integration is unresolved/,
