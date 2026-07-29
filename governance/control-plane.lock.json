@@ -10,7 +10,7 @@
   "contractDigest": "sha256:b259a4e92a7dd0d3ac29f6eeca6cfb30da04967f29973dba3c229d6e7c1138ce",
   "files": [
     {
-      "hash": "sha256:8482ed9a7321b8d0af43a2b7d1c6d2d38881ef08e19fe21f35301e39bd7d8f7c",
+      "hash": "sha256:abd284b3e1feb220629446fad806b6be5c1ec99cf8cf0a39a7ce50b39af708c6",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 73865,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:256064b10155c619d3dcf3712e74da9254f82ff26c3c8cb5fac4113bac2e5537",
+      "hash": "sha256:5a6e590555b62be475d56350cd8ca83dddad58f7364d05f7a7092caa1bb1c64f",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 167324,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:dbf187834f8e1b2fd79183f5d4988385bcc4caac0c4077202237a2832387328d",
+  "inputDigest": "sha256:368f2adddb12a89e7850b065c4f189f1effdcebb3cd36b1d4aec52bc156427bc",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:c63104d3dc1baeb14e5eeb90ddb4093b1ad268b24dcfee66c9746c6b7b4ef7e2",
+  "snapshotDigest": "sha256:e1ef74e379317ed9086df11f0eabc14c3b50c257480817854083e8fb9ac9a84a",
   "sources": [
     {
       "hash": "sha256:b844a18c72365e2c0a65caf07f6328fd8037e3d00be681bc26830eea117b7a6a",
@@ -1700,7 +1700,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:90905c41bc81ac1aabf513beb251ffea916800402db56d8dab47f6bf4be41ed2",
+      "hash": "sha256:7441c5893117a91b8ec769ef1eb4118925948e11d6e159a34c6ea4e8514b8c22",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2504,7 +2504,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:a52c9a134bd58adef81d5660a2426f74ac3c8b33d485abd81cf4545888bd3834",
+      "hash": "sha256:d5b7d4db9895d09a76dcb148c5163add86958c74ad83ec9ef447bd4ec2fee847",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2680,7 +2680,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:233d4143499e72fcc2e75be49923eecaa337a367c0f4083ced8cae0be8c514fd",
+      "hash": "sha256:42efe3deb4a99196f3de56131199847f20a025f2a0db11914d3fda68cea439df",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2724,7 +2724,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0882d4057ae91b2743dfcf1dce2bf3de8235d98bff5c9e5ed402a6ade73c87d0",
+      "hash": "sha256:245f4ab2b15576eca854719af55c9397489daa9e54c7e2d23822d2a95a4752a3",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2787,7 +2787,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:08060fd94c94170d287b507a6e3ab7d239c1d030c4c84c917a25bd6b95ccf208",
+      "hash": "sha256:354936b14d00255637582c83a9b97139e675ed95e7e4b0e4ca66a0381c0babe4",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3751,7 +3751,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:84ccc8f7f73508f8ad26a359ef135ee34fe633593dcc6705012dcdace4993d78",
+      "hash": "sha256:26e25337d7d11ec01ef65ea4ab1b2f2aba39f01c3e4e05c8d7cd8be9b69174b4",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -4307,12 +4307,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:abd37721651f7185504869003e64e3df33ede49eb7de5e0a670f9db8685ca607",
+      "hash": "sha256:bf947eec23495a13ab9d26b4cd8d7d2b3bec1d3b05faa9735c2f0931a0615a9e",
       "id": "release-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": ".github/workflows/release.yml",
-      "size": 27057,
+      "size": 27583,
       "type": "file"
     },
     {
@@ -4339,7 +4339,7 @@
         "scripts/generated/"
       ],
       "files": 377,
-      "hash": "sha256:a7b4ec82451ce6cb1431a7782679b25faaa59b70357756fa401a5ea0b92a85b4",
+      "hash": "sha256:fcd7e6f50a1519fad81b428a34530376075142bb2278c1540a26b06c668fac55",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

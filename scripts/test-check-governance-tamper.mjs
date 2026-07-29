@@ -1209,6 +1209,8 @@ try {
 
   const concurrentTarget = join(fixture, 'scripts/a-concurrent.ts')
   const writerReady = join(fixture, '.claude/concurrent-writer-ready')
+  const writerStop = join(fixture, '.claude/concurrent-writer-stop')
+  const writerHeartbeat = join(fixture, '.claude/concurrent-writer-heartbeat')
   writeFileSync(concurrentTarget, '// first-version\n')
   const concurrentInfo = lstatSync(concurrentTarget)
   const writer = spawn(
@@ -1221,10 +1223,17 @@ try {
       '.claude/concurrent-writer-ready',
       String(concurrentInfo.atimeMs),
       String(concurrentInfo.mtimeMs),
-      '5000',
+      // stop-file 協議:writer 持續改寫直到掃描結束(caller 建 stop 檔),
+      // duration 只是 runaway 保險 — 2026-07-29 release-9/10 + PR18r2 錨例:
+      // 固定寫入窗在重載 CI 反覆與掃描相位錯開 → 假綠。
+      '540000',
+      '.claude/concurrent-writer-stop',
+      '.claude/concurrent-writer-heartbeat',
     ],
-    { env: CLOSED_ENVIRONMENT, stdio: 'ignore' },
+    { env: CLOSED_ENVIRONMENT, stdio: ['ignore', 'ignore', 'pipe'] },
   )
+  let writerStderr = ''
+  writer.stderr.on('data', (chunk) => { writerStderr += String(chunk) })
   await new Promise((resolveReady, rejectReady) => {
     const deadline = Date.now() + 5_000
     const poll = () => {
@@ -1239,20 +1248,31 @@ try {
     poll()
   })
   const concurrentResult = run(fixture)
+  // 掃描剛結束的當下 writer 必須還活著 — 這是「改寫窗罩住掃描」的直接證據;
+  // 早死(fixture fail / crash)以 exit code + stderr 診斷,不再無聲假綠。
+  const writerAliveThroughScan = writer.exitCode === null && writer.signalCode === null
+  writeFileSync(writerStop, 'stop\n')
   await new Promise((resolveWriter) => {
     if (writer.exitCode !== null) {
       resolveWriter()
       return
     }
-    const timeout = setTimeout(() => {
-      writer.kill('SIGTERM')
-      resolveWriter()
-    }, 5_000)
+    const forceKill = setTimeout(() => writer.kill('SIGTERM'), 5_000)
+    const timeout = setTimeout(resolveWriter, 10_000)
     writer.once('exit', () => {
+      clearTimeout(forceKill)
       clearTimeout(timeout)
       resolveWriter()
     })
   })
+  const heartbeatIterations = existsSync(writerHeartbeat)
+    ? Number(readFileSync(writerHeartbeat, 'utf8').trim())
+    : null
+  expect(
+    writerAliveThroughScan,
+    'concurrent writer stayed alive through the stable scan',
+    `exitCode=${writer.exitCode} signal=${writer.signalCode} iterations=${heartbeatIterations ?? '<no heartbeat>'} stderr=${writerStderr.trim() || '<empty>'}`,
+  )
   expectResult(concurrentResult, {
     pass: false,
     label: 'same-size concurrent rewrites with restored mtime cannot pass stable scan',
@@ -1263,6 +1283,8 @@ try {
   })
   rmSync(concurrentTarget)
   rmSync(writerReady, { force: true })
+  rmSync(writerStop, { force: true })
+  rmSync(writerHeartbeat, { force: true })
 
   expectResult(run(fixture), {
     pass: true,

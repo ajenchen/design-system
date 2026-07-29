@@ -5,6 +5,7 @@
 import {
   closeSync,
   constants,
+  existsSync,
   lstatSync,
   openSync,
   realpathSync,
@@ -39,15 +40,17 @@ function resolveFixturePath(root, repositoryPath, { mustExist }) {
   return absolute
 }
 
-const [rootArgument, targetArgument, readyArgument, atimeArgument, mtimeArgument, durationArgument] =
+const [rootArgument, targetArgument, readyArgument, atimeArgument, mtimeArgument, durationArgument, stopArgument, heartbeatArgument] =
   process.argv.slice(2)
-if ([rootArgument, targetArgument, readyArgument, atimeArgument, mtimeArgument, durationArgument].some(value => value === undefined)) {
-  fail('expected root, target, ready, atime-ms, mtime-ms, and duration-ms')
+if ([rootArgument, targetArgument, readyArgument, atimeArgument, mtimeArgument, durationArgument, stopArgument, heartbeatArgument].some(value => value === undefined)) {
+  fail('expected root, target, ready, atime-ms, mtime-ms, duration-ms, stop, and heartbeat')
 }
 
 const root = realpathSync(resolve(rootArgument))
 const target = resolveFixturePath(root, targetArgument, { mustExist: true })
 const ready = resolveFixturePath(root, readyArgument, { mustExist: false })
+const stop = resolveFixturePath(root, stopArgument, { mustExist: false })
+const heartbeat = resolveFixturePath(root, heartbeatArgument, { mustExist: false })
 const targetInfo = lstatSync(target)
 if (!targetInfo.isFile() || targetInfo.isSymbolicLink() || targetInfo.nlink !== 1) fail('target must be a unique regular file')
 const atimeMs = Number(atimeArgument)
@@ -58,7 +61,10 @@ if (
   || !Number.isFinite(mtimeMs)
   || !Number.isInteger(durationMs)
   || durationMs < 100
-  || durationMs > 10_000
+  // duration 只是 runaway 保險:活性由 stop-file 協議決定(caller 在掃描結束後
+  // 建 stop 檔 + SIGTERM),寫入窗因此結構性罩住任意時長的掃描,不賭時序
+  // (2026-07-29 release-9/10 + PR18r2 錨例:固定窗在重載 CI 反覆失效)。
+  || durationMs > 600_000
 ) fail('time arguments are invalid')
 if (!Number.isInteger(constants.O_NOFOLLOW)) fail('O_NOFOLLOW is required')
 
@@ -66,7 +72,8 @@ writeFileSync(ready, 'ready\n', { flag: 'wx', mode: 0o600 })
 const versions = [Buffer.from('// first-version\n'), Buffer.from('// other-version\n')]
 const deadline = Date.now() + durationMs
 let index = 0
-while (Date.now() < deadline) {
+let iterations = 0
+while (Date.now() < deadline && !existsSync(stop)) {
   const descriptor = openSync(target, constants.O_WRONLY | constants.O_TRUNC | constants.O_NOFOLLOW)
   try {
     writeFileSync(descriptor, versions[index])
@@ -75,4 +82,7 @@ while (Date.now() < deadline) {
   }
   utimesSync(target, atimeMs / 1000, mtimeMs / 1000)
   index = (index + 1) % versions.length
+  iterations += 1
 }
+// 心跳:caller 據此驗證 writer 在掃描期間確實持續改寫(0 或缺檔 = 早死診斷)。
+writeFileSync(heartbeat, `${iterations}\n`, { mode: 0o600 })

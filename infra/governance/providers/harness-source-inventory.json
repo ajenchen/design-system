@@ -102,7 +102,7 @@
       },
       {
         "path": "scripts/test-fixtures/transitive-execution/governance-tamper-concurrent-writer.mjs",
-        "sha256": "c0079ef0349fc4e3e1f57487afc1bf118be0f966811c580391e9d1aba4915169",
+        "sha256": "4acacc66d422ae22a6796c01f5b112b682d644c228fbd58bba6408a23598e583",
         "kind": "node",
         "consumers": [
           "scripts/test-check-governance-tamper.mjs"

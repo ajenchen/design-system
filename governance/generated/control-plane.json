@@ -1188,7 +1188,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:90905c41bc81ac1aabf513beb251ffea916800402db56d8dab47f6bf4be41ed2",
+      "hash": "sha256:7441c5893117a91b8ec769ef1eb4118925948e11d6e159a34c6ea4e8514b8c22",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1992,7 +1992,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 16,
-      "hash": "sha256:a52c9a134bd58adef81d5660a2426f74ac3c8b33d485abd81cf4545888bd3834",
+      "hash": "sha256:d5b7d4db9895d09a76dcb148c5163add86958c74ad83ec9ef447bd4ec2fee847",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2168,7 +2168,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:233d4143499e72fcc2e75be49923eecaa337a367c0f4083ced8cae0be8c514fd",
+      "hash": "sha256:42efe3deb4a99196f3de56131199847f20a025f2a0db11914d3fda68cea439df",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2212,7 +2212,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0882d4057ae91b2743dfcf1dce2bf3de8235d98bff5c9e5ed402a6ade73c87d0",
+      "hash": "sha256:245f4ab2b15576eca854719af55c9397489daa9e54c7e2d23822d2a95a4752a3",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2275,7 +2275,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:08060fd94c94170d287b507a6e3ab7d239c1d030c4c84c917a25bd6b95ccf208",
+      "hash": "sha256:354936b14d00255637582c83a9b97139e675ed95e7e4b0e4ca66a0381c0babe4",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3239,7 +3239,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:84ccc8f7f73508f8ad26a359ef135ee34fe633593dcc6705012dcdace4993d78",
+      "hash": "sha256:26e25337d7d11ec01ef65ea4ab1b2f2aba39f01c3e4e05c8d7cd8be9b69174b4",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3795,12 +3795,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:abd37721651f7185504869003e64e3df33ede49eb7de5e0a670f9db8685ca607",
+      "hash": "sha256:bf947eec23495a13ab9d26b4cd8d7d2b3bec1d3b05faa9735c2f0931a0615a9e",
       "id": "release-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": ".github/workflows/release.yml",
-      "size": 27057,
+      "size": 27583,
       "type": "file"
     },
     {
@@ -3827,7 +3827,7 @@
         "scripts/generated/"
       ],
       "files": 377,
-      "hash": "sha256:a7b4ec82451ce6cb1431a7782679b25faaa59b70357756fa401a5ea0b92a85b4",
+      "hash": "sha256:fcd7e6f50a1519fad81b428a34530376075142bb2278c1540a26b06c668fac55",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
