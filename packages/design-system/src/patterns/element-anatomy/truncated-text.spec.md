@@ -30,13 +30,13 @@ benchmark:
 ## 何時用 / 何時不用
 
 - **用**:宿主 row/cell/pill 內「寬度受限的單行文字」,溢出時要保留可讀性(hover/focus 見全文)。
-- **不用**:(a) 多行文字(本 primitive 是 `truncate` 單行 `white-space:nowrap`,不處理多行);(b) compound content(icon+field/select/person 等自帶 layout)—— `truncate` 的 inline baseline 會 collapse Field/inline-flex 對齊(DataTable 於 `renderCellContent` 對 compound 欄位**bypass** `<TruncatedText>`,只 primitive string/number 才走);(c) 內容永遠放得下(不需 tooltip 補救)。
+- **不用**:(a) 多行文字(本 primitive 是 `truncate` 單行 `white-space:nowrap`,不處理多行——排除的是 **≥2 行** clamp;`line-clamp-1` 只顯示 1 行,屬單行 scope,item-anatomy 以自訂 measure 偵測,見下表);(b) compound content(icon+field/select/person 等自帶 layout)—— `truncate` 的 inline baseline 會 collapse Field/inline-flex 對齊(DataTable 於 `renderCellContent` 對 compound 欄位**bypass** `<TruncatedText>`,只 primitive string/number 才走);(c) 內容永遠放得下(不需 tooltip 補救)。
 
 ## 消費者變異點(hook options)
 
 | option | 預設 | 用途 |
 |--------|------|------|
-| `measure` | `scrollWidth > clientWidth`(觀察元素自身)| Tag 傳 Canvas `measureText`(observe root、量測內層 span);回 `undefined` = 保留前狀態 |
+| `measure` | `scrollWidth > clientWidth`(觀察元素自身)| Tag 傳 Canvas `measureText`(observe root、量測內層 span);item-anatomy(`ItemLabel` / `ItemContent`)傳單行截斷量法 `measureSingleLineClipped`(scrollWidth 溢出 ∨「可視高度 ≈ 1 行」+ scrollHeight 溢出)把 `line-clamp-1` 納入單行 scope、≥2 行 clamp 機械排除;回 `undefined` = 保留前狀態 |
 | `deps` | `[]`(mount-once)| Tag 傳 `[children]`(children 變重量)|
 | `recheckAfterPaint` | `true`(rAF + `setTimeout(100)` 二次量,抓字型 async 假陰性)| Tag 傳 `false`(原無二次量)|
 | `timing` | `'effect'` | Tag 傳 `'layoutEffect'`(避免 paint flash)|
@@ -55,3 +55,14 @@ benchmark:
 - ❌ 用條件 wrap(未截斷裸 span / 截斷才 wrap)—— 見上「`open` 控制」canonical。
 - ❌ 對 compound content 套 `<TruncatedText>`(baseline collapse);走宿主 bypass。
 - ❌ 多 consumer 各自 `new ResizeObserver` / 複製 shared RO 引擎 —— 一律消費 `useTruncated`(SSOT)。
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `calendar.spec.md`
+- `date-picker.spec.md`
+- `dialog.spec.md`
+- `inline-edit.spec.md`
+- `item-anatomy.spec.md`
+- `link-input.spec.md`

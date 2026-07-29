@@ -484,6 +484,7 @@ DataTable 是 composite multi-section 元件,**不套 SizeMatrix / StateBehavior
 **ARIA / Pattern**:DataTable 是 composite tabular widget,**對齊 W3C ARIA Authoring Practices Guide `grid` pattern**(非 `radio-group`——之前 boilerplate 從 RadioGroup spec 誤抄;DataTable 是 multi-row / multi-column composite,not single-choice selection group,a11y semantics 完全不同(grid vs radio-group)<!-- @benchmark-verified: 2026-05-18 D1 rewrite -->):
 
 - Root 套 `role="table"`(currently)或 `role="grid"`(future tier,when cell editing 普及)— 詳 [WAI-ARIA APG: grid](https://www.w3.org/WAI/ARIA/apg/patterns/grid/) + [MDN grid role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/grid_role)
+- Center body 捲動層套 `role="rowgroup"`(非空表):唯讀模式該層帶 `tabIndex=0` + `aria-label`(scrollable-region-focusable),**focusable 的無 role 中間層會被 axe aria-required-children 判為 table 的不合法 owned child**(2026-07-29 WM beta.95 錨例;與 Tabs 2026-07-18 決策1 同型)。rowgroup = 合法 table 子代 + 可具名([WAI-ARIA 1.2 §5.2.8.4 Name from author](https://www.w3.org/TR/wai-aria-1.2/#namecalculation))。空表例外:Empty 塊非 row → 不掛 rowgroup、亦無 overflow 故一併省 tabIndex/名稱
 - Column headers:以 `<div role="columnheader">` 顯式標記(本元件用 div + ARIA role,非語義 `<table>` — 見定位段;不渲染 `<th>` / `scope`)
 - Row headers:目前無對應(平面 row,無 row header 語意;未渲染 `role="rowheader"`)
 - Sortable column:`aria-sort="none" | "ascending" | "descending"` on 該 column header `<div role="columnheader">`

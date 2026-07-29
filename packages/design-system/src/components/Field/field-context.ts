@@ -44,6 +44,11 @@ export interface FieldContextValue {
   required: boolean
   invalid: boolean
   size: FieldSize
+  /** `size` 是被決定過的(consumer 顯式傳 / control 宣告偏好)還是 Field 的預設 md。
+   *  預設 md 不得壓過 control 自己宣告的 fallback —— 詳 useResolvedFieldSize 與 field.spec.md。 */
+  sizeExplicit: boolean
+  /** Control 於掛載時宣告偏好尺寸(wrapper/HOC 遮蔽靜態 `fieldPreferredSize` 時的補位通道)。 */
+  registerPreferredSize?: (preferred: FieldSize) => void
   orientation: FieldOrientation
   controlLayout: FieldControlLayout
   hasFieldWrapper: true
@@ -166,7 +171,26 @@ export function useResolvedFieldSize<T extends string = FieldSize>(sizeProp?: T 
   // generic T(預設 FieldSize)讓非-input 控件(SegmentedControl/Rating 的 'xs'|'sm'|'md'|'lg' 超集、各自 fallback)
   // 也走同一 SSOT resolution。fieldCtx.size/surfaceSize 為 FieldSize(T 的子集)→ widen cast 安全。
   // fallback 未傳預設 'md'(input-class 控件向後相容);Rating 傳 'xs'、SegmentedControl 傳 'md'。
-  return (sizeProp ?? (fieldCtx?.size as T | undefined) ?? (surfaceSize as T | undefined) ?? fallback ?? ('md' as T))
+  //
+  // 2026-07-28:Field 的 size 只有在 consumer 顯式指定、或 Field 已解析出 control 偏好時才算「決定過」
+  // (`sizeExplicit`)。否則那只是 Field 的預設 md,不該壓過控件自己宣告的 fallback ——
+  // 舊行為讓「InlineEdit 被包一層 wrapper」時靜默退回 md(詳 field.spec.md 偏好尺寸 SSOT)。
+  const contextSize = fieldCtx && fieldCtx.sizeExplicit ? (fieldCtx.size as T | undefined) : undefined
+  return (sizeProp ?? contextSize ?? fallback ?? (fieldCtx?.size as T | undefined) ?? (surfaceSize as T | undefined) ?? ('md' as T))
+}
+
+/**
+ * Control 向外層 Field 宣告偏好尺寸(render-time)。靜態 `fieldPreferredSize` 只有在 control 是
+ * Field 的**直接子元件**時才偵測得到;包 wrapper / `React.memo` / HOC 會遮蔽它。本 hook 讓 control
+ * 在掛載時主動註冊,Field 的**控件槽高度**因此也能跟上(控件本身的尺寸則由 `useResolvedFieldSize`
+ * 同步解析,不等這次註冊)。
+ */
+export function useRegisterFieldPreferredSize(preferred?: FieldSize | null): void {
+  const fieldCtx = React.useContext(FieldContext)
+  const register = fieldCtx?.registerPreferredSize
+  React.useEffect(() => {
+    if (preferred && register) register(preferred)
+  }, [preferred, register])
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/design-system/components/Tooltip/tooltip"
+import { useTruncated } from "@/design-system/hooks/use-truncated"
 
 // ── InlineActionConfig ─────────────────────────────────────────────────────
 // 宣告式 API:consumer 只宣告 intent,host 根據 size tier 自動渲染。
@@ -243,10 +244,31 @@ export const itemPrefixAlignVariants = cva(
   }
 )
 
+// ── 單行截斷偵測 measure(ItemLabel / ItemContent 共用)──────────────────────
+// 截斷 → tooltip 顯完整內容、僅實際截斷時顯示(owner:components/Tooltip/tooltip.spec.md:32;
+// 引擎 SSOT:patterns/element-anatomy/truncated-text.spec.md)。不消費 `<TruncatedText>`——
+// trigger 需自控(ItemLabel 要 forwardRef + data-sidebar attr + props spread;ItemContent 要保留
+// labelTruncate / clamp className 原樣)→ 走 spec 指定解:public `useTruncated` 自組
+// (同 components/InlineEdit/inline-edit.tsx「單行純值 view 截斷 tooltip」段與 components/Tag 的用法)。
+// 兩種「單行截斷」機制都要偵測(MenuItem 的 clamp 走 className escape,量 DOM 才能全蓋):
+// - `truncate`(nowrap)→ scrollWidth 溢出(useTruncated 預設量法)
+// - `line-clamp-1`(MenuItem labelMaxLines/descMaxLines=1、descriptionClamp=1;文字先 wrap
+//   再垂直裁)→ scrollWidth 不溢出,只能量 scrollHeight;以「可視高度 ≈ 1 行」gate 限定單行
+//   clamp。多行 clamp(≥2 行)刻意不顯 tooltip:truncated-text.spec.md「何時不用」(a) 明文
+//   排除多行,DS 尚無多行截斷↔補全 canonical(owner 決策前維持排除)—— gate 機械保證。
+const measureSingleLineClipped = (el: HTMLElement): boolean => {
+  if (el.scrollWidth > el.clientWidth) return true
+  const lineHeight = parseFloat(getComputedStyle(el).lineHeight)
+  if (Number.isNaN(lineHeight)) return false // line-height:normal 等不可量 → 只認橫向溢出
+  const isSingleVisualLine = el.clientHeight < lineHeight * 1.5
+  return isSingleVisualLine && el.scrollHeight > el.clientHeight + 1
+}
+
 /**
  * `<ItemLabel>` — Row primitive 的 label span。
  *
  * 預設 `min-w-0 flex-1 truncate`——單行截斷,佔滿剩餘 flex 空間。
+ * 截斷時 hover 顯 tooltip 補全(截斷才顯,tooltip.spec.md:32;內建,consumer 免自接)。
  * 加 `data-sidebar="menu-label"` attribute 讓 sidebar icon 模式的 CSS selector 能命中。
  *
  * 用法:
@@ -257,14 +279,36 @@ export const itemPrefixAlignVariants = cva(
 export const ItemLabel = React.forwardRef<
   HTMLSpanElement,
   React.HTMLAttributes<HTMLSpanElement>
->(({ className, ...props }, ref) => (
-  <span
-    ref={ref}
-    data-sidebar="menu-label"
-    className={cn("min-w-0 flex-1 truncate", className)}
-    {...props}
-  />
-))
+>(({ className, children, ...props }, forwardedRef) => {
+  const { ref: truncationRef, isTruncated } = useTruncated<HTMLSpanElement>({
+    measure: measureSingleLineClipped,
+    deps: [children],
+  })
+  return (
+    // 永遠 wrap + `open` 控制(truncated-text.spec.md canonical:條件 wrap 會 remount span、
+    // ref 對不上真 DOM)。hover-only:trigger = 不可聚焦 span,不加 tabIndex —— menu row 的
+    // roving focus 在宿主 row 上,label 加 tab stop 會破壞 APG menu 鍵盤導航;先例 = Tag 帶
+    // 內建截斷 tooltip 渲染於 SelectMenu option 內(select.tsx renderLabel → tag.tsx),
+    // menu 內無抑制。鍵盤/SR 無損失:row accessible name 本就含完整文字。
+    <Tooltip open={isTruncated ? undefined : false}>
+      <TooltipTrigger asChild>
+        <span
+          ref={(el) => {
+            truncationRef.current = el
+            if (typeof forwardedRef === "function") forwardedRef(el)
+            else if (forwardedRef) forwardedRef.current = el
+          }}
+          data-sidebar="menu-label"
+          className={cn("min-w-0 flex-1 truncate", className)}
+          {...props}
+        >
+          {children}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{children}</TooltipContent>
+    </Tooltip>
+  )
+})
 ItemLabel.displayName = "ItemLabel"
 
 /**
@@ -273,6 +317,11 @@ ItemLabel.displayName = "ItemLabel"
  * ── 存在的唯一理由 ──
  * 封裝「flex-col + label + description + `mt-[var(--item-gap-label-desc-<mode>[-lg])]` gap」結構,
  * 避免 13+ 消費者各自 hard-code `mt-0.5`。改 token 一處,全 DS 同步。
+ *
+ * ── 截斷 → tooltip(內建,consumer 免自接)──
+ * label(`truncate` 或 `line-clamp-1` escape)與單行截斷 description 在實際截斷時 hover 顯
+ * tooltip 補全(截斷才顯,tooltip.spec.md:32);多行 clamp(≥2 行)排除 —— 見
+ * `measureSingleLineClipped` 註解(truncated-text.spec.md「何時不用」(a))。
  *
  * ── Consumer 偏離 canonical ──
  * 消費端若有**確切合理理由**不用 `<ItemContent>` / 需自訂 label/desc 行為,必在
@@ -331,6 +380,9 @@ export interface ItemContentProps extends Omit<React.HTMLAttributes<HTMLDivEleme
   /**
    * Description 多行截斷(line-clamp-N)。undefined = 不 clamp(自由 wrap)。
    * Tailwind line-clamp utilities 支援 1-6。
+   * `1`(單行 clamp)截斷時 hover 顯 tooltip 補全(截斷才顯,tooltip.spec.md:32);
+   * `>= 2`(多行)不配 tooltip —— truncated-text.spec.md「何時不用」(a) 排除多行,
+   * DS 尚無多行截斷↔補全 canonical(owner 決策前維持排除)。
    */
   descriptionClamp?: number
   /**
@@ -394,35 +446,64 @@ export const ItemContent = React.forwardRef<HTMLDivElement, ItemContentProps>(
 
     const clampClass = lineClampClass(descriptionClamp) ?? ""
 
+    // 截斷 → tooltip(截斷才顯,tooltip.spec.md:32)。量測走 measureSingleLineClipped(檔內
+    // SSOT 註解):label 蓋 labelTruncate `truncate` + MenuItem labelClassName `line-clamp-1`
+    // escape 兩路;description 只在單行截斷(`descriptionClamp === 1` 或 !descriptionWrap 的
+    // truncate 分支,含 className escape)顯示——多行 clamp(≥2)由量測 gate 機械排除
+    // (truncated-text.spec.md「何時不用」(a):本 primitive 不處理多行)。
+    const { ref: labelRef, isTruncated: labelClipped } = useTruncated<HTMLSpanElement>({
+      measure: measureSingleLineClipped,
+      deps: [label],
+    })
+    const { ref: descriptionRef, isTruncated: descriptionClipped } = useTruncated<HTMLSpanElement>({
+      measure: measureSingleLineClipped,
+      deps: [description],
+    })
+
     return (
       <div
         ref={ref}
         className={cn("flex flex-col min-w-0 flex-1", className)}
         {...props}
       >
-        <span className={cn(labelTruncate && "truncate", labelClassName)}>{label}</span>
+        {/* 永遠 wrap + open 控制(truncated-text.spec.md canonical);hover-only 不加 tabIndex
+            (menu row roving focus 見 ItemLabel 註解)。 */}
+        <Tooltip open={labelClipped ? undefined : false}>
+          <TooltipTrigger asChild>
+            <span ref={labelRef} className={cn(labelTruncate && "truncate", labelClassName)}>
+              {label}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{label}</TooltipContent>
+        </Tooltip>
         {description && (
-          <span
-            className={cn(
-              // Typography-mode-aware gap token(2026-04-23):
-              // (mode, size)2 維正交 → 4 token 對應 4 typography 組合
-              mode === "scanning"
-                ? isLg
-                  ? "mt-[var(--item-gap-label-desc-scanning-lg)]"
-                  : "mt-[var(--item-gap-label-desc-scanning)]"
-                : isLg
-                  ? "mt-[var(--item-gap-label-desc-reading-lg)]"
-                  : "mt-[var(--item-gap-label-desc-reading)]",
-              modeClass,
-              toneClass,
-              clampClass,
-              descriptionBreakWords && "break-words",
-              !descriptionWrap && "truncate",
-              descriptionClassName,
-            )}
-          >
-            {description}
-          </span>
+          <Tooltip open={descriptionClipped ? undefined : false}>
+            <TooltipTrigger asChild>
+              <span
+                ref={descriptionRef}
+                className={cn(
+                  // Typography-mode-aware gap token(2026-04-23):
+                  // (mode, size)2 維正交 → 4 token 對應 4 typography 組合
+                  mode === "scanning"
+                    ? isLg
+                      ? "mt-[var(--item-gap-label-desc-scanning-lg)]"
+                      : "mt-[var(--item-gap-label-desc-scanning)]"
+                    : isLg
+                      ? "mt-[var(--item-gap-label-desc-reading-lg)]"
+                      : "mt-[var(--item-gap-label-desc-reading)]",
+                  modeClass,
+                  toneClass,
+                  clampClass,
+                  descriptionBreakWords && "break-words",
+                  !descriptionWrap && "truncate",
+                  descriptionClassName,
+                )}
+              >
+                {description}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{description}</TooltipContent>
+          </Tooltip>
         )}
       </div>
     )

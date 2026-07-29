@@ -21,24 +21,43 @@ import path from 'node:path'
 const ROOT = process.cwd()
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8')
 
-// (1) fieldViewGeometry multiline 分支:`multiline ? 'items-start py-2' : 'items-center'`
-const fw = read('packages/design-system/src/components/Field/field-wrapper.tsx')
-const fvgMatch = fw.match(/multiline\s*\?\s*'items-start\s+(py-[\d.]+)'/)
-// (2) textarea cva base:`'px-[var(--field-px)] py-2'`
-const ta = read('packages/design-system/src/components/Textarea/textarea.tsx')
-const taMatch = ta.match(/'px-\[var\(--field-px\)\]\s+(py-[\d.]+)'/)
-
+const SIZES = ['sm', 'md', 'lg']
 const errors = []
-if (!fvgMatch) errors.push('找不到 fieldViewGeometry 多行 py class(field-wrapper.tsx `multiline ? items-start py-N`)')
-if (!taMatch) errors.push('找不到 Textarea base py class(textarea.tsx `px-[var(--field-px)] py-N`)')
 
-let ok = false
-if (fvgMatch && taMatch) {
-  const fvgPy = fvgMatch[1]
-  const taPy = taMatch[1]
-  ok = fvgPy === taPy
-  if (!ok) errors.push(`py 不一致:fieldViewGeometry 多行=${fvgPy} vs Textarea edit=${taPy} — InlineEdit 多行 read↔edit 垂直不齊`)
-  console.log(`InlineEdit 多行 view py = ${fvgPy} | Textarea edit py = ${taPy} → ${ok ? '✅ 一致' : '❌ 漂移'}`)
+// (1) fieldViewGeometry 多行分支:每個 size 一條 `multiline && size === 'N' && 'py-[var(--field-control-py-N)]'`
+const fw = read('packages/design-system/src/components/Field/field-wrapper.tsx')
+// (2) textarea cva size axis:每個 size 一條 `N: 'text-… py-[var(--field-control-py-N)]'`
+const ta = read('packages/design-system/src/components/Textarea/textarea.tsx')
+
+const viewPy = {}
+const editPy = {}
+for (const size of SIZES) {
+  const view = fw.match(new RegExp(`multiline && size === '${size}' && '(py-\\[[^']+\\])'`))
+  const edit = ta.match(new RegExp(`\\n\\s+${size}: '[^']*?(py-\\[[^\\]]+\\])'`))
+  if (!view) errors.push(`找不到 fieldViewGeometry 多行 ${size} py class(field-wrapper.tsx)`)
+  if (!edit) errors.push(`找不到 Textarea size axis ${size} py class(textarea.tsx)`)
+  if (view) viewPy[size] = view[1]
+  if (edit) editPy[size] = edit[1]
+}
+
+// (3) 兩者必逐 size 相等,且必消費 --field-control-py-* token(不得回退成字面 py-N,
+//     否則單行 Textarea 與同 size Input 又會不等高、density 也不再自動連動)
+for (const size of SIZES) {
+  if (!viewPy[size] || !editPy[size]) continue
+  const expected = `py-[var(--field-control-py-${size})]`
+  if (viewPy[size] !== editPy[size]) {
+    errors.push(`${size} py 不一致:fieldViewGeometry 多行=${viewPy[size]} vs Textarea edit=${editPy[size]} — InlineEdit 多行 read↔edit 垂直不齊`)
+  } else if (viewPy[size] !== expected) {
+    errors.push(`${size} py 未消費 SSOT token:得到 ${viewPy[size]},應為 ${expected}(uiSize.css 公式 = (field-height − 1lh)/2 − 1px)`)
+  }
+  console.log(`  ${size}: view=${viewPy[size] ?? '?'} | edit=${editPy[size] ?? '?'}`)
+}
+
+// (4) token 本身必在 uiSize.css 且維持邊框修正項——少了 −1px 三個 size 都會比 Input 高 2px
+const uiSize = read('packages/design-system/src/tokens/uiSize/uiSize.css')
+for (const size of SIZES) {
+  const decl = uiSize.match(new RegExp(`--field-control-py-${size}:\\s*calc\\(\\(var\\(--field-height-${size}\\) - 1lh\\) / 2 - 1px\\);`))
+  if (!decl) errors.push(`uiSize.css 缺 --field-control-py-${size} 或公式漂移(必為 calc((var(--field-height-${size}) - 1lh) / 2 - 1px))`)
 }
 
 if (errors.length) {

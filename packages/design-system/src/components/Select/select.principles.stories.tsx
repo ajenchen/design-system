@@ -7,6 +7,7 @@ import LinkTo from '@storybook/addon-links/react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Flag } from 'lucide-react'
 import { Select } from './select'
+import { Field, FieldLabel } from '@/design-system/components/Field/field'
 
 const meta: Meta = {
   title: 'Design System/Components/Select/設計原則',
@@ -216,10 +217,10 @@ export const ImmediateVsSubmitRule: Story = {
           note="建立/編輯表單、對話框設定。onChange 寫進 React state,直到 submit button 被按才送出。有「取消」可回復"
         >
           <div className="border border-border rounded-lg p-4 space-y-3">
-            <div>
-              <label className="text-caption text-fg-muted mb-1 block">Category</label>
+            <Field>
+              <FieldLabel>Category</FieldLabel>
               <Select options={categoryOptions} value={draft} onChange={setDraft} />
-            </div>
+            </Field>
             <div className="flex gap-2 pt-2">
               <button className="h-field-md px-3 text-body rounded-md bg-primary text-inverse-fg">儲存</button>
               <button className="h-field-md px-3 text-body rounded-md border border-border">取消</button>

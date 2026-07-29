@@ -457,6 +457,7 @@ document.documentElement.setAttribute('data-density', 'lg')
 - `app-shell.spec.md`
 - `breadcrumb.spec.md`
 - `button.spec.md`
+- `dialog.spec.md`
 - `header-canonical.spec.md`
 - `overlay-surface.spec.md`
 - `popover.spec.md`

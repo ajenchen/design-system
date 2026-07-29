@@ -17,7 +17,7 @@
   },
   "gateMetaExclusions": {
     "path": "scripts/gate-meta-test-exclusions.json",
-    "sha256": "f3fa5a141075f847158cd7a7bc3302c0ab524156c18831233fed0f49b0ef7092"
+    "sha256": "e2719682bf8a7a5e61ae6de0ce81bf2303862c8221f5ce24af7cda67ffd26132"
   },
   "generatedMirrors": [
     {
@@ -427,7 +427,6 @@
       "scripts/test-check-codex-freshness.mjs",
       "scripts/test-check-dangling-infra-ref.mjs",
       "scripts/test-check-field-cascade-resolve.mjs",
-      "scripts/test-check-governance-tamper.mjs",
       "scripts/test-check-plugin-installed.mjs",
       "scripts/test-check-provider-neutral-ssot-residue.mjs",
       "scripts/test-check-skill-deadref.mjs",
@@ -468,6 +467,7 @@
     ]
   },
   "direct": [
+    "scripts/test-check-governance-tamper.mjs",
     "scripts/test-check-src-republish.mjs",
     "scripts/test-codex-run-guarded.mjs"
   ],

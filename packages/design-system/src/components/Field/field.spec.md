@@ -214,6 +214,12 @@ Field 透過 Context 暴露以下狀態給子元件（Primitive 可以透過 `us
 | `orientation` | FieldLabel 的垂直對齊策略（horizontal 模式套用 padding-top 公式） |
 | `hasFieldWrapper` | Primitive 讀到此旗標時應忽略自己的 label / description prop，由 FieldLabel / FieldDescription 接管 |
 
+### Control 偏好尺寸（`fieldPreferredSize`）SSOT
+
+Field 未收到顯式 `size` 時，依序取 **顯式 prop → control 宣告的 `fieldPreferredSize` → `md`**（`field.tsx` `detectPreferredSize`）。Control 以自身檔案的 static 宣告偏好（唯一現行宣告者 = InlineEdit `'sm'`，owner 句 `InlineEdit/inline-edit.spec.md`）。
+
+**失效語意（硬規則）**：偏好只在 control 是 Field 的**直接子元件**時才偵測得到。包一層 wrapper 元件、`React.memo`、HOC 都會遮蔽 static，Field 退回 `md`，且 `fieldCtx.size` 在 `useResolvedFieldSize` 的優先序中**高於** control 自己的 fallback，因此 control 再也搶不回偏好尺寸。**Consumer 對策**：把 state 提升到 Field 外層讓 control 保持直接子元件，或顯式傳 `size`。**禁**：為了包 wrapper 而預期偏好仍然生效。
+
 ### Primitive 的 Field-aware 行為
 
 **Checkbox / Switch / RadioItem** 等 primitive 自己有 `label` / `description` props 可用於**獨立使用場景**（不在 Field 內），但在 Field context 內時：
@@ -458,6 +464,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 - `field-control-group.spec.md`
 - `field-controls.spec.md`
 - `form-validation.spec.md`
+- `inline-edit.spec.md`
 - `input.spec.md`
 - `radio-group.spec.md`
 - `switch.spec.md`

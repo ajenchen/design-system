@@ -88,7 +88,16 @@ sm 與 md 視覺相同（純命名 mapping，對齊 Field family）。
 
 ### 為什麼不完全對齊 `--field-height-*`
 
-- **現況**:Textarea 高度由 `rows` + `resize-y` 決定,**不綁 `--field-height-*`**;`size` 只控字體(sm/md = text-body 14px / lg = text-body-lg 16px),**不控高度也不控 padding**(padding 為固定 `px-[var(--field-px)] py-2`,三 size 相同)
+- **現況**:Textarea 總高度由 `rows`(或 `autoSize` 的內容)+ `resize-y` 決定,**不綁 `--field-height-*`**;`size` 控字體(sm/md = text-body 14px / lg = text-body-lg 16px)**與垂直 padding**
+
+### 垂直 padding 公式(2026-07-28 SSOT)
+
+`py = var(--field-control-py-{size})` = `calc((var(--field-height-{size}) − 1lh) / 2 − 1px)`(token 住 `tokens/uiSize/uiSize.css`)。
+
+- **目的**:單行內容時,Textarea 總高 **精確等於**同 size 的 Input(sm/md/lg = 28/32/36px),並排不再高低差。舊的固定 `py-2` 讓單行 Textarea 是 39/39/42px(比 Input 高 11/7/6px)。
+- **為何有 `− 1px`**:Textarea 兩態都在 border-box 內帶 1px 邊框(edit `border-border` / view `border-transparent`),少了這一項三個 size 都會**各高 2px**。同一常數對三 size 與 lg density 皆成立,無 per-size 特例。
+- **為何不與 `--table-cell-py` 同式**:DataTable cell 的 padding 載體是**無邊框**的 cell(且 edit 以 `!h-full` 釘高),故其公式合法地不帶 `− 1px`;兩式並存、各有載體,不可互抄。
+- **機械鎖**:`scripts/inline-edit-view-geometry-invariant.mjs` 逐 size 驗「Textarea edit py == fieldViewGeometry 多行 view py == 該 token」,並驗 token 公式本身未漂移。
 - **Rationale**:Textarea 是**多行輸入**,高度由內容 / rows 決定是本質特徵——若硬綁 field-height 只有單行高度,multi-line 場景無法表達。字體 tier 仍對齊 Field family(sm/md 共 text-body、lg 切 text-body-lg),確保並排單行 Input 的視覺 rhythm 一致
 - **世界級對照**:Ant Design `<Input.TextArea>` rows 決定高度、autoSize object 配置 min/max / Material MUI `<TextField multiline>` 用 minRows/maxRows / Polaris `<TextField multiline>` 同流派——全部 textarea 的 container 高度獨立於 field-height,只繼承字體 / padding / border token <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 

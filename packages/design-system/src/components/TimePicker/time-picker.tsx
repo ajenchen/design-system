@@ -10,6 +10,7 @@ import {
   fieldDisplayTextClass,
 } from '@/design-system/components/Field/field-wrapper'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { Popover, PopoverTrigger, PopoverContent } from '@/design-system/components/Popover/popover'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { Button } from '@/design-system/components/Button/button'
@@ -266,7 +267,9 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
         // 2026-05-14 I2 fix(spec contract (e) view typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
         if (!value) return <span {...props} ref={ref as React.Ref<HTMLSpanElement>} className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
-        return <span {...props} ref={ref as React.Ref<HTMLSpanElement>} className={cn(fieldDisplayTextClass(size), 'truncate', className)}>{formatTime(value, { formatOptions, locale })}</span>
+        // 截斷必附 tooltip(tooltip.spec.md:32)— 外層 span 保留 ref/props 轉發(2026-07-16 DA3),
+        // 值文字包 TruncatedText(display="block":外層 span 在 flex cell 內是 block container)
+        return <span {...props} ref={ref as React.Ref<HTMLSpanElement>} className={cn(fieldDisplayTextClass(size), 'truncate', className)}><TruncatedText display="block">{formatTime(value, { formatOptions, locale })}</TruncatedText></span>
       }
       return (
         <div
@@ -275,9 +278,10 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
           className={cn(fieldWrapperStyles({ mode: 'view', variant, size }), className)}
           data-field-mode="view"
         >
-          <span className={cn(bareInputStyles, 'flex-1 min-w-0 truncate', !value && fieldEmptyColorClass(resolvedMode))}>
+          {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md:183 view 態元件自管 truncation) */}
+          <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && fieldEmptyColorClass(resolvedMode))}>
             {value ? formatTime(value, { formatOptions, locale }) : emptyDisplay}
-          </span>
+          </TruncatedText>
           {EndIconCmp && (
             <ItemSuffix className="pointer-events-none">
               <EndIconCmp size={iconSize} className="text-fg-muted" aria-hidden />
@@ -376,9 +380,11 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             )}
             {...props}
           >
-            <span className={cn(bareInputStyles, 'truncate', !value && 'text-fg-muted')}>
+            {/* 截斷必附 tooltip(tooltip.spec.md:32)— trigger div 自身是 hover 目標、無疊層,
+                值 span 直接消費 TruncatedText(對照 date-picker Range edit trigger 同型) */}
+            <TruncatedText className={cn(bareInputStyles, !value && 'text-fg-muted')}>
               {displayText}
-            </span>
+            </TruncatedText>
             {showClear && (
               <ItemInlineAction
                 size={size ?? 'md'}

@@ -5,6 +5,7 @@ import { X as XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { SurfaceHeader, SurfaceBody, SurfaceFooter, COMPACT_HEADER_SLOT } from "@/design-system/patterns/overlay-surface/overlay-surface"
+import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { Button } from "@/design-system/components/Button/button"
 import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING } from "@/design-system/tokens/elevation/overlay-geometry"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
@@ -182,7 +183,7 @@ PopoverFooter.displayName = "PopoverFooter"
 const PopoverTitle = React.forwardRef<
   HTMLHeadingElement,
   React.HTMLAttributes<HTMLHeadingElement>
->(({ className, id, ...props }, ref) => {
+>(({ className, id, children, ...props }, ref) => {
   const titleCtx = React.useContext(PopoverTitleContext)
   // 掛載時向 PopoverContent 註冊 → content 自動設 aria-labelledby(見 PopoverTitleContext docblock)。
   // consumer 自傳 id 時不註冊:auto 接線指向 context titleId,自訂 id 下引用會斷 → aria 由 consumer 自管。
@@ -200,7 +201,11 @@ const PopoverTitle = React.forwardRef<
       id={id ?? titleCtx?.titleId}
       className={cn("text-body font-medium truncate", className)}
       {...props}
-    />
+    >
+      {/* 2026-07-28:截斷必附 tooltip(tooltip.spec.md「截斷 → tooltip,僅實際截斷時顯示」)——
+          同 DialogTitle 同型修;id/aria-labelledby 留在 h2 本體不受影響。 */}
+      <TruncatedText display="block">{children}</TruncatedText>
+    </h2>
   )
 })
 PopoverTitle.displayName = "PopoverTitle"

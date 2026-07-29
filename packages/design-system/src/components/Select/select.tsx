@@ -9,6 +9,9 @@ import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '
 import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
+import { useTruncated } from '@/design-system/hooks/use-truncated'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { SelectMenu, forwardKeyToListbox, useActiveDescendant, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
@@ -242,6 +245,7 @@ function CustomSelectTriggerContent({
   ariaLabel,
   labelId,
   selectedItemRenderer,
+  truncationRef,
 }: {
   searchable: boolean
   open: boolean
@@ -261,6 +265,8 @@ function CustomSelectTriggerContent({
   ariaLabel?: string
   labelId?: string
   selectedItemRenderer?: (selectedOpt: SelectOption) => React.ReactNode
+  /** 截斷 tooltip 量測點(text display 的值 span;tooltip trigger 在外層 combobox host,見 CustomSelect triggerTruncationRef 註解)*/
+  truncationRef?: React.Ref<HTMLSpanElement>
 }): React.ReactNode {
   // Searchable + open: 顯示搜尋 input
   // 2026-05-15 Bug 2 fix(Claude+Codex Step 5 比稿 consensus,user verbatim「就 A」):
@@ -332,7 +338,7 @@ function CustomSelectTriggerContent({
       <>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
         {!StartIcon && SelectedIcon && value && <ItemPrefix><SelectedIcon size={iconSize} className="pointer-events-none" aria-hidden /></ItemPrefix>}
-        <span className={cn('flex-1 min-w-0 truncate', !value && 'text-fg-muted')}>
+        <span ref={truncationRef} className={cn('flex-1 min-w-0 truncate', !value && 'text-fg-muted')}>
           {value ? selectedLabel : (placeholder ?? '選擇…')}
         </span>
       </>
@@ -399,7 +405,9 @@ function ReadonlyDisplay({
           </span>
         )
       }
-      if (isTextDisplay) return <span className={cn(fieldDisplayTextClass(sz), 'truncate', className)}>{label}</span>
+      // 截斷必附 tooltip(tooltip.spec.md:32)— 改消費 truncated-text primitive(同 input.tsx:196 同型修;
+      // display='tag' 路徑由 Tag 內建 useTruncated 自管,text 路徑原本裸 truncate = gap)
+      if (isTextDisplay) return <TruncatedText className={cn(fieldDisplayTextClass(sz), className)}>{label}</TruncatedText>
       const tVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
       return <Tag size={sz} color={tVariant} className={className}>{label}</Tag>
     }
@@ -416,9 +424,10 @@ function ReadonlyDisplay({
             {selectedItemRenderer(selectedOpt)}
           </span>
         ) : isTextDisplay ? (
-          <span className={cn(bareInputStyles, 'flex-1 min-w-0 truncate', !value && emptyColorCls)}>
+          // 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md:183 view 態元件自管 truncation)
+          <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && emptyColorCls)}>
             {value ? label : emptyText}
-          </span>
+          </TruncatedText>
         ) : value ? (
           <Tag size={sz} color={tVariant}>{label}</Tag>
         ) : (
@@ -457,9 +466,10 @@ function ReadonlyDisplay({
     return (
       <div className={cn(fieldWrapperStyles({ mode: resolvedMode, variant, width, size: sz }), className)} data-field-mode={resolvedMode} aria-disabled={ariaDisabled}>
         {StartIcon && <ItemPrefix><StartIcon size={iconSize} className={cn('pointer-events-none', iconColor)} aria-hidden /></ItemPrefix>}
-        <span className={cn('flex-1 min-w-0 truncate', resolvedMode === 'disabled' && 'text-fg-disabled')}>
+        {/* 截斷必附 tooltip(tooltip.spec.md:32)— readonly/disabled 無下拉入口,tooltip 是唯一補救路徑 */}
+        <TruncatedText className={cn('flex-1', resolvedMode === 'disabled' && 'text-fg-disabled')}>
           {value ? label : <span className={emptyColorCls}>{emptyText}</span>}
-        </span>
+        </TruncatedText>
         {showIndicator && <ItemSuffix className="pointer-events-none"><ChevronDown size={iconSize} className={cn('shrink-0', iconColor)} aria-hidden /></ItemSuffix>}
       </div>
     )
@@ -631,6 +641,17 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // 級 fallback `?? value`。
     const selectedLabel = selectedOpt?.label ?? value ?? ''
     const SelectedIcon = selectedOpt?.icon
+    // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):closed trigger text
+    // display 的值 span 是截斷元素;trigger = 整個 combobox host(interactive host,hover 直達)、
+    // 量測內層值 span — useTruncated 自組 pattern(truncated-text.spec.md「trigger 需自控」指定解;
+    // 範本 inline-edit.tsx:251。tag display 由 Tag 內建 useTruncated 自管,不經此路)。
+    // deps 含 open:searchable && open 切搜尋 input branch 時值 span 會 unmount,關閉重掛後
+    // effect 需重跑重新 observe(Tag always-wrap 教訓:RO 卡在 detached node → isTruncated 凍結)。
+    // hook 必在下方 resolvedMode early return 之前(React #310 hook-count 鐵律,見上方註解)。
+    const { ref: triggerTruncationRef, isTruncated: triggerTruncated } = useTruncated<HTMLSpanElement>({
+      deps: [open, isTextDisplay && value ? selectedLabel : ''],
+    })
+    const triggerTooltipActive = isTextDisplay && !!value && triggerTruncated && !open
     // ── 過濾選項 ──
     // 2026-07-18:filter 用 trim 過的 search,對齊 SelectMenu creatable 的 `search.trim()` create-row 判定 —
     //   否則尾隨空白(如 "Bug ")會讓 filter 漏掉完全同名選項、SelectMenu 卻誤判「無同名」提議重複建立。
@@ -748,6 +769,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         ariaLabel={ariaLabel}
         labelId={fieldCtx?.labelId}
         selectedItemRenderer={selectedItemRenderer}
+        truncationRef={triggerTruncationRef}
       />
     )
 
@@ -828,29 +850,39 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     )
 
     return (
-      <SelectMenu
-        options={menuOptions}
-        groups={groups}
-        value={value ?? null}
-        onValueChange={handleValueChange}
-        searchable={false}
-        creatable={creatable}
-        onCreate={onCreate}
-        createLabel={createLabel}
-        search={searchable ? search : undefined}
-        onSearchChange={searchable ? setSearch : undefined}
-        loading={loading}
-        emptyText={emptyText}
-        size={size}
-        minRows={minRows}
-        open={open}
-        onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
-        contentId={listboxId}
-        renderLabel={renderLabel}
-        onOpenAutoFocus={searchable ? (e) => { e.preventDefault(); inputRef.current?.focus() } : undefined}
-      >
-        {trigger}
-      </SelectMenu>
+      // 截斷 tooltip:恆 wrap(truncated-text.spec.md always-wrap),未截斷或選單開啟時 open={false}
+      // 靜默。TooltipTrigger 放 SelectMenu 的 PopoverTrigger asChild 內側(緊貼 trigger div):
+      // PopoverTrigger 注入的 data-state(Field open 邊框樣式依賴)在 TooltipTrigger 內以
+      // triggerProps 後 spread 勝出;反序會被 tooltip 的 data-state 蓋掉。Tooltip root / Content
+      // 都不產 DOM(Content portal),SelectMenu children 結構與佈局不變。
+      <Tooltip open={triggerTooltipActive ? undefined : false}>
+        <SelectMenu
+          options={menuOptions}
+          groups={groups}
+          value={value ?? null}
+          onValueChange={handleValueChange}
+          searchable={false}
+          creatable={creatable}
+          onCreate={onCreate}
+          createLabel={createLabel}
+          search={searchable ? search : undefined}
+          onSearchChange={searchable ? setSearch : undefined}
+          loading={loading}
+          emptyText={emptyText}
+          size={size}
+          minRows={minRows}
+          open={open}
+          onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
+          contentId={listboxId}
+          renderLabel={renderLabel}
+          onOpenAutoFocus={searchable ? (e) => { e.preventDefault(); inputRef.current?.focus() } : undefined}
+        >
+          <TooltipTrigger asChild>
+            {trigger}
+          </TooltipTrigger>
+        </SelectMenu>
+        <TooltipContent>{triggerTooltipActive ? selectedLabel : null}</TooltipContent>
+      </Tooltip>
     )
   }
 )

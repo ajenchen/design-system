@@ -216,7 +216,16 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
 
     // 解析 size：consumer 顯式 > control primitive 偏好(如 InlineEdit='sm')> 預設 md
     //   (對齊 controlLayout 三層優先序;InlineEdit 進 Field 不指定 size 時自動收 sm)
-    const size: FieldSize = sizeProp ?? detectPreferredSize(controlNodes) ?? 'md'
+    // 靜態偵測只看得到直接子元件;包 wrapper / memo / HOC 時由 control 於掛載時註冊補位,
+    // 讓 Field 的控件槽高度也跟上(control 自身尺寸走 useResolvedFieldSize 同步解析)。
+    const [registeredSize, setRegisteredSize] = React.useState<FieldSize | null>(null)
+    const registerPreferredSize = React.useCallback((preferred: FieldSize) => {
+      setRegisteredSize((current) => (current === preferred ? current : preferred))
+    }, [])
+    const detectedSize = detectPreferredSize(controlNodes)
+    const resolvedPreferredSize = sizeProp ?? detectedSize ?? registeredSize
+    const size: FieldSize = resolvedPreferredSize ?? 'md'
+    const sizeExplicit = resolvedPreferredSize != null
 
     const contextValue = React.useMemo<FieldContextValue>(
       () => ({
@@ -230,11 +239,13 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
         required,
         invalid,
         size,
+        sizeExplicit,
+        registerPreferredSize,
         orientation,
         controlLayout,
         hasFieldWrapper: true,
       }),
-      [id, labelId, descriptionId, errorId, mode, variant, disabled, required, invalid, size, orientation, controlLayout]
+      [id, labelId, descriptionId, errorId, mode, variant, disabled, required, invalid, size, sizeExplicit, registerPreferredSize, orientation, controlLayout]
     )
 
     // Control area：兩種佈局模型,「第一行內容中線」都錨在 field-height/2,

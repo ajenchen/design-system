@@ -74,6 +74,12 @@ InlineEdit 本體只給:**對齊盒(-mx orientation-aware)+ 委派 view 統一 f
 
 **尺寸預設 = `sm`**（2026-07-09 user 拍板）:view 態無邊框、視覺即純文字,尺寸過大會使版面鬆散;consumer 可傳 `size` 覆寫,標題場景另用 `readClassName` 疊大字級。
 
+**在 `<Field>` 內也是 `sm`**(2026-07-28 user 拍板):Field 的預設 `md` 是「沒人決定過」的預設值,不得壓過本元件宣告的 `sm`。實作雙通道 —— 靜態 `InlineEdit.fieldPreferredSize = 'sm'` 供 Field 直接子元件同步偵測,加上掛載時的 `useRegisterFieldPreferredSize('sm')` 補位(包 wrapper / `React.memo` / HOC 會遮蔽靜態);控件自身尺寸則由 `useResolvedFieldSize` 依 `sizeExplicit` 同步解析,不等註冊。**唯有 consumer 顯式 `size`(在 Field 或 InlineEdit 上)才覆寫**。機制與失效語意 owner → `Field/field.spec.md`「Control 偏好尺寸 SSOT」。
+
+**單行 view 恆一行**(2026-07-28 user 拍板):`multiline=false` 的 view 態溢出**不換行**,一律 ellipsis,且**截斷才顯 tooltip**顯示完整值(規則 owner:`Tooltip/tooltip.spec.md`「截斷文字 → tooltip」+ `truncated-text.spec.md`)。**實作 = `useTruncated` 自組而非 `<TruncatedText>`**:view 上疊著透明 Pressable(click-to-edit 入口)會吞掉內層所有 hover,tooltip trigger 必須掛在**整個 view 容器**、量測留在內層值 span —— 這正是 truncated-text.spec 對「trigger 需自控」場景指定的 escape(2026-07-28 user 實測抓到 primitive 直用時 tooltip 永不開)。委派 view(`renderRead`)同一條規則、同一個外層 Tooltip:委派控件自帶的截斷 tooltip(Input `<TruncatedText>` / Tag)trigger 在內層,editable 時同樣被 Pressable 攔截 —— 故外層容器 Tooltip 一併服務委派路徑:`useTruncated` 傳自訂 `measure`(`hooks/use-truncated.ts` options.measure 即為此類自訂策略開的口)走訪 wrapper 子樹,任一 `.truncate` 後代溢出即視為截斷;tooltip 內容 = wrapper 當下 DOM 的 `textContent`(完整格式化文字;非 string `T` 不可 `String(value)`)。`editable=false` 不渲染 Pressable → 委派控件自身 tooltip 可達,外層讓位不重複顯示。多行(`multiline`)維持 `pre-wrap` 忠實呈現。
+
+**多行 edit 高度隨內容**(2026-07-28 user 拍板):view 態高度由內容決定,edit 態必須同源,否則 read↔edit 跳高。預設 `Textarea autoSize`(`field-sizing: content`),consumer 以 `editMaxRows` 設上限、超過改捲動。與 DataTable cell 共用同一份 `autoSize` 實作(原本只有 cell 有呼叫端膠水 → 兩者漂移)。
+
 **核心不變量:view 態 hover = 背景 tint;view 態 focus = Field 藍框（`border-primary`）,與 edit 態同源。** hover（滑鼠懸停）用底色、focus（鍵盤選中）用藍框——藍框是 edit focus 的預覽,view→edit 一路都是藍框、不會 ring→框跳一下;靜止（無 hover/focus）則透明邊框不可見 = 純值。
 
 ## 型別化 view + 多行 + 鍵盤 SSOT（2026-07-09 L2）
@@ -172,3 +178,9 @@ InlineEdit 是 **composite 編排層**(view 對齊盒 + 隱形 Pressable + 動�
 - ❌ 空值顯示唯讀展示的半形 `-` dash——InlineEdit 是可編輯欄位,空值 = placeholder 或空白
 - ❌ view 態語意標籤用 heading 時把它塞進 button——用隱形 Pressable 疊加,保留文件大綱
 - ❌ 用 disabled / 灰化表達鎖定——就地編輯無 disabled 態,鎖定 = `editable=false` 純 view 無入口、不灰化(見「editable 閘」)
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `field.spec.md`

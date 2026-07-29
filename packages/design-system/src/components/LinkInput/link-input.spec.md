@@ -89,7 +89,7 @@ URL 格式要求：必須包含 `http://` 或 `https://` protocol。
 ## 極長 URL（邊界）
 
 - **顯示文字 = hostname**:link 狀態預設只顯示 hostname（去 `www.`,如 `https://github.com/org/repo` → `github.com`）,非完整 URL;`label` prop 可覆寫顯示文字。完整 URL 載於 `href`
-- **單行 truncate**:link / readonly / view 狀態超寬時 ellipsis 截斷,不換行
+- **單行 truncate**:link / readonly / view 狀態超寬時 ellipsis 截斷,不換行;截斷時 hover 顯 tooltip 顯完整文字(僅實際截斷才顯——rule owner `components/Tooltip/tooltip.spec.md`「截斷文字 → tooltip」;anchor 內消費 `<TruncatedText>`,anchor 自身即 hover 目標,SSOT `patterns/element-anatomy/truncated-text.spec.md`)
 - **編輯態**:原生 input 水平捲動,無長度上限
 
 ---

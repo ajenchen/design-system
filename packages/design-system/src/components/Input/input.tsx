@@ -8,6 +8,7 @@ import { fieldWrapperStyles, bareInputStyles } from '@/design-system/components/
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import { ItemInlineAction, ItemPrefix, type InlineActionConfig } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
@@ -184,11 +185,15 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               // B1 fix(2026-05-05):view mode 單行 ellipsis 截斷(對齊 Notion / Airtable / Linear
               //   cell display canonical:single-line value 過長 → ellipsis。Textarea view 走 wrap path,
               //   不在此處;Input view 永遠 single-line。)
-              'truncate',
+              'min-w-0',
               displayValue == null && fieldEmptyColorClass(resolvedMode),
             )}
           >
-            {displayValue ?? emptyDisplay}
+            {/* 2026-07-28:截斷必附 tooltip(tooltip.spec.md)—— 原本只有 `truncate` 沒有 tooltip,
+                長值被裁掉就再也讀不到。改消費 truncated-text primitive(截斷才顯,未截斷靜默)。 */}
+            {displayValue == null
+              ? emptyDisplay
+              : <TruncatedText>{displayValue}</TruncatedText>}
           </span>
         </div>
       )

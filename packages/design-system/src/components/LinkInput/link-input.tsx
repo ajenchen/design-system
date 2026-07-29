@@ -6,6 +6,7 @@ import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-sys
 import { fieldWrapperStyles, bareInputStyles, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { ItemInlineAction } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 
 // ── URL Validation ──────────────────────────────────────────────────────────
 
@@ -40,7 +41,10 @@ function renderLinkAnchor(value: string, label?: string) {
       rel="noopener noreferrer"
       className="block truncate min-w-0 text-primary hover:text-primary-hover hover:underline transition-colors"
     >
-      {displayText}
+      {/* 截斷必附 tooltip(tooltip.spec.md:32)— anchor 自身即 hover 目標、無疊層,TruncatedText
+          放 anchor 內(trigger = 其 span child)即可;view/readonly/edit-showLink 共用本 helper 一處修。
+          display="block":anchor 是 block container(對照 breadcrumb.tsx anchor 內同型消費)。 */}
+      <TruncatedText display="block">{displayText}</TruncatedText>
     </a>
   )
 }
