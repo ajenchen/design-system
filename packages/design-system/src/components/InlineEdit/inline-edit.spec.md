@@ -178,3 +178,9 @@ InlineEdit 是 **composite 編排層**(view 對齊盒 + 隱形 Pressable + 動�
 - ❌ 空值顯示唯讀展示的半形 `-` dash——InlineEdit 是可編輯欄位,空值 = placeholder 或空白
 - ❌ view 態語意標籤用 heading 時把它塞進 button——用隱形 Pressable 疊加,保留文件大綱
 - ❌ 用 disabled / 灰化表達鎖定——就地編輯無 disabled 態,鎖定 = `editable=false` 純 view 無入口、不灰化(見「editable 閘」)
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `field.spec.md`

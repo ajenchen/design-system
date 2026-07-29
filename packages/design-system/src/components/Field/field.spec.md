@@ -464,6 +464,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 - `field-control-group.spec.md`
 - `field-controls.spec.md`
 - `form-validation.spec.md`
+- `inline-edit.spec.md`
 - `input.spec.md`
 - `radio-group.spec.md`
 - `switch.spec.md`

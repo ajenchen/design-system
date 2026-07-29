@@ -55,3 +55,14 @@ benchmark:
 - ❌ 用條件 wrap(未截斷裸 span / 截斷才 wrap)—— 見上「`open` 控制」canonical。
 - ❌ 對 compound content 套 `<TruncatedText>`(baseline collapse);走宿主 bypass。
 - ❌ 多 consumer 各自 `new ResizeObserver` / 複製 shared RO 引擎 —— 一律消費 `useTruncated`(SSOT)。
+
+## 被引用(auto-maintained,Dim 3 reciprocal audit)
+
+> 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
+
+- `calendar.spec.md`
+- `date-picker.spec.md`
+- `dialog.spec.md`
+- `inline-edit.spec.md`
+- `item-anatomy.spec.md`
+- `link-input.spec.md`
