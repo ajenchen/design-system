@@ -30,7 +30,9 @@ import {
 const GOVERNANCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const REPO_ROOT = resolve(GOVERNANCE_ROOT, '../..')
 const NOW = new Date('2026-07-21T00:00:00.000Z')
-const VERSION = '0.1.0-beta.95'
+// 合成 candidate 的版本必須追隨 repo 當前版本(plugin/marketplace 綁定檢查對照的是
+// repo 真實 manifest)— hardcode 會在每次 bump 時假紅(2026-07-29 beta.96 錨例)。
+const VERSION = JSON.parse(readFileSync(resolve(REPO_ROOT, 'packages/design-system/package.json'), 'utf8')).version
 const COMMIT = 'a'.repeat(40)
 const TREE = 'b'.repeat(40)
 const BOM = 'c'.repeat(64)
@@ -1998,7 +2000,7 @@ test('templates bind exact release tags, absolute runtimes, first-launch bootstr
     assert.doesNotMatch(codex, /allowed_approval_policies = \[[^\]]*"untrusted"/)
     assert.equal(assertCodexManagedEngineeringDelegationPolicy(codex), true)
     assert.match(codex, /plugins = false\nremote_plugin = false/)
-    assert.match(codex, /ref = "v0\.1\.0-beta\.95"/)
+    assert.match(codex, new RegExp(`ref = "v${VERSION.replace(/[.\\]/g, '\\$&')}"`))
     assert.match(codex, /\/opt\/qijenchen\/runtime\/node/)
     assert.match(codex, /--shell \/opt\/qijenchen\/runtime\/sh --python \/opt\/qijenchen\/runtime\/python3/)
     assert.doesNotMatch(`${JSON.stringify(claude)}${codex}`, /__[_A-Z0-9]+__/)

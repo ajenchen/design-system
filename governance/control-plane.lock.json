@@ -10,7 +10,7 @@
   "contractDigest": "sha256:b259a4e92a7dd0d3ac29f6eeca6cfb30da04967f29973dba3c229d6e7c1138ce",
   "files": [
     {
-      "hash": "sha256:bb500aec7e45303a22849d69f2f6d5c5bf2c43b84571c8122733088f00b1374a",
+      "hash": "sha256:fb58db7438bc05717312ceb70d0b12959cef8afce25933c6e7b14d3eab4e7971",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 73865,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:aef3a66f2e3046d816a16ac72f4ce7e0415d0f41b0e6beb39cdcef6e1331e192",
+      "hash": "sha256:6e781f36b95b59c7dfd550807217e9df30b1be3182b303c730d41e9c9ee257aa",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 167324,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:f231e890e0d8f176ac0f1d5e9158b9e1a200bd12b2e5fb7c5d7512962975e71c",
+  "inputDigest": "sha256:a2c50c2f6027b2c604d8fd8c57081e078dab709a04c6e99ceeb7373c617bb353",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:aac32a5d704c3c3bf8f8f053ab9aabfe07732af2916d21c3bfe997235d6da1de",
+  "snapshotDigest": "sha256:0a5cbe930ef46761bbea850b961bdbd4f60147597f120514fd51739e69a8c331",
   "sources": [
     {
       "hash": "sha256:b844a18c72365e2c0a65caf07f6328fd8037e3d00be681bc26830eea117b7a6a",
@@ -2649,7 +2649,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 63,
-      "hash": "sha256:cf6ab24261bc128a3336d49ab575e3ea6cf01e787edd352d1c3e375246890bda",
+      "hash": "sha256:0249f552e97442cab4e742e0e594c8e18a6ae5cdb469d99a2bd5f6e73c9ee3d9",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3276,12 +3276,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c4eb0d6d17789dd06947bb7384a952f62d1c934b36c017611b856b3598c4efde",
+      "hash": "sha256:8cdd8f6db7c311887b9984b327ee2610c008e5efa74777ab0327239f34cd4e86",
       "id": "managed-host-adversarial-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/managed-host-assurance.test.mjs",
-      "size": 98587,
+      "size": 98902,
       "type": "file"
     },
     {

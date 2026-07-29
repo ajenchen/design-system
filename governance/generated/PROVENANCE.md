@@ -245,7 +245,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:985855dbd9f0da1d9cd74df74ae494ca7c11adf763c55c99c4b65f2abec1fb96` |
 | governance-control-plane-libraries | `infra/governance/lib/` | `sha256:f740c553f55bd11fe59bb1d75521890dca78fa01ea6b4f535266f3e293a32ade` |
 | governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:cb6ccff3a13525c74b94ad5467ceefad8685d161bb3e715144ba10c1858282f1` |
-| governance-control-plane-tests | `infra/governance/test/` | `sha256:cf6ab24261bc128a3336d49ab575e3ea6cf01e787edd352d1c3e375246890bda` |
+| governance-control-plane-tests | `infra/governance/test/` | `sha256:0249f552e97442cab4e742e0e594c8e18a6ae5cdb469d99a2bd5f6e73c9ee3d9` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:67eb2bf140dbf16451e767685dd8bcde7f4083148e7c67566bad48337598d922` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:6ee4764cd2e230f3a6ff3ba75c3e00b7f9488152bc3bd3d8aae065b7b9da760f` |
 | governance-github-desired-state | `infra/governance/desired/` | `sha256:42efe3deb4a99196f3de56131199847f20a025f2a0db11914d3fda68cea439df` |
@@ -313,7 +313,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | managed-ci-trusted-execution-plan-schema | `scripts/schemas/managed-ci-trusted-execution-plan.schema.json` | `sha256:52ee46066d60f08f32489c3ac0b787b7647916570aa787bc462b2f2dd8b5a4fe` |
 | managed-ci-trusted-execution-tests | `scripts/test-managed-ci-trusted-execution.mjs` | `sha256:b47961188ce3fdcbfab2539ec44d7c56f2fdb63d08170cf44e96484e6dd3017a` |
 | managed-ci-trusted-execution-verifier | `scripts/verify-managed-ci-trusted-execution.mjs` | `sha256:6d8384e42cf1625295bc8e2a827da02ed61eec0e2e390f2f4044d17015608ac2` |
-| managed-host-adversarial-tests | `infra/governance/test/managed-host-assurance.test.mjs` | `sha256:c4eb0d6d17789dd06947bb7384a952f62d1c934b36c017611b856b3598c4efde` |
+| managed-host-adversarial-tests | `infra/governance/test/managed-host-assurance.test.mjs` | `sha256:8cdd8f6db7c311887b9984b327ee2610c008e5efa74777ab0327239f34cd4e86` |
 | managed-host-assurance-desired | `infra/governance/providers/managed-host-assurance.json` | `sha256:c9f989dedc829f1f0ce4d331158ee3a6fca61dfd425a2beb6ee59ab911ab00a1` |
 | managed-host-assurance-evidence-schema | `infra/governance/schemas/managed-host-assurance-evidence.schema.json` | `sha256:9d8b1b14c71cbea7e4cd01aee94ad08272922578b7b5c6a58938054dec2c56fa` |
 | managed-host-assurance-schema | `infra/governance/schemas/managed-host-assurance.schema.json` | `sha256:cd429d3179acf68e5190a531aa1f67ab0144c700a8ba5efaf58bd7c2f9d64178` |

@@ -2137,7 +2137,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 63,
-      "hash": "sha256:cf6ab24261bc128a3336d49ab575e3ea6cf01e787edd352d1c3e375246890bda",
+      "hash": "sha256:0249f552e97442cab4e742e0e594c8e18a6ae5cdb469d99a2bd5f6e73c9ee3d9",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2764,12 +2764,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c4eb0d6d17789dd06947bb7384a952f62d1c934b36c017611b856b3598c4efde",
+      "hash": "sha256:8cdd8f6db7c311887b9984b327ee2610c008e5efa74777ab0327239f34cd4e86",
       "id": "managed-host-adversarial-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/managed-host-assurance.test.mjs",
-      "size": 98587,
+      "size": 98902,
       "type": "file"
     },
     {
