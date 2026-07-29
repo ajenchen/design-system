@@ -1165,6 +1165,11 @@ export function diffRepository(repo, materialized, observed, desired, now = new 
 
   for (const environment of materialized.declaredEnvironments) {
     if (environment.independentReviewRequired && environment.reviewers.length === 0) conflicts.push(`environment ${environment.name} requires at least one independently administered reviewer before activation`)
+    // 1B(2026-07-29):App 整合可 required=false(standalone 可選),但**被環境引用**
+    // 即為該 profile 的啟用必要條件 —— 未解析(id=null)必 conflict,不得靜默略過。
+    if (environment.credentialIntegration && !Number.isInteger(desired.integrations[environment.credentialIntegration]?.id)) {
+      conflicts.push(`required integration unresolved: ${environment.credentialIntegration} for environment ${environment.name}`)
+    }
     conflicts.push(...environmentWorkflowPreflight(environment, observed.workflowContents[environment.workflow], desired.integrations))
   }
 
@@ -1315,8 +1320,9 @@ export function validateAuthorityBootstrapBoundary(boundary) {
   invariant(Array.isArray(boundary.rulesets) && boundary.rulesets.length === 2
     && stableStringify(boundary.rulesets, 0) === stableStringify(['fleet/base-integrity', 'fleet/verified-main'], 0),
   'authority policy bootstrap boundary ruleset closure is invalid')
-  invariant(Array.isArray(boundary.environments) && boundary.environments.length === 2
-    && stableStringify(boundary.environments, 0) === stableStringify(['governance-check-verdict', 'governance-external-ledger'], 0),
+  // 1B(2026-07-29):governance-check-verdict 環境隨 App verdict 層拆除。
+  invariant(Array.isArray(boundary.environments) && boundary.environments.length === 1
+    && stableStringify(boundary.environments, 0) === stableStringify(['governance-external-ledger'], 0),
   'authority policy bootstrap boundary environment closure is invalid')
   return boundary
 }

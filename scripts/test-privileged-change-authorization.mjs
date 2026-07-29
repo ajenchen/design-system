@@ -289,39 +289,20 @@ test('unchanged privileged executable closure needs no authorization', async () 
   assert.deepEqual(result.changedPaths, [])
 })
 
-test('single-owner OWNER bootstrap installs exactly one governed privileged/root signer, configures every policy, and closes itself forever', async () => {
+// 3B(2026-07-29 user 拍板):per-PR Ed25519 授權與 owner-comment bootstrap 拆除 ——
+// head-sha 命名 + 同 head 提交的綁定是密碼學不動點(不可滿足);保留 closure /
+// changedPaths 聯集 / registry append-only lineage 結構驗證 + protected required checks。
+test('privileged trust-config installation verifies structurally without owner-comment bootstrap(3B)', async () => {
   const root = fixture()
   const signer = issuer('one')
   const documents = root.install(root.candidate, [signer.record], { bootstrap: false })
-  const policyPath = join(root.candidate, 'infra/governance/privileged-trust-roots.json')
-  const changes = await privilegedChangeSet({ trustedRoot: root.trusted, candidateRoot: root.candidate })
-  const expiresAt = '2026-07-20T00:40:00.000Z'
-  const body = bootstrapCommentBody({
-    repository: REPOSITORY,
-    pullRequest: 42,
-    candidateHeadSha: HEAD_SHA,
-    trustRootSha256: createHash('sha256').update(readFileSync(policyPath)).digest('hex'),
-    issuerRegistryDigest: issuerRegistryDigest(documents.issuers),
-    contentDigest: changes.contentDigest,
-    expiresAt,
-    nonce: 'fixture-bootstrap-nonce-v1',
-  })
-  const comment = { id: 7, body, author_association: 'OWNER', user: { login: 'ajenchen' }, created_at: '2026-07-20T00:00:00.000Z', updated_at: '2026-07-20T00:00:00.000Z' }
-  const result = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, pullRequest: 42, bootstrapComments: [[comment]], now: new Date('2026-07-20T00:10:00Z') })
-  assert.equal(result.authorization.kind, 'owner-comment-bootstrap')
+  const result = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, pullRequest: 42, now: new Date('2026-07-20T00:10:00Z') })
+  assert.equal(result.authorized, true)
+  assert.equal(result.authorization, null)
+  assert.ok(result.changedPaths.includes('infra/governance/trust/issuers.json'))
   assert.deepEqual(documents.policy.allowedKeyIds, [signer.record.keyId])
   assert.equal(documents.policy.trustRootQuorum, 1)
   assert.equal(documents.releaseTag.allowedKeyIds.length, 2, 'functional release-only fixture keys remain outside the privileged allowlist')
-  for (const poisoned of [
-    { ...comment, updated_at: '2026-07-20T00:01:00.000Z' },
-    { ...comment, user: { login: 'attacker' } },
-    { ...comment, body: body.replace(HEAD_SHA, '3'.repeat(40)) },
-  ]) {
-    await assert.rejects(
-      verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, pullRequest: 42, bootstrapComments: [[poisoned]], now: new Date('2026-07-20T00:10:00Z') }),
-      /exactly one unedited, unexpired OWNER comment/,
-    )
-  }
 })
 
 test('single-owner bootstrap rejects multiple privileged/root keys rather than inventing custodian independence', async () => {
@@ -507,17 +488,11 @@ test('maximum-assurance registry rotation and revocation require the existing mu
     policy.allowedKeyIds = [signers[1].record.keyId, signers[2].record.keyId]
     writeFileSync(target, `${JSON.stringify(data, null, 2)}\n`)
   }
-  const authorization = await issuePrivilegedChangeAuthorization({
-    trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY,
-    baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, signerKeyId: signers[0].record.keyId,
-    subject: signers[0].record.subject, privateKey: signers[0].keys.privateKey,
-    issuedAt: '2026-07-20T00:00:00Z', expiresAt: '2026-07-20T01:00:00Z',
-  })
-  root.write(root.candidate, `governance/authorizations/${HEAD_SHA}.json`, `${JSON.stringify(authorization)}\n`)
-  await assert.rejects(verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW }), /lacks the active profile signer quorum/)
-  cosignPrivilegedChangeAuthorization(authorization, { signerKeyId: signers[1].record.keyId, subject: signers[1].record.subject, privateKey: signers[1].keys.privateKey })
-  root.write(root.candidate, `governance/authorizations/${HEAD_SHA}.json`, `${JSON.stringify(authorization)}\n`)
-  assert.equal((await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })).authorized, true)
+  // 3B:合法輪換 + 撤銷(append-only)結構性通過;lineage 破壞案由
+  // 「issuer registry lineage is append-only」測試持續 fail-closed。
+  const rotation = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
+  assert.equal(rotation.authorized, true)
+  assert.ok(rotation.changedPaths.includes('infra/governance/trust/issuers.json'))
 })
 
 test('maximum-assurance release-tag authorization policy rotation requires the existing root-rotator quorum', async () => {
@@ -528,33 +503,14 @@ test('maximum-assurance release-tag authorization policy rotation requires the e
   const releasePolicy = JSON.parse(readFileSync(releasePolicyPath, 'utf8'))
   releasePolicy.maxAuthorizationTtlMinutes = 61
   writeFileSync(releasePolicyPath, `${JSON.stringify(releasePolicy, null, 2)}\n`)
-  const authorization = await issuePrivilegedChangeAuthorization({
-    trustedRoot: root.trusted,
-    candidateRoot: root.candidate,
-    repository: REPOSITORY,
-    baseSha: BASE_SHA,
-    candidateHeadSha: HEAD_SHA,
-    signerKeyId: signers[0].record.keyId,
-    subject: signers[0].record.subject,
-    privateKey: signers[0].keys.privateKey,
-    issuedAt: '2026-07-20T00:00:00Z',
-    expiresAt: '2026-07-20T01:00:00Z',
-  })
-  root.write(root.candidate, `governance/authorizations/${HEAD_SHA}.json`, `${JSON.stringify(authorization)}\n`)
-  await assert.rejects(
-    verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW }),
-    /lacks the active profile signer quorum/,
-  )
-  cosignPrivilegedChangeAuthorization(authorization, {
-    signerKeyId: signers[1].record.keyId,
-    subject: signers[1].record.subject,
-    privateKey: signers[1].keys.privateKey,
-  })
-  root.write(root.candidate, `governance/authorizations/${HEAD_SHA}.json`, `${JSON.stringify(authorization)}\n`)
-  assert.equal((await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })).authorized, true)
+  // 3B:policy 檔屬特權 closure,變更以 changedPaths 精確揭露並結構性通過。
+  const result = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
+  assert.equal(result.authorized, true)
+  assert.ok(result.changedPaths.includes('infra/governance/release-tag-authorization-policy.json'))
 })
 
-test('new issuer revocation cannot backdate or future-date its privileged authorization effective time', async () => {
+test('issuer revocation is structural without ceremony time anchor and reactivation stays fail-closed(3B)', async () => {
+  // 3B:無簽章 issuedAt 可錨 → 撤銷時戳只需為合法時間;不可復活/不可改寫仍 fail-closed。
   for (const revokedAt of ['2026-07-19T23:59:59.000Z', '2026-07-20T00:00:01.000Z']) {
     const root = fixture({ quorum: 1 })
     const signers = [issuer(`effective-revoked-${revokedAt.slice(17, 19)}`), issuer(`effective-authorizer-${revokedAt.slice(17, 19)}`)]
@@ -582,24 +538,28 @@ test('new issuer revocation cannot backdate or future-date its privileged author
       policy.allowedKeyIds = [signers[1].record.keyId]
       writeFileSync(target, `${JSON.stringify(data, null, 2)}\n`)
     }
-    const authorization = await issuePrivilegedChangeAuthorization({
-      trustedRoot: root.trusted,
-      candidateRoot: root.candidate,
-      repository: REPOSITORY,
-      baseSha: BASE_SHA,
-      candidateHeadSha: HEAD_SHA,
-      signerKeyId: signers[1].record.keyId,
-      subject: signers[1].record.subject,
-      privateKey: signers[1].keys.privateKey,
-      issuedAt: '2026-07-20T00:00:00Z',
-      expiresAt: '2026-07-20T01:00:00Z',
-    })
-    root.write(root.candidate, `governance/authorizations/${HEAD_SHA}.json`, `${JSON.stringify(authorization)}\n`)
-    await assert.rejects(
-      verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW }),
-      /must take effect exactly at the privileged authorization issuedAt/,
-    )
+    const revocation = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
+    assert.equal(revocation.authorized, true)
   }
+  const root = fixture({ quorum: 1 })
+  const signers = [issuer('reactivate-victim'), issuer('reactivate-keeper')]
+  for (const base of [root.trusted, root.candidate]) {
+    root.install(base, [
+      { ...signers[0].record, status: 'revoked', revokedAt: '2026-07-19T00:00:00.000Z' },
+      signers[1].record,
+    ], {
+      bootstrap: false,
+      privilegedAllowedKeyIds: [signers[1].record.keyId],
+    })
+  }
+  root.install(root.candidate, signers.map(item => item.record), {
+    bootstrap: false,
+    privilegedAllowedKeyIds: [signers[1].record.keyId],
+  })
+  await assert.rejects(
+    verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW }),
+    /cannot be reactivated or rewritten/,
+  )
 })
 
 test('issuer registry lineage is append-only across authorized rotations', async () => {
@@ -640,29 +600,24 @@ test('issuer registry lineage is append-only across authorized rotations', async
 })
 
 for (const path of protectedFiles) {
-  test(`rejects unauthorized privileged mutation: ${path}`, async () => {
+  test(`privileged mutation verifies closure and reports the exact changed path: ${path}`, async () => {
+    // 3B:無 per-PR 簽章;守門 = closure 驗證 + changedPaths 精確揭露 + protected required checks。
     const { trusted, candidate, write } = fixture()
-    write(candidate, path, `${readFileSync(join(candidate, path), 'utf8')}malicious-step\n`)
-    await assert.rejects(
-      verifyPrivilegedChange({ trustedRoot: trusted, candidateRoot: candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW }),
-      /changed without governance\/authorizations/,
-    )
+    write(candidate, path, `${readFileSync(join(candidate, path), 'utf8')}reviewed-step\n`)
+    const result = await verifyPrivilegedChange({ trustedRoot: trusted, candidateRoot: candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
+    assert.equal(result.authorized, true)
+    assert.deepEqual(result.changedPaths, [path])
   })
 }
 
-test('accepts only an unexpired Ed25519 authorization bound to exact registry, head, and bytes', async () => {
-  const { trusted, candidate, keys, signer, write } = fixture({ signer: true })
+test('stale authorization artifacts are inert data and never consulted(3B)', async () => {
+  const { trusted, candidate, write } = fixture()
   write(candidate, 'scripts/release-npm-publish.mjs', 'reviewed privileged change\n')
-  const authorization = await issuePrivilegedChangeAuthorization({
-    trustedRoot: trusted, candidateRoot: candidate, repository: REPOSITORY,
-    baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, signerKeyId: signer.record.keyId,
-    subject: signer.record.subject, privateKey: keys.privateKey,
-    issuedAt: '2026-07-20T00:00:00Z', expiresAt: '2026-07-20T01:00:00Z',
-  })
-  write(candidate, `governance/authorizations/${HEAD_SHA}.json`, `${JSON.stringify(authorization, null, 2)}\n`)
+  write(candidate, `governance/authorizations/${HEAD_SHA}.json`, 'not-even-json{{{\n')
   const result = await verifyPrivilegedChange({ trustedRoot: trusted, candidateRoot: candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
   assert.equal(result.authorized, true)
-  assert.deepEqual(result.changedPaths, ['scripts/release-npm-publish.mjs'])
+  assert.equal(result.authorization, null)
+  assert.ok(result.changedPaths.includes('scripts/release-npm-publish.mjs'))
 })
 
 test('a newly required semantic source cannot be added outside the privileged closure', async () => {
@@ -775,25 +730,13 @@ test('simultaneous policy and semantic-manifest extension binds the new source b
   policy.protectedPaths.sort()
   writeFileSync(policyPath, `${JSON.stringify(policy, null, 2)}\n`)
 
-  const authorization = await issuePrivilegedChangeAuthorization({
-    trustedRoot: root.trusted,
-    candidateRoot: root.candidate,
-    repository: REPOSITORY,
-    baseSha: BASE_SHA,
-    candidateHeadSha: HEAD_SHA,
-    signerKeyId: root.signer.record.keyId,
-    subject: root.signer.record.subject,
-    privateKey: root.keys.privateKey,
-    issuedAt: '2026-07-20T00:00:00Z',
-    expiresAt: '2026-07-20T01:00:00Z',
-  })
-  assert.ok(authorization.changedPaths.includes(semanticPath), 'new semantic bytes must be in the signed change set')
-  root.write(root.candidate, semanticPath, 'substituted after authorization\n')
-  root.write(root.candidate, `governance/authorizations/${HEAD_SHA}.json`, `${JSON.stringify(authorization)}\n`)
-  await assert.rejects(
-    verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW }),
-    /does not bind the exact executable closure change/,
-  )
+  // 3B:聯集閉包不變量保留 —— 同時擴充 policy + manifest 時,新 source 位元組
+  // 必進 changedPaths(candidate 不能靠自己加前綴讓新 source 躲出變更集)。
+  const result = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
+  assert.equal(result.authorized, true)
+  for (const path of [semanticPath, 'infra/governance/privileged-trust-roots.json', 'packages/governance/canonical/manifest.json']) {
+    assert.ok(result.changedPaths.includes(path), `${path} must be inside the union-closure change set`)
+  }
 })
 
 test('revoked, expired, and role-ineligible issuer policies fail closed', async () => {
@@ -812,19 +755,3 @@ test('revoked, expired, and role-ineligible issuer policies fail closed', async 
   }
 })
 
-test('rejects a forged authorization before granting a verdict', async () => {
-  const { trusted, candidate, keys, signer, write } = fixture({ signer: true })
-  write(candidate, '.github/workflows/release.yml', 'malicious tag workflow\n')
-  const authorization = await issuePrivilegedChangeAuthorization({
-    trustedRoot: trusted, candidateRoot: candidate, repository: REPOSITORY,
-    baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, signerKeyId: signer.record.keyId,
-    subject: signer.record.subject, privateKey: keys.privateKey,
-    issuedAt: '2026-07-20T00:00:00Z', expiresAt: '2026-07-20T01:00:00Z',
-  })
-  authorization.contentDigest = '0'.repeat(64)
-  write(candidate, `governance/authorizations/${HEAD_SHA}.json`, `${JSON.stringify(authorization)}\n`)
-  await assert.rejects(
-    verifyPrivilegedChange({ trustedRoot: trusted, candidateRoot: candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW }),
-    /does not bind the exact executable closure change/,
-  )
-})

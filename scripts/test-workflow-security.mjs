@@ -742,8 +742,10 @@ base['template/ds-product-template/.github/workflows/governance-anchor.yml'] = b
           node trusted/.governance-tools/scripts/audit-consumer-a11y.mjs --repo candidate
   publish-app-verdict:`,
   )
-base['.github/workflows/governance-anchor.yml'] = base['template/ds-product-template/.github/workflows/governance-anchor.yml']
-  .replace('  publish-app-verdict:', '      - run: node trusted/scripts/verify-privileged-change.mjs\n  publish-app-verdict:')
+// 1B(2026-07-29):root anchor = verifier-only,不得有 App verdict job(規則反向要求);
+// template anchor 保留 App 架構作 fleet consumer 藍圖。
+base['.github/workflows/governance-anchor.yml'] = `${base['template/ds-product-template/.github/workflows/governance-anchor.yml']
+  .split('\n  publish-app-verdict:')[0]}\n      - run: node trusted/scripts/verify-privileged-change.mjs\n`
 base['.github/workflows/deploy-storybook.yml'] = `on:
   workflow_run:
     workflows: [CI]
@@ -1766,12 +1768,21 @@ for (const [label, replacement] of [
 }
 
 test('rejects workflow_dispatch for the protected-base Check App producer', () => {
-  const sources = {
+  // 1B 後 Check App producer 只存在 template anchor(fleet 藍圖);root anchor 的
+  // trigger 錯置由 WF-ANCHOR 守(verifier-only 合約要求 pull_request_target)。
+  const templateSources = {
+    ...base,
+    'template/ds-product-template/.github/workflows/governance-anchor.yml':
+      base['template/ds-product-template/.github/workflows/governance-anchor.yml']
+        .replace('  pull_request_target:', '  workflow_dispatch:'),
+  }
+  assert.ok(audit(templateSources).some((finding) => finding.rule === 'WF-PRIVILEGED-TRIGGER'))
+  const rootSources = {
     ...base,
     '.github/workflows/governance-anchor.yml': base['.github/workflows/governance-anchor.yml']
       .replace('  pull_request_target:', '  workflow_dispatch:'),
   }
-  assert.ok(audit(sources).some((finding) => finding.rule === 'WF-PRIVILEGED-TRIGGER'))
+  assert.ok(audit(rootSources).some((finding) => finding.rule === 'WF-ANCHOR'))
 })
 
 test('rejects pull_request_target secret in candidate verification job', () => {

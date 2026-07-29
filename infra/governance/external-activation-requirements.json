@@ -3,7 +3,7 @@
   "schemaVersion": 4,
   "policy": {
     "path": "infra/governance/external-activation-policy.json",
-    "sha256": "5c9cfa18608b5e22d6a064a26113fa7b2ccd5a8708dc201f9b3509f4ebb1973e"
+    "sha256": "002736cf8c595de72180dce58a6acfba3d52544ca46ee6f7ed71db0f2b47ec82"
   },
   "requirements": [
     {
@@ -72,7 +72,7 @@
       "reason": "GitHub can hide bypass_actors from a caller without ruleset-write observation authority, so a runtime metadata:read token cannot directly prove that bypass is empty. The signed high-authority snapshot and its contract-bound public projection, including ruleset IDs and created/updated timestamps, let the low-authority runtime detect semantic or bypass-only freshness drift without receiving the observer credential.",
       "mutationBoundaryContract": {
         "path": "infra/governance/providers/github-mutation-boundary-contract.json",
-        "sha256": "8ec9e43e64733a1fc3c7db440825ebb0677581ad9e40c60bf462d2f86a5c657f"
+        "sha256": "8d4b28604e306983c52b84513423d0e35b8f501c094d21c689cfef3285743c99"
       }
     },
     {
@@ -89,7 +89,7 @@
       "reason": "GitHub can hide bypass_actors from a caller without ruleset-write observation authority, so a runtime metadata:read token cannot directly prove that bypass is empty. The signed high-authority snapshot and its contract-bound public projection, including ruleset IDs and created/updated timestamps, let the low-authority runtime detect semantic or bypass-only freshness drift without receiving the observer credential.",
       "mutationBoundaryContract": {
         "path": "infra/governance/providers/github-mutation-boundary-contract.json",
-        "sha256": "8ec9e43e64733a1fc3c7db440825ebb0677581ad9e40c60bf462d2f86a5c657f"
+        "sha256": "8d4b28604e306983c52b84513423d0e35b8f501c094d21c689cfef3285743c99"
       }
     },
     {

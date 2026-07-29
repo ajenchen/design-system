@@ -165,7 +165,7 @@
                 "profile": {"const": "design-system-authority"},
                 "actionsWorkflowPermissions": {"const": true},
                 "rulesets": {"const": ["fleet/base-integrity", "fleet/verified-main"]},
-                "environments": {"const": ["governance-check-verdict", "governance-external-ledger"]},
+                "environments": {"const": ["governance-external-ledger"]},
                 "irreversibleActionsAllowed": {"const": false},
                 "staleResourceDeletionAllowed": {"const": false},
                 "exactReadbackRequired": {"const": true},

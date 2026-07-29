@@ -471,7 +471,10 @@ export function validateDesiredGithub(inventory, desired) {
     invariant(integration && typeof integration === 'object', `Integration ${name} must be an object`)
     invariant(integration.id === null || (Number.isInteger(integration.id) && integration.id >= 1), `Integration ${name} id must be null or a positive integer`)
     nonEmptyString(integration.slug, `Integration ${name} must have a non-empty slug`)
-    invariant(integration.required === true, `Integration ${name} must remain required`)
+    // 1B(2026-07-29):App 整合允許 required=false(誠實反映未 provision;schema 以
+    // 常數封閉每個整合的精確值,防無聲升降級);githubActions 仍必為 required。
+    invariant(typeof integration.required === 'boolean', `Integration ${name} must declare required as a boolean`)
+    invariant(name !== 'githubActions' || integration.required === true, 'GitHub Actions integration must remain required')
     invariant(['github-native', 'external-service', 'base-trusted-isolated-workflow', 'github-actions-environment'].includes(integration.operationMode), `Integration ${name} must declare a supported operationMode`)
   }
 
@@ -571,7 +574,11 @@ export function validateDesiredGithub(inventory, desired) {
       }
       checkNames.add(check.context)
     }
-    invariant(baseTrustedChecks > 0, `${profileName} must require at least one distinct base-trusted Governance Check App verdict`)
+    // 1B(2026-07-29):authority repo 的信任基礎 = protected repository workflows +
+    // required checks + branch protection;App-pinned verdict 層已拆除(secrets 從未
+    // provision、檢查恆紅)。consumer/template profiles(fleet 藍圖)仍必須有
+    // base-trusted App verdict。
+    invariant(baseTrustedChecks > 0 || profileName === 'design-system-authority', `${profileName} must require at least one distinct base-trusted Governance Check App verdict`)
     invariant(profile.rulesets.length === 3, `${profileName} must define exactly the three canonical managed rulesets`)
     const rulesetNames = new Set()
     const ruleTypesByRulesetName = new Map()

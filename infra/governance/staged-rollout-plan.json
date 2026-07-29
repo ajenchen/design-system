@@ -15,7 +15,7 @@
   "deploymentProfileBinding": {
     "externalActivationPolicy": {
       "path": "infra/governance/external-activation-policy.json",
-      "sha256": "5c9cfa18608b5e22d6a064a26113fa7b2ccd5a8708dc201f9b3509f4ebb1973e"
+      "sha256": "002736cf8c595de72180dce58a6acfba3d52544ca46ee6f7ed71db0f2b47ec82"
     },
     "profile": {
       "id": "PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM",
@@ -46,7 +46,7 @@
       "profile": "design-system-authority",
       "actionsWorkflowPermissions": true,
       "rulesets": ["fleet/base-integrity", "fleet/verified-main"],
-      "environments": ["governance-check-verdict", "governance-external-ledger"],
+      "environments": ["governance-external-ledger"],
       "irreversibleActionsAllowed": false,
       "staleResourceDeletionAllowed": false,
       "exactReadbackRequired": true,

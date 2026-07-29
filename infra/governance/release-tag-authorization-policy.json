@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "repository": "ajenchen/design-system",
   "algorithm": "ed25519",
-  "externalActivationPolicyDigest": "5c9cfa18608b5e22d6a064a26113fa7b2ccd5a8708dc201f9b3509f4ebb1973e",
+  "externalActivationPolicyDigest": "002736cf8c595de72180dce58a6acfba3d52544ca46ee6f7ed71db0f2b47ec82",
   "authorizationProfileId": "PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM",
   "authorizationProfileDigest": "a73ea5201176f5c9555738079ffb34673c0a3cd976cc7f72415c4eec4fb38472",
   "releaseAuthorization": {

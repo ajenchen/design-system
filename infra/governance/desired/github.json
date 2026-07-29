@@ -19,7 +19,7 @@
         "checks": "write"
       },
       "repositorySelection": "selected",
-      "required": true,
+      "required": false,
       "secretPrefix": "GOVERNANCE_CHECK_APP",
       "slug": "qijenchen-governance-check"
     },
@@ -34,7 +34,7 @@
         "workflows": "write"
       },
       "repositorySelection": "selected",
-      "required": true,
+      "required": false,
       "secretPrefix": "GOVERNANCE_WRITER_APP",
       "slug": "qijenchen-governance-writer"
     }
@@ -55,25 +55,6 @@
         "default_workflow_permissions": "read"
       },
       "environments": [
-        {
-          "credentialIntegration": "governanceCheckApp",
-          "deploymentBranchPolicy": {
-            "customBranchPolicies": false,
-            "protectedBranches": true
-          },
-          "name": "governance-check-verdict",
-          "preventSelfReview": false,
-          "reviewers": [],
-          "rollout": "always",
-          "waitTimer": 0,
-          "workflow": ".github/workflows/governance-anchor.yml",
-          "workflowIdentity": {
-            "contentSha256": "ecd087fa659564ebe296b8ad00cc4c24a91ed8773e751655fafcafa556141957",
-            "gitBlobSha": "a6b1db3f3974a60fa3dead3b315694bc8585afe8",
-            "semanticSha256": "9a34996d5ae3df2b0c06c2270df8e079804c4c65a3c3139b97261325e418155b",
-            "semanticVersion": 2
-          }
-        },
         {
           "deploymentBranchPolicy": {
             "customBranchPolicies": false,
@@ -151,24 +132,6 @@
       ],
       "immutableReleases": true,
       "requiredChecks": [
-        {
-          "baseTrusted": true,
-          "context": "Immutable consumer snapshot",
-          "forbidCandidateControlledSkip": true,
-          "integration": "governanceCheckApp",
-          "requireUnconditionalPullRequest": true,
-          "requiredEvents": [
-            "pull_request_target"
-          ],
-          "trustSource": "protected-base-workflow",
-          "workflow": ".github/workflows/governance-anchor.yml",
-          "workflowIdentity": {
-            "contentSha256": "ecd087fa659564ebe296b8ad00cc4c24a91ed8773e751655fafcafa556141957",
-            "gitBlobSha": "a6b1db3f3974a60fa3dead3b315694bc8585afe8",
-            "semanticSha256": "9a34996d5ae3df2b0c06c2270df8e079804c4c65a3c3139b97261325e418155b",
-            "semanticVersion": 2
-          }
-        },
         {
           "context": "Verify(tsc + tests + compile + build)",
           "forbidCandidateControlledSkip": true,

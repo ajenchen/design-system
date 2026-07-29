@@ -732,7 +732,8 @@ function createAuthorityBootstrapFixture(t) {
     canonicalInventoryBytesDigest: genesisReceipt.challenge.inventoryDigest,
     canonicalDesiredBytesDigest: genesisReceipt.challenge.desiredDigest,
   })
-  assert.equal(plan.actions.length, 5)
+  // 1B(2026-07-29):governance-check-verdict 環境拆除 → bootstrap 計畫 5→4 動作。
+  assert.equal(plan.actions.length, 4)
   const journalPath = resolve(root, 'bootstrap-journal.json')
   reconcileFixtureTestHarness.applyAuthorityBootstrapPlan(plan, client, {
     journalPath,
@@ -3106,7 +3107,7 @@ function desiredWithUnresolvedApps() {
   unresolved.integrations.governanceCheckApp = {
     id: null,
     slug: 'qijenchen-governance-check',
-    required: true,
+    required: false,
     externalTrustAnchor: true,
     capability: 'check-only',
     operationMode: 'base-trusted-isolated-workflow',
@@ -3117,7 +3118,7 @@ function desiredWithUnresolvedApps() {
   unresolved.integrations.governanceWriterApp = {
     id: null,
     slug: 'qijenchen-governance-writer',
-    required: true,
+    required: false,
     externalTrustAnchor: false,
     capability: 'writer',
     operationMode: 'github-actions-environment',

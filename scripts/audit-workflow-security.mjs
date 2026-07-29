@@ -1463,24 +1463,33 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
       && /\.head\.sha/.test(anchorVerify)
       && /git\/ref\/heads\/main/.test(anchorVerify)
     )
+    // 2026-07-29 user 拍板 1B:root repo 拆除 App-pinned verdict 層(App secrets 從未
+    // provision、檢查恆紅;protected required checks 已覆蓋同一保證面)。root anchor
+    // fail-closed 要求 verdict job 不得再出現(防未審查重引入);template anchor 是
+    // fleet consumer 藍圖,保留 App 架構待 fleet 啟用時重估。
+    const verdictClosed = anchorFile.startsWith('template/')
+      ? (
+        /^\s{2}publish-app-verdict:\s*$/m.test(anchor)
+        && needsJob(anchorVerdict, 'verify-candidate')
+        && /^\s{4}if:\s*(?:\$\{\{\s*)?always\(\)/m.test(anchorVerdict)
+        && /^\s{4}environment:\s*\n\s{6}name:\s*governance-check-verdict\s*$/m.test(anchorVerdict)
+        && /actions\/create-github-app-token@[a-f0-9]{40}/.test(anchorVerdict)
+        && /secrets\.GOVERNANCE_CHECK_APP_ID/.test(anchorVerdict)
+        && /secrets\.GOVERNANCE_CHECK_APP_PRIVATE_KEY/.test(anchorVerdict)
+        && /permission-checks:\s*write/.test(anchorVerdict)
+        && !/GOVERNANCE_WRITER_APP|permission-(?:contents|pull-requests):\s*write/.test(anchorVerdict)
+        && /(?:github\.event\.pull_request\.head\.sha|needs\.verify-candidate\.outputs\.head_sha)/.test(anchorVerdict)
+        && /repos\/\$GITHUB_REPOSITORY\/check-runs/.test(anchorVerdict)
+        && /Immutable consumer snapshot/.test(anchorVerdict)
+      )
+      : !/^\s{2}publish-app-verdict:/m.test(anchor)
     if (
       !/^\s{2}pull_request_target:\s*$/m.test(anchor)
       || /^\s{2}workflow_dispatch:\s*$/m.test(anchor)
       || !templateDispatchClosed
       || !/^\s{2}verify-candidate:\s*$/m.test(anchor)
-      || !/^\s{2}publish-app-verdict:\s*$/m.test(anchor)
-      || !needsJob(anchorVerdict, 'verify-candidate')
-      || !/^\s{4}if:\s*(?:\$\{\{\s*)?always\(\)/m.test(anchorVerdict)
-      || !/^\s{4}environment:\s*\n\s{6}name:\s*governance-check-verdict\s*$/m.test(anchorVerdict)
-      || !/actions\/create-github-app-token@[a-f0-9]{40}/.test(anchorVerdict)
+      || !verdictClosed
       || /\bsecrets\.|actions\/create-github-app-token@/.test(anchorVerify)
-      || !/secrets\.GOVERNANCE_CHECK_APP_ID/.test(anchorVerdict)
-      || !/secrets\.GOVERNANCE_CHECK_APP_PRIVATE_KEY/.test(anchorVerdict)
-      || !/permission-checks:\s*write/.test(anchorVerdict)
-      || /GOVERNANCE_WRITER_APP|permission-(?:contents|pull-requests):\s*write/.test(anchorVerdict)
-      || !/(?:github\.event\.pull_request\.head\.sha|needs\.verify-candidate\.outputs\.head_sha)/.test(anchorVerdict)
-      || !/repos\/\$GITHUB_REPOSITORY\/check-runs/.test(anchorVerdict)
-      || !/Immutable consumer snapshot/.test(anchorVerdict)
       || (anchorFile === '.github/workflows/governance-anchor.yml' && !/trusted\/scripts\/verify-privileged-change\.mjs/.test(anchorVerify))
       || !templateProductChecksClosed
       || (anchorFile.startsWith('template/') && /npm run (?:typecheck|build|audit:a11y)/.test(anchorVerify))

@@ -1816,11 +1816,13 @@ test('deterministic authority model poisons remain fail-closed during offline re
       expected: /Unknown release ring attacker-ring/,
     },
     {
+      // 1B(2026-07-29):authority profile 已拆 verdict 環境;此 poison 改打仍保留
+      // App 架構的 consumer profile(fleet 藍圖),validator 覆蓋不變。
       id: 'base-trust',
       path: 'infra/governance/desired/github.json',
       mutate: value => {
-        const environment = value.profiles['design-system-authority'].environments.find(item => item.name === 'governance-check-verdict')
-        assert.ok(environment, 'fixture requires the protected-base authority environment')
+        const environment = value.profiles['product-consumer'].environments.find(item => item.name === 'governance-check-verdict')
+        assert.ok(environment, 'fixture requires the consumer protected-base environment')
         environment.workflowIdentity.contentSha256 = 'f'.repeat(64)
       },
       expected: /governance-check-verdict identity must match/,
