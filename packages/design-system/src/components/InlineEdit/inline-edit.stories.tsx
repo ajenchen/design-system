@@ -46,10 +46,10 @@ export const TaskTitle: Story = {
 /* ── 真實業務:詳情面板多個 metadata 欄位逐欄就地編輯 ── */
 function MetaRow({ label, value, placeholder }: { label: string; value: string; placeholder?: string }) {
   return (
-    <div className="grid grid-cols-[128px_1fr] items-center gap-[var(--layout-space-tight)]">
-      <span className="text-body text-fg-secondary">{label}</span>
+    <Field orientation="horizontal" labelWidth="128px">
+      <FieldLabel>{label}</FieldLabel>
       <StatefulInlineEdit value={value} label={label} placeholder={placeholder} size="sm" />
-    </div>
+    </Field>
   )
 }
 
@@ -139,16 +139,21 @@ export const SelectTagField: Story = {
   render: () => {
     const [status, setStatus] = React.useState('in-progress')
     return (
-      <div className="grid w-[440px] grid-cols-[128px_1fr] items-center gap-[var(--layout-space-tight)] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
-        <span className="text-body text-fg-secondary">Status</span>
+      <Field
+        orientation="horizontal"
+        labelWidth="128px"
+        className="w-[440px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]"
+      >
+        <FieldLabel>Status</FieldLabel>
         <InlineEdit<string>
           value={status}
           onCommit={setStatus}
           label="status"
           size="sm"
           // view:Select 的 view mode 輸出 Tag(格式化 SSOT 住在 Select,InlineEdit 不自刻)。
-          // Tag **盒子左緣**對齊 label / 其他純文字值,tag 文字被 pill 內距自然縮排 —— 對齊 Meegle 實測
-          // (PIL 量測 2026-07-10:Meegle pill box=label 左緣、text 縮排 ~8px@1x)。**不做 text outdent**。
+          // Tag **盒子左緣**對齊同欄其他純文字值(horizontal Field:值落內容欄左緣 + field-px,
+          // 不用 -mx),tag 文字被 pill 內距自然縮排 —— 對齊 Meegle 實測
+          // (PIL 量測 2026-07-10:Meegle pill box=值左緣、text 縮排 ~8px@1x)。**不做 text outdent**。
           renderRead={(v) => (
             <Select mode="view" display="tag" size="sm" value={v} options={STATUS_OPTIONS} />
           )}
@@ -168,7 +173,7 @@ export const SelectTagField: Story = {
             />
           )}
         />
-      </div>
+      </Field>
     )
   },
 }
@@ -183,14 +188,16 @@ export const MultilineDescription: Story = {
     )
     return (
       <div className="w-[560px] rounded-lg border border-border bg-surface p-[var(--layout-space-loose)]">
-        <p className="mb-1 text-caption text-fg-secondary">DESCRIPTION</p>
-        <InlineEdit
-          multiline
-          value={desc}
-          onCommit={setDesc}
-          label="description"
-          placeholder="Add a description…"
-        />
+        <Field orientation="vertical">
+          <FieldLabel>DESCRIPTION</FieldLabel>
+          <InlineEdit
+            multiline
+            value={desc}
+            onCommit={setDesc}
+            label="description"
+            placeholder="Add a description…"
+          />
+        </Field>
       </div>
     )
   },
@@ -201,6 +208,10 @@ export const MultilineDescription: Story = {
 export const VerticalFieldForm: Story = {
   name: '詳情面板:垂直欄位就地編輯',
   render: () => {
+    // Assignee 的 state 提到 story 本體(不包 wrapper 元件)—— InlineEdit 必須是 <Field> 的**直接子**,
+    // Field 才讀得到靜態 fieldPreferredSize='sm';包一層 wrapper 會遮蔽它 → 控件槽退回 md(32px),
+    // 與同表其他 sm(28px)列不齊(對照 inline-edit.anatomy.stories.tsx CascadeDemo)。
+    const [assignee, setAssignee] = React.useState('Alex Rivera')
     const [status, setStatus] = React.useState('in-progress')
     const [desc, setDesc] = React.useState('Safari 上點擊結帳時,e2e 測試會間歇性失敗。')
     return (
@@ -210,7 +221,7 @@ export const VerticalFieldForm: Story = {
       >
         <Field orientation="vertical">
           <FieldLabel>Assignee</FieldLabel>
-          <StatefulInlineEdit value="Alex Rivera" label="assignee" />
+          <InlineEdit value={assignee} onCommit={setAssignee} label="assignee" />
         </Field>
         <Field orientation="vertical">
           <FieldLabel>Status</FieldLabel>

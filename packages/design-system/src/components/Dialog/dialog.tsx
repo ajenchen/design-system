@@ -8,6 +8,7 @@ import { Button } from "@/design-system/components/Button/button"
 import { ButtonDivider } from "@/design-system/components/Button/button-group"
 import { SurfaceHeader, SurfaceFooter, type SurfaceHeaderProps } from "@/design-system/patterns/overlay-surface/overlay-surface"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
+import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
 
 /**
@@ -248,12 +249,17 @@ DialogFooter.displayName = "DialogFooter"
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
->(({ className, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
     className={cn("text-body-lg font-medium truncate", className)}
     {...props}
-  />
+  >
+    {/* 2026-07-28:截斷必附 tooltip(tooltip.spec.md「截斷 → tooltip,僅實際截斷時顯示」)——
+        title 單行 truncate 被裁掉後沒有 hover 補救路徑。display="block":h2 是 block container,
+        inline span 量測不到 clientWidth(對照 breadcrumb.tsx 同型消費)。 */}
+    <TruncatedText display="block">{children}</TruncatedText>
+  </DialogPrimitive.Title>
 ))
 DialogTitle.displayName = DialogPrimitive.Title.displayName
 

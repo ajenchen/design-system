@@ -24,6 +24,17 @@
   --field-height-md: 2rem;      /* 32px */
   --field-height-lg: 2.25rem;   /* 36px */
 
+  /* Field control vertical padding — 讓「單行的多行控件」與同 size 單行 Input 等高 SSOT。
+     公式 = (field-height − 1lh)/2 − 1px:`1lh` 在使用端解析成該元素自己的行高(text-body 21px /
+     text-body-lg 24px),`−1px` 補 border-box 內的上下各 1px 邊框——少了它三個 size 都會高 2px。
+     density 自動連動(引用 --field-height-*,lg density 覆寫後公式仍成立)。
+     消費者:Textarea edit base + fieldViewGeometry 多行 view(兩者相等 = InlineEdit 多行零跳契約,
+     由 scripts/inline-edit-view-geometry-invariant.mjs 機械鎖)。
+     DataTable cell 不消費此 token——cell 的 padding 載體無邊框,自有 --table-cell-py 公式。 */
+  --field-control-py-sm: calc((var(--field-height-sm) - 1lh) / 2 - 1px);
+  --field-control-py-md: calc((var(--field-height-md) - 1lh) / 2 - 1px);
+  --field-control-py-lg: calc((var(--field-height-lg) - 1lh) / 2 - 1px);
+
   /* Field horizontal padding — 固定 12px(不隨 size/density);form-context field 左右內距 SSOT。
      跟 --table-cell-px(cell-context)同 -px 慣例;Input/Select/Combobox/DatePicker/TimePicker/Textarea
      + tag 模式右緣 re-assert 全消費此 token(取代散落的 px-3 / inline 0.75rem,M17 SSOT 可傳播)。 */

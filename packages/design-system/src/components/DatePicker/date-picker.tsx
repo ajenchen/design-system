@@ -7,6 +7,9 @@ import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '
 import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from '@/design-system/components/Popover/popover'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
+import { useTruncated } from '@/design-system/hooks/use-truncated'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { DateGrid } from '@/design-system/components/DateGrid/date-grid'
 import { Button } from '@/design-system/components/Button/button'
 import { SurfaceFooter } from '@/design-system/patterns/overlay-surface/overlay-surface'
@@ -475,6 +478,17 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
       }
     }, [onChange, showTime])
 
+    // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):非 typeable edit
+    // trigger 的值 span(bareInputStyles + truncate)是截斷元素;trigger = 整個 field wrapper
+    // (interactive host,hover 直達)、量測內層值 span — useTruncated 自組 pattern
+    // (truncated-text.spec.md「trigger 需自控」指定解;範本 inline-edit.tsx:251)。
+    // typeable 走 <input>(可捲動編輯,無截斷補救需求);popover 開啟時靜默(open 是 hover 之外的 reveal 路徑)。
+    // ⚠️ hook 必在下方 view / readonly early return 之前(React #310 hook-count 鐵律,同 select.tsx 教訓)。
+    const { ref: triggerTruncationRef, isTruncated: triggerTruncated } = useTruncated<HTMLSpanElement>({
+      deps: [!typeable && displayValue ? displayLive : ''],
+    })
+    const triggerTooltipActive = !typeable && !!displayValue && triggerTruncated && !open
+
     // mode='view'(Phase B2 2026-05-05):純內容輸出 — 對齊原 DatePickerDisplay sub-component(retired)。
     //   Default(showDisplayEndIcon=false):無 Field wrapper / 無 Calendar icon — backward compat 裸 span。
     //   Opt-in(showDisplayEndIcon=true,2026-05-08 D-path):Field naked wrapper + ItemSuffix Calendar,
@@ -484,16 +498,18 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
         // 2026-05-14 I2 fix(spec contract (e) view typography canonical):bare span 套
         // `fieldDisplayTextClass(size)`(sm/md→text-body,lg→text-body-lg)— 對齊 Field family 統一。
         if (!value) return <span className={cn(fieldDisplayTextClass(size), fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
-        return <span className={cn(fieldDisplayTextClass(size), 'truncate', className)}>{displayCommitted}</span>
+        // 截斷必附 tooltip(tooltip.spec.md:32)— 改消費 truncated-text primitive(同 input.tsx:196 同型修)
+        return <TruncatedText className={cn(fieldDisplayTextClass(size), className)}>{displayCommitted}</TruncatedText>
       }
       return (
         <div
           className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size }), className)}
           data-field-mode="view"
         >
-          <span className={cn(bareInputStyles, 'flex-1 min-w-0 truncate', !value && fieldEmptyColorClass(resolvedMode))}>
+          {/* 截斷必附 tooltip(tooltip.spec.md:32;data-table.spec.md:183 view 態元件自管 truncation) */}
+          <TruncatedText className={cn(bareInputStyles, 'flex-1 min-w-0', !value && fieldEmptyColorClass(resolvedMode))}>
             {value ? displayCommitted : emptyDisplay}
-          </span>
+          </TruncatedText>
           <ItemSuffix className="pointer-events-none">
             <CalendarIcon size={iconSize} className="text-fg-muted" aria-hidden />
           </ItemSuffix>
@@ -510,12 +526,13 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
           aria-disabled={resolvedMode === 'disabled' ? true : undefined}
           {...(props as React.HTMLAttributes<HTMLDivElement>)}
         >
-          <span className={cn('flex-1 min-w-0 truncate', resolvedMode === 'disabled' && 'text-fg-disabled')}>
+          {/* 截斷必附 tooltip(tooltip.spec.md:32)— readonly/disabled 無編輯入口,tooltip 是唯一補救路徑(同 Range readonly 分支同型) */}
+          <TruncatedText className={cn('flex-1', resolvedMode === 'disabled' && 'text-fg-disabled')}>
             {value
               ? displayCommitted
               : <span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span>
             }
-          </span>
+          </TruncatedText>
           {/* 2026-06-26 類型身份 indicator:edit 顯示 / readonly 不顯示(純值、不可開) / disabled 保留(fg-disabled,對齊原生 <select disabled>);
               naked cell 依 showDisplayEndIcon=isEditable(維持 2026-05-10 cell canonical「非可編欄不顯」)*/}
           {(variant === 'naked' ? showDisplayEndIcon : resolvedMode === 'disabled') && (
@@ -543,107 +560,117 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
 
     return (
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <div
-            ref={ref}
-            // a11y(2026-07-14 dim-10 修):typeable 模式 combobox 語意(name / state / 鍵盤)
-            // 集中在內層 <input>(APG editable-combobox idiom)— 外層 div 移除 role / tabIndex
-            // / aria-*,否則形成「關掉鍵盤 handler 的假 combobox tab stop」+ 內層 input 變成
-            // 第二個未命名 tab stop(雙重焦點站)。非 typeable 維持原 div-as-combobox canonical。
-            id={typeable ? undefined : (idProp ?? fieldCtx?.id)}
-            role={typeable ? undefined : 'combobox'}
-            tabIndex={typeable ? undefined : (disabled ? -1 : 0)}
-            aria-disabled={typeable ? undefined : (disabled || undefined)}
-            aria-label={typeable ? undefined : accessibleName}
-            aria-labelledby={typeable ? undefined : (ariaLabelledByProp ?? fieldCtx?.labelId)}
-            aria-invalid={typeable ? undefined : (error || undefined)}
-            aria-required={typeable ? undefined : (fieldCtx?.required || undefined)}
-            aria-describedby={typeable ? undefined : (ariaDescribedByProp ?? fieldCtx?.descriptionId)}
-            aria-errormessage={typeable ? undefined : (ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined))}
-            aria-haspopup={typeable ? undefined : 'dialog'}
-            aria-expanded={typeable ? undefined : open}
-            data-field-mode="edit"
-            data-error={error ? '' : undefined}
-            // Radix PopoverTrigger 只 compose onClick(onOpenToggle),`<div>` trigger 無
-            // native Enter/Space→click → 自建 onKeyDown 開 popover(對齊 select.tsx desktop
-            // trigger canonical:Enter/Space → 開;Esc → 關)。typeable 模式不攔 — 內層
-            // <input> 自有 Enter/Esc 語意(commit / reset draft),Calendar icon click 開
-            // popover(Material/Ant typed-date idiom),避免 div 層 keydown 與 input 衝突。
-            onKeyDown={typeable ? undefined : (e) => {
-              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(true) }
-              if (e.key === 'Escape') setOpen(false)
-            }}
-            className={cn(
-              fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }),
-              'text-left cursor-pointer',
-              'focus-visible:outline-none',
-              className,
-            )}
-            {...props}
-          >
-            {typeable ? (
-              // Issue 10 typed input(2026-05-10):real `<input>` 接 user 鍵盤打字。
-              // Click 在 input 上不 propagate 給外層 popover trigger(避免每次打字都開 popover)。
-              // Calendar icon `<ItemSuffix>` 點才開 popover(Material/Ant typed-date idiom)。
-              // a11y(2026-07-14 dim-10 修):input 持完整 combobox 語意(id/name/state,APG
-              // editable-combobox)— 外層 div 已讓位(見上方 role/tabIndex 註解);ArrowDown
-              // 開 popover 補鍵盤開啟路徑(原僅 icon click 可開,鍵盤 user 無入口)。
-              <input
-                type="text"
-                id={idProp ?? fieldCtx?.id}
-                role="combobox"
-                aria-haspopup="dialog"
-                aria-expanded={open}
-                aria-label={accessibleName}
-                aria-labelledby={ariaLabelledByProp ?? fieldCtx?.labelId}
-                aria-required={fieldCtx?.required || undefined}
-                aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
-                aria-errormessage={ariaErrorMessageProp ?? ((inputInvalid || error) ? fieldCtx?.errorId : undefined)}
-                disabled={disabled}
-                className={cn(bareInputStyles, 'truncate', !inputDraft && 'placeholder:text-fg-muted')}
-                value={inputDraft}
-                placeholder={resolvedPlaceholder}
-                aria-invalid={inputInvalid || error || undefined}
-                onChange={(e) => { setInputDraft(e.target.value); setInputInvalid(false) }}
-                onCompositionStart={() => { composingRef.current = true }}
-                onCompositionEnd={() => { composingRef.current = false }}
-                onKeyDown={(e) => {
-                  if (composingRef.current) return
-                  if (e.key === 'Enter') { e.preventDefault(); handleInputCommit(inputDraft) }
-                  if (e.key === 'Escape') { setInputDraft(displayLive); setInputInvalid(false); e.preventDefault() }
-                  if (e.key === 'ArrowDown' && !open) { e.preventDefault(); setOpen(true) }
+        {/* 截斷 tooltip:恆 wrap(truncated-text.spec.md always-wrap),未截斷或 popover 開啟時
+            open={false} 靜默。TooltipTrigger 放最內側(緊貼 div):PopoverTrigger 注入的
+            data-state(Field open 邊框樣式依賴)在 TooltipTrigger 內以 triggerProps 後 spread
+            勝出;反序會被 tooltip 的 data-state 蓋掉。 */}
+        <Tooltip open={triggerTooltipActive ? undefined : false}>
+          <PopoverTrigger asChild>
+            <TooltipTrigger asChild>
+              <div
+                ref={ref}
+                // a11y(2026-07-14 dim-10 修):typeable 模式 combobox 語意(name / state / 鍵盤)
+                // 集中在內層 <input>(APG editable-combobox idiom)— 外層 div 移除 role / tabIndex
+                // / aria-*,否則形成「關掉鍵盤 handler 的假 combobox tab stop」+ 內層 input 變成
+                // 第二個未命名 tab stop(雙重焦點站)。非 typeable 維持原 div-as-combobox canonical。
+                id={typeable ? undefined : (idProp ?? fieldCtx?.id)}
+                role={typeable ? undefined : 'combobox'}
+                tabIndex={typeable ? undefined : (disabled ? -1 : 0)}
+                aria-disabled={typeable ? undefined : (disabled || undefined)}
+                aria-label={typeable ? undefined : accessibleName}
+                aria-labelledby={typeable ? undefined : (ariaLabelledByProp ?? fieldCtx?.labelId)}
+                aria-invalid={typeable ? undefined : (error || undefined)}
+                aria-required={typeable ? undefined : (fieldCtx?.required || undefined)}
+                aria-describedby={typeable ? undefined : (ariaDescribedByProp ?? fieldCtx?.descriptionId)}
+                aria-errormessage={typeable ? undefined : (ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined))}
+                aria-haspopup={typeable ? undefined : 'dialog'}
+                aria-expanded={typeable ? undefined : open}
+                data-field-mode="edit"
+                data-error={error ? '' : undefined}
+                // Radix PopoverTrigger 只 compose onClick(onOpenToggle),`<div>` trigger 無
+                // native Enter/Space→click → 自建 onKeyDown 開 popover(對齊 select.tsx desktop
+                // trigger canonical:Enter/Space → 開;Esc → 關)。typeable 模式不攔 — 內層
+                // <input> 自有 Enter/Esc 語意(commit / reset draft),Calendar icon click 開
+                // popover(Material/Ant typed-date idiom),避免 div 層 keydown 與 input 衝突。
+                onKeyDown={typeable ? undefined : (e) => {
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(true) }
+                  if (e.key === 'Escape') setOpen(false)
                 }}
-                onBlur={() => { if (!composingRef.current) handleInputCommit(inputDraft) }}
-                onClick={(e) => e.stopPropagation()}
-              />
-            ) : (
-              <span className={cn(bareInputStyles, 'truncate', !displayValue && 'text-fg-muted')}>
-                {triggerText}
-              </span>
-            )}
-            {showClear && (
-              <ItemInlineAction
-                size={size ?? 'md'}
-                action={{
-                  icon: X,
-                  label: '清除日期', // i18n-allow: DS default inline-action label
-                  // Clear = 立刻 commit + 同步 draft(對齊 user 體感 / Ant trigger X 慣例)
-                  // 不走 needConfirm「等確定」語義 — X 在 trigger 上是 standard clear affordance,
-                  // 應立刻清空。dual-state 必同步:value('') + draft(null),否則 popover 開
-                  // 著時 displayValue=draft 仍顯示舊值(see line 318: displayValue = needConfirm ? draft : value)。
-                  onClick: (e) => {
-                    e?.stopPropagation()
-                    onChange?.('')
-                    setDraft(null)
-                  },
-                }}
-              />
-            )}
-            <ItemSuffix className="pointer-events-none">
-              <CalendarIcon size={iconSize} className="text-fg-muted" aria-hidden />
-            </ItemSuffix>
-          </div>
-        </PopoverTrigger>
+                className={cn(
+                  fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }),
+                  'text-left cursor-pointer',
+                  'focus-visible:outline-none',
+                  className,
+                )}
+                {...props}
+              >
+                {typeable ? (
+                  // Issue 10 typed input(2026-05-10):real `<input>` 接 user 鍵盤打字。
+                  // Click 在 input 上不 propagate 給外層 popover trigger(避免每次打字都開 popover)。
+                  // Calendar icon `<ItemSuffix>` 點才開 popover(Material/Ant typed-date idiom)。
+                  // a11y(2026-07-14 dim-10 修):input 持完整 combobox 語意(id/name/state,APG
+                  // editable-combobox)— 外層 div 已讓位(見上方 role/tabIndex 註解);ArrowDown
+                  // 開 popover 補鍵盤開啟路徑(原僅 icon click 可開,鍵盤 user 無入口)。
+                  <input
+                    type="text"
+                    id={idProp ?? fieldCtx?.id}
+                    role="combobox"
+                    aria-haspopup="dialog"
+                    aria-expanded={open}
+                    aria-label={accessibleName}
+                    aria-labelledby={ariaLabelledByProp ?? fieldCtx?.labelId}
+                    aria-required={fieldCtx?.required || undefined}
+                    aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
+                    aria-errormessage={ariaErrorMessageProp ?? ((inputInvalid || error) ? fieldCtx?.errorId : undefined)}
+                    disabled={disabled}
+                    className={cn(bareInputStyles, 'truncate', !inputDraft && 'placeholder:text-fg-muted')}
+                    value={inputDraft}
+                    placeholder={resolvedPlaceholder}
+                    aria-invalid={inputInvalid || error || undefined}
+                    onChange={(e) => { setInputDraft(e.target.value); setInputInvalid(false) }}
+                    onCompositionStart={() => { composingRef.current = true }}
+                    onCompositionEnd={() => { composingRef.current = false }}
+                    onKeyDown={(e) => {
+                      if (composingRef.current) return
+                      if (e.key === 'Enter') { e.preventDefault(); handleInputCommit(inputDraft) }
+                      if (e.key === 'Escape') { setInputDraft(displayLive); setInputInvalid(false); e.preventDefault() }
+                      if (e.key === 'ArrowDown' && !open) { e.preventDefault(); setOpen(true) }
+                    }}
+                    onBlur={() => { if (!composingRef.current) handleInputCommit(inputDraft) }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  // ref = 截斷量測點(值 span 是截斷元素;tooltip trigger 在外層 host div,見 triggerTruncationRef 註解)
+                  <span ref={triggerTruncationRef} className={cn(bareInputStyles, 'truncate', !displayValue && 'text-fg-muted')}>
+                    {triggerText}
+                  </span>
+                )}
+                {showClear && (
+                  <ItemInlineAction
+                    size={size ?? 'md'}
+                    action={{
+                      icon: X,
+                      label: '清除日期', // i18n-allow: DS default inline-action label
+                      // Clear = 立刻 commit + 同步 draft(對齊 user 體感 / Ant trigger X 慣例)
+                      // 不走 needConfirm「等確定」語義 — X 在 trigger 上是 standard clear affordance,
+                      // 應立刻清空。dual-state 必同步:value('') + draft(null),否則 popover 開
+                      // 著時 displayValue=draft 仍顯示舊值(see line 318: displayValue = needConfirm ? draft : value)。
+                      onClick: (e) => {
+                        e?.stopPropagation()
+                        onChange?.('')
+                        setDraft(null)
+                      },
+                    }}
+                  />
+                )}
+                <ItemSuffix className="pointer-events-none">
+                  <CalendarIcon size={iconSize} className="text-fg-muted" aria-hidden />
+                </ItemSuffix>
+              </div>
+            </TooltipTrigger>
+          </PopoverTrigger>
+          <TooltipContent>{triggerTooltipActive ? displayLive : null}</TooltipContent>
+        </Tooltip>
         <PopoverContent
           className="w-auto p-0"
           align="start"
@@ -852,6 +879,20 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       ? formatDateOrDateTime(endIso, showTime, showSeconds, { formatOptions, locale })
       : resolvedPlaceholder[1]
 
+    // 截斷 tooltip(tooltip.spec.md:32 截斷 → 顯完整內容,僅實際截斷時):Range 兩端 edit
+    // trigger button 各自截斷、各自量測顯示 — trigger = button 本體(interactive host,hover
+    // 直達)、量測內層文字 span,useTruncated 自組 pattern(truncated-text.spec.md「trigger 需
+    // 自控」指定解;範本 inline-edit.tsx:251)。popover 開啟時靜默;hook 必在 view / readonly
+    // early return 之前(React #310 hook-count 鐵律,同 select.tsx 教訓)。
+    const { ref: startTruncationRef, isTruncated: startTruncated } = useTruncated<HTMLSpanElement>({
+      deps: [startIso ? startText : ''],
+    })
+    const { ref: endTruncationRef, isTruncated: endTruncated } = useTruncated<HTMLSpanElement>({
+      deps: [endIso ? endText : ''],
+    })
+    const startTooltipActive = !!startIso && startTruncated && !open
+    const endTooltipActive = !!endIso && endTruncated && !open
+
     const activeIso = activeEnd === 'start' ? startIso : endIso
     const activeDate = activeEnd === 'start' ? startDate : endDate
     const activeTime = isoToTimeParts(activeIso) ?? { hours: 0, minutes: 0, seconds: 0 }
@@ -942,13 +983,14 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
       if (!hasAny) return <span className={cn(fieldEmptyColorClass(resolvedMode), className)}>{emptyDisplay}</span>
       return (
         <span className={cn('inline-flex items-center min-w-0', nakedCellRowModeAlign, className)}>
-          <span className={cn('truncate', !startIso && 'text-fg-muted')}>
+          {/* 截斷必附 tooltip(tooltip.spec.md:32)— start / end 各自獨立截斷、各自量測 */}
+          <TruncatedText className={cn(!startIso && 'text-fg-muted')}>
             {startIso ? formatDateOrDateTime(startIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[0]}
-          </span>
+          </TruncatedText>
           <ArrowRight size={iconSize} className="shrink-0 text-fg-muted mx-2" aria-hidden />
-          <span className={cn('truncate', !endIso && 'text-fg-muted')}>
+          <TruncatedText className={cn(!endIso && 'text-fg-muted')}>
             {endIso ? formatDateOrDateTime(endIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[1]}
-          </span>
+          </TruncatedText>
         </span>
       )
     }
@@ -963,13 +1005,14 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
           aria-disabled={resolvedMode === 'disabled' ? true : undefined}
           {...props}
         >
-          <span className={cn('flex-1 min-w-0 truncate', !startIso && 'text-fg-muted', resolvedMode === 'disabled' && 'text-fg-disabled')}>
+          {/* 截斷必附 tooltip(tooltip.spec.md:32)— readonly/disabled 無編輯入口,tooltip 是唯一補救路徑 */}
+          <TruncatedText className={cn('flex-1', !startIso && 'text-fg-muted', resolvedMode === 'disabled' && 'text-fg-disabled')}>
             {startIso ? formatDateOrDateTime(startIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[0]}
-          </span>
+          </TruncatedText>
           <ArrowRight size={iconSize} className={cn('shrink-0 mx-2', resolvedMode === 'disabled' ? 'text-fg-disabled' : 'text-fg-muted')} aria-hidden />
-          <span className={cn('flex-1 min-w-0 truncate', !endIso && 'text-fg-muted', resolvedMode === 'disabled' && 'text-fg-disabled')}>
+          <TruncatedText className={cn('flex-1', !endIso && 'text-fg-muted', resolvedMode === 'disabled' && 'text-fg-disabled')}>
             {endIso ? formatDateOrDateTime(endIso, showTime, showSeconds, { formatOptions, locale }) : resolvedPlaceholder[1]}
-          </span>
+          </TruncatedText>
           {/* 2026-06-26 類型身份 indicator:readonly 不顯示 / disabled 保留(fg-disabled)— 對齊單一 DatePicker(:488)+ SSOT;Range 無 naked-cell 變體故 gate = resolvedMode==='disabled' */}
           {resolvedMode === 'disabled' && (
             <ItemSuffix className="pointer-events-none">
@@ -1000,41 +1043,54 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
             )}
             {...props}
           >
-            <button
-              type="button"
-              ref={startBtnRef}
-              onClick={() => openWithActive('start')}
-              data-active-end={open && activeEnd === 'start' ? 'true' : undefined}
-              aria-label={resolvedPlaceholder[0]}
-              aria-haspopup="dialog"
-              aria-expanded={open && activeEnd === 'start'}
-              className={cn(
-                bareInputStyles,
-                'truncate text-left cursor-pointer focus-visible:outline-none',
-                'data-[active-end=true]:underline decoration-primary underline-offset-4 decoration-2',
-                !startIso && 'text-fg-muted',
-              )}
-            >
-              {startText}
-            </button>
+            {/* 兩端截斷 tooltip:恆 wrap、未截斷 open={false} 靜默(truncated-text.spec.md
+                always-wrap);TooltipTrigger asChild 只合併 handler / data-state 到 button,
+                零多餘 DOM → wrapper flex 佈局不變。內層 span = 量測點(見 startTruncationRef 註解)。 */}
+            <Tooltip open={startTooltipActive ? undefined : false}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  ref={startBtnRef}
+                  onClick={() => openWithActive('start')}
+                  data-active-end={open && activeEnd === 'start' ? 'true' : undefined}
+                  aria-label={resolvedPlaceholder[0]}
+                  aria-haspopup="dialog"
+                  aria-expanded={open && activeEnd === 'start'}
+                  className={cn(
+                    bareInputStyles,
+                    'truncate text-left cursor-pointer focus-visible:outline-none',
+                    'data-[active-end=true]:underline decoration-primary underline-offset-4 decoration-2',
+                    !startIso && 'text-fg-muted',
+                  )}
+                >
+                  <span ref={startTruncationRef} className="block truncate">{startText}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{startTooltipActive ? startText : null}</TooltipContent>
+            </Tooltip>
             <ArrowRight size={iconSize} className="shrink-0 text-fg-muted mx-2" aria-hidden />
-            <button
-              type="button"
-              ref={endBtnRef}
-              onClick={() => openWithActive('end')}
-              data-active-end={open && activeEnd === 'end' ? 'true' : undefined}
-              aria-label={resolvedPlaceholder[1]}
-              aria-haspopup="dialog"
-              aria-expanded={open && activeEnd === 'end'}
-              className={cn(
-                bareInputStyles,
-                'truncate text-left cursor-pointer focus-visible:outline-none',
-                'data-[active-end=true]:underline decoration-primary underline-offset-4 decoration-2',
-                !endIso && 'text-fg-muted',
-              )}
-            >
-              {endText}
-            </button>
+            <Tooltip open={endTooltipActive ? undefined : false}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  ref={endBtnRef}
+                  onClick={() => openWithActive('end')}
+                  data-active-end={open && activeEnd === 'end' ? 'true' : undefined}
+                  aria-label={resolvedPlaceholder[1]}
+                  aria-haspopup="dialog"
+                  aria-expanded={open && activeEnd === 'end'}
+                  className={cn(
+                    bareInputStyles,
+                    'truncate text-left cursor-pointer focus-visible:outline-none',
+                    'data-[active-end=true]:underline decoration-primary underline-offset-4 decoration-2',
+                    !endIso && 'text-fg-muted',
+                  )}
+                >
+                  <span ref={endTruncationRef} className="block truncate">{endText}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{endTooltipActive ? endText : null}</TooltipContent>
+            </Tooltip>
             {showClear && (
               <ItemInlineAction
                 size={size ?? 'md'}

@@ -26,9 +26,11 @@ import { cn } from '@/lib/utils'
 import { Input } from '@/design-system/components/Input/input'
 import { Textarea } from '@/design-system/components/Textarea/textarea'
 import type { FieldSize } from '@/design-system/components/Field/field-context'
-import { useFieldContext, useResolvedFieldSize, FieldSurfaceProvider } from '@/design-system/components/Field/field-context'
+import { useFieldContext, useResolvedFieldSize, useRegisterFieldPreferredSize, FieldSurfaceProvider } from '@/design-system/components/Field/field-context'
 import { fieldDisplayTextClass, fieldViewGeometry } from '@/design-system/components/Field/field-wrapper'
 import { makeEditSettleKeyHandler } from '@/design-system/components/Field/field-edit-keys'
+import { useTruncated } from '@/design-system/hooks/use-truncated'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -72,6 +74,11 @@ export interface InlineEditProps<T = string> {
   /** 多行欄位(Jira description 類):view 態換行 + 預設 edit 態用 `<Textarea>`,Enter=換行、Cmd/Ctrl+Enter 或 blur 提交 */
   multiline?: boolean
   /**
+   * 多行 edit 態的高度上限(行數)。預設無上限 —— 高度隨內容,與 view 態同源(= DataTable cell 語意)。
+   * 設定後超過行數改為捲動。僅在 `multiline` 時有意義。
+   */
+  editMaxRows?: number
+  /**
    * 是否可編輯(預設 true)。false → view 態無 hover 入口、無藍框、不可點進 edit(對齊世界級就地編輯
    * **無 disabled 態**,鎖定 = 純 view 無入口、**不灰化**;cite 見檔頭 MUI X / AG Grid URL)。
    * 永久唯讀資料 → 用 `<Control mode="view">` 或此 prop false;不用 disabled。
@@ -113,6 +120,7 @@ function InlineEditImpl<T = string>(
     renderEdit,
     renderRead,
     multiline = false,
+    editMaxRows,
     editable = true,
     label,
     placeholder,
@@ -123,9 +131,11 @@ function InlineEditImpl<T = string>(
   }: InlineEditProps<T>,
   ref: React.Ref<HTMLDivElement>,
 ) {
-  // size:接 fieldCtx.size cascade,standalone fallback sm(InlineEdit 靜態 fieldPreferredSize='sm'
-  //   讓外層 `<Field>` 自動收 sm — 見檔尾 static)。
+  // size:接 fieldCtx.size cascade,fallback sm。Field 只有在 consumer 顯式指定或已解析出偏好時
+  //   才壓過此 fallback(sizeExplicit),因此包一層 wrapper 也不會靜默退回 md。
   const size = useResolvedFieldSize(sizeProp, 'sm')
+  // 同時向外層 Field 註冊偏好,讓 Field 的控件槽高度跟上(靜態 fieldPreferredSize 被 wrapper 遮蔽時的補位)。
+  useRegisterFieldPreferredSize('sm')
   // orientation:vertical(值貼 label 左緣 → 用 -mx)/ horizontal(值落內容欄左緣+field-px = 對齊 sibling 控件 → 不用 -mx)。
   const fieldCtx = useFieldContext()
   const orientation = fieldCtx?.orientation ?? 'vertical'
@@ -238,6 +248,35 @@ function InlineEditImpl<T = string>(
     value == null || (value as unknown) === '' || (Array.isArray(value) && value.length === 0)
   const Tag = as as React.ElementType
 
+  // 單行純值 view 的截斷 tooltip:量測內層值 span,但 **trigger = 整個 view 容器**。
+  // 不能用 <TruncatedText>(trigger=值 span 本身):view 上疊著透明 Pressable(click-to-edit
+  // 入口,absolute inset-0),所有 hover 都被按鈕吞掉,值 span 永遠收不到 pointerenter →
+  // tooltip 永不開(2026-07-28 user 實測抓到)。truncated-text.spec 對「trigger 需自控」場景
+  // 的指定解 = 直接消費 public useTruncated 自組;DataTable cell 無疊層所以能用 primitive。
+  const singleLinePlainView = !renderRead && !multiline
+  const { ref: truncationRef, isTruncated } = useTruncated<HTMLSpanElement>({
+    deps: [singleLinePlainView && !isEmpty ? String(value) : ''],
+  })
+  const plainTruncationActive = singleLinePlainView && !isEmpty && isTruncated
+
+  // 委派 view(renderRead)同規則(tooltip.spec.md「截斷文字 → tooltip,截斷才顯」):委派控件
+  // 自帶的截斷 tooltip(Input <TruncatedText> / Tag)trigger 在內層,editable 時同樣被透明
+  // Pressable 吞掉 hover → 永不開,故外層容器 Tooltip 一併服務委派路徑。量測 = use-truncated
+  // options.measure 自訂策略(檔頭明載 Tag「observe root、量測內層」即同款開口):走訪 wrapper
+  // 子樹,任一 `.truncate` 後代溢出即視為截斷(委派控件截斷元素皆帶 truncate class:Tag 內層
+  // span / TruncatedText span / Select view span)。editable=false 不渲染 Pressable → 控件自身
+  // tooltip 可達,外層讓位避免雙重顯示。
+  const delegatedView = !!renderRead
+  const { ref: delegatedViewRef, isTruncated: delegatedTruncated } = useTruncated<HTMLDivElement>({
+    measure: (el) =>
+      Array.from(el.querySelectorAll<HTMLElement>('.truncate')).some(
+        (node) => node.scrollWidth > node.clientWidth,
+      ),
+    deps: [delegatedView && editable && !isEmpty ? value : null],
+  })
+  const delegatedTruncationActive = delegatedView && editable && !isEmpty && delegatedTruncated
+  const truncationTooltipActive = plainTruncationActive || delegatedTruncationActive
+
   // 對齊盒(orientation-aware,Model A;2026-07-17 移除 fieldCtx gate — root cause 修):
   //   vertical(預設,含 standalone)→ `-mx-field-px` + `w-calc` 把整塊拉到欄左緣(值貼 label 左緣;
   //     view 委派控件在 `surface='inline-edit'` 下 px 統一 field-px → 被 -mx 精準抵消 → 落 x=0 對齊 label)。
@@ -269,6 +308,9 @@ function InlineEditImpl<T = string>(
       <Textarea
         autoFocus
         mode="edit"
+        // view 態高度由內容決定,edit 態必須同源,否則 read↔edit 之間跳高(DataTable cell 早就是
+        // 內容驅動,standalone InlineEdit 原本卡在 rows=3)。consumer 要上限就傳 editMaxRows。
+        autoSize={editMaxRows === undefined ? true : { maxRows: editMaxRows }}
         value={draft as unknown as string}
         size={size}
         aria-label={label}
@@ -310,7 +352,8 @@ function InlineEditImpl<T = string>(
     // surface='inline-edit' 保留為 per-control 逃生訊號(若某控件 bare view 有內部 inset 破壞對齊,該控件可
     // 讀 surface 自抑;目前全控件 bare view=0px 不需)。
     <FieldSurfaceProvider surface="inline-edit">
-      <div className={fieldViewGeometry(size, multiline)}>{renderRead(value)}</div>
+      {/* delegatedViewRef = 委派路徑截斷量測根(walk `.truncate` 後代;見上方 useTruncated 註解) */}
+      <div ref={delegatedViewRef} className={fieldViewGeometry(size, multiline)}>{renderRead(value)}</div>
     </FieldSurfaceProvider>
   ) : (
     <Tag
@@ -327,37 +370,57 @@ function InlineEditImpl<T = string>(
         isEmpty && 'text-fg-muted',
       )}
     >
-      {isEmpty ? placeholder : String(value)}
+      {isEmpty || multiline
+        ? (isEmpty ? placeholder : String(value))
+        // 單行 view 恆一行:溢出改 ellipsis(tooltip.spec.md「截斷文字 → tooltip」);
+        // tooltip 掛在外層 view 容器(見 truncationRef 註解——隱形 Pressable 吞 hover)。
+        : <span ref={truncationRef} className="truncate min-w-0">{String(value)}</span>}
     </Tag>
   )
 
   return (
-    <div
-      ref={ref}
-      data-editing={false}
-      data-editable={editable || undefined}
-      className={cn(
-        'relative flex min-w-0 rounded-md border border-transparent transition-colors duration-150',
-        alignBleed,
-        // editable 才有 hover 底色 + 鍵盤 focus 藍框(Field focus 語言,非 Button ring);
-        //   editable=false = 純 view 鎖定,無入口、無藍框、不灰化。
-        editable && 'hover:bg-neutral-hover [&:has(button:focus-visible)]:border-primary',
-        className,
-      )}
-    >
-      {viewNode}
-      {/* 隱形 Pressable(僅 editable):提供 click + 鍵盤 Tab focus + Enter/Space 進 edit;透明疊於內容上。
-          hover 底色 + focus 藍框由外層 div 承載(Field focus 語言),故本 button 只需 outline-none 消瀏覽器預設外框。 */}
-      {editable && (
-        <button
-          ref={readButtonRef}
-          type="button"
-          aria-label={label ? `編輯 ${label}` : '編輯'}
-          onClick={enterEdit}
-          className="absolute inset-0 cursor-text rounded-md focus-visible:outline-none"
-        />
-      )}
-    </div>
+    // 截斷 tooltip:trigger = 整個 view 容器(隱形 Pressable 吞掉內層 hover,故不能掛在值 span);
+    // 純值路徑量內層值 span、委派路徑量 wrapper 子樹(見上方兩段 useTruncated 註解);
+    // 恆 wrap 保 DOM 生命週期穩定(truncated-text 檔頭 always-wrap 教訓),未截斷時 open={false} 靜默。
+    <Tooltip open={truncationTooltipActive ? undefined : false}>
+      <TooltipTrigger asChild>
+        <div
+          ref={ref}
+          data-editing={false}
+          data-editable={editable || undefined}
+          className={cn(
+            'relative flex min-w-0 rounded-md border border-transparent transition-colors duration-150',
+            alignBleed,
+            // editable 才有 hover 底色 + 鍵盤 focus 藍框(Field focus 語言,非 Button ring);
+            //   editable=false = 純 view 鎖定,無入口、無藍框、不灰化。
+            editable && 'hover:bg-neutral-hover [&:has(button:focus-visible)]:border-primary',
+            className,
+          )}
+        >
+          {viewNode}
+          {/* 隱形 Pressable(僅 editable):提供 click + 鍵盤 Tab focus + Enter/Space 進 edit;透明疊於內容上。
+              hover 底色 + focus 藍框由外層 div 承載(Field focus 語言),故本 button 只需 outline-none 消瀏覽器預設外框。 */}
+          {editable && (
+            <button
+              ref={readButtonRef}
+              type="button"
+              aria-label={label ? `編輯 ${label}` : '編輯'}
+              onClick={enterEdit}
+              className="absolute inset-0 cursor-text rounded-md focus-visible:outline-none"
+            />
+          )}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        {delegatedTruncationActive
+          ? // 委派路徑內容 = wrapper 子樹當下 DOM 的 textContent(完整格式化文字;
+            // 非 string T 不可 String(value) —— 如 string[] / PersonValue)
+            delegatedViewRef.current?.textContent
+          : plainTruncationActive
+            ? String(value)
+            : null}
+      </TooltipContent>
+    </Tooltip>
   )
 }
 

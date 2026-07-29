@@ -315,7 +315,7 @@ DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omi
 - **Loading(server-rendered grid)**:DatePicker 為 sync UI 不獨立 own loading。若 consumer 場景需 async date constraint fetch(如後端 disabled-dates list),consumer 應先 disable trigger 直到 fetch 完成,或在 popover 開啟後 body 切 `<Empty icon={<CircularProgress/>}/>`(對齊 panel-body loading SSOT)。本 spec scope 內不渲 loading state。
 - **Empty(no value)**:`value=null` → trigger 顯 placeholder(預設 `YYYY/MM/DD`,showTime 時 `YYYY/MM/DD HH:MM`;consumer 可傳 `placeholder` 覆寫)。無導覽目標時鍵盤焦點停留(react-day-picker v9 內建)。
 - **Invalid date input**:Field validation 處理 `aria-invalid="true"` + error border + 下方 error message;DatePicker 本身不 own validation 規則。
-- **極長格式化日期**:trigger 文字單行 `truncate`(ellipsis),不換行不撐高(View / Edit / typeable / Range 雙 input 皆同)。
+- **極長格式化日期**:trigger 文字單行 `truncate`(ellipsis),不換行不撐高(View / Edit / typeable / Range 雙 input 皆同);實際截斷時 hover / focus 顯完整值 tooltip(僅實際截斷才顯——rule owner `components/Tooltip/tooltip.spec.md:32`「截斷文字 → tooltip」):View 路徑消費 `<TruncatedText>`;Edit trigger 與 Range 兩端 button 為 interactive host,消費 `useTruncated` 自組(trigger = host、量測內層值 span,SSOT `patterns/element-anatomy/truncated-text.spec.md`「trigger 需自控」指定解),popover 開啟時靜默。typeable `<input>` 可捲動編輯,無截斷補救需求。
 - **RTL**:未實作方向鏡像(trigger / Range 雙 input / DateGrid 皆以 LTR physical 方向設計);RTL 屬 DS-wide 決策,未定(與 Chip / Breadcrumb 同口徑)。
 - **Dark mode / density**:走 Field + Popover SSOT 自動 adapt;DateGrid 內 cell 尺寸 density-aware(消費 `--field-height-sm`:md=28×28 / lg=32×32,對齊 L128 + `date-grid.spec.md:120`),隨 density 縮放而非固定。
 

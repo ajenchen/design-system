@@ -17,6 +17,9 @@ import { cn } from '@/lib/utils'
 import { CAT_EVENT, CAT_ACCENT, type CategoricalHue } from '@/design-system/tokens/categorical-color'
 import { Button } from '@/design-system/components/Button/button'
 import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
+import { useTruncated } from '@/design-system/hooks/use-truncated'
 
 /**
  * Calendar — 事件檢視 canvas(月 view MVP)
@@ -141,6 +144,54 @@ function coerceDate(value: string | Date): Date {
 // ── Component ──────────────────────────────────────────────────────────────
 
 const MAX_TILES_PER_CELL = 3
+
+// 預設事件 tile 抽出 component:截斷 tooltip 需 useTruncated(hook 不能在 map callback 內)。
+// 截斷 → tooltip 顯完整標題(tooltip.spec.md:32,僅實際截斷時);tile 是 interactive host
+// (role=button,hover 直達)→ trigger = tile 本體、量測內層文字 span — useTruncated 自組
+// pattern(truncated-text.spec.md「trigger 需自控」指定解;範本 inline-edit.tsx:251 + tag.tsx)。
+function MonthEventTile({
+  event,
+  colorClass,
+  onEventClick,
+}: {
+  event: CalendarEvent
+  colorClass: string
+  onEventClick?: (event: CalendarEvent) => void
+}) {
+  const { ref: truncationRef, isTruncated } = useTruncated<HTMLSpanElement>({ deps: [event.title] })
+  return (
+    // 恆 wrap、未截斷 open={false} 靜默(truncated-text.spec.md always-wrap:條件 wrap 會 remount 丟 RO 訂閱)
+    <Tooltip open={isTruncated ? undefined : false}>
+      <TooltipTrigger asChild>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.stopPropagation()
+            onEventClick?.(event)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onEventClick?.(event)
+            }
+          }}
+          aria-label={`事件:${event.title}`}
+          className={cn(
+            'rounded-md px-1.5 py-0.5 text-caption truncate cursor-pointer transition-colors',
+            // 2026-05-31 #22:事件 tile 是 focusable(tabIndex=0 role=button)但原無 focus ring
+            // → WCAG 2.4.7 不合規。補 focus-visible ring 對齊日期格按鈕。
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            colorClass,
+          )}
+        >
+          <span ref={truncationRef} className="block truncate">{event.title}</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>{event.title}</TooltipContent>
+    </Tooltip>
+  )
+}
 
 const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calendar({
   view: viewProp,
@@ -297,7 +348,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         </nav>
 
         <h2 className="text-body-lg font-medium text-foreground flex-1 min-w-0 truncate ml-2">
-          {monthTitle}
+          {/* 2026-07-28:截斷必附 tooltip(tooltip.spec.md「截斷 → tooltip,僅實際截斷時顯示」)——
+              窄 toolbar 下標題被裁掉沒有補救路徑。display="block":h2 是 block container。 */}
+          <TruncatedText display="block">{monthTitle}</TruncatedText>
         </h2>
 
         {/* View switcher:用 SegmentedControl(互斥多選一 canonical)——
@@ -411,31 +464,12 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                     )
                   }
                   return (
-                    <div
+                    <MonthEventTile
                       key={event.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onEventClick?.(event)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          onEventClick?.(event)
-                        }
-                      }}
-                      aria-label={`事件:${event.title}`}
-                      className={cn(
-                        'rounded-md px-1.5 py-0.5 text-caption truncate cursor-pointer transition-colors',
-                        // 2026-05-31 #22:事件 tile 是 focusable(tabIndex=0 role=button)但原無 focus ring
-                        // → WCAG 2.4.7 不合規。補 focus-visible ring 對齊日期格按鈕。
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                        colorClass,
-                      )}
-                    >
-                      {event.title}
-                    </div>
+                      event={event}
+                      colorClass={colorClass}
+                      onEventClick={onEventClick}
+                    />
                   )
                 })}
                 {overflowCount > 0 && (

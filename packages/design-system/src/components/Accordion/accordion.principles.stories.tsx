@@ -9,6 +9,8 @@ import {
 } from './accordion'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import { Button } from '@/design-system/components/Button/button'
+import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
+import { Input } from '@/design-system/components/Input/input'
 
 const meta: Meta = {
   title: 'Design System/Components/Accordion/設計原則',
@@ -275,37 +277,25 @@ export const ContentRule: Story = {
           <AccordionItem value='deploy'>
             <AccordionTrigger>進階部署設定</AccordionTrigger>
             <AccordionContent>
-              <div className='flex flex-col gap-3'>
-                <div className='flex flex-col gap-1'>
-                  <label htmlFor='adv-project-id' className='text-body text-foreground'>專案識別碼</label>
-                  <input
-                    id='adv-project-id'
-                    className='h-field-md border border-border rounded-md px-3 text-body'
-                    placeholder='例:Q2-RELEASE'
-                  />
-                </div>
-                <div className='flex flex-col gap-1'>
-                  <label htmlFor='adv-custom-domain' className='text-body text-foreground'>自訂網域</label>
-                  <input
-                    id='adv-custom-domain'
-                    className='h-field-md border border-border rounded-md px-3 text-body'
-                    placeholder='your-team.example.com'
-                  />
-                </div>
-              </div>
+              <FieldGroup gap='compact'>
+                <Field>
+                  <FieldLabel>專案識別碼</FieldLabel>
+                  <Input placeholder='例:Q2-RELEASE' />
+                </Field>
+                <Field>
+                  <FieldLabel>自訂網域</FieldLabel>
+                  <Input placeholder='your-team.example.com' />
+                </Field>
+              </FieldGroup>
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value='seo'>
             <AccordionTrigger>SEO 與中繼資料</AccordionTrigger>
             <AccordionContent>
-              <div className='flex flex-col gap-1'>
-                <label htmlFor='adv-page-title' className='text-body text-foreground'>頁面標題</label>
-                <input
-                  id='adv-page-title'
-                  className='h-field-md border border-border rounded-md px-3 text-body'
-                  placeholder='顯示於瀏覽器分頁與搜尋結果'
-                />
-              </div>
+              <Field>
+                <FieldLabel>頁面標題</FieldLabel>
+                <Input placeholder='顯示於瀏覽器分頁與搜尋結果' />
+              </Field>
             </AccordionContent>
           </AccordionItem>
         </Accordion>

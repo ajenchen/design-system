@@ -388,5 +388,11 @@ export const fieldViewGeometry = (size: 'sm' | 'md' | 'lg', multiline?: boolean)
     size === 'sm' && 'min-h-[var(--field-height-sm)]',
     size === 'md' && 'min-h-[var(--field-height-md)]',
     size === 'lg' && 'min-h-[var(--field-height-lg)]',
-    multiline ? 'items-start py-2' : 'items-center',
+    // 多行 view py 必等於 Textarea edit py(同一 --field-control-py-* token),否則
+    // InlineEdit 多行 read↔edit 垂直跳位;scripts/inline-edit-view-geometry-invariant.mjs 機械鎖。
+    multiline && 'items-start',
+    multiline && size === 'sm' && 'py-[var(--field-control-py-sm)]',
+    multiline && size === 'md' && 'py-[var(--field-control-py-md)]',
+    multiline && size === 'lg' && 'py-[var(--field-control-py-lg)]',
+    !multiline && 'items-center',
   )

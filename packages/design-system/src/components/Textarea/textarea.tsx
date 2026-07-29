@@ -41,7 +41,7 @@ const textareaVariants = cva(
     // K10 fix(2026-05-04):disabled 時 placeholder + text 切 fg-disabled(parallel 到 bareInputStyles)
     //   Textarea 自身 `<textarea disabled>` 帶 disabled HTML attribute,用 `disabled:` variant 直接命中
     'disabled:placeholder:text-fg-disabled disabled:text-fg-disabled',
-    'px-[var(--field-px)] py-2',
+    'px-[var(--field-px)]',
     'transition-colors duration-150',
   ],
   {
@@ -57,10 +57,12 @@ const textareaVariants = cva(
         default: '',
         naked: '',
       },
+      // py 隨 size 走 --field-control-py-* 公式,讓單行 Textarea 與同 size Input 等高
+      // (uiSize.css SSOT;DataTable naked compound 以 !py-* 覆蓋,不受影響)
       size: {
-        sm: 'text-body',
-        md: 'text-body',
-        lg: 'text-body-lg',
+        sm: 'text-body py-[var(--field-control-py-sm)]',
+        md: 'text-body py-[var(--field-control-py-md)]',
+        lg: 'text-body-lg py-[var(--field-control-py-lg)]',
       },
       // error(2026-07-04 Q1,鏡射 fieldWrapperStyles error variant;Phase D 整併時一起收)
       error: {
@@ -160,6 +162,15 @@ export interface TextareaProps
   variant?: FieldVariant
   /** Error 狀態（正交於 mode）。border-error + aria-invalid。 */
   error?: boolean
+  /**
+   * Edit 態高度隨內容(`field-sizing: content`)。`{ maxRows }` 設上限,超過改捲動。
+   *
+   * 為何是能力而非預設:表單 Textarea 的 `rows={3}` 預留高度是刻意的(textarea.spec.md
+   * 「rows / min-h」);但 cell-as-input 與 InlineEdit 的 view 態高度由內容決定,edit 若固定
+   * rows 就會在 read↔edit 之間跳高。此 prop 讓兩種語境共用同一份實作,而非各自在呼叫端手刻
+   * (原本只有 DataTable cell-registry 有這段膠水,InlineEdit 因此漂移)。
+   */
+  autoSize?: boolean | { maxRows?: number }
 }
 
 // code-quality-allow: long-function — Textarea forwardRef body 含 mode×size×variant×error 4 軸 prop + autoFocus + aria 完整覆蓋,拆 sub-fn 會把 useFieldContext / fieldWrapperStyles 跨檔 drilling
@@ -173,7 +184,8 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       className,
       disabled,
       readOnly,
-      rows = 3,
+      rows: rowsProp,
+      autoSize = false,
       value,
       defaultValue,
       id: idProp,
@@ -258,11 +270,32 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       )
     }
 
+    // autoSize:`field-sizing: content` 讓 textarea 長到內容高度(Chrome 123+ / FF 122+ / Safari 17+)。
+    // rows 是舊瀏覽器 fallback——沿用 cell 既有的換行 + 折行估算,別讓不支援的環境退回單行。
+    const autoSizeMaxRows = typeof autoSize === 'object' ? autoSize.maxRows : undefined
+    const autoSizeRows = () => {
+      const text = String(resolved ?? '')
+      const newlineRows = (text.match(/\n/g) || []).length + 1
+      const wrapRows = Math.ceil(text.length / 40)
+      return Math.min(autoSizeMaxRows ?? 10, Math.max(1, newlineRows, wrapRows))
+    }
+    const rows = rowsProp ?? (autoSize ? autoSizeRows() : 3)
+    const autoSizeStyle: React.CSSProperties | undefined = autoSize
+      ? ({
+        // any-allow: CSS `field-sizing` 尚未進 TypeScript lib.dom,narrow 到 CSSProperties 仍需 cast
+        fieldSizing: 'content',
+        ...(autoSizeMaxRows === undefined
+          ? {}
+          : { maxHeight: `calc(${autoSizeMaxRows} * 1lh + 2 * var(--field-control-py-${size}) + 2px)` }),
+      } as React.CSSProperties)
+      : undefined
+
     return (
       <textarea
         ref={setRef}
         id={inputId}
         rows={rows}
+        style={autoSizeStyle ? { ...autoSizeStyle, ...props.style } : props.style}
         value={resolved}
         disabled={resolvedMode === 'disabled'}
         readOnly={resolvedMode === 'readonly'}

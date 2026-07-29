@@ -6,6 +6,8 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from './accordion'
+import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { Input } from '@/design-system/components/Input/input'
 
 const meta: Meta<typeof Accordion> = {
   title: 'Design System/Components/Accordion/展示',
@@ -148,22 +150,14 @@ export const AdvancedOptions: Story = {
   name: '進階選項可隱藏',
   render: () => (
     <div className="max-w-[640px] flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="adv-project-name" className="text-body font-medium text-foreground">專案名稱</label>
-        <input
-          id="adv-project-name"
-          className="h-field-md border border-border rounded-md px-3 text-body"
-          defaultValue="Q2 發布計畫"
-        />
-      </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="adv-project-desc" className="text-body font-medium text-foreground">專案描述</label>
-        <input
-          id="adv-project-desc"
-          className="h-field-md border border-border rounded-md px-3 text-body"
-          placeholder="一句話描述此專案"
-        />
-      </div>
+      <Field>
+        <FieldLabel>專案名稱</FieldLabel>
+        <Input defaultValue="Q2 發布計畫" />
+      </Field>
+      <Field>
+        <FieldLabel>專案描述</FieldLabel>
+        <Input placeholder="一句話描述此專案" />
+      </Field>
       {/* 2026-07-14 Dim 68 修:原單一 AccordionItem 違反 accordion.spec.md「❌ 單一 item 不用
           Accordion」(單區塊該用 <details>,見 principles「單一項目不用 Accordion」)。補第二個
           可獨立收合的低頻設定段(type="multiple" 非互斥),成為合法多段收合場景。 */}
@@ -172,36 +166,24 @@ export const AdvancedOptions: Story = {
           <AccordionTrigger>進階選項</AccordionTrigger>
           <AccordionContent>
             <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-1">
-                <label htmlFor="adv-opt-project-id" className="text-body text-foreground">專案識別碼(選填)</label>
-                <input
-                  id="adv-opt-project-id"
-                  className="h-field-md border border-border rounded-md px-3 text-body font-mono"
-                  placeholder="例:Q2-RELEASE"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label htmlFor="adv-view-mode" className="text-body text-foreground">預設檢視模式</label>
-                <input
-                  id="adv-view-mode"
-                  className="h-field-md border border-border rounded-md px-3 text-body"
-                  defaultValue="看板"
-                />
-              </div>
+              <Field>
+                <FieldLabel>專案識別碼(選填)</FieldLabel>
+                <Input className="font-mono" placeholder="例:Q2-RELEASE" />
+              </Field>
+              <Field>
+                <FieldLabel>預設檢視模式</FieldLabel>
+                <Input defaultValue="看板" />
+              </Field>
             </div>
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="notifications">
           <AccordionTrigger>通知設定</AccordionTrigger>
           <AccordionContent>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="adv-notify-target" className="text-body text-foreground">狀態變更通知對象</label>
-              <input
-                id="adv-notify-target"
-                className="h-field-md border border-border rounded-md px-3 text-body"
-                placeholder="例:專案成員 + 關注者"
-              />
-            </div>
+            <Field>
+              <FieldLabel>狀態變更通知對象</FieldLabel>
+              <Input placeholder="例:專案成員 + 關注者" />
+            </Field>
           </AccordionContent>
         </AccordionItem>
       </Accordion>

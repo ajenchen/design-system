@@ -6,6 +6,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Select } from './select'
 import { Button } from '@/design-system/components/Button/button'
+import { Field, FieldLabel } from '@/design-system/components/Field/field'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
 
@@ -73,12 +74,12 @@ export const HugWidth: Story = {
     return (
       // 任務詳情右欄場景:label 上、hug 寬 select 下 — 框線互動與一般 field 完全相同,只有寬度依 value 收縮
       <div className="flex w-72 flex-col gap-[var(--layout-space-loose)]">
-        <div className="flex flex-col gap-1">{/* @layout-space-magic-ok: gap-1 = label↔control 4px 內距 demo */}
-          <span className="text-caption text-fg-secondary">Status</span>
+        <Field>
+          <FieldLabel>Status</FieldLabel>
           <Select width="hug" size="sm" options={statusOptions} value={status} onChange={setStatus} aria-label="Status(hug width demo)" />
-        </div>
-        <div className="flex flex-col gap-1">{/* @layout-space-magic-ok: gap-1 = label↔control 4px 內距 demo */}
-          <span className="text-caption text-fg-secondary">Priority</span>
+        </Field>
+        <Field>
+          <FieldLabel>Priority</FieldLabel>
           <Select
             width="hug"
             size="sm"
@@ -91,7 +92,7 @@ export const HugWidth: Story = {
             onChange={setPriority}
             aria-label="Priority(hug width demo)"
           />
-        </div>
+        </Field>
       </div>
     )
   },

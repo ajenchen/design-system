@@ -188,7 +188,7 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 ### 邊界案例(MVP 實作現況)
 
 - **單格事件 > 3**:只渲染前 3 筆,其餘**不進 DOM**(鍵盤 / SR 不可達),以「+N more」弱化計數提示(不可點擊,展開 popover 為後續增量)
-- **極長事件標題**:tile 單行 truncate,不換行不撐高 cell
+- **極長事件標題**:tile 單行 truncate,不換行不撐高 cell;實際截斷時 hover / focus 顯完整標題 tooltip(僅實際截斷才顯——rule owner `components/Tooltip/tooltip.spec.md:32`「截斷文字 → tooltip」,SSOT `patterns/element-anatomy/truncated-text.spec.md`;tile 是 interactive host → `useTruncated` 自組、trigger = tile 本體、量測內層文字 span;toolbar 月份標題同規則,消費 `<TruncatedText>`)
 - **跨月多日事件**:依日期範圍 filter,在每個涵蓋日各顯示一條(含 outside days 與翻月後的新月份)
 - **載入失敗 / 舊資料**:無內建 error 狀態(見上)——Calendar 照常渲染 consumer 當下傳入的 `events`,互動不自動禁用;是否 block 由 consumer 決定
 - **`view` 傳 `week` / `day`**:MVP 仍渲染月 grid;SegmentedControl 的週/日項 disabled(使用者無法切入),但受控 `value` 仍反映外部傳入值(`data-view` 同步)

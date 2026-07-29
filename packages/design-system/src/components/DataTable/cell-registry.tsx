@@ -148,20 +148,16 @@ function StringCell({ value, meta, mode, size, autoRowHeight, onCommit, onCancel
     // → cell 進 edit shrink)。改 CSS `field-sizing: content`(Chrome 123+ / FF 122+ /
     // Safari 17+)讓 textarea 自動 grow to content,匹配 view wrap 真實高度。
     // Fallback rows 仍保留給舊 browser(rows attr 在 field-sizing 支援時被覆蓋)。
-    const newlineRows = (v.match(/\n/g) || []).length + 1
-    const wrapRows = Math.ceil(v.length / 40)
-    const estimateRows = Math.min(10, Math.max(1, newlineRows, wrapRows))
     return (
       <Textarea
         autoFocus
         variant="naked"
         aria-label={ariaLabel}
         size={sizeForInput(size)}
-        rows={estimateRows}
+        // 2026-07-28:原本 field-sizing + rows 估算是本檔的呼叫端膠水,只有 cell 有、InlineEdit 沒有
+        // → 兩者 edit 高度漂移。已提升為 Textarea `autoSize` 能力,兩個語境共用同一份實作。
+        autoSize
         defaultValue={v}
-        // any-allow: CSS `field-sizing` 屬性 Chrome 123+/FF 122+/Safari 17+ 支援但 TypeScript lib.dom
-        // 尚未加 type;narrow 到 CSSProperties 仍需 cast,保留 single-site any 較 type aug 簡潔。
-        style={{ fieldSizing: 'content' } as React.CSSProperties}
         onChange={(e) => onDraft?.((e.target as HTMLTextAreaElement).value)}
         onBlur={(e) => onCommit?.((e.target as HTMLTextAreaElement).value)}
         // 多行:走 edit-in-place 鍵盤結算 SSOT(IME guard + Esc + Cmd/Ctrl+Enter commit;
