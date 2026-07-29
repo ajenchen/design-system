@@ -342,7 +342,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | privileged-change-adversarial-tests | `scripts/test-privileged-change-authorization.mjs` | `sha256:c403875c8eecdc371b5b02c244b9570cdfa3cb6470eacddffc9055e45a7e8898` |
 | privileged-change-schema | `infra/governance/schemas/privileged-change-authorization.schema.json` | `sha256:9f6ab967dcb1d367f88b176e283ccabc3de5e569e3e8bbb8f2bb6db36f5057f3` |
 | privileged-change-verifier | `scripts/verify-privileged-change.mjs` | `sha256:51a7e53907925be3fd18f79194b3cad5f13bd1d10f78c72d8615e1574d9f5288` |
-| privileged-trust-root-policy | `infra/governance/privileged-trust-roots.json` | `sha256:b76b84a5f460043733dae1a7b2b63f746a8c4d003c89cd0378dc407a6052453b` |
+| privileged-trust-root-policy | `infra/governance/privileged-trust-roots.json` | `sha256:cb56a0510e4c26b2eb1866a34d84b7df58f6664db4899c253be89315720e98e3` |
 | privileged-trust-root-schema | `infra/governance/schemas/privileged-trust-roots.schema.json` | `sha256:dba5fde0c21a8435d051f773c4a7030c3eef59a97b98ec92bd3b4bc66c8171d4` |
 | product-independent-review-launcher | `packages/design-system/ds-canonical/templates/product-launchers/independent-review.mjs` | `sha256:94a6c891efccf389dbc5cf9f6505b8b85bfc759fe500e81589d934fbf16dc9cc` |
 | product-seed-package-contract | `apps/template/package.json` | `sha256:efacb0ff0812e1809d39b113cd8c63495590a9df33b46eb6f5fd278816a1808e` |

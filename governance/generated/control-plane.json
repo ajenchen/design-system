@@ -3030,12 +3030,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b76b84a5f460043733dae1a7b2b63f746a8c4d003c89cd0378dc407a6052453b",
+      "hash": "sha256:cb56a0510e4c26b2eb1866a34d84b7df58f6664db4899c253be89315720e98e3",
       "id": "privileged-trust-root-policy",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/privileged-trust-roots.json",
-      "size": 1750,
+      "size": 2103,
       "type": "file"
     },
     {
