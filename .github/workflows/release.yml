@@ -553,17 +553,12 @@ jobs:
           # 同版不同位元組 = 外來 artifact,fail-closed。
           version="${RELEASE_TAG#v}"
           for tarball in "${tarballs[@]}"; do
-            name="$(tar -xOzf "$tarball" package/package.json | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).name')"
-            local_integrity="sha512-$(openssl dgst -sha512 -binary "$tarball" | openssl base64 -A)"
-            published_integrity="$(curl -fsS "https://registry.npmjs.org/${name/\//%2f}/${version}" 2>/dev/null | node -p 'try{JSON.parse(require("fs").readFileSync(0,"utf8")).dist.integrity||""}catch{""}' || true)"
-            if test -n "$published_integrity"; then
-              test "$published_integrity" = "$local_integrity" || {
-                echo "registry already holds ${name}@${version} with DIFFERENT bytes: refusing to continue"
-                exit 1
-              }
-              echo "skip ${name}@${version}: already published with identical integrity"
+            verdict="$(node scripts/release-published-integrity.mjs --tarball "$tarball" --version "$version")"
+            if test "$verdict" = "identical"; then
+              echo "skip ${tarball##*/}: already published with identical integrity"
               continue
             fi
+            test "$verdict" = "absent" || { echo "unexpected integrity verdict: ${verdict}"; exit 1; }
             echo "publishing ${tarball##*/}"
             npm publish "$tarball" --provenance --access public --tag latest
           done
