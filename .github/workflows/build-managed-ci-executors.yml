@@ -20,8 +20,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    env:
-      DOCKER_CONFIG: ${{ runner.temp }}/managed-ci-docker-config
     strategy:
       fail-fast: true
       matrix:
@@ -31,6 +29,12 @@ jobs:
           - model-broker
           - github-observer
     steps:
+      - name: Bind DOCKER_CONFIG to the runner-scoped temp directory
+        run: |
+          set -euo pipefail
+          test -d "$RUNNER_TEMP"
+          printf 'DOCKER_CONFIG=%s/managed-ci-docker-config\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
       - name: Checkout exact protected-main builder source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:

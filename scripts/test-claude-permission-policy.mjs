@@ -111,9 +111,11 @@ const ajv = new Ajv2020({ allErrors: true, strict: true })
 const validateBase = ajv.compile(baseSchema)
 assert.equal(validateBase(base), true, ajv.errorsText(validateBase.errors))
 const misplacedBase = structuredClone(base)
-delete misplacedBase.disableAutoMode
 misplacedBase.permissions.disableAutoMode = 'disable'
-assert.equal(validateBase(misplacedBase), false, 'base schema accepted permissions.disableAutoMode instead of the official top-level key')
+assert.equal(validateBase(misplacedBase), false, 'base schema accepted the retired permissions.disableAutoMode flag')
+const residualTopLevelBase = structuredClone(base)
+residualTopLevelBase.disableAutoMode = 'disable'
+assert.equal(validateBase(residualTopLevelBase), false, 'base schema accepted the retired top-level disableAutoMode flag')
 const topLevelDefaultBase = structuredClone(base)
 delete topLevelDefaultBase.permissions.defaultMode
 topLevelDefaultBase.defaultMode = 'acceptEdits'
@@ -217,7 +219,6 @@ const managedGovernance = materializeClaudeGovernanceSettings({
 const managedPermissions = managedGovernance.permissions
 const managedSettings = {
   ...managedProfile,
-  disableAutoMode: policy.disableAutoMode,
   permissions: managedPermissions,
   sandbox: managedGovernance.sandbox,
 }
@@ -263,7 +264,6 @@ assert.deepEqual(repositoryAdapter.sandbox, policy.sandbox)
   const productAdapter = {
     permissions: productGovernance.permissions,
     sandbox: productGovernance.sandbox,
-    disableAutoMode: policy.disableAutoMode,
     hooks: {},
   }
   const manifest = readJson('packages/design-system/ds-canonical/fork/manifest.json')
@@ -275,7 +275,7 @@ assert.deepEqual(repositoryAdapter.sandbox, policy.sandbox)
     assert.deepEqual(settings.permissions.deny, policy.permissions.deny, `${label} did not inherit fail-closed destructive controls`)
     assert.equal(Object.hasOwn(settings, 'defaultMode'), false, `${label} emitted obsolete top-level defaultMode`)
     assert.equal(Object.hasOwn(settings.permissions, 'disableAutoMode'), false, `${label} emitted obsolete permissions.disableAutoMode`)
-    assert.equal(settings.disableAutoMode, 'disable')
+    assert.equal(Object.hasOwn(settings, 'disableAutoMode'), false, `${label} emitted the retired disableAutoMode flag`)
     assert.equal(settings.permissions.defaultMode, 'acceptEdits')
     assert.equal(settings.permissions.disableBypassPermissionsMode, 'disable')
   }
@@ -353,14 +353,14 @@ assert.deepEqual(repositoryAdapter.sandbox, policy.sandbox)
     settings: {
       consumerOwned: { retained: true },
       permissions: { stale: true },
-      disableAutoMode: 'consumer-stale',
+      futureModeFlag: 'consumer-stale',
       eventHooks: { OldEvent: [{ hooks: [{ type: 'command', command: 'old' }] }] },
     },
     canonicalConfig: {
       description: 'locked future adapter',
       baseSetting: 'canonical',
       permissions: { providerSpecific: true },
-      disableAutoMode: 'future-provider-canonical',
+      futureModeFlag: 'future-provider-canonical',
       eventHooks: { PreToolUse: [{ hooks: [{ type: 'command', command: 'new' }] }] },
     },
     policy: validatedMultiPolicy.surfaces['future-merge'],
@@ -375,7 +375,7 @@ assert.deepEqual(repositoryAdapter.sandbox, policy.sandbox)
     description: 'locked future adapter',
     baseSetting: 'canonical',
     permissions: { providerSpecific: true },
-    disableAutoMode: 'future-provider-canonical',
+    futureModeFlag: 'future-provider-canonical',
   })
   const missingFuturePolicy = structuredClone(multiPolicy)
   delete missingFuturePolicy.surfaces['future-merge']

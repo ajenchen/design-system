@@ -324,7 +324,8 @@ export function mergeProviderHookSettings({ settings, canonicalConfig, policy, l
     merged.permissions.deny = nextDeny
     merged.permissions.defaultMode = canonicalPermissions.defaultMode
     merged.permissions.disableBypassPermissionsMode = canonicalPermissions.disableBypassPermissionsMode
-    merged.disableAutoMode = canonicalConfig.disableAutoMode
+    if (Object.hasOwn(canonicalConfig, 'disableAutoMode')) throw new Error(`${label} canonical permission base carries the retired disableAutoMode flag`)
+    delete merged.disableAutoMode
     delete merged.permissions.disableAutoMode
     delete merged.defaultMode
   } else if (policy.baseTemplate.engine === 'static-json-object-v1') {

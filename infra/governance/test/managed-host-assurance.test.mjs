@@ -1971,7 +1971,7 @@ test('templates bind exact release tags, absolute runtimes, first-launch bootstr
     assert.equal(claude.permissions.disableBypassPermissionsMode, 'disable')
     assert.equal(Object.hasOwn(claude.permissions, 'disableAutoMode'), false)
     assert.equal(Object.hasOwn(claude, 'defaultMode'), false)
-    assert.equal(claude.disableAutoMode, 'disable')
+    assert.equal(Object.hasOwn(claude, 'disableAutoMode'), false)
     assert.deepEqual(claude.permissions.allow, ['Edit'])
     assert.equal(claude.permissions.defaultMode, 'acceptEdits')
     assert.ok(claude.permissions.deny.includes('Bash(git reset *)'))

@@ -242,7 +242,6 @@ export function readClaudePermissionPolicy({ sourceRoot = DEFAULT_ROOT } = {}) {
     sha256: createHash('sha256').update(bytes).digest('hex'),
     dsAllow: Object.freeze(allow),
     dsDefaultMode: document.permissions.defaultMode,
-    disableAutoMode: document.disableAutoMode,
     sandbox: Object.freeze(cloneJson(sandbox)),
     permissions: Object.freeze({
       delegatedAllow: Object.freeze(delegatedAllow),
@@ -325,12 +324,11 @@ export function assertClaudePermissionMaterialization(value, policy, {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${label} must be an object`)
   const permissions = value.permissions
   if (!permissions || typeof permissions !== 'object' || Array.isArray(permissions)) throw new Error(`${label}.permissions must be an object`)
-  if (Object.hasOwn(value, 'defaultMode') || Object.hasOwn(permissions, 'disableAutoMode')) throw new Error(`${label} uses obsolete Claude permission-key placement`)
+  if (Object.hasOwn(value, 'defaultMode') || Object.hasOwn(value, 'disableAutoMode') || Object.hasOwn(permissions, 'disableAutoMode')) throw new Error(`${label} uses obsolete or retired Claude permission keys`)
   if (JSON.stringify(permissions.ask) !== JSON.stringify(policy.permissions.ask)) throw new Error(`${label}.permissions.ask differs from the canonical privileged ask policy`)
   const deny = uniqueStringRules(permissions.deny, `${label}.permissions.deny`)
   if (policy.permissions.deny.some((rule, index) => deny[index] !== rule)) throw new Error(`${label}.permissions.deny omits or reorders the canonical fail-closed policy`)
   if (permissions.disableBypassPermissionsMode !== policy.permissions.disableBypassPermissionsMode) throw new Error(`${label} permits bypassPermissions`)
-  if (value.disableAutoMode !== policy.disableAutoMode) throw new Error(`${label} permits auto mode`)
   if (permissions.defaultMode !== policy.dsDefaultMode) throw new Error(`${label}.permissions.defaultMode differs from the canonical engineering delegation`)
   const allow = uniqueStringRules(permissions.allow, `${label}.permissions.allow`)
   if (policy.permissions.delegatedAllow.some((rule) => !allow.includes(rule))

@@ -1950,7 +1950,6 @@ export function materializeManagedHostPolicy({ provider, release, compatibility,
     })
     policy.permissions = governance.permissions
     policy.sandbox = governance.sandbox
-    policy.disableAutoMode = permissionPolicy.disableAutoMode
     assertClaudePermissionMaterialization(policy, permissionPolicy, {
       label: 'Claude managed-host materialized settings',
       managedSettings: true,

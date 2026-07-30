@@ -2113,7 +2113,7 @@ for (const [providerId, surface] of mergeSurfaces) {
     }
   }
   const specializedBaseFields = baseTemplate.engine === 'claude-permission-policy-v1'
-    ? ['permissions', 'disableAutoMode']
+    ? ['permissions']
     : []
   for (const [key, value] of Object.entries(canonicalConfig || {})) {
     if ([materializer.hooksField, ...specializedBaseFields].includes(key)) continue
@@ -2134,7 +2134,8 @@ for (const [providerId, surface] of mergeSurfaces) {
       || permissionPolicy.retiredPermissionAllow.some((rule) => typeof rule !== 'string' || !/^Bash\(.+\)$/.test(rule))
       || !canonicalPermissions
       || !installedPermissions
-      || canonicalConfig.disableAutoMode !== settings?.disableAutoMode
+      || Object.hasOwn(canonicalConfig, 'disableAutoMode')
+      || Object.hasOwn(settings || {}, 'disableAutoMode')
       || canonicalPermissions.defaultMode !== installedPermissions.defaultMode
       || canonicalPermissions.disableBypassPermissionsMode !== installedPermissions.disableBypassPermissionsMode
       || !Array.isArray(installedPermissions.allow)

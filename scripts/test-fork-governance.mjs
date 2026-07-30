@@ -391,6 +391,7 @@ function buildSkelFixture(withOptOut) {
   // 既有 fork settings:user 自有「非治理」hook + 一個「舊版 launcher 註冊」(模擬 pre-update,測去重)
   writeFileSync(join(SKEL, '.claude/settings.json'), JSON.stringify({
     defaultMode: 'auto',
+    disableAutoMode: 'disable',
     permissions: {
       allow: [
         'Bash(npm install)',
@@ -467,7 +468,8 @@ const r1 = authorizedRefresh(SKEL)
   ].every((rule) => !(s.permissions?.ask || []).includes(rule))
   const canonicalAskApplied =
     JSON.stringify(s.permissions?.ask || []) === JSON.stringify(canonicalClaudeConfig.permissions?.ask || [])
-  const unsafeModesDisabled = s.disableAutoMode === canonicalClaudeConfig.disableAutoMode
+  const unsafeModesDisabled = !Object.hasOwn(s, 'disableAutoMode')
+    && !Object.hasOwn(canonicalClaudeConfig, 'disableAutoMode')
     && s.permissions?.defaultMode === canonicalClaudeConfig.permissions?.defaultMode
     && s.permissions?.disableBypassPermissionsMode === canonicalClaudeConfig.permissions?.disableBypassPermissionsMode
     && !Object.hasOwn(s.permissions || {}, 'disableAutoMode')

@@ -167,6 +167,5 @@
     "enableWeakerNetworkIsolation": false,
     "allowAppleEvents": false,
     "excludedCommands": []
-  },
-  "disableAutoMode": "disable"
+  }
 }
