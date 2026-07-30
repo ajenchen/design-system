@@ -255,7 +255,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "c6e0104fa4359b8f5c5924aa90a128cce4f3bc25e5a7c2bc816dc9e05b1b7cd9",
+      "sha256": "c75e340d681f6e99e0daeec359d4211155fbca11f075ff9ada1fd42f7e13f1ed",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -279,7 +279,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/governance-check.mjs",
-      "sha256": "39e14c8396ad1f3fd6d8819b6711657f1e6b5bbdbf51a95b8c9f0d48bcf8b83f",
+      "sha256": "363b6af5c1e9c87cc11a53bb9868cb17e591c64f5545a09dc66f66e86f70e66f",
       "source": "scripts/governance-check.mjs",
       "classification": null,
       "destination": null
@@ -383,7 +383,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/63061e05969667005020166ea2ae7df3c96663f7a928e7dd3eebc1471022df56.blob",
-      "sha256": "fe9fd1a2c786c0c4a7ea5d975906cceb3be651b32d16af7005ef618ef99ee267",
+      "sha256": "763c61964a4a971a664222e5dc0dd54564bdc9430b5a90f56021cca19d48596a",
       "source": "scripts/refresh-fork-launchers.mjs",
       "classification": null,
       "destination": "scripts/refresh-fork-launchers.mjs"
@@ -679,7 +679,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_code_quality.sh",
-      "sha256": "70a415fc8c8ee7676426a4f59c24352225ae77145b8cff7199bda32c0e6d70e9",
+      "sha256": "32b8e4d32426c0915c4afe2ad3d1e9a84a1de59549f4da68743457bebda17bfd",
       "source": "check_consumer_code_quality.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -751,7 +751,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_pattern_invariants.sh",
-      "sha256": "470bb101b61a6280670315b710b955be8fd4007f642ea1d98cbf3ade40ded326",
+      "sha256": "9618abe020720ccd7e797704d66516fc019579ae32750990642047f994355a7d",
       "source": "check_pattern_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -759,7 +759,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_sidebar_menu_button_implicit_wrap.sh",
-      "sha256": "ee890af41da3ca7981dd7dde3d86c635e507541b3a7c8ed131db39d26a5d971c",
+      "sha256": "0f435cfb643dd872c4019045b4351df05cdd62222df2bee9a70a69c6a8cdcbe8",
       "source": "check_sidebar_menu_button_implicit_wrap.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -911,7 +911,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "7078091c641e82d0ee54ac7c8b2a36e779783f219fdf49200e3b48e8589366b1",
+      "sha256": "1afe567c89ac7f01b23c3d70fbea3fa18a4f6aa5e337c6cd0c526f1f87695de3",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -919,7 +919,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "6c96f8b41cad6eb3db9a82580e74716efde346e08f13b0633085984873235926",
+      "sha256": "2a1fde1f9c3b3ef00054dae4775b3db5257cbd9548ca34699bdce85a122c448e",
       "source": null,
       "classification": null,
       "destination": null
@@ -935,7 +935,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/hook-config.json",
-      "sha256": "c9a5b3d00a475da24925f88f2b4b1b22b333e529cc120f1a2c8c7b7ac24e07cb",
+      "sha256": "65535dea9e21407ce70dfcd1f46b9c3d9556f992defdc01db11f7c94b37bd676",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:claude",
       "classification": null,
       "destination": null
@@ -1183,7 +1183,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "c6e0104fa4359b8f5c5924aa90a128cce4f3bc25e5a7c2bc816dc9e05b1b7cd9",
+      "sha256": "c75e340d681f6e99e0daeec359d4211155fbca11f075ff9ada1fd42f7e13f1ed",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null
@@ -1423,7 +1423,7 @@
     {
       "schemaVersion": 1,
       "file": "references/story-baseline-registry.json",
-      "sha256": "2d24dcee790d72742e91a4f49c2303da02c27fca6733131d235ea29551a80f5a",
+      "sha256": "cac3bbf5adff25302e78ac689c48204986c43ce41eb56161ccee1e14557ba56d",
       "source": "packages/design-system/ds-canonical/references/story-baseline-registry.json",
       "classification": null,
       "destination": null

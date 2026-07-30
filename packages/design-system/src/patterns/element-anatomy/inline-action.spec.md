@@ -45,7 +45,10 @@
 
 Inline action icon 色彩規則 **依 host 是否有自帶色彩分兩支**。共同精神:inline action 視覺融入 host — neutral host 的融入方式是「退到 muted」,colored host 的融入方式是「接收 host 色」。
 
-**預設（neutral host）**:預設 `fg-muted`,hover / active 時變 `foreground`
+**預設（neutral host）**:預設 `fg-muted`,hover / active 時變 `fg-secondary`(**往前一階,不跳階**;2026-07-30 user 拍板)
+- **階梯 root invariant**:`fg-muted`(neutral-7)→ `fg-secondary`(neutral-8)→ `foreground`(neutral-9)。弱化 icon 只走一階;rest 已是 `fg-secondary` 的整列 / 文字 hover(如 `chip.tsx` / TreeItem row)→ `foreground` 同樣是一階,合規
+- **世界級對照**:Fluent 2 `packages/tokens/src/alias/lightColor.ts`——`neutralForeground3Hover` 就等於 `neutralForeground2` 的值(grey[26]),`neutralForeground2Hover` = grey[14](https://github.com/microsoft/fluentui/blob/master/packages/tokens/src/alias/lightColor.ts);MUI `Chip.js` deleteIcon `alpha(text.primary, .26)` → hover `.4`(不到底,https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Chip/Chip.js)。Ant Design Tag close(`colorIcon` .45 → `colorTextHeading` .88)是唯一全跳,其 rest 值遠淡於本 DS `fg-muted`,travel 空間不對等,不採
+- **token 層 rule owner**:`tokens/color/semantic.css:53`「弱化 icon hover 後變 `fg-secondary`(neutral-8)」——本段與該行為同一 invariant 的兩個 home,禁互相漂移(機械強制:`check_pattern_invariants.sh` C.5)
 - 適用:Field endAction（Input clear button）/ TreeItem inline action / Menu inline action / DropdownMenu trigger inline action 等 **neutral 容器內**的 inline action
 - 語意:utility icon 是輔助操作,預設退到背景,hover 時提示可操作
 
@@ -59,9 +62,10 @@ Inline action icon 色彩規則 **依 host 是否有自帶色彩分兩支**。�
 **現況清單**:
 | Host | 規則分類 | Icon 色 |
 |------|---------|--------|
-| Field / Input / NumberInput / DatePicker / Combobox endAction | neutral host | `fg-muted` → `foreground` |
-| TreeItem / Menu / DropdownMenu inline action | neutral host | `fg-muted` → `foreground` |
-| Tag dismiss | colored host | 繼承 Tag 文字色 |
+| Field / Input / NumberInput / DatePicker / Combobox endAction | neutral host | `fg-muted` → `fg-secondary` |
+| TreeItem / Menu / DropdownMenu inline action | neutral host | `fg-muted` → `fg-secondary` |
+| Tag dismiss(**neutral subtle**) | **neutral host** | `fg-muted` → `fg-secondary`(2026-07-30 修正:`bg-secondary` 是中性宿主,依上方判斷法走預設分支;97e62a80 曾誤把全 Tag variant 歸 colored host)|
+| Tag dismiss(**有色 variant / solid**) | colored host | 繼承 Tag 文字色 |
 
 ### 尺寸對照
 
@@ -144,7 +148,7 @@ Q3. Row 多大?
 
 1. **Inline Action 不參與 action group 規則** — 沒有 Button 的 variant chrome / Separator 分群 / size 對稱要求;只是 host 內部 tap target
 2. **Button 必對齊 action group 規則** — 同 size、Separator 分群(詳 `patterns/action-bar.spec.md`)
-3. **Dismiss X(close)特殊弱化** — Inline Action default 已 `fg-muted`;Button 需加 `dismiss` prop 才 override(詳本 spec 下方 dismiss 節)
+3. **Dismiss X(close)特殊弱化** — Inline Action default 已 `fg-muted`(hover 一階 `fg-secondary`);Button 需加 `dismiss` prop 才 override(詳本 spec 下方 dismiss 節)
 
 #### Real case 表(所有 DS 用法一覽)
 
@@ -197,7 +201,7 @@ Row action 的 affordance 是「次要功能」,不是 primary CTA。Button chro
 
 ### Inline action 共用元件(`ItemInlineAction` / `ItemSuffix`)
 
-Canonical 實作於 `item-anatomy.tsx`,匯出 `ItemInlineAction` / `ItemSuffix`(從 `RowSizeContext` 自動查 icon size / hover bg / tooltip / aria-label / fg-muted → foreground 全內建)。
+Canonical 實作於 `item-anatomy.tsx`,匯出 `ItemInlineAction` / `ItemSuffix`(從 `RowSizeContext` 自動查 icon size / hover bg / tooltip / aria-label / fg-muted → `fg-secondary` 全內建)。
 
 ```tsx
 // 單一 action
@@ -237,7 +241,7 @@ Canonical 實作於 `item-anatomy.tsx`,匯出 `ItemInlineAction` / `ItemSuffix`(
 
 #### Colored host 例外(Tag 內 X)
 
-Tag solid / branded color variant(`red / blue / orange`)→ Tag 內 X **繼承 host 文字色**(非 fg-muted),hover bg 配色相。詳「Icon 色彩原則」段。
+Tag solid / branded color variant(`red / blue / orange`)→ Tag 內 X **繼承 host 文字色**(非 fg-muted),hover bg 配色相。**neutral subtle Tag 例外**:中性宿主 → 走預設 `fg-muted` → `fg-secondary`(2026-07-30)。詳「Icon 色彩原則」段。
 
 #### ❌ 禁止
 

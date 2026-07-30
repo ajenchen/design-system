@@ -34,10 +34,9 @@ import {
   ItemAvatar,
 } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
-import {
-  ProfileCard,
-  ProfileCardDefaultActions,
-} from '@/design-system/components/ProfileCard/profile-card'
+import { AccountMenu as AccountMenuPrimitive } from '@/design-system/components/AccountMenu/account-menu'
+// 帳號選單內容(AccountMenuItems)在本檔以 DropdownMenu primitives 直接組,
+// 供 header AccountMenu demo wrapper 與 footer UserFooter 共用(M17 單一 SSOT)。
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -87,30 +86,27 @@ export const WorkspaceBrand = () => (
   </div>
 )
 
-// ── UserFooter(對齊 sidebar.stories.tsx)────────────────────────────────
+// ── UserFooter(對齊 sidebar.stories.tsx;primary-sidebar 帳號入口 = footer 行開帳號選單)──
+// per app-shell.spec.md「帳號入口(Account entry)放置 SSOT」「入口開什麼」段:入口開
+// DropdownMenu 帳號選單,不掛 ProfileCard(看「別人」的人員卡)。選單內容與 AccountMenu
+// 共用 AccountMenuItems(同檔單一 SSOT,M17)。
 
 export const UserFooter = () => (
   <SidebarMenu>
     <SidebarMenuItem>
-      <SidebarMenuButton asChild>
-        <div role="group" aria-label="當前使用者">
-          <ItemAvatar
-            src="https://i.pravatar.cc/48?u=EMP-1001"
-            alt="Alan Chen"
-            color="blue"
-            hoverCard={
-              <ProfileCard
-                name="Alan Chen"
-                subtitle="Design｜D-0042"
-                avatar={{ src: 'https://i.pravatar.cc/80?u=EMP-1001', alt: 'Alan Chen', color: 'blue' }}
-                status="online"
-                actions={<ProfileCardDefaultActions />}
-              />
-            }
-          />
-          <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">Alan Chen</span>
-        </div>
-      </SidebarMenuButton>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <SidebarMenuButton asChild tooltip="Alan Chen">
+            <button type="button" aria-label="帳號與設定">
+              <ItemAvatar src="https://i.pravatar.cc/48?u=EMP-1001" alt="Alan Chen" color="blue" />
+              <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">Alan Chen</span>
+            </button>
+          </SidebarMenuButton>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" minWidth={280}>
+          <AccountMenuItems />
+        </DropdownMenuContent>
+      </DropdownMenu>
     </SidebarMenuItem>
   </SidebarMenu>
 )
@@ -187,39 +183,43 @@ export function AcmeSidebar({
   )
 }
 
+// ── AccountMenuItems(帳號選單內容;header AccountMenu + footer UserFooter 共用,M17 SSOT)──
+// DropdownMenuLabel 兩行 = 名字 + 身份資訊(text-caption)——per sidebar.spec.md
+// 「SidebarFooter user 區必單行」:身份資訊歸帳號選單頂部,不佔 footer 行第二行。
+function AccountMenuItems() {
+  return (
+    <>
+      <DropdownMenuGroup>
+        <DropdownMenuLabel>
+          <span className="block truncate">Alan Chen</span>
+          <span className="block truncate text-caption font-normal text-fg-secondary">Design｜D-0042｜EMP-1001</span>
+        </DropdownMenuLabel>
+        <DropdownMenuItem startIcon={User}>個人資料</DropdownMenuItem>
+        <DropdownMenuItem startIcon={Settings}>設定</DropdownMenuItem>
+      </DropdownMenuGroup>
+      <DropdownMenuGroup>
+        <DropdownMenuItem startIcon={LogOut}>登出</DropdownMenuItem>
+      </DropdownMenuGroup>
+    </>
+  )
+}
+
 // ── AccountMenu(primary-header mode 用,主標頭右側「個人設定入口」)──────────────
 // 2026-06-17 加 per user directive「primary-header 不該把個人設定放 sidebar footer,該放主標頭右側 avatar」。
-// 對齊 GitHub / Gmail / Slack / Atlassian:自己的帳號入口在 global top bar 右上 + 點開帳號選單
-// (非 ProfileCard——ProfileCard 是看「別人」的人員卡,預設動作 Chat/通話用在自己身上不對)。
-// 消費 SSOT:
-//   - <Avatar size={24}>(header-canonical.spec.md 4.5 chrome header avatar:brand + account 同 24px;
-//     sync with --chrome-header-avatar-size)。互動感由 focus-visible ring 提供(無 hover bg,chrome 輕量 entry),不放大到 field height。
-//   - <DropdownMenu>(個人資料 / 設定 / 登出;baseline = dropdown-menu.stories.tsx Groups)
-//   - 放置 / 邊距對稱 canonical → app-shell.spec.md「帳號入口(Account entry)放置 SSOT」段
+// 2026-07-30 F9 升 public:元件本體升級至 `components/AccountMenu/account-menu.tsx`(SSOT),
+// demo 只留綁 Alan Chen 示範資料的薄 wrapper 消費之,不再重複實作(視覺 / 行為 / 放置 canonical 不變;
+// 放置 SSOT 仍在 app-shell.spec.md「帳號入口(Account entry)放置 SSOT」段)。
 export function AccountMenu() {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          aria-label="帳號與設定"
-          className="flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-        >
-          {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical(brand + account 同尺寸); sync with --chrome-header-avatar-size */}
-          <Avatar size={24} src="https://i.pravatar.cc/48?u=EMP-1001" alt="Alan Chen" color="blue" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Alan Chen</DropdownMenuLabel>
-          <DropdownMenuItem startIcon={User}>個人資料</DropdownMenuItem>
-          <DropdownMenuItem startIcon={Settings}>設定</DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuGroup>
-          <DropdownMenuItem startIcon={LogOut}>登出</DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <AccountMenuPrimitive
+      user={{
+        name: 'Alan Chen',
+        avatar: { src: 'https://i.pravatar.cc/48?u=EMP-1001', color: 'blue' },
+      }}
+      onViewProfile={() => {}}
+      onOpenSettings={() => {}}
+      onSignOut={() => {}}
+    />
   )
 }
 

@@ -78,7 +78,7 @@
               "maxItems": 0
             },
             "allowAllUnixSockets": { "const": false },
-            "allowLocalBinding": { "const": false },
+            "allowLocalBinding": { "const": true },
             "allowMachLookup": {
               "type": "array",
               "maxItems": 0

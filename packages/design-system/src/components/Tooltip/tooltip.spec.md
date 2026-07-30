@@ -96,6 +96,10 @@ Tooltip 最大寬度 **280px**（見 `.tsx` 的 `max-w-[280px]`）——超過�
 - **貼近 viewport 邊**:Radix 自動翻邊 + `collisionPadding` 8px 呼吸距離(見「Edge collision」)
 - **空內容**:`TooltipContent` 的 `children` 為 `null` / `undefined` / `false` / 空字串時**不掛浮層**——不渲染帶 padding 的空 `role="tooltip"` 殼,trigger 原樣保留。Tooltip 是資訊補救機制(見「何時用」),沒有補充內容就不該出現。實作於 `tooltip.tsx` 的 `TooltipContent` 以空值 guard 提早 return null 落地
 
+## 受控開關(open / defaultOpen / onOpenChange)
+
+Radix idiom passthrough:`open`(受控)/ `defaultOpen`(非受控初始開啟)/ `onOpenChange`(開關回報)三 prop 語意與 Radix Root 一致。實作上 DS `Tooltip` wrapper **恆以受控模式掛 Radix Root**——`open` 未傳時由 wrapper internal state 鏡射 Radix 的 hover/focus/delay 決策(`defaultOpen` seed internal state),開/關**時機**仍由 Radix 決定(見「為何無 StateBehavior」)。理由:`truncated-text.tsx` 截斷抑制 canonical `open={isTruncated ? undefined : false}` 若直通 Radix 會反覆 controlled ↔ uncontrolled 切換(dev warning 噪音,consumer 實證)。`open` 與 `defaultOpen` 同傳時 `open` 勝(Radix idiom)。
+
 ## 禁止事項
 
 - ❌ 不要在已有完整 label 的按鈕上加 tooltip 重複同樣的文字

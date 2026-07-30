@@ -135,6 +135,37 @@ const pathEntryExists = (path) => {
     throw error
   }
 }
+const permissionDenied = (error) => error?.code === 'EPERM' || error?.code === 'EACCES'
+// Local provider sandboxes legitimately deny credential-class paths (for example ./.env.*) that
+// the repository may track as inert templates (.env.example). A denied metadata/content read is
+// evidence about the runtime, not about the repository: record it as a deterministic WARNING and
+// a distinct inventory row so a degraded local attestation can never collide with the fully
+// readable CI hard-gate attestation, instead of crashing the whole check.
+const sandboxDeniedPaths = new Set()
+const noteSandboxDenied = (path) => {
+  const rel = relative(repo, resolve(path)).replaceAll('\\', '/')
+  if (!sandboxDeniedPaths.has(rel)) {
+    sandboxDeniedPaths.add(rel)
+    add('GOV-SANDBOX-001', 'WARNING', `path is unreadable in this sandboxed runtime; full verification defers to the unsandboxed CI hard gate:${rel}`)
+  }
+  return rel
+}
+const lstatIfReadable = (path) => {
+  try { return lstatSync(path) }
+  catch (error) {
+    if (!permissionDenied(error)) throw error
+    noteSandboxDenied(path)
+    return null
+  }
+}
+const readdirIfReadable = (path, options) => {
+  try { return readdirSync(path, options) }
+  catch (error) {
+    if (!permissionDenied(error)) throw error
+    noteSandboxDenied(path)
+    return null
+  }
+}
 const unsafePathReports = new Set()
 const repositoryRootSafe = pathEntryExists(repo) && !lstatSync(repo).isSymbolicLink() && lstatSync(repo).isDirectory()
 if (pathEntryExists(join(repo, 'npm-shrinkwrap.json'))) {
@@ -267,10 +298,19 @@ const collectSourceFiles = (root) => {
   const ignoredFiles = new Set(['scripts/governance-check.mjs'])
   const visit = (dir) => {
     if (!pathEntryExists(dir)) return
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const entries = readdirIfReadable(dir, { withFileTypes: true })
+    if (!entries) return
+    for (const entry of entries) {
       const absolute = join(dir, entry.name)
-      const info = lstatSync(absolute)
       const rel = relative(root, absolute).replaceAll('\\', '/')
+      const info = lstatIfReadable(absolute)
+      if (!info) {
+        // A denied replay-class source would silently skip hook replay: that stays fail-closed.
+        if (/\.(?:[cm]?[jt]sx?|css|mdx?|html|json|sh|py)$/.test(entry.name)) {
+          add('GOV-CONTENT-002', 'BLOCKER', `replay-class source is unreadable in this runtime and cannot be attested:${rel}`)
+        }
+        continue
+      }
       if (info.isSymbolicLink()) {
         add('GOV-SYMLINK-001', 'BLOCKER', `repository symlink is outside the exhaustive replay contract: ${rel}`)
         continue
@@ -305,11 +345,19 @@ const repositoryInventory = (root) => {
   if (tracked?.status === 0) {
     for (const rel of tracked.stdout.toString('utf8').split('\0').filter(Boolean).sort()) {
       const absolute = join(root, rel)
-      if (!pathEntryExists(absolute)) {
-        add('GOV-INVENTORY-001', 'BLOCKER', `tracked repository path missing:${rel}`)
+      let info
+      try { info = lstatSync(absolute) }
+      catch (error) {
+        if (error?.code === 'ENOENT') {
+          add('GOV-INVENTORY-001', 'BLOCKER', `tracked repository path missing:${rel}`)
+        } else if (permissionDenied(error)) {
+          // Tracked but sandbox-denied (for example .env.example under the canonical ./.env.*
+          // credential deny): present per the Git index, so this is never GOV-INVENTORY-001.
+          noteSandboxDenied(absolute)
+          rows.push(`${rel}:sandbox-unreadable`)
+        } else throw error
         continue
       }
-      const info = lstatSync(absolute)
       if (info.isSymbolicLink()) {
         add('GOV-SYMLINK-001', 'BLOCKER', `tracked symlink cannot be governance-attested:${rel}`)
         rows.push(`${rel}:symlink:${readlinkSync(absolute)}`)
@@ -323,15 +371,27 @@ const repositoryInventory = (root) => {
         add('GOV-ALIAS-001', 'BLOCKER', `tracked repository file has a hard-link alias:${rel}`)
         continue
       }
-      rows.push(`${rel}:${(info.mode & 0o777).toString(8).padStart(4, '0')}:${fileSha(absolute)}`)
+      try {
+        rows.push(`${rel}:${(info.mode & 0o777).toString(8).padStart(4, '0')}:${fileSha(absolute)}`)
+      } catch (error) {
+        if (!permissionDenied(error)) throw error
+        noteSandboxDenied(absolute)
+        rows.push(`${rel}:sandbox-unreadable`)
+      }
     }
     return { basis: 'git-index', rows }
   }
   const visit = (dir) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const entries = readdirIfReadable(dir, { withFileTypes: true })
+    if (!entries) return
+    for (const entry of entries) {
       const absolute = join(dir, entry.name)
-      const info = lstatSync(absolute)
       const rel = relative(root, absolute).replaceAll('\\', '/')
+      const info = lstatIfReadable(absolute)
+      if (!info) {
+        rows.push(`${rel}:sandbox-unreadable`)
+        continue
+      }
       if (info.isSymbolicLink()) {
         add('GOV-SYMLINK-001', 'BLOCKER', `filesystem symlink cannot be governance-attested:${rel}`)
         rows.push(`${rel}:symlink:${readlinkSync(absolute)}`)
@@ -344,7 +404,13 @@ const repositoryInventory = (root) => {
           add('GOV-ALIAS-001', 'BLOCKER', `filesystem repository file has a hard-link alias:${rel}`)
           continue
         }
-        rows.push(`${rel}:${(info.mode & 0o777).toString(8).padStart(4, '0')}:${fileSha(absolute)}`)
+        try {
+          rows.push(`${rel}:${(info.mode & 0o777).toString(8).padStart(4, '0')}:${fileSha(absolute)}`)
+        } catch (error) {
+          if (!permissionDenied(error)) throw error
+          noteSandboxDenied(absolute)
+          rows.push(`${rel}:sandbox-unreadable`)
+        }
       } else add('GOV-SPECIAL-001', 'BLOCKER', `filesystem repository contains an unsupported entry:${rel}`)
     }
   }
@@ -2250,12 +2316,21 @@ if (bom?.payload?.sharedSkillCount !== managedSharedSkills.length) add('GOV-SKIL
 const lockedSharedSkills = (corpusLock?.entries || []).filter((entry) => entry.file.startsWith('skills/')).map((entry) => `${entry.file}:${entry.sha256}`).sort()
 if (bom?.payload?.sharedSkillsSha256 !== sha256(lockedSharedSkills.join('\n') + '\n')) add('GOV-SKILL-003', 'BLOCKER', 'shared skill aggregate digest != governance BOM')
 
+// Provider runtimes create local, git-ignored state directly below their discovery root:
+// Claude Code's .cc-writes write journal and the governance dispatcher's telemetry logs
+// (template/ds-product-template/.gitignore already declares .claude/logs/ as runtime noise;
+// both are empirically present in live consumer repos). They are not instruction/config/skill/
+// command/agent/hook discovery surfaces, and every executable/discovery class above stays
+// digest-closed, so skipping these exact direct children of the Claude root cannot open an
+// unsigned policy or execution surface. Symlink and plain-file impostors still fail below.
+const claudeRuntimeStateNames = new Set(['.cc-writes', 'logs'])
 for (const [providerRoot, plan] of providerRootPlans) {
   if (!pathEntryExists(providerRoot)) continue
   if (!repositoryPathIsSafe(providerRoot) || lstatSync(providerRoot).isSymbolicLink() || !lstatSync(providerRoot).isDirectory()) {
     add('GOV-EXTENSION-001', 'BLOCKER', `provider-native root must be a real directory:${relative(repo, providerRoot)}`)
     continue
   }
+  const providerRootIsClaude = relative(repo, providerRoot) === '.claude'
   const leaves = [...plan.files, ...plan.trees]
   const visit = (directory) => {
     for (const name of readdirSync(directory).sort()) {
@@ -2266,6 +2341,7 @@ for (const [providerRoot, plan] of providerRootPlans) {
         add('GOV-EXTENSION-001', 'BLOCKER', `provider-native surface contains an undeclared symlink:${rel}`)
         continue
       }
+      if (providerRootIsClaude && directory === providerRoot && info.isDirectory() && claudeRuntimeStateNames.has(name)) continue
       if (plan.files.has(absolute)) {
         if (!info.isFile()) add('GOV-EXTENSION-001', 'BLOCKER', `provider-native managed file has the wrong type:${rel}`)
         continue
@@ -2316,10 +2392,19 @@ const reservedDiscoveryLeaf = (rel, name) => (
   || Boolean(matchedDiscoveryConfig(rel, name))
 )
 const visitDiscoverySurfaces = (directory) => {
-  for (const name of readdirSync(directory).sort()) {
+  const names = readdirIfReadable(directory)
+  if (!names) return
+  for (const name of names.sort()) {
     const absolute = resolve(directory, name)
-    const info = lstatSync(absolute)
     const rel = relative(repo, absolute).replaceAll('\\', '/')
+    const info = lstatIfReadable(absolute)
+    if (!info) {
+      // Reserved provider discovery surfaces must stay verifiable; only non-reserved names degrade.
+      if (reservedProviderRootNames.has(name) || reservedDiscoveryLeaf(rel, name)) {
+        add('GOV-EXTENSION-001', 'BLOCKER', `provider discovery surface is unreadable and cannot be verified:${rel}`)
+      }
+      continue
+    }
     if (info.isSymbolicLink()) {
       if (reservedProviderRootNames.has(name) || reservedDiscoveryLeaf(rel, name)) {
         add('GOV-SYMLINK-001', 'BLOCKER', `provider discovery surface is a symbolic-link alias:${rel}`)
@@ -3021,6 +3106,7 @@ evidence.staticReplay = {
   requiredTools: [...requiredTools].sort(),
   nativeHooks: false,
 }
+evidence.sandboxDeniedPaths = [...sandboxDeniedPaths].sort()
 verifyReplaySourceCaptures()
 if (verifiedReplayCorpus) {
   try {
@@ -3047,6 +3133,7 @@ const attestationDigest = sha256(JSON.stringify({
   repositoryInventory: evidence.repositoryInventory,
   git: evidence.git,
   staticReplay: evidence.staticReplay,
+  sandboxDeniedPaths: evidence.sandboxDeniedPaths,
   blockerRuleIds: diagnostics.filter((item) => item.severity === 'BLOCKER').map((item) => item.ruleId).sort(),
 }))
 const report = { schemaVersion: 1, ok, role: bom?.role || null, hooksRequired: false, attestationDigest, evidence, diagnostics }

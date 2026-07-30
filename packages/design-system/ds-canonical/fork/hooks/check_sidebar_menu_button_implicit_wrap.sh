@@ -5,9 +5,10 @@
 #   SidebarMenuButton(sidebar.tsx L1036-1043)在沒 asChild 時把所有 children 塞進 <ItemLabel> 單一 span,
 #   Avatar + text-span 都在同 span 內 → 強迫垂直堆疊。
 #
-# Canonical:含 Avatar/ItemAvatar/icon prefix 的 SidebarMenuButton 必用 asChild + <div> wrap,
+# Canonical:含 Avatar/ItemAvatar/icon prefix 的 SidebarMenuButton 必用 asChild + 單一 wrapper
+#   (互動觸發行 <button type="button">,如 UserFooter 帳號選單;純展示 row <div role="group">),
 #   per sidebar.tsx:1025-1027 docblock:「asChild 的 consumer 自行放 icon + label」+ DS canonical
-#   sidebar.stories.tsx#UserFooter 範例 L76-104。
+#   sidebar.stories.tsx#UserFooter 範例。
 #
 # Detection:
 #   `<SidebarMenuButton ...>` (no asChild) ... `<ItemAvatar` or `<Avatar` inside → BLOCKER
@@ -81,7 +82,8 @@ cat >&2 <<'EOF'
 
   ❌ SidebarMenuButton id="..." 直接放 ItemAvatar + span 為 children
 
-  ✅ SidebarMenuButton asChild 包 div role="group" 內含 ItemAvatar + span data-sidebar="menu-label" min-w-0 flex-1 truncate
+  ✅ SidebarMenuButton asChild 包單一 wrapper 內含 ItemAvatar + span data-sidebar="menu-label" min-w-0 flex-1 truncate
+     (wrapper:互動觸發行用 <button type="button">,如 UserFooter 帳號選單;純展示 row 用 <div role="group">)
 
 Or use startIcon prop(自動 layout,不 wrap):
   ✅ SidebarMenuButton startIcon={SomeLucideIcon} 直接 children 為純文字
@@ -90,7 +92,7 @@ Bypass(極罕見):GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP=1 env var(audit-log
 
 Citation:
   - packages/design-system/src/components/Sidebar/sidebar.tsx:1025-1043(asChild docblock)
-  - packages/design-system/src/components/Sidebar/sidebar.stories.tsx UserFooter L76-104(canonical)
+  - packages/design-system/src/components/Sidebar/sidebar.stories.tsx UserFooter(canonical;帳號選單觸發行)
 EOF
 # 2026-05-31:exit 0 → exit 2(folded-hook-audit:原宣稱 BLOCKER 但 exit 0 = 假 enforcement;
 # SidebarMenuButton implicit-wrap 是 SSOT canonical,verified clean on 現有 sidebar code + 有 env escape)。

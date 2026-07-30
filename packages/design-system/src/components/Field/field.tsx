@@ -437,6 +437,7 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
                 <button
                   type="button"
                   aria-label={info}
+                  // 弱化 icon hover 一階(inline-action.spec.md「Icon 色彩」;2026-07-30 前全 DS 唯一合規處)
                   className="inline-flex items-center text-fg-muted hover:text-fg-secondary bg-transparent border-0 p-0 cursor-pointer"
                 >
                   <InfoIcon size={16} aria-hidden />

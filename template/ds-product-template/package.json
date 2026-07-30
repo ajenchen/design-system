@@ -28,8 +28,8 @@
     "audit:a11y": "node scripts/audit-consumer-a11y.mjs"
   },
   "dependencies": {
-    "@qijenchen/design-system": "0.1.0-beta.96",
-    "@qijenchen/storybook-config": "0.1.0-beta.96",
+    "@qijenchen/design-system": "0.1.0-beta.97",
+    "@qijenchen/storybook-config": "0.1.0-beta.97",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -48,7 +48,7 @@
     "storybook": "8.6.18",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0",
-    "vite": "7.3.6"
+    "vite": "6.4.3"
   },
   "overrides": {
     "@storybook/addon-actions": {

@@ -26,6 +26,8 @@ Icon?
 .claude/settings.local.json
 # fork 治理 dispatcher/hook 跑時生的 telemetry log = runtime noise,非 deliverable(雲端真機測 2026-06-17 證實會生)
 .claude/logs/
+# Claude Code write-journal(runtime state;governance-check runtime-state skip 已對應)
+.claude/.cc-writes/
 
 # Temp
 tmp/

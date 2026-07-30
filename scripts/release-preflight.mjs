@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// @preflight-transition(from-revision:2 from:0de935282c46790db59fcb87f4cd385eaa81264be3f01ef7add2cf47d8c816f8 to:8e7374b74c1bc200192ac1eab802681fc6481ca8f344976bd419bf7b06fab57f audit-ref:png-bounded-de-overengineering-2026-07-28 reason:retire-16-duplicate-and-enterprise-only-preflight-gates-covered-once-by-registered-all-harness)
+// @preflight-transition(from-revision:3 from:8e7374b74c1bc200192ac1eab802681fc6481ca8f344976bd419bf7b06fab57f to:35fcf07e69c845cde13576166d28ea977cfbd9a2b1ac5a99f9dc5f3c8b7ba4c7 audit-ref:wm-findings-f1-w2-render-gate-2026-07-30 reason:add-header-tabsslot-w2-render-contract-gate-after-build-storybook)
 // release-preflight.mjs — 單一指令跑本機可重播的 release gate，並以 live GitHub policy
 // readback 收口；npm/OIDC/environment/independent signed finalizer 等外部 trust 仍只由 release.yml 的
 // protected trust-preflight 與 completion-readiness 證明，不宣稱本機與整個 release workflow 1:1。
@@ -456,6 +456,9 @@ run(
   { cwd: join(ROOT, 'apps/template') },
 )
 run('build-storybook', 'npm run --silent build-storybook')
+// W2 render-level contract(2026-07-30 F1):storybook-static 熱的,量 header tabsSlot 三種
+// overflow 模式的 tablist computed padding = resolved --layout-space-loose + 第一 tab rect 對齊。
+run('header-tabsSlot W2 contract(3 overflow modes,paddingLeft = resolved loose)', 'node scripts/header-tabs-slot-invariants.mjs')
 // FULL story runtime smoke == release.yml smoke-shard job(被 `needs:` 硬 gate)。這是唯一能攔
 // SizeMatrix 那類 {var}-undefined / runtime crash 的 gate;build-storybook 是 compile-time、dogfood
 // 只 render 2 個 component,都攔不到。漏此道 = preflight marker 綠但 CI smoke 仍會紅(2026-06-02 audit

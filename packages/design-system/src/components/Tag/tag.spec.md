@@ -168,11 +168,12 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 
 ### Dismiss 行為（Inline Action 客製）
 
-Dismiss 是 Inline Action，但 icon 色繼承 Tag 文字色（非 `fg-muted`），因為宿主有色彩：
+Dismiss 是 Inline Action，icon 色**依宿主是否有色彩分兩支**(判斷法 SSOT → `inline-action.spec.md`「Icon 色彩」)：
 
 | 模式 | Icon 色 | Hover 背景 | Active 背景 |
 |---|---|---|---|
-| subtle | 繼承 Tag 文字色 | `--neutral-hover` | `--neutral-active` |
+| **neutral subtle**(預設) | `fg-muted` → hover `fg-secondary`(中性宿主走 inline-action 預設分支,**不** override primitive;2026-07-30 user 拍板) | `--neutral-hover` | `--neutral-active` |
+| 有色 subtle(categorical step-1 淺底) | 繼承 Tag 文字色 | `--neutral-hover` | `--neutral-active` |
 | solid（有色） | 繼承 Tag 文字色 | `--{hue}-hover`（如 `--blue-hover`） | `--{hue}-active` |
 | solid neutral | `--inverse-fg` | `--inverse-neutral-hover` | `--inverse-neutral-active` |
 
@@ -235,7 +236,7 @@ Inline Action 的其他規則（尺寸、hover 背景 pattern）不變。
 
 ## Dismiss（Inline Action）
 
-傳入 `onRemove` callback 時，Tag 自動渲染 remove 按鈕，消費端不需自行建構或知道 inline action 尺寸規格。尺寸 / 互動規則 SSOT 見 `../../patterns/element-anatomy/inline-action.spec.md`（含 neutral host vs colored host 兩支規則；Tag 屬 colored host——dismiss icon 繼承 Tag 文字色而非 `fg-muted`）；每 variant 的 icon 色 + hover 背景見上「Dismiss 行為（Inline Action 客製）」段。
+傳入 `onRemove` callback 時，Tag 自動渲染 remove 按鈕，消費端不需自行建構或知道 inline action 尺寸規格。尺寸 / 互動規則 SSOT 見 `../../patterns/element-anatomy/inline-action.spec.md`（含 neutral host vs colored host 兩支規則；**Tag 有色 / solid variant 屬 colored host**——dismiss icon 繼承 Tag 文字色；**neutral subtle Tag 屬 neutral host**——走預設 `fg-muted` → hover `fg-secondary`，2026-07-30 修正）；每 variant 的 icon 色 + hover 背景見上「Dismiss 行為（Inline Action 客製）」段。
 
 | Tag size | Icon | Hover 背景 | 上下呼吸空間 |
 |---|---|---|---|

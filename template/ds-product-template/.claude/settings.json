@@ -90,7 +90,7 @@
       "deniedDomains": [],
       "allowUnixSockets": [],
       "allowAllUnixSockets": false,
-      "allowLocalBinding": false,
+      "allowLocalBinding": true,
       "allowMachLookup": []
     },
     "filesystem": {
@@ -257,10 +257,6 @@
         },
         {
           "name": "SIGSTORE_ID_TOKEN",
-          "mode": "deny"
-        },
-        {
-          "name": "SSH_AUTH_SOCK",
           "mode": "deny"
         },
         {

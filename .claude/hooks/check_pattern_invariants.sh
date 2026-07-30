@@ -6,6 +6,7 @@
 #   C.2 inline-action canonical gap(原 check_inline_action_canonical_gap,P1 WARN context)
 #   C.3 primitive wrapper padding(原 check_primitive_wrapper_padding,P0 BLOCK exit 2)
 #   C.4 row slot handcraft(原 check_row_slot_handcraft,P0 BLOCK exit 2)
+#   C.5 弱化 icon hover 階梯(2026-07-30 user 拍板,P0 BLOCK exit 2)
 #
 # Why merge:皆 element-anatomy / overlay-surface SSOT 消費紀律 invariant,共用 INPUT
 # parsing + tsx filter,散裝是 M17 + Anthropic ≤ 15 hook best-practice 偏離。
@@ -17,6 +18,7 @@
 #   C.2: `// @inline-action-gap-allow: <reason>`(any line)
 #   C.3: `// @primitive-padding-allow: <reason>`(檔案前 5 行)
 #   C.4: `// @row-slot-handcraft-allow: <reason>`(any line)
+#   C.5: `// @hover-ramp-allow: <reason>`(any line)
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
@@ -171,6 +173,43 @@ EOF
         fi
         ;;
     esac
+    ;;
+esac
+
+
+# ── C.5 弱化 icon hover 階梯(P0 BLOCK exit 2;2026-07-30 user 拍板)─────────────
+# Root invariant:hover 往前一階,不跳階。rest \`text-fg-muted\`(neutral-7)的弱化 icon
+# hover 必 \`text-fg-secondary\`(neutral-8),不得直接跳 \`text-foreground\`(neutral-9)。
+# rule owner = inline-action.spec.md「Icon 色彩」段 + tokens/color/semantic.css:53。
+# 世界級:Fluent 2 neutralForeground3Hover === neutralForeground2 / MUI Chip deleteIcon .26→.4。
+# 錨例:2026-04-08 97e62a80 為修「colored Tag 上 fg-muted 不連貫」而 unified 全 variant 繼承文字色,
+# 連中性宿主一起改且未經 user 拍板;primitive 本身也一直跳兩階,四個月無機械防線。
+# rest 已是 fg-secondary 的整列/文字 hover(→ foreground)本身就是一階,不在射程內。
+case "$FILE_PATH" in
+  *components/*.tsx|*patterns/*.tsx|*.css)
+    if ! grep -q '@hover-ramp-allow' <<<"$NEW_CONTENT"; then
+      SKIP_RAMP=$(grep -m 3 -nE 'text-fg-muted[^"'"'"'\`]*hover:text-foreground|hover:text-foreground[^"'"'"'\`]*text-fg-muted' <<<"$NEW_CONTENT" || true)
+      if [ -n "$SKIP_RAMP" ]; then
+        cat >&2 <<EOF
+
+┄┄┄ C.5 check_pattern_invariants — 弱化 icon hover 跳階 BLOCK ┄┄┄
+
+[P0] ${FILE_PATH}
+rest \`text-fg-muted\` 的弱化 icon 直接 hover 到 \`text-foreground\`(跳兩階):
+${SKIP_RAMP}
+
+❌ inline-action.spec.md「Icon 色彩」+ tokens/color/semantic.css:53:
+   弱化 icon hover 後變 \`fg-secondary\`(neutral-8),不是 \`foreground\`(neutral-9)。
+   世界級對照:Fluent 2 neutralForeground3Hover = neutralForeground2 / MUI Chip deleteIcon .26→.4。
+
+修法:\`hover:text-foreground\` → \`hover:text-fg-secondary\`(active 同步);
+      優先直接消費 \`ItemInlineActionButton\`(primitive 已內建正確階梯)而非手刻。
+      真有理由跳階 → 加 \`// @hover-ramp-allow: <rationale>\` 行豁免。
+
+EOF
+        exit 2
+      fi
+    fi
     ;;
 esac
 

@@ -33,6 +33,12 @@ import { ICON_SIZE, AVATAR_SIZE, ItemContent, itemPrefixAlignVariants, ROW_PADDI
 
 const CHECKBOX_SIZE: Record<string, 'sm' | 'md' | 'lg'> = { sm: 'sm', md: 'md', lg: 'lg' }
 
+// inert 傳法依 React 主版本(peer range >=18):React 18 視 inert 為 unknown attr——boolean true
+// 會被丟棄(non-boolean attribute warning,attr 不落 DOM),必須傳空字串;React 19 起 inert 是
+// 內建 boolean prop——空字串反觸發 runtime warning 且視為 false(a11y 靜默失效)。runtime 判定
+// 一次,兩版皆真正落 inert attr(WM patch-package 吸收 2026-07-30;WM React 19 實證空字串失效)。
+const INERT_SPREAD = (Number.parseInt(React.version, 10) >= 19 ? { inert: true } : { inert: '' }) as object
+
 // ── Item variants ──
 const menuItemVariants = cva(
   [
@@ -242,14 +248,15 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
               // violation;tabIndex=-1 不夠(axe-core no-focusable-content 對 tabindex<0 仍回
               // violation,僅 messageKey 換 notHidden)。aria-hidden 移出 AT tree(消 SR 內外雙重
               // checkbox 宣告)+ inert 移除 focusability(axe focusDisabled 認 inert → clean pass)。
-              // inert:React 18 無 typing(React 19 才內建),以 spread cast 傳字串 attr。
+              // inert:React 18/19 傳法不同(18 要空字串、19 要 boolean)→ 消費 module scope
+              // INERT_SPREAD 的 runtime 版本判定,見該處註解。
               <Checkbox
                 size={CHECKBOX_SIZE[sizeKey]}
                 checked={checked === true ? true : checked === 'indeterminate' ? 'indeterminate' : false}
                 disabled={disabled}
                 tabIndex={-1}
                 aria-hidden
-                {...({ inert: '' } as object)}
+                {...INERT_SPREAD}
                 className="pointer-events-none"
               />
             )}

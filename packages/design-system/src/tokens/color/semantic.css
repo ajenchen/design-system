@@ -50,7 +50,9 @@
    │  --fg-disabled     disabled 文字（neutral-6）                       │
    │                                                                     │
    │  文字色一律使用 neutral alpha，透明度疊加在任何背景皆可維持對比      │
-   │  弱化 icon hover 後變 fg-secondary（neutral-8）                     │
+   │  弱化 icon hover 後變 fg-secondary（neutral-8）— 往前一階不跳階      │
+   │    rule owner 對偶:patterns/element-anatomy/inline-action.spec.md   │
+   │    「Icon 色彩」段;機械強制 check_pattern_invariants.sh C.5         │
    └─────────────────────────────────────────────────────────────────────┘
 
    ┌─ 互動狀態（引用色盤 step）─────────────────────────────────────────────┐

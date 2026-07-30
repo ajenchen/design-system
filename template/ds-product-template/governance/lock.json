@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "role": "template-consumer",
   "release": {
-    "designSystem": "0.1.0-beta.96",
-    "storybookConfig": "0.1.0-beta.96"
+    "designSystem": "0.1.0-beta.97",
+    "storybookConfig": "0.1.0-beta.97"
   },
   "upgradeTrust": {
     "schemaVersion": 1,
@@ -42,23 +42,23 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "7921962f10b5ff8932e2f3355365e8164d4067a1de1441bb3169b9fb2a1cb991",
+    "forkCorpusLockSha256": "9cb7411a875aadce01283484f03d3392b0e2ed9c0f39b2ca374ab4a4f5d7dfbf",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
-    "providerLifecycleSha256": "cd55290bdf2cdb728b6a2b70b3a5a3e8bae7d9e1a2bd91429e3b0bbc8deb7589",
+    "providerLifecycleSha256": "f55d2ed9e84b15f4b843120b03f1a7285bebad659f52fac24dc7daede8c5464a",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "3fca4ba4094e855412a22308e13f2b5f91dcfeb009512eb8318b3bd1bace8d9a",
     "commonInstructionSha256": "7e58a94ded69eeccf00422dd98ef3672be9c3b40b0cc96ff3bd0dc2f6ed5eda6",
     "providerArtifactDigests": {
       "claude": {
         "instructionSha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
-        "hookSha256": "c9a5b3d00a475da24925f88f2b4b1b22b333e529cc120f1a2c8c7b7ac24e07cb",
+        "hookSha256": "65535dea9e21407ce70dfcd1f46b9c3d9556f992defdc01db11f7c94b37bd676",
         "skillsSha256": "163e473a872d5fa11db9ba7df27f9d316a3c20f89d1ea1cbd002e5f9ada92321",
         "treeDigests": {}
       },
       "codex": {
         "instructionSha256": "7e58a94ded69eeccf00422dd98ef3672be9c3b40b0cc96ff3bd0dc2f6ed5eda6",
-        "hookSha256": "c6e0104fa4359b8f5c5924aa90a128cce4f3bc25e5a7c2bc816dc9e05b1b7cd9",
+        "hookSha256": "c75e340d681f6e99e0daeec359d4211155fbca11f075ff9ada1fd42f7e13f1ed",
         "skillsSha256": "b80eadd9559d29a50bb7c59ca5f431077174135de79081bbc716cdf64b25bee7",
         "treeDigests": {}
       },
@@ -70,9 +70,9 @@
       }
     },
     "mergeSurfaceDigests": {
-      "claude": "c9a5b3d00a475da24925f88f2b4b1b22b333e529cc120f1a2c8c7b7ac24e07cb"
+      "claude": "65535dea9e21407ce70dfcd1f46b9c3d9556f992defdc01db11f7c94b37bd676"
     },
-    "governanceCheckSha256": "39e14c8396ad1f3fd6d8819b6711657f1e6b5bbdbf51a95b8c9f0d48bcf8b83f",
+    "governanceCheckSha256": "363b6af5c1e9c87cc11a53bb9868cb17e591c64f5545a09dc66f66e86f70e66f",
     "utilityRegistrySha256": "310f92cc9aa57880d8f81464ac4191907bda9c9af31847a450497e6a9f97dce3",
     "sharedSkillsSha256": "138d3bec5497e8109c47788c181f7d2ee3c856f5a84b696eb9364b73ba647bf4",
     "sharedSkillCount": 11,
@@ -117,7 +117,7 @@
       "scripts/lib/worktree-fingerprint.mjs": "70a8bdbceade964d009f6a46c9e57a93bc9fd58c28971ea14ad1b5ffeaaf7250",
       "scripts/lint-ds-internal-imports.mjs": "86edd952fb5c3871896515440693abeb08c1d1da9f887fa073b9ddda1363f572",
       "scripts/product-template-scaffold-lock.mjs": "9134dabf11af7a2445a6a026fc23201e8aba3ef5aeb7da1d2159e92956dd32d2",
-      "scripts/refresh-fork-launchers.mjs": "fe9fd1a2c786c0c4a7ea5d975906cceb3be651b32d16af7005ef618ef99ee267",
+      "scripts/refresh-fork-launchers.mjs": "763c61964a4a971a664222e5dc0dd54564bdc9430b5a90f56021cca19d48596a",
       "scripts/release-bom-contract.mjs": "75d736f86c7f695dc88a1982d547998d510e8050c4847abe387227b6662b87c2",
       "scripts/schemas/product-template-scaffold-lock.schema.json": "1318af59f12546b3cda059a1d94923d9a969bef4c5a476ebb46e42f8c853d19a",
       "scripts/schemas/release-bom.schema.json": "6969482588a25533dc1896be63c3c9629aced1cbeb745b99822db764682dc4a4",

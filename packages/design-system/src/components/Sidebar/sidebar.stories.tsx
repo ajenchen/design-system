@@ -5,6 +5,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import {
   LayoutDashboard, Inbox, Users, Settings, Bell,
   Folder, FileText, FileCode, Plus, MoreVertical,
+  User, LogOut,
 } from 'lucide-react'
 import {
   SidebarProvider,
@@ -23,7 +24,14 @@ import {
 import { TreeView, TreeItem } from '@/design-system/components/TreeView/tree-view'
 import { ItemAvatar, ItemLabel } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
-import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuGroup,
+} from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 
 const meta: Meta = {
@@ -62,53 +70,52 @@ const WorkspaceBrand = () => (
 )
 
 /**
- * User footer——用 SidebarMenu 結構,每個 footer 項目是一個 SidebarMenuButton。
- * 未來可加更多選項(Settings / Help / Logout 等),全部共用同一套 item-layout。
+ * User footer——帳號入口(當前使用者)。整行 = 帳號選單(DropdownMenu)觸發點,
+ * 點開「個人資料 / 設定 / 登出」。Rule owner = `app-shell.spec.md`
+ * 「帳號入口(Account entry)放置 SSOT」:primary-sidebar mode 帳號家 = SidebarFooter,
+ * 入口開**帳號選單**、不是 ProfileCard——ProfileCard 是看「別人」的人員卡
+ * (預設動作 Chat / 通話,用在自己身上不對);職稱 / 工號等身份資訊歸
+ * 帳號選單頂部 DropdownMenuLabel 第二行(text-caption)。
  *
  * **Avatar 尺寸遵守 item-layout.spec 的預設**:
  * 無 description → inline 模式 24px @ md(20/24/24 for sm/md/lg)
  * **不要為了跟 icon 對齊而把 avatar 改小**——不同 prefix 類型(icon 16 / avatar 24)
  * 的 label x 位置略有差異是可接受的,每個 prefix 反映自己的視覺重量(詳見 spec)。
- *
- * asChild + h-[1lh] 容器強制 avatar 對齊第一行文字中線。
  */
-// a11y(2026-04-25 nested-interactive fix):user footer 用 <div role='group'>,避免
-// 外層 button + 內層 Avatar hoverCard focusable trigger 構成 nested-interactive。
-// Avatar hoverCard 本身已是 keyboard accessible 入口(Tab 直接到 Avatar → 開 ProfileCard
-// 取得 profile actions)。世界級 Slack / Linear user footer 亦 row 非 button,靠
-// inner avatar / menu-button 明確 disclosure。
+// a11y(2026-07-30 帳號選單 rewrite;取代 2026-04-25 <div role='group'> + Avatar hoverCard 結構):
+// DropdownMenuTrigger asChild → SidebarMenuButton asChild → 單一 <button type="button">
+// = 整行唯一 interactive element,無 nested-interactive;aria-expanded / keyboard 由 Radix DropdownMenu 提供。
 // @canonical-pattern: sidebar-menu-button-with-avatar
-// Consumer 抄此 pattern 用於 SidebarMenuButton 含 Avatar prefix 時必走 asChild + <div role="group"> wrap
+// Consumer 抄此 pattern 用於 SidebarMenuButton 含 Avatar prefix 時必走 asChild + <button type="button"> wrap
 // + data-sidebar="menu-label" min-w-0 flex-1 truncate。不走會被 SidebarMenuButton 隱式 wrap 進
 // ItemLabel 致 Avatar+text 垂直 stack(2026-05-27 user 抓的 bug)。
+// 選單 baseline = dropdown-menu.stories.tsx Groups(DropdownMenuLabel + DropdownMenuGroup 分組)。
 const UserFooter = () => (
   <SidebarMenu>
     <SidebarMenuItem>
-      <SidebarMenuButton asChild>
-        <div role="group" aria-label="當前使用者">
-          <ItemAvatar
-            src="https://i.pravatar.cc/48?u=EMP-1001"
-            alt="Alan Chen"
-            color="blue"
-            hoverCard={
-              <ProfileCard
-                name="Alan Chen"
-                subtitle="Design｜D-0042｜EMP-1001"
-                avatar={{ src: 'https://i.pravatar.cc/80?u=EMP-1001', alt: 'Alan Chen', color: 'blue' }}
-                status="online"
-                statusMessage="Out of Office: Back on Monday!"
-                actions={<ProfileCardDefaultActions />}
-                fields={[
-                  { label: 'ID', value: 'YHANAX' },
-                  { label: 'Employee number', value: '1234567' },
-                ]}
-                onViewMore={() => {}}
-              />
-            }
-          />
-          <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">Alan Chen</span>
-        </div>
-      </SidebarMenuButton>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <SidebarMenuButton asChild tooltip="Alan Chen">
+            <button type="button" aria-label="帳號與設定">
+              <ItemAvatar src="https://i.pravatar.cc/48?u=EMP-1001" alt="Alan Chen" color="blue" />
+              <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">Alan Chen</span>
+            </button>
+          </SidebarMenuButton>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" minWidth={280}>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>
+              <span className="block truncate">Alan Chen</span>
+              <span className="block truncate text-caption font-normal text-fg-secondary">Design｜D-0042｜EMP-1001</span>
+            </DropdownMenuLabel>
+            <DropdownMenuItem startIcon={User}>個人資料</DropdownMenuItem>
+            <DropdownMenuItem startIcon={Settings}>設定</DropdownMenuItem>
+          </DropdownMenuGroup>
+          <DropdownMenuGroup>
+            <DropdownMenuItem startIcon={LogOut}>登出</DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </SidebarMenuItem>
   </SidebarMenu>
 )

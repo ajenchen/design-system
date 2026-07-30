@@ -4,12 +4,18 @@ import { cn } from '@/lib/utils'
 /**
  * Header 家族 tabsSlot wrapper className(W2 SSOT,header-canonical.spec.md Rule W2)。
  * 兩家族(ChromeHeader chrome / SurfaceHeader overlay)的 column-mode tabsSlot row 共用此契約:
- * TabsList `w-full`(border-b 延展全寬 = W1 一條線)+ 內 `px-loose` inset triggers(對齊 header content)。
+ * 對 `[data-slot=tabs-list]`(tabs.tsx 三種 overflow 模式的 role=tablist 元素皆自標,對齊
+ * shadcn v4 data-slot idiom)注入內 `px-loose` inset triggers(對齊 header content = W2)。
+ * 寬度不在此注入 — TabsList 各模式自帶(none `w-full` border-b 延展全寬 = W1 一條線;
+ * scroll/menu `min-w-full` 讓 border 隨溢出內容成長,blanket `w-full` 會把 border 截在可視寬)。
+ * v4(2026-07-30 regression fix):beta.86 inlineAction overlay(fc2a3a5c)包 `<div class="relative">`
+ * 後,原 `[&>[role=tablist]]` direct-child 結構選擇器全滅(px-loose 靜默消失,且 scroll/menu 深度
+ * 本就 >1 從未命中)→ 改 data-slot attribute contract + descendant selector,免疫 DOM 深度重構。
  * SSOT 在此(header-canonical = 跨家族 W-rule owner);overlay-surface.tsx SurfaceHeader 消費同一 const,
  * 禁各自 hardcode(原兩處逐字重複,2026-06-08 收斂為單一 SSOT,per user「照你建議做到完美…不改A壞B」)。
  */
 export const HEADER_TABS_SLOT_WRAPPER_CLASS =
-  '[&>[role=tablist]]:w-full [&>[role=tablist]]:px-[var(--layout-space-loose)]'
+  '[&_[data-slot=tabs-list]]:px-[var(--layout-space-loose)]'
 
 /**
  * Public chrome-header composition primitive(header-canonical Pattern 的 runtime 件,對標 item-anatomy 的 MenuItem/slots:屬公開 Pattern 的可 import primitive)。
@@ -56,8 +62,9 @@ export interface ChromeHeaderProps
    * 提供時 ChromeHeader 自動 column 結構:
    *   row 1 = children(h-chrome-header-height 固定,px-loose,跟 single-row 模式同)
    *   row 2 = tabsSlot 包在 `HEADER_TABS_SLOT_WRAPPER_CLASS` wrapper
-   *           (`[&>[role=tablist]]:w-full` + 注入 TabsList 內 px-loose;wrapper 本身
-   *           無 padding 無 border——border 由 TabsList 自畫,W1 全寬 paint 一條線)
+   *           (`[&_[data-slot=tabs-list]]` 注入 TabsList 內 px-loose;寬度 TabsList 各
+   *           overflow 模式自帶 w-full / min-w-full;wrapper 本身無 padding 無 border——
+   *           border 由 TabsList 自畫,W1 全寬 paint 一條線)
    *
    * Consumer 傳:`tabsSlot={<TabsList>...</TabsList>}`,TabsContent 放 ChromeHeader 之外。
    * Standalone Tabs(無 chrome header)該直接用 `<TabsList>` 不需 wrapper。
@@ -123,7 +130,9 @@ export const ChromeHeader = React.forwardRef<HTMLElement, ChromeHeaderProps>(
           {/* Row 2:tabsSlot wrapper — TabsList 全 dialog 寬 + 內 px-loose inset triggers
               2026-05-18 v3 fix(同 SurfaceHeader,per user verbatim「分隔線寬度應該要填滿整個
               dialog」+「就這樣做」approval):TabsList 自己 px-loose 內 padding 而非 wrapper
-              提供,讓 TabsList border-b 延展全 dialog 寬。對齊 `tabs.spec.md:199` 既有 canonical。*/}
+              提供,讓 TabsList border-b 延展全 dialog 寬。對齊 `tabs.spec.md:199` 既有 canonical。
+              2026-07-30 v4:選取機制改 `data-slot="tabs-list"` attribute contract(beta.86
+              overlay 包裹層破 direct-child;詳 HEADER_TABS_SLOT_WRAPPER_CLASS 註解)。*/}
           <div className={HEADER_TABS_SLOT_WRAPPER_CLASS}>
             {tabsSlot}
           </div>

@@ -825,7 +825,7 @@ const SidebarGroupAction = React.forwardRef<
       ref={ref}
       data-sidebar="group-action"
       className={cn(
-        "absolute right-[var(--layout-space-loose)] top-2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted outline-none ring-ring transition-colors hover:bg-neutral-hover hover:text-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-[var(--layout-space-loose)] top-2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted outline-none ring-ring transition-colors hover:bg-neutral-hover hover:text-fg-secondary focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         "after:absolute after:-inset-2 after:md:hidden",
         "group-data-[collapsible=icon]:hidden",
         className
@@ -1190,7 +1190,7 @@ const SidebarMenuAction = React.forwardRef<
       ref={ref}
       data-sidebar="menu-action"
       className={cn(
-        "absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted outline-none ring-ring transition-colors hover:bg-neutral-hover hover:text-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted outline-none ring-ring transition-colors hover:bg-neutral-hover hover:text-fg-secondary focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         "after:absolute after:-inset-2 after:md:hidden",
         "group-data-[collapsible=icon]:hidden",
         showOnHover &&

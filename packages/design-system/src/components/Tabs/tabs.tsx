@@ -149,6 +149,14 @@ const Tabs = React.forwardRef<
 Tabs.displayName = 'Tabs'
 
 // ── List ──
+// data-slot="tabs-list" 契約(2026-07-30):三種 overflow 模式的 role=tablist 元素
+// (TabsPrimitive.List)一律自標 `data-slot="tabs-list"`,供容器以 attribute contract 注入樣式
+// (header-canonical HEADER_TABS_SLOT_WRAPPER_CLASS 消費,詳 chrome-header.tsx 註解)。
+// 對齊 shadcn v4 tabs.tsx `<TabsPrimitive.List data-slot="tabs-list">` idiom
+// (https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/tabs.tsx)
+// + DS 既有 data-unbounded 標記式契約(overlay-surface.tsx CHROME_UNBOUNDED_SLOT)。
+// 背景:beta.86 inlineAction overlay(fc2a3a5c)包 `<div class="relative">` 後,tablist DOM 深度
+// 不再穩定,結構性 direct-child 選擇器不可靠 → 顯式契約免疫未來 DOM 重構。
 // TabsList 基礎 class — inline-flex 單列 + gap-loose + 底部 border-divider
 // 2026-05-18 改 border-border → border-divider(per user verbatim「我認為應該把 tabs 的
 // 下底線統一改成是 divider 色吧?」+「做」approval):
@@ -202,6 +210,7 @@ const TabsList = React.forwardRef<
     listNode = (
       <TabsPrimitive.List
         ref={ref}
+        data-slot="tabs-list"
         className={cn(TABS_LIST_BASE, 'w-full', className)}
         {...props}
       >
@@ -270,6 +279,7 @@ const ScrollTabsList = React.forwardRef<
       >
         <TabsPrimitive.List
           ref={ref}
+          data-slot="tabs-list"
           className={cn(TABS_LIST_BASE, 'min-w-full', className)}
           {...props}
         >
@@ -376,6 +386,7 @@ const MenuTabsList = React.forwardRef<
       >
         <TabsPrimitive.List
           ref={ref}
+          data-slot="tabs-list"
           className={cn(TABS_LIST_BASE, 'min-w-full', className)}
           {...props}
         >

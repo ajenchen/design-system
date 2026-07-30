@@ -77,8 +77,13 @@ const REQUIRED_EXTERNAL_CREDENTIAL_ENV_VARS = Object.freeze([
   'GOOGLE_APPLICATION_CREDENTIALS',
   'NODE_AUTH_TOKEN',
   'NPM_TOKEN',
-  'SSH_AUTH_SOCK',
 ])
+// SSH_AUTH_SOCK is deliberately NOT in the required-deny set (owner-authorized 2026-07-30):
+// the canonical workflow promises agent-performed non-destructive `git push`, which needs the
+// login ssh-agent. Key material stays unreachable — Read(~/.ssh/**) and Read(~/.git-credentials)
+// remain denied, and destructive git verbs stay in permissions.deny. The harness runner keeps
+// scrubbing SSH_AUTH_SOCK from test children (infra/governance/lib/harness-runner.mjs) because
+// harness isolation is a different boundary from the interactive agent session.
 
 function bashRuleCommand(rule, label) {
   const match = typeof rule === 'string' ? rule.match(/^Bash\((.+)\)$/) : null
@@ -208,7 +213,7 @@ export function readClaudePermissionPolicy({ sourceRoot = DEFAULT_ROOT } = {}) {
     || sandbox.network.deniedDomains.length !== 0
     || sandbox.network.allowUnixSockets.length !== 0
     || sandbox.network.allowAllUnixSockets !== false
-    || sandbox.network.allowLocalBinding !== false
+    || sandbox.network.allowLocalBinding !== true
     || sandbox.network.allowMachLookup.length !== 0
   ) {
     throw new Error('Claude permission-policy sandbox must be fail-closed, network-closed, non-bypassable, and exclude no commands')

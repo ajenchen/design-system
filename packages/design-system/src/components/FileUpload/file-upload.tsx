@@ -208,7 +208,7 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
                       e.stopPropagation()
                       onRemove(f.id)
                     }}
-                    className="text-fg-muted hover:text-foreground"
+                    className="text-fg-muted hover:text-fg-secondary"
                   />
                 ) : undefined
               }

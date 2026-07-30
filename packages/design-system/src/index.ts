@@ -12,6 +12,13 @@ export {
   AccordionTrigger,
 } from './components/Accordion/index'
 export {
+  AccountMenu,
+} from './components/AccountMenu/index'
+export type {
+  AccountMenuProps,
+  AccountMenuUser,
+} from './components/AccountMenu/index'
+export {
   Alert,
   alertVariants,
 } from './components/Alert/index'

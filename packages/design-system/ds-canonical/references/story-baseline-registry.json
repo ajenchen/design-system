@@ -43,7 +43,13 @@
           "id": "sidebar-footer-two-line",
           "regex": "<SidebarFooter[^>]*>.{0,255}(text-xs|leading-tight)",
           "severity": "block",
-          "rationale": "SidebarFooter user 區必單行(名字 only;職稱/email 等身份資訊歸 ItemAvatar hoverCard 的 ProfileCard,sidebar.stories.tsx UserFooter canonical)。shadcn nav-user 的「name + email text-xs 兩行」是強 LLM 先驗,且 text-xs 違反 chrome typography canonical(sidebar.spec『chrome 內 text 一律 text-body-lg』);255 字元窗符合 POSIX ERE RE_DUP_MAX 並限制 greediness"
+          "rationale": "SidebarFooter user 區必單行(名字 only;職稱/email 等身份資訊歸帳號選單 DropdownMenuLabel 第二行 text-caption,sidebar.stories.tsx UserFooter canonical;自己的 avatar 不掛 ProfileCard hoverCard——rule owner app-shell.spec.md 帳號入口放置 SSOT)。shadcn nav-user 的「name + email text-xs 兩行」是強 LLM 先驗,且 text-xs 違反 chrome typography canonical(sidebar.spec『chrome 內 text 一律 text-body-lg』);255 字元窗符合 POSIX ERE RE_DUP_MAX 並限制 greediness"
+        },
+        {
+          "id": "sidebar-handbuilt-account-trigger",
+          "regex": "<DropdownMenuTrigger[^>]*>[[:space:]]*<button[^>]*>.{0,160}<Avatar\\b",
+          "severity": "warn",
+          "rationale": "手刻帳號觸發鏈(DropdownMenuTrigger 直包 raw <button> 再包 raw <Avatar>)= 帳號入口 hand-mock 簽名 — 帳號選單必消費 AccountMenu reference(AppShell/_demo-helpers.tsx;app-shell.spec.md「帳號入口放置 SSOT」),且帳號入口只能出現一次(primary-sidebar = SidebarFooter / primary-header = globalHeader 右)。WM F9 錨例(2026-07-30 pre-fix 1a26bd1^):SidebarHeader 右上手刻此鏈與 SidebarFooter user 區並存。雙位置 duplicate 的完整 conjunction 不可單條 ERE 表達(unlessRegex 檔級豁免在錨例實測失效 — 錨例檔同時含 ChromeHeader/isMobile 字面)→ hard P0 BLOCK 由 check_consumer_code_quality.sh 帳號入口 duplicate 段(python block-scope)承擔;本條為 story 層 early-warn。footer canonical(DropdownMenuTrigger > SidebarMenuButton)不直包 raw <button> → 不誤警;stories 全 corpus 實測 0 hit"
         }
       ]
     },

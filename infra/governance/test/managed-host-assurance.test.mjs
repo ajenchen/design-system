@@ -1992,7 +1992,7 @@ test('templates bind exact release tags, absolute runtimes, first-launch bootstr
     assert.equal(claude.sandbox.enableWeakerNetworkIsolation, false)
     assert.equal(claude.sandbox.allowAppleEvents, false)
     assert.deepEqual(claude.sandbox.excludedCommands, [])
-    for (const name of ['ANTHROPIC_API_KEY', 'GH_TOKEN', 'GITHUB_TOKEN', 'NODE_AUTH_TOKEN', 'NPM_TOKEN', 'SSH_AUTH_SOCK']) {
+    for (const name of ['ANTHROPIC_API_KEY', 'GH_TOKEN', 'GITHUB_TOKEN', 'NODE_AUTH_TOKEN', 'NPM_TOKEN']) {
       assert.deepEqual(claude.sandbox.credentials.envVars.find(record => record.name === name), { name, mode: 'deny' })
     }
     assert.match(codex, /allow_managed_hooks_only = true/)

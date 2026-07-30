@@ -507,6 +507,50 @@ try {
   for (const root of ['rules', 'agents', 'plugins']) rmSync(join(mirror, '.codex', root), { recursive: true, force: true })
   console.log('✅ negative: full repo-local Claude/Codex discovery, plugin, override, and MCP surface blocked')
 
+  // Provider runtime state (Claude Code .cc-writes journal + dispatcher telemetry logs) is local
+  // git-ignored noise below the Claude root, never an extension surface (WM F4).
+  mkdirSync(join(mirror, '.claude/.cc-writes'), { recursive: true })
+  mkdirSync(join(mirror, '.claude/logs'), { recursive: true })
+  writeFileSync(join(mirror, '.claude/logs/hook-fires-per-hook.jsonl'), '{"hook":"fixture"}\n')
+  const runtimeState = runCheck()
+  if (runtimeState.status !== 0) throw new Error(`Claude runtime state rejected:${JSON.stringify(runtimeState.report.diagnostics)}`)
+  console.log('✅ positive: Claude runtime state (.cc-writes / logs) accepted without extension diagnostics')
+  mkdirSync(join(mirror, '.codex/logs'), { recursive: true })
+  expectFailure('GOV-EXTENSION-001')
+  rmSync(join(mirror, '.codex/logs'), { recursive: true, force: true })
+  writeFileSync(join(mirror, '.claude/.cc-writes-file'), 'x\n')
+  expectFailure('GOV-EXTENSION-001')
+  rmSync(join(mirror, '.claude/.cc-writes-file'))
+  rmSync(join(mirror, '.claude/logs'), { recursive: true, force: true })
+  const outsideLogs = join(temp, 'outside-logs')
+  mkdirSync(outsideLogs, { recursive: true })
+  symlinkSync(outsideLogs, join(mirror, '.claude/logs'), 'dir')
+  expectFailure('GOV-EXTENSION-001')
+  rmSync(join(mirror, '.claude/logs'))
+  rmSync(join(mirror, '.claude/.cc-writes'), { recursive: true, force: true })
+  console.log('✅ negative: runtime-state skip stays .claude-scoped, exact-name, directory-only, symlink-hostile')
+
+  if (typeof process.getuid !== 'function' || process.getuid() !== 0) {
+    // Permission-denied traversal entries degrade to GOV-SANDBOX-001 WARNING, never a crash (WM F3).
+    const deniedDir = join(mirror, 'denied-fixture')
+    mkdirSync(deniedDir, { recursive: true })
+    writeFileSync(join(deniedDir, 'inner.txt'), 'x\n')
+    chmodSync(deniedDir, 0o000)
+    let denied
+    try {
+      denied = spawnSync(process.execPath, ['--', checkScript, '--repo', mirror, '--json', '--hooks-off'], { cwd: root, encoding: 'utf8' })
+    } finally {
+      chmodSync(deniedDir, 0o755)
+    }
+    rmSync(deniedDir, { recursive: true, force: true })
+    let deniedReport = null
+    try { deniedReport = JSON.parse(denied.stdout) } catch { throw new Error(`denied traversal crashed instead of degrading:${denied.stderr}`) }
+    const warning = deniedReport.diagnostics.find((d) => d.ruleId === 'GOV-SANDBOX-001' && d.severity === 'WARNING')
+    if (denied.status !== 0 || !warning) throw new Error(`denied traversal must degrade to WARNING and still pass:status=${denied.status} diagnostics=${JSON.stringify(deniedReport.diagnostics)}`)
+    if (!(deniedReport.evidence.sandboxDeniedPaths || []).includes('denied-fixture')) throw new Error('sandboxDeniedPaths evidence missing denied-fixture')
+    console.log('✅ positive: permission-denied traversal degrades to GOV-SANDBOX-001 WARNING with bound evidence')
+  }
+
   const codexAdapter = join(mirror, '.codex/hooks.json')
   const consumerLock = join(mirror, 'governance/lock.json')
   const originalCodexAdapter = readFileSync(codexAdapter)

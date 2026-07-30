@@ -120,6 +120,83 @@ export const WithTabs = () => (
 )
 WithTabs.storyName = '含分頁列'
 
+/* 3-4. withTabs × overflow(scroll / menu)— header 分頁列在窄容器的溢出模式。
+   對標 Jira 專案設定頁:細分頁多到單行放不下(概覽/待辦清單/衝刺/看板/報表/版本/元件/權限/通知)。
+   Panel 限寬 420px + 9 個分頁強制觸發溢出;W2 契約(triggers 內縮 px-loose 對齊 header
+   content row)三種 overflow 模式同享,border 隨溢出內容延展(min-w-full,header-canonical.spec.md Rule W2)。
+   兩則共用同組分頁資料(同 tabs.stories.tsx OverflowScroll/OverflowMenu 精神),各教一種溢出機制。 */
+const projectSettingsTabs = [
+  { value: 'overview', label: '概覽', content: '負責人:張惟安 · 分類:客戶關係 · Scrum 流程已啟用' },
+  { value: 'backlog', label: '待辦清單', content: 'Backlog 42 項:預設排序 = 優先級,顯示 story point 欄位' },
+  { value: 'sprints', label: '衝刺', content: 'Sprint 18 進行中(04/14–04/28),完成 21 / 34 點' },
+  { value: 'board', label: '看板', content: '欄位:待處理 / 進行中 / 審查中 / 完成;WIP 上限 5' },
+  { value: 'reports', label: '報表', content: '燃盡圖 / 速度圖 / 累積流量圖,每週一自動寄送摘要' },
+  { value: 'releases', label: '版本', content: 'v2.4.0 規劃中(05/30 發布)· v2.3.1 已發布' },
+  { value: 'components', label: '元件', content: '前端 / API / 資料庫 / 通知服務,各自指派預設負責人' },
+  { value: 'permissions', label: '權限', content: '管理員 3 人 · 成員 24 人;訪客僅能檢視看板' },
+  { value: 'notifications', label: '通知', content: '議題指派與提及即時通知;摘要每日 09:00 寄送' },
+] as const
+
+/** 3. withTabs + overflow="scroll" — 窄 header 的分頁列單行橫向捲動(fade mask + 左右 arrow)。 */
+export const WithTabsOverflowScroll = () => (
+  <div className="w-[420px]">
+    <Panel>
+      <Tabs defaultValue="overview">
+        <ChromeHeader
+          tabsSlot={
+            <TabsList overflow="scroll">
+              {projectSettingsTabs.map((t) => (
+                <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>
+              ))}
+            </TabsList>
+          }
+        >
+          <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">
+            CRM 平台 — 專案設定
+          </h2>
+          <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
+        </ChromeHeader>
+        {projectSettingsTabs.map((t) => (
+          <TabsContent key={t.value} value={t.value}>
+            <div className="p-6 text-body text-fg-secondary">{t.content}</div>
+          </TabsContent>
+        ))}
+      </Tabs>
+    </Panel>
+  </div>
+)
+WithTabsOverflowScroll.storyName = '含分頁列 — 溢出水平捲動'
+
+/** 4. withTabs + overflow="menu" — 窄 header 的分頁列 + 右側 ⌄ 導覽選單(show-all navigator)。 */
+export const WithTabsOverflowMenu = () => (
+  <div className="w-[420px]">
+    <Panel>
+      <Tabs defaultValue="overview">
+        <ChromeHeader
+          tabsSlot={
+            <TabsList overflow="menu">
+              {projectSettingsTabs.map((t) => (
+                <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>
+              ))}
+            </TabsList>
+          }
+        >
+          <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">
+            CRM 平台 — 專案設定
+          </h2>
+          <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
+        </ChromeHeader>
+        {projectSettingsTabs.map((t) => (
+          <TabsContent key={t.value} value={t.value}>
+            <div className="p-6 text-body text-fg-secondary">{t.content}</div>
+          </TabsContent>
+        ))}
+      </Tabs>
+    </Panel>
+  </div>
+)
+WithTabsOverflowMenu.storyName = '含分頁列 — 溢出 ⌄ 導覽選單'
+
 /** Overview — header anatomy 兩型疊起來一次看完,每型上方標清「何時用 + 對標既有元件」。
  *  注:ChromeHeader 另有 `leadingRail` slot,但它專為「跟 sidebar 收合 icon 對齊」而生(寬 = sidebar 收合寬),
  *  只在有 sidebar 時有意義 → canonical demo 放 AppShell primary-header(leadingRail = <SidebarTrigger />),

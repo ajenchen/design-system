@@ -98,7 +98,20 @@ assert.equal(base.sandbox.enableWeakerNestedSandbox, false)
 assert.equal(base.sandbox.enableWeakerNetworkIsolation, false)
 assert.equal(base.sandbox.allowAppleEvents, false)
 assert.deepEqual(base.sandbox.excludedCommands, [])
-for (const name of ['ANTHROPIC_API_KEY', 'GH_TOKEN', 'GITHUB_TOKEN', 'NODE_AUTH_TOKEN', 'NPM_TOKEN', 'SSH_AUTH_SOCK']) {
+assert.equal(base.sandbox.network.allowLocalBinding, true, 'loopback binding must stay permitted for the browser/Storybook verification contract')
+assert.deepEqual(base.sandbox.network.allowedDomains, [], 'outbound network must stay closed')
+assert.equal(
+  base.sandbox.credentials.envVars.some((entry) => entry.name === 'SSH_AUTH_SOCK'),
+  false,
+  'SSH_AUTH_SOCK must stay absent (absence = allowed) so agent-performed non-destructive git push works',
+)
+for (const rule of ['Bash(git push *--force*)', 'Bash(git push -f *)', 'Bash(git reset *)', 'Bash(gh auth token*)']) {
+  assert.ok(base.permissions.deny.includes(rule), `destructive/credential rule must stay denied:${rule}`)
+}
+for (const path of ['~/.ssh/**', '~/.git-credentials']) {
+  assert.ok(base.sandbox.credentials.files.some((entry) => entry.path === path && entry.mode === 'deny'), `key material must stay denied:${path}`)
+}
+for (const name of ['ANTHROPIC_API_KEY', 'GH_TOKEN', 'GITHUB_TOKEN', 'NODE_AUTH_TOKEN', 'NPM_TOKEN']) {
   assert.deepEqual(
     base.sandbox.credentials.envVars.find(record => record.name === name),
     { name, mode: 'deny' },
@@ -264,7 +277,9 @@ assert.deepEqual(repositoryAdapter.sandbox, policy.sandbox)
   const productAdapter = {
     permissions: productGovernance.permissions,
     sandbox: productGovernance.sandbox,
-    hooks: {},
+    // F6 fail-closed:canonical hook map 必須非空(空 map 視同看不懂的世代,merge 會 throw)。
+    // 本 fixture 聚焦 permission 語意,故給最小合法 canonical 註冊。
+    hooks: { SessionStart: [{ hooks: [{ type: 'command', command: 'bash "$CLAUDE_PROJECT_DIR/governance/bin/inject_fork_governance_preamble.sh"' }] }] },
   }
   const manifest = readJson('packages/design-system/ds-canonical/fork/manifest.json')
   const refreshPolicy = readJson('packages/design-system/ds-canonical/fork/launchers/settings-hooks.json')

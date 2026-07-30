@@ -11,7 +11,10 @@ PASS=0; FAIL=0; FAILED_TESTS=""
 
 run_hook() {
   local file_path="$1" content="$2"
-  STDOUT=$(mktemp); STDERR=$(mktemp)
+  # 顯式 template 尊重 TMPDIR(macOS BSD mktemp 無 template 時走 _CS_DARWIN_USER_TEMP_DIR、
+  # 忽略 TMPDIR → 受限環境無法指定可寫目錄);空值硬守衛防下游 cat "" / rm -rf ""。
+  STDOUT=$(mktemp "${TMPDIR:-/tmp}/pattern-inv-out.XXXXXX"); STDERR=$(mktemp "${TMPDIR:-/tmp}/pattern-inv-err.XXXXXX")
+  [ -n "$STDOUT" ] && [ -f "$STDOUT" ] && [ -n "$STDERR" ] && [ -f "$STDERR" ] || { echo "FAIL setup: mktemp unusable (TMPDIR=${TMPDIR:-unset})"; exit 1; }
   set +e
   jq -n --arg fp "$file_path" --arg c "$content" \
     '{hook_event_name:"PreToolUse", tool_name:"Write", tool_input:{file_path:$fp, content:$c}}' \
@@ -23,7 +26,10 @@ run_hook() {
 
 run_raw() {
   local payload="$1"
-  STDOUT=$(mktemp); STDERR=$(mktemp)
+  # 顯式 template 尊重 TMPDIR(macOS BSD mktemp 無 template 時走 _CS_DARWIN_USER_TEMP_DIR、
+  # 忽略 TMPDIR → 受限環境無法指定可寫目錄);空值硬守衛防下游 cat "" / rm -rf ""。
+  STDOUT=$(mktemp "${TMPDIR:-/tmp}/pattern-inv-out.XXXXXX"); STDERR=$(mktemp "${TMPDIR:-/tmp}/pattern-inv-err.XXXXXX")
+  [ -n "$STDOUT" ] && [ -f "$STDOUT" ] && [ -n "$STDERR" ] && [ -f "$STDERR" ] || { echo "FAIL setup: mktemp unusable (TMPDIR=${TMPDIR:-unset})"; exit 1; }
   set +e
   printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
   EXIT=$?
@@ -181,6 +187,34 @@ function F() { return <span className="h-[1lh] shrink-0 flex items-center"><Icon
 expect_exit "C.4.4 row slot allowlist → silent" 0 ""
 
 echo ""
+echo ""
+echo "=== C.5 弱化 icon hover 階梯(2026-07-30 user 拍板)==="
+
+# 負例:rest fg-muted 直接跳 foreground(跳兩階)→ BLOCK
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+const x = <button className="text-fg-muted hover:text-foreground" />
+'
+expect_exit "C.5.1 fg-muted → foreground 跳階 → BLOCK" 2 "hover 跳階"
+
+# 正例:一階 fg-muted → fg-secondary → silent
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+const x = <button className="text-fg-muted hover:text-fg-secondary" />
+'
+expect_exit "C.5.2 fg-muted → fg-secondary → silent" 0 ""
+
+# 零誤判:rest 已是 fg-secondary 的整列/文字 hover → foreground 本身就是一階(chip.tsx / TreeItem row 錨例)
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+const x = <div className="text-fg-secondary hover:text-foreground" />
+'
+expect_exit "C.5.3 secondary → foreground 合規一階 → silent" 0 ""
+
+# 豁免
+run_hook "/r/packages/design-system/src/components/Foo/foo.tsx" '
+// @hover-ramp-allow: legacy third-party surface
+const x = <button className="text-fg-muted hover:text-foreground" />
+'
+expect_exit "C.5.4 @hover-ramp-allow 豁免 → silent" 0 ""
+
 echo "=== Output contract ==="
 
 # Multiple independent warnings must be aggregated into one exact envelope.

@@ -488,7 +488,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       resolvedIconOnly && ICON_ONLY_BASE,
       // Dismiss 視覺弱化:override Button text variant 預設 foreground 為 fg-muted → hover foreground
       // 跟 Inline Action dismiss 視覺一致(cross-implementation dimming canonical)
-      dismiss && 'text-fg-muted hover:text-foreground',
+      // 弱化 icon hover 一階(item-anatomy.tsx ItemInlineActionButton 同階梯 SSOT)
+      dismiss && 'text-fg-muted hover:text-fg-secondary',
       resolvedFullWidth && 'w-full',
     )
 

@@ -106,7 +106,7 @@
       "deniedDomains": [],
       "allowUnixSockets": [],
       "allowAllUnixSockets": false,
-      "allowLocalBinding": false,
+      "allowLocalBinding": true,
       "allowMachLookup": []
     },
     "filesystem": {
@@ -158,7 +158,6 @@
         { "name": "NODE_AUTH_TOKEN", "mode": "deny" },
         { "name": "NPM_TOKEN", "mode": "deny" },
         { "name": "SIGSTORE_ID_TOKEN", "mode": "deny" },
-        { "name": "SSH_AUTH_SOCK", "mode": "deny" },
         { "name": "VERCEL_TOKEN", "mode": "deny" }
       ],
       "allowPlaintextInject": false

@@ -89,9 +89,9 @@ benchmark:
 - 在 chrome header 內放 avatar → **必用 raw `<Avatar size={24}>`**,**禁用 `<ItemAvatar>`**(會誤啟動 row anatomy lookup)
 - SidebarHeader 收合對齊公式必消費 `var(--chrome-header-avatar-size)`,**禁** hardcode 24
 - WorkspaceBrand demo 即此 pattern 的 reference implementation(`components/AppShell/_demo-helpers.tsx:WorkspaceBrand`)
-- **帳號入口(account entry)同規則**:primary-header globalHeader 右側的個人設定 avatar 也用 raw `<Avatar size={24}>`(reference:`_demo-helpers.tsx:AccountMenu`)。放置 / 開帳號選單 / 邊距對稱 canonical 見 `../../components/AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」段。
+- **帳號入口(account entry)同規則**:primary-header globalHeader 右側的個人設定 avatar 也用 raw `<Avatar size={24}>`(reference:`components/AccountMenu/account-menu.tsx`,2026-07-30 F9 升 public 元件;demo wrapper 在 `_demo-helpers.tsx`)。放置 / 開帳號選單 / 邊距對稱 canonical 見 `../../components/AppShell/app-shell.spec.md`「帳號入口(Account entry)放置 SSOT」段。
 
-**Sync invariant**:`--chrome-header-avatar-size` CSS 值 + `<Avatar size={24}>` JS literal(WorkspaceBrand + AccountMenu 兩處)+ `AVATAR_SIZE.inline.md = 24`(`item-anatomy.tsx:94`,L93 是 `export const AVATAR_SIZE = {` 宣告開頭)必同 24px 值。改 spec canonical 時 grep `--chrome-header-avatar-size` + `chrome header avatar canonical` keyword 找全 sync 點。
+**Sync invariant**:`--chrome-header-avatar-size` CSS 值 + `<Avatar size={24}>` JS literal(WorkspaceBrand `_demo-helpers.tsx` + AccountMenu `components/AccountMenu/account-menu.tsx` 兩處)+ `AVATAR_SIZE.inline.md = 24`(`item-anatomy.tsx:94`,L93 是 `export const AVATAR_SIZE = {` 宣告開頭)必同 24px 值。改 spec canonical 時 grep `--chrome-header-avatar-size` + `chrome header avatar canonical` keyword 找全 sync 點。
 
 ### 5. Title typography
 
@@ -147,15 +147,17 @@ ChromeHeader 內部用 `<header>` element(非 `<div>`)。HTML5 spec 允許 secti
 
 ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自動 **column mode**:
 - Row 1:children(title + close X / actions)— 跟 single-row 模式同 padding,但 border-b 撤掉
-- Row 2:tabsSlot 包在 `<div className="[&>[role=tablist]]:w-full [&>[role=tablist]]:px-[var(--layout-space-loose)]">`(wrapper 本身**不** inset,只用 CSS arbitrary variant 給 TabsList 注入 `w-full` + 內 padding)
-  - **TabsList 全 dialog 寬**(`w-full`)→ 自身 `border-b border-divider` 延展全 dialog 寬 = W1 視覺一條線
-  - **TabsList 內 padding-x = px-loose** → triggers 從 px-loose 內邊起,對齊 header content row(W2 alignment 達成)
+- Row 2:tabsSlot 包在 `<div className={HEADER_TABS_SLOT_WRAPPER_CLASS}>`(= `[&_[data-slot=tabs-list]]:px-[var(--layout-space-loose)]`,`chrome-header.tsx` 單一 SSOT const;wrapper 本身**不** inset,只用 CSS arbitrary variant 對契約元素注入內 padding)
+  - **選取契約 = `data-slot="tabs-list"` attribute(v4,2026-07-30)**:`tabs.tsx` 三種 overflow 模式(none / scroll / menu)的 `role=tablist` 元素(TabsPrimitive.List)皆自標 `data-slot="tabs-list"`(對齊 shadcn v4 tabs.tsx `data-slot` idiom,https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/tabs.tsx + DS 既有 `data-unbounded` 標記式契約);wrapper 用 descendant selector,不依賴 DOM 深度(beta.86 overlay 包裹層教訓,見下 v1-v4 歷史)
+  - **TabsList 全 dialog 寬 = TabsList 自帶,wrapper 不注入寬度**:none 模式 `w-full`(tabs.tsx 自帶)→ 自身 `border-b border-divider` 延展全 dialog 寬 = W1 視覺一條線;scroll / menu 模式 `min-w-full`(border 隨溢出內容成長;blanket `w-full` 會把 border 截在可視寬 → **禁**由 wrapper 注入寬度)
+  - **TabsList 內 padding-x = px-loose** → triggers 從 px-loose 內邊起,對齊 header content row(W2 alignment 達成;三種 overflow 模式同享)
   - Selected trigger 2px primary 真 overlay TabsList 1px gray border(`tabs.spec.md:187-189` canonical)
 
-**v1/v2 反 pattern**(歷史錨):
+**v1/v2/v3 反 pattern**(歷史錨):
 - v1(2026-05-18 initial):wrapper 加 `border-b border-divider` + TabsList 自身 `border-b border-border` 共存 → 雙線(色不同 + 1px box gap)
 - v2(2026-05-18 mid):wrapper px-loose + TabsList w-full inside → border 只跨 dialog - 2×px-loose(沒到 dialog 邊)
-- v3(本):wrapper 不 inset,TabsList 自己 padding inset triggers + 全 dialog 寬 border ✓
+- v3(2026-05-18):wrapper 不 inset,TabsList 自己 padding inset triggers + 全 dialog 寬 border ✓ — 但選取機制 = `[&>[role=tablist]]` direct-child **結構**選擇器,綁死 tablist 深度
+- v4(本,2026-07-30 regression fix):beta.86 Tabs inlineAction axe 正規修(fc2a3a5c)給 TabsList 包 `<div class="relative">` overlay 層 → v3 direct-child 選擇器全滅、px-loose 靜默消失(W2 regression);且 scroll / menu 模式 tablist 深度本就 >1,v3 從未命中。改 `data-slot="tabs-list"` attribute contract + descendant selector — 顯式契約免疫 DOM 重構,三種 overflow 模式齊套;寬度改由 TabsList 各模式自帶(w-full / min-w-full),wrapper 不再注入 ✓
 
 **W2 spec 註**:原 W2「TabsList 不設左右 padding,繼承 parent header padding」描述假設 ChromeHeader single-row 模式;**column mode 下實作機制改為 CSS arbitrary variant 注入 TabsList 內 padding**(不是 by-inheritance 從 wrapper)。Selected primary overlay full-width gray 共識(GitHub Primer UnderlineNav / Ant Design line type / Mantine default)需要 TabsList 自畫 full-width border。
 

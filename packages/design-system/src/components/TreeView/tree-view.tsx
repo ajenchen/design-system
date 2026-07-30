@@ -1212,7 +1212,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             onClick={handleChevronClick}
             className={cn(
               'flex items-center justify-center rounded-md',
-              'text-fg-muted hover:text-foreground hover:bg-neutral-hover',
+              'text-fg-muted hover:text-fg-secondary hover:bg-neutral-hover',
               'transition-all duration-150',
               isExpanded && 'rotate-90',
               disabled && 'text-fg-disabled pointer-events-none',
