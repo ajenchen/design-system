@@ -19,7 +19,7 @@
 // Run: `npm run test:header-tabs-slot-invariants` 或 `node scripts/header-tabs-slot-invariants.mjs`
 
 import { chromium } from 'playwright'
-import http from 'node:http'
+import { launchVerifyBrowser, serveStaticDir, attachStaticRoute } from './lib/sandboxed-verify-browser.mjs'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -61,51 +61,14 @@ if (!existsSync(STATIC)) {
   }
 }
 
-const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff': 'font/woff', '.woff2': 'font/woff2' }
-const serveFromDisk = (rawPath) => {
-  let p = decodeURIComponent(rawPath.split('?')[0]); if (p === '/') p = '/index.html'
-  const fp = join(STATIC, p); if (!existsSync(fp) || statSync(fp).isDirectory()) return null
-  return { type: MIME[extname(fp)] || 'application/octet-stream', body: readFileSync(fp) }
-}
-// Transport:primary = inline http server on 7501(idiom = data-table-invariants.mjs;CI / user
-// machine 路徑)。Sandbox 環境(seatbelt 禁 listen → EPERM/EACCES)fallback = Playwright request
-// interception 直供同一份 storybook-static bytes — 只換傳輸層,斷言與服務內容完全相同,fail-closed
-// 行為不變(其他 listen error 照常 throw)。
-let server = null
-try {
-  server = http.createServer((req, res) => {
-    const hit = serveFromDisk(req.url)
-    if (!hit) { res.writeHead(404); res.end(); return }
-    res.writeHead(200, { 'content-type': hit.type }); res.end(hit.body)
-  })
-  await new Promise((resolvePromise, rejectPromise) => {
-    server.once('error', rejectPromise)
-    server.listen(7501, resolvePromise)
-  })
-} catch (err) {
-  if (err?.code !== 'EPERM' && err?.code !== 'EACCES') throw err
-  server = null
-  console.log(`ℹ sandbox 禁 listen(${err.code})— 改用 Playwright request interception 直供 storybook-static(同 bytes,斷言不變)`)
-}
-
-// Launch:primary = 預設 multiprocess headless(CI / user machine 路徑,同 data-table gate)。
-// Sandbox 環境 macOS seatbelt 禁 mach bootstrap check-in → 預設 launch 必炸,retry 一次
-// --single-process(免 mach rendezvous;CSS/layout 量測結果與 multiprocess 相同)。
-let browser
-try {
-  browser = await chromium.launch({ headless: true })
-} catch {
-  console.log('ℹ 預設 chromium launch 失敗(sandbox 禁 mach port)— retry --single-process(量測斷言不變)')
-  browser = await chromium.launch({ headless: true, args: ['--single-process', '--no-zygote'] })
-}
+// Transport + launch 皆消費 scripts/lib/sandboxed-verify-browser.mjs(M17 單一住所):
+// primary = inline http server + 預設 multiprocess chromium(CI / user machine 路徑);
+// 受限環境自動降級為 route interception / --single-process,並印出實際走的路徑(無靜默降級)。
+const served = await serveStaticDir(STATIC, { port: 7501 })
+const { browser, mode: launchMode } = await launchVerifyBrowser(chromium)
+console.log(`ℹ transport=${served.transport} launch=${launchMode}`)
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } })
-if (!server) {
-  await page.route('http://localhost:7501/**', (route) => {
-    const hit = serveFromDisk(new URL(route.request().url()).pathname)
-    if (!hit) return route.fulfill({ status: 404, body: '' })
-    return route.fulfill({ status: 200, contentType: hit.type, body: hit.body })
-  })
-}
+await attachStaticRoute(page, served)
 
 const failures = []
 const passes = []
@@ -221,7 +184,7 @@ if (failures.length > 0) {
 }
 
 await browser.close()
-if (server) server.close()
+await served.close()
 
 if (failures.length > 0) {
   console.error(`\n✗ ${failures.length} invariant(s) failed. Block commit.`)
