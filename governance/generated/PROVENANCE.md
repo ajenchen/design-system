@@ -429,7 +429,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:bf947eec23495a13ab9d26b4cd8d7d2b3bec1d3b05faa9735c2f0931a0615a9e` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:797e89bd64a5147702fb1a8d70e7027c964fce4527c1894077401776638cca3b` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:1afe6853dfaccf4de96816df9c83374e1380a1b9e53a535c83a4eaba3e792dc8` |
-| repository-automation-corpus | `scripts` | `sha256:3bcf7e1487bdce77f56b0ca9ad54f97a89a904a587bc7f12df3459157a2720b3` |
+| repository-automation-corpus | `scripts` | `sha256:f52a6b958e664e2ace43f4a3da95d0f67131d234faf6712166cd06b05777261e` |
 | repository-ignore-boundary | `.gitignore` | `sha256:8a7ce326c91a0696697109af370ad4b12db0856d12f857d270da8dba95f1aec7` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
