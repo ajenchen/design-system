@@ -18,8 +18,8 @@
 // 改 HEADER_TABS_SLOT_WRAPPER_CLASS / TabsList overflow DOM 必跑此 script,fail → exit 1 阻 commit。
 // Run: `npm run test:header-tabs-slot-invariants` 或 `node scripts/header-tabs-slot-invariants.mjs`
 
-import { chromium } from 'playwright'
 import { launchVerifyBrowser, serveStaticDir, attachStaticRoute } from './lib/sandboxed-verify-browser.mjs'
+import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -27,6 +27,11 @@ import { fileURLToPath } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 const STATIC = join(ROOT, 'storybook-static')
+
+const runtime = resolveProvisionedPlaywrightRuntime({ repoRoot: ROOT, environment: process.env })
+if (!runtime) throw new Error('[header-tabs-slot] exact Playwright Chromium runtime missing; run `npm run setup:playwright`')
+process.env.PLAYWRIGHT_BROWSERS_PATH = runtime.environmentValue
+const { chromium } = await import('playwright')
 
 if (!existsSync(STATIC)) {
   console.error('✗ storybook-static missing. Run `npm run build-storybook` first.')
