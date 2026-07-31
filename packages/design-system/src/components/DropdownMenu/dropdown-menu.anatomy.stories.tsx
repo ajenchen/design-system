@@ -856,7 +856,7 @@ const StateBehaviorInner = () => {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">行為 2:Submenu 展開(hover/focus 延遲 + sideways slide)</span>
         <Desc>
-          SubTrigger hover 約 100ms 自動展開 submenu 向右側滑入(RTL 向左)。Submenu 是獨立 floating layer——與 parent 共存,parent 不 close。鍵盤用 ArrowRight 展開 / ArrowLeft 收起。
+          SubTrigger hover 約 100ms 自動展開 submenu 向右側滑入。Submenu 是獨立 floating layer——與 parent 共存,parent 不 close。鍵盤用 ArrowRight 展開 / ArrowLeft 收起；本 DS 為 LTR-only。
         </Desc>
         <div className="flex gap-6 items-start">
           <div className="flex items-center justify-center px-6 py-8 rounded-lg bg-canvas border border-divider min-w-[280px]">

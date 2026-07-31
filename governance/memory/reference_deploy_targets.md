@@ -15,7 +15,7 @@ originSessionId: a689a78e-f264-4c1f-b881-0859a7a12135
 ## ⚠️ 永久 anti-pattern:檢查部署看 Netlify 不看 GitHub Pages
 
 **User 訊息含「Netlify / deploy 沒更新 / 沒部署」**:❌ 絕禁 `gh api …/deployments`(GitHub Pages 只看 main)、❌ 絕禁結論「沒 merge main 所以沒 deploy」;✅ 必檢查 Netlify per-branch preview(任何 branch push 都自動 deploy)。
-**User 原話 SSOT**(2026-05-15):「所有你做的編輯都會直接部署到 netlify,直到我驗證確認才會叫你 push 到 main(GitHub page)…你現在不應該去檢查 GitHub page 是否是最新,而是應該檢查 netlify 是否是最新才對吧?」
+**歷史 user 原話（2026-05-15；只保留 Netlify-vs-Pages target 辨識教訓，git trigger 已由 2026-07-20 Standing Authorization supersede）**：「所有你做的編輯都會直接部署到 netlify,直到我驗證確認才會叫你 push 到 main(GitHub page)…你現在不應該去檢查 GitHub page 是否是最新,而是應該檢查 netlify 是否是最新才對吧?」現行 git authority 只讀 `feedback_solo_dev_workflow.md` 與 `AGENTS.md#Git solo-work canonical`，不得從本引文恢復 user push／merge trigger。
 犯錯 anchor:2026-05-15 連 3 次查 Pages SHA 下錯結論。
 
 ## Deploy URL 自動推導(hook `inject_deploy_url_after_push.sh` v4,2026-05-27 user verbatim「不管 repo 都自動推導」)

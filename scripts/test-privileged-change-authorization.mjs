@@ -173,7 +173,7 @@ function trustDocuments(records, {
     },
     runtime: {
       $schema: '../schemas/runtime-conformance-profile.schema.json',
-      schemaVersion: 4,
+      schemaVersion: 5,
       evidenceOutput: 'runtime/provider-runtime-conformance.json',
       timeoutMs: 45000,
       maxOutputBytes: 1048576,
@@ -754,4 +754,3 @@ test('revoked, expired, and role-ineligible issuer policies fail closed', async 
     )
   }
 })
-

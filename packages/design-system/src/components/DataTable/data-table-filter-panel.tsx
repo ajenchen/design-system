@@ -31,6 +31,11 @@ import {
   type FilterTreeFlat,
   type FilterTreeNested,
 } from './filter-tree'
+import {
+  DATA_TABLE_FILTER_PANEL_DEFAULT_LABELS,
+  resolveDataTableFilterPanelLabels,
+  type DataTableFilterPanelLabels,
+} from './data-table-filter-labels'
 
 // Re-export public API from filter-tree(consumer 既有 import path 不變)
 export {
@@ -40,6 +45,8 @@ export {
   dataTableFilterMatch,
 }
 export type { Conjunction, FilterCondition, FilterGroup, FilterTree, FilterTreeFlat, FilterTreeNested }
+export { DATA_TABLE_FILTER_PANEL_DEFAULT_LABELS }
+export type { DataTableFilterPanelLabels }
 
 /**
  * DataTableFilterPanel — ClickUp-style 進階篩選 panel
@@ -123,6 +130,17 @@ const newEmptyGroup = (): FilterGroup => ({
   children: [newEmptyCondition()],
 })
 
+const countFilterConditions = (tree: FilterTree): number =>
+  tree.mode === 'flat'
+    ? tree.children.length
+    : tree.children.reduce((total, group) => total + group.children.length, 0)
+
+const normalizeMaxConditions = (maxConditions: number | undefined): number => {
+  if (maxConditions === undefined || maxConditions === Number.POSITIVE_INFINITY) return Number.POSITIVE_INFINITY
+  if (!Number.isFinite(maxConditions)) return 0
+  return Math.max(0, Math.floor(maxConditions))
+}
+
 // ── Component Props ─────────────────────────────────────────────────────
 
 export interface DataTableFilterPanelProps<TData> {
@@ -144,6 +162,14 @@ export interface DataTableFilterPanelProps<TData> {
   /** Cell ⌄ menu「Filter by this」帶入的 column id(自動 add 一條 condition) */
   prefilledColumnId?: string
   onPrefillConsumed?: () => void
+  /**
+   * Condition leaf 上限(flat children 或 nested 所有 group.children 的總和)。
+   * 預設不限。到上限後所有 add 路徑與 prefill 都 fail closed；controlled value
+   * 已超過上限時保留原資料、不裁切，只停用後續新增。
+   */
+  maxConditions?: number
+  /** Panel chrome/operator/value-picker labels. Nested maps are deep-merged with defaults. */
+  labels?: Partial<DataTableFilterPanelLabels>
   onClose?: () => void
   className?: string
 }
@@ -158,6 +184,8 @@ function DataTableFilterPanelInner<TData>({
   defaultValue,
   prefilledColumnId,
   onPrefillConsumed,
+  maxConditions,
+  labels: labelsOverride,
   onClose,
   className,
 }: DataTableFilterPanelProps<TData>, ref: React.ForwardedRef<HTMLDivElement>): React.ReactElement {
@@ -166,6 +194,13 @@ function DataTableFilterPanelInner<TData>({
     () => filterableColumns.map((c) => ({ value: c.id, label: c.label })),
     [filterableColumns],
   )
+  const labels = React.useMemo(
+    () => resolveDataTableFilterPanelLabels(labelsOverride),
+    [labelsOverride],
+  )
+  const conditionCount = countFilterConditions(value)
+  const normalizedMaxConditions = normalizeMaxConditions(maxConditions)
+  const canAddCondition = conditionCount < normalizedMaxConditions
   // K13 後 firstCol 不再被 add* 消費(改用 newEmpty*),這裡只留 prefill effect 用(已直接讀 prefilledColumnId)。
 
   // **G fix(2026-05-04 v2)**:initial-mount 預設 1 empty row(field 未選 → op+value 自動 disabled)
@@ -179,6 +214,7 @@ function DataTableFilterPanelInner<TData>({
     initialMountDoneRef.current = true
     if (filterableColumns.length === 0) return
     if (value.children.length > 0) return
+    if (!canAddCondition) return
     if (value.mode === 'flat') {
       onChange({ ...value, children: [newEmptyCondition()] } as FilterTreeFlat)
     } else {
@@ -191,7 +227,7 @@ function DataTableFilterPanelInner<TData>({
   React.useEffect(() => {
     if (!prefilledColumnId) return
     const colInfo = filterableColumns.find((c) => c.id === prefilledColumnId)
-    if (colInfo) {
+    if (colInfo && canAddCondition) {
       const cond: FilterCondition = {
         kind: 'cond',
         id: newId(),
@@ -234,7 +270,7 @@ function DataTableFilterPanelInner<TData>({
     onChange({ ...flatTree, children: flatTree.children.filter((c) => c.id !== id) })
   }
   const addFlatCondition = () => {
-    if (!flatTree) return
+    if (!flatTree || !canAddCondition) return
     // K13 fix(2026-05-04):加篩選 → empty row(field 未選 → op+value disabled)
     //   World-class:Notion / Coda / ClickUp 不 auto-select;對齊 initial mount canonical
     onChange({ ...flatTree, children: [...flatTree.children, newEmptyCondition()] })
@@ -275,7 +311,7 @@ function DataTableFilterPanelInner<TData>({
   }
   // K13 fix(2026-05-04):同 addFlatCondition,巢狀內加條件也 empty row
   const addConditionToGroup = (groupId: string) => {
-    if (!nestedTree) return
+    if (!nestedTree || !canAddCondition) return
     onChange({
       ...nestedTree,
       children: nestedTree.children.map((g) =>
@@ -288,7 +324,7 @@ function DataTableFilterPanelInner<TData>({
     onChange({ ...nestedTree, children: nestedTree.children.filter((g) => g.id !== groupId) })
   }
   const addGroup = () => {
-    if (!nestedTree) return
+    if (!nestedTree || !canAddCondition) return
     // K13:加群組也用 empty group
     onChange({ ...nestedTree, children: [...nestedTree.children, newEmptyGroup()] })
   }
@@ -321,14 +357,14 @@ function DataTableFilterPanelInner<TData>({
     )}>
       {/* Popover 派輕量 chrome — slot 走 COMPACT_HEADER_SLOT(=21,衍生自 PopoverTitle text-body line-box),header 自然 ~45px */}
       <SurfaceHeader className={COMPACT_HEADER_SLOT}>
-        <PopoverTitle className="flex-1">篩選</PopoverTitle>
+        <PopoverTitle className="flex-1">{labels.title}</PopoverTitle>
         {/* Refresh icon — 只在 value ≠ defaultValue 時顯示(對齊 sort modified-from-default UX)
             含 ButtonDivider 對齊「欄位顯示」+「排序」chrome corner action canonical(2026-05-04) */}
         {defaultValue && !isFilterTreeEqual(value, defaultValue) && (
           <>
             <Button
               variant="text" size="sm" iconOnly startIcon={RotateCcw}
-              aria-label="恢復預設"
+              aria-label={labels.resetToDefault}
               onClick={() => onChange(defaultValue)}
             />
             {onClose && <ButtonDivider />}
@@ -336,7 +372,7 @@ function DataTableFilterPanelInner<TData>({
         )}
         {onClose && (
           <PopoverClose asChild>
-            <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label="關閉" onClick={onClose} />
+            <Button data-dismiss iconOnly dismiss size="sm" startIcon={XIcon} aria-label={labels.close} onClick={onClose} />
           </PopoverClose>
         )}
       </SurfaceHeader>
@@ -361,6 +397,7 @@ function DataTableFilterPanelInner<TData>({
             onChangeOp={(v) => updateFlatCondition(cond.id, { op: v, value: '' })}
             onChangeValue={(v) => updateFlatCondition(cond.id, { value: v })}
             onRemove={() => removeFlatCondition(cond.id)}
+            labels={labels}
           />
         ))}
 
@@ -378,6 +415,8 @@ function DataTableFilterPanelInner<TData>({
             onRemoveCondition={(condId) => removeGroupCondition(group.id, condId)}
             onAddCondition={() => addConditionToGroup(group.id)}
             onRemoveGroup={() => removeGroup(group.id)}
+            canAddCondition={canAddCondition}
+            labels={labels}
           />
         ))}
 
@@ -388,8 +427,9 @@ function DataTableFilterPanelInner<TData>({
           <Button
             variant="tertiary" size="sm" startIcon={Plus}
             onClick={value.mode === 'flat' ? addFlatCondition : addGroup}
+            disabled={!canAddCondition}
           >
-            {value.mode === 'nested' ? '加入篩選器' : '加篩選'}
+            {value.mode === 'nested' ? labels.addGroup : labels.addFilter}
           </Button>
         </div>
       </SurfaceBody>

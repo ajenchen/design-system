@@ -82,6 +82,8 @@ TabsList ─┬─ TabsTrigger  [startIcon?] [label] [suffix?: badge? + endIcon?
 TabsContent ← 對應被選中的 trigger
 ```
 
+**Trigger ↔ panel IDREF 鐵律**:composition 必須為每個 `TabsTrigger value="x"` 提供同 value 的 `<TabsContent value="x">`;該 trigger 成為 active 時,Radix 的 `aria-controls` 必解析到已掛載 panel。Inactive panel 的同時掛載生命週期由 Radix 管理,本 DS 不另要求 `forceMount`。即使某個反例 story 刻意展示「不該用 Tabs」的產品語意,也不得省略 panel 而讓 active trigger 產生懸空 IDREF。內容為空時仍渲 `TabsContent` + `<Empty>`,不以缺 DOM panel 表達空值。
+
 **單個 Trigger 內部**：`[startIcon 16/20px] ─gap-2─ [label] ─gap-2─ [suffix span(gap-1): badge? endIcon?]`——slot 間 **gap-2**（8px）對標 **item-layout pattern** 橫向 inline 變體；suffix 內 **gap-1**（4px）對標 **Button** suffix wrapper（`button.tsx` 的 `<span className="inline-flex items-center gap-1">`）
 - `startIcon` 描述 tab 的內容性質（人像 icon 配「成員」、齒輪 icon 配「設定」）
 - `badge` 傳達該 tab 底下的待處理計數（「通知 3」「成員 12」）
@@ -231,7 +233,7 @@ DS 詞彙 **selected**（持續選中）；Radix DOM attr 為 `data-state="activ
 - **Empty content panel**:tab 切到沒內容的 view 時,content panel 應渲 `<Empty>` 引導 user(對齊 empty 元件的 page-empty pattern)— 由 consumer 決定,Tabs primitive 不獨立處理。
 - **Disabled tab 鍵盤行為**:Radix Tabs 自動 skip disabled tab(`←/→` 不停留),focus 跳到下一個可用 tab。
 - **極長 label**:trigger `whitespace-nowrap` 不換行、不 truncate(hug content);整列放不下屬 TabsList 溢出問題,走「Overflow 模式」(scroll / menu),非單 trigger 截斷。
-- **RTL**:未實作方向鏡像(scroll edge / arrow 以 LTR `scrollLeft` 計算,與 Chip 共用 `useScrollEdges`);RTL 屬 DS-wide 決策,未定(與 Chip / Breadcrumb 同口徑)。
+- **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。scroll edge / arrow 的 LTR 實作細節不另立 owner。
 - **Dark mode / density**:走 chrome-header / Field 對應 token 自動 adapt;`size` × `variant` matrix 已在 anatomy 完整呈現,density 由 size prop 表達不獨立 own 維度。
 
 ---
@@ -284,8 +286,8 @@ Tabs anatomy 採 DS 標準結構 + 元件特有矩陣:
 
 **Focus**:Tabs 為內嵌導覽,不困住焦點(無 focus trap);Radix `tabs` primitive 以 roving tabindex 管理 tab 之間的鍵盤移動(整組 tabs 為單一 tab stop)。選中 tab 與 TabsContent 各有 focus-visible 焦點框(`ring-2 ring-ring` per design-system focus-visible canonical)。
 
-**驗證**:Tabs 元件**自身結構** axe 0 critical(nested-interactive + aria-required-children 皆已修,2026-07-18 實測 `.claude/logs/a11y-audit.json`);鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
-**已知非-Tabs-結構例外(誠實標註,非本元件缺陷)**:(a) `aria-controls` 指向未掛載的 inactive `TabsContent` = Radix 內建行為(inactive panel 預設 unmount → IDREF 懸空,axe `aria-valid-attr-value` flag);要消除需 `forceMount` 全 panel(有 perf 取捨,屬另案)。(b) story 內 demo 內容的 color-contrast / DataTable 巢狀(appshell story)非 Tabs 元件 own — 屬各自 owner。
+**驗證**:Tabs 元件**自身結構** axe 0 critical(nested-interactive + aria-required-children 皆已修,2026-07-18 實測 `.claude/logs/a11y-audit.json`);逐一 activate 每個 trigger 後,其 `aria-controls` 必解析到同 value 的已掛載 `TabsContent` panel;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
+**非-Tabs-結構例外**:story 內 demo 內容的 color-contrast / DataTable 巢狀(appshell story)非 Tabs 元件 own,屬各自 owner;trigger ↔ panel 的 IDREF 完整性則是 Tabs composition contract,不得列為外部例外。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

@@ -195,7 +195,7 @@ export const Overview = {
           {SIZES.map((sz) => (
             <div key={sz} className="flex items-center gap-4">
               <div className="w-12 shrink-0 flex justify-center">
-                <Checkbox size={sz} defaultChecked />
+                <Checkbox size={sz} defaultChecked aria-label={`${sz} 尺寸已勾選 Checkbox`} />
               </div>
               <span className="text-caption text-fg-secondary">{SIZE_SPECS[sz].label}</span>
             </div>
@@ -305,6 +305,7 @@ const InspectorInner = () => {
                 size={size}
                 checked={checkedState === 'checked' ? true : checkedState === 'indeterminate' ? 'indeterminate' : false}
                 disabled={interaction === 'disabled'}
+                aria-label={`${size} 尺寸 ${checkedState} ${interaction} Checkbox`}
               />
             )}
           </div>
@@ -422,6 +423,7 @@ export const ColorMatrix = {
                       size="md"
                       checked={cs === 'checked' ? true : cs === 'indeterminate' ? 'indeterminate' : false}
                       disabled={st === 'disabled'}
+                      aria-label={`${cs} ${st} Checkbox`}
                     />
                     <TokenAnnotation colors={TOKEN_MAP[cs][st]} />
                   </td>
@@ -492,8 +494,8 @@ export const SizeMatrix = {
               {SIZES.map((sz) => (
                 <tr key={sz}>
                   <Td mono>{sz}</Td>
-                  <Td><Checkbox size={sz} /></Td>
-                  <Td><Checkbox size={sz} defaultChecked /></Td>
+                  <Td><Checkbox size={sz} aria-label={`${sz} 尺寸未勾選 Checkbox`} /></Td>
+                  <Td><Checkbox size={sz} defaultChecked aria-label={`${sz} 尺寸已勾選 Checkbox`} /></Td>
                   <Td>
                     {/* 公開 API:`<Checkbox label>` 內部自動包 SelectionItem + wire id/htmlFor(selection-item.spec.md 禁裸用) */}
                     <Checkbox size={sz} defaultChecked label="接收通知" />
@@ -532,12 +534,19 @@ export const StateBehavior = {
             <div key={label} className="flex flex-col items-center gap-2">
               <div className="flex items-center gap-3">
                 <div className="flex flex-col items-center gap-1">
-                  <Checkbox disabled checked={checked} />
+                  <Checkbox
+                    disabled
+                    checked={checked}
+                    aria-label={`停用的${checked ? '已勾選' : '未勾選'} Checkbox`}
+                  />
                   <span className="text-[10px] text-fg-muted">disabled</span>
                 </div>
                 <span className="text-fg-muted text-caption">vs</span>
                 <div className="flex flex-col items-center gap-1">
-                  <Checkbox checked={checked} />
+                  <Checkbox
+                    checked={checked}
+                    aria-label={`可用的${checked ? '已勾選' : '未勾選'} Checkbox`}
+                  />
                   <span className="text-[10px] text-fg-muted">enabled</span>
                 </div>
               </div>

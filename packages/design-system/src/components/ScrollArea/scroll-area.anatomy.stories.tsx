@@ -140,7 +140,7 @@ export const Overview: Story = {
                 ['className',  'string',                            '—',       '傳入容器 className(常見:設定 height / border / rounded)'],
                 ['children',   'ReactNode',                         '—',       '要被捲動的內容'],
                 ['type',       "'auto'|'always'|'scroll'|'hover'",  "'hover'", 'Radix:scrollbar 顯示時機(hover = 游標進入才顯示)'],
-                ['dir',        "'ltr'|'rtl'",                       "'ltr'",   '文字方向(影響 horizontal scrollbar 起點)'],
+                ['dir',        "'ltr' only",                        "'ltr'",   '全域 compatibility contract 為 LTR-only；不宣稱 RTL 覆蓋'],
                 ['scrollHideDelay', 'number',                       '600',     'type=scroll / hover 時 scrollbar 隱藏前的延遲(ms)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>

@@ -462,6 +462,7 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 - **root `aria-label`**:consumer 透過 `<Steps aria-label="註冊流程進度">` 提供(透傳到 `<ol>`),命名此流程。對齊 Angular Material「stepper 必須有 label」。
 - **sr-only 狀態文字**:每個 step header 含 visually-hidden `<span>`「第 N 步,共 M 步,{已完成 / 進行中 / 錯誤 / 未開始}」——indicator 是 `aria-hidden` 純視覺,故 sr-only 是螢幕報讀器**唯一**狀態來源(對齊 Carbon `--assistive-text` 慣例)。
 - **展開狀態 ARIA**(2026-07-05 D4 加):垂直模式 step 含 `<StepContent>` 時,clickable header(`role="button"`)輸出 `aria-expanded`(反映 content 展開狀態;`multiple` toggle 與 `follow-active` 皆同步),並在 content 實際渲染(展開)時以 `aria-controls` 指向 content 區(收合時 content 不在 DOM,不輸出避免 dangling reference)——對齊 WAI-ARIA disclosure pattern trigger 最低要求。chevron 維持 `aria-hidden` 純視覺。
+- **StepContent 內的 consumer-owned scroll region**:Steps 不替任意 children 猜測捲動語意。consumer 若在 StepContent 放 `overflow-x-auto` / `overflow-y-auto`,實際會 overflow 的 wrapper 必須是鍵盤可達的具名區域(`tabIndex={0}` + `role="region"` + `aria-label`)並使用 DS inset focus ring(`focus-visible:outline-2 outline-offset-[-2px] outline-ring`)。tab stop 必須落在真正控制 `scrollLeft` / `scrollTop` 的 wrapper,不可放在內層 `<pre>`。展示層 `MultipleExpansion` 以 play assertion 驗證該節點確實 overflow、可聚焦。
 
 **Keyboard 行為**(Carbon 模型 — sequential Tab,非 tablist roving):
 

@@ -82,7 +82,7 @@ export const HoverSwap = {
         </div>
         {/* Rich border card list:無外框 + `gap-2`(item-anatomy「連續 item 貼邊合法性」) */}
         <div className="flex flex-col gap-2">
-          <FileItem mode="rich" name="Q1 營收報表.xlsx" status="completed"
+          <FileItem mode="rich" name="Q1 營收報表.xlsx" status="completed" data-visual-hover-target
             description="Uploaded to URL" thumbnailSrc="https://i.pravatar.cc/80?u=xls"
             onDownload={noop} actions={deleteBtn} />
           <FileItem mode="rich" name="合約草案 v3.pdf" status="error"

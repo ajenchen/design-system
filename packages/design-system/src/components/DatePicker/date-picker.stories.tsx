@@ -63,6 +63,23 @@ export const TypedInput: Story = {
       </div>
     )
   },
+  play: async ({ canvasElement }) => {
+    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
+    const canvas = within(canvasElement)
+    const input = canvas.getByRole('combobox', { name: 'YYYY/MM/DD' })
+    const visualWrapper = input.parentElement
+
+    // Closed popup 尚未掛載：真 combobox 與純視覺 wrapper 都不得留下懸空 IDREF。
+    expect(input).not.toHaveAttribute('aria-controls')
+    expect(visualWrapper).not.toHaveAttribute('aria-controls')
+
+    await userEvent.type(input, '{ArrowDown}')
+    const dialog = await within(document.body).findByRole('dialog', { name: '日期選擇' })
+    await waitFor(() => expect(input).toHaveAttribute('aria-controls', dialog.id))
+
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(input).not.toHaveAttribute('aria-controls'))
+  },
 }
 
 /* ── 四模式 ── */
@@ -263,7 +280,7 @@ export const ShowTimeRangePopoverOpen: Story = {
 /* ── HoverState:Range middle hover blue ring 驗證(M11 + Bug C 真實截圖)── */
 export const RangeMiddleHoverState: Story = {
   name: '範圍中段:滑鼠移過狀態',
-  parameters: { docs: { description: { story: 'Visual-audit — 開 range popover 並 userEvent.hover 一個 range_middle date,verify 藍色 1.5px ring 顯示在 grey track 之上(Bug C 設計準則 2026-05-02)。CSS :hover 需真實 pointer event,用 storybook/test userEvent.hover 觸發。' } } },
+  parameters: { docs: { description: { story: 'Visual-audit — play 開 range popover並定位 range_middle date；最終 CSS :hover 由 visual-audit 的 Playwright locator.hover() 在截圖前重套,驗藍色 1.5px ring 顯示在 grey track 之上。' } } },
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])
     return (
@@ -273,16 +290,23 @@ export const RangeMiddleHoverState: Story = {
     )
   },
   play: async ({ canvasElement }) => {
-    const { userEvent } = await import('@storybook/test')
+    const { userEvent, waitFor } = await import('@storybook/test')
     const trigger = canvasElement.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]')
-    if (!trigger) return
+    if (!trigger) throw new Error('日期區間 trigger 不存在')
     await userEvent.click(trigger)
-    await new Promise((r) => setTimeout(r, 250))
-    // Popover 在 Portal — query document;May 7 介於 range 5/4–5/12 之間 = range_middle cell
-    const target = Array.from(document.querySelectorAll<HTMLButtonElement>('.rdp-day_button'))
-      .find((b) => b.textContent?.trim() === '7')
-    if (target) await userEvent.hover(target)
-    await new Promise((r) => setTimeout(r, 400))
+
+    // Popover 在 Portal；等待固定 ISO 日期出現，避免用可變 locale 文字與固定 sleep 判定。
+    // 2026-05-07 介於 range 5/4–5/12 之間，依 DatePicker rangeModifiers 必為 rangeMiddle。
+    let target: HTMLButtonElement | null = null
+    await waitFor(() => {
+      target = document.querySelector<HTMLButtonElement>(
+        '[data-day="2026-05-07"] > button',
+      )
+      if (!target) throw new Error('範圍中段日期不存在')
+    })
+
+    // 只標記 deterministic target；真實 CSS :hover 由 visual-audit 建立。
+    target!.setAttribute('data-visual-hover-target', '')
   },
 }
 

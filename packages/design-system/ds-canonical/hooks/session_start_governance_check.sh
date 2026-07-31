@@ -214,13 +214,12 @@ elif [ -d "$HOOKS_DIR" ]; then
     2>/dev/null | wc -l | tr -d ' ')
   HOOK_COUNT=${HOOK_COUNT:-0}
 fi
-# 2026-06-11 deep-audit R2(n=8)重估:訊息原以 3 consumer hooks(check_consumer_no_ds_catalog /
-# check_consumer_story_baseline / check_consumer_ds_primitive_misuse)作 60 cap rationale,該 3 hook
-# 已 2026-06-11 prune-merge 入 check_consumer_app_invariants.sh(retired/2026-06-11-prune-merge/),
-# 現值 52。重估 verdict:60 維持 — 52 + 8 headroom(~15%)符合「升 cap 只為已 justified 新 hook」
-# 歷史節奏;降 cap 屬治理 substantive(soft 26 已在 27+ 提供 advisory),留 /knowledge-prune 評估。
+# 2026-07-31 canonical inventory:同一個 find predicate 算得現值 60,已抵 hard cap、
+# headroom=0。60 維持為邊界,不是新基準的自動調升理由；下一支 first-class hook 必先由
+# /knowledge-prune retire / consolidate 既有 hook。降 cap 仍屬治理 substantive
+# (soft 26 已在 27+ 提供 advisory),留 /knowledge-prune 評估。
 if [ "$HOOK_COUNT" -gt 60 ]; then
-  BLOCKERS="${BLOCKERS}\n- Hook count ${HOOK_COUNT}(hard 60 — Anthropic guideline ~15;含 root + lib/,排 retired/tests/). 2026-05-27 升 50→55→60(當時 3 consumer hooks ship;該 3 hook 已 2026-06-11 prune-merge 入 check_consumer_app_invariants,現值基準 52,cap 60 經 2026-06-11 重估維持)。超 60 = 先跑 /knowledge-prune 評估 retire / consolidate,不直接 re-raise。"
+  BLOCKERS="${BLOCKERS}\n- Hook count ${HOOK_COUNT}(hard 60 — Anthropic guideline ~15;含 root + lib/,排 retired/tests/；2026-07-31 canonical inventory 已為 60、零 headroom)。超 60 = 先跑 /knowledge-prune 評估 retire / consolidate,不直接 re-raise。"
 elif [ "$HOOK_COUNT" -gt 26 ]; then
   # 2026-05-15 raised soft cap 25→26 per /knowledge-prune D2 audit:
   # 26 wired hooks reflects M30 wrapper-schema-drift 新增 dedicated hook(justified evolution

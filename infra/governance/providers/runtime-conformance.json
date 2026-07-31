@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/runtime-conformance-profile.schema.json",
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "evidenceOutput": "runtime/provider-runtime-conformance.json",
   "timeoutMs": 45000,
   "maxOutputBytes": 1048576,
@@ -293,7 +293,23 @@
       "surfacePolicy": {
         "kind": "github-protected-workflow-readback",
         "artifactName": "external-runtime-surface-evidence",
-        "requiredCheckTrustSource": "protected-base-workflow",
+        "hardGateByRepositoryRole": {
+          "authority": {
+            "checkContext": "Verify(tsc + tests + compile + build)",
+            "oidcSubjectMode": "pull-request",
+            "trustSource": "repository-workflow"
+          },
+          "template-mirror": {
+            "checkContext": "Immutable consumer snapshot",
+            "oidcSubjectMode": "credential-environment",
+            "trustSource": "protected-base-workflow"
+          },
+          "product-consumer": {
+            "checkContext": "Immutable consumer snapshot",
+            "oidcSubjectMode": "credential-environment",
+            "trustSource": "protected-base-workflow"
+          }
+        },
         "requiredRulesetName": "fleet/verified-main",
         "protectedRef": "default-branch"
       },

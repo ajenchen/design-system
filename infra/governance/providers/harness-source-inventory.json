@@ -390,6 +390,7 @@
         "scripts/test-sync-ds-canonical-recovery.mjs",
         "scripts/test-sync-version-safety.mjs",
         "scripts/test-verified-exact-npm-runtime.mjs",
+        "scripts/test-visual-audit-interaction.mjs",
         "scripts/test-visual-baseline-review.mjs",
         "scripts/test-workflow-security.mjs"
       ]

@@ -198,6 +198,7 @@ export const SizeMatrix: Story = {
                 people={SAMPLE_PEOPLE}
                 value={SAMPLE_PEOPLE[0]}
                 onChange={() => {}}
+                aria-label={`負責人（${size} 尺寸）`}
               />
             </div>
           ))}
@@ -318,6 +319,7 @@ export const StateBehavior: Story = {
           value={SAMPLE_PEOPLE[0]}
           onChange={() => {}}
           searchPlaceholder="搜尋指派對象…"
+          aria-label="負責人"
         />
       </div>
 
@@ -332,6 +334,7 @@ export const StateBehavior: Story = {
           value={[SAMPLE_PEOPLE[0], SAMPLE_PEOPLE[1], SAMPLE_PEOPLE[2]]}
           onChange={() => {}}
           searchPlaceholder="加入 reviewers…"
+          aria-label="Reviewers"
         />
       </div>
 
@@ -346,6 +349,7 @@ export const StateBehavior: Story = {
           onChange={() => {}}
           searchPlaceholder="搜尋團隊成員…"
           emptyText="找不到符合的組員"
+          aria-label="團隊成員"
         />
       </div>
 
@@ -360,6 +364,7 @@ export const StateBehavior: Story = {
           value={null}
           onChange={() => {}}
           searchPlaceholder="指派對象…"
+          aria-label="負責人"
         />
       </div>
 
@@ -401,6 +406,7 @@ export const PersonValueType: Story = {
               people={['Ada Chen', 'Alice Wang', 'Bob Chen']}
               value="Ada Chen"
               onChange={() => {}}
+              aria-label="負責人（字串值）"
             />
           </div>
           <div>
@@ -409,6 +415,7 @@ export const PersonValueType: Story = {
               people={SAMPLE_PEOPLE}
               value={SAMPLE_PEOPLE[0]}
               onChange={() => {}}
+              aria-label="負責人（物件值）"
             />
           </div>
         </div>

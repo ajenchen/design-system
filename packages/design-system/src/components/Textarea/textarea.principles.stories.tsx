@@ -69,6 +69,7 @@ export const UsageGuidance: Story = {
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="描述這個問題的發生步驟、預期行為、實際行為..."
+              aria-label="Issue 留言"
               rows={4}
             />
           </div>
@@ -84,11 +85,12 @@ export const UsageGuidance: Story = {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="輸入專案名稱"
+              aria-label="專案名稱"
             />
           </div>
           <div>
             <Label warn>❌ 錯用:把單行標題做成 Textarea</Label>
-            <Textarea rows={1} placeholder="輸入專案名稱" />
+            <Textarea rows={1} placeholder="輸入專案名稱" aria-label="專案名稱（Textarea 誤用）" />
             <Label warn>↑ 使用者按 Enter 會換行,無法提交 form</Label>
           </div>
         </Rule>
@@ -108,7 +110,11 @@ export const ResizeRule: Story = {
         title="vertical resize — 使用者可拖下邊緣加高，但寬度固定"
         note="寬度固定保證 form 佈局不被破壞——一個 Textarea 突然變寬會推擠旁邊的 field。高度使用者可自由控制(長內容拉高比較好看)"
       >
-        <Textarea defaultValue="拖拉右下角可以垂直 resize 這個 textarea。試試看 ↓" rows={3} />
+        <Textarea
+          defaultValue="拖拉右下角可以垂直 resize 這個 textarea。試試看 ↓"
+          rows={3}
+          aria-label="可垂直縮放的留言"
+        />
         <Label>↑ 對照 Slack message box、GitHub comment box 的行為</Label>
       </Rule>
 
@@ -132,7 +138,12 @@ export const ReadonlyRule: Story = {
         title="Textarea readonly 保留 padding，用底色標示閱讀區"
         note="多行內容需要明確的閱讀區域邊界——多行文字若直接攤平會跟周圍純文字區融合,讀者無法辨識「這是一個 field 的內容」還是「文章一部分」。所以 readonly 時填上 bg-readonly 底色並保留內距,圈出一塊可辨識的閱讀區。Input readonly 因為是單行,可以做得更緊湊"
       >
-        <Textarea mode="readonly" defaultValue={'這是已送出的留言,現在呈現在 readonly 狀態。\n\n多行內容需要明確的閱讀區域邊界,所以 readonly 時保留內距並填上 bg-readonly 底色,圈出一塊閱讀區。'} rows={4} />
+        <Textarea
+          mode="readonly"
+          defaultValue={'這是已送出的留言,現在呈現在 readonly 狀態。\n\n多行內容需要明確的閱讀區域邊界,所以 readonly 時保留內距並填上 bg-readonly 底色,圈出一塊閱讀區。'}
+          rows={4}
+          aria-label="已送出的留言（唯讀）"
+        />
         <Label>↑ 對照 Slack 已編輯留言 / Notion 嵌入文字塊的 readonly 呈現</Label>
       </Rule>
 
@@ -140,7 +151,12 @@ export const ReadonlyRule: Story = {
         title="對比:Input readonly(無邊框、緊湊)"
         note="單行內容跟文字段落視覺可分,移除邊框不會混淆。兩者的 readonly 策略差異源自「單行 vs 多行」的閱讀需求"
       >
-        <Input mode="readonly" value="已送出的單行 URL:https://github.com/user/repo" onChange={() => {}} />
+        <Input
+          mode="readonly"
+          value="已送出的單行 URL:https://github.com/user/repo"
+          onChange={() => {}}
+          aria-label="已送出的網址（唯讀）"
+        />
       </Rule>
     </div>
   ),
@@ -164,7 +180,7 @@ export const NoIconRule: Story = {
         note="例如 comment box 的「送出」按鈕放 Textarea 下方,不塞進框內"
       >
         <div className="flex flex-col gap-2">
-          <Textarea placeholder="留下你的評論..." rows={3} />
+          <Textarea placeholder="留下你的評論..." rows={3} aria-label="評論" />
           <div className="flex justify-end">
             <Button variant="primary" size="sm">送出</Button>
           </div>

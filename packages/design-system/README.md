@@ -135,6 +135,7 @@ Token `--font-sans` stack = `Roboto, -apple-system, BlinkMacSystemFont, "Segoe U
 | `react-dom` | `>= 18.0.0` | peer |
 | `tailwindcss` | `>= 4.0.0` | peer,Tailwind v4 only |
 | `lucide-react` | `>= 0.400.0` | peer(consumer 已裝,DS 不重複,避免 hoisting 雙裝)|
+| Document direction | **LTR only** | RTL 不在目前支援矩陣；元件可能使用 physical left/right、LTR scrollLeft 與未鏡像 directional icons。consumer 不得把 `dir="rtl"` 視為已支援。若未來要支援，必須以 DS-wide proposal 同步 tokens、layout、icons、keyboard/scroll behavior 與 visual/a11y matrix，不能逐元件局部宣稱。|
 
 ---
 

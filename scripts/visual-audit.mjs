@@ -7,8 +7,9 @@
  *   1. 截圖每個關鍵 story(預設 1x PNG,`--retina` opt-in debug;neutral runtime evidence)
  *   2. WCAG 對比度掃描:每個 story 找可見文字 / icon 和底色對比,flag AA 不過(< 4.5:1 for text)
  *   3. 幾何 assertion(引擎支援 equalHeight / padding4Sided 等 type;⚠️ 現況誠實標註 2026-07-14:
- *      `scripts/visual-assertions.json` 的 111 個 scenario 目前全部只有 id+file、0 個定義
- *      `assertions` 陣列 → geometryViolations 恆空。該 manifest 現階段實質是「截圖場景清單」;
+ *      `scripts/visual-assertions.json` 的 124 個 scenario 中 12 個有 `interaction.hover`,
+ *      仍有 0 個定義 `assertions` 陣列 → geometryViolations 恆空。該 manifest 現階段實質是
+ *      「截圖場景 + 真實 hover interaction 清單」;
  *      幾何 invariant(如 toolbar slot 等高 / 四邊 padding 對稱)要生效須在 scenario 補 assertions 欄位)
  *   4. 產出 <absolute-git-dir>/governance-runtime/evidence/visual/visual-audit/report.json
  *
@@ -51,6 +52,10 @@ import {
   prepareVisualBaselineFile,
   resolveVisualBaselinePath,
 } from './lib/governance-visual-baselines.mjs'
+import {
+  executeVisualInteraction,
+  normalizeVisualInteraction,
+} from './lib/visual-audit-interaction.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = join(__dirname, '..')
@@ -77,15 +82,15 @@ const URLS = ARGS_KV['--urls'] // CSV of URLs,overrides scenario mode
 const NO_A11Y = ARGS_SET.has('--no-a11y') // skip @axe-core/playwright(default runs)
 const NO_DIFF = ARGS_SET.has('--no-diff') // skip baseline pixel diff
 const UPDATE_BASELINE = ARGS_SET.has('--update-baseline') // copy new snapshots as baseline
-// 2026-05-18 ship per codex Phase B F5: Dim 51 theme/density/RTL matrix support
-// 用法:`--matrix=theme-density-rtl` → 對每 scenario 跑 6-cell matrix
-//   (light / dark / high-contrast) × (density-md / density-lg) × (ltr / rtl)
-// Storybook globals 對齊 .storybook/preview.tsx:57-65 — theme={light|dark|hc} density={md|lg} dir={ltr|rtl}
+// Dim 51 theme/density matrix。`theme-density-rtl` 僅保留為 legacy CLI alias；
+// RTL 明確不支援，不得把 alias 名稱誤當 RTL coverage。現行矩陣只跑
+// (light / dark) × (density-md / density-lg) 共 4 cells。
+// Storybook globals 對齊 .storybook/preview.tsx 的 theme={light|dark}、density={md|lg}。
 const MATRIX = ARGS_KV['--matrix'] // 'theme-density' | 'theme-density-rtl'(舊名,同義)| undefined
 // 2026-06-11 dim 51 真落地:MATRIX_CELLS 原為 dead code(定義後 main loop 從未消費 = doc-claim ≠ code)。
 // 同時修 cell 清單造假:preview.tsx globals 真值只有 theme{light,dark} × density{md,lg} —
 // 原 hc / dir:rtl cell 注入未知 global = Storybook 靜默忽略 = 截到的其實是 light/ltr(假覆蓋)。
-// RTL / high-contrast 屬 DS-wide 未決策(見拍板清單),DS 落地後再擴 cell。
+// RTL 已明確不支援；high-contrast 也尚無 baseline 槽。兩者都不得虛構為現行 coverage。
 const MATRIX_CELLS = MATRIX === 'theme-density' || MATRIX === 'theme-density-rtl'
   ? [
       { theme: 'light', density: 'md', label: 'light-md' },
@@ -107,8 +112,26 @@ let ASSERTIONS = {}
 try {
   const raw = await readFile(ASSERTIONS_PATH, 'utf-8')
   ASSERTIONS = JSON.parse(raw)
+  if (
+    !ASSERTIONS
+    || typeof ASSERTIONS !== 'object'
+    || Array.isArray(ASSERTIONS)
+    || !Array.isArray(ASSERTIONS.scenarios)
+  ) {
+    throw new Error('root must be an object with a scenarios array')
+  }
+  ASSERTIONS.scenarios = ASSERTIONS.scenarios.map((scenario, index) => {
+    if (!scenario || typeof scenario !== 'object' || Array.isArray(scenario)) {
+      throw new Error(`scenarios[${index}] must be an object`)
+    }
+    const interaction = normalizeVisualInteraction(
+      scenario.interaction,
+      `scenarios[${index}].interaction`,
+    )
+    return interaction ? { ...scenario, interaction } : scenario
+  })
 } catch (err) {
-  console.error(`[visual-audit] FATAL: scripts/visual-assertions.json 讀取失敗(${err.message})— fail-closed,不做內建 fallback`)
+  console.error(`[visual-audit] FATAL: scripts/visual-assertions.json 讀取/契約驗證失敗(${err.message})— fail-closed,不做內建 fallback`)
   process.exit(1)
 }
 
@@ -331,6 +354,9 @@ async function auditScenario(browser, scenario, opts = {}) {
     deviceScaleFactor: opts.retina ? 2 : 1,
   })
   const page = await context.newPage()
+  let interactionResult = scenario.interaction
+    ? { status: 'not-run', action: scenario.interaction.action, selector: scenario.interaction.selector }
+    : null
   // 凍結系統「日期」(2026-07-07 根治 VR 換日假 breach):日期元件內部 new Date()(Calendar today
   // 圈 calendar.tsx:191 / DateGrid today bar)隨真實日期漂移 → baseline 每隔幾天假 breach
   // (anchor:calendar-event-publishing 0.503%,diff 量 = today 標記移格固定像素)。
@@ -360,7 +386,7 @@ async function auditScenario(browser, scenario, opts = {}) {
     globalThis.Date = ShiftedDate
   })
   // scenario 可有 .url(任意 URL,for product app routes)或 .id(Storybook story id)
-  // 2026-05-18 ship per codex Phase B F5 + Dim 51: opts.matrixCell { theme, density, dir }
+  // 4-cell LTR-only matrix:opts.matrixCell { theme, density }。RTL 明確不支援，不存在 dir 軸。
   // 注入 Storybook globals query params(對齊 .storybook/preview.tsx 全域 toolbar)
   const matrixCell = opts.matrixCell
   const globalsParam = matrixCell
@@ -373,12 +399,13 @@ async function auditScenario(browser, scenario, opts = {}) {
   try {
     await page.goto(url, { waitUntil: 'networkidle', timeout: 45_000 })
 
-    // Interactive stories(hover / focus / tooltip / click / item-hover 等)透過 play() 設定狀態,
-    // 不可被 reset 覆蓋。用 story id 關鍵字偵測(keyword-based),tagged 以外 fallback keyword match。
+    // Interactive stories 的非 pointer 狀態由 play() 建立；manifest interaction 的 CSS :hover
+    // 稍後由真實 Playwright pointer 建立。兩者都不可被 reset 覆蓋。
     const storyId = scenario.id ?? ''
     // 匹配 story id 含 interactive keywords(anywhere after '--'),不限於結尾
     const isInteractive =
-      /--[a-z-]*(hover|focus|tooltip|click|interactive|pressed|active|swap|open-snapshot)[a-z-]*$/i.test(storyId)
+      Boolean(scenario.interaction)
+      || /--[a-z-]*(hover|focus|tooltip|click|interactive|pressed|active|swap|open-snapshot)[a-z-]*$/i.test(storyId)
 
     if (!isInteractive) {
       await page.mouse.move(0, 0) // avoid mouse hovering an icon-only trigger auto-showing tooltip in snapshot
@@ -400,7 +427,32 @@ async function auditScenario(browser, scenario, opts = {}) {
     // 而非 class prefix(後者會誤匹 Storybook 初始 DOM chrome)。
     const errorMsg = await page.locator('#error-message').textContent().catch(() => '')
     if (errorMsg && errorMsg.trim().length > 0) {
-      return { id: scenario.id ?? scenario.url, file: scenario.file, error: `Storybook error display: ${errorMsg.slice(0, 200)}` }
+      return {
+        id: scenario.id ?? scenario.url,
+        file: scenario.file,
+        interaction: interactionResult,
+        error: `Storybook error display: ${errorMsg.slice(0, 200)}`,
+      }
+    }
+
+    if (scenario.interaction) {
+      interactionResult = {
+        status: 'running',
+        action: scenario.interaction.action,
+        selector: scenario.interaction.selector,
+      }
+      try {
+        const executed = await executeVisualInteraction(page, scenario.interaction)
+        interactionResult = { status: 'passed', ...executed }
+      } catch (interactionError) {
+        interactionResult = {
+          status: 'failed',
+          action: scenario.interaction.action,
+          selector: scenario.interaction.selector,
+          error: interactionError.message,
+        }
+        throw interactionError
+      }
     }
 
     const screenshotPath = prepareRuntimeEvidenceFile({
@@ -489,13 +541,19 @@ async function auditScenario(browser, scenario, opts = {}) {
     return {
       id: scenario.id ?? scenario.url,
       file: scenario.file,
+      interaction: interactionResult,
       contrast,
       geometryViolations: geometry,
       a11yViolations,
       diff,
     }
   } catch (err) {
-    return { id: scenario.id ?? scenario.url, file: scenario.file, error: err.message }
+    return {
+      id: scenario.id ?? scenario.url,
+      file: scenario.file,
+      interaction: interactionResult,
+      error: err.message,
+    }
   } finally {
     await context.close()
   }
@@ -523,7 +581,7 @@ function getChangedComponents() {
     const all = new Set([...committedFiles, ...workingFiles, ...stagedFiles])
     const components = new Set()
     for (const f of all) {
-      const m = /^src\/design-system\/components\/([^/]+)\//.exec(f)
+    const m = /^packages\/design-system\/src\/components\/([^/]+)\//.exec(f)
       if (m) components.add(m[1])
     }
     return components

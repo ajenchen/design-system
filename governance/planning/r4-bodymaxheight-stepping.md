@@ -1,7 +1,10 @@
 <!-- Authority/status: governance/planning/registry.json -->
 # R4 — DataTable bodyMaxHeight per-frame stepping fix
 
-**Status**: 🟡 awaiting codex deep eval
+**Status**: REFERENCE — fix 已落地；不再等待 codex deep eval。現行實作 authority =
+`packages/design-system/src/components/DataTable/data-table.tsx` 的 parent-slot
+ResizeObserver + rAF coalesce + `<4px` guard + 100ms stability window；下方候選矩陣與 open
+questions 僅保留歷史診斷，不是待執行計畫。
 **Brief**: PR #7 [comment 4402277095](https://github.com/ajenchen/design-system/pull/7#issuecomment-4402277095) sent 2026-05-07T18:48Z + followup [4402393026](https://github.com/ajenchen/design-system/pull/7#issuecomment-4402393026) at +42m
 **Queue entry**: `.claude/memory/codex-brief-queue.jsonl` `id=4402277095`
 **Owner**: Claude (synthesizer + implementer);codex = 2nd-opinion gatekeeper

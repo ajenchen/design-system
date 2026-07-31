@@ -73,6 +73,7 @@ export const UsageGuidance: Story = {
             <TabsList>
               <TabsTrigger value="a">唯一選項</TabsTrigger>
             </TabsList>
+            <TabsContent value="a" className="text-body text-fg-primary">唯一內容區沒有切換價值,應直接顯示。</TabsContent>
           </Tabs>
           <Label warn>↑ 這個 Tabs 沒有意義,直接顯示內容</Label>
         </Rule>
@@ -101,6 +102,9 @@ export const UsageGuidance: Story = {
               <TabsTrigger value="products">產品列表</TabsTrigger>
               <TabsTrigger value="about">關於我們</TabsTrigger>
             </TabsList>
+            <TabsContent value="home" className="text-body text-fg-primary">首頁是獨立路由,不應由 Tabs 承載。</TabsContent>
+            <TabsContent value="products" className="text-body text-fg-primary">產品列表是獨立路由,不應由 Tabs 承載。</TabsContent>
+            <TabsContent value="about" className="text-body text-fg-primary">關於我們是獨立路由,不應由 Tabs 承載。</TabsContent>
           </Tabs>
           <Label warn>↑ 這些是獨立頁面,不該用 Tabs</Label>
         </Rule>
@@ -177,6 +181,26 @@ export const UsageGuidance: Story = {
       </Section>
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
+    const canvas = within(canvasElement)
+    const assertControlledPanelExists = async (name: string) => {
+      const tab = canvas.getByRole('tab', { name })
+      await userEvent.click(tab)
+      await waitFor(() => {
+        expect(tab).toHaveAttribute('aria-selected', 'true')
+        const panelId = tab.getAttribute('aria-controls')
+        expect(panelId).toBeTruthy()
+        expect(document.getElementById(panelId as string)).not.toBeNull()
+      })
+    }
+
+    await assertControlledPanelExists('唯一選項')
+    await assertControlledPanelExists('首頁')
+    await assertControlledPanelExists('產品列表')
+    await assertControlledPanelExists('關於我們')
+    await assertControlledPanelExists('首頁')
+  },
 }
 
 // ── Size ─────────────────────────────────────────────────────────────────────

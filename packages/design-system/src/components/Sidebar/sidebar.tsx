@@ -761,7 +761,7 @@ const SidebarGroupLabel = React.forwardRef<
   // 跟 SidebarMenuButton 的 suffix inline action 同一套 canonical 實作。
   //
   // **為什麼 chevron 是 inline action 而非整個 label 是 trigger**:
-  // 1. 同 sidebar 內的 inline action 視覺必須一致(fg-muted → foreground、hover bg、圓角)
+  // 1. 同 sidebar 內的 inline action 視覺必須一致(fg-muted → fg-secondary、hover bg、圓角)
   // 2. Linear / Notion / Finder 等世界級 sidebar 都是「label 裝飾、chevron 互動」
   // 3. 整個 label 當 trigger 會把 label 升格為 button,跟非 collapsible group 的 label
   //    語意不一致(一個是 div、一個是 button),無障礙與視覺焦點都會跳動

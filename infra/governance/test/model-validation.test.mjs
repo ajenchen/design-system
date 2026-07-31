@@ -685,7 +685,7 @@ test('canonical GitHub profile minima reject required-check, environment, releas
   })
   expectDesiredPoison(value => {
     const duplicate = structuredClone(value.profiles['design-system-authority'].environments
-      .find(environment => environment.name === 'governance-check-verdict'))
+      .find(environment => environment.name === 'governance-mirror'))
     duplicate.waitTimer = 1
     value.profiles['design-system-authority'].environments.push(duplicate)
   })
@@ -696,8 +696,9 @@ test('canonical GitHub profile minima reject required-check, environment, releas
     duplicate.waitTimer = 1
     environments[npmIndex] = duplicate
   })
-  for (const integration of ['githubActions', 'governanceCheckApp', 'governanceWriterApp']) {
-    expectDesiredPoison(value => { value.integrations[integration].required = false })
+  expectDesiredPoison(value => { value.integrations.githubActions.required = false })
+  for (const integration of ['governanceCheckApp', 'governanceWriterApp']) {
+    expectDesiredPoison(value => { value.integrations[integration].required = true })
   }
   for (const mutate of [
     value => { value.integrations.githubActions.id = 999 },

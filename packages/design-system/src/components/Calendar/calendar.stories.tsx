@@ -10,7 +10,7 @@ const meta: Meta<typeof Calendar> = {
     docs: {
       description: {
         component:
-          '事件檢視 canvas(月 view MVP)。對齊 Notion Calendar / Google Calendar;與 DatePicker(選日期 form control)**職責不同**,見 spec。',
+          '月事件檢視 canvas。對齊 Notion Calendar / Google Calendar;與 DatePicker(選日期 form control)**職責不同**,見 spec。',
       },
     },
   },
@@ -21,10 +21,7 @@ type Story = StoryObj<typeof Calendar>
 
 // ── 真實業務情境 ─────────────────────────────────────────────────────
 
-// 釘固定日期(2026-07-07 修 VR flake;2026-07-13 補傳 defaultReferenceDate 使 pin 真正生效):
-// 只把 now 用來組事件日期字串「不會」pin 顯示月 —— Calendar 顯示月預設取即時 new Date()(tsx),
-// 故必須把 now 傳給 defaultReferenceDate 才真正釘住顯示月(下方各 instance 已補)。
-// 註:today 標記仍取真實日期(tsx 內 new Date(),無 today override prop)→ 落在被釘 7 月內時仍隨換日移格,屬已知殘留。
+// 視覺基線同時釘住顯示月與 today SSOT，避免跨月/換日造成 snapshot 漂移。
 const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
 
@@ -49,6 +46,7 @@ export const TeamCalendar: Story = {
       <div className="h-screen p-4 bg-canvas">
         <Calendar
           defaultReferenceDate={now}
+          today={now}
           events={events}
           onEventClick={(e) => alert(`點了事件:${e.title}`)}
           onDateClick={() => { /* demo:實際 app 在此開「當日新增事件」面板 */ }}
@@ -74,7 +72,7 @@ export const ContentPublishingSchedule: Story = {
     ]
     return (
       <div className="h-screen p-4 bg-canvas">
-        <Calendar events={events} defaultReferenceDate={now} onCreateEvent={() => alert('排內容')} />
+        <Calendar events={events} defaultReferenceDate={now} today={now} onCreateEvent={() => alert('排內容')} />
       </div>
     )
   },
@@ -87,7 +85,7 @@ export const EmptyCalendar: Story = {
   name: '空行事曆',
   render: () => (
     <div className="h-screen p-4 bg-canvas">
-      <Calendar events={[]} defaultReferenceDate={now} onCreateEvent={() => alert('加第一個事件')} />
+      <Calendar events={[]} defaultReferenceDate={now} today={now} onCreateEvent={() => alert('加第一個事件')} />
     </div>
   ),
 }

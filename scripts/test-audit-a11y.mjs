@@ -243,6 +243,8 @@ assert.match(productionSource, /storyIdsSha256: scanCorpus\.storyIdsSha256/, 'ba
 assert.match(productionSource, /evaluateA11yScanIntegrity\(results\.violationsByStory\)/, 'production CLI must block scan errors before all output modes')
 assert.match(productionSource, /evaluateA11ySeverityGate\(results\)/, 'production CLI must call the tested severity gate')
 assert.match(productionSource, /startA11yStaticServer\(\{ rootDirectory: STORYBOOK_DIR/, 'production CLI must use the owned contained server')
+assert.match(productionSource, /locator\('#error-message'\)\.textContent\(\)/, 'production CLI must fail closed on Storybook play/render error displays')
+assert.match(productionSource, /Storybook error display:/, 'production CLI must classify Storybook error displays as audit errors')
 assert.doesNotMatch(productionSource, /--(?:fixture|skip-a11y|mock-axe)\b/, 'production CLI must expose no test bypass')
 
 const staticServerSource = readFileSync(fileURLToPath(new URL('./lib/a11y-static-server.mjs', import.meta.url)), 'utf8')

@@ -16,13 +16,12 @@ import {
 import { cn } from '@/lib/utils'
 import { CAT_EVENT, CAT_ACCENT, type CategoricalHue } from '@/design-system/tokens/categorical-color'
 import { Button } from '@/design-system/components/Button/button'
-import { SegmentedControl, SegmentedControlItem } from '@/design-system/components/SegmentedControl/segmented-control'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { useTruncated } from '@/design-system/hooks/use-truncated'
 
 /**
- * Calendar — 事件檢視 canvas(月 view MVP)
+ * Calendar — 月事件檢視 canvas
  *
  * 定位:看事件的 page-level canvas,對齊 Notion Calendar / Google Calendar。
  * 完整 spec 見 `calendar.spec.md`。
@@ -30,11 +29,9 @@ import { useTruncated } from '@/design-system/hooks/use-truncated'
  * ── Layout Family ──
  * 非 4-Family,屬 page-composite(多區塊 Toolbar + Grid + EventTile)。
  *
- * ── MVP scope ──
- * - 月 view 完整(toolbar / grid / event tile / today highlight / outside days)
- * - 週 / 日 view + size lg = **roadmap:尚未實作,目前只渲染月檢視**(誠實 API,
- *   props 保留給未來增量,2026-07-14 user 拍板;行為明細見 spec「狀態 > 邊界案例」)
- * - 拖拉增刪 event 是 roadmap(見 spec「MVP vs 後續增量」)
+ * ── Implemented scope ──
+ * 月 view(toolbar / grid / event tile / today highlight / outside days)。未實作的
+ * week/day/size/drag 能力不預佔公開 prop 或 disabled control。
  *
  * ── 與 DatePicker 的區分 ──
  * DatePicker 是「選日期」form control;Calendar 是「看事件」page canvas。
@@ -59,22 +56,17 @@ export interface CalendarEvent {
   metadata?: Record<string, unknown>
 }
 
-export type CalendarView = 'month' | 'week' | 'day'
-
 export interface CalendarProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
-  /**
-   * 當前 view。**roadmap:`'week'` / `'day'` 尚未實作,目前只渲染月檢視**——
-   * 傳入不報錯:grid 仍為月檢視,僅 `data-view` 同步 + SegmentedControl 週/日項 disabled
-   * (誠實 API;見 calendar.spec.md「狀態 > 邊界案例」+「MVP vs 後續增量」)。
-   */
-  view?: CalendarView
-  defaultView?: CalendarView
-  onViewChange?: (view: CalendarView) => void
-
   /** 聚焦日期(月 view 的那個月) */
   referenceDate?: Date
   defaultReferenceDate?: Date
   onReferenceDateChange?: (date: Date) => void
+  /**
+   * 「今天」的時間來源。預設為呼叫端當下時間；傳入可讓 SSR、測試與視覺快照完全
+   * deterministic。此值同時擁有 today highlight、Today button target，以及未提供
+   * referenceDate/defaultReferenceDate 時的初始月份。
+   */
+  today?: Date
 
   /** 事件資料 */
   events?: CalendarEvent[]
@@ -92,11 +84,6 @@ export interface CalendarProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   /** 自訂 event tile 渲染 */
   renderEventTile?: (event: CalendarEvent) => React.ReactNode
 
-  /**
-   * size。**roadmap:`'lg'` 尚未實作,視覺與 `'md'` 相同**——傳入不報錯,
-   * 僅設 `data-size` attribute,無任何 CSS 消費(誠實 API;prop 保留給未來 cell 密度增量)。
-   */
-  size?: 'md' | 'lg'
   className?: string
 
   /** locale(預設 'en-US') */
@@ -107,7 +94,6 @@ export interface CalendarProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   nextAriaLabel?: string
   /** 月份導覽 <nav> landmark 的 aria-label。Override for i18n. */
   navAriaLabel?: string
-  viewToggleAriaLabel?: string
   todayLabel?: string
   /** 「新事件」CTA 文字。Override for i18n。CTA 僅在傳 `onCreateEvent` 時渲染(spec Toolbar 段)。 */
   createLabel?: string
@@ -194,32 +180,29 @@ function MonthEventTile({
 }
 
 const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calendar({
-  view: viewProp,
-  defaultView = 'month',
-  onViewChange,
   referenceDate: referenceDateProp,
   defaultReferenceDate,
   onReferenceDateChange,
+  today: todayProp,
   events = [],
   onEventClick,
   onDateClick,
   onCreateEvent,
   weekStartsOn = 0,
   renderEventTile,
-  size = 'md',
   className,
   locale = 'en-US',
   prevAriaLabel = '上個月', // i18n-allow: DS default; consumer override via prevAriaLabel prop
   nextAriaLabel = '下個月', // i18n-allow: DS default; consumer override via nextAriaLabel prop
   navAriaLabel = '行事曆月份導覽', // i18n-allow: DS default; consumer override via navAriaLabel prop
-  viewToggleAriaLabel = '檢視切換', // i18n-allow: DS default; consumer override via viewToggleAriaLabel prop
   todayLabel = '今天', // i18n-allow: DS default; consumer override via todayLabel prop
   createLabel = '新事件', // i18n-allow: DS default; consumer override via createLabel prop
   ...props
 }, ref) {
+  const resolvedToday = todayProp ?? new Date()
   // Controlled / uncontrolled refDate
   const [internalRef, setInternalRef] = React.useState<Date>(
-    defaultReferenceDate ?? new Date(),
+    () => new Date((defaultReferenceDate ?? resolvedToday).getTime()),
   )
   const refDate = referenceDateProp ?? internalRef
   const setRefDate = React.useCallback(
@@ -228,17 +211,6 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
       onReferenceDateChange?.(next)
     },
     [referenceDateProp, onReferenceDateChange],
-  )
-
-  // View state(roadmap:week/day 尚未實作,受控值照收但 grid 恆為月檢視)
-  const [internalView, setInternalView] = React.useState<CalendarView>(defaultView)
-  const currentView = viewProp ?? internalView
-  const setView = React.useCallback(
-    (next: CalendarView) => {
-      if (viewProp === undefined) setInternalView(next)
-      onViewChange?.(next)
-    },
-    [viewProp, onViewChange],
   )
 
   // Build month grid
@@ -257,8 +229,6 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     [locale],
   )
   const monthTitle = monthTitleFormatter.format(refDate)
-
-  const today = new Date()
 
   const weekdayNames = React.useMemo(() => {
     // 取 `days[0..6]` 的名字(gridStart 開始 7 天,正好一週)
@@ -302,7 +272,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
     return map
   }, [events, days])
 
-  const handleToday = () => setRefDate(new Date())
+  const handleToday = () => setRefDate(new Date(resolvedToday.getTime()))
   const handlePrev = () => setRefDate(subMonths(refDate, 1))
   const handleNext = () => setRefDate(addMonths(refDate, 1))
 
@@ -313,11 +283,9 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         'flex flex-col w-full h-full bg-surface rounded-md border border-divider overflow-hidden',
         className,
       )}
-      data-view={currentView}
-      data-size={size}
       {...props}
     >
-      {/* Toolbar:[◀] [今天] [▶]  title  [view tabs]  [+ new] */}
+      {/* Toolbar:[◀] [今天] [▶]  title  [+ new] */}
       <div
         className={cn(
           'flex items-center gap-2 shrink-0 border-b border-divider',
@@ -353,20 +321,6 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
           <TruncatedText display="block">{monthTitle}</TruncatedText>
         </h2>
 
-        {/* View switcher:用 SegmentedControl(互斥多選一 canonical)——
-            對齊 CLAUDE.md「互斥分類選擇走 SegmentedControl,非 checked Button group」原則。
-            Button 的 pressed 是「toggle 持續狀態」語意,不適合「單選 view 切換」 */}
-        <SegmentedControl
-          size="sm"
-          value={currentView}
-          onValueChange={(v) => setView(v as CalendarView)}
-          aria-label={viewToggleAriaLabel}
-        >
-          <SegmentedControlItem value="day" disabled>日</SegmentedControlItem>
-          <SegmentedControlItem value="week" disabled>週</SegmentedControlItem>
-          <SegmentedControlItem value="month">月</SegmentedControlItem>
-        </SegmentedControl>
-
         {onCreateEvent && (
           <Button variant="primary" size="sm" startIcon={Plus} onClick={onCreateEvent}>
             {createLabel}
@@ -397,7 +351,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
           <div key={rowIdx} role="row" style={{ display: 'contents' }}>
             {days.slice(rowIdx * 7, rowIdx * 7 + 7).map((date) => {
               const inMonth = isSameMonth(date, refDate)
-              const isToday = isSameDay(date, today)
+              const isToday = isSameDay(date, resolvedToday)
               // 2026-06-01 allDay:全天事件排 cell 頂端(對齊 Google Calendar 全天列在上)——
               // 排序已在 eventsByDate bucketing memo 內完成(D3 perf),cell 內 O(1) 查表
               const dayEvents = eventsByDate.get(`${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`) ?? []

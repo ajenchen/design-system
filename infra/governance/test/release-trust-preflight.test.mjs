@@ -841,7 +841,7 @@ test('candidate-null rollout still resolves exact live GitHub trust using read-o
   assert.equal(evidence.independentReviewerAuthority.authorityDigest, reviewerAuthority(context).authorityDigest)
   assert.deepEqual(evidence.release.verification, { verified: true, reason: 'valid', verifiedAt: '2026-07-19T23:30:00Z' })
   assert.equal(evidence.trust.immutableReleases, true)
-  assert.deepEqual(evidence.trust.integrations.map(item => item.observed.id), [15368, 1001, 1002])
+  assert.deepEqual(evidence.trust.integrations.map(item => item.observed.id), [15368])
   assert.ok(client.calls.length > 0 && client.calls.every(call => call.method === 'GET'))
   assert.match(releaseTrustPreflightEvidenceDigest(evidence, expected(context)), /^[a-f0-9]{64}$/)
 })
@@ -1033,7 +1033,8 @@ test('privileged rebind rejects run replay, model drift, and nested trust tamper
   )
 
   const tampered = structuredClone(evidence)
-  tampered.trust.integrations[1].observed.id += 1
+  tampered.trust.integrations
+    .find(integration => integration.name === 'githubActions').observed.id += 1
   assert.throws(() => validateReleaseTrustPreflightEvidence(tampered, expected(context)), /observed trust state differs/)
 
   const tagTampered = structuredClone(evidence)
@@ -1318,7 +1319,7 @@ test('insufficient observation permission fails closed and never attempts a writ
   const aligned = new AlignedReadOnlyClient(context)
   const client = {
     request(method, path, ...rest) {
-      if (path === '/apps/qijenchen-governance-check') {
+      if (path === '/apps/github-actions') {
         aligned.calls.push({ method, path })
         throw new Error('GitHub API HTTP 403: resource not accessible by integration')
       }

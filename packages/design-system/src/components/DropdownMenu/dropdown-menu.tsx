@@ -67,23 +67,65 @@ const radixItemClass = [
 ].join(' ')
 
 // ── Root ──
-const DropdownMenu = DropdownMenuPrimitive.Root
+// Radix modal menu 會在 open 時把 trigger 所在的 app subtree 設成 aria-hidden。瀏覽器仍可
+// 讓 subtree 內原本的 trigger 留在 sequential focus order，axe 因而正確報
+// aria-hidden-focus。由 Root SSOT 對所有 DropdownMenu 統一同步 trigger tab stop；Portal
+// 仍保留 React context，所以不需要 consumer/story 各自 patch。
+const DropdownMenuModalOpenContext = React.createContext(false)
+
+const DropdownMenu = ({
+  open,
+  defaultOpen,
+  onOpenChange,
+  modal = true,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Root>) => {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen ?? false)
+  const resolvedOpen = open ?? uncontrolledOpen
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (open === undefined) setUncontrolledOpen(nextOpen)
+      onOpenChange?.(nextOpen)
+    },
+    [onOpenChange, open],
+  )
+
+  return (
+    <DropdownMenuModalOpenContext.Provider value={modal && resolvedOpen}>
+      <DropdownMenuPrimitive.Root
+        open={open}
+        defaultOpen={defaultOpen}
+        onOpenChange={handleOpenChange}
+        modal={modal}
+        {...props}
+      />
+    </DropdownMenuModalOpenContext.Provider>
+  )
+}
+DropdownMenu.displayName = DropdownMenuPrimitive.Root.displayName
+
 const DropdownMenuTrigger = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger>
->(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.Trigger
-    ref={ref}
-    // 2026-07-05:非 asChild 裸用需可見 focus 指示(WCAG 2.4.7)——原 `outline-none` 讓裸 Trigger
-    // 完全無 focus ring。消費 Button focus canonical(button.tsx buttonVariants base)。
-    // asChild+Button 場景同名 class 重複,無影響。
-    className={cn(
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-      className,
-    )}
-    {...props}
-  />
-))
+>(({ className, tabIndex, ...props }, ref) => {
+  const modalOpen = React.useContext(DropdownMenuModalOpenContext)
+  return (
+    <DropdownMenuPrimitive.Trigger
+      ref={ref}
+      // modal open 時 trigger 位於 Radix aria-hidden subtree：移出 sequential focus order；
+      // 關閉時仍由 Radix programmatically focus，且恢復 consumer 原 tabIndex。
+      tabIndex={modalOpen ? -1 : tabIndex}
+      // 2026-07-05:非 asChild 裸用需可見 focus 指示(WCAG 2.4.7)——原 `outline-none` 讓裸 Trigger
+      // 完全無 focus ring。消費 Button focus canonical(button.tsx buttonVariants base)。
+      // asChild+Button 場景同名 class 重複,無影響。
+      className={cn(
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+        className,
+      )}
+      {...props}
+    />
+  )
+})
 DropdownMenuTrigger.displayName = DropdownMenuPrimitive.Trigger.displayName
 // DropdownMenuGroup — 對齊 MenuGroup 的 group separation 設計語言
 //
@@ -178,7 +220,7 @@ const DropdownMenuContent = React.forwardRef<
       <RowSizeProvider value={size}>
         {/* body 恆在 flex-1 ScrollArea 內:超過 clamped 高度即跨-OS 一致捲動(不吃寬度);
             短選單 flex-1 貼內容不塌(同 HoverCard/Popover/DataTable panel 已驗)。py-2 在內層,整 padded 區可捲。 */}
-        <ScrollArea className="flex-1 min-h-0">
+        <ScrollArea className="flex-1 min-h-0" viewportTabIndex={null}>
           <div className="py-2">{children}</div>
         </ScrollArea>
       </RowSizeProvider>
@@ -413,7 +455,7 @@ const DropdownMenuLabel = React.forwardRef<
         size={size}
         header
         role="presentation"
-        className="pointer-events-none"
+        className="pointer-events-none text-fg-secondary"
       >
         {children}
       </MenuItem>

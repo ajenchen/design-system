@@ -257,6 +257,8 @@ try {
         ok: transientTimeout.report.ok,
         expectedDigest: positive.report.attestationDigest,
         actualDigest: transientTimeout.report.attestationDigest,
+        diagnostics: transientTimeout.report.diagnostics,
+        staticReplay: transientTimeout.report.evidence?.staticReplay,
         stderr: transientTimeout.stderr,
       })}`,
     )

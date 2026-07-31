@@ -1,140 +1,193 @@
 <!-- Authority/status: governance/planning/registry.json -->
-# 2026-07-31 全域殘項總帳(跨 session 續作 SSOT)
+# 2026-07-31 全域殘項總帳（跨 session 續作 SSOT）
 
-**為什麼有這份文件**:2026-07-31 session 做了一次 6 路平行 + 2 路對抗的全域盤點,結論不能只留在對話裡。
-任何後續 session **先讀本檔**再決定做什麼,不要重新盤點(重盤一次約 130 萬 token)。
+**用途**：記錄 2026-07-31 全域盤點後的 current state。後續 session 應先讀本檔，再依
+canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描述當成 live remote verdict。
 
-## 0-A. 交接狀態(2026-07-31 晚更新 — 接手者先讀這段)
+## 0. Current state（2026-07-31 Codex 收尾）
 
-**分支** `claude/remove-app-verdict-authz` = `5a039570`(已推送),PR #22 open,base = protected `main`。
-**agent push 已打通**:token 在 `~/.config/qijenchen-governance/github-token`,git global credential helper
-以 `x-access-token` + 該檔供給;`url.https://github.com/.insteadOf git@github.com:` 已設(SSH 走不通,
-sandbox proxy 載不了 port 22)。**接手者不需要再要任何憑證**。
+- 分支：`claude/remove-app-verdict-authz`；唯一 PR #22 以 protected `main` 為 base。本輪 closure
+  set 依 `AGENTS.md#Git solo-work canonical` 由 agent 自動 commit／push／更新同一 PR、監看 hard
+  gates，並在全綠後自主 squash merge；不得把舊 head 的綠／紅燈寫成新 head verdict。
+- sibling `../work-management` 的 `codex/work-preview` 仍比
+  `origin/codex/work-preview` ahead 6；這是下游本機殘項，不是外部 activation。
+- 本檔只宣告已由 source、SSOT 與本機驗證證成的工程閉環；GitHub live apply、release、
+  canonical Ubuntu visual promotion、獨立 certification／rollout 仍集中列在 §4，沒有被
+  本輪冒充完成。
 
-### 本 session 已修好並驗證(不要重做)
-| 修了什麼 | 證據 |
+## 1. 本輪已完成的工程閉環
+
+| 範圍 | Current closure |
 |---|---|
-| `Edit`/`MultiEdit` 全面被 provider hook 擋死 | `packages/governance/src/provider-hook-normalization.mjs` PreToolUse 改套 `postEventCarriesDeclaredTransport`(原本只有 PostToolUse 有);真因被 `:1414-1416` 的 `error.code \|\| 'MUTATION_INVALID'` fallback 吞掉 |
-| `audit:workflow-security` TypeError 崩潰 | `scripts/audit-workflow-security.mjs` 用 `buildStepBlocks.slice(1)` 保住既有索引 + 新增第一 step 四條斷言 + 移除已失效的 job-level DOCKER_CONFIG 斷言;現 PASS(18 workflows) |
-| managed-CI frozen job-key drift(連鎖 23 harness 測試) | `scripts/lib/managed-ci-trusted-execution-plan.mjs` job key 去 `'env'`、step 數 10→11、新增 `build.steps[0]` 斷言、四處 workflow digest 同步 |
-| `governance:generate` 在 sandbox 內跑不動 | `scripts/lib/canonical-sync-transaction.mjs` 改 write-if-changed(`before === after` 即跳過 republish)+ 暫存區上層不可寫時退回 realpath 後的 OS temp。**現在 agent 可自行 generate,不需真人代跑** |
-| `test:workflow-security` ambient-Docker 變異 fixture | 215 pass / 0 fail |
-| workflow identity binding stale | `--propose` → `--apply-reviewed-proposal` 已同步 |
-| 本機 0700 目錄被烤進 control-plane lock | `.github` 與 `ds-canonical/hooks` chmod 755 後重生;**接手者若要跑 generate,先確認這兩個目錄是 755,否則會再犯** |
+| Provider / CI 基礎 | `Edit`／`MultiEdit` provider hook transport、workflow-security crash、managed-CI frozen job-key drift、sandbox-safe canonical sync 均已修；harness registry／source inventory／compatibility matrix 已同步 source。 |
+| User 拍板的 DS source | AccountMenu 明確 no-email；FileViewer open focus 移入可聚焦 viewer shell；FilterPanel 只新增完整 `labels` 與 `maxConditions`（含 child pickers、deep merge、所有新增路徑 cap）；全域 compatibility 收斂為 LTR-only；Calendar 新增 `today?: Date` 並移除機械證成的空 week/day/size surface；ResizeHandle 降為誠實 pointer-only presentation；FieldControlGroup 移除空 `size` API。 |
+| A11y 非對比度債 | Command separator required-children、DatePicker／Tabs IDREF、Steps／Overlay Surface scroll focus、TreeView consumer checkbox tab stop，以及既有 story 非對比度 violations 已修。權威 full scan：981/981 stories、719 fingerprints、5,108 nodes，**唯一 rule = `color-contrast`**；critical=0；baseline-diff gate = 0 regression。 |
+| A11y fail-closed | `scripts/audit-a11y.mjs` 現檢查 Storybook `#error-message`；play／render failure 會成為 `audit-error`，不再把 HTTP 200 的錯誤頁當 Axe 綠燈。Avatar fallback story 亦改為內嵌成功圖 + 同源 404，移除外部 DNS 對 `networkidle` 的不確定性。 |
+| Visual scenario truthfulness | Manifest 為 124 個唯一 scenario／file，12 個 interaction 全為 Playwright 真實 hover；stories 只標記 deterministic target，不用 `userEvent.hover` 假裝最終 CSS state。DatePicker range-middle 改用穩定 `data-day="2026-05-07"` locator。Final Layer A：124/124 render、12/12 interaction passed、0 render error、0 geometry violation。 |
+| Release source chain | `release.yml` 只 stage：執行 read-only trust preflight，產 attempt-bound `npm-stage-${tag}-${run_id}-${run_attempt}` 與 closed 9-field finalizer handoff；`release-finalize.yml` 精確下載同一 artifact。兩條 workflow 共用 `scripts/release-sbom.mjs`，SBOM 由 tag/tree deterministic 重建；成功 finalizer 才可觸發 template mirror。 |
+| GitHub reconciler | 已移除 `gh` shell-out，改以封閉 Node `fetch` 邊界；拒絕 cross-origin、fragment、dot segment、encoded traversal、method escape，且 `redirect: "error"`。Plan/read-only transport 可用；`--apply` 沒有被本輪執行。 |
+| Governance planning | overlay motion、body max-height、cell indicator、Storybook taxonomy 等 planning status 已指回現行 machine/spec authority；role-aware evidence schema、provider compatibility/harness authority、release trust tests與文件同步。Active／executable plan 正文現由 `validate-planning-registry.mjs` 機械禁止把 commit／push／PR／merge／release／rollout 等工程動作綁回 user／owner approval；P2H 與精確 human-only action 保留。 |
 
-### PR #22 目前 4 個紅燈(head `2fdadf58` 的觀測;`5a039570` 的結果需重查)
-| 紅燈 | 失敗步驟 | 性質 / 下一步 |
-|---|---|---|
-| Verify(tsc + tests + compile + build) | `Fork-governance corpus + harness` | 該 step 跑 4 支,其中 3 支本機已 PASS;**未驗證的是 `npm run test:governance-harnesses`**(先前 23 fail 源於 job-key drift,已修但未本機重跑)→ 接手第一件事就跑它 |
-| Packaging integrity | `ds-canonical freshness` | 已由 `5a039570` 的 0755 修正處理,需重查 |
-| Publish Governance App verdict | `Mint check-only Governance App token` | 來自 **main** 的 governance-anchor.yml,需要從未設定的 `GOVERNANCE_CHECK_APP_ID/_PRIVATE_KEY`。PR #22 本身就是要拆掉這一層 → **merge 後自然消失,不需修** |
-| Verify authority candidate without credentials | `Require independent authorization for all other privileged closure changes` | 同上,跑的是 **main** 版 `verify-privileged-change.mjs`。branch 版已於 `:831-841` 拆除(2026-07-29 user 拍板 3B)→ **merge 後消失** |
+### 1-A. User 決策（已實作，不再詢問）
 
-**判讀**:後兩個是「舊 main 擋新 PR」的循環,不是 code 壞。`mergeable_state = unstable`(不是 blocked),
-且 live ruleset **沒有 required_status_checks**,所以技術上可 merge。是否在這兩紅下 merge 屬治理姿態,
-user 2026-07-29 已拍板拆除該層,傾向直接 merge 並在 canonical 記明這兩個 check 從未是 required。
-
-### 接手起點(2026-07-31 收尾;head = `8d401529`,CI 已跑完 11 個 check,4 紅)
-
-**先做這兩個 —— 只有它們真的擋著 merge:**
-
-1. **`Verify` → `Fork-governance corpus + harness` step 內部 fail**
-   - 已排除的一層:beta.97 新增的 `scripts/test-header-tabs-slot-invariants.mjs` 沒登記進
-     `infra/governance/providers/harness-source-inventory.json` 的 `pairedMeta.members`,
-     導致 `harness-source-inventory.mjs:2362` 的 exact 比對讓整批 **一啟動就 blocked**。已補登記並重生 digest。
-   - **現在它會真的執行,但執行中仍有 fail,內容未知。**
-   - ⚠️ 本機 `npm run test:governance-harnesses` **要跑超過 10 分鐘**(Claude session 的 10 分鐘
-     bash timeout 會殺掉它,先前兩個 agent 也都撞到)。用背景長跑或直接讀 CI job log。
-2. **`a11y(axe-core WCAG 2A+AA, Dim 49)` → `Run axe-core gate(baseline-diff)` fail**
-   - 該 gate 語意是「只擋新增/增量 regression」→ 代表這批改動**引入了新的 a11y 違規**。
-   - 背景:`infra/governance/baseline/a11y-baseline.json` 已凍結 852 條指紋 / 5,436 個 violation
-     (其中非對比類 318 個),所以這是在既有債之上的新增,不是既有債本身。
-
-**不要花時間修的兩個**(跑的是 **main 版**舊授權層,正是本 PR 要拆除的東西,merge 後自然消失):
-`Publish Governance App verdict`(缺從未設定的 `GOVERNANCE_CHECK_APP_*` secrets)、
-`Verify authority candidate without credentials`(main 版 `verify-privileged-change.mjs`;
-branch 版已於 `:831-841` 拆除,2026-07-29 user 拍板 3B)。
-
-**已綠**:Packaging integrity / Bundle size budget / Visual Regression Diff / Composition Fidelity Diff
-/ Netlify 三項。工作區乾淨,全部已推送。
-
-### 其餘待辦(依序)
-1. ~~跑 `npm run test:governance-harnesses`~~(見上方接手起點第 1 項)
-2. **required_status_checks 尚未調諧到 GitHub**(不擋任何事,但「gate 全綠才 merge」目前無遠端機械保證)
-   - **SSOT 已經是對的**:`infra/governance/desired/github.json` 的 `profiles.design-system-authority.requiredChecks`
-     已宣告 `Verify(tsc + tests + compile + build)` 等 context。缺的只是把 desired 調諧到 live。
-   - **正解是 `infra/governance/bin/reconcile-github.mjs`**(canonical 調諧器),不要手刻 curl 改 ruleset。
-     `--repo <slug>` 是 plan-only;`--apply` 要求 full-fleet preflight。token 由 `GH_TOKEN` env 供給。
-   - **在 Claude sandbox 內跑不動(已實測,不要重試)**:該調諧器內部 shell out 到 `gh`,而 `gh` 在
-     macOS 一律用 Security framework 做 TLS 驗證,沙箱擋掉該系統呼叫 → `x509: OSStatus -26276`
-     (與 keychain 的 `-67674` 同根)。`SSL_CERT_FILE=/etc/ssl/cert.pem` 無效,因為 Go 在 darwin
-     忽略它、只用系統驗證器。curl 與 git 的 HTTPS 則正常(它們不走那條路徑)。
-   - **兩條可行路**:(a) 在沙箱外跑 `GH_TOKEN=… node infra/governance/bin/reconcile-github.mjs --apply`;
-     (b) 純工程修:把調諧器對 GitHub 的呼叫從 shell out `gh` 改成 Node `fetch`(agent 可自主做,
-     一勞永逸,且讓 CI 與任何沙箱環境都能跑)。**建議 (b)**。
-3. merge → 關 Genesis transition(獨立 PR)→ tag → **送 `stage-protected-release` repository_dispatch**(tag 本身不觸發任何東西,見 §「發版鏈」)
-4. 下游:`release-finalize.yml` 是死鏈(下載 `release.yml` 不產出的 `npm-stage-*` artifact),template mirror 因此永不 fire;WM fanout 要跑 `consumerctl apply-fanout`
-5. 本檔 §2 的 user 已拍板事項(FileViewer 焦點 / FilterPanel 兩個 prop / RTL 明確不做 / AccountMenu email 不做)尚未實作
-
-## 0. 原始 P0 盤點(2026-07-31 早;上方 0-A 為最新狀態)
-
-| # | 事項 | 狀態 | 證據 |
-|---|---|---|---|
-| P0-1 | **agent push 通道** | policy 已解、憑證未解 | `scripts/enable-agent-push.mjs` 已由 owner 執行(gh deny 移除、SSH_AUTH_SOCK 收回、view 重生)。但 gh token 存在 macOS Keychain(sandbox 擋,-67674),`~/.config/gh/hosts.yml` 內無 `oauth_token`;gh 自身過不了 sandbox TLS 代理(`x509: OSStatus -26276`)。git/curl 的 HTTPS 則實測可通。**唯一缺口 = 讓 token 落在 agent 讀得到的檔案** |
-| P0-2 | **CI 兩顆 frozen baseline drift** | 未修 | `cd38f089` 在 `.github/workflows/build-managed-ci-executors.yml` 的 build job 前插了一個新 step,但兩支凍結基線沒同步:①`scripts/audit-workflow-security.mjs:534` 寫死 `buildSteps[6]`(位移後指到 `uses:` step → `literalRunBody` 回 null → TypeError 崩潰);連帶三組 run-body sha256 與 `buildSteps[2]/[3]` 斷言全部指錯。②`scripts/lib/managed-ci-trusted-execution-plan.mjs:1509` 凍結 job-key 清單仍含 `'env'`(該 job-level env 已搬進 step)→ fail-closed → 23 個 harness 測試連鎖紅 |
-| P0-3 | **`Edit` 工具被自家 provider hook 擋死** | 未修 | 任何 `Edit` 都回 `GOV-PROVIDER-001: write mutation transport is invalid`;`Write` 正常。已排除:transport 匹配(唯一)、limits、checkpoint 逾時(397ms)、路徑 symlink(無)、corpus digest(Write 會過)。真因被 `packages/governance/src/provider-hook-normalization.mjs:1414-1416` 的 `error.code \|\| 'MUTATION_INVALID'` fallback 吞掉 → **先修 masking 才查得下去** |
-
-**修復順序**:P0-2 →(commit)→ P0-1 補上憑證 → push → CI 收綠 → merge → 關 Genesis → tag → 發 beta.97 → 下游傳播。
-P0-3 平行修(它讓大檔無法做外科式修改,目前只能用 `Write` 整檔覆寫)。
-
-## 1. 已 commit、未 push 的成果(只存在本機,最高遺失風險)
-
-分支 `claude/remove-app-verdict-authz` = `b16dd125`,origin 只到 `cd38f089`,差 3 個 commit:
-- `24159cd9` WM findings F1-F9 收編 + 弱化 icon hover 一階收斂 + policy carve-out(**beta.97 版本 bump**,102 檔)
-- `c1c5bfdc` sandbox 瀏覽器驗證抽成 canonical helper `scripts/lib/sandboxed-verify-browser.mjs`
-- `b16dd125` control-plane 快照重生
-
-下游 `work-management` 的 `codex/work-preview` 亦有 6 個 commit 未 push(含 `docs/upstream-findings-2026-07-30.md` F1-F9 回報包)。
-
-## 2. user 已拍板(2026-07-31,不要再問)
-
-| 題目 | 決定 |
+| 題目 | 決定與狀態 |
 |---|---|
-| AccountMenu 是否顯示 email 第二行 | **不做** |
-| FileViewer 開啟時焦點移入 viewer | **做**(`file-viewer.spec.md:373` 的 known a11y gap 收掉) |
-| FilterPanel 開哪些 prop | **只開 i18n/labels + maxConditions**;條件數 helper 與 footer slot 等第二個 consumer |
-| RTL 是否支援 | **明確不做** — 把 8 份 spec 的「未定」收斂成一處「不支援」canonical(chip:192 / tabs:234 / breadcrumb:220 / radio-group:114 / number-input:114 / field:344 / date-picker:319 / people-picker:257) |
+| AccountMenu email 第二行 | **不做**；spec、anatomy、principles 與 open snapshot 均以姓名 + actions 為合約。 |
+| FileViewer 開啟焦點 | **做**；composed `onOpenAutoFocus` 將焦點移入 viewer shell。 |
+| FilterPanel public API | **只開 `labels` + `maxConditions`**；沒有預先加入 helper/footer slot 等無第二 consumer API。 |
+| RTL | **不支援**；由 `packages/design-system/README.md#compatibility-matrix` 單一 owner，元件 specs 只引用。 |
+| AUTO source changes | Calendar `today`、ResizeHandle pointer-only、機械證成的 Calendar／FieldControlGroup 空 API 收斂、非對比度 a11y 修復、visual scenario／beta.97 candidate 檢查皆已完成。 |
 
-**以下為同批授權的 AUTO 預設**(user 未反對即執行):Calendar 加 `today` prop;`resize-handle` 依 BulkActionBar 判例(`bulk-action-bar.spec.md:192`)把 `role="separator"` 降級成誠實形狀;其餘 8 處 spec 明文「未實作」的空 prop/variant 依 `data-table.tsx:317-318`(2026-07-13 D1 判例)收掉;a11y baseline 318 個非對比違規當真 bug 修;補 8 個零 scenario 元件的視覺防線;beta.97 視覺改動補截圖驗收。
+禁止為符合舊盤點數字猜測 breaking deletion；只移除可由 export、runtime 與 consumer search 機械證成的空 surface。
 
-## 3. 凍結型債務(最容易永遠沒人發現的一類)
+## 2. 驗證與可重現證據
 
-| 項目 | 量化 | 證據 |
-|---|---|---|
-| a11y 慢性紅被凍進 baseline | 852 條指紋 / **5,436 個 violation**(color-contrast 5,118;**非對比類 318**:label 83 / button-name 82 / aria-required-children 69 / aria-required-parent 36 / aria-progressbar-name 21) | `infra/governance/baseline/a11y-baseline.json`,gate 語意「只 fail 新增」→ 永遠不會紅 |
-| 視覺防線只覆蓋約一成 | 113 條 scenario / 56 元件;**8 個元件 0 scenario**:Command、DateGrid、HoverCard、Menu、Notice、OverflowIndicator、SelectMenu、SelectionControl | `.github/workflows/visual-regression.yml:6-7` 自陳;`scripts/visual-assertions.json` |
-| aspirational-wiring 稽核未掃完且對治理隱形 | 521 claims 中 chunks 33/40-43 + ~120 adversarial 未跑;~50 條二次驗證未跑 | `.claude/logs/aspirational-wiring-findings.json`(住在 non-authority 路徑,不在 registry → 依 registry 的盤點必漏) |
-| i18n 紙防線 | 基礎設施標 shipped 但 **0 元件消費**;60 處 `i18n-allow` 硬寫中文 | `packages/design-system/src/lib/i18n/README.md` |
-| code-quality escape 從未清算 | 110 處 `code-quality-allow` / 31 `as any` / 21 `as unknown as` / 17 `eslint-disable`,無到期複查 | `packages/design-system/src` |
+### 2-A. A11y
 
-## 4. 治理預算與一致性
+- Authority：`infra/governance/baseline/a11y-baseline.json`
+- Corpus：981 story IDs，baseline 綁定 sorted corpus digest。
+- Final totals：719 stories/fingerprints、5,108 serious nodes、critical=0；
+  `byRule = { "color-contrast": 5108 }`，非對比度 = 0。
+- `npm run a11y:check -- --baseline-write`：PASS，無 Storybook error／audit-error。
+- `npm run a11y:check -- --gate`：`PASS — 0 regression vs baseline`。
+- 本 baseline **不是 WCAG AA 全綠宣告**；5,108 個 color-contrast nodes 仍是已知慢性債，
+  gate 只保證本輪沒有新增／增量。
 
-- **hook 60/60 頂到 hard cap**(soft 26),再加一支即 BLOCKER;`session_start_governance_check.sh` Check 7 註解仍寫「現值 52 + 8 headroom」= 已 stale。`/knowledge-prune` 需 hook-fire telemetry,而 telemetry opt-in 未開(`GOVERNANCE_TELEMETRY_OPT_IN` 無 repo-owned 開關)→ 兩者互卡。
-- `design-system-audit/SKILL.md` 388 行(budget 250),生成版 400 行 = 貼死 transition cap,等於該 skill 目前唯讀。
-- `meta-patterns.md:24` 寫「20 canonical skills」,實際 25,且不在 `sync-governance-counters.mjs` 同步範圍。
-- `.claude/logs` 502 檔 / 64MB 被 commit 進 repo,而 `.claude` 在 `protected-root-classification.json` 標為 non-authority-exclusion。
-- **文件狀態 stale**(會製造假的待拍板關卡):`registry.json:14` 把 overlay-motion-tokens 標 `awaiting-approval`,但六個 token 已在 `motion.css:36-41` 上線發版、`motion.spec.md:100` 自稱 user 拍板;`r4-bodymaxheight-stepping.md` / `cell-indicator-ssot-rfc.md` / `2026-06-05-storybook-category-taxonomy-rfc.md` 的 header 狀態同樣落後於實作。
+### 2-B. Visual
 
-## 5. 外部啟用(需 owner,非工程可代理)
+- Authority manifest：`scripts/visual-assertions.json`
+- Runtime report：
+  `.git/governance-runtime/evidence/visual/visual-audit/report.json`
+- Final local command：
+  `node scripts/visual-audit.mjs --auto-start --scope=all --no-diff --no-a11y`
+- Result：124 scenarios、12/12 hover interactions passed、0 render error、0 geometry violation。
+  因命令明確使用 `--no-diff --no-a11y`，report 內 diff／a11y 的 0 代表**未執行**，不得寫成
+  pixel regression 或 WCAG PASS。
+- 本輪已逐張檢視 11 張 Darwin runtime candidate；未見裁切、重疊、缺字或 hover action
+  消失。這是本機 Layer B inspection，不是授權 reviewer approval／independent certification。
 
-`infra/governance/external-activation-requirements.json` 21 項全 `not-activated`、evidence 全 null;`governance:activation-readiness` exit 2 / 8 個 BLOCK。
-`scripts/governance-build-graph.json` 的 `controlPlaneGenesisTransition.state = "open"` / `releaseAllowed = false` → **即使 CI 全綠、commit 全 push,beta.97 仍發不出去**,必須先用一個獨立的受保護 PR 關掉 Genesis transition。
-真實雙 provider model certification(`review-capability-certifications.json.certifications = []`)與 fleet rollout + 72h soak 亦未開始 → 任何「已獨立審查 / promotion eligible」宣稱目前都不成立。
+Canonical authority 是 `infra/governance/baseline/visual/curated/`，現有 113/124 PNG、extra=0，
+仍缺：
 
-## 6. 本 session 的流程教訓(避免重蹈)
+1. `accountmenu-open-snapshot.png`
+2. `button-dismiss-hover-state.png`
+3. `datatable-nested-rows-expander-hover-state.png`
+4. `fileupload-remove-hover-state.png`
+5. `header-with-tabs-overflow-menu.png`
+6. `header-with-tabs-overflow-scroll.png`
+7. `header-with-tabs.png`
+8. `item-inline-action-hover-state.png`
+9. `sidebar-action-hover-state.png`
+10. `tag-dismiss-hover-state.png`
+11. `treeview-action-hover-state.png`
 
-1. **先實測再把事情丟回 user**。本 session 三次要求 user 跑指令,其中兩次(`git checkout -- .claude/`、放行一條 deny)在實測後證明不必要或方向錯誤。
-2. **先找既有機制再發明**。`scripts/enable-agent-push.mjs` 的診斷與腳本在上一個 session 就寫好了,本 session 卻從零重新推導一遍才發現它躺在 `/tmp` 暫存 clone 裡(現已進版控)。
-3. **sandbox 讀取是 deny-only**(只擋名單上那幾條),不是 allow-only — 誤判這點導致提出多餘的政策變更。
+另有 5 張既有 hover baseline 需以真實 interaction 重新確認。Darwin runtime PNG 不得直接複製
+成 canonical；正確 closure 見 §4。
 
-相關:`governance/memory/project_provider_neutral_governance.md`、`governance/memory/feedback_solo_dev_workflow.md`。
+### 2-C. Release / workflow
+
+- `scripts/test-release-bom.mjs`、workflow YAML parse、workflow-security（220/220）、
+  workflow auditor（18 workflows）、harness registry／inventory（22/22）、deep-audit 與
+  governance build-graph targeted checks均已通過。
+- 本輪 workflow 變更後，已用 canonical
+  `infra/governance/bin/sync-workflow-identities.mjs` 的
+  propose → exact digest review → apply-reviewed 流程同步
+  `infra/governance/desired/github.json`：3 個 physical workflow source／4 個 binding；
+  `authorizationStatus = not-performed`，沒有執行 privileged authorization 或 live apply。
+- 同步後 `release-trust-preflight.test.mjs` 14/14 PASS；`governance-infra-remainder` 的
+  29 個 source members 合併重跑 493/493 PASS。第一次 all-Harness runner 揭露的唯一
+  shared-suite failure即為上述 stale reviewed workflow identity，已由 canonical 流程閉合。
+- identity closure 後的 all-Harness runner 為 10/11 suites PASS；唯一失敗是
+  `consumer-clean-room` 的 transient-timeout integration 在 1,206 個 replay child 中第
+  668 個遇到 host contention，兩次真實 30 秒 child deadline 都超時而正確 fail-closed。
+  相同 current source 的完整 clean-room 隔離重跑 PASS；test wrapper 現仍先驗 production
+  請求使用 canonical 30 秒／2 attempts，但 transient-control-flow fixture 的真實 child
+  delegate 使用有界 120 秒 test-only headroom，persistent synthetic 2/2 timeout 合約不變，
+  並補出完整 diagnostics／staticReplay。generation 後的最終
+  `npm run test:governance-harnesses` 已 exit 0、11/11 suites PASS；13 個 registry domain 的
+  `localHarnessStatus` 均為 `passed`。這是本機 source/harness verdict，不是外部 certification。
+- 上述只證成 source chain 與 trust contract；沒有 dispatch、publish、GitHub Release、
+  template mirror 或 consumer fanout 被本輪執行。
+
+## 3. 仍存在的本機／工程債（不是 external-only）
+
+| 項目 | Current debt |
+|---|---|
+| Color contrast | 719 fingerprints／5,108 nodes 已凍結；需另案逐 owner 修，不能把 baseline 說成 AA compliance。 |
+| Visual canonical coverage | Local capture 124/124 已完成，但 canonical 113/124；在 §4 的 Ubuntu + review authority closure 前，不能宣稱 visual regression complete。 |
+| Aspirational wiring | 521 claims 中 chunks 33/40–43、約 120 adversarial 與約 50 條 secondary verification 尚未跑；`.claude/logs/aspirational-wiring-findings.json` 位於 non-authority 路徑，registry-based inventory 會漏。 |
+| i18n Route B | FilterPanel labels 是 Route A public prop，不等於 DS `useI18n()` consumer；基礎設施仍幾乎無元件消費，硬寫中文與 `i18n-allow` 仍需另案。 |
+| Code-quality escapes | `code-quality-allow`、`as any`／`as unknown as`、`eslint-disable` 尚無到期複查機制。 |
+| Governance budget | Hook 60/60 已達 hard cap；`/knowledge-prune` 仍缺 opt-in telemetry。`design-system-audit/SKILL.md` 接近 transition cap。`.claude/logs` 約 64 MB 且屬 non-authority exclusion。 |
+| Downstream local state | `../work-management` branch ahead 6；尚未 push／fanout。 |
+
+## 4. 外部啟用／受保護操作（Standing Authorization AUTO）
+
+以下皆依 `AGENTS.md#自主執行 canonical` 由 agent 自動續跑，不是逐 milestone 的人類核准 gate。
+只有 login／MFA／OAuth、缺 credential reference、付費／法律／帳號／組織權限／商業承諾，或
+產品／UI／UX SSOT 真取捨屬 human-only boundary；若遇到，agent 必先完成所有可代理 preflight，
+只提出一個精確 human action，readback 後繼續。
+
+1. **Live required checks reconciliation**
+   - Desired SSOT 已在 `infra/governance/desired/github.json`。
+   - 只能用 `infra/governance/bin/reconcile-github.mjs`；不得手刻 curl／ruleset。
+   - Full-fleet `--apply` 與 live readback 仍受 external activation、runtime authorization、
+     rollout authorization 與 off-host append-only evidence mirror fail-closed 保護。
+   - 本輪沒有 apply；plan/read-only 可用不等於 GitHub live state 已收斂。
+
+2. **Genesis transition**
+   - `scripts/governance-build-graph.json` 仍為
+     `controlPlaneGenesisTransition.state = "open"`、
+     `cleanupRequiresDistinctProtectedPr = true`、`releaseAllowed = false`。
+   - 必須在 PR #22 merge 後另開受保護 PR 關閉；不得混入本 worktree，也不得預先 tag/release。
+   - Open transition 仍 content-addressed 保存舊 `ds-canonical/fork/preamble.md`，其中歷史
+     user-trigger merge 語意不是 current authority；獨立 closure PR 必移除該 preservation，讓
+     shipped Claude／Codex／future-provider product views 只消費現行 `AGENTS.md` Decision Authority
+     projection 與 generated provider adapters。
+
+3. **Release identities與真實執行**
+   - npm package identities／bootstrap、三個 trusted publishers、tokenless 2FA publishing、
+     account-holder 互動式 2FA、signed release authorization／tag authorizer 尚需 owner。
+   - 前置條件完成後才可送 `stage-protected-release` repository dispatch，再執行 finalize、
+     template mirror 與 `consumerctl apply-fanout`。
+   - Source dead chain 已修；真實 stage/finalize/mirror/fanout execution 尚未發生。
+
+4. **Ubuntu visual canonical promotion**
+   - `.github/workflows/visual-regression.yml` 的 authority runner 是 `ubuntu-24.04`。
+   - 應由 workflow 產 artifact，人工核對 exact image set，再依 review authority 把 Ubuntu PNG
+     放入 `infra/governance/baseline/visual/curated/`，重跑至 diff errors=0、breaches=0。
+   - `infra/governance/visual-baseline-review-policy.json` 的 overall／human／managed broker 目前
+     均 `not-activated`，human allowed keys 為空；因此 `apply-reviewed` 仍 REVIEW-BLOCKED。
+   - 不得把 Darwin candidate、local inspection 或機械 12/12 hover 升格成 reviewed canonical。
+
+5. **External assurance**
+   - `infra/governance/external-activation-requirements.json` 的外部 requirements 仍未啟用，
+     evidence 尚未具備；包含 GitHub App identity、managed rulesets/readback、mirror mutation
+     boundaries、off-host evidence、managed host／managed CI attestation 等。
+   - `review-capability-certifications.json.certifications = []`；獨立 provider/capability
+     certification、fleet rollback drill／rollout 與 72h soak 尚未開始。
+   - 因此不得宣稱 independent review complete、promotion eligible 或 production release ready。
+
+## 5. 後續合法順序
+
+1. **已完成（本 worktree）**：canonical workflow identity sync、governance generation/check、
+   full Harness 11/11 與 final local verification。
+2. Agent 依 Standing Authorization commit／push／更新 PR #22；遠端 checks 必以新 head 重跑，
+   hard gates 全綠後自主 squash merge，不引用舊快照或另等 user trigger。
+3. Merge 後以獨立 protected PR 關 Genesis transition。
+4. 啟用外部 identities／authorities／evidence，完成 required checks live reconciliation。
+5. 以 Ubuntu workflow 產生並授權 review visual canonical。
+6. 取得 signed release authorization，執行 stage → finalize → template mirror → consumer fanout。
+7. 完成獨立 capability certification、fleet rollout／rollback drill 與 72h soak 後，才可評估
+   promotion eligibility。
+
+## 6. 流程約束
+
+- Generated governance 檔不得手改；所有 canonical source 穩定後執行
+  `npm run governance:generate`，再以 `npm run governance:check` 與 full harness 驗證。
+- Live apply、release、baseline promotion、certification 都是不同 authority boundary；「source
+  已修」不得改寫成「外部 execution 已完成」。
+- 本檔是 planning/current-state SSOT，不取代 machine authority、runtime evidence 或 live readback。
+
+相關：`governance/memory/project_provider_neutral_governance.md`、
+`governance/memory/feedback_solo_dev_workflow.md`。

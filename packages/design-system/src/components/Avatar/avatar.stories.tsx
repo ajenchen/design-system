@@ -3,6 +3,13 @@ import { Building2 } from 'lucide-react'
 import { Avatar } from './avatar'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
 
+// Fallback story 必須可離線重現：成功路徑用內嵌 SVG，失敗路徑用同源 404。
+// 外部 avatar host 或 DNS 失敗網址會讓 a11y/visual runner 的 networkidle 不穩定。
+const fallbackDemoImage = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" fill="#dbeafe"/><circle cx="40" cy="31" r="15" fill="#2563eb"/><path d="M14 76c3-18 13-27 26-27s23 9 26 27" fill="#2563eb"/></svg>',
+)}`
+const missingAvatarImage = '/__avatar-fallback-missing__.jpg'
+
 const meta: Meta = {
   title: 'Design System/Components/Avatar/展示',
   parameters: { layout: 'padded' },
@@ -63,15 +70,15 @@ export const Fallback = {
       </div>
       <div className="flex items-center gap-8">
         <div className="flex flex-col items-center gap-2">
-          <Avatar size={40} src="https://i.pravatar.cc/80?u=ok" alt="Alice" />
+          <Avatar size={40} src={fallbackDemoImage} alt="Alice" />
           <span className="text-caption text-fg-muted">圖片正常載入</span>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <Avatar size={40} src="https://broken-url.invalid/img.jpg" alt="Bob" color="green" />
+          <Avatar size={40} src={missingAvatarImage} alt="Bob" color="green" />
           <span className="text-caption text-fg-muted">圖片失敗 + 有 alt → 首字</span>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <Avatar size={40} src="https://broken-url.invalid/img.jpg" color="yellow" />
+          <Avatar size={40} src={missingAvatarImage} color="yellow" />
           <span className="text-caption text-fg-muted">圖片失敗 + 無 alt → User icon</span>
         </div>
       </div>
@@ -96,7 +103,11 @@ export const InContext = {
       <div className="flex gap-8">
         <div className="flex flex-col gap-2">
           <span className="text-caption font-medium text-fg-secondary">無 description（inline）</span>
-          <div className="w-[280px] border border-divider rounded-lg py-1 bg-surface">
+          <div
+            role="listbox"
+            aria-label="無說明文字的成員選單"
+            className="w-[280px] border border-divider rounded-lg py-1 bg-surface"
+          >
             <MenuItem avatar={{ src: "https://i.pravatar.cc/48?u=alice-chen", alt: "Alice" }}>
               Alice Chen
             </MenuItem>
@@ -110,7 +121,11 @@ export const InContext = {
         </div>
         <div className="flex flex-col gap-2">
           <span className="text-caption font-medium text-fg-secondary">有 description（block）</span>
-          <div className="w-[320px] border border-divider rounded-lg py-1 bg-surface">
+          <div
+            role="listbox"
+            aria-label="含職稱說明的成員選單"
+            className="w-[320px] border border-divider rounded-lg py-1 bg-surface"
+          >
             <MenuItem
               avatar={{ src: "https://i.pravatar.cc/64?u=alice-chen", alt: "Alice" }}
               description="前端工程師"

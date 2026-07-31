@@ -232,7 +232,7 @@ const callerBaseline = run(REPO)
 expectResult(callerBaseline, {
   pass: true,
   label: 'live caller baseline PASS in explicit closed environment',
-  pattern: /48 exact-source gates/,
+  pattern: /49 exact-source gates/,
 })
 const checkerSource = readFileSync(CHECKER, 'utf8')
 expect(

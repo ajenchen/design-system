@@ -71,11 +71,11 @@ benchmark:
 
 - **「AccountMenu 該收 `mode` prop 自動決定放置」** — 錯;放置 SSOT 在 app-shell.spec.md,consumer 決定(元件收 mode = 第二份 SSOT + 元件被迫依賴 AppShell context 才能 render,Storybook / 非 AppShell 產品用不了)。
 - **「demo 的 `AccountMenu` 是另一個元件」** — 不是;`_demo-helpers.tsx` 的 `AccountMenu` 是綁示範資料(Alan Chen)的薄 wrapper,消費本元件。
-- **「要顯示 email 第二行」** — v1 Label 只渲染 `name`(demo baseline 忠實);第二行是視覺擴充,待 user 拍板(見 tsx 檔頭升級歷程)。
+- **「要顯示 email 第二行」** — 不做。Identity Label 的公開 contract 只含 `user.name`；不可為未核准的第二行擴充 `AccountMenuUser` 或另造展示資料。
 
 ## A11y 預設
 
-- **Trigger**:`<button type="button" aria-label>`(icon-only 觸發必有 aria-label;預設「帳號與設定」,i18n 走 `triggerAriaLabel`);focus ring = `focus-visible:ring-2 ring-ring`(互動感由 ring 提供,無 hover bg — chrome 輕量 entry,不放大 avatar 到 field height)
+- **Trigger**:`<button type="button" aria-label>`(icon-only 觸發必有 aria-label;預設「帳號與設定」,i18n 走 `triggerAriaLabel`);focus ring = `focus-visible:ring-2 ring-ring`(互動感由 ring 提供,無 hover bg — chrome 輕量 entry,不放大 avatar 到 field height)。Radix modal menu 開啟時 trigger 所在 app subtree 會被 `aria-hidden`;由 `DropdownMenu` SSOT 同步把 trigger 設為 `tabIndex={-1}`,關閉時復原,AccountMenu 不另建 open-state 邏輯
 - **Keyboard**:繼承 Radix DropdownMenu(Enter / Space / ArrowDown 開啟、Arrow 巡覽、Esc 關閉並 focus 還 trigger、typeahead)— owner = `dropdown-menu.spec.md` A11y 段,不重述
 - **選單語義**:Label 為 presentation(不可 focus),item 為 menuitem(Radix 自管 role / aria)
 
@@ -86,6 +86,7 @@ benchmark:
 - ❌ **`primary-sidebar` 派桌面用 AccountMenu**(該 mode 帳號家 = SidebarFooter;app-shell.spec.md 放置 SSOT)
 - ❌ **同畫面同時出現兩個帳號入口**(app-shell.spec.md「只能出現一次」rule)
 - ❌ **用 ProfileCard 當帳號選單內容**(看別人 vs 自己語義錯置)
+- ❌ **自行加入 email 第二行**(`user.name` 是 identity Label 唯一文字 contract)
 - ❌ **繞過本元件手刻 avatar + DropdownMenu 重造帳號入口**(跨 consumer 漂移;本元件即 canonical 收斂)
 
 ## Benchmark(M8 / M22 cite)

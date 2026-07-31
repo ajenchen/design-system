@@ -815,14 +815,16 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
   for (const dependency of ['vite', '@vitejs/plugin-react']) {
     assert.equal(templatePackage.devDependencies[dependency], authorityAppPackage.devDependencies[dependency])
   }
-  assert.equal(authorityLock.packages['apps/template/node_modules/vite'].version, authorityAppPackage.devDependencies.vite)
+  const authorityAppViteLock = authorityLock.packages['apps/template/node_modules/vite']
+    ?? authorityLock.packages['node_modules/vite']
+  assert.equal(authorityAppViteLock.version, authorityAppPackage.devDependencies.vite)
   const pluginReactMajor = authorityLock.packages['apps/template/node_modules/@vitejs/plugin-react'].version.split('.')[0]
   assert.match(authorityAppPackage.devDependencies['@vitejs/plugin-react'], new RegExp(`^\\^${pluginReactMajor}\\.`))
 
   const lockedToolchain = [
     authorityLock.packages['node_modules/npm'],
     authorityLock.packages['node_modules/eslint'],
-    authorityLock.packages['apps/template/node_modules/vite'],
+    authorityAppViteLock,
     authorityLock.packages['apps/template/node_modules/@vitejs/plugin-react'],
   ]
   const lockedNode22Minima = lockedToolchain.flatMap(tool => (

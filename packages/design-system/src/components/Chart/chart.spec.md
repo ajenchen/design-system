@@ -133,7 +133,7 @@ const config = {
 - **Loading(資料抓取中)**:本 wrapper 無內建 loading state——與空資料同模式,由 consumer 外層處理
 - **Tooltip / Legend 無 payload**:不渲染(return null),不留空殼
 - **ChartConfig 項目缺 `color` / `theme`**:不注入該 key 的 `--color-{key}` variable(`ChartStyle` 過濾)
-- **單一資料點 / 大資料量 / RTL**:由 Recharts engine 處理,本 wrapper 無額外行為;大資料量的取樣 / 聚合屬 consumer 職責
+- **單一資料點 / 大資料量**:由 Recharts engine 處理,本 wrapper 無額外行為;大資料量的取樣 / 聚合屬 consumer 職責。**RTL 不支援**，全域 owner 見 `packages/design-system/README.md#compatibility-matrix`。
 
 ---
 

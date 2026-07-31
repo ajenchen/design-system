@@ -2,7 +2,10 @@
 # RFC: Cell Indicator SSOT Divergence Decision
 
 **Date**: 2026-05-08(updated round 6)
-**Status**: **Round 6 codex synthesized → 10-step plan ready,等 user wave green 開始 Step 1**
+**Status**: REFERENCE — 2026-07-08 user 已拍板 A 案且實作完成。現行 authority =
+`packages/design-system/src/components/Field/{field.spec.md,field-controls.spec.md}` +
+`packages/design-system/src/components/DataTable/{data-table.spec.md,cell-registry.tsx}`；
+Round 1–7 與 10-step plan 只保留決策脈絡，不是待 wave-green 的執行清單。
 **Trigger**: Phase 1-2 round 1-5 collab(2026-05-07~08)反覆踩同一 trap;Round 6 codex confirm「D = A 修正版」+ rejected my Notion/Airtable hallucination claim。
 
 ## Round 6 → Round 7 Final Decision(codex synthesized)

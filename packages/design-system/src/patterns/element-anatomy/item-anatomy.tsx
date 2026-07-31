@@ -622,7 +622,7 @@ ItemAvatar.displayName = "ItemAvatar"
 // - Icon 尺寸 = ICON_SIZE[rowSize]      (16/16/20)
 // - Hover bg 尺寸 = icon + 2            (18/18/22,INLINE_ACTION_HOVER_BG_SIZE)
 // - Hover bg 圓角 = rounded-md (sm/md)/ rounded-md (lg)
-// - Icon 顏色:fg-muted → foreground on hover/active
+// - Icon 顏色:fg-muted → fg-secondary on hover/active
 // - 必須 <button type="button">,aria-label = label,Tooltip(同 label)
 // - cursor-pointer
 
@@ -635,7 +635,7 @@ ItemAvatar.displayName = "ItemAvatar"
 //   - 寬高 = ICON_SIZE[size]
 //   - Hover bg 尺寸 = INLINE_ACTION_HOVER_BG_SIZE[size]
 //   - Hover bg 圓角 = rounded-md (sm/md) / rounded-md (lg)
-//   - Icon color = fg-muted → foreground on hover/active
+//   - Icon color = fg-muted → fg-secondary on hover/active
 //
 // 接受任何 button props 並 spread(讓 Radix Slot 可以 merge onClick / data-state 等)
 

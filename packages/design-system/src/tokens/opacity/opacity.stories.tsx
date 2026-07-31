@@ -33,9 +33,9 @@ function OpacityRow({ utility, value, usage }: { utility: string; value: string;
       <div className="text-body text-foreground">{usage}</div>
       <div className="flex items-center gap-2">
         <div
+          aria-hidden="true"
           className="h-8 w-8 rounded bg-primary"
           style={{ opacity: parseFloat(value) }}
-          aria-label={`${utility} preview`}
         />
         <span className="text-caption text-fg-muted">preview</span>
       </div>

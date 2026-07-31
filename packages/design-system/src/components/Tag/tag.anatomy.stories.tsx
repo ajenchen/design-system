@@ -528,13 +528,16 @@ export const ColorMatrix = {
       {/* Dismiss action colors */}
       <div className="flex flex-col gap-3">
         <span className="text-caption font-semibold text-fg-secondary">Dismiss 按鈕色彩</span>
-        <Desc>Subtle 模式使用 neutral-hover/active。Solid 模式使用色相自身的 primitive hover/active token——深色底上 neutral-hover 幾乎不可見。</Desc>
+        <Desc>Neutral subtle 走 inline-action 預設色階;有色 subtle / solid 則繼承宿主文字色。Subtle 背景使用 neutral-hover/active,solid 背景使用宿主色相的 hover/active token。</Desc>
         <div className="overflow-x-auto">
           <table className="border-collapse text-caption">
             <thead><tr><Th>模式</Th><Th>狀態</Th><Th>Icon 色</Th><Th>Hover 背景</Th></tr></thead>
             <tbody>
               {[
-                { mode: 'Subtle', state: 'default', iconColor: '繼承 Tag 文字色', hoverBg: 'transparent' },
+                { mode: 'Neutral subtle', state: 'default', iconColor: '--fg-muted', hoverBg: 'transparent' },
+                { mode: '', state: 'hover', iconColor: '--fg-secondary', hoverBg: '--neutral-hover' },
+                { mode: '', state: 'active', iconColor: '--fg-secondary', hoverBg: '--neutral-active' },
+                { mode: 'Colored subtle', state: 'default', iconColor: '繼承 Tag 文字色', hoverBg: 'transparent' },
                 { mode: '', state: 'hover', iconColor: '繼承 Tag 文字色', hoverBg: '--neutral-hover' },
                 { mode: '', state: 'active', iconColor: '繼承 Tag 文字色', hoverBg: '--neutral-active' },
                 { mode: 'Solid', state: 'default', iconColor: '繼承 Tag 文字色', hoverBg: 'transparent' },

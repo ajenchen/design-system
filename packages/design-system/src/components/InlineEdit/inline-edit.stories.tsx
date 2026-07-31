@@ -108,11 +108,11 @@ export const States: Story = {
   ),
   play: async ({ canvasElement }) => {
     const { userEvent } = await import('@storybook/test')
-    // hover 態:滑鼠移入第二列 → 顯示 bg-neutral-hover 灰底
+    // 只標記第二列；真實 CSS :hover 由 visual-audit 的 Playwright pointer 建立。
     const hoverBtn = canvasElement
       .querySelector('[data-testid="inline-edit-hover-row"]')
       ?.querySelector('button')
-    if (hoverBtn) await userEvent.hover(hoverBtn)
+    if (hoverBtn) hoverBtn.setAttribute('data-visual-hover-target', '')
     // edit 態:點擊第三列 → 切成真正的 Input 控件
     const editBtn = canvasElement
       .querySelector('[data-testid="inline-edit-edit-row"]')

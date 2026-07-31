@@ -184,6 +184,7 @@ export const SurfaceBody = React.forwardRef<
     ref={ref}
     className={cn(
       'flex-1 min-h-0 overflow-y-auto',
+      'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
       'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',
       className,
     )}

@@ -59,7 +59,14 @@ export const SizeAlignment: Story = {
       <div className="flex flex-col gap-4">
         {(['sm', 'md', 'lg'] as const).map(size => (
           <div key={size} className="flex items-center gap-3">
-            <NumberInput size={size} value={states[size][0]} onChange={states[size][1]} prefix="$" className="max-w-xs" />
+            <NumberInput
+              size={size}
+              value={states[size][0]}
+              onChange={states[size][1]}
+              prefix="$"
+              aria-label={`價格（${size} 尺寸）`}
+              className="max-w-xs"
+            />
             <Button variant="primary" size={size}>送出</Button>
             <span className="text-caption text-fg-muted">size="{size}"</span>
           </div>
@@ -76,19 +83,19 @@ export const FormatOptions: Story = {
     <div className="flex flex-col gap-4 max-w-xs">
       <div>
         <p className="text-caption text-fg-muted mb-1">prefix="$"</p>
-        <NumberInput mode="readonly" value={2490} prefix="$" />
+        <NumberInput mode="readonly" value={2490} prefix="$" aria-label="美元價格" />
       </div>
       <div>
         <p className="text-caption text-fg-muted mb-1">suffix="%" precision={1}</p>
-        <NumberInput mode="readonly" value={85.5} suffix="%" precision={1} />
+        <NumberInput mode="readonly" value={85.5} suffix="%" precision={1} aria-label="百分比" />
       </div>
       <div>
         <p className="text-caption text-fg-muted mb-1">prefix="NT$" precision={0}</p>
-        <NumberInput mode="readonly" value={12500} prefix="NT$" precision={0} />
+        <NumberInput mode="readonly" value={12500} prefix="NT$" precision={0} aria-label="新台幣價格" />
       </div>
       <div>
         <p className="text-caption text-fg-muted mb-1">null value</p>
-        <NumberInput mode="readonly" value={null} prefix="$" />
+        <NumberInput mode="readonly" value={null} prefix="$" aria-label="空白美元價格" />
       </div>
     </div>
   ),

@@ -576,7 +576,7 @@ Consumer 不需要任何額外 code——只要加一個 prop:
 | Icon 尺寸 | `ICON_SIZE[size]`(16/16/20) |
 | Hover bg 尺寸 | icon + 2(18/18/22) |
 | Hover bg 圓角 | `rounded-md`(全尺寸一致) |
-| Icon 顏色 | `fg-muted` → `foreground` on hover/active |
+| Icon 顏色 | `fg-muted` → `fg-secondary` on hover/active |
 | 多個 action 間距 | `gap-2`(8px) |
 | 出現時機 | 預設永遠顯示;`actionsReveal="hover"` → row hover/focus 才淡入 |
 | Icon 模式 | 整個 suffix 隱藏 |

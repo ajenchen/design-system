@@ -95,6 +95,8 @@ export interface SelectMenuProps {
   children: React.ReactNode
   /** 搜尋框 placeholder */
   searchPlaceholder?: string
+  /** 搜尋框 accessible name；與可見 placeholder 分離。 */
+  searchAriaLabel?: string
   /** 空選項提示 */
   emptyText?: string
   /** 多選 footer 全選列文字(2026-07-05 D4:原「全部」字面 hardcode,無法覆寫也無法 i18n) */
@@ -183,6 +185,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   onSearchChange,
   children,
   searchPlaceholder = '搜尋…', // i18n-allow: DS default; consumer override via searchPlaceholder prop
+  searchAriaLabel = '搜尋選項', // i18n-allow: DS default; consumer override via searchAriaLabel prop
   emptyText = '沒有符合的選項', // i18n-allow: DS default; consumer override via emptyText prop
   selectAllLabel = '全部', // i18n-allow: DS default; consumer override via selectAllLabel prop
   loading = false,
@@ -394,7 +397,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
           // 不存在的 input」仍存在(upstream cmdk 限制;空 label 無 accessible name,不產生朗讀
           // 內容)。僅 searchable(真的有 input)時傳內容 = 避免 non-searchable 帶 search
           // placeholder 的 accessible name 卻無對應 input;真要消除 orphan label 需 upstream 修。
-          label={searchable ? searchPlaceholder : undefined}
+          label={searchable ? searchAriaLabel : undefined}
           className="bg-transparent"
         >
           {searchable && (

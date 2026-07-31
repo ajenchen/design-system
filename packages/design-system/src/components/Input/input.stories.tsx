@@ -58,7 +58,12 @@ export const SizeAlignment: Story = {
     <div className="flex flex-col gap-4">
       {(['sm', 'md', 'lg'] as const).map(size => (
         <div key={size} className="flex items-center gap-3">
-          <Input size={size} defaultValue="Wireless Bluetooth Headphones" className="max-w-xs" />
+          <Input
+            size={size}
+            defaultValue="Wireless Bluetooth Headphones"
+            aria-label={`商品名稱（${size} 尺寸）`}
+            className="max-w-xs"
+          />
           <Button variant="primary" size={size}>送出</Button>
           <span className="text-caption text-fg-muted">size="{size}"</span>
         </div>
@@ -83,6 +88,7 @@ export const EndAction: Story = {
           <Input
             type={showPwd ? 'text' : 'password'}
             defaultValue="my-secret-123"
+            aria-label="密碼"
             endAction={{
               icon: showPwd ? EyeOff : Eye,
               label: showPwd ? '隱藏密碼' : '顯示密碼',
@@ -96,6 +102,7 @@ export const EndAction: Story = {
             startIcon={Search}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="搜尋商品"
             endAction={query ? { icon: X, label: '清除搜尋', onClick: () => setQuery('') } : undefined}
           />
         </div>
@@ -106,6 +113,7 @@ export const EndAction: Story = {
             startIcon={Search}
             value={queryLg}
             onChange={(e) => setQueryLg(e.target.value)}
+            aria-label="搜尋商品（大尺寸）"
             endAction={queryLg ? { icon: X, label: '清除搜尋', onClick: () => setQueryLg('') } : undefined}
           />
         </div>

@@ -104,7 +104,7 @@ export const UsageGuidance: Story = {
         >
           <div className="flex items-center gap-3">
             <span className="text-body w-16">商品價格</span>
-            <NumberInput value={2490} prefix="$" onChange={() => {}} className="flex-1" />
+            <NumberInput value={2490} prefix="$" onChange={() => {}} aria-label="商品價格" className="flex-1" />
           </div>
           <Label>↑ 金額不用 Slider,直接 NumberInput 輸入</Label>
         </Rule>
@@ -115,7 +115,7 @@ export const UsageGuidance: Story = {
         >
           <div className="flex items-center gap-3">
             <span className="text-body w-12">啟用</span>
-            <Switch defaultChecked />
+            <Switch defaultChecked aria-label="啟用" />
           </div>
         </Rule>
       </div>
@@ -154,21 +154,21 @@ export const PositionAsStateRule: Story = {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-caption text-fg-muted w-16">Rest ON</span>
-            <Switch defaultChecked />
+            <Switch defaultChecked aria-label="啟用（開）" />
           </div>
           <div className="flex items-center gap-2">
             <span className="text-caption text-fg-muted w-16">Rest OFF</span>
-            <Switch />
+            <Switch aria-label="啟用（關）" />
           </div>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-caption text-fg-muted w-16">Disabled ON</span>
-            <Switch defaultChecked disabled />
+            <Switch defaultChecked disabled aria-label="啟用（停用、開）" />
           </div>
           <div className="flex items-center gap-2">
             <span className="text-caption text-fg-muted w-16">Disabled OFF</span>
-            <Switch disabled />
+            <Switch disabled aria-label="啟用（停用、關）" />
           </div>
         </div>
         <Label>↑ Switch disabled 保留顏色(opacity),所以仍能分辨 ON/OFF</Label>
@@ -219,7 +219,7 @@ export const ThumbBindingRule: Story = {
       >
         <div>
           <div className="text-caption text-fg-muted mb-1">Range mode(兩個 thumb)</div>
-          <Slider defaultValue={[30, 70]} />
+          <Slider defaultValue={[30, 70]} aria-label="價格範圍" />
         </div>
         <Label>↑ 兩個 thumb 清楚浮在 range 上,邊界分明</Label>
       </Rule>
@@ -230,11 +230,11 @@ export const ThumbBindingRule: Story = {
       >
         <div>
           <div className="text-caption text-fg-muted mb-1">Rest:range = primary + thumb border = primary</div>
-          <Slider defaultValue={[60]} />
+          <Slider defaultValue={[60]} aria-label="亮度" />
         </div>
         <div>
           <div className="text-caption text-fg-muted mb-1">Disabled:range = border + thumb border = border(同步降級)</div>
-          <Slider defaultValue={[60]} disabled />
+          <Slider defaultValue={[60]} disabled aria-label="亮度（停用）" />
         </div>
         <Label>↑ 兩個 state 下 range 和 thumb border 永遠同一個 token,不讓兩者漂移</Label>
       </Rule>

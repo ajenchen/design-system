@@ -18,6 +18,7 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuItem,
   SidebarMenuButton,
 } from './sidebar'
@@ -206,6 +207,29 @@ export const IconCollapse: Story = {
       </SidebarProvider>
     )
   },
+}
+
+// beta.97 SidebarMenuAction 手刻 consumer 的 hover 階梯證據。
+// 用 public Sidebar composition render 真實 row/action 關係,不直接複製 action class。
+export const ActionHoverState: Story = {
+  name: '側邊欄動作懸停狀態',
+  tags: ['!autodocs'],
+  render: () => (
+    <div className="w-[320px] overflow-hidden rounded-lg border border-divider bg-surface p-2">
+      <SidebarProvider defaultActiveId="roadmap" style={{ minHeight: 'auto' }}>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton id="roadmap" startIcon={Folder}>
+              產品路線圖
+            </SidebarMenuButton>
+            <SidebarMenuAction aria-label="更多產品路線圖操作" data-visual-hover-target>
+              <MoreVertical />
+            </SidebarMenuAction>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarProvider>
+    </div>
+  ),
 }
 
 // ── 2. 混合內容(SidebarMenu + TreeView)─────────────────────────────────
@@ -505,4 +529,3 @@ export const IntegrationSidebar: Story = {
     )
   },
 }
-

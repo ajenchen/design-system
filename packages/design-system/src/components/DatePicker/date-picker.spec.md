@@ -129,7 +129,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 ### Typed input(Issue 10,2026-05-10 opt-in)
 
-`typeable?: boolean`(default false)→ trigger 內渲 real `<input type="text">` 取代 `<span>`,user 可直接打字 + Calendar icon 仍開 popover(Material X DatePicker / Ant DatePicker / Notion typed-date 雙 affordance 共識)。Parser `parseDateInput(input, { allowTime })` 接 ISO YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD + native `Date.parse` fallback(RFC 'Mar 12 2026')。Partial input allow;`Enter`/`Blur` commit;`Esc` reset;IME `compositionstart/end` guard 不誤觸發。Invalid → `aria-invalid`。**v1 limits**:US `MM/DD/YYYY` vs EU `DD/MM/YYYY` ambiguous → Date.parse fallback;locale-aware format prop deferred v2;TimePicker typed input deferred(column picker UX 不同)。
+`typeable?: boolean`(default false)→ trigger 內渲 real `<input type="text" role="combobox">` 取代 `<span>`,user 可直接打字 + Calendar icon 仍開 popover(Material X DatePicker / Ant DatePicker / Notion typed-date 雙 affordance 共識)。外層 Field wrapper 只負責視覺與 Popover click anchor,不重複 `role` / `aria-*`;popup 開啟、dialog 實際掛載後,真 input 才輸出 `aria-controls` 指向該 dialog,關閉後移除,禁止把 Radix 的懸空 IDREF 留在純視覺 wrapper。Parser `parseDateInput(input, { allowTime })` 接 ISO YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD + native `Date.parse` fallback(RFC 'Mar 12 2026')。Partial input allow;`Enter`/`Blur` commit;`Esc` reset;IME `compositionstart/end` guard 不誤觸發。Invalid → `aria-invalid`。**v1 limits**:US `MM/DD/YYYY` vs EU `DD/MM/YYYY` ambiguous → Date.parse fallback;locale-aware format prop deferred v2;TimePicker typed input deferred(column picker UX 不同)。
 
 ---
 
@@ -292,7 +292,7 @@ DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omi
 
 ## A11y 預設
 
-- Trigger:`role="combobox"` + `aria-haspopup="dialog"` + `aria-expanded={open}` + 必含 accessible name(`aria-label` / 或外層 `<label>` / 或 fieldCtx label)
+- Trigger:非 typeable 由 Field wrapper 持 `role="combobox"`;typeable 由真 `<input>` 持 combobox 語意,外層 wrapper 不重複 ARIA。兩者皆有 `aria-haspopup="dialog"` + `aria-expanded={open}` + accessible name(`aria-label` / 或外層 `<label>` / 或 fieldCtx label),並只在 popup 已掛載時輸出 `aria-controls` 指向同一個 dialog ID(關閉時移除,不得留下懸空 IDREF)
 - Popover content:`role="dialog"`;單一日期 popover 的 PopoverContent 帶 `aria-label="日期選擇"`(date-picker.tsx:650,DS default dialog label),Range popover 加 `aria-label="日期區間選擇"`
 - DateGrid 鍵盤:Arrow keys 切日 / PageUp/Down 切月 / Home/End 行首尾(react-day-picker v9 內建)
 - Trigger 鍵盤(Space / Enter open;Esc close + 回焦):單一 DatePicker 的 `<div role="combobox">` 無 native Enter/Space→click,由元件**自建 `onKeyDown`** 開 popover(Radix PopoverTrigger 只 compose onClick;date-picker.tsx:554),Esc 關閉後靠 PopoverTrigger 的 Radix **內建** `triggerRef.focus()` 回焦;Range 用 native `<button>` onClick 開、只掛 PopoverAnchor(triggerRef 恆 null → 內建回焦 no-op),改由**自建 `onCloseAutoFocus`** 手動回焦 active 端 button(date-picker.tsx:1020-1026,守 WCAG 2.4.3)
@@ -316,7 +316,7 @@ DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omi
 - **Empty(no value)**:`value=null` → trigger 顯 placeholder(預設 `YYYY/MM/DD`,showTime 時 `YYYY/MM/DD HH:MM`;consumer 可傳 `placeholder` 覆寫)。無導覽目標時鍵盤焦點停留(react-day-picker v9 內建)。
 - **Invalid date input**:Field validation 處理 `aria-invalid="true"` + error border + 下方 error message;DatePicker 本身不 own validation 規則。
 - **極長格式化日期**:trigger 文字單行 `truncate`(ellipsis),不換行不撐高(View / Edit / typeable / Range 雙 input 皆同);實際截斷時 hover / focus 顯完整值 tooltip(僅實際截斷才顯——rule owner `components/Tooltip/tooltip.spec.md:32`「截斷文字 → tooltip」):View 路徑消費 `<TruncatedText>`;Edit trigger 與 Range 兩端 button 為 interactive host,消費 `useTruncated` 自組(trigger = host、量測內層值 span,SSOT `patterns/element-anatomy/truncated-text.spec.md`「trigger 需自控」指定解),popover 開啟時靜默。typeable `<input>` 可捲動編輯,無截斷補救需求。
-- **RTL**:未實作方向鏡像(trigger / Range 雙 input / DateGrid 皆以 LTR physical 方向設計);RTL 屬 DS-wide 決策,未定(與 Chip / Breadcrumb 同口徑)。
+- **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。trigger / Range / DateGrid 不在本檔另立支援決策。
 - **Dark mode / density**:走 Field + Popover SSOT 自動 adapt;DateGrid 內 cell 尺寸 density-aware(消費 `--field-height-sm`:md=28×28 / lg=32×32,對齊 L128 + `date-grid.spec.md:120`),隨 density 縮放而非固定。
 
 ---

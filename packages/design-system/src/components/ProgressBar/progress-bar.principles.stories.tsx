@@ -122,7 +122,7 @@ export const UsageGuidance: Story = {
           note="status 三選一是系統決定的語意。consumer 要紅、綠、藍以外的色 → 提到系統層討論是否新增 status,不要每個消費者自己用 className override fill 色。"
         >
           <Frame>
-            <ProgressBar value={55} status="inProgress" />
+            <ProgressBar value={55} status="inProgress" aria-label="標準進度色示範" />
           </Frame>
           <Label>✅ 走 status token(info / success / error),不 override 色值</Label>
         </Rule>
@@ -139,7 +139,7 @@ export const UsageGuidance: Story = {
               <span className="text-body flex-1">匯出客戶名單 CSV</span>
               <span className="text-caption text-fg-muted tabular-nums">812 / 1,250 筆</span>
             </div>
-            <ProgressBar value={65} status="inProgress" />
+            <ProgressBar value={65} status="inProgress" aria-label="匯出客戶名單進度" />
           </Frame>
           <Label>✅ CSV 匯出 / 批次處理:總量已知 → ProgressBar(檔案上傳改用 FileItem,見下方)</Label>
 
@@ -159,7 +159,7 @@ export const UsageGuidance: Story = {
               <FileText size={16} className="text-fg-muted" />
               <span className="text-body flex-1">產生季度報表中...</span>
             </div>
-            <ProgressBar value={0} status="inProgress" />
+            <ProgressBar value={0} status="inProgress" aria-label="無法量化的報表產生進度（誤用）" />
           </Frame>
           <Label warn>❌ 若無法量化卻硬用 ProgressBar(永遠卡 0% 或亂跳):使用者會以為壞掉 → 改用 CircularProgress(indeterminate)</Label>
         </Rule>
@@ -174,7 +174,7 @@ export const UsageGuidance: Story = {
               <span className="text-body flex-1">附件_會議記錄.docx</span>
               <span className="text-caption text-fg-muted">58%</span>
             </div>
-            <ProgressBar value={58} status="inProgress" />
+            <ProgressBar value={58} status="inProgress" aria-label="附件上傳進度（自組誤用）" />
           </Frame>
           <Label warn>❌ Consumer 自組檔名 + Paperclip + ProgressBar 做上傳列表 → 應該用 FileItem</Label>
 
@@ -184,7 +184,7 @@ export const UsageGuidance: Story = {
               <span className="text-body-lg font-medium flex-1">匯入客戶名單</span>
               <span className="text-caption text-fg-muted tabular-nums">812 / 1,250 筆</span>
             </div>
-            <ProgressBar value={65} status="inProgress" affix="value" />
+            <ProgressBar value={65} status="inProgress" affix="value" aria-label="匯入客戶名單進度" />
             <p className="text-footnote text-fg-muted mt-2">處理中,預計剩餘 28 秒</p>
           </Frame>
           <Label>✅ CSV 批次匯入 / 報表生成 → 直接用 ProgressBar(非檔案情境,FileItem 不適用)</Label>
@@ -207,7 +207,7 @@ export const StatusRule: Story = {
             <Paperclip size={16} className="text-fg-muted" />
             <span className="text-body flex-1">Q1_財報.xlsx</span>
           </div>
-          <ProgressBar value={42} status="inProgress" affix="value" />
+          <ProgressBar value={42} status="inProgress" affix="value" aria-label="Q1 財報上傳進度" />
         </Frame>
         <Label>✅ 上傳中用 inProgress,affix 顯示進度百分比</Label>
 
@@ -216,7 +216,7 @@ export const StatusRule: Story = {
             <Paperclip size={16} className="text-fg-muted" />
             <span className="text-body flex-1">簡報_final.pptx</span>
           </div>
-          <ProgressBar value={100} status="success" affix="status-icon" />
+          <ProgressBar value={100} status="success" affix="status-icon" aria-label="簡報上傳完成" />
         </Frame>
         <Label>✅ 完成用 success + 勾 icon(終態指示)</Label>
 
@@ -226,7 +226,7 @@ export const StatusRule: Story = {
             <span className="text-body flex-1">影片素材.mp4</span>
             <span className="text-caption text-error">檔案過大</span>
           </div>
-          <ProgressBar value={68} status="error" affix="status-icon" />
+          <ProgressBar value={68} status="error" affix="status-icon" aria-label="影片素材上傳失敗" />
         </Frame>
         <Label>✅ 失敗用 error + 叉 icon,旁邊可補上具體錯誤說明</Label>
       </Rule>
@@ -240,7 +240,7 @@ export const StatusRule: Story = {
             <span className="text-body flex-1">儲存空間</span>
             <span className="text-caption text-error tabular-nums">95% 使用</span>
           </div>
-          <ProgressBar value={95} status="error" />
+          <ProgressBar value={95} status="error" aria-label="儲存空間使用率" />
         </Frame>
         <Label>✅ 配額快滿:consumer 判斷「95% 以上顯示警示」後自行把 status 切成 error</Label>
       </Rule>
@@ -260,7 +260,7 @@ export const AffixRule: Story = {
           <div className="flex items-center gap-2 mb-2">
             <span className="text-body flex-1">儲存空間</span>
           </div>
-          <ProgressBar value={78} status="inProgress" affix="value" />
+          <ProgressBar value={78} status="inProgress" affix="value" aria-label="儲存空間使用率" />
         </Frame>
         <Label>✅ 配額顯示:affix=value,使用者要知道確切百分比</Label>
 
@@ -269,7 +269,7 @@ export const AffixRule: Story = {
             <Paperclip size={16} className="text-fg-muted" />
             <span className="text-body flex-1">提案書_終版.pdf</span>
           </div>
-          <ProgressBar value={100} status="success" affix="status-icon" />
+          <ProgressBar value={100} status="success" affix="status-icon" aria-label="提案書上傳完成" />
         </Frame>
         <Label>✅ 上傳完成:affix=status-icon,終態不需要再看百分比</Label>
       </Rule>
@@ -286,6 +286,7 @@ export const AffixRule: Story = {
           <ProgressBar
             value={42}
             status="inProgress"
+            aria-label="設計規範上傳進度"
             affix={<Button variant="text" size="xs" iconOnly startIcon={X} aria-label="取消上傳" />}
           />
         </Frame>
@@ -299,6 +300,7 @@ export const AffixRule: Story = {
           <ProgressBar
             value={66}
             status="inProgress"
+            aria-label="影片素材上傳進度"
             affix={<span className="text-caption text-fg-muted tabular-nums shrink-0">3.3 / 5.0 MB</span>}
           />
         </Frame>
@@ -315,7 +317,7 @@ export const AffixRule: Story = {
             <span className="text-body flex-1">附件.zip</span>
             <span className="text-caption text-fg-muted tabular-nums">55%</span>
           </div>
-          <ProgressBar value={55} status="inProgress" />
+          <ProgressBar value={55} status="inProgress" aria-label="附件上傳進度" />
         </Frame>
         <Label>✅ 上方已有 55% 文字 → bar 不加 affix,避免重複</Label>
       </Rule>

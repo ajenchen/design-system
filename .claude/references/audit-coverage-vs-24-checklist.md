@@ -55,7 +55,7 @@
 |---|---|
 | #22 cross-browser 抽測 | 第一個 Safari-specific bug 落地 → 建 weekly Playwright Safari smoke test |
 | #20 `npm audit` cron | 第一次 dep CVE 被通知 → schedule `npm audit` weekly report |
-| RTL 支援 | 第一個 RTL 產品需求 → 補 RTL audit dim + 測 logical properties |
+| RTL 支援 | **目前 LTR-only / 明確不支援**(`packages/design-system/README.md#compatibility-matrix`)；visual/audit matrix 不得把未驗證 RTL 當覆蓋。第一個真實 RTL 產品需求必先建立 DS-wide proposal，再新增 audit dim + logical-properties / icons / keyboard / scroll matrix |
 | Next.js / Remix 整合 | DS 要發 npm 時 → 補 `use client` boundary + SSR 測試 |
 
 ## 為什麼不寫成 24 dim 平行 audit

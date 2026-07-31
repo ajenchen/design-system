@@ -370,7 +370,7 @@ Radix DialogPrimitive 自動處理:
 - 所有 iconOnly button 皆有 `aria-label`(中文,跟 DS 其他元件風格一致)
 - Filmstrip `role="group"` + `aria-label` + thumb `<button>` + `aria-current`(非 tablist;見「Filmstrip 規則」段理由)
 - InfoPanel 用 `<aside aria-label="檔案詳細資訊">` 語意標記
-- `onOpenAutoFocus={e => e.preventDefault()}` **僅取消** Radix 開啟時的自動聚焦(避免焦點跑進第一個 tabbable 觸發 tooltip);此 handler **不主動把焦點移入 viewport** —— 焦點停在觸發按鈕,直到 user 操作使焦點進入 Content,FocusScope 才啟動 trap。(known a11y gap:若要開啟即把焦點移入 viewer 需補 `tabIndex` + `ref.focus()`,屬 SSOT-affecting 待拍板)
+- `DialogContent` 固定 `tabIndex={-1}`；`onOpenAutoFocus` 先執行 consumer handler,若未被取消則阻止 Radix 把焦點送到第一個 toolbar control,並主動 `focus({ preventScroll: true })` fullscreen shell。開啟後焦點立即位於 viewer/FocusScope 內,不留在被 `aria-hidden` 的背景 trigger,也不因首個 icon button focus 而誤觸 tooltip。consumer 若有專屬初始焦點可在 handler 中 `preventDefault()` 後自行聚焦。
 
 ---
 

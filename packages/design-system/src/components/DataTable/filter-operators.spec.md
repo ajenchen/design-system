@@ -210,7 +210,7 @@
 | 4 | `date` 擴 `is_on_or_before` / `is_on_or_after` | ✅ 採用(CU gap) |
 | 5 | `multiSelect` 走 5 ops(含 `has_all_of`)| ✅ |
 | 6 | `is_exactly` 全砍 | ✅ |
-| 7 | label 暫硬編繁中 + 留 i18n hook | ✅ |
+| 7 | registry 繁中 label 作預設；panel 以 `labels.operatorLabels` / relative-date maps 提供 consumer i18n override | ✅ 2026-07-31 落地 |
 | 8 | op 命名 snake_case | ✅ |
 | 9 | 統一 `is_set` / `is_not_set`(不混 `is_empty`) | ✅ |
 
@@ -253,7 +253,7 @@
 - [x] InputSurface 議題消失(配合砍 `number.between`)
 - [x] FilterTree data model + DataTable 耦合 — 已落地 `filter-tree.ts` + `data-table-filter-panel.tsx`(原規劃 `advanced-filter.draft.md` 未另立檔,內容即本 spec + code)
 - [x] datetime spec — 併入本 spec v3(原規劃 `datetime-picker.draft.md` 不需要,無新元件)
-- [x] i18n 策略 — 暫硬編繁中,留 i18n hook(對齊 DS 既有元件慣例)
+- [x] i18n 策略 — registry 繁中 label 保持預設 SSOT；`DataTableFilterPanel labels` 可 deep-partial override operator、relative-date group / option 與全部 panel chrome(2026-07-31)
 - [→] Phase B.5 lock canonical via `/ensure-canonical`(spec 全收斂後)
 
 ## Sources(M8 benchmark)

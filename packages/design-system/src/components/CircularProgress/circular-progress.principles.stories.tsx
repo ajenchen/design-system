@@ -62,7 +62,7 @@ export const UsageGuidance: Story = {
           note="語意鎖「正在載入、正在處理」。永遠旋轉的裝飾會讓 a11y 使用者(螢幕閱讀器)持續收到 loading 通知,也讓視覺使用者無法判斷何時結束"
         >
           <div className="flex items-center gap-2 border border-border rounded-lg p-3 w-72">
-            <CircularProgress />
+            <CircularProgress aria-label="載入中（裝飾誤用示範）" />
             <span className="text-body">歡迎使用本系統</span>
           </div>
           <Label warn>Welcome banner 裡無限轉的 CircularProgress → 使用者以為系統卡住</Label>
@@ -76,7 +76,7 @@ export const UsageGuidance: Story = {
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-center gap-2 border border-border rounded-md px-3 py-2">
                 {/* size=16 = field-inline canonical;此例為反例(不該多個一起轉)。 */}
-                <CircularProgress size={16} />
+                <CircularProgress size={16} aria-label={`載入項目 ${i + 1}`} />
                 <span className="text-body text-fg-muted">載入項目 {i + 1}</span>
               </div>
             ))}
@@ -104,7 +104,7 @@ export const UsageGuidance: Story = {
         >
           <div className="flex items-center gap-6">
             <div className="flex flex-col items-center gap-2">
-              <CircularProgress value={100} size={24} />
+              <CircularProgress value={100} size={24} aria-label="進度 100%（穩態誤用）" />
               <Label warn>❌ 穩態停留 100% → 使用者困惑</Label>
             </div>
             <div className="flex flex-col items-center gap-2">
@@ -166,7 +166,7 @@ export const IndeterminateVsDeterminateRule: Story = {
           <Label>✅ 第三方金流驗證:不知道要多久 → 不傳 value</Label>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <CircularProgress value={65} affix="value" />
+          <CircularProgress value={65} affix="value" aria-label="檔案上傳進度 65%" />
           <Label>✅ 檔案上傳:bytes 已知 → 傳 value={'{N}'}</Label>
         </div>
       </Rule>
@@ -176,7 +176,7 @@ export const IndeterminateVsDeterminateRule: Story = {
         note="value 永遠停在 0% 或隨機亂跳會讓使用者懷疑 app 壞掉。若操作本質不可量化,維持 indeterminate 到底,不要硬傳 value 假裝。"
       >
         <div className="flex flex-col items-center gap-2">
-          <CircularProgress value={0} />
+          <CircularProgress value={0} aria-label="報表產生進度 0%（假進度誤用）" />
           <Label warn>❌ 生成報表中卻永遠卡 0% → 改用 indeterminate(不傳 value)</Label>
         </div>
       </Rule>
@@ -209,6 +209,7 @@ export const ConsumptionScenarioRule: Story = {
           loading
           defaultValue="cq@"
           placeholder="驗證 email 唯一性..."
+          aria-label="Email"
           className="w-72"
         />
         <Label>驗證 email 唯一性(GitHub 註冊場景)</Label>
@@ -244,6 +245,7 @@ export const SizeMatchContextRule: Story = {
           loading
           defaultValue="驗證中..."
           placeholder="驗證 email..."
+          aria-label="Email"
           className="w-60"
         />
       </Rule>
@@ -253,7 +255,7 @@ export const SizeMatchContextRule: Story = {
         note="中等尺寸,放在 row / card 內容區,視覺重量足夠吸引注意但不喧賓奪主"
       >
         <div className="flex items-center justify-center gap-2 border border-border rounded-lg p-4 w-72">
-          <CircularProgress size={24} />
+          <CircularProgress size={24} aria-label="載入更多留言" />
           <span className="text-body text-fg-muted">載入更多留言...</span>
         </div>
         <Label>Slack channel 載入更多訊息的 footer</Label>

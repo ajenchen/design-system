@@ -166,15 +166,41 @@ export function externalGitHubDesiredPolicy(desired, repository, profileProvider
   invariant(profileProvider.surfacePolicy?.kind === 'github-protected-workflow-readback', 'GitHub Actions runtime profile policy is invalid')
   const desiredProfile = desired.profiles?.[repository.desiredProfile]
   invariant(desiredProfile, `GitHub Actions desired profile ${repository.desiredProfile ?? '<missing>'} is unavailable`)
-  const checks = (desiredProfile.requiredChecks ?? []).filter(check => check.trustSource === profileProvider.surfacePolicy.requiredCheckTrustSource)
-  invariant(checks.length === 1, `GitHub Actions desired profile ${repository.desiredProfile} must resolve one protected hard-gate check`)
+  const selector = profileProvider.surfacePolicy.hardGateByRepositoryRole?.[repository.role]
+  exactKeys(selector, ['checkContext', 'oidcSubjectMode', 'trustSource'], `GitHub Actions hard-gate selector for ${repository.role ?? '<missing>'}`)
+  invariant(
+    ['repository-workflow', 'protected-base-workflow'].includes(selector.trustSource)
+      && ['pull-request', 'credential-environment'].includes(selector.oidcSubjectMode),
+    `GitHub Actions hard-gate selector for ${repository.role} is invalid`,
+  )
+  const checks = (desiredProfile.requiredChecks ?? []).filter(check => (
+    check.context === selector.checkContext
+    && check.trustSource === selector.trustSource
+  ))
+  invariant(checks.length === 1, `GitHub Actions desired profile ${repository.desiredProfile} must resolve one role-selected hard-gate check`)
   const requiredCheck = checks[0]
-  invariant(Array.isArray(requiredCheck.requiredEvents) && requiredCheck.requiredEvents.length === 1, 'GitHub Actions protected hard-gate must declare exactly one event')
+  invariant(Array.isArray(requiredCheck.requiredEvents) && requiredCheck.requiredEvents.length === 1, 'GitHub Actions role-selected hard-gate must declare exactly one event')
   const integration = desired.integrations?.[requiredCheck.integration]
-  invariant(Number.isSafeInteger(integration?.id) && integration.id > 0, `GitHub Actions protected hard-gate integration ${requiredCheck.integration ?? '<missing>'} requires an exact active App id`)
-  const environments = (desiredProfile.environments ?? []).filter(environment => environment.workflow === requiredCheck.workflow
-    && environment.credentialIntegration === requiredCheck.integration)
-  invariant(environments.length === 1, 'GitHub Actions protected hard-gate must resolve one credential-bound environment')
+  invariant(Number.isSafeInteger(integration?.id) && integration.id > 0, `GitHub Actions role-selected hard-gate integration ${requiredCheck.integration ?? '<missing>'} requires an exact active App id`)
+  let oidcSubject
+  if (selector.oidcSubjectMode === 'credential-environment') {
+    invariant(selector.trustSource === 'protected-base-workflow', 'Credential-environment OIDC requires a protected-base workflow hard gate')
+    const environments = (desiredProfile.environments ?? []).filter(environment => (
+      environment.workflow === requiredCheck.workflow
+      && environment.credentialIntegration === requiredCheck.integration
+    ))
+    invariant(environments.length === 1, 'GitHub Actions protected-base hard gate must resolve one credential-bound environment')
+    oidcSubject = `repo:${repository.github}:environment:${environments[0].name}`
+  } else {
+    invariant(
+      selector.oidcSubjectMode === 'pull-request'
+        && selector.trustSource === 'repository-workflow'
+        && requiredCheck.requiredEvents[0] === 'pull_request'
+        && requiredCheck.integration === 'githubActions',
+      'GitHub Actions native pull-request hard gate has an incompatible event, integration, or trust source',
+    )
+    oidcSubject = `repo:${repository.github}:pull_request`
+  }
   const rulesets = (desiredProfile.rulesets ?? []).filter(ruleset => ruleset.name === profileProvider.surfacePolicy.requiredRulesetName)
   invariant(rulesets.length === 1 && rulesets[0].enforcement === 'active', 'GitHub Actions protected required-check ruleset is unavailable')
   const ruleset = rulesets[0]
@@ -206,7 +232,7 @@ export function externalGitHubDesiredPolicy(desired, repository, profileProvider
     rulesetName: ruleset.name,
     rulesetPolicyDigest: sha256(stableStringify({ ruleset, requiredCheckName: requiredCheck.context }, 0)),
     desiredStateDigest,
-    oidcSubject: `repo:${repository.github}:environment:${environments[0].name}`,
+    oidcSubject,
   }
 }
 

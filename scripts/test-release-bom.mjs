@@ -23,6 +23,11 @@ import { pathToFileURL } from 'node:url'
 import Ajv2020 from 'ajv/dist/2020.js'
 import { inspectReleaseSet } from './release-set.mjs'
 import {
+  canonicalReleaseSbomBytes,
+  normalizeReleaseSbom,
+  releaseSbomSerialNumber,
+} from './release-sbom.mjs'
+import {
   assertRemoteTagUnchanged,
   assertVerifiedReleaseTag,
   resolveRemoteTagIdentity,
@@ -142,7 +147,6 @@ const trustBlock = jobBlock('trust-preflight')
 const buildBlock = jobBlock('build-release-evidence')
 const attestBlock = jobBlock('attest-release')
 const npmBlock = jobBlock('publish-npm')
-const releaseGithubBlock = jobBlock('github-release')
 const finalizeWorkflow = readFileSync(join(root, '.github/workflows/release-finalize.yml'), 'utf8')
 const finalizerJobBlock = (name) => {
   const match = finalizeWorkflow.match(new RegExp(`(?:^|\\n)  ${name}:\\n[\\s\\S]*?(?=\\n  [a-z0-9][a-z0-9-]*:\\n|$)`))
@@ -151,6 +155,115 @@ const finalizerJobBlock = (name) => {
 }
 const finalizeCertBlock = finalizerJobBlock('certify-finalization')
 const githubBlock = finalizerJobBlock('publish-github-release')
+
+must(
+  (workflow.match(/node scripts\/release-sbom\.mjs/g) || []).length === 1,
+  'release producer must invoke the canonical SBOM normalizer exactly once',
+)
+must(
+  (finalizeWorkflow.match(/node scripts\/release-sbom\.mjs/g) || []).length === 1,
+  'release finalizer must invoke the canonical SBOM normalizer exactly once',
+)
+mustMatch(
+  buildBlock,
+  /node scripts\/release-sbom\.mjs[\s\S]*--input "\$RUNNER_TEMP\/release\.sbom\.raw\.json"[\s\S]*--output "\$GITHUB_WORKSPACE\/release-artifacts\/release\.sbom\.cdx\.json"[\s\S]*--tag "\$RELEASE_TAG"[\s\S]*--git-tree "\$\{\{ needs\.resolve-release-request\.outputs\.release_tree \}\}"/,
+  'release producer must normalize the SBOM with the dispatch tag and resolved release tree',
+)
+mustMatch(
+  finalizeCertBlock,
+  /node scripts\/release-sbom\.mjs[\s\S]*--input "\$RUNNER_TEMP\/release\.sbom\.raw\.json"[\s\S]*--output "\$GITHUB_WORKSPACE\/release-artifacts\/release\.sbom\.cdx\.json"[\s\S]*--tag "\$\{\{ github\.event\.client_payload\.tag \}\}"[\s\S]*--git-tree "\$\{\{ steps\.identity\.outputs\.tree \}\}"/,
+  'release finalizer must normalize the SBOM with the same dispatch tag and independently resolved tree',
+)
+must(
+  !/(?:sbom_serial|del\(\.serialNumber|\.serialNumber\s*=|metadata\.timestamp)/.test(`${buildBlock}\n${finalizeCertBlock}`),
+  'release workflows must not duplicate or bypass canonical SBOM normalization',
+)
+
+const releaseSbomIdentity = {
+  tag: 'v1.2.3',
+  gitTree: '0123456789abcdef0123456789abcdef01234567',
+}
+const producerRawSbom = {
+  specVersion: '1.6',
+  metadata: {
+    timestamp: '2026-07-31T01:02:03.000Z',
+    component: { version: '1.2.3', name: 'release-fixture', type: 'application' },
+  },
+  bomFormat: 'CycloneDX',
+  serialNumber: 'urn:uuid:producer-random-value',
+  version: 1,
+  components: [{ version: '1.0.0', name: 'dependency', type: 'library' }],
+}
+const finalizerRawSbom = {
+  components: [{ type: 'library', name: 'dependency', version: '1.0.0' }],
+  version: 1,
+  serialNumber: 'urn:uuid:finalizer-random-value',
+  bomFormat: 'CycloneDX',
+  metadata: {
+    component: { type: 'application', name: 'release-fixture', version: '1.2.3' },
+    timestamp: '2030-01-01T00:00:00.000Z',
+  },
+  specVersion: '1.6',
+}
+const expectedReleaseSbomSerial = 'urn:uuid:ad025820-f0db-5f63-8282-1148ab65e192'
+must(
+  releaseSbomSerialNumber(releaseSbomIdentity) === expectedReleaseSbomSerial,
+  'release SBOM deterministic serial algorithm drifted',
+)
+const normalizedReleaseSbom = normalizeReleaseSbom(producerRawSbom, releaseSbomIdentity)
+must(normalizedReleaseSbom.serialNumber === expectedReleaseSbomSerial, 'release SBOM normalizer did not bind tag+tree serial')
+must(
+  !Object.hasOwn(normalizedReleaseSbom.metadata, 'timestamp'),
+  'release SBOM normalizer retained the nondeterministic metadata timestamp',
+)
+must(
+  canonicalReleaseSbomBytes(producerRawSbom, releaseSbomIdentity)
+    .equals(canonicalReleaseSbomBytes(finalizerRawSbom, releaseSbomIdentity)),
+  'semantically identical producer/finalizer SBOMs did not normalize to identical bytes',
+)
+must(
+  releaseSbomSerialNumber({ ...releaseSbomIdentity, gitTree: 'f'.repeat(40) }) !== expectedReleaseSbomSerial,
+  'release SBOM serial does not change with the release tree',
+)
+expectThrow(
+  () => canonicalReleaseSbomBytes({ ...producerRawSbom, specVersion: '1.3' }, releaseSbomIdentity),
+  /specVersion 1\.4 or newer/,
+  'obsolete CycloneDX version negative',
+)
+
+const producerSbomDirectory = temporaryDirectory('release-sbom-producer-')
+const finalizerSbomDirectory = temporaryDirectory('release-sbom-finalizer-')
+const producerSbomInput = join(producerSbomDirectory, 'raw.json')
+const producerSbomOutput = join(producerSbomDirectory, 'canonical.json')
+const finalizerSbomInput = join(finalizerSbomDirectory, 'raw.json')
+const finalizerSbomOutput = join(finalizerSbomDirectory, 'canonical.json')
+writeFileSync(producerSbomInput, JSON.stringify(producerRawSbom))
+writeFileSync(finalizerSbomInput, `${JSON.stringify(finalizerRawSbom, null, 4)}\n`)
+const runReleaseSbom = (input, output, identity = releaseSbomIdentity) => spawnSync(process.execPath, [
+  'scripts/release-sbom.mjs',
+  '--input', input,
+  '--output', output,
+  '--tag', identity.tag,
+  '--git-tree', identity.gitTree,
+], { cwd: root, encoding: 'utf8' })
+expectPass(runReleaseSbom(producerSbomInput, producerSbomOutput), 'release producer SBOM normalization')
+expectPass(runReleaseSbom(finalizerSbomInput, finalizerSbomOutput), 'release finalizer SBOM normalization')
+must(
+  readFileSync(producerSbomOutput).equals(readFileSync(finalizerSbomOutput)),
+  'release producer and finalizer CLI paths emitted different canonical SBOM bytes',
+)
+expectFail(
+  runReleaseSbom(producerSbomInput, producerSbomOutput),
+  /output already exists/,
+  'release SBOM overwrite negative',
+)
+const symlinkedSbomInput = join(finalizerSbomDirectory, 'raw-link.json')
+symlinkSync(finalizerSbomInput, symlinkedSbomInput)
+expectFail(
+  runReleaseSbom(symlinkedSbomInput, join(finalizerSbomDirectory, 'linked-output.json')),
+  /canonical regular file \(no symlink\)/,
+  'release SBOM symlink input negative',
+)
 
 for (const [label, pattern] of [
   ['protected-default dispatch trigger', /repository_dispatch:\s*\n\s*types: \[stage-protected-release\]/],
@@ -177,9 +290,11 @@ mustMatch(trustBlock, /--event "\$GITHUB_EVENT_PATH"/, 'release trust preflight 
 mustMatch(trustBlock, /tag_object: \$\{\{ steps\.resolve_trust\.outputs\.tag_object \}\}[\s\S]*--release-tag/, 'release trust preflight must emit a digest-bound verified annotated tag object')
 mustMatch(trustBlock, /evidence_file_sha256: \$\{\{ steps\.resolve_trust\.outputs\.evidence_file_sha256 \}\}/, 'release trust preflight must expose the exact evidence-file digest')
 mustMatch(buildBlock, /needs: \[resolve-release-request, smoke-shard\]/, 'evidence build must depend on the protected-main resolver and smoke matrix')
-mustMatch(trustBlock, /if: vars\.RELEASE_HIGH_ASSURANCE == 'true'/, 'the high-assurance trust preflight must stay an explicit opt-in lane')
-mustMatch(attestBlock, /needs: \[resolve-release-request, build-release-evidence\]/, 'attestation must depend on protected-main resolution and the unprivileged evidence build')
-mustMatch(npmBlock, /needs: \[resolve-release-request, build-release-evidence, attest-release\]/, 'npm publication must depend on protected-main resolution, evidence, and attestation')
+must(!/^\s{4}if:/m.test(trustBlock), 'release trust preflight must be mandatory for every staged release')
+mustMatch(attestBlock, /needs: \[resolve-release-request, trust-preflight, build-release-evidence\]/, 'attestation must depend on protected-main resolution, mandatory trust, and unprivileged evidence')
+mustMatch(npmBlock, /needs: \[resolve-release-request, trust-preflight, build-release-evidence, attest-release\]/, 'npm staging must depend on protected-main resolution, mandatory trust, evidence, and attestation')
+mustMatch(attestBlock, /release-trust-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}[\s\S]*release-trust-preflight\.mjs[\s\S]*--verify[\s\S]*--expected-authorization-digest/, 'attestation must download and revalidate the exact attempt-bound trust evidence')
+must((attestBlock.match(/--expected-object "\$\{\{ steps\.verify_trust\.outputs\.tag_object \}\}"/g) || []).length === 2, 'each attestation tag recheck must bind the originally authorized tag object')
 mustMatch(githubBlock, /needs: certify-finalization/, 'GitHub Release writer must depend on independent finalization certification')
 mustMatch(buildBlock, /permissions:\s*\n\s*contents: read/, 'evidence builder must remain read-only')
 must(!/contents: write|id-token: write|attestations: write|environment:/.test(buildBlock), 'evidence builder gained authority')
@@ -190,17 +305,20 @@ must(!/contents: write|environment:/.test(attestBlock), 'attestation job gained 
 mustMatch(npmBlock, /environment:\s*\n\s*name: npm-release/, 'npm publish job lost its protected environment')
 mustMatch(npmBlock, /contents: read[\s\S]*id-token: write/, 'npm publish job permissions drifted')
 must(!/contents: write|attestations: write/.test(npmBlock), 'npm publish job gained repository/attestation write authority')
-mustMatch(npmBlock, /npm publish "\$tarball" --provenance --access public --tag latest/, 'publication must go through tokenless OIDC Trusted Publishing with provenance')
-mustMatch(npmBlock, /release-published-integrity\.mjs --tarball "\$tarball" --version "\$version"/, 'publish loop must probe already-published versions through the committed static integrity CLI')
-mustMatch(npmBlock, /already published with identical integrity/, 'publish loop must be idempotent across reruns for byte-identical already-published versions')
-const integrityProbe = readFileSync(join(root, 'scripts/release-published-integrity.mjs'), 'utf8')
-mustMatch(integrityProbe, /DIFFERENT bytes: refusing to continue/, 'integrity probe must fail closed when the registry already holds different bytes for the same version')
-mustMatch(integrityProbe, /sha512-\$\{createHash\('sha512'\)\.update\(tarball\)\.digest\('base64'\)\}/, 'integrity probe must bind the comparison to the exact local tarball bytes')
-mustMatch(npmBlock, /npm view "\$\{name\}@\$\{version\}" version/, 'publication must read back the exact published registry versions')
-mustMatch(releaseGithubBlock, /needs: \[resolve-release-request, build-release-evidence, publish-npm\]/, 'GitHub Release publication must depend on the completed npm publish')
-mustMatch(releaseGithubBlock, /permissions:\s*\n\s*contents: write/, 'GitHub Release job needs contents write')
-must(!/id-token: write|attestations: write/.test(releaseGithubBlock), 'GitHub Release job gained npm/attestation authority')
-mustMatch(releaseGithubBlock, /gh release create "\$RELEASE_TAG"[\s\S]*--verify-tag/, 'GitHub Release must bind the verified tag')
+mustMatch(npmBlock, /release-trust-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}[\s\S]*release-trust-preflight\.mjs[\s\S]*--verify[\s\S]*--expected-authorization-digest/, 'npm staging must download and revalidate the exact attempt-bound trust evidence')
+mustMatch(npmBlock, /node scripts\/release-npm-publish\.mjs[\s\S]*--receipt "\$RUNNER_TEMP\/npm-stage\/npm-stage-receipt\.json"[\s\S]*--trust-artifact-digest[\s\S]*--trust-run-attempt/, 'npm authority must run only through the native stage helper with the complete trust binding')
+mustMatch(npmBlock, /if: always\(\)[\s\S]*sha256sum "\$receipt"[\s\S]*name: npm-stage-\$\{\{ github\.event\.client_payload\.tag \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}[\s\S]*artifact-digest/, 'stage receipt must be hashed and retained as an attempt-bound v4 artifact even after a staging failure')
+for (const output of [
+  'tag', 'stage_run_id', 'stage_run_attempt', 'stage_artifact_digest', 'release_set_sha256',
+  'stage_receipt_sha256', 'release_authorization_digest', 'release_trust_evidence_digest',
+  'release_trust_artifact_digest',
+]) {
+  mustMatch(npmBlock, new RegExp(`^      ${output}: \\\$\\\{\\\{ steps\\.finalizer_handoff\\.outputs\\.${output} \\\}\\\}$`, 'm'), `npm stage job is missing finalizer producer output ${output}`)
+}
+mustMatch(npmBlock, /id: finalizer_handoff[\s\S]*STAGE_ARTIFACT_DIGEST: \$\{\{ steps\.retain_stage\.outputs\.artifact-digest \}\}[\s\S]*stage_receipt_sha256=\$STAGE_RECEIPT_SHA256[\s\S]*GITHUB_STEP_SUMMARY/, 'stage job must expose and summarize the exact closed finalizer handoff')
+must(!/^\s{2}github-release:/m.test(workflow), 'release.yml must not contain a GitHub Release writer job')
+must(!/contents: write/.test(workflow), 'release.yml must not hold repository contents-write authority')
+must(!/\bnpm publish\b|\bgh release (?:create|upload|edit)\b/.test(workflow), 'release.yml must not contain direct npm publication or GitHub Release mutation')
 mustMatch(githubBlock, /permissions:\s*\n\s*contents: write/, 'GitHub Release job needs contents write')
 must(!/id-token: write|attestations: write/.test(githubBlock), 'GitHub Release job gained npm/attestation authority')
 mustMatch(githubBlock, /environment:\s*\n\s*name: release-finalize/, 'GitHub Release writer lost its independently protected environment')
@@ -216,11 +334,11 @@ must(
   'each attestation must have its own immediately preceding remote signed-tag recheck',
 )
 const stagingTagChecks = indexesOf(npmBlock, 'scripts/release-remote-tag.mjs')
-const stagingAuthorityUses = indexesOf(npmBlock, 'npm publish "$tarball"')
+const stagingAuthorityUses = indexesOf(npmBlock, 'node scripts/release-npm-publish.mjs')
 must(
   stagingTagChecks.length === 1 && stagingAuthorityUses.length === 1
   && stagingTagChecks[0] < stagingAuthorityUses[0],
-  'npm publication authority must have its own preceding remote tag recheck',
+  'npm native-stage authority must have its own preceding remote tag recheck',
 )
 must((workflow.match(/--expected "\$\{\{ needs\.build-release-evidence\.outputs\.release_set_sha256 \}\}"/g) || []).length === 2, 'attestation and staging must bind the same independent release-set digest')
 must((workflow.match(/node scripts\/run-verified-npm\.mjs -- pack \.\/packages\//g) || []).length === 3, 'each publishable package must be packed exactly once through the verified npm runtime')
@@ -242,6 +360,7 @@ mustMatch(npmPublishHelper, /'stage', 'publish', archive,[\s\S]*'--tag', context
 mustMatch(npmPublishHelper, /receiptItem\.stageId = evidence\.stageId[\s\S]*writeAtomicJson\(receiptPath, receipt\)/, 'every successful package must durably record its stageId')
 mustMatch(npmPublishHelper, /tagObject: args\['--tag-object'\][\s\S]*createStageReceipt/, 'stage receipt must retain the exact quorum-authorized tag object')
 mustMatch(npmPublishHelper, /evidenceFileSha256: args\['--release-trust-evidence-file-sha256'\][\s\S]*createStageReceipt/, 'stage receipt must retain the exact trust-evidence file digest')
+mustMatch(npmPublishHelper, /for \(const item of context\.ordered\)[\s\S]*await recheckRemoteTag\(context\.identity, args\['--tag-object'\], githubToken\)[\s\S]*const staged = npmResult\(npmCli, \[[\s\S]*'stage', 'publish'/, 'native stage helper must re-read the exact signed tag before each irreversible stage request')
 must(!/\[\s*'publish'\b|'dist-tag'/.test(npmPublishHelper), 'OIDC helper contains direct publication or channel mutation')
 const npmPromotionHelper = readFileSync(join(root, 'scripts/release-npm-promote.mjs'), 'utf8')
 mustMatch(npmPromotionHelper, /assertInteractivePromotionEnvironment[\s\S]*verifyAuthorizedTrain[\s\S]*'dist-tag', 'add'/, 'promotion must validate the platform-interactive session and the entire authorized train before channel mutation')

@@ -23,7 +23,7 @@ export const Overview: Story = {
         <H3>Anatomy</H3>
         <Desc>Textarea 是多行 Input——native `&lt;textarea&gt;` + 橋接 DS token。不同於 Input:沒有 field-height(高度由 rows / min-h 決定)、沒有 startIcon / endAction。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
-          <Textarea rows={3} placeholder="請輸入留言..." />
+          <Textarea rows={3} placeholder="請輸入留言..." aria-label="留言" />
         </div>
       </div>
 
@@ -80,6 +80,7 @@ export const Inspector: Story = {
     error: false,
     placeholder: '寫下您對這個 PR 的 review 意見…',
     defaultValue: '',
+    'aria-label': 'PR review 意見（互動檢閱器）',
   },
   argTypes: {
     mode: { control: 'radio', options: ['edit', 'view', 'readonly', 'disabled'] },
@@ -103,12 +104,12 @@ export const SizeMatrix: Story = {
       <div>
         <H3>Size = sm / md</H3>
         <Desc>`text-body`(14px)。常見 form / comment 場景。</Desc>
-        <Textarea size="sm" rows={3} placeholder="寫下您的意見..." />
+        <Textarea size="sm" rows={3} placeholder="寫下您的意見..." aria-label="意見（小尺寸）" />
       </div>
       <div>
         <H3>Size = lg</H3>
         <Desc>`text-body-lg`(16px)。長篇閱讀場景(bio editor、article body)。</Desc>
-        <Textarea size="lg" rows={3} placeholder="介紹您自己..." />
+        <Textarea size="lg" rows={3} placeholder="介紹您自己..." aria-label="自我介紹（大尺寸）" />
       </div>
     </div>
   ),
@@ -123,6 +124,7 @@ export const ModeMatrix: Story = {
         <Textarea
           rows={3}
           defaultValue="我覺得這個專案非常有潛力,建議加強 onboarding 的引導流程..."
+          aria-label="專案意見（可編輯）"
         />
       </div>
       <div>
@@ -132,6 +134,7 @@ export const ModeMatrix: Story = {
           mode="view"
           rows={3}
           value="我覺得這個專案非常有潛力,建議加強 onboarding 的引導流程..."
+          aria-label="專案意見（展示）"
         />
       </div>
       <div>
@@ -141,6 +144,7 @@ export const ModeMatrix: Story = {
           mode="readonly"
           rows={3}
           defaultValue="我覺得這個專案非常有潛力,建議加強 onboarding 的引導流程..."
+          aria-label="專案意見（唯讀）"
         />
       </div>
       <div>
@@ -149,6 +153,7 @@ export const ModeMatrix: Story = {
           mode="disabled"
           rows={3}
           defaultValue="尚未開放編輯"
+          aria-label="專案意見（停用）"
         />
       </div>
       <div>
@@ -157,6 +162,7 @@ export const ModeMatrix: Story = {
           error
           rows={3}
           defaultValue="留言內容不能為空"
+          aria-label="留言（錯誤狀態）"
         />
       </div>
     </div>
@@ -239,19 +245,19 @@ export const ColorMatrix: Story = {
         <div className="grid grid-cols-1 gap-4 max-w-md">
           <div>
             <div className="text-caption text-fg-muted mb-1 font-mono">edit default</div>
-            <Textarea rows={2} placeholder="開始輸入..." />
+            <Textarea rows={2} placeholder="開始輸入..." aria-label="意見（預設狀態）" />
           </div>
           <div>
             <div className="text-caption text-fg-muted mb-1 font-mono">readonly(底色標示閱讀區)</div>
-            <Textarea mode="readonly" rows={2} defaultValue="已送出的意見 — 謝謝您的回饋" />
+            <Textarea mode="readonly" rows={2} defaultValue="已送出的意見 — 謝謝您的回饋" aria-label="意見（唯讀狀態）" />
           </div>
           <div>
             <div className="text-caption text-fg-muted mb-1 font-mono">disabled</div>
-            <Textarea mode="disabled" rows={2} defaultValue="尚未開放編輯" />
+            <Textarea mode="disabled" rows={2} defaultValue="尚未開放編輯" aria-label="意見（停用狀態）" />
           </div>
           <div>
             <div className="text-caption text-fg-muted mb-1 font-mono">error(invalid)</div>
-            <Textarea error rows={2} defaultValue="評論內容違反社群規範" />
+            <Textarea error rows={2} defaultValue="評論內容違反社群規範" aria-label="評論（錯誤狀態）" />
           </div>
         </div>
       </div>
@@ -269,11 +275,11 @@ export const RowsResizeMatrix: Story = {
         <div className="flex flex-col gap-3">
           <div>
             <div className="text-caption text-fg-muted mb-1 font-mono">rows=2</div>
-            <Textarea rows={2} placeholder="短留言..." />
+            <Textarea rows={2} placeholder="短留言..." aria-label="短留言（兩行）" />
           </div>
           <div>
             <div className="text-caption text-fg-muted mb-1 font-mono">rows=3(預設)</div>
-            <Textarea rows={3} placeholder="詳細描述..." />
+            <Textarea rows={3} placeholder="詳細描述..." aria-label="詳細描述（三行）" />
           </div>
         </div>
       </div>

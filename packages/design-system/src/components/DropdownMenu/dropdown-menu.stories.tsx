@@ -241,9 +241,8 @@ export const OpenSnapshot: StoryObj = {
 }
 
 // ── ItemHover(視覺稽核用 — 互動狀態 pilot)──
-// defaultOpen 展開後,play() hover 第一個 item,讓 Playwright 截圖抓到
-// hover highlight(bg-neutral-hover)+ 相鄰未 hover item 的視覺對比。
-// 這是 Layer A 預設抓不到的 post-interaction state。
+// defaultOpen 建立 Portal；visual-audit 的真實 Playwright pointer 負責
+// 第一個 item 的 CSS :hover，截圖同時保留相鄰未 hover item 作對照。
 // 詳見 .claude/skills/visual-audit/SKILL.md 的「Layer A interactive state coverage」。
 
 export const ItemHover: StoryObj = {
@@ -255,7 +254,7 @@ export const ItemHover: StoryObj = {
         <Button variant="tertiary" endIcon={ChevronDown}>操作</Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem startIcon={Copy} shortcut="⌘C" data-testid="item-hover-target">
+        <DropdownMenuItem startIcon={Copy} shortcut="⌘C" data-testid="item-hover-target" data-visual-hover-target>
           複製
         </DropdownMenuItem>
         <DropdownMenuItem startIcon={Pencil} shortcut="⌘E">
@@ -268,19 +267,6 @@ export const ItemHover: StoryObj = {
       </DropdownMenuContent>
     </DropdownMenu>
   ),
-  play: async () => {
-    const { userEvent } = await import('@storybook/test')
-    // Radix DropdownMenu 走 Portal 到 document.body,不在 canvasElement 內;
-    // 用 document.querySelector 找 menu item。
-    // 等 Radix 動畫 + Portal render 完畢(~300ms)。
-    await new Promise((r) => setTimeout(r, 400))
-    const target = document.querySelector<HTMLElement>('[data-testid="item-hover-target"]')
-    if (target) {
-      await userEvent.hover(target)
-      // 等 hover bg transition 完成
-      await new Promise((r) => setTimeout(r, 300))
-    }
-  },
 }
 
 // @story-trait-rationale: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。

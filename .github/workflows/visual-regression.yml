@@ -3,7 +3,7 @@ name: Visual Regression
 # Phase 5.2 2026-05-25 — visual regression CI(curated-scenario model)
 #
 # Pixel diff scripts/visual-assertions.json 的 curated scenarios(2026-07-14 誠實化:
-# 目前 111 條,約佔全 DS ~900+ story exports 的 1 成 — representative curation,
+# 目前 124 條,約佔全 DS ~900+ story exports 的 1 成 — representative curation,
 # 對齊 Chromatic curated snapshot 模型,「非」every-story 全覆蓋;新關鍵 story 記得補 scenario)
 # vs committed neutral authority `infra/governance/baseline/visual/curated/`。
 # `snapshots-baseline` 僅是 deterministic compatibility symlink,不得當 reverse SSOT。
@@ -52,7 +52,7 @@ jobs:
       # node_modules/playwright-core/.local-browsers;消費步驟必須帶同一 pin,
       # 否則 playwright 落回 ~/.cache/ms-playwright 找不到瀏覽器(2026-07-28 CI 錨例)。
       PLAYWRIGHT_BROWSERS_PATH: '0'
-    timeout-minutes: 45  # ~111 curated scenarios × screenshot + diff(headroom 給 scenario 增長)
+    timeout-minutes: 45  # ~124 curated scenarios × screenshot + diff(headroom 給 scenario 增長)
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

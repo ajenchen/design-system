@@ -31,7 +31,6 @@ import {
   invariant,
   parseFlags,
   readJson,
-  runClosedGh,
   sha256,
   stableStringify,
   validateInventory,
@@ -240,19 +239,88 @@ const AUTHORITY_BOOTSTRAP_REPLAY_KEYS = new Set([
 
 const clone = value => JSON.parse(JSON.stringify(value))
 
-export function githubApiRequestArgs(method, path) {
-  return [
-    'api', '-X', method,
-    '-H', 'Accept: application/vnd.github+json',
-    '-H', `X-GitHub-Api-Version: ${GITHUB_API_VERSION}`,
+const GITHUB_API_ORIGIN = 'https://api.github.com'
+const GITHUB_API_METHODS = new Set(['DELETE', 'GET', 'PATCH', 'POST', 'PUT'])
+const GITHUB_FETCH_CHILD = String.raw`
+const [method, path, maxBytesText] = process.argv.slice(1)
+const maxBytes = Number(maxBytesText)
+const token = process.env.GITHUB_TOKEN
+if (!token || !Number.isSafeInteger(maxBytes) || maxBytes <= 0) process.exit(64)
+const response = await fetch('https://api.github.com' + path, {
+  method,
+  redirect: 'error',
+  headers: {
+    Accept: 'application/vnd.github+json',
+    Authorization: 'Bearer ' + token,
+    'Content-Type': 'application/json',
+    'User-Agent': 'qijenchen-governance-reconciler',
+    'X-GitHub-Api-Version': '${GITHUB_API_VERSION}',
+  },
+  body: method === 'GET' || method === 'DELETE'
+    ? undefined
+    : await new Promise((resolve, reject) => {
+        const chunks = []
+        let size = 0
+        process.stdin.on('data', chunk => {
+          size += chunk.length
+          if (size > 16 * 1024 * 1024) reject(new Error('request body exceeds closed limit'))
+          else chunks.push(chunk)
+        })
+        process.stdin.on('end', () => resolve(chunks.length ? Buffer.concat(chunks) : undefined))
+        process.stdin.on('error', reject)
+      }),
+  signal: AbortSignal.timeout(55_000),
+})
+const chunks = []
+let size = 0
+if (response.body) {
+  for await (const chunk of response.body) {
+    size += chunk.length
+    if (size > maxBytes) throw new Error('response body exceeds closed limit')
+    chunks.push(chunk)
+  }
+}
+process.stdout.write(JSON.stringify({
+  status: response.status,
+  body: Buffer.concat(chunks).toString('base64'),
+}))
+`
+
+export function githubApiRequestDescriptor(method, path) {
+  invariant(GITHUB_API_METHODS.has(method), `GitHub API method is unsupported: ${method}`)
+  const rawPathname = typeof path === 'string' ? path.split('?', 1)[0] : ''
+  const repositoryBoundary = rawPathname.match(/^\/repos\/([^/]+)\/([^/]+)(?:\/|$)/)
+  const parsed = typeof path === 'string' ? new URL(path, GITHUB_API_ORIGIN) : null
+  invariant(
+    typeof path === 'string'
+      && path.startsWith('/repos/')
+      && !/[\0\r\n\\]/.test(path)
+      && !path.includes('://')
+      && !path.includes('#')
+      && repositoryBoundary
+      && /^[A-Za-z0-9_.-]+$/.test(repositoryBoundary[1])
+      && /^[A-Za-z0-9_.-]+$/.test(repositoryBoundary[2])
+      && !['.', '..'].includes(repositoryBoundary[1])
+      && !['.', '..'].includes(repositoryBoundary[2])
+      && parsed.origin === GITHUB_API_ORIGIN
+      && parsed.pathname === rawPathname
+      && parsed.href === `${GITHUB_API_ORIGIN}${path}`,
+    `GitHub API path is outside the closed repository boundary: ${path}`,
+  )
+  return Object.freeze({
+    method,
     path,
-  ]
+    url: `${GITHUB_API_ORIGIN}${path}`,
+    headers: Object.freeze({
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': GITHUB_API_VERSION,
+    }),
+  })
 }
 
 export class GhApiClient {
   constructor({
     environment = process.env,
-    executable,
     token,
     tokenEnvironmentName = 'GH_TOKEN',
   } = {}) {
@@ -262,43 +330,88 @@ export class GhApiClient {
       requireToken: false,
       tokenEnvironmentName,
     })
-    this.executable = executable
   }
 
-  execute(args, {
+  execute(method, path, {
     input,
-    maxOutputBytes = 16 * 1024 * 1024,
-    output = 'capture',
+    maxOutputBytes = 20 * 1024 * 1024,
     timeoutMs = 60_000,
   } = {}) {
     invariant(this.token !== null, 'GitHub API transport requires one captured GH_TOKEN authority')
-    return runClosedGh(args, {
+    const descriptor = githubApiRequestDescriptor(method, path)
+    invariant(
+      input === undefined || typeof input === 'string' || Buffer.isBuffer(input),
+      'GitHub API request body must be a string or Buffer',
+    )
+    invariant(
+      input === undefined || Buffer.byteLength(input) <= 16 * 1024 * 1024,
+      'GitHub API request body exceeds the closed size limit',
+    )
+    invariant(
+      Number.isInteger(maxOutputBytes) && maxOutputBytes > 0 && maxOutputBytes <= 128 * 1024 * 1024,
+      'GitHub API response limit is outside the safe range',
+    )
+    invariant(
+      Number.isInteger(timeoutMs) && timeoutMs > 0 && timeoutMs <= 120_000,
+      'GitHub API timeout is outside the safe range',
+    )
+    const result = spawnSync(process.execPath, [
+      '--input-type=module',
+      '--eval',
+      GITHUB_FETCH_CHILD,
+      descriptor.method,
+      descriptor.path,
+      String(maxOutputBytes),
+    ], {
       cwd: resolve(GOVERNANCE_ROOT, '../..'),
-      environment: {},
-      executable: this.executable,
+      encoding: 'utf8',
+      env: {
+        GITHUB_TOKEN: this.token,
+        HOME: '/dev/null',
+        LANG: 'C',
+        LC_ALL: 'C',
+        NO_COLOR: '1',
+      },
       input,
-      maxOutputBytes,
-      output,
-      repoRoot: resolve(GOVERNANCE_ROOT, '../..'),
-      timeoutMs,
-      token: this.token,
-      tokenEnvironmentName: null,
+      maxBuffer: Math.ceil(maxOutputBytes * 4 / 3) + 64 * 1024,
+      shell: false,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: timeoutMs,
+      windowsHide: true,
     })
+    if (result.error) throw new Error(`GitHub API transport failed for ${method} ${path}: ${result.error.message}`)
+    if (result.signal !== null || result.status !== 0) {
+      const detail = (result.stderr || result.stdout || `exit ${result.status}`).trim().slice(0, 4000)
+      throw new Error(`GitHub API transport failed for ${method} ${path}: ${detail}`)
+    }
+    try {
+      const envelope = JSON.parse(result.stdout)
+      invariant(
+        Number.isInteger(envelope?.status)
+          && envelope.status >= 100
+          && envelope.status <= 599
+          && typeof envelope.body === 'string',
+        'GitHub API transport returned an invalid response envelope',
+      )
+      return {
+        status: envelope.status,
+        body: Buffer.from(envelope.body, 'base64'),
+      }
+    } catch (error) {
+      throw new Error(`GitHub API transport returned invalid JSON for ${method} ${path}: ${error.message}`)
+    }
   }
 
   request(method, path, body, options = {}) {
-    const args = githubApiRequestArgs(method, path)
-    if (body !== undefined) args.push('--input', '-')
-    const result = this.execute(args, {
+    const result = this.execute(method, path, {
       input: body === undefined ? undefined : JSON.stringify(body),
     })
-    if (result.error) throw new Error(`GitHub API transport failed for ${method} ${path}: ${result.error.message}`)
-    if (result.status !== 0) {
-      const detail = (result.stderr || result.stdout || 'unknown gh api failure').trim().slice(0, 4000)
-      if (options.allow404 && /(?:HTTP 404|Not Found)/i.test(detail)) return null
-      throw new Error(`GitHub API failed closed for ${method} ${path} (exit ${result.status}): ${detail}`)
+    if (result.status < 200 || result.status >= 300) {
+      const detail = result.body.toString('utf8').trim().slice(0, 4000)
+      if (options.allow404 && result.status === 404) return null
+      throw new Error(`GitHub API failed closed for ${method} ${path} (HTTP ${result.status}): ${detail}`)
     }
-    const output = result.stdout.trim()
+    const output = result.body.toString('utf8').trim()
     if (!output) return null
     try {
       return JSON.parse(output)
@@ -308,18 +421,14 @@ export class GhApiClient {
   }
 
   requestBytes(method, path, { maxOutputBytes = 20 * 1024 * 1024 } = {}) {
-    const args = githubApiRequestArgs(method, path)
-    const result = this.execute(args, {
+    const result = this.execute(method, path, {
       maxOutputBytes,
-      output: 'buffer',
     })
-    if (result.error || result.signal !== null || result.status !== 0 || !Buffer.isBuffer(result.stdout)) {
-      const detail = Buffer.isBuffer(result.stderr)
-        ? result.stderr.toString('utf8')
-        : String(result.error?.message || result.stderr || `exit ${result.status}`)
-      throw new Error(`GitHub binary API failed closed for ${method} ${path}: ${detail.trim().slice(0, 1000)}`)
+    if (result.status < 200 || result.status >= 300) {
+      const detail = result.body.toString('utf8').trim().slice(0, 1000)
+      throw new Error(`GitHub binary API failed closed for ${method} ${path} (HTTP ${result.status}): ${detail}`)
     }
-    return Buffer.from(result.stdout)
+    return Buffer.from(result.body)
   }
 }
 

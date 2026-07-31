@@ -28,7 +28,7 @@ import {
   buildPlan as reconcileBuildPlan,
   computeEligibility as reconcileComputeEligibility,
   fetchRepositoryState,
-  githubApiRequestArgs,
+  githubApiRequestDescriptor,
   journalAuthorizationEnvelopeDigest,
   main as reconcileMain,
   reconcileFixtureTestHarness,
@@ -2749,13 +2749,51 @@ test('production mutation entrypoints reject fixture API provenance', async () =
   )
 })
 
-test('GitHub API transport pins the mutation-boundary API version', () => {
-  assert.deepEqual(githubApiRequestArgs('GET', '/repos/acme/consumer/rulesets'), [
-    'api', '-X', 'GET',
-    '-H', 'Accept: application/vnd.github+json',
-    '-H', 'X-GitHub-Api-Version: 2022-11-28',
-    '/repos/acme/consumer/rulesets',
-  ])
+test('GitHub API transport pins the origin and mutation-boundary API version', () => {
+  assert.deepEqual(githubApiRequestDescriptor('GET', '/repos/acme/consumer/rulesets'), {
+    method: 'GET',
+    path: '/repos/acme/consumer/rulesets',
+    url: 'https://api.github.com/repos/acme/consumer/rulesets',
+    headers: {
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  })
+  assert.deepEqual(
+    githubApiRequestDescriptor('GET', '/repos/acme/consumer/rulesets?per_page=100'),
+    {
+      method: 'GET',
+      path: '/repos/acme/consumer/rulesets?per_page=100',
+      url: 'https://api.github.com/repos/acme/consumer/rulesets?per_page=100',
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    },
+  )
+  for (const path of [
+    'https://attacker.example/repos/acme/consumer',
+    '/repos/acme',
+    '/repos/acme/consumer/../../user',
+    '/repos/acme/../user/rulesets',
+    '/repos/%2e%2e/%2e%2e/user',
+    '/repos/acme%2Fattacker/consumer/rulesets',
+    '/repos/acme/consumer/rulesets#outside',
+  ]) {
+    assert.throws(
+      () => githubApiRequestDescriptor('GET', path),
+      /outside the closed repository boundary/,
+      path,
+    )
+  }
+  assert.throws(
+    () => githubApiRequestDescriptor('CONNECT', '/repos/acme/consumer'),
+    /GitHub API method is unsupported/,
+  )
+  const source = readFileSync(resolve(REPO_ROOT, 'infra/governance/bin/reconcile-github.mjs'), 'utf8')
+  assert.match(source, /await fetch\('https:\/\/api\.github\.com' \+ path/)
+  assert.match(source, /redirect: 'error'/)
+  assert.doesNotMatch(source, /\brunClosedGh\b|\bgh api\b/)
 })
 
 test('apply binds the exact signed mirror adapter and live-verifies the terminal head', () => {

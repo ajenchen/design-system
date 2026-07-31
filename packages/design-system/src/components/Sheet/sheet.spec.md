@@ -108,7 +108,7 @@ Sheet 為容器,內容由 consumer 決定;focus trap + Escape close + `aria-labe
 - **Empty(no content)**:Sheet 必含 title(`aria-labelledby` 強制要求);body 為空時 consumer 應渲 `<Empty>` placeholder,不渲空白 panel。
 - **Scroll(body 內容超過視口高度)**:`SheetBody` = `<ScrollArea>`(`flex-1 min-h-0`),超高內容在 body 內部捲動,header / footer 固定不動;consumer 不需自寫 `overflow-y-auto`。
 - **誤嵌套降級(nested Sheet)**:禁止事項已禁 nested;若 consumer 不慎嵌套,Radix 的 Esc 與 focus trap 只作用於**最上層** layer(DismissableLayer 只 dismiss highest layer;FocusScope stack 最新 scope active),關閉由上而下逐層。
-- **RTL**:`side` 為物理方向(`right-0` 物理定位),不隨 `dir="rtl"` 自動鏡像。
+- **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。`side` 維持 physical direction。
 - **Dark mode**:overlay-surface SSOT 自動 adapt(`overlay-surface.spec.md`);Sheet 不獨立 own dark token。
 - **Density**:Sheet body density 由 consumer 控(若內含 form / DataTable / Menu 各自有 density 規則);Sheet container 自身不持 density。
 

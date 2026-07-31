@@ -2,11 +2,11 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * ResizeHandle — pattern primitive for drag-to-resize visual + a11y(2026-05-21 v1 ship per
+ * ResizeHandle — pattern primitive for drag-to-resize visual hit target(2026-05-21 v1 ship per
  * user「style 難道不用跟 data table column resize 維持 ssot」+「都照你建議做」approval)。
  *
  * ── 定位 ──
- * 統一所有 drag-resize affordance 的視覺 / cursor / 命中區 / a11y attributes。
+ * 統一所有 drag-resize affordance 的視覺 / cursor / 命中區。
  * Consumer 自管 drag math(TanStack column resize / Sidebar drag-resize / Aside drag-resize
  * 各有不同 width state pathway,本 primitive 不耦合)。
  *
@@ -32,13 +32,16 @@ import { cn } from '@/lib/utils'
  * - Figma left panel resize(8px hit zone + 1px line)
  *
  * 統一共識:hit zone ≥ 7px(fingertip-friendly)/ 1px visual line(non-intrusive)/
- * hover affordance(stronger line) / drag feedback(primary highlight) /
- * a11y `role="separator"` + `aria-orientation` + 描述性 aria-label。
+ * hover affordance(stronger line) / drag feedback(primary highlight)。
+ *
+ * 本 primitive 目前只有 pointer drag visual/hit target，沒有 keyboard/value/controls contract；
+ * 因此固定從 accessibility tree 隱藏，不冒充 WAI-ARIA separator/window-splitter widget。
  */
-export interface ResizeHandleProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'role'> {
+export interface ResizeHandleProps
+  extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'role' | 'aria-hidden' | 'aria-label' | 'aria-orientation'> {
   /**
    * Drag 方向。`horizontal` = 拖拉左右(column resize / sidebar width);
-   * `vertical` = 拖拉上下(row resize / panel height)。決定 cursor + aria-orientation。
+   * `vertical` = 拖拉上下(row resize / panel height)。決定 cursor。
    */
   direction: 'horizontal' | 'vertical'
   /**
@@ -53,11 +56,9 @@ export interface ResizeHandleProps extends Omit<React.HTMLAttributes<HTMLSpanEle
   isResizing?: boolean
   /**
    * 是否禁用拖拉。consumer 透過 col / panel 的 resizable flag 決定。
-   * 禁用時不 render cursor + 不 attach a11y role。
+   * 禁用時不 render cursor；元件所有狀態皆固定 aria-hidden。
    */
   disabled?: boolean
-  /** a11y 描述性 label。consumer 必傳(eg. 「拖曳調整欄寬」/「拖曳調整側欄寬度」)。 */
-  'aria-label': string
   /**
    * 是否畫 visual line(1px divider)。`false` = consumer 已 paint(eg. DataTable panel
    * boundary col by panel-r 接管,不重複)。Default `true`。
@@ -82,7 +83,6 @@ export interface ResizeHandleProps extends Omit<React.HTMLAttributes<HTMLSpanEle
  *   position="end"
  *   isResizing={header.column.getIsResizing?.()}
  *   disabled={!isResizable}
- *   aria-label="拖曳調整欄寬"
  *   onPointerDownCapture={(e) => {
  *     e.stopPropagation()
  *     header.getResizeHandler?.()(e.nativeEvent)
@@ -96,7 +96,6 @@ export interface ResizeHandleProps extends Omit<React.HTMLAttributes<HTMLSpanEle
  *   direction="horizontal"
  *   position="end"
  *   isResizing={isDragging}
- *   aria-label="拖曳調整側欄寬度"
  *   onPointerDown={startDrag}
  * />
  * ```
@@ -117,7 +116,6 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
     ref,
   ) => {
     const isHorizontal = direction === 'horizontal'
-    const ariaOrientation = isHorizontal ? 'vertical' : 'horizontal'  // separator's axis is perpendicular to drag
 
     // 命中區用 inline style 而非 Tailwind arbitrary values(避免 Tailwind v4 JIT 對新增 arbitrary
     // class 在 dev mode 不更新 stylesheet 的 quirk;7px 是 primitive constant 非 token,inline 妥當)。
@@ -162,17 +160,14 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
           ...(position === 'end' ? { bottom: 3 } : { top: 3 }),
         }
 
-    // 抽 aria-label / style 由我們管,其他 ...props 不重複
-    const { 'aria-label': ariaLabel, style: extraStyle, ...restProps } = props
+    const { style: extraStyle, ...restProps } = props
     return (
       <span
         ref={ref}
-        role={disabled ? undefined : 'separator'}
-        aria-orientation={disabled ? undefined : ariaOrientation}
-        aria-label={disabled ? undefined : ariaLabel}
+        {...restProps}
+        aria-hidden="true"
         style={{ ...hitZoneStyle, ...extraStyle }}
         className={cn('group/resize', !disabled && 'select-none', className)}
-        {...restProps}
       >
         {showLine && (
           <span

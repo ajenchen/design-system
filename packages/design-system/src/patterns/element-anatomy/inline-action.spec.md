@@ -235,7 +235,7 @@ Canonical 實作於 `item-anatomy.tsx`,匯出 `ItemInlineAction` / `ItemSuffix`(
 
 #### `dismiss` prop 觸發條件(Button 限定)
 
-**明示**:`<Button dismiss />`(唯一機械觸發;Button 無 `onClose` / `onDismiss` prop)→ 觸發弱化 override(icon fg-muted → hover foreground;variant 強制 text)。語意判準:點擊語意 = X close 才用 dismiss
+**明示**:`<Button dismiss />`(唯一機械觸發;Button 無 `onClose` / `onDismiss` prop)→ 觸發弱化 override(icon `fg-muted` → hover `fg-secondary`;variant 強制 text)。語意判準:點擊語意 = X close 才用 dismiss
 
 **不觸發**:callback = `onRemove`(collection 操作)/ `onClear`(欄位清空)/ `onDelete` — 這些不是 dismiss 語意,Button 用對應 variant 即可
 

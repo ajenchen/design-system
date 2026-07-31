@@ -1,5 +1,5 @@
 {
-  "$schema-note": "scripts/visual-audit.mjs 消費此檔。每個 scenario 含:id(Storybook id)或 url(外部) / file(輸出 png 檔名) / 可選 assertions[](DOM 幾何測量陣列) / 可選 rationale(scenario-level 合理偏離說明,對齊 CLAUDE.md 稽核 canonical 優先順序 ladder)。assertion 內也可加 rationale 欄位讓個別檢查宣告合理偏離。id 從 curl http://localhost:6006/index.json 取得真實值。",
+  "$schema-note": "scripts/visual-audit.mjs 消費此檔。每個 scenario 含:id(Storybook id)或 url(外部) / file(輸出 png 檔名) / 可選 interaction({action:'hover',selector}:截圖前由 Playwright locator.hover() 維持真實 CSS :hover,selector 必唯一且缺失/重複 fail-closed) / 可選 assertions[](DOM 幾何測量陣列) / 可選 rationale(scenario-level 合理偏離說明,對齊 CLAUDE.md 稽核 canonical 優先順序 ladder)。assertion 內也可加 rationale 欄位讓個別檢查宣告合理偏離。id 從 curl http://localhost:6006/index.json 取得真實值。",
   "scenarios": [
     {
       "id": "design-system-components-datepicker-展示--default",
@@ -40,7 +40,8 @@
     {
       "id": "design-system-components-datepicker-展示--range-middle-hover-state",
       "file": "datepicker-range-middle-hover-state.png",
-      "rationale": "Hover state capture — play() hover range_middle date,verify 藍色 ring(1.5px primary)顯示在 grey track 上。Bug C 真實截圖驗證。"
+      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "rationale": "Hover state capture — play() 負責開啟 Portal 並標記 range_middle date；截圖前由 visual-audit 的 Playwright locator.hover() 擁有最終 CSS :hover,驗藍色 1.5px primary ring 顯示在 grey track 上。"
     },
     {
       "id": "design-system-components-calendar-展示--team-calendar",
@@ -163,7 +164,8 @@
     {
       "id": "design-system-components-button-展示--hover-focus-state",
       "file": "button-hover-focus-state.png",
-      "rationale": "Interactive state capture — play() 觸發 userEvent.hover() + element.focus() 讓 Layer A 抓到 hover bg / focus-visible ring post-interaction 視覺,補靜態 snapshot gap(見 SKILL.md「Layer A interactive state coverage」)"
+      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "rationale": "Interactive state capture — play() 建立第二顆 Button 的 focus；截圖前由 visual-audit 的 Playwright locator.hover() 維持第一顆 Button 的 CSS :hover,同張驗 hover bg + focus ring。"
     },
     {
       "id": "design-system-components-button-展示--tooltip-visible",
@@ -240,7 +242,9 @@
     },
     {
       "id": "design-system-components-fileitem-展示--hover-swap",
-      "file": "fileitem-hover-swap.png"
+      "file": "fileitem-hover-swap.png",
+      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "rationale": "Hover swap 由 visual-audit 的 Playwright locator.hover() 直接套在第一個 rich row host,讓 group-hover 將 completed 狀態圖示替換成 Download。"
     },
     {
       "id": "design-system-components-fileitem-設計規格--color-matrix",
@@ -266,7 +270,8 @@
     {
       "id": "design-system-components-dropdownmenu-展示--item-hover",
       "file": "dropdownmenu-item-hover.png",
-      "rationale": "Interactive state capture — defaultOpen + play() hover 第一個 item 讓 Playwright 抓到 hover highlight(bg-neutral-hover);Radix Portal 外 DOM 需 document.querySelector 找(見 SKILL.md「Layer A interactive state coverage」)"
+      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "rationale": "Interactive state capture — defaultOpen 建立 Radix Portal；截圖前由 visual-audit 的 Playwright locator.hover() 維持第一個 menu item 的 CSS :hover highlight(bg-neutral-hover)。"
     },
     {
       "id": "design-system-patterns-item-anatomy--icon-action-primitive-decision",
@@ -354,7 +359,9 @@
     },
     {
       "id": "design-system-components-inlineedit-展示--states",
-      "file": "inlineedit-states.png"
+      "file": "inlineedit-states.png",
+      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "rationale": "play() 負責把第三列切到 edit mode 並標記第二列 view button；截圖前由 visual-audit 的 Playwright locator.hover() 維持第二列 CSS :hover。"
     },
     {
       "id": "design-system-components-input-展示--modes",
@@ -463,7 +470,68 @@
     {
       "id": "design-system-internal-selectioncontrol-展示--notification-preferences",
       "file": "selectioncontrol-notification-preferences.png"
+    },
+    {
+      "id": "design-system-components-accountmenu-展示--open-snapshot",
+      "file": "accountmenu-open-snapshot.png",
+      "rationale": "beta.97 AccountMenu public composite 的 canonical 展開狀態;defaultOpen 固定呈現 identity label、個人資料、設定與獨立登出分組。"
+    },
+    {
+      "id": "design-system-patterns-header-anatomy--with-tabs",
+      "file": "header-with-tabs.png",
+      "rationale": "beta.97 Header W2 data-slot contract 基本場景;TabsList trigger inset 對齊 header content row,底線由 TabsList 自畫。"
+    },
+    {
+      "id": "design-system-patterns-header-anatomy--with-tabs-overflow-scroll",
+      "file": "header-with-tabs-overflow-scroll.png",
+      "rationale": "beta.97 Header W2 × overflow=scroll;窄容器下保留 px-loose trigger inset、min-w-full border 與水平捲動 affordance。"
+    },
+    {
+      "id": "design-system-patterns-header-anatomy--with-tabs-overflow-menu",
+      "file": "header-with-tabs-overflow-menu.png",
+      "rationale": "beta.97 Header W2 × overflow=menu;多層 wrapper 下仍由 data-slot=tabs-list 套用 inset,並保留 show-all navigator。"
+    },
+    {
+      "id": "design-system-patterns-item-anatomy--inline-action-hover-state",
+      "file": "item-inline-action-hover-state.png",
+      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "rationale": "beta.97 弱化 icon 一階 root invariant；story 靜態標記唯一 target,截圖前由 visual-audit 的 Playwright locator.hover() 建立最終 CSS :hover,驗 fg-muted → fg-secondary + neutral-hover 背景。"
+    },
+    {
+      "id": "design-system-components-fileupload-展示--remove-hover-state",
+      "file": "fileupload-remove-hover-state.png",
+      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "rationale": "beta.97 FileUpload 內建 file-list remove consumer；play() 定位並標記內建按鈕,截圖前由 visual-audit 的 Playwright locator.hover() 擁有最終 CSS :hover。"
+    },
+    {
+      "id": "design-system-components-sidebar-展示--action-hover-state",
+      "file": "sidebar-action-hover-state.png",
+      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "rationale": "beta.97 SidebarMenuAction 手刻 consumer；story 靜態標記唯一 target,截圖前由 visual-audit 的 Playwright locator.hover() 建立最終 CSS :hover,驗 fg-muted → fg-secondary 一階。"
+    },
+    {
+      "id": "design-system-components-treeview-展示--action-hover-state",
+      "file": "treeview-action-hover-state.png",
+      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "rationale": "beta.97 TreeItem 展開/收合 action 直接 consumer；play() 定位並標記 chevron,截圖前由 visual-audit 的 Playwright locator.hover() 維持最終 CSS :hover,驗一階 icon 色與 neutral-hover 背景。"
+    },
+    {
+      "id": "design-system-components-tag-展示--dismiss-hover-state",
+      "file": "tag-dismiss-hover-state.png",
+      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "rationale": "beta.97 neutral subtle Tag remove 分支；play() 定位並標記 onRemove action,截圖前由 visual-audit 的 Playwright locator.hover() 維持最終 CSS :hover,驗 primitive fg-muted → fg-secondary。Chip dismiss 明確 N/A:chip.spec.md 禁止 Filter Chip 提供 dismiss,移除 filter 由 deselect 承擔。"
+    },
+    {
+      "id": "design-system-components-button-展示--dismiss-hover-state",
+      "file": "button-dismiss-hover-state.png",
+      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "rationale": "beta.97 Button dismiss 手刻 consumer；story 靜態標記唯一 target,截圖前由 visual-audit 的 Playwright locator.hover() 建立 chrome close X 的最終 CSS :hover,驗 fg-muted → fg-secondary 一階。"
+    },
+    {
+      "id": "design-system-components-datatable-展示--nested-rows-expander-hover-state",
+      "file": "datatable-nested-rows-expander-hover-state.png",
+      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "rationale": "beta.97 DataTable nested row expander 手刻 consumer；story play 只驗 component pointer path 並標記唯一 target,截圖前由 visual-audit 的 Playwright locator.hover() 擁有最終 CSS :hover,驗 fg-muted → fg-secondary 一階。"
     }
   ]
 }
-

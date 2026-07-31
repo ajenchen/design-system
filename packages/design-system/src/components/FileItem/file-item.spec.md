@@ -459,7 +459,7 @@ Passive status icon 置中於 action-sized 容器,hover 時 active action 填滿
 - **超長檔名**:label 經 `ItemContent` 預設 `truncate` 單行截斷(ellipsis),不換行。
 - **過長 description**:自由換行不截斷(FileItem 未傳 `descriptionClamp`);rich 多行 desc 時 progress bar 隨內容下移並保 8px min gap(見 Rich layout invariant)。
 - **progress 精度**:傳入值直接顯示(rich 的 `%` 文字與 bar 同源),元件不四捨五入;`completed` 強制 100。
-- **RTL**:未特化——compact progress bar offset 用 physical `left/right`(見 `file-item.tsx`),RTL 支援需另案。
+- **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。compact progress offset 維持 physical direction。
 - **Dark mode**:走 semantic token 自動 adapt。無 `disabled` prop(展示型 row,非 form control)。
 
 ---

@@ -1,6 +1,7 @@
 // @story-trait-rationale: hasInteractiveStates trait — TreeView interactive states(hover / focus / selected / disabled)由 TreeItem 內部處理(spec.md state machine + anatomy StateBehavior story 已 cover),showcase 層 manual Disabled/States story retired per F migration(2026-05-15)— anatomy.stories.tsx auto-compile owns StateBehavior 6-canonical。AllSizes 同理 retired(SizeMatrix anatomy auto-compile owns)。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
+import { expect, userEvent, within } from '@storybook/test'
 import {
   Folder, FileText, FileCode, Image, Settings,
   CheckCircle2, Circle, Minus,
@@ -44,6 +45,29 @@ export const FileBrowser: Story = {
       </TreeView>
     </div>
   ),
+}
+
+// beta.97 直接修改的 TreeItem expand/collapse chevron hover 證據。
+// Chevron 依 TreeView virtual-focus contract 不進 tab sequence,因此以 row data id 精準取真實 button。
+export const ActionHoverState: Story = {
+  name: '展開動作懸停狀態',
+  tags: ['!autodocs'],
+  render: () => (
+    <div className="w-[300px] overflow-hidden rounded-lg border border-divider bg-surface py-2">
+      <TreeView aria-label="專案檔案">
+        <TreeItem id="product-roadmap" icon={Folder} label="產品路線圖">
+          <TreeItem id="q3-plan" icon={FileText} label="Q3-plan.pdf" />
+        </TreeItem>
+      </TreeView>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const action = canvasElement.querySelector<HTMLElement>(
+      '[data-tree-id="product-roadmap"] button[aria-hidden="true"]',
+    )
+    if (!action) throw new Error('TreeView 展開動作不存在')
+    action.setAttribute('data-visual-hover-target', '')
+  },
 }
 
 // ── Stepper ─────────────────────────────────────────────────────────────
@@ -96,29 +120,45 @@ const CheckboxTree = () => {
   const writeNone = !checked['write-docs'] && !checked['write-media']
 
   return (
-    <div className="w-[300px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
-      <TreeView selectionMode="multiple" aria-label="權限選擇" defaultExpandedIds={['read', 'write']}>
+    <div>
+      <button type="button" className="sr-only">樹狀清單之前</button>
+      <div className="w-[300px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
+        <TreeView selectionMode="multiple" aria-label="權限選擇" defaultExpandedIds={['read', 'write']}>
         <TreeItem
           id="read"
           icon={Folder}
           label="讀取權限"
-          checkbox={<Checkbox size="md" checked={readAll ? true : readNone ? false : 'indeterminate'} />}
+          checkbox={
+            <Checkbox
+              size="md"
+              checked={readAll ? true : readNone ? false : 'indeterminate'}
+              aria-label="讀取權限"
+            />
+          }
           onClick={() => { const next = !readAll; setChecked((p) => ({ ...p, read: next, 'read-docs': next, 'read-media': next })) }}
         >
-          <TreeItem id="read-docs" icon={FileText} label="文件" checkbox={<Checkbox size="md" checked={checked['read-docs']} />} onClick={() => toggle('read-docs')} />
-          <TreeItem id="read-media" icon={Image} label="媒體檔案" checkbox={<Checkbox size="md" checked={checked['read-media']} />} onClick={() => toggle('read-media')} />
+          <TreeItem id="read-docs" icon={FileText} label="文件" checkbox={<Checkbox size="md" checked={checked['read-docs']} aria-label="讀取文件" />} onClick={() => toggle('read-docs')} />
+          <TreeItem id="read-media" icon={Image} label="媒體檔案" checkbox={<Checkbox size="md" checked={checked['read-media']} aria-label="讀取媒體檔案" />} onClick={() => toggle('read-media')} />
         </TreeItem>
         <TreeItem
           id="write"
           icon={Folder}
           label="寫入權限"
-          checkbox={<Checkbox size="md" checked={writeAll ? true : writeNone ? false : 'indeterminate'} />}
+          checkbox={
+            <Checkbox
+              size="md"
+              checked={writeAll ? true : writeNone ? false : 'indeterminate'}
+              aria-label="寫入權限"
+            />
+          }
           onClick={() => { const next = !writeAll; setChecked((p) => ({ ...p, write: next, 'write-docs': next, 'write-media': next })) }}
         >
-          <TreeItem id="write-docs" icon={FileText} label="文件" checkbox={<Checkbox size="md" checked={checked['write-docs']} />} onClick={() => toggle('write-docs')} />
-          <TreeItem id="write-media" icon={Image} label="媒體檔案" checkbox={<Checkbox size="md" checked={checked['write-media']} />} onClick={() => toggle('write-media')} />
+          <TreeItem id="write-docs" icon={FileText} label="文件" checkbox={<Checkbox size="md" checked={checked['write-docs']} aria-label="寫入文件" />} onClick={() => toggle('write-docs')} />
+          <TreeItem id="write-media" icon={Image} label="媒體檔案" checkbox={<Checkbox size="md" checked={checked['write-media']} aria-label="寫入媒體檔案" />} onClick={() => toggle('write-media')} />
         </TreeItem>
-      </TreeView>
+        </TreeView>
+      </div>
+      <button type="button" className="sr-only">樹狀清單之後</button>
     </div>
   )
 }
@@ -126,6 +166,25 @@ const CheckboxTree = () => {
 export const WithCheckbox: Story = {
   name: '多選',
   render: () => <CheckboxTree />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const before = canvas.getByRole('button', { name: '樹狀清單之前' })
+    const tree = canvas.getByRole('tree', { name: '權限選擇' })
+    const after = canvas.getByRole('button', { name: '樹狀清單之後' })
+    const visualCheckboxes = canvasElement.querySelectorAll('[role="checkbox"]')
+
+    await expect(visualCheckboxes).toHaveLength(6)
+    for (const checkbox of visualCheckboxes) {
+      await expect(checkbox).toHaveAttribute('aria-hidden', 'true')
+      await expect(checkbox).toHaveAttribute('tabindex', '-1')
+    }
+
+    before.focus()
+    await userEvent.tab()
+    await expect(tree).toHaveFocus()
+    await userEvent.tab()
+    await expect(after).toHaveFocus()
+  },
 }
 
 // ── Long label (wrap test) ──────────────────────────────────────────────

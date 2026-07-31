@@ -35,7 +35,7 @@ export const Default: Story = {
           (Button loading = iconSize / Input loading = iconSize / Empty = iconSize)。
           不 parallel 展示多 sizes 因為 DS 不「提供各種 sizes」讓 consumer 挑,而是透過原則
           在 consumer 端自動決定(見 spec.md「Size canonical」)。 */}
-      <CircularProgress />
+      <CircularProgress aria-label="載入中" />
       <CircularProgress value={60} aria-label="進度 60%" />
       <CircularProgress value={90} affix="value" aria-label="進度 90%" />
     </div>
@@ -65,6 +65,7 @@ export const InlineAction: Story = {
           loading
           defaultValue="react-"
           placeholder="搜尋 GitHub repositories..."
+          aria-label="搜尋 GitHub repositories"
         />
 
         <div className="flex flex-col gap-2">
@@ -107,7 +108,7 @@ const syncColumns: ColumnDef<SyncRow>[] = [
         // 再加 leading-none 嘗試「壓縮行高」——那會讓 svg(16px) 與 text line box 互搶
         // 基線,反而歪掉。
         <span className="inline-flex items-center gap-2 text-fg-muted">
-          <CircularProgress size={16} />
+          <CircularProgress size={16} aria-label="同步中" />
           同步中
         </span>
       ) : (
@@ -142,4 +143,3 @@ export const FullScreenOverlay: Story = {
     </div>
   ),
 }
-

@@ -554,7 +554,7 @@ const InspectorInner = () => {
               <div className="w-[360px]">
                 <SelectionItem
                   size={size}
-                  control={<Checkbox size={size} checked={true} />}
+                  control={<Checkbox size={size} checked={true} aria-label={labelText} />}
                   icon={effectiveHasPrefix && effectivePrefixType === 'icon' ? Mail : undefined}
                   avatar={effectiveHasPrefix && effectivePrefixType === 'avatar' ? { alt: "Alice", color: "indigo" as const, hoverCard: personHover("Alice", "Design team lead") } : undefined}
                   label={labelText}
@@ -1144,7 +1144,7 @@ export const ReadingModes = {
               <div className="w-[300px]">
                 <SelectionItem
                   size={sz}
-                  control={<Checkbox size={sz} checked={true} />}
+                  control={<Checkbox size={sz} checked={true} aria-label={`${sz} 尺寸電子郵件通知`} />}
                   label="電子郵件通知"
                   description="每日寄送摘要信件到您的電子信箱"
                 />
@@ -1390,13 +1390,13 @@ export const IconColorsAndPresets = {
             <div className="w-[280px]">
               <SelectionItem
                 size="md"
-                control={<Checkbox size="md" checked={true} />}
+                control={<Checkbox size="md" checked={true} aria-label="電子郵件通知" />}
                 label="電子郵件通知"
                 description="每日寄送摘要信件"
               />
               <SelectionItem
                 size="md"
-                control={<Checkbox size="md" />}
+                control={<Checkbox size="md" aria-label="推送通知" />}
                 label="推送通知"
               />
             </div>
@@ -1430,6 +1430,25 @@ export const IconColorsAndPresets = {
 /* ═══════════════════════════════════════════════════════════════════════════
    5. Icon Action Primitive 決策樹（設計準則 2026-04-22）
    ═══════════════════════════════════════════════════════════════════════════ */
+
+export const InlineActionHoverState = {
+  name: '行內動作懸停狀態',
+  tags: ['!autodocs'],
+  render: () => (
+    <div className="flex w-[360px] items-center gap-3 rounded-md border border-divider bg-surface px-3 py-2">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-body font-medium text-foreground">正式環境部署</p>
+        <p className="truncate text-caption text-fg-secondary">版本 v2.4.0 · 5 分鐘前</p>
+      </div>
+      <ItemInlineActionButton
+        icon={MoreVertical}
+        size="md"
+        aria-label="更多部署操作"
+        data-visual-hover-target
+      />
+    </div>
+  ),
+}
 
 export const IconActionPrimitiveDecision = {
   name: '圖示動作通用零件決策',
@@ -1571,7 +1590,7 @@ export const IconActionPrimitiveDecision = {
         </div>
         <p className="text-[11px] text-fg-muted max-w-[780px] leading-relaxed">
           ✅ refresh / share / close 都是 Button sm iconOnly,Separator 分群(action 群 vs dismiss 群)。close 套
-          <code className="font-mono"> dismiss</code> prop 自動弱化(icon fg-muted → hover foreground)。
+          <code className="font-mono"> dismiss</code> prop 自動弱化(icon fg-muted → hover fg-secondary)。
           <br />❌ 禁止把 close 改寫成 Inline Action(會造成 same-row primitive 混用,gap 視覺斷裂)。
         </p>
       </div>
