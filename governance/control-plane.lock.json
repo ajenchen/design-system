@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:219d63d09f6078f57cac6b555ed96ed7358cbccf86ef32cc02853ded6c507fb0",
+      "hash": "sha256:41f158e1e79a83cf0367fdad33350f4492931501a13ccc379f36d916d2fbbf8c",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 167325,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:713c78df87409205f44e19926d657943731b9c5716be4f6216327b6e2a62b7ec",
+  "inputDigest": "sha256:b90832895a4e362788a05cd0ffeec4fb9c448acef4427892379df50118f0b925",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:038a38066834c15d2d6e8a4453a08e26a9b449890545ae67623184d489ea2318",
+  "snapshotDigest": "sha256:01bf19a15999addebb131e8889006a107bd5f8f1ceea7cd6f3eb4b091e9afd1a",
   "sources": [
     {
       "hash": "sha256:b844a18c72365e2c0a65caf07f6328fd8037e3d00be681bc26830eea117b7a6a",
@@ -647,7 +647,7 @@
       "files": 230,
       "hash": "sha256:14d35f4cadbd381ea035180e5b24e6ed3d67a1272d2155bf46e21a45bfd768b3",
       "id": "canonical-hooks",
-      "mode": "0700",
+      "mode": "0755",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/hooks",
       "type": "directory"
@@ -2506,7 +2506,7 @@
       "files": 16,
       "hash": "sha256:b15aceebffa7604dcd06d8846cb338d8f2b2e328846441f6637a5c53620c2c00",
       "id": "github-repository-governance",
-      "mode": "0700",
+      "mode": "0755",
       "ownerRepo": "design-system",
       "path": ".github/",
       "type": "directory"

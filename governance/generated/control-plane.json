@@ -135,7 +135,7 @@
       "files": 230,
       "hash": "sha256:14d35f4cadbd381ea035180e5b24e6ed3d67a1272d2155bf46e21a45bfd768b3",
       "id": "canonical-hooks",
-      "mode": "0700",
+      "mode": "0755",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/hooks",
       "type": "directory"
@@ -1994,7 +1994,7 @@
       "files": 16,
       "hash": "sha256:b15aceebffa7604dcd06d8846cb338d8f2b2e328846441f6637a5c53620c2c00",
       "id": "github-repository-governance",
-      "mode": "0700",
+      "mode": "0755",
       "ownerRepo": "design-system",
       "path": ".github/",
       "type": "directory"
