@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// @preflight-transition(from-revision:3 from:8e7374b74c1bc200192ac1eab802681fc6481ca8f344976bd419bf7b06fab57f to:35fcf07e69c845cde13576166d28ea977cfbd9a2b1ac5a99f9dc5f3c8b7ba4c7 audit-ref:wm-findings-f1-w2-render-gate-2026-07-30 reason:add-header-tabsslot-w2-render-contract-gate-after-build-storybook)
+// @preflight-transition(from-revision:4 from:35fcf07e69c845cde13576166d28ea977cfbd9a2b1ac5a99f9dc5f3c8b7ba4c7 to:f8a26c6f11bac8a31bd37494ccad2a8fa54ad03d27d27e5276a14b962381379e audit-ref:release-preflight-executable-ctime-stability-2026-07-31 reason:ignore-volatile-executable-ctime-while-retaining-file-identity-and-sha256)
 // release-preflight.mjs — 單一指令跑本機可重播的 release gate，並以 live GitHub policy
 // readback 收口；npm/OIDC/environment/independent signed finalizer 等外部 trust 仍只由 release.yml 的
 // protected trust-preflight 與 completion-readiness 證明，不宣稱本機與整個 release workflow 1:1。
@@ -87,13 +87,20 @@ function inside(parent, child) {
   return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
 }
 
-function sameFileIdentity(left, right) {
+// Sync-backed macOS volumes may update ctime for xattr-only metadata while a
+// long-running child executes. Executables remain bound to this identity plus
+// an exact SHA-256 readback; package registries keep the stricter ctime check.
+function sameExecutableIdentity(left, right) {
   return left.dev === right.dev
     && left.ino === right.ino
     && left.mode === right.mode
     && left.nlink === right.nlink
     && left.size === right.size
     && left.mtimeMs === right.mtimeMs
+}
+
+function sameFileIdentity(left, right) {
+  return sameExecutableIdentity(left, right)
     && left.ctimeMs === right.ctimeMs
 }
 
@@ -183,7 +190,7 @@ function spawnClosedNode(args, {
   })
   TOOL_PROFILE.verify()
   invariant(
-    sameFileIdentity(entryInfo, lstatSync(absoluteEntrypoint))
+    sameExecutableIdentity(entryInfo, lstatSync(absoluteEntrypoint))
       && sha256Bytes(readFileSync(absoluteEntrypoint)) === entrypointSha256,
     `release Node entrypoint changed while it executed:${entrypoint}`,
   )
@@ -220,7 +227,7 @@ function spawnClosedLocalBin(name, args, {
   })
   TOOL_PROFILE.verify()
   invariant(
-    sameFileIdentity(before, lstatSync(executable))
+    sameExecutableIdentity(before, lstatSync(executable))
       && sha256Bytes(readFileSync(executable)) === executableSha256,
     `release local binary changed while it executed:${name}`,
   )

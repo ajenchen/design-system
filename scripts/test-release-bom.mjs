@@ -135,6 +135,30 @@ mustMatch(stagedReleaseRunbook, /release-tag-authorizer[\s\S]*releaseTagAuthoriz
 const localPreflight = readFileSync(join(root, 'scripts/release-preflight.mjs'), 'utf8')
 mustMatch(localPreflight, /npm run --silent test:governance-harnesses/, 'local release preflight must run the one registered All-Harness that owns the governance/supply-chain suites')
 mustMatch(localPreflight, /npx --no-install tsc -b/, 'local release preflight must not allow npx registry fallback')
+const executableIdentityBlock = localPreflight.match(/function sameExecutableIdentity\(left, right\) \{[\s\S]*?\n\}/)?.[0] || ''
+mustMatch(
+  executableIdentityBlock,
+  /left\.dev === right\.dev[\s\S]*left\.ino === right\.ino[\s\S]*left\.mode === right\.mode[\s\S]*left\.nlink === right\.nlink[\s\S]*left\.size === right\.size[\s\S]*left\.mtimeMs === right\.mtimeMs/,
+  'release executable identity must retain device, inode, mode, link-count, size, and mtime binding',
+)
+must(!executableIdentityBlock.includes('ctimeMs'), 'release executable identity must tolerate ctime-only metadata drift')
+mustMatch(
+  localPreflight,
+  /function sameFileIdentity\(left, right\) \{\s*return sameExecutableIdentity\(left, right\)\s*&& left\.ctimeMs === right\.ctimeMs\s*\}/,
+  'release package registry identity must retain the stricter ctime binding',
+)
+must(indexesOf(localPreflight, 'sameFileIdentity(').length === 2, 'only the package registry stable-read may use strict file identity')
+must(indexesOf(localPreflight, 'sameExecutableIdentity(').length === 4, 'only the strict helper and two executable readbacks may use executable identity')
+mustMatch(
+  localPreflight,
+  /sameExecutableIdentity\(entryInfo, lstatSync\(absoluteEntrypoint\)\)\s*&& sha256Bytes\(readFileSync\(absoluteEntrypoint\)\) === entrypointSha256/,
+  'release Node entrypoint readback must pair executable identity with SHA-256',
+)
+mustMatch(
+  localPreflight,
+  /sameExecutableIdentity\(before, lstatSync\(executable\)\)\s*&& sha256Bytes\(readFileSync\(executable\)\) === executableSha256/,
+  'release local-bin readback must pair executable identity with SHA-256',
+)
 
 // The static workflow contract proves authority separation before any fixture is built.
 const workflow = readFileSync(join(root, '.github/workflows/release.yml'), 'utf8')
