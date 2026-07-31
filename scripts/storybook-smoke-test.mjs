@@ -19,6 +19,7 @@ import { spawn } from 'node:child_process'
 import { existsSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = join(__dirname, '..')
@@ -141,6 +142,9 @@ try {
   }
 
   // Playwright probe(import lazily,parallelize with concurrency)
+  const runtime = resolveProvisionedPlaywrightRuntime({ repoRoot: REPO_ROOT, environment: process.env })
+  if (!runtime) throw new Error('[storybook-smoke] exact Playwright Chromium runtime missing; run `npm run setup:playwright`')
+  process.env.PLAYWRIGHT_BROWSERS_PATH = runtime.environmentValue
   const { chromium } = await import(join(REPO_ROOT, 'node_modules/playwright/index.mjs'))
   const browser = await chromium.launch()
   const ctx = await browser.newContext()
