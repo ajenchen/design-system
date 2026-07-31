@@ -3958,50 +3958,72 @@ function acquireAuthorityBootstrapReplayLock(receiptRoot, replayIdentityDigest, 
     pid: process.pid,
   }, 0)}\n`
   for (;;) {
-    let descriptor
+    const temporary = resolve(
+      root,
+      `.${replayIdentityDigest}.${process.pid}.${randomUUID()}.pending-lock`,
+    )
+    let descriptor = null
+    let published = false
     try {
-      descriptor = openSync(path, 'wx', 0o600)
+      descriptor = openSync(temporary, 'wx', 0o600)
       writeFileSync(descriptor, body)
       fsyncSync(descriptor)
-      return { path, descriptor, body }
-    } catch (error) {
-      if (descriptor !== undefined) closeSync(descriptor)
-      if (error?.code !== 'EEXIST') throw error
-      let owner
       try {
-        const bytes = readFileSync(path, 'utf8')
-        owner = JSON.parse(bytes)
-        invariant(
-          bytes === `${stableStringify(owner, 0)}\n`
-            && owner.kind === 'authority-bootstrap-durable-replay-local-lock'
-            && owner.replayIdentityDigest === replayIdentityDigest
-            && Number.isSafeInteger(owner.pid)
-            && owner.pid > 0,
-          'authority policy bootstrap durable replay lock record is invalid',
-        )
-      } catch (readError) {
-        throw new Error(`authority policy bootstrap durable replay lock is unreadable or untrusted: ${readError.message}`)
+        linkSync(temporary, path)
+        published = true
+      } catch (error) {
+        if (error?.code !== 'EEXIST') throw error
       }
-      let ownerAlive = true
-      try { process.kill(owner.pid, 0) } catch (probeError) {
-        if (probeError?.code === 'ESRCH') ownerAlive = false
-        else if (probeError?.code !== 'EPERM') throw probeError
+      unlinkSync(temporary)
+      if (published) {
+        const directoryDescriptor = openSync(root, 'r')
+        try { fsyncSync(directoryDescriptor) } finally { closeSync(directoryDescriptor) }
+        invariant(readFileSync(path, 'utf8') === body,
+          'authority policy bootstrap durable replay lock exact readback failed')
+        return { path, descriptor, body }
       }
-      if (!ownerAlive) {
-        const stale = resolve(root, `.${replayIdentityDigest}.${randomUUID()}.stale-lock`)
-        try {
-          renameSync(path, stale)
-          unlinkSync(stale)
-          continue
-        } catch (recoveryError) {
-          if (recoveryError?.code === 'ENOENT') continue
-          throw new Error(`authority policy bootstrap durable replay stale-lock recovery failed: ${recoveryError.message}`)
-        }
-      }
-      invariant(Date.now() < deadline,
-        'authority policy bootstrap durable replay lock remained held by a live process')
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25)
+    } catch (error) {
+      if (descriptor !== null) closeSync(descriptor)
+      if (existsSync(temporary)) unlinkSync(temporary)
+      throw error
     }
+    closeSync(descriptor)
+    descriptor = null
+    let owner
+    try {
+      const bytes = readFileSync(path, 'utf8')
+      owner = JSON.parse(bytes)
+      invariant(
+        bytes === `${stableStringify(owner, 0)}\n`
+          && owner.kind === 'authority-bootstrap-durable-replay-local-lock'
+          && owner.replayIdentityDigest === replayIdentityDigest
+          && Number.isSafeInteger(owner.pid)
+          && owner.pid > 0,
+        'authority policy bootstrap durable replay lock record is invalid',
+      )
+    } catch (readError) {
+      if (readError?.code === 'ENOENT') continue
+      throw new Error(`authority policy bootstrap durable replay lock is unreadable or untrusted: ${readError.message}`)
+    }
+    let ownerAlive = true
+    try { process.kill(owner.pid, 0) } catch (probeError) {
+      if (probeError?.code === 'ESRCH') ownerAlive = false
+      else if (probeError?.code !== 'EPERM') throw probeError
+    }
+    if (!ownerAlive) {
+      const stale = resolve(root, `.${replayIdentityDigest}.${randomUUID()}.stale-lock`)
+      try {
+        renameSync(path, stale)
+        unlinkSync(stale)
+        continue
+      } catch (recoveryError) {
+        if (recoveryError?.code === 'ENOENT') continue
+        throw new Error(`authority policy bootstrap durable replay stale-lock recovery failed: ${recoveryError.message}`)
+      }
+    }
+    invariant(Date.now() < deadline,
+      'authority policy bootstrap durable replay lock remained held by a live process')
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25)
   }
 }
 

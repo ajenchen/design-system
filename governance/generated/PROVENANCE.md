@@ -131,7 +131,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-external-surface-evidence-schema | `infra/governance/schemas/external-surface-evidence.schema.json` | `sha256:30b82cfd6048aebac0a6a6cbaaeb697fac2d4b1fde8373b8b3380e734f0c811c` |
 | exact-fleet-reconcile-bootstrap-replay-receipt-schema | `infra/governance/schemas/fleet-reconcile-bootstrap-replay-receipt.schema.json` | `sha256:ad8919bd3c1aad18852a03adcf8420536012fd9da381cc5829a78ec10b9d8d53` |
 | exact-fleet-reconcile-bootstrap-transaction-schema | `infra/governance/schemas/fleet-reconcile-bootstrap-transaction.schema.json` | `sha256:1a21b77485a6b0b2f4973b715db0c7c37134c20c770ab3a0d73f07d5376a4931` |
-| exact-fleet-reconcile-cli | `infra/governance/bin/reconcile-github.mjs` | `sha256:83cff3f9f5ad85c14231b04b185edd87c19ca18dc80084470d2bd44c52436e81` |
+| exact-fleet-reconcile-cli | `infra/governance/bin/reconcile-github.mjs` | `sha256:725c9bf19f1c281589d55f54f35117025f01d042ce1002b64962538a89f9e1d9` |
 | exact-fleet-reconcile-journal-schema | `infra/governance/schemas/fleet-reconcile-journal.schema.json` | `sha256:de04515c017baa22320bb98b0bf32ad50e97467aa2dd6141ad6a6b67acc36961` |
 | exact-fleet-reconcile-mirror-library | `infra/governance/lib/fleet-reconcile-mirror.mjs` | `sha256:3f475d3847fee3e4dff4ac7d7f6cd4accf9dbfb8ed9087c3a1712e4544c99f0c` |
 | exact-fork-governance-builder | `scripts/build-fork-governance.mjs` | `sha256:0e1128711e874eb76a279181567f9e65e82af212a8e3395f702b4d4c190a86de` |
@@ -242,7 +242,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-build-graph-runner | `scripts/governance-build-graph.mjs` | `sha256:df58c74cd6c035987b899fb55cbcd4673f1d8776d1fc2d5f777d3ccc42a7a416` |
 | governance-build-graph-schema | `scripts/schemas/governance-build-graph.schema.json` | `sha256:238e8acaf96ab284b9e2352e8857524acaa665eb8969a454f26e0da184c22744` |
 | governance-build-graph-tests | `scripts/test-governance-build-graph.mjs` | `sha256:7c6170007ae6c14f9b42ea0dd00006b0914df6d300a3e4f0c1ddca450dcf4668` |
-| governance-control-plane-clis | `infra/governance/bin/` | `sha256:0f6dd68205e7afccdfa40d6bba5e5303321e57a1cd55294d69cda7dbba7569ae` |
+| governance-control-plane-clis | `infra/governance/bin/` | `sha256:61ba4194427c198004a8b2659f639cb6b536a0a980a674d8bc4d3796dcae35e0` |
 | governance-control-plane-libraries | `infra/governance/lib/` | `sha256:0b4aa80c16bce7a6dcee3b3188852da30609f1bcfdbe8910c171d6972b4ff64e` |
 | governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:5e795bc81c0a0200df71a70eb802c9012b46c0b8fca8bd42906531e7dcb87358` |
 | governance-control-plane-tests | `infra/governance/test/` | `sha256:8e0df716c69bcdf6f434244fe5b09641a62242b88a8f4fbdb7a2ce23f9f5f959` |
