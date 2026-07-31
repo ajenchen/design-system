@@ -36,7 +36,18 @@ user 2026-07-29 已拍板拆除該層,傾向直接 merge 並在 canonical 記明
 
 ### 還沒做的(依序)
 1. 跑 `npm run test:governance-harnesses`,修剩餘 fail
-2. required_status_checks 尚未加進 `fleet/verified-main` ruleset(token 已有 Administration 權限,可用 API 設)
+2. **required_status_checks 尚未調諧到 GitHub**(不擋任何事,但「gate 全綠才 merge」目前無遠端機械保證)
+   - **SSOT 已經是對的**:`infra/governance/desired/github.json` 的 `profiles.design-system-authority.requiredChecks`
+     已宣告 `Verify(tsc + tests + compile + build)` 等 context。缺的只是把 desired 調諧到 live。
+   - **正解是 `infra/governance/bin/reconcile-github.mjs`**(canonical 調諧器),不要手刻 curl 改 ruleset。
+     `--repo <slug>` 是 plan-only;`--apply` 要求 full-fleet preflight。token 由 `GH_TOKEN` env 供給。
+   - **在 Claude sandbox 內跑不動(已實測,不要重試)**:該調諧器內部 shell out 到 `gh`,而 `gh` 在
+     macOS 一律用 Security framework 做 TLS 驗證,沙箱擋掉該系統呼叫 → `x509: OSStatus -26276`
+     (與 keychain 的 `-67674` 同根)。`SSL_CERT_FILE=/etc/ssl/cert.pem` 無效,因為 Go 在 darwin
+     忽略它、只用系統驗證器。curl 與 git 的 HTTPS 則正常(它們不走那條路徑)。
+   - **兩條可行路**:(a) 在沙箱外跑 `GH_TOKEN=… node infra/governance/bin/reconcile-github.mjs --apply`;
+     (b) 純工程修:把調諧器對 GitHub 的呼叫從 shell out `gh` 改成 Node `fetch`(agent 可自主做,
+     一勞永逸,且讓 CI 與任何沙箱環境都能跑)。**建議 (b)**。
 3. merge → 關 Genesis transition(獨立 PR)→ tag → **送 `stage-protected-release` repository_dispatch**(tag 本身不觸發任何東西,見 §「發版鏈」)
 4. 下游:`release-finalize.yml` 是死鏈(下載 `release.yml` 不產出的 `npm-stage-*` artifact),template mirror 因此永不 fire;WM fanout 要跑 `consumerctl apply-fanout`
 5. 本檔 §2 的 user 已拍板事項(FileViewer 焦點 / FilterPanel 兩個 prop / RTL 明確不做 / AccountMenu email 不做)尚未實作
