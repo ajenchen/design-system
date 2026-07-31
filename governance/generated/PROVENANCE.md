@@ -146,7 +146,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-governance-common-library | `infra/governance/lib/common.mjs` | `sha256:6bac480e46e1060acefb7324753f0074eda7e47146584025b71141fdee14fc36` |
 | exact-governance-common-module | `packages/governance/src/common.mjs` | `sha256:9e60e0c4fc1d8f0ee0bd0f6da2172a154c268c3aae2ac1b366bf21de826fcbe0` |
 | exact-governance-contract-module | `packages/governance/src/contract.mjs` | `sha256:58e2bcc9889e4f0aeefb8c60586d7331a44e19095bf4e3e628bdf9a466f6480a` |
-| exact-governance-dependency-bootstrap-library | `scripts/lib/governance-dependency-bootstrap.mjs` | `sha256:6779f0e06b01fde7be74ff07be125405808d124811df3cfd77da428e6f618df2` |
+| exact-governance-dependency-bootstrap-library | `scripts/lib/governance-dependency-bootstrap.mjs` | `sha256:a614a741e1eb18cf79a69d93f02eb41d062dabbbd85dc95af154268226e8866c` |
 | exact-governance-hook-api-module | `packages/governance/src/hook-api.mjs` | `sha256:3b2a790788eb6f46d7f4a567b978d14c82f0d638117ff6c992a85ef6f440d37e` |
 | exact-governance-metadata-generator | `scripts/generate-governance-metadata.mjs` | `sha256:d52ee1cf1aa1c6e3dfa2d04da2479bf767fd9e55d5e865faf6c509f9bceae465` |
 | exact-governance-package-entrypoint | `packages/governance/bin/governance.mjs` | `sha256:b42f7d158159e4e6c52f149ae24bb4080b362f281b6dbe333353157d738e9769` |
@@ -430,7 +430,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:8e211f67d2fb38e9e61057282aee23c475840e0fdcf6875068bd253fdcd5236b` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:61b5583b675453f7400dbbdf011a86fbef8010bbea8abbd763c246e9d2d66225` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:eacd41d51b565a8cfa1127b2e19cfd47028898a692c60066cd04165b993831a6` |
-| repository-automation-corpus | `scripts` | `sha256:f75bf368c6a7850ae0f29080ab09052d99b79b2755065cddd146ca692157b7dd` |
+| repository-automation-corpus | `scripts` | `sha256:93ee3f616334125b3fd3bf025509f4084e9667a03614b7aefbc59a5b6a59394b` |
 | repository-ignore-boundary | `.gitignore` | `sha256:8a7ce326c91a0696697109af370ad4b12db0856d12f857d270da8dba95f1aec7` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

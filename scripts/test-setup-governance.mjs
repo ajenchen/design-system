@@ -692,6 +692,16 @@ test('overlay-aware high audit excludes only the exact verified bundled preimage
   assert.equal(receipt.effectiveHigh, 0)
   assert.equal(receipt.effectiveCritical, 0)
 
+  const renumberedAdvisory = structuredClone(report)
+  renumberedAdvisory.vulnerabilities['brace-expansion'].range = '4.0.0 - 5.0.7'
+  renumberedAdvisory.vulnerabilities['brace-expansion'].via[0].source = 1130591
+  renumberedAdvisory.vulnerabilities['brace-expansion'].via[0].range = '>=4.0.0 <5.0.8'
+  assert.deepEqual(evaluate(renumberedAdvisory).remediatedFindings, ['brace-expansion'])
+
+  const hybridAdvisory = structuredClone(renumberedAdvisory)
+  hybridAdvisory.vulnerabilities['brace-expansion'].via[0].source = 1124334
+  assert.throws(() => evaluate(hybridAdvisory), /exact remediated bundled preimage/)
+
   const wrongPath = structuredClone(report)
   wrongPath.vulnerabilities['brace-expansion'].nodes = ['node_modules/brace-expansion']
   assert.throws(() => evaluate(wrongPath), /exact remediated bundled preimage/)

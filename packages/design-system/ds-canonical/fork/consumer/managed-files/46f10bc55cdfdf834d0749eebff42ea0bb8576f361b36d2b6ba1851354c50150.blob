@@ -229,25 +229,44 @@ function exactArray(value, expected) {
     && value.every((entry, index) => entry === expected[index])
 }
 
+const VERIFIED_BRACE_EXPANSION_AUDIT_PREIMAGES = Object.freeze([
+  Object.freeze({
+    source: 1124334,
+    findingRange: '<=5.0.7',
+    advisoryRange: '<=5.0.7',
+  }),
+  Object.freeze({
+    source: 1130591,
+    findingRange: '4.0.0 - 5.0.7',
+    advisoryRange: '>=4.0.0 <5.0.8',
+  }),
+])
+
+function matchesVerifiedBraceExpansionAuditPreimage(finding) {
+  return VERIFIED_BRACE_EXPANSION_AUDIT_PREIMAGES.some((preimage) => (
+    finding.range === preimage.findingRange
+      && finding.via[0]?.source === preimage.source
+      && finding.via[0]?.range === preimage.advisoryRange
+  ))
+}
+
 function assertRemediatedHighFinding(name, finding, installedOverlayReceipt) {
   invariant(finding && typeof finding === 'object' && !Array.isArray(finding), `npm audit high finding is malformed:${name}`)
   invariant(finding.name === name && finding.severity === 'high', `npm audit high finding identity drifted:${name}`)
   if (name === 'brace-expansion') {
     invariant(
       finding.isDirect === false
-        && finding.range === '<=5.0.7'
         && exactArray(finding.nodes, ['node_modules/npm/node_modules/brace-expansion'])
         && Array.isArray(finding.effects)
         && finding.effects.length <= 1
         && finding.effects.every((effect) => effect === 'minimatch')
         && Array.isArray(finding.via)
         && finding.via.length === 1
-        && finding.via[0]?.source === 1124334
         && finding.via[0]?.name === 'brace-expansion'
         && finding.via[0]?.dependency === 'brace-expansion'
         && finding.via[0]?.url === 'https://github.com/advisories/GHSA-mh99-v99m-4gvg'
         && finding.via[0]?.severity === 'high'
-        && finding.via[0]?.range === '<=5.0.7',
+        && matchesVerifiedBraceExpansionAuditPreimage(finding),
       'npm audit brace-expansion finding differs from the exact remediated bundled preimage',
     )
     return
