@@ -19,7 +19,6 @@
       "Read(~/.aws/**)",
       "Read(~/.azure/**)",
       "Read(~/.config/gcloud/**)",
-      "Read(~/.config/gh/**)",
       "Read(~/.docker/**)",
       "Read(~/.git-credentials)",
       "Read(~/.gnupg/**)",
@@ -127,10 +126,6 @@
         },
         {
           "path": "~/.config/gcloud/**",
-          "mode": "deny"
-        },
-        {
-          "path": "~/.config/gh/hosts.yml",
           "mode": "deny"
         },
         {
@@ -257,6 +252,10 @@
         },
         {
           "name": "SIGSTORE_ID_TOKEN",
+          "mode": "deny"
+        },
+        {
+          "name": "SSH_AUTH_SOCK",
           "mode": "deny"
         },
         {

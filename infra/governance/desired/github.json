@@ -143,9 +143,9 @@
           "trustSource": "repository-workflow",
           "workflow": ".github/workflows/ci.yml",
           "workflowIdentity": {
-            "contentSha256": "9db807da50e9eb92ce32c718a41c20a5aa9ca7791853d576e1b0e3bbb52eb0ef",
-            "gitBlobSha": "0d30139255640fbf03b709e831cd508aac7e5a9b",
-            "semanticSha256": "1f1333f96ce526f8f11633799a979d019aa77bb51eb45ccec6aebad805281380",
+            "contentSha256": "fb36376e97b9391daa12f8058755bbd8d427387684281d06d8bca9517ebdf9c7",
+            "gitBlobSha": "eca9e47b8cb327a7bcd28fd70bbb99faa65eba7e",
+            "semanticSha256": "d051035795f61e74fbd5c355b590021bea5ed09d8c4a745f4ea414e4401865af",
             "semanticVersion": 2
           }
         },

@@ -68,7 +68,6 @@ for (const failClosedRule of [
   'Bash(rm *)',
   'Bash(*--dangerously-skip-permissions*)',
   'Read(./.env)',
-  'Read(~/.config/gh/**)',
   'Read(~/.npmrc)',
   'Read(~/.ssh/**)',
 ]) assert.ok(policy.permissions.deny.includes(failClosedRule), `${failClosedRule} is not fail closed`)

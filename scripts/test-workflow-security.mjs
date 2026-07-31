@@ -1027,8 +1027,8 @@ test('managed executor builder keeps registry mutation, digest binding, and OIDC
     [
       'writer uses ambient Docker configuration',
       source.replace(
-        '      DOCKER_CONFIG: ${{ runner.temp }}/managed-ci-docker-config\n',
-        '      DOCKER_CONFIG: $HOME/.docker\n',
+        `          printf 'DOCKER_CONFIG=%s/managed-ci-docker-config\\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"\n`,
+        `          printf 'DOCKER_CONFIG=%s/.docker\\n' "$HOME" >> "$GITHUB_ENV"\n`,
       ),
       'WF-MANAGED-CI-PRIVILEGE-SEPARATION',
     ],

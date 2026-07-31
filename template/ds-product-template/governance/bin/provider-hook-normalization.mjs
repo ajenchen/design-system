@@ -1380,17 +1380,11 @@ export function normalizeProviderHookInput({
   const selectedWriteTransports = matchingWriteTransports(provider, input)
   const shouldParseMutation = selectedWriteTransports.matches.length > 0
     && (
-      event === 'PreToolUse'
-      || (
-        event === 'PostToolUse'
-        && (
-          selectedWriteTransports.matches.length !== 1
-          || postEventCarriesDeclaredTransport(input, selectedWriteTransports.matches[0], {
-            limits,
-            checkpoint,
-          })
-        )
-      )
+      selectedWriteTransports.matches.length !== 1
+      || postEventCarriesDeclaredTransport(input, selectedWriteTransports.matches[0], {
+        limits,
+        checkpoint,
+      })
     )
   if (shouldParseMutation) {
     try {

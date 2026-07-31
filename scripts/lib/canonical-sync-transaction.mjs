@@ -1,7 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto'
 import {
+  accessSync,
   chmodSync,
   closeSync,
+  constants as fsConstants,
   copyFileSync,
   cpSync,
   existsSync,
@@ -20,7 +22,7 @@ import {
   symlinkSync,
   writeFileSync,
 } from 'node:fs'
-import { hostname } from 'node:os'
+import { hostname, tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -424,9 +426,24 @@ function authorityGenerationJournalPath(root) {
   return join(root, AUTHORITY_GENERATION_JOURNAL)
 }
 
+// Staging lives outside the repository so a partially written generation can never be scanned or
+// committed. The repository parent is preferred, but some sandboxes only grant write access to the
+// repository itself and the OS temp directory; fall back there instead of failing the whole run.
+function authorityGenerationStagingParent(root) {
+  const parent = dirname(root)
+  try {
+    accessSync(parent, fsConstants.W_OK)
+    return parent
+  } catch {
+    // macOS exposes the temp directory through a symlink, and the transaction requires one
+    // canonical real directory, so resolve it before use.
+    return realpathSync(tmpdir())
+  }
+}
+
 function expectedAuthorityGenerationRoot(root, transactionId) {
   invariant(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(transactionId || ''), 'authority generation transaction id is invalid')
-  return join(dirname(root), `${AUTHORITY_GENERATION_PREFIX}${transactionId}`)
+  return join(authorityGenerationStagingParent(root), `${AUTHORITY_GENERATION_PREFIX}${transactionId}`)
 }
 
 function removeAuthorityEntry(root, repositoryPath, label = 'authority generation target') {
@@ -755,6 +772,14 @@ export function runAtomicAuthorityGenerationTransaction({
       failureInjector?.({ phase: 'before-target', index, entry, transactionId })
       const current = authorityEntrySnapshot(join(root, entry.path), `authority generation pre-publish target ${entry.path}`)
       invariant(authoritySnapshotEqual(current, entry.before), `authority generation output changed before publication:${entry.path}`)
+      // Publishing is write-if-changed. An output whose live bytes already equal the staged bytes is
+      // republished to no effect, and rewriting it needlessly fails the whole transaction wherever
+      // the host makes an already-correct path read-only. The post-check still verifies every
+      // output, so skipping a no-op publish cannot weaken the closure.
+      if (authoritySnapshotEqual(entry.before, entry.after)) {
+        failureInjector?.({ phase: 'after-target', index, entry, transactionId })
+        continue
+      }
       removeAuthorityEntry(root, entry.path, 'authority generation publish target')
       if (entry.after.present) {
         const staged = join(workspaceRoot, entry.path)

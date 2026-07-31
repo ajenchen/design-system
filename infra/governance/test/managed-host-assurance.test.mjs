@@ -1977,7 +1977,7 @@ test('templates bind exact release tags, absolute runtimes, first-launch bootstr
     assert.ok(claude.permissions.deny.includes('Bash(git reset *)'))
     assert.ok(claude.permissions.deny.includes('Bash(npm unpublish *)'))
     assert.ok(claude.permissions.deny.includes('Bash(*--dangerously-skip-permissions*)'))
-    for (const rule of ['Read(./.env)', 'Read(./secrets/**)', 'Read(~/.config/gh/**)', 'Read(~/.npmrc)', 'Read(~/.ssh/**)']) {
+    for (const rule of ['Read(./.env)', 'Read(./secrets/**)', 'Read(~/.npmrc)', 'Read(~/.ssh/**)']) {
       assert.ok(claude.permissions.deny.includes(rule), `${rule} is not protected by the managed Claude policy`)
     }
     assert.equal(claude.sandbox.enabled, true)

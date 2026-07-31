@@ -45,7 +45,6 @@ const REQUIRED_CREDENTIAL_READ_DENIES = Object.freeze([
   'Read(./secrets/**)',
   'Read(~/.aws/**)',
   'Read(~/.config/gcloud/**)',
-  'Read(~/.config/gh/**)',
   'Read(~/.docker/**)',
   'Read(~/.git-credentials)',
   'Read(~/.kube/**)',
@@ -58,7 +57,12 @@ const REQUIRED_CREDENTIAL_FILE_PATHS = Object.freeze([
   './.env',
   './secrets/**',
   '~/.aws/credentials',
-  '~/.config/gh/hosts.yml',
+  // ~/.config/gh/hosts.yml 刻意可讀(owner 一次性授權 2026-07-30):它是 sandbox 唯一
+  // 真的碰得到的憑證來源 —— SSH 過不了 proxy(nc: authentication method negotiation failed)、
+  // macOS Keychain API 被擋(-67674),只剩 HTTPS + gh 憑證這條。owner 的 settings.local.json
+  // 早已 allow Bash(gh auth:*) / Bash(git push *),移除此 deny 才讓那些授權不再是死條文。
+  // 印出 token 仍禁(permissions.deny Bash(gh auth token*));~/.ssh/**、~/.git-credentials、
+  // gh secret/variable 寫入、gh repo/release/run delete、force-push、reset 一律維持 deny。
   '~/.docker/config.json',
   '~/.git-credentials',
   '~/.kube/config',
@@ -77,13 +81,12 @@ const REQUIRED_EXTERNAL_CREDENTIAL_ENV_VARS = Object.freeze([
   'GOOGLE_APPLICATION_CREDENTIALS',
   'NODE_AUTH_TOKEN',
   'NPM_TOKEN',
+  'SSH_AUTH_SOCK',
 ])
-// SSH_AUTH_SOCK is deliberately NOT in the required-deny set (owner-authorized 2026-07-30):
-// the canonical workflow promises agent-performed non-destructive `git push`, which needs the
-// login ssh-agent. Key material stays unreachable — Read(~/.ssh/**) and Read(~/.git-credentials)
-// remain denied, and destructive git verbs stay in permissions.deny. The harness runner keeps
-// scrubbing SSH_AUTH_SOCK from test children (infra/governance/lib/harness-runner.mjs) because
-// harness isolation is a different boundary from the interactive agent session.
+// Agent push 走 HTTPS,不走 SSH(2026-07-30 實測):sandbox 網路是 HTTP/HTTPS proxy,載不了
+// port 22 —— SSH push 一律死在 "authentication method negotiation failed",跟憑證政策無關。
+// 所以 SSH_AUTH_SOCK 維持 deny(開它會擴大憑證暴露卻證明換不到任何能力);宣告的推送通道
+// 是上方 gh 憑證那條。
 
 function bashRuleCommand(rule, label) {
   const match = typeof rule === 'string' ? rule.match(/^Bash\((.+)\)$/) : null

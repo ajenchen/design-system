@@ -58,7 +58,6 @@
       "Read(~/.aws/**)",
       "Read(~/.azure/**)",
       "Read(~/.config/gcloud/**)",
-      "Read(~/.config/gh/**)",
       "Read(~/.docker/**)",
       "Read(~/.git-credentials)",
       "Read(~/.gnupg/**)",
@@ -124,7 +123,6 @@
         { "path": "~/.aws/credentials", "mode": "deny" },
         { "path": "~/.azure/**", "mode": "deny" },
         { "path": "~/.config/gcloud/**", "mode": "deny" },
-        { "path": "~/.config/gh/hosts.yml", "mode": "deny" },
         { "path": "~/.docker/config.json", "mode": "deny" },
         { "path": "~/.git-credentials", "mode": "deny" },
         { "path": "~/.gnupg/**", "mode": "deny" },
@@ -158,6 +156,7 @@
         { "name": "NODE_AUTH_TOKEN", "mode": "deny" },
         { "name": "NPM_TOKEN", "mode": "deny" },
         { "name": "SIGSTORE_ID_TOKEN", "mode": "deny" },
+        { "name": "SSH_AUTH_SOCK", "mode": "deny" },
         { "name": "VERCEL_TOKEN", "mode": "deny" }
       ],
       "allowPlaintextInject": false

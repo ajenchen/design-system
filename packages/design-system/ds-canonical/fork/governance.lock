@@ -255,7 +255,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "c75e340d681f6e99e0daeec359d4211155fbca11f075ff9ada1fd42f7e13f1ed",
+      "sha256": "697d186cfe0882ee2ce1b02ecc4c3258ab42b125bab6d70c7be868fa271132f7",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -895,7 +895,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/provider-hook-normalization.mjs",
-      "sha256": "3b574773dda4b383aaeb8dc8263f0d12735445073b2b0ccb996b473eaa297278",
+      "sha256": "fe7dffbd9e3dd8a2b423765c48ef9200bbd5705870eedcae8a088575d5dd4e1a",
       "source": "packages/governance/src/provider-hook-normalization.mjs",
       "classification": null,
       "destination": null
@@ -911,7 +911,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "1afe567c89ac7f01b23c3d70fbea3fa18a4f6aa5e337c6cd0c526f1f87695de3",
+      "sha256": "41e4883c64d7e0676c49e2dc0cbeed2c85ab25e7d3574344d6cd5af4b8e79cfe",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -935,7 +935,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/hook-config.json",
-      "sha256": "65535dea9e21407ce70dfcd1f46b9c3d9556f992defdc01db11f7c94b37bd676",
+      "sha256": "6398e6b20f6558392bdce1d7123815042047952be473b8fda6d2491aa1648a05",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:claude",
       "classification": null,
       "destination": null
@@ -1183,7 +1183,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "c75e340d681f6e99e0daeec359d4211155fbca11f075ff9ada1fd42f7e13f1ed",
+      "sha256": "697d186cfe0882ee2ce1b02ecc4c3258ab42b125bab6d70c7be868fa271132f7",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null

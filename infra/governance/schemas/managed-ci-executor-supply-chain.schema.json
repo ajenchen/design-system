@@ -130,7 +130,7 @@
       "properties": {
         "workflowPath": {"const": ".github/workflows/build-managed-ci-executors.yml"},
         "workflowRef": {"const": "ajenchen/design-system/.github/workflows/build-managed-ci-executors.yml@refs/heads/main"},
-        "workflowSourceSha256": {"const": "c1359007766f0fcf73c6c7d55dde100388cfabc4eeab5a0217670462342012db"},
+        "workflowSourceSha256": {"const": "907599cb201de7c14f370de0d87c7856b5169bcd59f88b0e689026b5e6e4856b"},
         "workflowIdentity": {
           "type": "object", "additionalProperties": false,
           "required": ["repository", "path", "ref", "workflowShaClaim", "sourceCommitClaim", "sourceTreeDerivation", "separateWorkflowAndSourceFieldsRequired", "sameProtectedRevisionRequired"],

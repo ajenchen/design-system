@@ -20,7 +20,7 @@ const MANAGED_CI_ATTESTATION_COUNT = [
 ].filter(Boolean).length
 // Deliberately independent from the mutable policy file: any byte change to the
 // privileged workflow or a sensitive shell body requires an explicit auditor review.
-const MANAGED_CI_WORKFLOW_SHA256 = 'c1359007766f0fcf73c6c7d55dde100388cfabc4eeab5a0217670462342012db'
+const MANAGED_CI_WORKFLOW_SHA256 = '907599cb201de7c14f370de0d87c7856b5169bcd59f88b0e689026b5e6e4856b'
 const MANAGED_CI_BUILD_RUN_SHA256 = Object.freeze([
   '558cda32fa544c7135953828bc3576fabc5cc2e875450c383fb76a74494933eb',
   '929c3918a5c2f9cc6e90e6f85f782286ca7c1080e49276ba3e43a842721289dc',
@@ -470,7 +470,12 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
     const attestPermissions = jobPermissionMap(attest)
     const exactJobClosure = JSON.stringify([...jobs.keys()])
       === JSON.stringify(['build-and-push', 'generate-sbom', 'bind-image-set', 'attest-image'])
-    const buildSteps = workflowStepBlocks(build)
+    // GitHub does not expose the runner context to job-level `env`, so the builder binds
+    // DOCKER_CONFIG in its first step through $GITHUB_ENV. That step is asserted separately and the
+    // canonical ten builder steps keep their original indexes below.
+    const buildStepBlocks = workflowStepBlocks(build)
+    const dockerConfigStep = buildStepBlocks[0] || ''
+    const buildSteps = buildStepBlocks.slice(1)
     const sbomSteps = workflowStepBlocks(sbom)
     const bindSteps = workflowStepBlocks(bind)
     const attestSteps = workflowStepBlocks(attest)
@@ -482,7 +487,7 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
       === JSON.stringify(['name', 'on', 'permissions', 'concurrency', 'jobs'])
     const exactJobShapes = (
       JSON.stringify(jobTopLevelKeys(build))
-        === JSON.stringify(['if', 'runs-on', 'timeout-minutes', 'permissions', 'env', 'strategy', 'steps'])
+        === JSON.stringify(['if', 'runs-on', 'timeout-minutes', 'permissions', 'strategy', 'steps'])
       && JSON.stringify(jobTopLevelKeys(sbom))
         === JSON.stringify(['if', 'needs', 'runs-on', 'timeout-minutes', 'permissions', 'strategy', 'steps'])
       && JSON.stringify(jobTopLevelKeys(bind))
@@ -595,6 +600,10 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
       || !exactWorkflowShape
       || !exactJobShapes
       || buildSteps.length !== 10
+      || !/name:\s*Bind DOCKER_CONFIG to the runner-scoped temp directory/.test(dockerConfigStep)
+      || !/test -d "\$RUNNER_TEMP"/.test(dockerConfigStep)
+      || !/DOCKER_CONFIG=%s\/managed-ci-docker-config/.test(dockerConfigStep)
+      || !/>> "\$GITHUB_ENV"/.test(dockerConfigStep)
       || sbomSteps.length !== 8
       || bindSteps.length !== 7
       || attestSteps.length !== 11
@@ -620,7 +629,6 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
       || !needsJob(attest, 'bind-image-set')
       || ![build, sbom, bind, attest].every(block => /^    if:\s*github\.ref == 'refs\/heads\/main'\s*$/m.test(block))
       || /docker\/build-push-action@/.test(managedBuilder)
-      || !/^      DOCKER_CONFIG:\s*\$\{\{\s*runner\.temp\s*\}\}\/managed-ci-docker-config\s*$/m.test(build)
       || /\$HOME\/\.docker|~\/\.docker/.test(build)
       || /^          version:/m.test(buildSteps[3] || '')
       || !/^          driver:\s*docker-container\s*$/m.test(buildSteps[3] || '')
