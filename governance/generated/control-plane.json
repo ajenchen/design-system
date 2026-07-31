@@ -3372,7 +3372,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 38,
-      "hash": "sha256:7c10c9b721b9276710bb28f4d2d42977b16defd5574e0f6aaa2712d35d6f8dfe",
+      "hash": "sha256:584aaacf9c5da0884b3bce32a3eca12592b54d72847f868725ffa06564b65d4e",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
