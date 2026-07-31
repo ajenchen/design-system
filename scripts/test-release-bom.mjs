@@ -160,6 +160,29 @@ mustMatch(
   'release local-bin readback must pair executable identity with SHA-256',
 )
 
+const dogfoodPrepublish = readFileSync(join(root, 'scripts/dogfood-prepublish-verify.mjs'), 'utf8')
+mustMatch(
+  dogfoodPrepublish,
+  /execFileSync\(process\.execPath, \['--', NPM_CLI, \.\.\.args\],[\s\S]{0,220}shell: false/,
+  'dogfood npm must use the repo-pinned CLI through the current Node executable without a shell',
+)
+must(indexesOf(dogfoodPrepublish, "runNpm(['pack', '--pack-destination', packDir]").length === 2, 'dogfood must pack both workspaces through the pinned npm CLI')
+mustMatch(dogfoodPrepublish, /runNpm\(\['init', '-y'\], \{ cwd: consumerDir \}\)/, 'dogfood consumer init must use the pinned npm CLI')
+mustMatch(dogfoodPrepublish, /runNpm\(\[\s*'install',[\s\S]*?\], \{ cwd: consumerDir \}\)/, 'dogfood consumer install must use argv with the pinned npm CLI')
+mustMatch(
+  dogfoodPrepublish,
+  /runNode\(join\(consumerDir, 'node_modules\/vite\/bin\/vite\.js'\), \['build'\], \{ cwd: consumerDir \}\)/,
+  'dogfood build must invoke the installed Vite entrypoint through the current Node executable',
+)
+must(!/\bexecSync\(/.test(dogfoodPrepublish), 'dogfood must not execute shell command strings')
+must(!/`cd \$\{/.test(dogfoodPrepublish), 'dogfood must not compose cwd changes into shell commands')
+const closedPathNpmVersion = execFileSync(process.execPath, ['--', npmCli, '--version'], {
+  encoding: 'utf8',
+  env: { ...process.env, PATH: '/usr/bin:/bin' },
+  shell: false,
+}).trim()
+must(closedPathNpmVersion === JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).devDependencies.npm, 'repo-pinned npm must execute without PATH npm')
+
 // The static workflow contract proves authority separation before any fixture is built.
 const workflow = readFileSync(join(root, '.github/workflows/release.yml'), 'utf8')
 const jobBlock = (name) => {

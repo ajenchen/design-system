@@ -247,6 +247,12 @@ assert.match(productionSource, /locator\('#error-message'\)\.textContent\(\)/, '
 assert.match(productionSource, /Storybook error display:/, 'production CLI must classify Storybook error displays as audit errors')
 assert.doesNotMatch(productionSource, /--(?:fixture|skip-a11y|mock-axe)\b/, 'production CLI must expose no test bypass')
 
+const smokeSource = readFileSync(fileURLToPath(new URL('./storybook-smoke-test.mjs', import.meta.url)), 'utf8')
+assert.match(smokeSource, /stdio:\s*\['ignore',\s*'ignore',\s*'ignore'\]/, 'smoke server must not block on unread child output pipes')
+assert.match(smokeSource, /if \(unprobed\.length > 0\)[\s\S]*?exitCode = 1/, 'any unprobed story must fail the smoke gate')
+assert.match(smokeSource, /if \(failures\.length === 0 && unprobed\.length === 0\)/, 'smoke success must require complete coverage and zero failures')
+assert.doesNotMatch(smokeSource, /unprobed[^\n]*(?:非致命|nonfatal)|(?:非致命|nonfatal)[^\n]*unprobed/i, 'unprobed coverage must never be documented as nonfatal')
+
 const staticServerSource = readFileSync(fileURLToPath(new URL('./lib/a11y-static-server.mjs', import.meta.url)), 'utf8')
 assert.match(staticServerSource, /LOOPBACK_HOST = '127\.0\.0\.1'/, 'a11y server must bind explicit IPv4 loopback')
 assert.match(staticServerSource, /server\.listen\(0, LOOPBACK_HOST/, 'a11y server must own an ephemeral port')

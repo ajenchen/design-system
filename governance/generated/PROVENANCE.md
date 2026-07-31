@@ -416,7 +416,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-set-contract | `scripts/release-set.mjs` | `sha256:0472e721a491c1b6d93ae214bacc3557d19bcd8cb18ec3613387d9400716b2d7` |
 | release-stage-receipt-schema | `scripts/schemas/npm-stage-receipt.schema.json` | `sha256:bc2eb9f2416234da4528dca409bae5ca4d3f0eb64f796b55bbf9af2cf405c9c5` |
 | release-stage-run-identity | `scripts/release-stage-run-identity.mjs` | `sha256:538e5a7bf104480e9519ca25f71364945c08344593825a7f9c4e174530a90ee5` |
-| release-supply-chain-tests | `scripts/test-release-bom.mjs` | `sha256:351e4ecf6739edc6083fdce70beb08448af68d2008bf25173804050f4993020b` |
+| release-supply-chain-tests | `scripts/test-release-bom.mjs` | `sha256:a562a03f9b0e2133b30e327a45aafe4a56a243882c009331dd972c278d16483c` |
 | release-tag-authorization-adversarial-tests | `infra/governance/test/release-tag-authorization.test.mjs` | `sha256:f42d5a5f66805b3da0409e42e0b4387e44380aa1dcbef178f3e149529aab1f67` |
 | release-tag-authorization-cli | `scripts/release-tag-authorization.mjs` | `sha256:c62cf972bf3d2b116b33ee2c7004e20653ea1bf6e9bd0baa8d905ab2cc69fb45` |
 | release-tag-authorization-envelope-schema | `infra/governance/schemas/release-tag-authorization.schema.json` | `sha256:9b5e04ef381d28f53c80a26f8d9b23e766a15efdda96685807d4df8d4cdd3549` |
@@ -430,7 +430,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:8e211f67d2fb38e9e61057282aee23c475840e0fdcf6875068bd253fdcd5236b` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:61b5583b675453f7400dbbdf011a86fbef8010bbea8abbd763c246e9d2d66225` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:eacd41d51b565a8cfa1127b2e19cfd47028898a692c60066cd04165b993831a6` |
-| repository-automation-corpus | `scripts` | `sha256:777f3e61d6b3373f89a02c418d2d3bc14cd72d5ca1f3c35650dbf52ec7d14c3d` |
+| repository-automation-corpus | `scripts` | `sha256:f75bf368c6a7850ae0f29080ab09052d99b79b2755065cddd146ca692157b7dd` |
 | repository-ignore-boundary | `.gitignore` | `sha256:8a7ce326c91a0696697109af370ad4b12db0856d12f857d270da8dba95f1aec7` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
