@@ -34,8 +34,32 @@ sandbox proxy 載不了 port 22)。**接手者不需要再要任何憑證**。
 且 live ruleset **沒有 required_status_checks**,所以技術上可 merge。是否在這兩紅下 merge 屬治理姿態,
 user 2026-07-29 已拍板拆除該層,傾向直接 merge 並在 canonical 記明這兩個 check 從未是 required。
 
-### 還沒做的(依序)
-1. 跑 `npm run test:governance-harnesses`,修剩餘 fail
+### 接手起點(2026-07-31 收尾;head = `8d401529`,CI 已跑完 11 個 check,4 紅)
+
+**先做這兩個 —— 只有它們真的擋著 merge:**
+
+1. **`Verify` → `Fork-governance corpus + harness` step 內部 fail**
+   - 已排除的一層:beta.97 新增的 `scripts/test-header-tabs-slot-invariants.mjs` 沒登記進
+     `infra/governance/providers/harness-source-inventory.json` 的 `pairedMeta.members`,
+     導致 `harness-source-inventory.mjs:2362` 的 exact 比對讓整批 **一啟動就 blocked**。已補登記並重生 digest。
+   - **現在它會真的執行,但執行中仍有 fail,內容未知。**
+   - ⚠️ 本機 `npm run test:governance-harnesses` **要跑超過 10 分鐘**(Claude session 的 10 分鐘
+     bash timeout 會殺掉它,先前兩個 agent 也都撞到)。用背景長跑或直接讀 CI job log。
+2. **`a11y(axe-core WCAG 2A+AA, Dim 49)` → `Run axe-core gate(baseline-diff)` fail**
+   - 該 gate 語意是「只擋新增/增量 regression」→ 代表這批改動**引入了新的 a11y 違規**。
+   - 背景:`infra/governance/baseline/a11y-baseline.json` 已凍結 852 條指紋 / 5,436 個 violation
+     (其中非對比類 318 個),所以這是在既有債之上的新增,不是既有債本身。
+
+**不要花時間修的兩個**(跑的是 **main 版**舊授權層,正是本 PR 要拆除的東西,merge 後自然消失):
+`Publish Governance App verdict`(缺從未設定的 `GOVERNANCE_CHECK_APP_*` secrets)、
+`Verify authority candidate without credentials`(main 版 `verify-privileged-change.mjs`;
+branch 版已於 `:831-841` 拆除,2026-07-29 user 拍板 3B)。
+
+**已綠**:Packaging integrity / Bundle size budget / Visual Regression Diff / Composition Fidelity Diff
+/ Netlify 三項。工作區乾淨,全部已推送。
+
+### 其餘待辦(依序)
+1. ~~跑 `npm run test:governance-harnesses`~~(見上方接手起點第 1 項)
 2. **required_status_checks 尚未調諧到 GitHub**(不擋任何事,但「gate 全綠才 merge」目前無遠端機械保證)
    - **SSOT 已經是對的**:`infra/governance/desired/github.json` 的 `profiles.design-system-authority.requiredChecks`
      已宣告 `Verify(tsc + tests + compile + build)` 等 context。缺的只是把 desired 調諧到 live。
