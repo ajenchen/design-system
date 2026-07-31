@@ -9,6 +9,11 @@
 Storybook: https://ajenchen-design-system.netlify.app
 Source(AI 讀此看官方範例): src/components/Accordion/
 
+## AccountMenu(family composite)
+
+Storybook: https://ajenchen-design-system.netlify.app
+Source(AI 讀此看官方範例): src/components/AccountMenu/
+
 ## Alert(family 2)
 
 Storybook: https://ajenchen-design-system.netlify.app

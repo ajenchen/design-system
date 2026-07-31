@@ -3705,12 +3705,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:62d952f275b4b2d4edab1335d0df0e8adcf6dba6e6f48dfef18b9e81e2e660eb",
+      "hash": "sha256:332f21a52658f3f28aaec568ec1b4d993a4faa8a086f975dca47f1c0965fc249",
       "id": "release-supply-chain-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-release-bom.mjs",
-      "size": 91576,
+      "size": 91719,
       "type": "file"
     },
     {
@@ -3836,7 +3836,7 @@
         "scripts/generated/"
       ],
       "files": 384,
-      "hash": "sha256:9f4a9645b91a0aaa4c68579d389f78c40d3f7b1dcc7bc22529778b16fa2bd4c9",
+      "hash": "sha256:e728ddbe93df585e581592d7cc8b9bcc64f4365df0a1114fb7cf3129ccffee02",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

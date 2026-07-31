@@ -21,6 +21,11 @@ import {
 } from '../packages/design-system/tools/shared/safe-filesystem.mjs'
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const NPM_CLI = join(REPO_ROOT, 'node_modules/npm/bin/npm-cli.js')
+
+function execNpmSync(args, options) {
+  return execFileSync(process.execPath, [NPM_CLI, ...args], options)
+}
 
 function withAdversarialLocaleCompare(locale, callback) {
   const descriptor = Object.getOwnPropertyDescriptor(String.prototype, 'localeCompare')
@@ -276,7 +281,7 @@ test('post-commit backup or lock cleanup failures never roll applied targets bac
 
 test('packed npm archive exposes both CLIs and executes against an isolated exact dependency fixture', () => {
   const staging = mkdtempSync(join(tmpdir(), 'design-system-packed-cli-'))
-  const packed = JSON.parse(execFileSync('npm', ['pack', './packages/design-system', '--json', '--pack-destination', staging], {
+  const packed = JSON.parse(execNpmSync(['pack', './packages/design-system', '--json', '--pack-destination', staging], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
     env: { ...process.env, npm_config_ignore_scripts: 'true' },
@@ -301,7 +306,7 @@ test('packed npm archive exposes both CLIs and executes against an isolated exac
     symlinkSync(relative(binRoot, join(packageRoot, path)), join(binRoot, name))
   }
   writeFileSync(join(consumer, 'src/app.tsx'), `import { Input } from '@qijenchen/design-system'\nexport const App = () => <Input mode="display" />\n`)
-  execFileSync('npm', ['exec', '--offline', '--', 'qijenchen-ds-codemod', 'beta.84-breaking-api', 'plan', '--root', consumer, '--source', 'src', '--output', 'codemod.json'], {
+  execNpmSync(['exec', '--offline', '--', 'qijenchen-ds-codemod', 'beta.84-breaking-api', 'plan', '--root', consumer, '--source', 'src', '--output', 'codemod.json'], {
     cwd: consumer,
     env: { ...process.env, NODE_PATH: join(staging, 'no-ambient-node-path'), npm_config_ignore_scripts: 'true' },
     stdio: 'pipe',
@@ -322,7 +327,7 @@ test('packed npm archive exposes both CLIs and executes against an isolated exac
   execFileSync('git', ['remote', 'add', 'origin', 'https://github.com/qijenchen-fixtures/packed-cli.git'], { cwd: consumer, stdio: 'pipe' })
   execFileSync('git', ['add', '--', 'src', 'candidate', 'baseline', 'statements.json'], { cwd: consumer, stdio: 'pipe' })
   execFileSync('git', ['-c', 'user.name=Packed CLI Fixture', '-c', 'user.email=packed-cli@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '--quiet', '-m', 'packed cli base'], { cwd: consumer, stdio: 'pipe' })
-  execFileSync('npm', ['exec', '--offline', '--', 'qijenchen-ds-visual-baseline', 'plan', '--root', consumer, '--author', 'clean-room-author', '--candidate', 'candidate', '--baseline', 'baseline', '--statements', 'statements.json', '--output', 'visual.json'], {
+  execNpmSync(['exec', '--offline', '--', 'qijenchen-ds-visual-baseline', 'plan', '--root', consumer, '--author', 'clean-room-author', '--candidate', 'candidate', '--baseline', 'baseline', '--statements', 'statements.json', '--output', 'visual.json'], {
     cwd: consumer,
     env: { ...process.env, NODE_PATH: join(staging, 'no-ambient-node-path'), npm_config_ignore_scripts: 'true' },
     stdio: 'pipe',
@@ -330,7 +335,7 @@ test('packed npm archive exposes both CLIs and executes against an isolated exac
   const visual = JSON.parse(readFileSync(join(consumer, 'visual.json'), 'utf8'))
   assert.equal(visual.pngParserVersion, 'pngjs@7.0.0')
   assert.equal(visual.reviewTrust.status, 'not-activated')
-  assert.throws(() => execFileSync('npm', ['exec', '--offline', '--', 'qijenchen-ds-visual-baseline', 'check', '--root', consumer, '--proposal', 'visual.json'], {
+  assert.throws(() => execNpmSync(['exec', '--offline', '--', 'qijenchen-ds-visual-baseline', 'check', '--root', consumer, '--proposal', 'visual.json'], {
     cwd: consumer,
     env: { ...process.env, NODE_PATH: join(staging, 'no-ambient-node-path'), npm_config_ignore_scripts: 'true' },
     stdio: 'pipe',

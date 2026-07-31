@@ -66,6 +66,8 @@ import {
 import { validateGitHubActionsRunArtifactsApiSnapshot } from './lib/github-actions-artifact-identity.mjs'
 
 const root = process.cwd()
+const npmCli = join(root, 'node_modules/npm/bin/npm-cli.js')
+const execNpmSync = (args, options) => execFileSync(process.execPath, [npmCli, ...args], options)
 const temporaryDirectories = []
 const temporaryDirectory = (prefix) => {
   const directory = realpathSync(mkdtempSync(join(tmpdir(), prefix)))
@@ -435,7 +437,7 @@ for (const [label, pattern] of [
 // The standalone governance remainder must be order-independent: release workflows
 // build these publishable workspaces before packing, so reproduce that prerequisite
 // here instead of accepting archives that silently omit required dist entries.
-execFileSync('npm', ['run', '--silent', 'build:lib'], {
+execNpmSync(['run', '--silent', 'build:lib'], {
   cwd: root,
   env: process.env,
   stdio: 'pipe',
@@ -465,7 +467,7 @@ const createPackedFixture = () => {
   const manifests = packageSources.map(([expectedName, packageDirectory]) => {
     const manifest = JSON.parse(readFileSync(join(root, packageDirectory, 'package.json'), 'utf8'))
     must(manifest.name === expectedName, `fixture package identity drift: ${packageDirectory}`)
-    const packed = JSON.parse(execFileSync('npm', [
+    const packed = JSON.parse(execNpmSync([
       'pack', `./${packageDirectory}`, '--pack-destination', directory, '--json', '--ignore-scripts',
     ], { cwd: root, encoding: 'utf8', env: npmEnvironment }))
     must(packed.length === 1, `npm pack returned ${packed.length} artifacts for ${expectedName}`)
