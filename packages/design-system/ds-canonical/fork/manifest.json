@@ -104,20 +104,20 @@
   },
   "providerLifecycle": {
     "schemaVersion": 4,
-    "releaseVersion": "0.1.0-beta.102",
+    "releaseVersion": "0.1.0-beta.103",
     "immutableHead": {
       "providerInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
-      "releaseVersion": "0.1.0-beta.101",
-      "snapshotSha256": "1617b7209f07e8ddab3de91877c3e2f0cf342e33a9883f54de979e5f247120fd"
+      "releaseVersion": "0.1.0-beta.102",
+      "snapshotSha256": "12ff40aa549d8511aacb73e42b298d5e3fd1a4efd8cb5cb3828a8ced4ceaac57"
     },
-    "ledgerSha256": "26f23fedd21c67e4be70fcef08e38fbaf345cbd143724e238f399a6322f38e19",
-    "previousSnapshotSha256": "1617b7209f07e8ddab3de91877c3e2f0cf342e33a9883f54de979e5f247120fd",
-    "currentSnapshotSha256": "12ff40aa549d8511aacb73e42b298d5e3fd1a4efd8cb5cb3828a8ced4ceaac57",
+    "ledgerSha256": "8b5e24a2b8b7fc6ccece11d2a40257848a7d958e24168a6c60c9e51105fe0561",
+    "previousSnapshotSha256": "12ff40aa549d8511aacb73e42b298d5e3fd1a4efd8cb5cb3828a8ced4ceaac57",
+    "currentSnapshotSha256": "233b7d5514434b891f6969c0803651bc3d60751d86394713b9d4c38c762b5266",
     "currentProviderInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
     "retiredProviders": [],
     "currentSnapshot": {
-      "releaseVersion": "0.1.0-beta.102",
-      "previousSnapshotSha256": "1617b7209f07e8ddab3de91877c3e2f0cf342e33a9883f54de979e5f247120fd",
+      "releaseVersion": "0.1.0-beta.103",
+      "previousSnapshotSha256": "12ff40aa549d8511aacb73e42b298d5e3fd1a4efd8cb5cb3828a8ced4ceaac57",
       "providers": [
         {
           "id": "claude",
@@ -193,7 +193,8 @@
       "retiredProviders": []
     },
     "immutableHeadSnapshot": {
-      "previousSnapshotSha256": "ac98b3f85f7abba54edd7d730cfa8b0ed8b537731c3b9bbffca9c1cdc96532d5",
+      "releaseVersion": "0.1.0-beta.102",
+      "previousSnapshotSha256": "1617b7209f07e8ddab3de91877c3e2f0cf342e33a9883f54de979e5f247120fd",
       "providers": [
         {
           "id": "claude",
@@ -266,7 +267,6 @@
           ]
         }
       ],
-      "releaseVersion": "0.1.0-beta.101",
       "retiredProviders": []
     }
   },

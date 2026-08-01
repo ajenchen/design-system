@@ -193,6 +193,30 @@ function matchingConsumerPullRequest(repository, version) {
   return found ? withRequiredChecks(repository, found) : null
 }
 
+export function buildPublishedTemplatePullRequestCreateArgs(target, { version, commit }) {
+  invariant(target.delivery === 'release-published-pr', `consumer ${target.repository} is not published-template driven`)
+  invariant(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version), `invalid published-template version: ${version}`)
+  invariant(/^[a-f0-9]{40}$/.test(commit), `invalid published-template release commit: ${commit}`)
+  const tag = `v${version}`
+  const branch = `automation/release-${tag}`
+  return {
+    branch,
+    args: [
+      'pr', 'create', '--repo', target.repository,
+      '--head', branch, '--base', target.defaultBranch,
+      '--title', `chore: mirror design system ${tag}`,
+      '--body', `Generated from published design-system release ${tag} at ${commit}.`,
+    ],
+  }
+}
+
+function publishedTemplateBranchExists(target, version) {
+  const branch = `automation/release-v${version}`
+  return Boolean(ghJson([
+    'api', `repos/${target.repository}/branches/${encodeURIComponent(branch)}`,
+  ], { allowFailure: true }))
+}
+
 function readConsumerLock(target) {
   const result = gh([
     'api', `repos/${target.repository}/contents/${target.readbackPath}?ref=${encodeURIComponent(target.defaultBranch)}`,
@@ -444,6 +468,15 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
           tag: observation.tag,
           commit: observation.releaseCommitSha,
         })
+        dispatchedConsumers.add(target.repository)
+      } else if (target.delivery === 'release-published-pr'
+        && !dispatchedConsumers.has(target.repository)
+        && publishedTemplateBranchExists(target, observation.version)) {
+        const operation = buildPublishedTemplatePullRequestCreateArgs(target, {
+          version: observation.version,
+          commit: observation.releaseCommitSha,
+        })
+        gh(operation.args)
         dispatchedConsumers.add(target.repository)
       }
     }

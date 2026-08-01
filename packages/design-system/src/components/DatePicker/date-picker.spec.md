@@ -187,7 +187,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 - **range_start / range_end**:沿用 single selected 的視覺(藍底白字圓)
 - **range middle**:灰底矩形橫條(實作層級詳 `date-grid.tsx`)
-- **端點 ↔ 中間的接縫**:端點採半圓角(左端 `rounded-l-full` / 右端 `rounded-r-full`)讓圓弧 + 矩形無縫連接成一條連續底色帶
+- **端點 ↔ 中間的接縫**:端點朝區間外側保留完整圓弧、朝區間內側與矩形無縫銜接,形成連續底色帶；實作 class 對照由 anatomy 管理
 
 完整 class 對照見 anatomy `CalendarTokens`(State canonical 表的 `selected` / `range track`)。
 

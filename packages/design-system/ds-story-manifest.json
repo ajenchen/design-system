@@ -3,11 +3,11 @@
     "purpose": "DS canonical story id SSOT for consumer visual diff and baseline validation",
     "canonicalSource": "M31 codex synthesis 2026-05-27 dual-track",
     "consumedBy": [
-      ".claude/hooks/check_consumer_story_baseline.sh",
+      "packages/design-system/ds-canonical/hooks/check_consumer_app_invariants.sh#r2_story_baseline",
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-07-18T17:15:24.667Z"
+    "generatedAt": "2026-08-01T19:48:56.377Z"
   },
   "components": {
     "accordion": {
@@ -35,6 +35,29 @@
         ]
       },
       "openSnapshotIds": [],
+      "exception": null
+    },
+    "accountmenu": {
+      "tiers": {
+        "展示": [
+          "design-system-components-accountmenu-展示--global-header-entry",
+          "design-system-components-accountmenu-展示--open-snapshot"
+        ],
+        "設計規格": [
+          "design-system-components-accountmenu-設計規格--overview",
+          "design-system-components-accountmenu-設計規格--inspector",
+          "design-system-components-accountmenu-設計規格--state-behavior",
+          "design-system-components-accountmenu-設計規格--accessibility"
+        ],
+        "設計原則": [
+          "design-system-components-accountmenu-設計原則--usage-guidance",
+          "design-system-components-accountmenu-設計原則--placement-rule",
+          "design-system-components-accountmenu-設計原則--composition-rule"
+        ]
+      },
+      "openSnapshotIds": [
+        "design-system-components-accountmenu-展示--open-snapshot"
+      ],
       "exception": null
     },
     "alert": {
@@ -220,6 +243,7 @@
           "design-system-components-button-展示--disabled",
           "design-system-components-button-展示--loading",
           "design-system-components-button-展示--full-width",
+          "design-system-components-button-展示--dismiss-hover-state",
           "design-system-components-button-展示--hover-focus-state",
           "design-system-components-button-展示--tooltip-visible"
         ],
@@ -476,6 +500,7 @@
           "design-system-components-datatable-展示--cell-errors",
           "design-system-components-datatable-展示--cell-errors-fixed-row-override",
           "design-system-components-datatable-展示--nested-rows",
+          "design-system-components-datatable-展示--nested-rows-expander-hover-state",
           "design-system-components-datatable-展示--nested-rows-with-drag",
           "design-system-components-datatable-展示--virtual-scroll",
           "design-system-components-datatable-展示--with-bulk-actions",
@@ -488,6 +513,7 @@
           "design-system-components-datatable-展示--filter-panel-relative-date",
           "design-system-components-datatable-展示--filter-panel-modified",
           "design-system-components-datatable-展示--filter-panel-long-tag-overflow",
+          "design-system-components-datatable-展示--filter-panel-labels-and-limit",
           "design-system-components-datatable-展示--row-drag-interactive",
           "design-system-components-datatable-展示--row-drag-with-virtualization",
           "design-system-components-datatable-展示--roadmap-all-in-one",
@@ -794,6 +820,7 @@
           "design-system-components-fileupload-展示--resume-upload",
           "design-system-components-fileupload-展示--bulk-image-upload",
           "design-system-components-fileupload-展示--with-file-list",
+          "design-system-components-fileupload-展示--remove-hover-state",
           "design-system-components-fileupload-展示--custom-children",
           "design-system-components-fileupload-展示--button-variant"
         ],
@@ -1401,6 +1428,7 @@
       "tiers": {
         "展示": [
           "design-system-components-sidebar-展示--icon-collapse",
+          "design-system-components-sidebar-展示--action-hover-state",
           "design-system-components-sidebar-展示--mixed-content",
           "design-system-components-sidebar-展示--offcanvas",
           "design-system-components-sidebar-展示--integration-sidebar"
@@ -1563,6 +1591,7 @@
         "展示": [
           "design-system-components-tag-展示--with-avatar",
           "design-system-components-tag-展示--dismissable",
+          "design-system-components-tag-展示--dismiss-hover-state",
           "design-system-components-tag-展示--truncation"
         ],
         "設計規格": [
@@ -1687,6 +1716,7 @@
       "tiers": {
         "展示": [
           "design-system-components-treeview-展示--file-browser",
+          "design-system-components-treeview-展示--action-hover-state",
           "design-system-components-treeview-展示--stepper",
           "design-system-components-treeview-展示--with-checkbox",
           "design-system-components-treeview-展示--long-label",
@@ -1712,6 +1742,6 @@
       "exception": null
     }
   },
-  "totalComponents": 64,
-  "totalStories": 918
+  "totalComponents": 65,
+  "totalStories": 934
 }
