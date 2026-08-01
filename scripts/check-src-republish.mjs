@@ -37,7 +37,7 @@ const ROOT = realpathSync(resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const PKG = 'packages/design-system'
 const SRC_GLOB = `${PKG}/src`
 const PACKAGE_NAME = '@qijenchen/design-system'
-const REGISTRY_LATEST_URL = 'https://registry.npmjs.org/@qijenchen%2fdesign-system/latest'
+const REGISTRY_PACKAGE_URL = 'https://registry.npmjs.org/@qijenchen%2fdesign-system'
 const RELEASE_REPOSITORY_URL = 'https://github.com/ajenchen/design-system.git'
 const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+)\.(0|[1-9]\d*))?$/
 // 整個 ds-canonical corpus ship 進 npm(files: "ds-canonical" + "!ds-canonical/.claude")。
@@ -105,23 +105,30 @@ function verifyRepository(repoRoot) {
   invariant(topLevel === repoRoot, `Git top-level differs from the exact checker root:${topLevel}`)
 }
 
+export function selectPublishedTagCommit(advertisedText, baselineTag) {
+  const advertised = advertisedText.trim().split('\n').filter(Boolean)
+  const rows = advertised.map((line) => line.split('\t'))
+  const tagRef = `refs/tags/${baselineTag}`
+  const peeledRef = `${tagRef}^{}`
+  invariant(
+    (rows.length === 1 || rows.length === 2)
+      && rows.every(parts => parts.length === 2 && /^[0-9a-f]{40,64}$/.test(parts[0]))
+      && rows.filter(parts => parts[1] === tagRef).length === 1
+      && rows.filter(parts => parts[1] === peeledRef).length === rows.length - 1,
+    `published baseline is not one exact lightweight or annotated remote tag:${baselineTag}`,
+  )
+  return (rows.find(parts => parts[1] === peeledRef) || rows.find(parts => parts[1] === tagRef))[0]
+}
+
 function publishedTagCommitFromRemote({ baselineTag, repoRoot }) {
-  const advertised = closedGit(repoRoot, [
+  const advertisedText = closedGit(repoRoot, [
     'ls-remote',
     '--tags',
     RELEASE_REPOSITORY_URL,
     `refs/tags/${baselineTag}`,
     `refs/tags/${baselineTag}^{}`,
-  ]).trim().split('\n').filter(Boolean)
-  const rows = advertised.map((line) => line.split('\t'))
-  invariant(
-    rows.length === 2
-      && rows.every(parts => parts.length === 2 && /^[0-9a-f]{40,64}$/.test(parts[0]))
-      && rows.some(parts => parts[1] === `refs/tags/${baselineTag}`)
-      && rows.some(parts => parts[1] === `refs/tags/${baselineTag}^{}`),
-    `published baseline is not one exact annotated remote tag:${baselineTag}`,
-  )
-  const commit = rows.find(parts => parts[1].endsWith('^{}'))[0]
+  ])
+  const commit = selectPublishedTagCommit(advertisedText, baselineTag)
   try {
     closedGit(repoRoot, ['cat-file', '-e', `${commit}^{commit}`])
   } catch {
@@ -137,12 +144,20 @@ function publishedTagCommitFromRemote({ baselineTag, repoRoot }) {
   return commit
 }
 
-async function publishedVersionFromRegistry({
+export function releaseDistTag(releaseVersion) {
+  const parsed = parseVersion(releaseVersion, 'current package version')
+  return parsed.channel ?? 'latest'
+}
+
+export async function publishedVersionFromRegistry({
+  releaseVersion,
   fetcher = globalThis.fetch,
   timeoutMs = 20_000,
 } = {}) {
   invariant(typeof fetcher === 'function', 'registry HTTPS client is unavailable')
-  const response = await fetcher(REGISTRY_LATEST_URL, {
+  const distTag = releaseDistTag(releaseVersion)
+  const registryUrl = `${REGISTRY_PACKAGE_URL}/${encodeURIComponent(distTag)}`
+  const response = await fetcher(registryUrl, {
     headers: {
       Accept: 'application/json',
       'User-Agent': 'qijenchen-governance-republish-gate/1',
@@ -151,7 +166,7 @@ async function publishedVersionFromRegistry({
     redirect: 'error',
     signal: AbortSignal.timeout(timeoutMs),
   })
-  invariant(response?.status === 200, `npm registry latest readback returned HTTP ${response?.status ?? 'unknown'}`)
+  invariant(response?.status === 200, `npm registry ${distTag} readback returned HTTP ${response?.status ?? 'unknown'}`)
   const declaredLength = response.headers?.get?.('content-length')
   if (declaredLength !== null && declaredLength !== undefined) {
     invariant(/^\d+$/.test(declaredLength) && Number(declaredLength) <= 1024 * 1024, 'npm registry response length is invalid')
@@ -170,7 +185,7 @@ async function publishedVersionFromRegistry({
       && !Array.isArray(document)
       && document.name === PACKAGE_NAME
       && typeof document.version === 'string',
-    'npm registry latest response does not identify the exact package/version',
+    `npm registry ${distTag} response does not identify the exact package/version`,
   )
   parseVersion(document.version, 'published package version')
   return document.version
@@ -200,7 +215,7 @@ export async function runRepublishGate({
 
   let baselineVersion
   try {
-    baselineVersion = await publishedVersionResolver()
+    baselineVersion = await publishedVersionResolver({ releaseVersion: currentVersion })
   } catch (error) {
     throw new Error(`REPUBLISH_GATE_BLOCK:published npm baseline is unavailable:${error.message}`, { cause: error })
   }
