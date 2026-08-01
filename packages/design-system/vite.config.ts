@@ -7,6 +7,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 import { globSync } from 'node:fs'
+import { deterministicViteOutputPlugin } from './vite-deterministic-output.mjs'
 
 // Phase 5.1 2026-05-25:加 per-component / per-pattern index.ts 為 explicit entries
 // → vite preserveModules 不會 inline 這些 re-export shim,emit dist/components/<Dir>/index.js
@@ -34,7 +35,10 @@ const tokenEntries = Object.fromEntries(
 )
 
 export default defineConfig({
-  plugins: [react()],
+  // Vite pads removed CSS imports to their original (absolute-path-dependent) length.
+  // Normalize that inert placeholder after every other bundle hook so npm packs are
+  // byte-identical across local, Claude, Codex, and hosted checkout roots.
+  plugins: [react(), deterministicViteOutputPlugin()],
   resolve: {
     alias: [
       // Internal package imports(specific-first per Vite alias ordering)

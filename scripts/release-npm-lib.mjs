@@ -37,6 +37,7 @@ export { validateProvenanceStatement }
 export const npmRegistry = 'https://registry.npmjs.org'
 export const provenanceType = PROVENANCE_TYPE
 export const minimumStagedNpmVersion = '11.15.0'
+export const PUBLISHED_PACKAGE_READBACK_ATTEMPTS = 24
 export const FINALIZER_WORKFLOW_PATH = '.github/workflows/release-finalize.yml'
 export const FINALIZER_WORKFLOW_EVENT = 'repository_dispatch'
 
@@ -291,13 +292,13 @@ export async function validateRegistryPackage(npmCli, item, identity) {
 
 export async function waitForPublishedPackage(npmCli, item, identity) {
   let lastError
-  for (let attempt = 1; attempt <= 12; attempt += 1) {
+  for (let attempt = 1; attempt <= PUBLISHED_PACKAGE_READBACK_ATTEMPTS; attempt += 1) {
     try {
       await validateRegistryPackage(npmCli, item, identity)
       return
     } catch (error) {
       lastError = error
-      if (attempt < 12) await sleep(5_000)
+      if (attempt < PUBLISHED_PACKAGE_READBACK_ATTEMPTS) await sleep(5_000)
     }
   }
   throw lastError

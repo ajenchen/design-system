@@ -104,18 +104,95 @@
   },
   "providerLifecycle": {
     "schemaVersion": 4,
-    "releaseVersion": "0.1.0-beta.100",
+    "releaseVersion": "0.1.0-beta.101",
     "immutableHead": {
       "providerInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
-      "releaseVersion": "0.1.0-beta.99",
-      "snapshotSha256": "631028133be027a55e6fed2a61632aa4b0ef4eeb574a02322a61eba41db70b64"
+      "releaseVersion": "0.1.0-beta.100",
+      "snapshotSha256": "ac98b3f85f7abba54edd7d730cfa8b0ed8b537731c3b9bbffca9c1cdc96532d5"
     },
-    "ledgerSha256": "0218b08a98c78dd50d00c143460c21a2f9a973a933419ebbb684a32f761462c3",
-    "previousSnapshotSha256": "631028133be027a55e6fed2a61632aa4b0ef4eeb574a02322a61eba41db70b64",
-    "currentSnapshotSha256": "ac98b3f85f7abba54edd7d730cfa8b0ed8b537731c3b9bbffca9c1cdc96532d5",
+    "ledgerSha256": "fa70b735911b3607214ce21a900e24398af962743391e23029e8ca71b3cbc359",
+    "previousSnapshotSha256": "ac98b3f85f7abba54edd7d730cfa8b0ed8b537731c3b9bbffca9c1cdc96532d5",
+    "currentSnapshotSha256": "1617b7209f07e8ddab3de91877c3e2f0cf342e33a9883f54de979e5f247120fd",
     "currentProviderInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
     "retiredProviders": [],
     "currentSnapshot": {
+      "previousSnapshotSha256": "ac98b3f85f7abba54edd7d730cfa8b0ed8b537731c3b9bbffca9c1cdc96532d5",
+      "providers": [
+        {
+          "id": "claude",
+          "discovery": {
+            "providerRootNames": [
+              ".claude"
+            ],
+            "instructionNames": [
+              "CLAUDE.md"
+            ],
+            "instructionOverrideNames": [
+              "CLAUDE.local.md",
+              "CLAUDE.override.md"
+            ],
+            "configPaths": [
+              ".claude/settings.json",
+              ".claude/settings.local.json",
+              ".mcp.json"
+            ],
+            "pluginRootNames": [
+              ".claude-plugin"
+            ]
+          },
+          "surfaces": [
+            {
+              "path": ".claude/settings.json",
+              "kind": "file"
+            },
+            {
+              "path": ".claude/skills",
+              "kind": "tree"
+            },
+            {
+              "path": "CLAUDE.md",
+              "kind": "file"
+            }
+          ]
+        },
+        {
+          "id": "codex",
+          "discovery": {
+            "providerRootNames": [
+              ".agents",
+              ".codex"
+            ],
+            "instructionNames": [
+              "AGENTS.md"
+            ],
+            "instructionOverrideNames": [
+              "AGENTS.local.md",
+              "AGENTS.override.md"
+            ],
+            "configPaths": [
+              ".codex/config.toml",
+              ".codex/hooks.json"
+            ],
+            "pluginRootNames": [
+              ".codex-plugin"
+            ]
+          },
+          "surfaces": [
+            {
+              "path": ".agents/skills",
+              "kind": "tree"
+            },
+            {
+              "path": ".codex/hooks.json",
+              "kind": "file"
+            }
+          ]
+        }
+      ],
+      "releaseVersion": "0.1.0-beta.101",
+      "retiredProviders": []
+    },
+    "immutableHeadSnapshot": {
       "previousSnapshotSha256": "631028133be027a55e6fed2a61632aa4b0ef4eeb574a02322a61eba41db70b64",
       "providers": [
         {
@@ -190,83 +267,6 @@
         }
       ],
       "releaseVersion": "0.1.0-beta.100",
-      "retiredProviders": []
-    },
-    "immutableHeadSnapshot": {
-      "previousSnapshotSha256": "fe8c13ee9e865d19384a58f759e1687d3575043e9869bb4784c9ce3fb18cf86c",
-      "providers": [
-        {
-          "id": "claude",
-          "discovery": {
-            "providerRootNames": [
-              ".claude"
-            ],
-            "instructionNames": [
-              "CLAUDE.md"
-            ],
-            "instructionOverrideNames": [
-              "CLAUDE.local.md",
-              "CLAUDE.override.md"
-            ],
-            "configPaths": [
-              ".claude/settings.json",
-              ".claude/settings.local.json",
-              ".mcp.json"
-            ],
-            "pluginRootNames": [
-              ".claude-plugin"
-            ]
-          },
-          "surfaces": [
-            {
-              "path": ".claude/settings.json",
-              "kind": "file"
-            },
-            {
-              "path": ".claude/skills",
-              "kind": "tree"
-            },
-            {
-              "path": "CLAUDE.md",
-              "kind": "file"
-            }
-          ]
-        },
-        {
-          "id": "codex",
-          "discovery": {
-            "providerRootNames": [
-              ".agents",
-              ".codex"
-            ],
-            "instructionNames": [
-              "AGENTS.md"
-            ],
-            "instructionOverrideNames": [
-              "AGENTS.local.md",
-              "AGENTS.override.md"
-            ],
-            "configPaths": [
-              ".codex/config.toml",
-              ".codex/hooks.json"
-            ],
-            "pluginRootNames": [
-              ".codex-plugin"
-            ]
-          },
-          "surfaces": [
-            {
-              "path": ".agents/skills",
-              "kind": "tree"
-            },
-            {
-              "path": ".codex/hooks.json",
-              "kind": "file"
-            }
-          ]
-        }
-      ],
-      "releaseVersion": "0.1.0-beta.99",
       "retiredProviders": []
     }
   },
