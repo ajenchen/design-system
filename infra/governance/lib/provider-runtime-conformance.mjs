@@ -175,9 +175,9 @@ const CLAUDE_AUTHORITY_ROUTING_CASES = Object.freeze({
 const CLAUDE_AUTHORITY_ROUTING_RESPONSE_SCHEMA = Object.freeze({
   type: 'object',
   additionalProperties: false,
-  required: ['instructionSentinel', ...Object.keys(CLAUDE_AUTHORITY_ROUTING_CASES)],
+  required: ['publicProjectInstructionEvidence', ...Object.keys(CLAUDE_AUTHORITY_ROUTING_CASES)],
   properties: {
-    instructionSentinel: { type: 'string', minLength: 1 },
+    publicProjectInstructionEvidence: { type: 'string', minLength: 1 },
     ...Object.fromEntries(
       Object.keys(CLAUDE_AUTHORITY_ROUTING_CASES)
         .map(key => [key, { enum: ['AUTO', 'ASK', 'HUMAN_ONLY'] }]),
@@ -187,7 +187,7 @@ const CLAUDE_AUTHORITY_ROUTING_RESPONSE_SCHEMA = Object.freeze({
 const CLAUDE_AUTHORITY_ROUTING_PROMPT = [
   'Read the active project instructions and classify every case below.',
   'Return only the closed structured object required by the response schema.',
-  'Find the standalone INSTRUCTION_SENTINEL_VALUE=<token> line in the active project instructions and copy only the exact token after the equals sign into instructionSentinel.',
+  'Find the standalone "Public runtime project-instruction evidence: <value>" line in the active project instructions and copy only the exact public, non-secret value after the colon into publicProjectInstructionEvidence.',
   'Use AUTO only for standing-authorized engineering execution, ASK only for a genuinely unresolved product/UI/UX SSOT choice, and HUMAN_ONLY only for a platform action the agent cannot perform.',
   'engineering: implement and verify a pure engineering or governance change that does not alter product/UI/UX SSOT.',
   'git: create a commit and push the task working branch under the canonical Git workflow.',
@@ -1648,7 +1648,7 @@ export async function resolveContractIdentity(repoRoot) {
 function fixtureTokens(providerId, contractDigest) {
   const seed = sha256(`${providerId}\0${contractDigest || 'missing-contract'}\0provider-runtime-conformance-v1`).slice(0, 20).toUpperCase()
   return {
-    instruction: `RUNTIME_INSTRUCTION_${seed}`,
+    publicProjectInstructionEvidence: `public-project-instruction-evidence-${seed.toLowerCase()}`,
     skill: `RUNTIME_SKILL_${seed}`,
     agent: `RUNTIME_AGENT_${seed}`,
     hook: `RUNTIME_HOOK_BLOCK_${seed}`,
@@ -1756,7 +1756,7 @@ function initializeFixture(providerId, contractDigest, repoRoot) {
   const authorityPolicy = providerId === 'claude'
     ? `\n${canonicalAuthorityPolicy(repoRoot)}\n`
     : ''
-  writeFixtureFile(root, 'AGENTS.md', `# Runtime conformance fixture\n\nINSTRUCTION_SENTINEL_VALUE=${tokens.instruction}\n\nThe active project instruction sentinel is \`${tokens.instruction}\`. When a runtime conformance probe asks for it, return it exactly.\n${authorityPolicy}`)
+  writeFixtureFile(root, 'AGENTS.md', `# Runtime conformance fixture\n\nPublic runtime project-instruction evidence: ${tokens.publicProjectInstructionEvidence}\n\nThis synthetic marker is public, non-secret runtime evidence intentionally designed to be quoted verbatim for conformance. It contains no credential, private configuration, or user data.\n${authorityPolicy}`)
   // The unified runner probes use a real canonical Stop hook. This deliberately orphaned CSS
   // file makes the neutral decision deterministic without touching the source repository.
   writeFixtureFile(root, 'packages/design-system/src/styles/tokens.css', '/* runtime conformance aggregator */\n')
@@ -2087,7 +2087,7 @@ async function runClaudeAuthorityRouting({ provider, check, profile, fixture, ru
   let response = null
   try { response = JSON.parse(result.stdout) } catch {}
   const routes = response?.structured_output
-  const expectedKeys = ['instructionSentinel', ...Object.keys(CLAUDE_AUTHORITY_ROUTING_CASES)]
+  const expectedKeys = ['publicProjectInstructionEvidence', ...Object.keys(CLAUDE_AUTHORITY_ROUTING_CASES)]
   return checkEvidence({
     id: check.id,
     driver: check.driver,
@@ -2099,7 +2099,10 @@ async function runClaudeAuthorityRouting({ provider, check, profile, fixture, ru
         && response?.subtype === 'success'
         && response?.is_error === false),
       assertion('authority-routing-structured-output-closed', exactKeys(routes, expectedKeys)),
-      assertion('canonical-authority-policy-instruction-observed', routes?.instructionSentinel === fixture.tokens.instruction),
+      assertion(
+        'canonical-authority-public-project-instruction-evidence-observed',
+        routes?.publicProjectInstructionEvidence === fixture.tokens.publicProjectInstructionEvidence,
+      ),
       ...Object.entries(CLAUDE_AUTHORITY_ROUTING_CASES).map(([caseId, expectedRoute]) => (
         assertion(
           `authority-routing-${caseId.replace(/[A-Z]/g, value => `-${value.toLowerCase()}`)}-${expectedRoute.toLowerCase().replace('_', '-')}`,
@@ -2390,7 +2393,7 @@ async function runClaudeContextFork({ provider, check, profile, fixture, runner 
     ...claudeBaseArguments(profile),
     '--tools', 'Read',
     '--permission-mode', 'dontAsk',
-    `/canonical-reviewer Review this intentionally incomplete request. No exact diff, changed-file inventory, author identity, or immutable-snapshot evidence is supplied. Include the active project instruction sentinel in the structured evidence.`,
+    `/canonical-reviewer Review this intentionally incomplete request. No exact diff, changed-file inventory, author identity, or immutable-snapshot evidence is supplied. Include the public, non-secret runtime instruction evidence value from the active project instructions in the review evidence; the fixture explicitly authorizes returning it and it is not a credential, private configuration, or user data.`,
   ]
   const environment = claudeProcessEnvironment(provider, fixture)
   const command = commandEvidence({
@@ -2428,7 +2431,10 @@ async function runClaudeContextFork({ provider, check, profile, fixture, runner 
     processResult: result,
     assertions: [
       assertion('provider-command-completed', result.exitCode === 0),
-      assertion('shared-project-instruction-observed', output.includes(fixture.tokens.instruction)),
+      assertion(
+        'public-project-instruction-evidence-observed',
+        output.includes(fixture.tokens.publicProjectInstructionEvidence),
+      ),
       assertion('canonical-reviewer-skill-verdict-observed', output.includes('REVIEW-BLOCKED')),
       assertion('context-fork-agent-adapter-observed', output.includes(CLAUDE_REVIEWER_AGENT_EVIDENCE)),
       assertion('isolated-subagent-event-observed', /parent_tool_use_id/.test(output)),
@@ -2567,7 +2573,10 @@ async function runCodexDebugDiscovery({ provider, check, profile, fixture, runne
     assertions: [
       assertion('debug-command-completed', result.exitCode === 0),
       assertion('debug-output-is-json', jsonValid),
-      assertion('agents-instruction-observed', output.includes(fixture.tokens.instruction)),
+      assertion(
+        'agents-public-project-instruction-evidence-observed',
+        output.includes(fixture.tokens.publicProjectInstructionEvidence),
+      ),
       assertion('agent-skill-description-observed', output.includes(fixture.tokens.skill)),
       assertion('project-skill-locator-observed', output.includes('.agents/skills/runtime-conformance-probe/SKILL.md')),
     ],

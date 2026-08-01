@@ -10,11 +10,7 @@
   "contractDigest": "sha256:da78ff92e17b2e6e0bb13392079a1dbe4785aaa7ad1bfa914683560c37228676",
   "files": [
     {
-<<<<<<< HEAD
-      "hash": "sha256:5cd45a34f9abe1acc429c97de57971fe30b839a4985d9d18506791c5db79aab5",
-=======
-      "hash": "sha256:0c0464b410e8298ca746a104d66b31c284c691a174615bc1aed87ed36be31c31",
->>>>>>> c94257d6 (fix(governance): require Claude authority routing)
+      "hash": "sha256:c15f58d170e50ab0fe4abf6c62b1dea042d3ae87023eb3b19f4f584cfa19fa2e",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 73998,
@@ -42,11 +38,7 @@
       "type": "file"
     },
     {
-<<<<<<< HEAD
-      "hash": "sha256:b2eb31a50696514b381d43e357e18ad9aa60e3b5d5b32ff607f73bd6c88b782d",
-=======
-      "hash": "sha256:34d34df5ef588f6d366e1d9865868c3d455bc71a9f5b5e6bcb6f04e928c64404",
->>>>>>> c94257d6 (fix(governance): require Claude authority routing)
+      "hash": "sha256:ca5b8dac7dc72ed1ce01a5e4fc03ab150d82ecae61dbb5b88e6f1f5abaaba5d3",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 167607,
@@ -74,11 +66,7 @@
       "type": "file"
     }
   ],
-<<<<<<< HEAD
-  "inputDigest": "sha256:dd5f5c34c29434bbe201542357711a0d4e895202151f7c8e32530c3f0bd01101",
-=======
-  "inputDigest": "sha256:bea16971356367afd240209bb5ed97718f21aa9762cb34e1130b75ce8bdd221a",
->>>>>>> c94257d6 (fix(governance): require Claude authority routing)
+  "inputDigest": "sha256:ffa5688923975a01255f64ac5b86dacb5151c2241185cd5e05207cf7a7c19012",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -530,11 +518,7 @@
       ]
     }
   ],
-<<<<<<< HEAD
-  "snapshotDigest": "sha256:cf20b97064056dc2f5faa21fff6979f3b3747efb7fa5003ddf3099418a258b76",
-=======
-  "snapshotDigest": "sha256:28a6ce1fe058d385d0cd062b4119dab4d87057f1aceac975bbbb88ebda405258",
->>>>>>> c94257d6 (fix(governance): require Claude authority routing)
+  "snapshotDigest": "sha256:1897f784ceae860926beca27da984dbec5934ba4a6359db821e9abd2539461d2",
   "sources": [
     {
       "hash": "sha256:f3babea912be34fd1cf8cce7a7f82302701f1632f72f974317abcaaff1edda0d",
@@ -1995,12 +1979,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4bb6393063d6b99a261fdb8d50a27bb7433cf8d52d4c5146a48b22392607b721",
+      "hash": "sha256:ba135cfa8d1b10d56ff76c47d0cdcb56cf8feac822bfda1ce56a13dc27e087ae",
       "id": "exact-provider-runtime-conformance-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/lib/provider-runtime-conformance.mjs",
-      "size": 158447,
+      "size": 159038,
       "type": "file"
     },
     {
@@ -2643,7 +2627,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 33,
-      "hash": "sha256:6a9b2bb96566d52d6cf751abed5303eae9a3f001741ac5a79a89b1c4bcf5768d",
+      "hash": "sha256:444624ad450750b9c4b81c5a2d2a9f4193b6b4fbab344d447fc04c8914e68d8f",
       "id": "governance-control-plane-libraries",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2665,7 +2649,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 63,
-      "hash": "sha256:b92fbc2a2d9d59402289d1114efbe8b1d41a6086ad42360d1920b56b41f4d08d",
+      "hash": "sha256:0f728496f9eae62ddf2c138ac4add49eae96f62c71e9819fcc80f7d48f60915d",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",

@@ -185,12 +185,12 @@ function successMockRunner(overrides = {}) {
       assert.deepEqual(responseSchema.properties.engineering.enum, ['AUTO', 'ASK', 'HUMAN_ONLY'])
       assert.equal(responseSchema.additionalProperties, false)
       const fixtureInstructions = readFileSync(join(fixture.root, 'AGENTS.md'), 'utf8')
-      assert.match(fixtureInstructions, new RegExp(`^INSTRUCTION_SENTINEL_VALUE=${fixture.tokens.instruction}$`, 'm'))
+      assert.match(fixtureInstructions, new RegExp(`^Public runtime project-instruction evidence: ${fixture.tokens.publicProjectInstructionEvidence}$`, 'm'))
       assert.match(fixtureInstructions, /canonical-decision-authority:start/)
       assert.match(fixtureInstructions, /Decision／Engineering Authority/)
       assert.match(fixtureInstructions, /Human-only boundaries/)
       assert.match(providerArguments.at(-1), /engineering: implement and verify/)
-      assert.match(providerArguments.at(-1), /INSTRUCTION_SENTINEL_VALUE=<token>/)
+      assert.match(providerArguments.at(-1), /Public runtime project-instruction evidence: <value>/)
       assert.match(providerArguments.at(-1), /unresolvedUiUxSsot:/)
       assert.match(providerArguments.at(-1), /oauth:/)
       return {
@@ -200,7 +200,7 @@ function successMockRunner(overrides = {}) {
           subtype: 'success',
           is_error: false,
           structured_output: {
-            instructionSentinel: fixture.tokens.instruction,
+            publicProjectInstructionEvidence: fixture.tokens.publicProjectInstructionEvidence,
             engineering: 'AUTO',
             git: 'AUTO',
             pullRequest: 'AUTO',
@@ -256,13 +256,16 @@ function successMockRunner(overrides = {}) {
       assert.ok(providerArguments.includes('--strict-mcp-config'))
       const fixtureSkill = readFileSync(join(fixture.root, '.claude/skills/canonical-reviewer/SKILL.md'), 'utf8')
       const fixtureAgent = readFileSync(join(fixture.root, '.claude/agents/canonical-reviewer.md'), 'utf8')
+      const fixtureInstructions = readFileSync(join(fixture.root, 'AGENTS.md'), 'utf8')
       assert.equal(fixtureSkill, readFileSync(resolve(REPO_ROOT, '.claude/skills/canonical-reviewer/SKILL.md'), 'utf8'))
       assert.equal(fixtureAgent, readFileSync(resolve(REPO_ROOT, '.claude/agents/canonical-reviewer.md'), 'utf8'))
+      assert.match(fixtureInstructions, /public, non-secret runtime evidence/)
+      assert.match(providerArguments.at(-1), /public, non-secret runtime instruction evidence/)
       assert.match(fixtureSkill, /^context: fork$/m)
       assert.match(fixtureSkill, /^agent: canonical-reviewer$/m)
       return {
         exitCode: 0,
-        stdout: JSON.stringify({ parent_tool_use_id: 'fixture-fork', text: `REVIEW-BLOCKED\nadapterEvidence: CLAUDE_CANONICAL_REVIEWER_AGENT_V1\ninstructionEvidence: ${fixture.tokens.instruction}` }),
+        stdout: JSON.stringify({ parent_tool_use_id: 'fixture-fork', text: `REVIEW-BLOCKED\nadapterEvidence: CLAUDE_CANONICAL_REVIEWER_AGENT_V1\npublicProjectInstructionEvidence: ${fixture.tokens.publicProjectInstructionEvidence}` }),
         stderr: '',
         timedOut: false,
         outputExceeded: false,
@@ -288,7 +291,7 @@ function successMockRunner(overrides = {}) {
       return {
         exitCode: 0,
         stdout: JSON.stringify([
-          { type: 'message', text: fixture.tokens.instruction },
+          { type: 'message', text: fixture.tokens.publicProjectInstructionEvidence },
           { type: 'skill', text: `${fixture.tokens.skill} .agents/skills/runtime-conformance-probe/SKILL.md` },
         ]),
         stderr: '',
@@ -1516,7 +1519,7 @@ test('Claude decision-authority routing is required and fails closed on route or
           subtype: 'success',
           is_error: false,
           structured_output: {
-            instructionSentinel: 'substituted-instruction',
+            publicProjectInstructionEvidence: 'substituted-instruction',
             engineering: 'ASK',
             git: 'AUTO',
             pullRequest: 'AUTO',
@@ -1539,7 +1542,7 @@ test('Claude decision-authority routing is required and fails closed on route or
   assert.equal(check.status, 'fail')
   assert.equal(claude.status, 'fail')
   assert.equal(wrongRouting.evidence.status, 'fail')
-  assert.equal(assertions.get('canonical-authority-policy-instruction-observed'), false)
+  assert.equal(assertions.get('canonical-authority-public-project-instruction-evidence-observed'), false)
   assert.equal(assertions.get('authority-routing-engineering-auto'), false)
   assert.equal(assertions.get('authority-routing-unresolved-ui-ux-ssot-ask'), false)
   assert.equal(assertions.get('authority-routing-login-human-only'), false)
