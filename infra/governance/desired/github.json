@@ -65,9 +65,9 @@
           "waitTimer": 0,
           "workflow": ".github/workflows/release.yml",
           "workflowIdentity": {
-            "contentSha256": "ae5e8ce00b8042f374fcbc5d1be17d9db26f62917304b0d0bfd97bba5cd257e7",
-            "gitBlobSha": "2c3959dfc81ee5ca920e03d1f3c94d1062f98a3a",
-            "semanticSha256": "bf622c8c1f7019196d566bd247d0ca35121689b9a832f73c267f3f6863ed6420",
+            "contentSha256": "d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f",
+            "gitBlobSha": "253a5cd3da120cf4af02f36c29bcbdca4c4b352d",
+            "semanticSha256": "577ad48cb5e844684d8ffbd709a5716df2e9c2a9cd1682164749b2928d8dbc1c",
             "semanticVersion": 2
           }
         },
@@ -207,9 +207,9 @@
         "sourceBranch": "main",
         "sourceWorkflow": ".github/workflows/release.yml",
         "sourceWorkflowIdentity": {
-          "contentSha256": "ae5e8ce00b8042f374fcbc5d1be17d9db26f62917304b0d0bfd97bba5cd257e7",
-          "gitBlobSha": "2c3959dfc81ee5ca920e03d1f3c94d1062f98a3a",
-          "semanticSha256": "bf622c8c1f7019196d566bd247d0ca35121689b9a832f73c267f3f6863ed6420",
+          "contentSha256": "d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f",
+          "gitBlobSha": "253a5cd3da120cf4af02f36c29bcbdca4c4b352d",
+          "semanticSha256": "577ad48cb5e844684d8ffbd709a5716df2e9c2a9cd1682164749b2928d8dbc1c",
           "semanticVersion": 2
         }
       }

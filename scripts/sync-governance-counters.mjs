@@ -250,7 +250,7 @@ for (const rel of liveCountFiles) {
   }
 }
 
-// ── Published-release-only mirror trigger contract ──
+// ── Exact post-publish dispatch mirror trigger contract ──
 // Raw push mirroring can publish an unverified commit and make DS source self-certifying. Every
 // allowlisted source change instead rides the next published GitHub Release.
 const mirrorSrcPath = path.join(ROOT, 'scripts/build-published-template-mirror.mjs')
@@ -267,10 +267,10 @@ if (fs.existsSync(mirrorSrcPath) && fs.existsSync(mirrorWfPath)) {
     const releaseOnly = parsed?.on?.push === undefined
       && parsed?.on?.workflow_dispatch === undefined
       && parsed?.on?.workflow_run === undefined
-      && parsed?.on?.repository_dispatch === undefined
-      && JSON.stringify(parsed?.on?.release?.types) === JSON.stringify(['published'])
+      && parsed?.on?.release === undefined
+      && JSON.stringify(parsed?.on?.repository_dispatch?.types) === JSON.stringify(['mirror-published-release'])
     if (!releaseOnly) {
-      drifts.push('mirror workflow 必須只接受 published GitHub Release；raw push/workflow_dispatch/repository_dispatch/workflow_run 禁止')
+      drifts.push('mirror workflow 必須只接受 release readback 後的 mirror-published-release repository_dispatch；raw push/release/workflow_dispatch/workflow_run 禁止')
     }
   } catch (error) {
     drifts.push(`mirror workflow YAML 無法解析:${error.message}`)

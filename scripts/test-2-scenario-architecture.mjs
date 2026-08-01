@@ -344,12 +344,12 @@ const missingRuntimeFiles = authorityRuntimeClosure.runtimeModules.filter((path)
 const releaseOnlyTriggers = workflow?.on?.push === undefined
   && workflow?.on?.workflow_dispatch === undefined
   && workflow?.on?.workflow_run === undefined
-  && workflow?.on?.repository_dispatch === undefined
-  && JSON.stringify(workflow?.on?.release?.types) === JSON.stringify(['published'])
+  && workflow?.on?.release === undefined
+  && JSON.stringify(workflow?.on?.repository_dispatch?.types) === JSON.stringify(['mirror-published-release'])
 if (releaseOnlyTriggers && directNodeRoots.length > 0 && missingWorkflowRoots.length === 0 && missingRuntimeFiles.length === 0) {
-  pass_test('M1', `Release-only trigger + mirror allowlist(${allowlistScripts.length}) + direct/transitive Node runtime closure(${directNodeRoots.length}/${authorityRuntimeClosure.runtimeModules.length})`)
+  pass_test('M1', `Post-publish dispatch-only trigger + mirror allowlist(${allowlistScripts.length}) + direct/transitive Node runtime closure(${directNodeRoots.length}/${authorityRuntimeClosure.runtimeModules.length})`)
 } else {
-  fail_test('M1', `Release-only workflow/runtime closure drift`, `release-only triggers:${releaseOnlyTriggers};direct roots:${directNodeRoots.join(',') || 'none'};missing roots:${missingWorkflowRoots.join(',') || 'none'};missing runtime files:${missingRuntimeFiles.join(',') || 'none'}`)
+  fail_test('M1', `Post-publish dispatch-only workflow/runtime closure drift`, `dispatch-only triggers:${releaseOnlyTriggers};direct roots:${directNodeRoots.join(',') || 'none'};missing roots:${missingWorkflowRoots.join(',') || 'none'};missing runtime files:${missingRuntimeFiles.join(',') || 'none'}`)
 }
 
 // M2-M5: integrity scans already run as part of M0 build. Re-check stdout.

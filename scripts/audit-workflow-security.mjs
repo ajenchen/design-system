@@ -797,6 +797,7 @@ export function auditWorkflowSources(sources, {
     || !/release', 'create'/.test(releaseGithubPublisher)
     || !/release', 'upload'/.test(releaseGithubPublisher)
     || !/release', 'edit'/.test(releaseGithubPublisher)
+    || !/node scripts\/release-github-release\.mjs[\s\S]*event_type:"mirror-published-release"[\s\S]*client_payload:\{tag:\$tag,commit:\$commit\}/.test(directGithub)
   ) add(releaseFile, 'WF-RELEASE-EVIDENCE', 'the exact six-file release set must be bound and read back by name, size, and digest')
   if (/trust-preflight|release-finalize|stage\s+publish|release-npm-(?:approve|promote)|actions\/attest@|test:governance-harnesses|build-storybook/.test(executableSource(directRelease))) {
     add(releaseFile, 'WF-RELEASE-LEGACY', 'retired trust, staging, finalizer, attestation, and duplicate harness gates must stay off the release path')
@@ -811,21 +812,28 @@ export function auditWorkflowSources(sources, {
   const publishedMirrorJob = publishedMirrorJobs.get('mirror-published-release') || ''
   const publishedMirrorEvents = workflowEventNames(publishedMirror.split(/^jobs:\s*$/m)[0])
   if (
-    publishedMirrorEvents.length !== 1 || publishedMirrorEvents[0] !== 'release'
-    || !/^\s{4}types:\s*\[published\]\s*$/m.test(publishedMirror)
-    || /workflow_run|repository_dispatch|workflow_dispatch|release-finalize|finalizer/.test(executableSource(publishedMirror))
-  ) add(publishedMirrorFile, 'WF-MIRROR-TRIGGER', 'the nonblocking mirror may run only after a GitHub Release is published')
+    publishedMirrorEvents.length !== 1 || publishedMirrorEvents[0] !== 'repository_dispatch'
+    || !/^\s{4}types:\s*\[mirror-published-release\]\s*$/m.test(publishedMirror)
+    || /workflow_run|workflow_dispatch|release-finalize|finalizer/.test(executableSource(publishedMirror))
+  ) add(publishedMirrorFile, 'WF-MIRROR-TRIGGER', 'the nonblocking mirror may run only from the exact post-publish repository dispatch')
   if (
     publishedMirrorJobs.size !== 1 || !publishedMirrorJob
+    || !/^\s{4}if:\s*github\.ref == 'refs\/heads\/main'\s*$/m.test(publishedMirrorJob)
     || !/contents:\s*read/.test(publishedMirrorJob)
     || /contents:\s*write/.test(publishedMirrorJob)
-    || !/github\.event\.release\.tag_name/.test(publishedMirrorJob)
+    || !/github\.event\.client_payload\.tag/.test(publishedMirrorJob)
+    || !/github\.event\.client_payload\.commit/.test(publishedMirrorJob)
+    || !/test "\$event_commit" = "\$main_commit"/.test(publishedMirrorJob)
+    || !/test "\$release_commit" = "\$RELEASE_COMMIT"/.test(publishedMirrorJob)
+    || !/gh release view/.test(publishedMirrorJob)
+    || !/\.isDraft == false/.test(publishedMirrorJob)
+    || !/\.publishedAt/.test(publishedMirrorJob)
     || !/gh release download/.test(publishedMirrorJob)
     || !/release-set\.mjs/.test(publishedMirrorJob)
     || !/build-release-bom\.mjs --verify/.test(publishedMirrorJob)
     || !/release-npm-readback\.mjs/.test(publishedMirrorJob)
     || !/product-template-scaffold-lock\.mjs --verify/.test(publishedMirrorJob)
-  ) add(publishedMirrorFile, 'WF-MIRROR-RELEASE', 'mirror must verify the published tag, six assets, BOM, npm provenance, and scaffold lock before writing')
+  ) add(publishedMirrorFile, 'WF-MIRROR-RELEASE', 'mirror must verify protected workflow source, exact dispatch identity, live published release, six assets, BOM, npm provenance, and scaffold lock before writing')
   const mirrorTokenAt = publishedMirrorJob.indexOf('secrets.CROSS_REPO_TOKEN')
   const mirrorVerifyAt = publishedMirrorJob.indexOf('Verify six-file release set')
   if (

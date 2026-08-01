@@ -603,9 +603,10 @@ const removeContinuedCommand = (source, marker, occurrence = 0) => {
   return source
 }
 for (const [label, mutate, expectedRule] of [
-  ['manual trigger', source => source.replace('  release:\n', '  workflow_dispatch:\n  release:\n'), 'WF-MIRROR-TRIGGER'],
-  ['legacy finalizer trigger', source => source.replace('  release:\n    types: [published]', '  workflow_run:\n    workflows: [Release finalize]\n    types: [completed]'), 'WF-MIRROR-TRIGGER'],
+  ['manual trigger', source => source.replace('  repository_dispatch:\n', '  workflow_dispatch:\n  repository_dispatch:\n'), 'WF-MIRROR-TRIGGER'],
+  ['legacy finalizer trigger', source => source.replace('  repository_dispatch:\n    types: [mirror-published-release]', '  workflow_run:\n    workflows: [Release finalize]\n    types: [completed]'), 'WF-MIRROR-TRIGGER'],
   ['built-in contents writer', source => source.replace('      contents: read', '      contents: write'), 'WF-MIRROR-RELEASE'],
+  ['missing live published-release readback', source => source.replace('gh release view', 'gh release inspect'), 'WF-MIRROR-RELEASE'],
   ['early cross-repository credential', source => source.replace('      - name: Verify six-file release set, BOM, and npm readback', '      - run: echo "${{ secrets.CROSS_REPO_TOKEN }}" >/dev/null\n      - name: Verify six-file release set, BOM, and npm readback'), 'WF-MIRROR-CREDENTIAL'],
 ]) {
   test(`published-release mirror rejects ${label}`, () => {
