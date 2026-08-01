@@ -172,7 +172,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-provider-projection-contract-library | `scripts/lib/provider-projection-contract.mjs` | `sha256:11383f5b721b141c7ab4f6efb65c47586191f7ff7c5fe443789a75af43d061d5` |
 | exact-provider-registry | `packages/governance/canonical/providers.json` | `sha256:e109e9de67315a5c834bb93ab1a160c9bb1d9880402e123ec290645dbc775ab8` |
 | exact-provider-registry-schema | `packages/governance/canonical/schemas/providers.schema.json` | `sha256:355c0db175e5e05bd5af9ad774af1ba94a8bde649aec1f2419128ad0735820c6` |
-| exact-provider-runtime-conformance-library | `infra/governance/lib/provider-runtime-conformance.mjs` | `sha256:8cd0e79875b33da6f433aeafb21c19a8ec99924e5b41304d9d8b6d620cdec3a4` |
+| exact-provider-runtime-conformance-library | `infra/governance/lib/provider-runtime-conformance.mjs` | `sha256:4bb6393063d6b99a261fdb8d50a27bb7433cf8d52d4c5146a48b22392607b721` |
 | exact-provider-runtime-contract-library | `scripts/lib/provider-runtime-contract.mjs` | `sha256:67ee6e74c41280849cc53389bcd108416da4c02eec60b907faa2263c800ca878` |
 | exact-provider-runtime-validation-library | `scripts/lib/provider-runtime-validation.mjs` | `sha256:461d50f3b27d73b4ae42fd89c6f03b9b3197345bf8059e29378decae70075103` |
 | exact-published-template-mirror-builder | `scripts/build-published-template-mirror.mjs` | `sha256:f3d4bda1d07e137f34aece4aa35721f2009bfa419af7d139b015ad17f39b0f40` |
@@ -243,9 +243,9 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-build-graph-schema | `scripts/schemas/governance-build-graph.schema.json` | `sha256:238e8acaf96ab284b9e2352e8857524acaa665eb8969a454f26e0da184c22744` |
 | governance-build-graph-tests | `scripts/test-governance-build-graph.mjs` | `sha256:7c6170007ae6c14f9b42ea0dd00006b0914df6d300a3e4f0c1ddca450dcf4668` |
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:61ba4194427c198004a8b2659f639cb6b536a0a980a674d8bc4d3796dcae35e0` |
-| governance-control-plane-libraries | `infra/governance/lib/` | `sha256:8feb7d5fb17bfb810adc63ee03bd6a1da73fe911a17a209e49a05eba5d4cc9ad` |
-| governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:767c3b710f475723492fee4653ecbc82f2114fb8cb79daaa8b9b47c369637af0` |
-| governance-control-plane-tests | `infra/governance/test/` | `sha256:a544e80f94165d7abc22c082c3addbb6a231d69f2f2d818bd2e7f291dd6ece31` |
+| governance-control-plane-libraries | `infra/governance/lib/` | `sha256:6a9b2bb96566d52d6cf751abed5303eae9a3f001741ac5a79a89b1c4bcf5768d` |
+| governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:252ef4f8ac5125a16d64041af8058fe167dd6f8b8183aab25570381f0bc4f494` |
+| governance-control-plane-tests | `infra/governance/test/` | `sha256:b92fbc2a2d9d59402289d1114efbe8b1d41a6086ad42360d1920b56b41f4d08d` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:5e179f234148dc7bef40c7974a23eda6563f6416e6809004f168a47fbbfb4075` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:6ee4764cd2e230f3a6ff3ba75c3e00b7f9488152bc3bd3d8aae065b7b9da760f` |
 | governance-github-desired-state | `infra/governance/desired/` | `sha256:76b6e36009dba929eaac31c73434c68bbbe1eb5e6f7914cf1c131bafce2b834f` |
@@ -390,7 +390,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | provider-role-surface-policy-library | `infra/governance/lib/role-surface-policy.mjs` | `sha256:a55f2a7176dca32a3999238d5237b3d99efe54fddde132711a878c0e99fbd30b` |
 | provider-role-surface-policy-schema | `infra/governance/schemas/role-surface-policy.schema.json` | `sha256:f4fa7100e7022ba005d54b22baca96359e481a081417035ed38b6f01a2a49113` |
 | provider-runtime-conformance-profile | `infra/governance/providers/runtime-conformance.json` | `sha256:2fdef9eb4ef27cd6da72023793eaa5703a53cc48d3d60dd6795bb2e2808fc72a` |
-| provider-runtime-conformance-profile-schema | `infra/governance/schemas/runtime-conformance-profile.schema.json` | `sha256:7dc062796bb3c8f0ee14c877b7e8c81ebe7ea716365d0259f5ab0964b3776444` |
+| provider-runtime-conformance-profile-schema | `infra/governance/schemas/runtime-conformance-profile.schema.json` | `sha256:6b107e875b22cd0e2a4dafb8f8801b1a81d7b5bc17437b552c28a9621b98cc49` |
 | provider-runtime-validator-artifact | `generated/governance/provider-runtime-validator.mjs` | `sha256:527429c427c2da5edeb154d4253062bc547fb0f1d5ab52d3765e01ff1186493d` |
 | provider-skill-semantics | `scripts/provider-skill-semantics.json` | `sha256:f2a98d6b61ebd67209c137e38b48f2c7e37d923a1ff419f0c5246782c736a01b` |
 | provider-skill-semantics-schema | `scripts/schemas/provider-skill-semantics.schema.json` | `sha256:2dfe1530e6eb161de83fd6113524f31d69d56a122218c803403c3bbd4c59e7c5` |

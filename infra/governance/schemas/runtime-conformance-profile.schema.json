@@ -182,6 +182,34 @@
         },
         "allOf": [
           {
+            "if": {
+              "required": ["id", "executionMode"],
+              "properties": {
+                "id": {"const": "claude"},
+                "executionMode": {"const": "local-probe"}
+              }
+            },
+            "then": {
+              "properties": {
+                "checks": {
+                  "type": "array",
+                  "contains": {
+                    "type": "object",
+                    "required": ["id", "driver", "requiresModel", "certificationImpact"],
+                    "properties": {
+                      "id": {"const": "decision-authority-routing"},
+                      "driver": {"const": "claude-authority-routing"},
+                      "requiresModel": {"const": true},
+                      "certificationImpact": {"const": "required"}
+                    }
+                  },
+                  "minContains": 1,
+                  "maxContains": 1
+                }
+              }
+            }
+          },
+          {
             "if": {"properties": {"executionMode": {"const": "local-probe"}}},
             "then": {
               "properties": {

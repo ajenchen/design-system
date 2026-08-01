@@ -749,6 +749,10 @@ export function validateRuntimeProfile(profile, {
       checkDrivers.add(check.driver)
     }
     if (provider.id === 'claude' && provider.executionMode === 'local-probe') {
+      invariant(
+        checkDrivers.has('claude-authority-routing'),
+        'Claude local runtime must contain exactly one required decision-authority-routing/claude-authority-routing check',
+      )
       const capabilityRegistry = readJson(resolve(
         GOVERNANCE_ROOT,
         'providers/review-capability-registry.json',

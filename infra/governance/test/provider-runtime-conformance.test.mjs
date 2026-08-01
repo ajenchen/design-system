@@ -434,6 +434,17 @@ test('mocked Claude and Codex CLIs produce deterministic semantic evidence witho
     .checks.find(check => check.driver === 'claude-authority-routing')
     .certificationImpact = 'capability-only'
   assert.equal(validateProfileSchema(optionalAuthorityRoutingProfile), false, 'schema must keep decision-authority-routing required')
+  const missingAuthorityRoutingProfile = structuredClone(profile)
+  const missingSchemaClaude = missingAuthorityRoutingProfile.providers.find(provider => provider.id === 'claude')
+  missingSchemaClaude.checks = missingSchemaClaude.checks
+    .filter(check => check.driver !== 'claude-authority-routing')
+  assert.equal(validateProfileSchema(missingAuthorityRoutingProfile), false, 'schema must require decision-authority-routing')
+  const duplicateAuthorityRoutingProfile = structuredClone(profile)
+  const duplicateSchemaClaude = duplicateAuthorityRoutingProfile.providers.find(provider => provider.id === 'claude')
+  duplicateSchemaClaude.checks.push(structuredClone(
+    duplicateSchemaClaude.checks.find(check => check.driver === 'claude-authority-routing'),
+  ))
+  assert.equal(validateProfileSchema(duplicateAuthorityRoutingProfile), false, 'schema must reject duplicate decision-authority-routing checks')
   const validateSchema = ajv.compile(readJson(resolve(GOVERNANCE_ROOT, 'schemas/runtime-conformance-evidence.schema.json')))
   assert.equal(validateSchema(first.evidence), true, ajv.errorsText(validateSchema.errors))
   const claudeLocalAccountSafety = structuredClone(first.evidence)
@@ -1842,6 +1853,25 @@ test('profile validation is provider/driver aware and rejects arbitrary executab
   assert.throws(
     () => validateRuntimeProfile(optionalAuthorityRouting),
     /must remain the required decision-authority-routing check/,
+  )
+
+  const missingAuthorityRouting = structuredClone(profile)
+  const missingRuntimeClaude = missingAuthorityRouting.providers.find(provider => provider.id === 'claude')
+  missingRuntimeClaude.checks = missingRuntimeClaude.checks
+    .filter(check => check.driver !== 'claude-authority-routing')
+  assert.throws(
+    () => validateRuntimeProfile(missingAuthorityRouting),
+    /must contain exactly one required decision-authority-routing\/claude-authority-routing check/,
+  )
+
+  const duplicateAuthorityRouting = structuredClone(profile)
+  const duplicateRuntimeClaude = duplicateAuthorityRouting.providers.find(provider => provider.id === 'claude')
+  duplicateRuntimeClaude.checks.push(structuredClone(
+    duplicateRuntimeClaude.checks.find(check => check.driver === 'claude-authority-routing'),
+  ))
+  assert.throws(
+    () => validateRuntimeProfile(duplicateAuthorityRouting),
+    /Duplicate runtime check/,
   )
 
   const noRequiredCertificationCheck = structuredClone(profile)
