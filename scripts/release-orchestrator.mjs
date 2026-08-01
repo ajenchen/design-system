@@ -58,6 +58,7 @@ function run(command, args, { allowFailure = false, input } = {}) {
     cwd: ROOT,
     encoding: 'utf8',
     input,
+    maxBuffer: 16 * 1024 * 1024,
     shell: false,
     stdio: ['pipe', 'pipe', 'pipe'],
   })
@@ -165,7 +166,9 @@ function requiredPullRequestChecks(repository, number) {
     '--json', 'bucket,name,state,workflow',
   ], { allowFailure: true })
   if (result.stdout === '') {
-    if (!result.ok) throw new Error(`cannot read required checks for ${repository}#${number}: ${result.stderr}`)
+    if (!result.ok && !/no (?:required )?checks reported/i.test(result.stderr)) {
+      throw new Error(`cannot read required checks for ${repository}#${number}: ${result.stderr}`)
+    }
     return []
   }
   try {
@@ -377,6 +380,10 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
       }
       invariant(incomplete.status !== 'failed', `PR #${observation.pullRequest.number} has failed checks; remediate the same PR and rerun release:auto`)
       if (noWait) return report
+      if (observation.pullRequest.requiredChecks.length === 0) {
+        sleep(2000)
+        continue
+      }
       gh(['pr', 'checks', `${observation.pullRequest.number}`, '--repo', observation.repository, '--required', '--watch', '--interval', '10'])
       continue
     }
