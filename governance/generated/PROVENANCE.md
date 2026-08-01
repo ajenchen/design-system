@@ -74,8 +74,8 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | deep-audit-deterministic-plan | `scripts/deep-audit-deterministic-plan.json` | `sha256:8a119eb5c998caca28ec61c33ceafc75657f19d5c2f6827109de3289cb1a26ac` |
 | deep-audit-deterministic-plan-library | `scripts/lib/deep-audit-deterministic-plan.mjs` | `sha256:8c8e790db71b101f07481f6b0f474232e2fdf54b463a6817d638297c9d5df43b` |
 | deep-audit-deterministic-plan-schema | `scripts/schemas/deep-audit-deterministic-plan.schema.json` | `sha256:17801e3893f71ff6041b405d6ef864090bdc2a0a65c6e2eabdc33d1676b94024` |
-| deep-audit-deterministic-runner | `scripts/run-deterministic-deep-audit.mjs` | `sha256:d6aab808920b14c04c9a6ecac5925ccf77403257a0ea72588eca802f70667bb0` |
-| deep-audit-deterministic-tests | `scripts/test-run-deterministic-deep-audit.mjs` | `sha256:6f89d9a6d481170f152343407e5ab0fbb700b9e5171b6691e305aae1428cd046` |
+| deep-audit-deterministic-runner | `scripts/run-deterministic-deep-audit.mjs` | `sha256:4ca9da5b7592754d1c7a7026705ac3d706880520cd8aa0ecaa025869880ecf56` |
+| deep-audit-deterministic-tests | `scripts/test-run-deterministic-deep-audit.mjs` | `sha256:b2bb5075f851b074ed40430f7c58e87c1c265736df7d2e0053dafe31ca2e0859` |
 | deep-audit-evidence-contract | `scripts/lib/deep-audit-evidence-contract.mjs` | `sha256:a6642942de797bd3189cc4ef5a079218eead8508292f1e3d5815daf47b1f7655` |
 | deep-audit-evidence-contract-schema | `scripts/schemas/deep-audit-evidence-contract.schema.json` | `sha256:2ba00a598d82bb11ca3935431c2d02fc09bd42ebd24846c8856238da503d7e1a` |
 | deep-audit-evidence-schema-parity-tests | `scripts/test-deep-audit-evidence-schema-parity.mjs` | `sha256:ec22fe6ed7ebd5f3fcd4248e46db744704155f2935cfcffb99cd078653f4845c` |
@@ -428,7 +428,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:a62e9d86c390723e582b0135134884dd585eaa48a17353c3c50055ac925846c4` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:b4dc0ce3bacda251e8ae1b1856905b7471bba491799e2e47fa77b4081f8e7065` |
-| repository-automation-corpus | `scripts` | `sha256:647b17ce95e8ec54dfa0f046a7e89bee78e29e43cf4babf06f004f25199ba0ed` |
+| repository-automation-corpus | `scripts` | `sha256:40de86b4f5f8f7f7fde668275c7e074e6f4487e653f37b67b09839359aad0237` |
 | repository-ignore-boundary | `.gitignore` | `sha256:8a7ce326c91a0696697109af370ad4b12db0856d12f857d270da8dba95f1aec7` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |

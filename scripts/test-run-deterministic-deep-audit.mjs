@@ -235,6 +235,28 @@ test('exit zero without required observations and zero-work output cannot become
   }, 2), /matched no manifest path|vacuous/)
 })
 
+test('command completion failures preserve bounded diagnostic tails after snapshot cleanup', () => {
+  const state = loadDeterministicDeepAuditPlan({ repoRoot: ROOT })
+  const command = state.commandById.get('a11y-all-stories')
+  const oversizedPrefix = `START_SHOULD_BE_TRUNCATED:${'x'.repeat(5_000)}`
+  assert.throws(
+    () => validateDeterministicCommandCompletion(command, {
+      exitCode: 1,
+      signal: null,
+      error: null,
+      stdout: `${oversizedPrefix}\nA11Y_STORY_FAILURE:button-default`,
+      stderr: 'axe gate found one unexpected regression',
+    }),
+    (error) => {
+      assert.match(error.message, /command a11y-all-stories exited 1/)
+      assert.match(error.message, /A11Y_STORY_FAILURE:button-default/)
+      assert.match(error.message, /axe gate found one unexpected regression/)
+      assert.doesNotMatch(error.message, /START_SHOULD_BE_TRUNCATED/)
+      return true
+    },
+  )
+})
+
 test('one shared command executes once while each dimension receives an independent receipt', async () => {
   const command = {
     id: 'shared-story-quality',
