@@ -42,7 +42,7 @@ const Rule = ({
   <div className="mb-14">
     <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
     {note && (
-      <p className="text-caption text-fg-muted mb-5 max-w-[720px] leading-relaxed">{note}</p>
+      <p className="text-caption text-fg-secondary mb-5 max-w-[720px] leading-relaxed">{note}</p>
     )}
     <div className="flex flex-wrap gap-6 items-start">{children}</div>
   </div>
@@ -50,7 +50,7 @@ const Rule = ({
 
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
   <p
-    className={`text-footnote leading-normal mt-2 ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}
+    className={`text-footnote leading-normal mt-2 ${warn ? 'text-error font-medium' : 'text-fg-secondary'}`}
   >
     {children}
   </p>
