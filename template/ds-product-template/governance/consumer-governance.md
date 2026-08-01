@@ -54,21 +54,18 @@ authorizes its own next execution. Reviewed paths run from the DS authority, mat
 fresh snapshot, execute no candidate code, and emit proposals rather than applying to the live
 consumer or inventory.
 
-## Automated upgrade trust chain
+## Release mirror and protected PR trust chain
 
-Repository Actions defaults stay read-only, and **Allow GitHub Actions to create and approve pull
-requests** stays disabled. The credential-free certifier and fresh read-only verifier first bind the
-exact base, paths, patch, tree, and incoming bytes. Only the protected-branch `governance-upgrade`
-environment may mint the short-lived Governance Writer App token with contents and pull-request
-write permissions. The Writer App may create or strictly reuse one deterministic upgrade branch and
-PR; it cannot publish checks, approve, merge, bypass protection, or write directly to `main`.
+Automatic template delivery is owned upstream by the release mirror. It opens a normal PR containing
+the exact published snapshot; a consumer does not carry a second release-dispatch/updater workflow.
+Repository Actions defaults remain read-only, and ordinary delivery requires no hosted environment or
+App credential in the consumer.
 
-Writer App pushes can start ordinary candidate workflows. Those automatic candidate runs are
-non-authoritative and never satisfy the required check. The writer must explicitly send the
-`governance-upgrade-candidate-validation` repository dispatch. That event reloads
-`governance-anchor.yml` from protected default, executes candidate verification without credentials,
-and lets only the separate check-only Governance Check App publish the required
-`Immutable consumer snapshot` verdict. Review and protected rules decide whether the PR can merge.
+Protected `main` requires the single `Verify consumer` context from `audit.yml`. That workflow performs
+one locked install followed by typecheck, import lint, and build. The normal PR review and protected
+branch rules decide whether the mirror proposal can merge. Preview, visual, accessibility, canary, and
+external readback evidence are optional hardening lanes unless a repository explicitly opts into them;
+they are not hidden prerequisites for the standard release path.
 
 ## Verification boundary
 

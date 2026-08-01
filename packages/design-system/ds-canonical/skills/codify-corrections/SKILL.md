@@ -65,13 +65,13 @@ description: Process $GOVERNANCE_STATE_DIR/user-corrections.jsonl — the Stop-h
 
 ### Phase 1.5 — Authority classification + triage receipt
 
-向 user present:
+在 `$GOVERNANCE_STATE_DIR` 寫 session-local triage receipt；P0／P1／P2E 不停下等待 user，只有 P2H 於全盤分類後 batch-at-end 提請產品決策：
 ```
 Phase 0 scan 找到 N 條 pending corrections(dedup 後 M 條)。
 Phase 1 cluster:
   - P0(auto-apply)AUTO fixes to memory 現有 entry / spec rationale:X 條
   - P1(engineering review + apply)新建 memory file / engineering spec rationale 新段:Y 條
-  - P2E(AUTO + maximum-assurance review)新 engineering M-row / governance substantive:Z 條
+  - P2E(AUTO；task／deliverable 明確要求時才加 maximum-assurance independent review)新 engineering M-row / governance substantive:Z 條
   - P2H(HUMAN-ONLY)會改產品／UI／UX SSOT 且仍有真取捨:K 條
 
 Execution order:P0 → P1 → P2E；P2H 若有則 batch-at-end 一次提請產品決策。
@@ -104,7 +104,7 @@ Fail 任一 → 重名或拆分。
 - World-class benchmark(≥ 3 家 DS,M8 強制)
 - 被吸收的下游 M-row / specific bug / memory entries 清單(M10 下游刪)
 
-P2E 由最高 certified capability + distinct-provider review 通過後直接 edit `packages/design-system/ds-canonical/rules/meta-patterns.md`；P2H 才在 user 決定產品／UI／UX方向後 edit。Generated provider instruction/view 只能由 adapter materialize，禁止反向手改。
+P2E 由最高 certified capability 依 canonical evidence、tests 與 hard gates 自主收斂後直接 edit `packages/design-system/ds-canonical/rules/meta-patterns.md`；只有 task／deliverable 明確要求 independent review 時才加 distinct-provider review。Exact run 若有 user waiver，記錄 waiver receipt 且不得冒充已做 review；optional review 缺席不得阻擋 P2E。P2H 才在 user 決定產品／UI／UX方向後 edit。Generated provider instruction/view 只能由 adapter materialize，禁止反向手改。
 
 ### Phase 3 — Archive processed entries
 
@@ -171,7 +171,7 @@ Update `$GOVERNANCE_STATE_DIR/metric-snapshots.jsonl`:
 
 - GitHub CODEOWNERS diff → assignment:本 skill 類似「correction ownership assignment」
 - Linux kernel `Documentation/process/howto.rst`:upstream patches go through maintainers — 我們 correction 也有「送到對的 home」的流程化
-- RFCs / ADRs workflow:新 canonical 走 Gate 3 evidence + independent review，產品／UI／UX真取捨才升 human decision
+- RFCs / ADRs workflow:新 canonical 走 Gate 3 evidence；task／deliverable 明確要求時才加 independent review，產品／UI／UX真取捨才升 human decision
 
 本 skill 是本 DS 原創,因為常見 agent coding 生態沒有同層級的「session signal → governance codify」pipeline。
 

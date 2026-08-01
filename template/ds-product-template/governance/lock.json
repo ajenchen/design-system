@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "role": "template-consumer",
   "release": {
-    "designSystem": "0.1.0-beta.104",
-    "storybookConfig": "0.1.0-beta.104"
+    "designSystem": "0.1.0-beta.105",
+    "storybookConfig": "0.1.0-beta.105"
   },
   "upgradeTrust": {
     "schemaVersion": 1,
@@ -42,10 +42,10 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "dd68020ddcc2980e47d17b0db09cfcce5c593f29382270cc6328395ce9fc3285",
+    "forkCorpusLockSha256": "0d2489d8bb989a6cd7c039f2c7262deb6fcd0be26e67a21ede951003da953455",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
-    "providerLifecycleSha256": "d68d37b0c362b38ac70bffd135aeea6eb483d078db49e68cc69ec3ea7bae01d8",
+    "providerLifecycleSha256": "43c6b2abb99a2b185eb143e5a5be12db0a3e096475cba58b1bde3a29dfb64940",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "3fca4ba4094e855412a22308e13f2b5f91dcfeb009512eb8318b3bd1bace8d9a",
     "commonInstructionSha256": "3d40f4b5d3ea78f6c9ca5bd18daa531dc758d77df21a5e7ef35a3336cd71f906",
@@ -53,13 +53,13 @@
       "claude": {
         "instructionSha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
         "hookSha256": "6398e6b20f6558392bdce1d7123815042047952be473b8fda6d2491aa1648a05",
-        "skillsSha256": "f5767bb43b442af15cbe45307365388953552c6b57b8fd58cfabe391b73fe228",
+        "skillsSha256": "617994510c71b6cb717dd3f06dc2dbf2ea6bd68849b5be83ca6a624ac409f697",
         "treeDigests": {}
       },
       "codex": {
         "instructionSha256": "3d40f4b5d3ea78f6c9ca5bd18daa531dc758d77df21a5e7ef35a3336cd71f906",
         "hookSha256": "697d186cfe0882ee2ce1b02ecc4c3258ab42b125bab6d70c7be868fa271132f7",
-        "skillsSha256": "f2f34252fa8bc0be9ddd6a7ca2a7243a184f1b1a951f98f1f2e9773850573a3e",
+        "skillsSha256": "a4f57953384153f393c3db3008f1967f637e0dc1d7cb149b8c47f020b62278ee",
         "treeDigests": {}
       },
       "generic": {
@@ -72,9 +72,9 @@
     "mergeSurfaceDigests": {
       "claude": "6398e6b20f6558392bdce1d7123815042047952be473b8fda6d2491aa1648a05"
     },
-    "governanceCheckSha256": "363b6af5c1e9c87cc11a53bb9868cb17e591c64f5545a09dc66f66e86f70e66f",
-    "utilityRegistrySha256": "310f92cc9aa57880d8f81464ac4191907bda9c9af31847a450497e6a9f97dce3",
-    "sharedSkillsSha256": "9a79b48a6543929a7b94952c1bd3be90faa15d3dc963e8487df0dd6bb8474aa7",
+    "governanceCheckSha256": "393f5a016baac5a345e9c08a93c14bdb575b66570fd475a7fa86bc2e8002dd33",
+    "utilityRegistrySha256": "ac430d50ee82c19eb678f725c00eec23a0e25b33ec4bad81d3bf6e2fa9fa64ff",
+    "sharedSkillsSha256": "8b0a4563714a8b6226890f2a94b5fa28036960035e040c0224d4c127fc17efe6",
     "sharedSkillCount": 11,
     "requiredScripts": {
       "audit:a11y": "node scripts/audit-consumer-a11y.mjs",
@@ -93,7 +93,7 @@
       ".github/workflows/audit.yml": "3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",
       ".github/workflows/governance-anchor.yml": "3e280e67fd72886b0686a6d296947ee3270b4899e9914c1e3a9c61c951dcc2ee",
       ".npmrc": "79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63",
-      "governance/consumer-governance.md": "abbded0a31cf3a6fb0de62975b749d10f27ac0adcc9bbf5e95ef410b64073396",
+      "governance/consumer-governance.md": "bc58561386e0df62306a5d7246e51647847732efa3de84426bada9978ff6da5c",
       "governance/provider-cli-toolchain.json": "6bc607cb6ac299b332d35ca871c838b54e367d96775ad0e759c827a0e3ca10cc",
       "governance/provider-cli-toolchain.package-lock.json": "fe7115dcbb9c096cc9c2aff069282636b942995399ace5dfd9ba68a7280d465f",
       "governance/schemas/issuer-registry.schema.json": "52616f59420942b96b33001e00d2c9a23ca3aa14dc236d8cb2aa9756787bfb90",
@@ -121,13 +121,13 @@
       "scripts/schemas/product-template-scaffold-lock.schema.json": "1318af59f12546b3cda059a1d94923d9a969bef4c5a476ebb46e42f8c853d19a",
       "scripts/schemas/release-bom.schema.json": "6969482588a25533dc1896be63c3c9629aced1cbeb745b99822db764682dc4a4",
       "scripts/schemas/upgrade-evidence-receipt.schema.json": "e2da0a86241d8d019545b63e6285d2ca049ce95fe6aed4264149df2108c4ade0",
-      "scripts/setup-governance.mjs": "5297a0c6dace974c1233a95825a6ffceef8823373eb4bb96947961f3979e4339",
+      "scripts/setup-governance.mjs": "2d5bf5ef149595854681c5744a431c2c231ead7d8699571a453783b39e556518",
       "scripts/setup-provider-cli-toolchain.mjs": "b34e11d02a7aa71d001ef8f1a42af4cf97d1b8b82360f5779cb927370f5ee15a",
       "scripts/setup-workspace.mjs": "95dc0fef1f7570efe277a66f7edf4640055ad6abbae0245615eceb9b041560e9",
       "scripts/sync-all.mjs": "938c706cad79a4bd538359c9b74cb9253a4c74b5f1342cbfc1625600425d8bfd",
       "scripts/verify-consumer-css-entry.mjs": "a16545ea8d4f5224d8133f0bb0b68d5489d8e106fe7594488a78e0e5718b99cc",
       "scripts/verify-upgrade-evidence.mjs": "f4452640d34cb28dbddbca9919f4bc5d3caec7c35879f9e69fd5f6c8485b2ffc",
-      "scripts/verify-upgrade-provenance.mjs": "be8be9b993199d0eb01da1b57cd0e395a4bfceea70a78ff45e436f626c290ed3",
+      "scripts/verify-upgrade-provenance.mjs": "1902716115df20d4b8831e7c497abc82f9d3b848a06ca6b7cc1fe64def37a31b",
       "scripts/workflow-static-validation.mjs": "8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305"
     }
   },

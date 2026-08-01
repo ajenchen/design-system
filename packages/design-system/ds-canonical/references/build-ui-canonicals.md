@@ -28,6 +28,19 @@
 | 浮層 media + title + description + actions | 自組 `<div>` 結構 | `<Coachmark>` 或 `<Dialog>`(視是否阻斷) |
 | 固定高度 chrome header(toolbar / page top bar / panel 標題列)| 自組 `<div className="flex h-12 items-center border-b px-4">...</div>` | `<ChromeHeader>`(消費 header-canonical;或在 `<AppShell header={...}>` slot 傳它)|
 
+### Native table 語意分類：app data grid vs rich-text document
+
+`<table>` 在產品 UI 預設視為資料表格，必消費 `DataTable`。唯一不同類別是 WYSIWYG／rich-text 文件內容中的 document table：它是使用者可編輯、可序列化的 HTML 文件節點，不是 app data grid，因此不能替換成 React `DataTable`。
+
+此類別不是靠檔名、component 名或註解豁免；同一完整檔案必同時有下列可機械驗證證據，缺一仍按 raw data table 阻擋：
+
+1. 明確的 `contentEditable` 文件 host。
+2. sanitizer 使用封閉 tag allowlist，且逐一允許 `TABLE / THEAD / TBODY / TR / TH / TD`。
+3. sanitizer 實際以 allowlist 驗 tag，並移除輸入 attributes（URL／style 等可再採更窄 allowlist）。
+4. `editor.innerHTML` 先通過 sanitizer，再把 sanitized value 交給 `onChange`／serializer；不可直接持久化 raw `innerHTML`。
+
+一般 JSX `<table>`、只有 `contentEditable`、只有名為 `sanitize*` 的 passthrough、缺 table-family allowlist，或未在輸出前 sanitize，全部仍是 violation。機械閘 SSOT：`check_consumer_app_invariants.sh` Pattern 10。
+
 **Story 特別提醒**:**stories 也是 code**。如果 story 在 label / comment 說「DataTable cell 用法」「Table 配額」「Menu 選單」等,**要 render 真的該元件 demo,不可用 raw `<table>` / raw `<button>` 假裝**。否則 story 教壞 consumer、自己也在破壞 DS 訓練資料。
 
 `check_story_invariants.sh` hook(R1 anatomy,原 `check_story_anatomy.sh` folded 折入)會在 Write/Edit 階段攔下這類手刻;allowlist `// @anatomy-exempt: <reason>`(檔首)/ `// @anatomy-exempt-next`(下一行)可豁免教學用 raw primitive。

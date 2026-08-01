@@ -3,7 +3,7 @@
     "contractDigest": "sha256:84b25210baa872e3af50b698c7151ddc4ab53525961f8b3d0050d299eaa336ad",
     "generated": true,
     "generator": "@qijenchen/governance",
-    "generatorVersion": "0.1.0-beta.104",
+    "generatorVersion": "0.1.0-beta.105",
     "manifestId": "qijenchen-provider-neutral-governance",
     "role": "ds-author"
   },
@@ -27,12 +27,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:068a0450d60c2603e5b3cec32311716de80b772c4266a3d88e5d08ee4097850b",
+      "hash": "sha256:d567f4d403819e3aef47201747e4e4ad64575966880f839f7aa783b03390031c",
       "id": "audit-rubric",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md",
-      "size": 82740,
+      "size": 83034,
       "type": "file"
     },
     {
@@ -132,8 +132,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 228,
-      "hash": "sha256:6a1aa5b9f04ba71f769bd960fe74f80bf8db4cf5f07b86b0166e2af356768075",
+      "files": 229,
+      "hash": "sha256:23e5d0da1367bf35e8390567c7720a9ce3548435edb1647b31f44e67a57e1d5c",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -144,7 +144,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 11,
-      "hash": "sha256:a68544f64873934bcf983ea791bd6563a12f2464c99b3b38fa344677bb2becc0",
+      "hash": "sha256:e0891dd3c0e35e78c0a25a3fcbca6cd9f7027954ba8a51b42f9ddc5ca3ccf634",
       "id": "canonical-product-templates",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -155,7 +155,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 25,
-      "hash": "sha256:c2d12f1bd14709ff9b2ec2f9cd320e28851ba6371fdf5460019eaefa1e62e331",
+      "hash": "sha256:0c36071d38d8377711ba96f811732a3d5d11e40f95baad1baaa6f7dd0332e09b",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -166,7 +166,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 6,
-      "hash": "sha256:e9fec99cef2ea8fd49c8df7d8e517059ac2de37324d596d84e2c15f9f3f93691",
+      "hash": "sha256:1147f746a780fcb5cfa7092d5c1f8ed900279aac11339500a4842ebd57f33f92",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -177,7 +177,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:d5ee352aa88c936ea6e00cb11f2b61f694bfc3f10611b12fbf500672fda070f0",
+      "hash": "sha256:6f222057672fd239f2b2c17ebb8807b2c2b2ce7833d730721d6d75083747b23d",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -203,7 +203,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:1221e6d6be69f37823a68793575f2f6b98fd746e8c796f7089097e3d0416c76a",
+      "hash": "sha256:4eed74e3b93ba338ad2e4f806836e1323361e73079501917d41840a68172ceb3",
       "id": "claude-managed-plugin-manifest",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -212,7 +212,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:074be9b83ea7d79a0bbc7665cd775b49fcc8a5c07842adcbcd8dcf3b020a2c1b",
+      "hash": "sha256:a051e74554b61fd0247227e2ef206fcd39734a62483a59272098feba61ecae45",
       "id": "claude-managed-plugin-marketplace",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -581,21 +581,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:d6aab808920b14c04c9a6ecac5925ccf77403257a0ea72588eca802f70667bb0",
+      "hash": "sha256:4ca9da5b7592754d1c7a7026705ac3d706880520cd8aa0ecaa025869880ecf56",
       "id": "deep-audit-deterministic-runner",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/run-deterministic-deep-audit.mjs",
-      "size": 26216,
+      "size": 26892,
       "type": "file"
     },
     {
-      "hash": "sha256:6f89d9a6d481170f152343407e5ab0fbb700b9e5171b6691e305aae1428cd046",
+      "hash": "sha256:b2bb5075f851b074ed40430f7c58e87c1c265736df7d2e0053dafe31ca2e0859",
       "id": "deep-audit-deterministic-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-run-deterministic-deep-audit.mjs",
-      "size": 27043,
+      "size": 27958,
       "type": "file"
     },
     {
@@ -871,7 +871,7 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:b332f9be3d0e3ced9e308d465578e861db4e494227071c0ec7aadd1d1867084b",
+      "hash": "sha256:e9c5eaeaa2106f6e7c029617f26e07bb0215cce323b80d42beed6bcf6ab3e72d",
       "id": "design-system-package-contract",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -880,21 +880,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:310f92cc9aa57880d8f81464ac4191907bda9c9af31847a450497e6a9f97dce3",
+      "hash": "sha256:ac430d50ee82c19eb678f725c00eec23a0e25b33ec4bad81d3bf6e2fa9fa64ff",
       "id": "design-system-utility-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/src/tokens/utility-registry.json",
-      "size": 15140,
+      "size": 16857,
       "type": "file"
     },
     {
-      "hash": "sha256:0a3672076abc8154e17f66f67d41a3ce2d10b014c8c51078ba0a81958bfaba62",
+      "hash": "sha256:6e41f5522ab3e2d0364042bb433e129dceba1e85db170c2785d4271cc48e889c",
       "id": "design-system-utility-registry-schema",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/src/tokens/utility-registry.schema.json",
-      "size": 12302,
+      "size": 13943,
       "type": "file"
     },
     {
@@ -1125,12 +1125,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:7cb86557b8e2ae8f66492a0724e4dc7fbbefba14d8c07e6940a3e0f1fed88bbc",
+      "hash": "sha256:5d032910b75a61a15011bcdaafba79253140860b9928e438b3bde473c1a8d3cc",
       "id": "exact-fork-governance-builder",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/build-fork-governance.mjs",
-      "size": 120970,
+      "size": 120992,
       "type": "file"
     },
     {
@@ -1269,12 +1269,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:5297a0c6dace974c1233a95825a6ffceef8823373eb4bb96947961f3979e4339",
+      "hash": "sha256:2d5bf5ef149595854681c5744a431c2c231ead7d8699571a453783b39e556518",
       "id": "exact-governance-setup-cli",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/setup-governance.mjs",
-      "size": 22608,
+      "size": 23788,
       "type": "file"
     },
     {
@@ -1638,12 +1638,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:be8be9b993199d0eb01da1b57cd0e395a4bfceea70a78ff45e436f626c290ed3",
+      "hash": "sha256:1902716115df20d4b8831e7c497abc82f9d3b848a06ca6b7cc1fe64def37a31b",
       "id": "exact-upgrade-provenance-verifier",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/verify-upgrade-provenance.mjs",
-      "size": 43808,
+      "size": 44689,
       "type": "file"
     },
     {
@@ -2009,12 +2009,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c28b15015cdc46bc8a460d6e724709e05a0fe334c3532b6f4e2fc482ae18a7dd",
+      "hash": "sha256:8bac6326fddcaee466024b1f4b52065ab5b6cd0e63a6521b9576b67360820bcc",
       "id": "governance-anchor-preflight-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-governance-anchor-preflight.mjs",
-      "size": 30441,
+      "size": 31974,
       "type": "file"
     },
     {
@@ -2212,7 +2212,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:65f34a6d6757a4a96e7567571d21c8816bc6d0e6144fe5134c03d03e2ae75482",
+      "hash": "sha256:7474603356f4a354429d31be8a9f7696b9ac8543c93e6524b63cbcdc12f7de9a",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2275,7 +2275,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b9d7b362a4dca4f8287d95c57ac0d36cc9bfb7c1fed898a1863891356e370275",
+      "hash": "sha256:04ff2644695b67c1fcaa89bda4de49ddf96a1cdd07ef1695a860d290955dab70",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2358,7 +2358,7 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:f8bfafe8b745898584a89e263c1a12694aae7375d1db8cdf76b8246f4c24e7b9",
+      "hash": "sha256:5a5307d819515b177abff03366d3a49044fc8b2ecc7194e73e8b54311b03a7f5",
       "id": "governance-package-contract",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3122,7 +3122,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:70f96ca6cbf89a688bcf11d2ad260124cf730f685135dfe2048a2d003fc3809b",
+      "hash": "sha256:652dfe674bf50f83280bcebb39a18a587187cda00d1ac10535a1b1ce4e636577",
       "id": "product-template-package-contract",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3140,12 +3140,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a3546f4894d3582a9f8cc250120dbf6a587635276d6ae34de4abf37d6bcbc036",
+      "hash": "sha256:bde330a02e994577f44fa50bf5194db8776642065e164420f02dfe5a7682d082",
       "id": "product-template-readme",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "template/ds-product-template/README.md",
-      "size": 16714,
+      "size": 16699,
       "type": "file"
     },
     {
@@ -3230,7 +3230,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:eec7f9feb51b57ca26158b4379748ca4f07182785461a4de6916e72ef1013a3b",
+      "hash": "sha256:556a7416862f0aba76d93bd0d161870490d5fc40367c8dff249c4fade34275fe",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3311,12 +3311,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:3d268941fab5a75bf36fbaf942669bf2363bdf6b26da8b53b8db1013d42ec3fd",
+      "hash": "sha256:123137a9b7e8455b5f8bcb1d729ef2d34ebd6205299a8c0766fe89567793e1dd",
       "id": "provider-lifecycle-ledger",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/governance/canonical/provider-lifecycle.json",
-      "size": 19749,
+      "size": 21691,
       "type": "file"
     },
     {
@@ -3352,7 +3352,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 20,
-      "hash": "sha256:c3f66cf215aad77502f236e83dff9c7bc5c9c48ee04ff939572b2105c1da7240",
+      "hash": "sha256:5ad4094dd1e2ff14be8114d57ca2e23289743564549a2e0dd36a0feb07535b05",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3818,7 +3818,7 @@
         "scripts/generated/"
       ],
       "files": 391,
-      "hash": "sha256:647b17ce95e8ec54dfa0f046a7e89bee78e29e43cf4babf06f004f25199ba0ed",
+      "hash": "sha256:1ee97b5ad7e68b4f1a57dcf8a9fab52724d1dee1349f3961d5848c590d76ea3d",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3998,7 +3998,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:d3c6b5106f804fc78a6d4cd11201eea9499cc9e6a8c32810e22643fdec122743",
+      "hash": "sha256:54ff76d9fcb2850cbcd95b551967be1a3d9d4694f3581c215a7cebcb2ee386e6",
       "id": "storybook-package-contract",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -4061,7 +4061,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:e71943f4c4d9f229c8265c747f283de34f848e58077eef9d475d68e1545efa21",
+      "hash": "sha256:e26724a67c878e3f8797ee09d4af9373970b978bd825caef85e7dd0deb535205",
       "id": "workspace-lockfile",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -4219,10 +4219,10 @@
           "targetDigest": "sha256:b01d8e5ef440b74d318efd4ba2f3adb1ed11ceb7a2e90fc224887a7801586642"
         },
         {
-          "expectedTargetDigest": "sha256:485010092b9e38211bc30085fc2c3ec22dee22f6a30b71f68f235f6c63740044",
+          "expectedTargetDigest": "sha256:5d6f1b5f66d310eb6f41cf4e00e57b809df5171db303db049f90f5490f8d061d",
           "name": "code-quality-audit",
-          "sourceDigest": "sha256:54eb4c00e6de52be16bbe3fe6103811c59a16b31c6e7b3483b5d617cbec61776",
-          "targetDigest": "sha256:485010092b9e38211bc30085fc2c3ec22dee22f6a30b71f68f235f6c63740044"
+          "sourceDigest": "sha256:3cf34eb4a3e0520e559c5622f099d7e6aed1c0e2f2ca1434fe02cd41a6c5b2f8",
+          "targetDigest": "sha256:5d6f1b5f66d310eb6f41cf4e00e57b809df5171db303db049f90f5490f8d061d"
         },
         {
           "expectedTargetDigest": "sha256:8d048cc1573adaf71d9619688f034905a04588a6bc2de9e86d496d24cba0cfda",
@@ -4231,16 +4231,16 @@
           "targetDigest": "sha256:8d048cc1573adaf71d9619688f034905a04588a6bc2de9e86d496d24cba0cfda"
         },
         {
-          "expectedTargetDigest": "sha256:9927db7ca8684e623a6e44c69f3a20f1119485e60f2b12cac058bf4b46d0ffe7",
+          "expectedTargetDigest": "sha256:1ce3682baac691b328711510bff877a8f4b71c3afcd5aa4a612cdfcf5c2dbc2b",
           "name": "codify-corrections",
-          "sourceDigest": "sha256:7c717ba72e629413b23e89213f2db351024f1d3b196ac5e6e6b4e22835e2f999",
-          "targetDigest": "sha256:9927db7ca8684e623a6e44c69f3a20f1119485e60f2b12cac058bf4b46d0ffe7"
+          "sourceDigest": "sha256:5386945df504822cea1910fe9a79fd2f539a543417aeeeda7474263807bdbc06",
+          "targetDigest": "sha256:1ce3682baac691b328711510bff877a8f4b71c3afcd5aa4a612cdfcf5c2dbc2b"
         },
         {
-          "expectedTargetDigest": "sha256:38628dd5bfa5e499e1490de5a4c6c8341272f790bab6ed89b85fa975e5807a6d",
+          "expectedTargetDigest": "sha256:c127da893a2c77994d9320a8a162aa7a9686aa28ae35fc4e85194d78a06f842a",
           "name": "codify-principle",
-          "sourceDigest": "sha256:ad5cbfae43a484947484e55f2b6c2fe2f1a67cb69f84efec31d35a8a251c9dda",
-          "targetDigest": "sha256:38628dd5bfa5e499e1490de5a4c6c8341272f790bab6ed89b85fa975e5807a6d"
+          "sourceDigest": "sha256:ace3af3922a9ea2f9d9c48344916209aeb80d9bc29ddefc6fe70ddee13848333",
+          "targetDigest": "sha256:c127da893a2c77994d9320a8a162aa7a9686aa28ae35fc4e85194d78a06f842a"
         },
         {
           "expectedTargetDigest": "sha256:10cd7a16ff0fc70ec80b75bb271dbd36804e071644e7c265093946b449e59acf",
@@ -4261,10 +4261,10 @@
           "targetDigest": "sha256:bc58dbf54772fee014ea0902c347e8857b3787f8502510715c383b8046818fcd"
         },
         {
-          "expectedTargetDigest": "sha256:1befbbc9ceefaf0286f3d3b91062540630d0dd7533ebddd89156456bf8ab1e54",
+          "expectedTargetDigest": "sha256:08dd56cffa83e6192ab09dea3e99d82b1a16cf035a226a150e2ef6104cec9e08",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:9af546edbb33f66eea023b7c3562a88a05c6d68519c9b7a98872dcd566dbfb65",
-          "targetDigest": "sha256:1befbbc9ceefaf0286f3d3b91062540630d0dd7533ebddd89156456bf8ab1e54"
+          "sourceDigest": "sha256:80285189925c5564cf5cf2dc36f6bebedfb807c37143e6c95e45f163d415575c",
+          "targetDigest": "sha256:08dd56cffa83e6192ab09dea3e99d82b1a16cf035a226a150e2ef6104cec9e08"
         },
         {
           "expectedTargetDigest": "sha256:b71c9a39fab91baa251682be5450fb2ae974abd6f3f13bf8f3f438c8de102f63",
@@ -4309,10 +4309,10 @@
           "targetDigest": "sha256:eb5f2fcf89544bff39da8c355be5a44a531e4672140d2e917e1a520b270c04c9"
         },
         {
-          "expectedTargetDigest": "sha256:0bff1bb5407fb469d5f13f1dc7b888719a551f7844eccde530a04ae9a2154498",
+          "expectedTargetDigest": "sha256:42e69a1b138f9601c79b91b14e96bcefdf7f2cea5999e149b2280b75b892df72",
           "name": "product-ui-audit",
-          "sourceDigest": "sha256:5b749324a34e393ea558b1cfbe699a4db429aed9fe60fc7ccc0063b5c22dd813",
-          "targetDigest": "sha256:0bff1bb5407fb469d5f13f1dc7b888719a551f7844eccde530a04ae9a2154498"
+          "sourceDigest": "sha256:a35b83fc800520f972ae2406e1f373fc7b2805a99c26e0cbe7e455b6c527c07b",
+          "targetDigest": "sha256:42e69a1b138f9601c79b91b14e96bcefdf7f2cea5999e149b2280b75b892df72"
         },
         {
           "expectedTargetDigest": "sha256:6feb834bb20336c71d4000bf91b529f232aadb75e454c722753683d27fcd4168",
@@ -4327,10 +4327,10 @@
           "targetDigest": "sha256:07138a087d4237c6375fd5d727a56d21e210c699156b60b4bf40ec8548465bd4"
         },
         {
-          "expectedTargetDigest": "sha256:8a461e3ca175faa18f8b07525d3122b58185d69e86fd93928e6056fdc9e22c8e",
+          "expectedTargetDigest": "sha256:0b7e8d5df15b94289bb82440255f66f6ed94f87d4c8abbe9fad4b6a0f7a9a779",
           "name": "scan-similar-bugs",
-          "sourceDigest": "sha256:3de1cb9e1eab64d71951957485593710709325d058896a76f5933e81a4f96f37",
-          "targetDigest": "sha256:8a461e3ca175faa18f8b07525d3122b58185d69e86fd93928e6056fdc9e22c8e"
+          "sourceDigest": "sha256:4c0468d135dde4521d6986098bbe05e1f97a3086ea8db4511a5ed02193e439f5",
+          "targetDigest": "sha256:0b7e8d5df15b94289bb82440255f66f6ed94f87d4c8abbe9fad4b6a0f7a9a779"
         },
         {
           "expectedTargetDigest": "sha256:b81508a97e3b364dd9c348e6da4ef222f951fc8359ae1a13f4dee60c6117bc7f",
@@ -4339,10 +4339,10 @@
           "targetDigest": "sha256:b81508a97e3b364dd9c348e6da4ef222f951fc8359ae1a13f4dee60c6117bc7f"
         },
         {
-          "expectedTargetDigest": "sha256:ad06fb8eedec193b8bc814ceeaa1f4c1dad242351a2cca1324baf1819a8fb9a5",
+          "expectedTargetDigest": "sha256:cc8af9fb2f3bbb28992b634212f82ad33fffe5f79f58437c98f911852cff2b87",
           "name": "story-writing",
-          "sourceDigest": "sha256:89975734295ee31120914e1959f39284c698357b7eb74aff0ac6935ad9307575",
-          "targetDigest": "sha256:ad06fb8eedec193b8bc814ceeaa1f4c1dad242351a2cca1324baf1819a8fb9a5"
+          "sourceDigest": "sha256:7b8eb0de1d9d8b4c2916f0b6253ea0803009f8414105f71a2d7b7bc0e13274c2",
+          "targetDigest": "sha256:cc8af9fb2f3bbb28992b634212f82ad33fffe5f79f58437c98f911852cff2b87"
         },
         {
           "expectedTargetDigest": "sha256:5ab71f688dc8806dfe4dd4711e5e654d1f342d724c5dcfc3a9dea3a36169ebbf",
@@ -4351,10 +4351,10 @@
           "targetDigest": "sha256:5ab71f688dc8806dfe4dd4711e5e654d1f342d724c5dcfc3a9dea3a36169ebbf"
         },
         {
-          "expectedTargetDigest": "sha256:8cbc8b478f8a8f1c2ba48624f50637cce6499209f1a1f4a87fe8800bcc929e09",
+          "expectedTargetDigest": "sha256:7d6998cad25409d1d8b19f6567e4d451a2796c10bce4d8434b4c2908172246ab",
           "name": "visual-audit",
-          "sourceDigest": "sha256:7a2176ccad565fd93b9951fbe8e2fa244e8e90a96f42f62906a8f01fe816ffda",
-          "targetDigest": "sha256:8cbc8b478f8a8f1c2ba48624f50637cce6499209f1a1f4a87fe8800bcc929e09"
+          "sourceDigest": "sha256:6b10bc1cbb6f119eb1256c97319f9b92e2b58a56954c35ea771d6fb5e38484dd",
+          "targetDigest": "sha256:7d6998cad25409d1d8b19f6567e4d451a2796c10bce4d8434b4c2908172246ab"
         }
       ],
       "sourceDirectory": "packages/design-system/ds-canonical/skills",
@@ -4442,10 +4442,10 @@
           "targetDigest": "sha256:4f516c00b3df06bf9cbcddf1d88f7b7fa4b93e3fe8168b15ba7031bfeb5b20bd"
         },
         {
-          "expectedTargetDigest": "sha256:cdd7f3581cb24bf4dfb2a862e13114f1bc8921d17b98338017d96ffd6074710b",
+          "expectedTargetDigest": "sha256:473d3b2d178fb030cf3a1fd665bee01ee453e67c9ae54219309fa7b313f4fd4a",
           "name": "code-quality-audit",
-          "sourceDigest": "sha256:54eb4c00e6de52be16bbe3fe6103811c59a16b31c6e7b3483b5d617cbec61776",
-          "targetDigest": "sha256:cdd7f3581cb24bf4dfb2a862e13114f1bc8921d17b98338017d96ffd6074710b"
+          "sourceDigest": "sha256:3cf34eb4a3e0520e559c5622f099d7e6aed1c0e2f2ca1434fe02cd41a6c5b2f8",
+          "targetDigest": "sha256:473d3b2d178fb030cf3a1fd665bee01ee453e67c9ae54219309fa7b313f4fd4a"
         },
         {
           "expectedTargetDigest": "sha256:a1c3d2adf1441788a658cb10df8365bc20a6e53d8742a2c70f121337c1e83ce4",
@@ -4454,16 +4454,16 @@
           "targetDigest": "sha256:a1c3d2adf1441788a658cb10df8365bc20a6e53d8742a2c70f121337c1e83ce4"
         },
         {
-          "expectedTargetDigest": "sha256:33f5b9bd281fd486c469a7d10fafac0b539afc6aab056dd9c237ecd623aa2a54",
+          "expectedTargetDigest": "sha256:d43f78de3aeafe448346bf5f61fd9045541a051e5ad77183ef92e66f972c2c0a",
           "name": "codify-corrections",
-          "sourceDigest": "sha256:7c717ba72e629413b23e89213f2db351024f1d3b196ac5e6e6b4e22835e2f999",
-          "targetDigest": "sha256:33f5b9bd281fd486c469a7d10fafac0b539afc6aab056dd9c237ecd623aa2a54"
+          "sourceDigest": "sha256:5386945df504822cea1910fe9a79fd2f539a543417aeeeda7474263807bdbc06",
+          "targetDigest": "sha256:d43f78de3aeafe448346bf5f61fd9045541a051e5ad77183ef92e66f972c2c0a"
         },
         {
-          "expectedTargetDigest": "sha256:cad4405aa2a2b70e93766a426a0d2aa446179b70c1e0184ba82621eca07a159b",
+          "expectedTargetDigest": "sha256:5d647fc6d123e4a9025c13f79869051377aea13e4877c3df11907b0e65dc79c1",
           "name": "codify-principle",
-          "sourceDigest": "sha256:ad5cbfae43a484947484e55f2b6c2fe2f1a67cb69f84efec31d35a8a251c9dda",
-          "targetDigest": "sha256:cad4405aa2a2b70e93766a426a0d2aa446179b70c1e0184ba82621eca07a159b"
+          "sourceDigest": "sha256:ace3af3922a9ea2f9d9c48344916209aeb80d9bc29ddefc6fe70ddee13848333",
+          "targetDigest": "sha256:5d647fc6d123e4a9025c13f79869051377aea13e4877c3df11907b0e65dc79c1"
         },
         {
           "expectedTargetDigest": "sha256:12300ded24276d56664b93966345d067a3d5cd67f51c80faedba020617a64f88",
@@ -4484,10 +4484,10 @@
           "targetDigest": "sha256:b2a70ea7a9edc9a25fceca06cdd50dac5e6cf75e9ffa494f203d407b9591b01b"
         },
         {
-          "expectedTargetDigest": "sha256:004256a8fee4d1827c1aa14043d1cde629ec1b8e67b676d013c0570bffa667af",
+          "expectedTargetDigest": "sha256:1305e71237619a977a3b02b01e9020257599f8c5759f4b773a3e7b9a4915c6e8",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:9af546edbb33f66eea023b7c3562a88a05c6d68519c9b7a98872dcd566dbfb65",
-          "targetDigest": "sha256:004256a8fee4d1827c1aa14043d1cde629ec1b8e67b676d013c0570bffa667af"
+          "sourceDigest": "sha256:80285189925c5564cf5cf2dc36f6bebedfb807c37143e6c95e45f163d415575c",
+          "targetDigest": "sha256:1305e71237619a977a3b02b01e9020257599f8c5759f4b773a3e7b9a4915c6e8"
         },
         {
           "expectedTargetDigest": "sha256:b9da47c4227209a03b97581c050fac898a25e28e7d9c6dcf5754b55c5554ed37",
@@ -4532,10 +4532,10 @@
           "targetDigest": "sha256:f6e314491f30e6b8903fd0c89039d59a03305e523fc46c62ac13897934def2fe"
         },
         {
-          "expectedTargetDigest": "sha256:dc88738ddb4b1b4aeca3f16f049c46b017d5f6f053eaf4043a2592a14296d4b1",
+          "expectedTargetDigest": "sha256:74fed7263f6cd9e241bd673393d1652d3c67d9132bd5631972ce6882ba461175",
           "name": "product-ui-audit",
-          "sourceDigest": "sha256:5b749324a34e393ea558b1cfbe699a4db429aed9fe60fc7ccc0063b5c22dd813",
-          "targetDigest": "sha256:dc88738ddb4b1b4aeca3f16f049c46b017d5f6f053eaf4043a2592a14296d4b1"
+          "sourceDigest": "sha256:a35b83fc800520f972ae2406e1f373fc7b2805a99c26e0cbe7e455b6c527c07b",
+          "targetDigest": "sha256:74fed7263f6cd9e241bd673393d1652d3c67d9132bd5631972ce6882ba461175"
         },
         {
           "expectedTargetDigest": "sha256:7e3f4d58baeb55e8ad8dea64acde8dc4329157ffef5c4968716e64352e5a85a7",
@@ -4550,10 +4550,10 @@
           "targetDigest": "sha256:619c1d7835acd97b9763adfc90204b8d1dddf10dc057e7f6e29c3d6e96d0de18"
         },
         {
-          "expectedTargetDigest": "sha256:c8ceebb2521f8bb5f919cbc58e77be2014d35fdadc92ee6509e925deda5086af",
+          "expectedTargetDigest": "sha256:fda8570b9ab4856ce8b46ef3e47773e44d89b3a6df076596c5ce1c8951de6c35",
           "name": "scan-similar-bugs",
-          "sourceDigest": "sha256:3de1cb9e1eab64d71951957485593710709325d058896a76f5933e81a4f96f37",
-          "targetDigest": "sha256:c8ceebb2521f8bb5f919cbc58e77be2014d35fdadc92ee6509e925deda5086af"
+          "sourceDigest": "sha256:4c0468d135dde4521d6986098bbe05e1f97a3086ea8db4511a5ed02193e439f5",
+          "targetDigest": "sha256:fda8570b9ab4856ce8b46ef3e47773e44d89b3a6df076596c5ce1c8951de6c35"
         },
         {
           "expectedTargetDigest": "sha256:557deefd2e45d81dbcb2ba683bc7a4cce2882822e19c4e6a8812fde03b5708ed",
@@ -4562,10 +4562,10 @@
           "targetDigest": "sha256:557deefd2e45d81dbcb2ba683bc7a4cce2882822e19c4e6a8812fde03b5708ed"
         },
         {
-          "expectedTargetDigest": "sha256:c31f6e4d4025099a6fec5dd8df20ad68bb26299a83157b2c8c9fa2ad8eb972e6",
+          "expectedTargetDigest": "sha256:0a32a0cb85e8ce2930caf96ae5c764f5d4b1be56fafc5957f91b9081a2f56637",
           "name": "story-writing",
-          "sourceDigest": "sha256:89975734295ee31120914e1959f39284c698357b7eb74aff0ac6935ad9307575",
-          "targetDigest": "sha256:c31f6e4d4025099a6fec5dd8df20ad68bb26299a83157b2c8c9fa2ad8eb972e6"
+          "sourceDigest": "sha256:7b8eb0de1d9d8b4c2916f0b6253ea0803009f8414105f71a2d7b7bc0e13274c2",
+          "targetDigest": "sha256:0a32a0cb85e8ce2930caf96ae5c764f5d4b1be56fafc5957f91b9081a2f56637"
         },
         {
           "expectedTargetDigest": "sha256:8de446538cf74afd56a975ceed8cb917e2d338af85262183a1a0345fcd0bd61d",
@@ -4574,10 +4574,10 @@
           "targetDigest": "sha256:8de446538cf74afd56a975ceed8cb917e2d338af85262183a1a0345fcd0bd61d"
         },
         {
-          "expectedTargetDigest": "sha256:3d97ac828df98ae4374fc8175aa5286f7cf58de66da66e8d9c48cb73036b36c3",
+          "expectedTargetDigest": "sha256:d9c5d2644686901421e3818fa71d501bee9d5de8a9e57524b1a92f53f4bfbdf0",
           "name": "visual-audit",
-          "sourceDigest": "sha256:7a2176ccad565fd93b9951fbe8e2fa244e8e90a96f42f62906a8f01fe816ffda",
-          "targetDigest": "sha256:3d97ac828df98ae4374fc8175aa5286f7cf58de66da66e8d9c48cb73036b36c3"
+          "sourceDigest": "sha256:6b10bc1cbb6f119eb1256c97319f9b92e2b58a56954c35ea771d6fb5e38484dd",
+          "targetDigest": "sha256:d9c5d2644686901421e3818fa71d501bee9d5de8a9e57524b1a92f53f4bfbdf0"
         }
       ],
       "sourceDirectory": "packages/design-system/ds-canonical/skills",

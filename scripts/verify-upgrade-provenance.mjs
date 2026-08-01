@@ -3,7 +3,7 @@
 //
 // Security boundary:
 //   verified npm/Sigstore bundle -> exact GitHub workflow/tag/commit
-//   -> direct GitHub-verified signed annotated tag object -> exact commit/tree
+//   -> exact GitHub lightweight commit tag or direct annotated tag object -> exact commit/tree
 //   -> immutable GitHub Release closed asset set (six core files plus optional finalizer evidence) -> receipt/trust/BOM/scaffold/package/SBOM bytes
 //   -> exact npm SRI.
 // This file is loaded from the current trusted consumer before an incoming package is installed;
@@ -466,7 +466,7 @@ export function validateImmutableReleaseSnapshot({
   policy,
   expectedFinalizerRun = null,
   // Lane selector, fail-closed by default:false = high-assurance(governance anchor /
-  // enterprise finalizer)— GitHub-verified signed tag + full 8-asset closure required。
+  // enterprise finalizer)— GitHub-verified signed annotated tag + full 8-asset closure required。
   // true = ordinary consumer upgrade lane(tag→commit→tree + BOM + SLSA provenance;
   // 簽章與 finalizer evidence assets 是 opt-in 加值)。Ordinary 入口必須顯式傳 true。
   ordinaryRelease = false,
@@ -742,44 +742,61 @@ export async function resolveImmutableReleaseSnapshot({
     `GitHub tag ${tag}`,
   )
   const reference = await referenceResponse.json()
-  if (reference?.ref !== `refs/tags/${tag}`
-    || reference?.object?.type !== 'tag'
-    || !COMMIT_RE.test(reference.object.sha || '')) {
-    throw new Error(`GitHub tag ${tag} must directly reference one annotated tag object; lightweight tags are forbidden`)
+  const referenceType = reference?.object?.type
+  if (!reference
+    || typeof reference !== 'object'
+    || Array.isArray(reference)
+    || reference.ref !== `refs/tags/${tag}`
+    || !['commit', 'tag'].includes(referenceType)
+    || !COMMIT_RE.test(reference.object?.sha || '')) {
+    throw new Error(`GitHub tag ${tag} must return one exact lightweight commit ref or annotated tag ref`)
+  }
+
+  const annotated = referenceType === 'tag'
+  if (!annotated && !ordinaryRelease) {
+    throw new Error(`GitHub tag ${tag} high-assurance lane requires a directly verified signed annotated tag object`)
   }
   const tagObjectSha = reference.object.sha
-  const tagObjectResponse = await fetchOk(
-    fetchImpl,
-    `${apiBase}/git/tags/${tagObjectSha}`,
-    { headers: githubHeaders(token) },
-    `GitHub annotated tag ${tag}`,
-  )
-  const tagObject = await tagObjectResponse.json()
-  if (tagObject?.sha !== tagObjectSha
-    || tagObject?.tag !== tag
-    || tagObject?.object?.type !== 'commit'
-    || !COMMIT_RE.test(tagObject.object.sha || '')) {
-    throw new Error(`GitHub tag ${tag} annotated tag object/name/direct commit binding is invalid`)
-  }
-  const verification = tagObject.verification
-  // Ordinary releases push an annotated tag whose authority comes from the exact
-  // tag → commit → tree binding plus the BOM digests and npm SLSA provenance.
-  // A GitHub-verified signature (verified === true, reason 'valid') is the opt-in
-  // high-assurance finalizer's extra guarantee, not an ordinary requirement — but a
-  // BROKEN signature claim (bad_signature etc. on a signed tag) still fails closed.
-  const signedAndValid = verification?.verified === true && verification?.reason === 'valid'
-  const unsignedOrdinary = ordinaryRelease
-    && verification?.verified === false
-    && ['unsigned', 'unknown_signature_type'].includes(verification?.reason)
-  if (!signedAndValid && !unsignedOrdinary) {
-    throw new Error(`GitHub tag ${tag} is not a directly verified signed annotated tag object:${verification?.reason || '<missing>'}`)
-  }
-  if (signedAndValid) {
-    if (typeof verification.signature !== 'string' || !verification.signature
-      || typeof verification.payload !== 'string' || !verification.payload) {
-      throw new Error(`GitHub tag ${tag} is not a directly verified signed annotated tag object`)
+  let commitSha
+  let signedAndValid = false
+  let verification = null
+  if (annotated) {
+    const tagObjectResponse = await fetchOk(
+      fetchImpl,
+      `${apiBase}/git/tags/${tagObjectSha}`,
+      { headers: githubHeaders(token) },
+      `GitHub annotated tag ${tag}`,
+    )
+    const tagObject = await tagObjectResponse.json()
+    if (tagObject?.sha !== tagObjectSha
+      || tagObject?.tag !== tag
+      || tagObject?.object?.type !== 'commit'
+      || !COMMIT_RE.test(tagObject.object.sha || '')) {
+      throw new Error(`GitHub tag ${tag} annotated tag object/name/direct commit binding is invalid`)
     }
-    canonicalTimestamp(verification.verified_at, `GitHub tag ${tag} verified_at`)
+    commitSha = tagObject.object.sha
+    verification = tagObject.verification
+    // An annotated ordinary release accepts signed-valid or explicitly unsigned tag objects.
+    // A broken signature claim (bad_signature etc.) still fails closed.
+    signedAndValid = verification?.verified === true && verification?.reason === 'valid'
+    const unsignedOrdinary = ordinaryRelease
+      && verification?.verified === false
+      && ['unsigned', 'unknown_signature_type'].includes(verification?.reason)
+    if (!signedAndValid && !unsignedOrdinary) {
+      throw new Error(`GitHub tag ${tag} is not an acceptable direct annotated tag object:${verification?.reason || '<missing>'}`)
+    }
+    if (signedAndValid) {
+      if (typeof verification.signature !== 'string' || !verification.signature
+        || typeof verification.payload !== 'string' || !verification.payload) {
+        throw new Error(`GitHub tag ${tag} is not a directly verified signed annotated tag object`)
+      }
+      canonicalTimestamp(verification.verified_at, `GitHub tag ${tag} verified_at`)
+    }
+  } else {
+    // The formal release orchestrator publishes one exact lightweight tag. Its authority is the
+    // ref → commit → tree binding plus the immutable BOM and npm SLSA provenance; no tag object
+    // exists to carry a signature, so tagObject intentionally equals the direct commit object.
+    commitSha = tagObjectSha
   }
   const confirmedReferenceResponse = await fetchOk(
     fetchImpl,
@@ -788,12 +805,14 @@ export async function resolveImmutableReleaseSnapshot({
     `GitHub tag ${tag} confirmation`,
   )
   const confirmedReference = await confirmedReferenceResponse.json()
-  if (confirmedReference?.ref !== reference.ref
-    || confirmedReference?.object?.type !== 'tag'
+  if (!confirmedReference
+    || typeof confirmedReference !== 'object'
+    || Array.isArray(confirmedReference)
+    || confirmedReference.ref !== reference.ref
+    || confirmedReference?.object?.type !== referenceType
     || confirmedReference.object.sha !== tagObjectSha) {
-    throw new Error(`GitHub tag ${tag} changed while its signed annotated object was being verified`)
+    throw new Error(`GitHub tag ${tag} changed while its exact object binding was being verified`)
   }
-  const commitSha = tagObject.object.sha
   const commitResponse = await fetchOk(
     fetchImpl,
     `${apiBase}/git/commits/${commitSha}`,
@@ -813,7 +832,15 @@ export async function resolveImmutableReleaseSnapshot({
       tagObject: tagObjectSha,
       commit: commitSha,
       tree: commit.tree.sha,
-      verification: signedAndValid
+      verification: !annotated
+        ? {
+          verified: false,
+          reason: 'unsigned',
+          verifiedAt: null,
+          signatureSha256: null,
+          payloadSha256: null,
+        }
+        : signedAndValid
         ? {
           verified: true,
           reason: 'valid',

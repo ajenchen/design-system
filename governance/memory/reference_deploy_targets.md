@@ -8,7 +8,7 @@ originSessionId: a689a78e-f264-4c1f-b881-0859a7a12135
 
 ## ⚠️ 永久 runtime/transport self-awareness(2026-07-23 provider-neutral consolidation)
 
-**任何跨 provider 協作前**，以 `packages/governance/canonical/providers.json`、`packages/governance/src/provider-review-binding.mjs` 的 `resolveProviderReviewBinding` 與 target-bound certification/readback 解析 current runtime、獨立 peer、transport 與隔離條件。不得從 provider 專屬環境變數、個人家目錄或工作區字串猜測地端／雲端；registry 未宣告、peer 不獨立、transport 不可用或證據不足一律 `REVIEW-BLOCKED`。
+**Task／deliverable 明確要求跨 provider independent review 時**，以 `packages/governance/canonical/providers.json`、`packages/governance/src/provider-review-binding.mjs` 的 `resolveProviderReviewBinding` 與 target-bound certification/readback 解析 current runtime、獨立 peer、transport 與隔離條件。不得從 provider 專屬環境變數、個人家目錄或工作區字串猜測地端／雲端；registry 未宣告、peer 不獨立、transport 不可用或證據不足時，只有 required-review claim 標 `REVIEW-BLOCKED`，不得阻擋一般工程、deep audit 或 standard release。
 歷史 Codex CLI、GitHub mention 與 bypass 指令已移至 `governance/archive/memory-retired/`，只作 non-authority provenance，禁止當 current runbook。
 **User 原話**(2026-05-15):「你應該每次在和 codex 協作前都會自己主動自動知道自己在地端還是雲端然後進而知道該以何種工作流程工作,對嗎」
 
@@ -35,9 +35,9 @@ originSessionId: a689a78e-f264-4c1f-b881-0859a7a12135
 
 ## 部署管道
 
-- **Netlify per-branch preview** = solo-work evidence gate(branch push 自動)；產品／UI／UX SSOT 真取捨可由 user 檢視後決策，但純工程 release 不把 preview 變成人類 merge approval；**Netlify production** = main(storybook)
+- **Netlify per-branch preview** = optional asynchronous evidence(branch push 自動)，不是 standard release hard gate；產品／UI／UX SSOT 真取捨可由 user 檢視後決策，但純工程 release 不等待 preview；**Netlify production** = main(storybook)
 - **GitHub Pages production** = main push → ci.yml deploy-storybook job(2026-05-08 補;netlify.toml command = build-storybook,publish storybook-static)
-- Solo-work 對齊:agent push working branch → PR + preview/canary + required checks/attestation/readback → hard gates 全綠後依 Standing Authorization squash merge → Pages + Netlify production；不再等 chat「push」keyword。
+- Solo-work 對齊:agent push working branch → PR → required CI + conversations resolved → protected merge → publish → exact release readback → exact-version consumer propagation/readback；由 `npm run release:auto` 依 Standing Authorization 續跑。preview／canary／attestation 只可作 non-blocking optional assurance，不得重返標準 five-step blocking graph，也不再等 chat「push」keyword。
 
 ## Anti-pattern(永久 ban,deploy URL)
 
@@ -80,7 +80,7 @@ originSessionId: a689a78e-f264-4c1f-b881-0859a7a12135
 
 ## Rule 3 — Model 工作負載必 bounded、content-addressed、fail closed
 
-跨 provider audit 由 canonical deep-audit/independent-review workflow 將完整 inventory 切成 content-addressed bounded shards，保留 author/peer/model/version/coverage/evidence，最後交給 closed reducer。provider adapter 只能依 registry 綁定 transport/model profile，不得把個人 CLI config、dangerous bypass flag 或退役 wrapper 當 SSOT。任一 shard 缺失、超時、quota/auth/error、模型身分不符或 reducer 證據不完整，都必須 fail closed，禁止把空輸出當 0 findings。
+Task／deliverable 明確要求 independent review 時，跨 provider audit 由 canonical deep-audit/independent-review workflow 將完整 inventory 切成 content-addressed bounded shards，保留 author/peer/model/version/coverage/evidence，最後交給 closed reducer。provider adapter 只能依 registry 綁定 transport/model profile，不得把個人 CLI config、dangerous bypass flag 或退役 wrapper 當 SSOT。任一 shard 缺失、超時、quota/auth/error、模型身分不符或 reducer 證據不完整，都必須讓 required-review claim fail closed，禁止把空輸出當 0 findings。未要求或 exact run 已由 user waiver 時，primary 仍須完成同一 NO-SAMPLE scope、deterministic hard gates 與 receipt；缺 peer 不得阻擋一般工程、deep audit 或 standard release，也不得冒充已做 review。
 
 ## Rule 4 — 兩個 repo 都全雲端可操作 = clone-on-demand
 

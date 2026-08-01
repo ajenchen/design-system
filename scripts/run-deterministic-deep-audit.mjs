@@ -106,17 +106,33 @@ function outputMatchCount(output, pattern) {
 }
 
 export function validateDeterministicCommandCompletion(command, result) {
-  if (!result || result.error || result.signal || !Number.isInteger(result.exitCode)) {
-    fail(`command ${command.id} crashed or did not produce an exit code`)
+  const failureContext = () => {
+    const details = []
+    if (result?.error) details.push(`error=${JSON.stringify(result.error.message ?? String(result.error))}`)
+    if (result?.signal) details.push(`signal=${JSON.stringify(result.signal)}`)
+    const stdoutTail = outputTail(result?.stdout)
+    const stderrTail = outputTail(result?.stderr)
+    if (stdoutTail) details.push(`stdoutTail=${JSON.stringify(stdoutTail)}`)
+    if (stderrTail) details.push(`stderrTail=${JSON.stringify(stderrTail)}`)
+    return details.length ? `; ${details.join('; ')}` : ''
   }
-  if (!command.completion.acceptedExitCodes.includes(result.exitCode)) fail(`command ${command.id} exited ${result.exitCode}`)
+  if (!result || result.error || result.signal || !Number.isInteger(result.exitCode)) {
+    fail(`command ${command.id} crashed or did not produce an exit code${failureContext()}`)
+  }
+  if (!command.completion.acceptedExitCodes.includes(result.exitCode)) {
+    fail(`command ${command.id} exited ${result.exitCode}${failureContext()}`)
+  }
   const combined = `${result.stdout ?? ''}\n${result.stderr ?? ''}`
   for (const pattern of command.completion.rejectOutputPatterns) {
-    if (new RegExp(pattern, 'u').test(combined)) fail(`command ${command.id} matched rejected infrastructure output:${pattern}`)
+    if (new RegExp(pattern, 'u').test(combined)) {
+      fail(`command ${command.id} matched rejected infrastructure output:${pattern}${failureContext()}`)
+    }
   }
   for (const requirement of command.completion.minimumOutputMatches) {
     const count = outputMatchCount(combined, requirement.pattern)
-    if (count < requirement.minimum) fail(`command ${command.id} output is vacuous:${requirement.pattern} matched ${count}/${requirement.minimum}`)
+    if (count < requirement.minimum) {
+      fail(`command ${command.id} output is vacuous:${requirement.pattern} matched ${count}/${requirement.minimum}${failureContext()}`)
+    }
   }
   return true
 }

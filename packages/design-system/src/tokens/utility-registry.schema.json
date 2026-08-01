@@ -229,9 +229,45 @@
     "spacing": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["allow_canonical", "warn"],
+      "required": ["allow_canonical", "canonical_micro_geometry", "warn"],
       "properties": {
         "allow_canonical": { "$ref": "#/$defs/nonEmptyString" },
+        "canonical_micro_geometry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "gap_utilities",
+            "alignment_utilities",
+            "inline_display_utilities",
+            "phrasing_elements",
+            "list_container_elements",
+            "list_item_elements",
+            "list_roles",
+            "control_roles",
+            "field_group_elements",
+            "field_group_roles",
+            "field_control_elements",
+            "nearby_line_limit",
+            "rationale",
+            "rationale_path"
+          ],
+          "properties": {
+            "gap_utilities": { "$ref": "#/$defs/tokenArray" },
+            "alignment_utilities": { "$ref": "#/$defs/tokenArray" },
+            "inline_display_utilities": { "$ref": "#/$defs/tokenArray" },
+            "phrasing_elements": { "$ref": "#/$defs/tokenArray" },
+            "list_container_elements": { "$ref": "#/$defs/tokenArray" },
+            "list_item_elements": { "$ref": "#/$defs/tokenArray" },
+            "list_roles": { "$ref": "#/$defs/tokenArray" },
+            "control_roles": { "$ref": "#/$defs/tokenArray" },
+            "field_group_elements": { "$ref": "#/$defs/tokenArray" },
+            "field_group_roles": { "$ref": "#/$defs/tokenArray" },
+            "field_control_elements": { "$ref": "#/$defs/tokenArray" },
+            "nearby_line_limit": { "type": "integer", "minimum": 1, "maximum": 32 },
+            "rationale": { "$ref": "#/$defs/nonEmptyString" },
+            "rationale_path": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        },
         "warn": {
           "type": "object",
           "additionalProperties": false,

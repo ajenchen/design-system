@@ -103,7 +103,7 @@ function sameFileIdentity(left, right) {
     && left.ctimeNs === right.ctimeNs
 }
 
-function stableRegularBytes(path, label, maxBytes = MAX_SETUP_AUTHORITY_FILE_BYTES) {
+function stableRegularFile(path, label, maxBytes = MAX_SETUP_AUTHORITY_FILE_BYTES) {
   let descriptor
   try {
     const beforePath = lstatSync(path, { bigint: true })
@@ -132,10 +132,17 @@ function stableRegularBytes(path, label, maxBytes = MAX_SETUP_AUTHORITY_FILE_BYT
         && BigInt(bytes.length) === before.size,
       `${label} changed while it was captured`,
     )
-    return bytes
+    return {
+      bytes,
+      mode: Number(before.mode & 0o777n),
+    }
   } finally {
     if (descriptor !== undefined) closeSync(descriptor)
   }
+}
+
+function stableRegularBytes(path, label, maxBytes = MAX_SETUP_AUTHORITY_FILE_BYTES) {
+  return stableRegularFile(path, label, maxBytes).bytes
 }
 
 function canonicalForkPath(value) {
@@ -155,8 +162,9 @@ function regularForkInventory(root) {
     invariant(
       directoryInfo.isDirectory()
         && !directoryInfo.isSymbolicLink()
+        && (directoryInfo.mode & 0o777) === 0o755
         && realpathSync(directory) === directory,
-      `installed governance corpus directory is unsafe:${prefix || '.'}`,
+      `installed governance corpus directory is unsafe or has a non-canonical mode:${prefix || '.'}`,
     )
     for (const name of readdirSync(directory).sort()) {
       invariant(name === name.normalize('NFC') && name !== '.' && name !== '..', `installed governance corpus name is not canonical:${name}`)
@@ -174,17 +182,27 @@ function regularForkInventory(root) {
   return rows
 }
 
-function writeExclusiveSnapshotFile(path, bytes) {
+function frozenSnapshotFileMode(sourceMode, label) {
+  invariant([0o644, 0o755].includes(sourceMode), `${label} has a non-canonical source mode`)
+  return sourceMode === 0o755 ? 0o500 : 0o400
+}
+
+function writeExclusiveSnapshotFile(path, record, label) {
   mkdirSync(dirname(path), { recursive: true, mode: 0o700 })
+  const frozenMode = frozenSnapshotFileMode(record.mode, label)
   let descriptor
   try {
-    descriptor = openSync(path, 'wx', 0o400)
-    writeFileSync(descriptor, bytes)
+    descriptor = openSync(path, 'wx', frozenMode)
+    writeFileSync(descriptor, record.bytes)
     fsyncSync(descriptor)
   } finally {
     if (descriptor !== undefined) closeSync(descriptor)
   }
-  invariant(sha256(stableRegularBytes(path, `private checker snapshot ${path}`)) === sha256(bytes), 'private checker snapshot write did not preserve authenticated bytes')
+  const written = stableRegularFile(path, `private checker snapshot ${path}`)
+  invariant(
+    written.mode === frozenMode && sha256(written.bytes) === sha256(record.bytes),
+    'private checker snapshot write did not preserve authenticated bytes and frozen source-mode identity',
+  )
 }
 
 function freezeSnapshotDirectories(root) {
@@ -223,7 +241,8 @@ function materializeInstalledCheckerClosure(root) {
       && realpathSync(installedFork) === installedFork,
     'installed governance corpus root is missing or has symlink ancestry',
   )
-  const corpusLockBytes = stableRegularBytes(join(installedFork, 'governance.lock'), 'installed governance corpus lock')
+  const corpusLockRecord = stableRegularFile(join(installedFork, 'governance.lock'), 'installed governance corpus lock')
+  const corpusLockBytes = corpusLockRecord.bytes
   let corpusLock
   let committedBom
   try {
@@ -243,10 +262,12 @@ function materializeInstalledCheckerClosure(root) {
     committedBom?.payload?.forkCorpusLockSha256 === sha256(corpusLockBytes),
     'committed governance lock does not authenticate the installed corpus lock',
   )
-  const shippedBom = stableRegularBytes(join(installedFork, 'consumer/lock.json'), 'installed governance release lock')
+  const shippedBomRecord = stableRegularFile(join(installedFork, 'consumer/lock.json'), 'installed governance release lock')
+  const shippedBom = shippedBomRecord.bytes
   const committedBomBytes = stableRegularBytes(join(root, 'governance/lock.json'), 'committed governance lock')
   invariant(shippedBom.equals(committedBomBytes), 'installed governance release lock differs from the committed lock')
-  const shippedSchema = stableRegularBytes(join(installedFork, 'consumer/lock.schema.json'), 'installed governance lock schema')
+  const shippedSchemaRecord = stableRegularFile(join(installedFork, 'consumer/lock.schema.json'), 'installed governance lock schema')
+  const shippedSchema = shippedSchemaRecord.bytes
   const committedSchema = stableRegularBytes(join(root, 'governance/lock.schema.json'), 'committed governance lock schema')
   invariant(shippedSchema.equals(committedSchema), 'installed governance lock schema differs from the committed schema')
 
@@ -262,16 +283,17 @@ function materializeInstalledCheckerClosure(root) {
         && !entries.has(entry.file),
       `installed governance corpus lock entry is invalid or duplicated:${index}`,
     )
-    const bytes = stableRegularBytes(join(installedFork, ...entry.file.split('/')), `installed governance corpus ${entry.file}`)
-    invariant(sha256(bytes) === entry.sha256, `installed governance corpus digest mismatch:${entry.file}`)
-    totalBytes += bytes.length
+    const record = stableRegularFile(join(installedFork, ...entry.file.split('/')), `installed governance corpus ${entry.file}`)
+    frozenSnapshotFileMode(record.mode, `installed governance corpus ${entry.file}`)
+    invariant(sha256(record.bytes) === entry.sha256, `installed governance corpus digest mismatch:${entry.file}`)
+    totalBytes += record.bytes.length
     invariant(totalBytes <= MAX_SETUP_AUTHORITY_TOTAL_BYTES, 'installed governance corpus exceeds the closed snapshot budget')
-    entries.set(entry.file, bytes)
+    entries.set(entry.file, record)
   }
   const checkerRelative = 'consumer/governance-check.mjs'
   invariant(
     entries.has(checkerRelative)
-      && committedBom?.payload?.governanceCheckSha256 === sha256(entries.get(checkerRelative)),
+      && committedBom?.payload?.governanceCheckSha256 === sha256(entries.get(checkerRelative).bytes),
     'committed governance lock does not authenticate the installed checker',
   )
   const expectedInventory = [...entries.keys(), 'consumer/lock.json', 'consumer/lock.schema.json', 'governance.lock'].sort()
@@ -281,9 +303,9 @@ function materializeInstalledCheckerClosure(root) {
   )
   const sourceClosure = new Map([
     ...entries,
-    ['governance.lock', corpusLockBytes],
-    ['consumer/lock.json', shippedBom],
-    ['consumer/lock.schema.json', shippedSchema],
+    ['governance.lock', corpusLockRecord],
+    ['consumer/lock.json', shippedBomRecord],
+    ['consumer/lock.schema.json', shippedSchemaRecord],
   ])
 
   const privateBase = resolveClosedPrivateRuntimeBase(process.platform)
@@ -292,12 +314,12 @@ function materializeInstalledCheckerClosure(root) {
   const snapshotFork = join(snapshotRoot, 'fork')
   mkdirSync(snapshotFork, { mode: 0o700 })
   try {
-    for (const [path, bytes] of entries) {
-      writeExclusiveSnapshotFile(join(snapshotFork, ...path.split('/')), bytes)
+    for (const [path, record] of entries) {
+      writeExclusiveSnapshotFile(join(snapshotFork, ...path.split('/')), record, `installed governance corpus ${path}`)
     }
-    writeExclusiveSnapshotFile(join(snapshotFork, 'governance.lock'), corpusLockBytes)
-    writeExclusiveSnapshotFile(join(snapshotFork, 'consumer/lock.json'), shippedBom)
-    writeExclusiveSnapshotFile(join(snapshotFork, 'consumer/lock.schema.json'), shippedSchema)
+    writeExclusiveSnapshotFile(join(snapshotFork, 'governance.lock'), corpusLockRecord, 'installed governance corpus lock')
+    writeExclusiveSnapshotFile(join(snapshotFork, 'consumer/lock.json'), shippedBomRecord, 'installed governance release lock')
+    writeExclusiveSnapshotFile(join(snapshotFork, 'consumer/lock.schema.json'), shippedSchemaRecord, 'installed governance lock schema')
     freezeSnapshotDirectories(snapshotRoot)
     return {
       checker: join(snapshotFork, checkerRelative),
@@ -310,11 +332,12 @@ function materializeInstalledCheckerClosure(root) {
           'installed governance corpus inventory changed after checker snapshot',
         )
         for (const [path, expected] of sourceClosure) {
+          const current = stableRegularFile(
+            join(installedFork, ...path.split('/')),
+            `installed checker closure CAS ${path}`,
+          )
           invariant(
-            stableRegularBytes(
-              join(installedFork, ...path.split('/')),
-              `installed checker closure CAS ${path}`,
-            ).equals(expected),
+            current.mode === expected.mode && current.bytes.equals(expected.bytes),
             `installed checker closure changed after authenticated snapshot:${path}`,
           )
         }

@@ -39,7 +39,7 @@ Cycle waste:edit → ship → BLOCKER → revert → re-propose。每多一次 =
 - 動 production source 前讓 canonical classifier 檢查每個 target 與 current operation。
 - 工程 remediation → 自主完成並附 tests/evidence/rollback。
 - 產品／UI／UX SSOT 真取捨 → proposal 必含 concrete option + tradeoff + exact target；取得 target-bound decision 才動。
-- 無法分類 → fail closed 並補 owner/evidence/independent review，不用泛用 user approval 代替工程判斷。
+- 無法分類 → fail closed 並補 owner/evidence；task／deliverable 明確要求時才加 independent review，不用泛用 user approval 代替工程判斷。
 
 ## Related
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Clean-room positive/negative fixtures for scripts/governance-check.mjs.
 
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
@@ -37,6 +37,7 @@ const snapshot = (dir) => {
   return { digest: sha(rows.join('\n')), rows }
 }
 const runCheck = ({
+  entrypointOverride = null,
   injectPayloadEnvironmentAfterLaunch = false,
   injectLiveHookSwapAfterSnapshot = false,
   injectLiveSourceSwapAfterCapture = false,
@@ -52,9 +53,9 @@ const runCheck = ({
     || injectTransientReplayTimeoutAfterLaunch
     || injectPersistentReplayTimeoutAfterLaunch
   )
-  const entrypoint = useWrapper
+  const entrypoint = entrypointOverride || (useWrapper
     ? join(root, 'scripts/test-fixtures/consumer-governance-payload-environment-wrapper.mjs')
-    : checkScript
+    : checkScript)
   const liveSwapRecord = join(temp, 'live-swap-record.json')
   rmSync(liveSwapRecord, { force: true })
   const run = spawnSync(process.execPath, [
@@ -91,6 +92,39 @@ const runCheck = ({
   let report = null
   try { report = JSON.parse(run.stdout) } catch { throw new Error(`governance check emitted invalid JSON:${run.stdout}\n${run.stderr}`) }
   return { status: run.status, report, stderr: run.stderr }
+}
+const freezePrivateCheckerSnapshot = source => {
+  const snapshotRoot = realpathSync(mkdtempSync(join(realpathSync(tmpdir()), 'setup-governance-private-checker-')))
+  const snapshotFork = join(snapshotRoot, 'fork')
+  cpSync(source, snapshotFork, { recursive: true })
+  const directories = []
+  const visit = path => {
+    const info = lstatSync(path)
+    if (info.isSymbolicLink()) throw new Error(`private checker fixture contains a symlink:${path}`)
+    if (info.isDirectory()) {
+      directories.push(path)
+      for (const name of readdirSync(path)) visit(join(path, name))
+      return
+    }
+    if (!info.isFile()) throw new Error(`private checker fixture contains an unsupported entry:${path}`)
+    chmodSync(path, (info.mode & 0o111) === 0 ? 0o400 : 0o500)
+  }
+  visit(snapshotRoot)
+  for (const directory of directories.reverse()) chmodSync(directory, 0o500)
+  return {
+    checker: join(snapshotFork, 'consumer/governance-check.mjs'),
+    cleanup() {
+      const thaw = path => {
+        chmodSync(path, 0o700)
+        for (const name of readdirSync(path)) {
+          const child = join(path, name)
+          if (lstatSync(child).isDirectory()) thaw(child)
+        }
+      }
+      thaw(snapshotRoot)
+      rmSync(snapshotRoot, { recursive: true, force: true })
+    },
+  }
 }
 const expectFailure = (ruleId) => {
   const result = runCheck()
@@ -160,6 +194,17 @@ try {
     throw new Error(`positive clean-room did not execute the complete replay:${JSON.stringify(positive.report.evidence?.staticReplay)}`)
   }
   console.log(`✅ positive: hooks-off immutable snapshot PASS(${positive.report.attestationDigest.slice(0, 16)})`)
+
+  const privateChecker = freezePrivateCheckerSnapshot(join(dsDest, 'ds-canonical/fork'))
+  try {
+    const privatePositive = runCheck({ entrypointOverride: privateChecker.checker })
+    if (privatePositive.status !== 0 || !privatePositive.report.ok) {
+      throw new Error(`authenticated private checker snapshot failed mode-aware provider skill parity:${JSON.stringify(privatePositive.report, null, 2)}`)
+    }
+    console.log(`✅ positive: authenticated private checker snapshot preserves provider skill mode parity(${privatePositive.report.attestationDigest.slice(0, 16)})`)
+  } finally {
+    privateChecker.cleanup()
+  }
 
   const outputTransportPath = join(
     dsDest,

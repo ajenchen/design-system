@@ -601,16 +601,53 @@ function releaseFetch(snapshot, { reference = snapshot.tagApi.reference, tagObje
   }
 }
 
+test('live ordinary immutable resolver accepts one exact lightweight commit tag', async () => {
+  const snapshot = releaseSnapshot('0.1.0-beta.94')
+  snapshot.tagApi.reference = {
+    ref: `refs/tags/${snapshot.tagIdentity.tag}`,
+    object: { type: 'commit', sha: snapshot.tagIdentity.commit },
+  }
+  const resolved = await resolveImmutableReleaseSnapshot({
+    repository: TRUSTED_UPGRADE_POLICY.repository,
+    tag: snapshot.tagIdentity.tag,
+    assetName: TRUSTED_UPGRADE_POLICY.releaseBomAsset,
+    fetchImpl: releaseFetch(snapshot),
+    ordinaryRelease: true,
+  })
+  assert.equal(resolved.tagIdentity.ref, `refs/tags/${snapshot.tagIdentity.tag}`)
+  assert.equal(resolved.tagIdentity.tagObject, snapshot.tagIdentity.commit)
+  assert.equal(resolved.tagIdentity.commit, snapshot.tagIdentity.commit)
+  assert.deepEqual(resolved.tagIdentity.verification, {
+    verified: false,
+    reason: 'unsigned',
+    verifiedAt: null,
+    signatureSha256: null,
+    payloadSha256: null,
+  })
+})
+
 for (const [label, mutate, pattern] of [
-  ['lightweight release tag', snapshot => {
+  ['lightweight release tag in the high-assurance lane', snapshot => {
     snapshot.tagApi.reference = { ref: `refs/tags/${snapshot.tagIdentity.tag}`, object: { type: 'commit', sha: snapshot.tagIdentity.commit } }
-  }, /annotated tag object; lightweight tags are forbidden/],
+  }, /high-assurance.*annotated tag object/],
+  ['multiple tag references', snapshot => {
+    snapshot.tagApi.reference = [
+      snapshot.tagApi.reference,
+      { ref: `refs/tags/${snapshot.tagIdentity.tag}`, object: { type: 'commit', sha: snapshot.tagIdentity.commit } },
+    ]
+  }, /one exact.*tag ref/],
+  ['wrong exact tag ref', snapshot => {
+    snapshot.tagApi.reference.ref = `refs/tags/${snapshot.tagIdentity.tag}-other`
+  }, /one exact.*tag ref/],
+  ['non-commit lightweight target', snapshot => {
+    snapshot.tagApi.reference.object.type = 'blob'
+  }, /one exact.*tag ref/],
   ['indirect annotated tag target', snapshot => { snapshot.tagApi.tagObject.object.type = 'tag' }, /direct commit binding is invalid/],
   ['wrong annotated tag name', snapshot => { snapshot.tagApi.tagObject.tag = 'v9.9.9' }, /object\/name\/direct commit binding is invalid/],
   ['invalid annotated tag signature', snapshot => {
     snapshot.tagApi.tagObject.verification.verified = false
     snapshot.tagApi.tagObject.verification.reason = 'invalid'
-  }, /not a directly verified signed annotated tag object/],
+  }, /not an acceptable direct annotated tag object/],
 ]) {
   test(`live immutable resolver rejects ${label}`, async () => {
     const snapshot = releaseSnapshot('0.1.0-beta.94')

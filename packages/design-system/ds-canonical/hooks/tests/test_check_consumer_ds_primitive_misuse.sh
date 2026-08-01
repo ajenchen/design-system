@@ -342,6 +342,86 @@ expect_silent "52. C13 共用 SectionHeader → silent"
 run_hook "$PROD_TSX" 'export const P = () => <button onClick={next} className="flex justify-between">next<ChevronRight /></button> // @section-header-ok: 分頁導航非 section 標題'
 expect_silent "53. C13 @section-header-ok escape → silent"
 
+# ── P10 native table semantic classifier(rich-text document vs app data grid)──
+RICH_TEXT_DOCUMENT_TABLE='const ALLOWED_TAGS = new Set(["TABLE", "THEAD", "TBODY", "TR", "TH", "TD"])
+function sanitizeRichText(html: string) {
+  const template = document.createElement("template")
+  template.innerHTML = html
+  for (const child of Array.from(template.content.querySelectorAll("*"))) {
+    if (!ALLOWED_TAGS.has(child.tagName)) child.replaceWith(...Array.from(child.childNodes))
+    for (const attribute of Array.from(child.attributes)) child.removeAttribute(attribute.name)
+  }
+  return template.innerHTML
+}
+export function RichTextEditor({ onChange }) {
+  const editorRef = useRef<HTMLDivElement>(null)
+  const emitChange = () => {
+    const editor = editorRef.current
+    const next = sanitizeRichText(editor.innerHTML)
+    onChange(next)
+  }
+  const insertTable = () => insertHtml("<table><thead><tr><th>Heading</th></tr></thead><tbody><tr><td>Cell</td></tr></tbody></table>")
+  return <div ref={editorRef} contentEditable onInput={emitChange} />
+}'
+
+# 54. POSITIVE:contentEditable document + closed table tag allowlist + attribute-stripping
+# sanitizer + sanitized innerHTML serialization is not an app data grid.
+run_hook "$PROD_TSX" "$RICH_TEXT_DOCUMENT_TABLE"
+expect_silent "54. P10 bounded rich-text document table → silent"
+
+# 55. NEGATIVE:ordinary raw table remains blocked.
+run_hook "$PROD_TSX" 'export const Grid = () => <table><thead><tr><th>Name</th></tr></thead><tbody><tr><td>Ada</td></tr></tbody></table>'
+expect_block "55. P10 ordinary raw data table → BLOCK" "手刻 raw <table>"
+
+# 56. NEGATIVE:contentEditable alone does not establish a bounded document serializer.
+run_hook "$PROD_TSX" 'export const Editor = () => <div contentEditable>{"<table><tbody><tr><td>Unsafe</td></tr></tbody></table>"}</div>'
+expect_block "56. P10 contentEditable without sanitizer → BLOCK" "手刻 raw <table>"
+
+# 57. NEGATIVE:a sanitizer-like function without contentEditable remains an app raw table.
+run_hook "$PROD_TSX" 'const ALLOWED_TAGS = new Set(["TABLE", "THEAD", "TBODY", "TR", "TH", "TD"]); function sanitizeRichText(html){ return html }; export const Grid = () => <table><tbody><tr><td>Ada</td></tr></tbody></table>'
+expect_block "57. P10 sanitizer name without contentEditable → BLOCK" "手刻 raw <table>"
+
+# 58. NEGATIVE:contentEditable + open passthrough serializer has no closed tag/attribute policy.
+run_hook "$PROD_TSX" 'function sanitizeRichText(html){ return html }; export const Editor = ({onChange}) => <div contentEditable onInput={(event) => onChange(sanitizeRichText(event.currentTarget.innerHTML))}>{"<table><tbody><tr><td>Unsafe</td></tr></tbody></table>"}</div>'
+expect_block "58. P10 contentEditable with unbounded serializer → BLOCK" "手刻 raw <table>"
+
+# 59. Real PostToolUse Edit payload contains only the inserted table fragment; the hook must read
+# the now-written full file before classifying its contentEditable + sanitizer/serializer context.
+RICH_EDITOR_PATH="$TMP_DIR/apps/web/src/components/RichTextEditor.tsx"
+mkdir -p "$(dirname "$RICH_EDITOR_PATH")"
+printf '%s\n' "$RICH_TEXT_DOCUMENT_TABLE" > "$RICH_EDITOR_PATH"
+run_hook "$RICH_EDITOR_PATH" 'insertHtml("<table><tbody><tr><td>Cell</td></tr></tbody></table>")' "Edit"
+expect_silent "59. P10 Edit fragment uses full-file rich-text evidence → silent"
+
+# 60. Write payload is the complete proposed file and remains authoritative even when a stale file
+# already exists at the path (synthetic/provider pre-write runtimes may not have persisted it yet).
+WRITE_EXISTING_PATH="$TMP_DIR/apps/web/src/components/Existing.tsx"
+printf '%s\n' 'export const Existing = () => <div />' > "$WRITE_EXISTING_PATH"
+run_hook "$WRITE_EXISTING_PATH" 'export const Grid = () => <table><thead><tr><th>Name</th></tr></thead><tbody><tr><td>Ada</td></tr></tbody></table>' "Write"
+expect_block "60. P10 Write uses complete payload rather than stale disk file → BLOCK" "手刻 raw <table>"
+
+# 61. Provider-normalized Edit replay can be read-only:retain the proposed fragment alongside the
+# on-disk context so a stale clean file cannot erase a raw-table violation.
+run_hook "$WRITE_EXISTING_PATH" 'export const Grid = () => <table><thead><tr><th>Name</th></tr></thead><tbody><tr><td>Ada</td></tr></tbody></table>' "Edit"
+expect_block "61. P10 Edit retains proposed fragment when disk is stale → BLOCK" "手刻 raw <table>"
+
+# 62. A tag allowlist is closed, not merely table-complete. Unsafe extras cannot borrow the
+# document-table exemption even when all required table tags and sanitizer wiring are present.
+RICH_TEXT_UNSAFE_TAGS=${RICH_TEXT_DOCUMENT_TABLE/'"TD"]'/'"TD", "SCRIPT"]'}
+run_hook "$PROD_TSX" "$RICH_TEXT_UNSAFE_TAGS"
+expect_block "62. P10 unsafe ALLOWED_TAGS extra → BLOCK" "手刻 raw <table>"
+
+# 63. Sanitized emission does not excuse a second raw editor serialization path in the same file.
+RICH_TEXT_RAW_EMISSION=${RICH_TEXT_DOCUMENT_TABLE/'    onChange(next)'/$'    onChange(next)\n    onChange(editor.innerHTML)'}
+run_hook "$PROD_TSX" "$RICH_TEXT_RAW_EMISSION"
+expect_block "63. P10 mixed sanitized + raw innerHTML emission → BLOCK" "手刻 raw <table>"
+
+# 64. A bounded rich-text editor can coexist with product UI, but it cannot classify an unrelated
+# raw JSX application table as serialized document content.
+RICH_TEXT_WITH_APP_TABLE="$RICH_TEXT_DOCUMENT_TABLE"$'\nexport const AppGrid = () => <table><thead><tr><th>Name</th></tr></thead><tbody><tr><td>Ada</td></tr></tbody></table>'
+run_hook "$PROD_TSX" "$RICH_TEXT_WITH_APP_TABLE"
+expect_block "64. P10 rich editor plus raw JSX app table → BLOCK" "手刻 raw <table>"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

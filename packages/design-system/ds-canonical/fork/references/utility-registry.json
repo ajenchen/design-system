@@ -6,6 +6,8 @@
     "owner": "packages/design-system/src/tokens/utility-registry.json",
     "consumed_by": [
       "packages/design-system/ds-canonical/hooks/check_opacity_token_usage.sh",
+      "packages/design-system/ds-canonical/hooks/check_layout_space_magic_numbers.sh",
+      "packages/design-system/ds-canonical/hooks/check_escape_marker_abuse.sh",
       "packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md#Dim-5",
       "packages/design-system/ds-canonical/hooks/lib/_token_hygiene.sh",
       "packages/design-system/ds-canonical/hooks/check_consumer_code_quality.sh"
@@ -16,7 +18,8 @@
       "packages/design-system/src/tokens/radius/radius.spec.md L57-71",
       "packages/design-system/src/tokens/opacity/opacity.spec.md L53-57",
       "packages/design-system/src/tokens/color/color.spec.md(hardcoded hex/rgb canonical)",
-      "packages/design-system/src/tokens/elevation/elevation.spec.md(shadow-{sm,md,lg,xl,2xl} 禁)"
+      "packages/design-system/src/tokens/elevation/elevation.spec.md(shadow-{sm,md,lg,xl,2xl} 禁)",
+      "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md L125-134,L150-163"
     ],
     "rationale": "World-class DS(Atlassian @atlaskit/tokens / Carbon @carbon/themes / Ant ConfigProvider / Polaris polaris-tokens)用 registry + lint, 不靠 grep 各處 spec.md。Rule-of-3 violation 已存在(典型禁止 list 在 3 個 spec.md 各寫一份)— 本檔抽 SSOT。",
     "exceptions": {
@@ -312,6 +315,52 @@
   },
   "spacing": {
     "allow_canonical": "對齊 spec(gap-2/3/4/6/8 等;layout-space token via var())",
+    "canonical_micro_geometry": {
+      "gap_utilities": [
+        "gap-1",
+        "gap-2"
+      ],
+      "alignment_utilities": [
+        "items-start",
+        "items-center",
+        "items-baseline"
+      ],
+      "inline_display_utilities": [
+        "inline-flex"
+      ],
+      "phrasing_elements": [
+        "span"
+      ],
+      "list_container_elements": [
+        "ul",
+        "ol"
+      ],
+      "list_item_elements": [
+        "li"
+      ],
+      "list_roles": [
+        "list",
+        "listitem"
+      ],
+      "control_roles": [
+        "toolbar"
+      ],
+      "field_group_elements": [
+        "fieldset"
+      ],
+      "field_group_roles": [
+        "group"
+      ],
+      "field_control_elements": [
+        "Field",
+        "input",
+        "select",
+        "textarea"
+      ],
+      "nearby_line_limit": 16,
+      "rationale": "gap-1/2 只在同行或有界 nearby 證據可機械證明為 inline item/control、semantic homogeneous list、toolbar、或 layoutSpace rule-5 grouped horizontal fields 時是固定 micro geometry。一般 flex/grid/section gap-1/2 仍屬 macro 候選並阻擋；同行混入 p-/m-/space-* magic 也不能被 micro 證據隱藏。",
+      "rationale_path": "packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md L125-134,L150-163; packages/design-system/src/patterns/element-anatomy/item-anatomy.spec.md L869-900; packages/design-system/src/components/Button/button.spec.md L87-122"
+    },
     "warn": {
       "micro_gap": [
         "gap-px",

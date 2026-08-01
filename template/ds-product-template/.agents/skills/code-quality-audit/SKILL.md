@@ -45,8 +45,8 @@ Scope:**tsx / ts code hygiene**,跟 design canonical 正交。
      與 long-function remediation 都是工程決策，依 Standing Authorization 自主完成並驗證。
    - 只有修法會改變 public component semantics、產品 workflow、interaction 或其他產品／
      UI／UX SSOT，且證據收斂後仍有真實取捨時，才停下取得 exact target-bound decision。
-   - 無法分類時 fail closed 並補 source/evidence/independent review；不得用泛用 user
-     approval 代替工程判斷。
+   - 無法分類時 fail closed 並補 source/evidence；task／deliverable 明確要求時才加
+     independent review，不得用泛用 user approval 代替工程判斷。
 
 ## 禁止
 

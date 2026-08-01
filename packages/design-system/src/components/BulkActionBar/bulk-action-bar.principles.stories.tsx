@@ -23,13 +23,13 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
 const Rule = ({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) => (
   <div className="mb-10">
     <h3 className="text-body font-bold text-foreground mb-1">{title}</h3>
-    {note && <p className="text-caption text-fg-muted mb-4 max-w-[720px] leading-relaxed">{note}</p>}
+    {note && <p className="text-caption text-fg-secondary mb-4 max-w-[720px] leading-relaxed">{note}</p>}
     <div className="flex flex-col gap-3">{children}</div>
   </div>
 )
 
 const Label = ({ children, warn }: { children: React.ReactNode; warn?: boolean }) => (
-  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-muted'}`}>{children}</p>
+  <p className={`text-footnote leading-normal ${warn ? 'text-error font-medium' : 'text-fg-secondary'}`}>{children}</p>
 )
 
 export const UsageGuidance: Story = {
@@ -136,7 +136,7 @@ export const VsToastRule: Story = {
         note="BulkActionBar 由目前 selection state 驅動;封存完成後 selection 已結束,再保留操作列會把『接下來能做什麼』與『剛才發生什麼』混在一起。事件後復原應交給短暫的 Toast。"
       >
         <Label warn>這種情況應改用 Toast</Label>
-        <p className="text-fg-muted text-body">
+        <p className="text-fg-secondary text-body">
           事件後通知 → 用 Toast(sonner Toaster)。
           BulkActionBar 是「選了 N 項要做什麼」的選取後 toolbar,不是「我做完了」的回饋。
         </p>

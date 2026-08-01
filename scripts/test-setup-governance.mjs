@@ -915,7 +915,11 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
   assert.doesNotMatch(governanceAnchor, /node \.\.\/trusted\/node_modules\/npm\/bin\/npm-cli\.js audit --audit-level=high/)
   assert.doesNotMatch(governanceAnchor, /\bnode\s+(?:-e|--eval|--input-type)\b/)
   assert.doesNotMatch(governanceAnchor, /runGovernance(?:Dependency)?Setup/)
-  assert.match(readFileSync(workflowPaths[2], 'utf8'), /npm run setup:governance/)
+  assert.deepEqual(
+    workflowPaths.filter(path => /npm run setup:governance/.test(readFileSync(path, 'utf8'))),
+    [workflowPaths[1]],
+    'only the protected-base governance anchor may invoke authenticated governance setup',
+  )
 
   const devcontainer = JSON.parse(readFileSync('template/ds-product-template/.devcontainer/devcontainer.json', 'utf8'))
   assert.match(devcontainer.image, /javascript-node:1-22@sha256:[a-f0-9]{64}$/)
@@ -1024,7 +1028,7 @@ test('consumer a11y runtime helpers stay aligned across fork, mirror, workflow, 
   assert.match(mirrorWorkflow, /published-template-mirror-policy\.json/)
 })
 
-test('consumer desired state and documentation use one native Verify consumer gate without an updater workflow', () => {
+test('consumer desired state uses one native Verify consumer gate without an updater workflow', () => {
   const desired = JSON.parse(readFileSync('infra/governance/desired/github.json', 'utf8'))
   for (const profileName of ['product-consumer', 'published-template']) {
     const profile = desired.profiles[profileName]
@@ -1044,7 +1048,9 @@ test('consumer desired state and documentation use one native Verify consumer ga
   for (const command of ['npm run typecheck', 'npm run lint:imports', 'npm run build']) assert.match(audit, new RegExp(command))
   assert.doesNotMatch(audit, /setup:governance|audit:a11y|playwright|GOVERNANCE_(?:CHECK|WRITER)_APP/)
   assert.equal(existsSync('template/ds-product-template/.github/workflows/sync-design-system.yml'), false)
+})
 
+test('consumer documentation describes the release mirror gate without the retired App publishing ceremony', () => {
   const documentationPaths = [
     'packages/design-system/ds-canonical/templates/consumer-governance.md',
     'template/ds-product-template/README.md',
@@ -1054,7 +1060,10 @@ test('consumer desired state and documentation use one native Verify consumer ga
   const documentation = documentationPaths.map(path => readFileSync(path, 'utf8')).join('\n')
   assert.match(documentation, /Verify consumer/)
   assert.match(documentation, /release mirror|上游 release mirror/i)
-  assert.doesNotMatch(documentation, /sync-design-system\.yml|governance-upgrade environment|Governance Check App/i)
+  assert.doesNotMatch(
+    documentation,
+    /sync-design-system\.yml|governance-upgrade-candidate-validation|Immutable consumer snapshot|environment may mint[^\n]*Writer App/i,
+  )
   assert.doesNotMatch(documentation, /(?:禁止|do not) (?:改用|replace)[^\n]*(?:Writer App|GitHub App)/i)
 })
 

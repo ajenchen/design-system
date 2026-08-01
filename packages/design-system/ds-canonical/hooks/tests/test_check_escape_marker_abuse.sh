@@ -37,6 +37,7 @@ TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 export GOVERNANCE_PROJECT_DIR="$TMP_DIR"
 mkdir -p "$TMP_DIR/.claude/logs"
+mkdir -p "$TMP_DIR/apps/template/src"
 
 # run_hook: feed JSON payload to hook via stdin
 #   $1 tool_name  $2 file_path  $3 content-field-name(content|new_string)  $4 content
@@ -88,6 +89,17 @@ expect_not_block() {
     echo "  PASS  $name"; PASS=$((PASS+1))
   else
     echo "  FAIL  $name (expected NOT blocked, got exit=2 BLOCKER)"
+    echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
+    FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
+  fi
+}
+
+expect_pass() {
+  local name="$1"
+  if [ "$EXIT" = "0" ]; then
+    echo "  PASS  $name"; PASS=$((PASS+1))
+  else
+    echo "  FAIL  $name (expected exit=0, got exit=$EXIT)"
     echo "  --- stderr ---"; echo "$STDERR_TEXT" | sed 's/^/    /'; echo "  --- end ---"
     FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - $name"
   fi
@@ -192,6 +204,34 @@ export const Portal = 1;'
 run_hook "Write" "/repo/apps/template/src/AllDsComponents.stories.tsx" "content" "$C_PORTAL"
 expect_not_block "N10. sanctioned proxy portal 3 distinct markers (< portal cap 6) → not blocked"
 
+# N11. A layout-space marker that documents mechanically proven canonical micro geometry is
+# redundant compatibility metadata, not an active governance escape. It must not consume the
+# per-file distinct ceiling while an ordinary layout escape still does.
+C_CANONICAL_MICRO_MARKER='// @layout-space-magic-ok: legacy rationale for canonical item gap
+const Meta = () => <span className="inline-flex items-center gap-1"><Info />Details</span>;
+// @ds-misuse-allow: one true exception
+// @benchmark-unverified cited in audit notes
+export const App = 1;'
+run_hook "Write" "$CONSUMER" "content" "$C_CANONICAL_MICRO_MARKER"
+expect_pass "N11. proven canonical micro marker excluded from per-file ceiling"
+
+# N12. The carve-out is structural, not value-only. A gap-1 marker on an ordinary macro div still
+# counts; together with two other marker families it reaches the ordinary distinct ceiling.
+C_GENERIC_GAP_MARKER='<div className="flex flex-col gap-1">Sections</div> // @layout-space-magic-ok: claimed micro
+// @ds-misuse-allow: true exception
+// @benchmark-unverified cited in audit notes
+export const App = 1;'
+run_hook "Write" "$CONSUMER" "content" "$C_GENERIC_GAP_MARKER"
+expect_block "N12. generic gap marker still consumes per-file ceiling" "$BLOCK_NEEDLE"
+
+# N13. Same-line canonical micro markers are ignored too; support is symmetric with the preceding
+# comment form used by JSX.
+C_CANONICAL_MICRO_SAME_LINE='const Meta = () => <span className="flex items-center gap-2">Meta</span>; // @layout-space-magic-ok: legacy item anatomy rationale
+// @ds-misuse-allow: one true exception
+// @benchmark-unverified cited in audit notes'
+run_hook "Write" "$CONSUMER" "content" "$C_CANONICAL_MICRO_SAME_LINE"
+expect_pass "N13. same-line proven canonical micro marker excluded from ceiling"
+
 # ── R-series:repo 級累計 ratchet(2026-07-08 WM 戰役 R4)──────────────────────
 # 存量 ≥10(apps/** 全 repo)後,只擋「本次 edit 再新增 marker」;無 marker edit 不 brick。
 mkdir -p "$TMP_DIR/apps/work/src"
@@ -213,6 +253,18 @@ rm -f "$TMP_DIR/apps/work/src/seed3.tsx" "$TMP_DIR/apps/work/src/seed4.tsx" \
       "$TMP_DIR/apps/work/src/seed5.tsx" "$TMP_DIR/apps/work/src/seed6.tsx"
 run_hook "Write" "/repo/apps/work/src/new.tsx" "content" '<div /> // @ds-misuse-allow: legit case'
 expect_not_block "R3. repo 存量 4 < cap + edit 加 marker → not blocked"
+
+# R4. Repo ratchet must count real escapes, not legacy comments attached to geometry that the
+# canonical layout classifier now proves without an escape. Seed 12 such comments (> cap), then
+# verify one genuine but still-below-cap exception is accepted.
+rm -rf "$TMP_DIR/apps/work/src"
+mkdir -p "$TMP_DIR/apps/work/src"
+for i in 1 2 3 4 5 6; do
+  printf '// @layout-space-magic-ok: legacy canonical micro %s\nconst A%s = () => <span className="inline-flex items-center gap-1">A</span>\n// @layout-space-magic-ok: legacy canonical micro %sb\nconst B%s = () => <span className="flex items-start gap-2">B</span>\n' \
+    "$i" "$i" "$i" "$i" > "$TMP_DIR/apps/work/src/micro$i.tsx"
+done
+run_hook "Write" "/repo/apps/work/src/new.tsx" "content" '<div /> // @ds-misuse-allow: one bounded true exception'
+expect_pass "R4. repo canonical micro markers do not consume escape ratchet"
 
 rm -rf "$TMP_DIR/apps"
 

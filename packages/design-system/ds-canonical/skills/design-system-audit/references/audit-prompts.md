@@ -1346,6 +1346,8 @@ Your job(NO-SAMPLE,DS-src 全 component/pattern):LLM adversarial per-component �
 **判準邊界**(必先讀):`tokens/layoutSpace/layoutSpace.spec.md`「該用 token vs 刻意固定」段 —— **只抓 macro
 結構違規,禁 flag 合法 magic number**(同質 list 列間距 / micro-icon / 刻意視覺平衡 / 元件內部固定如 FieldGroup)。
 **每 finding 必對抗二次驗證殺假陽性**(2026-07-01 錨:sweep 35 raw → 8 confirmed;over-flag ProfileCard/
-apps-scaffold/list-gap 均被覆核判非違規)。既有 magic-number hook skip DS-src → 本 dim 是唯一 DS-src
-layout-space judgment 防線(regex 分不出 macro/micro)。
+apps-scaffold/list-gap 均被覆核判非違規)。Consumer `check_layout_space_magic_numbers.sh` 只會放行
+`utility-registry.json#/spacing/canonical_micro_geometry` 有同行/有界 nearby 證據的 inline item/control、
+semantic list、toolbar、rule-5 grouped fields;一般 `flex/grid/section gap-1/2` 仍是 blocker。該 hook skip
+DS-src → 本 dim 是唯一 DS-src layout-space judgment 防線，也覆核 consumer 機械 classifier 無法證明的邊界案。
 End:`N files scanned, M macro violations(對抗覆核後)`。Don't fix。
