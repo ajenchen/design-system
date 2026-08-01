@@ -16,6 +16,11 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
+// Fixed local date keeps rendered states deterministic across run dates and time zones.
+const STORY_TODAY = new Date(2026, 6, 15)
+const storyDate = (day: number) =>
+  new Date(STORY_TODAY.getFullYear(), STORY_TODAY.getMonth(), day)
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -93,7 +98,7 @@ export const UsageGuidance: Story = {
             note="本元件只處理日期選擇(選一天、多天、範圍)。若需求是「顯示一個月內的事件清單、拖曳事件、切換 week / month / agenda view」——那是事件行事曆,需要專用元件(Google Calendar / Outlook 類),不屬於本元件範疇。"
           >
             <Demo title="✅ 正確用途:選日">
-              <DateGrid mode="single" defaultMonth={new Date()} locale={zhTW} />
+              <DateGrid mode="single" defaultMonth={STORY_TODAY} today={STORY_TODAY} locale={zhTW} />
             </Demo>
           </Rule>
 
@@ -133,6 +138,7 @@ export const UsageGuidance: Story = {
                   selected={inline}
                   onSelect={setInline}
                   defaultMonth={inline}
+                  today={STORY_TODAY}
                   locale={zhTW}
                 />
               </div>
@@ -169,18 +175,17 @@ export const ModeRule: Story = {
   name: '模式 選擇',
   render: () => {
     const ModeDemo = () => {
-      const today = new Date()
       const [single, setSingle] = useState<Date | undefined>(
-        new Date(today.getFullYear(), today.getMonth(), 10),
+        storyDate(10),
       )
       const [multiple, setMultiple] = useState<Date[]>([
-        new Date(today.getFullYear(), today.getMonth(), 5),
-        new Date(today.getFullYear(), today.getMonth(), 12),
-        new Date(today.getFullYear(), today.getMonth(), 20),
+        storyDate(5),
+        storyDate(12),
+        storyDate(20),
       ])
       const [range, setRange] = useState<DateRange | undefined>({
-        from: new Date(today.getFullYear(), today.getMonth(), 8),
-        to: new Date(today.getFullYear(), today.getMonth(), 18),
+        from: storyDate(8),
+        to: storyDate(18),
       })
 
       return (
@@ -194,7 +199,8 @@ export const ModeRule: Story = {
                 mode="single"
                 selected={single}
                 onSelect={setSingle}
-                defaultMonth={today}
+                defaultMonth={STORY_TODAY}
+                today={STORY_TODAY}
                 locale={zhTW}
               />
             </Demo>
@@ -209,7 +215,8 @@ export const ModeRule: Story = {
                 mode="multiple"
                 selected={multiple}
                 onSelect={(d) => setMultiple(d ?? [])}
-                defaultMonth={today}
+                defaultMonth={STORY_TODAY}
+                today={STORY_TODAY}
                 locale={zhTW}
               />
             </Demo>
@@ -224,7 +231,8 @@ export const ModeRule: Story = {
                 mode="range"
                 selected={range}
                 onSelect={setRange}
-                defaultMonth={today}
+                defaultMonth={STORY_TODAY}
+                today={STORY_TODAY}
                 locale={zhTW}
               />
             </Demo>
@@ -258,12 +266,9 @@ export const VisualTokenRule: Story = {
         <Demo title="今日 + 已選他日">
           <DateGrid
             mode="single"
-            selected={(() => {
-              const d = new Date()
-              d.setDate(d.getDate() + 3)
-              return d
-            })()}
-            defaultMonth={new Date()}
+            selected={storyDate(STORY_TODAY.getDate() + 3)}
+            defaultMonth={STORY_TODAY}
+            today={STORY_TODAY}
             locale={zhTW}
           />
         </Demo>
@@ -276,9 +281,10 @@ export const VisualTokenRule: Story = {
         <Demo title="showOutsideDays + disabled 過去日期">
           <DateGrid
             mode="single"
-            defaultMonth={new Date()}
+            defaultMonth={STORY_TODAY}
+            today={STORY_TODAY}
             locale={zhTW}
-            disabled={{ before: new Date() }}
+            disabled={{ before: STORY_TODAY }}
           />
         </Demo>
       </Rule>
@@ -307,10 +313,10 @@ export const LocaleRule: Story = {
         note="react-day-picker 接受 date-fns locale 物件。週首日由 locale 物件決定,不以語言籠統判斷:en-US 週日起、en-GB 週一起——同樣是英文,週首日就不同;zhTW / de / fr(date-fns 內建值)都是週一起。下方對照:zhTW 首欄是週一,en-US 首欄是週日。Consumer 決定傳哪個 locale;locale 只控制「可見」的日期格式與週首日,不內建可見語言層。註:螢幕報讀器 aria-label(上/下月、日期朗讀等)DS 內建繁中 default,可透過 labels prop 逐鍵覆寫做 i18n(見 tsx labels 段)。"
       >
         <Demo title="zhTW(繁體中文 · 週一起)">
-          <DateGrid mode="single" defaultMonth={new Date(2026, 3, 1)} locale={zhTW} />
+          <DateGrid mode="single" defaultMonth={new Date(2026, 3, 1)} today={STORY_TODAY} locale={zhTW} />
         </Demo>
         <Demo title="預設(en-US · 週日起)">
-          <DateGrid mode="single" defaultMonth={new Date(2026, 3, 1)} />
+          <DateGrid mode="single" defaultMonth={new Date(2026, 3, 1)} today={STORY_TODAY} />
         </Demo>
       </Rule>
 
