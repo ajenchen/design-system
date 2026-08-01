@@ -125,6 +125,21 @@ def has_open_element(line, elements):
     return any(re.search(rf"<{re.escape(element)}\b", line) for element in elements)
 
 
+def phrasing_owner_has_geometry(line):
+    """Require the phrasing element itself to own the geometry-bearing class attribute."""
+    for match in re.finditer(r"<([A-Za-z][A-Za-z0-9.]*)\b([^<>]*)>", line):
+        tag, attributes = match.groups()
+        if tag not in phrasing_elements or not re.search(r"\bclass(?:Name)?\s*=", attributes):
+            continue
+        if (
+            has_utility(attributes, "flex")
+            and has_any_utility(attributes, alignments)
+            and has_any_utility(attributes, allowed_gaps)
+        ):
+            return True
+    return False
+
+
 def has_role(line, roles):
     return any(
         re.search(rf"\brole\s*=\s*['\"]{re.escape(role)}['\"]", line)
@@ -156,7 +171,7 @@ def is_canonical_micro_line(lines, index):
     # utility is used because the HTML owner is still a bounded phrasing wrapper.
     if aligned and (
         has_any_utility(line, inline_displays)
-        or (has_open_element(line, phrasing_elements) and flex)
+        or phrasing_owner_has_geometry(line)
     ):
         return True
 

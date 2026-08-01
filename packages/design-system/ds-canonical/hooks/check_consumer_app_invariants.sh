@@ -224,7 +224,6 @@ if { [ "$TOOL" = "Edit" ] || [ "$TOOL" = "MultiEdit" ]; } \
   # file contributes only the bounded serializer evidence needed for the rich-text exception.
   TABLE_CONTEXT="${CONTENT}"$'\n'"${TABLE_FILE_CONTEXT}"
 fi
-TABLE_CONTEXT=$(printf '%s' "$TABLE_CONTEXT" | tr '\n' ' ')
 
 # 2026-06-03 修(同 R8 bug class):換行→空格 flatten。真實 JSX 屬性跨行(<DS.X\n  size={N}\n/>),
 # grep 逐行 + 各 pattern 用 [^>]+ 跨屬性匹配 → 不 flatten 的話多行 component 靜默繞過全部 anti-pattern 檢查
@@ -294,27 +293,197 @@ fi
 #
 # Narrow semantic class(2026-08-02):a native table serialized inside a WYSIWYG document is
 # document content, not an application data grid. It is exempt only when the same complete file
-# mechanically proves every condition below:contentEditable host; an explicit TABLE / THEAD /
-# TBODY / TR / TH / TD tag allowlist actively consulted by the sanitizer; unknown attributes
-# stripped; editor.innerHTML passed through that sanitizer; and only the sanitized value emitted
-# through onChange. Missing any one condition stays blocked. This is not a filename allowlist.
-is_bounded_rich_text_document_table() {
-  local context="$1"
-  grep -qE '\bcontentEditable\b' <<<"$context" || return 1
-  grep -qE '\b[A-Z_]*ALLOWED[A-Z_]*TAGS\b[[:space:]]*=[[:space:]]*new Set' <<<"$context" || return 1
-  local tag
-  for tag in TABLE THEAD TBODY TR TH TD; do
-    grep -qE "['\"]${tag}['\"]" <<<"$context" || return 1
-  done
-  grep -qE '\b[A-Z_]*ALLOWED[A-Z_]*TAGS\.has\([A-Za-z_][A-Za-z0-9_.]*\)' <<<"$context" || return 1
-  grep -qE '\.removeAttribute\(' <<<"$context" || return 1
-  grep -qE '\b(const|let)[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=[[:space:]]*sanitize[A-Za-z0-9_]*\([^)]*\.innerHTML\)' <<<"$context" || return 1
-  grep -qE '\bonChange\([A-Za-z_][A-Za-z0-9_]*\)' <<<"$context" || return 1
-  return 0
+# mechanically proves every condition below:contentEditable host; one closed safe-tag allowlist
+# containing TABLE / THEAD / TBODY / TR / TH / TD and no unsafe/dynamic extras; that exact allowlist
+# plus attribute stripping inside the sanitizer; editor.innerHTML passed through that sanitizer;
+# every use of that editor serialization limited to sanitize/compare/safe write-back; and every
+# onChange emission bound to the sanitized value. Raw JSX tables are classified before serialized
+# document strings, so an unrelated app table cannot borrow editor evidence. Missing any condition
+# stays blocked. This is not a filename allowlist.
+TABLE_CLASSIFICATION=$(python3 - 3<<<"$TABLE_CONTEXT" <<'PY'
+import os
+import re
+
+source = os.fdopen(3, encoding="utf-8").read()
+required_table_tags = {"TABLE", "THEAD", "TBODY", "TR", "TH", "TD"}
+safe_rich_text_tags = {
+    "A", "B", "BLOCKQUOTE", "BR", "CODE", "DIV", "EM", "FONT",
+    "H1", "H2", "H3", "H4", "H5", "H6", "I", "IMG", "LI", "OL",
+    "P", "PRE", "S", "SPAN", "STRIKE", "STRONG", "TABLE", "TBODY",
+    "TD", "TH", "THEAD", "TR", "U", "UL",
 }
-if grep -qE '<table\b' <<<"$TABLE_CONTEXT" && grep -qE '<thead\b|<tbody\b|<th\b' <<<"$TABLE_CONTEXT" \
-  && ! is_bounded_rich_text_document_table "$TABLE_CONTEXT"; then
+identifier = r"[A-Za-z_$][A-Za-z0-9_$]*"
+
+
+def blank(mask, start, end):
+    for offset in range(start, end):
+        if mask[offset] not in "\r\n":
+            mask[offset] = " "
+
+
+def lexical_view(text):
+    """Mask comments/strings while retaining offsets and literal contents."""
+    mask = list(text)
+    literals = []
+    index = 0
+    while index < len(text):
+        if text.startswith("//", index):
+            end = text.find("\n", index + 2)
+            end = len(text) if end < 0 else end
+            blank(mask, index, end)
+            index = end
+            continue
+        if text.startswith("/*", index):
+            close = text.find("*/", index + 2)
+            end = len(text) if close < 0 else close + 2
+            blank(mask, index, end)
+            index = end
+            continue
+        quote = text[index]
+        if quote not in ("'", '"', chr(96)):
+            index += 1
+            continue
+        start = index
+        index += 1
+        while index < len(text):
+            if text[index] == "\\":
+                index = min(index + 2, len(text))
+                continue
+            if text[index] == quote:
+                index += 1
+                break
+            index += 1
+        literals.append((start, index, quote, text[start + 1:max(start + 1, index - 1)]))
+        blank(mask, start, index)
+    return "".join(mask), literals
+
+
+code, literals = lexical_view(source)
+raw_jsx_table = (
+    re.search(r"<table\b", code) is not None
+    and re.search(r"<(?:thead|tbody|th)\b", code) is not None
+)
+serialized_literals = [
+    (quote, value)
+    for _start, _end, quote, value in literals
+    if re.search(r"<table\b", value, re.IGNORECASE)
+    and re.search(r"<(?:thead|tbody|th)\b", value, re.IGNORECASE)
+]
+serialized_table = bool(serialized_literals)
+
+if not raw_jsx_table and not serialized_table:
+    print("clean")
+    raise SystemExit(0)
+if raw_jsx_table or any(quote == chr(96) and chr(36) + "{" in value for quote, value in serialized_literals):
+    print("violation")
+    raise SystemExit(0)
+
+
+def bounded_function_body(name):
+    declaration = re.search(
+        rf"\bfunction\s+{re.escape(name)}\s*\([^)]*\)\s*(?::[^{{}}]+)?\{{",
+        code,
+    )
+    if declaration is None:
+        return None
+    open_brace = declaration.end() - 1
+    depth = 0
+    for offset in range(open_brace, len(code)):
+        if code[offset] == "{":
+            depth += 1
+        elif code[offset] == "}":
+            depth -= 1
+            if depth == 0:
+                return code[open_brace + 1:offset]
+    return None
+
+
+bounded = re.search(r"\bcontentEditable\b", code) is not None
+allow_declarations = list(re.finditer(
+    r"\b(?P<name>[A-Z_]*ALLOWED[A-Z_]*TAGS)\s*=\s*new\s+Set\s*\(\s*\[",
+    code,
+))
+bounded = bounded and len(allow_declarations) == 1
+allow_name = ""
+if bounded:
+    declaration = allow_declarations[0]
+    allow_name = declaration.group("name")
+    array_start = declaration.end()
+    array_end = code.find("]", array_start)
+    bounded = array_end >= 0 and re.match(r"\s*\)", code[array_end + 1:]) is not None
+if bounded:
+    array_source = source[array_start:array_end]
+    tag_matches = list(re.finditer(r"(['\"])([A-Z][A-Z0-9]*)\1", array_source))
+    residual = list(array_source)
+    for match in tag_matches:
+        blank(residual, match.start(), match.end())
+    observed_tags = [match.group(2) for match in tag_matches]
+    bounded = (
+        re.sub(r"[\s,]", "", "".join(residual)) == ""
+        and len(observed_tags) == len(set(observed_tags))
+        and required_table_tags.issubset(observed_tags)
+        and set(observed_tags).issubset(safe_rich_text_tags)
+    )
+
+binding_pattern = re.compile(
+    rf"\b(?:const|let)\s+(?P<safe>{identifier})\s*=\s*"
+    rf"(?P<sanitizer>sanitize[A-Za-z0-9_$]*)\s*\(\s*"
+    rf"(?P<editor>{identifier})\.innerHTML\s*\)"
+)
+bindings = list(binding_pattern.finditer(code))
+bounded = bounded and bool(bindings)
+safe_variables = {match.group("safe") for match in bindings}
+sanitizers = {match.group("sanitizer") for match in bindings}
+editors = {match.group("editor") for match in bindings}
+
+if bounded:
+    for sanitizer in sanitizers:
+        body = bounded_function_body(sanitizer)
+        if body is None or re.search(rf"\b{re.escape(allow_name)}\s*\.\s*has\s*\(", body) is None \
+          or re.search(r"\.removeAttribute\s*\(", body) is None:
+            bounded = False
+            break
+
+on_change_calls = list(re.finditer(r"\bonChange\s*\(\s*([^()]*)\)", code))
+bounded = bounded and bool(on_change_calls) and all(
+    match.group(1).strip() in safe_variables for match in on_change_calls
+)
+
+if bounded:
+    for editor in editors:
+        editor_html = rf"\b{re.escape(editor)}\.innerHTML\b"
+        allowed_offsets = set()
+        for sanitizer in sanitizers:
+            for match in re.finditer(
+                rf"\b{re.escape(sanitizer)}\s*\(\s*(?P<html>{editor_html})\s*\)",
+                code,
+            ):
+                allowed_offsets.add(match.start("html"))
+        for safe in safe_variables:
+            comparison_patterns = [
+                rf"\b{re.escape(safe)}\b\s*(?:===|!==|==|!=)\s*(?P<html>{editor_html})",
+                rf"(?P<html>{editor_html})\s*(?:===|!==|==|!=)\s*\b{re.escape(safe)}\b",
+                rf"(?P<html>{editor_html})\s*=\s*\b{re.escape(safe)}\b",
+            ]
+            for pattern in comparison_patterns:
+                for match in re.finditer(pattern, code):
+                    allowed_offsets.add(match.start("html"))
+        observed_offsets = {match.start() for match in re.finditer(editor_html, code)}
+        if not observed_offsets or not observed_offsets.issubset(allowed_offsets):
+            bounded = False
+            break
+
+print("clean" if bounded else "violation")
+PY
+) || {
+  printf '🚨 GOVERNANCE_INTEGRITY: native-table classifier failed for:%s\n' "$FILE" >&2
+  exit 70
+}
+if [ "$TABLE_CLASSIFICATION" = "violation" ]; then
   VIOLATIONS="${VIOLATIONS}  - 手刻 raw <table><thead>/<tbody> 資料表 → 必用 <DataTable columns={...} data={...} />(build-ui-canonicals.md:18 ❌→✅ SSOT;這是「優先消費既有元件」大原則,無理由不得手刻)\n"
+elif [ "$TABLE_CLASSIFICATION" != "clean" ]; then
+  printf '🚨 GOVERNANCE_INTEGRITY: native-table classifier returned invalid state:%s\n' "$TABLE_CLASSIFICATION" >&2
+  exit 70
 fi
 # 2026-07-08 WM 戰役 R4:偽表格視覺簽名(div-grid 表格繞過字面 <table> 偵測 — WM 5 檔
 # MINI_TABLE grid-cols + header bg + row 常數重複宣告實證,spec broad / hook narrow M34 gap)。

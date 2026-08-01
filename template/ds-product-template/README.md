@@ -126,7 +126,7 @@ Codemod ambiguity and `DataTable meta.disabled` are manual blockers, never guess
 | Codex adapter | `AGENTS.md` + `.codex/hooks.json` + `.agents/skills` |
 | Future provider | Enabled only after registering instruction, hook/exclusion, and skill materializers; otherwise it remains explicitly disabled and only the CLI/CI hard gate is usable |
 | Native hooks | Feedback accelerator; the locked coverage record permits only declared events and gives every missing event the immutable checker/protected-CI fallback |
-| Hard authority | exact installed checker + the protected-main `Governance anchor / Immutable consumer snapshot` required check |
+| Hard authority | exact installed checker + the protected-main `Verify consumer` required check from `audit.yml` |
 | Managed guide | `governance/consumer-governance.md`; explanatory, exact-hash upstream-managed, and updated for existing consumers by `sync-all` |
 | Product-specific policy | Add stricter, non-executable neutral rules in `governance/overlay.md`; never edit generated governance views or root product documentation through upstream sync |
 

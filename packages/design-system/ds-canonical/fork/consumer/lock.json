@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "8d639239bd7cccf22bc77915740e6c76d4d8dff9a5692efa423319bc09ba5adb",
+    "forkCorpusLockSha256": "eee0bc3840192a3ee33a406565ed1497fe9492bc2cd44cb8275c140b31c5d6da",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "43c6b2abb99a2b185eb143e5a5be12db0a3e096475cba58b1bde3a29dfb64940",
@@ -93,7 +93,7 @@
       ".github/workflows/audit.yml": "3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",
       ".github/workflows/governance-anchor.yml": "3e280e67fd72886b0686a6d296947ee3270b4899e9914c1e3a9c61c951dcc2ee",
       ".npmrc": "79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63",
-      "governance/consumer-governance.md": "abbded0a31cf3a6fb0de62975b749d10f27ac0adcc9bbf5e95ef410b64073396",
+      "governance/consumer-governance.md": "bc58561386e0df62306a5d7246e51647847732efa3de84426bada9978ff6da5c",
       "governance/provider-cli-toolchain.json": "6bc607cb6ac299b332d35ca871c838b54e367d96775ad0e759c827a0e3ca10cc",
       "governance/provider-cli-toolchain.package-lock.json": "fe7115dcbb9c096cc9c2aff069282636b942995399ace5dfd9ba68a7280d465f",
       "governance/schemas/issuer-registry.schema.json": "52616f59420942b96b33001e00d2c9a23ca3aa14dc236d8cb2aa9756787bfb90",

@@ -405,6 +405,23 @@ expect_block "60. P10 Write uses complete payload rather than stale disk file �
 run_hook "$WRITE_EXISTING_PATH" 'export const Grid = () => <table><thead><tr><th>Name</th></tr></thead><tbody><tr><td>Ada</td></tr></tbody></table>' "Edit"
 expect_block "61. P10 Edit retains proposed fragment when disk is stale → BLOCK" "手刻 raw <table>"
 
+# 62. A tag allowlist is closed, not merely table-complete. Unsafe extras cannot borrow the
+# document-table exemption even when all required table tags and sanitizer wiring are present.
+RICH_TEXT_UNSAFE_TAGS=${RICH_TEXT_DOCUMENT_TABLE/'"TD"]'/'"TD", "SCRIPT"]'}
+run_hook "$PROD_TSX" "$RICH_TEXT_UNSAFE_TAGS"
+expect_block "62. P10 unsafe ALLOWED_TAGS extra → BLOCK" "手刻 raw <table>"
+
+# 63. Sanitized emission does not excuse a second raw editor serialization path in the same file.
+RICH_TEXT_RAW_EMISSION=${RICH_TEXT_DOCUMENT_TABLE/'    onChange(next)'/$'    onChange(next)\n    onChange(editor.innerHTML)'}
+run_hook "$PROD_TSX" "$RICH_TEXT_RAW_EMISSION"
+expect_block "63. P10 mixed sanitized + raw innerHTML emission → BLOCK" "手刻 raw <table>"
+
+# 64. A bounded rich-text editor can coexist with product UI, but it cannot classify an unrelated
+# raw JSX application table as serialized document content.
+RICH_TEXT_WITH_APP_TABLE="$RICH_TEXT_DOCUMENT_TABLE"$'\nexport const AppGrid = () => <table><thead><tr><th>Name</th></tr></thead><tbody><tr><td>Ada</td></tr></tbody></table>'
+run_hook "$PROD_TSX" "$RICH_TEXT_WITH_APP_TABLE"
+expect_block "64. P10 rich editor plus raw JSX app table → BLOCK" "手刻 raw <table>"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

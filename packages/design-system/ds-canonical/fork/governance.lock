@@ -463,7 +463,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
-      "sha256": "abbded0a31cf3a6fb0de62975b749d10f27ac0adcc9bbf5e95ef410b64073396",
+      "sha256": "bc58561386e0df62306a5d7246e51647847732efa3de84426bada9978ff6da5c",
       "source": "packages/design-system/ds-canonical/templates/consumer-governance.md",
       "classification": null,
       "destination": "governance/consumer-governance.md"
@@ -663,7 +663,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "b7012123984801411335782237454092d0018bad7f2f8860ba07980a2efeb0c4",
+      "sha256": "ed10949aa7cd907585adf2ffb03379b416f82b0325b0b608d31b9bd22fec1045",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -807,7 +807,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/lib/_micro_geometry.sh",
-      "sha256": "178dcc7c64ffe5116fcd4e334a90cd80cbc4b8e4f029fc9311b1e9b429667a81",
+      "sha256": "de7c428792f28136c446e247622e44595ab06139430cedf391b671282abb3cf3",
       "source": "lib/_micro_geometry.sh",
       "classification": "HELPER",
       "destination": null

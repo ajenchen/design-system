@@ -30,7 +30,7 @@
         "**/test_*.sh",
         "**/test_*.sh.broken"
       ],
-      "treeSha256": "509df1aa092bd6df6c0baee95901fdadb0d92eef2ea56484a9762b0f92b4e420"
+      "treeSha256": "075676fe806fd29021bbec28b353cc22286526a995eef234b44bd05494b5b719"
     }
   ],
   "canonicalHookStaticHelpers": {

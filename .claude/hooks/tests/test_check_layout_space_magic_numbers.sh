@@ -153,6 +153,13 @@ run_hook "Write" "$APP_TSX" "content" \
   'const Row = () => <div className="flex items-center gap-2"><SummaryCard /><RecentWork /></div>;'
 expect_block "P11. generic flex row gap-2 without semantic owner → BLOCK"
 
+# P12. A nested phrasing child is not the class-bearing owner. Only `<span className="...">`
+#      itself can establish phrasing micro geometry; otherwise any macro row could smuggle in a
+#      harmless child span and bypass the gate.
+run_hook "Write" "$APP_TSX" "content" \
+  'const Row = () => <div className="flex items-center gap-2"><span>Title</span><SummaryCard /><RecentWork /></div>;'
+expect_block "P12. macro div gap-2 cannot borrow nested span semantics → BLOCK"
+
 # ─────────────────────────────────────────────────────────────
 # NEGATIVE cases — should NOT trigger (over-broad guard)
 # ─────────────────────────────────────────────────────────────
