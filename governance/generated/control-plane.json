@@ -1,6 +1,6 @@
 {
   "_provenance": {
-    "contractDigest": "sha256:da78ff92e17b2e6e0bb13392079a1dbe4785aaa7ad1bfa914683560c37228676",
+    "contractDigest": "sha256:a72c034c82120d7afd03f84da8436dad9752b0efef6991a6f4b3e0490abbb7ce",
     "generated": true,
     "generator": "@qijenchen/governance",
     "generatorVersion": "0.1.0-beta.98",
@@ -9,12 +9,12 @@
   },
   "canonicalSources": [
     {
-      "hash": "sha256:f3babea912be34fd1cf8cce7a7f82302701f1632f72f974317abcaaff1edda0d",
+      "hash": "sha256:cd31d066c1efff979839114da6c9306250d76dc15ef55ff9209867f433730955",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 23289,
+      "size": 23256,
       "type": "file"
     },
     {
@@ -66,7 +66,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 4,
-      "hash": "sha256:4f2db8f1b2a3422d89b86c92b4804f2e307d8a153e01aea31eea89ede1f95658",
+      "hash": "sha256:48077b6619dca07d38e07257d79a31375bdad539a22ac7486cd3a7fa57c10aab",
       "id": "canonical-adapter-templates",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -194,12 +194,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:636d9864988fc06946f90b698e830a061dc0a3cb802b3695f661ec4a11920cc4",
+      "hash": "sha256:356d28826ad861f6017784cacda1ac334fd8adcdbef06316c1aaa028b20f46ce",
       "id": "claude-instruction-adapter",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/adapters/claude-root-instructions.md",
-      "size": 2560,
+      "size": 2731,
       "type": "file"
     },
     {
@@ -392,12 +392,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0bf775148a730e50be4fe7157e0cf4b798e658d97283a8403698d8b3eb3dcffc",
+      "hash": "sha256:7e41328439c43d38d27615f4b93b4a803499521d3c59962942cac831fa3d0f45",
       "id": "consumer-managed-repos-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/inventory/managed-repos.json",
-      "size": 12389,
+      "size": 12259,
       "type": "file"
     },
     {
@@ -473,21 +473,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:60d23fc48a52498d3a295a14e2a1f1e5458a3727c3a518716bdc85dff0950b35",
+      "hash": "sha256:1b38793ab254d0553410584fa76a8484a13dad1509f354479d3564487ec1c8e4",
       "id": "deep-audit-ci-evidence-plan",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/ci-evidence-plan.json",
-      "size": 12166,
+      "size": 12083,
       "type": "file"
     },
     {
-      "hash": "sha256:37e46c7d863bf5917e835f3ce31c3b014b2ec9a65eb1970a74ae574edf99c510",
+      "hash": "sha256:f231c10c8f03b4e54147c8641a41e5da56ec915fb93533c3019b6d3dbfe93110",
       "id": "deep-audit-ci-evidence-plan-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/lib/ci-evidence-plan.mjs",
-      "size": 14640,
+      "size": 14563,
       "type": "file"
     },
     {
@@ -509,12 +509,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a31e51ea36e7948557e7eb7d2239460dc7768c297ef46eb74f94d2852427c577",
+      "hash": "sha256:088935927470ccd8e1584ed5ca9b7fe361a8b67d0ff61662dbeb17b1b6b38fac",
       "id": "deep-audit-ci-evidence-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-produce-ci-enforced-evidence.mjs",
-      "size": 45151,
+      "size": 45074,
       "type": "file"
     },
     {
@@ -1062,12 +1062,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b55460d3c56a12c4db22863ac8e4f7e6f47a0ad1d45b210c7af321ca57c77db5",
+      "hash": "sha256:00050c92b8846a0d6f98e559aff0ac3b95cbf95fe4c8b9a1dbf5493695e8b333",
       "id": "exact-external-surface-evidence-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/lib/external-surface-evidence.mjs",
-      "size": 37410,
+      "size": 37886,
       "type": "file"
     },
     {
@@ -1125,12 +1125,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0e1128711e874eb76a279181567f9e65e82af212a8e3395f702b4d4c190a86de",
+      "hash": "sha256:7cb86557b8e2ae8f66492a0724e4dc7fbbefba14d8c07e6940a3e0f1fed88bbc",
       "id": "exact-fork-governance-builder",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/build-fork-governance.mjs",
-      "size": 121101,
+      "size": 120970,
       "type": "file"
     },
     {
@@ -1179,21 +1179,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:702ee37b83b259f9f0f1e58a5078b36fe8bcf24e83c3073620787912845be4b5",
+      "hash": "sha256:fbe9104abea79598f4f0b10d4b07bddd4548beaf897b9b0fa608c1f57865f4bd",
       "id": "exact-github-desired-schema",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/schemas/github-desired.schema.json",
-      "size": 27545,
+      "size": 22536,
       "type": "file"
     },
     {
-      "hash": "sha256:dd73a2c6c753da436c5128db6ef8ade6863219ad4aae88ae4c42cd4fd9d99121",
+      "hash": "sha256:f0f8ddb1d9052c1a19d62b3987296fe8642de5ed089f09105371479793e17982",
       "id": "exact-github-desired-state",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/desired/github.json",
-      "size": 22481,
+      "size": 13590,
       "type": "file"
     },
     {
@@ -1341,21 +1341,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:895308c4ace1ca94125b9ca7908351badbb6d3e21a080230d1a241ad94adb2cf",
+      "hash": "sha256:797b187771d3d7eeeb80705df57fd298197510391ce83a67929551dae5cd1ea8",
       "id": "exact-mirror-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": ".github/workflows/mirror-to-published-template.yml",
-      "size": 51601,
+      "size": 8224,
       "type": "file"
     },
     {
-      "hash": "sha256:97363f6e9d0f26b111ebe38cb783d701dc9aca6f54addbb30bb4ec21284f2123",
+      "hash": "sha256:e2491f163865f1d1d3374c9fd4bedfb863fe6dbb42879aab840287c8e6bbe61b",
       "id": "exact-model-validation-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/lib/model-validation.mjs",
-      "size": 60856,
+      "size": 64410,
       "type": "file"
     },
     {
@@ -1467,12 +1467,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9e3a164fa62330bca53e1b13e2fbb6d8fe8199498d3fbeeba1dd1dbf6809282b",
+      "hash": "sha256:03c99e433dc8b8db8c5daf852b50aed60ea39a6ccfae3474d50fac66c5f48f61",
       "id": "exact-provider-runtime-conformance-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/lib/provider-runtime-conformance.mjs",
-      "size": 161919,
+      "size": 161961,
       "type": "file"
     },
     {
@@ -1991,8 +1991,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 15,
-      "hash": "sha256:fe040f607157d52098e8539b8f1043842397904f55f476ba2442c272255ce068",
+      "files": 14,
+      "hash": "sha256:618f8c4add27ef7b4ce5c4ed3e8dd4d7881fed1fae18d0986672874a7aa17913",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2065,12 +2065,12 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:296889d1eb80ce79e1f2f273d0fdc5d962f0f45dd264be4295c9f60a8a775966",
+      "hash": "sha256:2546c702868838fab95b2044b055179df7d061de893d59880c68aa62b3423cff",
       "id": "governance-build-graph-definition",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/governance-build-graph.json",
-      "size": 30999,
+      "size": 31286,
       "type": "file"
     },
     {
@@ -2092,12 +2092,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:7c6170007ae6c14f9b42ea0dd00006b0914df6d300a3e4f0c1ddca450dcf4668",
+      "hash": "sha256:4e0b6e504c1a6d611d2347b41433c7c43442a1530e2fe8b4a7ddcd2c9577f77c",
       "id": "governance-build-graph-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-governance-build-graph.mjs",
-      "size": 78040,
+      "size": 78034,
       "type": "file"
     },
     {
@@ -2115,7 +2115,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 33,
-      "hash": "sha256:f8af4e64b15b7aedb493729380e1d50cd69544bb96ec6ce80e1450bcacee4bdd",
+      "hash": "sha256:412864f249d1780ab6c6872a0e3ca0fe7f844fca6e1cf444214b36ff2b41a1c6",
       "id": "governance-control-plane-libraries",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2125,8 +2125,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 82,
-      "hash": "sha256:252ef4f8ac5125a16d64041af8058fe167dd6f8b8183aab25570381f0bc4f494",
+      "files": 83,
+      "hash": "sha256:07af39e0f17cc7c7e4c073b847312462903af17d3cb58a05a6e1e3cb81fe2d8a",
       "id": "governance-control-plane-schemas",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2136,8 +2136,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 63,
-      "hash": "sha256:bd9af03573a0fc0b0334869745494be08b7eb98d9630e761f03c01cdfbb7e02f",
+      "files": 65,
+      "hash": "sha256:29c2627a7335fbba2917761ec622c6a2b92148354ebecb8848b3b980a571727b",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2157,7 +2157,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:6ee4764cd2e230f3a6ff3ba75c3e00b7f9488152bc3bd3d8aae065b7b9da760f",
+      "hash": "sha256:336af1e8bf03979d20066af25d49faf29c39d9d6aa69e93897fb4161e9f6be55",
       "id": "governance-fleet-inventory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2168,7 +2168,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 1,
-      "hash": "sha256:76b6e36009dba929eaac31c73434c68bbbe1eb5e6f7914cf1c131bafce2b834f",
+      "hash": "sha256:df23db8d29fbb53488c36caa5f75dfb4cc2fe5c5e9a7b64604bca10679b57b2c",
       "id": "governance-github-desired-state",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2176,12 +2176,12 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:52bf2092da9e12f2ea99f4b206fcf1ed27238a9243d01eb01f9e5da30d362e28",
+      "hash": "sha256:8cf5fb8d88bbd246918fdee773cb67b9aa83ef85a1f0fe393b2c9f4a3efec9dd",
       "id": "governance-harness-authority-contracts",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/providers/harness-authority-contracts.json",
-      "size": 100273,
+      "size": 100151,
       "type": "file"
     },
     {
@@ -2212,12 +2212,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a79997f9325cec0221503da339228b82f2c182fc790dc42ed0e84f26c17ebb8c",
+      "hash": "sha256:3f805ba9bd601923b7d74270c4956904950c061ee1354acf517e535b2bab9748",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/providers/harness-registry.json",
-      "size": 46952,
+      "size": 46445,
       "type": "file"
     },
     {
@@ -2338,12 +2338,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a7797c8efda68d3679c656202d5b3409c1557b3cac6160e40aa2d7491a350aa2",
+      "hash": "sha256:0891f62f4d2c7c0c66472a94096b0eead8a7090e419e6888e0a2394a95cfe688",
       "id": "governance-infrastructure-runbook",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/README.md",
-      "size": 80497,
+      "size": 77457,
       "type": "file"
     },
     {
@@ -2434,12 +2434,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:733fa0af059787e0d430d4a56f9ee1bca84b11d99b654ce6209f5c1117f06290",
+      "hash": "sha256:669183cc9c0fa0be26d955c40c0bdba832ab456a67d11bcb95d7629dbaf31602",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 22081,
+      "size": 21807,
       "type": "file"
     },
     {
@@ -3066,28 +3066,28 @@
       "type": "file"
     },
     {
-      "hash": "sha256:835f9bf30c0274f77662765fd53cd1a6947c1730ec562adcfd4507a4a321132e",
+      "hash": "sha256:ad00b020aae20e076e0e309aa383b84eb117ee421039a2625ca292fd523ec413",
       "id": "product-shared-instruction",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/fork-role-sources/AGENTS.product.md",
-      "size": 6441,
+      "size": 7290,
       "type": "file"
     },
     {
-      "hash": "sha256:66bcee0a60de93a992131b92c20d1e397297fa109a2fe8c72dbfd62ebbbe9680",
+      "hash": "sha256:3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",
       "id": "product-template-audit-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "template/ds-product-template/.github/workflows/audit.yml",
-      "size": 1185,
+      "size": 799,
       "type": "file"
     },
     {
       "carrierProjections": [],
       "excludes": [],
       "files": 5,
-      "hash": "sha256:d3ea59c64bb48c16f90ff2ceaf6e317d7ff10ead8bc04762e783ee6f2239e107",
+      "hash": "sha256:6d53940db9d27017fd850f0a5eadf16aaa01ef49b04c7ae0f3cfcb7e4b4855dd",
       "id": "product-template-documentation",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3140,21 +3140,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4549bf66fac51e0e43b236158052eeb1b7a4bd183a7a3c97729bc56ddeb49374",
+      "hash": "sha256:a3546f4894d3582a9f8cc250120dbf6a587635276d6ae34de4abf37d6bcbc036",
       "id": "product-template-readme",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "template/ds-product-template/README.md",
-      "size": 17622,
-      "type": "file"
-    },
-    {
-      "hash": "sha256:f25e4d348daf1d98a0c8d0d9c1546d6b8340683ba59ed22aeb0f001378000483",
-      "id": "product-template-upgrade-workflow",
-      "mode": "0644",
-      "ownerRepo": "design-system",
-      "path": "template/ds-product-template/.github/workflows/sync-design-system.yml",
-      "size": 20380,
+      "size": 16714,
       "type": "file"
     },
     {
@@ -3239,7 +3230,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:029fc10ac6c68da26755805c672bcd32a8558170c671d5d094cd4d5825eed9ef",
+      "hash": "sha256:49018245f169e74370cb6e371db8bca4189182514d4570b9c7348fcbd79261e7",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3361,7 +3352,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 20,
-      "hash": "sha256:de47d19c74ee612ef69949a20a00b6b176ac4f17d91bdacc1df8c0bcc95c3112",
+      "hash": "sha256:59b527664446495f3231301ea3b7bc76ad5ac7d55c15368ce884bc4bf7927483",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3372,7 +3363,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 38,
-      "hash": "sha256:9786f982d91ebd9d01bd8df6dfdd8f23d91684dc27fc2b3c543321e29c4e2088",
+      "hash": "sha256:31dfd9790a8d1e50f233b24dede08218bd6253469a6a7e15a32d26adbe86335d",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3461,21 +3452,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:2fdef9eb4ef27cd6da72023793eaa5703a53cc48d3d60dd6795bb2e2808fc72a",
+      "hash": "sha256:b8c31ca5bee12bbe9f0fd53356f00e66dadbc3e0d8cc7018baae4778baead8e3",
       "id": "provider-runtime-conformance-profile",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/providers/runtime-conformance.json",
-      "size": 17942,
+      "size": 17895,
       "type": "file"
     },
     {
-      "hash": "sha256:6b107e875b22cd0e2a4dafb8f8801b1a81d7b5bc17437b552c28a9621b98cc49",
+      "hash": "sha256:2808c2ba9484e51cf958317e878930362cc9bba1fa9026d3fe203bb193e3f358",
       "id": "provider-runtime-conformance-profile-schema",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/schemas/runtime-conformance-profile.schema.json",
-      "size": 13368,
+      "size": 13575,
       "type": "file"
     },
     {
@@ -3579,21 +3570,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:50c803c131995cd0862b2b5d775f2333196bd7df0d6ac05c911687e55d78f45a",
-      "id": "release-finalizer-workflow",
-      "mode": "0644",
-      "ownerRepo": "design-system",
-      "path": ".github/workflows/release-finalize.yml",
-      "size": 20221,
-      "type": "file"
-    },
-    {
-      "hash": "sha256:8a510f7b300b00cf1e158d735fe0beb0f3413062ef9cc9218938bcb1923eac64",
+      "hash": "sha256:74bc6c3bc5f6e6b0ce1d6a037b4e5ac16f37db417ebd1b4f8d382c5ca29b5265",
       "id": "release-github-release-writer",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-github-release.mjs",
-      "size": 11736,
+      "size": 9127,
       "type": "file"
     },
     {
@@ -3603,6 +3585,15 @@
       "ownerRepo": "design-system",
       "path": "scripts/release-npm-approve.mjs",
       "size": 5233,
+      "type": "file"
+    },
+    {
+      "hash": "sha256:0752417674707d1e873ac250b8c739ea0af4e81520330751174e4ee55f2a322a",
+      "id": "release-npm-direct-publisher",
+      "mode": "0644",
+      "ownerRepo": "design-system",
+      "path": "scripts/release-npm-publish.mjs",
+      "size": 6936,
       "type": "file"
     },
     {
@@ -3633,21 +3624,21 @@
       "type": "file"
     },
     {
+      "hash": "sha256:0d556dc71b314f147611c964674f4fe6fe92072292a9661450bcb72de4887137",
+      "id": "release-npm-registry-readback",
+      "mode": "0644",
+      "ownerRepo": "design-system",
+      "path": "scripts/release-npm-readback.mjs",
+      "size": 2147,
+      "type": "file"
+    },
+    {
       "hash": "sha256:0c562052a70c507477021d87bb7abb69872d4d01443cfd0edb3da89b4bcedaf3",
       "id": "release-npm-rejector",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-npm-reject.mjs",
       "size": 4751,
-      "type": "file"
-    },
-    {
-      "hash": "sha256:1ae8d5a0d14698201de4d65aa063a243b5692c5556c2b0988f733617f0b740ce",
-      "id": "release-npm-stage-writer",
-      "mode": "0644",
-      "ownerRepo": "design-system",
-      "path": "scripts/release-npm-publish.mjs",
-      "size": 10347,
       "type": "file"
     },
     {
@@ -3660,12 +3651,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:01e8dcac6bb76acf6b19c9e2b8a41481181c2a52c1cc8921d9622194d65722cd",
+      "hash": "sha256:e456818ef7a206955be290a76721c33f56303053d7395bc0fdef2e3d67294566",
       "id": "release-runbook",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "docs/npm-native-staged-release.md",
-      "size": 20267,
+      "size": 3796,
       "type": "file"
     },
     {
@@ -3705,12 +3696,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a562a03f9b0e2133b30e327a45aafe4a56a243882c009331dd972c278d16483c",
+      "hash": "sha256:4a77487e4eaf54497b37ad4023a1aace3e834b0128485c2821f91cb46d081401",
       "id": "release-supply-chain-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-release-bom.mjs",
-      "size": 94888,
+      "size": 4827,
       "type": "file"
     },
     {
@@ -3804,30 +3795,30 @@
       "type": "file"
     },
     {
-      "hash": "sha256:8e211f67d2fb38e9e61057282aee23c475840e0fdcf6875068bd253fdcd5236b",
+      "hash": "sha256:ae5e8ce00b8042f374fcbc5d1be17d9db26f62917304b0d0bfd97bba5cd257e7",
       "id": "release-workflow",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": ".github/workflows/release.yml",
-      "size": 31653,
+      "size": 10302,
       "type": "file"
     },
     {
-      "hash": "sha256:61b5583b675453f7400dbbdf011a86fbef8010bbea8abbd763c246e9d2d66225",
+      "hash": "sha256:5dec94a7b3d0f01b3cebb1bb0da4ce368b228559d5c6ff5ab3641eb8b4903b66",
       "id": "release-workflow-security-auditor",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/audit-workflow-security.mjs",
-      "size": 115735,
+      "size": 56551,
       "type": "file"
     },
     {
-      "hash": "sha256:5254bba90e68478a729ada4bcbee43e10d850d22c069f7b384ff166811cf4e46",
+      "hash": "sha256:399f362a3ce03f6a164eb20327c61e7ea174aa98bea28ec1c3106ecd612635cc",
       "id": "release-workflow-security-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-workflow-security.mjs",
-      "size": 125195,
+      "size": 38973,
       "type": "file"
     },
     {
@@ -3835,8 +3826,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 384,
-      "hash": "sha256:23915796b6b8c35c690dfc26fb62035d333f4efab61940d2926caa285366aa2b",
+      "files": 386,
+      "hash": "sha256:56eaf111f3cbab285ba72a9dbc9ccb4daf957b4fdc1e66a584adb98e30e29fa5",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3971,6 +3962,42 @@
       "type": "file"
     },
     {
+      "hash": "sha256:a9d35780e2563eb245b9d2a79a5cac5072eb577b9957a439190b80722fc0694f",
+      "id": "standard-release-orchestrator",
+      "mode": "0644",
+      "ownerRepo": "design-system",
+      "path": "scripts/release-orchestrator.mjs",
+      "size": 20568,
+      "type": "file"
+    },
+    {
+      "hash": "sha256:34f358055ed03ffc609877cf9b516c450e93da6dd5b56584c2a888ca7b3a949a",
+      "id": "standard-release-workflow",
+      "mode": "0644",
+      "ownerRepo": "design-system",
+      "path": "infra/governance/release-workflow.json",
+      "size": 2988,
+      "type": "file"
+    },
+    {
+      "hash": "sha256:826b1f89e4f03eab0bf2968e5bb634dcf92fed53e65a83669726ce209b35b8fa",
+      "id": "standard-release-workflow-schema",
+      "mode": "0644",
+      "ownerRepo": "design-system",
+      "path": "infra/governance/schemas/release-workflow.schema.json",
+      "size": 7060,
+      "type": "file"
+    },
+    {
+      "hash": "sha256:ecce7c139ac439a605174b6367d5049cf9377b78a316220320f4a8d2a03341b8",
+      "id": "standard-release-workflow-tests",
+      "mode": "0644",
+      "ownerRepo": "design-system",
+      "path": "infra/governance/test/release-workflow.test.mjs",
+      "size": 12569,
+      "type": "file"
+    },
+    {
       "hash": "sha256:0215eb1247193bd172ba730d6e3fb58ae285c1cf8e8d1611f3cab31f1de55fb3",
       "id": "storybook-package-contract",
       "mode": "0644",
@@ -3998,12 +4025,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:56d1d9ad891ac6afc5e8412bf6e08ce082f3e222b8ecbc80d431f6463c582e22",
+      "hash": "sha256:502c5fdbf4427e802b9ba122e415dfb88456e565624a3174f6bf5a2f4ec89937",
       "id": "workflow-identity-adversarial-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/workflow-identity-sync.test.mjs",
-      "size": 13663,
+      "size": 13617,
       "type": "file"
     },
     {

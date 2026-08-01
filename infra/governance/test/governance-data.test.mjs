@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -21,7 +21,7 @@ const NOW = new Date(Math.max(
   ...issuerRegistry.issuers.map(issuer => Date.parse(issuer.notBefore)),
 ) + 1)
 const templateConsumerLock = readJson(resolve(ROOT, '../../template/ds-product-template/governance/lock.json'))
-const templateUpgradeWorkflow = readFileSync(resolve(ROOT, '../../template/ds-product-template/.github/workflows/sync-design-system.yml'), 'utf8')
+const templateAuditWorkflow = readFileSync(resolve(ROOT, '../../template/ds-product-template/.github/workflows/audit.yml'), 'utf8')
 const authorityVersionWorkflow = readFileSync(resolve(ROOT, '../../.github/workflows/changeset-version.yml'), 'utf8')
 const authorityReleaseWorkflow = readFileSync(resolve(ROOT, '../../.github/workflows/release.yml'), 'utf8')
 
@@ -77,20 +77,28 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   }
   for (const profileName of ['published-template', 'product-consumer']) {
     const profile = desired.profiles[profileName]
-    assert.deepEqual(profile.requiredChecks.map(check => check.context), ['Immutable consumer snapshot'])
-    assert.equal(profile.requiredChecks[0].integration, 'governanceCheckApp')
-    assert.equal(profile.environments.find(environment => environment.name === 'governance-upgrade').credentialIntegration, 'governanceWriterApp')
-    assert.equal(profile.actionsWorkflowPermissions.can_approve_pull_request_reviews, false)
-    assert.ok(profile.environments.every(environment => {
-      if (!environment.credentialIntegration) return true
-      return environment.name === 'governance-check-verdict'
-        ? environment.credentialIntegration === 'governanceCheckApp'
-        : environment.credentialIntegration === 'governanceWriterApp'
-    }))
+    assert.deepEqual(profile.requiredChecks.map(check => check.context), ['Verify consumer'])
+    assert.equal(profile.requiredChecks[0].integration, 'githubActions')
+    assert.equal(profile.actionsWorkflowPermissions.can_approve_pull_request_reviews, true)
+    assert.deepEqual(profile.environments, [])
   }
-  assert.equal(
-    desired.profiles['design-system-authority'].environments.find(environment => environment.name === 'governance-mirror').credentialIntegration,
-    'governanceWriterApp',
+  assert.deepEqual(
+    desired.profiles['product-consumer'].requiredChecks[0],
+    {
+      ...desired.profiles['product-consumer'].requiredChecks[0],
+      baseTrusted: true,
+      requiredEvents: ['repository_dispatch'],
+      trustSource: 'protected-base-workflow',
+      workflow: '.github/workflows/audit.yml',
+    },
+  )
+  assert.equal(desired.profiles['published-template'].requiredChecks[0].baseTrusted, undefined)
+  assert.deepEqual(desired.profiles['published-template'].requiredChecks[0].requiredEvents, ['pull_request'])
+  assert.equal(desired.profiles['published-template'].requiredChecks[0].trustSource, 'repository-workflow')
+  assert.equal(desired.profiles['published-template'].requiredChecks[0].workflow, '.github/workflows/audit.yml')
+  assert.deepEqual(
+    desired.profiles['design-system-authority'].environments.map(environment => environment.name),
+    ['npm-release', 'governance-external-ledger'],
   )
   const externalLedgerEnvironment = desired.profiles['design-system-authority'].environments.find(
     environment => environment.name === 'governance-external-ledger',
@@ -121,6 +129,8 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   }
   const npmRelease = desired.profiles['design-system-authority'].environments.find(environment => environment.name === 'npm-release')
   assert.equal(Object.hasOwn(npmRelease, 'credentialIntegration'), false)
+  assert.equal(npmRelease.rollout, 'always')
+  assert.equal(desired.profiles['design-system-authority'].immutableReleases, false)
   const publishNpmOffset = authorityReleaseWorkflow.indexOf('\n  publish-npm:\n')
   const publishNpm = publishNpmOffset >= 0 ? authorityReleaseWorkflow.slice(publishNpmOffset + 1) : null
   assert.ok(publishNpm, 'release workflow lacks the npm-release publish job')
@@ -128,7 +138,15 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   assert.match(publishNpm, /id-token: write/)
   assert.doesNotMatch(publishNpm, /create-github-app-token|GOVERNANCE_WRITER_APP|permission-contents|permission-pull-requests/)
   const authorityChecks = desired.profiles['design-system-authority'].requiredChecks
-  assert.ok(authorityChecks.some(check => check.context === 'Packaging integrity(dims 84/85/86/88 light checks)'))
+  assert.equal(authorityChecks.length, 1)
+  assert.equal(authorityChecks[0].context, 'Verify(tsc + tests + compile + build)')
+  assert.deepEqual(authorityChecks[0].requiredEvents, ['pull_request'])
+  assert.deepEqual(authorityChecks[0].releaseRequiredEvents, ['push'])
+  const authorityVerifiedMain = desired.profiles['design-system-authority'].rulesets.find(ruleset => ruleset.name === 'fleet/verified-main')
+  const authorityTags = desired.profiles['design-system-authority'].rulesets.find(ruleset => ruleset.target === 'tag')
+  assert.equal(authorityVerifiedMain.rollout, 'always')
+  assert.equal(authorityTags.rollout, 'always')
+  assert.deepEqual(authorityTags.rules.map(rule => rule.type), ['update', 'deletion'])
   assert.ok(authorityChecks.every(check => (
     check.integration === 'githubActions'
     && check.trustSource === 'repository-workflow'
@@ -141,37 +159,23 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   )
   for (const profile of Object.values(desired.profiles)) {
     assert.deepEqual(profile.actionsWorkflowPermissions, {
-      can_approve_pull_request_reviews: profile.environments.some(environment => environment.name === 'governance-upgrade') ? false : true,
+      can_approve_pull_request_reviews: true,
       default_workflow_permissions: 'read',
     })
     const pullRequest = profile.rulesets.flatMap(ruleset => ruleset.rules).find(rule => rule.type === 'pull_request')
+    assert.ok(profile.rulesets.every(ruleset => ruleset.rollout === 'always'))
+    assert.deepEqual(profile.rulesets.find(ruleset => ruleset.target === 'tag').rules.map(rule => rule.type), ['update', 'deletion'])
     assert.equal(pullRequest.parameters.required_approving_review_count, 0)
     assert.equal(pullRequest.parameters.require_code_owner_review, false)
     assert.equal(pullRequest.parameters.require_last_push_approval, false)
     assert.ok(profile.rulesets.some(ruleset => ruleset.target === 'tag' && ruleset.conditions.ref_name.include.includes('refs/tags/v*')))
     assert.ok(profile.rulesets.every(ruleset => ruleset.bypass_actors.length === 0))
   }
-  const upgradeDispatchLines = templateUpgradeWorkflow.match(/^  repository_dispatch:[ \t]*$/gm) || []
-  assert.deepEqual(
-    upgradeDispatchLines,
-    ['  repository_dispatch:'],
-  )
-  const upgradeDispatchTypeLines = templateUpgradeWorkflow.match(/^    types:[ \t]*\[[^\]]*\][ \t]*$/gm) || []
-  assert.deepEqual(
-    upgradeDispatchTypeLines,
-    ['    types: [governance-release, manual-governance-upgrade-request]'],
-  )
-  assert.doesNotMatch(templateUpgradeWorkflow, /^  workflow_dispatch:\s*$/m)
-  assert.doesNotMatch(templateUpgradeWorkflow, /\b(?:design-system-published|ds-published)\b/)
-  assert.match(templateUpgradeWorkflow, /environment:\s*\n\s*name: governance-upgrade/)
-  assert.match(templateUpgradeWorkflow, /uses: actions\/create-github-app-token@[a-f0-9]{40}/)
-  assert.match(templateUpgradeWorkflow, /app-id:\s*\$\{\{ secrets\.GOVERNANCE_WRITER_APP_ID \}\}/)
-  assert.match(templateUpgradeWorkflow, /private-key:\s*\$\{\{ secrets\.GOVERNANCE_WRITER_APP_PRIVATE_KEY \}\}/)
-  assert.match(templateUpgradeWorkflow, /GH_TOKEN:\s*\$\{\{ steps\.app-token\.outputs\.token \}\}/)
-  assert.doesNotMatch(templateUpgradeWorkflow, /GH_TOKEN:\s*\$\{\{ github\.token \}\}|github-actions\[bot\]/)
-  assert.match(templateUpgradeWorkflow, /baseRefName,headRefName,headRefOid,isCrossRepository/)
-  assert.match(templateUpgradeWorkflow, /author\.login[\s\S]*WRITER_LOGIN/)
-  assert.doesNotMatch(templateUpgradeWorkflow, /\bgh\s+pr\s+(?:review|merge)\b|actions\/runs\/[^\s"']+\/approve|pulls\/[^\s"']+\/reviews/)
+  assert.match(templateAuditWorkflow, /name: Verify consumer/)
+  assert.match(templateAuditWorkflow, /npm ci --ignore-scripts/)
+  for (const command of ['npm run typecheck', 'npm run lint:imports', 'npm run build']) assert.match(templateAuditWorkflow, new RegExp(command))
+  assert.doesNotMatch(templateAuditWorkflow, /setup:governance|audit:a11y|playwright|GOVERNANCE_(?:CHECK|WRITER)_APP/)
+  assert.equal(existsSync(resolve(ROOT, '../../template/ds-product-template/.github/workflows/sync-design-system.yml')), false)
   assert.match(authorityVersionWorkflow, /uses: changesets\/action@[a-f0-9]{40}/)
   assert.match(authorityVersionWorkflow, /^on:\s*\n  push:\s*\n    branches: \[main\]\s*$/m)
   assert.doesNotMatch(authorityVersionWorkflow, /\bgh\s+pr\s+(?:review|merge)\b|actions\/runs\/[^\s"']+\/approve|pulls\/[^\s"']+\/reviews/)
@@ -181,21 +185,21 @@ test('live governance model encodes exact trust anchors, solo review settings, t
     () => validateModel(inventory, overlyBroad, rings, certifications, waivers, NOW),
     /desired schema validation failed:.*default_workflow_permissions must be equal to constant/,
   )
-  const missingWriterApp = structuredClone(desired)
-  delete missingWriterApp.profiles['product-consumer'].environments.find(environment => environment.name === 'governance-upgrade').credentialIntegration
+  const unexpectedConsumerEnvironment = structuredClone(desired)
+  unexpectedConsumerEnvironment.profiles['product-consumer'].environments.push(structuredClone(npmRelease))
   assert.throws(
-    () => validateModel(inventory, missingWriterApp, rings, certifications, waivers, NOW),
-    /desired schema validation failed:.*credentialIntegration/,
+    () => validateModel(inventory, unexpectedConsumerEnvironment, rings, certifications, waivers, NOW),
+    /desired schema validation failed|must not require Governance App environments/,
   )
-  const builtInWriterFallback = structuredClone(desired)
-  builtInWriterFallback.profiles['product-consumer'].actionsWorkflowPermissions.can_approve_pull_request_reviews = true
+  const disabledActionsPrWriter = structuredClone(desired)
+  disabledActionsPrWriter.profiles['product-consumer'].actionsWorkflowPermissions.can_approve_pull_request_reviews = false
   assert.throws(
-    () => validateModel(inventory, builtInWriterFallback, rings, certifications, waivers, NOW),
+    () => validateModel(inventory, disabledActionsPrWriter, rings, certifications, waivers, NOW),
     /desired schema validation failed:.*can_approve_pull_request_reviews must be equal to constant/,
   )
   const desiredValidatorContract = validateDesiredGithub.toString()
-  assert.match(desiredValidatorContract, /upgradeEnvironment\.credentialIntegration === 'governanceWriterApp'[\s\S]*governance-upgrade must use the dedicated Governance Writer App/)
-  assert.match(desiredValidatorContract, /actionsWorkflowPermissions\.can_approve_pull_request_reviews === false[\s\S]*must disable the built-in GITHUB_TOKEN PR writer/)
+  assert.match(desiredValidatorContract, /product-consumer required check must be the protected-default receiver Verify consumer receipt/)
+  assert.match(desiredValidatorContract, /must allow GitHub Actions to create upgrade pull requests/)
   assert.match(desiredValidatorContract, /externalLedgerEnvironment\.workflow === '\.github\/workflows\/external-ledger-writer\.yml'[\s\S]*governance-external-ledger must bind the protected external-ledger writer workflow/)
   assert.match(desiredValidatorContract, /externalLedgerEnvironment\.credentialIntegration === 'governanceWriterApp'[\s\S]*governance-external-ledger must use the dedicated Governance Writer App/)
   const missingExternalLedgerEnvironment = structuredClone(desired)
@@ -231,7 +235,7 @@ test('live governance model encodes exact trust anchors, solo review settings, t
     /desired schema validation failed:.*design-system-authority\/environments/,
   )
   assert.match(desiredValidatorContract, /environment\.name === 'npm-release'[\s\S]*npm-release must remain OIDC-only/)
-  assert.deepEqual(desired.managedEnvironmentNames, ['npm-release', 'release-finalize', 'governance-check-verdict', 'governance-mirror', 'governance-upgrade', 'governance-external-ledger'])
+  assert.deepEqual(desired.managedEnvironmentNames, ['npm-release', 'governance-check-verdict', 'governance-upgrade', 'governance-external-ledger'])
   assert.equal(rings.schemaVersion, 3)
   assert.equal(rings.candidateRelease, null)
   for (const ring of rings.rings) {

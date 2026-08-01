@@ -20,8 +20,8 @@ git push -u origin feat/<your-feature-name>
 
 ## CI 自動跑(每 PR / push)
 
-- `audit.yml`:hooks-off governance hard gate + tsc + lint:imports + build all apps + a11y
-- `sync-design-system.yml`:只接受 exact release version；read-only runner 獨立重建後，`governance-upgrade` environment-gated Governance Writer App 只取得 contents/PR 與完整 snapshot 更新 `.github/workflows/**` 所必需的 workflows write，並建立 deterministic PR。它觸發的 candidate runs 全部是 non-authoritative；明確 repository dispatch 重新載入 protected-default validation，再由獨立 check-only Governance Check App 發布 required verdict。不直推 main、不 review/approve/merge、不解析 dist-tag；repository Actions 預設維持 read-only 且 create/approve PR 設定維持關閉
+- `audit.yml`:單次 locked install + tsc + lint:imports + build all apps，發布唯一 required context `Verify consumer`
+- Exact template 更新由上游 release mirror 建立一般 protected-main PR；template 不保留第二條 release-dispatch/updater workflow
 - Storybook deploy 走 `netlify.toml` Git integration auto-build,不需 workflow file
 
 ## Code review(CODEOWNERS)

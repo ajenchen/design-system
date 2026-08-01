@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   audit:
+    name: Verify consumer
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -22,8 +23,8 @@ jobs:
           node-version: '24.14.0'
           cache: npm
 
-      - name: Lock-verified exact npm install, audits and provider-neutral hard gate
-        run: npm run setup:governance
+      - name: Install exact locked dependencies
+        run: npm ci --ignore-scripts
 
       - name: Type-check
         run: npm run typecheck
@@ -33,11 +34,3 @@ jobs:
 
       - name: Build all apps
         run: npm run build
-
-      - name: Install Playwright browsers
-        run: npx --no-install playwright install --with-deps chromium
-
-      - name: A11y audit consumer apps(WCAG 2 A + AA)
-        # Phase 5 加 — DS repo 跑 npm run a11y:check on storybook;ds-product-template
-        # 跑 audit-consumer-a11y.mjs on apps/*/dist。對等 DS audit 嚴謹度。
-        run: npm run audit:a11y

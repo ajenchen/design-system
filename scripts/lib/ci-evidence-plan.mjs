@@ -187,7 +187,6 @@ const EXPECTED_REQUIRED_PATHS = Object.freeze({
     'scripts/verify-upgrade-provenance.mjs',
     'scripts/visual-assertions.json',
     'template/ds-product-template/.github/workflows/audit.yml',
-    'template/ds-product-template/.github/workflows/sync-design-system.yml',
   ]),
 })
 

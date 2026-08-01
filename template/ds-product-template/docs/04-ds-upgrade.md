@@ -1,22 +1,19 @@
 # DS Upgrade Flow
 
-Every consumer snapshot uses exact versions. An upgrade is a reviewed change to code, package lock, governance BOM, provider adapters, and skills—not an install-time lookup of “latest”.
+Every consumer snapshot uses exact versions. An upgrade is a reviewed change to code, package lock,
+governance material, provider adapters, and skills—not an install-time lookup of “latest”.
 
 ## Automated proposal
 
-`sync-design-system.yml` accepts a release event or manual exact version. It:
+The design-system authority owns the five-step release SSOT and mirrors the exact published snapshot
+into this template repository through a normal protected-main PR. The template intentionally carries
+no second release-dispatch/updater workflow and requires no Governance App environment.
 
-1. validates exact semver;
-2. installs the current committed snapshot with `npm ci --ignore-scripts` and verifies registry signatures;
-3. runs `sync-all --apply --to <version>` without any write credential;
-4. materializes the authenticated package in the credential-free certifier, but rejects any changed `.github/**`, `.npmrc`, `governance/bin/**`, `scripts/**`, or `package.json#scripts` body from the ordinary path; an established v2 consumer must use the recurring reviewed control-plane full-snapshot route, while a pre-v2 consumer must first complete its one-time bootstrap;
-5. freezes the exact base, changed paths, patch, and resulting tree in a digest-bound receipt;
-6. starts a fresh **read-only** runner and runs the protected-base verifier in a disposable sandbox; it independently authenticates provenance and reconstructs the complete incoming tree, patch, and add/modify/delete set, then rechecks live `main` after that long reconstruction and emits a digest for the exact verified bytes;
-7. starts a separate `governance-upgrade` environment-gated writer, rechecks live `main`, applies only those digest-bound bytes, and mints a short-lived Governance Writer App token limited to contents, pull-request, and workflow writes because the authenticated full snapshot manages `.github/workflows/**`. It pushes/opens or strictly validates one deterministic PR. Writer App events may start ordinary candidate workflows, but every such run is non-authoritative. The writer sends one explicit `governance-upgrade-candidate-validation` repository dispatch; only protected-default `governance-anchor.yml` resolves the live PR/base/head and runs credential-free candidate validation. A fresh verdict job alone receives the separate check-only Governance Check App.
-
-Required checks and review decide whether the PR can merge. The workflow never writes directly to `main`.
-
-Repository Actions defaults must remain `contents: read`, and **Allow GitHub Actions to create and approve pull requests** must remain disabled. The built-in `GITHUB_TOKEN` is read-only and is never the writer. The audited Governance Writer App has no Checks permission and contains no PR review, run-approval, merge, ruleset-bypass, or direct-main operation. Never treat automatically triggered candidate runs as the required verdict; explicit protected-default dispatch and the separate check-only Governance Check App are the validation route.
+The PR must pass exactly one required context, `Verify consumer`, from `audit.yml`. That job performs
+one `npm ci --ignore-scripts` followed by typecheck, import-boundary lint, and build. Review
+conversations and protected-main exact readback remain required. Preview, a11y, visual, canary, fleet,
+and independent-review evidence are optional or scheduled unless explicitly requested and never
+block the standard release path by default.
 
 ## Fleet onboarding
 

@@ -32,10 +32,9 @@ const DESIRED = readJson(resolve(GOVERNANCE, 'desired/github.json'))
 const INVENTORY = readJson(resolve(GOVERNANCE, 'inventory/managed-repos.json'))
 const REVISION = Object.freeze({ commitSha: '1'.repeat(40), treeSha: '2'.repeat(40) })
 const MUTATED = Object.freeze([
-  '.github/workflows/a11y-and-size.yml',
+  '.github/workflows/ci.yml',
   '.github/workflows/release.yml',
-  '.github/workflows/release-finalize.yml',
-  '.github/workflows/mirror-to-published-template.yml',
+  '.github/workflows/external-ledger-writer.yml',
 ])
 
 function workflowBindings(desired) {
@@ -99,7 +98,7 @@ function build(fx) {
   })
 }
 
-test('four unique stale workflows fan out to exactly six consumer bindings and each physical source is read once', t => {
+test('three unique stale workflows fan out to exactly four authority bindings and every consumer source is still read once', t => {
   const fx = fixture(t)
   const counts = new Map()
   const result = synchronizeWorkflowIdentities(fx.desired(), {
@@ -110,14 +109,14 @@ test('four unique stale workflows fan out to exactly six consumer bindings and e
       return { text: readFileSync(path, 'utf8') }
     },
   })
-  assert.equal(result.changes.length, 6)
-  assert.equal(new Set(result.changes.map(change => change.sourceId)).size, 4)
+  assert.equal(result.changes.length, 4)
+  assert.equal(new Set(result.changes.map(change => change.sourceId)).size, 3)
   assert.equal(result.uniqueWorkflowCount, counts.size)
   assert.ok([...counts.values()].every(count => count === 1))
 
   const proposal = build(fx).proposal
-  assert.equal(proposal.changes.length, 6)
-  assert.equal(proposal.requiredChangedPaths.length, 5)
+  assert.equal(proposal.changes.length, 4)
+  assert.equal(proposal.requiredChangedPaths.length, 4)
   assert.ok(proposal.changes.every(change => change.after.semanticVersion === 2))
   assert.equal(proposal.authorizationStatus, 'not-performed')
 })
@@ -242,7 +241,7 @@ test('a concurrent workflow change during the final read aborts before desired m
 test('same physical workflow bindings must carry one identity and desired schema is validated before reads', t => {
   const fx = fixture(t, { mutate: false })
   const conflicting = fx.desired()
-  conflicting.profiles['product-consumer'].requiredChecks[0].workflowIdentity.contentSha256 = 'f'.repeat(64)
+  conflicting.profiles['design-system-authority'].tagPolicy.sourceWorkflowIdentity.contentSha256 = 'f'.repeat(64)
   assert.throws(() => synchronizeWorkflowIdentities(conflicting, { sources: fx.sources(), authorityRoot: fx.root }), /conflicts with/)
 
   const open = fx.desired()

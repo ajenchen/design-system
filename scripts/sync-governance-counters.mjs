@@ -250,10 +250,9 @@ for (const rel of liveCountFiles) {
   }
 }
 
-// ── Immutable-release-only mirror trigger contract ──
-// Raw push mirroring can publish an unfinalized commit and make DS source self-certifying. Every
-// allowlisted source change instead rides the next signed immutable release; only its completed
-// finalizer (or a closed run-id/attempt retry) may activate the privileged mirror workflow.
+// ── Published-release-only mirror trigger contract ──
+// Raw push mirroring can publish an unverified commit and make DS source self-certifying. Every
+// allowlisted source change instead rides the next published GitHub Release.
 const mirrorSrcPath = path.join(ROOT, 'scripts/build-published-template-mirror.mjs')
 const mirrorWfPath = path.join(ROOT, '.github/workflows/mirror-to-published-template.yml')
 if (fs.existsSync(mirrorSrcPath) && fs.existsSync(mirrorWfPath)) {
@@ -267,11 +266,11 @@ if (fs.existsSync(mirrorSrcPath) && fs.existsSync(mirrorWfPath)) {
     const parsed = loadYaml(wf)
     const releaseOnly = parsed?.on?.push === undefined
       && parsed?.on?.workflow_dispatch === undefined
-      && JSON.stringify(parsed?.on?.workflow_run?.workflows) === JSON.stringify(['Finalize staged release'])
-      && JSON.stringify(parsed?.on?.workflow_run?.types) === JSON.stringify(['completed'])
-      && JSON.stringify(parsed?.on?.repository_dispatch?.types) === JSON.stringify(['mirror-template-request'])
+      && parsed?.on?.workflow_run === undefined
+      && parsed?.on?.repository_dispatch === undefined
+      && JSON.stringify(parsed?.on?.release?.types) === JSON.stringify(['published'])
     if (!releaseOnly) {
-      drifts.push('mirror workflow 必須只接受 completed Finalize staged release 或封閉 repository_dispatch；raw push/workflow_dispatch 禁止')
+      drifts.push('mirror workflow 必須只接受 published GitHub Release；raw push/workflow_dispatch/repository_dispatch/workflow_run 禁止')
     }
   } catch (error) {
     drifts.push(`mirror workflow YAML 無法解析:${error.message}`)

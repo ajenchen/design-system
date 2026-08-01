@@ -6,20 +6,20 @@ canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描�
 
 ## Active Codex execution ledger（2026-08-01；最高優先）
 
-Codex 已於 2026-08-01 接回完整執行責任；Claude handoff 已結束。執行 worktree 為
-`/private/tmp/ds-genesis.B3xxFi`。任何 AI agent（Codex、Claude 或後續 provider）都必須先讀 root
-`AGENTS.md`、root `CLAUDE.md` 與本檔，沿 live exact-head/readback 繼續，不得重跑全域 discovery，
-也不得為已授權的工程動作再次詢問 user。本節是唯一 continuation SSOT；歷史診斷只供 provenance，
-不得蓋過本節的 current verdict。
+Codex 已於 2026-08-01 接回完整執行責任；Claude handoff 已結束。任何 AI agent（Codex、Claude 或
+後續 provider）都必須先讀 root `AGENTS.md`、root `CLAUDE.md` 與本檔，沿 live exact-head/readback
+繼續，不得重跑全域 discovery，也不得為已授權的工程動作再次詢問 user。暫存 worktree 路徑不是
+authority；standard release 的唯一 machine execution SSOT 是 `infra/governance/release-workflow.json`。
+本節只記 current state；歷史診斷只供 provenance，不得蓋過 machine verdict。
 
 ### Authority（不得再次詢問）
 
 - User 已明確授權全部工程、baseline、Git、PR、CI remediation/rerun、merge、release、rollout 與
   readback。Exact visual image set 的「可以改」已是完整 UI/UX 核准；不需要第二次核准、key
   enrollment、OWNER comment 或 signature，也不得啟用 optional independent cryptographic review。
-- 只有真正未解的產品／UI／UX SSOT 取捨才 ASK。只有 login/MFA/OAuth/account-owner/billing、
-  plan 外付費／法律／帳號／組織／商業承諾，或在安全 preflight 後仍缺既有 credential reference
-  才是 HUMAN_ONLY；先完成所有可代理工作，最後只提出一個 exact human action，readback 後續跑。
+- 只有真正未解的產品／UI／UX SSOT 取捨才 ASK。Standard release 可能遇到的 HUMAN_ONLY runtime
+  邊界只有 login/MFA/OAuth/缺 credential reference；完成 exact action 後 AUTO resume。其他全域
+  billing／付費／法律／帳號／組織權限／商業承諾邊界仍依 `AGENTS.md`，但不是 release milestone。
 - Engineering failure、CI failure、GitHub write、commit/push/PR/merge/rebase/release milestone 都是
   AUTO，不是 user approval gate。Claude 的 `decision-authority-routing` live probe 必覆蓋同一語意。
 
@@ -166,41 +166,25 @@ Codex 已於 2026-08-01 接回完整執行責任；Claude handoff 已結束。�
 `Harness suite blocked: Harness suite may only run inside the canonical all-Harness runner`，
 只能整批跑（約 65 分鐘）。個別 test 檔仍可用 `node --test <path>` 驗。
 
-**Historical note**：前一個 Claude sandbox 無法產生全綠 receipt；Codex 目前環境不沿用此限制。
-最終 release closure 會在 committed clean tree 以 `npm run release:preflight` 內含的 canonical
-all-Harness runner 產生一次 exact HEAD/tree receipt。
+**Historical note**：前一個 Claude sandbox 無法產生全綠 receipt；該 preflight/candidate 流程已退為
+provenance，不是 current standard release gate。
 
 ### Mandatory continuation order
 
-1. ~~完成 Genesis source closure~~ **已完成**：12 個 commits 已保留且 rebase 到 PR #22 的 protected
-   merge tree；generated conflicts 全由 canonical source 重生。
-2. ~~完成 beta.98 canonical closure~~ **已完成**：版本面、append-only provider lifecycle ledger、
-   continuation SSOT、template/LLMS/governance generation 與 Claude live authority-routing 修復均已閉合。
-3. ~~首輪 final preflight 與 PR 建立~~ **已完成**：`fe8acb76` exact tree preflight PASS；ready PR #23
-   已建立。其 receipt 因下項真實 CI remediation 變為 historical，不得綁到新 tree。
-4. **目前執行點**：完成 npm config 單一 SSOT 修復、canonical generation 與 targeted checks；提交成
-   clean tree 後只對新 exact HEAD/tree 重跑一次 `npm run release:preflight`，推送同一 PR #23，監看並
-   自動修復 candidate CI；全綠後以 exact-head CAS squash merge 並讀回 protected `main` 與 Ubuntu
-   visual evidence。
-5. 續跑 §4 external activation／reconciliation／release 的所有安全可代理步驟；只有實證的 npm login/MFA
-   或缺 secure signing-key reference 才可留下 HUMAN_ONLY action，其他 failure 全部 AUTO remediation。
-6. DS release closure 後處理 `../work-management`：不得整批推送六個 local commits；只 salvage
-   `1a26bd1` 的三個產品檔並移除 beta.96 workaround，沿既有 `codex/work-preview`／PR #13 驗證合併。
-   此處沒有未決 UI/UX：Work 產品 SSOT 明定設定入口是 topbar gear，account menu 不新增 Settings；
-   不得拿 DS generic AccountMenu default 覆蓋產品逐字稿或再次詢問 user。
+唯一合法順序是 `pr-checks → merge → publish → readback → consumer`，全部 AUTO；用
+`npm run release:status` 取得第一個未完成步驟，並用 `npm run release:auto` 安全續跑。舊 Genesis、
+candidate receipt、external activation、certification、offline signature、soak 與 fleet promotion
+描述不得插入額外階段或 approval gate。
 
 ### Completion condition
 
-Do not stop at “source fixed” or “PR opened.” Completion is: PR #22 merged; Genesis candidate rebased,
-fully verified, PR-green and merged; live protected-main readback captured; then every safely executable §4
-step advanced until either complete or one precisely evidenced HUMAN_ONLY action remains. Keep this file as the
-single continuation SSOT and update its live snapshot before the next handoff.
+Do not stop at “source fixed” or “PR opened.” Completion means all five machine steps have live readback, or
+the exact current action is paused only for login/MFA/OAuth/credential reference. This planning file never
+overrides `infra/governance/release-workflow.json` and must not introduce another completion definition.
 
-**2026-08-01 current status**：PR #22 已 exact-head merge；Genesis beta.98 首輪 exact preflight 已通過，
-PR #23 已 ready；目前唯一 candidate source remediation 是上述 npm config SSOT 漂移，沒有 UI/UX 決策
-blocker。Commit／preflight／PR／CI／merge 的 live completion 必由 exact Git、receipt 與 GitHub readback
-判定。GitHub write/readback 已實證可用；下一個可能的人類邊界只會是 release 最後端的 npm login/MFA
-或安全 signing-key reference，且必須先完成所有可代理工程與外部 readback 才能提出。
+**2026-08-01 current status**：PR #23 已 merge 到 protected `main`；先前 preflight/candidate 記錄只供
+歷史 provenance。後續狀態一律由五步 orchestrator 的 GitHub/npm/consumer live readback 判定，沒有
+未決 UI/UX 決策 blocker；login/MFA/OAuth/credential reference 完成後必自動續跑。
 
 ## 0. Historical state（2026-07-31；superseded by active ledger above）
 
@@ -308,63 +292,29 @@ blocker。Commit／preflight／PR／CI／merge 的 live completion 必由 exact 
 | Governance budget | Hook 60/60 已達 hard cap；`/knowledge-prune` 仍缺 opt-in telemetry。`design-system-audit/SKILL.md` 接近 transition cap。`.claude/logs` 約 64 MB 且屬 non-authority exclusion。 |
 | Downstream local state | `../work-management` branch ahead 6；尚未 push／fanout。 |
 
-## 4. 外部啟用／受保護操作（Standing Authorization AUTO）
+## 4. Standard release（Standing Authorization AUTO）
 
-以下皆依 `AGENTS.md#自主執行 canonical` 由 agent 自動續跑，不是逐 milestone 的人類核准 gate。
-只有 login／MFA／OAuth、缺 credential reference、付費／法律／帳號／組織權限／商業承諾，或
-產品／UI／UX SSOT 真取捨屬 human-only boundary；若遇到，agent 必先完成所有可代理 preflight，
-只提出一個精確 human action，readback 後繼續。
+`infra/governance/release-workflow.json` 是唯一 blocking graph：`pr-checks → merge → publish → readback →
+consumer`。Agent 只用 `release:auto`／`release:status` 執行與讀回；CI/workflow/readback failure 自動修復，
+不是核准點。Login/MFA/OAuth/credential reference 完成後 AUTO resume。
 
-1. **Live required checks reconciliation**
-   - Desired SSOT 已在 `infra/governance/desired/github.json`。
-   - 只能用 `infra/governance/bin/reconcile-github.mjs`；不得手刻 curl／ruleset。
-   - Full-fleet `--apply` 與 live readback 仍受 external activation、runtime authorization、
-     rollout authorization 與 off-host append-only evidence mirror fail-closed 保護。
-   - 本輪沒有 apply；plan/read-only 可用不等於 GitHub live state 已收斂。
+Legacy candidate-freeze、broad external activation、model certification、offline signatures、72h soak 與
+fleet promotion 對 standard small-team release 明確是 non-blocking 或 retired。它們可留作歷史或額外
+assurance evidence，但缺漏不得阻止五步完成，也不得改寫 production release ready 的五步定義。
 
-2. **Genesis transition（2026-08-01 distinct cleanup candidate）**
-   - `scripts/governance-build-graph.json` 在本獨立 candidate 已改為
-     `controlPlaneGenesisTransition.state = "closed"`、
-     `cleanupRequiresDistinctProtectedPr = true`、`releaseAllowed = true`，並綁定重算後的 transition digest。
-   - Open-only SSOT dispatch／status／propagation tombstones與 consumer preamble compatibility output 已退場；
-     baseline compatibility tree 在 generation 後只保留指向 provider-neutral authority 的 exact symlink。
-   - 此 candidate 必以 PR #22 merge 後的 protected base 開獨立 PR，required checks 與 merge/readback
-     通過前不得預先 tag/release。Closure 只解除 Genesis freeze，不代表 external activation、certification、
-     fleet rollout 或 soak 已完成。
-
-3. **Release identities與真實執行**
-   - npm package identities／bootstrap、三個 trusted publishers、tokenless 2FA publishing、
-     account-holder 互動式 2FA、signed release authorization／tag authorizer 尚需 owner。
-   - 前置條件完成後才可送 `stage-protected-release` repository dispatch，再執行 finalize、
-     template mirror 與 `consumerctl apply-fanout`。
-   - Source dead chain 已修；真實 stage/finalize/mirror/fanout execution 尚未發生。
-
-4. **Ubuntu visual canonical readback**
-   - `.github/workflows/visual-regression.yml` 的 authority runner 是 `ubuntu-24.04`。Exact Ubuntu
-     artifact 的 11 張缺口已經 user 核准並收入 canonical；本次 push 後必須讀回
-     新 head 的 diff errors=0、breaches=0，失敗則 agent 自動修復。
-   - `visual-baseline-review-policy.json` 維持 optional、`not-activated`；只有 user 明確
-     要求 independent cryptographic review 時才啟用，不得將它當成明確 UI 核准後的第二道 gate。
-
-5. **External assurance**
-   - `infra/governance/external-activation-requirements.json` 的外部 requirements 仍未啟用，
-     evidence 尚未具備；包含 GitHub App identity、managed rulesets/readback、mirror mutation
-     boundaries、off-host evidence、managed host／managed CI attestation 等。
-   - `review-capability-certifications.json.certifications = []`；獨立 provider/capability
-     certification、fleet rollback drill／rollout 與 72h soak 尚未開始。
-   - 因此不得宣稱 independent review complete、promotion eligible 或 production release ready。
+Ubuntu visual、required CI、GitHub Release、npm exact versions、template 與 WM protected-main readback
+仍在各自五步內 fail closed；optional cryptographic review 未經 user 明確要求不得啟用。
 
 ## 5. 後續合法順序
 
-唯一 authoritative execution order 是本檔最上方 `Active Codex execution ledger` 的
-`Mandatory continuation order`。本歷史區段不另立或複製 current 流程。
+唯一 authoritative execution order 是 `infra/governance/release-workflow.json` 的五步。本檔不另立
+或複製另一套 current 流程。
 
 ## 6. 流程約束
 
 - Generated governance 檔不得手改；所有 canonical source 穩定後執行
   `npm run governance:generate`，再以 `npm run governance:check` 與 full harness 驗證。
-- Live apply、release、baseline promotion、certification 都是不同 authority boundary；「source
-  已修」不得改寫成「外部 execution 已完成」。
+- 「source 已修」不得改寫成「外部 execution 已完成」；只接受五步 live readback。
 - 本檔是 planning/current-state SSOT，不取代 machine authority、runtime evidence 或 live readback。
 
 相關：`governance/memory/project_provider_neutral_governance.md`、

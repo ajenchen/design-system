@@ -1643,7 +1643,6 @@
       "domain": "release",
       "authoritySourceIds": [
         "release-workflow",
-        "release-finalizer-workflow",
         "exact-github-actions-artifact-identity-library",
         "release-bom-contract",
         "release-sbom-normalizer",
@@ -1697,7 +1696,6 @@
           "text": "Release BOM, tag authorization, workflow identity and finalization receipts are closed and digest-bound.",
           "sourceIds": [
             "release-workflow",
-            "release-finalizer-workflow",
             "exact-github-actions-artifact-identity-library",
             "release-bom-contract",
             "release-sbom-normalizer",
@@ -1779,7 +1777,6 @@
           "text": "npm packages, GitHub tags or immutable releases exist before live provider readback.",
           "sourceIds": [
             "release-workflow",
-            "release-finalizer-workflow",
             "exact-release-finalizer-mirror-handoff",
             "exact-upgrade-provenance-verifier"
           ],

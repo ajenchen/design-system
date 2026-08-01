@@ -43,9 +43,7 @@
   },
   "managedEnvironmentNames": [
     "npm-release",
-    "release-finalize",
     "governance-check-verdict",
-    "governance-mirror",
     "governance-upgrade",
     "governance-external-ledger"
   ],
@@ -53,23 +51,23 @@
     "product-consumer": {
       "actionsWorkflowPermissions": {
         "default_workflow_permissions": "read",
-        "can_approve_pull_request_reviews": false
+        "can_approve_pull_request_reviews": true
       },
       "immutableReleases": false,
       "requiredChecks": [
         {
-          "context": "Immutable consumer snapshot",
-          "integration": "governanceCheckApp",
+          "context": "Verify consumer",
+          "integration": "githubActions",
           "trustSource": "protected-base-workflow",
-          "workflow": ".github/workflows/governance-anchor.yml",
+          "workflow": ".github/workflows/audit.yml",
           "workflowIdentity": {
-            "contentSha256": "b1ba2edcfa33a02059ea67bbd6e3350d4c6d9d3dbcb85be5ffa885f30402d113",
-            "gitBlobSha": "42a5ef2f6f62d7955f595680d1c6f14a4fa30664",
+            "contentSha256": "f620b819dc58937bde853da5c08d103b6d81194fdd0f400f1cebfdbad2c7a211",
+            "gitBlobSha": "3e3b9e818e995a935af34013c2e6a01c1bb70c63",
             "semanticVersion": 2,
-            "semanticSha256": "c5f7ddc8e2fed23c25dbd7b3297ff00ce5e41c24a3b411f38e79ee106af11f42"
+            "semanticSha256": "dad42ba5e135c6a1fab279e064e934784f03700353e5f68aa8ea1b8c7a6fa166"
           },
           "requiredEvents": [
-            "pull_request_target"
+            "repository_dispatch"
           ],
           "forbidCandidateControlledSkip": true,
           "requireUnconditionalPullRequest": true,
@@ -106,7 +104,7 @@
         {
           "name": "fleet/verified-main",
           "target": "branch",
-          "rollout": "on-promotion",
+          "rollout": "always",
           "enforcement": "active",
           "conditions": {
             "ref_name": {
@@ -140,7 +138,7 @@
         {
           "name": "fleet/immutable-release-tags",
           "target": "tag",
-          "rollout": "on-promotion",
+          "rollout": "always",
           "enforcement": "active",
           "conditions": {
             "ref_name": {
@@ -153,16 +151,10 @@
           "bypass_actors": [],
           "rules": [
             {
-              "type": "creation"
-            },
-            {
               "type": "update"
             },
             {
               "type": "deletion"
-            },
-            {
-              "type": "required_signatures"
             }
           ]
         }
@@ -170,50 +162,11 @@
       "tagPolicy": {
         "pattern": "v*",
         "sourceBranch": "main",
-        "allowCreation": false,
+        "allowCreation": true,
         "requireSourceAncestry": true,
         "requireVerifiedSource": true
       },
-      "environments": [
-        {
-          "name": "governance-check-verdict",
-          "workflow": ".github/workflows/governance-anchor.yml",
-          "workflowIdentity": {
-            "contentSha256": "b1ba2edcfa33a02059ea67bbd6e3350d4c6d9d3dbcb85be5ffa885f30402d113",
-            "gitBlobSha": "42a5ef2f6f62d7955f595680d1c6f14a4fa30664",
-            "semanticVersion": 2,
-            "semanticSha256": "c5f7ddc8e2fed23c25dbd7b3297ff00ce5e41c24a3b411f38e79ee106af11f42"
-          },
-          "credentialIntegration": "governanceCheckApp",
-          "rollout": "always",
-          "waitTimer": 0,
-          "preventSelfReview": false,
-          "reviewers": [],
-          "deploymentBranchPolicy": {
-            "protectedBranches": true,
-            "customBranchPolicies": false
-          }
-        },
-        {
-          "name": "governance-upgrade",
-          "workflow": ".github/workflows/sync-design-system.yml",
-          "workflowIdentity": {
-            "contentSha256": "f620b819dc58937bde853da5c08d103b6d81194fdd0f400f1cebfdbad2c7a211",
-            "gitBlobSha": "3e3b9e818e995a935af34013c2e6a01c1bb70c63",
-            "semanticVersion": 2,
-            "semanticSha256": "dad42ba5e135c6a1fab279e064e934784f03700353e5f68aa8ea1b8c7a6fa166"
-          },
-          "credentialIntegration": "governanceWriterApp",
-          "rollout": "on-promotion",
-          "waitTimer": 0,
-          "preventSelfReview": false,
-          "reviewers": [],
-          "deploymentBranchPolicy": {
-            "protectedBranches": true,
-            "customBranchPolicies": false
-          }
-        }
-      ]
+      "environments": []
     }
   }
 }

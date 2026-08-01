@@ -332,22 +332,20 @@ const authorityRuntimeClosure = assertRuntimeDependencyClosureEntries(authorityR
 })
 const allowlistScripts = [...buildScript.matchAll(/'scripts\/([^']+\.mjs)'/g)].map(m => m[1])
 const requiredWorkflowRoots = [
-  'release-finalizer-mirror-handoff.mjs',
-  'mirror-run-artifact-identity.mjs',
-  'setup-authority-governance.mjs',
+  'release-set.mjs',
+  'build-release-bom.mjs',
+  'release-npm-readback.mjs',
   'build-published-template-mirror.mjs',
-  'run-verified-npm.mjs',
-  'verify-mirror-release.mjs',
-  'verify-mirror-evidence.mjs',
   'product-template-scaffold-lock.mjs',
   'generate-product-template-package-lock.mjs',
 ]
 const missingWorkflowRoots = requiredWorkflowRoots.filter((path) => !directNodeRoots.includes(path))
 const missingRuntimeFiles = authorityRuntimeClosure.runtimeModules.filter((path) => !existsSync(join(REPO_ROOT, path)))
 const releaseOnlyTriggers = workflow?.on?.push === undefined
-  && JSON.stringify(workflow?.on?.workflow_run?.workflows) === JSON.stringify(['Finalize staged release'])
-  && JSON.stringify(workflow?.on?.workflow_run?.types) === JSON.stringify(['completed'])
-  && JSON.stringify(workflow?.on?.repository_dispatch?.types) === JSON.stringify(['mirror-template-request'])
+  && workflow?.on?.workflow_dispatch === undefined
+  && workflow?.on?.workflow_run === undefined
+  && workflow?.on?.repository_dispatch === undefined
+  && JSON.stringify(workflow?.on?.release?.types) === JSON.stringify(['published'])
 if (releaseOnlyTriggers && directNodeRoots.length > 0 && missingWorkflowRoots.length === 0 && missingRuntimeFiles.length === 0) {
   pass_test('M1', `Release-only trigger + mirror allowlist(${allowlistScripts.length}) + direct/transitive Node runtime closure(${directNodeRoots.length}/${authorityRuntimeClosure.runtimeModules.length})`)
 } else {

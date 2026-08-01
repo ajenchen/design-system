@@ -1,56 +1,26 @@
 #!/usr/bin/env node
-// Stage the exact release train through npm's native stage-only trusted publisher.
+// Publish the exact release train directly through npm Trusted Publishing, then read it back.
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { prepareVerifiedExactNpmRuntime } from './lib/verified-exact-npm-runtime.mjs'
 import {
-  assertExpectedChannelProgress,
   assertTokenlessNpmEnvironment,
-  classifyNpmViewResult,
-  compareReleaseVersions,
-  createStageReceipt,
-  decideNpmStageAction,
   loadReleaseContext,
-  minimumStagedNpmVersion,
   npmRegistry,
   npmResult,
   npmView,
-  planReleaseChannelPromotion,
-  readAndPlanChannel,
-  stagingTagForVersion,
-  validateProvenanceStatement,
-  validateStagePublishJson,
-  validateStageReceipt,
-  writeAtomicJson,
+  readTagVersions,
+  validateRegistryPackage,
+  waitForPublishedPackage,
 } from './release-npm-lib.mjs'
-import {
-  assertVerifiedReleaseTag,
-  requestGitHubJson,
-  resolveRemoteTagIdentity,
-} from './release-remote-tag.mjs'
 
-export {
-  assertExpectedChannelProgress,
-  assertTokenlessNpmEnvironment,
-  classifyNpmViewResult,
-  compareReleaseVersions,
-  decideNpmStageAction,
-  planReleaseChannelPromotion,
-  stagingTagForVersion,
-  validateProvenanceStatement,
-  validateStagePublishJson,
-  validateStageReceipt,
-}
+const OBJECT_ID = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/
 
 function parseArgs(argv) {
   const allowed = new Set([
-    '--artifacts', '--bom', '--repository', '--tag', '--git-head', '--tag-object', '--github-token-env', '--receipt',
-    '--authorization-digest', '--release-trust-evidence-digest', '--release-trust-evidence-file-sha256',
-    '--trust-artifact-name', '--trust-artifact-digest',
-    '--trust-run-id', '--trust-run-attempt',
+    '--artifacts', '--bom', '--repository', '--tag', '--git-head', '--github-token-env',
   ])
   const values = {}
   for (let index = 0; index < argv.length; index += 2) {
@@ -59,183 +29,135 @@ function parseArgs(argv) {
     if (!allowed.has(name) || !value || value.startsWith('--')) throw new Error(`invalid argument: ${name || '<missing>'}`)
     values[name] = value
   }
-  for (const required of [
-    '--artifacts', '--bom', '--repository', '--tag', '--git-head', '--tag-object', '--github-token-env', '--receipt',
-    '--authorization-digest', '--release-trust-evidence-digest', '--release-trust-evidence-file-sha256',
-    '--trust-artifact-name', '--trust-artifact-digest',
-    '--trust-run-id', '--trust-run-attempt',
-  ]) {
+  for (const required of allowed) {
     if (!values[required]) throw new Error(`${required} is required`)
   }
-  for (const name of [
-    '--authorization-digest', '--release-trust-evidence-digest', '--release-trust-evidence-file-sha256',
-    '--trust-artifact-digest',
-  ]) {
-    if (!/^[a-f0-9]{64}$/.test(values[name])) throw new Error(`${name} must be a lowercase SHA-256`)
-  }
-  for (const name of ['--trust-run-id', '--trust-run-attempt']) {
-    if (!/^[1-9][0-9]*$/.test(values[name])) throw new Error(`${name} must be a positive integer`)
-  }
+  if (!OBJECT_ID.test(values['--git-head'])) throw new Error('--git-head must be a full Git object ID')
   return values
 }
 
-async function recheckRemoteTag(identity, expectedTagObject, token) {
-  const actual = await resolveRemoteTagIdentity({
-    repository: identity.repository,
-    tag: identity.tag,
-    requestJson: (path) => requestGitHubJson({ token, path }),
+async function requestGitHubJson(token, path) {
+  const response = await fetch(`https://api.github.com${path}`, {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${token}`,
+      'User-Agent': 'design-system-direct-npm-release',
+      'X-GitHub-Api-Version': '2026-03-10',
+    },
+    signal: AbortSignal.timeout(15_000),
   })
-  assertVerifiedReleaseTag({ identity: actual, expectedCommit: identity.gitHead, expectedTagObject })
-}
-
-function readReceipt(path, context, releaseTrustExpected) {
-  const absolute = resolve(path)
-  if (!existsSync(absolute)) return null
-  const stats = lstatSync(absolute)
-  if (!stats.isFile() || stats.isSymbolicLink() || realpathSync(absolute) !== absolute) {
-    throw new Error(`stage receipt must be a regular file (no symlink): ${absolute}`)
+  if (!response.ok) {
+    const body = (await response.text()).slice(0, 1000)
+    throw new Error(`GitHub identity API ${path} failed with HTTP ${response.status}: ${body}`)
   }
-  return validateStageReceipt(JSON.parse(readFileSync(absolute, 'utf8')), context, { releaseTrustExpected })
+  return response.json()
 }
 
-function assertNativeStageRuntime(npmCli) {
+async function resolveTagCommit(token, repository, tag) {
+  const encoded = tag.split('/').map(encodeURIComponent).join('/')
+  const path = `/repos/${repository}/git/ref/tags/${encoded}`
+  const reference = await requestGitHubJson(token, path)
+  let commit
+  if (reference?.object?.type === 'commit') {
+    commit = reference.object.sha
+  } else if (reference?.object?.type === 'tag' && OBJECT_ID.test(reference.object.sha || '')) {
+    const tagObject = await requestGitHubJson(token, `/repos/${repository}/git/tags/${reference.object.sha}`)
+    if (tagObject?.tag !== tag || tagObject?.object?.type !== 'commit') {
+      throw new Error(`release tag ${tag} does not directly target a commit`)
+    }
+    commit = tagObject.object.sha
+  } else {
+    throw new Error(`release tag ${tag} has an unsupported Git object type`)
+  }
+  const confirmed = await requestGitHubJson(token, path)
+  if (confirmed?.object?.type !== reference.object.type || confirmed?.object?.sha !== reference.object.sha) {
+    throw new Error(`release tag ${tag} moved during remote verification`)
+  }
+  if (!OBJECT_ID.test(commit || '')) throw new Error(`release tag ${tag} did not resolve to a full commit ID`)
+  return commit
+}
+
+async function assertStableReleaseTag({ token, repository, tag, gitHead }) {
+  const tagCommit = await resolveTagCommit(token, repository, tag)
+  if (tagCommit !== gitHead) throw new Error(`release tag ${tag} targets ${tagCommit}, expected release commit ${gitHead}`)
+}
+
+function assertTrustedPublisherRuntime(npmCli) {
   const version = execFileSync(npmCli, ['--version'], { encoding: 'utf8' }).trim()
-  if (version !== '11.18.0' || compareReleaseVersions(version, minimumStagedNpmVersion) < 0) {
-    throw new Error(`lock-bound npm 11.18.0 is required for native staged publishing; found ${version}`)
-  }
+  if (version !== '11.18.0') throw new Error(`lock-bound npm 11.18.0 is required for Trusted Publishing; found ${version}`)
   if (process.env.GITHUB_ACTIONS !== 'true' || process.env.RUNNER_ENVIRONMENT !== 'github-hosted') {
-    throw new Error('stage-only OIDC publishing is restricted to a GitHub-hosted Actions runner')
+    throw new Error('OIDC Trusted Publishing is restricted to a GitHub-hosted Actions runner')
   }
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   assertTokenlessNpmEnvironment(process.env)
-  const npmRuntime = await prepareVerifiedExactNpmRuntime({ repositoryRoot: resolve(dirname(fileURLToPath(import.meta.url)), '..') })
-  const npmCli = npmRuntime.cli
-  try {
-    assertNativeStageRuntime(npmCli)
-  const context = loadReleaseContext({
-    artifacts: resolve(args['--artifacts']),
-    bomPath: resolve(args['--bom']),
-    repository: args['--repository'],
-    tag: args['--tag'],
-    gitHead: args['--git-head'],
-  })
   const githubToken = process.env[args['--github-token-env']]
   if (!githubToken) throw new Error(`GitHub token environment variable is empty: ${args['--github-token-env']}`)
-  const receiptPath = resolve(args['--receipt'])
-  const releaseTrustExpected = {
-    authorizationDigest: args['--authorization-digest'],
-    evidenceSha256: args['--release-trust-evidence-digest'],
-    evidenceFileSha256: args['--release-trust-evidence-file-sha256'],
-    tagObject: args['--tag-object'],
-    artifactName: args['--trust-artifact-name'],
-    artifactDigest: args['--trust-artifact-digest'],
-    runId: args['--trust-run-id'],
-    runAttempt: args['--trust-run-attempt'],
-    headSha: context.identity.gitHead,
-  }
-  const releaseTrust = {
-    authorizationDigest: releaseTrustExpected.authorizationDigest,
-    evidenceSha256: releaseTrustExpected.evidenceSha256,
-    evidenceFileSha256: releaseTrustExpected.evidenceFileSha256,
-    tagObject: releaseTrustExpected.tagObject,
-    artifact: {
-      name: releaseTrustExpected.artifactName,
-      digest: `sha256:${releaseTrustExpected.artifactDigest}`,
-      workflow: {
-        path: '.github/workflows/release.yml',
-        event: 'repository_dispatch',
-        headBranch: 'main',
-        headSha: context.identity.gitHead,
-        runId: String(releaseTrustExpected.runId),
-        runAttempt: Number(releaseTrustExpected.runAttempt),
-      },
-    },
-  }
-  let receipt = readReceipt(receiptPath, context, releaseTrustExpected) || createStageReceipt(context, releaseTrust)
-  writeAtomicJson(receiptPath, receipt)
 
-  await recheckRemoteTag(context.identity, args['--tag-object'], githubToken)
+  const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
+  const npmRuntime = await prepareVerifiedExactNpmRuntime({ repositoryRoot })
+  const npmCli = npmRuntime.cli
+  try {
+    assertTrustedPublisherRuntime(npmCli)
+    const context = loadReleaseContext({
+      artifacts: resolve(args['--artifacts']),
+      bomPath: resolve(args['--bom']),
+      repository: args['--repository'],
+      tag: args['--tag'],
+      gitHead: args['--git-head'],
+    })
 
-  // Validate every package before the first irreversible stage request. Native staging cannot
-  // create a brand-new package, so a missing bootstrap must stop the entire train up front.
-  for (const item of context.ordered) {
-    const receiptItem = receipt.packages.find((candidate) => candidate.name === item.name)
-    if (receiptItem.status === 'staged') continue
-    if (receiptItem.status !== 'planned') {
-      throw new Error(
-        `${item.name}: receipt is ${receiptItem.status}; do not retry blindly after an ambiguous request. `
-        + 'Recover it interactively with release-npm-stage-recover.mjs.',
-      )
-    }
-    const versionState = npmView(npmCli, `${item.name}@${item.version}`, 'dist')
-    const packageState = npmView(npmCli, item.name, 'name')
-    decideNpmStageAction({ name: item.name, version: item.version, versionState, packageState })
-  }
+    await assertStableReleaseTag({
+      token: githubToken,
+      repository: context.identity.repository,
+      tag: context.identity.tag,
+      gitHead: context.identity.gitHead,
+    })
 
-  for (const item of context.ordered) {
-    const receiptItem = receipt.packages.find((candidate) => candidate.name === item.name)
-    if (receiptItem.status === 'staged') continue
-    receiptItem.status = 'submitting'
-    receiptItem.attemptedAt = new Date().toISOString()
-    receipt.state = 'staging'
-    writeAtomicJson(receiptPath, receipt)
-    await recheckRemoteTag(context.identity, args['--tag-object'], githubToken)
+    for (const item of context.ordered) {
+      const existing = npmView(npmCli, `${item.name}@${item.version}`, 'dist')
+      if (existing.kind === 'found') {
+        await validateRegistryPackage(npmCli, item, context.identity)
+        console.log(`ℹ️ ${item.name}@${item.version} already exists with the expected integrity and provenance`)
+        continue
+      }
+      if (existing.kind !== 'missing') throw new Error(`${item.name}@${item.version}: registry state is not safe to publish`)
 
-    const archive = resolve(context.releaseSet.artifacts, item.file)
-    const staged = npmResult(npmCli, [
-      'stage', 'publish', archive,
-      '--access', 'public',
-      '--tag', context.stagingTag,
-      '--provenance',
-      '--ignore-scripts',
-      '--json',
-      `--registry=${npmRegistry}`,
-    ])
-    if (staged.status !== 0) {
-      receiptItem.status = 'ambiguous'
-      receiptItem.failure = (staged.stderr || staged.stdout || '').trim().slice(0, 2000)
-      receipt.state = 'recovery-required'
-      writeAtomicJson(receiptPath, receipt)
-      throw new Error(
-        `npm stage publish returned exit ${staged.status ?? 'unknown'} for ${item.name}@${item.version}. `
-        + 'The registry may have accepted the request before the client failed; the durable receipt is marked ambiguous. '
-        + 'Do not retry until an interactive maintainer lists/views the staged version and repairs the receipt.',
-      )
+      await assertStableReleaseTag({
+        token: githubToken,
+        repository: context.identity.repository,
+        tag: context.identity.tag,
+        gitHead: context.identity.gitHead,
+      })
+      const archive = resolve(context.releaseSet.artifacts, item.file)
+      const published = npmResult(npmCli, [
+        'publish', archive,
+        '--access', 'public',
+        '--tag', context.targetTag,
+        '--provenance',
+        '--ignore-scripts',
+        '--json',
+        `--registry=${npmRegistry}`,
+      ])
+      if (published.status !== 0) {
+        throw new Error(`${item.name}@${item.version}: npm publish failed (exit ${published.status ?? 'unknown'}): ${(published.stderr || published.stdout || '').trim().slice(0, 2000)}`)
+      }
+      await waitForPublishedPackage(npmCli, item, context.identity)
+      console.log(`✅ published and verified ${item.name}@${item.version}`)
     }
 
-    let parsed
-    try {
-      parsed = JSON.parse(staged.stdout)
-    } catch {
-      receiptItem.status = 'ambiguous'
-      receiptItem.failure = `successful command returned invalid JSON: ${(staged.stdout || '').trim().slice(0, 1200)}`
-      receipt.state = 'recovery-required'
-      writeAtomicJson(receiptPath, receipt)
-      throw new Error(`${item.name}: stage request succeeded but the stageId response was not parseable; interactive recovery is required`)
+    for (const item of context.ordered) await validateRegistryPackage(npmCli, item, context.identity)
+    const targetTags = readTagVersions(npmCli, context.ordered, context.targetTag)
+    for (const item of context.ordered) {
+      if (targetTags[item.name] !== context.targetVersion) {
+        throw new Error(`${item.name}: npm ${context.targetTag} tag is ${targetTags[item.name] || '<missing>'}, expected ${context.targetVersion}`)
+      }
     }
-    const evidence = validateStagePublishJson(parsed, item)
-    receiptItem.stageId = evidence.stageId
-    receiptItem.status = 'staged'
-    receiptItem.stagedAt = new Date().toISOString()
-    delete receiptItem.failure
-    writeAtomicJson(receiptPath, receipt)
-    await recheckRemoteTag(context.identity, args['--tag-object'], githubToken)
-    console.log(`✅ staged ${item.name}@${item.version} as ${evidence.stageId}`)
-  }
-
-  receipt.state = 'awaiting-platform-confirmation'
-  receipt.awaitingPlatformConfirmationAt = new Date().toISOString()
-  validateStageReceipt(receipt, context, { requireComplete: true })
-  writeAtomicJson(receiptPath, receipt)
-  await recheckRemoteTag(context.identity, args['--tag-object'], githubToken)
-  console.log(`✅ all three packages are staged under immutable tag ${context.stagingTag}`)
-  console.log('⏸️  npm now requires an account-holder platform action: inspect each stageId and complete npm 2FA confirmation')
-  console.log(`   durable receipt: ${receiptPath}`)
+    console.log(`✅ exact three-package ${context.targetTag} train and npm provenance read back successfully`)
   } finally {
-    npmRuntime.cleanup()
+    npmRuntime.cleanup?.()
   }
 }
 

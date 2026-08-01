@@ -7,7 +7,7 @@
     {
       "schemaVersion": 1,
       "file": "AGENTS.md",
-      "sha256": "2b9eb1a4fbca7d432c3b68c3b2fd73090ed9a95f41da960584556ac030b599e6",
+      "sha256": "3d40f4b5d3ea78f6c9ca5bd18daa531dc758d77df21a5e7ef35a3336cd71f906",
       "source": "common instruction compatibility alias",
       "classification": null,
       "destination": null
@@ -271,7 +271,7 @@
     {
       "schemaVersion": 1,
       "file": "common/instruction.md",
-      "sha256": "2b9eb1a4fbca7d432c3b68c3b2fd73090ed9a95f41da960584556ac030b599e6",
+      "sha256": "3d40f4b5d3ea78f6c9ca5bd18daa531dc758d77df21a5e7ef35a3336cd71f906",
       "source": "scripts/fork-role-sources/AGENTS.product.md + AGENTS.md#canonical-decision-authority",
       "classification": null,
       "destination": null
@@ -422,14 +422,6 @@
     },
     {
       "schemaVersion": 1,
-      "file": "consumer/managed-files/77e06f62670dfee01e9b5e8b0f8dad085ce711d75538c1fb0679d9818acaca82.blob",
-      "sha256": "f25e4d348daf1d98a0c8d0d9c1546d6b8340683ba59ed22aeb0f001378000483",
-      "source": "template/ds-product-template/.github/workflows/sync-design-system.yml",
-      "classification": null,
-      "destination": ".github/workflows/sync-design-system.yml"
-    },
-    {
-      "schemaVersion": 1,
       "file": "consumer/managed-files/7937321877e5c34c27dae36c0d507d21cd42fa3f46a8f11a284b8b4a52b6faa4.blob",
       "sha256": "86edd952fb5c3871896515440693abeb08c1d1da9f887fa073b9ddda1363f572",
       "source": "scripts/lint-ds-internal-imports.mjs",
@@ -495,7 +487,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/93a89f16f6717d1e4e4e27ec20ef916e3355c7aa890ca74cd9b12db30d8a899f.blob",
-      "sha256": "66bcee0a60de93a992131b92c20d1e397297fa109a2fe8c72dbfd62ebbbe9680",
+      "sha256": "3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",
       "source": "template/ds-product-template/.github/workflows/audit.yml",
       "classification": null,
       "destination": ".github/workflows/audit.yml"
@@ -919,7 +911,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "4ab3a8554d2cdf7ecf3fa11c0543d31fa3df95a2cba666729740e0c9e6ab9fc1",
+      "sha256": "45f13a018c4ea82f15b0513cb3b557d27069bc225c8e8435b468fd9a255359ae",
       "source": null,
       "classification": null,
       "destination": null
