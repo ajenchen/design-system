@@ -58,6 +58,7 @@ function run(command, args, { allowFailure = false, input } = {}) {
     cwd: ROOT,
     encoding: 'utf8',
     input,
+    maxBuffer: 16 * 1024 * 1024,
     shell: false,
     stdio: ['pipe', 'pipe', 'pipe'],
   })

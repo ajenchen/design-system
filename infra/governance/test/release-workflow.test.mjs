@@ -176,8 +176,10 @@ test('consumer dispatches exact release identity and requires a protected-main P
 
 test('public commands and cross-agent instructions expose only the canonical release entrypoints', () => {
   const scripts = readJson(resolve(ROOT, 'package.json')).scripts
+  const orchestrator = readFileSync(resolve(ROOT, 'scripts/release-orchestrator.mjs'), 'utf8')
   assert.equal(scripts['release:auto'], 'node scripts/release-orchestrator.mjs auto')
   assert.equal(scripts['release:status'], 'node scripts/release-orchestrator.mjs status')
+  assert.match(orchestrator, /maxBuffer:\s*16 \* 1024 \* 1024/, 'long-running gh watch output must not exhaust the default child-process buffer')
   for (const retired of ['release:preflight', 'release:stage-recover', 'release:approve', 'release:promote', 'release:reject-stage', 'release:finalize-verify']) {
     assert.equal(retired in scripts, false, `${retired} remains a public release path`)
   }
