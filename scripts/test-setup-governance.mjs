@@ -44,6 +44,7 @@ const exactNpmVersion = '11.18.0'
 const exactNpmIntegrity = 'sha512-T67M4L5wNm0cZ7EBLErcEkY1SmzEW/WJ+SADBzsFUY1UdAPfFHXFQtZ6SEXiK0+vzXysCvAsepbMaBTwnrAD+w=='
 const exactNpmOverlaySpec = 'npm:brace-expansion@5.0.8'
 const exactNpmOverlayIntegrity = 'sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg=='
+const exactNpmMinimatchIntegrity = 'sha512-MULkVLfKGYDFYejP07QOurDLLQpcjk7Fw+7jXS2R2czRQzR56yHRveU5NDJEOviH+hETZKSkIk5c+T23GjFUMg=='
 
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex')
@@ -89,6 +90,8 @@ function fixture({
     '@qijenchen/storybook-config': version,
   }
   const devDependencies = {
+    'brace-expansion': '5.0.8',
+    minimatch: '10.2.5',
     npm: exactNpmVersion,
     'npm-runtime-brace-expansion-patch': exactNpmOverlaySpec,
   }
@@ -123,6 +126,20 @@ function fixture({
         resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.8.tgz',
         integrity: exactNpmOverlayIntegrity,
         dev: true,
+      },
+      'node_modules/brace-expansion': {
+        version: '5.0.8',
+        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.8.tgz',
+        integrity: exactNpmOverlayIntegrity,
+        dev: true,
+        dependencies: { 'balanced-match': '^4.0.2' },
+      },
+      'node_modules/minimatch': {
+        version: '10.2.5',
+        resolved: 'https://registry.npmjs.org/minimatch/-/minimatch-10.2.5.tgz',
+        integrity: exactNpmMinimatchIntegrity,
+        dev: true,
+        dependencies: { 'brace-expansion': '^5.0.5' },
       },
     },
   }, null, 2)}\n`)
@@ -410,8 +427,17 @@ test.after(() => {
   for (const path of temporary) rmSync(path, { recursive: true, force: true })
 })
 
-test('verified runtime performs install, signature audit and high-vulnerability audit; PATH and installed npm are never authorities', () => {
+test('fresh exact audit-closure lock supports verified install, audits, and the authenticated governance checker', () => {
   const value = fixture()
+  const manifest = JSON.parse(readFileSync(join(value.root, 'package.json'), 'utf8'))
+  const lock = JSON.parse(readFileSync(join(value.root, 'package-lock.json'), 'utf8'))
+  for (const [name, version] of [['brace-expansion', '5.0.8'], ['minimatch', '10.2.5']]) {
+    assert.equal(manifest.devDependencies[name], version)
+    assert.equal(lock.packages[''].devDependencies[name], version)
+    assert.equal(lock.packages[`node_modules/${name}`].version, version)
+  }
+  assert.equal(manifest.devDependencies['npm-runtime-brace-expansion-patch'], exactNpmOverlaySpec)
+  assert.equal(lock.packages[''].devDependencies['npm-runtime-brace-expansion-patch'], exactNpmOverlaySpec)
   const result = value.execute()
   assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`)
   assert.deepEqual(value.ordered(), [
@@ -427,6 +453,24 @@ test('verified runtime performs install, signature audit and high-vulnerability 
   assert.equal(new Set(configPaths).size, 2)
   assert.ok(configPaths.every(path => !existsSync(path)), 'isolated npm config directory must be removed')
   assert.ok(existsSync(value.poisonedUserConfig) && existsSync(value.poisonedGlobalConfig), 'poison fixtures must not be used or removed')
+})
+
+test('canonical product template keeps the exact audit closure, overlay alias, and three reviewed overrides', () => {
+  const templatePackage = JSON.parse(readFileSync('template/ds-product-template/package.json', 'utf8'))
+  assert.deepEqual({
+    'brace-expansion': templatePackage.devDependencies['brace-expansion'],
+    minimatch: templatePackage.devDependencies.minimatch,
+    'npm-runtime-brace-expansion-patch': templatePackage.devDependencies['npm-runtime-brace-expansion-patch'],
+  }, {
+    'brace-expansion': '5.0.8',
+    minimatch: '10.2.5',
+    'npm-runtime-brace-expansion-patch': exactNpmOverlaySpec,
+  })
+  assert.deepEqual(templatePackage.overrides, {
+    '@storybook/addon-actions': { uuid: '11.1.1' },
+    '@joshwooding/vite-plugin-react-docgen-typescript': '0.6.4',
+    postcss: '8.5.23',
+  })
 })
 
 test('dependency-only setup authenticates dependencies without executing installed candidate code', () => {

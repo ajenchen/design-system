@@ -293,6 +293,21 @@ test('actual clean-room mirror closes every generated provider/fork scaffold fil
     cwd: process.cwd(), encoding: 'utf8',
   })
   assert.equal(built.status, 0, `${built.stderr}\n${built.stdout}`)
+  const mirrorManifest = JSON.parse(readFileSync(join(mirror, 'package.json'), 'utf8'))
+  assert.deepEqual({
+    'brace-expansion': mirrorManifest.devDependencies['brace-expansion'],
+    minimatch: mirrorManifest.devDependencies.minimatch,
+    'npm-runtime-brace-expansion-patch': mirrorManifest.devDependencies['npm-runtime-brace-expansion-patch'],
+  }, {
+    'brace-expansion': '5.0.8',
+    minimatch: '10.2.5',
+    'npm-runtime-brace-expansion-patch': 'npm:brace-expansion@5.0.8',
+  })
+  assert.deepEqual(mirrorManifest.overrides, {
+    '@storybook/addon-actions': { uuid: '11.1.1' },
+    '@joshwooding/vite-plugin-react-docgen-typescript': '0.6.4',
+    postcss: '8.5.23',
+  })
   const lock = buildProductTemplateScaffoldLock({ root: mirror, releaseVersion: '1.2.3' })
   assert.ok(lock.entries.length > 100, 'actual mirror inventory unexpectedly small')
   assert.equal(verifyProductTemplateScaffold({ root: mirror, lock, phase: 'source' }).entries.length, lock.entries.length)
