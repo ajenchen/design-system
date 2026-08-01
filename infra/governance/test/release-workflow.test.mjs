@@ -7,6 +7,7 @@ import Ajv2020 from 'ajv/dist/2020.js'
 import {
   buildFiveStepStatus,
   buildConsumerDispatch,
+  buildPublishedTemplatePullRequestCreateArgs,
   buildPublishMutationPlan,
   buildPullRequestLookupArgs,
   buildPullRequestCreateArgs,
@@ -172,6 +173,18 @@ test('consumer dispatches exact release identity and requires a protected-main P
   assert.throws(() => buildConsumerDispatch({ ...target, delivery: 'direct-main' }, {
     version: '1.2.3', tag: 'v1.2.3', commit: 'c'.repeat(40),
   }), /not repository-dispatch driven/)
+
+  const publishedTemplate = buildPublishedTemplatePullRequestCreateArgs(template, {
+    version: '1.2.3-beta.4',
+    commit: 'd'.repeat(40),
+  })
+  assert.equal(publishedTemplate.branch, 'automation/release-v1.2.3-beta.4')
+  assert.deepEqual(publishedTemplate.args, [
+    'pr', 'create', '--repo', 'ajenchen/ds-product-template',
+    '--head', 'automation/release-v1.2.3-beta.4', '--base', 'main',
+    '--title', 'chore: mirror design system v1.2.3-beta.4',
+    '--body', `Generated from published design-system release v1.2.3-beta.4 at ${'d'.repeat(40)}.`,
+  ])
 })
 
 test('public commands and cross-agent instructions expose only the canonical release entrypoints', () => {

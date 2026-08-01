@@ -46,6 +46,11 @@ jobs:
       - name: TypeScript project check
         run: npx --no-install tsc -b
 
+      - name: Verify the shipped Storybook manifest
+        run: |
+          npm run build-storybook
+          /usr/bin/git diff --exit-code -- packages/design-system/ds-story-manifest.json
+
       - name: Focused governance and release SSOT checks
         run: |
           node --test infra/governance/test/ci-workflow-scope.test.mjs
