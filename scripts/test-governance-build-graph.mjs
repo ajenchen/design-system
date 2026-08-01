@@ -623,6 +623,10 @@ assert.deepEqual(ids('infra/governance/providers/compatibility-matrix.json'), ['
 assert.deepEqual(ids('infra/governance/providers/certifications.json'), ['control-plane', 'fork-template'])
 assert.deepEqual(ids('infra/governance/providers/harness-registry.json'), ['control-plane', 'harness-authority-bindings'])
 assert.deepEqual(ids('infra/governance/providers/harness-source-inventory.json'), ['control-plane', 'harness-authority-bindings'])
+assert.ok(
+  ids('packages/design-system/ds-canonical/hooks/lib/audit-report-validator.mjs').includes('harness-authority-bindings'),
+  'Harness authority generation must rerun when a digest-bound canonical hook helper changes',
+)
 assert.deepEqual(ids('packages/design-system/src/tokens/utility-registry.json'), ['control-plane', 'fork-template'])
 assert.deepEqual(ids('packages/design-system/src/tokens/utility-registry.schema.json'), ['control-plane', 'fork-template'])
 assert.deepEqual(ids('infra/governance/lib/managed-repository-ownership.mjs'), ['control-plane', 'fork-template', 'harness-authority-bindings'])

@@ -48,7 +48,7 @@
       },
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/audit-report-validator.mjs",
-        "sha256": "72482f9bd744e3c12243795bce581b486f9657fa9392ab6bd03c50b23f8e0ddf",
+        "sha256": "c014698c206510f4f322ab668e6694dae87148454ab62c1f7a70becf2709c78a",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/check_audit_post_report_validator.sh"
         ]
@@ -385,6 +385,7 @@
         "scripts/test-provider-lifecycle.mjs",
         "scripts/test-provider-review-binding.mjs",
         "scripts/test-release-bom.mjs",
+        "scripts/test-review-bundle-materialization-guard.mjs",
         "scripts/test-review-capability-selection.mjs",
         "scripts/test-run-gate-meta-tests-isolation.mjs",
         "scripts/test-sync-all-transaction.mjs",
@@ -453,6 +454,7 @@
       "scripts/test-product-template-scaffold-lock.mjs",
       "scripts/test-propose-provider-cli-package-content.mjs",
       "scripts/test-release-finalizer-mirror-handoff.mjs",
+      "scripts/test-repository-hygiene-invariant.mjs",
       "scripts/test-run-deterministic-deep-audit.mjs",
       "scripts/test-score-infra-best-practice.mjs",
       "scripts/test-setup-governance-hooks.mjs",

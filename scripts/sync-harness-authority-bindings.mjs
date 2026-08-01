@@ -7,6 +7,7 @@ import {
   deriveHarnessGeneratedMirrorBinding,
   readHarnessSourceInventory,
 } from '../infra/governance/lib/harness-source-inventory.mjs'
+import { createGateMetaTestInventory } from './lib/gate-meta-test-inventory.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const check = process.argv.includes('--check')
@@ -41,8 +42,24 @@ function compareUtf8Bytes(left, right) {
 function synchronizeHarnessAuthorityBindings() {
   const inventory = readHarnessSourceInventory(HARNESS_INVENTORY_PATH)
   const generatedMirror = deriveHarnessGeneratedMirrorBinding(inventory, { repoRoot: ROOT })
+  const gateMeta = createGateMetaTestInventory({ root: ROOT })
   const nextInventory = structuredClone(inventory)
   nextInventory.generatedMirrors = [generatedMirror.binding]
+  nextInventory.gateMetaExclusions.sha256 = sha256(readFileSync(resolve(ROOT, nextInventory.gateMetaExclusions.path)))
+  nextInventory.pairedMeta.members = gateMeta.runnable
+    .map(({ file }) => `scripts/${file}`)
+    .sort(compareUtf8Bytes)
+  const canonicalHookRoot = `${nextInventory.canonicalHookStaticHelpers.root}/`
+  nextInventory.canonicalHookStaticHelpers.entries = nextInventory.canonicalHookStaticHelpers.entries.map((entry) => {
+    invariant(
+      entry.path.startsWith(canonicalHookRoot) && !entry.path.split('/').includes('..'),
+      `Harness canonical hook static-helper path is outside its canonical root:${entry.path}`,
+    )
+    return {
+      ...entry,
+      sha256: sha256(readFileSync(resolve(ROOT, entry.path))),
+    }
+  })
   const canonicalHookSuite = nextInventory.suites.find(item => item.id === 'canonical-hook-behavioral')
   invariant(canonicalHookSuite, 'Harness canonical hook behavioral suite is missing')
   canonicalHookSuite.members = generatedMirror.canonicalHookTree.records
