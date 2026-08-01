@@ -3,7 +3,11 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import { compareReleaseAssets } from './release-github-release.mjs'
-import { assertTokenlessNpmEnvironment, clearSetupNodeRegistryPlaceholder } from './release-npm-lib.mjs'
+import {
+  assertTokenlessNpmEnvironment,
+  clearSetupNodeRegistryPlaceholder,
+  PUBLISHED_PACKAGE_READBACK_ATTEMPTS,
+} from './release-npm-lib.mjs'
 
 const workflow = readFileSync('.github/workflows/release.yml', 'utf8')
 const npmPublisher = readFileSync('scripts/release-npm-publish.mjs', 'utf8')
@@ -59,6 +63,10 @@ test('setup-node registry placeholder is cleared without allowing a real npm cre
     () => assertTokenlessNpmEnvironment({ NODE_AUTH_TOKEN: 'npm_real_credential' }),
     /NODE_AUTH_TOKEN/,
   )
+})
+
+test('npm provenance readback tolerates normal registry propagation delay', () => {
+  assert.equal(PUBLISHED_PACKAGE_READBACK_ATTEMPTS, 24)
 })
 
 test('retired staging and finalizer gates are absent from release', () => {

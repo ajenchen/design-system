@@ -52,6 +52,7 @@ jobs:
           node --test --test-name-pattern='canonical GitHub profile minima' infra/governance/test/model-validation.test.mjs
           node --test infra/governance/test/workflow-identity-sync.test.mjs
           node --test infra/governance/test/release-workflow.test.mjs
+          node --test scripts/test-deterministic-vite-output.mjs
           node scripts/governance-build-graph.mjs --check
 
       - name: Build React 19 consumer template
