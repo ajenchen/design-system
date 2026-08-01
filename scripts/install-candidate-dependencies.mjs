@@ -8,6 +8,7 @@ import {
   assertClosedProjectNpmConfig,
   assertNoRootNpmShrinkwrap,
   createIsolatedGovernanceNpmEnvironment,
+  GOVERNANCE_CLOSED_PROJECT_NPM_CONFIG_LINES,
   runVerifiedHighVulnerabilityAudit,
 } from './lib/governance-dependency-bootstrap.mjs'
 import {
@@ -70,7 +71,7 @@ export async function installCandidateDependencies({
   assertNoRootNpmShrinkwrap(candidate, { errorPrefix: 'GOV-CANDIDATE-DEPS-001' })
   assertClosedProjectNpmConfig(
     candidate,
-    ['legacy-peer-deps=true', 'ignore-scripts=true'],
+    GOVERNANCE_CLOSED_PROJECT_NPM_CONFIG_LINES,
     { errorPrefix: 'GOV-CANDIDATE-DEPS-001' },
   )
 
@@ -93,7 +94,7 @@ export async function installCandidateDependencies({
     runNpm(runtime.cli, ['ci', '--legacy-peer-deps', '--ignore-scripts', `--registry=${REGISTRY}`], { candidate, environment: isolated.env, runner })
     runtime.applyInstalledSecurityOverlay(candidate)
     installedOverlayReceipt = runtime.verifyInstalledSecurityOverlay(candidate)
-    assertClosedProjectNpmConfig(candidate, ['legacy-peer-deps=true', 'ignore-scripts=true'], { errorPrefix: 'GOV-CANDIDATE-DEPS-001' })
+    assertClosedProjectNpmConfig(candidate, GOVERNANCE_CLOSED_PROJECT_NPM_CONFIG_LINES, { errorPrefix: 'GOV-CANDIDATE-DEPS-001' })
     assertGitVisibleWorktreeUnchanged(trustedRoot, trustedBefore, { label: 'trusted verifier after candidate install' })
     assertGitVisibleWorktreeUnchanged(candidate, candidateBefore, { label: 'candidate after dependency install' })
     runNpm(runtime.cli, ['audit', 'signatures', `--registry=${REGISTRY}`], { candidate, environment: isolated.env, runner })
@@ -110,7 +111,7 @@ export async function installCandidateDependencies({
         timeoutMs: 30 * 60 * 1_000,
       },
     )
-    assertClosedProjectNpmConfig(candidate, ['legacy-peer-deps=true', 'ignore-scripts=true'], { errorPrefix: 'GOV-CANDIDATE-DEPS-001' })
+    assertClosedProjectNpmConfig(candidate, GOVERNANCE_CLOSED_PROJECT_NPM_CONFIG_LINES, { errorPrefix: 'GOV-CANDIDATE-DEPS-001' })
     assertGitVisibleWorktreeUnchanged(trustedRoot, trustedBefore, { label: 'trusted verifier after candidate audit' })
     assertGitVisibleWorktreeUnchanged(candidate, candidateBefore, { label: 'candidate after dependency audit' })
     return {

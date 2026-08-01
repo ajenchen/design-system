@@ -15,6 +15,10 @@ import {
 export const GOVERNANCE_DEPENDENCY_REGISTRY = 'https://registry.npmjs.org/'
 export const GOVERNANCE_DEPENDENCY_MINIMUM_NODE_VERSION = '22.13.0'
 export const GOVERNANCE_DEPENDENCY_EXACT_NPM_VERSION = '11.18.0'
+export const GOVERNANCE_CLOSED_PROJECT_NPM_CONFIG_LINES = Object.freeze([
+  'legacy-peer-deps=true',
+  'ignore-scripts=true',
+])
 export const GOVERNANCE_DEPENDENCY_REQUIRED_EXECUTABLES = Object.freeze(['bash', 'git', 'jq', 'python3'])
 export const GOVERNANCE_DEPENDENCY_NPM_STEPS = Object.freeze([
   Object.freeze(['ci', '--legacy-peer-deps', '--ignore-scripts', `--registry=${GOVERNANCE_DEPENDENCY_REGISTRY}`]),

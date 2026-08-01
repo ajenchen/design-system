@@ -359,7 +359,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
-      "sha256": "a614a741e1eb18cf79a69d93f02eb41d062dabbbd85dc95af154268226e8866c",
+      "sha256": "0b3c22a322174b179a2f499b0c08bbda996f90fac9be29a074bd5b1ae3435ffe",
       "source": "scripts/lib/governance-dependency-bootstrap.mjs",
       "classification": null,
       "destination": "scripts/lib/governance-dependency-bootstrap.mjs"
@@ -535,7 +535,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/bc44cabad181f766611dab6a8f52d81100afadd50ac59799015e8ba7bf46d9eb.blob",
-      "sha256": "134dd20f0dee07258866c807a827785a3b96c31a6cb821e6b30ce4fe2c680db9",
+      "sha256": "5297a0c6dace974c1233a95825a6ffceef8823373eb4bb96947961f3979e4339",
       "source": "scripts/setup-governance.mjs",
       "classification": null,
       "destination": "scripts/setup-governance.mjs"

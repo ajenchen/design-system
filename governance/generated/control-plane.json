@@ -963,12 +963,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:73919927af598f1a4bfd97217017a1e9db40943c48f87b17c6747d514978606c",
+      "hash": "sha256:37d911599f91b1dc375b0bf33b9b6c3feb6b154a91d20db84db658dfab0ab9db",
       "id": "exact-candidate-dependency-installer",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/install-candidate-dependencies.mjs",
-      "size": 6209,
+      "size": 6237,
       "type": "file"
     },
     {
@@ -1233,12 +1233,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a614a741e1eb18cf79a69d93f02eb41d062dabbbd85dc95af154268226e8866c",
+      "hash": "sha256:0b3c22a322174b179a2f499b0c08bbda996f90fac9be29a074bd5b1ae3435ffe",
       "id": "exact-governance-dependency-bootstrap-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/lib/governance-dependency-bootstrap.mjs",
-      "size": 19815,
+      "size": 19944,
       "type": "file"
     },
     {
@@ -1269,12 +1269,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:134dd20f0dee07258866c807a827785a3b96c31a6cb821e6b30ce4fe2c680db9",
+      "hash": "sha256:5297a0c6dace974c1233a95825a6ffceef8823373eb4bb96947961f3979e4339",
       "id": "exact-governance-setup-cli",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/setup-governance.mjs",
-      "size": 22574,
+      "size": 22608,
       "type": "file"
     },
     {
@@ -2036,12 +2036,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:5c04e2a38d41f7cd5f9d5621aae8db8f8e6f72b7c30ae5d4054b54abd14cfc37",
+      "hash": "sha256:eacace564df1e3e06da32e651c8fcd7d08ebaf7d116926c37f06feb51a2121dd",
       "id": "governance-authority-setup-cli",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/setup-authority-governance.mjs",
-      "size": 10866,
+      "size": 10887,
       "type": "file"
     },
     {
@@ -2940,12 +2940,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:dca20607091ed465674c360603f0c51a26a80dfea3f98c3a35bab03305441e3f",
+      "hash": "sha256:8f4aa6035022827cf1031320fbb5ba8f1d300952e3f873b269aeeb712dea201d",
       "id": "npm-release-policy",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": ".npmrc",
-      "size": 58,
+      "size": 42,
       "type": "file"
     },
     {
@@ -3372,7 +3372,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 38,
-      "hash": "sha256:f1d8a55d80dcf9d8056f64f7b459626406406bc4c3f22f4a995dad650935f935",
+      "hash": "sha256:9786f982d91ebd9d01bd8df6dfdd8f23d91684dc27fc2b3c543321e29c4e2088",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3836,7 +3836,7 @@
         "scripts/generated/"
       ],
       "files": 384,
-      "hash": "sha256:3771cc6b3a87fa1e6552b892326be125714e5f1907c487624af5939ba657e4eb",
+      "hash": "sha256:23915796b6b8c35c690dfc26fb62035d333f4efab61940d2926caa285366aa2b",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

@@ -5,6 +5,7 @@ import { lstatSync, readFileSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
+  GOVERNANCE_CLOSED_PROJECT_NPM_CONFIG_LINES,
   GOVERNANCE_DEPENDENCY_MINIMUM_NODE_VERSION,
   runClosedBootstrapStep,
   runVerifiedGovernanceDependencyBootstrap,
@@ -150,7 +151,7 @@ export async function runAuthorityDependencySetup({
     runner,
     ...(runtimeFactory ? { runtimeFactory } : {}),
     authorityPaths: DEPENDENCY_AUTHORITY_PATHS,
-    expectedNpmrcLines: ['ignore-scripts=true', 'legacy-peer-deps=true', 'save-exact=true'],
+    expectedNpmrcLines: GOVERNANCE_CLOSED_PROJECT_NPM_CONFIG_LINES,
     errorPrefix: 'GOV-AUTHORITY-SETUP-001',
     validateRoleRepository(authorityRoot) {
       const manifest = JSON.parse(regularBytes(authorityRoot, 'package.json').toString('utf8'))

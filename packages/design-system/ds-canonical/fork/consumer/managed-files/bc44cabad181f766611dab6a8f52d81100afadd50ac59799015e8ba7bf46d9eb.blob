@@ -27,6 +27,7 @@ import {
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
+  GOVERNANCE_CLOSED_PROJECT_NPM_CONFIG_LINES,
   GOVERNANCE_DEPENDENCY_EXACT_NPM_VERSION,
   GOVERNANCE_DEPENDENCY_MINIMUM_NODE_VERSION,
   GOVERNANCE_DEPENDENCY_NPM_STEPS,
@@ -392,7 +393,7 @@ function readRegularJson(path, label) {
 }
 
 function assertClosedProjectNpmConfig(root) {
-  return assertClosedProjectNpmConfigShared(root, ['legacy-peer-deps=true', 'ignore-scripts=true'], { errorPrefix: 'GOV-SETUP-001' })
+  return assertClosedProjectNpmConfigShared(root, GOVERNANCE_CLOSED_PROJECT_NPM_CONFIG_LINES, { errorPrefix: 'GOV-SETUP-001' })
 }
 
 export function assertSupportedSetupPlatform(platform = process.platform) {
@@ -476,7 +477,7 @@ async function runGovernanceDependencyBootstrap({
     runner,
     ...(runtimeFactory ? { runtimeFactory } : {}),
     authorityPaths: SETUP_AUTHORITY_PATHS,
-    expectedNpmrcLines: ['legacy-peer-deps=true', 'ignore-scripts=true'],
+    expectedNpmrcLines: GOVERNANCE_CLOSED_PROJECT_NPM_CONFIG_LINES,
     errorPrefix: 'GOV-SETUP-001',
     validateRoleRepository: assertCommittedSetupSnapshot,
     afterStage({ index }) {

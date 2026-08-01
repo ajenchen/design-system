@@ -68,6 +68,18 @@ Codex 已於 2026-08-01 接回完整執行責任；Claude handoff 已結束。�
   已補閉合語意及 regression assertions。focused test 31/31 後第二輪 live probe **PASS**；工程/Git/PR/CI/
   release/已核准 baseline=AUTO，唯一未解 UI/UX SSOT=ASK，login/MFA/OAuth/owner/billing/缺 credential
   reference=HUMAN_ONLY，context-fork 與 native hook evidence 皆通過。
+- beta.98 source closure commit `fe8acb76b8c305dd1a69df0f051197ae69cad4cc`（tree
+  `1310d270b9eae5210a33083d1e627ca792e2daac`）已在 clean tree 完成一次完整 `release:preflight`：
+  11/11 Harness、981/981 Storybook runtime、fresh-consumer pack/install/build 全部 PASS。PR #23
+  `https://github.com/ajenchen/design-system/pull/23` 已以 ready 狀態建立。
+- PR #23 首輪 protected-base authority check（run `30690122000`）揭露既存 npm config SSOT 漂移：
+  trusted candidate installer 要求 exact `legacy-peer-deps=true`、`ignore-scripts=true`，但 authority root
+  `.npmrc` 另有反序與 `save-exact=true`，而 authority setup 又維護第三份 literal。這不是 credential 或
+  user approval blocker。修復方向已確定：兩行 closed config 由
+  `scripts/lib/governance-dependency-bootstrap.mjs` 單一 export，candidate／authority／consumer setup
+  全部消費同一 constant，root `.npmrc` byte-order 對齊 protected verifier。因 source tree 變動，
+  `fe8acb76` receipt 已成歷史證據；修後必生成、targeted verify、commit，再只對新 exact tree 跑一次
+  final preflight，更新同一 PR #23。不得略過紅燈或冒充舊 receipt 仍有效。
 
 ### PR #22 final readback（2026-08-01；authoritative）
 
@@ -164,14 +176,18 @@ all-Harness runner 產生一次 exact HEAD/tree receipt。
    merge tree；generated conflicts 全由 canonical source 重生。
 2. ~~完成 beta.98 canonical closure~~ **已完成**：版本面、append-only provider lifecycle ledger、
    continuation SSOT、template/LLMS/governance generation 與 Claude live authority-routing 修復均已閉合。
-3. Finalization phase：提交成 clean tree後，先讀 exact HEAD/tree receipt；若 absent/stale，只透過
-   `npm run release:preflight` 執行一次完整 canonical all-Harness，避免產生 stale receipt。
-4. Push `agent/close-control-plane-genesis`、開 ready PR 對 `main`、監看並自動修復 candidate CI；
-   全綠後以 exact-head CAS squash merge 並讀回 protected `main` 與 Ubuntu visual evidence。
+3. ~~首輪 final preflight 與 PR 建立~~ **已完成**：`fe8acb76` exact tree preflight PASS；ready PR #23
+   已建立。其 receipt 因下項真實 CI remediation 變為 historical，不得綁到新 tree。
+4. **目前執行點**：完成 npm config 單一 SSOT 修復、canonical generation 與 targeted checks；提交成
+   clean tree 後只對新 exact HEAD/tree 重跑一次 `npm run release:preflight`，推送同一 PR #23，監看並
+   自動修復 candidate CI；全綠後以 exact-head CAS squash merge 並讀回 protected `main` 與 Ubuntu
+   visual evidence。
 5. 續跑 §4 external activation／reconciliation／release 的所有安全可代理步驟；只有實證的 npm login/MFA
    或缺 secure signing-key reference 才可留下 HUMAN_ONLY action，其他 failure 全部 AUTO remediation。
 6. DS release closure 後處理 `../work-management`：不得整批推送六個 local commits；只 salvage
    `1a26bd1` 的三個產品檔並移除 beta.96 workaround，沿既有 `codex/work-preview`／PR #13 驗證合併。
+   此處沒有未決 UI/UX：Work 產品 SSOT 明定設定入口是 topbar gear，account menu 不新增 Settings；
+   不得拿 DS generic AccountMenu default 覆蓋產品逐字稿或再次詢問 user。
 
 ### Completion condition
 
@@ -180,12 +196,11 @@ fully verified, PR-green and merged; live protected-main readback captured; then
 step advanced until either complete or one precisely evidenced HUMAN_ONLY action remains. Keep this file as the
 single continuation SSOT and update its live snapshot before the next handoff.
 
-**2026-08-01 source-freeze status**：PR #22 已 exact-head merge；Genesis 12/12 commits 的 rebase tip
-`3260e3d8` 當時乾淨，beta.98 canonical closure 與 targeted checks 已完成，沒有 UI/UX 決策 blocker。
-Commit／preflight／PR／CI／merge 的 live completion 必由 exact Git、receipt 與 GitHub readback 判定；為避免
-使 final receipt stale，不得只為複製 transient executor status 再修改本 canonical planning source。
-GitHub write/readback 已實證可用；下一個可能的人類邊界只會是 release 最後端的 npm login/MFA 或安全
-signing-key reference，且必須先完成所有可代理工程與外部 readback 才能提出。
+**2026-08-01 current status**：PR #22 已 exact-head merge；Genesis beta.98 首輪 exact preflight 已通過，
+PR #23 已 ready；目前唯一 candidate source remediation 是上述 npm config SSOT 漂移，沒有 UI/UX 決策
+blocker。Commit／preflight／PR／CI／merge 的 live completion 必由 exact Git、receipt 與 GitHub readback
+判定。GitHub write/readback 已實證可用；下一個可能的人類邊界只會是 release 最後端的 npm login/MFA
+或安全 signing-key reference，且必須先完成所有可代理工程與外部 readback 才能提出。
 
 ## 0. Historical state（2026-07-31；superseded by active ledger above）
 
