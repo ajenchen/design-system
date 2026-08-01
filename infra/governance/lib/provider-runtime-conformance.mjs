@@ -2286,6 +2286,22 @@ async function runClaudeReviewCapabilityProbe({
   })
 }
 
+// `validateDriverSpecificCommandEvidence` recomputes this probe's arguments from
+// canonical source, so the redacted certification fixture must reproduce the exact
+// same command instead of a driver placeholder. Staging runtime evidence is
+// gitignored and host-specific, so the fixture cannot borrow a developer machine's
+// last probe; it derives the command here.
+export function prepareClaudeAuthorityRoutingProbe({ provider, environmentNames = ['HOME'] }) {
+  return {
+    command: commandEvidence({
+      executable: provider.executable,
+      arguments: claudeAuthorityRoutingArguments(),
+      cwd: '<fixture>',
+      environmentNames,
+    }),
+  }
+}
+
 export function prepareClaudeReviewCapabilityProbe({
   repoRoot,
   provider,

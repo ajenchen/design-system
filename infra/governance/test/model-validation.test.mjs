@@ -12,6 +12,7 @@ import { readJson, validateInventory } from '../lib/common.mjs'
 import { validateCertifications, validateDesiredGithub, validateGovernanceModel, validateProviderRegistry, validateReleaseRings } from '../lib/model-validation.mjs'
 import { compareUtf8Bytes, sha256, stableStringify } from '../lib/common.mjs'
 import {
+  prepareClaudeAuthorityRoutingProbe,
   prepareClaudeReviewCapabilityProbe,
   runtimeEvidenceSigningPayload,
   runtimeTargetDigest,
@@ -204,6 +205,9 @@ function runtimeEvidenceCheckCommand(provider, check) {
       check,
       environmentNames: ['HOME'],
     }).command
+  }
+  if (check.driver === 'claude-authority-routing') {
+    return prepareClaudeAuthorityRoutingProbe({ provider, environmentNames: ['HOME'] }).command
   }
   return {
     executable: provider.executable,
