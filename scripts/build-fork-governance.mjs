@@ -1253,7 +1253,7 @@ export function buildCorpus({
   // These are authenticated corpus dependencies, not hook registrations; omitting them turns a
   // valid policy replay into reserved integrity exit 70 on every provider and in hooks-off CI.
   mkdirSync(join(outDir, 'hooks/lib'), { recursive: true })
-  for (const helper of ['_hook_integrity.sh', '_provider_paths.sh']) {
+  for (const helper of ['_hook_integrity.sh', '_provider_paths.sh', '_micro_geometry.sh']) {
     const helperPath = assertRegularSource(
       join(canonicalSources.hooksDir, 'lib', helper),
       `canonical fork hook helper ${helper}`,

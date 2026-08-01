@@ -207,6 +207,25 @@ if echo "$FILE" | grep -qE 'packages/design-system/src/|node_modules/'; then exi
 CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content // ""' 2>/dev/null)
 [ -z "$CONTENT" ] && exit 0
 
+# PostToolUse Edit payloads contain only the changed fragment. Native table classification needs
+# the complete, now-written file to prove that a table belongs to one bounded contentEditable
+# document pipeline rather than an app data grid. Keep all other checks fragment-based; only P10
+# consumes this full-file view. A symlink is never accepted as classification evidence.
+TABLE_CONTEXT="$CONTENT"
+if { [ "$TOOL" = "Edit" ] || [ "$TOOL" = "MultiEdit" ]; } \
+  && [ -f "$FILE" ] && [ ! -L "$FILE" ]; then
+  TABLE_FILE_CONTEXT=$(cat -- "$FILE" 2>/dev/null) || {
+    printf '🚨 GOVERNANCE_INTEGRITY: cannot read consumer file for native-table classification:%s\n' "$FILE" >&2
+    exit 70
+  }
+  # Keep the exact proposed fragment in the evidence set. Provider-normalized replay may carry a
+  # complete patch while the synthetic/read-only fixture has not persisted it to disk; replacing
+  # the fragment with stale file bytes would turn raw-table violations into false greens. The full
+  # file contributes only the bounded serializer evidence needed for the rich-text exception.
+  TABLE_CONTEXT="${CONTENT}"$'\n'"${TABLE_FILE_CONTEXT}"
+fi
+TABLE_CONTEXT=$(printf '%s' "$TABLE_CONTEXT" | tr '\n' ' ')
+
 # 2026-06-03 修(同 R8 bug class):換行→空格 flatten。真實 JSX 屬性跨行(<DS.X\n  size={N}\n/>),
 # grep 逐行 + 各 pattern 用 [^>]+ 跨屬性匹配 → 不 flatten 的話多行 component 靜默繞過全部 anti-pattern 檢查
 # (= BLOCKER false-negative,consumer DS misuse 沒被擋)。[^>]+ 自帶 tag 邊界(遇 > 停),flatten 後不會跨 component。
@@ -272,7 +291,29 @@ fi
 # → 必消費,不 hand-craft raw HTML 繞過」這條**必定遵循大原則**的機械閘缺口。反 pattern 由
 # build-ui-canonicals.md ❌→✅ 對照表(SSOT)驅動。零誤判:只抓高信心 raw-tag 訊號;<DS.X> 元件是
 # PascalCase + DS. prefix 不匹配小寫 raw tag;node_modules 已於上方排除;有理由可 @ds-misuse-allow escape。
-if grep -qE '<table\b' <<<"$CONTENT" && grep -qE '<thead\b|<tbody\b|<th\b' <<<"$CONTENT"; then
+#
+# Narrow semantic class(2026-08-02):a native table serialized inside a WYSIWYG document is
+# document content, not an application data grid. It is exempt only when the same complete file
+# mechanically proves every condition below:contentEditable host; an explicit TABLE / THEAD /
+# TBODY / TR / TH / TD tag allowlist actively consulted by the sanitizer; unknown attributes
+# stripped; editor.innerHTML passed through that sanitizer; and only the sanitized value emitted
+# through onChange. Missing any one condition stays blocked. This is not a filename allowlist.
+is_bounded_rich_text_document_table() {
+  local context="$1"
+  grep -qE '\bcontentEditable\b' <<<"$context" || return 1
+  grep -qE '\b[A-Z_]*ALLOWED[A-Z_]*TAGS\b[[:space:]]*=[[:space:]]*new Set' <<<"$context" || return 1
+  local tag
+  for tag in TABLE THEAD TBODY TR TH TD; do
+    grep -qE "['\"]${tag}['\"]" <<<"$context" || return 1
+  done
+  grep -qE '\b[A-Z_]*ALLOWED[A-Z_]*TAGS\.has\([A-Za-z_][A-Za-z0-9_.]*\)' <<<"$context" || return 1
+  grep -qE '\.removeAttribute\(' <<<"$context" || return 1
+  grep -qE '\b(const|let)[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=[[:space:]]*sanitize[A-Za-z0-9_]*\([^)]*\.innerHTML\)' <<<"$context" || return 1
+  grep -qE '\bonChange\([A-Za-z_][A-Za-z0-9_]*\)' <<<"$context" || return 1
+  return 0
+}
+if grep -qE '<table\b' <<<"$TABLE_CONTEXT" && grep -qE '<thead\b|<tbody\b|<th\b' <<<"$TABLE_CONTEXT" \
+  && ! is_bounded_rich_text_document_table "$TABLE_CONTEXT"; then
   VIOLATIONS="${VIOLATIONS}  - 手刻 raw <table><thead>/<tbody> 資料表 → 必用 <DataTable columns={...} data={...} />(build-ui-canonicals.md:18 ❌→✅ SSOT;這是「優先消費既有元件」大原則,無理由不得手刻)\n"
 fi
 # 2026-07-08 WM 戰役 R4:偽表格視覺簽名(div-grid 表格繞過字面 <table> 偵測 — WM 5 檔

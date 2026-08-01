@@ -44,11 +44,15 @@ source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
   printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
   exit 70
 }
+source "$(dirname "$0")/lib/_micro_geometry.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: escape-marker micro-geometry classifier unavailable\n' >&2
+  exit 70
+}
 
 set -uo pipefail
 
 governance_hook_load_input
-governance_hook_require_commands grep sed sort tr wc
+governance_hook_require_commands grep sed sort tr wc python3
 TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null) \
   || governance_hook_integrity_fail 'escape-marker tool extraction failed'
 
@@ -113,10 +117,11 @@ esac
 # 改為提高閾值(portal ≥6 / 一般 ≥3)保留 ceiling,justification gate 不變。
 if [ "$IS_SANCTIONED_PORTAL" -eq 1 ]; then DISTINCT_CAP=6; else DISTINCT_CAP=3; fi
 if [ "$IS_CONSUMER" -eq 1 ]; then
-  # 2026-05-31 廣化 MARKER_RE(M7/M34:spec wording broad「任何 escape marker」→ hook regex 不該 narrow 只 16 種):
-  # @<x>-allow 家族用廣義 [a-z][a-z-]*-allow 自動納管(免每次補 enum drift)+ 非 -allow markers 顯式列。
-  MARKER_RE='@([a-z][a-z-]*-allow|benchmark-unverified(-blanket)?|template-customized|anatomy-exempt(-next)?|overlay-open-skip|layout-space-magic-ok|propose-cite-skip|story-(trait|split)-rationale)'
-  governance_hook_grep_capture MARKERS_UNSORTED 'escape-marker matcher failed' "$CONTENT" -oE "$MARKER_RE"
+  # 2026-05-31 廣化 marker family 仍在 shared classifier 裡閉包納管。layout-space marker
+  # 若附著在 utility-registry 可機械證明的 canonical micro geometry,已沒有繞過
+  # enforcement,因此不消耗 escape ceiling;一般 gap-1/2 或其他 marker 仍照常計數。
+  MARKERS_UNSORTED=$(governance_countable_escape_markers "$CONTENT") \
+    || governance_hook_integrity_fail 'escape-marker structural classification failed'
   MARKERS_FOUND=$(sort -u <<< "$MARKERS_UNSORTED" 2>/dev/null) \
     || governance_hook_integrity_fail 'escape-marker sorter failed'
   # 2026-05-30 fix(test-surfaced):空 MARKERS_FOUND 時 grep -c 印 "0" 已 exit 1,原 `|| echo 0`
@@ -159,8 +164,11 @@ EOF
   # per-file gate(≥3 distinct/≥5 total)可被「每檔 1-2 個、散多檔」繞過 → repo 級 ceiling。
   # Ratchet 精神(Polaris stylelint migrator):存量 ≥ cap 後只擋「本次 edit 再新增 marker」,
   # 不因存量 brick 無關 edit(本次內容無 marker → 直接放行)。
-  governance_hook_grep_capture EDIT_ADDS_MARKER 'escape-marker edit counter failed' "$CONTENT" -cE "$MARKER_RE"
-  EDIT_ADDS_MARKER=${EDIT_ADDS_MARKER:-0}
+  if [ -n "$MARKERS_UNSORTED" ]; then
+    governance_hook_grep_capture EDIT_ADDS_MARKER 'escape-marker edit counter failed' "$MARKERS_UNSORTED" -c .
+  else
+    EDIT_ADDS_MARKER=0
+  fi
   if [ "${EDIT_ADDS_MARKER:-0}" -gt 0 ]; then
     PROJECT_ROOT=$(governance_project_root 2>/dev/null) \
       || governance_hook_integrity_fail 'escape-marker project root could not be resolved'
@@ -169,14 +177,8 @@ EOF
     if [ -L "$APPS_ROOT" ] || [ ! -d "$APPS_ROOT" ] || [ ! -r "$APPS_ROOT" ]; then
       governance_hook_integrity_fail 'escape-marker repository scan root is unavailable or unsafe'
     fi
-    if REPO_MARKERS=$(grep -rhoE "$MARKER_RE" "$APPS_ROOT" --include='*.tsx' --include='*.ts' 2>/dev/null); then
-      _MATCH_RC=0
-    else
-      _MATCH_RC=$?
-    fi
-    if [ "$_MATCH_RC" -gt 1 ]; then
-      governance_hook_integrity_fail 'escape-marker repository scan failed'
-    fi
+    REPO_MARKERS=$(governance_countable_repository_escape_markers "$APPS_ROOT") \
+      || governance_hook_integrity_fail 'escape-marker repository scan failed'
     if [ -n "$REPO_MARKERS" ]; then
       governance_hook_grep_capture REPO_TOTAL 'escape-marker repository counter failed' "$REPO_MARKERS" -c .
     else

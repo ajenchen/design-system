@@ -134,6 +134,25 @@ run_hook "Write" "$APP_TSX" "content" \
 );'
 expect_block "P8. mixed escaped + un-escaped magic → BLOCK"
 
+# P9. `gap-2` remains a macro violation when the line has no canonical micro/list/control
+#     structure. The fix for canonical item/Button geometry must not become a blanket gap-1/2
+#     allowlist.
+run_hook "Write" "$APP_TSX" "content" \
+  'const Dashboard = () => <div className="flex flex-col gap-2"><SummaryCard /><RecentWork /></div>;'
+expect_block "P9. macro parallel-section gap-2 without semantic micro evidence → BLOCK"
+
+# P10. A micro-looking value plus unrelated macro spacing remains a violation. Classification is
+#      per complete line, so canonical gap evidence cannot hide p-/m-/space-* magic.
+run_hook "Write" "$APP_TSX" "content" \
+  'const Label = () => <span className="inline-flex items-center gap-2 p-4"><Icon />Label</span>;'
+expect_block "P10. canonical-looking inline gap plus p-4 → BLOCK"
+
+# P11. `flex items-center gap-2` alone is not sufficient:the same utilities can describe a macro
+#      row. A recognized inline/list/control/form semantic owner is mandatory.
+run_hook "Write" "$APP_TSX" "content" \
+  'const Row = () => <div className="flex items-center gap-2"><SummaryCard /><RecentWork /></div>;'
+expect_block "P11. generic flex row gap-2 without semantic owner → BLOCK"
+
 # ─────────────────────────────────────────────────────────────
 # NEGATIVE cases — should NOT trigger (over-broad guard)
 # ─────────────────────────────────────────────────────────────
@@ -195,6 +214,38 @@ expect_silent "N9. clean code, no spacing class → silent"
 run_hook "Write" "/Users/x/my-project/node_modules/@qijenchen/design-system/dist/x.tsx" "content" \
   'const X = () => <div className="p-4">x</div>;'
 expect_silent "N10. node_modules path → silent (out of scope)"
+
+# N11. Item/Button-style inline anatomy:the inline formatting context + cross-axis alignment is
+#      mechanically sufficient evidence that gap-1/2 is fixed internal geometry, not macro layout.
+run_hook "Write" "$APP_TSX" "content" \
+  'const Meta = () => <span className="inline-flex items-center gap-1"><Info />Details</span>;'
+expect_silent "N11. inline item/control gap-1 with structural evidence → silent"
+
+# N12. A phrasing wrapper using flex (rather than inline-flex) is still bounded inline anatomy.
+run_hook "Write" "$APP_TSX" "content" \
+  'const Title = () => <span className="flex min-w-0 items-start gap-2"><Icon /><span>Title</span></span>;'
+expect_silent "N12. span item-anatomy gap-2 with alignment evidence → silent"
+
+# N13. Homogeneous semantic list rows own their fixed row gap per layoutSpace rule 3 boundary.
+run_hook "Write" "$APP_TSX" "content" \
+  'const List = () => <ul className="flex flex-col gap-2">{items.map((item) => <li key={item.id}>{item.name}</li>)}</ul>;'
+expect_silent "N13. semantic homogeneous list gap-2 → silent"
+
+# N14. Toolbar is a named control context; compact Button geometry is deliberately fixed.
+run_hook "Write" "$APP_TSX" "content" \
+  'const Toolbar = () => <div role="toolbar" className="flex items-center gap-1"><Button iconOnly /><Button iconOnly /></div>;'
+expect_silent "N14. toolbar control gap-1 with role evidence → silent"
+
+# N15. layoutSpace rule 5 permits a tightly grouped horizontal field pair at fixed gap-2. Both
+#      the group semantic and two nearby field controls are required.
+run_hook "Write" "$APP_TSX" "content" \
+  'const Range = () => (
+  <fieldset className="flex items-start gap-2">
+    <Field label="Start"><Input /></Field>
+    <Field label="End"><Input /></Field>
+  </fieldset>
+);'
+expect_silent "N15. grouped horizontal field pair gap-2 (rule 5) → silent"
 
 echo ""
 echo "=== Summary ==="

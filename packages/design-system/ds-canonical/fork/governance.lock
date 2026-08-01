@@ -279,7 +279,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/governance-check.mjs",
-      "sha256": "363b6af5c1e9c87cc11a53bb9868cb17e591c64f5545a09dc66f66e86f70e66f",
+      "sha256": "393f5a016baac5a345e9c08a93c14bdb575b66570fd475a7fa86bc2e8002dd33",
       "source": "scripts/governance-check.mjs",
       "classification": null,
       "destination": null
@@ -431,7 +431,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/794bb911ba8ebef58ab0d44a55b9968a19d2c62bcfb310b1ee3a84166f087f21.blob",
-      "sha256": "be8be9b993199d0eb01da1b57cd0e395a4bfceea70a78ff45e436f626c290ed3",
+      "sha256": "1902716115df20d4b8831e7c497abc82f9d3b848a06ca6b7cc1fe64def37a31b",
       "source": "scripts/verify-upgrade-provenance.mjs",
       "classification": null,
       "destination": "scripts/verify-upgrade-provenance.mjs"
@@ -527,7 +527,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/bc44cabad181f766611dab6a8f52d81100afadd50ac59799015e8ba7bf46d9eb.blob",
-      "sha256": "5297a0c6dace974c1233a95825a6ffceef8823373eb4bb96947961f3979e4339",
+      "sha256": "2d5bf5ef149595854681c5744a431c2c231ead7d8699571a453783b39e556518",
       "source": "scripts/setup-governance.mjs",
       "classification": null,
       "destination": "scripts/setup-governance.mjs"
@@ -663,7 +663,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "d0a9dca6b35e1e9d7d317999d6af366ed67977450acf5266b1d8e4f39f4c95fd",
+      "sha256": "b7012123984801411335782237454092d0018bad7f2f8860ba07980a2efeb0c4",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -695,7 +695,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_escape_marker_abuse.sh",
-      "sha256": "936a634c28b348e90ab4faa57cd8d392a46156a769eedb106758cecb53c07650",
+      "sha256": "836b252a2671402edb1fb775a7c5166a66945497bf26721547ea4c0c91a9cf77",
       "source": "check_escape_marker_abuse.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -727,7 +727,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_layout_space_magic_numbers.sh",
-      "sha256": "ff4588eaf79e83e2cc8a7071ebab0ec09c29aa54bef0f97f77663295e0632018",
+      "sha256": "9cc344cce5898c98f00e61861cd483559c28fbb92e3784127ddd7cc2979bc746",
       "source": "check_layout_space_magic_numbers.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -801,6 +801,14 @@
       "file": "hooks/lib/_hook_integrity.sh",
       "sha256": "59043fe211ca17e0fe0e8f2712b273678bfd6fcc9c30944c6677731ff08877ed",
       "source": "lib/_hook_integrity.sh",
+      "classification": "HELPER",
+      "destination": null
+    },
+    {
+      "schemaVersion": 1,
+      "file": "hooks/lib/_micro_geometry.sh",
+      "sha256": "178dcc7c64ffe5116fcd4e334a90cd80cbc4b8e4f029fc9311b1e9b429667a81",
+      "source": "lib/_micro_geometry.sh",
       "classification": "HELPER",
       "destination": null
     },
@@ -1423,7 +1431,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.json",
-      "sha256": "310f92cc9aa57880d8f81464ac4191907bda9c9af31847a450497e6a9f97dce3",
+      "sha256": "ac430d50ee82c19eb678f725c00eec23a0e25b33ec4bad81d3bf6e2fa9fa64ff",
       "source": "packages/design-system/src/tokens/utility-registry.json",
       "classification": null,
       "destination": null
@@ -1431,7 +1439,7 @@
     {
       "schemaVersion": 1,
       "file": "references/utility-registry.schema.json",
-      "sha256": "0a3672076abc8154e17f66f67d41a3ce2d10b014c8c51078ba0a81958bfaba62",
+      "sha256": "6e41f5522ab3e2d0364042bb433e129dceba1e85db170c2785d4271cc48e889c",
       "source": "packages/design-system/src/tokens/utility-registry.schema.json",
       "classification": null,
       "destination": null

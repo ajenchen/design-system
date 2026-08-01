@@ -160,7 +160,7 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 
 **判準一句話**:是「並列/區塊/chrome/header→content/content→action 的 macro 結構間距、規則說該縮放」→ 用 token;是「list 列間距 / micro / 刻意固定 / 元件內部決定」→ magic number 合法,**不要 token 化**。
 
-**機械強制**:`check_tabs_content_chrome_body_double_gap.sh` Check 2 抓「浮層 body 自身固定 macro gap」(明確 pattern);判斷題(這是並列還是 list?macro 還是 micro?)靠 **週期 LLM sweep**(`/design-system-audit` dim「layout-space macro 合規」)—— 純 regex 分不出,不硬機械化(否則 over-flag 合法 magic number)。
+**機械強制**:`check_layout_space_magic_numbers.sh` 只自動放行 `utility-registry.json#/spacing/canonical_micro_geometry` 能用同行或有界 nearby 證據證明的子集:inline item/control、semantic homogeneous list/list row、`role="toolbar"` control cluster、以及「group 語意 + 至少兩個 nearby Field/input」的規則 5 橫排 fields。只看到一般 `flex/grid/section gap-1/2`、或同行還混有 `p-/m-/space-*` magic 都仍 BLOCK；不新增 CSS/UI token。`check_escape_marker_abuse.sh` 共用同一 classifier,已被結構證明且不再繞 gate 的舊 micro marker 不消耗 ceiling。`check_tabs_content_chrome_body_double_gap.sh` Check 2 另抓「浮層 body 自身固定 macro gap」。其餘判斷題(這是並列還是 list?macro 還是 micro?)仍靠 **週期 LLM sweep**(`/design-system-audit` dim「layout-space macro 合規」)—— 不將無語意證據的 regex 擴張成全放行(否則會 over-flag 或漏掉真 macro)。
 
 ---
 

@@ -19,11 +19,19 @@ source "$(dirname "$0")/lib/_hook_integrity.sh" 2>/dev/null || {
   printf 'GOVERNANCE_INTEGRITY: hook integrity helper unavailable\n' >&2
   exit 70
 }
+source "$(dirname "$0")/lib/_provider_paths.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: layout-space corpus resolver unavailable\n' >&2
+  exit 70
+}
+source "$(dirname "$0")/lib/_micro_geometry.sh" 2>/dev/null || {
+  printf 'GOVERNANCE_INTEGRITY: layout-space micro-geometry classifier unavailable\n' >&2
+  exit 70
+}
 
 set -uo pipefail
 
 governance_hook_load_input
-governance_hook_require_commands grep head sed
+governance_hook_require_commands grep head sed python3
 TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null) \
   || governance_hook_integrity_fail 'layout-space tool extraction failed'
 
@@ -83,6 +91,15 @@ governance_hook_grep_capture MAGIC_LINES_FILTERED 'layout-space canonical-divide
   "$MAGIC_LINES" -vE '(Separator|ButtonDivider)'
 MAGIC_LINES="$MAGIC_LINES_FILTERED"
 
+# layoutSpace.spec.md L150-163:token scaling owns macro structure, while fixed micro/control/list
+# geometry and rule-5 grouped horizontal fields must not be over-tokenized. The shared classifier
+# consumes the authenticated utility registry and admits only same-line/bounded-nearby structural
+# evidence. It also requires every magic token on the line to be a registered gap-1/2, so an inline
+# gap cannot hide p-/m-/space-* macro magic.
+MAGIC_LINES_FILTERED=$(governance_filter_canonical_micro_geometry "$NEW_CONTENT" "$MAGIC_LINES") \
+  || governance_hook_integrity_fail 'layout-space canonical micro-geometry classification failed'
+MAGIC_LINES="$MAGIC_LINES_FILTERED"
+
 if [ -z "$MAGIC_LINES" ]; then
   exit 0
 fi
@@ -132,6 +149,10 @@ $(printf '%b' "$UNJUSTIFIED" | sed 's/^/    /' | awk 'NR <= 10')
     (a) 改 token:換成 var(--layout-space-N) N∈{loose,tight} family per 6 規則 + 親疏 3 級
     (b) Escape:在該 line 加 \`// @layout-space-magic-ok: <rationale>\` 顯式 documented
         (eg.「\`gap-1\` 是 4px stack icon — non-spacing context,not consumer layout」)
+
+  注意:canonical inline item/control、semantic homogeneous list、toolbar 與 rule-5 grouped
+  horizontal fields 的 gap-1/2 會由 utility-registry 結構規則自動辨識,不需 escape。
+  一般 flex/grid/section 的 gap-1/2 沒有這些語意證據時仍是 blocker。
 
   完整 6 條規則 → packages/design-system/src/tokens/layoutSpace/layoutSpace.spec.md
 EOF

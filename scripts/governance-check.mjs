@@ -259,12 +259,22 @@ const readJson = (path, ruleId) => {
   try { return JSON.parse(readFileSync(path, 'utf8')) }
   catch (error) { add(ruleId, 'BLOCKER', `${relative(repo, path)} invalid JSON`, error.message); return null }
 }
-const treeInventory = (root) => {
+const treeInventory = (root, { frozenCanonicalSnapshot = false } = {}) => {
   if (!existsSync(root)) return null
   const rows = []
   const visit = (absolute, rel = '') => {
     const stat = lstatSync(absolute)
-    const mode = (stat.mode & 0o777).toString(8).padStart(4, '0')
+    const observedMode = stat.mode & 0o777
+    let projectedMode = observedMode
+    if (frozenCanonicalSnapshot) {
+      if (stat.isDirectory() && observedMode === 0o500) projectedMode = 0o755
+      else if (stat.isFile() && observedMode === 0o400) projectedMode = 0o644
+      else if (stat.isFile() && observedMode === 0o500) projectedMode = 0o755
+      else projectedMode = -1
+    }
+    const mode = projectedMode < 0
+      ? `invalid-frozen-${observedMode.toString(8).padStart(4, '0')}`
+      : projectedMode.toString(8).padStart(4, '0')
     if (stat.isSymbolicLink()) { rows.push(`link:${rel}:${mode}:${readlinkSync(absolute)}`); return }
     if (stat.isDirectory()) {
       rows.push(`dir:${rel || '.'}:${mode}`)
@@ -282,8 +292,14 @@ const assertTreeEqual = (ruleId, label, actual, canonical) => {
     add(ruleId, 'BLOCKER', `${label} contains an unsafe symlink path component`)
     return false
   }
-  const actualRows = treeInventory(actual)
-  const canonicalRows = treeInventory(canonical)
+  const isFrozenCanonicalPath = path => entrypointIsPrivateSnapshot
+    && (path === forkRoot || path.startsWith(`${forkRoot}${sep}`))
+  const actualRows = treeInventory(actual, {
+    frozenCanonicalSnapshot: isFrozenCanonicalPath(actual),
+  })
+  const canonicalRows = treeInventory(canonical, {
+    frozenCanonicalSnapshot: isFrozenCanonicalPath(canonical),
+  })
   if (!actualRows || !canonicalRows || JSON.stringify(actualRows) !== JSON.stringify(canonicalRows)) {
     add(ruleId, 'BLOCKER', `${label} is not a recursive path/type/mode/hash match of the installed canonical projection`)
     return false
