@@ -172,7 +172,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | exact-provider-projection-contract-library | `scripts/lib/provider-projection-contract.mjs` | `sha256:11383f5b721b141c7ab4f6efb65c47586191f7ff7c5fe443789a75af43d061d5` |
 | exact-provider-registry | `packages/governance/canonical/providers.json` | `sha256:e109e9de67315a5c834bb93ab1a160c9bb1d9880402e123ec290645dbc775ab8` |
 | exact-provider-registry-schema | `packages/governance/canonical/schemas/providers.schema.json` | `sha256:355c0db175e5e05bd5af9ad774af1ba94a8bde649aec1f2419128ad0735820c6` |
-| exact-provider-runtime-conformance-library | `infra/governance/lib/provider-runtime-conformance.mjs` | `sha256:ba135cfa8d1b10d56ff76c47d0cdcb56cf8feac822bfda1ce56a13dc27e087ae` |
+| exact-provider-runtime-conformance-library | `infra/governance/lib/provider-runtime-conformance.mjs` | `sha256:669d46284a05d477e1f6d18d6223567103c0be9ce6b66c756e9eb18350c9ed63` |
 | exact-provider-runtime-contract-library | `scripts/lib/provider-runtime-contract.mjs` | `sha256:67ee6e74c41280849cc53389bcd108416da4c02eec60b907faa2263c800ca878` |
 | exact-provider-runtime-validation-library | `scripts/lib/provider-runtime-validation.mjs` | `sha256:461d50f3b27d73b4ae42fd89c6f03b9b3197345bf8059e29378decae70075103` |
 | exact-published-template-mirror-builder | `scripts/build-published-template-mirror.mjs` | `sha256:f3d4bda1d07e137f34aece4aa35721f2009bfa419af7d139b015ad17f39b0f40` |
@@ -243,9 +243,9 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-build-graph-schema | `scripts/schemas/governance-build-graph.schema.json` | `sha256:238e8acaf96ab284b9e2352e8857524acaa665eb8969a454f26e0da184c22744` |
 | governance-build-graph-tests | `scripts/test-governance-build-graph.mjs` | `sha256:7c6170007ae6c14f9b42ea0dd00006b0914df6d300a3e4f0c1ddca450dcf4668` |
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:61ba4194427c198004a8b2659f639cb6b536a0a980a674d8bc4d3796dcae35e0` |
-| governance-control-plane-libraries | `infra/governance/lib/` | `sha256:444624ad450750b9c4b81c5a2d2a9f4193b6b4fbab344d447fc04c8914e68d8f` |
+| governance-control-plane-libraries | `infra/governance/lib/` | `sha256:de0d6a0aa9d35fde0c0dd7267d97ea5585ea427cd2ab1f973c55aa275d8f16ae` |
 | governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:252ef4f8ac5125a16d64041af8058fe167dd6f8b8183aab25570381f0bc4f494` |
-| governance-control-plane-tests | `infra/governance/test/` | `sha256:0f728496f9eae62ddf2c138ac4add49eae96f62c71e9819fcc80f7d48f60915d` |
+| governance-control-plane-tests | `infra/governance/test/` | `sha256:5c5723c7d782d565bf9ddf15bcc981c0e8c97238b42449b4175331512284a5af` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:5e179f234148dc7bef40c7974a23eda6563f6416e6809004f168a47fbbfb4075` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:6ee4764cd2e230f3a6ff3ba75c3e00b7f9488152bc3bd3d8aae065b7b9da760f` |
 | governance-github-desired-state | `infra/governance/desired/` | `sha256:76b6e36009dba929eaac31c73434c68bbbe1eb5e6f7914cf1c131bafce2b834f` |

@@ -191,6 +191,8 @@ function successMockRunner(overrides = {}) {
       assert.match(fixtureInstructions, /Human-only boundaries/)
       assert.match(providerArguments.at(-1), /engineering: implement and verify/)
       assert.match(providerArguments.at(-1), /Public runtime project-instruction evidence: <value>/)
+      assert.match(providerArguments.at(-1), /current durable authority policy/)
+      assert.match(providerArguments.at(-1), /Do not invent missing target details or an additional approval gate/)
       assert.match(providerArguments.at(-1), /unresolvedUiUxSsot:/)
       assert.match(providerArguments.at(-1), /oauth:/)
       return {
