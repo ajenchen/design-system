@@ -761,7 +761,7 @@ const SidebarGroupLabel = React.forwardRef<
   // 跟 SidebarMenuButton 的 suffix inline action 同一套 canonical 實作。
   //
   // **為什麼 chevron 是 inline action 而非整個 label 是 trigger**:
-  // 1. 同 sidebar 內的 inline action 視覺必須一致(fg-muted → foreground、hover bg、圓角)
+  // 1. 同 sidebar 內的 inline action 視覺必須一致(fg-muted → fg-secondary、hover bg、圓角)
   // 2. Linear / Notion / Finder 等世界級 sidebar 都是「label 裝飾、chevron 互動」
   // 3. 整個 label 當 trigger 會把 label 升格為 button,跟非 collapsible group 的 label
   //    語意不一致(一個是 div、一個是 button),無障礙與視覺焦點都會跳動
@@ -825,7 +825,7 @@ const SidebarGroupAction = React.forwardRef<
       ref={ref}
       data-sidebar="group-action"
       className={cn(
-        "absolute right-[var(--layout-space-loose)] top-2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted outline-none ring-ring transition-colors hover:bg-neutral-hover hover:text-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-[var(--layout-space-loose)] top-2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted outline-none ring-ring transition-colors hover:bg-neutral-hover hover:text-fg-secondary focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         "after:absolute after:-inset-2 after:md:hidden",
         "group-data-[collapsible=icon]:hidden",
         className
@@ -1190,7 +1190,7 @@ const SidebarMenuAction = React.forwardRef<
       ref={ref}
       data-sidebar="menu-action"
       className={cn(
-        "absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted outline-none ring-ring transition-colors hover:bg-neutral-hover hover:text-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted outline-none ring-ring transition-colors hover:bg-neutral-hover hover:text-fg-secondary focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         "after:absolute after:-inset-2 after:md:hidden",
         "group-data-[collapsible=icon]:hidden",
         showOnHover &&

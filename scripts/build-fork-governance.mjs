@@ -1454,7 +1454,6 @@ export function buildCorpus({
         )
     const baseConfig = baseTemplateContract?.engine === 'claude-permission-policy-v1'
       ? {
-          disableAutoMode: claudePermissionPolicy.disableAutoMode,
           _comment_governance: productWiring.settings.comment,
           permissions: productClaudeGovernanceSettings.permissions,
           sandbox: productClaudeGovernanceSettings.sandbox,

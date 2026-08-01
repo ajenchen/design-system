@@ -206,7 +206,13 @@ export const Overview = {
           {MODES.map((m) => (
             <div key={m} className="flex items-center gap-4">
               <div className="w-56 shrink-0">
-                <NumberInput mode={m} value={2490} prefix="$" className="max-w-[200px]" />
+                <NumberInput
+                  mode={m}
+                  value={2490}
+                  prefix="$"
+                  aria-label={`價格（${m} 模式）`}
+                  className="max-w-[200px]"
+                />
               </div>
               <span className="font-mono text-caption text-fg-secondary w-20 shrink-0">{m}</span>
               <span className="text-caption text-fg-secondary">{MODE_DESC[m]}</span>
@@ -228,7 +234,13 @@ export const Overview = {
           ] as const).map(({ label, props, value }) => (
             <div key={label} className="flex items-center gap-4">
               <div className="w-56 shrink-0">
-                <NumberInput mode="readonly" value={value} {...props} className="max-w-[200px]" />
+                <NumberInput
+                  mode="readonly"
+                  value={value}
+                  {...props}
+                  aria-label={`格式化數值（${label}）`}
+                  className="max-w-[200px]"
+                />
               </div>
               <span className="text-caption font-mono text-fg-secondary">{label}</span>
               {value === null && <span className="text-[11px] text-fg-muted">hyphen + text-foreground</span>}
@@ -342,6 +354,7 @@ const InspectorInner = () => {
               value={value}
               onChange={setValue}
               prefix={hasPrefix ? '$' : undefined}
+              aria-label="價格（互動檢閱器）"
               endAction={isEdit && hasEndAction ? { icon: X, label: '清除', onClick: () => setValue(null) } : undefined}
               className="max-w-[240px]"
             />
@@ -482,7 +495,13 @@ export const ColorMatrix = {
                     <Td mono>{st}</Td>
                     <Td>
                       <div className="w-[180px]">
-                        <NumberInput mode="edit" value={2490} prefix="$" error={st === 'error'} />
+                        <NumberInput
+                          mode="edit"
+                          value={2490}
+                          prefix="$"
+                          error={st === 'error'}
+                          aria-label={`價格（${st} 狀態）`}
+                        />
                       </div>
                     </Td>
                     <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.bg} size="sm" /><span className="font-mono text-[11px]">{c.bg}</span></span></Td>
@@ -519,7 +538,7 @@ export const ColorMatrix = {
                     <Td mono>{m}</Td>
                     <Td>
                       <div className="w-[180px]">
-                        <NumberInput mode={m} value={2490} prefix="$" />
+                        <NumberInput mode={m} value={2490} prefix="$" aria-label={`價格（${m} 模式）`} />
                       </div>
                     </Td>
                     <Td><span className="inline-flex items-center gap-1.5"><Swatch value={c.bg} size="sm" /><span className="font-mono text-[11px]">{c.bg}</span></span></Td>
@@ -627,7 +646,13 @@ export const SizeMatrix = {
                   {SIZES.map((sz) => (
                     <Td key={sz}>
                       <div className="w-[180px]">
-                        <NumberInput mode={m} size={sz} value={2490} prefix="$" />
+                        <NumberInput
+                          mode={m}
+                          size={sz}
+                          value={2490}
+                          prefix="$"
+                          aria-label={`價格（${m} 模式、${sz} 尺寸）`}
+                        />
                       </div>
                     </Td>
                   ))}
@@ -663,7 +688,13 @@ export const StateBehavior = {
           <span className="text-caption font-medium text-fg-secondary">Focus — border-primary，無 ring</span>
           <div className="flex items-center gap-4">
             <div className="w-[200px]">
-              <NumberInput value={focusValue} onChange={setFocusValue} prefix="$" placeholder="點擊 focus" />
+              <NumberInput
+                value={focusValue}
+                onChange={setFocusValue}
+                prefix="$"
+                placeholder="點擊 focus"
+                aria-label="價格（焦點狀態）"
+              />
             </div>
             <span className="text-[11px] text-fg-muted">input outline-none；focus 時由 wrapper focus-within 觸發 border-primary 1px</span>
           </div>
@@ -675,13 +706,13 @@ export const StateBehavior = {
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-4">
               <div className="w-[200px]">
-                <NumberInput value={-100} error prefix="$" />
+                <NumberInput value={-100} error prefix="$" aria-label="價格（錯誤狀態）" />
               </div>
               <span className="text-[11px] text-fg-muted">edit + error: border-error + aria-invalid</span>
             </div>
             <div className="flex items-center gap-4">
               <div className="w-[200px]">
-                <NumberInput mode="readonly" value={-100} error prefix="$" />
+                <NumberInput mode="readonly" value={-100} error prefix="$" aria-label="價格（唯讀錯誤 prop）" />
               </div>
               <span className="text-[11px] text-fg-muted">readonly + error: error prop 被忽略，無紅框</span>
             </div>
@@ -698,6 +729,7 @@ export const StateBehavior = {
                   value={clearValue}
                   onChange={setClearValue}
                   prefix="$"
+                  aria-label="價格（可清除）"
                   endAction={{ icon: X, label: '清除', onClick: () => setClearValue(null) }}
                 />
               </div>
@@ -705,7 +737,7 @@ export const StateBehavior = {
             </div>
             <div className="flex items-center gap-4">
               <div className="w-[200px]">
-                <NumberInput mode="readonly" value={1500} prefix="$" />
+                <NumberInput mode="readonly" value={1500} prefix="$" aria-label="價格（唯讀）" />
               </div>
               <span className="text-[11px] text-fg-muted">readonly / disabled 不渲染 endAction</span>
             </div>
@@ -744,7 +776,9 @@ export const StateBehavior = {
             {(['edit', 'readonly', 'disabled'] as const).map((m) => (
               <div key={m} className="flex flex-col gap-1 items-start">
                 <span className="text-[11px] text-fg-muted font-mono">{m}</span>
-                <div className="w-[160px]"><NumberInput mode={m} value={null} prefix="$" /></div>
+                <div className="w-[160px]">
+                  <NumberInput mode={m} value={null} prefix="$" aria-label={`空白價格（${m} 模式）`} />
+                </div>
                 <span className="text-[10px] text-fg-muted">{m === 'edit' ? '空白 input' : m === 'disabled' ? 'hyphen - + fg-disabled（M24 state > emphasis）' : 'hyphen - + foreground'}</span>
               </div>
             ))}

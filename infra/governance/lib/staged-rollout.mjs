@@ -195,7 +195,8 @@ const BASE_BOOTSTRAP_BOUNDARY = Object.freeze({
     profile: 'design-system-authority',
     actionsWorkflowPermissions: true,
     rulesets: Object.freeze(['fleet/base-integrity', 'fleet/verified-main']),
-    environments: Object.freeze(['governance-check-verdict', 'governance-external-ledger']),
+    // 1B(2026-07-29):governance-check-verdict 環境隨 App verdict 層拆除。
+    environments: Object.freeze(['governance-external-ledger']),
     irreversibleActionsAllowed: false,
     staleResourceDeletionAllowed: false,
     exactReadbackRequired: true,

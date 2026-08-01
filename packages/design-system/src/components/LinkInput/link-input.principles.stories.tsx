@@ -73,7 +73,7 @@ export const UsageGuidance: Story = {
         >
           <div>
             <Label>✅ 個人資料：Website（儲存後可直接點擊開啟）</Label>
-            <LinkInput value={website} onChange={setWebsite} />
+            <LinkInput value={website} onChange={setWebsite} aria-label="Website" />
           </div>
         </Rule>
 
@@ -83,11 +83,11 @@ export const UsageGuidance: Story = {
         >
           <div>
             <Label>✅ 專案 slug 用 Input（純字串,不是 URL）</Label>
-            <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
+            <Input value={slug} onChange={(e) => setSlug(e.target.value)} aria-label="專案 slug" />
           </div>
           <div>
             <Label warn>❌ 錯用：把 slug 塞進 LinkInput</Label>
-            <LinkInput value="my-design-system" onChange={() => {}} />
+            <LinkInput value="my-design-system" onChange={() => {}} aria-label="專案 slug（LinkInput 誤用）" />
             <Label warn>↑ blur 後會出現 error 邊框,因為「my-design-system」不是合法 URL</Label>
           </div>
         </Rule>
@@ -107,7 +107,7 @@ export const DisplayStateRule: Story = {
         title="有合法 URL 且未編輯 → 藍色連結 + Pencil"
         note="主要顯示狀態。使用者一眼看到可點擊的連結,想改才按 Pencil。對照 Notion / Linear 的 URL field——value 展示為 link,編輯是次要動作"
       >
-        <LinkInput value="https://react.dev/reference" onChange={() => {}} />
+        <LinkInput value="https://react.dev/reference" onChange={() => {}} aria-label="參考連結" />
         <Label>↑ 可直接點文字開啟,Pencil 進入編輯</Label>
       </Rule>
 
@@ -117,7 +117,7 @@ export const DisplayStateRule: Story = {
       >
         <div>
           <Label>✅ 空值：直接顯示輸入框,不需要先按 Pencil</Label>
-          <LinkInput value="" onChange={() => {}} />
+          <LinkInput value="" onChange={() => {}} aria-label="Website" />
         </div>
       </Rule>
 
@@ -143,7 +143,7 @@ export const ValidationRule: Story = {
           title="blur 時驗證，不在打字過程中"
           note="使用者還在輸入時就抱怨「格式錯」= 打擾體驗。blur(離開欄位 / 按 Enter)才檢查。開始打字時清除 error,讓使用者無壓力重試。對齊 Field 系統的共用驗證規則"
         >
-          <LinkInput value={url} onChange={setUrl} placeholder="輸入 URL（需含 https://）" />
+          <LinkInput value={url} onChange={setUrl} placeholder="輸入 URL（需含 https://）" aria-label="Website" />
           <Label>↑ 試試輸入「github.com」(無 protocol),按 Tab 離開會出現 error。開始打字自動清除 error</Label>
         </Rule>
 
@@ -168,7 +168,7 @@ export const EmptyRule: Story = {
         title="edit 空值 → input 外觀（可直接輸入）"
         note="沒有連結可以開,沒必要先按 Pencil。直接 input + placeholder 提示格式"
       >
-        <LinkInput value="" onChange={() => {}} placeholder="https://" />
+        <LinkInput value="" onChange={() => {}} placeholder="https://" aria-label="Website" />
       </Rule>
 
       <Rule

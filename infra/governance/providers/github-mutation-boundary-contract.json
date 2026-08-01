@@ -164,8 +164,8 @@
   },
   "desiredBindings": {
     "source": {
-      "normalizedRulesetsDigest": "f9262f2cb75405a81d684159cc9ad9666fd19da423f0279ee703c5472d29ad2f",
-      "requiredChecksDigest": "45b0defc77bdbfa38af281d96fcd0661aae01ba9f4549ab1c4302d19ab41baed",
+      "normalizedRulesetsDigest": "e13460c61f6e181c7f9be1b816fcfa452ded569dd760737cd5355ffb1a3525ba",
+      "requiredChecksDigest": "7faf7afc03441e4f33a451781dd520fad3c587cf2deaca359851dc9ffc42d850",
       "actionsWorkflowPermissionsDigest": "e4eea28a28f0c12dc5a441d5d6451c4bc7f3f72ed8f0b717c6cb5502e825965d",
       "repositoryIdentityDefaultBranchDigest": "3b806606e9e410c78bbaccf83bb7d49cca20ec2e1e3f03381fb7e4afb8119317",
       "environmentPolicyDigest": "64fff20d282ee11a4ff7e1bcd61293215740447966cbd8bd7d576e2295987001"

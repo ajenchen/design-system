@@ -429,7 +429,11 @@ export const ColorMatrix = {
                   return (
                     <td key={st} className="p-3 border-b border-divider align-top min-w-[160px]">
                       <RadioGroup defaultValue={isChecked ? 'demo' : undefined}>
-                        <RadioGroupItem value="demo" disabled={isDisabled} />
+                        <RadioGroupItem
+                          value="demo"
+                          disabled={isDisabled}
+                          aria-label={`${c} ${st} Radio`}
+                        />
                       </RadioGroup>
                       <TokenAnnotation colors={TOKEN_MAP[c][st]} />
                     </td>

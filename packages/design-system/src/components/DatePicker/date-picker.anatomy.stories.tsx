@@ -243,7 +243,7 @@ export const Overview = {
       {/* Props table */}
       <div className="flex flex-col gap-3">
         <H3>Props</H3>
-        <div className="overflow-x-auto">
+        <div tabIndex={0} aria-label="DatePicker 屬性表" className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
@@ -807,7 +807,7 @@ export const CalendarTokens = {
           {/* Token table */}
           <div className="flex-1 min-w-[420px]">
             <span className="text-caption font-medium text-fg-secondary block mb-2">Cell state token(5 種 標準)</span>
-            <div className="overflow-x-auto">
+            <div tabIndex={0} aria-label="日期格狀態設計變數表" className="overflow-x-auto">
               <table className="border-collapse text-caption w-full">
                 <thead><tr><Th>State</Th><Th>視覺</Th><Th>Token / Class</Th><Th>備註</Th></tr></thead>
                 <tbody>
@@ -858,7 +858,7 @@ export const CalendarTokens = {
             </div>
 
             <span className="text-caption font-medium text-fg-secondary block mb-2 mt-6">其他區塊 token</span>
-            <div className="overflow-x-auto">
+            <div tabIndex={0} aria-label="日期面板區塊設計變數表" className="overflow-x-auto">
               <table className="border-collapse text-caption w-full">
                 <thead><tr><Th>區塊</Th><Th>Token / Class</Th><Th>說明</Th></tr></thead>
                 <tbody>

@@ -86,6 +86,8 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
    *  (Select 無 searchPlaceholder prop);multi `searchIn='trigger'` inline 搜尋同理走
    *  placeholder 規則(spec「Trigger display SSOT canonical table」)。 */
   searchPlaceholder?: string
+  /** Multi 模式搜尋框 accessible name。僅轉送 wrapped Combobox。 */
+  searchAriaLabel?: string
   /** 搜尋無結果訊息(filtered menu empty)。**僅**用於 SelectMenu `emptyText`(菜單空狀態,
    *  2026-07-04 Q4 接線完成),不轉 trigger placeholder(2026-05-12 Issue 4 semantic fix)。 */
   emptyText?: string
@@ -137,6 +139,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   people = [],
   placeholder = '請選擇人員', // i18n-allow: DS default(2026-05-12 Stream C Issue 4)
   searchPlaceholder = '搜尋人員…', // i18n-allow: DS default
+  searchAriaLabel = '搜尋人員', // i18n-allow: DS default
   emptyText = '沒有符合的人員', // i18n-allow: DS default — only for SelectMenu noResultsText
   className,
   disabled: disabledProp,
@@ -345,6 +348,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // documented multi opt-in `searchIn='trigger'` silently 無效;stack branch 已傳,對齊 M30 forward 全 surface)
         searchIn={searchIn}
         searchPlaceholder={searchPlaceholder}
+        searchAriaLabel={searchAriaLabel}
         // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty hint('請選擇人員')
         // — semantic clean separation。2026-07-04 Q4 拍板完成 1-cycle 承諾:emptyPlaceholder forward
         // 移除,emptyText 改傳 Combobox → SelectMenu emptyText(search-empty 真住所,菜單空狀態)。
@@ -410,6 +414,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       searchable
       searchIn={searchIn}
       searchPlaceholder={searchPlaceholder}
+      searchAriaLabel={searchAriaLabel}
       // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty('請選擇人員');emptyText = search-empty(僅 backward-compat forward 1 cycle)
       placeholder={placeholder}
       emptyText={emptyText}

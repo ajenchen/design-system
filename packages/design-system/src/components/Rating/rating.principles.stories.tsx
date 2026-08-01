@@ -84,8 +84,8 @@ export const UsageGuidance: Story = {
           <Label>✅ `aria-label=&quot;平均評分 4.5 星，共 5 星&quot;`</Label>
         </div>
         <div className="flex flex-col gap-2 w-[320px] p-4 border border-border rounded-md">
-          <Rating value={4.5} readOnly precision="half" size="md" />
-          <Label warn>❌ 無 aria-label，螢幕閱讀器讀不出分數</Label>
+          <Rating value={4.5} readOnly precision="half" size="md" aria-label="平均評分 4.5 星，共 5 星" />
+          <Label warn>❌ 若省略 aria-label，螢幕閱讀器會讀不出分數；此可執行示範仍保留名稱，避免 demo 本身成為違規來源</Label>
         </div>
       </Rule>
 

@@ -1052,6 +1052,8 @@ export interface TreeItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   /**
    * Checkbox(多選模式,label 前方)。傳入 ReactNode(Checkbox 元件)。
    * 位置:在 icon 之後、label 之前。
+   * 此 slot 僅是 treeitem selection 的視覺鏡像；有效 React element 會由 TreeItem
+   * 強制正規化為 `aria-hidden` + `tabIndex=-1`，不形成第二個 node tab stop。
    * 單選模式通常不需要(用 bg-neutral-selected 表達選中)。
    */
   checkbox?: React.ReactNode
@@ -1145,6 +1147,9 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
     const showRing = isFocused && isKeyboardRef.current
     const isDragging = draggingId === id
     const isDropTarget = dropTarget?.id === id
+    const visualCheckbox = checkbox && React.isValidElement<Record<string, unknown>>(checkbox)
+      ? React.cloneElement(checkbox, { 'aria-hidden': true, tabIndex: -1 })
+      : checkbox
 
     const iconPx = ICON_SIZE[size]
     const indentPx = depth * INDENT_STEP[size]
@@ -1212,7 +1217,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             onClick={handleChevronClick}
             className={cn(
               'flex items-center justify-center rounded-md',
-              'text-fg-muted hover:text-foreground hover:bg-neutral-hover',
+              'text-fg-muted hover:text-fg-secondary hover:bg-neutral-hover',
               'transition-all duration-150',
               isExpanded && 'rotate-90',
               disabled && 'text-fg-disabled pointer-events-none',
@@ -1326,7 +1331,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
                   * 破壞 tree 單一 tab stop 虛擬焦點模型(tree-view.spec.md「Focus」段);
                   * ItemPrefix pointer-events-none 只擋滑鼠不擋鍵盤。選取語意由 treeitem
                   * aria-selected 承載,checkbox 純視覺反映。 */}
-                {checkbox || <Checkbox checked={isSelected} disabled={disabled} aria-hidden="true" tabIndex={-1} />}
+                {visualCheckbox || <Checkbox checked={isSelected} disabled={disabled} aria-hidden="true" tabIndex={-1} />}
               </ItemPrefix>
             )}
 

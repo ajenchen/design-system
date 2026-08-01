@@ -185,7 +185,11 @@ export const UsageGuidance: Story = {
           title="✅ ScrollArea / 列表捲動 — 自由瀏覽多項"
           note="使用者想同時看到多個項目、在任意位置停下、掃視後挑選——那是列表的 affordance。用水平 ScrollArea / flex + overflow-x-auto 更符合使用者直覺。"
         >
-          <div className="w-[480px] flex gap-3 overflow-x-auto pb-2">
+          <div
+            tabIndex={0}
+            aria-label="常用食物標籤列表"
+            className="w-[480px] flex gap-3 overflow-x-auto pb-2"
+          >
             {['🍜 拉麵', '🍕 披薩', '🍔 漢堡', '🥗 沙拉', '🌮 墨西哥捲', '🍣 壽司', '🍛 咖哩'].map((t) => (
               <div key={t} className="shrink-0 w-28 h-20 rounded-lg border border-border bg-surface-raised flex items-center justify-center text-body">
                 {t}

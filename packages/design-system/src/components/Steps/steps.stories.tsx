@@ -3,6 +3,7 @@
 //   manual trait grid 違 story-rules.md 三層定位「展示層 = 典型使用情境,不是 trait grid」)。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
+import { expect, within } from '@storybook/test'
 import { Check } from 'lucide-react'
 import {
   Steps,
@@ -255,7 +256,12 @@ export const MultipleExpansion: Story = {
           <StepLabel>匯入元件</StepLabel>
           <StepDescription>從 design-system 引入</StepDescription>
           <StepContent>
-            <div className="max-w-full overflow-x-auto rounded-md bg-muted">
+            <div
+              tabIndex={0}
+              role="region"
+              aria-label="Steps 元件匯入範例程式碼"
+              className="max-w-full overflow-x-auto rounded-md bg-muted focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+            >
               <pre className="text-caption p-3 whitespace-pre w-max">
               {"import { Steps } from '@/design-system/components/Steps/steps'"}
             </pre>
@@ -276,6 +282,17 @@ export const MultipleExpansion: Story = {
       </Steps>
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const scrollRegion = canvas.getByRole('region', {
+      name: 'Steps 元件匯入範例程式碼',
+    })
+
+    await expect(scrollRegion.scrollWidth).toBeGreaterThan(scrollRegion.clientWidth)
+    await expect(scrollRegion).toHaveAttribute('tabindex', '0')
+    scrollRegion.focus()
+    await expect(scrollRegion).toHaveFocus()
+  },
 }
 
 // @story-trait-rationale: MixedDescription(欄節奏驗證 grid)retired 2026-06-11 per audit

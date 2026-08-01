@@ -83,7 +83,7 @@ export const Overview: Story = {
         </Desc>
         <div className="border border-divider rounded-md p-4 bg-muted max-w-xl">
           <SelectionItem
-            control={<Checkbox defaultChecked />}
+            control={<Checkbox defaultChecked aria-label="讀取 email 信箱" />}
             icon={Mail}
             label="讀取 email 信箱"
             description="僅用於通知,永遠不會外流"
@@ -246,7 +246,14 @@ function SelectionInspector() {
           <div className="border border-divider rounded-md p-4 bg-muted">
             <SelectionItem
               size={size}
-              control={<Checkbox size={size} defaultChecked disabled={disabled} />}
+              control={
+                <Checkbox
+                  size={size}
+                  defaultChecked
+                  disabled={disabled}
+                  aria-label="Admin 層級操作"
+                />
+              }
               icon={prefix === 'icon' ? Shield : undefined}
               avatar={prefix === 'avatar' ? { alt: 'Ada Chen', color: 'indigo' } : undefined}
               label="Admin 層級操作"
@@ -438,7 +445,7 @@ export const PrefixAlignment: Story = {
             </span>
             <div className="border border-divider rounded-md p-4 bg-muted">
               <SelectionItem
-                control={<Checkbox defaultChecked />}
+                control={<Checkbox defaultChecked aria-label="選取 Ada Chen（單行）" />}
                 avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
                 label="Ada Chen"
               />
@@ -450,7 +457,7 @@ export const PrefixAlignment: Story = {
             </span>
             <div className="border border-divider rounded-md p-4 bg-muted">
               <SelectionItem
-                control={<Checkbox defaultChecked />}
+                control={<Checkbox defaultChecked aria-label="選取 Ada Chen（含職稱）" />}
                 avatar={{ src: 'https://i.pravatar.cc/64?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
                 label="Ada Chen"
                 description="Design Engineer · Frontend team"
@@ -467,11 +474,15 @@ export const PrefixAlignment: Story = {
         </Desc>
         <div className="grid grid-cols-2 gap-6 max-w-4xl">
           <div className="border border-divider rounded-md p-4 bg-muted">
-            <SelectionItem control={<Checkbox defaultChecked />} icon={Folder} label="存取 Drive 檔案" />
+            <SelectionItem
+              control={<Checkbox defaultChecked aria-label="存取 Drive 檔案（單行）" />}
+              icon={Folder}
+              label="存取 Drive 檔案"
+            />
           </div>
           <div className="border border-divider rounded-md p-4 bg-muted">
             <SelectionItem
-              control={<Checkbox defaultChecked />}
+              control={<Checkbox defaultChecked aria-label="存取 Drive 檔案（含說明）" />}
               icon={Folder}
               label="存取 Drive 檔案"
               description="讀取並修改你授權的資料夾"
@@ -538,13 +549,13 @@ export const SizeMatrix: Story = {
               <div className="border border-divider rounded-md bg-muted flex flex-col">
                 <SelectionItem
                   size={s}
-                  control={<Checkbox size={s} defaultChecked />}
+                  control={<Checkbox size={s} defaultChecked aria-label={`${s} 尺寸產品更新電子報`} />}
                   icon={Mail}
                   label="產品更新電子報"
                 />
                 <SelectionItem
                   size={s}
-                  control={<Checkbox size={s} />}
+                  control={<Checkbox size={s} aria-label={`${s} 尺寸安全性警告`} />}
                   icon={Shield}
                   label="安全性警告"
                   description="登入裝置變動、密碼變更等重要事件"

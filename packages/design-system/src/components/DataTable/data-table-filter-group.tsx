@@ -27,6 +27,7 @@ import {
 } from './filter-operators'
 import type { Conjunction, FilterCondition, FilterGroup } from './filter-tree'
 import { FilterValuePicker } from './data-table-filter-value-picker'
+import type { DataTableFilterPanelLabels } from './data-table-filter-labels'
 
 // ── Shared internal types + operator helpers(panel orchestration 也消費)────
 
@@ -40,9 +41,12 @@ export interface FilterColumn {
   includeTime?: boolean
 }
 
-function getOperatorOptions(type?: ColumnType): SelectOption[] {
+function getOperatorOptions(
+  type: ColumnType | undefined,
+  operatorLabels: DataTableFilterPanelLabels['operatorLabels'],
+): SelectOption[] {
   const registry = type && OPERATOR_REGISTRY[type] ? OPERATOR_REGISTRY[type] : OPERATOR_REGISTRY.string
-  return registry.map((op) => ({ value: op.op, label: op.label }))
+  return registry.map((op) => ({ value: op.op, label: operatorLabels[op.op] ?? op.label }))
 }
 
 export function getDefaultOperator(type?: ColumnType): string {
@@ -56,25 +60,25 @@ export const datePrecisionOf = (col: FilterColumn | undefined): 'day' | 'ms' | u
 
 // ── ConjunctionLabel ───────────────────────────────────────────────────
 
-const CONJ_OPTIONS: SelectOption[] = [
-  { value: 'and', label: 'And' },
-  { value: 'or', label: 'Or' },
-]
-
 function ConjunctionLabel({
-  index, conjunction, onChange,
-}: { index: number; conjunction: Conjunction; onChange: (c: Conjunction) => void }) {
+  index, conjunction, onChange, labels,
+}: {
+  index: number
+  conjunction: Conjunction
+  onChange: (c: Conjunction) => void
+  labels: DataTableFilterPanelLabels
+}) {
   // index === 0:首 row 顯示靜態「Where」label
   // index === 1:**唯一可改**的 AND/OR Select(連動整 group conjunction)
   // index ≥ 2:被連動的 row,read-only 顯示當前 conjunction 文字(同 Where 視覺,A6 canonical)
   //   對齊 Airtable / Notion / Linear 共識 @benchmark-unverified(non-OSS)
   //   px-[var(--field-px)] 對齊 Field 內部 padding 12px(Q13)
   if (index === 0) {
-    return <div className="w-20 shrink-0 text-body text-fg-muted px-[var(--field-px)] self-center">Where</div>
+    return <div className="w-20 shrink-0 text-body text-fg-secondary px-[var(--field-px)] self-center">{labels.where}</div>
   }
   if (index >= 2) {
-    const label = conjunction === 'and' ? 'And' : 'Or'
-    return <div className="w-20 shrink-0 text-body text-fg-muted px-[var(--field-px)] self-center">{label}</div>
+    const label = conjunction === 'and' ? labels.and : labels.or
+    return <div className="w-20 shrink-0 text-body text-fg-secondary px-[var(--field-px)] self-center">{label}</div>
   }
   // index === 1:可切換的 AND/OR Select
   // minRows={2} — And/Or 2 選項,顯式縮 menu 高度避免 reserve 3 row 空白(Q5)
@@ -82,11 +86,14 @@ function ConjunctionLabel({
     <div className="w-20 shrink-0">
       <Select
         size="sm"
-        options={CONJ_OPTIONS}
+        options={[
+          { value: 'and', label: labels.and },
+          { value: 'or', label: labels.or },
+        ]}
         value={conjunction}
         onChange={(v) => onChange(v as Conjunction)}
         minRows={2}
-        aria-label="連接詞 — 同 group 共用"
+        aria-label={labels.conjunctionAriaLabel}
       />
     </div>
   )
@@ -96,7 +103,7 @@ function ConjunctionLabel({
 
 export function FilterRow({
   index, condition, conjunction, filterableColumns, fieldOptions,
-  onChangeConjunction, onChangeField, onChangeOp, onChangeValue, onRemove,
+  onChangeConjunction, onChangeField, onChangeOp, onChangeValue, onRemove, labels,
 }: {
   index: number
   condition: FilterCondition
@@ -108,9 +115,10 @@ export function FilterRow({
   onChangeOp: (v: string) => void
   onChangeValue: (v: unknown) => void
   onRemove: () => void
+  labels: DataTableFilterPanelLabels
 }) {
   const colInfo = filterableColumns.find((c) => c.id === condition.field)
-  const operatorOptions = getOperatorOptions(colInfo?.type)
+  const operatorOptions = getOperatorOptions(colInfo?.type, labels.operatorLabels)
   const hasField = !!condition.field
   const opSpec = colInfo ? getOperatorSpec(colInfo.type, condition.op) : null
   const valueShape: ValueShape | null = colInfo && opSpec
@@ -129,7 +137,7 @@ export function FilterRow({
   //   - **#2 fix**:FilterValuePicker 直接是 FieldControlGroup direct child(無 wrapper div),CSS variants 命中正確
   return (
     <div className="flex items-center gap-2">
-      <ConjunctionLabel index={index} conjunction={conjunction} onChange={onChangeConjunction} />
+      <ConjunctionLabel index={index} conjunction={conjunction} onChange={onChangeConjunction} labels={labels} />
       {/* **#9 fix(2026-05-04 v4)**:Field controls trigger `w-full` override 外 className,改用 Tailwind `!`
           important 強制 override(`!w-[160px]` / `!w-[120px]`),value 用 `!flex-1 !min-w-0`。
           Select 元件本身沒 destructure `style` prop 所以 inline style flex-basis 行不通,只能用 className。 */}
@@ -138,13 +146,13 @@ export function FilterRow({
             `--data-table-filter-field-width` / `--data-table-filter-op-width`(SSOT in uiSize.css)
             Behavior preserved 完好如初:flat + nested 同 width(token 是 design constant) */}
         <Select
-          className="!w-[var(--data-table-filter-field-width)] flex-shrink-0"
+          className="!w-[var(--data-table-filter-field-width)] flex-shrink-0 [&_.text-fg-muted]:!text-fg-secondary"
           size="sm"
           options={fieldOptions}
           value={condition.field}
           onChange={onChangeField}
-          placeholder="選擇欄位"
-          aria-label="篩選欄位"
+          placeholder={labels.fieldPlaceholder}
+          aria-label={labels.fieldAriaLabel}
         />
         <Select
           className={hasValueCell ? '!w-[var(--data-table-filter-op-width)] flex-shrink-0' : '!flex-1 !min-w-0'}
@@ -153,8 +161,8 @@ export function FilterRow({
           value={condition.op}
           onChange={onChangeOp}
           disabled={!hasField}
-          placeholder="運算子"
-          aria-label="篩選運算子"
+          placeholder={labels.operatorPlaceholder}
+          aria-label={labels.operatorAriaLabel}
         />
         {hasValueCell && (
           <FilterValuePicker
@@ -163,13 +171,14 @@ export function FilterRow({
             onChange={onChangeValue}
             colInfo={colInfo}
             disabled={!hasField}
-            ariaLabel={colInfo ? `${colInfo.label} 篩選值` : '篩選值'}
+            ariaLabel={labels.filterValueAriaLabel(colInfo?.label)}
+            labels={labels}
             className="!flex-1 !min-w-0"
           />
         )}
       </FieldControlGroup>
       {/* Trash 用 text Button — filter row 是 form-control row,Field 同高對齊(28 md) */}
-      <Button variant="text" size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={onRemove} />
+      <Button variant="text" size="sm" iconOnly startIcon={Trash2} aria-label={labels.deleteCondition} onClick={onRemove} />
     </div>
   )
 }
@@ -180,6 +189,7 @@ export function GroupBlock({
   index, group, rootConjunction, filterableColumns, fieldOptions,
   onChangeRootConjunction, onChangeGroupConjunction,
   onChangeCondition, onRemoveCondition, onAddCondition, onRemoveGroup,
+  canAddCondition, labels,
 }: {
   index: number
   group: FilterGroup
@@ -192,11 +202,13 @@ export function GroupBlock({
   onRemoveCondition: (condId: string) => void
   onAddCondition: () => void
   onRemoveGroup: () => void
+  canAddCondition: boolean
+  labels: DataTableFilterPanelLabels
 }) {
   return (
     <div className="flex items-start gap-2">
       <div className="pt-2">
-        <ConjunctionLabel index={index} conjunction={rootConjunction} onChange={onChangeRootConjunction} />
+        <ConjunctionLabel index={index} conjunction={rootConjunction} onChange={onChangeRootConjunction} labels={labels} />
       </div>
       {/* Group container 灰底 — `bg-muted`(`--muted` neutral-2,user 2026-05-09 拍板 Q3 A)。對齊 color.spec.md L651-654 「table header / tab / code block / skeleton」靜態低重要 surface semantic */}
       <div className="flex-1 min-w-0 rounded-md bg-muted p-2 flex flex-col gap-2">
@@ -216,13 +228,18 @@ export function GroupBlock({
             onChangeOp={(v) => onChangeCondition(cond.id, { op: v, value: '' })}
             onChangeValue={(v) => onChangeCondition(cond.id, { value: v })}
             onRemove={() => onRemoveCondition(cond.id)}
+            labels={labels}
           />
         ))}
         {/* Q9 — text variant 對齊 inline 派 + 視覺輕量 */}
         <div className="flex items-center justify-between">
-          <Button variant="text" size="sm" startIcon={Plus} onClick={onAddCondition}>加入巢狀篩選</Button>
+          <Button variant="text" size="sm" startIcon={Plus} onClick={onAddCondition} disabled={!canAddCondition}>
+            {labels.addNestedFilter}
+          </Button>
           {group.children.length === 0 && (
-            <Button variant="text" size="sm" startIcon={Trash2} danger onClick={onRemoveGroup}>移除空群組</Button>
+            <Button variant="text" size="sm" startIcon={Trash2} danger onClick={onRemoveGroup}>
+              {labels.removeEmptyGroup}
+            </Button>
           )}
         </div>
       </div>

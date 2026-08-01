@@ -341,7 +341,7 @@ const ICON_ONLY_BASE = 'aspect-square p-0 min-w-0 gap-0'
 |------|------|--------|
 | `variant` | **強制 `text`**(由 `dismiss` prop 內部 override)| 其他 variant chrome 太強,搶 dismiss 弱化語意 |
 | Icon 色 default | **`fg-muted`**(override Button text variant 預設 `foreground`) | 對齊 Inline Action dismiss 弱化,cross-implementation 一致 |
-| Icon 色 hover | `foreground` | 對齊 Inline Action hover |
+| Icon 色 hover | `fg-secondary` | 對齊 Inline Action 的一階 hover |
 | `iconOnly` | **強制 true** | dismiss 必 icon-only,帶 label 違反「可忽略」本質 |
 
 #### 觸發條件(Button 限定)

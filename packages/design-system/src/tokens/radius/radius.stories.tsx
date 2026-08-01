@@ -33,9 +33,9 @@ export const Overview: Story = {
           <span className="text-caption text-fg-muted">2px — 極小 indicator(≤ 10px)</span>
         </div>
         <div className="flex flex-wrap gap-3 items-center">
-          <div className="rounded-xs bg-primary h-2 w-2" aria-label="Chart legend dot" />
-          <div className="rounded-xs bg-success h-2 w-2" />
-          <div className="rounded-xs bg-error h-2 w-2" />
+          <div aria-hidden="true" className="rounded-xs bg-primary h-2 w-2" />
+          <div aria-hidden="true" className="rounded-xs bg-success h-2 w-2" />
+          <div aria-hidden="true" className="rounded-xs bg-error h-2 w-2" />
           <span className="text-caption text-fg-muted ml-2">Chart legend swatch(8×8 色塊):md 4px 在 8×8 上接近 50% 圓,xs 2px 保留「色塊」而非「膠囊」語意</span>
         </div>
       </div>

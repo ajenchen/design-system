@@ -9,7 +9,17 @@ import {
 } from './workflow-static-validation.mjs'
 
 const npmrc = 'ignore-scripts=true\nlegacy-peer-deps=true\n'
-const trustedPublisher = "npmResult(npmCli, ['stage', 'publish', archive, '--tag', context.stagingTag, '--provenance', '--json'])\n"
+const trustedPublisher = `
+receiptItem.status = 'submitting'
+writeAtomicJson(receiptPath, receipt)
+await recheckRemoteTag(context.identity, args['--tag-object'], githubToken)
+const staged = npmResult(npmCli, ['stage', 'publish', archive, '--tag', context.stagingTag, '--provenance', '--json'])
+receiptItem.status = 'ambiguous'
+writeAtomicJson(receiptPath, receipt)
+receiptItem.stageId = evidence.stageId
+receiptItem.status = 'staged'
+writeAtomicJson(receiptPath, receipt)
+`
 const base = {
   '.github/workflows/ci.yml': 'on:\n  pull_request:\njobs:\n  test:\n    steps:\n      - uses: actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n        with:\n          persist-credentials: false\n      - run: npm ci --ignore-scripts\n      - run: npm audit signatures\n      - run: npm audit --audit-level=high\n      - run: npm run --silent test:governance-harnesses\n',
   '.github/workflows/a11y-and-size.yml': 'on:\n  pull_request:\njobs: {}\n',
@@ -29,7 +39,6 @@ jobs:
           test "$event_commit" = "$main_commit"
           test "$tag_commit" = "$main_commit"
   trust-preflight:
-    if: vars.RELEASE_HIGH_ASSURANCE == 'true'
     needs: resolve-release-request
     permissions:
       contents: read
@@ -48,11 +57,12 @@ jobs:
       release_set_sha256: \${{ steps.release_set.outputs.sha256 }}
     steps:
       - run: git merge-base --is-ancestor tag refs/remotes/origin/main
+      - run: node scripts/release-sbom.mjs --input "$RUNNER_TEMP/release.sbom.raw.json" --output "$GITHUB_WORKSPACE/release-artifacts/release.sbom.cdx.json" --tag "$RELEASE_TAG" --git-tree "\${{ needs.resolve-release-request.outputs.release_tree }}"
       - run: npm run --silent test:governance-harnesses
       - id: release_set
       - uses: actions/upload-artifact@eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
   attest-release:
-    needs: [build-release-evidence]
+    needs: [trust-preflight, build-release-evidence]
     permissions:
       contents: read
       id-token: write
@@ -60,30 +70,37 @@ jobs:
     steps:
       - run: node scripts/release-set.mjs --expected digest
       - run: node scripts/build-release-bom.mjs --verify
-      - run: node scripts/release-remote-tag.mjs --expected commit --token-env GH_TOKEN
+      - run: echo release-trust-\${{ github.run_id }}-\${{ github.run_attempt }}
+      - run: node scripts/release-trust-preflight.mjs --verify evidence --expected-authorization-digest digest
+      - run: node scripts/release-remote-tag.mjs --expected commit --expected-object object --token-env GH_TOKEN
       - uses: actions/attest@eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
   publish-npm:
-    needs: [build-release-evidence, attest-release]
+    needs: [trust-preflight, build-release-evidence, attest-release]
     environment:
       name: npm-release
     permissions:
       contents: read
       id-token: write
+    outputs:
+      stage_artifact_digest: \${{ steps.finalizer_handoff.outputs.stage_artifact_digest }}
+      stage_receipt_sha256: \${{ steps.finalizer_handoff.outputs.stage_receipt_sha256 }}
     steps:
       - run: node scripts/release-set.mjs --expected digest
       - run: node scripts/build-release-bom.mjs --verify
-      - run: node scripts/release-remote-tag.mjs --expected commit --token-env GH_TOKEN
-      - run: |
-          npm publish "$tarball" --provenance --access public
-      - run: |
-          npm view "\${name}@\${version}" version
-  github-release:
-    needs: [resolve-release-request, build-release-evidence, publish-npm]
-    permissions:
-      contents: write
-    steps:
-      - run: |
-          gh release create "$RELEASE_TAG" --verify-tag
+      - run: echo release-trust-\${{ github.run_id }}-\${{ github.run_attempt }}
+      - run: node scripts/release-trust-preflight.mjs --verify evidence --expected-authorization-digest digest
+      - run: node scripts/release-remote-tag.mjs --expected commit --expected-object object --token-env GH_TOKEN
+      - run: node scripts/release-npm-publish.mjs --receipt "$RUNNER_TEMP/npm-stage/npm-stage-receipt.json" --trust-artifact-digest digest --trust-run-attempt "$GITHUB_RUN_ATTEMPT"
+      - if: always()
+        run: sha256sum "$receipt"
+      - if: always()
+        uses: actions/upload-artifact@eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+        with:
+          name: npm-stage-\${{ github.event.client_payload.tag }}-\${{ github.run_id }}-\${{ github.run_attempt }}
+      - id: finalizer_handoff
+        env:
+          STAGE_ARTIFACT_DIGEST: \${{ steps.retain_stage.outputs.artifact-digest }}
+        run: echo "$GITHUB_STEP_SUMMARY"
 `,
   '.github/workflows/release-finalize.yml': `on:
   repository_dispatch:
@@ -117,6 +134,7 @@ jobs:
       - run: node scripts/run-verified-npm.mjs -- pack ./packages/design-system
       - run: node scripts/run-verified-npm.mjs -- pack ./packages/storybook-config
       - run: node scripts/run-verified-npm.mjs -- pack ./packages/governance
+      - run: node scripts/release-sbom.mjs --input "$RUNNER_TEMP/release.sbom.raw.json" --output "$GITHUB_WORKSPACE/release-artifacts/release.sbom.cdx.json" --tag "\${{ github.event.client_payload.tag }}" --git-tree "\${{ steps.identity.outputs.tree }}"
       - run: echo \${{ github.event.client_payload.stage_receipt_sha256 }}
       - run: node scripts/build-release-bom.mjs --allow-repository-dispatch
       - run: node scripts/release-set.mjs --expected "\${{ github.event.client_payload.release_set_sha256 }}"
@@ -742,8 +760,10 @@ base['template/ds-product-template/.github/workflows/governance-anchor.yml'] = b
           node trusted/.governance-tools/scripts/audit-consumer-a11y.mjs --repo candidate
   publish-app-verdict:`,
   )
-base['.github/workflows/governance-anchor.yml'] = base['template/ds-product-template/.github/workflows/governance-anchor.yml']
-  .replace('  publish-app-verdict:', '      - run: node trusted/scripts/verify-privileged-change.mjs\n  publish-app-verdict:')
+// 1B(2026-07-29):root anchor = verifier-only,不得有 App verdict job(規則反向要求);
+// template anchor 保留 App 架構作 fleet consumer 藍圖。
+base['.github/workflows/governance-anchor.yml'] = `${base['template/ds-product-template/.github/workflows/governance-anchor.yml']
+  .split('\n  publish-app-verdict:')[0]}\n      - run: node trusted/scripts/verify-privileged-change.mjs\n`
 base['.github/workflows/deploy-storybook.yml'] = `on:
   workflow_run:
     workflows: [CI]
@@ -1025,8 +1045,8 @@ test('managed executor builder keeps registry mutation, digest binding, and OIDC
     [
       'writer uses ambient Docker configuration',
       source.replace(
-        '      DOCKER_CONFIG: ${{ runner.temp }}/managed-ci-docker-config\n',
-        '      DOCKER_CONFIG: $HOME/.docker\n',
+        `          printf 'DOCKER_CONFIG=%s/managed-ci-docker-config\\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"\n`,
+        `          printf 'DOCKER_CONFIG=%s/.docker\\n' "$HOME" >> "$GITHUB_ENV"\n`,
       ),
       'WF-MANAGED-CI-PRIVILEGE-SEPARATION',
     ],
@@ -1766,12 +1786,21 @@ for (const [label, replacement] of [
 }
 
 test('rejects workflow_dispatch for the protected-base Check App producer', () => {
-  const sources = {
+  // 1B 後 Check App producer 只存在 template anchor(fleet 藍圖);root anchor 的
+  // trigger 錯置由 WF-ANCHOR 守(verifier-only 合約要求 pull_request_target)。
+  const templateSources = {
+    ...base,
+    'template/ds-product-template/.github/workflows/governance-anchor.yml':
+      base['template/ds-product-template/.github/workflows/governance-anchor.yml']
+        .replace('  pull_request_target:', '  workflow_dispatch:'),
+  }
+  assert.ok(audit(templateSources).some((finding) => finding.rule === 'WF-PRIVILEGED-TRIGGER'))
+  const rootSources = {
     ...base,
     '.github/workflows/governance-anchor.yml': base['.github/workflows/governance-anchor.yml']
       .replace('  pull_request_target:', '  workflow_dispatch:'),
   }
-  assert.ok(audit(sources).some((finding) => finding.rule === 'WF-PRIVILEGED-TRIGGER'))
+  assert.ok(audit(rootSources).some((finding) => finding.rule === 'WF-ANCHOR'))
 })
 
 test('rejects pull_request_target secret in candidate verification job', () => {
@@ -2109,40 +2138,62 @@ test('rejects release authority collapse or permission crossover', () => {
   const sources = {
     ...base,
     '.github/workflows/release.yml': base['.github/workflows/release.yml'].replace(
-      '  publish-npm:\n    needs: [build-release-evidence, attest-release]\n    environment:\n      name: npm-release\n    permissions:\n      contents: read\n      id-token: write',
-      '  publish-npm:\n    needs: [build-release-evidence, attest-release]\n    environment:\n      name: npm-release\n    permissions:\n      contents: write\n      id-token: write',
+      '  publish-npm:\n    needs: [trust-preflight, build-release-evidence, attest-release]\n    environment:\n      name: npm-release\n    permissions:\n      contents: read\n      id-token: write',
+      '  publish-npm:\n    needs: [trust-preflight, build-release-evidence, attest-release]\n    environment:\n      name: npm-release\n    permissions:\n      contents: write\n      id-token: write',
     ),
   }
   assert.ok(audit(sources).some((finding) => finding.rule === 'WF-RELEASE-PRIVILEGE'))
 })
 
-test('rejects a trust preflight that is not opt-in gated', () => {
+test('rejects making the release trust preflight optional', () => {
   const sources = {
     ...base,
     '.github/workflows/release.yml': base['.github/workflows/release.yml'].replace(
-      "    if: vars.RELEASE_HIGH_ASSURANCE == 'true'\n",
-      '',
+      '  trust-preflight:\n    needs: resolve-release-request',
+      "  trust-preflight:\n    if: vars.RELEASE_HIGH_ASSURANCE == 'true'\n    needs: resolve-release-request",
     ),
   }
   assert.ok(audit(sources).some(finding => finding.rule === 'WF-RELEASE-TRUST-PREFLIGHT'))
 })
 
-test('rejects ordinary publish path gated on the high-assurance trust preflight', () => {
+test('rejects native staging that bypasses the mandatory trust preflight', () => {
   const sources = {
     ...base,
     '.github/workflows/release.yml': base['.github/workflows/release.yml'].replace(
+      '  publish-npm:\n    needs: [trust-preflight, build-release-evidence, attest-release]',
       '  publish-npm:\n    needs: [build-release-evidence, attest-release]',
-      '  publish-npm:\n    needs: [build-release-evidence, attest-release, trust-preflight]',
     ),
   }
   assert.ok(audit(sources).some(finding => finding.rule === 'WF-RELEASE-TRUST-PREFLIGHT'))
+})
+
+test('rejects a release producer that bypasses the canonical SBOM normalizer', () => {
+  const sources = {
+    ...base,
+    '.github/workflows/release.yml': base['.github/workflows/release.yml'].replace(
+      '      - run: node scripts/release-sbom.mjs --input "$RUNNER_TEMP/release.sbom.raw.json" --output "$GITHUB_WORKSPACE/release-artifacts/release.sbom.cdx.json" --tag "$RELEASE_TAG" --git-tree "${{ needs.resolve-release-request.outputs.release_tree }}"\n',
+      '',
+    ),
+  }
+  assert.ok(audit(sources).some(finding => finding.rule === 'WF-RELEASE-EVIDENCE'))
+})
+
+test('rejects inline release SBOM normalization beside the canonical helper', () => {
+  const sources = {
+    ...base,
+    '.github/workflows/release.yml': base['.github/workflows/release.yml'].replace(
+      '      - run: node scripts/release-sbom.mjs --input "$RUNNER_TEMP/release.sbom.raw.json" --output "$GITHUB_WORKSPACE/release-artifacts/release.sbom.cdx.json" --tag "$RELEASE_TAG" --git-tree "${{ needs.resolve-release-request.outputs.release_tree }}"\n',
+      '      - run: node scripts/release-sbom.mjs --input "$RUNNER_TEMP/release.sbom.raw.json" --output "$GITHUB_WORKSPACE/release-artifacts/release.sbom.cdx.json" --tag "$RELEASE_TAG" --git-tree "${{ needs.resolve-release-request.outputs.release_tree }}"\n      - run: /usr/bin/jq \'.serialNumber = "different" | del(.metadata.timestamp)\' raw.json\n',
+    ),
+  }
+  assert.ok(audit(sources).some(finding => finding.rule === 'WF-RELEASE-EVIDENCE'))
 })
 
 test('rejects attestation authority without an immediate exact remote-tag recheck', () => {
   const sources = {
     ...base,
     '.github/workflows/release.yml': base['.github/workflows/release.yml'].replace(
-      '      - run: node scripts/release-remote-tag.mjs --expected commit --token-env GH_TOKEN\n      - uses: actions/attest@',
+      '      - run: node scripts/release-remote-tag.mjs --expected commit --expected-object object --token-env GH_TOKEN\n      - uses: actions/attest@',
       '      # node scripts/release-remote-tag.mjs --expected fake --token-env GH_TOKEN\n      - uses: actions/attest@',
     ),
   }
@@ -2160,23 +2211,36 @@ test('rejects multiple attestation writes when the signed tag is not rechecked b
   assert.ok(audit(sources).some(finding => finding.rule === 'WF-RELEASE-EVIDENCE'))
 })
 
-test('rejects a publish job that drops the exact registry version readback', () => {
+test('rejects native staging without an attempt-bound stage receipt artifact', () => {
   const sources = {
     ...base,
     '.github/workflows/release.yml': base['.github/workflows/release.yml'].replace(
-      '      - run: |\n          npm view "${name}@${version}" version\n',
+      '      - if: always()\n        uses: actions/upload-artifact@eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\n        with:\n          name: npm-stage-${{ github.event.client_payload.tag }}-${{ github.run_id }}-${{ github.run_attempt }}\n',
       '',
     ),
   }
   assert.ok(audit(sources).some(finding => finding.rule === 'WF-RELEASE-EVIDENCE'))
 })
 
-test('rejects publication without provenance', () => {
+test('rejects a native stage helper that drops provenance', () => {
+  const publisher = trustedPublisher.replace("'--provenance', ", '')
+  assert.ok(audit(base, publisher).some(finding => finding.rule === 'WF-TRUSTED-PUBLISH'))
+})
+
+test('rejects a native stage helper that drops the pre-authority tag-object recheck', () => {
+  const publisher = trustedPublisher.replace(
+    "await recheckRemoteTag(context.identity, args['--tag-object'], githubToken)\n",
+    '',
+  )
+  assert.ok(audit(base, publisher).some(finding => finding.rule === 'WF-TRUSTED-PUBLISH'))
+})
+
+test('rejects a direct npm publish path in the protected stage workflow', () => {
   const sources = {
     ...base,
     '.github/workflows/release.yml': base['.github/workflows/release.yml'].replace(
+      'node scripts/release-npm-publish.mjs --receipt "$RUNNER_TEMP/npm-stage/npm-stage-receipt.json" --trust-artifact-digest digest --trust-run-attempt "$GITHUB_RUN_ATTEMPT"',
       'npm publish "$tarball" --provenance --access public',
-      'npm publish "$tarball" --access public',
     ),
   }
   assert.ok(audit(sources).some(finding => finding.rule === 'WF-TRUSTED-PUBLISH'))
@@ -2204,15 +2268,18 @@ test('rejects publication outside the npm-release environment binding', () => {
   assert.ok(audit(sources).some((finding) => finding.rule === 'WF-TRUSTED-PUBLISH'))
 })
 
-test('rejects OIDC or attestation authority on the GitHub Release job', () => {
+test('rejects a direct GitHub Release writer in the native stage workflow', () => {
   const sources = {
     ...base,
-    '.github/workflows/release.yml': base['.github/workflows/release.yml'].replace(
-      '  github-release:\n    needs: [resolve-release-request, build-release-evidence, publish-npm]\n    permissions:\n      contents: write',
-      '  github-release:\n    needs: [resolve-release-request, build-release-evidence, publish-npm]\n    permissions:\n      contents: write\n      id-token: write',
-    ),
+    '.github/workflows/release.yml': `${base['.github/workflows/release.yml']}  github-release:
+    needs: publish-npm
+    permissions:
+      contents: write
+    steps:
+      - run: gh release create "$RELEASE_TAG" --verify-tag
+`,
   }
-  assert.ok(audit(sources).some((finding) => finding.rule === 'WF-RELEASE-PRIVILEGE'))
+  assert.ok(audit(sources).some((finding) => ['WF-TRUSTED-PUBLISH', 'WF-RELEASE-PRIVILEGE'].includes(finding.rule)))
 })
 
 test('rejects npm authority in the independent finalizer', () => {
@@ -2221,6 +2288,17 @@ test('rejects npm authority in the independent finalizer', () => {
     '.github/workflows/release-finalize.yml': base['.github/workflows/release-finalize.yml'].replace(
       '      - run: node scripts/release-npm-finalize-verify.mjs',
       '      - run: npm dist-tag add package@1.0.0 latest',
+    ),
+  }
+  assert.ok(audit(sources).some((finding) => finding.rule === 'WF-FINALIZE-EVIDENCE'))
+})
+
+test('rejects a finalizer SBOM normalizer bound to a different tree identity', () => {
+  const sources = {
+    ...base,
+    '.github/workflows/release-finalize.yml': base['.github/workflows/release-finalize.yml'].replace(
+      '--git-tree "${{ steps.identity.outputs.tree }}"',
+      '--git-tree "${{ github.sha }}"',
     ),
   }
   assert.ok(audit(sources).some((finding) => finding.rule === 'WF-FINALIZE-EVIDENCE'))

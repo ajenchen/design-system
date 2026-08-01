@@ -65,6 +65,8 @@ function FilmstripScrollDemo() {
     <div className="relative w-[480px]">
       <div
         ref={scrollRef}
+        tabIndex={0}
+        aria-label="簡報頁面縮圖"
         className="overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ maskImage, WebkitMaskImage: maskImage }}
       >

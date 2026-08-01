@@ -23,6 +23,7 @@ import {
   DATE_RELATIVE_GROUPS,
   type ValueShape,
 } from './filter-operators'
+import type { DataTableFilterPanelLabels } from './data-table-filter-labels'
 
 // ── FilterValuePicker(value-picker switcher per ValueShape)────────────────
 //
@@ -47,6 +48,8 @@ export interface FilterValuePickerProps {
   disabled?: boolean
   /** 用 column.label 組「{label} 篩選值」(panel 每 row 不顯式 label,a11y 必填) */
   ariaLabel?: string
+  /** Resolved panel labels; placeholders and relative-date labels share one SSOT. */
+  labels: DataTableFilterPanelLabels
   /** Forward 給內部 Field control 的 className(2026-05-04 #2 fix)
    *  避免外層包 wrapper div 破壞 FieldControlGroup CSS variants(rounded radii / margin overlap) */
   className?: string
@@ -59,10 +62,11 @@ export function FilterValuePicker({
   colInfo,
   disabled,
   ariaLabel,
+  labels,
   className,
 }: FilterValuePickerProps) {
   if (!shape || disabled) {
-    return <Input size="sm" value="" onChange={() => {}} placeholder="輸入值…" disabled aria-label={ariaLabel} className={className} />
+    return <Input size="sm" value="" onChange={() => {}} placeholder={labels.valuePlaceholder} disabled aria-label={ariaLabel} className={className} />
   }
 
   switch (shape) {
@@ -75,7 +79,7 @@ export function FilterValuePicker({
           size="sm"
           value={String(value ?? '')}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="輸入值…"
+          placeholder={labels.valuePlaceholder}
           aria-label={ariaLabel}
           className={className}
         />
@@ -87,7 +91,7 @@ export function FilterValuePicker({
           size="sm"
           value={typeof value === 'number' ? value : null}
           onChange={(v) => onChange(v ?? '')}
-          placeholder="輸入數字…"
+          placeholder={labels.numberPlaceholder}
           aria-label={ariaLabel}
           className={className}
         />
@@ -121,17 +125,21 @@ export function FilterValuePicker({
       // 群組分類:Past / Current / Future(對齊 Linear / Notion idiom),走 Select.groups → SelectMenu
       const opts: SelectOption[] = DATE_RELATIVE_OPTIONS.map((o) => ({
         value: o.value,
-        label: o.label,
+        label: labels.relativeDateOptionLabels[o.value] ?? o.label,
         group: o.group,
+      }))
+      const groups = DATE_RELATIVE_GROUPS.map((group) => ({
+        key: group.key,
+        label: labels.relativeDateGroupLabels[group.key] ?? group.label,
       }))
       return (
         <Select
           size="sm"
           options={opts}
-          groups={DATE_RELATIVE_GROUPS as unknown as Array<{ key: string; label: string }>}
+          groups={groups}
           value={String(value ?? '')}
           onChange={(v) => onChange(v)}
-          placeholder="選擇相對日期"
+          placeholder={labels.relativeDatePlaceholder}
           aria-label={ariaLabel}
           className={className}
         />
@@ -149,7 +157,7 @@ export function FilterValuePicker({
           options={opts}
           value={String(value ?? '')}
           onChange={(v) => onChange(v)}
-          placeholder="選擇值"
+          placeholder={labels.singleSelectPlaceholder}
           aria-label={ariaLabel}
           className={className}
         />
@@ -168,7 +176,8 @@ export function FilterValuePicker({
           options={opts}
           value={arr}
           onChange={(v) => onChange(v)}
-          placeholder="選擇值…"
+          placeholder={labels.multiSelectPlaceholder}
+          emptyText={labels.multiSelectEmptyText}
           aria-label={ariaLabel}
           className={className}
         />
@@ -213,6 +222,10 @@ export function FilterValuePicker({
           value={v ?? null}
           people={colInfo?.people ?? []}
           onChange={(next) => onChange(next[0] ?? null)}
+          placeholder={labels.peoplePlaceholder}
+          searchPlaceholder={labels.peopleSearchPlaceholder}
+          searchAriaLabel={labels.peopleSearchAriaLabel}
+          emptyText={labels.peopleEmptyText}
           aria-label={ariaLabel}
           className={className}
         />
@@ -226,6 +239,10 @@ export function FilterValuePicker({
           value={v}
           people={colInfo?.people ?? []}
           onChange={(next) => onChange(next)}
+          placeholder={labels.peoplePlaceholder}
+          searchPlaceholder={labels.peopleSearchPlaceholder}
+          searchAriaLabel={labels.peopleSearchAriaLabel}
+          emptyText={labels.peopleEmptyText}
           aria-label={ariaLabel}
           className={className}
         />

@@ -214,9 +214,9 @@ export const Overview = {
                 {/* view + readonly 讀 controlled value:兩者「空值」皆走 <span> 顯 '-'(input.tsx:121),
                     demo 要展示有值狀態故傳 value;edit / disabled 用 defaultValue 保持 uncontrolled */}
                 {(m === 'view' || m === 'readonly') ? (
-                  <Input mode={m} value="Wireless Bluetooth Headphones" size="md" />
+                  <Input mode={m} value="Wireless Bluetooth Headphones" size="md" aria-label={`商品名稱（${m} 模式）`} />
                 ) : (
-                  <Input mode={m} defaultValue="Wireless Bluetooth Headphones" size="md" />
+                  <Input mode={m} defaultValue="Wireless Bluetooth Headphones" size="md" aria-label={`商品名稱（${m} 模式）`} />
                 )}
               </div>
               <span className="text-caption text-fg-secondary">{MODE_DESC[m]}</span>
@@ -227,7 +227,7 @@ export const Overview = {
           <span className="text-[11px] text-fg-muted font-medium">+ error prop（僅 edit 模式生效）</span>
           <div className="flex items-center gap-4">
             <div className="w-64 shrink-0">
-              <Input error defaultValue="invalid-email@" size="md" />
+              <Input error defaultValue="invalid-email@" size="md" aria-label="Email（錯誤狀態）" />
             </div>
             <span className="text-caption text-fg-secondary">border-error — 錯誤訊息由 Form help text 提供</span>
           </div>
@@ -237,7 +237,7 @@ export const Overview = {
       {/* Props table */}
       <div className="flex flex-col gap-3">
         <H3>Props</H3>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} aria-label="Input props 表格">
           <table className="text-caption border-collapse">
             <thead><tr><Th>Prop</Th><Th>Type</Th><Th>Default</Th><Th>說明</Th></tr></thead>
             <tbody>
@@ -332,6 +332,7 @@ const InspectorInner = () => {
               mode={mode}
               size={size}
               error={error}
+              aria-label="商品名稱（互動檢閱器）"
               startIcon={hasStartIcon ? Search : undefined}
               endAction={hasEndAction && isEdit ? { icon: X, label: '清除', onClick: () => {} } : undefined}
               // view mode 讀 value 渲染 <span>;其餘 mode 用 defaultValue 保持 uncontrolled
@@ -505,6 +506,7 @@ export const ColorMatrix = {
                         error={st === 'error'}
                         defaultValue="Wireless Bluetooth Headphones"
                         size="md"
+                        aria-label={`商品名稱（${st} 狀態）`}
                       />
                     </td>
                     <td className="p-3 border-b border-divider align-top">
@@ -529,7 +531,12 @@ export const ColorMatrix = {
                 <tr key={m}>
                   <td className="p-3 border-b border-divider font-mono text-caption font-medium align-top w-24">{m}</td>
                   <td className="p-3 border-b border-divider align-top min-w-[240px]">
-                    <Input mode={m} defaultValue="Wireless Bluetooth Headphones" size="md" />
+                    <Input
+                      mode={m}
+                      defaultValue="Wireless Bluetooth Headphones"
+                      size="md"
+                      aria-label={`商品名稱（${m} 模式）`}
+                    />
                   </td>
                   <td className="p-3 border-b border-divider align-top">
                     <TokenAnnotation colors={COLOR_MAP[m].default!} />
@@ -634,7 +641,13 @@ export const SizeMatrix = {
                   <Td mono>{sz}</Td>
                   {MODES.map((m) => (
                     <td key={m} className="p-2 border-b border-divider">
-                      <Input mode={m} size={sz} defaultValue="Headphones" className="w-48" />
+                      <Input
+                        mode={m}
+                        size={sz}
+                        defaultValue="Headphones"
+                        aria-label={`商品名稱（${sz} 尺寸、${m} 模式）`}
+                        className="w-48"
+                      />
                     </td>
                   ))}
                   <td className="p-2 border-b border-divider">
@@ -643,6 +656,7 @@ export const SizeMatrix = {
                       startIcon={Search}
                       endAction={{ icon: X, label: '清除', onClick: () => {} }}
                       defaultValue="Headphones"
+                      aria-label={`商品搜尋（${sz} 尺寸）`}
                       className="w-48"
                     />
                   </td>
@@ -678,8 +692,8 @@ export const StateBehavior = {
           <span className="text-caption font-medium text-fg-secondary">Focus — border-primary（1px），無 ring（readonly 例外:ring-2 ring-ring focus 指示,WCAG 2.4.7）</span>
           <div className="flex flex-col gap-2 max-w-sm">
             <span className="text-[11px] text-fg-muted">文字輸入永遠 focus-visible（瀏覽器規範），click 和 Tab 觸發相同效果。點擊下方 input 或用 Tab 切換觀察。</span>
-            <Input placeholder="點擊或 Tab 觀察 focus 邊框" />
-            <Input placeholder="第二個，測試 Tab 切換" />
+            <Input placeholder="點擊或 Tab 觀察 focus 邊框" aria-label="第一個焦點測試欄位" />
+            <Input placeholder="第二個，測試 Tab 切換" aria-label="第二個焦點測試欄位" />
           </div>
         </div>
 
@@ -689,12 +703,12 @@ export const StateBehavior = {
           <div className="flex flex-col gap-3 max-w-sm">
             <div>
               <span className="text-[11px] text-fg-muted block mb-1">border-error，hover 時 border-error-hover</span>
-              <Input error defaultValue="invalid-email@" />
+              <Input error defaultValue="invalid-email@" aria-label="Email（錯誤狀態）" />
               <p className="text-caption text-error mt-1">請輸入有效的 email 地址</p>
             </div>
             <div>
               <span className="text-[11px] text-fg-muted block mb-1">focus 時 border-error（不切回 primary）</span>
-              <Input error defaultValue="bad-url" startIcon={Search} />
+              <Input error defaultValue="bad-url" startIcon={Search} aria-label="網址（錯誤焦點狀態）" />
             </div>
           </div>
         </div>
@@ -708,6 +722,7 @@ export const StateBehavior = {
               startIcon={Search}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              aria-label="搜尋商品"
               endAction={query ? { icon: X, label: '清除搜尋', onClick: () => setQuery('') } : undefined}
             />
           </div>
@@ -722,6 +737,7 @@ export const StateBehavior = {
               <Input
                 type={showPwd ? 'text' : 'password'}
                 defaultValue="my-secret-123"
+                aria-label="密碼"
                 endAction={{
                   icon: showPwd ? EyeOff : Eye,
                   label: showPwd ? '隱藏密碼' : '顯示密碼',
@@ -737,10 +753,10 @@ export const StateBehavior = {
           <span className="text-caption font-medium text-fg-secondary">Disabled — endAction 不渲染，停用原因由外部承擔</span>
           <div className="flex flex-col gap-3 max-w-sm">
             <div className="flex items-center gap-3">
-              <Input mode="edit" startIcon={Mail} defaultValue="alice@example.com"
+              <Input mode="edit" startIcon={Mail} defaultValue="alice@example.com" aria-label="Email（可編輯）"
                 endAction={{ icon: X, label: '清除', onClick: () => {} }} className="w-56" />
               <span className="text-fg-muted text-caption">→</span>
-              <Input mode="disabled" startIcon={Mail} defaultValue="alice@example.com"
+              <Input mode="disabled" startIcon={Mail} defaultValue="alice@example.com" aria-label="Email（停用）"
                 endAction={{ icon: X, label: '清除', onClick: () => {} }} className="w-56" />
             </div>
             <span className="text-[11px] text-fg-muted">左：edit（有 endAction）→ 右：disabled（endAction 消失，icon 變 fg-disabled）</span>

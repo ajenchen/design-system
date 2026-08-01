@@ -296,7 +296,7 @@ export interface ButtonProps
    * 自動套用:
    * - `variant="text"`(強制 override 其他 variant)
    * - `iconOnly=true`(強制)
-   * - Icon 色 override:`fg-muted` → hover `foreground`(跟 Inline Action dismiss 視覺一致)
+   * - Icon 色 override:`fg-muted` → hover `fg-secondary`(跟 Inline Action dismiss 視覺一致)
    *
    * 典型 case:Dialog / Sheet / Popover / Alert / Toast / Coachmark 的 **chrome corner close X**
    * (action group region — corner 可多 action,close 左側加 Separator + refresh / share 等)。
@@ -356,7 +356,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const resolvedSize = useResolvedFieldSize(size, 'md')
 
     // ── Dismiss 視覺類 override(2026-04-22 cross-implementation dimming canonical) ──
-    // dismiss=true 強制:variant="text" + iconOnly=true + icon 色弱化(fg-muted → hover foreground)
+    // dismiss=true 強制:variant="text" + iconOnly=true + icon 色弱化(fg-muted → hover fg-secondary)
     // 跟 Inline Action dismiss 視覺一致。詳見 button.spec.md「Dismiss 視覺類」。
     const resolvedIconOnly = iconOnly || dismiss
 
@@ -486,9 +486,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       // iconOnly 鐵律:padding-free + aspect-square + flex-center (Polaris idiom)
       // 0 magic-number 0 公式自動正方形。詳 ICON_ONLY_BASE rationale。
       resolvedIconOnly && ICON_ONLY_BASE,
-      // Dismiss 視覺弱化:override Button text variant 預設 foreground 為 fg-muted → hover foreground
+      // Dismiss 視覺弱化:override Button text variant 預設 foreground 為 fg-muted → hover fg-secondary
       // 跟 Inline Action dismiss 視覺一致(cross-implementation dimming canonical)
-      dismiss && 'text-fg-muted hover:text-foreground',
+      // 弱化 icon hover 一階(item-anatomy.tsx ItemInlineActionButton 同階梯 SSOT)
+      dismiss && 'text-fg-muted hover:text-fg-secondary',
       resolvedFullWidth && 'w-full',
     )
 

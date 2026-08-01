@@ -30,7 +30,7 @@
         "**/test_*.sh",
         "**/test_*.sh.broken"
       ],
-      "treeSha256": "f3dcaced0aa6e3744dbc09a77c6c252aafdfa8df1fc45768de30bd1272bdb17e"
+      "treeSha256": "3b9f359737c7b60b066c9b9b9b4e5a9a344381f63d42cdb0fc6316d7f91ac9c1"
     }
   ],
   "canonicalHookStaticHelpers": {
@@ -390,6 +390,7 @@
         "scripts/test-sync-ds-canonical-recovery.mjs",
         "scripts/test-sync-version-safety.mjs",
         "scripts/test-verified-exact-npm-runtime.mjs",
+        "scripts/test-visual-audit-interaction.mjs",
         "scripts/test-visual-baseline-review.mjs",
         "scripts/test-workflow-security.mjs"
       ]
@@ -437,6 +438,7 @@
       "scripts/test-data-table-invariants.mjs",
       "scripts/test-governance-anchor-preflight.mjs",
       "scripts/test-governance-build-graph.mjs",
+      "scripts/test-header-tabs-slot-invariants.mjs",
       "scripts/test-inline-edit-view-geometry-invariant.mjs",
       "scripts/test-install-candidate-dependencies.mjs",
       "scripts/test-item-content-leading-coherence.mjs",

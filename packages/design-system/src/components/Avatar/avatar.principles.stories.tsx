@@ -60,12 +60,12 @@ export const UsageGuidance: Story = {
           title="❌ 代表抽象概念:用 Lucide Icon"
           note="「設定」「通知」「首頁」這類功能 / 動作 / 概念不是「誰」,是「做什麼」。Icon 更適合——Avatar 用在這裡會讓使用者以為是某個人的頭像"
         >
-          <div className="border border-divider rounded-lg bg-surface py-1">
+          <div role="listbox" aria-label="Avatar 誤用範例" className="border border-divider rounded-lg bg-surface py-1">
             {/* 真實誤用:把功能名「設定」直接當 avatar 的 alt,fallback 渲染首字「設」的色塊,看起來像某個成員或群組 */}
             <MenuItem avatar={{ alt: '設定' }}>設定</MenuItem>
           </div>
           <Label warn>↑ ❌ 「設定」是功能不是「誰」,套 Avatar 後 fallback 渲染首字「設」的色塊,使用者誤以為是某位成員或群組。功能導覽應用 Lucide icon</Label>
-          <div className="border border-divider rounded-lg bg-surface py-1">
+          <div role="listbox" aria-label="功能圖示正確用法" className="border border-divider rounded-lg bg-surface py-1">
             <MenuItem startIcon={Settings}>設定</MenuItem>
           </div>
           <Label>↑ ✓ 功能 / 動作 / 概念用 Lucide icon,語義清楚不會誤認身份</Label>
@@ -85,7 +85,7 @@ export const UsageGuidance: Story = {
           title="Avatar 代表身份,Icon 代表概念"
           note="判斷法:「這代表『誰』還是『做什麼』?」誰 / 什麼實體 → Avatar;做什麼 / 某個概念 → Icon"
         >
-          <div className="border border-divider rounded-lg bg-surface py-1">
+          <div role="listbox" aria-label="身份與功能圖示對照" className="border border-divider rounded-lg bg-surface py-1">
             {/* 人員 → 真實人像;團隊 / 組織 → 首字 + 色彩(非人臉,letter mark 是 Slack workspace idiom)*/}
             <MenuItem avatar={{ src: 'https://i.pravatar.cc/48?u=ada-chen', alt: 'Ada Chen' }}>Ada Chen 的留言</MenuItem>
             <MenuItem avatar={{ alt: 'Engineering Team', color: 'blue' }}>Engineering Team 專案</MenuItem>
@@ -231,7 +231,7 @@ export const HoverCardIntegrationRule: Story = {
             {/* 主畫面呈現關鍵狀態:Family 2 row 結構(avatar + label + description)由 MenuItem
                 承載——size=lg 觸發 block 對齊(avatar 跨越 label + description 中心)。
                 這正是 item-anatomy.spec.md 的 Family 2 設計準則,不手刻 flex row。 */}
-            <div className="border border-divider rounded-lg bg-surface py-1 w-full">
+            <div role="listbox" aria-label="成員狀態列表" className="border border-divider rounded-lg bg-surface py-1 w-full">
               <MenuItem
                 size="lg"
                 avatar={{ src: 'https://i.pravatar.cc/64?u=alex-wang', alt: 'Alex Wang' }}

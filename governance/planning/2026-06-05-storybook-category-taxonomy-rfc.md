@@ -1,7 +1,11 @@
 <!-- Authority/status: governance/planning/registry.json -->
-# RFC(DRAFT,待 user 討論,未執行)— Storybook 分類 taxonomy + category-aware 稽核 SSOT
+# RFC(REFERENCE，決策已落地並由現行 SSOT 接管)— Storybook 分類 taxonomy + category-aware 稽核 SSOT
 
-**狀態**:DRAFT / for-discussion。**未動任何檔**。2026-06-05 user directive:「釐清 pattern 目標 + 善用既有 internal + 所有 storybook 稽核按 category 適性調整 + 共用稽核有 SSOT + 未雨綢繆新分類 + 符合世界級」。
+**狀態**:REFERENCE / non-executable。2026-06-05 決策已落到
+`packages/design-system/src/story-governance/category-matrix.{json,ts}`、category-aware story
+hook/audit 與 `scripts/category-classification-invariant.mjs`；2026-06-06 後續分類收斂由
+`packages/design-system/src/patterns/README.md` 與 canonical `rules/ui-development.md` 接管。
+下方原始 migration map/open questions 保留研究脈絡，不再表示「待 user 討論、未執行」。
 
 ---
 

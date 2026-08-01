@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://qijenchen.dev/schemas/runtime-conformance-profile-v4.json",
+  "$id": "https://qijenchen.dev/schemas/runtime-conformance-profile-v5.json",
   "title": "Provider runtime conformance profile",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "evidenceOutput", "timeoutMs", "maxOutputBytes", "maxEvidenceAgeSeconds", "issuerRegistryDigest", "allowedKeyIds", "requiredIssuerQuorum", "platformPolicy", "providers"],
   "properties": {
     "$schema": {"type": "string"},
-    "schemaVersion": {"const": 4},
+    "schemaVersion": {"const": 5},
     "evidenceOutput": {"type": "string", "pattern": "^runtime/[a-z0-9][a-z0-9-]*\\.json$"},
     "timeoutMs": {"type": "integer", "minimum": 1000, "maximum": 60000},
     "maxOutputBytes": {"type": "integer", "minimum": 1024, "maximum": 10485760},
@@ -68,11 +68,20 @@
               {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["kind", "artifactName", "requiredCheckTrustSource", "requiredRulesetName", "protectedRef"],
+                "required": ["kind", "artifactName", "hardGateByRepositoryRole", "requiredRulesetName", "protectedRef"],
                 "properties": {
                   "kind": {"const": "github-protected-workflow-readback"},
                   "artifactName": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"},
-                  "requiredCheckTrustSource": {"const": "protected-base-workflow"},
+                  "hardGateByRepositoryRole": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["authority", "template-mirror", "product-consumer"],
+                    "properties": {
+                      "authority": {"$ref": "#/$defs/githubHardGateSelector"},
+                      "template-mirror": {"$ref": "#/$defs/githubHardGateSelector"},
+                      "product-consumer": {"$ref": "#/$defs/githubHardGateSelector"}
+                    }
+                  },
                   "requiredRulesetName": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"},
                   "protectedRef": {"const": "default-branch"}
                 }
@@ -194,6 +203,26 @@
     }
   },
   "$defs": {
+    "githubHardGateSelector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkContext", "oidcSubjectMode", "trustSource"],
+      "properties": {
+        "checkContext": {"type": "string", "minLength": 1},
+        "oidcSubjectMode": {"enum": ["pull-request", "credential-environment"]},
+        "trustSource": {"enum": ["repository-workflow", "protected-base-workflow"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"oidcSubjectMode": {"const": "pull-request"}}},
+          "then": {"properties": {"trustSource": {"const": "repository-workflow"}}}
+        },
+        {
+          "if": {"properties": {"oidcSubjectMode": {"const": "credential-environment"}}},
+          "then": {"properties": {"trustSource": {"const": "protected-base-workflow"}}}
+        }
+      ]
+    },
     "certificationTarget": {
       "type": "object",
       "additionalProperties": false,

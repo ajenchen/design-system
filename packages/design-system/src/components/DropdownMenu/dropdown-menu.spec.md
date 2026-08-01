@@ -246,12 +246,17 @@ Item-level default / hover / focused / selected / disabled **色彩**由 MenuIte
 
 **Focus**:Radix primitive 自管 focus trap / restoration。鍵盤導覽到的項目以 highlight **底色**標示(Radix `data-[highlighted]:bg-neutral-hover`,本元件刻意採 `data-highlighted` 而非 `:focus-visible` outline ring,跨瀏覽器一致 — 見 dropdown-menu.tsx docblock「Hover / highlight canonical」),不畫 `outline: 2px solid var(--ring)` 外框。**Trigger focus 指示**:非 asChild 裸用的 Trigger 顯示 Button focus canonical ring(`focus-visible:ring-2 ring-ring ring-offset-1`,SSOT = button.tsx);asChild 場景由子元件(通常 Button)自帶同款 ring。
 
+**ARIA composite scroll wrapper**:`DropdownMenuContent` 的 viewport-aware body 仍消費 `ScrollArea`,但 viewport 傳 `viewportTabIndex={null}` 完全省略 generic wrapper 的 `tabindex`。`role="menu"` 內的 focus owner 是 Radix roving-focus `menuitem*` family；額外 `div[tabindex]` 會破壞 required-children 結構。群組 Label 是正常可讀文字,使用 `fg-secondary`(非低對比的 `fg-muted`)。
+
+**Modal trigger focus**:modal menu 開啟時,Root 會把 Trigger 暫時設為 `tabIndex=-1`,與 Radix 對 app subtree 的 `aria-hidden` 同步；關閉後恢復 consumer 原 tab order。此規則由 DropdownMenu SSOT 統一負責,consumer 不各自追蹤 open state。`modal={false}` 不套用此調整。
+
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `account-menu.spec.md`
 - `action-bar.spec.md`
 - `command.spec.md`
 - `file-viewer.spec.md`

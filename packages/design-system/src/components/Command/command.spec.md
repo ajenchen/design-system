@@ -87,6 +87,7 @@ cmdk 自動處理：
 - **搜尋框**：`role="combobox"` + `aria-expanded` / `aria-controls` 指向 list
 - **鍵盤導覽**：cmdk 提供 ↑ / ↓ 移動 highlight、Enter 選取（另支援 vim-style Ctrl+n/p/j/k、Home/End）。cmdk 本身無 Esc handler — Esc 關閉僅在 `CommandDialog`(Cmd+K)模式由 Radix Dialog 的 DismissableLayer 提供;inline `<Command>` 模式按 Esc 無反應
 - **空狀態**：`<CommandEmpty>` 自動帶 `role="presentation"`,不干擾 screen reader 的 list 朗讀
+- **分隔線**：`<CommandSeparator>` 是純視覺分組線,固定 `role="presentation"`；不冒充 listbox 選項或其他可導覽項目
 
 Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>` / `<CommandList>` / `<CommandItem>` 即可。
 

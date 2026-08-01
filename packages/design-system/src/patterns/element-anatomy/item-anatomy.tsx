@@ -315,7 +315,7 @@ ItemLabel.displayName = "ItemLabel"
  * `<ItemContent>` — Row primitive 的 label + optional description 內容區(SSOT)。
  *
  * ── 存在的唯一理由 ──
- * 封裝「flex-col + label + description + `mt-[var(--item-gap-label-desc-<mode>[-lg])]` gap」結構,
+ * 封裝「flex-col + label + description + canonical label/description gap」結構,
  * 避免 13+ 消費者各自 hard-code `mt-0.5`。改 token 一處,全 DS 同步。
  *
  * ── 截斷 → tooltip(內建,consumer 免自接)──
@@ -622,7 +622,7 @@ ItemAvatar.displayName = "ItemAvatar"
 // - Icon 尺寸 = ICON_SIZE[rowSize]      (16/16/20)
 // - Hover bg 尺寸 = icon + 2            (18/18/22,INLINE_ACTION_HOVER_BG_SIZE)
 // - Hover bg 圓角 = rounded-md (sm/md)/ rounded-md (lg)
-// - Icon 顏色:fg-muted → foreground on hover/active
+// - Icon 顏色:fg-muted → fg-secondary on hover/active
 // - 必須 <button type="button">,aria-label = label,Tooltip(同 label)
 // - cursor-pointer
 
@@ -635,7 +635,7 @@ ItemAvatar.displayName = "ItemAvatar"
 //   - 寬高 = ICON_SIZE[size]
 //   - Hover bg 尺寸 = INLINE_ACTION_HOVER_BG_SIZE[size]
 //   - Hover bg 圓角 = rounded-md (sm/md) / rounded-md (lg)
-//   - Icon color = fg-muted → foreground on hover/active
+//   - Icon color = fg-muted → fg-secondary on hover/active
 //
 // 接受任何 button props 並 spread(讓 Radix Slot 可以 merge onClick / data-state 等)
 
@@ -699,11 +699,15 @@ export const ItemInlineActionButton = React.forwardRef<
       type={type}
       className={cn(
         "group/action relative grid place-content-center shrink-0 cursor-pointer",
-        "text-fg-muted hover:text-foreground active:text-foreground transition-colors",
+        // 弱化 icon hover 階梯 SSOT(2026-07-30 user 拍板):fg-muted(neutral-7)→ 一階 fg-secondary
+        // (neutral-8),不跳到 foreground(neutral-9)。inline-action.spec.md「Icon 色彩」+
+        // tokens/color/semantic.css:53 為 rule owner;世界級對照 Fluent 2
+        // (neutralForeground3Hover === neutralForeground2 值)/ MUI Chip deleteIcon(.26 → .4)。
+        "text-fg-muted hover:text-fg-secondary active:text-fg-secondary transition-colors",
         // Overlay trigger active state — 只在 consumer 顯式宣告 overlayTrigger=true 時生效
         // (canonical 2026-05-05:Collapsible / drag / dismiss 等 in-place 互動 ≠ overlay,
         // 不應 leak 視覺 lock。詳 inline-action.spec.md「Overlay trigger canonical」)
-        overlayTrigger && "data-[state=open]:text-foreground",
+        overlayTrigger && "data-[state=open]:text-fg-secondary",
         "focus-visible:outline-2 focus-visible:outline-ring",
         className
       )}

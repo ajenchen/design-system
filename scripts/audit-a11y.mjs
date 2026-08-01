@@ -116,6 +116,13 @@ for (let i = 0; i < stories.length; i++) {
   try {
     await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 })
     await page.waitForTimeout(300)
+    // Storybook 的 play/render failure 會改顯錯誤頁，但 HTTP 仍是 200；若直接跑 Axe，
+    // 可能把錯誤頁的 0 violation 誤當成 story 綠燈。與 visual-audit 同樣 fail closed，
+    // 只有實際帶文字的 #error-message 才判錯，避免初始 preview chrome 的空節點誤報。
+    const storybookError = (await page.locator('#error-message').textContent().catch(() => ''))?.trim()
+    if (storybookError) {
+      throw new Error(`Storybook error display: ${storybookError.slice(0, 200)}`)
+    }
     const result = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
       .analyze()

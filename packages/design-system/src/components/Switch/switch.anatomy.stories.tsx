@@ -25,8 +25,8 @@ export const Overview: Story = {
         <H3>Anatomy</H3>
         <Desc>Track(pill 形容器)+ Thumb(白色圓 + 2px border + check icon when ON)。基於 Radix Switch,shadcn 包裝 + 橋接 DS token。</Desc>
         <div className="flex items-center gap-6 border border-border rounded-lg p-6">
-          <Switch />
-          <Switch defaultChecked />
+          <Switch aria-label="關閉狀態 Switch" />
+          <Switch defaultChecked aria-label="開啟狀態 Switch" />
           <span className="text-caption text-fg-muted font-mono">OFF → ON 切換 track bg-border → bg-primary,thumb 白色 + 2px border 視覺延續</span>
         </div>
       </div>
@@ -112,15 +112,15 @@ export const SizeMatrix: Story = {
         </div>
         <div className="flex items-center gap-8 border border-border rounded-lg p-4">
           <div className="flex flex-col items-center gap-2">
-            <Switch size="sm" defaultChecked />
+            <Switch size="sm" defaultChecked aria-label="sm 尺寸開啟狀態 Switch" />
             <span className="text-caption text-fg-muted font-mono">sm</span>
           </div>
           <div className="flex flex-col items-center gap-2">
-            <Switch size="md" defaultChecked />
+            <Switch size="md" defaultChecked aria-label="md 尺寸開啟狀態 Switch" />
             <span className="text-caption text-fg-muted font-mono">md</span>
           </div>
           <div className="flex flex-col items-center gap-2">
-            <Switch size="lg" defaultChecked />
+            <Switch size="lg" defaultChecked aria-label="lg 尺寸開啟狀態 Switch" />
             <span className="text-caption text-fg-muted font-mono">lg</span>
           </div>
         </div>
@@ -151,27 +151,27 @@ export const StateBehavior: Story = {
         <div className="grid grid-cols-2 gap-4 max-w-2xl">
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">OFF</div>
-            <Switch />
+            <Switch aria-label="可用的關閉狀態 Switch" />
           </div>
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">ON</div>
-            <Switch defaultChecked />
+            <Switch defaultChecked aria-label="可用的開啟狀態 Switch" />
           </div>
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Disabled OFF</div>
-            <Switch disabled />
+            <Switch disabled aria-label="停用的關閉狀態 Switch" />
           </div>
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Disabled ON</div>
-            <Switch disabled defaultChecked />
+            <Switch disabled defaultChecked aria-label="停用的開啟狀態 Switch" />
           </div>
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Readonly ON</div>
-            <Switch readOnly defaultChecked />
+            <Switch readOnly defaultChecked aria-label="唯讀的開啟狀態 Switch" />
           </div>
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Readonly OFF</div>
-            <Switch readOnly />
+            <Switch readOnly aria-label="唯讀的關閉狀態 Switch" />
           </div>
         </div>
       </div>

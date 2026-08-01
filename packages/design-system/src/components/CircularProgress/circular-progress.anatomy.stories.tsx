@@ -51,8 +51,8 @@ export const Overview: Story = {
               consumer 在 Button / Input / Empty 等 context 內由這些元件自動依原則縮放
               (見 spec.md「Size canonical」+ UsageInButton / UsageInline 兩個 context story)。
               Overview 只展示 indeterminate + determinate 兩種模式。 */}
-          <CircularProgress />
-          <CircularProgress value={60} />
+          <CircularProgress aria-label="載入中" />
+          <CircularProgress value={60} aria-label="載入進度 60%" />
           <span className="text-caption text-fg-muted font-mono">
             indeterminate(不傳 value)· determinate(value=60)
           </span>
@@ -125,7 +125,7 @@ export const UsageInline: Story = {
       <div>
         <H3>Cell / Table row 局部 loading</H3>
         <div className="flex items-center gap-2 border border-border rounded-md px-3 py-2 max-w-xs">
-          <CircularProgress size={16} />
+          <CircularProgress size={16} aria-label="載入訂單資料中" />
           <span className="text-body text-fg-muted">載入訂單資料...</span>
         </div>
       </div>
@@ -141,6 +141,7 @@ export const UsageInline: Story = {
           loading
           defaultValue="cq@example.com"
           placeholder="驗證 email 中..."
+          aria-label="Email"
           className="max-w-sm"
         />
       </div>
@@ -154,9 +155,9 @@ export const UsageInline: Story = {
           (見 spec「不設 status prop」)。
         </Desc>
         <div className="flex items-center gap-4">
-          <CircularProgress value={25} />
-          <CircularProgress value={60} affix="value" />
-          <CircularProgress value={90} affix="value" />
+          <CircularProgress value={25} aria-label="上傳進度 25%" />
+          <CircularProgress value={60} affix="value" aria-label="上傳進度 60%" />
+          <CircularProgress value={90} affix="value" aria-label="上傳進度 90%" />
         </div>
       </div>
     </div>

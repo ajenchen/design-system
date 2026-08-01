@@ -65,7 +65,7 @@
       "properties": {
         "id": {"type": ["integer", "null"], "minimum": 1},
         "slug": {"const": "qijenchen-governance-check"},
-        "required": {"const": true},
+        "required": {"const": false},
         "externalTrustAnchor": {"const": true},
         "capability": {"const": "check-only"},
         "operationMode": {"const": "base-trusted-isolated-workflow"},
@@ -81,7 +81,7 @@
       "properties": {
         "id": {"type": ["integer", "null"], "minimum": 1},
         "slug": {"const": "qijenchen-governance-writer"},
-        "required": {"const": true},
+        "required": {"const": false},
         "externalTrustAnchor": {"const": false},
         "capability": {"const": "writer"},
         "operationMode": {"const": "github-actions-environment"},
@@ -167,9 +167,8 @@
             "immutableReleases": {"const": true},
             "requiredChecks": {
               "type": "array",
-              "minItems": 7,
+              "minItems": 6,
               "allOf": [
-                {"$ref": "#/$defs/containsImmutableConsumerSnapshotCheck"},
                 {"$ref": "#/$defs/containsAuthorityVerifyCheck"},
                 {"$ref": "#/$defs/containsAuthorityA11yCheck"},
                 {"$ref": "#/$defs/containsAuthorityBundleSizeCheck"},
@@ -189,10 +188,9 @@
             },
             "environments": {
               "type": "array",
-              "minItems": 5,
-              "maxItems": 5,
+              "minItems": 4,
+              "maxItems": 4,
               "allOf": [
-                {"$ref": "#/$defs/containsGovernanceCheckVerdictEnvironment"},
                 {"$ref": "#/$defs/containsNpmReleaseEnvironment"},
                 {"$ref": "#/$defs/containsReleaseFinalizeEnvironment"},
                 {"$ref": "#/$defs/containsGovernanceMirrorEnvironment"},

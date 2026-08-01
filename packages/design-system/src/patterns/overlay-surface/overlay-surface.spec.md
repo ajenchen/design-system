@@ -32,6 +32,7 @@ Dialog 和 Popover 的**結構化 sub-components 共用 primitive**——提供 
 ### SurfaceBody
 - `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]`
 - **永遠套 `flex-1 min-h-0 overflow-y-auto`**(viewport-aware scroll:視窗太小時 body 內捲動;非 flex-col parent 內 flex-1/min-h-0 為 no-op,backward compat)。2026-05-31 infra-audit 修:原寫「無額外 flex 屬性」與 code(overlay-surface.tsx:183 恆套)矛盾。consumer 依浮層類型:
+- **Focus ownership**:SurfaceBody 不預設 `tabIndex`——短內容時它不是 scroll region,一律塞進 sequential focus order 會製造多餘 tab stop。當 bare SurfaceBody 在定高/viewport 壓縮下**實際 overflow**時,consumer 必須傳 `tabIndex={0}` + `role="region"` + 語意明確的 `aria-label`;SurfaceBody runtime 內建 inset DS focus ring。`BodyScroll` story 的 play assertion 機械驗證該具名節點確實 overflow 且可聚焦。Dialog / Sheet 正式 consumer 仍優先走下節 ScrollArea canonical。
   - **Popover**:多數 bare consume,padding 即是總 padding
   - **Dialog / Sheet**:consumer **不直接 wrap SurfaceBody**——走 ScrollArea canonical(下節),padding 搬到 ScrollArea viewport 內層 div
 - **邊界**:空 children → 不渲染 placeholder、無最小高度(定高浮層內仍被 `flex-1` 撐滿剩餘空間);viewport 極小 → 見「Viewport-aware scroll chain invariant」節(body 內捲動);loading / error / empty 屬 consumer 內容層職責,非本 structural pattern(見 `dialog.spec.md`「狀態處理的職責邊界」)

@@ -880,6 +880,7 @@ function CustomCombobox({
       createLabel={createLabel}
       searchable={searchable && searchIn === 'menu'}
       searchPlaceholder={searchPlaceholder}
+      searchAriaLabel={searchAriaLabel}
       size={size}
       open={open}
       onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}

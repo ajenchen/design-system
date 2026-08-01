@@ -18,7 +18,9 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import {
   authorizeDisposableProviderRefreshTransaction,
+  mergeProviderHookSettings,
   refreshLaunchers,
+  validateCanonicalSettingsWiring,
   validateInstalledForkCorpus,
   validateInstalledProviderTransition,
 } from './refresh-fork-launchers.mjs'
@@ -391,6 +393,7 @@ function buildSkelFixture(withOptOut) {
   // 既有 fork settings:user 自有「非治理」hook + 一個「舊版 launcher 註冊」(模擬 pre-update,測去重)
   writeFileSync(join(SKEL, '.claude/settings.json'), JSON.stringify({
     defaultMode: 'auto',
+    disableAutoMode: 'disable',
     permissions: {
       allow: [
         'Bash(npm install)',
@@ -467,7 +470,8 @@ const r1 = authorizedRefresh(SKEL)
   ].every((rule) => !(s.permissions?.ask || []).includes(rule))
   const canonicalAskApplied =
     JSON.stringify(s.permissions?.ask || []) === JSON.stringify(canonicalClaudeConfig.permissions?.ask || [])
-  const unsafeModesDisabled = s.disableAutoMode === canonicalClaudeConfig.disableAutoMode
+  const unsafeModesDisabled = !Object.hasOwn(s, 'disableAutoMode')
+    && !Object.hasOwn(canonicalClaudeConfig, 'disableAutoMode')
     && s.permissions?.defaultMode === canonicalClaudeConfig.permissions?.defaultMode
     && s.permissions?.disableBypassPermissionsMode === canonicalClaudeConfig.permissions?.disableBypassPermissionsMode
     && !Object.hasOwn(s.permissions || {}, 'disableAutoMode')
@@ -527,6 +531,82 @@ const r1 = authorizedRefresh(SKEL)
   if (!fileKept || !exactRegistrationGone || !substringHookKept || !reported) {
     skelResults.push(`  obsolete registration: ❌ fileKept=${fileKept}/exactGone=${exactRegistrationGone}/substringKept=${substringHookKept}/reported=${reported}`); fail++
   } else skelResults.push('  obsolete registration: ✅ 舊 blocker 停用；相似 user hook + 同名檔保留；migration 可稽核')
+}
+// 4e' F6 迴歸鎖(WM commit 1f71fec):餵「另一世代 settings-hooks.json」→ 必 throw + 絕不寫檔。
+// 舊代 refresh 對新代 schema 用 `canonical.hooks || {}` 寬鬆 fallback,把看不懂的世代當「零 hooks」,
+// strip 照跑 + append 空 → 靜默清空 .claude/settings.json hooks。本測試只改 artifact 形狀、
+// 同步重封 authenticity 鏈(corpus lock entry sha + BOM forkCorpusLockSha256),證明擋下它的是
+// schema generation gate,不是 digest gate — F6 的前提正是「authentic 但看不懂」。
+const sha256hex = (content) => createHash('sha256').update(content).digest('hex')
+function resealSettingsHooks(newContent) {
+  const npmFork = join(SKEL, 'node_modules/@qijenchen/design-system/ds-canonical/fork')
+  writeFileSync(join(npmFork, 'launchers/settings-hooks.json'), newContent)
+  const corpusLockPath = join(npmFork, 'governance.lock')
+  const corpusLock = JSON.parse(readFileSync(corpusLockPath, 'utf8'))
+  for (const entry of corpusLock.entries) {
+    if (entry.file === 'launchers/settings-hooks.json') entry.sha256 = sha256hex(newContent)
+  }
+  writeFileSync(corpusLockPath, JSON.stringify(corpusLock, null, 2))
+  const bomPath = join(npmFork, 'consumer/lock.json')
+  const bom = JSON.parse(readFileSync(bomPath, 'utf8'))
+  bom.payload.forkCorpusLockSha256 = sha256hex(readFileSync(corpusLockPath))
+  writeFileSync(bomPath, JSON.stringify(bom, null, 2))
+}
+for (const [generationLabel, artifact] of [
+  ['old-generation direct hook map(pre-beta.96)', {
+    hooks: { SessionStart: [{ hooks: [{ type: 'command', command: 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/inject_fork_governance_preamble.sh"' }] }] },
+    permissions: { allow: ['Bash(npm run *)'] },
+  }],
+  ['future-generation schemaVersion 2', {
+    _generated: 'build-fork-governance.mjs',
+    kind: 'provider-hook-merge-policies',
+    schemaVersion: 2,
+    sourceDigest: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    surfaces: {},
+  }],
+]) {
+  buildSkelFixture(false)
+  const settingsPath = join(SKEL, '.claude/settings.json')
+  const settingsBefore = readFileSync(settingsPath, 'utf8')
+  resealSettingsHooks(JSON.stringify(artifact, null, 2) + '\n')
+  let threw = null
+  try { authorizedRefresh(SKEL) } catch (e) { threw = e }
+  const settingsAfter = readFileSync(settingsPath, 'utf8')
+  const unchanged = settingsBefore === settingsAfter
+  const migrationMessage = !!threw && /provider-hook-merge-policies/.test(String(threw.message)) && /sync-all/.test(String(threw.message))
+  const hooksNotEmptied = JSON.stringify(JSON.parse(settingsAfter).hooks || {}).includes('my-own-hook.sh')
+  if (!threw || !unchanged || !migrationMessage || !hooksNotEmptied) {
+    skelResults.push(`  F6 schema gate(${generationLabel}): ❌ threw=${!!threw}/unchanged=${unchanged}/migrationMsg=${migrationMessage}/hooksKept=${hooksNotEmptied}(絕不可靜默清空 hooks)`); fail++
+  } else skelResults.push(`  F6 schema gate(${generationLabel}): ✅ throw + 未寫檔 + 遷移指引`)
+}
+// F6 姊妹案例:corpus 存在但 settings-hooks.json 整個消失(另一世代搬家)→ 必 throw,不得靜默 skip
+{
+  buildSkelFixture(false)
+  rmSync(join(SKEL, 'node_modules/@qijenchen/design-system/ds-canonical/fork/launchers/settings-hooks.json'))
+  let threw = null
+  try { refreshLaunchers(SKEL, { dryRun: true }) } catch (e) { threw = e }
+  if (!threw || !/sync-all/.test(String(threw.message))) {
+    skelResults.push(`  F6 missing-policy gate: ❌ corpus 在但 settings-hooks.json 缺 → 應 throw 不 skip(threw=${!!threw})`); fail++
+  } else skelResults.push('  F6 missing-policy gate: ✅ corpus 在 + policy 缺 → fail-closed throw(非靜默 skip)')
+}
+// F6 hook-artifact drift(單元層):canonical hook-config 的 hooks map 被另一世代搬走/改名 →
+// merge 必 throw,不得把「map 缺席」當「零 hooks」寫出清空的 surface
+{
+  const forkManifest = JSON.parse(readFileSync(join(ROOT, 'packages/design-system/ds-canonical/fork/manifest.json'), 'utf8'))
+  const refreshPolicy = JSON.parse(readFileSync(join(ROOT, 'packages/design-system/ds-canonical/fork/launchers/settings-hooks.json'), 'utf8'))
+  const validatedPolicy = validateCanonicalSettingsWiring(refreshPolicy, forkManifest)
+  let threw = null
+  try {
+    mergeProviderHookSettings({
+      settings: { hooks: { SessionStart: [{ hooks: [{ type: 'command', command: 'bash "$CLAUDE_PROJECT_DIR/governance/bin/inject_fork_governance_preamble.sh"' }] }] } },
+      canonicalConfig: { schemaVersion: 99, hookRegistrations: { SessionStart: [] }, permissions: {} },
+      policy: validatedPolicy.surfaces.claude,
+      label: 'F6 drifted hook artifact',
+    })
+  } catch (e) { threw = e }
+  if (!threw || !/does not understand/.test(String(threw.message))) {
+    skelResults.push(`  F6 hook-artifact drift: ❌ canonical hooks map 缺仍靜默 merge(threw=${!!threw})`); fail++
+  } else skelResults.push('  F6 hook-artifact drift: ✅ canonical hooks map 缺 → throw 不清空')
 }
 // 4f skill 送達(2026-06-18:C-prime 補 skill 送達 → fork 可叫用 /prototype;根治 root cause)
 {

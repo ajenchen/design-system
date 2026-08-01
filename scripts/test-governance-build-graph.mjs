@@ -656,6 +656,7 @@ for (const releaseTrustSource of [
   '.github/workflows/release-finalize.yml',
   'scripts/build-release-bom.mjs',
   'scripts/release-bom-contract.mjs',
+  'scripts/release-sbom.mjs',
   'scripts/release-set.mjs',
   'scripts/release-npm-lib.mjs',
   'scripts/release-npm-publish.mjs',

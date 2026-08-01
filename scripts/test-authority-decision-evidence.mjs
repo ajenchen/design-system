@@ -62,13 +62,19 @@ assert.equal(
   '5dd8be410a2e2650fa685a9f99104f282150a75f8e12c43623aac106d7aff066',
 )
 const authorityPolicyText = authorityPolicyBytes.toString('utf8')
+// These pin the two substantive claims of the marked canonical-decision-authority
+// block: (1) only the user decides product/UI/UX SSOT tradeoffs and
+// user-perceivable/product-semantic changes, and (2) standing AUTO already covers
+// implementing approved UI/UX plus mechanical generation/sync. The block was
+// compressed to stay inside the discovery budget, so these track the current
+// wording and must be updated deliberately whenever that block is rewritten.
 assert.match(
   authorityPolicyText,
-  /user 保留所有產品／UI／UX SSOT 真取捨，以及任何會改變使用者可感知結果、產品語意或 canonical UI／UX SSOT 的決策權/u,
+  /user 只拍板產品／UI／UX SSOT 真取捨及可感知／產品語意變更/u,
 )
 assert.match(
   authorityPolicyText,
-  /包含已核准 UI／UX 語意的實作及機械式 generation／sync/u,
+  /含已核准 UI／UX 實作\/機械 generation\/sync/u,
 )
 const canonicalDelegatedScopes = [
   'consumer-template-adoption',

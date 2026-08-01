@@ -90,9 +90,10 @@ export interface SurfaceHeaderProps
    * Tabs row slot(2026-05-18 加 per header-canonical.spec.md W2/W4 真實能用 + user-mandated fix)。
    * 提供時 SurfaceHeader 自動 column 結構:
    *   row 1 = children(title + actions/dismiss,px-loose py-tight)
-   *   row 2 = tabsSlot 包在 `HEADER_TABS_SLOT_WRAPPER_CLASS` wrapper(v3:wrapper 自身
-   *           無 px / 無 border;TabsList 自己 w-full + px-loose,border-b 延展全寬 —
-   *           W1 視覺一條線。詳 chrome-header.tsx v3 fix 註解)
+   *   row 2 = tabsSlot 包在 `HEADER_TABS_SLOT_WRAPPER_CLASS` wrapper(v4:wrapper 自身
+   *           無 px / 無 border;`[&_[data-slot=tabs-list]]` 注入 px-loose,寬度 TabsList
+   *           各 overflow 模式自帶,border-b 延展全寬 — W1 視覺一條線。
+   *           詳 chrome-header.tsx HEADER_TABS_SLOT_WRAPPER_CLASS 註解)
    *
    * Consumer 傳:`tabsSlot={<TabsList>...</TabsList>}`,TabsContent 仍放 DialogBody 內。
    * `<Tabs>` root 必須 wrap 整 DialogContent(Radix TabsList ↔ TabsContent 同 root 連動)。
@@ -133,8 +134,10 @@ export const SurfaceHeader = React.forwardRef<
             - v1: wrapper border + TabsList border = 雙線(W1 違反)
             - v2: wrapper px-loose + TabsList w-full inside = border 只跨 dialog - 2×px-loose
                  (不到 dialog 邊 user 抓「分隔線寬度應該要填滿整個 dialog」)
-            - v3(本):wrapper 不 inset,TabsList 自己 px-loose 內 padding inset triggers
+            - v3:wrapper 不 inset,TabsList 自己 px-loose 內 padding inset triggers
                   → TabsList border-b 延展全 dialog 寬,triggers 對齊 header content
+            - v4(2026-07-30):選取機制改 `data-slot="tabs-list"` attribute contract
+                  (beta.86 overlay 包裹層破 direct-child;詳 chrome-header.tsx 註解)
             對齊既有 `tabs.spec.md`「Underline 與 TabsList border 的視覺關係」段「selected 底線從
             TabsList 的 gray border 位置長出來」(token = border-divider,tabs.tsx TABS_LIST_BASE)
             + GitHub Primer UnderlineNav / Ant Design line type / Mantine default 共識
@@ -181,6 +184,7 @@ export const SurfaceBody = React.forwardRef<
     ref={ref}
     className={cn(
       'flex-1 min-h-0 overflow-y-auto',
+      'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
       'px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]',
       className,
     )}

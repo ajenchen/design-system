@@ -40,7 +40,7 @@ function SpaceRow({ utility, mdValue, lgValue, usage }: {
       <div className="text-caption font-mono text-fg-muted">lg: {lgValue}</div>
       <div className="text-body text-foreground">{usage}</div>
       <div className="flex items-center justify-end">
-        <div className="bg-primary h-6" style={{ width: mdValue }} aria-label={`${utility} preview`} />
+        <div aria-hidden="true" className="bg-primary h-6" style={{ width: mdValue }} />
       </div>
     </div>
   )

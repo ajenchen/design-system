@@ -73,11 +73,11 @@ export const UsageGuidance: Story = {
           title="❌ 不用 Input 顯示需要格式化的資料 → NumberInput / DatePicker"
           note="數字、日期、金額都需要格式化(千分位、時區、幣別符號)。每種資料類型有專屬元件,擁有該類型的格式化邏輯(唯一真實來源),同時服務 Form 和 DataTable"
         >
-          <Input defaultValue="1234567" placeholder="金額" />
+          <Input defaultValue="1234567" placeholder="金額" aria-label="金額（不建議用 Input）" />
           <Label warn>↑ 金額 → 用 NumberInput + currency mode(自動 $1,234,567)</Label>
-          <Input defaultValue="2026-04-18" placeholder="日期" />
+          <Input defaultValue="2026-04-18" placeholder="日期" aria-label="日期（不建議用 Input）" />
           <Label warn>↑ 日期 → 用 DatePicker(in-locale 顯示、避免時區誤判)</Label>
-          <Input defaultValue="1234567" placeholder="數量" />
+          <Input defaultValue="1234567" placeholder="數量" aria-label="數量（不建議用 Input）" />
           <Label warn>↑ 數字 → 用 NumberInput(千分位、min/max、step)</Label>
         </Rule>
 
@@ -85,9 +85,9 @@ export const UsageGuidance: Story = {
           title="✅ Input 只用於純文字——沒有格式化需求的 value"
           note="姓名、URL、搜尋字串、email。格式化邏輯是 identity(value → value)"
         >
-          <Input placeholder="姓名" defaultValue="Ada Chen" />
-          <Input startIcon={Globe} defaultValue="https://example.com" />
-          <Input startIcon={Search} placeholder="搜尋..." />
+          <Input placeholder="姓名" defaultValue="Ada Chen" aria-label="姓名" />
+          <Input startIcon={Globe} defaultValue="https://example.com" aria-label="網址" />
+          <Input startIcon={Search} placeholder="搜尋..." aria-label="搜尋" />
         </Rule>
       </Section>
     </div>
@@ -102,14 +102,14 @@ export const ModeRule: Story = {
         title="edit — 表單中可編輯的欄位(預設)"
         note="Focus 時邊框變 primary,使用者正在輸入或修改"
       >
-        <Input defaultValue="Wireless Bluetooth Headphones" />
+        <Input defaultValue="Wireless Bluetooth Headphones" aria-label="商品名稱" />
       </Rule>
 
       <Rule
         title="readonly — 表單中顯示但當下不可編輯"
         note="同 edit 高度(neutral-2 底色、無邊框),確保與其他欄位並排對齊。常見場景:viewing mode、送出後鎖定但仍在表單脈絡"
       >
-        <Input mode="readonly" value="alice@example.com" />
+        <Input mode="readonly" value="alice@example.com" aria-label="Email（唯讀）" />
       </Rule>
 
       <Rule
@@ -119,7 +119,7 @@ export const ModeRule: Story = {
         <Tooltip>
           <TooltipTrigger asChild>
             <div>
-              <Input mode="disabled" defaultValue="僅付費方案可用" />
+              <Input mode="disabled" defaultValue="僅付費方案可用" aria-label="付費方案欄位（停用）" />
             </div>
           </TooltipTrigger>
           <TooltipContent>此欄位在免費方案中不可編輯</TooltipContent>
@@ -130,7 +130,7 @@ export const ModeRule: Story = {
         title="❌ 不用 readonly 作為 DataTable cell"
         note="readonly 有底色 chrome(bg-readonly),密集列表會顯得鬆散。Table cell 用 `<Input mode='view'>`(Model A:edit 幾何減 chrome —— 保留 px 與高度,只拔 border/bg;cell 內經 naked variant 由 host cell 供 padding)"
       >
-        <Input mode="readonly" value="alice@example.com" />
+        <Input mode="readonly" value="alice@example.com" aria-label="Email（資料表誤用示範）" />
         <Label warn>↑ 在 table cell 中有多餘底色 chrome → 用 &lt;Input mode=&quot;view&quot; /&gt;</Label>
       </Rule>
     </div>
@@ -145,18 +145,18 @@ export const StartIconRule: Story = {
         title="startIcon 描述 input 的「用途」,不是 value 的類型"
         note="icon 幫助使用者一眼辨識這個欄位要填什麼——搜尋、Email、密碼、網址等。與 Button 的 startIcon 同理(描述動作),這裡描述欄位身份"
       >
-        <Input startIcon={Search} placeholder="搜尋商品..." />
-        <Input startIcon={Mail} defaultValue="alice@example.com" />
-        <Input startIcon={Lock} type="password" defaultValue="secret-123" />
-        <Input startIcon={Globe} placeholder="https://example.com" />
+        <Input startIcon={Search} placeholder="搜尋商品..." aria-label="搜尋商品" />
+        <Input startIcon={Mail} defaultValue="alice@example.com" aria-label="Email" />
+        <Input startIcon={Lock} type="password" defaultValue="secret-123" aria-label="密碼" />
+        <Input startIcon={Globe} placeholder="https://example.com" aria-label="網址" />
       </Rule>
 
       <Rule
         title="❌ startIcon 不可隨 value 變化"
         note="icon 是「身份」不是「狀態」——value 變了但欄位用途沒變,icon 不該跟著跳動。狀態回饋用 error border 或 Form help text"
       >
-        <Input startIcon={AlertCircle} defaultValue="invalid-email" />
-        <Input startIcon={CheckCircle2} defaultValue="alice@example.com" />
+        <Input startIcon={AlertCircle} defaultValue="invalid-email" aria-label="Email（錯誤圖示誤用）" />
+        <Input startIcon={CheckCircle2} defaultValue="alice@example.com" aria-label="Email（成功圖示誤用）" />
         <Label warn>↑ 用 icon 切換暗示「有效/無效」——status 應該走邊框和 help text,不佔 startIcon 語意槽</Label>
       </Rule>
     </div>
@@ -177,6 +177,7 @@ export const EndActionRule: Story = {
           <Input
             type={showPwd ? 'text' : 'password'}
             defaultValue="my-secret-123"
+            aria-label="密碼"
             endAction={{
               icon: showPwd ? EyeOff : Eye,
               label: showPwd ? '隱藏密碼' : '顯示密碼',
@@ -187,6 +188,7 @@ export const EndActionRule: Story = {
             startIcon={Search}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="搜尋商品"
             endAction={query ? { icon: X, label: '清除搜尋', onClick: () => setQuery('') } : undefined}
           />
         </Rule>
@@ -199,11 +201,13 @@ export const EndActionRule: Story = {
             startIcon={Search}
             value=""
             placeholder="輸入後會出現清除按鈕"
+            aria-label="搜尋商品（空值）"
             readOnly
           />
           <Input
             startIcon={Search}
             defaultValue="Bluetooth"
+            aria-label="搜尋商品（有值）"
             endAction={{ icon: X, label: '清除搜尋', onClick: () => {} }}
           />
         </Rule>
@@ -215,6 +219,7 @@ export const EndActionRule: Story = {
           <Input
             error
             defaultValue="invalid-email@"
+            aria-label="Email（錯誤狀態圖示誤用）"
             endAction={{ icon: AlertCircle, label: '錯誤', onClick: () => {} }}
           />
           <Label warn>↑ 錯誤已由紅邊框傳達,endAction 放 AlertCircle 會讓使用者誤以為可點擊解決</Label>
@@ -233,7 +238,7 @@ export const ErrorRule: Story = {
         note="紅色邊框已足夠傳達「這個欄位有問題」,具體訊息由 Form 層的 help text 補充。Input 尾部不放 ⚠️ 狀態 icon"
       >
         <div>
-          <Input error defaultValue="invalid-email@" />
+          <Input error defaultValue="invalid-email@" aria-label="Email（錯誤狀態）" />
           <p className="text-caption text-error mt-1">請輸入有效的 email 地址</p>
         </div>
       </Rule>
@@ -245,6 +250,7 @@ export const ErrorRule: Story = {
         <Input
           error
           defaultValue="invalid-email@"
+          aria-label="Email（錯誤狀態圖示誤用）"
           endAction={{ icon: AlertCircle, label: '錯誤', onClick: () => {} }}
         />
         <Label warn>↑ 邊框已紅,再加尾部 icon = 雙重傳達 + 佔用 action 槽</Label>
@@ -252,4 +258,3 @@ export const ErrorRule: Story = {
     </div>
   ),
 }
-

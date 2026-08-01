@@ -147,7 +147,11 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/run-verified-npm.mjs -- sbom --workspaces --package-lock-only --sbom-format=cyclonedx > "$RUNNER_TEMP/release.sbom.raw.json"
-          /usr/bin/jq 'del(.serialNumber, .metadata.timestamp)' "$RUNNER_TEMP/release.sbom.raw.json" > release-artifacts/release.sbom.cdx.json
+          node scripts/release-sbom.mjs \
+            --input "$RUNNER_TEMP/release.sbom.raw.json" \
+            --output "$GITHUB_WORKSPACE/release-artifacts/release.sbom.cdx.json" \
+            --tag "${{ github.event.client_payload.tag }}" \
+            --git-tree "${{ steps.identity.outputs.tree }}"
 
       - name: Rebuild every published product-template scaffold path and mode
         shell: bash

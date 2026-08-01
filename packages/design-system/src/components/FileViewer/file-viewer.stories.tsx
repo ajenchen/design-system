@@ -1,5 +1,6 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
+import { expect, waitFor } from '@storybook/test'
 import { FileViewer, type FileInfo } from './file-viewer'
 import { Button } from '@/design-system/components/Button/button'
 import { Image as ImageIcon, Paperclip, Camera, Figma } from 'lucide-react'
@@ -402,5 +403,11 @@ export const OpenSnapshot: Story = {
         onIndexChange={setIndex}
       />
     )
+  },
+  play: async () => {
+    await waitFor(() => {
+      expect(document.activeElement).toHaveAttribute('role', 'dialog')
+      expect(document.activeElement).toHaveAttribute('tabindex', '-1')
+    })
   },
 }

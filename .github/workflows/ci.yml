@@ -176,6 +176,12 @@ jobs:
         # Fail = block main merge / 防 runtime regression ship。
         run: node scripts/storybook-smoke-test.mjs
 
+      - name: Header tabsSlot W2 contract(paddingLeft = resolved --layout-space-loose,3 overflow modes)
+        # 2026-07-30 F1 render-level 防線:beta.86 overlay wrapper 斷鏈 direct-child selector →
+        # tablist px-loose 靜默 0px,source-level gate 抓不到 → per-PR 量 built storybook 的
+        # computed padding + 第一 tab rect 對齊(storybook-static 剛 build 完,邊際成本 3 story 頁面)。
+        run: node scripts/header-tabs-slot-invariants.mjs
+
       - name: Windows-like scrollbar probe(Linux Chromium ≈ Windows persistent bar)
         # 地端 macOS 是 OS-overlay scrollbar，看不到 Windows 17px persistent bar 的圓角溢出。
         # CI Linux Chromium 預設 persistent native scrollbar，視覺接近 Win Chrome → 用來驗證

@@ -64,7 +64,11 @@ export const UsageGuidance: Story = {
                 <div className="text-body font-medium">Bluetooth</div>
                 <div className="text-caption text-fg-muted">切換立刻開 / 關</div>
               </div>
-              <Switch checked={bluetooth} onCheckedChange={setBluetooth} />
+              <Switch
+                checked={bluetooth}
+                onCheckedChange={setBluetooth}
+                aria-label="Bluetooth"
+              />
             </div>
           </div>
           <Label>↑ 獨立 inline control,無 submit / cancel 流程</Label>
@@ -105,11 +109,11 @@ export const UsageGuidance: Story = {
         <div className="grid grid-cols-2 gap-4">
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Readonly ON(顏色正常)</div>
-            <Switch readOnly defaultChecked />
+            <Switch readOnly defaultChecked aria-label="唯讀的開啟狀態設定" />
           </div>
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Disabled ON(opacity 降低)</div>
-            <Switch disabled defaultChecked />
+            <Switch disabled defaultChecked aria-label="停用的開啟狀態設定" />
           </div>
         </div>
       </Rule>
@@ -137,19 +141,19 @@ export const DisabledOpacityRule: Story = {
         <div className="grid grid-cols-2 gap-4">
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Rest ON</div>
-            <Switch defaultChecked />
+            <Switch defaultChecked aria-label="可用的開啟狀態 Switch" />
           </div>
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Rest OFF</div>
-            <Switch />
+            <Switch aria-label="可用的關閉狀態 Switch" />
           </div>
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Disabled ON(opacity 保留顏色)</div>
-            <Switch defaultChecked disabled />
+            <Switch defaultChecked disabled aria-label="停用的開啟狀態 Switch" />
           </div>
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Disabled OFF</div>
-            <Switch disabled />
+            <Switch disabled aria-label="停用的關閉狀態 Switch" />
           </div>
         </div>
         <Label>↑ Disabled 仍能分辨 ON(藍)vs OFF(灰)——opacity 降低但顏色身份保留</Label>
@@ -171,4 +175,3 @@ export const DisabledOpacityRule: Story = {
     </div>
   ),
 }
-

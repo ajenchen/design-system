@@ -133,6 +133,39 @@ if grep -Eq 'layout="primary-header"|layout=\{('\''|")primary-header('\''|")\}' 
   if [ -n "$PRIMARY" ] && ! has_rationale '@app-shell-primary-header-allow'; then VIOLATIONS="${VIOLATIONS}${PRIMARY}"; fi
 fi
 
+# 帳號入口 duplicate(2026-07-30 WM F9 layer 3;app-shell.spec.md「帳號入口放置 SSOT」:帳號入口只能出現一次)。
+# 上段攔「宣告 primary-header + SidebarFooter」;本段補 mode 字面不在檔內的 dual-entry 缺口(WM 錨例 =
+# apps/work/src/App.tsx pre-fix 1a26bd1^:SidebarHeader 右上 avatar 帳號選單與 SidebarFooter user 區並存):
+#   header 帳號簽名 = SidebarHeader block 內 <AccountMenu> OR(<DropdownMenuTrigger> + <Avatar>/<ItemAvatar>
+#   + account/logout 語彙);footer user 簽名 = SidebarFooter block 內 <Avatar>/<ItemAvatar>/<AccountMenu>。
+# 零誤判 bound(M23 R9 零誤判簽名 precedent;DS apps/template/src + WM 全 corpus 實測 0 hit、錨例 fire):
+#   - workspace switcher in header(trigger+avatar、無 account/logout 語彙)不中 — 語彙 conjunction;
+#   - mobile Sheet 鏡像(header AccountMenu、footer 無 user 區,app-shell.spec.md Responsive 子句)不中;
+#   - 多 mode demo 檔(primary-header + primary-sidebar 字面並存)skip → 跨 story 誤攔防護,歸 product-ui-audit;
+#   - BODY 已 strip 註解(WM 修復檔 SidebarHeader 註解即含「帳號入口」字樣);local 同名元件不中和 —
+#     duplicate 語義違規與 primitive 來源無關。
+ACCOUNT_DUP=$(printf '%s' "$BODY" | python3 -c '
+import re, sys
+content = sys.stdin.read()
+account = re.compile(r"[Aa]ccount|[Ll]og\s?-?[Oo]ut|LogOut|[Ss]ign\s?-?[Oo]ut|SignOut|登出|個人資料|帳號")
+headers = re.findall(r"<SidebarHeader\b[^>]*>.*?</SidebarHeader>", content, re.DOTALL)
+footers = re.findall(r"<SidebarFooter\b[^>]*>.*?</SidebarFooter>", content, re.DOTALL)
+header_account = any(
+    re.search(r"<AccountMenu\b", b)
+    or (re.search(r"<DropdownMenuTrigger\b", b)
+        and re.search(r"<(Avatar|ItemAvatar)\b", b)
+        and account.search(b))
+    for b in headers)
+footer_user = any(re.search(r"<(Avatar|ItemAvatar|AccountMenu)\b", b) for b in footers)
+multi_mode = ("primary-header" in content) and ("primary-sidebar" in content)
+if header_account and footer_user and not multi_mode:
+    print("DUP")
+' 2>/dev/null) \
+  || governance_hook_integrity_fail 'consumer quality account-entry scanner failed'
+if [ "$ACCOUNT_DUP" = "DUP" ] && ! has_rationale '@account-entry-allow'; then
+  add_violation 'duplicate account entry: SidebarHeader account menu + SidebarFooter user area coexist; app-shell.spec.md 帳號入口只能出現一次(primary-sidebar → SidebarFooter / primary-header → globalHeader 右);escape @account-entry-allow: <rationale>'
+fi
+
 if [ -n "$VIOLATIONS" ]; then
   printf 'GOV-CONSUMER-QUALITY-001:%b\nFile:%s\n' "$VIOLATIONS" "$FILE_PATH" >&2
   exit 2

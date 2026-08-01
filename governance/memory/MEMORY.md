@@ -8,7 +8,7 @@
 - [project_wm_ds_alignment_campaign.md](project_wm_ds_alignment_campaign.md) — WM↔DS 對齊戰役完整收官:beta.84/85 已發版、WM lockfile 真綠 13/13、CellSelect 包裝落地;WM main 已 push(4e83402,CAMPAIGN CLOSED);handoff 在 WM docs
 - [project_governance_evolution_roadmap.md](project_governance_evolution_roadmap.md) — 稽核=永久機構、謂詞化=機械化引擎雙柱;方向 1-3 已落地(判準化 harvest / fail-closed / 造輪三洞),4-7 分期各有 trigger;SSOT → governance/planning/2026-07-07-governance-evolution-roadmap.md
 
-- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + SHIPPED(07-29):beta.95/96 OIDC+provenance 發版、鏈硬化;machine contracts 是 authority、provider views 生成;App/簽章層 1B/3B 拆除中
+- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + SHIPPED(07-29);**接手前必讀的跨 session 續作總帳** → governance/planning/2026-07-31-outstanding-work-inventory.md ,內含 3 個 P0 blocker 與 user 07-31 已拍板事項,勿重跑全域盤點;仍 blocked:activation ledger 21 項、Genesis transition open、雙 provider certification、fleet soak
 
 ## Feedback (workflow / collaboration discipline)
 - [feedback_audit_discipline_full_sweep_deterministic_preflight.md](feedback_audit_discipline_full_sweep_deterministic_preflight.md) — 稽核三 invariant:NO-SAMPLE 全盤 / 必 chain deterministic script / Preflight scan(合 3 file)
@@ -19,7 +19,7 @@
 - [Storybook addon preset MUST be .cjs](feedback_storybook_addon_preset_must_be_cjs.md) — beta.27-.31 5 連敗 root cause: 強制 CJS evaluation,bypass Node ESM/esbuild-register CJS-interop 衝突(2026-05-28)
 - [feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md](feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md) — SSOT canonical = 必 P0 BLOCKER 機械強制 with per-line escape comment;禁 P1 WARN soft signal(2026-05-27)
 - [feedback_ai_ground_truth_unreliable_mechanical_primary.md](feedback_ai_ground_truth_unreliable_mechanical_primary.md) — AI self-audit unreliable;mechanical(pixel/DOM/tsc/playwright)= primary defense / AI judgement = supplementary only / new audit layer ALWAYS expand never replace(2026-05-27 + composition fidelity application,合 2 file)
-- [feedback_consume_existing_classification_ssot.md](feedback_consume_existing_classification_ssot.md) — 消費既有不憑直覺:(a)分類用既有 category-matrix.json 5-category SSOT 禁發明新框架(朝三暮四根因;對抗 workflow 抓出重造)+ anatomy pattern(item/header)對稱公開;(b)用元件前先讀其 spec variant/size/emphasis 按原則選不吃 cva 預設(Button CTA 必 explicit primary;chrome header icon=text)(2026-06-06 合 2 file)
+- [feedback_consume_existing_classification_ssot.md](feedback_consume_existing_classification_ssot.md) — 消費既有不憑直覺:(a)分類用既有 category-matrix.json 5-category SSOT 禁發明新框架(朝三暮四根因;對抗 workflow 抓出重造)+ anatomy pattern(item/header)對稱公開;(b)用元件前先讀其 spec variant/size/emphasis 按原則選不吃 cva 預設(Button CTA 必 explicit primary;chrome header icon=text);(c)**先找既有機制再發明、先實測再把動作丟回 user**(2026-07-31 錨例:解 push 死結的腳本上個 session 已寫好卻從零重推;sandbox 讀取是 deny-only 卻誤判成 allow-only)
 
 ## Feedback (DS canonical / 視覺判斷)
 - [feedback_nearest_same_purpose_canonical.md](feedback_nearest_same_purpose_canonical.md) — 寫 stories wrap primitive 前必抄 production baseline(M35→M23(d);registry R8 + grep-baseline R7 + AppShell drift 錨例;2026-06-02 fold story_baseline_reference 同事件進來)
@@ -37,3 +37,4 @@
 - 2026-07-07 D8 headroom:netlify_basic_password→deploy_targets 合併(同部署域 D1 consolidation,invariant 零損;19→18)
 - 2026-07-14 D8 headroom:project_cprime_governance_shipped→reference_cloud_governance_loading 合併(campaign 已完結 + 同雲端治理域 + 同 originSession D1 consolidation,invariant 零損;19→18)
 - 2026-07-23 provider-neutral consolidation:退役 fixed Claude/Codex layer mapping 與 Codex exec transport；歷史原文移至 `governance/archive/memory-retired/2026-07-23-provider-neutral-consolidate/`，現行 authority 只保留 registry/binding/certification contracts
+- 2026-07-31 續作保障:新增 planning `2026-07-31-outstanding-work-inventory.md`(registry 標 active),指標寫入 PNG memory 與本索引;**未新增 index 條目**(維持 17,soft 18)

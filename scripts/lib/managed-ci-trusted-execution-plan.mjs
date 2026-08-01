@@ -78,7 +78,7 @@ const EXPECTED_CLASSES = Object.freeze([
   'model-broker',
   'github-observer',
 ])
-const MANAGED_CI_EXECUTOR_BUILDER_WORKFLOW_SHA256 = 'c1359007766f0fcf73c6c7d55dde100388cfabc4eeab5a0217670462342012db'
+const MANAGED_CI_EXECUTOR_BUILDER_WORKFLOW_SHA256 = '907599cb201de7c14f370de0d87c7856b5169bcd59f88b0e689026b5e6e4856b'
 const JSON_SCHEMA_VALIDATOR_CACHE_LIMIT = 32
 const jsonSchemaValidatorCache = new Map()
 const managedCiCarrierValidationContexts = new WeakMap()
@@ -1506,7 +1506,7 @@ export function validateManagedCiExecutorBuilderTrigger({
   )
   exactObjectKeys(
     build,
-    ['if', 'runs-on', 'timeout-minutes', 'permissions', 'env', 'strategy', 'steps'],
+    ['if', 'runs-on', 'timeout-minutes', 'permissions', 'strategy', 'steps'],
     'managed CI image builder job',
   )
   exactObjectKeys(
@@ -1531,9 +1531,6 @@ export function validateManagedCiExecutorBuilderTrigger({
     if (job?.['runs-on'] !== 'ubuntu-24.04') fail(`managed CI executor builder job runner is not exact:${id}`)
   }
   exactValue(build.permissions, { contents: 'read', packages: 'write' }, 'managed CI image builder permissions')
-  exactValue(build.env, {
-    DOCKER_CONFIG: '${{ runner.temp }}/managed-ci-docker-config',
-  }, 'managed CI image builder isolated Docker configuration')
   exactValue(sbom.permissions, { actions: 'read', packages: 'read' }, 'managed CI SBOM generator permissions')
   exactValue(bind.permissions, { actions: 'read' }, 'managed CI image binding permissions')
   exactValue(attest.permissions, {
@@ -1599,10 +1596,22 @@ export function validateManagedCiExecutorBuilderTrigger({
     }
   }
 
-  if (!Array.isArray(build.steps) || build.steps.length !== 10) {
-    fail('managed CI image builder step closure differs from the canonical ten steps')
+  if (!Array.isArray(build.steps) || build.steps.length !== 11) {
+    fail('managed CI image builder step closure differs from the canonical eleven steps')
   }
+  // GitHub does not expose the runner context to job-level `env`, so DOCKER_CONFIG is bound by the
+  // first step through $GITHUB_ENV instead. The isolation guarantee therefore lives in this step.
   validateStep(build.steps[0], {
+    keys: ['name', 'run'],
+    name: 'Bind DOCKER_CONFIG to the runner-scoped temp directory',
+    runMarkers: [
+      'test -d "$RUNNER_TEMP"',
+      'DOCKER_CONFIG=%s/managed-ci-docker-config',
+      '>> "$GITHUB_ENV"',
+    ],
+  }, 'managed CI image builder isolated Docker configuration step')
+  const builderSteps = build.steps.slice(1)
+  validateStep(builderSteps[0], {
     keys: ['name', 'uses', 'with'],
     name: 'Checkout exact protected-main builder source',
     uses: builderActions.checkout,
@@ -1616,7 +1625,7 @@ export function validateManagedCiExecutorBuilderTrigger({
       clean: true,
     },
   }, 'managed CI image builder checkout step')
-  validateStep(build.steps[1], {
+  validateStep(builderSteps[1], {
     keys: ['name', 'env', 'run'],
     name: 'Fail closed unless the observed workflow and source identities are exact',
     env: {
@@ -1631,7 +1640,7 @@ export function validateManagedCiExecutorBuilderTrigger({
     ],
     runSha256: builder.closedBuilderRunSha256.workflowAndSourceIdentityPreflight,
   }, 'managed CI image builder workflow/source identity preflight step')
-  validateStep(build.steps[2], {
+  validateStep(builderSteps[2], {
     keys: ['name', 'run'],
     name: 'Materialize the exact Buildx binary before any execution',
     runMarkers: [
@@ -1642,7 +1651,7 @@ export function validateManagedCiExecutorBuilderTrigger({
     ],
     runSha256: builder.closedBuilderRunSha256.materializeBuildx,
   }, 'managed CI image builder Buildx materialization step')
-  validateStep(build.steps[3], {
+  validateStep(builderSteps[3], {
     keys: ['name', 'id', 'uses', 'with'],
     name: 'Set up exact BuildKit from the preverified Buildx plugin',
     id: 'buildx',
@@ -1658,7 +1667,7 @@ export function validateManagedCiExecutorBuilderTrigger({
       cleanup: true,
     },
   }, 'managed CI image builder BuildKit step')
-  validateStep(build.steps[4], {
+  validateStep(builderSteps[4], {
     keys: ['name', 'env', 'run'],
     name: 'Verify the exact Buildx binary and BuildKit daemon',
     env: {
@@ -1675,7 +1684,7 @@ export function validateManagedCiExecutorBuilderTrigger({
     ],
     runSha256: builder.closedBuilderRunSha256.verifyToolchain,
   }, 'managed CI image builder toolchain verification step')
-  validateStep(build.steps[5], {
+  validateStep(builderSteps[5], {
     keys: ['name', 'uses', 'with'],
     name: 'Authenticate only to GHCR',
     uses: builderActions.login,
@@ -1685,7 +1694,7 @@ export function validateManagedCiExecutorBuilderTrigger({
       password: '${{ secrets.GITHUB_TOKEN }}',
     },
   }, 'managed CI image builder registry login step')
-  validateStep(build.steps[6], {
+  validateStep(builderSteps[6], {
     keys: ['name', 'id', 'env', 'run'],
     name: 'Build and push without OIDC or attestation authority',
     id: 'build',
@@ -1716,7 +1725,7 @@ export function validateManagedCiExecutorBuilderTrigger({
     ],
     runSha256: builder.closedBuilderRunSha256.buildFromExactGitArchive,
   }, 'managed CI image builder build/push step')
-  const buildProgram = build.steps[6].run
+  const buildProgram = builderSteps[6].run
   const archiveMaterializeAt = buildProgram.indexOf(
     '/usr/bin/git -c tar.umask=0022 archive --format=tar --mtime="@$SOURCE_COMMIT_TIME"',
   )
@@ -1743,7 +1752,7 @@ export function validateManagedCiExecutorBuilderTrigger({
     || !buildProgram.slice(registryPushAt, imageDigestAt).includes('- 0<&"$CONTEXT_ARCHIVE_FD"')) {
     fail('managed CI image builder can mutate the registry before exact context archive member, mode, blob, and digest validation')
   }
-  validateStep(build.steps[7], {
+  validateStep(builderSteps[7], {
     keys: ['name', 'if', 'run'],
     name: 'Revoke GHCR write credentials before any binding or artifact step',
     if: 'always()',
@@ -1753,7 +1762,7 @@ export function validateManagedCiExecutorBuilderTrigger({
     ],
     runSha256: builder.closedBuilderRunSha256.revokeRegistryCredential,
   }, 'managed CI image builder registry credential revocation step')
-  validateStep(build.steps[8], {
+  validateStep(builderSteps[8], {
     keys: ['name', 'env', 'run'],
     name: 'Validate and freeze the exact pushed subject before read-only scanning',
     env: {
@@ -1789,7 +1798,7 @@ export function validateManagedCiExecutorBuilderTrigger({
     ],
     runSha256: builder.closedBuilderRunSha256.freezePreScanBinding,
   }, 'managed CI image builder subject-binding step')
-  validateStep(build.steps[9], {
+  validateStep(builderSteps[9], {
     keys: ['name', 'uses', 'with'],
     name: 'Retain the pre-scan image binding as a non-WORM GitHub handoff',
     uses: builderActions.upload,

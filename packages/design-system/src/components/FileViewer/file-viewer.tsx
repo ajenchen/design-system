@@ -735,7 +735,7 @@ const DEFAULT_LABELS: Required<FileViewerLabels> = {
 export interface FileViewerProps
   extends Omit<
     React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>,
-    'onOpenChange'
+    'onOpenChange' | 'tabIndex'
   > {
   files: FileInfo[]
   initialIndex?: number
@@ -776,6 +776,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
   onDownload,
   labels: labelsOverride,
   className,
+  onOpenAutoFocus,
   ...props
 }, ref) {
   const labels = React.useMemo(
@@ -793,6 +794,15 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
     defaultValue: defaultOpen ?? false,
     onChange: onOpenChange,
   })
+  const contentRef = React.useRef<HTMLDivElement | null>(null)
+  const setContentRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      contentRef.current = node
+      if (typeof ref === 'function') ref(node)
+      else if (ref) ref.current = node
+    },
+    [ref],
+  )
 
   // Index:uncontrolled fallback
   const [internalIndex, setInternalIndex] = React.useState(initialIndex)
@@ -949,7 +959,9 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
           )}
         />
         <DialogPrimitive.Content
-          ref={ref}
+          ref={setContentRef}
+          {...props}
+          tabIndex={-1}
           className={cn(
             // Edge-to-edge fullscreen,無 inset / 無 radius(與一般 Dialog 差別的所在)
             'fixed inset-0 z-50 outline-none',
@@ -958,9 +970,15 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
             'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
           )}
-          // 避免 Radix 自動把焦點送進 Content 的第一個 tabbable —— 我們要留給 viewport
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          {...props}
+          // FileViewer 是 fullscreen content-consumption dialog：開啟即把焦點放到 shell，
+          // 讓 Radix FocusScope 立即接管、但不誤觸第一個 toolbar control/Tooltip。
+          // Consumer handler 可先取消；未取消時由本元件阻止 Radix default 並聚焦 Content。
+          onOpenAutoFocus={(event) => {
+            onOpenAutoFocus?.(event)
+            if (event.defaultPrevented) return
+            event.preventDefault()
+            contentRef.current?.focus({ preventScroll: true })
+          }}
         >
           {/* 鎖 dark subtree。Density 繼承 page(不另設 data-density)。
               header 高度透過 `--chrome-header-height` 自動 density-aware(md=48 / lg=56)。

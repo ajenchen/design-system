@@ -127,8 +127,18 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   assert.match(publishNpm, /environment:\s*\n\s*name: npm-release/)
   assert.match(publishNpm, /id-token: write/)
   assert.doesNotMatch(publishNpm, /create-github-app-token|GOVERNANCE_WRITER_APP|permission-contents|permission-pull-requests/)
-  assert.ok(desired.profiles['design-system-authority'].requiredChecks.some(check => check.context === 'Packaging integrity(dims 84/85/86/88 light checks)'))
-  assert.ok(desired.profiles['design-system-authority'].requiredChecks.some(check => check.baseTrusted && check.integration === 'governanceCheckApp'))
+  const authorityChecks = desired.profiles['design-system-authority'].requiredChecks
+  assert.ok(authorityChecks.some(check => check.context === 'Packaging integrity(dims 84/85/86/88 light checks)'))
+  assert.ok(authorityChecks.every(check => (
+    check.integration === 'githubActions'
+    && check.trustSource === 'repository-workflow'
+    && check.baseTrusted !== true
+  )))
+  assert.equal(
+    desired.profiles['design-system-authority'].environments.some(environment => environment.name === 'governance-check-verdict'),
+    false,
+    'authority profile must not regain the removed Governance Check App verdict environment',
+  )
   for (const profile of Object.values(desired.profiles)) {
     assert.deepEqual(profile.actionsWorkflowPermissions, {
       can_approve_pull_request_reviews: profile.environments.some(environment => environment.name === 'governance-upgrade') ? false : true,

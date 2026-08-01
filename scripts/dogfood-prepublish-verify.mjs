@@ -17,7 +17,7 @@
 // 加進 release.yml audit gates → fail 該 block publish。
 
 import { mkdtempSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs'
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import { join, resolve, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -25,21 +25,33 @@ import { fileURLToPath } from 'node:url'
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const DS = join(REPO_ROOT, 'packages/design-system')
 const SB = join(REPO_ROOT, 'packages/storybook-config')
+const NPM_CLI = join(REPO_ROOT, 'node_modules/npm/bin/npm-cli.js')
 
-function run(cmd, opts = {}) {
-  console.log(`$ ${cmd}`)
-  return execSync(cmd, { stdio: 'inherit', ...opts })
+function runNode(entrypoint, args, { cwd = REPO_ROOT } = {}) {
+  console.log(`$ node ${entrypoint} ${args.join(' ')}`)
+  return execFileSync(process.execPath, ['--', entrypoint, ...args], {
+    cwd,
+    shell: false,
+    stdio: 'inherit',
+  })
 }
 
-function runCapture(cmd, opts = {}) {
-  return execSync(cmd, { encoding: 'utf8', ...opts }).trim()
+function runNpm(args, { cwd = REPO_ROOT, capture = false } = {}) {
+  console.log(`$ node ${NPM_CLI} ${args.join(' ')}`)
+  const output = execFileSync(process.execPath, ['--', NPM_CLI, ...args], {
+    cwd,
+    encoding: capture ? 'utf8' : undefined,
+    shell: false,
+    stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit',
+  })
+  return capture ? output.trim() : output
 }
 
 // Step 0: canonical/provider projection drift gate (canonical ds-canonical sources own policy;
 // npm mirrors and provider homes are deterministic outputs only).
 console.log('=== Step 0: ds-canonical mirror drift check ===')
 try {
-  run('node scripts/sync-ds-canonical.mjs --check', { cwd: REPO_ROOT, stdio: 'inherit' })
+  runNode(join(REPO_ROOT, 'scripts/sync-ds-canonical.mjs'), ['--check'])
 } catch {
   console.error('❌ ds-canonical mirror drift — run `npm run sync:ds-canonical` then re-commit before publish')
   process.exit(1)
@@ -48,19 +60,32 @@ try {
 // Step 1: pack
 console.log('=== Step 1: pack DS + storybook-config ===')
 const packDir = mkdtempSync(join(tmpdir(), 'ds-dogfood-pack-'))
-const dsTgz = runCapture(`cd ${DS} && npm pack --pack-destination ${packDir}`)
-const sbTgz = runCapture(`cd ${SB} && npm pack --pack-destination ${packDir}`)
+const dsTgz = runNpm(['pack', '--pack-destination', packDir], { cwd: DS, capture: true })
+const sbTgz = runNpm(['pack', '--pack-destination', packDir], { cwd: SB, capture: true })
 console.log('  packed:', dsTgz, sbTgz)
 
 // Step 2: fresh consumer project
 console.log('=== Step 2: fresh consumer project ===')
 const consumerDir = mkdtempSync(join(tmpdir(), 'ds-dogfood-consumer-'))
 console.log('  consumer:', consumerDir)
-run(`cd ${consumerDir} && npm init -y`)
+runNpm(['init', '-y'], { cwd: consumerDir })
 
 // Step 3: install
 console.log('=== Step 3: install ===')
-run(`cd ${consumerDir} && npm install --no-audit --no-fund ${packDir}/${dsTgz} ${packDir}/${sbTgz} react@19 react-dom@19 vite@7 @vitejs/plugin-react@5 tailwindcss@4 @tailwindcss/vite@4 typescript@5`)
+runNpm([
+  'install',
+  '--no-audit',
+  '--no-fund',
+  join(packDir, dsTgz),
+  join(packDir, sbTgz),
+  'react@19',
+  'react-dom@19',
+  'vite@7',
+  '@vitejs/plugin-react@5',
+  'tailwindcss@4',
+  '@tailwindcss/vite@4',
+  'typescript@5',
+], { cwd: consumerDir })
 
 // Step 4: write minimal App.tsx + index.html + vite.config + globals.css
 console.log('=== Step 4: write consumer app ===')
@@ -153,7 +178,7 @@ console.log('✓ qijenchen-ds-init bin available')
 // Step 5: vite build
 console.log('=== Step 5: vite build(catches missing peer deps)===')
 try {
-  run(`cd ${consumerDir} && npx vite build`)
+  runNode(join(consumerDir, 'node_modules/vite/bin/vite.js'), ['build'], { cwd: consumerDir })
   console.log('')
   console.log('✅ DOGFOOD PASS — consumer install + canonical ship + vite build success')
 } catch (e) {

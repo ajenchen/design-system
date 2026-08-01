@@ -131,7 +131,10 @@ const CommandSeparator = React.forwardRef<
     ref={ref}
     className={cn("h-px bg-divider", className)}
     {...props}
-  />
+    asChild
+  >
+    <div role="presentation" />
+  </CommandPrimitive.Separator>
 ))
 CommandSeparator.displayName = CommandPrimitive.Separator.displayName
 

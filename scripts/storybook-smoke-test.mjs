@@ -19,6 +19,7 @@ import { spawn } from 'node:child_process'
 import { existsSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = join(__dirname, '..')
@@ -62,7 +63,7 @@ if (!existsSync(STATIC_DIR)) {
 // Spawn http.server
 console.log('=== Spawn http.server ===')
 const server = spawn('python3', ['-m', 'http.server', String(PORT), '--directory', STATIC_DIR], {
-  stdio: ['ignore', 'pipe', 'pipe'],
+  stdio: ['ignore', 'ignore', 'ignore'],
 })
 await new Promise((r) => setTimeout(r, 1500))
 
@@ -141,6 +142,9 @@ try {
   }
 
   // Playwright probe(import lazily,parallelize with concurrency)
+  const runtime = resolveProvisionedPlaywrightRuntime({ repoRoot: REPO_ROOT, environment: process.env })
+  if (!runtime) throw new Error('[storybook-smoke] exact Playwright Chromium runtime missing; run `npm run setup:playwright`')
+  process.env.PLAYWRIGHT_BROWSERS_PATH = runtime.environmentValue
   const { chromium } = await import(join(REPO_ROOT, 'node_modules/playwright/index.mjs'))
   const browser = await chromium.launch()
   const ctx = await browser.newContext()
@@ -163,9 +167,7 @@ try {
 
   const failures = []
   let probedCount = 0
-  const unprobed = []  // 2026-06-02: GOTO-timeout 未驗的 story 改「追蹤可見化」而非靜默 skip(原 silent
-  // return 把「載不起」藏成綠燈 = SizeMatrix crash 漏 ship beta.44 root cause 之一)。先非致命 log
-  // 觀測 CI 真實 skip 數;若 CI 持續 ≈0 再升 hard coverage-gate(避免盲推 hard-gate 再弄垮 release)。
+  const unprobed = []  // GOTO timeout = 未實際驗證，必須 fail-closed 防止假綠燈。
   const CONCURRENCY = 6  // 6 parallel pages = ~6x speedup
 
   // Process in batches of CONCURRENCY
@@ -198,7 +200,7 @@ try {
             if (pageErrors.length > 0) loaded = true
           }
           if (!loaded) {
-            unprobed.push(id)  // 不靜默 skip:追蹤可見化(報告會列出 + 非致命 warn)
+            unprobed.push(id)
             return
           }
           probedCount++
@@ -225,15 +227,12 @@ try {
   console.log(`Failures:             ${failures.length}`)
   console.log(`Unprobed (timeout):   ${unprobed.length}`)
 
-  // 2026-06-02: unprobed 可見化(非致命)。原 silent skip 把「載不起」藏成綠燈;現在列出來。
-  // 暫不 hard-fail —— 需先觀測 CI 真實 skip 數(本機 GDrive 噪音不可靠),若 CI 持續 ≈0 再升
-  // hard coverage-gate(per memory feedback_ai_ground_truth:盲推 hard-gate 曾弄垮 beta.45 release)。
   if (unprobed.length > 0) {
     console.log('')
-    console.log(`⚠️  COVERAGE 觀測:${unprobed.length} 個 story GOTO timeout 未驗(非致命 warn)。前 10 個:`)
+    console.log(`❌ COVERAGE GAP:${unprobed.length} 個 story GOTO timeout 未驗。前 10 個:`)
     for (const id of unprobed.slice(0, 10)) console.log(`   ◦ ${id}`)
     if (unprobed.length > 10) console.log(`   ...(${unprobed.length - 10} more)`)
-    console.log('   (若 CI 持續顯示 0 → 可把此升為 hard BLOCKER 防 silent-skip 假綠燈)')
+    exitCode = 1
   }
 
   if (failures.length > 0) {
@@ -249,7 +248,9 @@ try {
       console.log(`  ...(${failures.length - 20} more)`)
     }
     exitCode = 1
-  } else {
+  }
+
+  if (failures.length === 0 && unprobed.length === 0) {
     console.log('✅ All stories render with 0 console error')
   }
 } finally {

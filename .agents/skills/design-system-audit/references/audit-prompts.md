@@ -1197,7 +1197,7 @@ Per component gzip size 上限(eg. Button ≤ 5KB / DataTable ≤ 50KB);CI fail 
 
 **Type**: Absolute(deep mode only)/ **Canonical**: visual-audit Layer B + baseline snapshot / **Home**: spec.md「邊界案例」段
 
-Deep mode 每 core story 跑 light/dark/high-contrast/density-md/density-lg/RTL 6-cell matrix screenshot diff;baseline drift > 5% pixel-diff → flag。對齊 Polaris visual regression + Carbon dark token matrix + Material 3 dynamic color + Apple HIG Dynamic Type。Chain `/visual-audit --scope=all --matrix=theme-density-rtl`。
+Deep mode 每 core story 跑現有 `theme-density` 4-cell(light/dark × density-md/lg) screenshot capture；RTL 依 `packages/design-system/README.md#compatibility-matrix` 明確不支援，禁止加入不存在的 matrix flag 或把未驗證 RTL 當覆蓋。High-contrast 尚無 baseline 槽，僅能列明 gap，不得虛構 6-cell diff。
 
 ## 52. Header canonical cross-family invariants(2026-05-17 新增,W1-W6 per M31 codex 共識)
 

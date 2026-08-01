@@ -126,6 +126,16 @@ function poisonClosedBuilderWorkflow(source, before, after) {
   return changed
 }
 
+function closedBuilderRunProgram(workflowSource) {
+  const steps = loadYaml(workflowSource).jobs['build-and-push'].steps
+  assert.equal(
+    steps[0]?.name,
+    'Bind DOCKER_CONFIG to the runner-scoped temp directory',
+    'managed-CI builder isolation prelude moved without updating the test projection',
+  )
+  return steps.slice(1)[6]?.run
+}
+
 // Git >= 2.54 auto-maintenance ("geometric" strategy, 100-loose-object threshold) would
 // otherwise let each fixture commit spawn a detached background repack that mutates
 // .git/objects while the immutable identity gate is verifying — the gate then correctly
@@ -1371,9 +1381,10 @@ test('managed executor builder trigger is an exact protected-default projection 
     ],
     [
       'writer cannot use ambient Docker credentials',
-      workflowSource.replace(
-        '      DOCKER_CONFIG: ${{ runner.temp }}/managed-ci-docker-config\n',
-        '      DOCKER_CONFIG: $HOME/.docker\n',
+      poisonClosedBuilderWorkflow(
+        workflowSource,
+        '          printf \'DOCKER_CONFIG=%s/managed-ci-docker-config\\n\' "$RUNNER_TEMP" >> "$GITHUB_ENV"\n',
+        '          printf \'DOCKER_CONFIG=%s/.docker\\n\' "$HOME" >> "$GITHUB_ENV"\n',
       ),
     ],
     [
@@ -2119,7 +2130,7 @@ test('canonical managed-CI builder workflow satisfies the closed supply-chain co
     (CLOSED_BUILDER_WORKFLOW.match(/git -c tar\.umask=0022 archive --format=tar --mtime="@\$SOURCE_COMMIT_TIME"/g) || []).length,
     2,
   )
-  const buildProgram = loadYaml(CLOSED_BUILDER_WORKFLOW).jobs['build-and-push'].steps[6].run
+  const buildProgram = closedBuilderRunProgram(CLOSED_BUILDER_WORKFLOW)
   const archiveAt = buildProgram.indexOf(
     '/usr/bin/git -c tar.umask=0022 archive --format=tar --mtime="@$SOURCE_COMMIT_TIME"',
   )
@@ -2153,7 +2164,7 @@ test('registry mutation cannot occur before exact context member, metadata, blob
     '          /usr/bin/docker buildx build --push - < "$CONTEXT_ARCHIVE"\n'
       + '          test "$(tar -tf "$CONTEXT_ARCHIVE")" = "$(printf \'%s\\n\' \\\n',
   )
-  const poisonedRun = loadYaml(poisonedWorkflow).jobs['build-and-push'].steps[6].run
+  const poisonedRun = closedBuilderRunProgram(poisonedWorkflow)
   const poisonedBuilder = structuredClone(CLOSED_SUPPLY_CHAIN_POLICY.builder)
   poisonedBuilder.closedBuilderRunSha256.buildFromExactGitArchive = managedCiSha256(poisonedRun)
   assert.throws(
@@ -2236,7 +2247,7 @@ test('commit-epoch Git archive bytes remain stable across wall-clock seconds', a
       createHash('sha256').update(second.stdout).digest('hex'),
     )
 
-    const buildProgram = loadYaml(CLOSED_BUILDER_WORKFLOW).jobs['build-and-push'].steps[6].run
+    const buildProgram = closedBuilderRunProgram(CLOSED_BUILDER_WORKFLOW)
     const verifierMatch = buildProgram.match(
       /\/usr\/bin\/python3 - "\$CONTEXT_ARCHIVE" <<'PY'\n([\s\S]*?)\nPY/,
     )

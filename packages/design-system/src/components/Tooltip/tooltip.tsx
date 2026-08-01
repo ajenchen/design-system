@@ -14,9 +14,40 @@ const TooltipProvider = ({ delayDuration = MOTION_DELAY_PLAIN_MS, ...props }: Re
   <TooltipPrimitive.Provider delayDuration={delayDuration} {...props} />
 )
 
-const Tooltip = ({ delayDuration = MOTION_DELAY_PLAIN_MS, ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) => (
-  <TooltipPrimitive.Root delayDuration={delayDuration} {...props} />
-)
+// 2026-07-30 WM patch-package 吸收:Tooltip 恆以受控模式掛 Radix Root。
+// 動機:truncated-text.tsx 截斷抑制 canonical `open={isTruncated ? undefined : false}` 直通
+// Radix 會反覆 controlled ↔ uncontrolled 切換(Radix useControllableState dev warning 噪音,
+// consumer 大量截斷 cell 實證)。做法:`open` 未傳時以 internal state 鏡射 Radix 的 open/close
+// 決策(hover/focus/delay 時機仍由 Radix owns,經 onOpenChange 回報落地),對 Radix 永遠是
+// controlled,模式切換消失。`defaultOpen` destructure 出來 seed internal state(語意保留;不可
+// 與 `open` 一起 spread 給 Root)。consumer 三 prop(open/defaultOpen/onOpenChange)行為不變;
+// open 與 defaultOpen 同傳時 open 勝(Radix idiom)。
+const Tooltip = ({
+  delayDuration = MOTION_DELAY_PLAIN_MS,
+  open: openProp,
+  defaultOpen,
+  onOpenChange,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Root>) => {
+  const [internalOpen, setInternalOpen] = React.useState(defaultOpen ?? false)
+  const open = openProp ?? internalOpen
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (openProp === undefined) setInternalOpen(nextOpen)
+      onOpenChange?.(nextOpen)
+    },
+    [onOpenChange, openProp],
+  )
+
+  return (
+    <TooltipPrimitive.Root
+      delayDuration={delayDuration}
+      open={open}
+      onOpenChange={handleOpenChange}
+      {...props}
+    />
+  )
+}
 
 const TooltipTrigger = TooltipPrimitive.Trigger
 

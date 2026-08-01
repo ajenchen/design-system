@@ -217,7 +217,7 @@ Breadcrumb 顯示「當前頁面在資訊階層中的位置」，同時提供快
 - **中段項無 `href`**:declarative mode 僅末位自動轉 `BreadcrumbPage`;中段項無 `href` 仍渲染 `BreadcrumbLink`(輸出無 `href` 的 `<a>`,不可 focus / 不可導覽)
 - **Loading / Error**:本元件無 loading / error state — 純 sync 展示元件;async 路徑載入時 consumer 以 Skeleton 取代整條(對齊 Steps 同類處理),路徑解析失敗的降級由 consumer own
 - **多語言長字串**:truncate 為 CSS 字元級裁切,不分語言(中英同規則),完整文字由 Tooltip 補(見 truncate canonical)
-- **RTL**:未實作方向鏡像(separator 固定 `ChevronRight`,flex-shrink hierarchy 以 LTR 設計);RTL 屬 DS-wide 決策,未定
+- **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。separator / hierarchy 不在本檔另立支援決策。
 
 ---
 

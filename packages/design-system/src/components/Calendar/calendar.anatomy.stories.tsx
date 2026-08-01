@@ -1,10 +1,10 @@
 // @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 // @anatomy-rationale:
-//   SizeMatrix N/A — MVP 只支援 view="month" + 固定 size="md",無多 size tier
-//     (lg 為後續增量,見 calendar.spec.md「MVP vs 後續增量」)。
+//   SizeMatrix N/A — Calendar 是單一 month canvas，沒有 size variant。
 //   StateBehavior 已存在(today / outside month / hover / event tile 等狀態
 //     已由 StateBehavior 5. 涵蓋)。
 import type { Meta, StoryObj } from '@storybook/react'
+import { expect, userEvent, within } from '@storybook/test'
 import { Calendar, type CalendarEvent } from './calendar'
 import { CATEGORICAL_HUES } from '@/design-system/tokens/categorical-color'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
@@ -18,11 +18,7 @@ export default meta
 
 type Story = StoryObj<typeof Calendar>
 
-// 釘固定日期(2026-07-07 修 VR flake;2026-07-13 補傳 defaultReferenceDate 使 pin 真正生效):
-// 只把 now 用來組事件日期字串「不會」pin 顯示月 —— Calendar 顯示月預設取即時 new Date()(tsx),
-// 故必須把 now 傳給 defaultReferenceDate 才真正釘住顯示月(下方各 instance 已補),否則當前月非
-// 7 月時 7 月事件根本不顯示。註:today 標記仍取真實日期(tsx 內 new Date(),無 today override prop)
-// → 落在被釘的 7 月內時仍隨換日移格,屬已知殘留(需新增 today prop 才能完全釘死,SSOT 待拍板)。
+// 視覺基線同時釘住顯示月與 today SSOT，避免跨月/換日造成 snapshot 漂移。
 const now = new Date(2026, 6, 15)
 const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
 
@@ -39,7 +35,7 @@ export const Overview: Story = {
   name: '元件總覽',
   render: () => (
     <div className="h-screen p-4 bg-canvas">
-      <Calendar events={sampleEvents} defaultReferenceDate={now} />
+      <Calendar events={sampleEvents} defaultReferenceDate={now} today={now} />
     </div>
   ),
 }
@@ -48,20 +44,18 @@ export const Overview: Story = {
 export const Inspector: Story = {
   name: '元件檢閱器',
   parameters: {
-    docs: { description: { story: '右側 Controls 切換 props 即時預覽,取代 Figma 標註。檢視目前只支援「月」(週 / 日檢視尚未實作,為後續增量,選項已停用)。' } },
+    docs: { description: { story: '右側 Controls 切換 month canvas 的已實作 props；未實作的週/日與 size API 不暴露。' } },
     layout: 'fullscreen',
   },
   args: {
-    view: 'month',
     weekStartsOn: 0,
     locale: 'en-US',
     events: sampleEvents,
+    today: now,
   },
   argTypes: {
-    view: { control: 'radio', options: ['month', 'week', 'day'] },
     weekStartsOn: { control: 'radio', options: [0, 1] },
     locale: { control: 'select', options: ['en-US', 'zh-TW', 'ja-JP'] },
-    size: { control: 'radio', options: ['md', 'lg'] },
     events: { control: 'object' },
   },
   render: (args) => (
@@ -72,7 +66,7 @@ export const Inspector: Story = {
 }
 
 // ── 3. 色彩對照表(事件 color 類別 + Cell / Event tile token)─────────────────────
-// 跳過 4. SizeMatrix(rationale 見 calendar.spec.md「MVP vs 後續增量」,roadmap:lg 尚未實作、視覺同 md)
+// 跳過 4. SizeMatrix：元件沒有 size API。
 export const ColorMatrix: Story = {
   name: '色彩對照表',
   render: () => {
@@ -93,7 +87,7 @@ export const ColorMatrix: Story = {
             顏色代表「這是哪一類事件」(同一個團隊 / 同一個專案),不是嚴重程度。每個色名對應一個色相,紅與橘各自獨立、可清楚區分。
           </Desc>
           <div className="h-[560px]">
-            <Calendar events={colorEvents} defaultReferenceDate={now} />
+            <Calendar events={colorEvents} defaultReferenceDate={now} today={now} />
           </div>
         </div>
 
@@ -143,7 +137,7 @@ export const ColorMatrix: Story = {
                 <tr>
                   <Td>Weekend cell(後續增量)</Td>
                   <Td mono>bg-muted</Td>
-                  <Td>對齊 Google Calendar,MVP 未實作(無 weekend prop / 無 isWeekend 邏輯),列後續增量</Td>
+                  <Td>目前不提供 weekend prop / isWeekend 樣式；未實作能力不預佔 API</Td>
                 </tr>
               </tbody>
             </table>
@@ -204,9 +198,17 @@ export const StateBehavior: Story = {
         <div>• <b>event hover</b>:tile 切同色深一階 `hover:bg-{`{color}`}-2`(如 blue → `--color-blue-2`)+ `cursor-pointer`</div>
         <div>• <b>empty cell</b>:無事件保持純底色,點擊觸發 onDateClick</div>
       </div>
-      <Calendar events={sampleEvents} defaultReferenceDate={now} />
+      <Calendar events={sampleEvents} defaultReferenceDate={now} today={now} />
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('button', { name: /^2026-07-15,/ })).toHaveClass('bg-info')
+    await userEvent.click(canvas.getByRole('button', { name: '下個月' }))
+    await expect(canvas.getByRole('heading', { level: 2 })).toHaveTextContent('August 2026')
+    await userEvent.click(canvas.getByRole('button', { name: '今天' }))
+    await expect(canvas.getByRole('heading', { level: 2 })).toHaveTextContent('July 2026')
+  },
 }
 
 // ── Accessibility ─────────────────────────────────────────────────────────
@@ -216,7 +218,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `calendar.spec.md` 「A11y 預設」段。摘要:\n\n  Grid role  :月格容器 `role=\"grid\"` + `aria-label`(月份),每列 `role=\"row\"`(`display:contents` 保 CSS grid 佈局),每格 `role=\"gridcell\"`(非互動容器),日期數字按鈕帶 `aria-label`(日期 + 事件數)。事件 tile `role=\"button\"` + `aria-label`(事件標題)。\n\n  Keyboard 行為(MVP 實作現況)  :\n\n- Tab — 逐一 focus 每格的日期數字按鈕與其中的事件 tile(cell 為非互動 gridcell 容器,滑鼠點空白處等同點日期)\n- Enter / Space — 日期數字按鈕觸發 `onDateClick`;事件 tile 觸發 `onEventClick`\n- Toolbar 的 ◀ / 今天 / ▶ / 檢視切換為標準可聚焦控件,Tab 可達\n\n  Keyboard tech debt(尚未實作,見 spec.md「MVP vs 後續增量」)  :\n\n- ↑/↓/←/→ 在日期格間 roving 移動、PageUp/Down 切月、Shift+PageUp/Down 切年、Esc 關閉 — 隨週 / 日 view 增量一併補上 roving tabindex\n\n  Focus  :focus-visible ring 對齊 DS 設計準則(ring-2 ring-ring,box-shadow 實作 + outline-none);日期數字按鈕與事件 tile 皆有 ring。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
+      <p className="whitespace-pre-line">{"詳 `calendar.spec.md` 「A11y 預設」段。摘要:\n\n  Grid role  :月格容器 `role=\"grid\"` + `aria-label`(月份),每列 `role=\"row\"`(`display:contents` 保 CSS grid 佈局),每格 `role=\"gridcell\"`(非互動容器),日期數字按鈕帶 `aria-label`(日期 + 事件數)。事件 tile `role=\"button\"` + `aria-label`(事件標題)。\n\n  Keyboard 行為(實作現況)  :\n\n- Tab — 逐一 focus 每格的日期數字按鈕與其中的事件 tile(cell 為非互動 gridcell 容器,滑鼠點空白處等同點日期)\n- Enter / Space — 日期數字按鈕觸發 `onDateClick`;事件 tile 觸發 `onEventClick`\n- Toolbar 的 ◀ / 今天 / ▶ 為標準可聚焦控件,Tab 可達\n\n  Keyboard tech debt  :\n\n- ↑/↓/←/→ 在日期格間 roving 移動、PageUp/Down 切月、Shift+PageUp/Down 切年\n\n  Focus  :focus-visible ring 對齊 DS 設計準則(ring-2 ring-ring,box-shadow 實作 + outline-none);日期數字按鈕與事件 tile 皆有 ring。\n\n  驗證  :Storybook a11y addon panel 應 0 critical violation。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。"}</p>
     </div>
   ),
 }

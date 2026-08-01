@@ -422,6 +422,10 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     const needConfirm = needConfirmProp ?? showTime  // datetime 預設需確認
     const [open, setOpenState] = React.useState(defaultOpen)
     const setOpen = React.useCallback((next: boolean) => { setOpenState(next); onOpenChange?.(next) }, [onOpenChange])
+    // Radix Popover 的預設 contentId 在 content 未掛載時仍會留在 trigger。
+    // DatePicker 改用穩定 ID，且只在 dialog 已掛載(open)時輸出 aria-controls，
+    // 避免 closed state 的懸空 IDREF；typeable 模式則把關聯放到真正的 combobox input。
+    const popupId = React.useId()
     const [draft, setDraft] = React.useState<string | null>(value ?? null)
     const resolvedPlaceholder = placeholder ?? (showTime ? 'YYYY/MM/DD HH:MM' : 'YYYY/MM/DD')
     // a11y:role="combobox" 必須有 accessible name(aria-label / labelledby / fieldCtx label)
@@ -565,7 +569,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
             data-state(Field open 邊框樣式依賴)在 TooltipTrigger 內以 triggerProps 後 spread
             勝出;反序會被 tooltip 的 data-state 蓋掉。 */}
         <Tooltip open={triggerTooltipActive ? undefined : false}>
-          <PopoverTrigger asChild>
+          <PopoverTrigger asChild type={undefined}>
             <TooltipTrigger asChild>
               <div
                 ref={ref}
@@ -585,6 +589,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                 aria-errormessage={typeable ? undefined : (ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined))}
                 aria-haspopup={typeable ? undefined : 'dialog'}
                 aria-expanded={typeable ? undefined : open}
+                aria-controls={typeable || !open ? undefined : popupId}
                 data-field-mode="edit"
                 data-error={error ? '' : undefined}
                 // Radix PopoverTrigger 只 compose onClick(onOpenToggle),`<div>` trigger 無
@@ -617,6 +622,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                     role="combobox"
                     aria-haspopup="dialog"
                     aria-expanded={open}
+                    aria-controls={open ? popupId : undefined}
                     aria-label={accessibleName}
                     aria-labelledby={ariaLabelledByProp ?? fieldCtx?.labelId}
                     aria-required={fieldCtx?.required || undefined}
@@ -672,6 +678,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
           <TooltipContent>{triggerTooltipActive ? displayLive : null}</TooltipContent>
         </Tooltip>
         <PopoverContent
+          id={popupId}
           className="w-auto p-0"
           align="start"
           aria-label="日期選擇" // i18n-allow: DS default dialog label

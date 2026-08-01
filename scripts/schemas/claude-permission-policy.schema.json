@@ -3,7 +3,7 @@
   "$id": "https://qijenchen.dev/schemas/claude-permission-policy-v1.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["permissions", "sandbox", "disableAutoMode"],
+  "required": ["permissions", "sandbox"],
   "properties": {
     "permissions": {
       "type": "object",
@@ -78,7 +78,7 @@
               "maxItems": 0
             },
             "allowAllUnixSockets": { "const": false },
-            "allowLocalBinding": { "const": false },
+            "allowLocalBinding": { "const": true },
             "allowMachLookup": {
               "type": "array",
               "maxItems": 0
@@ -140,7 +140,6 @@
           "maxItems": 0
         }
       }
-    },
-    "disableAutoMode": { "const": "disable" }
+    }
   }
 }

@@ -1,4 +1,4 @@
-// @story-baseline: none — primitive 用 minimal scenario showcase visual + cursor + a11y
+// @story-baseline: none — primitive 用 minimal scenario showcase visual + cursor
 import type { Meta, StoryObj } from '@storybook/react'
 import * as React from 'react'
 import { ResizeHandle } from './resize-handle'
@@ -21,7 +21,6 @@ const ColumnDemo: React.FC<{ isResizing?: boolean; disabled?: boolean }> = ({ is
       position="end"
       isResizing={isResizing}
       disabled={disabled}
-      aria-label="拖曳調整欄寬"
     />
   </div>
 )
@@ -64,7 +63,6 @@ export const Vertical: Story = {
       <ResizeHandle
         direction="vertical"
         position="end"
-        aria-label="拖曳調整面板高度"
       />
     </div>
   ),

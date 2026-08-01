@@ -11,6 +11,11 @@ const meta: Meta = {
 }
 export default meta
 
+// Fixed local date keeps rendered states deterministic across run dates and time zones.
+const STORY_TODAY = new Date(2026, 6, 15)
+const storyDate = (day: number) =>
+  new Date(STORY_TODAY.getFullYear(), STORY_TODAY.getMonth(), day)
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Types & Data
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -108,12 +113,9 @@ export const Overview = {
         <div className="inline-flex bg-surface-raised border border-border rounded-lg w-fit">
           <DateGrid
             mode="single"
-            selected={(() => {
-              const d = new Date()
-              d.setDate(d.getDate() - 1)
-              return d
-            })()}
-            defaultMonth={new Date()}
+            selected={storyDate(STORY_TODAY.getDate() - 1)}
+            defaultMonth={STORY_TODAY}
+            today={STORY_TODAY}
             locale={zhTW}
           />
         </div>
@@ -188,8 +190,7 @@ export const Inspector = {
   name: '元件檢閱器',
   render: () => {
     const InspectorInner = () => {
-      const today = new Date()
-      const [selected] = useState<Date>(new Date(today.getFullYear(), today.getMonth(), 15))
+      const [selected] = useState<Date>(storyDate(15))
 
       return (
         <div className="flex gap-6 items-start flex-wrap">
@@ -201,6 +202,7 @@ export const Inspector = {
                   mode="single"
                   selected={selected}
                   defaultMonth={selected}
+                  today={STORY_TODAY}
                   locale={zhTW}
                 />
               </div>
@@ -443,13 +445,13 @@ export const SizeMatrix = {
         <div className="flex flex-col gap-2">
           <span className="text-caption font-medium text-fg-secondary">單月(預設)</span>
           <div className="bg-surface-raised border border-border rounded-lg">
-            <DateGrid mode="single" defaultMonth={new Date()} locale={zhTW} />
+            <DateGrid mode="single" defaultMonth={STORY_TODAY} today={STORY_TODAY} locale={zhTW} />
           </div>
         </div>
         <div className="flex flex-col gap-2">
           <span className="text-caption font-medium text-fg-secondary">雙月並排(range 常用)</span>
           <div className="bg-surface-raised border border-border rounded-lg">
-            <DateGrid mode="single" defaultMonth={new Date()} locale={zhTW} numberOfMonths={2} />
+            <DateGrid mode="single" defaultMonth={STORY_TODAY} today={STORY_TODAY} locale={zhTW} numberOfMonths={2} />
           </div>
         </div>
       </div>
@@ -465,18 +467,17 @@ export const StateBehavior = {
   name: '狀態行為',
   render: () => {
     const ModeDemo = () => {
-      const today = new Date()
       const [single, setSingle] = useState<Date | undefined>(
-        new Date(today.getFullYear(), today.getMonth(), 10),
+        storyDate(10),
       )
       const [multiple, setMultiple] = useState<Date[]>([
-        new Date(today.getFullYear(), today.getMonth(), 5),
-        new Date(today.getFullYear(), today.getMonth(), 12),
-        new Date(today.getFullYear(), today.getMonth(), 20),
+        storyDate(5),
+        storyDate(12),
+        storyDate(20),
       ])
       const [range, setRange] = useState<DateRange | undefined>({
-        from: new Date(today.getFullYear(), today.getMonth(), 8),
-        to: new Date(today.getFullYear(), today.getMonth(), 18),
+        from: storyDate(8),
+        to: storyDate(18),
       })
 
       return (
@@ -488,7 +489,8 @@ export const StateBehavior = {
                 mode="single"
                 selected={single}
                 onSelect={setSingle}
-                defaultMonth={today}
+                defaultMonth={STORY_TODAY}
+                today={STORY_TODAY}
                 locale={zhTW}
               />
             </div>
@@ -504,7 +506,8 @@ export const StateBehavior = {
                 mode="multiple"
                 selected={multiple}
                 onSelect={(d) => setMultiple(d ?? [])}
-                defaultMonth={today}
+                defaultMonth={STORY_TODAY}
+                today={STORY_TODAY}
                 locale={zhTW}
               />
             </div>
@@ -520,7 +523,8 @@ export const StateBehavior = {
                 mode="range"
                 selected={range}
                 onSelect={setRange}
-                defaultMonth={today}
+                defaultMonth={STORY_TODAY}
+                today={STORY_TODAY}
                 locale={zhTW}
               />
             </div>

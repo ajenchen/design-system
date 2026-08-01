@@ -31,7 +31,6 @@ import {
   invariant,
   parseFlags,
   readJson,
-  runClosedGh,
   sha256,
   stableStringify,
   validateInventory,
@@ -240,19 +239,88 @@ const AUTHORITY_BOOTSTRAP_REPLAY_KEYS = new Set([
 
 const clone = value => JSON.parse(JSON.stringify(value))
 
-export function githubApiRequestArgs(method, path) {
-  return [
-    'api', '-X', method,
-    '-H', 'Accept: application/vnd.github+json',
-    '-H', `X-GitHub-Api-Version: ${GITHUB_API_VERSION}`,
+const GITHUB_API_ORIGIN = 'https://api.github.com'
+const GITHUB_API_METHODS = new Set(['DELETE', 'GET', 'PATCH', 'POST', 'PUT'])
+const GITHUB_FETCH_CHILD = String.raw`
+const [method, path, maxBytesText] = process.argv.slice(1)
+const maxBytes = Number(maxBytesText)
+const token = process.env.GITHUB_TOKEN
+if (!token || !Number.isSafeInteger(maxBytes) || maxBytes <= 0) process.exit(64)
+const response = await fetch('https://api.github.com' + path, {
+  method,
+  redirect: 'error',
+  headers: {
+    Accept: 'application/vnd.github+json',
+    Authorization: 'Bearer ' + token,
+    'Content-Type': 'application/json',
+    'User-Agent': 'qijenchen-governance-reconciler',
+    'X-GitHub-Api-Version': '${GITHUB_API_VERSION}',
+  },
+  body: method === 'GET' || method === 'DELETE'
+    ? undefined
+    : await new Promise((resolve, reject) => {
+        const chunks = []
+        let size = 0
+        process.stdin.on('data', chunk => {
+          size += chunk.length
+          if (size > 16 * 1024 * 1024) reject(new Error('request body exceeds closed limit'))
+          else chunks.push(chunk)
+        })
+        process.stdin.on('end', () => resolve(chunks.length ? Buffer.concat(chunks) : undefined))
+        process.stdin.on('error', reject)
+      }),
+  signal: AbortSignal.timeout(55_000),
+})
+const chunks = []
+let size = 0
+if (response.body) {
+  for await (const chunk of response.body) {
+    size += chunk.length
+    if (size > maxBytes) throw new Error('response body exceeds closed limit')
+    chunks.push(chunk)
+  }
+}
+process.stdout.write(JSON.stringify({
+  status: response.status,
+  body: Buffer.concat(chunks).toString('base64'),
+}))
+`
+
+export function githubApiRequestDescriptor(method, path) {
+  invariant(GITHUB_API_METHODS.has(method), `GitHub API method is unsupported: ${method}`)
+  const rawPathname = typeof path === 'string' ? path.split('?', 1)[0] : ''
+  const repositoryBoundary = rawPathname.match(/^\/repos\/([^/]+)\/([^/]+)(?:\/|$)/)
+  const parsed = typeof path === 'string' ? new URL(path, GITHUB_API_ORIGIN) : null
+  invariant(
+    typeof path === 'string'
+      && path.startsWith('/repos/')
+      && !/[\0\r\n\\]/.test(path)
+      && !path.includes('://')
+      && !path.includes('#')
+      && repositoryBoundary
+      && /^[A-Za-z0-9_.-]+$/.test(repositoryBoundary[1])
+      && /^[A-Za-z0-9_.-]+$/.test(repositoryBoundary[2])
+      && !['.', '..'].includes(repositoryBoundary[1])
+      && !['.', '..'].includes(repositoryBoundary[2])
+      && parsed.origin === GITHUB_API_ORIGIN
+      && parsed.pathname === rawPathname
+      && parsed.href === `${GITHUB_API_ORIGIN}${path}`,
+    `GitHub API path is outside the closed repository boundary: ${path}`,
+  )
+  return Object.freeze({
+    method,
     path,
-  ]
+    url: `${GITHUB_API_ORIGIN}${path}`,
+    headers: Object.freeze({
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': GITHUB_API_VERSION,
+    }),
+  })
 }
 
 export class GhApiClient {
   constructor({
     environment = process.env,
-    executable,
     token,
     tokenEnvironmentName = 'GH_TOKEN',
   } = {}) {
@@ -262,43 +330,88 @@ export class GhApiClient {
       requireToken: false,
       tokenEnvironmentName,
     })
-    this.executable = executable
   }
 
-  execute(args, {
+  execute(method, path, {
     input,
-    maxOutputBytes = 16 * 1024 * 1024,
-    output = 'capture',
+    maxOutputBytes = 20 * 1024 * 1024,
     timeoutMs = 60_000,
   } = {}) {
     invariant(this.token !== null, 'GitHub API transport requires one captured GH_TOKEN authority')
-    return runClosedGh(args, {
+    const descriptor = githubApiRequestDescriptor(method, path)
+    invariant(
+      input === undefined || typeof input === 'string' || Buffer.isBuffer(input),
+      'GitHub API request body must be a string or Buffer',
+    )
+    invariant(
+      input === undefined || Buffer.byteLength(input) <= 16 * 1024 * 1024,
+      'GitHub API request body exceeds the closed size limit',
+    )
+    invariant(
+      Number.isInteger(maxOutputBytes) && maxOutputBytes > 0 && maxOutputBytes <= 128 * 1024 * 1024,
+      'GitHub API response limit is outside the safe range',
+    )
+    invariant(
+      Number.isInteger(timeoutMs) && timeoutMs > 0 && timeoutMs <= 120_000,
+      'GitHub API timeout is outside the safe range',
+    )
+    const result = spawnSync(process.execPath, [
+      '--input-type=module',
+      '--eval',
+      GITHUB_FETCH_CHILD,
+      descriptor.method,
+      descriptor.path,
+      String(maxOutputBytes),
+    ], {
       cwd: resolve(GOVERNANCE_ROOT, '../..'),
-      environment: {},
-      executable: this.executable,
+      encoding: 'utf8',
+      env: {
+        GITHUB_TOKEN: this.token,
+        HOME: '/dev/null',
+        LANG: 'C',
+        LC_ALL: 'C',
+        NO_COLOR: '1',
+      },
       input,
-      maxOutputBytes,
-      output,
-      repoRoot: resolve(GOVERNANCE_ROOT, '../..'),
-      timeoutMs,
-      token: this.token,
-      tokenEnvironmentName: null,
+      maxBuffer: Math.ceil(maxOutputBytes * 4 / 3) + 64 * 1024,
+      shell: false,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: timeoutMs,
+      windowsHide: true,
     })
+    if (result.error) throw new Error(`GitHub API transport failed for ${method} ${path}: ${result.error.message}`)
+    if (result.signal !== null || result.status !== 0) {
+      const detail = (result.stderr || result.stdout || `exit ${result.status}`).trim().slice(0, 4000)
+      throw new Error(`GitHub API transport failed for ${method} ${path}: ${detail}`)
+    }
+    try {
+      const envelope = JSON.parse(result.stdout)
+      invariant(
+        Number.isInteger(envelope?.status)
+          && envelope.status >= 100
+          && envelope.status <= 599
+          && typeof envelope.body === 'string',
+        'GitHub API transport returned an invalid response envelope',
+      )
+      return {
+        status: envelope.status,
+        body: Buffer.from(envelope.body, 'base64'),
+      }
+    } catch (error) {
+      throw new Error(`GitHub API transport returned invalid JSON for ${method} ${path}: ${error.message}`)
+    }
   }
 
   request(method, path, body, options = {}) {
-    const args = githubApiRequestArgs(method, path)
-    if (body !== undefined) args.push('--input', '-')
-    const result = this.execute(args, {
+    const result = this.execute(method, path, {
       input: body === undefined ? undefined : JSON.stringify(body),
     })
-    if (result.error) throw new Error(`GitHub API transport failed for ${method} ${path}: ${result.error.message}`)
-    if (result.status !== 0) {
-      const detail = (result.stderr || result.stdout || 'unknown gh api failure').trim().slice(0, 4000)
-      if (options.allow404 && /(?:HTTP 404|Not Found)/i.test(detail)) return null
-      throw new Error(`GitHub API failed closed for ${method} ${path} (exit ${result.status}): ${detail}`)
+    if (result.status < 200 || result.status >= 300) {
+      const detail = result.body.toString('utf8').trim().slice(0, 4000)
+      if (options.allow404 && result.status === 404) return null
+      throw new Error(`GitHub API failed closed for ${method} ${path} (HTTP ${result.status}): ${detail}`)
     }
-    const output = result.stdout.trim()
+    const output = result.body.toString('utf8').trim()
     if (!output) return null
     try {
       return JSON.parse(output)
@@ -308,18 +421,14 @@ export class GhApiClient {
   }
 
   requestBytes(method, path, { maxOutputBytes = 20 * 1024 * 1024 } = {}) {
-    const args = githubApiRequestArgs(method, path)
-    const result = this.execute(args, {
+    const result = this.execute(method, path, {
       maxOutputBytes,
-      output: 'buffer',
     })
-    if (result.error || result.signal !== null || result.status !== 0 || !Buffer.isBuffer(result.stdout)) {
-      const detail = Buffer.isBuffer(result.stderr)
-        ? result.stderr.toString('utf8')
-        : String(result.error?.message || result.stderr || `exit ${result.status}`)
-      throw new Error(`GitHub binary API failed closed for ${method} ${path}: ${detail.trim().slice(0, 1000)}`)
+    if (result.status < 200 || result.status >= 300) {
+      const detail = result.body.toString('utf8').trim().slice(0, 1000)
+      throw new Error(`GitHub binary API failed closed for ${method} ${path} (HTTP ${result.status}): ${detail}`)
     }
-    return Buffer.from(result.stdout)
+    return Buffer.from(result.body)
   }
 }
 
@@ -1165,6 +1274,11 @@ export function diffRepository(repo, materialized, observed, desired, now = new 
 
   for (const environment of materialized.declaredEnvironments) {
     if (environment.independentReviewRequired && environment.reviewers.length === 0) conflicts.push(`environment ${environment.name} requires at least one independently administered reviewer before activation`)
+    // 1B(2026-07-29):App 整合可 required=false(standalone 可選),但**被環境引用**
+    // 即為該 profile 的啟用必要條件 —— 未解析(id=null)必 conflict,不得靜默略過。
+    if (environment.credentialIntegration && !Number.isInteger(desired.integrations[environment.credentialIntegration]?.id)) {
+      conflicts.push(`required integration unresolved: ${environment.credentialIntegration} for environment ${environment.name}`)
+    }
     conflicts.push(...environmentWorkflowPreflight(environment, observed.workflowContents[environment.workflow], desired.integrations))
   }
 
@@ -1315,8 +1429,9 @@ export function validateAuthorityBootstrapBoundary(boundary) {
   invariant(Array.isArray(boundary.rulesets) && boundary.rulesets.length === 2
     && stableStringify(boundary.rulesets, 0) === stableStringify(['fleet/base-integrity', 'fleet/verified-main'], 0),
   'authority policy bootstrap boundary ruleset closure is invalid')
-  invariant(Array.isArray(boundary.environments) && boundary.environments.length === 2
-    && stableStringify(boundary.environments, 0) === stableStringify(['governance-check-verdict', 'governance-external-ledger'], 0),
+  // 1B(2026-07-29):governance-check-verdict 環境隨 App verdict 層拆除。
+  invariant(Array.isArray(boundary.environments) && boundary.environments.length === 1
+    && stableStringify(boundary.environments, 0) === stableStringify(['governance-external-ledger'], 0),
   'authority policy bootstrap boundary environment closure is invalid')
   return boundary
 }
@@ -3843,50 +3958,72 @@ function acquireAuthorityBootstrapReplayLock(receiptRoot, replayIdentityDigest, 
     pid: process.pid,
   }, 0)}\n`
   for (;;) {
-    let descriptor
+    const temporary = resolve(
+      root,
+      `.${replayIdentityDigest}.${process.pid}.${randomUUID()}.pending-lock`,
+    )
+    let descriptor = null
+    let published = false
     try {
-      descriptor = openSync(path, 'wx', 0o600)
+      descriptor = openSync(temporary, 'wx', 0o600)
       writeFileSync(descriptor, body)
       fsyncSync(descriptor)
-      return { path, descriptor, body }
-    } catch (error) {
-      if (descriptor !== undefined) closeSync(descriptor)
-      if (error?.code !== 'EEXIST') throw error
-      let owner
       try {
-        const bytes = readFileSync(path, 'utf8')
-        owner = JSON.parse(bytes)
-        invariant(
-          bytes === `${stableStringify(owner, 0)}\n`
-            && owner.kind === 'authority-bootstrap-durable-replay-local-lock'
-            && owner.replayIdentityDigest === replayIdentityDigest
-            && Number.isSafeInteger(owner.pid)
-            && owner.pid > 0,
-          'authority policy bootstrap durable replay lock record is invalid',
-        )
-      } catch (readError) {
-        throw new Error(`authority policy bootstrap durable replay lock is unreadable or untrusted: ${readError.message}`)
+        linkSync(temporary, path)
+        published = true
+      } catch (error) {
+        if (error?.code !== 'EEXIST') throw error
       }
-      let ownerAlive = true
-      try { process.kill(owner.pid, 0) } catch (probeError) {
-        if (probeError?.code === 'ESRCH') ownerAlive = false
-        else if (probeError?.code !== 'EPERM') throw probeError
+      unlinkSync(temporary)
+      if (published) {
+        const directoryDescriptor = openSync(root, 'r')
+        try { fsyncSync(directoryDescriptor) } finally { closeSync(directoryDescriptor) }
+        invariant(readFileSync(path, 'utf8') === body,
+          'authority policy bootstrap durable replay lock exact readback failed')
+        return { path, descriptor, body }
       }
-      if (!ownerAlive) {
-        const stale = resolve(root, `.${replayIdentityDigest}.${randomUUID()}.stale-lock`)
-        try {
-          renameSync(path, stale)
-          unlinkSync(stale)
-          continue
-        } catch (recoveryError) {
-          if (recoveryError?.code === 'ENOENT') continue
-          throw new Error(`authority policy bootstrap durable replay stale-lock recovery failed: ${recoveryError.message}`)
-        }
-      }
-      invariant(Date.now() < deadline,
-        'authority policy bootstrap durable replay lock remained held by a live process')
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25)
+    } catch (error) {
+      if (descriptor !== null) closeSync(descriptor)
+      if (existsSync(temporary)) unlinkSync(temporary)
+      throw error
     }
+    closeSync(descriptor)
+    descriptor = null
+    let owner
+    try {
+      const bytes = readFileSync(path, 'utf8')
+      owner = JSON.parse(bytes)
+      invariant(
+        bytes === `${stableStringify(owner, 0)}\n`
+          && owner.kind === 'authority-bootstrap-durable-replay-local-lock'
+          && owner.replayIdentityDigest === replayIdentityDigest
+          && Number.isSafeInteger(owner.pid)
+          && owner.pid > 0,
+        'authority policy bootstrap durable replay lock record is invalid',
+      )
+    } catch (readError) {
+      if (readError?.code === 'ENOENT') continue
+      throw new Error(`authority policy bootstrap durable replay lock is unreadable or untrusted: ${readError.message}`)
+    }
+    let ownerAlive = true
+    try { process.kill(owner.pid, 0) } catch (probeError) {
+      if (probeError?.code === 'ESRCH') ownerAlive = false
+      else if (probeError?.code !== 'EPERM') throw probeError
+    }
+    if (!ownerAlive) {
+      const stale = resolve(root, `.${replayIdentityDigest}.${randomUUID()}.stale-lock`)
+      try {
+        renameSync(path, stale)
+        unlinkSync(stale)
+        continue
+      } catch (recoveryError) {
+        if (recoveryError?.code === 'ENOENT') continue
+        throw new Error(`authority policy bootstrap durable replay stale-lock recovery failed: ${recoveryError.message}`)
+      }
+    }
+    invariant(Date.now() < deadline,
+      'authority policy bootstrap durable replay lock remained held by a live process')
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25)
   }
 }
 

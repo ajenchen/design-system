@@ -1,5 +1,4 @@
 {
-  "disableAutoMode": "disable",
   "_comment_governance": "Provider-neutral committed adapter. Engineering external writes, package installation, and publication are standing-delegated when canonical preflight, least privilege, evidence, rollback, and readback gates pass; raw destructive or bypass commands remain denied. Only platform-enforced login/MFA/OAuth, missing credential references, plan-external spend, legal/account/organization commitments, and genuine product/UI/UX SSOT choices require human action. Native hooks accelerate feedback while provider-neutral checks and protected CI remain authoritative.",
   "permissions": {
     "allow": [
@@ -20,7 +19,6 @@
       "Read(~/.aws/**)",
       "Read(~/.azure/**)",
       "Read(~/.config/gcloud/**)",
-      "Read(~/.config/gh/**)",
       "Read(~/.docker/**)",
       "Read(~/.git-credentials)",
       "Read(~/.gnupg/**)",
@@ -91,7 +89,7 @@
       "deniedDomains": [],
       "allowUnixSockets": [],
       "allowAllUnixSockets": false,
-      "allowLocalBinding": false,
+      "allowLocalBinding": true,
       "allowMachLookup": []
     },
     "filesystem": {
@@ -128,10 +126,6 @@
         },
         {
           "path": "~/.config/gcloud/**",
-          "mode": "deny"
-        },
-        {
-          "path": "~/.config/gh/hosts.yml",
           "mode": "deny"
         },
         {

@@ -1,7 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 // @story-trait-rationale: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration);Default scenario 由 Pressed / IconOnly / 各 variant 真實業務情境 story 覆蓋。
 import type { Meta, StoryObj } from '@storybook/react'
-import { Plus, Trash2, Search, ChevronDown, Settings, Download, Bell, RefreshCw, Maximize2, Save } from 'lucide-react'
+import { Plus, Trash2, Search, ChevronDown, Settings, Download, Bell, RefreshCw, Maximize2, Save, X } from 'lucide-react'
 import { Button } from './button'
 import { Badge } from '@/design-system/components/Badge/badge'
 
@@ -310,27 +310,40 @@ export const FullWidth: Story = {
 }
 
 // ── Interactive State Pilot(視覺稽核用)─────────────────────────────
-// 用 play() + @storybook/test 觸發 hover / focus / tooltip 等互動狀態,
-// 讓 Playwright 截圖抓到 post-interaction 視覺(而非靜態 className 模擬)。
+// play() 只建立 focus / tooltip 等非 pointer 狀態；CSS :hover 一律由
+// visual-audit 的真實 Playwright pointer 建立，避免 synthetic hover 假綠。
 // 詳見 .claude/skills/visual-audit/SKILL.md 的「Layer A interactive state coverage」。
+
+export const DismissHoverState: Story = {
+  name: '關閉按鈕懸停狀態',
+  tags: ['!autodocs'],
+  render: () => (
+    <div className="flex items-center gap-3 rounded-lg border border-divider bg-surface p-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-body font-medium text-foreground">付款方式已更新</p>
+        <p className="text-caption text-fg-secondary">此通知可直接關閉。</p>
+      </div>
+      <Button dismiss size="sm" startIcon={X} aria-label="關閉付款通知" data-visual-hover-target />
+    </div>
+  ),
+}
 
 export const HoverFocusState: Story = {
   name: '滑鼠移過 / 鍵盤聚焦',
   tags: ['!autodocs'],
   render: () => (
     <div className="flex gap-4">
-      <Button variant="primary" data-testid="hover-target">查看帳單</Button>
+      <Button variant="primary" data-testid="hover-target" data-visual-hover-target>查看帳單</Button>
       <Button variant="primary" data-testid="focus-target">下載明細</Button>
     </div>
   ),
   play: async ({ canvasElement }) => {
-    const { userEvent, within } = await import('@storybook/test')
+    const { within } = await import('@storybook/test')
     const canvas = within(canvasElement)
-    const hoverEl = await canvas.findByTestId('hover-target')
+    await canvas.findByTestId('hover-target')
     const focusEl = await canvas.findByTestId('focus-target')
-    await userEvent.hover(hoverEl)
     focusEl.focus()
-    // Wait transitions settle (hover bg ~150ms + focus ring render)
+    // visual-audit 會在 play 完成後把真實 pointer 留在 hover target。
     await new Promise((r) => setTimeout(r, 400))
   },
 }
@@ -353,4 +366,3 @@ export const TooltipVisible: Story = {
     await new Promise((r) => setTimeout(r, 1000))
   },
 }
-

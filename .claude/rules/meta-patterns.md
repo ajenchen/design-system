@@ -21,15 +21,15 @@
 
 ## 2026-05-10 skills consolidation analysis(Task #20 closed)
 
-**Per Anthropic「~10 sweet spot」benchmark**:DS 現有 20 canonical skills(`packages/design-system/ds-canonical/skills/` minus README),約 2x Anthropic typical recommend。**Verdict:無 aggressive merge candidate**,維持 20 skills justified:
+**Per Anthropic「~10 sweet spot」benchmark**:DS 現有 25 canonical skills(`packages/design-system/ds-canonical/skills/` 的一層目錄,2026-07-31 inventory),約 2.5x Anthropic typical recommend。**Verdict:無 aggressive merge candidate**,維持 25 skills justified:
 
 | 類別 | Skills | 為何不 merge |
 |---|---|---|
 | Core audit | design-system-audit / visual-audit / component-quality-gate / knowledge-prune | 各 sharp trigger,invoke logs 顯示高頻(design-system-audit 6 / knowledge-prune 7) |
 | Domain audit | ux-audit / performance-audit / code-quality-audit / product-ui-audit | D2/D3/D4/consumer-code dim 已 chain 進 design-system-audit |
-| Workflow | prototype / new-component / delivery-handoff / story-writing / story-auto-compile-migrate | create / prototype / final-handoff / story 各 phase distinct rare-event(per knowledge-prune retire rule 例外) |
+| Workflow | prototype / new-component / delivery-handoff / story-writing / story-auto-compile-migrate / bug-fix-rhythm / governance-status | create / prototype / final-handoff / story / multi-fix rhythm / read-only status 各 phase distinct |
 | Discipline | ensure-canonical / propose-options / codify-principle / codify-corrections / scan-similar-bugs / governance-health | trigger phrase / 4-Q gate / 5-layer artifact gen / batch log / post-fix scan / monthly metric 各 unique |
-| Collab | codex-collab | M31 5-step home,unique |
+| Review / collaboration | codex-collab / canonical-reviewer / independent-review / deep-audit-cross-codex | 一般 cross-provider synthesis / canonical-only review / product-consumer review / no-sample deep audit 的 scope 與證據契約不同 |
 
 **Marginal merge candidate**(Backlog,不擴張目前 frozen scope):`codify-principle` + `codify-corrections` 都產 5-layer artifact,trigger 不同(live propose vs batch log)— 可合 `codify` 一統 skill。**目前不執行原因**:codex Q-13 sharp-rule preference + 兩 skill SKILL.md 各自 250 lines budget 內，尚無 evidence 顯示合併是當前 Requirement 必需。未來若進入 frozen scope，由最高 certified capability 依 evidence + independent review 作工程判斷，不需 user 工程核准。
 

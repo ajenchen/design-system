@@ -692,6 +692,16 @@ test('overlay-aware high audit excludes only the exact verified bundled preimage
   assert.equal(receipt.effectiveHigh, 0)
   assert.equal(receipt.effectiveCritical, 0)
 
+  const renumberedAdvisory = structuredClone(report)
+  renumberedAdvisory.vulnerabilities['brace-expansion'].range = '4.0.0 - 5.0.7'
+  renumberedAdvisory.vulnerabilities['brace-expansion'].via[0].source = 1130591
+  renumberedAdvisory.vulnerabilities['brace-expansion'].via[0].range = '>=4.0.0 <5.0.8'
+  assert.deepEqual(evaluate(renumberedAdvisory).remediatedFindings, ['brace-expansion'])
+
+  const hybridAdvisory = structuredClone(renumberedAdvisory)
+  hybridAdvisory.vulnerabilities['brace-expansion'].via[0].source = 1124334
+  assert.throws(() => evaluate(hybridAdvisory), /exact remediated bundled preimage/)
+
   const wrongPath = structuredClone(report)
   wrongPath.vulnerabilities['brace-expansion'].nodes = ['node_modules/brace-expansion']
   assert.throws(() => evaluate(wrongPath), /exact remediated bundled preimage/)
@@ -815,14 +825,16 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
   for (const dependency of ['vite', '@vitejs/plugin-react']) {
     assert.equal(templatePackage.devDependencies[dependency], authorityAppPackage.devDependencies[dependency])
   }
-  assert.equal(authorityLock.packages['apps/template/node_modules/vite'].version, authorityAppPackage.devDependencies.vite)
+  const authorityAppViteLock = authorityLock.packages['apps/template/node_modules/vite']
+    ?? authorityLock.packages['node_modules/vite']
+  assert.equal(authorityAppViteLock.version, authorityAppPackage.devDependencies.vite)
   const pluginReactMajor = authorityLock.packages['apps/template/node_modules/@vitejs/plugin-react'].version.split('.')[0]
   assert.match(authorityAppPackage.devDependencies['@vitejs/plugin-react'], new RegExp(`^\\^${pluginReactMajor}\\.`))
 
   const lockedToolchain = [
     authorityLock.packages['node_modules/npm'],
     authorityLock.packages['node_modules/eslint'],
-    authorityLock.packages['apps/template/node_modules/vite'],
+    authorityAppViteLock,
     authorityLock.packages['apps/template/node_modules/@vitejs/plugin-react'],
   ]
   const lockedNode22Minima = lockedToolchain.flatMap(tool => (

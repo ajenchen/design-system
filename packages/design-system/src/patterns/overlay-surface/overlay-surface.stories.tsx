@@ -5,6 +5,7 @@
 // DialogHeader / SheetHeader / PopoverHeader 等 wrapper,不直接 import;
 // 本頁給 DS contributor 看「overlay 三段式結構 + padding / 分隔線契約」長什麼樣。
 import type { Meta, StoryObj } from '@storybook/react'
+import { expect, within } from '@storybook/test'
 import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -91,7 +92,11 @@ export const BodyScroll: Story = {
           <h2 className="flex-1 truncate text-body-lg font-medium text-foreground">服務條款更新</h2>
           <Button iconOnly dismiss size="sm" startIcon={X} aria-label="關閉" />
         </SurfaceHeader>
-        <SurfaceBody>
+        <SurfaceBody
+          tabIndex={0}
+          role="region"
+          aria-label="服務條款更新內容"
+        >
           <div className="flex flex-col gap-3 text-body text-foreground">
             <p>1. 資料保存期限由 30 天調整為 90 天,到期後自動匿名化。</p>
             <p>2. 新增歐盟區域資料中心選項,既有工作區可在設定頁遷移。</p>
@@ -113,4 +118,15 @@ export const BodyScroll: Story = {
       </p>
     </div>
   ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const scrollRegion = canvas.getByRole('region', {
+      name: '服務條款更新內容',
+    })
+
+    await expect(scrollRegion.scrollHeight).toBeGreaterThan(scrollRegion.clientHeight)
+    await expect(scrollRegion).toHaveAttribute('tabindex', '0')
+    scrollRegion.focus()
+    await expect(scrollRegion).toHaveFocus()
+  },
 }

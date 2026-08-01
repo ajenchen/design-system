@@ -12,6 +12,14 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
+// Fixed local date keeps rendered states deterministic across run dates and time zones.
+const STORY_TODAY = new Date(2026, 6, 15)
+const storyDate = (day: number, monthOffset = 0) =>
+  new Date(STORY_TODAY.getFullYear(), STORY_TODAY.getMonth() + monthOffset, day)
+// Preserve the end-of-month → next-month deadline scenario without wall-clock drift.
+const INLINE_TODAY = new Date(2026, 6, 31)
+const INLINE_DEADLINE = new Date(2026, 7, 5)
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const Card = ({
@@ -65,6 +73,7 @@ export const Single: Story = {
               selected={date}
               onSelect={setDate}
               defaultMonth={date}
+              today={STORY_TODAY}
               locale={zhTW}
               autoFocus
             />
@@ -85,11 +94,10 @@ export const Single: Story = {
 export const Multiple: Story = {
   name: '多日 — 活動可參加日期',
   render: () => {
-    const today = new Date()
     const [dates, setDates] = useState<Date[]>([
-      new Date(today.getFullYear(), today.getMonth(), 8),
-      new Date(today.getFullYear(), today.getMonth(), 15),
-      new Date(today.getFullYear(), today.getMonth(), 22),
+      storyDate(8),
+      storyDate(15),
+      storyDate(22),
     ])
     return (
       <div>
@@ -102,7 +110,8 @@ export const Multiple: Story = {
               mode="multiple"
               selected={dates}
               onSelect={(d) => setDates(d ?? [])}
-              defaultMonth={today}
+              defaultMonth={STORY_TODAY}
+              today={STORY_TODAY}
               locale={zhTW}
             />
             <div className="text-caption text-fg-secondary px-1">
@@ -125,10 +134,9 @@ export const Multiple: Story = {
 export const Range: Story = {
   name: '範圍 — 分析時段 / 訂單範圍',
   render: () => {
-    const today = new Date()
     const [range, setRange] = useState<DateRange | undefined>({
-      from: new Date(today.getFullYear(), today.getMonth(), 1),
-      to: new Date(today.getFullYear(), today.getMonth(), 14),
+      from: storyDate(1),
+      to: storyDate(14),
     })
     return (
       <div>
@@ -141,7 +149,8 @@ export const Range: Story = {
               mode="range"
               selected={range}
               onSelect={setRange}
-              defaultMonth={range?.from ?? today}
+              defaultMonth={range?.from ?? STORY_TODAY}
+              today={STORY_TODAY}
               locale={zhTW}
               numberOfMonths={2}
             />
@@ -162,9 +171,8 @@ export const Range: Story = {
 export const Inline: Story = {
   name: '行內 — 儀表板小卡',
   render: () => {
-    const today = new Date()
     const [deadline, setDeadline] = useState<Date | undefined>(
-      new Date(today.getFullYear(), today.getMonth() + 1, 5),
+      INLINE_DEADLINE,
     )
     return (
       <div>
@@ -183,9 +191,10 @@ export const Inline: Story = {
               mode="single"
               selected={deadline}
               onSelect={setDeadline}
-              defaultMonth={deadline ?? today}
+              defaultMonth={deadline ?? INLINE_TODAY}
+              today={INLINE_TODAY}
               locale={zhTW}
-              disabled={{ before: today }}
+              disabled={{ before: INLINE_TODAY }}
             />
           </div>
         </Card>

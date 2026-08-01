@@ -828,44 +828,22 @@ export async function verifyPrivilegedChange({
   invariant(repository === policy.repository, `privileged verification repository mismatch: ${repository}`)
   const changes = await privilegedChangeSet({ trustedRoot, candidateRoot, policy, candidatePolicy })
   if (changes.changedPaths.length === 0) return { authorized: true, changedPaths: [], authorization: null }
-  const authorizationPath = safeRelative(candidateRoot, `${policy.authorizationDirectory}/${candidateHeadSha}.json`).absolute
-  let authorization
-  try { authorization = JSON.parse(readFileSync(authorizationPath, 'utf8')) } catch (error) {
-    if (policy.bootstrap.enabled && policy.allowedKeyIds.length === 0 && bootstrapComments) {
-      return verifyBootstrapTransition({ trustedRoot, candidateRoot, repository, candidateHeadSha, pullRequest, comments: bootstrapComments, changes, policy, now })
-    }
-    throw new Error(`privileged executable closure changed without ${relative(candidateRoot, authorizationPath)}: ${changes.changedPaths.join(', ')}`, { cause: error })
-  }
-  invariant(exactKeys(authorization, AUTH_KEYS), 'privileged authorization has an invalid or open shape')
-  invariant(authorization.schemaVersion === 1 && authorization.kind === 'privileged-change-authorization', 'privileged authorization kind/version is invalid')
-  invariant(authorization.repository === repository && authorization.baseSha === baseSha && authorization.candidateHeadSha === candidateHeadSha, 'privileged authorization repository or commit binding mismatch')
-  invariant(stable(authorization.changedPaths) === stable(changes.changedPaths) && authorization.contentDigest === changes.contentDigest, 'privileged authorization does not bind the exact executable closure change')
-  invariant(authorization.issuerRegistryDigest === policy.issuerRegistryDigest && authorization.issuerRegistryDigest === issuerRegistryDigest(registry), 'privileged authorization issuer registry binding mismatch')
-  const issuedAt = new Date(authorization.issuedAt)
-  const expiresAt = new Date(authorization.expiresAt)
-  invariant(Number.isFinite(issuedAt.getTime()) && Number.isFinite(expiresAt.getTime()) && expiresAt > issuedAt, 'privileged authorization time window is invalid')
-  invariant(expiresAt.getTime() - issuedAt.getTime() <= policy.maxAuthorizationTtlMinutes * 60 * 1000, 'privileged authorization exceeds policy TTL')
-  invariant(issuedAt.getTime() <= now.getTime() + policy.clockSkewSeconds * 1000 && expiresAt > now, 'privileged authorization is not currently valid')
-  invariant(Array.isArray(authorization.coSignatures) && authorization.coSignatures.every(item => exactKeys(item, COSIGNATURE_KEYS)), 'privileged authorization cosignatures have an invalid shape')
-  const signatures = [{ signerKeyId: authorization.signerKeyId, subject: authorization.subject, signature: authorization.signature }, ...authorization.coSignatures]
-  invariant(new Set(signatures.map(item => item.signerKeyId)).size === signatures.length, 'privileged authorization signers must be distinct')
-  invariant(new Set(signatures.map(item => item.subject)).size === signatures.length, 'privileged authorization signer subjects must be distinct')
-  const trustChange = trustConfigurationChanged(trustedRoot, candidateRoot, changes)
-  const role = trustChange ? 'root-rotator' : 'privileged-change-authorizer'
-  for (const item of signatures) {
-    const issuer = resolvePolicyIssuer(policy, registry, item.signerKeyId, { role, at: issuedAt, validThrough: expiresAt })
-    resolvePolicyIssuer(policy, registry, item.signerKeyId, { role, at: now, validThrough: now })
-    invariant(issuer.subject === item.subject, 'privileged authorization signer subject does not match the issuer registry')
-    const signature = Buffer.from(item.signature, 'base64url')
-    invariant(signature.length === 64 && signature.toString('base64url') === item.signature, 'privileged authorization signature encoding is not canonical Ed25519 base64url')
-    invariant(verify(null, unsignedPayload(authorization), publicKeyFromIssuer(issuer), signature), 'privileged authorization signature is invalid')
-  }
-  invariant(signatures.length >= (trustChange ? policy.trustRootQuorum : 1), 'privileged trust-root rotation/revocation lacks the active profile signer quorum')
-  if (trustChange) {
+  // 2026-07-29 user 拍板 3B:拆除 per-PR Ed25519 授權檔要求。
+  // 原設計以 `${authorizationDirectory}/${candidateHeadSha}.json` 綁定授權,但授權檔
+  // 必須 commit 進其自身命名的 head —— commit sha 依內容而變、內容含蓋 sha 的簽章,
+  // 為密碼學不動點,任何特權 PR 皆不可滿足(2026-07-29 PR13-21 全數 REVIEW-red 實證)。
+  // 保留的防線:semantic-source closure 驗證(readTrustRootPolicy 內
+  // validateSemanticSourceClosure)、privilegedChangeSet 的 trusted+candidate 聯集
+  // 閉包計算、以及 trust-config 變更時的 registry append-only lineage 結構驗證;
+  // 外加 repo 端 protected main + required checks。簽章式授權若未來重啟,必須改綁
+  // content digest 或 parent commit 而非 head sha。
+  if (trustConfigurationChanged(trustedRoot, candidateRoot, changes)) {
     const candidate = validateCandidateTrustConfiguration(candidateRoot, { now })
-    validateIssuerRegistryLineage(registry, candidate.registry, { revocationEffectiveAt: issuedAt })
+    // 無簽章 issuedAt 可錨 → 省略 revocationEffectiveAt 的精確時刻綁定;
+    // append-only / 不可改寫 / 不可復活 / 不可刪除的結構保證全數保留。
+    validateIssuerRegistryLineage(registry, candidate.registry)
   }
-  return { authorized: true, changedPaths: changes.changedPaths, authorization }
+  return { authorized: true, changedPaths: changes.changedPaths, authorization: null }
 }
 
 function value(args, flag) {

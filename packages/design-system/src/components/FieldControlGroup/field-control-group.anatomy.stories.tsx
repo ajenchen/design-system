@@ -53,14 +53,14 @@ export const Overview: Story = {
   ),
 }
 
-/* SizeMatrix */
+/* Export id 保留 corpus 穩定；此矩陣只改 child size，FieldControlGroup 本身沒有 size API。 */
 export const SizeMatrix: Story = {
-  name: '尺寸矩陣',
+  name: '子元件尺寸對齊',
   render: () => (
     <div className="flex flex-col gap-6 w-[420px]">
       {(['sm', 'md', 'lg'] as const).map(size => (
         <div key={size}>
-          <p className="text-caption text-fg-muted mb-2">size="{size}"</p>
+          <p className="text-caption text-fg-muted mb-2">children size="{size}"（group 無 size prop）</p>
           <FieldControlGroup block>
             <Select size={size} className="!w-[120px]" options={FIELDS} value="name" onChange={() => {}} aria-label="篩選欄位" />
             <Input size={size} className="flex-1" defaultValue="無線滑鼠" aria-label="篩選值" />

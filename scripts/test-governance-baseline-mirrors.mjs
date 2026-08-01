@@ -107,6 +107,17 @@ function assertOpenCheckRejects(root, mutate, pattern, cleanup = null) {
       readFileSync(join(root, CURATED_SOURCE)),
     )
 
+    // The open transition preserves the exact Genesis compatibility tree while
+    // the provider-neutral authority remains free to accept newly approved
+    // baselines. A source addition must not mutate or block the preserved tree.
+    writeFileSync(
+      join(root, 'infra/governance/baseline/visual/curated/approved-after-genesis.png'),
+      'new approved canonical baseline\n',
+    )
+    syncBaselineMirrors({ root, transition: OPEN_TRANSITION })
+    syncBaselineMirrors({ root, transition: OPEN_TRANSITION, check: true })
+    assert.equal(existsSync(join(root, 'snapshots-baseline/approved-after-genesis.png')), false)
+
     assertOpenCheckRejects(
       root,
       () => writeFileSync(join(root, CURATED_MIRROR), 'tampered\n'),

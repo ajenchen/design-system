@@ -1,5 +1,6 @@
 // @story-trait-rationale: hasInteractiveStates 的 Disabled / States 由 anatomy.stories.tsx StateBehavior auto-compile owns(2026-05-15 F-migration);showcase 層展示真實上傳 / 自訂內容情境。
 import type { Meta } from '@storybook/react'
+import { within } from '@storybook/test'
 import { useState } from 'react'
 import { Image as ImageIcon, X } from 'lucide-react'
 import { FileUpload } from './file-upload'
@@ -113,6 +114,37 @@ export const WithFileList = {
         />
       </div>
     )
+  },
+}
+
+// beta.97 弱化 icon hover 一階的真實互動證據:
+// FileUpload 內建 files 清單自己渲染 remove Button,story 不以 className 模擬 hover。
+export const RemoveHoverState = {
+  name: '移除檔案懸停狀態',
+  tags: ['!autodocs'],
+  render: () => (
+    <div className="max-w-lg">
+      <FileUpload
+        title="上傳季度報告"
+        description="PDF,單檔最大 20 MB"
+        files={[
+          {
+            id: 'quarterly-report',
+            name: '2026-Q2-季度報告.pdf',
+            size: 2_500_000,
+            status: 'completed',
+          },
+        ]}
+        fileListMode="compact"
+        onRemove={noop}
+        onUpload={noop}
+      />
+    </div>
+  ),
+  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    const canvas = within(canvasElement)
+    const remove = await canvas.findByRole('button', { name: '移除 2026-Q2-季度報告.pdf' })
+    remove.setAttribute('data-visual-hover-target', '')
   },
 }
 

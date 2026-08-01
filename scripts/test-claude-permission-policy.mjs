@@ -15,7 +15,10 @@ import {
   materializeClaudeSandbox,
   readClaudePermissionPolicy,
 } from './lib/claude-permission-policy.mjs'
-import { validatePlanningDocumentAuthority } from './validate-planning-registry.mjs'
+import {
+  validateActivePlanningDocumentContent,
+  validatePlanningDocumentAuthority,
+} from './validate-planning-registry.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const readJson = (relativePath) => JSON.parse(readFileSync(resolve(root, relativePath), 'utf8'))
@@ -39,6 +42,37 @@ assert.throws(() => validatePlanningDocumentAuthority({
   executable: false,
   reason: 'Wait for user approval before applying the engineering migration.',
 }), /awaiting-approval is reserved for a genuine product\/UI\/UX SSOT P2H decision/)
+
+const activePlan = {
+  path: 'governance/planning/active-engineering-plan.md',
+  status: 'active',
+  executable: true,
+  reason: 'Active engineering plan.',
+}
+assert.doesNotThrow(() => validateActivePlanningDocumentContent(activePlan, `
+P2H product/UI/UX SSOT: visual baseline apply awaits a user decision on the visible result.
+Before release publish, the account-holder must complete npm login and MFA.
+After hard gates pass, the agent merges automatically and does not wait for user approval.
+Agent 自動 commit／push／更新 PR／merge，不另等 user trigger。
+Validator 機械禁止把 commit／push／PR／merge／release／rollout 綁回 user／owner approval。
+`))
+assert.doesNotThrow(() => validateActivePlanningDocumentContent({
+  ...activePlan,
+  status: 'reference',
+  executable: false,
+}, '由 owner 決定 commit/push/PR merge。'))
+for (const prohibitedEngineeringCheckpoint of [
+  '由 owner 決定 commit/push/PR merge。',
+  'Release dispatch waits for user approval.',
+  'External writes require human confirmation.',
+  'Apply and rollout need owner sign-off.',
+  '- commit/push/merge\n  - 等 user 拍板',
+]) {
+  assert.throws(
+    () => validateActivePlanningDocumentContent(activePlan, prohibitedEngineeringCheckpoint),
+    /active engineering operation must not depend on a human approval checkpoint/,
+  )
+}
 
 assert.deepEqual(base.permissions.allow, policy.dsAllow)
 assert.deepEqual(policy.permissions.delegatedAllow, ['Edit'])
@@ -68,7 +102,6 @@ for (const failClosedRule of [
   'Bash(rm *)',
   'Bash(*--dangerously-skip-permissions*)',
   'Read(./.env)',
-  'Read(~/.config/gh/**)',
   'Read(~/.npmrc)',
   'Read(~/.ssh/**)',
 ]) assert.ok(policy.permissions.deny.includes(failClosedRule), `${failClosedRule} is not fail closed`)
@@ -98,7 +131,20 @@ assert.equal(base.sandbox.enableWeakerNestedSandbox, false)
 assert.equal(base.sandbox.enableWeakerNetworkIsolation, false)
 assert.equal(base.sandbox.allowAppleEvents, false)
 assert.deepEqual(base.sandbox.excludedCommands, [])
-for (const name of ['ANTHROPIC_API_KEY', 'GH_TOKEN', 'GITHUB_TOKEN', 'NODE_AUTH_TOKEN', 'NPM_TOKEN', 'SSH_AUTH_SOCK']) {
+assert.equal(base.sandbox.network.allowLocalBinding, true, 'loopback binding must stay permitted for the browser/Storybook verification contract')
+assert.deepEqual(base.sandbox.network.allowedDomains, [], 'outbound network must stay closed')
+assert.deepEqual(
+  base.sandbox.credentials.envVars.find((entry) => entry.name === 'SSH_AUTH_SOCK'),
+  { name: 'SSH_AUTH_SOCK', mode: 'deny' },
+  'SSH_AUTH_SOCK must stay denied; agent push uses the governed HTTPS credential path instead',
+)
+for (const rule of ['Bash(git push *--force*)', 'Bash(git push -f *)', 'Bash(git reset *)', 'Bash(gh auth token*)']) {
+  assert.ok(base.permissions.deny.includes(rule), `destructive/credential rule must stay denied:${rule}`)
+}
+for (const path of ['~/.ssh/**', '~/.git-credentials']) {
+  assert.ok(base.sandbox.credentials.files.some((entry) => entry.path === path && entry.mode === 'deny'), `key material must stay denied:${path}`)
+}
+for (const name of ['ANTHROPIC_API_KEY', 'GH_TOKEN', 'GITHUB_TOKEN', 'NODE_AUTH_TOKEN', 'NPM_TOKEN']) {
   assert.deepEqual(
     base.sandbox.credentials.envVars.find(record => record.name === name),
     { name, mode: 'deny' },
@@ -111,9 +157,11 @@ const ajv = new Ajv2020({ allErrors: true, strict: true })
 const validateBase = ajv.compile(baseSchema)
 assert.equal(validateBase(base), true, ajv.errorsText(validateBase.errors))
 const misplacedBase = structuredClone(base)
-delete misplacedBase.disableAutoMode
 misplacedBase.permissions.disableAutoMode = 'disable'
-assert.equal(validateBase(misplacedBase), false, 'base schema accepted permissions.disableAutoMode instead of the official top-level key')
+assert.equal(validateBase(misplacedBase), false, 'base schema accepted the retired permissions.disableAutoMode flag')
+const residualTopLevelBase = structuredClone(base)
+residualTopLevelBase.disableAutoMode = 'disable'
+assert.equal(validateBase(residualTopLevelBase), false, 'base schema accepted the retired top-level disableAutoMode flag')
 const topLevelDefaultBase = structuredClone(base)
 delete topLevelDefaultBase.permissions.defaultMode
 topLevelDefaultBase.defaultMode = 'acceptEdits'
@@ -217,7 +265,6 @@ const managedGovernance = materializeClaudeGovernanceSettings({
 const managedPermissions = managedGovernance.permissions
 const managedSettings = {
   ...managedProfile,
-  disableAutoMode: policy.disableAutoMode,
   permissions: managedPermissions,
   sandbox: managedGovernance.sandbox,
 }
@@ -263,8 +310,9 @@ assert.deepEqual(repositoryAdapter.sandbox, policy.sandbox)
   const productAdapter = {
     permissions: productGovernance.permissions,
     sandbox: productGovernance.sandbox,
-    disableAutoMode: policy.disableAutoMode,
-    hooks: {},
+    // F6 fail-closed:canonical hook map 必須非空(空 map 視同看不懂的世代,merge 會 throw)。
+    // 本 fixture 聚焦 permission 語意,故給最小合法 canonical 註冊。
+    hooks: { SessionStart: [{ hooks: [{ type: 'command', command: 'bash "$CLAUDE_PROJECT_DIR/governance/bin/inject_fork_governance_preamble.sh"' }] }] },
   }
   const manifest = readJson('packages/design-system/ds-canonical/fork/manifest.json')
   const refreshPolicy = readJson('packages/design-system/ds-canonical/fork/launchers/settings-hooks.json')
@@ -275,7 +323,7 @@ assert.deepEqual(repositoryAdapter.sandbox, policy.sandbox)
     assert.deepEqual(settings.permissions.deny, policy.permissions.deny, `${label} did not inherit fail-closed destructive controls`)
     assert.equal(Object.hasOwn(settings, 'defaultMode'), false, `${label} emitted obsolete top-level defaultMode`)
     assert.equal(Object.hasOwn(settings.permissions, 'disableAutoMode'), false, `${label} emitted obsolete permissions.disableAutoMode`)
-    assert.equal(settings.disableAutoMode, 'disable')
+    assert.equal(Object.hasOwn(settings, 'disableAutoMode'), false, `${label} emitted the retired disableAutoMode flag`)
     assert.equal(settings.permissions.defaultMode, 'acceptEdits')
     assert.equal(settings.permissions.disableBypassPermissionsMode, 'disable')
   }
@@ -353,14 +401,14 @@ assert.deepEqual(repositoryAdapter.sandbox, policy.sandbox)
     settings: {
       consumerOwned: { retained: true },
       permissions: { stale: true },
-      disableAutoMode: 'consumer-stale',
+      futureModeFlag: 'consumer-stale',
       eventHooks: { OldEvent: [{ hooks: [{ type: 'command', command: 'old' }] }] },
     },
     canonicalConfig: {
       description: 'locked future adapter',
       baseSetting: 'canonical',
       permissions: { providerSpecific: true },
-      disableAutoMode: 'future-provider-canonical',
+      futureModeFlag: 'future-provider-canonical',
       eventHooks: { PreToolUse: [{ hooks: [{ type: 'command', command: 'new' }] }] },
     },
     policy: validatedMultiPolicy.surfaces['future-merge'],
@@ -375,7 +423,7 @@ assert.deepEqual(repositoryAdapter.sandbox, policy.sandbox)
     description: 'locked future adapter',
     baseSetting: 'canonical',
     permissions: { providerSpecific: true },
-    disableAutoMode: 'future-provider-canonical',
+    futureModeFlag: 'future-provider-canonical',
   })
   const missingFuturePolicy = structuredClone(multiPolicy)
   delete missingFuturePolicy.surfaces['future-merge']

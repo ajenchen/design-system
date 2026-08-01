@@ -15,14 +15,14 @@ benchmark:
 
 ## 定位
 
-**Drag-to-resize 視覺 + a11y 共同 primitive**——統一 column resize / sidebar drag-resize / row resize / panel resize 的命中區、cursor、視覺 line、a11y attributes。
+**Drag-to-resize 視覺共同 primitive**——統一 column resize / sidebar drag-resize / row resize / panel resize 的命中區、cursor 與視覺 line。
 
 **消費者(計畫)**:
 - DataTable column resize(目前自畫 — Phase 2 migrate)
 - Sidebar drag-resize(目前無 — Phase 3 enable)
 - AppShell Aside drag-resize(目前無 — Phase 4 enable)
 
-**不耦合 drag math** — consumer 自管 width state(TanStack `header.getResizeHandler()` / 手刻 pointer math / `useResizeObserver` 各種路徑)。本 primitive only ship 視覺 + cursor + a11y。
+**不耦合 drag math** — consumer 自管 width state(TanStack `header.getResizeHandler()` / 手刻 pointer math / `useResizeObserver` 各種路徑)。本 primitive only ship 視覺 + cursor，且固定 aria-hidden。
 
 **Layout Family**:N/A(self-contained primitive,非 row-layout family member)。
 
@@ -38,7 +38,6 @@ benchmark:
   position="end"           // | "start"
   isResizing?: boolean     // consumer 自管 drag state
   disabled?: boolean       // consumer 自決 resizable opt-in
-  aria-label="拖曳調整欄寬" // 必傳
   showLine?: boolean       // default true,false = consumer paint own line
   lineInsetStart?: string  // line start inset(eg. var(--table-cell-py))
   lineInsetEnd?: string    // line end inset
@@ -46,11 +45,11 @@ benchmark:
 />
 ```
 
-上方為自有(own)props。drag handler(`onPointerDownCapture` / `onPointerDown` / `onTouchStart` 等)**非本元件 bespoke typed prop**,而是經 `ResizeHandleProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'role'>`(resize-handle.tsx:38;`role` 被 Omit 型別鎖死不可覆寫 — a11y `role="separator"` SSOT 防漂移)的 `...restProps` spread 透傳到底層 `<span>`(與 `onClick` / `onPointerMove` 等 generic DOM 事件同 status)。consumer 接 drag math 即透過這些透傳事件,本 primitive 不耦合。
+上方為自有(own)props。drag handler(`onPointerDownCapture` / `onPointerDown` / `onTouchStart` 等)**非本元件 bespoke typed prop**,而是經 `ResizeHandleProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'role' | 'aria-label' | 'aria-orientation' | 'aria-hidden'>` 的 `...restProps` spread 透傳到底層 `<span>`(與 `onClick` / `onPointerMove` 等 generic DOM 事件同 status)。上述四個 ARIA props 由 primitive 固定為誠實的純 pointer decoration 契約，consumer 不可覆寫。consumer 接 drag math 即透過這些透傳事件,本 primitive 不耦合。
 
 **direction**:
-- `horizontal`(拖左右)→ `cursor: col-resize` + `aria-orientation="vertical"`(separator 軸垂直於 drag)
-- `vertical`(拖上下)→ `cursor: row-resize` + `aria-orientation="horizontal"`
+- `horizontal`(拖左右)→ `cursor: col-resize`
+- `vertical`(拖上下)→ `cursor: row-resize`
 
 **position**:`end` 命中區在右(horizontal)/ 底(vertical)— column right edge / sidebar right edge 典型;`start` 左 / 上 — 罕用。
 
@@ -69,9 +68,8 @@ benchmark:
 
 ## a11y
 
-- **`role="separator"`** + **`aria-orientation`** + **`aria-label`**:目前 Phase 1 暴露 `role="separator"` marker + 描述性 label 供輔助技術(AT)發現此元件。完整 WAI-ARIA *window-splitter widget* 語意(focusable / `aria-valuenow`/`min`/`max` / `aria-controls` / Arrow key 操作)deferred 至鍵盤 Phase(見下行)。本元件目前不可 focus、無 value 屬性、無鍵盤 handler,屬靜態 separator marker 形狀,尚非可操作的 separator widget。
-- 鍵盤導覽 future Phase: Arrow keys 微調 + Enter 顯式 commit(consumer Phase 2+ 補)
-- `disabled` 時不掛 role / orientation / label(語意正確 — disabled separator 不該為 a11y tree 入口)
+- 固定 `aria-hidden="true"`:目前只有 pointer hit target / visual line，沒有 focus、`aria-valuenow/min/max`、`aria-controls` 或 Arrow-key 行為，不能冒充 WAI-ARIA separator/window-splitter widget。
+- consumer 若把 resize 作為必要功能，必須另提供 keyboard-operable 等價控制；完整 splitter widget 需由新元件一次擁有 value、controls 與鍵盤 contract，不能在本 visual primitive 上零碎加 ARIA。
 
 ## 何時用 / 何時不用
 
@@ -84,10 +82,10 @@ benchmark:
 
 ## 邊界案例
 
-- **Disabled**:仍渲染 1px line(`bg-divider`,無 hover affordance),但無 cursor、無 `select-none`、不掛 role / orientation / label(見 a11y 段)。disabled 切換不改 DOM 結構,只增減 attribute。
+- **Disabled**:仍渲染 1px line(`bg-divider`,無 hover affordance),但無 cursor、無 `select-none`;所有狀態皆固定從 accessibility tree 隱藏。
 - **拖到 min / max 卡住**:primitive 不持 width state(不耦合 drag math),邊界 clamp 與卡住回饋由 consumer 的 resize handler 管;`isResizing` 期間 line 維持 `bg-primary` 不另示警。
 - **同列多 handle 並存**(多欄 column resize):各 handle 為獨立 `<span>`,無互相協調;`-3px` outward offset 使相鄰欄命中區可能相接,先命中者(DOM 順序 / pointer target)收事件,衝突仲裁屬 consumer drag math。
-- **RTL**:未特化——命中區與 line 用 physical `left/right` 定位(`resize-handle.tsx`),RTL 鏡像需另案。
+- **RTL**:全域明定 LTR-only；本元件使用 physical `left/right` 定位，不提供 RTL 鏡像。
 
 ## Roadmap(用 user 既有的 v2 framing)
 
@@ -110,11 +108,11 @@ Phase 2-4 需獨立 RFC + 各別 user approval,本 spec 只 ship Phase 1 + 鎖�
 | **VS Code** | 8px(activity bar)| bg highlight on drag | col-resize | aria-label "Resize" |
 | **Figma** | 8px | 1px line | col-resize | role separator |
 
-共識:7-8px hit zone / 1px line / cursor 對應 direction / role="separator" + aria-label。本 primitive 7px hit zone + 全對齊。
+視覺共識是 7-8px hit zone / 1px line / cursor 對應 direction；各產品 a11y contract 不一致。本 primitive 只收斂視覺，不把未實作的 splitter behavior 偽裝成 separator。
 
 ## 禁止事項
 
 - ❌ 自畫 resize handle 視覺(`<div className="cursor-col-resize">`)— 必消費本 primitive
 - ❌ 直接給 ResizeHandle 加 drag state hook(eg. `useColumnResize`)— drag math 是 consumer concern,不污染 primitive
 - ❌ Phase 2/3/4 不走 RFC + user approval 自動 migrate — Audit-vs-execute 分權違反
-- ❌ 重新發明 a11y attributes — `role="separator"` + `aria-orientation` + `aria-label` SSOT 不可漂移
+- ❌ 在本 pointer-only primitive 加 `role="separator"` / `aria-*value*`——完整 splitter 語意必須連同 keyboard/value/controls 一次實作

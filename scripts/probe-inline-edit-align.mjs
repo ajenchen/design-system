@@ -1,15 +1,19 @@
 #!/usr/bin/env node
 // probe-inline-edit-align.mjs — 量 InlineEdit view 態內容左緣 vs label 左緣(對齊 SSOT 驗證,2026-07-17)
 // 驗證 root cause 修:委派控件(tag/plain/date)+ 純值 view 左緣都應落 label 左緣(Δ≈0)。
-import { chromium } from 'playwright'
 import http from 'node:http'
 import { existsSync, readFileSync } from 'node:fs'
 import { join, extname, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
 
 const ROOT = process.cwd()
 const STATIC = join(ROOT, 'storybook-static')
 if (!existsSync(join(STATIC, 'index.json'))) { console.error('✗ storybook-static missing. build-storybook first.'); process.exit(2) }
+const runtime = resolveProvisionedPlaywrightRuntime({ repoRoot: ROOT, environment: process.env })
+if (!runtime) throw new Error('[inline-edit-align] exact Playwright Chromium runtime missing; run `npm run setup:playwright`')
+process.env.PLAYWRIGHT_BROWSERS_PATH = runtime.environmentValue
+const { chromium } = await import('playwright')
 const MIME = { '.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.svg':'image/svg+xml','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf' }
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html'

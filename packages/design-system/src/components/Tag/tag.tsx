@@ -102,10 +102,18 @@ const SOLID_DISMISS_HOVER: Record<string, { hover: string; active: string }> = {
 // 視覺對齊:`size="md"` → icon 16 / hover-bg 18,跟 Tag 既有手刻幾何完全相等。
 // Solid variant(blue/green/red 等)透過 `hoverBgClassName` 套色相 override token;
 // Subtle variant 落用 ItemInlineActionButton 預設 neutral-hover。
-// 圖標色繼承 Tag 文字色 → `text-current` 三態覆寫。
+// 圖標色依 host 分兩支(inline-action.spec.md「Icon 色彩」判斷法):
+// **colored host**(12 色相任一,或 solid neutral 的 neutral-9 深底)→ `text-current` 三態覆寫,
+//   繼承 Tag 文字色維持「一個整體視覺單元」。
+// **neutral subtle**(`bg-secondary` 中性宿主)→ **不 override**,落回 primitive 預設
+//   `fg-muted` → hover `fg-secondary`。2026-07-30 user 拍板修正 97e62a80 的過度泛化:
+//   該 commit 自陳病症「fg-muted breaks on colored Tags」只發生在有色宿主,卻 unified 全 variant,
+//   把中性宿主也拖走(且未經 user 拍板改 UI/UX SSOT)。
 
 function TagDismiss({ onRemove, label, solid, color }: { onRemove: () => void; label: string; solid?: boolean; color?: string }) {
   const solidColors = solid && color ? SOLID_DISMISS_HOVER[color] : undefined
+  // colored host 判定:有色相 → 是;solid neutral(neutral-9 深底 + text-inverse-fg)→ 也是。
+  const inheritsHostColor = solid === true || (color ?? 'neutral') !== 'neutral'
 
   return (
     <ItemInlineActionButton
@@ -119,8 +127,9 @@ function TagDismiss({ onRemove, label, solid, color }: { onRemove: () => void; l
           ? 'group-hover/action:bg-[var(--dismiss-hover)] group-active/action:bg-[var(--dismiss-active)]'
           : undefined
       }
-      // Override default fg-muted → 繼承 Tag 文字色(label 同色)
-      className="text-current hover:text-current active:text-current"
+      // colored host 才 override primitive 預設(繼承 Tag 文字色,label 同色);
+      // neutral subtle 留給 primitive 的 fg-muted → hover fg-secondary 階梯。
+      className={inheritsHostColor ? 'text-current hover:text-current active:text-current' : undefined}
     />
   )
 }
@@ -230,7 +239,7 @@ Tag.displayName = 'Tag'
 export const tagMeta = {
   component: 'Tag',
   family: 3,
-  // categorical 色相(裝飾性分類,非語意狀態)。**1:1 對 `--color-{hue}-*` primitive,零 offset**。
+  // categorical 色相(裝飾性分類,非語意狀態)。色名 1:1 對 primitive hue family,零 offset。
   // 不對應語意 token——語意狀態(error/info/success/warning)走 Notice / Alert 等狀態元件,
   // 不是 Tag 色相。2026-06-04 修:移除原「red 對應 --error / blue 對應 --info ...」誤導框架
   // (red = 品牌紅 hue-25,跟語意 --error〔= deep-orange〕無關)。
@@ -262,7 +271,7 @@ export const tagMeta = {
   states: ['default'],
   tokens: {
     // 2026-07-04 audit 註記:另有動態色相家族不逐一列 — CAT_SUBTLE 12 色相
-    // bg-[var(--color-{hue}-1)] + step-7 深字、CAT_SOLID step-6 底 + --on-emphasis(-dark) 配字、
+    // subtle background + step-7 深字、CAT_SOLID step-6 底 + --on-emphasis(-dark) 配字、
     // neutral solid bg-[var(--color-neutral-9)] — 全由 categorical-color.ts SSOT 衍生
     //(anatomy TOKEN_MAP 以 stripVar 機械衍生,零漂移)。
     bg: ['bg-neutral-active', 'bg-neutral-hover', 'bg-secondary', 'bg-transparent'],

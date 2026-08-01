@@ -111,7 +111,7 @@ col.accessor('price', {
 - **負數 / 超大數字**:`toLocaleString(locale)` 自動處理負號與千分位分組,無特殊 prop。
 - **科學記號輸入**(`1e5`):`Number(raw)` parse 為 `100000`,非 NaN 即觸發 `onChange`(`number-input.tsx:150-152`)。
 - **精度上限**:`precision` > 6 為禁止事項(浮點精度雜訊),極端精度走 `Input` + 自驗證。
-- **RTL**:未實作方向鏡像(edit 靠左 / table cell 靠右皆以 LTR 設計);RTL 屬 DS-wide 決策,未定(與 Chip / Breadcrumb 同口徑)。
+- **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。edit/table alignment 不在本檔另立支援決策。
 - **Dark mode / density**:走 Field SSOT,不獨立 own。
 
 ---

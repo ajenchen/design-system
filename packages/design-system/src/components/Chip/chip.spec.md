@@ -189,7 +189,7 @@ Chip 的 overflow 處理有三種模式：
 
 **menu 模式需要 controlled ChipGroup**：菜單 items 透過 `onValueChange` 觸發選擇變化，因此 ChipGroup 必須傳 `value` + `onValueChange`（controlled）。uncontrolled mode（`defaultValue`）的 menu 模式無法讓 menu items 與 chips 同步狀態。
 
-**RTL**：三模式皆未實作方向鏡像（scroll edge 偵測以 LTR `scrollLeft` 計算，fade mask / arrow 為實體 left/right）；RTL 屬 DS-wide 決策，未定。
+**RTL**：不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。本元件的 `scrollLeft` / fade / arrow physical-direction 限制不在此重複建立第二決策。
 
 ---
 

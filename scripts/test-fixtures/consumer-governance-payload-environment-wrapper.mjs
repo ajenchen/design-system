@@ -22,6 +22,8 @@ const transientReplayTimeout = process.argv.includes('--test-transient-replay-ti
 const persistentReplayTimeout = process.argv.includes('--test-persistent-replay-timeout')
 const liveHookSwapAfterSnapshot = process.argv.includes('--test-live-hook-swap-after-snapshot')
 const liveSourceSwapAfterCapture = process.argv.includes('--test-live-source-swap-after-capture')
+const replayChildTimeoutMs = 30000
+const transientReplayNativeTimeoutMs = 120000
 const replayTimeoutInjectionLimit = transientReplayTimeout ? 1 : persistentReplayTimeout ? 2 : 0
 let replayTimeoutInjectionCount = 0
 let liveSwapInjected = false
@@ -29,7 +31,7 @@ if (replayTimeoutInjectionLimit > 0 || liveHookSwapAfterSnapshot || liveSourceSw
   const nativeSpawnSync = childProcess.spawnSync
   childProcess.spawnSync = (command, args, options) => {
     const isReplayChild = (
-      options?.timeout === 30000
+      options?.timeout === replayChildTimeoutMs
       && options?.encoding === null
       && Array.isArray(args)
       && args.length === 1
@@ -86,7 +88,14 @@ if (replayTimeoutInjectionLimit > 0 || liveHookSwapAfterSnapshot || liveSourceSw
         stdout: Buffer.alloc(0),
       }
     }
-    return nativeSpawnSync(command, args, options)
+    // The transient fixture verifies that production requested the canonical 30s deadline above,
+    // then runs the real child with bounded host-contention headroom. It replays 1,206 children to
+    // prove one retry, so a later unrelated child must not make the retry-control-flow test flaky.
+    // Persistent timeout coverage remains two synthetic production-shaped failures.
+    const nativeOptions = transientReplayTimeout
+      ? { ...options, timeout: transientReplayNativeTimeoutMs }
+      : options
+    return nativeSpawnSync(command, args, nativeOptions)
   }
   syncBuiltinESMExports()
 }

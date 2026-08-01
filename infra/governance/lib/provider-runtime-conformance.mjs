@@ -75,6 +75,11 @@ const MODEL_DRIVERS = new Set([
   'codex-native-hook-lifecycle',
 ])
 const CHECK_CERTIFICATION_IMPACTS = new Set(['required', 'capability-only'])
+const GITHUB_HARD_GATE_REPOSITORY_ROLES = Object.freeze([
+  'authority',
+  'template-mirror',
+  'product-consumer',
+])
 export const RUNTIME_EVIDENCE_SCOPES = Object.freeze(['local-fleet', 'provider'])
 const PRODUCTION_CREDENTIAL_HANDLING = Object.freeze([
   'no-ambient-credentials-passed',
@@ -555,7 +560,7 @@ export function validateRuntimeProfile(profile, {
 } = {}) {
   invariant(Object.keys(profile || {}).sort().join(',') === '$schema,allowedKeyIds,evidenceOutput,issuerRegistryDigest,maxEvidenceAgeSeconds,maxOutputBytes,platformPolicy,providers,requiredIssuerQuorum,schemaVersion,timeoutMs', 'Runtime conformance profile has an invalid or open shape')
   invariant(profile.$schema === '../schemas/runtime-conformance-profile.schema.json', 'Runtime conformance profile schema reference is invalid')
-  invariant(profile?.schemaVersion === 4, 'Runtime conformance profile schemaVersion must be 4')
+  invariant(profile?.schemaVersion === 5, 'Runtime conformance profile schemaVersion must be 5')
   invariant(
     typeof profile.evidenceOutput === 'string' && /^runtime\/[a-z0-9][a-z0-9-]*\.json$/.test(profile.evidenceOutput),
     'Runtime conformance evidenceOutput must be one JSON file below runtime/',
@@ -602,12 +607,31 @@ export function validateRuntimeProfile(profile, {
       invariant(Array.isArray(provider.versionArguments) && provider.versionArguments.length === 0, `External runtime provider ${provider.id} cannot claim local version arguments`)
       invariant(provider.distributionVersionAuthority?.kind === 'external-runtime-identity', `External runtime provider ${provider.id} requires an honest external runtime identity authority`)
       if (provider.certificationSurface === 'github-actions') {
-        invariant(exactKeys(provider.surfacePolicy, ['kind', 'artifactName', 'requiredCheckTrustSource', 'requiredRulesetName', 'protectedRef']), `GitHub runtime provider ${provider.id} surface policy has an invalid or open shape`)
+        invariant(exactKeys(provider.surfacePolicy, ['kind', 'artifactName', 'hardGateByRepositoryRole', 'requiredRulesetName', 'protectedRef']), `GitHub runtime provider ${provider.id} surface policy has an invalid or open shape`)
         invariant(provider.surfacePolicy.kind === 'github-protected-workflow-readback'
           && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(provider.surfacePolicy.artifactName ?? '')
-          && provider.surfacePolicy.requiredCheckTrustSource === 'protected-base-workflow'
           && typeof provider.surfacePolicy.requiredRulesetName === 'string'
           && provider.surfacePolicy.protectedRef === 'default-branch', `GitHub runtime provider ${provider.id} surface policy is invalid`)
+        invariant(
+          exactKeys(provider.surfacePolicy.hardGateByRepositoryRole, GITHUB_HARD_GATE_REPOSITORY_ROLES),
+          `GitHub runtime provider ${provider.id} hard-gate role map has an invalid or open shape`,
+        )
+        for (const repositoryRole of GITHUB_HARD_GATE_REPOSITORY_ROLES) {
+          const selector = provider.surfacePolicy.hardGateByRepositoryRole[repositoryRole]
+          invariant(
+            exactKeys(selector, ['checkContext', 'oidcSubjectMode', 'trustSource'])
+              && typeof selector.checkContext === 'string'
+              && selector.checkContext.length > 0
+              && ['pull-request', 'credential-environment'].includes(selector.oidcSubjectMode)
+              && ['repository-workflow', 'protected-base-workflow'].includes(selector.trustSource),
+            `GitHub runtime provider ${provider.id} hard-gate selector for ${repositoryRole} is invalid or open`,
+          )
+          invariant(
+            (selector.oidcSubjectMode === 'pull-request' && selector.trustSource === 'repository-workflow')
+              || (selector.oidcSubjectMode === 'credential-environment' && selector.trustSource === 'protected-base-workflow'),
+            `GitHub runtime provider ${provider.id} hard-gate selector for ${repositoryRole} has an incompatible OIDC/trust-source pair`,
+          )
+        }
       } else invariant(exactKeys(provider.surfacePolicy, ['kind'])
         && provider.surfacePolicy.kind === 'inventory-repository-readback', `External runtime provider ${provider.id} surface policy is invalid`)
     }

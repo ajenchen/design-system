@@ -128,18 +128,20 @@ function resolveAsideWidth(width: AppShellAsideProps['width'], isXl: boolean): n
 
 function SkipToMain() {
   return (
-    <a
-      href="#app-shell-main"
-      className={cn(
-        'sr-only focus:not-sr-only',
-        'focus:fixed focus:top-2 focus:left-2 focus:z-50',
-        'focus:px-3 focus:py-2 focus:rounded-md',
-        'focus:bg-surface focus:text-foreground focus:shadow-[var(--elevation-200)]',
-        'focus:outline-none focus:ring-2 focus:ring-primary'
-      )}
-    >
-      Skip to main content
-    </a>
+    <nav aria-label="Skip links">
+      <a
+        href="#app-shell-main"
+        className={cn(
+          'sr-only focus:not-sr-only',
+          'focus:fixed focus:top-2 focus:left-2 focus:z-50',
+          'focus:px-3 focus:py-2 focus:rounded-md',
+          'focus:bg-surface focus:text-foreground focus:shadow-[var(--elevation-200)]',
+          'focus:outline-none focus:ring-2 focus:ring-primary'
+        )}
+      >
+        Skip to main content
+      </a>
+    </nav>
   )
 }
 

@@ -494,10 +494,41 @@ test('Codex Desktop local evidence is exact-version, exact-path, externally atte
   )
 })
 
-test('GitHub Actions evidence rejects self-consistent wrong repo, candidate workflow/event, wrong App/ruleset and mixed bundles', () => {
+test('GitHub Actions evidence selects hard gates by repository role and rejects wrong repo, workflow/event, App/ruleset and mixed bundles', () => {
   const context = signingContext()
   const tuples = externalTuples(context)
   const tuple = tuples.find(candidate => candidate.profileProvider.id === 'github-actions-hosted' && candidate.record.repositoryRole === 'authority')
+  const consumerTuple = tuples.find(candidate => candidate.profileProvider.id === 'github-actions-hosted' && candidate.record.repositoryRole === 'product-consumer')
+  const authorityPolicy = externalGitHubDesiredPolicy(FIXTURE_DESIRED, tuple.repository, tuple.profileProvider)
+  const consumerPolicy = externalGitHubDesiredPolicy(FIXTURE_DESIRED, consumerTuple.repository, consumerTuple.profileProvider)
+  assert.deepEqual(
+    {
+      checkName: authorityPolicy.checkName,
+      checkAppId: authorityPolicy.checkAppId,
+      event: authorityPolicy.event,
+      oidcSubject: authorityPolicy.oidcSubject,
+    },
+    {
+      checkName: 'Verify(tsc + tests + compile + build)',
+      checkAppId: '15368',
+      event: 'pull_request',
+      oidcSubject: `repo:${tuple.repository.github}:pull_request`,
+    },
+  )
+  assert.deepEqual(
+    {
+      checkName: consumerPolicy.checkName,
+      checkAppId: consumerPolicy.checkAppId,
+      event: consumerPolicy.event,
+      oidcSubject: consumerPolicy.oidcSubject,
+    },
+    {
+      checkName: 'Immutable consumer snapshot',
+      checkAppId: String(FIXTURE_DESIRED.integrations.governanceCheckApp.id),
+      event: 'pull_request_target',
+      oidcSubject: `repo:${consumerTuple.repository.github}:environment:governance-check-verdict`,
+    },
+  )
   const baseline = evidenceFor(tuple, 40, context)
   const certification = certificationFor(tuple, baseline, { reference: `infra/governance/evidence/external-runtime/${'d'.repeat(64)}.json`, sha256: 'd'.repeat(64) })
   const options = evidence => bindingOptions(tuple, evidence, certification, context)
@@ -512,12 +543,12 @@ test('GitHub Actions evidence rejects self-consistent wrong repo, candidate work
         value.profile.repository = 'attacker/repository'
         value.surfaceBinding.repositoryId = value.profile.repositoryId
         value.surfaceBinding.repository = value.profile.repository
-        value.surfaceBinding.oidcSubject = 'repo:attacker/repository:environment:governance-check-verdict'
+        value.surfaceBinding.oidcSubject = 'repo:attacker/repository:pull_request'
       },
     },
     { name: 'candidate workflow', pattern: /workflowPath differs from the canonical/, mutate: value => { value.surfaceBinding.workflowPath = '.github/workflows/candidate.yml' } },
-    { name: 'candidate event', pattern: /event differs from the canonical/, mutate: value => { value.surfaceBinding.event = 'pull_request' } },
-    { name: 'wrong App', pattern: /checkAppId differs from the canonical/, mutate: value => { value.surfaceBinding.checkAppId = '15368' } },
+    { name: 'candidate event', pattern: /event differs from the canonical/, mutate: value => { value.surfaceBinding.event = 'pull_request_target' } },
+    { name: 'wrong App', pattern: /checkAppId differs from the canonical/, mutate: value => { value.surfaceBinding.checkAppId = String(FIXTURE_DESIRED.integrations.governanceCheckApp.id) } },
     {
       name: 'wrong ruleset',
       pattern: /rulesetName differs from the canonical|rulesetPolicyDigest differs from the canonical/,

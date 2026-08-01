@@ -73,24 +73,24 @@ export const WithPrefixIcon: Story = {
         Figma-like permission scope picker — control + icon(24px 閾值內 inline)+ label + description。
       </p>
       <SelectionItem
-        control={<Checkbox defaultChecked />}
+        control={<Checkbox defaultChecked aria-label="讀取 email 信箱" />}
         icon={Mail}
         label="讀取 email 信箱"
         description="僅用於通知,永遠不會外流"
       />
       <SelectionItem
-        control={<Checkbox />}
+        control={<Checkbox aria-label="存取 Drive 檔案" />}
         icon={Folder}
         label="存取 Drive 檔案"
         description="讀取並修改你授權的資料夾"
       />
       <SelectionItem
-        control={<Checkbox defaultChecked />}
+        control={<Checkbox defaultChecked aria-label="推播通知權限" />}
         icon={Bell}
         label="推播通知權限"
       />
       <SelectionItem
-        control={<Checkbox />}
+        control={<Checkbox aria-label="Admin 層級操作" />}
         icon={Shield}
         label="Admin 層級操作"
         description="僅限 workspace owner 開啟"
@@ -113,19 +113,19 @@ export const WithPrefixAvatarBlock: Story = {
         role。
       </p>
       <SelectionItem
-        control={<Checkbox defaultChecked />}
+        control={<Checkbox defaultChecked aria-label="選取 Ada Chen" />}
         avatar={{ src: 'https://i.pravatar.cc/64?u=ada-chen', alt: 'Ada Chen', color: 'indigo' }}
         label="Ada Chen"
         description="Design Engineer · Frontend team"
       />
       <SelectionItem
-        control={<Checkbox />}
+        control={<Checkbox aria-label="選取張美真" />}
         avatar={{ src: 'https://i.pravatar.cc/64?u=zhang-meizhen', alt: '張美真', color: 'magenta' }}
         label="張美真"
         description="Product Designer · Platform team"
       />
       <SelectionItem
-        control={<Checkbox defaultChecked />}
+        control={<Checkbox defaultChecked aria-label="選取林伯彥" />}
         avatar={{ src: 'https://i.pravatar.cc/64?u=lin-boyan', alt: '林伯彥', color: 'green' }}
         label="林伯彥"
         description="Staff Engineer · Infra team"

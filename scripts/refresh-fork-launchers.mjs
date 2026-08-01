@@ -250,10 +250,29 @@ export function mergeProviderHookSettings({ settings, canonicalConfig, policy, l
     throw new Error(`${label} ${hooksField} must be an object`)
   }
   const retiredIds = []
+  // F6 fail-closed:canonical hook map 必須存在、非空,且每 event 都是非空合形的 group 陣列。
+  // 寬鬆 fallback(`|| {}` / `Array.isArray ? : []`)會把「看不懂的另一世代 artifact 形狀」當
+  // 「零 hooks」:下方 strip(canonicalCommands / refsLauncher)照跑、append 卻是空 → 靜默清空
+  // 治理 hooks(WM 1f71fec 同型事故)。禁止。
+  const canonicalHookMap = canonicalConfig[hooksField]
+  if (!canonicalHookMap || typeof canonicalHookMap !== 'object' || Array.isArray(canonicalHookMap) || !Object.keys(canonicalHookMap).length) {
+    throw new Error(
+      `${label}: canonical hook artifact carries no non-empty ${JSON.stringify(hooksField)} map — the installed corpus uses a schema generation this scripts/refresh-fork-launchers.mjs does not understand; `
+      + 'refusing to write (an empty merge would silently strip every governance hook). '
+      + 'Migrate the fork scaffold to the matching generation first (npm run sync-all -- --apply --to <exact-version>).'
+    )
+  }
   const canonicalCommands = new Set()
-  for (const groups of Object.values(canonicalConfig[hooksField] || {})) for (const group of Array.isArray(groups) ? groups : []) {
-    for (const handler of Array.isArray(group?.hooks) ? group.hooks : []) {
-      if (typeof handler?.command === 'string' && handler.command) canonicalCommands.add(handler.command)
+  for (const [event, groups] of Object.entries(canonicalHookMap)) {
+    if (!Array.isArray(groups) || !groups.length) throw new Error(`${label} canonical ${hooksField}.${event} must be a non-empty array`)
+    for (const group of groups) {
+      if (!group || typeof group !== 'object' || Array.isArray(group) || !Array.isArray(group.hooks) || !group.hooks.length) {
+        throw new Error(`${label} canonical ${hooksField}.${event} contains an invalid or empty hook group`)
+      }
+      for (const handler of group.hooks) {
+        if (typeof handler?.command !== 'string' || !handler.command) throw new Error(`${label} canonical ${hooksField}.${event} contains a hook without a command`)
+        canonicalCommands.add(handler.command)
+      }
     }
   }
   const retainedHooks = {}
@@ -286,8 +305,15 @@ export function mergeProviderHookSettings({ settings, canonicalConfig, policy, l
   // the authenticated canonical groups exactly once. This keeps refresh idempotent without turning
   // a provider adapter update into authority over unrelated product automation.
   merged[hooksField] = retainedHooks
-  for (const [event, groups] of Object.entries(canonicalConfig[hooksField] || {})) {
+  for (const [event, groups] of Object.entries(canonicalHookMap)) {
     merged[hooksField][event] = [...(merged[hooksField][event] || []), ...structuredClone(groups)]
+  }
+  // Never-empty postcondition(F6 迴歸絆網):merge 結果必含每個 canonical event 的註冊,
+  // 否則代表上游 shape 判定失守 → 寧可 throw 也不寫出被清空的 hook surface。
+  for (const event of Object.keys(canonicalHookMap)) {
+    if (!Array.isArray(merged[hooksField][event]) || !merged[hooksField][event].length) {
+      throw new Error(`${label}: merged ${hooksField}.${event} lost its canonical registrations — refusing to write an emptied hook surface`)
+    }
   }
   for (const [key, value] of Object.entries(canonicalConfig)) {
     if (key === hooksField || key === 'permissions' || key === 'disableAutoMode') continue
@@ -324,7 +350,8 @@ export function mergeProviderHookSettings({ settings, canonicalConfig, policy, l
     merged.permissions.deny = nextDeny
     merged.permissions.defaultMode = canonicalPermissions.defaultMode
     merged.permissions.disableBypassPermissionsMode = canonicalPermissions.disableBypassPermissionsMode
-    merged.disableAutoMode = canonicalConfig.disableAutoMode
+    if (Object.hasOwn(canonicalConfig, 'disableAutoMode')) throw new Error(`${label} canonical permission base carries the retired disableAutoMode flag`)
+    delete merged.disableAutoMode
     delete merged.permissions.disableAutoMode
     delete merged.defaultMode
   } else if (policy.baseTemplate.engine === 'static-json-object-v1') {
@@ -336,7 +363,27 @@ export function mergeProviderHookSettings({ settings, canonicalConfig, policy, l
   return { settings: merged, retiredIds: retiredIds.sort() }
 }
 
+// ── F6 fail-closed schema generation gate(WM commit 1f71fec 教訓)──
+// 舊代 refresh 對新代 settings-hooks.json 用 `canonical.hooks || {}` 寬鬆 fallback,把「看不懂的
+// 另一世代 schema」當「零 hooks」:strip 舊治理註冊照跑、append 卻是空 → 靜默清空
+// .claude/settings.json hooks = Claude 端治理整條斷線。本 gate 是唯一 generation 判定 SSOT:
+// kind + schemaVersion 必須 exact match 本腳本世代,否則丟含遷移指引的錯誤;絕不寫檔。
+export const SETTINGS_HOOKS_KIND = 'provider-hook-merge-policies'
+export const SETTINGS_HOOKS_SCHEMA_VERSION = 1
+
+export function assertSupportedSettingsHooksGeneration(value, label = 'installed launchers/settings-hooks.json') {
+  const record = value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+  if (record.kind === SETTINGS_HOOKS_KIND && record.schemaVersion === SETTINGS_HOOKS_SCHEMA_VERSION) return
+  throw new Error(
+    `${label} declares kind=${JSON.stringify(record.kind ?? null)} schemaVersion=${JSON.stringify(record.schemaVersion ?? null)}, `
+    + `but this scripts/refresh-fork-launchers.mjs generation understands exactly ${SETTINGS_HOOKS_KIND}@${SETTINGS_HOOKS_SCHEMA_VERSION}. `
+    + 'Refusing to merge provider hooks; nothing was written. Merging an ununderstood generation is exactly how an older scaffold silently emptied .claude/settings.json hooks. '
+    + 'Migrate this fork scaffold to the generation matching the installed corpus first (npm run sync-all -- --apply --to <exact-version>), then re-run.'
+  )
+}
+
 export function validateCanonicalSettingsWiring(value, manifest) {
+  assertSupportedSettingsHooksGeneration(value)
   exactKeys(value, ['_generated', 'kind', 'schemaVersion', 'sourceDigest', 'surfaces'], 'installed provider hook merge policies')
   if (
     value._generated !== 'build-fork-governance.mjs'
@@ -2050,6 +2097,15 @@ export function refreshLaunchers(projectDir, opts = {}) {
   const src = join(candidateForkRoot, 'launchers')
   assertSafeTree(projectDir, src, 'installed launcher corpus', { allowMissing: true })
   if (!existsSync(join(src, 'settings-hooks.json'))) {
+    // 只有「治理 corpus 整個不在」才是合法 skip(舊 npm / 未安裝)。corpus 在、卻沒有本世代的
+    // settings-hooks.json = 另一世代把 merge policy 搬走了 → fail-closed throw,絕不靜默 skip
+    //(F6 對偶:靜默 skip 讓 fork 永遠停在 stale 接線,治理斷線無人知)。
+    if (existsSync(join(candidateForkRoot, 'manifest.json'))) {
+      throw new Error(
+        'installed fork corpus exists but ships no launchers/settings-hooks.json — the installed release uses a scaffold generation this scripts/refresh-fork-launchers.mjs does not understand; '
+        + 'migrate the fork scaffold first (npm run sync-all -- --apply --to <exact-version>) instead of refreshing with this script generation.'
+      )
+    }
     result.skipped = 'launchers 未 ship(npm 套件版本過舊或治理本體未安裝)'
     return result
   }

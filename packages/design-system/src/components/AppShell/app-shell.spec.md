@@ -152,6 +152,8 @@ function CustomAside() {
 
 **Rule:帳號入口只能出現一次**(視覺 SSOT,同 WorkspaceBrand)。`primary-header` mode 同時放(globalHeader 右 + sidebar footer)= 視覺冗餘 + 入口混淆 → **禁止**;`primary-header` 的 sidebar **不放** user footer(與上方「globalHeader 存在 → sidebar 不重複 chrome 角色」同源邏輯)。
 
+**機械強制(2026-07-30 codify per WM F9 layer 3「無機械攔」)**:consumer 層 `packages/design-system/ds-canonical/hooks/check_consumer_code_quality.sh`(GOV-CONSUMER-QUALITY-001,fork corpus 隨附)兩段互補 — (a) 既有 primary-header 段:檔內宣告 `layout="primary-header"` + `<SidebarFooter>` → BLOCK;(b) 帳號入口 duplicate 段:mode 字面不在檔內時,SidebarHeader block 帳號選單簽名(AccountMenu / DropdownMenuTrigger+Avatar+account 語彙)與 SidebarFooter user 區同檔並存 → BLOCK(escape `@account-entry-allow: <rationale>`)。story 層 early-warn = `story-baseline-registry.json#sidebar-handbuilt-account-trigger`。跨檔組合(layout 宣告與 sidebar 分檔)機械不可及 → 歸 `/product-ui-audit` judgment。
+
 **Responsive 精修(mobile-Sheet 子句,per breakpoint;2026-06-18 修正為「鏡像自己桌面的帳號家」)**:mobile(<768px)sidebar 收成 Sheet 蓋住 globalHeader(桌面帳號入口也在 globalHeader 右)→ **帳號入口鏡像桌面位置搬進 Sheet header 右**:在 `<SidebarHeader>` 內放 `<WorkspaceBrand/>`(左)+ `flex-1` + `<AccountMenu/>`(右)= 把整條 globalHeader 原封搬進 Sheet 頂排(SidebarHeader 即 ChromeHeader 基底,與 GlobalHeader 同 primitive → 帳號 avatar 24px + 右緣距 `--layout-space-loose` 由 construction 保證,**非手刻對齊**)。**不在 Sheet 底放 `<SidebarFooter>`**(footer 是 primary-sidebar 的帳號家慣例;primary-header 任何 breakpoint 帳號家都在 header 區)。Consumer 讀 `useSidebar().isMobile` + `useAppShell().layout`(`headerHasAccount = layout === 'primary-header' && isMobile`),desktop 維持無 header/footer。對齊 Material modal navigation drawer 官方「account switcher 放 drawer header 區(與 logo 同區、pinned、最高優先),footer 區放 settings/support 次要項」(<https://m3.material.io/components/navigation-drawer>)+ Gmail / GitHub mobile 選單頂部帳號慣例。**為何不放 footer**:使用者開 Sheet 看到的頂排 = 原本被蓋住的 top bar(brand 左 / 帳號右),空間記憶不斷;把帳號丟到 footer = 誤套 primary-sidebar 慣例(那 mode 桌面帳號本就在底)。Reference:`_demo-helpers.tsx` `AcmeSidebar`。
 
 **為什麼 primary-header 帳號入口在「右上」**:GitHub / Gmail / Slack / Atlassian 的全域標頭一律把「自己的帳號」放右上(品牌在左、帳號在右,左右對稱)= global chrome 標準位置,不是 sidebar footer。
@@ -163,7 +165,7 @@ function CustomAside() {
 
 **Avatar 尺寸 + 邊距**:帳號 avatar = `<Avatar size={24}>`(density-fixed,跟左側品牌 avatar 同尺寸),走 `../../patterns/header-canonical/header-canonical.spec.md` 4.5 chrome header avatar SSOT(brand + account 皆 24px raw Avatar、非 ItemAvatar)。右側邊距 = 作為 ChromeHeader 主內容區最後一個 child 自然繼承 `--layout-space-loose`(16px@md / 24px@lg),**與左側品牌 avatar 距 leadingRail 分割線的距離對稱**(ChromeHeader px-loose canonical 結構性保證,**禁 hardcode margin**)。
 
-**Reference implementation**:`_demo-helpers.tsx` `AccountMenu`(帳號選單)+ `GlobalHeader`(右 slot 預設放 `<AccountMenu />`)。
+**Reference implementation**:`../AccountMenu/account-menu.tsx`(公開元件;2026-07-30 F9 自 `_demo-helpers.tsx` 升 public,demo `AccountMenu` 為綁示範資料的薄 wrapper 消費之)+ `_demo-helpers.tsx` `GlobalHeader`(右 slot 預設放 `<AccountMenu />`)。
 
 **真正的 distinguishing factor = Header scope(local toolbar vs global bar)**:
 - **Local toolbar 派**(當前頁 anchor / breadcrumb / page-level actions / filter / 該頁 specific 操作)→ `primary-sidebar`
@@ -280,6 +282,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 | `sidebar` | **無自帶 landmark** — `<Sidebar>` 渲染 `<div>`(三 collapsible 分支皆然,per `sidebar.spec.md`「A11y 預設」)| consumer 需自行用 `<nav aria-label="Main">` 包住 `<Sidebar>` 才有 navigation landmark;AppShell / Sidebar 皆**不**自帶 `<nav>` / `role="navigation"` |
 | `aside` | `<aside aria-label={title}>` | title required(modal mode `aria-labelledby` 強制) |
 | `children`(main) | `<main>` | `role="main"`(implicit)+ skip-to-main 跳轉 anchor |
+| skip link | `<nav aria-label="Skip links">` 包 skip-to-main `<a>`(2026-07-30 WM patch 收編:裸 `<a>` 落在所有 landmark 之外 → axe region violation)| `role="navigation"`(implicit;WebAIM skip-navigation idiom)|
 
 **W3C ARIA in HTML banner rule(精準 quote)**:`<header>` element 在 `<body>` direct context = `role="banner"` implicit;若 `<header>` 是 `<main>` / `<nav>` / `<article>` / `<section>` / `<aside>` descendant,則 **NOT** banner role(W3C HTML AAM spec)。
 
@@ -358,5 +361,6 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `account-menu.spec.md`
 - `header-canonical.spec.md`
 - `sidebar.spec.md`

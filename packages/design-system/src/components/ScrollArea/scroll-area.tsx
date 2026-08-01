@@ -43,9 +43,10 @@ const ScrollArea = React.forwardRef<
      *  場景勿開 — table wrapper 是其 min-content 溢出機制)。 */
     fillX?: boolean
     /** Viewport tabIndex(預設 0 = axe scrollable-region-focusable fix)。內容已有自帶
-     *  focusable 元素(如 TimePicker role=listbox tabIndex=0)時傳 -1 消除雙 tab stop —
-     *  axe 由內部 focusable 內容滿足,焦點直接落在有 keydown 的 listbox 上。 */
-    viewportTabIndex?: 0 | -1
+     *  focusable 元素(如 TimePicker role=listbox tabIndex=0)時傳 -1 消除雙 tab stop。
+     *  當 ScrollArea 是 ARIA composite(role=menu 等)的純結構 wrapper 時傳 null,完全省略
+     *  tabindex,避免在 composite 直屬樹插入不合法的可聚焦 generic div。 */
+    viewportTabIndex?: 0 | -1 | null
   }
 >(({ className, children, fillX, viewportTabIndex = 0, ...props }, ref) => (
   <ScrollAreaPrimitive.Root
@@ -63,7 +64,7 @@ const ScrollArea = React.forwardRef<
         才能 keyboard focus(Safari 不自動把 scroll container 標 focusable)。focus-
         visible:outline 用 DS focus ring,不破壞視覺。 */}
     <ScrollAreaPrimitive.Viewport
-      tabIndex={viewportTabIndex}
+      tabIndex={viewportTabIndex ?? undefined}
       className={cn(
         'flex-1 min-h-0 w-full rounded-[inherit] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
         fillX && '[&>div]:!block [&>div]:!w-full [&>div]:!min-w-0',

@@ -2,7 +2,10 @@
 # 浮層動畫 Token 設計提案(2026-07-11,motion workflow wgxto9cag)
 
 **觸發**:codex A.1b 抓出 7 浮層 fade/zoom/slide 動畫 class 無 CSS(外掛未裝)= 全 no-op;user 問「delay token 有沒有正確套用 + 動畫要不要重新定義變數確保一致設計語言」。
-**狀態**:待 user 拍板(§5 六項)。核准後實作。
+**狀態**:✅ COMPLETED(2026-07-11 user 已拍板並實作)。現行 authority 是
+`packages/design-system/src/tokens/motion/{motion.css,motion.spec.md,overlay-motion.ts}`：
+六個進出場 token 已落地，Tooltip / Popover / HoverCard / DropdownMenu / Dialog / Sheet /
+FileViewer 七個家族已接共用 motion SSOT。本檔保留研究與決策脈絡，§5 不再是待拍板清單。
 
 ## 現況盤查(逐檔 grep/read,非憑記憶)
 {

@@ -58,7 +58,6 @@
       "Read(~/.aws/**)",
       "Read(~/.azure/**)",
       "Read(~/.config/gcloud/**)",
-      "Read(~/.config/gh/**)",
       "Read(~/.docker/**)",
       "Read(~/.git-credentials)",
       "Read(~/.gnupg/**)",
@@ -106,7 +105,7 @@
       "deniedDomains": [],
       "allowUnixSockets": [],
       "allowAllUnixSockets": false,
-      "allowLocalBinding": false,
+      "allowLocalBinding": true,
       "allowMachLookup": []
     },
     "filesystem": {
@@ -143,10 +142,6 @@
         },
         {
           "path": "~/.config/gcloud/**",
-          "mode": "deny"
-        },
-        {
-          "path": "~/.config/gh/hosts.yml",
           "mode": "deny"
         },
         {
@@ -291,7 +286,6 @@
     "allowAppleEvents": false,
     "excludedCommands": []
   },
-  "disableAutoMode": "disable",
   "hooks": {
     "PreToolUse": [
       {

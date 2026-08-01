@@ -341,7 +341,7 @@ Button 的 height 與 `field-height` 共用同一組 token,放進 inline control
 ## 邊界案例
 
 - **空 Field(無 control children)**:code 不擋——control area 渲染成空容器。Field 是佈局容器,無 control 即無意義,屬 consumer 誤用
-- **RTL**:未實作方向鏡像(horizontal label 欄固定在左、Switch `ml-auto` 推右皆以 LTR 設計);RTL 屬 DS-wide 決策,未定(與 Chip / Breadcrumb 同口徑)
+- **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。horizontal label / suffix alignment 不在本檔另立支援決策。
 
 ---
 

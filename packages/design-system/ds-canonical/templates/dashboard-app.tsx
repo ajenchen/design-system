@@ -39,8 +39,14 @@ import {
   Avatar,
   ItemAvatar,
   Button,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuGroup,
 } from '@qijenchen/design-system'
-import { LayoutDashboard, Users, Settings, FileText, BarChart3 } from 'lucide-react'
+import { LayoutDashboard, Users, Settings, FileText, BarChart3, User, LogOut } from 'lucide-react'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -78,15 +84,32 @@ function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        {/* 對齊 DS canonical UserFooter(sidebar.stories.tsx):asChild + <div role="group"> + data-sidebar="menu-label" 必有,否則 SidebarMenuButton 把 children 全 wrap 進 ItemLabel 視覺垂直 stack */}
+        {/* 對齊 DS canonical UserFooter(sidebar.stories.tsx):footer user 行 = 帳號入口,點開帳號選單
+            (DropdownMenu;rule owner = app-shell.spec.md「帳號入口(Account entry)放置 SSOT」——
+            自己的 avatar 不掛 ProfileCard,那是看「別人」的人員卡)。asChild + <button type="button">
+            + data-sidebar="menu-label" 必有,否則 SidebarMenuButton 把 children 全 wrap 進 ItemLabel 視覺垂直 stack */}
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <div role="group" aria-label="當前使用者">
-                <ItemAvatar alt="Current user" color="blue" />
-                <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">當前使用者</span>
-              </div>
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton asChild tooltip="當前使用者">
+                  <button type="button" aria-label="帳號與設定">
+                    <ItemAvatar alt="Current user" color="blue" />
+                    <span data-sidebar="menu-label" className="min-w-0 flex-1 truncate">當前使用者</span>
+                  </button>
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" minWidth={280}>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>當前使用者</DropdownMenuLabel>
+                  <DropdownMenuItem startIcon={User}>個人資料</DropdownMenuItem>
+                  <DropdownMenuItem startIcon={Settings}>設定</DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem startIcon={LogOut}>登出</DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

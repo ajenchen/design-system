@@ -1,5 +1,6 @@
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
+import { within } from '@storybook/test'
 import { Tag } from './tag'
 
 const meta: Meta<typeof Tag> = {
@@ -53,6 +54,24 @@ export const Dismissable: Story = {
         {tags.length === 0 && <p className="text-caption text-fg-muted">全部移除了，重新整理頁面可恢復</p>}
       </div>
     )
+  },
+}
+
+// neutral subtle Tag 是 beta.97 校正的 neutral host 分支:
+// remove action 應由 fg-muted 只前進一階到 fg-secondary。
+export const DismissHoverState: Story = {
+  name: '移除標籤懸停狀態',
+  tags: ['!autodocs'],
+  render: () => (
+    <div className="flex items-center gap-2">
+      <Tag color="neutral" onRemove={() => {}}>付款待確認</Tag>
+      <span className="text-caption text-fg-secondary">發票篩選條件</span>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const dismiss = await canvas.findByRole('button', { name: '移除 付款待確認' })
+    dismiss.setAttribute('data-visual-hover-target', '')
   },
 }
 

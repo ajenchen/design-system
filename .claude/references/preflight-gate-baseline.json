@@ -1,11 +1,11 @@
 {
   "schemaVersion": 4,
   "kind": "release-preflight-gate-ratchet",
-  "revision": 3,
-  "gateCount": 48,
-  "gateDigest": "dacffa3ec7d50742848e03c21be769b3ca62c2c6e3778aae40c113161a80e12c",
-  "scaffoldSha256": "7c64fd03052d080db4a3ac17fd032d540bb0b78c0ecfcaefed07fdb5dde5e03f",
-  "behaviorDigest": "8e7374b74c1bc200192ac1eab802681fc6481ca8f344976bd419bf7b06fab57f",
+  "revision": 5,
+  "gateCount": 49,
+  "gateDigest": "bd7772bb6bf7460c8fe0107c54bff89026cc843286dfd04919ada163b9dbaca8",
+  "scaffoldSha256": "cb65b7b6133298f22319bec0798efe285cbab02502fbd62d8028c4e1a1b2a3fa",
+  "behaviorDigest": "f8a26c6f11bac8a31bd37494ccad2a8fa54ad03d27d27e5276a14b962381379e",
   "gates": [
     {
       "label": "sync version → release manifests + workspace lock entries",
@@ -188,6 +188,10 @@
       "semanticSha256": "ed22a699d74880140860e65416498d5d0ad393ba29cac71335ac5ee2448ee7ba"
     },
     {
+      "label": "header-tabsSlot W2 contract(3 overflow modes,paddingLeft = resolved loose)",
+      "semanticSha256": "21763c9ebc5cb6f40ca86cde182164e767855553209b7653d653ba53470871c9"
+    },
+    {
       "label": "FULL storybook runtime smoke — 分 8 shard 串跑(全 961 story 零抽樣;每 shard 資源歸零防拖垮)",
       "semanticSha256": "aed5b5fc7d3442420c3379bc42cd3fe4111990857c9289e78ffd4c82c90d24cd"
     },
@@ -201,12 +205,12 @@
     }
   ],
   "transition": {
-    "fromRevision": 2,
-    "fromBehaviorDigest": "0de935282c46790db59fcb87f4cd385eaa81264be3f01ef7add2cf47d8c816f8",
-    "toBehaviorDigest": "8e7374b74c1bc200192ac1eab802681fc6481ca8f344976bd419bf7b06fab57f",
-    "auditRef": "png-bounded-de-overengineering-2026-07-28",
-    "reason": "retire-16-duplicate-and-enterprise-only-preflight-gates-covered-once-by-registered-all-harness"
+    "fromRevision": 4,
+    "fromBehaviorDigest": "35fcf07e69c845cde13576166d28ea977cfbd9a2b1ac5a99f9dc5f3c8b7ba4c7",
+    "toBehaviorDigest": "f8a26c6f11bac8a31bd37494ccad2a8fa54ad03d27d27e5276a14b962381379e",
+    "auditRef": "release-preflight-executable-ctime-stability-2026-07-31",
+    "reason": "ignore-volatile-executable-ctime-while-retaining-file-identity-and-sha256"
   },
-  "updated": "2026-07-27",
+  "updated": "2026-07-31",
   "note": "Transition markers are immutable audit metadata only; they do not authenticate a reviewer or grant approval. When external trust is activated, authorization is enforced separately by the protected-base privileged-change verifier against a valid commit-bound privileged-change authorization. Every behavior change requires one header marker @preflight-transition(from-revision:<old revision> from:<old behavior digest> to:<new behavior digest> audit-ref:<change reference> reason:<why>)."
 }

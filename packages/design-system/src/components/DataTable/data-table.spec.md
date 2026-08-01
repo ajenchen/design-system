@@ -299,6 +299,18 @@ type FilterTreeNested = { mode: 'nested'; conjunction: 'and'|'or'; children: Fil
 
 `FilterGroup['children']` 只能 `FilterCondition[]` — TypeScript 編譯就拒 over-nest,不靠 runtime check。
 
+Panel 額外公開兩個正交控制:
+
+```ts
+interface DataTableFilterPanelProps<TData> {
+  maxConditions?: number
+  labels?: Partial<DataTableFilterPanelLabels>
+}
+```
+
+- **`maxConditions`**:計算 condition leaf 總數。flat = `tree.children.length`;nested = 所有 `group.children.length` 加總。未傳 = unlimited;有限值先 `floor` 並 clamp 至 ≥ 0,非有限非法值(NaN / -Infinity)fail closed 為 0。到 cap 後 initial-mount auto row、flat add、nested group 內 add、root add group、cell prefill 五條路徑全部拒絕;prefill 即使被拒仍呼叫 `onPrefillConsumed`，避免同一 request 重試迴圈。Controlled `value` 已超 cap 時**不裁資料**，只停用後續新增。
+- **`labels`**:跟 `DATA_TABLE_FILTER_PANEL_DEFAULT_LABELS` shallow + nested maps deep merge。涵蓋 panel chrome、Where/And/Or、欄位/operator/value placeholder 與 accessible name、刪除/新增/移除、multi-select 子 picker 的 trigger / empty 文案、PeoplePicker 的 trigger / search / empty 文案，以及 operator / relative-date group / option label maps。Panel dispatch 必須把這些子 picker 文案完整下傳，不能漏回 Combobox / PeoplePicker 的獨立 zh-TW defaults。Operator 未 override 的 key 回退 `OPERATOR_REGISTRY[].label`，registry 仍是預設文字 SSOT。
+
 ### 二、求值策略
 
 採 TanStack `globalFilter` + 自訂 `globalFilterFn(row, _, tree) => evaluateTree(tree, row.original)`,**棄 `columnFilters`**(N 條同 column 不能 OR)。`evaluateTree` SSOT 在 `filter-tree.ts`。**比對精度(2026-07-04 Q6 實作)**:panel 建 condition 時把 `meta.includeTime` 固化為 `condition.datePrecision`('ms' / 'day';`evaluateTree` 簽名不變)— date ops 預設 day 級(本地 `startOfDay` 截斷,AG Grid / MUI X 慣例;`is` 同步走日期比對非字串),`includeTime=true` 才 ms 全精度(避開 Airtable day-precision 漏邊界地雷)。
@@ -325,12 +337,15 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 
 - 第 1 row conjunction 是靜態 `Where` label(`px-[var(--field-px)]` 對齊下方 Field value 起點 = 12px)
 - field 未選 → operator + value picker disabled;同 group 共用 conjunction(第 2 條 row 是唯一可改的 And/Or Select,改動連動整 group;第 3 條起唯讀顯示當前 conjunction — A6 canonical)
-- **空狀態(兩態,G fix 2026-05-04 v2)**:initial mount 且 value 空 → auto-add 1 條空 condition row(field 未選 → operator / value 自動 disabled;讓 user 直接看到 row shape,不必先點 CTA;useRef gate 只 mount 一次);user 手動刪光 → 只顯 inline `+ 加篩選` CTA、不 re-add(尊重清空意圖,對齊 Notion / Airtable / Linear) <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **空狀態(兩態,G fix 2026-05-04 v2)**:initial mount 且 value 空且 `maxConditions` 尚有容量 → auto-add 1 條空 condition row(field 未選 → operator / value 自動 disabled;讓 user 直接看到 row shape,不必先點 CTA;useRef gate 只 mount 一次);`maxConditions=0` 不 auto-add。user 手動刪光 → 只顯 inline `+ 加篩選` CTA、不 re-add(尊重清空意圖,對齊 Notion / Airtable / Linear) <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 - **CTA 位置**:緊貼最後一條 row(**廢 SurfaceFooter**),條件與「加入」屬同一語境;root-level「加篩選 / 加入篩選器」用 `tertiary`(輕量但有邊界,符合 root-CTA 重量),group 內「加入巢狀篩選」才用 `text`(更輕,inline 於 group 內)
 - **Trash / 刪除**:row 是 form-control row → text Button(non Inline Action,違 item-anatomy canonical)
 - **And/Or Select** `minRows={2}`(2 選項顯式縮 menu 高度);**Where padding** `px-[var(--field-px)]` align Field
 - Header refresh icon:`value !== defaultValue` 顯;ButtonDivider 串接 close X(對齊欄位顯示 chrome canonical)
 - **Relative date 群組**:`DATE_RELATIVE_GROUPS` Past / Current / Future,走 `<Select groups>`
+- **Labels / i18n**:所有 panel-owned 可見文字與 accessible name 經 `labels`；operator 與 relative-date maps 是 nested partial override。Column header / option label 仍由 consumer 的 `ColumnDef` 提供，不由 panel 翻譯。
+- **Readable secondary copy**:`Where` / 第 3 列起 conjunction 與 field placeholder 用 `fg-secondary`，在 `surface` / nested `muted` 背景維持 WCAG AA 正文對比；不可退回只適合弱化 icon / 非正文 metadata 的 `fg-muted`。
+- **Condition cap**:任何 add CTA 到 cap 時保留於原位置但 disabled；group creation 本身帶 1 個 condition，故消耗 1 容量。刪除後立即恢復新增。
 - Trigger button checked(`aria-pressed`):`value` 有 ≥ 1 active condition → on(語意:資料被篩,獨立於 refresh)
 
 ### 五、Filterable column 判定
@@ -401,6 +416,7 @@ tableOptions={{ getSubRows, getRowCanExpand, state: { expanded }, onExpandedChan
 - Click 分權:chevron stopPropagation 不 fire select
 - Leaf placeholder:同層 sibling 有 expandable 時 leaf 也佔位
 - a11y:`aria-expanded` 套在展開 chevron `<button>`(非 row);`aria-level` 尚未實作(row depth 目前僅以 `--tree-indent-*` 縮排視覺呈現)
+- Visual interaction regression:`NestedRowsExpanderHoverState` 的 play 標記實際 chevron button；`visual-assertions.json` interaction 再由 Playwright 真 pointer hover 並 fail-closed 驗證唯一 target / trusted pointer hit，禁止只 dispatch synthetic hover event 假綠。
 - Selection cascade:default OFF;`selectionCascade` opt-in 待 v2
 
 ### Drag visual SSOT(2026-05-06 v14.5)

@@ -12,6 +12,13 @@ export {
   AccordionTrigger,
 } from './components/Accordion/index'
 export {
+  AccountMenu,
+} from './components/AccountMenu/index'
+export type {
+  AccountMenuProps,
+  AccountMenuUser,
+} from './components/AccountMenu/index'
+export {
   Alert,
   alertVariants,
 } from './components/Alert/index'
@@ -87,7 +94,6 @@ export {
 export type {
   CalendarEvent,
   CalendarProps,
-  CalendarView,
 } from './components/Calendar/index'
 export {
   Carousel,
@@ -151,6 +157,7 @@ export type {
   ComboboxProps,
 } from './components/Combobox/index'
 export {
+  DATA_TABLE_FILTER_PANEL_DEFAULT_LABELS,
   DataTable,
   DataTableColumnVisibilityPanel,
   DataTableFilterPanel,
@@ -165,6 +172,7 @@ export {
 export type {
   Conjunction,
   DataTableColumnVisibilityPanelProps,
+  DataTableFilterPanelLabels,
   DataTableFilterPanelProps,
   DataTablePaginationOptions,
   DataTableProps,

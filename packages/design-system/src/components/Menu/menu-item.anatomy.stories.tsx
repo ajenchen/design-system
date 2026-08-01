@@ -187,7 +187,7 @@ const BpZoneV = ({ h, color, label, sub }: { h: number; color: { bg: string; bor
 )
 
 const MenuContainer = ({ children, width = 320 }: { children: React.ReactNode; width?: number }) => (
-  <div className="rounded-lg bg-surface-raised border border-border overflow-hidden"
+  <div role="listbox" aria-label="MenuItem 設計預覽" className="rounded-lg bg-surface-raised border border-border overflow-hidden"
     style={{ boxShadow: 'var(--elevation-200)', width }}>
     {children}
   </div>

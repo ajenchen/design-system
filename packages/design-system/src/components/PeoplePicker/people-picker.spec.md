@@ -70,6 +70,8 @@ PeoplePicker 是**人員選擇器**——專為「從人員清單中選一個或
 
 Multi mode 公開 `multiDisplay` / `pillShowAvatar` / `pillWrap` 三個顯示 props(jsDoc SSOT 見 `people-picker.tsx` `PeoplePickerProps`;single mode 忽略):`multiDisplay='stack'`(default)= Avatar 疊合 + 圓形 `+N` overflow、不可 wrap;`'pill'` opt-in = 每人矩形 Tag pill、可 wrap(對齊 GitHub Reviewers / Combobox tag-input idiom)。`pillShowAvatar`(default `true`)控 pill 內 avatar prefix,`false` → 純文字 pill(對齊 Tag 元件 `avatar` prop SSOT);`pillWrap`(default `true`)控 pill 換行(對齊 Combobox `wrap` prop)。
 
+Multi 模式搜尋文案公開 `searchPlaceholder` / `searchAriaLabel`，分別轉送 wrapped Combobox 的可見 placeholder 與搜尋 input accessible name；`emptyText` 只負責 filtered-menu 空態，三者不互相代用。Single mode 的 inline search accessible name 沿用 PeoplePicker `aria-label` / Field label，因底層 Select 不公開獨立 `searchAriaLabel`。
+
 ---
 
 ## 搜尋
@@ -254,7 +256,7 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 - **Empty(no search results)**:`emptyText` 預設「沒有符合的人員」(本 spec L80 已 codify);無 creatable mode(人員不可建立)。
 - **Empty(no value selected)**:single mode → trigger 顯 placeholder「請選擇人員」;multi mode `value=[]` → trigger 同 placeholder(無 avatar stack 渲);詳「Trigger display SSOT canonical table」B-D 段。
 - **`people` 清單變動(async fetch 後更新)**:已選 value 顯示不依賴 `people` 查找 — display 路徑直接渲染 value 自帶資料;edit 路徑以人名回查 `people`,查不到降級為純名字 string(initials fallback),不報錯(`people-picker-helpers.ts:74-75`)。選單選項即時跟隨 props 重渲。
-- **RTL**:未實作方向鏡像(avatar stack overlap `-ml-0.5` / 12px inset 皆以 LTR physical 方向設計);RTL 屬 DS-wide 決策,未定(與 Chip / Breadcrumb 同口徑)。
+- **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。avatar overlap / inset 不在本檔另立支援決策。
 - **Dark mode / density**:Avatar 12px inset 固定不隨 density 漂移(PeoplePicker own,見「Trigger display SSOT canonical table」§E + Avatar 左 inset SSOT 段);其他走 Field + SelectMenu SSOT。
 
 ---

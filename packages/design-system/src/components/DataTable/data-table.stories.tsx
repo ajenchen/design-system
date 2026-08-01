@@ -2,12 +2,20 @@
 // same-row-mixed-allow: file 含 toolbar Button iconOnly + row ItemInlineActionButton,但兩者在不同 row(toolbar 跟 panel row 分離)
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table'
 import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, Download, Plus, ArrowUpDown } from 'lucide-react'
 import { DataTable, type DataTableSelection } from './data-table'
 import { DataTableSortManager } from './data-table-sort-manager'
 import { DataTableColumnVisibilityPanel } from './data-table-column-visibility-panel'
-import { DataTableFilterPanel, evaluateTree, createEmptyFilterTree, isFilterTreeActive, type FilterTree } from './data-table-filter-panel'
+import {
+  DataTableFilterPanel,
+  evaluateTree,
+  createEmptyFilterTree,
+  isFilterTreeActive,
+  type DataTableFilterPanelLabels,
+  type FilterTree,
+} from './data-table-filter-panel'
 import { getFilteredRowModel, type SortingState } from '@tanstack/react-table'
 import { Button } from '@/design-system/components/Button/button'
 import { Empty } from '@/design-system/components/Empty/empty'
@@ -820,25 +828,23 @@ const NESTED_DATA: TaskRow[] = [
   },
 ]
 
+const NESTED_STATUS_OPTIONS = [
+  { value: 'Not started', label: 'Not started' },
+  { value: 'In progress', label: 'In progress' },
+  { value: 'Blocked', label: 'Blocked' },
+  { value: 'Done', label: 'Done' },
+]
+const nestedTaskColumn = createColumnHelper<TaskRow>()
+const NESTED_COLUMNS = [
+  nestedTaskColumn.accessor('task', { header: '任務', meta: { type: 'string', width: 360 } }),
+  nestedTaskColumn.accessor('owner', { header: '負責人', meta: { type: 'string', width: 160 } }),
+  nestedTaskColumn.accessor('status', { header: '狀態', meta: { type: 'select', options: NESTED_STATUS_OPTIONS, width: 140 } }),
+]
+
 export const NestedRows: Story = {
   name: '巢狀列（樹狀表格）',
   render: () => {
     const [expanded, setExpanded] = React.useState<Record<string, boolean>>({ 'task-1': true, 'task-1-1': true })
-    const STATUS_OPTIONS = [
-      { value: 'Not started', label: 'Not started' },
-      { value: 'In progress', label: 'In progress' },
-      { value: 'Blocked', label: 'Blocked' },
-      { value: 'Done', label: 'Done' },
-    ]
-    const taskCol = createColumnHelper<TaskRow>()
-    const taskColumns = React.useMemo(
-      () => [
-        taskCol.accessor('task', { header: '任務', meta: { type: 'string', width: 360 } }),
-        taskCol.accessor('owner', { header: '負責人', meta: { type: 'string', width: 160 } }),
-        taskCol.accessor('status', { header: '狀態', meta: { type: 'select', options: STATUS_OPTIONS, width: 140 } }),
-      ],
-      []
-    )
     return (
       <div>
         {/* 實作:forward TanStack getSubRows;縮排共用 --tree-indent-{sm,md,lg} token(跨 TreeView
@@ -848,7 +854,7 @@ export const NestedRows: Story = {
           點三角形只切換展開,不會順帶選取整列。
         </p>
         <DataTable
-          columns={taskColumns}
+          columns={NESTED_COLUMNS}
           data={NESTED_DATA}
           height="auto"
           getRowId={(row) => row.id}
@@ -865,6 +871,42 @@ export const NestedRows: Story = {
   },
 }
 
+export const NestedRowsExpanderHoverState: Story = {
+  name: '巢狀列展開鈕：滑鼠移過狀態',
+  tags: ['!autodocs'],
+  render: () => {
+    const [expanded, setExpanded] = React.useState<Record<string, boolean>>({})
+    return (
+      <div className="max-w-3xl p-6">
+        <p className="text-caption text-fg-secondary mb-3">
+          真實滑鼠停在第一列的展開鈕，驗證弱化圖示只前進一階到次要文字色。
+        </p>
+        <DataTable
+          columns={NESTED_COLUMNS}
+          data={NESTED_DATA}
+          height="auto"
+          getRowId={(row) => row.id}
+          tableOptions={{
+            getSubRows: (row: TaskRow) => row.children,
+            getRowCanExpand: (row) => Boolean(row.original.children?.length),
+            state: { expanded },
+            onExpandedChange: setExpanded as any,
+          }}
+        />
+      </div>
+    )
+  },
+  play: ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const expander = canvas.getAllByRole('button', { name: '展開' })[0]
+    expect(expander).toHaveAttribute('aria-expanded', 'false')
+    // play 只做 deterministic target selection；真 hover 完全由 visual-audit
+    // 的 Playwright locator.hover() 擁有，避免 synthetic userEvent 假綠。
+    expander.dataset.visualHoverTarget = 'true'
+    expect(canvasElement.querySelectorAll('[data-visual-hover-target]')).toHaveLength(1)
+  },
+}
+
 /* ── 巢狀 row × 拖曳重排(tree-table drag)──
    Tree drag 設計準則(2026-05-06 v14.7,對齊 spec.md「Cross-parent drop 禁止」)
    - **Top-level rows**:有 drag handle(absolute pinned to row left edge),可拖重排
@@ -876,21 +918,6 @@ export const NestedRowsWithDrag: Story = {
   render: () => {
     const [expanded, setExpanded] = React.useState<Record<string, boolean>>({ 'task-1': true })
     const [list, setList] = React.useState<TaskRow[]>(NESTED_DATA)
-    const STATUS_OPTIONS = [
-      { value: 'Not started', label: 'Not started' },
-      { value: 'In progress', label: 'In progress' },
-      { value: 'Blocked', label: 'Blocked' },
-      { value: 'Done', label: 'Done' },
-    ]
-    const taskCol = createColumnHelper<TaskRow>()
-    const taskColumns = React.useMemo(
-      () => [
-        taskCol.accessor('task', { header: '任務', meta: { type: 'string', width: 360 } }),
-        taskCol.accessor('owner', { header: '負責人', meta: { type: 'string', width: 160 } }),
-        taskCol.accessor('status', { header: '狀態', meta: { type: 'select', options: STATUS_OPTIONS, width: 140 } }),
-      ],
-      []
-    )
     const handleReorder = (sourceId: string, targetId: string, position: 'before' | 'after') => {
       setList((prev) => {
         // top-level reorder only(sub-rows 不可拖)
@@ -913,7 +940,7 @@ export const NestedRowsWithDrag: Story = {
           顯 invalid signal。Drop indicator 水平 2px primary line — 主檔對齊 TreeView。
         </p>
         <DataTable
-          columns={taskColumns}
+          columns={NESTED_COLUMNS}
           data={list}
           height="auto"
           getRowId={(row) => row.id}
@@ -1272,6 +1299,114 @@ const FILTER_COLUMNS = [
   col.accessor('updatedAt', { header: '更新時間', meta: { type: 'date', filterable: true, includeTime: true } }),
 ] as const
 
+const FILTER_COLUMNS_ENGLISH = [
+  col.accessor('name', { header: 'Name', meta: { type: 'string', filterable: true } }),
+  col.accessor('category', { header: 'Category', meta: {
+    type: 'select',
+    filterable: true,
+    options: [
+      { value: 'Electronics', label: 'Electronics' },
+      { value: 'Furniture', label: 'Furniture' },
+    ],
+  } }),
+  col.accessor('seller', { header: 'Owner', meta: {
+    type: 'person',
+    filterable: true,
+    people: SELLERS,
+  } }),
+  col.accessor('updatedAt', { header: 'Updated at', meta: { type: 'date', filterable: true } }),
+] as const
+
+const FILTER_CHILD_PICKER_COLUMNS = [
+  col.accessor('category', { header: 'Category', meta: {
+    type: 'select',
+    filterable: true,
+    options: [],
+  } }),
+  col.accessor('seller', { header: 'Owner', meta: {
+    type: 'person',
+    filterable: true,
+    people: [],
+  } }),
+] as const
+
+const FILTER_PANEL_ENGLISH_LABELS: Partial<DataTableFilterPanelLabels> = {
+  title: 'Filters',
+  resetToDefault: 'Reset to default',
+  close: 'Close',
+  where: 'Where',
+  and: 'And',
+  or: 'Or',
+  conjunctionAriaLabel: 'Conjunction for this group',
+  fieldPlaceholder: 'Choose field',
+  fieldAriaLabel: 'Filter field',
+  operatorPlaceholder: 'Operator',
+  operatorAriaLabel: 'Filter operator',
+  valuePlaceholder: 'Enter value…',
+  numberPlaceholder: 'Enter number…',
+  relativeDatePlaceholder: 'Choose relative date',
+  singleSelectPlaceholder: 'Choose value',
+  multiSelectPlaceholder: 'Choose values…',
+  multiSelectEmptyText: 'No matching values',
+  peoplePlaceholder: 'Choose people',
+  peopleSearchPlaceholder: 'Search people…',
+  peopleSearchAriaLabel: 'Search filter people',
+  peopleEmptyText: 'No matching people',
+  filterValueAriaLabel: (columnLabel) => columnLabel ? `${columnLabel} filter value` : 'Filter value',
+  deleteCondition: 'Delete condition',
+  addFilter: 'Add filter',
+  addGroup: 'Add filter group',
+  addNestedFilter: 'Add nested filter',
+  removeEmptyGroup: 'Remove empty group',
+  operatorLabels: {
+    contains: 'contains',
+    does_not_contain: 'does not contain',
+    is: 'is',
+    is_not: 'is not',
+    starts_with: 'starts with',
+    ends_with: 'ends with',
+    equals: 'equals',
+    not_equals: 'does not equal',
+    gt: 'is greater than',
+    gte: 'is greater than or equal to',
+    lt: 'is less than',
+    lte: 'is less than or equal to',
+    is_before: 'is before',
+    is_after: 'is after',
+    is_on_or_before: 'is on or before',
+    is_on_or_after: 'is on or after',
+    is_between: 'is between',
+    is_relative: 'is relative',
+    has_any_of: 'has any of',
+    has_all_of: 'has all of',
+    has_none_of: 'has none of',
+    is_set: 'is set',
+    is_not_set: 'is not set',
+    is_true: 'is checked',
+    is_false: 'is not checked',
+  },
+  relativeDateGroupLabels: {
+    past: 'Past',
+    current: 'Current',
+    future: 'Future',
+  },
+  relativeDateOptionLabels: {
+    past_30_days: 'Past 30 days',
+    past_7_days: 'Past 7 days',
+    last_month: 'Last month',
+    last_week: 'Last week',
+    yesterday: 'Yesterday',
+    today: 'Today',
+    this_week: 'This week',
+    this_month: 'This month',
+    tomorrow: 'Tomorrow',
+    next_week: 'Next week',
+    next_month: 'Next month',
+    next_7_days: 'Next 7 days',
+    next_30_days: 'Next 30 days',
+  },
+}
+
 /* ── 進階篩選 — 空狀態 ── */
 export const FilterPanelEmpty: Story = {
   name: '進階篩選 — 空狀態',
@@ -1439,6 +1574,184 @@ export const FilterPanelLongTagOverflow: Story = {
         />
       </div>
     )
+  },
+}
+
+const FilterPanelLabelsAndLimitHarness = () => {
+  const [childPickerLabels, setChildPickerLabels] = React.useState<FilterTree>({
+    mode: 'flat',
+    conjunction: 'and',
+    children: [
+      { kind: 'cond', id: 'labels-category', field: 'category', op: 'is', value: [] },
+      { kind: 'cond', id: 'labels-owner', field: 'seller', op: 'is', value: [] },
+    ],
+  })
+  const [flat, setFlat] = React.useState<FilterTree>({
+    mode: 'flat',
+    conjunction: 'and',
+    children: [
+      { kind: 'cond', id: 'flat-1', field: 'updatedAt', op: 'is_relative', value: 'past_7_days' },
+    ],
+  })
+  const [nestedCondition, setNestedCondition] = React.useState<FilterTree>({
+    mode: 'nested',
+    conjunction: 'and',
+    children: [{
+      kind: 'group',
+      id: 'nested-condition-group',
+      conjunction: 'and',
+      children: [{ kind: 'cond', id: 'nested-condition-1', field: 'name', op: 'contains', value: 'phone' }],
+    }],
+  })
+  const [nestedGroup, setNestedGroup] = React.useState<FilterTree>({
+    mode: 'nested',
+    conjunction: 'and',
+    children: [{
+      kind: 'group',
+      id: 'nested-group-1',
+      conjunction: 'and',
+      children: [{ kind: 'cond', id: 'nested-group-cond-1', field: 'name', op: 'contains', value: 'phone' }],
+    }],
+  })
+  const [mountCapZero, setMountCapZero] = React.useState<FilterTree>(() => createEmptyFilterTree('flat'))
+  const [prefillValue, setPrefillValue] = React.useState<FilterTree>({
+    mode: 'flat',
+    conjunction: 'and',
+    children: [{ kind: 'cond', id: 'prefill-1', field: 'name', op: 'contains', value: 'phone' }],
+  })
+  const [prefilledColumnId, setPrefilledColumnId] = React.useState<string | undefined>('category')
+  const [prefillConsumed, setPrefillConsumed] = React.useState(false)
+
+  return (
+    <div className="flex flex-col gap-10">
+      <div data-testid="filter-label-child-pickers">
+        <h3 className="text-body font-medium mb-2">English child-picker labels</h3>
+        <DataTableFilterPanel
+          columns={[...FILTER_CHILD_PICKER_COLUMNS]}
+          value={childPickerLabels}
+          onChange={setChildPickerLabels}
+          maxConditions={2}
+          labels={FILTER_PANEL_ENGLISH_LABELS}
+        />
+      </div>
+
+      <div data-testid="filter-limit-flat">
+        <h3 className="text-body font-medium mb-2">English labels + flat cap</h3>
+        <DataTableFilterPanel
+          columns={[...FILTER_COLUMNS_ENGLISH]}
+          value={flat}
+          onChange={setFlat}
+          maxConditions={2}
+          labels={FILTER_PANEL_ENGLISH_LABELS}
+        />
+      </div>
+
+      <div data-testid="filter-limit-nested-condition">
+        <h3 className="text-body font-medium mb-2">Nested condition cap</h3>
+        <DataTableFilterPanel
+          columns={[...FILTER_COLUMNS_ENGLISH]}
+          value={nestedCondition}
+          onChange={setNestedCondition}
+          maxConditions={2}
+          labels={FILTER_PANEL_ENGLISH_LABELS}
+        />
+      </div>
+
+      <div data-testid="filter-limit-nested-group">
+        <h3 className="text-body font-medium mb-2">Nested group cap</h3>
+        <DataTableFilterPanel
+          columns={[...FILTER_COLUMNS_ENGLISH]}
+          value={nestedGroup}
+          onChange={setNestedGroup}
+          maxConditions={2}
+          labels={FILTER_PANEL_ENGLISH_LABELS}
+        />
+      </div>
+
+      <div data-testid="filter-limit-mount-zero">
+        <h3 className="text-body font-medium mb-2">Initial mount at zero capacity</h3>
+        <DataTableFilterPanel
+          columns={[...FILTER_COLUMNS_ENGLISH]}
+          value={mountCapZero}
+          onChange={setMountCapZero}
+          maxConditions={0}
+          labels={FILTER_PANEL_ENGLISH_LABELS}
+        />
+      </div>
+
+      <div data-testid="filter-limit-prefill">
+        <h3 className="text-body font-medium mb-2">Prefill at capacity</h3>
+        <p data-testid="prefill-consumed" className="text-caption text-fg-secondary mb-2">
+          Prefill consumed: {prefillConsumed ? 'yes' : 'no'}
+        </p>
+        <DataTableFilterPanel
+          columns={[...FILTER_COLUMNS_ENGLISH]}
+          value={prefillValue}
+          onChange={setPrefillValue}
+          prefilledColumnId={prefilledColumnId}
+          onPrefillConsumed={() => {
+            setPrefilledColumnId(undefined)
+            setPrefillConsumed(true)
+          }}
+          maxConditions={1}
+          labels={FILTER_PANEL_ENGLISH_LABELS}
+        />
+      </div>
+    </div>
+  )
+}
+
+export const FilterPanelLabelsAndLimit: Story = {
+  name: '進階篩選 — 標籤與條件上限',
+  render: () => <FilterPanelLabelsAndLimitHarness />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const page = within(canvasElement.ownerDocument.body)
+
+    const childPickers = within(canvas.getByTestId('filter-label-child-pickers'))
+    const categoryValue = childPickers.getByRole('combobox', { name: 'Category filter value' })
+    await expect(categoryValue).toHaveTextContent('Choose values…')
+    await userEvent.click(categoryValue)
+    await expect(page.getAllByText('No matching values')).toHaveLength(2)
+    await userEvent.keyboard('{Escape}')
+
+    await userEvent.click(childPickers.getByRole('combobox', { name: 'Owner filter value' }))
+    const peopleSearch = await page.findByPlaceholderText('Search people…')
+    await expect(peopleSearch).toHaveAccessibleName('Search filter people')
+    await expect(page.getAllByText('No matching people')).toHaveLength(2)
+    await userEvent.keyboard('{Escape}')
+
+    const flat = within(canvas.getByTestId('filter-limit-flat'))
+    await expect(flat.getByText('Filters')).toBeInTheDocument()
+    await expect(flat.getByText('Where')).toBeInTheDocument()
+    await expect(flat.getByText('is relative')).toBeInTheDocument()
+    await expect(flat.getByText('Past 7 days')).toBeInTheDocument()
+    await userEvent.click(flat.getByRole('button', { name: 'Add filter' }))
+    await waitFor(() => expect(flat.getAllByLabelText('Filter field')).toHaveLength(2))
+    await expect(flat.getByRole('button', { name: 'Add filter' })).toBeDisabled()
+
+    const nestedCondition = within(canvas.getByTestId('filter-limit-nested-condition'))
+    await userEvent.click(nestedCondition.getByRole('button', { name: 'Add nested filter' }))
+    await waitFor(() => expect(nestedCondition.getAllByLabelText('Filter field')).toHaveLength(2))
+    await expect(nestedCondition.getByRole('button', { name: 'Add nested filter' })).toBeDisabled()
+    await expect(nestedCondition.getByRole('button', { name: 'Add filter group' })).toBeDisabled()
+
+    const nestedGroup = within(canvas.getByTestId('filter-limit-nested-group'))
+    await userEvent.click(nestedGroup.getByRole('button', { name: 'Add filter group' }))
+    await waitFor(() => expect(nestedGroup.getAllByLabelText('Filter field')).toHaveLength(2))
+    for (const button of nestedGroup.getAllByRole('button', { name: 'Add nested filter' })) {
+      await expect(button).toBeDisabled()
+    }
+    await expect(nestedGroup.getByRole('button', { name: 'Add filter group' })).toBeDisabled()
+
+    const mountCapZero = within(canvas.getByTestId('filter-limit-mount-zero'))
+    await expect(mountCapZero.queryAllByLabelText('Filter field')).toHaveLength(0)
+    await expect(mountCapZero.getByRole('button', { name: 'Add filter' })).toBeDisabled()
+
+    const prefill = within(canvas.getByTestId('filter-limit-prefill'))
+    await waitFor(() => expect(prefill.getByTestId('prefill-consumed')).toHaveTextContent('yes'))
+    await expect(prefill.getAllByLabelText('Filter field')).toHaveLength(1)
+    await expect(prefill.getByRole('button', { name: 'Add filter' })).toBeDisabled()
   },
 }
 
