@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import {
   chmodSync,
-  lstatSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -21,7 +21,6 @@ import Ajv2020 from 'ajv/dist/2020.js'
 import {
   assertAllControlPlaneGenesisPreservations,
   assertControlPlaneGenesisBaseBinding,
-  assertControlPlaneGenesisTombstones,
   assertControlPlaneGenesisTransitionClosed,
   CONTROL_PLANE_GENESIS_BASE_COMMIT,
   CONTROL_PLANE_GENESIS_BASE_TREE,
@@ -78,12 +77,6 @@ function materializePreservations(root, materializations) {
   }
 }
 
-function materializeTombstones(root) {
-  for (const item of CONTROL_PLANE_GENESIS_TOMBSTONES) {
-    writeRegular(join(root, item.path), readFileSync(join(ROOT, item.path)), item.mode)
-  }
-}
-
 function closedMaterializationRoot() {
   const root = mkdtempSync(join(tmpdir(), 'control-plane-genesis-closed-'))
   mkdirSync(join(root, 'infra/governance/baseline/visual/targeted'), { recursive: true })
@@ -102,6 +95,10 @@ function closedMaterializationRoot() {
 
 const graph = JSON.parse(readFileSync(GRAPH_PATH, 'utf8'))
 const transition = loadControlPlaneGenesisTransition({ root: ROOT })
+const openTransition = mutated(transition, value => {
+  value.state = CONTROL_PLANE_GENESIS_OPEN_STATE
+  value.releaseAllowed = false
+})
 
 test('graph schema carries one closed Genesis transition contract', () => {
   const schema = JSON.parse(readFileSync(SCHEMA_PATH, 'utf8'))
@@ -109,8 +106,8 @@ test('graph schema carries one closed Genesis transition contract', () => {
   const validate = ajv.compile(schema)
   assert.equal(validate(graph), true, ajv.errorsText(validate.errors))
   assert.equal(graph.controlPlaneGenesisTransition.contentDigest, controlPlaneGenesisTransitionDigest(transition))
-  assert.equal(transition.state, CONTROL_PLANE_GENESIS_OPEN_STATE)
-  assert.equal(transition.releaseAllowed, false)
+  assert.equal(transition.state, CONTROL_PLANE_GENESIS_CLOSED_STATE)
+  assert.equal(transition.releaseAllowed, true)
   assert.equal(transition.baseCommit, CONTROL_PLANE_GENESIS_BASE_COMMIT)
   assert.equal(transition.baseTree, CONTROL_PLANE_GENESIS_BASE_TREE)
   assert.equal(transition.preservations.length, 5)
@@ -123,14 +120,11 @@ test('graph schema carries one closed Genesis transition contract', () => {
   openShape.controlPlaneGenesisTransition.unreviewed = true
   assert.equal(validate(openShape), false, 'schema accepted an open transition shape')
   const mismatchedState = structuredClone(graph)
-  mismatchedState.controlPlaneGenesisTransition.state = 'closed'
+  mismatchedState.controlPlaneGenesisTransition.releaseAllowed = false
   assert.equal(validate(mismatchedState), false, 'schema accepted closed state with releaseAllowed=false')
-  const closedGraph = structuredClone(graph)
-  closedGraph.controlPlaneGenesisTransition = mutated(transition, value => {
-    value.state = 'closed'
-    value.releaseAllowed = true
-  })
-  assert.equal(validate(closedGraph), true, ajv.errorsText(validate.errors))
+  const historicalOpenGraph = structuredClone(graph)
+  historicalOpenGraph.controlPlaneGenesisTransition = openTransition
+  assert.equal(validate(historicalOpenGraph), true, ajv.errorsText(validate.errors))
 })
 
 test('carrier is content-addressed, ordered, non-overlapping, and exact-scope', () => {
@@ -183,8 +177,8 @@ test('exact Genesis base Git objects bind every preservation and expose determin
   assert.equal(binding.baseTree, CONTROL_PLANE_GENESIS_BASE_TREE)
   assert.deepEqual(binding.preservations, transition.preservations)
 
-  const first = readAllControlPlaneGenesisBasePreservations({ root: ROOT, transition })
-  const second = readAllControlPlaneGenesisBasePreservations({ root: ROOT, transition })
+  const first = readAllControlPlaneGenesisBasePreservations({ root: ROOT, transition: openTransition })
+  const second = readAllControlPlaneGenesisBasePreservations({ root: ROOT, transition: openTransition })
   assert.deepEqual(first, second, 'base-object materialization changed between identical reads')
   assert.equal(first.length, 5)
   assert.equal(first.find(item => item.path === '.claude/snapshots-baseline').leaves.length, 97)
@@ -197,7 +191,7 @@ test('exact Genesis base Git objects bind every preservation and expose determin
   assert.equal(
     readControlPlaneGenesisBasePreservation({
       root: ROOT,
-      transition,
+      transition: openTransition,
       path: 'packages/design-system/scripts',
     }).target,
     '../../scripts',
@@ -234,35 +228,26 @@ test('exact Genesis base Git objects bind every preservation and expose determin
   )
 })
 
-test('materialized preservation and tombstone bytes fail closed on drift', t => {
-  const source = readAllControlPlaneGenesisBasePreservations({ root: ROOT, transition })
+test('historical open-state preservation bytes fail closed on drift', t => {
+  const source = readAllControlPlaneGenesisBasePreservations({ root: ROOT, transition: openTransition })
   const materialized = mkdtempSync(join(tmpdir(), 'control-plane-genesis-open-'))
   t.after(() => rmSync(materialized, { recursive: true, force: true }))
   materializePreservations(materialized, source)
-  materializeTombstones(materialized)
   assert.deepEqual(
     assertAllControlPlaneGenesisPreservations({
       root: ROOT,
       materializationRoot: materialized,
-      transition,
+      transition: openTransition,
     }),
-    transition.preservations,
+    openTransition.preservations,
   )
-  assert.deepEqual(
-    assertControlPlaneGenesisTombstones({
-      root: materialized,
-      transition,
-    }),
-    transition.tombstones,
-  )
-
   const preamble = join(materialized, 'packages/design-system/ds-canonical/fork/preamble.md')
   writeFileSync(preamble, Buffer.concat([readFileSync(preamble), Buffer.from('\n')]))
   assert.throws(
     () => assertAllControlPlaneGenesisPreservations({
       root: ROOT,
       materializationRoot: materialized,
-      transition,
+      transition: openTransition,
     }),
     /preserved file digest drift/,
   )
@@ -273,7 +258,7 @@ test('materialized preservation and tombstone bytes fail closed on drift', t => 
     () => assertAllControlPlaneGenesisPreservations({
       root: ROOT,
       materializationRoot: materialized,
-      transition,
+      transition: openTransition,
     }),
     /preserved file mode drift/,
   )
@@ -286,7 +271,7 @@ test('materialized preservation and tombstone bytes fail closed on drift', t => 
     () => assertAllControlPlaneGenesisPreservations({
       root: ROOT,
       materializationRoot: materialized,
-      transition,
+      transition: openTransition,
     }),
     /preserved tree digest drift/,
   )
@@ -299,52 +284,20 @@ test('materialized preservation and tombstone bytes fail closed on drift', t => 
     () => assertAllControlPlaneGenesisPreservations({
       root: ROOT,
       materializationRoot: materialized,
-      transition,
+      transition: openTransition,
     }),
     /preserved symlink target drift/,
   )
   unlinkSync(alias)
   symlinkSync('../../scripts', alias)
-
-  const workflow = join(materialized, '.github/workflows/ssot-sync-dispatch.yml')
-  writeFileSync(workflow, Buffer.concat([readFileSync(workflow), Buffer.from('\n')]))
-  assert.throws(
-    () => assertControlPlaneGenesisTombstones({
-      root: materialized,
-      transition,
-    }),
-    /tombstone digest drift/,
-  )
-  const workflowSource = transition.tombstones.find(item => item.path.endsWith('/ssot-sync-dispatch.yml'))
-  writeRegular(workflow, readFileSync(join(ROOT, workflowSource.path)), workflowSource.mode)
-  chmodSync(workflow, 0o755)
-  assert.throws(
-    () => assertControlPlaneGenesisTombstones({
-      root: materialized,
-      transition,
-    }),
-    /tombstone mode drift/,
-  )
-  writeRegular(workflow, readFileSync(join(ROOT, workflowSource.path)), workflowSource.mode)
-  unlinkSync(workflow)
-  assert.throws(
-    () => assertControlPlaneGenesisTombstones({
-      root: materialized,
-      transition,
-    }),
-    /tombstone is missing/,
-  )
 })
 
 test('open and closed states have disjoint fail-closed completion semantics', t => {
   assert.throws(
-    () => assertControlPlaneGenesisTransitionClosed({ root: ROOT, transition }),
+    () => assertControlPlaneGenesisTransitionClosed({ root: ROOT, transition: openTransition }),
     /candidate freeze\/release is forbidden/,
   )
-  const closed = mutated(transition, value => {
-    value.state = CONTROL_PLANE_GENESIS_CLOSED_STATE
-    value.releaseAllowed = true
-  })
+  const closed = structuredClone(transition)
   assert.deepEqual(validateControlPlaneGenesisTransition(closed), closed)
   assert.throws(
     () => readAllControlPlaneGenesisBasePreservations({ root: ROOT, transition: closed }),
@@ -400,18 +353,19 @@ test('open and closed states have disjoint fail-closed completion semantics', t 
   )
 })
 
-test('canonical repository currently matches the open preservation and tombstone closure', () => {
-  assert.deepEqual(
-    assertAllControlPlaneGenesisPreservations({ root: ROOT, transition }),
-    transition.preservations,
-  )
-  assert.deepEqual(
-    assertControlPlaneGenesisTombstones({ root: ROOT, transition }),
-    transition.tombstones,
-  )
+test('canonical repository carries the closed transition without legacy paths', () => {
+  assert.deepEqual(validateControlPlaneGenesisTransition(transition), transition)
+  assert.equal(transition.state, CONTROL_PLANE_GENESIS_CLOSED_STATE)
+  assert.equal(transition.releaseAllowed, true)
   for (const tombstone of transition.tombstones) {
     assert.equal(transitionTombstone(transition, tombstone.path).sha256, tombstone.sha256)
-    const info = lstatSync(join(ROOT, tombstone.path))
-    assert.equal(info.isFile() && !info.isSymbolicLink(), true)
+    assert.equal(existsSync(join(ROOT, tombstone.path)), false, `closed tombstone remains:${tombstone.path}`)
+  }
+  for (const path of [
+    'packages/design-system/ds-canonical/fork/preamble.md',
+    'packages/design-system/scripts',
+    'template/ds-product-template/.claude/hooks',
+  ]) {
+    assert.equal(existsSync(join(ROOT, path)), false, `closed preservation remains:${path}`)
   }
 })

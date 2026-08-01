@@ -140,6 +140,7 @@
                 "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
                 "driver": {
                   "enum": [
+                    "claude-authority-routing",
                     "claude-context-fork",
                     "claude-entitlement-readback",
                     "claude-native-block",
@@ -162,7 +163,20 @@
                 "requiresModel": {"type": "boolean"},
                 "certificationImpact": {"enum": ["required", "capability-only"]},
                 "reviewProfileId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}
-              }
+              },
+              "allOf": [
+                {
+                  "if": {"properties": {"driver": {"const": "claude-authority-routing"}}},
+                  "then": {
+                    "required": ["certificationImpact"],
+                    "properties": {
+                      "id": {"const": "decision-authority-routing"},
+                      "requiresModel": {"const": true},
+                      "certificationImpact": {"const": "required"}
+                    }
+                  }
+                }
+              ]
             }
           }
         },

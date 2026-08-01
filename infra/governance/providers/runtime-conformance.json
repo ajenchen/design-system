@@ -45,6 +45,12 @@
           "certificationImpact": "capability-only"
         },
         {
+          "id": "decision-authority-routing",
+          "driver": "claude-authority-routing",
+          "requiresModel": true,
+          "certificationImpact": "required"
+        },
+        {
           "id": "review-capability-claude-max-code-fable-5",
           "driver": "claude-review-capability-probe",
           "requiresModel": true,

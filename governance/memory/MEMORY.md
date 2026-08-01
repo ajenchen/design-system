@@ -8,7 +8,7 @@
 - [project_wm_ds_alignment_campaign.md](project_wm_ds_alignment_campaign.md) — WM↔DS 對齊戰役完整收官:beta.84/85 已發版、WM lockfile 真綠 13/13、CellSelect 包裝落地;WM main 已 push(4e83402,CAMPAIGN CLOSED);handoff 在 WM docs
 - [project_governance_evolution_roadmap.md](project_governance_evolution_roadmap.md) — 稽核=永久機構、謂詞化=機械化引擎雙柱;方向 1-3 已落地(判準化 harvest / fail-closed / 造輪三洞),4-7 分期各有 trigger;SSOT → governance/planning/2026-07-07-governance-evolution-roadmap.md
 
-- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + SHIPPED(07-29);**接手前必讀的跨 session 續作總帳** → governance/planning/2026-07-31-outstanding-work-inventory.md ,內含 3 個 P0 blocker 與 user 07-31 已拍板事項,勿重跑全域盤點;仍 blocked:activation ledger 21 項、Genesis transition open、雙 provider certification、fleet soak
+- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + SHIPPED(07-29);**接手前必讀的跨 session 續作總帳** → governance/planning/2026-07-31-outstanding-work-inventory.md ,內含 3 個 P0 blocker 與 user 07-31 已拍板事項,勿重跑全域盤點;distinct protected Genesis closure candidate 已收斂,仍待 merge/readback 且 blocked:activation ledger 21 項、雙 provider certification、fleet soak
 
 ## Feedback (workflow / collaboration discipline)
 - [feedback_audit_discipline_full_sweep_deterministic_preflight.md](feedback_audit_discipline_full_sweep_deterministic_preflight.md) — 稽核三 invariant:NO-SAMPLE 全盤 / 必 chain deterministic script / Preflight scan(合 3 file)

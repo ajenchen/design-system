@@ -30,7 +30,7 @@
         "**/test_*.sh",
         "**/test_*.sh.broken"
       ],
-      "treeSha256": "3b9f359737c7b60b066c9b9b9b4e5a9a344381f63d42cdb0fc6316d7f91ac9c1"
+      "treeSha256": "13e16859fa8bd2c8d3e6123ec817e325550237231d79a8a799c7ab1909550462"
     }
   ],
   "canonicalHookStaticHelpers": {
@@ -210,7 +210,6 @@
         "packages/design-system/ds-canonical/hooks/tests/test_check_person_data_richness.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_pixel_quantified_audit.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_plugin_fork_health.sh",
-        "packages/design-system/ds-canonical/hooks/tests/test_check_post_main_ssot_propagate.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_propose_cite_required.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_propose_discipline.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_check_propose_plain_chinese.sh",

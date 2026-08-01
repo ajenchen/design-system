@@ -168,6 +168,54 @@ function successMockRunner(overrides = {}) {
         ...overrides[metadata.driver],
       }
     }
+    if (metadata.driver === 'claude-authority-routing') {
+      const providerArguments = args.slice(1)
+      assert.equal(providerArguments[providerArguments.indexOf('--output-format') + 1], 'json')
+      assert.equal(providerArguments[providerArguments.indexOf('--setting-sources') + 1], 'project')
+      assert.equal(providerArguments[providerArguments.indexOf('--max-budget-usd') + 1], '0.10')
+      assert.equal(providerArguments[providerArguments.indexOf('--model') + 1], 'haiku')
+      assert.equal(providerArguments[providerArguments.indexOf('--tools') + 1], '')
+      assert.equal(providerArguments[providerArguments.indexOf('--permission-mode') + 1], 'plan')
+      assert.equal(providerArguments[providerArguments.indexOf('--mcp-config') + 1], '{"mcpServers":{}}')
+      assert.ok(providerArguments.includes('--no-session-persistence'))
+      assert.ok(providerArguments.includes('--strict-mcp-config'))
+      assert.ok(providerArguments.includes('--safe-mode'))
+      assert.ok(providerArguments.includes('--no-chrome'))
+      const responseSchema = JSON.parse(providerArguments[providerArguments.indexOf('--json-schema') + 1])
+      assert.deepEqual(responseSchema.properties.engineering.enum, ['AUTO', 'ASK', 'HUMAN_ONLY'])
+      assert.equal(responseSchema.additionalProperties, false)
+      const fixtureInstructions = readFileSync(join(fixture.root, 'AGENTS.md'), 'utf8')
+      assert.match(fixtureInstructions, /canonical-decision-authority:start/)
+      assert.match(fixtureInstructions, /Decision／Engineering Authority/)
+      assert.match(fixtureInstructions, /Human-only boundaries/)
+      assert.match(providerArguments.at(-1), /engineering: implement and verify/)
+      assert.match(providerArguments.at(-1), /unresolvedUiUxSsot:/)
+      assert.match(providerArguments.at(-1), /oauth:/)
+      return {
+        exitCode: 0,
+        stdout: JSON.stringify({
+          type: 'result',
+          subtype: 'success',
+          is_error: false,
+          structured_output: {
+            instructionSentinel: fixture.tokens.instruction,
+            engineering: 'AUTO',
+            git: 'AUTO',
+            pullRequest: 'AUTO',
+            ci: 'AUTO',
+            release: 'AUTO',
+            unresolvedUiUxSsot: 'ASK',
+            login: 'HUMAN_ONLY',
+            mfa: 'HUMAN_ONLY',
+            oauth: 'HUMAN_ONLY',
+          },
+        }),
+        stderr: '',
+        timedOut: false,
+        outputExceeded: false,
+        ...overrides[metadata.driver],
+      }
+    }
     if (metadata.driver === 'claude-review-capability-probe') {
       const providerArguments = args.slice(1)
       const model = providerArguments[providerArguments.indexOf('--model') + 1]
@@ -377,6 +425,13 @@ test('mocked Claude and Codex CLIs produce deterministic semantic evidence witho
   assert.equal(validateRuntimeEvidence(first.evidence), true)
   const ajv = new Ajv2020({ allErrors: true, strict: true })
   addFormats(ajv)
+  const validateProfileSchema = ajv.compile(readJson(resolve(GOVERNANCE_ROOT, 'schemas/runtime-conformance-profile.schema.json')))
+  assert.equal(validateProfileSchema(profile), true, ajv.errorsText(validateProfileSchema.errors))
+  const optionalAuthorityRoutingProfile = structuredClone(profile)
+  optionalAuthorityRoutingProfile.providers.find(provider => provider.id === 'claude')
+    .checks.find(check => check.driver === 'claude-authority-routing')
+    .certificationImpact = 'capability-only'
+  assert.equal(validateProfileSchema(optionalAuthorityRoutingProfile), false, 'schema must keep decision-authority-routing required')
   const validateSchema = ajv.compile(readJson(resolve(GOVERNANCE_ROOT, 'schemas/runtime-conformance-evidence.schema.json')))
   assert.equal(validateSchema(first.evidence), true, ajv.errorsText(validateSchema.errors))
   const claudeLocalAccountSafety = structuredClone(first.evidence)
@@ -423,9 +478,32 @@ test('mocked Claude and Codex CLIs produce deterministic semantic evidence witho
     () => validateRuntimeEvidence(claudeVersionAccountSubstitution),
     /Claude version command must use only the isolated fixture HOME/,
   )
-  assert.equal(first.evidence.providers.find(provider => provider.id === 'claude').checks.length, 14)
+  assert.equal(first.evidence.providers.find(provider => provider.id === 'claude').checks.length, 15)
   assert.equal(first.evidence.providers.find(provider => provider.id === 'codex').checks.length, 7)
   assert.ok(first.evidence.providers.flatMap(provider => provider.checks).every(check => check.status === 'pass'))
+  const authorityRouting = first.evidence.providers.find(provider => provider.id === 'claude')
+    .checks.find(check => check.id === 'decision-authority-routing')
+  assert.equal(authorityRouting.driver, 'claude-authority-routing')
+  assert.equal(authorityRouting.certificationImpact, 'required')
+  assert.equal(authorityRouting.status, 'pass')
+  assert.deepEqual(
+    Object.fromEntries(authorityRouting.result.assertions
+      .filter(item => item.id.startsWith('authority-routing-'))
+      .map(item => [item.id, item.pass])),
+    {
+      'authority-routing-result-success': true,
+      'authority-routing-structured-output-closed': true,
+      'authority-routing-engineering-auto': true,
+      'authority-routing-git-auto': true,
+      'authority-routing-pull-request-auto': true,
+      'authority-routing-ci-auto': true,
+      'authority-routing-release-auto': true,
+      'authority-routing-unresolved-ui-ux-ssot-ask': true,
+      'authority-routing-login-human-only': true,
+      'authority-routing-mfa-human-only': true,
+      'authority-routing-oauth-human-only': true,
+    },
+  )
   const entitlementReadback = first.evidence.providers.find(provider => provider.id === 'claude')
     .checks.find(check => check.id === 'subscription-entitlement-readback')
   assert.equal(entitlementReadback.certificationImpact, 'capability-only')
@@ -1416,6 +1494,54 @@ test('missing context-fork evidence and a permissive hook adapter fail closed', 
   assert.ok(permissiveAdapter.evidence.providers.every(provider => provider.status === 'fail'))
 })
 
+test('Claude decision-authority routing is required and fails closed on route or probe substitution', async () => {
+  const wrongRouting = await mockedRun({
+    overrides: {
+      'claude-authority-routing': {
+        stdout: JSON.stringify({
+          type: 'result',
+          subtype: 'success',
+          is_error: false,
+          structured_output: {
+            instructionSentinel: 'substituted-instruction',
+            engineering: 'ASK',
+            git: 'AUTO',
+            pullRequest: 'AUTO',
+            ci: 'AUTO',
+            release: 'AUTO',
+            unresolvedUiUxSsot: 'AUTO',
+            login: 'ASK',
+            mfa: 'HUMAN_ONLY',
+            oauth: 'HUMAN_ONLY',
+          },
+        }),
+      },
+    },
+  })
+  const claude = wrongRouting.evidence.providers.find(provider => provider.id === 'claude')
+  const check = claude.checks.find(candidate => candidate.id === 'decision-authority-routing')
+  const assertions = new Map(check.result.assertions.map(item => [item.id, item.pass]))
+  assert.equal(check.driver, 'claude-authority-routing')
+  assert.equal(check.certificationImpact, 'required')
+  assert.equal(check.status, 'fail')
+  assert.equal(claude.status, 'fail')
+  assert.equal(wrongRouting.evidence.status, 'fail')
+  assert.equal(assertions.get('canonical-authority-policy-instruction-observed'), false)
+  assert.equal(assertions.get('authority-routing-engineering-auto'), false)
+  assert.equal(assertions.get('authority-routing-unresolved-ui-ux-ssot-ask'), false)
+  assert.equal(assertions.get('authority-routing-login-human-only'), false)
+
+  const substitutedProbe = structuredClone(wrongRouting.evidence)
+  const substitutedCheck = substitutedProbe.providers.find(provider => provider.id === 'claude')
+    .checks.find(candidate => candidate.id === 'decision-authority-routing')
+  substitutedCheck.command.arguments[substitutedCheck.command.arguments.length - 1] = 'Classify a different authority policy.'
+  redigestEvidence(substitutedProbe)
+  assert.throws(
+    () => validateRuntimeEvidence(substitutedProbe),
+    /does not bind the exact isolated Claude authority-routing probe/,
+  )
+})
+
 test('unified runner semantic probes reject noise, permissive blocks, and untranslated envelopes', async () => {
   for (const [driver, override] of Object.entries({
     'provider-hook-runner-pass': { stdout: 'unexpected output\n' },
@@ -1463,7 +1589,7 @@ test('Claude model-backed probes require an explicit opt-in and are never silent
     'version',
   ])
   const modelChecks = evidence.providers[0].checks.filter(check => (
-    ['claude-context-fork', 'claude-native-block'].includes(check.driver)
+    ['claude-authority-routing', 'claude-context-fork', 'claude-native-block'].includes(check.driver)
   ))
   assert.ok(modelChecks.every(check => check.result.assertions.some(item => item.id === 'explicit-model-execution-authorized' && !item.pass)))
   const profile = readJson(PROFILE_PATH)
@@ -1708,8 +1834,16 @@ test('profile validation is provider/driver aware and rejects arbitrary executab
   invalidCertificationImpact.providers[0].checks[0].certificationImpact = 'advisory'
   assert.throws(() => validateRuntimeProfile(invalidCertificationImpact), /certificationImpact is invalid/)
 
+  const optionalAuthorityRouting = structuredClone(profile)
+  optionalAuthorityRouting.providers[0].checks.find(check => check.driver === 'claude-authority-routing')
+    .certificationImpact = 'capability-only'
+  assert.throws(
+    () => validateRuntimeProfile(optionalAuthorityRouting),
+    /must remain the required decision-authority-routing check/,
+  )
+
   const noRequiredCertificationCheck = structuredClone(profile)
-  for (const check of noRequiredCertificationCheck.providers[0].checks) {
+  for (const check of noRequiredCertificationCheck.providers.find(provider => provider.id === 'codex').checks) {
     check.certificationImpact = 'capability-only'
   }
   assert.throws(() => validateRuntimeProfile(noRequiredCertificationCheck), /at least one required certification check/)

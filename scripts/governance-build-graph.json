@@ -4,13 +4,13 @@
   "controlPlaneGenesisTransition": {
     "schemaVersion": 1,
     "id": "control-plane-genesis-am-only-v1",
-    "state": "open",
+    "state": "closed",
     "baseCommit": "25b39558cbf352f053948190bb28326a78562f43",
     "baseTree": "92e090f9500fb14b8b05895a43c217f604cb5338",
     "deploymentProfile": "PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM",
     "phase": "control-plane-genesis",
     "cleanupRequiresDistinctProtectedPr": true,
-    "releaseAllowed": false,
+    "releaseAllowed": true,
     "preservations": [
       {
         "kind": "tree",
@@ -71,7 +71,7 @@
         "sha256": "d91d1d9c36311f1e77d46b387f2f39c0add7b075acf4af8b08f7c6a218ef5676"
       }
     ],
-    "contentDigest": "e348a7504109091451913ca8ec9013da2c8a234c961bd82149eb28fe7fd6bce3"
+    "contentDigest": "4e5a786eda16c7211de2fea195d063086e80455e5fada0acc80ba1ff6dd5f1d2"
   },
   "stages": [
     {

@@ -124,15 +124,15 @@ canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描�
      rollout authorization 與 off-host append-only evidence mirror fail-closed 保護。
    - 本輪沒有 apply；plan/read-only 可用不等於 GitHub live state 已收斂。
 
-2. **Genesis transition**
-   - `scripts/governance-build-graph.json` 仍為
-     `controlPlaneGenesisTransition.state = "open"`、
-     `cleanupRequiresDistinctProtectedPr = true`、`releaseAllowed = false`。
-   - 必須在 PR #22 merge 後另開受保護 PR 關閉；不得混入本 worktree，也不得預先 tag/release。
-   - Open transition 仍 content-addressed 保存舊 `ds-canonical/fork/preamble.md`，其中歷史
-     user-trigger merge 語意不是 current authority；獨立 closure PR 必移除該 preservation，讓
-     shipped Claude／Codex／future-provider product views 只消費現行 `AGENTS.md` Decision Authority
-     projection 與 generated provider adapters。
+2. **Genesis transition（2026-08-01 distinct cleanup candidate）**
+   - `scripts/governance-build-graph.json` 在本獨立 candidate 已改為
+     `controlPlaneGenesisTransition.state = "closed"`、
+     `cleanupRequiresDistinctProtectedPr = true`、`releaseAllowed = true`，並綁定重算後的 transition digest。
+   - Open-only SSOT dispatch／status／propagation tombstones與 consumer preamble compatibility output 已退場；
+     baseline compatibility tree 在 generation 後只保留指向 provider-neutral authority 的 exact symlink。
+   - 此 candidate 必以 PR #22 merge 後的 protected base 開獨立 PR，required checks 與 merge/readback
+     通過前不得預先 tag/release。Closure 只解除 Genesis freeze，不代表 external activation、certification、
+     fleet rollout 或 soak 已完成。
 
 3. **Release identities與真實執行**
    - npm package identities／bootstrap、三個 trusted publishers、tokenless 2FA publishing、
@@ -162,7 +162,7 @@ canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描�
    full Harness 11/11 與 final local verification。
 2. Agent 依 Standing Authorization commit／push／更新 PR #22；遠端 checks 必以新 head 重跑，
    hard gates 全綠後自主 squash merge，不引用舊快照或另等 user trigger。
-3. Merge 後以獨立 protected PR 關 Genesis transition。
+3. 以 PR #22 merge 後的 protected base 將本 candidate 作為獨立 protected PR 關 Genesis transition，並完成 merge/readback。
 4. 啟用外部 identities／authorities／evidence，完成 required checks live reconciliation。
 5. 取得 signed release authorization，執行 stage → finalize → template mirror → consumer fanout。
 6. 完成獨立 capability certification、fleet rollout／rollback drill 與 72h soak 後，才可評估
