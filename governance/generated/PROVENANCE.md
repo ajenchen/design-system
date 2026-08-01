@@ -245,7 +245,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:61ba4194427c198004a8b2659f639cb6b536a0a980a674d8bc4d3796dcae35e0` |
 | governance-control-plane-libraries | `infra/governance/lib/` | `sha256:6f04731347c04d40c27b38336788c731a5d730a4680e65677d6b83f1cbec6057` |
 | governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:252ef4f8ac5125a16d64041af8058fe167dd6f8b8183aab25570381f0bc4f494` |
-| governance-control-plane-tests | `infra/governance/test/` | `sha256:b3d3955aa651937e7009a1ab46e2baafd108dadb77a3abcbbc8e7d7a599dc27a` |
+| governance-control-plane-tests | `infra/governance/test/` | `sha256:0069cb22530510e184cbee5782233aac296c5610ebcc451fd489ef39c41d8892` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:5e179f234148dc7bef40c7974a23eda6563f6416e6809004f168a47fbbfb4075` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:6ee4764cd2e230f3a6ff3ba75c3e00b7f9488152bc3bd3d8aae065b7b9da760f` |
 | governance-github-desired-state | `infra/governance/desired/` | `sha256:76b6e36009dba929eaac31c73434c68bbbe1eb5e6f7914cf1c131bafce2b834f` |
@@ -444,7 +444,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | staged-rollout-plan | `infra/governance/staged-rollout-plan.json` | `sha256:dc02bf3e749e16b43d82c36334c11d3a8c669a3af99f12b22dd13be037ff1bcb` |
 | staged-rollout-poison-cases | `infra/governance/test/fixtures/staged-rollout/poison-cases.json` | `sha256:67e1052eca09ec4f10b8dbec028abe03c123bbf88aab9a1f4337710bf0434d06` |
 | staged-rollout-schema | `infra/governance/schemas/staged-rollout.schema.json` | `sha256:70496ae4404aa08ee68592ae4fc2f06563af3eb3409280331afaa2ca888df595` |
-| staged-rollout-tests | `infra/governance/test/staged-rollout.test.mjs` | `sha256:872a1b8fe23f5c4ebc2c87b3ad27ed33d2aeb69f914ab2e798ae44ef76230a4d` |
+| staged-rollout-tests | `infra/governance/test/staged-rollout.test.mjs` | `sha256:325bdb458c455b45c9ebf0dc486df0321aae9756f5bb531e57ebfa7838e01a57` |
 | storybook-package-contract | `packages/storybook-config/package.json` | `sha256:aa4257ea2e01433f2c7986ac3921f23b1bb667e11832c80da400b7926a8fd844` |
 | visual-baseline-review-policy | `infra/governance/visual-baseline-review-policy.json` | `sha256:339179f3bb7805f067c40cb22509734fa3f1cf2834129e64f6e0bf08aa70b334` |
 | visual-baseline-review-policy-schema | `infra/governance/schemas/visual-baseline-review-policy.schema.json` | `sha256:29eb02c844515e6e94a063503c4682e8a1a87a3976b26067e725e5491cc6bc45` |

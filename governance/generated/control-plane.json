@@ -2137,7 +2137,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 63,
-      "hash": "sha256:b3d3955aa651937e7009a1ab46e2baafd108dadb77a3abcbbc8e7d7a599dc27a",
+      "hash": "sha256:0069cb22530510e184cbee5782233aac296c5610ebcc451fd489ef39c41d8892",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3962,12 +3962,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:872a1b8fe23f5c4ebc2c87b3ad27ed33d2aeb69f914ab2e798ae44ef76230a4d",
+      "hash": "sha256:325bdb458c455b45c9ebf0dc486df0321aae9756f5bb531e57ebfa7838e01a57",
       "id": "staged-rollout-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/staged-rollout.test.mjs",
-      "size": 195684,
+      "size": 196172,
       "type": "file"
     },
     {

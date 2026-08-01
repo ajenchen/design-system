@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { resolveGitRuntimeRoots } from '../../../scripts/lib/governance-runtime-evidence.mjs'
 import {
   RELEASE_PACKAGE_NAMES,
   RELEASE_PUBLISH_ORDER,
@@ -2183,8 +2184,10 @@ test('production-grade candidate freeze content-addresses activation baseline wi
 })
 
 test('production-grade candidate freeze refuses maximum-assurance replay input before writing output', () => {
-  const evidenceBase = resolve(process.cwd(), '.git/governance-runtime/evidence')
-  mkdirSync(evidenceBase, { recursive: true, mode: 0o700 })
+  // Consume the canonical evidence-root resolver instead of assuming `.git` is a
+  // directory: in a linked Git worktree it is a file, so the hardcoded join raised
+  // ENOTDIR and this suite could never run from the worktree layout this repo uses.
+  const evidenceBase = resolveGitRuntimeRoots(process.cwd(), { create: true }).evidence
   const evidenceRoot = realpathSync(mkdtempSync(resolve(evidenceBase, 'staged-rollout-empty-trust-')))
   try {
     const replayDirectory = resolve(
@@ -3508,8 +3511,10 @@ test('an entirely re-signed archived-run substitution still fails against the lo
 })
 
 test('canonical loader permits exactly freeze plus PR-head runs, rejects a third pointer and archived tampering, and init output is no-clobber', () => {
-  const evidenceBase = resolve(process.cwd(), '.git/governance-runtime/evidence')
-  mkdirSync(evidenceBase, { recursive: true, mode: 0o700 })
+  // Consume the canonical evidence-root resolver instead of assuming `.git` is a
+  // directory: in a linked Git worktree it is a file, so the hardcoded join raised
+  // ENOTDIR and this suite could never run from the worktree layout this repo uses.
+  const evidenceBase = resolveGitRuntimeRoots(process.cwd(), { create: true }).evidence
   const evidenceRoot = mkdtempSync(resolve(evidenceBase, 'staged-rollout-loader-test-'))
   try {
     const snapshot = captureDeepAuditSnapshot(process.cwd())

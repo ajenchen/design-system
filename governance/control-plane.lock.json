@@ -10,7 +10,7 @@
   "contractDigest": "sha256:da78ff92e17b2e6e0bb13392079a1dbe4785aaa7ad1bfa914683560c37228676",
   "files": [
     {
-      "hash": "sha256:4c93577c084cbf1a0d8cb0fbff75cbd24674c6ef0b861e0f73fee088b6241343",
+      "hash": "sha256:52690388ff9f73c1a495a18145a9a9976456306b697207749e2d7052e0b04111",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 73998,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:906431398719f6d351ff35aca9c252d10f47cc71261fe8f2eb8e4dfb413618fe",
+      "hash": "sha256:18a71d979ea5e9f8d041c2e5b38aeeb10e7dbb6283682a5ed075e6deee86782e",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 167607,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:d77d77ea41cb911e5d9972a37de048e5ef98411961b0f8b712de6d59057e75e0",
+  "inputDigest": "sha256:e6a795c9e837ce0c52fcd5392a73aa79b71a81be1625b321ebe4c08af698bf45",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:c16d919caedee80038e9f5fc16b2ba671ee41804222577f5cee1b34f81b49663",
+  "snapshotDigest": "sha256:1218836a69f782b0609644562119216caa57a236f480fdcde49cf784ee714ad9",
   "sources": [
     {
       "hash": "sha256:f3babea912be34fd1cf8cce7a7f82302701f1632f72f974317abcaaff1edda0d",
@@ -2649,7 +2649,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 63,
-      "hash": "sha256:b3d3955aa651937e7009a1ab46e2baafd108dadb77a3abcbbc8e7d7a599dc27a",
+      "hash": "sha256:0069cb22530510e184cbee5782233aac296c5610ebcc451fd489ef39c41d8892",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -4474,12 +4474,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:872a1b8fe23f5c4ebc2c87b3ad27ed33d2aeb69f914ab2e798ae44ef76230a4d",
+      "hash": "sha256:325bdb458c455b45c9ebf0dc486df0321aae9756f5bb531e57ebfa7838e01a57",
       "id": "staged-rollout-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/staged-rollout.test.mjs",
-      "size": 195684,
+      "size": 196172,
       "type": "file"
     },
     {
