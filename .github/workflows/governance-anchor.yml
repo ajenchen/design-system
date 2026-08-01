@@ -114,5 +114,7 @@ jobs:
 
       - name: Execute protected-base governance policy against candidate data
         run: |
-          node trusted/packages/governance/bin/governance.mjs check --repo candidate --role ds-author --hooks-off
+          node trusted/infra/governance/lib/governance-anchor-version-projection.mjs \
+            --trusted-root trusted \
+            --candidate-root candidate
           node trusted/scripts/audit-workflow-security.mjs --root candidate

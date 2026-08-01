@@ -876,6 +876,13 @@ export function auditWorkflowSources(sources, {
     const productToolVerifyAt = anchorVerify.indexOf('--verify-trusted-product-checks trusted/.governance-tools')
     const protectedLintAt = anchorVerify.indexOf('trusted/.governance-tools/scripts/lint-ds-internal-imports.mjs --repo candidate')
     const protectedA11yAt = anchorVerify.indexOf('trusted/.governance-tools/scripts/audit-consumer-a11y.mjs --repo candidate')
+    const rootPrivilegedVerifyAt = anchorVerify.search(/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/scripts\/verify-privileged-change\.mjs\b/m)
+    const rootCandidateInstallAt = anchorVerify.search(/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/scripts\/install-candidate-dependencies\.mjs\s+--candidate\s+candidate[ \t]*$/m)
+    const rootVersionProjectionAt = anchorVerify.search(/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/infra\/governance\/lib\/governance-anchor-version-projection\.mjs\b/m)
+    const rootWorkflowAuditAt = anchorVerify.search(/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/scripts\/audit-workflow-security\.mjs\s+--root\s+candidate[ \t]*$/m)
+    const rootVersionProjectionCommands = anchorVerify.match(
+      /^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/infra\/governance\/lib\/governance-anchor-version-projection\.mjs\b/gm,
+    ) || []
     const templateProductChecksClosed = !anchorFile.startsWith('template/') || (
       [
         productToolStageAt,
@@ -922,6 +929,15 @@ export function auditWorkflowSources(sources, {
       && /\.head\.sha/.test(anchorVerify)
       && /git\/ref\/heads\/main/.test(anchorVerify)
     )
+    const rootVersionProjectionClosed = anchorFile.startsWith('template/') || (
+      rootPrivilegedVerifyAt >= 0
+      && rootCandidateInstallAt > rootPrivilegedVerifyAt
+      && rootVersionProjectionAt > rootCandidateInstallAt
+      && rootWorkflowAuditAt > rootVersionProjectionAt
+      && rootVersionProjectionCommands.length === 1
+      && /^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node[ \t]+trusted\/infra\/governance\/lib\/governance-anchor-version-projection\.mjs(?:[ \t]+\\[ \t]*\n[ \t]*|[ \t]+)--trusted-root[ \t]+trusted(?:[ \t]+\\[ \t]*\n[ \t]*|[ \t]+)--candidate-root[ \t]+candidate[ \t]*$/m.test(anchorVerify)
+      && !/node\s+trusted\/packages\/governance\/bin\/governance\.mjs\s+check\b/.test(anchorVerify)
+    )
     // 2026-07-29 user 拍板 1B:root repo 拆除 App-pinned verdict 層(App secrets 從未
     // provision、檢查恆紅;protected required checks 已覆蓋同一保證面)。root anchor
     // fail-closed 要求 verdict job 不得再出現(防未審查重引入);template anchor 是
@@ -950,6 +966,7 @@ export function auditWorkflowSources(sources, {
       || !verdictClosed
       || /\bsecrets\.|actions\/create-github-app-token@/.test(anchorVerify)
       || (anchorFile === '.github/workflows/governance-anchor.yml' && !/trusted\/scripts\/verify-privileged-change\.mjs/.test(anchorVerify))
+      || !rootVersionProjectionClosed
       || !templateProductChecksClosed
       || (anchorFile.startsWith('template/') && /npm run (?:typecheck|build|audit:a11y)/.test(anchorVerify))
     ) add(anchorFile, 'WF-ANCHOR', 'protected-base credential-free verifier and environment-isolated App-pinned verdict producer are incomplete')

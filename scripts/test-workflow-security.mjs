@@ -1,7 +1,24 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import {
+  linkSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
 import test from 'node:test'
+import {
+  runGovernanceAnchorVersionProjection,
+  withGovernanceAnchorVersionProjection,
+} from '../infra/governance/lib/governance-anchor-version-projection.mjs'
 import { auditWorkflowSources } from './audit-workflow-security.mjs'
 import {
   compareExactSemver,
@@ -81,7 +98,12 @@ base['template/ds-product-template/.github/workflows/governance-anchor.yml'] = b
 // 1B(2026-07-29):root anchor = verifier-only,不得有 App verdict job(規則反向要求);
 // template anchor 保留 App 架構作 fleet consumer 藍圖。
 base['.github/workflows/governance-anchor.yml'] = `${base['template/ds-product-template/.github/workflows/governance-anchor.yml']
-  .split('\n  publish-app-verdict:')[0]}\n      - run: node trusted/scripts/verify-privileged-change.mjs\n`
+  .split('\n  publish-app-verdict:')[0]}\n      - run: node trusted/scripts/verify-privileged-change.mjs
+      - run: node trusted/scripts/install-candidate-dependencies.mjs --candidate candidate
+      - run: |
+          node trusted/infra/governance/lib/governance-anchor-version-projection.mjs --trusted-root trusted --candidate-root candidate
+          node trusted/scripts/audit-workflow-security.mjs --root candidate
+`
 base['.github/workflows/deploy-storybook.yml'] = `on:
   workflow_run:
     workflows: [CI]
@@ -114,16 +136,188 @@ const audit = (sources, publisher = trustedPublisher, githubPublisher = trustedG
   releaseGithubPublisher: githubPublisher,
 })
 
+const projectionPackages = [
+  ['@qijenchen/design-system', 'packages/design-system/package.json'],
+  ['@qijenchen/governance', 'packages/governance/package.json'],
+  ['@qijenchen/storybook-config', 'packages/storybook-config/package.json'],
+]
+
+function projectionSandbox(t) {
+  const root = mkdtempSync(join(realpathSync(tmpdir()), 'governance-anchor-version-test-'))
+  t.after(() => rmSync(root, { recursive: true, force: true }))
+  return root
+}
+
+function writeProjectionRepository(parent, name, versions) {
+  const root = join(parent, name)
+  for (const [packageName, repoPath] of projectionPackages) {
+    const path = join(root, repoPath)
+    mkdirSync(dirname(path), { recursive: true })
+    const version = typeof versions === 'string' ? versions : versions[packageName]
+    writeFileSync(path, `${JSON.stringify({ name: packageName, version }, null, 2)}\n`)
+  }
+  return root
+}
+
+const manifestAt = (root, repoPath) => JSON.parse(readFileSync(join(root, repoPath), 'utf8'))
+
+test('anchor projects only validated generator provenance and always restores protected-base bytes', (t) => {
+  const sandbox = projectionSandbox(t)
+  const trusted = writeProjectionRepository(sandbox, 'trusted', '0.1.0-beta.103')
+  const candidate = writeProjectionRepository(sandbox, 'candidate', '0.1.0-beta.104')
+  const trustedGovernancePath = join(trusted, 'packages/governance/package.json')
+  const original = readFileSync(trustedGovernancePath)
+
+  const result = withGovernanceAnchorVersionProjection({
+    trustedRoot: trusted,
+    candidateRoot: candidate,
+    execute(plan) {
+      assert.equal(plan.trusted.version, '0.1.0-beta.103')
+      assert.equal(plan.candidate.version, '0.1.0-beta.104')
+      assert.equal(plan.projected, true)
+      assert.equal(manifestAt(trusted, 'packages/governance/package.json').version, '0.1.0-beta.104')
+      assert.equal(manifestAt(trusted, 'packages/design-system/package.json').version, '0.1.0-beta.103')
+      assert.equal(manifestAt(trusted, 'packages/storybook-config/package.json').version, '0.1.0-beta.103')
+      return 'verified'
+    },
+  })
+  assert.equal(result, 'verified')
+  assert.deepEqual(readFileSync(trustedGovernancePath), original)
+
+  assert.throws(() => withGovernanceAnchorVersionProjection({
+    trustedRoot: trusted,
+    candidateRoot: candidate,
+    execute() {
+      throw new Error('expected verifier failure')
+    },
+  }), /expected verifier failure/)
+  assert.deepEqual(readFileSync(trustedGovernancePath), original, 'verifier failure did not restore protected-base bytes')
+})
+
+test('anchor CLI executes one fixed protected-base governance command without a shell', (t) => {
+  const sandbox = projectionSandbox(t)
+  const trusted = writeProjectionRepository(sandbox, 'trusted', '0.1.0-beta.103')
+  const candidate = writeProjectionRepository(sandbox, 'candidate', '0.1.0-beta.104')
+  const calls = []
+  const plan = runGovernanceAnchorVersionProjection([
+    '--trusted-root', trusted,
+    '--candidate-root', candidate,
+  ], {
+    spawn(executable, args, options) {
+      calls.push({ executable, args, options })
+      assert.equal(manifestAt(trusted, 'packages/governance/package.json').version, '0.1.0-beta.104')
+      return { status: 0 }
+    },
+  })
+  assert.equal(plan.projected, true)
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].executable, process.execPath)
+  assert.deepEqual(calls[0].args, [
+    join(trusted, 'packages/governance/bin/governance.mjs'),
+    'check',
+    '--repo', candidate,
+    '--role', 'ds-author',
+    '--hooks-off',
+  ])
+  assert.equal(calls[0].options.cwd, trusted)
+  assert.equal(calls[0].options.shell, false)
+  assert.equal(manifestAt(trusted, 'packages/governance/package.json').version, '0.1.0-beta.103')
+})
+
+test('anchor version projection rejects split, downgraded, noncanonical, symlinked, and hard-linked manifests', async (t) => {
+  await t.test('split candidate release train', (t) => {
+    const sandbox = projectionSandbox(t)
+    const trusted = writeProjectionRepository(sandbox, 'trusted', '0.1.0-beta.103')
+    const candidate = writeProjectionRepository(sandbox, 'candidate', {
+      '@qijenchen/design-system': '0.1.0-beta.104',
+      '@qijenchen/governance': '0.1.0-beta.105',
+      '@qijenchen/storybook-config': '0.1.0-beta.104',
+    })
+    assert.throws(() => withGovernanceAnchorVersionProjection({ trustedRoot: trusted, candidateRoot: candidate, execute() {} }), /candidate package versions must be identical/)
+  })
+
+  await t.test('candidate downgrade', (t) => {
+    const sandbox = projectionSandbox(t)
+    const trusted = writeProjectionRepository(sandbox, 'trusted', '0.1.0-beta.103')
+    const candidate = writeProjectionRepository(sandbox, 'candidate', '0.1.0-beta.102')
+    assert.throws(() => withGovernanceAnchorVersionProjection({ trustedRoot: trusted, candidateRoot: candidate, execute() {} }), /older than protected-base/)
+  })
+
+  await t.test('candidate version outside the closed release train', (t) => {
+    const sandbox = projectionSandbox(t)
+    const trusted = writeProjectionRepository(sandbox, 'trusted', '0.1.0-beta.103')
+    const candidate = writeProjectionRepository(sandbox, 'candidate', '0.1.0-alpha.104')
+    assert.throws(() => withGovernanceAnchorVersionProjection({ trustedRoot: trusted, candidateRoot: candidate, execute() {} }), /outside the closed release train/)
+  })
+
+  await t.test('noncanonical candidate JSON', (t) => {
+    const sandbox = projectionSandbox(t)
+    const trusted = writeProjectionRepository(sandbox, 'trusted', '0.1.0-beta.103')
+    const candidate = writeProjectionRepository(sandbox, 'candidate', '0.1.0-beta.104')
+    writeFileSync(join(candidate, 'packages/governance/package.json'), '{"name":"@qijenchen/governance","version":"0.1.0-beta.104"}\n')
+    assert.throws(() => withGovernanceAnchorVersionProjection({ trustedRoot: trusted, candidateRoot: candidate, execute() {} }), /canonical JSON serialization/)
+  })
+
+  await t.test('symbolic-link candidate manifest', (t) => {
+    const sandbox = projectionSandbox(t)
+    const trusted = writeProjectionRepository(sandbox, 'trusted', '0.1.0-beta.103')
+    const candidate = writeProjectionRepository(sandbox, 'candidate', '0.1.0-beta.104')
+    const manifest = join(candidate, 'packages/governance/package.json')
+    const target = join(candidate, 'packages/governance/package.target.json')
+    writeFileSync(target, readFileSync(manifest))
+    unlinkSync(manifest)
+    symlinkSync(target, manifest)
+    assert.throws(() => withGovernanceAnchorVersionProjection({ trustedRoot: trusted, candidateRoot: candidate, execute() {} }), /symbolic link/)
+  })
+
+  await t.test('hard-linked candidate manifest', (t) => {
+    const sandbox = projectionSandbox(t)
+    const trusted = writeProjectionRepository(sandbox, 'trusted', '0.1.0-beta.103')
+    const candidate = writeProjectionRepository(sandbox, 'candidate', '0.1.0-beta.104')
+    const manifest = join(candidate, 'packages/governance/package.json')
+    const target = join(candidate, 'packages/governance/package.target.json')
+    writeFileSync(target, readFileSync(manifest))
+    unlinkSync(manifest)
+    linkSync(target, manifest)
+    assert.throws(() => withGovernanceAnchorVersionProjection({ trustedRoot: trusted, candidateRoot: candidate, execute() {} }), /one regular file/)
+  })
+})
+
+test('governance package version remains provenance-only in protected verifier source', () => {
+  const common = readFileSync('packages/governance/src/common.mjs', 'utf8')
+  const snapshot = readFileSync('packages/governance/src/snapshot.mjs', 'utf8')
+  const versionSourceFiles = readdirSync('packages/governance/src', { recursive: true })
+    .filter(path => path.endsWith('.mjs'))
+    .filter(path => /\bPACKAGE_VERSION\b/.test(readFileSync(join('packages/governance/src', path), 'utf8')))
+    .sort()
+  assert.deepEqual(versionSourceFiles, ['common.mjs', 'snapshot.mjs'])
+  assert.equal((common.match(/\bPACKAGE_VERSION\b/g) || []).length, 1)
+  assert.match(common, /export const PACKAGE_VERSION = JSON\.parse\(readFileSync\(resolve\(PACKAGE_ROOT, 'package\.json'\), 'utf8'\)\)\.version/)
+  const versionLines = snapshot.split('\n').filter(line => /\bPACKAGE_VERSION\b/.test(line))
+  assert.equal(versionLines.length, 5)
+  for (const line of versionLines) {
+    assert.ok([
+      /^\s*PACKAGE_VERSION,$/,
+      /^\s*generatorVersion: PACKAGE_VERSION,$/,
+      /@generated by @qijenchen\/governance \$\{PACKAGE_VERSION\}/,
+      /Generator:.*\$\{PACKAGE_VERSION\}/,
+    ].some(pattern => pattern.test(line)), `PACKAGE_VERSION gained a non-provenance use: ${line}`)
+  }
+})
+
 test('actual DS anchor installs and audits protected-base dependencies before executing protected verifier code', () => {
   const workflow = readFileSync('.github/workflows/governance-anchor.yml', 'utf8')
   const markers = [
     'working-directory: trusted',
     'npm run --silent setup:dependencies',
     'node trusted/scripts/verify-privileged-change.mjs',
-    'node trusted/packages/governance/bin/governance.mjs',
+    'node trusted/scripts/install-candidate-dependencies.mjs --candidate candidate',
+    'node trusted/infra/governance/lib/governance-anchor-version-projection.mjs',
+    'node trusted/scripts/audit-workflow-security.mjs --root candidate',
   ].map((marker) => workflow.indexOf(marker))
   assert.ok(markers.every((index) => index >= 0), 'DS anchor is missing the protected-base exact dependency bootstrap closure')
   assert.deepEqual(markers, [...markers].sort((left, right) => left - right), 'DS anchor executes protected verifier code before its trusted dependencies are installed and audited')
+  assert.doesNotMatch(workflow, /node trusted\/packages\/governance\/bin\/governance\.mjs check/, 'DS anchor bypasses target-version provenance projection')
   assert.doesNotMatch(
     workflow,
     /issues: read|bootstrap-comments|--pull-request|DS-GOVERNANCE-BOOTSTRAP-V1/,
@@ -632,6 +826,37 @@ test('rejects workflow_dispatch for the protected-base Check App producer', () =
   }
   assert.ok(audit(rootSources).some((finding) => finding.rule === 'WF-ANCHOR'))
 })
+
+for (const [label, mutate] of [
+  [
+    'direct governance check that bypasses target-version projection',
+    source => source.replace(
+      'node trusted/infra/governance/lib/governance-anchor-version-projection.mjs --trusted-root trusted --candidate-root candidate',
+      'node trusted/packages/governance/bin/governance.mjs check --repo candidate --role ds-author --hooks-off',
+    ),
+  ],
+  [
+    'projection without the exact candidate root',
+    source => source.replace('--candidate-root candidate', '--candidate-root unbound'),
+  ],
+  [
+    'candidate workflow audit before version projection',
+    source => source.replace(
+      'node trusted/infra/governance/lib/governance-anchor-version-projection.mjs --trusted-root trusted --candidate-root candidate\n          node trusted/scripts/audit-workflow-security.mjs --root candidate',
+      'node trusted/scripts/audit-workflow-security.mjs --root candidate\n          node trusted/infra/governance/lib/governance-anchor-version-projection.mjs --trusted-root trusted --candidate-root candidate',
+    ),
+  ],
+]) {
+  test(`rejects root anchor ${label}`, () => {
+    const path = '.github/workflows/governance-anchor.yml'
+    const source = mutate(base[path])
+    assert.notEqual(source, base[path], `${label}: poison did not mutate fixture`)
+    assert.ok(
+      audit({ ...base, [path]: source }).some(finding => finding.file === path && finding.rule === 'WF-ANCHOR'),
+      `${label}: expected WF-ANCHOR`,
+    )
+  })
+}
 
 test('rejects pull_request_target secret in candidate verification job', () => {
   const sources = {
