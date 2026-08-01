@@ -106,7 +106,7 @@ Phase 1 found N candidates of same anti-pattern:
 
 Execution:
 - deterministic fix → Auto-fix all confirmed N
-- engineering judgment → 依 owning spec + highest certified capability + independent review逐檔收斂
+- engineering judgment → 依 owning spec + highest certified capability 逐檔收斂；task／deliverable 明確要求時才加 independent review
 - 不屬 frozen scope → Backlog with evidence；不得用 defer 逃避 scope 內修復
 - 會改產品／UI／UX SSOT 且仍有真取捨 → batch-at-end human-only decision
 ```

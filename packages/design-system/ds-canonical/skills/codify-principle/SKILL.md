@@ -41,7 +41,7 @@ User 提供 principle text。Skill 提取:
 對 cross-component 原則(scope ≠ governance-only),**強制** M8 ≥ 3 家世界級 DS 對照:
 1. 跑 web research(WebFetch Polaris / Material / Carbon / Atlassian / Ant 等對應 component / pattern)
 2. 列對照表:每家做法 + 我們對齊 / 偏離 + 偏離 rationale
-3. 若 < 3 家對照 → 擴大 primary-source research／distinct-provider review，不得把資料不足轉成 user 工程判斷；只有「是否採用無 benchmark 的原創產品／UI／UX原則」是真產品取捨時才 STOP
+3. 若 < 3 家對照 → 擴大 primary-source research；task／deliverable 明確要求時才加 distinct-provider review。不得把資料不足轉成 user 工程判斷；只有「是否採用無 benchmark 的原創產品／UI／UX原則」是真產品取捨時才 STOP
 
 ### Phase 3 — Draft 5 layer artifacts(authority-classified)
 
@@ -110,7 +110,7 @@ Scope / type / affected homes 是工程 mapping，由 agent 依 canonical 自行
 < 3 家世界級對照 → 繼續 primary-source research 或標 `REVIEW-BLOCKED`；只有 OG-only 是否成為產品／UI／UX原則的選擇交給 user，工程治理原則由 evidence + security/hard gates 決定。
 
 ### Gate 3 — Phase 3 per-layer
-每 layer 都過 tests／independent review／rollback check；工程 canonical substantive 直接執行，只有產品／UI／UX SSOT 真取捨停下。
+每 layer 都過 tests／rollback check；task／deliverable 明確要求時才把 independent review 列為 required。工程 canonical substantive 直接執行，只有產品／UI／UX SSOT 真取捨停下。
 
 ### Gate 4 — Phase 6 verify
 任何 layer commit 後 tsc / hook test fail → 回該 phase 修,**不繞過**。

@@ -260,7 +260,7 @@ User verbatim:「你完整稽核之前應該會先全面盤查全部檔案和所
 2. **設計原則 enumeration**:M-rule(meta-patterns.md)+ spec trait(frontmatter)+ hook invariant + rules
 3. **Coverage matrix**:每原則 → audit dim 對應(N 對應 / NO COVER gap)— derived JSON 寫 Git-owned `<git-dir>/governance-runtime/evidence/audit/preflight/audit-preflight-{date}.json`；完整每原則→dim 對應 SSOT = `packages/design-system/ds-canonical/references/principle-dim-map.json`(`--verbose` 才 dump coverageMap 進 evidence)
 
-**Gap 處理**:有 gap → Phase 1 前由 agent 依 canonical、failure-class coverage、tests 與 independent review補 dim／修 mapping；不得接受 scope 內 coverage gap。只有撤換產品／UI／UX SSOT 原則且存在真取捨才請 user 決策。
+**Gap 處理**:有 gap → Phase 1 前由 agent 依 canonical、failure-class coverage、tests 與 hard gates 補 dim／修 mapping；task／deliverable 明確要求時才加 independent review，不得接受 scope 內 coverage gap。只有撤換產品／UI／UX SSOT 原則且存在真取捨才請 user 決策。
 
 **Phase 1 sub-agent 必引 preflight log**:Coverage matrix 對應 dim → sub-agent 跑該 dim 時掃 file enumeration list(DS-wide ALL,不 sample,per NO-SAMPLE invariant)。
 
@@ -344,7 +344,7 @@ Consolidate into priority matrix:
 | 3 | Classification ambiguous(Internal/Components / SSOT home / primitive vs semantic)| home/architecture 由 agent 判；若 public contract/UI 語意真取捨才 P2H |
 | 4 | Cross-cutting refactor > 10 檔 | agent 選最小可逆分組、逐組 verify，不問 user 工程 strategy |
 | 5 | 環境 / 建置 issue | 自行 remediation；只在 human-only boundary 或重試後真 technical blocker 停 |
-| 6 | spec 與 code 衝突 | 用 git history、consumer evidence、tests與 distinct-provider review 收斂；只把未解 UI/UX 真取捨列 P2H |
+| 6 | spec 與 code 衝突 | 用 git history、consumer evidence 與 tests 收斂；task／deliverable 明確要求時才加 distinct-provider review，只把未解 UI/UX 真取捨列 P2H |
 | 7 | 「先不管」vs「之後再處理」semantic | **「先不管」= 完全忽略**(不入 tech debt);**「之後再處理」= park to memory**;絕不混淆 |
 
 **Naming proposal**:Authority Gate 2 前必過 `packages/design-system/ds-canonical/references/naming-conventions.md` 的命名三重 test(不 re-spec)。

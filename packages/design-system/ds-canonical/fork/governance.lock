@@ -31,7 +31,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/code-quality-audit/SKILL.md",
-      "sha256": "f969d2fde816532cf77efdf6e6c364131b67ea9bc64666289f692016748755a6",
+      "sha256": "0ad9dd2792347c7bf2b445d27fbab556ddde3b393a9f21aedc2abd021c2487c0",
       "source": "providers/codex/skills/code-quality-audit",
       "classification": null,
       "destination": null
@@ -127,7 +127,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/product-ui-audit/references/report-template.md",
-      "sha256": "6b982b8c85f43c3629d58cebb3e1ec09b3941c7a583db42a78f66ece73430a55",
+      "sha256": "c61f2d9a87d6fa95accb45a3403075a26048b64f4c07f926aaa951085897f1de",
       "source": "providers/codex/skills/product-ui-audit",
       "classification": null,
       "destination": null
@@ -199,7 +199,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "deb79db56da754256f6447920a8daf204bdfc92c209d163437bcafa7cbead3b2",
+      "sha256": "d4a5c4002a11d696be9220be4162dfb908971abb904c071c7048187d8f0d0b73",
       "source": "providers/codex/skills/scan-similar-bugs",
       "classification": null,
       "destination": null
@@ -215,7 +215,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/visual-audit/SKILL.md",
-      "sha256": "76fc323b9e996993c5bfd6d46d0a326372220b55ff8a8911440270770701ef29",
+      "sha256": "6519f32ca5c9855dfab0a65950931ee04a863ca6ada6f2dd952af904399139a2",
       "source": "providers/codex/skills/visual-audit",
       "classification": null,
       "destination": null
@@ -951,7 +951,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/code-quality-audit/SKILL.md",
-      "sha256": "a1fade9335e6ba9a6043dc16a65104cf0732c2852227b7361cc1135b83438282",
+      "sha256": "fff384c5e97f9ebe9a2f21866cf4ce07bfb389c7ab231c56d6cc65f05e7b6ee7",
       "source": "skills/code-quality-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1047,7 +1047,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/product-ui-audit/references/report-template.md",
-      "sha256": "6b982b8c85f43c3629d58cebb3e1ec09b3941c7a583db42a78f66ece73430a55",
+      "sha256": "c61f2d9a87d6fa95accb45a3403075a26048b64f4c07f926aaa951085897f1de",
       "source": "skills/product-ui-audit/references/report-template.md",
       "classification": null,
       "destination": null
@@ -1119,7 +1119,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "f4dd1ed1a76ff43953b9ee911f071cff80873ae5fc5dae04792f8ce20996c019",
+      "sha256": "0851876a9d3780ab4a06eb60f29a0feac8917dcc85dab16a86e0ef3fe358fa7c",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1135,7 +1135,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/visual-audit/SKILL.md",
-      "sha256": "dba0f1a8ad4e5f27b045adfc61657af10d90f18f80a65a13804c0b08a0480990",
+      "sha256": "5e86a50b05bc891b093179808d5dd4e6fd410fc4ffe78d488e7b1267a4dac3d3",
       "source": "skills/visual-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1191,7 +1191,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/code-quality-audit/SKILL.md",
-      "sha256": "f969d2fde816532cf77efdf6e6c364131b67ea9bc64666289f692016748755a6",
+      "sha256": "0ad9dd2792347c7bf2b445d27fbab556ddde3b393a9f21aedc2abd021c2487c0",
       "source": "skills/code-quality-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1287,7 +1287,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/product-ui-audit/references/report-template.md",
-      "sha256": "6b982b8c85f43c3629d58cebb3e1ec09b3941c7a583db42a78f66ece73430a55",
+      "sha256": "c61f2d9a87d6fa95accb45a3403075a26048b64f4c07f926aaa951085897f1de",
       "source": "skills/product-ui-audit/references/report-template.md",
       "classification": null,
       "destination": null
@@ -1359,7 +1359,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "deb79db56da754256f6447920a8daf204bdfc92c209d163437bcafa7cbead3b2",
+      "sha256": "d4a5c4002a11d696be9220be4162dfb908971abb904c071c7048187d8f0d0b73",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1375,7 +1375,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/visual-audit/SKILL.md",
-      "sha256": "76fc323b9e996993c5bfd6d46d0a326372220b55ff8a8911440270770701ef29",
+      "sha256": "6519f32ca5c9855dfab0a65950931ee04a863ca6ada6f2dd952af904399139a2",
       "source": "skills/visual-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1471,7 +1471,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/code-quality-audit/SKILL.md",
-      "sha256": "ec0703d59ae16ad24f5b6ec3291432258fbd4543252b4dedcadcc779fa047ab3",
+      "sha256": "b77ee7f30b28770d229ccf0f51d5b95bb324052715dc4ad70ac4b0f4ba99e500",
       "source": null,
       "classification": null,
       "destination": null
@@ -1567,7 +1567,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/product-ui-audit/references/report-template.md",
-      "sha256": "6b982b8c85f43c3629d58cebb3e1ec09b3941c7a583db42a78f66ece73430a55",
+      "sha256": "c61f2d9a87d6fa95accb45a3403075a26048b64f4c07f926aaa951085897f1de",
       "source": null,
       "classification": null,
       "destination": null
@@ -1639,7 +1639,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/scan-similar-bugs/SKILL.md",
-      "sha256": "c2c5bb0ad389d3682dffaaf6eeb67b044eaf427da1672cbb0fda8373c575bb98",
+      "sha256": "dd4b0efbb8e09975dca8b4c041185658f6faddd4525a7981d4b5805f4788beff",
       "source": null,
       "classification": null,
       "destination": null
@@ -1655,7 +1655,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/visual-audit/SKILL.md",
-      "sha256": "e0cec52fbacf39c90d84747836b87c35eeca3b33529acde2e88f395ab45f0c5a",
+      "sha256": "3818a3d9ea457bd6d49271367c46777d4928947cebde3a43c1b3a44e167a3993",
       "source": null,
       "classification": null,
       "destination": null

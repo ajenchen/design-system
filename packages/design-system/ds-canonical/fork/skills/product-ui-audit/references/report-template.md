@@ -47,7 +47,7 @@ scope / 設計決策 / 業務判斷:
 
 **處理**:
 - **P2E**:engineering/governance/refactor/a11y/performance 或既有 SSOT 唯一落地，依
-  evidence + independent review + hard gates 自主修。
+  evidence + hard gates 自主修；task／deliverable 明確要求時才加 independent review。
 - **P2H**:只有會改變產品／UI／UX SSOT 且證據收斂後仍存在真實取捨，才由 user
   逐項做 exact target-bound decision。
 

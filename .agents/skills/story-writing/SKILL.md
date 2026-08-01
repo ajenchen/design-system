@@ -104,7 +104,7 @@ Checkpoint: 寫完後必驗:
 - spec 新加 rule → principles stories 必有對應 do/don't 範例
 - 元件改 variant/size → anatomy TOKEN_MAP / SIZE_SPECS 同步
 
-**STOP 條件**:若三方(code / spec / story)任一有矛盾且原因不清楚 → 先以 canonical owner、repo evidence、tests 與 independent review 分類。可唯一推導的工程 drift 自主修復；只有涉及產品／UI／UX SSOT 真取捨才交 user；仍無法分類則 fail closed，不默默選邊。
+**STOP 條件**:若三方(code / spec / story)任一有矛盾且原因不清楚 → 先以 canonical owner、repo evidence 與 tests 分類；只有 task／deliverable 明確要求時才加 independent review。可唯一推導的工程 drift 自主修復；只有涉及產品／UI／UX SSOT 真取捨才交 user；仍無法分類則 fail closed，不默默選邊。
 
 ### Phase 5 — 自我檢查 checklist
 

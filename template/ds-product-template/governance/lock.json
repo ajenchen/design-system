@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "eee0bc3840192a3ee33a406565ed1497fe9492bc2cd44cb8275c140b31c5d6da",
+    "forkCorpusLockSha256": "0d2489d8bb989a6cd7c039f2c7262deb6fcd0be26e67a21ede951003da953455",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "43c6b2abb99a2b185eb143e5a5be12db0a3e096475cba58b1bde3a29dfb64940",
@@ -53,13 +53,13 @@
       "claude": {
         "instructionSha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
         "hookSha256": "6398e6b20f6558392bdce1d7123815042047952be473b8fda6d2491aa1648a05",
-        "skillsSha256": "f5767bb43b442af15cbe45307365388953552c6b57b8fd58cfabe391b73fe228",
+        "skillsSha256": "617994510c71b6cb717dd3f06dc2dbf2ea6bd68849b5be83ca6a624ac409f697",
         "treeDigests": {}
       },
       "codex": {
         "instructionSha256": "3d40f4b5d3ea78f6c9ca5bd18daa531dc758d77df21a5e7ef35a3336cd71f906",
         "hookSha256": "697d186cfe0882ee2ce1b02ecc4c3258ab42b125bab6d70c7be868fa271132f7",
-        "skillsSha256": "f2f34252fa8bc0be9ddd6a7ca2a7243a184f1b1a951f98f1f2e9773850573a3e",
+        "skillsSha256": "a4f57953384153f393c3db3008f1967f637e0dc1d7cb149b8c47f020b62278ee",
         "treeDigests": {}
       },
       "generic": {
@@ -74,7 +74,7 @@
     },
     "governanceCheckSha256": "393f5a016baac5a345e9c08a93c14bdb575b66570fd475a7fa86bc2e8002dd33",
     "utilityRegistrySha256": "ac430d50ee82c19eb678f725c00eec23a0e25b33ec4bad81d3bf6e2fa9fa64ff",
-    "sharedSkillsSha256": "9a79b48a6543929a7b94952c1bd3be90faa15d3dc963e8487df0dd6bb8474aa7",
+    "sharedSkillsSha256": "8b0a4563714a8b6226890f2a94b5fa28036960035e040c0224d4c127fc17efe6",
     "sharedSkillCount": 11,
     "requiredScripts": {
       "audit:a11y": "node scripts/audit-consumer-a11y.mjs",

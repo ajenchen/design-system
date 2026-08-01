@@ -215,7 +215,7 @@ FAIL 項摘要:
 
 後續路由:
 1. FAIL 可由既有 canonical 決定 → P2E，由 primary context 依 Standing Authorization remediation + verify
-2. 純工程／治理原因尚未收斂 → P2E，依 Engineering Decision Policy、tests、independent review 與 hard gates 收斂；無法收斂則 fail closed 回報 technical blocker
+2. 純工程／治理原因尚未收斂 → P2E，依 Engineering Decision Policy、tests 與 hard gates 收斂；task／deliverable 明確要求時才加 independent review，optional review 缺席不得阻擋一般工程；無法收斂則 fail closed 回報 technical blocker
 3. 必須改變產品／UI／UX SSOT 且仍有真實選擇或取捨 → P2H，batch-at-end 請 user 拍板
 4. 證據不足 → 補足 screenshot／量測，不以猜測結案
 
