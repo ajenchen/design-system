@@ -161,7 +161,7 @@ const CircularProgress = React.forwardRef<HTMLSpanElement, CircularProgressProps
             strokeDashoffset={dashOffset}
             strokeLinecap="round"
             transform={`rotate(-90 ${size / 2} ${size / 2})`}
-            className={isDeterminate ? 'transition-[stroke-dashoffset] duration-300' : undefined}
+            className={isDeterminate ? 'transition-[stroke-dashoffset] duration-300 motion-reduce:duration-0' : undefined}
           />
         </svg>
       </span>

@@ -42,7 +42,7 @@ export const Overview: Story = {
                 ['onValueCommit', '(value: number[]) => void', '—', '互動結束觸發:滑鼠放開,或鍵盤 Arrow/Page/Home/End 每次有效變更(防抖用)'],
                 ['min / max', 'number', '0 / 100', '值範圍'],
                 ['step', 'number', '1', '步進'],
-                ['size', "'sm' | 'md' | 'lg'", "'md'", '**只影響容器外高**,不影響 track/thumb 尺寸'],
+                ['size', "'sm' | 'md' | 'lg'", "'md'", '只影響容器外高,不影響 track/thumb 尺寸'],
                 ['disabled', 'boolean', 'false', '灰階降級(range/thumb border→border,thumb bg 沉回 bg-canvas(不透明背景色))'],
                 ['minStepsBetweenThumbs', 'number', '—', 'range mode 兩 thumb 最小距離'],
               ].map(([p, t, d, desc]) => (
@@ -94,7 +94,7 @@ export const ColorMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>一種視覺,多種容器尺寸</H3>
-        <Desc>Slider 的視覺(track 厚度、thumb 直徑、thumb 邊框寬度)是**固定單一值**——不隨 `size` 變動。業界(Material / Ant / Radix Themes / shadcn)共識:thumb 必須足夠大以便手指/鼠標捕捉,track 太細會看不清 range。</Desc>
+        <Desc>Slider 的視覺(track 厚度、thumb 直徑、thumb 邊框寬度)是固定單一值——不隨 `size` 變動。業界(Material / Ant / Radix Themes / shadcn)共識:thumb 必須足夠大以便手指/鼠標捕捉,track 太細會看不清 range。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>元素</Th><Th>值</Th><Th>Token</Th></tr></thead>
@@ -146,7 +146,7 @@ export const StateBehavior: Story = {
     <div className="flex flex-col gap-6 max-w-md">
       <div>
         <H3>互動狀態</H3>
-        <Desc>Hover 和 Active 用**陰影**(elevation)不用色變——Slider 是「當前位置指示器」,底色不該動(動了會暗示是另一個狀態)。對齊 Material 3 / iOS / Linear 共識。</Desc>
+        <Desc>Hover 和 Active 用陰影(elevation)不用色變——Slider 是「當前位置指示器」,底色不該動(動了會暗示是另一個狀態)。對齊 Material 3 / iOS / Linear 共識。</Desc>
         <div className="flex flex-col gap-3">
           <div className="border border-dashed border-divider rounded-md p-3">
             <div className="text-caption text-fg-muted mb-2">Default</div>
@@ -165,7 +165,7 @@ export const StateBehavior: Story = {
 
       <div>
         <H3>Disabled 策略:灰階 swap(對照 Switch)</H3>
-        <Desc>Slider 用灰階 swap(range/thumb border: primary→border),不用 opacity。因為 Slider 的 state 載體是**位置/長度**(thumb 在哪 / range 多長),不是顏色——灰色 thumb 在灰色 track 上,位置資訊跟 primary 版本完全一樣。對照 Switch 的唯一載體是顏色,必須 opacity 保留顏色。</Desc>
+        <Desc>Slider 用灰階 swap(range/thumb border: primary→border),不用 opacity。因為 Slider 的 state 載體是位置/長度(thumb 在哪 / range 多長),不是顏色——灰色 thumb 在灰色 track 上,位置資訊跟 primary 版本完全一樣。對照 Switch 的唯一載體是顏色,必須 opacity 保留顏色。</Desc>
       </div>
     </div>
   ),
@@ -188,7 +188,7 @@ export const ColorBindingRule: Story = {
           </table>
         </div>
         <p className="text-footnote text-fg-muted mt-3">
-          **強制規則**:未來若要改 Range 的 disabled 色(例如加新 variant),必須同步改 Thumb border——不讓兩者漂移。
+          強制規則:未來若要改 Range 的 disabled 色(例如加新 variant),必須同步改 Thumb border——不讓兩者漂移。
         </p>
       </div>
 

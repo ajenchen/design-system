@@ -597,7 +597,7 @@ export const StateBehavior: Story = {
         <H3>狀態行為</H3>
         <Desc>
           Sidebar 層級特有的狀態:collapse / expand 三種模式、mobile offcanvas、active item single-selection、open state cookie 持久化。
-          Item-level default / hover / active / selected / disabled **色彩**由 `ColorMatrix` 作為 state-driven 矩陣完整呈現(共用 item-anatomy row primitive 主檔);本 story 展示 container 層的結構狀態切換。
+          Item-level default / hover / active / selected / disabled 色彩由 `ColorMatrix` 作為 state-driven 矩陣完整呈現(共用 item-anatomy row primitive 主檔);本 story 展示 container 層的結構狀態切換。
         </Desc>
       </div>
 
@@ -672,7 +672,7 @@ export const StateBehavior: Story = {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">行為 3:Icon mode 時 label 隱藏 → Tooltip 代償</span>
         <Desc>
-          collapse 到 icon mode 時 label 文字隱藏,滑鼠 hover menu button(**需 per-button 傳 `tooltip` prop**,opt-in)才出現 Tooltip(顯示 label)補償 — 對齊 Linear / GitHub 慣例,避免 icon-only 狀態讓使用者忘記每個 icon 的含義。SidebarMenuButton 內建此行為(`tooltip` prop)。
+          collapse 到 icon mode 時 label 文字隱藏,滑鼠 hover menu button(需 per-button 傳 `tooltip` prop,opt-in)才出現 Tooltip(顯示 label)補償 — 對齊 Linear / GitHub 慣例,避免 icon-only 狀態讓使用者忘記每個 icon 的含義。SidebarMenuButton 內建此行為(`tooltip` prop)。
         </Desc>
       </div>
 
@@ -682,9 +682,9 @@ export const StateBehavior: Story = {
         <ul className="text-caption text-fg-secondary space-y-1.5 ml-4 list-disc">
           <li>`collapsible="offcanvas"` 用於主內容為主的 app(sidebar 是啟動器,使用者常關);`collapsible="icon"` 用於深度導覽 app(sidebar 是常駐工作區)。</li>
           <li>open state 寫 cookie `sidebar_state`(7 天 max-age);Provider 只寫不讀,還原由 consumer 讀 cookie 傳 `defaultOpen`(避免 SSR hydration flash)。</li>
-          <li>Mobile(&lt;768px)時 `offcanvas`(預設)/ `icon` 走 Sheet overlay,小螢幕不佔固定空間;**`collapsible="none"` 例外**——`none` 在 `isMobile` 判斷前提前 return,mobile 下仍是固定寬度側欄,不進 Sheet。</li>
+          <li>Mobile(&lt;768px)時 `offcanvas`(預設)/ `icon` 走 Sheet overlay,小螢幕不佔固定空間;`collapsible="none"` 例外——`none` 在 `isMobile` 判斷前提前 return,mobile 下仍是固定寬度側欄,不進 Sheet。</li>
           <li>Icon mode 下 active item 的 `bg-neutral-selected` 仍然顯示,但 label 不可見——提供最小視覺指引讓使用者知道「當前在哪」。</li>
-          <li>Cmd+B / Ctrl+B 全域快捷鍵由 SidebarProvider 監聽,但有三道 guard(2026-07-05 D4 修):`defaultPrevented`(app editor 已處理同鍵時不 double-fire)/ `isComposing`(IME 組字中不攔)/ 可編輯 target(`input` / `textarea` / `contentEditable` 內按 Cmd/Ctrl+B **不 toggle**,讓位給 bold 等編輯語意)。仍無 `disableShortcut` opt-out。</li>
+          <li>Cmd+B / Ctrl+B 全域快捷鍵由 SidebarProvider 監聽,但有三道 guard(2026-07-05 D4 修):`defaultPrevented`(app editor 已處理同鍵時不 double-fire)/ `isComposing`(IME 組字中不攔)/ 可編輯 target(`input` / `textarea` / `contentEditable` 內按 Cmd/Ctrl+B 不 toggle,讓位給 bold 等編輯語意)。仍無 `disableShortcut` opt-out。</li>
         </ul>
       </div>
     </div>

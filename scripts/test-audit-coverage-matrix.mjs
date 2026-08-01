@@ -131,7 +131,7 @@ try {
     writeFileSync(planPath, `${JSON.stringify(corruptPlan, null, 2)}\n`)
     const incompletePlan = run('--check')
     assert.equal(incompletePlan.status, 1, 'an incomplete deterministic plan must fail closed')
-    assert.match(incompletePlan.stderr, /plan must enumerate exactly 24 deterministic dimensions|matrix\/plan dimensions differ|unreferenced commands/)
+    assert.match(incompletePlan.stderr, /matrix\/plan dimensions differ|unreferenced commands/)
   } finally {
     writeFileSync(planPath, `${JSON.stringify(deterministicPlan, null, 2)}\n`)
   }

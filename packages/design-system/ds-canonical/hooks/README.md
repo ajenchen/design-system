@@ -95,7 +95,7 @@ Node helper 必須是本 canonical tree 內可盤點、可雜湊的 committed `.
 
 - **L1 Pre-write**:`check_file_size_budget.sh` + `check_story_invariants.sh`(內含 principles canonical + l3 primitive 等 5 個合一)等(PreToolUse 阻擋 / 警告)
 - **L2 Per-edit**(PostToolUse Write|Edit|MultiEdit,script 內自過濾 governance file):`log_governance_fires.sh` → `$GOVERNANCE_STATE_DIR/hook-fires.jsonl`(governance file 編輯軌跡)+ `log_skill_invokes.sh`
-- **L3 Periodic**:`/knowledge-prune` skill 季度跑,retire ≥ 5%
+- **L3 Periodic**:`/knowledge-prune` skill 季度跑；量化 retire rate，但只 retire 有證據的噪音，禁止為湊比例硬刪
 
 Runtime telemetry 必須由 trusted adapter 明示設定 `GOVERNANCE_TELEMETRY_OPT_IN=1`。`$GOVERNANCE_STATE_DIR` 只能在 Git-owned `<git-dir>/governance-runtime/` 內；未指定時使用該 Git-owned default，read-only / 未 opt-in 時不寫任何 runtime bytes。Generated provider homes 不是 telemetry authority。
 

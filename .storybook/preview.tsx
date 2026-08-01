@@ -4,4 +4,6 @@
 import '../src/globals.css'
 import preview from '@qijenchen/storybook-config/preview'
 
-export default preview
+// Keep the default export statically object-shaped so Storybook's config parser can inspect it
+// without emitting a false CSF parsing warning for an imported identifier.
+export default { ...preview }

@@ -5,8 +5,12 @@ import { ResizeHandle } from './resize-handle'
 
 const meta: Meta<typeof ResizeHandle> = {
   title: 'Design System/Patterns/Resize Handle',
+  tags: ['autodocs'],
   component: ResizeHandle,
-  parameters: { layout: 'centered' },
+  parameters: {
+    layout: 'centered',
+    docs: { description: { component: '可調整面板尺寸的拖曳把手，提供方向、游標與可操作區的一致基礎。當 split pane 或側欄允許使用者調整寬高時使用，不作一般分隔線。' } },
+  },
 }
 export default meta
 

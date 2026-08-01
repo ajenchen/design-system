@@ -60,7 +60,7 @@
     "audit:staged-rollout-check": "node infra/governance/bin/staged-rollout.mjs --check --json",
     "audit:provider-neutral-residue": "node scripts/check-provider-neutral-ssot-residue.mjs",
     "test:ci-evidence": "node --test scripts/test-produce-ci-enforced-evidence.mjs",
-    "test:model-evidence": "node scripts/test-model-evidence-broker-hardening.mjs && node scripts/test-model-deep-audit-safety.mjs && node scripts/test-deep-audit-evidence-schema-parity.mjs",
+    "test:model-evidence": "node scripts/test-model-evidence-broker-hardening.mjs && node scripts/test-review-bundle-materialization-guard.mjs && node scripts/test-model-deep-audit-safety.mjs && node scripts/test-deep-audit-evidence-schema-parity.mjs",
     "test:model-evidence:managed": "node scripts/test-managed-envelope-binding.mjs && node scripts/test-model-release-authority.mjs",
     "test:managed-ci-trusted-execution": "node --test scripts/test-managed-ci-trusted-execution.mjs",
     "test:staged-rollout": "node --test infra/governance/test/staged-rollout.test.mjs",

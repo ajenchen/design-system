@@ -1046,7 +1046,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
                   <div
                     className={cn(
                       'absolute left-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 z-10',
-                      'transition-opacity duration-150',
+                      'transition-opacity duration-150 motion-reduce:duration-0',
                       // armVisible state 控制,或 focus-within 時 a11y 強制顯示
                       armVisible ? 'opacity-100' : 'opacity-0 pointer-events-none',
                       'focus-within:opacity-100 focus-within:pointer-events-auto',
@@ -1080,7 +1080,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
                   <div
                     className={cn(
                       'absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 z-10',
-                      'transition-opacity duration-150',
+                      'transition-opacity duration-150 motion-reduce:duration-0',
                       armVisible ? 'opacity-100' : 'opacity-0 pointer-events-none',
                       'focus-within:opacity-100 focus-within:pointer-events-auto',
                     )}

@@ -41,9 +41,16 @@ paths:
 
 **Story `name:` field 必中文人話**(no auto-compile 豁免):anatomy 6-story canonical 的中文 name(如 `'元件總覽'`)為 checked-in convention(`check_story_invariants.sh` R4 title_canonical / R5 name_jargon 看守);`compile-stories.mjs` 僅做 spec/tsx componentMeta key drift `--check`(stdout POC markdown),**不**產生 stories 或 name 欄。Manually-written stories `name:` 用純英文 implementation label(`'Default'` / `'Pressed'` / `'SizeMatrix'`)= drift,**必 humanize 中文**。Export const 維持 PascalCase(英)為 code identifier,**`name:` field 為 reader-facing 必中文**(術語例外:`FAQ` / 元件名 `Avatar/Tooltip` 等專有可保英)。
 
+**Autodocs component 導讀必寫**:reader-facing、非 anatomy 的 meta 只要標
+`tags: ['autodocs']`，就必在 `parameters.docs.description.component` 用 1–3 句人話回答
+「這個單元解決什麼」與「何時用／何時改用近親」。不可只重複 component 名、props 或內部代號，
+也不可用 TODO/WIP stub。機械 gate=`scripts/audit-content-quality.mjs --check`；語意是否真的提供
+用途與選擇判準仍由 Deep Audit Storybook content judgment 全量判讀。
+
 ## 範例最高準則
 
-精簡幹練、0 重複、每 story earn its existence(audit Dim 24/25/28/29/30 抓)。
+精簡幹練、0 重複、每 story earn its existence；Autodocs 先有用途/選擇導讀，再讓各 story
+各教一件新事(audit Dim 24/25/28/29/30/43 抓)。
 
 **Earn-existence 2 test**:(a) 教別 story 沒教的原則?(b) 移除後 spec 理解 degrade?兩題皆 NO → retire。
 

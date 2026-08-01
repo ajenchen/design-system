@@ -280,7 +280,7 @@ export const RowAutoHeightInlineEdit: Story = {
     return (
       <div className="max-w-5xl">
         <p className="text-caption text-fg-muted mb-2">
-          autoRowHeight=true。Note 欄位 wrap text 撐高 row。其他單行 cell 在高 row 中應**頂對齊**。
+          autoRowHeight=true。Note 欄位 wrap text 撐高 row。其他單行 cell 在高 row 中應頂對齊。
           Click 任一 cell 進 edit:文字位置 view↔edit 不偏移(仍頂對齊),
           frame 填 cell,Field 自帶 state ring(focus-within → primary)。
         </p>
@@ -935,8 +935,8 @@ export const NestedRowsWithDrag: Story = {
     return (
       <div className="flex flex-col gap-3 max-w-3xl">
         <p className="text-caption text-fg-muted">
-          Tree-table drag 設計準則:**top-level rows 可拖**(handle 浮在 row 左緣),
-          **sub-rows 無 handle 不可拖**(對齊 Notion 保守)。Cross-parent drop 過濾,
+          Tree-table drag 設計準則:top-level rows 可拖(handle 浮在 row 左緣),
+          sub-rows 無 handle 不可拖(對齊 Notion 保守)。Cross-parent drop 過濾,
           顯 invalid signal。Drop indicator 水平 2px primary line — 主檔對齊 TreeView。
         </p>
         <DataTable
@@ -1177,7 +1177,7 @@ export const WithBulkActions: Story = {
                 actions={
                   <>
                     <Button variant="tertiary" size="md" startIcon={Download}>下載</Button>
-                    <Button variant="tertiary" size="md" startIcon={Trash2} danger>移除</Button>
+                    <Button variant="tertiary" size="md" startIcon={Trash2}>移除</Button>
                   </>
                 }
               />
@@ -2194,7 +2194,7 @@ export const RoadmapAllInOne: Story = {
             actions={
               <>
                 <Button variant="tertiary" size="md" startIcon={Download}>匯出</Button>
-                <Button variant="tertiary" size="md" startIcon={Trash2} danger>移除</Button>
+                <Button variant="tertiary" size="md" startIcon={Trash2}>移除</Button>
               </>
             }
           />

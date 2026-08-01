@@ -37,7 +37,7 @@ export const Overview: Story = {
 
       <div>
         <H3>Item 內部結構</H3>
-        <Desc>[startIcon?] [label span px-1] [suffix gap-1:badge?]——跟 Button size sm/md/lg 的 `gap-1` 和 `px-1` label 完全對齊,視覺肌肉記憶直接複用。</Desc>
+        <Desc>依序排列可選 startIcon、具 px-1 的 label span、以及可含 badge 的 gap-1 suffix；跟 Button size sm/md/lg 的 `gap-1` 和 `px-1` label 完全對齊,視覺肌肉記憶直接複用。</Desc>
         <div className="flex flex-col gap-3 border border-border rounded-lg p-4 max-w-md">
           <SegmentedControl defaultValue="all">
             <SegmentedControlItem value="all" badge={<Badge count={12} variant="low" />}>全部</SegmentedControlItem>
@@ -257,7 +257,7 @@ export const IconOnlyMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>iconOnly 是 group-level,不是 item-level</H3>
-        <Desc>**必須整組一致**:要嘛全部 icon-only,要嘛全部帶 label。混搭會讓使用者無法預測哪個 item 有 tooltip、哪個沒有,也破壞 segmented 的對稱感。iconOnly 時每個 item 變正方形(`aspect-square p-0`),必須設 aria-label(dev-mode runtime warn,非 TS 強制),自動渲染 tooltip。</Desc>
+        <Desc>必須整組一致:要嘛全部 icon-only,要嘛全部帶 label。混搭會讓使用者無法預測哪個 item 有 tooltip、哪個沒有,也破壞 segmented 的對稱感。iconOnly 時每個 item 變正方形(`aspect-square p-0`),必須設 aria-label(dev-mode runtime warn,非 TS 強制),自動渲染 tooltip。</Desc>
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-4">
             <span className="text-caption text-fg-muted w-24">對齊選擇</span>

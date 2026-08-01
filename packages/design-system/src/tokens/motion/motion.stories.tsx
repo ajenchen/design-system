@@ -10,6 +10,7 @@ import {
 
 const meta: Meta = {
   title: 'Design System/Tokens/Motion',
+  tags: ['autodocs'],
   parameters: {
     layout: 'padded',
     docs: {

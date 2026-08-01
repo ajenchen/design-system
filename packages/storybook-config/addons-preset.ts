@@ -33,7 +33,6 @@ export const sharedTypescriptConfig = {
 }
 
 export const sharedStoryGlobs = [
-  '../packages/design-system/src/**/*.mdx',
   '../packages/design-system/src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
 ]
 

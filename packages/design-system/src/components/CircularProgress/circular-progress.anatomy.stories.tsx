@@ -80,7 +80,7 @@ export const Overview: Story = {
         <p className="text-footnote text-fg-muted mt-3">
           色彩策略:固定 <span className="font-mono">text-info</span>;Button loading 傳
           <span className="font-mono"> className="text-current" </span>讓 arc 繼承 button
-          foreground(常為白色)。**不隨狀態變色**——「完成 / 失敗」由 consumer 端 swap 整個元件
+          foreground(常為白色)。不隨狀態變色——「完成 / 失敗」由 consumer 端 swap 整個元件
           呈現(見 spec「不設 status prop」)。
         </p>
       </div>
@@ -151,7 +151,7 @@ export const UsageInline: Story = {
         <Desc>
           有進度資訊時傳 <span className="font-mono">value</span>,CircularProgress 切換為
           determinate 模式(fixed arc + track)。可搭配 <span className="font-mono">affix</span>
-          顯示百分比;完成時 consumer 端 swap 為 Check icon / 結果內容,**不做 success morph**
+          顯示百分比;完成時 consumer 端 swap 為 Check icon / 結果內容,不做 success morph
           (見 spec「不設 status prop」)。
         </Desc>
         <div className="flex items-center gap-4">

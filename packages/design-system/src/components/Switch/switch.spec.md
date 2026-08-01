@@ -139,6 +139,14 @@ sm 和 md 視覺相同（純粹命名 mapping，讓消費者可直接傳同一�
 - `readonly` — **Field 內** = 灰框 + 勾/叉 icon(消費 `fieldWrapperStyles` readonly,與 Input readonly 同一視覺語言;世界級:Salesforce output ✓ glyph / SAP 靜態文字 — readonly 下 boolean 是資料 value 非控件);**standalone** = 正常色鎖互動(settings list 場景)。
 - `disabled` — 同上表「Readonly vs Disabled」(opacity 弱化);`mode='disabled'` 直傳與 `disabled` prop 等效(effectiveDisabled,2026-06-12)。
 
+### Controlled / Uncontrolled dual-mode
+
+`checked` / `defaultChecked` / `onCheckedChange` 保留 Radix Switch 的 dual-mode contract：傳
+`checked` 時由 consumer 受控；只傳 `defaultChecked` 時由 Switch 內部持有。Wrapper
+以共用 `useControllable` 作單一狀態來源，因此 edit 切換後改成 `mode="view"`
+或 Field readonly 時，非互動分支仍會顯示當前值，不會退回初始值。
+Uncontrolled form 的 `reset()` 會回復 `defaultChecked`；controlled 模式不改寫 consumer 值。
+
 ---
 
 ## label / description 整合

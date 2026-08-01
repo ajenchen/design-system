@@ -16,7 +16,7 @@
 
 ## Public pattern vs Internal pattern(2026-05-23 user 永久拍板 SSOT)
 
-詳定義 → `.claude/rules/ui-development.md`「Public component vs Internal primitive canonical」段。
+詳定義 → `packages/design-system/ds-canonical/rules/ui-development.md`「Public component vs Internal primitive canonical」段。
 
 - **Public pattern**:consumer 可直接 import 用,或作為公開設計原則 / anatomy 參照(`action-bar` / `resize-handle` / `element-anatomy`(item-anatomy + slots)/ `header-canonical`(ChromeHeader header anatomy))。Storybook title `Design System/Patterns/<Name>`。
 - **Internal pattern**:只被 DS 內部其他元件 wrap、consumer 不直接碰且**無公開 anatomy 參照**(`horizontal-overflow useOverflowItems` / `overlay-surface SurfaceHeader/Body/Footer`)。Storybook title `Design System/Internal Patterns/<Name>`。Frontmatter `internal: true`。Export jsDoc `@internal`。
@@ -42,10 +42,10 @@ element-level 結構分類永遠用 **anatomy**(Material / Polaris / Atlassian /
 
 | 疑似要放這但其實不是 | 實際應去 | 為什麼 |
 |-------------------|---------|--------|
-| 「怎麼寫 story」的指南 | `.claude/skills/story-writing/` | 文件撰寫 workflow,不是 runtime primitive。AI 只在寫 story 時需要 |
-| 「元件完成清單」/ 品質 gate | `.claude/skills/component-quality-gate/` | 是 invoke-time checklist,不是 runtime primitive |
-| 「規則放哪裡」的 8-home 指南 | `.claude/skills/design-system-audit/references/rule-placement.md` | governance reference,audit skill 相關 |
-| CLAUDE.md 某段太長想搬出來 | 先看 8-home flowchart:是 runtime pattern 才來這 | 「要搬出 CLAUDE.md」不等於「該放 patterns/」 |
+| 「怎麼寫 story」的指南 | `packages/design-system/ds-canonical/skills/story-writing/` | 文件撰寫 workflow,不是 runtime primitive。AI 只在寫 story 時需要 |
+| 「元件完成清單」/ 品質 gate | `packages/design-system/ds-canonical/skills/component-quality-gate/` | 是 invoke-time checklist,不是 runtime primitive |
+| 「規則放哪裡」的 Level 1–9 taxonomy | `packages/design-system/ds-canonical/skills/design-system-audit/references/rule-placement.md` | governance reference,audit skill 相關 |
+| provider instruction 某段太長想搬出來 | 先看 Level 1–9 rule-placement taxonomy:是 runtime pattern 才來這 | 「要搬出 provider instruction」不等於「該放 patterns/」 |
 | 單一元件的規則 | `components/{Name}/{name}.spec.md` | 只 1 個元件影響範圍 |
 | Token 命名規則 | `tokens/` 對應 spec | |
 | Cross-cutting non-visual primitive(i18n / formatters / type modules)| `packages/design-system/src/lib/{topic}/` | 無 visual surface — 對齊 Material `@mui/material/locale` / Ant ConfigProvider 共識 |

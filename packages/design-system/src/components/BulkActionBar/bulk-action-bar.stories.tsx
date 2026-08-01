@@ -7,8 +7,12 @@ import { Alert } from '@/design-system/components/Alert/alert'
 
 const meta: Meta<typeof BulkActionBar> = {
   title: 'Design System/Components/BulkActionBar/展示',
+  tags: ['autodocs'],
   component: BulkActionBar,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '在使用者選取多筆資料後顯示選取數量與批次操作，並可清除選取。表格或清單進入批次處理狀態時使用，動作一律維持次要視覺重量。' } },
+  },
 }
 export default meta
 type Story = StoryObj<typeof BulkActionBar>
@@ -112,7 +116,7 @@ export const EmptySelectionHidden: Story = {
     <div className="text-caption text-fg-muted">
       selection=[] → BulkActionBar 回傳 null,<strong>不佔 layout</strong>(對齊禁止事項 #3)
       <div className="mt-3 border border-dashed border-border-muted p-3">
-        <BulkActionBar selection={[]} actions={<Button variant="tertiary" size="md">Action</Button>} />
+        <BulkActionBar selection={[]} actions={<Button variant="tertiary" size="md">封存</Button>} />
         ↑ 這裡 BulkActionBar 完全不渲染
       </div>
     </div>

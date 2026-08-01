@@ -30,7 +30,7 @@ Claude Code 專案級 subagent 現在會讀取 `.claude/agents/*.md`。共用 wo
 
 | 疑似要放這但其實不是 | 正確去處 | 為什麼 |
 |---------------------|---------|--------|
-| 可能含產品／UI／UX SSOT 決策的 workflow | `.claude/skills/` | agent 返回一次 summary；真正 P2H checkpoint 需在 main AI 端處理 |
+| 可能含產品／UI／UX SSOT 決策的 workflow | `packages/design-system/ds-canonical/skills/`(runtime 使用 generated provider view) | agent 返回一次 summary；真正 P2H checkpoint 需在 main AI 端處理 |
 | 一次性 script | `.claude/commands/` | agent 是 AI worker,不是 script |
 | 每 session signal rule | `CLAUDE.md` | agent 只在 invoke 時載入 |
 | 機械 tool-level 檢查 | `.claude/hooks/` | hook 是 pre/post tool event,不是 AI agent |

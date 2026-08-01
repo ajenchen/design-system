@@ -5,7 +5,11 @@ import { Toaster, toast } from './toast'
 
 const meta: Meta = {
   title: 'Design System/Components/Toast/展示',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '在操作完成後短暫顯示非阻斷回饋，由 Toaster 統一管理位置與佇列。適用儲存成功、背景工作完成等可自行消退的訊息；需持續閱讀或操作時用 Alert。' } },
+  },
 }
 export default meta
 

@@ -3,8 +3,9 @@
 //
 // Why(上一輪稽核抓到 5/68 borderline,且**沒有任何稽核在檢查分類一致性**):
 //   每個 DS 單元的 category 由三訊號決定:folder / storybook title prefix / frontmatter isInternal。
-//   三訊號必須**互相一致**(都指同一 category)。不一致 = 分類漂移(像「folder 在 components 但 title 寫 Internal」)。
-//   本檢查 = 機械驗三訊號一致(零誤判)。SSOT = packages/design-system/src/story-governance/category-matrix.json。
+//   三訊號必須**互相一致**(都指同一 category),且 reader-facing Autodocs 必符合該
+//   category 的 policy。不一致 = 分類 / 文件可見性漂移。
+//   SSOT = packages/design-system/src/story-governance/category-matrix.json。
 //
 // 注意分工:本檢查只管「三訊號一致」(deterministic)。「該單元『本質上』該不該是這 category」
 //   (機械 render test 判斷,如 element-anatomy 本質是 internal)屬 judgment audit dim,不在此(P3 遷移處理)。
@@ -43,6 +44,25 @@ function fromTitle(title) {
 const failures = []
 const seen = []
 
+// storySort is a runtime projection of matrix.sidebarOrder. Keep the shared
+// Storybook package in the same order without introducing a second authority.
+const previewSource = readFileSync(join(ROOT, 'packages/storybook-config/preview.tsx'), 'utf8')
+const storySortStart = previewSource.indexOf('storySort:')
+const sidebarLabels = Object.values(matrix.categories)
+  .sort((a, b) => a.sidebarOrder - b.sidebarOrder)
+  .map(rule => rule.titlePrefix.split('/').at(-1))
+const internalIndex = sidebarLabels.indexOf('Internal')
+if (internalIndex >= 0) sidebarLabels.splice(internalIndex + 1, 0, 'Internal Patterns')
+let previousSidebarPosition = storySortStart
+for (const label of sidebarLabels) {
+  const position = storySortStart >= 0 ? previewSource.indexOf(`'${label}'`, storySortStart) : -1
+  if (position < 0 || position <= previousSidebarPosition) {
+    failures.push(`✗ packages/storybook-config/preview.tsx: storySort 未依 category-matrix sidebarOrder 排列(${sidebarLabels.join(' → ')})`)
+    break
+  }
+  previousSidebarPosition = position
+}
+
 // 列舉 unit 目錄
 const unitDirs = []
 for (const base of ['components', 'patterns', 'tokens']) {
@@ -77,8 +97,11 @@ for (const relDir of unitDirs) {
   const resolvedCat = isInternal ? 'internal' : folderBase
   // 掃**每一個** story file 的 title(同 unit 全部 story 必同 category;不可只看第一個)
   const titleCats = []
+  const storySources = new Map()
   for (const sf of storyFiles) {
-    const m = readFileSync(join(absDir, sf), 'utf8').match(/title:\s*(['"][^'"]+['"])/)
+    const storySource = readFileSync(join(absDir, sf), 'utf8')
+    storySources.set(sf, storySource)
+    const m = storySource.match(/title:\s*(['"][^'"]+['"])/)
     const t = m ? fromTitle(m[1]) : null
     if (t) titleCats.push({ sf, t })
   }
@@ -99,9 +122,26 @@ for (const relDir of unitDirs) {
   if (distinct.length > 1) {
     failures.push(`✗ ${relDir}: 同 unit 的 story titles 跨 category 不一致(${distinct.join(' vs ')})`)
   }
+
+  // Invariant 4:public category 的 reader-facing owner story 必開 Autodocs;
+  // internal/reference category 必維持關閉。Anatomy / principles 已各自是文件頁,
+  // 所以 tag 只由 main `*.stories.tsx` owner 持有,避免三層各多一份重複 Docs。
+  const expectedAutodocs = matrix.categories[resolvedCat]?.autodocs
+  for (const sf of storyFiles.filter(name => !name.endsWith('.anatomy.stories.tsx') && !name.endsWith('.principles.stories.tsx'))) {
+    const storySource = storySources.get(sf)
+    const metaEnd = storySource.indexOf('export default')
+    const metaSource = metaEnd >= 0 ? storySource.slice(0, metaEnd) : storySource
+    const hasAutodocs = /tags:\s*\[[^\]]*['"]autodocs['"]/.test(metaSource)
+    if (expectedAutodocs === true && !hasAutodocs) {
+      failures.push(`✗ ${relDir}/${sf}: category=[${resolvedCat}]要求 main story 啟用 tags:['autodocs']`)
+    }
+    if (expectedAutodocs === false && hasAutodocs) {
+      failures.push(`✗ ${relDir}/${sf}: category=[${resolvedCat}]禁止 main story 啟用 Autodocs`)
+    }
+  }
 }
 
-console.log('\n=== Category Classification Invariant(三訊號一致性:folder / title / frontmatter)===')
+console.log('\n=== Category Classification Invariant(分類訊號 + Autodocs + sidebar order)===')
 console.log(`Scanned: ${seen.length} units   FAIL: ${failures.length}\n`)
 if (failures.length) {
   console.log(failures.join('\n'))

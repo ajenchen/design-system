@@ -1,7 +1,8 @@
 <!-- 2026-06-05 — 無需 client-side auth widget(原 Netlify Identity invite-only widget 已移除)。
 
      Access control 走 Netlify Edge Function 自做 HTTP Basic Auth(免費,在 edge 層擋,client 不需 widget):
-       1. `npm run setup:netlify` 完成自動部分(CLI + site + 連 repo)
+       1. `npm run setup:netlify` 只做唯讀診斷並列出 Dashboard 手動步驟；它不安裝或呼叫 CLI，
+          也不自動登入、建站或連 repo（固定 exit 2 / MANUAL ACTION REQUIRED）
        2. Netlify → Site configuration → Environment variables → 加 `STORYBOOK_BASIC_AUTH` = `user:password`
        3. 下次 deploy → edge function `netlify/edge-functions/basic-auth.ts` 比對 env var(fail-closed-v1:
           env var 未設或格式壞 → 503 鎖站;env var 正確、帳密缺或錯 → 401 + WWW-Authenticate 瀏覽器原生帳密彈窗)
@@ -11,4 +12,4 @@
        - 免費要真擋陌生人 = Edge Function 自做 Basic Auth(Edge Functions 所有方案含 free-tier 可用,`.netlify.app` 預設網址直接生效)
        - 密碼不進 repo,只存 Netlify 後台 env var,edge 執行時讀取
 
-     詳 CLAUDE.md `# 🔒 Access control — 免費 HTTP Basic Auth via Edge Function` 段。 -->
+     詳 README.md `Free password protection on Netlify` 與 docs/02-create-new-product.md `Netlify 部署`。 -->

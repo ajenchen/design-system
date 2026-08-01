@@ -418,7 +418,7 @@ export const IndentAlignment: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Indicator 永遠 inline 對齊 label 第一行</H3>
-        <Desc>**刻意打破 item-layout 的 24px 閾值規則**——不管 indicator 尺寸、不管有無 description,一律 inline 對齊。Column rhythm 優先於「大 prefix 視覺重量平衡文字塊」。這是 Steps 跟其他 row primitive 的本質差異——Steps 是「一條有連接關係的進度路徑」,column rhythm 是元件本身。</Desc>
+        <Desc>刻意打破 item-layout 的 24px 閾值規則——不管 indicator 尺寸、不管有無 description,一律 inline 對齊。Column rhythm 優先於「大 prefix 視覺重量平衡文字塊」。這是 Steps 跟其他 row primitive 的本質差異——Steps 是「一條有連接關係的進度路徑」,column rhythm 是元件本身。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
           <Steps orientation="vertical" value="b" completedValues={['a']}>
             <StepItem value="a"><StepLabel>驗證電子信箱</StepLabel></StepItem>

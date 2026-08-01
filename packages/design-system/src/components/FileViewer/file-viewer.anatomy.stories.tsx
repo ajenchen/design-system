@@ -903,8 +903,8 @@ export const StateBehavior: Story = {
       <div>
         <H3>Keyboard shortcut 對照</H3>
         <Desc>
-          Focus 在 input / textarea / contentEditable 時,FileViewer 自管的快捷鍵(← → / +・−・0 / F / I)**全部不觸發**(避免打字被快捷鍵劫持)。
-          **例外:Esc** 由 Radix DismissableLayer 以 document capture-phase 監聽,不受此排除影響 —— 在 InfoPanel textarea 內按 Esc 仍會關閉整個 viewer。
+          Focus 在 input / textarea / contentEditable 時,FileViewer 自管的快捷鍵(← → / +・−・0 / F / I)全部不觸發(避免打字被快捷鍵劫持)。
+          例外:Esc 由 Radix DismissableLayer 以 document capture-phase 監聽,不受此排除影響 —— 在 InfoPanel textarea 內按 Esc 仍會關閉整個 viewer。
           所有 keyboard 動作都有 toolbar button 對應(a11y + tablet / touch 可用性)。
         </Desc>
         <div className="overflow-x-auto">

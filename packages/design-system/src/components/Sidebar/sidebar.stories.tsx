@@ -37,7 +37,11 @@ import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-h
 
 const meta: Meta = {
   title: 'Design System/Components/Sidebar/展示',
-  parameters: { layout: 'fullscreen' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'fullscreen',
+    docs: { description: { component: '應用程式主要導覽與工作區 chrome 的側欄結構，包含群組、項目、收合與行動版 Sheet。產品以 primary-sidebar 模式組織跨頁導覽時使用。' } },
+  },
 }
 export default meta
 
@@ -74,13 +78,13 @@ const WorkspaceBrand = () => (
  * User footer——帳號入口(當前使用者)。整行 = 帳號選單(DropdownMenu)觸發點,
  * 點開「個人資料 / 設定 / 登出」。Rule owner = `app-shell.spec.md`
  * 「帳號入口(Account entry)放置 SSOT」:primary-sidebar mode 帳號家 = SidebarFooter,
- * 入口開**帳號選單**、不是 ProfileCard——ProfileCard 是看「別人」的人員卡
+ * 入口開帳號選單、不是 ProfileCard——ProfileCard 是看「別人」的人員卡
  * (預設動作 Chat / 通話,用在自己身上不對);職稱 / 工號等身份資訊歸
  * 帳號選單頂部 DropdownMenuLabel 第二行(text-caption)。
  *
- * **Avatar 尺寸遵守 item-layout.spec 的預設**:
+ * Avatar 尺寸遵守 item-layout.spec 的預設:
  * 無 description → inline 模式 24px @ md(20/24/24 for sm/md/lg)
- * **不要為了跟 icon 對齊而把 avatar 改小**——不同 prefix 類型(icon 16 / avatar 24)
+ * 不要為了跟 icon 對齊而把 avatar 改小——不同 prefix 類型(icon 16 / avatar 24)
  * 的 label x 位置略有差異是可接受的,每個 prefix 反映自己的視覺重量(詳見 spec)。
  */
 // a11y(2026-07-30 帳號選單 rewrite;取代 2026-04-25 <div role='group'> + Avatar hoverCard 結構):

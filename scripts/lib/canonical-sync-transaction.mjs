@@ -446,6 +446,43 @@ function expectedAuthorityGenerationRoot(root, transactionId) {
   return join(authorityGenerationStagingParent(root), `${AUTHORITY_GENERATION_PREFIX}${transactionId}`)
 }
 
+// A SIGKILL between transaction-root creation and durable journal publication cannot run the
+// normal finally/recovery path. Reconcile only roots cryptographically bound by our owner marker;
+// unrelated/unknown sibling directories are never touched.
+export function reapAbandonedAuthorityGenerationStaging({ root = MODULE_ROOT } = {}) {
+  root = canonicalRepositoryRoot(root)
+  const parent = authorityGenerationStagingParent(root)
+  let reaped = 0
+  for (const entry of readdirSync(parent, { withFileTypes: true })) {
+    const match = /^\.governance-build-graph-([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.exec(entry.name)
+    if (!match || !entry.isDirectory()) continue
+    const transactionRoot = join(parent, entry.name)
+    const markerPath = join(transactionRoot, AUTHORITY_GENERATION_OWNER_MARKER)
+    if (!pathEntryExists(markerPath)) continue
+    assertNoSymlinkPath(transactionRoot, markerPath, 'abandoned authority generation owner marker', { allowMissing: false })
+    const markerInfo = lstatSync(markerPath)
+    invariant(markerInfo.isFile() && !markerInfo.isSymbolicLink() && markerInfo.nlink === 1, 'abandoned authority generation owner marker must be one regular file')
+    const marker = JSON.parse(readFileSync(markerPath, 'utf8'))
+    exactKeys(marker, ['schemaVersion', 'kind', 'repoRoot', 'transactionId', 'owner'], 'abandoned authority generation owner marker')
+    if (marker.repoRoot !== root) continue
+    invariant(
+      marker.schemaVersion === 1
+        && marker.kind === 'governance-build-graph-output-transaction'
+        && marker.transactionId === match[1],
+      'abandoned authority generation owner marker binding mismatch',
+    )
+    exactKeys(marker.owner, ['host', 'pid'], 'abandoned authority generation owner')
+    invariant(marker.owner.host === hostname(), `abandoned authority generation owner host cannot be proven inactive:${marker.owner.host}`)
+    invariant(Number.isSafeInteger(marker.owner.pid) && marker.owner.pid > 0, 'abandoned authority generation owner pid is invalid')
+    invariant(!processIsAlive(marker.owner.pid), `authority generation transaction is still active on pid ${marker.owner.pid}`)
+    invariant(realpathSync(transactionRoot) === transactionRoot, 'abandoned authority generation root is not a real directory')
+    rmSync(transactionRoot, { recursive: true, force: true })
+    fsyncDirectory(parent)
+    reaped += 1
+  }
+  return { reaped }
+}
+
 function removeAuthorityEntry(root, repositoryPath, label = 'authority generation target') {
   const normalized = normalizeRepositoryRelative(repositoryPath, label)
   const target = join(root, normalized)
@@ -695,6 +732,7 @@ export function runAtomicAuthorityGenerationTransaction({
   invariant(typeof generateWorkspace === 'function', 'authority generation requires a workspace generator')
   invariant(typeof verifyWorkspace === 'function' && typeof verifyLive === 'function', 'authority generation verification callbacks are invalid')
   const recovered = recoverInterruptedAuthorityGeneration({ root, targetPaths: targets })
+  reapAbandonedAuthorityGenerationStaging({ root })
   const transactionId = randomUUID()
   const transactionRoot = expectedAuthorityGenerationRoot(root, transactionId)
   const workspaceRoot = join(transactionRoot, 'workspace')

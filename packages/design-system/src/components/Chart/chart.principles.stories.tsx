@@ -327,6 +327,7 @@ export const FiveCategoryLimitRule: Story = {
 
       <Rule
         title="❌ 錯誤 — 7 類別,第 6、7 類只能 reuse 顏色導致視覺衝突"
+        note="同色被分配給不同類別後,legend 與圖形不再能建立一對一辨識;觀看者必須反覆比對標籤,因此超過五類時應先合併低占比項目或拆圖。"
       >
         <div className="w-full max-w-sm">
           <ChartContainer config={tooManyCategoriesConfig}>

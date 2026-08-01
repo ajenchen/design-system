@@ -22,7 +22,7 @@
 
 | 內容類型 | 實際位置 |
 |---------|---------|
-| AI 工作流 / workflow guide(寫 story / 做 prototype / audit) | `.claude/skills/<skill>/` |
+| AI 工作流 / workflow guide(寫 story / 做 prototype / audit) | `packages/design-system/ds-canonical/skills/<skill>/` |
 | AI 每 session 需要的 signal rule | `CLAUDE.md` |
 | AI session 狀態(audit progress / tech debt) | `~/.claude/projects/.../memory/` |
 | Tool-level 機械檢查 | `.claude/hooks/` |

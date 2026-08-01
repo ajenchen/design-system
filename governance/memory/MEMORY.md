@@ -5,17 +5,18 @@
 - [project_goal.md](project_goal.md) — World-class DS where AGENTS.md + specs ensure AI faithfully executes design principles
 
 ## Project (active work)
-- [project_wm_ds_alignment_campaign.md](project_wm_ds_alignment_campaign.md) — WM↔DS 對齊戰役完整收官:beta.84/85 已發版、WM lockfile 真綠 13/13、CellSelect 包裝落地;WM main 已 push(4e83402,CAMPAIGN CLOSED);handoff 在 WM docs
-- [project_governance_evolution_roadmap.md](project_governance_evolution_roadmap.md) — 稽核=永久機構、謂詞化=機械化引擎雙柱;方向 1-3 已落地(判準化 harvest / fail-closed / 造輪三洞),4-7 分期各有 trigger;SSOT → governance/planning/2026-07-07-governance-evolution-roadmap.md
+- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + five-step machine SSOT；舊 baton/P0/activation/certification/fleet/soak 只作歷史 provenance；current state 必由 exact-head deep-audit evidence與 `npm run release:status` 讀回
 
-- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + SHIPPED(07-29);**接手前必讀的跨 session 續作總帳** → governance/planning/2026-07-31-outstanding-work-inventory.md ,內含 3 個 P0 blocker 與 user 07-31 已拍板事項,勿重跑全域盤點;distinct protected Genesis closure candidate 已收斂,仍待 merge/readback 且 blocked:activation ledger 21 項、雙 provider certification、fleet soak
+## Project (closed; retained reference)
+- [project_governance_evolution_roadmap.md](project_governance_evolution_roadmap.md) — 方向 1-3、6-7 已落地；方向 4-5 是有明確 trigger 的 future-reserved reference，不是 current backlog
+- [project_wm_ds_alignment_campaign.md](project_wm_ds_alignment_campaign.md) — WM↔DS 對齊戰役完整收官:beta.84/85 已發版、WM lockfile 真綠 13/13、CellSelect 包裝落地;WM main 已 push(4e83402,CAMPAIGN CLOSED);handoff 在 WM docs
 
 ## Feedback (workflow / collaboration discipline)
 - [feedback_audit_discipline_full_sweep_deterministic_preflight.md](feedback_audit_discipline_full_sweep_deterministic_preflight.md) — 稽核三 invariant:NO-SAMPLE 全盤 / 必 chain deterministic script / Preflight scan(合 3 file)
 - [feedback_solo_dev_workflow.md](feedback_solo_dev_workflow.md) — 1 task = 1 branch + 1 PR；protected main/required checks/conversations/preview/readback；全綠後依 Standing Authorization merge(M28)
 - [feedback_ship_then_revert_anti_pattern.md](feedback_ship_then_revert_anti_pattern.md) — 產品／UI／UX SSOT 真取捨需 exact target-bound decision；工程 remediation AUTO；unknown fail closed(2026-05-15／2026-07-26)
 - [feedback_propose_discipline.md](feedback_propose_discipline.md) — 中文人話(禁 jargon,2026-05-31 擴大至**所有 reply**,user 看不懂英文)+ file:line cite(claim「規定/必配」沒 cite = 撤回)(2026-05-15 + 2026-05-27 + 2026-05-31,合 3 file)
-- [feedback_push_always_call.md](feedback_push_always_call.md) — 每 substantive turn 結尾必 call PushNotification,不自我 suppress(2026-05-17)
+- [feedback_push_always_call.md](feedback_push_always_call.md) — registered runtime 有 PushNotification capability 時 substantive turn 結尾必 call；能力缺席 = nonblocking/unobserved(2026-08-02 provider-neutral 收斂)
 - [Storybook addon preset MUST be .cjs](feedback_storybook_addon_preset_must_be_cjs.md) — beta.27-.31 5 連敗 root cause: 強制 CJS evaluation,bypass Node ESM/esbuild-register CJS-interop 衝突(2026-05-28)
 - [feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md](feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md) — SSOT canonical = 必 P0 BLOCKER 機械強制 with per-line escape comment;禁 P1 WARN soft signal(2026-05-27)
 - [feedback_ai_ground_truth_unreliable_mechanical_primary.md](feedback_ai_ground_truth_unreliable_mechanical_primary.md) — AI self-audit unreliable;mechanical(pixel/DOM/tsc/playwright)= primary defense / AI judgement = supplementary only / new audit layer ALWAYS expand never replace(2026-05-27 + composition fidelity application,合 2 file)
@@ -37,4 +38,4 @@
 - 2026-07-07 D8 headroom:netlify_basic_password→deploy_targets 合併(同部署域 D1 consolidation,invariant 零損;19→18)
 - 2026-07-14 D8 headroom:project_cprime_governance_shipped→reference_cloud_governance_loading 合併(campaign 已完結 + 同雲端治理域 + 同 originSession D1 consolidation,invariant 零損;19→18)
 - 2026-07-23 provider-neutral consolidation:退役 fixed Claude/Codex layer mapping 與 Codex exec transport；歷史原文移至 `governance/archive/memory-retired/2026-07-23-provider-neutral-consolidate/`，現行 authority 只保留 registry/binding/certification contracts
-- 2026-07-31 續作保障:新增 planning `2026-07-31-outstanding-work-inventory.md`(registry 標 active),指標寫入 PNG memory 與本索引;**未新增 index 條目**(維持 17,soft 18)
+- 2026-07-31 續作保障:新增 planning baton；2026-08-01 deep-audit 收為 `reference / non-executable`，live state 回歸 machine evidence；**未新增 index 條目**

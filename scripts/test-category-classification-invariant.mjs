@@ -30,7 +30,33 @@ try {
   writeFileSync(target, orig)
 }
 
-// 3) 還原後必 PASS
+// 3) public component 的 main story 移除 Autodocs → 必 FAIL → 還原
+const AUTODOCS = "  tags: ['autodocs'],\n"
+if (!orig.includes(AUTODOCS)) { console.error('✗ 目標檔缺 Autodocs anchor — 注入基礎失效'); process.exit(1) }
+try {
+  writeFileSync(target, orig.replace(AUTODOCS, ''))
+  const code = run()
+  if (code === 0) { console.error('✗ 移除 Autodocs 後 gate 未 FAIL(detection 失效)'); ok = false }
+  else console.log('✓ Autodocs policy drift 被抓(exit ' + code + ')')
+} finally {
+  writeFileSync(target, orig)
+}
+
+// 4) shared Storybook sidebar 順序背離 matrix → 必 FAIL → 還原
+const previewTarget = 'packages/storybook-config/preview.tsx'
+const previewOrig = readFileSync(previewTarget, 'utf8')
+const ORDER_ANCHOR = "          'Patterns',\n          'Internal',"
+if (!previewOrig.includes(ORDER_ANCHOR)) { console.error('✗ storySort anchor 漂移 — 注入基礎失效'); process.exit(1) }
+try {
+  writeFileSync(previewTarget, previewOrig.replace(ORDER_ANCHOR, "          'Internal',\n          'Patterns',"))
+  const code = run()
+  if (code === 0) { console.error('✗ storySort 順序漂移後 gate 未 FAIL(detection 失效)'); ok = false }
+  else console.log('✓ storySort matrix drift 被抓(exit ' + code + ')')
+} finally {
+  writeFileSync(previewTarget, previewOrig)
+}
+
+// 5) 還原後必 PASS
 if (run() !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
 console.log('✓ 還原後 PASS(gate exit 0)')
 

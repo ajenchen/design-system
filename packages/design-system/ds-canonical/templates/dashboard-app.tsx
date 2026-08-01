@@ -1,5 +1,5 @@
 // 完整 AppShell 範例 — 對齊 DS canonical `sidebar.stories.tsx#IconCollapse` baseline
-// (per `.claude/rules/story-rules.md`「Production-grade composition fidelity」+ M23(d) nearest-same-purpose canonical wins)
+// (per `packages/design-system/ds-canonical/rules/story-rules.md`「Production-grade composition fidelity」+ M23(d) nearest-same-purpose canonical wins)
 //
 // @story-baseline: @qijenchen/design-system/components/Sidebar/sidebar.stories.tsx#IconCollapse
 // (2026-06-02 conformance-model:@story-baseline = consume canonical 結構的意圖,由靜態 conformance hook 驗

@@ -4,22 +4,28 @@
 
 Agent 在執行時按需讀的深度 reference 檔 — audit protocol / FP 記憶 / workflow recipe / lookup tables。**不是 product design canonical**(那該進 spec.md / `packages/design-system/ds-canonical/rules/*.md`)。
 
-## 當前居民(17 檔,2026-05-30 update)
+## 當前居民
 
 | Ref | 用途 |
 |-----|------|
-| `audit-coverage-vs-24-checklist.md` | 業界 24-checklist 對照 + 為何不平行 audit 24 dim rationale |
 | `build-ui-canonicals.md` | 建 UI 前 12 情境 + 8 layout primitive lookup |
+| `certified-surfaces.md` | Provider surface certification policy；machine ledger 仍是唯一狀態 authority |
 | `composition-fidelity.md` | Composition fidelity SSOT — consumer 用對 DS(conformance)為主,靜態 lint 驗(對齊 Polaris/Atlassian/Carbon);pixel/DOM identity diff 改 opt-in(2026-06-02 model 修正,非追求 product-vs-showcase 一致) |
 | `cva-patterns.md` | cva 適用 / 不適用 + 例外清單(跟 canonical `packages/design-system/ds-canonical/rules/ui-development.md` shadcn 規範互補) |
-| `drag-canonical.md` | 世界級 drag impl 對照 + dnd-kit collision strategy + Phase 1/2 fix plan |
+| `drag-canonical.md` | 現行 drag behavior/visual ownership、DataTable/TreeView 能力矩陣與保留中的未來擴充邊界 |
+| `failure-class-registry.json` | 被抓過的 failure class → mechanical defense／judgment audit 的封閉追蹤表 |
+| `governance-audit-coverage.md` | 治理 home × 稽核機制 × 執行頻率覆蓋表 |
 | `item-anatomy-recipe.md` | 7 步建立新 row primitive workflow + audit grep guard |
 | `naming-conventions.md` | 命名詳表 + 禁止清單(AGENTS.md `# 命名與語言一致性` pointer) |
+| `preflight-gate-baseline.json` | Release preflight gate 的 content-addressed ratchet baseline |
 | `principle-dim-map.json` | M-rule / trait / hook → audit dim explicit mapping(SSOT for dim coverage) |
 | `props-naming.md` | Props callback / Badge / icon canonical 詳表 |
+| `repository-hygiene.md` + `repository-hygiene-policy.json` | Full/deep audit 的 repo 拓撲、冗餘分類與可攜機械政策 |
+| `runtime-evidence-retention.md` | Git-local audit/review evidence 的 lifecycle retention、lazy bundle materialization 與 whole-run cleanup canonical |
 | `scenario-definition.md` | Monorepo 2-Scenario architecture SSOT(Scenario A direct fork DS / Scenario B fork template + mirror chain + verify checkpoints)|
 | `spec-rules.md` | SSOT 機制 / 邊界案例 scope default 詳展 |
 | `story-baseline-registry.json` | Anti-drift registry — stories wrap 既有 primitive 的 machine-readable canonical archetype(hook `check_story_invariants.sh R8` 讀)|
+| `story-baseline-registry.schema.json` | Story baseline registry 的封閉 JSON Schema |
 | `ssot-consultation.md` | SSOT 消費完整對照表 |
 | `ssot-index.md` | High-risk interface ownership map(propose 前 grep 找 owner) |
 | `structural-token-retention.md` | 6 類結構性保留 token canonical(audit Dim 48 triple-verify) |

@@ -6,6 +6,9 @@ const meta: Meta<typeof RadioGroupItem> = {
   title: 'Design System/Components/RadioGroup/展示',
   component: RadioGroupItem,
   tags: ['autodocs'],
+  parameters: {
+    docs: { description: { component: '讓使用者從一組互斥且同時可見的選項中選一個，支援方向鍵移動。選項不多且比較內容很重要時使用；空間受限或選項很多時改用 Select。' } },
+  },
 }
 
 export default meta

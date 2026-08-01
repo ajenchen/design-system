@@ -49,6 +49,14 @@ Purpose: design-system-audit audits the **DS itself**(spec / cva / SSOT 三方�
 
 ## 7-Dimension Audit
 
+### Full-repository preflight(release / full or deep audit only)
+
+Feature-scoped UI audit 不擴張到無關檔案；但 release、full-repo 或 deep audit 必先依
+`node_modules/@qijenchen/design-system/ds-canonical/references/repository-hygiene.md` 完成一次
+Git-index + nonignored worktree inventory。若 authority repo 的 portable gate 可用，執行
+`perform the equivalent check described in the common product instruction (repository-hygiene-invariant.mjs is DS-author-only)`；否則依同一
+canonical 手動分類。未掛載的 registered repo 是 unobserved，不可寫成 PASS。
+
 每個 dimension 獨立檢查,產出 findings。詳細 grep pattern + rule 見 `references/audit-checks.md`。
 
 ### Dim 1 — Token 紀律(token hygiene)
@@ -232,10 +240,10 @@ audit 完畢報告應含:
 
 ## Common failure modes
 
-- **Scope 太廣**:掃整個 repo 導致 findings 爆量,triage 崩潰 → 限制 scope 到 feature / folder
+- **Scope 模式混淆**:feature audit 才限制到指定 folder；release/full/deep audit 必依 preflight 全 repo、NO-SAMPLE 掃完，再以 severity/authority 分批 remediation，不得用「finding 太多」縮 scope
 - **Dim 間互相矛盾**:Dim 2 建議用 Empty 但 Dim 3 說 Button 該在某處 — surface 而非自己選
 - **P0/P1 分類偏誤**:把明確 bug 當 P1 / 把 style preference 當 P0 — 嚴格按 audit-checks.md 分類
-- **AI 自行修 P2**:違反 checkpoint 精神,每個 P2 都是設計決策
+- **把所有 P2 當 human gate**:severity 不等於決策 authority；P2E 工程／治理 remediation 自主完成，只有 genuine product/UI/UX SSOT 取捨的 P2H 才停下請 user 拍板
 
 ## References
 

@@ -408,10 +408,21 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                     return (
                       <div
                         key={event.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`事件:${event.title}`}
                         onClick={(e) => {
                           e.stopPropagation()
                           onEventClick?.(event)
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            onEventClick?.(event)
+                          }
+                        }}
+                        className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         {renderEventTile(event)}
                       </div>

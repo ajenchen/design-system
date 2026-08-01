@@ -3,6 +3,7 @@
 // Combobox 為主元件;當 stories 內 wrap DataTable 演示 cell-context,baseline = DataTable WithBulkActions(per .claude/references/story-baseline-registry.json#DataTable)
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Combobox } from './combobox'
 import { Button } from '@/design-system/components/Button/button'
@@ -21,6 +22,9 @@ const meta: Meta<typeof Combobox> = {
   title: 'Design System/Components/Combobox/展示',
   component: Combobox,
   tags: ['autodocs'],
+  parameters: {
+    docs: { description: { component: '可搜尋並選取一個或多個選項，已選值以 tag 或摘要呈現。選項很多、需要篩選或多選時使用；少量單選且不需搜尋時優先用 Select。' } },
+  },
 }
 
 export default meta
@@ -31,12 +35,13 @@ type Story = StoryObj<typeof Combobox>
 export const Modes: Story = {
   name: '四模式',
   render: () => {
-    const [value, setValue] = React.useState(['electronics', 'food'])
+    const [value, setValue] = React.useState(['electronics', 'food', 'lifestyle'])
     return (
       <div className="flex flex-col gap-6 max-w-sm">
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
           <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="類別(edit mode demo)" />
+          <Button variant="text" size="xs" onClick={() => setValue(['electronics', 'food', 'lifestyle'])}>重設編輯模式</Button>
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">view</h3>
@@ -56,6 +61,16 @@ export const Modes: Story = {
         </div>
       </div>
     )
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: '移除 Electronics' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: '移除 Food' })).toHaveFocus())
+    await userEvent.click(canvas.getByRole('button', { name: '移除 Food' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: '移除 Lifestyle' })).toHaveFocus())
+    await userEvent.click(canvas.getByRole('button', { name: '移除 Lifestyle' }))
+    await waitFor(() => expect(canvas.getByRole('combobox', { name: '類別(edit mode demo)' })).toHaveFocus())
+    await userEvent.click(canvas.getByRole('button', { name: '重設編輯模式' }))
   },
 }
 

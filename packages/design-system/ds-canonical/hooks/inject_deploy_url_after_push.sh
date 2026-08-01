@@ -11,7 +11,7 @@
 #     3. GitHub Pages(.github/workflows/*.yml 含 pages action)— DS repo
 #   → output URL list inject into AI context(下個 reply 必看到)
 #
-# 為何走 Hook(per shared governance 8-home L7 Hook 自動化):
+# 為何走 Hook(per shared governance Level 7 Hook 自動化):
 #   - 不靠 AI 記得「每次推完都要 echo URL」(會忘記 — 本 session user 抓「你他媽到底做得怎樣」)
 #   - 不靠 user 每次問「部署到哪?」(無聊重複)
 #   - Hook 機械保證每 push 必觸發,跨 session / 跨 fork user 自動受惠

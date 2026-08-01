@@ -1,6 +1,6 @@
 #!/bin/bash
 # PreToolUse Write hook: gate new files in classification dirs.
-# 確保新檔放對 home(8-home flowchart canonical)。
+# 確保新檔放對 home(Level 1–9 rule-placement taxonomy canonical)。
 #
 # Silent on pass(2026-04-26 noise reduction):only fire if charter README
 # missing OR file-name pattern violates dir convention(no charter inject).
@@ -53,7 +53,7 @@ for d in "${DIRS[@]}"; do
       CHARTER="$PROJECT_DIR/$d/README.md"
       if [ ! -f "$CHARTER" ]; then
         # P0:charter missing → block via stderr + exit 2
-        echo "❌ Charter missing for $d/. Create $CHARTER first per # 治理 canonical 8-home flowchart." >&2
+        echo "❌ Charter missing for $d/. Create $CHARTER first per the Level 1–9 rule-placement taxonomy." >&2
         exit 2
       fi
       # Charter exists → silent pass(content placement is AI's responsibility,

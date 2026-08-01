@@ -85,6 +85,8 @@
         ".claude-plugin/plugin.json",
         "package-lock.json",
         "packages/design-system/package.json",
+        "packages/governance/canonical/provider-lifecycle.json",
+        "packages/governance/canonical/providers.json",
         "packages/governance/package.json",
         "packages/governance/src/closed-tool-execution.mjs",
         "packages/storybook-config/package.json",
@@ -102,6 +104,7 @@
         ".claude-plugin/marketplace.json",
         ".claude-plugin/plugin.json",
         "package-lock.json",
+        "packages/governance/canonical/provider-lifecycle.json",
         "packages/governance/package.json",
         "packages/storybook-config/package.json",
         "template/ds-product-template/package.json"
@@ -111,6 +114,7 @@
         ".claude-plugin/marketplace.json",
         ".claude-plugin/plugin.json",
         "package-lock.json",
+        "packages/governance/canonical/provider-lifecycle.json",
         "packages/governance/package.json",
         "packages/storybook-config/package.json",
         "template/ds-product-template/package.json"

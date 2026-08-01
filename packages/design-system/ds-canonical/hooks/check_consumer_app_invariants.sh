@@ -109,7 +109,7 @@ if [ -n "$VIOLATIONS" ]; then
   Consumer file $FILE 違反:
 $(echo -e "$VIOLATIONS")
   per M31 codex synthesis SSOT:
-    - DS owns per-component canonical pixels(62/62 components ×3 tiers stories in DS Storybook)
+    - DS owns per-component canonical pixels(all inventory-discovered components × applicable story tiers in DS Storybook)
     - PW(consumer)owns 真實業務 composition demos(AppShell Dashboard etc.)
     - Catalog → DS canonical Storybook iframe/link proxy,**禁** PW 重寫 <DS.X minimal mock>
 

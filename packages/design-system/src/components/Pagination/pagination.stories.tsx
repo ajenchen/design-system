@@ -6,6 +6,9 @@ const meta: Meta<typeof Pagination> = {
   title: 'Design System/Components/Pagination/展示',
   component: Pagination,
   tags: ['autodocs'],
+  parameters: {
+    docs: { description: { component: '讓使用者在離散資料頁之間前後移動或直接跳頁，並保留目前頁位置。資料量需要分頁載入或 URL 可定位頁碼時使用；連續探索內容可改用載入更多。' } },
+  },
 }
 export default meta
 type Story = StoryObj<typeof Pagination>

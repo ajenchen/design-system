@@ -46,11 +46,6 @@ import {
   REVIEW_CAPABILITY_CERTIFICATION_CARRIER_PATH,
 } from '../../packages/governance/src/carrier-projection.mjs'
 import {
-  EXTERNAL_ACTIVATION_POLICY_DIGEST,
-  GITHUB_MUTATION_BOUNDARY_CONTRACT_DIGEST,
-  validateExternalActivationCarrierAfterImage,
-} from '../../infra/governance/lib/external-activation.mjs'
-import {
   validateExternalCertificationCarrierAfterImage,
   validateProviderReviewCapabilityCertificationCarrierAfterImage,
 } from '../../infra/governance/lib/external-operator.mjs'
@@ -4744,10 +4739,6 @@ function validateManagedCiGovernanceCarrierAfterImages(core, now) {
     }
 
     headBinding = currentHeadCarrierBinding(core.root, context.snapshot, context.carrierCaptures)
-    const baselineActivation = context.snapshot.readJson(
-      EXTERNAL_ACTIVATION_CARRIER_PATH,
-      'managed CI immutable external activation carrier',
-    ).value
     const baselineCertifications = context.snapshot.readJson(
       PROVIDER_CERTIFICATION_CARRIER_PATH,
       'managed CI immutable provider certification carrier',
@@ -4756,10 +4747,6 @@ function validateManagedCiGovernanceCarrierAfterImages(core, now) {
       REVIEW_CAPABILITY_CERTIFICATION_CARRIER_PATH,
       'managed CI immutable review capability certification carrier',
     ).value
-    const currentActivation = parseCapturedGovernanceCarrier(
-      context.carrierCaptures.get(EXTERNAL_ACTIVATION_CARRIER_PATH),
-      'external activation',
-    )
     const currentCertifications = parseCapturedGovernanceCarrier(
       context.carrierCaptures.get(PROVIDER_CERTIFICATION_CARRIER_PATH),
       'provider certification',
@@ -4777,23 +4764,11 @@ function validateManagedCiGovernanceCarrierAfterImages(core, now) {
       'infra/governance/desired/github.json',
       'managed CI immutable GitHub desired state',
     )
-    const rings = snapshotJson(
-      'infra/governance/release-rings.json',
-      'managed CI immutable release-ring policy',
-    )
     const issuerRegistryRead = context.snapshot.readJson(
       'infra/governance/trust/issuers.json',
       'managed CI immutable issuer registry',
     )
     const issuerRegistry = issuerRegistryRead.value
-    const activationPolicy = snapshotJson(
-      'infra/governance/external-activation-policy.json',
-      'managed CI immutable external activation policy',
-    )
-    const mutationBoundaryContract = snapshotJson(
-      'infra/governance/providers/github-mutation-boundary-contract.json',
-      'managed CI immutable GitHub mutation-boundary contract',
-    )
     const matrix = snapshotJson(
       'infra/governance/providers/compatibility-matrix.json',
       'managed CI immutable provider compatibility matrix',
@@ -4831,21 +4806,9 @@ function validateManagedCiGovernanceCarrierAfterImages(core, now) {
       }),
     }
 
-    validateExternalActivationCarrierAfterImage(baselineActivation, currentActivation, {
-      inventory,
-      desired,
-      rings,
-      issuerRegistry,
-      policy: activationPolicy,
-      expectedPolicyDigest: EXTERNAL_ACTIVATION_POLICY_DIGEST,
-      mutationBoundaryContract,
-      expectedMutationBoundaryContractDigest: GITHUB_MUTATION_BOUNDARY_CONTRACT_DIGEST,
-      now,
-      managedCiValidationContext: {
-        managedCore: core,
-        sourceTreeValidation: 'managed-ci-immutable-core-closure',
-      },
-    })
+    // External activation remains a captured, committed carrier for enterprise evidence and
+    // model-broker readback, but its retired release-finalizer ceremony is not a managed-CI
+    // activation gate. Enterprise staged-rollout validation owns its semantic contract.
     const providerChanged = managedCiStableStringify(baselineCertifications)
       !== managedCiStableStringify(currentCertifications)
     const reviewCapabilityChanged =

@@ -12,7 +12,11 @@ import { ButtonGroup, ButtonDivider } from '@/design-system/components/Button/bu
 
 const meta: Meta = {
   title: 'Design System/Patterns/Action Bar',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '多個頁面操作的編排指南，依業務重要性、工具性與編輯情境決定按鈕分組和視覺重量。需要在 toolbar 或 editor chrome 排列一組操作時使用。' } },
+  },
 }
 export default meta
 type Story = StoryObj
@@ -445,7 +449,7 @@ export const Overflow: Story = {
             <Button variant="text" size="sm" iconOnly startIcon={Redo2} aria-label="重做" />
           </ButtonGroup>
         </div>
-        <Label>格式（有溢出）┆ 插入（全部攤開）┆ 歷史（無溢出）— 各群組獨立決定是否需要溢出</Label>
+        <Label>格式群組有溢出；插入群組全部攤開；歷史群組無溢出。各群組依自身低頻操作決定是否需要溢出。</Label>
       </Rule>
     </div>
   ),
@@ -457,7 +461,7 @@ export const CommonMistakes: Story = {
     <div>
       <Rule
         title="❌ 工具操作混入業務層（最常見錯誤）"
-        note="↺ 重新載入是工具操作——與任何任務無關，任何頁面都可能有它。把它放進業務層會導致角色邊界錯亂，分隔線規則失效。常見案例：[儲存|複製]┆[↺|🗑]┆[···]┆[✕]——↺ 和 🗑 角色混用，正確做法是分層"
+        note="重新載入是工具操作——與任何任務無關，任何頁面都可能有它。若把重新載入與儲存、複製、刪除等業務操作混在同一群，角色邊界與分隔線規則都會失效；應先分開業務層與工具層。"
       >
           <ToolbarFrame title="工具列">
             <ButtonGroup>
@@ -479,7 +483,7 @@ export const CommonMistakes: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>✅ 業務（刪除）┆ 工具（↺ + ⚙）— 角色清楚分離</Label>
+          <Label>✅ 業務層放刪除；工具層放重新載入與設定，角色清楚分離</Label>
       </Rule>
 
       <Rule

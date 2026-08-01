@@ -6,6 +6,7 @@ import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta<typeof LinkInput> = {
   title: 'Design System/Components/LinkInput/展示',
+  tags: ['autodocs'],
   component: LinkInput,
   // autodocs disabled — LinkInput 有 stateful render logic，Docs page 需要手動 stories
   parameters: {

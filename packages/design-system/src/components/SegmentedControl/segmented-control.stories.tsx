@@ -10,8 +10,12 @@ import { SegmentedControl, SegmentedControlItem } from './segmented-control'
 
 const meta: Meta<typeof SegmentedControl> = {
   title: 'Design System/Components/SegmentedControl/展示',
+  tags: ['autodocs'],
   component: SegmentedControl,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '以緊密相連的選項切換少量互斥模式，讓所有選擇持續可見。適合檢視模式、排序範圍等立即生效的切換；內容面板導覽改用 Tabs。' } },
+  },
 }
 export default meta
 

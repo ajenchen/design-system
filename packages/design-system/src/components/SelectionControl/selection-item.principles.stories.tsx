@@ -59,7 +59,7 @@ export const CompositionRules: Story = {
   render: () => (
     <div className="flex flex-col gap-12">
       <div className="prose prose-sm max-w-prose">
-        <p>SelectionItem 是 Family 2 reading-mode row layout primitive,由 Checkbox / RadioGroup 兩個 consumer 在「list-as-page settings」場景消費,**不直接放在 app code**:</p>
+        <p>SelectionItem 是 Family 2 reading-mode row layout primitive,由 Checkbox / RadioGroup 兩個 consumer 在「list-as-page settings」場景消費,不直接放在 app code:</p>
 
         <h4>Pattern 1 — Checkbox + SelectionItem(多選 settings list)</h4>
         <p>多選 + 每個 row 大塊 description / icon → <LinkTo kind="Design System/Components/Checkbox/展示" name="四模式"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">Checkbox</span></LinkTo> 內部消費 SelectionItem(control 放 Checkbox indicator / prefix 可選放 icon 或 avatar / content 放 label + description)。對齊 Notion 通知設定 / Slack notification preferences idiom。</p>

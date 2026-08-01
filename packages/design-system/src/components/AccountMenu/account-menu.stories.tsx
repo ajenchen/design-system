@@ -8,7 +8,11 @@ import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-h
 
 const meta: Meta = {
   title: 'Design System/Components/AccountMenu/展示',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '全域 chrome 中目前登入者的帳號入口，以 avatar 開啟個人資料、設定與登出選單。primary-header 模式需要唯一帳號入口時使用；他人資訊改用 ProfileCard。' } },
+  },
 }
 export default meta
 

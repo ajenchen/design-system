@@ -4,7 +4,11 @@ import { Avatar } from '@/design-system/components/Avatar/avatar'
 
 const meta: Meta = {
   title: 'Design System/Components/ProfileCard/展示',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '在 avatar 等 identity mark 上提供他人的角色、狀態、聯絡資訊與相關動作。需要快速理解協作者而不離開當前頁面時使用；自己的帳號操作改用 AccountMenu。' } },
+  },
 }
 export default meta
 

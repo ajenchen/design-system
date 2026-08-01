@@ -269,6 +269,7 @@ W3C APG carousel pattern 有兩條合法路:**tabbed**(dot `role="tab"` + slide 
 
 - **單一 item**:dots 自動不渲染(`scrollSnaps.length > 1` gate)+ 箭頭因 `canScrollPrev/Next === false` 自動隱藏 → 純顯示單一 slide,consumer 不必手動判斷
 - **零 items**:consumer 應在 items 為空時不 render Carousel(改用 `<Empty>`),本元件不自帶 empty state UI
+- **Loading**:Carousel API 無 loading prop；slide 內容與其遠端資料生命週期由 consumer own。
 - **Autoplay 單 item**:autoplay 在 single item 時無作用(`canScrollNext=false`)— embla-carousel 自動處理,consumer 不用加特判
 - **Dark mode**:由 semantic token(arrow bg `--surface` / border `--border`,繼承 Button tertiary)自動切換,詳見 `../../tokens/color/color.spec.md`
 

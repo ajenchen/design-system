@@ -13,7 +13,7 @@
  * R2 tier freeze:已 codify 的 consumer tier 凍結(改 tier = 必先改 motion.spec 對照表 + 本表,diff 可見)
  * R3 cross-home 同值:motion.ts(JS)與 motion.css(CSS)三值必一致
  *
- * Exit 1 on violation(release:preflight gate)。
+ * Exit 1 on violation(deterministic audit / protected CI gate)。
  */
 import { readFileSync, globSync } from 'node:fs'
 import { join, dirname } from 'node:path'

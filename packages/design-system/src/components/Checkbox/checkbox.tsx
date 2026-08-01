@@ -76,7 +76,7 @@ const checkIconSize: Record<string, number> = { sm: 12, md: 12, lg: 16 }
 // ⚠️ 2026-06-12:發現 base.css `.lucide{stroke-width:1.75}` 全域規則自 2026-04-08 起
 // 無條件蓋掉本 prop(CSS class > SVG attribute)→ 本表從未真渲染過,上述 05-18 視覺
 // 測試兩者實為 0.875px(證據污染)。base.css 已改 `[stroke-width='2']` 限定,本表自此
-// 真實生效(pixel 驗證 1.50px)。SSOT → .claude/references/ui-dev-rules.md「小尺寸 icon stroke 補償」
+// 真實生效(pixel 驗證 1.50px)。SSOT → packages/design-system/ds-canonical/references/ui-dev-rules.md「小尺寸 icon stroke 補償」
 const checkStrokeWidth: Record<string, number> = { sm: 3, md: 3, lg: 2.5 }
 
 // ── Types ───────────────────────────────────────────────────────────────────

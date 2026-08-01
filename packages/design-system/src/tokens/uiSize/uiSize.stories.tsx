@@ -5,6 +5,7 @@ import { ICON_SIZE } from './icon-size'
 
 const meta: Meta = {
   title: 'Design System/Tokens/UiSize',
+  tags: ['autodocs'],
   parameters: {
     layout: 'padded',
     docs: {

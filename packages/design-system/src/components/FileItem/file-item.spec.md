@@ -329,7 +329,7 @@ upload-manager 的 completed(100% bar + ✓)屬「剛完成的 upload session」
 ```
 
 **Clickable → 下載 / 預覽 canonical**(AR15):
-- FileItem 提供 `onClick` prop,consumer 傳入即進 clickable 模式(僅滑鼠可點 + `cursor-pointer`;刻意不加整列 keyboard 焦點 / hover-bg — 見「A11y 預設」nested-interactive rationale 與「Hover 行為 canonical」)
+- FileItem 提供 `onClick` prop,consumer 傳入即進 clickable 模式：滑鼠保留整列 hit area；鍵盤透過同層透明 native button 以 Tab / Enter / Space 觸發，並以 `actionAriaLabel`（預設「開啟 {name}」）命名。row 本身不加互動 role，避免包住 trailing actions 形成 nested-interactive。
 - 兩種 surface 都可以用 `onClick`(upload-manager 可跟 `onDownload` hover-swap 並存)
 - consumer 決定具體行為(download / FileViewer),元件只提供 row 可點擊能力
 
@@ -339,7 +339,7 @@ upload-manager 的 completed(100% bar + ✓)屬「剛完成的 upload session」
 
 | 屬性 | 值 | 依據 |
 |---|---|---|
-| 消費元件 | `<ProgressBar status={...} value={...} height={compact ? 2 : undefined} />` | 本 DS ProgressBar SSOT(公開 API 固定 4px;`height` 是 internal-only 逃生艙,FileItem 為唯一合法 consumer) |
+| 消費元件 | `<ProgressBar status={...} value={...} className={compact ? '!h-0.5' : undefined} />` | 本 DS ProgressBar SSOT(公開 API 固定 4px；compact 2px 是 FileItem 私有 composition styling，不形成 ProgressBar size API) |
 | status 映射 | `uploading → inProgress` / `completed → success` / `error → error` | ProgressBar `status` 原生支援 |
 | height 映射 | `compact → 2px` / `rich → 4px`(預設) | compact mode 極密集 row layout 需要更細 track;rich mode 走 DS 預設 4px |
 | value | `status === 'completed' ? 100 : progress` | completed 永遠 100% |
@@ -419,7 +419,7 @@ Passive status icon 置中於 action-sized 容器,hover 時 active action 填滿
 - **ProgressBar 整合(進度 context 帶檔名)**:消費的 `<ProgressBar>` 自帶 `role="progressbar"` + `aria-valuenow` / `aria-valuemax`(Radix Progress primitive 提供),本元件再傳 `aria-label={檔名 上傳進度}` 作 context;keyboard 不需 focus progress bar(被動指示器,非互動元素)。
 - **Action button labels**:Download / retry / remove 等 inline action 必傳 `aria-label`(中文 / consumer locale)— 「下載 report.pdf」/「重試上傳」/「移除附件」,單純「下載」/「刪除」缺檔名 context SR user 無法區分多 row。
 - **Status icon hover-swap a11y**:hover-swap 不改變 SR 語意 — passive status icon `aria-hidden`,active action button 自帶 `aria-label`,避免 SR user 收到視覺 swap 噪音。
-- **Row clickable 不做整列 keyboard 焦點**:傳 `onClick` 時整列僅滑鼠可點(`onClick` 直接掛在 row);**刻意不**把整列設成單一可聚焦按鈕(不加 `role="button"` / `tabIndex` / Enter-Space handler),避免與列內操作按鈕(下載 / 重試 / 移除)構成巢狀互動(axe nested-interactive)。keyboard user 直接 Tab 到列內 explicit 操作按鈕取得等價能力。世界級對照:Slack message row / Notion page row 同模式(整列只滑鼠點,鍵盤走列內按鈕)。
+- **Row primary action 鍵盤可達且不 nested-interactive**:傳 `onClick` 時，row 保持非互動容器並保留整列 pointer hit area；另渲染與 trailing actions 同層的透明 full-row native button（pointer-events none，只承接 Tab / Enter / Space），focus-visible 由 row 外框顯示。`actionAriaLabel` 預設「開啟 {name}」且可由 consumer 覆寫。Primary button 與下載／重試／移除皆為 sibling，禁止把 row 本身改成 `role="button"` 包住互動後代。
 - **status / error 不額外加 row ARIA**:`status="uploading"` / `status="error"` 不在 row 上加 `aria-busy` / `role="status"` / `aria-live`;狀態由 progress bar 的 `role="progressbar"` 與 description 文字本身傳達。若 consumer 需要上傳完成 / 失敗的即時 announce,由外層上傳流程容器(FileUpload)統一管理 live region,避免每列各自宣告造成 SR 噪音。
 
 ---
@@ -476,7 +476,7 @@ shadcn 2026-06 chat 套件的 Attachment(ui.shadcn.com/docs/components/attachmen
 
 **Known-gaps(對照後承認、留 anchor,現無產品需求不動)**:
 - `processing` / `idle` state:Attachment 5 態 enum 可表達「傳完但伺服器處理中」(掃毒 / transcode / AI ingestion);我們 3 態 + undefined 表達不了 — 未來需求出現時走 prop 演進 ASK
-- AttachmentTrigger stacking-order pattern(整卡鍵盤可達、actions 各自 focusable、不觸 nested-interactive — 解了我們明文 punt 的「整列 Enter 開啟」trade-off,見「Hover 行為 canonical」)與 `orientation="vertical"` + Group 橫向 scroll(chat composer tile;gallery 既定走 Grid / Carousel):皆屬 SSOT-affecting,對應需求出現時 ASK 再議
+- `orientation="vertical"` + Group 橫向 scroll(chat composer tile;gallery 既定走 Grid / Carousel):屬 SSOT-affecting,對應需求出現時 ASK 再議。AttachmentTrigger 的 stacking-order 鍵盤路徑已由本元件 sibling primary-action button contract 吸收，不再列為 gap。
 
 ---
 

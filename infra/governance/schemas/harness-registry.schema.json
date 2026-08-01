@@ -85,15 +85,15 @@
         },
         "requiredConsumers": {
           "type": "array",
-          "minItems": 4,
-          "maxItems": 4,
+          "minItems": 2,
+          "maxItems": 2,
           "items": {
             "type": "object",
             "additionalProperties": false,
             "required": ["path", "invocationKind", "argv"],
             "properties": {
-              "path": {"enum": [".github/workflows/ci.yml", ".github/workflows/release.yml", "scripts/release-preflight.mjs", ".devcontainer/post-create.mjs"]},
-              "invocationKind": {"enum": ["yaml-run-line", "js-reviewed-shell-wrapper", "js-authority-setup-wrapper"]},
+              "path": {"enum": ["scripts/release-preflight.mjs", ".devcontainer/post-create.mjs"]},
+              "invocationKind": {"enum": ["js-reviewed-shell-wrapper", "js-authority-setup-wrapper"]},
               "argv": {"$ref": "#/$defs/consumerCommand"}
             }
           }

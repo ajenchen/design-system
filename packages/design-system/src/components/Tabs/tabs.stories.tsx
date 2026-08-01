@@ -13,8 +13,12 @@ import {
 
 const meta: Meta<typeof Tabs> = {
   title: 'Design System/Components/Tabs/展示',
+  tags: ['autodocs'],
   component: Tabs,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '在同一頁面區域切換彼此平行的內容面板，維持單一選取狀態與鍵盤導覽。內容同層且使用者需要快速來回比較時使用，不表示逐步流程。' } },
+  },
 }
 export default meta
 

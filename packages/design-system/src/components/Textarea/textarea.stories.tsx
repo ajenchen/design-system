@@ -7,7 +7,10 @@ const meta: Meta<typeof Textarea> = {
   title: 'Design System/Components/Textarea/展示',
   component: Textarea,
   tags: ['autodocs'],
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '多行文字輸入控制項，支援不同尺寸、驗證與表單 Field 組合。需要輸入描述、備註或段落內容時使用；短且單行的資料改用 Input。' } },
+  },
 }
 export default meta
 

@@ -52,5 +52,6 @@ Scan 全 audit / test infra:
 - audit script 只驗 `getAttribute(...)` / `class.includes(...)` 不驗 `getBoundingClientRect()` numeric(pixel-quantified 缺)
 - `*.spec.md` 寫 visual canonical 但無對應 playwright snapshot 或 visual-audit 覆蓋
 - stale screenshot ref(`infra/governance/baseline/visual/**` 內 committed baseline 6 月未更新;provider compatibility mirror 不另行計數)
+- 依 [runtime evidence retention canonical](../../../references/runtime-evidence-retention.md) 枚舉每個 observed worktree 的 `<absolute-git-dir>/governance-runtime/evidence/`:保留 current active/live referenced/genuine review/unexpired receipt closure；將 unreferenced blocked/failed/stale run 列為 whole-run 自主回收候選，禁止 partial CAS pruning
 
-**Output**:per audit script 升 pixel-quantified 提名 + 缺 visual coverage 列表
+**Output**:per audit script 升 pixel-quantified 提名 + 缺 visual coverage列表 + runtime evidence bytes/保留根/whole-run 回收結果

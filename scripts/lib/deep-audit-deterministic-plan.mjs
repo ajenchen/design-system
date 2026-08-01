@@ -128,7 +128,6 @@ export function validateDeterministicDeepAuditPlan(plan, { repoRoot = DEFAULT_RE
   }
   const orphanCommands = [...commandById.keys()].filter((id) => !referencedCommands.has(id))
   if (orphanCommands.length) fail(`unreferenced commands:${orphanCommands.join(',')}`)
-  if (plan.dimensions.length !== 24) fail(`plan must enumerate exactly 24 deterministic dimensions, found ${plan.dimensions.length}`)
   return { plan, commandById, dimensionByNumber, planDigest: sha256(stableStringify(plan)) }
 }
 

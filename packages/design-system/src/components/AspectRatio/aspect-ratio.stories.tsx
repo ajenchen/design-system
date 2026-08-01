@@ -11,7 +11,11 @@ import { AspectRatio } from './aspect-ratio'
 
 const meta: Meta = {
   title: 'Design System/Components/AspectRatio/展示',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '在內容載入前後維持固定長寬比，避免圖片、影片或縮圖造成版面位移。媒體需要依容器縮放但比例不可變形時使用。' } },
+  },
 }
 export default meta
 type Story = StoryObj
@@ -85,4 +89,3 @@ export const Ultrawide21x9: Story = {
     </div>
   ),
 }
-

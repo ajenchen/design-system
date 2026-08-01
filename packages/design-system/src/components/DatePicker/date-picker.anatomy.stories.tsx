@@ -903,18 +903,12 @@ export const CalendarTokens = {
         {/* Architecture */}
         <div className="flex flex-col gap-3">
           <span className="text-caption font-medium text-fg-secondary">架構</span>
-          <pre className="text-caption font-mono bg-neutral-hover rounded-md p-4 text-fg-secondary leading-relaxed">
-{`<div role="combobox" tabIndex={0} fieldWrapperStyles>  ← Input wrapper 外觀;div+role 非 button(避免 nested-interactive)
-  <span>格式化的日期文字</span>
-  <ItemInlineAction X />            ← 選用,clearable=true 時顯示(本身是 button)
-  <CalendarIcon />                   ← 右側固定
-</div>
-       │ 點擊 / Enter / Space 開啟
-       ▼
-<Popover align="start">
-  <DateGrid />                      ← react-day-picker + 本 DS token
-</Popover>`}
-          </pre>
+          <ol className="list-decimal pl-5 space-y-2 text-caption bg-neutral-hover rounded-md p-4 text-fg-secondary">
+            <li><code>&lt;div role=&quot;combobox&quot; tabIndex=&#123;0&#125;&gt;</code> 提供 Input wrapper 外觀；使用 div + role 而非 button，避免巢狀互動元素。</li>
+            <li>Wrapper 內依序放格式化日期文字、可選的 <code>ItemInlineAction</code> 清除鈕，以及固定在右側的 calendar icon。</li>
+            <li>滑鼠點擊或按 Enter / Space 後開啟 <code>&lt;Popover align=&quot;start&quot;&gt;</code>。</li>
+            <li>Popover 內容渲染 <code>&lt;DateGrid /&gt;</code>，由 react-day-picker 處理日期邏輯並消費本 DS token。</li>
+          </ol>
         </div>
       </div>
     )

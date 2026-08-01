@@ -277,10 +277,10 @@ export const ShowTimeRangePopoverOpen: Story = {
   play: openPopoverPlay('button[aria-haspopup="dialog"]'),  // 第一個 match = start input
 }
 
-/* ── HoverState:Range middle hover blue ring 驗證(M11 + Bug C 真實截圖)── */
+/* ── HoverState:Range middle 沿用 selected hover-ring suppression(M11 真實截圖)── */
 export const RangeMiddleHoverState: Story = {
-  name: '範圍中段:滑鼠移過狀態',
-  parameters: { docs: { description: { story: 'Visual-audit — play 開 range popover並定位 range_middle date；最終 CSS :hover 由 visual-audit 的 Playwright locator.hover() 在截圖前重套,驗藍色 1.5px ring 顯示在 grey track 之上。' } } },
+  name: '範圍中段:滑鼠移過抑制',
+  parameters: { docs: { description: { story: 'Visual-audit — play 開 range popover並定位 range_middle date；最終 CSS :hover 由 visual-audit 的 Playwright locator.hover() 在截圖前重套，驗證已選取中段維持 grey track 且不出現第二層 hover ring。' } } },
   render: () => {
     const [range, setRange] = React.useState<[string | null, string | null]>(['2026-05-04', '2026-05-12'])
     return (

@@ -256,7 +256,7 @@ MVP 無內建 error 狀態(無 `error` / `onRetry` prop)——載入失敗由 co
 - Tab — 逐一 focus 每格的日期數字按鈕與其中的事件 tile(cell 為非互動 `role="gridcell"` 容器;滑鼠點 cell 空白處等同點日期,keyboard 走日期數字按鈕,功能等價。對齊 Google Calendar)
 - Enter / Space — 啟用目前 focus 的元素:日期數字按鈕觸發 `onDateClick`(native button activation),事件 tile 觸發 `onEventClick`
 - Toolbar 的 prev / 今天 / next 為標準可聚焦控件,Tab 可達
-- `renderEventTile` 自訂 tile:外層 wrapper 只掛 `onClick`(無 role / tabIndex / onKeyDown)——keyboard 可達性由 consumer 的自訂 tile 自行渲染 focusable element 提供(default tile 才內建 `role="button"` + tabIndex + Enter/Space);否則該 tile 僅滑鼠可點
+- `renderEventTile` 自訂 tile:外層 wrapper 統一 own `role="button"`、`tabIndex=0`、focus ring 與 Enter/Space activation，確保自訂視覺不會把 keyboard parity 推給 consumer。Consumer 回傳內容必為 presentational（不可再巢狀 button/link）；互動由 `onEventClick` 單一 owner 承接。
 
 **Keyboard 後續增量**:
 

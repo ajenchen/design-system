@@ -8,6 +8,9 @@ const meta: Meta<typeof Checkbox> = {
   title: 'Design System/Components/Checkbox/展示',
   component: Checkbox,
   tags: ['autodocs'],
+  parameters: {
+    docs: { description: { component: '切換彼此獨立的布林選項，支援 checked、unchecked 與 indeterminate。使用者可以同時選多項或單獨同意條款時使用；互斥選擇改用 RadioGroup。' } },
+  },
 }
 
 export default meta

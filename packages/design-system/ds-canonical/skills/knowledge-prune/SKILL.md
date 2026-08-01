@@ -1,15 +1,15 @@
 ---
 name: knowledge-prune
-description: Prune governance sprawl across provider-neutral instructions / specs / skills / hooks / memory / settings. Finds duplicate rules (Rule-of-3), dead hooks from the Git-owned provider telemetry state, stale memories, over-concrete bug case studies that should abstract to meta, and contradictions across homes. Enforces per-file budgets and retire rate ≥ 5% / quarter. Invoke quarterly or when governance exceeds its documented budgets. Auto-chained by /design-system-audit --deep Phase 4.5.
+description: Prune governance sprawl across provider-neutral instructions / specs / skills / hooks / memory / settings. Finds duplicate rules (Rule-of-3), dead hooks from the Git-owned provider telemetry state, stale memories, over-concrete bug case studies that should abstract to meta, and contradictions across homes. Enforces per-file budgets and quantifies quarterly retire rate without forcing deletion. Invoke quarterly or when governance exceeds its documented budgets. Auto-chained by /design-system-audit --deep Phase 4.5.
 ---
 
 # Knowledge Prune — 治理反膨脹 skill
 
-**目的**:本 DS governance 自身是活的知識庫,若只 append 會讓 provider-neutral canonical 載入成本失控、MEMORY.md 條目爆炸、hook 變殭屍、spec.md 重複。本 skill 掃 8 個 canonical home 找冗贅,提議 retire 候選,加嚴執行 Rule-of-3 SSOT + 行數預算;`.claude/**` / `.agents/**` 只是 generated provider delivery/discovery view,不參與 authority 枚舉或 retire 決策。
+**目的**:本 DS governance 自身是活的知識庫,若只 append 會讓 provider-neutral canonical 載入成本失控、MEMORY.md 條目爆炸、hook 變殭屍、spec.md 重複。本 skill 依 `design-system-audit/references/rule-placement.md` 的 Level 1–9 taxonomy 與 provider registry 動態枚舉 canonical homes 找冗贅,提議 retire 候選,加嚴執行 Rule-of-3 SSOT + 行數預算;`.claude/**` / `.agents/**` 只是 generated provider delivery/discovery view,不參與 authority 枚舉或 retire 決策。
 
 **🔒 核心前提(每次必遵,不需 user 提醒 — mindset #6「tell me once」)**:prune 唯一目的是**移除噪音以銳化 signal、提升遵循正確率**,**絕不以犧牲品質換行數 / 條目下降**。每次跑同時必滿足:(a) 品質不可因 prune 打折;(b) 以**提升品質**(清晰度↑ / drift 風險↓ / recall 精度↑)為目標。故:① 只 retire 真冗餘 / stale / 已被上游完整吸收的條目(這類本身是噪音,清掉反提升正確率);② consolidate 重複(同概念多 home → 選 SSOT + pointer);③ **每條真實 invariant / 機械防線必完整保留 — retire 前必 grep 確認保護已被別處覆蓋,否則不動**;④ distinct 條目強合成大條目會降 recall 精度 = 反 pattern,不做。**retire rate 是結果指標非目標**:湊 % 傷品質 = 違本前提;寧可 retire rate < 5% + report 明寫「成熟無冗餘」rationale,也不強刪真保護。本前提 override 下方所有 Phase / Checkpoint 的數值 target。
 
-**對齊 `AGENTS.md` `# 治理 canonical`**:本 skill 是 L3(Periodic deep)實作。L1(pre-write hook)+ L2(fire log)自動執行；L3 的純工程治理 retire／consolidate 決策已 standing-delegated，依 evidence + highest-assurance independent review 自主收斂。
+**對齊 `AGENTS.md` `# 治理 canonical`**:本 skill 是 L3(Periodic deep)實作。L1(pre-write hook)+ L2(fire log)自動執行；L3 的純工程治理 retire／consolidate 決策已 standing-delegated，依 evidence 與最高可用工程能力自主收斂。只有 task／deliverable 明確要求時才啟動 independent review；明確 waiver 必記錄且不得冒充已做。
 
 **Authority boundary**:canonical substantive 本身不是 human gate。只有 resolution 會改變產品／UI／UX SSOT 且仍存在真實取捨才 **STOP**；治理 ownership、hook/skill lifecycle、架構與表達／duplicate／pointer 都依 `AGENTS.md # 自主執行 canonical` **AUTO**。
 
@@ -32,7 +32,7 @@ description: Prune governance sprawl across provider-neutral instructions / spec
 
 ### Phase 0 — Baseline scan(AUTO)
 
-掃 8 個 home 建立基準表:
+依 Level 1–9 taxonomy + canonical provider registry 動態枚舉 homes，建立基準表（下表是最低必含，不是封閉清單）:
 
 ```
 Home              Size           Over-budget?
@@ -83,7 +83,7 @@ Example violations(historic — 2026-05-22 prune verify 後均已收斂為 point
 - **Unused skills**:`skill-invokes.jsonl` 3 月 0 invoke(除非是 rare-event skill,例 `delivery-handoff`)
 - **Commands / context-fork agents**(2026-07-10 hunt 補,原零掃描):先讀 `packages/governance/canonical/providers.json` 的 `canonical.roots.commands` 與 `canonical.roots.contextForkAgents`,再對這兩個 canonical tree 做 enumeration。Commands 對照 `skill-invokes.jsonl`(命令同走 registered skill invocation log);context-fork agents 無 invoke log → 用 canonical file 的 git log recency + transcript grep 判 dead。Provider views 只驗 generated projection,不參與 dead/retire 決策。
 - **References orphan**(2026-07-10 hunt 補):枚舉 `packages/design-system/ds-canonical/references/*.md`,rg 檔名 across `packages/design-system/ds-canonical/skills/` + `AGENTS.md` + `packages/**/*.spec.md` + `packages/design-system/ds-canonical/hooks/`;0 cite = retire 候選。Provider views 僅可用 mirror-check 驗交付完整性,不能反向證明 canonical 在使用。
-- **Stale marker 兌現**(2026-07-10 hunt 補,anchor drag-canonical 標了 6 次 prune 沒人讀):`rg -l 'stale-pending-prune' packages/design-system/ds-canonical/ governance/ AGENTS.md` → 命中即列 update/retire 候選;generated provider view 的同源命中不重複計數。
+- **Stale marker 兌現**(2026-07-10 hunt 補):`marker='stale''-pending-prune'; rg -l "$marker" packages/design-system/ds-canonical/ governance/ AGENTS.md` → 命中即列 update/retire 候選；命令與教學文字不得直接含 marker literal 造成自命中；generated provider view 的同源命中不重複計數。
 
 **Output**:retire 候選 + rationale(`fire=0 / last_edit=2025-10 / 被 M14 吸收`)
 
@@ -124,7 +124,7 @@ Phase 1 findings(D1-D10):
 Priority:
 - P0 (AUTO): 對齊 SSOT / 補 pointer / 刪 confirmed dead hook / retire unused skill — 表達層調整,不動 canonical 意思
 - P1 (AUTO with brief report): 合併 duplicate(保 semantic)/ 刪 6+ 月 stale memory(非 critical)/ 編號 renumber
-- P2E (AUTO + maximum-assurance review):抽工程治理 meta / 解 governance contradiction / 撤工程 Meta-Pattern / 改治理 SSOT ownership
+- P2E (AUTO):抽工程治理 meta / 解 governance contradiction / 撤工程 Meta-Pattern / 改治理 SSOT ownership；若 task／deliverable 明確要求 review，再加 maximum-assurance independent review
 - P2H (HUMAN-ONLY):resolution 會改變產品／UI／UX SSOT，且 evidence 收斂後仍有真實選擇或取捨
 
 Execution receipt:P0/P1/P2E 的分組、evidence、review binding、rollback；P2H 若有則 batch-at-end 一次列出。
@@ -140,7 +140,7 @@ Execution receipt:P0/P1/P2E 的分組、evidence、review binding、rollback；P
 
 ### Phase 4 — P2 resolution + apply
 
-- 每 P2 item 一個獨立 commit(animation trail 可回溯)；P2E 依最高 certified capability + independent review 自主收斂，P2H 只在取得產品／UI／UX決策後執行
+- 每 P2 item 一個獨立 commit(animation trail 可回溯)；P2E 依最高 certified capability + evidence 自主收斂，只有明確要求時才加 independent review；P2H 只在取得產品／UI／UX決策後執行
 - 新 meta-pattern 加進 `AGENTS.md` `# Meta-Pattern 預警` → 同時**必檢討哪些下游條目冗餘**(上游加 = 下游減)
 
 ### Phase Z reference — Cross-repo SSOT propagation
@@ -210,11 +210,11 @@ Update `${GOVERNANCE_STATE_DIR}/metric-snapshots.jsonl`(provider-neutral Git tel
 
 ### Gate 2 — 動 Meta-Pattern(P2)
 
-撤／合併／改寫工程治理 Meta-Pattern 由最高 certified capability 依全 repo evidence、tests、independent review 與 rollback 自主決定；若條目本身定義產品／UI／UX SSOT 且存在真取捨，才列 P2H 給 user 拍板。
+撤／合併／改寫工程治理 Meta-Pattern 由最高 certified capability 依全 repo evidence、tests 與 rollback 自主決定；若 task／deliverable 明確要求 independent review 才把它納入 required evidence。若條目本身定義產品／UI／UX SSOT 且存在真取捨，才列 P2H 給 user 拍板。
 
 ### Gate 3 — 抽新 canonical
 
-Phase 1 D3 發現 5+ 條下游條目可被新 meta 吸收 → 建立新 Meta-Pattern 前走命名三 test + world-class benchmark + independent review(對齊 `AGENTS.md` M8 / M12)，工程 governance 直接落地。
+Phase 1 D3 發現 5+ 條下游條目可被新 meta 吸收 → 建立新 Meta-Pattern 前走命名三 test + world-class benchmark；只有 task／deliverable 明確要求時才加 independent review(對齊 `AGENTS.md` M8 / M12)，工程 governance 直接落地。
 
 ### Gate 4 — Retire 率 < 5%
 

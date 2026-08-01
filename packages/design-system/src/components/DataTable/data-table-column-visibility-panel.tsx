@@ -42,7 +42,7 @@ interface ColumnVisibilityPanelColumn {
   label: string
 }
 
-export interface DataTableColumnVisibilityPanelProps {
+export interface DataTableColumnVisibilityPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   /** 全部可 toggle 欄位(consumer 已過濾掉 system cols 如 __select__)*/
   columns: ColumnVisibilityPanelColumn[]
   /** 受控 visibility map(`true` / undefined = visible / `false` = hidden)*/
@@ -63,7 +63,7 @@ export interface DataTableColumnVisibilityPanelProps {
   // 已自帶 popover dismiss,沒 concrete consumer 需 callback。Future 若需要再加。
 }
 
-export function DataTableColumnVisibilityPanel({
+export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, DataTableColumnVisibilityPanelProps>(({
   columns,
   visibility,
   onVisibilityChange,
@@ -72,7 +72,9 @@ export function DataTableColumnVisibilityPanel({
   lockedIds = [],
   searchable = false,
   resettable = false,
-}: DataTableColumnVisibilityPanelProps) {
+  className,
+  ...props
+}, ref) => {
   const [search, setSearch] = React.useState('')
   const lockedSet = React.useMemo(() => new Set(lockedIds), [lockedIds])
   const dndEnabled = !!(columnOrder && onColumnOrderChange)
@@ -141,7 +143,7 @@ export function DataTableColumnVisibilityPanel({
     //   scroll chain)+ viewport-adaptive `PopoverBody`(取代原 fixed `ScrollArea max-h-72`)。三個
     //   DataTable state-panel 收斂成同一形狀,body 隨視窗高度自適應(高螢幕多欄不再硬卡 288px)。
     //   寬度仍由 consumer 的 `<PopoverContent w-72>` 提供(panel root w-full 撐滿)。
-    <div className="flex flex-col h-full min-h-0 w-full">
+    <div ref={ref} className={cn('flex flex-col h-full min-h-0 w-full', className)} {...props}>
       <PopoverHeader hideClose>
         <div className="flex items-center gap-1 w-full min-w-0">
           <PopoverTitle className="flex-1">欄位顯示</PopoverTitle>
@@ -217,7 +219,8 @@ export function DataTableColumnVisibilityPanel({
       </PopoverFooter>
     </div>
   )
-}
+})
+DataTableColumnVisibilityPanel.displayName = 'DataTableColumnVisibilityPanel'
 
 // VisibilityRow:single column row。Draggable mode → GripVertical handle / static mode → 無 handle。
 function VisibilityRow({

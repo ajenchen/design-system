@@ -392,6 +392,25 @@ AppShellAside.displayName = 'AppShellAside'
 
 // ── Exports ──────────────────────────────────────────────────────────────────
 
+// Story auto-compile metadata — canonical migration(2026-08-01)
+// AppShell is a page-level composition primitive. `layout` is a structural mode,
+// not a visual variant axis; slot controls own their interaction states and sizes.
+export const appShellMeta = {
+  component: 'AppShell',
+  family: 'composite',
+  variants: {},
+  sizes: {},
+  states: [],
+  tokens: {
+    bg: ['bg-canvas', 'bg-surface'],
+    fg: ['text-foreground'],
+    border: ['border-divider'],
+    ring: ['ring-primary'],
+  },
+  defaultVariant: undefined,
+  defaultSize: undefined,
+} as const
+
 // code-quality-allow: dead-export useAppShell — public compound API hook(consumer 可自拼 custom aside layout,
 // 對齊 Radix `useDialogContext` / MUI `useFormControl` 慣例)。內部 AppShellAside 已消費(L294),
 // audit script 抓「無 cross-file import」是 false positive(2026-05-21 D2 codify)。

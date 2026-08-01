@@ -28,7 +28,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Chip 是 **Material Design Filter Chip** 實作——多選或單選的 pill 控件(`type` 必填)。基於 Radix ToggleGroup,橋接 DS token。視覺上是一排獨立的 `rounded-full` pill,各自有 `gap-2` 間距(非連體,這是跟 SegmentedControl 的主要差異)。</Desc>
+        <Desc>Chip 是 Material Design Filter Chip 實作——多選或單選的 pill 控件(`type` 必填)。基於 Radix ToggleGroup,橋接 DS token。視覺上是一排獨立的 `rounded-full` pill,各自有 `gap-2` 間距(非連體,這是跟 SegmentedControl 的主要差異)。</Desc>
         <ChipGroup type="multiple" defaultValue={['electronics', 'food']}>
           <Chip value="electronics">電子產品</Chip>
           <Chip value="furniture">家具</Chip>
@@ -144,7 +144,7 @@ export const ColorMatrix: Story = {
         <H3>狀態 × 色彩 Token 矩陣</H3>
         <Desc>
           Chip 採 pill-設計準則 選中規則(跟 SegmentedControl 共用;semantic.css SSOT,2026-07-06 拍板改 base):selected 時 `--primary` 同時染 border 和 text,
-          **底色維持 `--surface` 不變**——不用 primary-subtle 底色(那是 Button subtle 的視覺語言,跟 filter chip 不同)。
+          底色維持 `--surface` 不變——不用 primary-subtle 底色(那是 Button subtle 的視覺語言,跟 filter chip 不同)。
           視覺輕量是 filter 語意必要條件,避免 chip 群組喧賓奪主壓過資料表格。
         </Desc>
         <div className="overflow-x-auto mb-4">
@@ -273,7 +273,7 @@ export const SizeMatrix: Story = {
       <div>
         <H3>單一 size = h-field-sm(28 / 32 density-aware)</H3>
         <Desc>
-          Chip 故意**只有一種尺寸**——對齊 Material 3 / Atlassian / Polaris 的 filter chip
+          Chip 故意只有一種尺寸——對齊 Material 3 / Atlassian / Polaris 的 filter chip
           設計準則 共識。Chip 是 filter 語意,filter 列的視覺重量應該固定;如果需要多 tier,那是
           Button 或 Tabs 的領域。
         </Desc>
@@ -310,7 +310,7 @@ export const StateBehavior: Story = {
         <H3>四種狀態 × 色彩 Token</H3>
         <Desc>
           選中態走 pill-設計準則 規則(跟 SegmentedControl 完全一致):
-          **primary base 同時染 border 和 text**,底色維持 bg-surface 不變——不用 primary-subtle
+          primary base 同時染 border 和 text,底色維持 bg-surface 不變——不用 primary-subtle
           底色(那是 Button subtle 的視覺語言,跟 chip 不同)。
         </Desc>
         <div className="overflow-x-auto mb-4">

@@ -1,5 +1,5 @@
 /**
- * @internal — DS-internal 單元(per `.claude/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
+ * @internal — DS-internal 單元(per `packages/design-system/ds-canonical/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
  * 不進 root barrel front-door;由 Combobox / PeoplePicker 等 DS 元件 wrap 消費,end-user app 請用 wrapper 元件。
  */
 import * as React from 'react'

@@ -14,7 +14,7 @@
 - ✅ `.claude/rules/spec-rules.md` / `ui-development.md` / `story-rules.md` / `self-verify.md`
 
 ### Reference SSOT(15 file in `.claude/references/`)
-- ssot-index / ssot-consultation / build-ui-canonicals / naming-conventions / ui-dev-rules / props-naming / tailwind-gotchas / cva-patterns / drag-canonical / item-anatomy-recipe / spec-rules / structural-token-retention / audit-coverage-vs-24-checklist / principle-dim-map.json
+- ssot-index / ssot-consultation / build-ui-canonicals / naming-conventions / ui-dev-rules / props-naming / tailwind-gotchas / cva-patterns / drag-canonical / item-anatomy-recipe / spec-rules / structural-token-retention / principle-dim-map.json
 
 ### DS spec.md(78 file)
 - **Tokens**(7):color / density / elevation / layoutSpace / opacity / radius / typography / uiSize

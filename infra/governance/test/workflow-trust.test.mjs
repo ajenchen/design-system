@@ -284,22 +284,24 @@ test('terminal canonicalization preserves the mixed-case V1 golden across parser
 test('legacy reviewed identities remain valid only with exact bytes, blob, and V1 semantic digest', () => {
   const route = 'GET /repos/acme/consumer/contents/.github/workflows/governance-anchor.yml?ref=main'
   const routes = JSON.parse(readFileSync(resolve(HERE, 'fixtures/github/empty/routes.json'), 'utf8'))
-  const desired = JSON.parse(readFileSync(resolve(HERE, 'fixtures/github/desired.json'), 'utf8'))
+  const historicalReviewedIdentity = {
+    contentSha256: 'b1ba2edcfa33a02059ea67bbd6e3350d4c6d9d3dbcb85be5ffa885f30402d113',
+    gitBlobSha: '42a5ef2f6f62d7955f595680d1c6f14a4fa30664',
+    semanticSha256: 'c5f7ddc8e2fed23c25dbd7b3297ff00ce5e41c24a3b411f38e79ee106af11f42',
+    semanticVersion: 2,
+  }
   assert.ok(Object.hasOwn(routes, route))
   const fixture = routes[route].response
   const observed = workflowIdentity(fixture.text, fixture.sha)
-  const reviewedCheck = desired.profiles['product-consumer'].requiredChecks.find(check => check.workflow === '.github/workflows/governance-anchor.yml')
-  const reviewedEnvironment = desired.profiles['product-consumer'].environments.find(environment => environment.workflow === '.github/workflows/governance-anchor.yml')
 
   assert.equal(observed.contentSha256, 'b1ba2edcfa33a02059ea67bbd6e3350d4c6d9d3dbcb85be5ffa885f30402d113')
   assert.equal(observed.gitBlobSha, '42a5ef2f6f62d7955f595680d1c6f14a4fa30664')
   assert.equal(observed.semanticSha256, 'c5f7ddc8e2fed23c25dbd7b3297ff00ce5e41c24a3b411f38e79ee106af11f42')
   assert.equal(observed.legacySemanticSha256, '1ed371303e32370e71f910a38820021ac15e7b00d3fa8636c121c70ea57c015b')
-  assert.deepEqual(reviewedCheck?.workflowIdentity, closedV2(observed))
-  assert.deepEqual(reviewedEnvironment?.workflowIdentity, closedV2(observed))
+  assert.deepEqual(historicalReviewedIdentity, closedV2(observed))
   assert.deepEqual(validateWorkflowIdentity(closedV1(observed), observed), [])
   assert.deepEqual(validateWorkflowIdentity(closedV1(observed, true), observed), [])
-  assert.deepEqual(validateWorkflowIdentity(closedV2(observed), observed), [])
+  assert.deepEqual(validateWorkflowIdentity(historicalReviewedIdentity, observed), [])
 
   const wrongBytes = { ...closedV1(observed), contentSha256: '0'.repeat(64) }
   assert.match(validateWorkflowIdentity(wrongBytes, observed).join('\n'), /contentSha256 differs/)

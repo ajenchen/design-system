@@ -16,7 +16,8 @@
     /* Path aliases */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@qijenchen/storybook-config/preset": ["./packages/storybook-config/addons-preset.ts"]
     },
 
     /* Linting */

@@ -191,7 +191,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>Dismissible(右側 close icon)</H3>
         <Desc>
-          Alert 預設 `dismissible=true`,**傳入 `onDismiss` 時**右上角顯示 close button(未傳 handler 不渲染 X——controlled-only,無 handler 的 X 是死按鈕;2026-07-05 D4)。按 close 觸發 `onDismiss` 由 consumer 控制移除(Alert 本身不 own unmount 狀態——inline 通知通常需要 consumer 記住「使用者已關閉」狀態)。
+          Alert 預設 `dismissible=true`,傳入 `onDismiss` 時右上角顯示 close button(未傳 handler 不渲染 X——controlled-only,無 handler 的 X 是死按鈕;2026-07-05 D4)。按 close 觸發 `onDismiss` 由 consumer 控制移除(Alert 本身不 own unmount 狀態——inline 通知通常需要 consumer 記住「使用者已關閉」狀態)。
         </Desc>
         <div className="flex flex-col gap-3 max-w-xl">
           <Alert variant="info" title="可關閉" description="右上角有 close icon,按下觸發 onDismiss" onDismiss={() => {}} />
@@ -203,7 +203,7 @@ export const StateBehavior: Story = {
       <div>
         <H3>Close button 互動狀態</H3>
         <Desc>
-          Chrome corner close 用 **Button iconOnly `dismiss` size="xs"**(notification banner family 設計準則,見 `overlay-surface.spec.md`「Chrome dismiss size canonical」)。現行 canonical 為兩分:notification banner family(Notice / Alert / Toast,px-4 py-3 固定)dismiss 用 `xs`;overlay surface(Dialog / Sheet / Popover)另走 `sm` + unbounded 負 margin trick。corner 屬 action group region,實務上可與 refresh / share 等 Button 並排(用 ButtonDivider 分群),必須統一 Button primitive + 同 family 全 xs。`dismiss` prop 自動套 `variant="text"` + icon `fg-muted` 弱化,hover 時恢復 foreground。
+          Chrome corner close 用 Button iconOnly `dismiss` size="xs"(notification banner family 設計準則,見 `overlay-surface.spec.md`「Chrome dismiss size canonical」)。現行 canonical 為兩分:notification banner family(Notice / Alert / Toast,px-4 py-3 固定)dismiss 用 `xs`;overlay surface(Dialog / Sheet / Popover)另走 `sm` + unbounded 負 margin trick。corner 屬 action group region,實務上可與 refresh / share 等 Button 並排(用 ButtonDivider 分群),必須統一 Button primitive + 同 family 全 xs。`dismiss` prop 自動套 `variant="text"` + icon `fg-muted` 弱化,hover 時恢復 foreground。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">

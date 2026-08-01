@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react'
 
 const meta: Meta = {
   title: 'Design System/Tokens/Radius',
+  tags: ['autodocs'],
   parameters: {
     layout: 'padded',
     docs: {

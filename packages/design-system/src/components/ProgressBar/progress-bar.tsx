@@ -41,7 +41,6 @@ import { cn } from '@/lib/utils'
  * 不傳 → 純 bar
  */
 
-const DEFAULT_TRACK_H = 4 // 預設 4px(見 docblock「單一高度」)
 const STATUS_FILL = {
   inProgress: 'bg-info',
   success: 'bg-success',
@@ -59,18 +58,6 @@ export interface ProgressBarProps extends Omit<React.ComponentProps<typeof Progr
   status?: 'inProgress' | 'success' | 'error'
   /** 右側附加 */
   affix?: 'value' | 'status-icon' | React.ReactNode
-  /**
-   * Track 高度(px)override。**預設 4**(對齊 Material / Carbon / Ant canonical)。
-   *
-   * **非公開 size 階**——這不是給 consumer 自由選擇粗細的 API,而是給**內部另一個
-   * DS 元件(FileItem)在極密集 row layout 下壓低到 2px** 的逃生艙。Consumer 端
-   * 一律走預設 4px。未來若新 primitive(例如 health-bar 型 hero progress)需要
-   * 較高的 track,再評估是否擴公開 API。
-   *
-   * 世界級對照:Ant `<Progress>` 有 `strokeWidth` 原生 prop;本 DS 只暴露給內部
-   * 元件使用,不在 public API 宣傳,避免 consumer 重新陷入「選哪個 size」的判斷負擔。
-   */
-  height?: number
 }
 
 const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
@@ -79,7 +66,6 @@ const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
       value,
       status = 'inProgress',
       affix,
-      height,
       className,
       ...props
     },
@@ -87,8 +73,6 @@ const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
   ) => {
     const clampedValue = Math.max(0, Math.min(100, value))
     const fillColor = STATUS_FILL[status]
-    const trackH = height ?? DEFAULT_TRACK_H
-
     // Affix 渲染
     let affixNode: React.ReactNode = null
     if (affix === 'value') {
@@ -110,14 +94,13 @@ const ProgressBar = React.forwardRef<HTMLDivElement, ProgressBarProps>(
         value={clampedValue}
         max={100}
         className={cn(
-          'relative overflow-hidden rounded-full bg-secondary w-full',
+          'relative h-1 overflow-hidden rounded-full bg-secondary w-full',
           className,
         )}
-        style={{ height: trackH }}
         {...props}
       >
         <ProgressPrimitive.Indicator
-          className={cn('h-full rounded-full transition-all duration-300', fillColor)}
+          className={cn('h-full rounded-full transition-all duration-300 motion-reduce:duration-0', fillColor)}
           style={{ width: `${clampedValue}%` }}
         />
       </ProgressPrimitive.Root>

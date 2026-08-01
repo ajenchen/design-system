@@ -40,7 +40,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const RUNNER = resolve(ROOT, 'scripts/run-deterministic-deep-audit.mjs')
 const PLAN_PATH = resolve(ROOT, 'scripts/deep-audit-deterministic-plan.json')
 const PROCESS_TREE_FIXTURE_ROOT = resolve(ROOT, 'scripts/test-fixtures/deterministic-deep-audit')
-const EXPECTED_DIMS = [2, 3, 5, 15, 16, 23, 27, 36, 40, 41, 42, 45, 48, 49, 50, 51, 77, 83, 84, 85, 86, 87, 88, 91]
+const EXPECTED_DIMS = [2, 3, 5, 14, 15, 16, 23, 27, 36, 40, 41, 42, 45, 48, 49, 50, 51, 77, 83, 84, 85, 86, 87, 88, 91]
 
 function browserlessNestedFixtureEnvironment(snapshot) {
   // The outer gate-meta snapshot can provide Playwright for the real DS repo.
@@ -67,29 +67,39 @@ function browserlessNestedFixtureEnvironment(snapshot) {
   return environment
 }
 
-test('execution plan exactly closes the 24 deterministic matrix dimensions and corrected argv', () => {
+test('execution plan exactly closes the 25 deterministic matrix dimensions and corrected argv', () => {
   const state = loadDeterministicDeepAuditPlan({ repoRoot: ROOT })
   assertDeterministicMatrixParity(state, { repoRoot: ROOT })
   assert.deepEqual([...state.dimensionByNumber.keys()].sort((a, b) => a - b), EXPECTED_DIMS)
   assert.deepEqual(state.commandById.get('code-quality').argv, ['node', 'scripts/code-quality-audit.mjs', '--scope=all', '--check'])
   assert.deepEqual(state.commandById.get('compile-stories').argv, ['node', 'scripts/compile-stories.mjs', '--all', '--check'])
-  assert.deepEqual(state.commandById.get('visual-theme-density-matrix').argv, ['node', 'scripts/visual-audit.mjs', '--auto-start', '--scope=all', '--matrix=theme-density'])
+  assert.deepEqual(state.dimensionByNumber.get(14).commandIds, ['naming-structure', 'repository-hygiene'])
+  assert.deepEqual(state.commandById.get('repository-hygiene').argv, ['node', 'scripts/repository-hygiene-invariant.mjs', '--profile=authority', '--check'])
+  assert.deepEqual(state.commandById.get('visual-theme-density-matrix').argv, ['node', 'scripts/visual-audit.mjs', '--static', '--scope=all', '--matrix=theme-density'])
   assert.deepEqual(
     state.dimensionByNumber.get(51).commandIds,
-    ['build-library', 'visual-theme-density-matrix'],
-    'standalone dimension 51 must materialize Storybook config dist before auto-start',
+    ['build-library', 'build-storybook', 'visual-theme-density-matrix'],
+    'standalone dimension 51 must build the exact static Storybook before the isolated visual scan',
   )
   for (const configPath of ['tsconfig.app.json', 'tsconfig.node.json']) {
     const configSource = readFileSync(resolve(ROOT, configPath), 'utf8')
     assert.doesNotMatch(configSource, /node_modules\/\.tmp/, `${configPath} must not write build state into installed dependencies`)
     assert.match(configSource, /"tsBuildInfoFile": "\.\/dist\/\.tsbuildinfo\//, `${configPath} build state must stay in the declared dist output`)
   }
+  const nodeConfigSource = readFileSync(resolve(ROOT, 'tsconfig.node.json'), 'utf8')
+  assert.match(
+    nodeConfigSource,
+    /"@qijenchen\/storybook-config\/preset": \["\.\/packages\/storybook-config\/addons-preset\.ts"\]/,
+    'fresh root typecheck must resolve the Storybook preset from source without requiring a prior package build',
+  )
   const visualAuditSource = readFileSync(resolve(ROOT, 'scripts/visual-audit.mjs'), 'utf8')
-  assert.match(visualAuditSource, /detached: process\.platform !== 'win32'/)
-  assert.match(visualAuditSource, /process\.kill\(-child\.pid, signal\)/)
+  assert.match(visualAuditSource, /startA11yStaticServer\(\{ rootDirectory: staticDirectory/)
+  assert.match(visualAuditSource, /createRenderHealthMonitor\(page, \{\s*mode: scenario\.url \? 'document' : 'storybook'/)
+  assert.match(visualAuditSource, /await renderHealth\.assertHealthy/)
+  assert.match(visualAuditSource, /executeVisualInteraction[\s\S]*await renderHealth\.assertHealthy/, 'visual audit must re-check render health after interaction')
   assert.match(visualAuditSource, /await stopStorybook\(\)/)
   assert.match(visualAuditSource, /await closeBrowser\(\)/)
-  assert.doesNotMatch(visualAuditSource, /storybookProc\.kill\(/, 'visual audit must reap the complete Storybook process group')
+  assert.doesNotMatch(visualAuditSource, /spawn\(['"]npm['"], \[['"]run['"], ['"]storybook['"]/, 'visual audit must not attach to a fixed-port dev server')
   assert.deepEqual(state.dimensionByNumber.get(50).coverage.include, [
     'package.json',
     'package-lock.json',

@@ -312,7 +312,7 @@ export const ColorMatrix: Story = {
       <div>
         <H3>Dots(photo overlay convention)</H3>
         <Desc>
-          Dots 採「白點於照片上」慣例(Instagram / Airbnb / Ant Carousel)——active 不靠變色而是**加寬至 24px**,對色弱使用者更友善。
+          Dots 採「白點於照片上」慣例(Instagram / Airbnb / Ant Carousel)——active 不靠變色而是加寬至 24px,對色弱使用者更友善。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">

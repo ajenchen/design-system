@@ -286,7 +286,7 @@ export const RowsResizeMatrix: Story = {
 
       <div>
         <H3>resize-y 垂直可調,水平禁止</H3>
-        <Desc>永遠 `resize-y`(使用者可垂直拖大 / 拖小)。**禁止** `resize-x` 或 `resize: both`——水平 resize 破壞 form 佈局。</Desc>
+        <Desc>永遠 `resize-y`(使用者可垂直拖大 / 拖小)。禁止 `resize-x` 或 `resize: both`——水平 resize 破壞 form 佈局。</Desc>
       </div>
 
       <div>

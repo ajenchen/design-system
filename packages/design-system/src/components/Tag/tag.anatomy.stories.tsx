@@ -217,8 +217,8 @@ export const Overview = {
             </div>
           </div>
         </div>
-        <div className="text-[10px] text-fg-muted font-mono">
-          內部結構：[tag-px] [icon? | avatar?] [text-px TEXT text-px] [dismiss?] [tag-px]
+        <div className="text-[10px] text-fg-muted">
+          內部由左右 tag padding 包住內容；prefix 可放 icon 或 avatar，中間是具水平文字內距的 label，最後可放 dismiss action。
         </div>
       </div>
 

@@ -385,7 +385,7 @@
     { "id": "release-runbook", "ownerRepo": "design-system", "path": "docs/npm-native-staged-release.md", "required": true },
     { "id": "issuer-registry-adversarial-tests", "ownerRepo": "design-system", "path": "infra/governance/test/issuer-registry.test.mjs", "required": true },
     { "id": "release-tag-authorization-adversarial-tests", "ownerRepo": "design-system", "path": "infra/governance/test/release-tag-authorization.test.mjs", "required": true },
-    { "id": "release-trust-preflight-adversarial-tests", "ownerRepo": "design-system", "path": "infra/governance/test/release-trust-preflight.test.mjs", "required": true },
+    { "id": "standard-release-retired-trust-ceremony-tests", "ownerRepo": "design-system", "path": "infra/governance/test/release-trust-preflight.test.mjs", "required": true },
     { "id": "signed-release-tag-adversarial-tests", "ownerRepo": "design-system", "path": "infra/governance/test/signed-release-tag.test.mjs", "required": true },
     { "id": "privileged-change-adversarial-tests", "ownerRepo": "design-system", "path": "scripts/test-privileged-change-authorization.mjs", "required": true },
     { "id": "exact-artifact-attestation-schema", "ownerRepo": "design-system", "path": "packages/governance/canonical/schemas/attestation.schema.json", "required": true },

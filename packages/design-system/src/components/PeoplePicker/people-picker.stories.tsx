@@ -1,12 +1,14 @@
 // @story-trait-rationale: pre-existing isInputLike WithError trait gap tracked separately (see L62/L72 inline rationale); this edit only adds explicit variant="primary" to the primary-CTA Button per new tertiary/text default migration
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
 import type { PersonValue } from './person-display'
 import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta = {
   title: 'Design System/Components/PeoplePicker/展示',
+  tags: ['autodocs'],
   parameters: {
     docs: {
       description: {
@@ -101,6 +103,7 @@ const MultiPicker = () => {
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">edit（可互動,多選）</h3>
         <PeoplePicker value={val} people={samplePeople} onChange={setVal} aria-label="專案協作者(edit multi demo)" />
+        <Button variant="text" size="xs" onClick={() => setVal(samplePeople.slice(0, 4))}>重設協作者</Button>
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
@@ -113,6 +116,18 @@ const MultiPicker = () => {
 export const Multi: Story = {
   name: '多人',
   render: () => <MultiPicker />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: '移除 Alice Chen' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: '移除 Bob Lin' })).toHaveFocus())
+    await userEvent.click(canvas.getByRole('button', { name: '移除 Bob Lin' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: '移除 Charlie Wu' })).toHaveFocus())
+    await userEvent.click(canvas.getByRole('button', { name: '移除 Charlie Wu' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: '移除 Diana Huang' })).toHaveFocus())
+    await userEvent.click(canvas.getByRole('button', { name: '移除 Diana Huang' }))
+    await waitFor(() => expect(canvas.getByRole('combobox', { name: '專案協作者(edit multi demo)' })).toHaveFocus())
+    await userEvent.click(canvas.getByRole('button', { name: '重設協作者' }))
+  },
 }
 
 /* ── 尺寸與 Button 對齊 ── */

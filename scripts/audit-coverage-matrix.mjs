@@ -58,7 +58,7 @@ const COVERAGE = {
   12: { tier: 'PURE-JUDGMENT', mechanism: 'Story 人話 AI judgment;dispatch 必 DS-wide 全 stories 過 placeholder/jargon test' },
   13: { tier: 'HOOK-ENFORCED', mechanism: 'check_story_invariants.sh R1 anatomy 5-section structural enforce(原 check_story_anatomy.sh)' },
   // Group E — System
-  14: { tier: 'PURE-JUDGMENT', mechanism: '結構核心已謂詞化:chain scripts/naming-structure-invariant.mjs(PascalCase/kebab/主檔,deterministic,2026-07-07 C.0b harvest 首跑);語義部分(hook naming / 章名中文 / identifier 語言)仍 AI judgment DS-wide' },
+  14: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(14) + ';mechanical repository-wide naming/topology/transient/symlink/exact-duplicate closure，另保留 home/file purpose AI judgment layer' },
   15: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(15) },
   // Group F — Architecture
   16: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(16) },
@@ -97,7 +97,7 @@ const COVERAGE = {
   40: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(40) },
   41: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(41) },
   42: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(42) },
-  43: { tier: 'PURE-JUDGMENT', mechanism: 'Rule note 品質 AI judgment;dispatch 必 DS-wide 全 principles.stories rule notes per-component sample-free read' },
+  43: { tier: 'PURE-JUDGMENT', mechanism: 'Reader-facing guidance AI judgment;dispatch 必 DS-wide NO-SAMPLE 全讀所有 Autodocs component descriptions + principles.stories Rule notes，判用途/何時用/近親分界與 rationale 品質；audit-content-quality 只兜 existence/stub' },
   44: { tier: 'PURE-JUDGMENT', mechanism: 'Internal vs Components 三 test DS-wide — dispatch 必 enumerate ALL Internal folder + components,3-test per row' },
   45: { tier: 'DETERMINISTIC', mechanism: deterministicMechanism(45) },
   46: { tier: 'PURE-JUDGMENT', mechanism: 'Manual vs Mechanical boundary — dispatch 必 grep DS-wide stories trait-derived hand-written exports' },

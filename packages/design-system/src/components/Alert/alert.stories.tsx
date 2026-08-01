@@ -10,7 +10,11 @@ import type { NoticeVariant } from '@/design-system/components/Notice/notice'
 
 const meta: Meta = {
   title: 'Design System/Components/Alert/展示',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '在頁面內容中持續呈現重要狀態、警告、錯誤或成功訊息，並可附帶操作。訊息需要留在閱讀脈絡供使用者處理時用 Alert；短暫回饋改用 Toast。' } },
+  },
 }
 export default meta
 
@@ -136,4 +140,3 @@ export const Fixed = {
     </div>
   ),
 }
-

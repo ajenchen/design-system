@@ -15,7 +15,11 @@ import { AspectRatio } from '@/design-system/components/AspectRatio/aspect-ratio
 
 const meta: Meta = {
   title: 'Design System/Components/Carousel/展示',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '讓一組同類內容在有限區域中水平逐頁瀏覽，提供箭頭與頁面指示。適合圖片集、產品卡或宣傳內容；必須同時比較的資訊不可藏進 Carousel。' } },
+  },
 }
 export default meta
 

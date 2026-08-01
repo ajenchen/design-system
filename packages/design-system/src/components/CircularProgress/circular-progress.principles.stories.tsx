@@ -100,7 +100,7 @@ export const UsageGuidance: Story = {
 
         <Rule
           title="❌ 達 100% 不 swap,留在 value=100"
-          note="CircularProgress 語義是「進行中」,停在 100% 跟「完成」語義衝突,使用者看到「滿的 circle」會困惑「還在跑嗎?」。世界級慣例(Gmail / Dropbox / Google Drive):上傳完成即消失,swap 為 ✓ icon / 實際內容 / Empty。本 DS **不提供** success / error variant——consumer 端替換整個元件,不在 CircularProgress 內做狀態 morph"
+          note="CircularProgress 語義是「進行中」,停在 100% 跟「完成」語義衝突,使用者看到「滿的 circle」會困惑「還在跑嗎?」。世界級慣例(Gmail / Dropbox / Google Drive):上傳完成即消失,swap 為 ✓ icon / 實際內容 / Empty。本 DS 不提供 success / error variant——consumer 端替換整個元件,不在 CircularProgress 內做狀態 morph"
         >
           <div className="flex items-center gap-6">
             <div className="flex flex-col items-center gap-2">

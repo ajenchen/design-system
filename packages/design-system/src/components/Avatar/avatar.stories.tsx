@@ -12,7 +12,11 @@ const missingAvatarImage = '/__avatar-fallback-missing__.jpg'
 
 const meta: Meta = {
   title: 'Design System/Components/Avatar/展示',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '以圖片、姓名縮寫或圖示辨識人員、團隊與實體，並提供可靠 fallback。清單、帳號入口或協作內容需要穩定 identity mark 時使用。' } },
+  },
 }
 export default meta
 

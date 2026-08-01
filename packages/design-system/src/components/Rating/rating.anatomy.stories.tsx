@@ -346,7 +346,7 @@ export const SizeMatrix = {
       <div>
         <H3>Size 對照</H3>
         <Desc>
-          Rating 的 star icon 大小 sm=20 / md=24 / lg=24,**對齊 item-anatomy inline Avatar**——
+          Rating 的 star icon 大小 sm=20 / md=24 / lg=24,對齊 item-anatomy inline Avatar——
           Rating 是 filled identity 視覺(主要資料點),跟 Avatar 同重量才能在 row 內 visual weight 對齊。
           Container 走 `--field-height-*`(sm=28 / md=32 / lg=36)跟 Input/Select/Button 並排時 row-align;
           star 本身不走 icon tier(16/16/20,那是次要 affordance icon 的尺寸)。詳見 rating.spec.md。

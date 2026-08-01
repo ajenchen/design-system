@@ -8,7 +8,11 @@ import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta = {
   title: 'Design System/Components/Coachmark/展示',
-  parameters: { layout: 'centered' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'centered',
+    docs: { description: { component: '錨定在介面元素旁的短篇引導浮層，可串成步驟介紹新功能或關鍵操作。只在使用者需要情境式教學時使用，不承載必須立即處理的警告。' } },
+  },
 }
 export default meta
 type Story = StoryObj

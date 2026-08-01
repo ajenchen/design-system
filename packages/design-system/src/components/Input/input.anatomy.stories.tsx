@@ -58,7 +58,7 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
 
 const MODE_DESC: Record<ModeKey, string> = {
   edit:     '表單可編輯欄位 — bg-surface + border + hover/focus 回饋',
-  view:     '純展示值（非表單）— edit 幾何減 chrome（transparent bg/border，**保留 px-field-px 內距與高度**，Model A round16）+ 文字正常色，空值顯示半形 -（hyphen，同 value 前景色）。用在 cell / InlineEdit / 詳情',
+  view:     '純展示值（非表單）— edit 幾何減 chrome（transparent bg/border，保留 px-field-px 內距與高度，Model A round16）+ 文字正常色，空值顯示半形 -（hyphen，同 value 前景色）。用在 cell / InlineEdit / 詳情',
   readonly: '不可編輯但可見 — bg-readonly(neutral-2) + 無邊框 + 文字正常色',
   disabled: '被停用的欄位 — bg-disabled(neutral-2) + 無邊框 + 文字灰化',
 }
@@ -717,7 +717,7 @@ export const StateBehavior = {
         <div className="flex flex-col gap-4">
           <span className="text-caption font-medium text-fg-secondary">startIcon 不攔截點擊 — pointer-events-none</span>
           <div className="flex flex-col gap-2 max-w-sm">
-            <span className="text-[11px] text-fg-muted">startIcon（SVG）帶 pointer-events-none，不攔截點擊、不擋文字選取（不成為死區）。注意：點 icon 區域**不會** focus input（icon 與 input 為 sibling，無 click-to-focus）。endAction 是互動元素，有自己的點擊行為。</span>
+            <span className="text-[11px] text-fg-muted">startIcon（SVG）帶 pointer-events-none，不攔截點擊、不擋文字選取（不成為死區）。注意：點 icon 區域不會 focus input（icon 與 input 為 sibling，無 click-to-focus）。endAction 是互動元素，有自己的點擊行為。</span>
             <Input
               startIcon={Search}
               value={query}

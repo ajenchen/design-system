@@ -95,6 +95,7 @@ Tooltip 最大寬度 **280px**（見 `.tsx` 的 `max-w-[280px]`）——超過�
 - **長文字**:超過 max-width 280px 自動換行、完整呈現不截斷(見「最大寬度」「內容完整性」)
 - **貼近 viewport 邊**:Radix 自動翻邊 + `collisionPadding` 8px 呼吸距離(見「Edge collision」)
 - **空內容**:`TooltipContent` 的 `children` 為 `null` / `undefined` / `false` / 空字串時**不掛浮層**——不渲染帶 padding 的空 `role="tooltip"` 殼,trigger 原樣保留。Tooltip 是資訊補救機制(見「何時用」),沒有補充內容就不該出現。實作於 `tooltip.tsx` 的 `TooltipContent` 以空值 guard 提早 return null 落地
+- **Loading**:Tooltip API 無 loading prop 或內建 async state；content 的資料生命週期由 consumer own。
 
 ## 受控開關(open / defaultOpen / onOpenChange)
 

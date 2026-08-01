@@ -59,7 +59,7 @@ export const CompositionRules: Story = {
   render: () => (
     <div className="flex flex-col gap-12">
       <div className="prose prose-sm max-w-prose">
-        <p>Command 是 internal primitive,由消費者組合使用,**不直接放在 app code**。以下兩種 world-class 慣例(對齊 Linear / Raycast / VS Code Cmd-K idiom):</p>
+        <p>Command 是 internal primitive,由消費者組合使用,不直接放在 app code。以下兩種 world-class 慣例(對齊 Linear / Raycast / VS Code Cmd-K idiom):</p>
 
         <h4>Pattern 1 — SelectMenu 內嵌 Command(searchable form input)</h4>
         <p>需要「搜尋 + 選值寫回 form」→ 用 <code>SelectMenu</code>(內部已組合 <code>Popover + Command</code>),<strong>不要</strong>自己組合:</p>

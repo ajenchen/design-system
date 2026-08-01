@@ -285,6 +285,8 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 
 **Focus**:Field 家族 focus 由 Field wrapper 提供(`focus-within:!border-primary`,`field-wrapper.tsx` v13.3 SSOT;對齊 Select / Combobox spec「Focus」段),非 outline ring;focus management 由元件 own。
 
+移除已選人員後的 focus order 消費 Combobox collection contract：下一個 remove control → 前一個 → owner combobox trigger，禁止 focus 掉到 `body`。Stack avatar remove button 必保留 `data-collection-remove` marker 供 owner 統一接管。
+
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)

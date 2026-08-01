@@ -224,8 +224,8 @@ export const Overview = {
                   style={{ borderColor: `var(--${s.color})`, backgroundColor: `var(--${s.color}-subtle)`, color: `var(--${s.color})` }}>{s.name}</span>
               ))}
             </div>
-            <span className="text-[10px] text-fg-muted font-mono">
-              prefix: [checkbox?] [startIcon? | avatar?] &middot; content: [label + description?] &middot; suffix: [tag?]
+            <span className="text-[10px] text-fg-muted">
+              Prefix 依序容納可選 checkbox 與 start icon 或 avatar；content 容納 label 與可選 description；suffix 容納可選 tag。
             </span>
           </div>
 

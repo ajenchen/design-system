@@ -42,6 +42,7 @@ import {
 } from './lib/a11y-gate.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 import { prepareRuntimeEvidenceFile, resolveRuntimeEvidencePath } from './lib/governance-runtime-evidence.mjs'
+import { createStorybookRenderHealthMonitor } from './lib/storybook-render-health.mjs'
 
 const ROOT = process.cwd()
 const STORYBOOK_DIR = path.join(ROOT, 'storybook-static')
@@ -113,16 +114,11 @@ for (let i = 0; i < stories.length; i++) {
   const s = stories[i]
   const url = `${server.origin}/iframe.html?id=${encodeURIComponent(s.id)}&viewMode=story`
   const page = await ctx.newPage()
+  const renderHealth = createStorybookRenderHealthMonitor(page)
   try {
     await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 })
     await page.waitForTimeout(300)
-    // Storybook 的 play/render failure 會改顯錯誤頁，但 HTTP 仍是 200；若直接跑 Axe，
-    // 可能把錯誤頁的 0 violation 誤當成 story 綠燈。與 visual-audit 同樣 fail closed，
-    // 只有實際帶文字的 #error-message 才判錯，避免初始 preview chrome 的空節點誤報。
-    const storybookError = (await page.locator('#error-message').textContent().catch(() => ''))?.trim()
-    if (storybookError) {
-      throw new Error(`Storybook error display: ${storybookError.slice(0, 200)}`)
-    }
+    await renderHealth.assertHealthy({ label: s.id })
     const result = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
       .analyze()
@@ -145,8 +141,10 @@ for (let i = 0; i < stories.length; i++) {
   } catch (e) {
     console.error(`  ⚠️  ${s.id} — ${e.message}`)
     results.violationsByStory[s.id] = [{ id: 'audit-error', impact: 'serious', help: e.message, nodes: 1 }]
+  } finally {
+    renderHealth.dispose()
+    await page.close()
   }
-  await page.close()
   completedStoryIds.push(s.id)
 }
 

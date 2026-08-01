@@ -179,7 +179,7 @@ export const SlotCombinations: Story = {
       <div>
         <H3>四種 slot 組合 — 從最小到最完整</H3>
         <Desc>
-          Empty 是純 layout 元件——consumer 依 context 決定要顯示多少 slot。**最少只要 `description`**
+          Empty 是純 layout 元件——consumer 依 context 決定要顯示多少 slot。最少只要 `description`
           (預設唯一必填 slot),icon / title / action 全部是 opt-in。選擇時問自己:「使用者需要多強的
           引導?」——越初次 / 越重要的空狀態,slot 越多。
         </Desc>

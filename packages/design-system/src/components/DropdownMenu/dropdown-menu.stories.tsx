@@ -13,7 +13,11 @@ import { Badge } from '@/design-system/components/Badge/badge'
 
 const meta: Meta = {
   title: 'Design System/Components/DropdownMenu/展示',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '由 trigger 開啟的浮層動作選單，支援一般、勾選、單選與巢狀項目。當操作需要節省畫面空間且不必持續可見時使用；主要 CTA 不應藏入選單。' } },
+  },
 }
 export default meta
 

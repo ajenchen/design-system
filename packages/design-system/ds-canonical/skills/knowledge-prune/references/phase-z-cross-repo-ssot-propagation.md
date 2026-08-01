@@ -1,14 +1,15 @@
 # Cross-repository SSOT propagation
 
-The trigger is not completion of `/knowledge-prune` or any other skill. Propagation begins only after a release-affecting PR passes every required gate and is merged through protected `main` under the standing engineering authorization.
+The trigger is not completion of `/knowledge-prune` or any other skill. Standard propagation is owned only by `infra/governance/release-workflow.json` and resumed by `npm run release:auto` under the standing engineering authorization.
 
 Canonical chain:
 
-1. The working branch contains the exact version bump, generated projections, immutable BOM, and a successful `npm run release:preflight` attestation.
-2. Required PR checks, conversation resolution, product preview/canary, attestation, and external protection readback pass; no separate chat trigger or milestone approval is required.
-3. The protected PR is merged. The release tag may target only the attested commit or a squash commit with an identical Git tree.
-4. The Release workflow publishes immutable packages with provenance.
-5. `mirror-to-published-template.yml` consumes the successful Release event, mints a short-lived GitHub App token, and opens a complete template mirror PR.
-6. Fleet rollout advances through release rings. WM is the product canary. For each registered opt-in consumer selected in the current ring/wave, a reviewed fleet plan may issue one exact-version upgrade dispatch; that consumer must pass its own governance/product CI and independent readback before completion is claimed. Unregistered template descendants remain self-service and are not fleet-covered.
+1. `pr-checks`:the single task branch/PR contains the intended exact version and generated projections; required CI and conversation resolution pass.
+2. `merge`:the PR merges through protected `main`, followed by protected-main readback.
+3. `publish`:the registered Release workflow publishes the exact npm packages.
+4. `readback`:GitHub Release and npm exact-version readbacks both match.
+5. `consumer`:reviewed exact-version PRs land in the template and WM, and both protected `main` lockfiles read back the released version.
 
-No skill or SessionStart hook may install, bump, dispatch a mutable tag, write a lockfile, push consumer `main`, or silently repair drift. The provider-neutral checker and protected CI are authoritative; native provider hooks only provide earlier feedback.
+`release:preflight`, candidate freeze, offline signatures, preview/canary, model certification, soak, and fleet promotion are retired or optional assurance for the standard profile. Their absence never inserts a sixth step or blocks the five-step completion claim. Login/MFA/OAuth/credential reference may pause only the exact action; completion resumes automatically afterward.
+
+No skill or SessionStart hook may install, bump, dispatch a mutable tag, write a lockfile, push consumer `main`, or silently repair drift. `release:auto`, protected CI, and live readback are authoritative; native provider hooks only provide earlier feedback.

@@ -1,7 +1,7 @@
 <!-- Authority/status: governance/planning/registry.json -->
-# Story Auto-Compile 系統(C)— 完整規劃
+# Story Auto-Compile 系統(C)— 歷史規劃（非 executable）
 
-**Status**:Phase 1-4 完成 2026-04-25(57/59 aligned 0 drift);**2026-05-01 verified 60/60 aligned 0 skipped**(全元件 phase 1+2 structure done);Phase 5 由實際使用驅動,尚無 consumer 需求不動。
+**Status**:Phase 1-4 完成 2026-04-25(57/59 aligned 0 drift);**2026-05-01 verified 60/60 aligned 0 skipped**(當時 inventory 的 phase 1+2 structure done)。本文件現為 historical reference：目前 `compile-stories.mjs` 可在 stdout 編譯 canonical rows並做 spec/tsx metadata drift check，但不寫入 story files；執行 authority 是 `packages/design-system/ds-canonical/rules/story-rules.md`、`story-auto-compile-migrate` skill 與 deterministic audit。Phase 5 只是 future-reserved idea，沒有 consumer requirement 前不得自行重啟。
 - Phase 1(tsx `componentMeta`):56 元件 migrate 完成 + 2 已完成合規 + Button 手動 world-class refs
 - Phase 2(spec YAML frontmatter):variants / sizes auto-fill + Badge/Tag world-class refs 填 + `componentMeta.tokens` 自動 grep 填(2026-04-25)
 - Phase 3(compile script):`scripts/compile-stories.mjs --all --check` 0 drift
@@ -211,6 +211,8 @@ writeStory('button.anatomy.stories.tsx', {
 
 現在有 44 元件、3 個 audit iteration、multiple drift bugs,建 auto-compile 的 ROI 終於壓倒前置工成本。
 
-## 執行 trigger
+## 歷史文件使用方式
 
-User 說「開工 story auto-compile」/「做 C」→ AI 讀本檔 → 從 Phase 1 開始。
+本檔只保留原始願景、已完成 migration 與 future-reserved Phase 5 的 rationale。任何新需求先依
+現行 story-rules / component spec 建立新的可驗證 plan；不得從本檔 Phase 1 重跑或把舊 pseudocode
+當 production 行為。

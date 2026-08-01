@@ -6,8 +6,12 @@ import { NumberInput } from '@/design-system/components/NumberInput/number-input
 
 const meta: Meta<typeof Slider> = {
   title: 'Design System/Components/Slider/展示',
+  tags: ['autodocs'],
   component: Slider,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '在連續範圍內以拖曳方式調整單一數值，並提供鍵盤操作。適合音量、強度或大致偏好等即時回饋情境；需要精確輸入時搭配 NumberInput。' } },
+  },
 }
 export default meta
 

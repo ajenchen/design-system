@@ -16,7 +16,11 @@ import '@/design-system/components/DataTable/column-types' // ColumnMeta declara
 
 const meta: Meta = {
   title: 'Design System/Components/Skeleton/展示',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '在資料載入期間以接近最終內容的色塊保留版面，降低跳動並預告資訊結構。已知內容形狀且等待時間短時使用；未知進度工作改用進度指示。' } },
+  },
 }
 export default meta
 type Story = StoryObj

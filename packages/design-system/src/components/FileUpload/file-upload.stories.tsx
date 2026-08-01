@@ -1,6 +1,6 @@
 // @story-trait-rationale: hasInteractiveStates 的 Disabled / States 由 anatomy.stories.tsx StateBehavior auto-compile owns(2026-05-15 F-migration);showcase 層展示真實上傳 / 自訂內容情境。
 import type { Meta } from '@storybook/react'
-import { within } from '@storybook/test'
+import { expect, userEvent, within } from '@storybook/test'
 import { useState } from 'react'
 import { Image as ImageIcon, X } from 'lucide-react'
 import { FileUpload } from './file-upload'
@@ -10,8 +10,12 @@ import { Empty } from '@/design-system/components/Empty/empty'
 
 const meta: Meta<typeof FileUpload> = {
   title: 'Design System/Components/FileUpload/展示',
+  tags: ['autodocs'],
   component: FileUpload,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '接收拖放或檔案選擇並呈現上傳入口，可配合 FileItem 管理進度與錯誤。產品需要新增本機檔案到工作流時使用；既有檔案的預覽改用 FileViewer。' } },
+  },
 }
 export default meta
 
@@ -114,6 +118,11 @@ export const WithFileList = {
         />
       </div>
     )
+  },
+  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(await canvas.findByRole('button', { name: '移除 2026-Q1-report.pdf' }))
+    await expect(await canvas.findByRole('button', { name: '移除 cover-image.png' })).toHaveFocus()
   },
 }
 

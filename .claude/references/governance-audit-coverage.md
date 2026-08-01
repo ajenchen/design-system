@@ -1,6 +1,6 @@
-# 治理 home × 稽核者 覆蓋表(2026-07-22)
+# 治理 home × 稽核者覆蓋表（2026-08-01 重驗）
 
-**觸發**:user verbatim「綜觀來看,deep audit 到底會不會稽核**所有** DS 的治理?」— 不是單軸,是全部。本表 = 逐 home 盤點「誰稽核它、怎麼稽核、多常跑」,誠實標出弱軸。**機械消費點:deep-audit SKILL C.0b(2026-07-10 接線)— 每輪收尾必逐 row 對照本表,新治理物無 row = C 階段不完整**;另 knowledge-prune 季度掃時參照。
+**觸發**:user verbatim「綜觀來看,deep audit 到底會不會稽核**所有** DS 的治理?」— 不是單軸,是全部。本表 = 逐 home 盤點「誰稽核它、怎麼稽核、多常跑」,誠實標出弱軸。**消費點:`design-system-audit/SKILL.md` Phase 4.5 deep mode**— 同一 run 的 full knowledge-prune 後必逐 row 對照本表並產 evidence／UNOBSERVED receipt；新治理物無 row 或漏 row = deep run 不完整。Default audit 只跑 light prune，不冒充全治理覆蓋。
 
 ## 覆蓋表(逐 home,cite 查證過)
 
@@ -8,12 +8,13 @@
 |---|---|---|---|
 | `AGENTS.md` + canonical `packages/design-system/ds-canonical/rules/*.md` + 計數 snapshot | `sync-governance-counters --check`(數字 drift,fail-closed)+ session-start Check 7 + `_governance_coverage_check` PostToolUse(原則→dim 對映)+ knowledge-prune D1/D4(重複/矛盾) | 每 session + 每發版 + 季度 | ✅ 強 |
 | `packages/design-system/ds-canonical/rules/*.md`(M-rules 等) | counters(M-rule 數)+ `extract-canonical-rules --check` + canonical-reviewer agent(edit 時)+ knowledge-prune D1/D3/D4 | 每 edit + 每發版 + 季度 | ✅ 強 |
-| `*.spec.md`(83+) | deep-audit dims 6/7/8(NO-SAMPLE judgment)+ A.1b claim-vs-code 逐句 + `audit-spec-deadlinks --check` + `add-reciprocal-pointers --check` + `check_spec_class_drift` hook + `audit-content-quality --check`(**scope 註:此 script 只掃 components/ 的 spec/story,非治理 md**) | 每 deep-audit + 每發版 | ✅ 強 |
-| hooks(56) | `audit:hook-quality`(fire 活性/假死)+ `audit-hook-test-coverage --check`(BLOCKER hook 必有 test;**2026-07-10 進 preflight fail-closed**)+ `tests/run-all` + fork classification gate(`build-fork-governance --check`,新 hook 未分類 = 擋發版)+ counters(數量 cap) | 每發版 + 季度 | ✅ 強 |
-| skills(SKILL.md ×22) | knowledge-prune D7(invoke 活性)+ file-size hook + deep-audit A.0 第 7 項全讀(2026-07-10 補真 — 原宣稱超前)+ governance-health 月度 | 每 deep-audit + 季度 + 月度 | ⚠️ 中(read 層有了;逐句 claim-vs-behavior 仍無機械閘 = 弱軸 2) |
+| `*.spec.md` | deep-audit dims 6/7/8(NO-SAMPLE judgment)+ A.1b claim-vs-code 逐句 + `audit-spec-deadlinks --check` + `add-reciprocal-pointers --check` + `check_spec_class_drift` hook + `audit-content-quality --check`(**scope 註:此 script 只掃 components/ 的 spec/story,非治理 md**) | 每 deep-audit + 每發版 | ✅ 強 |
+| registered hooks | `audit:hook-quality`(有可信 telemetry 時才判 fire 活性/假死；缺資料 = unobserved)+ `audit-hook-test-coverage --check`(BLOCKER hook 必有 test)+ `tests/run-all` + fork classification gate(`build-fork-governance --check`,新 hook 未分類 = 擋發版)+ dynamic counters(數量 cap) | 每 deep-audit + 每發版 + 季度 | ✅ 結構強 / ⚠️ live telemetry 視環境可為 UNOBSERVED |
+| canonical skills | knowledge-prune D7(只在有可信 invoke telemetry 時判活性)+ file-size hook + deep-audit A.0 全讀 + governance-health 月度；inventory 由 canonical tree 動態枚舉 | 每 deep-audit + 季度 + 月度 | ⚠️ 中(read 層有了;逐句 claim-vs-behavior 仍無機械閘 = 弱軸 2) |
 | committed memory SSOT + provider cache | session-start 對 repo SSOT cap 檢查(≤20)+ `sync-memory --check` content-hash drift + knowledge-prune D8(recency/orphan) | 每 session + 季度 | ✅ 強 |
-| `references/`(registry / 對照表) | dim 91 registry gate(failure-class)+ `check_story_invariants` R8(story-baseline-registry 消費)+ prune D1/D4 + **D2 references-orphan 掃(2026-07-10 加)** | 每發版 + 季度 | ⚠️ 中(2026-07-10 修:原誤引 canonical_propagation/counters — 兩者實際不掃本目錄;純文字 reference 靠季度) |
-| `planning/`(Level 9 plan doc) | 設計上 = 歷史 SSOT 存檔;**D8 planning-orphan 掃(2026-07-10 補 — 原 D8 只掃 memory 方向相反)** | 季度 | ⚠️ 低-by-design(存檔性質;活的必有 memory pointer,無引用 → D8 列 orphan 候選) |
+| `references/`(registry / 對照表) | dim 91 registry gate(failure-class)+ `check_story_invariants` R8(story-baseline-registry 消費)+ repo-hygiene exact inventory/duplicate gate + prune D1/D4/D2 references-orphan | 每 deep-audit + 每發版 + 季度 | ⚠️ 中(結構/registry 強；純文字語意仍靠季度 judgment) |
+| `planning/`(Level 9 plan doc) | `validate-planning-registry.mjs` 驗 exact inventory/status/executable contract；knowledge-prune D8 驗 active memory pointer、stale/orphan | 每 deep-audit + 每發版 + 季度 | ⚠️ 中(狀態機械；內容 recency 仍是 judgment) |
+| repository folder/file topology(含 authority + available registered consumer repos) | `repository-hygiene-invariant.mjs` + paired mutation meta-test + `references/repository-hygiene.md` 全檔語意分類；未掛載 repo = unobserved | 每 full/deep audit + 每發版 | ✅ 結構強 / ⚠️ ambiguous future-use 需 evidence judgment |
 | checker gates(discovery-derived) | `audit-coverage-matrix --check`(每 dim 的 tier/mechanism 封閉分類、deterministic plan 與 active hook edge 綁定)+ `audit-gate-meta-test-coverage --check`(發現數 = paired owner 數、zero debt)+ `run-gate-meta-tests.mjs`(一次性 disposable snapshot 內執行 paired mutation tests)。Harness registry 從 checker inventory + execution owner 即時重算；任一 test 改成 external-only 就立即產生 gap 並 fail closed，不靠人工維護總數。 | 每 deep-audit + 每發版 + All-Harness | ✅ 強(只證明本機 mutation closure；不冒充 browser/registry/model/CI/managed-host live certification) |
 | plugin / marketplace / fork corpus | `plugin-structure-validate` + `build-fork-governance --check` + `test-fork-governance` 假 fork harness(防 false-green/brick)+ counters | 每發版 | ✅ 強 |
 | eslint-plugin | 自帶 node --test(50 case)| 手跑/CI 無(**未發佈 = 對 consumer 零效**,plan doc 批次 B) | ⚠️ 已知缺口(tracked) |
@@ -23,7 +24,7 @@
 
 ## 誠實結論(回答「所有?」)
 
-**主幹 9 軸已全機械化 + fail-closed**(內容/計數/機械化程度/hook 活性+測試/膨脹矛盾/fork 出貨/病根覆蓋/provider-model 綁定/dim 自身反抽樣)。**「所有」還不成立的 4 個弱軸**(全部 tracked,非隱藏):
+**所有已登記治理 home 都有稽核路徑，能機械化的結構／計數／引用／拓撲／mutation closure 均 fail closed。**仍有 4 個不能冒充全自動真值的弱軸（全部 tracked，非隱藏）：
 
 1. **live 外部執行/啟用**:discovery-derived 本機 paired mutation 已保持 zero-gap，但 GitHub rulesets/App identities、registry/npm、真實 model provider、cloud runner 與 managed-host 仍必須用簽署且鮮度受控的 live readback 認證；`Unverified` 不能當 PASS。
 2. **SKILL.md 內容 claim-vs-behavior**:skill 文字宣稱的流程 vs 實際 hook/script 行為,無逐句機械比對(A.1b 只對 component spec)。季度 prune D5 部分覆蓋。

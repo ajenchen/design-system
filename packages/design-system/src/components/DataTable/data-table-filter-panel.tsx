@@ -143,7 +143,7 @@ const normalizeMaxConditions = (maxConditions: number | undefined): number => {
 
 // ── Component Props ─────────────────────────────────────────────────────
 
-export interface DataTableFilterPanelProps<TData> {
+export interface DataTableFilterPanelProps<TData> extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange' | 'defaultValue'> {
   // 2026-07-18 決策17:移除獨立 `mode` prop(單一真相源 = `value.mode` discriminant)——
   //   舊設計 mode + value.mode 兩來源型別允許矛盾(mode='nested' 配 flat value → CTA 錯文案 + 死操作);
   //   無外部消費者傳 mode(grep 0),全由 value.mode 推導。對齊 MUI X GridFilterModel / AG Grid 單一 model。
@@ -188,6 +188,7 @@ function DataTableFilterPanelInner<TData>({
   labels: labelsOverride,
   onClose,
   className,
+  ...props
 }: DataTableFilterPanelProps<TData>, ref: React.ForwardedRef<HTMLDivElement>): React.ReactElement {
   const filterableColumns = React.useMemo(() => extractColumns(columns), [columns])
   const fieldOptions: SelectOption[] = React.useMemo(
@@ -348,13 +349,17 @@ function DataTableFilterPanelInner<TData>({
     //   詳 overlay-surface.spec.md「viewport-aware scroll chain invariant」段
     // K11 v2 fix(2026-05-04):flex item 預設 min-h:auto 讓 content 撐 height,h-full 失效。
     // 必加 `min-h-0` 才能讓 panel 在 PopoverContent max-h cap 下正確 shrink + body scroll。
-    <div ref={ref} className={cn(
-      'flex flex-col h-full min-h-0',
-      value.mode === 'nested'
-        ? 'w-[min(760px,calc(100vw-2rem))]'
-        : 'w-[min(640px,calc(100vw-2rem))]',
-      className,
-    )}>
+    <div
+      ref={ref}
+      className={cn(
+        'flex flex-col h-full min-h-0',
+        value.mode === 'nested'
+          ? 'w-[min(760px,calc(100vw-2rem))]'
+          : 'w-[min(640px,calc(100vw-2rem))]',
+        className,
+      )}
+      {...props}
+    >
       {/* Popover 派輕量 chrome — slot 走 COMPACT_HEADER_SLOT(=21,衍生自 PopoverTitle text-body line-box),header 自然 ~45px */}
       <SurfaceHeader className={COMPACT_HEADER_SLOT}>
         <PopoverTitle className="flex-1">{labels.title}</PopoverTitle>

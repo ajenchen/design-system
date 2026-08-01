@@ -63,7 +63,18 @@ benchmark:
 | `children` | `ReactNode` | — | 取代 default 選單內容(自組 Group / Item;i18n / 產品自訂項走這);identity Label 恆由元件渲染 |
 | `align` | `'start' \| 'center' \| 'end'` | `'end'` | 右上入口靠右展開(demo baseline) |
 | `triggerAriaLabel` | `string` | `'帳號與設定'` | i18n override(對齊 Avatar `badgeAriaLabel` pattern) |
+| `open` | `boolean` | — | controlled 展開狀態(Radix passthrough) |
 | `defaultOpen` | `boolean` | — | uncontrolled 預設展開(Radix passthrough;Storybook OpenSnapshot 用) |
+| `onOpenChange` | `(open: boolean) => void` | — | 展開狀態變更 callback(Radix passthrough) |
+| `triggerProps` | button props(排除 `children/type/aria-label/className/disabled`) | — | 把分析、測試與事件所需的非視覺 DOM attributes 傳給 trigger；canonical 外觀與 disabled policy 不開放覆寫 |
+
+`open` / `defaultOpen` / `onOpenChange` 保留 Radix DropdownMenu 的 controlled / uncontrolled
+dual-mode contract：僅傳 `defaultOpen` 時由 Radix 持有狀態；傳 `open` 時由 consumer 編排，
+`onOpenChange` 在兩種模式均通知開關變化。
+
+`ref` 明確指向 avatar trigger `<button>`，不是 portal 內的 menu surface。AccountMenu 沒有
+額外 root DOM；因此 trigger 是唯一穩定、可聚焦的 imperative host。需操作選單內容時應使用
+controlled `open` / `onOpenChange`，不靠查找 portal DOM。
 
 **Default 選單集合**(owner = app-shell.spec.md「入口開什麼」段):Group 1 = Label(user.name)+ 個人資料 + 設定;Group 2 = 登出(破壞性動作獨立分區)。三個 default callback 未接任何一個且無 `children` → dev-mode warn(對齊 `ProfileCardDefaultActions` 先例)。
 
@@ -78,6 +89,14 @@ benchmark:
 - **Trigger**:`<button type="button" aria-label>`(icon-only 觸發必有 aria-label;預設「帳號與設定」,i18n 走 `triggerAriaLabel`);focus ring = `focus-visible:ring-2 ring-ring`(互動感由 ring 提供,無 hover bg — chrome 輕量 entry,不放大 avatar 到 field height)。Radix modal menu 開啟時 trigger 所在 app subtree 會被 `aria-hidden`;由 `DropdownMenu` SSOT 同步把 trigger 設為 `tabIndex={-1}`,關閉時復原,AccountMenu 不另建 open-state 邏輯
 - **Keyboard**:繼承 Radix DropdownMenu(Enter / Space / ArrowDown 開啟、Arrow 巡覽、Esc 關閉並 focus 還 trigger、typeahead)— owner = `dropdown-menu.spec.md` A11y 段,不重述
 - **選單語義**:Label 為 presentation(不可 focus),item 為 menuitem(Radix 自管 role / aria)
+
+## 邊界案例
+
+- **Disabled**:AccountMenu 不提供整體 disabled prop。帳號入口是 chrome 內的固定 navigation 入口；個別不可用動作由 consumer 自組 `children`，並在對應 `DropdownMenuItem` 上表達 disabled。
+- **Loading**:AccountMenu API 無 loading prop 或內建 async state；登出等非同步生命週期由該 menu item 的 consumer handler 與後續頁面狀態負責。
+- **Empty / callback 未接**:default 集合固定渲染三個 navigation item；三個 callback 全未接且無 `children` 時以 dev warning 揭露無效操作。自組 `children` 為空時只剩 identity Label，consumer 應省略該空 override、改用 default 集合。
+- **Dark mode / density**:色彩由 Avatar / DropdownMenu semantic token 自動處理；trigger avatar 依 `header-canonical.spec.md` 4.5 固定為 chrome 24px，不隨 density 變動。
+- **Validation**:本元件不承載可編輯值或表單提交，驗證時機不適用。
 
 ## 禁止事項
 
@@ -99,3 +118,10 @@ benchmark:
 | Material 3 | 無專門元件;navigation drawer 帳號 switcher 放 drawer header 區(placement guidance) | <https://m3.material.io/components/navigation-drawer>(placement cite 已在 app-shell.spec.md) |
 
 **收斂**:trigger 出貨為專門元件(Atlassian 路線,因 DS 內兩處 spec mandate 同構消費)+ 內容維持 DropdownMenu composition 開放(shadcn / Primer 路線,`children` 取代)。M21 3-test:(1) `DropdownMenu` 無單一 prop 可達成 identity trigger + canonical 集合;(2) Atlassian 出貨分離元件(cite 上表);(3) contract 不同 — 收 user identity 資料 + navigation callbacks,非 menu primitive surface。
+
+## 相關
+
+- `../AppShell/app-shell.spec.md` — 帳號入口放置 SSOT
+- `../Avatar/avatar.spec.md` — trigger identity mark
+- `../DropdownMenu/dropdown-menu.spec.md` — menu behavior / disabled item / keyboard owner
+- `../ProfileCard/profile-card.spec.md` — 「自己」帳號入口 vs「別人」資料卡分界

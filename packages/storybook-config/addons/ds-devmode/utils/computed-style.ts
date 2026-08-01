@@ -14,7 +14,7 @@ const LAYOUT_PROPS = [
   'padding-bottom',
   'padding-left',
   // Logical padding(2026-05-21 加 per codex M31 Layer C — Tailwind v4 預設輸出 logical
-  // shorthand,未含這些 whitelist 會讓 tokenUsage 漏掉 `px-[var()]` / `py-[var()]` 等)
+  // shorthand,未含這些 whitelist 會讓 tokenUsage 漏掉以 CSS variable 驅動的 px / py utilities)
   'padding-inline',
   'padding-inline-start',
   'padding-inline-end',

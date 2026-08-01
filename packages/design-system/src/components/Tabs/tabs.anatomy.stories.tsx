@@ -41,7 +41,7 @@ export const Overview: Story = {
 
       <div>
         <H3>Trigger 內部結構</H3>
-        <Desc>[startIcon?] [label] [suffix: badge? + endIcon?]——slot 間 gap-2,suffix 內 gap-1。</Desc>
+        <Desc>依序排列可選 startIcon、label、以及可含 badge / endIcon 的 suffix；slot 間 gap-2，suffix 內 gap-1。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-2xl">
           <Tabs defaultValue="files">
             <TabsList>
@@ -405,7 +405,7 @@ export const SpacingTokens: Story = {
 
       <div>
         <H3>Trigger 無水平 padding</H3>
-        <Desc>Trigger **不加任何水平 padding**——寬度 = 內容寬度(hug content)。selected underline(`::after left-0 right-0`)因此剛好 fit label;若加橫向 padding,underline 會多出鬆散空白。trigger 之間的分隔靠 TabsList 的 `gap-[var(--layout-space-loose)]`,不是 padding。</Desc>
+        <Desc>Trigger 不加任何水平 padding——寬度 = 內容寬度(hug content)。selected underline(`::after left-0 right-0`)因此剛好 fit label;若加橫向 padding,underline 會多出鬆散空白。trigger 之間的分隔靠 TabsList 的 `gap-[var(--layout-space-loose)]`,不是 padding。</Desc>
       </div>
     </div>
   ),

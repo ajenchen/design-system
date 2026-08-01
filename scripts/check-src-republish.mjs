@@ -233,7 +233,7 @@ export async function runRepublishGate({
     console.error('   → 此 push 不會產生可被 consumer 解析的新 immutable npm 版本。')
     console.error(`   ship-relevant 改動(${shipDiff.length}):`)
     shipDiff.slice(0, 20).forEach((f) => console.error(`     - ${f}`))
-    console.error('\n   修:bump packages/design-system/package.json 版本 → 跑 `npm run release:preflight` → 建立並推送指向當前 protected main HEAD 的 remote exact tag（tag 僅為資料）→ 送出 `stage-protected-release` repository dispatch。')
+    console.error('\n   修:bump packages/design-system/package.json 版本 → commit/push 同一 task branch → 執行 `npm run release:auto`；orchestrator 依 five-step SSOT 完成 protected PR、merge、publish、readback、consumer。')
     throw new Error('REPUBLISH_GATE_BLOCK:publish surface changed without a strictly newer package version')
   }
   console.log(`✓ republish gate:publish surface 改了且版本已 bump(${baselineVersion} → ${currentVersion})→ 會走發版鏈,OK`)

@@ -1,6 +1,7 @@
 // @story-trait-rationale: hasInteractiveStates 由 anatomy.stories.tsx StateBehavior auto-compile owns(2026-05-15 F-migration);Default scenario 由 Rich / Compact / HoverSwap 等真實上傳情境 story 覆蓋,Disabled state 由 status="error" / "uploading" 真實 state 體現。
 import * as React from 'react'
 import type { Meta } from '@storybook/react'
+import { expect, fn, userEvent, within } from '@storybook/test'
 import { Trash2, ChevronDown } from 'lucide-react'
 import { FileItem } from './file-item'
 import { Button } from '@/design-system/components/Button/button'
@@ -21,12 +22,17 @@ const errorDescWithLog = (
 
 const meta: Meta<typeof FileItem> = {
   title: 'Design System/Components/FileItem/展示',
+  tags: ['autodocs'],
   component: FileItem,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '以一致列項呈現檔名、類型、進度、狀態與檔案操作，可切換 compact 或 rich 內容。上傳佇列與附件清單需要逐檔回饋時使用。' } },
+  },
 }
 export default meta
 
 const noop = () => {}
+const keyboardOpen = fn()
 
 // FileItem row dedicated action(2026-04-23 統一 canonical):
 // **Row action 絕對值 cap = ≤ 24px,不隨 row tier 放大**。rich + compact 統一用
@@ -50,12 +56,19 @@ export const Rich = {
         description="5.7 MB of 7.5MB" thumbnailSrc="https://i.pravatar.cc/80?u=alan" actions={deleteBtn} />
       <FileItem mode="rich" name="Alan Profile.png" status="completed"
         description="5.7 MB" thumbnailSrc="https://i.pravatar.cc/80?u=alan"
-        onClick={noop} onDownload={noop} actions={deleteBtn} />
+        onClick={keyboardOpen} onDownload={noop} actions={deleteBtn} />
       <FileItem mode="rich" name="Alan Profile.png" status="error" progress={65}
         description={errorDescWithLog} thumbnailSrc="https://i.pravatar.cc/80?u=alan"
         onRetry={noop} actions={deleteBtn} />
     </div>
   ),
+  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    keyboardOpen.mockClear()
+    const action = await within(canvasElement).findByRole('button', { name: '開啟 Alan Profile.png' })
+    action.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect(keyboardOpen).toHaveBeenCalledTimes(1)
+  },
 }
 
 export const Compact = {
@@ -202,7 +215,7 @@ export const CompactMixed = {
   name: '緊湊 混合',
   render: () => (
     // Real-world:email 草稿 — 新上傳中(status=uploading/error)+ 舊已存附件(無 status 靜態)混在同 list
-    // **重要 invariant**:upload-manager 的 **completed**(bar 100% + ✓)跟靜態(無 bar)不共存
+    // 重要 invariant:upload-manager 的 completed(bar 100% + ✓)跟靜態(無 bar)不共存
     // —— completed-保留 是「剛完成的 upload session」,無 status 是「已存 attachment」,
     //    業務語義互斥(表單情境完成後 consumer 會清掉 status 轉靜態)。
     // 這 mixed 情境只含:上傳中(uploading/error)+ 已存附件(saved attachments,無 status)

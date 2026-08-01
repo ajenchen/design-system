@@ -162,7 +162,11 @@ function MemberRow({ member, index }: { member: (typeof MEMBERS)[number]; index:
 
 const meta: Meta = {
   title: 'Design System/Components/Dialog/展示',
-  parameters: { layout: 'centered' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'centered',
+    docs: { description: { component: '以模態浮層要求使用者專注完成確認、輸入或短流程，並管理 focus 與 Escape。任務必須在回到原頁前處理時使用；長篇或需要更多工作空間時改用 Sheet。' } },
+  },
 }
 export default meta
 
@@ -334,7 +338,7 @@ export const ListBody = {
           <DialogBody className="!px-0 !pt-0 !pb-0">{/* @tabs-content-gap-ok: list-as-region canonical(body 撤 chrome padding、list wrapper py-2 own;非 tabs !pt-0 hack)*/}
             <div role="list" className="flex flex-col py-2">
               {['Bug', 'Feature', 'Improvement', 'Research', 'Documentation', 'Refactor', 'Test'].map((t) => (
-                // 小 item 純文字 label → 用 **MenuItem** primitive(世界級 Linear Cmd+K / Polaris OptionList
+                // 小 item 純文字 label → 用 MenuItem primitive(世界級 Linear Cmd+K / Polaris OptionList
                 // / Atlassian Modal+Menu 共通 pattern:menu-like 內容在 dialog 內用 menu primitive)
                 // className 覆蓋 px-3 為 px-loose → 對齊 dialog header/footer(tailwind-merge 吃掉預設 px-3)
                 // list outer wrapper 已 `py-2`(menu group 8px breathing)+ body 撤 chrome padding,

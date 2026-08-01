@@ -6,8 +6,12 @@ import { Badge } from '@/design-system/components/Badge/badge'
 
 const meta: Meta<typeof ChipGroup> = {
   title: 'Design System/Components/Chip/展示',
+  tags: ['autodocs'],
   component: ChipGroup,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '表示可切換的篩選條件或輕量選項，ChipGroup 管理單選、多選與水平溢出。使用者需要在內容上方快速套用少量篩選時使用；純分類標籤改用 Tag。' } },
+  },
 }
 export default meta
 

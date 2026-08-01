@@ -185,7 +185,7 @@ Field wrapper 透過 context 注入的 key 是 `invalid`(**非 `error`**;field.t
 
 注：有 view 渲染分支者（Input 家族 / Select / Combobox / DatePicker / TimePicker / PeoplePicker / **Checkbox** / **Switch**，後二者 view = ✓/—）完整響應 `<Field mode="view"/"readonly">` + `<Field disabled>`；**Slider / Rating 無 view 態但有 readonly cascade**（2026-06-12 補:Slider readonly = 鎖互動保留視覺;Rating readonly = 星星鎖定 role=img）+ 響應 `<Field disabled>`;**SegmentedControl 無 view/readonly 態**（僅 enabled/disabled）→ 只響應 `<Field disabled>`。**group 控件（Checkbox/RadioGroup/Switch/SegmentedControl）雖非 fieldWrapperStyles 消費者，仍一律經 resolver hook 解析**（gate Check 1b/2 強制）。
 
-**機械強制**：`scripts/check-field-cascade-resolve.mjs`（ci + release:preflight）—— 消費 `fieldWrapperStyles` 的控件若散落手刻 `fieldCtx?.{disabled,mode}` 解析（而非走 resolver hook）= fail，防新控件重演 cascade 漏接。
+**機械強制**：`scripts/check-field-cascade-resolve.mjs`（required CI + deterministic audit chain）—— 消費 `fieldWrapperStyles` 的控件若散落手刻 `fieldCtx?.{disabled,mode}` 解析（而非走 resolver hook）= fail，防新控件重演 cascade 漏接。
 
 ---
 

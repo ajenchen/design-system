@@ -120,6 +120,7 @@ function TagDismiss({ onRemove, label, solid, color }: { onRemove: () => void; l
       icon={X}
       size="md"
       onClick={(e) => { e.stopPropagation(); onRemove() }}
+      data-collection-remove
       aria-label={label ? `移除 ${label}` : '移除'}
       style={solidColors ? ({ '--dismiss-hover': solidColors.hover, '--dismiss-active': solidColors.active } as React.CSSProperties) : undefined}
       hoverBgClassName={

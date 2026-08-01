@@ -1,10 +1,15 @@
 <!-- Authority/status: governance/planning/registry.json -->
-# 2026-07-31 全域殘項總帳（跨 session 續作 SSOT）
+# 2026-07-31 全域殘項總帳（歷史跨 session baton）
+
+> **2026-08-01 lifecycle**：本檔已由 `governance/planning/registry.json` 收為
+> `reference / non-executable`。它保存交接 provenance，不再是 current backlog；任何 agent 必以
+> deep-audit runtime evidence、`infra/governance/release-workflow.json` 與 `npm run release:status`
+> 取得 live state，不得照下列歷史步驟重跑工作。
 
 **用途**：記錄 2026-07-31 全域盤點後的 current state。後續 session 應先讀本檔，再依
 canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描述當成 live remote verdict。
 
-## Active Codex execution ledger（2026-08-01；最高優先）
+## Historical Codex execution ledger（2026-08-01 snapshot）
 
 Codex 已於 2026-08-01 接回完整執行責任；Claude handoff 已結束。任何 AI agent（Codex、Claude 或
 後續 provider）都必須先讀 root `AGENTS.md`、root `CLAUDE.md` 與本檔，沿 live exact-head/readback

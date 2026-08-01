@@ -19,7 +19,11 @@ import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-grou
 
 const meta: Meta = {
   title: 'Design System/Components/Sheet/展示',
-  parameters: { layout: 'centered' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'centered',
+    docs: { description: { component: '從畫面右側滑入的模態工作面，提供 header、可捲 body 與 footer。當次要流程需要更多空間但仍應保留原頁脈絡時使用；短小選項改用 Popover。' } },
+  },
 }
 export default meta
 type Story = StoryObj

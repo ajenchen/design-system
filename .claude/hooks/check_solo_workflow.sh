@@ -3,10 +3,11 @@ set -uo pipefail
 # PreToolUse hook: enforce protected-main solo-work canonical (M28)
 # SSOT: governance/memory/feedback_solo_dev_workflow.md + AGENTS.md # Git solo-work canonical
 #
-# Blocks 3 violations:
+# Blocks 2 violations:
 #   R1. A second working branch in the same session(checkout -b or switch -c).
 #   R2. Any direct push to main. PR is the only merge path.
-#   R4. Tag push without a matching release-preflight commit/tree attestation.
+# Tag/release lifecycle belongs to `release:auto` + protected workflows; the retired
+# local release-preflight R4 branch must not insert a sixth standard release gate.
 #
 # Managed recovery override: GOVERNANCE_BYPASS_SOLO_WORKFLOW=1 in the hook host
 # environment (audit-logged to neutral runtime state when opted in). Command text
@@ -19,7 +20,6 @@ source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
 set -uo pipefail
 
-PROJECT_DIR="${GOVERNANCE_PROJECT_DIR:-$(pwd)}"
 STATE_DIR="$(governance_runtime_state_dir 2>/dev/null || true)"
 STATE_WRITES=0
 [ -n "$STATE_DIR" ] && STATE_WRITES=1
@@ -85,27 +85,6 @@ sys.exit(1)
 " 2>/dev/null
 }
 
-# Helper: shell-aware push-tag detect(2026-06-02 — R4 改用 shlex,對齊 R1/R2,修 plain-grep
-# 對 echo/字串內字面 'git push origin v...' 的 false-positive,per M34 hook-regex 廣度對齊)。
-# shlex.split(comments=True)讓 quoted echo 字串成單一 token → 不會把字串內的 git/push 當相鄰指令。
-detect_push_tag() {
-  python3 -c "
-import shlex, sys, re
-try:
-    tokens = shlex.split(sys.stdin.read(), comments=True)
-except Exception:
-    sys.exit(1)
-for i in range(len(tokens) - 1):
-    if tokens[i] == 'git' and tokens[i+1] == 'push':
-        for j in range(i+2, len(tokens)):
-            t = tokens[j]
-            # tag-ref: --tags / refs/tags/... / v<digit>... / X:refs/tags/...
-            if t == '--tags' or 'refs/tags/' in t or re.match(r'^v[0-9]', t) or t.endswith(':v') or re.search(r':v[0-9]', t):
-                sys.exit(0)
-sys.exit(1)
-" 2>/dev/null
-}
-
 if [ "$TOOL_NAME" = "Bash" ]; then
   COMMAND=$(jq -r '.tool_input.command // empty' <<<"$INPUT" 2>/dev/null)
 
@@ -164,85 +143,10 @@ EOF
 修法:
   1. push working branch
   2. create/update its single PR
-	  3. required checks / conversations / preview / attestation / readback 全綠後用 PR merge
+		  3. required CI / conversations 全綠後用 PR merge；release 續作交給 release:auto
 EOF
-	    exit 2
-	  fi
-
-  # === Rule 4 (Bash): push tag without release:preflight pass-marker (M28 release root-cause, 2026-06-02) ===
-  # beta.43/45 連環 push 失敗根因 = 發版前靠手動記得逐道 sync/check → 必漏。已修成單一
-  # `npm run release:preflight`(syncs + 全 gate + dogfood,全過寫 commit/tree-bound marker)。
-  # Squash merge 會改 commit ID，但若 merge tree 與已審 branch 完全相同仍可安全 tag；任何內容變動即 block。
-	  # 用 detect_push_tag(shlex,對齊 R1/R2)而非 plain grep —— 修 echo/字串內字面誤觸發(M34)。
-  if echo "$COMMAND" | detect_push_tag; then
-    PF_RESOLVER="$PROJECT_DIR/scripts/lib/governance-runtime-evidence.mjs"
-    PF_ARGS=(--repo-root "$PROJECT_DIR" --path release/release-preflight-pass.json)
-    [ -n "${GOVERNANCE_EVIDENCE_ROOT:-}" ] && PF_ARGS+=(--root "$GOVERNANCE_EVIDENCE_ROOT")
-    PF_MARKER=""
-    [ -f "$PF_RESOLVER" ] && PF_MARKER=$(node "$PF_RESOLVER" "${PF_ARGS[@]}" 2>/dev/null || true)
-    PF_HEAD=$(git -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null)
-    PF_TREE=$(git -C "$PROJECT_DIR" rev-parse 'HEAD^{tree}' 2>/dev/null)
-    PF_MARKER_HEAD=$(jq -r '.head // empty' "$PF_MARKER" 2>/dev/null)
-    PF_MARKER_TREE=$(jq -r '.tree // empty' "$PF_MARKER" 2>/dev/null)
-    PF_EXPECTED_REPO="${GOVERNANCE_RELEASE_REPOSITORY:-ajenchen/design-system}"
-    # Recompute every governance input bound into the attestation. A syntactically
-    # valid digest map is not authority: it must still describe the current SSOT
-    # bytes, including squash-style commits whose tree identity is preserved.
-    PF_AGENTS_DIGEST=$(shasum -a 256 "$PROJECT_DIR/AGENTS.md" 2>/dev/null | awk '{print $1}')
-    PF_PROVIDER_DIGEST=$(shasum -a 256 "$PROJECT_DIR/packages/governance/canonical/providers.json" 2>/dev/null | awk '{print $1}')
-    PF_COVERAGE_DIGEST=$(shasum -a 256 "$PROJECT_DIR/generated/governance/audit-coverage-matrix.json" 2>/dev/null | awk '{print $1}')
-    PF_BASELINE_DIGEST=$(shasum -a 256 "$PROJECT_DIR/packages/design-system/ds-canonical/references/preflight-gate-baseline.json" 2>/dev/null | awk '{print $1}')
-    PF_MIN_GATES=$(jq -r 'select(.gateCount | type == "number" and floor == . and . >= 0) | .gateCount' \
-      "$PROJECT_DIR/packages/design-system/ds-canonical/references/preflight-gate-baseline.json" 2>/dev/null)
-    PF_MARKER_VALID=0
-    if [ -n "$PF_MARKER" ] && [ -f "$PF_MARKER" ] && [ ! -L "$PF_MARKER" ] && jq -e \
-      --arg expectedRepo "$PF_EXPECTED_REPO" \
-      --arg agentsDigest "$PF_AGENTS_DIGEST" \
-      --arg providerDigest "$PF_PROVIDER_DIGEST" \
-      --arg coverageDigest "$PF_COVERAGE_DIGEST" \
-      --arg baselineDigest "$PF_BASELINE_DIGEST" \
-      --argjson minGates "$PF_MIN_GATES" '
-      type == "object"
-      and .schemaVersion == 1
-      and .evidenceKind == "release-preflight-attestation"
-      and (.head | type == "string" and test("^[0-9a-f]{40}$"))
-      and (.tree | type == "string" and test("^[0-9a-f]{40}$"))
-      and (.version | type == "string" and test("^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"))
-      and .repo == $expectedRepo
-      and (.ts | type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T"))
-      and (.gatesPassed | type == "number" and . >= $minGates and floor == .)
-      and (.governanceDigest | type == "object"
-        and (keys | sort) == ["agentsMd","coverageMatrix","preflightGateBaseline","providerRegistry"]
-        and all(.[]; type == "string" and test("^[0-9a-f]{64}$"))
-        and .agentsMd == $agentsDigest
-        and .providerRegistry == $providerDigest
-        and .coverageMatrix == $coverageDigest
-        and .preflightGateBaseline == $baselineDigest)
-      and (.surface | type == "string" and length > 0)
-      and (.ruleIds | type == "string" and length > 0)
-    ' "$PF_MARKER" >/dev/null 2>&1; then
-      PF_MARKER_VALID=1
-    fi
-    if [ "$PF_MARKER_VALID" != "1" ] || { [ "$PF_MARKER_HEAD" != "$PF_HEAD" ] && [ "$PF_MARKER_TREE" != "$PF_TREE" ]; }; then
-      cat >&2 <<EOF
-
-┄┄┄ check_solo_workflow — R4 BLOCKER (M28 release preflight) ┄┄┄
-
-[P0 BLOCKER] git push <tag> 但 release:preflight 未跑過，或目前 commit/tree 未受 attest。
-   neutral marker=${PF_MARKER:-<unavailable>}
-   marker.head=${PF_MARKER_HEAD:0:12} vs 當前 HEAD=${PF_HEAD:0:12}
-   marker.tree=${PF_MARKER_TREE:0:12} vs 當前 tree=${PF_TREE:0:12}
-
-❌ 發版前必跑單一指令(自動 sync version 5-manifest + ds-canonical + 全 deterministic
-   gate + build + dogfood,fail-fast,全過寫 commit/tree-bound pass-marker):
-     npm run release:preflight
-   全過才准 push tag。根治 beta.43/45 連環 push 失敗(漏手動 sync 步驟)。
-
-例外 override:GOVERNANCE_BYPASS_SOLO_WORKFLOW=1 (audit logged)
-EOF
-      exit 2
-    fi
-  fi
+		    exit 2
+		  fi
 fi
 
 exit 0

@@ -130,7 +130,7 @@ export const PositionAsStateRule: Story = {
     <div>
       <Rule
         title="Disabled 用灰階 swap(不是 opacity)— 因為 state 載體是位置 / 長度"
-        note="使用者看 disabled Slider 需要理解兩件事:thumb 在 track 哪個位置、range 填滿多長。這兩個資訊**完全不依賴顏色**——灰階 thumb 在灰階 track 上的位置跟 primary 版本一模一樣。失去藍色沒有資訊損失"
+        note="使用者看 disabled Slider 需要理解兩件事:thumb 在 track 哪個位置、range 填滿多長。這兩個資訊完全不依賴顏色——灰階 thumb 在灰階 track 上的位置跟 primary 版本一模一樣。失去藍色沒有資訊損失"
       >
         <div className="flex items-center gap-4">
           <div className="flex-1">
@@ -215,7 +215,7 @@ export const ThumbBindingRule: Story = {
     <div>
       <Rule
         title="Thumb 白底 + 2px primary border(不是實心 primary)"
-        note="實心 primary thumb 在 range mode(兩個 thumb)+ primary range 一起時,會跟 range 融為一體,看不出 thumb 邊界。白底 + 邊框讓 thumb 浮出——**thumb 白底是「被 range 圍住的空心洞」**,border 是 range 的連續延伸"
+        note="實心 primary thumb 在 range mode(兩個 thumb)+ primary range 一起時,會跟 range 融為一體,看不出 thumb 邊界。白底 + 邊框讓 thumb 浮出——thumb 白底是「被 range 圍住的空心洞」,border 是 range 的連續延伸"
       >
         <div>
           <div className="text-caption text-fg-muted mb-1">Range mode(兩個 thumb)</div>

@@ -584,6 +584,33 @@ function ReadonlyMultiSelect({
 // target);唯本處 actionable drop。
 type ComboboxInternalProps = ComboboxProps & { __triggerRef?: React.Ref<HTMLDivElement> }
 
+function focusAfterTagRemoval(container: HTMLElement | null, owner: HTMLElement | null) {
+  const active = document.activeElement
+  const buttons = container
+    ? Array.from(container.querySelectorAll<HTMLButtonElement>('[data-collection-remove]'))
+      .filter((button) => button.getClientRects().length > 0)
+    : []
+  const index = buttons.indexOf(active as HTMLButtonElement)
+  const next = index >= 0 ? buttons[index + 1] ?? buttons[index - 1] : undefined
+  const fallback = owner ?? container?.closest<HTMLElement>('[role="combobox"]')
+  ;(next ?? fallback)?.focus()
+
+  // Some renderers intentionally change anatomy at collection length 1 (PeoplePicker stack:
+  // avatar stack → avatar + name). That remounts the button focused above. Re-apply the same
+  // next→previous→owner policy after React commits so focus cannot fall back to body.
+  const preferredIndex = index >= 0
+    ? (buttons[index + 1] ? index : buttons[index - 1] ? index - 1 : -1)
+    : -1
+  window.requestAnimationFrame(() => {
+    const updatedButtons = container
+      ? Array.from(container.querySelectorAll<HTMLButtonElement>('[data-collection-remove]'))
+        .filter((button) => button.getClientRects().length > 0)
+      : []
+    const updatedTarget = preferredIndex >= 0 ? updatedButtons[preferredIndex] : undefined
+    ;(updatedTarget ?? fallback)?.focus()
+  })
+}
+
 function NativeCombobox({
   mode, variant: variantProp, width, error = false, size = 'md', options, value = [], onChange, placeholder,
   className, disabled: disabledProp, wrap = false, clearable = false, showDisplayEndIcon = false,
@@ -600,7 +627,6 @@ function NativeCombobox({
   const iconSize = getIconSize(size)
   const showClear = clearable && value.length > 0 && resolvedMode === 'edit'
 
-  const handleRemove = (v: string) => onChange?.(value.filter(x => x !== v))
   const handleAdd = (v: string) => { if (!value.includes(v)) onChange?.([...value, v]) }
 
   // React #310 fix(對齊 select.tsx):hooks 必在 conditional early-return 前無條件呼叫。
@@ -608,6 +634,10 @@ function NativeCombobox({
   // hook 數量不可變動,否則 Rules of Hooks violation → React #310 「rendered fewer/more hooks」crash。
   const selectRef = React.useRef<HTMLSelectElement>(null)
   const tagAreaRef = React.useRef<HTMLDivElement>(null)
+  const handleRemove = (v: string) => {
+    focusAfterTagRemoval(tagAreaRef.current, selectRef.current)
+    onChange?.(value.filter(x => x !== v))
+  }
 
   if (resolvedMode !== 'edit') {
     return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
@@ -730,7 +760,10 @@ function CustomCombobox({
   const tagAreaRef = React.useRef<HTMLDivElement>(null)
   const tagHeight = size === 'sm' ? 20 : 24
 
-  const handleRemove = (v: string) => onChange?.(value.filter(x => x !== v))
+  const handleRemove = (v: string) => {
+    focusAfterTagRemoval(tagAreaRef.current, inputRef.current)
+    onChange?.(value.filter(x => x !== v))
+  }
 
   // searchIn='trigger' 時由 trigger input 過濾，不走 SelectMenu 內建搜尋
   const filteredOptions = React.useMemo(
@@ -760,7 +793,7 @@ function CustomCombobox({
     return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
   }
 
-  const chevronEl = <ChevronDown size={iconSize} className={cn('shrink-0 text-fg-muted transition-transform', open && 'rotate-180')} aria-hidden />
+  const chevronEl = <ChevronDown size={iconSize} className={cn('shrink-0 text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
 
   const trigger = (
     <div

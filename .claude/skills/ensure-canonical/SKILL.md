@@ -151,7 +151,7 @@ Plan 與 scope classifier 必記錄，但純工程不得停等 user 拍板。只
 
 ### Gate 2 — Substantive 動議
 
-- 工程／治理 canonical 既有 substantive meaning(改 rule、刪 rule、改 SSOT 位置)→ AUTO，綁 evidence + maximum-assurance independent review
+- 工程／治理 canonical 既有 substantive meaning(改 rule、刪 rule、改 SSOT 位置)→ AUTO，綁 evidence；task／deliverable 明確要求時才加 maximum-assurance independent review
 - 改變產品／UI／UX SSOT 且仍有真取捨 → STOP
 - 對齊 / 表達層調整 / 補 pointer → AUTO
 
@@ -177,7 +177,7 @@ Plan 與 scope classifier 必記錄，但純工程不得停等 user 拍板。只
 | **/ensure-canonical** | 「確保 X 一定要」trigger phrase | 規劃 N-layer enforcement |
 | `/propose-options` | 列 options 給 user 前 | 4-Q gate per option |
 | `/design-system-audit` | 已 codified rule batch verify | audit 既有元件 |
-| `/knowledge-prune` | governance bloat | 8-home retire |
+| `/knowledge-prune` | governance bloat | Level 1–9 taxonomy retire / consolidate |
 | `/scan-similar-bugs` | 修 bug 後 | M10 exhaustive scan |
 | `/story-writing` | 寫 / 編 stories | rule-mapping workflow |
 

@@ -5,6 +5,11 @@ import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
+import {
+  deriveProviderProductManagedInventory,
+  lifecycleSnapshotSha256,
+  providerInventorySha256,
+} from './lib/provider-lifecycle.mjs'
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..')
 const SCRIPT = join(ROOT, 'scripts/sync-version-to-all-manifests.mjs')
@@ -14,6 +19,7 @@ const GOVERNANCE_DEPENDENCY_BOOTSTRAP = join(ROOT, 'scripts/lib/governance-depen
 const VERIFIED_EXACT_NPM_RUNTIME = join(ROOT, 'scripts/lib/verified-exact-npm-runtime.mjs')
 const CLOSED_TOOL_EXECUTION_ADAPTER = join(ROOT, 'scripts/lib/closed-tool-execution.mjs')
 const CLOSED_TOOL_EXECUTION = join(ROOT, 'packages/governance/src/closed-tool-execution.mjs')
+const PROVIDER_REGISTRY = join(ROOT, 'packages/governance/canonical/providers.json')
 
 function writeJson(root, path, value, mode = 0o644) {
   const target = join(root, path)
@@ -50,6 +56,26 @@ function fixture() {
       'packages/governance': { name: '@qijenchen/governance', version: '0.1.0-beta.94' },
     },
   }, 0o640)
+  const providerRegistry = JSON.parse(readFileSync(PROVIDER_REGISTRY, 'utf8'))
+  const providers = deriveProviderProductManagedInventory(providerRegistry)
+  const genesis = {
+    releaseVersion: '0.1.0-beta.94',
+    previousSnapshotSha256: null,
+    providers,
+    retiredProviders: [],
+  }
+  writeJson(root, 'packages/governance/canonical/providers.json', providerRegistry)
+  writeJson(root, 'packages/governance/canonical/provider-lifecycle.json', {
+    $schema: './schemas/provider-lifecycle.schema.json',
+    schemaVersion: 1,
+    kind: 'provider-lifecycle-ledger',
+    immutableHead: {
+      providerInventorySha256: providerInventorySha256(providers),
+      releaseVersion: genesis.releaseVersion,
+      snapshotSha256: lifecycleSnapshotSha256(genesis),
+    },
+    snapshots: [genesis],
+  })
   return root
 }
 
@@ -74,6 +100,8 @@ function snapshot(root) {
     'packages/governance/package.json',
     'template/ds-product-template/package.json',
     'package-lock.json',
+    'packages/governance/canonical/providers.json',
+    'packages/governance/canonical/provider-lifecycle.json',
   ].map((path) => [path, readFileSync(join(root, path), 'utf8')])
 }
 
@@ -92,23 +120,49 @@ function assertSnapshot(root, before) {
   assert.equal(lock.packages['packages/storybook-config'].version, '0.1.0-beta.95')
   assert.equal(lock.packages['packages/governance'].version, '0.1.0-beta.95')
   assert.equal(lock.packages['packages/design-system'].untouched, 'sentinel')
+  const lifecycle = JSON.parse(readFileSync(join(root, 'packages/governance/canonical/provider-lifecycle.json')))
+  assert.equal(lifecycle.snapshots.length, 2)
+  assert.equal(lifecycle.snapshots[0].releaseVersion, '0.1.0-beta.94')
+  assert.equal(lifecycle.snapshots[1].releaseVersion, '0.1.0-beta.95')
+  assert.equal(lifecycle.immutableHead.releaseVersion, '0.1.0-beta.94')
+  assert.equal(lifecycle.immutableHead.snapshotSha256, lifecycleSnapshotSha256(lifecycle.snapshots[0]))
+  assert.equal(lifecycle.snapshots[1].previousSnapshotSha256, lifecycle.immutableHead.snapshotSha256)
+  assert.equal(lifecycle.immutableHead.providerInventorySha256, providerInventorySha256(lifecycle.snapshots[0].providers))
   assert.equal(lstatSync(join(root, 'package-lock.json')).mode & 0o777, 0o640)
   assert.equal(lstatSync(join(root, 'packages/storybook-config/package.json')).mode & 0o777, 0o640)
   assert.equal(lstatSync(join(root, '.claude-plugin/plugin.json')).mode & 0o777, 0o600)
   assert.equal(run(root, '--check').status, 0)
+  const after = snapshot(root)
+  assert.equal(run(root).status, 0)
+  assertSnapshot(root, after)
   assert.equal(run(root, '--unknown').status, 1)
 }
 
 {
   const root = fixture()
   const before = snapshot(root)
-  const result = runInjectedFailure(root, 2)
+  const result = runInjectedFailure(root, 7)
   assert.notEqual(result.status, 0)
   assert.match(result.stderr, /injected version transaction failure/)
   assertSnapshot(root, before)
-  for (const directory of ['.claude-plugin', 'packages/storybook-config', 'packages/governance', 'template/ds-product-template', '.']) {
+  for (const directory of ['.claude-plugin', 'packages/storybook-config', 'packages/governance', 'packages/governance/canonical', 'template/ds-product-template', '.']) {
     assert.equal(readdirSync(join(root, directory)).some((name) => /\.(?:tmp|bak)-version-/.test(name)), false, directory)
   }
+}
+
+{
+  const root = fixture()
+  const registryPath = join(root, 'packages/governance/canonical/providers.json')
+  const registry = JSON.parse(readFileSync(registryPath, 'utf8'))
+  const provider = registry.providers.find((candidate) => candidate.adapter?.generate)
+  provider.adapter.discovery.configPaths.push('.zz-version-sync-inventory-change.json')
+  provider.adapter.discovery.configPaths.sort()
+  writeJson(root, 'packages/governance/canonical/providers.json', registry)
+  const before = snapshot(root)
+  const result = run(root)
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /provider topology changed.*explicit provider lifecycle migration/)
+  assertSnapshot(root, before)
 }
 
 {
@@ -183,4 +237,4 @@ for (const corrupt of [
   assert.equal(readFileSync(sentinel, 'utf8'), '{"name":"@qijenchen/design-system","version":"0.1.0-beta.95"}\n')
 }
 
-console.log('✓ version SSOT sync validates shapes/lock links first, preserves mode, blocks symlinks, checks without writes, and rolls back mid-transaction')
+console.log('✓ version SSOT sync atomically advances an unchanged provider lifecycle, is idempotent, checks without writes, blocks topology drift/symlinks, preserves mode, and rolls back mid-transaction')

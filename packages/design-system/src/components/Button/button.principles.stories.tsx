@@ -180,12 +180,12 @@ export const PrimaryRule: Story = {
   name: '主要按鈕限制',
   render: () => (
     <div>
-      <Rule title="✅ 正確 — 唯一的 primary">
+      <Rule title="✅ 正確 — 唯一的 primary" note="單一最強視覺入口讓使用者立即辨識主要路徑;其餘動作降為 tertiary,避免同一操作區出現競爭焦點。">
         <Button variant="primary">確認</Button>
         <Button variant="tertiary">取消</Button>
       </Rule>
 
-      <Rule title="❌ 錯誤 — 兩個 primary 同時出現，使用者無法判斷優先順序">
+      <Rule title="❌ 錯誤 — 兩個 primary 同時出現，使用者無法判斷優先順序" note="兩個相同最高視覺重量的動作互相競爭,使用者必須先讀文案才能判斷主路徑,因此同一操作區最多保留一個 primary。">
         <Button variant="primary">儲存</Button>
         <Button variant="primary">另存新檔</Button>
         <Label warn>視覺重量相同 → 無法分辨主次</Label>
@@ -234,7 +234,7 @@ export const DangerRule: Story = {
         <Button variant="text" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
       </Rule>
 
-      <Rule title="❌ 錯誤 — 在有後續確認的流程中使用 primary danger">
+      <Rule title="❌ 錯誤 — 在有後續確認的流程中使用 primary danger" note="primary danger 承諾『點下即完成不可逆動作』;若後面還有確認或可復原,提前使用最高危險強度會誤報操作後果。">
         <Button variant="primary" danger>移至垃圾桶</Button>
         <Label warn>移至垃圾桶還可以復原 → 不應用 primary danger</Label>
       </Rule>
@@ -367,4 +367,3 @@ export const OrderRule: Story = {
     </div>
   ),
 }
-

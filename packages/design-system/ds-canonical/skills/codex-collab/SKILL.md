@@ -5,6 +5,10 @@ description: Provider-neutral workflow for evidence-complete collaboration with 
 
 # Cross-provider collaboration workflow
 
+> Frontmatter 的 legacy identifier 是為既有 registry、hook 與已發佈 consumer 保留的相容
+> discovery ID，不代表任何特定 provider，也不是使用者/agent 的 task-navigation 入口。所有 provider 均由
+> provider registry 綁定同一份下列語意；新入口一律使用 provider-neutral review route。
+
 This file owns workflow meaning only. Provider identity, peer selection, transport, commands, and discovery paths are adapter bindings. Read `references/brief-template.md` for the shared input contract and `references/transport.md` for admissible transport evidence.
 
 ## Preconditions

@@ -707,7 +707,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
 
     const chevronEl = (
       <ItemSuffix>
-        <ChevronDown size={iconSize} className={cn('text-fg-muted transition-transform', open && 'rotate-180')} aria-hidden />
+        <ChevronDown size={iconSize} className={cn('text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
       </ItemSuffix>
     )
 

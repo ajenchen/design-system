@@ -105,12 +105,6 @@ export interface ProgressBarProps {
   status?: 'inProgress' | 'success' | 'error'
   /** 右側附加:value=顯示 `{value}%` / status-icon=顯示狀態圖示 / ReactNode=客製 */
   affix?: 'value' | 'status-icon' | React.ReactNode
-  /**
-   * Track 高度 override(**非 consumer API**)。
-   * 僅 FileItem 的 compact mode 內部使用,匹配極密集 row 的視覺比例。
-   * Consumer 不要傳此 prop;若有新需求應先討論是否開新 variant,而非濫用此逃生艙。
-   */
-  height?: number
 }
 ```
 
@@ -127,6 +121,10 @@ export interface ProgressBarProps {
 ### 單一高度 4px(2026-04-20 決策)
 
 本元件**不提供 size 選項**,track 固定 `4px`——對齊 Material 3 / Carbon / Ant Design 慣例(皆固定單一高度)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+
+`height` 不存在於公開型別。FileItem compact row 的 2px 呈現是該組合元件透過既有
+`className` DOM styling 通道套用的內部 composition 細節，不構成 ProgressBar 的第二個
+size variant，也不應寫入 consumer recipe。
 
 **為什麼不分 size**:
 - 過往分 size 的刻度差太小,視覺差異使用者幾乎無法區分,形同冗餘 API
@@ -217,7 +215,7 @@ ProgressBar 是**純視覺百分比指示**,本身**無互動狀態**(見「狀�
 
 - **CircularProgress 分界** — 本 spec「與 CircularProgress 的分界」節(SSOT)
 - **CircularProgress 元件** — `components/CircularProgress/circular-progress.spec.md`(circular 兩態 primitive)
-- **FileItem 消費** — `components/FileItem/file-item.tsx`(canonical 檔案情境 consumer-facing primitive,內部消費 ProgressBar 的 4px 單一高度)
+- **FileItem 消費** — `components/FileItem/file-item.tsx`(canonical 檔案情境 consumer-facing primitive；rich 使用 4px canonical，compact 的 2px 是 FileItem 私有 composition 細節)
 - **Steps** — `components/Steps/steps.spec.md`(步驟結構非百分比)
 - **Skeleton** — `components/Skeleton/skeleton.spec.md`(骨架載入非進度)
 - **Color tokens** — `tokens/color/color.spec.md`(`--info` / `--success` / `--error` 定義)

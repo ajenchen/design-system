@@ -99,6 +99,8 @@ value 軸 controlled-only;open 軸方向相反 — **uncontrolled-only**:`defaul
 
 每個 Tag 有 dismiss 按鈕（X），點擊移除該選項。
 
+Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒有下一個則前一個；最後一個移除後回 owner select/combobox trigger。焦點不可因 DOM unmount 掉到 `body`；PeoplePicker 的自訂 avatar Tag 亦走相同 `data-collection-remove` contract。
+
 ### 全部清除
 
 `clearable` 在有值時顯示 clear all 按鈕，一次清除所有選項。位於最右側，ChevronDown 左邊。

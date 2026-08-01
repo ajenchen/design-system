@@ -360,6 +360,7 @@ test('active setup surfaces contain no mutable Netlify CLI acquisition route or 
     /npx\s+(?:-y|--yes)[^\n]*netlify-cli/i,
     /CLI install \+ login \+ site/i,
     /auto-creates site/i,
+    /setup:netlify[^\n]*(?:\u5b8c\u6210\u81ea\u52d5\u90e8\u5206|CLI[^\n]*\+[^\n]*site[^\n]*\+[^\n]*\u9023 repo)/i,
   ]
   for (const file of files) {
     const source = readFileSync(join(ROOT, file), 'utf8')

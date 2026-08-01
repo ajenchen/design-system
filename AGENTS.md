@@ -13,7 +13,7 @@
 2. **不憑直覺發明 / 優先消費既有**——新增任何值 / 名 / pattern / variant / layout primitive 前先 `grep` 既有。**強制 `# SSOT 消費 canonical` 清單**——寫視覺 code 前列消費的 components/patterns/tokens/spec。提建議也算定 pattern,給 option 必對照 DS canonical + ≥3 家世界級。**禁止憑印象列部分家**。
 3. **改一處必看三處**——code / spec / story 三方聯動。改 cva `defaultVariants` / variant / token 前先 grep 該元件所有檔案,一次改完。
 4. **範例必真實業務場景**——Jira / Stripe / Notion / Figma 可辨識情境;禁 `Option A/B/C`、「按鈕一」、極端不現實、ASCII art。
-5. **先證據、再分權**——無前例的產品／UI／UX SSOT 決策:grep 既有 → 讀近親 spec → 仍有真實選擇或取捨才停下問。純工程不確定性由最高 certified model 依 canonical、tests、Harness、security gates 與 independent review 收斂，**不得用問 user 代替工程判斷**；禁止憑直覺造新 pattern。
+5. **先證據、再分權**——無前例的產品／UI／UX SSOT 決策:grep 既有 → 讀近親 spec → 仍有真實選擇或取捨才停下問。純工程不確定性由最高 certified model 依 canonical、tests、Harness 與 security gates 收斂；只有 task／deliverable 明確要求時才加 independent review，**不得用問 user 代替工程判斷**；禁止憑直覺造新 pattern。
 6. **大原則吸收瑣碎**——同類 bug 反覆糾正 = meta 層沒抓住。見 `packages/design-system/ds-canonical/rules/meta-patterns.md` 31 active M-rules(M1-M32,M27/M33/M34/M35 retired,折入 M20/M7/M23(c)(d))。**AI 不需 user 提醒才找 root invariant**——rule 震盪 → AI 自跑 M12 benchmark + invariant test。User 第 2 次問 → 必截圖 verify(M13)。對話結論 → AUTO 5-layer pipeline(M14)。Visual / behavior decision 前必先 WebFetch ≥ 3 source(M26)。Solo-work git ops 必先 grep canonical(M28)。**視覺/結構 propose 前必 grep DS spec.md 找 owner SSOT(M29)— 出 3-column 表;否則提案不被接受**。使用者 tell me once 不該要 tell me twice。
 
 完整 M-rules 詳 `packages/design-system/ds-canonical/rules/meta-patterns.md`(必讀)。
@@ -36,22 +36,10 @@
 
 # 治理 canonical(home 分層 + anti-bloat)
 
-## 規則放哪 home(8-home 分層)
+## 規則放哪裡（bootstrap navigator）
 
-| Level | Home | 收什麼 |
-|-------|------|--------|
-| 1 | `AGENTS.md`(本檔;Claude 經 CLAUDE.md import) | 每 session signal 的 mindset + 6 條 + 任務導航 |
-| 1.5 | `packages/design-system/ds-canonical/rules/*.md` | 規則 authority；provider adapters 只負責 discovery/path scope |
-| 2 | `{name}.spec.md` | 單元件「何時用 / 為什麼」 |
-| 3 | Pattern `spec.md` | runtime 跨元件 primitive |
-| 4 | Code(`.tsx` / `.css`) | cva / 型別等機械強制 |
-| 5 | Skill(`packages/design-system/ds-canonical/skills/`) | invoke 情境的多步驟 workflow + checkpoint；生成到各 provider discovery view |
-| 6 | Memory(repo `governance/memory/` SSOT + provider home 可重建 cache)| 跨 session 狀態。只改 committed repo；`npm run sync-memory` 單向刷新 Claude home cache |
-| 7 | Hook(`packages/design-system/ds-canonical/hooks/`) | 中立機械判準；provider lifecycle adapters 提供 write-time 接線，最終兜底 = preflight/CI |
-| 8 | Command(`packages/design-system/ds-canonical/commands/`) | 一次性單步 action；只有支援 native commands 的 provider 才 materialize view |
-| 9 | Plan doc(`governance/planning/`)| 完整 plan / RFC / spec 草稿 SSOT;memory file 是短 index pointer |
-
-**Q1 設計規則 → Level 1-4 / Q2 invoke 情境 → Skill or Command / Q3 隨時間變化 → Memory(short index)+ Plan doc / Q4 機械化 → Hook(+ preflight gate)**。完整 flowchart → `packages/design-system/ds-canonical/skills/design-system-audit/references/rule-placement.md`。
+本檔只提供每 session 導航，不是 home taxonomy 的第二份 SSOT。Level 1–9 的唯一 owner、scope 與 flowchart 是
+`packages/design-system/ds-canonical/skills/design-system-audit/references/rule-placement.md`：設計知識走 Level 1–4；invoke workflow／單步 action 走 Skill／Command；跨 session 短狀態走 Memory，完整計畫／RFC 走 Planning；可機械化判準走 Hook + preflight/CI。Provider views 只作 discovery/delivery，不得反向成為 semantic owner。
 
 ## 行數預算(Anthropic 對齊)
 
@@ -61,7 +49,7 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 
 - **L1 Pre-write**:`packages/design-system/ds-canonical/hooks/check_file_size_budget.sh`(+ canonical hook registry)
 - **L2 Per-edit**:`log_governance_fires.sh` → opt-in Git-owned `governance-runtime/hook-fires.jsonl`；provider homes 永不持有 telemetry authority
-- **L3 Periodic**(季度 / `--deep`):`/knowledge-prune` skill,retire ≥ 5%
+- **L3 Periodic**(季度 / `--deep`):`/knowledge-prune` skill；任何 Deep Audit 必在同一 run、final report 前完成 full Phase 0–5 並留下 receipt；量化 retire rate，但只移除有證據的噪音，禁止為湊比例犧牲真實 invariant
 
 ## 加規則前必過 3 題
 
@@ -96,7 +84,7 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 
 # Independent second opinion(跨 provider 對抗審查)
 
-**Canonical 概念**:重大變更(governance / Critical DS change / deep audit)需 **author provider ≠ reviewer provider** 的獨立第二意見。判準 = 同一份 rubric(`audit-prompts.md`),reviewer 只提 findings(rule 對照 + severity + evidence),**不得**自建規範。記錄雙方 provider/model/version。
+**Canonical 概念**:只有 task／deliverable 明確要求 independent review 時，才啟動 **author provider ≠ reviewer provider** 的獨立第二意見。判準 = 同一份 rubric(`audit-prompts.md`),reviewer 只提 findings(rule 對照 + severity + evidence),**不得**自建規範。記錄雙方 provider/model/version。User 對 exact run 的明確 waiver 必尊重並寫入 receipt；該 run 不得冒充已做 review，optional review 缺席不得阻擋一般工程、deep audit 或 standard release。
 - **路由 authority**:`packages/governance/canonical/providers.json` 只定義 provider-neutral selection policy 與 review class，不得固定 peer/model/version/API。`standard/high/maximum` 為 canonical assurance tiers；Tier-0 governance = `maximum`。`packages/governance/src/provider-review-binding.mjs` 的 `resolveProviderReviewBinding` 從 capability/profile/certification registries 排除 author provider，依 assurance→reasoning→compute 選 policy 允許的最高 certified capability；budget 只能 batch/stop，禁降級。選定後才凍結 exact provider/profile/model/release 與所有 registry digests，response substitution 一律 fail closed。
 - **Workflow selection**:產品消費者第二意見讀 `packages/design-system/ds-canonical/skills/independent-review/SKILL.md`；重大 governance/release/DS no-sample 審查讀 `packages/design-system/ds-canonical/skills/deep-audit-cross-codex/SKILL.md`(舊 discovery 名稱，workflow 語意為 provider-neutral)。兩者都不得從 skill 名稱推斷 peer。
 - **Binding 不可用 → claim fail-closed**:只有 user 或任務明確要求 independent-review 交付物時才標該 claim `REVIEW-BLOCKED`;禁同一 agent 假扮另一 provider;未登錄、同 provider、缺 capability certification/entitlement readback/transport/隔離/證據或未通過 exact target certification 皆不得取得 independent/compliant 宣稱。不可用 peer 不得阻擋一般工程或 canonical five-step release。訂閱方案是 entitlement route、不是 model identity；沒有 certified exact entitlement readback 時不得冒充或以其他 API/較低模型作成本導向 fallback。新模型只更新 capability/release/certification data，不修改 canonical semantics。
@@ -203,10 +191,9 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 | shadcn compat alias 回流 | dark mode 不聯動 |
 | `asChild ? Slot : Native` 內部 JSX 仍渲染多 children | React.Children.only runtime fail;asChild 分支 render 只傳 consumer child |
 | `tsc -b` 不 emit declaration | TS4023 漏抓;型別 surface 改動必 `npm run build:lib` |
-| 工具靜默陷阱:`rsync -a` 等長同秒跳過(必 `--checksum`)/ `rg` 黏寫 `-rn` 的 `-r`=replace / `mktemp -d` 失敗回空 → `cd ""`=原地 → trap 刪掉 cwd | 寫後斷言 + flag 分開寫 + mktemp 必 `[ -d ]` 守衛 |
+| 工具靜默陷阱:`rsync -a` 等長同秒跳過(必 `--checksum`)/ `rg` 黏寫 `-rn` 的 `-r`=replace / `mktemp -d` 失敗回空 → `cd ""`=原地 → trap 刪掉 cwd | 寫後斷言 + flag 分開寫；mktemp 後必 `[ -n "$V" ]` + `[ -d "$V" ]` 才可正規化／註冊 cleanup(2026-07-28 事故 anchor) |
 | DS css 不在 tokens.css aggregator 也沒被 tsx import = orphan | consumer 靜默拿不到 |
 | storybook-smoke 驗舊 build = 假綠 | smoke script 已加 stale-build guard |
-| `V=$(mktemp -d)` 失敗回空字串,`cd "" && pwd -P` 在 bash 解析成**當前目錄** → `trap 'rm -rf "$V"'` 刪掉 cwd | mktemp 後必 `[ -n ]`+`[ -d ]` 硬守衛才可正規化;2026-07-28 刪光 99 檔 hook corpus anchor |
 
 新 bug → 歸 Meta-Pattern OR 本表 1 行;> 10 條 = 漏寫,評估 meta-merge 既有 M-rule。
 

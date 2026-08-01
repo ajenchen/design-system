@@ -15,7 +15,11 @@ import { Image as ImageIcon, Paperclip, Camera, Figma } from 'lucide-react'
 
 const meta: Meta = {
   title: 'Design System/Components/FileViewer/展示',
-  parameters: { layout: 'centered' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'centered',
+    docs: { description: { component: '集中預覽圖片與文件，並提供切換、資訊面板和受能力控制的工具列。使用者需要在不離開當前工作流的情況下檢視一個或一組檔案時使用。' } },
+  },
 }
 export default meta
 type Story = StoryObj

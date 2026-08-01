@@ -493,7 +493,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // 只在 length > 1 才走 stack(各 avatar 純 chip)。多選 + inline 搜尋場景拿掉 name 改 cursor
         // 走 `searchIn='trigger'` opt-in(2026-05-12 規則 3 ship,已轉傳 Combobox;default 'menu' 走 panel-top search)。
         if (selectedNames.length === 1) {
-          return <PersonDisplay key={item.value} value={p} size={size} />
+          return <PersonDisplay key={item.value} value={p} size={size} onRemove={onRemove} />
         }
         return (
           <PersonAvatarTag

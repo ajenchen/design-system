@@ -433,4 +433,23 @@ InlineEdit.displayName = 'InlineEdit'
 //   (對齊 detectControlLayout 讀 fieldLayout 的機制;InlineEdit view 態無邊框,md 過大會讓版面鬆散)。
 InlineEdit.fieldPreferredSize = 'sm'
 
+// Story auto-compile metadata — canonical migration(2026-08-01)
+// Geometry and size belong to Field controls; InlineEdit owns only the
+// view-to-edit orchestration and its read-view interaction affordances.
+export const inlineEditMeta = {
+  component: 'InlineEdit',
+  family: 'composite',
+  variants: {},
+  sizes: {},
+  states: ['default', 'hover', 'focus-visible', 'editing', 'readonly'],
+  tokens: {
+    bg: ['bg-neutral-hover'],
+    fg: ['text-fg-muted'],
+    border: ['border-transparent', 'border-primary'],
+    ring: [],
+  },
+  defaultVariant: undefined,
+  defaultSize: undefined,
+} as const
+
 export { InlineEdit }

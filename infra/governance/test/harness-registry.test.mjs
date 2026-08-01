@@ -15,7 +15,6 @@ import Ajv2020 from 'ajv/dist/2020.js'
 import {
   DEFAULT_REPO_ROOT,
   HARNESS_SETUP_OUTER_RESERVE_MS,
-  HARNESS_WORKFLOW_RESERVE_MINUTES,
   HARNESS_DOMAIN_TAXONOMY,
   REQUIRED_HARNESS_DOMAINS,
   deriveAuthorityAllHarnessTimeoutMs,
@@ -27,7 +26,6 @@ import {
   validateHarnessAuthorityContracts,
   validateHarnessRegistry,
   validateHarnessSharedAuthorityClosures,
-  workflowHarnessTimeoutMinutes,
 } from '../lib/harness-registry.mjs'
 
 const registry = readHarnessRegistry()
@@ -418,8 +416,6 @@ test('Harness registry is closed, complete and bound to real no-symlink authorit
     1_860_000,
   )
   assert.deepEqual(registry.runner.requiredConsumers.map(consumer => consumer.path), [
-    '.github/workflows/ci.yml',
-    '.github/workflows/release.yml',
     'scripts/release-preflight.mjs',
     '.devcontainer/post-create.mjs',
   ])
@@ -551,21 +547,9 @@ test('Harness registry is closed, complete and bound to real no-symlink authorit
     (total, command) => total + (timeoutByCommand.get(JSON.stringify(command)) ?? registry.runner.defaultTimeoutMs),
     0,
   )
-  const requiredMinutes = Math.ceil(aggregateTimeoutMs / 60_000) + HARNESS_WORKFLOW_RESERVE_MINUTES
   assert.equal(deriveHarnessAggregateTimeoutMs(registry), aggregateTimeoutMs)
   assert.equal(deriveAuthorityAllHarnessTimeoutMs(registry), deriveHarnessAggregateTimeoutMs(registry) + HARNESS_SETUP_OUTER_RESERVE_MS)
   assert.ok(deriveAuthorityAllHarnessTimeoutMs(registry) > 15 * 60_000, 'authority setup regressed to the old 15-minute bootstrap timeout')
-  for (const path of ['.github/workflows/ci.yml', '.github/workflows/release.yml']) {
-    const source = readFileSync(resolve(DEFAULT_REPO_ROOT, path), 'utf8')
-    const actualMinutes = workflowHarnessTimeoutMinutes(source, path)
-    assert.ok(actualMinutes >= requiredMinutes)
-    const malformedBudget = source.replace(`timeout-minutes: ${actualMinutes}`, 'timeout-minutes: not-a-budget')
-    assert.notEqual(malformedBudget, source, `${path} timeout fixture did not mutate the workflow`)
-    assert.throws(
-      () => workflowHarnessTimeoutMinutes(malformedBudget, path),
-      /literal timeout-minutes budget/,
-    )
-  }
 })
 
 test('versioned Harness taxonomy preserves ordered core domains and admits only append-only portable extensions', () => {

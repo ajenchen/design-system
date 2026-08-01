@@ -45,7 +45,7 @@ export const Overview: Story = {
 
       <div>
         <H3>Props 速查</H3>
-        <Desc>Popover / PopoverTrigger / PopoverContent 沿用 Radix Popover 的同名 prop（定位 / 開關 / modal 等 props 與 Radix 一致），並接上設計系統 token。**例外**:PopoverContent 覆寫兩處 a11y 行為(`onOpenAutoFocus` 讓開啟焦點落 body 首個互動元素、自動接線 `aria-labelledby`),故行為非全等 Radix，詳「A11y 預設」段。Props 依宣告元件分兩類——定位類(align / side / sideOffset / collisionPadding)寫在 {'<PopoverContent>'} 上,開關 / modal 類(open / onOpenChange / defaultOpen / modal)寫在最外層 {'<Popover>'}(Root)上;寫錯元件不會生效(見「所屬元件」欄)。完整 API 見 <a href="https://www.radix-ui.com/primitives/docs/components/popover" className="underline" target="_blank" rel="noreferrer">Radix Popover 官方文件</a>。</Desc>
+        <Desc>Popover / PopoverTrigger / PopoverContent 沿用 Radix Popover 的同名 prop（定位 / 開關 / modal 等 props 與 Radix 一致），並接上設計系統 token。唯一例外:PopoverContent 覆寫兩處 a11y 行為(`onOpenAutoFocus` 讓開啟焦點落 body 首個互動元素、自動接線 `aria-labelledby`),故行為非全等 Radix，詳「A11y 預設」段。Props 依宣告元件分兩類——定位類(align / side / sideOffset / collisionPadding)寫在 {'<PopoverContent>'} 上,開關 / modal 類(open / onOpenChange / defaultOpen / modal)寫在最外層 {'<Popover>'}(Root)上;寫錯元件不會生效(見「所屬元件」欄)。完整 API 見 <a href="https://www.radix-ui.com/primitives/docs/components/popover" className="underline" target="_blank" rel="noreferrer">Radix Popover 官方文件</a>。</Desc>
         <div className="overflow-x-auto">
           {/* @anatomy-exempt-next: Props 速查表為純文件對照(prop/type/default),非元件資料展示;DataTable 過重 */}
           <table className="text-caption border-collapse">
@@ -235,7 +235,7 @@ export const SizeMatrix: Story = {
 
       <div>
         <H3>sideOffset(與 trigger 的距離)</H3>
-        <Desc>DS 設計準則 = **8px**(對標 Notion / Linear / Figma / Stripe)。&lt; 4px 會讓浮層貼死 trigger 失去「另一層」感;&gt; 12px 會拉斷 trigger ↔ content 的視覺關聯。consumer 通常不需改,特殊情境(如 anchored tooltip-like)可傳覆蓋。</Desc>
+        <Desc>DS 設計準則 = 8px(對標 Notion / Linear / Figma / Stripe)。&lt; 4px 會讓浮層貼死 trigger 失去「另一層」感;&gt; 12px 會拉斷 trigger ↔ content 的視覺關聯。consumer 通常不需改,特殊情境(如 anchored tooltip-like)可傳覆蓋。</Desc>
       </div>
     </div>
   ),

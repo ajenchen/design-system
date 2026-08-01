@@ -123,6 +123,15 @@ if (process.argv[2] === '--crash-probe') {
   throw new Error('crash probe escaped its injected process exit')
 }
 
+if (process.argv[2] === '--prejournal-crash-probe') {
+  const root = process.argv[3]
+  runAtomicAuthorityGenerationTransaction({
+    ...options(root),
+    materializeWorkspace: () => process.exit(87),
+  })
+  throw new Error('pre-journal crash probe escaped its injected process exit')
+}
+
 {
   const fx = fixture('governance-graph-transaction-late-')
   try {
@@ -193,4 +202,28 @@ if (process.argv[2] === '--crash-probe') {
   }
 }
 
-console.log('✓ graph-wide authority transaction preserves dirty outputs and atomically handles stale/create/delete, late failure, crash recovery, and idempotence')
+{
+  const fx = fixture('governance-graph-transaction-prejournal-crash-')
+  try {
+    const child = spawnSync(process.execPath, [
+      'scripts/test-governance-build-graph-transaction.mjs',
+      '--prejournal-crash-probe',
+      fx.root,
+    ], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      timeout: 30_000,
+    })
+    assert.equal(child.status, 87, child.stderr || child.stdout)
+    assert.equal(fs.existsSync(join(fx.root, AUTHORITY_GENERATION_JOURNAL)), false)
+    assert.equal(fs.readdirSync(fx.outer).filter(name => name.startsWith('.governance-build-graph-')).length, 1)
+
+    assert.equal(runAtomicAuthorityGenerationTransaction(options(fx.root)).targetCount, TARGETS.length)
+    verify(fx.root)
+    assert.deepEqual(fs.readdirSync(fx.outer).filter(name => name.startsWith('.governance-build-graph-')), [])
+  } finally {
+    fs.rmSync(fx.outer, { recursive: true, force: true })
+  }
+}
+
+console.log('✓ graph-wide authority transaction preserves dirty outputs and handles stale/create/delete, late failure, journal/pre-journal crash recovery, and idempotence')

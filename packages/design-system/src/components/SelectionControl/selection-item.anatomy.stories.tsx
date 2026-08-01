@@ -76,7 +76,7 @@ export const Overview: Story = {
         <H3>Anatomy</H3>
         <Desc>
           SelectionItem 是 Checkbox / RadioGroup 共用的 layout primitive。3-slot 結構:
-          <code className="font-mono text-footnote mx-1">[control] [optional prefix (icon | avatar)] [content]</code>
+          <span className="mx-1">control、可選的 icon / avatar prefix、content</span>
           。Padding 公式
           <code className="font-mono text-footnote mx-1">py = (field-height - 1lh) / 2</code>
           讓單行高度自動對齊同 size 的 Input,density 切換時跟著算。
@@ -265,21 +265,19 @@ function SelectionInspector() {
 
         <div>
           <H3>尺寸藍圖</H3>
-          <div className="border border-divider rounded-md p-4 bg-muted">
-            <pre className="text-footnote font-mono text-fg-secondary leading-relaxed whitespace-pre">
-{`size=${size}   prefix=${prefix}   block=${useBlock}
-
-  ┌─ py = (${spec.fieldHeight} - 1lh) / 2 ─────────────────────────────┐
-  │  flex items-start gap-2  ${spec.text} (${spec.textPx}px)           │
-  │                                                                    │
-  │  [control]   ${prefix !== 'none' ? `[${prefix}]` : '        '}   [content]                           │
-  │   h-[1lh]     h-[1lh]${useBlock ? ' (block)' : '        '}    label (text-body${size === 'lg' ? '-lg' : ''})         │
-  │                                  ${hasDesc ? 'description (text-fg-secondary 14px)' : ''}        │
-  └────────────────────────────────────────────────────────────────────┘
-
-單行總高 = ${spec.fieldHeight} = ${spec.fieldHeightPx}px
-${prefix === 'avatar' ? `avatar size = ${useBlock ? spec.avatarBlockPx : spec.avatarInlinePx}px (${useBlock ? 'block' : 'inline'})` : prefix === 'icon' ? `icon size = ${spec.iconPx}px` : ''}`}
-            </pre>
+          <div className="border border-divider rounded-md p-4 bg-muted text-footnote text-fg-secondary">
+            <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2">
+              <dt className="font-medium text-foreground">設定</dt>
+              <dd><code>size={size}</code>、<code>prefix={prefix}</code>、<code>block={String(useBlock)}</code></dd>
+              <dt className="font-medium text-foreground">外框節奏</dt>
+              <dd><code>py = ({spec.fieldHeight} - 1lh) / 2</code>；單行總高 {spec.fieldHeight}（{spec.fieldHeightPx}px）</dd>
+              <dt className="font-medium text-foreground">排列</dt>
+              <dd><code>flex items-start gap-2</code>；control、{prefix === 'none' ? '無 prefix' : `${prefix} prefix`}、content 依序排列</dd>
+              <dt className="font-medium text-foreground">文字</dt>
+              <dd><code>{spec.text}</code>（{spec.textPx}px）；label 使用 <code>text-body{size === 'lg' ? '-lg' : ''}</code>{hasDesc ? '，description 使用 text-fg-secondary 14px' : ''}</dd>
+              {prefix === 'avatar' && <><dt className="font-medium text-foreground">Avatar</dt><dd>{useBlock ? spec.avatarBlockPx : spec.avatarInlinePx}px（{useBlock ? 'block' : 'inline'}）</dd></>}
+              {prefix === 'icon' && <><dt className="font-medium text-foreground">Icon</dt><dd>{spec.iconPx}px</dd></>}
+            </dl>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 name: Composition Fidelity (DS canonical vs product pilot)
 
-# Non-blocking scheduled/manual monitor comparing the canonical DS and product pilot.
+# Scheduled/manual monitor comparing the canonical DS and product pilot. It is
+# outside the required PR graph, so failures stay visible without blocking release.
 on:
   workflow_dispatch:
   schedule:
@@ -17,7 +18,6 @@ jobs:
   composition-fidelity:
     name: Monitor composition fidelity drift
     runs-on: ubuntu-24.04
-    continue-on-error: true
     env:
       PLAYWRIGHT_BROWSERS_PATH: '0'
     timeout-minutes: 30

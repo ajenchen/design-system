@@ -17,7 +17,6 @@ jobs:
   a11y-axe:
     name: Monitor a11y drift(axe-core WCAG 2A+AA)
     runs-on: ubuntu-24.04
-    continue-on-error: true
     env:
       # setup:playwright 以 PLAYWRIGHT_BROWSERS_PATH=0 安裝到 repo-local
       # node_modules/playwright-core/.local-browsers;消費步驟必須帶同一 pin,
@@ -49,7 +48,6 @@ jobs:
   size-limit:
     name: Monitor bundle size drift
     runs-on: ubuntu-24.04
-    continue-on-error: true
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

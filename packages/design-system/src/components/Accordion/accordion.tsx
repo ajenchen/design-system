@@ -63,7 +63,7 @@ const AccordionTrigger = React.forwardRef<
       {children}
       <ChevronDown
         size={16}
-        className="shrink-0 text-fg-muted transition-transform duration-200"
+        className="shrink-0 text-fg-muted transition-transform duration-200 motion-reduce:duration-0"
         aria-hidden
       />
     </AccordionPrimitive.Trigger>
@@ -81,7 +81,7 @@ const AccordionContent = React.forwardRef<
     ref={ref}
     className={cn(
       'overflow-hidden text-body text-fg-secondary',
-      'data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down',
+      'data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down motion-reduce:animate-none',
     )}
     {...props}
   >

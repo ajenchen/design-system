@@ -25,7 +25,7 @@ description: Process $GOVERNANCE_STATE_DIR/user-corrections.jsonl — the Stop-h
 ## Non-goals
 
 - 不改 code(`.tsx` / `.css`)— 只動 governance 文件
-- 不自行發明產品／UI／UX語意；工程治理 M-row 可依 evidence + maximum-assurance independent review 自動落地
+- 不自行發明產品／UI／UX語意；工程治理 M-row 可依 evidence 自動落地，task／deliverable 明確要求時才加 maximum-assurance independent review
 - 不刪 jsonl 歷史 — 處理後 append 到 `.processed.jsonl`,raw log 保留 grep evidence
 - 不重跑 harvest — harvest 是 stop_passive_logging.sh R2 rule_harvest_corrections()(原 stop_harvest_corrections.sh,已 folded)的責任
 

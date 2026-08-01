@@ -30,7 +30,7 @@
         "**/test_*.sh",
         "**/test_*.sh.broken"
       ],
-      "treeSha256": "13e16859fa8bd2c8d3e6123ec817e325550237231d79a8a799c7ab1909550462"
+      "treeSha256": "0b198cf1ad12b3ce6245b48f44532cedc21b6421b1b0f449d9d0bea9d5389db6"
     }
   ],
   "canonicalHookStaticHelpers": {
@@ -293,6 +293,7 @@
         "infra/governance/test/activation-readiness-canonical-inputs.test.mjs",
         "infra/governance/test/authority-setup.test.mjs",
         "infra/governance/test/check-run-trust.test.mjs",
+        "infra/governance/test/ci-workflow-scope.test.mjs",
         "infra/governance/test/completion-readiness.test.mjs",
         "infra/governance/test/consumerctl.test.mjs",
         "infra/governance/test/external-activation.test.mjs",
@@ -313,6 +314,7 @@
         "infra/governance/test/release-evidence.test.mjs",
         "infra/governance/test/release-tag-authorization.test.mjs",
         "infra/governance/test/release-trust-preflight.test.mjs",
+        "infra/governance/test/release-workflow.test.mjs",
         "infra/governance/test/repository-path-topology.test.mjs",
         "infra/governance/test/rollout-state-machine.test.mjs",
         "infra/governance/test/signed-release-tag.test.mjs",
@@ -360,6 +362,7 @@
         "scripts/test-deep-audit-evidence-schema-parity.mjs",
         "scripts/test-deep-audit-review-archive.mjs",
         "scripts/test-design-system-codemod.mjs",
+        "scripts/test-deterministic-vite-output.mjs",
         "scripts/test-devmode-geometry-invariant.mjs",
         "scripts/test-future-provider-fork-surface.mjs",
         "scripts/test-gate-meta-test-exclusion-inventory.mjs",

@@ -13,11 +13,6 @@ import addFormats from 'ajv-formats'
 import { load as loadYaml } from 'js-yaml'
 import { createManagedCiActivationFixture } from '../infra/governance/test/fixtures/managed-ci-activation-fixture.mjs'
 import {
-  EXTERNAL_ACTIVATION_POLICY_DIGEST,
-  GITHUB_MUTATION_BOUNDARY_CONTRACT_DIGEST,
-  validateExternalActivationRequirements,
-} from '../infra/governance/lib/external-activation.mjs'
-import {
   finalizationRequestEnvelope,
   finalizationTransportReadbackDigest,
   finalizedReceiptSetDigest,
@@ -353,7 +348,7 @@ test('model-broker activation converges only from the verified managed carrier a
   )
 })
 
-test('projected governance carriers allow only committed monotonic raw after-images across B0 to B1 to B2', (t) => {
+test('projected governance carriers require committed raw after-images while retired activation semantics remain nonblocking', (t) => {
   const active = activeState()
   const root = mkdtempSync(join(tmpdir(), 'managed-ci-carrier-transition-'))
   cpSync(active.root, root, { recursive: true })
@@ -425,33 +420,24 @@ test('projected governance carriers allow only committed monotonic raw after-ima
     ))
   }
 
-  const invalid = structuredClone(activation)
-  Object.assign(invalid.requirements[0], {
+  const retiredActivationChange = structuredClone(activation)
+  Object.assign(retiredActivationChange.requirements[0], {
     status: 'activated',
     evidence: null,
     observedAt: null,
     expiresAt: null,
   })
-  writeFileSync(activationPath, `${JSON.stringify(invalid, null, 2)}\n`)
-  commitManagedCiFixture(root, 'B2 invalid unsigned activation carrier transition')
+  writeFileSync(activationPath, `${JSON.stringify(retiredActivationChange, null, 2)}\n`)
+  commitManagedCiFixture(root, 'B2 committed retired activation carrier transition')
   const b2 = loadManagedCiTrustedExecutionPlan({ repoRoot: root, now })
   assert.equal(b2.coreActive, true)
-  assert.equal(b2.carrierValidated, false)
-  assert.equal(b2.active, false)
-  assert(b2.carrierValidation.blockers.some(item => (
-    item.includes('must have evidence and timestamps')
-      || item.includes('must not fabricate evidence')
-      || item.includes('evidence must be an object')
-      || item.includes('activated')
-  )))
-  assert.throws(
-    () => managedCiModelBrokerActivationConvergence(
-      b2,
-      MODEL_BROKER_ACTIVATION_CONTRACT,
-      { evidenceKind: 'deep-audit-judgment', selectedProvider: 'claude' },
-    ),
-    /has not converged/,
-  )
+  assert.equal(b2.carrierValidated, true)
+  assert.equal(b2.active, true)
+  assert.equal(managedCiModelBrokerActivationConvergence(
+    b2,
+    MODEL_BROKER_ACTIVATION_CONTRACT,
+    { evidenceKind: 'deep-audit-judgment', selectedProvider: 'claude' },
+  ).status, 'converged')
 
   writeFileSync(activationPath, b1Bytes)
   commitManagedCiFixture(root, 'B3 recover exact reviewed carrier after rejected partial activation')
@@ -463,7 +449,7 @@ test('projected governance carriers allow only committed monotonic raw after-ima
   ).status, 'converged')
 })
 
-test('nested activation validation consumes only branded B0 runtime models and final core recapture catches stable live drift', t => {
+test('managed CI consumes only branded B0 runtime models and final core recapture catches stable live drift', t => {
   const active = activeState()
   const root = mkdtempSync(join(tmpdir(), 'managed-ci-immutable-runtime-models-'))
   cpSync(active.root, root, { recursive: true })
@@ -494,26 +480,6 @@ test('nested activation validation consumes only branded B0 runtime models and f
       assert.deepEqual(immutableDuring[name].bytes, originals.get(path))
       assert.deepEqual(immutableDuring[name].bytes, immutableBefore[name].bytes)
     }
-
-    const json = path => JSON.parse(readFileSync(resolve(root, path), 'utf8'))
-    assert.equal(validateExternalActivationRequirements(
-      json('infra/governance/external-activation-requirements.json'),
-      {
-        inventory: json('infra/governance/inventory/managed-repos.json'),
-        desired: json('infra/governance/desired/github.json'),
-        rings: json('infra/governance/release-rings.json'),
-        issuerRegistry: JSON.parse(originals.get('infra/governance/trust/issuers.json')),
-        policy: json('infra/governance/external-activation-policy.json'),
-        expectedPolicyDigest: EXTERNAL_ACTIVATION_POLICY_DIGEST,
-        mutationBoundaryContract: json('infra/governance/providers/github-mutation-boundary-contract.json'),
-        expectedMutationBoundaryContractDigest: GITHUB_MUTATION_BOUNDARY_CONTRACT_DIGEST,
-        now,
-        managedCiValidationContext: {
-          managedCore: core,
-          sourceTreeValidation: 'managed-ci-immutable-core-closure',
-        },
-      },
-    ), true)
 
     const drifted = loadManagedCiTrustedExecutionPlan({ repoRoot: root, now })
     assert.equal(drifted.active, false)

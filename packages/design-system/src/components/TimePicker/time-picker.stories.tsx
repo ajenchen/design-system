@@ -7,6 +7,7 @@ import { Field, FieldLabel, FieldError } from '@/design-system/components/Field/
 
 const meta: Meta<typeof TimePicker> = {
   title: 'Design System/Components/TimePicker/展示',
+  tags: ['autodocs'],
   component: TimePicker,
   parameters: {
     layout: 'centered',

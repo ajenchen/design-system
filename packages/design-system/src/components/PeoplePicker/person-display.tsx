@@ -147,7 +147,7 @@ function PersonAvatar({
 // outer 改 items-start + Avatar 外包 ItemPrefix primitive consumption。單行視覺 = items-center 等效;
 // 多行(autoRowHeight cell)避免 avatar+name center 整 row 不對齊 first-line text top。M1 消費既有
 // 對齊 TreeView / MenuItem / SelectionItem 共用 ItemPrefix wrap chevron/icon/avatar canonical。
-function PersonDisplay({ value, size = 'md', disabled = false }: { value?: PersonValue | null; size?: 'sm' | 'md' | 'lg'; /** 見 PersonAvatar.disabled jsDoc(抑制 hoverCard + dim) */ disabled?: boolean }) {
+function PersonDisplay({ value, size = 'md', disabled = false, onRemove }: { value?: PersonValue | null; size?: 'sm' | 'md' | 'lg'; /** 見 PersonAvatar.disabled jsDoc(抑制 hoverCard + dim) */ disabled?: boolean; onRemove?: () => void }) {
 const emptyDisplay = useFieldEmptyDisplay()
   if (!value) return <span className="text-foreground">{emptyDisplay}</span>
 
@@ -160,7 +160,12 @@ const emptyDisplay = useFieldEmptyDisplay()
   // 對齊 GitHub Primer ActionList / Slack users_select / Atlassian UserPicker truncation canonical。
   return (
     <span className="flex items-start gap-2 min-w-0 w-full">
-      <ItemPrefix><PersonAvatar person={person} size={size} disabled={disabled} /></ItemPrefix>
+      <ItemPrefix>
+        <span className="relative inline-flex group/avatar">
+          <PersonAvatar person={person} size={size} disabled={disabled} />
+          {onRemove && <AvatarDismissOverlay onRemove={onRemove} label={person.name} />}
+        </span>
+      </ItemPrefix>
       <span className="truncate flex-1 min-w-0">{person.name}</span>
     </span>
   )
@@ -235,7 +240,7 @@ function MultiPersonDisplay({
 
   // 單人回退到 PersonDisplay(顯示名字)
   if (people.length === 1) {
-    return <PersonDisplay value={value[0]} size={size} disabled={disabled} />
+    return <PersonDisplay value={value[0]} size={size} disabled={disabled} onRemove={onRemove ? () => onRemove(value[0]) : undefined} />
   }
 
   // 2026-05-14 item-anatomy SSOT fix(per codex+Layer A 共識):outer items-start + avatar stack
@@ -307,7 +312,7 @@ MultiPersonDisplay.displayName = 'MultiPersonDisplay'
 //     (light=neutral-5 / dark=neutral-7,跨 mode 對稱)
 //   - **X icon size=12 strokeWidth=3**(icon 跟底色一樣大,對齊 checkbox checkmark
 //     sm/md stroke 規格;2026-06-12 同步 checkbox 2026-05-18 簡化 3.5→3,SSOT →
-//     .claude/references/ui-dev-rules.md「小尺寸 icon stroke 補償」)
+//     packages/design-system/ds-canonical/references/ui-dev-rules.md「小尺寸 icon stroke 補償」)
 //   - **text-on-emphasis**(白 X,確保飽和色底對比)
 //   - **位置 `absolute -top-px -right-1`**(top -1px / right -4px,右緣凸出 avatar 外 4px —
 //     v15.15 user-confirmed asymmetric canonical,rationale 見下方 className 內註解)
@@ -323,6 +328,7 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
     <button
       type="button"
       onClick={(e) => { e.stopPropagation(); onRemove() }}
+      data-collection-remove
       aria-label={`移除 ${label}`}
       className={[
         // **Position(2026-05-07 v15.15 user-confirmed)**:asymmetric `-top-px -right-1`
@@ -343,7 +349,7 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         // a11y(codex P1 fix):opacity 而非 display:none — element 在 DOM/tab-order,
         // keyboard 可達。Hover / focus-within / focus-visible 三條件之一觸發。
         'opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100 focus-visible:opacity-100',
-        'transition-opacity duration-150',
+        'transition-opacity duration-150 motion-reduce:duration-0',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       ].join(' ')}
     >

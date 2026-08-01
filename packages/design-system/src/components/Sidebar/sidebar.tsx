@@ -1133,7 +1133,7 @@ const SidebarMenuButton = React.forwardRef<
           // mouse click 觸發,導致 click 之後 actions 永久顯示直到焦點移走;
           // focus-visible 只在鍵盤 tab 時啟動,mouse click 不會觸發,符合使用者直覺。
           actionsReveal === "hover" &&
-            "opacity-0 group-hover/menu-item:opacity-100 group-has-[:focus-visible]/menu-item:opacity-100 transition-opacity duration-150"
+            "opacity-0 group-hover/menu-item:opacity-100 group-has-[:focus-visible]/menu-item:opacity-100 transition-opacity duration-150 motion-reduce:duration-0"
         )}
       >
         {hasSlot

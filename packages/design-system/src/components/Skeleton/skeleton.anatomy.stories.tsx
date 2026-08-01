@@ -121,7 +121,7 @@ export const DesignPrinciple: Story = {
     <div className="flex flex-col gap-6">
       <div>
         <H3>形狀貼合真實內容</H3>
-        <Desc>Skeleton 的形狀應該**貼近真實內容的排版**——使用者看到 skeleton 後資料載入,佈局不應大幅跳動。形狀嚴重偏離真實內容會讓使用者預期被打破、體感更慢。</Desc>
+        <Desc>Skeleton 的形狀應該貼近真實內容的排版——使用者看到 skeleton 後資料載入,佈局不應大幅跳動。形狀嚴重偏離真實內容會讓使用者預期被打破、體感更慢。</Desc>
       </div>
 
       <div>

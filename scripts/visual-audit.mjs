@@ -41,7 +41,7 @@ import { writeFile, readFile } from 'node:fs/promises'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { spawn, execSync } from 'node:child_process'
+import { spawnSync, execSync } from 'node:child_process'
 import {
   ensureRuntimeEvidenceDirectory,
   prepareRuntimeEvidenceFile,
@@ -56,12 +56,14 @@ import {
   executeVisualInteraction,
   normalizeVisualInteraction,
 } from './lib/visual-audit-interaction.mjs'
+import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
+import { createRenderHealthMonitor } from './lib/storybook-render-health.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = join(__dirname, '..')
 const OUT_DIR = ensureRuntimeEvidenceDirectory({ repoRoot: PROJECT_ROOT, relativePath: 'visual/visual-audit' })
 const ASSERTIONS_PATH = join(PROJECT_ROOT, 'scripts/visual-assertions.json')
-const STORYBOOK_URL = 'http://localhost:6006'
+const DEFAULT_STORYBOOK_URL = 'http://127.0.0.1:6006'
 const PIXEL_DIFF_THRESHOLD = 0.1 // pixelmatch threshold (0=strict, 1=loose)
 const PIXEL_DIFF_PCT_BUDGET = 0.5 // flag scenario if > 0.5% pixels differ from baseline
 
@@ -75,6 +77,7 @@ const ARGS_KV = Object.fromEntries(
   }),
 )
 const AUTO_START = ARGS_SET.has('--auto-start')
+const STATIC_STORYBOOK = ARGS_SET.has('--static')
 const HEADED = ARGS_SET.has('--headed')
 const RETINA = ARGS_SET.has('--retina') // 預設 1x,Layer B AI 可讀(2x 超 2000px 限制);--retina opt-in for debug
 const SCOPE = ARGS_KV['--scope'] ?? 'changed' // changed | all | component:<name>
@@ -82,6 +85,11 @@ const URLS = ARGS_KV['--urls'] // CSV of URLs,overrides scenario mode
 const NO_A11Y = ARGS_SET.has('--no-a11y') // skip @axe-core/playwright(default runs)
 const NO_DIFF = ARGS_SET.has('--no-diff') // skip baseline pixel diff
 const UPDATE_BASELINE = ARGS_SET.has('--update-baseline') // copy new snapshots as baseline
+let storybookUrl = ARGS_KV['--storybook-url'] ?? DEFAULT_STORYBOOK_URL
+if (AUTO_START && STATIC_STORYBOOK) {
+  console.error('[visual-audit] --auto-start 與 --static 二擇一')
+  process.exit(1)
+}
 // Dim 51 theme/density matrix。`theme-density-rtl` 僅保留為 legacy CLI alias；
 // RTL 明確不支援，不得把 alias 名稱誤當 RTL coverage。現行矩陣只跑
 // (light / dark) × (density-md / density-lg) 共 4 cells。
@@ -354,6 +362,9 @@ async function auditScenario(browser, scenario, opts = {}) {
     deviceScaleFactor: opts.retina ? 2 : 1,
   })
   const page = await context.newPage()
+  const renderHealth = createRenderHealthMonitor(page, {
+    mode: scenario.url ? 'document' : 'storybook',
+  })
   let interactionResult = scenario.interaction
     ? { status: 'not-run', action: scenario.interaction.action, selector: scenario.interaction.selector }
     : null
@@ -394,7 +405,7 @@ async function auditScenario(browser, scenario, opts = {}) {
     : ''
   const url = scenario.url
     ? scenario.url
-    : `${STORYBOOK_URL}/iframe.html?id=${scenario.id}&viewMode=story${globalsParam}`
+    : `${storybookUrl}/iframe.html?id=${scenario.id}&viewMode=story${globalsParam}`
 
   try {
     await page.goto(url, { waitUntil: 'networkidle', timeout: 45_000 })
@@ -422,18 +433,9 @@ async function auditScenario(browser, scenario, opts = {}) {
       await page.waitForTimeout(200) // let tooltip dismiss
     }
 
-    // Detect Storybook error display(stale cache / module resolution failure)—
-    // 若 story load 失敗,Storybook 顯示 error。用 `#error-message` 有實際 text 偵測,
-    // 而非 class prefix(後者會誤匹 Storybook 初始 DOM chrome)。
-    const errorMsg = await page.locator('#error-message').textContent().catch(() => '')
-    if (errorMsg && errorMsg.trim().length > 0) {
-      return {
-        id: scenario.id ?? scenario.url,
-        file: scenario.file,
-        interaction: interactionResult,
-        error: `Storybook error display: ${errorMsg.slice(0, 200)}`,
-      }
-    }
+    // A failed JS/CSS load can leave #storybook-root empty with HTTP 200. Treat that as an
+    // infrastructure/render failure before contrast/axe can vacuously pass an empty canvas.
+    await renderHealth.assertHealthy({ label: scenario.id ?? scenario.url })
 
     if (scenario.interaction) {
       interactionResult = {
@@ -444,6 +446,9 @@ async function auditScenario(browser, scenario, opts = {}) {
       try {
         const executed = await executeVisualInteraction(page, scenario.interaction)
         interactionResult = { status: 'passed', ...executed }
+        // Interaction can trigger a render crash after the initial healthy frame. Re-check the
+        // root, page exceptions, and critical assets before taking evidence.
+        await renderHealth.assertHealthy({ label: scenario.id ?? scenario.url })
       } catch (interactionError) {
         interactionResult = {
           status: 'failed',
@@ -555,6 +560,7 @@ async function auditScenario(browser, scenario, opts = {}) {
       error: err.message,
     }
   } finally {
+    renderHealth.dispose()
     await context.close()
   }
 }
@@ -629,44 +635,13 @@ function filterScenarios(allScenarios) {
   return allScenarios
 }
 
-let storybookProc = null
+let ownedStaticServer = null
 let browser = null
 
-function signalStorybookProcessGroup(child, signal) {
-  if (!child?.pid) return
-  if (process.platform !== 'win32') {
-    try {
-      process.kill(-child.pid, signal)
-      return
-    } catch {}
-  }
-  try {
-    child.kill(signal)
-  } catch {}
-}
-
 async function stopStorybook() {
-  const child = storybookProc
-  storybookProc = null
-  if (!child || child.exitCode !== null || child.signalCode !== null) return
-  await new Promise((resolveStop) => {
-    let settled = false
-    let forceKillTimer = null
-    let cleanupDeadline = null
-    const finish = () => {
-      if (settled) return
-      settled = true
-      child.off('close', finish)
-      if (forceKillTimer) clearTimeout(forceKillTimer)
-      if (cleanupDeadline) clearTimeout(cleanupDeadline)
-      resolveStop()
-    }
-    child.once('close', finish)
-    signalStorybookProcessGroup(child, 'SIGTERM')
-    forceKillTimer = setTimeout(() => signalStorybookProcessGroup(child, 'SIGKILL'), 1_000)
-    cleanupDeadline = setTimeout(finish, 3_000)
-    if (child.exitCode !== null || child.signalCode !== null) finish()
-  })
+  const server = ownedStaticServer
+  ownedStaticServer = null
+  if (server) await server.stop()
 }
 
 async function closeBrowser() {
@@ -679,27 +654,28 @@ async function main() {
   await ensureOutDir()
 
   if (AUTO_START) {
-    console.log('[visual-audit] 啟動 storybook...')
-    storybookProc = spawn('npm', ['run', 'storybook', '--', '--ci', '--quiet'], {
+    console.log('[visual-audit] 建立 production Storybook...')
+    const build = spawnSync('npm', ['run', 'build-storybook'], {
       cwd: PROJECT_ROOT,
-      detached: process.platform !== 'win32',
-      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+      maxBuffer: 4 * 1024 * 1024,
     })
-    storybookProc.stdout.on('data', () => {})
-    storybookProc.stderr.on('data', () => {})
-
-    const ready = await waitForStorybook(STORYBOOK_URL, 180_000)
-    if (!ready) {
-      console.error('[visual-audit] storybook 120s 未就緒')
-      await stopStorybook()
-      process.exitCode = 1
-      return
+    if (build.error || build.status !== 0) {
+      const detail = `${build.stdout ?? ''}\n${build.stderr ?? ''}`.trim().slice(-4_000)
+      throw new Error(`production Storybook build failed(exit ${build.status ?? 'unknown'}):${build.error?.message ?? detail}`)
     }
-    console.log('[visual-audit] storybook 就緒')
+    console.log('[visual-audit] production Storybook 建立完成')
+  }
+
+  if (AUTO_START || STATIC_STORYBOOK) {
+    const staticDirectory = join(PROJECT_ROOT, 'storybook-static')
+    ownedStaticServer = await startA11yStaticServer({ rootDirectory: staticDirectory, defaultFile: 'iframe.html' })
+    storybookUrl = ownedStaticServer.origin
+    console.log(`[visual-audit] owned static Storybook 就緒(${storybookUrl})`)
   } else {
-    const ready = await waitForStorybook(STORYBOOK_URL, 5_000)
+    const ready = await waitForStorybook(storybookUrl, 5_000)
     if (!ready) {
-      console.error(`[visual-audit] storybook 未跑(${STORYBOOK_URL})。加 --auto-start 或先 npm run storybook`)
+      console.error(`[visual-audit] storybook 未跑(${storybookUrl})。加 --auto-start / --static 或傳 --storybook-url`)
       process.exitCode = 1
       return
     }
