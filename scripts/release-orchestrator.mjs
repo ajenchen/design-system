@@ -166,7 +166,7 @@ function requiredPullRequestChecks(repository, number) {
     '--json', 'bucket,name,state,workflow',
   ], { allowFailure: true })
   if (result.stdout === '') {
-    if (!result.ok && !/no checks reported/i.test(result.stderr)) {
+    if (!result.ok && !/no (?:required )?checks reported/i.test(result.stderr)) {
       throw new Error(`cannot read required checks for ${repository}#${number}: ${result.stderr}`)
     }
     return []
