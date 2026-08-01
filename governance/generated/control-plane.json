@@ -1467,12 +1467,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:752960f35a18dd4fff77e51cfabd834eedf6078ff2d23005361bcf3700dd77fe",
+      "hash": "sha256:8cd0e79875b33da6f433aeafb21c19a8ec99924e5b41304d9d8b6d620cdec3a4",
       "id": "exact-provider-runtime-conformance-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/lib/provider-runtime-conformance.mjs",
-      "size": 157871,
+      "size": 158244,
       "type": "file"
     },
     {
@@ -2115,7 +2115,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 33,
-      "hash": "sha256:dfd7cf678da7fb69577102443ea16eec75777a2fc805f98981709f3a807f563e",
+      "hash": "sha256:8feb7d5fb17bfb810adc63ee03bd6a1da73fe911a17a209e49a05eba5d4cc9ad",
       "id": "governance-control-plane-libraries",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2137,7 +2137,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 63,
-      "hash": "sha256:ce4753ce5db44e260a922685b1b434ad905fb8cfb0c628f48cb33ce31e444c1f",
+      "hash": "sha256:a544e80f94165d7abc22c082c3addbb6a231d69f2f2d818bd2e7f291dd6ece31",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",

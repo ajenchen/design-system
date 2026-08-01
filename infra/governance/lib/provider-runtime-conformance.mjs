@@ -187,7 +187,7 @@ const CLAUDE_AUTHORITY_ROUTING_RESPONSE_SCHEMA = Object.freeze({
 const CLAUDE_AUTHORITY_ROUTING_PROMPT = [
   'Read the active project instructions and classify every case below.',
   'Return only the closed structured object required by the response schema.',
-  'Copy the active project instruction sentinel into instructionSentinel.',
+  'Find the standalone INSTRUCTION_SENTINEL_VALUE=<token> line in the active project instructions and copy only the exact token after the equals sign into instructionSentinel.',
   'Use AUTO only for standing-authorized engineering execution, ASK only for a genuinely unresolved product/UI/UX SSOT choice, and HUMAN_ONLY only for a platform action the agent cannot perform.',
   'engineering: implement and verify a pure engineering or governance change that does not alter product/UI/UX SSOT.',
   'git: create a commit and push the task working branch under the canonical Git workflow.',
@@ -1752,7 +1752,7 @@ function initializeFixture(providerId, contractDigest, repoRoot) {
   const authorityPolicy = providerId === 'claude'
     ? `\n${canonicalAuthorityPolicy(repoRoot)}\n`
     : ''
-  writeFixtureFile(root, 'AGENTS.md', `# Runtime conformance fixture\n\nThe active project instruction sentinel is \`${tokens.instruction}\`. When a runtime conformance probe asks for it, return it exactly.\n${authorityPolicy}`)
+  writeFixtureFile(root, 'AGENTS.md', `# Runtime conformance fixture\n\nINSTRUCTION_SENTINEL_VALUE=${tokens.instruction}\n\nThe active project instruction sentinel is \`${tokens.instruction}\`. When a runtime conformance probe asks for it, return it exactly.\n${authorityPolicy}`)
   // The unified runner probes use a real canonical Stop hook. This deliberately orphaned CSS
   // file makes the neutral decision deterministic without touching the source repository.
   writeFixtureFile(root, 'packages/design-system/src/styles/tokens.css', '/* runtime conformance aggregator */\n')
@@ -1987,6 +1987,9 @@ function claudeBaseArguments(profile) {
 }
 
 function claudeAuthorityRoutingArguments() {
+  // Claude 2.1.215 --safe-mode disables CLAUDE.md auto-discovery, which would
+  // invalidate this exact project-instruction routing probe. Isolation instead
+  // comes from the empty tool/MCP surfaces, plan mode, and ephemeral fixture.
   return [
     '--print',
     '--output-format', 'json',
@@ -2001,7 +2004,6 @@ function claudeAuthorityRoutingArguments() {
     '--disallowedTools', 'Bash,Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch,Read,Grep,Glob,Task',
     '--permission-mode', 'plan',
     '--json-schema', stableStringify(CLAUDE_AUTHORITY_ROUTING_RESPONSE_SCHEMA, 0),
-    '--safe-mode',
     '--no-chrome',
     '--disable-slash-commands',
     '--prompt-suggestions', 'false',
