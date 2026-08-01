@@ -30,9 +30,11 @@ canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描�
   - PR `https://github.com/ajenchen/design-system/pull/22`
 - Genesis worktree：`/tmp/ds-genesis.B3xxFi`
   - branch `agent/close-control-plane-genesis`
-  - **clean committed HEAD `830fcb8f`**（2026-08-01 11:0x Asia/Taipei，本輪由 Claude Code 收斂 dirty diff 後提交）
-  - six commits after old PR head `a3b4a86f6e17d237f94556a16c7d3266eadb1fb1`:
+  - **clean committed HEAD `a5e7be68`**（2026-08-01 Asia/Taipei，本輪由 Claude Code 收斂 dirty diff 後提交）
+  - nine commits after old PR head `a3b4a86f6e17d237f94556a16c7d3266eadb1fb1`:
     `58909462` → `d54586c9` → `c94257d6` → `b40a5447` → `bd228374` → `830fcb8f`
+    → `656941b7`(本檔 live snapshot) → `5031a0bc`(authority-routing fixture 綁定)
+    → `a5e7be68`(linked-worktree evidence root)
   - 先前的 dirty worktree **已完整保留並提交**，沒有任何 reset/checkout/clean。`830fcb8f` 內容：
     verifier 移除 per-change Ed25519 `issue`/`cosign` API、OWNER-comment bootstrap transition、
     `bootstrapCommentBody`，以及 `--issue/--private-key/--signer-key-id/--subject/--issued-at/
@@ -96,11 +98,37 @@ canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描�
 | Chromium／Playwright | **不可用** | `bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer: Permission denied (1100)`。所有 Playwright gate（`data-table-invariants`、`audit-consumer-a11y`、visual、storybook smoke）本機必紅 |
 | `mktemp -d` | **不可用** | macOS `mktemp -d` 走 `/var/folders/.../T/`（不理會 `TMPDIR`）→ `Operation not permitted`。`canonical-hook-behavioral` suite 因此必紅 |
 
-實測 `npm run test:governance-harnesses`（在 `830fcb8f`）= **10/11 suites 通過，exit 1**。唯二失敗
-`run-gate-meta-tests`（3 個 Playwright 相依的 gate meta-test：`test-audit-consumer-a11y`、
-`test-check-agents-bootstrap`、`test-data-table-invariants`，皆 `baseline run 應 PASS 卻 FAIL`）與
-`canonical-hook-behavioral`（`mktemp -d`），根因都在上表。**因此 all-Harness receipt 必須在非 sandbox host
-或 CI 產生**；在本 sandbox 內無法取得綠燈，也不得因此宣稱 source 有缺陷。
+實測 `npm run test:governance-harnesses`（在 `830fcb8f`）= **11 個 harness entry 中 6 個通過、5 個失敗，exit 1**。
+（**更正**：先前一版本檔誤記為「10/11 通過」。該數字來自只 grep stderr 的 `❌` 行，漏掉了以 JSON
+`"status": "failed"` 回報的 suite summary。正確做法是解析每個 suite summary 物件，不是掃 stderr。）
+
+逐項失敗與分類：
+
+| Harness entry | 失敗成員 | 分類 |
+|---|---|---|
+| `governance-script-remainder`(43 members) | `test-devmode-geometry-invariant`、`test-visual-audit-interaction` | 環境（Chromium） |
+| `run-gate-meta-tests` | `test-audit-consumer-a11y`、`test-check-agents-bootstrap`、`test-data-table-invariants` | 環境（Chromium） |
+| `governance-infra-remainder`(29 members) | `model-validation`、`staged-rollout` | **真缺陷，已修** |
+| `governance-package-remainder`(10 members) | `provider-adapter-generator`（2 例） | 環境（`mkdtemp /private/tmp`） |
+| `canonical-hook-behavioral` | `hooks/tests/run-all.sh` | 環境（`mktemp -d`） |
+
+兩個真缺陷已在本 branch 修掉，兩者都會讓 Genesis PR 的 CI 紅：
+
+1. `5031a0bc` — `validateDriverSpecificCommandEvidence` 會用 canonical source 重算 Claude
+   authority-routing probe 的 arguments 並要求 runtime evidence 完全綁定，但
+   `model-validation.test.mjs` 的 redacted certification fixture 對所有非 capability check 一律產生
+   placeholder `['<claude-authority-routing>']`（且 `environmentNames: []`），於是
+   `validateCertifications` 直接 throw。修法：export `prepareClaudeAuthorityRoutingProbe`，
+   讓 fixture 由 canonical source 推導同一條 exact command。此缺陷隨 authority-routing driver 一起進來
+   （`origin/main` 沒有 `claude-authority-routing`，`bd228374` 已有），**早於** `830fcb8f`。
+   修後 `model-validation` 18/18。
+2. `a5e7be68` — `staged-rollout.test.mjs` 兩處硬寫 `resolve(process.cwd(), '.git/governance-runtime/evidence')`；
+   linked worktree 的 `.git` 是檔案不是目錄，故 `ENOTDIR`。改為消費 canonical
+   `resolveGitRuntimeRoots`（走 `git rev-parse --absolute-git-dir`）。修後 76/76。
+   這一項在正常 clone 的 CI 不會發生，但它讓 harness 無法在本 repo 自己的 worktree 流程下跑完。
+
+其餘失敗全屬上表環境限制。**all-Harness receipt 仍必須在非 sandbox host 或 CI 產生**；
+在本 sandbox 內無法取得綠燈，也不得因此宣稱 source 有缺陷。
 
 ### Mandatory continuation order
 
