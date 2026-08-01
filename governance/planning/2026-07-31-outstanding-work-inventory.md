@@ -30,11 +30,16 @@ canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描�
   - PR `https://github.com/ajenchen/design-system/pull/22`
 - Genesis worktree：`/tmp/ds-genesis.B3xxFi`
   - branch `agent/close-control-plane-genesis`
-  - **clean committed HEAD `a5e7be68`**（2026-08-01 Asia/Taipei，本輪由 Claude Code 收斂 dirty diff 後提交）
-  - nine commits after old PR head `a3b4a86f6e17d237f94556a16c7d3266eadb1fb1`:
-    `58909462` → `d54586c9` → `c94257d6` → `b40a5447` → `bd228374` → `830fcb8f`
-    → `656941b7`(本檔 live snapshot) → `5031a0bc`(authority-routing fixture 綁定)
-    → `a5e7be68`(linked-worktree evidence root)
+  - **worktree 乾淨、無未提交變更**。exact tip 以
+    `git rev-parse agent/close-control-plane-genesis` 為準（本檔每次更新自己也會產生新 commit，
+    所以這裡不寫死 tip sha）。
+  - rebase base 固定為 old PR head `a3b4a86f6e17d237f94556a16c7d3266eadb1fb1`。其後的 commit 依序為：
+    `58909462` 關閉 control-plane Genesis → `d54586c9` 驗證 Claude authority routing →
+    `c94257d6` 要求 Claude authority routing → `b40a5447` runtime evidence 明確 public →
+    `bd228374` authority probe 改 stage-relative → `830fcb8f` 退場 per-change privileged ceremony →
+    `656941b7` 本檔 live snapshot → `5031a0bc` authority-routing fixture 綁定（真缺陷）→
+    `a5e7be68` linked-worktree evidence root（真缺陷）→ `5be08957` 更正 harness 數字 →
+    `9ff1505e` 記錄修後 all-Harness 複驗
   - 先前的 dirty worktree **已完整保留並提交**，沒有任何 reset/checkout/clean。`830fcb8f` 內容：
     verifier 移除 per-change Ed25519 `issue`/`cosign` API、OWNER-comment bootstrap transition、
     `bootstrapCommentBody`，以及 `--issue/--private-key/--signer-key-id/--subject/--issued-at/
