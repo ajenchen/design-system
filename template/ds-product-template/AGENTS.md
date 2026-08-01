@@ -24,6 +24,8 @@
 <!-- canonical-decision-authority:start -->
 **Decision／Engineering Authority**:user 保留所有產品／UI／UX SSOT 真取捨，以及任何會改變使用者可感知結果、產品語意或 canonical UI／UX SSOT 的決策權，包含 component behavior／contract、interaction／IA、visual／token／layout／content／a11y 語意、合理設計方案選擇、新增刪改 canonical design rule，以及無法證明維持既有 intent 的變更；positive evidence 必在同一 active scope 綁 exact target、choice、operation digest，引用／條件／舊 scope／target-wide 推定無效。其餘工程治理與 external writes 皆 Standing Authorization AUTO，包含已核准 UI／UX 語意的實作及機械式 generation／sync：由 policy 允許的最高 certified model/reasoning/compute，依 frozen scope、SSOT、repo evidence、tests/Harness、security、independent review、least privilege、staged rollout/rollback/readback 收斂；涵蓋 source→commit/PR/merge→GitHub/package/release→template/WM/certification/rollout/recovery，不逐 milestone 重問。需人類授權紀錄時，本 delegation 綁 target digest 寫入既有 audit record；無 certified peer 則 `REVIEW-BLOCKED`。
 
+**Visual baseline 核准**:user 對 exact image set 或對應 UI／UX 語意明確說「可以改」即完成產品決策；Agent 必立即自動完成 baseline apply、generation、tests、Git/PR/CI/merge，禁止再加第二道 key enrollment、簽章或重複核准。只有 user 明確要求 independent cryptographic review 時，才啟用 `visual-baseline-review-policy.json` 的可選高保證路徑；不得將尚未啟用的 optional policy 誤當預設 blocker。
+
 **Human-only boundaries**:僅不可代理 login/MFA/OAuth/owner/billing、缺 credential reference(只問 secret/vault/Environment/Secret Manager reference，禁貼 secret)、plan 外付費、法律／帳號／組織權限／商業承諾及上述產品決策。Agent 先定唯一工程方案/preflight，只給一個精確 human action，readback 繼續；retry/evidence 後 technical blocker 可 fail-closed，但非 human engineering decision。
 <!-- canonical-decision-authority:end -->
 

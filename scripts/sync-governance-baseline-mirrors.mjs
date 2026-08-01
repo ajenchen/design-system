@@ -1,16 +1,14 @@
 #!/usr/bin/env node
 import {
-  cpSync,
   existsSync,
   lstatSync,
   mkdirSync,
-  readFileSync,
-  readdirSync,
   readlinkSync,
   realpathSync,
   renameSync,
   rmSync,
   symlinkSync,
+  writeFileSync,
 } from 'node:fs'
 import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -18,6 +16,7 @@ import {
   assertControlPlaneGenesisPreservation,
   CONTROL_PLANE_GENESIS_RETAIN_STATE,
   loadControlPlaneGenesisTransition,
+  readControlPlaneGenesisBasePreservation,
   validateControlPlaneGenesisTransition,
 } from './lib/control-plane-genesis-transition.mjs'
 import { resolveVisualBaselinePath } from './lib/governance-visual-baselines.mjs'
@@ -60,26 +59,6 @@ function assertNoSymlinkAncestors(root, target, label) {
   }
 }
 
-function treeRecords(root) {
-  const records = []
-  const visit = (directory, prefix = '') => {
-    for (const name of readdirSync(directory).sort()) {
-      const absolute = resolve(directory, name)
-      const path = prefix ? `${prefix}/${name}` : name
-      const info = lstatSync(absolute)
-      if (info.isSymbolicLink()) fail(`retained tree contains a symbolic link:${path}`)
-      if (info.isDirectory()) visit(absolute, path)
-      else {
-        if (!info.isFile() || info.nlink !== 1) fail(`retained tree contains an unsupported or hard-linked entry:${path}`)
-        const mode = (info.mode & 0o111) === 0 ? '100644' : '100755'
-        records.push(`file:${path}:${mode}:${readFileSync(absolute).toString('base64')}`)
-      }
-    }
-  }
-  visit(root)
-  return records.sort()
-}
-
 function verifyRetainedMirror(root, descriptor, transition) {
   const source = resolveVisualBaselinePath({ repoRoot: root, collection: descriptor.collection })
   if (!existsSync(source)) fail(`canonical ${descriptor.collection} collection is missing`)
@@ -90,9 +69,25 @@ function verifyRetainedMirror(root, descriptor, transition) {
     transition,
     path: descriptor.destination,
   })
-  const destination = resolve(root, descriptor.destination)
-  if (JSON.stringify(treeRecords(source)) !== JSON.stringify(treeRecords(destination))) {
-    fail(`retained mirror differs from the provider-neutral ${descriptor.collection} authority:${descriptor.destination}`)
+}
+
+function materializeRetainedTree(root, destination, descriptor, transition) {
+  const preservation = readControlPlaneGenesisBasePreservation({
+    root,
+    transition,
+    path: descriptor.destination,
+  })
+  if (preservation.kind !== 'tree') fail(`retained compatibility output is not an authenticated tree:${descriptor.destination}`)
+  mkdirSync(destination, { recursive: true })
+  for (const leaf of preservation.leaves) {
+    const target = resolve(destination, leaf.relativePath)
+    if (!contained(destination, target)) fail(`retained tree leaf escapes destination:${leaf.relativePath}`)
+    assertNoSymlinkAncestors(destination, dirname(target), `retained tree leaf ${leaf.relativePath}`)
+    mkdirSync(dirname(target), { recursive: true })
+    writeFileSync(target, leaf.bytes, {
+      flag: 'wx',
+      mode: leaf.mode === '100755' ? 0o755 : 0o644,
+    })
   }
 }
 
@@ -115,11 +110,7 @@ function generateRetainedMirror(root, descriptor, transition) {
   const temporary = resolve(parent, `.${basename(destination)}.genesis-${suffix}`)
   const backup = resolve(parent, `.${basename(destination)}.previous-${suffix}`)
   if (existsSync(temporary) || existsSync(backup)) fail(`retained mirror temporary path collision:${descriptor.destination}`)
-  cpSync(source, temporary, {
-    recursive: true,
-    dereference: false,
-    preserveTimestamps: false,
-  })
+  materializeRetainedTree(root, temporary, descriptor, transition)
   let movedPrevious = false
   try {
     if (existsSync(destination)) {

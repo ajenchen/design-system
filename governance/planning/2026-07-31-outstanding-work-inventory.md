@@ -63,26 +63,16 @@ canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描�
 - Result：124 scenarios、12/12 hover interactions passed、0 render error、0 geometry violation。
   因命令明確使用 `--no-diff --no-a11y`，report 內 diff／a11y 的 0 代表**未執行**，不得寫成
   pixel regression 或 WCAG PASS。
-- 本輪已逐張檢視 11 張 Darwin runtime candidate；未見裁切、重疊、缺字或 hover action
-  消失。這是本機 Layer B inspection，不是授權 reviewer approval／independent certification。
-
-Canonical authority 是 `infra/governance/baseline/visual/curated/`，現有 113/124 PNG、extra=0，
-仍缺：
-
-1. `accountmenu-open-snapshot.png`
-2. `button-dismiss-hover-state.png`
-3. `datatable-nested-rows-expander-hover-state.png`
-4. `fileupload-remove-hover-state.png`
-5. `header-with-tabs-overflow-menu.png`
-6. `header-with-tabs-overflow-scroll.png`
-7. `header-with-tabs.png`
-8. `item-inline-action-hover-state.png`
-9. `sidebar-action-hover-state.png`
-10. `tag-dismiss-hover-state.png`
-11. `treeview-action-hover-state.png`
-
-另有 5 張既有 hover baseline 需以真實 interaction 重新確認。Darwin runtime PNG 不得直接複製
-成 canonical；正確 closure 見 §4。
+- Ubuntu authority workflow run `30671095099` artifact `8808941536`
+  (`sha256:c3c918cfd770901c4d18512cc3c67e489f3d1891baddc401da049a49c804f0ac`)
+  產生 124 張 PNG；report 唯一失敗類別是 11 張 missing baseline，其餘為 0 render
+  error、0 geometry violation、0 contrast/a11y violation、0 diff-budget breach。
+- User 於 2026-08-01 對該 exact 11-image set 明確核准。依 `AGENTS.md#自主執行-canonical`
+  直接把 Ubuntu PNG 收入 canonical；候選由已提交的 113 張開始並只 overlay 11 張，
+  因此 **create=11、unchanged=113、replace=0、delete=0**。
+- Canonical authority `infra/governance/baseline/visual/curated/` 現為 124/124 PNG、extra=0。
+  新 head 的 Ubuntu remote diff readback 尚待 PR check；本記錄不宣稱 independent
+  cryptographic review，而未啟用的 optional review policy 也不是預設 blocker。
 
 ### 2-C. Release / workflow
 
@@ -112,9 +102,8 @@ Canonical authority 是 `infra/governance/baseline/visual/curated/`，現有 113
 ## 3. 仍存在的本機／工程債（不是 external-only）
 
 | 項目 | Current debt |
-|---|---|
 | Color contrast | 719 fingerprints／5,108 nodes 已凍結；需另案逐 owner 修，不能把 baseline 說成 AA compliance。 |
-| Visual canonical coverage | Local capture 124/124 已完成，但 canonical 113/124；在 §4 的 Ubuntu + review authority closure 前，不能宣稱 visual regression complete。 |
+| Visual canonical coverage | Canonical source 已 124/124；只剩新 PR head 的 Ubuntu remote diff=0 readback，未通過前不宣稱 remote visual gate complete。 |
 | Aspirational wiring | 521 claims 中 chunks 33/40–43、約 120 adversarial 與約 50 條 secondary verification 尚未跑；`.claude/logs/aspirational-wiring-findings.json` 位於 non-authority 路徑，registry-based inventory 會漏。 |
 | i18n Route B | FilterPanel labels 是 Route A public prop，不等於 DS `useI18n()` consumer；基礎設施仍幾乎無元件消費，硬寫中文與 `i18n-allow` 仍需另案。 |
 | Code-quality escapes | `code-quality-allow`、`as any`／`as unknown as`、`eslint-disable` 尚無到期複查機制。 |
@@ -152,13 +141,12 @@ Canonical authority 是 `infra/governance/baseline/visual/curated/`，現有 113
      template mirror 與 `consumerctl apply-fanout`。
    - Source dead chain 已修；真實 stage/finalize/mirror/fanout execution 尚未發生。
 
-4. **Ubuntu visual canonical promotion**
-   - `.github/workflows/visual-regression.yml` 的 authority runner 是 `ubuntu-24.04`。
-   - 應由 workflow 產 artifact，人工核對 exact image set，再依 review authority 把 Ubuntu PNG
-     放入 `infra/governance/baseline/visual/curated/`，重跑至 diff errors=0、breaches=0。
-   - `infra/governance/visual-baseline-review-policy.json` 的 overall／human／managed broker 目前
-     均 `not-activated`，human allowed keys 為空；因此 `apply-reviewed` 仍 REVIEW-BLOCKED。
-   - 不得把 Darwin candidate、local inspection 或機械 12/12 hover 升格成 reviewed canonical。
+4. **Ubuntu visual canonical readback**
+   - `.github/workflows/visual-regression.yml` 的 authority runner 是 `ubuntu-24.04`。Exact Ubuntu
+     artifact 的 11 張缺口已經 user 核准並收入 canonical；本次 push 後必須讀回
+     新 head 的 diff errors=0、breaches=0，失敗則 agent 自動修復。
+   - `visual-baseline-review-policy.json` 維持 optional、`not-activated`；只有 user 明確
+     要求 independent cryptographic review 時才啟用，不得將它當成明確 UI 核准後的第二道 gate。
 
 5. **External assurance**
    - `infra/governance/external-activation-requirements.json` 的外部 requirements 仍未啟用，
@@ -176,9 +164,8 @@ Canonical authority 是 `infra/governance/baseline/visual/curated/`，現有 113
    hard gates 全綠後自主 squash merge，不引用舊快照或另等 user trigger。
 3. Merge 後以獨立 protected PR 關 Genesis transition。
 4. 啟用外部 identities／authorities／evidence，完成 required checks live reconciliation。
-5. 以 Ubuntu workflow 產生並授權 review visual canonical。
-6. 取得 signed release authorization，執行 stage → finalize → template mirror → consumer fanout。
-7. 完成獨立 capability certification、fleet rollout／rollback drill 與 72h soak 後，才可評估
+5. 取得 signed release authorization，執行 stage → finalize → template mirror → consumer fanout。
+6. 完成獨立 capability certification、fleet rollout／rollback drill 與 72h soak 後，才可評估
    promotion eligibility。
 
 ## 6. 流程約束

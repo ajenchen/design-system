@@ -34,7 +34,7 @@ benchmark:
 
 | 場景 | 改用 | 原因 |
 |------|------|------|
-| `primary-sidebar` 派桌面帳號入口 | `<SidebarFooter>` + UserFooter 慣例(`ItemAvatar` + ProfileCard hover) | 該 mode 帳號家在 sidebar 底,不在 chrome header(app-shell.spec.md 放置 SSOT) |
+| `primary-sidebar` 派桌面帳號入口 | `<SidebarFooter>` + UserFooter 慣例(整行開 `DropdownMenu` 帳號選單) | 該 mode 帳號家在 sidebar 底,不在 chrome header;自己的帳號入口不用 `ProfileCard`(app-shell.spec.md 放置 SSOT) |
 | 看「別人」的人員資訊 | `ProfileCard`(avatar hoverCard) | ProfileCard 預設動作(Chat / 通話)語義是聯絡某人;AccountMenu 是「自己」的入口 |
 | 一般動作選單(排序 / 匯出 / row actions) | raw `DropdownMenu` | AccountMenu 綁 identity 語義(avatar trigger + user Label),非通用選單 |
 | 帳號切換器(多帳號 switcher) | 自組 `children`(v1 未內建 switcher) | Default 集合是單帳號 navigation;switcher 是產品級擴充 |

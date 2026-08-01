@@ -14,6 +14,7 @@ export const ISSUER_ROLES = Object.freeze([
   'apply-authorizer',
   'completion-attestor',
   'release-tag-authorizer',
+  'visual-baseline-reviewer',
 ])
 
 const ROLE_SET = new Set(ISSUER_ROLES)

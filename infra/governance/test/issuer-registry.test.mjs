@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { generateKeyPairSync } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import {
   cosignSignedAttestation,
@@ -7,6 +8,7 @@ import {
   verifySignedAttestation,
 } from '../lib/attestation.mjs'
 import {
+  ISSUER_ROLES,
   issuerRegistryDigest,
   validateIssuerRegistry,
   validateIssuerRegistryLineage,
@@ -79,6 +81,19 @@ test('issuer registry is closed-shape and its digest is deterministic', () => {
   assert.equal(validateIssuerRegistry(active), true)
   assert.equal(issuerRegistryDigest(structuredClone(active)), issuerRegistryDigest(active))
   assert.throws(() => validateIssuerRegistry({ ...active, privateKey: 'forbidden' }), /invalid or open shape/)
+})
+
+test('runtime issuer roles stay byte-for-byte aligned with the canonical schema enum', () => {
+  const schema = JSON.parse(readFileSync(new URL('../schemas/issuer-registry.schema.json', import.meta.url), 'utf8'))
+  const schemaRoles = schema.properties.issuers.items.properties.roles.items.enum
+  assert.deepEqual(ISSUER_ROLES, schemaRoles)
+
+  const reviewer = issuer('visual-reviewer', ['visual-baseline-reviewer'])
+  assert.equal(validateIssuerRegistry(registry([reviewer.record])), true)
+  assert.throws(
+    () => validateIssuerRegistry(registry([{ ...reviewer.record, roles: ['unknown-reviewer'] }])),
+    /unknown role/,
+  )
 })
 
 test('issuer identities cannot alias the same key or use non-canonical SPKI bytes', () => {

@@ -256,6 +256,7 @@ Item-level default / hover / focused / selected / disabled **色彩**由 MenuIte
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `account-menu.spec.md`
 - `action-bar.spec.md`
 - `command.spec.md`
 - `file-viewer.spec.md`
