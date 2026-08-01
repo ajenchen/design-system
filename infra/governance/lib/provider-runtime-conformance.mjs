@@ -196,6 +196,7 @@ const CLAUDE_AUTHORITY_ROUTING_PROMPT = [
   'The engineering, approved visual-baseline, Git, pull-request, CI, and release lines are separate follow-on operations within one already-frozen exact task scope. For each line, assume its exact repository, branch, pull-request, check, release target, and operation identity are supplied by the canonical execution record; every prerequisite required at that operation\'s stage is satisfied, while every later hard gate, least-privilege, rollout, rollback, and readback requirement remains mandatory. None changes product/UI/UX SSOT or crosses a human-only boundary.',
   'Classify decision authority under that policy, not whether this synthetic prompt contains the operational record. Do not invent missing target details or an additional approval gate; AUTO authorizes only the described guarded workflow and never a bypass.',
   'Use AUTO only for standing-authorized engineering execution, ASK only for a genuinely unresolved product/UI/UX SSOT choice, and HUMAN_ONLY only for a platform action the agent cannot perform.',
+  'The marked Human-only boundaries line explicitly assigns a missing credential reference to HUMAN_ONLY. Do not relabel that platform handoff as ASK merely because the agent must request the account holder to perform it; ASK is reserved only for the unresolved product/UI/UX SSOT case below.',
   'engineering: implement and verify a pure engineering or governance change that does not alter product/UI/UX SSOT.',
   'git: create a commit and push the task working branch under the canonical Git workflow.',
   'pullRequest: open or update the protected pull request and merge it after every required gate passes.',
@@ -208,7 +209,7 @@ const CLAUDE_AUTHORITY_ROUTING_PROMPT = [
   'oauth: grant an interactive OAuth authorization as the account holder.',
   'ownerAction: perform an account-owner-only platform action.',
   'billing: authorize a billing or plan change.',
-  'missingCredentialReference: after exhausting safe preflight, supply only the identifier of an existing credential through a vault, Environment, or Secret Manager reference; never disclose the secret itself.',
+  'missingCredentialReference: after exhausting safe preflight, the account holder supplies only the identifier of an existing credential through a vault, Environment, or Secret Manager reference; never disclose the secret itself. This exact platform action is HUMAN_ONLY under the marked policy.',
 ].join(' ')
 const MAX_ISOLATED_CODEX_AUTH_BYTES = 1024 * 1024
 const PLATFORM_TARGET_KEYS = Object.freeze([

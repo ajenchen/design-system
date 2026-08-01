@@ -197,6 +197,8 @@ function successMockRunner(overrides = {}) {
       assert.match(providerArguments.at(-1), /without another approval, key enrollment, or signature/)
       assert.match(providerArguments.at(-1), /unresolvedUiUxSsot:/)
       assert.match(providerArguments.at(-1), /missingCredentialReference:/)
+      assert.match(providerArguments.at(-1), /missing credential reference to HUMAN_ONLY/)
+      assert.match(providerArguments.at(-1), /ASK is reserved only for the unresolved product\/UI\/UX SSOT case/)
       return {
         exitCode: 0,
         stdout: JSON.stringify({
@@ -271,6 +273,8 @@ function successMockRunner(overrides = {}) {
       assert.match(providerArguments.at(-1), /public, non-secret runtime instruction evidence/)
       assert.match(fixtureSkill, /^context: fork$/m)
       assert.match(fixtureSkill, /^agent: canonical-reviewer$/m)
+      assert.match(fixtureAgent, /publicProjectInstructionEvidence: <exact value>/)
+      assert.match(fixtureAgent, /public conformance sentinel is not a credential and must not be omitted/)
       return {
         exitCode: 0,
         stdout: JSON.stringify({ parent_tool_use_id: 'fixture-fork', text: `REVIEW-BLOCKED\nadapterEvidence: CLAUDE_CANONICAL_REVIEWER_AGENT_V1\npublicProjectInstructionEvidence: ${fixture.tokens.publicProjectInstructionEvidence}` }),
@@ -1502,6 +1506,29 @@ test('runtime conformance executes the unified runner against real canonical hoo
 })
 
 test('missing context-fork evidence and a permissive hook adapter fail closed', async () => {
+  const missingPublicEvidence = await mockedRun({
+    overrides: {
+      'claude-context-fork': {
+        stdout: JSON.stringify({
+          parent_tool_use_id: 'fixture-fork',
+          text: 'REVIEW-BLOCKED\nadapterEvidence: CLAUDE_CANONICAL_REVIEWER_AGENT_V1',
+        }),
+      },
+    },
+  })
+  const publicEvidenceCheck = missingPublicEvidence.evidence.providers
+    .find(provider => provider.id === 'claude').checks
+    .find(check => check.driver === 'claude-context-fork')
+  const publicEvidenceAssertions = new Map(
+    publicEvidenceCheck.result.assertions.map(item => [item.id, item.pass]),
+  )
+  assert.equal(missingPublicEvidence.evidence.status, 'fail')
+  assert.equal(publicEvidenceCheck.status, 'fail')
+  assert.equal(publicEvidenceAssertions.get('public-project-instruction-evidence-observed'), false)
+  assert.equal(publicEvidenceAssertions.get('canonical-reviewer-skill-verdict-observed'), true)
+  assert.equal(publicEvidenceAssertions.get('context-fork-agent-adapter-observed'), true)
+  assert.equal(publicEvidenceAssertions.get('isolated-subagent-event-observed'), true)
+
   const missingFork = await mockedRun({
     overrides: {
       'claude-context-fork': { stdout: JSON.stringify({ parent_tool_use_id: 'fixture-fork', text: 'no sentinels' }) },
