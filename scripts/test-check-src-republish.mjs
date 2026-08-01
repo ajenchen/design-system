@@ -9,7 +9,12 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { runRepublishGate } from './check-src-republish.mjs'
+import {
+  publishedVersionFromRegistry,
+  releaseDistTag,
+  runRepublishGate,
+  selectPublishedTagCommit,
+} from './check-src-republish.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const CALLER_ROOT = execFileSync('git', ['rev-parse', '--show-toplevel'], {
@@ -69,6 +74,44 @@ const packageJson = (version) => `${JSON.stringify({
 
 let ok = true
 try {
+  const registryRequests = []
+  const registryFetch = async (url) => {
+    registryRequests.push(url)
+    const version = url.endsWith('/beta') ? '1.2.3-beta.103' : '1.2.3'
+    return new Response(JSON.stringify({ name: '@qijenchen/design-system', version }), { status: 200 })
+  }
+  const betaBaseline = await publishedVersionFromRegistry({ releaseVersion: '1.2.3-beta.104', fetcher: registryFetch })
+  const stableBaseline = await publishedVersionFromRegistry({ releaseVersion: '1.2.4', fetcher: registryFetch })
+  if (
+    releaseDistTag('1.2.3-beta.104') !== 'beta'
+      || releaseDistTag('1.2.4') !== 'latest'
+      || betaBaseline !== '1.2.3-beta.103'
+      || stableBaseline !== '1.2.3'
+      || !registryRequests[0].endsWith('/beta')
+      || !registryRequests[1].endsWith('/latest')
+  ) {
+    console.error('✗ registry baseline did not follow the current release channel')
+    ok = false
+  } else {
+    console.log('✓ registry baseline follows beta/latest release channels')
+  }
+
+  const lightweightSha = '1'.repeat(40)
+  const tagObjectSha = '2'.repeat(40)
+  const annotatedCommitSha = '3'.repeat(40)
+  if (
+    selectPublishedTagCommit(`${lightweightSha}\trefs/tags/v1.2.3\n`, 'v1.2.3') !== lightweightSha
+      || selectPublishedTagCommit(
+        `${tagObjectSha}\trefs/tags/v1.2.3\n${annotatedCommitSha}\trefs/tags/v1.2.3^{}\n`,
+        'v1.2.3',
+      ) !== annotatedCommitSha
+  ) {
+    console.error('✗ remote tag resolver did not accept exact lightweight and annotated forms')
+    ok = false
+  } else {
+    console.log('✓ remote tag resolver accepts exact lightweight and annotated forms')
+  }
+
   mkdirSync(dirname(fixtureSource), { recursive: true })
   writeFileSync(fixturePackage, packageJson('1.2.3'))
   writeFileSync(fixtureSource, 'export const baseline = true\n')

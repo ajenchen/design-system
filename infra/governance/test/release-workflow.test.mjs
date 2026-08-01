@@ -7,6 +7,7 @@ import Ajv2020 from 'ajv/dist/2020.js'
 import {
   buildFiveStepStatus,
   buildConsumerDispatch,
+  buildBranchPushArgs,
   buildPublishedTemplatePullRequestCreateArgs,
   buildPublishMutationPlan,
   buildPullRequestLookupArgs,
@@ -143,10 +144,15 @@ test('publish run selection ignores workflow_dispatch and stale-head failures', 
 })
 
 test('orchestrator creates a missing branch PR automatically', () => {
+  assert.deepEqual(buildBranchPushArgs(workflow, 'agent/release-ssot'), [
+    'push', '--set-upstream', 'origin', 'HEAD:refs/heads/agent/release-ssot',
+  ])
   assert.deepEqual(buildPullRequestCreateArgs(workflow, 'agent/release-ssot'), [
     'pr', 'create', '--repo', 'ajenchen/design-system', '--base', 'main', '--head', 'agent/release-ssot', '--fill',
   ])
   assert.throws(() => buildPullRequestCreateArgs(workflow, 'main'), /working branch/)
+  assert.throws(() => buildBranchPushArgs(workflow, 'main'), /working branch/)
+  assert.throws(() => buildBranchPushArgs(workflow, '--force'), /invalid release branch/)
   const lookup = buildPullRequestLookupArgs('ajenchen/design-system', 'agent/release-ssot')
   assert.deepEqual(lookup.allStates.slice(0, 8), [
     'pr', 'list', '--repo', 'ajenchen/design-system', '--state', 'all', '--head', 'agent/release-ssot',
@@ -195,6 +201,7 @@ test('public commands and cross-agent instructions expose only the canonical rel
   assert.match(orchestrator, /maxBuffer:\s*16 \* 1024 \* 1024/, 'long-running gh watch output must not exhaust the default child-process buffer')
   assert.match(orchestrator, /no \(\?:required \)\?checks reported/i, 'a newly created PR without attached checks must remain pending')
   assert.match(orchestrator, /requiredChecks\.length === 0/, 'release:auto must retry while GitHub attaches required checks')
+  assert.match(orchestrator, /buildBranchPushArgs/, 'release:auto must publish the exact local branch before creating or advancing its PR')
   for (const retired of ['release:preflight', 'release:stage-recover', 'release:approve', 'release:promote', 'release:reject-stage', 'release:finalize-verify']) {
     assert.equal(retired in scripts, false, `${retired} remains a public release path`)
   }

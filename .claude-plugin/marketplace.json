@@ -6,7 +6,7 @@
     "name": "qijenchen"
   },
   "metadata": {
-    "version": "0.1.0-beta.103",
+    "version": "0.1.0-beta.104",
     "pluginRoot": "."
   },
   "plugins": [
@@ -14,7 +14,7 @@
       "name": "design-system",
       "source": "./",
       "description": "Generated authority/DS-author Claude Code skills and full-corpus hook-feedback adapter for authority-only endpoint assignment. Its hook guard no-ops in non-authority targets, but plugin discovery remains endpoint-wide; products must not receive this profile and instead use their authenticated package snapshot, immutable lock, generated adapters, and protected provider-neutral hard gates.",
-      "version": "0.1.0-beta.103",
+      "version": "0.1.0-beta.104",
       "author": {
         "name": "qijenchen"
       },

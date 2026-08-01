@@ -366,6 +366,12 @@ export function buildPullRequestCreateArgs(workflow, branch) {
   ]
 }
 
+export function buildBranchPushArgs(workflow, branch) {
+  invariant(branch && branch !== workflow.automation.defaultBranch, 'a working branch is required to push a release PR')
+  invariant(/^(?![-/])(?!.*(?:\.\.|\/\/|@\{|\.lock(?:\/|$)))[A-Za-z0-9._/-]+(?<![/.])$/.test(branch), `invalid release branch:${branch}`)
+  return ['push', '--set-upstream', 'origin', `HEAD:refs/heads/${branch}`]
+}
+
 export function buildPublishMutationPlan(workflow, { tag, protectedMainSha, existingTagSha = null }) {
   validateReleaseWorkflow(workflow)
   invariant(/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(tag), `invalid exact release tag: ${tag}`)
@@ -399,7 +405,12 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
 
     if (incomplete.id === 'pr-checks') {
       if (!observation.pullRequest) {
+        run('git', buildBranchPushArgs(workflow, observation.branch))
         gh(buildPullRequestCreateArgs(workflow, observation.branch))
+        continue
+      }
+      if (observation.pullRequest.headRefOid !== observation.headSha) {
+        run('git', buildBranchPushArgs(workflow, observation.branch))
         continue
       }
       invariant(incomplete.status !== 'failed', `PR #${observation.pullRequest.number} has failed checks; remediate the same PR and rerun release:auto`)
