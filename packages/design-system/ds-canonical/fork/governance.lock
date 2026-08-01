@@ -7,7 +7,7 @@
     {
       "schemaVersion": 1,
       "file": "AGENTS.md",
-      "sha256": "135c22e8cb7a40f2ffae268ada1833793d7adcfe7edeb0cbbeacf90bdb106655",
+      "sha256": "2b9eb1a4fbca7d432c3b68c3b2fd73090ed9a95f41da960584556ac030b599e6",
       "source": "common instruction compatibility alias",
       "classification": null,
       "destination": null
@@ -271,7 +271,7 @@
     {
       "schemaVersion": 1,
       "file": "common/instruction.md",
-      "sha256": "135c22e8cb7a40f2ffae268ada1833793d7adcfe7edeb0cbbeacf90bdb106655",
+      "sha256": "2b9eb1a4fbca7d432c3b68c3b2fd73090ed9a95f41da960584556ac030b599e6",
       "source": "scripts/fork-role-sources/AGENTS.product.md + AGENTS.md#canonical-decision-authority",
       "classification": null,
       "destination": null

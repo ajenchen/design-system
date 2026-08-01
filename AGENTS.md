@@ -181,11 +181,11 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 **SSOT auto-sync invariant**:跨 file 數字禁 hardcode 多處;以 `scripts/sync-governance-counters.mjs` 機械對齊。
 
 <!-- canonical-decision-authority:start -->
-**Decision／Engineering Authority**:user 保留所有產品／UI／UX SSOT 真取捨，以及任何會改變使用者可感知結果、產品語意或 canonical UI／UX SSOT 的決策權，包含 component behavior／contract、interaction／IA、visual／token／layout／content／a11y 語意、合理設計方案選擇、新增刪改 canonical design rule，以及無法證明維持既有 intent 的變更；positive evidence 必在同一 active scope 綁 exact target、choice、operation digest，引用／條件／舊 scope／target-wide 推定無效。其餘工程治理與 external writes 皆 Standing Authorization AUTO，包含已核准 UI／UX 語意的實作及機械式 generation／sync：由 policy 允許的最高 certified model/reasoning/compute，依 frozen scope、SSOT、repo evidence、tests/Harness、security、independent review、least privilege、staged rollout/rollback/readback 收斂；涵蓋 source→commit/PR/merge→GitHub/package/release→template/WM/certification/rollout/recovery，不逐 milestone 重問。需人類授權紀錄時，本 delegation 綁 target digest 寫入既有 audit record；無 certified peer 則 `REVIEW-BLOCKED`。
+**Decision／Engineering Authority**:user 只拍板產品／UI／UX SSOT 真取捨及可感知／產品語意變更（behavior/interaction/IA/visual/token/layout/content/a11y/canonical rules）；核准須同 scope 綁 exact target/choice/operation digest，引用/條件/舊 scope/跨 target 無效。其餘工程/external writes 皆 Standing Authorization AUTO，含已核准 UI／UX 實作/機械 generation/sync 與 source→commit/PR/merge→GitHub/package/release→template/WM/certification/rollout/recovery；最高 certified model/reasoning/compute 依 frozen scope、SSOT、tests/Harness、security、independent review、least privilege、staged rollout/rollback/readback 收斂，不逐 milestone 重問。需 human record 時將 target digest 寫入既有 audit；無 certified peer=`REVIEW-BLOCKED`。
 
-**Visual baseline 核准**:user 對 exact image set 或對應 UI／UX 語意明確說「可以改」即完成產品決策；Agent 必立即自動完成 baseline apply、generation、tests、Git/PR/CI/merge，禁止再加第二道 key enrollment、簽章或重複核准。只有 user 明確要求 independent cryptographic review 時，才啟用 `visual-baseline-review-policy.json` 的可選高保證路徑；不得將尚未啟用的 optional policy 誤當預設 blocker。
+**Visual baseline**:user 對 exact image set／UI／UX 語意說「可以改」即拍板；Agent 自動 apply/generate/test/commit/PR/CI/merge，禁再核准/key enrollment/簽章。僅 user 明確要求 independent cryptographic review 才啟用 `visual-baseline-review-policy.json`，否則不阻擋。
 
-**Human-only boundaries**:僅不可代理 login/MFA/OAuth/owner/billing、缺 credential reference(只問 secret/vault/Environment/Secret Manager reference，禁貼 secret)、plan 外付費、法律／帳號／組織權限／商業承諾及上述產品決策。Agent 先定唯一工程方案/preflight，只給一個精確 human action，readback 繼續；retry/evidence 後 technical blocker 可 fail-closed，但非 human engineering decision。
+**Human-only boundaries**:僅 login/MFA/OAuth/owner/billing、缺 credential reference（只問 vault/Environment/Secret Manager reference，禁 secret）、plan 外付費、法律/帳號/組織權限/商業承諾及上述產品決策。Agent 完成唯一方案/preflight，只問一個 exact action，readback 後續跑；technical failure fail-closed，非 human decision。
 <!-- canonical-decision-authority:end -->
 
 # 遇不確定時的協議
