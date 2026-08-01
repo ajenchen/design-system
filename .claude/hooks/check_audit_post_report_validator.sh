@@ -33,7 +33,7 @@ source "$HOOK_DIR/lib/_provider_paths.sh" 2>/dev/null || {
 set -uo pipefail
 
 governance_hook_load_input
-governance_hook_require_commands grep node sort wc tr awk
+governance_hook_require_commands grep jq node sort wc tr awk
 TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""') \
   || governance_hook_integrity_fail 'audit validator tool name could not be decoded'
 FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""') \
@@ -90,6 +90,27 @@ elif [ "$REVIEW_NOT_REQUIRED" -eq 1 ]; then
   REVIEW_MODE=not-required
 else
   REVIEW_MODE=unspecified
+fi
+
+# Report prose is a receipt, never waiver authority. The only valid waiver is
+# the exact one-run selection frozen in the current immutable manifest. Reusing
+# the canonical verifier also closes pointer digest, current HEAD/tree/index,
+# provider binding, evidence-tree, and one-provider coverage in one readback.
+if [ "$REVIEW_MODE" = waived ]; then
+  WAIVER_PROOF=""
+  if [ -f "$PROJECT_DIR/scripts/verify-deep-audit-coverage.mjs" ]; then
+    WAIVER_PROOF=$(node "$PROJECT_DIR/scripts/verify-deep-audit-coverage.mjs" \
+      --repo-root "$PROJECT_DIR" --json 2>/dev/null || true)
+  fi
+  if ! printf '%s' "$WAIVER_PROOF" | jq -e '
+    .evidenceKind == "deep-audit-coverage-verification"
+    and .secondOpinion == "waived-by-user"
+    and (.providers.self | type == "string" and length > 0)
+    and .providers.peer == null
+  ' >/dev/null 2>&1; then
+    WARNINGS="${WARNINGS}\n  🔴 [R] Report 文字不是 second-opinion waiver authority：目前 active immutable run 無可驗證的 exact user waiver／current binding／single-provider coverage。"
+    CRITICAL_FAIL=1
+  fi
 fi
 
 if [ "$REVIEW_MODE" = required ]; then

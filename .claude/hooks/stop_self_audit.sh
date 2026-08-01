@@ -64,20 +64,31 @@ PEER_DISCOVERY_MARKERS_JSON="${GOVERNANCE_PEER_DISCOVERY_MARKERS_JSON:-[]}"
 INSTRUCTION_ENTRY="${GOVERNANCE_INSTRUCTION_ENTRY:-AGENTS.md}"
 SHARED_INSTRUCTION_ENTRY="${GOVERNANCE_SHARED_INSTRUCTION_ENTRY:-AGENTS.md}"
 
-if ! printf '%s' "$SELF_PROVIDER" | grep -qE '^[a-z][a-z0-9-]*$' \
-  || ! printf '%s' "$PEER_PROVIDER" | grep -qE '^[a-z][a-z0-9-]*$' \
-  || ! printf '%s' "$PEER_CLI" | grep -qE '^[a-z][a-z0-9-]*$' \
-  || ! printf '%s' "$PEER_REPLY_PREFIX" | grep -qE '^[a-z][a-z0-9-]*-reply$'; then
-  governance_hook_integrity_fail 'self-audit registry-resolved self/peer runtime context is missing or invalid'
+if ! printf '%s' "$SELF_PROVIDER" | grep -qE '^[a-z][a-z0-9-]*$'; then
+  governance_hook_integrity_fail 'self-audit registry-resolved self runtime context is missing or invalid'
+fi
+
+PEER_CONTEXT_PRESENT=0
+if [ -n "$PEER_PROVIDER$PEER_CLI$PEER_LOCAL_EXECUTABLE$PEER_REPLY_PREFIX" ] \
+  || [ "$PEER_DISCOVERY_MARKERS_JSON" != '[]' ]; then
+  PEER_CONTEXT_PRESENT=1
+  if ! printf '%s' "$PEER_PROVIDER" | grep -qE '^[a-z][a-z0-9-]*$' \
+    || ! printf '%s' "$PEER_CLI" | grep -qE '^[a-z][a-z0-9-]*$' \
+    || ! printf '%s' "$PEER_REPLY_PREFIX" | grep -qE '^[a-z][a-z0-9-]*-reply$'; then
+    governance_hook_integrity_fail 'self-audit registry-resolved peer runtime context is partial or invalid'
+  fi
 fi
 
 json_array_to_ere() {
   node -- "$HOOK_DIR/lib/provider-marker-regex.mjs" discovery "$1" 2>/dev/null
 }
 
-PEER_DISCOVERY_RE=$(json_array_to_ere "$PEER_DISCOVERY_MARKERS_JSON") || {
-  governance_hook_integrity_fail 'self-audit registry-resolved peer discovery metadata is missing or invalid'
-}
+PEER_DISCOVERY_RE=""
+if [ "$PEER_CONTEXT_PRESENT" = "1" ]; then
+  PEER_DISCOVERY_RE=$(json_array_to_ere "$PEER_DISCOVERY_MARKERS_JSON") || {
+    governance_hook_integrity_fail 'self-audit registry-resolved peer discovery metadata is missing or invalid'
+  }
+fi
 
 WARNINGS=""
 
@@ -188,8 +199,7 @@ fi
 #   verify-deep-audit-coverage.mjs = 機械閘;宣告完成 + ledger 有缺口 → BLOCK。
 run_deep_audit_coverage_verify() {
   node scripts/verify-deep-audit-coverage.mjs \
-    --self-provider "$SELF_PROVIDER" \
-    --peer-provider "$PEER_PROVIDER"
+    --self-provider "$SELF_PROVIDER"
 }
 if [ -n "$LAST_ASSISTANT" ] && [ -f scripts/verify-deep-audit-coverage.mjs ]; then
   DEEPAUDIT_CLAIM_RE='(deep.?audit.{0,10}(完成|完整|done)|稽核.{0,8}(完整完美|全部完成|都.?跑完)|91.{0,6}dim.{0,8}(都|全).{0,4}(跑|過|完|有證據)|Phase A.{0,6}完成)'
@@ -197,6 +207,7 @@ if [ -n "$LAST_ASSISTANT" ] && [ -f scripts/verify-deep-audit-coverage.mjs ]; th
   if grep -qE "$DEEPAUDIT_CLAIM_RE" <<< "$LAST_ASSISTANT" \
     && ! grep -qE "$DEEPAUDIT_NEG_RE" <<< "$LAST_ASSISTANT"; then
     if ! run_deep_audit_coverage_verify >/dev/null 2>&1; then
+      WARNINGS="${WARNINGS}\n  • Deep-audit completion claim rejected:the active immutable run's provider set, 91 dimensions, or component evidence is incomplete."
       CRITICAL_DEEPAUDIT_COVERAGE=1
     fi
   fi
@@ -254,7 +265,7 @@ done
 #   (c) Read against peer-cited code path(`packages/design-system/src/...`)
 #   (d) Explicit retract phrase(撤回 / 未採納 / 不採用 / skip peer)
 # 任一 missing → CRITICAL 通知;同 Mechanism 1 升 BLOCKER 阻 turn 結束。
-if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "$LAST_USER_LINE" -gt 0 ]; then
+if [ "$PEER_CONTEXT_PRESENT" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "$LAST_USER_LINE" -gt 0 ]; then
   THIS_TURN_FULL=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null)
   PEER_REPLY_READ=$(grep -cE "${PEER_REPLY_PREFIX}-[a-zA-Z0-9_-]+\\.md" <<< "$THIS_TURN_FULL" 2>/dev/null)
   PEER_REPLY_READ=${PEER_REPLY_READ:-0}
@@ -451,7 +462,7 @@ fi
 # ── Mechanism 5: Peer transport discovery gap(2026-05-17 user-authorized)──
 # Registry 宣告 peer 的 local/global discovery markers。本 mechanism 偵測:本 turn 含 active peer
 # collaboration 意圖 AND 無任一 discovery marker trace AND 無撤回 → BLOCKER。
-if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
+if [ "$PEER_CONTEXT_PRESENT" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
   THIS_TURN_RAW=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null)
   # Scope to assistant prose so commit messages, tool inputs, and historical citations do not
   # trigger the gate. Active intent requires an action verb adjacent to the resolved peer id.
@@ -679,7 +690,7 @@ if [ "${CRITICAL_DEEPAUDIT_COVERAGE:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; th
     COVERAGE_OUTPUT=$(run_deep_audit_coverage_verify 2>/dev/null || true)
     GAPLINE=$(awk '/個 dim-證據缺口/ && !found { print; found=1 }' <<< "$COVERAGE_OUTPUT")
     REASON=$(printf '%s' \
-      "🚨 DEEP-AUDIT-COVERAGE BLOCKER(M7c,2026-07-12 user-authorized「不抽樣不偷懶…現在和未來可以確保嗎」):你宣告 deep audit 完成,但 neutral evidence verifier 未通過 — ${GAPLINE:-91 dim × ${SELF_PROVIDER}+${PEER_PROVIDER} 雙軌未全有證據}。禁宣稱 done。跑 node scripts/verify-deep-audit-coverage.mjs --self-provider ${SELF_PROVIDER} --peer-provider ${PEER_PROVIDER} 看缺哪些；填完 Git-owned governance-runtime/evidence/deep-audit 內的 judgment / deterministic / hook-residue / ci-enforced / component-a1b 證據才可宣稱；OR 明寫『核心做完,dim 覆蓋待補』。否則 turn 不結束。" \
+      "🚨 DEEP-AUDIT-COVERAGE BLOCKER(M7c,2026-07-12 user-authorized「不抽樣不偷懶…現在和未來可以確保嗎」):你宣告 deep audit 完成,但 neutral evidence verifier 未通過 — ${GAPLINE:-immutable run 的 91 dim / component 證據未閉合}。禁宣稱 done。跑 node scripts/verify-deep-audit-coverage.mjs --self-provider ${SELF_PROVIDER} 看缺哪些；provider set 與本次 second-opinion disposition 只由 active immutable manifest 決定。填完 Git-owned governance-runtime/evidence/deep-audit 內的 judgment / deterministic / hook-residue / ci-enforced / component-a1b 證據才可宣稱；OR 明寫『核心做完,dim 覆蓋待補』。否則 turn 不結束。" \
       "本機制起因:本 session AI 漏跑 91 dim 裡 deterministic 24 + judgment 26 + hook 39 + CI 2 四層,只做 claim-vs-code + 反應式補,user 憤怒。觸發器 = 宣告 deep audit 完成本身。")
     emit_governance_block "$REASON"
   fi

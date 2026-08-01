@@ -9,11 +9,13 @@
 // 3 層檢查(由淺到深):
 //   L1 mirror-run health     — gh run:mirror workflow 最近一次 conclusion 必 success(免密碼,最便宜)
 //   L2 source→published 同步  — published repo .storybook/main.ts 必等於本地 template(drift = mirror 沒送達)
-//   L3 live-deploy render(可選)— 給 NETLIFY_PREVIEW_PASSWORD 才跑:playwright 帶密碼 render 部署故事,斷言非空白
+//   L3 live-deploy render(可選)— 支援 template Edge Function Basic Auth 與既有 Netlify
+//      dashboard password protection，playwright 通過驗證後逐故事斷言非空白
 //
 // 用法:
 //   node scripts/verify-published-deploy.mjs                    # L1+L2(CI / audit 預設)
-//   NETLIFY_PREVIEW_PASSWORD=xxx node scripts/verify-published-deploy.mjs --live   # 加 L3 真 render
+//   NETLIFY_LIVE_BASIC_AUTH=user:password node scripts/verify-published-deploy.mjs --live
+//   NETLIFY_PREVIEW_PASSWORD=xxx node scripts/verify-published-deploy.mjs --live # legacy dashboard gate
 
 import { execSync } from 'node:child_process'
 import { readFileSync, existsSync } from 'node:fs'
@@ -55,17 +57,28 @@ try {
 
 // ── L3 live-deploy render(可選,需密碼)──────────────────────────────────
 if (WANT_LIVE) {
-  const pw = process.env.NETLIFY_PREVIEW_PASSWORD
-  if (!pw) { fail('L3 --live 需設 NETLIFY_PREVIEW_PASSWORD env(Netlify Basic Password)'); }
+  const basicAuth = process.env.NETLIFY_LIVE_BASIC_AUTH || ''
+  const dashboardPassword = process.env.NETLIFY_PREVIEW_PASSWORD || ''
+  const basicMatch = /^([^:\s]+):([^\s]+)$/.exec(basicAuth)
+  if (!basicMatch && !dashboardPassword) {
+    fail('L3 --live 需設 NETLIFY_LIVE_BASIC_AUTH=user:password(Edge Basic Auth)或 NETLIFY_PREVIEW_PASSWORD(legacy dashboard gate)')
+  }
+  else if (basicAuth && !basicMatch) fail('L3 NETLIFY_LIVE_BASIC_AUTH 必須是非空白 user:password')
   else {
     try {
       const { chromium } = await import('playwright')
       const browser = await chromium.launch()
-      const ctx = await browser.newContext()
+      const ctx = await browser.newContext(basicMatch ? {
+        httpCredentials: { username: basicMatch[1], password: basicMatch[2] },
+      } : {})
       const login = await ctx.newPage()
       await login.goto(SITE + '/', { waitUntil: 'domcontentloaded' })
       const input = await login.$('input[name="password"]')
-      if (input) { await input.fill(pw); await login.keyboard.press('Enter'); await login.waitForLoadState('networkidle').catch(() => {}) }
+      if (input && dashboardPassword) {
+        await input.fill(dashboardPassword)
+        await login.keyboard.press('Enter')
+        await login.waitForLoadState('networkidle').catch(() => {})
+      }
       // 讀部署 index 取所有故事
       const idxRaw = await (await ctx.request.get(SITE + '/index.json')).text()
       const entries = JSON.parse(idxRaw).entries || {}

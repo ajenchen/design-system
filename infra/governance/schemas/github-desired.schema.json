@@ -27,7 +27,6 @@
     "managedEnvironmentNames": {
       "const": [
         "npm-release",
-        "governance-check-verdict",
         "governance-upgrade",
         "governance-external-ledger"
       ]
@@ -278,7 +277,10 @@
         "workflow": {"const": ".github/workflows/audit.yml"},
         "requiredEvents": {"const": ["pull_request"]}
       },
-      "not": {"required": ["baseTrusted"]}
+      "not": {
+        "required": ["baseTrusted"],
+        "properties": {"baseTrusted": {"type": "boolean"}}
+      }
     },
     "productConsumerCheckIdentity": {
       "type": "object",

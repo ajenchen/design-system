@@ -41,7 +41,6 @@
   },
   "managedEnvironmentNames": [
     "npm-release",
-    "governance-check-verdict",
     "governance-upgrade",
     "governance-external-ledger"
   ],

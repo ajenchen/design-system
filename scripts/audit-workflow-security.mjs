@@ -842,135 +842,38 @@ export function auditWorkflowSources(sources, {
     || /secrets\.[\s\S]{0,300}gh release download/.test(publishedMirrorJob)
   ) add(publishedMirrorFile, 'WF-MIRROR-CREDENTIAL', 'mirror may expose the existing cross-repository token only after all release verification')
 
-  const anchorFiles = [
-    '.github/workflows/governance-anchor.yml',
-    'template/ds-product-template/.github/workflows/governance-anchor.yml',
-  ]
-  for (const anchorFile of anchorFiles) {
-    const anchor = sources[anchorFile]
-    if (!anchor) {
-      if (anchorFile.startsWith('template/')) add(anchorFile, 'WF-ANCHOR', 'required protected-base Governance App producer is missing')
-      continue
-    }
-    const anchorJobs = workflowJobBlocks(anchor)
-    const anchorVerify = anchorJobs.get('verify-candidate') || ''
-    const anchorVerdict = anchorJobs.get('publish-app-verdict') || ''
-    const productToolStageAt = anchorVerify.indexOf('--stage-trusted-product-checks trusted/.governance-tools')
-    const playwrightInstallAt = anchorVerify.indexOf('node trusted/node_modules/playwright/cli.js install --with-deps chromium')
-    const candidateLockPreflightAt = anchorVerify.indexOf('--lock-only')
-    const candidateDependencySetupAt = anchorVerify.search(
-      /node\s+\.\.\/trusted\/scripts\/setup-governance\.mjs\s+--dependencies-only\s+--root\s+\./,
-    )
-    const candidateFullSetupAt = anchorVerify.indexOf('runGovernanceSetup')
-    const candidateAttestationAuditAt = anchorVerify.indexOf('--include-attestations')
-    const candidateProvenanceAt = anchorVerify.indexOf('--verified-attestations')
-    const candidateCheckerAt = anchorVerify.search(
-      /node\s+\.\.\/trusted\/scripts\/setup-governance\.mjs\s+--installed-check-only\s+--root\s+\./,
-    )
-    const candidateStaticSetupCommands = anchorVerify.match(
-      /node\s+\.\.\/trusted\/scripts\/setup-governance\.mjs\s+(?:--dependencies-only|--installed-check-only)\s+--root\s+\./g,
-    ) || []
-    const candidateHarnessAt = anchorVerify.indexOf('trusted/.governance-tools/scripts/consumer-source-harness.mjs --repo candidate')
-    const candidateKillAt = anchorVerify.indexOf('pkill -KILL -u governance-candidate')
-    const candidateFreezeAt = anchorVerify.indexOf('chmod -R a-w candidate')
-    const productToolVerifyAt = anchorVerify.indexOf('--verify-trusted-product-checks trusted/.governance-tools')
-    const protectedLintAt = anchorVerify.indexOf('trusted/.governance-tools/scripts/lint-ds-internal-imports.mjs --repo candidate')
-    const protectedA11yAt = anchorVerify.indexOf('trusted/.governance-tools/scripts/audit-consumer-a11y.mjs --repo candidate')
-    const rootPrivilegedVerifyAt = anchorVerify.search(/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/scripts\/verify-privileged-change\.mjs\b/m)
-    const rootCandidateInstallAt = anchorVerify.search(/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/scripts\/install-candidate-dependencies\.mjs\s+--candidate\s+candidate[ \t]*$/m)
-    const rootVersionProjectionAt = anchorVerify.search(/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/infra\/governance\/lib\/governance-anchor-version-projection\.mjs\b/m)
-    const rootWorkflowAuditAt = anchorVerify.search(/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/scripts\/audit-workflow-security\.mjs\s+--root\s+candidate[ \t]*$/m)
-    const rootVersionProjectionCommands = anchorVerify.match(
-      /^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/infra\/governance\/lib\/governance-anchor-version-projection\.mjs\b/gm,
-    ) || []
-    const templateProductChecksClosed = !anchorFile.startsWith('template/') || (
-      [
-        productToolStageAt,
-        playwrightInstallAt,
-        candidateLockPreflightAt,
-        candidateDependencySetupAt,
-        candidateAttestationAuditAt,
-        candidateProvenanceAt,
-        candidateCheckerAt,
-        candidateHarnessAt,
-        candidateKillAt,
-        candidateFreezeAt,
-        productToolVerifyAt,
-        protectedLintAt,
-        protectedA11yAt,
-      ].every(position => position >= 0)
-      && candidateFullSetupAt < 0
-      && candidateStaticSetupCommands.length === 2
-      && productToolStageAt < playwrightInstallAt
-      && playwrightInstallAt < candidateLockPreflightAt
-      && candidateLockPreflightAt < candidateDependencySetupAt
-      && candidateDependencySetupAt < candidateAttestationAuditAt
-      && candidateAttestationAuditAt < candidateProvenanceAt
-      && candidateProvenanceAt < candidateCheckerAt
-      && candidateCheckerAt < candidateHarnessAt
-      && candidateHarnessAt < candidateKillAt
-      && candidateKillAt < candidateFreezeAt
-      && candidateFreezeAt < productToolVerifyAt
-      && productToolVerifyAt < protectedLintAt
-      && protectedLintAt < protectedA11yAt
-      && /useradd --system --user-group --no-create-home[\s\S]*governance-candidate/.test(anchorVerify)
-      && /sudo -u governance-candidate env -i/.test(anchorVerify)
-      && !/(?:^|\s)node (?:candidate\/)?scripts\/(?:lint-ds-internal-imports|audit-consumer-a11y)\.mjs/m.test(anchorVerify)
-      && !/\bnpx\b[^\n]*\bplaywright\b/.test(anchorVerify)
-      && !/node \.\.\/trusted\/node_modules\/npm\/bin\/npm-cli\.js audit --audit-level=high/.test(anchorVerify)
-    )
-    const templateDispatchClosed = !anchorFile.startsWith('template/') || (
-      /^\s{2}repository_dispatch:\s*$/m.test(anchor)
-      && /types:\s*\[governance-upgrade-candidate-validation\]/.test(anchor)
-      && /governance-upgrade-writer-v1/.test(anchorVerify)
-      && /\.client_payload \| keys \| sort/.test(anchorVerify)
-      && /\.base\.ref/.test(anchorVerify)
-      && /\.base\.sha/.test(anchorVerify)
-      && /\.head\.sha/.test(anchorVerify)
-      && /git\/ref\/heads\/main/.test(anchorVerify)
-    )
-    const rootVersionProjectionClosed = anchorFile.startsWith('template/') || (
-      rootPrivilegedVerifyAt >= 0
-      && rootCandidateInstallAt > rootPrivilegedVerifyAt
-      && rootVersionProjectionAt > rootCandidateInstallAt
-      && rootWorkflowAuditAt > rootVersionProjectionAt
-      && rootVersionProjectionCommands.length === 1
-      && /^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node[ \t]+trusted\/infra\/governance\/lib\/governance-anchor-version-projection\.mjs(?:[ \t]+\\[ \t]*\n[ \t]*|[ \t]+)--trusted-root[ \t]+trusted(?:[ \t]+\\[ \t]*\n[ \t]*|[ \t]+)--candidate-root[ \t]+candidate[ \t]*$/m.test(anchorVerify)
-      && !/node\s+trusted\/packages\/governance\/bin\/governance\.mjs\s+check\b/.test(anchorVerify)
-    )
-    // 2026-07-29 user 拍板 1B:root repo 拆除 App-pinned verdict 層(App secrets 從未
-    // provision、檢查恆紅;protected required checks 已覆蓋同一保證面)。root anchor
-    // fail-closed 要求 verdict job 不得再出現(防未審查重引入);template anchor 是
-    // fleet consumer 藍圖,保留 App 架構待 fleet 啟用時重估。
-    const verdictClosed = anchorFile.startsWith('template/')
-      ? (
-        /^\s{2}publish-app-verdict:\s*$/m.test(anchor)
-        && needsJob(anchorVerdict, 'verify-candidate')
-        && /^\s{4}if:\s*(?:\$\{\{\s*)?always\(\)/m.test(anchorVerdict)
-        && /^\s{4}environment:\s*\n\s{6}name:\s*governance-check-verdict\s*$/m.test(anchorVerdict)
-        && /actions\/create-github-app-token@[a-f0-9]{40}/.test(anchorVerdict)
-        && /secrets\.GOVERNANCE_CHECK_APP_ID/.test(anchorVerdict)
-        && /secrets\.GOVERNANCE_CHECK_APP_PRIVATE_KEY/.test(anchorVerdict)
-        && /permission-checks:\s*write/.test(anchorVerdict)
-        && !/GOVERNANCE_WRITER_APP|permission-(?:contents|pull-requests):\s*write/.test(anchorVerdict)
-        && /(?:github\.event\.pull_request\.head\.sha|needs\.verify-candidate\.outputs\.head_sha)/.test(anchorVerdict)
-        && /repos\/\$GITHUB_REPOSITORY\/check-runs/.test(anchorVerdict)
-        && /Immutable consumer snapshot/.test(anchorVerdict)
-      )
-      : !/^\s{2}publish-app-verdict:/m.test(anchor)
-    if (
-      !/^\s{2}pull_request_target:\s*$/m.test(anchor)
-      || /^\s{2}workflow_dispatch:\s*$/m.test(anchor)
-      || !templateDispatchClosed
-      || !/^\s{2}verify-candidate:\s*$/m.test(anchor)
-      || !verdictClosed
-      || /\bsecrets\.|actions\/create-github-app-token@/.test(anchorVerify)
-      || (anchorFile === '.github/workflows/governance-anchor.yml' && !/trusted\/scripts\/verify-privileged-change\.mjs/.test(anchorVerify))
-      || !rootVersionProjectionClosed
-      || !templateProductChecksClosed
-      || (anchorFile.startsWith('template/') && /npm run (?:typecheck|build|audit:a11y)/.test(anchorVerify))
-    ) add(anchorFile, 'WF-ANCHOR', 'protected-base credential-free verifier and environment-isolated App-pinned verdict producer are incomplete')
+  const retiredConsumerAnchor = 'template/ds-product-template/.github/workflows/governance-anchor.yml'
+  if (sources[retiredConsumerAnchor]) {
+    add(retiredConsumerAnchor, 'WF-RETIRED-CONSUMER-ANCHOR', 'consumer repositories use only audit.yml / Verify consumer; the retired App verdict workflow must not return')
   }
+
+  const anchorFile = '.github/workflows/governance-anchor.yml'
+  const anchor = sources[anchorFile] || ''
+  const anchorJobs = workflowJobBlocks(anchor)
+  const anchorVerify = anchorJobs.get('verify-candidate') || ''
+  const rootPrivilegedVerifyAt = anchorVerify.search(/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/scripts\/verify-privileged-change\.mjs\b/m)
+  const rootCandidateInstallAt = anchorVerify.search(/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/scripts\/install-candidate-dependencies\.mjs\s+--candidate\s+candidate[ \t]*$/m)
+  const rootVersionProjectionAt = anchorVerify.search(/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/infra\/governance\/lib\/governance-anchor-version-projection\.mjs\b/m)
+  const rootWorkflowAuditAt = anchorVerify.search(/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/scripts\/audit-workflow-security\.mjs\s+--root\s+candidate[ \t]*$/m)
+  const rootVersionProjectionCommands = anchorVerify.match(
+    /^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node\s+trusted\/infra\/governance\/lib\/governance-anchor-version-projection\.mjs\b/gm,
+  ) || []
+  const rootVersionProjectionClosed = rootPrivilegedVerifyAt >= 0
+    && rootCandidateInstallAt > rootPrivilegedVerifyAt
+    && rootVersionProjectionAt > rootCandidateInstallAt
+    && rootWorkflowAuditAt > rootVersionProjectionAt
+    && rootVersionProjectionCommands.length === 1
+    && /^[ \t]*(?:(?:-[ \t]+)?run:[ \t]+)?node[ \t]+trusted\/infra\/governance\/lib\/governance-anchor-version-projection\.mjs(?:[ \t]+\\[ \t]*\n[ \t]*|[ \t]+)--trusted-root[ \t]+trusted(?:[ \t]+\\[ \t]*\n[ \t]*|[ \t]+)--candidate-root[ \t]+candidate[ \t]*$/m.test(anchorVerify)
+    && !/node\s+trusted\/packages\/governance\/bin\/governance\.mjs\s+check\b/.test(anchorVerify)
+  if (
+    !/^\s{2}pull_request_target:\s*$/m.test(anchor)
+    || /^\s{2}workflow_dispatch:\s*$/m.test(anchor)
+    || !/^\s{2}verify-candidate:\s*$/m.test(anchor)
+    || /^\s{2}publish-app-verdict:/m.test(anchor)
+    || /\bsecrets\.|actions\/create-github-app-token@/.test(anchorVerify)
+    || !/trusted\/scripts\/verify-privileged-change\.mjs/.test(anchorVerify)
+    || !rootVersionProjectionClosed
+  ) add(anchorFile, 'WF-ANCHOR', 'authority protected-base credential-free verifier is incomplete')
 
   const composition = sources['.github/workflows/composition-fidelity.yml'] || ''
   if (!/--require-mappings\b/.test(composition)) add('.github/workflows/composition-fidelity.yml', 'WF-NONVACUOUS', 'composition required check must reject zero executable mappings')

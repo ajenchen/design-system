@@ -42,7 +42,6 @@ const WAIVER_RISKS = new Set(['low', 'medium', 'high', 'critical'])
 const WAIVER_CONTROL_TYPES = new Set(['ruleset', 'required-check', 'environment', 'provider-surface', 'ownership', 'compatibility'])
 const CANONICAL_MANAGED_ENVIRONMENT_NAMES = Object.freeze([
   'npm-release',
-  'governance-check-verdict',
   'governance-upgrade',
   'governance-external-ledger',
 ])

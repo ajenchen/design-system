@@ -9,6 +9,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -308,6 +309,16 @@ test('actual clean-room mirror closes every generated provider/fork scaffold fil
     '@joshwooding/vite-plugin-react-docgen-typescript': '0.6.4',
     postcss: '8.5.23',
   })
+  assert.deepEqual(
+    readdirSync(join(mirror, '.github/workflows')).sort(),
+    ['audit.yml'],
+    'published consumer mirror must contain exactly the native Verify consumer workflow',
+  )
+  assert.equal(
+    readdirSync(join(mirror, 'scripts')).includes('governance-anchor-preflight.mjs'),
+    false,
+    'retired consumer anchor helper must not remain in the published mirror',
+  )
   const lock = buildProductTemplateScaffoldLock({ root: mirror, releaseVersion: '1.2.3' })
   assert.ok(lock.entries.length > 100, 'actual mirror inventory unexpectedly small')
   assert.equal(verifyProductTemplateScaffold({ root: mirror, lock, phase: 'source' }).entries.length, lock.entries.length)

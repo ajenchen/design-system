@@ -205,7 +205,7 @@ if (mirrorSb.includes('apps/**') && !mirrorSb.includes("'../packages/**")) {
 }
 
 // B5: mirror has all consumer scripts
-const consumerScripts = ['create-app.mjs', 'setup-netlify-access.mjs', 'check-plugin-installed.mjs', 'audit-consumer-a11y.mjs', 'deploy-url.mjs', 'lint-ds-internal-imports.mjs', 'setup-governance.mjs', 'sync-all.mjs', 'refresh-fork-launchers.mjs', 'release-bom-contract.mjs', 'governance-check.mjs', 'governance-anchor-preflight.mjs', 'verify-upgrade-provenance.mjs', 'verify-consumer-css-entry.mjs']
+const consumerScripts = ['create-app.mjs', 'setup-netlify-access.mjs', 'check-plugin-installed.mjs', 'audit-consumer-a11y.mjs', 'deploy-url.mjs', 'lint-ds-internal-imports.mjs', 'setup-governance.mjs', 'sync-all.mjs', 'refresh-fork-launchers.mjs', 'release-bom-contract.mjs', 'governance-check.mjs', 'verify-upgrade-provenance.mjs', 'verify-consumer-css-entry.mjs']
 const missingScripts = consumerScripts.filter(s => !existsSync(join(MIRROR_OUT, 'scripts', s)))
 if (missingScripts.length === 0) {
   pass_test('B5', `Mirror scripts/ contains all ${consumerScripts.length} consumer scripts`)

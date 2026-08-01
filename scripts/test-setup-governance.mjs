@@ -895,31 +895,16 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
     `npm@${runtime.exactNpmVersion} install --package-lock-only --ignore-scripts --legacy-peer-deps --no-audit --no-fund`,
   )
 
-  const workflowPaths = [
-    'template/ds-product-template/.github/workflows/audit.yml',
-    'template/ds-product-template/.github/workflows/governance-anchor.yml',
-  ]
+  const workflowPaths = ['template/ds-product-template/.github/workflows/audit.yml']
   for (const path of workflowPaths) {
     const body = readFileSync(path, 'utf8')
     const declared = [...body.matchAll(/node-version:\s*['"]?(\d+\.\d+\.\d+)['"]?/g)].map(match => match[1])
     assert.ok(declared.length > 0, `${path}: every consumer workflow must pin an exact Node version`)
     assert.ok(declared.every(version => atLeast(version, runtime.minimumNodeVersion)), `${path}: Node pin is below the canonical minimum`)
     assert.doesNotMatch(body, /node-version:\s*['"]?22['"]?\s*$/m, `${path}: ambiguous major-only Node channel`)
-    if (!path.endsWith('/audit.yml')) assert.doesNotMatch(body, /^\s*(?:(?:-\s*)?run:\s*)?npm\s+(?:ci|install|audit)\b/m, `${path}: ambient npm may not perform authoritative install or audit work`)
   }
   assert.match(readFileSync(workflowPaths[0], 'utf8'), /npm ci --ignore-scripts/)
-  const governanceAnchor = readFileSync(workflowPaths[1], 'utf8')
-  assert.match(governanceAnchor, /^\s*npm run setup:governance\s*$/m)
-  assert.match(governanceAnchor, /node \.\.\/trusted\/scripts\/setup-governance\.mjs\s*\n\s*--dependencies-only --root \./)
-  assert.match(governanceAnchor, /node \.\.\/trusted\/scripts\/setup-governance\.mjs\s*\n\s*--installed-check-only --root \./)
-  assert.doesNotMatch(governanceAnchor, /node \.\.\/trusted\/node_modules\/npm\/bin\/npm-cli\.js audit --audit-level=high/)
-  assert.doesNotMatch(governanceAnchor, /\bnode\s+(?:-e|--eval|--input-type)\b/)
-  assert.doesNotMatch(governanceAnchor, /runGovernance(?:Dependency)?Setup/)
-  assert.deepEqual(
-    workflowPaths.filter(path => /npm run setup:governance/.test(readFileSync(path, 'utf8'))),
-    [workflowPaths[1]],
-    'only the protected-base governance anchor may invoke authenticated governance setup',
-  )
+  assert.equal(existsSync('template/ds-product-template/.github/workflows/governance-anchor.yml'), false)
 
   const devcontainer = JSON.parse(readFileSync('template/ds-product-template/.devcontainer/devcontainer.json', 'utf8'))
   assert.match(devcontainer.image, /javascript-node:1-22@sha256:[a-f0-9]{64}$/)

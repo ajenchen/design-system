@@ -17,7 +17,7 @@
         "registryPath": "infra/governance/providers/harness-registry.json",
         "registrySchemaVersion": 2,
         "registryKind": "provider-neutral-governance-harness-registry",
-        "registrySha256": "7474603356f4a354429d31be8a9f7696b9ac8543c93e6524b63cbcdc12f7de9a",
+        "registrySha256": "e65f111c874b37b4cac0042cf3b7bd7e952fb182ac54814b201db3b2e7312b59",
         "runnerCommand": [
           "node",
           "infra/governance/bin/run-harnesses.mjs"
@@ -179,15 +179,6 @@
         ],
         "severity": "blocker",
         "resolution": "Use consumerctl plan-bootstrap for a read-only full-snapshot plan, then a separately reviewed protected PR and independent consumer-governance-bootstrap-readback-v1. The legacy updater may not execute or certify this transition; ordinary sync-all starts only after DS inventory enters reviewed-bootstrap-established-v2 and binds the accepted readback SHA-256."
-      },
-      {
-        "id": "governance-app-integration-unresolved",
-        "appliesToRoles": [
-          "template-mirror",
-          "product-consumer"
-        ],
-        "severity": "blocker",
-        "resolution": "Install two distinct GitHub Apps: a Checks-write-only Governance Check App as the immutable trust anchor and a Contents/Pull-requests-write-only Governance Writer App for reviewed mutation PRs. Record both distinct integration IDs and observe a successful Immutable consumer snapshot check from the Check App before apply."
       },
       {
         "id": "codex-vs-claude-hook-schema",

@@ -31,7 +31,7 @@ originSessionId: a689a78e-f264-4c1f-b881-0859a7a12135
 | Repo | Netlify | GH Pages |
 |---|---|---|
 | ajenchen/design-system | https://ajenchen-design-system.netlify.app ✅ | https://ajenchen.github.io/design-system/ ✅ |
-| ajenchen/ds-product-template | https://qijenchen.netlify.app ✅ | — |
+| ajenchen/ds-product-template | https://ds-product-template.netlify.app ✅ | — |
 
 ## 部署管道
 

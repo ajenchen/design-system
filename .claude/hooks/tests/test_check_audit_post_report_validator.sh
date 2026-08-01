@@ -21,7 +21,34 @@ TMPDIR_TEST=$(mktemp -d)
 trap 'rm -rf "$TMPDIR_TEST"' EXIT
 mkdir -p "$TMPDIR_TEST/.claude/logs"
 mkdir -p "$TMPDIR_TEST/corpus/packages/governance/canonical" \
-  "$TMPDIR_TEST/corpus/canonical/skills/design-system-audit/references"
+  "$TMPDIR_TEST/corpus/canonical/skills/design-system-audit/references" \
+  "$TMPDIR_TEST/scripts"
+cat > "$TMPDIR_TEST/scripts/verify-deep-audit-coverage.mjs" <<'EOF'
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
+const rootIndex = process.argv.indexOf('--repo-root')
+const root = rootIndex >= 0 ? process.argv[rootIndex + 1] : process.cwd()
+const modePath = resolve(root, '.fixture-review-mode')
+const mode = existsSync(modePath) ? readFileSync(modePath, 'utf8').trim() : 'missing'
+if (mode === 'waived') {
+  process.stdout.write(JSON.stringify({
+    evidenceKind: 'deep-audit-coverage-verification',
+    secondOpinion: 'waived-by-user',
+    providers: { self: 'alpha', peer: null },
+  }))
+  process.exit(0)
+}
+if (mode === 'selected') {
+  process.stdout.write(JSON.stringify({
+    evidenceKind: 'deep-audit-coverage-verification',
+    secondOpinion: 'completed',
+    providers: { self: 'alpha', peer: 'beta' },
+  }))
+  process.exit(0)
+}
+process.exit(2)
+EOF
 cat > "$TMPDIR_TEST/corpus/packages/governance/canonical/providers.json" <<'EOF'
 {
   "canonical": {"roots": {"skills": "canonical/skills"}},
@@ -264,8 +291,8 @@ else
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 8. future peer verdict"
 fi
 
-# 9. A user waiver removes only the peer-verdict requirement; the other decision
-#    quality evidence remains mandatory.
+# 9. Report prose alone cannot authorize a waiver. The same receipt passes only
+#    when the current immutable run verifier proves the exact one-run waiver.
 unset GOVERNANCE_PEER_PROVIDER GOVERNANCE_PEER_DISPLAY_NAME
 cat > "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" <<'EOF'
 # Deep Audit 報告
@@ -280,7 +307,34 @@ second opinion: waived by user
    - 設計語言 fit:符合 density canonical
 EOF
 run_hook "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" "Write"
-expect_silent "9. user-waived decision → no peer context required"
+expect_block_stderr "9. text-only user waiver → block" "Report 文字不是 second-opinion waiver authority"
+
+printf 'waived\n' > "$TMPDIR_TEST/.fixture-review-mode"
+run_hook "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" "Write"
+expect_silent "9b. immutable user-waived run → no peer context required"
+
+printf 'selected\n' > "$TMPDIR_TEST/.fixture-review-mode"
+run_hook "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" "Write"
+expect_block_stderr "9c. selected run cannot be waived by report prose" "Report 文字不是 second-opinion waiver authority"
+
+printf 'tampered\n' > "$TMPDIR_TEST/.fixture-review-mode"
+run_hook "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" "Write"
+expect_block_stderr "9d. tampered/missing active waiver proof → block" "Report 文字不是 second-opinion waiver authority"
+
+printf 'waived\n' > "$TMPDIR_TEST/.fixture-review-mode"
+cat > "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" <<'EOF'
+# Deep Audit 報告
+Dim 1: pass
+
+### 待你拍板
+1. 決策一:Popover 內距是否改 12px
+   - SSOT 理由:改跨元件 canonical 視覺結構
+   - SSOT-check:grep spec + memory,無既有拍板
+   - 世界級:Polaris https://polaris.shopify.com/tokens/space / Material / Ant(3 家)
+   - 設計語言 fit:符合 density canonical
+EOF
+run_hook "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" "Write"
+expect_block_stderr "9e. active waiver still requires explicit report receipt" "registry-resolved peer provider"
 
 # 10. A general report with no decision and an explicit task-level receipt also
 #     has no peer dependency.

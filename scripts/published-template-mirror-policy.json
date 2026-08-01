@@ -12,7 +12,6 @@
     "scripts/consumer-source-harness.mjs",
     "scripts/create-app.mjs",
     "scripts/deploy-url.mjs",
-    "scripts/governance-anchor-preflight.mjs",
     "scripts/governance-check.mjs",
     "scripts/lint-ds-internal-imports.mjs",
     "scripts/lib/a11y-static-server.mjs",

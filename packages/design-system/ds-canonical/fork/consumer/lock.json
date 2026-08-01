@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "role": "template-consumer",
   "release": {
-    "designSystem": "0.1.0-beta.105",
-    "storybookConfig": "0.1.0-beta.105"
+    "designSystem": "0.1.0-beta.106",
+    "storybookConfig": "0.1.0-beta.106"
   },
   "upgradeTrust": {
     "schemaVersion": 1,
@@ -42,10 +42,10 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "0d2489d8bb989a6cd7c039f2c7262deb6fcd0be26e67a21ede951003da953455",
+    "forkCorpusLockSha256": "f192cdd2cdfcd7e887ac1caeb2ee57410f7419487237fb2702c44b2a1797d671",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
-    "providerLifecycleSha256": "43c6b2abb99a2b185eb143e5a5be12db0a3e096475cba58b1bde3a29dfb64940",
+    "providerLifecycleSha256": "6adab7f6bfa9a6a185cfef41bcb2a596d00ef81b439a1052940ec8e0f02616f3",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "3fca4ba4094e855412a22308e13f2b5f91dcfeb009512eb8318b3bd1bace8d9a",
     "commonInstructionSha256": "3d40f4b5d3ea78f6c9ca5bd18daa531dc758d77df21a5e7ef35a3336cd71f906",
@@ -91,7 +91,6 @@
       ".devcontainer/onboard-banner.sh": "fd87b372e48ff079afb0b257c5e5c28fcf58637b2589a508987460a66c2b8b75",
       ".devcontainer/post-create.mjs": "6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b",
       ".github/workflows/audit.yml": "3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",
-      ".github/workflows/governance-anchor.yml": "3e280e67fd72886b0686a6d296947ee3270b4899e9914c1e3a9c61c951dcc2ee",
       ".npmrc": "79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63",
       "governance/consumer-governance.md": "bc58561386e0df62306a5d7246e51647847732efa3de84426bada9978ff6da5c",
       "governance/provider-cli-toolchain.json": "6bc607cb6ac299b332d35ca871c838b54e367d96775ad0e759c827a0e3ca10cc",
@@ -104,7 +103,6 @@
       "scripts/audit-consumer-a11y.mjs": "a2ca30c164ef55277cc783a79450eb1bff203b936acbfad3bc94a8c644cfd173",
       "scripts/check-plugin-installed.mjs": "f2a673cc011743fe51f87746b9aebbd3332378cd2732088eda621e16a3c74386",
       "scripts/consumer-source-harness.mjs": "725072155d0b15b373bf6befb333cd2085dc8a38fff8538b4f4c8ea56f9c5308",
-      "scripts/governance-anchor-preflight.mjs": "3f87bcdcf95f85c73351646a5f818b088d6528cc6bd3c811054087fd58b4fdfa",
       "scripts/lib/a11y-static-server.mjs": "3ae8ca74a66ca5f155d1a1d0c97280d41f07556274c8c077705a489ebe6a7018",
       "scripts/lib/canonical-path-containment.mjs": "0244e31dc3be5015bed3efd65a5a77086a2e4676e9ac79cd0801c8cde6a74fcd",
       "scripts/lib/closed-tool-execution.mjs": "131255a302f1b403fe95dd6251e180d7f3ce920faf6cbfe90496b52d192d93c3",

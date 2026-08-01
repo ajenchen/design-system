@@ -168,13 +168,13 @@
       "repositoryRole": "template-mirror",
       "status": "not-certified",
       "platformMatrix": [
-        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions", "pathClass": "contains-space", "status": "not-certified", "limitations": ["No required-check ruleset binds the template mirror on this exact Linux/x64 runner target."]}
+        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions", "pathClass": "contains-space", "status": "not-certified", "limitations": ["The native pull_request Verify consumer check is live; a fresh signed target-bound runtime certification is still required."]}
       ],
       "checks": [
         {"id": "template-audit-observed", "status": "pass", "evidence": {"kind": "github-check-runs", "reference": "baseline/2026-07-20.github.json"}},
-        {"id": "immutable-anchor-required", "status": "fail", "evidence": {"kind": "github-api", "reference": "baseline shows no ruleset requiring the Governance Check App check"}}
+        {"id": "native-verify-consumer-certification", "status": "not-tested", "evidence": {"kind": "github-api", "reference": "Fresh signed pull_request Verify consumer ruleset/runtime evidence has not yet been imported into this certification ledger."}}
       ],
-      "limitations": ["The published template has not yet adopted the base-trusted anchor and required-check ruleset."]
+      "limitations": ["Native Verify consumer is the only current trust anchor; this ledger intentionally remains not-certified until its fresh signed runtime evidence is imported."]
     },
     {
       "id": "codex-cli-local-product-v1",
@@ -323,13 +323,13 @@
       "repositoryRole": "product-consumer",
       "status": "not-certified",
       "platformMatrix": [
-        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions", "pathClass": "contains-space", "status": "not-certified", "limitations": ["WM audit is red and no immutable required-check anchor certifies this exact Linux/x64 runner target."]}
+        {"id": "linux-linux-x64-github-hosted-space", "operatingSystem": "linux", "platform": "linux", "arch": "x64", "executionEnvironment": "github-hosted-runner", "distributionVersion": "github-actions", "pathClass": "contains-space", "status": "not-certified", "limitations": ["The protected-base repository_dispatch Verify consumer check is live; a fresh signed target-bound runtime certification is still required."]}
       ],
       "checks": [
-        {"id": "wm-audit-observed", "status": "fail", "evidence": {"kind": "github-check-runs", "reference": "baseline/2026-07-20.github.json"}},
-        {"id": "immutable-anchor-required", "status": "fail", "evidence": {"kind": "github-api", "reference": "baseline shows no ruleset requiring the Governance Check App check"}}
+        {"id": "wm-native-verify-consumer-observed", "status": "pass", "evidence": {"kind": "github-check-runs", "reference": "https://github.com/ajenchen/work-management/actions/runs/30722603061"}},
+        {"id": "native-verify-consumer-certification", "status": "not-tested", "evidence": {"kind": "github-api", "reference": "Fresh signed repository_dispatch Verify consumer ruleset/runtime evidence has not yet been imported into this certification ledger."}}
       ],
-      "limitations": ["WM audit is red and the base-trusted immutable consumer check is not installed or required."]
+      "limitations": ["Native Verify consumer is green and required; this ledger intentionally remains not-certified until its fresh signed runtime evidence is imported."]
     },
     {
       "id": "codex-remote-control-governance-v1",

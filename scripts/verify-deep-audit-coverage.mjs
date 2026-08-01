@@ -317,14 +317,18 @@ export function verifyDeepAuditCoverage({
 } = {}) {
   const active = loadActiveDeepAuditRun({ repoRoot, explicitRoot, requireCurrent: true })
   validateDeepAuditRunProviderBindings(active.manifest, { repoRoot: active.repository })
-  if (active.manifest.providers.peer === null) {
+  const secondOpinionWaived = active.manifest.reviewSelection?.kind === 'provider-review-capability-selection-waived'
+  if (active.manifest.providers.peer === null && !secondOpinionWaived) {
     fail(`active run review selection is ${active.manifest.reviewSelection.selectionStatus}:${active.manifest.reviewSelection.selectionReasonCode}`)
   }
-  const manifestProviders = [active.manifest.providers.self.id, active.manifest.providers.peer.id]
+  const manifestProviders = secondOpinionWaived
+    ? [active.manifest.providers.self.id]
+    : [active.manifest.providers.self.id, active.manifest.providers.peer.id]
   if (selfProvider !== null && selfProvider !== manifestProviders[0]) fail('--self-provider differs from the active run manifest')
-  if (peerProvider !== null && peerProvider !== manifestProviders[1]) fail('--peer-provider differs from the active run manifest')
+  if (peerProvider !== null && peerProvider !== (manifestProviders[1] ?? null)) fail('--peer-provider differs from the active run manifest')
   if (authorProvider !== null && authorProvider !== active.manifest.authorProvider) fail('--author-provider differs from the active run manifest')
-  if (active.manifest.authorProvider !== manifestProviders[0] || active.manifest.authorProvider === manifestProviders[1]) {
+  if (active.manifest.authorProvider !== manifestProviders[0]
+    || (manifestProviders[1] !== undefined && active.manifest.authorProvider === manifestProviders[1])) {
     fail('active run author provider is not the current/self provider or collides with the independent peer')
   }
   const providers = manifestProviders
@@ -440,7 +444,8 @@ export function verifyDeepAuditCoverage({
     worktreeFingerprint: active.manifest.worktreeFingerprint,
     authorProvider: active.manifest.authorProvider,
     providerIdentityDigest: active.manifest.providerIdentityDigest,
-    providers: { self: providers[0], peer: providers[1] },
+    providers: { self: providers[0], peer: providers[1] ?? null },
+    secondOpinion: secondOpinionWaived ? 'waived-by-user' : 'completed',
     tiers: {
       deterministic: tiers.DETERMINISTIC.length,
       pureJudgment: tiers['PURE-JUDGMENT'].length,
@@ -456,7 +461,10 @@ export function verifyDeepAuditCoverage({
 
 function printHuman(result) {
   console.log(`═══ Immutable Deep-Audit Run ${result.runId} ═══`)
-  console.log(`author:${result.authorProvider}; providers:${result.providers.self}+${result.providers.peer}; HEAD:${result.head}`)
+  const providerSummary = result.providers.peer === null
+    ? `${result.providers.self} (second opinion waived by user)`
+    : `${result.providers.self}+${result.providers.peer}`
+  console.log(`author:${result.authorProvider}; providers:${providerSummary}; HEAD:${result.head}`)
   console.log(`deterministic gaps:${result.gaps.deterministic.join(',') || 'none'}`)
   for (const provider of Object.keys(result.gaps.judgment)) console.log(`judgment ${provider} gaps:${result.gaps.judgment[provider].join(',') || 'none'}`)
   console.log(`hook gaps:${result.gaps.hookResidue.join(',') || 'none'}`)
@@ -468,14 +476,24 @@ function printHuman(result) {
   console.log(result.promotionEligible ? '✅ immutable run evidence is complete, clean, and promotion-eligible' : '❌ immutable run is not promotion-eligible')
 }
 
+export function resolveVerifierProviderAssertions(args = {}, environment = process.env) {
+  return {
+    selfProvider: args['self-provider'] ?? environment.GOVERNANCE_SELF_PROVIDER ?? null,
+    // The immutable active manifest is provider authority. Ambient peer metadata
+    // is adapter context, not a verifier assertion; callers may still pass an
+    // explicit --peer-provider to detect a mismatch or waiver conflict.
+    peerProvider: args['peer-provider'] ?? null,
+    authorProvider: args['author-provider'] ?? environment.GOVERNANCE_AUTHOR_PROVIDER ?? null,
+  }
+}
+
 export function main(argv = process.argv.slice(2)) {
   const args = parseArgs(argv)
+  const providerAssertions = resolveVerifierProviderAssertions(args)
   const result = verifyDeepAuditCoverage({
     repoRoot: args['repo-root'] ?? DEFAULT_ROOT,
     explicitRoot: args['evidence-root'] ?? process.env.GOVERNANCE_EVIDENCE_ROOT ?? null,
-    selfProvider: args['self-provider'] ?? process.env.GOVERNANCE_SELF_PROVIDER ?? null,
-    peerProvider: args['peer-provider'] ?? process.env.GOVERNANCE_PEER_PROVIDER ?? null,
-    authorProvider: args['author-provider'] ?? process.env.GOVERNANCE_AUTHOR_PROVIDER ?? null,
+    ...providerAssertions,
   })
   if (args.json) process.stdout.write(`${stableStringify(result, 2)}\n`)
   else printHuman(result)

@@ -397,7 +397,6 @@ for (const provider of PROVIDER_REGISTRY.providers.filter((item) => item.adapter
 
 const MANAGED_FILE_SOURCES = {
   '.github/workflows/audit.yml': join(ROOT, 'template/ds-product-template/.github/workflows/audit.yml'),
-  '.github/workflows/governance-anchor.yml': join(ROOT, 'template/ds-product-template/.github/workflows/governance-anchor.yml'),
   '.npmrc': join(ROOT, 'template/ds-product-template/.npmrc'),
   '.devcontainer/devcontainer.json': join(ROOT, 'template/ds-product-template/.devcontainer/devcontainer.json'),
   '.devcontainer/devcontainer-lock.json': join(ROOT, 'template/ds-product-template/.devcontainer/devcontainer-lock.json'),
@@ -424,7 +423,6 @@ const MANAGED_FILE_SOURCES = {
   'scripts/lib/verified-exact-npm-runtime.mjs': join(ROOT, 'scripts/lib/verified-exact-npm-runtime.mjs'),
   'scripts/lib/worktree-fingerprint.mjs': join(ROOT, 'scripts/lib/worktree-fingerprint.mjs'),
   'scripts/lib/workspace-post-create.mjs': join(ROOT, 'scripts/lib/workspace-post-create.mjs'),
-  'scripts/governance-anchor-preflight.mjs': join(ROOT, 'scripts/governance-anchor-preflight.mjs'),
   'scripts/product-template-scaffold-lock.mjs': join(ROOT, 'scripts/product-template-scaffold-lock.mjs'),
   'scripts/refresh-fork-launchers.mjs': join(ROOT, 'scripts/refresh-fork-launchers.mjs'),
   'scripts/release-bom-contract.mjs': join(ROOT, 'scripts/release-bom-contract.mjs'),

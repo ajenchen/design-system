@@ -131,7 +131,7 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   assert.equal(Object.hasOwn(npmRelease, 'credentialIntegration'), false)
   assert.equal(npmRelease.rollout, 'always')
   assert.equal(desired.profiles['design-system-authority'].immutableReleases, false)
-  const publishNpmOffset = authorityReleaseWorkflow.indexOf('\n  publish-npm:\n')
+  const publishNpmOffset = authorityReleaseWorkflow.indexOf('\n  build-and-publish-npm:\n')
   const publishNpm = publishNpmOffset >= 0 ? authorityReleaseWorkflow.slice(publishNpmOffset + 1) : null
   assert.ok(publishNpm, 'release workflow lacks the npm-release publish job')
   assert.match(publishNpm, /environment:\s*\n\s*name: npm-release/)
@@ -236,7 +236,7 @@ test('live governance model encodes exact trust anchors, solo review settings, t
     /desired schema validation failed:.*design-system-authority\/environments/,
   )
   assert.match(desiredValidatorContract, /environment\.name === 'npm-release'[\s\S]*npm-release must remain OIDC-only/)
-  assert.deepEqual(desired.managedEnvironmentNames, ['npm-release', 'governance-check-verdict', 'governance-upgrade', 'governance-external-ledger'])
+  assert.deepEqual(desired.managedEnvironmentNames, ['npm-release', 'governance-upgrade', 'governance-external-ledger'])
   assert.equal(rings.schemaVersion, 3)
   assert.equal(rings.candidateRelease, null)
   for (const ring of rings.rings) {
