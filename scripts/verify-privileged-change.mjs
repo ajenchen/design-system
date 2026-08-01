@@ -1,14 +1,11 @@
 #!/usr/bin/env node
 
-import { createHash, createPrivateKey, sign, verify } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { lstatSync, readFileSync, readdirSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  issuerRegistryDigest,
-  publicKeyFromIssuer,
-  resolvePolicyIssuer,
   validateIssuerRegistry,
   validateIssuerRegistryLineage,
   validateRegistryPolicyBinding,
@@ -21,18 +18,12 @@ import {
   resolveExternalActivationProfile,
 } from '../infra/governance/lib/external-activation.mjs'
 
-const AUTH_KEYS = [
-  'schemaVersion', 'kind', 'repository', 'baseSha', 'candidateHeadSha',
-  'changedPaths', 'contentDigest', 'issuerRegistryDigest', 'issuedAt', 'expiresAt',
-  'signerKeyId', 'subject', 'signature', 'coSignatures',
-]
 const POLICY_KEYS = [
   '$schema', 'schemaVersion', 'repository', 'algorithm', 'maxAuthorizationTtlMinutes',
   'clockSkewSeconds', 'authorizationDirectory', 'issuerRegistryDigest', 'allowedKeyIds',
   'protectedPaths', 'protectedPrefixes', 'trustRootQuorum', 'bootstrap',
   'externalActivationPolicyDigest', 'authorizationProfileId', 'authorizationProfileDigest',
 ]
-const COSIGNATURE_KEYS = ['signerKeyId', 'subject', 'signature']
 const BOOTSTRAP_KEYS = ['schemaVersion', 'enabled', 'ownerLogins', 'nonce', 'maxCommentTtlMinutes']
 const shaPattern = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/
 const REGISTRY_PATH = 'infra/governance/trust/issuers.json'
@@ -273,9 +264,9 @@ export async function privilegedChangeSet({
   policy = readTrustRootPolicy(trustedRoot),
   candidatePolicy = readTrustRootPolicy(candidateRoot),
 }) {
-  // The authorization image is the union of the current and proposed closures.
+  // The verified image is the union of the current and proposed closures.
   // Otherwise a candidate could add a policy prefix and semantic manifest entry
-  // while leaving the newly introduced source bytes outside the signed digest.
+  // while leaving the newly introduced source bytes outside the structural check.
   const policies = [policy, candidatePolicy]
   const protectedPaths = new Set([POLICY_PATH, REGISTRY_PATH])
   for (const item of policies) for (const path of item.protectedPaths) protectedPaths.add(path)
@@ -294,60 +285,6 @@ export async function privilegedChangeSet({
     }
   }
   return { changedPaths: changed, contentDigest: await sha256(stable(candidateImages)) }
-}
-
-function unsignedPayload(authorization) {
-  const payload = { ...authorization }
-  delete payload.signature
-  delete payload.coSignatures
-  return Buffer.from(stable(payload), 'utf8')
-}
-
-export async function issuePrivilegedChangeAuthorization({ trustedRoot, candidateRoot, repository, baseSha, candidateHeadSha, signerKeyId, subject, privateKey, issuedAt, expiresAt }) {
-  const registry = readIssuerRegistry(trustedRoot)
-  const issuanceTime = new Date(issuedAt)
-  const policy = readTrustRootPolicy(trustedRoot, { now: issuanceTime })
-  const candidatePolicy = readTrustRootPolicy(candidateRoot, { now: issuanceTime })
-  const changes = await privilegedChangeSet({ trustedRoot, candidateRoot, policy, candidatePolicy })
-  invariant(changes.changedPaths.length > 0, 'no privileged change requires authorization')
-  const authorization = {
-    schemaVersion: 1,
-    kind: 'privileged-change-authorization',
-    repository,
-    baseSha,
-    candidateHeadSha,
-    changedPaths: changes.changedPaths,
-    contentDigest: changes.contentDigest,
-    issuerRegistryDigest: issuerRegistryDigest(registry),
-    issuedAt,
-    expiresAt,
-    signerKeyId,
-    subject,
-    signature: '',
-    coSignatures: [],
-  }
-  const key = privateKey?.type === 'private' ? privateKey : createPrivateKey(privateKey)
-  invariant(key.asymmetricKeyType === 'ed25519', 'privileged authorization private key must be Ed25519')
-  authorization.signature = sign(null, unsignedPayload(authorization), key).toString('base64url')
-  return authorization
-}
-
-export function cosignPrivilegedChangeAuthorization(authorization, { signerKeyId, subject, privateKey }) {
-  invariant(exactKeys(authorization, AUTH_KEYS), 'privileged authorization has an invalid or open shape')
-  invariant(![authorization.signerKeyId, ...authorization.coSignatures.map(item => item.signerKeyId)].includes(signerKeyId), 'privileged cosigner must be distinct')
-  invariant(![authorization.subject, ...authorization.coSignatures.map(item => item.subject)].includes(subject), 'privileged cosigner subject must be distinct')
-  const key = privateKey?.type === 'private' ? privateKey : createPrivateKey(privateKey)
-  invariant(key.asymmetricKeyType === 'ed25519', 'privileged authorization private key must be Ed25519')
-  authorization.coSignatures.push({ signerKeyId, subject, signature: sign(null, unsignedPayload(authorization), key).toString('base64url') })
-  return authorization
-}
-
-function bootstrapPayload({ repository, pullRequest, candidateHeadSha, trustRootSha256, issuerRegistryDigest, contentDigest, expiresAt, nonce }) {
-  return { repository, pullRequest, candidateHeadSha, trustRootSha256, issuerRegistryDigest, contentDigest, expiresAt, nonce }
-}
-
-export function bootstrapCommentBody(input) {
-  return `DS-GOVERNANCE-BOOTSTRAP-V1 ${stable(bootstrapPayload(input))}`
 }
 
 function trustProjection(root) {
@@ -499,111 +436,97 @@ export function controlPlaneGenesisCommentBody({ challenge, challengeDigest, exp
   })}`
 }
 
-async function verifyBootstrapTransition({ trustedRoot, candidateRoot, repository, candidateHeadSha, pullRequest, comments, changes, policy, now }) {
-  invariant(policy.bootstrap.enabled && policy.allowedKeyIds.length === 0, 'privileged trust root is not in one-time bootstrap mode')
-  invariant(Number.isInteger(pullRequest) && pullRequest > 0 && Array.isArray(comments), 'privileged bootstrap requires trusted PR comment evidence')
-  const { registry: candidateRegistry, policy: candidatePolicy } = validateCandidateTrustConfiguration(candidateRoot, { now })
-  for (const key of POLICY_KEYS.filter(key => !['issuerRegistryDigest', 'allowedKeyIds', 'bootstrap'].includes(key))) {
-    invariant(stable(candidatePolicy[key]) === stable(policy[key]), `bootstrap transition may not alter policy field ${key}`)
-  }
-  invariant(stable({ ...candidatePolicy.bootstrap, enabled: true }) === stable(policy.bootstrap), 'bootstrap transition may only close the bootstrap enabled flag')
-  const trustRootPath = safeRelative(candidateRoot, POLICY_PATH).absolute
-  const trustRootSha256 = await sha256(readFileSync(trustRootPath))
-  const candidateRegistryDigest = issuerRegistryDigest(candidateRegistry)
-  const maxExpiry = new Date(now.getTime() + policy.bootstrap.maxCommentTtlMinutes * 60 * 1000)
-  const matching = comments.flat(Infinity).filter(comment => {
-    const createdAt = new Date(comment?.created_at)
-    const updatedAt = new Date(comment?.updated_at)
-    if (comment?.author_association !== 'OWNER' || !policy.bootstrap.ownerLogins.includes(comment?.user?.login)) return false
-    if (!Number.isFinite(createdAt.getTime()) || createdAt.getTime() !== updatedAt.getTime() || createdAt > now) return false
-    const marker = 'DS-GOVERNANCE-BOOTSTRAP-V1 '
-    if (typeof comment.body !== 'string' || !comment.body.startsWith(marker)) return false
-    let payload
-    try { payload = JSON.parse(comment.body.slice(marker.length)) } catch { return false }
-    if (!exactKeys(payload, ['repository', 'pullRequest', 'candidateHeadSha', 'trustRootSha256', 'issuerRegistryDigest', 'contentDigest', 'expiresAt', 'nonce'])) return false
-    const expiresAt = new Date(payload.expiresAt)
-    if (!Number.isFinite(expiresAt.getTime()) || expiresAt <= now || expiresAt > maxExpiry || createdAt > expiresAt) return false
-    return comment.body === bootstrapCommentBody({ repository, pullRequest, candidateHeadSha, trustRootSha256, issuerRegistryDigest: candidateRegistryDigest, contentDigest: changes.contentDigest, expiresAt: payload.expiresAt, nonce: policy.bootstrap.nonce })
-  })
-  invariant(matching.length === 1, 'privileged bootstrap requires exactly one unedited, unexpired OWNER comment bound to this PR/head/trust root/registry/closure')
-  return { authorized: true, changedPaths: changes.changedPaths, authorization: { kind: 'owner-comment-bootstrap', commentId: matching[0].id } }
-}
-
 export async function verifyPrivilegedChange({
   trustedRoot,
   candidateRoot,
   repository,
   baseSha,
   candidateHeadSha,
-  pullRequest = null,
-  bootstrapComments = null,
   now = new Date(),
+  ...unsupported
 }) {
+  invariant(
+    Object.keys(unsupported).length === 0,
+    `unsupported privileged verification option(s): ${Object.keys(unsupported).sort().join(', ')}`,
+  )
   invariant(shaPattern.test(baseSha) && shaPattern.test(candidateHeadSha), 'privileged verification commit SHA is invalid')
   const registry = readIssuerRegistry(trustedRoot)
   const policy = readTrustRootPolicy(trustedRoot, { now })
   // Candidate validation happens before change-set calculation, and the
   // candidate policy is then included in that calculation. New semantic source
-  // bytes are therefore part of this authorization, not merely future changes.
+  // bytes are therefore part of this verification, not merely future changes.
   const candidatePolicy = readTrustRootPolicy(candidateRoot, { now })
   invariant(repository === policy.repository, `privileged verification repository mismatch: ${repository}`)
   const changes = await privilegedChangeSet({ trustedRoot, candidateRoot, policy, candidatePolicy })
-  if (changes.changedPaths.length === 0) return { authorized: true, changedPaths: [], authorization: null }
-  // 2026-07-29 user 拍板 3B:拆除 per-PR Ed25519 授權檔要求。
-  // 原設計以 `${authorizationDirectory}/${candidateHeadSha}.json` 綁定授權,但授權檔
-  // 必須 commit 進其自身命名的 head —— commit sha 依內容而變、內容含蓋 sha 的簽章,
-  // 為密碼學不動點,任何特權 PR 皆不可滿足(2026-07-29 PR13-21 全數 REVIEW-red 實證)。
-  // 保留的防線:semantic-source closure 驗證(readTrustRootPolicy 內
-  // validateSemanticSourceClosure)、privilegedChangeSet 的 trusted+candidate 聯集
-  // 閉包計算、以及 trust-config 變更時的 registry append-only lineage 結構驗證;
-  // 外加 repo 端 protected main + required checks。簽章式授權若未來重啟,必須改綁
-  // content digest 或 parent commit 而非 head sha。
+  if (changes.changedPaths.length === 0) return { verified: true, changedPaths: [] }
+  // 3B: privileged closure changes are structural verification, not a per-change
+  // signature, OWNER-comment, key-enrollment, or authorization-artifact ceremony.
+  // The retained fail-closed boundaries are semantic-source closure validation,
+  // the trusted+candidate union closure, append-only issuer lineage for trust
+  // configuration changes, and repository protected required checks.
   if (trustConfigurationChanged(trustedRoot, candidateRoot, changes)) {
     const candidate = validateCandidateTrustConfiguration(candidateRoot, { now })
-    // 無簽章 issuedAt 可錨 → 省略 revocationEffectiveAt 的精確時刻綁定;
-    // append-only / 不可改寫 / 不可復活 / 不可刪除的結構保證全數保留。
+    // With no per-change issuedAt, revocation remains structurally validated:
+    // append-only, immutable, non-reactivatable, and non-deletable lineage.
     validateIssuerRegistryLineage(registry, candidate.registry)
   }
-  return { authorized: true, changedPaths: changes.changedPaths, authorization: null }
+  return { verified: true, changedPaths: changes.changedPaths }
 }
 
-function value(args, flag) {
-  const at = args.indexOf(flag)
-  invariant(at >= 0 && args[at + 1] && !args[at + 1].startsWith('--'), `missing ${flag}`)
-  return args[at + 1]
+const VERIFY_CLI_FLAGS = new Set([
+  '--trusted',
+  '--candidate',
+  '--repository',
+  '--base-sha',
+  '--candidate-head-sha',
+])
+const REMOVED_CEREMONY_FLAGS = new Set([
+  '--issue',
+  '--private-key',
+  '--signer-key-id',
+  '--subject',
+  '--issued-at',
+  '--expires-at',
+  '--bootstrap-comments',
+  '--pull-request',
+])
+
+function parseCliArgs(args) {
+  for (const argument of args) {
+    invariant(
+      !REMOVED_CEREMONY_FLAGS.has(argument),
+      `${argument} was removed: privileged closure verification has no per-change signature, OWNER comment, or key-enrollment ceremony`,
+    )
+  }
+  invariant(args.length % 2 === 0, 'privileged verification arguments must be flag/value pairs')
+  const values = new Map()
+  for (let index = 0; index < args.length; index += 2) {
+    const flag = args[index]
+    const value = args[index + 1]
+    invariant(VERIFY_CLI_FLAGS.has(flag), `unknown privileged verification flag: ${flag}`)
+    invariant(!values.has(flag), `duplicate privileged verification flag: ${flag}`)
+    invariant(value && !value.startsWith('--'), `missing ${flag}`)
+    values.set(flag, value)
+  }
+  for (const flag of VERIFY_CLI_FLAGS) invariant(values.has(flag), `missing ${flag}`)
+  return values
 }
 
 async function main() {
-  const args = process.argv.slice(2)
-  const trustedRoot = resolve(value(args, '--trusted'))
-  const candidateRoot = resolve(value(args, '--candidate'))
-  const repository = value(args, '--repository')
-  const baseSha = value(args, '--base-sha')
-  const candidateHeadSha = value(args, '--candidate-head-sha')
-  if (args.includes('--issue')) {
-    const privateKeyPath = resolve(value(args, '--private-key'))
-    const stat = lstatSync(privateKeyPath)
-    invariant(stat.isFile() && !stat.isSymbolicLink() && (stat.mode & 0o077) === 0, 'private key must be a regular non-symlink file with no group/other permissions')
-    const authorization = await issuePrivilegedChangeAuthorization({
-      trustedRoot, candidateRoot, repository, baseSha, candidateHeadSha,
-      signerKeyId: value(args, '--signer-key-id'), subject: value(args, '--subject'),
-      privateKey: readFileSync(privateKeyPath), issuedAt: value(args, '--issued-at'), expiresAt: value(args, '--expires-at'),
-    })
-    process.stdout.write(`${JSON.stringify(authorization, null, 2)}\n`)
-    return
-  }
-  const bootstrapComments = args.includes('--bootstrap-comments') ? JSON.parse(readFileSync(resolve(value(args, '--bootstrap-comments')), 'utf8')) : null
-  const pullRequest = args.includes('--pull-request') ? Number(value(args, '--pull-request')) : null
+  const values = parseCliArgs(process.argv.slice(2))
+  const trustedRoot = resolve(values.get('--trusted'))
+  const candidateRoot = resolve(values.get('--candidate'))
+  const repository = values.get('--repository')
+  const baseSha = values.get('--base-sha')
+  const candidateHeadSha = values.get('--candidate-head-sha')
   const result = await verifyPrivilegedChange({
     trustedRoot,
     candidateRoot,
     repository,
     baseSha,
     candidateHeadSha,
-    bootstrapComments,
-    pullRequest,
   })
-  console.log(`privileged executable closure verified (${result.changedPaths.length} authorized changes)`)
+  console.log(`privileged executable closure verified structurally (${result.changedPaths.length} changed paths)`)
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main().catch(error => { console.error(error.message); process.exit(1) })

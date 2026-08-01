@@ -802,6 +802,12 @@ test('actual DS anchor installs and audits protected-base dependencies before ex
   ].map((marker) => workflow.indexOf(marker))
   assert.ok(markers.every((index) => index >= 0), 'DS anchor is missing the protected-base exact dependency bootstrap closure')
   assert.deepEqual(markers, [...markers].sort((left, right) => left - right), 'DS anchor executes protected verifier code before its trusted dependencies are installed and audited')
+  assert.doesNotMatch(
+    workflow,
+    /issues: read|bootstrap-comments|--pull-request|DS-GOVERNANCE-BOOTSTRAP-V1/,
+    'DS anchor retained the removed OWNER-comment/per-change authorization ceremony',
+  )
+  assert.match(workflow, /Verify all other privileged closure changes structurally/)
 })
 
 test('actual template anchor binds candidate dependencies to immutable provenance before executing the installed checker', () => {

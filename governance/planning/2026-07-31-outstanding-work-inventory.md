@@ -4,6 +4,89 @@
 **用途**：記錄 2026-07-31 全域盤點後的 current state。後續 session 應先讀本檔，再依
 canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描述當成 live remote verdict。
 
+## Immediate Claude Code pickup baton（2026-08-01；最高優先）
+
+這一節是目前的 executable cross-session handoff。Claude Code 應從
+`/tmp/ds-genesis.B3xxFi` 接手，先讀 root `AGENTS.md`、root `CLAUDE.md` 與本檔，再直接執行；
+不得重跑全域 discovery，也不得為下列工程動作再次詢問 user。Live Git/GitHub state 若已前進，
+以 exact head/readback 為準並更新本節，不能把本節快照當遠端 verdict。
+
+### Authority（不得再次詢問）
+
+- User 已明確授權全部工程、baseline、Git、PR、CI remediation/rerun、merge、release、rollout 與
+  readback。Exact visual image set 的「可以改」已是完整 UI/UX 核准；不需要第二次核准、key
+  enrollment、OWNER comment 或 signature，也不得啟用 optional independent cryptographic review。
+- 只有真正未解的產品／UI／UX SSOT 取捨才 ASK。只有 login/MFA/OAuth/account-owner/billing、
+  plan 外付費／法律／帳號／組織／商業承諾，或在安全 preflight 後仍缺既有 credential reference
+  才是 HUMAN_ONLY；先完成所有可代理工作，最後只提出一個 exact human action，readback 後續跑。
+- Engineering failure、CI failure、GitHub write、commit/push/PR/merge/rebase/release milestone 都是
+  AUTO，不是 user approval gate。Claude 的 `decision-authority-routing` live probe 必覆蓋同一語意。
+
+### Exact local state（接手時不可丟棄）
+
+- PR worktree：`/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project`
+  - branch `claude/remove-app-verdict-authz`
+  - clean HEAD `4a1f90edf3bda24f4b17060f676cc965df3f5ab2`
+  - PR `https://github.com/ajenchen/design-system/pull/22`
+- Genesis worktree：`/tmp/ds-genesis.B3xxFi`
+  - branch `agent/close-control-plane-genesis`
+  - last committed HEAD `bd22837454df4587c7d165fcdc24ca54d1840a00`
+  - five existing commits begin after old PR head `a3b4a86f6e17d237f94556a16c7d3266eadb1fb1`:
+    `58909462` → `d54586c9` → `c94257d6` → `b40a5447` → `bd228374`
+  - worktree intentionally dirty. Preserve every current edit. It adds Claude live authority cases for an
+    already-approved visual baseline = `AUTO` and owner/billing/missing-credential-reference = `HUMAN_ONLY`;
+    it also removes the obsolete per-change Ed25519/OWNER-comment privileged-change ceremony from the
+    verifier, workflow, tests, README and tamper text while preserving control-plane Genesis receipts and
+    runtime/fleet/release cryptographic attestations.
+- `node --test infra/governance/test/provider-runtime-conformance.test.mjs` passed 31/31 after the new route
+  cases. Re-run it after all dirty edits and generation. Do not use reset/checkout/clean to discard work.
+
+### PR #22 live snapshot（2026-08-01 10:30 Asia/Taipei）
+
+- Exact head above is OPEN, ready and mergeable. Candidate failures = 0.
+- PASS: Visual Regression 124/124 pixel diff, Packaging, Bundle, Composition Fidelity, Netlify deploy/header.
+- Still running at handoff: A11y run `30679561281` / job `91313734521`; CI Verify run `30679561262` /
+  job `91313734593` at `Fork-governance corpus + harness`. Earlier setup/audit/build/tsc/story/template/hook
+  steps passed. Historical normal durations are about 29 minutes for a11y and 38–50 minutes for CI.
+- The two failures in Authority run `30679559628` (`Verify authority candidate without credentials` and
+  `Publish Governance App verdict`) are known stale protected-base infrastructure, not candidate failures;
+  the separate Genesis candidate removes that obsolete path. Never relabel them green, but do not ask user.
+
+### Mandatory continuation order
+
+1. In the Genesis worktree, inspect and finish the existing dirty diff only. Close every stale 3B ceremony
+   reference/CLI/workflow input consistently; keep unrelated cryptographic attestation flows. Run at least:
+   `node --test infra/governance/test/provider-runtime-conformance.test.mjs`,
+   `npm run test:privileged-change-authorization`, `npm run test:workflow-security`,
+   `node scripts/test-check-governance-tamper.mjs`, `npm run governance:generate`,
+   `npm run governance:check`, `node scripts/check-governance-tamper.mjs --check`, and `git diff --check`.
+   Review the complete diff, then commit it. On the resulting clean committed tree run the real bounded Claude
+   probe: `node infra/governance/bin/conform-provider-runtime.mjs --provider claude --allow-model`.
+2. Poll PR #22 by exact head. If either remaining candidate check fails, diagnose/fix/push the same branch and
+   wait for the new exact-head gates. Once A11y and CI Verify pass, squash-merge automatically with head CAS:
+   `env -u GH_TOKEN gh pr merge 22 --repo ajenchen/design-system --squash --match-head-commit 4a1f90edf3bda24f4b17060f676cc965df3f5ab2`.
+   Read back merged state and protected `main`; do not wait for another user message.
+3. Fetch the merged protected base, then in the clean Genesis worktree rebase only the Genesis commits:
+   `git fetch origin main` followed by
+   `git rebase --onto origin/main a3b4a86f6e17d237f94556a16c7d3266eadb1fb1 agent/close-control-plane-genesis`.
+   Expected conflicts are generated lock/projection files; preserve canonical source semantics, regenerate, stage
+   exact resolved files and continue the rebase. Never use destructive reset/checkout. Re-run generation/check,
+   focused tests, tamper check and the real Claude authority probe on the final rebased clean tree.
+4. Run `npm run test:governance-harnesses` exactly once on that final rebased tree because its receipt binds the
+   final HEAD/tree. Fix any real failure. Push `agent/close-control-plane-genesis`, open one ready PR against
+   `main`, monitor and remediate all candidate CI, then squash-merge with exact-head CAS and read back.
+5. Continue §4 external activation/reconciliation/release in canonical order without engineering approval.
+   Stop only at a true HUMAN_ONLY boundary. Do not bulk-push the mixed six-commit
+   `../work-management` branch; after governance/bootstrap is merged, salvage and verify only the intended UI
+   commit `1a26bd1` before normal PR/CI/merge handling.
+
+### Completion condition
+
+Do not stop at “source fixed” or “PR opened.” Completion is: PR #22 merged; Genesis candidate rebased,
+fully verified, PR-green and merged; live protected-main readback captured; then every safely executable §4
+step advanced until either complete or one precisely evidenced HUMAN_ONLY action remains. Keep this file as the
+single continuation SSOT and update its live snapshot before the next handoff.
+
 ## 0. Current state（2026-07-31 Codex 收尾）
 
 - 分支：`claude/remove-app-verdict-authz`；唯一 PR #22 以 protected `main` 為 base。本輪 closure

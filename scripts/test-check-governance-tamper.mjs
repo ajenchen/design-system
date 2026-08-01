@@ -57,7 +57,7 @@ const CLOSED_ENVIRONMENT = Object.freeze({
 })
 const TIMEOUT_MS = 60_000
 const MAX_BUFFER = 8 * 1024 * 1024
-const TRANSITION_NOTE = 'Transition markers are immutable audit metadata only; they do not authenticate a reviewer or grant approval. When external trust is activated, authorization is enforced separately by the protected-base privileged-change verifier against a valid commit-bound privileged-change authorization. Every behavior change requires one header marker @preflight-transition(from-revision:<old revision> from:<old behavior digest> to:<new behavior digest> audit-ref:<change reference> reason:<why>).'
+const TRANSITION_NOTE = 'Transition markers are immutable audit metadata only; they do not authenticate a reviewer or grant approval. Protected-base privileged closure changes are verified structurally against the exact trusted-plus-candidate closure and append-only issuer lineage, and remain subject to protected required checks; no per-change signature, OWNER comment, key-enrollment command, or commit-bound authorization artifact is accepted. Every behavior change requires one header marker @preflight-transition(from-revision:<old revision> from:<old behavior digest> to:<new behavior digest> audit-ref:<change reference> reason:<why>).'
 const liveFingerprint = captureGitVisibleWorktree(REPO)
 
 function run(root, arguments_ = ['--check']) {

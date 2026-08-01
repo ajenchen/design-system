@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { createHash, generateKeyPairSync } from 'node:crypto'
 import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  rmSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs'
@@ -20,9 +20,6 @@ import {
 } from '../infra/governance/lib/external-activation.mjs'
 import { issuerRegistryDigest } from '../infra/governance/lib/issuer-registry.mjs'
 import {
-  bootstrapCommentBody,
-  cosignPrivilegedChangeAuthorization,
-  issuePrivilegedChangeAuthorization,
   privilegedChangeSet,
   verifyPrivilegedChange,
 } from './verify-privileged-change.mjs'
@@ -33,13 +30,14 @@ const REPOSITORY = 'ajenchen/design-system'
 const NOW = new Date('2026-07-20T00:30:00Z')
 const PRODUCTION_PROFILE = 'PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM'
 const MAXIMUM_PROFILE = 'MAXIMUM_ASSURANCE_MULTI_CUSTODIAN_WORM'
-const canonicalClaudeCapabilityProbeChecks = JSON.parse(readFileSync(
+const canonicalClaudeRequiredFixtureChecks = JSON.parse(readFileSync(
   join(import.meta.dirname, '../infra/governance/providers/runtime-conformance.json'),
   'utf8',
 )).providers
   .find(provider => provider.id === 'claude')
   .checks
-  .filter(check => check.driver === 'claude-review-capability-probe')
+  .filter(check => check.driver === 'claude-review-capability-probe'
+    || (check.id === 'decision-authority-routing' && check.driver === 'claude-authority-routing'))
 const protectedFiles = [
   'AGENTS.md',
   'CLAUDE.md',
@@ -163,7 +161,7 @@ function trustDocuments(records, {
             executionEnvironment: 'native', distributionVersion: '2.1.215', pathClass: 'no-space',
           }],
           checks: [
-            ...structuredClone(canonicalClaudeCapabilityProbeChecks),
+            ...structuredClone(canonicalClaudeRequiredFixtureChecks),
             { id: 'provider-hook-adapter-block', driver: 'provider-hook-adapter', requiresModel: false },
           ],
         },
@@ -250,9 +248,10 @@ function fixture({
   return { trusted, candidate, keys: signerRecord?.keys, signer: signerRecord, releaseSigners, write, install }
 }
 
-test('unchanged privileged executable closure needs no authorization', async () => {
+test('unchanged privileged executable closure reports no changed paths', async () => {
   const { trusted, candidate } = fixture()
   const result = await verifyPrivilegedChange({ trustedRoot: trusted, candidateRoot: candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
+  assert.equal(result.verified, true)
   assert.deepEqual(result.changedPaths, [])
 })
 
@@ -263,16 +262,15 @@ test('privileged trust-config installation verifies structurally without owner-c
   const root = fixture()
   const signer = issuer('one')
   const documents = root.install(root.candidate, [signer.record], { bootstrap: false })
-  const result = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, pullRequest: 42, now: new Date('2026-07-20T00:10:00Z') })
-  assert.equal(result.authorized, true)
-  assert.equal(result.authorization, null)
+  const result = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: new Date('2026-07-20T00:10:00Z') })
+  assert.equal(result.verified, true)
   assert.ok(result.changedPaths.includes('infra/governance/trust/issuers.json'))
   assert.deepEqual(documents.policy.allowedKeyIds, [signer.record.keyId])
   assert.equal(documents.policy.trustRootQuorum, 1)
   assert.equal(documents.releaseTag.allowedKeyIds.length, 2, 'functional release-only fixture keys remain outside the privileged allowlist')
 })
 
-test('single-owner bootstrap rejects multiple privileged/root keys rather than inventing custodian independence', async () => {
+test('single-owner initial trust configuration rejects multiple privileged/root keys rather than inventing custodian independence', async () => {
   const root = fixture()
   const signers = [issuer('single-owner-duplicate-one'), issuer('single-owner-duplicate-two')]
   root.install(root.candidate, signers.map(item => item.record), { bootstrap: false })
@@ -282,7 +280,7 @@ test('single-owner bootstrap rejects multiple privileged/root keys rather than i
   )
 })
 
-test('maximum-assurance bootstrap fails closed below two distinct privileged/root signer subjects', async () => {
+test('maximum-assurance initial trust configuration fails closed below two distinct privileged/root signer subjects', async () => {
   const root = fixture({ quorum: 2, profileId: MAXIMUM_PROFILE })
   const signer = issuer('maximum-only-one')
   root.install(root.candidate, [signer.record], { bootstrap: false })
@@ -329,9 +327,18 @@ test('privileged trust policy is content-addressed to the active canonical assur
   }
 })
 
-test('canonical source keeps ordinary bootstrap free of a raw two-registry-key gate', () => {
+test('canonical source keeps ordinary structural activation free of ceremony and a raw two-registry-key gate', async () => {
   const source = readFileSync(join(process.cwd(), 'scripts/verify-privileged-change.mjs'), 'utf8')
   assert.doesNotMatch(source, /requireTwoRegistryKeys|registry\.issuers\.length\s*>=\s*2|at least two independent registry keys/)
+  assert.doesNotMatch(
+    source,
+    /function (?:issuePrivilegedChangeAuthorization|cosignPrivilegedChangeAuthorization|bootstrapCommentBody|verifyBootstrapTransition)|DS-GOVERNANCE-BOOTSTRAP-V1/,
+    'removed per-change signature or OWNER-comment API returned',
+  )
+  const verifierApi = await import('./verify-privileged-change.mjs')
+  for (const name of ['issuePrivilegedChangeAuthorization', 'cosignPrivilegedChangeAuthorization', 'bootstrapCommentBody']) {
+    assert.equal(Object.hasOwn(verifierApi, name), false, `removed verifier API returned: ${name}`)
+  }
   assert.doesNotMatch(
     source,
     /--control-plane-genesis|validateControlPlaneGenesisChallengeTransition|prepareControlPlaneGenesisChallenge|verifyControlPlaneGenesis/,
@@ -354,6 +361,53 @@ test('canonical source keeps ordinary bootstrap free of a raw two-registry-key g
       true,
       `ordinary protected-base verifier does not cover Genesis closure source:${path}`,
     )
+  }
+})
+
+test('removed per-change ceremony options and CLI flags fail closed', async () => {
+  const root = fixture()
+  const verification = {
+    trustedRoot: root.trusted,
+    candidateRoot: root.candidate,
+    repository: REPOSITORY,
+    baseSha: BASE_SHA,
+    candidateHeadSha: HEAD_SHA,
+    now: NOW,
+  }
+  for (const option of ['pullRequest', 'bootstrapComments']) {
+    await assert.rejects(
+      verifyPrivilegedChange({ ...verification, [option]: option === 'pullRequest' ? 42 : [] }),
+      new RegExp(`unsupported privileged verification option\\(s\\): ${option}`),
+    )
+  }
+
+  const verifier = join(import.meta.dirname, 'verify-privileged-change.mjs')
+  const structuralArgs = [
+    '--', verifier,
+    '--trusted', root.trusted,
+    '--candidate', root.candidate,
+    '--repository', REPOSITORY,
+    '--base-sha', BASE_SHA,
+    '--candidate-head-sha', HEAD_SHA,
+  ]
+  const accepted = spawnSync(process.execPath, structuralArgs, { encoding: 'utf8' })
+  assert.equal(accepted.status, 0, accepted.stderr)
+  assert.match(accepted.stdout, /privileged executable closure verified structurally/)
+
+  for (const flag of [
+    '--issue',
+    '--private-key',
+    '--signer-key-id',
+    '--subject',
+    '--issued-at',
+    '--expires-at',
+    '--bootstrap-comments',
+    '--pull-request',
+  ]) {
+    const rejected = spawnSync(process.execPath, [...structuralArgs, flag, 'removed'], { encoding: 'utf8' })
+    assert.notEqual(rejected.status, 0, `${flag} unexpectedly remained callable`)
+    assert.match(rejected.stderr, new RegExp(`${flag} was removed`))
+    assert.equal(rejected.stdout, '')
   }
 })
 
@@ -380,7 +434,7 @@ test('maximum-assurance registry rotation and revocation require the existing mu
   // 3B:合法輪換 + 撤銷(append-only)結構性通過;lineage 破壞案由
   // 「issuer registry lineage is append-only」測試持續 fail-closed。
   const rotation = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
-  assert.equal(rotation.authorized, true)
+  assert.equal(rotation.verified, true)
   assert.ok(rotation.changedPaths.includes('infra/governance/trust/issuers.json'))
 })
 
@@ -394,7 +448,7 @@ test('maximum-assurance release-tag authorization policy rotation requires the e
   writeFileSync(releasePolicyPath, `${JSON.stringify(releasePolicy, null, 2)}\n`)
   // 3B:policy 檔屬特權 closure,變更以 changedPaths 精確揭露並結構性通過。
   const result = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
-  assert.equal(result.authorized, true)
+  assert.equal(result.verified, true)
   assert.ok(result.changedPaths.includes('infra/governance/release-tag-authorization-policy.json'))
 })
 
@@ -428,7 +482,7 @@ test('issuer revocation is structural without ceremony time anchor and reactivat
       writeFileSync(target, `${JSON.stringify(data, null, 2)}\n`)
     }
     const revocation = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
-    assert.equal(revocation.authorized, true)
+    assert.equal(revocation.verified, true)
   }
   const root = fixture({ quorum: 1 })
   const signers = [issuer('reactivate-victim'), issuer('reactivate-keeper')]
@@ -468,19 +522,6 @@ test('issuer registry lineage is append-only across authorized rotations', async
       bootstrap: false,
       privilegedAllowedKeyIds: [signers[1].record.keyId],
     })
-    const authorization = await issuePrivilegedChangeAuthorization({
-      trustedRoot: root.trusted,
-      candidateRoot: root.candidate,
-      repository: REPOSITORY,
-      baseSha: BASE_SHA,
-      candidateHeadSha: HEAD_SHA,
-      signerKeyId: signers[1].record.keyId,
-      subject: signers[1].record.subject,
-      privateKey: signers[1].keys.privateKey,
-      issuedAt: '2026-07-20T00:00:00Z',
-      expiresAt: '2026-07-20T01:00:00Z',
-    })
-    root.write(root.candidate, `governance/authorizations/${HEAD_SHA}.json`, `${JSON.stringify(authorization)}\n`)
     await assert.rejects(
       verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW }),
       mutation === 'delete-historical-key' ? /missing from the append-only current registry/ : /changed immutable lineage field publicKeySpki/,
@@ -494,7 +535,7 @@ for (const path of protectedFiles) {
     const { trusted, candidate, write } = fixture()
     write(candidate, path, `${readFileSync(join(candidate, path), 'utf8')}reviewed-step\n`)
     const result = await verifyPrivilegedChange({ trustedRoot: trusted, candidateRoot: candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
-    assert.equal(result.authorized, true)
+    assert.equal(result.verified, true)
     assert.deepEqual(result.changedPaths, [path])
   })
 }
@@ -504,8 +545,7 @@ test('stale authorization artifacts are inert data and never consulted(3B)', asy
   write(candidate, 'scripts/release-npm-publish.mjs', 'reviewed privileged change\n')
   write(candidate, `governance/authorizations/${HEAD_SHA}.json`, 'not-even-json{{{\n')
   const result = await verifyPrivilegedChange({ trustedRoot: trusted, candidateRoot: candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
-  assert.equal(result.authorized, true)
-  assert.equal(result.authorization, null)
+  assert.equal(result.verified, true)
   assert.ok(result.changedPaths.includes('scripts/release-npm-publish.mjs'))
 })
 
@@ -622,7 +662,7 @@ test('simultaneous policy and semantic-manifest extension binds the new source b
   // 3B:聯集閉包不變量保留 —— 同時擴充 policy + manifest 時,新 source 位元組
   // 必進 changedPaths(candidate 不能靠自己加前綴讓新 source 躲出變更集)。
   const result = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
-  assert.equal(result.authorized, true)
+  assert.equal(result.verified, true)
   for (const path of [semanticPath, 'infra/governance/privileged-trust-roots.json', 'packages/governance/canonical/manifest.json']) {
     assert.ok(result.changedPaths.includes(path), `${path} must be inside the union-closure change set`)
   }

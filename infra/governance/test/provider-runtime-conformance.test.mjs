@@ -193,8 +193,10 @@ function successMockRunner(overrides = {}) {
       assert.match(providerArguments.at(-1), /Public runtime project-instruction evidence: <value>/)
       assert.match(providerArguments.at(-1), /current durable authority policy/)
       assert.match(providerArguments.at(-1), /Do not invent missing target details or an additional approval gate/)
+      assert.match(providerArguments.at(-1), /approvedVisualBaseline:/)
+      assert.match(providerArguments.at(-1), /without another approval, key enrollment, or signature/)
       assert.match(providerArguments.at(-1), /unresolvedUiUxSsot:/)
-      assert.match(providerArguments.at(-1), /oauth:/)
+      assert.match(providerArguments.at(-1), /missingCredentialReference:/)
       return {
         exitCode: 0,
         stdout: JSON.stringify({
@@ -208,10 +210,14 @@ function successMockRunner(overrides = {}) {
             pullRequest: 'AUTO',
             ci: 'AUTO',
             release: 'AUTO',
+            approvedVisualBaseline: 'AUTO',
             unresolvedUiUxSsot: 'ASK',
             login: 'HUMAN_ONLY',
             mfa: 'HUMAN_ONLY',
             oauth: 'HUMAN_ONLY',
+            ownerAction: 'HUMAN_ONLY',
+            billing: 'HUMAN_ONLY',
+            missingCredentialReference: 'HUMAN_ONLY',
           },
         }),
         stderr: '',
@@ -516,10 +522,14 @@ test('mocked Claude and Codex CLIs produce deterministic semantic evidence witho
       'authority-routing-pull-request-auto': true,
       'authority-routing-ci-auto': true,
       'authority-routing-release-auto': true,
+      'authority-routing-approved-visual-baseline-auto': true,
       'authority-routing-unresolved-ui-ux-ssot-ask': true,
       'authority-routing-login-human-only': true,
       'authority-routing-mfa-human-only': true,
       'authority-routing-oauth-human-only': true,
+      'authority-routing-owner-action-human-only': true,
+      'authority-routing-billing-human-only': true,
+      'authority-routing-missing-credential-reference-human-only': true,
     },
   )
   const entitlementReadback = first.evidence.providers.find(provider => provider.id === 'claude')
@@ -1527,10 +1537,14 @@ test('Claude decision-authority routing is required and fails closed on route or
             pullRequest: 'AUTO',
             ci: 'AUTO',
             release: 'AUTO',
+            approvedVisualBaseline: 'ASK',
             unresolvedUiUxSsot: 'AUTO',
             login: 'ASK',
             mfa: 'HUMAN_ONLY',
             oauth: 'HUMAN_ONLY',
+            ownerAction: 'AUTO',
+            billing: 'AUTO',
+            missingCredentialReference: 'ASK',
           },
         }),
       },
@@ -1546,8 +1560,12 @@ test('Claude decision-authority routing is required and fails closed on route or
   assert.equal(wrongRouting.evidence.status, 'fail')
   assert.equal(assertions.get('canonical-authority-public-project-instruction-evidence-observed'), false)
   assert.equal(assertions.get('authority-routing-engineering-auto'), false)
+  assert.equal(assertions.get('authority-routing-approved-visual-baseline-auto'), false)
   assert.equal(assertions.get('authority-routing-unresolved-ui-ux-ssot-ask'), false)
   assert.equal(assertions.get('authority-routing-login-human-only'), false)
+  assert.equal(assertions.get('authority-routing-owner-action-human-only'), false)
+  assert.equal(assertions.get('authority-routing-billing-human-only'), false)
+  assert.equal(assertions.get('authority-routing-missing-credential-reference-human-only'), false)
 
   const substitutedProbe = structuredClone(wrongRouting.evidence)
   const substitutedCheck = substitutedProbe.providers.find(provider => provider.id === 'claude')

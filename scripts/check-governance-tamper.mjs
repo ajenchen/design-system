@@ -6,8 +6,8 @@
  * source identity and also binds the exact non-gate preflight scaffold. Every gate-ledger
  * transition (addition, deletion, substitution, or reordering) and every
  * runner/scaffold mutation requires a lineage-recorded baseline update. The
- * marker is audit metadata, not approval; external authorization is enforced
- * separately by the protected-base privileged-change protocol when activated.
+ * marker is audit metadata, not approval. Protected-base privileged closure
+ * changes are verified structurally and remain subject to required checks.
  *
  * R2 validates every time-boxed
  *   @waiver(owner:<x> expiry:<YYYY-MM-DD> reason:<non-empty>)
@@ -78,7 +78,7 @@ const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0
 const APPROVED_PNG_PREFIX = 'infra/governance/baseline/visual/'
 const SHA256 = /^[0-9a-f]{64}$/
 const PNG_TOTAL_BUDGET_EXCEEDED = Symbol('png-total-budget-exceeded')
-const TRANSITION_NOTE = 'Transition markers are immutable audit metadata only; they do not authenticate a reviewer or grant approval. When external trust is activated, authorization is enforced separately by the protected-base privileged-change verifier against a valid commit-bound privileged-change authorization. Every behavior change requires one header marker @preflight-transition(from-revision:<old revision> from:<old behavior digest> to:<new behavior digest> audit-ref:<change reference> reason:<why>).'
+const TRANSITION_NOTE = 'Transition markers are immutable audit metadata only; they do not authenticate a reviewer or grant approval. Protected-base privileged closure changes are verified structurally against the exact trusted-plus-candidate closure and append-only issuer lineage, and remain subject to protected required checks; no per-change signature, OWNER comment, key-enrollment command, or commit-bound authorization artifact is accepted. Every behavior change requires one header marker @preflight-transition(from-revision:<old revision> from:<old behavior digest> to:<new behavior digest> audit-ref:<change reference> reason:<why>).'
 const NO_FOLLOW = fs.constants.O_NOFOLLOW
 if (!Number.isInteger(NO_FOLLOW)) {
   throw new Error('O_NOFOLLOW is required; use macOS, Linux, WSL2, or the supported devcontainer')
