@@ -127,8 +127,20 @@ canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描�
    `resolveGitRuntimeRoots`（走 `git rev-parse --absolute-git-dir`）。修後 76/76。
    這一項在正常 clone 的 CI 不會發生，但它讓 harness 無法在本 repo 自己的 worktree 流程下跑完。
 
-其餘失敗全屬上表環境限制。**all-Harness receipt 仍必須在非 sandbox host 或 CI 產生**；
-在本 sandbox 內無法取得綠燈，也不得因此宣稱 source 有缺陷。
+**修後於最終 tree `5be08957` 重跑全 all-Harness 複驗**：`governance-infra-remainder`
+**由 failed 轉為 passed（29/29，563s）**，兩個真缺陷確認在 suite 層級關閉；
+`governance-script-remainder`(43 members) 仍只有原本那 2 個 Playwright 失敗，無新增回歸。
+最終 11 個 entry 中 7 passed / 4 failed，exit 1，四個失敗全屬上表環境限制：
+`governance-script-remainder`(Chromium ×2)、`run-gate-meta-tests`(Chromium ×3，
+`ran=64 pass=61`)、`governance-package-remainder`(`mkdtemp /private/tmp` EPERM)、
+`canonical-hook-behavioral`(`mktemp -d`)。
+
+注意：**single suite 無法單獨執行**——`run-harness-suite.mjs --suite <id>` 會直接
+`Harness suite blocked: Harness suite may only run inside the canonical all-Harness runner`，
+只能整批跑（約 65 分鐘）。個別 test 檔仍可用 `node --test <path>` 驗。
+
+**all-Harness receipt 仍必須在非 sandbox host 或 CI 產生**；在本 sandbox 內無法取得綠燈，
+也不得因此宣稱 source 有缺陷。
 
 ### Mandatory continuation order
 
