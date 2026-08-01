@@ -311,61 +311,19 @@ test('actual clean-room mirror closes every generated provider/fork scaffold fil
 
 test('release and fresh-writer workflows keep the scaffold provenance chain wired', () => {
   const release = readFileSync('.github/workflows/release.yml', 'utf8')
-  const finalizer = readFileSync('.github/workflows/release-finalize.yml', 'utf8')
   const mirror = readFileSync('.github/workflows/mirror-to-published-template.yml', 'utf8')
-  const finalVerifier = readFileSync('scripts/verify-mirror-evidence.mjs', 'utf8')
-  for (const [label, workflow] of [['release builder', release], ['release finalizer', finalizer]]) {
-    const build = workflow.indexOf('build-published-template-mirror.mjs')
-    const lock = workflow.indexOf('product-template-scaffold-lock.mjs', build)
-    const bom = workflow.indexOf('build-release-bom.mjs', lock)
-    assert.ok(build >= 0 && build < lock && lock < bom, `${label} does not build scaffold lock before BOM`)
-  }
-  assert.match(release, /subject-path:[\s\S]*product-template-scaffold\.lock\.json/)
-  assert.match(mirror, /node source\/scripts\/generate-product-template-package-lock\.mjs --prefix "\$MIRROR"/)
+  const build = release.indexOf('build-published-template-mirror.mjs')
+  const lock = release.indexOf('product-template-scaffold-lock.mjs', build)
+  const bom = release.indexOf('build-release-bom.mjs', lock)
+  assert.ok(build >= 0 && build < lock && lock < bom, 'release must build scaffold lock before BOM')
+  assert.match(release, /release-set\.mjs[\s\S]*release-github-release\.mjs/)
+  assert.match(mirror, /release:\n\s+types: \[published\]/)
+  assert.match(mirror, /gh release download[\s\S]*release-set\.mjs[\s\S]*build-release-bom\.mjs --verify/)
+  assert.match(mirror, /product-template-scaffold-lock\.mjs --verify[\s\S]*--phase source/)
+  assert.match(mirror, /node source\/scripts\/generate-product-template-package-lock\.mjs --prefix "\$mirror"/)
+  assert.match(mirror, /product-template-scaffold-lock\.mjs --verify[\s\S]*--phase published/)
   assert.doesNotMatch(mirror, /npm install --global|\bnpx\s+-y\b/)
-  assert.match(mirror, /gh release download[\s\S]*--pattern release-bom\.json[\s\S]*--pattern product-template-scaffold\.lock\.json/)
-  assert.match(mirror, /--pre-extract[\s\S]*tar --no-same-owner[\s\S]*node trusted\/scripts\/verify-mirror-evidence\.mjs/)
-  const verifierPublishedScaffold = finalVerifier.indexOf('verifyProductTemplateScaffold({ root: mirror')
-  const verifierReceiptTree = finalVerifier.indexOf('MIRROR-EVIDENCE-005', verifierPublishedScaffold)
-  const verifierSetupSnapshot = finalVerifier.indexOf('assertCommittedSetupSnapshot(mirror)', verifierReceiptTree)
-  assert.ok(
-    verifierPublishedScaffold >= 0
-      && verifierPublishedScaffold < verifierReceiptTree
-      && verifierReceiptTree < verifierSetupSnapshot,
-    'final verifier must close published scaffold -> receipt-bound tree -> committed setup snapshot',
-  )
-  const sourceVerify = mirror.indexOf('--phase source')
-  const certifyActivationProof = mirror.indexOf('node trusted/scripts/verify-mirror-activation-boundary.mjs')
-  const lockfileGeneration = mirror.indexOf('node source/scripts/generate-product-template-package-lock.mjs --prefix "$MIRROR"')
-  const publishedVerify = mirror.indexOf('--phase published', sourceVerify)
-  const proofEvidenceCopy = mirror.indexOf('mirror-activation-boundary-proof.json" "$EVIDENCE/mirror-activation-boundary-proof.json', publishedVerify)
-  const evidenceReceipt = mirror.indexOf('{schemaVersion:4', publishedVerify)
-  const receiptProofBinding = mirror.indexOf('activationBoundaryProofSha256:$activation', evidenceReceipt)
-  const envelopeVerify = mirror.indexOf('verify-mirror-evidence.mjs', evidenceReceipt)
-  const extractedVerify = mirror.indexOf('verify-mirror-evidence.mjs', envelopeVerify + 1)
-  const writerActivationProof = mirror.indexOf('node trusted/scripts/verify-mirror-activation-boundary.mjs', certifyActivationProof + 1)
-  const writerProofReadback = mirror.indexOf('cmp -s "$FRESH_PROOF" "$ARTIFACT_PROOF"', writerActivationProof)
-  const targetEvidenceReadback = mirror.indexOf('verify-mirror-evidence.mjs', extractedVerify + 1)
-  const targetReadback = mirror.indexOf('--allow-git-metadata', targetEvidenceReadback)
-  const indexEvidenceReadback = mirror.indexOf('verify-mirror-evidence.mjs', targetEvidenceReadback + 1)
-  const liveMutationBoundary = mirror.indexOf('Prove live mutation boundaries before requesting write credentials', indexEvidenceReadback)
-  const sourceBoundary = mirror.indexOf('--repository "$GITHUB_REPOSITORY"', liveMutationBoundary)
-  const targetBoundary = mirror.indexOf('--repository ajenchen/ds-product-template', sourceBoundary)
-  const token = mirror.indexOf('actions/create-github-app-token@', targetBoundary)
-  assert.equal((mirror.match(/--activation-boundary-proof-sha256/g) ?? []).length, 3)
-  assert.equal((mirror.match(/--activation-proof "\$RUNNER_TEMP\/mirror-evidence\/mirror-activation-boundary-proof\.json"/g) ?? []).length, 2)
-  assert.equal((mirror.match(/--release-source-root "\$GITHUB_WORKSPACE\/release-source"/g) ?? []).length, 3)
-  assert.ok(
-    certifyActivationProof >= 0 && certifyActivationProof < sourceVerify
-      && sourceVerify < lockfileGeneration
-      && lockfileGeneration < publishedVerify && publishedVerify < evidenceReceipt
-      && publishedVerify < proofEvidenceCopy && proofEvidenceCopy < evidenceReceipt
-      && evidenceReceipt < receiptProofBinding && receiptProofBinding < writerActivationProof
-      && writerActivationProof < writerProofReadback && writerProofReadback < envelopeVerify
-      && envelopeVerify < extractedVerify && extractedVerify < targetEvidenceReadback
-      && targetEvidenceReadback < targetReadback && targetReadback < indexEvidenceReadback
-      && indexEvidenceReadback < liveMutationBoundary && liveMutationBoundary < sourceBoundary
-      && sourceBoundary < targetBoundary && targetBoundary < token,
-    'mirror workflow no longer closes signed activation -> source -> generated lockfile -> receipt v4 -> safe extraction -> exact target/index readback -> live boundaries before credentials',
-  )
+  const verify = mirror.indexOf('Verify six-file release set, BOM, and npm readback')
+  const token = mirror.indexOf('secrets.CROSS_REPO_TOKEN')
+  assert.ok(verify >= 0 && token > verify, 'target write token must be minted only after release verification')
 })

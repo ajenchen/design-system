@@ -42,13 +42,13 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "c95bf7970b897f4585347ea0db809c3715b263f752f9e5a7fcf55ab24c2942dc",
+    "forkCorpusLockSha256": "8116f1d5d144310f457c4475596011bb36a79f199f4c9d5375d95bfcfb9dd7b1",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "8f30d9c5fcb0b79c29eeeeb14df31ea98f3303b3b24f462a99e01ad65e8a3061",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "3fca4ba4094e855412a22308e13f2b5f91dcfeb009512eb8318b3bd1bace8d9a",
-    "commonInstructionSha256": "2b9eb1a4fbca7d432c3b68c3b2fd73090ed9a95f41da960584556ac030b599e6",
+    "commonInstructionSha256": "3d40f4b5d3ea78f6c9ca5bd18daa531dc758d77df21a5e7ef35a3336cd71f906",
     "providerArtifactDigests": {
       "claude": {
         "instructionSha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
@@ -57,7 +57,7 @@
         "treeDigests": {}
       },
       "codex": {
-        "instructionSha256": "2b9eb1a4fbca7d432c3b68c3b2fd73090ed9a95f41da960584556ac030b599e6",
+        "instructionSha256": "3d40f4b5d3ea78f6c9ca5bd18daa531dc758d77df21a5e7ef35a3336cd71f906",
         "hookSha256": "697d186cfe0882ee2ce1b02ecc4c3258ab42b125bab6d70c7be868fa271132f7",
         "skillsSha256": "b80eadd9559d29a50bb7c59ca5f431077174135de79081bbc716cdf64b25bee7",
         "treeDigests": {}
@@ -90,9 +90,8 @@
       ".devcontainer/devcontainer.json": "1668412229466b1e5092218606817711c46c5307b7fc7b77abf6fff089b9b4c7",
       ".devcontainer/onboard-banner.sh": "fd87b372e48ff079afb0b257c5e5c28fcf58637b2589a508987460a66c2b8b75",
       ".devcontainer/post-create.mjs": "6bc05d2597a54e8f6a5a087901e92ccc89acc3d5873d96ad20814f8f539a146b",
-      ".github/workflows/audit.yml": "66bcee0a60de93a992131b92c20d1e397297fa109a2fe8c72dbfd62ebbbe9680",
+      ".github/workflows/audit.yml": "3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",
       ".github/workflows/governance-anchor.yml": "3e280e67fd72886b0686a6d296947ee3270b4899e9914c1e3a9c61c951dcc2ee",
-      ".github/workflows/sync-design-system.yml": "f25e4d348daf1d98a0c8d0d9c1546d6b8340683ba59ed22aeb0f001378000483",
       ".npmrc": "79eff2d98653857c11ab6a0354fa62685a72ec214545e7fdfabc450e91b7ba63",
       "governance/consumer-governance.md": "abbded0a31cf3a6fb0de62975b749d10f27ac0adcc9bbf5e95ef410b64073396",
       "governance/provider-cli-toolchain.json": "6bc607cb6ac299b332d35ca871c838b54e367d96775ad0e759c827a0e3ca10cc",

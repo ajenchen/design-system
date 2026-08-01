@@ -690,13 +690,13 @@ export function validateRuntimeProfile(profile, {
             exactKeys(selector, ['checkContext', 'oidcSubjectMode', 'trustSource'])
               && typeof selector.checkContext === 'string'
               && selector.checkContext.length > 0
-              && ['pull-request', 'credential-environment'].includes(selector.oidcSubjectMode)
+              && ['pull-request', 'credential-environment', 'protected-ref'].includes(selector.oidcSubjectMode)
               && ['repository-workflow', 'protected-base-workflow'].includes(selector.trustSource),
             `GitHub runtime provider ${provider.id} hard-gate selector for ${repositoryRole} is invalid or open`,
           )
           invariant(
             (selector.oidcSubjectMode === 'pull-request' && selector.trustSource === 'repository-workflow')
-              || (selector.oidcSubjectMode === 'credential-environment' && selector.trustSource === 'protected-base-workflow'),
+              || (['credential-environment', 'protected-ref'].includes(selector.oidcSubjectMode) && selector.trustSource === 'protected-base-workflow'),
             `GitHub runtime provider ${provider.id} hard-gate selector for ${repositoryRole} has an incompatible OIDC/trust-source pair`,
           )
         }

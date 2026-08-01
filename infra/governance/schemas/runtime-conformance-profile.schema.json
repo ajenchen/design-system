@@ -251,7 +251,7 @@
       "required": ["checkContext", "oidcSubjectMode", "trustSource"],
       "properties": {
         "checkContext": {"type": "string", "minLength": 1},
-        "oidcSubjectMode": {"enum": ["pull-request", "credential-environment"]},
+        "oidcSubjectMode": {"enum": ["pull-request", "credential-environment", "protected-ref"]},
         "trustSource": {"enum": ["repository-workflow", "protected-base-workflow"]}
       },
       "allOf": [
@@ -261,6 +261,10 @@
         },
         {
           "if": {"properties": {"oidcSubjectMode": {"const": "credential-environment"}}},
+          "then": {"properties": {"trustSource": {"const": "protected-base-workflow"}}}
+        },
+        {
+          "if": {"properties": {"oidcSubjectMode": {"const": "protected-ref"}}},
           "then": {"properties": {"trustSource": {"const": "protected-base-workflow"}}}
         }
       ]

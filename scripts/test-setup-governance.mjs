@@ -854,7 +854,6 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
   const workflowPaths = [
     'template/ds-product-template/.github/workflows/audit.yml',
     'template/ds-product-template/.github/workflows/governance-anchor.yml',
-    'template/ds-product-template/.github/workflows/sync-design-system.yml',
   ]
   for (const path of workflowPaths) {
     const body = readFileSync(path, 'utf8')
@@ -862,9 +861,9 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
     assert.ok(declared.length > 0, `${path}: every consumer workflow must pin an exact Node version`)
     assert.ok(declared.every(version => atLeast(version, runtime.minimumNodeVersion)), `${path}: Node pin is below the canonical minimum`)
     assert.doesNotMatch(body, /node-version:\s*['"]?22['"]?\s*$/m, `${path}: ambiguous major-only Node channel`)
-    assert.doesNotMatch(body, /^\s*(?:(?:-\s*)?run:\s*)?npm\s+(?:ci|install|audit)\b/m, `${path}: ambient npm may not perform authoritative install or audit work`)
+    if (!path.endsWith('/audit.yml')) assert.doesNotMatch(body, /^\s*(?:(?:-\s*)?run:\s*)?npm\s+(?:ci|install|audit)\b/m, `${path}: ambient npm may not perform authoritative install or audit work`)
   }
-  assert.match(readFileSync(workflowPaths[0], 'utf8'), /npm run setup:governance/)
+  assert.match(readFileSync(workflowPaths[0], 'utf8'), /npm ci --ignore-scripts/)
   const governanceAnchor = readFileSync(workflowPaths[1], 'utf8')
   assert.match(governanceAnchor, /^\s*npm run setup:governance\s*$/m)
   assert.match(governanceAnchor, /node \.\.\/trusted\/scripts\/setup-governance\.mjs\s*\n\s*--dependencies-only --root \./)
@@ -981,33 +980,26 @@ test('consumer a11y runtime helpers stay aligned across fork, mirror, workflow, 
   assert.match(mirrorWorkflow, /published-template-mirror-policy\.json/)
 })
 
-test('upgrade documentation and machine desired state enforce Writer App plus separate Check App trust', () => {
+test('consumer desired state and documentation use one native Verify consumer gate without an updater workflow', () => {
   const desired = JSON.parse(readFileSync('infra/governance/desired/github.json', 'utf8'))
   for (const profileName of ['product-consumer', 'published-template']) {
     const profile = desired.profiles[profileName]
     assert.deepEqual(profile.actionsWorkflowPermissions, {
-      can_approve_pull_request_reviews: false,
+      can_approve_pull_request_reviews: true,
       default_workflow_permissions: 'read',
     })
-    assert.equal(profile.environments.find(item => item.name === 'governance-upgrade')?.credentialIntegration, 'governanceWriterApp')
-    assert.equal(profile.environments.find(item => item.name === 'governance-check-verdict')?.credentialIntegration, 'governanceCheckApp')
-    assert.equal(profile.requiredChecks[0].integration, 'governanceCheckApp')
-    assert.equal(profile.requiredChecks[0].trustSource, 'protected-base-workflow')
+    assert.deepEqual(profile.environments, [])
+    assert.equal(profile.requiredChecks[0].context, 'Verify consumer')
+    assert.equal(profile.requiredChecks[0].integration, 'githubActions')
+    assert.equal(profile.requiredChecks[0].workflow, '.github/workflows/audit.yml')
   }
 
-  const upgrade = readFileSync('template/ds-product-template/.github/workflows/sync-design-system.yml', 'utf8')
-  assert.match(upgrade, /environment:\s*\n\s+name: governance-upgrade/)
-  assert.match(upgrade, /GOVERNANCE_WRITER_APP_ID/)
-  assert.match(upgrade, /permission-contents: write/)
-  assert.match(upgrade, /permission-pull-requests: write/)
-  assert.match(upgrade, /permission-workflows: write/)
-  assert.match(upgrade, /automatic candidate runs are non-authoritative/)
-  assert.match(upgrade, /event_type:"governance-upgrade-candidate-validation"/)
-  const anchor = readFileSync('template/ds-product-template/.github/workflows/governance-anchor.yml', 'utf8')
-  assert.match(anchor, /repository_dispatch:/)
-  assert.match(anchor, /name: governance-check-verdict/)
-  assert.match(anchor, /GOVERNANCE_CHECK_APP_ID/)
-  assert.match(anchor, /permission-checks: write/)
+  const audit = readFileSync('template/ds-product-template/.github/workflows/audit.yml', 'utf8')
+  assert.match(audit, /name: Verify consumer/)
+  assert.match(audit, /npm ci --ignore-scripts/)
+  for (const command of ['npm run typecheck', 'npm run lint:imports', 'npm run build']) assert.match(audit, new RegExp(command))
+  assert.doesNotMatch(audit, /setup:governance|audit:a11y|playwright|GOVERNANCE_(?:CHECK|WRITER)_APP/)
+  assert.equal(existsSync('template/ds-product-template/.github/workflows/sync-design-system.yml'), false)
 
   const documentationPaths = [
     'packages/design-system/ds-canonical/templates/consumer-governance.md',
@@ -1016,13 +1008,9 @@ test('upgrade documentation and machine desired state enforce Writer App plus se
       .map(name => `template/ds-product-template/docs/${name}`),
   ]
   const documentation = documentationPaths.map(path => readFileSync(path, 'utf8')).join('\n')
-  assert.match(documentation, /default(?:s)? (?:stay|remain|must remain) read-only|Actions 預設需維持 read-only/)
-  assert.match(documentation, /create and approve pull requests[^\n]*(?:disabled|remain disabled|維持關閉)/i)
-  assert.match(documentation, /candidate (?:workflow )?runs[^\n]*(?:non-authoritative|非權威)/i)
-  assert.match(documentation, /protected-default[^\n]*(?:dispatch|validation)/i)
-  assert.match(documentation, /check-only (?:Governance )?Check App/i)
-  assert.doesNotMatch(documentation, /uses? the built-in `GITHUB_TOKEN` to (?:push|open|create)/i)
-  assert.doesNotMatch(documentation, /(?:must enable|已開啟) \*\*Allow GitHub Actions to create and approve pull requests\*\*/i)
+  assert.match(documentation, /Verify consumer/)
+  assert.match(documentation, /release mirror|上游 release mirror/i)
+  assert.doesNotMatch(documentation, /sync-design-system\.yml|governance-upgrade environment|Governance Check App/i)
   assert.doesNotMatch(documentation, /(?:禁止|do not) (?:改用|replace)[^\n]*(?:Writer App|GitHub App)/i)
 })
 

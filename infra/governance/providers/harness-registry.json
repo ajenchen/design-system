@@ -28,7 +28,7 @@
     "schemaPath": "infra/governance/schemas/harness-authority-contracts.schema.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-authority-contracts",
-    "sha256": "52bf2092da9e12f2ea99f4b206fcf1ed27238a9243d01eb01f9e5da30d362e28",
+    "sha256": "8cf5fb8d88bbd246918fdee773cb67b9aa83ef85a1f0fe393b2c9f4a3efec9dd",
     "schemaSha256": "bba73861c87bc3047b70376e891a9464d525e9648fadd6e7d8fb406b57d10dce",
     "projectionPolicy": "registry-authority-and-claim-fields-are-exact-derived-projections"
   },
@@ -117,26 +117,6 @@
       }
     ],
     "requiredConsumers": [
-      {
-        "path": ".github/workflows/ci.yml",
-        "invocationKind": "yaml-run-line",
-        "argv": [
-          "npm",
-          "run",
-          "--silent",
-          "test:governance-harnesses"
-        ]
-      },
-      {
-        "path": ".github/workflows/release.yml",
-        "invocationKind": "yaml-run-line",
-        "argv": [
-          "npm",
-          "run",
-          "--silent",
-          "test:governance-harnesses"
-        ]
-      },
       {
         "path": "scripts/release-preflight.mjs",
         "invocationKind": "js-reviewed-shell-wrapper",
@@ -681,7 +661,6 @@
       ],
       "authorityPaths": [
         ".github/workflows/release.yml",
-        ".github/workflows/release-finalize.yml",
         "scripts/lib/github-actions-artifact-identity.mjs",
         "scripts/release-bom-contract.mjs",
         "scripts/release-sbom.mjs",

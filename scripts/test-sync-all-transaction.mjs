@@ -220,12 +220,6 @@ const readCurrentJournalState = (projectRoot) => {
   return envelope.journal
 }
 
-const syncWorkflow = readFileSync(join(root, 'template/ds-product-template/.github/workflows/sync-design-system.yml'), 'utf8')
-const certifierBranchOffset = syncWorkflow.indexOf('git checkout -b "governance/certify-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"')
-const certifierApplyOffset = syncWorkflow.indexOf('node scripts/sync-all.mjs --apply --to "$VERSION" --json')
-if (certifierBranchOffset < 0 || certifierApplyOffset < 0 || certifierBranchOffset > certifierApplyOffset) {
-  throw new Error('credential-free upgrade certifier must create a dedicated local branch before sync-all --apply')
-}
 const productionSyncSource = readFileSync(join(root, 'scripts/sync-all.mjs'), 'utf8')
 if (
   productionSyncSource.includes("from './setup-provider-cli-toolchain.mjs'")

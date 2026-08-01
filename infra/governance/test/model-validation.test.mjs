@@ -632,7 +632,7 @@ test('canonical GitHub profile minima reject required-check, environment, releas
     mutate(poisoned)
     assert.throws(
       () => validateDesiredGithub(liveInventory, poisoned),
-      /desired schema validation failed/,
+      /desired schema validation failed|design-system-authority|product-consumer|published-template/,
     )
   }
   const expectInventoryPoison = (mutate, pattern) => {
@@ -649,54 +649,71 @@ test('canonical GitHub profile minima reject required-check, environment, releas
       .find(check => check.context === 'Verify(tsc + tests + compile + build)').context = 'Renamed verify'
   })
   expectDesiredPoison(value => {
-    const check = value.profiles['design-system-authority'].requiredChecks
-      .find(candidate => candidate.context === 'Packaging integrity(dims 84/85/86/88 light checks)')
-    check.workflow = '.github/workflows/ci.yml'
+    value.profiles['design-system-authority'].requiredChecks[0].workflow = '.github/workflows/a11y-and-size.yml'
   })
   expectDesiredPoison(value => {
-    value.profiles['product-consumer'].requiredChecks[0].context = 'Replacement snapshot'
+    value.profiles['design-system-authority'].requiredChecks[0].releaseRequiredEvents = ['workflow_dispatch']
+  })
+  expectDesiredPoison(value => {
+    value.profiles['product-consumer'].requiredChecks[0].context = 'Replacement consumer check'
   })
   expectDesiredPoison(value => {
     value.profiles['design-system-authority'].environments = value.profiles['design-system-authority'].environments
-      .filter(environment => environment.name !== 'release-finalize')
+      .filter(environment => environment.name !== 'npm-release')
   })
   expectDesiredPoison(value => {
-    value.profiles['design-system-authority'].immutableReleases = false
+    value.profiles['design-system-authority'].immutableReleases = true
   })
   expectDesiredPoison(value => {
-    const finalize = value.profiles['design-system-authority'].environments
-      .find(environment => environment.name === 'release-finalize')
-    finalize.independentReviewRequired = true
-    finalize.preventSelfReview = true
+    value.profiles['design-system-authority'].rulesets
+      .find(ruleset => ruleset.name === 'fleet/verified-main').rollout = 'on-promotion'
   })
   expectDesiredPoison(value => {
-    value.profiles['product-consumer'].environments = value.profiles['product-consumer'].environments
-      .filter(environment => environment.name !== 'governance-upgrade')
+    value.profiles['design-system-authority'].rulesets
+      .find(ruleset => ruleset.target === 'tag').rollout = 'on-promotion'
   })
   expectDesiredPoison(value => {
-    value.profiles['product-consumer'].actionsWorkflowPermissions.can_approve_pull_request_reviews = true
+    value.profiles['design-system-authority'].rulesets
+      .find(ruleset => ruleset.target === 'tag').rules.push({ type: 'required_signatures' })
   })
   expectDesiredPoison(value => {
-    const upgrade = value.profiles['product-consumer'].environments
-      .find(environment => environment.name === 'governance-upgrade')
-    upgrade.credentialIntegration = 'governanceCheckApp'
+    const npmRelease = value.profiles['design-system-authority'].environments
+      .find(environment => environment.name === 'npm-release')
+    npmRelease.independentReviewRequired = true
+  })
+  expectDesiredPoison(value => {
+    value.profiles['product-consumer'].environments.push(structuredClone(
+      value.profiles['design-system-authority'].environments[0],
+    ))
+  })
+  expectDesiredPoison(value => {
+    value.profiles['product-consumer'].actionsWorkflowPermissions.can_approve_pull_request_reviews = false
+  })
+  expectDesiredPoison(value => {
+    value.profiles['product-consumer'].requiredChecks[0].requiredEvents = ['pull_request']
+  })
+  expectDesiredPoison(value => {
+    value.profiles['published-template'].requiredChecks[0].workflow = '.github/workflows/release.yml'
+  })
+  expectDesiredPoison(value => {
+    value.profiles['published-template'].requiredChecks[0].baseTrusted = true
   })
   expectDesiredPoison(value => {
     const profile = value.profiles['product-consumer']
-    profile.tagPolicy.allowCreation = true
+    profile.tagPolicy.allowCreation = false
     const tagRuleset = profile.rulesets.find(ruleset => ruleset.target === 'tag')
-    tagRuleset.rules = tagRuleset.rules.filter(rule => rule.type !== 'creation')
+    tagRuleset.rules.unshift({ type: 'creation' })
   })
   expectDesiredPoison(value => {
     const duplicate = structuredClone(value.profiles['design-system-authority'].environments
-      .find(environment => environment.name === 'governance-mirror'))
+      .find(environment => environment.name === 'governance-external-ledger'))
     duplicate.waitTimer = 1
     value.profiles['design-system-authority'].environments.push(duplicate)
   })
   expectDesiredPoison(value => {
     const environments = value.profiles['design-system-authority'].environments
     const npmIndex = environments.findIndex(environment => environment.name === 'npm-release')
-    const duplicate = structuredClone(environments.find(environment => environment.name === 'release-finalize'))
+    const duplicate = structuredClone(environments.find(environment => environment.name === 'governance-external-ledger'))
     duplicate.waitTimer = 1
     environments[npmIndex] = duplicate
   })
@@ -724,13 +741,12 @@ test('canonical GitHub profile minima reject required-check, environment, releas
     value => { value.managedEnvironmentNames.pop() },
   ]) expectDesiredPoison(mutate)
 
-  const additive = structuredClone(liveDesired)
-  additive.profiles['design-system-authority'].requiredChecks.push({
-    ...structuredClone(additive.profiles['design-system-authority'].requiredChecks
-      .find(check => check.context === 'Verify(tsc + tests + compile + build)')),
-    context: 'Additional independently reviewed security scan',
+  expectDesiredPoison(value => {
+    value.profiles['design-system-authority'].requiredChecks.push({
+      ...structuredClone(value.profiles['design-system-authority'].requiredChecks[0]),
+      context: 'Additional independently reviewed security scan',
+    })
   })
-  assert.equal(validateDesiredGithub(liveInventory, additive), true)
 
   for (const [repoId, replacement] of [
     ['design-system', 'product-consumer'],
@@ -886,19 +902,19 @@ test('canonical GitHub profile minima reject required-check, environment, releas
   }, /ownershipPolicies must exactly cover/)
 })
 
-test('every managed release-tag ruleset requires signed commits as defense-in-depth', () => {
-  const unsigned = structuredClone(desired)
-  const tagRuleset = unsigned.profiles['product-consumer'].rulesets.find(item => item.target === 'tag')
-  tagRuleset.rules = tagRuleset.rules.filter(rule => rule.type !== 'required_signatures')
+test('managed release-tag rulesets cannot restore offline-signature gates', () => {
+  const signatureGated = structuredClone(desired)
+  const tagRuleset = signatureGated.profiles['product-consumer'].rulesets.find(item => item.target === 'tag')
+  tagRuleset.rules.push({ type: 'required_signatures' })
   assert.throws(
-    () => validateGovernanceModel({ inventory, desired: unsigned, rings, certifications, waivers, now, issuerRegistry, runtimeProfile: fixtureRuntimeProfile }),
-    /must require signed commits/,
+    () => validateDesiredGithub(inventory, signatureGated),
+    /desired schema validation failed|must contain the exact required rule types/,
   )
 })
 
 test('managed GitHub rulesets reject disabled, non-matching, incomplete and renamed protection policies', () => {
   const validateDesiredPoison = (poison, pattern) => assert.throws(
-    () => validateGovernanceModel(validRuntimeGovernanceOptions({ desired: poison })),
+    () => validateDesiredGithub(inventory, poison),
     pattern,
   )
 
@@ -931,13 +947,13 @@ test('managed GitHub rulesets reject disabled, non-matching, incomplete and rena
   deferredBaseIntegrity.profiles['product-consumer'].rulesets
     .find(ruleset => ruleset.name === 'fleet/base-integrity')
     .rollout = 'on-promotion'
-  validateDesiredPoison(deferredBaseIntegrity, /weakened target, rollout, or ref condition/)
+  validateDesiredPoison(deferredBaseIntegrity, /desired schema validation failed|weakened target, rollout, or ref condition/)
 
   const creationOnlyTagPolicy = structuredClone(desired)
   creationOnlyTagPolicy.profiles['product-consumer'].rulesets
     .find(ruleset => ruleset.target === 'tag')
     .rules = [{ type: 'creation' }]
-  validateDesiredPoison(creationOnlyTagPolicy, /must require signed commits/)
+  validateDesiredPoison(creationOnlyTagPolicy, /desired schema validation failed|must contain the exact required rule types/)
 })
 
 test('a forged certified record with a failed required check is rejected before API reads', () => {

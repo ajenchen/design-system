@@ -90,7 +90,7 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 
 **Consistency 類稽核必 Phase 0 全掃再判**。**Deep audit 全掃優先 + 決策 batch-at-end 鐵律**(2026-07-11 user directive):先全 DS 掃完(NO-SAMPLE)→ 跨元件去重 → **最後一次**列「真問題 + 只影響 SSOT-UI/UX」決策清單給 user 拍板;非-SSOT autonomous 做完美;**禁**途中逐元件問 user。
 
-**Audit-vs-execute 分權**:只有改變產品／UI／UX SSOT 且存在真實選擇或取捨 → STOP、batch-at-end 給 user 拍板；治理、架構、security、release、migration 等純工程 canonical substantive meaning 依 `# 自主執行 canonical` Standing Authorization AUTO，以最高 assurance independent review + hard gates 收斂。對齊 / 表達統一 / 清 duplicate / 補 pointer 一律 AUTO。
+**Audit-vs-execute 分權**:只有改變產品／UI／UX SSOT 且存在真實選擇或取捨 → STOP、batch-at-end 給 user 拍板；治理、架構、security、release、migration 等純工程 canonical substantive meaning 依 `# 自主執行 canonical` Standing Authorization AUTO，以 canonical required hard gates 收斂。Independent review 只有在交付物明確要求時才是該 claim 的必要條件，不得阻擋一般工程或標準 release。對齊 / 表達統一 / 清 duplicate / 補 pointer 一律 AUTO。
 
 **Scope classifier — Surgical visual bug**:user 列 N 個 visual defects + 無新 canonical / 無新 API contract / 無 cross-component semantic 改動 → **Surgical scope**:no collab / no new M-rule / no audit report,batch fix + final pixel-quantified verify only。Substantive 改動依 audit-vs-execute authority classifier：只有產品／UI／UX SSOT 真取捨才 STOP，其餘工程決策 AUTO。
 
@@ -99,7 +99,7 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 **Canonical 概念**:重大變更(governance / Critical DS change / deep audit)需 **author provider ≠ reviewer provider** 的獨立第二意見。判準 = 同一份 rubric(`audit-prompts.md`),reviewer 只提 findings(rule 對照 + severity + evidence),**不得**自建規範。記錄雙方 provider/model/version。
 - **路由 authority**:`packages/governance/canonical/providers.json` 只定義 provider-neutral selection policy 與 review class，不得固定 peer/model/version/API。`standard/high/maximum` 為 canonical assurance tiers；Tier-0 governance = `maximum`。`packages/governance/src/provider-review-binding.mjs` 的 `resolveProviderReviewBinding` 從 capability/profile/certification registries 排除 author provider，依 assurance→reasoning→compute 選 policy 允許的最高 certified capability；budget 只能 batch/stop，禁降級。選定後才凍結 exact provider/profile/model/release 與所有 registry digests，response substitution 一律 fail closed。
 - **Workflow selection**:產品消費者第二意見讀 `packages/design-system/ds-canonical/skills/independent-review/SKILL.md`；重大 governance/release/DS no-sample 審查讀 `packages/design-system/ds-canonical/skills/deep-audit-cross-codex/SKILL.md`(舊 discovery 名稱，workflow 語意為 provider-neutral)。兩者都不得從 skill 名稱推斷 peer。
-- **Binding 不可用 → fail-closed**:標 `REVIEW-BLOCKED`;禁同一 agent 假扮另一 provider;未登錄、同 provider、缺 capability certification/entitlement readback/transport/隔離/證據或未通過 exact target certification 皆不得取得 independent/compliant 宣稱。訂閱方案是 entitlement route、不是 model identity；沒有 certified exact entitlement readback 時不得冒充或以其他 API/較低模型作成本導向 fallback。新模型只更新 capability/release/certification data，不修改 canonical semantics。
+- **Binding 不可用 → claim fail-closed**:只有 user 或任務明確要求 independent-review 交付物時才標該 claim `REVIEW-BLOCKED`;禁同一 agent 假扮另一 provider;未登錄、同 provider、缺 capability certification/entitlement readback/transport/隔離/證據或未通過 exact target certification 皆不得取得 independent/compliant 宣稱。不可用 peer 不得阻擋一般工程或 canonical five-step release。訂閱方案是 entitlement route、不是 model identity；沒有 certified exact entitlement readback 時不得冒充或以其他 API/較低模型作成本導向 fallback。新模型只更新 capability/release/certification data，不修改 canonical semantics。
 
 # SSOT 消費 canonical
 
@@ -126,23 +126,21 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 
 **找不到** → 進 `# 遇不確定時的協議`；產品／UI／UX SSOT 真取捨不自決，純工程由最高 certified capability 依證據自決並驗證。
 
-# Git solo-work canonical(SSOT → `governance/memory/feedback_solo_dev_workflow.md`)
+# Git / release canonical（machine SSOT → `infra/governance/release-workflow.json`）
 
-**1 chat = 1 working branch + 1 PR**;**protected main + required CI 是不可繞過 hard gate**。**Session-start 必先 grep canonical + 開 working branch，禁直接在 main 上 edit 或 push**(M28 sub-rule)。真正強制的是 required checks、conversation resolution、preview／canary、attestation 與 external readback(非自我 approval/CODEOWNERS);gate 全綠後 merge 是 standing-delegated 工程動作，不另等 user trigger。
+**1 chat = 1 working branch + 1 PR**；protected `main` + required CI 不可繞過。所有 agent（Claude、Codex、未來 provider）只跑同一條五步：
 
-| 步驟 | 動作 |
-|------|------|
-| 1 Edit | AI 改 code |
-| 2 Commit + push working branch | 自動觸發 Netlify per-branch preview 與 PR CI |
-| 3 建立或更新唯一 PR | PR 必指向 protected `main`；禁止 direct-main fallback |
-| 4 **SSOT/release pre-merge gate** | 動到 skill/hook/spec/token/AGENTS/CLAUDE 等 release-affecting paths時，在同一 branch 完成 exact version bump + **`npm run release:preflight`**；結果與 attestation 都進 PR |
-| 5 監看並回報 PR / preview | Agent 等待 required checks、preview／canary、conversation resolution 與 external readback 全綠；回報是 receipt，不是 approval checkpoint |
-| 6 收斂 hard gates | gate fail → 同 branch/PR 自行 remediation + rerun affected validation；gate 全綠 → step 7。若 user 提出產品／UI／UX變更，回 step 1 |
-| 7 Squash merge PR | 依 Standing Authorization 透過受保護 main 的 PR merge；不得繞過 ruleset/direct push，merge 後立即 external readback |
-| 8 發版與傳播 | release-affecting PR merge 後，通過 release hard gates即 tag 該 main commit → GitHub Actions OIDC/provenance publish → template/fleet 各自開 exact-version PR；不使用 mutable tag 作 dependency input |
-| 9 清理與本機對齊 | 刪 remote branch；`git switch main && git pull --ff-only`，確認乾淨後刪 local branch |
+| 步驟 | AUTO 動作與完成條件 |
+|---|---|
+| 1 `pr-checks` | 編輯、生成、測試、commit、push、建立／更新唯一 PR；自行修到 required CI green 且 conversations resolved |
+| 2 `merge` | 以 exact-head CAS squash merge 到 protected `main`，立即讀回 main |
+| 3 `publish` | 從 protected main 自動發布 immutable exact version；不得使用 mutable dependency tag |
+| 4 `readback` | 自動讀回 GitHub Release 與 npm 三包 exact version；未一致不得宣稱完成 |
+| 5 `consumer` | 自動建立、修復、合併 template 與 WM exact-version PR，讀回 consumer protected main |
 
-**禁止**:direct push main / 同 chat 開多 branch 或多 PR / required-check、conversation、preview／canary、attestation 或 readback bypass / mutable dependency tag / 留 stale 不刪 / 「下個 session 處理」deferred 措辭。**不得把一般 external write 或 milestone 當成人類核准 gate。**
+公開入口只有 `npm run release:auto`（安全續跑未完成步驟）與 `npm run release:status`（唯讀五步狀態）。唯一 ASK 是尚未解決的產品／UI／UX SSOT 真取捨；login/MFA/OAuth/缺 credential reference 只暫停當下動作，完成後 AUTO resume。`candidate-freeze`、broad external activation、model certification、offline signatures、72h soak、fleet promotion 對 standard small-team release 一律 non-blocking 或 retired，不得另建 approval/promotion 流程。完成後才清 remote/local branch 並 `git switch main && git pull --ff-only`。
+
+**禁止**：direct push main / 同 chat 多 branch 或多 PR / required CI、conversation 或 live readback bypass / mutable dependency tag / 把 external write、milestone 或 legacy ceremony 當成人類核准 gate。
 
 # 命名與語言一致性
 
@@ -181,11 +179,11 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 **SSOT auto-sync invariant**:跨 file 數字禁 hardcode 多處;以 `scripts/sync-governance-counters.mjs` 機械對齊。
 
 <!-- canonical-decision-authority:start -->
-**Decision／Engineering Authority**:user 只拍板產品／UI／UX SSOT 真取捨及可感知／產品語意變更（behavior/interaction/IA/visual/token/layout/content/a11y/canonical rules）；核准須同 scope 綁 exact target/choice/operation digest，引用/條件/舊 scope/跨 target 無效。其餘工程/external writes 皆 Standing Authorization AUTO，含已核准 UI／UX 實作/機械 generation/sync 與 source→commit/PR/merge→GitHub/package/release→template/WM/certification/rollout/recovery；最高 certified model/reasoning/compute 依 frozen scope、SSOT、tests/Harness、security、independent review、least privilege、staged rollout/rollback/readback 收斂，不逐 milestone 重問。需 human record 時將 target digest 寫入既有 audit；無 certified peer=`REVIEW-BLOCKED`。
+**Decision／Engineering Authority**:user 只拍板產品／UI／UX SSOT 真取捨及可感知／產品語意變更（behavior/interaction/IA/visual/token/layout/content/a11y/canonical rules）；核准須同 scope 綁 exact target/choice/operation digest，引用/條件/舊 scope/跨 target 無效。其餘工程/external writes 皆 Standing Authorization AUTO，含已核准 UI／UX 實作/機械 generation/sync 與 source→commit/PR/merge→canonical `infra/governance/release-workflow.json` 的 `pr-checks → merge → publish → readback → consumer`；依 frozen scope、SSOT、required checks、security、least privilege、rollback/readback 收斂，不逐 milestone 重問。Certification、rollout、staged rollout、preview/canary 與 independent review 是明確要求時的附加 assurance，不得進入標準 five-step release blocking graph；peer 不可用只阻擋明確要求的 independent-review claim。
 
 **Visual baseline**:user 對 exact image set／UI／UX 語意說「可以改」即拍板；Agent 自動 apply/generate/test/commit/PR/CI/merge，禁再核准/key enrollment/簽章。僅 user 明確要求 independent cryptographic review 才啟用 `visual-baseline-review-policy.json`，否則不阻擋。
 
-**Human-only boundaries**:僅 login/MFA/OAuth/owner/billing、缺 credential reference（只問 vault/Environment/Secret Manager reference，禁 secret）、plan 外付費、法律/帳號/組織權限/商業承諾及上述產品決策。Agent 完成唯一方案/preflight，只問一個 exact action，readback 後續跑；technical failure fail-closed，非 human decision。
+**Human-only boundaries**:僅 login/MFA/OAuth/owner/billing、缺 credential reference（只問 vault/Environment/Secret Manager reference，禁 secret）、plan 外付費、法律/帳號/組織權限/商業承諾及上述產品決策。Agent 完成唯一方案/preflight，只問一個 exact action，readback 後續跑；technical failure fail-closed，非 human decision。Release 常見的 login/MFA/OAuth/credential reference 完成後一律 AUTO resume，不另問核准。
 <!-- canonical-decision-authority:end -->
 
 # 遇不確定時的協議

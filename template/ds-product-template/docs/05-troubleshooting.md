@@ -32,8 +32,8 @@
 | Codex hooks 未執行 | Codex repo hook 需要信任；完成 trust 後重試。CI/hook-off checker 仍為 authority，不可把未 trust 誤報成 compliant |
 | Upgrade 報 `GOV-UPGRADE-PATH-*` / managed body missing | 不要手抄 workflow 或腳本。該 exact release 的 corpus／BOM 不完整或 patch 超出封閉 materialization policy；停止合併並回 DS authority 修正、重發更高版本 |
 | Upgrade 報 `GOV-UPGRADE-BOOTSTRAP-001/002` | 這兩個是相容性保留的穩定錯誤 ID；代表 exact release 改到 workflow、可執行腳本、`.npmrc`、`governance/bin` 或 `package.json#scripts`。已是 v2 的 consumer 改走 DS authority 的 recurring reviewed control-plane 六階段流程；只有仍在 `legacy-bootstrap-v2` 的舊 consumer 才走一次性 bootstrap |
-| Upgrade 無法建 PR | 確認 `governance-upgrade` environment 已設定 Governance Writer App ID/private key，且 App 只具 contents/PR write；repository Actions 預設需維持 read-only，**Allow GitHub Actions to create and approve pull requests** 維持關閉。Writer App 自動觸發的 candidate runs 非權威；required verdict 必須來自 protected-default dispatch 與獨立 check-only Governance Check App |
-| Upgrade PR 存在但沒有 `Immutable consumer snapshot` | 顯示 live `main`、deterministic branch 或 existing PR base/head/repository 在 writer 過程中移動，或明確 protected-default validation dispatch 失敗。不要重用舊 check；從新 main 重跑 exact upgrade |
+| 上游 template PR 未出現 | 在 design-system release SSOT 檢查 mirror readback；template 本身沒有 release-dispatch/updater workflow，也不需要 Governance App environment |
+| PR 存在但沒有 `Verify consumer` | 確認 `audit.yml` 存在於 candidate、Actions 可執行，並重新跑唯一 required job；不要以 preview/a11y/visual/canary context 取代它 |
 | 已合併的 DS release 有問題 | 不移動 dist-tag、不降版、不只回一包。保留證據並由 DS authority 發布更高的 corrected exact release，再走正常 upgrade PR |
 
 ## Netlify deploy

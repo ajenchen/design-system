@@ -51,10 +51,7 @@ const MANAGED_CI_ATTEST_RUN_SHA256 = Object.freeze([
 const WORKFLOW_DIRS = ['.github/workflows', 'template/ds-product-template/.github/workflows']
 const REQUIRED_PR_WORKFLOWS = [
   '.github/workflows/ci.yml',
-  '.github/workflows/a11y-and-size.yml',
-  '.github/workflows/visual-regression.yml',
-  '.github/workflows/composition-fidelity.yml',
-  '.github/workflows/packaging-canary.yml',
+  'template/ds-product-template/.github/workflows/audit.yml',
 ]
 
 function workflowFiles(root) {
@@ -67,7 +64,6 @@ function workflowFiles(root) {
       .map((name) => join(absolute, name))
   })
 }
-
 function hasNearbyPersistFalse(lines, index) {
   const indent = lines[index].match(/^\s*/)[0].length
   for (let i = index + 1; i < Math.min(lines.length, index + 16); i += 1) {
@@ -296,7 +292,11 @@ function everyAuthorityUseHasSignedTagRecheck(block, marker) {
   return true
 }
 
-export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublisher = '' } = {}) {
+export function auditWorkflowSources(sources, {
+  rootNpmrc = '',
+  releaseNpmPublisher = '',
+  releaseGithubPublisher = '',
+} = {}) {
   const findings = []
   const add = (file, rule, message) => findings.push({ file, rule, message })
 
@@ -319,7 +319,10 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
       if (executable && /\bnpx\s+/.test(line) && !/\bnpx\s+--no-install\b/.test(line)) {
         add(file, 'WF-NPX', `line ${index + 1}: npx must use --no-install`)
       }
-      if (/^\s*continue-on-error:\s*true\b/.test(line)) add(file, 'WF-FAIL-OPEN', `line ${index + 1}: continue-on-error is forbidden`)
+      if (/^\s*continue-on-error:\s*true\b/.test(line)
+        && (REQUIRED_PR_WORKFLOWS.includes(file) || file === '.github/workflows/release.yml')) {
+        add(file, 'WF-FAIL-OPEN', `line ${index + 1}: required workflows may not fail open`)
+      }
       if (/^\s*if:.*(?:\[skip-|skip[_-](?:visual|composition|governance))/i.test(line)) {
         add(file, 'WF-BYPASS', `line ${index + 1}: user-controlled skip conditions are forbidden`)
       }
@@ -424,6 +427,7 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
       }
       const executable = executableSource(block)
       if (!/\bnpm\s+ci\b/.test(executable)) continue
+      if (file === 'template/ds-product-template/.github/workflows/audit.yml') continue
       if (!/\bnpm\s+audit\s+signatures\b/.test(executable)) {
         add(file, 'WF-SIGNATURE-AUDIT', `job ${job}: npm ci must be followed by registry signature verification`)
       }
@@ -741,679 +745,94 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
     }
   }
 
-  const release = sources['.github/workflows/release.yml'] || ''
-  if (/NPM_TOKEN|NODE_AUTH_TOKEN|_authToken/.test(release)) add('.github/workflows/release.yml', 'WF-NPM-TOKEN', 'release must use tokenless stage-only trusted publishing')
-  const releaseJobs = workflowJobBlocks(release)
-  const resolveRelease = releaseJobs.get('resolve-release-request') || ''
-  const trustPreflight = releaseJobs.get('trust-preflight') || ''
-  const buildRelease = releaseJobs.get('build-release-evidence') || ''
-  const attestRelease = releaseJobs.get('attest-release') || ''
-  const publishNpm = releaseJobs.get('publish-npm') || ''
-  const executableRelease = executableSource(release)
-  const executableNpmPublisher = executableSource(releaseNpmPublisher)
-  const nativeStagePublisherIsClosed = (
-    /npmResult\(npmCli,\s*\[\s*'stage',\s*'publish',\s*archive,[\s\S]*'--provenance'[\s\S]*'--json'/.test(executableNpmPublisher)
-    && /receiptItem\.status = 'submitting'[\s\S]*writeAtomicJson\(receiptPath, receipt\)[\s\S]*await recheckRemoteTag\([^\n]+\)[\s\S]*npmResult\(npmCli,\s*\[\s*'stage',\s*'publish'/.test(executableNpmPublisher)
-    && /receiptItem\.status = 'ambiguous'[\s\S]*writeAtomicJson\(receiptPath, receipt\)/.test(executableNpmPublisher)
-    && /receiptItem\.stageId = evidence\.stageId[\s\S]*receiptItem\.status = 'staged'[\s\S]*writeAtomicJson\(receiptPath, receipt\)/.test(executableNpmPublisher)
-    && !/\[\s*'publish'\b|'dist-tag'/.test(executableNpmPublisher)
-  )
+  const releaseFile = '.github/workflows/release.yml'
+  const directRelease = sources[releaseFile] || ''
+  const directReleaseJobs = workflowJobBlocks(directRelease)
+  const directResolve = directReleaseJobs.get('resolve-release-request') || ''
+  const directNpm = directReleaseJobs.get('build-and-publish-npm') || ''
+  const directGithub = directReleaseJobs.get('publish-github-release') || ''
+  const directReleaseEvents = workflowEventNames(directRelease.split(/^jobs:\s*$/m)[0])
   if (
-    !/^    environment:\s*\n      name:\s*npm-release\s*$/m.test(publishNpm)
-    || !/node scripts\/release-npm-publish\.mjs/.test(publishNpm)
-    || !nativeStagePublisherIsClosed
-    || /\bnpm\s+publish\b|\bgh\s+release\s+(?:create|upload|edit)\b/.test(executableRelease)
-  ) {
-    add('.github/workflows/release.yml', 'WF-TRUSTED-PUBLISH', 'release must bind npm-release and use only the reviewed tokenless native-stage helper with provenance; direct npm publish and GitHub Release mutations are forbidden')
+    directReleaseEvents.length !== 1
+    || directReleaseEvents[0] !== 'repository_dispatch'
+    || !/^\s{4}types:\s*\[stage-protected-release\]\s*$/m.test(directRelease)
+    || /^\s{2}(?:push|workflow_dispatch|pull_request):/m.test(directRelease)
+  ) add(releaseFile, 'WF-RELEASE-TRIGGER', 'release must load only from protected-default repository_dispatch')
+  if (
+    directReleaseJobs.size !== 3 || !directResolve || !directNpm || !directGithub
+    || !/^\s{4}if:\s*github\.ref == 'refs\/heads\/main'\s*$/m.test(directResolve)
+    || !/test "\$event_commit" = "\$main_commit"/.test(directResolve)
+    || !/test "\$tag_commit" = "\$main_commit"/.test(directResolve)
+  ) add(releaseFile, 'WF-RELEASE-IDENTITY', 'release must have exactly three jobs and bind event SHA plus exact tag to current main')
+  if (
+    !needsJob(directNpm, 'resolve-release-request')
+    || !/^\s{4}environment:\s*\n\s{6}name:\s*npm-release\s*$/m.test(directNpm)
+    || !/contents:\s*read/.test(directNpm) || !/id-token:\s*write/.test(directNpm)
+    || /contents:\s*write|attestations:\s*write/.test(directNpm)
+    || !needsJob(directGithub, 'resolve-release-request')
+    || !needsJob(directGithub, 'build-and-publish-npm')
+    || !/actions:\s*read/.test(directGithub) || !/contents:\s*write/.test(directGithub)
+    || /id-token:\s*write|attestations:\s*write/.test(directGithub)
+  ) add(releaseFile, 'WF-RELEASE-PRIVILEGE', 'npm OIDC and GitHub contents authority must remain in separate least-privilege jobs')
+  if (
+    /NPM_TOKEN|NODE_AUTH_TOKEN|_authToken/.test(directRelease)
+    || !/node scripts\/release-npm-publish\.mjs/.test(directNpm)
+    || !/npmResult\(npmCli,\s*\[\s*'publish',\s*archive,[\s\S]*'--provenance'/.test(releaseNpmPublisher)
+    || !/existing\.kind === 'found'[\s\S]*validateRegistryPackage[\s\S]*continue/.test(releaseNpmPublisher)
+    || !/existing\.kind !== 'missing'[\s\S]*npmResult\(npmCli,[\s\S]*waitForPublishedPackage/.test(releaseNpmPublisher)
+    || !/for \(const item of context\.ordered\) await validateRegistryPackage/.test(releaseNpmPublisher)
+    || !/readTagVersions\(npmCli, context\.ordered, context\.targetTag\)/.test(releaseNpmPublisher)
+    || /\bstage\b|NPM_TOKEN|NODE_AUTH_TOKEN|_authToken/.test(executableSource(releaseNpmPublisher))
+  ) add(releaseFile, 'WF-TRUSTED-PUBLISH', 'release must use tokenless direct npm publish --provenance with resumable three-package readback')
+  if (
+    (directRelease.match(/node scripts\/run-verified-npm\.mjs -- pack \.\/packages\//g) || []).length !== 3
+    || !/build-release-bom\.mjs/.test(directNpm)
+    || !/product-template-scaffold-lock\.mjs/.test(directNpm)
+    || !/release-set\.mjs[\s\S]*--github-output/.test(directNpm)
+    || !/release_set_sha256:\s*\$\{\{\s*steps\.release_set\.outputs\.sha256\s*\}\}/.test(directNpm)
+    || !/release-set\.mjs[\s\S]*--expected "\$\{\{ needs\.build-and-publish-npm\.outputs\.release_set_sha256 \}\}"/.test(directGithub)
+    || !/node scripts\/release-github-release\.mjs/.test(directGithub)
+    || !/compareReleaseAssets/.test(releaseGithubPublisher)
+    || !/observed\.digest !== wanted\.digest \|\| observed\.size !== wanted\.size/.test(releaseGithubPublisher)
+    || !/release', 'create'/.test(releaseGithubPublisher)
+    || !/release', 'upload'/.test(releaseGithubPublisher)
+    || !/release', 'edit'/.test(releaseGithubPublisher)
+  ) add(releaseFile, 'WF-RELEASE-EVIDENCE', 'the exact six-file release set must be bound and read back by name, size, and digest')
+  if (/trust-preflight|release-finalize|stage\s+publish|release-npm-(?:approve|promote)|actions\/attest@|test:governance-harnesses|build-storybook/.test(executableSource(directRelease))) {
+    add(releaseFile, 'WF-RELEASE-LEGACY', 'retired trust, staging, finalizer, attestation, and duplicate harness gates must stay off the release path')
   }
-  if (
-    !resolveRelease || !trustPreflight || !buildRelease || !attestRelease || !publishNpm
-    || releaseJobs.has('github-release')
-    || !/^\s{2}repository_dispatch:\s*$/m.test(release)
-    || !/^\s{4}types:\s*\[stage-protected-release\]\s*$/m.test(release)
-    || /^\s{2}(?:workflow_dispatch|pull_request):\s*$/m.test(release)
-    || /^\s{4}tags:/m.test(eventBlock(release.split(/^jobs:\s*$/m)[0], 'push'))
-    || !/^\s{4}if:\s*github\.ref == 'refs\/heads\/main'\s*$/m.test(resolveRelease)
-    || !/test "\$tag_commit" = "\$main_commit"/.test(resolveRelease)
-    || !/test "\$event_commit" = "\$main_commit"/.test(resolveRelease)
-    || !needsJob(buildRelease, 'resolve-release-request')
-    || !/contents:\s*read/.test(buildRelease)
-    || /(?:contents|id-token):\s*write/.test(buildRelease)
-    || !needsJob(attestRelease, 'build-release-evidence')
-    || !/contents:\s*read/.test(attestRelease)
-    || !/id-token:\s*write/.test(attestRelease)
-    || !/attestations:\s*write/.test(attestRelease)
-    || /contents:\s*write/.test(attestRelease)
-    || !needsJob(attestRelease, 'trust-preflight')
-    || !needsJob(publishNpm, 'build-release-evidence')
-    || !needsJob(publishNpm, 'attest-release')
-    || !needsJob(publishNpm, 'trust-preflight')
-    || !/contents:\s*read/.test(publishNpm)
-    || !/id-token:\s*write/.test(publishNpm)
-    || /contents:\s*write|attestations:\s*write/.test(publishNpm)
-    || /\bnpm ci\b|build-storybook|test:consumer-governance|test:sync-all-transaction/.test(publishNpm)
-    || /contents:\s*write/.test(release)
-  ) add('.github/workflows/release.yml', 'WF-RELEASE-PRIVILEGE', 'stage authority must load from protected-default dispatch, bind the exact tag to current main, and confine writes to attestation plus stage-only npm OIDC; GitHub contents write belongs only to release-finalize.yml')
-
-  if (
-    !trustPreflight
-    || /^\s{4}if:/m.test(trustPreflight)
-    || /(?:contents|id-token|attestations):\s*write/.test(trustPreflight)
-    || !needsJob(attestRelease, 'trust-preflight')
-    || !needsJob(publishNpm, 'trust-preflight')
-  ) add('.github/workflows/release.yml', 'WF-RELEASE-TRUST-PREFLIGHT', 'the read-only trust preflight must be mandatory and gate both attestation and native staging authority')
-
-  if (
-    !/release_set_sha256:\s*\$\{\{\s*steps\.release_set\.outputs\.sha256\s*\}\}/.test(buildRelease)
-    || !/actions\/upload-artifact@[a-f0-9]{40}/.test(buildRelease)
-    || !/(?:git merge-base --is-ancestor[\s\S]{0,300}refs\/remotes\/origin\/main|test "\$\{\{ steps\.release-identity\.outputs\.commit \}\}" = "\$\(git rev-parse refs\/remotes\/origin\/main\^\{commit\}\)")/.test(buildRelease)
-    || (executableRelease.match(/node scripts\/release-sbom\.mjs/g) || []).length !== 1
-    || !/node scripts\/release-sbom\.mjs[\s\S]*--input "\$RUNNER_TEMP\/release\.sbom\.raw\.json"[\s\S]*--output "\$GITHUB_WORKSPACE\/release-artifacts\/release\.sbom\.cdx\.json"[\s\S]*--tag "\$RELEASE_TAG"[\s\S]*--git-tree "\$\{\{ needs\.resolve-release-request\.outputs\.release_tree \}\}"/.test(buildRelease)
-    || /(?:sbom_serial|del\(\.serialNumber|\.serialNumber\s*=|metadata\.timestamp)/.test(executableRelease)
-    || ![attestRelease, publishNpm].every((block) =>
-      /release-set\.mjs[\s\S]*--expected/.test(block) && /build-release-bom\.mjs --verify/.test(block))
-    || ![attestRelease, publishNpm].every((block) =>
-      /release-trust-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/.test(block)
-      && /release-trust-preflight\.mjs[\s\S]*--verify[\s\S]*--expected-authorization-digest/.test(block))
-    || (attestRelease.match(/--expected-object\b/g) || []).length !== (attestRelease.match(/actions\/attest@[a-f0-9]{40}/g) || []).length
-    || !/release-remote-tag\.mjs/.test(publishNpm)
-    || !/release-remote-tag\.mjs[\s\S]*--expected-object\b[\s\S]*node scripts\/release-npm-publish\.mjs/.test(publishNpm)
-    || !everyAuthorityUseHasSignedTagRecheck(attestRelease, /actions\/attest@[a-f0-9]{40}/g)
-    || !everyAuthorityUseHasSignedTagRecheck(publishNpm, /node scripts\/release-npm-publish\.mjs/g)
-    || !/--receipt\s+"\$RUNNER_TEMP\/npm-stage\/npm-stage-receipt\.json"[\s\S]*--trust-artifact-digest[\s\S]*--trust-run-attempt/.test(publishNpm)
-    || !/if:\s*always\(\)[\s\S]*sha256sum\s+"\$receipt"[\s\S]*actions\/upload-artifact@[a-f0-9]{40}[\s\S]*name:\s*npm-stage-\$\{\{ github\.event\.client_payload\.tag \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/.test(publishNpm)
-    || !/stage_artifact_digest:\s*\$\{\{\s*steps\.finalizer_handoff\.outputs\.stage_artifact_digest\s*\}\}/.test(publishNpm)
-    || !/stage_receipt_sha256:\s*\$\{\{\s*steps\.finalizer_handoff\.outputs\.stage_receipt_sha256\s*\}\}/.test(publishNpm)
-    || !/STAGE_ARTIFACT_DIGEST:\s*\$\{\{\s*steps\.retain_stage\.outputs\.artifact-digest\s*\}\}/.test(publishNpm)
-    || !/GITHUB_STEP_SUMMARY/.test(publishNpm)
-  ) add('.github/workflows/release.yml', 'WF-RELEASE-EVIDENCE', 'attestation and native staging must rebind the same release/trust evidence, and staging must retain an attempt-bound receipt plus the closed finalizer digest handoff')
-
-  const finalizerFile = '.github/workflows/release-finalize.yml'
-  const finalizer = sources[finalizerFile] || ''
-  const finalizerJobs = workflowJobBlocks(finalizer)
-  const certifyFinalization = finalizerJobs.get('certify-finalization') || ''
-  const publishGithub = finalizerJobs.get('publish-github-release') || ''
-  const executableFinalizer = executableSource(finalizer)
-  if (
-    !/^  repository_dispatch:\s*$/m.test(finalizer)
-    || !/^    types:\s*\[finalize-staged-release\]\s*$/m.test(finalizer)
-    || /^  workflow_dispatch:\s*$/m.test(finalizer)
-    || /\$\{\{\s*inputs\./.test(finalizer)
-    || ![
-      'stage_run_id', 'stage_run_attempt', 'stage_artifact_digest', 'release_set_sha256', 'stage_receipt_sha256',
-      'release_authorization_digest', 'release_trust_evidence_digest', 'release_trust_artifact_digest',
-    ]
-      .every((key) => finalizer.includes(`github.event.client_payload.${key}`))
-    || !certifyFinalization || !publishGithub
-    || !/^    if:\s*github\.ref == 'refs\/heads\/main'\s*$/m.test(certifyFinalization)
-    || !/^    if:\s*github\.ref == 'refs\/heads\/main'\s*$/m.test(publishGithub)
-    || !/contents:\s*read/.test(certifyFinalization)
-    || !/actions:\s*read/.test(certifyFinalization)
-    || /contents:\s*write|id-token:\s*write|attestations:\s*write|environment:/.test(certifyFinalization)
-    || !needsJob(publishGithub, 'certify-finalization')
-    || !/contents:\s*write/.test(publishGithub)
-    || /id-token:\s*write|attestations:\s*write/.test(publishGithub)
-    || !/environment:\s*\n\s+name:\s*release-finalize/.test(publishGithub)
-  ) add(finalizerFile, 'WF-FINALIZE-PRIVILEGE', 'finalizer must be default-branch repository_dispatch only and separate read-only exact-tag certification from an environment-gated contents-only writer')
-  if (
-    !/ref:\s*refs\/tags\/\$\{\{ github\.event\.client_payload\.tag \}\}/.test(certifyFinalization)
-    || !/git merge-base --is-ancestor[\s\S]{0,300}refs\/remotes\/origin\/main/.test(certifyFinalization)
-    || (certifyFinalization.match(/node scripts\/run-verified-npm\.mjs -- pack \.\/packages\//g) || []).length !== 3
-    || (executableFinalizer.match(/node scripts\/release-sbom\.mjs/g) || []).length !== 1
-    || !/node scripts\/release-sbom\.mjs[\s\S]*--input "\$RUNNER_TEMP\/release\.sbom\.raw\.json"[\s\S]*--output "\$GITHUB_WORKSPACE\/release-artifacts\/release\.sbom\.cdx\.json"[\s\S]*--tag "\$\{\{ github\.event\.client_payload\.tag \}\}"[\s\S]*--git-tree "\$\{\{ steps\.identity\.outputs\.tree \}\}"/.test(certifyFinalization)
-    || /(?:sbom_serial|del\(\.serialNumber|\.serialNumber\s*=|metadata\.timestamp)/.test(executableFinalizer)
-    || !/build-release-bom\.mjs[\s\S]*--allow-repository-dispatch/.test(certifyFinalization)
-    || !/release-set\.mjs[\s\S]*--expected "\$\{\{ github\.event\.client_payload\.release_set_sha256 \}\}"/.test(certifyFinalization)
-    || !/client_payload \| keys \| sort[\s\S]*stage_artifact_digest/.test(certifyFinalization)
-    || !/release-stage-run-identity\.mjs[\s\S]*--release-trust-artifact-digest[\s\S]*Download exact original release trust evidence[\s\S]*release-trust-\$\{\{ github\.event\.client_payload\.stage_run_id \}\}-\$\{\{ github\.event\.client_payload\.stage_run_attempt \}\}[\s\S]*--verify-issued[\s\S]*--expected-authorization-digest[\s\S]*Download the exact durable stage receipt/.test(certifyFinalization)
-    || !/npm-stage-\$\{\{ github\.event\.client_payload\.tag \}\}-\$\{\{ github\.event\.client_payload\.stage_run_id \}\}-\$\{\{ github\.event\.client_payload\.stage_run_attempt \}\}/.test(certifyFinalization)
-    || !/release-npm-finalize-verify\.mjs/.test(certifyFinalization)
-    || !/release-npm-finalize-verify\.mjs[\s\S]*--release-authorization-digest[\s\S]*--release-trust-evidence-digest[\s\S]*--release-trust-evidence-file\s+"\$GITHUB_WORKSPACE\/finalization-evidence\/release-trust-preflight\.json"[\s\S]*--release-trust-evidence-file-sha256\s+"\$\{\{ steps\.issued_trust\.outputs\.evidence_file_sha256 \}\}"[\s\S]*--release-trust-artifact-digest/.test(certifyFinalization)
-    || !/tag_object:\s*\$\{\{\s*steps\.issued_trust\.outputs\.tag_object\s*\}\}/.test(certifyFinalization)
-    || !/release_trust_evidence_file_sha256:\s*\$\{\{\s*steps\.issued_trust\.outputs\.evidence_file_sha256\s*\}\}/.test(certifyFinalization)
-    || !/--verify-issued[\s\S]*--expected-authorization-digest[\s\S]*--retain-exact\s+"\$GITHUB_WORKSPACE\/finalization-evidence\/release-trust-preflight\.json"[\s\S]*--github-output\s+"\$GITHUB_OUTPUT"[\s\S]*release-remote-tag\.mjs[\s\S]*--expected-object\s+"\$\{\{ steps\.issued_trust\.outputs\.tag_object \}\}"[\s\S]*release-npm-finalize-verify\.mjs[\s\S]*--tag-object\s+"\$\{\{ steps\.issued_trust\.outputs\.tag_object \}\}"/.test(certifyFinalization)
-    || !/actions\/upload-artifact@[a-f0-9]{40}[\s\S]*finalization-evidence\/release-trust-preflight\.json[\s\S]*finalization-evidence\/npm-finalization-receipt\.json/.test(certifyFinalization)
-    || !/actions\/upload-artifact@[a-f0-9]{40}/.test(certifyFinalization)
-    || !/release-set\.mjs[\s\S]*--expected "\$\{\{ needs\.certify-finalization\.outputs\.release_set_sha256 \}\}"/.test(publishGithub)
-    || (finalizer.match(/release-stage-run-identity\.mjs/g) || []).length !== 2
-    || (finalizer.match(/--release-trust-artifact-digest/g) || []).length < 4
-    || !/release-stage-run-identity\.mjs[\s\S]*release-npm-finalization-receipt\.mjs/.test(publishGithub)
-    || !/release-npm-finalization-receipt\.mjs/.test(publishGithub)
-    || !/release-npm-finalization-receipt\.mjs[\s\S]*--tag-object\s+"\$\{\{ needs\.certify-finalization\.outputs\.tag_object \}\}"[\s\S]*--release-authorization-digest[\s\S]*--release-trust-evidence-digest[\s\S]*--release-trust-evidence-file\s+"\$GITHUB_WORKSPACE\/finalization-evidence\/release-trust-preflight\.json"[\s\S]*--release-trust-evidence-file-sha256\s+"\$\{\{ needs\.certify-finalization\.outputs\.release_trust_evidence_file_sha256 \}\}"[\s\S]*--release-trust-artifact-digest/.test(publishGithub)
-    || !/release-remote-tag\.mjs/.test(publishGithub)
-    || !/TAG_READ_TOKEN:\s*\$\{\{ secrets\.RELEASE_TAG_READ_TOKEN \}\}/.test(publishGithub)
-    || !/release-remote-tag\.mjs[\s\S]*--expected-object\s+"\$\{\{ needs\.certify-finalization\.outputs\.tag_object \}\}"[\s\S]*--token-env\s+TAG_READ_TOKEN[\s\S]*release-github-release\.mjs[\s\S]*--tag-object\s+"\$\{\{ needs\.certify-finalization\.outputs\.tag_object \}\}"[\s\S]*--tag-token-env\s+TAG_READ_TOKEN/.test(publishGithub)
-    || !/release-github-release\.mjs[\s\S]*--audit-evidence\s+"\$GITHUB_WORKSPACE\/finalization-evidence\/npm-finalization-receipt\.json"[\s\S]*--audit-evidence-sha256\s+"\$\{\{ needs\.certify-finalization\.outputs\.finalization_receipt_sha256 \}\}"/.test(publishGithub)
-    || !/release-github-release\.mjs[\s\S]*--release-trust-evidence\s+"\$GITHUB_WORKSPACE\/finalization-evidence\/release-trust-preflight\.json"[\s\S]*--release-trust-evidence-sha256\s+"\$\{\{ needs\.certify-finalization\.outputs\.release_trust_evidence_file_sha256 \}\}"/.test(publishGithub)
-    || /\bnpm\s+(?:stage\s+publish|publish|dist-tag)\b/.test(executableFinalizer)
-  ) add(finalizerFile, 'WF-FINALIZE-EVIDENCE', 'finalizer must independently rebuild the exact tag, certify npm/tag receipts, and rebind them before immutable GitHub Release mutation')
-
-  const mirrorFile = '.github/workflows/mirror-to-published-template.yml'
-  const mirror = sources[mirrorFile] || ''
-  const mirrorJobs = workflowJobBlocks(mirror)
-  const certifyMirror = executableSource(mirrorJobs.get('certify-mirror') || '')
-  const mirrorWriter = executableSource(mirrorJobs.get('write-mirror-pr') || '')
-  const mirrorPreJobs = mirror.split(/^jobs:\s*$/m)[0]
-  const mirrorEvents = workflowEventNames(mirrorPreJobs)
-  const mirrorPayloadFields = [...mirror.matchAll(/github\.event\.client_payload\.([A-Za-z0-9_]+)/g)].map(match => match[1])
-  const allowedMirrorPayloadFields = new Set(['finalizer_run_id', 'finalizer_run_attempt'])
-  const mirrorPayloadShape = /client_payload\s*\|\s*keys(?:\s*\|\s*sort)?\)?\s*==\s*\[\s*"finalizer_run_attempt"\s*,\s*"finalizer_run_id"\s*\]/
-  const mirrorPayloadGuarded = /if:\s*(?:\$\{\{\s*)?github\.event_name\s*==\s*'repository_dispatch'(?:\s*\}\})?[\s\S]{0,500}client_payload\s*\|\s*keys/.test(certifyMirror)
-    || /elif\s+\[\s*"\$GITHUB_EVENT_NAME"\s*=\s*repository_dispatch\s*\];\s*then[\s\S]{0,500}client_payload\s*\|\s*keys/.test(certifyMirror)
-  if (
-    mirrorEvents.length !== 2
-    || !mirrorEvents.includes('workflow_run')
-    || !mirrorEvents.includes('repository_dispatch')
-    || !/^\s{4}workflows:\s*\[Finalize staged release\]\s*(?:#.*)?$/m.test(eventBlock(mirrorPreJobs, 'workflow_run'))
-    || !/^\s{4}types:\s*\[completed\]\s*(?:#.*)?$/m.test(eventBlock(mirrorPreJobs, 'workflow_run'))
-    || !/^\s{4}types:\s*\[mirror-template-request\]\s*(?:#.*)?$/m.test(eventBlock(mirrorPreJobs, 'repository_dispatch'))
-    || /github\.event\.workflow_run\.head_sha/.test(mirror)
-    || !/github\.event\.workflow_run\.conclusion\s*==\s*'success'/.test(certifyMirror)
-    || !/github\.event\.workflow_run\.id/.test(mirror)
-    || !/github\.event\.workflow_run\.run_attempt/.test(mirror)
-    || !/github\.event\.client_payload\.finalizer_run_id/.test(mirror)
-    || !/github\.event\.client_payload\.finalizer_run_attempt/.test(mirror)
-    || mirrorPayloadFields.some(field => !allowedMirrorPayloadFields.has(field))
-    || !mirrorPayloadGuarded
-    || !mirrorPayloadShape.test(certifyMirror)
-  ) add(mirrorFile, 'WF-MIRROR-TRIGGER', 'mirror must load only from the completed finalizer or a closed two-field protected-default retry dispatch; the finalizer workflow head is never the release source')
-
-  const concurrency = mirror.match(/^concurrency:\s*\n([\s\S]*?)(?=^[^\s#]|(?![\s\S]))/m)?.[1] || ''
-  if (
-    !/group:/.test(concurrency)
-    || !/github\.event\.workflow_run\.id/.test(concurrency)
-    || !/github\.event\.workflow_run\.run_attempt/.test(concurrency)
-    || !/github\.event\.client_payload\.finalizer_run_id/.test(concurrency)
-    || !/github\.event\.client_payload\.finalizer_run_attempt/.test(concurrency)
-    || !/^\s{2}cancel-in-progress:\s*false\s*(?:#.*)?$/m.test(concurrency)
-  ) add(mirrorFile, 'WF-MIRROR-CONCURRENCY', 'mirror concurrency must be scoped to the exact finalizer run/attempt and may not cancel an in-flight evidence writer')
-
-  const handoffFlags = [
-    '--repository', '--finalizer-run-id', '--finalizer-run-attempt', '--token-env', '--output',
-  ]
-  const certifyHandoffCommands = continuedShellCommands(certifyMirror, 'trusted/scripts/release-finalizer-mirror-handoff.mjs')
-  const writerHandoffCommands = continuedShellCommands(mirrorWriter, 'trusted/scripts/release-finalizer-mirror-handoff.mjs')
-  const commandHasFlags = (command, flags) => flags.every(flag => command.includes(flag))
-  const exactCertifyHandoffArgs = [
-    '--repository "$GITHUB_REPOSITORY"', '--finalizer-run-id "$FINALIZER_RUN_ID"',
-    '--finalizer-run-attempt "$FINALIZER_RUN_ATTEMPT"', '--token-env GH_TOKEN', '--output ',
-  ]
-  const exactWriterHandoffArgs = [
-    '--repository "$GITHUB_REPOSITORY"', '--finalizer-run-id "$EXPECTED_FINALIZER_RUN_ID"',
-    '--finalizer-run-attempt "$EXPECTED_FINALIZER_RUN_ATTEMPT"', '--token-env GH_TOKEN', '--output ',
-  ]
-  const trustedCheckoutPattern = /uses:\s*actions\/checkout@[a-f0-9]{40}[\s\S]{0,500}?ref:\s*\$\{\{\s*github\.sha\s*\}\}[\s\S]{0,300}?path:\s*trusted/
-  if (
-    certifyHandoffCommands.length !== 1
-    || writerHandoffCommands.length !== 1
-    || !certifyHandoffCommands.every(command => commandHasFlags(command, handoffFlags))
-    || !writerHandoffCommands.every(command => commandHasFlags(command, handoffFlags))
-    || !certifyHandoffCommands.every(command => commandHasFlags(command, exactCertifyHandoffArgs))
-    || !writerHandoffCommands.every(command => commandHasFlags(command, exactCertifyHandoffArgs)
-      || commandHasFlags(command, exactWriterHandoffArgs))
-    || !trustedCheckoutPattern.test(certifyMirror)
-    || !trustedCheckoutPattern.test(mirrorWriter)
-    || !/git -C trusted fetch[\s\S]*refs\/heads\/main:refs\/remotes\/origin\/main/.test(certifyMirror)
-    || !/git -C trusted rev-parse ['"]?HEAD\^\{commit\}['"]?/.test(certifyMirror)
-    || !/git -C trusted rev-parse ['"]?refs\/remotes\/origin\/main\^\{commit\}['"]?/.test(certifyMirror)
-    || !/path:\s*source/.test(certifyMirror)
-    || !/ref:\s*\$\{\{\s*steps\.[A-Za-z0-9_-]+\.outputs\.(?:release_commit|source_sha)\s*\}\}/.test(certifyMirror)
-    || !/git -C source rev-parse ['"]?HEAD\^\{commit\}['"]?/.test(certifyMirror)
-    || !/git -C source rev-parse ['"]?HEAD\^\{tree\}['"]?/.test(certifyMirror)
-    || !/git -C source merge-base --is-ancestor[\s\S]{0,300}refs\/remotes\/origin\/main/.test(certifyMirror)
-  ) add(mirrorFile, 'WF-MIRROR-SOURCE', 'protected-base code must derive the finalizer handoff twice, while the exact release commit/tree is checked out separately and proved to be on current main')
-
-  const mirrorOutputKeys = [
-    'ready', 'trusted_sha', 'handoff_sha256', 'finalizer_workflow_source_sha', 'finalizer_run_id', 'finalizer_run_attempt',
-    'finalizer_artifact_id', 'finalizer_artifact_digest', 'release_id', 'release_tag', 'version',
-    'tag_object', 'source_sha', 'source_tree', 'release_set_sha256', 'release_bom_sha256',
-    'finalization_receipt_sha256', 'release_trust_evidence_sha256', 'external_activation_requirements_sha256',
-    'activation_boundary_proof_sha256', 'archive_sha256',
-    'tree_sha256', 'scaffold_lock_sha256', 'artifact_id', 'artifact_digest',
-  ]
-  const mirrorOutputBindings = new Map([
-    ['ready', 'steps.certify.outputs.ready'],
-    ['trusted_sha', 'steps.trusted.outputs.sha'],
-    ['handoff_sha256', 'steps.handoff.outputs.handoff_sha256'],
-    ['finalizer_workflow_source_sha', 'steps.handoff.outputs.finalizer_workflow_source_sha'],
-    ['finalizer_run_id', 'steps.handoff.outputs.finalizer_run_id'],
-    ['finalizer_run_attempt', 'steps.handoff.outputs.finalizer_run_attempt'],
-    ['finalizer_artifact_id', 'steps.handoff.outputs.finalizer_artifact_id'],
-    ['finalizer_artifact_digest', 'steps.handoff.outputs.finalizer_artifact_digest'],
-    ['release_id', 'steps.handoff.outputs.release_id'],
-    ['release_tag', 'steps.handoff.outputs.release_tag'],
-    ['version', 'steps.handoff.outputs.version'],
-    ['tag_object', 'steps.handoff.outputs.tag_object'],
-    ['source_sha', 'steps.handoff.outputs.source_sha'],
-    ['source_tree', 'steps.handoff.outputs.source_tree'],
-    ['release_set_sha256', 'steps.handoff.outputs.release_set_sha256'],
-    ['release_bom_sha256', 'steps.archive.outputs.release_bom_sha256'],
-    ['finalization_receipt_sha256', 'steps.handoff.outputs.finalization_receipt_sha256'],
-    ['release_trust_evidence_sha256', 'steps.handoff.outputs.release_trust_evidence_sha256'],
-    ['external_activation_requirements_sha256', 'steps.handoff.outputs.external_activation_requirements_sha256'],
-    ['activation_boundary_proof_sha256', 'steps.archive.outputs.activation_boundary_proof_sha256'],
-    ['archive_sha256', 'steps.archive.outputs.sha256'],
-    ['tree_sha256', 'steps.archive.outputs.tree_sha256'],
-    ['scaffold_lock_sha256', 'steps.archive.outputs.scaffold_lock_sha256'],
-    ['artifact_id', 'steps.upload.outputs.artifact-id'],
-    ['artifact_digest', 'steps.upload.outputs.artifact-digest'],
-  ])
-  const missingDeclaredMirrorOutput = mirrorOutputKeys.some((key) => {
-    const binding = mirrorOutputBindings.get(key)
-    if (!binding) return true
-    const escaped = binding.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    return !new RegExp(`^      ${key}:\\s*\\$\\{\\{\\s*${escaped}\\s*\\}\\}\\s*$`, 'm').test(certifyMirror)
-  })
-  const missingWriterMirrorBinding = mirrorOutputKeys.some(key => !mirrorWriter.includes(`needs.certify-mirror.outputs.${key}`))
-  const handoffBindings = [
-    ['.workflowSourceSha', 'FINALIZER_WORKFLOW_SOURCE_SHA'],
-    ['.finalizerRun.runId', 'FINALIZER_RUN_ID'],
-    ['.finalizerRun.runAttempt', 'FINALIZER_RUN_ATTEMPT'],
-    ['.artifact.id', 'FINALIZER_ARTIFACT_ID'],
-    ['.artifact.digest', 'FINALIZER_ARTIFACT_DIGEST'],
-    ['.release.releaseId', 'RELEASE_ID'],
-    ['.release.tag', 'RELEASE_TAG'],
-    ['.release.version', 'VERSION'],
-    ['.release.tagObject', 'TAG_OBJECT'],
-    ['.release.releaseCommit', 'SOURCE_SHA'],
-    ['.release.releaseTree', 'SOURCE_TREE'],
-    ['.release.releaseSetSha256', 'RELEASE_SET_SHA256'],
-    ['.release.bomSha256', 'RELEASE_BOM_SHA256'],
-    ['.release.finalizationReceiptSha256', 'FINALIZATION_RECEIPT_SHA256'],
-    ['.release.releaseTrustEvidenceSha256', 'RELEASE_TRUST_EVIDENCE_SHA256'],
-    ['.release.externalActivationRequirementsSha256', 'EXTERNAL_ACTIVATION_REQUIREMENTS_SHA256'],
-  ]
-  const missingFreshHandoffComparison = handoffBindings.some(([selector, expected]) => {
-    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const direct = new RegExp(`jq\\s+-(?:er|e)\\s+['"]${escaped}['"][^\\n]*\\)[^\\n]*=\\s*['"]?\\$(?:EXPECTED_)?${expected}\\b`)
-    const helper = new RegExp(`check_field\\s+['"]${escaped}['"]\\s+['"]?\\$(?:EXPECTED_)?${expected}\\b`)
-    return !direct.test(mirrorWriter) && !helper.test(mirrorWriter)
-  })
-  if (
-    missingDeclaredMirrorOutput
-    || missingWriterMirrorBinding
-    || missingFreshHandoffComparison
-    || !/test\s+"\$\(sha256sum\s+"?\$HANDOFF"?[^\n]*\)"\s*=\s*"\$(?:EXPECTED_)?HANDOFF_SHA256"/.test(mirrorWriter)
-    || !/test\s+"\$TRUSTED_SHA"\s*=\s*"\$(?:EXPECTED_)?TRUSTED_SHA"/.test(mirrorWriter)
-  ) add(mirrorFile, 'WF-MIRROR-HANDOFF', 'every finalizer, release, archive, and uploaded-artifact identity must cross the job boundary explicitly and be compared with a fresh protected-base resolution')
-
-  const certifyActivationCommands = continuedShellCommands(certifyMirror, 'trusted/scripts/verify-mirror-activation-boundary.mjs')
-  const writerActivationCommands = continuedShellCommands(mirrorWriter, 'trusted/scripts/verify-mirror-activation-boundary.mjs')
-  const activationVerifierFlags = [
-    '--release-source-root', '--expected-commit', '--expected-tree',
-    '--expected-external-activation-requirements-sha256', '--output',
-  ]
-  const exactCertifyActivationArgs = [
-    '--release-source-root "$GITHUB_WORKSPACE/source"',
-    '--expected-commit "$EXPECTED_SOURCE_SHA"',
-    '--expected-tree "$EXPECTED_SOURCE_TREE"',
-    '--expected-external-activation-requirements-sha256 "$EXPECTED_EXTERNAL_ACTIVATION_REQUIREMENTS_SHA256"',
-    '--output "$PROOF"',
-  ]
-  const exactWriterActivationArgs = [
-    '--release-source-root "$GITHUB_WORKSPACE/release-source"',
-    '--expected-commit "$EXPECTED_SOURCE_SHA"',
-    '--expected-tree "$EXPECTED_SOURCE_TREE"',
-    '--expected-external-activation-requirements-sha256 "$EXPECTED_EXTERNAL_ACTIVATION_REQUIREMENTS_SHA256"',
-    '--output "$FRESH_PROOF"',
-  ]
-  const certifyActivationAt = certifyMirror.indexOf('trusted/scripts/verify-mirror-activation-boundary.mjs')
-  const certifyReleaseSourceAt = certifyMirror.indexOf('path: source')
-  const certifyReleaseBuildAt = Math.min(...[
-    'node source/scripts/setup-authority-governance.mjs',
-    'node source/scripts/build-published-template-mirror.mjs',
-  ].map((marker) => {
-    const index = certifyMirror.indexOf(marker)
-    return index < 0 ? Number.POSITIVE_INFINITY : index
-  }))
-  const certifyReceiptAt = certifyMirror.indexOf('{schemaVersion:4')
-  const certifyProofCopyAt = certifyMirror.indexOf('cp "$RUNNER_TEMP/mirror-activation-boundary-proof.json" "$EVIDENCE/mirror-activation-boundary-proof.json"')
-  const certifyProofDigestAt = certifyMirror.indexOf('ACTIVATION_BOUNDARY_PROOF_SHA=$(sha256sum "$EVIDENCE/mirror-activation-boundary-proof.json"')
-  const certifyUploadAt = certifyMirror.indexOf('actions/upload-artifact@')
-  const writerReleaseSourceAt = mirrorWriter.indexOf('path: release-source')
-  const writerReleaseCommitProofAt = mirrorWriter.indexOf("git -C release-source rev-parse 'HEAD^{commit}'")
-  const writerArtifactDownloadAt = mirrorWriter.indexOf('actions/download-artifact@')
-  const writerActivationAt = mirrorWriter.indexOf('trusted/scripts/verify-mirror-activation-boundary.mjs')
-  const writerFirstEvidenceAt = mirrorWriter.indexOf('trusted/scripts/verify-mirror-evidence.mjs')
-  if (
-    certifyActivationCommands.length !== 1
-    || writerActivationCommands.length !== 1
-    || !certifyActivationCommands.every(command => commandHasFlags(command, activationVerifierFlags))
-    || !writerActivationCommands.every(command => commandHasFlags(command, activationVerifierFlags))
-    || !certifyActivationCommands.every(command => commandHasFlags(command, exactCertifyActivationArgs))
-    || !writerActivationCommands.every(command => commandHasFlags(command, exactWriterActivationArgs))
-    || certifyReleaseSourceAt < 0
-    || certifyActivationAt < certifyReleaseSourceAt
-    || !Number.isFinite(certifyReleaseBuildAt)
-    || certifyActivationAt > certifyReleaseBuildAt
-    || !/external_activation_requirements_sha256:\s*\$\{\{\s*steps\.handoff\.outputs\.external_activation_requirements_sha256\s*\}\}/.test(certifyMirror)
-    || !/activation_boundary_proof_sha256:\s*\$\{\{\s*steps\.archive\.outputs\.activation_boundary_proof_sha256\s*\}\}/.test(certifyMirror)
-    || !/EXPECTED_EXTERNAL_ACTIVATION_REQUIREMENTS_SHA256:\s*\$\{\{\s*steps\.handoff\.outputs\.external_activation_requirements_sha256\s*\}\}/.test(certifyMirror)
-    || !/echo "sha256=\$PROOF_SHA" >> "\$GITHUB_OUTPUT"/.test(certifyMirror)
-    || certifyProofCopyAt < certifyActivationAt
-    || certifyProofDigestAt < certifyProofCopyAt
-    || certifyReceiptAt < certifyProofDigestAt
-    || certifyUploadAt < certifyReceiptAt
-    || !/test "\$ACTIVATION_BOUNDARY_PROOF_SHA" = "\$EXPECTED_ACTIVATION_BOUNDARY_PROOF_SHA256"/.test(certifyMirror)
-    || !/\{schemaVersion:4[^\n]*activationBoundaryProofSha256:\$activation\}/.test(certifyMirror)
-    || !/> "\$EVIDENCE\/receipt\.json"/.test(certifyMirror)
-    || !/echo "activation_boundary_proof_sha256=\$ACTIVATION_BOUNDARY_PROOF_SHA" >> "\$GITHUB_OUTPUT"/.test(certifyMirror)
-    || !/actions\/upload-artifact@[a-f0-9]{40}[\s\S]{0,400}path:\s*\$\{\{\s*runner\.temp\s*\}\}\/mirror-evidence\/[\s\S]{0,200}if-no-files-found:\s*error/.test(certifyMirror)
-    || writerReleaseSourceAt < 0
-    || !/ref:\s*\$\{\{\s*needs\.certify-mirror\.outputs\.source_sha\s*\}\}[\s\S]{0,180}path:\s*release-source/.test(mirrorWriter)
-    || writerReleaseCommitProofAt < writerReleaseSourceAt
-    || !/git -C release-source rev-parse 'HEAD\^\{tree\}'/.test(mirrorWriter)
-    || !/git -C release-source status --porcelain=v1 --untracked-files=no --ignore-submodules=none/.test(mirrorWriter)
-    || writerArtifactDownloadAt < writerReleaseCommitProofAt
-    || writerActivationAt < writerArtifactDownloadAt
-    || writerFirstEvidenceAt < writerActivationAt
-    || !/EXPECTED_ACTIVATION_BOUNDARY_PROOF_SHA256:\s*\$\{\{\s*needs\.certify-mirror\.outputs\.activation_boundary_proof_sha256\s*\}\}/.test(mirrorWriter)
-    || !/ARTIFACT_PROOF="\$RUNNER_TEMP\/mirror-evidence\/mirror-activation-boundary-proof\.json"/.test(mirrorWriter)
-    || !/test -f "\$ARTIFACT_PROOF" && test ! -L "\$ARTIFACT_PROOF"/.test(mirrorWriter)
-    || !/test "\$\(sha256sum "\$ARTIFACT_PROOF" \| cut -d' ' -f1\)" = "\$EXPECTED_ACTIVATION_BOUNDARY_PROOF_SHA256"/.test(mirrorWriter)
-    || !/test "\$\(sha256sum "\$FRESH_PROOF" \| cut -d' ' -f1\)" = "\$EXPECTED_ACTIVATION_BOUNDARY_PROOF_SHA256"/.test(mirrorWriter)
-    || !/cmp -s "\$FRESH_PROOF" "\$ARTIFACT_PROOF"/.test(mirrorWriter)
-  ) add(mirrorFile, 'WF-MIRROR-ACTIVATION-PROOF', 'certify and writer must independently verify the exact release-bound activation proof, bind it into receipt v4 and the artifact digest, and byte-compare a fresh writer proof before evidence use')
-
-  const mirrorWriterTokenAt = mirrorWriter.indexOf('actions/create-github-app-token@')
-  const mirrorWriterSecretAt = mirrorWriter.search(/\bsecrets\.(?:GOVERNANCE_WRITER_APP_ID|GOVERNANCE_WRITER_APP_PRIVATE_KEY)\b/)
-  const writerHandoffAt = mirrorWriter.indexOf('trusted/scripts/release-finalizer-mirror-handoff.mjs')
-  const mirrorIdentityAt = mirrorWriter.indexOf('trusted/scripts/mirror-run-artifact-identity.mjs')
-  const downloadAt = mirrorWriter.indexOf('actions/download-artifact@')
-  const preExtractAt = mirrorWriter.indexOf('--pre-extract')
-  const extractAt = mirrorWriter.indexOf('tar --no-same-owner')
-  const preTokenMirrorWriter = mirrorWriter.slice(0, Math.max(mirrorWriterTokenAt, 0))
-  const preTokenLastEvidenceVerifyAt = preTokenMirrorWriter.lastIndexOf('trusted/scripts/verify-mirror-evidence.mjs')
-  const preTokenRsyncAt = preTokenMirrorWriter.indexOf('rsync ')
-  if (
-    !needsJob(mirrorWriter, 'certify-mirror')
-    || !/^\s{4}if:\s*(?:\$\{\{\s*)?needs\.certify-mirror\.result\s*==\s*'success'\s*&&\s*needs\.certify-mirror\.outputs\.ready\s*==\s*'true'(?:\s*\}\})?\s*$/m.test(mirrorWriter)
-    || !/^\s{4}environment:\s*\n\s{6}name:\s*governance-mirror\s*$/m.test(mirrorWriter)
-    || !/actions:\s*read/.test(mirrorWriter)
-    || !/contents:\s*read/.test(mirrorWriter)
-    || /^\s{6}(?:actions|contents|id-token|attestations|checks):\s*write\s*$/m.test(mirrorWriter)
-    || mirrorWriterTokenAt < 0
-    || mirrorWriterSecretAt < 0
-    || mirrorWriterSecretAt < mirrorWriterTokenAt
-    || writerHandoffAt < 0
-    || mirrorIdentityAt < writerHandoffAt
-    || downloadAt < mirrorIdentityAt
-    || preExtractAt < downloadAt
-    || extractAt < preExtractAt
-    || preTokenRsyncAt < extractAt
-    || preTokenLastEvidenceVerifyAt < extractAt
-    || preTokenLastEvidenceVerifyAt < preTokenRsyncAt
-    || mirrorWriter.lastIndexOf('trusted/scripts/verify-mirror-evidence.mjs') >= mirrorWriterTokenAt
-  ) add(mirrorFile, 'WF-LATE-CREDENTIAL', 'the fresh read-only writer must re-resolve, bind, preflight, safely extract, and fully verify the target tree before minting the App token')
-
-  const mirrorIdentityCommands = continuedShellCommands(mirrorWriter, 'trusted/scripts/mirror-run-artifact-identity.mjs')
-  const mirrorIdentityFlags = [
-    '--repository', '--event', '--head-sha', '--run-id', '--run-attempt', '--artifact-id',
-    '--artifact-digest', '--token-env', '--output',
-  ]
-  const mirrorIdentityArgs = [
-    '--repository "$GITHUB_REPOSITORY"', '--event "$MIRROR_EVENT"', '--head-sha "$MIRROR_HEAD_SHA"',
-    '--run-id "$MIRROR_RUN_ID"', '--run-attempt "$MIRROR_RUN_ATTEMPT"',
-    '--artifact-id "$ARTIFACT_ID"', '--artifact-digest "$ARTIFACT_DIGEST"', '--token-env GH_TOKEN', '--output ',
-  ]
-  const directMirrorIdentityArgs = [
-    '--repository "$GITHUB_REPOSITORY"', '--event "$GITHUB_EVENT_NAME"', '--head-sha "$GITHUB_SHA"',
-    '--run-id "$GITHUB_RUN_ID"', '--run-attempt "$GITHUB_RUN_ATTEMPT"',
-    '--artifact-id "$ARTIFACT_ID"', '--artifact-digest "$ARTIFACT_DIGEST"', '--token-env GH_TOKEN', '--output ',
-  ]
-  if (
-    mirrorIdentityCommands.length !== 1
-    || !mirrorIdentityCommands.every(command => commandHasFlags(command, mirrorIdentityFlags))
-    || !mirrorIdentityCommands.every(command => commandHasFlags(command, mirrorIdentityArgs)
-      || commandHasFlags(command, directMirrorIdentityArgs))
-    || !(
-      (/MIRROR_EVENT:\s*\$\{\{\s*github\.event_name\s*\}\}/.test(mirrorWriter)
-        && /MIRROR_HEAD_SHA:\s*\$\{\{\s*github\.sha\s*\}\}/.test(mirrorWriter)
-        && /MIRROR_RUN_ID:\s*\$\{\{\s*github\.run_id\s*\}\}/.test(mirrorWriter)
-        && /MIRROR_RUN_ATTEMPT:\s*\$\{\{\s*github\.run_attempt\s*\}\}/.test(mirrorWriter))
-      || mirrorIdentityCommands.every(command => commandHasFlags(command, directMirrorIdentityArgs))
-    )
-    || !/artifact-ids:\s*\$\{\{\s*needs\.certify-mirror\.outputs\.artifact_id\s*\}\}/.test(mirrorWriter)
-    || !/artifact_id:\s*\$\{\{\s*steps\.upload\.outputs\.artifact-id\s*\}\}/.test(certifyMirror)
-    || !/artifact_digest:\s*\$\{\{\s*steps\.upload\.outputs\.artifact-digest\s*\}\}/.test(certifyMirror)
-  ) add(mirrorFile, 'WF-MIRROR-ARTIFACT', 'writer must re-read the active same-run workflow/artifact identity and download the exact v4 artifact by numeric ID and digest')
-
-  const certifyEvidenceCommands = continuedShellCommands(certifyMirror, 'verify-mirror-evidence.mjs')
-  const evidenceCommands = continuedShellCommands(mirrorWriter, 'verify-mirror-evidence.mjs')
-  const evidenceIdentityFlags = [
-    '--evidence', '--source-sha', '--source-tree', '--version', '--archive-sha256', '--tree-sha256',
-    '--release-bom-sha256', '--scaffold-lock-sha256', '--activation-boundary-proof-sha256',
-  ]
-  const exactEvidenceBindings = source => [
-    /--source-sha\s+"\$(?:EXPECTED_)?SOURCE_SHA"/,
-    /--source-tree\s+"\$(?:EXPECTED_)?SOURCE_TREE"/,
-    /--version\s+"\$(?:(?:EXPECTED_)?VERSION|BUILT_VER)"/,
-    /--archive-sha256\s+"\$(?:EXPECTED_)?ARCHIVE_SHA256"/,
-    /--tree-sha256\s+"\$(?:(?:EXPECTED_)?TREE_SHA256|MIRROR_SHA)"/,
-    /--release-bom-sha256\s+"\$(?:EXPECTED_)?RELEASE_BOM_SHA256"/,
-    /--scaffold-lock-sha256\s+"\$(?:EXPECTED_)?SCAFFOLD_LOCK_SHA256"/,
-    /--activation-boundary-proof-sha256\s+"\$(?:EXPECTED_)?ACTIVATION_BOUNDARY_PROOF_SHA256"/,
-  ].every(pattern => pattern.test(source))
-  const verifyArgsBlocks = [...mirrorWriter.matchAll(/VERIFY_ARGS=\([\s\S]*?^\s*\)/gm)].map(match => match[0])
-  const verifyArgsBound = verifyArgsBlocks.length === 1
-    && commandHasFlags(verifyArgsBlocks[0], evidenceIdentityFlags)
-    && exactEvidenceBindings(verifyArgsBlocks[0])
-  const envelopeCommands = evidenceCommands.filter(command => command.includes('--pre-extract'))
-  const fullEvidenceCommands = evidenceCommands.filter(command => !command.includes('--pre-extract'))
-  const evidenceCommandIsBound = command => exactEvidenceBindings(command)
-    || (verifyArgsBound && /"\$\{VERIFY_ARGS\[@\]\}"/.test(command))
-  const preTokenEvidenceCommands = continuedShellCommands(preTokenMirrorWriter, 'verify-mirror-evidence.mjs')
-  const preTokenEnvelopeCommands = preTokenEvidenceCommands.filter(command => command.includes('--pre-extract'))
-  const preTokenFullEvidenceCommands = preTokenEvidenceCommands.filter(command => !command.includes('--pre-extract'))
-  const rsyncAt = mirrorWriter.indexOf('rsync ')
-  const lastEvidenceVerifyAt = mirrorWriter.lastIndexOf('verify-mirror-evidence.mjs')
-  const firstRepositoryMutationAt = Math.min(...['git add -A', 'git push origin'].map(marker => {
-    const index = mirrorWriter.indexOf(marker)
-    return index < 0 ? Number.POSITIVE_INFINITY : index
-  }))
-  const downloadedArchiveWindow = preExtractAt >= 0 && rsyncAt > preExtractAt
-    ? mirrorWriter.slice(preExtractAt, rsyncAt)
-    : ''
-  const safeTarPathGate = downloadedArchiveWindow.includes("grep -qE '(^/|(^|/)\\.\\.(/|$))'")
-    || (
-      /tar -tf/.test(downloadedArchiveWindow)
-      && /"\$entry"\s*==\s*\/\*/.test(downloadedArchiveWindow)
-      && /"\$entry"\s*==\s*"?\.\."?/.test(downloadedArchiveWindow)
-      && /"\$entry"\s*==\s*\.\.\/\*/.test(downloadedArchiveWindow)
-      && /"\$entry"\s*==\s*\*\/\.\.\/\*/.test(downloadedArchiveWindow)
-      && /"\$entry"\s*==\s*\*\/\.\./.test(downloadedArchiveWindow)
-    )
-  const safeTarTypeGate = (
-    /tar -tvf/.test(downloadedArchiveWindow)
-      && /type\s*!=\s*"-"/.test(downloadedArchiveWindow)
-      && /type\s*!=\s*"d"/.test(downloadedArchiveWindow)
-  ) || /case\s+"\$\{listing:0:1\}"\s+in[\s\S]{0,100}-\|d\)\s*;;/.test(downloadedArchiveWindow)
-  if (
-    envelopeCommands.length !== 1
-    || fullEvidenceCommands.length < 2
-    || !certifyEvidenceCommands.every(evidenceCommandIsBound)
-    || preTokenEnvelopeCommands.length !== 1
-    || preTokenFullEvidenceCommands.length < 1
-    || !evidenceCommands.every(evidenceCommandIsBound)
-    || !evidenceCommands.every(command => command.includes('trusted/scripts/verify-mirror-evidence.mjs'))
-    || !fullEvidenceCommands.every(command => command.includes('--mirror') && command.includes('--policy'))
-    || !safeTarPathGate
-    || !safeTarTypeGate
-    || !/tar[\s\S]{0,160}--no-same-owner[\s\S]{0,160}--no-same-permissions[\s\S]{0,160}(?:-x[fv]?|--extract)\b/.test(downloadedArchiveWindow)
-    || !/trusted\/scripts\/published-template-mirror-policy\.json/.test(mirrorWriter)
-    || rsyncAt < 0
-    || lastEvidenceVerifyAt < rsyncAt
-    || !Number.isFinite(firstRepositoryMutationAt)
-    || lastEvidenceVerifyAt > firstRepositoryMutationAt
-  ) add(mirrorFile, 'WF-MIRROR-EVIDENCE', 'mirror evidence must be fully output-bound before extraction, reject unsafe paths and non-file/directory tar entries, and be fully reverified after extraction and target sync')
-
-  const downgradeAt = mirrorWriter.indexOf('ROOT_PACKAGE="$PUBLISHED/package.json"')
-  const downgradeEnd = rsyncAt > downgradeAt ? rsyncAt : -1
-  const downgrade = downgradeAt >= 0 && downgradeEnd >= 0 ? mirrorWriter.slice(downgradeAt, downgradeEnd) : ''
-  const downgradeCommands = continuedShellCommands(downgrade, 'workflow-static-validation.mjs')
-  if (
-    downgradeAt < 0
-    || downgradeEnd < 0
-    || downgradeEnd > mirrorWriterTokenAt
-    || !/APP_PACKAGE="\$PUBLISHED\/apps\/template\/package\.json"/.test(downgrade)
-    || !/for package_file in "\$ROOT_PACKAGE" "\$APP_PACKAGE"; do/.test(downgrade)
-    || !/test -f "\$package_file" && test ! -L "\$package_file"/.test(downgrade)
-    || downgradeCommands.length !== 1
-    || !downgradeCommands.every(command => (
-      /node "\$GITHUB_WORKSPACE\/trusted\/scripts\/workflow-static-validation\.mjs"/.test(command)
-      && commandHasFlags(command, [
-        'assert-mirror-version-floor',
-        '--root-manifest "$ROOT_PACKAGE"',
-        '--app-manifest "$APP_PACKAGE"',
-        '--built-version "$BUILT_VER"',
-      ])
-    ))
-  ) add(mirrorFile, 'WF-MIRROR-DOWNGRADE', 'before sync or credentials, two regular manifests must be passed only as data to the committed static SemVer oracle, normalize three closed exact/one-prefix legacy specs to one release, and reject BUILT_VER downgrades')
-
-  const forceIndexAt = mirrorWriter.indexOf('git -C "$PUBLISHED" add -f -A')
-  const writeTreeAt = mirrorWriter.indexOf('DESIRED_TREE=$(git -C "$PUBLISHED" write-tree)', forceIndexAt)
-  const indexArchiveAt = mirrorWriter.indexOf('git -C "$PUBLISHED" archive "$DESIRED_TREE"', writeTreeAt)
-  const indexVerifyCommands = evidenceCommands.filter(command => command.includes('--mirror "$INDEX_READBACK"'))
-  const indexVerifyAt = mirrorWriter.lastIndexOf('trusted/scripts/verify-mirror-evidence.mjs')
-  const indexWindow = forceIndexAt >= 0 && mirrorWriterTokenAt >= 0
-    ? mirrorWriter.slice(forceIndexAt, mirrorWriterTokenAt)
-    : ''
-  if (
-    forceIndexAt < rsyncAt
-    || forceIndexAt > mirrorWriterTokenAt
-    || !/test -z "\$\(git -C "\$PUBLISHED" ls-files --others --exclude-standard\)"/.test(indexWindow)
-    || !/test -z "\$\(git -C "\$PUBLISHED" ls-files --others --ignored --exclude-standard\)"/.test(indexWindow)
-    || !/git -C "\$PUBLISHED" diff --cached --check/.test(indexWindow)
-    || writeTreeAt < forceIndexAt
-    || indexArchiveAt < writeTreeAt
-    || !/INDEX_READBACK="\$RUNNER_TEMP\/published-index-readback"/.test(indexWindow)
-    || !/test ! -e "\$INDEX_READBACK"[\s\S]{0,120}mkdir -m 700 "\$INDEX_READBACK"/.test(indexWindow)
-    || !/git -C "\$PUBLISHED" archive "\$DESIRED_TREE" \| tar[\s\S]{0,180}--no-same-owner[\s\S]{0,180}--no-same-permissions[\s\S]{0,180}-C "\$INDEX_READBACK" -xf -/.test(indexWindow)
-    || indexVerifyCommands.length !== 1
-    || !indexVerifyCommands.every(command => evidenceCommandIsBound(command) && command.includes('--policy') && !command.includes('--allow-git-metadata'))
-    || indexVerifyAt < indexArchiveAt
-    || indexVerifyAt > mirrorWriterTokenAt
-  ) add(mirrorFile, 'WF-MIRROR-INDEX', 'the complete future-provider snapshot must be force-indexed, prove no ignored/untracked omissions, archive the exact write-tree, and pass full evidence readback before mutation checks or credentials')
-
-  const mutationBoundaryCommands = continuedShellCommands(mirrorWriter, 'trusted/scripts/check-branch-protection.mjs')
-  const sourceMutationBoundaryCommands = mutationBoundaryCommands.filter(command => command.includes('--repository "$GITHUB_REPOSITORY"'))
-  const targetMutationBoundaryCommands = mutationBoundaryCommands.filter(command => command.includes('--repository ajenchen/ds-product-template'))
-  const mutationBoundaryFlags = [
-    '--check', '--mutation-boundary-only',
-    '--activation-proof "$RUNNER_TEMP/mirror-evidence/mirror-activation-boundary-proof.json"',
-    '--release-source-root "$GITHUB_WORKSPACE/release-source"',
-  ]
-  const mutationBoundaryPositions = [...mirrorWriter.matchAll(/trusted\/scripts\/check-branch-protection\.mjs/g)].map(match => match.index)
-  const mutationBoundaryStepAt = mirrorWriter.indexOf('- name: Prove live mutation boundaries before requesting write credentials')
-  const mutationTokenStepAt = mirrorWriter.indexOf('- name: Mint least-privilege short-lived Governance Writer App token')
-  const interveningMutationStep = mutationBoundaryStepAt >= 0 && mutationTokenStepAt > mutationBoundaryStepAt
-    ? /\n\s{6}-\s+(?:name:|uses:|run:)/.test(mirrorWriter.slice(
-      mutationBoundaryStepAt + '- name: Prove live mutation boundaries before requesting write credentials'.length,
-      mutationTokenStepAt,
-    ))
-    : true
-  const mutationBoundaryStepClosed = /- name: Prove live mutation boundaries[^\n]*\n\s*if:\s*steps\.target\.outputs\.changed == 'true'/.test(mirrorWriter)
-  const tokenStepClosed = /- name: Mint least-privilege[^\n]*\n\s*if:\s*steps\.target\.outputs\.changed == 'true'/.test(mirrorWriter)
-  if (
-    mutationBoundaryCommands.length !== 2
-    || sourceMutationBoundaryCommands.length !== 1
-    || targetMutationBoundaryCommands.length !== 1
-    || !mutationBoundaryCommands.every(command => commandHasFlags(command, mutationBoundaryFlags))
-    || !sourceMutationBoundaryCommands[0]?.includes('--environment governance-mirror')
-    || targetMutationBoundaryCommands[0]?.includes('--environment')
-    || mutationBoundaryPositions.some(position => position < indexVerifyAt || position > mirrorWriterTokenAt)
-    || mutationBoundaryPositions[0] > mutationBoundaryPositions[1]
-    || interveningMutationStep
-    || !mutationBoundaryStepClosed
-    || !tokenStepClosed
-  ) add(mirrorFile, 'WF-MIRROR-MUTATION-BOUNDARY', 'exact source and target live mutation-boundary checks must consume the signed artifact proof and exact release source after index readback and immediately before the conditional Writer App token')
-
-  const mirrorWriterAppTokenUses = (mirrorWriter.match(/actions\/create-github-app-token@[a-f0-9]{40}/g) || []).length
-  const mirrorSecretNames = [...mirror.matchAll(/\bsecrets\.([A-Za-z0-9_]+)/g)].map(match => match[1])
-  const allowedMirrorSecrets = new Set(['GOVERNANCE_WRITER_APP_ID', 'GOVERNANCE_WRITER_APP_PRIVATE_KEY'])
-  const unexpectedMirrorSecret = mirrorSecretNames.some(name => !allowedMirrorSecrets.has(name))
-  const postTokenMirrorWriter = mirrorWriterTokenAt >= 0 ? mirrorWriter.slice(mirrorWriterTokenAt) : ''
-  if (
-    mirrorWriterAppTokenUses !== 1
-    || unexpectedMirrorSecret
-    || mirrorSecretNames.filter(name => name === 'GOVERNANCE_WRITER_APP_ID').length !== 1
-    || mirrorSecretNames.filter(name => name === 'GOVERNANCE_WRITER_APP_PRIVATE_KEY').length !== 1
-    || /GH_TOKEN:\s*\$\{\{\s*secrets\./.test(mirror)
-    || /\b(?:PAT|ADMIN_TOKEN|PERSONAL_ACCESS_TOKEN)\b/i.test(mirrorSecretNames.join('\n'))
-    || /^\s+(?:actions|checks|contents|deployments|id-token|issues|packages|pages|pull-requests|statuses):\s*write\s*$/m.test(mirror)
-    || !/^\s+owner:\s*ajenchen\s*$/m.test(mirrorWriter)
-    || !/^\s+repositories:\s*ds-product-template\s*$/m.test(mirrorWriter)
-    || (mirrorWriter.match(/^\s+permission-contents:\s*write\s*$/gm) || []).length !== 1
-    || (mirrorWriter.match(/^\s+permission-pull-requests:\s*write\s*$/gm) || []).length !== 1
-    || (mirrorWriter.match(/^\s+permission-workflows:\s*write\s*$/gm) || []).length !== 1
-    || /permission-(?:actions|checks|issues|members|metadata|packages|statuses):\s*write/.test(mirrorWriter)
-    || /\$\{\{\s*github\.token\s*\}\}/.test(postTokenMirrorWriter)
-    || /http\.[^\s=]*extraheader|https?:\/\/[^\s/@]+:[^\s/@]+@github\.com/i.test(mirrorWriter)
-  ) add(mirrorFile, 'WF-MIRROR-CREDENTIAL', 'mirror may load exactly one selected-repository Writer App credential after proof checks; PATs, admin credentials, extra secrets, broader write permissions, and additional token channels are forbidden')
-
-  const prListCommands = continuedShellCommands(mirrorWriter, 'gh pr list')
-  const prCreateCommands = continuedShellCommands(mirrorWriter, 'gh pr create')
-  const prIdentityCommands = continuedShellCommands(mirrorWriter, 'PR_IDENTITY=$(gh pr view')
-  const prListAt = mirrorWriter.indexOf('gh pr list')
-  const prIdentityAt = mirrorWriter.indexOf('PR_IDENTITY=$(gh pr view')
-  const prePr = prListAt >= 0 ? mirrorWriter.slice(Math.max(0, prListAt - 2400), prListAt) : ''
-  const postPr = prIdentityAt >= 0 ? mirrorWriter.slice(prIdentityAt) : ''
-  const prIdentityFields = 'headRefOid,baseRefOid,headRefName,baseRefName,isCrossRepository,headRepository,headRepositoryOwner'
-  if (
-    prListCommands.length !== 1
-    || !prListCommands.every(command => commandHasFlags(command, [
-      '--repo ajenchen/ds-product-template', '--state open', '--head "$BRANCH"', '--base main', '--json number,url',
-    ]))
-    || !/EXISTING_COUNT=\$\(jq ['"]length['"] <<<"\$EXISTING"\)/.test(mirrorWriter)
-    || !/test "\$EXISTING_COUNT" -le 1/.test(mirrorWriter)
-    || prCreateCommands.length !== 1
-    || !prCreateCommands.every(command => commandHasFlags(command, [
-      '--repo ajenchen/ds-product-template', '--base main', '--head "$BRANCH"',
-    ]))
-    || !/PR_NUMBER=\$\(jq -er ['"]\.\[0\]\.number['"] <<<"\$EXISTING"\)/.test(mirrorWriter)
-    || !/PR_NUMBER=\$\(gh pr view "\$PR_URL" --repo ajenchen\/ds-product-template --json number --jq ['"]\.number['"]\)/.test(mirrorWriter)
-    || prIdentityCommands.length !== 1
-    || !prIdentityCommands[0].includes('--repo ajenchen/ds-product-template')
-    || !prIdentityCommands[0].includes(`--json ${prIdentityFields}`)
-    || !/keys == \["baseRefName", "baseRefOid", "headRefName", "headRefOid", "headRepository", "headRepositoryOwner", "isCrossRepository"\]/.test(mirrorWriter)
-    || !/\.headRefOid == \$headOid/.test(mirrorWriter)
-    || !/\.baseRefOid == \$baseOid/.test(mirrorWriter)
-    || !/\.headRefName == \$headName/.test(mirrorWriter)
-    || !/\.baseRefName == "main"/.test(mirrorWriter)
-    || !/\.isCrossRepository == false/.test(mirrorWriter)
-    || !/\.headRepository\.nameWithOwner == "ajenchen\/ds-product-template"/.test(mirrorWriter)
-    || !/\.headRepositoryOwner\.login == "ajenchen"/.test(mirrorWriter)
-    || !/EXPECTED_BRANCH_COMMIT="\$(?:REMOTE|LOCAL)_COMMIT"/.test(mirrorWriter)
-    || !/LIVE_TARGET_BASE_SHA=\$\(git ls-remote origin refs\/heads\/main/.test(prePr)
-    || !/test "\$LIVE_TARGET_BASE_SHA" = "\$TARGET_BASE_SHA"/.test(prePr)
-    || !/LIVE_BRANCH_COMMIT=\$\(git ls-remote origin "refs\/heads\/\$BRANCH"/.test(prePr)
-    || !/test "\$LIVE_BRANCH_COMMIT" = "\$EXPECTED_BRANCH_COMMIT"/.test(prePr)
-    || !/test "\$\(git ls-remote origin "refs\/heads\/\$BRANCH"[^\n]*\)" = "\$EXPECTED_BRANCH_COMMIT"/.test(postPr)
-    || !/test "\$\(git ls-remote origin refs\/heads\/main[^\n]*\)" = "\$TARGET_BASE_SHA"/.test(postPr)
-  ) add(mirrorFile, 'WF-MIRROR-PR-IDENTITY', 'deterministic PR reuse/create must be unique for exact head/base, bind full PR repository/name/OID identity, and re-read target main plus branch immediately before and after PR operations')
-
-  if (
-    !/scripts\/verify-mirror-release\.mjs/.test(certifyMirror)
-    || !/permission-contents:\s*write/.test(mirrorWriter)
-    || !/permission-pull-requests:\s*write/.test(mirrorWriter)
-    || !/secrets\.GOVERNANCE_WRITER_APP_ID/.test(mirrorWriter)
-    || !/secrets\.GOVERNANCE_WRITER_APP_PRIVATE_KEY/.test(mirrorWriter)
-    || /GOVERNANCE_CHECK_APP|permission-checks:\s*write/.test(mirrorWriter)
-    || !/TARGET_BASE_SHA=\$\(git -C "\$PUBLISHED" rev-parse ['"]?refs\/remotes\/origin\/main\^\{commit\}['"]?\)/.test(mirrorWriter)
-    || !/BRANCH="governance\/mirror-\$\{BUILT_VER\/\/\.\/-\}-\$\{SOURCE_SHA:0:12\}-\$\{TARGET_BASE_SHA:0:12\}"/.test(mirrorWriter)
-    || !/REMOTE_LINE=\$\(git rev-list --parents -n 1 "\$REMOTE_COMMIT"\)/.test(mirrorWriter)
-    || !/test "\$\(wc -w <<<"\$REMOTE_LINE" \| tr -d ' '\)" = 2/.test(mirrorWriter)
-    || !/REMOTE_PARENT=\$\(cut -d' ' -f2 <<<"\$REMOTE_LINE"\)/.test(mirrorWriter)
-    || !/test "\$REMOTE_TREE" = "\$DESIRED_TREE" && test "\$REMOTE_PARENT" = "\$TARGET_BASE_SHA"/.test(mirrorWriter)
-    || !/LOCAL_LINE=\$\(git rev-list --parents -n 1 "\$LOCAL_COMMIT"\)/.test(mirrorWriter)
-    || !/test "\$\(wc -w <<<"\$LOCAL_LINE" \| tr -d ' '\)" = 2/.test(mirrorWriter)
-    || !/test "\$LOCAL_TREE" = "\$DESIRED_TREE" && test "\$LOCAL_PARENT" = "\$TARGET_BASE_SHA"/.test(mirrorWriter)
-    || !/LIVE_TARGET_BASE_SHA=\$\(git ls-remote origin refs\/heads\/main/.test(mirrorWriter)
-    || !/test "\$LIVE_TARGET_BASE_SHA" = "\$TARGET_BASE_SHA"/.test(mirrorWriter)
-  ) add(mirrorFile, 'WF-MIRROR-PRIVILEGE', 'the scoped writer may only create or reuse a one-parent deterministic PR branch bound to current target main')
-  if (!/git -C source merge-base --is-ancestor/.test(mirror) || !/no direct main write/i.test(mirror)) {
-    add(mirrorFile, 'WF-MIRROR-BOUNDARY', 'mirror must prove release ancestry and open a PR without direct target-main mutation')
+  if (sources['.github/workflows/release-finalize.yml']) {
+    add('.github/workflows/release-finalize.yml', 'WF-RELEASE-LEGACY', 'the separate release finalizer workflow is retired')
   }
+
+  const publishedMirrorFile = '.github/workflows/mirror-to-published-template.yml'
+  const publishedMirror = sources[publishedMirrorFile] || ''
+  const publishedMirrorJobs = workflowJobBlocks(publishedMirror)
+  const publishedMirrorJob = publishedMirrorJobs.get('mirror-published-release') || ''
+  const publishedMirrorEvents = workflowEventNames(publishedMirror.split(/^jobs:\s*$/m)[0])
+  if (
+    publishedMirrorEvents.length !== 1 || publishedMirrorEvents[0] !== 'release'
+    || !/^\s{4}types:\s*\[published\]\s*$/m.test(publishedMirror)
+    || /workflow_run|repository_dispatch|workflow_dispatch|release-finalize|finalizer/.test(executableSource(publishedMirror))
+  ) add(publishedMirrorFile, 'WF-MIRROR-TRIGGER', 'the nonblocking mirror may run only after a GitHub Release is published')
+  if (
+    publishedMirrorJobs.size !== 1 || !publishedMirrorJob
+    || !/contents:\s*read/.test(publishedMirrorJob)
+    || /contents:\s*write/.test(publishedMirrorJob)
+    || !/github\.event\.release\.tag_name/.test(publishedMirrorJob)
+    || !/gh release download/.test(publishedMirrorJob)
+    || !/release-set\.mjs/.test(publishedMirrorJob)
+    || !/build-release-bom\.mjs --verify/.test(publishedMirrorJob)
+    || !/release-npm-readback\.mjs/.test(publishedMirrorJob)
+    || !/product-template-scaffold-lock\.mjs --verify/.test(publishedMirrorJob)
+  ) add(publishedMirrorFile, 'WF-MIRROR-RELEASE', 'mirror must verify the published tag, six assets, BOM, npm provenance, and scaffold lock before writing')
+  const mirrorTokenAt = publishedMirrorJob.indexOf('secrets.CROSS_REPO_TOKEN')
+  const mirrorVerifyAt = publishedMirrorJob.indexOf('Verify six-file release set')
+  if (
+    mirrorTokenAt < 0 || mirrorVerifyAt < 0 || mirrorTokenAt < mirrorVerifyAt
+    || /actions\/create-github-app-token@|GOVERNANCE_WRITER_APP/.test(publishedMirrorJob)
+    || /secrets\.[\s\S]{0,300}gh release download/.test(publishedMirrorJob)
+  ) add(publishedMirrorFile, 'WF-MIRROR-CREDENTIAL', 'mirror may expose the existing cross-repository token only after all release verification')
 
   const anchorFiles = [
     '.github/workflows/governance-anchor.yml',
@@ -1528,205 +947,6 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
     ) add(anchorFile, 'WF-ANCHOR', 'protected-base credential-free verifier and environment-isolated App-pinned verdict producer are incomplete')
   }
 
-  const upgradeFile = 'template/ds-product-template/.github/workflows/sync-design-system.yml'
-  const upgrade = sources[upgradeFile] || ''
-  const upgradeJobs = workflowJobBlocks(upgrade)
-  const certifyUpgrade = upgradeJobs.get('certify-upgrade') || ''
-  const verifyUpgrade = upgradeJobs.get('verify-upgrade') || ''
-  const writeUpgrade = upgradeJobs.get('write-upgrade-pr') || ''
-  const upgradeAnchor = sources['template/ds-product-template/.github/workflows/governance-anchor.yml'] || ''
-  const upgradeEvidenceAt = upgrade.indexOf('Independently reconstruct exact incoming tree without write authority')
-  const upgradeWriterAt = upgrade.indexOf('Apply preverified evidence + open Writer App reviewed PR')
-  const upgradePreJobs = upgrade.split(/^jobs:\s*$/m)[0] || ''
-  const upgradeEvents = workflowEventNames(upgradePreJobs)
-  const upgradeDispatch = eventBlock(upgradePreJobs, 'repository_dispatch')
-  const upgradeDispatchTypeLists = [...upgradeDispatch.matchAll(
-    /^\s{4}types:\s*\[([^\]]*)\]\s*(?:#.*)?$/gm,
-  )].map(match => match[1].split(',').map(value => value.trim()))
-  const expectedUpgradeDispatchTypes = [
-    'governance-release',
-    'manual-governance-upgrade-request',
-  ]
-  const applyPreverifiedAt = writeUpgrade.indexOf('--apply-preverified')
-  const writerTokenAt = writeUpgrade.indexOf('actions/create-github-app-token@')
-  const writerSecretAt = writeUpgrade.search(/secrets\.GOVERNANCE_WRITER_APP_(?:ID|PRIVATE_KEY)/)
-  const executableUpgradeWriter = executableSource(writeUpgrade)
-  const upgradeWriterMutationStep = workflowStepBlocks(writeUpgrade)
-    .find(step => /GH_TOKEN:\s*\$\{\{\s*steps\.app-token\.outputs\.token\s*\}\}/.test(step)
-      && /governance-upgrade-writer-v1/.test(step)) || ''
-  const executableUpgradeWriterMutation = executableSource(upgradeWriterMutationStep)
-  const writerSetupAt = writeUpgrade.indexOf('npm run setup:governance')
-  const writerNpmRunLines = executableUpgradeWriter.split(/\r?\n/)
-    .filter(line => /\bnpm\s+run\b/.test(line))
-    .map(line => line.trim())
-  const liveMainReads = executableUpgradeWriter.match(/git ls-remote --exit-code origin refs\/heads\/main/g) || []
-  const liveMainBindings = executableUpgradeWriter.match(/test "\$LIVE_MAIN_SHA" = "\$BASE_SHA"/g) || []
-  if (
-    JSON.stringify(upgradeEvents) !== JSON.stringify(['repository_dispatch'])
-    || upgradeDispatchTypeLists.length !== 1
-    || JSON.stringify(upgradeDispatchTypeLists[0]) !== JSON.stringify(expectedUpgradeDispatchTypes)
-  ) {
-    add(upgradeFile, 'WF-PRIVILEGED-TRIGGER', 'Writer App upgrade workflow must load only from protected-default repository_dispatch with the exact governance-release and manual-governance-upgrade-request event allowlist')
-  }
-  if (
-    !certifyUpgrade
-    || !verifyUpgrade
-    || !writeUpgrade
-    || !needsJob(verifyUpgrade, 'certify-upgrade')
-    || !needsJob(writeUpgrade, 'certify-upgrade')
-    || !needsJob(writeUpgrade, 'verify-upgrade')
-    || !/^    environment:\s*\n      name:\s*governance-upgrade\s*$/m.test(writeUpgrade)
-    || /\bsecrets\.|actions\/create-github-app-token@/.test(certifyUpgrade)
-    || /\bsecrets\.|actions\/create-github-app-token@|(?:contents|pull-requests):\s*write/.test(verifyUpgrade)
-    || upgradeEvidenceAt < 0
-    || upgradeWriterAt < upgradeEvidenceAt
-    || applyPreverifiedAt < 0
-    || writerSetupAt < 0
-    || writerSetupAt > applyPreverifiedAt
-    || JSON.stringify(writerNpmRunLines) !== JSON.stringify(['npm run setup:governance'])
-    || !/test "\$\(git rev-parse HEAD\)" = "\$\{\{ needs\.verify-upgrade\.outputs\.base_sha \}\}"[\s\S]*npm run setup:governance/.test(writeUpgrade)
-    || writerTokenAt < applyPreverifiedAt
-    || writerSecretAt < writerTokenAt
-    || !/^    permissions:\s*\n      contents:\s*read\s*$/m.test(writeUpgrade)
-    || !/actions\/create-github-app-token@[a-f0-9]{40}/.test(writeUpgrade)
-    || !/app-id:\s*\$\{\{\s*secrets\.GOVERNANCE_WRITER_APP_ID\s*\}\}/.test(writeUpgrade)
-    || !/private-key:\s*\$\{\{\s*secrets\.GOVERNANCE_WRITER_APP_PRIVATE_KEY\s*\}\}/.test(writeUpgrade)
-    || !/permission-contents:\s*write/.test(writeUpgrade)
-    || !/permission-pull-requests:\s*write/.test(writeUpgrade)
-    || !/permission-workflows:\s*write/.test(writeUpgrade)
-    || /permission-checks:\s*write|GOVERNANCE_CHECK_APP/.test(writeUpgrade)
-    || !/GH_TOKEN:\s*\$\{\{\s*steps\.app-token\.outputs\.token\s*\}\}/.test(writeUpgrade)
-    || /GH_TOKEN:\s*\$\{\{\s*github\.token\s*\}\}|\bGITHUB_TOKEN\b|CANDIDATE_WRITER_PAT/.test(writeUpgrade)
-    || !/--apply-preverified/.test(writeUpgrade)
-    || !/--expected-verification-sha256/.test(writeUpgrade)
-  ) add(upgradeFile, 'WF-UPGRADE-PRIVILEGE', 'upgrade must certify and independently reconstruct without credentials before a fresh environment-gated Writer App job applies preverified bytes and mints least-privilege mutation authority')
-  const upgradeGitWrapperAt = executableUpgradeWriterMutation.indexOf('git() {')
-  const upgradeFirstPrivilegedGitAt = Math.min(...['git commit', 'git fetch', 'git push'].map(marker => {
-    const index = executableUpgradeWriterMutation.indexOf(marker)
-    return index < 0 ? Number.POSITIVE_INFINITY : index
-  }))
-  const upgradePrivilegedGitBypass = /\/usr\/bin\/git\s+(?:commit|fetch|ls-remote|push)\b|(?:^|[;&|$(]\s*)command\s+git\s+(?:commit|fetch|ls-remote|push)\b|(?:^|[;&|$(]\s*)\\git\s+(?:commit|fetch|ls-remote|push)\b/m
-    .test(executableUpgradeWriterMutation)
-  const upgradeWriterMutationLines = new Set(
-    upgradeWriterMutationStep.split(/\r?\n/).map(line => line.trim()),
-  )
-  const upgradeClosedGitEnvironment = [
-    "GH_PROMPT_DISABLED: '1'",
-    'PATH: /usr/bin:/bin',
-    'HOME: ${{ runner.temp }}/upgrade-writer-home',
-    'XDG_CONFIG_HOME: ${{ runner.temp }}/upgrade-writer-home/xdg',
-    'GH_CONFIG_DIR: ${{ runner.temp }}/upgrade-writer-home/gh',
-    "GIT_CONFIG_NOSYSTEM: '1'",
-    'GIT_CONFIG_GLOBAL: /dev/null',
-    "GIT_TERMINAL_PROMPT: '0'",
-    'GIT_ASKPASS: /bin/false',
-    'SSH_ASKPASS: /bin/false',
-    'GIT_PAGER: /bin/cat',
-    'PAGER: /bin/cat',
-    "GIT_CONFIG_COUNT: '4'",
-    'GIT_CONFIG_KEY_0: credential.helper',
-    "GIT_CONFIG_VALUE_0: ''",
-    'GIT_CONFIG_KEY_1: credential.helper',
-    "GIT_CONFIG_VALUE_1: '!/usr/bin/gh auth git-credential'",
-    'GIT_CONFIG_KEY_2: core.hooksPath',
-    'GIT_CONFIG_VALUE_2: /dev/null',
-    'GIT_CONFIG_KEY_3: protocol.file.allow',
-    'GIT_CONFIG_VALUE_3: never',
-    'GIT_AUTHOR_NAME: Qijenchen Governance Writer App',
-    'GIT_AUTHOR_EMAIL: qijenchen-governance-writer[bot]@users.noreply.github.com',
-    'GIT_COMMITTER_NAME: Qijenchen Governance Writer App',
-    'GIT_COMMITTER_EMAIL: qijenchen-governance-writer[bot]@users.noreply.github.com',
-  ].every(marker => upgradeWriterMutationLines.has(marker))
-  const upgradeClosedGitWrapper = [
-    'set -euo pipefail',
-    'WRITER_TOKEN="$GH_TOKEN"',
-    'unset GH_TOKEN',
-    '/usr/bin/env -i',
-    'GIT_CONFIG_NOSYSTEM=1',
-    'GIT_CONFIG_GLOBAL=/dev/null',
-    'GIT_TERMINAL_PROMPT=0',
-    'GIT_ASKPASS=/bin/false',
-    'SSH_ASKPASS=/bin/false',
-    'GIT_PAGER=/bin/cat',
-    'PAGER=/bin/cat',
-    'GIT_CONFIG_COUNT=4',
-    'GIT_CONFIG_KEY_0=credential.helper',
-    'GIT_CONFIG_VALUE_0=',
-    'GIT_CONFIG_KEY_1=credential.helper',
-    "GIT_CONFIG_VALUE_1='!/usr/bin/gh auth git-credential'",
-    'GIT_CONFIG_KEY_2=core.hooksPath',
-    'GIT_CONFIG_VALUE_2=/dev/null',
-    'GIT_CONFIG_KEY_3=protocol.file.allow',
-    'GIT_CONFIG_VALUE_3=never',
-    "GIT_AUTHOR_NAME='Qijenchen Governance Writer App'",
-    "GIT_AUTHOR_EMAIL='qijenchen-governance-writer[bot]@users.noreply.github.com'",
-    "GIT_COMMITTER_NAME='Qijenchen Governance Writer App'",
-    "GIT_COMMITTER_EMAIL='qijenchen-governance-writer[bot]@users.noreply.github.com'",
-    '"${token_environment[@]}"',
-    '/usr/bin/git "$@"',
-    "git commit --no-gpg-sign -m",
-    'WRITER_TOKEN=\'\'',
-    'unset WRITER_TOKEN',
-  ].every(marker => executableUpgradeWriterMutation.includes(marker))
-  const upgradeClosedGitTokenScope = /case "\$\{1:-\}" in\s+fetch\|ls-remote\|push\)\s+token_environment=\(GH_TOKEN="\$WRITER_TOKEN" GH_PROMPT_DISABLED=1\)\s+;;\s+esac/.test(executableUpgradeWriterMutation)
-  if (
-    !upgradeWriterMutationStep
-    || !upgradeClosedGitEnvironment
-    || !upgradeClosedGitWrapper
-    || !upgradeClosedGitTokenScope
-    || upgradeGitWrapperAt < 0
-    || upgradeGitWrapperAt > upgradeFirstPrivilegedGitAt
-    || upgradePrivilegedGitBypass
-    || (executableUpgradeWriterMutation.match(/\/usr\/bin\/git "\$@"/g) || []).length !== 1
-    || (executableUpgradeWriterMutation.match(/^\s*git commit\b/gm) || []).length !== 1
-    || (executableUpgradeWriterMutation.match(/^\s*git fetch\b/gm) || []).length !== 1
-    || (executableUpgradeWriterMutation.match(/^\s*git push\b/gm) || []).length !== 1
-    || /\bgh auth (?:login|logout|refresh|setup-git|token)\b|\bgit (?:config|credential approve)\b|persist-credentials:\s*true/.test(writeUpgrade)
-    || /(?:echo|printf)[^\n]*\$(?:\{)?WRITER_TOKEN(?:\})?[^\n]*(?:>|tee\b)/.test(executableUpgradeWriterMutation)
-  ) add(upgradeFile, 'WF-UPGRADE-GIT-CLOSURE', 'Writer App commit/fetch/push must use the exact closed /usr/bin/git wrapper with isolated config, hooks, pager, askpass and an ephemeral token scoped only to authenticated network subprocesses')
-  if (
-    !/base_sha:\s*\$\{\{\s*steps\.source\.outputs\.sha\s*\}\}/.test(certifyUpgrade)
-    || !/patch_sha256:\s*\$\{\{\s*steps\.evidence\.outputs\.patch_sha256\s*\}\}/.test(certifyUpgrade)
-    || !/tree_sha256:\s*\$\{\{\s*steps\.evidence\.outputs\.tree_sha256\s*\}\}/.test(certifyUpgrade)
-    || !/authority_sha256:\s*\$\{\{\s*steps\.evidence\.outputs\.authority_sha256\s*\}\}/.test(certifyUpgrade)
-    || !/--certify-staged/.test(certifyUpgrade)
-    || !/--previous-root "\$PREVIOUS_ROOT"/.test(certifyUpgrade)
-    || !/--sync-report "\$RUNNER_TEMP\/sync-all-report\.json"/.test(certifyUpgrade)
-    || !/--verify-only/.test(verifyUpgrade)
-    || !/--live-main-remote origin/.test(verifyUpgrade)
-    || !/--base-sha "\$\{\{ needs\.certify-upgrade\.outputs\.base_sha \}\}"/.test(verifyUpgrade)
-    || !/--version "\$\{\{ needs\.certify-upgrade\.outputs\.version \}\}"/.test(verifyUpgrade)
-    || !/--expected-patch-sha256 "\$\{\{ needs\.certify-upgrade\.outputs\.patch_sha256 \}\}"/.test(verifyUpgrade)
-    || !/--expected-tree-sha "\$\{\{ needs\.certify-upgrade\.outputs\.tree_sha256 \}\}"/.test(verifyUpgrade)
-    || !/--expected-authority-sha256 "\$\{\{ needs\.certify-upgrade\.outputs\.authority_sha256 \}\}"/.test(verifyUpgrade)
-    || /--manifest\b|node_modules\/@qijenchen\/design-system\/ds-canonical\/fork\/consumer\/governance-check/.test(verifyUpgrade)
-    || !/ref:\s*\$\{\{ github\.sha \}\}/.test(verifyUpgrade)
-    || (upgrade.match(/node-version:\s*'24\.14\.0'/g) || []).length !== 3
-    || !/BRANCH="governance\/upgrade-\$\{VERSION\/\/\.\/-\}-\$\{BASE_SHA:0:12\}"/.test(writeUpgrade)
-    || !/deterministic branch/.test(writeUpgrade)
-    || !/no direct main write/i.test(upgrade)
-  ) add(upgradeFile, 'WF-UPGRADE-EVIDENCE', 'upgrade writer must rebind base, patch and tree digests, reject path substitution, and reuse one deterministic PR branch')
-  if (
-    !/repository_dispatch:\s*[\s\S]*types:\s*\[[^\]]*governance-upgrade-candidate-validation/.test(upgradeAnchor)
-    || !/event_type:"governance-upgrade-candidate-validation"/.test(writeUpgrade)
-    || !/governance-upgrade-writer-v1/.test(writeUpgrade)
-    || !/number,url,author,baseRefName,headRefName,headRefOid,isCrossRepository/.test(writeUpgrade)
-    || !/WRITER_LOGIN:\s*qijenchen-governance-writer\[bot\]/.test(writeUpgrade)
-    || !writeUpgrade.includes(`test "$(jq -r '.[0].author.login' <<<"$PR_JSON")" = "$WRITER_LOGIN"`)
-    || !writeUpgrade.includes(`test "$(jq -r '.[0].baseRefName' <<<"$PR_JSON")" = main`)
-    || !writeUpgrade.includes(`test "$(jq -r '.[0].headRefName' <<<"$PR_JSON")" = "$BRANCH"`)
-    || !writeUpgrade.includes(`test "$(jq -r '.[0].isCrossRepository' <<<"$PR_JSON")" = false`)
-    || !writeUpgrade.includes(`test "$(jq -r '.[0].headRefOid' <<<"$PR_JSON")" = "$REMOTE_COMMIT"`)
-    || !writeUpgrade.includes(`test "$(wc -w <<<"$REMOTE_LINE" | tr -d ' ')" = 2`)
-    || !writeUpgrade.includes(`test "$REMOTE_TREE" = "$DESIRED_TREE" && test "$REMOTE_PARENT" = "$BASE_SHA"`)
-    || writerNpmRunLines.some(line => line !== 'npm run setup:governance')
-    || /\bnode\s+(?!scripts\/verify-upgrade-evidence\.mjs\b)scripts\//.test(executableUpgradeWriter)
-    || /\bgh\s+pr\s+(?:review|merge)\b|actions\/runs\/[^\s"']+\/approve|pulls\/[^\s"']+\/reviews/.test(executableUpgradeWriter)
-    || liveMainReads.length < 3
-    || liveMainBindings.length < 3
-    || !writeUpgrade.includes(`test "$LIVE_MAIN_SHA" = "$BASE_SHA" && test "$LIVE_BRANCH_SHA" = "$REMOTE_COMMIT"`)
-  ) add(upgradeFile, 'WF-UPGRADE-CANDIDATE-EXECUTION', 'only the exact Writer App-authored PR plus closed protected-default Check App validation dispatch may count; automatic candidate runs are non-authoritative, and writer approval/merge or stale PR/base/head/tree/parent are forbidden')
-
   const composition = sources['.github/workflows/composition-fidelity.yml'] || ''
   if (!/--require-mappings\b/.test(composition)) add('.github/workflows/composition-fidelity.yml', 'WF-NONVACUOUS', 'composition required check must reject zero executable mappings')
 
@@ -1735,15 +955,6 @@ export function auditWorkflowSources(sources, { rootNpmrc = '', releaseNpmPublis
   if (/(?:pages|id-token):\s*write|actions\/deploy-pages@|actions\/upload-pages-artifact@/.test(ci)) {
     add('.github/workflows/ci.yml', 'WF-CI-PRIVILEGE', 'PR/manual CI must remain read-only and may not build, upload, or deploy with Pages/OIDC authority')
   }
-  // Provider/fork portability coverage is owned by the registered All-Harness
-  // (its suites/pairedMeta include every portability-safety member); CI and release
-  // consume it once through test:governance-harnesses instead of a duplicate chain.
-  for (const file of ['.github/workflows/ci.yml', '.github/workflows/release.yml']) {
-    if (!/npm run --silent test:governance-harnesses/.test(executableSource(sources[file] || ''))) {
-      add(file, 'WF-PORTABILITY-MATRIX', 'CI and release must consume the registered All-Harness that owns the provider/fork portability safety members')
-    }
-  }
-
   const pagesFile = '.github/workflows/deploy-storybook.yml'
   const pages = sources[pagesFile] || ''
   const pagesJobs = workflowJobBlocks(pages)
@@ -1780,7 +991,9 @@ export function auditRepository(root = ROOT) {
   const rootNpmrc = existsSync(join(root, '.npmrc')) ? readFileSync(join(root, '.npmrc'), 'utf8') : ''
   const publisher = join(root, 'scripts/release-npm-publish.mjs')
   const releaseNpmPublisher = existsSync(publisher) ? readFileSync(publisher, 'utf8') : ''
-  return auditWorkflowSources(sources, { rootNpmrc, releaseNpmPublisher })
+  const githubPublisher = join(root, 'scripts/release-github-release.mjs')
+  const releaseGithubPublisher = existsSync(githubPublisher) ? readFileSync(githubPublisher, 'utf8') : ''
+  return auditWorkflowSources(sources, { rootNpmrc, releaseNpmPublisher, releaseGithubPublisher })
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

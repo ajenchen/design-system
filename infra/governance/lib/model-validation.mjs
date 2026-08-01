@@ -42,9 +42,7 @@ const WAIVER_RISKS = new Set(['low', 'medium', 'high', 'critical'])
 const WAIVER_CONTROL_TYPES = new Set(['ruleset', 'required-check', 'environment', 'provider-surface', 'ownership', 'compatibility'])
 const CANONICAL_MANAGED_ENVIRONMENT_NAMES = Object.freeze([
   'npm-release',
-  'release-finalize',
   'governance-check-verdict',
-  'governance-mirror',
   'governance-upgrade',
   'governance-external-ledger',
 ])
@@ -533,8 +531,47 @@ export function validateDesiredGithub(inventory, desired) {
     )
     invariant(typeof profile.immutableReleases === 'boolean', `${profileName} must declare immutableReleases`)
     invariant(Array.isArray(profile.requiredChecks) && profile.requiredChecks.length > 0, `${profileName} must define required checks`)
+    if (profileName === 'design-system-authority') {
+      invariant(profile.requiredChecks.length === 1, 'design-system-authority must define exactly one required check')
+      const [authorityCheck] = profile.requiredChecks
+      invariant(
+        authorityCheck.context === 'Verify(tsc + tests + compile + build)'
+          && authorityCheck.workflow === '.github/workflows/ci.yml',
+        'design-system-authority required check must be the canonical CI Verify job',
+      )
+    } else if (profileName === 'published-template') {
+      invariant(profile.requiredChecks.length === 1, 'published-template must define exactly one required check')
+      const [consumerCheck] = profile.requiredChecks
+      invariant(
+        consumerCheck.context === 'Verify consumer'
+          && consumerCheck.integration === 'githubActions'
+          && consumerCheck.trustSource === 'repository-workflow'
+          && consumerCheck.workflow === '.github/workflows/audit.yml'
+          && consumerCheck.requiredEvents?.length === 1
+          && consumerCheck.requiredEvents[0] === 'pull_request'
+          && consumerCheck.baseTrusted === undefined,
+        'published-template required check must be the canonical pull-request Verify consumer job',
+      )
+    } else if (profileName === 'product-consumer') {
+      invariant(profile.requiredChecks.length === 1, 'product-consumer must define exactly one required check')
+      const [consumerCheck] = profile.requiredChecks
+      invariant(
+        consumerCheck.context === 'Verify consumer'
+          && consumerCheck.integration === 'githubActions'
+          && consumerCheck.trustSource === 'protected-base-workflow'
+          && consumerCheck.workflow === '.github/workflows/audit.yml'
+          && consumerCheck.requiredEvents?.length === 1
+          && consumerCheck.requiredEvents[0] === 'repository_dispatch'
+          && consumerCheck.baseTrusted === true,
+        'product-consumer required check must be the protected-default receiver Verify consumer receipt',
+      )
+    }
     invariant(Array.isArray(profile.rulesets) && profile.rulesets.length > 0, `${profileName} must define rulesets`)
     invariant(Array.isArray(profile.environments), `${profileName} environments must be an array`)
+    if (profileName === 'product-consumer' || profileName === 'published-template') {
+      invariant(profile.actionsWorkflowPermissions.can_approve_pull_request_reviews === true, `${profileName} must allow GitHub Actions to create upgrade pull requests`)
+      invariant(profile.environments.length === 0, `${profileName} must not require Governance App environments or promotion gates`)
+    }
     invariant(profile.tagPolicy?.pattern === 'v*' && profile.tagPolicy.sourceBranch === 'main', `${profileName} tag policy must protect v* from main`)
     invariant(profile.tagPolicy.requireSourceAncestry === true && profile.tagPolicy.requireVerifiedSource === true, `${profileName} tag policy must require verified source ancestry`)
     if (profile.tagPolicy.sourceWorkflow) {
@@ -548,6 +585,19 @@ export function validateDesiredGithub(inventory, desired) {
       invariant(!checkNames.has(check.context), `Duplicate required check ${check.context} in ${profileName}`)
       invariant(desired.integrations[check.integration], `Unknown integration ${check.integration} for ${check.context}`)
       uniqueNonEmptyStrings(check.requiredEvents, `Required event missing for ${check.context}`)
+      if (check.releaseRequiredEvents !== undefined) {
+        uniqueNonEmptyStrings(check.releaseRequiredEvents, `Release-required event missing for ${check.context}`)
+        invariant(check.releaseRequiredEvents.every(event => event === 'push'), `Unknown release-required event for ${check.context}`)
+      }
+      if (profileName === 'design-system-authority') {
+        invariant(
+          check.requiredEvents.length === 1
+            && check.requiredEvents[0] === 'pull_request'
+            && check.releaseRequiredEvents?.length === 1
+            && check.releaseRequiredEvents[0] === 'push',
+          'design-system-authority Verify must gate pull requests and release readback from main push',
+        )
+      }
       invariant(['repository-workflow', 'protected-base-workflow', 'external-github-app'].includes(check.trustSource), `Required check ${check.context} trustSource is invalid`)
       if (check.trustSource === 'repository-workflow' || check.trustSource === 'protected-base-workflow') {
         invariant(typeof check.workflow === 'string' && /^\.github\/workflows\/.+\.ya?ml$/.test(check.workflow), `Required workflow is invalid for ${check.context}`)
@@ -555,30 +605,36 @@ export function validateDesiredGithub(inventory, desired) {
         if (check.trustSource === 'repository-workflow') invariant(check.baseTrusted !== true, `Repository workflow ${check.context} cannot be the base-trusted boundary`)
         else {
           invariant(check.baseTrusted === true, `Protected-base workflow ${check.context} must be base trusted`)
-          invariant(check.requiredEvents.length === 1 && check.requiredEvents[0] === 'pull_request_target', `Protected-base workflow ${check.context} must run unconditionally on pull_request_target`)
+          const nativeReceiverReceipt = check.integration === 'githubActions'
+            && check.requiredEvents.length === 1
+            && check.requiredEvents[0] === 'repository_dispatch'
+          const appVerdict = check.requiredEvents.length === 1 && check.requiredEvents[0] === 'pull_request_target'
+          invariant(nativeReceiverReceipt || appVerdict, `Protected-base workflow ${check.context} must use repository_dispatch receipt or pull_request_target verdict semantics`)
         }
       } else {
         invariant(check.workflow === undefined && check.workflowIdentity === undefined, `External App check ${check.context} must not trust a repository workflow`)
       }
-      invariant(check.requiredEvents.every(event => event === 'pull_request' || event === 'pull_request_target'), `Unknown required event for ${check.context}`)
+      invariant(check.requiredEvents.every(event => event === 'pull_request' || event === 'pull_request_target' || event === 'repository_dispatch'), `Unknown required event for ${check.context}`)
       invariant(check.forbidCandidateControlledSkip === true && check.requireUnconditionalPullRequest === true, `Required check ${check.context} must fail closed against candidate skips`)
       if (check.baseTrusted) {
         const integration = desired.integrations[check.integration]
-        invariant(integration.capability === 'check-only' && integration.externalTrustAnchor === true, `Base-trusted check ${check.context} must use the check-only external trust anchor`)
-        invariant(
-          (check.trustSource === 'external-github-app' && integration.operationMode === 'external-service')
-          || (check.trustSource === 'protected-base-workflow' && integration.operationMode === 'base-trusted-isolated-workflow'),
-          `Base-trusted check ${check.context} trust source and Check App operation mode are inconsistent`,
-        )
+        const nativeReceiverReceipt = check.trustSource === 'protected-base-workflow'
+          && check.integration === 'githubActions'
+          && integration.capability === 'ci'
+          && integration.operationMode === 'github-native'
+          && check.requiredEvents.length === 1
+          && check.requiredEvents[0] === 'repository_dispatch'
+        const externalAppVerdict = integration.capability === 'check-only'
+          && integration.externalTrustAnchor === true
+          && ((check.trustSource === 'external-github-app' && integration.operationMode === 'external-service')
+            || (check.trustSource === 'protected-base-workflow' && integration.operationMode === 'base-trusted-isolated-workflow'))
+        invariant(nativeReceiverReceipt || externalAppVerdict, `Base-trusted check ${check.context} trust source and integration mode are inconsistent`)
         baseTrustedChecks += 1
       }
       checkNames.add(check.context)
     }
-    // 1B(2026-07-29):authority repo 的信任基礎 = protected repository workflows +
-    // required checks + branch protection;App-pinned verdict 層已拆除(secrets 從未
-    // provision、檢查恆紅)。consumer/template profiles(fleet 藍圖)仍必須有
-    // base-trusted App verdict。
-    invariant(baseTrustedChecks > 0 || profileName === 'design-system-authority', `${profileName} must require at least one distinct base-trusted Governance Check App verdict`)
+    invariant(profileName !== 'product-consumer' || baseTrustedChecks === 1, 'product-consumer must require exactly one protected-default receiver receipt')
+    invariant(profileName !== 'published-template' || baseTrustedChecks === 0, 'published-template must rely on its normal pull-request workflow without a Governance App verdict')
     invariant(profile.rulesets.length === 3, `${profileName} must define exactly the three canonical managed rulesets`)
     const rulesetNames = new Set()
     const ruleTypesByRulesetName = new Map()
@@ -588,7 +644,7 @@ export function validateDesiredGithub(inventory, desired) {
       invariant(!rulesetNames.has(ruleset.name), `Duplicate ruleset ${ruleset.name} in ${profileName}`)
       invariant(ruleset.target === 'branch' || ruleset.target === 'tag', `Ruleset ${ruleset.name} has invalid target`)
       invariant(ruleset.enforcement === 'active', `Ruleset ${ruleset.name} in ${profileName} must be active in source policy`)
-      invariant(['always', 'on-promotion'].includes(ruleset.rollout), `Ruleset ${ruleset.name} in ${profileName} has invalid rollout`)
+      invariant(ruleset.rollout === 'always', `Ruleset ${ruleset.name} in ${profileName} must be active without a promotion prerequisite`)
       invariant(
         exactKeys(ruleset.conditions, ['ref_name'])
           && exactKeys(ruleset.conditions.ref_name, ['include', 'exclude'])
@@ -631,15 +687,12 @@ export function validateDesiredGithub(inventory, desired) {
           )
         } else {
           invariant(
-            ['creation', 'deletion', 'non_fast_forward', 'required_linear_history', 'required_signatures', 'update'].includes(rule.type)
+            ['deletion', 'non_fast_forward', 'required_linear_history', 'update'].includes(rule.type)
               && exactKeys(rule, ['type']),
             `Ruleset ${ruleset.name} in ${profileName} contains an unsupported or open simple rule`,
           )
         }
         ruleTypes.add(rule.type)
-      }
-      if (ruleset.target === 'tag') {
-        invariant(ruleTypes.has('required_signatures'), `Tag ruleset ${ruleset.name} in ${profileName} must require signed commits as defense-in-depth`)
       }
       ruleTypesByRulesetName.set(ruleset.name, ruleTypes)
       rulesetNames.add(ruleset.name)
@@ -655,20 +708,18 @@ export function validateDesiredGithub(inventory, desired) {
       {
         name: `${desired.managedRulesetPrefix}verified-main`,
         target: 'branch',
-        rollout: 'on-promotion',
+        rollout: 'always',
         include: ['~DEFAULT_BRANCH'],
         rules: ['pull_request', 'required_status_checks'],
       },
       {
         name: `${desired.managedRulesetPrefix}immutable-release-tags`,
         target: 'tag',
-        rollout: 'on-promotion',
+        rollout: 'always',
         include: ['refs/tags/v*'],
         rules: [
-          ...(!profile.tagPolicy.allowCreation ? ['creation'] : []),
           'update',
           'deletion',
-          'required_signatures',
         ],
       },
     ]
@@ -691,11 +742,8 @@ export function validateDesiredGithub(inventory, desired) {
       invariant(!environmentNames.has(environment.name), `${profileName} contains duplicate environment ${environment.name}`)
       environmentNames.add(environment.name)
       invariant(desired.managedEnvironmentNames.includes(environment.name), `Unmanaged environment name ${environment.name}`)
-      if (environment.independentReviewRequired) {
-        invariant(environment.name === 'release-finalize' && environment.preventSelfReview === true, `${environment.name} independent review must prevent self review`)
-        invariant(environment.workflow === '.github/workflows/release-finalize.yml', 'release-finalize independent review must be bound to the release-finalize workflow')
-        invariant(environment.deploymentBranchPolicy?.protectedBranches === true && environment.deploymentBranchPolicy?.customBranchPolicies === false, 'release-finalize must accept deployments only from protected branches')
-      } else invariant(environment.reviewers?.length === 0 && environment.preventSelfReview === false, `${environment.name} must not imply a reviewer that does not exist`)
+      invariant(environment.independentReviewRequired !== true, `${environment.name} cannot restore a retired human review gate`)
+      invariant(environment.reviewers?.length === 0 && environment.preventSelfReview === false, `${environment.name} must not imply a reviewer that does not exist`)
       invariant(typeof environment.workflow === 'string' && /^\.github\/workflows\/.+\.ya?ml$/.test(environment.workflow), `${environment.name} must name a valid workflow that consumes it`)
       assertReviewedWorkflowIdentity(environment.workflowIdentity, `Environment ${environment.name}`)
       if (environment.credentialIntegration) {
@@ -710,6 +758,7 @@ export function validateDesiredGithub(inventory, desired) {
       if (environment.name === 'npm-release') {
         invariant(environment.credentialIntegration === undefined, 'npm-release must remain OIDC-only and may not receive a repository Writer App credential')
         invariant(environment.workflow === '.github/workflows/release.yml', 'npm-release must bind the canonical release workflow')
+        if (profileName === 'design-system-authority') invariant(environment.rollout === 'always', 'design-system-authority npm-release must not depend on promotion state')
       }
     }
     const upgradeEnvironments = profile.environments.filter(environment => environment.name === 'governance-upgrade')
@@ -718,11 +767,15 @@ export function validateDesiredGithub(inventory, desired) {
       const upgradeEnvironment = upgradeEnvironments[0]
       invariant(upgradeEnvironment.workflow === '.github/workflows/sync-design-system.yml', `${profileName} governance-upgrade must bind the canonical sync workflow`)
       invariant(upgradeEnvironment.credentialIntegration === 'governanceWriterApp', `${profileName} governance-upgrade must use the dedicated Governance Writer App`)
+      invariant(upgradeEnvironment.rollout === 'always', `${profileName} governance-upgrade must not depend on promotion state`)
       invariant(upgradeEnvironment.deploymentBranchPolicy?.protectedBranches === true && upgradeEnvironment.deploymentBranchPolicy?.customBranchPolicies === false, `${profileName} governance-upgrade must load only from protected branches`)
       invariant(profile.actionsWorkflowPermissions.can_approve_pull_request_reviews === false, `${profileName} must disable the built-in GITHUB_TOKEN PR writer when governance-upgrade uses the Writer App`)
     }
     const externalLedgerEnvironments = profile.environments.filter(environment => environment.name === 'governance-external-ledger')
     if (profileName === 'design-system-authority') {
+      invariant(profile.immutableReleases === false, 'design-system-authority must not restore external immutable-release activation as a prerequisite')
+      invariant(profile.environments.length === 2, 'design-system-authority must retain only npm-release and governance-external-ledger environments')
+      invariant(profile.environments.some(environment => environment.name === 'npm-release'), 'design-system-authority must retain npm-release')
       invariant(externalLedgerEnvironments.length === 1, 'design-system-authority must declare exactly one governance-external-ledger environment')
       const externalLedgerEnvironment = externalLedgerEnvironments[0]
       invariant(externalLedgerEnvironment.workflow === '.github/workflows/external-ledger-writer.yml',
@@ -736,7 +789,7 @@ export function validateDesiredGithub(inventory, desired) {
       'governance-external-ledger must load only from protected branches')
     } else invariant(externalLedgerEnvironments.length === 0,
       `${profileName} must not receive authority external-ledger writer credentials`)
-    for (const check of profile.requiredChecks.filter(item => item.trustSource === 'protected-base-workflow')) {
+    for (const check of profile.requiredChecks.filter(item => item.trustSource === 'protected-base-workflow' && item.integration !== 'githubActions')) {
       const verdictEnvironment = profile.environments.find(environment => environment.name === 'governance-check-verdict')
       invariant(verdictEnvironment, `${profileName} protected-base check ${check.context} requires governance-check-verdict environment`)
       invariant(verdictEnvironment.workflow === check.workflow, `${profileName} governance-check-verdict workflow must match ${check.context}`)

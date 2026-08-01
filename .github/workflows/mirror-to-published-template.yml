@@ -1,955 +1,187 @@
-name: Mirror immutable ds-product-template snapshot
+name: Mirror published product template
 
-# DS is the only source authority. The first job builds and certifies a byte-bound
-# mirror without credentials. A fresh environment-scoped runner receives only that
-# archive and may create or reuse one deterministic PR. External activation remains
-# fail-closed until exact source/target rulesets, environment policy, and App-secret
-# placement have been independently read back; this workflow has no direct-main path.
+# A published GitHub Release is the only handoff. This workflow never blocks the
+# release path and exposes the existing cross-repository credential only after all
+# release assets are verified.
 on:
-  workflow_run:
-    workflows: [Finalize staged release]
-    types: [completed]
-  # Manual retries use repository_dispatch so GitHub always loads this privileged
-  # writer workflow from the protected default branch, never a selected branch.
-  repository_dispatch:
-    types: [mirror-template-request]
-
-concurrency:
-  group: ${{ github.repository }}-published-template-mirror-${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || github.event.client_payload.finalizer_run_id }}-${{ github.event_name == 'workflow_run' && github.event.workflow_run.run_attempt || github.event.client_payload.finalizer_run_attempt }}
-  cancel-in-progress: false
+  release:
+    types: [published]
 
 permissions:
-  actions: read
   contents: read
 
-defaults:
-  run:
-    shell: bash -eo pipefail {0}
+concurrency:
+  group: ${{ github.repository }}-published-template-mirror-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
 
 jobs:
-  certify-mirror:
-    name: Certify mirror without write credentials
-    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.event_name == 'repository_dispatch' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 40
-    outputs:
-      ready: ${{ steps.certify.outputs.ready }}
-      trusted_sha: ${{ steps.trusted.outputs.sha }}
-      handoff_sha256: ${{ steps.handoff.outputs.handoff_sha256 }}
-      finalizer_run_id: ${{ steps.handoff.outputs.finalizer_run_id }}
-      finalizer_run_attempt: ${{ steps.handoff.outputs.finalizer_run_attempt }}
-      finalizer_workflow_source_sha: ${{ steps.handoff.outputs.finalizer_workflow_source_sha }}
-      finalizer_artifact_id: ${{ steps.handoff.outputs.finalizer_artifact_id }}
-      finalizer_artifact_digest: ${{ steps.handoff.outputs.finalizer_artifact_digest }}
-      release_id: ${{ steps.handoff.outputs.release_id }}
-      release_tag: ${{ steps.handoff.outputs.release_tag }}
-      version: ${{ steps.handoff.outputs.version }}
-      tag_object: ${{ steps.handoff.outputs.tag_object }}
-      source_sha: ${{ steps.handoff.outputs.source_sha }}
-      source_tree: ${{ steps.handoff.outputs.source_tree }}
-      release_set_sha256: ${{ steps.handoff.outputs.release_set_sha256 }}
-      release_bom_sha256: ${{ steps.archive.outputs.release_bom_sha256 }}
-      finalization_receipt_sha256: ${{ steps.handoff.outputs.finalization_receipt_sha256 }}
-      release_trust_evidence_sha256: ${{ steps.handoff.outputs.release_trust_evidence_sha256 }}
-      external_activation_requirements_sha256: ${{ steps.handoff.outputs.external_activation_requirements_sha256 }}
-      activation_boundary_proof_sha256: ${{ steps.archive.outputs.activation_boundary_proof_sha256 }}
-      archive_sha256: ${{ steps.archive.outputs.sha256 }}
-      tree_sha256: ${{ steps.archive.outputs.tree_sha256 }}
-      scaffold_lock_sha256: ${{ steps.archive.outputs.scaffold_lock_sha256 }}
-      artifact_id: ${{ steps.upload.outputs.artifact-id }}
-      artifact_digest: ${{ steps.upload.outputs.artifact-digest }}
-    steps:
-      - name: Accept only one completed finalizer identity
-        id: trigger
-        run: |
-          if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then
-            jq -e '
-              .action == "completed"
-              and .workflow_run.conclusion == "success"
-              and (.workflow_run.id | type == "number")
-              and (.workflow_run.run_attempt | type == "number")
-            ' "$GITHUB_EVENT_PATH" >/dev/null
-            FINALIZER_RUN_ID=$(jq -er '.workflow_run.id | tostring' "$GITHUB_EVENT_PATH")
-            FINALIZER_RUN_ATTEMPT=$(jq -er '.workflow_run.run_attempt | tostring' "$GITHUB_EVENT_PATH")
-          elif [ "$GITHUB_EVENT_NAME" = repository_dispatch ]; then
-            jq -e '
-              .action == "mirror-template-request"
-              and (.client_payload | type == "object")
-              and (.client_payload | keys == ["finalizer_run_attempt", "finalizer_run_id"])
-              and (.client_payload.finalizer_run_id | type == "string" and test("^[1-9][0-9]*$"))
-              and (.client_payload.finalizer_run_attempt | type == "string" and test("^[1-9][0-9]*$"))
-            ' "$GITHUB_EVENT_PATH" >/dev/null
-            FINALIZER_RUN_ID=$(jq -er '.client_payload.finalizer_run_id' "$GITHUB_EVENT_PATH")
-            FINALIZER_RUN_ATTEMPT=$(jq -er '.client_payload.finalizer_run_attempt' "$GITHUB_EVENT_PATH")
-          else
-            echo "❌ unsupported mirror trigger: $GITHUB_EVENT_NAME"
-            exit 1
-          fi
-          echo "finalizer_run_id=$FINALIZER_RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "finalizer_run_attempt=$FINALIZER_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout protected-main verifier
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-          ref: ${{ github.sha }}
-          path: trusted
-
-      - name: Prove protected-main verifier identity
-        id: trusted
-        run: |
-          TRUSTED_SHA=$(git -C trusted rev-parse 'HEAD^{commit}')
-          test "$TRUSTED_SHA" = "$GITHUB_SHA" || {
-            echo "❌ trusted checkout differs from the workflow commit."
-            exit 1
-          }
-          git -C trusted fetch --force --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
-          MAIN_SHA=$(git -C trusted rev-parse 'refs/remotes/origin/main^{commit}')
-          git -C trusted merge-base --is-ancestor "$TRUSTED_SHA" "$MAIN_SHA" || {
-            echo "❌ workflow verifier $TRUSTED_SHA is not on protected main."
-            exit 1
-          }
-          echo "sha=$TRUSTED_SHA" >> "$GITHUB_OUTPUT"
-
-      - name: Setup trusted Node runtime
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: '24.14.0'
-          cache: npm
-          cache-dependency-path: trusted/package-lock.json
-
-      - name: Install protected verifier dependencies from its exact lock
-        run: node trusted/scripts/setup-authority-governance.mjs --dependencies-only
-
-      - name: Resolve finalizer to one immutable release handoff
-        id: handoff
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FINALIZER_RUN_ID: ${{ steps.trigger.outputs.finalizer_run_id }}
-          FINALIZER_RUN_ATTEMPT: ${{ steps.trigger.outputs.finalizer_run_attempt }}
-        run: |
-          READ_TOKEN="$GH_TOKEN"
-          unset GH_TOKEN
-          HANDOFF="$RUNNER_TEMP/finalizer-mirror-handoff.json"
-          GH_TOKEN="$READ_TOKEN" node trusted/scripts/release-finalizer-mirror-handoff.mjs \
-            --repository "$GITHUB_REPOSITORY" \
-            --finalizer-run-id "$FINALIZER_RUN_ID" \
-            --finalizer-run-attempt "$FINALIZER_RUN_ATTEMPT" \
-            --token-env GH_TOKEN \
-            --output "$HANDOFF"
-          READ_TOKEN=''
-          unset READ_TOKEN
-          HANDOFF_SHA=$(sha256sum "$HANDOFF" | cut -d' ' -f1)
-          WORKFLOW_SOURCE_SHA=$(jq -er '.workflowSourceSha' "$HANDOFF")
-          git -C trusted cat-file -e "$WORKFLOW_SOURCE_SHA^{commit}"
-          git -C trusted merge-base --is-ancestor "$WORKFLOW_SOURCE_SHA" refs/remotes/origin/main || {
-            echo "❌ finalizer workflow source is not on protected main."
-            exit 1
-          }
-          echo "handoff_sha256=$HANDOFF_SHA" >> "$GITHUB_OUTPUT"
-          echo "finalizer_run_id=$(jq -er '.finalizerRun.runId' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "finalizer_run_attempt=$(jq -er '.finalizerRun.runAttempt' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "finalizer_workflow_source_sha=$WORKFLOW_SOURCE_SHA" >> "$GITHUB_OUTPUT"
-          echo "finalizer_artifact_id=$(jq -er '.artifact.id' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "finalizer_artifact_digest=$(jq -er '.artifact.digest' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "release_id=$(jq -er '.release.releaseId' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "release_tag=$(jq -er '.release.tag' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "version=$(jq -er '.release.version' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "tag_object=$(jq -er '.release.tagObject' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "source_sha=$(jq -er '.release.releaseCommit' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "source_tree=$(jq -er '.release.releaseTree' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "release_set_sha256=$(jq -er '.release.releaseSetSha256' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "release_bom_sha256=$(jq -er '.release.bomSha256' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "finalization_receipt_sha256=$(jq -er '.release.finalizationReceiptSha256' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "release_trust_evidence_sha256=$(jq -er '.release.releaseTrustEvidenceSha256' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-          echo "external_activation_requirements_sha256=$(jq -er '.release.externalActivationRequirementsSha256' "$HANDOFF")" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout exact immutable release source as data
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-          ref: ${{ steps.handoff.outputs.source_sha }}
-          path: source
-
-      - name: Prove commit, tree, signed tag, versions, and protected-main ancestry
-        env:
-          RELEASE_TAG: ${{ steps.handoff.outputs.release_tag }}
-          RELEASE_VERSION: ${{ steps.handoff.outputs.version }}
-          EXPECTED_TAG_OBJECT: ${{ steps.handoff.outputs.tag_object }}
-          EXPECTED_SOURCE_SHA: ${{ steps.handoff.outputs.source_sha }}
-          EXPECTED_SOURCE_TREE: ${{ steps.handoff.outputs.source_tree }}
-        run: |
-          git -C source fetch --force --no-tags origin \
-            '+refs/heads/main:refs/remotes/origin/main' \
-            "+refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
-          test "$(git -C source rev-parse 'HEAD^{commit}')" = "$EXPECTED_SOURCE_SHA"
-          test "$(git -C source rev-parse 'HEAD^{tree}')" = "$EXPECTED_SOURCE_TREE"
-          test "$(git -C source rev-parse "refs/tags/$RELEASE_TAG^{commit}")" = "$EXPECTED_SOURCE_SHA"
-          test "$(git -C source rev-parse "refs/tags/$RELEASE_TAG^{tag}")" = "$EXPECTED_TAG_OBJECT"
-          git -C source merge-base --is-ancestor "$EXPECTED_SOURCE_SHA" refs/remotes/origin/main || {
-            echo "❌ immutable release commit is not on current protected main."
-            exit 1
-          }
-          for manifest in \
-            source/packages/design-system/package.json \
-            source/packages/governance/package.json \
-            source/packages/storybook-config/package.json; do
-            node trusted/scripts/workflow-static-validation.mjs assert-package-version \
-              --manifest "$manifest" --expected "$RELEASE_VERSION"
-          done
-
-      - name: Revalidate fresh signed source and target mutation boundaries
-        id: activation
-        env:
-          EXPECTED_SOURCE_SHA: ${{ steps.handoff.outputs.source_sha }}
-          EXPECTED_SOURCE_TREE: ${{ steps.handoff.outputs.source_tree }}
-          EXPECTED_EXTERNAL_ACTIVATION_REQUIREMENTS_SHA256: ${{ steps.handoff.outputs.external_activation_requirements_sha256 }}
-        run: |
-          PROOF="$RUNNER_TEMP/mirror-activation-boundary-proof.json"
-          node trusted/scripts/verify-mirror-activation-boundary.mjs \
-            --release-source-root "$GITHUB_WORKSPACE/source" \
-            --expected-commit "$EXPECTED_SOURCE_SHA" \
-            --expected-tree "$EXPECTED_SOURCE_TREE" \
-            --expected-external-activation-requirements-sha256 "$EXPECTED_EXTERNAL_ACTIVATION_REQUIREMENTS_SHA256" \
-            --output "$PROOF"
-          PROOF_SHA=$(sha256sum "$PROOF" | cut -d' ' -f1)
-          echo "sha256=$PROOF_SHA" >> "$GITHUB_OUTPUT"
-
-      - name: Bind dependency cache to the immutable release lock
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: '24.14.0'
-          cache: npm
-          cache-dependency-path: source/package-lock.json
-
-      - name: Install reviewed authority dependencies with the lock-bound npm runtime
-        run: node source/scripts/setup-authority-governance.mjs --dependencies-only
-
-      - name: Build allowlisted mirror
-        run: node source/scripts/build-published-template-mirror.mjs --out="$RUNNER_TEMP/mirror-build"
-
-      - name: Bind npm artifacts to immutable GitHub release BOM
-        id: certify
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.handoff.outputs.release_tag }}
-          EXPECTED_VERSION: ${{ steps.handoff.outputs.version }}
-          EXPECTED_SOURCE_SHA: ${{ steps.handoff.outputs.source_sha }}
-          EXPECTED_SOURCE_TREE: ${{ steps.handoff.outputs.source_tree }}
-          EXPECTED_BOM_SHA256: ${{ steps.handoff.outputs.release_bom_sha256 }}
-        run: |
-          READ_TOKEN="$GH_TOKEN"
-          unset GH_TOKEN
-          MIRROR="$RUNNER_TEMP/mirror-build"
-          CERTIFY="$RUNNER_TEMP/mirror-certify"
-          RELEASE_EVIDENCE="$RUNNER_TEMP/release-evidence"
-          BUILT_VER="$EXPECTED_VERSION"
-          node trusted/scripts/workflow-static-validation.mjs assert-package-version \
-            --manifest source/packages/design-system/package.json --expected "$BUILT_VER"
-          mkdir -p "$RELEASE_EVIDENCE"
-          /usr/bin/mkdir -m 700 "$RUNNER_TEMP/gh-read-home"
-          /usr/bin/env -i \
-            PATH=/usr/bin:/bin \
-            HOME="$RUNNER_TEMP/gh-read-home" \
-            GH_CONFIG_DIR="$RUNNER_TEMP/gh-read-home" \
-            GH_TOKEN="$READ_TOKEN" \
-            GH_PROMPT_DISABLED=1 \
-            /usr/bin/gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
-              --pattern release-bom.json \
-              --pattern product-template-scaffold.lock.json \
-              --dir "$RELEASE_EVIDENCE"
-          READ_TOKEN=''
-          unset READ_TOKEN
-          BOM="$RELEASE_EVIDENCE/release-bom.json"
-          SCAFFOLD_LOCK="$RELEASE_EVIDENCE/product-template-scaffold.lock.json"
-          test "$(sha256sum "$BOM" | cut -d' ' -f1)" = "$EXPECTED_BOM_SHA256" || {
-            echo "❌ downloaded release BOM differs from the finalizer handoff."
-            exit 1
-          }
-          NPM_EVIDENCE="$RELEASE_EVIDENCE/npm-integrity.json"
-          printf '[]\n' > "$NPM_EVIDENCE"
-
-          for package_name in @qijenchen/design-system @qijenchen/storybook-config; do
-            expected=$(jq -er --arg n "$package_name" --arg v "$BUILT_VER" \
-              '.packages[] | select(.name == $n and .version == $v) | .integrity' "$BOM")
-            set +e
-            registry_json=$(node source/scripts/run-verified-npm.mjs -- view "${package_name}@${BUILT_VER}" dist.integrity --json \
-              --registry=https://registry.npmjs.org/ 2>"$RUNNER_TEMP/npm-view.err")
-            view_rc=$?
-            set -e
-            if [ "$view_rc" -ne 0 ]; then
-              if grep -qE 'E404|404 Not Found' "$RUNNER_TEMP/npm-view.err"; then
-                echo "❌ release BOM exists but ${package_name}@${BUILT_VER} is absent from npm."
-              else
-                echo "❌ npm registry lookup failed (not a verified E404)."
-                sed -n '1,20p' "$RUNNER_TEMP/npm-view.err"
-              fi
-              exit 1
-            fi
-            actual=$(jq -er '.' <<<"$registry_json")
-            test "$actual" = "$expected" || {
-              echo "❌ npm integrity for ${package_name}@${BUILT_VER} differs from release BOM."
-              exit 1
-            }
-            jq --arg name "$package_name" --arg version "$BUILT_VER" --arg integrity "$actual" \
-              '. + [{name:$name,version:$version,integrity:$integrity}]' "$NPM_EVIDENCE" > "$NPM_EVIDENCE.next"
-            mv "$NPM_EVIDENCE.next" "$NPM_EVIDENCE"
-          done
-
-          node source/scripts/verify-mirror-release.mjs \
-            --bom "$BOM" \
-            --scaffold-lock "$SCAFFOLD_LOCK" \
-            --npm-evidence "$NPM_EVIDENCE" \
-            --repository "$GITHUB_REPOSITORY" \
-            --version "$BUILT_VER" \
-            --source-sha "$EXPECTED_SOURCE_SHA" \
-            --source-tree "$EXPECTED_SOURCE_TREE" \
-            > "$RELEASE_EVIDENCE/verified-release.json"
-          jq -e \
-            --arg tag "$RELEASE_TAG" \
-            --arg version "$BUILT_VER" \
-            --arg source "$EXPECTED_SOURCE_SHA" \
-            --arg tree "$EXPECTED_SOURCE_TREE" \
-            --arg bom "$EXPECTED_BOM_SHA256" \
-            '.tag == $tag and .version == $version and .sourceSha == $source and .sourceTree == $tree and .bomDigest == ("sha256:" + $bom)' \
-            "$RELEASE_EVIDENCE/verified-release.json" >/dev/null
-
-          node source/scripts/product-template-scaffold-lock.mjs --verify \
-            --root "$MIRROR" \
-            --lock "$SCAFFOLD_LOCK" \
-            --phase source \
-            --bom "$BOM"
-
-          node source/scripts/generate-product-template-package-lock.mjs --prefix "$MIRROR"
-          node source/scripts/product-template-scaffold-lock.mjs --verify \
-            --root "$MIRROR" \
-            --lock "$SCAFFOLD_LOCK" \
-            --phase published \
-            --bom "$BOM"
-          cp -a "$MIRROR" "$CERTIFY"
-          node source/scripts/run-verified-npm.mjs -- ci --prefix "$CERTIFY" --ignore-scripts --legacy-peer-deps
-          node source/scripts/run-verified-npm.mjs -- audit signatures --prefix "$CERTIFY"
-          node source/scripts/run-verified-npm.mjs -- audit --prefix "$CERTIFY" --audit-level=high
-          npm run --prefix "$CERTIFY" governance:check
-          npm run --prefix "$CERTIFY" typecheck
-          npm run --prefix "$CERTIFY" build
-          (cd "$CERTIFY" && npx --no-install playwright install --with-deps chromium && npm run audit:a11y)
-
-          test -z "$(find "$MIRROR" -type l -print -quit)" || {
-            echo '❌ mirror contains a symlink.'
-            exit 1
-          }
-          echo "ready=true" >> "$GITHUB_OUTPUT"
-
-      - name: Create deterministic credential-free evidence archive
-        if: steps.certify.outputs.ready == 'true'
-        id: archive
-        env:
-          SOURCE_SHA: ${{ steps.handoff.outputs.source_sha }}
-          SOURCE_TREE: ${{ steps.handoff.outputs.source_tree }}
-          BUILT_VER: ${{ steps.handoff.outputs.version }}
-          EXPECTED_BOM_SHA256: ${{ steps.handoff.outputs.release_bom_sha256 }}
-          EXPECTED_ACTIVATION_BOUNDARY_PROOF_SHA256: ${{ steps.activation.outputs.sha256 }}
-        run: |
-          MIRROR="$RUNNER_TEMP/mirror-build"
-          EVIDENCE="$RUNNER_TEMP/mirror-evidence"
-          RELEASE_EVIDENCE="$RUNNER_TEMP/release-evidence"
-          mkdir -p "$EVIDENCE"
-          cp "$RELEASE_EVIDENCE/release-bom.json" "$EVIDENCE/release-bom.json"
-          cp "$RELEASE_EVIDENCE/product-template-scaffold.lock.json" "$EVIDENCE/product-template-scaffold.lock.json"
-          cp "$RUNNER_TEMP/mirror-activation-boundary-proof.json" "$EVIDENCE/mirror-activation-boundary-proof.json"
-          TREE_SHA=$(cd "$MIRROR" && find . -type f -print0 | sort -z | while IFS= read -r -d '' file; do
-            printf '%s %s ' "$(stat -c '%a' "$file")" "$(sha256sum "$file" | cut -d' ' -f1)"
-            printf '%s\n' "$file"
-          done | sha256sum | cut -d' ' -f1)
-          tar --format=ustar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
-            -C "$MIRROR" -cf "$EVIDENCE/mirror.tar" .
-          ARCHIVE_SHA=$(sha256sum "$EVIDENCE/mirror.tar" | cut -d' ' -f1)
-          BOM_SHA=$(sha256sum "$EVIDENCE/release-bom.json" | cut -d' ' -f1)
-          SCAFFOLD_LOCK_SHA=$(sha256sum "$EVIDENCE/product-template-scaffold.lock.json" | cut -d' ' -f1)
-          ACTIVATION_BOUNDARY_PROOF_SHA=$(sha256sum "$EVIDENCE/mirror-activation-boundary-proof.json" | cut -d' ' -f1)
-          test "$BOM_SHA" = "$EXPECTED_BOM_SHA256"
-          test "$ACTIVATION_BOUNDARY_PROOF_SHA" = "$EXPECTED_ACTIVATION_BOUNDARY_PROOF_SHA256"
-          jq -n --arg source "$SOURCE_SHA" --arg sourceTree "$SOURCE_TREE" --arg version "$BUILT_VER" \
-            --arg archive "$ARCHIVE_SHA" --arg tree "$TREE_SHA" \
-            --arg bom "$BOM_SHA" --arg scaffold "$SCAFFOLD_LOCK_SHA" --arg activation "$ACTIVATION_BOUNDARY_PROOF_SHA" \
-            '{schemaVersion:4,sourceSha:$source,sourceTree:$sourceTree,version:$version,archiveSha256:$archive,treeSha256:$tree,releaseBomSha256:$bom,scaffoldLockSha256:$scaffold,activationBoundaryProofSha256:$activation}' \
-            > "$EVIDENCE/receipt.json"
-          echo "sha256=$ARCHIVE_SHA" >> "$GITHUB_OUTPUT"
-          echo "tree_sha256=$TREE_SHA" >> "$GITHUB_OUTPUT"
-          echo "release_bom_sha256=$BOM_SHA" >> "$GITHUB_OUTPUT"
-          echo "scaffold_lock_sha256=$SCAFFOLD_LOCK_SHA" >> "$GITHUB_OUTPUT"
-          echo "activation_boundary_proof_sha256=$ACTIVATION_BOUNDARY_PROOF_SHA" >> "$GITHUB_OUTPUT"
-
-      - name: Upload exact mirror evidence
-        if: steps.certify.outputs.ready == 'true'
-        id: upload
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: mirror-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/mirror-evidence/
-          if-no-files-found: error
-          retention-days: 14
-          compression-level: 0
-
-  write-mirror-pr:
-    name: Verify evidence + open reviewed PR(no direct main write)
-    needs: certify-mirror
-    if: ${{ needs.certify-mirror.result == 'success' && needs.certify-mirror.outputs.ready == 'true' }}
+  mirror-published-release:
+    name: Verify the published release and open the mirror PR
+    if: github.event.release.draft == false
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    environment:
-      name: governance-mirror
     permissions:
-      actions: read
       contents: read
     steps:
-      - name: Checkout protected-base mirror verifier
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Checkout protected workflow source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
-          fetch-depth: 0
-          persist-credentials: false
-          ref: ${{ github.sha }}
           path: trusted
+          fetch-depth: 1
+          persist-credentials: false
 
-      - name: Setup trusted Node runtime
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - name: Checkout the published release tag
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
-          node-version: '24.14.0'
-          cache: npm
-          cache-dependency-path: trusted/package-lock.json
-
-      - name: Install protected verifier dependencies from its exact lock
-        run: node trusted/scripts/setup-authority-governance.mjs --dependencies-only
-
-      - name: Re-resolve finalizer handoff and compare every closed field
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EXPECTED_TRUSTED_SHA: ${{ needs.certify-mirror.outputs.trusted_sha }}
-          EXPECTED_HANDOFF_SHA256: ${{ needs.certify-mirror.outputs.handoff_sha256 }}
-          EXPECTED_FINALIZER_RUN_ID: ${{ needs.certify-mirror.outputs.finalizer_run_id }}
-          EXPECTED_FINALIZER_RUN_ATTEMPT: ${{ needs.certify-mirror.outputs.finalizer_run_attempt }}
-          EXPECTED_FINALIZER_WORKFLOW_SOURCE_SHA: ${{ needs.certify-mirror.outputs.finalizer_workflow_source_sha }}
-          EXPECTED_FINALIZER_ARTIFACT_ID: ${{ needs.certify-mirror.outputs.finalizer_artifact_id }}
-          EXPECTED_FINALIZER_ARTIFACT_DIGEST: ${{ needs.certify-mirror.outputs.finalizer_artifact_digest }}
-          EXPECTED_RELEASE_ID: ${{ needs.certify-mirror.outputs.release_id }}
-          EXPECTED_RELEASE_TAG: ${{ needs.certify-mirror.outputs.release_tag }}
-          EXPECTED_VERSION: ${{ needs.certify-mirror.outputs.version }}
-          EXPECTED_TAG_OBJECT: ${{ needs.certify-mirror.outputs.tag_object }}
-          EXPECTED_SOURCE_SHA: ${{ needs.certify-mirror.outputs.source_sha }}
-          EXPECTED_SOURCE_TREE: ${{ needs.certify-mirror.outputs.source_tree }}
-          EXPECTED_RELEASE_SET_SHA256: ${{ needs.certify-mirror.outputs.release_set_sha256 }}
-          EXPECTED_RELEASE_BOM_SHA256: ${{ needs.certify-mirror.outputs.release_bom_sha256 }}
-          EXPECTED_FINALIZATION_RECEIPT_SHA256: ${{ needs.certify-mirror.outputs.finalization_receipt_sha256 }}
-          EXPECTED_RELEASE_TRUST_EVIDENCE_SHA256: ${{ needs.certify-mirror.outputs.release_trust_evidence_sha256 }}
-          EXPECTED_EXTERNAL_ACTIVATION_REQUIREMENTS_SHA256: ${{ needs.certify-mirror.outputs.external_activation_requirements_sha256 }}
-        run: |
-          READ_TOKEN="$GH_TOKEN"
-          unset GH_TOKEN
-          if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then
-            jq -e '
-              .action == "completed"
-              and .workflow_run.conclusion == "success"
-              and (.workflow_run.id | tostring) == env.EXPECTED_FINALIZER_RUN_ID
-              and (.workflow_run.run_attempt | tostring) == env.EXPECTED_FINALIZER_RUN_ATTEMPT
-            ' "$GITHUB_EVENT_PATH" >/dev/null
-          elif [ "$GITHUB_EVENT_NAME" = repository_dispatch ]; then
-            jq -e '
-              .action == "mirror-template-request"
-              and (.client_payload | type == "object")
-              and (.client_payload | keys == ["finalizer_run_attempt", "finalizer_run_id"])
-              and .client_payload.finalizer_run_id == env.EXPECTED_FINALIZER_RUN_ID
-              and .client_payload.finalizer_run_attempt == env.EXPECTED_FINALIZER_RUN_ATTEMPT
-            ' "$GITHUB_EVENT_PATH" >/dev/null
-          else
-            echo "❌ unsupported mirror trigger: $GITHUB_EVENT_NAME"
-            exit 1
-          fi
-
-          TRUSTED_SHA=$(git -C trusted rev-parse 'HEAD^{commit}')
-          test "$TRUSTED_SHA" = "$GITHUB_SHA"
-          test "$TRUSTED_SHA" = "$EXPECTED_TRUSTED_SHA"
-          git -C trusted fetch --force --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
-          git -C trusted merge-base --is-ancestor "$TRUSTED_SHA" refs/remotes/origin/main
-
-          HANDOFF="$RUNNER_TEMP/finalizer-mirror-handoff-fresh.json"
-          GH_TOKEN="$READ_TOKEN" node trusted/scripts/release-finalizer-mirror-handoff.mjs \
-            --repository "$GITHUB_REPOSITORY" \
-            --finalizer-run-id "$EXPECTED_FINALIZER_RUN_ID" \
-            --finalizer-run-attempt "$EXPECTED_FINALIZER_RUN_ATTEMPT" \
-            --token-env GH_TOKEN \
-            --output "$HANDOFF"
-          READ_TOKEN=''
-          unset READ_TOKEN
-          test "$(sha256sum "$HANDOFF" | cut -d' ' -f1)" = "$EXPECTED_HANDOFF_SHA256" || {
-            echo '❌ finalizer handoff changed between credential-free certification and writer.'
-            exit 1
-          }
-          check_field() {
-            actual=$(jq -er "$1" "$HANDOFF")
-            test "$actual" = "$2" || {
-              echo "❌ finalizer handoff field changed: $1"
-              exit 1
-            }
-          }
-          check_field '.workflowSourceSha' "$EXPECTED_FINALIZER_WORKFLOW_SOURCE_SHA"
-          check_field '.finalizerRun.runId' "$EXPECTED_FINALIZER_RUN_ID"
-          check_field '.finalizerRun.runAttempt' "$EXPECTED_FINALIZER_RUN_ATTEMPT"
-          check_field '.artifact.id' "$EXPECTED_FINALIZER_ARTIFACT_ID"
-          check_field '.artifact.digest' "$EXPECTED_FINALIZER_ARTIFACT_DIGEST"
-          check_field '.release.releaseId' "$EXPECTED_RELEASE_ID"
-          check_field '.release.tag' "$EXPECTED_RELEASE_TAG"
-          check_field '.release.version' "$EXPECTED_VERSION"
-          check_field '.release.tagObject' "$EXPECTED_TAG_OBJECT"
-          check_field '.release.releaseCommit' "$EXPECTED_SOURCE_SHA"
-          check_field '.release.releaseTree' "$EXPECTED_SOURCE_TREE"
-          check_field '.release.releaseSetSha256' "$EXPECTED_RELEASE_SET_SHA256"
-          check_field '.release.bomSha256' "$EXPECTED_RELEASE_BOM_SHA256"
-          check_field '.release.finalizationReceiptSha256' "$EXPECTED_FINALIZATION_RECEIPT_SHA256"
-          check_field '.release.releaseTrustEvidenceSha256' "$EXPECTED_RELEASE_TRUST_EVIDENCE_SHA256"
-          check_field '.release.externalActivationRequirementsSha256' "$EXPECTED_EXTERNAL_ACTIVATION_REQUIREMENTS_SHA256"
-          git -C trusted cat-file -e "$EXPECTED_FINALIZER_WORKFLOW_SOURCE_SHA^{commit}"
-          git -C trusted merge-base --is-ancestor "$EXPECTED_FINALIZER_WORKFLOW_SOURCE_SHA" refs/remotes/origin/main
-
-      - name: Checkout exact immutable release source for signed-proof revalidation
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
+          ref: refs/tags/${{ github.event.release.tag_name }}
+          path: source
           fetch-depth: 0
           persist-credentials: false
-          ref: ${{ needs.certify-mirror.outputs.source_sha }}
-          path: release-source
 
-      - name: Prove writer release-source commit and tree before evidence use
+      - name: Bind release identity to main and package version
+        id: identity
+        shell: bash
         env:
-          EXPECTED_SOURCE_SHA: ${{ needs.certify-mirror.outputs.source_sha }}
-          EXPECTED_SOURCE_TREE: ${{ needs.certify-mirror.outputs.source_tree }}
-        run: |
-          test "$(git -C release-source rev-parse 'HEAD^{commit}')" = "$EXPECTED_SOURCE_SHA"
-          test "$(git -C release-source rev-parse 'HEAD^{tree}')" = "$EXPECTED_SOURCE_TREE"
-          test -z "$(git -C release-source status --porcelain=v1 --untracked-files=no --ignore-submodules=none)"
-
-      - name: Bind this active run to the exact uploaded artifact
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ARTIFACT_ID: ${{ needs.certify-mirror.outputs.artifact_id }}
-          ARTIFACT_DIGEST: ${{ needs.certify-mirror.outputs.artifact_digest }}
-        run: |
-          READ_TOKEN="$GH_TOKEN"
-          unset GH_TOKEN
-          IDENTITY="$RUNNER_TEMP/mirror-run-identity.json"
-          verified=false
-          for delay in 0 2 4 8 16; do
-            if [ "$delay" -gt 0 ]; then sleep "$delay"; fi
-            if GH_TOKEN="$READ_TOKEN" node trusted/scripts/mirror-run-artifact-identity.mjs \
-              --repository "$GITHUB_REPOSITORY" \
-              --event "$GITHUB_EVENT_NAME" \
-              --head-sha "$GITHUB_SHA" \
-              --run-id "$GITHUB_RUN_ID" \
-              --run-attempt "$GITHUB_RUN_ATTEMPT" \
-              --artifact-id "$ARTIFACT_ID" \
-              --artifact-digest "$ARTIFACT_DIGEST" \
-              --token-env GH_TOKEN \
-              --output "$IDENTITY"; then
-              verified=true
-              break
-            fi
-            test ! -e "$IDENTITY" || {
-              echo '❌ mirror identity adapter left an unverified output.'
-              exit 1
-            }
-          done
-          test "$verified" = true || {
-            echo '❌ exact v4 mirror artifact did not become independently observable.'
-            exit 1
-          }
-          READ_TOKEN=''
-          unset READ_TOKEN
-
-      - name: Download exact certified evidence by immutable artifact ID
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          artifact-ids: ${{ needs.certify-mirror.outputs.artifact_id }}
-          path: ${{ runner.temp }}/mirror-evidence
-          merge-multiple: true
-
-      - name: Recompute signed activation proof from the exact release before artifact use
-        env:
-          EXPECTED_SOURCE_SHA: ${{ needs.certify-mirror.outputs.source_sha }}
-          EXPECTED_SOURCE_TREE: ${{ needs.certify-mirror.outputs.source_tree }}
-          EXPECTED_EXTERNAL_ACTIVATION_REQUIREMENTS_SHA256: ${{ needs.certify-mirror.outputs.external_activation_requirements_sha256 }}
-          EXPECTED_ACTIVATION_BOUNDARY_PROOF_SHA256: ${{ needs.certify-mirror.outputs.activation_boundary_proof_sha256 }}
-        run: |
-          ARTIFACT_PROOF="$RUNNER_TEMP/mirror-evidence/mirror-activation-boundary-proof.json"
-          test -f "$ARTIFACT_PROOF" && test ! -L "$ARTIFACT_PROOF"
-          test "$(sha256sum "$ARTIFACT_PROOF" | cut -d' ' -f1)" = "$EXPECTED_ACTIVATION_BOUNDARY_PROOF_SHA256"
-          FRESH_PROOF="$RUNNER_TEMP/mirror-activation-boundary-proof-fresh.json"
-          node trusted/scripts/verify-mirror-activation-boundary.mjs \
-            --release-source-root "$GITHUB_WORKSPACE/release-source" \
-            --expected-commit "$EXPECTED_SOURCE_SHA" \
-            --expected-tree "$EXPECTED_SOURCE_TREE" \
-            --expected-external-activation-requirements-sha256 "$EXPECTED_EXTERNAL_ACTIVATION_REQUIREMENTS_SHA256" \
-            --output "$FRESH_PROOF"
-          test "$(sha256sum "$FRESH_PROOF" | cut -d' ' -f1)" = "$EXPECTED_ACTIVATION_BOUNDARY_PROOF_SHA256"
-          cmp -s "$FRESH_PROOF" "$ARTIFACT_PROOF" || {
-            echo '❌ artifact activation proof differs from fresh signed release revalidation.'
-            exit 1
-          }
-
-      - name: Verify envelope before safe extraction, then verify published Day-0 tree
-        id: verified
-        env:
-          EXPECTED_SOURCE_SHA: ${{ needs.certify-mirror.outputs.source_sha }}
-          EXPECTED_SOURCE_TREE: ${{ needs.certify-mirror.outputs.source_tree }}
-          EXPECTED_VERSION: ${{ needs.certify-mirror.outputs.version }}
-          EXPECTED_ARCHIVE_SHA256: ${{ needs.certify-mirror.outputs.archive_sha256 }}
-          EXPECTED_TREE_SHA256: ${{ needs.certify-mirror.outputs.tree_sha256 }}
-          EXPECTED_RELEASE_BOM_SHA256: ${{ needs.certify-mirror.outputs.release_bom_sha256 }}
-          EXPECTED_SCAFFOLD_LOCK_SHA256: ${{ needs.certify-mirror.outputs.scaffold_lock_sha256 }}
-          EXPECTED_ACTIVATION_BOUNDARY_PROOF_SHA256: ${{ needs.certify-mirror.outputs.activation_boundary_proof_sha256 }}
-        run: |
-          EVIDENCE="$RUNNER_TEMP/mirror-evidence"
-          VERIFY_ARGS=(
-            --evidence "$EVIDENCE"
-            --source-sha "$EXPECTED_SOURCE_SHA"
-            --source-tree "$EXPECTED_SOURCE_TREE"
-            --version "$EXPECTED_VERSION"
-            --archive-sha256 "$EXPECTED_ARCHIVE_SHA256"
-            --tree-sha256 "$EXPECTED_TREE_SHA256"
-            --release-bom-sha256 "$EXPECTED_RELEASE_BOM_SHA256"
-            --scaffold-lock-sha256 "$EXPECTED_SCAFFOLD_LOCK_SHA256"
-            --activation-boundary-proof-sha256 "$EXPECTED_ACTIVATION_BOUNDARY_PROOF_SHA256"
-          )
-          node trusted/scripts/verify-mirror-evidence.mjs "${VERIFY_ARGS[@]}" --pre-extract
-          while IFS= read -r entry; do
-            if [[ -z "$entry" || "$entry" == /* || "$entry" == ".." || "$entry" == ../* \
-              || "$entry" == */../* || "$entry" == */.. || "$entry" == *\\* ]]; then
-              echo "❌ unsafe archive path: $entry"
-              exit 1
-            fi
-          done < <(tar -tf "$EVIDENCE/mirror.tar")
-          while IFS= read -r listing; do
-            case "${listing:0:1}" in
-              -|d) ;;
-              *) echo "❌ unsafe archive entry type: ${listing:0:1}"; exit 1 ;;
-            esac
-          done < <(tar -tvf "$EVIDENCE/mirror.tar")
-          test ! -e "$RUNNER_TEMP/mirror"
-          mkdir -m 700 "$RUNNER_TEMP/mirror"
-          tar --no-same-owner --no-same-permissions --delay-directory-restore \
-            -C "$RUNNER_TEMP/mirror" -xf "$EVIDENCE/mirror.tar"
-          node trusted/scripts/verify-mirror-evidence.mjs \
-            "${VERIFY_ARGS[@]}" \
-            --mirror "$RUNNER_TEMP/mirror" \
-            --policy trusted/scripts/published-template-mirror-policy.json
-
-      - name: Prepare and fully verify the exact public target tree before credentials
-        id: target
-        env:
-          SOURCE_SHA: ${{ steps.verified.outputs.source_sha }}
-          SOURCE_TREE: ${{ steps.verified.outputs.source_tree }}
-          BUILT_VER: ${{ steps.verified.outputs.version }}
-          ARCHIVE_SHA256: ${{ steps.verified.outputs.archive_sha256 }}
-          MIRROR_SHA: ${{ steps.verified.outputs.tree_sha256 }}
-          RELEASE_BOM_SHA256: ${{ steps.verified.outputs.release_bom_sha256 }}
-          SCAFFOLD_LOCK_SHA256: ${{ steps.verified.outputs.scaffold_lock_sha256 }}
-          ACTIVATION_BOUNDARY_PROOF_SHA256: ${{ steps.verified.outputs.activation_boundary_proof_sha256 }}
-        run: |
-          PUBLISHED="$RUNNER_TEMP/published"
-          test ! -e "$PUBLISHED"
-          git clone --no-tags --filter=blob:none --single-branch --branch main \
-            https://github.com/ajenchen/ds-product-template.git "$PUBLISHED"
-          test "$(git -C "$PUBLISHED" remote get-url origin)" = 'https://github.com/ajenchen/ds-product-template.git'
-          git -C "$PUBLISHED" fetch --force --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
-          TARGET_BASE_SHA=$(git -C "$PUBLISHED" rev-parse 'refs/remotes/origin/main^{commit}')
-          test "$(git -C "$PUBLISHED" rev-parse 'HEAD^{commit}')" = "$TARGET_BASE_SHA" || {
-            echo '❌ published-template checkout is not the exact current target main.'
-            exit 1
-          }
-          ROOT_PACKAGE="$PUBLISHED/package.json"
-          APP_PACKAGE="$PUBLISHED/apps/template/package.json"
-          for package_file in "$ROOT_PACKAGE" "$APP_PACKAGE"; do
-            test -f "$package_file" && test ! -L "$package_file" || {
-              echo "❌ target package manifest must be a regular non-symlink file: $package_file"
-              exit 1
-            }
-          done
-          node "$GITHUB_WORKSPACE/trusted/scripts/workflow-static-validation.mjs" \
-            assert-mirror-version-floor \
-            --root-manifest "$ROOT_PACKAGE" \
-            --app-manifest "$APP_PACKAGE" \
-            --built-version "$BUILT_VER"
-          rsync -a --checksum --delete --exclude='.git' "$RUNNER_TEMP/mirror/" "$PUBLISHED/"
-          node "$GITHUB_WORKSPACE/trusted/scripts/verify-mirror-evidence.mjs" \
-            --evidence "$RUNNER_TEMP/mirror-evidence" \
-            --mirror "$PUBLISHED" \
-            --policy "$GITHUB_WORKSPACE/trusted/scripts/published-template-mirror-policy.json" \
-            --source-sha "$SOURCE_SHA" \
-            --source-tree "$SOURCE_TREE" \
-            --version "$BUILT_VER" \
-            --archive-sha256 "$ARCHIVE_SHA256" \
-            --tree-sha256 "$MIRROR_SHA" \
-            --release-bom-sha256 "$RELEASE_BOM_SHA256" \
-            --scaffold-lock-sha256 "$SCAFFOLD_LOCK_SHA256" \
-            --activation-boundary-proof-sha256 "$ACTIVATION_BOUNDARY_PROOF_SHA256" \
-            --allow-git-metadata
-          node "$GITHUB_WORKSPACE/trusted/scripts/workflow-static-validation.mjs" \
-            assert-package-dependency --manifest "$PUBLISHED/package.json" \
-            --package '@qijenchen/design-system' --expected "$BUILT_VER"
-          node "$GITHUB_WORKSPACE/trusted/scripts/workflow-static-validation.mjs" \
-            assert-package-dependency --manifest "$PUBLISHED/apps/template/package.json" \
-            --package '@qijenchen/design-system' --expected "$BUILT_VER"
-          # Force every byte in the certified snapshot into the Git index even if a
-          # future provider adapter happens to match a consumer .gitignore rule.
-          git -C "$PUBLISHED" add -f -A
-          test -z "$(git -C "$PUBLISHED" ls-files --others --exclude-standard)" || {
-            echo '❌ certified mirror contains unstaged untracked paths.'
-            exit 1
-          }
-          test -z "$(git -C "$PUBLISHED" ls-files --others --ignored --exclude-standard)" || {
-            echo '❌ certified mirror contains ignored paths missing from the Git index.'
-            exit 1
-          }
-          git -C "$PUBLISHED" diff --cached --check
-          DESIRED_TREE=$(git -C "$PUBLISHED" write-tree)
-          INDEX_READBACK="$RUNNER_TEMP/published-index-readback"
-          test ! -e "$INDEX_READBACK"
-          mkdir -m 700 "$INDEX_READBACK"
-          git -C "$PUBLISHED" archive "$DESIRED_TREE" | tar \
-            --no-same-owner --no-same-permissions --delay-directory-restore \
-            -C "$INDEX_READBACK" -xf -
-          node "$GITHUB_WORKSPACE/trusted/scripts/verify-mirror-evidence.mjs" \
-            --evidence "$RUNNER_TEMP/mirror-evidence" \
-            --mirror "$INDEX_READBACK" \
-            --policy "$GITHUB_WORKSPACE/trusted/scripts/published-template-mirror-policy.json" \
-            --source-sha "$SOURCE_SHA" \
-            --source-tree "$SOURCE_TREE" \
-            --version "$BUILT_VER" \
-            --archive-sha256 "$ARCHIVE_SHA256" \
-            --tree-sha256 "$MIRROR_SHA" \
-            --release-bom-sha256 "$RELEASE_BOM_SHA256" \
-            --scaffold-lock-sha256 "$SCAFFOLD_LOCK_SHA256" \
-            --activation-boundary-proof-sha256 "$ACTIVATION_BOUNDARY_PROOF_SHA256"
-          if git -C "$PUBLISHED" diff --cached --quiet; then
-            echo 'changed=false' >> "$GITHUB_OUTPUT"
-            echo '✓ published template main is already byte-aligned; no writer credential requested.'
-          else
-            echo 'changed=true' >> "$GITHUB_OUTPUT"
-          fi
-          echo "target_base_sha=$TARGET_BASE_SHA" >> "$GITHUB_OUTPUT"
-          echo "desired_tree=$DESIRED_TREE" >> "$GITHUB_OUTPUT"
-
-      - name: Prove live mutation boundaries before requesting write credentials
-        if: steps.target.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          READ_TOKEN="$GH_TOKEN"
-          unset GH_TOKEN
-          GH_TOKEN="$READ_TOKEN" node trusted/scripts/check-branch-protection.mjs \
-            --check \
-            --repository "$GITHUB_REPOSITORY" \
-            --environment governance-mirror \
-            --mutation-boundary-only \
-            --activation-proof "$RUNNER_TEMP/mirror-evidence/mirror-activation-boundary-proof.json" \
-            --release-source-root "$GITHUB_WORKSPACE/release-source"
-          GH_TOKEN="$READ_TOKEN" node trusted/scripts/check-branch-protection.mjs \
-            --check \
-            --repository ajenchen/ds-product-template \
-            --mutation-boundary-only \
-            --activation-proof "$RUNNER_TEMP/mirror-evidence/mirror-activation-boundary-proof.json" \
-            --release-source-root "$GITHUB_WORKSPACE/release-source"
-          READ_TOKEN=''
-          unset READ_TOKEN
-
-      - name: Mint least-privilege short-lived Governance Writer App token
-        if: steps.target.outputs.changed == 'true'
-        id: app-token
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
-        with:
-          app-id: ${{ secrets.GOVERNANCE_WRITER_APP_ID }}
-          private-key: ${{ secrets.GOVERNANCE_WRITER_APP_PRIVATE_KEY }}
-          owner: ajenchen
-          repositories: ds-product-template
-          permission-contents: write
-          permission-pull-requests: write
-          permission-workflows: write
-
-      - name: Open or reuse one deterministic mirror PR
-        if: steps.target.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          GH_PROMPT_DISABLED: '1'
-          PATH: /usr/bin:/bin
-          HOME: ${{ runner.temp }}/writer-home
-          XDG_CONFIG_HOME: ${{ runner.temp }}/writer-home/xdg
-          GH_CONFIG_DIR: ${{ runner.temp }}/writer-home/gh
-          GIT_CONFIG_NOSYSTEM: '1'
-          GIT_CONFIG_GLOBAL: /dev/null
-          GIT_TERMINAL_PROMPT: '0'
-          GIT_ASKPASS: /bin/false
-          SSH_ASKPASS: /bin/false
-          HTTP_PROXY: ''
-          HTTPS_PROXY: ''
-          ALL_PROXY: ''
-          NO_PROXY: ''
-          GIT_CONFIG_COUNT: '4'
-          GIT_CONFIG_KEY_0: credential.helper
-          GIT_CONFIG_VALUE_0: ''
-          GIT_CONFIG_KEY_1: credential.helper
-          GIT_CONFIG_VALUE_1: '!/usr/bin/gh auth git-credential'
-          GIT_CONFIG_KEY_2: core.hooksPath
-          GIT_CONFIG_VALUE_2: /dev/null
-          GIT_CONFIG_KEY_3: protocol.file.allow
-          GIT_CONFIG_VALUE_3: never
-          GIT_AUTHOR_NAME: DS Governance App
-          GIT_AUTHOR_EMAIL: ds-governance-app[bot]@users.noreply.github.com
-          GIT_COMMITTER_NAME: DS Governance App
-          GIT_COMMITTER_EMAIL: ds-governance-app[bot]@users.noreply.github.com
-          SOURCE_SHA: ${{ steps.verified.outputs.source_sha }}
-          BUILT_VER: ${{ steps.verified.outputs.version }}
-          MIRROR_SHA: ${{ steps.verified.outputs.tree_sha256 }}
-          EXPECTED_TARGET_BASE_SHA: ${{ steps.target.outputs.target_base_sha }}
-          EXPECTED_DESIRED_TREE: ${{ steps.target.outputs.desired_tree }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TARGET: ${{ github.event.release.target_commitish }}
         run: |
           set -euo pipefail
-          test -n "$GH_TOKEN" || { echo '❌ short-lived GitHub App token missing.'; exit 1; }
-          WRITER_TOKEN="$GH_TOKEN"
-          unset GH_TOKEN
-          gh() {
-            /usr/bin/env -i \
-              PATH=/usr/bin:/bin \
-              HOME="$HOME" \
-              XDG_CONFIG_HOME="$XDG_CONFIG_HOME" \
-              GH_CONFIG_DIR="$GH_CONFIG_DIR" \
-              GH_TOKEN="$WRITER_TOKEN" \
-              GH_PROMPT_DISABLED=1 \
-              /usr/bin/gh "$@"
-          }
-          git() {
-            local token_environment=()
-            if [ "${1:-}" = push ]; then
-              token_environment=(GH_TOKEN="$WRITER_TOKEN" GH_PROMPT_DISABLED=1)
-            fi
-            /usr/bin/env -i \
-              PATH=/usr/bin:/bin \
-              HOME="$HOME" \
-              LANG=C.UTF-8 \
-              LC_ALL=C.UTF-8 \
-              TZ=UTC \
-              GIT_CONFIG_NOSYSTEM=1 \
-              GIT_CONFIG_GLOBAL=/dev/null \
-              GIT_TERMINAL_PROMPT=0 \
-              GIT_ASKPASS=/bin/false \
-              SSH_ASKPASS=/bin/false \
-              GIT_CONFIG_COUNT=4 \
-              GIT_CONFIG_KEY_0=credential.helper \
-              GIT_CONFIG_VALUE_0= \
-              GIT_CONFIG_KEY_1=credential.helper \
-              GIT_CONFIG_VALUE_1='!/usr/bin/gh auth git-credential' \
-              GIT_CONFIG_KEY_2=core.hooksPath \
-              GIT_CONFIG_VALUE_2=/dev/null \
-              GIT_CONFIG_KEY_3=protocol.file.allow \
-              GIT_CONFIG_VALUE_3=never \
-              GIT_AUTHOR_NAME='DS Governance App' \
-              GIT_AUTHOR_EMAIL='ds-governance-app[bot]@users.noreply.github.com' \
-              GIT_COMMITTER_NAME='DS Governance App' \
-              GIT_COMMITTER_EMAIL='ds-governance-app[bot]@users.noreply.github.com' \
-              "${token_environment[@]}" \
-              /usr/bin/git "$@"
-          }
-          mkdir -m 700 "$HOME" "$XDG_CONFIG_HOME" "$GH_CONFIG_DIR"
-          PUBLISHED="$RUNNER_TEMP/published"
-          cd "$PUBLISHED"
-          TARGET_BASE_SHA=$(git rev-parse 'HEAD^{commit}')
-          test "$TARGET_BASE_SHA" = "$EXPECTED_TARGET_BASE_SHA"
-          DESIRED_TREE=$(git write-tree)
-          test "$DESIRED_TREE" = "$EXPECTED_DESIRED_TREE"
-          LIVE_TARGET_BASE_SHA=$(git ls-remote origin refs/heads/main | awk 'NR == 1 { print $1 }')
-          test "$LIVE_TARGET_BASE_SHA" = "$TARGET_BASE_SHA" || {
-            echo "❌ target main advanced from $TARGET_BASE_SHA to $LIVE_TARGET_BASE_SHA; rerun against the new base."
-            exit 1
-          }
-          BRANCH="governance/mirror-${BUILT_VER//./-}-${SOURCE_SHA:0:12}-${TARGET_BASE_SHA:0:12}"
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            git fetch --no-tags origin "refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
-            REMOTE_COMMIT=$(git rev-parse "refs/remotes/origin/$BRANCH^{commit}")
-            REMOTE_TREE=$(git rev-parse "$REMOTE_COMMIT^{tree}")
-            REMOTE_LINE=$(git rev-list --parents -n 1 "$REMOTE_COMMIT")
-            test "$(wc -w <<<"$REMOTE_LINE" | tr -d ' ')" = 2
-            REMOTE_PARENT=$(cut -d' ' -f2 <<<"$REMOTE_LINE")
-            test "$REMOTE_TREE" = "$DESIRED_TREE" && test "$REMOTE_PARENT" = "$TARGET_BASE_SHA" || {
-              echo "❌ deterministic branch $BRANCH is not the exact one-parent target-base evidence; refusing overwrite."
-              exit 1
-            }
-            EXPECTED_BRANCH_COMMIT="$REMOTE_COMMIT"
-          else
-            git checkout -b "$BRANCH"
-            git commit --no-gpg-sign -m "chore(governance): mirror $BUILT_VER from ${SOURCE_SHA:0:12}"
-            LOCAL_COMMIT=$(git rev-parse 'HEAD^{commit}')
-            LOCAL_TREE=$(git rev-parse "$LOCAL_COMMIT^{tree}")
-            LOCAL_LINE=$(git rev-list --parents -n 1 "$LOCAL_COMMIT")
-            test "$(wc -w <<<"$LOCAL_LINE" | tr -d ' ')" = 2
-            LOCAL_PARENT=$(cut -d' ' -f2 <<<"$LOCAL_LINE")
-            test "$LOCAL_TREE" = "$DESIRED_TREE" && test "$LOCAL_PARENT" = "$TARGET_BASE_SHA" || {
-              echo '❌ local mirror commit lost its exact tree or target-main parent binding.'
-              exit 1
-            }
-            git push origin "$BRANCH"
-            EXPECTED_BRANCH_COMMIT="$LOCAL_COMMIT"
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|next|rc)\.[0-9]+)?$ ]]
+          /usr/bin/git -C source fetch --force --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          release_commit="$(/usr/bin/git -C source rev-parse "refs/tags/$RELEASE_TAG^{commit}")"
+          release_tree="$(/usr/bin/git -C source rev-parse "$release_commit^{tree}")"
+          /usr/bin/git -C source merge-base --is-ancestor "$release_commit" refs/remotes/origin/main
+          release_version="${RELEASE_TAG#v}"
+          for manifest in \
+            source/packages/design-system/package.json \
+            source/packages/storybook-config/package.json \
+            source/packages/governance/package.json
+          do
+            test "$(node -p "require('./$manifest').version")" = "$release_version"
+          done
+          test "$RELEASE_TARGET" = "main" -o "$RELEASE_TARGET" = "$release_commit"
+          echo "commit=$release_commit" >> "$GITHUB_OUTPUT"
+          echo "tree=$release_tree" >> "$GITHUB_OUTPUT"
+
+      - name: Set up locked Node toolchain
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.14.0'
+          package-manager-cache: false
+
+      - name: Install source dependencies
+        working-directory: source
+        run: npm run --silent setup:dependencies
+
+      - name: Download the exact published release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir release-artifacts
+
+      - name: Verify six-file release set, BOM, and npm readback
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_COMMIT: ${{ steps.identity.outputs.commit }}
+          RELEASE_TREE: ${{ steps.identity.outputs.tree }}
+        run: |
+          set -euo pipefail
+          node source/scripts/release-set.mjs --artifacts "$GITHUB_WORKSPACE/release-artifacts"
+          node source/scripts/build-release-bom.mjs --verify \
+            --repo "$GITHUB_WORKSPACE/source" \
+            --artifacts "$GITHUB_WORKSPACE/release-artifacts" \
+            --bom "$GITHUB_WORKSPACE/release-artifacts/release-bom.json" \
+            --tag "$RELEASE_TAG" \
+            --git-head "$RELEASE_COMMIT" \
+            --git-tree "$RELEASE_TREE" \
+            --repository "$GITHUB_REPOSITORY" \
+            --main-ref refs/remotes/origin/main \
+            --require-sbom
+          node source/scripts/release-npm-readback.mjs \
+            --artifacts "$GITHUB_WORKSPACE/release-artifacts" \
+            --bom "$GITHUB_WORKSPACE/release-artifacts/release-bom.json" \
+            --repository "$GITHUB_REPOSITORY" \
+            --tag "$RELEASE_TAG" \
+            --git-head "$RELEASE_COMMIT"
+
+      - name: Build and verify the published template mirror
+        id: mirror
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          mirror="$RUNNER_TEMP/published-template"
+          test -f source/scripts/published-template-mirror-policy.json
+          node source/scripts/build-published-template-mirror.mjs --out="$mirror"
+          node source/scripts/product-template-scaffold-lock.mjs --verify \
+            --root "$mirror" \
+            --lock "$GITHUB_WORKSPACE/release-artifacts/product-template-scaffold.lock.json" \
+            --phase source
+          node source/scripts/generate-product-template-package-lock.mjs --prefix "$mirror"
+          node source/scripts/product-template-scaffold-lock.mjs --verify \
+            --root "$mirror" \
+            --lock "$GITHUB_WORKSPACE/release-artifacts/product-template-scaffold.lock.json" \
+            --phase published
+          echo "path=$mirror" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare a deterministic mirror branch without credentials
+        id: prepare
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          MIRROR: ${{ steps.mirror.outputs.path }}
+        run: |
+          set -euo pipefail
+          target="$RUNNER_TEMP/ds-product-template"
+          git clone --depth=1 https://github.com/ajenchen/ds-product-template.git "$target"
+          rsync -a --delete --exclude=.git/ "$MIRROR/" "$target/"
+          /usr/bin/git -C "$target" add --all
+          if /usr/bin/git -C "$target" diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          branch="automation/release-${RELEASE_TAG//[^A-Za-z0-9._-]/-}"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
 
-          LIVE_TARGET_BASE_SHA=$(git ls-remote origin refs/heads/main | awk 'NR == 1 { print $1 }')
-          test "$LIVE_TARGET_BASE_SHA" = "$TARGET_BASE_SHA" || {
-            echo "❌ target main advanced from $TARGET_BASE_SHA to $LIVE_TARGET_BASE_SHA; rerun against the new base."
-            exit 1
-          }
-          LIVE_BRANCH_COMMIT=$(git ls-remote origin "refs/heads/$BRANCH" | awk 'NR == 1 { print $1 }')
-          test "$LIVE_BRANCH_COMMIT" = "$EXPECTED_BRANCH_COMMIT" || {
-            echo "❌ deterministic branch changed before PR operation."
-            exit 1
-          }
-
-          EXISTING=$(gh pr list --repo ajenchen/ds-product-template --state open \
-            --head "$BRANCH" --base main --json number,url)
-          EXISTING_COUNT=$(jq 'length' <<<"$EXISTING")
-          test "$EXISTING_COUNT" -le 1 || {
-            echo "❌ more than one open deterministic PR exists for $BRANCH -> main."
-            exit 1
-          }
-          if [ "$EXISTING_COUNT" = 1 ]; then
-            PR_NUMBER=$(jq -er '.[0].number' <<<"$EXISTING")
-            echo "✓ existing deterministic PR: $(jq -er '.[0].url' <<<"$EXISTING")"
+      - name: Push mirror branch and open or update pull request
+        if: steps.prepare.outputs.changed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+          GH_PROMPT_DISABLED: '1'
+          GIT_TERMINAL_PROMPT: '0'
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          SOURCE_SHA: ${{ steps.identity.outputs.commit }}
+          BRANCH: ${{ steps.prepare.outputs.branch }}
+          TARGET: ${{ steps.prepare.outputs.target }}
+        run: |
+          set -euo pipefail
+          /usr/bin/git -C "$TARGET" config user.name design-system-release-bot
+          /usr/bin/git -C "$TARGET" config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          /usr/bin/git -C "$TARGET" config credential.helper '!gh auth git-credential'
+          /usr/bin/git -C "$TARGET" commit -m "chore: mirror design system $RELEASE_TAG"
+          expected="$(/usr/bin/git -C "$TARGET" ls-remote --refs origin "refs/heads/$BRANCH" | awk 'NR == 1 { print $1 }')"
+          if [ -n "$expected" ]; then
+            /usr/bin/git -C "$TARGET" push --force-with-lease="refs/heads/$BRANCH:$expected" origin "HEAD:refs/heads/$BRANCH"
           else
-            PR_URL=$(gh pr create \
+            /usr/bin/git -C "$TARGET" push origin "HEAD:refs/heads/$BRANCH"
+          fi
+          existing="$(gh pr list --repo ajenchen/ds-product-template --head "$BRANCH" --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$existing" ]; then
+            gh pr create \
               --repo ajenchen/ds-product-template \
-              --base main \
               --head "$BRANCH" \
-              --title "chore(governance): adopt immutable DS snapshot $BUILT_VER" \
-              --body "Generated from reviewed design-system commit \`$SOURCE_SHA\`. Mirror tree digest: \`sha256:$MIRROR_SHA\`. The archive was bound to the immutable release BOM, npm SRI, signature audit, exact governance check, typecheck, build, and accessibility audit before this fresh runner minted a scoped App token.")
-            PR_NUMBER=$(gh pr view "$PR_URL" --repo ajenchen/ds-product-template --json number --jq '.number')
+              --base main \
+              --title "chore: mirror design system $RELEASE_TAG" \
+              --body "Generated from published design-system release $RELEASE_TAG at $SOURCE_SHA."
           fi
-
-          PR_IDENTITY=$(gh pr view "$PR_NUMBER" --repo ajenchen/ds-product-template \
-            --json headRefOid,baseRefOid,headRefName,baseRefName,isCrossRepository,headRepository,headRepositoryOwner)
-          jq -e \
-            --arg headOid "$EXPECTED_BRANCH_COMMIT" \
-            --arg baseOid "$TARGET_BASE_SHA" \
-            --arg headName "$BRANCH" '
-              keys == ["baseRefName", "baseRefOid", "headRefName", "headRefOid", "headRepository", "headRepositoryOwner", "isCrossRepository"]
-              and .headRefOid == $headOid
-              and .baseRefOid == $baseOid
-              and .headRefName == $headName
-              and .baseRefName == "main"
-              and .isCrossRepository == false
-              and .headRepository.nameWithOwner == "ajenchen/ds-product-template"
-              and .headRepositoryOwner.login == "ajenchen"
-            ' <<<"$PR_IDENTITY" >/dev/null || {
-              echo '❌ PR identity does not match the certified branch commit and target-main base.'
-              exit 1
-            }
-          test "$(git ls-remote origin "refs/heads/$BRANCH" | awk 'NR == 1 { print $1 }')" = "$EXPECTED_BRANCH_COMMIT"
-          test "$(git ls-remote origin refs/heads/main | awk 'NR == 1 { print $1 }')" = "$TARGET_BASE_SHA"
-          WRITER_TOKEN=''
-          unset WRITER_TOKEN

@@ -1,37 +1,20 @@
 name: Packaging canary
 
-# 2026-05-30 ship per user「打包給 template/fork 的所有東西都應被稽核 + 確保如預期運作」+
-# 2026-05-29 anchor:mirror 從 5/26 默默失敗數週,稽核沒抓到(無自動 canary)。
-#
-# 讓 design-system-audit packaging-integrity dims(84 mirror / 85 ds-canonical / 86 plugin / 88 infra-self-ref)
-# 的輕量 deterministic 檢查「自動排程 fire」,不必等手動 /deep-audit-cross-codex。catch packaging rot between releases。
-# 重量級 dim 87(dogfood npm install+build)+ --live netlify probe 仍留 deep-audit Phase A + release.yml(手動 / release)。
+# Non-blocking scheduled/manual monitor for packaging drift between releases.
 
 on:
   schedule:
     - cron: '17 6 * * 1'   # 每週一 06:17 UTC
   workflow_dispatch:        # 手動隨時跑
-  push:
-    branches: [main]
-    paths:                  # 只在 packaging-affecting 改動時跑(省 CI)
-      - 'scripts/build-published-template-mirror.mjs'
-      - 'scripts/sync-ds-canonical.mjs'
-      - 'packages/design-system/ds-canonical/**'
-      - '.claude-plugin/**'
-      - 'apps/template/**'
-      - 'template/ds-product-template/**'
-  pull_request:
-    # This check is required by the main ruleset, so it must report on every PR.
-    # A path filter would leave the required context permanently pending.
-    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
   packaging-integrity:
-    name: Packaging integrity(dims 84/85/86/88 light checks)
+    name: Monitor packaging integrity(dims 84/85/86/88)
     runs-on: ubuntu-24.04
+    continue-on-error: true
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

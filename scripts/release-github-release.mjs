@@ -1,29 +1,17 @@
 #!/usr/bin/env node
-// Create or safely resume an exact GitHub draft, then require immutable release verification.
+// Create or resume the exact GitHub Release, then require published asset readback.
 
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import {
-  captureClosedGitHubToken,
-  runClosedGh,
-} from './lib/closed-tool-execution.mjs'
-import { inspectDigestBoundEvidenceFile } from './release-npm-lib.mjs'
+import { captureClosedGitHubToken, runClosedGh } from './lib/closed-tool-execution.mjs'
 import { inspectReleaseSet } from './release-set.mjs'
-import {
-  assertVerifiedReleaseTag,
-  requestGitHubJson,
-  resolveRemoteTagIdentity,
-} from './release-remote-tag.mjs'
 
-const sleep = (milliseconds) => new Promise((done) => setTimeout(done, milliseconds))
+const sleep = milliseconds => new Promise(done => setTimeout(done, milliseconds))
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
+const OBJECT_ID = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/
 
 function parseArgs(argv) {
-  const allowed = new Set([
-    '--artifacts', '--repository', '--tag', '--git-head', '--tag-object', '--tag-token-env',
-    '--audit-evidence', '--audit-evidence-sha256',
-    '--release-trust-evidence', '--release-trust-evidence-sha256', '--gh',
-  ])
+  const allowed = new Set(['--artifacts', '--repository', '--tag', '--git-head', '--gh'])
   const values = {}
   for (let index = 0; index < argv.length; index += 2) {
     const name = argv[index]
@@ -31,19 +19,14 @@ function parseArgs(argv) {
     if (!allowed.has(name) || !value || value.startsWith('--')) throw new Error(`invalid argument: ${name || '<missing>'}`)
     values[name] = value
   }
-  for (const required of [
-    '--artifacts', '--repository', '--tag', '--git-head', '--tag-object', '--tag-token-env',
-    '--audit-evidence', '--audit-evidence-sha256', '--release-trust-evidence', '--release-trust-evidence-sha256',
-  ]) {
+  for (const required of ['--artifacts', '--repository', '--tag', '--git-head']) {
     if (!values[required]) throw new Error(`${required} is required`)
   }
-  for (const name of ['--audit-evidence-sha256', '--release-trust-evidence-sha256']) {
-    if (!/^[a-f0-9]{64}$/.test(values[name])) throw new Error(`${name} must be a lowercase SHA-256`)
-  }
+  if (!OBJECT_ID.test(values['--git-head'])) throw new Error('--git-head must be a full Git object ID')
   return values
 }
 
-function ghResult(ghContext, args, options = {}) {
+function ghResult(ghContext, args) {
   return runClosedGh(args, {
     cwd: ROOT,
     environment: {},
@@ -51,7 +34,6 @@ function ghResult(ghContext, args, options = {}) {
     maxOutputBytes: 16 * 1024 * 1024,
     repoRoot: ROOT,
     token: ghContext.token,
-    ...options,
   })
 }
 
@@ -61,6 +43,10 @@ function ghRun(ghContext, args) {
     throw new Error(`gh ${args.slice(0, 3).join(' ')} failed (exit ${result.status}): ${(result.stderr || result.stdout || '').trim().slice(0, 1500)}`)
   }
   return result.stdout
+}
+
+function ghJson(ghContext, args) {
+  return JSON.parse(ghRun(ghContext, args))
 }
 
 function viewRelease(ghContext, repository, tag) {
@@ -74,143 +60,119 @@ function viewRelease(ghContext, repository, tag) {
   throw new Error(`cannot inspect GitHub Release ${tag}: ${message.trim().slice(0, 1500)}`)
 }
 
-async function recheckRemoteTag(expected, tagReadToken) {
-  const actual = await resolveRemoteTagIdentity({
-    repository: expected.repository,
-    tag: expected.tag,
-    requestJson: path => requestGitHubJson({ token: tagReadToken, path }),
-  })
-  assertVerifiedReleaseTag({ identity: actual, expectedCommit: expected.gitHead, expectedTagObject: expected.tagObject })
+function resolveTagCommit(ghContext, repository, tag) {
+  const encoded = tag.split('/').map(encodeURIComponent).join('/')
+  const path = `repos/${repository}/git/ref/tags/${encoded}`
+  const reference = ghJson(ghContext, ['api', path])
+  let commit
+  if (reference?.object?.type === 'commit') {
+    commit = reference.object.sha
+  } else if (reference?.object?.type === 'tag' && OBJECT_ID.test(reference.object.sha || '')) {
+    const tagObject = ghJson(ghContext, ['api', `repos/${repository}/git/tags/${reference.object.sha}`])
+    if (tagObject?.tag !== tag || tagObject?.object?.type !== 'commit') {
+      throw new Error(`release tag ${tag} does not directly target a commit`)
+    }
+    commit = tagObject.object.sha
+  } else {
+    throw new Error(`release tag ${tag} has an unsupported Git object type`)
+  }
+  const confirmed = ghJson(ghContext, ['api', path])
+  if (confirmed?.object?.type !== reference.object.type || confirmed?.object?.sha !== reference.object.sha) {
+    throw new Error(`release tag ${tag} moved during remote verification`)
+  }
+  return commit
 }
 
-export function assertImmutableReleasesEnabled(ghContext, repository, phase) {
-  const result = ghResult(ghContext, [
-    'api', `repos/${repository}/immutable-releases`, '--method', 'GET',
-    '--header', 'Accept: application/vnd.github+json',
-    '--header', 'X-GitHub-Api-Version: 2026-03-10',
-  ])
-  if (result.status !== 0) {
-    throw new Error(`immutable releases are not enabled/readable ${phase}; refusing GitHub Release mutation: ${(result.stderr || result.stdout || '').trim().slice(0, 800)}`)
-  }
-  let state = null
-  try { state = JSON.parse(result.stdout) } catch { /* fail closed below */ }
-  if (state?.enabled !== true) throw new Error(`immutable releases are not enabled ${phase}; refusing GitHub Release mutation`)
-  return state
+function recheckRemoteTag(ghContext, expected) {
+  const commit = resolveTagCommit(ghContext, expected.repository, expected.tag)
+  if (commit !== expected.gitHead) throw new Error(`release tag ${expected.tag} targets ${commit}, expected ${expected.gitHead}`)
 }
 
 export function compareReleaseAssets(state, expectedFiles) {
-  const expected = new Map(expectedFiles.map((item) => [item.name, `sha256:${item.sha256}`]))
+  const expected = new Map(expectedFiles.map(item => [item.name, {
+    digest: `sha256:${item.sha256}`,
+    size: item.size,
+  }]))
   if (expected.size !== expectedFiles.length) throw new Error('expected GitHub Release asset set contains duplicate names')
-  const actualAssets = state?.assets || []
   const actual = new Map()
-  for (const asset of actualAssets) {
-    if (!asset?.name || actual.has(asset.name)) throw new Error('GitHub Release contains duplicate/invalid asset names')
-    actual.set(asset.name, asset.digest)
+  for (const asset of state?.assets || []) {
+    if (!asset?.name || actual.has(asset.name)) throw new Error('GitHub Release contains duplicate or invalid asset names')
+    actual.set(asset.name, { digest: asset.digest, size: asset.size })
   }
-  const unexpected = [...actual.keys()].filter((name) => !expected.has(name))
+  const unexpected = [...actual.keys()].filter(name => !expected.has(name))
   if (unexpected.length) throw new Error(`GitHub Release contains unexpected assets: ${unexpected.sort().join(', ')}`)
-  for (const [name, digest] of actual) {
-    if (digest !== expected.get(name)) throw new Error(`GitHub Release asset ${name} has digest ${digest || '<missing>'}, expected ${expected.get(name)}`)
+  for (const [name, observed] of actual) {
+    const wanted = expected.get(name)
+    if (observed.digest !== wanted.digest || observed.size !== wanted.size) {
+      throw new Error(
+        `GitHub Release asset ${name} readback differs: `
+        + `digest=${observed.digest || '<missing>'} size=${observed.size ?? '<missing>'}, `
+        + `expected digest=${wanted.digest} size=${wanted.size}`,
+      )
+    }
   }
-  return expectedFiles.filter((item) => !actual.has(item.name))
+  return expectedFiles.filter(item => !actual.has(item.name))
 }
 
 function validateIdentity(state, expected, { published }) {
-  if (state.tagName !== expected.tag) throw new Error(`GitHub Release tag mismatch: ${state.tagName} != ${expected.tag}`)
-  if (state.name !== expected.tag) throw new Error(`GitHub Release title mismatch: ${state.name || '<empty>'} != ${expected.tag}`)
-  // targetCommitish is not a commit identity when a release uses a pre-existing
-  // tag (GitHub commonly returns the default branch). The exact GitHub-verified
-  // annotated tag object is rechecked at every mutation/verification boundary.
+  if (state.tagName !== expected.tag || state.name !== expected.tag) throw new Error('GitHub Release tag/title identity mismatch')
   if (published) {
     if (state.isDraft) throw new Error('GitHub Release remained a draft')
-    if (!state.isImmutable) throw new Error('GitHub Release was published without immutable-release enforcement')
     if (Boolean(state.isPrerelease) !== expected.prerelease) throw new Error('GitHub Release prerelease state is incorrect')
   } else if (!state.isDraft) {
-    throw new Error('existing GitHub Release is published but not in an accepted immutable final state')
+    throw new Error('GitHub Release unexpectedly became published during draft preparation')
   }
 }
 
-async function verifyPublishedRelease(ghContext, repository, tag, expected, expectedFiles, tagReadToken) {
+async function verifyPublishedRelease(ghContext, expected, expectedFiles) {
   let state
   for (let attempt = 1; attempt <= 12; attempt += 1) {
-    state = viewRelease(ghContext, repository, tag)
-    if (state?.isImmutable) break
+    state = viewRelease(ghContext, expected.repository, expected.tag)
+    if (state && !state.isDraft) break
     if (attempt < 12) await sleep(5_000)
   }
-  if (!state) throw new Error(`GitHub Release disappeared after publish: ${tag}`)
+  if (!state) throw new Error(`GitHub Release disappeared after publish: ${expected.tag}`)
   validateIdentity(state, expected, { published: true })
-  await recheckRemoteTag(expected, tagReadToken)
+  recheckRemoteTag(ghContext, expected)
   const missing = compareReleaseAssets(state, expectedFiles)
-  if (missing.length) throw new Error(`published GitHub Release is missing assets: ${missing.map((item) => item.name).join(', ')}`)
-  ghRun(ghContext, ['release', 'verify', tag, '--repo', repository])
-  for (const item of expectedFiles) {
-    ghRun(ghContext, ['release', 'verify-asset', tag, item.path, '--repo', repository])
-  }
-  console.log(`✅ immutable GitHub Release, exact six-file release set, and two permanent evidence assets verified: ${tag}`)
+  if (missing.length) throw new Error(`published GitHub Release is missing assets: ${missing.map(item => item.name).join(', ')}`)
+  console.log(
+    `✅ published GitHub Release and exact six-file name/size/digest readback verified: ${expected.tag}`
+    + (state.isImmutable ? ' (immutable)' : ''),
+  )
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
-  const writerToken = captureClosedGitHubToken({
-    environment: process.env,
-    tokenEnvironmentName: 'GH_TOKEN',
-  })
-  const tagTokenEnvironmentName = args['--tag-token-env']
-  if (
-    !/^[A-Z][A-Z0-9_]{0,127}$/.test(tagTokenEnvironmentName)
-      || ['GH_TOKEN', 'GITHUB_TOKEN'].includes(tagTokenEnvironmentName)
-  ) throw new Error('--tag-token-env must name a separate explicit read-only token authority')
-  const tagReadToken = process.env[tagTokenEnvironmentName]
-  if (
-    typeof tagReadToken !== 'string'
-      || tagReadToken.length < 8
-      || tagReadToken.length > 4096
-      || /[\0\r\n]/.test(tagReadToken)
-  ) throw new Error(`GitHub tag-read token environment variable is empty or malformed: ${tagTokenEnvironmentName}`)
-  if (tagReadToken === writerToken) throw new Error('GitHub release writer and tag-read authorities must be distinct')
   const ghContext = Object.freeze({
     executable: args['--gh'],
-    token: writerToken,
+    token: captureClosedGitHubToken({ environment: process.env, tokenEnvironmentName: 'GH_TOKEN' }),
   })
   const releaseSet = inspectReleaseSet(args['--artifacts'])
-  const auditEvidence = inspectDigestBoundEvidenceFile(args['--audit-evidence'], {
-    expectedSha256: args['--audit-evidence-sha256'],
-    expectedName: 'npm-finalization-receipt.json',
-    label: 'release audit evidence',
-  })
-  const releaseTrustEvidence = inspectDigestBoundEvidenceFile(args['--release-trust-evidence'], {
-    expectedSha256: args['--release-trust-evidence-sha256'],
-    expectedName: 'release-trust-preflight.json',
-    label: 'release trust evidence',
-  })
-  const expectedFiles = [
-    ...releaseSet.files.map((item) => ({ ...item, path: join(releaseSet.artifacts, item.name) })),
-    auditEvidence,
-    releaseTrustEvidence,
-  ]
+  const expectedFiles = releaseSet.files.map(item => ({ ...item, path: join(releaseSet.artifacts, item.name) }))
   const expected = {
-    artifacts: releaseSet.artifacts,
     repository: args['--repository'],
     tag: args['--tag'],
     gitHead: args['--git-head'],
-    tagObject: args['--tag-object'],
     prerelease: args['--tag'].includes('-'),
   }
-  await recheckRemoteTag(expected, tagReadToken)
-  assertImmutableReleasesEnabled(ghContext, expected.repository, 'before release inspection')
+
+  recheckRemoteTag(ghContext, expected)
   let state = viewRelease(ghContext, expected.repository, expected.tag)
   if (state && !state.isDraft) {
     validateIdentity(state, expected, { published: true })
     const missing = compareReleaseAssets(state, expectedFiles)
-    if (missing.length) throw new Error(`published GitHub Release is missing assets: ${missing.map((item) => item.name).join(', ')}`)
-    await verifyPublishedRelease(ghContext, expected.repository, expected.tag, expected, expectedFiles, tagReadToken)
-    console.log('ℹ️ exact immutable GitHub Release already existed; no mutation performed')
+    if (missing.length) throw new Error(`published GitHub Release is missing assets: ${missing.map(item => item.name).join(', ')}`)
+    await verifyPublishedRelease(ghContext, expected, expectedFiles)
+    console.log(
+      'ℹ️ exact published GitHub Release already existed; no mutation performed'
+      + (state.isImmutable ? ' (immutable)' : ''),
+    )
     return
   }
 
   if (!state) {
-    assertImmutableReleasesEnabled(ghContext, expected.repository, 'immediately before draft creation')
-    await recheckRemoteTag(expected, tagReadToken)
+    recheckRemoteTag(ghContext, expected)
     ghRun(ghContext, [
       'release', 'create', expected.tag, '--repo', expected.repository, '--verify-tag',
       '--target', expected.gitHead, '--generate-notes', '--title', expected.tag, '--draft',
@@ -222,29 +184,24 @@ async function main() {
   validateIdentity(state, expected, { published: false })
   const missing = compareReleaseAssets(state, expectedFiles)
   for (const item of missing) {
-    assertImmutableReleasesEnabled(ghContext, expected.repository, `immediately before uploading ${item.name}`)
-    await recheckRemoteTag(expected, tagReadToken)
-    ghRun(ghContext, [
-      'release', 'upload', expected.tag, item.path,
-      '--repo', expected.repository,
-    ])
+    recheckRemoteTag(ghContext, expected)
+    ghRun(ghContext, ['release', 'upload', expected.tag, item.path, '--repo', expected.repository])
   }
   state = viewRelease(ghContext, expected.repository, expected.tag)
   validateIdentity(state, expected, { published: false })
   const stillMissing = compareReleaseAssets(state, expectedFiles)
-  if (stillMissing.length) throw new Error(`GitHub draft upload is incomplete: ${stillMissing.map((item) => item.name).join(', ')}`)
+  if (stillMissing.length) throw new Error(`GitHub draft upload is incomplete: ${stillMissing.map(item => item.name).join(', ')}`)
 
-  assertImmutableReleasesEnabled(ghContext, expected.repository, 'immediately before publication')
-  await recheckRemoteTag(expected, tagReadToken)
+  recheckRemoteTag(ghContext, expected)
   ghRun(ghContext, [
     'release', 'edit', expected.tag, '--repo', expected.repository, '--verify-tag',
     '--target', expected.gitHead, '--draft=false', `--prerelease=${expected.prerelease}`,
   ])
-  await verifyPublishedRelease(ghContext, expected.repository, expected.tag, expected, expectedFiles, tagReadToken)
+  await verifyPublishedRelease(ghContext, expected, expectedFiles)
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch((error) => {
+  main().catch(error => {
     console.error(`❌ ${error.message}`)
     process.exitCode = 1
   })

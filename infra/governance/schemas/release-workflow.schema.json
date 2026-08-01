@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qijenchen.dev/schemas/release-workflow.schema.json",
+  "title": "Canonical five-step release workflow",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "profile", "decisionAuthority", "steps", "legacyMechanisms", "automation"],
+  "properties": {
+    "$schema": {"const": "schemas/release-workflow.schema.json"},
+    "schemaVersion": {"const": 1},
+    "profile": {"const": "PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM"},
+    "decisionAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engineering", "ask", "humanOnly", "resumeAfterHumanAction"],
+      "properties": {
+        "engineering": {"const": "AUTO"},
+        "ask": {"const": "unresolved-product-ui-ux-ssot-choice"},
+        "humanOnly": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "login"},
+            {"const": "mfa"},
+            {"const": "oauth"},
+            {"const": "credential-reference"}
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "resumeAfterHumanAction": {"const": "AUTO"}
+      }
+    },
+    "steps": {
+      "type": "array",
+      "prefixItems": [
+        {"$ref": "#/$defs/prChecks"},
+        {"$ref": "#/$defs/merge"},
+        {"$ref": "#/$defs/publish"},
+        {"$ref": "#/$defs/readback"},
+        {"$ref": "#/$defs/consumer"}
+      ],
+      "items": false,
+      "minItems": 5,
+      "maxItems": 5
+    },
+    "legacyMechanisms": {
+      "type": "array",
+      "prefixItems": [
+        {"$ref": "#/$defs/legacyCandidateFreeze"},
+        {"$ref": "#/$defs/legacyExternalActivation"},
+        {"$ref": "#/$defs/legacyModelCertification"},
+        {"$ref": "#/$defs/legacyOfflineSignatures"},
+        {"$ref": "#/$defs/legacySoak"},
+        {"$ref": "#/$defs/legacyFleetPromotion"}
+      ],
+      "items": false,
+      "minItems": 6,
+      "maxItems": 6
+    },
+    "automation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "defaultBranch", "publishWorkflow", "packages", "consumers"],
+      "properties": {
+        "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "defaultBranch": {"type": "string", "pattern": "^[A-Za-z0-9._/-]+$"},
+        "publishWorkflow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["file", "dispatchEvent"],
+          "properties": {
+            "file": {"type": "string", "pattern": "^[A-Za-z0-9._-]+\\.ya?ml$"},
+            "dispatchEvent": {"const": "stage-protected-release"}
+          }
+        },
+        "packages": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^@qijenchen/[a-z0-9-]+$"},
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "consumers": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/consumerTarget"},
+          "minItems": 1
+        }
+      }
+    }
+  },
+  "$defs": {
+    "stepBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "authority", "completion"],
+      "properties": {
+        "id": {"type": "string"},
+        "authority": {"const": "AUTO"},
+        "completion": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true}
+      }
+    },
+    "prChecks": {"allOf": [{"$ref": "#/$defs/stepBase"}, {"type": "object", "properties": {"id": {"const": "pr-checks"}}}]},
+    "merge": {"allOf": [{"$ref": "#/$defs/stepBase"}, {"type": "object", "properties": {"id": {"const": "merge"}}}]},
+    "publish": {"allOf": [{"$ref": "#/$defs/stepBase"}, {"type": "object", "properties": {"id": {"const": "publish"}}}]},
+    "readback": {"allOf": [{"$ref": "#/$defs/stepBase"}, {"type": "object", "properties": {"id": {"const": "readback"}}}]},
+    "consumer": {"allOf": [{"$ref": "#/$defs/stepBase"}, {"type": "object", "properties": {"id": {"const": "consumer"}}}]},
+    "legacyBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "standardRelease", "reason"],
+      "properties": {
+        "id": {"type": "string"},
+        "standardRelease": {"enum": ["non-blocking", "retired"]},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "legacyCandidateFreeze": {"allOf": [{"$ref": "#/$defs/legacyBase"}, {"type": "object", "properties": {"id": {"const": "candidate-freeze"}, "standardRelease": {"const": "retired"}}}]},
+    "legacyExternalActivation": {"allOf": [{"$ref": "#/$defs/legacyBase"}, {"type": "object", "properties": {"id": {"const": "external-activation"}, "standardRelease": {"const": "non-blocking"}}}]},
+    "legacyModelCertification": {"allOf": [{"$ref": "#/$defs/legacyBase"}, {"type": "object", "properties": {"id": {"const": "model-certification"}, "standardRelease": {"const": "non-blocking"}}}]},
+    "legacyOfflineSignatures": {"allOf": [{"$ref": "#/$defs/legacyBase"}, {"type": "object", "properties": {"id": {"const": "offline-signatures"}, "standardRelease": {"const": "retired"}}}]},
+    "legacySoak": {"allOf": [{"$ref": "#/$defs/legacyBase"}, {"type": "object", "properties": {"id": {"const": "72h-soak"}, "standardRelease": {"const": "retired"}}}]},
+    "legacyFleetPromotion": {"allOf": [{"$ref": "#/$defs/legacyBase"}, {"type": "object", "properties": {"id": {"const": "fleet-promotion"}, "standardRelease": {"const": "retired"}}}]},
+    "consumerTarget": {
+      "oneOf": [
+        {"$ref": "#/$defs/releasePublishedConsumer"},
+        {"$ref": "#/$defs/repositoryDispatchConsumer"}
+      ]
+    },
+    "releasePublishedConsumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "defaultBranch", "delivery", "readbackPath", "packages"],
+      "properties": {
+        "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "defaultBranch": {"type": "string", "pattern": "^[A-Za-z0-9._/-]+$"},
+        "delivery": {"const": "release-published-pr"},
+        "readbackPath": {"const": "package-lock.json"},
+        "packages": {"$ref": "#/$defs/consumerPackages"}
+      }
+    },
+    "repositoryDispatchConsumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "defaultBranch", "dispatchEvent", "delivery", "readbackPath", "packages"],
+      "properties": {
+        "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "defaultBranch": {"type": "string", "pattern": "^[A-Za-z0-9._/-]+$"},
+        "dispatchEvent": {"const": "design-system-published"},
+        "delivery": {"const": "repository-dispatch-pr"},
+        "readbackPath": {"const": "package-lock.json"},
+        "packages": {"$ref": "#/$defs/consumerPackages"}
+      }
+    },
+    "consumerPackages": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^@qijenchen/[a-z0-9-]+$"},
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  }
+}

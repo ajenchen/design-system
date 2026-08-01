@@ -1,6 +1,6 @@
 # Claude Code 專屬機制層(provider adapter)
 
-**跨模型 bootstrap 核心住在 `AGENTS.md`**(上方 import,launch 全載,內容零損失)——增刪改共同 bootstrap 原則**只改 AGENTS.md**,Claude 與 Codex 等所有 agent 自動同步；其他治理／infra 只改 `infra/governance/protected-root-classification.json` 指定的 canonical owner，再跑完整 governance build graph。當前機器可驗的 authority chain 是 `packages/governance/canonical/manifest.json` → `scripts/governance-build-graph.json` → `infra/governance/` 內的 evidence/release/rollout contracts；`governance/planning/2026-07-16-provider-neutral-governance.md` 只是歷史遷移紀錄。本檔只收 Claude Code 的 generated adapter 機制說明，不是另一份 authority。
+**跨模型 bootstrap 核心住在 `AGENTS.md`**(上方 import,launch 全載,內容零損失)——增刪改共同 bootstrap 原則**只改 AGENTS.md**,Claude 與 Codex 等所有 agent 自動同步；其他治理／infra 只改 `infra/governance/protected-root-classification.json` 指定的 canonical owner，再跑完整 governance build graph。當前機器可驗的 authority chain 是 `packages/governance/canonical/manifest.json` → `scripts/governance-build-graph.json` → `infra/governance/` 內的 evidence/release/rollout contracts；standard release machine SSOT 是 `infra/governance/release-workflow.json`，Claude 同樣只跑 `pr-checks → merge → publish → readback → consumer` 五步 AUTO。`governance/planning/2026-07-16-provider-neutral-governance.md` 只是歷史遷移紀錄。本檔只收 Claude Code 的 generated adapter 機制說明，不是另一份 authority。
 
 ## Path-scoped rules(Claude 自動載入;2026 Anthropic 推薦)
 

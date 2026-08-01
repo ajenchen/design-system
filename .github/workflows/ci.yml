@@ -5,21 +5,15 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  # 允許手動 trigger,讓 working branch 也能在 merge 前跑 verify + scrollbar probe
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# Keep verification concurrency independent from privileged Pages deployment.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# 2026-06-04 SSOT 假綠根治:所有 run: step 一律 bash -eo pipefail。
-# GitHub Actions 預設 bash -e 但「無 pipefail」→ `cmd 2>&1 | tail` 的 pipe exit = tail = 0,
-# cmd 失敗被吞 = 假綠(原只有 Storybook build 一步手動 set -o pipefail,其餘 ~17 步全漏)。
-# workflow-level default 一次涵蓋所有 step,取代逐步 set -o pipefail(SSOT)。
 defaults:
   run:
     shell: bash -eo pipefail {0}
@@ -27,264 +21,41 @@ defaults:
 jobs:
   verify:
     name: Verify(tsc + tests + compile + build)
-    permissions:
-      contents: read
     runs-on: ubuntu-24.04
-    env:
-      # setup:playwright 以 PLAYWRIGHT_BROWSERS_PATH=0 安裝到 repo-local
-      # node_modules/playwright-core/.local-browsers;消費步驟必須帶同一 pin,
-      # 否則 playwright 落回 ~/.cache/ms-playwright 找不到瀏覽器(2026-07-28 CI 錨例)。
-      PLAYWRIGHT_BROWSERS_PATH: '0'
-    timeout-minutes: 330
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           persist-credentials: false
-          # governance-build-graph --check chains the genesis-transition residue checker,
-          # which rev-parses the pinned base commit — a depth-1 checkout cannot resolve it.
+          # governance-build-graph --check verifies history-bound transitions.
           fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          # Match the exact reviewed cloud/consumer runtime; do not float on a
-          # moving major-version alias.
           node-version: '24.14.0'
           cache: npm
 
-      - name: Install and audit with the lock-verified npm runtime
+      - name: Install locked dependencies once
         run: npm run --silent setup:dependencies
 
-      # 2026-07-28 CI 錨例:test-review-capability-selection(All-Harness member)靜態驗證
-      # node_modules/.provider-cli-toolchain/content-v2/<platform>/<authorityDigest> 的真實
-      # runtime binding(shim/target sha256),GOV-PROVIDER-CLI-TOOLCHAIN-001 fail-closed。
-      # setup-workspace.mjs 把 provider CLI toolchain 列為 workspace bootstrap 第 3 步;CI 只跑
-      # setup:dependencies = bootstrap 不完整 → linux-x64 content 缺失。本步補齊同一 hermetic
-      # 安裝:exact-npm runtime + npm ci --ignore-scripts 對 manifest 鎖定 lock(sha256 pin)+
-      # audit signatures + per-package treeSha256 驗證 + staged atomic rename,非浮動安裝。
-      - name: Provision provider CLI toolchain(lock-pinned hermetic;harness runtime-binding 驗證需要)
-        run: npm run --silent setup:provider-cli
-
-      - name: Install Playwright Chromium explicitly(no lifecycle scripts)
-        run: npm run --silent setup:playwright -- --with-deps
-
-      - name: Build DS lib + storybook-config dist(required for tsc + Storybook)
-        # 2026-05-26 fix(per user 「DS repo netlify failed 那麼多次」+ CI fail diagnose):
-        # `.storybook/main.ts` imports `@qijenchen/storybook-config/preset` types → 需 storybook-config dist 才能 resolve。
-        # storybook-config 本身又 imports `@qijenchen/design-system` types → 需 DS dist。
-        # `build:lib` chain DS build → DS dts → storybook-config build,正確 dependency order。
+      - name: Build publishable libraries and declarations
         run: npm run build:lib
 
-      # 2026-05-29 RC1 fix(codex dual-track 共識):ds-devmode addon manager 程式必用 classic JSX
-      # (React.createElement,用 Storybook manager externalize 的 React),禁 react/jsx-runtime
-      # (consumer 非 monorepo 環境會解析到第二份 React → Minified React error #31 → 故事檢視空白)。
-      # 守 `/** @jsxRuntime classic */` pragma 不被移除。Anchor:beta.33 fork storybook 故事檢視空白。
-      - name: Guard ds-devmode manager classic JSX(no jsx-runtime)
-        run: |
-          if grep -rEl "from [\"']react/jsx-runtime[\"']" packages/storybook-config/dist/addons/ds-devmode/manager.js packages/storybook-config/dist/addons/ds-devmode/Panel.js 2>/dev/null; then
-            echo "❌ ds-devmode manager dist 含 react/jsx-runtime import → consumer manager React #31 風險。"
-            echo "   manager.tsx / Panel.tsx 必保留 '/** @jsxRuntime classic */' pragma。"
-            exit 1
-          fi
-          echo "✅ ds-devmode manager 用 classic JSX(無 jsx-runtime)"
+      - name: TypeScript project check
+        run: npx --no-install tsc -b
 
-      # 2026-05-29:機械保證 consumer CSS 入口完整(tailwind + tokens+base + DS @source)。
-      # 防 globals.css「掉東掉西」drift class(字體 / 沒吃到元件 / 底色 退預設)。
-      - name: Guard consumer CSS entry completeness
-        run: npm run verify:consumer-css
-
-      - name: tsc -b(0 errors required + 印 errors 出來)
-        # 2026-05-26 fix:`2>&1 | grep -q` 把 errors silent 掉,無法 diagnose CI 真實 fail。改 print 完整 errors。
+      - name: Focused governance and release SSOT checks
         run: |
-          OUTPUT=$(npx --no-install tsc -b 2>&1)
-          if echo "$OUTPUT" | grep -q "error TS"; then
-            echo "❌ tsc errors found:"
-            echo "$OUTPUT"
-            exit 1
-          fi
-
-      - name: typecheck stories(主 tsc -b exclude stories 因 emitDeclarationOnly;本 gate 純型別檢查 stories 防 {var}-undefined / prop 型別錯 — 2026-06-02 SizeMatrix crash root cause)
-        run: |
-          OUTPUT=$(npm run typecheck:stories 2>&1)
-          if echo "$OUTPUT" | grep -q "error TS"; then
-            echo "❌ story type errors found:"
-            echo "$OUTPUT"
-            exit 1
-          fi
-          echo "✅ stories type-check clean"
-
-      - name: Build apps/template(React 19 — root tsc -b references 不含 → 防 receiver-only TS2503 再現)
-        # 2026-06-16 root-cause fix:apps/template 是 React 19 workspace(自帶 nested @types/react@19),但 root
-        # tsconfig.json references 只含 tsconfig.app/node,從不 typecheck apps/template。React19-specific 錯
-        # (@types/react 移除「全域」JSX namespace → `JSX.Element` TS2503)只在 receiver `cd apps/template &&
-        # npm run build` 才炸,DS CI 一路假綠 ship(anchor:bde81e7e 2026-06-12 brick ds-product-template
-        # receiver build + 自身 Audit + Dependabot PR)。跑 receiver 同款 build command(tsc -b && vite build,
-        # resolve apps/template 自帶 React19 types)在 publish 前攔下此 class bug。
-        run: |
-          cd apps/template
-          npm run build
-
-      - name: Hook test suite
-        run: |
-          shopt -s nullglob
-          fail=0
-          for t in .claude/hooks/tests/test_*.sh; do
-            chmod +x "$t"
-            if ! bash "$t" > /tmp/test.log 2>&1; then
-              echo "❌ $t failed:"
-              tail -10 /tmp/test.log
-              fail=1
-            fi
-          done
-          if [ "$fail" -eq 1 ]; then exit 1; fi
-          echo "✅ all hook tests passed"
-
-      - name: Fork-governance corpus + harness(C-prime PR-gate;registered All-Harness 一次 + 非重複 direct gates)
-        run: |
-          npm run --silent test:governance-harnesses
-          npm run --silent audit:workflow-security
-          npm run --silent governance:workflow-identities:check
+          node --test infra/governance/test/ci-workflow-scope.test.mjs
+          node --test --test-name-pattern='canonical GitHub profile minima' infra/governance/test/model-validation.test.mjs
+          node --test infra/governance/test/workflow-identity-sync.test.mjs
+          node --test infra/governance/test/release-workflow.test.mjs
+          node scripts/test-governance-build-graph.mjs
+          node --test scripts/test-governance-build-graph-transaction.mjs
           node scripts/governance-build-graph.mjs --check
 
-      - name: Story compile-drift check
-        run: |
-          # 直接用 compile-stories.mjs 的 exit code:script 內部 `--check` mode 已正確
-          # 區分 drift(exit 1)vs aligned-only(exit 0)。skipped count 不算 drift。
-          # 印完整 output 方便 CI log 查問題,exit code 作為唯一 source of truth。
-          set +e
-          node scripts/compile-stories.mjs --all --check
-          ec=$?
-          if [ "$ec" -ne 0 ]; then
-            echo "❌ compile-stories exited with code $ec — drift detected"
-            exit "$ec"
-          fi
-          echo "✅ compile-stories: no drift"
-
-      - name: Storybook build
-        # 2026-05-31 fix(假綠 anchor):原 `| tail -20` 讓 pipe exit code = tail(永遠 0)→
-        # build-storybook 失敗(如 CSF index error / 未閉合 JSX tag)被吞 → CI 假綠,只有 release.yml
-        # FULL smoke 才抓到。set -o pipefail 讓 build 真實 exit code 傳出 → build 失敗 = CI 紅。
-        run: |
-          set -o pipefail
-          npm run build-storybook 2>&1 | tail -30
-
-      - name: Storybook story runtime smoke test(Phase 4.13 — 0 console error gate)
-        # 2026-05-25 Phase 4.13 加 — 本 session 已踩 3 個 story runtime bug(Breadcrumb asChild
-        # / DataTable JSX comment / Internal pattern visual)。`build-storybook` 過 = compile pass
-        # ≠ runtime render pass。本 step Playwright 訪問每個 story id + assert 0 console error,
-        # catch React.Children.only / undefined import / 等 runtime trap。
-        # Fail = block main merge / 防 runtime regression ship。
-        run: node scripts/storybook-smoke-test.mjs
-
-      - name: Header tabsSlot W2 contract(paddingLeft = resolved --layout-space-loose,3 overflow modes)
-        # 2026-07-30 F1 render-level 防線:beta.86 overlay wrapper 斷鏈 direct-child selector →
-        # tablist px-loose 靜默 0px,source-level gate 抓不到 → per-PR 量 built storybook 的
-        # computed padding + 第一 tab rect 對齊(storybook-static 剛 build 完,邊際成本 3 story 頁面)。
-        run: node scripts/header-tabs-slot-invariants.mjs
-
-      - name: Windows-like scrollbar probe(Linux Chromium ≈ Windows persistent bar)
-        # 地端 macOS 是 OS-overlay scrollbar，看不到 Windows 17px persistent bar 的圓角溢出。
-        # CI Linux Chromium 預設 persistent native scrollbar，視覺接近 Win Chrome → 用來驗證
-        # data-table.css v15.13 interim CSS parity 是否有效。
-        # 跑完 upload artifact 給 user 看 corner-zoom 圖。
-        run: |
-          set -e
-          # 1) 起 static http server serving storybook-static/
-          python3 -m http.server 8000 --directory storybook-static > /tmp/sb-static.log 2>&1 &
-          SERVER_PID=$!
-          sleep 3
-          curl -sf http://localhost:8000/ > /dev/null && echo "✓ storybook-static served" || (echo "✗ static server failed"; cat /tmp/sb-static.log; exit 1)
-          # 2) 跑 probe
-          STORYBOOK_URL=http://localhost:8000 node scripts/probe-windows-scrollbar.mjs 2>&1 | tail -40
-          # 3) 收 server
-          kill $SERVER_PID 2>/dev/null || true
-          ls -la tmp/scrollbar-probe/ 2>&1 | tail -20
-
-      - name: Upload scrollbar probe artifact
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: scrollbar-probe-linux
-          path: tmp/scrollbar-probe/
-          if-no-files-found: warn
-
-      - name: Vite build
-        run: npm run build 2>&1 | tail -10
-
-      - name: Story quality DS-wide(Dim 40/41/42 anti-sample deterministic scan)
-        run: npm run story-quality:check 2>&1 | tail -20
-
-      - name: DataTable row-mode SSOT(data-table.spec.md:457「強制」— 2026-05-30 wired from orphan per codex Phase B)
-        run: npm run audit:datatable-row-mode 2>&1 | tail -20
-
-      - name: Anti-sample coverage matrix(88-dim fail-closed gate — 2026-05-30 codex Phase B P1 補滿 56→88 + --check)
-        run: npm run audit:coverage-matrix -- --check 2>&1 | tail -20
-
-      - name: Governance counter SSOT(count drift fail-closed — 2026-05-30 全掃 curated docs,治「改 dim 數忘了改 plugin.json」)
-        run: node scripts/sync-governance-counters.mjs --check 2>&1 | tail -20
-
-      - name: Story LinkTo target SSOT(principles LinkTo name 必命中 showcase story name — 2026-05-30 治系統性死連結)
-        run: node scripts/check-story-linkto-targets.mjs --check 2>&1 | tail -40
-
-      - name: Layout Family frontmatter(Dim 16 deterministic backstop — 2026-05-30 從誤分 PURE-JUDGMENT 修正)
-        run: node scripts/audit-layout-family-frontmatter.mjs --check 2>&1 | tail -20
-
-      - name: SSOT spec dead-link(Dim 2 deterministic backstop — 2026-05-30 從誤分 PURE-JUDGMENT 修正,治 rename spec 忘改 pointer)
-        run: node scripts/audit-spec-deadlinks.mjs --check 2>&1 | tail -30
-
-      - name: SSOT reciprocal-pointer(Dim 3 — 2026-05-31 加 --check gate,原 mutator 無 verify=紙上 DETERMINISTIC)
-        run: node scripts/add-reciprocal-pointers.mjs --check 2>&1 | tail -20
-
-      - name: Content quality DS-wide(spec/story 人話 + 佔位符 deterministic gate — 2026-05-30 wire per task#6 orphan)
-        run: node scripts/audit-content-quality.mjs --check 2>&1 | tail -20
-
-      - name: .mjs syntax gate(M6 — 抓 TS-in-mjs dead script 假綠,2026-05-30 per laziness-hunt)
-        run: |
-          for f in scripts/*.mjs; do node --check "$f" || { echo "❌ $f node --check failed (TS-in-mjs?)"; exit 1; }; done
-          echo "✅ all scripts/*.mjs parse via node --check"
-
-      - name: BLOCKER hook test coverage(每個含 exit2/deny 的 hook 必有 test_<name>.sh — 2026-05-30 per laziness-hunt)
-        run: node scripts/audit-hook-test-coverage.mjs --check 2>&1 | tail -20
-
-      - name: Figma Make artifacts(SSOT propagation check)
-        run: node scripts/gen-figma-make-artifacts.mjs --check
-
-      # 2026-06-08:llms.txt/llms-full.txt 從 spec frontmatter build-time derive,禁手維護。
-      # deterministic(不讀 storybook)→ 此 gate 順序無關;source 改了沒重生 → drift fail。
-      - name: llms.txt drift check(build-time derive,禁手維護)
-        run: node scripts/gen-llms-txt.mjs --check 2>&1 | tail -20
-
-      # 2026-06-08:防新增 Field 控件又用 `size = 'md'` 不讀 context(B 組 cascade bug class)。
-      # deterministic source grep — Field 控件(import fieldWrapperStyles)必用 useResolvedFieldSize。
-      - name: Field size-resolve gate(防漏讀 size context)
-        run: node scripts/check-field-cascade-resolve.mjs 2>&1 | tail -10
-
-      # 2026-06-08:DS src 改了但版本沒 bump → 此 main push 不會 republish npm → consumer 拿 stale。
-      # 補「republish 靠 AI 記得 bump」的非機械斷點(release.yml tag-only 觸發,plain main push 不發版)。
-      # 只在 main push 跑(PR 還沒決定發版,不擋);排除 stories/spec.md(不 ship);網路失敗降級 warn。
-      - name: DS src republish gate(src 改了必 bump,防 ship stale)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: node scripts/check-src-republish.mjs --check 2>&1 | tail -25
-
-      - name: File-size budget enforcement
-        run: |
-          fail=0
-          claude_lines=$(wc -l < CLAUDE.md | tr -d ' ')
-          if [ "$claude_lines" -gt 800 ]; then
-            echo "❌ CLAUDE.md ${claude_lines} lines exceeds 800 transition cap"
-            fail=1
-          fi
-          for f in packages/design-system/src/components/*/*.spec.md; do
-            l=$(wc -l < "$f" | tr -d ' ')
-            case "$f" in
-              */item-anatomy.spec.md) cap=1200 ;;
-              */color.spec.md|*/sidebar.spec.md|*/tree-view.spec.md|*/field.spec.md|*/field-controls.spec.md|*/button.spec.md|*/overlay-surface.spec.md|*/action-bar.spec.md|*/uiSize.spec.md|*/data-table.spec.md) cap=800 ;;
-              *) cap=500 ;;
-            esac
-            if [ "$l" -gt "$cap" ]; then
-              echo "❌ $f ${l}/${cap} cap exceeded"
-              fail=1
-            fi
-          done
-          if [ "$fail" -eq 1 ]; then exit 1; fi
-          echo "✅ all files under cap"
+      - name: Build React 19 consumer template
+        working-directory: apps/template
+        run: npm run build

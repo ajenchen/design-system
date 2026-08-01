@@ -170,7 +170,7 @@ export function externalGitHubDesiredPolicy(desired, repository, profileProvider
   exactKeys(selector, ['checkContext', 'oidcSubjectMode', 'trustSource'], `GitHub Actions hard-gate selector for ${repository.role ?? '<missing>'}`)
   invariant(
     ['repository-workflow', 'protected-base-workflow'].includes(selector.trustSource)
-      && ['pull-request', 'credential-environment'].includes(selector.oidcSubjectMode),
+      && ['pull-request', 'credential-environment', 'protected-ref'].includes(selector.oidcSubjectMode),
     `GitHub Actions hard-gate selector for ${repository.role} is invalid`,
   )
   const checks = (desiredProfile.requiredChecks ?? []).filter(check => (
@@ -191,6 +191,14 @@ export function externalGitHubDesiredPolicy(desired, repository, profileProvider
     ))
     invariant(environments.length === 1, 'GitHub Actions protected-base hard gate must resolve one credential-bound environment')
     oidcSubject = `repo:${repository.github}:environment:${environments[0].name}`
+  } else if (selector.oidcSubjectMode === 'protected-ref') {
+    invariant(
+      selector.trustSource === 'protected-base-workflow'
+        && requiredCheck.requiredEvents[0] === 'repository_dispatch'
+        && requiredCheck.integration === 'githubActions',
+      'GitHub Actions protected-ref hard gate has an incompatible event, integration, or trust source',
+    )
+    oidcSubject = `repo:${repository.github}:ref:refs/heads/${repository.defaultBranch}`
   } else {
     invariant(
       selector.oidcSubjectMode === 'pull-request'

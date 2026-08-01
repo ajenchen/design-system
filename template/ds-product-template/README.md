@@ -97,7 +97,7 @@ npm run sync-all -- --apply --to X.Y.Z
 
 One `sync-all --apply` command authenticates and reconstructs the complete incoming snapshot before mutation. An ordinary upgrade may update exact dependencies plus authenticated non-executable governance data, instructions, and provider views. If the reconstructed release changes `.github/**`, `.npmrc`, `governance/bin/**`, `scripts/**`, or `package.json#scripts`, the same command fails closed with the stable compatibility IDs `GOV-UPGRADE-BOOTSTRAP-001/002`, restores the original state, and routes those control-plane changes to a separately reviewed full-snapshot PR; it never activates incoming control-plane code automatically. Its process-crash journal covers every path that the transaction might stage, the common instruction (`AGENTS.md`), and the prior installed tree; a failed install/materialization/check or a later invocation after SIGKILL restores the original snapshot. Run upgrades with editors and other writers quiesced: no filesystem transaction can promise to capture a non-cooperative process that keeps writing through an already-open old file descriptor. Review every permitted diff and merge through a protected PR.
 
-`.github/workflows/sync-design-system.yml` implements the same contract with three isolated jobs: a credential-free certifier emits a base/paths/patch/tree/operation receipt; a fresh read-only verifier independently authenticates provenance, reconstructs the complete incoming exact tree, rejects protected control-plane changes from the ordinary path, rechecks live `main`, and emits a digest for the exact approved bytes; only then may a fresh `governance-upgrade` environment-gated writer apply those digest-bound bytes. Repository Actions defaults remain read-only and **Allow GitHub Actions to create and approve pull requests** remains disabled. The writer mints a short-lived Governance Writer App token limited to contents, pull-request, and workflow writes because the authenticated full snapshot itself manages `.github/workflows/**`, then opens or strictly validates one deterministic PR. Writer App pushes may start ordinary candidate workflows, but those runs are non-authoritative. The required automatic path is an explicit `governance-upgrade-candidate-validation` repository dispatch that reloads protected-default workflow code; only a separate check-only Governance Check App may publish the required verdict. The writer cannot publish checks, approve/merge, bypass protection, or push directly to `main`.
+Automatic template delivery is owned upstream by the design-system release mirror. It opens a normal PR containing the exact published snapshot; this repository does not carry a second release-dispatch/updater workflow. Protected `main` requires the single `Verify consumer` check from `audit.yml`, which performs one locked install followed by typecheck, import lint, and build. Preview, visual, a11y, canary, and independent-review evidence remain optional or scheduled unless explicitly requested; they do not block the standard release path.
 
 Legacy consumers that predate this v2 boundary are intentionally different from new template users: they first complete a one-time separately reviewed full-snapshot bootstrap PR (they cannot bootstrap themselves through the old updater). Later control-plane changes for every consumer go through the same separately reviewed full-snapshot PR route. The optional fleet/readback-chain machinery in `docs/04-ds-upgrade.md` is an opt-in hardening lane, never a precondition for ordinary `sync-all`.
 
@@ -175,15 +175,14 @@ scripts/                        create, deploy, exact upgrade, governance check
 governance/lock.json            immutable release BOM
 governance/consumer-governance.md upstream-managed cross-provider/cloud guide
 .storybook/                     product-story configuration
-.github/workflows/audit.yml     governance + typecheck + build + a11y gate
-.github/workflows/sync-design-system.yml
+.github/workflows/audit.yml     locked install + typecheck + import lint + build gate
 netlify/edge-functions/         free HTTP Basic Auth
 ```
 
 ## CI and delivery
 
-- `audit.yml` runs the provider-neutral governance check with hooks off, then typecheck, import lint, all builds, and consumer a11y.
-- `sync-design-system.yml` proposes exact-version upgrade PRs with a least-privilege Governance Writer App. Automatic candidate runs are non-authoritative; explicit protected-default dispatch plus the separate check-only Governance Check App produce the required verdict.
+- `audit.yml` publishes the single `Verify consumer` required context after one `npm ci --ignore-scripts`, typecheck, import lint, and all app builds.
+- Exact template updates arrive as normal protected-main PRs from the upstream release mirror; this repository has no duplicate release-dispatch workflow.
 - Netlify builds Storybook from protected `main` and branch previews from working branches.
 
 See `docs/01-first-time-setup.md` through `docs/05-troubleshooting.md` for task-specific details.

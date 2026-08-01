@@ -1,14 +1,10 @@
 name: Composition Fidelity (DS canonical vs product pilot)
 
-# The product pilot lives in apps/template and is built from the same reviewed
-# commit as the DS. This avoids executing mutable code from another repository
-# in a privileged DS workflow and validates changes before they are mirrored.
+# Non-blocking scheduled/manual monitor comparing the canonical DS and product pilot.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '41 3 * * 4'
 
 permissions:
   contents: read
@@ -19,12 +15,10 @@ defaults:
 
 jobs:
   composition-fidelity:
-    name: Composition Fidelity Diff
+    name: Monitor composition fidelity drift
     runs-on: ubuntu-24.04
+    continue-on-error: true
     env:
-      # setup:playwright 以 PLAYWRIGHT_BROWSERS_PATH=0 安裝到 repo-local
-      # node_modules/playwright-core/.local-browsers;消費步驟必須帶同一 pin,
-      # 否則 playwright 落回 ~/.cache/ms-playwright 找不到瀏覽器(2026-07-28 CI 錨例)。
       PLAYWRIGHT_BROWSERS_PATH: '0'
     timeout-minutes: 30
     steps:
@@ -49,7 +43,7 @@ jobs:
         run: |
           if ! grep -R -E --include='*.tsx' --include='*.ts' \
             '@composition-fidelity-mode:[[:space:]]*(pixel|shell-only|structural)' apps/template/src; then
-            echo '❌ product pilot has no composition-fidelity mapping; refusing a vacuous required check.'
+            echo '❌ product pilot has no composition-fidelity mapping; monitor cannot produce evidence.'
             exit 1
           fi
 

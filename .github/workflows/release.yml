@@ -1,22 +1,14 @@
 name: Release
 
-# This protected-default workflow has stage-only npm authority. It verifies the
-# exact release identity and trust evidence, attests the deterministic release
-# set, and submits each archive through npm native staged publishing. It never
-# publishes a public npm version, mutates a dist-tag, or creates a GitHub Release;
-# those later authorities remain separated behind interactive npm approval and
-# the independently protected release-finalize.yml workflow.
-
+# The privileged workflow is always loaded from protected default. The dispatch tag is
+# untrusted data until it is proven to be the exact current protected-main HEAD.
 on:
-  # repository_dispatch always loads this privileged workflow from protected
-  # default. A pushed tag is data only and can never supply its own workflow.
   repository_dispatch:
+    # Keep the existing dispatch contract; the implementation now publishes directly.
     types: [stage-protected-release]
 
 permissions: {}
 
-# The payload tag must resolve to the current protected-main HEAD before any
-# untrusted code, OIDC, attestation, or npm authority is used.
 concurrency:
   group: ${{ github.repository }}-release
   cancel-in-progress: false
@@ -27,7 +19,7 @@ env:
 
 jobs:
   resolve-release-request:
-    name: Bind dispatch request to current protected main
+    name: Bind release tag to current protected main
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -71,129 +63,18 @@ jobs:
           echo "commit=$tag_commit" >> "$GITHUB_OUTPUT"
           echo "tree=$(/usr/bin/git rev-parse "$tag_commit^{tree}")" >> "$GITHUB_OUTPUT"
 
-  trust-preflight:
-    name: Read-only GitHub release trust preflight
+  build-and-publish-npm:
+    name: Build once and publish exact npm packages with provenance
     needs: resolve-release-request
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 45
+    environment:
+      name: npm-release
     permissions:
-      actions: read
-      checks: read
       contents: read
-      deployments: read
+      id-token: write
     outputs:
-      evidence_digest: ${{ steps.resolve_trust.outputs.evidence_digest }}
-      evidence_file_sha256: ${{ steps.resolve_trust.outputs.evidence_file_sha256 }}
-      authorization_digest: ${{ steps.resolve_trust.outputs.authorization_digest }}
-      tag_object: ${{ steps.resolve_trust.outputs.tag_object }}
-      artifact_digest: ${{ steps.retain_trust.outputs.artifact-digest }}
-    steps:
-      - name: Checkout exact protected release commit without stored credentials
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-        with:
-          ref: ${{ needs.resolve-release-request.outputs.release_commit }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Set up verification-only Node
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '24.14.0'
-          package-manager-cache: false
-
-      - name: Install the locked read-only verifier dependencies
-        run: npm run --silent setup:dependencies
-
-      - name: Resolve actual GitHub trust state before any privileged job can start
-        id: resolve_trust
-        env:
-          # A separately provisioned fine-grained read-only token may be needed
-          # for ruleset/environment/secret-metadata/immutable-release readback.
-          # Missing observation permission is a hard failure, never a bypass.
-          GH_TOKEN: ${{ secrets.RELEASE_TRUST_PREFLIGHT_TOKEN || github.token }}
-        run: >-
-          node scripts/release-trust-preflight.mjs
-          --repository "$GITHUB_REPOSITORY"
-          --release-tag "${{ needs.resolve-release-request.outputs.tag }}"
-          --release-commit "${{ needs.resolve-release-request.outputs.release_commit }}"
-          --release-tree "${{ needs.resolve-release-request.outputs.release_tree }}"
-          --run-id "$GITHUB_RUN_ID"
-          --run-attempt "$GITHUB_RUN_ATTEMPT"
-          --event "$GITHUB_EVENT_PATH"
-          --output "$RUNNER_TEMP/release-trust/release-trust-preflight.json"
-          --github-output "$GITHUB_OUTPUT"
-
-      - name: Retain attempt-unique trust evidence
-        id: retain_trust
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: release-trust-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/release-trust/release-trust-preflight.json
-          if-no-files-found: error
-          retention-days: 90
-          compression-level: 0
-
-  smoke-shard:
-    name: Storybook full smoke ${{ matrix.shard }}/4
-    needs: resolve-release-request
-    runs-on: ubuntu-24.04
-    env:
-      # setup:playwright 以 PLAYWRIGHT_BROWSERS_PATH=0 安裝到 repo-local
-      # node_modules/playwright-core/.local-browsers;消費步驟必須帶同一 pin,
-      # 否則 playwright 落回 ~/.cache/ms-playwright 找不到瀏覽器(2026-07-28 CI 錨例)。
-      PLAYWRIGHT_BROWSERS_PATH: '0'
-    timeout-minutes: 25
-    permissions:
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4]
-    steps:
-      - name: Checkout exact protected release commit
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-        with:
-          ref: ${{ needs.resolve-release-request.outputs.release_commit }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Set up Node
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '24.14.0'
-          package-manager-cache: false
-
-      - name: Install dependencies with the lock-bound npm runtime
-        run: node scripts/setup-authority-governance.mjs --dependencies-only
-
-      - name: Install Playwright Chromium
-        run: npm run --silent setup:playwright -- --with-deps
-
-      - name: Build library and Storybook
-        run: |
-          npm run --silent build:lib
-          npm run --silent build-storybook
-
-      - name: Run every Storybook story in shard ${{ matrix.shard }}/4
-        run: node scripts/storybook-smoke-test.mjs --full --shard=${{ matrix.shard }}/4
-
-  build-release-evidence:
-    name: Build and verify exact release evidence(no publish authority)
-    needs: [resolve-release-request, smoke-shard]
-    runs-on: ubuntu-24.04
-    env:
-      # setup:playwright 以 PLAYWRIGHT_BROWSERS_PATH=0 安裝到 repo-local
-      # node_modules/playwright-core/.local-browsers;消費步驟必須帶同一 pin,
-      # 否則 playwright 落回 ~/.cache/ms-playwright 找不到瀏覽器(2026-07-28 CI 錨例)。
-      PLAYWRIGHT_BROWSERS_PATH: '0'
-    timeout-minutes: 330
-    permissions:
-      contents: read
-    outputs:
-      release_commit: ${{ steps.release-identity.outputs.commit }}
-      release_tree: ${{ steps.release-identity.outputs.tree }}
       release_set_sha256: ${{ steps.release_set.outputs.sha256 }}
-      actions_artifact_digest: ${{ steps.retain_evidence.outputs.artifact-digest }}
     steps:
       - name: Checkout exact protected release commit
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -202,30 +83,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Fetch protected main ref
-        env:
-          PATH: /usr/bin:/bin
-        run: git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
-
-      - name: Resolve immutable release identity
-        id: release-identity
+      - name: Fetch exact main and tag identities
         shell: bash
-        env:
-          PATH: /usr/bin:/bin
         run: |
           set -euo pipefail
-          commit="$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")"
-          tree="$(git rev-parse "${commit}^{tree}")"
-          echo "commit=${commit}" >> "$GITHUB_OUTPUT"
-          echo "tree=${tree}" >> "$GITHUB_OUTPUT"
-
-      - name: Fail closed unless the tag is still current protected main
-        shell: bash
-        env:
-          PATH: /usr/bin:/bin
-        run: |
-          set -euo pipefail
-          test "${{ steps.release-identity.outputs.commit }}" = "$(git rev-parse refs/remotes/origin/main^{commit})"
+          /usr/bin/git fetch --force --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          /usr/bin/git fetch --force --no-tags origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          test "$(/usr/bin/git rev-parse HEAD^{commit})" = "${{ needs.resolve-release-request.outputs.release_commit }}"
+          test "$(/usr/bin/git rev-parse refs/remotes/origin/main^{commit})" = "${{ needs.resolve-release-request.outputs.release_commit }}"
+          test "$(/usr/bin/git rev-parse "refs/tags/$RELEASE_TAG^{commit}")" = "${{ needs.resolve-release-request.outputs.release_commit }}"
 
       - name: Set up Node and npm registry
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -234,57 +100,15 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
 
-      - name: Install dependencies with the lock-bound npm runtime
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build and typecheck publishable workspaces once
         run: |
-          node scripts/setup-authority-governance.mjs --verify-runtime
-          node scripts/setup-authority-governance.mjs --dependencies-only
-
-      - name: Build publishable workspaces
-        run: npm run --silent build:lib
-
-      - name: Provision exact Playwright Chromium runtime for isolated Harnesses
-        run: npm run --silent setup:playwright -- --with-deps
-
-      # 同 ci.yml:harness member test-review-capability-selection 驗真實 provider CLI
-      # runtime binding,缺 linux-x64 toolchain content 即 GOV-PROVIDER-CLI-TOOLCHAIN-001。
-      - name: Provision provider CLI toolchain(lock-pinned hermetic;harness runtime-binding 驗證需要)
-        run: npm run --silent setup:provider-cli
-
-      - name: Deterministic governance and product gates
-        run: |
-          npm run --silent test:governance-harnesses
-          npm run --silent audit:workflow-security
-          npm run --silent governance:workflow-identities:check
+          npm run --silent build:lib
           npx --no-install tsc -b
-          npm run --silent typecheck:stories
-          node scripts/audit-orphan-tokens.mjs --check
-          node scripts/categorical-color-invariants.mjs
-          node scripts/status-color-invariant.mjs
-          node scripts/layout-space-utility-invariant.mjs
-          node scripts/category-classification-invariant.mjs
-          node scripts/gen-design-system-barrel.mjs --check
-          node scripts/code-quality-audit.mjs --scope=packages/design-system/src/components --check
-          node scripts/audit-content-quality.mjs --check
-          node scripts/sync-governance-counters.mjs --check
-          node scripts/gen-figma-make-artifacts.mjs --check
-          node scripts/plugin-structure-validate.mjs
-          npm run --silent story-quality:check
-          node scripts/governance-build-graph.mjs --check
-          node scripts/check-src-republish.mjs --check
-          node scripts/sync-template-canonical-app.mjs --check
-          node scripts/gen-llms-txt.mjs --check
-          node scripts/check-field-cascade-resolve.mjs
-          node scripts/audit-motion-delay-invariants.mjs
-          node scripts/item-content-leading-coherence.mjs
-          node scripts/checkbox-group-handcraft-invariant.mjs
-          node scripts/layout-space-story-coherence.mjs
-          node scripts/overlay-density-lock-placement.mjs
-          ( cd apps/template && npm run build )
 
-      - name: Fresh-consumer packaging dogfood
-        run: node scripts/dogfood-prepublish-verify.mjs
-
-      - name: Pack the release archives exactly once
+      - name: Pack the exact three-package release train
         shell: bash
         run: |
           set -euo pipefail
@@ -304,7 +128,7 @@ jobs:
             --tag "$RELEASE_TAG" \
             --git-tree "${{ needs.resolve-release-request.outputs.release_tree }}"
 
-      - name: Lock every published product-template scaffold path and mode
+      - name: Build product-template scaffold lock
         shell: bash
         run: |
           set -euo pipefail
@@ -314,293 +138,45 @@ jobs:
             --output "$GITHUB_WORKSPACE/release-artifacts/product-template-scaffold.lock.json" \
             --version "${RELEASE_TAG#v}"
 
-      - name: Build release BOM from the exact archives
-        run: >-
-          node scripts/build-release-bom.mjs
-          --repo "$GITHUB_WORKSPACE"
-          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
-          --output "$GITHUB_WORKSPACE/release-artifacts/release-bom.json"
-          --tag "$RELEASE_TAG"
-          --git-head "${{ steps.release-identity.outputs.commit }}"
-          --git-tree "${{ steps.release-identity.outputs.tree }}"
-          --repository "$GITHUB_REPOSITORY"
-          --main-ref refs/remotes/origin/main
-          --require-sbom
-          --require-clean
-          --require-release-ref
-          --allow-repository-dispatch
+      - name: Build and verify the release BOM
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/build-release-bom.mjs \
+            --repo "$GITHUB_WORKSPACE" \
+            --artifacts "$GITHUB_WORKSPACE/release-artifacts" \
+            --output "$GITHUB_WORKSPACE/release-artifacts/release-bom.json" \
+            --tag "$RELEASE_TAG" \
+            --git-head "${{ needs.resolve-release-request.outputs.release_commit }}" \
+            --git-tree "${{ needs.resolve-release-request.outputs.release_tree }}" \
+            --repository "$GITHUB_REPOSITORY" \
+            --main-ref refs/remotes/origin/main \
+            --require-sbom \
+            --require-clean \
+            --require-release-ref \
+            --allow-repository-dispatch
+          node scripts/build-release-bom.mjs --verify \
+            --repo "$GITHUB_WORKSPACE" \
+            --artifacts "$GITHUB_WORKSPACE/release-artifacts" \
+            --bom "$GITHUB_WORKSPACE/release-artifacts/release-bom.json" \
+            --tag "$RELEASE_TAG" \
+            --git-head "${{ needs.resolve-release-request.outputs.release_commit }}" \
+            --git-tree "${{ needs.resolve-release-request.outputs.release_tree }}" \
+            --repository "$GITHUB_REPOSITORY" \
+            --main-ref refs/remotes/origin/main \
+            --require-sbom \
+            --require-clean \
+            --require-release-ref \
+            --allow-repository-dispatch
 
-      - name: Canonical read-only release verification
-        run: >-
-          npm run --silent release:verify --
-          --repo "$GITHUB_WORKSPACE"
-          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
-          --bom "$GITHUB_WORKSPACE/release-artifacts/release-bom.json"
-          --tag "$RELEASE_TAG"
-          --git-head "${{ steps.release-identity.outputs.commit }}"
-          --git-tree "${{ steps.release-identity.outputs.tree }}"
-          --repository "$GITHUB_REPOSITORY"
-          --main-ref refs/remotes/origin/main
-          --require-sbom
-          --require-clean
-          --require-release-ref
-          --allow-repository-dispatch
-
-      - name: Bind the exact six-file release set to a job output
+      - name: Bind the exact six-file release set
         id: release_set
         run: >-
           node scripts/release-set.mjs
           --artifacts "$GITHUB_WORKSPACE/release-artifacts"
           --github-output "$GITHUB_OUTPUT"
 
-      - name: Retain the exact release evidence
-        id: retain_evidence
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: release-${{ github.event.client_payload.tag }}
-          path: release-artifacts/
-          if-no-files-found: error
-          retention-days: 90
-          compression-level: 0
-
-  attest-release:
-    name: Attest exact release set(no npm or repository write authority)
-    needs: [resolve-release-request, trust-preflight, build-release-evidence]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      id-token: write
-      attestations: write
-    steps:
-      - name: Checkout exact protected release commit without stored credentials
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-        with:
-          ref: ${{ needs.resolve-release-request.outputs.release_commit }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Fetch protected main ref
-        run: /usr/bin/git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
-
-      - name: Set up verification-only Node
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '24.14.0'
-          package-manager-cache: false
-
-      - name: Download evidence produced by the unprivileged job
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: release-${{ github.event.client_payload.tag }}
-          path: release-artifacts
-
-      - name: Download the exact attempt-bound release trust evidence
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: release-trust-${{ github.run_id }}-${{ github.run_attempt }}
-          path: release-trust-evidence
-
-      - name: Fail closed on artifact substitution
-        run: >-
-          node scripts/release-set.mjs
-          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
-          --expected "${{ needs.build-release-evidence.outputs.release_set_sha256 }}"
-
-      # build-release-bom --verify 載入 consumer-upgrade-protocol(ajv schema 驗證)
-      # → 需要 lock-bound node_modules;缺裝依賴 = MODULE_NOT_FOUND(2026-07-28 發版錨例)。
-      - name: Install the locked verification dependencies
-        run: npm run --silent setup:dependencies
-
-      - name: Revalidate the exact trust evidence before attestation authority
-        id: verify_trust
-        shell: bash
-        env:
-          EXPECTED_EVIDENCE_FILE_SHA256: ${{ needs.trust-preflight.outputs.evidence_file_sha256 }}
-        run: |
-          set -euo pipefail
-          evidence="$GITHUB_WORKSPACE/release-trust-evidence/release-trust-preflight.json"
-          test "$(/usr/bin/sha256sum "$evidence" | /usr/bin/awk '{print $1}')" = "$EXPECTED_EVIDENCE_FILE_SHA256"
-          node scripts/release-trust-preflight.mjs \
-            --verify "$evidence" \
-            --expected-digest "${{ needs.trust-preflight.outputs.evidence_digest }}" \
-            --expected-authorization-digest "${{ needs.trust-preflight.outputs.authorization_digest }}" \
-            --repository "$GITHUB_REPOSITORY" \
-            --release-tag "$RELEASE_TAG" \
-            --release-commit "${{ needs.resolve-release-request.outputs.release_commit }}" \
-            --release-tree "${{ needs.resolve-release-request.outputs.release_tree }}" \
-            --run-id "$GITHUB_RUN_ID" \
-            --run-attempt "$GITHUB_RUN_ATTEMPT" \
-            --github-output "$GITHUB_OUTPUT"
-
-      - name: Re-verify exact BOM before attestation
-        run: >-
-          node scripts/build-release-bom.mjs --verify
-          --repo "$GITHUB_WORKSPACE"
-          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
-          --bom "$GITHUB_WORKSPACE/release-artifacts/release-bom.json"
-          --tag "$RELEASE_TAG"
-          --git-head "${{ needs.build-release-evidence.outputs.release_commit }}"
-          --git-tree "${{ needs.build-release-evidence.outputs.release_tree }}"
-          --repository "$GITHUB_REPOSITORY"
-          --main-ref refs/remotes/origin/main
-          --require-sbom
-          --require-clean
-          --require-release-ref
-          --allow-repository-dispatch
-
-      - name: Recheck remote tag through GitHub API immediately before attestation
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          node scripts/release-remote-tag.mjs
-          --repository "$GITHUB_REPOSITORY"
-          --tag "$RELEASE_TAG"
-          --expected "${{ needs.build-release-evidence.outputs.release_commit }}"
-          --expected-object "${{ steps.verify_trust.outputs.tag_object }}"
-          --token-env GH_TOKEN
-
-      - name: Attest release provenance
-        id: provenance
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
-        with:
-          subject-path: |
-            release-artifacts/*.tgz
-            release-artifacts/release-bom.json
-            release-artifacts/release.sbom.cdx.json
-            release-artifacts/product-template-scaffold.lock.json
-
-      - name: Recheck the same verified annotated tag immediately before SBOM attestation
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          node scripts/release-remote-tag.mjs
-          --repository "$GITHUB_REPOSITORY"
-          --tag "$RELEASE_TAG"
-          --expected "${{ needs.build-release-evidence.outputs.release_commit }}"
-          --expected-object "${{ steps.verify_trust.outputs.tag_object }}"
-          --token-env GH_TOKEN
-
-      - name: Attest release SBOM
-        id: sbom-attestation
-        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
-        with:
-          subject-path: release-artifacts/*.tgz
-          sbom-path: release-artifacts/release.sbom.cdx.json
-
-  publish-npm:
-    name: Stage npm packages(OIDC native staged publishing with provenance)
-    needs: [resolve-release-request, trust-preflight, build-release-evidence, attest-release]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    environment:
-      name: npm-release
-    permissions:
-      contents: read
-      id-token: write
-    outputs:
-      tag: ${{ steps.finalizer_handoff.outputs.tag }}
-      stage_run_id: ${{ steps.finalizer_handoff.outputs.stage_run_id }}
-      stage_run_attempt: ${{ steps.finalizer_handoff.outputs.stage_run_attempt }}
-      stage_artifact_digest: ${{ steps.finalizer_handoff.outputs.stage_artifact_digest }}
-      release_set_sha256: ${{ steps.finalizer_handoff.outputs.release_set_sha256 }}
-      stage_receipt_sha256: ${{ steps.finalizer_handoff.outputs.stage_receipt_sha256 }}
-      release_authorization_digest: ${{ steps.finalizer_handoff.outputs.release_authorization_digest }}
-      release_trust_evidence_digest: ${{ steps.finalizer_handoff.outputs.release_trust_evidence_digest }}
-      release_trust_artifact_digest: ${{ steps.finalizer_handoff.outputs.release_trust_artifact_digest }}
-    steps:
-      - name: Checkout exact protected release commit without stored credentials
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-        with:
-          ref: ${{ needs.resolve-release-request.outputs.release_commit }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Fetch protected main ref
-        run: /usr/bin/git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
-
-      - name: Set up publish Node and npm registry
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '24.14.0'
-          registry-url: 'https://registry.npmjs.org'
-          package-manager-cache: false
-
-      - name: Verify the committed npm runtime authority
-        run: node scripts/setup-authority-governance.mjs --verify-runtime
-
-      - name: Download exact release evidence
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: release-${{ github.event.client_payload.tag }}
-          path: release-artifacts
-
-      - name: Download the exact attempt-bound release trust evidence
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: release-trust-${{ github.run_id }}-${{ github.run_attempt }}
-          path: release-trust-evidence
-
-      - name: Fail closed on artifact substitution
-        run: >-
-          node scripts/release-set.mjs
-          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
-          --expected "${{ needs.build-release-evidence.outputs.release_set_sha256 }}"
-
-      # build-release-bom --verify 載入 consumer-upgrade-protocol(ajv schema 驗證)
-      # → 需要 lock-bound node_modules;缺裝依賴 = MODULE_NOT_FOUND(2026-07-28 發版錨例)。
-      - name: Install the locked verification dependencies
-        run: npm run --silent setup:dependencies
-
-      - name: Revalidate and bind the exact trust evidence before npm authority
-        id: verify_trust
-        shell: bash
-        env:
-          EXPECTED_EVIDENCE_FILE_SHA256: ${{ needs.trust-preflight.outputs.evidence_file_sha256 }}
-        run: |
-          set -euo pipefail
-          evidence="$GITHUB_WORKSPACE/release-trust-evidence/release-trust-preflight.json"
-          test "$(/usr/bin/sha256sum "$evidence" | /usr/bin/awk '{print $1}')" = "$EXPECTED_EVIDENCE_FILE_SHA256"
-          node scripts/release-trust-preflight.mjs \
-            --verify "$evidence" \
-            --expected-digest "${{ needs.trust-preflight.outputs.evidence_digest }}" \
-            --expected-authorization-digest "${{ needs.trust-preflight.outputs.authorization_digest }}" \
-            --repository "$GITHUB_REPOSITORY" \
-            --release-tag "$RELEASE_TAG" \
-            --release-commit "${{ needs.resolve-release-request.outputs.release_commit }}" \
-            --release-tree "${{ needs.resolve-release-request.outputs.release_tree }}" \
-            --run-id "$GITHUB_RUN_ID" \
-            --run-attempt "$GITHUB_RUN_ATTEMPT" \
-            --github-output "$GITHUB_OUTPUT"
-
-      - name: Re-verify exact BOM before npm authority is used
-        run: >-
-          node scripts/build-release-bom.mjs --verify
-          --repo "$GITHUB_WORKSPACE"
-          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
-          --bom "$GITHUB_WORKSPACE/release-artifacts/release-bom.json"
-          --tag "$RELEASE_TAG"
-          --git-head "${{ needs.build-release-evidence.outputs.release_commit }}"
-          --git-tree "${{ needs.build-release-evidence.outputs.release_tree }}"
-          --repository "$GITHUB_REPOSITORY"
-          --main-ref refs/remotes/origin/main
-          --require-sbom
-          --require-clean
-          --require-release-ref
-          --allow-repository-dispatch
-
-      - name: Recheck remote tag through GitHub API immediately before staging
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          node scripts/release-remote-tag.mjs
-          --repository "$GITHUB_REPOSITORY"
-          --tag "$RELEASE_TAG"
-          --expected "${{ needs.build-release-evidence.outputs.release_commit }}"
-          --expected-object "${{ steps.verify_trust.outputs.tag_object }}"
-          --token-env GH_TOKEN
-
-      - name: Stage each exact archive through npm native Trusted Publishing
+      - name: Publish through npm Trusted Publishing and verify registry provenance
         env:
           GH_TOKEN: ${{ github.token }}
         run: >-
@@ -609,87 +185,58 @@ jobs:
           --bom "$GITHUB_WORKSPACE/release-artifacts/release-bom.json"
           --repository "$GITHUB_REPOSITORY"
           --tag "$RELEASE_TAG"
-          --git-head "${{ needs.build-release-evidence.outputs.release_commit }}"
-          --tag-object "${{ steps.verify_trust.outputs.tag_object }}"
+          --git-head "${{ needs.resolve-release-request.outputs.release_commit }}"
           --github-token-env GH_TOKEN
-          --receipt "$RUNNER_TEMP/npm-stage/npm-stage-receipt.json"
-          --authorization-digest "${{ needs.trust-preflight.outputs.authorization_digest }}"
-          --release-trust-evidence-digest "${{ needs.trust-preflight.outputs.evidence_digest }}"
-          --release-trust-evidence-file-sha256 "${{ steps.verify_trust.outputs.evidence_file_sha256 }}"
-          --trust-artifact-name "release-trust-${{ github.run_id }}-${{ github.run_attempt }}"
-          --trust-artifact-digest "${{ needs.trust-preflight.outputs.artifact_digest }}"
-          --trust-run-id "$GITHUB_RUN_ID"
-          --trust-run-attempt "$GITHUB_RUN_ATTEMPT"
 
-      - name: Bind the durable stage receipt bytes
-        id: stage_receipt
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          receipt="$RUNNER_TEMP/npm-stage/npm-stage-receipt.json"
-          test -f "$receipt" && test ! -L "$receipt"
-          echo "sha256=$(/usr/bin/sha256sum "$receipt" | /usr/bin/awk '{print $1}')" >> "$GITHUB_OUTPUT"
-
-      - name: Retain the attempt-bound native stage receipt
-        id: retain_stage
-        if: always()
+      - name: Retain exact release assets for the contents-only writer
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: npm-stage-${{ github.event.client_payload.tag }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/npm-stage/npm-stage-receipt.json
+          name: release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-artifacts/
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 30
           compression-level: 0
 
-      - name: Emit the closed finalizer handoff
-        id: finalizer_handoff
-        shell: bash
+  publish-github-release:
+    name: Publish and read back exact GitHub Release assets
+    needs: [resolve-release-request, build-and-publish-npm]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout exact release commit without stored credentials
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ needs.resolve-release-request.outputs.release_commit }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up verification-only Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.14.0'
+          package-manager-cache: false
+
+      - name: Download exact release assets
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-artifacts
+
+      - name: Reject artifact substitution
+        run: >-
+          node scripts/release-set.mjs
+          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
+          --expected "${{ needs.build-and-publish-npm.outputs.release_set_sha256 }}"
+
+      - name: Create, publish, and verify exact release assets
         env:
-          STAGE_ARTIFACT_DIGEST: ${{ steps.retain_stage.outputs.artifact-digest }}
-          RELEASE_SET_SHA256: ${{ needs.build-release-evidence.outputs.release_set_sha256 }}
-          STAGE_RECEIPT_SHA256: ${{ steps.stage_receipt.outputs.sha256 }}
-          RELEASE_AUTHORIZATION_DIGEST: ${{ needs.trust-preflight.outputs.authorization_digest }}
-          RELEASE_TRUST_EVIDENCE_DIGEST: ${{ needs.trust-preflight.outputs.evidence_digest }}
-          RELEASE_TRUST_ARTIFACT_DIGEST: ${{ needs.trust-preflight.outputs.artifact_digest }}
-        run: |
-          set -euo pipefail
-          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|next|rc)\.[0-9]+)?$ ]]
-          [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ ]]
-          [[ "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
-          for digest in \
-            "$STAGE_ARTIFACT_DIGEST" \
-            "$RELEASE_SET_SHA256" \
-            "$STAGE_RECEIPT_SHA256" \
-            "$RELEASE_AUTHORIZATION_DIGEST" \
-            "$RELEASE_TRUST_EVIDENCE_DIGEST" \
-            "$RELEASE_TRUST_ARTIFACT_DIGEST"; do
-            [[ "$digest" =~ ^[0-9a-f]{64}$ ]]
-          done
-          {
-            echo "tag=$RELEASE_TAG"
-            echo "stage_run_id=$GITHUB_RUN_ID"
-            echo "stage_run_attempt=$GITHUB_RUN_ATTEMPT"
-            echo "stage_artifact_digest=$STAGE_ARTIFACT_DIGEST"
-            echo "release_set_sha256=$RELEASE_SET_SHA256"
-            echo "stage_receipt_sha256=$STAGE_RECEIPT_SHA256"
-            echo "release_authorization_digest=$RELEASE_AUTHORIZATION_DIGEST"
-            echo "release_trust_evidence_digest=$RELEASE_TRUST_EVIDENCE_DIGEST"
-            echo "release_trust_artifact_digest=$RELEASE_TRUST_ARTIFACT_DIGEST"
-          } >> "$GITHUB_OUTPUT"
-          {
-            echo "### Native npm stage complete"
-            echo
-            echo "After account-holder 2FA approval and guarded promotion, pass this exact closed handoff to \`finalize-staged-release\`:"
-            echo
-            echo "- tag: \`$RELEASE_TAG\`"
-            echo "- stage_run_id: \`$GITHUB_RUN_ID\`"
-            echo "- stage_run_attempt: \`$GITHUB_RUN_ATTEMPT\`"
-            echo "- stage_artifact_digest: \`$STAGE_ARTIFACT_DIGEST\`"
-            echo "- release_set_sha256: \`$RELEASE_SET_SHA256\`"
-            echo "- stage_receipt_sha256: \`$STAGE_RECEIPT_SHA256\`"
-            echo "- release_authorization_digest: \`$RELEASE_AUTHORIZATION_DIGEST\`"
-            echo "- release_trust_evidence_digest: \`$RELEASE_TRUST_EVIDENCE_DIGEST\`"
-            echo "- release_trust_artifact: \`release-trust-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT\`"
-            echo "- release_trust_artifact_digest: \`$RELEASE_TRUST_ARTIFACT_DIGEST\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          node scripts/release-github-release.mjs
+          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
+          --repository "$GITHUB_REPOSITORY"
+          --tag "${{ needs.resolve-release-request.outputs.tag }}"
+          --git-head "${{ needs.resolve-release-request.outputs.release_commit }}"

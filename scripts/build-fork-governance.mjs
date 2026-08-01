@@ -398,7 +398,6 @@ for (const provider of PROVIDER_REGISTRY.providers.filter((item) => item.adapter
 const MANAGED_FILE_SOURCES = {
   '.github/workflows/audit.yml': join(ROOT, 'template/ds-product-template/.github/workflows/audit.yml'),
   '.github/workflows/governance-anchor.yml': join(ROOT, 'template/ds-product-template/.github/workflows/governance-anchor.yml'),
-  '.github/workflows/sync-design-system.yml': join(ROOT, 'template/ds-product-template/.github/workflows/sync-design-system.yml'),
   '.npmrc': join(ROOT, 'template/ds-product-template/.npmrc'),
   '.devcontainer/devcontainer.json': join(ROOT, 'template/ds-product-template/.devcontainer/devcontainer.json'),
   '.devcontainer/devcontainer-lock.json': join(ROOT, 'template/ds-product-template/.devcontainer/devcontainer-lock.json'),

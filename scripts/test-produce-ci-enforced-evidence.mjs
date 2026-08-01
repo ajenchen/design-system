@@ -587,7 +587,6 @@ test('DIM 66 canonical guidance matches the immutable release, mirror, fleet and
     'infra/governance/bin/consumerctl.mjs',
     'scripts/dogfood-prepublish-verify.mjs',
     'scripts/visual-assertions.json',
-    'template/ds-product-template/.github/workflows/sync-design-system.yml',
   ]) {
     assert.ok(dimension.coverage.requiredPaths.includes(requiredPath), `DIM 66 misses ${requiredPath}`)
   }

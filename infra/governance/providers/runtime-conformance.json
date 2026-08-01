@@ -306,13 +306,13 @@
             "trustSource": "repository-workflow"
           },
           "template-mirror": {
-            "checkContext": "Immutable consumer snapshot",
-            "oidcSubjectMode": "credential-environment",
-            "trustSource": "protected-base-workflow"
+            "checkContext": "Verify consumer",
+            "oidcSubjectMode": "pull-request",
+            "trustSource": "repository-workflow"
           },
           "product-consumer": {
-            "checkContext": "Immutable consumer snapshot",
-            "oidcSubjectMode": "credential-environment",
+            "checkContext": "Verify consumer",
+            "oidcSubjectMode": "protected-ref",
             "trustSource": "protected-base-workflow"
           }
         },
