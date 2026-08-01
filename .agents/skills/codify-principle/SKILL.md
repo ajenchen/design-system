@@ -109,7 +109,7 @@ Per layer 一個 commit:
 Scope / type / affected homes 是工程 mapping，由 agent 依 canonical 自行決定。只有原則文字本身對產品／UI／UX語意有多種合理解讀且會改 SSOT，才請 user 釐清。
 
 ### Gate 2 — Phase 2 benchmark
-< 3 家世界級對照 → 繼續 primary-source research 或標 `REVIEW-BLOCKED`；只有 OG-only 是否成為產品／UI／UX原則的選擇交給 user，工程治理原則由 evidence + security/hard gates 決定。
+< 3 家世界級對照 → 繼續 primary-source research，證據仍不足就不 codify 並明列 benchmark gap；只有 task／deliverable 明確要求 independent review 且 peer 證據不可得時才標 `REVIEW-BLOCKED`。只有 OG-only 是否成為產品／UI／UX原則的選擇交給 user，工程治理原則由 evidence + security/hard gates 決定。
 
 ### Gate 3 — Phase 3 per-layer
 每 layer 都過 tests／rollback check；task／deliverable 明確要求時才把 independent review 列為 required。工程 canonical substantive 直接執行，只有產品／UI／UX SSOT 真取捨停下。

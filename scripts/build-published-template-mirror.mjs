@@ -101,7 +101,6 @@ const ALLOWLIST = [
   'scripts/schemas/product-template-scaffold-lock.schema.json',
   'scripts/schemas/upgrade-evidence-receipt.schema.json',
   'scripts/governance-check.mjs',       // provider-neutral hard gate(native hooks off 仍完整驗證)
-  'scripts/governance-anchor-preflight.mjs', // base-trusted pull_request_target preflight; candidate is data
   'scripts/verify-upgrade-provenance.mjs', // current trusted client binds incoming npm/Sigstore evidence to immutable GitHub Release BOM
   'scripts/verify-consumer-css-entry.mjs',
   'scripts/verify-upgrade-evidence.mjs',
@@ -466,7 +465,7 @@ if (scanFail > 0) {
 }
 
 console.log(`✅ Build complete: ${OUT_DIR}`)
-console.log(`   Next: workflow uses a short-lived GitHub App token to open a protected upgrade PR`)
+console.log(`   Next: protected release mirror opens the ordinary Verify consumer upgrade PR`)
 return Object.freeze({ outDir: OUT_DIR })
 }
 

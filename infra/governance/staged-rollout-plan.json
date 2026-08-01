@@ -283,8 +283,7 @@
         "scripts/build-release-bom.mjs",
         "scripts/release-bom-contract.mjs",
         "infra/governance/lib/release-trust-preflight.mjs",
-        ".github/workflows/release.yml",
-        ".github/workflows/release-finalize.yml"
+        ".github/workflows/release.yml"
       ]
     },
     {

@@ -21,6 +21,8 @@ const PROPOSED_REPLAY_NODE_FIXTURE = join(
 const temp = realpathSync(mkdtempSync(join(realpathSync(tmpdir()), 'consumer-governance-')))
 const mirror = join(temp, 'repo')
 const checkScript = join(mirror, 'node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/governance-check.mjs')
+const privateCheckerRoot = join(temp, 'private-checker')
+const privateCheckScript = join(privateCheckerRoot, 'fork/consumer/governance-check.mjs')
 const sha = (buf) => createHash('sha256').update(buf).digest('hex')
 const snapshot = (dir) => {
   const rows = []
@@ -37,7 +39,7 @@ const snapshot = (dir) => {
   return { digest: sha(rows.join('\n')), rows }
 }
 const runCheck = ({
-  entrypointOverride = null,
+  usePrivateChecker = false,
   injectPayloadEnvironmentAfterLaunch = false,
   injectLiveHookSwapAfterSnapshot = false,
   injectLiveSourceSwapAfterCapture = false,
@@ -53,9 +55,11 @@ const runCheck = ({
     || injectTransientReplayTimeoutAfterLaunch
     || injectPersistentReplayTimeoutAfterLaunch
   )
-  const entrypoint = entrypointOverride || (useWrapper
-    ? join(root, 'scripts/test-fixtures/consumer-governance-payload-environment-wrapper.mjs')
-    : checkScript)
+  const entrypoint = usePrivateChecker
+    ? privateCheckScript
+    : useWrapper
+      ? join(root, 'scripts/test-fixtures/consumer-governance-payload-environment-wrapper.mjs')
+      : checkScript
   const liveSwapRecord = join(temp, 'live-swap-record.json')
   rmSync(liveSwapRecord, { force: true })
   const run = spawnSync(process.execPath, [
@@ -93,8 +97,8 @@ const runCheck = ({
   try { report = JSON.parse(run.stdout) } catch { throw new Error(`governance check emitted invalid JSON:${run.stdout}\n${run.stderr}`) }
   return { status: run.status, report, stderr: run.stderr }
 }
-const freezePrivateCheckerSnapshot = source => {
-  const snapshotRoot = realpathSync(mkdtempSync(join(realpathSync(tmpdir()), 'setup-governance-private-checker-')))
+const freezePrivateCheckerSnapshot = (source, snapshotRoot) => {
+  mkdirSync(snapshotRoot, { recursive: false })
   const snapshotFork = join(snapshotRoot, 'fork')
   cpSync(source, snapshotFork, { recursive: true })
   const directories = []
@@ -195,9 +199,9 @@ try {
   }
   console.log(`✅ positive: hooks-off immutable snapshot PASS(${positive.report.attestationDigest.slice(0, 16)})`)
 
-  const privateChecker = freezePrivateCheckerSnapshot(join(dsDest, 'ds-canonical/fork'))
+  const privateChecker = freezePrivateCheckerSnapshot(join(dsDest, 'ds-canonical/fork'), privateCheckerRoot)
   try {
-    const privatePositive = runCheck({ entrypointOverride: privateChecker.checker })
+    const privatePositive = runCheck({ usePrivateChecker: true })
     if (privatePositive.status !== 0 || !privatePositive.report.ok) {
       throw new Error(`authenticated private checker snapshot failed mode-aware provider skill parity:${JSON.stringify(privatePositive.report, null, 2)}`)
     }

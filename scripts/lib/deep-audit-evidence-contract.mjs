@@ -128,6 +128,30 @@ export function sha256(value) {
   return createHash('sha256').update(value).digest('hex')
 }
 
+export function buildDeepAuditSecondOpinionWaiver({
+  underlyingSelection,
+  authorProviderId,
+  selfProviderId,
+  now = new Date(),
+} = {}) {
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime())) fail('second-opinion waiver time must be valid')
+  const payload = {
+    schemaVersion: 1,
+    kind: 'provider-review-capability-selection-waived',
+    selectionStatus: 'REVIEW-WAIVED',
+    selectionReasonCode: 'USER_WAIVER',
+    waiverAuthority: 'user',
+    waiverScope: 'second-opinion-this-run',
+    waivedAt: now.toISOString(),
+    skill: 'deep-audit-cross-codex',
+    authorProviderId,
+    selfProviderId,
+    bindingDigest: underlyingSelection?.bindingDigest,
+    underlyingSelection,
+  }
+  return Object.freeze({ ...payload, selectionDigest: sha256(stableStringify(payload)) })
+}
+
 export function deepAuditProviderIdentityDigest({ authorProvider, providers, reviewSelection = null } = {}) {
   return sha256(stableStringify({
     authorProvider,
@@ -254,6 +278,45 @@ function exactKeys(value, keys, label) {
   if (actual.length !== expected.length || actual.some((key, index) => key !== expected[index])) {
     fail(`${label} has an invalid or open shape; expected ${expected.join(',')}`)
   }
+}
+
+export function validateDeepAuditSecondOpinionWaiver(receipt) {
+  exactKeys(receipt, [
+    'schemaVersion', 'kind', 'selectionStatus', 'selectionReasonCode', 'waiverAuthority',
+    'waiverScope', 'waivedAt', 'skill', 'authorProviderId', 'selfProviderId',
+    'bindingDigest', 'underlyingSelection', 'selectionDigest',
+  ], 'second-opinion waiver')
+  if (receipt.schemaVersion !== 1
+    || receipt.kind !== 'provider-review-capability-selection-waived'
+    || receipt.selectionStatus !== 'REVIEW-WAIVED'
+    || receipt.selectionReasonCode !== 'USER_WAIVER'
+    || receipt.waiverAuthority !== 'user'
+    || receipt.waiverScope !== 'second-opinion-this-run'
+    || receipt.skill !== 'deep-audit-cross-codex') fail('second-opinion waiver identity is invalid')
+  validIso(receipt.waivedAt, 'second-opinion waiver waivedAt')
+  if (!PROVIDER_ID.test(receipt.authorProviderId ?? '') || !PROVIDER_ID.test(receipt.selfProviderId ?? '')) {
+    fail('second-opinion waiver provider identity is invalid')
+  }
+  const underlying = receipt.underlyingSelection
+  try {
+    if (underlying?.kind === 'provider-review-capability-selection') {
+      validateReviewCapabilitySelectionReceipt(underlying)
+    } else if (underlying?.kind === 'provider-review-capability-selection-blocked') {
+      validateBlockedReviewCapabilitySelectionReceipt(underlying)
+    } else fail('second-opinion waiver underlying selection kind is invalid')
+  } catch (error) {
+    fail(`second-opinion waiver underlying selection is invalid:${error.message}`)
+  }
+  if (receipt.authorProviderId !== underlying.authorProviderId
+    || receipt.selfProviderId !== underlying.selfProviderId
+    || receipt.bindingDigest !== underlying.bindingDigest) {
+    fail('second-opinion waiver is detached from the underlying selection')
+  }
+  const { selectionDigest, ...payload } = receipt
+  if (!SHA256.test(selectionDigest ?? '') || selectionDigest !== sha256(stableStringify(payload))) {
+    fail('second-opinion waiver selectionDigest mismatches')
+  }
+  return true
 }
 
 function nonEmptyString(value, label) {
@@ -987,10 +1050,13 @@ export function validateDeepAuditRunManifest(manifest) {
   exactKeys(manifest.providers, ['self', 'peer'], 'run manifest providers')
   const blockedSelection = !isHistorical
     && manifest.reviewSelection?.kind === 'provider-review-capability-selection-blocked'
-  validateProvider(manifest.providers.self, 'run manifest providers.self', { allowBlockedPeer: blockedSelection })
-  if (blockedSelection) {
+  const waivedSelection = !isHistorical
+    && manifest.reviewSelection?.kind === 'provider-review-capability-selection-waived'
+  const selectionWithoutPeer = blockedSelection || waivedSelection
+  validateProvider(manifest.providers.self, 'run manifest providers.self', { allowBlockedPeer: selectionWithoutPeer })
+  if (selectionWithoutPeer) {
     if (manifest.providers.peer !== null || manifest.providers.self.reviewPeerId !== null) {
-      fail('blocked run manifest must not invent a peer provider')
+      fail('blocked or waived run manifest must not invent a peer provider')
     }
   } else {
     validateProvider(manifest.providers.peer, 'run manifest providers.peer')
@@ -1009,6 +1075,7 @@ export function validateDeepAuditRunManifest(manifest) {
   if (!isHistorical) {
     try {
       if (blockedSelection) validateBlockedReviewCapabilitySelectionReceipt(manifest.reviewSelection)
+      else if (waivedSelection) validateDeepAuditSecondOpinionWaiver(manifest.reviewSelection)
       else validateReviewCapabilitySelectionReceipt(manifest.reviewSelection)
     } catch (error) {
       fail(`run manifest review capability selection is invalid:${error.message}`)
@@ -1016,7 +1083,7 @@ export function validateDeepAuditRunManifest(manifest) {
     if (manifest.reviewSelection.authorProviderId !== manifest.authorProvider
       || manifest.reviewSelection.selfProviderId !== manifest.providers.self.id
       || manifest.reviewSelection.bindingDigest !== manifest.providers.self.reviewBindingDigest
-      || (!blockedSelection && (
+      || (!selectionWithoutPeer && (
         manifest.reviewSelection.selected.providerId !== manifest.providers.peer.id
         || manifest.reviewSelection.bindingDigest !== manifest.providers.peer.reviewBindingDigest
       ))) {
@@ -1093,13 +1160,21 @@ export function validateDeepAuditRunProviderBindings(manifest, {
   const repository = resolveRepositoryRoot(repoRoot)
   const inputs = loadProviderInputs(repository, now)
   const blockedSelection = manifest.reviewSelection.kind === 'provider-review-capability-selection-blocked'
-  const entitlementAvailability = reverifyEntitlementAvailability(
-    repository,
-    inputs,
-    manifest.reviewSelection.entitlementAvailability,
-    manifest.tree,
-    now,
-  )
+  const waivedSelection = manifest.reviewSelection.kind === 'provider-review-capability-selection-waived'
+  const selectionWithoutPeer = blockedSelection || waivedSelection
+  const sourceSelection = waivedSelection
+    ? manifest.reviewSelection.underlyingSelection
+    : manifest.reviewSelection
+  const sourceSelectionBlocked = sourceSelection.kind === 'provider-review-capability-selection-blocked'
+  const entitlementAvailability = waivedSelection
+    ? []
+    : reverifyEntitlementAvailability(
+        repository,
+        inputs,
+        sourceSelection.entitlementAvailability,
+        manifest.tree,
+        now,
+      )
   let resolvedReview
   try {
     resolvedReview = resolveProviderReviewBinding({
@@ -1107,13 +1182,13 @@ export function validateDeepAuditRunProviderBindings(manifest, {
       skill: 'deep-audit-cross-codex',
       selfProviderId: manifest.providers.self.id,
       authorProviderId: manifest.authorProvider,
-      expectedPeerProviderId: blockedSelection ? null : manifest.providers.peer.id,
-      expectedReviewProfileId: blockedSelection ? null : manifest.reviewSelection.selected.reviewProfileId,
-      expectedModelReleaseId: blockedSelection ? null : manifest.reviewSelection.selected.modelReleaseId,
-      requiredEntitlementId: manifest.reviewSelection.requiredEntitlementId,
+      expectedPeerProviderId: waivedSelection || sourceSelectionBlocked ? null : sourceSelection.selected.providerId,
+      expectedReviewProfileId: waivedSelection || sourceSelectionBlocked ? null : sourceSelection.selected.reviewProfileId,
+      expectedModelReleaseId: waivedSelection || sourceSelectionBlocked ? null : sourceSelection.selected.modelReleaseId,
+      requiredEntitlementId: waivedSelection ? null : sourceSelection.requiredEntitlementId,
       entitlementAvailability,
       requireCertificationContract: true,
-      requireSelectedCapability: !blockedSelection,
+      requireSelectedCapability: !waivedSelection && !sourceSelectionBlocked,
       capabilityRegistry: inputs.capabilityRegistry,
       capabilityCertificationLedger: inputs.capabilityCertificationLedger,
       invocationRegistry: inputs.invocationRegistry,
@@ -1123,10 +1198,10 @@ export function validateDeepAuditRunProviderBindings(manifest, {
   } catch (error) {
     fail(`run manifest provider review binding is stale:${error.message}`)
   }
-  if (!blockedSelection) {
+  if (!waivedSelection && !sourceSelectionBlocked) {
     try {
       verifyReviewCapabilitySelection({
-        receipt: manifest.reviewSelection,
+        receipt: sourceSelection,
         registry: inputs.registry,
         capabilityRegistry: inputs.capabilityRegistry,
         capabilityCertificationLedger: inputs.capabilityCertificationLedger,
@@ -1135,7 +1210,7 @@ export function validateDeepAuditRunProviderBindings(manifest, {
         skill: 'deep-audit-cross-codex',
         selfProviderId: manifest.providers.self.id,
         authorProviderId: manifest.authorProvider,
-        requiredEntitlementId: manifest.reviewSelection.requiredEntitlementId,
+        requiredEntitlementId: sourceSelection.requiredEntitlementId,
         entitlementAvailability,
         observedProviderId: resolvedReview.peer.id,
         observedReviewProfileId: resolvedReview.selectedProfile.id,
@@ -1147,16 +1222,19 @@ export function validateDeepAuditRunProviderBindings(manifest, {
       fail(`run manifest review capability selection is stale:${error.message}`)
     }
   }
-  if (stableStringify(resolvedReview.selectionReceipt) !== stableStringify(manifest.reviewSelection)) {
+  if (waivedSelection && resolvedReview.bindingDigest !== manifest.reviewSelection.bindingDigest) {
+    fail('run manifest second-opinion waiver binding is stale')
+  }
+  if (!waivedSelection && stableStringify(resolvedReview.selectionReceipt) !== stableStringify(sourceSelection)) {
     fail('run manifest review capability selection receipt is stale')
   }
   const expectedByRole = {
-    self: { record: resolvedReview.self, reviewPeerId: blockedSelection ? null : resolvedReview.peer.id },
-    ...(blockedSelection ? {} : {
+    self: { record: resolvedReview.self, reviewPeerId: selectionWithoutPeer ? null : resolvedReview.peer.id },
+    ...(selectionWithoutPeer ? {} : {
       peer: { record: resolvedReview.peer, reviewPeerId: resolvedReview.self.id },
     }),
   }
-  for (const role of blockedSelection ? ['self'] : ['self', 'peer']) {
+  for (const role of selectionWithoutPeer ? ['self'] : ['self', 'peer']) {
     const provider = manifest.providers[role]
     const expected = expectedByRole[role]
     const resolved = resolveProviderRuntimeSelection(
@@ -1212,6 +1290,7 @@ export function prepareDeepAuditRun({
   peerTarget = null,
   requiredReviewerEntitlement = null,
   reviewerEntitlementAvailability = [],
+  secondOpinionWaiver = null,
   replaceActive = false,
   now = new Date(),
 } = {}) {
@@ -1221,6 +1300,14 @@ export function prepareDeepAuditRun({
   if (!Array.isArray(reviewerEntitlementAvailability)) {
     fail('reviewer entitlement availability must be verified adapter readback records')
   }
+  if (![null, 'user'].includes(secondOpinionWaiver)) {
+    fail('second-opinion waiver must be the exact value user')
+  }
+  if (secondOpinionWaiver !== null && (peerProvider !== null || peerRuntime !== null
+    || peerSurface !== null || peerTarget !== null || requiredReviewerEntitlement !== null
+    || reviewerEntitlementAvailability.length > 0)) {
+    fail('second-opinion waiver cannot be combined with peer selection inputs')
+  }
   const resolvedAuthorProvider = authorProvider ?? selfProvider
   const paths = evidencePaths({ repoRoot, explicitRoot, create: true })
   const activeRelative = 'deep-audit/active-run.json'
@@ -1228,7 +1315,9 @@ export function prepareDeepAuditRun({
   if (existsSync(activePath) && !replaceActive) fail('an active deep-audit run already exists; explicit --replace-active is required')
   const snapshot = captureDeepAuditSnapshot(paths.repository)
   const inputs = loadProviderInputs(paths.repository, now)
-  const verifiedReviewerEntitlementAvailability = reviewerEntitlementAvailability.length > 0
+  const verifiedReviewerEntitlementAvailability = secondOpinionWaiver !== null
+    ? []
+    : reviewerEntitlementAvailability.length > 0
     ? reverifyEntitlementAvailability(
         paths.repository,
         inputs,
@@ -1268,7 +1357,15 @@ export function prepareDeepAuditRun({
   } catch (error) {
     fail(`deep-audit review binding is invalid:${error.message}`)
   }
-  const selectedCapability = resolvedReview.peer !== null
+  const reviewSelection = secondOpinionWaiver === 'user'
+    ? buildDeepAuditSecondOpinionWaiver({
+        underlyingSelection: resolvedReview.selectionReceipt,
+        authorProviderId: resolvedAuthorProvider,
+        selfProviderId: selfProvider,
+        now,
+      })
+    : resolvedReview.selectionReceipt
+  const selectedCapability = secondOpinionWaiver === null && resolvedReview.peer !== null
   const selectedEntitlementAvailability = selectedCapability
     && resolvedReview.selectionReceipt.selected.routeClass === 'subscription-entitlement'
     ? verifiedReviewerEntitlementAvailability.find((record) => (
@@ -1321,10 +1418,10 @@ export function prepareDeepAuditRun({
     providerIdentityDigest: deepAuditProviderIdentityDigest({
       authorProvider: resolvedAuthorProvider,
       providers,
-      reviewSelection: resolvedReview.selectionReceipt,
+      reviewSelection,
     }),
     providers,
-    reviewSelection: resolvedReview.selectionReceipt,
+    reviewSelection,
     inventory: snapshot.inventory,
     rubricPaths,
     components,

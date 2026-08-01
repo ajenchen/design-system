@@ -27,19 +27,21 @@ EVIDENCE_ROOT="$GIT_DIR/governance-runtime/evidence"
 cp "$REPO_ROOT/scripts/lib/governance-runtime-evidence.mjs" "$PROJECT_DIR/scripts/lib/governance-runtime-evidence.mjs"
 cp "$REPO_ROOT/packages/governance/src/closed-tool-execution.mjs" "$PROJECT_DIR/scripts/lib/closed-tool-execution.mjs"
 cat > "$PROJECT_DIR/scripts/verify-deep-audit-coverage.mjs" <<'VERIFY_FIXTURE'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const selfIndex = process.argv.indexOf('--self-provider')
 const peerIndex = process.argv.indexOf('--peer-provider')
-const providerPairIsExact = selfIndex >= 0 && peerIndex >= 0
-  && process.argv[selfIndex + 1] === 'alpha'
-  && process.argv[peerIndex + 1] === 'beta'
+const selfIsExact = selfIndex >= 0 && process.argv[selfIndex + 1] === 'alpha'
 const stateRoot = process.env.GOVERNANCE_STATE_DIR
 const neutralReceipt = stateRoot
   ? resolve(stateRoot, '..', 'evidence/deep-audit/fixture-complete.json')
   : null
-process.exit(providerPairIsExact && neutralReceipt && existsSync(neutralReceipt) ? 0 : 1)
+let receipt = null
+try { receipt = neutralReceipt && existsSync(neutralReceipt) ? JSON.parse(readFileSync(neutralReceipt, 'utf8')) : null } catch {}
+const immutableProviderClosure = receipt?.secondOpinion === 'waived-by-user'
+  || (receipt?.secondOpinion === 'completed' && receipt?.peerEvidence === true)
+process.exit(selfIsExact && peerIndex === -1 && immutableProviderClosure ? 0 : 1)
 VERIFY_FIXTURE
 {
   echo 'const DIMS = {'
@@ -71,25 +73,34 @@ export GOVERNANCE_SHARED_INSTRUCTION_ENTRY=AGENTS.md
 
 PASS=0; FAIL=0
 run_test() {
-  local name="$1"; local expect_block="$2"; local transcript_content="$3"
+  local name="$1"; local expect_block="$2"; local transcript_content="$3"; local direct_message="${4:-}"
   local transcript="$TMPDIR/transcript-$$.jsonl"
   printf '%s\n' "$transcript_content" > "$transcript"
   local input
-  input=$(printf '{"transcript_path":"%s","session_id":"test"}' "$transcript")
-  local stdout; stdout=$(echo "$input" | bash "$HOOK" 2>/dev/null)
+  input=$(jq -nc --arg path "$transcript" --arg message "$direct_message" \
+    '{transcript_path:$path,session_id:"test",last_assistant_message:$message}')
+  local stdout stderr_file exit_code
+  stderr_file=$(mktemp)
+  set +e
+  stdout=$(echo "$input" | bash "$HOOK" 2>"$stderr_file")
+  exit_code=$?
+  set -e
   if [ "$expect_block" = "1" ]; then
-    if echo "$stdout" | grep -q '"governanceDecision":"block"'; then
+    if [ "$exit_code" = "0" ] && echo "$stdout" | grep -q '"governanceDecision":"block"'; then
       echo "  PASS  $name (blocked as expected)"; PASS=$((PASS+1))
     else
-      echo "  FAIL  $name (expected block, got: ${stdout:0:120})"; FAIL=$((FAIL+1))
+      echo "  FAIL  $name (expected block, exit=$exit_code, got: ${stdout:0:120}, stderr: $(head -c 160 "$stderr_file"))"; FAIL=$((FAIL+1))
     fi
   else
-    if echo "$stdout" | grep -q '"governanceDecision":"block"'; then
+    if [ "$exit_code" != "0" ]; then
+      echo "  FAIL  $name (unexpected exit=$exit_code, stderr: $(head -c 160 "$stderr_file"))"; FAIL=$((FAIL+1))
+    elif echo "$stdout" | grep -q '"governanceDecision":"block"'; then
       echo "  FAIL  $name (unexpected block: ${stdout:0:120})"; FAIL=$((FAIL+1))
     else
       echo "  PASS  $name (no block)"; PASS=$((PASS+1))
     fi
   fi
+  rm -f "$stderr_file"
 }
 
 run_exact_io_test() {
@@ -232,18 +243,45 @@ cp "$PROJECT_DIR/.claude/logs/dim-audit/dim-2.json" "$PROJECT_DIR/.claude/logs/c
 printf '%s\n' '{"dim":3,"hook":"poison","residueCount":0,"findings":[]}' > "$PROJECT_DIR/.claude/logs/hook-residue/dim-3.json"
 printf '%s\n' '{"component":"Button","claimsVerified":1,"falseClaims":[]}' > "$PROJECT_DIR/.claude/logs/claude-a1b-deep/Button.json"
 cp "$PROJECT_DIR/.claude/logs/claude-a1b-deep/Button.json" "$PROJECT_DIR/.claude/logs/codex-phaseB/Button.json"
+set +e
+(cd "$PROJECT_DIR" && node scripts/verify-deep-audit-coverage.mjs --self-provider alpha >/dev/null 2>&1)
+VERIFY_FIXTURE_EXIT=$?
+set -e
+[ "$VERIFY_FIXTURE_EXIT" = "1" ] || { echo "FATAL: incomplete verifier fixture must exit 1, got $VERIFY_FIXTURE_EXIT"; exit 1; }
 T10="$USER_MSG
 "'{"message":{"role":"assistant","content":[{"type":"text","text":"deep audit 完成"}]}}'
-run_test "Test 10: poisoned .claude deep-audit ledger → block" 1 "$T10"
+run_test "Test 10: poisoned .claude deep-audit ledger → block" 1 "" "deep audit 完成"
 
-# Test 11: the hook accepts the provider-neutral verifier result after `.claude` deletion.
+# Test 11: the hook accepts a manifest-authorized one-run waiver after `.claude` deletion,
+# and never forwards adapter-injected ambient peer metadata as a verifier assertion.
 # Full immutable run/envelope closure belongs to scripts/test-verify-deep-audit-coverage.mjs;
 # this focused fixture proves argument wiring and that provider-home poison is never authority.
 mkdir -p "$EVIDENCE_ROOT/deep-audit"
-printf '%s\n' '{"complete":true}' > "$EVIDENCE_ROOT/deep-audit/fixture-complete.json"
+printf '%s\n' '{"secondOpinion":"waived-by-user"}' > "$EVIDENCE_ROOT/deep-audit/fixture-complete.json"
 rm -rf "$PROJECT_DIR/.claude"
-run_test "Test 11: neutral deep-audit ledger + deleted .claude → no block" 0 "$T10"
+run_test "Test 11: waived immutable run + ambient peer + deleted .claude → no block" 0 "" "deep audit 完成"
 [ ! -e "$PROJECT_DIR/infra/governance/runtime" ] || { echo "  FAIL  deep-audit evidence mutated workspace runtime"; FAIL=$((FAIL+1)); }
+
+# A waived run remains valid when the adapter has no peer runtime at all.
+unset GOVERNANCE_PEER_PROVIDER GOVERNANCE_PEER_DISPLAY_NAME GOVERNANCE_PEER_CLI \
+  GOVERNANCE_PEER_LOCAL_EXECUTABLE GOVERNANCE_PEER_REPLY_ARTIFACT_PREFIX \
+  GOVERNANCE_PEER_DISCOVERY_MARKERS_JSON
+run_test "Test 11b: waived immutable run + no peer runtime → no block" 0 "" "deep audit 完成"
+
+# Merely switching prose/context to no peer cannot waive a selected run: the
+# immutable verifier still requires the selected peer's complete evidence.
+printf '%s\n' '{"secondOpinion":"completed","peerEvidence":false}' > "$EVIDENCE_ROOT/deep-audit/fixture-complete.json"
+run_test "Test 11c: selected run without peer evidence → block" 1 "" "稽核全部完成"
+printf '%s\n' '{"secondOpinion":"completed","peerEvidence":true}' > "$EVIDENCE_ROOT/deep-audit/fixture-complete.json"
+run_test "Test 11d: selected run with complete peer evidence → no block" 0 "" "deep audit 完成"
+
+# Restore the normal registry-resolved peer context for the peer-specific hook tests below.
+export GOVERNANCE_PEER_PROVIDER=beta
+export GOVERNANCE_PEER_DISPLAY_NAME="Beta"
+export GOVERNANCE_PEER_CLI=beta
+export GOVERNANCE_PEER_LOCAL_EXECUTABLE=node_modules/.bin/beta
+export GOVERNANCE_PEER_REPLY_ARTIFACT_PREFIX=beta-reply
+export GOVERNANCE_PEER_DISCOVERY_MARKERS_JSON='["node_modules/.bin/beta","command -v beta"]'
 
 # Tests 12-14: inputs larger than a pipe buffer must preserve exact policy and I/O contracts.
 # Put each positive marker at the beginning so a producer→`grep -q` implementation would close

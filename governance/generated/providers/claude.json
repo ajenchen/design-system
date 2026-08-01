@@ -1,9 +1,9 @@
 {
   "_provenance": {
-    "contractDigest": "sha256:84b25210baa872e3af50b698c7151ddc4ab53525961f8b3d0050d299eaa336ad",
+    "contractDigest": "sha256:aefc82e2283b6c5228457651bcc1e6fe7306d5641e892ce7dce7f7141134f0a9",
     "generated": true,
     "generator": "@qijenchen/governance",
-    "generatorVersion": "0.1.0-beta.105",
+    "generatorVersion": "0.1.0-beta.106",
     "manifestId": "qijenchen-provider-neutral-governance",
     "role": "ds-author"
   },

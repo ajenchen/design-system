@@ -104,20 +104,20 @@
   },
   "providerLifecycle": {
     "schemaVersion": 4,
-    "releaseVersion": "0.1.0-beta.105",
+    "releaseVersion": "0.1.0-beta.106",
     "immutableHead": {
       "providerInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
-      "releaseVersion": "0.1.0-beta.104",
-      "snapshotSha256": "3d9d69c770e9f8bfb9b99e795598178ba324af8d89ca809e09aef4569cfeef31"
+      "releaseVersion": "0.1.0-beta.105",
+      "snapshotSha256": "e0a8c02e4faeb126f3612eb1559e6bce02b408ffabcd8f0101b9c005ea1344a1"
     },
-    "ledgerSha256": "3af26d7634fd5e462b835a1fd1e222aaf87f10b9d33d2f950467a6112887c026",
-    "previousSnapshotSha256": "3d9d69c770e9f8bfb9b99e795598178ba324af8d89ca809e09aef4569cfeef31",
-    "currentSnapshotSha256": "e0a8c02e4faeb126f3612eb1559e6bce02b408ffabcd8f0101b9c005ea1344a1",
+    "ledgerSha256": "7096ad8e6d068b37dca410a01bf0af73cc577a98a6cbdc97135477cd0c24ade7",
+    "previousSnapshotSha256": "e0a8c02e4faeb126f3612eb1559e6bce02b408ffabcd8f0101b9c005ea1344a1",
+    "currentSnapshotSha256": "6ba66c4b02e1985cc2175f94a481eb02cf1be57281d9c6b08ce39d6a7c8243c1",
     "currentProviderInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
     "retiredProviders": [],
     "currentSnapshot": {
-      "releaseVersion": "0.1.0-beta.105",
-      "previousSnapshotSha256": "3d9d69c770e9f8bfb9b99e795598178ba324af8d89ca809e09aef4569cfeef31",
+      "releaseVersion": "0.1.0-beta.106",
+      "previousSnapshotSha256": "e0a8c02e4faeb126f3612eb1559e6bce02b408ffabcd8f0101b9c005ea1344a1",
       "providers": [
         {
           "id": "claude",
@@ -193,8 +193,8 @@
       "retiredProviders": []
     },
     "immutableHeadSnapshot": {
-      "releaseVersion": "0.1.0-beta.104",
-      "previousSnapshotSha256": "233b7d5514434b891f6969c0803651bc3d60751d86394713b9d4c38c762b5266",
+      "releaseVersion": "0.1.0-beta.105",
+      "previousSnapshotSha256": "3d9d69c770e9f8bfb9b99e795598178ba324af8d89ca809e09aef4569cfeef31",
       "providers": [
         {
           "id": "claude",
@@ -1848,7 +1848,6 @@
       ".devcontainer/onboard-banner.sh": "consumer/managed-files/da2ad2737315d25a5300905ddefd62f1695056a8a1af155c5b34170ad9923bce.blob",
       ".devcontainer/post-create.mjs": "consumer/managed-files/3ddedc67b464bdfe3dde9803a2d917920c96d633678b802eee638a44cd47366a.blob",
       ".github/workflows/audit.yml": "consumer/managed-files/93a89f16f6717d1e4e4e27ec20ef916e3355c7aa890ca74cd9b12db30d8a899f.blob",
-      ".github/workflows/governance-anchor.yml": "consumer/managed-files/e1b11160d6c4043002d2cbff6d9a4ae551698a96137773c4244dadfac152fcb0.blob",
       ".npmrc": "consumer/managed-files/e813096d69c49812e40e00be9ac8fa14d77f0ec1f97ab4c45cb096b3bedd35de.blob",
       "governance/consumer-governance.md": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
       "governance/provider-cli-toolchain.json": "consumer/managed-files/189e551431181e4a88783c02130d2787b801ef731c86e35bcde89a7313aa020e.blob",
@@ -1861,7 +1860,6 @@
       "scripts/audit-consumer-a11y.mjs": "consumer/managed-files/e71c65f45c6af7ce12b6b3c0d8028f185da5b719e2050c9b2a6b243d41ae4878.blob",
       "scripts/check-plugin-installed.mjs": "consumer/managed-files/ea94e914d5c8acb84ad7660e5bda0f01b6ccc8cf96b0f6b1ce048f8938d0f5b5.blob",
       "scripts/consumer-source-harness.mjs": "consumer/managed-files/423729840acdd43c812f17c245b871716c6b60f76e4d3e94864d0e34a815bf8d.blob",
-      "scripts/governance-anchor-preflight.mjs": "consumer/managed-files/6929a3c8bb4d69c507720b4754aeb339c6cbb8ff655e0a381d76606d64695e38.blob",
       "scripts/lib/a11y-static-server.mjs": "consumer/managed-files/92e4828cdcb96ff0d01daa16f6885f24045a8e72820665650f2a1890dc3a446c.blob",
       "scripts/lib/canonical-path-containment.mjs": "consumer/managed-files/faa128c26102415dc5345e68698efbbd28a395c35ee278dceae044cf430692b2.blob",
       "scripts/lib/closed-tool-execution.mjs": "consumer/managed-files/2d1ef5617a5ce3c39ad9aae1c42af7d199f9270c0a0ccb490b63d62dbc6913db.blob",
@@ -1896,7 +1894,6 @@
         ".devcontainer/onboard-banner.sh",
         ".devcontainer/post-create.mjs",
         ".github/workflows/audit.yml",
-        ".github/workflows/governance-anchor.yml",
         ".npmrc",
         "AGENTS.md",
         "CLAUDE.md",
@@ -1927,7 +1924,6 @@
         "scripts/audit-consumer-a11y.mjs",
         "scripts/check-plugin-installed.mjs",
         "scripts/consumer-source-harness.mjs",
-        "scripts/governance-anchor-preflight.mjs",
         "scripts/governance-check.mjs",
         "scripts/lib/a11y-static-server.mjs",
         "scripts/lib/canonical-path-containment.mjs",

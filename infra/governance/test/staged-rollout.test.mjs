@@ -342,6 +342,21 @@ const CERT_RUN = {
   },
 }
 const CERT_BINDING = activeRunBinding(CERT_RUN)
+const WAIVED_CERT_RUN = {
+  manifestSha256: 'd'.repeat(64),
+  manifest: {
+    ...structuredClone(CERT_RUN.manifest),
+    providerIdentityDigest: '8'.repeat(64),
+    providers: { self: { id: 'claude' }, peer: null },
+    reviewSelection: {
+      kind: 'provider-review-capability-selection-waived',
+      selectionStatus: 'REVIEW-WAIVED',
+      selectionReasonCode: 'USER_WAIVER',
+      waiverAuthority: 'user',
+    },
+  },
+}
+const WAIVED_CERT_BINDING = activeRunBinding(WAIVED_CERT_RUN)
 
 function releaseRecord(version, observedAt, seed, source = {}) {
   const sourceCommit = source.sourceCommit ?? String(seed).repeat(40)
@@ -831,20 +846,23 @@ function policySnapshot(headSha, observedAt) {
   }
 }
 
-function coverageProof({ complete }) {
+function coverageProof({ complete, certificationRun = CERT_RUN }) {
+  const peer = certificationRun.manifest.providers.peer?.id ?? null
+  const providers = [certificationRun.manifest.providers.self.id, peer].filter(provider => provider !== null)
   return {
     schemaVersion: 4,
     evidenceKind: 'deep-audit-coverage-verification',
-    runId: CERT_RUN.manifest.runId,
-    manifestSha256: CERT_RUN.manifestSha256,
-    head: CERT_RUN.manifest.head,
-    tree: CERT_RUN.manifest.tree,
-    inventoryDigest: CERT_RUN.manifest.inventoryDigest,
-    rubricDigest: CERT_RUN.manifest.rubricDigest,
-    worktreeFingerprint: CERT_RUN.manifest.worktreeFingerprint,
-    authorProvider: CERT_RUN.manifest.authorProvider,
-    providerIdentityDigest: CERT_RUN.manifest.providerIdentityDigest,
-    providers: { self: 'claude', peer: 'codex' },
+    runId: certificationRun.manifest.runId,
+    manifestSha256: certificationRun.manifestSha256,
+    head: certificationRun.manifest.head,
+    tree: certificationRun.manifest.tree,
+    inventoryDigest: certificationRun.manifest.inventoryDigest,
+    rubricDigest: certificationRun.manifest.rubricDigest,
+    worktreeFingerprint: certificationRun.manifest.worktreeFingerprint,
+    authorProvider: certificationRun.manifest.authorProvider,
+    providerIdentityDigest: certificationRun.manifest.providerIdentityDigest,
+    providers: { self: providers[0], peer },
+    secondOpinion: peer === null ? 'waived-by-user' : 'completed',
     tiers: {
       deterministic: COVERAGE_TOPOLOGY.deterministic.length,
       pureJudgment: COVERAGE_TOPOLOGY.pureJudgment.length,
@@ -853,8 +871,8 @@ function coverageProof({ complete }) {
     },
     componentCount: 1,
     gaps: {
-      deterministic: [], judgment: { claude: [], codex: [] }, hookResidue: [],
-      ciEnforced: complete ? [] : [...COVERAGE_TOPOLOGY.ciEnforced], componentA1b: { claude: [], codex: [] },
+      deterministic: [], judgment: Object.fromEntries(providers.map(provider => [provider, []])), hookResidue: [],
+      ciEnforced: complete ? [] : [...COVERAGE_TOPOLOGY.ciEnforced], componentA1b: Object.fromEntries(providers.map(provider => [provider, []])),
     },
     totalGaps: complete ? 0 : 2,
     coverageStatus: complete ? 'complete' : 'incomplete',
@@ -866,11 +884,11 @@ function coverageProof({ complete }) {
   }
 }
 
-function certificationDependencies() {
+function certificationDependencies(certificationRun = CERT_RUN) {
   return {
     schemaVersion: 1,
     kind: 'frozen-dependency-trust',
-    activeRun: structuredClone(CERT_BINDING),
+    activeRun: structuredClone(activeRunBinding(certificationRun)),
     status: 'trusted',
     materialization: 'clean-npm-ci-from-frozen-lockfile',
     lockfileSha256: LOCKFILE_SHA256,
@@ -969,7 +987,7 @@ function refreshManagedCiIndex(index) {
   return index
 }
 
-function managedCiEvidenceIndex(coverage, dependencies, timestamp) {
+function managedCiEvidenceIndex(coverage, dependencies, timestamp, certificationRun = CERT_RUN) {
   const dependencyIdentity = {
     lockfileSha256: dependencies.lockfileSha256,
     installedLockfileSha256: dependencies.lockfileSha256,
@@ -994,10 +1012,11 @@ function managedCiEvidenceIndex(coverage, dependencies, timestamp) {
       dependencyBundleDigest,
     }
   }
+  const providers = Object.keys(coverage.gaps.judgment)
   const artifacts = [
     ...COVERAGE_TOPOLOGY.deterministic.map(dimension => artifact({ evidenceKind: 'deep-audit-deterministic', dimension })),
     ...COVERAGE_TOPOLOGY.hookEnforced.map(dimension => artifact({ evidenceKind: 'deep-audit-hook-residue', dimension })),
-    ...['claude', 'codex'].flatMap(providerId => [
+    ...providers.flatMap(providerId => [
       ...COVERAGE_TOPOLOGY.pureJudgment.map(dimension => artifact({ evidenceKind: 'deep-audit-judgment', providerId, dimension })),
       artifact({ evidenceKind: 'deep-audit-component-a1b', providerId, component: 'Fixture' }),
     ]),
@@ -1052,8 +1071,8 @@ function managedCiEvidenceIndex(coverage, dependencies, timestamp) {
       modelAuthorityIssuerRegistryDigest: EVIDENCE_SHA('model-authority-issuer-registry'),
       runtimeCertificationDigest: EVIDENCE_SHA(`runtime-certification-${item.providerId}`),
       profileDigest: EVIDENCE_SHA(`selected-profile-${item.providerId}`),
-      runId: CERT_RUN.manifest.runId,
-      manifestSha256: CERT_RUN.manifestSha256,
+      runId: certificationRun.manifest.runId,
+      manifestSha256: certificationRun.manifestSha256,
       taskKind,
       subject,
       transcriptPath: `${taskKind}/${item.providerId}/_transcripts/${transcriptSha256}.json`,
@@ -1078,12 +1097,12 @@ function managedCiEvidenceIndex(coverage, dependencies, timestamp) {
   const index = {
     schemaVersion: 1,
     kind: 'managed-ci-pr-head-evidence-index',
-    source: { runId: CERT_RUN.manifest.runId, manifestSha256: CERT_RUN.manifestSha256, head: CERT_RUN.manifest.head, tree: CERT_RUN.manifest.tree },
+    source: { runId: certificationRun.manifest.runId, manifestSha256: certificationRun.manifestSha256, head: certificationRun.manifest.head, tree: certificationRun.manifest.tree },
     executor: {
       repository: 'ajenchen/design-system', workflowPath: '.github/workflows/deep-audit-managed.yml',
       workflowRef: 'refs/heads/main', event: 'workflow_dispatch', controlPlaneCommit: CONTROL_PLANE_COMMIT,
       controlPlaneTree: CONTROL_PLANE_TREE, workflowIdentityDigest: WORKFLOW_IDENTITY_DIGEST,
-      workflowRunId: '6101', runAttempt: 1, subjectCommit: CERT_RUN.manifest.head, subjectTree: CERT_RUN.manifest.tree,
+      workflowRunId: '6101', runAttempt: 1, subjectCommit: certificationRun.manifest.head, subjectTree: certificationRun.manifest.tree,
     },
     activation: {
       requirementId: 'activate-managed-ci-trusted-execution', evidenceSha256: ACTIVATION_EVIDENCE_SHA256,
@@ -1416,10 +1435,10 @@ function ledgerFixture({
   return ledger
 }
 
-function validate(ledger, { repoRoot = process.cwd(), verifyMechanisms = true } = {}) {
+function validate(ledger, { repoRoot = process.cwd(), verifyMechanisms = true, certificationRun = CERT_RUN } = {}) {
   return validateStagedRolloutLedger(PLAN, ledger, {
     activeRun: ACTIVE_RUN,
-    certificationRun: CERT_RUN,
+    certificationRun,
     issuerRegistry: REGISTRY,
     attestationPolicy: POLICY,
     now: NOW,
@@ -1429,6 +1448,34 @@ function validate(ledger, { repoRoot = process.cwd(), verifyMechanisms = true } 
     activationCarrierValidator: FIXTURE_ACTIVATION_CARRIER_VALIDATOR,
     contractValidators: FIXTURE_CONTRACT_VALIDATORS,
   })
+}
+
+function bindWaivedCertification(ledger) {
+  if (!ledger.certificationRun) return ledger
+  ledger.certificationRun = structuredClone(WAIVED_CERT_BINDING)
+  for (const receipt of ledger.receipts.slice(3)) receipt.activeRun = structuredClone(WAIVED_CERT_BINDING)
+  if (ledger.receipts[3]) {
+    const certification = evidenceValue(ledger.receipts[3], 'pr-head-certification-v1')
+    const coverage = coverageProof({ complete: false, certificationRun: WAIVED_CERT_RUN })
+    const dependencies = certificationDependencies(WAIVED_CERT_RUN)
+    certification.certificationRun = structuredClone(WAIVED_CERT_BINDING)
+    certification.coverage = coverage
+    certification.dependencies = dependencies
+    certification.managedCiEvidenceIndex = managedCiEvidenceIndex(coverage, dependencies, certification.observedAt, WAIVED_CERT_RUN)
+    replaceEvidenceValue(ledger.receipts[3], 'pr-head-certification-v1', certification)
+  }
+  if (ledger.receipts[8]) {
+    const full = evidenceValue(ledger.receipts[8], 'full-deep-audit-verification-v1')
+    const coverage = coverageProof({ complete: true, certificationRun: WAIVED_CERT_RUN })
+    full.certificationRun = structuredClone(WAIVED_CERT_BINDING)
+    full.coverage = coverage
+    full.ciImport.sourceHead = WAIVED_CERT_RUN.manifest.head
+    full.ciImport.sourceTree = WAIVED_CERT_RUN.manifest.tree
+    full.ciImport.coverageSha256 = sha256(stableStringify(coverage, 0))
+    replaceEvidenceValue(ledger.receipts[8], 'full-deep-audit-verification-v1', full)
+  }
+  resignFrom(ledger, 3)
+  return ledger
 }
 
 function isolatedGovernanceRepo(t) {
@@ -1817,16 +1864,15 @@ test('deterministic authority model poisons remain fail-closed during offline re
       expected: /Unknown release ring attacker-ring/,
     },
     {
-      // 1B(2026-07-29):authority profile 已拆 verdict 環境;此 poison 改打仍保留
-      // App 架構的 consumer profile(fleet 藍圖),validator 覆蓋不變。
+      // Native consumer verification is bound to the protected-default
+      // repository_dispatch receiver. Reintroducing the retired
+      // pull_request_target/App-verdict route must stay fail closed.
       id: 'base-trust',
       path: 'infra/governance/desired/github.json',
       mutate: value => {
-        const environment = value.profiles['product-consumer'].environments.find(item => item.name === 'governance-check-verdict')
-        assert.ok(environment, 'fixture requires the consumer protected-base environment')
-        environment.workflowIdentity.contentSha256 = 'f'.repeat(64)
+        value.profiles['product-consumer'].requiredChecks[0].requiredEvents = ['pull_request_target']
       },
-      expected: /governance-check-verdict identity must match/,
+      expected: /desired schema validation failed.*requiredEvents must be equal to constant/,
     },
   ]
 
@@ -2223,7 +2269,7 @@ test('strict generic validation recomputes the canonical bootstrap prerequisite'
     issuerRegistry: REGISTRY,
     attestationPolicy: POLICY,
     now: NOW,
-  }), /requires current release-scope external activation|allowedKeyIds cannot be empty after trust activation|Issuer owner-governance-[a-z0-9-]+ is not active yet/)
+  }), /requires current release-scope external activation|allowedKeyIds cannot be empty after trust activation|Issuer owner-governance-[a-z0-9-]+ is not active yet|source desired profile must declare exactly one governance-mirror environment/)
 })
 
 test('fixture validation cannot mint a rollout package and the soak predecessor remains explicit', () => {
@@ -3442,6 +3488,46 @@ test('PR-head certification permits only pending CI dimensions 64 and 66 and can
     resignFrom(ledger, 3)
     assert.throws(() => validate(ledger), expected, label)
   }
+})
+
+test('PR-head certification accepts an immutable user-waived single-provider run and rejects invented peer state', () => {
+  const accepted = bindWaivedCertification(ledgerFixture({ receiptCount: 4 }))
+  const result = validate(accepted, { certificationRun: WAIVED_CERT_RUN })
+  assert.equal(result.nextPhase, 'merge-post-gates')
+  const acceptedCertification = evidenceValue(accepted.receipts[3], 'pr-head-certification-v1')
+  assert.deepEqual(acceptedCertification.coverage.providers, { self: 'claude', peer: null })
+  assert.equal(acceptedCertification.coverage.secondOpinion, 'waived-by-user')
+  assert.deepEqual(Object.keys(acceptedCertification.coverage.gaps.judgment), ['claude'])
+  assert.equal(acceptedCertification.managedCiEvidenceIndex.artifacts.some(item => item.providerId === 'codex'), false)
+
+  for (const [label, mutate, expected] of [
+    ['wrong waiver disposition', certification => { certification.coverage.secondOpinion = 'completed' }, /second-opinion disposition differs/],
+    ['invented peer provider', certification => { certification.coverage.providers.peer = 'codex' }, /providers are invalid/],
+    ['invented peer gap key', certification => { certification.coverage.gaps.judgment.codex = [] }, /judgment gaps has an invalid or open shape/],
+    ['invented peer managed artifact', certification => {
+      const forged = structuredClone(certification.managedCiEvidenceIndex.artifacts.find(item => item.providerId === 'claude'))
+      forged.providerId = 'codex'
+      forged.path = forged.path.replace('/claude/', '/codex/')
+      certification.managedCiEvidenceIndex.artifacts.push(forged)
+      refreshManagedCiIndex(certification.managedCiEvidenceIndex)
+    }, /provider is invalid|typed artifact set differs/],
+  ]) {
+    const ledger = bindWaivedCertification(ledgerFixture({ receiptCount: 4 }))
+    const certification = evidenceValue(ledger.receipts[3], 'pr-head-certification-v1')
+    mutate(certification)
+    replaceEvidenceValue(ledger.receipts[3], 'pr-head-certification-v1', certification)
+    resignFrom(ledger, 3)
+    assert.throws(() => validate(ledger, { certificationRun: WAIVED_CERT_RUN }), expected, label)
+  }
+})
+
+test('full completion accepts the same immutable user-waived single-provider topology', () => {
+  const ledger = bindWaivedCertification(ledgerFixture({ receiptCount: 9 }))
+  const result = validate(ledger, { certificationRun: WAIVED_CERT_RUN })
+  assert.equal(result.nextPhase, 'soak-72h')
+  const full = evidenceValue(ledger.receipts[8], 'full-deep-audit-verification-v1')
+  assert.deepEqual(full.coverage.providers, { self: 'claude', peer: null })
+  assert.equal(full.coverage.secondOpinion, 'waived-by-user')
 })
 
 test('dirty candidate-freeze run cannot be reused as the committed PR-head certification run', () => {

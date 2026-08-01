@@ -1297,13 +1297,13 @@ Report file:line gaps。End:`N onboarding 環節 checked, M gaps`。Don't fix.
 
 ## 66. Immutable cross-repo promotion + visual parity(CI-ENFORCED,2026-07-25 升級)
 
-**Type**: Absolute / **Canonical**: `release.yml` stage + `release-finalize.yml` + `mirror-to-published-template.yml` + `consumerctl plan/check/apply-fanout` + `template/sync-design-system.yml` + `governance-anchor.yml` + `composition-fidelity.yml` + `dogfood-prepublish-verify.mjs` + `scripts/visual-assertions.json` + `ci-evidence-plan.json` / **Home**: scenario-definition.md mirror chain
+**Type**: Absolute / **Canonical**: protected-main `release.yml` exact-tag build-once + npm Trusted Publishing + GitHub/npm readback + `mirror-to-published-template.yml` + `consumerctl plan/check/apply-fanout` + consumer native `audit.yml / Verify consumer` + `composition-fidelity.yml` + `dogfood-prepublish-verify.mjs` + `scripts/visual-assertions.json` + `ci-evidence-plan.json` + `infra/governance/desired/github.json` / **Home**: scenario-definition.md mirror chain
 
 ```
 Your job(NO-SAMPLE):驗 protected DS PR merge → attested npm publish → template/fleet exact-version PR → consumer required CI/visual parity 整鏈無斷；任何 direct-main、PAT fallback、mutable tag dependency 都是失敗。
-**成立條件**:必須讀回受保護主分支的 ruleset、可信 GitHub App required check、精確 candidate commit、immutable release/BOM、template/fleet exact-version PR 與 consumer required visual checks，並由封閉 schema 的 CI evidence receipt 綁定同一 frozen deep-audit run。只讀 workflow 原始碼、模型判斷或手寫 JSON 不構成通過證據；遠端尚未啟用時必標 pending/fail-closed。
-Enumerate + Read:release stage/finalizer → mirror workflow → consumerctl plan/check/apply-fanout →
-sync-design-system.yml(fork 端只收 exact `governance-release` / manual API path)→ governance-anchor required verdict /
+**成立條件**:必須讀回受保護主分支的 ruleset、GitHub native `Verify consumer` required check、精確 candidate commit、immutable release/BOM、template/fleet exact-version PR 與 consumer required visual checks，並由封閉 schema 的 CI evidence receipt 綁定同一 frozen deep-audit run。consumer profile 必為零 App environment／零 App verdict producer；只讀 workflow 原始碼、模型判斷或手寫 JSON 不構成通過證據；遠端尚未啟用時必標 pending/fail-closed。
+Enumerate + Read:protected-main `release.yml` exact-tag build-once/publish/readback → mirror workflow → consumerctl plan/check/apply-fanout →
+template exact-version PR 的 `audit.yml / Verify consumer` → product-consumer exact-version PR 的同名 native required verdict /
 composition-fidelity visual-diff scenarios(全 N scenario)/ dogfood-prepublish / CI evidence plan。對每環節驗 trigger
 event allowlist、exact version/BOM/candidate/PR/check readback 綁定、無 PAT scope 漏或 direct-main fallback、visual
 parity scenario 覆蓋 stakeholder flow。Report file:line。End:`N 環節, M gaps`。Don't fix.

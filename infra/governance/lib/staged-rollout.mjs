@@ -977,12 +977,24 @@ export function loadStagedRolloutCoverageTopology({
 
 function validateCoverageTopology(value, activeRun, label, { repoRoot = REPOSITORY_ROOT, requireFrozen = false } = {}) {
   exactObjectKeys(value.providers, ['self', 'peer'], `${label} providers`)
-  invariant(typeof value.providers.self === 'string' && typeof value.providers.peer === 'string' && value.providers.self !== value.providers.peer, `${label} providers are invalid`)
   const manifestProviders = activeRun.manifest.providers
+  const secondOpinionWaived = activeRun.manifest.reviewSelection?.kind === 'provider-review-capability-selection-waived'
+  const expectedPeer = secondOpinionWaived ? null : manifestProviders?.peer?.id
+  invariant(
+    typeof value.providers.self === 'string'
+      && (secondOpinionWaived
+        ? value.providers.peer === null
+        : typeof value.providers.peer === 'string' && value.providers.self !== value.providers.peer),
+    `${label} providers are invalid`,
+  )
+  invariant(
+    value.secondOpinion === (secondOpinionWaived ? 'waived-by-user' : 'completed'),
+    `${label} second-opinion disposition differs from the immutable run`,
+  )
   if (manifestProviders) {
-    invariant(value.providers.self === manifestProviders.self.id && value.providers.peer === manifestProviders.peer.id, `${label} providers differ from the committed run`)
+    invariant(value.providers.self === manifestProviders.self.id && value.providers.peer === expectedPeer, `${label} providers differ from the committed run`)
     invariant(activeRun.manifest.authorProvider === manifestProviders.self.id
-      && activeRun.manifest.authorProvider !== manifestProviders.peer.id, `${label} committed author provider is invalid or not independent from the peer`)
+      && (expectedPeer === null || activeRun.manifest.authorProvider !== expectedPeer), `${label} committed author provider is invalid or not independent from the peer`)
     invariant(value.authorProvider === activeRun.manifest.authorProvider, `${label} author provider differs from the committed run`)
     invariant(value.providerIdentityDigest === activeRun.manifest.providerIdentityDigest, `${label} provider identity digest differs from the committed run`)
   }
@@ -999,15 +1011,16 @@ function validateCoverageTopology(value, activeRun, label, { repoRoot = REPOSITO
   invariant(Number.isSafeInteger(value.componentCount) && value.componentCount > 0, `${label} component count is invalid`)
   if (Array.isArray(activeRun.manifest.components)) invariant(value.componentCount === activeRun.manifest.components.length, `${label} component count differs from the committed run`)
   exactObjectKeys(value.gaps, ['deterministic', 'judgment', 'hookResidue', 'ciEnforced', 'componentA1b'], `${label} gaps`)
-  exactObjectKeys(value.gaps.judgment, [value.providers.self, value.providers.peer], `${label} judgment gaps`)
-  exactObjectKeys(value.gaps.componentA1b, [value.providers.self, value.providers.peer], `${label} component A1b gaps`)
+  const providerIds = [value.providers.self, value.providers.peer].filter(provider => provider !== null)
+  exactObjectKeys(value.gaps.judgment, providerIds, `${label} judgment gaps`)
+  exactObjectKeys(value.gaps.componentA1b, providerIds, `${label} component A1b gaps`)
   return topology
 }
 
 function validateFullCoverageProof(value, activeRun, options = {}) {
   exactObjectKeys(value, [
     'schemaVersion', 'evidenceKind', 'runId', 'manifestSha256', 'head', 'tree', 'inventoryDigest',
-    'rubricDigest', 'worktreeFingerprint', 'authorProvider', 'providerIdentityDigest', 'providers', 'tiers', 'componentCount', 'gaps',
+    'rubricDigest', 'worktreeFingerprint', 'authorProvider', 'providerIdentityDigest', 'providers', 'secondOpinion', 'tiers', 'componentCount', 'gaps',
     'totalGaps', 'coverageStatus', 'complianceStatus', 'promotionEligible', 'status',
     'findings', 'trustDowngrades',
   ], 'deep-audit coverage proof')
@@ -1150,7 +1163,7 @@ function validateCandidateFreezeProof(value, activeRun, { requireExternalArtifac
 function validatePremergeCoverageProof(value, activeRun, options = {}) {
   exactObjectKeys(value, [
     'schemaVersion', 'evidenceKind', 'runId', 'manifestSha256', 'head', 'tree', 'inventoryDigest',
-    'rubricDigest', 'worktreeFingerprint', 'authorProvider', 'providerIdentityDigest', 'providers', 'tiers', 'componentCount', 'gaps',
+    'rubricDigest', 'worktreeFingerprint', 'authorProvider', 'providerIdentityDigest', 'providers', 'secondOpinion', 'tiers', 'componentCount', 'gaps',
     'totalGaps', 'coverageStatus', 'complianceStatus', 'promotionEligible', 'status',
     'findings', 'trustDowngrades',
   ], 'PR-head certification coverage proof')
@@ -1828,7 +1841,7 @@ function validateManagedCiEvidenceIndex(index, {
   ], 'PR-head broker evidence binding')
   invariant(Object.values(index.brokerEvidence).every(value => SHA256.test(value)), 'PR-head broker evidence contains an invalid digest')
   invariant(Array.isArray(index.artifacts) && index.artifacts.length > 0, 'PR-head managed CI evidence index cannot be a shallow signed summary without typed artifacts')
-  const providers = [coverage.providers.self, coverage.providers.peer]
+  const providers = [coverage.providers.self, coverage.providers.peer].filter(provider => provider !== null)
   const components = certificationRun.manifest.components.map(item => item.name)
   const keys = new Set()
   for (const item of index.artifacts) {

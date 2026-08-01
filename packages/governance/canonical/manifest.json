@@ -281,7 +281,6 @@
     { "id": "product-template-onboarding-banner", "ownerRepo": "design-system", "path": "template/ds-product-template/.devcontainer/onboard-banner.sh", "required": true },
     { "id": "product-template-post-create", "ownerRepo": "design-system", "path": "template/ds-product-template/.devcontainer/post-create.mjs", "required": true },
     { "id": "product-template-audit-workflow", "ownerRepo": "design-system", "path": "template/ds-product-template/.github/workflows/audit.yml", "required": true },
-    { "id": "product-template-governance-anchor-workflow", "ownerRepo": "design-system", "path": "template/ds-product-template/.github/workflows/governance-anchor.yml", "required": true },
     { "id": "product-template-readme", "ownerRepo": "design-system", "path": "template/ds-product-template/README.md", "required": true },
     { "id": "product-template-documentation", "ownerRepo": "design-system", "path": "template/ds-product-template/docs", "required": true },
     { "id": "governance-build-graph-definition", "ownerRepo": "design-system", "path": "scripts/governance-build-graph.json", "required": true },

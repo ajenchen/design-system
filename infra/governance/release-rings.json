@@ -94,9 +94,7 @@
       "candidateReleaseDigest": null,
       "applyAuthorization": null,
       "completionAttestation": null,
-      "manualBlockers": [
-        "Base-trusted governance-anchor and PR-based governance-upgrade workflows must be present on work-management main before ring-2 promotion."
-      ]
+      "manualBlockers": []
     }
   }
 }

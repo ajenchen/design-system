@@ -398,14 +398,6 @@
     },
     {
       "schemaVersion": 1,
-      "file": "consumer/managed-files/6929a3c8bb4d69c507720b4754aeb339c6cbb8ff655e0a381d76606d64695e38.blob",
-      "sha256": "3f87bcdcf95f85c73351646a5f818b088d6528cc6bd3c811054087fd58b4fdfa",
-      "source": "scripts/governance-anchor-preflight.mjs",
-      "classification": null,
-      "destination": "scripts/governance-anchor-preflight.mjs"
-    },
-    {
-      "schemaVersion": 1,
       "file": "consumer/managed-files/6b746628ac11fcccbe277ef6fea94cc2a7b90ea2822e83536eae80d5ee4b3fa5.blob",
       "sha256": "7e5c6c14c8a9295373f56df968afdb8cb8888764ce1b060993a655ccec8ac61d",
       "source": "infra/governance/schemas/provider-cli-toolchain.schema.json",
@@ -563,14 +555,6 @@
       "source": "template/ds-product-template/.devcontainer/onboard-banner.sh",
       "classification": null,
       "destination": ".devcontainer/onboard-banner.sh"
-    },
-    {
-      "schemaVersion": 1,
-      "file": "consumer/managed-files/e1b11160d6c4043002d2cbff6d9a4ae551698a96137773c4244dadfac152fcb0.blob",
-      "sha256": "3e280e67fd72886b0686a6d296947ee3270b4899e9914c1e3a9c61c951dcc2ee",
-      "source": "template/ds-product-template/.github/workflows/governance-anchor.yml",
-      "classification": null,
-      "destination": ".github/workflows/governance-anchor.yml"
     },
     {
       "schemaVersion": 1,
@@ -919,7 +903,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "e557147218676744b583998593d5075decf2c7660bf53fe9d50396f380d46e4f",
+      "sha256": "d92cc77eb725aadb92add11e63cc3e366886949f0535825a97e60d1571998a66",
       "source": null,
       "classification": null,
       "destination": null

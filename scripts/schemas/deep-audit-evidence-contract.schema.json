@@ -47,7 +47,8 @@
     "reviewSelection": {
       "oneOf": [
         {"$ref": "#/$defs/selectedReviewSelection"},
-        {"$ref": "#/$defs/blockedReviewSelection"}
+        {"$ref": "#/$defs/blockedReviewSelection"},
+        {"$ref": "#/$defs/waivedReviewSelection"}
       ]
     },
     "reviewSelectionBaseProperties": {
@@ -83,6 +84,25 @@
         "schemaVersion": {"const": 1}, "kind": {"const": "provider-review-capability-selection-blocked"}, "selectionStatus": {"const": "REVIEW-BLOCKED"}, "selectionReasonCode": {"enum": ["REVIEW_CAPABILITY_UNAVAILABLE", "REVIEW_ENTITLEMENT_UNAVAILABLE"]}, "skill": {"const": "deep-audit-cross-codex"}, "authorProviderId": {"$ref": "#/$defs/providerId"}, "selfProviderId": {"$ref": "#/$defs/providerId"}, "selectionPolicy": {"type": "string", "pattern": "^[a-z][a-z0-9-]*-v[1-9][0-9]*$"}, "reviewClass": {"$ref": "#/$defs/providerId"}, "requiredAssuranceTier": {"enum": ["standard", "high", "maximum"]}, "requiredReasoningTier": {"enum": ["standard", "high", "maximum"]}, "requiredComputeTier": {"enum": ["standard", "high", "maximum"]}, "requiredEntitlementId": {"oneOf": [{"$ref": "#/$defs/providerId"}, {"type": "null"}]}, "entitlementAvailability": {"type": "array", "items": {"$ref": "#/$defs/entitlementAvailabilityRecord"}}, "entitlementAvailabilityDigest": {"$ref": "#/$defs/sha256"}, "bindingDigest": {"$ref": "#/$defs/sha256"}, "selectionPolicyDigest": {"$ref": "#/$defs/sha256"}, "providerRegistryDigest": {"$ref": "#/$defs/sha256"}, "capabilityRegistryDigest": {"$ref": "#/$defs/sha256"}, "capabilityCertificationLedgerDigest": {"$ref": "#/$defs/sha256"}, "invocationRegistryDigest": {"$ref": "#/$defs/sha256"}, "modelReleaseRegistryDigest": {"$ref": "#/$defs/sha256"}, "selectionDigest": {"$ref": "#/$defs/sha256"}
       }
     },
+    "waivedReviewSelection": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "kind", "selectionStatus", "selectionReasonCode", "waiverAuthority", "waiverScope", "waivedAt", "skill", "authorProviderId", "selfProviderId", "bindingDigest", "underlyingSelection", "selectionDigest"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "kind": {"const": "provider-review-capability-selection-waived"},
+        "selectionStatus": {"const": "REVIEW-WAIVED"},
+        "selectionReasonCode": {"const": "USER_WAIVER"},
+        "waiverAuthority": {"const": "user"},
+        "waiverScope": {"const": "second-opinion-this-run"},
+        "waivedAt": {"$ref": "#/$defs/isoTime"},
+        "skill": {"const": "deep-audit-cross-codex"},
+        "authorProviderId": {"$ref": "#/$defs/providerId"},
+        "selfProviderId": {"$ref": "#/$defs/providerId"},
+        "bindingDigest": {"$ref": "#/$defs/sha256"},
+        "underlyingSelection": {"oneOf": [{"$ref": "#/$defs/selectedReviewSelection"}, {"$ref": "#/$defs/blockedReviewSelection"}]},
+        "selectionDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
     "runManifest": {
       "type": "object", "additionalProperties": false,
       "required": ["schemaVersion", "contractVersion", "evidenceKind", "runId", "createdAt", "head", "tree", "indexDigest", "inventoryDigest", "rubricDigest", "worktreeFingerprint", "authorProvider", "providerIdentityDigest", "providers", "reviewSelection", "inventory", "rubricPaths", "components"],
@@ -100,7 +120,7 @@
             "properties": {
               "reviewSelection": {
                 "type": "object",
-                "properties": {"kind": {"const": "provider-review-capability-selection-blocked"}},
+                "properties": {"kind": {"enum": ["provider-review-capability-selection-blocked", "provider-review-capability-selection-waived"]}},
                 "required": ["kind"]
               }
             },

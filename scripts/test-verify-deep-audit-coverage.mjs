@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import {
   existsSync,
   linkSync,
@@ -35,6 +35,7 @@ import {
 } from './lib/deep-audit-evidence-contract.mjs'
 import {
   hookDimensionNumbers,
+  resolveVerifierProviderAssertions,
   summarizeDeepAuditCompliance,
   verifyDeepAuditCoverage,
 } from './verify-deep-audit-coverage.mjs'
@@ -609,6 +610,68 @@ try {
     () => writeDeepAuditEvidenceEnvelope({ repoRoot: fixture, relativePath: 'deterministic/dim-1.json', envelope }),
     /cannot be created exclusively/,
   )
+
+  const waived = prepareDeepAuditRun({
+    repoRoot: fixture,
+    selfProvider: 'claude',
+    selfSurface: 'local',
+    secondOpinionWaiver: 'user',
+    replaceActive: true,
+  })
+  assert.equal(waived.manifest.providers.peer, null)
+  assert.equal(waived.manifest.providers.self.reviewPeerId, null)
+  assert.equal(waived.manifest.reviewSelection.selectionStatus, 'REVIEW-WAIVED')
+  assert.equal(waived.manifest.reviewSelection.selectionReasonCode, 'USER_WAIVER')
+  assert.equal(waived.manifest.reviewSelection.waiverAuthority, 'user')
+  assert.equal(validateDeepAuditRunProviderBindings(waived.manifest, { repoRoot: fixture }), true)
+  const forgedWaiver = structuredClone(waived.manifest)
+  forgedWaiver.reviewSelection.waiverAuthority = 'agent'
+  forgedWaiver.providerIdentityDigest = deepAuditProviderIdentityDigest({
+    authorProvider: forgedWaiver.authorProvider,
+    providers: forgedWaiver.providers,
+    reviewSelection: forgedWaiver.reviewSelection,
+  })
+  throwsBlocked(() => validateDeepAuditRunManifest(forgedWaiver), /waiver identity is invalid/)
+  throwsBlocked(() => prepareDeepAuditRun({
+    repoRoot: fixture,
+    selfProvider: 'claude',
+    selfSurface: 'local',
+    secondOpinionWaiver: 'user',
+    peerProvider: 'codex',
+    replaceActive: true,
+  }), /cannot be combined with peer selection inputs/)
+
+  const ambientPeerEnvironment = {
+    ...process.env,
+    GOVERNANCE_PEER_PROVIDER: 'codex',
+    GOVERNANCE_PEER_SURFACE: 'local',
+    GOVERNANCE_REVIEWER_ENTITLEMENT: 'reviewer-entitlement-fixture',
+  }
+  const preparedWithAmbientPeer = spawnSync(process.execPath, [
+    'scripts/prepare-deep-audit-run.mjs',
+    '--repo-root', fixture,
+    '--self-provider', 'claude',
+    '--self-surface', 'local',
+    '--second-opinion-waiver', 'user',
+    '--replace-active',
+    '--json',
+  ], { cwd: repositoryRoot, encoding: 'utf8', env: ambientPeerEnvironment })
+  assert.equal(preparedWithAmbientPeer.status, 0, preparedWithAmbientPeer.stderr)
+  assert.equal(JSON.parse(preparedWithAmbientPeer.stdout).providers.peer, null)
+  const ambientWaived = loadActiveDeepAuditRun({ repoRoot: fixture })
+  assert.equal(ambientWaived.manifest.providers.peer, null)
+
+  assert.deepEqual(resolveVerifierProviderAssertions({}, ambientPeerEnvironment), {
+    selfProvider: ambientPeerEnvironment.GOVERNANCE_SELF_PROVIDER ?? null,
+    peerProvider: null,
+    authorProvider: ambientPeerEnvironment.GOVERNANCE_AUTHOR_PROVIDER ?? null,
+  })
+  assert.equal(resolveVerifierProviderAssertions({ 'peer-provider': 'codex' }, ambientPeerEnvironment).peerProvider, 'codex')
+  throwsBlocked(
+    () => verifyDeepAuditCoverage({ repoRoot: fixture, peerProvider: 'codex' }),
+    /--peer-provider differs from the active run manifest/,
+  )
+  console.log('✓ exact user waiver is immutable, single-provider, and cannot be combined with peer selection')
 
   const second = prepareDeepAuditRun({ repoRoot: fixture, selfProvider: 'claude', peerProvider: 'codex', selfSurface: 'local', peerSurface: 'local', replaceActive: true })
   const activeSecond = loadActiveDeepAuditRun({ repoRoot: fixture })

@@ -464,38 +464,6 @@ test('preinstall evidence does not permit source mutation or symlinks outside no
   )
 })
 
-test('protected workflow carries preinstall evidence across npm ci before full provenance', () => {
-  const workflow = readFileSync('template/ds-product-template/.github/workflows/governance-anchor.yml', 'utf8')
-  const ordered = [
-    'name: Stage protected product-check tools and exact Playwright runtime before candidate execution',
-    'name: Reject downgrade, alternate registry, lock and provenance substitution',
-    'name: Install and audit candidate dependencies without executing installed code',
-    'name: Verify every registry signature',
-    'name: Bind verified provenance to immutable GitHub Release BOM',
-    'name: Execute only the authenticated immutable checker',
-    'name: Base-owned exhaustive workspace type/build harness under a candidate-only identity',
-    'name: Reverify protected tools then treat the frozen candidate only as product-check input',
-  ].map((marker) => workflow.indexOf(marker))
-  assert.ok(ordered.every((position) => position >= 0), 'workflow is missing a preinstall/full-verification marker')
-  assert.deepEqual(ordered, [...ordered].sort((a, b) => a - b), 'workflow trust/install/verification order drifted')
-  for (const marker of [
-    '--lock-only',
-    '--evidence-out "$RUNNER_TEMP/candidate-preinstall-evidence.json"',
-    'node ../trusted/node_modules/npm/bin/npm-cli.js audit signatures',
-    '--json --include-attestations --registry=https://registry.npmjs.org/',
-    '--preinstall-evidence "$RUNNER_TEMP/candidate-preinstall-evidence.json"',
-    '--stage-trusted-product-checks trusted/.governance-tools',
-    'node trusted/node_modules/playwright/cli.js install --with-deps chromium',
-    'sudo -u governance-candidate env -i',
-    'trusted/.governance-tools/scripts/consumer-source-harness.mjs --repo candidate',
-    '--verify-trusted-product-checks trusted/.governance-tools',
-    'trusted/.governance-tools/scripts/lint-ds-internal-imports.mjs --repo candidate',
-    'trusted/.governance-tools/scripts/audit-consumer-a11y.mjs --repo candidate',
-  ]) assert.ok(workflow.includes(marker), `workflow is missing provenance control:${marker}`)
-  assert.doesNotMatch(workflow, /(?:^|\s)node candidate\/scripts\/(?:lint-ds-internal-imports|audit-consumer-a11y)\.mjs/)
-  assert.doesNotMatch(workflow, /(?:^|\s)node scripts\/(?:lint-ds-internal-imports|audit-consumer-a11y)\.mjs/)
-})
-
 test('rejects candidate mutation of the protected closed upgrade policy', async (t) => {
   const value = await fixture(t)
   value.bom.upgradeTrust = { ...TRUSTED_UPGRADE_POLICY, repository: 'attacker/repository' }

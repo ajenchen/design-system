@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
 import {
+  existsSync,
   linkSync,
   mkdirSync,
   mkdtempSync,
@@ -35,70 +36,20 @@ const base = {
   '.github/workflows/composition-fidelity.yml': 'on:\n  pull_request:\njobs:\n  composition:\n    steps:\n      - run: node scripts/composition-fidelity-visual-diff.mjs --require-mappings\n',
   '.github/workflows/packaging-canary.yml': 'on:\n  pull_request:\njobs:\n  packaging:\n    steps:\n      - run: node scripts/test-fork-governance.mjs\n',
   'template/ds-product-template/.github/workflows/audit.yml': 'on:\n  pull_request:\n    branches: [main]\njobs:\n  audit:\n    name: Verify consumer\n    runs-on: ubuntu-24.04\n    steps:\n      - run: npm ci --ignore-scripts\n      - run: npm run typecheck\n      - run: npm run lint:imports\n      - run: npm run build\n',
-  'template/ds-product-template/.github/workflows/governance-anchor.yml': `on:
+}
+
+base['.github/workflows/governance-anchor.yml'] = `on:
   pull_request_target:
-  repository_dispatch:
-    types: [governance-upgrade-candidate-validation]
 permissions:
   contents: read
 jobs:
   verify-candidate:
-    outputs:
-      head_sha: \${{ steps.request.outputs.head_sha }}
     steps:
-      - id: request
-        run: |
-          test governance-upgrade-writer-v1
-          jq -e '(.client_payload | keys | sort)'
-          jq -r '.base.ref' pr.json
-          jq -r '.base.sha' pr.json
-          jq -r '.head.sha' pr.json
-          gh api repos/$GITHUB_REPOSITORY/git/ref/heads/main
       - uses: actions/checkout@cccccccccccccccccccccccccccccccccccccccc
         with:
           persist-credentials: false
-          ref: \${{ steps.request.outputs.head_sha }}
-  publish-app-verdict:
-    if: \${{ always() && needs.verify-candidate.outputs.head_sha != '' }}
-    needs: verify-candidate
-    steps:
-      - uses: actions/create-github-app-token@dddddddddddddddddddddddddddddddddddddddd
-        with:
-          app-id: \${{ secrets.GOVERNANCE_CHECK_APP_ID }}
-          private-key: \${{ secrets.GOVERNANCE_CHECK_APP_PRIVATE_KEY }}
-          permission-checks: write
-      - run: echo \${{ needs.verify-candidate.outputs.head_sha }} && gh api repos/$GITHUB_REPOSITORY/check-runs # Immutable consumer snapshot
-`,
-}
-
-base['template/ds-product-template/.github/workflows/governance-anchor.yml'] = base['template/ds-product-template/.github/workflows/governance-anchor.yml']
-  .replace('    needs: verify-candidate\n    steps:', '    needs: verify-candidate\n    environment:\n      name: governance-check-verdict\n    steps:')
-  .replace('      - run: gh api', '      - run: echo ${{ github.event.pull_request.head.sha }} && gh api')
-  .replace(
-    '  publish-app-verdict:',
-    `      - run: node trusted/scripts/consumer-source-harness.mjs --stage-trusted-product-checks trusted/.governance-tools --trusted trusted
-      - run: node trusted/node_modules/playwright/cli.js install --with-deps chromium
-      - run: node trusted/scripts/governance-anchor-preflight.mjs --lock-only
-      - run: node ../trusted/scripts/setup-governance.mjs --dependencies-only --root .
-      - run: node trusted/node_modules/npm/bin/npm-cli.js audit signatures --include-attestations
-      - run: node trusted/scripts/governance-anchor-preflight.mjs --verified-attestations "$RUNNER_TEMP/verified-attestations.json"
-      - run: node trusted/node_modules/npm/bin/npm-cli.js audit --audit-level=high
-      - run: node ../trusted/scripts/setup-governance.mjs --installed-check-only --root .
-      - run: |
-          sudo useradd --system --user-group --no-create-home --shell /usr/sbin/nologin governance-candidate
-          sudo -u governance-candidate env -i node trusted/.governance-tools/scripts/consumer-source-harness.mjs --repo candidate
-          sudo pkill -KILL -u governance-candidate
-          sudo chmod -R a-w candidate
-      - run: |
-          node trusted/scripts/consumer-source-harness.mjs --verify-trusted-product-checks trusted/.governance-tools --trusted trusted
-          node trusted/.governance-tools/scripts/lint-ds-internal-imports.mjs --repo candidate
-          node trusted/.governance-tools/scripts/audit-consumer-a11y.mjs --repo candidate
-  publish-app-verdict:`,
-  )
-// 1B(2026-07-29):root anchor = verifier-only,不得有 App verdict job(規則反向要求);
-// template anchor 保留 App 架構作 fleet consumer 藍圖。
-base['.github/workflows/governance-anchor.yml'] = `${base['template/ds-product-template/.github/workflows/governance-anchor.yml']
-  .split('\n  publish-app-verdict:')[0]}\n      - run: node trusted/scripts/verify-privileged-change.mjs
+          ref: \${{ github.event.pull_request.head.sha }}
+      - run: node trusted/scripts/verify-privileged-change.mjs
       - run: node trusted/scripts/install-candidate-dependencies.mjs --candidate candidate
       - run: |
           node trusted/infra/governance/lib/governance-anchor-version-projection.mjs --trusted-root trusted --candidate-root candidate
@@ -326,23 +277,9 @@ test('actual DS anchor installs and audits protected-base dependencies before ex
   assert.match(workflow, /Verify all other privileged closure changes structurally/)
 })
 
-test('actual template anchor binds candidate dependencies to immutable provenance before executing the installed checker', () => {
-  const workflow = readFileSync('template/ds-product-template/.github/workflows/governance-anchor.yml', 'utf8')
-  const markers = [
-    '--lock-only',
-    '--dependencies-only --root .',
-    '--include-attestations',
-    '--verified-attestations',
-    '--installed-check-only --root .',
-  ].map(marker => workflow.indexOf(marker))
-  assert.ok(markers.every(index => index >= 0), 'template anchor is missing the closed dependency/provenance/checker sequence')
-  assert.deepEqual(markers, [...markers].sort((left, right) => left - right), 'template anchor executes installed candidate code before immutable provenance is bound')
-  assert.equal(workflow.includes('runGovernanceSetup({ root: process.cwd() })'), false, 'full setup must not execute the installed checker during candidate dependency bootstrap')
-  assert.doesNotMatch(
-    workflow,
-    /node \.\.\/trusted\/node_modules\/npm\/bin\/npm-cli\.js audit --audit-level=high/,
-    'template anchor must not repeat a raw lock-only audit after the canonical overlay-aware dependency bootstrap',
-  )
+test('consumer template keeps only the native Verify consumer workflow', () => {
+  assert.equal(existsSync('template/ds-product-template/.github/workflows/governance-anchor.yml'), false)
+  assert.equal(existsSync('template/ds-product-template/.github/workflows/audit.yml'), true)
 })
 
 test('actual managed executor builder loads privileged authority only from protected-default repository dispatch', () => {
@@ -773,16 +710,6 @@ const replaceLast = (source, needle, replacement) => {
   const at = source.lastIndexOf(needle)
   return at < 0 ? source : `${source.slice(0, at)}${replacement}${source.slice(at + needle.length)}`
 }
-const moveBlockBefore = (source, startMarker, endMarker, beforeMarker) => {
-  const startAt = source.indexOf(startMarker)
-  const endAt = source.indexOf(endMarker, startAt + startMarker.length)
-  if (startAt < 0 || endAt < 0) return source
-  const block = source.slice(startAt, endAt)
-  const without = `${source.slice(0, startAt)}${source.slice(endAt)}`
-  const beforeAt = without.indexOf(beforeMarker)
-  if (beforeAt < 0) return source
-  return `${without.slice(0, beforeAt)}${block}${without.slice(beforeAt)}`
-}
 const removeContinuedCommand = (source, marker, occurrence = 0) => {
   const lines = source.split('\n')
   let seen = 0
@@ -809,16 +736,7 @@ for (const [label, mutate, expectedRule] of [
   })
 }
 
-test('rejects workflow_dispatch for the protected-base Check App producer', () => {
-  // 1B 後 Check App producer 只存在 template anchor(fleet 藍圖);root anchor 的
-  // trigger 錯置由 WF-ANCHOR 守(verifier-only 合約要求 pull_request_target)。
-  const templateSources = {
-    ...base,
-    'template/ds-product-template/.github/workflows/governance-anchor.yml':
-      base['template/ds-product-template/.github/workflows/governance-anchor.yml']
-        .replace('  pull_request_target:', '  workflow_dispatch:'),
-  }
-  assert.ok(audit(templateSources).some((finding) => finding.rule === 'WF-PRIVILEGED-TRIGGER'))
+test('rejects workflow_dispatch for the authority protected-base verifier', () => {
   const rootSources = {
     ...base,
     '.github/workflows/governance-anchor.yml': base['.github/workflows/governance-anchor.yml']
@@ -859,11 +777,12 @@ for (const [label, mutate] of [
 }
 
 test('rejects pull_request_target secret in candidate verification job', () => {
+  const path = '.github/workflows/governance-anchor.yml'
   const sources = {
     ...base,
-    'template/ds-product-template/.github/workflows/governance-anchor.yml': base['template/ds-product-template/.github/workflows/governance-anchor.yml'].replace(
-      'jobs:\n',
-      'jobs:\n  verify-candidate:\n    steps:\n      - run: echo ${{ secrets.PRIVATE_KEY }}\n',
+    [path]: base[path].replace(
+      '    steps:\n',
+      '    steps:\n      - run: echo ${{ secrets.PRIVATE_KEY }}\n',
     ),
   }
   assert.ok(audit(sources).some((finding) => finding.rule === 'WF-PR-TARGET-SECRET'))
@@ -912,62 +831,19 @@ jobs:
   )
 })
 
-for (const [label, mutate] of [
-  [
-    'full candidate setup before immutable provenance binding',
-    source => source.replace(
-      'node ../trusted/scripts/setup-governance.mjs --dependencies-only --root .',
-      'node ../trusted/scripts/setup-governance.mjs',
-    ),
-  ],
-  [
-    'installed checker before immutable provenance binding',
-    source => moveBlockBefore(
-      source,
-      '      - run: node ../trusted/scripts/setup-governance.mjs --installed-check-only --root .',
-      '      - run: |',
-      '      - run: node trusted/node_modules/npm/bin/npm-cli.js audit signatures --include-attestations',
-    ),
-  ],
-  [
-    'candidate-owned post-build lint helper',
-    source => source.replace(
-      'trusted/.governance-tools/scripts/lint-ds-internal-imports.mjs --repo candidate',
-      'candidate/scripts/lint-ds-internal-imports.mjs',
-    ),
-  ],
-  [
-    'missing protected-tool revalidation',
-    source => source.replace('--verify-trusted-product-checks trusted/.governance-tools', '--unverified-product-checks trusted/.governance-tools'),
-  ],
-  [
-    'candidate build with inherited runner environment',
-    source => source.replace('sudo -u governance-candidate env -i', 'sudo -u governance-candidate env'),
-  ],
-]) {
-  test(`rejects ${label} in the protected product-check boundary`, () => {
-    const path = 'template/ds-product-template/.github/workflows/governance-anchor.yml'
-    const mutated = mutate(base[path])
-    assert.notEqual(mutated, base[path], `poison did not mutate fixture: ${label}`)
-    assert.ok(
-      audit({ ...base, [path]: mutated }).some(finding => finding.file === path && finding.rule === 'WF-ANCHOR'),
-      `${label}: expected WF-ANCHOR`,
-    )
-  })
-}
-
 test('published mirror has no dependency on unprovisioned App credentials', () => {
   const source = base['.github/workflows/mirror-to-published-template.yml']
   assert.doesNotMatch(source, /GOVERNANCE_(?:WRITER|CHECK)_APP|create-github-app-token/)
   assert.match(source, /secrets\.CROSS_REPO_TOKEN/)
 })
 
-test('rejects writer App in check-authority workflow', () => {
+test('rejects reintroduction of the retired consumer governance anchor', () => {
+  const path = 'template/ds-product-template/.github/workflows/governance-anchor.yml'
   const sources = {
     ...base,
-    'template/ds-product-template/.github/workflows/governance-anchor.yml': base['template/ds-product-template/.github/workflows/governance-anchor.yml'].replaceAll('GOVERNANCE_CHECK_APP', 'GOVERNANCE_WRITER_APP'),
+    [path]: 'on:\n  pull_request_target:\njobs: {}\n',
   }
-  assert.ok(audit(sources).some((finding) => ['WF-APP-SEPARATION', 'WF-ANCHOR'].includes(finding.rule)))
+  assert.ok(audit(sources).some((finding) => finding.file === path && finding.rule === 'WF-RETIRED-CONSUMER-ANCHOR'))
 })
 
 test('rejects path-filtered required pull request workflow', () => {

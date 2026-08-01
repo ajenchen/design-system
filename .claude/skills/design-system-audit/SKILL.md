@@ -373,6 +373,7 @@ Phase 1-3 覆蓋 D1+D2;D3-D6 chain 專門 skill。**模式**:高效(default)scop
 **Deep mode**(`--deep`):在**同一 run、final report 前**直接執行 `/knowledge-prune` full Phase 0–5；P0/P1/P2E auto-fix，只有 P2H 等 user。不得只排到 next turn、只寫 trigger、或以 report-only 冒充已跑。接著逐 row 讀 `packages/design-system/ds-canonical/references/governance-audit-coverage.md`，把每個 registered governance home／artifact 類型對到本次 deterministic 或 judgment evidence；未掛載外部 repo／缺 telemetry 必標 `UNOBSERVED`，不可寫 PASS。Trigger 條件(2026-05-17 加 4 條,共 9 條):registry-declared instruction budget 超標 / MEMORY > 20 / 動 Meta-Pattern / hook-fires 6 月 0 fire / corrections > 10 / **audit-prompts.md coverage < 100%** / **`@benchmark-unverified-blanket` count > 0** / **new audit dim added 本次** / **hooks count >= canonical soft threshold**。
 
 Deep final report 的收斂回執使用固定、可機械驗證的字串:`knowledge-prune: same-run complete`、`governance-coverage: same-run reconciled`（並列出各 `UNOBSERVED`），以及 `second opinion: waived by user`／`second opinion: not required by task`／可驗證的 required peer review 其一。回執缺席時 final report 必須 fail closed，不得把 recovery trigger 當作已完成證據。
+若 user 明確只豁免本次 second opinion，formal run 準備必顯式帶 `--second-opinion-waiver user`，把 exact one-run authority 固定進 immutable manifest；報告文字不能反向替未授權 run 補造 waiver，也不得和任何 peer selection 參數並用。
 
 Deep mode 的 full D10 同時依 [runtime evidence retention canonical](../../references/runtime-evidence-retention.md) 枚舉各 observed worktree 的 runtime evidence、保留 live/genuine/unexpired closure，並自主回收可安全判定的 unreferenced blocked/failed/stale whole run；禁止 partial CAS pruning 或新增 user approval ceremony。
 
