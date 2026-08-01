@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import { compareReleaseAssets } from './release-github-release.mjs'
+import { assertTokenlessNpmEnvironment, clearSetupNodeRegistryPlaceholder } from './release-npm-lib.mjs'
 
 const workflow = readFileSync('.github/workflows/release.yml', 'utf8')
 const npmPublisher = readFileSync('scripts/release-npm-publish.mjs', 'utf8')
@@ -47,6 +48,17 @@ test('npm publisher is tokenless, direct, resumable, and closes all three packag
   assert.match(npmPublisher, /readTagVersions\(npmCli, context\.ordered, context\.targetTag\)/)
   assert.doesNotMatch(npmPublisher, /git\/ref\/heads\/main|protected main moved/, 'main may advance after the immutable release tag is bound')
   assert.doesNotMatch(npmPublisher, /NPM_TOKEN|NODE_AUTH_TOKEN|_authToken|stage publish/)
+})
+
+test('setup-node registry placeholder is cleared without allowing a real npm credential', () => {
+  const placeholder = { NODE_AUTH_TOKEN: 'XXXXX-XXXXX-XXXXX-XXXXX' }
+  assert.equal(clearSetupNodeRegistryPlaceholder(placeholder), true)
+  assert.equal(placeholder.NODE_AUTH_TOKEN, '')
+  assert.doesNotThrow(() => assertTokenlessNpmEnvironment(placeholder))
+  assert.throws(
+    () => assertTokenlessNpmEnvironment({ NODE_AUTH_TOKEN: 'npm_real_credential' }),
+    /NODE_AUTH_TOKEN/,
+  )
 })
 
 test('retired staging and finalizer gates are absent from release', () => {

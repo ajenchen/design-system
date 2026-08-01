@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { prepareVerifiedExactNpmRuntime } from './lib/verified-exact-npm-runtime.mjs'
 import {
   assertTokenlessNpmEnvironment,
+  clearSetupNodeRegistryPlaceholder,
   loadReleaseContext,
   npmRegistry,
   npmResult,
@@ -92,6 +93,7 @@ function assertTrustedPublisherRuntime(npmCli) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
+  clearSetupNodeRegistryPlaceholder(process.env)
   assertTokenlessNpmEnvironment(process.env)
   const githubToken = process.env[args['--github-token-env']]
   if (!githubToken) throw new Error(`GitHub token environment variable is empty: ${args['--github-token-env']}`)

@@ -23,12 +23,10 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
     "node --test --test-name-pattern='canonical GitHub profile minima' infra/governance/test/model-validation.test.mjs",
     'node --test infra/governance/test/workflow-identity-sync.test.mjs',
     'node --test infra/governance/test/release-workflow.test.mjs',
-    'node scripts/test-governance-build-graph.mjs',
-    'node --test scripts/test-governance-build-graph-transaction.mjs',
     'node scripts/governance-build-graph.mjs --check',
     'npm run build',
   ]) assert.match(source, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
-  assert.doesNotMatch(source, /setup:playwright|setup:provider-cli|test:governance-harnesses|@qijenchen\/governance test|build-storybook|storybook-smoke-test|visual-audit/)
+  assert.doesNotMatch(source, /setup:playwright|setup:provider-cli|test:governance-harnesses|test-governance-build-graph|@qijenchen\/governance test|build-storybook|storybook-smoke-test|visual-audit/)
 })
 
 for (const name of [

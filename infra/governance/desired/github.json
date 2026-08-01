@@ -97,19 +97,19 @@
           "context": "Verify(tsc + tests + compile + build)",
           "forbidCandidateControlledSkip": true,
           "integration": "githubActions",
+          "releaseRequiredEvents": [
+            "push"
+          ],
           "requireUnconditionalPullRequest": true,
           "requiredEvents": [
             "pull_request"
           ],
-          "releaseRequiredEvents": [
-            "push"
-          ],
           "trustSource": "repository-workflow",
           "workflow": ".github/workflows/ci.yml",
           "workflowIdentity": {
-            "contentSha256": "d51dfc110bb209c4b8105a1918cc23bf9d8b749f8c1822524300feeafc90b69c",
-            "gitBlobSha": "7bb3841df05291e5ba001f6c67b35ba8e0ed2cef",
-            "semanticSha256": "c4938837b213f60bf63d3a6ec54df01c8c2daa56fbfb20f7f39e9b2c00c39f52",
+            "contentSha256": "5adaa6a8d4c88ff86b13c3c744aed84a4e354bc2b74ca6535171799089d47fad",
+            "gitBlobSha": "4b04e555a7e23260e974a95443ee8e28fb1d1921",
+            "semanticSha256": "6b2e283f09f48c83dd15f586c6d9f3c8006594fd87711ac06e942819050fddb4",
             "semanticVersion": 2
           }
         }

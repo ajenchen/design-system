@@ -166,6 +166,16 @@ const forbiddenNpmCredentialNames = (environment) => Object.entries(environment)
   .map(([name]) => name)
   .sort()
 
+const SETUP_NODE_REGISTRY_PLACEHOLDER = 'XXXXX-XXXXX-XXXXX-XXXXX'
+
+export function clearSetupNodeRegistryPlaceholder(environment) {
+  if (environment.NODE_AUTH_TOKEN === SETUP_NODE_REGISTRY_PLACEHOLDER) {
+    environment.NODE_AUTH_TOKEN = ''
+    return true
+  }
+  return false
+}
+
 export function assertTokenlessNpmEnvironment(environment) {
   const present = forbiddenNpmCredentialNames(environment)
   if (present.length) {
