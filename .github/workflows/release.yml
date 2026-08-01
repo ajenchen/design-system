@@ -240,3 +240,17 @@ jobs:
           --repository "$GITHUB_REPOSITORY"
           --tag "${{ needs.resolve-release-request.outputs.tag }}"
           --git-head "${{ needs.resolve-release-request.outputs.release_commit }}"
+
+      - name: Trigger exact published-template mirror
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.resolve-release-request.outputs.tag }}
+          RELEASE_COMMIT: ${{ needs.resolve-release-request.outputs.release_commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg tag "$RELEASE_TAG" \
+            --arg commit "$RELEASE_COMMIT" \
+            '{event_type:"mirror-published-release",client_payload:{tag:$tag,commit:$commit}}' |
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/dispatches" --input -
