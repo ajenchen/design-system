@@ -103,7 +103,7 @@ export const UsageGuidance: Story = {
           note="違反 WCAG 2.2.2 Pause, Stop, Hide——超過 5 秒自動變動的內容必須可暫停。使用者常需要時間閱讀 testimonial 文字、看清產品細節,自動跳過打斷閱讀。Polaris / Material 皆建議不使用 auto-playing carousel。"
         >
           <Label warn>
-            若專案必須 auto-play,consumer 自行引入 embla-autoplay 並**同時提供暫停按鈕**,spec 不預設處理
+            若專案必須 auto-play,consumer 自行引入 embla-autoplay 並同時提供暫停按鈕,spec 不預設處理
           </Label>
         </Rule>
 

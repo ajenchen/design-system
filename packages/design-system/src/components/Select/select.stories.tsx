@@ -27,6 +27,9 @@ const meta: Meta<typeof Select> = {
   title: 'Design System/Components/Select/展示',
   component: Select,
   tags: ['autodocs'],
+  parameters: {
+    docs: { description: { component: '從預先定義的選項中選取單一值，支援清除、建立與檢視模式。選項數量適中且不需同時比較時使用；需要搜尋或多選時改用 Combobox。' } },
+  },
 }
 
 export default meta

@@ -10,27 +10,27 @@ import { TooltipProvider } from '@qijenchen/design-system'
 
 export const sharedGlobalTypes = {
   theme: {
-    name: 'Theme',
-    description: 'Global theme',
+    name: '主題',
+    description: '全域顯示主題',
     defaultValue: 'light',
     toolbar: {
       icon: 'circlehollow',
       items: [
-        { value: 'light', icon: 'sun', title: 'Light' },
-        { value: 'dark', icon: 'moon', title: 'Dark' },
+        { value: 'light', icon: 'sun', title: '淺色' },
+        { value: 'dark', icon: 'moon', title: '深色' },
       ],
       showName: true,
     },
   },
   density: {
-    name: 'Density',
-    description: 'UI density (ui-size + layout-space)',
+    name: '介面密度',
+    description: '全域元件尺寸與版面留白密度',
     defaultValue: 'md',
     toolbar: {
       icon: 'component',
       items: [
-        { value: 'md', title: 'Density: md' },
-        { value: 'lg', title: 'Density: lg' },
+        { value: 'md', title: '標準（md）' },
+        { value: 'lg', title: '寬鬆（lg）' },
       ],
       showName: true,
     },
@@ -49,7 +49,16 @@ export const sharedParameters = {
     storySort: {
       order: [
         'Design System',
-        ['Tokens', 'Components', ['*', ['展示', '設計規格', '設計原則']], 'Patterns'],
+        [
+          'Tokens',
+          'Components', ['*', ['展示', '設計規格', '設計原則']],
+          'Patterns',
+          'Internal', ['*', ['展示', '設計規格', '設計原則']],
+          'Internal Patterns',
+          '*',
+        ],
+        'Apps',
+        '*',
       ],
     },
   },

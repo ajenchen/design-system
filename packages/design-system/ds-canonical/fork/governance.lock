@@ -103,7 +103,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/product-ui-audit/SKILL.md",
-      "sha256": "4447736c652302399e10c1a6852b163e778f749615e68bd486f09d2068334c74",
+      "sha256": "8e752295b474f98a6c70ec180d89b01e384280d59c5f3a9ed28abefc9f7d0261",
       "source": "providers/codex/skills/product-ui-audit",
       "classification": null,
       "destination": null
@@ -663,7 +663,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "65f1169bd378a9fdba8155cd6c02ca6b66008088ce0c1ae36bc32035a1dd7a79",
+      "sha256": "d0a9dca6b35e1e9d7d317999d6af366ed67977450acf5266b1d8e4f39f4c95fd",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -791,7 +791,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/inject_deploy_url_after_push.sh",
-      "sha256": "77588a88a395bae34dea76a51101bd020a13c80175149fb723ff27bf2f6ff66f",
+      "sha256": "6a5c00788dc330b0eea1c3610f68d4aa3c91e86f4079a50edf0cc205f921db33",
       "source": "inject_deploy_url_after_push.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -911,7 +911,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "c2f05dca08d474b3fc03c235b542e644e3b2cf1a1395c6d8dfd55696841af9b8",
+      "sha256": "97fe59d86973ebc4bc18a286cb887b53632f464df1c2290390eda71c0a16c2af",
       "source": null,
       "classification": null,
       "destination": null
@@ -1015,7 +1015,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/product-ui-audit/SKILL.md",
-      "sha256": "94e29fcf2ffa8cdc293aa2cc6b3237f1ac2886bd35623a7a00b0d64ef4a734e7",
+      "sha256": "17d8d97bd8fc60f50706ed0748e522b3750deb0f32fa8bfbdc16bb115d9135c3",
       "source": "skills/product-ui-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1255,7 +1255,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/product-ui-audit/SKILL.md",
-      "sha256": "4447736c652302399e10c1a6852b163e778f749615e68bd486f09d2068334c74",
+      "sha256": "8e752295b474f98a6c70ec180d89b01e384280d59c5f3a9ed28abefc9f7d0261",
       "source": "skills/product-ui-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1535,7 +1535,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/product-ui-audit/SKILL.md",
-      "sha256": "ca8967bc60dedc57043a340ebe37cb176b5075063b749ecaf0a61999f8011fff",
+      "sha256": "b95dfd0fe40cc1c97d4b3608df22a57c863b0a35643f56ca462567681b2c5029",
       "source": null,
       "classification": null,
       "destination": null

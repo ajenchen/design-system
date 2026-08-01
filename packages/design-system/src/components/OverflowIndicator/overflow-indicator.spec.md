@@ -72,6 +72,7 @@ sm / md 跟 Tag 同階（20/24px），lg 對齊 md（尺寸需求一致，不需
 ## 邊界案例
 
 - **count ≤ 0**:元件自行不渲染(return `null`)——「無溢出」時 consumer 不需條件渲染
+- **Loading**:OverflowIndicator 是同步 count + children primitive，API 無 loading prop；隱藏項目的資料生命週期由擁有資料的 host row / picker own。
 - **大數值**:`+N` 原樣顯示(無 `99+` 縮寫),trigger `min-w` 起步、隨位數自然加寬
 - **極窄容器 / 貼 viewport 邊**:浮層定位與翻邊由 HoverCard(Radix collision)處理,見 `hover-card.spec.md`
 - **已展開時項目變動**:children 變動觸發浮層寬度重新量測(shrink-wrap re-measure)

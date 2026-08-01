@@ -27,7 +27,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy(純行為 primitive)</H3>
-        <Desc>HoverCard 基於 Radix HoverCard,**不含視覺樣式**——只提供觸發邏輯、定位、動畫。Bg / border / shadow / padding 由 consumer 決定,符合不同場景的視覺語言。</Desc>
+        <Desc>HoverCard 基於 Radix HoverCard,不含視覺樣式——只提供觸發邏輯、定位、動畫。Bg / border / shadow / padding 由 consumer 決定,符合不同場景的視覺語言。</Desc>
         <div className="flex items-center gap-6">
           <HoverCard>
             <HoverCardTrigger asChild>

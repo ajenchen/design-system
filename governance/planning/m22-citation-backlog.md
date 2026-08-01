@@ -3,19 +3,19 @@
 
 **M22 canonical**(2026-05-02 起):spec.md / tsx 內含 world-class DS claim 必附 inline source citation 之一:(a) URL / (b) GitHub `#L42` / (c) screenshot / (d) `@benchmark-unverified` 顯式撤回。
 
-**現況(2026-05-03 v11/v12 收尾)**:**全 135 files BACKLOG CLOSED via M22 (d) blanket retraction**。檔頭 marker 從 `@benchmark-citation-allow`(暫掛)→ `@benchmark-unverified-blanket`(M22 (d) 正式撤回 file-level)。
+**現況語意（2026-08-02 重驗）**:`@benchmark-unverified-blanket` 讓檔案在 M22 **compliance** 上有顯式撤回，因此沒有「未分類 claim」；但撤回不等於 source verification，所有 blanket／inline unverified marker 仍是 knowledge-prune D9 的 **verification debt**。數量必由當次 repo scan 動態計，不沿用本文件的歷史總數。
 
 **3-tier retrofit 升級路徑**(per-claim 升級時用):
-1. **L0 Blanket retraction**(現況):檔頭 `@benchmark-unverified-blanket` — 所有 claims 預設 unverified rumor 等級
+1. **L0 Blanket retraction**:檔頭 `@benchmark-unverified-blanket` — 所有 claims 預設 unverified rumor 等級；compliance closed、verification debt open
 2. **L1 Per-claim `@benchmark-unverified` inline**:某 claim 無法 cite source,inline 標
 3. **L2 URL / GitHub source citation**:claim 成為 substantive 設計驅動時(影響 token / variant / canonical 決策),WebFetch 取真 source 升級 cite
 
 **處理方針**:
-- **Hook 防新增**:`check_benchmark_citation.sh`(write-time soft warn,exit 1)阻新 violations
-- **既有 (d) blanket retraction**:本 session 完成,135/135 收尾
-- **未來 retrofit**:claim 成為 substantive driver 時 in-place 升級 L1/L2(不另開 backlog)— L0 不是「待辦」是「acknowledged unverified status」
+- **Hook 防新增**:`check_benchmark_citation.sh` 依 current M22 policy 對未分類 benchmark claim fail closed；顯式 L0/L1 retraction 合法
+- **Compliance**:既有 blanket retraction 已把 claim 誠實分類，不重開「補 marker」工作
+- **Verification debt**:D9 每次動態列 L0/L1；claim 成為 substantive driver 時 in-place 升級 L2。L0 不是隱藏 violation，但仍不得稱為 verified benchmark
 
-## 優先序(依 paragraph violation 數)
+## 歷史優先序 snapshot（不得當 current inventory）
 
 ### Tier 1:Foundational(token / pattern,影響整 DS,priority ★★★)
 

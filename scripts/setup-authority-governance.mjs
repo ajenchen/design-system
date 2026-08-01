@@ -188,7 +188,7 @@ export async function runAuthorityGovernanceSetup(options = {}) {
   runStep(process.execPath, ['scripts/governance-build-graph.mjs', '--check'], { root, env: environment, runner })
   assertGitVisibleWorktreeUnchanged(root, callerWorktree, { label: 'authority governance check' })
   // Ordinary setup:all = bootstrap + deterministic drift check only. The complete
-  // All-Harness certification run is a release-time gate (release:preflight / CI), not a
+  // All-Harness certification run is an explicit full-certification / CI gate, not a standard
   // workspace-setup prerequisite; opt in explicitly when a full local certification pass
   // is wanted.
   const withAllHarnesses = options.withAllHarnesses === true

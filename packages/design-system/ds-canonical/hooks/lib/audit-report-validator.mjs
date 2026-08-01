@@ -60,7 +60,7 @@ function pureJudgmentCount() {
 }
 
 function missingDecisionEvidence() {
-  const [reportPath, peerProvider, peerDisplayName] = exactArgs(3)
+  const [reportPath, peerProvider, peerDisplayName, reviewMode] = exactArgs(4)
   try {
     const text = readFileSync(reportPath, 'utf8')
     const marker = text.search(/待你拍板|拍板清單/)
@@ -84,7 +84,10 @@ function missingDecisionEvidence() {
     const requirements = [
       ['SSOT-check', (block) => /SSOT|既有拍板/.test(block)],
       ['世界級cite', (block) => /世界級|https?:\/\//.test(block)],
-      ['peer-verdict', (block) => {
+      ['design-fit', (block) => /設計語言|設計原則|design-fit/.test(block)],
+    ]
+    if (reviewMode === 'required') {
+      requirements.splice(2, 0, ['peer-verdict', (block) => {
         const terms = [
           peerProvider,
           peerDisplayName,
@@ -95,9 +98,10 @@ function missingDecisionEvidence() {
         ].filter(Boolean).map((value) => value.toLocaleLowerCase())
         const normalized = block.toLocaleLowerCase()
         return terms.some((term) => normalized.includes(term))
-      }],
-      ['design-fit', (block) => /設計語言|設計原則|design-fit/.test(block)],
-    ]
+      }])
+    } else if (!['waived', 'not-required'].includes(reviewMode)) {
+      process.exit(2)
+    }
     const missing = []
     blocks.forEach((block, index) => {
       const absent = requirements

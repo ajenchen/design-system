@@ -308,7 +308,7 @@ export const GroupHeaderRules: Story = {
         description={
           <>
             相鄰的 SidebarGroup 會透過 <code className="text-caption bg-neutral-hover px-1 rounded">::before</code> pseudo-element
-            自動產生**loose token 內縮的分隔線**。Consumer 不需要手動放 SidebarSeparator。
+            自動產生loose token 內縮的分隔線。Consumer 不需要手動放 SidebarSeparator。
           </>
         }
       >
@@ -339,7 +339,7 @@ export const GroupHeaderRules: Story = {
           <DoDont type="dont" title="別手動放 SidebarSeparator 在群組之間">
             <Desc>
               手動放會導致雙重分隔線(group 自動 + 手動)。Group 之間的分隔是 group 自己的責任。
-              SidebarSeparator 只用於**結構邊界**(例如 header ↔ content,但那個已由 SidebarHeader 的 border-b 處理)。
+              SidebarSeparator 只用於結構邊界(例如 header ↔ content,但那個已由 SidebarHeader 的 border-b 處理)。
             </Desc>
           </DoDont>
         </div>

@@ -3,6 +3,7 @@ import React from 'react'
 
 const meta: Meta = {
   title: 'Design System/Tokens/Color',
+  tags: ['autodocs'],
   parameters: {
     layout: 'padded',
     docs: {

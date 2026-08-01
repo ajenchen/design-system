@@ -6,8 +6,8 @@
 
 - One Codex/Claude task = one working branch = one pull request.
 - Never edit or push directly on `main`.
-- The PR is the only merge path. Required checks, resolved review threads, immutable dependency checks, and the product preview are gates.
-- In this solo repository, the PR author cannot meaningfully self-approve. CODEOWNERS records ownership, but the ruleset uses zero required human approvals; protected checks, resolved conversations, preview/canary evidence, immutable attestations, and external readback are the authority.
+- The PR is the only merge path. Required CI and resolved review threads are the `pr-checks` completion gates.
+- In this solo repository, the PR author cannot meaningfully self-approve. CODEOWNERS records ownership, but the ruleset uses zero required human approvals; protected checks, resolved conversations, protected-main merge/readback, immutable publish, exact release readback, and exact consumer readback are the authority.
 - Creating or updating the one PR is normal workflow and does not require a second confirmation.
 - Merging is a standing-delegated engineering action once all hard gates are green. A status report or milestone is a receipt, not an approval checkpoint.
 - A GitHub App may open propagation/upgrade PRs. It may never write `main` directly or bypass required checks.
@@ -18,13 +18,12 @@
 1. Read this file and confirm the current working branch before editing.
 2. Make and verify changes on the single task branch.
 3. Commit and push that branch; create or update its single PR.
-4. If release-affecting SSOT changed, complete the exact version bump and run `npm run release:preflight` on the clean branch. The attestation belongs to the PR evidence.
-5. Monitor required CI, preview/canary, unresolved conversations, and external protection readback; remediate failures on the same branch and PR. Report the important diff, PR, and preview as receipts.
-6. If the user requests changes, continue on the same branch and PR.
-7. After every hard gate is green, squash-merge the PR through protected `main` under the standing engineering authorization, then read back the merge and protection state.
-8. For a release, update local `main` with `git pull --ff-only`. The tag guard accepts the attested commit or an identical attested tree after squash; push the immutable tag and verify the published exact versions/provenance.
-9. Release completion opens checked PRs for the template and product rings. It never dispatches a mutable tag or directly rewrites consumer `main`.
-10. Delete the merged remote branch, update local `main` with fast-forward only, then delete the local task branch when clean.
+4. If release-affecting SSOT changed, complete the exact version bump and generated projections on the same branch; no retired preflight attestation or extra approval ceremony is required.
+5. Run `npm run release:auto`. It monitors required CI and unresolved conversations, remediates on the same PR, merges through protected `main`, publishes, reads back GitHub/npm, and lands exact-version template/WM PRs.
+6. If the user requests changes before merge, continue on the same branch and PR.
+7. If login/MFA/OAuth/credential reference pauses one action, complete that human action and rerun `release:auto`; it resumes from the first incomplete machine step.
+8. Confirm completion with `npm run release:status -- --json`; optional preview/canary/soak may continue asynchronously but cannot block standard completion.
+9. Delete the merged remote branch and clean local branch only after the orchestrator/readback says it is safe.
 
 ## Mechanical enforcement (M28)
 
@@ -32,9 +31,7 @@
 
 - R1: a session cannot create a second working branch; both `git checkout -b` and `git switch -c` are recognized across provider branch prefixes.
 - R2: any direct push to `main` is blocked. Standing authorization does not bypass protected-main architecture.
-- R4: tag push is blocked unless `release:preflight` produced a marker for the same commit or identical Git tree.
-
-R3's transcript-keyword merge gate is retired because it confused human product authority with delegated engineering execution. Remote protected checks, conversation resolution, preview/canary evidence, attestation, and external readback remain fail-closed.
+Tag creation/push is owned by `release:auto` + the registered Release workflow, not a provider hook or retired local preflight marker. R3's transcript-keyword merge gate and the old R4 tag-attestation branch are retired because they inserted non-canonical ceremony. Remote protected checks and five-step live readback remain fail-closed.
 
 `GOVERNANCE_BYPASS_SOLO_WORKFLOW=1` remains an audit-logged break-glass mechanism for recovery only when injected into the hook host environment before the provider starts. A token inside command text is never authority and must not disable the guard. The override is not a normal path and does not bypass GitHub rulesets.
 
@@ -44,10 +41,8 @@ R3's transcript-keyword merge gate is retired because it confused human product 
 
 ## Release hard gate
 
-The single release gate is `npm run release:preflight`. It performs deterministic generation/checks, full build and dogfood validation, verifies all version surfaces, requires a clean tree, and writes `release/release-preflight-pass.json` below the fail-closed Git-owned governance evidence root with commit, Git tree, exact version, governance digest, and passed gates.
-
-After a squash merge, the commit ID changes but the tree must remain byte-identical. R4 therefore accepts an exact attested Git tree; any merge-time content change invalidates the marker and requires a new preflight. Publishing uses npm provenance/OIDC where supported, and consumers adopt only exact versions through reviewed PRs.
+The standard release gate is the machine-readable five-step graph in `infra/governance/release-workflow.json`, executed by `npm run release:auto` and read by `npm run release:status -- --json`. Required PR CI, protected merge, immutable npm publish, GitHub/npm exact readback, and template/WM exact-version protected-main readback are the only standard blockers. Optional assurance never rewrites this graph.
 
 ## Why the old flow was retired
 
-The 2026-05 no-PR rule solved branch/PR sprawl but permitted direct-main writes and made remote hard gates impossible. The preserved lesson is one task/one branch plus non-bypassable PR gates—not a chat-keyword merge gate. The 2026-07 migration keeps those protections while making CI, release attestation, rollback, and fleet rollout enforceable for Claude, Codex, and future providers.
+The 2026-05 no-PR rule solved branch/PR sprawl but permitted direct-main writes and made remote hard gates impossible. The preserved lesson is one task/one branch plus non-bypassable PR gates—not chat-keyword, local attestation, preview, soak, or fleet ceremonies. The current five-step machine workflow keeps those protections for Claude, Codex, and future providers.

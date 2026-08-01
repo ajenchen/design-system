@@ -45,7 +45,7 @@ export const Overview: Story = {
       <div>
         <H3>Anatomy</H3>
         <Desc>
-          ProfileCard 是人員 HoverCard 的**內容元件**——提供統一的人員資訊展示格式。本身不含觸發或定位邏輯
+          ProfileCard 是人員 HoverCard 的內容元件——提供統一的人員資訊展示格式。本身不含觸發或定位邏輯
           (那是 HoverCard 的職責),只是 HoverCard content 的標準人員模板。固定寬度 320px。
         </Desc>
         <div className="border border-border rounded-lg p-4">
@@ -205,7 +205,7 @@ export const SectionMatrix: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Minimal — profile header + View more</H3>
-        <Desc>最小形式:avatar + name + subtitle + **View more**(hover context 必含 — canonical owner 見 avatar.spec.md「onViewMore 為 hover context 必含」段;顯示條件見本元件 spec「View More」節)。@mention hover 場景 user 點 View more 跳完整 profile。</Desc>
+        <Desc>最小形式:avatar + name + subtitle + View more(hover context 必含 — canonical owner 見 avatar.spec.md「onViewMore 為 hover context 必含」段;顯示條件見本元件 spec「View More」節)。@mention hover 場景 user 點 View more 跳完整 profile。</Desc>
         <div className="border border-dashed border-divider rounded-md p-4 inline-block">
           <ProfileCard name="Alice Wang" subtitle="Frontend Engineer" onViewMore={() => {}} />
         </div>
@@ -291,7 +291,7 @@ export const ColorMatrix: Story = {
         <H3>四種狀態對應色彩(Avatar 狀態點 + Status 區)</H3>
         <Desc>
           狀態點顏色語意對齊 Slack / Teams / Linear 業界共識。Status 區的標籤底色一律 `bg-muted` 保持中性
-          (狀態是**展示資訊**,不可點擊,避免暗示互動性)。
+          (狀態是展示資訊,不可點擊,避免暗示互動性)。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">

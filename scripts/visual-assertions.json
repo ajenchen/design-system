@@ -41,7 +41,7 @@
       "id": "design-system-components-datepicker-展示--range-middle-hover-state",
       "file": "datepicker-range-middle-hover-state.png",
       "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
-      "rationale": "Hover state capture — play() 負責開啟 Portal 並標記 range_middle date；截圖前由 visual-audit 的 Playwright locator.hover() 擁有最終 CSS :hover,驗藍色 1.5px primary ring 顯示在 grey track 上。"
+      "rationale": "Hover suppression capture — play() 負責開啟 Portal 並標記 range_middle date；截圖前由 visual-audit 的 Playwright locator.hover() 擁有最終 CSS :hover，驗證已選取中段維持 grey track 且不出現第二層 hover ring。"
     },
     {
       "id": "design-system-components-calendar-展示--team-calendar",

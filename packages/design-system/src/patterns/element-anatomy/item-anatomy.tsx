@@ -791,10 +791,10 @@ ItemInlineAction.displayName = "ItemInlineAction"
 
 const SUFFIX_HOVER_REVEAL_BY_GROUP = {
   "menu-item":
-    "opacity-0 group-hover/menu-item:opacity-100 group-has-[:focus-visible]/menu-item:opacity-100 transition-opacity duration-150",
+    "opacity-0 group-hover/menu-item:opacity-100 group-has-[:focus-visible]/menu-item:opacity-100 transition-opacity duration-150 motion-reduce:duration-0",
   "tree-item":
-    "opacity-0 group-hover/tree-item:opacity-100 group-has-[:focus-visible]/tree-item:opacity-100 transition-opacity duration-150",
-  row: "opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 transition-opacity duration-150",
+    "opacity-0 group-hover/tree-item:opacity-100 group-has-[:focus-visible]/tree-item:opacity-100 transition-opacity duration-150 motion-reduce:duration-0",
+  row: "opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 transition-opacity duration-150 motion-reduce:duration-0",
 } as const
 
 export type ItemSuffixHoverGroup = keyof typeof SUFFIX_HOVER_REVEAL_BY_GROUP

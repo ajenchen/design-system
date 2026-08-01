@@ -418,7 +418,7 @@ export const ColorMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>Density</H3>
-        <Desc>Dialog **不自設任何 density attribute**,layout-space + ui-size 全繼承 page。md page → body px-loose 16 / header py-tight 12 → header 48;lg page → 24 / 16 → header 56,隨 page tier。modal 寬鬆呼吸由 page tier 自動滿足(lg 拿 24 = Material 級;md 16 = Polaris Modal 下限)。世界級:SAP Fiori / AWS Cloudscape 皆讓 modal 跟 page density dial 走,不釘固定 tier。</Desc>
+        <Desc>Dialog 不自設任何 density attribute,layout-space + ui-size 全繼承 page。md page → body px-loose 16 / header py-tight 12 → header 48;lg page → 24 / 16 → header 56,隨 page tier。modal 寬鬆呼吸由 page tier 自動滿足(lg 拿 24 = Material 級;md 16 = Polaris Modal 下限)。世界級:SAP Fiori / AWS Cloudscape 皆讓 modal 跟 page density dial 走,不釘固定 tier。</Desc>
       </div>
 
       <div>

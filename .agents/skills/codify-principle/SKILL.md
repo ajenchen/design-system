@@ -1,6 +1,6 @@
 ---
 name: codify-principle
-description: User 提出新設計原則 → auto 5-layer artifact generation pipeline。將原則文字自動轉化為 SSOT canonical text + hook scaffold + audit dim + scaffold update + memory entry,放入正確 home。對齊 M14 + M19 + 8-home 治理 canonical。Invoke when user says「我想加一條設計原則 X」「新原則 Y」「ensure X always」OR auto-recognize trigger phrase。本 skill 把 reactive markdown rule 升級成 proactive principle-to-artifact generator。
+description: User 提出新設計原則 → auto 5-layer artifact generation pipeline。將原則文字自動轉化為 SSOT canonical text + hook scaffold + audit dim + scaffold update + memory entry,依 rule-placement Level 1–9 taxonomy 放入正確 home。對齊 M14 + M19。Invoke when user says「我想加一條設計原則 X」「新原則 Y」「ensure X always」OR auto-recognize trigger phrase。本 skill 把 reactive markdown rule 升級成 proactive principle-to-artifact generator。
 ---
 
 <!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/codify-principle/SKILL.md; provider: codex; do not edit this adapter view. -->
@@ -30,7 +30,7 @@ User mandate「我說一條原則 → 自動轉化產生正確 artifacts 放正�
 User 提供 principle text。Skill 提取:
 - **Scope**:跨元件 / 單元件 / 跨 layer / governance-only
 - **Type**:Absolute(機械可驗)/ Consistency(對照可驗)/ Judgement(無 mechanical)
-- **Affected homes**(8-home matching):
+- **Affected homes**(依 `design-system-audit/references/rule-placement.md` Level 1–9 taxonomy):
   - `packages/design-system/ds-canonical/rules/` 或 `references/` 哪個 canonical owner?
   - `*.spec.md` 哪個元件?
   - 新 hook?

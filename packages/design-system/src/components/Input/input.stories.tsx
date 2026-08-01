@@ -10,6 +10,9 @@ const meta: Meta<typeof Input> = {
   title: 'Design System/Components/Input/展示',
   component: Input,
   tags: ['autodocs'],
+  parameters: {
+    docs: { description: { component: '單行文字輸入控制項，提供前後圖示、清除與密碼等常見模式。需要輸入短文字、搜尋詞或單行識別資料時使用；多行內容改用 Textarea。' } },
+  },
 }
 
 export default meta

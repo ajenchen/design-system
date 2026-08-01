@@ -1,9 +1,11 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
+import { expect, fn, userEvent, within } from '@storybook/test'
 import { Calendar, type CalendarEvent } from './calendar'
 
 const meta: Meta<typeof Calendar> = {
   title: 'Design System/Components/Calendar/展示',
+  tags: ['autodocs'],
   component: Calendar,
   parameters: {
     layout: 'fullscreen',
@@ -18,6 +20,7 @@ const meta: Meta<typeof Calendar> = {
 export default meta
 
 type Story = StoryObj<typeof Calendar>
+const customTileActivated = fn()
 
 // ── 真實業務情境 ─────────────────────────────────────────────────────
 
@@ -72,9 +75,23 @@ export const ContentPublishingSchedule: Story = {
     ]
     return (
       <div className="h-screen p-4 bg-canvas">
-        <Calendar events={events} defaultReferenceDate={now} today={now} onCreateEvent={() => alert('排內容')} />
+        <Calendar
+          events={events}
+          defaultReferenceDate={now}
+          today={now}
+          renderEventTile={(event) => <span className="block truncate rounded-md bg-secondary px-1.5 py-0.5 text-caption text-foreground">{event.title}</span>}
+          onEventClick={customTileActivated}
+          onCreateEvent={() => alert('排內容')}
+        />
       </div>
     )
+  },
+  play: async ({ canvasElement }) => {
+    customTileActivated.mockClear()
+    const tile = await within(canvasElement).findByRole('button', { name: '事件:週五 newsletter' })
+    tile.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect(customTileActivated).toHaveBeenCalledTimes(1)
   },
 }
 

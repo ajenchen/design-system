@@ -7,7 +7,11 @@ import '@/design-system/components/DataTable/column-types' // ColumnMeta declara
 
 const meta: Meta = {
   title: 'Design System/Components/ScrollArea/展示',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '為受限尺寸內容提供一致的自訂捲軸與可存取捲動區域。面板、選單或資料區必須在固定邊界內捲動時使用；整頁瀏覽仍交給瀏覽器。' } },
+  },
 }
 export default meta
 type Story = StoryObj

@@ -106,7 +106,7 @@ Output: 「過去 4 週 user 糾正 15 條,sample: ..., 提議:升級 M19「XX p
 
 report 是 receipt，不是 approval milestone；完成後直接 routing:
 - P0 retire(confirmed dead + 無 reference):AUTO chain `/knowledge-prune`
-- P1 Meta-Pattern upgrade / codify:若純工程治理，AUTO chain canonical remediation + maximum-assurance independent review；只有會改產品／UI／UX SSOT 的真取捨才 batch 到 human-only boundary
+- P1 Meta-Pattern upgrade / codify:若純工程治理，AUTO chain canonical remediation；task／deliverable 明確要求時才加 maximum-assurance independent review。只有會改產品／UI／UX SSOT 的真取捨才 batch 到 human-only boundary
 - P2 外部 benchmark 過期:AUTO run fetcher
 
 ### Phase 5 — Self-improvement capture + snapshot

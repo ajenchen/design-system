@@ -1,15 +1,15 @@
 ---
 name: story-auto-compile-migrate
-description: Batch-migrate design system components to Story Auto-Compile Phase 1+2 structure (tsx `componentMeta` export + spec.md YAML frontmatter). Mechanical steps auto (parse cva → generate componentMeta / infer sizes from cva / extract 禁止事項 from spec). Judgment fills use existing canonical evidence plus the highest certified capability and independent review; only a genuine product/UI/UX SSOT tradeoff stops. Invoke via /story-auto-compile-migrate when user says「migrate 元件到 auto-compile / phase 4 migration / 把 X 元件加 componentMeta」OR auto-chained by /design-system-audit Dim 23 when un-migrated components found.
+description: Batch-migrate design system components to Story Auto-Compile Phase 1+2 structure (tsx `componentMeta` export + spec.md YAML frontmatter). Mechanical steps auto (parse cva → generate componentMeta / infer sizes from cva / extract 禁止事項 from spec). Judgment fills use existing canonical evidence plus the highest certified capability; independent review is added only when the task or deliverable explicitly requires it, and only a genuine product/UI/UX SSOT tradeoff stops. Invoke via /story-auto-compile-migrate when user says「migrate 元件到 auto-compile / phase 4 migration / 把 X 元件加 componentMeta」OR auto-chained by /design-system-audit Dim 23 when un-migrated components found.
 ---
 
 <!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/story-auto-compile-migrate/SKILL.md; provider: claude; do not edit this adapter view. -->
 
 # Story Auto-Compile Migrate — 批次將元件移到 Phase 1+2 結構
 
-**目的**:把全部元件從 hand-written stories 遷到 auto-compile-able 結構(tsx `componentMeta` export + spec YAML frontmatter)。分「mechanical auto」+「evidence-bound judgment」兩層。元件總數 Phase 0 動態計(`ls -d packages/design-system/src/components/*/ | wc -l`,當前 62),禁 hardcode。
+**目的**:把全部元件從 hand-written stories 遷到 auto-compile-able 結構(tsx `componentMeta` export + spec YAML frontmatter)。分「mechanical auto」+「evidence-bound judgment」兩層。元件總數由 Phase 0 inventory 動態計，禁止 hardcode。
 
-**不含**:不改元件實作(cva / tsx logic 不動);不產 stories(compile-stories 負責)。只加 metadata。
+**不含**:不改元件實作(cva / tsx logic 不動);不寫入 stories files。`compile-stories.mjs` 只在 stdout 編譯 canonical rows並驗 drift；本 skill 只加 metadata。
 
 ## When to run
 
@@ -21,7 +21,7 @@ description: Batch-migrate design system components to Story Auto-Compile Phase 
 
 - 不改 cva variants / defaults(變體結構不動)
 - 不動 stories.tsx 實作
-- Phase 1 不憑空填 judgment 欄位(world-class / when)；Phase 2 必以 owning spec、primary-source benchmark 與 independent review補齊，不留 TODO
+- Phase 1 不憑空填 judgment 欄位(world-class / when)；Phase 2 必以 owning spec、primary-source benchmark補齊，不留 TODO；task／deliverable 明確要求時才加 independent review
 
 ---
 
@@ -156,7 +156,7 @@ Agent 依 public contract、owning spec、consumer evidence與 rollback 自行�
 
 ## References
 
-- repository-approved planning artifact — 完整 4-phase plan
+- `governance/planning/story-auto-compile.md` — historical 4-phase plan + current non-executable status
 - `scripts/compile-stories.mjs` — compile + verify
 - `packages/design-system/ds-canonical/skills/story-writing/references/anatomy-standard.md` — 6-story canonical
 - `packages/design-system/ds-canonical/skills/new-component/SKILL.md` — 新建元件流程(本 skill 為已建元件 migration)

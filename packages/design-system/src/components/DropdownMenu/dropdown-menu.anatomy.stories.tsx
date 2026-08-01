@@ -895,7 +895,7 @@ const StateBehaviorInner = () => {
       <div className="flex flex-col gap-3">
         <span className="text-caption font-medium text-fg-secondary">行為 3:CheckboxItem toggle(多選維持 open)</span>
         <Desc>
-          CheckboxItem 與一般 Item 的關鍵差異:點擊後 menu **不 close**(保留當前 filter 狀態讓使用者繼續勾 / 取消勾),直到 Esc / 外部點擊才關閉。對比 {'<DropdownMenuItem>'} 點擊即 close。
+          CheckboxItem 與一般 Item 的關鍵差異:點擊後 menu 保持開啟(保留當前 filter 狀態讓使用者繼續勾 / 取消勾),直到 Esc / 外部點擊才關閉。對比 {'<DropdownMenuItem>'} 點擊即 close。
         </Desc>
         <div className="flex gap-6 items-start">
           <div className="flex items-center justify-center px-6 py-8 rounded-lg bg-canvas border border-divider min-w-[280px]">
@@ -941,7 +941,7 @@ const StateBehaviorInner = () => {
         <span className="text-caption font-medium text-fg-secondary">行為規則</span>
         <ul className="text-caption text-fg-secondary space-y-1.5 ml-4 list-disc">
           <li>`DropdownMenuItem` 點擊即 close——這是「action 觸發即完成」語意。</li>
-          <li>`DropdownMenuCheckboxItem` 點擊**不 close**——每次勾選即時生效(onCheckedChange 即時 fire),menu 保持開啟只為讓使用者連續多選。</li>
+          <li>`DropdownMenuCheckboxItem` 點擊不 close——每次勾選即時生效(onCheckedChange 即時 fire),menu 保持開啟只為讓使用者連續多選。</li>
           <li>`DropdownMenuSub` 永遠右側滑入,parent menu 保持展開——提供 breadcrumb 式認知流,使用者知道自己在哪層。</li>
           <li>Escape close 整個選單(含所有展開子層;Radix root close)。ArrowLeft 才逐層收合(焦點回 SubTrigger)。</li>
           <li>Portal render 到 body,`z-50` 確保不被 parent overflow 截斷。</li>

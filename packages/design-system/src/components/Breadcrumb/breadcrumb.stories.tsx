@@ -20,8 +20,12 @@ import {
 
 const meta: Meta<typeof Breadcrumb> = {
   title: 'Design System/Components/Breadcrumb/展示',
+  tags: ['autodocs'],
   component: Breadcrumb,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '顯示目前頁面在資訊架構中的階層路徑，並讓使用者返回上層。頁面位於兩層以上導覽結構且需要保留位置感時使用；平行頁面切換改用 Tabs 或側欄。' } },
+  },
 }
 export default meta
 

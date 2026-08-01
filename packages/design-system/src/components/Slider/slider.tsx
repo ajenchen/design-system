@@ -156,7 +156,7 @@ const Slider = React.forwardRef<
           className={cn(
             'block h-4 w-4 shrink-0 rounded-full cursor-grab',
             'bg-on-emphasis border-2 border-primary',
-            'transition-all duration-150',
+            'transition-all duration-150 motion-reduce:duration-0',
             // Hover:border 升 hover 階(light mode 淺一階 lift,= Button primary hover 變色邏輯)
             // + elevation 陰影。2026-07-06 修語:原註解寫「加深」但 primary-hover 比 base 淺,
             // 措辭與 token 相反 — token 不遷就錯註解,註解修正。

@@ -177,7 +177,8 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   assert.doesNotMatch(templateAuditWorkflow, /setup:governance|audit:a11y|playwright|GOVERNANCE_(?:CHECK|WRITER)_APP/)
   assert.equal(existsSync(resolve(ROOT, '../../template/ds-product-template/.github/workflows/sync-design-system.yml')), false)
   assert.match(authorityVersionWorkflow, /uses: changesets\/action@[a-f0-9]{40}/)
-  assert.match(authorityVersionWorkflow, /^on:\s*\n  push:\s*\n    branches: \[main\]\s*$/m)
+  assert.match(authorityVersionWorkflow, /^on:\s*\n(?:  #.*\n)*  workflow_dispatch:\s*$/m)
+  assert.doesNotMatch(authorityVersionWorkflow, /^\s+push:\s*$/m)
   assert.doesNotMatch(authorityVersionWorkflow, /\bgh\s+pr\s+(?:review|merge)\b|actions\/runs\/[^\s"']+\/approve|pulls\/[^\s"']+\/reviews/)
   const overlyBroad = structuredClone(desired)
   overlyBroad.profiles['product-consumer'].actionsWorkflowPermissions.default_workflow_permissions = 'write'

@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import test from 'node:test'
 import { compareReleaseAssets } from './release-github-release.mjs'
 import {
@@ -40,6 +43,26 @@ test('release builds and binds exactly six artifacts once', () => {
   assert.match(workflow, /product-template-scaffold-lock\.mjs[\s\S]*build-release-bom\.mjs/)
   assert.match(workflow, /release_set_sha256: \$\{\{ steps\.release_set\.outputs\.sha256 \}\}/)
   assert.match(workflow, /release-set\.mjs[\s\S]*--expected "\$\{\{ needs\.build-and-publish-npm\.outputs\.release_set_sha256 \}\}"/)
+})
+
+test('governance package contains the canonical closed-tool runtime', () => {
+  const output = mkdtempSync(join(tmpdir(), 'governance-pack-'))
+  const governancePackage = 'packages/governance'
+  try {
+    const [packed] = JSON.parse(execFileSync(process.execPath, [
+      '--',
+      'node_modules/npm/bin/npm-cli.js',
+      'pack',
+      `./${governancePackage}`,
+      '--pack-destination',
+      output,
+      '--json',
+      '--ignore-scripts',
+    ], { encoding: 'utf8', shell: false }))
+    assert.ok(packed.files.some(file => file.path === 'src/closed-tool-execution.mjs'))
+  } finally {
+    rmSync(output, { recursive: true, force: true })
+  }
 })
 
 test('npm publisher is tokenless, direct, resumable, and closes all three packages', () => {

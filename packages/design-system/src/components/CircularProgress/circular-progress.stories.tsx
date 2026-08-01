@@ -22,7 +22,11 @@ import { DataTable } from '@/design-system/components/DataTable/data-table'
 
 const meta: Meta = {
   title: 'Design System/Components/CircularProgress/展示',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '圓形進度指示，可呈現未知進度的持續載入或已知百分比的 determinate 狀態。適用 inline 小空間；頁面級已知進度改用 ProgressBar。' } },
+  },
 }
 export default meta
 type Story = StoryObj

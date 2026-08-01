@@ -243,8 +243,9 @@ assert.match(productionSource, /storyIdsSha256: scanCorpus\.storyIdsSha256/, 'ba
 assert.match(productionSource, /evaluateA11yScanIntegrity\(results\.violationsByStory\)/, 'production CLI must block scan errors before all output modes')
 assert.match(productionSource, /evaluateA11ySeverityGate\(results\)/, 'production CLI must call the tested severity gate')
 assert.match(productionSource, /startA11yStaticServer\(\{ rootDirectory: STORYBOOK_DIR/, 'production CLI must use the owned contained server')
-assert.match(productionSource, /locator\('#error-message'\)\.textContent\(\)/, 'production CLI must fail closed on Storybook play/render error displays')
-assert.match(productionSource, /Storybook error display:/, 'production CLI must classify Storybook error displays as audit errors')
+assert.match(productionSource, /createStorybookRenderHealthMonitor\(page\)/, 'production CLI must monitor render health before navigation')
+assert.match(productionSource, /renderHealth\.assertHealthy\(\{ label: s\.id \}\)/, 'production CLI must reject blank canvases, preview errors, and critical resource failures')
+assert.match(productionSource, /renderHealth\.dispose\(\)/, 'production CLI must release every page monitor')
 assert.doesNotMatch(productionSource, /--(?:fixture|skip-a11y|mock-axe)\b/, 'production CLI must expose no test bypass')
 
 const smokeSource = readFileSync(fileURLToPath(new URL('./storybook-smoke-test.mjs', import.meta.url)), 'utf8')

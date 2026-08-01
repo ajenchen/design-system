@@ -1,5 +1,5 @@
 /**
- * @internal — DS-internal 單元(per `.claude/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
+ * @internal — DS-internal 單元(per `packages/design-system/ds-canonical/rules/ui-development.md` Public vs Internal canonical;spec frontmatter `isInternal`)。
  * 不進 root barrel front-door;由 DatePicker wrap 消費,end-user app 請用 wrapper 元件。
  */
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
@@ -144,11 +144,11 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
         // Selected(single 或 range 端點):button 藍底白字圓
         selected: cn(
           '[&>button]:bg-primary [&>button]:text-on-emphasis',
-          '[&>button]:hover:bg-primary-hover [&>button]:hover:ring-0',
+          '[&>button]:hover:bg-primary-hover [&>button]:hover:!ring-0',
         ),
         disabled: cn(
           '[&>button]:bg-disabled [&>button]:text-fg-disabled [&>button]:cursor-not-allowed',
-          '[&>button]:hover:ring-0 [&>button]:hover:bg-disabled',
+          '[&>button]:hover:!ring-0 [&>button]:hover:bg-disabled',
         ),
         // ── Range track(canonical 2026-05-03 v6,Ant stadium pattern)──
         // v5 用 pseudo 矩形蓋全 cell 修「白色破圖」,但新副作用:button 圓比矩形小,4 個
@@ -182,7 +182,7 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           '[&>button]:after:!bg-primary',
           // button 透明顯露 track。2026-07-05 對齊 RDP v9 真實行為(deep-audit A.1b):
           // range 中段日同樣掛 selected modifier(useRange rangeIncludesDate 不排除中段)→
-          // 上方 selected 的 `[&>button]:hover:ring-0` 一併壓制 hover ring(與 selected 一致
+          // 上方 selected 的 `[&>button]:hover:!ring-0` 一併壓制 hover ring(與 selected 一致
           // 的 hover 抑制),非原註解宣稱的「hover ring 仍顯示」;today bar 亦被 data-selected
           // selector 切 on-emphasis(見 spec「組合狀態」段)。
           '[&>button]:!bg-transparent [&>button]:!text-foreground',

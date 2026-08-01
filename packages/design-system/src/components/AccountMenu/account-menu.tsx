@@ -75,83 +75,103 @@ export interface AccountMenuProps {
   align?: 'start' | 'center' | 'end'
   /** Trigger aria-label(i18n override,對齊 Avatar `badgeAriaLabel` pattern)。預設「帳號與設定」 */
   triggerAriaLabel?: string
+  /** 受控展開狀態(Radix passthrough) */
+  open?: boolean
   /** 預設展開(uncontrolled,Radix passthrough)。Storybook OpenSnapshot(M15 visual-audit coverable)用 */
   defaultOpen?: boolean
+  /** 展開狀態變更 callback(Radix passthrough) */
+  onOpenChange?: (open: boolean) => void
+  /**
+   * Trigger button 的非視覺 DOM attributes / event handlers。
+   * `children`、`type`、`aria-label`、`className`、`disabled` 由 AccountMenu canonical contract
+   * 擁有；分析與測試所需的 `data-*`、`aria-*`、事件可由此傳入。
+   */
+  triggerProps?: Omit<
+    React.ComponentPropsWithoutRef<'button'>,
+    'children' | 'type' | 'aria-label' | 'className' | 'disabled'
+  >
 }
 
 // ── AccountMenu ─────────────────────────────────────────────────────────────
 
-export function AccountMenu({
-  user,
-  onViewProfile,
-  onOpenSettings,
-  onSignOut,
-  children,
-  align = 'end',
-  triggerAriaLabel = '帳號與設定',
-  defaultOpen,
-}: AccountMenuProps) {
-  // Dev-mode warning(對齊 ProfileCardDefaultActions dev-warn 先例):default 選單項沒接任何
-  // handler = item 點了永遠沒反應;production 必接 callback 或自組 children。
-  if (
-    process.env.NODE_ENV !== 'production' &&
-    !children &&
-    !onViewProfile &&
-    !onOpenSettings &&
-    !onSignOut
-  ) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      '[DS AccountMenu] default 選單項未接 onViewProfile/onOpenSettings/onSignOut——item 點擊無反應。請傳入 callback 或自組 children。'
+export const AccountMenu = React.forwardRef<HTMLButtonElement, AccountMenuProps>(
+  ({
+    user,
+    onViewProfile,
+    onOpenSettings,
+    onSignOut,
+    children,
+    align = 'end',
+    triggerAriaLabel = '帳號與設定',
+    open,
+    defaultOpen,
+    onOpenChange,
+    triggerProps,
+  }, ref) => {
+    // Dev-mode warning(對齊 ProfileCardDefaultActions dev-warn 先例):default 選單項沒接任何
+    // handler = item 點了永遠沒反應;production 必接 callback 或自組 children。
+    if (
+      process.env.NODE_ENV !== 'production' &&
+      !children &&
+      !onViewProfile &&
+      !onOpenSettings &&
+      !onSignOut
+    ) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[DS AccountMenu] default 選單項未接 onViewProfile/onOpenSettings/onSignOut——item 點擊無反應。請傳入 callback 或自組 children。'
+      )
+    }
+    const avatar = user.avatar ?? {}
+    return (
+      <DropdownMenu open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
+        <DropdownMenuTrigger asChild>
+          {/* 互動感由 focus-visible ring 提供(無 hover bg,chrome 輕量 entry),不放大到 field height
+              — per app-shell.spec.md「Avatar 尺寸 + 邊距」+ header-canonical.spec.md 4.5 */}
+          <button
+            {...triggerProps}
+            ref={ref}
+            type="button"
+            aria-label={triggerAriaLabel}
+            className="flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          >
+            {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical(brand + account 同尺寸); sync with --chrome-header-avatar-size */}
+            <Avatar size={24} {...avatar} alt={avatar.alt ?? user.name} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align={align}>
+          {children ? (
+            <>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
+              </DropdownMenuGroup>
+              {children}
+            </>
+          ) : (
+            <>
+              {/* Default 選單集合 = app-shell.spec.md「入口開什麼」canonical(個人資料 / 設定 / 登出,
+                  登出獨立 group — 破壞性動作分區,對齊 GitHub / Gmail / Slack 帳號選單慣例) */}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
+                <DropdownMenuItem startIcon={User} onSelect={onViewProfile}>
+                  個人資料
+                </DropdownMenuItem>
+                <DropdownMenuItem startIcon={Settings} onSelect={onOpenSettings}>
+                  設定
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuGroup>
+                <DropdownMenuItem startIcon={LogOut} onSelect={onSignOut}>
+                  登出
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     )
-  }
-  const avatar = user.avatar ?? {}
-  return (
-    <DropdownMenu defaultOpen={defaultOpen}>
-      <DropdownMenuTrigger asChild>
-        {/* 互動感由 focus-visible ring 提供(無 hover bg,chrome 輕量 entry),不放大到 field height
-            — per app-shell.spec.md「Avatar 尺寸 + 邊距」+ header-canonical.spec.md 4.5 */}
-        <button
-          type="button"
-          aria-label={triggerAriaLabel}
-          className="flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-        >
-          {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical(brand + account 同尺寸); sync with --chrome-header-avatar-size */}
-          <Avatar size={24} {...avatar} alt={avatar.alt ?? user.name} />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align={align}>
-        {children ? (
-          <>
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
-            </DropdownMenuGroup>
-            {children}
-          </>
-        ) : (
-          <>
-            {/* Default 選單集合 = app-shell.spec.md「入口開什麼」canonical(個人資料 / 設定 / 登出,
-                登出獨立 group — 破壞性動作分區,對齊 GitHub / Gmail / Slack 帳號選單慣例) */}
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
-              <DropdownMenuItem startIcon={User} onSelect={onViewProfile}>
-                個人資料
-              </DropdownMenuItem>
-              <DropdownMenuItem startIcon={Settings} onSelect={onOpenSettings}>
-                設定
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuGroup>
-              <DropdownMenuItem startIcon={LogOut} onSelect={onSignOut}>
-                登出
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
+  },
+)
 AccountMenu.displayName = 'AccountMenu'
 
 // Story auto-compile metadata — F9 public 升級(2026-07-30)

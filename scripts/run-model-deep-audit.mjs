@@ -455,11 +455,14 @@ function validatePreparedReviewGraphExchange({ repoRoot, prepared }) {
     || !Array.isArray(prepared.taskDescriptors) || !prepared.contentSet) {
     fail('portable review graph preparation is invalid')
   }
-  validateDeepAuditRunProviderBindings(prepared.run.manifest, { repoRoot })
-  if (!prepared.exchangeSchedule
-    || prepared.reviewSelection?.kind !== 'provider-review-capability-selection') {
-    fail('portable review exchange is REVIEW-BLOCKED until a capability selection receipt is frozen')
+  if (prepared.reviewSelectionStatus !== 'selected'
+    || !prepared.exchangeSchedule
+    || prepared.reviewSelection?.kind !== 'provider-review-capability-selection'
+    || !prepared.reviewerProviderId
+    || !prepared.requestModelId) {
+    fail('portable review materialization/dispatch is REVIEW-BLOCKED until a selected peer and dispatch schedule are frozen')
   }
+  validateDeepAuditRunProviderBindings(prepared.run.manifest, { repoRoot })
   validateReviewCapabilitySelectionReceipt(prepared.reviewSelection)
   const selected = prepared.reviewSelection.selected
   if (prepared.reviewerProviderId !== selected.providerId
@@ -598,9 +601,10 @@ function canonicalArtifact(path, role, value) {
 
 /**
  * Persist the exact canonical portable exchange inputs below the active run's
- * Git-owned evidence root. This is an archive/export surface for the existing
- * runner and protocol; it does not select a provider, invoke a model, or mutate
- * the repository.
+ * Git-owned evidence root. Materialization is lazy: only a frozen selected-peer
+ * exchange that is dispatch-ready may reach this archive/export surface.
+ * REVIEW-BLOCKED preparations remain compact. This function does not select a
+ * provider, invoke a model, or mutate the repository.
  */
 export function writeProviderNeutralReviewBundle({
   repoRoot = process.cwd(),
@@ -616,6 +620,7 @@ export function writeProviderNeutralReviewBundle({
     || !prepared.contentSet) {
     fail('portable review bundle preparation is invalid')
   }
+  const { brokerState } = validatePreparedReviewGraphExchange({ repoRoot, prepared })
   const before = captureDeepAuditSnapshot(repoRoot)
   for (const key of ['head', 'tree', 'indexDigest', 'inventoryDigest', 'worktreeFingerprint']) {
     if (prepared.run.manifest[key] !== before[key]) {
@@ -625,7 +630,6 @@ export function writeProviderNeutralReviewBundle({
   if (prepared.run.manifestSha256 !== sha256(readFileSync(prepared.run.manifestPath))) {
     fail('portable review bundle run manifest bytes are substituted')
   }
-  const brokerState = loadModelEvidenceBrokerPlan({ repoRoot })
   const leafCas = rebuildPreparedReviewLeafCas({ repoRoot, prepared, brokerState })
   const summary = sourceChangeSummary ?? buildDeepAuditSourceChangeSummary({
     baselineRun,

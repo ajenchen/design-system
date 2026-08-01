@@ -178,7 +178,7 @@ export const StateBehavior: Story = {
 
       <div>
         <H3>Disabled 策略:opacity 而非灰階 swap</H3>
-        <Desc>Switch 的 on/off 視覺差異**最強載體是顏色**(track bg-primary vs bg-border)——thumb 位移與 check icon 只是弱輔助線索。若用灰階 swap(把 primary 換成 border),disabled 的 ON 和 OFF 只剩灰階低對比下的位置與小 icon 差異,難以一眼分辨當前狀態。必須保留顏色。</Desc>
+        <Desc>Switch 的 on/off 視覺差異最強載體是顏色(track bg-primary vs bg-border)——thumb 位移與 check icon 只是弱輔助線索。若用灰階 swap(把 primary 換成 border),disabled 的 ON 和 OFF 只剩灰階低對比下的位置與小 icon 差異,難以一眼分辨當前狀態。必須保留顏色。</Desc>
         <p className="text-footnote text-fg-muted">對照 Checkbox / Slider 用灰階弱化(它們的形狀或位置本身就承載開 / 關狀態,不靠顏色),所以灰掉也看得出狀態;Switch 的主載體是顏色,只能降透明度保留顏色。</p>
       </div>
     </div>

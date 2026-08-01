@@ -144,7 +144,7 @@ interface BulkActionBarProps extends React.HTMLAttributes<HTMLDivElement> {
   selection: readonly string[]
   /** Clear 觸發,user 點 X icon(consumer 在 page-level 監聽 Esc 觸發) */
   onClearSelection?: () => void
-  /** 批次 actions(consumer 提供 md Button,variant=tertiary 或 tertiary+danger,不用 primary) */
+  /** 批次 actions(consumer 提供 md Button,一律 variant=tertiary,不用 primary / danger) */
   actions?: React.ReactNode
   /** Filter 模式:hidden 數量,顯示在 count 區 inline 「已選 {N} 項 · {M} 個被 filter 隱藏」 */
   hiddenByFilter?: number
@@ -215,7 +215,7 @@ interface BulkActionBarLabels {
 - ❌ 不在 selection.length === 0 仍佔 layout(必須完全藏 OR consumer 自擺 placeholder)
 - ❌ 不藏 disabled action(顯示 disabled 比藏起來易理解,user 知道為何不能用)
 - ❌ 不替代既有 toolbar 永久(只在 selection > 0 期間,clear 後恢復)
-- ❌ 批次 action **不用 variant="primary"**(留給 dialog 確認最終 action);批次用 `tertiary`,destructive 用 `tertiary` + `danger`(對齊 button.spec.md 「Inline destructive 不用 primary」 canonical)
+- ❌ 批次 action **不用 `variant="primary"` 或 `danger`**(留給 dialog 內最終不可逆 action);批次 destructive 仍用 `tertiary`,由 Trash icon + 動作文字表達語意(對齊上方 Slot / Action variant canonical)
 - ❌ 不用 contrast 底色 / box-shadow 製造「浮層」感(footer 是 layout 結構切割,不是 overlay)
 - ❌ Hint banner 不在「全可見已選 + dataset 還有更多」之外的場景顯示(小 dataset 顯示 hint 是 noise)
 - ❌ Filter hidden status 不獨立開 hint banner(進主 bar count 區 inline 即可)

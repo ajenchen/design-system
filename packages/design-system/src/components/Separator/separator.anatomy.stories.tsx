@@ -30,7 +30,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Separator 是語意分隔元件——consumer 手動放置的分隔線。基於 Radix Separator(shadcn passthrough),提供正確的 ARIA 語意:預設 `decorative=true` 時 render `role="none"`(SR 跳過),`decorative=&#123;false&#125;` 時 render `role="separator"` + orientation 語意。元件固定結構(header/footer 邊框)和裝飾性邊框**不使用 Separator**。</Desc>
+        <Desc>Separator 是語意分隔元件——consumer 手動放置的分隔線。基於 Radix Separator(shadcn passthrough),提供正確的 ARIA 語意:預設 `decorative=true` 時 render `role="none"`(SR 跳過),`decorative=&#123;false&#125;` 時 render `role="separator"` + orientation 語意。元件固定結構(header/footer 邊框)和裝飾性邊框不使用 Separator。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
           <div className="flex flex-col gap-2 py-2">
             <div className="text-body">個人資訊</div>
@@ -82,7 +82,7 @@ export const TokenMatrix: Story = {
     <div className="flex flex-col gap-8">
       <div>
         <H3>兩個不同 token 的語意分工</H3>
-        <Desc>`--divider`(neutral-4,較淡)用於內容分隔;`--border`(neutral-5,較深)用於控件 / 容器邊框。視覺接近但語意不同,**分隔線一律用 `--divider`**。</Desc>
+        <Desc>`--divider`(neutral-4,較淡)用於內容分隔;`--border`(neutral-5,較深)用於控件 / 容器邊框。視覺接近但語意不同,分隔線一律用 `--divider`。</Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
             <thead><tr><Th>用途</Th><Th>Token</Th><Th>值</Th><Th>範例</Th></tr></thead>

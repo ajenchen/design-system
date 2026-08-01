@@ -1,8 +1,11 @@
 name: Changeset Version PR
 
 on:
-  push:
-    branches: [main]
+  # The canonical beta release path versions the package in the content PR and
+  # runs release:auto. Keep Changesets available for an explicit future
+  # migration, but do not spend a runner on every main push when there are no
+  # changeset entries.
+  workflow_dispatch:
 
 # 2026-05-25 Phase 5 — Automated CHANGELOG.md + version bump via changesets/action
 #
@@ -14,11 +17,11 @@ on:
 #        "@qijenchen/storybook-config": patch
 #        ---
 #        Add Breadcrumb showHomeIcon prop + storybook-config tooltip delay
-#   2. PR / push main → 此 workflow 偵測 .changeset/ 內 unconsumed entries
+#   2. Maintainer 明確 dispatch → 此 workflow 偵測 .changeset/ 內 unconsumed entries
 #   3. Auto-open「Version Packages」PR(bump 4 處 version + CHANGELOG.md 自動生成)
-#   4. Standing-delegated agent review + protected merge → version commit 先通過 protected main gates；發版者建立並推送指向
-#      當前 protected main HEAD 的 remote exact tag，再送 `stage-protected-release` repository_dispatch。
-#      Tag 只是 release identity 資料，不會觸發或提供 privileged workflow bytes。
+#   4. Standing-delegated agent review + protected merge → 交回 `npm run release:auto`；orchestrator
+#      建立指向當前 protected main HEAD 的 exact tag，再送 `stage-protected-release`
+#      repository_dispatch。Tag 只是 release identity 資料，不會觸發或提供 privileged workflow bytes。
 #
 # Reference: https://github.com/changesets/action
 

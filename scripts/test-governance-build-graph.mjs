@@ -580,7 +580,8 @@ assert.deepEqual(ids('infra/governance/runtime/provider-runtime-conformance.json
 assert.deepEqual(ids('infra/governance/baseline/visual/curated/button.png'), ['baseline-mirrors', 'control-plane'])
 assert.deepEqual(ids('snapshots-baseline'), ['baseline-mirrors'])
 assert.deepEqual(ids('.claude/snapshots-baseline'), ['baseline-mirrors'])
-assert.deepEqual(ids('packages/governance/canonical/provider-lifecycle.json'), ['control-plane', 'fork-template'])
+assert.deepEqual(ids('packages/governance/canonical/provider-lifecycle.json'), ['control-plane', 'fork-template', 'release-version'])
+assert.deepEqual(ids('packages/governance/canonical/providers.json'), ['control-plane', 'fork-template', 'plugin-aliases', 'provider-adapters', 'release-version'])
 assert.deepEqual(ids('packages/governance/canonical/schemas/provider-lifecycle.schema.json'), ['control-plane', 'fork-template'])
 assert.equal(ids('scripts/lib/provider-lifecycle.mjs').includes('control-plane'), true)
 const providerAdapterRuntimeSources = [
@@ -622,6 +623,10 @@ assert.deepEqual(ids('infra/governance/providers/compatibility-matrix.json'), ['
 assert.deepEqual(ids('infra/governance/providers/certifications.json'), ['control-plane', 'fork-template'])
 assert.deepEqual(ids('infra/governance/providers/harness-registry.json'), ['control-plane', 'harness-authority-bindings'])
 assert.deepEqual(ids('infra/governance/providers/harness-source-inventory.json'), ['control-plane', 'harness-authority-bindings'])
+assert.ok(
+  ids('packages/design-system/ds-canonical/hooks/lib/audit-report-validator.mjs').includes('harness-authority-bindings'),
+  'Harness authority generation must rerun when a digest-bound canonical hook helper changes',
+)
 assert.deepEqual(ids('packages/design-system/src/tokens/utility-registry.json'), ['control-plane', 'fork-template'])
 assert.deepEqual(ids('packages/design-system/src/tokens/utility-registry.schema.json'), ['control-plane', 'fork-template'])
 assert.deepEqual(ids('infra/governance/lib/managed-repository-ownership.mjs'), ['control-plane', 'fork-template', 'harness-authority-bindings'])
@@ -814,6 +819,7 @@ assert.deepEqual(release.outputs, [
   '.claude-plugin/marketplace.json',
   '.claude-plugin/plugin.json',
   'package-lock.json',
+  'packages/governance/canonical/provider-lifecycle.json',
   'packages/governance/package.json',
   'packages/storybook-config/package.json',
   'template/ds-product-template/package.json',

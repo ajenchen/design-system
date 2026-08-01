@@ -422,13 +422,15 @@ EOF
   fi
 fi
 
-# ── Mechanism 6: PushNotification gap(2026-05-18 user-authorized)──────────
-# Why: memory/feedback_push_always_call.md 明文「每 substantive turn 結尾必 call PushNotification」,
-# 但純 markdown rule AI 會 silently forget(本 session 中段漏 5+ turns,user 抓「為何完成回覆沒送通知」)。
-# 機械化:本 turn assistant 有 substantive output(text > 200 chars OR commit/ship/push/done 等)+
-# 無 PushNotification tool call trace → P1 warn,未來升 BLOCKER 若仍漏。
-# Allow escape:turn 純 ack(< 200 chars 確認類 reply)/ 純翻譯 / 純 grep-only 無 action。
-if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
+# ── Mechanism 6: capability-bound PushNotification gap ────────────────────
+# Provider-neutral runtime 不可假設 exact tool 存在。只有 adapter/registry 明確宣告
+# `push-notification` capability 時才檢查；缺宣告 = UNOBSERVED/nonblocking。
+NOTIFICATION_AVAILABLE=0
+case ",${GOVERNANCE_AVAILABLE_CAPABILITIES:-}," in
+  *,push-notification,*|*,PushNotification,*) NOTIFICATION_AVAILABLE=1 ;;
+esac
+[ "${GOVERNANCE_PUSH_NOTIFICATION_AVAILABLE:-0}" = "1" ] && NOTIFICATION_AVAILABLE=1
+if [ "$NOTIFICATION_AVAILABLE" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
   ASSISTANT_LEN=${#LAST_ASSISTANT}
   ASSISTANT_LEN=${ASSISTANT_LEN:-0}
   # Substantive trigger:長 reply OR 含 commit/ship/done/push keyword
@@ -441,7 +443,7 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "${LAST_USER_LINE
     HAS_PUSH=$(grep -ciE 'PushNotification|"name":"PushNotification"' <<< "$THIS_TURN_TOOLS" 2>/dev/null)
     HAS_PUSH=${HAS_PUSH:-0}
     if [ "$HAS_PUSH" -eq 0 ]; then
-      WARNINGS="${WARNINGS}\n  • PushNotification gap:本 turn substantive output 但無 PushNotification tool call trace。per memory/feedback_push_always_call.md「每 substantive turn 結尾必 call,不自我 suppress(harness 自決)」。下輪 reply 結尾必 call PushNotification(若 terminal focused harness 自決 suppress = OK)。"
+      WARNINGS="${WARNINGS}\n  • PushNotification gap:current adapter 已宣告 push-notification capability，但本 turn substantive output 無 tool call trace。per memory/feedback_push_always_call.md，有能力時必 call；terminal-focused suppression 由 harness 自決。"
     fi
   fi
 fi

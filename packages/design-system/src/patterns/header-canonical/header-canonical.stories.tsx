@@ -26,7 +26,11 @@ import {
 
 const meta: Meta = {
   title: 'Design System/Patterns/Header Anatomy',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '頁面與浮層標頭的組合規則，統一標題、操作、分頁與導覽槽位。建立 AppShell、Dialog 或 Sheet 標頭時，用這裡的結構選型，避免各自手刻 chrome。' } },
+  },
 }
 export default meta
 

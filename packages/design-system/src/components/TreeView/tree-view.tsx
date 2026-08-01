@@ -1218,7 +1218,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             className={cn(
               'flex items-center justify-center rounded-md',
               'text-fg-muted hover:text-fg-secondary hover:bg-neutral-hover',
-              'transition-all duration-150',
+              'transition-all duration-150 motion-reduce:duration-0',
               isExpanded && 'rotate-90',
               disabled && 'text-fg-disabled pointer-events-none',
             )}
@@ -1384,7 +1384,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
           {hasChildren && (
             <CollapsiblePrimitive.Root open={isExpanded}>
               <CollapsiblePrimitive.Content
-                className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
+                className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none"
               >
                 <DepthContext.Provider value={depth + 1}>
                   <div role="group" className="flex flex-col w-full">

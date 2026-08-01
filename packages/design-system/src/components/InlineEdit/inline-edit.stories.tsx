@@ -8,6 +8,9 @@ const meta: Meta<typeof InlineEdit> = {
   title: 'Design System/Components/InlineEdit/展示',
   component: InlineEdit,
   tags: ['autodocs'],
+  parameters: {
+    docs: { description: { component: '讓既有文字或選擇值在原位置切換為編輯控制項，保留檢視與編輯的版面連續性。適用低風險、可快速儲存的單欄位修改，不取代完整表單。' } },
+  },
 }
 export default meta
 type Story = StoryObj<typeof InlineEdit>
@@ -208,7 +211,7 @@ export const MultilineDescription: Story = {
 export const VerticalFieldForm: Story = {
   name: '詳情面板:垂直欄位就地編輯',
   render: () => {
-    // Assignee 的 state 提到 story 本體(不包 wrapper 元件)—— InlineEdit 必須是 <Field> 的**直接子**,
+    // Assignee 的 state 提到 story 本體(不包 wrapper 元件)—— InlineEdit 必須是 <Field> 的直接子,
     // Field 才讀得到靜態 fieldPreferredSize='sm';包一層 wrapper 會遮蔽它 → 控件槽退回 md(32px),
     // 與同表其他 sm(28px)列不齊(對照 inline-edit.anatomy.stories.tsx CascadeDemo)。
     const [assignee, setAssignee] = React.useState('Alex Rivera')

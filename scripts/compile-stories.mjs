@@ -129,7 +129,7 @@ function compileOne(componentName) {
   lines.push('## Variants\n')
   lines.push('| Variant | When | World-class 對照 |')
   lines.push('|---------|------|-----------------|')
-  for (const [key, specV] of Object.entries(specMeta.variants)) {
+  for (const [key, specV] of Object.entries(specMeta.variants || {})) {
     const wc = (specV['world-class'] || []).join(' / ')
     lines.push(`| \`${key}\` | ${specV.when} | ${wc} |`)
   }

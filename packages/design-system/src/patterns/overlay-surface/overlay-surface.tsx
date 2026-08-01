@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { HEADER_TABS_SLOT_WRAPPER_CLASS } from '@/design-system/patterns/header-canonical/chrome-header'
 
 /**
- * @internal — DS-internal primitive(2026-05-23 per `.claude/rules/ui-development.md` Public vs Internal canonical)。
+ * @internal — DS-internal primitive(2026-05-23 per `packages/design-system/ds-canonical/rules/ui-development.md` Public vs Internal canonical)。
  * end-user app 直接 import 無 functioning UI;由 Dialog / Sheet / Popover / Coachmark 等 DS overlay 元件 wrap 消費(HoverCard 不消費 — 2026-07-04 grep 0 import,spec「何時不用」同步)。
  *
  * Overlay Surface primitives — Dialog / Popover / Sheet 共用結構化 sub-components。

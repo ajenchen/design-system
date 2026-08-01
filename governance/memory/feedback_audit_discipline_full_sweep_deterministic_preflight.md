@@ -22,7 +22,7 @@ User 2026-05-15 + 2026-05-23 系列 directives codified per Rule-of-3 absorb pri
 
 ## Sub-rule 2 — Deterministic script not sub-agent judgment(原 deterministic_script)
 
-**Rule**:Dim 40/41/42(title canonical / name jargon / placeholder)**禁** sub-agent AI judgment 替代 deterministic script。**必 chain** `node scripts/audit-story-quality.mjs --check` 全 196 stories / 350 names 全掃。
+**Rule**:Dim 40/41/42(title canonical / name jargon / placeholder)**禁** sub-agent AI judgment 替代 deterministic script。**必 chain** `node scripts/audit-story-quality.mjs --check`，以 script 當次動態 inventory 證明全 stories / names 全掃，禁止硬寫歷史總數。
 
 Sub-agent dispatch prompt 必含:
 > 「先跑 `node scripts/audit-story-quality.mjs --check`,stderr 完整貼進 report;0 violations = CLEAN,有 violations 列具體 file:line。禁 sub-agent 自寫 grep / 自評 sample」

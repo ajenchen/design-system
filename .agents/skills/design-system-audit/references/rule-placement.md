@@ -1,12 +1,12 @@
-# 規則分層(8 個 home)— 完整參考
+# 規則分層（Level 1–9）— 唯一 taxonomy owner
 
-**Canonical owner**:`packages/design-system/ds-canonical/` 擁有固定規則、references、skills、hooks、commands；本檔 own 8 個 home 的 scope、decision flowchart、現行 skill 生態與歷史放置案例。`AGENTS.md` / `CLAUDE.md` 只可作 shared bootstrap 或 provider delivery view，不是反向編輯的 semantic owner。
+**Canonical owner**:本檔唯一擁有 Level 1–9 home taxonomy、scope 與 decision flowchart；`packages/design-system/ds-canonical/` 擁有固定規則、references、skills、hooks、commands，`governance/memory/` 與 `governance/planning/` 分別擁有短狀態與完整計畫。`AGENTS.md` 只是 shared bootstrap navigator，`CLAUDE.md` 與其他 provider views 只是 delivery/discovery projection；兩者都不是 taxonomy 或 semantic owner。
 
 寫規則 / audit 規則分層時,走本檔 flowchart 先決定 home；固定治理內容落 `packages/design-system/ds-canonical/`，provider adapter 再單向產生 discovery/delivery view。
 
 ---
 
-## 8 個 home 的完整 scope
+## Level 1–9 homes 的完整 scope
 
 ### 設計規則層(DS 設計知識,按影響範圍分層)
 
@@ -67,12 +67,7 @@
 
 - **Pre/post-tool 自動化**(邊界守衛、sync check 提醒、token hygiene、import guard、charter gate)
 - **判斷法**:這條規則能「機械化在 tool 執行前後自動跑」嗎? 是 → canonical hook + `registrations.json`;否 → canonical rule 或 spec
-- **當前 hooks**(7 個):
-  - `pre_edit_spec_check.sh`(retired;改靠 M3 mindset #3「改一處看三處」)— 編輯 tsx 前讀 spec
-  - `check_sync_update.sh`(retired/未實作 — 改靠 M3 mindset #3 + `pre_edit_spec_check.sh`)
-  - `lib/_token_hygiene.sh`(由 `post_edit_dispatcher.sh` source)— 硬寫 shadow / shadcn alias / primitive-color / raw overflow 抓違規
-  - `block_prototype_imports.py` — 產品 code 禁 import explorations
-  - `enforce_home_charter.sh` — Write 到 classification-sensitive dir 時注入 charter(本 audit 設計時新增)
+- **當前 inventory**:以 `packages/design-system/ds-canonical/hooks/registrations.json`、canonical hook tree 與 `scripts/sync-governance-counters.mjs --check` 動態結果為準；本文件不硬寫數量或複製 hook 清單。
 
 ### Level 8 — Command workflow (`packages/design-system/ds-canonical/commands/*.md`)
 
@@ -80,6 +75,13 @@
 - 跟 Skill 的差別:Skill 是多步驟 workflow + user 決策點;Command 是一次性 scaffold / 單步觸發
 - **判斷法**:這是「一次性 scaffold 或單步 action」嗎? 是且**重複使用 ≥ 3 次** → Command;否 → 需要 workflow → Skill
 - **當前狀態**:以 canonical commands inventory 為準；provider command view 只能由 adapter 產生，不能成為 semantic owner
+
+### Level 9 — Planning (`governance/planning/`)
+
+- 完整 execution plan、RFC、proposal、跨 session handoff ledger 與 point-in-time audit evidence
+- `governance/planning/registry.json` 是 inventory／status／executable contract；只有 `active + executable` 可驅動續作
+- Memory 只保留短 pointer 與 current-state 摘要；completed／reference／superseded／rejected 文件保留 provenance，不得重新當待辦
+- **判斷法**:資訊若超出 memory 的短索引、需要完整步驟／驗收／rollback／歷史證據 → Planning；可由 code／live readback 即時取得的狀態不得複寫成另一份 current truth
 
 ---
 
@@ -110,8 +112,9 @@ Q2. 只在「特定 invoke 情境」才需要嗎?(audit / code review / setup �
     → YES 且是**一次性單步 action**(scaffold / 單一 check): Slash Command
     → NO: 繼續 Q3
 
-Q3. 是「隨時間變化的狀態」嗎?(已完成 / 待辦 / 決策紀錄 / user 偏好)
-    → YES: Memory
+Q3. 是「隨時間變化的狀態」或完整計畫嗎?(已完成 / 待辦 / 決策紀錄 / user 偏好 / RFC / handoff)
+    → 短 current-state / user preference: Memory(index + pointer)
+    → 完整 plan / RFC / handoff / evidence ledger: Planning(registry 決定是否 executable)
     → NO: 繼續 Q4
 
 Q4. 能用 script「機械化自動執行」嗎?(pre/post tool)
@@ -155,7 +158,7 @@ Q5. 是 canonical rule / SKILL.md 已有項目的「深層細節」嗎?
 
 ## 已知但未採納的 Claude Code adapter 能力(future-ready)
 
-僅供 provider adapter 參考,**目前專案未使用，亦不構成 authority/edit target**——寫新規則仍先用上述 canonical 8 個 home。
+僅供 provider adapter 參考,**目前專案未使用，亦不構成 authority/edit target**——寫新規則仍先用上述 Level 1–9 canonical taxonomy。
 
 | 能力 | 路徑 | 何時該採納 |
 |------|------|-----------|
@@ -165,7 +168,7 @@ Q5. 是 canonical rule / SKILL.md 已有項目的「深層細節」嗎?
 | Custom statusline | settings.json `statusLine` | 需要持續在狀態列顯示 session health(如 audit progress / 未解 tech debt 數) |
 | ScheduleWakeup / CronCreate | 內建 tool | 需要 scheduled recurring task(目前無此需求) |
 
-採納新能力前先走:能力真的解決問題嗎? → 目前 8 個 home 是否已涵蓋?(若是 → 不加) → 採納成本 vs 收益?
+採納新能力前先走:能力真的解決問題嗎? → 目前 Level 1–9 taxonomy 是否已涵蓋?(若是 → 不加) → 採納成本 vs 收益?
 
 ---
 

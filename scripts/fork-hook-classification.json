@@ -241,7 +241,7 @@
     },
     {
       "hook": "enforce_home_charter.sh",
-      "reason": "DS-author 8-home governance charter 強制。"
+      "reason": "DS-author declared-home governance charter 強制。"
     },
     {
       "hook": "inject_pending_self_audit.sh",

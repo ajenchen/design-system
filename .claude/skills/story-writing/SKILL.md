@@ -110,6 +110,11 @@ Checkpoint: 寫完後必驗:
 
 **參考 `references/self-check.md`**——7 題 checklist 全部打勾才算完成:範例真實性 / 「人」test / 舉一反三 / 無極端案例 / 無代號 / Rule note 原則>結論 / 無中英夾雜。
 
+若 meta 使用 `tags: ['autodocs']`，另確認 `parameters.docs.description.component` 已用人話說清
+用途與何時用／近親分界；這是 Docs 首屏導讀，不是貼 component 名或 API 摘要。最後跑
+`node scripts/audit-content-quality.mjs --check`，缺導讀、stub、抽象名稱、可見符號圖或 raw Markdown
+任一項都不得交付。
+
 ## References
 
 - `references/category-templates.md` — 7 category(A-G)suggested core stories(展示層 emergent typology)

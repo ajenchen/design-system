@@ -16,8 +16,12 @@ import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta<typeof Steps> = {
   title: 'Design System/Components/Steps/展示',
+  tags: ['autodocs'],
   component: Steps,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '呈現有固定順序的多步驟流程、目前位置與完成狀態，可搭配逐步內容。使用者必須依序完成設定、申請或結帳時使用；平行內容切換改用 Tabs。' } },
+  },
 }
 export default meta
 

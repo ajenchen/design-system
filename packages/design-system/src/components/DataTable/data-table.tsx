@@ -715,6 +715,11 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
     // useOverflowCount fix `combobox.tsx:130`)。
     let scrollRafId = 0
     const onScroll = () => {
+      // D3 NO-SAMPLE audit(2026-08-02):non-hovered virtual rows still share the window
+      // listener, but their hidden handles do not need rect reads. Without this guard a
+      // 50-row virtual window scheduled 50 rAF callbacks + getBoundingClientRect calls
+      // for every scroll frame even though only one handle can be visible.
+      if (!rowEl.hasAttribute('data-hovered') && !buttonHovered && !ctx.isDragging) return
       if (scrollRafId) cancelAnimationFrame(scrollRafId)
       scrollRafId = requestAnimationFrame(() => {
         scrollRafId = 0
@@ -730,7 +735,7 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
       window.removeEventListener('scroll', onScroll, true)
       window.removeEventListener('resize', onScroll)
     }
-  }, [rowEl, ctx])
+  }, [rowEl, ctx, buttonHovered])
 
   // 永遠 render anchor span(讓 anchorRef 可拿到 row element)。
   // A3 fix(2026-05-05):顯式 `top:0 left:0 pointer-events:none` — 雖 width/height=0 不該佔
@@ -793,7 +798,6 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
           ? (ctx.isDragging ? 'var(--opacity-disabled)' as unknown as number : (canDrag ? 1 : 'var(--opacity-disabled)' as unknown as number))
           : 0,
         pointerEvents: visible ? 'auto' : 'none',
-        transition: 'opacity 150ms ease',
       }}
       className={cn(
         // 2026-05-12 debug fix(user 抓「hover 還是透明」)— Round 4.5 我未授權加
@@ -805,6 +809,7 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
         // row 任何 state 視覺都有 token-level 對比(在 token 差異存在的 mode;light mode --surface-raised
         // 等於 --surface 是 design token semantic,非本 fix scope)。
         'bg-surface-raised hover:bg-surface-raised aria-disabled:bg-surface-raised',
+        'transition-opacity duration-150 ease-in-out motion-reduce:duration-0',
         canDrag && !showInvalid && 'cursor-grab',
         canDrag && showInvalid && 'cursor-not-allowed !text-error !border-error',
         // drag 進行中 source button cursor(opacity 0.5 via style;aria-disabled visual 由 Button cva 接管)
@@ -1822,7 +1827,7 @@ function DataTableInner<TData>(
                       type="button"
                       aria-label={isExpanded ? '收合' : '展開'}
                       aria-expanded={isExpanded}
-                      className="inline-flex items-center justify-center shrink-0 w-4 h-4 mr-2 text-fg-muted hover:text-fg-secondary rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform"
+                      className="inline-flex items-center justify-center shrink-0 w-4 h-4 mr-2 text-fg-muted hover:text-fg-secondary rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform motion-reduce:duration-0"
                       style={{ transform: isExpanded ? 'rotate(90deg)' : undefined }}
                       onClick={(e) => { e.stopPropagation(); toggleExpand?.() }}
                     >
@@ -1867,7 +1872,7 @@ function DataTableInner<TData>(
                     type="button"
                     aria-label={isExpanded ? '收合' : '展開'}
                     aria-expanded={isExpanded}
-                    className="inline-flex items-center justify-center shrink-0 w-4 h-4 mr-2 text-fg-muted hover:text-fg-secondary rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform"
+                    className="inline-flex items-center justify-center shrink-0 w-4 h-4 mr-2 text-fg-muted hover:text-fg-secondary rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform motion-reduce:duration-0"
                     style={{ transform: isExpanded ? 'rotate(90deg)' : undefined }}
                     onClick={(e) => { e.stopPropagation(); toggleExpand?.() }}
                   >
@@ -2933,7 +2938,7 @@ function DataTableInner<TData>(
   // pointerWithin 要求 pointer 真在 droppable rect 內才返回 → release 在 gap 自然 over=null →
   // 不觸發 reorder → snap back 自然成立(對齊 Notion / TreeView 行為)。
   // rectIntersection fallback 給 keyboard sensor(無 pointer)。
-  // 詳 .claude/references/drag-canonical.md。
+  // 詳 packages/design-system/ds-canonical/references/drag-canonical.md。
   const sameParentCollisionDetection: CollisionDetection = React.useCallback((args) => {
     const activeId = args.active?.id != null ? String(args.active.id) : null
     if (!activeId) {

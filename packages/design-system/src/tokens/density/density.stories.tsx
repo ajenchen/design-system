@@ -3,6 +3,7 @@ import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta = {
   title: 'Design System/Tokens/Density',
+  tags: ['autodocs'],
   parameters: {
     layout: 'padded',
     docs: {

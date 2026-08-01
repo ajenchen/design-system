@@ -54,7 +54,7 @@ export const Overview: Story = {
                 ['actions', 'ReactNode', '—', 'suffix actions(例:delete / cancel button)'],
                 ['onDownload', '() => void', '—', "hover-swap:status='completed' 時,滑鼠移上整列,綠勾 ✓ 換成下載 ↓。兩種 mode 都用 Button xs(24)iconOnly,符合列內操作 ≤ 24 上限"],
                 ['onRetry', '() => void', '—', "hover-swap:status='error' 時,滑鼠移上整列,紅叉 ✗ 換成重試 ⟲。幾何同上 — 兩種 mode 都用 Button xs(24)"],
-                ['onClick', '() => void', '—', '傳入後整個 item 變可點擊(cursor-pointer,**無 hover bg**——FileItem 設計準則:permanent-anchored 元件不加 hover-bg double-emphasis)'],
+                ['onClick', '() => void', '—', '傳入後整個 item 變可點擊(cursor-pointer,無 hover bg——FileItem 設計準則:permanent-anchored 元件不加 hover-bg double-emphasis)'],
               ].map(([p, t, d, desc]) => (
                 <tr key={p}><Td mono>{p}</Td><Td mono>{t}</Td><Td mono>{d}</Td><Td>{desc}</Td></tr>
               ))}
@@ -102,7 +102,7 @@ export const ColorMatrix: Story = {
         <H3>Status × 元素 色彩矩陣</H3>
         <Desc>
           FileItem 本身無色彩變體——text 走 item-anatomy row primitive 共用 token
-          (`--foreground` / `--fg-secondary`);background 依 mode × surface 決定(rich + surface=form = `--surface` + border / rich + surface=upload-manager = 無邊框無 bg / compact 無 status = `--secondary` / compact 有 status = transparent),**無 hover-bg**(見下方 Container background table)。
+          (`--foreground` / `--fg-secondary`);background 依 mode × surface 決定(rich + surface=form = `--surface` + border / rich + surface=upload-manager = 無邊框無 bg / compact 無 status = `--secondary` / compact 有 status = transparent),無 hover-bg(見下方 Container background table)。
           Status 才驅動色彩:progress bar 色(inProgress / success / error)+ status icon 色(check / X)+ description 色(error 時升階)。
         </Desc>
         <div className="overflow-x-auto mb-4">
@@ -151,9 +151,9 @@ export const ColorMatrix: Story = {
       </div>
 
       <div>
-        <H3>Container background(per mode,**無 hover-bg**)</H3>
+        <H3>Container background(per mode,無 hover-bg)</H3>
         <Desc>
-          FileItem 設計準則(2026-04-23):**永不顯示 hover-bg**。各型態皆已 permanent-anchored(rich + surface=form = border card / rich + surface=upload-manager = avatar 作 item 邊界 / compact 無 status = bg-secondary / compact 有 status = 底部 progress bar),再加 hover-bg 是 double-emphasis 視覺雜。affordance 只靠 `cursor-pointer`(onClick 時)+ hover-swap icon fade。詳 spec「Hover 行為 canonical」。
+          FileItem 設計準則(2026-04-23):永不顯示 hover-bg。各型態皆已 permanent-anchored(rich + surface=form = border card / rich + surface=upload-manager = avatar 作 item 邊界 / compact 無 status = bg-secondary / compact 有 status = 底部 progress bar),再加 hover-bg 是 double-emphasis 視覺雜。affordance 只靠 `cursor-pointer`(onClick 時)+ hover-swap icon fade。詳 spec「Hover 行為 canonical」。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
@@ -223,7 +223,7 @@ export const SizeMatrix: Story = {
       <div>
         <H3>Mode 決定 density,不走 size prop</H3>
         <Desc>
-          FileItem **沒有 size prop**——兩種 mode(compact / rich)已經覆蓋所有密度需求。對齊
+          FileItem 沒有 size prop——兩種 mode(compact / rich)已經覆蓋所有密度需求。對齊
           Dropbox / Google Drive / Linear 的檔案清單慣例:compact 是系統列表預設,rich 是 media-heavy
           場景(照片、需要縮圖的場景)。Size tier 的區別在 mode 上已足夠表達。
         </Desc>

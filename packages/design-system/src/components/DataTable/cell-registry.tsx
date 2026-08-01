@@ -468,7 +468,7 @@ function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit,
           iconOnly
           startIcon={Pencil}
           aria-label="編輯連結"
-          className={cn('ml-1 opacity-0 group-hover/cell:opacity-100 transition-opacity')}
+          className={cn('ml-1 opacity-0 group-hover/cell:opacity-100 transition-opacity motion-reduce:duration-0')}
           onClick={(e) => {
             e.stopPropagation()
             onRequestEdit?.()

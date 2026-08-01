@@ -256,20 +256,19 @@ function NoticeInspector() {
 
         <div>
           <H3>尺寸藍圖</H3>
-          <div className="border border-divider rounded-md p-4 bg-muted">
-            <pre className="text-footnote font-mono text-fg-secondary leading-relaxed whitespace-pre">
-{`┌─ Notice container ──────────────────────────────────────────────┐
-│  px-4 (16px)     py-3 (12px)     gap-2 (8px)                    │
-│  ┌───┐ ┌────────────────────────┐ ┌──────────┐ ┌─┐               │
-│  │ ⚠ │ │ title  text-body fm    │ │ Button   │ │X│               │
-│  │16 │ │ desc   text-body fs    │ │ xs       │ │16│              │
-│  └───┘ └────────────────────────┘ └──────────┘ └─┘               │
-│  h-[1lh]      min-w-0 flex-1                   h-[1lh]           │
-└──────────────────────────────────────────────────────────────────┘
-
-text-body = 14px   reading 行高 = 1.5(Family 2 reading-md,2026-06-15 收斂)
-固定 md tier — 不隨 density 變(通知是跨 density 一致的訊息載體)`}
-            </pre>
+          <div className="border border-divider rounded-md p-4 bg-muted text-footnote text-fg-secondary">
+            <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2">
+              <dt className="font-medium text-foreground">Container</dt>
+              <dd><code>px-4</code>（16px）、<code>py-3</code>（12px）、<code>gap-2</code>（8px）</dd>
+              <dt className="font-medium text-foreground">Prefix icon</dt>
+              <dd>16px，包在 <code>h-[1lh]</code> 對齊容器中</dd>
+              <dt className="font-medium text-foreground">Content</dt>
+              <dd><code>min-w-0 flex-1</code>；title 使用 medium、description 使用 regular，兩者皆為 14px <code>text-body</code></dd>
+              <dt className="font-medium text-foreground">Actions</dt>
+              <dd>可選的 <code>Button size="xs"</code> 與 16px dismiss icon，共用 suffix row</dd>
+              <dt className="font-medium text-foreground">行高與密度</dt>
+              <dd>Reading 行高 1.5（Family 2 reading-md）；固定 md tier，不隨 density 改變</dd>
+            </dl>
           </div>
         </div>
       </div>

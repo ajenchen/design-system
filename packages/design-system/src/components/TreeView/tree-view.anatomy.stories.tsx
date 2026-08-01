@@ -17,7 +17,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>TreeView 是**階層結構的遞迴元件**——一個 TreeItem 就是一個 node,有 children 就可展開,沒有就是 leaf。基於 Radix Collapsible 實作展開/收合,自建 tree 結構 + ARIA tree 鍵盤導覽(Radix 沒有 Tree primitive)。</Desc>
+        <Desc>TreeView 是階層結構的遞迴元件——一個 TreeItem 就是一個 node,有 children 就可展開,沒有就是 leaf。基於 Radix Collapsible 實作展開/收合,自建 tree 結構 + ARIA tree 鍵盤導覽(Radix 沒有 Tree primitive)。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
           <TreeView defaultExpandedIds={['docs', 'photos']}>
             <TreeItem id="docs" label="Documents" icon={Folder}>
@@ -36,7 +36,7 @@ export const Overview: Story = {
 
       <div>
         <H3>TreeItem 內部結構</H3>
-        <Desc>[chevron placeholder] [checkbox? (多選模式)] [indicator | icon?] [label] [suffix? (hover inline action / badge)] ——遵循 item-layout pattern;checkbox 位於 chevron 之後、icon 之前(對齊 tsx render 順序)。葉節點(無 children)自動填入透明 chevron placeholder 保持 column 對齊。</Desc>
+        <Desc>依序排列 chevron placeholder、多選模式的 checkbox、indicator 或 icon、label，以及可選的 hover inline action / badge suffix；整體遵循 item-layout pattern。Checkbox 位於 chevron 之後、icon 之前(對齊 tsx render 順序)。葉節點(無 children)自動填入透明 chevron placeholder 保持 column 對齊。</Desc>
       </div>
 
       <div>

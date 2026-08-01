@@ -13,6 +13,9 @@ const meta: Meta<typeof NumberInput> = {
   title: 'Design System/Components/NumberInput/展示',
   component: NumberInput,
   tags: ['autodocs'],
+  parameters: {
+    docs: { description: { component: '輸入並以步進按鈕調整數值，處理上下限、步距與鍵盤操作。使用者需要精確數字或小幅增減時使用；只需大致調整且即時預覽時可用 Slider。' } },
+  },
 }
 
 export default meta

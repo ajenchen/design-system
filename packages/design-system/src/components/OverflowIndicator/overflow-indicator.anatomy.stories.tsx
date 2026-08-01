@@ -222,24 +222,19 @@ function OverflowInspector() {
 
         <div>
           <H3>尺寸藍圖</H3>
-          <div className="border border-divider rounded-md p-4 bg-muted">
-            <pre className="text-footnote font-mono text-fg-secondary leading-relaxed whitespace-pre">
-{`shape=${shape}   size=${size}
-  ┌───────────────┐
-  │   +${count.toString().padStart(2, ' ')}           │   ← trigger pill
-  │  ${spec.height.padEnd(13)}│      ${spec.heightPx}px (min-width 同高)
-  │  ${textClass.padEnd(13)}│      ${textPx}px 字體 (${shape})
-  └───────────────┘
-         │ hover
-         ▼
-  ┌────────────────────────┐
-  │  HoverCardContent      │  bg-tooltip · data-theme="dark"
-  │  ShrinkWrapList        │  flex-wrap · gap-1 · p-2 · max-w-[280px]
-  │  ▸ 隱藏項目 1          │
-  │  ▸ 隱藏項目 2          │
-  │  …                     │
-  └────────────────────────┘`}
-            </pre>
+          <div className="border border-divider rounded-md p-4 bg-muted text-footnote text-fg-secondary">
+            <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2">
+              <dt className="font-medium text-foreground">設定</dt>
+              <dd><code>shape={shape}</code>、<code>size={size}</code></dd>
+              <dt className="font-medium text-foreground">觸發器</dt>
+              <dd><code>+{count}</code> pill；高度與最小寬度皆為 <code>{spec.height}</code>（{spec.heightPx}px）</dd>
+              <dt className="font-medium text-foreground">字級</dt>
+              <dd><code>{textClass}</code>（{textPx}px，{shape} shape）</dd>
+              <dt className="font-medium text-foreground">展開內容</dt>
+              <dd><code>HoverCardContent</code> 使用 dark tooltip surface；清單以 <code>flex-wrap gap-1 p-2 max-w-[280px]</code> 收斂</dd>
+              <dt className="font-medium text-foreground">互動</dt>
+              <dd>滑鼠移入或鍵盤聚焦觸發器後顯示完整隱藏項目清單</dd>
+            </dl>
           </div>
         </div>
       </div>

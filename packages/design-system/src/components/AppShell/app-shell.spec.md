@@ -1,6 +1,8 @@
 ---
 component: AppShell
 family: composite  # 組合 sidebar+header+main+aside,非 Family 1-4 row element
+variants: {}  # layout 是頁面結構 mode,非視覺 variant 軸
+sizes: {}  # shell 尺寸由 slots / responsive layout 自管,無 component size 軸
 traits: []  # page-level layout composite,slots 全 ReactNode 組合,無 trait variants(R3 trait enforce 無適用項;2026-07-04 dim 29 補宣告)
 scope: web service page-level layout primitive (sidebar + header + main + aside composition)
 benchmark:

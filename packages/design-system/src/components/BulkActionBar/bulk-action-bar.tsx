@@ -42,7 +42,7 @@ export interface BulkActionBarProps extends React.HTMLAttributes<HTMLDivElement>
   selection: readonly string[]
   /** Clear 觸發,user 點 X icon 或 Esc(consumer 在 page-level 監聽) */
   onClearSelection?: () => void
-  /** 批次 actions(consumer 提供 md Button,variant=tertiary 或 tertiary+danger;不用 primary) */
+  /** 批次 actions(consumer 提供 md Button,一律 variant=tertiary；不用 primary/danger) */
   actions?: React.ReactNode
   /** Filter 模式:hidden 數量,顯示在 count 區 inline「已選 {N} 項 · {M} 個被 filter 隱藏」 */
   hiddenByFilter?: number

@@ -35,7 +35,7 @@ interface SortColumn {
   enableSorting?: boolean
 }
 
-export interface DataTableSortManagerProps<TData> {
+export interface DataTableSortManagerProps<TData> extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onReset'> {
   /** 可排序欄位來源(讀 columnDef.header / id);會自動排除 enableSorting=false */
   columns: ColumnDef<TData, any>[]
   /** 當前排序 state(TanStack SortingState) */
@@ -65,14 +65,15 @@ const DIRECTION_OPTIONS: SelectOption[] = [
   { value: 'desc', label: '降冪' },
 ]
 
-export function DataTableSortManager<TData>({
+function DataTableSortManagerInner<TData>({
   columns,
   sorting,
   onSortingChange,
   onReset,
   onClose,
   className,
-}: DataTableSortManagerProps<TData>) {
+  ...props
+}: DataTableSortManagerProps<TData>, ref: React.ForwardedRef<HTMLDivElement>) {
   const sortableColumns = React.useMemo(() => extractColumns(columns), [columns])
   const fieldOptions: SelectOption[] = React.useMemo(
     () => sortableColumns.map((c) => ({ value: c.id, label: c.label })),
@@ -107,7 +108,11 @@ export function DataTableSortManager<TData>({
   // K11 fix(2026-05-04): viewport-aware scroll chain invariant — 詳 overlay-surface.spec.md
   // 2026-05-23 Phase A.4 Decision 2: w-[480px] → token `--data-table-sort-panel-width`(SSOT in uiSize.css)
   return (
-    <div className={cn('flex flex-col h-full min-h-0 w-[var(--data-table-sort-panel-width)]', className)}>
+    <div
+      ref={ref}
+      className={cn('flex flex-col h-full min-h-0 w-[var(--data-table-sort-panel-width)]', className)}
+      {...props}
+    >
       {/* Popover 派輕量 chrome — slot 走 COMPACT_HEADER_SLOT(=21,衍生自 PopoverTitle text-body line-box),header 自然 ~45px */}
       <SurfaceHeader className={COMPACT_HEADER_SLOT}>
         <PopoverTitle className="flex-1">排序</PopoverTitle>
@@ -165,7 +170,10 @@ export function DataTableSortManager<TData>({
   )
 }
 
-DataTableSortManager.displayName = 'DataTableSortManager'
+export const DataTableSortManager = React.forwardRef(DataTableSortManagerInner) as <TData>(
+  props: DataTableSortManagerProps<TData> & { ref?: React.ForwardedRef<HTMLDivElement> }
+) => React.ReactElement
+;(DataTableSortManager as { displayName?: string }).displayName = 'DataTableSortManager'
 
 // SortRow:DnD-enabled row。GripVertical 為 drag listener handle(對齊 Notion / Airtable 拖曳 idiom)。
 function SortRow({

@@ -103,6 +103,15 @@ export interface FileUploadProps extends Omit<React.HTMLAttributes<HTMLDivElemen
   removeAriaLabel?: (name: string) => string
 }
 
+function focusAfterFileRemoval(current: HTMLButtonElement) {
+  const list = current.closest('ul')
+  const buttons = list ? Array.from(list.querySelectorAll<HTMLButtonElement>('[data-collection-remove]')) : []
+  const index = buttons.indexOf(current)
+  const next = buttons[index + 1] ?? buttons[index - 1]
+  const owner = list?.parentElement?.querySelector<HTMLElement>('[data-file-upload-owner]')
+  ;(next ?? owner)?.focus()
+}
+
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
   (
@@ -204,8 +213,10 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
                     size="xs"
                     startIcon={X}
                     aria-label={removeAriaLabel(f.name)}
+                    data-collection-remove
                     onClick={(e) => {
                       e.stopPropagation()
+                      focusAfterFileRemoval(e.currentTarget)
                       onRemove(f.id)
                     }}
                     className="text-fg-muted hover:text-fg-secondary"
@@ -242,6 +253,7 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
             }}
           />
           <Button
+            data-file-upload-owner
             variant="tertiary"
             startIcon={UploadIcon}
             loading={loading}
@@ -256,6 +268,7 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
         </div>
       ) : (
       <div
+        data-file-upload-owner
         role="button"
         tabIndex={isBlocked ? -1 : 0}
         aria-disabled={disabled || undefined}

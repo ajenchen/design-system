@@ -4,7 +4,7 @@
 //   hover 升 hover 階、active 深一階 —— 與 semantic.css「選中」canonical + 拍板 #8 完全同拼寫);
 //   選中「語意」由 aria-current="page" 承載(非 pressed —— pressed 是可取消 toggle,當前頁不可取消)
 // - Select(size="sm"):../Select/select.tsx —— 完整形態的「N 筆/頁」選單
-// - Ellipsis icon:MoreHorizontal(.claude/rules/ui-development.md「Icon canonical」)
+// - Ellipsis icon:MoreHorizontal(packages/design-system/ds-canonical/rules/ui-development.md「Icon canonical」)
 // - DOM 骨架:shadcn Pagination(nav > ul > li + aria-current="page");
 //   controlled 事件驅動 + total/pageSize 資料模型對齊 Ant Pagination(2026-07-06 user 拍板:
 //   Pagination 本體 = 完整功能 SSOT —— showTotal / 每頁筆數皆本元件 own,Table 轉發 config 消費)

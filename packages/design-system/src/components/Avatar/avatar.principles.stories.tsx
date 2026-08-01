@@ -170,7 +170,7 @@ export const WithBadgeOverlayRule: Story = {
 
       <Rule
         title="✅ status(右下 presence)+ badgeCount(右上 count)可並存"
-        note="兩者是**不同角、不同語義**的 slot(presence=這個人的線上狀態,右下;count=此對話未讀量,右上),對齊 `badge.spec.md`「Avatar 可疊 status + count」canonical + Slack / Teams / iMessage / LINE 標配。**signal crowding 只禁「同一角疊兩個同類 indicator」**(如右上同時 count + dot),不禁不同角不同語義的兩個訊號"
+        note="兩者是不同角、不同語義的 slot(presence=這個人的線上狀態,右下;count=此對話未讀量,右上),對齊 `badge.spec.md`「Avatar 可疊 status + count」canonical + Slack / Teams / iMessage / LINE 標配。signal crowding 只禁「同一角疊兩個同類 indicator」(如右上同時 count + dot),不禁不同角不同語義的兩個訊號"
       >
         <div className="flex items-center gap-4">
           <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada" size={40} status="online" badgeCount={3} />
@@ -216,7 +216,7 @@ export const HoverCardIntegrationRule: Story = {
 
       <Rule
         title="❌ 關鍵資訊只靠 hover 顯示(觸控裝置看不到)"
-        note="ProfileCard hover 本身用法沒錯,問題是「資訊的唯一出口」。觸控裝置無 hover 能力,若必看資訊(狀態角色、是否離職、權限等)只出現在 hover 浮層裡,平板 / 手機使用者完全錯過。hover 是**補充資訊**管道,不是**關鍵資訊**唯一載體"
+        note="ProfileCard hover 本身用法沒錯,問題是「資訊的唯一出口」。觸控裝置無 hover 能力,若必看資訊(狀態角色、是否離職、權限等)只出現在 hover 浮層裡,平板 / 手機使用者完全錯過。hover 是補充資訊管道,不是關鍵資訊唯一載體"
       >
         <div className="flex items-start gap-8">
           <div className="flex flex-col gap-2">

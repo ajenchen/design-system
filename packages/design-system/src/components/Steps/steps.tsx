@@ -543,7 +543,7 @@ function VerticalLayout({
               <ChevronDown
                 size={16}
                 className={cn(
-                  'text-fg-muted transition-transform duration-150',
+                  'text-fg-muted transition-transform duration-150 motion-reduce:duration-0',
                   item.expanded && 'rotate-180',
                 )}
               />

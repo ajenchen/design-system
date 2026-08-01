@@ -140,7 +140,7 @@ ajenchen/ds-product-template (published repo) ← Mirror artifact ────�
 
 ## 8. 對齊上游 canonical
 
-- AGENTS.md 6 mindset 全 + canonical `packages/design-system/ds-canonical/rules/meta-patterns.md` 31 M-rules + 治理 8-home + 自主執行 7 軸 + 命名 SSOT 3-test(per deep-audit-cross-codex SKILL.md「上游 canonical 全繼承」段 2026-05-29)
+- AGENTS.md mindset 全 + canonical `packages/design-system/ds-canonical/rules/meta-patterns.md` 動態 active M-rule inventory + rule-placement Level 1–9 taxonomy + 自主執行 canonical + 命名 SSOT 3-test(per deep-audit-cross-codex SKILL.md「上游 canonical 全繼承」段 2026-05-29)
 - M17 SSOT 鐵律(本 file 就是 example:single canonical home,其他 file pointer)
 - M19 trigger phrase auto-pipeline + M28 solo-work canonical
 - 命名 SSOT 3 層(per `template/README.md`「命名 SSOT」段)

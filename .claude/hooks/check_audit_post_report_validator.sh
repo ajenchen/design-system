@@ -9,10 +9,11 @@
 #
 # 驗證:
 #   (a) NO-SAMPLE invariant — report 不含「sample top N / subset / pick top X」keyword
-#   (b) 46-dim full dispatch — report 應列 ≥ 46 dim coverage 紀錄(或明示 N/A 跳過理由)
+#   (b) matrix-derived full dispatch — report 應列齊當前 dim coverage 紀錄(或明示 N/A 跳過理由)
 #   (c) audit-prompts.md coverage — 若 missing dim prompt → flag prune-chain-trigger
 #   (d) `@benchmark-unverified-blanket` count drift — vs last audit baseline
-#   (e) prune-chain-trigger signal → emit additionalContext 進下一 turn,inject_pending_self_audit 吸
+#   (e) deep final report 必須記錄 same-run knowledge-prune + governance-coverage receipt;
+#       progress artifact 缺 receipt 才 emit recovery context 進下一 turn
 #
 # 對應 SKILL.md `/design-system-audit` Phase 4.5 機械化 trigger(2026-05-17 加)。
 
@@ -38,11 +39,13 @@ TOOL=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""') \
 FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""') \
   || governance_hook_integrity_fail 'audit validator file path could not be decoded'
 
-# Only fire on audit report writes
+# Only fire on audit report writes. Final reports fail closed; the progress memory
+# remains a recovery surface because it can be written before the run is complete.
+IS_FINAL_REPORT=0
 case "$FILE_PATH" in
-  */audit-report-*.json) ;;
+  */audit-report-*.json) IS_FINAL_REPORT=1 ;;
   */project_audit_progress.md) ;;
-  */C1-final-report*.md) ;;
+  */C1-final-report*.md) IS_FINAL_REPORT=1 ;;
   *) exit 0 ;;
 esac
 
@@ -55,13 +58,46 @@ CANONICAL_SKILL_ROOT="$(governance_canonical_root skills 2>/dev/null)" || {
 }
 PEER_PROVIDER="${GOVERNANCE_PEER_PROVIDER:-}"
 PEER_DISPLAY_NAME="${GOVERNANCE_PEER_DISPLAY_NAME:-$PEER_PROVIDER}"
-printf '%s' "$PEER_PROVIDER" | grep -qE '^[a-z][a-z0-9-]*$' || {
-  governance_hook_integrity_fail 'audit validator registry-resolved peer provider is invalid'
-}
 
 WARNINGS=""
 TRIGGER_PRUNE=0
+CRITICAL_FAIL=0
 AUDIT_MATRIX="$PROJECT_DIR/generated/governance/audit-coverage-matrix.json"
+
+# Independent review is an explicit task/deliverable requirement,not a universal
+# audit tax. A real UI/UX SSOT decision still requires the four-element review
+# unless the user explicitly waived second opinion for this run.
+_HAS_DECISION_ITEMS=0
+if grep -qE '待你拍板|拍板清單' "$FILE_PATH" 2>/dev/null; then
+  _DECISION_SEG=$(awk '/待你拍板|拍板清單/{found=1} found' "$FILE_PATH" 2>/dev/null)
+  if printf '%s\n' "$_DECISION_SEG" | grep -qE '^[[:space:]]*([0-9]+[.、)]|##+ *決策)'; then
+    _HAS_DECISION_ITEMS=1
+  fi
+fi
+
+REVIEW_WAIVED=0
+REVIEW_NOT_REQUIRED=0
+REVIEW_CLAIMED=0
+grep -qiE 'second[ -]opinion[[:space:]]*[:：][[:space:]]*(waived by (the )?user|user[- ]waived)|independent review[[:space:]]*[:：][[:space:]]*waived by (the )?user|第二意見.*(使用者|user).*(豁免|免除|不需要)|(使用者|user).*(豁免|免除).*第二意見' "$FILE_PATH" 2>/dev/null && REVIEW_WAIVED=1
+grep -qiE 'second[ -]opinion[[:space:]]*[:：][[:space:]]*not required by (the )?(task|deliverable)|independent review[[:space:]]*[:：][[:space:]]*not required by (the )?(task|deliverable)|第二意見.*(任務|交付).*(未要求|不需要)' "$FILE_PATH" 2>/dev/null && REVIEW_NOT_REQUIRED=1
+grep -qiE 'second[ -]opinion[[:space:]]*[:：][[:space:]]*(required|complete|completed|pass|done)|independent review[[:space:]]*[:：][[:space:]]*(required|complete|completed|pass|done)|peer review[[:space:]]*[:：][[:space:]]*(required|complete|completed|pass|done)|第二意見.*(必須|要求|已完成|已執行)|獨立審查.*(必須|要求|已完成|已執行)' "$FILE_PATH" 2>/dev/null && REVIEW_CLAIMED=1
+
+if [ "$REVIEW_WAIVED" -eq 1 ]; then
+  REVIEW_MODE=waived
+elif [ "$_HAS_DECISION_ITEMS" -eq 1 ] || [ "$REVIEW_CLAIMED" -eq 1 ]; then
+  REVIEW_MODE=required
+elif [ "$REVIEW_NOT_REQUIRED" -eq 1 ]; then
+  REVIEW_MODE=not-required
+else
+  REVIEW_MODE=unspecified
+fi
+
+if [ "$REVIEW_MODE" = required ]; then
+  if ! printf '%s' "$PEER_PROVIDER" | grep -qE '^[a-z][a-z0-9-]*$'; then
+    WARNINGS="${WARNINGS}\n  🔴 [R] Independent review 已被 report 要求／使用，但無 registry-resolved peer provider context。補齊可驗證的 peer 執行與回執，或記錄 user 明確豁免。"
+    CRITICAL_FAIL=1
+  fi
+fi
 
 # ─ Validator A: NO-SAMPLE ─────────────────────────────────────────────────
 if grep -qE 'sample top [0-9]+|sampled top|subset|pick top [0-9]+|top hot|sampled components' "$FILE_PATH" 2>/dev/null; then
@@ -151,9 +187,11 @@ if [ "$DIM_COUNT" -ge 10 ]; then   # 只對 full/deep-audit 規模 report 要求
   #   report 顯示 Phase B / peer 比稿有跑 → 必含「dim 覆蓋對帳」表(彙總 peer 各 brief 蓋到的
   #   dim 號 vs dispatch 清單逐號對;SKILL B.2 Step 0 契約的報告端機械閘 — 保證鏈第三段)。
   _PEER_RUN=0
-  grep -qiE 'Phase B|peer 比稿|獨立審查|cite battle|dual-track' "$FILE_PATH" 2>/dev/null && _PEER_RUN=1
-  grep -qiF "$PEER_PROVIDER" "$FILE_PATH" 2>/dev/null && _PEER_RUN=1
-  [ -n "$PEER_DISPLAY_NAME" ] && grep -qiF "$PEER_DISPLAY_NAME" "$FILE_PATH" 2>/dev/null && _PEER_RUN=1
+  grep -qiE '(Phase B|peer 比稿|獨立審查|cite battle|dual-track).*(complete|completed|pass|done|完成|已跑|已執行|通過)|second[ -]opinion[[:space:]]*[:：][[:space:]]*(complete|completed|pass|done)' "$FILE_PATH" 2>/dev/null && _PEER_RUN=1
+  if [ "$REVIEW_MODE" = required ] && printf '%s' "$PEER_PROVIDER" | grep -qE '^[a-z][a-z0-9-]*$'; then
+    grep -qiF "$PEER_PROVIDER" "$FILE_PATH" 2>/dev/null && _PEER_RUN=1
+    [ -n "$PEER_DISPLAY_NAME" ] && grep -qiF "$PEER_DISPLAY_NAME" "$FILE_PATH" 2>/dev/null && _PEER_RUN=1
+  fi
   if [ "$_PEER_RUN" -eq 1 ]; then
     if ! grep -qiE 'dim 覆蓋對帳|dim 對帳|coverage tally' "$FILE_PATH" 2>/dev/null; then
       WARNINGS="${WARNINGS}\n  🔴 [J] Peer dim 覆蓋對帳缺席:report 提及 Phase B/比稿但無「dim 覆蓋對帳」表(${PEER_DISPLAY_NAME} 各 brief 蓋到的 dim 號 vs dispatch 清單逐號對,缺號 = 補 brief)。per SKILL B.2 Step 0(2026-07-10),不齊不得宣稱雙軌全覆蓋。"
@@ -166,7 +204,7 @@ fi
 # 報告含「待你拍板」/「拍板清單」區塊時:區塊內每個編號題必含「SSOT 理由」字樣;
 # 題數 > SSOT-理由數 = 有題目沒標理由 = 混入非 SSOT 項 → BLOCK。
 if grep -qE '待你拍板|拍板清單' "$FILE_PATH" 2>/dev/null; then
-  _BLOCK_SEG=$(sed -n '/待你拍板\|拍板清單/,$p' "$FILE_PATH" 2>/dev/null)
+  _BLOCK_SEG=$(awk '/待你拍板|拍板清單/{found=1} found' "$FILE_PATH" 2>/dev/null)
   _Q_COUNT=$(echo "$_BLOCK_SEG" | grep -cE '^[[:space:]]*([0-9]+[.、)]|##+ *決策)' || true)
   _R_COUNT=$(echo "$_BLOCK_SEG" | grep -c 'SSOT 理由' || true)
   if [ "${_Q_COUNT:-0}" -gt "${_R_COUNT:-0}" ]; then
@@ -184,15 +222,48 @@ fi
 #   (3) registry-resolved independent-peer verdict(4) design-fit(設計語言/設計原則/design-fit)。缺任一 → 該題不成熟
 #   → BLOCK(exit 2)。Detection conservative:只掃本 hook file scope(audit report / C1-final-report)
 #   的拍板 section;無決策 block(「無待拍板」)= 合法 pass。
-if grep -qE '待你拍板|拍板清單' "$FILE_PATH" 2>/dev/null; then
+if [ "$_HAS_DECISION_ITEMS" -eq 1 ]; then
   _K_MISSING=$(
     node -- "$HOOK_DIR/lib/audit-report-validator.mjs" \
-      missing-decision-evidence "$FILE_PATH" "$PEER_PROVIDER" "$PEER_DISPLAY_NAME" \
+      missing-decision-evidence "$FILE_PATH" "$PEER_PROVIDER" "$PEER_DISPLAY_NAME" "$REVIEW_MODE" \
       2>/dev/null || echo ""
   )
   if [ -n "$_K_MISSING" ]; then
     CRITICAL_FAIL=1
-    WARNINGS="${WARNINGS}\n  🔴 [K] 決策四要件不全:${_K_MISSING} — 每個送 user 拍板的決策必含 (1)SSOT-check(先 grep 既有 canonical/已拍板)(2)≥3 世界級 cite(真 source + URL)(3)${PEER_DISPLAY_NAME} 辯論 verdict(4)設計語言/原則 fit。缺 = 該題不成熟,退回研究/辯論(deep-audit SKILL C.1 四要件),禁送 user。"
+    if [ "$REVIEW_MODE" = required ]; then
+      _K_REVIEW_TEXT="(3)${PEER_DISPLAY_NAME:-independent peer} 辯論 verdict(4)"
+    else
+      _K_REVIEW_TEXT="(3)second opinion 已依 user 豁免並明示記錄(4)"
+    fi
+    WARNINGS="${WARNINGS}\n  🔴 [K] 決策品質要件不全:${_K_MISSING} — 每個送 user 拍板的決策必含 (1)SSOT-check(先 grep 既有 canonical/已拍板)(2)≥3 世界級 cite(真 source + URL)${_K_REVIEW_TEXT}設計語言/原則 fit。缺 = 該題不成熟,退回研究/辯論(deep-audit SKILL C.1),禁送 user。"
+  fi
+fi
+
+# ─ Validator L: deep-final same-run closure receipts ─────────────────────────────────────
+# Full knowledge prune and governance-home reconciliation are phases of the same
+# deep run. A next-turn trigger is recovery only and cannot certify a final report.
+SAME_RUN_PRUNE=0
+SAME_RUN_GOVERNANCE_COVERAGE=0
+grep -qiE '(knowledge[- ]prune).*(same[- ]run|同一(輪|次|run)).*(complete|completed|pass|done|完成|對帳)|same[- ]run.*(knowledge[- ]prune).*(complete|completed|pass|done)|同一(輪|次).*(knowledge[- ]prune).*(完成|對帳)' "$FILE_PATH" 2>/dev/null && SAME_RUN_PRUNE=1
+grep -qiE '(governance[- ]coverage|governance-audit-coverage).*(same[- ]run|同一(輪|次|run)).*(complete|completed|pass|done|reconciled|receipt|unobserved|完成|對帳|回執)|same[- ]run.*(governance[- ]coverage|governance-audit-coverage).*(complete|completed|pass|done|reconciled|receipt|unobserved)|同一(輪|次).*(governance[- ]coverage|governance-audit-coverage).*(完成|對帳|回執|UNOBSERVED)' "$FILE_PATH" 2>/dev/null && SAME_RUN_GOVERNANCE_COVERAGE=1
+
+if [ "${DIM_COUNT:-0}" -ge 10 ]; then
+  if [ "$IS_FINAL_REPORT" -eq 1 ]; then
+    if [ "$REVIEW_MODE" = unspecified ]; then
+      WARNINGS="${WARNINGS}\n  🔴 [L] Second-opinion receipt 缺席:deep final report 必須明記 『second opinion: waived by user』、『second opinion: not required by task』或可驗證的 required/completed peer review。"
+      CRITICAL_FAIL=1
+    fi
+    if [ "$SAME_RUN_PRUNE" -ne 1 ]; then
+      WARNINGS="${WARNINGS}\n  🔴 [L] Same-run knowledge-prune receipt 缺席:deep final report 不得把 full prune 留到 next turn。完成後明記『knowledge-prune: same-run complete』。"
+      CRITICAL_FAIL=1
+    fi
+    if [ "$SAME_RUN_GOVERNANCE_COVERAGE" -ne 1 ]; then
+      WARNINGS="${WARNINGS}\n  🔴 [L] Same-run governance coverage receipt 缺席:必須逐 row 對帳 governance-audit-coverage.md，無法觀測的 home 標 UNOBSERVED，並明記『governance-coverage: same-run reconciled』。"
+      CRITICAL_FAIL=1
+    fi
+  elif [ "$SAME_RUN_PRUNE" -ne 1 ] || [ "$SAME_RUN_GOVERNANCE_COVERAGE" -ne 1 ]; then
+    TRIGGER_PRUNE=1
+    WARNINGS="${WARNINGS}\n  • [L] Recovery only:deep progress 尚缺 same-run knowledge-prune / governance-coverage receipt；在 final report 前完成同一輪收斂。"
   fi
 fi
 
@@ -201,19 +272,14 @@ fi
 #   2026-07-10 user「只有 SSOT UI/UX 才交拍板,要確保」:Validator H 原在本 gate 之後 = CRITICAL_FAIL 白設
 #   死旗(hunt finding #62)→ 搬到 gate 前,H 現在真擋)─
 if [ "${CRITICAL_FAIL:-0}" -eq 1 ]; then
-  printf '🚨 AUDIT-REPORT VALIDATOR BLOCK(C/F/G/H/I/J/K critical):%b\n\n此 deep-audit report 不合格,補齊上述後重出 report。' "$WARNINGS" >&2
+  printf '🚨 AUDIT-REPORT VALIDATOR BLOCK(C/F/G/H/I/J/K/L/R critical):%b\n\n此 deep-audit report 不合格,補齊上述後重出 report。' "$WARNINGS" >&2
   exit 2
 fi
 
 # ─ Validator E: prune-chain-trigger emit ──────────────────────────────────
-# 2026-06-11 擴充(user 糾正「為何每次都要問我是否要跑 knowledge prune」機械兜底,SSOT = deep-audit SKILL C.0a):
-# deep-audit 規模 report(DIM_COUNT≥10)→ 無條件 fire prune-chain trigger,非僅 coverage 不足時。
-# 分權不變:AI 收到 trigger 必 AUTO-RUN(品質優先前提)；P2E 工程治理 retire 自主收斂，
-# 只有改變產品／UI／UX SSOT 且存在真取捨的 P2H 才由 user 拍板。
-if [ "${DIM_COUNT:-0}" -ge 10 ] && [ "$TRIGGER_PRUNE" -eq 0 ]; then
-  TRIGGER_PRUNE=1
-  WARNINGS="${WARNINGS}\n  • C.0a unconditional chain:deep-audit 收尾必 AUTO-RUN /knowledge-prune(禁問 user 要不要跑;headroom trigger 命中時 scope 聚焦,否則 quarterly)。"
-fi
+# Validator L enforces deep-final closure. This trigger is only recovery for a
+# progress artifact or another non-critical debt signal; it is never proof that
+# the final report already ran knowledge prune.
 if [ "$TRIGGER_PRUNE" -eq 1 ] || [ -n "$WARNINGS" ]; then
   if RUNTIME_STATE_DIR="$(governance_runtime_state_dir 2>/dev/null)"; then
     mkdir -p "$RUNTIME_STATE_DIR" 2>/dev/null

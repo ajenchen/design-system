@@ -6,6 +6,9 @@ const meta: Meta<typeof Switch> = {
   title: 'Design System/Components/Switch/展示',
   component: Switch,
   tags: ['autodocs'],
+  parameters: {
+    docs: { description: { component: '立即切換單一設定的開啟或關閉狀態，支援受控、非受控與唯讀模式。變更會立即生效時使用；需要提交表單後才套用的多選項改用 Checkbox。' } },
+  },
 }
 export default meta
 type Story = StoryObj<typeof Switch>

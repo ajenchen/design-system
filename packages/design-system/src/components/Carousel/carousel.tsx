@@ -263,7 +263,7 @@ type ArrowProps = Omit<React.ComponentPropsWithoutRef<typeof Button>, 'iconOnly'
 
 const arrowWrapperClass = cn(
   'absolute z-10',
-  'transition-opacity duration-200',
+  'transition-opacity duration-200 motion-reduce:duration-0',
   'opacity-0 group-hover/carousel:opacity-100',
   'focus-within:opacity-100',
   '[&:has(button:disabled)]:opacity-0 [&:has(button:disabled)]:pointer-events-none',
@@ -403,7 +403,7 @@ const CarouselDots = React.forwardRef<
           aria-label={`跳至第 ${i + 1} 張`}
           onClick={() => scrollTo(i)}
           className={cn(
-            'h-1.5 rounded-full transition-all',
+            'h-1.5 rounded-full transition-all motion-reduce:duration-0',
             // 2026-06-11 a11y(R2;Phase B codex 修重疊):hit-area 垂直擴至 24px、水平 ±3px(dot 6px+gap 6px → 中心距 12px,±3 恰相切零重疊;再寬必互搶點擊)
             // — 視覺 dot 維持 6×6 不變,僅點擊目標擴大(anatomy story 原宣稱的 hit-area 機制補真)
             'relative before:absolute before:-inset-y-[9px] before:-inset-x-[3px] before:content-[""]',

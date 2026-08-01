@@ -141,7 +141,7 @@ export const ColumnTypeRule: Story = {
 
         <Rule
           title="❌ 手寫 cell render 自訂格式化"
-          note="每 column 自己寫 `cell: (info) => ...` 會繞過 `mode='view'` 系統——**格式化邏輯會漂移**。一個 table 的 price 顯示「$2,490」,另一個 table 的 price 顯示「2490」,一個 boolean 顯示勾 icon,另一個 boolean 顯示「是」——整個系統 format 失去一致性"
+          note="每 column 自己寫 `cell: (info) => ...` 會繞過 `mode='view'` 系統——格式化邏輯會漂移。一個 table 的 price 顯示「$2,490」,另一個 table 的 price 顯示「2490」,一個 boolean 顯示勾 icon,另一個 boolean 顯示「是」——整個系統 format 失去一致性"
         >
           <Label warn>除非真的需要 `mode='view'` 無法提供的客製視覺,否則一律走 meta.type 系統。客製化時完全跳過 type 讓 view 渲染不要干預</Label>
         </Rule>
@@ -254,7 +254,7 @@ export const NotSpreadsheetRule: Story = {
     <div>
       <Rule
         title="DataTable 預設不做公式計算、不做跨 cell 選取"
-        note="DataTable 的心智模型是「結構化資料展示」——每筆資料是一 row,每個屬性是一 column。預設不做:Excel 的公式、跨 cell range selection(Ctrl+drag)、cell clipboard paste、pivot、跨欄運算。**逃生門**:確需 Excel-like 編輯可 opt-in `spreadsheetMode` prop(Shift+click range + 方向鍵 cell 導覽 + cell editing;仍不做公式計算)——即使開啟 spreadsheetMode,DataTable 仍只是「可 range 選取 + 方向鍵導覽 + inline 編輯」的結構化資料表,不會變成有公式引擎的試算表。"
+        note="DataTable 的心智模型是「結構化資料展示」——每筆資料是一 row,每個屬性是一 column。預設不做:Excel 的公式、跨 cell range selection(Ctrl+drag)、cell clipboard paste、pivot、跨欄運算。逃生門:確需 Excel-like 編輯可 opt-in `spreadsheetMode` prop(Shift+click range + 方向鍵 cell 導覽 + cell editing;仍不做公式計算)——即使開啟 spreadsheetMode,DataTable 仍只是「可 range 選取 + 方向鍵導覽 + inline 編輯」的結構化資料表,不會變成有公式引擎的試算表。"
       >
         <Label>需要試算表能力 → 用專門 library(AG Grid Enterprise / Handsontable / Luckysheet),不往 DataTable 塞</Label>
       </Rule>

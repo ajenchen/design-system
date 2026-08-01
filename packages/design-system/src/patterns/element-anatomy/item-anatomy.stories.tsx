@@ -40,7 +40,11 @@ import { cn } from '@/lib/utils'
 
 const meta: Meta = {
   title: 'Design System/Patterns/Item Anatomy',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '清單、選單與樹狀列項目的共用 anatomy，定義前綴、標籤、說明、suffix 與 inline action 的排列。組合任何可掃視 row 時先依此選槽位。' } },
+  },
 }
 export default meta
 
@@ -413,7 +417,7 @@ const InspectorInner = () => {
   const alignContainer = isBlockAlign ? '= label 文字塊 + 2px + desc 文字塊' : '= 一行文字高度'
   const alignDesc = isBlockAlign
     ? consumer === 'SelectionItem'
-      ? 'avatar + desc → block;**control 跟 prefix 同高度**(都在 text block center,不歪斜)'
+      ? 'avatar + desc → block;control 跟 prefix 同高度(都在 text block center,不歪斜)'
       : 'prefix > 24px(avatar)+ description → 對齊 label + description 文字塊中心'
     : 'prefix ≤ 24px(或無 description)→ 對齊第一行 label 中線'
 
@@ -802,8 +806,8 @@ const InspectorInner = () => {
                 </div>
               )}
               <div className="text-[10px] text-fg-muted leading-relaxed">
-                行數是 <strong>內容長度 + 容器寬 + clamp</strong> 三者共同決定的 emergent 結果,**不是離散設定值**。
-                左側 live preview 和右側藍圖**同步**反映相同的 clamp—改 toggle 兩邊一起變。
+                行數是 <strong>內容長度 + 容器寬 + clamp</strong> 三者共同決定的 emergent 結果,不是離散設定值。
+                左側 live preview 和右側藍圖同步反映相同的 clamp—改 toggle 兩邊一起變。
                 <br />
                 ※ <code>minLines</code> 概念目前在所有 consumer 都是 0,保留欄位是為了將來「避免 layout shift」的需求(例如 grid 列表需要每個 item 等高)
               </div>
@@ -934,7 +938,7 @@ export const AlignmentThreshold = {
           <strong>Prefix</strong> 對齊容器由 prefix 內容物大小決定:&le; 24px → 一行文字高度(inline);
           &gt; 24px(avatar + desc)→ label行高 + 2px + desc行高(block,對齊文字塊中心)。
           <br />
-          <strong>Suffix</strong> 永遠用一行文字高度,**對齊第一行 label**,跟 prefix 解耦。
+          <strong>Suffix</strong> 永遠用一行文字高度,對齊第一行 label,跟 prefix 解耦。
           理由:suffix 內容(Tag、Chevron、時間、計數)是 label 的 metadata,不是整個 item 的——
           業界 convention(Apple Mail / Gmail / iOS Settings / Material / Polaris)全部如此。
         </Desc>
@@ -1073,7 +1077,7 @@ export const AlignmentThreshold = {
               </tr>
               <tr>
                 <Td><strong>Suffix</strong></Td>
-                <Td>**所有情況**</Td>
+                <Td>所有情況</Td>
                 <Td mono>一行文字高度</Td>
                 <Td>第一行 label 垂直中心(跟 prefix 解耦)</Td>
               </tr>

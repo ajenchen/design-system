@@ -12,7 +12,11 @@ import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 
 const meta: Meta = {
   title: 'Design System/Components/TreeView/展示',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '呈現可展開的階層資料，支援選取、鍵盤導覽與拖放重排。資料具有父子關係且使用者需要逐層瀏覽資料夾、文件或分類時使用。' } },
+  },
 }
 export default meta
 

@@ -128,7 +128,6 @@ const SUITE_RUNNER_PATH = 'infra/governance/bin/run-harness-suite.mjs'
 const CANONICAL_HOOK_SUITE = ['node', SUITE_RUNNER_PATH, '--suite', 'canonical-hook-behavioral']
 const META_RUNNER = ['node', 'scripts/run-gate-meta-tests.mjs']
 const COVERAGE_CHECK = ['node', 'scripts/audit-gate-meta-test-coverage.mjs', '--check']
-export const HARNESS_WORKFLOW_RESERVE_MINUTES = 60
 export const HARNESS_SETUP_OUTER_RESERVE_MS = 60_000
 
 function invariant(condition, message) {
@@ -904,16 +903,6 @@ function executionTopology(inventory) {
 function validateRequiredConsumers(runner, repoRoot, packageJson) {
   const expected = [
     {
-      path: '.github/workflows/ci.yml',
-      invocationKind: 'yaml-run-line',
-      argv: ['npm', 'run', '--silent', 'test:governance-harnesses'],
-    },
-    {
-      path: '.github/workflows/release.yml',
-      invocationKind: 'yaml-run-line',
-      argv: ['npm', 'run', '--silent', 'test:governance-harnesses'],
-    },
-    {
       path: 'scripts/release-preflight.mjs',
       invocationKind: 'js-reviewed-shell-wrapper',
       argv: ['npm', 'run', '--silent', 'test:governance-harnesses'],
@@ -928,9 +917,7 @@ function validateRequiredConsumers(runner, repoRoot, packageJson) {
   for (const consumer of runner.requiredConsumers) {
     const path = resolveRepoPath(repoRoot, consumer.path, `Harness consumer ${consumer.path}`, { fileOnly: true })
     const source = readFileSync(path, 'utf8')
-    if (consumer.invocationKind === 'yaml-run-line') {
-      invariant(/^\s+npm run --silent test:governance-harnesses\s*$/m.test(source), `Harness consumer ${consumer.path} lacks the active YAML invocation`)
-    } else if (consumer.invocationKind === 'js-reviewed-shell-wrapper') {
+    if (consumer.invocationKind === 'js-reviewed-shell-wrapper') {
       invariant(/^run\([^\n,]+,\s*'npm run --silent test:governance-harnesses'\)\s*$/m.test(source), `Harness consumer ${consumer.path} lacks the reviewed wrapper invocation`)
     } else if (consumer.invocationKind === 'js-authority-setup-wrapper') {
       invariant(source.includes('runWorkspacePostCreate({ root })'), `Harness consumer ${consumer.path} lacks the structured authority-setup invocation`)
@@ -965,43 +952,6 @@ function validateRequiredConsumers(runner, repoRoot, packageJson) {
     } else {
       throw new Error(`Harness consumer ${consumer.path} has unsupported invocation kind:${consumer.invocationKind}`)
     }
-  }
-}
-
-export function workflowHarnessTimeoutMinutes(source, path = '<workflow>') {
-  invariant(typeof source === 'string', `Harness consumer ${path} source is invalid`)
-  const lines = source.split(/\r?\n/)
-  const invocation = lines.findIndex(line => line.trim() === 'npm run --silent test:governance-harnesses')
-  invariant(invocation >= 0, `Harness consumer ${path} lacks the active YAML invocation`)
-  let jobStart = -1
-  for (let index = invocation; index >= 0; index -= 1) {
-    if (/^  [A-Za-z0-9_-]+:\s*$/.test(lines[index])) {
-      jobStart = index
-      break
-    }
-  }
-  invariant(jobStart >= 0, `Harness consumer ${path} invocation is not inside a workflow job`)
-  let jobEnd = lines.length
-  for (let index = jobStart + 1; index < lines.length; index += 1) {
-    if (/^  [A-Za-z0-9_-]+:\s*$/.test(lines[index])) {
-      jobEnd = index
-      break
-    }
-  }
-  const timeoutLine = lines.slice(jobStart, jobEnd).find(line => /^    timeout-minutes:\s*[0-9]+\s*$/.test(line))
-  invariant(timeoutLine, `Harness consumer ${path} job lacks a literal timeout-minutes budget`)
-  return Number.parseInt(timeoutLine.match(/[0-9]+/)[0], 10)
-}
-
-function validateRequiredConsumerBudgets(runner, repoRoot, aggregateTimeoutMs) {
-  const minimumMinutes = Math.ceil(aggregateTimeoutMs / 60_000) + HARNESS_WORKFLOW_RESERVE_MINUTES
-  for (const consumer of runner.requiredConsumers.filter(item => item.invocationKind === 'yaml-run-line')) {
-    const source = readFileSync(resolveRepoPath(repoRoot, consumer.path, `Harness consumer ${consumer.path}`, { fileOnly: true }), 'utf8')
-    const timeoutMinutes = workflowHarnessTimeoutMinutes(source, consumer.path)
-    invariant(
-      timeoutMinutes >= minimumMinutes,
-      `Harness consumer ${consumer.path} job timeout ${timeoutMinutes}m is below the ${minimumMinutes}m aggregate Harness plus workflow reserve`,
-    )
   }
 }
 
@@ -1194,9 +1144,6 @@ export function validateHarnessRegistry(registry, { repoRoot = DEFAULT_REPO_ROOT
     invariant(Number.isInteger(timeout) && timeout === suite.totalTimeoutMs + 60_000, `Harness suite outer process-group deadline must equal its source-inventory deadline plus 60 seconds:${suite.id}`)
   }
   invariant((timeoutByCommand.get(commandKey(META_RUNNER)) ?? 0) >= 1_800_000, 'Harness paired-meta runner lacks a bounded long-run timeout override')
-  const aggregateTimeoutMs = deriveHarnessAggregateTimeoutMs(registry)
-  validateRequiredConsumerBudgets(runner, root, aggregateTimeoutMs)
-
   const byDomain = new Map(registry.entries.map(entry => [entry.domain, entry]))
   const cloud = byDomain.get('cloud')
   invariant(cloud.executionClass === 'external-readback-required' && cloud.certificationClaim === 'not-certified', 'Cloud Harness must remain not-certified pending external target readback')

@@ -35,12 +35,37 @@ for (const name of [
   'composition-fidelity.yml',
   'packaging-canary.yml',
 ]) {
-  test(`${name} is scheduled/manual and non-blocking`, () => {
+  test(`${name} is scheduled/manual, outside the PR gate, and reports failures truthfully`, () => {
     const source = readWorkflow(name)
     const workflow = parseWorkflowSemantics(source)
     assert.deepEqual(Object.keys(workflow.on).sort(), ['schedule', 'workflow_dispatch'])
-    assert.ok(Object.values(workflow.jobs).every(job => job.continueOnError === true))
+    assert.ok(Object.values(workflow.jobs).every(job => job.continueOnError !== true))
     assert.doesNotMatch(source, /^\s{2}(?:push|pull_request):/m)
     assert.doesNotMatch(source, /name:\s*(?:Verify\(|a11y\(|Bundle size budget|Visual Regression Diff|Composition Fidelity Diff|Packaging integrity\()/)
   })
 }
+
+test('Pages deployment binds and reads back the exact Storybook source', () => {
+  const source = readWorkflow('deploy-storybook.yml')
+  const workflow = parseWorkflowSemantics(source)
+  assert.deepEqual(Object.keys(workflow.on), ['workflow_run'])
+  assert.deepEqual(workflow.on.workflow_run.workflows, ['CI'])
+  assert.deepEqual(workflow.on.workflow_run.types, ['completed'])
+  assert.equal(workflow.jobs['deploy-pages'].needs, 'build-pages')
+  assert.equal(workflow.jobs['deploy-pages'].timeoutMinutes, 15)
+  for (const evidence of [
+    'storybook-static/deployment.json',
+    'needs.build-pages.outputs.source_sha',
+    '$base_url/deployment.json?$cache_key',
+    '$base_url/index.json?$cache_key',
+    '$base_url/iframe.html?id=$story_id&viewMode=story&source=$EXPECTED_SHA',
+    "cache_key=\"source=$EXPECTED_SHA&attempt=$attempt\"",
+  ]) assert.ok(source.includes(evidence), `Pages readback evidence is missing:${evidence}`)
+  assert.match(source, /jq -er '\.sourceSha'/)
+  assert.match(source, /select\(\.type == \"story\"\)/)
+  assert.match(source, /test "\$SOURCE_SHA" = "\$current_main_sha"/)
+  const build = workflow.jobs['build-pages']
+  const stepNames = build.steps.map(step => step.name).filter(Boolean)
+  assert.ok(stepNames.indexOf('Rebuild exact Storybook') < stepNames.indexOf('Refuse a stale artifact before upload'))
+  assert.ok(stepNames.indexOf('Refuse a stale artifact before upload') < stepNames.indexOf('Upload Pages artifact'))
+})

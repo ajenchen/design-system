@@ -15,7 +15,11 @@ import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-grou
 
 const meta: Meta = {
   title: 'Design System/Components/Popover/展示',
-  parameters: { layout: 'centered' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'centered',
+    docs: { description: { component: '由 trigger 錨定的輕量浮層，可承載簡短資訊、篩選或小型表單。內容需要保留來源位置且不值得打斷整頁時使用；複雜流程改用 Dialog 或 Sheet。' } },
+  },
 }
 export default meta
 type Story = StoryObj

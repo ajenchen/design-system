@@ -1,6 +1,6 @@
 ---
 name: deep-audit-cross-codex
-description: Provider-neutral workflow for two isolated no-sample audits under one inventory and rubric; use for material governance, release, or design-system review.
+description: Provider-neutral workflow for two isolated no-sample audits under one inventory and rubric. Use only when the task or deliverable explicitly requests independent review; material governance, release, or design-system scope alone does not trigger it.
 ---
 
 # Cross-provider deep-audit workflow

@@ -1133,11 +1133,16 @@ Grep story `name:` field 含 `L1-L7 | canonical | spec X | phase Y | stream [A-Z
 
 Grep `.stories.tsx` body 含 `Option A/B/C` / `按鈕一` / `Foo/Bar/Baz` / `Lorem ipsum` / `Hello World` / `Test 1/2` 等。對齊 Polaris/Carbon 共識用 Jira/Stripe/Notion 真情境。
 
-## 43. Rule note 品質(原則 > 結論 / 無中英夾雜)
+## 43. Reader-facing guidance 品質(Autodocs 導讀 + Rule note)
 
-**Type**: AI-judgement(NO-SAMPLE per audit-full-sweep canonical:DS-wide ALL principles stories,不 sample)/ **Canonical**: `references/example-selection.md` / **Home**: spec.md rationale
+**Type**: AI-judgement(NO-SAMPLE per audit-full-sweep canonical:DS-wide ALL reader-facing Autodocs owners + principles stories,不 sample)/ **Canonical**: `rules/story-rules.md`「Autodocs component 導讀必寫」+ `references/example-selection.md` / **Home**:對應 story owner
 
-Per-element 讀 `.principles.stories.tsx` Rule notes,判 (a) 是否「告訴讀者原則為何」而非「只說結論」;(b) 是否無中英夾雜(技術術語例外)。
+1. 全讀 `tags:['autodocs']` owner 的 `parameters.docs.description.component`：是否先說解決什麼，
+   再說何時用／何時改用近親；只重複名稱、props/API、內部代號或空泛「用於展示」均不合格。
+2. 全讀 `.principles.stories.tsx` Rule notes：是否說明原則為何，而非只下結論。
+3. 兩者都檢查不必要的中英夾雜(技術術語例外)。
+
+`audit-content-quality.mjs` 只機械驗存在、非 stub 與最低資訊量；script PASS 不得取代上述逐段語意判讀。
 
 ## 44. Internal vs Components 分類三 test
 
@@ -1329,7 +1334,7 @@ End:`N components, M API-surface concerns`。Don't fix。
 (frontmatter `- isInternal` / `internal: true`,storybook `Design System/Internal[/| ]`)**刻意排除 root barrel
 front-door**,僅留 subpath(per ui-development.md「Root barrel front-door 排除」+ user Q2 原則「internal 包裝後才可用」)。
 判定 PASS 條件:該 internal 不在 `packages/design-system/src/index.ts`(機械 `gen-design-system-barrel.mjs --check`
-已於 release:preflight gate)。**只在**「internal 卻仍出現在 root barrel」或「marking 不一致(frontmatter internal 但
+由 current deterministic audit / required CI chain 消費)。**只在**「internal 卻仍出現在 root barrel」或「marking 不一致(frontmatter internal 但
 storybook 非 Internal,反之亦然)」時才 flag。已 subpath-only = 合規,non-finding。
 ```
 

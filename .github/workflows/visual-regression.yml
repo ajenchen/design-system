@@ -1,6 +1,8 @@
 name: Visual Regression
 
-# Non-blocking scheduled/manual monitor for curated Ubuntu pixel baselines.
+# Scheduled/manual monitor for curated Ubuntu pixel baselines. It is not a
+# required PR check, so a truthful red result does not block the five-step
+# release path.
 
 on:
   workflow_dispatch:
@@ -18,7 +20,6 @@ jobs:
   visual-regression:
     name: Monitor visual regression drift(curated scenarios)
     runs-on: ubuntu-24.04
-    continue-on-error: true
     env:
       PLAYWRIGHT_BROWSERS_PATH: '0'
     timeout-minutes: 45  # ~124 curated scenarios × screenshot + diff(headroom 給 scenario 增長)

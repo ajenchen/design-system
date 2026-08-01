@@ -3,9 +3,9 @@
   "expected_dims": 91,
   "classified": 91,
   "tier_counts": {
-    "DETERMINISTIC": 24,
+    "DETERMINISTIC": 25,
     "HOOK-ENFORCED": 39,
-    "PURE-JUDGMENT": 26,
+    "PURE-JUDGMENT": 25,
     "UNKNOWN": 0,
     "CI-ENFORCED": 2
   },
@@ -90,10 +90,10 @@
       "critical": true
     },
     "14": {
-      "tier": "PURE-JUDGMENT",
-      "mechanism": "結構核心已謂詞化:chain scripts/naming-structure-invariant.mjs(PascalCase/kebab/主檔,deterministic,2026-07-07 C.0b harvest 首跑);語義部分(hook naming / 章名中文 / identifier 語言)仍 AI judgment DS-wide",
+      "tier": "DETERMINISTIC",
+      "mechanism": "scripts/deep-audit-deterministic-plan.json dimension 14(argv/capability/coverage SSOT);mechanical repository-wide naming/topology/transient/symlink/exact-duplicate closure，另保留 home/file purpose AI judgment layer",
       "id": "DS-DIM-014",
-      "critical": false
+      "critical": true
     },
     "15": {
       "tier": "DETERMINISTIC",
@@ -265,7 +265,7 @@
     },
     "43": {
       "tier": "PURE-JUDGMENT",
-      "mechanism": "Rule note 品質 AI judgment;dispatch 必 DS-wide 全 principles.stories rule notes per-component sample-free read",
+      "mechanism": "Reader-facing guidance AI judgment;dispatch 必 DS-wide NO-SAMPLE 全讀所有 Autodocs component descriptions + principles.stories Rule notes，判用途/何時用/近親分界與 rationale 品質；audit-content-quality 只兜 existence/stub",
       "id": "DS-DIM-043",
       "critical": false
     },

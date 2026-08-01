@@ -22,8 +22,12 @@ import type { SortingState } from '@tanstack/react-table'
 
 const meta: Meta<typeof AppShell> = {
   title: 'Design System/Components/AppShell/展示',
+  tags: ['autodocs'],
   component: AppShell,
-  parameters: { layout: 'fullscreen' },
+  parameters: {
+    layout: 'fullscreen',
+    docs: { description: { component: '組合全域標頭、側欄、主內容與輔助面板的應用程式骨架，統一響應式行為與 landmark。建立多頁產品的頂層 chrome 時使用，不拿來包單一局部區塊。' } },
+  },
 }
 export default meta
 type Story = StoryObj<typeof AppShell>

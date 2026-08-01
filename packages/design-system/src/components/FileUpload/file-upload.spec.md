@@ -111,6 +111,7 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 - `files`: uploaded / uploading 檔案清單(`FileUploadStatus[]`:id / name / size? / progress? / status? / description? / thumbnailSrc?)。傳入 → drop zone 下方渲染列表,每項經 `FileItem`(status 對應:uploading = progress bar / completed = ✓ / error = ✗);不傳 → 不顯示。consumer 持 state(progress / status),FileUpload 只負責渲染
 - `fileListMode`: 清單每項顯示模式;預設 `'compact'`(單行),`'rich'` 含 thumbnail / size / progress bar
 - `onRemove(id)`: 清單移除 callback;有值 → 每項右側顯示 X 移除鈕(ARIA label 由 `removeAriaLabel` 模板客製,預設「移除 {name}」),無 → view-only
+- 移除焦點:在 callback 前把 focus 交給下一項 remove button；沒有下一項則前一項；清單清空則回 FileUpload owner trigger（dropzone 或 button）。禁止 item unmount 後讓 focus 掉到 `body`。
 - `variant` / `buttonLabel`: 見「兩種觸發外觀」段
 
 ---

@@ -30,6 +30,19 @@ const sampleEvents: CalendarEvent[] = [
   { id: 'e5', title: 'Alex vacation', start: `${thisMonth}-20`, end: `${thisMonth}-22`, color: 'yellow', allDay: true },
 ]
 
+// Keep dynamic-token documentation readable without presenting Tailwind's
+// source scanner with an invalid literal arbitrary-value candidate.
+const TIMED_EVENT_CLASS_GUIDE = [
+  'bg-[var(--color-', '{color}', '-1)] · text-[var(--color-', '{color}',
+  '-7)] · rounded-md · px-1.5 py-0.5 · text-caption · truncate',
+].join('')
+const ALL_DAY_EVENT_CLASS_GUIDE = [
+  '同上 + border-l-[3px] border-[var(--color-', '{color}', '-6)] · font-medium',
+].join('')
+const HOVER_EVENT_CLASS_GUIDE = [
+  'hover:bg-[var(--color-', '{color}', '-2)]',
+].join('')
+
 // ── 1. 元件總覽 ────────────────────────────────────────────────────────────────
 export const Overview: Story = {
   name: '元件總覽',
@@ -159,17 +172,17 @@ export const ColorMatrix: Story = {
               <tbody>
                 <tr>
                   <Td>一般 event(timed)</Td>
-                  <Td mono>bg-[var(--color-{`{color}`}-1)] · text-[var(--color-{`{color}`}-7)] · rounded-md · px-1.5 py-0.5 · text-caption · truncate</Td>
-                  <Td>單行 tile,color 依事件類別(12 categorical 色相,消費 categorical-color SSOT,與 Tag / Avatar 共用)。對齊 Tag 色階(step-1 淺底 / step-7 文字)。**色名 1:1 對 `--color-{`{hue}`}-*`,零 offset**(2026-06-04 修:原 red / orange 都誤接 deep-orange,改後 red→`--color-red-*`、orange→`--color-orange-*` 各自獨立)</Td>
+                  <Td mono>{TIMED_EVENT_CLASS_GUIDE}</Td>
+                  <Td>單行 tile,color 依事件類別(12 categorical 色相,消費 categorical-color SSOT,與 Tag / Avatar 共用)。對齊 Tag 色階(step-1 淺底 / step-7 文字)。色名必須 1:1 對應 <code>--color-{'{hue}'}-*</code>,零 offset(2026-06-04 修:原 red / orange 都誤接 deep-orange,改後 red→`--color-red-*`、orange→`--color-orange-*` 各自獨立)</Td>
                 </tr>
                 <tr>
                   <Td>All-day event</Td>
-                  <Td mono>同上 + border-l-[3px] border-[var(--color-{`{color}`}-6)] · font-medium</Td>
+                  <Td mono>{ALL_DAY_EVENT_CLASS_GUIDE}</Td>
                   <Td>2026-06-01 補實作:淡底 + 左側實心 accent 條 + medium,排序在有時間事件之前(cell 頂端);多日全天事件以日精度 filter 在每個涵蓋日各顯示一條</Td>
                 </tr>
                 <tr>
                   <Td>Hover tile</Td>
-                  <Td mono>hover:bg-[var(--color-{`{color}`}-2)]</Td>
+                  <Td mono>{HOVER_EVENT_CLASS_GUIDE}</Td>
                   <Td>同色深一階表示可點擊</Td>
                 </tr>
                 <tr>

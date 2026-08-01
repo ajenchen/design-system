@@ -1,6 +1,7 @@
 name: Packaging canary
 
-# Non-blocking scheduled/manual monitor for packaging drift between releases.
+# Scheduled/manual monitor for packaging drift between releases. It is outside
+# the required PR graph, so failures stay visible without blocking release.
 
 on:
   schedule:
@@ -14,7 +15,6 @@ jobs:
   packaging-integrity:
     name: Monitor packaging integrity(dims 84/85/86/88)
     runs-on: ubuntu-24.04
-    continue-on-error: true
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

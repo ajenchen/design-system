@@ -28,13 +28,13 @@ export const Overview: Story = {
   render: () => (
     <div className="flex flex-col gap-8 max-w-3xl">
       <section>
-        <H3>結構:[X] [count] [ButtonDivider] [actions]</H3>
+        <H3>結構:關閉、選取數量、分隔線、批次動作</H3>
         <Desc>
           全 md Buttons(close X 與 actions 同尺寸,維持同一列視覺一致)+ gap-2(8px)+ <code>ButtonDivider</code>(自帶 mx-1 = 12px 視覺距離)。
           Padding 對齊 SurfaceFooter / DataTable toolbar 設計準則:
           <code> px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]</code>。
           自然高度 56md / 68lg(md Button 32/36 + py-tight 12/16 ×2)。
-          Action variant 採 <code>tertiary</code>(主)/ <code>tertiary danger</code>(destructive)— <strong>不用 primary</strong>(留給 dialog 確認最終 action)。
+          Action variant 一律採 <code>tertiary</code>(含 destructive)— <strong>不用 primary / danger</strong>(紅色強調留給 dialog 內最終不可逆 action)。
         </Desc>
         <div className="border border-divider rounded-md">
           <BulkActionBar
@@ -43,7 +43,7 @@ export const Overview: Story = {
               <>
                 <Button variant="tertiary" size="md" startIcon={Archive}>封存</Button>
                 <Button variant="tertiary" size="md" startIcon={Download}>匯出</Button>
-                <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
+                <Button variant="tertiary" size="md" startIcon={Trash2}>刪除</Button>
               </>
             }
             onClearSelection={() => {}}
@@ -112,7 +112,7 @@ function SelectionStateDemo() {
           actions={
             <>
               <Button variant="tertiary" size="md" startIcon={Archive}>封存</Button>
-              <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
+              <Button variant="tertiary" size="md" startIcon={Trash2}>刪除</Button>
             </>
           }
           onClearSelection={() => setCount(0)}
@@ -159,7 +159,7 @@ function InspectorInner() {
           actions={
             <>
               <Button variant="tertiary" size="md" startIcon={Archive}>封存</Button>
-              <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
+              <Button variant="tertiary" size="md" startIcon={Trash2}>刪除</Button>
             </>
           }
           onClearSelection={() => setSelectionCount(0)}
@@ -213,7 +213,7 @@ export const Accessibility: Story = {
             actions={
               <>
                 <Button variant="tertiary" size="md" startIcon={Archive}>封存</Button>
-                <Button variant="tertiary" size="md" startIcon={Trash2} danger disabled>刪除(無權限)</Button>
+                <Button variant="tertiary" size="md" startIcon={Trash2} disabled>刪除(無權限)</Button>
               </>
             }
             onClearSelection={() => {}}

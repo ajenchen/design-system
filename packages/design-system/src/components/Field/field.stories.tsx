@@ -17,7 +17,11 @@ import { Rating } from '@/design-system/components/Rating/rating'
 
 const meta: Meta = {
   title: 'Design System/Components/Field/展示',
-  parameters: { layout: 'padded' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: '表單欄位的語意與版面容器，統一 label、說明、錯誤、必填狀態和控制項模式。任何需要讓輸入控制項與其說明、驗證建立關係的表單情境都使用 Field。' } },
+  },
 }
 export default meta
 

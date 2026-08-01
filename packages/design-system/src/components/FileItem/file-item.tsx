@@ -69,6 +69,8 @@ export interface FileItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   thumbnailSrc?: string
   actions?: React.ReactNode
   onClick?: () => void
+  /** 整列 primary action 的 accessible name；預設 `開啟 {name}`。 */
+  actionAriaLabel?: string
   /**
    * Hover 動作(passive 狀態 icon 變互動 button 的 UX):
    * - `onDownload`:有值時,`status="completed"` 的綠 ✓ icon 在 row hover 時
@@ -96,6 +98,7 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
       thumbnailSrc,
       actions,
       onClick,
+      actionAriaLabel = `開啟 ${name}`,
       onDownload,
       onRetry,
       className,
@@ -121,14 +124,14 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
     const hoverClass = onClick ? 'cursor-pointer' : ''
 
     // 消費 ProgressBar 元件(SSOT);不再自 roll bar。
-    // height override:compact mode 用 2px(極密集 row layout),rich mode 用預設 4px。
-    // 這是 ProgressBar `height` prop 的唯一合法 consumer(見 progress-bar.tsx docblock)。
+    // compact mode 用 2px(極密集 row layout),rich mode 用預設 4px。這是 FileItem
+    // 私有 composition 細節；ProgressBar 公開 API 維持單一 4px、沒有 height/size 軸。
     // a11y(2026-04-25 axe aria-progressbar-name):aria-label 用 file name 作 context。
     const progressBar = hasStatus ? (
       <ProgressBar
         value={progressWidth}
         status={PROGRESS_STATUS_MAP[status!]}
-        height={isRich ? undefined : 2}
+        className={isRich ? undefined : '!h-0.5'}
         aria-label={`${name} 上傳進度`}
       />
     ) : null
@@ -158,7 +161,7 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
         <statusConfig.icon
           size={ICON_PX}
           className={cn(
-            'shrink-0 transition-opacity',
+            'shrink-0 transition-opacity motion-reduce:duration-0',
             statusConfig.color,
             // 2026-07-05 D4:鍵盤 focus 同步觸發 swap(:has(:focus-visible),對齊 item-anatomy SUFFIX_HOVER_REVEAL_BY_GROUP SSOT)
             hoverAction && 'group-hover/row:opacity-0 group-has-[:focus-visible]/row:opacity-0',
@@ -174,7 +177,7 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
             startIcon={hoverAction.icon}
             aria-label={hoverAction.label}
             onClick={(e) => { e.stopPropagation(); hoverAction.onClick() }}
-            className="absolute inset-0 opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 transition-opacity"
+            className="absolute inset-0 opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 transition-opacity motion-reduce:duration-0"
           />
         )}
       </span>
@@ -222,13 +225,9 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
       </div>
     )
 
-    // a11y(2026-04-25 nested-interactive fix):FileItem row 含 inner interactive
-    // (hover-swap action button / ProgressBar / Avatar hoverCard trigger)。原本
-    // role='button' + tabIndex=0 整列可鍵盤點,與 inner buttons 構成 nested-interactive
-    // (axe serious)。移除 row 層 button semantic → mouse 仍可點(onClick 保留),
-    // 鍵盤 user 直接 tab 到 inner primary action。Trade-off:失去「整列 Enter 開啟」
-    // 但滿足 WCAG;世界級對照:Slack message row / Notion page row 同模式 — row 只
-    // mouse 點,inner 有 explicit 按鈕負責鍵盤。
+    // a11y nested-interactive contract:row 含 hover-swap / trailing action buttons，故 row
+    // 本身不可設 role=button + tabIndex。Primary keyboard path 由下方 sibling native button
+    // 承接；mouse 仍由 row onClick 承接，兩者皆呼叫同一 callback。
     const rowA11y = {}
 
     // Compact 靜態背景(AR20):無進度條 → 顯示 `bg-secondary`(= neutral-3)作「檔案已上傳 /
@@ -239,6 +238,20 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
     // 是 semantic token 橋接的 utility(見 `tokens/color/semantic.css`@theme inline),
     // 底色同樣指向 `--color-neutral-3`。對齊 Badge low / ProgressBar track SSOT。
     const compactStaticBg = !progressBar ? 'bg-secondary' : ''
+    // Primary row action 與 trailing actions 是 sibling controls，不把整列設成 role=button，
+    // 因此不會形成 nested-interactive。透明 full-row button 只接 keyboard/focus；pointer
+    // 仍由既有 row onClick 接手，保持 hit area 與 consumer callback contract 不變。
+    const keyboardPrimaryAction = onClick ? (
+      <button
+        type="button"
+        aria-label={actionAriaLabel}
+        className="absolute inset-0 opacity-0 pointer-events-none"
+        onClick={(event) => {
+          event.stopPropagation()
+          onClick()
+        }}
+      />
+    ) : null
 
     // ── rich(含縮圖完整呈現)——AR17 canonical:surface=form 加邊框 card / surface=upload-manager 無邊框 ──
     // Rich surface=form 是「檔案 card」風格,外框讓每個 row 視覺上是獨立 card(Slack / Notion /
@@ -249,7 +262,8 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
         <div
           ref={ref}
           className={cn(
-            'group/row flex items-start gap-2 w-full text-body leading-compact transition-colors',
+            'group/row relative flex items-start gap-2 w-full text-body leading-compact transition-colors',
+            'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring',
             // surface=form → border card(自立輪廓);surface=upload-manager → 無邊框(box 自身是容器,
             // avatar 作 item 邊界)。2026-06-03 codify rich-borderless(原僅 spec 旁註,consumer 自己移除)。
             // 2026-06-03 圖五:upload-manager rich 拿掉 px+py(卡片移除後 py 多餘,列高靠 avatar 48 的 content minHeight;
@@ -262,6 +276,7 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
           {...rowA11y}
           {...props}
         >
+          {keyboardPrimaryAction}
           <Avatar src={thumbnailSrc} alt={name} size={AVATAR_SIZE} shape="square" className="shrink-0" />
           {/* Rich layout invariant(2026-04-23 user 校準):
               - content col minHeight = AVATAR_SIZE(48),確保 1-line desc 時內容 ≥ avatar 高
@@ -295,6 +310,7 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
         className={cn(
           'group/row relative flex items-start gap-2 py-2 w-full text-body leading-compact transition-colors rounded-md',
           compactStaticBg,
+          'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring',
           hoverClass,
           className,
         )}
@@ -303,6 +319,7 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
         {...rowA11y}
         {...props}
       >
+        {keyboardPrimaryAction}
         <ItemPrefix>
           <Paperclip size={ICON_PX} className="shrink-0 text-fg-muted" aria-hidden />
         </ItemPrefix>

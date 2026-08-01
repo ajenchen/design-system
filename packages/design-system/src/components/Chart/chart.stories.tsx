@@ -25,6 +25,7 @@ import { Desc, H3 } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta = {
   title: 'Design System/Components/Chart/展示',
+  tags: ['autodocs'],
   parameters: {
     layout: 'padded',
     docs: {

@@ -115,6 +115,7 @@ Radix primitive + 本 DS a11y 橋接:
 - **Density**:scrollbar 寬度不受 density 影響(功能性 primitive,不隨 field-height / layout-space 放大縮小)
 - **Disabled**:ScrollArea 無互動狀態——內容是否可操作由 consumer 決定,captured 容器本身不 disable
 - **Empty**:內容為空時 scrollbar 不顯示(Radix 自動偵測 overflow,無溢出 → scrollbar 隱藏)
+- **Loading**:ScrollArea 只提供捲動能力，不擁有內容 loading；Skeleton / CircularProgress 由 consumer 放在 viewport 內容內。
 
 ---
 

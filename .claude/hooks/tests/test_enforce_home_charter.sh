@@ -1,7 +1,7 @@
 #!/bin/bash
 # Tests for enforce_home_charter.sh
 #
-# Hook gate:Write 新檔到 8-home classification dirs(.claude/hooks /
+# Hook gate:Write 新檔到 Level 1–9 classification dirs(provider hooks /
 # skills / agents / commands / rules + packages/design-system/src/{components,
 # patterns, tokens})時,verify charter README 存在 + file-name pattern
 # 對齊 dir convention。

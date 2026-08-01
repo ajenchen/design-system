@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 const meta: Meta = {
   title: 'Design System/Tokens/LayoutSpace',
+  tags: ['autodocs'],
   parameters: {
     layout: 'padded',
     docs: {

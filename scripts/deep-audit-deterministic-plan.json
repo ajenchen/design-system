@@ -32,6 +32,24 @@
       "completion": { "acceptedExitCodes": [0], "minimumOutputMatches": [], "rejectOutputPatterns": ["Cannot find module", "SyntaxError", "ReferenceError"] }
     },
     {
+      "id": "naming-structure",
+      "argv": ["node", "scripts/naming-structure-invariant.mjs"],
+      "cwd": ".",
+      "outputRoots": [],
+      "capabilities": ["local"],
+      "timeoutSeconds": 120,
+      "completion": { "acceptedExitCodes": [0], "minimumOutputMatches": [], "rejectOutputPatterns": ["Cannot find module", "SyntaxError", "ReferenceError"] }
+    },
+    {
+      "id": "repository-hygiene",
+      "argv": ["node", "scripts/repository-hygiene-invariant.mjs", "--profile=authority", "--check"],
+      "cwd": ".",
+      "outputRoots": [],
+      "capabilities": ["local"],
+      "timeoutSeconds": 180,
+      "completion": { "acceptedExitCodes": [0], "minimumOutputMatches": [{ "pattern": "repository-hygiene-invariant PASS", "minimum": 1 }], "rejectOutputPatterns": ["repository-hygiene-invariant FAIL", "Cannot find module", "SyntaxError", "ReferenceError"] }
+    },
+    {
       "id": "content-quality",
       "argv": ["node", "scripts/audit-content-quality.mjs", "--check"],
       "cwd": ".",
@@ -140,7 +158,7 @@
     },
     {
       "id": "visual-theme-density-matrix",
-      "argv": ["node", "scripts/visual-audit.mjs", "--auto-start", "--scope=all", "--matrix=theme-density"],
+      "argv": ["node", "scripts/visual-audit.mjs", "--static", "--scope=all", "--matrix=theme-density"],
       "cwd": ".",
       "outputRoots": [],
       "capabilities": ["local", "build"],
@@ -249,6 +267,7 @@
     { "dim": 2, "name": "Spec deadlinks", "commandIds": ["spec-deadlinks"], "coverage": { "include": ["scripts/audit-spec-deadlinks.mjs", "packages/design-system/src/**/*.spec.md"], "exclude": [] } },
     { "dim": 3, "name": "Reciprocal pointers", "commandIds": ["reciprocal-pointers"], "coverage": { "include": ["scripts/add-reciprocal-pointers.mjs", "packages/design-system/src/**/*.spec.md"], "exclude": [] } },
     { "dim": 5, "name": "Orphan tokens", "commandIds": ["orphan-tokens"], "coverage": { "include": ["scripts/audit-orphan-tokens.mjs", "scripts/audit-orphan-tokens.baseline.json", "packages/design-system/src/tokens/**/*.css", "packages/**/*.{ts,tsx,css}"], "exclude": ["packages/**/dist/**", "packages/**/node_modules/**"] } },
+    { "dim": 14, "name": "Naming and repository hygiene", "commandIds": ["naming-structure", "repository-hygiene"], "coverage": { "include": ["**"], "exclude": [".git/**", "node_modules/**", "dist/**", "storybook-static/**", "packages/**/node_modules/**", "packages/**/dist/**"] } },
     { "dim": 15, "name": "Cross-document content quality", "commandIds": ["content-quality"], "coverage": { "include": ["scripts/audit-content-quality.mjs", "packages/design-system/src/components/**/*.spec.md", "packages/design-system/src/components/**/*.stories.tsx"], "exclude": [] } },
     { "dim": 16, "name": "Layout-family frontmatter", "commandIds": ["layout-family-frontmatter"], "coverage": { "include": ["scripts/audit-layout-family-frontmatter.mjs", "packages/design-system/src/components/**/*.spec.md", "packages/design-system/src/patterns/**/*.spec.md"], "exclude": [] } },
     { "dim": 23, "name": "Story canonical drift and migration coverage", "commandIds": ["compile-stories"], "coverage": { "include": ["scripts/compile-stories.mjs", "packages/design-system/src/components/**/*.spec.md", "packages/design-system/src/components/**/*.tsx"], "exclude": ["packages/design-system/src/components/**/*.stories.tsx"] } },
@@ -259,9 +278,9 @@
     { "dim": 42, "name": "Story placeholder quality", "commandIds": ["story-quality"], "coverage": { "include": ["scripts/audit-story-quality.mjs", "packages/design-system/src/**/*.stories.tsx"], "exclude": [] } },
     { "dim": 45, "name": "Mechanical compile-output structural coverage", "commandIds": ["compile-stories"], "coverage": { "include": ["scripts/compile-stories.mjs", "packages/design-system/src/components/**/*.spec.md", "packages/design-system/src/components/**/*.tsx"], "exclude": ["packages/design-system/src/components/**/*.stories.tsx"] } },
     { "dim": 48, "name": "Structural-keep token classification", "commandIds": ["orphan-tokens"], "coverage": { "include": ["scripts/audit-orphan-tokens.mjs", "scripts/audit-orphan-tokens.baseline.json", "packages/design-system/src/tokens/**/*.css", "packages/**/*.{ts,tsx,css}"], "exclude": ["packages/**/dist/**", "packages/**/node_modules/**"] } },
-    { "dim": 49, "name": "Axe WCAG all-story gate", "commandIds": ["build-library", "build-storybook", "a11y-all-stories"], "coverage": { "include": ["scripts/audit-a11y.mjs", "infra/governance/baseline/a11y-baseline.json", ".storybook/**", "packages/design-system/src/**/*.stories.tsx"], "exclude": [] } },
+    { "dim": 49, "name": "Axe WCAG all-story gate", "commandIds": ["build-library", "build-storybook", "a11y-all-stories"], "coverage": { "include": ["scripts/audit-a11y.mjs", "scripts/test-audit-a11y.mjs", "scripts/lib/a11y-static-server.mjs", "scripts/lib/storybook-render-health.mjs", "infra/governance/baseline/a11y-baseline.json", ".storybook/**", "packages/design-system/src/**/*.stories.tsx"], "exclude": [] } },
     { "dim": 50, "name": "Bundle-size budget", "commandIds": ["build-library", "build-production-app", "bundle-size"], "coverage": { "include": ["package.json", "package-lock.json", "tsconfig.json", "tsconfig.app.json", "tsconfig.node.json", "vite.config.ts", "src/**/*.{ts,tsx,css}", "packages/design-system/package.json", "packages/design-system/bundle-budget.json", "packages/design-system/vite.config.ts", "packages/design-system/tsconfig.json", "packages/design-system/src/**/*.{ts,tsx,css}", "packages/storybook-config/package.json", "packages/storybook-config/tsconfig.json", "packages/storybook-config/**/*.{ts,tsx}"], "exclude": ["packages/**/dist/**"] } },
-    { "dim": 51, "name": "Theme-density visual matrix", "commandIds": ["build-library", "visual-theme-density-matrix"], "coverage": { "include": ["package.json", "package-lock.json", "scripts/visual-audit.mjs", "scripts/visual-assertions.json", "scripts/lib/governance-runtime-evidence.mjs", "scripts/lib/governance-visual-baselines.mjs", "scripts/lib/visual-audit-interaction.mjs", "scripts/test-visual-audit-interaction.mjs", ".storybook/**", "packages/design-system/package.json", "packages/design-system/vite.config.ts", "packages/design-system/tsconfig.json", "packages/design-system/src/**/*.{ts,tsx,css}", "packages/storybook-config/package.json", "packages/storybook-config/tsconfig.json", "packages/storybook-config/**/*.{ts,tsx}", "infra/governance/baseline/visual/curated/**"], "exclude": ["packages/**/dist/**"] } },
+    { "dim": 51, "name": "Theme-density visual matrix", "commandIds": ["build-library", "build-storybook", "visual-theme-density-matrix"], "coverage": { "include": ["package.json", "package-lock.json", "scripts/visual-audit.mjs", "scripts/visual-assertions.json", "scripts/lib/a11y-static-server.mjs", "scripts/lib/storybook-render-health.mjs", "scripts/lib/governance-runtime-evidence.mjs", "scripts/lib/governance-visual-baselines.mjs", "scripts/lib/visual-audit-interaction.mjs", "scripts/test-visual-audit-interaction.mjs", ".storybook/**", "packages/design-system/package.json", "packages/design-system/vite.config.ts", "packages/design-system/tsconfig.json", "packages/design-system/src/**/*.{ts,tsx,css}", "packages/storybook-config/package.json", "packages/storybook-config/tsconfig.json", "packages/storybook-config/**/*.{ts,tsx}", "infra/governance/baseline/visual/curated/**"], "exclude": ["packages/**/dist/**"] } },
     { "dim": 77, "name": "Composition-fidelity non-vacuous mappings", "commandIds": ["build-library", "build-storybook", "composition-fidelity"], "coverage": { "include": ["scripts/composition-fidelity-visual-diff.mjs", "apps/template/**/*.ts", "apps/template/**/*.tsx", "packages/design-system/src/**/*.stories.tsx"], "exclude": [] } },
     { "dim": 83, "name": "Published template live deployment", "commandIds": ["published-live-deploy"], "coverage": { "include": ["scripts/verify-published-deploy.mjs", "template/ds-product-template/.storybook/main.ts", ".github/workflows/mirror-to-published-template.yml"], "exclude": [] } },
     { "dim": 84, "name": "Two-scenario architecture", "commandIds": ["two-scenario-architecture"], "coverage": { "include": ["scripts/test-2-scenario-architecture.mjs", "scripts/build-published-template-mirror.mjs", "packages/design-system/ds-canonical/**", "packages/governance/canonical/providers.json", "apps/template/**", "template/ds-product-template/**", ".github/workflows/mirror-to-published-template.yml"], "exclude": [] } },

@@ -267,7 +267,7 @@ const internalExcluded = []
 // (per canonical `packages/design-system/ds-canonical/rules/ui-development.md`
 // 「export jsDoc 加 @internal marker(IDE intellisense 警示 end-user)」)。
 // 偵測:internal dir 內所有非 stories / 非 `_` 前綴 .tsx 至少一檔含 `@internal` → pass;
-// 全缺 → 記入 internalMissingMarker,--check 時 fail(release:preflight 防 regression)。
+// 全缺 → 記入 internalMissingMarker,--check 時 fail(deterministic audit / protected CI 防 regression)。
 const internalMissingMarker = []
 function hasInternalMarker(dirPath) {
   const tsx = fs.readdirSync(dirPath)
@@ -450,7 +450,7 @@ if (collisions.length > 0) {
 const generated = exports.join('\n')
 const target = path.join(ROOT, 'index.ts')
 
-// --check mode(release:preflight 用):驗 committed index.ts == 重新生成,catch
+// --check mode(deterministic audit / protected CI 用):驗 committed index.ts == 重新生成,catch
 // 「元件標 isInternal 但忘了重跑 generator → 仍漏在 root barrel front-door」這類 dim-72 drift
 // + 「新增 export / *Meta 後未重生 → named 名單 drift」。
 if (process.argv.includes('--check')) {

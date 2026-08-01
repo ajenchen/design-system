@@ -352,7 +352,7 @@ export const SizeMatrix: Story = {
       <div>
         <H3>Accordion 無 size 切換</H3>
         <Desc>
-          Accordion 是 content-level 收合容器,**typography 固定為 text-body**(trigger font-medium / content regular),不提供 size variant。理由:accordion 的視覺重量由內容本身承擔,不靠 size 分層——真的需要更大或更小的 header 字級,應該改用 Tabs / DescriptionList / 自組 section heading。
+          Accordion 是 content-level 收合容器,typography 固定為 text-body(trigger font-medium / content regular),不提供 size variant。理由:accordion 的視覺重量由內容本身承擔,不靠 size 分層——真的需要更大或更小的 header 字級,應該改用 Tabs / DescriptionList / 自組 section heading。
         </Desc>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">

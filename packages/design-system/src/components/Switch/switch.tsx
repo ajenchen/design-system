@@ -6,6 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant } from '@/design-system/components/Field/field-types'
 import { useFieldContext, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldSize } from '@/design-system/components/Field/field-context'
+import { useControllable } from '@/design-system/hooks/use-controllable'
 import { fieldWrapperStyles } from '@/design-system/components/Field/field-wrapper'
 import { BooleanValueIcon } from '@/design-system/components/SelectionControl/boolean-value'
 
@@ -152,6 +153,9 @@ const Switch = React.forwardRef<
       mode,
       // chrome 對 Switch 主體無視覺影響(無 input wrapper)— 接收純為 prop 一致性;destructure 防 leak 到 DOM。
       variant: _chrome,
+      checked: checkedProp,
+      defaultChecked: defaultCheckedProp,
+      onCheckedChange,
       id: idProp,
       ...props
     },
@@ -193,9 +197,6 @@ const Switch = React.forwardRef<
     // 抽出 Radix 專屬 non-DOM props,其餘 DOM props 於兩分支 spread 轉發(與 Checkbox/
     // RadioGroup 同修);edit 主路徑不受影響(rootEl 仍 spread 完整 props)。
     const {
-      checked: checkedProp,
-      defaultChecked: defaultCheckedProp,
-      onCheckedChange: _onCheckedChange,
       required: _required,
       name: _name,
       value: _value,
@@ -206,13 +207,44 @@ const Switch = React.forwardRef<
       // (防 any-cast consumer 洩漏到 primitive),與 RadioGroup 同款防禦。
     } = props as SwitchProps & { asChild?: boolean; children?: React.ReactNode }
 
+    // Wrapper 持有 dual-mode 狀態，讓 edit toggle 後改成 view / Field readonly
+    // 仍顯示當前值；否則 Radix 內部 uncontrolled state 無法被非 Root 分支讀取。
+    const isControlled = checkedProp !== undefined
+    const [resolvedChecked, setResolvedChecked] = useControllable<boolean>({
+      value: checkedProp,
+      defaultValue: defaultCheckedProp ?? false,
+    })
+
+    // form.reset() 不發 checked-change event；wrapper 持有 uncontrolled SSOT 後需回復初始值。
+    const innerRef = React.useRef<HTMLButtonElement | null>(null)
+    React.useEffect(() => {
+      if (isControlled) return
+      const form = innerRef.current?.form
+      if (!form) return
+      const handleReset = () => setResolvedChecked(defaultCheckedProp ?? false)
+      form.addEventListener('reset', handleReset)
+      return () => form.removeEventListener('reset', handleReset)
+    }, [defaultCheckedProp, isControlled, resolvedMode, setResolvedChecked])
+    const setRef = React.useCallback((element: HTMLButtonElement | null) => {
+      innerRef.current = element
+      if (typeof ref === 'function') ref(element)
+      else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = element
+    }, [ref])
+
     // ── mode='view'(下移至所有 hooks 之後,per #35 Rules of Hooks)──────────
     // 純展示模式:無互動 toggle、渲染 Check / X icon。與 Checkbox view 對齊(同 boolean primitive,
     // 共用 SelectionControl/boolean-value.tsx SSOT — 勾/叉 icon + 中性 foreground 色)。
     if (resolvedMode === 'view') {
-      const isChecked = checkedProp === true
+      const isChecked = resolvedChecked
+      const viewAriaLabel = (restDomProps as { 'aria-label'?: string })['aria-label'] ?? (isChecked ? '是' : '否')
       return (
-        <span {...restDomProps} ref={ref as React.Ref<HTMLSpanElement>} className="inline-flex">
+        <span
+          {...restDomProps}
+          ref={ref as React.Ref<HTMLSpanElement>}
+          role="img"
+          aria-label={viewAriaLabel}
+          className={cn('inline-flex', className)}
+        >
           <BooleanValueIcon checked={isChecked} size={resolvedBoxSize} />
         </span>
       )
@@ -222,7 +254,7 @@ const Switch = React.forwardRef<
     // Field 內 readonly boolean = fieldWrapperStyles readonly 灰框(= Input readonly 同源)
     // + 勾/叉 icon 值語言;standalone readOnly(settings list)維持原樣鎖互動。詳 checkbox.tsx 同段註解。
     if (effectiveReadOnly && insideField) {
-      const isChecked = (checkedProp ?? defaultCheckedProp) === true
+      const isChecked = resolvedChecked
       const boxSize = resolvedBoxSize
       return (
         <div
@@ -250,8 +282,13 @@ const Switch = React.forwardRef<
       <SwitchPrimitives.Root
         id={inputId}
         className={cn(switchVariants({ size }), alignRightInField, className)}
-        ref={ref}
+        ref={setRef}
         disabled={effectiveDisabled}
+        checked={resolvedChecked}
+        onCheckedChange={(next) => {
+          setResolvedChecked(next)
+          onCheckedChange?.(next)
+        }}
         aria-readonly={effectiveReadOnly || undefined}
         data-readonly={effectiveReadOnly || undefined}
         tabIndex={effectiveReadOnly ? -1 : undefined}
@@ -272,7 +309,7 @@ const Switch = React.forwardRef<
         <SwitchPrimitives.Thumb
           className={cn(
             'pointer-events-none flex items-center justify-center rounded-full bg-on-emphasis border-2',
-            'transition-all duration-150',
+            'transition-all duration-150 motion-reduce:duration-0',
             'data-[state=unchecked]:translate-x-0 data-[state=unchecked]:border-border',
             'data-[state=checked]:border-primary',
             sizeKey === 'lg' ? 'data-[state=checked]:translate-x-6' : 'data-[state=checked]:translate-x-5',
@@ -283,7 +320,7 @@ const Switch = React.forwardRef<
           <Check
             size={spec.check}
             strokeWidth={spec.checkStroke}
-            className="text-primary opacity-0 transition-opacity duration-150 group-data-[state=checked]:opacity-100"
+            className="text-primary opacity-0 transition-opacity duration-150 motion-reduce:duration-0 group-data-[state=checked]:opacity-100"
             aria-hidden
           />
         </SwitchPrimitives.Thumb>

@@ -1,5 +1,5 @@
 /**
- * @internal — DS-internal primitive module(2026-05-23 per `.claude/rules/ui-development.md` Public vs Internal canonical)。
+ * @internal — DS-internal primitive module(2026-05-23 per `packages/design-system/ds-canonical/rules/ui-development.md` Public vs Internal canonical)。
  * end-user app 直接 import 無 functioning UI;由 Tabs / ChipGroup 等 DS 元件 wrap 消費 hook + helper components。
  */
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.

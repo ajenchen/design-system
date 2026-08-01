@@ -16,8 +16,11 @@
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
+import ts from 'typescript';
 
-const COMPONENTS_DIR = 'packages/design-system/src/components';
+// Storybook also exposes token and pattern stories; a content gate limited to
+// components would let reader-visible drift ship through those two IA branches.
+const STORIES_DIR = 'packages/design-system/src';
 const fix = process.argv.includes('--fix');
 
 function* walk(dir) {
@@ -27,6 +30,74 @@ function* walk(dir) {
     if (st.isDirectory()) yield* walk(p);
     else if (p.endsWith('.stories.tsx')) yield p;
   }
+}
+
+const markdownEmphasisPattern = /\*\*[^*\s](?:(?!\*\*)[\s\S])*?\*\*/g;
+
+function propertyName(node) {
+  if (!node.name) return null;
+  if (ts.isIdentifier(node.name) || ts.isStringLiteral(node.name)) return node.name.text;
+  return null;
+}
+
+function isDocsDescriptionMarkdown(node) {
+  const ancestorProperties = [];
+  for (let parent = node.parent; parent; parent = parent.parent) {
+    if (ts.isPropertyAssignment(parent)) ancestorProperties.push(propertyName(parent));
+  }
+  return ancestorProperties.some(name => name === 'component' || name === 'story')
+    && ancestorProperties.includes('description')
+    && ancestorProperties.includes('docs');
+}
+
+function findLiteralMarkdownEmphasis(file, content) {
+  const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const samples = new Set();
+  const addSample = value => {
+    for (const match of value.matchAll(markdownEmphasisPattern)) {
+      samples.add(match[0].replace(/\s+/g, ' ').trim().slice(0, 100));
+    }
+  };
+  const visit = node => {
+    if (ts.isJsxElement(node)) {
+      let directTextSegment = '';
+      const flushDirectText = () => {
+        addSample(directTextSegment);
+        directTextSegment = '';
+      };
+      for (const child of node.children) {
+        if (ts.isJsxText(child)) {
+          directTextSegment += child.text;
+        } else if (
+          ts.isJsxExpression(child)
+          && child.expression
+          && (
+            ts.isIdentifier(child.expression)
+            || ts.isStringLiteral(child.expression)
+            || ts.isNoSubstitutionTemplateLiteral(child.expression)
+            || ts.isTemplateExpression(child.expression)
+          )
+        ) {
+          directTextSegment += child.expression.getText(sourceFile);
+        } else {
+          flushDirectText();
+        }
+      }
+      flushDirectText();
+    } else if (ts.isJsxText(node)) {
+      addSample(node.text);
+    } else if (
+      (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+      && !isDocsDescriptionMarkdown(node)
+    ) {
+      addSample(node.text);
+    } else if (ts.isTemplateExpression(node) && !isDocsDescriptionMarkdown(node)) {
+      addSample(node.getText(sourceFile));
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return [...samples];
 }
 
 const violations = {
@@ -49,10 +120,11 @@ const violations = {
   noRealBrand: [],          // showcase story render 缺真實業務 brand reference
   thinDescription: [],      // parameters.docs.description.{component,story} stub / 太短 / 缺
   abstractName: [],         // story name 抽象代號(無描述性)
+  literalMarkdownEmphasis: [], // JSX canvas 會原樣顯示 **星號**,不是 Markdown renderer
 };
 let autoFixed = 0;
 
-for (const file of walk(COMPONENTS_DIR)) {
+for (const file of walk(STORIES_DIR)) {
   const isAnatomy = file.endsWith('.anatomy.stories.tsx');
   const isPrinciples = file.endsWith('.principles.stories.tsx');
   let content = readFileSync(file, 'utf-8');
@@ -125,6 +197,19 @@ for (const file of walk(COMPONENTS_DIR)) {
     .replace(/\/\*[\s\S]*?\*\//g, '')        // /* ... */
     .replace(/^\s*\*.*$/gm, '')              // leading * (jsdoc)
     .replace(/\/\/.*$/gm, '');               // // line comments
+
+  // === Check 4e: JSX canvas 中的 literal Markdown emphasis ===
+  // Storybook canvas renders JSX text/attributes as plain text. Writing
+  // `<Desc>這是**重點**</Desc>` or `note="這是**重點**"` leaks the asterisks
+  // to readers; use React markup(<strong>)or concise plain text instead.
+  const markdownEmphasisSamples = findLiteralMarkdownEmphasis(file, content);
+  if (markdownEmphasisSamples.length > 0) {
+    violations.literalMarkdownEmphasis.push({
+      file: basename(file),
+      count: markdownEmphasisSamples.length,
+      samples: markdownEmphasisSamples.slice(0, 3),
+    });
+  }
 
   const forbiddenPatterns = [
     { re: /Option\s+[A-Z](?:\s|<|"|')/g, label: 'Option A/B/C' },
@@ -269,18 +354,30 @@ for (const file of walk(COMPONENTS_DIR)) {
   // 如 Badge Dot / Avatar Shapes 不該需要 brand)。改靠 abstractName 為更精準
   // proxy(description 化命名 = 人話 / camelCase identifier copy = 抽象)。
 
-  // === Check 5h: 「人話」proxy — story description 太薄 / stub ===
-  // parameters.docs.description.{component,story} 缺或極短 → likely 沒寫 vs 寫人話
+  // === Check 5h: 「人話」proxy — Autodocs 導讀缺漏 / 太薄 / stub ===
+  // Reader-facing Autodocs owner 必有 component 導讀：先說這個單元解決什麼，再說何時使用。
+  // 機械層能可靠驗「存在 + 非 stub + 最低資訊量」；語意品質仍由 Storybook content audit 判斷。
   if (!isAnatomy) {
-    const compDescMatch = content.match(/description:\s*\{[\s\S]{0,400}component:\s*['"`]([^'"`]+)['"`]/);
-    if (compDescMatch) {
-      const desc = compDescMatch[1];
+    const metaEnd = content.indexOf('export default');
+    const metaSource = metaEnd >= 0 ? content.slice(0, metaEnd) : content;
+    const hasAutodocs = /tags:\s*\[[^\]]*['"]autodocs['"]/.test(metaSource);
+    const quotedDesc = content.match(/description:\s*\{[\s\S]{0,400}component:\s*(['"])([^'"\n]+)\1/);
+    const templateDesc = content.match(/description:\s*\{[\s\S]{0,400}component:\s*`([\s\S]*?)(?<!\\)`/);
+    const desc = quotedDesc?.[2] ?? templateDesc?.[1];
+    if (hasAutodocs && desc === undefined) {
+      violations.thinDescription.push({
+        file: basename(file),
+        where: 'component',
+        desc: '[missing Autodocs component description]',
+      });
+    } else if (desc !== undefined) {
       // Stub indicators:< 15 chars,純英技術詞,只 component name
-      if (desc.length < 15 || /^\s*(TODO|WIP|FIXME)/i.test(desc)) {
+      const readableDesc = desc.replace(/[`*_#>-]/g, '').trim();
+      if (readableDesc.length < 15 || /^\s*(TODO|WIP|FIXME)/i.test(readableDesc)) {
         violations.thinDescription.push({
           file: basename(file),
           where: 'component',
-          desc: desc.slice(0, 40),
+          desc: readableDesc.slice(0, 40),
         });
       }
     }
@@ -393,13 +490,20 @@ if (violations.noRealBrand.length > 0) {
 }
 
 if (violations.thinDescription.length > 0) {
-  console.log(`\n[P1] Component description thin / stub: ${violations.thinDescription.length}`);
+  console.log(`\n[P1] Autodocs component description missing / thin / stub: ${violations.thinDescription.length}`);
   violations.thinDescription.slice(0, 10).forEach(v => console.log(`  • ${v.file}: "${v.desc}..."`));
 }
 
 if (violations.abstractName.length > 0) {
   console.log(`\n[P1] Story name 抽象代號(直接 copy identifier): ${violations.abstractName.length}`);
   violations.abstractName.slice(0, 10).forEach(v => console.log(`  • ${v.file}: [${v.names.join(', ')}]`));
+}
+
+if (violations.literalMarkdownEmphasis.length > 0) {
+  console.log(`\n[P1] Literal Markdown emphasis visible in JSX canvas: ${violations.literalMarkdownEmphasis.length} files`);
+  violations.literalMarkdownEmphasis.slice(0, 10).forEach(v =>
+    console.log(`  • ${v.file}: ${v.count}× ${v.samples.map(s => `"${s}"`).join(', ')}`)
+  );
 }
 
 if (violations.linkTo.length > 0) {

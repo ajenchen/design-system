@@ -31,7 +31,33 @@ try {
   writeFileSync(target, orig)
 }
 
-// 3) 還原後必 PASS
+// 3) JSX canvas 的 Markdown emphasis 會把 ** 原樣顯示,gate 必抓。
+try {
+  const injected = orig + `\nconst injectedMarkdownToken = '跨 expression';\nexport const InjectedMarkdownViolation = {\n  name: '注入星號違規測試',\n  render: () => <p>這是**不會被解析的 {injectedMarkdownToken} 粗體**</p>,\n};\n`
+  writeFileSync(target, injected)
+  const code = run()
+  if (code === 0) { console.error('✗ 注入 literal Markdown 後 gate 未 FAIL'); ok = false }
+  else console.log('✓ 注入 literal Markdown 被抓(exit ' + code + ')')
+} finally {
+  writeFileSync(target, orig)
+}
+
+// 4) Reader-facing Autodocs 缺 component 導讀時必 FAIL。
+const docsDescriptionBlock = /\n  parameters: \{\n    docs: \{\n      description: \{\n        component: [^\n]+\n      \},\n    \},\n  \},/
+if (!docsDescriptionBlock.test(orig)) {
+  console.error('✗ 目標檔缺 Autodocs description anchor — 注入基礎失效')
+  process.exit(1)
+}
+try {
+  writeFileSync(target, orig.replace(docsDescriptionBlock, ''))
+  const code = run()
+  if (code === 0) { console.error('✗ 移除 Autodocs component description 後 gate 未 FAIL'); ok = false }
+  else console.log('✓ 缺 Autodocs component description 被抓(exit ' + code + ')')
+} finally {
+  writeFileSync(target, orig)
+}
+
+// 5) 還原後必 PASS
 if (run() !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
 console.log(ok ? '✅ meta-test PASS' : '❌ meta-test FAIL')
 process.exit(ok ? 0 : 1)

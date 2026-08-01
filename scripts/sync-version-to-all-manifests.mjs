@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 // sync-version-to-all-manifests.mjs — Phase 5 sync DS package version to plugin + marketplace
 //
-// changesets/cli `changeset version` 只 bump packages/* package.json。此 script 以 DS package version
-// 為唯一版本 SSOT，同步 plugin/marketplace、linked packages、template exact dependencies，以及
+// packages/design-system/package.json 是版本 SSOT。governance build graph 在 generate/check 階段
+// 呼叫本 script，同步 plugin/marketplace、linked packages、template exact dependencies，以及
 // package-lock v3 的三個 workspace entries（只改版本欄位，不接管其餘 manifest/lock 內容）。
-//
-// 此 script 跑在 `npm run changeset:version` 之後,讀 packages/design-system/package.json 新 version
-// → 同步寫進 plugin 3 處。release.yml version-sync BLOCKER 步驟才不會擋 publish。
+// Changesets 保留為未來可手動啟動的替代 authoring surface，不是 standard beta release 前置。
 
 import { chmodSync, constants as fsConstants, copyFileSync, lstatSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { assertNoSymlinkPath, canonicalRepositoryRoot } from './refresh-fork-launchers.mjs'
+import {
+  deriveProviderProductManagedInventory,
+  lifecycleSnapshotSha256,
+  providerInventorySha256,
+  validateProviderLifecycleLedger,
+} from './lib/provider-lifecycle.mjs'
 
 const ROOT = canonicalRepositoryRoot(process.cwd())
 const manifestPaths = [
@@ -22,6 +26,8 @@ const manifestPaths = [
   'packages/governance/package.json',
   'template/ds-product-template/package.json',
   'package-lock.json',
+  'packages/governance/canonical/providers.json',
+  'packages/governance/canonical/provider-lifecycle.json',
 ]
 
 function readManifest(path) {
@@ -58,6 +64,40 @@ const dsPkg = manifest('packages/design-system/package.json')
 if (dsPkg.name !== '@qijenchen/design-system') throw new Error('packages/design-system/package.json has an invalid package name')
 assertVersion(dsPkg.version, 'packages/design-system/package.json')
 const newVersion = dsPkg.version
+
+const providerRegistryPath = 'packages/governance/canonical/providers.json'
+const providerRegistry = manifest(providerRegistryPath)
+assertRecord(providerRegistry.canonical, `${providerRegistryPath} canonical`)
+if (!Array.isArray(providerRegistry.canonical.retiredProviders)) {
+  throw new Error(`${providerRegistryPath} canonical.retiredProviders must be an array`)
+}
+
+const providerLifecyclePath = 'packages/governance/canonical/provider-lifecycle.json'
+const providerLifecycle = manifest(providerLifecyclePath)
+if (!Array.isArray(providerLifecycle.snapshots) || !providerLifecycle.snapshots.length) {
+  throw new Error(`${providerLifecyclePath} must contain at least one snapshot`)
+}
+const currentProviderSnapshot = providerLifecycle.snapshots.at(-1)
+assertRecord(currentProviderSnapshot, `${providerLifecyclePath} current snapshot`)
+assertVersion(currentProviderSnapshot.releaseVersion, `${providerLifecyclePath} current snapshot.releaseVersion`)
+if (!Array.isArray(currentProviderSnapshot.retiredProviders)) {
+  throw new Error(`${providerLifecyclePath} current snapshot.retiredProviders must be an array`)
+}
+const needsProviderLifecycleAdvance = currentProviderSnapshot.releaseVersion !== newVersion
+if (needsProviderLifecycleAdvance && (providerRegistry.canonical.retiredProviders.length || currentProviderSnapshot.retiredProviders.length)) {
+  throw new Error('version-only provider lifecycle advance requires empty registry/current retiredProviders; use an explicit provider lifecycle migration')
+}
+const currentProviderInventory = deriveProviderProductManagedInventory(providerRegistry)
+if (JSON.stringify(currentProviderSnapshot.providers) !== JSON.stringify(currentProviderInventory)) {
+  throw new Error('provider topology changed since the current lifecycle snapshot; use an explicit provider lifecycle migration')
+}
+// Validate every retained digest, transition, immutable-head pointer, and registry projection before
+// calculating any writes. Pure version sync may advance only an already-valid, unchanged topology.
+validateProviderLifecycleLedger({
+  ledger: providerLifecycle,
+  registry: providerRegistry,
+  releaseVersion: currentProviderSnapshot.releaseVersion,
+})
 
 const pluginPath = '.claude-plugin/plugin.json'
 const plugin = manifest(pluginPath)
@@ -133,6 +173,25 @@ update(lockPath, (value) => {
   for (const workspacePath of workspacePackages.keys()) value.packages[workspacePath].version = newVersion
 })
 
+if (needsProviderLifecycleAdvance) {
+  const previousSnapshotSha256 = lifecycleSnapshotSha256(currentProviderSnapshot)
+  const nextLifecycle = structuredClone(providerLifecycle)
+  nextLifecycle.immutableHead = {
+    providerInventorySha256: providerInventorySha256(currentProviderSnapshot.providers),
+    releaseVersion: currentProviderSnapshot.releaseVersion,
+    snapshotSha256: previousSnapshotSha256,
+  }
+  nextLifecycle.snapshots.push({
+    releaseVersion: newVersion,
+    previousSnapshotSha256,
+    providers: structuredClone(currentProviderSnapshot.providers),
+    retiredProviders: [],
+  })
+  validateProviderLifecycleLedger({ ledger: nextLifecycle, registry: providerRegistry, releaseVersion: newVersion })
+  const content = JSON.stringify(nextLifecycle, null, 2) + '\n'
+  if (content !== manifests.get(providerLifecyclePath).source) desired.set(providerLifecyclePath, content)
+}
+
 function writeTransaction(changes) {
   const staged = []
   let renameCount = 0
@@ -181,16 +240,16 @@ console.log(`📦 DS version: ${newVersion}`)
 //   → 三道網全漏 → 無人 bump → DS 到 beta.60 它還停 beta.32。下游靠 mirror 重寫 + semver 容錯掩蓋,
 //   但 source 字串本身違反 SSOT(且 DS 一旦 bump 0.2.0,caret 容錯失效 → 本地 dogfood 裝到 stale)。
 // 此處跟著 DS version 改寫 root template 的 DS + storybook-config consumer dep,讓
-//   「ds push main → template 版本自動 SSOT」機械成立(release-preflight.mjs 第一步即跑本 script)。
+//   「version SSOT → template exact dependency」由 governance build graph 機械同步。
 // 注:apps/template/package.json 的 DS dep 是 `*`(workspace wildcard,由 mirror transform 處理),不在此動。
 if (CHECK_ONLY && desired.size) {
   for (const path of desired.keys()) console.error(`✗ version drift:${path} != ${newVersion}`)
   process.exit(1)
 }
 if (!CHECK_ONLY) writeTransaction(desired)
-for (const path of [pluginPath, mpPath, sbConfigPath, governancePath, tmplPkgPath, lockPath]) {
+for (const path of [pluginPath, mpPath, sbConfigPath, governancePath, tmplPkgPath, lockPath, providerLifecyclePath]) {
   console.log(`✓ ${path} ${desired.has(path) ? (CHECK_ONLY ? 'drift' : `→ ${newVersion}`) : `already ${newVersion}`}`)
 }
 
 console.log('')
-console.log(CHECK_ONLY ? 'Version SSOT check passed.' : 'Done. Commit through the protected PR flow, then dispatch the protected-default release workflow with the exact attested tag.')
+console.log(CHECK_ONLY ? 'Version SSOT check passed.' : 'Done. Commit through the protected PR flow, then run the canonical release:auto five-step workflow.')

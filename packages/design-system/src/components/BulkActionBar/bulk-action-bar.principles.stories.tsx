@@ -80,7 +80,7 @@ export const UsageGuidance: Story = {
             actions={
               <>
                 <Button variant="tertiary" size="md" startIcon={Archive}>封存</Button>
-                <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
+                <Button variant="tertiary" size="md" startIcon={Trash2}>刪除</Button>
               </>
             }
             onClearSelection={() => {}}
@@ -126,13 +126,14 @@ export const VsToastRule: Story = {
           actions={
             <>
               <Button variant="tertiary" size="md" startIcon={Archive}>封存</Button>
-              <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
+              <Button variant="tertiary" size="md" startIcon={Trash2}>刪除</Button>
             </>
           }
         />
       </Rule>
       <Rule
         title="❌ 不要用 BulkActionBar 顯示「3 個項目已封存,Undo」這類事件後通知"
+        note="BulkActionBar 由目前 selection state 驅動;封存完成後 selection 已結束,再保留操作列會把『接下來能做什麼』與『剛才發生什麼』混在一起。事件後復原應交給短暫的 Toast。"
       >
         <Label warn>這種情況應改用 Toast</Label>
         <p className="text-fg-muted text-body">
@@ -149,20 +150,20 @@ export const ActionVariantRule: Story = {
   render: () => (
     <div>
       <Rule
-        title="✅ 批次 action 用 tertiary,destructive 用 tertiary + danger"
-        note="批次操作是『可取消的入口』(點下後通常還會跳出確認視窗),所以用次要樣式(tertiary)就好;最強調的 primary 樣式留給確認視窗裡那顆最終按鈕。刪除這類危險操作也只加 danger 紅色,不升成 primary。"
+        title="✅ 批次 action 一律用 tertiary,包含 destructive"
+        note="批次操作是『開啟下一步確認的入口』,不是最終不可逆動作;因此刪除也維持 tertiary,由 Trash icon + 動作文字辨識語意。primary 與 danger 紅色都留給確認視窗裡的最終按鈕。"
       >
         <BulkActionBar
           selection={['a', 'b', 'c']}
           actions={
             <>
               <Button variant="tertiary" size="md" startIcon={Archive}>封存</Button>
-              <Button variant="tertiary" size="md" startIcon={Trash2} danger>刪除</Button>
+              <Button variant="tertiary" size="md" startIcon={Trash2}>刪除</Button>
             </>
           }
           onClearSelection={() => {}}
         />
-        <Label>↑ tertiary 主 / tertiary danger 破壞性</Label>
+        <Label>↑ 一律 tertiary;破壞性由 Trash icon +「刪除」文字辨識</Label>
       </Rule>
 
       <Rule

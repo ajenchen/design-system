@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "authority": "packages/design-system/ds-canonical/references/repository-hygiene.md",
+  "transientExemptPrefixes": [
+    ".claude/logs/",
+    ".claude/scratch/",
+    "governance/archive/",
+    "infra/governance/test/fixtures/",
+    "packages/design-system/ds-canonical/hooks/retired/"
+  ],
+  "duplicateExcludedPrefixes": [
+    ".agents/",
+    ".claude/",
+    "generated/",
+    "governance/archive/",
+    "governance/generated/",
+    "packages/design-system/ds-canonical/fork/",
+    "scripts/package-role-sources/",
+    "template/"
+  ],
+  "duplicateExcludedSegments": [
+    "archive",
+    "baseline",
+    "fixtures",
+    "retired"
+  ],
+  "profiles": {
+    "authority": {
+      "topLevelPurposes": {
+        ".agents": "generated Codex agent discovery view",
+        ".changeset": "future-reserved optional release authoring declarations; never a standard-path gate",
+        ".claude": "generated Claude provider view and retained provider evidence",
+        ".claude-plugin": "Claude plugin manifest",
+        ".codex": "Codex provider configuration",
+        ".devcontainer": "portable development environment",
+        ".github": "GitHub workflows and repository policy",
+        ".gitignore": "Git ignore policy",
+        ".husky": "local Git hook entrypoints",
+        ".npmrc": "npm policy",
+        ".storybook": "Storybook host configuration",
+        "AGENTS.md": "provider-neutral agent bootstrap",
+        "CLAUDE.md": "Claude import shell",
+        "CONTRIBUTING.md": "contributor guide",
+        "apps": "first-party consumer applications",
+        "commands": "compatibility symlink to provider commands",
+        "components.json": "component tooling configuration",
+        "docs": "repository documentation",
+        "generated": "committed generated repository views",
+        "governance": "repository governance state and projections",
+        "hooks": "provider hook compatibility surface",
+        "index.html": "Vite application entry document",
+        "infra": "shared governance control plane",
+        "netlify.toml": "Netlify deployment configuration",
+        "package-lock.json": "exact npm dependency lock",
+        "package.json": "workspace manifest",
+        "packages": "workspace packages and canonical design-system authority",
+        "scripts": "repository automation and deterministic gates",
+        "skills": "compatibility symlink to provider skills",
+        "snapshots-baseline": "compatibility symlink to curated visual baselines",
+        "src": "root demo application source",
+        "template": "published consumer template projection",
+        "tsconfig.app.json": "root application TypeScript configuration",
+        "tsconfig.json": "workspace TypeScript configuration",
+        "tsconfig.node.json": "Node/tooling TypeScript configuration",
+        "vite.config.ts": "root Vite configuration"
+      },
+      "declaredSymlinks": {
+        ".claude/snapshots-baseline": "../infra/governance/baseline/visual/targeted",
+        "commands": ".claude/commands",
+        "hooks/scripts": "../.claude/hooks",
+        "skills": ".claude/skills",
+        "snapshots-baseline": "infra/governance/baseline/visual/curated"
+      },
+      "duplicateExemptGroups": [
+        {
+          "paths": [
+            "apps/template/src/App.tsx",
+            "packages/design-system/ds-canonical/templates/dashboard-app.tsx"
+          ],
+          "reason": "first-party dogfood app intentionally proves the canonical dashboard template byte-for-byte"
+        }
+      ]
+    },
+    "product-consumer": {
+      "topLevelPurposes": {
+        ".agents": "generated Codex agent discovery view",
+        ".claude": "generated Claude provider view",
+        ".codex": "Codex provider configuration",
+        ".devcontainer": "portable development environment",
+        ".env.example": "non-secret environment variable contract",
+        ".gitattributes": "Git path behavior",
+        ".github": "GitHub workflows and repository policy",
+        ".gitignore": "Git ignore policy",
+        ".npmrc": "npm policy",
+        ".storybook": "Storybook host configuration",
+        "AGENTS.md": "provider-neutral agent bootstrap",
+        "CLAUDE.md": "Claude import shell",
+        "README.md": "product repository guide",
+        "apps": "product and template applications",
+        "docs": "product documentation",
+        "governance": "installed governance state",
+        "netlify": "Netlify functions and runtime assets",
+        "netlify.toml": "Netlify deployment configuration",
+        "npm-shrinkwrap.json": "installed governance dependency lock",
+        "package-lock.json": "exact npm dependency lock",
+        "package.json": "workspace manifest",
+        "patches": "versioned package patches or reserved patch home",
+        "schemas": "installed governance schemas",
+        "scripts": "product and governance automation",
+        "tsconfig.json": "workspace TypeScript configuration"
+      },
+      "declaredSymlinks": {},
+      "duplicateExemptGroups": [
+        {
+          "paths": ["apps/template/src/main.tsx", "apps/work/src/main.tsx"],
+          "reason": "template and product retain the same minimal React bootstrap while their application roots diverge"
+        },
+        {
+          "paths": ["apps/template/tsconfig.json", "apps/work/tsconfig.json"],
+          "reason": "both workspace applications intentionally consume the shared TypeScript profile"
+        },
+        {
+          "paths": ["apps/template/vite.config.ts", "apps/work/vite.config.ts"],
+          "reason": "template canary and product intentionally share the deployment-compatible Vite host"
+        }
+      ]
+    }
+  }
+}

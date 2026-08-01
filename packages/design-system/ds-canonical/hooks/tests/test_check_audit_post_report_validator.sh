@@ -3,7 +3,7 @@
 #
 # Hook(PostToolUse Write/Edit/MultiEdit):驗 audit report quality:
 #   A) NO-SAMPLE keyword 偵測
-#   B) Dim ≥ 46 coverage
+#   B) matrix-derived full Dim coverage
 #   C) audit-prompts.md prompt count
 #   D) @benchmark-unverified-blanket count drift
 #   E) prune-chain-trigger → emit additionalContext JSON
@@ -69,11 +69,6 @@ resolve_fixture_peer() {
   GOVERNANCE_PEER_PROVIDER=$(printf '%s' "$resolved" | jq -er '.id') || return 1
   GOVERNANCE_PEER_DISPLAY_NAME=$(printf '%s' "$resolved" | jq -er '.displayName') || return 1
   export GOVERNANCE_PEER_PROVIDER GOVERNANCE_PEER_DISPLAY_NAME
-}
-
-resolve_fixture_peer alpha || {
-  echo "FATAL:fixture lacks a concrete certified independent-review peer"
-  exit 1
 }
 
 if [ ! -f "$HOOK" ]; then echo "FATAL: hook not found: $HOOK"; exit 1; fi
@@ -167,7 +162,7 @@ Dim 2: pass
 Dim 3: pass
 EOF
 run_hook "$TMPDIR_TEST/governance/memory/project_audit_progress.md" "Write"
-# B fires (DIM_COUNT < 46) but no TRIGGER_PRUNE since audit-prompts.md absent + no bench debt
+# B fires (DIM_COUNT < matrix-derived total) but no TRIGGER_PRUNE since audit-prompts.md absent + no bench debt
 # stdout should be silent (TRIGGER_PRUNE=0)
 expect_silent "4. valid file no prune trigger → silent stdout"
 
@@ -195,9 +190,9 @@ EOF
 run_hook "$TMPDIR_TEST/governance/memory/project_audit_progress.md" "Edit"
 expect_block_stderr "5. judgment dim 缺 prompt → Validator C exit-2 block" "VALIDATOR BLOCK"
 
-# 6/7. Validator K 決策品質四要件(2026-07-14;SSOT = deep-audit SKILL C.1「🔒 決策品質四要件」)
-#    拍板 section 內每個決策 block 必含 SSOT-check / 世界級 cite(URL)/ independent-peer verdict / design-fit 四 marker。
-#    先補 `## 99.` prompt 讓 test 5 留下的 Validator C 條件通過,隔離 K 的判定。
+# 6/7. Validator K:when review is required,a decision needs SSOT-check /
+#    world-class cite / registry-resolved peer verdict / design-fit.
+#    First satisfy Validator C so these cases isolate K.
 cat > "$TMPDIR_TEST/corpus/canonical/skills/design-system-audit/references/audit-prompts.md" <<'EOF'
 ## 1. foo
 prompt
@@ -205,6 +200,10 @@ prompt
 prompt
 EOF
 mkdir -p "$TMPDIR_TEST/.claude/logs/deep-audit-test"
+resolve_fixture_peer alpha || {
+  echo "FATAL:fixture lacks a concrete certified independent-review peer"
+  exit 1
+}
 cat > "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" <<'EOF'
 # Deep Audit 報告
 Dim 1: pass
@@ -217,7 +216,7 @@ Dim 1: pass
    - 設計語言 fit:符合 density canonical
 EOF
 run_hook "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" "Write"
-expect_block_stderr "6. 決策缺世界級 cite → Validator K exit-2 block" "決策四要件不全"
+expect_block_stderr "6. 決策缺世界級 cite → Validator K exit-2 block" "決策品質要件不全"
 
 cat > "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" <<'EOF'
 # Deep Audit 報告
@@ -239,7 +238,8 @@ else
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 7. 四要件齊 pass"
 fi
 
-# 8. The independent-review requirement follows the registry-resolved peer,not a Codex literal.
+# 8. The independent-review requirement follows the registry-resolved peer,
+#    not a provider literal baked into the validator.
 cat > "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" <<'EOF'
 # Deep Audit 報告
 Dim 1: pass
@@ -264,10 +264,71 @@ else
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 8. future peer verdict"
 fi
 
-# 9. Direct invocation without the adapter's certified peer context must fail closed.
+# 9. A user waiver removes only the peer-verdict requirement; the other decision
+#    quality evidence remains mandatory.
 unset GOVERNANCE_PEER_PROVIDER GOVERNANCE_PEER_DISPLAY_NAME
+cat > "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" <<'EOF'
+# Deep Audit 報告
+Dim 1: pass
+second opinion: waived by user
+
+### 待你拍板
+1. 決策一:Popover 內距是否改 12px
+   - SSOT 理由:改跨元件 canonical 視覺結構
+   - SSOT-check:grep spec + memory,無既有拍板
+   - 世界級:Polaris https://polaris.shopify.com/tokens/space / Material / Ant(3 家)
+   - 設計語言 fit:符合 density canonical
+EOF
 run_hook "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" "Write"
-expect_integrity "9. missing registry-resolved peer → integrity fault" "peer provider is invalid"
+expect_silent "9. user-waived decision → no peer context required"
+
+# 10. A general report with no decision and an explicit task-level receipt also
+#     has no peer dependency.
+cat > "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" <<'EOF'
+# Scoped Audit 報告
+Dim 1: pass
+second opinion: not required by task
+EOF
+run_hook "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" "Write"
+expect_silent "10. no-decision scoped report → no peer context required"
+
+# 11. If the report does require independent review,it must carry the adapter's
+#     registry-resolved peer context.
+cat > "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" <<'EOF'
+# Scoped Audit 報告
+Dim 1: pass
+second opinion: required
+EOF
+run_hook "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" "Write"
+expect_block_stderr "11. required review without peer → block" "registry-resolved peer provider"
+
+# 12/13. A deep final report must close knowledge prune and governance coverage
+#        in the same run. The recovery trigger is not a final-report receipt.
+cat > "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" <<'EOF'
+# Deep Audit 報告
+Dim 1: pass
+Dim 2: pass
+Dim 3: pass
+Dim 4: pass
+Dim 5: pass
+Dim 6: pass
+Dim 7: pass
+Dim 8: pass
+Dim 9: pass
+Dim 10: pass
+A.1b story-vs-code: files scanned: 1; 0 findings
+performance-audit: N/A; ux-audit: N/A; visual-audit: N/A
+second opinion: waived by user
+governance-coverage: same-run reconciled; unavailable telemetry = UNOBSERVED
+EOF
+run_hook "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" "Write"
+expect_block_stderr "12. deep final missing same-run prune receipt → block" "Same-run knowledge-prune receipt"
+
+cat >> "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" <<'EOF'
+knowledge-prune: same-run complete
+EOF
+run_hook "$TMPDIR_TEST/.claude/logs/deep-audit-test/C1-final-report.md" "Write"
+expect_silent "13. deep final with all same-run receipts → pass"
 
 echo ""
 echo "=== Summary ==="
