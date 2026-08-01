@@ -1,14 +1,11 @@
 #!/usr/bin/env node
 
-import { createHash, createPrivateKey, sign, verify } from 'node:crypto'
+import { createHash } from 'node:crypto'
+import { spawnSync } from 'node:child_process'
 import { lstatSync, readFileSync, readdirSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import {
-  issuerRegistryDigest,
-  publicKeyFromIssuer,
-  resolvePolicyIssuer,
   validateIssuerRegistry,
   validateIssuerRegistryLineage,
   validateRegistryPolicyBinding,
@@ -20,32 +17,13 @@ import {
   externalActivationPolicyDigest,
   resolveExternalActivationProfile,
 } from '../infra/governance/lib/external-activation.mjs'
-import {
-  loadGovernanceBuildGraphSemanticDefinition,
-  pathMatches as buildGraphPathMatches,
-  stageSourceMatches,
-} from './governance-build-graph.mjs'
-import {
-  assertAllControlPlaneGenesisPreservations,
-  assertControlPlaneGenesisBaseBinding,
-  assertControlPlaneGenesisTombstones,
-  CONTROL_PLANE_GENESIS_OPEN_STATE,
-  loadControlPlaneGenesisTransition,
-  validateControlPlaneGenesisTransition,
-} from './lib/control-plane-genesis-transition.mjs'
 
-const AUTH_KEYS = [
-  'schemaVersion', 'kind', 'repository', 'baseSha', 'candidateHeadSha',
-  'changedPaths', 'contentDigest', 'issuerRegistryDigest', 'issuedAt', 'expiresAt',
-  'signerKeyId', 'subject', 'signature', 'coSignatures',
-]
 const POLICY_KEYS = [
   '$schema', 'schemaVersion', 'repository', 'algorithm', 'maxAuthorizationTtlMinutes',
   'clockSkewSeconds', 'authorizationDirectory', 'issuerRegistryDigest', 'allowedKeyIds',
   'protectedPaths', 'protectedPrefixes', 'trustRootQuorum', 'bootstrap',
   'externalActivationPolicyDigest', 'authorizationProfileId', 'authorizationProfileDigest',
 ]
-const COSIGNATURE_KEYS = ['signerKeyId', 'subject', 'signature']
 const BOOTSTRAP_KEYS = ['schemaVersion', 'enabled', 'ownerLogins', 'nonce', 'maxCommentTtlMinutes']
 const shaPattern = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/
 const REGISTRY_PATH = 'infra/governance/trust/issuers.json'
@@ -55,19 +33,6 @@ const RELEASE_RINGS_PATH = 'infra/governance/release-rings.json'
 const RUNTIME_PROFILE_PATH = 'infra/governance/providers/runtime-conformance.json'
 const RELEASE_TAG_POLICY_PATH = 'infra/governance/release-tag-authorization-policy.json'
 const SEMANTIC_MANIFEST_PATH = 'packages/governance/canonical/manifest.json'
-const CONTROL_PLANE_GENESIS_MARKERS = Object.freeze([
-  '.github/workflows/governance-anchor.yml',
-  'governance/control-plane.lock.json',
-  'infra/governance/bin/reconcile-github.mjs',
-  'infra/governance/desired/github.json',
-  'infra/governance/inventory/managed-repos.json',
-  'infra/governance/privileged-trust-roots.json',
-  'infra/governance/staged-rollout-plan.json',
-  'infra/governance/trust/issuers.json',
-  'packages/governance/canonical/manifest.json',
-  'scripts/governance-build-graph.json',
-  'scripts/verify-privileged-change.mjs',
-])
 const CONTROL_PLANE_GENESIS_COMMENT_MARKER = 'DS-GOVERNANCE-CONTROL-PLANE-GENESIS-V1 '
 const PRODUCTION_PROFILE = 'PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM'
 
@@ -299,9 +264,9 @@ export async function privilegedChangeSet({
   policy = readTrustRootPolicy(trustedRoot),
   candidatePolicy = readTrustRootPolicy(candidateRoot),
 }) {
-  // The authorization image is the union of the current and proposed closures.
+  // The verified image is the union of the current and proposed closures.
   // Otherwise a candidate could add a policy prefix and semantic manifest entry
-  // while leaving the newly introduced source bytes outside the signed digest.
+  // while leaving the newly introduced source bytes outside the structural check.
   const policies = [policy, candidatePolicy]
   const protectedPaths = new Set([POLICY_PATH, REGISTRY_PATH])
   for (const item of policies) for (const path of item.protectedPaths) protectedPaths.add(path)
@@ -320,60 +285,6 @@ export async function privilegedChangeSet({
     }
   }
   return { changedPaths: changed, contentDigest: await sha256(stable(candidateImages)) }
-}
-
-function unsignedPayload(authorization) {
-  const payload = { ...authorization }
-  delete payload.signature
-  delete payload.coSignatures
-  return Buffer.from(stable(payload), 'utf8')
-}
-
-export async function issuePrivilegedChangeAuthorization({ trustedRoot, candidateRoot, repository, baseSha, candidateHeadSha, signerKeyId, subject, privateKey, issuedAt, expiresAt }) {
-  const registry = readIssuerRegistry(trustedRoot)
-  const issuanceTime = new Date(issuedAt)
-  const policy = readTrustRootPolicy(trustedRoot, { now: issuanceTime })
-  const candidatePolicy = readTrustRootPolicy(candidateRoot, { now: issuanceTime })
-  const changes = await privilegedChangeSet({ trustedRoot, candidateRoot, policy, candidatePolicy })
-  invariant(changes.changedPaths.length > 0, 'no privileged change requires authorization')
-  const authorization = {
-    schemaVersion: 1,
-    kind: 'privileged-change-authorization',
-    repository,
-    baseSha,
-    candidateHeadSha,
-    changedPaths: changes.changedPaths,
-    contentDigest: changes.contentDigest,
-    issuerRegistryDigest: issuerRegistryDigest(registry),
-    issuedAt,
-    expiresAt,
-    signerKeyId,
-    subject,
-    signature: '',
-    coSignatures: [],
-  }
-  const key = privateKey?.type === 'private' ? privateKey : createPrivateKey(privateKey)
-  invariant(key.asymmetricKeyType === 'ed25519', 'privileged authorization private key must be Ed25519')
-  authorization.signature = sign(null, unsignedPayload(authorization), key).toString('base64url')
-  return authorization
-}
-
-export function cosignPrivilegedChangeAuthorization(authorization, { signerKeyId, subject, privateKey }) {
-  invariant(exactKeys(authorization, AUTH_KEYS), 'privileged authorization has an invalid or open shape')
-  invariant(![authorization.signerKeyId, ...authorization.coSignatures.map(item => item.signerKeyId)].includes(signerKeyId), 'privileged cosigner must be distinct')
-  invariant(![authorization.subject, ...authorization.coSignatures.map(item => item.subject)].includes(subject), 'privileged cosigner subject must be distinct')
-  const key = privateKey?.type === 'private' ? privateKey : createPrivateKey(privateKey)
-  invariant(key.asymmetricKeyType === 'ed25519', 'privileged authorization private key must be Ed25519')
-  authorization.coSignatures.push({ signerKeyId, subject, signature: sign(null, unsignedPayload(authorization), key).toString('base64url') })
-  return authorization
-}
-
-function bootstrapPayload({ repository, pullRequest, candidateHeadSha, trustRootSha256, issuerRegistryDigest, contentDigest, expiresAt, nonce }) {
-  return { repository, pullRequest, candidateHeadSha, trustRootSha256, issuerRegistryDigest, contentDigest, expiresAt, nonce }
-}
-
-export function bootstrapCommentBody(input) {
-  return `DS-GOVERNANCE-BOOTSTRAP-V1 ${stable(bootstrapPayload(input))}`
 }
 
 function trustProjection(root) {
@@ -435,6 +346,35 @@ function controlPlaneGenesisReceiptDigest(receipt) {
     .digest('hex')
 }
 
+function closedGit(root, args, label) {
+  const result = spawnSync('/usr/bin/git', ['-C', resolve(root), ...args], {
+    cwd: resolve(root),
+    encoding: 'utf8',
+    env: {
+      GIT_CONFIG_NOSYSTEM: '1',
+      GIT_TERMINAL_PROMPT: '0',
+      LC_ALL: 'C',
+    },
+    maxBuffer: 16 * 1024 * 1024,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  invariant(!result.error && result.status === 0,
+    `${label} failed closed: ${(result.stderr || result.error?.message || 'unknown Git failure').trim()}`)
+  return result.stdout
+}
+
+// Live reconciler readback still needs this generic checkout identity guard
+// after the one-time Genesis challenge issuer has been retired.
+export function verifyGitCheckoutIdentity(root, { head, tree, label }) {
+  const identity = closedGit(root, ['rev-parse', 'HEAD^{commit}', 'HEAD^{tree}'],
+    `${label} identity readback`).trim().split('\n')
+  invariant(identity.length === 2 && identity[0] === head && identity[1] === tree,
+    `${label} checkout does not match the declared commit/tree`)
+  invariant(closedGit(root, ['status', '--porcelain=v1', '-z', '--untracked-files=all'],
+    `${label} worktree readback`).length === 0,
+  `${label} checkout contains uncommitted or untracked bytes`)
+}
+
 export function validateControlPlaneGenesisReceipt(receipt) {
   invariant(exactKeys(receipt, [
     'schemaVersion', 'kind', 'challenge', 'challengeDigest', 'authorization',
@@ -487,222 +427,6 @@ export function validateControlPlaneGenesisReceipt(receipt) {
   return receipt
 }
 
-function canonicalChangedPaths(candidateRoot, changedPaths) {
-  invariant(Array.isArray(changedPaths) && changedPaths.length > 0, 'control-plane genesis requires a non-empty trusted PR changed-path list')
-  const normalized = changedPaths.map(path => {
-    invariant(typeof path === 'string' && path.length > 0, 'control-plane genesis changed path is invalid')
-    const resolved = safeRelative(candidateRoot, path)
-    invariant(resolved.rel === path && path !== '.', `control-plane genesis changed path is not canonical: ${path}`)
-    return path
-  })
-  invariant(new Set(normalized).size === normalized.length, 'control-plane genesis changed paths contain duplicates')
-  invariant(stable(normalized) === stable([...normalized].sort()), 'control-plane genesis changed paths are not canonically ordered')
-  return normalized
-}
-
-function closedGit(root, args, label) {
-  const result = spawnSync('/usr/bin/git', ['-C', resolve(root), ...args], {
-    cwd: resolve(root),
-    encoding: 'utf8',
-    env: {
-      GIT_CONFIG_NOSYSTEM: '1',
-      GIT_TERMINAL_PROMPT: '0',
-      LC_ALL: 'C',
-    },
-    maxBuffer: 16 * 1024 * 1024,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-  invariant(!result.error && result.status === 0,
-    `${label} failed closed: ${(result.stderr || result.error?.message || 'unknown Git failure').trim()}`)
-  return result.stdout
-}
-
-export function verifyGitCheckoutIdentity(root, { head, tree, label }) {
-  const identity = closedGit(root, ['rev-parse', 'HEAD^{commit}', 'HEAD^{tree}'],
-    `${label} identity readback`).trim().split('\n')
-  invariant(identity.length === 2 && identity[0] === head && identity[1] === tree,
-    `${label} checkout does not match the declared commit/tree`)
-  invariant(closedGit(root, ['status', '--porcelain=v1', '-z', '--untracked-files=all'],
-    `${label} worktree readback`).length === 0,
-  `${label} checkout contains uncommitted or untracked bytes`)
-}
-
-function exactGitChangedPaths(candidateRoot, { baseSha, baseTree, candidateHeadSha, candidateHeadTree }) {
-  const resolved = closedGit(candidateRoot, [
-    'rev-parse',
-    `${baseSha}^{commit}`,
-    `${baseSha}^{tree}`,
-    `${candidateHeadSha}^{commit}`,
-    `${candidateHeadSha}^{tree}`,
-  ], 'control-plane genesis commit/tree object readback').trim().split('\n')
-  invariant(resolved.length === 4
-    && resolved[0] === baseSha
-    && resolved[1] === baseTree
-    && resolved[2] === candidateHeadSha
-    && resolved[3] === candidateHeadTree,
-  'control-plane genesis declared commit/tree objects differ from canonical Git readback')
-  const fields = closedGit(candidateRoot, [
-    'diff',
-    '--name-status',
-    '-z',
-    '--no-renames',
-    '--no-ext-diff',
-    '--no-textconv',
-    `${baseSha}^{tree}`,
-    `${candidateHeadSha}^{tree}`,
-  ], 'control-plane genesis exact changed-path readback').split('\0')
-  if (fields.at(-1) === '') fields.pop()
-  invariant(fields.length > 0 && fields.length % 2 === 0,
-    'control-plane genesis exact Git changed-path readback is empty or malformed')
-  const paths = []
-  for (let index = 0; index < fields.length; index += 2) {
-    invariant(fields[index] === 'A' || fields[index] === 'M',
-      `control-plane genesis contains forbidden Git status ${fields[index]} for ${fields[index + 1]}`)
-    paths.push(fields[index + 1])
-  }
-  invariant(new Set(paths).size === paths.length,
-    'control-plane genesis Git changed-path readback contains duplicates')
-  return paths.sort()
-}
-
-export function validateControlPlaneGenesisChallengeTransition({
-  candidateRoot,
-  transition,
-  baseSha,
-  baseTree,
-}) {
-  const value = validateControlPlaneGenesisTransition(transition)
-  invariant(
-    value.state === CONTROL_PLANE_GENESIS_OPEN_STATE,
-    'control-plane genesis transition must remain open until the distinct protected cleanup PR',
-  )
-  invariant(
-    value.releaseAllowed === false,
-    'control-plane genesis transition must keep candidate freeze/release blocked',
-  )
-  invariant(
-    value.baseCommit === baseSha && value.baseTree === baseTree,
-    'control-plane genesis transition base commit/tree differs from the exact challenge base',
-  )
-  assertControlPlaneGenesisBaseBinding({
-    root: candidateRoot,
-    transition: value,
-  })
-  assertAllControlPlaneGenesisPreservations({
-    root: candidateRoot,
-    transition: value,
-  })
-  assertControlPlaneGenesisTombstones({
-    root: candidateRoot,
-    transition: value,
-  })
-  return value
-}
-
-export async function prepareControlPlaneGenesisChallenge({
-  trustedRoot,
-  candidateRoot,
-  repository,
-  baseSha,
-  baseTree,
-  candidateHeadSha,
-  candidateHeadTree,
-  pullRequest,
-  changedPaths,
-  now = new Date(),
-}) {
-  invariant(shaPattern.test(baseSha) && shaPattern.test(baseTree)
-    && shaPattern.test(candidateHeadSha) && shaPattern.test(candidateHeadTree),
-  'control-plane genesis commit/tree identity is invalid')
-  invariant(repository === 'ajenchen/design-system', 'control-plane genesis is restricted to the registered authority repository')
-  invariant(Number.isSafeInteger(pullRequest) && pullRequest > 0, 'control-plane genesis requires an exact pull request number')
-  invariant(now instanceof Date && Number.isFinite(now.getTime()), 'control-plane genesis verification time is invalid')
-  const paths = canonicalChangedPaths(candidateRoot, changedPaths)
-  verifyGitCheckoutIdentity(trustedRoot, {
-    head: baseSha,
-    tree: baseTree,
-    label: 'control-plane genesis trusted base',
-  })
-  verifyGitCheckoutIdentity(candidateRoot, {
-    head: candidateHeadSha,
-    tree: candidateHeadTree,
-    label: 'control-plane genesis candidate',
-  })
-  invariant(stable(paths) === stable(exactGitChangedPaths(candidateRoot, {
-    baseSha,
-    baseTree,
-    candidateHeadSha,
-    candidateHeadTree,
-  })), 'control-plane genesis changed paths do not equal the complete base-to-candidate Git tree diff')
-  const graph = loadGovernanceBuildGraphSemanticDefinition({
-    repoRoot: candidateRoot,
-  })
-  validateControlPlaneGenesisChallengeTransition({
-    candidateRoot,
-    transition: loadControlPlaneGenesisTransition({ root: candidateRoot }),
-    baseSha,
-    baseTree,
-  })
-  const stage = graph.stages.find(candidate => candidate.id === 'control-plane')
-  invariant(stage, 'canonical build graph has no control-plane stage')
-  const withinControlPlaneClosure = path => stageSourceMatches(stage, path)
-    || stage.outputs.some(declaration => buildGraphPathMatches(path, declaration))
-  for (const path of paths) invariant(withinControlPlaneClosure(path), `control-plane genesis changed a path outside the canonical control-plane closure: ${path}`)
-  for (const marker of CONTROL_PLANE_GENESIS_MARKERS) {
-    invariant(withinControlPlaneClosure(marker), `control-plane genesis marker is outside the canonical control-plane closure: ${marker}`)
-    invariant((await image(trustedRoot, marker)).type === 'absent', `control-plane genesis is permanently closed because the trusted base already contains ${marker}`)
-    invariant(paths.includes(marker), `control-plane genesis omits required marker ${marker}`)
-    invariant((await image(candidateRoot, marker)).type === 'file', `control-plane genesis candidate lacks required marker ${marker}`)
-  }
-  const { registry, policy } = validateCandidateTrustConfiguration(candidateRoot, { now })
-  const repositoryOwner = repository.split('/')[0]
-  invariant(stable(policy.bootstrap.ownerLogins) === stable([repositoryOwner]), 'control-plane genesis owner allowlist must contain only the registered repository owner')
-  const images = []
-  for (const path of paths) {
-    const before = await image(trustedRoot, path)
-    const after = await image(candidateRoot, path)
-    invariant(after.type === 'file', `control-plane genesis may not delete or materialize a non-file path: ${path}`)
-    invariant(stable(before) !== stable(after), `control-plane genesis trusted PR changed-path list contains an unchanged path: ${path}`)
-    images.push({ path, before, after })
-  }
-  const buildGraphBytes = readFileSync(safeRelative(candidateRoot, 'scripts/governance-build-graph.json').absolute)
-  const manifestBytes = readFileSync(safeRelative(candidateRoot, SEMANTIC_MANIFEST_PATH).absolute)
-  const inventoryBytes = readFileSync(safeRelative(candidateRoot, 'infra/governance/inventory/managed-repos.json').absolute)
-  const desiredBytes = readFileSync(safeRelative(candidateRoot, 'infra/governance/desired/github.json').absolute)
-  const controlPlaneLockBytes = readFileSync(safeRelative(candidateRoot, 'governance/control-plane.lock.json').absolute)
-  const challenge = {
-    schemaVersion: 1,
-    kind: 'control-plane-genesis-challenge',
-    repository,
-    pullRequest,
-    baseSha,
-    baseTree,
-    candidateHeadSha,
-    candidateHeadTree,
-    changedPaths: paths,
-    changedPathsDigest: await sha256(stable(paths)),
-    controlPlaneClosureDigest: await sha256(stable(images)),
-    controlPlaneStageDigest: await sha256(stable({
-      id: stage.id,
-      sources: stage.sources,
-      sourceExcludes: stage.sourceExcludes,
-      outputs: stage.outputs,
-      runtimeEntrypoints: stage.runtimeEntrypoints,
-    })),
-    buildGraphDigest: await sha256(buildGraphBytes),
-    manifestDigest: await sha256(manifestBytes),
-    inventoryDigest: await sha256(inventoryBytes),
-    desiredDigest: await sha256(desiredBytes),
-    controlPlaneLockDigest: await sha256(controlPlaneLockBytes),
-    issuerRegistryDigest: issuerRegistryDigest(registry),
-  }
-  return {
-    challenge,
-    policy,
-    challengeDigest: await sha256(`qijenchen-control-plane-genesis-challenge-v1\n${stable(challenge)}`),
-  }
-}
-
 export function controlPlaneGenesisCommentBody({ challenge, challengeDigest, expiresAt, nonce }) {
   return `${CONTROL_PLANE_GENESIS_COMMENT_MARKER}${stable({
     challenge,
@@ -712,184 +436,97 @@ export function controlPlaneGenesisCommentBody({ challenge, challengeDigest, exp
   })}`
 }
 
-export async function verifyControlPlaneGenesis(input) {
-  const prepared = await prepareControlPlaneGenesisChallenge(input)
-  const { challenge, challengeDigest, policy } = prepared
-  const now = input.now ?? new Date()
-  const comments = input.bootstrapComments
-  invariant(Array.isArray(comments), 'control-plane genesis requires trusted GitHub PR comment readback')
-  const repositoryOwner = challenge.repository.split('/')[0]
-  const maxExpiry = new Date(now.getTime() + policy.bootstrap.maxCommentTtlMinutes * 60 * 1000)
-  const matches = comments.flat(Infinity).filter(comment => {
-    const createdAt = new Date(comment?.created_at)
-    const updatedAt = new Date(comment?.updated_at)
-    if (comment?.author_association !== 'OWNER' || comment?.user?.login !== repositoryOwner) return false
-    if (!Number.isFinite(createdAt.getTime()) || createdAt.getTime() !== updatedAt.getTime() || createdAt > now) return false
-    if (typeof comment.body !== 'string' || !comment.body.startsWith(CONTROL_PLANE_GENESIS_COMMENT_MARKER)) return false
-    let payload
-    try { payload = JSON.parse(comment.body.slice(CONTROL_PLANE_GENESIS_COMMENT_MARKER.length)) } catch { return false }
-    if (!exactKeys(payload, ['challenge', 'challengeDigest', 'expiresAt', 'nonce'])) return false
-    const expiresAt = new Date(payload.expiresAt)
-    if (!Number.isFinite(expiresAt.getTime()) || expiresAt <= now || expiresAt > maxExpiry || createdAt > expiresAt) return false
-    return comment.body === controlPlaneGenesisCommentBody({
-      challenge,
-      challengeDigest,
-      expiresAt: payload.expiresAt,
-      nonce: policy.bootstrap.nonce,
-    })
-  })
-  invariant(matches.length === 1, 'control-plane genesis requires exactly one unedited, unexpired OWNER comment bound to the exact base/head/tree/control-plane closure')
-  const comment = matches[0]
-  const receipt = {
-    schemaVersion: 1,
-    kind: 'control-plane-genesis-verification',
-    challenge,
-    challengeDigest,
-    authorization: {
-      kind: 'github-owner-comment',
-      commentId: String(comment.id),
-      commentDigest: await sha256(comment.body),
-      ownerLogin: repositoryOwner,
-      createdAt: new Date(comment.created_at).toISOString(),
-    },
-    verifiedAt: now.toISOString(),
-    receiptDigest: null,
-  }
-  receipt.receiptDigest = controlPlaneGenesisReceiptDigest(receipt)
-  return validateControlPlaneGenesisReceipt(receipt)
-}
-
-async function verifyBootstrapTransition({ trustedRoot, candidateRoot, repository, candidateHeadSha, pullRequest, comments, changes, policy, now }) {
-  invariant(policy.bootstrap.enabled && policy.allowedKeyIds.length === 0, 'privileged trust root is not in one-time bootstrap mode')
-  invariant(Number.isInteger(pullRequest) && pullRequest > 0 && Array.isArray(comments), 'privileged bootstrap requires trusted PR comment evidence')
-  const { registry: candidateRegistry, policy: candidatePolicy } = validateCandidateTrustConfiguration(candidateRoot, { now })
-  for (const key of POLICY_KEYS.filter(key => !['issuerRegistryDigest', 'allowedKeyIds', 'bootstrap'].includes(key))) {
-    invariant(stable(candidatePolicy[key]) === stable(policy[key]), `bootstrap transition may not alter policy field ${key}`)
-  }
-  invariant(stable({ ...candidatePolicy.bootstrap, enabled: true }) === stable(policy.bootstrap), 'bootstrap transition may only close the bootstrap enabled flag')
-  const trustRootPath = safeRelative(candidateRoot, POLICY_PATH).absolute
-  const trustRootSha256 = await sha256(readFileSync(trustRootPath))
-  const candidateRegistryDigest = issuerRegistryDigest(candidateRegistry)
-  const maxExpiry = new Date(now.getTime() + policy.bootstrap.maxCommentTtlMinutes * 60 * 1000)
-  const matching = comments.flat(Infinity).filter(comment => {
-    const createdAt = new Date(comment?.created_at)
-    const updatedAt = new Date(comment?.updated_at)
-    if (comment?.author_association !== 'OWNER' || !policy.bootstrap.ownerLogins.includes(comment?.user?.login)) return false
-    if (!Number.isFinite(createdAt.getTime()) || createdAt.getTime() !== updatedAt.getTime() || createdAt > now) return false
-    const marker = 'DS-GOVERNANCE-BOOTSTRAP-V1 '
-    if (typeof comment.body !== 'string' || !comment.body.startsWith(marker)) return false
-    let payload
-    try { payload = JSON.parse(comment.body.slice(marker.length)) } catch { return false }
-    if (!exactKeys(payload, ['repository', 'pullRequest', 'candidateHeadSha', 'trustRootSha256', 'issuerRegistryDigest', 'contentDigest', 'expiresAt', 'nonce'])) return false
-    const expiresAt = new Date(payload.expiresAt)
-    if (!Number.isFinite(expiresAt.getTime()) || expiresAt <= now || expiresAt > maxExpiry || createdAt > expiresAt) return false
-    return comment.body === bootstrapCommentBody({ repository, pullRequest, candidateHeadSha, trustRootSha256, issuerRegistryDigest: candidateRegistryDigest, contentDigest: changes.contentDigest, expiresAt: payload.expiresAt, nonce: policy.bootstrap.nonce })
-  })
-  invariant(matching.length === 1, 'privileged bootstrap requires exactly one unedited, unexpired OWNER comment bound to this PR/head/trust root/registry/closure')
-  return { authorized: true, changedPaths: changes.changedPaths, authorization: { kind: 'owner-comment-bootstrap', commentId: matching[0].id } }
-}
-
 export async function verifyPrivilegedChange({
   trustedRoot,
   candidateRoot,
   repository,
   baseSha,
   candidateHeadSha,
-  pullRequest = null,
-  bootstrapComments = null,
   now = new Date(),
-  controlPlaneGenesis = false,
-  baseTree = null,
-  candidateHeadTree = null,
-  changedPaths = null,
+  ...unsupported
 }) {
+  invariant(
+    Object.keys(unsupported).length === 0,
+    `unsupported privileged verification option(s): ${Object.keys(unsupported).sort().join(', ')}`,
+  )
   invariant(shaPattern.test(baseSha) && shaPattern.test(candidateHeadSha), 'privileged verification commit SHA is invalid')
-  if (controlPlaneGenesis) {
-    return verifyControlPlaneGenesis({
-      trustedRoot,
-      candidateRoot,
-      repository,
-      baseSha,
-      baseTree,
-      candidateHeadSha,
-      candidateHeadTree,
-      pullRequest,
-      changedPaths,
-      bootstrapComments,
-      now,
-    })
-  }
   const registry = readIssuerRegistry(trustedRoot)
   const policy = readTrustRootPolicy(trustedRoot, { now })
   // Candidate validation happens before change-set calculation, and the
   // candidate policy is then included in that calculation. New semantic source
-  // bytes are therefore part of this authorization, not merely future changes.
+  // bytes are therefore part of this verification, not merely future changes.
   const candidatePolicy = readTrustRootPolicy(candidateRoot, { now })
   invariant(repository === policy.repository, `privileged verification repository mismatch: ${repository}`)
   const changes = await privilegedChangeSet({ trustedRoot, candidateRoot, policy, candidatePolicy })
-  if (changes.changedPaths.length === 0) return { authorized: true, changedPaths: [], authorization: null }
-  // 2026-07-29 user 拍板 3B:拆除 per-PR Ed25519 授權檔要求。
-  // 原設計以 `${authorizationDirectory}/${candidateHeadSha}.json` 綁定授權,但授權檔
-  // 必須 commit 進其自身命名的 head —— commit sha 依內容而變、內容含蓋 sha 的簽章,
-  // 為密碼學不動點,任何特權 PR 皆不可滿足(2026-07-29 PR13-21 全數 REVIEW-red 實證)。
-  // 保留的防線:semantic-source closure 驗證(readTrustRootPolicy 內
-  // validateSemanticSourceClosure)、privilegedChangeSet 的 trusted+candidate 聯集
-  // 閉包計算、以及 trust-config 變更時的 registry append-only lineage 結構驗證;
-  // 外加 repo 端 protected main + required checks。簽章式授權若未來重啟,必須改綁
-  // content digest 或 parent commit 而非 head sha。
+  if (changes.changedPaths.length === 0) return { verified: true, changedPaths: [] }
+  // 3B: privileged closure changes are structural verification, not a per-change
+  // signature, OWNER-comment, key-enrollment, or authorization-artifact ceremony.
+  // The retained fail-closed boundaries are semantic-source closure validation,
+  // the trusted+candidate union closure, append-only issuer lineage for trust
+  // configuration changes, and repository protected required checks.
   if (trustConfigurationChanged(trustedRoot, candidateRoot, changes)) {
     const candidate = validateCandidateTrustConfiguration(candidateRoot, { now })
-    // 無簽章 issuedAt 可錨 → 省略 revocationEffectiveAt 的精確時刻綁定;
-    // append-only / 不可改寫 / 不可復活 / 不可刪除的結構保證全數保留。
+    // With no per-change issuedAt, revocation remains structurally validated:
+    // append-only, immutable, non-reactivatable, and non-deletable lineage.
     validateIssuerRegistryLineage(registry, candidate.registry)
   }
-  return { authorized: true, changedPaths: changes.changedPaths, authorization: null }
+  return { verified: true, changedPaths: changes.changedPaths }
 }
 
-function value(args, flag) {
-  const at = args.indexOf(flag)
-  invariant(at >= 0 && args[at + 1] && !args[at + 1].startsWith('--'), `missing ${flag}`)
-  return args[at + 1]
+const VERIFY_CLI_FLAGS = new Set([
+  '--trusted',
+  '--candidate',
+  '--repository',
+  '--base-sha',
+  '--candidate-head-sha',
+])
+const REMOVED_CEREMONY_FLAGS = new Set([
+  '--issue',
+  '--private-key',
+  '--signer-key-id',
+  '--subject',
+  '--issued-at',
+  '--expires-at',
+  '--bootstrap-comments',
+  '--pull-request',
+])
+
+function parseCliArgs(args) {
+  for (const argument of args) {
+    invariant(
+      !REMOVED_CEREMONY_FLAGS.has(argument),
+      `${argument} was removed: privileged closure verification has no per-change signature, OWNER comment, or key-enrollment ceremony`,
+    )
+  }
+  invariant(args.length % 2 === 0, 'privileged verification arguments must be flag/value pairs')
+  const values = new Map()
+  for (let index = 0; index < args.length; index += 2) {
+    const flag = args[index]
+    const value = args[index + 1]
+    invariant(VERIFY_CLI_FLAGS.has(flag), `unknown privileged verification flag: ${flag}`)
+    invariant(!values.has(flag), `duplicate privileged verification flag: ${flag}`)
+    invariant(value && !value.startsWith('--'), `missing ${flag}`)
+    values.set(flag, value)
+  }
+  for (const flag of VERIFY_CLI_FLAGS) invariant(values.has(flag), `missing ${flag}`)
+  return values
 }
 
 async function main() {
-  const args = process.argv.slice(2)
-  const trustedRoot = resolve(value(args, '--trusted'))
-  const candidateRoot = resolve(value(args, '--candidate'))
-  const repository = value(args, '--repository')
-  const baseSha = value(args, '--base-sha')
-  const candidateHeadSha = value(args, '--candidate-head-sha')
-  if (args.includes('--issue')) {
-    const privateKeyPath = resolve(value(args, '--private-key'))
-    const stat = lstatSync(privateKeyPath)
-    invariant(stat.isFile() && !stat.isSymbolicLink() && (stat.mode & 0o077) === 0, 'private key must be a regular non-symlink file with no group/other permissions')
-    const authorization = await issuePrivilegedChangeAuthorization({
-      trustedRoot, candidateRoot, repository, baseSha, candidateHeadSha,
-      signerKeyId: value(args, '--signer-key-id'), subject: value(args, '--subject'),
-      privateKey: readFileSync(privateKeyPath), issuedAt: value(args, '--issued-at'), expiresAt: value(args, '--expires-at'),
-    })
-    process.stdout.write(`${JSON.stringify(authorization, null, 2)}\n`)
-    return
-  }
-  const bootstrapComments = args.includes('--bootstrap-comments') ? JSON.parse(readFileSync(resolve(value(args, '--bootstrap-comments')), 'utf8')) : null
-  const pullRequest = args.includes('--pull-request') ? Number(value(args, '--pull-request')) : null
-  const controlPlaneGenesis = args.includes('--control-plane-genesis')
-  const changedPaths = controlPlaneGenesis ? JSON.parse(readFileSync(resolve(value(args, '--changed-paths')), 'utf8')) : null
+  const values = parseCliArgs(process.argv.slice(2))
+  const trustedRoot = resolve(values.get('--trusted'))
+  const candidateRoot = resolve(values.get('--candidate'))
+  const repository = values.get('--repository')
+  const baseSha = values.get('--base-sha')
+  const candidateHeadSha = values.get('--candidate-head-sha')
   const result = await verifyPrivilegedChange({
     trustedRoot,
     candidateRoot,
     repository,
     baseSha,
     candidateHeadSha,
-    bootstrapComments,
-    pullRequest,
-    controlPlaneGenesis,
-    baseTree: controlPlaneGenesis ? value(args, '--base-tree') : null,
-    candidateHeadTree: controlPlaneGenesis ? value(args, '--candidate-head-tree') : null,
-    changedPaths,
   })
-  if (controlPlaneGenesis) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
-  else console.log(`privileged executable closure verified (${result.changedPaths.length} authorized changes)`)
+  console.log(`privileged executable closure verified structurally (${result.changedPaths.length} changed paths)`)
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main().catch(error => { console.error(error.message); process.exit(1) })

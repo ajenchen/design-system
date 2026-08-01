@@ -25,23 +25,26 @@ import {
 import { syncBaselineMirrors } from './sync-governance-baseline-mirrors.mjs'
 
 const REPOSITORY_ROOT = realpathSync(join(import.meta.dirname, '..'))
-const OPEN_TRANSITION = JSON.parse(readFileSync(
+const CURRENT_TRANSITION = JSON.parse(readFileSync(
   join(REPOSITORY_ROOT, 'scripts/governance-build-graph.json'),
   'utf8',
 )).controlPlaneGenesisTransition
 const CURATED_SOURCE = 'infra/governance/baseline/visual/curated/accordion-faq.png'
 const CURATED_MIRROR = 'snapshots-baseline/accordion-faq.png'
 
-assert.equal(OPEN_TRANSITION.state, CONTROL_PLANE_GENESIS_OPEN_STATE)
-assert.equal(OPEN_TRANSITION.releaseAllowed, false)
+assert.equal(CURRENT_TRANSITION.state, CONTROL_PLANE_GENESIS_CLOSED_STATE)
+assert.equal(CURRENT_TRANSITION.releaseAllowed, true)
 
-function closedTransition() {
-  const transition = structuredClone(OPEN_TRANSITION)
-  transition.state = CONTROL_PLANE_GENESIS_CLOSED_STATE
-  transition.releaseAllowed = true
+function openTransition() {
+  const transition = structuredClone(CURRENT_TRANSITION)
+  transition.state = CONTROL_PLANE_GENESIS_OPEN_STATE
+  transition.releaseAllowed = false
   transition.contentDigest = controlPlaneGenesisTransitionDigest(transition)
   return transition
 }
+
+const OPEN_TRANSITION = openTransition()
+const closedTransition = () => structuredClone(CURRENT_TRANSITION)
 
 function runGit(args, cwd = REPOSITORY_ROOT) {
   const result = spawnSync('/usr/bin/git', args, {

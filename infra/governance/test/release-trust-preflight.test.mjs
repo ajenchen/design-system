@@ -237,31 +237,6 @@ function runReleaseTrustPreflight(argv, dependencies = {}) {
   })
 }
 
-test('canonical release trust preflight fails closed while the Genesis transition is open', async () => {
-  const directory = mkdtempSync(resolve(tmpdir(), 'release-trust-genesis-open-'))
-  const output = join(directory, 'release-trust-preflight.json')
-  const githubOutput = join(directory, 'github-output.txt')
-  try {
-    await assert.rejects(
-      runReleaseTrustPreflightImpl([
-        '--repository', RELEASE_REPOSITORY,
-        '--release-tag', RELEASE_TAG,
-        '--release-commit', RELEASE_COMMIT,
-        '--release-tree', RELEASE_TREE,
-        '--run-id', '42',
-        '--run-attempt', '1',
-        '--output', output,
-        '--github-output', githubOutput,
-      ], { now: NOW }),
-      /candidate freeze\/release is forbidden until the distinct protected cleanup PR closes the Genesis transition/,
-    )
-    assert.equal(existsSync(output), false)
-    assert.equal(existsSync(githubOutput), false)
-  } finally {
-    rmSync(directory, { recursive: true, force: true })
-  }
-})
-
 function models() {
   const canonicalInventory = readJson(resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json'))
   const authorityRepository = structuredClone(canonicalInventory.repositories.find(repository => repository.role === 'authority'))

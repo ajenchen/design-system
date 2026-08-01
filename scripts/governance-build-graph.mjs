@@ -770,6 +770,10 @@ function materializeDetachedGitReadView(root, workspaceRoot) {
     cwd: root,
     timeoutMs: 10_000,
   })
+  const liveCommonDirectoryResult = runClosedGit(['rev-parse', '--git-common-dir'], {
+    cwd: root,
+    timeoutMs: 10_000,
+  })
   const liveHeadResult = runClosedGit(['rev-parse', 'HEAD'], {
     cwd: root,
     timeoutMs: 10_000,
@@ -777,21 +781,30 @@ function materializeDetachedGitReadView(root, workspaceRoot) {
   if (liveGitDirectoryResult.error
     || liveGitDirectoryResult.signal !== null
     || liveGitDirectoryResult.status !== 0
+    || liveCommonDirectoryResult.error
+    || liveCommonDirectoryResult.signal !== null
+    || liveCommonDirectoryResult.status !== 0
     || liveHeadResult.error
     || liveHeadResult.signal !== null
     || liveHeadResult.status !== 0) {
     throw new Error('cannot materialize detached staged Git read view')
   }
   const liveGitDirectory = resolve(liveGitDirectoryResult.stdout.trim())
+  const liveCommonDirectory = resolve(root, liveCommonDirectoryResult.stdout.trim())
   const liveHead = liveHeadResult.stdout.trim()
   if (!/^[a-f0-9]{40}$/.test(liveHead)
     || !existsSync(liveGitDirectory)
     || lstatSync(liveGitDirectory).isSymbolicLink()
-    || !lstatSync(liveGitDirectory).isDirectory()) {
+    || !lstatSync(liveGitDirectory).isDirectory()
+    || !existsSync(liveCommonDirectory)
+    || lstatSync(liveCommonDirectory).isSymbolicLink()
+    || !lstatSync(liveCommonDirectory).isDirectory()) {
     throw new Error('staged Git read view authority is invalid')
   }
   const liveIndex = join(liveGitDirectory, 'index')
-  const liveObjects = join(liveGitDirectory, 'objects')
+  // A linked worktree owns its index in the per-worktree Git directory while
+  // object storage remains in the shared common Git directory.
+  const liveObjects = join(liveCommonDirectory, 'objects')
   if (!existsSync(liveIndex)
     || lstatSync(liveIndex).isSymbolicLink()
     || !lstatSync(liveIndex).isFile()

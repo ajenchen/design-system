@@ -140,6 +140,7 @@
                 "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
                 "driver": {
                   "enum": [
+                    "claude-authority-routing",
                     "claude-context-fork",
                     "claude-entitlement-readback",
                     "claude-native-block",
@@ -162,11 +163,52 @@
                 "requiresModel": {"type": "boolean"},
                 "certificationImpact": {"enum": ["required", "capability-only"]},
                 "reviewProfileId": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}
-              }
+              },
+              "allOf": [
+                {
+                  "if": {"properties": {"driver": {"const": "claude-authority-routing"}}},
+                  "then": {
+                    "required": ["certificationImpact"],
+                    "properties": {
+                      "id": {"const": "decision-authority-routing"},
+                      "requiresModel": {"const": true},
+                      "certificationImpact": {"const": "required"}
+                    }
+                  }
+                }
+              ]
             }
           }
         },
         "allOf": [
+          {
+            "if": {
+              "required": ["id", "executionMode"],
+              "properties": {
+                "id": {"const": "claude"},
+                "executionMode": {"const": "local-probe"}
+              }
+            },
+            "then": {
+              "properties": {
+                "checks": {
+                  "type": "array",
+                  "contains": {
+                    "type": "object",
+                    "required": ["id", "driver", "requiresModel", "certificationImpact"],
+                    "properties": {
+                      "id": {"const": "decision-authority-routing"},
+                      "driver": {"const": "claude-authority-routing"},
+                      "requiresModel": {"const": true},
+                      "certificationImpact": {"const": "required"}
+                    }
+                  },
+                  "minContains": 1,
+                  "maxContains": 1
+                }
+              }
+            }
+          },
           {
             "if": {"properties": {"executionMode": {"const": "local-probe"}}},
             "then": {

@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  issues: read
   pull-requests: read
 
 jobs:
@@ -49,23 +48,6 @@ jobs:
           : > "$RUNNER_TEMP/npmrc-user-empty"
           : > "$RUNNER_TEMP/npmrc-global-empty"
           npm run --silent setup:dependencies
-
-      - name: Fetch authenticated bootstrap comments as untrusted evidence
-        if: ${{ !startsWith(github.event.pull_request.head.ref, 'governance/external-ledger/') }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          set -euo pipefail
-          /usr/bin/mkdir -m 700 "$RUNNER_TEMP/gh-home"
-          /usr/bin/env -i \
-            PATH=/usr/bin:/bin \
-            HOME="$RUNNER_TEMP/gh-home" \
-            GH_TOKEN="$GH_TOKEN" \
-            GH_PROMPT_DISABLED=1 \
-            /usr/bin/gh api --paginate --slurp \
-              "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments?per_page=100" \
-              > "$RUNNER_TEMP/bootstrap-comments.json"
 
       - name: Recognize only an exact signed external-ledger carrier transaction
         if: startsWith(github.event.pull_request.head.ref, 'governance/external-ledger/')
@@ -114,12 +96,11 @@ jobs:
             --pr-body "$PR_BODY" \
             --maintainer-can-modify "$MAINTAINER_CAN_MODIFY"
 
-      - name: Require independent authorization for all other privileged closure changes
+      - name: Verify all other privileged closure changes structurally
         if: ${{ !startsWith(github.event.pull_request.head.ref, 'governance/external-ledger/') }}
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: >-
           node trusted/scripts/verify-privileged-change.mjs
           --trusted trusted
@@ -127,8 +108,6 @@ jobs:
           --repository "$GITHUB_REPOSITORY"
           --base-sha "$BASE_SHA"
           --candidate-head-sha "$HEAD_SHA"
-          --pull-request "$PR_NUMBER"
-          --bootstrap-comments "$RUNNER_TEMP/bootstrap-comments.json"
 
       - name: Install and audit candidate with the protected-base lock-bound npm runtime
         run: node trusted/scripts/install-candidate-dependencies.mjs --candidate candidate
@@ -137,4 +116,3 @@ jobs:
         run: |
           node trusted/packages/governance/bin/governance.mjs check --repo candidate --role ds-author --hooks-off
           node trusted/scripts/audit-workflow-security.mjs --root candidate
-

@@ -88,8 +88,7 @@
       "items": [
         {
           "names": [
-            "README.md",
-            "gov-status.md"
+            "README.md"
           ],
           "bucket": "DROP",
           "reason": "Legacy command-home charter; active workflows are provider-neutral Agent Skills."

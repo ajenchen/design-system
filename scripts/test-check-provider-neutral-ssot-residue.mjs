@@ -2,13 +2,11 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import {
-  chmodSync,
   copyFileSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
-  symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -16,7 +14,6 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   CONTROL_PLANE_GENESIS_TOMBSTONES,
-  controlPlaneGenesisTransitionDigest,
 } from './lib/control-plane-genesis-transition.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
@@ -30,7 +27,6 @@ const GRAPH = 'scripts/governance-build-graph.json'
 const HOOK_CLASSIFICATION = 'scripts/fork-hook-classification.json'
 const MEMORY = 'governance/memory/MEMORY.md'
 const TOMBSTONES = CONTROL_PLANE_GENESIS_TOMBSTONES.map(item => item.path)
-const TOMBSTONE_BY_PATH = new Map(CONTROL_PLANE_GENESIS_TOMBSTONES.map(item => [item.path, item]))
 
 function indexedMemoryFiles(root = ROOT) {
   const index = readFileSync(join(root, MEMORY), 'utf8').split(/\n---\s*\n/u, 1)[0]
@@ -63,7 +59,6 @@ const required = [
   HOOK_CLASSIFICATION,
   GRAPH,
   'scripts/lib/control-plane-genesis-transition.mjs',
-  ...TOMBSTONES,
 ]
 
 function activateMemory(root, filename, body) {
@@ -83,17 +78,7 @@ function install(root) {
     const destination = join(root, relativePath)
     mkdirSync(dirname(destination), { recursive: true })
     copyFileSync(join(ROOT, relativePath), destination)
-    const tombstone = TOMBSTONE_BY_PATH.get(relativePath)
-    if (tombstone) chmodSync(destination, tombstone.mode === '100755' ? 0o755 : 0o644)
   }
-}
-
-function restoreTombstone(root, relativePath) {
-  const destination = join(root, relativePath)
-  const tombstone = TOMBSTONE_BY_PATH.get(relativePath)
-  assert(tombstone, `unknown Genesis tombstone:${relativePath}`)
-  copyFileSync(join(ROOT, relativePath), destination)
-  chmodSync(destination, tombstone.mode === '100755' ? 0o755 : 0o644)
 }
 
 function run(root) {
@@ -127,45 +112,6 @@ try {
   writeFileSync(join(fixture, '.codex/hooks.json'), '{"poison":true}\n')
   assert.equal(run(fixture).status, 0, 'poisoned provider views changed the verdict')
 
-  for (const tombstonePath of TOMBSTONES) {
-    const absolute = join(fixture, tombstonePath)
-    const expected = TOMBSTONE_BY_PATH.get(tombstonePath)
-    assert(expected, `missing Genesis tombstone fixture metadata:${tombstonePath}`)
-
-    writeFileSync(absolute, 'retired transport poison\n')
-    let tombstone = run(fixture)
-    assert.notEqual(tombstone.status, 0, `modified Genesis tombstone was accepted:${tombstonePath}`)
-    assert.match(tombstone.stderr, /tombstone digest drift/)
-    restoreTombstone(fixture, tombstonePath)
-
-    chmodSync(absolute, expected.mode === '100755' ? 0o644 : 0o755)
-    tombstone = run(fixture)
-    assert.notEqual(tombstone.status, 0, `wrong-mode Genesis tombstone was accepted:${tombstonePath}`)
-    assert.match(tombstone.stderr, /tombstone mode drift/)
-    restoreTombstone(fixture, tombstonePath)
-
-    rmSync(absolute)
-    tombstone = run(fixture)
-    assert.notEqual(tombstone.status, 0, `missing Genesis tombstone was accepted:${tombstonePath}`)
-    assert.match(tombstone.stderr, /tombstone is missing/)
-
-    symlinkSync(join(fixture, AGENTS), absolute)
-    tombstone = run(fixture)
-    assert.notEqual(tombstone.status, 0, `symlink Genesis tombstone was accepted:${tombstonePath}`)
-    assert.match(tombstone.stderr, /tombstone is not one regular file/)
-    rmSync(absolute)
-    restoreTombstone(fixture, tombstonePath)
-  }
-  assert.equal(run(fixture).status, 0, 'restored Genesis tombstones did not restore the open fixture')
-
-  mutateJson(fixture, GRAPH, value => {
-    value.controlPlaneGenesisTransition.state = 'closed'
-    value.controlPlaneGenesisTransition.releaseAllowed = true
-    value.controlPlaneGenesisTransition.contentDigest = controlPlaneGenesisTransitionDigest(
-      value.controlPlaneGenesisTransition,
-    )
-  })
-  for (const tombstonePath of TOMBSTONES) rmSync(join(fixture, tombstonePath))
   assert.equal(run(fixture).status, 0, 'closed transition with absent tombstones must pass')
   for (const tombstonePath of TOMBSTONES) {
     const absolute = join(fixture, tombstonePath)

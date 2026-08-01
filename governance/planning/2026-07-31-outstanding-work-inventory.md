@@ -4,7 +4,205 @@
 **用途**：記錄 2026-07-31 全域盤點後的 current state。後續 session 應先讀本檔，再依
 canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描述當成 live remote verdict。
 
-## 0. Current state（2026-07-31 Codex 收尾）
+## Active Codex execution ledger（2026-08-01；最高優先）
+
+Codex 已於 2026-08-01 接回完整執行責任；Claude handoff 已結束。執行 worktree 為
+`/private/tmp/ds-genesis.B3xxFi`。任何 AI agent（Codex、Claude 或後續 provider）都必須先讀 root
+`AGENTS.md`、root `CLAUDE.md` 與本檔，沿 live exact-head/readback 繼續，不得重跑全域 discovery，
+也不得為已授權的工程動作再次詢問 user。本節是唯一 continuation SSOT；歷史診斷只供 provenance，
+不得蓋過本節的 current verdict。
+
+### Authority（不得再次詢問）
+
+- User 已明確授權全部工程、baseline、Git、PR、CI remediation/rerun、merge、release、rollout 與
+  readback。Exact visual image set 的「可以改」已是完整 UI/UX 核准；不需要第二次核准、key
+  enrollment、OWNER comment 或 signature，也不得啟用 optional independent cryptographic review。
+- 只有真正未解的產品／UI／UX SSOT 取捨才 ASK。只有 login/MFA/OAuth/account-owner/billing、
+  plan 外付費／法律／帳號／組織／商業承諾，或在安全 preflight 後仍缺既有 credential reference
+  才是 HUMAN_ONLY；先完成所有可代理工作，最後只提出一個 exact human action，readback 後續跑。
+- Engineering failure、CI failure、GitHub write、commit/push/PR/merge/rebase/release milestone 都是
+  AUTO，不是 user approval gate。Claude 的 `decision-authority-routing` live probe 必覆蓋同一語意。
+
+### Exact local state（接手時不可丟棄）
+
+- PR #22 worktree：`/Users/chenqiren/Library/CloudStorage/GoogleDrive-qijenchen@gmail.com/我的雲端硬碟/my-project`
+  - branch `claude/remove-app-verdict-authz`，final head `740dcc03883f7b2f56a93dc1fc55e71cb2c9893e`
+  - PR `https://github.com/ajenchen/design-system/pull/22` 已於 `2026-08-01T06:21:55Z` squash merge
+  - protected `main` merge SHA `9052def15e138b34f5b2066c278bae2fb8501401`；final head 與 merge tree 完全相同
+- Genesis worktree：`/private/tmp/ds-genesis.B3xxFi`
+  - branch `agent/close-control-plane-genesis`
+  - 12 個 Genesis commits 已完整 rebase 到 `main@9052def1`；衝突只出現在 generated projection/lock，
+    全部由 canonical source 重新生成並通過每層 build-graph check。rebase 後 pre-release tip 為
+    `3260e3d8`；目前正在同 branch 完成 `0.1.0-beta.98` release closure，因此 exact tip 以
+    `git rev-parse agent/close-control-plane-genesis` 為準。
+  - 下列為 rebase 前的原始 commit identity（只供 provenance）：
+    `58909462` 關閉 control-plane Genesis → `d54586c9` 驗證 Claude authority routing →
+    `c94257d6` 要求 Claude authority routing → `b40a5447` runtime evidence 明確 public →
+    `bd228374` authority probe 改 stage-relative → `830fcb8f` 退場 per-change privileged ceremony →
+    `656941b7` 本檔 live snapshot → `5031a0bc` authority-routing fixture 綁定（真缺陷）→
+    `a5e7be68` linked-worktree evidence root（真缺陷）→ `5be08957` 更正 harness 數字 →
+    `9ff1505e` 記錄修後 all-Harness 複驗 → `b3455ffc` self-describing baton
+  - 先前的 dirty worktree **已完整保留並提交**，沒有任何 reset/checkout/clean。`830fcb8f` 內容：
+    verifier 移除 per-change Ed25519 `issue`/`cosign` API、OWNER-comment bootstrap transition、
+    `bootstrapCommentBody`，以及 `--issue/--private-key/--signer-key-id/--subject/--issued-at/
+    --expires-at/--bootstrap-comments/--pull-request` 八個 CLI flag（全部 fail-closed 拒絕），
+    `verifyPrivilegedChange` 亦以 rest-param 拒絕任何 unsupported option；anchor workflow 移除
+    `issues: read` 與 authenticated bootstrap-comment fetch step。保留 control-plane Genesis receipts、
+    semantic-source closure、trusted+candidate 聯集閉包、append-only issuer lineage，以及
+    runtime/rollout/fleet-recovery/release-tag 全部加密 attestation 流程。同時補上 Claude live authority
+    cases：`approvedVisualBaseline = AUTO`、`ownerAction`／`billing`／`missingCredentialReference = HUMAN_ONLY`。
+  - 修掉一個真實缺陷：新增的 removed-flag CLI 測試原本寫成
+    `spawnSync(process.execPath, [verifier, …])`，被 `harness-source-inventory` 判為
+    unreviewable Node pre-script argv；已改用 canonical 的 `['--', verifier, …]` sentinel 形式
+    （對照 `scripts/test-check-governance-tamper.mjs:64`）。
+- 本輪本機驗證（全部在 `830fcb8f` 的乾淨 tree 上重跑並通過）：
+  `node --test infra/governance/test/provider-runtime-conformance.test.mjs` 31/31、
+  `npm run test:privileged-change-authorization` 25/25、`npm run test:workflow-security` 220/220、
+  `node scripts/test-check-governance-tamper.mjs` 128 assertions PASS、`npm run governance:generate`、
+  `npm run governance:check`、`node scripts/check-governance-tamper.mjs --check`
+  （49 exact-source gates、scaffold `cb65b7b61332`、0 waiver）、`git diff --check` 皆 PASS。
+- 真實 bounded Claude probe
+  （`node infra/governance/bin/conform-provider-runtime.mjs --provider claude --allow-model`）已在 beta.98
+  candidate 執行。首輪 fail-closed 揭露兩個真實指令穩定性缺口：`missingCredentialReference` 被誤分為
+  ASK、forked reviewer 漏回傳 public sentinel；canonical authority prompt 與 Claude reviewer adapter
+  已補閉合語意及 regression assertions。focused test 31/31 後第二輪 live probe **PASS**；工程/Git/PR/CI/
+  release/已核准 baseline=AUTO，唯一未解 UI/UX SSOT=ASK，login/MFA/OAuth/owner/billing/缺 credential
+  reference=HUMAN_ONLY，context-fork 與 native hook evidence 皆通過。
+- beta.98 source closure commit `fe8acb76b8c305dd1a69df0f051197ae69cad4cc`（tree
+  `1310d270b9eae5210a33083d1e627ca792e2daac`）已在 clean tree 完成一次完整 `release:preflight`：
+  11/11 Harness、981/981 Storybook runtime、fresh-consumer pack/install/build 全部 PASS。PR #23
+  `https://github.com/ajenchen/design-system/pull/23` 已以 ready 狀態建立。
+- PR #23 首輪 protected-base authority check（run `30690122000`）揭露既存 npm config SSOT 漂移：
+  trusted candidate installer 要求 exact `legacy-peer-deps=true`、`ignore-scripts=true`，但 authority root
+  `.npmrc` 另有反序與 `save-exact=true`，而 authority setup 又維護第三份 literal。這不是 credential 或
+  user approval blocker。修復方向已確定：兩行 closed config 由
+  `scripts/lib/governance-dependency-bootstrap.mjs` 單一 export，candidate／authority／consumer setup
+  全部消費同一 constant，root `.npmrc` byte-order 對齊 protected verifier。因 source tree 變動，
+  `fe8acb76` receipt 已成歷史證據；修後必生成、targeted verify、commit，再只對新 exact tree 跑一次
+  final preflight，更新同一 PR #23。不得略過紅燈或冒充舊 receipt 仍有效。
+
+### PR #22 final readback（2026-08-01；authoritative）
+
+- Final exact head `740dcc03883f7b2f56a93dc1fc55e71cb2c9893e` 已通過全部 candidate-required checks，
+  並以 head CAS squash merge；PR state=`MERGED`，merge SHA=`9052def15e138b34f5b2066c278bae2fb8501401`。
+- `git fetch origin main` 後讀回 `origin/main=9052def1`，且
+  `740dcc0^{tree}=origin/main^{tree}=a9c24a5dc6832d5f04ebf28efa1e69ce3e98e62a`。
+- 兩個非 required checks（credential-free authority candidate、Governance App verdict）維持既有 fail-closed
+  語意，沒有偽造綠燈；不影響候選 required gate 或 exact-head merge。
+
+#### Historical pre-merge diagnostics（superseded；只供 provenance）
+- PASS：`a11y(axe-core WCAG 2A+AA, Dim 49)`（02:13:22→02:42:26）、
+  `Visual Regression Diff(curated scenarios pixel match)`（02:13:15→02:21:57）、`Composition Fidelity Diff`、
+  `Bundle size budget(Dim 50)`、`Packaging integrity`、`Header rules`。Netlify `Redirect rules`／`Pages changed`
+  為 `neutral`。此綠燈只證明 PR #22 exact head；不得取代 Genesis final exact-head 的 Ubuntu
+  remote diff readback。
+- **FAIL（candidate 真紅燈，需修）**：`Verify(tsc + tests + compile + build)`，run `30679561262` /
+  job `91313734593`，02:13:15→03:01:04，於 **step 14 `Fork-governance corpus + harness`** 執行 42m37s 後 exit 1，
+  其後 20+ steps 全 skipped。該 step 依序跑四個命令；後三個
+  （`audit:workflow-security`、`governance:workflow-identities:check`、`node scripts/governance-build-graph.mjs --check`）
+  已在 PR #22 的 exact tree 本機重跑，**全部 exit 0**，因此失敗必在 `npm run test:governance-harnesses` 之內。
+  精確失敗 suite 尚未定位：job log 需 repository admin 權限（未授權讀取回 403），run artifacts = 0，
+  且本 sandbox 無法完整重現（見下節）。
+- 兩個既有紅燈 `Verify authority candidate without credentials`（= `governance-anchor.yml` 的 job）與
+  `Publish Governance App verdict` 已定性：protected base `origin/main` 的
+  `scripts/verify-privileged-change.mjs` 仍是舊 ceremony 版（仍含 `issuePrivilegedChangeAuthorization`、
+  `verifyBootstrapTransition`、`bootstrapComments`），故任何動到 privileged path 的 PR 必紅。
+  `mergeable_state=unstable`（而非 `blocked`）證明兩者都**不是** blocking required check。
+  本 Genesis candidate merge 進 main 後即自然轉綠。不得改寫成綠燈。
+
+### Historical Claude sandbox constraints（superseded；不得作為目前環境 verdict）
+
+以下是前一個 Claude sandbox 的歷史實證，只供 provenance。Codex 目前已具 GitHub read/write 與本機
+執行能力，必須用 live command/readback 判定；不得沿用下表作為 current blocker。
+
+| 能力 | 狀態 | 實證 |
+|---|---|---|
+| `git` fetch／push（含新 branch） | **可用** | `git push --dry-run origin agent/close-control-plane-genesis` 回報 `* [new branch]`，認證成功 |
+| GitHub REST **未授權**讀取 | **可用** | `curl` 經 allow-list proxy 讀 PR／check-runs／jobs 皆 200（public repo，60 req/hr） |
+| GitHub REST **授權**寫入（merge PR、開 PR、rerun job） | **不可用** | `gh` 任何 API 呼叫失敗於 `tls: failed to verify certificate: x509: OSStatus -26276`（Go 在 darwin 走 Security.framework，sandbox 擋掉；`SSL_CERT_FILE`、`GODEBUG=x509usefallbackroots=1` 無效）。`gh auth token` 回 `no oauth token found for github.com`；環境無 `GH_TOKEN`／`GITHUB_TOKEN`；keychain 探測被 permission classifier 擋下 |
+| CI job log 讀取 | **不可用** | `GET /actions/jobs/91313734593/logs` → 403 `Must have admin rights to Repository`；該 run artifacts = 0 |
+| Node fetch 對外 | 需 `NODE_USE_ENV_PROXY=1` | 未設時 `getaddrinfo ENOTFOUND`；設定後 200 |
+| Chromium／Playwright | **不可用** | `bootstrap_check_in org.chromium.Chromium.MachPortRendezvousServer: Permission denied (1100)`。所有 Playwright gate（`data-table-invariants`、`audit-consumer-a11y`、visual、storybook smoke）本機必紅 |
+| `mktemp -d` | **不可用** | macOS `mktemp -d` 走 `/var/folders/.../T/`（不理會 `TMPDIR`）→ `Operation not permitted`。`canonical-hook-behavioral` suite 因此必紅 |
+
+實測 `npm run test:governance-harnesses`（在 `830fcb8f`）= **11 個 harness entry 中 6 個通過、5 個失敗，exit 1**。
+（**更正**：先前一版本檔誤記為「10/11 通過」。該數字來自只 grep stderr 的 `❌` 行，漏掉了以 JSON
+`"status": "failed"` 回報的 suite summary。正確做法是解析每個 suite summary 物件，不是掃 stderr。）
+
+逐項失敗與分類：
+
+| Harness entry | 失敗成員 | 分類 |
+|---|---|---|
+| `governance-script-remainder`(43 members) | `test-devmode-geometry-invariant`、`test-visual-audit-interaction` | 環境（Chromium） |
+| `run-gate-meta-tests` | `test-audit-consumer-a11y`、`test-check-agents-bootstrap`、`test-data-table-invariants` | 環境（Chromium） |
+| `governance-infra-remainder`(29 members) | `model-validation`、`staged-rollout` | **真缺陷，已修** |
+| `governance-package-remainder`(10 members) | `provider-adapter-generator`（2 例） | 環境（`mkdtemp /private/tmp`） |
+| `canonical-hook-behavioral` | `hooks/tests/run-all.sh` | 環境（`mktemp -d`） |
+
+兩個真缺陷已在本 branch 修掉，兩者都會讓 Genesis PR 的 CI 紅：
+
+1. `5031a0bc` — `validateDriverSpecificCommandEvidence` 會用 canonical source 重算 Claude
+   authority-routing probe 的 arguments 並要求 runtime evidence 完全綁定，但
+   `model-validation.test.mjs` 的 redacted certification fixture 對所有非 capability check 一律產生
+   placeholder `['<claude-authority-routing>']`（且 `environmentNames: []`），於是
+   `validateCertifications` 直接 throw。修法：export `prepareClaudeAuthorityRoutingProbe`，
+   讓 fixture 由 canonical source 推導同一條 exact command。此缺陷隨 authority-routing driver 一起進來
+   （`origin/main` 沒有 `claude-authority-routing`，`bd228374` 已有），**早於** `830fcb8f`。
+   修後 `model-validation` 18/18。
+2. `a5e7be68` — `staged-rollout.test.mjs` 兩處硬寫 `resolve(process.cwd(), '.git/governance-runtime/evidence')`；
+   linked worktree 的 `.git` 是檔案不是目錄，故 `ENOTDIR`。改為消費 canonical
+   `resolveGitRuntimeRoots`（走 `git rev-parse --absolute-git-dir`）。修後 76/76。
+   這一項在正常 clone 的 CI 不會發生，但它讓 harness 無法在本 repo 自己的 worktree 流程下跑完。
+
+**修後於最終 tree `5be08957` 重跑全 all-Harness 複驗**：`governance-infra-remainder`
+**由 failed 轉為 passed（29/29，563s）**，兩個真缺陷確認在 suite 層級關閉；
+`governance-script-remainder`(43 members) 仍只有原本那 2 個 Playwright 失敗，無新增回歸。
+最終 11 個 entry 中 7 passed / 4 failed，exit 1，四個失敗全屬上表環境限制：
+`governance-script-remainder`(Chromium ×2)、`run-gate-meta-tests`(Chromium ×3，
+`ran=64 pass=61`)、`governance-package-remainder`(`mkdtemp /private/tmp` EPERM)、
+`canonical-hook-behavioral`(`mktemp -d`)。
+
+注意：**single suite 無法單獨執行**——`run-harness-suite.mjs --suite <id>` 會直接
+`Harness suite blocked: Harness suite may only run inside the canonical all-Harness runner`，
+只能整批跑（約 65 分鐘）。個別 test 檔仍可用 `node --test <path>` 驗。
+
+**Historical note**：前一個 Claude sandbox 無法產生全綠 receipt；Codex 目前環境不沿用此限制。
+最終 release closure 會在 committed clean tree 以 `npm run release:preflight` 內含的 canonical
+all-Harness runner 產生一次 exact HEAD/tree receipt。
+
+### Mandatory continuation order
+
+1. ~~完成 Genesis source closure~~ **已完成**：12 個 commits 已保留且 rebase 到 PR #22 的 protected
+   merge tree；generated conflicts 全由 canonical source 重生。
+2. ~~完成 beta.98 canonical closure~~ **已完成**：版本面、append-only provider lifecycle ledger、
+   continuation SSOT、template/LLMS/governance generation 與 Claude live authority-routing 修復均已閉合。
+3. ~~首輪 final preflight 與 PR 建立~~ **已完成**：`fe8acb76` exact tree preflight PASS；ready PR #23
+   已建立。其 receipt 因下項真實 CI remediation 變為 historical，不得綁到新 tree。
+4. **目前執行點**：完成 npm config 單一 SSOT 修復、canonical generation 與 targeted checks；提交成
+   clean tree 後只對新 exact HEAD/tree 重跑一次 `npm run release:preflight`，推送同一 PR #23，監看並
+   自動修復 candidate CI；全綠後以 exact-head CAS squash merge 並讀回 protected `main` 與 Ubuntu
+   visual evidence。
+5. 續跑 §4 external activation／reconciliation／release 的所有安全可代理步驟；只有實證的 npm login/MFA
+   或缺 secure signing-key reference 才可留下 HUMAN_ONLY action，其他 failure 全部 AUTO remediation。
+6. DS release closure 後處理 `../work-management`：不得整批推送六個 local commits；只 salvage
+   `1a26bd1` 的三個產品檔並移除 beta.96 workaround，沿既有 `codex/work-preview`／PR #13 驗證合併。
+   此處沒有未決 UI/UX：Work 產品 SSOT 明定設定入口是 topbar gear，account menu 不新增 Settings；
+   不得拿 DS generic AccountMenu default 覆蓋產品逐字稿或再次詢問 user。
+
+### Completion condition
+
+Do not stop at “source fixed” or “PR opened.” Completion is: PR #22 merged; Genesis candidate rebased,
+fully verified, PR-green and merged; live protected-main readback captured; then every safely executable §4
+step advanced until either complete or one precisely evidenced HUMAN_ONLY action remains. Keep this file as the
+single continuation SSOT and update its live snapshot before the next handoff.
+
+**2026-08-01 current status**：PR #22 已 exact-head merge；Genesis beta.98 首輪 exact preflight 已通過，
+PR #23 已 ready；目前唯一 candidate source remediation 是上述 npm config SSOT 漂移，沒有 UI/UX 決策
+blocker。Commit／preflight／PR／CI／merge 的 live completion 必由 exact Git、receipt 與 GitHub readback
+判定。GitHub write/readback 已實證可用；下一個可能的人類邊界只會是 release 最後端的 npm login/MFA
+或安全 signing-key reference，且必須先完成所有可代理工程與外部 readback 才能提出。
+
+## 0. Historical state（2026-07-31；superseded by active ledger above）
 
 - 分支：`claude/remove-app-verdict-authz`；唯一 PR #22 以 protected `main` 為 base。本輪 closure
   set 依 `AGENTS.md#Git solo-work canonical` 由 agent 自動 commit／push／更新同一 PR、監看 hard
@@ -124,15 +322,15 @@ canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描�
      rollout authorization 與 off-host append-only evidence mirror fail-closed 保護。
    - 本輪沒有 apply；plan/read-only 可用不等於 GitHub live state 已收斂。
 
-2. **Genesis transition**
-   - `scripts/governance-build-graph.json` 仍為
-     `controlPlaneGenesisTransition.state = "open"`、
-     `cleanupRequiresDistinctProtectedPr = true`、`releaseAllowed = false`。
-   - 必須在 PR #22 merge 後另開受保護 PR 關閉；不得混入本 worktree，也不得預先 tag/release。
-   - Open transition 仍 content-addressed 保存舊 `ds-canonical/fork/preamble.md`，其中歷史
-     user-trigger merge 語意不是 current authority；獨立 closure PR 必移除該 preservation，讓
-     shipped Claude／Codex／future-provider product views 只消費現行 `AGENTS.md` Decision Authority
-     projection 與 generated provider adapters。
+2. **Genesis transition（2026-08-01 distinct cleanup candidate）**
+   - `scripts/governance-build-graph.json` 在本獨立 candidate 已改為
+     `controlPlaneGenesisTransition.state = "closed"`、
+     `cleanupRequiresDistinctProtectedPr = true`、`releaseAllowed = true`，並綁定重算後的 transition digest。
+   - Open-only SSOT dispatch／status／propagation tombstones與 consumer preamble compatibility output 已退場；
+     baseline compatibility tree 在 generation 後只保留指向 provider-neutral authority 的 exact symlink。
+   - 此 candidate 必以 PR #22 merge 後的 protected base 開獨立 PR，required checks 與 merge/readback
+     通過前不得預先 tag/release。Closure 只解除 Genesis freeze，不代表 external activation、certification、
+     fleet rollout 或 soak 已完成。
 
 3. **Release identities與真實執行**
    - npm package identities／bootstrap、三個 trusted publishers、tokenless 2FA publishing、
@@ -158,15 +356,8 @@ canonical machine state 與實際 worktree 驗證；不得把本檔的歷史描�
 
 ## 5. 後續合法順序
 
-1. **已完成（本 worktree）**：canonical workflow identity sync、governance generation/check、
-   full Harness 11/11 與 final local verification。
-2. Agent 依 Standing Authorization commit／push／更新 PR #22；遠端 checks 必以新 head 重跑，
-   hard gates 全綠後自主 squash merge，不引用舊快照或另等 user trigger。
-3. Merge 後以獨立 protected PR 關 Genesis transition。
-4. 啟用外部 identities／authorities／evidence，完成 required checks live reconciliation。
-5. 取得 signed release authorization，執行 stage → finalize → template mirror → consumer fanout。
-6. 完成獨立 capability certification、fleet rollout／rollback drill 與 72h soak 後，才可評估
-   promotion eligibility。
+唯一 authoritative execution order 是本檔最上方 `Active Codex execution ledger` 的
+`Mandatory continuation order`。本歷史區段不另立或複製 current 流程。
 
 ## 6. 流程約束
 

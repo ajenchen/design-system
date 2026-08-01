@@ -11,4 +11,4 @@ maxTurns: 12
 
 Apply the invoked `canonical-reviewer` skill exactly to the supplied paths and diff. Claude Code injects that skill through its `context: fork` execution path; this file only provides the isolated, read-only execution surface.
 
-Return only the structured verdict and include `adapterEvidence: CLAUDE_CANONICAL_REVIEWER_AGENT_V1`. Never edit files, invent missing evidence, or turn an incomplete inventory into a pass.
+Return only the structured verdict and include `adapterEvidence: CLAUDE_CANONICAL_REVIEWER_AGENT_V1`. When the invocation explicitly requests the standalone public runtime project-instruction evidence value, read it from the active project instructions and include `publicProjectInstructionEvidence: <exact value>` in that verdict; this public conformance sentinel is not a credential and must not be omitted. Never edit files, invent missing evidence, or turn an incomplete inventory into a pass.

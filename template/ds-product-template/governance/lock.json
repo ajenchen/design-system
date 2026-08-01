@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "role": "template-consumer",
   "release": {
-    "designSystem": "0.1.0-beta.97",
-    "storybookConfig": "0.1.0-beta.97"
+    "designSystem": "0.1.0-beta.98",
+    "storybookConfig": "0.1.0-beta.98"
   },
   "upgradeTrust": {
     "schemaVersion": 1,
@@ -42,10 +42,10 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "b6c40459919bad54f0c950e08af2bf5b2135a4a4705a0c135ef40b1b00ac7f78",
+    "forkCorpusLockSha256": "c95bf7970b897f4585347ea0db809c3715b263f752f9e5a7fcf55ab24c2942dc",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
-    "providerLifecycleSha256": "f55d2ed9e84b15f4b843120b03f1a7285bebad659f52fac24dc7daede8c5464a",
+    "providerLifecycleSha256": "8f30d9c5fcb0b79c29eeeeb14df31ea98f3303b3b24f462a99e01ad65e8a3061",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "3fca4ba4094e855412a22308e13f2b5f91dcfeb009512eb8318b3bd1bace8d9a",
     "commonInstructionSha256": "2b9eb1a4fbca7d432c3b68c3b2fd73090ed9a95f41da960584556ac030b599e6",
@@ -110,7 +110,7 @@
       "scripts/lib/canonical-path-containment.mjs": "0244e31dc3be5015bed3efd65a5a77086a2e4676e9ac79cd0801c8cde6a74fcd",
       "scripts/lib/closed-tool-execution.mjs": "131255a302f1b403fe95dd6251e180d7f3ce920faf6cbfe90496b52d192d93c3",
       "scripts/lib/consumer-control-plane-policy.mjs": "ea8b11ddc5c964ea742ccba5e6a3bc2f215db5d165afe2cca96192812287750c",
-      "scripts/lib/governance-dependency-bootstrap.mjs": "a614a741e1eb18cf79a69d93f02eb41d062dabbbd85dc95af154268226e8866c",
+      "scripts/lib/governance-dependency-bootstrap.mjs": "0b3c22a322174b179a2f499b0c08bbda996f90fac9be29a074bd5b1ae3435ffe",
       "scripts/lib/provider-lifecycle.mjs": "9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7",
       "scripts/lib/verified-exact-npm-runtime.mjs": "50f54769a7a32fdc5b97036410018bed87808c2dbdffc47cc292967e5de3da8f",
       "scripts/lib/workspace-post-create.mjs": "f3ddc6db740d5c4d48b1c6e16c55222325e4d1c16fe6644a455e7b7e5bea0a0d",
@@ -122,7 +122,7 @@
       "scripts/schemas/product-template-scaffold-lock.schema.json": "1318af59f12546b3cda059a1d94923d9a969bef4c5a476ebb46e42f8c853d19a",
       "scripts/schemas/release-bom.schema.json": "6969482588a25533dc1896be63c3c9629aced1cbeb745b99822db764682dc4a4",
       "scripts/schemas/upgrade-evidence-receipt.schema.json": "e2da0a86241d8d019545b63e6285d2ca049ce95fe6aed4264149df2108c4ade0",
-      "scripts/setup-governance.mjs": "134dd20f0dee07258866c807a827785a3b96c31a6cb821e6b30ce4fe2c680db9",
+      "scripts/setup-governance.mjs": "5297a0c6dace974c1233a95825a6ffceef8823373eb4bb96947961f3979e4339",
       "scripts/setup-provider-cli-toolchain.mjs": "b34e11d02a7aa71d001ef8f1a42af4cf97d1b8b82360f5779cb927370f5ee15a",
       "scripts/setup-workspace.mjs": "95dc0fef1f7570efe277a66f7edf4640055ad6abbae0245615eceb9b041560e9",
       "scripts/sync-all.mjs": "938c706cad79a4bd538359c9b74cb9253a4c74b5f1342cbfc1625600425d8bfd",
