@@ -3,8 +3,8 @@
 #
 # Hook(PreToolUse Edit/Write/MultiEdit):spec.md / .tsx in packages/design-system/src/
 # 含 world-class benchmark claim(Ant / Material / Polaris ...)必附 inline citation
-# (URL / GitHub #L / snapshots/ / @benchmark-unverified)。違 P0 BLOCKER(exit 2,2026-07-07 方向 2 升級;escape marker 既有)。
-# 整檔 escape:前 5 行含 @benchmark-citation-allow: 或 @benchmark-unverified-blanket:。
+# (URL / GitHub #L / snapshots/ / @benchmark-unverified)。違 P0 BLOCKER(exit 2,2026-07-07 方向 2 升級)。
+# Component specs 是 zero-debt scope,禁止逐句與檔級 escape；其他 scope 保留既有 escape。
 
 set -u
 
@@ -89,22 +89,54 @@ run_hook_write "/repo/packages/design-system/src/components/Foo/foo.spec.md" '
 '
 expect_warn "5. Polaris claim missing cite → warn" "check_benchmark_citation"
 
-# 6. DS path Atlassian claim with @benchmark-unverified → silent (撤回 marker)
-run_hook_write "/repo/packages/design-system/src/components/Foo/foo.spec.md" '
+# 6. Non-component spec can still use the legacy per-claim retraction
+run_hook_write "/repo/packages/design-system/src/patterns/Foo/foo.spec.md" '
 # Foo spec
 
 對齊 Atlassian Design @benchmark-unverified 待補 source
 '
-expect_pass_silent "6. claim with @benchmark-unverified → silent"
+expect_pass_silent "6. non-component claim with @benchmark-unverified → silent"
 
-# 7. File-level @benchmark-citation-allow escape → silent
-run_hook_write "/repo/packages/design-system/src/components/Foo/foo.spec.md" '// @benchmark-citation-allow: legacy migration backlog
+# 7. Non-component file-level @benchmark-citation-allow escape → silent
+run_hook_write "/repo/packages/design-system/src/patterns/Foo/foo.spec.md" '// @benchmark-citation-allow: legacy migration backlog
 # Foo
 
 對齊 Carbon Design 內部共識。
 對齊 Polaris 派系。
 '
-expect_pass_silent "7. file-level @benchmark-citation-allow → silent"
+expect_pass_silent "7. non-component file-level @benchmark-citation-allow → silent"
+
+# 8. Component per-claim retraction cannot recreate evidence debt
+run_hook_write "/repo/packages/design-system/src/components/Foo/foo.spec.md" '
+# Foo spec
+
+對齊 Atlassian Design @benchmark-unverified 待補 source
+'
+expect_warn "8. component @benchmark-unverified → BLOCK" "component spec benchmark evidence debt"
+
+# 9. Component blanket retraction cannot bypass the zero-debt rule
+run_hook_write "/repo/packages/design-system/src/components/Foo/foo.spec.md" '<!-- @benchmark-unverified-blanket: legacy backlog -->
+# Foo
+
+對齊 Carbon Design 內部共識。
+'
+expect_warn "9. component @benchmark-unverified-blanket → BLOCK" "zero-debt scope"
+
+# 10. Component file-level citation allow cannot bypass the zero-debt rule
+run_hook_write "/repo/packages/design-system/src/components/Foo/foo.spec.md" '<!-- @benchmark-citation-allow: legacy backlog -->
+# Foo
+
+對齊 Polaris 派系。
+'
+expect_warn "10. component @benchmark-citation-allow → BLOCK" "zero-debt scope"
+
+# 11. Verified component claim remains valid
+run_hook_write "/repo/packages/design-system/src/components/Foo/foo.spec.md" '
+# Foo
+
+對齊 Ant Design，來源 https://ant-design.com/components/button
+'
+expect_pass_silent "11. component claim + direct citation → silent"
 
 echo ""
 echo "=== Summary ==="

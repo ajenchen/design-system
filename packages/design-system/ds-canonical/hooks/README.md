@@ -26,7 +26,7 @@
 | `check_canonical_propagation.sh` | canonical 改動(spec / token / primitive)時 consumer propagation 檢查 |
 | `check_pattern_invariants.sh` | pattern 層 invariant(overlay-surface / item-anatomy / action-bar / 等) |
 | `check_naming_and_abstraction.sh` | M21 prop variant test + M27 prop name conflict + naming 三 test |
-| `check_benchmark_citation.sh` | M22 benchmark claim inline cite verify |
+| `check_benchmark_citation.sh` | M22 benchmark claim inline cite verify；component specs 禁止未驗證／檔級 escape，維持 zero evidence debt |
 | `check_wrapper_primitive_schema_drift.sh` | M30 wrapper schema 必 extends primitive |
 | `check_field_family_invariants.sh` | Field family layout / state machine 統一 |
 | `check_datatable_invariants.sh` | DataTable canonical(virtualizer / column-types / autoRow / overflow) |

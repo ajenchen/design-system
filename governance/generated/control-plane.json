@@ -133,7 +133,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 229,
-      "hash": "sha256:eab08b1ab2436db7a3814abf573a43c8eb124852bb6b2e6cd8c178c1733d6883",
+      "hash": "sha256:f4ee301f642fa5fa8ec48181fb5a2a20c449df239221396a99ddffd4184f43ef",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -155,7 +155,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 25,
-      "hash": "sha256:03b86b18171df9fc27eb8d905a914527989de3457c66ee9b08357e8c8a888b29",
+      "hash": "sha256:1715fd7f440b5bebe0c71546b0a5b2df73617e1bcac08a2c67ce8ffffda012c3",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -166,7 +166,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 6,
-      "hash": "sha256:1147f746a780fcb5cfa7092d5c1f8ed900279aac11339500a4842ebd57f33f92",
+      "hash": "sha256:871f3544f791453b4acf0f7f3b1e9fb885771d22c998dd362f8a62dd0057a7aa",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -177,7 +177,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:7297f52c192d81dda19ab1a23d5ed64b20c1bc212b521384588284be47edc2fb",
+      "hash": "sha256:590fbe3b69c24b7163d7d78b819a4d1919d47addfc26aac40388b7a2e0a80be3",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2212,7 +2212,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:036cf2bb9aed36e1a750c3f9b2e0ce2ed272657d470fcd19325ff2afb43c0dd2",
+      "hash": "sha256:53540c58581d2ffec946b52e2cf405ad67233beb1ab37b8680a7ea2340c427fb",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2275,7 +2275,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0278591eb2364edaa2ea8ccf708fe64cc09b62f33d1c4b132a2bf027ad998b60",
+      "hash": "sha256:6bacfb99ebd75934069b1743b5df0b166899d79151f486839cdde2588b05c001",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3221,7 +3221,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:eeff302ec3af2025b6822b286cdb18b1c0111569ad4deb5b4142a4c634bb3490",
+      "hash": "sha256:9ef57309dcfce4bed73b564ddff4c312011f09c097203f53a15536932af071cb",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -4252,10 +4252,10 @@
           "targetDigest": "sha256:bc58dbf54772fee014ea0902c347e8857b3787f8502510715c383b8046818fcd"
         },
         {
-          "expectedTargetDigest": "sha256:c832da476d7a84196fc793879ff0b26888396bb5d9944a412503708d3e73280f",
+          "expectedTargetDigest": "sha256:d11fbe326e2a562b2ae72160cb572075a23c250cbb691fc57ffe26d1a51c804b",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:2d15304ad201fa04e95a0db1f48a987bbe33fcb898ac759a7c5fa3c8f81509c3",
-          "targetDigest": "sha256:c832da476d7a84196fc793879ff0b26888396bb5d9944a412503708d3e73280f"
+          "sourceDigest": "sha256:26e2ba80da80fcd552fc61ec3afe226e9abad43a5d4d8843d7b2aafc54f96731",
+          "targetDigest": "sha256:d11fbe326e2a562b2ae72160cb572075a23c250cbb691fc57ffe26d1a51c804b"
         },
         {
           "expectedTargetDigest": "sha256:b71c9a39fab91baa251682be5450fb2ae974abd6f3f13bf8f3f438c8de102f63",
@@ -4475,10 +4475,10 @@
           "targetDigest": "sha256:b2a70ea7a9edc9a25fceca06cdd50dac5e6cf75e9ffa494f203d407b9591b01b"
         },
         {
-          "expectedTargetDigest": "sha256:8617099badfb98f57fa7a5bffe51921c7e0b2bc7c7062888f16cc3e6797d3900",
+          "expectedTargetDigest": "sha256:79995fb0b55332eb962a2686fbcd1f304b3ac4d4b96e592d00d0a97070f2aa9c",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:2d15304ad201fa04e95a0db1f48a987bbe33fcb898ac759a7c5fa3c8f81509c3",
-          "targetDigest": "sha256:8617099badfb98f57fa7a5bffe51921c7e0b2bc7c7062888f16cc3e6797d3900"
+          "sourceDigest": "sha256:26e2ba80da80fcd552fc61ec3afe226e9abad43a5d4d8843d7b2aafc54f96731",
+          "targetDigest": "sha256:79995fb0b55332eb962a2686fbcd1f304b3ac4d4b96e592d00d0a97070f2aa9c"
         },
         {
           "expectedTargetDigest": "sha256:b9da47c4227209a03b97581c050fac898a25e28e7d9c6dcf5754b55c5554ed37",

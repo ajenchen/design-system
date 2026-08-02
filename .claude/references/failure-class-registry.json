@@ -148,6 +148,13 @@
    "status": "protected",
    "landedAt": "2026-07-30",
    "note": "direct-child 結構選擇器 vs primitive 內部 DOM 巢狀(beta.86 tabsSlot W2 迴歸錨例);防線 = scripts/header-tabs-slot-invariants.mjs render-level gate + data-slot attribute contract"
+  },
+  {
+   "id": "component-spec-benchmark-evidence-debt",
+   "name": "Component spec 以未驗證 benchmark marker 取代可追溯證據",
+   "status": "protected",
+   "landedAt": "2026-08-02",
+   "note": "beta.107 清零 components/**/*.spec.md 的 @benchmark-unverified debt；check_benchmark_citation.sh 在 PreToolUse 禁止 component spec 新增逐句／blanket／citation-allow escape，外部 claim 必附 direct inline evidence，否則改寫成 DS-internal rationale"
   }
  ]
 }
