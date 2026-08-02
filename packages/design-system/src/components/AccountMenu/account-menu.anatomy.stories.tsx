@@ -85,7 +85,7 @@ export const Inspector: Story = {
 }
 
 export const StateBehavior: Story = {
-  name: '開合與內容行為',
+  name: '狀態行為',
   render: () => (
     <div className="max-w-3xl space-y-4 text-body">
       <h3 className="text-h5">狀態由 Radix DropdownMenu 管理</h3>
@@ -100,7 +100,7 @@ export const StateBehavior: Story = {
 }
 
 export const Accessibility: Story = {
-  name: '無障礙',
+  name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl space-y-4 text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground">A11y contract</h3>

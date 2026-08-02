@@ -556,7 +556,7 @@ export const StateBehavior = {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export const Accessibility = {
-  name: '無障礙',
+  name: '無障礙與鍵盤',
   render: () => (
     <div className="flex flex-col gap-6 max-w-3xl text-body">
       <section>

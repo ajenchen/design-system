@@ -57,7 +57,76 @@ try {
   writeFileSync(target, orig)
 }
 
-// 5) 還原後必 PASS
+// 5) Anatomy canonical display name 必精確匹配。
+const anatomyTarget = join(repoRoot, 'packages/design-system/src/components/Button/button.anatomy.stories.tsx')
+const anatomyOrig = readFileSync(anatomyTarget, 'utf8')
+try {
+  writeFileSync(anatomyTarget, anatomyOrig.replace("name: '元件總覽'", "name: '總覽（錯誤注入）'"))
+  const code = run()
+  if (code === 0) { console.error('✗ anatomy canonical 顯示名漂移後 gate 未 FAIL'); ok = false }
+  else console.log('✓ anatomy canonical 顯示名漂移被抓(exit ' + code + ')')
+} finally {
+  writeFileSync(anatomyTarget, anatomyOrig)
+}
+
+// 6) Missing canonical section 必有該 section 自己的 scoped rationale；
+//    不相干的 rationale 不可當整檔 escape。
+try {
+  const injected = `// @anatomy-rationale:\n// ColorMatrix N/A — 注入測試的合法但不相干理由。\n${anatomyOrig}`
+    .replace('export const SizeMatrix =', 'export const InjectedMissingSizeMatrix =')
+  writeFileSync(anatomyTarget, injected)
+  const code = run()
+  if (code === 0) { console.error('✗ missing SizeMatrix 借用不相干 rationale 後 gate 未 FAIL'); ok = false }
+  else console.log('✓ missing anatomy section 的 scoped rationale 規則被抓(exit ' + code + ')')
+} finally {
+  writeFileSync(anatomyTarget, anatomyOrig)
+}
+
+// 7) Showcase 只要求一個有代表性的 reader-facing story；不強迫 export 名為 Default。
+try {
+  writeFileSync(target, orig.replace('export const Default: Story =', 'export const RepresentativeBaseline: Story ='))
+  const code = run()
+  if (code !== 0) { console.error('✗ 非 Default 的 representative showcase 應 PASS 卻 FAIL'); ok = false }
+  else console.log('✓ 非 Default 的 representative showcase 可通過')
+} finally {
+  writeFileSync(target, orig)
+}
+
+// 8) 完全沒有 reader-facing export 的 showcase 必 FAIL。
+try {
+  writeFileSync(target, orig.replace(/^export const /gm, 'const '))
+  const code = run()
+  if (code === 0) { console.error('✗ 空 showcase gate 未 FAIL'); ok = false }
+  else console.log('✓ 空 showcase 被抓(exit ' + code + ')')
+} finally {
+  writeFileSync(target, orig)
+}
+
+// 9) 單一完整 integrated UsageGuidance 合法；任意 thin non-decision story 不合法。
+const principlesTarget = join(repoRoot, 'packages/design-system/src/components/Button/button.principles.stories.tsx')
+const principlesOrig = readFileSync(principlesTarget, 'utf8')
+const singleIntegrated = principlesOrig.replace(
+  /^export const (?!UsageGuidance\b)/gm,
+  'const ',
+)
+try {
+  writeFileSync(principlesTarget, singleIntegrated)
+  const code = run()
+  if (code !== 0) { console.error('✗ 單一 integrated UsageGuidance 應 PASS 卻 FAIL'); ok = false }
+  else console.log('✓ 單一 integrated UsageGuidance 可通過')
+} finally {
+  writeFileSync(principlesTarget, principlesOrig)
+}
+try {
+  writeFileSync(principlesTarget, singleIntegrated.replace('export const UsageGuidance', 'export const StylingNotes'))
+  const code = run()
+  if (code === 0) { console.error('✗ 單一 thin non-decision principle gate 未 FAIL'); ok = false }
+  else console.log('✓ 單一 thin non-decision principle 被抓(exit ' + code + ')')
+} finally {
+  writeFileSync(principlesTarget, principlesOrig)
+}
+
+// 10) 還原後必 PASS
 if (run() !== 0) { console.error('✗ 還原後應 PASS'); process.exit(1) }
 console.log(ok ? '✅ meta-test PASS' : '❌ meta-test FAIL')
 process.exit(ok ? 0 : 1)

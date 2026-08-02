@@ -412,7 +412,7 @@ export const PlacementReference = {
 // ── Accessibility ─────────────────────────────────────────────────────────
 // 2026-05-17 ship per audit Dim 13(story-rules.md 6-canonical 含 Accessibility)
 export const Accessibility = {
-  name: '無障礙',
+  name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>

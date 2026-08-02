@@ -23,7 +23,7 @@ type Story = StoryObj<typeof AppShell>
 
 /** Slot 結構 + landmark role 對照(使用 baseline AcmeSidebar / PageHeader 完整 production-grade)。 */
 export const Overview: Story = {
-  name: '槽位結構總覽',
+  name: '元件總覽',
   render: () => {
     const [activeId, setActiveId] = React.useState<string>('dashboard')
     const [asideOpen, setAsideOpen] = React.useState(true)
@@ -99,7 +99,7 @@ export const LayoutModeDiagram: Story = {
 
 /** Aside 2-mode state behavior(toggle + breakpoint 切換)— 用完整 baseline。 */
 export const StateBehavior: Story = {
-  name: '右側面板開合行為(兩種模式)',
+  name: '狀態行為',
   render: () => {
     const [activeId, setActiveId] = React.useState<string>('dashboard')
     const [open, setOpen] = React.useState(false)
@@ -142,7 +142,7 @@ export const StateBehavior: Story = {
 
 /** A11y landmark 文字說明(非 live render,避無謂 nested shell)。 */
 export const Accessibility: Story = {
-  name: '無障礙(地標標記 + 跳轉連結 + 鍵盤導覽)',
+  name: '無障礙與鍵盤',
   render: () => (
     <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
       <h2 className="text-h4 mb-3">A11y 機制</h2>
@@ -168,7 +168,7 @@ export const Accessibility: Story = {
 
 /** Size matrix:Aside width clamp 文字對照(非 rendered case,因 width 是 number prop)。 */
 export const SizeMatrix: Story = {
-  name: '右側面板寬度範圍(240-640)',
+  name: '尺寸對照表',
   render: () => (
     <div className="px-[var(--layout-space-loose)] py-[var(--layout-space-tight)] space-y-3 text-body">
       <h2 className="text-h4">Aside width clamp</h2>
