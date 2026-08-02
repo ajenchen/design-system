@@ -304,7 +304,7 @@ export const StateBehavior: Story = {
             </tbody>
           </table>
         </div>
-        <p className="text-footnote text-fg-muted mt-3">
+        <p className="text-footnote text-fg-secondary mt-3">
           role / aria-live 由 Toaster 的兩個 stable sr-only sibling regions 承載。Sonner 視覺 viewport
           固定是 polite，所以可見 toast 本身明確設為 role=&quot;group&quot; + aria-live=&quot;off&quot;；
           內部 action / dismiss 仍在 accessibility tree 中可聚焦、可閱讀。

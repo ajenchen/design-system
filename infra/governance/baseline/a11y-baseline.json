@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-08-02T03:26:57.501Z",
-    "stories": 989,
+    "generatedAt": "2026-08-02T05:30:42.000Z",
+    "stories": 990,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -817,6 +817,7 @@
       "design-system-components-timepicker-設計規格--precision-matrix",
       "design-system-components-timepicker-設計規格--size-matrix",
       "design-system-components-toast-展示--interactive",
+      "design-system-components-toast-展示--live-region-contract",
       "design-system-components-toast-展示--with-description",
       "design-system-components-toast-設計原則--action-rule",
       "design-system-components-toast-設計原則--duration-rule",
@@ -994,7 +995,7 @@
       "design-system-tokens-typography--type-scale",
       "design-system-tokens-uisize--overview"
     ],
-    "storyIdsSha256": "38ce1f0f70795b9fde9b17badaf3566ee4bcb87d0eb8ddec4ccabdeb63e17d0d",
+    "storyIdsSha256": "76e0bf5a05ece658a55a0b81cc9a1c184fbd3904b4a4bdd78fb7bbd524095934",
     "fingerprints": 714
   },
   "fingerprints": {
