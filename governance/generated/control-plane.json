@@ -554,12 +554,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:db7e287dc21137730fe8d77678c9eeb9c6ae9cb4567984b8a2e404130d8fe989",
+      "hash": "sha256:a1dbf0cd397f19f36df434451d257ac5431581dc9a0239c5cadefa3ffe848c83",
       "id": "deep-audit-deterministic-plan",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/deep-audit-deterministic-plan.json",
-      "size": 20771,
+      "size": 20793,
       "type": "file"
     },
     {
@@ -590,12 +590,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:6ff4669aa5e628360b91925a67a08dd2330d4e5bd50fbee92dab1aa967a0e231",
+      "hash": "sha256:d2ac6ae710c1ad7ae57033a159932cadadf328cb97a398c2a70916ac5ed2d899",
       "id": "deep-audit-deterministic-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-run-deterministic-deep-audit.mjs",
-      "size": 32049,
+      "size": 33057,
       "type": "file"
     },
     {
@@ -3836,7 +3836,7 @@
         "scripts/generated/"
       ],
       "files": 405,
-      "hash": "sha256:181b7276974f83ee67c85b038d6c5f5c6cbdc3770a42df978be1512c6e3e175e",
+      "hash": "sha256:9f455bffd1c33e6fdf96d9693e94635cb3ee8192ff94d978b6928192a953f051",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

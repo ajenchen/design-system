@@ -330,6 +330,27 @@ test('exit zero without required observations and zero-work output cannot become
   }, 2), /matched no manifest path|vacuous/)
 })
 
+test('zero-work reject patterns use numeric boundaries and do not reject positive counts ending in zero', () => {
+  const state = loadDeterministicDeepAuditPlan({ repoRoot: ROOT })
+  const clean = (stdout) => ({ exitCode: 0, signal: null, error: null, stdout, stderr: '' })
+  assert.equal(validateDeterministicCommandCompletion(
+    state.commandById.get('compile-stories'),
+    clean('✅ 60 component(s) canonical aligned; 0 skipped\n'),
+  ), true)
+  assert.equal(validateDeterministicCommandCompletion(
+    state.commandById.get('a11y-all-stories'),
+    clean('running axe-core against 990 stories\nStories scanned: 990\n'),
+  ), true)
+  assert.equal(validateDeterministicCommandCompletion(
+    state.commandById.get('visual-theme-density-matrix'),
+    clean('scope=all,跑 120 scenario\n'),
+  ), true)
+  assert.equal(validateDeterministicCommandCompletion(
+    state.commandById.get('composition-fidelity'),
+    clean('Found 10 identity-verify mapping\n10 個 identity-opt-in mapping\n'),
+  ), true)
+})
+
 test('command completion failures preserve bounded diagnostic tails after snapshot cleanup', () => {
   const state = loadDeterministicDeepAuditPlan({ repoRoot: ROOT })
   const command = state.commandById.get('a11y-all-stories')

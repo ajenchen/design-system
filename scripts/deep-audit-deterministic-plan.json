@@ -77,7 +77,7 @@
       "completion": {
         "acceptedExitCodes": [0],
         "minimumOutputMatches": [{ "pattern": "[1-9][0-9]* component\\(s\\) canonical aligned", "minimum": 1 }],
-        "rejectOutputPatterns": ["0 component(s) canonical aligned", "; [1-9][0-9]* skipped", "Cannot find module", "SyntaxError", "ReferenceError"]
+        "rejectOutputPatterns": ["\\b0 component\\(s\\) canonical aligned", "; [1-9][0-9]* skipped", "Cannot find module", "SyntaxError", "ReferenceError"]
       }
     },
     {
@@ -135,7 +135,7 @@
       "completion": {
         "acceptedExitCodes": [0],
         "minimumOutputMatches": [{ "pattern": "running axe-core against [1-9][0-9]* stories", "minimum": 1 }],
-        "rejectOutputPatterns": ["0 stories", "storybook-static/index.json not found", "Cannot find module", "SyntaxError", "ReferenceError"]
+        "rejectOutputPatterns": ["\\b0 stories\\b", "storybook-static/index.json not found", "Cannot find module", "SyntaxError", "ReferenceError"]
       }
     },
     {
@@ -166,7 +166,7 @@
       "completion": {
         "acceptedExitCodes": [0],
         "minimumOutputMatches": [{ "pattern": "scope=all,跑 [1-9][0-9]* scenario", "minimum": 1 }],
-        "rejectOutputPatterns": ["0 scenario", "storybook 未跑", "storybook 120s 未就緒", "Cannot find module", "SyntaxError", "ReferenceError"]
+        "rejectOutputPatterns": ["\\b0 scenario\\b", "storybook 未跑", "storybook 120s 未就緒", "Cannot find module", "SyntaxError", "ReferenceError"]
       }
     },
     {
@@ -179,7 +179,7 @@
       "completion": {
         "acceptedExitCodes": [0],
         "minimumOutputMatches": [{ "pattern": "Found [1-9][0-9]* identity-verify mapping", "minimum": 1 }],
-        "rejectOutputPatterns": ["0 個 identity-opt-in mapping", "gate is vacuous", "static dir not found", "Cannot find module", "SyntaxError", "ReferenceError"]
+        "rejectOutputPatterns": ["\\b0 個 identity-opt-in mapping", "gate is vacuous", "static dir not found", "Cannot find module", "SyntaxError", "ReferenceError"]
       }
     },
     {

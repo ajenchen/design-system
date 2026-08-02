@@ -71,11 +71,11 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | deep-audit-ci-observation-schema | `scripts/schemas/ci-evidence-observation.schema.json` | `sha256:770f54aecf0426a7dfce16b326c151a6b16f14015d138ac7323d552e9b367e70` |
 | deep-audit-coverage-tests | `scripts/test-verify-deep-audit-coverage.mjs` | `sha256:fbd0387fcf966b27ebd14abe418e08f0563f3f8c44d1b6cf477f2fedae7c051f` |
 | deep-audit-coverage-verifier | `scripts/verify-deep-audit-coverage.mjs` | `sha256:7a9587ca3e5295c9147afce114da0524162381a2748289f84a1e314025bb5db9` |
-| deep-audit-deterministic-plan | `scripts/deep-audit-deterministic-plan.json` | `sha256:db7e287dc21137730fe8d77678c9eeb9c6ae9cb4567984b8a2e404130d8fe989` |
+| deep-audit-deterministic-plan | `scripts/deep-audit-deterministic-plan.json` | `sha256:a1dbf0cd397f19f36df434451d257ac5431581dc9a0239c5cadefa3ffe848c83` |
 | deep-audit-deterministic-plan-library | `scripts/lib/deep-audit-deterministic-plan.mjs` | `sha256:695096fe789c0befd8ac6b00cc9390131eaaea1b6ec92bd80dc934cc7f2b7d45` |
 | deep-audit-deterministic-plan-schema | `scripts/schemas/deep-audit-deterministic-plan.schema.json` | `sha256:f9bba1dc63dc13b631b04b426f65e4a6e94851ba6ca378173d371d08647d39a0` |
 | deep-audit-deterministic-runner | `scripts/run-deterministic-deep-audit.mjs` | `sha256:f03e904ce98d598743caea865268b560215c6a057fd16fe2267cee6ca7d662be` |
-| deep-audit-deterministic-tests | `scripts/test-run-deterministic-deep-audit.mjs` | `sha256:6ff4669aa5e628360b91925a67a08dd2330d4e5bd50fbee92dab1aa967a0e231` |
+| deep-audit-deterministic-tests | `scripts/test-run-deterministic-deep-audit.mjs` | `sha256:d2ac6ae710c1ad7ae57033a159932cadadf328cb97a398c2a70916ac5ed2d899` |
 | deep-audit-evidence-contract | `scripts/lib/deep-audit-evidence-contract.mjs` | `sha256:c94219d3e51f4c4dbdb34a1c76db186672a82591735f2e92b2ee1264c07ddc74` |
 | deep-audit-evidence-contract-schema | `scripts/schemas/deep-audit-evidence-contract.schema.json` | `sha256:eeeb8d4c8a8994f59b2f4e90cd5700c07af2427d34a20df4e8fc8b492ffefc4c` |
 | deep-audit-evidence-schema-parity-tests | `scripts/test-deep-audit-evidence-schema-parity.mjs` | `sha256:e14949ebbc3c33c41107f86846eeb06abb931bae79eb843f1f008e4e92cc0fd3` |
@@ -430,7 +430,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:6e5ac901cce627dd23c1a3a9d203efd5014dd57a30c1379c6f465403c6a80a56` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:64ff175f430bc2e150a01905e1c85a42e3f27baf4da1c34a514edcfc8a985b57` |
-| repository-automation-corpus | `scripts` | `sha256:181b7276974f83ee67c85b038d6c5f5c6cbdc3770a42df978be1512c6e3e175e` |
+| repository-automation-corpus | `scripts` | `sha256:9f455bffd1c33e6fdf96d9693e94635cb3ee8192ff94d978b6928192a953f051` |
 | repository-ignore-boundary | `.gitignore` | `sha256:8a7ce326c91a0696697109af370ad4b12db0856d12f857d270da8dba95f1aec7` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
