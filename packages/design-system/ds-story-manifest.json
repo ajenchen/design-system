@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-08-02T01:28:21.618Z"
+    "generatedAt": "2026-08-02T02:24:05.645Z"
   },
   "components": {
     "accordion": {
@@ -442,6 +442,7 @@
       "tiers": {
         "展示": [
           "design-system-components-combobox-展示--modes",
+          "design-system-components-combobox-展示--with-error",
           "design-system-components-combobox-展示--size-alignment",
           "design-system-components-combobox-展示--searchable",
           "design-system-components-combobox-展示--in-data-table"
@@ -913,6 +914,8 @@
         "設計規格": [
           "design-system-components-inlineedit-設計規格--overview",
           "design-system-components-inlineedit-設計規格--inspector",
+          "design-system-components-inlineedit-設計規格--color-matrix",
+          "design-system-components-inlineedit-設計規格--size-matrix",
           "design-system-components-inlineedit-設計規格--state-behavior",
           "design-system-components-inlineedit-設計規格--in-field-cascade",
           "design-system-components-inlineedit-設計規格--accessibility"
@@ -1038,6 +1041,7 @@
       "tiers": {
         "展示": [
           "design-system-components-numberinput-展示--modes",
+          "design-system-components-numberinput-展示--with-error",
           "design-system-components-numberinput-展示--size-alignment",
           "design-system-components-numberinput-展示--format-options",
           "design-system-components-numberinput-展示--in-data-table"
@@ -1107,6 +1111,7 @@
       "tiers": {
         "展示": [
           "design-system-components-peoplepicker-展示--single",
+          "design-system-components-peoplepicker-展示--with-error",
           "design-system-components-peoplepicker-展示--multi",
           "design-system-components-peoplepicker-展示--size-alignment",
           "design-system-components-peoplepicker-展示--async-directory-load"
@@ -1305,6 +1310,7 @@
       "tiers": {
         "展示": [
           "design-system-components-select-展示--modes",
+          "design-system-components-select-展示--with-error",
           "design-system-components-select-展示--hug-width",
           "design-system-components-select-展示--size-alignment",
           "design-system-components-select-展示--clearable",
@@ -1745,5 +1751,5 @@
     }
   },
   "totalComponents": 65,
-  "totalStories": 936
+  "totalStories": 942
 }
