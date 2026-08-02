@@ -13,8 +13,6 @@ benchmark:
   - Ant Design DatePicker (value/defaultValue API): ant.design/components/date-picker
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # SelectMenu 設計原則
 
 ## 定位
@@ -34,7 +32,7 @@ SelectMenu 是 **Popover + Command 組成的完整下拉選單浮層**——提�
 **為什麼**:
 - 內部狀態複雜(search filter / range / menu open state)跟 `value` 雙向 sync 會產生 race condition
 - Consumer 幾乎一定有外部 state(form library / app state),強制 controlled 消除 ambiguity
-- 世界級對照:Ant Design DatePicker(`value`「To set date」+ `defaultValue`「To set default date」,ant.design/components/date-picker)/ Material MUI Select(`value` controlled + `defaultValue`「Use when the component is not controlled」,mui.com/material-ui/api/select/)/ Radix Select(「Can be controlled or uncontrolled」`value`+`defaultValue`,radix-ui.com/primitives/docs/components/select)皆支援 dual-mode;我們選 controlled-only 對齊狀態一致性優先 <!-- @benchmark-cited: 2026-05-30 WebFetch 三家 API 實證 value+defaultValue dual-mode(MUI Select API / Ant DatePicker API / Radix Select),URL inline -->
+- value 軸由外層選值元件持有；SelectMenu 不再建立第二份可漂移的 selection state，因此刻意不開 uncontrolled fallback
 
 **若未來 value 軸要改 dual-mode**:DS 已有 `useControllable` helper(open 軸與 Select 皆已消費),另需測試 controlled↔uncontrolled switch 場景,屬 major API 擴充。
 
@@ -76,7 +74,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 **定位**:SelectMenu 的 `sideOffset` 與 `align` 直接走 Popover canonical——`sideOffset=8` / `align` 跟隨 trigger 位置(見 `../Popover/popover.spec.md`「Align 對齊 canonical(跨浮層 SSOT)」)。SelectMenu 不自訂浮層定位規則。
 
-**視覺 vs 語意**(2026-04-20 精緻化):SelectMenu 的 **width 預設跟 trigger(input)同寬**(Radix trigger-width),此時 `start` / `end` 兩種 align 呈現視覺完全相同(popover 正好跟 input 貼合,左右邊緣對齊無差異)。但當 consumer 傳 `minWidth` 大於 input 寬度(例:長 option label 要空間展示)、或 option 內容撐開導致 popover 寬於 trigger,**align 的視覺差異立刻顯現**——此時嚴格照 structured overlay canonical(trigger 在左 → start / 右 → end)。(SelectMenu `align` prop 僅暴露 `'start' | 'end'`,不開放底層 Radix 的 `center`。) <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**視覺 vs 語意**(2026-04-20 精緻化):SelectMenu 的 **width 預設跟 trigger(input)同寬**(底層 trigger-width),此時 `start` / `end` 兩種 align 呈現視覺完全相同(popover 正好跟 input 貼合,左右邊緣對齊無差異)。但當 consumer 傳 `minWidth` 大於 input 寬度(例:長 option label 要空間展示)、或 option 內容撐開導致 popover 寬於 trigger,**align 的視覺差異立刻顯現**——此時嚴格照 structured overlay canonical(trigger 在左 → start / 右 → end)。(SelectMenu `align` prop 僅暴露 `'start' | 'end'`,不開放底層的 `center`。)
 
 換言之 SelectMenu **永遠照 canonical**,只是大多數情況 width=trigger-width 讓 canonical 視覺上被 mask,一旦 popover 突破 trigger 寬度 canonical 立刻生效。規則沒例外,只是呈現條件。
 
@@ -138,7 +136,7 @@ Popover（浮動容器，handle 展開 / 定位）
 - **Dropdown 開啟時**（2026-07-04 Q3 拍板措辭修訂）：spinner 只在**無可顯示選項時**佔 empty slot，渲 panel-center `<Empty icon={<CircularProgress size={48}/>} className="py-6"/>`（cmdk `CommandEmpty` 機制）；**已有 options 時保留顯示不清空**（MUI Autocomplete 官方「only if there are no suggestions to show」共識）
 - **CircularProgress 預設 24px**，但在 Empty wrapper 內 48px（取代 Empty 的 48px Avatar icon slot）
 
-對齊 MUI Autocomplete loading dropdown-body + Ant Select loading idiom + DS `empty.spec.md`「禁止事項」段「loading 用 Empty + CircularProgress compose」SSOT（SelectMenu loading 用法 canonical row 見 `empty.spec.md`「現有消費者」表）。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+本行為對齊 DS `empty.spec.md`「禁止事項」段「loading 用 Empty + CircularProgress compose」SSOT（SelectMenu loading 用法 canonical row 見 `empty.spec.md`「現有消費者」表）。
 
 **消費**：Select / Combobox forward `loading` prop 到 SelectMenu（PeoplePicker 尚未暴露 / 轉發 `loading`，見 `people-picker.spec.md`「邊界案例」），本元件不需 consumer 直接知道 Empty + CircularProgress 組合（封裝在內）。
 

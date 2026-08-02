@@ -20,8 +20,6 @@ benchmark:
   - Ant Design Switch: github.com/ant-design/ant-design/tree/master/components/switch
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # Switch 設計原則
 
 ## 定位
@@ -75,7 +73,7 @@ Track（pill 形，rounded-full）
 - Track 寬 = 2 × 高（pill 比例）
 - Thumb 直徑 = track 高度
 - ON 狀態 thumb 右滑 `translateX(trackHeight)`
-- **Hover**(2026-07-06 補,「選中之上 hover 升階」家族):ON track `bg-primary → bg-primary-hover`(Checkbox checked hover 同款;Ant Switch checked hover = `colorPrimaryHover` 源碼實錘);OFF track `bg-border → bg-border-hover` 深一階(Checkbox 未選 hover 同慣例)
+- **Hover**(2026-07-06 補,「選中之上 hover 升階」家族):ON track `bg-primary → bg-primary-hover`(Checkbox checked hover 同款);OFF track `bg-border → bg-border-hover` 深一階(Checkbox 未選 hover 同慣例)
 
 ---
 
@@ -91,8 +89,7 @@ sm 和 md 視覺相同（純粹命名 mapping，讓消費者可直接傳同一�
 ### 為什麼不完全對齊 `--field-height-*`
 
 - **現況**:track 高 sm/md=20px / lg=24px(不等於 `--field-height-sm/md/lg` = 28/32/36px);track 寬固定 2× 高(pill 比例);thumb 直徑 = track 高
-- **Rationale**:Switch 是**實體開關類比**(iOS / macOS 系統開關),track 是 pill 形不是 field-like 容器;高度**小於 field-height** 才符合「嵌在一列中的小控件」的語意。放大到 field-height(28/32/36)會破壞 pill 比例(canonical 2:1),視覺語意從 toggle 降級為 generic action button,且失去「可滑動凹槽」的空間 affordance。行高對齊透過 `<Field>` 容器的 `flex items-center` 垂直置中達成 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
-- **世界級對照**:iOS `UISwitch` = 32×20pt(獨立 pill 比例,不跟 form field 成比例)/ Material 3 Switch = 52×32dp / GitHub Primer ToggleSwitch = 40×24——全部 pill 比例 2:1、獨立於 field-height <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **Rationale**:Switch 是**實體開關類比**,track 是 pill 形而不是 field-like 容器;高度**小於 field-height** 才符合「嵌在一列中的小控件」的語意。放大到 field-height(28/32/36)會破壞 canonical 2:1 pill 比例,讓 toggle 看似 generic action button,並削弱可滑動凹槽的 affordance。行高對齊由 `<Field>` 容器的 `flex items-center` 垂直置中達成
 
 ---
 
@@ -135,7 +132,7 @@ sm 和 md 視覺相同（純粹命名 mapping，讓消費者可直接傳同一�
 
 `mode?: 'edit' | 'view' | 'readonly' | 'disabled'`(默認 inherit Field context 或 `'edit'`),對齊 `field-types.ts` FieldMode：
 - `edit`(預設)— 可切換的 Switch。
-- `view` — **純展示**:渲染 勾/叉 icon(非互動 Switch;true=Check / false=X,中性 foreground 色,SSOT = `../SelectionControl/boolean-value.tsx`),語意由 context(如 DataTable boolean cell 的行/列 header)提供,對齊 Carbon read-only / Input·Select·Textarea view mode 一致。<!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- `view` — **純展示**:渲染 勾/叉 icon(非互動 Switch;true=Check / false=X,中性 foreground 色,SSOT = `../SelectionControl/boolean-value.tsx`),語意由 context(如 DataTable boolean cell 的行/列 header)提供,並與 Input·Select·Textarea view mode 一致。
 - `readonly` — **Field 內** = 灰框 + 勾/叉 icon(消費 `fieldWrapperStyles` readonly,與 Input readonly 同一視覺語言;世界級:Salesforce output ✓ glyph / SAP 靜態文字 — readonly 下 boolean 是資料 value 非控件);**standalone** = 正常色鎖互動(settings list 場景)。
 - `disabled` — 同上表「Readonly vs Disabled」(opacity 弱化);`mode='disabled'` 直傳與 `disabled` prop 等效(effectiveDisabled,2026-06-12)。
 
@@ -161,7 +158,7 @@ Switch 可透過 `label` / `description` props 內部直接渲染緊鄰文字：
 
 ### Horizontal Field 自動齊右(2026-04-20)
 
-在 `<Field orientation="horizontal">` 內 Switch 自動 `ml-auto`(control area 是 `flex items-center`,Switch 被推到最右邊),**不需要 consumer 傳 className**。這對齊 iOS Settings / macOS System Settings / GitHub Settings / Figma preferences 的 canonical:**toggle 永遠齊右,label 左對齊、固定寬度**——視覺掃描快、列與列對齊一致。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+在 `<Field orientation="horizontal">` 內 Switch 自動 `ml-auto`(control area 是 `flex items-center`,Switch 被推到最右邊),**不需要 consumer 傳 className**。Settings list 的 canonical 是 **toggle 齊右、label 左對齊、固定寬度**，讓列與列對齊並加快掃描。
 
 **⚠️ 自動齊右只適用「純 settings list」情境**(整排獨立 toggle)— 適用判準見下方「兩種對齊慣例」表。**混合表單**(同表單有 Input / SegmentedControl 等其他控件)= Form-edit 情境 → Switch 應與其他控件**左對齊**:consumer 傳 `className="ml-0"` 覆寫(cn 合併時 consumer className 在後,tailwind-merge 以 `ml-0` 蓋掉內部 `ml-auto`)。錨例:`field.stories.tsx`「SegmentedControl 作為 Field 控制元件」混合表單段(2026-06-10 user 拍板修正)。
 
@@ -171,12 +168,12 @@ Switch 可透過 `label` / `description` props 內部直接渲染緊鄰文字：
 
 ### 對齊情境:Settings list vs Form edit(2026-04-20)
 
-世界級對照 Switch 在 horizontal layout 有**兩種**對齊慣例,由 **context 決定**:
+Switch 在 horizontal layout 有**兩種**對齊慣例,由 **context 決定**:
 
-| Context | 對齊 | 世界級對照 |
+| Context | 對齊 | 本 DS 判準 |
 |---------|------|-----------|
-| **Settings list**(獨立每項 row,一項一個偏好,即時生效,無 submit) | **齊右** | macOS System Settings / iOS Settings / GitHub Settings / Linear Settings |
-| **Form edit**(多欄位混合 control,使用者 submit 才生效) | **緊跟 label / 與其他 control 對齊** | Ant Design Form layout=horizontal / Material Form / Polaris Form | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+| **Settings list**(獨立每項 row,一項一個偏好,即時生效,無 submit) | **齊右** | trailing value/control 對齊，方便逐列掃描 |
+| **Form edit**(多欄位混合 control,使用者 submit 才生效) | **緊跟 label / 與其他 control 對齊** | 跟同表單其他 field control 共用起始線 |
 
 **判斷法**:這個頁面有 submit button 嗎?
 - **有** → form → Switch 本來就不是 canonical(該用 Checkbox,見上「與 Checkbox 的分界」)—— 若硬要用 Switch 代替 submit-flow Checkbox,需 consumer 明確不 ml-auto。

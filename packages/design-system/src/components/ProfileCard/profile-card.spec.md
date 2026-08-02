@@ -9,8 +9,6 @@ benchmark:
   - MUI Card: github.com/mui/material-ui/tree/master/packages/mui-material/src/Card
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # ProfileCard 設計原則
 
 人員 HoverCard 的內容元件。提供統一的人員資訊展示格式，作為 HoverCard 的 content 消費者。
@@ -81,7 +79,7 @@ Section 之間用 `border-t border-divider` 分隔(見 `separator.spec.md`「元
 
 ProfileCard 使用單一元件級寬度，HoverCard 浮層量測由它決定且不隨人員內容改變；canonical 數值與 utility 由 `profile-card.tsx` 擁有。
 
-對照世界級：Material Snackbar 固定 344px、Slack message modal 固定寬度——**單一元件的 canonical 寬度屬於該元件自己的 design spec，不抽為跨元件 token**。Token 系統只管共享值（如 `--field-height-*`、`--layout-space-*`）；單一元件獨有的結構常數留在 component code + 本 spec。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**單一元件的 canonical 寬度屬於該元件自己的 design spec，不抽為跨元件 token**。Token 系統只管共享值（如 `--field-height-*`、`--layout-space-*`）；單一元件獨有的結構常數留在 component code + 本 spec，避免為無第二個消費者的值建立假共享層。
 
 ## Action 行(2026-04-20 canonical)
 
@@ -96,7 +94,7 @@ Action 區的 layout **永遠等寬均分容器寬度**——multiple actions �
 **為什麼等寬均分**:
 - ProfileCard 是**人員關係卡**,action 是 relationship actions(Chat / Audio / Message / Follow)——這類動作視覺權重對等,無主次之分,等寬最直覺
 - Single action 撐滿讓「行動列」永遠占滿 card 底部,視覺節奏一致(不會「單一 button 孤零零縮在左邊」)
-- 世界級對照:iOS Contact card / macOS Contact / LinkedIn profile card / Slack profile modal 的 action row——全部等寬 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- action row 全部等寬，讓各動作擁有相同的命中區與視覺優先序
 
 **Consumer 跨 story / 跨 consumer 必須用同一組 canonical actions**:
 

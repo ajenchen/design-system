@@ -9,8 +9,6 @@ benchmark:
   - Ant Design Progress: github.com/ant-design/ant-design/tree/master/components/progress
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # ProgressBar 設計原則
 
 **水平進度條(linear determinate progress)**——表達「已完成 X%、還剩 Y%」的量化進度視覺 primitive。0–100% 的已知進度、單向推進、可預期終點。circular 形式(含 indeterminate)走 `CircularProgress`。
@@ -29,8 +27,8 @@ ProgressBar 是**量化 linear 進度** primitive——consumer 必須能回答�
 
 世界級對照:
 - **Material** `LinearProgress`(determinate) — 同樣區分 determinate / indeterminate 兩模式,indeterminate 在我們系統由 `CircularProgress`(無 value)承擔
-- **Ant Design** `Progress` — 支援百分比文字、status（success/exception/normal）,我們以 `affix="value"` / `status` 對應 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
-- **Polaris** `ProgressBar` — 單一直線進度,不含 status 色區分,我們加上 status 對應上傳完成 / 失敗語意 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- 本 DS 以 `affix="value"` 顯示百分比文字，以 `status` 區分一般、完成與失敗語意。
+- ProgressBar 只負責線性進度表達；上傳檔名、重試與移除動作由 FileUpload / FileItem 擁有。
 - **shadcn** `Progress` — 同為 Radix Progress 薄包裝
 
 ---
@@ -120,7 +118,7 @@ export interface ProgressBarProps {
 
 ### 單一高度 4px(2026-04-20 決策)
 
-本元件**不提供 size 選項**,track 固定 `4px`——對齊 Material 3 / Carbon / Ant Design 慣例(皆固定單一高度)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+本元件**不提供 size 選項**,track 固定 `4px`。進度條是資料指示器而非 Field control，固定高度可讓相同進度在不同宿主中保持同一視覺量尺。
 
 `height` 不存在於公開型別。FileItem compact row 的 2px 呈現是該組合元件透過既有
 `className` DOM styling 通道套用的內部 composition 細節，不構成 ProgressBar 的第二個
@@ -129,7 +127,7 @@ size variant，也不應寫入 consumer recipe。
 **為什麼不分 size**:
 - 過往分 size 的刻度差太小,視覺差異使用者幾乎無法區分,形同冗餘 API
 - 分 size 反而讓 consumer 每次要「判斷該選哪個」,增加認知負擔
-- 世界級 canonical:Material LinearProgress / Carbon ProgressBar / Ant Progress 皆固定單一高度,無 size variant <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- 需要更強調的場景應改變容器排版與文字層級，不為 ProgressBar 新增高度 variant。
 - 若需要視覺強調(hero level progress),改用 full-width 排版 + 放大百分比文字 / swap 為 CircularProgress 大尺寸,不靠 size 階梯撐
 
 ### 與 FileItem 的分界(consumer 選哪個)
@@ -142,7 +140,7 @@ size variant，也不應寫入 consumer recipe。
 | CSV 匯入 / 批次處理 / 表單 wizard / quota 使用率 | **ProgressBar** 直接用 |
 | 短暫 loading(不知時長) | **CircularProgress**(indeterminate) |
 
-**世界級對照**:Ant Design 的 `Upload` vs `Progress`(Upload.List 內部用 Progress,consumer 不直接拼 Progress 做上傳 UI)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**組合邊界**:FileUpload / FileItem 在內部消費 ProgressBar，consumer 不直接拼進度條、檔名與動作來另造上傳 UI。
 
 ### Affix 選擇
 
@@ -228,7 +226,7 @@ ProgressBar 是**純視覺百分比指示**,本身**無互動狀態**(見「狀�
 - `<Progress value={N}/>` → `<ProgressBar value={N}/>`(props 契約未變)
 - `ProgressProps` type name → `ProgressBarProps`
 
-重命名理由:`CircularProgress` 元件(circular 兩態合一)納入系統後,需和 `Progress`(原 linear)在名稱上明確區分形狀。`ProgressBar` 對齊 Polaris / shadcn 命名慣例,使用者一看即知是 linear。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+重命名理由:`CircularProgress` 元件(circular 兩態合一)納入系統後,需和原本模糊的 `Progress` 名稱明確區分形狀。`ProgressBar` 直接表明 linear bar，與 `CircularProgress` 成對。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

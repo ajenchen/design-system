@@ -29,8 +29,6 @@ benchmark:
   - Carbon ContentSwitcher: github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/ContentSwitcher
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # SegmentedControl 設計原則
 
 ## 定位
@@ -151,7 +149,7 @@ SegmentedControl 必須能塞進 `Field` 容器（就像 `Input` / `Button` / `S
 - **false（hug content）★default**：SegmentedControl 寬度由 item 總寬決定，items 各自照內容寬度排列
 - **true**：SegmentedControl 撐滿父容器，所有 item 等分該寬度。fullWidth 與 size 正交——只影響寬度分配，高度仍由 `size` 決定（xs fullWidth 仍是 24px 固定）
 
-> **不論 `fullWidth` 為何，items 之間永遠等寬或全由內容決定，不存在「撐滿但各自不同寬」的混血模式**。這是 SegmentedControl 的身份特徵，對齊 Apple HIG、Material 3 Segmented Button、Carbon ContentSwitcher 等世界級系統：「all segments have the same width」是 segmented 的視覺定義之一。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+> **不論 `fullWidth` 為何，items 之間永遠等寬或全由內容決定，不存在「撐滿但各自不同寬」的混血模式**。這是 SegmentedControl 的身份特徵：同一選擇組的 segments 應共享一種寬度邏輯，否則視覺重量會被 label 長度誤導。
 
 ### fullWidth 的判準：**跟著容器尺度走，跟 label 長度無關**
 
@@ -220,7 +218,7 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 
 ### focus-visible
 
-由 Radix ToggleGroup 原生處理——左右箭頭在 items 間移動 focus，空白/Enter 選取。Focus ring 對齊 Button：`ring-2 ring-ring ring-offset-1`。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+由底層 ToggleGroup 處理——左右箭頭在 items 間移動 focus，空白/Enter 選取。Focus ring 對齊 Button：`ring-2 ring-ring ring-offset-1`。
 
 ---
 

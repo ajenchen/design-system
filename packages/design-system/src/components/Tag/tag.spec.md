@@ -60,8 +60,6 @@ benchmark:
   - Carbon Tag: github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/Tag
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # Tag 設計原則
 
 ## 定位
@@ -83,7 +81,7 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 | Cursor | `pointer` | `text` | indicator 非 action（dismiss button 內部仍 pointer）|
 | 字體 pairing | Button xs 是 standalone utility（text-caption 12px） | Tag md pair Field md（text-body 14px） | size 對應 Field, Tag 出現在 Field 內需視覺連續 |
 
-**不該把 Tag 改成 Button 樣式來「統一」**——這是 world-class DS（Polaris / Material / Atlassian / Ant / Carbon）共識：action 跟 indicator padding + typography 分開。
+**不該把 Tag 改成 Button 樣式來「統一」**——兩者在本 DS 分屬 action trigger 與 data indicator，padding 與 typography 必須各自服務其資訊層級。
 
 ---
 
@@ -107,7 +105,7 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 
 ## Color
 
-以色名命名，**色名即色相，語義由消費端內容與上下文決定**（categorical 色，非 semantic 狀態）。Prop 命名 `color`（對齊 MUI Chip / Ant Tag / Atlaskit Tag world-class 多數派 idiom）。**12 色相 1:1 對 color token 的 categorical 色相**（`--color-{hue}-*`），與 Avatar / Calendar event 共用同一組 SSOT（`tokens/categorical-color.ts`），名實一致零 offset。 <!-- @benchmark-cited: Ant Design Tag preset colors https://ant.design/components/tag#components-tag-demo-colorful (raw hue names) -->
+以色名命名，**色名即色相，語義由消費端內容與上下文決定**（categorical 色，非 semantic 狀態）。Prop 命名 `color`，直接表達 categorical hue。**12 色相 1:1 對 color token 的 categorical 色相**（`--color-{hue}-*`），與 Avatar / Calendar event 共用同一組 SSOT（`tokens/categorical-color.ts`），名實一致零 offset。
 
 | Color | categorical 色相 |
 |---------|----------|

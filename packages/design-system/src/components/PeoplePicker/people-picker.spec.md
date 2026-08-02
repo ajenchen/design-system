@@ -11,8 +11,6 @@ benchmark:
   - Polaris Combobox: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Combobox
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # PeoplePicker 設計原則
 
 ## 定位
@@ -174,7 +172,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 **改 PeoplePicker 視覺前必查本表,動 trigger render / placeholder / overflowShape / tagWrapperClassName 前先 cite 對應 row。** Hook `check_peoplepicker_ssot_drift.sh` 機械強制。
 
-**Avatar 左 inset SSOT(GitHub people picker idiom)**:single trigger / multi stack 第一個 avatar 距 trigger.left = **12px 固定**(不隨 size / density 漂移)。實作:PeoplePicker form context + 有 tag → `cn(className, '!px-[var(--field-px)]')` inject 12px override 到 Combobox Field wrapper,**覆蓋** Combobox `tagPadding[size]` density-dependent calc 公式(該公式在 default lg + 全 comfortable 共 4/6 組合漂離 12px,故報廢改固定值;推導史詳 git log 2026-05-13);`tagAreaPaddingLeftPx={undefined}` 不再 +8 magic。Cell context naked variant `!px-[var(--table-cell-px)]` 已是 12px 不 inject。對齊 GitHub picker / Material Autocomplete renderTags / Ant Select tagRender 共享 fixed-inset canonical(不 scale with size)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**Avatar 左 inset SSOT**:single trigger / multi stack 第一個 avatar 距 trigger.left = **12px 固定**(不隨 size / density 漂移)。實作:PeoplePicker form context + 有 tag → `cn(className, '!px-[var(--field-px)]')` inject 12px override 到 Combobox Field wrapper,**覆蓋** Combobox `tagPadding[size]` density-dependent calc 公式(該公式在 default lg + 全 comfortable 共 4/6 組合漂離 12px,故報廢改固定值;推導史詳 git log 2026-05-13);`tagAreaPaddingLeftPx={undefined}` 不再 +8 magic。Cell context naked variant `!px-[var(--table-cell-px)]` 已是 12px 不 inject。固定 inset 讓 avatar 與其他 Field control 的文字起點共享同一水平節奏，不被 density 改寫。
 
 **判準**：
 - **選人 → PeoplePicker**（不用 Select / Combobox 代替，失去 Avatar 視覺）

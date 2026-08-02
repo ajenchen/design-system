@@ -32,8 +32,6 @@ benchmark:
   - Polaris Navigation: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Navigation
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # Sidebar 設計原則
 
 > **Foundational SSOT rationale**(2026-04-24 approved,cap 800):
@@ -265,16 +263,9 @@ Modal header 用 **padding-based**（`py-3` + content），因為 modal 是 ephe
 - 不同 weight → 會造成「哪個比較重要」的語意混淆
 - **「當前位置」的訊號由 sidebar active item(`bg-neutral-selected`)負責**,不靠 page title 的字重搶戲
 
-### 對照 Linear / Slack / Discord / Figma <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+### Chrome typography 選擇
 
-| 產品 | Chrome text size | 做法 |
-|---|---|---|
-| Linear | 14-15px medium | 同 size 同 weight |
-| Slack | 15-18px bold | 同 weight,稍有 size 差異 |
-| Discord | 16px semibold | 同 size 同 weight |
-| Figma | 13px regular | 同 size 同 weight |
-
-我們選 **`text-body-lg font-medium` 統一**,是世界級 chrome typography 的中庸做法——比 Linear（14-15px medium）字級大 1px / weight 一致，比 Slack（15-18px bold）字級略小且 weight 較輕避免 navigation 過度搶 attention，對齊 Discord（16px semibold）。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+本 DS 選 **`text-body-lg font-medium` 統一**：16px 保留 chrome 中的可讀性，medium 足以標示結構但不會壓過頁面內容。workspace brand、page title 與 user name 共用同 size / weight，層級改由 slot 位置與 active state 表達，不在固定高度的 chrome 裡製造假主從。
 
 ---
 
@@ -475,7 +466,7 @@ variant=meta 把這三件事做成結構性保證:樣式自動退、selection �
 </SidebarMenuButton>
 ```
 
-**世界級對照**:Linear「Show N more」、Notion「Show N more」、Slack「Show more」、Gmail Labels「More」——全部是「section 底部的 muted 命令 row」,行為與視覺一致。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**命令 row 語意**:meta item 固定放在 section 底部，以 muted 視覺表明它會展開更多資料，而不是另一個可被選中的導覽項目。
 
 **禁止**:
 
@@ -695,7 +686,7 @@ Item-level default / hover / selected / disabled **色彩**完全共用 item-ana
 ## 邊界案例
 
 - **Disabled item**:SidebarMenuButton `disabled` prop 走 native button disabled(`text-fg-disabled` + 不觸發 onClick + 不可聚焦,鍵盤導覽自動 skip);**不自動設 `aria-disabled`**——cva 另備 `aria-disabled:` 樣式,consumer 自傳 `aria-disabled`(如 asChild 非 button host)時同樣式生效。
-- **Loading(nav data-fetch)**:async nav tree fetch 時 consumer 應在對應 group 內渲 `<Skeleton>` line-stack(常見 3-5 條 sidebar nav skeleton 行)而非 Empty + spinner — Sidebar 是 chrome 不是 panel,loading 用 skeleton 更符合 chrome 持續存在的 affordance。對齊 Atlassian Sidebar / VS Code activity-bar idiom。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **Loading(nav data-fetch)**:async nav tree fetch 時 consumer 應在對應 group 內渲 `<Skeleton>` line-stack(常見 3-5 條 sidebar nav skeleton 行)而非 Empty + spinner — Sidebar 是持續存在的 chrome 不是 panel，skeleton 能保留導覽列的空間與節奏，不讓內容載入時整個 shell 改形。
 - **Empty(no nav items)**:罕見場景(用戶無權限 / 全空 workspace)。若整個 group 無 item,consumer 應 conditional 不渲該 group(不渲空 group label);若整個 sidebar 無 item,可能該 hide sidebar(走 layout context 不渲)。不渲空白 sidebar。
 - **Dark mode / density**:Sidebar 為 chrome surface,走 chrome-header token 自動 adapt;density 預設 lock 跟隨 app density chrome token,不獨立 own。
 - **Collapsed mode(icon-only)**:label / inline actions suffix 隱藏,只留 icon(hover tooltip 為 opt-in — 未傳 `tooltip` prop 的 collapsed button 無 hover 提示,collapsed 導覽 button 建議都傳 `tooltip`);TreeView 整區隱藏,重新看階層資料的唯一路徑 = 展開 sidebar(完整規則見「Icon 模式的行為規則」段)。

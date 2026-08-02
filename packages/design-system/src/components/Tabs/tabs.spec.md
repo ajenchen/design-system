@@ -20,8 +20,6 @@ benchmark:
   - Polaris Tabs: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Tabs
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # Tabs 設計原則
 
 ## 定位
@@ -88,7 +86,7 @@ TabsContent ← 對應被選中的 trigger
 - `startIcon` 描述 tab 的內容性質（人像 icon 配「成員」、齒輪 icon 配「設定」）
 - `badge` 傳達該 tab 底下的待處理計數（「通知 3」「成員 12」）
 - `endIcon` **純視覺 indicator only**（方向 / 狀態 — ChevronDown 暗示「展開後看到子內容」、Pin / Star 狀態徽記）。**不拼 click 行為** — 點到 endIcon 跟點到 tab body 同效果（切 tab）
-- `inlineAction`（2026-05-21 加）拆分 click target：點到 inlineAction 走它自己的 handler 不切 tab；典型如「『更多 ▾』tab 後綴點開 overflow dropdown 不切 tab」（split-click pattern,對齊 GitHub「Code ▾」/ Linear "Triage..." menu / Atlassian split-tab 共識）。**DOM 結構(2026-07-18 決策1 axe 正規修)**:inlineAction **portal 到 `TabsList` 的 overlay 層(`role=tablist` 之外的 sibling div)**,以 trigger 的量測座標(viewport-relative,涵蓋 none/scroll/menu)定位在 trigger 右緣預留的 paddingRight 區。**為什麼不放 tablist 內**:`role=tablist` 只能擁有 `role=tab`(ARIA required-children);inlineAction(`button[aria-haspopup]`)DOM-在 tablist 內 = axe critical(2026-07-18 實測確認),故 portal 出去。trigger 本身仍在 tablist 內(Radix roving focus 要求 trigger 為 List React 子代)。**演進史**:2026-07-05 先修 button-巢-button(nested-interactive serious,改 sibling 佈局);2026-07-18 再修 button-在-tablist(required-children critical,改 portal overlay)。**代價(user 2026-07-18 拍板接受)**:鍵盤 Tab 序 = 全部 tab 之後才到 action(action 現為 overlay 內獨立 tab stop)。click 天然分流(action portal 出 trigger 子樹,不冒泡)。<!-- @benchmark-unverified: axe aria-required-children rule 實測(.claude/logs/a11y-audit.json);split-click pattern 對照未逐一 URL cite -->
+- `inlineAction`（2026-05-21 加）拆分 click target：點到 inlineAction 走它自己的 handler 不切 tab；典型如「『更多 ▾』tab 後綴點開 overflow dropdown 不切 tab」。**DOM 結構(2026-07-18 決策1 axe 正規修)**:inlineAction **portal 到 `TabsList` 的 overlay 層(`role=tablist` 之外的 sibling div)**,以 trigger 的量測座標(viewport-relative,涵蓋 none/scroll/menu)定位在 trigger 右緣預留的 paddingRight 區。**為什麼不放 tablist 內**:`role=tablist` 只能擁有 `role=tab`(ARIA required-children);inlineAction(`button[aria-haspopup]`)DOM-在 tablist 內會觸發 axe critical,故 portal 出去。trigger 本身仍在 tablist 內(底層 primitive 的 roving focus 要求 trigger 為 List React 子代)。**演進史**:2026-07-05 先修 button-巢-button(nested-interactive serious,改 sibling 佈局);2026-07-18 再修 button-在-tablist(required-children critical,改 portal overlay)。**代價(user 2026-07-18 拍板接受)**:鍵盤 Tab 序 = 全部 tab 之後才到 action(action 現為 overlay 內獨立 tab stop)。click 天然分流(action portal 出 trigger 子樹,不冒泡)。
 
   **⚠️ ARIA required-children 鐵律(泛化,防同類 regression)**:任何 composite widget 容器(`role=tablist` / `listbox` / `menu` / `radiogroup` / `tree`)只能擁有其 required child role;要在容器「格子」旁塞獨立互動 element(action / dropdown trigger)時,**必 portal 出容器 DOM 子樹 + 量測定位**(aria-owns 不可行:axe required-children 計 DOM-owned 子代,不因 aria-owns 排除)。對齊 W3C ARIA APG composite-widget owned-elements 規範。
 
@@ -120,14 +118,14 @@ Tabs 有三種尺寸,**高度由 `--tab-height-*` token 控制**,隨 `data-densi
 | Size | md density | lg density | 字體 | 何時用 | 世界級對照 |
 |------|-----------|-----------|------|--------|-----------|
 | `sm` ★ cva default(2026-05-17 從 md 改 sm)| 32 | 40 | `text-body` (14) | **預設 use case**:所有 header 內 tabs(overlay header / chrome header / Dialog / Sidebar / dense toolbar)| Ant Design verbatim:「**small size could be used in Modal**」(`ant.design/components/tabs`)|
-| `md` | 40 | 48 | `text-body` (14) | **Future tier — 目前無 recommended use case**;新 consumer 必先諮詢 DS owner | 多家世界級 DS(Material / MUI / Primer / Polaris)只有 1 個 default size,無中間階梯 | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+| `md` | 40 | 48 | `text-body` (14) | **Future tier — 目前無 recommended use case**;新 consumer 必先諮詢 DS owner | 保留相容階梯，不作新用例預設 |
 | `lg` | 48 | 56 | `text-body-lg` (16) | **獨立 tabs 直接取代 chrome header 用**(tab 高度 = `--chrome-header-height` 像素相等,48/56)— page-level workspace 主導覽 | Ant verbatim:「**Large size tabs are usually used in page header**」(`ant.design/components/tabs`)|
 
 **Token alignment + size 階梯 rationale SSOT**:`--tab-height-lg` (48/56) = `--chrome-header-height` (48/56) 像素相等 + md future tier + sm default 遷移 — **完整 cross-family canonical 詳** `patterns/header-canonical/header-canonical.spec.md` W3/W5/W6(per Rule-of-3 SSOT 集中此處,本元件 spec.md 不重複論述,只列上表 size table)。
 
 ### 為什麼 Tabs 不複用 `--field-height-*`
 
-Tabs 是 navigation container，不是 form control。field-height 的 scale（24–36）是為 input / button 設計，套在 tabs 上高度 < 32px 時底線距 baseline < 8px，違反 navigation breathing 最小值。世界級設計系統（Atlassian 32 / Polaris 44 / Material 48）的 tabs 高度都在 32 起跳。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Tabs 是 navigation container，不是 form control。field-height 的 scale（24–36）是為 input / button 設計；套在 tabs 上高度 < 32px 時，底線距 baseline < 8px，低於本 DS navigation breathing 最小值，因此使用獨立的 `--tab-height-*` 階梯。
 
 ### 為什麼獨立於 `--table-row-*`
 
@@ -149,13 +147,13 @@ Tabs 支援三種 overflow 策略，透過 `TabsList` 的 `overflow` prop 選擇
 
 外層 overflow-x scroll(scrollbar 隱藏)+ 邊緣 mask-image gradient 依滾動位置動態 fade(不可滾無 mask / 可右→右 fade / 可左→左 fade / 雙向→兩側)。`useScrollEdges()` hook 追蹤狀態。**Mask 不用 gradient overlay**:mask 淡化內容本身 alpha,自動融合任何背景(dark / card / surface);overlay 需寫死背景色會漂移。
 
-**Scroll arrow buttons**(`atStart/atEnd === false` 時顯示 `<ChevronLeft/Right>`,點擊捲 80% 容器寬,smooth scroll):三輸入方式都要顧——鍵盤(Radix 原生方向鍵 + scroll-into-view) / trackpad(兩指橫滑) / 滑鼠滾輪(需 `Shift+wheel`,一般使用者不知道,**必須補 arrow buttons**)。Arrow 容器 `pointer-events-none` + 內層 Button `pointer-events-auto`,不阻擋下方 trigger hit test。對齊 Material 3 / Ant / Carbon / Mantine。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**Scroll arrow buttons**(`atStart/atEnd === false` 時顯示 `<ChevronLeft/Right>`,點擊捲 80% 容器寬,smooth scroll):三輸入方式都要顧——鍵盤(底層 primitive 方向鍵 + scroll-into-view) / trackpad(兩指橫滑) / 滑鼠滾輪(需 `Shift+wheel`,不易發現,因此**必須補 arrow buttons**)。Arrow 容器 `pointer-events-none` + 內層 Button `pointer-events-auto`,不阻擋下方 trigger hit test。
 
 ### menu 模式
 
-menu = **scroll 模式 + 額外的 ⌄ quick-jump navigator**(show-all navigator pattern,對齊 Chrome 分頁下拉 / VS Code 編輯器分頁 / Discord 頻道跳轉)。全部 TabsTrigger 一直可見、留在底層 `overflow-x-auto` 捲動容器內(**不套 `invisible`、不隱藏溢出**)。右側 `OverflowMenuTriggerButton`(`ChevronDown` ⌄ icon)在有溢出空間時(`canScroll`)出現,點開 DropdownMenu **列出全部 tab**(非只溢出者);當前選中的 tab 用 DropdownMenuItem 的 `selected` 標記(`bg-neutral-selected`,跟 SelectMenu 單選同一套視覺)。點 menu item 經 Tabs context `onValueChange` 觸發切換(Radix 自然更新 `data-state`),同時 `scrollIntoView`(`inline: center`)把該 tab 捲到視圖中央。底層仍是真實捲動容器(非 `overflow-hidden`)的理由:`scrollIntoView` 與鍵盤 focus 的 auto scroll-into-view 都需要真實 scroll 容器;捲軸用 CSS 隱藏。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+menu = **scroll 模式 + 額外的 ⌄ quick-jump navigator**(show-all navigator pattern)。全部 TabsTrigger 一直可見、留在底層 `overflow-x-auto` 捲動容器內(**不套 `invisible`、不隱藏溢出**)。右側 `OverflowMenuTriggerButton`(`ChevronDown` ⌄ icon)在有溢出空間時(`canScroll`)出現,點開 DropdownMenu **列出全部 tab**(非只溢出者);當前選中的 tab 用 DropdownMenuItem 的 `selected` 標記(`bg-neutral-selected`,跟 SelectMenu 單選同一套視覺)。點 menu item 經 Tabs context `onValueChange` 觸發切換(底層 primitive 自然更新 `data-state`),同時 `scrollIntoView`(`inline: center`)把該 tab 捲到視圖中央。底層仍是真實捲動容器(非 `overflow-hidden`)的理由:`scrollIntoView` 與鍵盤 focus 的 auto scroll-into-view 都需要真實 scroll 容器;捲軸用 CSS 隱藏。
 
-**a11y**:全部 trigger 一直在 DOM 且可見(保 Radix roving tabindex);鍵盤使用者方向鍵導覽全部 tab,或 Tab 到 ⌄ 用 dropdown 快速跳轉,兩路徑並存。對齊 Ant Design Tabs / Atlassian Navigation Tabs。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**a11y**:全部 trigger 一直在 DOM 且可見(保留 roving tabindex);鍵盤使用者可用方向鍵導覽全部 tab,或 Tab 到 ⌄ 用 dropdown 快速跳轉,兩路徑並存。
 
 ### 跨元件共用
 
@@ -169,7 +167,7 @@ menu = **scroll 模式 + 額外的 ⌄ quick-jump navigator**(show-all navigator
 
 Tabs 是 **navigation anchor**，不是 compact control：
 - 它在視覺階層上是 section header 等級，用「文字流」的節奏左對齊排列，trigger 間以 `--layout-space-loose` 分隔，接近閱讀動線
-- 「各 segment 同寬」是 SegmentedControl 的身份特徵（對齊 Apple HIG / Material 3 等定義），Tabs 沒有這層視覺契約 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- 「各 segment 同寬」是本 DS SegmentedControl 的身份特徵，Tabs 沒有這層視覺契約
 - 需要 compact 的等寬互斥切換器 → 用 `SegmentedControl`；需要 section-level 的視圖導覽 → 用 Tabs
 
 **Triggers 之間 gap**：使用 `--layout-space-loose`（md density 16px / lg density 24px），與其他「pattern 層級的鬆散留白」共用同一 token。Tabs 的 gap 不是裝飾性空白，而是告訴使用者「每個 tab 是獨立的視圖入口」的視覺分隔。
@@ -244,7 +242,7 @@ DS 詞彙 **selected**（持續選中）；Radix DOM attr 為 `data-state="activ
 - ❌ 不得用 Tabs 做表單單選（選 view ≠ 選 value）——改用 SegmentedControl
 - ❌ 不得用 Tabs 做頁面層級導覽（切路由）——改用 navigation
 - ❌ Trigger `startIcon` 不得超過一個
-- ❌ **同一組 Tabs 內 `startIcon` 全有或全無**(2026-05-18 加 per user 抓「圖一 tabs 圖示混用」)——禁止「總覽無 icon / 成員 + 通知 + 設定 有 icon」這種視覺重心散亂的混用。對齊 Material UI Tabs「Tab labels may be either all icons or all text」+ Carbon「Do not mix dismissible tabs without icons with dismissible tabs with icons」。Scope **限縮 `startIcon`** — `endIcon`(badge / chevron-down 等狀態 indicator)可獨立判斷,因屬狀態 affordance 非語意 label icon <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- ❌ **同一組 Tabs 內 `startIcon` 全有或全無**(2026-05-18 加 per user 抓「圖一 tabs 圖示混用」)——禁止「總覽無 icon / 成員 + 通知 + 設定 有 icon」這種視覺重心散亂的混用。Scope **限縮 `startIcon`** — `endIcon`(badge / chevron-down 等狀態 indicator)可獨立判斷,因屬狀態 affordance 非語意 label icon
 - ❌ `endIcon` 不得放動詞性 icon（Download、Trash2）——tab 是視圖切換，不是觸發動作
 - ❌ Dialog / Sidebar header 內不得同時有 header `border-b` 和 TabsList `border-b`——會出現雙線
 - ❌ 不得把 trigger 改成等分 / fullWidth——等寬互斥切換是 SegmentedControl 的身份特徵，Tabs 是 navigation anchor，兩者不同層級。需要等寬改用 SegmentedControl
