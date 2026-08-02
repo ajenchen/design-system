@@ -5,6 +5,7 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import Ajv2020 from 'ajv/dist/2020.js'
 import {
+  authorizeDeepAuditPublish,
   buildFiveStepStatus,
   buildConsumerDispatch,
   buildBranchPushArgs,
@@ -40,6 +41,42 @@ test('decision authority has one ASK class and only four resumable human runtime
     humanOnly: ['login', 'mfa', 'oauth', 'credential-reference'],
     resumeAfterHumanAction: 'AUTO',
   })
+})
+
+test('deep audit validates one candidate branch and permits only one final publish without incident evidence', () => {
+  assert.deepEqual(authorizeDeepAuditPublish(workflow, { completedFinalReleases: 0 }), {
+    authorization: 'final-release',
+    releaseNumber: 1,
+  })
+  assert.throws(
+    () => authorizeDeepAuditPublish(workflow, { completedFinalReleases: 1 }),
+    /requires incident evidence/,
+  )
+  const incident = {
+    incidentId: 'SEC-2026-0082',
+    failureClass: 'security-incident',
+    publishedVersion: '1.2.3-beta.4',
+    evidenceRef: 'github://ajenchen/design-system/security/SEC-2026-0082',
+  }
+  assert.deepEqual(authorizeDeepAuditPublish(workflow, { completedFinalReleases: 1, incident }), {
+    authorization: 'incident-release',
+    incidentId: 'SEC-2026-0082',
+  })
+  assert.throws(
+    () => authorizeDeepAuditPublish(workflow, {
+      completedFinalReleases: 1,
+      incident,
+      priorAdditionalReleaseIncidentIds: ['SEC-2026-0082'],
+    }),
+    /already authorized/,
+  )
+  assert.throws(
+    () => authorizeDeepAuditPublish(workflow, {
+      completedFinalReleases: 1,
+      incident: { ...incident, failureClass: 'ordinary-remediation' },
+    }),
+    /failureClass is not eligible/,
+  )
 })
 
 test('legacy ceremonies cannot enter the standard release blocking graph', () => {
@@ -221,6 +258,8 @@ test('public commands and cross-agent instructions expose only the canonical rel
   for (const generated of [generatedForkAgent, generatedTemplateAgent]) {
     assert.match(generated, /infra\/governance\/release-workflow\.json/)
     assert.match(generated, /pr-checks.*merge.*publish.*readback.*consumer/s)
+    assert.match(generated, /Deep Audit.*single branch|Deep Audit.*單一 branch/s)
+    assert.match(generated, /publish.*iteration\/test loop/s)
   }
 })
 

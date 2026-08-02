@@ -40,6 +40,21 @@ export function validateReleaseWorkflow(workflow) {
     'human-only boundaries must be exactly login/MFA/OAuth/credential-reference',
   )
   invariant(workflow.decisionAuthority?.resumeAfterHumanAction === 'AUTO', 'release must resume automatically after a human-only action')
+  invariant(workflow.deepAuditReleasePolicy?.iterationBoundary === 'one-branch-one-pr-candidate-validation', 'deep audit must finish candidate validation on one branch and PR')
+  invariant(workflow.deepAuditReleasePolicy?.publishAsIterationLoop === false, 'deep audit must never publish as an iteration or test loop')
+  invariant(workflow.deepAuditReleasePolicy?.maximumFinalReleasesPerAudit === 1, 'deep audit permits at most one final release')
+  invariant(
+    workflow.deepAuditReleasePolicy?.additionalReleaseCondition === 'separately-evidenced-post-publish-blocker-or-security-incident',
+    'an additional deep-audit release requires a separately evidenced post-publish blocker or security incident',
+  )
+  invariant(
+    JSON.stringify(workflow.deepAuditReleasePolicy?.allowedAdditionalReleaseFailureClasses) === JSON.stringify(['post-publish-blocker', 'security-incident']),
+    'deep-audit additional release failure classes are closed',
+  )
+  invariant(
+    JSON.stringify(workflow.deepAuditReleasePolicy?.requiredIncidentFields) === JSON.stringify(['incidentId', 'failureClass', 'publishedVersion', 'evidenceRef']),
+    'deep-audit additional releases must bind exact incident evidence fields',
+  )
   invariant(
     JSON.stringify(workflow.steps?.map(step => step.id)) === JSON.stringify(['pr-checks', 'merge', 'publish', 'readback', 'consumer']),
     'release workflow must contain exactly the canonical five steps in order',
@@ -47,6 +62,30 @@ export function validateReleaseWorkflow(workflow) {
   invariant(workflow.steps.every(step => step.authority === 'AUTO'), 'every release step must be AUTO')
   invariant(workflow.legacyMechanisms.every(item => item.standardRelease === 'non-blocking' || item.standardRelease === 'retired'), 'legacy mechanisms must not block standard release')
   return workflow
+}
+
+export function authorizeDeepAuditPublish(workflow, {
+  completedFinalReleases,
+  incident = null,
+  priorAdditionalReleaseIncidentIds = [],
+}) {
+  validateReleaseWorkflow(workflow)
+  invariant(Number.isInteger(completedFinalReleases) && completedFinalReleases >= 0 && completedFinalReleases <= 1, 'completed deep-audit final releases must be 0 or 1')
+  invariant(Array.isArray(priorAdditionalReleaseIncidentIds) && priorAdditionalReleaseIncidentIds.every(value => typeof value === 'string' && value.length > 0), 'prior deep-audit incident IDs are invalid')
+  if (completedFinalReleases === 0) {
+    invariant(incident === null, 'the one final deep-audit release must not masquerade as an incident release')
+    return Object.freeze({ authorization: 'final-release', releaseNumber: 1 })
+  }
+
+  invariant(incident && typeof incident === 'object' && !Array.isArray(incident), 'an additional deep-audit release requires incident evidence')
+  const required = workflow.deepAuditReleasePolicy.requiredIncidentFields
+  invariant(Object.keys(incident).length === required.length && required.every(field => Object.hasOwn(incident, field)), 'incident evidence must contain only the exact required fields')
+  invariant(typeof incident.incidentId === 'string' && /^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/.test(incident.incidentId), 'incidentId is invalid')
+  invariant(!priorAdditionalReleaseIncidentIds.includes(incident.incidentId), 'incidentId already authorized an additional release')
+  invariant(workflow.deepAuditReleasePolicy.allowedAdditionalReleaseFailureClasses.includes(incident.failureClass), 'incident failureClass is not eligible for an additional release')
+  invariant(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(incident.publishedVersion), 'incident publishedVersion must be exact semver')
+  invariant(typeof incident.evidenceRef === 'string' && incident.evidenceRef.length > 0 && incident.evidenceRef !== incident.incidentId, 'incident evidenceRef must be a separate non-empty reference')
+  return Object.freeze({ authorization: 'incident-release', incidentId: incident.incidentId })
 }
 
 export function loadReleaseWorkflow(path = WORKFLOW_PATH) {
