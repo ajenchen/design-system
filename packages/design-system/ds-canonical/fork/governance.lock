@@ -255,7 +255,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "6a7c408d37e79099fa39b57af9127a09b498d34a02de423d5f4eaeade77d7412",
+      "sha256": "cafed99be010eed1ff80459022348f8eb96f01fb3e8eadb4cb1dc10ed7d7d3e0",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -374,6 +374,14 @@
     },
     {
       "schemaVersion": 1,
+      "file": "consumer/managed-files/5aeda1df235815f40dd755951f2b868d4e02035653d4536a8dde209cdc75b493.blob",
+      "sha256": "3c9453e5228d7eaf1bfef3350585746e1aff1475411cb7cf8696bf9acdb048cf",
+      "source": "scripts/lib/exact-workspace-dependencies.mjs",
+      "classification": null,
+      "destination": "scripts/lib/exact-workspace-dependencies.mjs"
+    },
+    {
+      "schemaVersion": 1,
       "file": "consumer/managed-files/61c6aca6d7f04bedbf556eaa9d3043681fe48cbe0e93a8ccb1d69a7c5e23fdcf.blob",
       "sha256": "70a8bdbceade964d009f6a46c9e57a93bc9fd58c28971ea14ad1b5ffeaaf7250",
       "source": "scripts/lib/worktree-fingerprint.mjs",
@@ -430,6 +438,14 @@
     },
     {
       "schemaVersion": 1,
+      "file": "consumer/managed-files/7ab15a8aeca39485d7b9b57234bbc4a69e0b9e70b4a851dfe10f6447127cee78.blob",
+      "sha256": "29ce6aaab16fd7a939eff6e556e8548291fad28df88d578627153c9508bf6e31",
+      "source": "scripts/sync-exact-workspace-dependencies.mjs",
+      "classification": null,
+      "destination": "scripts/sync-exact-workspace-dependencies.mjs"
+    },
+    {
+      "schemaVersion": 1,
       "file": "consumer/managed-files/7b17835d0ceb17cdcdcaf930540a3e5d0943a34a747ac43c12ca8cd485c11581.blob",
       "sha256": "29eb02c844515e6e94a063503c4682e8a1a87a3976b26067e725e5491cc6bc45",
       "source": "infra/governance/schemas/visual-baseline-review-policy.schema.json",
@@ -455,7 +471,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
-      "sha256": "649d6ec22373352651eefee4795d254d54ff10634481374e30722692ca84d5f7",
+      "sha256": "4545d0dac5d869c58ec26f37ff6ed70a255f61f9cf406efd41e99a9aeaa885b2",
       "source": "packages/design-system/ds-canonical/templates/consumer-governance.md",
       "classification": null,
       "destination": "governance/consumer-governance.md"
@@ -895,7 +911,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "90748985d862f0b6748b6706bcacc4f86e1bcd37c4d0a801b8f45f736e9f348c",
+      "sha256": "7bf621f0fc438620b5c1cc3cb7a48b9f1bee6df14916ef2a00ad5163f66be982",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -903,7 +919,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "2174ab9becc13fce59add9939d0ce2fd94cbab40413b6c89a3e7465decab362e",
+      "sha256": "8d3210801ad72a0637ef42152969d774219fea60b10b1ec9fc7949ab87af7235",
       "source": null,
       "classification": null,
       "destination": null
@@ -1159,7 +1175,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "6a7c408d37e79099fa39b57af9127a09b498d34a02de423d5f4eaeade77d7412",
+      "sha256": "cafed99be010eed1ff80459022348f8eb96f01fb3e8eadb4cb1dc10ed7d7d3e0",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null

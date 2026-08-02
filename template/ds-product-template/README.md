@@ -99,6 +99,14 @@ One `sync-all --apply` command authenticates and reconstructs the complete incom
 
 Automatic template delivery is owned upstream by the design-system release mirror. It opens a normal PR containing the exact published snapshot; this repository does not carry a second release-dispatch/updater workflow. Protected `main` requires the single `Verify consumer` check from `audit.yml`, which performs one locked install followed by typecheck, import lint, and build. Preview, visual, a11y, canary, and independent-review evidence remain optional or scheduled unless explicitly requested; they do not block the standard release path.
 
+The release authority is the provider-neutral five-step SSOT, in this exact order:
+`pr-checks → merge → publish → readback → consumer`. The upstream release mirror owns delivery to
+the template repository. A separately registered product receiver may consume the immutable release
+event, but it may only pin every dynamically discovered workspace manifest, regenerate the one npm
+lock, and open a protected PR; it never publishes, writes `main`, or replaces mirror authority. Both
+status detection and staging must use `npm run sync:workspace-dependencies -- --list-receiver-paths`
+rather than a hard-coded app list.
+
 Legacy consumers that predate this v2 boundary are intentionally different from new template users: they first complete a one-time separately reviewed full-snapshot bootstrap PR (they cannot bootstrap themselves through the old updater). Later control-plane changes for every consumer go through the same separately reviewed full-snapshot PR route. The optional fleet/readback-chain machinery in `docs/04-ds-upgrade.md` is an opt-in hardening lane, never a precondition for ordinary `sync-all`.
 
 ### Breaking API migration and reviewed visual baselines

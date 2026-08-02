@@ -37,6 +37,12 @@ import {
   PROTECTED_CONTROL_PLANE_PATH_PREFIXES,
 } from './lib/consumer-control-plane-policy.mjs'
 import { evaluateVerifiedHighVulnerabilityAudit } from './lib/governance-dependency-bootstrap.mjs'
+import {
+  discoverPackageManifestPaths,
+  discoverReceiverDependencyPaths,
+  pinExactWorkspaceDependencies,
+  verifyExactWorkspaceDependencies,
+} from './lib/exact-workspace-dependencies.mjs'
 
 const temporary = []
 const version = '1.2.3-beta.4'
@@ -1071,6 +1077,130 @@ test('consumer documentation describes the release mirror gate without the retir
   assert.doesNotMatch(documentation, /(?:禁止|do not) (?:改用|replace)[^\n]*(?:Writer App|GitHub App)/i)
 })
 
+test('current product docs bind provider-neutral bootstrap, runtime, five-step release, and delivery authority', () => {
+  const currentDocs = [
+    'template/ds-product-template/README.md',
+    'template/ds-product-template/docs/01-first-time-setup.md',
+    'template/ds-product-template/docs/02-create-new-product.md',
+  ]
+  for (const path of currentDocs) {
+    const source = readFileSync(path, 'utf8')
+    assert.match(source, /provider-neutral/i, `${path} lost the provider-neutral bootstrap`)
+    assert.match(source, /Node 22\.13\.0/, `${path} lost the canonical minimum Node version`)
+    assert.match(
+      source,
+      /pr-checks\s*→\s*merge\s*→\s*publish\s*→\s*readback\s*→\s*consumer/,
+      `${path} lost the canonical five-step release`,
+    )
+    assert.match(source, /release mirror/i, `${path} lost mirror authority`)
+    assert.match(source, /receiver/i, `${path} lost downstream receiver authority`)
+    assert.doesNotMatch(source, /Node 22\.12\.0|externalActivationRequired=true/)
+    assert.doesNotMatch(source, /SessionStart[^\n]*(?:will|會|自動)[^\n]*(?:install|repair|安裝|修復)/i)
+  }
+})
+
+test('workspace dependency authority discovers, pins, verifies, and lists receiver paths dynamically', () => {
+  const root = mkdtempSync(join(tmpdir(), 'exact-workspace-dependencies-'))
+  temporary.push(root)
+  mkdirSync(join(root, 'apps/alpha'), { recursive: true })
+  mkdirSync(join(root, 'packages/future'), { recursive: true })
+  const expected = '1.2.3-beta.4'
+  const stale = '1.2.3-beta.3'
+  writeFileSync(join(root, 'package.json'), `${JSON.stringify({
+    name: 'fixture',
+    private: true,
+    workspaces: { packages: ['apps/*', 'packages/*'] },
+    dependencies: {
+      '@qijenchen/design-system': expected,
+      '@qijenchen/storybook-config': expected,
+    },
+  }, null, 2)}\n`)
+  writeFileSync(join(root, 'apps/alpha/package.json'), `${JSON.stringify({
+    name: '@fixture/alpha',
+    private: true,
+    dependencies: { '@qijenchen/design-system': `^${stale}` },
+  }, null, 2)}\n`)
+  writeFileSync(join(root, 'packages/future/package.json'), `${JSON.stringify({
+    name: '@fixture/future',
+    private: true,
+    devDependencies: { '@qijenchen/governance': `~${stale}` },
+  }, null, 2)}\n`)
+  const packageLock = {
+    name: 'fixture',
+    lockfileVersion: 3,
+    packages: {
+      '': {
+        dependencies: {
+          '@qijenchen/design-system': expected,
+          '@qijenchen/storybook-config': expected,
+        },
+      },
+      'apps/alpha': {
+        dependencies: { '@qijenchen/design-system': `^${stale}` },
+      },
+      'packages/future': {
+        devDependencies: { '@qijenchen/governance': `~${stale}` },
+      },
+      'node_modules/@qijenchen/design-system': { version: expected },
+      'node_modules/@qijenchen/governance': { version: stale },
+      'node_modules/@qijenchen/storybook-config': { version: expected },
+    },
+  }
+  writeFileSync(join(root, 'package-lock.json'), `${JSON.stringify(packageLock, null, 2)}\n`)
+
+  assert.deepEqual(discoverPackageManifestPaths(root), [
+    'package.json',
+    'apps/alpha/package.json',
+    'packages/future/package.json',
+  ])
+  assert.deepEqual(discoverReceiverDependencyPaths(root), [
+    'package.json',
+    'apps/alpha/package.json',
+    'packages/future/package.json',
+    'package-lock.json',
+  ])
+  assert.throws(
+    () => verifyExactWorkspaceDependencies(root, expected),
+    /apps\/alpha\/package\.json.*expected exact/,
+  )
+  assert.deepEqual(pinExactWorkspaceDependencies(root, expected), [
+    'apps/alpha/package.json',
+    'packages/future/package.json',
+  ])
+  assert.throws(
+    () => verifyExactWorkspaceDependencies(root, expected),
+    /package-lock\.json.*is not exact/,
+    'manifest pinning must not hide stale lock entries',
+  )
+
+  packageLock.packages['apps/alpha'].dependencies['@qijenchen/design-system'] = expected
+  packageLock.packages['packages/future'].devDependencies['@qijenchen/governance'] = expected
+  packageLock.packages['node_modules/@qijenchen/governance'].version = expected
+  writeFileSync(join(root, 'package-lock.json'), `${JSON.stringify(packageLock, null, 2)}\n`)
+  const verified = verifyExactWorkspaceDependencies(root, expected)
+  assert.deepEqual(verified.declaredPackages, [
+    '@qijenchen/design-system',
+    '@qijenchen/governance',
+    '@qijenchen/storybook-config',
+  ])
+  assert.deepEqual(verified.receiverPaths, discoverReceiverDependencyPaths(root))
+
+  const listed = spawnSync(
+    process.execPath,
+    [join(process.cwd(), 'scripts/sync-exact-workspace-dependencies.mjs'), '--list-receiver-paths'],
+    { cwd: root, encoding: 'utf8' },
+  )
+  assert.equal(listed.status, 0, listed.stderr)
+  assert.deepEqual(listed.stdout.trim().split('\n'), verified.receiverPaths)
+
+  writeFileSync(join(root, 'npm-shrinkwrap.json'), `${JSON.stringify(packageLock)}\n`)
+  assert.throws(
+    () => discoverReceiverDependencyPaths(root),
+    /exactly one dependency lock/,
+    'ambiguous lock authority must fail closed',
+  )
+})
+
 test('sync-all merger adds authenticated setup commands without clobbering product scripts', () => {
   const original = {
     name: 'product',
@@ -1177,17 +1307,23 @@ test('template, cloud, devcontainer, mirror and managed-file wiring share the on
   assert.match(forkBuild, /'scripts\/setup-governance\.mjs': join\(ROOT, 'scripts\/setup-governance\.mjs'\)/)
   assert.match(forkBuild, /'scripts\/setup-provider-cli-toolchain\.mjs': join\(ROOT, 'scripts\/setup-provider-cli-toolchain\.mjs'\)/)
   assert.match(forkBuild, /'scripts\/setup-workspace\.mjs': join\(ROOT, 'scripts\/setup-workspace\.mjs'\)/)
+  assert.match(forkBuild, /'scripts\/sync-exact-workspace-dependencies\.mjs': join\(ROOT, 'scripts\/sync-exact-workspace-dependencies\.mjs'\)/)
+  assert.match(forkBuild, /'scripts\/lib\/exact-workspace-dependencies\.mjs': join\(ROOT, 'scripts\/lib\/exact-workspace-dependencies\.mjs'\)/)
   assert.match(forkBuild, /'scripts\/lib\/verified-exact-npm-runtime\.mjs': join\(ROOT, 'scripts\/lib\/verified-exact-npm-runtime\.mjs'\)/)
   assert.match(forkBuild, /'setup-governance\.mjs'/)
   const mirrorBuild = readFileSync('scripts/build-published-template-mirror.mjs', 'utf8')
   assert.match(mirrorBuild, /'scripts\/setup-governance\.mjs'/)
   assert.match(mirrorBuild, /'scripts\/setup-provider-cli-toolchain\.mjs'/)
   assert.match(mirrorBuild, /'scripts\/setup-workspace\.mjs'/)
+  assert.match(mirrorBuild, /'scripts\/sync-exact-workspace-dependencies\.mjs'/)
+  assert.match(mirrorBuild, /'scripts\/lib\/exact-workspace-dependencies\.mjs'/)
   assert.match(mirrorBuild, /'scripts\/lib\/verified-exact-npm-runtime\.mjs'/)
   const mirrorPolicy = JSON.parse(readFileSync('scripts/published-template-mirror-policy.json', 'utf8'))
   assert.ok(mirrorPolicy.exactPaths.includes('scripts/setup-governance.mjs'))
   assert.ok(mirrorPolicy.exactPaths.includes('scripts/setup-provider-cli-toolchain.mjs'))
   assert.ok(mirrorPolicy.exactPaths.includes('scripts/setup-workspace.mjs'))
+  assert.ok(mirrorPolicy.exactPaths.includes('scripts/sync-exact-workspace-dependencies.mjs'))
+  assert.ok(mirrorPolicy.exactPaths.includes('scripts/lib/exact-workspace-dependencies.mjs'))
   assert.ok(mirrorPolicy.exactPaths.includes('scripts/lib/verified-exact-npm-runtime.mjs'))
   const mirrorWorkflow = readFileSync('.github/workflows/mirror-to-published-template.yml', 'utf8')
   assert.match(mirrorWorkflow, /build-published-template-mirror\.mjs --out=/)
@@ -1195,7 +1331,7 @@ test('template, cloud, devcontainer, mirror and managed-file wiring share the on
   assert.match(mirrorWorkflow, /product-template-scaffold-lock\.mjs --verify[\s\S]*--phase published/)
 
   const inventory = JSON.parse(readFileSync('infra/governance/inventory/managed-repos.json', 'utf8'))
-  for (const path of ['scripts/setup-governance.mjs', 'scripts/setup-provider-cli-toolchain.mjs', 'scripts/setup-workspace.mjs', 'scripts/lib/verified-exact-npm-runtime.mjs']) {
+  for (const path of ['scripts/setup-governance.mjs', 'scripts/setup-provider-cli-toolchain.mjs', 'scripts/setup-workspace.mjs', 'scripts/sync-exact-workspace-dependencies.mjs', 'scripts/lib/exact-workspace-dependencies.mjs', 'scripts/lib/verified-exact-npm-runtime.mjs']) {
     assert.deepEqual(
       inventory.ownershipPolicies['product-consumer'].rules.filter(rule => rule.pattern === path),
       [{ pattern: path, mode: 'upstream-managed', owner: 'design-system-governance' }],
@@ -1206,7 +1342,7 @@ test('template, cloud, devcontainer, mirror and managed-file wiring share the on
   temporary.push(corpusScratch)
   const corpusRoot = join(corpusScratch, 'fork')
   const corpus = buildCorpus({ outDir: corpusRoot, templateRoot: join(corpusScratch, 'template') })
-  for (const path of ['scripts/setup-governance.mjs', 'scripts/setup-provider-cli-toolchain.mjs', 'scripts/setup-workspace.mjs', 'scripts/lib/verified-exact-npm-runtime.mjs']) {
+  for (const path of ['scripts/setup-governance.mjs', 'scripts/setup-provider-cli-toolchain.mjs', 'scripts/setup-workspace.mjs', 'scripts/sync-exact-workspace-dependencies.mjs', 'scripts/lib/exact-workspace-dependencies.mjs', 'scripts/lib/verified-exact-npm-runtime.mjs']) {
     const managedArtifact = corpus.manifest.consumer.managedFiles[path]
     assert.equal(typeof managedArtifact, 'string')
     assert.deepEqual(readFileSync(join(corpusRoot, managedArtifact)), readFileSync(path))

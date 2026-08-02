@@ -33,6 +33,7 @@ import basicAuth, {
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const SCRIPT = join(ROOT, 'scripts/setup-netlify-access.mjs')
+const DEPLOY_URL_SCRIPT = join(ROOT, 'scripts/deploy-url.mjs')
 const TEMPLATE = join(ROOT, 'template/ds-product-template')
 const EDGE_FUNCTION_SOURCE = readFileSync(
   join(TEMPLATE, 'netlify/edge-functions/basic-auth.ts'),
@@ -324,6 +325,44 @@ test('CLI entrypoint returns structured manual-required diagnostics with exit 2'
   const invalid = spawnSync(process.execPath, ['--', SCRIPT, '--execute'], { cwd: TEMPLATE, encoding: 'utf8', shell: false, timeout: 10_000 })
   assert.equal(invalid.status, 64)
   assert.match(invalid.stderr, /unsupported or duplicate argument/)
+})
+
+test('deploy URL diagnostic fails closed when no real Netlify subdomain is known', (t) => {
+  const root = fixture(t)
+  write(join(root, '.netlify/state.json'), '{"siteId":"11111111-2222-4333-8444-555555555555"}\n')
+  const before = snapshot(root)
+  const unresolved = spawnSync(process.execPath, ['--', DEPLOY_URL_SCRIPT, '--json'], {
+    cwd: root,
+    encoding: 'utf8',
+    shell: false,
+    timeout: 10_000,
+  })
+  assert.equal(unresolved.status, 3, unresolved.stderr)
+  assert.equal(unresolved.stderr, '')
+  const diagnostic = JSON.parse(unresolved.stdout)
+  assert.equal(diagnostic.url, '')
+  assert.equal(diagnostic.siteSlug, '')
+  assert.match(diagnostic.warning, /無法推導正確 subdomain/)
+  assert.deepEqual(snapshot(root), before, 'deploy URL diagnostics must be read-only')
+
+  write(join(root, '.netlify/deploy-meta.json'), '{"siteName":"bad/name"}\n')
+  const malformed = spawnSync(process.execPath, ['--', DEPLOY_URL_SCRIPT, '--json'], {
+    cwd: root,
+    encoding: 'utf8',
+    shell: false,
+    timeout: 10_000,
+  })
+  assert.equal(malformed.status, 3)
+  assert.equal(JSON.parse(malformed.stdout).url, '')
+
+  const invalidArgs = spawnSync(process.execPath, ['--', DEPLOY_URL_SCRIPT, '--execute'], {
+    cwd: root,
+    encoding: 'utf8',
+    shell: false,
+    timeout: 10_000,
+  })
+  assert.equal(invalidArgs.status, 64)
+  assert.match(invalidArgs.stderr, /DEPLOY-URL-001/)
 })
 
 test('unsafe local metadata and symlinked authority fail closed', (t) => {

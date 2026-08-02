@@ -418,6 +418,7 @@ const MANAGED_FILE_SOURCES = {
   'scripts/lib/canonical-path-containment.mjs': join(ROOT, 'scripts/lib/canonical-path-containment.mjs'),
   // The product receives the complete implementation, not the monorepo-only re-export adapter.
   'scripts/lib/closed-tool-execution.mjs': join(ROOT, 'packages/governance/src/closed-tool-execution.mjs'),
+  'scripts/lib/exact-workspace-dependencies.mjs': join(ROOT, 'scripts/lib/exact-workspace-dependencies.mjs'),
   'scripts/lib/provider-lifecycle.mjs': join(ROOT, 'scripts/lib/provider-lifecycle.mjs'),
   'scripts/lib/governance-dependency-bootstrap.mjs': join(ROOT, 'scripts/lib/governance-dependency-bootstrap.mjs'),
   'scripts/lib/verified-exact-npm-runtime.mjs': join(ROOT, 'scripts/lib/verified-exact-npm-runtime.mjs'),
@@ -433,6 +434,7 @@ const MANAGED_FILE_SOURCES = {
   'scripts/setup-provider-cli-toolchain.mjs': join(ROOT, 'scripts/setup-provider-cli-toolchain.mjs'),
   'scripts/setup-workspace.mjs': join(ROOT, 'scripts/setup-workspace.mjs'),
   'scripts/workflow-static-validation.mjs': join(ROOT, 'scripts/workflow-static-validation.mjs'),
+  'scripts/sync-exact-workspace-dependencies.mjs': join(ROOT, 'scripts/sync-exact-workspace-dependencies.mjs'),
   'scripts/sync-all.mjs': join(ROOT, 'scripts/sync-all.mjs'),
   'scripts/lib/consumer-control-plane-policy.mjs': join(ROOT, 'scripts/lib/consumer-control-plane-policy.mjs'),
   'scripts/verify-consumer-css-entry.mjs': join(ROOT, 'scripts/verify-consumer-css-entry.mjs'),
@@ -748,7 +750,7 @@ const FORK_SKILL_NOTE = '> **Product-role projection(build 自動)**:本 skill �
 const FORK_SCRIPT_FILES = new Set([
   'create-app.mjs', 'setup-netlify-access.mjs', 'check-plugin-installed.mjs',
   'audit-consumer-a11y.mjs', 'deploy-url.mjs', 'lint-ds-internal-imports.mjs',
-  'setup-governance.mjs', 'setup-provider-cli-toolchain.mjs', 'setup-workspace.mjs', 'workflow-static-validation.mjs', 'sync-all.mjs', 'refresh-fork-launchers.mjs', 'governance-check.mjs',
+  'setup-governance.mjs', 'setup-provider-cli-toolchain.mjs', 'setup-workspace.mjs', 'workflow-static-validation.mjs', 'sync-exact-workspace-dependencies.mjs', 'sync-all.mjs', 'refresh-fork-launchers.mjs', 'governance-check.mjs',
   'verify-consumer-css-entry.mjs', 'verify-upgrade-evidence.mjs', 'verify-upgrade-provenance.mjs', 'release-bom-contract.mjs',
   'product-template-scaffold-lock.mjs',
 ])

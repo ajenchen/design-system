@@ -204,7 +204,7 @@ function TabsStateContractHarness() {
 // Covers no-default first selection,defaultValue,controlled updates,and overflow-menu proxy.
 export const StateContract: Story = {
   name: '狀態同步驗證',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   parameters: { chromatic: { disableSnapshot: true } },
   render: () => <TabsStateContractHarness />,
   play: async ({ canvasElement }) => {

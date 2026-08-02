@@ -166,7 +166,7 @@ function RadioGroupStateContractHarness() {
 // controlled updates stay authoritative,and native form reset restores defaultValue.
 export const StateContract: Story = {
   name: '狀態同步驗證',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   parameters: { chromatic: { disableSnapshot: true } },
   render: () => <RadioGroupStateContractHarness />,
   play: async ({ canvasElement }) => {

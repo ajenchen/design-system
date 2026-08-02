@@ -295,14 +295,14 @@ test('actual clean-room mirror closes every generated provider/fork scaffold fil
   })
   assert.equal(built.status, 0, `${built.stderr}\n${built.stdout}`)
   const mirrorManifest = JSON.parse(readFileSync(join(mirror, 'package.json'), 'utf8'))
+  assert.equal(Object.hasOwn(mirrorManifest.devDependencies, 'brace-expansion'), false)
+  assert.equal(Object.hasOwn(mirrorManifest.devDependencies, 'minimatch'), false)
   assert.deepEqual({
-    'brace-expansion': mirrorManifest.devDependencies['brace-expansion'],
-    minimatch: mirrorManifest.devDependencies.minimatch,
     'npm-runtime-brace-expansion-patch': mirrorManifest.devDependencies['npm-runtime-brace-expansion-patch'],
+    'npm-runtime-tar-patch': mirrorManifest.devDependencies['npm-runtime-tar-patch'],
   }, {
-    'brace-expansion': '5.0.8',
-    minimatch: '10.2.5',
     'npm-runtime-brace-expansion-patch': 'npm:brace-expansion@5.0.8',
+    'npm-runtime-tar-patch': 'npm:tar@7.5.22',
   })
   assert.deepEqual(mirrorManifest.overrides, {
     '@storybook/addon-actions': { uuid: '11.1.1' },

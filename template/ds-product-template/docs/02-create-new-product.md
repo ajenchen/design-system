@@ -2,6 +2,12 @@
 
 從 template 生新 product app — 1 command, 自動 setup。
 
+本流程使用 Day-0 已存在的 provider-neutral bootstrap；Claude、Codex 與未來已註冊 provider
+都讀同一份 authority，不建立 provider 私有流程。執行環境最低為 Node 22.13.0。標準發版只走
+`pr-checks → merge → publish → readback → consumer` 五步：上游 release mirror 擁有 template
+交付權；已註冊 product receiver 只能動態發現所有 workspace manifest、exact pin／更新 lock、
+以同一動態 path set 做 status/staging 並開 protected PR，不得 publish 或 direct-write `main`。
+
 ## Generator command
 
 ```

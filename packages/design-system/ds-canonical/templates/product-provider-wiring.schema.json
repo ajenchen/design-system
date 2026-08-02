@@ -67,11 +67,12 @@
         { "const": "setup:all" },
         { "const": "setup:governance" },
         { "const": "setup:provider-cli" },
-        { "const": "sync-all" }
+        { "const": "sync-all" },
+        { "const": "sync:workspace-dependencies" }
       ],
       "items": false,
-      "minItems": 7,
-      "maxItems": 7
+      "minItems": 8,
+      "maxItems": 8
     },
     "settings": {
       "type": "object",

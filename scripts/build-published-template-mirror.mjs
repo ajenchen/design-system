@@ -93,6 +93,8 @@ const ALLOWLIST = [
   'scripts/setup-provider-cli-toolchain.mjs',
   'scripts/setup-workspace.mjs',
   'scripts/workflow-static-validation.mjs',
+  'scripts/sync-exact-workspace-dependencies.mjs',
+  'scripts/lib/exact-workspace-dependencies.mjs',
   'scripts/sync-all.mjs',
   'scripts/refresh-fork-launchers.mjs', // sync-all import 此模組刷新接線骨架 → 必隨 mirror ship,否則 fork sync-all 炸 module-not-found
   'scripts/release-bom-contract.mjs', // upgrade provenance imports the shared closed release BOM validator

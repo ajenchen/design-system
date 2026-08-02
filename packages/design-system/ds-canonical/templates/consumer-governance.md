@@ -61,6 +61,13 @@ the exact published snapshot; a consumer does not carry a second release-dispatc
 Repository Actions defaults remain read-only, and ordinary delivery requires no hosted environment or
 App credential in the consumer.
 
+The provider-neutral standard release order is exactly
+`pr-checks → merge → publish → readback → consumer`. The upstream release mirror owns template
+delivery. A registered product receiver is downstream-only: it pins every manifest discovered from
+the root workspace declaration to the exact release, regenerates the single npm lock, and derives
+both status and staging paths from `sync-exact-workspace-dependencies.mjs --list-receiver-paths`.
+It may open a protected PR; it may not publish, direct-write `main`, or replace mirror authority.
+
 Protected `main` requires the single `Verify consumer` context from `audit.yml`. That workflow performs
 one locked install followed by typecheck, import lint, and build. The normal PR review and protected
 branch rules decide whether the mirror proposal can merge. Preview, visual, accessibility, canary, and

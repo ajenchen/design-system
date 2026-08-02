@@ -22,6 +22,7 @@
     "setup:all": "node scripts/setup-workspace.mjs",
     "setup:provider-cli": "node scripts/setup-provider-cli-toolchain.mjs",
     "sync-all": "node scripts/sync-all.mjs",
+    "sync:workspace-dependencies": "node scripts/sync-exact-workspace-dependencies.mjs",
     "ds:migrate": "qijenchen-ds-codemod",
     "visual-baseline:review": "qijenchen-ds-visual-baseline",
     "governance:check": "node node_modules/@qijenchen/design-system/ds-canonical/fork/consumer/governance-check.mjs --repo . --hooks-off",
