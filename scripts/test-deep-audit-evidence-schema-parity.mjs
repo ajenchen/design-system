@@ -15,6 +15,7 @@ const PATHS = {
   deep: 'scripts/schemas/deep-audit-evidence-contract.schema.json',
   managed: 'scripts/schemas/managed-ci-sandbox-receipt.schema.json',
   observation: 'scripts/schemas/ci-evidence-observation.schema.json',
+  standardObservation: 'scripts/schemas/standard-ci-evidence-observation.schema.json',
   transcript: 'infra/governance/schemas/model-broker-transcript.schema.json',
   shardResult: 'infra/governance/schemas/model-broker-shard-result.schema.json',
   modelReleaseAuthority: 'infra/governance/schemas/managed-ci-model-release-authority-binding.schema.json',
@@ -103,7 +104,7 @@ function compile(schema, dependencies) {
   return { ajv, validate: ajv.compile(schema) }
 }
 
-const deepValidator = compile(schemas.deep, [schemas.managed, schemas.observation])
+const deepValidator = compile(schemas.deep, [schemas.managed, schemas.observation, schemas.standardObservation])
 const runManifestGolden = schemaSample(schemas.deep.$defs.runManifest, schemas.deep)
 runManifestGolden.authorProvider = 'claude'
 runManifestGolden.providers.self.id = 'claude'
@@ -249,7 +250,7 @@ for (const [label, mutate] of [
 }
 
 const frozenSchemaManifest = {
-  inventory: ['deep', 'managed', 'observation'].map(name => ({
+  inventory: ['deep', 'managed', 'observation', 'standardObservation'].map(name => ({
     path: PATHS[name],
     kind: 'file',
     sha256: sha256(readFileSync(resolve(ROOT, PATHS[name]))),

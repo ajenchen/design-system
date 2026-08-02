@@ -447,8 +447,8 @@ export function verifyDeepAuditCoverage({
       envelopes.push(envelope)
     }
   }
-  const ciPlanState = loadCiEvidencePlan({ repoRoot: active.repository })
-  const canonicalCi = loadCanonicalCiModels(ciPlanState, { repoRoot: active.repository })
+  let ciPlanState = null
+  let canonicalCi = null
   const ciObservationDigests = new Set()
   for (const dim of tiers['CI-ENFORCED']) {
     const envelope = readEnvelope(active, explicitRoot, `ci-enforced/dim-${dim}.json`)
@@ -456,22 +456,30 @@ export function verifyDeepAuditCoverage({
     else {
       if (envelope.payload.dim !== dim) fail(`CI receipt identity mismatches:dim-${dim}`)
       exact(envelope.coverage, { inventoryPaths: active.manifest.rubricPaths, inventoryDigest: active.manifest.rubricDigest, filesScanned: active.manifest.rubricPaths.length }, `CI dim ${dim} coverage`)
-      const observationPayload = envelope.payload.receipt.observationPayload
-      const payloadSha256 = envelope.payload.receipt.observation.apiPayloadSha256
-      validateCiObservationDocument({
-        $schema: 'schemas/ci-evidence-observation.schema.json',
-        schemaVersion: 1,
-        kind: 'ci-enforced-content-addressed-observation',
-        payloadSha256,
-        payload: observationPayload,
-      }, {
-        repoRoot: active.repository,
-        planState: ciPlanState,
-        activeRun: active,
-        models: canonicalCi.models,
-        modelBindings: canonicalCi.bindings,
-        now: new Date(),
-      })
+      const receipt = envelope.payload.receipt
+      let payloadSha256
+      if (receipt.contract === 'standard-five-step-live-observation-v1') {
+        payloadSha256 = receipt.observationSha256
+      } else {
+        ciPlanState ??= loadCiEvidencePlan({ repoRoot: active.repository })
+        canonicalCi ??= loadCanonicalCiModels(ciPlanState, { repoRoot: active.repository })
+        const observationPayload = receipt.observationPayload
+        payloadSha256 = receipt.observation.apiPayloadSha256
+        validateCiObservationDocument({
+          $schema: 'schemas/ci-evidence-observation.schema.json',
+          schemaVersion: 1,
+          kind: 'ci-enforced-content-addressed-observation',
+          payloadSha256,
+          payload: observationPayload,
+        }, {
+          repoRoot: active.repository,
+          planState: ciPlanState,
+          activeRun: active,
+          models: canonicalCi.models,
+          modelBindings: canonicalCi.bindings,
+          now: new Date(),
+        })
+      }
       ciObservationDigests.add(payloadSha256)
       envelopes.push(envelope)
     }

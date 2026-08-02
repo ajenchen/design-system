@@ -390,7 +390,16 @@
         "attestation": {"type": "object", "additionalProperties": false, "required": ["binding", "signatures"], "properties": {"binding": {"$ref": "#/$defs/ciAttestationBinding"}, "signatures": {"type": "array", "minItems": 1, "maxItems": 5, "items": {"$ref": "#/$defs/ciSignature"}}}}
       }
     },
-    "ciPayload": {"type": "object", "additionalProperties": false, "required": ["dim", "capability", "receipt"], "properties": {"dim": {"type": "integer", "minimum": 1, "maximum": 91}, "capability": {"$ref": "#/$defs/nonEmpty"}, "receipt": {"$ref": "#/$defs/ciTrustReceipt"}}},
+    "standardCiTrustReceipt": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contract", "observationSha256", "observation"],
+      "properties": {
+        "contract": {"const": "standard-five-step-live-observation-v1"},
+        "observationSha256": {"$ref": "#/$defs/sha256"},
+        "observation": {"$ref": "https://qijenchen.dev/schemas/standard-ci-evidence-observation-v1.json"}
+      }
+    },
+    "ciPayload": {"type": "object", "additionalProperties": false, "required": ["dim", "capability", "receipt"], "properties": {"dim": {"type": "integer", "minimum": 1, "maximum": 91}, "capability": {"$ref": "#/$defs/nonEmpty"}, "receipt": {"oneOf": [{"$ref": "#/$defs/ciTrustReceipt"}, {"$ref": "#/$defs/standardCiTrustReceipt"}]}}},
     "evidenceEnvelope": {
       "type": "object", "additionalProperties": false,
       "required": ["schemaVersion", "contractVersion", "evidenceKind", "runId", "manifestSha256", "head", "tree", "inventoryDigest", "rubricDigest", "worktreeBefore", "worktreeAfter", "producer", "command", "environment", "coverage", "payload"],

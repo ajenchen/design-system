@@ -75,6 +75,7 @@ import { validateProviderRegistry } from '../../infra/governance/lib/model-valid
 import { resolveCertificationCanary } from '../../infra/governance/lib/common.mjs'
 import { certificationCarrierPolicyForRole } from '../../infra/governance/lib/role-surface-policy.mjs'
 import { resolveLocalRepositoryIdentity } from '../../infra/governance/lib/repository-subject-proof.mjs'
+import { validateStandardFiveStepReceipt } from './standard-ci-evidence.mjs'
 
 export { validateManagedCiSandboxReceiptShape }
 
@@ -91,6 +92,7 @@ const DEEP_AUDIT_SCHEMA_PATHS = Object.freeze({
   contract: 'scripts/schemas/deep-audit-evidence-contract.schema.json',
   managedSandbox: 'scripts/schemas/managed-ci-sandbox-receipt.schema.json',
   ciObservation: 'scripts/schemas/ci-evidence-observation.schema.json',
+  standardCiObservation: 'scripts/schemas/standard-ci-evidence-observation.schema.json',
 })
 const DEEP_AUDIT_SCHEMA_VALIDATORS = new Map()
 const EVIDENCE_KINDS = new Set([
@@ -201,6 +203,7 @@ export function validateDeepAuditEvidenceContractSchema(document, { repoRoot = p
     try {
       ajv.addSchema(schemas.managedSandbox)
       ajv.addSchema(schemas.ciObservation)
+      ajv.addSchema(schemas.standardCiObservation)
       validate = ajv.compile(schemas.contract)
     } catch (error) {
       fail(`deep-audit contract schema cannot compile:${error.message}`)
@@ -1813,6 +1816,15 @@ function canonicalEd25519Signature(value, label) {
 }
 
 function validateCiTrustReceipt(receipt, { manifest, manifestSha256, repoRoot, now, dim, capability }) {
+  if (receipt?.contract === 'standard-five-step-live-observation-v1') {
+    validateStandardFiveStepReceipt(receipt, {
+      repoRoot,
+      activeRun: { manifest, manifestSha256 },
+    })
+    const dimension = receipt.observation.dimensions.find((item) => item.dim === dim)
+    if (!dimension || dimension.capability !== capability) fail('standard CI receipt dimension/capability differs')
+    return true
+  }
   exactKeys(receipt, ['contract', 'subject', 'observation', 'observationPayload', 'attestation'], 'CI trust receipt')
   if (receipt.contract !== 'signed-github-check-observation-v1') fail('CI trust receipt contract is unsupported')
   exactKeys(receipt.subject, ['repository', 'workflow', 'checkName', 'runId', 'head', 'tree'], 'CI trust receipt subject')

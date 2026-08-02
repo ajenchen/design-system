@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "standard-five-step-ci-evidence-plan",
+  "profile": "PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM",
+  "workflowPlan": "infra/governance/release-workflow.json",
+  "steps": ["pr-checks", "merge", "publish", "readback", "consumer"],
+  "dimensions": [
+    {
+      "dim": 64,
+      "capability": "protected-release-propagation",
+      "workflow": ".github/workflows/release.yml",
+      "event": "repository_dispatch"
+    },
+    {
+      "dim": 66,
+      "capability": "cross-repo-visual-parity",
+      "workflow": ".github/workflows/mirror-to-published-template.yml",
+      "event": "repository_dispatch"
+    }
+  ],
+  "authority": {
+    "repositoryId": "design-system",
+    "requiredCheck": "Verify(tsc + tests + compile + build)"
+  },
+  "consumers": [
+    {
+      "repositoryId": "ds-product-template",
+      "role": "template-mirror",
+      "sourceWorkflow": ".github/workflows/mirror-to-published-template.yml",
+      "sourceEvent": "repository_dispatch",
+      "requiredCheck": "Verify consumer"
+    },
+    {
+      "repositoryId": "work-management",
+      "role": "product-consumer",
+      "sourceWorkflow": ".github/workflows/sync-design-system.yml",
+      "sourceEvent": "repository_dispatch",
+      "requiredCheck": "Verify consumer"
+    }
+  ],
+  "legacyMaximumAssurance": {
+    "blocking": false,
+    "command": "node scripts/produce-ci-enforced-evidence.mjs"
+  }
+}

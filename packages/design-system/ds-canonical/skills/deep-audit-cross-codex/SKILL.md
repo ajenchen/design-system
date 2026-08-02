@@ -41,6 +41,14 @@ This canonical workflow contains no provider, model, version, API, context-lengt
 
 A user may explicitly request a single-provider audit. It must be labelled single-provider and must never claim independent review.
 
+### Standard CI-enforced evidence route
+
+For CI dimensions 64 and 66, the small-team blocking path is exactly:
+
+`npm run audit:ci-evidence-observe`
+
+The command performs one live read-only observation and atomically publishes both envelopes with the same content digest. It must bind the active PR tree to the squash-merge/tag tree, the exact required-check producers, successful `repository_dispatch` release and mirror runs, immutable GitHub Release/BOM, all three npm SLSA provenance identities, and template/work-management exact locks plus `Verify consumer`. Candidate freeze, broad external activation, model certification, offline completion-attestor signatures, staging, and import are maximum-assurance or legacy mechanisms and cannot block or substitute for this standard path.
+
 ### Exact user-waiver route
 
 When the active run has `reviewSelection.kind=provider-review-capability-selection-waived`,
