@@ -10,7 +10,7 @@
   "contractDigest": "sha256:aefc82e2283b6c5228457651bcc1e6fe7306d5641e892ce7dce7f7141134f0a9",
   "files": [
     {
-      "hash": "sha256:4a469d237c15dc8faead6bc0568888ed5ae6322fcf36254ecdf31f27541c29fd",
+      "hash": "sha256:fbf0ef537d87c9eede59a0c15fb17d65fef429a3bd27a9549ec00b523d767a95",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 74251,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:1636582ca9e445ec393ac414655b2fba8a8f7ffe29643176616f8a3ea9eef3f3",
+      "hash": "sha256:67fcd2e6b4ead5c9593ce59cc3f72e4a1742b3933fe2903860d0d56c86b767b2",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 168148,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:290221dcd39af79f7a1805d7479f59fe3b7c0b1de5943aa98591cf22acab70fe",
+  "inputDigest": "sha256:99bfd889d06b70041d6848201e3dbef7c61bd7397bd479e425e39d99a184f73a",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -138,10 +138,10 @@
           "targetDigest": "sha256:bc58dbf54772fee014ea0902c347e8857b3787f8502510715c383b8046818fcd"
         },
         {
-          "expectedTargetDigest": "sha256:d11fbe326e2a562b2ae72160cb572075a23c250cbb691fc57ffe26d1a51c804b",
+          "expectedTargetDigest": "sha256:c9bfb486080a10300eaefd740a174e432bb1aca137ec67afd18d8c79472f28a5",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:26e2ba80da80fcd552fc61ec3afe226e9abad43a5d4d8843d7b2aafc54f96731",
-          "targetDigest": "sha256:d11fbe326e2a562b2ae72160cb572075a23c250cbb691fc57ffe26d1a51c804b"
+          "sourceDigest": "sha256:2428d7923ab0e38b12955ae2f2ae6dd657292ff70d3900570ee6f371f794d15e",
+          "targetDigest": "sha256:c9bfb486080a10300eaefd740a174e432bb1aca137ec67afd18d8c79472f28a5"
         },
         {
           "expectedTargetDigest": "sha256:b71c9a39fab91baa251682be5450fb2ae974abd6f3f13bf8f3f438c8de102f63",
@@ -174,10 +174,10 @@
           "targetDigest": "sha256:ea685241c7bc54fb11c030f58711a47c273b6c97e085acd16b4670fbe909cc03"
         },
         {
-          "expectedTargetDigest": "sha256:f35e1d700d59792f027ebec2857acec072b6a50df01c64f8906203823e2388ec",
+          "expectedTargetDigest": "sha256:978451705476b12832c8f7c70024a107020644fb63afb2b15ed6721ef5c07491",
           "name": "new-component",
-          "sourceDigest": "sha256:ee43c7d6c6bd5af7dd6f49a70a9ee3a511197c71303732027f69da2b1cc4fe9c",
-          "targetDigest": "sha256:f35e1d700d59792f027ebec2857acec072b6a50df01c64f8906203823e2388ec"
+          "sourceDigest": "sha256:b4ebed3ec4aa91efeeeb504ebf7f94fb3d202a4e39b0136a408354341d74d9bd",
+          "targetDigest": "sha256:978451705476b12832c8f7c70024a107020644fb63afb2b15ed6721ef5c07491"
         },
         {
           "expectedTargetDigest": "sha256:eb5f2fcf89544bff39da8c355be5a44a531e4672140d2e917e1a520b270c04c9",
@@ -216,10 +216,10 @@
           "targetDigest": "sha256:b81508a97e3b364dd9c348e6da4ef222f951fc8359ae1a13f4dee60c6117bc7f"
         },
         {
-          "expectedTargetDigest": "sha256:cc8af9fb2f3bbb28992b634212f82ad33fffe5f79f58437c98f911852cff2b87",
+          "expectedTargetDigest": "sha256:b4cc910a12272941a1cf4130ac4e2ead9b5af50c9ac3794891d3bf9d674d88a8",
           "name": "story-writing",
-          "sourceDigest": "sha256:7b8eb0de1d9d8b4c2916f0b6253ea0803009f8414105f71a2d7b7bc0e13274c2",
-          "targetDigest": "sha256:cc8af9fb2f3bbb28992b634212f82ad33fffe5f79f58437c98f911852cff2b87"
+          "sourceDigest": "sha256:16e46be9be25771e8a2fcc79dee90c1a3959879b4b164eba56f32fef3656c534",
+          "targetDigest": "sha256:b4cc910a12272941a1cf4130ac4e2ead9b5af50c9ac3794891d3bf9d674d88a8"
         },
         {
           "expectedTargetDigest": "sha256:5ab71f688dc8806dfe4dd4711e5e654d1f342d724c5dcfc3a9dea3a36169ebbf",
@@ -361,10 +361,10 @@
           "targetDigest": "sha256:b2a70ea7a9edc9a25fceca06cdd50dac5e6cf75e9ffa494f203d407b9591b01b"
         },
         {
-          "expectedTargetDigest": "sha256:79995fb0b55332eb962a2686fbcd1f304b3ac4d4b96e592d00d0a97070f2aa9c",
+          "expectedTargetDigest": "sha256:37234eb40619b9af2c54ae953b7751302d84ea5b3938249e8263255b815832e4",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:26e2ba80da80fcd552fc61ec3afe226e9abad43a5d4d8843d7b2aafc54f96731",
-          "targetDigest": "sha256:79995fb0b55332eb962a2686fbcd1f304b3ac4d4b96e592d00d0a97070f2aa9c"
+          "sourceDigest": "sha256:2428d7923ab0e38b12955ae2f2ae6dd657292ff70d3900570ee6f371f794d15e",
+          "targetDigest": "sha256:37234eb40619b9af2c54ae953b7751302d84ea5b3938249e8263255b815832e4"
         },
         {
           "expectedTargetDigest": "sha256:b9da47c4227209a03b97581c050fac898a25e28e7d9c6dcf5754b55c5554ed37",
@@ -397,10 +397,10 @@
           "targetDigest": "sha256:fe82936872ccad9185d00265f5589331f82865a3bd184e7770368d352ae82cd9"
         },
         {
-          "expectedTargetDigest": "sha256:5f42ad51b4b9143fc6610ec059429a97750f5a90f9d671911179e938967e7052",
+          "expectedTargetDigest": "sha256:7477cef9cf84158b6f824d6d4ef4571b573cc77486d675b26727dbfbd0f1c88b",
           "name": "new-component",
-          "sourceDigest": "sha256:ee43c7d6c6bd5af7dd6f49a70a9ee3a511197c71303732027f69da2b1cc4fe9c",
-          "targetDigest": "sha256:5f42ad51b4b9143fc6610ec059429a97750f5a90f9d671911179e938967e7052"
+          "sourceDigest": "sha256:b4ebed3ec4aa91efeeeb504ebf7f94fb3d202a4e39b0136a408354341d74d9bd",
+          "targetDigest": "sha256:7477cef9cf84158b6f824d6d4ef4571b573cc77486d675b26727dbfbd0f1c88b"
         },
         {
           "expectedTargetDigest": "sha256:f6e314491f30e6b8903fd0c89039d59a03305e523fc46c62ac13897934def2fe",
@@ -439,10 +439,10 @@
           "targetDigest": "sha256:557deefd2e45d81dbcb2ba683bc7a4cce2882822e19c4e6a8812fde03b5708ed"
         },
         {
-          "expectedTargetDigest": "sha256:0a32a0cb85e8ce2930caf96ae5c764f5d4b1be56fafc5957f91b9081a2f56637",
+          "expectedTargetDigest": "sha256:f27effa716a3e0344e0eb4e720f1b48e2b5d11b56a77fab25fe681eb3e71f053",
           "name": "story-writing",
-          "sourceDigest": "sha256:7b8eb0de1d9d8b4c2916f0b6253ea0803009f8414105f71a2d7b7bc0e13274c2",
-          "targetDigest": "sha256:0a32a0cb85e8ce2930caf96ae5c764f5d4b1be56fafc5957f91b9081a2f56637"
+          "sourceDigest": "sha256:16e46be9be25771e8a2fcc79dee90c1a3959879b4b164eba56f32fef3656c534",
+          "targetDigest": "sha256:f27effa716a3e0344e0eb4e720f1b48e2b5d11b56a77fab25fe681eb3e71f053"
         },
         {
           "expectedTargetDigest": "sha256:8de446538cf74afd56a975ceed8cb917e2d338af85262183a1a0345fcd0bd61d",
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:fc1ac0472392cf2bfa11ca90a394454afbeef4c160898afc3335db0132f20350",
+  "snapshotDigest": "sha256:2ec794cf41a088eb488653fc86d3d9a7f52e6e9d7df95397d807d262c0659472",
   "sources": [
     {
       "hash": "sha256:12d59d1a6ab7dca572c02c18bab21a765430c9255d7b20c18dd9279f19a1db1a",
@@ -539,12 +539,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:346fb940b05abdc6276c9501d737bdb37686088e4a3262c37656ee73e785041a",
+      "hash": "sha256:f1ad6f1e9db70876d6b27bc4a94d318a9fbb0cf0444b48668f26d6a5bc47b05b",
       "id": "audit-rubric",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md",
-      "size": 83252,
+      "size": 84164,
       "type": "file"
     },
     {
@@ -645,7 +645,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 229,
-      "hash": "sha256:f4ee301f642fa5fa8ec48181fb5a2a20c449df239221396a99ddffd4184f43ef",
+      "hash": "sha256:2432d7804bc2fb20c4c19ed2c221e6ebe7169726a4c4804e02ec2b449e34fb27",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -678,7 +678,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 6,
-      "hash": "sha256:871f3544f791453b4acf0f7f3b1e9fb885771d22c998dd362f8a62dd0057a7aa",
+      "hash": "sha256:972dfa4d6a5c776a853b54294f15ae957d7d55d0d36e4e9c45299f3bc20e90f9",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -689,7 +689,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:590fbe3b69c24b7163d7d78b819a4d1919d47addfc26aac40388b7a2e0a80be3",
+      "hash": "sha256:4d6fe1fc58e42a38255240542d4906c93decf595a27976975f14242e991ccbf4",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2724,7 +2724,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:53540c58581d2ffec946b52e2cf405ad67233beb1ab37b8680a7ea2340c427fb",
+      "hash": "sha256:84a39795ac491846742615babdb972752ac12a53d9f08f33cec703e91c654c9c",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2787,7 +2787,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:6bacfb99ebd75934069b1743b5df0b166899d79151f486839cdde2588b05c001",
+      "hash": "sha256:bd26cd0c4323801948033cf93542bcb905587367f386f6a814cda9244011a492",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -3733,7 +3733,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9ef57309dcfce4bed73b564ddff4c312011f09c097203f53a15536932af071cb",
+      "hash": "sha256:1caccaf73a96aafc19c0648f6389a0ff0a6ef861833f2fac4d2ad94c5a6951c5",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -4320,8 +4320,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 391,
-      "hash": "sha256:06c3d082dd8167a8c64ba689c0ca20aacee69e921d8ec1c4e42a9b157ddedf5c",
+      "files": 392,
+      "hash": "sha256:0e156d6005ba22074585739b3a7df755ebd0513b93c3fb1c34d4651753ad1733",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

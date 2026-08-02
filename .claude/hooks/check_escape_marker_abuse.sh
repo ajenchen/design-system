@@ -15,7 +15,7 @@
 #   - @template-customized (template canonical sync opt-out)
 #   - @layout-space-magic-ok:(check_layout_space_magic_numbers.sh escape)
 #   - @story-trait-allow:  (story-baseline / catalog escape)
-#   - @story-trait-rationale:(check_story_invariants.sh R3 escape)
+#   - @story-trait-rationale:(check_story_invariants.sh R3 scoped trait exception)
 #   - @story-split-rationale:(check_story_invariants.sh R2 escape)
 #   - @story-name-canonical-allow:(check_story_invariants.sh R4 escape)
 #   - @propose-cite-skip:  (check_propose_cite_required.sh escape)

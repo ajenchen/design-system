@@ -11,6 +11,7 @@
 //   2. Principles cross-references in plain text without LinkTo(對照X頁 / 見X / 跳X)
 //   3. Auto-generated stub patterns(`<X> 場景` CamelCase split without real content)
 //   4. Missing `name:` zh-CN on stories(showcase / principles)
+//   5. Storybook technical-probe visibility drift(`test-only` semantics)
 //
 // Usage from Stop hook: `node scripts/audit-content-quality.mjs --check` (silent if OK, warn if drift).
 
@@ -135,6 +136,7 @@ function exportedStoryDefinitions(sourceFile) {
       if (!ts.isIdentifier(declaration.name)) continue;
       const initializer = unwrapExpression(declaration.initializer);
       let displayName = null;
+      let tags = [];
       if (initializer && ts.isObjectLiteralExpression(initializer)) {
         const nameProperty = initializer.properties.find(property =>
           ts.isPropertyAssignment(property) && propertyName(property) === 'name'
@@ -144,8 +146,17 @@ function exportedStoryDefinitions(sourceFile) {
           nameInitializer
           && (ts.isStringLiteral(nameInitializer) || ts.isNoSubstitutionTemplateLiteral(nameInitializer))
         ) displayName = nameInitializer.text;
+        const tagsProperty = initializer.properties.find(property =>
+          ts.isPropertyAssignment(property) && propertyName(property) === 'tags'
+        );
+        const tagsInitializer = tagsProperty && unwrapExpression(tagsProperty.initializer);
+        if (tagsInitializer && ts.isArrayLiteralExpression(tagsInitializer)) {
+          tags = tagsInitializer.elements
+            .filter(element => ts.isStringLiteral(element) || ts.isNoSubstitutionTemplateLiteral(element))
+            .map(element => element.text);
+        }
       }
-      stories.set(declaration.name.text, { displayName });
+      stories.set(declaration.name.text, { displayName, tags });
     }
   }
   return stories;
@@ -196,8 +207,24 @@ const violations = {
   thinDescription: [],      // parameters.docs.description.{component,story} stub / 太短 / 缺
   abstractName: [],         // story name 抽象代號(無描述性)
   literalMarkdownEmphasis: [], // JSX canvas 會原樣顯示 **星號**,不是 Markdown renderer
+  storyVisibility: [],     // technical probes 必保留 index/test 但退出 sidebar + Autodocs
 };
 let autoFixed = 0;
+
+function checkStoryVisibility(file, content, exportedStories) {
+  if (/tags:\s*\[[^\]]*['"]!autodocs['"]/.test(content)) {
+    violations.storyVisibility.push({ file, issue: 'replace !autodocs with the scoped test-only visibility role' });
+  }
+  for (const [exportName, story] of exportedStories) {
+    if (!story.tags.includes('test-only')) continue;
+    if (story.tags.includes('!dev') || story.tags.includes('!test')) {
+      violations.storyVisibility.push({
+        file,
+        issue: `${exportName} combines test-only with !dev/!test and therefore disappears from its test surface`,
+      });
+    }
+  }
+}
 
 for (const file of walk(STORIES_DIR)) {
   const isAnatomy = file.endsWith('.anatomy.stories.tsx');
@@ -206,6 +233,7 @@ for (const file of walk(STORIES_DIR)) {
   let modified = false;
   const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const exportedStories = exportedStoryDefinitions(sourceFile);
+  checkStoryVisibility(file, content, exportedStories);
 
   // === Check 1: Anatomy numbering — DEPRECATED 2026-04-26 ===
   // user 反饋:序號(`'1. 元件總覽'` 等)無價值且容易跳號。改成 anatomy story name
@@ -385,7 +413,10 @@ for (const file of walk(STORIES_DIR)) {
   // components(Calendar/Chart/Carousel)的 first scenario 即 Default。實際只需 ≥ 1 export。
   if (!isAnatomy && !file.endsWith('.principles.stories.tsx')) {
     const exportMatches = [...content.matchAll(/^export const ([A-Z]\w+)/gm)].map(m => m[1]);
-    if (exportMatches.length === 0) {
+    const readerFacingExports = exportMatches.filter(exportName =>
+      !exportedStories.get(exportName)?.tags.includes('test-only')
+    );
+    if (readerFacingExports.length === 0) {
       violations.showcaseRepresentative.push({ file: basename(file) });
     }
   }
@@ -510,6 +541,30 @@ for (const file of walk(STORIES_DIR)) {
   if (modified) writeFileSync(file, content);
 }
 
+// Consumer-template technical probes share the same Storybook runtime but are
+// outside the DS content corpus above. Scan their tags without applying DS prose
+// or three-layer requirements.
+for (const file of walk('apps/template/src')) {
+  const content = readFileSync(file, 'utf-8');
+  const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  checkStoryVisibility(file, content, exportedStoryDefinitions(sourceFile));
+}
+
+const sharedPreview = readFileSync('packages/storybook-config/preview.tsx', 'utf-8');
+if (!/stories:\s*\{[\s\S]*filter:[\s\S]*!story\.tags\?\.includes\('test-only'\)/.test(sharedPreview)) {
+  violations.storyVisibility.push({
+    file: 'packages/storybook-config/preview.tsx',
+    issue: 'shared Autodocs test-only filter missing',
+  });
+}
+const sharedManager = readFileSync('packages/storybook-config/addons/ds-devmode/manager.tsx', 'utf-8');
+if (!/sidebar:\s*\{[\s\S]*filters:[\s\S]*!item\.tags\?\.includes\('test-only'\)/.test(sharedManager)) {
+  violations.storyVisibility.push({
+    file: 'packages/storybook-config/addons/ds-devmode/manager.tsx',
+    issue: 'shared sidebar test-only filter missing',
+  });
+}
+
 const totalViolations = Object.values(violations).reduce((s, arr) => s + arr.length, 0);
 
 console.log('=== Content quality audit ===\n');
@@ -594,6 +649,11 @@ if (violations.literalMarkdownEmphasis.length > 0) {
   violations.literalMarkdownEmphasis.slice(0, 10).forEach(v =>
     console.log(`  • ${v.file}: ${v.count}× ${v.samples.map(s => `"${s}"`).join(', ')}`)
   );
+}
+
+if (violations.storyVisibility.length > 0) {
+  console.log(`\n[P0] Storybook technical-probe visibility drift: ${violations.storyVisibility.length}`);
+  violations.storyVisibility.slice(0, 10).forEach(v => console.log(`  • ${v.file}: ${v.issue}`));
 }
 
 if (violations.linkTo.length > 0) {

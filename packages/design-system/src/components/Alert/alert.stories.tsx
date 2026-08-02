@@ -1,4 +1,4 @@
-// @story-trait-rationale: hasVariants/hasInteractiveStates 的 canonical core stories(AllVariants / States)
+// @story-history: hasVariants/hasInteractiveStates 的 canonical core stories(AllVariants / States)
 //   集中在 anatomy.stories.tsx 的 ColorMatrix + StateBehavior(Inspector 互動);本 showcase
 //   提供真實業務 scenario(部署 / 系統警示)而非 trait grid 重複展示。
 import type { Meta } from '@storybook/react'
@@ -91,7 +91,7 @@ export const CornerActionGroup = {
           description="點「重新整理」同步最新狀態,或忽略此訊息繼續目前作業。"
           dismissible={false}
         />
-        {/* @story-trait-rationale: scenario showcase 沒 AllVariants/States,trait grid 在 anatomy */}
+        {/* @story-history: scenario showcase 沒 AllVariants/States,trait grid 在 anatomy */}
         <div className="absolute top-3 right-4 flex items-center gap-2">
           {/* 角落操作群組:全部用最小尺寸按鈕(同尺寸才一致),
               ButtonDivider 自帶 mx-1(左右各 4px)當分隔間距(對齊 button-group 主檔)*/}

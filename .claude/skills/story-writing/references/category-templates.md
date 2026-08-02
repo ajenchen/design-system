@@ -17,8 +17,8 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 - **Polaris Button**:24 stories(variant × tone matrix,但 sizes 散在 per-variant)
 - **MUI Button**:18 example files,trait-driven(BasicButtons / OutlinedButtons / IconLabelButtons / LoadingButtons)
 - **Ant Button**:22 demos,one demo = one focused trait
-- **Storybook 官方**:推薦 Default first + CSF3 args,**不 prescribe count or required set**
-- **共識**:`Default` 必有 / `WithIcon` merged grid 不拆 / overlay default-open `useState(true)` / Disabled 多數有但非絕對 / scenarios 多寡看 component 性質
+- **Storybook 官方**:推薦把代表性 baseline 放前面 + CSF3 args,**不 prescribe exact export name、count or required set**
+- **共識**:每個 showcase 至少一個 reader-facing 代表範例；`Default` 只有在 minimal baseline 本身值得獨立存在時才用 / `WithIcon` merged grid 不拆 / overlay default-open `useState(true)` / Disabled 多數有但非絕對 / scenarios 多寡看 component 性質
 
 → trait-based 對齊 5/5 benchmark systems(M8 ≥ 3 ✓ overshot)。
 
@@ -26,7 +26,7 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 
 ### Universal(每元件必有)
 
-- **Default** — 最 minimal 代表性範例(對齊 Storybook 官方 + Carbon idiom)
+- **至少一個 reader-facing representative story** — export 名按它真正教的情境命名；`Default` 是可選名稱，不是 compliance token。只有最小 baseline 能獨立教會讀者時才開 `Default`，否則由第一個完整 scenario／matrix 擔任代表範例。
 
 ### Conditional traits → required stories
 
@@ -43,7 +43,7 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 | `isSelectionSingle` | Switch / 單一 toggle(無群組概念) | `States` only(對齊 Material/Polaris/Carbon Switch idiom — 無 group story) |
 | `isMatrixHeavy` | Avatar / Skeleton / Spinner / Badge / Slider 等 token × size 正交視覺軸 | ≥ 4 matrix stories(`Modes` / `Shapes` / `Colors` / `AllSizes` 任 4) |
 | `isStructural` | DataTable / Steps / Tabs / Accordion 結構主導 | 每結構變體 1 story(無固定數,過 earn-existence) |
-| `isInternal` | L3 building block(被其他元件消費) | 1 `Default` + ≤ 1 composition scenario(寬鬆,Internal/ 命名空間下) |
+| `isInternal` | L3 building block(被其他元件消費) | 1 個代表性 primitive story + ≤ 1 composition scenario(寬鬆,Internal/ 命名空間下；不強迫命名 `Default`) |
 
 ### Optional universal
 
@@ -135,10 +135,10 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 - `ContentGuidelines` 永遠獨立(文案 vs 元件選擇 是不同主題)
 
 **Legacy aliases 接受**(不強制 rename 既存 stories):
-- `WhenToUse` / `WhenNotToUse` / `Vs*Rule` 任 1 已存在 = 算「has core」
-- 新元件用 `UsageGuidance` 整合單一 story
+- split style 必涵蓋至少 2 個不同 decision dimensions:`WhenToUse` / `WhenNotToUse` / `Vs*Rule` / `ContentGuidelines`
+- 新元件預設用單一完整 `UsageGuidance`(何時用 + 何時不用 + sibling boundary)
 
-**規則**:每元件 principles 至少 **2 個 stories**(任意 combo:canonical 4 + component-specific `*Rule` + 描述性名稱如 `BlueConnectorLogic` / `ParentControlled` 都算 valid)。**全 4 個必有** = over-engineer(Polaris 4/4,但 Carbon Ant 都不到);**少於 2 stories** = principles 太薄無教學價值。Audit `audit-content-quality.mjs` 採寬鬆 ≥ 2 exports 標準(承認既有 component-specific naming idiom)。
+**規則**:**ONE complete `UsageGuidance` is sufficient**。不得為了湊數再開第二篇；額外 principles story 只有在教 distinct topic 且通過 earn-existence 2-test 時才保留。若採 split style，至少需要 2 個不同 decision dimensions；任意兩個 implementation notes／視覺重演不能靠 export 數量取得 compliance。Audit `audit-content-quality.mjs` 與 hook `check_canonical_propagation.sh` E.1 同規則。
 
 ## Canonical naming(取代既有 drift 變體)
 
@@ -169,6 +169,6 @@ v1 7 categories(A 視覺 variant / B field control / C selection / D structural 
 
 ## 強制機制
 
-- **Hook** `check_canonical_propagation.sh` E.1 principles:PreToolUse 攔不符 ≥ 2 universal core
+- **Hook** `check_canonical_propagation.sh` E.1 principles:PreToolUse 接受單一完整 `UsageGuidance`，split style 則攔少於 2 個 decision dimensions
 - **Audit Dim 30**:periodic verify
-- **`/new-component` Phase 5.3**:scaffold 4 universal stories template
+- **`/new-component` Phase 5.3**:預設 scaffold 單一完整 `UsageGuidance`；只有 distinct topic 才加第二篇

@@ -394,7 +394,7 @@ export const FallbackUnknownType: Story = {
  */
 export const OpenSnapshot: Story = {
   name: '開啟狀態',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => {
     const [open, setOpen] = React.useState(true)
     const [index, setIndex] = React.useState(0)

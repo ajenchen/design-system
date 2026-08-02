@@ -27,6 +27,7 @@ type Story = StoryObj<typeof Button>
 // render tree 逐字複製 DS button.stories.tsx#IconOnly(只換 import 來源為 published package)
 export const IconOnlyReplica: Story = {
   name: 'Button 純圖示 — DS canonical 忠實複製',
+  tags: ['test-only'],
   render: () => (
     /* @layout-space-magic-ok: Button#IconOnly pixel replica must preserve its fixed 16px outer story rhythm; density remapping would change the opt-in pixel/DOM baseline */
     <div className="flex flex-col gap-4">

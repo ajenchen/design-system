@@ -179,7 +179,7 @@ export const UsageGuidance: Story = {
   ),
 }
 
-// @story-trait-rationale: 教「如何選 ratio」的決策邏輯(原則層),不是「5 個 ratio 長怎樣」
+// @story-history: 教「如何選 ratio」的決策邏輯(原則層),不是「5 個 ratio 長怎樣」
 //   的視覺對照——後者 SSOT 在 anatomy「標準 比例 視覺對照」(StandardRatios)。此處只給判斷準則
 //   + LinkTo,不重畫 5 張圖(per 2026-05-30 EXAMPLE_REDUNDANT prune,避免 3 file 各畫一次)。
 const RATIO_RULES = [

@@ -1,4 +1,4 @@
-// @story-trait-rationale: hasSizes 由 anatomy.stories.tsx SizeMatrix owns size showcase;hasInteractiveStates 由 anatomy.stories.tsx StateBehavior owns(展示層 Disabled + AllWithStartIcon story 2026-07-17 Dim 24 retire — 分別與 anatomy StateBehavior disabled 列 / Overview startIcon slot + principles TriggerSlots 全 icon 示範重複)。
+// @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix owns size showcase;hasInteractiveStates 由 anatomy.stories.tsx StateBehavior owns(展示層 Disabled + AllWithStartIcon story 2026-07-17 Dim 24 retire — 分別與 anatomy StateBehavior disabled 列 / Overview startIcon slot + principles TriggerSlots 全 icon 示範重複)。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { ChevronDown, Archive, Pin, EyeOff } from 'lucide-react'
@@ -248,7 +248,7 @@ export const StateContract: Story = {
   },
 }
 
-// @story-trait-rationale: overflow 機制對照(none / scroll / menu side-by-side)由 anatomy
+// @story-history: overflow 機制對照(none / scroll / menu side-by-side)由 anatomy
 //   OverflowMatrix own;上方兩則「溢出處理」是 320px 窄容器的真實情境示範
 //   (2026-05-18 加,user 要求展示層要真的看得到溢出),兩層分工不重複。
 

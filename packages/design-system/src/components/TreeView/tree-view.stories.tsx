@@ -1,4 +1,4 @@
-// @story-trait-rationale: hasInteractiveStates trait — TreeView interactive states(hover / focus / selected / disabled)由 TreeItem 內部處理(spec.md state machine + anatomy StateBehavior story 已 cover),showcase 層 manual Disabled/States story retired per F migration(2026-05-15)— anatomy.stories.tsx auto-compile owns StateBehavior 6-canonical。AllSizes 同理 retired(SizeMatrix anatomy auto-compile owns)。
+// @story-history: hasInteractiveStates trait — TreeView interactive states(hover / focus / selected / disabled)由 TreeItem 內部處理(spec.md state machine + anatomy StateBehavior story 已 cover),showcase 層 manual Disabled/States story retired per F migration(2026-05-15)— anatomy.stories.tsx auto-compile owns StateBehavior 6-canonical。AllSizes 同理 retired(SizeMatrix anatomy auto-compile owns)。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { expect, userEvent, within } from '@storybook/test'
@@ -55,7 +55,7 @@ export const FileBrowser: Story = {
 // Chevron 依 TreeView virtual-focus contract 不進 tab sequence,因此以 row data id 精準取真實 button。
 export const ActionHoverState: Story = {
   name: '展開動作懸停狀態',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => (
     <div className="w-[300px] overflow-hidden rounded-lg border border-divider bg-surface py-2">
       <TreeView aria-label="專案檔案">
@@ -325,5 +325,5 @@ export const DragAndDrop: Story = {
   },
 }
 
-// @story-trait-rationale: AllSizes retired per F migration(2026-05-15)— anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。
-// @story-trait-rationale: IndentAlignment retired per Dim 24 dedup(2026-07-17)— indentStep=chevronSize+gap-2 幾何三重重複(showcase / anatomy IndentMatrix / principles IndentRule)。geometry 歸 anatomy.stories.tsx IndentMatrix、縮排原則 + icon 混用反例(唯一在此的內容)已遷入 principles.stories.tsx IndentRule;showcase 層不重複教 geometry(同 AllSizes / States 退役先例)。
+// @story-history: AllSizes retired per F migration(2026-05-15)— anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。
+// @story-history: IndentAlignment retired per Dim 24 dedup(2026-07-17)— indentStep=chevronSize+gap-2 幾何三重重複(showcase / anatomy IndentMatrix / principles IndentRule)。geometry 歸 anatomy.stories.tsx IndentMatrix、縮排原則 + icon 混用反例(唯一在此的內容)已遷入 principles.stories.tsx IndentRule;showcase 層不重複教 geometry(同 AllSizes / States 退役先例)。

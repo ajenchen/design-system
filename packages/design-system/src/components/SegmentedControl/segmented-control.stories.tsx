@@ -1,4 +1,4 @@
-// @story-trait-rationale: 6 stories(Default/WithStartIcon/WithBadge/IconOnly/FullWidth/Disabled)
+// @story-history: 6 stories(Default/WithStartIcon/WithBadge/IconOnly/FullWidth/Disabled)
 // 2026-05-17 retire per audit Dim 24:跟 anatomy.stories.tsx 4 個 matrix
 // (Overview/IconOnlyMatrix/FullWidthMatrix/StateBehavior)完全 trait-grid 重複,無 unique teaching。
 // 真實業務情境靠 principles.stories.tsx 的 UsageGuidance / IconOnlyRule / FullWidthRule;

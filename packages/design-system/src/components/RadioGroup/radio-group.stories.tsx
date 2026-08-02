@@ -1,4 +1,4 @@
-// @story-trait-rationale: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration);Default scenario 由 WithLabel / HorizontalLayout 等真實 form 情境 story 覆蓋。
+// @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration);Default scenario 由 WithLabel / HorizontalLayout 等真實 form 情境 story 覆蓋。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { RadioGroup, RadioGroupItem } from './radio-group'
@@ -20,7 +20,6 @@ type Story = StoryObj<typeof RadioGroupItem>
 // 「何時用」明文禁止裸用)→ 收斂為公開 <RadioGroupItem value label description>(自動 wire SelectionItem
 // + id/htmlFor),與同元件 principles / anatomy 層一致 — 三層 story 一律示範公開 API。
 
-// @story-trait-rationale: pre-existing trait gaps tracked separately; this PR scope = add Modes story with view card.
 /* ── 四模式 ── */
 export const Modes: Story = {
   name: '四模式',
@@ -64,7 +63,7 @@ export const Modes: Story = {
   ),
 }
 
-// @story-trait-rationale: States retired 2026-05-17 per audit Dim 24 —
+// @story-history: States retired 2026-05-17 per audit Dim 24 —
 //   anatomy.stories.tsx SizeMatrix + StateBehavior own size/state trait grid。
 //   展示層保留 typical real-product Group 情境(Vertical/Horizontal/Modes)。
 
@@ -199,7 +198,7 @@ export const StateContract: Story = {
   },
 }
 
-// @story-trait-rationale: Disabled retired 2026-07-14 per audit Dim 24 —
+// @story-history: Disabled retired 2026-07-14 per audit Dim 24 —
 //   disabled 覆蓋已由 Modes story 的 disabled 列 + anatomy StateBehavior
 //   「Mutual Exclusion + Disabled Item Matrix」owns;對齊 Checkbox / Switch
 //   同 Family 已 retire 的獨立 Disabled story。

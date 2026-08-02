@@ -14,7 +14,7 @@ paths:
 |---|------|-----------|------|-----------|
 | 1 展示 | `*.stories.tsx` | trait-based v2 | `check_story_invariants.sh` R3 category | 29 |
 | 2 設計規格 | `*.anatomy.stories.tsx` | 6-canonical(Overview / Inspector / ColorMatrix / SizeMatrix / StateBehavior / Accessibility)| —(6-canonical 由 Dim 13 batch verify + `compile-stories.mjs --check` 兜底;`check_story_invariants.sh` R1 = 展示層 hand-craft 偵測,2026-06-11 起豁免 anatomy 檔)| 13 |
-| 3 設計原則 | `*.principles.stories.tsx` | Polaris-aligned ≥ 2 of {WhenToUse / WhenNotToUse / Vs*Rule / ContentGuidelines};v3 預設整合 `UsageGuidance` 單一 export(Polaris/Material/Ant 共識) | `check_canonical_propagation.sh` E.1 principles | 30 |
+| 3 設計原則 | `*.principles.stories.tsx` | ONE complete `UsageGuidance` sufficient；split style 才需 ≥ 2 個 distinct decision dimensions；額外 story 必須 earn existence | `check_canonical_propagation.sh` E.1 principles | 30 |
 
 ## Title 命名
 
@@ -47,6 +47,13 @@ paths:
 也不可用 TODO/WIP stub。機械 gate=`scripts/audit-content-quality.mjs --check`；語意是否真的提供
 用途與選擇判準仍由 Deep Audit Storybook content judgment 全量判讀。
 
+**Technical probe visibility**:只服務 hover/focus/open snapshot、效能量測、import smoke 等
+automation 的 story，在該 story 本身標 `tags: ['test-only']`。Shared Storybook runtime 會把它從
+sidebar 與 Autodocs 教學內容排除，但仍保留在 story index、direct URL、a11y/interaction runner。
+禁止用 `!autodocs` 代替，也禁止再加 `!dev` / `!test` 把 probe 從 index 或測試面移除；真正
+reader-facing 的 scenario 不得標 `test-only`。機械 gate=`scripts/audit-content-quality.mjs --check`，
+回歸 inventory=`scripts/test-storybook-test-only-semantics.mjs`。
+
 ## 範例最高準則
 
 精簡幹練、0 重複、每 story earn its existence；Autodocs 先有用途/選擇導讀，再讓各 story
@@ -67,7 +74,9 @@ paths:
 
 **展示 v2 trait-based**:spec.md frontmatter `traits:` array → required core stories 衍生 + hook `check_story_invariants.sh` R3 category 攔。
 
-**Principles canonical**(Polaris-aligned):universal core ≥ 2 of `WhenToUse`/`WhenNotToUse`/`Vs*Rule`/`ContentGuidelines` + hook 攔。SSOT → `/story-writing` skill `references/category-templates.md`。
+**Showcase representative canonical**:每檔至少一個 reader-facing 代表範例；不強迫 exact `Default` export。`Default` 只有在 minimal baseline 本身通過 earn-existence 時才開。
+
+**Principles canonical**(Polaris-aligned):ONE complete `UsageGuidance` sufficient；split style 才需 ≥ 2 個 distinct decision dimensions。額外 story 只有教不同主題且通過 earn-existence 才保留。SSOT → `/story-writing` skill `references/category-templates.md`。
 
 ## 禁止
 

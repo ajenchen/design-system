@@ -1,4 +1,4 @@
-// @story-trait-rationale: HoverCard 是「行為 primitive」非視覺 variant — `isOverlay` trait
+// @story-history: HoverCard 是「行為 primitive」非視覺 variant — `isOverlay` trait
 //   要求的 OpenSnapshot/defaultOpen 用 hover trigger 真實情境(MultiAvatarTooltip / Avatar
 //   滑過顯人物卡 / DateContextOnHover 等)展示遠比 forced-open snapshot 更貼近 user 真實
 //   體驗。Default/AllVariants N/A — HoverCard 自身無視覺(bg/border/shadow 由 consumer 決定),

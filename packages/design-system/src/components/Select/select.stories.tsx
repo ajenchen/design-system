@@ -125,7 +125,7 @@ export const HugWidth: Story = {
   },
 }
 
-// @story-trait-rationale: DisplayMode(plain/tag × edit/readonly)retired 2026-07-17 per audit Dim 24 —
+// @story-history: DisplayMode(plain/tag × edit/readonly)retired 2026-07-17 per audit Dim 24 —
 //   為 anatomy.stories.tsx ColorMatrix(plain/tag × edit/readonly/disabled 完整矩陣)的嚴格子集;
 //   plain vs tag 的選用原則另由 principles.stories.tsx DisplayModeRule 承載。展示版無新增約束
 //   (earn-existence 2-test 雙 NO)→ retire。display 模式 canonical home = anatomy ColorMatrix + principles DisplayModeRule。

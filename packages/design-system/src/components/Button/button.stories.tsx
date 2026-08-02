@@ -1,5 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @story-trait-rationale: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration);Default scenario 由 Pressed / IconOnly / 各 variant 真實業務情境 story 覆蓋。
+// @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration);Default scenario 由 Pressed / IconOnly / 各 variant 真實業務情境 story 覆蓋。
 import type { Meta, StoryObj } from '@storybook/react'
 import { Plus, Trash2, Search, ChevronDown, Settings, Download, Bell, RefreshCw, Maximize2, Save, X } from 'lucide-react'
 import { Button } from './button'
@@ -316,7 +316,7 @@ export const FullWidth: Story = {
 
 export const DismissHoverState: Story = {
   name: '關閉按鈕懸停狀態',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => (
     <div className="flex items-center gap-3 rounded-lg border border-divider bg-surface p-4">
       <div className="min-w-0 flex-1">
@@ -330,7 +330,7 @@ export const DismissHoverState: Story = {
 
 export const HoverFocusState: Story = {
   name: '滑鼠移過 / 鍵盤聚焦',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => (
     <div className="flex gap-4">
       <Button variant="primary" data-testid="hover-target" data-visual-hover-target>查看帳單</Button>
@@ -350,7 +350,7 @@ export const HoverFocusState: Story = {
 
 export const TooltipVisible: Story = {
   name: '純圖示加 Tooltip',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => (
     <div className="p-12">
       <Button iconOnly startIcon={Save} aria-label="儲存" data-testid="tooltip-target" />

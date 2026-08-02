@@ -1437,7 +1437,7 @@ export const IconColorsAndPresets = {
 
 export const InlineActionHoverState = {
   name: '行內動作懸停狀態',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => (
     <div className="flex w-[360px] items-center gap-3 rounded-md border border-divider bg-surface px-3 py-2">
       <div className="min-w-0 flex-1">

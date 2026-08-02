@@ -679,7 +679,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_escape_marker_abuse.sh",
-      "sha256": "836b252a2671402edb1fb775a7c5166a66945497bf26721547ea4c0c91a9cf77",
+      "sha256": "1307a70e7ff776a6f100e173d93f6b2b8b58cc535c15688c08afa61ad1bc5651",
       "source": "check_escape_marker_abuse.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null

@@ -118,7 +118,7 @@ export const SizeAlignment: Story = {
   },
 }
 
-// @story-trait-rationale: 原 WrapModes(單行 vs 換行)retired 2026-07-17(Dim 24 earn-existence)—
+// @story-history: 原 WrapModes(單行 vs 換行)retired 2026-07-17(Dim 24 earn-existence)—
 //   單行/wrap × edit/readonly 矩陣已由 anatomy「狀態行為」(單行溢出 + readonly 溢出 + edit/readonly wrap)
 //   完整覆蓋機制,wrap 選擇原則由 principles「Wrap 模式選擇」(WrapRule)owns。展示層不重演矩陣(三層定位);
 //   principles 使用指引頁對應 LinkTo(單行 vs 換行)同步移除。

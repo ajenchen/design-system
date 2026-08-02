@@ -1,5 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @story-trait-rationale: hasSizes / hasInteractiveStates / Default 由 anatomy.stories.tsx SizeMatrix + StateBehavior + Inspector auto-compile owns(2026-05-15 F-migration);showcase 層展示真實導覽 / 整合情境。
+// @story-history: hasSizes / hasInteractiveStates / Default 由 anatomy.stories.tsx SizeMatrix + StateBehavior + Inspector auto-compile owns(2026-05-15 F-migration);showcase 層展示真實導覽 / 整合情境。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
@@ -217,7 +217,7 @@ export const IconCollapse: Story = {
 // 用 public Sidebar composition render 真實 row/action 關係,不直接複製 action class。
 export const ActionHoverState: Story = {
   name: '側邊欄動作懸停狀態',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => (
     <div className="w-[320px] overflow-hidden rounded-lg border border-divider bg-surface p-2">
       <SidebarProvider defaultActiveId="roadmap" style={{ minHeight: 'auto' }}>

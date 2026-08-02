@@ -39,7 +39,7 @@ export const Default: Story = {
   },
 }
 
-// @story-trait-rationale: WithFilterHidden(selection=3 + hiddenByFilter=2)retired 2026-07-17 per audit Dim 24 —
+// @story-history: WithFilterHidden(selection=3 + hiddenByFilter=2)retired 2026-07-17 per audit Dim 24 —
 //   principles.stories.tsx HintBannerRule 第三 Rule 已用同情境(selection 3 + hiddenByFilter=2)且多教「filter hidden
 //   inline 進 count 區、不開 hint banner」規則;展示版無新增約束(earn-existence 2-test 雙 NO)→ retire。
 //   hiddenByFilter inline 呈現 canonical home = principles HintBannerRule。

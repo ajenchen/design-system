@@ -1,5 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
-// @story-trait-rationale: Breadcrumb 是純結構導覽元件,disabled/states 由 BreadcrumbLink 內部 :focus-visible / :hover / :active 處理(spec.md 互動狀態段已 cover),無 element-level disabled mode(spec.md 互動狀態 > Disabled 段「通常 breadcrumb link 不會 disabled」)。互動行為示範由 InteractiveEllipsis story + anatomy StateBehavior 完整覆蓋。AllSizes retired per F migration 2026-05-15(anatomy auto-compile SizeMatrix owns size showcase)。
+// @story-history: Breadcrumb 是純結構導覽元件,disabled/states 由 BreadcrumbLink 內部 :focus-visible / :hover / :active 處理(spec.md 互動狀態段已 cover),無 element-level disabled mode(spec.md 互動狀態 > Disabled 段「通常 breadcrumb link 不會 disabled」)。互動行為示範由 InteractiveEllipsis story + anatomy StateBehavior 完整覆蓋。AllSizes retired per F migration 2026-05-15(anatomy auto-compile SizeMatrix owns size showcase)。
 import type { Meta, StoryObj } from '@storybook/react'
 import { House } from 'lucide-react'
 import {
@@ -106,10 +106,10 @@ export const InteractiveEllipsis: Story = {
   ),
 }
 
-// @story-trait-rationale: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。
+// @story-history: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。
 // ── Declarative items + auto-collapse(Phase B,2026-05-10)──────────────────
 //
-// @story-trait-rationale: 此 story 展示 Phase B declarative `items` API + auto-collapse
+// @story-history: 此 story 展示 Phase B declarative `items` API + auto-collapse
 // (maxItems=4)+ flex-shrink hierarchy + truncate-on-overflow + tooltip canonical(per
 // `tooltip.principles.stories.tsx:190`)。Disabled / States 仍由 BreadcrumbLink 內部 :hover /
 // :focus-visible / :active 處理(spec.md 互動狀態 > Disabled 段,無 element-level disabled)。
@@ -189,7 +189,7 @@ export const DeclarativeAutoCollapse: Story = {
           縮放瀏覽器寬度可觀察:容器變窄時,首項最先被壓縮、中段次之、當前頁最後才縮。
           每一項文字被截斷時自動顯示 ...,滑鼠移上去會用 tooltip 顯示完整文字;沒被截斷則不顯示 tooltip。
         </p>
-        {/* @story-trait-rationale: 2026-05-14 per user 拍板「拿掉 fixed 320px 讓 resize window 測 RWD」— Breadcrumb 是純結構導覽,disabled/states 由 BreadcrumbLink :focus-visible/:hover/:active 處理(spec.md 互動狀態 > Disabled 段),trait check 沿用 file header rationale */}
+        {/* @story-history: 2026-05-14 per user 拍板「拿掉 fixed 320px 讓 resize window 測 RWD」— Breadcrumb 是純結構導覽,disabled/states 由 BreadcrumbLink :focus-visible/:hover/:active 處理(spec.md 互動狀態 > Disabled 段),trait check 沿用 file header rationale */}
         <div className="border border-dashed border-divider rounded-md p-2">
           <Breadcrumb>
             <BreadcrumbList
@@ -206,11 +206,11 @@ export const DeclarativeAutoCollapse: Story = {
   ),
 }
 
-// @story-trait-rationale: Deep(5 層)+ TwoLevels(2 層)retired 2026-05-30 per earn-existence 2-test —
+// @story-history: Deep(5 層)+ TwoLevels(2 層)retired 2026-05-30 per earn-existence 2-test —
 // 兩者與 Default(3 層)教的原則完全相同(BreadcrumbLink + Separator + 末項 BreadcrumbPage),差別僅「深度數字」。
 // 路徑深度變化已由 anatomy Inspector `pathLength` control(3/4/5/6/7 即時切換)+ DeclarativeAutoCollapse(5 層 + auto-collapse)涵蓋。
 
-// @story-trait-rationale: WithHomeIcon(首項配首頁圖示)retired 2026-06-11 per earn-existence 2-test —
+// @story-history: WithHomeIcon(首項配首頁圖示)retired 2026-06-11 per earn-existence 2-test —
 // 首項 House icon 慣例 + icon 尺寸隨字級自動(sm/md 16px / lg 20px)已由下方 PairedWithPageTitle 三個
 // size 的首項完整示範(原則層 ScopeRule 另有教學),單獨一則 md 尺寸範例屬重複;LinkTo 全庫 grep 無引用。
 
@@ -313,7 +313,7 @@ export const IntegrateRouterLink: Story = {
 
 // ── Router Link + 自動摺疊(2026-07-19 回歸防線)────────────────────────────
 //
-// @story-trait-rationale: 專驗 auto-collapse 抽取器把 `<BreadcrumbLink asChild><router Link>` 中段項目
+// @story-history: 專驗 auto-collapse 抽取器把 `<BreadcrumbLink asChild><router Link>` 中段項目
 //   摺疊進 ⋯ dropdown 時,link 元素(含 to/href/onClick)整個保留、非退化成純文字 —— DA3 對抗稽核抓到的
 //   邏輯 gap 回歸鎖。play() 開摺疊選單並斷言摺疊項目為可點 <a href>(role=menuitem 落在 anchor 上,
 //   非外層 div = 無 nested-interactive)。此處以 `<a onClick prevent>` 模擬 React Router / Next Link。

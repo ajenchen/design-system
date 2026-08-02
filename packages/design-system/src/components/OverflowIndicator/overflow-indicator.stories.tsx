@@ -124,12 +124,12 @@ export const AvatarStackOverflow: Story = {
   ),
 }
 
-// @story-trait-rationale: Shapes(形狀對照)retired 2026-06-11 per audit Dim 24/25 —
+// @story-history: Shapes(形狀對照)retired 2026-06-11 per audit Dim 24/25 —
 //   shape × size 全矩陣已由 anatomy ShapeMatrix「Shape × Size 視覺矩陣」+ SizeMatrix
 //   (overflow-indicator.anatomy.stories.tsx)完整覆蓋,展示層只留真實業務場景;
 //   principles UsageGuidance 對應 LinkTo 已同步移除。
 
-// @story-trait-rationale: BreadcrumbCollapse(Breadcrumb 中段收合)retired 2026-07-16 per
+// @story-history: BreadcrumbCollapse(Breadcrumb 中段收合)retired 2026-07-16 per
 //   deep-audit A.1b — DS Breadcrumb 收合 canonical = BreadcrumbEllipsis + DropdownMenu(click 開選單,
 //   breadcrumb.spec.md「BreadcrumbEllipsis」段),Breadcrumb 全庫零 OverflowIndicator 消費;
 //   本 story 示範與 canonical 相左的 hover +N 收合 = 誤導 consumer,故 retire;

@@ -873,7 +873,7 @@ export const NestedRows: Story = {
 
 export const NestedRowsExpanderHoverState: Story = {
   name: '巢狀列展開鈕：滑鼠移過狀態',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => {
     const [expanded, setExpanded] = React.useState<Record<string, boolean>>({})
     return (
@@ -2232,7 +2232,7 @@ export const RoadmapAllInOne: Story = {
 export const RoadmapPerfBudget: Story = {
   name: '效能預算量測',
   parameters: { layout: 'fullscreen' },
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => {
     const bigData = React.useMemo(() => {
       const arr: RoadmapItem[] = []

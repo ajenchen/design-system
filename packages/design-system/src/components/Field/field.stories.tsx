@@ -1,4 +1,4 @@
-// @story-trait-rationale: Field 是 compound component(FieldLabel / FieldError / FieldDescription / FieldGroup),hasSizes / Default 由 anatomy.stories.tsx SizeMatrix + Inspector auto-compile owns(2026-05-15 F-migration);showcase 展示 Vertical / Horizontal 兩種 orientation 真實 form 情境。
+// @story-history: Field 是 compound component(FieldLabel / FieldError / FieldDescription / FieldGroup),hasSizes / Default 由 anatomy.stories.tsx SizeMatrix + Inspector auto-compile owns(2026-05-15 F-migration);showcase 展示 Vertical / Horizontal 兩種 orientation 真實 form 情境。
 import type { Meta, StoryObj } from '@storybook/react'
 import * as React from 'react'
 import { Upload } from 'lucide-react'
@@ -62,7 +62,7 @@ export const Vertical: Story = {
 }
 
 // ── Field 狀態 cascade（2026-06-08 補：disabled / mode 透過 context 流給所有 field 控件）──────
-// @story-trait-rationale: Field 透過 context 把 disabled / mode 流給「所有」field 控件。此前無 story 覆蓋此
+// @story-history: Field 透過 context 把 disabled / mode 流給「所有」field 控件。此前無 story 覆蓋此
 // cascade，致 picker 漏讀 fieldCtx.mode、Switch/Rating/Slider/PeoplePicker 漏讀 fieldCtx.disabled 的 cascade
 // bug 長期隱形（M15）。本 story 為 cascade 視覺驗證 SSOT —— 控件「皆不」自帶 disabled/mode prop，純靠 <Field> cascade。
 
@@ -376,7 +376,7 @@ export const SegmentedControlInField: Story = {
   ),
 }
 
-// @story-trait-rationale: States retired 2026-05-17 per audit Dim 24 —
+// @story-history: States retired 2026-05-17 per audit Dim 24 —
 //   anatomy.stories.tsx StateBehavior own required/disabled/invalid/readonly state matrix。
 //   展示層保留 typical real-product 情境(Block control / Mode 等),避免跟 anatomy trait grid 重複。
 

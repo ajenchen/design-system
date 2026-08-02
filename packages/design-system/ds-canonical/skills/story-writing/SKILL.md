@@ -113,6 +113,12 @@ Checkpoint: 寫完後必驗:
 `node scripts/audit-content-quality.mjs --check`，缺導讀、stub、抽象名稱、可見符號圖或 raw Markdown
 任一項都不得交付。
 
+若 story 只供 automation probe(hover/focus/open snapshot、效能量測、import smoke)，在 story-level
+標 `tags: ['test-only']`：shared runtime 只把它從 sidebar + Autodocs 隱藏，仍保留 direct URL、index
+與 a11y/interaction runner。不得用 `!autodocs`，也不得搭配 `!dev` / `!test`；reader-facing scenario
+不得為了縮短目錄而誤標 test-only。語意與 regression 由 `story-rules.md` +
+`scripts/test-storybook-test-only-semantics.mjs` 看守。
+
 ## References
 
 - `references/category-templates.md` — 7 category(A-G)suggested core stories(展示層 emergent typology)

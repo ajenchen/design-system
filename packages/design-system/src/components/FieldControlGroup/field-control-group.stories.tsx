@@ -158,5 +158,5 @@ export const FilterRow: Story = {
   },
 }
 
-/* @story-trait-rationale: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx 的
+/* @story-history: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx 的
    ChildSizeAlignment 只展示 children 尺寸接合；FieldControlGroup 本身不擁有 size API。 */

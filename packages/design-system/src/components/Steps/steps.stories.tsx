@@ -1,4 +1,4 @@
-// @story-trait-rationale: AllSizes retired 2026-05-15(anatomy SizeMatrix own size matrix);
+// @story-history: AllSizes retired 2026-05-15(anatomy SizeMatrix own size matrix);
 //   AllStates retired 2026-05-17 per audit Dim 46(anatomy StateBehavior own state matrix,
 //   manual trait grid 違 story-rules.md 三層定位「展示層 = 典型使用情境,不是 trait grid」)。
 import * as React from 'react'
@@ -146,7 +146,7 @@ export const Default: Story = {
   },
 }
 
-// @story-trait-rationale: AllSizes + AllStates retired per F migration 2026-05-17 —
+// @story-history: AllSizes + AllStates retired per F migration 2026-05-17 —
 //   AllSizes retired 2026-05-15(anatomy SizeMatrix own);AllStates retired 2026-05-17
 //   per Dim 46 audit(anatomy StateBehavior 已 own state matrix,manual trait grid 違反
 //   story-rules.md 三層定位「展示層應為典型使用情境,不是 trait grid」)。
@@ -299,6 +299,6 @@ export const MultipleExpansion: Story = {
   },
 }
 
-// @story-trait-rationale: MixedDescription(欄節奏驗證 grid)retired 2026-06-11 per audit
+// @story-history: MixedDescription(欄節奏驗證 grid)retired 2026-06-11 per audit
 //   EXAMPLE_REDUNDANT — indicator 對齊 label 第一行的 column rhythm 已由 anatomy「欄位節奏」+
 //   principles「規則:指示欄節奏一致」雙層 own;展示層不重複 trait 驗證 grid。

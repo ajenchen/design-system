@@ -201,6 +201,6 @@ export const FormatOptionsRule: Story = {
   ),
 }
 
-// @story-trait-rationale: DataTypeMatchRule(數字一律用 NumberInput)retired 2026-06-11 per audit Dim 24/25 —
+// @story-history: DataTypeMatchRule(數字一律用 NumberInput)retired 2026-06-11 per audit Dim 24/25 —
 //   與 UsageGuidance「vs 近親元件」段完整重複(✅ NumberInput-over-Input / ❌ 電話號碼非算術型);
 //   唯一未覆蓋的「❌ 不用 Input 顯示數字」與「非算術型資料」完整 note 已折入 UsageGuidance。

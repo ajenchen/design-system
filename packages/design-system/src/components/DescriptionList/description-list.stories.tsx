@@ -106,7 +106,7 @@ export const Horizontal: Story = {
   ),
 }
 
-// @story-trait-rationale: HorizontalDivided retired 2026-05-17 per audit Dim 24/25 strict re-run —
+// @story-history: HorizontalDivided retired 2026-05-17 per audit Dim 24/25 strict re-run —
 //   違 story-rules.md L42「同 affordance 內 prop variations 用 Controls 不另開」。Horizontal orientation
 //   已展示;divided 是單一 prop toggle,anatomy Inspector 已 expose Controls (L85-86)。
 //   原本內容 archive 於 git history(若要看 divided 視覺,進 anatomy Inspector 開 divided=true)。

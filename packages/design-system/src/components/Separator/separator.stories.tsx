@@ -69,7 +69,7 @@ export const Vertical: Story = {
   ),
 }
 
-// @story-trait-rationale: InDropdownMenu retired 2026-07-14 per audit Dim 24 —
+// @story-history: InDropdownMenu retired 2026-07-14 per audit Dim 24 —
 //   同一「重新命名/複製連結/分隔/刪除」選單完整重複 principles DecorativeSemanticRule
 //   (separator.principles.stories.tsx)首例;且 menu 內分隔屬 DropdownMenuSeparator
 //   (DropdownMenu owns 該 primitive,見 separator.spec.md 近親分界),非 consumer

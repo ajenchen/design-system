@@ -136,7 +136,7 @@ export const EditUserRight: Story = {
  */
 export const OpenSnapshot: Story = {
   name: '開啟狀態',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => (
     <Sheet defaultOpen>
       <SheetTrigger asChild>

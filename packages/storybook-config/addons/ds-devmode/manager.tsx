@@ -9,6 +9,16 @@ import { IconButton } from '@storybook/components'
 import { ADDON_ID, PANEL_ID, TOOL_ID, EVENTS, type DevmodeMode } from './constants'
 import { DsDevmodePanel } from './Panel'
 
+// `test-only` is a visibility role, not a Storybook removal tag: keep probes in
+// index.json/direct URLs for automation while omitting them from reader navigation.
+addons.setConfig({
+  sidebar: {
+    filters: {
+      testOnly: item => !item.tags?.includes('test-only'),
+    },
+  },
+})
+
 const ToolbarButton: React.FC = () => {
   const [mode, setMode] = React.useState<DevmodeMode>('off')
   const emit = useChannel({

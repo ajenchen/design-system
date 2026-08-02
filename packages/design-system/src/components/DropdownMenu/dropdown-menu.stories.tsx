@@ -1,4 +1,4 @@
-// @story-trait-rationale: isOverlay OpenSnapshot / hasInteractiveStates Disabled 由 anatomy.stories.tsx StateBehavior + Inspector auto-compile owns(2026-05-15 F-migration);showcase 展示真實多選 / 角色切換 / Checkbox 整合情境。
+// @story-history: isOverlay OpenSnapshot / hasInteractiveStates Disabled 由 anatomy.stories.tsx StateBehavior + Inspector auto-compile owns(2026-05-15 F-migration);showcase 展示真實多選 / 角色切換 / Checkbox 整合情境。
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
 import { Mail, Settings, User, LogOut, Trash2, Copy, Pencil, ExternalLink, Moon, Sun, Monitor, ChevronDown, FileText } from 'lucide-react'
@@ -222,7 +222,7 @@ export const RadioItems: StoryObj = {
 
 export const OpenSnapshot: StoryObj = {
   name: '開啟狀態',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => (
     <DropdownMenu defaultOpen>
       <DropdownMenuTrigger asChild>
@@ -251,7 +251,7 @@ export const OpenSnapshot: StoryObj = {
 
 export const ItemHover: StoryObj = {
   name: '選項懸停高亮',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => (
     <DropdownMenu defaultOpen>
       <DropdownMenuTrigger asChild>
@@ -273,4 +273,4 @@ export const ItemHover: StoryObj = {
   ),
 }
 
-// @story-trait-rationale: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。
+// @story-history: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。

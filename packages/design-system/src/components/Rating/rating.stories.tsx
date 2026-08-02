@@ -112,8 +112,8 @@ export const InField: Story = {
   },
 }
 
-/* @story-trait-rationale: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。 */
-// @story-trait-rationale: Disabled retired per audit Dim 24 —
+/* @story-history: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。 */
+// @story-history: Disabled retired per audit Dim 24 —
 //   disabled 覆蓋已由 anatomy.stories.tsx StateBehavior 的 disabled live case
 //   (value=4 disabled)owns;對齊 Checkbox / Switch / RadioGroup 同 Family
 //   已 retire 的獨立 Disabled story,不重複展示同一 state。

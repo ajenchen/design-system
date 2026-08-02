@@ -142,7 +142,7 @@ ${NEW_CONTENT}"
 
       if [ "$CORE_COUNT" -lt 2 ]; then
         if [ -z "$EXISTING_CONTENT" ]; then
-          VIOLATIONS_E1="${VIOLATIONS_E1}\n  • [P0] Universal core ≥ 2 required: have ${CORE_COUNT} of {WhenToUse, WhenNotToUse, Vs*Rule, ContentGuidelines}"
+          VIOLATIONS_E1="${VIOLATIONS_E1}\n  • [P0] Need ONE complete UsageGuidance or ≥ 2 split decision dimensions; have ${CORE_COUNT}/2"
         else
           WARNINGS_E1="${WARNINGS_E1}\n  • [P1] Universal core ${CORE_COUNT}/2 — add WhenToUse / WhenNotToUse / Vs*Rule / ContentGuidelines"
         fi
@@ -157,7 +157,9 @@ ${NEW_CONTENT}"
 Violations:$(echo -e "$VIOLATIONS_E1")
 
 Per category-templates.md「Principles canonical」:
-  ‣ Universal core ≥ 2 of {WhenToUse, WhenNotToUse, Vs*Rule, ContentGuidelines}
+  ‣ ONE complete UsageGuidance is sufficient
+  ‣ Split style needs ≥ 2 distinct dimensions of {WhenToUse, WhenNotToUse, Vs*Rule, ContentGuidelines}
+  ‣ Extra stories only when they teach a distinct topic and pass earn-existence
   ‣ Anti-pattern naming → WhenNotToUse(Forbidden/Donts/Pitfalls/Prohibitions/NonGoals/VisualDonts deprecated)
   ‣ 例外:加 \`// @principles-rationale: <reason>\`
 
