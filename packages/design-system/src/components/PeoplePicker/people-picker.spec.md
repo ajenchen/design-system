@@ -27,7 +27,7 @@ PeoplePicker 是**人員選擇器**——專為「從人員清單中選一個或
 
 本元件採 **controlled-only**:`value` + `onChange`,不支援 `defaultValue` uncontrolled fallback(value pair V1)。多選跟隨內部 wrap 的 `Combobox`(controlled-only,rationale 見其 spec「Controlled-only rationale(Dim 26)」段);單選雖 wrap dual-mode 的 `Select`(其有 `defaultValue`),但本 wrapper 刻意不 expose `defaultValue` 以維持兩 mode API 一致——wrapper 單側開放 dual-mode 會產生狀態斷層。未來要改 dual-mode 需自 primitive 層引入 `useControllableState`,屬 major API 擴充。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 4（Field control layout）** 消費者。結構繼承 `components/Field/field-controls.spec.md` 的 `fieldWrapperStyles + [startIcon?] [<editable>] [endAction?]` 規格,視覺對齊 Family 1（Menu item）讓 SelectMenu trigger + options 連續一致。
+**Layout Family**：本元件是 `components/Field/field-controls.spec.md` 所擁有的 **Family 4（Field control layout）** 消費者。結構繼承其 `fieldWrapperStyles + [startIcon?] [<editable>] [endAction?]` 規格,視覺對齊 Family 1（Menu item）讓 SelectMenu trigger + options 連續一致。
 
 ---
 

@@ -221,7 +221,7 @@ N/A — TimePicker 是純同步輸入,無 async 狀態。
 
 ---
 
-## Dismiss / Clear 規則(對齊 CLAUDE.md canonical)
+## Dismiss / Clear 規則(對齊 `packages/design-system/ds-canonical/references/props-naming.md` callback canonical)
 
 - **關閉 Panel** → `onOpenChange(false)`(Popover 內建)/ outside click / Esc —— 這是 **overlay close**,不是 `onClear`
 - **清空值** → `clearable={true}` 在 trigger 的 endAction slot 顯示 `X` 透過 `ItemInlineActionButton`(canonical),點擊 `onChange("")`

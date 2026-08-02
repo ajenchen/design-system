@@ -2,7 +2,7 @@
 
 # Token System 設計原則(SSOT,跨所有 token family)
 
-> **Foundational SSOT rationale**(cap 1200,per CLAUDE.md「foundational SSOT 例外 ≤ 800-1200」):
+> **Foundational SSOT rationale**(cap 1200,per `AGENTS.md`「行數預算」的 foundational SSOT 例外 ≤ 800-1200):
 > 本 spec 是**所有 token family 共同遵循的上游 canonical**——5-layer 架構、命名 family-scoped 規則、token vs hardcode 判斷、cross-family co-location rationale、SSOT consumer scope。改變本 spec = 影響全 DS 30+ 元件 + 200+ token。改一處不對齊就 drift,所以集中在這裡為 SSOT;個別 family spec(color / typography / uiSize 等)只 codify 自家具體規則,不重述上游架構。
 
 ## 架構流派定位

@@ -44,7 +44,7 @@ Family 的 canonical 規定的是「同用途同 layout」;FileViewer 用途(ful
 
 ## Consistency Audit Rationale(偏離 canonical 說明)
 
-根據 CLAUDE.md「Consistency Audit 原則」,列出本元件偏離系統 canonical 的地方與理由:
+根據 `packages/design-system/ds-canonical/skills/design-system-audit/SKILL.md`「Consistency 類稽核」protocol,列出本元件偏離系統 canonical 的地方與理由:
 
 | 偏離點 | Canonical | 本元件做法 | 理由 |
 |--------|-----------|-----------|------|
@@ -260,7 +260,7 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 - ⌄ DropdownMenu 內容分兩組:**Fit options 在上**(Fit to width / Fit to page)/ **preset 百分比在下**,`<DropdownMenuSeparator />` 分組
 - 當前 zoom 在 preset 中的那項視覺標示 `bg-neutral-selected`
 
-### 同 flex 列幾何鐵律(CLAUDE.md 規則)
+### 同 flex 列幾何鐵律(`packages/design-system/ds-canonical/references/ui-dev-rules.md` canonical)
 
 `[−]` / `[%input]` / `[+]` 三個 slot **都是 h-field-sm**,統一高度確保 gap 不被 hover bg 吃掉。Toolbar 包在 `<ChromeHeader>`(繼承 page density,2026-06-15 移除 lockDensity)內 → h-field-sm 隨 page density 解析(`uiSize.spec.md`:sm 在 md = 28px / lg = 32px)。Button iconOnly size="sm" aspect-square 與 Input size="sm" 同高,視覺嚴格對齊。
 

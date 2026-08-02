@@ -20,7 +20,7 @@
         "schemaVersion": { "const": 2 },
         "engine": { "const": "node-posix-toolchain-v2" },
         "minimumNodeVersion": { "const": "22.13.0" },
-        "exactNpmVersion": { "const": "11.18.0" },
+        "exactNpmVersion": { "const": "11.19.0" },
         "supportedHostPlatforms": {
           "type": "array",
           "prefixItems": [{ "const": "darwin" }, { "const": "linux" }],

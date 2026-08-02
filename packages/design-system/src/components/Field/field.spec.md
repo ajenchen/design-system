@@ -23,7 +23,7 @@ Field 是**表單欄位的佈局容器**。只負責排版（label / control / d
 
 **實作基礎**：自建——本 DS 的 form layout 設計。**拒絕的是 Field 層引擎耦合**（2026-07-03 精確化）：shadcn 的 `FormField` = react-hook-form `Controller` wrapper、脫離 RHF 不能用——本 DS 不採用，因 Field 同時是 DataTable cell 基底（naked variant）+ display/readonly 純展示載體，耦引擎會毒害非表單場景；Field 只做 layout + context（engine-agnostic，對齊 MUI FormControl / Carbon / Polaris 派）。**form 層另有可執行層** `useFormValidation`（基於 react-hook-form，wrapped 不外露，對齊 DS「基於 X」引擎慣例；見 `form-validation.spec.md`「可執行層」段）——引擎藏在 form 層 hook 內 ≠ Field 耦合，Field 經 `invalid` context 一行接入。
 
-**Layout Family**：Field **不屬於** 4-Family Model 的 element layout families——它是 form composition pattern（包 Family 4 control + label + description）。見 CLAUDE.md「4-Family Layout Model」段 + `patterns/element-anatomy/element-anatomy.spec.md`「Field Composition(不在 family 但相關)」段。
+**Layout Family**：Field **不屬於** 4-Family Model 的 element layout families——它是 form composition pattern（包 Family 4 control + label + description）。見 taxonomy owner `patterns/element-anatomy/element-anatomy.spec.md`「Field Composition(不在 family 但相關)」段。
 
 ---
 

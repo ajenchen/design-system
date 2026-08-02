@@ -45,7 +45,7 @@ benchmark:
 
 **實作基礎**：基於 Radix Collapsible + Radix Slot（shadcn Sidebar 模式改寫）+ 橋接 DS token。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 1（Menu item layout）** 消費者。結構繼承 `patterns/element-anatomy/item-anatomy.spec.md`「Menu item layout」章節的 scanning-mode 規格。
+**Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 1（Menu item layout）** 消費者。結構繼承其「Menu item layout」章節的 scanning-mode 規格。
 
 **不是**：NavigationMenu（水平導覽）、Tabs（同層切換）、Command Palette（跨頁搜尋）、Sheet / Drawer（暫時性面板）。Sidebar 是**持續存在**的主骨架。
 

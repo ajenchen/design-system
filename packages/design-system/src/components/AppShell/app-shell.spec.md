@@ -323,7 +323,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 | Sheet fallback | `sheet.spec.md` SSOT |
 | Overlay | `overlay-surface.spec.md` SSOT |
 
-**0 新 CSS variable**,per CLAUDE.md token 4 條硬規則(不孤立發明)。
+**0 新 CSS variable**,per `packages/design-system/ds-canonical/rules/ui-development.md`「Token 命名 4 條硬規則」(不孤立發明)。
 
 ---
 

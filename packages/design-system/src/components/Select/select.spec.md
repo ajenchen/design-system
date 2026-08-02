@@ -13,7 +13,7 @@ benchmark:
   - Polaris Select: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Select
 ---
 
-<!-- @spec-budget-exception: SSOT-heavy 例外(CLAUDE.md 行數預算「foundational SSOT 例外 ≤800-1200」)— 本檔持有跨元件 SSOT:「與 RadioGroup 的分界」(~40 行)+ 3 筆拍板記錄(2026-07-13 D2 hidden-input mirror / 2026-05-21 D3 dual-mode / 2026-06-12 R2 open-pair 例外);2026-07-14 knowledge-prune P2 結論「殘餘超標內容全是 canonical,再砍必動 meaning」(.claude/logs/prune-p2-candidates.md)。 -->
+<!-- @spec-budget-exception: SSOT-heavy 例外(`AGENTS.md`「行數預算」的 foundational SSOT 例外 ≤800-1200)— 本檔持有跨元件 SSOT:「與 RadioGroup 的分界」(~40 行)+ 3 筆拍板記錄(2026-07-13 D2 hidden-input mirror / 2026-05-21 D3 dual-mode / 2026-06-12 R2 open-pair 例外);2026-07-14 knowledge-prune P2 結論「殘餘超標內容全是 canonical,再砍必動 meaning」(.claude/logs/prune-p2-candidates.md)。 -->
 
 <!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
@@ -27,7 +27,7 @@ Select 是**單選下拉的表單 control**——從 3+ 選項中挑恰好一個
 
 共用規則見 `field-controls.spec.md`。本文件只記錄 Select 特有的原則。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 4（Field control layout）** 消費者。結構繼承 `components/Field/field-controls.spec.md` 的 `fieldWrapperStyles + [startIcon?] [<editable>] [endAction?]` 規格,視覺對齊 Family 1（Menu item）讓 SelectMenu trigger + options 連續一致。
+**Layout Family**：本元件是 `components/Field/field-controls.spec.md` 所擁有的 **Family 4（Field control layout）** 消費者。結構繼承其 `fieldWrapperStyles + [startIcon?] [<editable>] [endAction?]` 規格,視覺對齊 Family 1（Menu item）讓 SelectMenu trigger + options 連續一致。
 
 ## 實作：裝置自適應雙路徑
 

@@ -121,7 +121,7 @@ function successfulRunnerResult(args) {
       return successfulRunnerResult(args)
     },
   })
-  assert.equal(result.toolchain.npm, '11.18.0')
+  assert.equal(result.toolchain.npm, '11.19.0')
   // Ordinary setup ends at the deterministic governance check; the complete All-Harness
   // is release-time (or explicit opt-in via withAllHarnesses / DS_SETUP_ALL_HARNESS=1).
   assert.deepEqual(result.steps, [

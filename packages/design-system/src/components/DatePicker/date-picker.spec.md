@@ -22,7 +22,7 @@ DatePicker 是**單一日期**的輸入與顯示元件(form 場景選定絕對�
 
 共用規則見 `../Field/field-controls.spec.md`。本文件只記錄 DatePicker 特有的原則。
 
-**Layout Family**:CLAUDE.md 4-Family Model **Family 4(Field control layout)** 消費者。結構繼承 `components/Field/field-controls.spec.md` 的 `fieldWrapperStyles + [startIcon?] [<editable>] [endAction?]` 規格,視覺對齊 Family 1(Menu item)讓 SelectMenu trigger + options 連續一致。
+**Layout Family**:本元件是 `components/Field/field-controls.spec.md` 所擁有的 **Family 4(Field control layout)** 消費者。結構繼承其 `fieldWrapperStyles + [startIcon?] [<editable>] [endAction?]` 規格,視覺對齊 Family 1(Menu item)讓 SelectMenu trigger + options 連續一致。
 
 **實作基礎**:
 - Trigger:`<div role="combobox" tabIndex={0}>` 包 `fieldWrapperStyles`(視覺仍是 Input wrapper,只是改為可點擊觸發浮層)。**刻意不用 native `<button>`**——trigger 內含 `ItemInlineAction`(本身是 `<button>`),button 包 button 會構成 nested-interactive(axe serious 違規);改用 `div + role="combobox"`;Radix PopoverTrigger 只 compose onClick(div 無 native Enter/Space→click),Enter / Space 開 popover 由本檔自建 onKeyDown 補(見 date-picker.tsx trigger 註解)。對齊 Combobox / Select / TimePicker 同 pattern。**例外**:`DatePicker.Range` 的雙 input 是真 `<button type="button">`(各自獨立 active,無內含 inline-action)
@@ -79,7 +79,7 @@ open 軸同樣只開最小 API — **uncontrolled-only**:`defaultOpen`(初始開
 
 ## DateGrid popup(本 DS 自建)
 
-DatePicker 使用**本 DS 自建 DateGrid** + Popover 而非瀏覽器原生 `<input type="date">`。歷史變更(2026-04-19):原本遵守「不自建 calendar」禁令以保留 mobile 原生 wheel UX,但 CLAUDE.md Mindset #1 擴充後明確要求「視覺上也必須跟世界級一樣整齊」——原生 picker 視覺不受控、跨瀏覽器不一致,無法達成與 Dialog / SelectMenu / Combobox 等浮層的視覺連續性。遂改為自建 DateGrid。
+DatePicker 使用**本 DS 自建 DateGrid** + Popover 而非瀏覽器原生 `<input type="date">`。歷史變更(2026-04-19):原本遵守「不自建 calendar」禁令以保留 mobile 原生 wheel UX,但 `AGENTS.md`「每次任務前的 6 條 mindset」#1 擴充後明確要求「視覺上也必須跟世界級一樣整齊」——原生 picker 視覺不受控、跨瀏覽器不一致,無法達成與 Dialog / SelectMenu / Combobox 等浮層的視覺連續性。遂改為自建 DateGrid。
 
 **命名變更(2026-04-21)**:原 `<Calendar>` 元件改名為 `<DateGrid>`(DatePicker 內部 primitive),讓 `Calendar` 這個命名留給真正的事件檢視 canvas(對齊 Notion / Google / Apple / Ant 世界級慣例)。DatePicker 內部 primitive 以功能命名為 `DateGrid`。
 

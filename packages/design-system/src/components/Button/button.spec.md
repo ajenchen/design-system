@@ -59,7 +59,7 @@ benchmark:
 Button 是最基礎的互動元件，用於觸發操作或導覽。
 基於 shadcn/ui Button，橋接設計系統 token，支援 uiSize 自動縮放。
 
-**Layout Family**：本元件是 **CLAUDE.md 4-Family Model Family 3（Pill Layout）的 SSOT 擁有者 + action trigger sub-profile canonical**。SegmentedControlItem / Chip / Tag 繼承本元件的 Pill Layout 結構。
+**Layout Family**：依 `patterns/element-anatomy/element-anatomy.spec.md` 的 4-Family taxonomy,本元件是 **Family 3（Pill Layout）的 SSOT 擁有者 + action trigger sub-profile canonical**。SegmentedControlItem / Chip / Tag 繼承本元件的 Pill Layout 結構。
 
 ---
 

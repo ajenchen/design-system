@@ -23,9 +23,13 @@ let ok = true
 const fixture = mkdtempSync(join(tmpdir(), 'skill-deadref-meta-'))
 try {
   const rules = join(fixture, 'packages/design-system/ds-canonical/rules')
+  const specs = join(fixture, 'packages/design-system/src/components/Button')
   mkdirSync(rules, { recursive: true })
+  mkdirSync(specs, { recursive: true })
   const target = join(rules, 'self-verify.md')
+  const productSpec = join(specs, 'button.spec.md')
   writeFileSync(target, '# Fixture\n')
+  writeFileSync(productSpec, '# Button\nCanonical: `AGENTS.md` `# 4-Family Layout Model`.\n')
   if (run(fixture) !== 0) {
     console.error('✗ isolated fixture baseline 應 PASS 卻 FAIL')
     ok = false
@@ -38,6 +42,16 @@ try {
     ok = false
   } else {
     console.log(`✓ isolated fixture dead ref 被抓(exit ${code})`)
+  }
+
+  writeFileSync(target, '# Fixture\n')
+  writeFileSync(productSpec, '# Button\nCanonical: `CLAUDE.md` `# 4-Family Layout Model`.\n')
+  const specCode = run(fixture)
+  if (specCode === 0) {
+    console.error('✗ product spec canonical pointer mutation 成 CLAUDE.md 後 gate 未 FAIL')
+    ok = false
+  } else {
+    console.log(`✓ product spec provider-view authority mutation 被抓(exit ${specCode})`)
   }
 } finally {
   rmSync(fixture, { recursive: true, force: true })

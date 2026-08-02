@@ -48,6 +48,12 @@ const NPM_RUNTIME_OVERLAY_TARGET = 'node_modules/brace-expansion'
 const NPM_RUNTIME_OVERLAY_CONSUMER = 'node_modules/minimatch'
 const NPM_RUNTIME_OVERLAY_CONSUMER_VERSION = '10.2.5'
 const NPM_RUNTIME_OVERLAY_CONSUMER_RANGE = '^5.0.5'
+const NPM_RUNTIME_SECONDARY_OVERLAY_ALIAS = 'npm-runtime-tar-patch'
+const NPM_RUNTIME_SECONDARY_OVERLAY_SPEC = 'npm:tar@7.5.22'
+const NPM_RUNTIME_SECONDARY_OVERLAY_PACKAGE = 'tar'
+const NPM_RUNTIME_SECONDARY_OVERLAY_VERSION = '7.5.22'
+const NPM_RUNTIME_SECONDARY_OVERLAY_REPLACED_VERSION = '7.5.19'
+const NPM_RUNTIME_SECONDARY_OVERLAY_TARGET = 'node_modules/tar'
 
 const invariant = (condition, message) => {
   if (!condition) throw new Error(`GOV-NPM-RUNTIME-001:${message}`)
@@ -100,6 +106,13 @@ function npmRuntimeOverlayIdentity(value) {
     consumer: value.consumer,
     consumerVersion: value.consumerVersion,
     consumerDependencyRange: value.consumerDependencyRange,
+    secondaryAlias: value.secondaryAlias,
+    secondaryPackage: value.secondaryPackage,
+    secondaryVersion: value.secondaryVersion,
+    secondaryResolved: value.secondaryResolved,
+    secondaryIntegrity: value.secondaryIntegrity,
+    secondaryTarget: value.secondaryTarget,
+    secondaryReplacedVersion: value.secondaryReplacedVersion,
   })).digest('hex')
 }
 
@@ -132,19 +145,23 @@ export function resolveExactNpmArtifact(repositoryRoot) {
 export function resolveExactNpmRuntimeContract(repositoryRoot) {
   const root = realpathSync(resolve(repositoryRoot))
   const npmArtifact = resolveExactNpmArtifact(root)
-  invariant(npmArtifact.version === '11.18.0', 'npm security overlay is not certified for this exact npm version')
+  invariant(npmArtifact.version === '11.19.0', 'npm security overlay is not certified for this exact npm version')
   const manifest = readJson(join(root, 'package.json'), 'package.json')
   const lock = readJson(join(root, 'package-lock.json'), 'package-lock.json')
   invariant(
     manifest?.devDependencies?.[NPM_RUNTIME_OVERLAY_ALIAS] === NPM_RUNTIME_OVERLAY_SPEC
-      && manifest?.dependencies?.[NPM_RUNTIME_OVERLAY_ALIAS] === undefined,
-    `package.json must pin ${NPM_RUNTIME_OVERLAY_ALIAS} as the exact dev-only npm alias ${NPM_RUNTIME_OVERLAY_SPEC}`,
+      && manifest?.devDependencies?.[NPM_RUNTIME_SECONDARY_OVERLAY_ALIAS] === NPM_RUNTIME_SECONDARY_OVERLAY_SPEC
+      && manifest?.dependencies?.[NPM_RUNTIME_OVERLAY_ALIAS] === undefined
+      && manifest?.dependencies?.[NPM_RUNTIME_SECONDARY_OVERLAY_ALIAS] === undefined,
+    `package.json must pin the exact dev-only npm security overlay aliases`,
   )
   const lockedRoot = lock.packages?.['']
   invariant(
     lockedRoot?.devDependencies?.[NPM_RUNTIME_OVERLAY_ALIAS] === NPM_RUNTIME_OVERLAY_SPEC
-      && lockedRoot?.dependencies?.[NPM_RUNTIME_OVERLAY_ALIAS] === undefined,
-    `package-lock.json root must pin ${NPM_RUNTIME_OVERLAY_ALIAS} as the exact dev-only npm alias`,
+      && lockedRoot?.devDependencies?.[NPM_RUNTIME_SECONDARY_OVERLAY_ALIAS] === NPM_RUNTIME_SECONDARY_OVERLAY_SPEC
+      && lockedRoot?.dependencies?.[NPM_RUNTIME_OVERLAY_ALIAS] === undefined
+      && lockedRoot?.dependencies?.[NPM_RUNTIME_SECONDARY_OVERLAY_ALIAS] === undefined,
+    `package-lock.json root must pin the exact dev-only npm security overlay aliases`,
   )
   const entry = lock.packages?.[`node_modules/${NPM_RUNTIME_OVERLAY_ALIAS}`]
   const resolved = `${NPM_REGISTRY_ORIGIN}/${NPM_RUNTIME_OVERLAY_PACKAGE}/-/${NPM_RUNTIME_OVERLAY_PACKAGE}-${NPM_RUNTIME_OVERLAY_VERSION}.tgz`
@@ -156,6 +173,16 @@ export function resolveExactNpmRuntimeContract(repositoryRoot) {
     'package-lock.json npm security overlay artifact is missing or not the canonical registry tarball',
   )
   integrityBytes(entry.integrity)
+  const secondaryEntry = lock.packages?.[`node_modules/${NPM_RUNTIME_SECONDARY_OVERLAY_ALIAS}`]
+  const secondaryResolved = `${NPM_REGISTRY_ORIGIN}/${NPM_RUNTIME_SECONDARY_OVERLAY_PACKAGE}/-/${NPM_RUNTIME_SECONDARY_OVERLAY_PACKAGE}-${NPM_RUNTIME_SECONDARY_OVERLAY_VERSION}.tgz`
+  invariant(
+    secondaryEntry?.link !== true
+      && secondaryEntry?.name === NPM_RUNTIME_SECONDARY_OVERLAY_PACKAGE
+      && secondaryEntry?.version === NPM_RUNTIME_SECONDARY_OVERLAY_VERSION
+      && secondaryEntry?.resolved === secondaryResolved,
+    'package-lock.json secondary npm security overlay artifact is missing or not the canonical registry tarball',
+  )
+  integrityBytes(secondaryEntry.integrity)
   const securityOverlay = {
     alias: NPM_RUNTIME_OVERLAY_ALIAS,
     package: NPM_RUNTIME_OVERLAY_PACKAGE,
@@ -168,6 +195,13 @@ export function resolveExactNpmRuntimeContract(repositoryRoot) {
     consumer: NPM_RUNTIME_OVERLAY_CONSUMER,
     consumerVersion: NPM_RUNTIME_OVERLAY_CONSUMER_VERSION,
     consumerDependencyRange: NPM_RUNTIME_OVERLAY_CONSUMER_RANGE,
+    secondaryAlias: NPM_RUNTIME_SECONDARY_OVERLAY_ALIAS,
+    secondaryPackage: NPM_RUNTIME_SECONDARY_OVERLAY_PACKAGE,
+    secondaryVersion: NPM_RUNTIME_SECONDARY_OVERLAY_VERSION,
+    secondaryResolved,
+    secondaryIntegrity: secondaryEntry.integrity,
+    secondaryTarget: NPM_RUNTIME_SECONDARY_OVERLAY_TARGET,
+    secondaryReplacedVersion: NPM_RUNTIME_SECONDARY_OVERLAY_REPLACED_VERSION,
   }
   securityOverlay.identityDigest = npmRuntimeOverlayIdentity(securityOverlay)
   return Object.freeze({
@@ -268,7 +302,7 @@ export async function downloadCanonicalNpmTarball(url, { timeoutMs = 30_000 } = 
 export async function downloadCanonicalNpmSecurityOverlayTarball(url, { timeoutMs = 30_000 } = {}) {
   return downloadCanonicalRegistryTarball(url, {
     label: 'canonical npm security overlay',
-    pathPattern: /^\/brace-expansion\/-\/brace-expansion-5\.0\.8\.tgz$/,
+    pathPattern: /^\/(?:brace-expansion\/-\/brace-expansion-5\.0\.8|tar\/-\/tar-7\.5\.22)\.tgz$/,
     timeoutMs,
   })
 }
@@ -434,9 +468,11 @@ const dependencyRoot = '.' + '/node_modules/'
 const brace = require(dependencyRoot + 'brace-expansion')
 const minimatchModule = require(dependencyRoot + 'minimatch')
 const minimatch = minimatchModule.minimatch || minimatchModule
+const tar = require(dependencyRoot + 'tar/package.json')
 if (typeof brace.expand !== 'function') process.exit(41)
 if (JSON.stringify(brace.expand('{a,b}')) !== JSON.stringify(['a','b'])) process.exit(42)
 if (typeof minimatch !== 'function' || !minimatch('a', '{a,b}')) process.exit(43)
+if (tar.name !== 'tar' || tar.version !== '7.5.22') process.exit(44)
 `
   const result = runner(process.execPath, ['--eval', compatibilityProbe], {
     cwd: packageRoot,
@@ -449,11 +485,79 @@ if (typeof minimatch !== 'function' || !minimatch('a', '{a,b}')) process.exit(43
   invariant(result?.status === 0, `npm security overlay compatibility probe failed with exit ${String(result?.status)}`)
 }
 
+function overlayPatchTreeDigest(records) {
+  return createHash('sha256').update(JSON.stringify(records.map(({ target, treeDigest }) => ({ target, treeDigest })))).digest('hex')
+}
+
+function applyNpmRuntimeSecurityPatch({
+  packageRoot,
+  stagingParent,
+  patch,
+  tarballBytes,
+}) {
+  const expectedIntegrity = integrityBytes(patch.integrity)
+  invariant(Buffer.isBuffer(tarballBytes) && tarballBytes.length > 0 && tarballBytes.length <= MAX_COMPRESSED_BYTES, `npm security overlay ${patch.package} tarball bytes exceed the closed compressed budget`)
+  const actualIntegrity = createHash('sha512').update(tarballBytes).digest()
+  invariant(timingSafeEqual(actualIntegrity, expectedIntegrity), `npm security overlay ${patch.package} tarball SHA-512 differs from the committed lock`)
+  let tarBytes
+  try { tarBytes = gunzipSync(tarballBytes, { maxOutputLength: MAX_UNCOMPRESSED_BYTES }) } catch (error) {
+    throw new Error(`GOV-NPM-RUNTIME-001:npm security overlay ${patch.package} tarball is not a bounded canonical gzip archive:${error?.message || error}`)
+  }
+  const entries = parseClosedUstar(tarBytes)
+  const target = resolve(packageRoot, ...patch.target.split('/'))
+  const targetInfo = lstatSync(target)
+  invariant(
+    targetInfo.isDirectory() && !targetInfo.isSymbolicLink() && realpathSync(target) === target,
+    `npm security overlay ${patch.package} target must be one real extracted directory`,
+  )
+  const replacedManifest = readJson(join(target, 'package.json'), `npm security overlay ${patch.package} replaced package manifest`)
+  invariant(
+    replacedManifest.name === patch.package && replacedManifest.version === patch.replacedVersion,
+    `npm security overlay ${patch.package} replaced package identity differs from the certified contract`,
+  )
+  if (patch.consumer) {
+    const consumer = resolve(packageRoot, ...patch.consumer.split('/'))
+    const consumerManifest = readJson(join(consumer, 'package.json'), `npm security overlay ${patch.package} consumer manifest`)
+    invariant(
+      consumerManifest.name === patch.consumerName
+        && consumerManifest.version === patch.consumerVersion
+        && consumerManifest.dependencies?.[patch.package] === patch.consumerDependencyRange,
+      `npm security overlay ${patch.package} consumer identity or dependency range differs from the certified contract`,
+    )
+  }
+  const staging = realpathSync(mkdtempSync(join(realpathSync(resolve(stagingParent)), `.verified-npm-security-overlay-${patch.package}-`)))
+  chmodSync(staging, 0o700)
+  const replacement = extractClosedArchive(entries, staging)
+  const replacementManifest = readJson(join(replacement, 'package.json'), `npm security overlay ${patch.package} replacement package manifest`)
+  invariant(
+    replacementManifest.name === patch.package && replacementManifest.version === patch.version,
+    `npm security overlay ${patch.package} replacement package identity differs from the committed lock`,
+  )
+  rmSync(target, { recursive: true, force: false })
+  renameSync(replacement, target)
+  rmSync(staging, { recursive: true, force: false })
+  const appliedManifest = readJson(join(target, 'package.json'), `applied npm security overlay ${patch.package} package manifest`)
+  invariant(
+    appliedManifest.name === patch.package && appliedManifest.version === patch.version,
+    `applied npm security overlay ${patch.package} identity differs after atomic replacement`,
+  )
+  return Object.freeze({
+    alias: patch.alias,
+    package: patch.package,
+    version: patch.version,
+    integrity: patch.integrity,
+    target: patch.target,
+    replacedVersion: patch.replacedVersion,
+    treeDigest: regularTreeDigest(target),
+  })
+}
+
 function applyNpmRuntimeSecurityOverlay({
   packageRoot,
   stagingParent,
   securityOverlay,
   tarballBytes,
+  secondaryTarballBytes,
   env,
   runner,
 }) {
@@ -466,55 +570,46 @@ function applyNpmRuntimeSecurityOverlay({
       && securityOverlay.replacedVersion === NPM_RUNTIME_OVERLAY_REPLACED_VERSION
       && securityOverlay.consumer === NPM_RUNTIME_OVERLAY_CONSUMER
       && securityOverlay.consumerVersion === NPM_RUNTIME_OVERLAY_CONSUMER_VERSION
-      && securityOverlay.consumerDependencyRange === NPM_RUNTIME_OVERLAY_CONSUMER_RANGE,
+      && securityOverlay.consumerDependencyRange === NPM_RUNTIME_OVERLAY_CONSUMER_RANGE
+      && securityOverlay.secondaryAlias === NPM_RUNTIME_SECONDARY_OVERLAY_ALIAS
+      && securityOverlay.secondaryPackage === NPM_RUNTIME_SECONDARY_OVERLAY_PACKAGE
+      && securityOverlay.secondaryVersion === NPM_RUNTIME_SECONDARY_OVERLAY_VERSION
+      && securityOverlay.secondaryTarget === NPM_RUNTIME_SECONDARY_OVERLAY_TARGET
+      && securityOverlay.secondaryReplacedVersion === NPM_RUNTIME_SECONDARY_OVERLAY_REPLACED_VERSION,
     'npm security overlay contract is invalid',
   )
-  const expectedIntegrity = integrityBytes(securityOverlay.integrity)
-  invariant(Buffer.isBuffer(tarballBytes) && tarballBytes.length > 0 && tarballBytes.length <= MAX_COMPRESSED_BYTES, 'npm security overlay tarball bytes exceed the closed compressed budget')
-  const actualIntegrity = createHash('sha512').update(tarballBytes).digest()
-  invariant(timingSafeEqual(actualIntegrity, expectedIntegrity), 'npm security overlay tarball SHA-512 differs from the committed lock')
-  let tarBytes
-  try { tarBytes = gunzipSync(tarballBytes, { maxOutputLength: MAX_UNCOMPRESSED_BYTES }) } catch (error) {
-    throw new Error(`GOV-NPM-RUNTIME-001:npm security overlay tarball is not a bounded canonical gzip archive:${error?.message || error}`)
-  }
-  const entries = parseClosedUstar(tarBytes)
-  const target = resolve(packageRoot, ...securityOverlay.target.split('/'))
-  const targetInfo = lstatSync(target)
-  invariant(
-    targetInfo.isDirectory() && !targetInfo.isSymbolicLink() && realpathSync(target) === target,
-    'npm security overlay target must be one real extracted directory',
-  )
-  const replacedManifest = readJson(join(target, 'package.json'), 'npm security overlay replaced package manifest')
-  invariant(
-    replacedManifest.name === securityOverlay.package && replacedManifest.version === securityOverlay.replacedVersion,
-    'npm security overlay replaced package identity differs from the certified contract',
-  )
-  const consumer = resolve(packageRoot, ...securityOverlay.consumer.split('/'))
-  const consumerManifest = readJson(join(consumer, 'package.json'), 'npm security overlay consumer manifest')
-  invariant(
-    consumerManifest.name === 'minimatch'
-      && consumerManifest.version === securityOverlay.consumerVersion
-      && consumerManifest.dependencies?.[securityOverlay.package] === securityOverlay.consumerDependencyRange,
-    'npm security overlay consumer identity or dependency range differs from the certified contract',
-  )
-  const staging = realpathSync(mkdtempSync(join(realpathSync(resolve(stagingParent)), '.verified-npm-security-overlay-')))
-  chmodSync(staging, 0o700)
-  const replacement = extractClosedArchive(entries, staging)
-  const replacementManifest = readJson(join(replacement, 'package.json'), 'npm security overlay replacement package manifest')
-  invariant(
-    replacementManifest.name === securityOverlay.package && replacementManifest.version === securityOverlay.version,
-    'npm security overlay replacement package identity differs from the committed lock',
-  )
-  rmSync(target, { recursive: true, force: false })
-  renameSync(replacement, target)
-  rmSync(staging, { recursive: true, force: false })
-  const appliedManifest = readJson(join(target, 'package.json'), 'applied npm security overlay package manifest')
-  invariant(
-    appliedManifest.name === securityOverlay.package && appliedManifest.version === securityOverlay.version,
-    'applied npm security overlay identity differs after atomic replacement',
-  )
+  const primary = applyNpmRuntimeSecurityPatch({
+    packageRoot,
+    stagingParent,
+    patch: {
+      alias: securityOverlay.alias,
+      package: securityOverlay.package,
+      version: securityOverlay.version,
+      integrity: securityOverlay.integrity,
+      target: securityOverlay.target,
+      replacedVersion: securityOverlay.replacedVersion,
+      consumer: securityOverlay.consumer,
+      consumerName: 'minimatch',
+      consumerVersion: securityOverlay.consumerVersion,
+      consumerDependencyRange: securityOverlay.consumerDependencyRange,
+    },
+    tarballBytes,
+  })
+  const secondary = applyNpmRuntimeSecurityPatch({
+    packageRoot,
+    stagingParent,
+    patch: {
+      alias: securityOverlay.secondaryAlias,
+      package: securityOverlay.secondaryPackage,
+      version: securityOverlay.secondaryVersion,
+      integrity: securityOverlay.secondaryIntegrity,
+      target: securityOverlay.secondaryTarget,
+      replacedVersion: securityOverlay.secondaryReplacedVersion,
+    },
+    tarballBytes: secondaryTarballBytes,
+  })
   probeNpmRuntimeSecurityOverlay(packageRoot, { env, runner })
-  const treeDigest = regularTreeDigest(target)
+  const treeDigest = overlayPatchTreeDigest([primary, secondary])
   return Object.freeze({
     schemaVersion: 1,
     kind: 'verified-npm-runtime-security-overlay-receipt',
@@ -528,6 +623,13 @@ function applyNpmRuntimeSecurityOverlay({
     replacedVersion: securityOverlay.replacedVersion,
     consumer: securityOverlay.consumer,
     consumerVersion: securityOverlay.consumerVersion,
+    secondaryAlias: securityOverlay.secondaryAlias,
+    secondaryPackage: securityOverlay.secondaryPackage,
+    secondaryVersion: securityOverlay.secondaryVersion,
+    secondaryIntegrity: securityOverlay.secondaryIntegrity,
+    secondaryTarget: securityOverlay.secondaryTarget,
+    secondaryReplacedVersion: securityOverlay.secondaryReplacedVersion,
+    secondaryTreeDigest: secondary.treeDigest,
     treeDigest,
   })
 }
@@ -560,7 +662,19 @@ function verifyAppliedNpmRuntimeSecurityOverlay({
       && consumerManifest.dependencies?.[securityOverlay.package] === securityOverlay.consumerDependencyRange,
     'installed npm security overlay consumer identity or dependency range drifted',
   )
-  const treeDigest = regularTreeDigest(target)
+  const secondaryTarget = resolve(packageRoot, ...securityOverlay.secondaryTarget.split('/'))
+  const secondaryManifest = readJson(join(secondaryTarget, 'package.json'), 'installed secondary npm security overlay package manifest')
+  invariant(
+    secondaryManifest.name === securityOverlay.secondaryPackage
+      && secondaryManifest.version === securityOverlay.secondaryVersion,
+    'installed secondary npm security overlay package is missing, stale, or substituted',
+  )
+  const primaryTreeDigest = regularTreeDigest(target)
+  const secondaryTreeDigest = regularTreeDigest(secondaryTarget)
+  const treeDigest = overlayPatchTreeDigest([
+    { target: securityOverlay.target, treeDigest: primaryTreeDigest },
+    { target: securityOverlay.secondaryTarget, treeDigest: secondaryTreeDigest },
+  ])
   invariant(treeDigest === expectedTreeDigest, 'installed npm security overlay tree differs from the verified runtime overlay')
   probeNpmRuntimeSecurityOverlay(packageRoot, { env, runner })
   return Object.freeze({
@@ -573,6 +687,12 @@ function verifyAppliedNpmRuntimeSecurityOverlay({
     version: securityOverlay.version,
     integrity: securityOverlay.integrity,
     target: securityOverlay.target,
+    secondaryAlias: securityOverlay.secondaryAlias,
+    secondaryPackage: securityOverlay.secondaryPackage,
+    secondaryVersion: securityOverlay.secondaryVersion,
+    secondaryIntegrity: securityOverlay.secondaryIntegrity,
+    secondaryTarget: securityOverlay.secondaryTarget,
+    secondaryTreeDigest,
     treeDigest,
   })
 }
@@ -580,22 +700,12 @@ function verifyAppliedNpmRuntimeSecurityOverlay({
 function verifyInstalledNpmAuditClosure(repositoryRoot, securityOverlay) {
   const root = realpathSync(resolve(repositoryRoot))
   const expected = [
-    ['node_modules/brace-expansion', 'brace-expansion', securityOverlay.version, null],
-    ['node_modules/minimatch', 'minimatch', securityOverlay.consumerVersion, [securityOverlay.package, securityOverlay.consumerDependencyRange]],
+    [`node_modules/npm/${securityOverlay.target}`, securityOverlay.package, securityOverlay.version, null],
+    [`node_modules/npm/${securityOverlay.consumer}`, 'minimatch', securityOverlay.consumerVersion, [securityOverlay.package, securityOverlay.consumerDependencyRange]],
+    [`node_modules/npm/${securityOverlay.secondaryTarget}`, securityOverlay.secondaryPackage, securityOverlay.secondaryVersion, null],
     [`node_modules/${securityOverlay.alias}`, securityOverlay.package, securityOverlay.version, null],
+    [`node_modules/${securityOverlay.secondaryAlias}`, securityOverlay.secondaryPackage, securityOverlay.secondaryVersion, null],
   ]
-  try {
-    const eslintManifest = readJson(join(root, 'node_modules/eslint/package.json'), 'installed eslint audit-closure manifest')
-    invariant(
-      eslintManifest.name === 'eslint'
-        && eslintManifest.version === '10.8.0'
-        && eslintManifest.dependencies?.minimatch === '^10.2.5',
-      'installed eslint audit-closure identity or minimatch range drifted',
-    )
-    expected.push(['node_modules/eslint', 'eslint', '10.8.0', ['minimatch', '^10.2.5']])
-  } catch (error) {
-    if (!String(error?.message || '').includes('is missing or unreadable')) throw error
-  }
   const records = expected.map(([relative, name, version, dependency]) => {
     const manifest = readJson(join(root, relative, 'package.json'), `installed npm audit-closure manifest ${relative}`)
     invariant(
@@ -621,6 +731,7 @@ export function materializeVerifiedExactNpmRuntime({
   artifact,
   tarballBytes,
   securityOverlayTarballBytes,
+  secondarySecurityOverlayTarballBytes,
   parentDirectory = tmpdir(),
   env = process.env,
   runner = spawnSync,
@@ -652,12 +763,17 @@ export function materializeVerifiedExactNpmRuntime({
           stagingParent: root,
           securityOverlay: artifact.securityOverlay,
           tarballBytes: securityOverlayTarballBytes,
+          secondaryTarballBytes: secondarySecurityOverlayTarballBytes,
           env,
           runner,
         })
       : null
     invariant(
-      artifact.securityOverlay ? securityOverlay?.status === 'applied' : securityOverlay === null && securityOverlayTarballBytes === undefined,
+      artifact.securityOverlay
+        ? securityOverlay?.status === 'applied'
+        : securityOverlay === null
+          && securityOverlayTarballBytes === undefined
+          && secondarySecurityOverlayTarballBytes === undefined,
       'npm security overlay materialization state differs from the runtime contract',
     )
     const cli = regularUnaliasedFile(join(packageRoot, 'bin/npm-cli.js'), 'verified npm CLI')
@@ -686,6 +802,7 @@ export function materializeVerifiedExactNpmRuntime({
           stagingParent: resolve(packageRoot, 'node_modules'),
           securityOverlay: artifact.securityOverlay,
           tarballBytes: securityOverlayTarballBytes,
+          secondaryTarballBytes: secondarySecurityOverlayTarballBytes,
           env,
           runner,
         })
@@ -744,10 +861,12 @@ export async function prepareVerifiedExactNpmRuntime({
   const artifact = resolveExactNpmRuntimeContract(repositoryRoot)
   const tarballBytes = await download(artifact.resolved)
   const securityOverlayTarballBytes = await downloadSecurityOverlay(artifact.securityOverlay.resolved)
+  const secondarySecurityOverlayTarballBytes = await downloadSecurityOverlay(artifact.securityOverlay.secondaryResolved)
   return materializeVerifiedExactNpmRuntime({
     artifact,
     tarballBytes,
     securityOverlayTarballBytes,
+    secondarySecurityOverlayTarballBytes,
     parentDirectory,
     env,
     runner,
@@ -771,7 +890,10 @@ export function assertVerifiedExactNpmRuntimeCapability(runtime, expectedContrac
       && runtime?.securityOverlay?.identityDigest === expectedOverlay.identityDigest
       && runtime?.securityOverlay?.integrity === expectedOverlay.integrity
       && runtime?.securityOverlay?.target === expectedOverlay.target
-      && runtime?.securityOverlay?.version === expectedOverlay.version,
+      && runtime?.securityOverlay?.version === expectedOverlay.version
+      && runtime?.securityOverlay?.secondaryIntegrity === expectedOverlay.secondaryIntegrity
+      && runtime?.securityOverlay?.secondaryTarget === expectedOverlay.secondaryTarget
+      && runtime?.securityOverlay?.secondaryVersion === expectedOverlay.secondaryVersion,
     'verified exact npm runtime security overlay is missing, stale, or substituted',
   )
   return true

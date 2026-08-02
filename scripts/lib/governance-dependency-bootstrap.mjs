@@ -14,7 +14,7 @@ import {
 
 export const GOVERNANCE_DEPENDENCY_REGISTRY = 'https://registry.npmjs.org/'
 export const GOVERNANCE_DEPENDENCY_MINIMUM_NODE_VERSION = '22.13.0'
-export const GOVERNANCE_DEPENDENCY_EXACT_NPM_VERSION = '11.18.0'
+export const GOVERNANCE_DEPENDENCY_EXACT_NPM_VERSION = '11.19.0'
 export const GOVERNANCE_CLOSED_PROJECT_NPM_CONFIG_LINES = Object.freeze([
   'legacy-peer-deps=true',
   'ignore-scripts=true',
@@ -254,12 +254,13 @@ function matchesVerifiedBraceExpansionAuditPreimage(finding) {
   ))
 }
 
-function assertRemediatedHighFinding(name, finding, installedOverlayReceipt) {
-  invariant(finding && typeof finding === 'object' && !Array.isArray(finding), `npm audit high finding is malformed:${name}`)
-  invariant(finding.name === name && finding.severity === 'high', `npm audit high finding identity drifted:${name}`)
+function assertRemediatedFinding(name, finding) {
+  invariant(finding && typeof finding === 'object' && !Array.isArray(finding), `npm audit finding is malformed:${name}`)
+  invariant(finding.name === name, `npm audit finding identity drifted:${name}`)
   if (name === 'brace-expansion') {
     invariant(
-      finding.isDirect === false
+      finding.severity === 'high'
+        && finding.isDirect === false
         && exactArray(finding.nodes, ['node_modules/npm/node_modules/brace-expansion'])
         && Array.isArray(finding.effects)
         && finding.effects.length <= 1
@@ -275,41 +276,38 @@ function assertRemediatedHighFinding(name, finding, installedOverlayReceipt) {
     )
     return
   }
-  if (name === 'minimatch') {
+  if (name === 'tar') {
     invariant(
-      finding.isDirect === false
-        && exactArray(finding.via, ['brace-expansion'])
-        && Array.isArray(finding.nodes)
-        && finding.nodes.length > 0
-        && finding.nodes.every((node) => [
-          'node_modules/minimatch',
-          'node_modules/npm/node_modules/minimatch',
-        ].includes(node))
-        && new Set(finding.nodes).size === finding.nodes.length
-        && Array.isArray(finding.effects)
-        && finding.effects.every((effect) => effect === 'eslint'),
-      'npm audit minimatch metavulnerability differs from the verified overlay closure',
+      finding.severity === 'moderate'
+        && finding.isDirect === false
+        && exactArray(finding.nodes, ['node_modules/npm/node_modules/tar'])
+        && exactArray(finding.effects, ['npm'])
+        && finding.range === '<=7.5.20'
+        && Array.isArray(finding.via)
+        && finding.via.length === 1
+        && finding.via[0]?.source === 1124287
+        && finding.via[0]?.name === 'tar'
+        && finding.via[0]?.dependency === 'tar'
+        && finding.via[0]?.url === 'https://github.com/advisories/GHSA-r292-9mhp-454m'
+        && finding.via[0]?.severity === 'moderate'
+        && finding.via[0]?.range === '<=7.5.20',
+      'npm audit tar finding differs from the exact remediated bundled preimage',
     )
     return
   }
-  if (name === 'eslint') {
+  if (name === 'npm') {
     invariant(
-      finding.isDirect === true
-        && exactArray(finding.via, ['minimatch'])
-        && exactArray(finding.nodes, ['node_modules/eslint'])
+      finding.severity === 'moderate'
+        && finding.isDirect === true
+        && exactArray(finding.via, ['tar'])
+        && exactArray(finding.nodes, ['node_modules/npm'])
         && exactArray(finding.effects, [])
-        && installedOverlayReceipt.auditClosure.some((entry) => (
-          entry.path === 'node_modules/eslint'
-            && entry.name === 'eslint'
-            && entry.version === '10.8.0'
-            && entry.dependency?.name === 'minimatch'
-            && entry.dependency?.range === '^10.2.5'
-        )),
-      'npm audit eslint metavulnerability is not bound to the verified safe closure',
+        && finding.range === '<=10.9.8 || >=11.0.0-pre.0',
+      'npm audit npm metavulnerability differs from the verified tar overlay closure',
     )
     return
   }
-  invariant(false, `npm audit contains an unremediated high finding:${name}`)
+  invariant(false, `npm audit contains an unremediated high/moderate finding:${name}`)
 }
 
 export function evaluateVerifiedHighVulnerabilityAudit({
@@ -342,21 +340,23 @@ export function evaluateVerifiedHighVulnerabilityAudit({
     'npm audit JSON schema is unsupported',
   )
   const entries = Object.entries(report.vulnerabilities)
-  const counted = { critical: 0, high: 0 }
+  const counted = { critical: 0, high: 0, moderate: 0 }
   const remediated = []
   for (const [name, finding] of entries) {
     if (finding?.severity === 'critical') {
       counted.critical += 1
       invariant(false, `npm audit contains an unremediated critical finding:${name}`)
     }
-    if (finding?.severity !== 'high') continue
-    counted.high += 1
-    assertRemediatedHighFinding(name, finding, installedOverlayReceipt)
+    if (finding?.severity === 'high') counted.high += 1
+    else if (finding?.severity === 'moderate') counted.moderate += 1
+    else continue
+    assertRemediatedFinding(name, finding)
     remediated.push(name)
   }
   invariant(
     report.metadata.vulnerabilities.critical === counted.critical
-      && report.metadata.vulnerabilities.high === counted.high,
+      && report.metadata.vulnerabilities.high === counted.high
+      && report.metadata.vulnerabilities.moderate === counted.moderate,
     'npm audit metadata severity counts differ from the finding set',
   )
   invariant(
@@ -376,6 +376,7 @@ export function evaluateVerifiedHighVulnerabilityAudit({
     remediatedFindings: Object.freeze(remediated.sort()),
     effectiveCritical: 0,
     effectiveHigh: 0,
+    effectiveModerate: 0,
   })
 }
 

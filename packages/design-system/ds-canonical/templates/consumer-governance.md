@@ -22,7 +22,7 @@ protection, apps, secrets, and required checks are activated.
 The locked execution contract requires Node.js 22.13.0 or newer, Bash, Git, `jq`, and Python 3.
 Native Windows is unsupported; use the committed Linux devcontainer or WSL2. The host npm only
 launches the setup script and may be npm 10 or newer. All authoritative npm operations use the
-independently downloaded and lock-verified exact npm 11.18.0 runtime. Unsupported or incomplete
+independently downloaded and lock-verified exact npm 11.19.0 runtime. Unsupported or incomplete
 hosts fail before dependency installation or repository mutation.
 
 ## Provider-neutral behavior

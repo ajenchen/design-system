@@ -21,7 +21,7 @@ benchmark:
 Chip 是 **Material Design Filter Chip** 的實作——用於從多個選項裡**選取任意數量（多選）或單一選項（單選）**，視覺上是一排獨立的 pill。
 基於 Radix ToggleGroup，橋接設計系統 token。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 3（Pill Layout）action trigger sub-profile**。內部結構 `[startIcon?] [<span px-1>label</span>] [suffix badge? + endIcon?]` 繼承 Button canonical（code docblock 明寫「鏡射 Button」）。SSOT 在 `components/Button/button.spec.md`「Pill Layout」章節。Chip 特有視覺（`rounded-full`、單一固定 `h-field-sm` size、hover/selected 色彩規則）寫在本 spec 下方章節。
+**Layout Family**：本元件是 `components/Button/button.spec.md`「Pill Layout」所擁有的 **Family 3（Pill Layout）action trigger sub-profile** 消費者。內部結構 `[startIcon?] [<span px-1>label</span>] [suffix badge? + endIcon?]` 繼承 Button canonical（code docblock 明寫「鏡射 Button」）。Chip 特有視覺（`rounded-full`、單一固定 `h-field-sm` size、hover/selected 色彩規則）寫在本 spec 下方章節。
 
 ---
 

@@ -6,7 +6,7 @@
     "schemaVersion": 2,
     "engine": "node-posix-toolchain-v2",
     "minimumNodeVersion": "22.13.0",
-    "exactNpmVersion": "11.18.0",
+    "exactNpmVersion": "11.19.0",
     "supportedHostPlatforms": [
       "darwin",
       "linux"

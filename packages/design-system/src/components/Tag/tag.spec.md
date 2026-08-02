@@ -70,7 +70,7 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 
 **實作基礎**：純視覺 atom——styled span + 可選 dismiss button，無 external primitive base。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 3（Pill Layout）** 的 **data indicator sub-profile**。SSOT 在 `components/Button/button.spec.md`「Pill Layout」章節；Tag 是 indicator variant（見下「與 Button 的差異」）。
+**Layout Family**：本元件是 `components/Button/button.spec.md`「Pill Layout」所擁有的 **Family 3（Pill Layout）data indicator sub-profile** 消費者；Tag 是 indicator variant（見下「與 Button 的差異」）。
 
 ## 與 Button 的差異（Family 3 indicator variant）
 

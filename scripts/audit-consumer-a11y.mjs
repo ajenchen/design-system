@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // audit-consumer-a11y.mjs — Phase 5 consumer-side a11y check on built apps
 //
-// 在 ds-product-template CI 跑(audit.yml 後 build step):
+// 在 consumer repo CI 跑(audit.yml 後 build step):
 //   1. apps/*/dist 已 build
 //   2. serve each app from an owned ephemeral 127.0.0.1 capability
 //   3. Playwright + @axe-core 跑 WCAG 2 A+AA

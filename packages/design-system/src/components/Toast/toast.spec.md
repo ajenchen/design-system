@@ -36,7 +36,7 @@ Toast 是**短暫的浮動通知，自動消失**。用於操作結果回饋（�
 
 **實作基礎**：基於 sonner（浮動管理）+ 消費 Notice primitive（layout + icon + theme 策略，與 Alert 共用）。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 2（List item layout）** 消費者。結構繼承 `patterns/element-anatomy/item-anatomy.spec.md`「List item layout」章節的 reading-mode 規格。Toast 透過 Notice 繼承 Family 2 結構。
+**Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 2（List item layout）** 消費者。結構繼承其「List item layout」章節的 reading-mode 規格；Toast 透過 Notice 繼承 Family 2 結構。
 
 ---
 

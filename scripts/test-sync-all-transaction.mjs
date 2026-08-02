@@ -323,8 +323,27 @@ if (process.argv[2] === 'audit' && process.argv.includes('--audit-level=high')) 
     }))
     process.exit(1)
   }
-  process.stdout.write(JSON.stringify({ auditReportVersion: 2, vulnerabilities: {}, metadata: { vulnerabilities: { high: 0, critical: 0 } } }))
-  process.exit(0)
+  process.stdout.write(JSON.stringify({
+    auditReportVersion: 2,
+    vulnerabilities: {
+      'brace-expansion': {
+        name: 'brace-expansion', severity: 'high', isDirect: false,
+        via: [{ source: 1130591, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-mh99-v99m-4gvg', severity: 'high', range: '>=4.0.0 <5.0.8' }],
+        effects: [], range: '4.0.0 - 5.0.7', nodes: ['node_modules/npm/node_modules/brace-expansion'],
+      },
+      npm: {
+        name: 'npm', severity: 'moderate', isDirect: true, via: ['tar'], effects: [],
+        range: '<=10.9.8 || >=11.0.0-pre.0', nodes: ['node_modules/npm'],
+      },
+      tar: {
+        name: 'tar', severity: 'moderate', isDirect: false,
+        via: [{ source: 1124287, name: 'tar', dependency: 'tar', url: 'https://github.com/advisories/GHSA-r292-9mhp-454m', severity: 'moderate', range: '<=7.5.20' }],
+        effects: ['npm'], range: '<=7.5.20', nodes: ['node_modules/npm/node_modules/tar'],
+      },
+    },
+    metadata: { vulnerabilities: { info: 0, low: 0, moderate: 2, high: 1, critical: 0, total: 3 } },
+  }))
+  process.exit(1)
 }
 if (!process.argv.includes('--ignore-scripts')) process.exit(91)
 if (mode === 'install-failure') {
@@ -372,8 +391,10 @@ fs.chmodSync(path.join(npm, 'bin/npm-cli.js'), 0o755)
 fs.writeFileSync(path.join(npm, 'package.json'), JSON.stringify({ name: 'npm', version: fixture.FAKE_NPM_VERSION, type: 'commonjs' }) + '\\n')
 const installedBrace = path.join(npm, 'node_modules/brace-expansion')
 const installedMinimatch = path.join(npm, 'node_modules/minimatch')
+const installedTar = path.join(npm, 'node_modules/tar')
 fs.mkdirSync(installedBrace, { recursive: true })
 fs.mkdirSync(installedMinimatch, { recursive: true })
+fs.mkdirSync(installedTar, { recursive: true })
 fs.writeFileSync(path.join(installedBrace, 'package.json'), JSON.stringify({ name: 'brace-expansion', version: '5.0.7' }) + '\\n')
 fs.writeFileSync(path.join(installedBrace, 'index.js'), 'exports.expand = value => [value]\\n')
 fs.writeFileSync(path.join(installedMinimatch, 'package.json'), JSON.stringify({
@@ -383,10 +404,10 @@ fs.writeFileSync(path.join(installedMinimatch, 'package.json'), JSON.stringify({
   dependencies: { 'brace-expansion': '^5.0.5' },
 }) + '\\n')
 fs.writeFileSync(path.join(installedMinimatch, 'index.js'), "const { expand } = require('brace-expansion')\\nexports.minimatch = (value, pattern) => expand(pattern).includes(value)\\n")
+fs.writeFileSync(path.join(installedTar, 'package.json'), JSON.stringify({ name: 'tar', version: '7.5.19' }) + '\\n')
 for (const [directory, manifest] of [
-  ['brace-expansion', { name: 'brace-expansion', version: '5.0.8' }],
-  ['minimatch', { name: 'minimatch', version: '10.2.5', dependencies: { 'brace-expansion': '^5.0.5' } }],
   ['npm-runtime-brace-expansion-patch', { name: 'brace-expansion', version: '5.0.8' }],
+  ['npm-runtime-tar-patch', { name: 'tar', version: '7.5.22' }],
 ]) {
   const target = path.join(process.cwd(), 'node_modules', directory)
   fs.mkdirSync(target, { recursive: true })
@@ -422,9 +443,12 @@ import { installCanonicalNpmHttpsFixture } from ${JSON.stringify(verifiedNpmFixt
 import { immutableReleaseFixture } from ${JSON.stringify(immutableReleaseFixtureHelperUrl)}
 const npmRuntimeArtifact = JSON.parse(Buffer.from(process.env.FAKE_NPM_RUNTIME_ARTIFACT, 'base64').toString('utf8'))
 const npmRuntimeSecurityOverlayArtifact = JSON.parse(Buffer.from(process.env.FAKE_NPM_RUNTIME_SECURITY_OVERLAY_ARTIFACT, 'base64').toString('utf8'))
+const npmRuntimeSecondarySecurityOverlayArtifact = JSON.parse(Buffer.from(process.env.FAKE_NPM_RUNTIME_SECONDARY_SECURITY_OVERLAY_ARTIFACT, 'base64').toString('utf8'))
 installCanonicalNpmHttpsFixture({
   artifact: npmRuntimeArtifact,
   tarballBytes: Buffer.from(process.env.FAKE_NPM_RUNTIME_TARBALL, 'base64'),
+  secondarySecurityOverlayArtifact: npmRuntimeSecondarySecurityOverlayArtifact,
+  secondarySecurityOverlayTarballBytes: Buffer.from(process.env.FAKE_NPM_RUNTIME_SECONDARY_SECURITY_OVERLAY_TARBALL, 'base64'),
   securityOverlayArtifact: npmRuntimeSecurityOverlayArtifact,
   securityOverlayTarballBytes: Buffer.from(process.env.FAKE_NPM_RUNTIME_SECURITY_OVERLAY_TARBALL, 'base64'),
 })
@@ -656,6 +680,10 @@ try {
         ...verifiedNpmRuntime.securityOverlayArtifact,
         dev: true,
       },
+      'node_modules/npm-runtime-tar-patch': {
+        ...verifiedNpmRuntime.secondarySecurityOverlayArtifact,
+        dev: true,
+      },
     },
   }, null, 2) + '\n')
 
@@ -810,6 +838,8 @@ try {
     FAKE_NPM_RUNTIME_TARBALL: verifiedNpmRuntime.tarballBytes.toString('base64'),
     FAKE_NPM_RUNTIME_SECURITY_OVERLAY_ARTIFACT: Buffer.from(JSON.stringify(verifiedNpmRuntime.securityOverlayArtifact)).toString('base64'),
     FAKE_NPM_RUNTIME_SECURITY_OVERLAY_TARBALL: verifiedNpmRuntime.securityOverlayTarballBytes.toString('base64'),
+    FAKE_NPM_RUNTIME_SECONDARY_SECURITY_OVERLAY_ARTIFACT: Buffer.from(JSON.stringify(verifiedNpmRuntime.secondarySecurityOverlayArtifact)).toString('base64'),
+    FAKE_NPM_RUNTIME_SECONDARY_SECURITY_OVERLAY_TARBALL: verifiedNpmRuntime.secondarySecurityOverlayTarballBytes.toString('base64'),
     FAKE_RELEASE_VERSION: dsVersion,
     FAKE_RELEASE_COMMIT: '1234567890abcdef1234567890abcdef12345678',
     FAKE_DS_SRI: dsSri,

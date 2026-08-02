@@ -19,7 +19,7 @@ benchmark:
 
 **實作基礎**：組合元件——Icon + Text + ProgressBar + Button，無 external primitive base。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 2（List item layout）** 消費者。結構繼承 `patterns/element-anatomy/item-anatomy.spec.md`「List item layout」章節,兩 mode 皆採 scanning-mode 規格（見下「Typography」段:FileItem 固定傳 ItemContent `mode="scanning"`）。FileItem 在 rich mode 用 avatar 作 item boundary。
+**Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 2（List item layout）** 消費者。結構繼承其「List item layout」章節,兩 mode 皆採 scanning-mode 規格（見下「Typography」段:FileItem 固定傳 ItemContent `mode="scanning"`）。FileItem 在 rich mode 用 avatar 作 item boundary。
 
 **命名 rationale**：`compact / rich` 表達精簡 vs 完整內容呈現（對齊 Discord embed type='rich' / Slack rich preview / Notion rich text 世界級 idiom）。不叫 `lg/sm`——兩者是資訊量不同的展示策略，不是同一結構的尺寸縮放。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 

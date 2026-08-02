@@ -5,7 +5,7 @@ variants: {}
 sizes: {}
 traits:
   - isStructural
-foundational_ssot: true  # 2026-05-18 codify per CLAUDE.md spec budget rule:foundational SSOT ≤ 800-1200 line 例外。DataTable 涵蓋 L1-L4 完整 grid taxonomy(structure / selection / sort+filter / inline-edit + drag + nested),為 DS 最複雜 composite + 跨家族 anchor(行對齊 item-anatomy / 浮層對齊 overlay-surface / state 對齊 field-controls)。
+foundational_ssot: true  # 2026-05-18 codify per AGENTS.md「行數預算」:foundational SSOT ≤ 800-1200 line 例外。DataTable 涵蓋 L1-L4 完整 grid taxonomy(structure / selection / sort+filter / inline-edit + drag + nested),為 DS 最複雜 composite + 跨家族 anchor(行對齊 item-anatomy / 浮層對齊 overlay-surface / state 對齊 field-controls)。
 benchmark:
   - Ant Design Table: github.com/ant-design/ant-design/tree/master/components/table
   - MUI X DataGrid: github.com/mui/mui-x/tree/master/packages/x-data-grid

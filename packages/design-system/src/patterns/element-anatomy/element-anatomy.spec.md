@@ -91,7 +91,7 @@ Dialog / Sheet / Popover / Tooltip / HoverCard / Coachmark / Command / SelectMen
 **共同約束**:
 - 結構化 chrome 浮層(Dialog / Sheet / Popover;Coachmark 經 `PopoverHeader`)消費 `patterns/overlay-surface/` 的 `SurfaceHeader` / `SurfaceBody` / `SurfaceFooter`(padding SSOT;實際 consumer 名單見 `overlay-surface.spec.md`「Consumers」)。menu 形浮層(Command / SelectMenu / DropdownMenu)走自有 menu surface canonical(`floatingLayerClass` + `py-2`);Tooltip(純文字 surface)與 HoverCard(behavior primitive,內容由 consumer 排)不消費 Surface*(2026-05-18 M18 anchor)
 - elevation 走 `--elevation-200`+ 的 overlay layer
-- dismiss 走 `onClose`(語意:關閉 overlay session,見 CLAUDE.md 命名 canonical)
+- dismiss 走 `onClose`(語意:關閉 overlay session,見 `packages/design-system/ds-canonical/references/props-naming.md`「關閉 / 移除類 callback canonical」)
 - 部分 overlay 有 modal vs non-modal 分流(Dialog / Sheet modal;Popover / HoverCard non-modal)
 - 在 dark-mode context(如 FileViewer chrome)中需支援 `data-theme="dark"` 子樹
 
@@ -146,7 +146,7 @@ Family 4 的 Input / Select 視覺對齊 Family 1 的 menu-item(高度、字體�
 3. **單行可編輯資料?** → Family 4(必須視覺對齊 Family 1)
 4. **都不是?** → **停下討論**——新 family 還是 self-contained
 
-CLAUDE.md `# 4-Family Layout Model` 留概要 + 判斷流程(每 session signal)。本檔 own 完整 taxonomy + Family 3 sub-profile + size pairing + consumers + exclusions。
+`AGENTS.md` `# 4-Family Layout Model` 留每 session 導航；本檔 own 完整 taxonomy + 判斷流程 + Family 3 sub-profile + size pairing + consumers + exclusions。
 
 ---
 
@@ -205,7 +205,7 @@ Consumer 自建 chrome-like div 帶 bg/border/shadow 時,參考上表或就近�
 - `patterns/element-anatomy/item-anatomy.spec.md` — Family 1+2 row anatomy deep SSOT + runtime primitive(`<MenuItem>` canonical + `<ItemIcon>` / `<ItemAvatar>` / `<ItemLabel>` / `<ItemSuffix>` / `<ItemInlineAction>` slot components)
 - `components/Button/button.spec.md` — Family 3 Pill anatomy SSOT
 - `components/Field/field-controls.spec.md` — Family 4 Field control anatomy SSOT
-- CLAUDE.md `# 4-Family Layout Model` — 每 session signal 的概要 + judgment flow
+- `AGENTS.md` `# 4-Family Layout Model` — 每 session signal 的 owner 導航
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

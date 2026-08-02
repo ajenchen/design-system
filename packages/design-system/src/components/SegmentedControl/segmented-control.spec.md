@@ -39,7 +39,7 @@ SegmentedControl 是**互斥多選一的 compact control**——從 2–5 個選
 
 **SegmentedControl 的選值可以驅動下方內容變化**——這是正當用法，不要誤以為它只能當表單輸入（「切 value 不能切 view」是錯的二分法）。
 
-**Layout Family**：每個 SegmentedControlItem 是 CLAUDE.md 4-Family Model **Family 3（Pill Layout）action trigger sub-profile** 的消費者——內部結構 `[startIcon?] [<span px-1>label</span>] [suffix]` 繼承 Button canonical。SSOT 在 `components/Button/button.spec.md`「Pill Layout」章節。SegmentedControl 外層容器的「分段連體」（`-ml-px` border 重疊、首尾 `rounded-l-md/rounded-r-md`）是本元件特有視覺規格，非 Family 3 共用。
+**Layout Family**：每個 SegmentedControlItem 是 `components/Button/button.spec.md`「Pill Layout」所擁有的 **Family 3（Pill Layout）action trigger sub-profile** 消費者——內部結構 `[startIcon?] [<span px-1>label</span>] [suffix]` 繼承 Button canonical。SegmentedControl 外層容器的「分段連體」（`-ml-px` border 重疊、首尾 `rounded-l-md/rounded-r-md`）是本元件特有視覺規格，非 Family 3 共用。
 
 ---
 

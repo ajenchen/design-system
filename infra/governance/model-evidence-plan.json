@@ -12,7 +12,6 @@
       { "dim": 9, "ruleId": "DS-DIM-009" },
       { "dim": 10, "ruleId": "DS-DIM-010" },
       { "dim": 12, "ruleId": "DS-DIM-012" },
-      { "dim": 14, "ruleId": "DS-DIM-014" },
       { "dim": 17, "ruleId": "DS-DIM-017" },
       { "dim": 19, "ruleId": "DS-DIM-019" },
       { "dim": 20, "ruleId": "DS-DIM-020" },

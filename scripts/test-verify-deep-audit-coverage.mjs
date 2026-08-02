@@ -151,10 +151,10 @@ try {
   write('package-lock.json', `${JSON.stringify({
     lockfileVersion: 3,
     packages: {
-      '': { devDependencies: { npm: '11.18.0' } },
+      '': { devDependencies: { npm: '11.19.0' } },
       'node_modules/npm': {
-        version: '11.18.0',
-        resolved: 'https://registry.npmjs.org/npm/-/npm-11.18.0.tgz',
+        version: '11.19.0',
+        resolved: 'https://registry.npmjs.org/npm/-/npm-11.19.0.tgz',
         integrity: 'sha512-T67M4L5wNm0cZ7EBLErcEkY1SmzEW/WJ+SADBzsFUY1UdAPfFHXFQtZ6SEXiK0+vzXysCvAsepbMaBTwnrAD+w==',
         bin: { npm: 'bin/npm-cli.js', npx: 'bin/npx-cli.js' },
       },
@@ -448,7 +448,7 @@ try {
     else process.env.PATH = previousPath
   }
   assert.equal(existsSync(`${ambientNpm}.marker`), false, 'ambient npm must not participate in evidence identity')
-  assert.equal(envelope.environment.npmVersion, '11.18.0')
+  assert.equal(envelope.environment.npmVersion, '11.19.0')
   assert.equal(validateDeepAuditEvidenceEnvelope(envelope, {
     manifest: active.manifest,
     manifestSha256: active.manifestSha256,

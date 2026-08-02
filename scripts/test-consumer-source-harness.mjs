@@ -77,6 +77,12 @@ test('the actual canonical product manifest requires every workspace build', () 
   )
 })
 
+test('consumer a11y executor documentation remains repository-neutral after template projection', () => {
+  const source = readFileSync(resolve('scripts/audit-consumer-a11y.mjs'), 'utf8')
+  assert.match(source, /在 consumer repo CI 跑/)
+  assert.doesNotMatch(source, /在 ds-product-template CI 跑/)
+})
+
 test('candidate-controlled workspace roots cannot hide product source from the trusted harness', () => {
   for (const workspaces of [[], ['fixtures/*'], ['apps/*', 'fixtures/*']]) {
     const value = fixture('export const value: string = "ok"\n')

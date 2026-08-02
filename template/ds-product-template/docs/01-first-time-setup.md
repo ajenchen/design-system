@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node 22.12.0+, npm 10+ as the launcher, Git, Bash, `jq`, and Python 3. Governance npm operations use exact lock-verified npm 11.18.0.
+- Node 22.12.0+, npm 10+ as the launcher, Git, Bash, `jq`, and Python 3. Governance npm operations use exact lock-verified npm 11.19.0.
 - Claude Code, Codex, or another agent that can read `AGENTS.md`
 
 The exact governance checker intentionally fails closed when Bash, `jq`, or Python 3 is unavailable,

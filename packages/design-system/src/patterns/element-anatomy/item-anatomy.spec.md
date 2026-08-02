@@ -154,7 +154,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 
 ## 任何未來的 row 元件
 
-必須先判斷屬於 Family 1 或 Family 2，然後照對應章節的規則做。**不要自己發明新規格**——發明前必先讀本 spec 全文 + CLAUDE.md「4-Family Model」。
+必須先判斷屬於 Family 1 或 Family 2，然後照對應章節的規則做。**不要自己發明新規格**——發明前必先讀本 spec 全文 + `element-anatomy.spec.md`「4 個可繼承的 Layout Family」。
 
 ---
 

@@ -93,13 +93,13 @@ export function verifyAuthorityRuntime({
   const lock = JSON.parse(regularBytes(root, 'package-lock.json').toString('utf8'))
   invariant(manifest.scripts?.['setup:dependencies'] === AUTHORITY_DEPENDENCY_SETUP_COMMAND, 'package.json authority dependency setup command drifted')
   invariant(
-    manifest.packageManager === 'npm@11.18.0' && manifest.engines?.node === `>=${AUTHORITY_MINIMUM_NODE_VERSION}`,
+    manifest.packageManager === 'npm@11.19.0' && manifest.engines?.node === `>=${AUTHORITY_MINIMUM_NODE_VERSION}`,
     'authority runtime declaration drifted',
   )
   invariant(lock.lockfileVersion === 3 && lock.packages?.['']?.engines?.node === `>=${AUTHORITY_MINIMUM_NODE_VERSION}`, 'package-lock authority runtime declaration drifted')
-  invariant(lock.packages?.['']?.devDependencies?.npm === '11.18.0', 'package-lock root npm runtime declaration drifted')
+  invariant(lock.packages?.['']?.devDependencies?.npm === '11.19.0', 'package-lock root npm runtime declaration drifted')
   const npmArtifact = resolveExactNpmArtifact(root)
-  invariant(npmArtifact.version === '11.18.0', 'authority npm runtime must remain exactly 11.18.0')
+  invariant(npmArtifact.version === '11.19.0', 'authority npm runtime must remain exactly 11.19.0')
   return Object.freeze({
     root,
     toolchain: Object.freeze({ node: String(nodeVersion), npm: npmArtifact.version }),
@@ -157,9 +157,9 @@ export async function runAuthorityDependencySetup({
       const manifest = JSON.parse(regularBytes(authorityRoot, 'package.json').toString('utf8'))
       const lock = JSON.parse(regularBytes(authorityRoot, 'package-lock.json').toString('utf8'))
       invariant(manifest.scripts?.['setup:dependencies'] === AUTHORITY_DEPENDENCY_SETUP_COMMAND, 'package.json authority dependency setup command drifted')
-      invariant(manifest.packageManager === 'npm@11.18.0' && manifest.engines?.node === `>=${AUTHORITY_MINIMUM_NODE_VERSION}`, 'authority runtime declaration drifted')
+      invariant(manifest.packageManager === 'npm@11.19.0' && manifest.engines?.node === `>=${AUTHORITY_MINIMUM_NODE_VERSION}`, 'authority runtime declaration drifted')
       invariant(lock.packages?.['']?.engines?.node === `>=${AUTHORITY_MINIMUM_NODE_VERSION}`, 'package-lock authority runtime declaration drifted')
-      invariant(resolveExactNpmArtifact(authorityRoot).version === '11.18.0', 'authority npm runtime must remain exactly 11.18.0')
+      invariant(resolveExactNpmArtifact(authorityRoot).version === '11.19.0', 'authority npm runtime must remain exactly 11.19.0')
     },
     afterStage({ index }) {
       assertGitVisibleWorktreeUnchanged(root, callerWorktree, { label: `authority dependency stage ${index + 1}` })

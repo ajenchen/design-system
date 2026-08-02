@@ -30,7 +30,7 @@ import {
 } from './test-fixtures/verified-npm-runtime-archive.mjs'
 
 const temporary = []
-const version = '11.18.0'
+const version = '11.19.0'
 
 function temporaryDirectory(label = 'verified npm runtime test ') {
   const path = mkdtempSync(join(realpathSync(tmpdir()), label))
@@ -124,6 +124,10 @@ function npmEntriesWithSecurityOverlayPreimage() {
       path: 'package/node_modules/minimatch/index.js',
       body: "const { expand } = require('brace-expansion')\nexports.minimatch = (value, pattern) => expand(pattern).includes(value)\n",
     },
+    {
+      path: 'package/node_modules/tar/package.json',
+      body: `${JSON.stringify({ name: 'tar', version: '7.5.19' })}\n`,
+    },
   ]
 }
 
@@ -145,6 +149,15 @@ function securityOverlayArchive() {
   ])
 }
 
+function secondarySecurityOverlayArchive() {
+  return tarball([
+    {
+      path: 'package/package.json',
+      body: `${JSON.stringify({ name: 'tar', version: '7.5.22' })}\n`,
+    },
+  ])
+}
+
 function artifact(bytes, artifactVersion = version) {
   return Object.freeze({
     version: artifactVersion,
@@ -153,7 +166,7 @@ function artifact(bytes, artifactVersion = version) {
   })
 }
 
-function repositoryFixture(bytes, { overlayBytes } = {}) {
+function repositoryFixture(bytes, { overlayBytes, secondaryOverlayBytes } = {}) {
   const root = join(temporaryDirectory(), 'consumer')
   const npmArtifact = artifact(bytes)
   const overlayArtifact = overlayBytes
@@ -164,9 +177,18 @@ function repositoryFixture(bytes, { overlayBytes } = {}) {
         integrity: `sha512-${createHash('sha512').update(overlayBytes).digest('base64')}`,
       }
     : null
+  const secondaryOverlayArtifact = secondaryOverlayBytes
+    ? {
+        name: 'tar',
+        version: '7.5.22',
+        resolved: 'https://registry.npmjs.org/tar/-/tar-7.5.22.tgz',
+        integrity: `sha512-${createHash('sha512').update(secondaryOverlayBytes).digest('base64')}`,
+      }
+    : null
   const devDependencies = {
     npm: version,
     ...(overlayArtifact ? { 'npm-runtime-brace-expansion-patch': 'npm:brace-expansion@5.0.8' } : {}),
+    ...(secondaryOverlayArtifact ? { 'npm-runtime-tar-patch': 'npm:tar@7.5.22' } : {}),
   }
   write(join(root, 'package.json'), `${JSON.stringify({ name: 'consumer', version: '0.0.0', devDependencies }, null, 2)}\n`)
   write(join(root, 'package-lock.json'), `${JSON.stringify({
@@ -182,9 +204,10 @@ function repositoryFixture(bytes, { overlayBytes } = {}) {
         bin: { npm: 'bin/npm-cli.js' },
       },
       ...(overlayArtifact ? { 'node_modules/npm-runtime-brace-expansion-patch': overlayArtifact } : {}),
+      ...(secondaryOverlayArtifact ? { 'node_modules/npm-runtime-tar-patch': secondaryOverlayArtifact } : {}),
     },
   }, null, 2)}\n`)
-  return { artifact: npmArtifact, overlayArtifact, root: realpathSync(root) }
+  return { artifact: npmArtifact, overlayArtifact, root: realpathSync(root), secondaryOverlayArtifact }
 }
 
 function assertMaterializationRejects(entries, pattern, { mutateArtifact } = {}) {
@@ -226,7 +249,8 @@ test('valid lock-digested archive materializes outside the repository and cleanu
 test('prepare downloads only the canonical lock URL and ignores perfect-looking project npm poison', async () => {
   const bytes = tarball(npmEntriesWithSecurityOverlayPreimage())
   const overlayBytes = securityOverlayArchive()
-  const repository = repositoryFixture(bytes, { overlayBytes })
+  const secondaryOverlayBytes = secondarySecurityOverlayArchive()
+  const repository = repositoryFixture(bytes, { overlayBytes, secondaryOverlayBytes })
   const poisonMarker = join(dirname(repository.root), 'poisoned-installed-npm-ran')
   write(join(repository.root, 'node_modules/npm/package.json'), `${JSON.stringify({ name: 'npm', version, bin: { npm: 'bin/npm-cli.js' } })}\n`)
   write(join(repository.root, 'node_modules/npm/bin/npm-cli.js'), `import { writeFileSync } from 'node:fs'\nwriteFileSync(${JSON.stringify(poisonMarker)}, 'ran')\nif (process.argv[2] === '--version') console.log('${version}')\n`, 0o755)
@@ -235,15 +259,26 @@ test('prepare downloads only the canonical lock URL and ignores perfect-looking 
     repositoryRoot: repository.root,
     parentDirectory: temporaryDirectory(),
     download: async (url) => { urls.push(url); return bytes },
-    downloadSecurityOverlay: async (url) => { urls.push(url); return overlayBytes },
+    downloadSecurityOverlay: async (url) => {
+      urls.push(url)
+      return url === repository.overlayArtifact.resolved ? overlayBytes : secondaryOverlayBytes
+    },
   })
   try {
-    assert.deepEqual(urls, [repository.artifact.resolved, repository.overlayArtifact.resolved])
+    assert.deepEqual(urls, [
+      repository.artifact.resolved,
+      repository.overlayArtifact.resolved,
+      repository.secondaryOverlayArtifact.resolved,
+    ])
     assert.equal(runtime.securityOverlay.status, 'applied')
     assert.equal(runtime.securityOverlay.version, '5.0.8')
     assert.equal(
       JSON.parse(readFileSync(join(runtime.packageRoot, 'node_modules/brace-expansion/package.json'), 'utf8')).version,
       '5.0.8',
+    )
+    assert.equal(
+      JSON.parse(readFileSync(join(runtime.packageRoot, 'node_modules/tar/package.json'), 'utf8')).version,
+      '7.5.22',
     )
     assert.notEqual(runtime.cli, join(repository.root, 'node_modules/npm/bin/npm-cli.js'))
     assert.equal(existsSync(poisonMarker), false)
@@ -252,12 +287,12 @@ test('prepare downloads only the canonical lock URL and ignores perfect-looking 
   }
 })
 
-test('runtime contract fails closed when the content-addressed security overlay alias is absent', () => {
+test('runtime contract fails closed when either content-addressed security overlay alias is absent', () => {
   const bytes = tarball(npmEntriesWithSecurityOverlayPreimage())
   const repository = repositoryFixture(bytes)
   assert.throws(
     () => resolveExactNpmRuntimeContract(repository.root),
-    /must pin npm-runtime-brace-expansion-patch/,
+    /must pin the exact dev-only npm security overlay aliases/,
   )
 })
 
