@@ -12,7 +12,7 @@ const meta: Meta<typeof Button> = {
   parameters: {
     docs: {
       description: {
-        component: '觸發操作或導覽的基礎互動元件。支援五種視覺強調等級（variant）、danger 語意疊加、四種尺寸、icon-only 模式。',
+        component: '用於觸發送出、儲存、確認或工具列動作，並以強調等級表達操作優先序。純跨頁導覽或內文連結改用 Link / `<a>`；多選一的持續狀態改用 SegmentedControl。',
       },
     },
   },

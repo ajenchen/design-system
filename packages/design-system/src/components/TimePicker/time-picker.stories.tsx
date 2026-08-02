@@ -14,7 +14,7 @@ const meta: Meta<typeof TimePicker> = {
     docs: {
       description: {
         component:
-          '單一時間輸入。對齊 Ant Design TimePicker API;視覺 / 互動走本 DS 設計語言。完整規格見 `time-picker.spec.md`。',
+          '用於表單中選擇單一時鐘時間，例如會議、營業、排班或提醒時間。同時需日期改用 `DatePicker showTime`，時間範圍使用兩個 TimePicker 組合，倒數／時長或大量精確輸入則用專用控件或 Input。',
       },
     },
   },

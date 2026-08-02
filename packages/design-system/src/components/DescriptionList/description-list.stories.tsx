@@ -9,7 +9,7 @@ const meta: Meta<typeof DescriptionList> = {
     docs: {
       description: {
         component:
-          '唯讀 label + value 展示(HTML `dl / dt / dd`)。層級靠色彩區分而非字體大小。`cols` 控制欄數(1 / 2 / 3)。',
+          '用於顯示單一實體的多組唯讀屬性，並以 `dl / dt / dd` 保留「欄位—值」語意。需編輯時改用 Field 系統，多筆同結構資料改用 DataTable，只有一組值則用簡單 layout。',
       },
     },
   },

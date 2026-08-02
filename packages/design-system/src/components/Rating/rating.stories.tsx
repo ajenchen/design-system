@@ -12,7 +12,7 @@ const meta: Meta<typeof Rating> = {
     docs: {
       description: {
         component:
-          '星星評分元件——離散 1–5 分。interactive 送出評分 / readOnly 展示平均分；precision full 整星 / half 半星。',
+          '用於讓使用者給出離散星等，或唯讀顯示已提交的個人／平均評分。連續數值改用 Slider，二元喜好改用 Switch 或 icon button，完成進度改用 ProgressBar / CircularProgress。',
       },
     },
   },

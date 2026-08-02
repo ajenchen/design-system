@@ -100,57 +100,27 @@ export const ModeRule: Story = {
   render: () => (
     <div>
       <Rule
-        title="rich — 需要縮圖預覽的檔案（圖片、文件）"
-        note="左側 Avatar 48px square 顯示縮圖或檔案類型 icon,右側檔名 + 大小 + 進度 bar。掃描模式(text-body 14px + leading-compact;兩 mode 統一),資訊容量較高"
+        title="先問：使用者靠縮圖辨識，還是靠檔名快速掃視？"
+        note="mode 是資訊策略，不是大小 variant。只在縮圖會改變判斷時選 rich；其餘批次上傳與附件清單預設 compact，讀者才能用一致節奏掃視。"
       >
-        <FileItem
-          name="Q1-report.pdf"
-          description="2.4 MB · 上傳中 75%"
-          status="uploading"
-          progress={75}
-          mode="rich"
-        />
-        <FileItem
-          name="beach-photo.jpg"
-          description="4.8 MB"
-          mode="rich"
-          thumbnailSrc="https://i.pravatar.cc/112?img=3"
-        />
-        <Label>↑ 設計 / 影音類檔案、需要視覺辨識的場景</Label>
-      </Rule>
-
-      <Rule
-        title="compact — 批次上傳的一般檔案（CSV / JSON）"
-        note="左側 Paperclip 16px icon,掃描模式(text-body + leading-compact,desc 為 text-caption;兩 mode 統一),資訊密度高。適合一次顯示 10+ 檔案的 batch upload 清單"
-      >
-        <div className="flex flex-col gap-1">
-          <FileItem
-            name="users.csv"
-            mode="compact"
-            status="completed"
-            progress={100}
-          />
-          <FileItem
-            name="orders.json"
-            mode="compact"
-            status="uploading"
-            progress={42}
-          />
-          <FileItem
-            name="products.xlsx"
-            mode="compact"
-            status="error"
-            description="檔案格式不支援"
-          />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-md border border-divider bg-surface p-4">
+            <p className="text-body font-medium text-foreground">rich：縮圖會幫助辨識</p>
+            <p className="mt-1 text-caption text-fg-muted">設計稿、照片或文件預覽；圖像內容比副檔名更能區分檔案。</p>
+          </div>
+          <div className="rounded-md border border-divider bg-surface p-4">
+            <p className="text-body font-medium text-foreground">compact：檔名與狀態是主要訊息</p>
+            <p className="mt-1 text-caption text-fg-muted">批次匯入、日誌或工單附件；使用者要快速掃描多筆進度與錯誤。</p>
+          </div>
         </div>
-        <Label>↑ 數據匯入、日誌上傳等批次場景</Label>
+        <Label>完整的視覺與 token 對照請看「設計規格 / 模式對照」；這裡只負責選擇判斷。</Label>
       </Rule>
 
       <Rule
-        title="判斷法：「檔案需要視覺預覽,還是清單掃視？」"
-        note="需要預覽 → rich(圖文並列)/ 需要快速掃視多個 → compact(單行列表,預設)"
+        title="同一清單不混用 rich 與 compact"
+        note="兩種 mode 有不同列高與視覺錨點；混用會打斷掃視節奏，也讓使用者誤以為資料狀態不同。上傳中與已儲存附件可以共存，但應在同一 mode 內用 status 區分。"
       >
-        <Label>圖片類 / 需要縮圖用 rich;logs / data export / batch 用 compact（預設）</Label>
+        <Label>先以整個工作流的閱讀任務選 mode，再用 status 表達每筆檔案的進度。</Label>
       </Rule>
     </div>
   ),
@@ -273,4 +243,3 @@ export const ActionsRule: Story = {
     </div>
   ),
 }
-

@@ -13,7 +13,7 @@ const meta: Meta<typeof LinkInput> = {
   parameters: {
     docs: {
       description: {
-        component: 'URL 輸入元件。有合法 URL 時以藍色連結顯示，Pencil icon 觸發編輯。blur 時驗證格式。',
+        component: '用於儲存、驗證與直接開啟單一外部 URL，在連結閱讀態與輸入編輯態間切換。Slug、Email 或內部 router path 改用 Input，需同時編輯顯示文字與 URL 時改用連結編輯器。',
       },
     },
   },

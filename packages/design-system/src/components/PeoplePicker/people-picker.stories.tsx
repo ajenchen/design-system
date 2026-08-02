@@ -12,7 +12,7 @@ const meta: Meta = {
   parameters: {
     docs: {
       description: {
-        component: '人員選擇元件。外觀同 Select，value 前面多 avatar。多人時 avatar 堆疊。',
+        component: '用於指派、邀請或選擇一位或多位人員，並以 Avatar 幫助辨識同名成員。非人員的單選／多選改用 Select / Combobox；只顯示人員資訊時改用 ProfileCard、Avatar.Group 或 list。',
       },
     },
   },

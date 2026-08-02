@@ -31,7 +31,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          '資料視覺化元件。基於 shadcn chart 結構 + Recharts v3 engine,tooltip / legend / grid / axis 全改用本 DS token。',
+          '用於看出多個資料點之間的趨勢、比較、比例或分布。單一 KPI 改用文字或 Badge，需逐列掃視與排序篩選時改用 DataTable，單值進度則用 ProgressBar / CircularProgress。',
       },
     },
   },

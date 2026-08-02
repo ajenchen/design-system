@@ -13,7 +13,7 @@ const meta: Meta<typeof Separator> = {
     docs: {
       description: {
         component:
-          '語意分隔元件（Radix Separator passthrough）——只用於 consumer 手動放置的分隔線。色彩固定為 `--divider` token，無 size / variant。',
+          '用於 consumer 手動指定的內容群組邊界，必要時可輸出 separator 語意。元件內固定的 header / footer 分隔改用 CSS `border-divider`，自動分隔相鄰群組用結構規則，控件外框則使用 `--border`。',
       },
     },
   },
