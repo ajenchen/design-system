@@ -79,7 +79,7 @@ Section 之間用 `border-t border-divider` 分隔(見 `separator.spec.md`「元
 
 ## 寬度（元件級常數）
 
-ProfileCard 固定 **320px 寬**（見 `.tsx` 的 `w-[320px]`）——HoverCard 浮層寬度由 ProfileCard 決定，不隨內容伸縮（避免 hover 時浮層寬度跳動）。
+ProfileCard 使用單一元件級寬度，HoverCard 浮層量測由它決定且不隨人員內容改變；canonical 數值與 utility 由 `profile-card.tsx` 擁有。
 
 對照世界級：Material Snackbar 固定 344px、Slack message modal 固定寬度——**單一元件的 canonical 寬度屬於該元件自己的 design spec，不抽為跨元件 token**。Token 系統只管共享值（如 `--field-height-*`、`--layout-space-*`）；單一元件獨有的結構常數留在 component code + 本 spec。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
@@ -124,7 +124,7 @@ ProfileCard 的 default actions **是 `Chat + Audio call`**(chat app 標配,cano
 
 ## 設計決策
 
-- **固定寬度而非 min/max**：HoverCard 內容量可預期，固定寬度避免不同人員 card 寬度跳動
+- **固定寬度而非 min/max**：HoverCard 內容量可預期，固定寬度讓不同人員共用穩定的 panel measure
 - **Section 用 border-t 分隔**：清晰的資訊分區，每個 section 獨立存在或不存在
 - **Status badge 用 muted 而非 interactive 色**：狀態是展示資訊，不可點擊，不應暗示互動性
 

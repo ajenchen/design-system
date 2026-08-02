@@ -10,13 +10,9 @@
 #            排除 `packages/design-system/src/` + `node_modules/`
 #   - Content:tool_input.new_string // tool_input.content
 #   - Global escape:content 含 `@ds-misuse-allow:` → silent exit 0
-#   - 7 anti-patterns(P1-P5 + P8 任何 .tsx/.ts;P6 僅 .stories.tsx):
-#       P1 <DS.CircularProgress size={N}> literal number override default 24
-#       P2 <DS.RadioGroupItem> 沒 wrap SelectionItem 且無 label=
-#       P3 <DS.DataTable columns={[single-col]}> minimal one-column
-#       P4 <DS.LinkInput placeholder=...> 沒 value/defaultValue
-#       P5 <DS.Empty title=...> 無 icon 且無 description
-#       P6 (.stories.tsx only) overlay trigger 無 defaultOpen
+#   - Consumer anti-patterns include bare RadioGroupItem / minimal DataTable / placeholder-only
+#     LinkInput / incomplete Empty / closed overlay stories / token bypasses. CircularProgress's
+#     numeric size API is intentionally allowed and has explicit 16/20/32/48 canonical contexts.
 #   - BLOCKER:exit 2 + stderr 含 "CONSUMER-DS-PRIMITIVE-MISUSE BLOCKER"
 #   - 非觸發 tool / out-of-scope path / 空 content → silent exit 0
 #
@@ -130,25 +126,24 @@ run_hook "$PROD_TSX" '// @ds-misuse-allow: legacy migration WIP
 <DS.Empty title="無資料" />'
 expect_silent "7. @ds-misuse-allow escape → silent"
 
-# ── P1 CircularProgress(broad-vs-narrow symmetry)─────────────────────────────
+# ── CircularProgress numeric public API(over-broad regression)───────────────
 
-# 8. POSITIVE over-narrow guard:literal size={24} → BLOCK
+# 8. Default literal is a valid explicit value → silent
 run_hook "$PROD_TSX" 'export const L = () => <DS.CircularProgress size={24} />'
-expect_block "8. P1 <CircularProgress size={24}> → BLOCK"
+expect_silent "8. <CircularProgress size={24}> public API → silent"
 
-# 9. NEGATIVE over-broad guard:string variant size="lg" 非 literal number → silent
-run_hook "$PROD_TSX" 'export const L = () => <DS.CircularProgress size="lg" />'
-expect_silent "9. P1 nearmiss <CircularProgress size=\"lg\"> → silent"
+# 9. Standalone composition size from the component spec → silent
+run_hook "$PROD_TSX" 'export const L = () => <DS.CircularProgress size={48} />'
+expect_silent "9. <CircularProgress size={48}> standalone composition → silent"
 
-# 9b. 2026-06-03 回歸防護(同 R8 bug class):屬性跨多行的真實 JSX → BLOCK。修前 grep 逐行 +
-#     [^>]+ 跨屬性匹配 → 多行 component 靜默繞過全部 anti-pattern(= BLOCKER false-negative,對抗稽核抓到)。
+# 9b. Multiline JSX must remain allowed; flattening must not revive the retired false-positive.
 run_hook "$PROD_TSX" 'export const L = () => (
   <DS.CircularProgress
     variant="blue"
     size={48}
   />
 )'
-expect_block "9b. P1 多行屬性 <CircularProgress size={48}> → BLOCK(回歸防護)"
+expect_silent "9b. 多行 <CircularProgress size={48}> public API → silent"
 
 # ── P2 RadioGroupItem(broad-vs-narrow symmetry)───────────────────────────────
 
@@ -200,9 +195,9 @@ expect_silent "19. P6 nearmiss story <Dialog defaultOpen> → silent"
 
 # ── Edit field-path 契約(new_string 而非 content)────────────────────────────
 
-# 20. POSITIVE:Edit tool 走 tool_input.new_string,anti-pattern → BLOCK
+# 20. Edit payload with a valid numeric size remains silent
 run_hook "$PROD_TSX" 'export const L = () => <DS.CircularProgress size={48} />' "Edit"
-expect_block "20. Edit(new_string)<CircularProgress size={48}> → BLOCK"
+expect_silent "20. Edit(new_string)<CircularProgress size={48}> → silent"
 
 # ── P8 硬寫色值/字級/shadow 繞 token(broad-vs-narrow symmetry,2026-06-02 CF conformance 主防線)──
 

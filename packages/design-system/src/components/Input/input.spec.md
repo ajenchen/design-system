@@ -160,8 +160,8 @@ Input 有**一個公開** visual chrome variant `default`(+ 一個 `@internal` �
 **邊界(內容超寬)**:寬度上限 = 父容器可用寬(wrapper `inline-flex w-auto` shrink-to-fit);超過後 input 不再增寬,溢出文字走原生水平捲動。不支援 `field-sizing` 的瀏覽器退化 `w-auto`(fallback 細節見 tsx jsDoc)。
 
 **禁止**:
-- ❌ **表單 Field 內**——Field 欄位必須欄寬對齊,寬度隨值跳動會破壞 grid layout
-- ❌ **放在主表單欄位區**——auto-width 讓欄寬隨值跳動、破壞 grid 對齊;autoWidth 適用 toolbar / page-body inline 場景,搭 `variant="default"`(小尺寸有框輸入,如 FileViewer zoom;`bare` 2026-07-09 退役)
+- ❌ **表單 Field 內**——Field 欄位必須遵守共享欄寬；內容驅動寬度會破壞 grid alignment contract
+- ❌ **放在主表單欄位區**——主表單需要穩定的 column sizing；`autoWidth` 只適用 toolbar / page-body inline 場景，使用 `variant="default"`（`bare` 已退役）
 
 **世界級對照**:VS Code settings inline input 用同 pattern;Notion property field、Airtable cell edit 皆 auto-size。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 

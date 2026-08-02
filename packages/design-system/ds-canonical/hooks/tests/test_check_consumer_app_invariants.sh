@@ -32,7 +32,7 @@ else
 fi
 
 set +e
-printf '%s' '{"tool_name":"Write","tool_input":{"file_path":"apps/demo/src/App.tsx","content":"<CircularProgress size={24} />"}}' \
+printf '%s' '{"tool_name":"Write","tool_input":{"file_path":"apps/demo/src/App.tsx","content":"<RadioGroupItem value=\"a\" />"}}' \
   | bash "$DIR/../check_consumer_app_invariants.sh" \
       >"$FAULT_DIR/policy.stdout" 2>"$FAULT_DIR/policy.stderr"
 rc=$?

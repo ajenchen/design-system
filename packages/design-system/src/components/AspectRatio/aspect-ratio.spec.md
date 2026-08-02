@@ -29,7 +29,7 @@ AspectRatio 是**固定長寬比容器** primitive——確保內部 children(�
 
 ## 何時用
 
-- **圖片容器未載入前防坍塌**:圖片 src 還沒 ready 時,容器高度若為 0 → 頁面 layout 跳動(CLS 問題)。AspectRatio 鎖死比例
+- **圖片載入前保留比例**:src 尚未 ready 時先保留已知 media geometry，降低 cumulative layout shift
 - **Coachmark / Tour media 區**:onboarding 截圖 / illustration 統一 ratio
 - **Carousel item 圖像**:輪播各張圖保持一致高度
 - **Card thumbnail**(未來):product card / blog post cover

@@ -101,7 +101,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 
 | State | 視覺 | Token 角色(class 細節見 tsx)| 備註 |
 |-------|------|------------------------------|------|
-| **today**(未選) | 數字下方短圓桿(藍) | button `::after` bar,色用 `primary`,尺寸靠近文字行底(不貼 button 邊) | affordance 方式,不 fill bg;位置刻意貼近數字避免「黏 button 邊」視覺 flaw |
+| **today**(未選) | today indicator | 消費 `primary` semantic role；確切結構與尺寸由 `date-grid.tsx` 擁有 | 與 selected background 保持不同狀態語言，兩者疊加時仍可辨識 |
 | **today + selected** | 數字下方短圓桿(白) | bar 色切 `on-emphasis` | 選中藍底上藍 bar 隱形,必切白;以 state 疊加 selector 覆寫 |
 | **disabled** | 灰底 + 淡字 | `bg-disabled` + `fg-disabled` + `cursor-not-allowed` | 跟 Button disabled token 一致,不自創 palette |
 | **outside(非本月)**| 淡字(只文字) | `fg-muted` | 比 disabled 弱:outside 仍可 hover / 可點,純是「非焦點月份」的標示 |

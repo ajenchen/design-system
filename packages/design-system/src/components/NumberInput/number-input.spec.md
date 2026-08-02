@@ -38,12 +38,12 @@ NumberInput 是**數值的**輸入與顯示元件。格式化邏輯：`toLocaleS
 
 | 場景 | 改用 | 原因 |
 |------|------|------|
-| 純文字 / 看起來像數字的字串（電話、郵遞區號）| `Input` | 電話不是算術型數字，不需要千分位 / 不該用 step |
+| 數字識別碼（電話、郵遞區號）| `Input` | 這些值不參與算術，不需要千分位或 step |
 | 日期 / 時間戳 | `DatePicker` | 需要日期語意和 picker 互動 |
 | 視覺調整數值（音量、亮度、滑動調整）| `Slider` | 使用者目標是「感受」而非「輸入精確值」 |
 | 大量帶小數的科學計算 | `Input` + 自訂驗證 | 極端精度需求超出 NumberInput 格式化能力 |
 
-**常見誤解**:(1)「看起來像數字」≠ 數值——電話 / 郵遞區號 / 身分證號用 `Input`(見上表);(2)百分比 value 直接存 `85` 非 `0.85`,`suffix='%'` 純顯示;(3)NumberInput **無** step ↑↓ stepper——純值輸入,加減互動走 `endSlot`(見禁止事項)。
+**常見誤解**:(1)只含數字字元的識別碼不等於算術數值——電話 / 郵遞區號 / 身分證號用 `Input`(見上表);(2)百分比 value 直接存 `85` 非 `0.85`,`suffix='%'` 純顯示;(3)NumberInput **無** step ↑↓ stepper——純值輸入,加減互動走 `endSlot`(見禁止事項)。
 
 ---
 
@@ -118,7 +118,7 @@ col.accessor('price', {
 
 ## 相關
 
-- `../Input/input.spec.md` — 純文字（含電話 / 郵遞區號等「看起來像數字」的資料）
+- `../Input/input.spec.md` — 純文字與數字識別碼（電話 / 郵遞區號等）
 - `../DatePicker/date-picker.spec.md` — 日期
 - `../Slider/slider.spec.md` — 視覺調整數值（音量、亮度）
 - `../Field/field-controls.spec.md` — Field Control 共用規則（mode / size / endAction / error）

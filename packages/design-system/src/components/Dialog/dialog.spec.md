@@ -84,7 +84,7 @@ Modal 與 viewport 四邊保持 `--layout-space-bottom`（48px）最小間距。
 
 | 模式 | 條件 | 行為 |
 |---|---|---|
-| **預設（填滿）** | 不傳 `autoHeight` | `height = 100vh - inset*2`，body 捲動。防止動態內容（載入資料、展開 section）造成 dialog 跳動 |
+| **預設（填滿）** | 不傳 `autoHeight` | viewport-bounded 固定高度，body 擁有捲動；動態內容不改變 dialog 外框幾何 |
 | **autoHeight** | `autoHeight={true}` | 高度隨內容，超過 viewport 時 `max-height` 安全帽。適合內容量已知且穩定的 dialog（確認框、短表單） |
 
 ## maxWidth
@@ -160,7 +160,7 @@ Dialog 是容器，無整體 disabled / loading / empty 狀態——這些屬於
 | 誤解 | 正解 |
 |------|------|
 | 「側邊 / 長停留面板也用 Dialog」 | 視覺重量不同——Dialog 是中央阻斷 modal,Sheet 側滑較輕(見「何時不用」+ 禁止事項「長 form wizard」條) |
-| 「autoHeight 是預設」 | 預設填滿(`100vh - inset*2`)防內容載入跳動;autoHeight 只給內容量已知且穩定的短 dialog(見「高度行為」) |
+| 「autoHeight 是預設」 | 預設採 viewport-bounded 固定高度以維持穩定外框；autoHeight 只給內容量已知且穩定的短 dialog(見「高度行為」) |
 | 「maxWidth 想設多寬都行」 | 受 viewport inset 公式截斷(見「maxWidth」邊界) |
 | 「視覺不顯示標題就可拿掉 DialogTitle」 | 必須保留,用 VisuallyHidden 包裹給 screen reader(見「A11y 預設」) |
 

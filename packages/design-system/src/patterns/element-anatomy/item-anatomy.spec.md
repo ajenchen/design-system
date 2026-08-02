@@ -167,7 +167,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 - **字重**: `font-medium`(500),**不隨 selected 變**
 - **預設文字色**: `text-fg-secondary`(neutral-8);icon 透過 currentColor 繼承
 - **Hover**: `bg-neutral-hover` + `text-foreground`
-- **Active / selected**: `bg-neutral-selected` + `text-foreground`(不加字重,避免跳動)
+- **Active / selected**: `bg-neutral-selected` + `text-foreground`；字重維持不變，避免 label metrics reflow
 - **無 rounded**: full-width fill
 - **無 gap 在 items 之間**: items 緊貼(SidebarMenu / TreeView / DropdownMenuGroup 容器不設 flex gap)
 - **Size variants**: sm / md / lg 跟 `--field-height-*` family 一致
@@ -652,7 +652,7 @@ Label x 位置受 prefix 尺寸影響(icon 16 vs avatar 24,差 8px)。**對齊�
 
 | 情境 | 對齊要求 | 理由 |
 |---|---|---|
-| **同 group 多 items** | Prefix 類型必須一致(全 icon 或全 avatar) | 多個 label 需要齊左掃視,prefix 類型混用會讓 label x 跳動,破壞 row rhythm |
+| **同 group 多 items** | Prefix 類型必須一致(全 icon 或全 avatar) | 多個 label 需要共享 scan alignment；混用 prefix 類型會產生不一致的 label 起點 |
 | **同 group 單一 item** | **無對齊負擔**,用 prefix 自然尺寸 | 沒有相鄰 label 可參照,縮小 prefix 只是為了對齊一個不存在的東西 |
 | **跨 group** | **永不強求對齊** | 不同 group 的語意本來就不同(主導覽 icon / user identity avatar / thumbnail list),各自反映視覺重量 |
 

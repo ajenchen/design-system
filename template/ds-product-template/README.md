@@ -19,7 +19,7 @@ The repository snapshot already contains the provider-neutral bootstrap and gene
 
 No Claude plugin is required. Session startup never installs packages, resolves `@beta`/`latest`, or rewrites the checkout. Native hooks provide fast feedback; the provider-neutral check supplies the deterministic decision. Merge enforcement comes from protected `main` requiring that check.
 
-The authenticated consumer predicate corpus currently requires Node 22.12.0+, Git, Bash, `jq`, and
+The authenticated consumer predicate corpus currently requires Node 22.13.0+, Git, Bash, `jq`, and
 Python 3. The provider-neutral checker verifies these tools and fails closed if one is absent. On
 Windows, use the committed Linux dev container or WSL2. Native Windows is explicitly unsupported
 and fails closed; it may not be relabelled as WSL2/devcontainer or as an unspecified "equivalent"

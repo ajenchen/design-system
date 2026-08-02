@@ -238,23 +238,23 @@ CONTENT=$(neutralize_local_tags "$CONTENT")
 
 VIOLATIONS=""
 
-# Pattern 1: <CircularProgress size={N}> with literal number (override default 24)
-if grep -qE '<(DS\.)?CircularProgress[^>]+size=\{[0-9]+\}' <<<"$CONTENT"; then
-  VIOLATIONS="${VIOLATIONS}  - <CircularProgress size={N}> hardcoded number override default 24 (per circular-progress.spec.md:101)\n"
-fi
+# CircularProgress intentionally accepts numeric sizes. The component spec names 16/20 for
+# field-height hosts and 32/48 for standalone compositions, so a literal-number regex cannot
+# distinguish valid context from misuse. Context suitability remains a product-ui audit judgment;
+# this hook must not reject the public API's canonical examples.
 
-# Pattern 2: <RadioGroupItem> NOT wrapped in <SelectionItem control={...}>
+# Pattern 1: <RadioGroupItem> NOT wrapped in <SelectionItem control={...}>
 # Approximation: file uses RadioGroupItem but doesn't reference SelectionItem
 if grep -qE '<(DS\.)?RadioGroupItem\b' <<<"$CONTENT" && ! grep -qE 'SelectionItem|<(DS\.)?RadioGroupItem[^>]+label=' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - <RadioGroupItem> 沒 wrap <SelectionItem control={<RadioGroupItem>}> (per selection-item.spec.md:23 SSOT spacing/padding)\n"
 fi
 
-# Pattern 3: <DataTable columns={[…]}> with literal single column
+# Pattern 2: <DataTable columns={[…]}> with literal single column
 if grep -qE '<(DS\.)?DataTable[^>]+columns=\{\[\s*\{[^}]+\}\s*\]\}' <<<"$CONTENT" && ! grep -qE 'columns=\{[^}]*\},\s*\{' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - <DataTable columns={[single-col]}> minimal one-column = 違反 data-table.spec.md canonical(min 2 cols for meaningful render)\n"
 fi
 
-# Pattern 4: <LinkInput placeholder=...> without value prop
+# Pattern 3: <LinkInput placeholder=...> without value prop
 if grep -qE '<(DS\.)?LinkInput[^>]+placeholder=' <<<"$CONTENT" && ! grep -qE '<(DS\.)?LinkInput[^>]+(value|defaultValue)=' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - <LinkInput placeholder=...> 沒 value prop = placeholder-only mode 抹平 link/edit canonical (per link-input.spec.md:18,48-58)\n"
 fi

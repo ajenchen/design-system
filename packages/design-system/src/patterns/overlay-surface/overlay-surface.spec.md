@@ -87,8 +87,7 @@ Dialog 和 Popover 的**結構化 sub-components 共用 primitive**——提供 
   <div className="py-2">                       {/* list outer wrapper:menu group 8px breathing */}
     {items.map(item => (
       <MenuItem key={item.id} className="px-[var(--layout-space-loose)]">{item.label}</MenuItem>
-      // 或 hand-craft Family 2 row(prefix+content)時:
-      // <div className="flex items-center gap-3 py-2 px-[var(--layout-space-loose)] rounded-md hover:bg-neutral-hover">
+      // Family 2 row 請直接消費 item-anatomy primitives；utility 組合由其 source 擁有。
     ))}
   </div>
 </DialogBody>

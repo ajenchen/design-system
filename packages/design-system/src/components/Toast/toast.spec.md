@@ -128,7 +128,7 @@ toast({
 
 ## 寬度（元件級常數）
 
-Toast 固定 **360px 寬**（見 `.tsx` 的 `w-[360px]`）——跨通知視覺一致，避免長短不一造成視覺跳動；同時限制單一通知橫向占據空間，不遮蔽過多頁面內容。
+Toast 使用單一元件級寬度，以維持穩定的訊息行長與頁面遮蔽上限；canonical 數值與 utility 由 `toast.tsx` 擁有，調整時連同對應 story baseline 驗證。
 
 對照世界級：Material Snackbar 固定 344px、Sonner default toast 固定寬度——**單一元件的 canonical 寬度屬於該元件自己的 design spec，不抽為跨元件 token**。Token 系統只管共享值（如 `--field-height-*`、`--layout-space-*`）；單一元件獨有的結構常數留在 component code + 本 spec。
 

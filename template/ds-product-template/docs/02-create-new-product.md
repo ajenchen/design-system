@@ -53,7 +53,7 @@ export default function App() {
 
 ## Deploy(Dashboard 連線後自動,帳密不進 Git)
 
-新 app 自動進 Storybook(`netlify.toml:14` `build.command = "npm run build-storybook"`)；變更經 required checks 與 review 後合併 PR 到 `main`，Netlify 便會自動 rebuild，可見於 `https://<your-netlify-site>/?path=/story/apps-<name>-...`。
+新 app 自動進 Storybook(`netlify.toml:13` `build.command = "npm run build-storybook"`)；變更經 required checks 與 review 後合併 PR 到 `main`，Netlify 便會自動 rebuild，可見於 `https://<your-netlify-site>/?path=/story/apps-<name>-...`。
 
 **Fork user 第一次 setup**:
 - `npm run setup:netlify` 只做唯讀診斷並列 Dashboard 步驟；它不安裝、不下載、不呼叫 Netlify CLI，也不自動登入或建站。看到 exit 2 / `MANUAL ACTION REQUIRED` 是預期的 fail-closed 狀態。
