@@ -13,7 +13,9 @@ import {
   buildPublishMutationPlan,
   buildPullRequestLookupArgs,
   buildPullRequestCreateArgs,
+  matchesConsumerPullRequest,
   selectPublishRun,
+  validateConsumerCheckProvenance,
   validateReleaseWorkflow,
 } from '../../../scripts/release-orchestrator.mjs'
 import { loadGovernanceBuildGraph } from '../../../scripts/governance-build-graph.mjs'
@@ -99,10 +101,10 @@ test('live readbacks alone support safe resume without local candidate receipts'
     onProtectedMain: true,
     pullRequest: null,
     releaseCommitSha: 'a'.repeat(40),
-    release: { tagName: 'v1.2.3', isDraft: false, publishedAt: '2026-08-01T00:00:00Z' },
+    release: { tagName: 'v1.2.3', isDraft: false, isImmutable: true, publishedAt: '2026-08-01T00:00:00Z' },
     publishRun: null,
     npmPackages: workflow.automation.packages.map(name => ({ name, exactVersion: true })),
-    consumers: workflow.automation.consumers.map(target => ({ ...target, exactVersion: true })),
+    consumers: workflow.automation.consumers.map(target => ({ ...target, exactVersion: true, checkReadback: { trusted: true } })),
   })
   assert.deepEqual(complete.map(step => step.status), ['complete', 'complete', 'complete', 'complete', 'complete'])
 
@@ -138,12 +140,51 @@ test('live readbacks alone support safe resume without local candidate receipts'
     onProtectedMain: true,
     pullRequest: null,
     releaseCommitSha: 'a'.repeat(40),
-    release: { tagName: 'v1.2.3', isDraft: true, publishedAt: null },
+    release: { tagName: 'v1.2.3', isDraft: true, isImmutable: false, publishedAt: null },
     publishRun: null,
     npmPackages: workflow.automation.packages.map(name => ({ name, exactVersion: true })),
     consumers: workflow.automation.consumers.map(target => ({ ...target, exactVersion: true })),
   })
   assert.deepEqual(draft.map(step => step.status), ['complete', 'complete', 'ready', 'blocked', 'blocked'])
+})
+
+test('consumer completion requires an Actions-bound producer matching the release target', () => {
+  const target = workflow.automation.consumers[1]
+  const pullRequest = { headRefOid: 'a'.repeat(40), baseRefOid: 'b'.repeat(40) }
+  const integration = { id: 15368, slug: 'github-actions' }
+  const checkRun = {
+    name: 'Verify consumer',
+    head_sha: pullRequest.headRefOid,
+    status: 'completed',
+    conclusion: 'success',
+    app: integration,
+  }
+  const workflowRun = {
+    path: '.github/workflows/sync-design-system.yml',
+    event: 'repository_dispatch',
+    head_sha: pullRequest.baseRefOid,
+    status: 'completed',
+    conclusion: 'success',
+  }
+  assert.equal(validateConsumerCheckProvenance(target, pullRequest, checkRun, workflowRun, integration), true)
+  assert.equal(validateConsumerCheckProvenance(target, pullRequest, checkRun, { ...workflowRun, event: 'pull_request' }, integration), false)
+  assert.equal(validateConsumerCheckProvenance(target, pullRequest, checkRun, { ...workflowRun, head_sha: pullRequest.headRefOid }, integration), false)
+})
+
+test('consumer PR matching rejects a release identity copied onto the wrong branch or base', () => {
+  const target = workflow.automation.consumers[1]
+  const version = '1.2.3-beta.4'
+  const releaseCommit = 'c'.repeat(40)
+  const row = {
+    state: 'OPEN',
+    headRefName: `automation/design-system-${version}`,
+    baseRefName: 'main',
+    title: `chore(ds): sync v${version}`,
+    body: `Version ${version}; commit ${releaseCommit}`,
+  }
+  assert.equal(matchesConsumerPullRequest(target, row, version, releaseCommit), true)
+  assert.equal(matchesConsumerPullRequest(target, { ...row, headRefName: 'attacker/copied-receipt' }, version, releaseCommit), false)
+  assert.equal(matchesConsumerPullRequest(target, { ...row, baseRefName: 'preview' }, version, releaseCommit), false)
 })
 
 test('orchestrator builds protected-main tag and repository-dispatch commands without workflow_dispatch', () => {

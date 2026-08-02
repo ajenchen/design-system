@@ -35,12 +35,12 @@
     {
       "id": "readback",
       "authority": "AUTO",
-      "completion": ["github-release-readback", "npm-exact-version-readback"]
+      "completion": ["github-release-readback", "github-release-immutable", "npm-exact-version-readback"]
     },
     {
       "id": "consumer",
       "authority": "AUTO",
-      "completion": ["template-main-exact-version", "work-management-main-exact-version"]
+      "completion": ["template-main-exact-version", "work-management-main-exact-version", "actions-bound-consumer-check-provenance"]
     }
   ],
   "legacyMechanisms": [
@@ -62,7 +62,14 @@
         "defaultBranch": "main",
         "delivery": "release-published-pr",
         "readbackPath": "package-lock.json",
-        "packages": ["@qijenchen/design-system", "@qijenchen/storybook-config"]
+        "packages": ["@qijenchen/design-system", "@qijenchen/storybook-config"],
+        "requiredCheck": {
+          "context": "Verify consumer",
+          "integration": "githubActions",
+          "producerWorkflow": ".github/workflows/audit.yml",
+          "producerEvent": "pull_request",
+          "producerHead": "pull-request-head"
+        }
       },
       {
         "repository": "ajenchen/work-management",
@@ -70,7 +77,14 @@
         "dispatchEvent": "design-system-published",
         "delivery": "repository-dispatch-pr",
         "readbackPath": "package-lock.json",
-        "packages": ["@qijenchen/design-system", "@qijenchen/storybook-config"]
+        "packages": ["@qijenchen/design-system", "@qijenchen/storybook-config"],
+        "requiredCheck": {
+          "context": "Verify consumer",
+          "integration": "githubActions",
+          "producerWorkflow": ".github/workflows/sync-design-system.yml",
+          "producerEvent": "repository_dispatch",
+          "producerHead": "pull-request-base"
+        }
       }
     ]
   }

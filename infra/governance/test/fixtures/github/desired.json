@@ -57,7 +57,7 @@
         {
           "context": "Verify consumer",
           "integration": "githubActions",
-          "trustSource": "protected-base-workflow",
+          "trustSource": "repository-workflow",
           "workflow": ".github/workflows/audit.yml",
           "workflowIdentity": {
             "contentSha256": "f620b819dc58937bde853da5c08d103b6d81194fdd0f400f1cebfdbad2c7a211",
@@ -66,11 +66,10 @@
             "semanticSha256": "dad42ba5e135c6a1fab279e064e934784f03700353e5f68aa8ea1b8c7a6fa166"
           },
           "requiredEvents": [
-            "repository_dispatch"
+            "pull_request"
           ],
           "forbidCandidateControlledSkip": true,
-          "requireUnconditionalPullRequest": true,
-          "baseTrusted": true
+          "requireUnconditionalPullRequest": true
         }
       ],
       "rulesets": [

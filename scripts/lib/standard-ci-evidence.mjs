@@ -153,6 +153,8 @@ export function validateStandardFiveStepObservation(observation, {
     const item = consumerById.get(repo.id)
     const profile = desired.profiles[repo.desiredProfile]
     const check = profile.requiredChecks.find((candidate) => candidate.context === expectedConsumer.requiredCheck)
+    const releaseTarget = workflow.automation.consumers.find((target) => target.repository === repo.github)
+    if (!releaseTarget || releaseTarget.requiredCheck?.context !== check?.context) fail(`${repo.id} release/check SSOT differs`)
     if (!item || item.role !== repo.role || item.repository !== repo.github || item.defaultBranch !== repo.defaultBranch
       || item.sourcePullRequest.mergeCommit !== item.protectedMain.head || item.sourcePullRequest.mergeTree !== item.protectedMain.tree
       || item.sourcePullRequest.baseRef !== repo.defaultBranch
@@ -168,8 +170,10 @@ export function validateStandardFiveStepObservation(observation, {
     validateWorkflowIdentity(item.auditWorkflow, { path: check.workflow, ...check.workflowIdentity }, `${repo.id} audit`)
     validateCheck(item.requiredCheck, {
       context: check.context, integration: desired.integrations[check.integration], repository: repo.github,
-      workflow: check.workflow, event: check.requiredEvents[0], headSha: item.sourcePullRequest.head,
-      workflowHeadSha: check.requiredEvents[0] === 'repository_dispatch'
+      workflow: releaseTarget.requiredCheck.producerWorkflow,
+      event: releaseTarget.requiredCheck.producerEvent,
+      headSha: item.sourcePullRequest.head,
+      workflowHeadSha: releaseTarget.requiredCheck.producerHead === 'pull-request-base'
         ? item.sourcePullRequest.baseHead
         : item.sourcePullRequest.head,
     }, repo.id)

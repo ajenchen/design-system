@@ -662,7 +662,7 @@ test('canonical GitHub profile minima reject required-check, environment, releas
       .filter(environment => environment.name !== 'npm-release')
   })
   expectDesiredPoison(value => {
-    value.profiles['design-system-authority'].immutableReleases = true
+    value.profiles['design-system-authority'].immutableReleases = false
   })
   expectDesiredPoison(value => {
     value.profiles['design-system-authority'].rulesets
@@ -690,7 +690,7 @@ test('canonical GitHub profile minima reject required-check, environment, releas
     value.profiles['product-consumer'].actionsWorkflowPermissions.can_approve_pull_request_reviews = false
   })
   expectDesiredPoison(value => {
-    value.profiles['product-consumer'].requiredChecks[0].requiredEvents = ['pull_request']
+    value.profiles['product-consumer'].requiredChecks[0].requiredEvents = ['repository_dispatch']
   })
   expectDesiredPoison(value => {
     value.profiles['published-template'].requiredChecks[0].workflow = '.github/workflows/release.yml'

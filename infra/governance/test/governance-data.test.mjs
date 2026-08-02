@@ -86,12 +86,12 @@ test('live governance model encodes exact trust anchors, solo review settings, t
     desired.profiles['product-consumer'].requiredChecks[0],
     {
       ...desired.profiles['product-consumer'].requiredChecks[0],
-      baseTrusted: true,
-      requiredEvents: ['repository_dispatch'],
-      trustSource: 'protected-base-workflow',
+      requiredEvents: ['pull_request'],
+      trustSource: 'repository-workflow',
       workflow: '.github/workflows/audit.yml',
     },
   )
+  assert.equal(desired.profiles['product-consumer'].requiredChecks[0].baseTrusted, undefined)
   assert.equal(desired.profiles['published-template'].requiredChecks[0].baseTrusted, undefined)
   assert.deepEqual(desired.profiles['published-template'].requiredChecks[0].requiredEvents, ['pull_request'])
   assert.equal(desired.profiles['published-template'].requiredChecks[0].trustSource, 'repository-workflow')
@@ -130,7 +130,7 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   const npmRelease = desired.profiles['design-system-authority'].environments.find(environment => environment.name === 'npm-release')
   assert.equal(Object.hasOwn(npmRelease, 'credentialIntegration'), false)
   assert.equal(npmRelease.rollout, 'always')
-  assert.equal(desired.profiles['design-system-authority'].immutableReleases, false)
+  assert.equal(desired.profiles['design-system-authority'].immutableReleases, true)
   const publishNpmOffset = authorityReleaseWorkflow.indexOf('\n  build-and-publish-npm:\n')
   const publishNpm = publishNpmOffset >= 0 ? authorityReleaseWorkflow.slice(publishNpmOffset + 1) : null
   assert.ok(publishNpm, 'release workflow lacks the npm-release publish job')
@@ -199,7 +199,7 @@ test('live governance model encodes exact trust anchors, solo review settings, t
     /desired schema validation failed:.*can_approve_pull_request_reviews must be equal to constant/,
   )
   const desiredValidatorContract = validateDesiredGithub.toString()
-  assert.match(desiredValidatorContract, /product-consumer required check must be the protected-default receiver Verify consumer receipt/)
+  assert.match(desiredValidatorContract, /product-consumer required check must be the canonical pull-request Verify consumer job/)
   assert.match(desiredValidatorContract, /must allow GitHub Actions to create upgrade pull requests/)
   assert.match(desiredValidatorContract, /externalLedgerEnvironment\.workflow === '\.github\/workflows\/external-ledger-writer\.yml'[\s\S]*governance-external-ledger must bind the protected external-ledger writer workflow/)
   assert.match(desiredValidatorContract, /externalLedgerEnvironment\.credentialIntegration === 'governanceWriterApp'[\s\S]*governance-external-ledger must use the dedicated Governance Writer App/)

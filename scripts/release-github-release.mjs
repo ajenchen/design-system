@@ -119,6 +119,7 @@ function validateIdentity(state, expected, { published }) {
   if (published) {
     if (state.isDraft) throw new Error('GitHub Release remained a draft')
     if (Boolean(state.isPrerelease) !== expected.prerelease) throw new Error('GitHub Release prerelease state is incorrect')
+    if (state.isImmutable !== true) throw new Error('published GitHub Release is not immutable')
   } else if (!state.isDraft) {
     throw new Error('GitHub Release unexpectedly became published during draft preparation')
   }
@@ -137,8 +138,7 @@ async function verifyPublishedRelease(ghContext, expected, expectedFiles) {
   const missing = compareReleaseAssets(state, expectedFiles)
   if (missing.length) throw new Error(`published GitHub Release is missing assets: ${missing.map(item => item.name).join(', ')}`)
   console.log(
-    `✅ published GitHub Release and exact six-file name/size/digest readback verified: ${expected.tag}`
-    + (state.isImmutable ? ' (immutable)' : ''),
+    `✅ immutable published GitHub Release and exact six-file name/size/digest readback verified: ${expected.tag}`,
   )
 }
 
@@ -165,8 +165,7 @@ async function main() {
     if (missing.length) throw new Error(`published GitHub Release is missing assets: ${missing.map(item => item.name).join(', ')}`)
     await verifyPublishedRelease(ghContext, expected, expectedFiles)
     console.log(
-      'ℹ️ exact published GitHub Release already existed; no mutation performed'
-      + (state.isImmutable ? ' (immutable)' : ''),
+      'ℹ️ exact immutable published GitHub Release already existed; no mutation performed',
     )
     return
   }
