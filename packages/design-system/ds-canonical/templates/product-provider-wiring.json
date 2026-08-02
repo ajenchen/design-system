@@ -6,7 +6,7 @@
     "schemaVersion": 2,
     "engine": "node-posix-toolchain-v2",
     "minimumNodeVersion": "22.13.0",
-    "exactNpmVersion": "11.18.0",
+    "exactNpmVersion": "11.19.0",
     "supportedHostPlatforms": [
       "darwin",
       "linux"
@@ -35,7 +35,8 @@
     "setup:all",
     "setup:governance",
     "setup:provider-cli",
-    "sync-all"
+    "sync-all",
+    "sync:workspace-dependencies"
   ],
   "settings": {
     "comment": "Provider-neutral committed adapter. Engineering external writes, package installation, and publication are standing-delegated when canonical preflight, least privilege, evidence, rollback, and readback gates pass; raw destructive or bypass commands remain denied. Only platform-enforced login/MFA/OAuth, missing credential references, plan-external spend, legal/account/organization commitments, and genuine product/UI/UX SSOT choices require human action. Native hooks accelerate feedback while provider-neutral checks and protected CI remain authoritative.",

@@ -59,4 +59,74 @@ else
   echo "SUB-FAIL: plugin/fork child policy contract changed (exit $rc)"
   fail=1
 fi
+
+# Regression for the aggregate hook runner: the Claude-only marketplace compatibility probe is
+# intentionally non-authoritative. Transport failure, timeout, empty response, and malformed JSON
+# must all be silent rc0 skips even when the caller exports aggregate-runner state.
+TRANSPORT_DIR="$FAULT_DIR/transport"
+mkdir -p \
+  "$TRANSPORT_DIR/bin" \
+  "$TRANSPORT_DIR/project/.claude-plugin" \
+  "$TRANSPORT_DIR/project/governance/bin" \
+  "$TRANSPORT_DIR/project/node_modules/@qijenchen/design-system/ds-canonical/fork" \
+  "$TRANSPORT_DIR/home"
+printf '%s\n' '{"dependencies":{"@qijenchen/design-system":"1.2.3"},"scripts":{"setup:all":"node scripts/setup-workspace.mjs"}}' \
+  >"$TRANSPORT_DIR/project/package.json"
+printf '%s\n' '{"version":"1.2.3"}' >"$TRANSPORT_DIR/project/.claude-plugin/plugin.json"
+: >"$TRANSPORT_DIR/project/governance/bin/fork-governance-dispatcher.sh"
+printf '%s\n' '{}' >"$TRANSPORT_DIR/project/node_modules/@qijenchen/design-system/ds-canonical/fork/manifest.json"
+cat >"$TRANSPORT_DIR/bin/curl" <<'EOF'
+#!/bin/sh
+case "$CURL_FIXTURE_MODE" in
+  failure) exit 7 ;;
+  timeout) exit 28 ;;
+  empty) exit 0 ;;
+  malformed) printf '%s' '{"metadata":' ;;
+  mismatch) printf '%s' '{"metadata":{"version":"9.9.9"}}' ;;
+  *) exit 99 ;;
+esac
+EOF
+chmod +x "$TRANSPORT_DIR/bin/curl"
+
+for _mode in failure timeout empty malformed; do
+  _stderr="$TRANSPORT_DIR/$_mode.stderr"
+  if _stdout=$(printf '%s' '{"hook_event_name":"SessionStart"}' \
+    | HOME="$TRANSPORT_DIR/home" \
+      PATH="$TRANSPORT_DIR/bin:$PATH" \
+      CURL_FIXTURE_MODE="$_mode" \
+      GOVERNANCE_PROJECT_DIR="$TRANSPORT_DIR/project" \
+      GOVERNANCE_PROVIDER=claude \
+      bash "$DIR/../check_plugin_fork_health.sh" 2>"$_stderr"); then
+    _rc=0
+  else
+    _rc=$?
+  fi
+  if [ "$_rc" -eq 0 ] && [ -z "$_stdout" ] && [ ! -s "$_stderr" ]; then
+    echo "PASS: marketplace $_mode is a silent aggregate-safe rc0 skip"
+  else
+    echo "SUB-FAIL: marketplace $_mode escaped the compatibility skip contract (exit $_rc)"
+    fail=1
+  fi
+done
+
+_stderr="$TRANSPORT_DIR/mismatch.stderr"
+if _stdout=$(printf '%s' '{"hook_event_name":"SessionStart"}' \
+  | HOME="$TRANSPORT_DIR/home" \
+    PATH="$TRANSPORT_DIR/bin:$PATH" \
+    CURL_FIXTURE_MODE=mismatch \
+    GOVERNANCE_PROJECT_DIR="$TRANSPORT_DIR/project" \
+    GOVERNANCE_PROVIDER=claude \
+    bash "$DIR/../check_plugin_fork_health.sh" 2>"$_stderr"); then
+  _rc=0
+else
+  _rc=$?
+fi
+if [ "$_rc" -eq 0 ] && [ ! -s "$_stderr" ] \
+  && printf '%s' "$_stdout" | grep -qF 'Legacy Claude plugin compatibility version differs' \
+  && printf '%s' "$_stdout" | grep -qF 'npm run setup:all'; then
+  echo "PASS: a genuine version mismatch still emits the non-authoritative compatibility notice"
+else
+  echo "SUB-FAIL: genuine marketplace mismatch no longer emits its compatibility notice (exit $_rc)"
+  fail=1
+fi
 exit $fail

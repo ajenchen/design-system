@@ -138,7 +138,7 @@
       "required": ["node", "npm"],
       "properties": {
         "node": { "type": "string", "pattern": "^v\\d+\\.\\d+\\.\\d+$" },
-        "npm": { "const": "11.18.0" }
+        "npm": { "const": "11.19.0" }
       }
     }
   }

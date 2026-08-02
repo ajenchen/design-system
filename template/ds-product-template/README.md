@@ -19,7 +19,7 @@ The repository snapshot already contains the provider-neutral bootstrap and gene
 
 No Claude plugin is required. Session startup never installs packages, resolves `@beta`/`latest`, or rewrites the checkout. Native hooks provide fast feedback; the provider-neutral check supplies the deterministic decision. Merge enforcement comes from protected `main` requiring that check.
 
-The authenticated consumer predicate corpus currently requires Node 22.12.0+, Git, Bash, `jq`, and
+The authenticated consumer predicate corpus currently requires Node 22.13.0+, Git, Bash, `jq`, and
 Python 3. The provider-neutral checker verifies these tools and fails closed if one is absent. On
 Windows, use the committed Linux dev container or WSL2. Native Windows is explicitly unsupported
 and fails closed; it may not be relabelled as WSL2/devcontainer or as an unspecified "equivalent"
@@ -98,6 +98,14 @@ npm run sync-all -- --apply --to X.Y.Z
 One `sync-all --apply` command authenticates and reconstructs the complete incoming snapshot before mutation. An ordinary upgrade may update exact dependencies plus authenticated non-executable governance data, instructions, and provider views. If the reconstructed release changes `.github/**`, `.npmrc`, `governance/bin/**`, `scripts/**`, or `package.json#scripts`, the same command fails closed with the stable compatibility IDs `GOV-UPGRADE-BOOTSTRAP-001/002`, restores the original state, and routes those control-plane changes to a separately reviewed full-snapshot PR; it never activates incoming control-plane code automatically. Its process-crash journal covers every path that the transaction might stage, the common instruction (`AGENTS.md`), and the prior installed tree; a failed install/materialization/check or a later invocation after SIGKILL restores the original snapshot. Run upgrades with editors and other writers quiesced: no filesystem transaction can promise to capture a non-cooperative process that keeps writing through an already-open old file descriptor. Review every permitted diff and merge through a protected PR.
 
 Automatic template delivery is owned upstream by the design-system release mirror. It opens a normal PR containing the exact published snapshot; this repository does not carry a second release-dispatch/updater workflow. Protected `main` requires the single `Verify consumer` check from `audit.yml`, which performs one locked install followed by typecheck, import lint, and build. Preview, visual, a11y, canary, and independent-review evidence remain optional or scheduled unless explicitly requested; they do not block the standard release path.
+
+The release authority is the provider-neutral five-step SSOT, in this exact order:
+`pr-checks → merge → publish → readback → consumer`. The upstream release mirror owns delivery to
+the template repository. A separately registered product receiver may consume the immutable release
+event, but it may only pin every dynamically discovered workspace manifest, regenerate the one npm
+lock, and open a protected PR; it never publishes, writes `main`, or replaces mirror authority. Both
+status detection and staging must use `npm run sync:workspace-dependencies -- --list-receiver-paths`
+rather than a hard-coded app list.
 
 Legacy consumers that predate this v2 boundary are intentionally different from new template users: they first complete a one-time separately reviewed full-snapshot bootstrap PR (they cannot bootstrap themselves through the old updater). Later control-plane changes for every consumer go through the same separately reviewed full-snapshot PR route. The optional fleet/readback-chain machinery in `docs/04-ds-upgrade.md` is an opt-in hardening lane, never a precondition for ordinary `sync-all`.
 

@@ -90,8 +90,8 @@ async function main() {
   const npmCli = npmRuntime.cli
   try {
     const npmVersion = execFileSync(npmCli, ['--version'], { encoding: 'utf8' }).trim()
-    if (npmVersion !== '11.18.0' || npmRuntime.toolchain?.npm !== npmVersion) {
-      throw new Error(`lock-bound npm 11.18.0 is required for final certification; found ${npmVersion}`)
+    if (npmVersion !== '11.19.0' || npmRuntime.toolchain?.npm !== npmVersion) {
+      throw new Error(`lock-bound npm 11.19.0 is required for final certification; found ${npmVersion}`)
     }
   const context = loadReleaseContext({
     artifacts: resolve(args['--artifacts']),

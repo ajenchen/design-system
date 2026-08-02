@@ -14,7 +14,11 @@ set -uo pipefail
 #     - Screenshot reference(`snapshots/...`)
 #     - Marked `@benchmark-unverified`(顯式撤回)
 #
-# 允許 escape:
+# Component-spec zero-debt rule:
+#   `packages/design-system/src/components/**/*.spec.md` may not add any benchmark escape.
+#   Claims must either carry direct inline evidence or be rewritten as internal product rationale.
+#
+# 其他 scope 允許 escape:
 #   檔頭加 `// @benchmark-citation-allow: <reason>` 整檔豁免(legacy,M22 hook 上線過渡期)
 #   檔頭加 `// @benchmark-unverified-blanket: <reason>` 整檔 M22 (d) 撤回(file-level unverified)
 
@@ -44,6 +48,28 @@ NEW_CONTENT=$(echo "$INPUT" | jq -r '
 ' 2>/dev/null || echo "")
 
 grep -q '[^[:space:]]' <<<"$NEW_CONTENT" || exit 0
+
+# Component specs are the public authoring contract and completed their D9 evidence-debt
+# migration in beta.107. Do not allow either a per-claim retraction or a file-level bypass to
+# recreate that debt. This intentionally runs before the legacy file-level allowlist below.
+case "$FILE_PATH" in
+  */packages/design-system/src/components/**/*.spec.md)
+    if grep -qE '@benchmark-unverified([^-[:alnum:]]|-blanket:)|@benchmark-citation-allow:' <<<"$NEW_CONTENT"; then
+      cat >&2 <<EOF
+
+┄┄┄┄ check_benchmark_citation — component spec benchmark evidence debt ┄┄┄┄
+
+[P0 BLOCKER] ${FILE_PATH}
+Component specs are a zero-debt scope: \`@benchmark-unverified\`,
+\`@benchmark-unverified-blanket\`, and \`@benchmark-citation-allow\` are forbidden.
+
+Keep the claim only with a direct inline primary-source citation that supports it;
+otherwise remove the external comparison and state the DS-internal product rationale.
+EOF
+      exit 2
+    fi
+    ;;
+esac
 
 # File-level allowlist
 FIRST_LINES=$(printf '%s\n' "$NEW_CONTENT" | sed -n '1,5p')

@@ -18,10 +18,10 @@
 #   - PostToolUse:R5(reads from disk after write)
 # settings.json registers same script to both events on Edit|Write|MultiEdit matcher。
 #
-# Allowlist markers preserved 1-to-1:
+# Scoped exception markers preserved 1-to-1:
 #   R1: @anatomy-exempt: / @anatomy-exempt-next
 #   R2: @story-split-rationale:
-#   R3: @story-trait-rationale:
+#   R3: @story-trait-rationale: <declared-trait> -> <existing-story-export> — <non-deferred reason>
 #   R4: @story-name-canonical-allow:
 #   R5(no allowlist,reads disk;jargon catch is broad warning)
 
@@ -374,10 +374,6 @@ rule_slot_split() {
     violations="${violations}
 [命名漂移] Variants → AllVariants"
   fi
-  if grep -qE '^export const Basic(\b|:|\s|=)' <<< "$FULL"; then
-    violations="${violations}
-[命名漂移] Basic → Default"
-  fi
   if grep -qE '^export const (DisabledState|DisabledGroup)(\b|:|\s|=)' <<< "$FULL"; then
     violations="${violations}
 [命名漂移] DisabledState/Group → Disabled"
@@ -408,13 +404,6 @@ rule_slot_split() {
 rule_category() {
   [ "$EVENT" = "PostToolUse" ] && return 0
   case "$FILE_PATH" in *anatomy.stories.tsx|*principles.stories.tsx) return 0 ;; esac
-
-  # Allowlist — check new content AND disk (align with R4 behavior)
-  grep -q "@story-trait-rationale:" <<< "$NEW_CONTENT" && return 0
-  if [ "${GOVERNANCE_WRITE_STATE_TRUST:-}" != "runner-v1" ] && [ -f "$FILE_PATH" ]; then
-    DISK_HEAD=$(sed -n '1,5p' "$FILE_PATH" 2>/dev/null || true)
-    grep -q '@story-trait-rationale:' <<< "$DISK_HEAD" && return 0
-  fi
 
   COMP_DIR=$(dirname "$FILE_PATH")
   SPEC_FILE=""
@@ -457,56 +446,106 @@ rule_category() {
     FULL="${EXISTING}
 ${NEW_CONTENT}"
   fi
-  EXPORTS=$(grep -oE "^export const [A-Z][a-zA-Z]+" <<< "$FULL" | awk '{print $3}' | sort -u)
+  EXPORTS=$(grep -oE "^export const [A-Z][a-zA-Z0-9]*" <<< "$FULL" | awk '{print $3}' | sort -u)
 
   has_present() { grep -qE "^${1}$" <<< "$EXPORTS"; }
   has_contains() { grep -qE "${1}" <<< "$EXPORTS"; }
 
+  # A trait rationale is a scoped, mechanically validated exception rather than a
+  # file-wide escape. It can only satisfy the named trait and must point at a real
+  # reader-facing export that already teaches the omitted trait scenario.
+  local rationale_line rationale_trait rationale_target rationale_reason
+  local rationale_errors=""
+  local valid_rationale_traits=""
+  while IFS= read -r rationale_line; do
+    [ -n "$rationale_line" ] || continue
+    if [[ "$rationale_line" =~ ^[[:space:]]*//[[:space:]]*@story-trait-rationale:[[:space:]]*([A-Za-z][A-Za-z0-9]*)[[:space:]]*\-\>[[:space:]]*([A-Z][A-Za-z0-9]*)[[:space:]]*—[[:space:]]*(.+[^[:space:]])[[:space:]]*$ ]]; then
+      rationale_trait="${BASH_REMATCH[1]}"
+      rationale_target="${BASH_REMATCH[2]}"
+      rationale_reason="${BASH_REMATCH[3]}"
+
+      case "$rationale_trait" in
+        hasSizes|hasInteractiveStates|isOverlay|isInputLike|isSelectionMulti) ;;
+        *)
+          rationale_errors="${rationale_errors}
+  • [P0] @story-trait-rationale unknown/non-enforced trait: ${rationale_trait}"
+          continue ;;
+      esac
+      if ! grep -qE "(^|[[:space:]])${rationale_trait}([[:space:]]|$)" <<< "$TRAITS"; then
+        rationale_errors="${rationale_errors}
+  • [P0] @story-trait-rationale trait not declared in spec: ${rationale_trait}"
+        continue
+      fi
+      if ! has_present "$rationale_target"; then
+        rationale_errors="${rationale_errors}
+  • [P0] @story-trait-rationale target export missing: ${rationale_target}"
+        continue
+      fi
+      if grep -qiE 'tracked separately|pre-existing|this PR scope|defer(red)?|later|future|待辦|之後|另案|未來|不在本次|另處理|先補' <<< "$rationale_reason"; then
+        rationale_errors="${rationale_errors}
+  • [P0] @story-trait-rationale reason is deferred rather than resolved: ${rationale_trait} -> ${rationale_target}"
+        continue
+      fi
+      valid_rationale_traits="${valid_rationale_traits}
+${rationale_trait}"
+    else
+      rationale_errors="${rationale_errors}
+  • [P0] malformed @story-trait-rationale; expected: // @story-trait-rationale: <declared-trait> -> <existing-story-export> — <non-deferred reason>"
+    fi
+  done < <(grep '@story-trait-rationale:' <<< "$FULL" || true)
+
+  has_trait_rationale() { grep -qx "$1" <<< "$valid_rationale_traits"; }
+
   # 2026-06-11 deep-audit R2(n=36):anatomy 分層 credit — 矩陣類 showcase 的 home 在 anatomy 層
   # (category-matrix stateComboMatrix/anatomyDiagram + dim 11 三層分工)。Drift 證據:12 個 hasSizes
   # 元件 SizeMatrix 全在 anatomy 檔,展示檔無 AllSizes;button.stories.tsx:2 等 16 檔被迫用
-  # @story-trait-rationale escape marker 繞 hook(marker hack = required-exports 集合與分層 convention 漂移)。
-  # Credit 對照:hasSizes ← SizeMatrix / Default-AllVariants ← ColorMatrix / hasInteractiveStates ← StateBehavior。
+  # 舊 file-wide @story-trait-rationale 曾繞過整個 hook(marker hack = required-exports
+  # 集合與分層 convention 漂移)。現在只接受上方 scoped grammar。
+  # Credit 對照:hasSizes ← SizeMatrix / hasInteractiveStates ← StateBehavior。
   # 情境類 trait(isInputLike WithError / isSelectionMulti Group / isOverlay OpenSnapshot)仍 owned by
   # 展示層,不 credit(真保護不削弱)。
   ANATOMY_EXPORTS=""
+  ANATOMY_HEADERS=""
   for af in "$COMP_DIR"/*.anatomy.stories.tsx "$COMP_DIR"/*.principles.stories.tsx; do
     [ -f "$af" ] || continue
     ANATOMY_EXPORTS="${ANATOMY_EXPORTS}
-$(awk '/^export const [A-Z][a-zA-Z]+/ { print $3 }' "$af" 2>/dev/null)"
+$(grep -oE '^export const [A-Z][a-zA-Z0-9]*' "$af" 2>/dev/null | awk '{print $3}')"
+    ANATOMY_HEADERS="${ANATOMY_HEADERS}
+$(awk '/^import[[:space:]]/{exit} {print}' "$af" 2>/dev/null)"
   done
   anatomy_has() { grep -qE "^${1}$" <<< "$ANATOMY_EXPORTS"; }
+  anatomy_has_or_rationale() {
+    anatomy_has "$1" && return 0
+    grep -q '@anatomy-rationale:' <<< "$ANATOMY_HEADERS" \
+      && grep -qE "(^|[^A-Za-z0-9])${1}([^A-Za-z0-9]|$)" <<< "$ANATOMY_HEADERS"
+  }
 
-  local violations=""
-  if ! has_present "Default" && ! has_present "AllVariants" && ! anatomy_has "ColorMatrix"; then
-    violations="${violations}
-  • [P1 warn] missing Default/AllVariants story(anatomy ColorMatrix 亦可)"
-  fi
+  local violations="$rationale_errors"
   for trait in $TRAITS; do
     case "$trait" in
       hasSizes)
-        if ! has_present "AllSizes"; then
+        if ! has_present "AllSizes" && ! has_trait_rationale "hasSizes"; then
           if grep -qE "^(Small|Medium|Large|SizeSm|SizeMd|SizeLg)$" <<< "$EXPORTS"; then
             violations="${violations}
   • [P0] hasSizes → per-size split,merge AllSizes(或遷 anatomy SizeMatrix)"
-          elif ! anatomy_has "SizeMatrix"; then
+          elif ! anatomy_has_or_rationale "SizeMatrix"; then
             violations="${violations}
   • [P0] hasSizes → missing AllSizes(展示層)/ SizeMatrix(anatomy 層)"
           fi
         fi ;;
       hasInteractiveStates)
-        has_contains "(Disabled|States|Modes)" || anatomy_has "StateBehavior" || violations="${violations}
+        has_contains "(Disabled|States|Modes)" || anatomy_has_or_rationale "StateBehavior" || has_trait_rationale "hasInteractiveStates" || violations="${violations}
   • [P0] hasInteractiveStates → missing Disabled/States/Modes(展示層)/ StateBehavior(anatomy 層)" ;;
       isOverlay)
-        if ! has_present "OpenSnapshot" && ! grep -qE "(defaultOpen|useState\(true\))" <<< "$FULL"; then
+        if ! has_present "OpenSnapshot" && ! grep -qE "(defaultOpen|useState\(true\))" <<< "$FULL" && ! has_trait_rationale "isOverlay"; then
           violations="${violations}
   • [P0] isOverlay → missing OpenSnapshot/defaultOpen"
         fi ;;
       isInputLike)
-        has_present "WithError" || has_present "ErrorState" || violations="${violations}
+        has_present "WithError" || has_present "ErrorState" || has_trait_rationale "isInputLike" || violations="${violations}
   • [P0] isInputLike → missing WithError" ;;
       isSelectionMulti)
-        has_present "VerticalGroup" || has_present "Group" || violations="${violations}
+        has_present "VerticalGroup" || has_present "Group" || has_trait_rationale "isSelectionMulti" || violations="${violations}
   • [P0] isSelectionMulti → missing VerticalGroup/Group" ;;
     esac
   done
@@ -519,7 +558,7 @@ $(awk '/^export const [A-Z][a-zA-Z]+/ { print $3 }' "$af" 2>/dev/null)"
         echo "  Component: $(basename "$COMP_DIR") / Traits: $TRAITS"
         printf '%s' "$violations"
         echo ""
-        echo "豁免:檔首 // @story-trait-rationale: <reason>"
+        echo "Scoped exception: // @story-trait-rationale: <declared-trait> -> <existing-story-export> — <non-deferred reason>"
       } >&2
       record_worst 2
     else

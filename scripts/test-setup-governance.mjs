@@ -37,14 +37,21 @@ import {
   PROTECTED_CONTROL_PLANE_PATH_PREFIXES,
 } from './lib/consumer-control-plane-policy.mjs'
 import { evaluateVerifiedHighVulnerabilityAudit } from './lib/governance-dependency-bootstrap.mjs'
+import {
+  discoverPackageManifestPaths,
+  discoverReceiverDependencyPaths,
+  pinExactWorkspaceDependencies,
+  verifyExactWorkspaceDependencies,
+} from './lib/exact-workspace-dependencies.mjs'
 
 const temporary = []
 const version = '1.2.3-beta.4'
-const exactNpmVersion = '11.18.0'
-const exactNpmIntegrity = 'sha512-T67M4L5wNm0cZ7EBLErcEkY1SmzEW/WJ+SADBzsFUY1UdAPfFHXFQtZ6SEXiK0+vzXysCvAsepbMaBTwnrAD+w=='
+const exactNpmVersion = '11.19.0'
+const exactNpmIntegrity = 'sha512-SDd/hHg3KqHE5Ht2NHWxNYNtqCQ2pXAPLl6OtQhPyED5PHsRfrOtO199MZTIG2cQoQ1ZRI9t28shrD+2cr3AAw=='
 const exactNpmOverlaySpec = 'npm:brace-expansion@5.0.8'
 const exactNpmOverlayIntegrity = 'sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg=='
-const exactNpmMinimatchIntegrity = 'sha512-MULkVLfKGYDFYejP07QOurDLLQpcjk7Fw+7jXS2R2czRQzR56yHRveU5NDJEOviH+hETZKSkIk5c+T23GjFUMg=='
+const exactNpmSecondaryOverlaySpec = 'npm:tar@7.5.22'
+const exactNpmSecondaryOverlayIntegrity = 'sha512-MFO/QzvtAOmJbkhOaCTvbGcFN9L9b+JunIsDwaKljSOdcLMea3NJ1k9Usz/rjdfSXTq4dfzfeS7W4p4YOAAHeA=='
 
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex')
@@ -90,10 +97,9 @@ function fixture({
     '@qijenchen/storybook-config': version,
   }
   const devDependencies = {
-    'brace-expansion': '5.0.8',
-    minimatch: '10.2.5',
     npm: exactNpmVersion,
     'npm-runtime-brace-expansion-patch': exactNpmOverlaySpec,
+    'npm-runtime-tar-patch': exactNpmSecondaryOverlaySpec,
   }
   const engines = { node: `>=${SETUP_GOVERNANCE_MINIMUM_NODE_VERSION}`, npm: '>=10.0.0' }
   write(join(root, 'package.json'), `${JSON.stringify({
@@ -127,19 +133,12 @@ function fixture({
         integrity: exactNpmOverlayIntegrity,
         dev: true,
       },
-      'node_modules/brace-expansion': {
-        version: '5.0.8',
-        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.8.tgz',
-        integrity: exactNpmOverlayIntegrity,
+      'node_modules/npm-runtime-tar-patch': {
+        name: 'tar',
+        version: '7.5.22',
+        resolved: 'https://registry.npmjs.org/tar/-/tar-7.5.22.tgz',
+        integrity: exactNpmSecondaryOverlayIntegrity,
         dev: true,
-        dependencies: { 'balanced-match': '^4.0.2' },
-      },
-      'node_modules/minimatch': {
-        version: '10.2.5',
-        resolved: 'https://registry.npmjs.org/minimatch/-/minimatch-10.2.5.tgz',
-        integrity: exactNpmMinimatchIntegrity,
-        dev: true,
-        dependencies: { 'brace-expansion': '^5.0.5' },
       },
     },
   }, null, 2)}\n`)
@@ -302,15 +301,9 @@ const runtimeFactory = async () => {
     schemaVersion: 1,
     kind: 'verified-npm-runtime-security-overlay-receipt',
     status: 'applied',
-    identityDigest: contract.securityOverlay.identityDigest,
+    ...contract.securityOverlay,
     npmVersion: contract.version,
-    package: contract.securityOverlay.package,
-    version: contract.securityOverlay.version,
-    integrity: contract.securityOverlay.integrity,
-    target: contract.securityOverlay.target,
-    replacedVersion: contract.securityOverlay.replacedVersion,
-    consumer: contract.securityOverlay.consumer,
-    consumerVersion: contract.securityOverlay.consumerVersion,
+    secondaryTreeDigest: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
     treeDigest: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
   }
   const installedOverlay = {
@@ -323,12 +316,20 @@ const runtimeFactory = async () => {
     version: overlay.version,
     integrity: overlay.integrity,
     target: overlay.target,
+    secondaryAlias: overlay.secondaryAlias,
+    secondaryPackage: overlay.secondaryPackage,
+    secondaryVersion: overlay.secondaryVersion,
+    secondaryIntegrity: overlay.secondaryIntegrity,
+    secondaryTarget: overlay.secondaryTarget,
+    secondaryTreeDigest: overlay.secondaryTreeDigest,
     treeDigest: overlay.treeDigest,
     auditClosureDigest: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
     auditClosure: [
-      { path: 'node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.8', dependency: null },
-      { path: 'node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
+      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.8', dependency: null },
+      { path: 'node_modules/npm/node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
+      { path: 'node_modules/npm/node_modules/tar', name: 'tar', version: '7.5.22', dependency: null },
       { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.8', dependency: null },
+      { path: 'node_modules/npm-runtime-tar-patch', name: 'tar', version: '7.5.22', dependency: null },
     ],
   }
   return {
@@ -427,17 +428,14 @@ test.after(() => {
   for (const path of temporary) rmSync(path, { recursive: true, force: true })
 })
 
-test('fresh exact audit-closure lock supports verified install, audits, and the authenticated governance checker', () => {
+test('fresh exact dual-overlay lock supports verified install, audits, and the authenticated governance checker', () => {
   const value = fixture()
   const manifest = JSON.parse(readFileSync(join(value.root, 'package.json'), 'utf8'))
   const lock = JSON.parse(readFileSync(join(value.root, 'package-lock.json'), 'utf8'))
-  for (const [name, version] of [['brace-expansion', '5.0.8'], ['minimatch', '10.2.5']]) {
-    assert.equal(manifest.devDependencies[name], version)
-    assert.equal(lock.packages[''].devDependencies[name], version)
-    assert.equal(lock.packages[`node_modules/${name}`].version, version)
-  }
   assert.equal(manifest.devDependencies['npm-runtime-brace-expansion-patch'], exactNpmOverlaySpec)
   assert.equal(lock.packages[''].devDependencies['npm-runtime-brace-expansion-patch'], exactNpmOverlaySpec)
+  assert.equal(manifest.devDependencies['npm-runtime-tar-patch'], exactNpmSecondaryOverlaySpec)
+  assert.equal(lock.packages[''].devDependencies['npm-runtime-tar-patch'], exactNpmSecondaryOverlaySpec)
   const result = value.execute()
   assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`)
   assert.deepEqual(value.ordered(), [
@@ -455,16 +453,14 @@ test('fresh exact audit-closure lock supports verified install, audits, and the 
   assert.ok(existsSync(value.poisonedUserConfig) && existsSync(value.poisonedGlobalConfig), 'poison fixtures must not be used or removed')
 })
 
-test('canonical product template keeps the exact audit closure, overlay alias, and three reviewed overrides', () => {
+test('canonical product template keeps both exact runtime-overlay aliases and three reviewed overrides', () => {
   const templatePackage = JSON.parse(readFileSync('template/ds-product-template/package.json', 'utf8'))
   assert.deepEqual({
-    'brace-expansion': templatePackage.devDependencies['brace-expansion'],
-    minimatch: templatePackage.devDependencies.minimatch,
     'npm-runtime-brace-expansion-patch': templatePackage.devDependencies['npm-runtime-brace-expansion-patch'],
+    'npm-runtime-tar-patch': templatePackage.devDependencies['npm-runtime-tar-patch'],
   }, {
-    'brace-expansion': '5.0.8',
-    minimatch: '10.2.5',
     'npm-runtime-brace-expansion-patch': exactNpmOverlaySpec,
+    'npm-runtime-tar-patch': exactNpmSecondaryOverlaySpec,
   })
   assert.deepEqual(templatePackage.overrides, {
     '@storybook/addon-actions': { uuid: '11.1.1' },
@@ -627,8 +623,8 @@ test('a future tracked governance source outside the static setup list cannot be
 })
 
 for (const [label, mutate, message] of [
-  ['ranged manifest npm', (manifest) => { manifest.devDependencies.npm = '^11.18.0' }, /package\.json must pin npm 11\.18\.0/],
-  ['root lock mismatch', (_manifest, lock) => { lock.packages[''].devDependencies.npm = '11.17.0' }, /package-lock\.json root must pin npm 11\.18\.0/],
+  ['ranged manifest npm', (manifest) => { manifest.devDependencies.npm = '^11.19.0' }, /package\.json must pin npm 11\.19\.0/],
+  ['root lock mismatch', (_manifest, lock) => { lock.packages[''].devDependencies.npm = '11.18.0' }, /package-lock\.json root must pin npm 11\.19\.0/],
   ['noncanonical npm tarball', (_manifest, lock) => { lock.packages['node_modules/npm'].resolved = 'https://attacker.invalid/npm.tgz' }, /not the canonical registry tarball/],
   ['missing npm integrity', (_manifest, lock) => { delete lock.packages['node_modules/npm'].integrity }, /missing canonical SHA-512 integrity/],
   ['npm CLI lock drift', (_manifest, lock) => { lock.packages['node_modules/npm'].bin.npm = 'bin/attacker.js' }, /does not bind bin\/npm-cli\.js/],
@@ -677,7 +673,7 @@ test('platform and command contract is closed and native Windows is unsupported'
   assert.doesNotMatch(source, /node_modules\/npm\/bin\/npm-cli\.js/)
 })
 
-test('overlay-aware high audit excludes only the exact verified bundled preimage and otherwise fails closed', () => {
+test('overlay-aware audit excludes only the exact verified bundled preimages and otherwise fails closed', () => {
   const identityDigest = 'a'.repeat(64)
   const treeDigest = 'b'.repeat(64)
   const npmRuntime = {
@@ -693,10 +689,11 @@ test('overlay-aware high audit excludes only the exact verified bundled preimage
     treeDigest,
     auditClosureDigest: 'c'.repeat(64),
     auditClosure: [
-      { path: 'node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.8', dependency: null },
-      { path: 'node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
+      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.8', dependency: null },
+      { path: 'node_modules/npm/node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
+      { path: 'node_modules/npm/node_modules/tar', name: 'tar', version: '7.5.22', dependency: null },
       { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.8', dependency: null },
-      { path: 'node_modules/eslint', name: 'eslint', version: '10.8.0', dependency: { name: 'minimatch', range: '^10.2.5' } },
+      { path: 'node_modules/npm-runtime-tar-patch', name: 'tar', version: '7.5.22', dependency: null },
     ],
   }
   const finding = {
@@ -719,7 +716,34 @@ test('overlay-aware high audit excludes only the exact verified bundled preimage
   }
   const report = {
     auditReportVersion: 2,
-    vulnerabilities: { 'brace-expansion': finding },
+    vulnerabilities: {
+      'brace-expansion': finding,
+      npm: {
+        name: 'npm',
+        severity: 'moderate',
+        isDirect: true,
+        via: ['tar'],
+        effects: [],
+        range: '<=10.9.8 || >=11.0.0-pre.0',
+        nodes: ['node_modules/npm'],
+      },
+      tar: {
+        name: 'tar',
+        severity: 'moderate',
+        isDirect: false,
+        via: [{
+          source: 1124287,
+          name: 'tar',
+          dependency: 'tar',
+          url: 'https://github.com/advisories/GHSA-r292-9mhp-454m',
+          severity: 'moderate',
+          range: '<=7.5.20',
+        }],
+        effects: ['npm'],
+        range: '<=7.5.20',
+        nodes: ['node_modules/npm/node_modules/tar'],
+      },
+    },
     metadata: {
       vulnerabilities: { info: 0, low: 0, moderate: 2, high: 1, critical: 0, total: 3 },
       dependencies: { prod: 0, dev: 0, optional: 0, peer: 0, peerOptional: 0, total: 0 },
@@ -732,15 +756,16 @@ test('overlay-aware high audit excludes only the exact verified bundled preimage
     installedOverlayReceipt: options.installedOverlayReceipt ?? installedOverlayReceipt,
   })
   const receipt = evaluate()
-  assert.deepEqual(receipt.remediatedFindings, ['brace-expansion'])
+  assert.deepEqual(receipt.remediatedFindings, ['brace-expansion', 'npm', 'tar'])
   assert.equal(receipt.effectiveHigh, 0)
+  assert.equal(receipt.effectiveModerate, 0)
   assert.equal(receipt.effectiveCritical, 0)
 
   const renumberedAdvisory = structuredClone(report)
   renumberedAdvisory.vulnerabilities['brace-expansion'].range = '4.0.0 - 5.0.7'
   renumberedAdvisory.vulnerabilities['brace-expansion'].via[0].source = 1130591
   renumberedAdvisory.vulnerabilities['brace-expansion'].via[0].range = '>=4.0.0 <5.0.8'
-  assert.deepEqual(evaluate(renumberedAdvisory).remediatedFindings, ['brace-expansion'])
+  assert.deepEqual(evaluate(renumberedAdvisory).remediatedFindings, ['brace-expansion', 'npm', 'tar'])
 
   const hybridAdvisory = structuredClone(renumberedAdvisory)
   hybridAdvisory.vulnerabilities['brace-expansion'].via[0].source = 1124334
@@ -766,7 +791,7 @@ test('overlay-aware high audit excludes only the exact verified bundled preimage
   }
   extraHigh.metadata.vulnerabilities.high = 2
   extraHigh.metadata.vulnerabilities.total = 4
-  assert.throws(() => evaluate(extraHigh), /unremediated high finding:unknown/)
+  assert.throws(() => evaluate(extraHigh), /unremediated high\/moderate finding:unknown/)
 
   assert.throws(() => evaluate('not-json'), /did not produce closed JSON/)
   assert.throws(() => evaluate(report, { exitStatus: 0 }), /exit status differs/)
@@ -825,7 +850,7 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
     schemaVersion: 2,
     engine: 'node-posix-toolchain-v2',
     minimumNodeVersion: '22.13.0',
-    exactNpmVersion: '11.18.0',
+    exactNpmVersion: '11.19.0',
     supportedHostPlatforms: ['darwin', 'linux'],
     nativeWindowsPolicy: 'unsupported-fail-closed',
     windowsCompatibilityEnvironments: ['devcontainer-linux', 'wsl2-linux'],
@@ -933,7 +958,7 @@ test('consumer governance guide is canonical, protected, exact-hash managed and 
   assert.match(guide, /reviewed full-snapshot bootstrap PR/)
   assert.match(guide, /Product-owned root documentation stays product-owned/)
   assert.match(guide, /Node\.js 22\.13\.0 or newer/)
-  assert.match(guide, /exact npm 11\.18\.0 runtime/)
+  assert.match(guide, /exact npm 11\.19\.0 runtime/)
   assert.match(guide, /scope=local-bootstrap/)
   assert.match(guide, /providerCertification=not-checked/)
   assert.match(guide, /externalActivationRequired=false/)
@@ -1052,6 +1077,130 @@ test('consumer documentation describes the release mirror gate without the retir
   assert.doesNotMatch(documentation, /(?:禁止|do not) (?:改用|replace)[^\n]*(?:Writer App|GitHub App)/i)
 })
 
+test('current product docs bind provider-neutral bootstrap, runtime, five-step release, and delivery authority', () => {
+  const currentDocs = [
+    'template/ds-product-template/README.md',
+    'template/ds-product-template/docs/01-first-time-setup.md',
+    'template/ds-product-template/docs/02-create-new-product.md',
+  ]
+  for (const path of currentDocs) {
+    const source = readFileSync(path, 'utf8')
+    assert.match(source, /provider-neutral/i, `${path} lost the provider-neutral bootstrap`)
+    assert.match(source, /Node 22\.13\.0/, `${path} lost the canonical minimum Node version`)
+    assert.match(
+      source,
+      /pr-checks\s*→\s*merge\s*→\s*publish\s*→\s*readback\s*→\s*consumer/,
+      `${path} lost the canonical five-step release`,
+    )
+    assert.match(source, /release mirror/i, `${path} lost mirror authority`)
+    assert.match(source, /receiver/i, `${path} lost downstream receiver authority`)
+    assert.doesNotMatch(source, /Node 22\.12\.0|externalActivationRequired=true/)
+    assert.doesNotMatch(source, /SessionStart[^\n]*(?:will|會|自動)[^\n]*(?:install|repair|安裝|修復)/i)
+  }
+})
+
+test('workspace dependency authority discovers, pins, verifies, and lists receiver paths dynamically', () => {
+  const root = mkdtempSync(join(tmpdir(), 'exact-workspace-dependencies-'))
+  temporary.push(root)
+  mkdirSync(join(root, 'apps/alpha'), { recursive: true })
+  mkdirSync(join(root, 'packages/future'), { recursive: true })
+  const expected = '1.2.3-beta.4'
+  const stale = '1.2.3-beta.3'
+  writeFileSync(join(root, 'package.json'), `${JSON.stringify({
+    name: 'fixture',
+    private: true,
+    workspaces: { packages: ['apps/*', 'packages/*'] },
+    dependencies: {
+      '@qijenchen/design-system': expected,
+      '@qijenchen/storybook-config': expected,
+    },
+  }, null, 2)}\n`)
+  writeFileSync(join(root, 'apps/alpha/package.json'), `${JSON.stringify({
+    name: '@fixture/alpha',
+    private: true,
+    dependencies: { '@qijenchen/design-system': `^${stale}` },
+  }, null, 2)}\n`)
+  writeFileSync(join(root, 'packages/future/package.json'), `${JSON.stringify({
+    name: '@fixture/future',
+    private: true,
+    devDependencies: { '@qijenchen/governance': `~${stale}` },
+  }, null, 2)}\n`)
+  const packageLock = {
+    name: 'fixture',
+    lockfileVersion: 3,
+    packages: {
+      '': {
+        dependencies: {
+          '@qijenchen/design-system': expected,
+          '@qijenchen/storybook-config': expected,
+        },
+      },
+      'apps/alpha': {
+        dependencies: { '@qijenchen/design-system': `^${stale}` },
+      },
+      'packages/future': {
+        devDependencies: { '@qijenchen/governance': `~${stale}` },
+      },
+      'node_modules/@qijenchen/design-system': { version: expected },
+      'node_modules/@qijenchen/governance': { version: stale },
+      'node_modules/@qijenchen/storybook-config': { version: expected },
+    },
+  }
+  writeFileSync(join(root, 'package-lock.json'), `${JSON.stringify(packageLock, null, 2)}\n`)
+
+  assert.deepEqual(discoverPackageManifestPaths(root), [
+    'package.json',
+    'apps/alpha/package.json',
+    'packages/future/package.json',
+  ])
+  assert.deepEqual(discoverReceiverDependencyPaths(root), [
+    'package.json',
+    'apps/alpha/package.json',
+    'packages/future/package.json',
+    'package-lock.json',
+  ])
+  assert.throws(
+    () => verifyExactWorkspaceDependencies(root, expected),
+    /apps\/alpha\/package\.json.*expected exact/,
+  )
+  assert.deepEqual(pinExactWorkspaceDependencies(root, expected), [
+    'apps/alpha/package.json',
+    'packages/future/package.json',
+  ])
+  assert.throws(
+    () => verifyExactWorkspaceDependencies(root, expected),
+    /package-lock\.json.*is not exact/,
+    'manifest pinning must not hide stale lock entries',
+  )
+
+  packageLock.packages['apps/alpha'].dependencies['@qijenchen/design-system'] = expected
+  packageLock.packages['packages/future'].devDependencies['@qijenchen/governance'] = expected
+  packageLock.packages['node_modules/@qijenchen/governance'].version = expected
+  writeFileSync(join(root, 'package-lock.json'), `${JSON.stringify(packageLock, null, 2)}\n`)
+  const verified = verifyExactWorkspaceDependencies(root, expected)
+  assert.deepEqual(verified.declaredPackages, [
+    '@qijenchen/design-system',
+    '@qijenchen/governance',
+    '@qijenchen/storybook-config',
+  ])
+  assert.deepEqual(verified.receiverPaths, discoverReceiverDependencyPaths(root))
+
+  const listed = spawnSync(
+    process.execPath,
+    [join(process.cwd(), 'scripts/sync-exact-workspace-dependencies.mjs'), '--list-receiver-paths'],
+    { cwd: root, encoding: 'utf8' },
+  )
+  assert.equal(listed.status, 0, listed.stderr)
+  assert.deepEqual(listed.stdout.trim().split('\n'), verified.receiverPaths)
+
+  writeFileSync(join(root, 'npm-shrinkwrap.json'), `${JSON.stringify(packageLock)}\n`)
+  assert.throws(
+    () => discoverReceiverDependencyPaths(root),
+    /exactly one dependency lock/,
+    'ambiguous lock authority must fail closed',
+  )
+})
+
 test('sync-all merger adds authenticated setup commands without clobbering product scripts', () => {
   const original = {
     name: 'product',
@@ -1158,17 +1307,23 @@ test('template, cloud, devcontainer, mirror and managed-file wiring share the on
   assert.match(forkBuild, /'scripts\/setup-governance\.mjs': join\(ROOT, 'scripts\/setup-governance\.mjs'\)/)
   assert.match(forkBuild, /'scripts\/setup-provider-cli-toolchain\.mjs': join\(ROOT, 'scripts\/setup-provider-cli-toolchain\.mjs'\)/)
   assert.match(forkBuild, /'scripts\/setup-workspace\.mjs': join\(ROOT, 'scripts\/setup-workspace\.mjs'\)/)
+  assert.match(forkBuild, /'scripts\/sync-exact-workspace-dependencies\.mjs': join\(ROOT, 'scripts\/sync-exact-workspace-dependencies\.mjs'\)/)
+  assert.match(forkBuild, /'scripts\/lib\/exact-workspace-dependencies\.mjs': join\(ROOT, 'scripts\/lib\/exact-workspace-dependencies\.mjs'\)/)
   assert.match(forkBuild, /'scripts\/lib\/verified-exact-npm-runtime\.mjs': join\(ROOT, 'scripts\/lib\/verified-exact-npm-runtime\.mjs'\)/)
   assert.match(forkBuild, /'setup-governance\.mjs'/)
   const mirrorBuild = readFileSync('scripts/build-published-template-mirror.mjs', 'utf8')
   assert.match(mirrorBuild, /'scripts\/setup-governance\.mjs'/)
   assert.match(mirrorBuild, /'scripts\/setup-provider-cli-toolchain\.mjs'/)
   assert.match(mirrorBuild, /'scripts\/setup-workspace\.mjs'/)
+  assert.match(mirrorBuild, /'scripts\/sync-exact-workspace-dependencies\.mjs'/)
+  assert.match(mirrorBuild, /'scripts\/lib\/exact-workspace-dependencies\.mjs'/)
   assert.match(mirrorBuild, /'scripts\/lib\/verified-exact-npm-runtime\.mjs'/)
   const mirrorPolicy = JSON.parse(readFileSync('scripts/published-template-mirror-policy.json', 'utf8'))
   assert.ok(mirrorPolicy.exactPaths.includes('scripts/setup-governance.mjs'))
   assert.ok(mirrorPolicy.exactPaths.includes('scripts/setup-provider-cli-toolchain.mjs'))
   assert.ok(mirrorPolicy.exactPaths.includes('scripts/setup-workspace.mjs'))
+  assert.ok(mirrorPolicy.exactPaths.includes('scripts/sync-exact-workspace-dependencies.mjs'))
+  assert.ok(mirrorPolicy.exactPaths.includes('scripts/lib/exact-workspace-dependencies.mjs'))
   assert.ok(mirrorPolicy.exactPaths.includes('scripts/lib/verified-exact-npm-runtime.mjs'))
   const mirrorWorkflow = readFileSync('.github/workflows/mirror-to-published-template.yml', 'utf8')
   assert.match(mirrorWorkflow, /build-published-template-mirror\.mjs --out=/)
@@ -1176,7 +1331,7 @@ test('template, cloud, devcontainer, mirror and managed-file wiring share the on
   assert.match(mirrorWorkflow, /product-template-scaffold-lock\.mjs --verify[\s\S]*--phase published/)
 
   const inventory = JSON.parse(readFileSync('infra/governance/inventory/managed-repos.json', 'utf8'))
-  for (const path of ['scripts/setup-governance.mjs', 'scripts/setup-provider-cli-toolchain.mjs', 'scripts/setup-workspace.mjs', 'scripts/lib/verified-exact-npm-runtime.mjs']) {
+  for (const path of ['scripts/setup-governance.mjs', 'scripts/setup-provider-cli-toolchain.mjs', 'scripts/setup-workspace.mjs', 'scripts/sync-exact-workspace-dependencies.mjs', 'scripts/lib/exact-workspace-dependencies.mjs', 'scripts/lib/verified-exact-npm-runtime.mjs']) {
     assert.deepEqual(
       inventory.ownershipPolicies['product-consumer'].rules.filter(rule => rule.pattern === path),
       [{ pattern: path, mode: 'upstream-managed', owner: 'design-system-governance' }],
@@ -1187,7 +1342,7 @@ test('template, cloud, devcontainer, mirror and managed-file wiring share the on
   temporary.push(corpusScratch)
   const corpusRoot = join(corpusScratch, 'fork')
   const corpus = buildCorpus({ outDir: corpusRoot, templateRoot: join(corpusScratch, 'template') })
-  for (const path of ['scripts/setup-governance.mjs', 'scripts/setup-provider-cli-toolchain.mjs', 'scripts/setup-workspace.mjs', 'scripts/lib/verified-exact-npm-runtime.mjs']) {
+  for (const path of ['scripts/setup-governance.mjs', 'scripts/setup-provider-cli-toolchain.mjs', 'scripts/setup-workspace.mjs', 'scripts/sync-exact-workspace-dependencies.mjs', 'scripts/lib/exact-workspace-dependencies.mjs', 'scripts/lib/verified-exact-npm-runtime.mjs']) {
     const managedArtifact = corpus.manifest.consumer.managedFiles[path]
     assert.equal(typeof managedArtifact, 'string')
     assert.deepEqual(readFileSync(join(corpusRoot, managedArtifact)), readFileSync(path))

@@ -8,8 +8,6 @@ benchmark:
   - Radix ScrollArea primitive: github.com/radix-ui/primitives/tree/main/packages/react/scroll-area
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # ScrollArea 設計原則
 
 ScrollArea 是**跨 OS 視覺一致的自訂捲動容器**——用 overlay 捲軸取代原生 scrollbar,解決 macOS / Windows / Linux 之間的跑版落差。
@@ -18,7 +16,7 @@ ScrollArea 是**跨 OS 視覺一致的自訂捲動容器**——用 overlay 捲�
 
 **實作基礎**:基於 Radix ScrollArea primitive(shadcn passthrough 結構)——由 Radix 處理 viewport / scrollbar / thumb 的 pointer 拖曳與 overflow-detection,本 DS 橋接 token(scrollbar 寬度、thumb bg、hover 反饋)與 a11y 行為(Viewport `tabIndex={0}` 預設 + `viewportTabIndex={-1}` 雙 tab-stop opt-out + `viewportTabIndex={null}` ARIA composite wrapper opt-out + DS focus ring;Radix 不處理 keyboard,亦不自動標 Viewport focusable)。
 
-**世界級對照**:shadcn `ScrollArea` / Radix primitive 本身。Polaris / Carbon 未提供等效元件(預設相信 native scrollbar);我們採用 shadcn / Radix 派:為了跨 OS 視覺一致、避免 DataTable / Sheet / Dialog 遇 Windows always-visible scrollbar 吃寬度跑版。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**實作取向**:本元件包裝既有 scroll-area primitive，目的是統一跨 OS 的捲軸視覺，並避免 DataTable / Sheet / Dialog 在 always-visible scrollbar 環境中被吃掉內容寬度。
 
 ---
 
@@ -31,7 +29,7 @@ Native scrollbar 跨 OS 不一致:
 | macOS | Overlay——不吃寬度,預設隱藏,捲動時浮出 |
 | Windows / Linux | Always-visible——永遠吃 ~15–17px 寬度 |
 
-**結果**:同一個 DataTable 橫向捲動、Sheet / Dialog 內容垂直捲動在 macOS 視覺對齊,在 Windows 右側被 scrollbar 吃 17px 跑版。「Left pinned + Row Actions」的 DataTable 截圖即是此類 bug。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**結果**:同一個 DataTable 橫向捲動、Sheet / Dialog 內容垂直捲動在 macOS 視覺對齊,在 Windows 右側被 scrollbar 吃 17px 跑版。「Left pinned + Row Actions」的 DataTable 截圖即是此類已觀察的跨 OS bug。
 
 ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、捲動時浮出(hover / scroll 自動顯示)**。
 
@@ -61,7 +59,7 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 | **Document native scroll** | Native scroll 用 OS scrollbar;ScrollArea 用 Radix overlay scrollbar | sub-region container,非全頁 |
 | **AspectRatio** | AspectRatio 鎖比例不 scroll;ScrollArea 允許溢出 scroll | 內容可能 overflow 容器需 scroll |
 
-對齊 Radix ScrollArea / Polaris Scrollable / Material `<Box overflow="auto">` 共識:sub-region scroll,document 留 native。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+本 DS 只在有明確邊界的 sub-region 使用 ScrollArea，document 級捲動保留 native，避免破壞瀏覽器的頁面捲動語意與恢復位置。
 
 ---
 
@@ -79,7 +77,7 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 | Thumb 邊緣 inset | 1px(實作細節見 `.tsx`) | thumb 與容器邊緣保留 1px 視覺 inset,不貼死邊界 |
 | Track | 透明(無 bg) | overlay 浮層,不搶視覺 |
 | Thumb bg | `--scrollbar-thumb` → hover `--scrollbar-thumb-hover`(semantic alias,resolves to `--border` / `--border-hover` = neutral-5/-6) | 靜態時低存在感,hover 加深反饋可抓握。2026-05-09 抽 SSOT alias 跟 DataTable fake scrollbar 共享 token,避免 thumb 視覺未來演化時誤動 Field/Input/Checkbox border |
-| Thumb radius | `rounded-full` | 圓形 thumb 對齊 macOS / modern DS 慣例 | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+| Thumb radius | `rounded-full` | 圓形 thumb 在垂直／水平方向都保持同一端點幾何 |
 | 過渡 | `transition-colors` | 色彩變化平滑,不做尺寸動畫 |
 
 **Scrollbar 寬度固定 10px 不隨 size 變**:不同 size 的元件(sm/md/lg Button、DataTable)都消費同一個 10px scrollbar;scrollbar 是「捲動機制」不是「內容尺寸」,不需要對齊 content 字級。

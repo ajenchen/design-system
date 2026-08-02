@@ -11,15 +11,13 @@ benchmark:
   - MUI Rating: github.com/mui/material-ui/tree/master/packages/mui-material/src/Rating
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # Rating 設計原則
 
 ## 定位
 
 Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、體驗給出 1 到 max（預設 5）分的星等，或將已提交的平均分數唯讀展示。
 
-**實作基礎**：自建，無 shadcn 核心或 Radix primitive 對應（shadcn 不提供 Rating，Ant Design `<Rate>` / Material `<Rating>` 為世界級對照）。內部以 lucide-react `Star` 為預設 icon，外層 `role="slider"` / `role="img"` 依互動性切換(`isInteractive = !readOnly && !disabled && !loading`,`rating.tsx` — disabled / loading 也切 `role="img"` 並摘除 slider aria / tabIndex)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**實作基礎**：自建的離散星等控件。內部以 lucide-react `Star` 為預設 icon，外層 `role="slider"` / `role="img"` 依互動性切換(`isInteractive = !readOnly && !disabled && !loading`,`rating.tsx` — disabled / loading 也切 `role="img"` 並摘除 slider aria / tabIndex)。
 
 **Layout Family**:非 4-Family Model —— **self-contained primitive**(獨立視覺,無 slot 結構,類似 Switch / Checkbox / Badge / CircularProgress)。
 
@@ -74,9 +72,9 @@ Rating 是**離散 1–5 分評分元件**——使用者對商品、服務、�
 
 ### 為什麼不 default md — Standalone vs Field 尺寸選擇(canonical)
 
-- **Standalone 展示**(非 Field 內):用 **`xs`**(container 24 / icon 20)——對齊 Avatar sm 20px / Tag sm;Airbnb / Yelp 商品卡星星亦此大小 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **Standalone 展示**(非 Field 內):用 **`xs`**(container 24 / icon 20)——對齊 Avatar sm 20px / Tag sm，讓商品卡與清單 row 的身分視覺量體一致。
 - **Field 內**(`<Field>` 表單內當 control):跟 Field size 對應傳 sm/md/lg(Field 預設 md)
-- 世界級對照:Material Rating standalone ≈ 24dp;Ant Rate 在 Form 內跟 Form itemSize。兩種 context 分開設計,不強求單一預設 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- Standalone 與 Field 是兩種 context：前者以清單掃視為主，後者必須跟表單列高對齊，因此不強求單一預設尺寸。
 
 ### 為什麼不完全對齊 icon tier — Icon 尺寸對齊 **Avatar inline**(2026-04-21 AR48 canonical)
 
@@ -90,7 +88,7 @@ Rating 的 **container 高度消費 `--field-height-*` token**(sm=28 / md=32 / l
 | md | **24px** ← Avatar | 24px | 16px | Avatar |
 | lg | **24px** ← Avatar | 24px | 20px | Avatar |
 
-**為什麼對齊 Avatar 不對齊 icon tier**:星星是 filled shape 的「主要資料視覺」(一顆星 = 一個資料點),與同為 filled 的 identity 元件(Avatar)同尺寸才能在 row 裡 visual weight 對齊;次要 affordance(Input startIcon / Button iconOnly)才走 icon tier(16/16/20)。世界級對照:Ant Rate in Form 20px / Material MUI Rating 24px / Airbnb 商品卡 24px,皆走 identity 重量。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->(歷史:早期 16/16/20 對齊 icon tier,星星比並排 avatar「小一號」——AR48 修正。)
+**為什麼對齊 Avatar 不對齊 icon tier**:星星是 filled shape 的「主要資料視覺」(一顆星 = 一個資料點),與同為 filled 的 identity 元件(Avatar)同尺寸才能在 row 裡 visual weight 對齊;次要 affordance(Input startIcon / Button iconOnly)才走 icon tier(16/16/20)。(歷史:早期 16/16/20 對齊 icon tier,星星比並排 avatar「小一號」——AR48 修正。)
 
 ### 放入 Field 的可組合性
 
@@ -156,7 +154,7 @@ API:`loading?: boolean` prop(對齊 `../Field/field-controls.spec.md` Field 家�
 
 | Role | Token | 色值（light） | 說明 |
 |------|-------|--------------|------|
-| Filled star | `var(--warning)` | yellow-6 | 世界級黃星 convention（Amazon / Yelp / Google / Shopify / Airbnb 都是黃）| <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+| Filled star | `var(--warning)` | yellow-6 | 本 DS 評分語意的固定黃色，不隨品牌 primary 色變動 |
 | Empty star | `var(--divider)` | 中灰（= `--color-neutral-4`）| 未填的輪廓色;借 `--divider` semantic alias(neutral-4,user 2026-05-09 拍板),與分隔線同級的 muted-fill |
 | Hover 預覽 | 改 `fill`（不改尺寸） | — | interactive 時 hover 把游標所在星之前（含）的星填色預覽，給予 preview 回饋；星星尺寸不變 |
 | Focus ring | `ring-2 ring-ring ring-offset-2` + `rounded-md` | — | 鍵盤 focus 時整個 Rating 容器顯示 focus ring（**per-star 無 ring / border / outline**——focus 視覺由 parent container 統一承擔）|
@@ -165,11 +163,11 @@ API:`loading?: boolean` prop(對齊 `../Field/field-controls.spec.md` Field 家�
 
 ### Star icon 無 stroke outline
 
-Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="currentColor"` 帶輪廓,strokeWidth 預設 2,保留會讓 filled 星星多一層深色 outline,破壞純 fill-only shape canonical)。**Rating 是純 fill-only shape**,不保留 outline——對齊 Ant Rate / Material MUI Rating 的世界級慣例。Empty star 靠 `--divider`(= `--color-neutral-4`)的 fill 本身與 canvas 對比區隔,不需 outline 補視覺。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Star icon 渲染時明確設 `stroke="none"`(Lucide Star 預設 `stroke="currentColor"` 帶輪廓,strokeWidth 預設 2,保留會讓 filled 星星多一層深色 outline,破壞純 fill-only shape canonical)。**Rating 是純 fill-only shape**,不保留 outline。Empty star 靠 `--divider`(= `--color-neutral-4`)的 fill 本身與 canvas 對比區隔,不需 outline 補視覺。
 
 ### 為什麼用 `--warning`（黃色）而不用 `--primary`
 
-黃星是**世界級 convention**——Amazon / Yelp / Google Reviews / Shopify / Airbnb / TripAdvisor 全部用黃。使用者的視覺記憶已經把「黃星 = 評分」綁定，換成品牌 primary 色（藍、綠、紫）會破壞這個直覺。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+黃星是本 DS 的評分語意 canonical。使用者在同一產品內應以相同色相辨識評分，換成品牌 primary 色（藍、綠、紫）會讓評分與一般選取狀態混淆。
 
 `--warning` 在本系統指向 yellow-6，與 Rating **共用色相但語境不同**——evaluation convention color，非 status color。這是 documented 例外（見 `color.spec.md`），不是每個元件都能這樣共用。
 

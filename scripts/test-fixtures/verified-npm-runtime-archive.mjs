@@ -82,6 +82,7 @@ export function buildDeterministicNpmRuntimeArchive({
         dependencies: { 'brace-expansion': '^5.0.5' },
       })}\n`, 0o644],
       ['package/node_modules/minimatch/index.js', "const { expand } = require('brace-expansion')\nexports.minimatch = (value, pattern) => expand(pattern).includes(value)\n", 0o644],
+      ['package/node_modules/tar/package.json', `${JSON.stringify({ name: 'tar', version: '7.5.19' })}\n`, 0o644],
     )
   }
   const tarballBytes = deterministicArchive(npmEntries)
@@ -107,9 +108,20 @@ export function buildDeterministicNpmRuntimeArchive({
     resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.8.tgz',
     integrity: `sha512-${createHash('sha512').update(securityOverlayTarballBytes).digest('base64')}`,
   })
+  const secondarySecurityOverlayTarballBytes = deterministicArchive([
+    ['package/package.json', `${JSON.stringify({ name: 'tar', version: '7.5.22' })}\n`, 0o644],
+  ])
+  const secondarySecurityOverlayArtifact = Object.freeze({
+    name: 'tar',
+    version: '7.5.22',
+    resolved: 'https://registry.npmjs.org/tar/-/tar-7.5.22.tgz',
+    integrity: `sha512-${createHash('sha512').update(secondarySecurityOverlayTarballBytes).digest('base64')}`,
+  })
   return Object.freeze({
     artifact,
     tarballBytes,
+    secondarySecurityOverlayArtifact,
+    secondarySecurityOverlayTarballBytes,
     securityOverlayArtifact,
     securityOverlayTarballBytes,
   })
@@ -117,6 +129,8 @@ export function buildDeterministicNpmRuntimeArchive({
 
 export function installCanonicalNpmHttpsFixture({
   artifact,
+  secondarySecurityOverlayArtifact,
+  secondarySecurityOverlayTarballBytes,
   tarballBytes,
   securityOverlayArtifact,
   securityOverlayTarballBytes,
@@ -150,6 +164,27 @@ export function installCanonicalNpmHttpsFixture({
       'fixture security-overlay tarball differs from its lock artifact',
     )
     servedArtifacts.set(securityOverlayArtifact.resolved, Buffer.from(securityOverlayTarballBytes))
+  }
+  if (secondarySecurityOverlayArtifact || secondarySecurityOverlayTarballBytes) {
+    assert.deepEqual(
+      {
+        name: secondarySecurityOverlayArtifact?.name,
+        version: secondarySecurityOverlayArtifact?.version,
+        resolved: secondarySecurityOverlayArtifact?.resolved,
+      },
+      {
+        name: 'tar',
+        version: '7.5.22',
+        resolved: 'https://registry.npmjs.org/tar/-/tar-7.5.22.tgz',
+      },
+    )
+    assert.ok(Buffer.isBuffer(secondarySecurityOverlayTarballBytes) && secondarySecurityOverlayTarballBytes.length > 0)
+    assert.equal(
+      secondarySecurityOverlayArtifact.integrity,
+      `sha512-${createHash('sha512').update(secondarySecurityOverlayTarballBytes).digest('base64')}`,
+      'fixture secondary security-overlay tarball differs from its lock artifact',
+    )
+    servedArtifacts.set(secondarySecurityOverlayArtifact.resolved, Buffer.from(secondarySecurityOverlayTarballBytes))
   }
   const originalRequest = https.request
   let active = true

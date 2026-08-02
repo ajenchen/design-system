@@ -11,6 +11,7 @@
 //   2. Principles cross-references in plain text without LinkTo(對照X頁 / 見X / 跳X)
 //   3. Auto-generated stub patterns(`<X> 場景` CamelCase split without real content)
 //   4. Missing `name:` zh-CN on stories(showcase / principles)
+//   5. Storybook technical-probe visibility drift(`test-only` semantics)
 //
 // Usage from Stop hook: `node scripts/audit-content-quality.mjs --check` (silent if OK, warn if drift).
 
@@ -100,6 +101,91 @@ function findLiteralMarkdownEmphasis(file, content) {
   return [...samples];
 }
 
+const anatomyCanonicalDisplayNames = Object.freeze({
+  Overview: '元件總覽',
+  Inspector: '元件檢閱器',
+  ColorMatrix: '色彩對照表',
+  SizeMatrix: '尺寸對照表',
+  StateBehavior: '狀態行為',
+  Accessibility: '無障礙與鍵盤',
+});
+
+function unwrapExpression(node) {
+  let current = node;
+  while (
+    current
+    && (
+      ts.isParenthesizedExpression(current)
+      || ts.isAsExpression(current)
+      || ts.isSatisfiesExpression(current)
+    )
+  ) {
+    current = current.expression;
+  }
+  return current;
+}
+
+function exportedStoryDefinitions(sourceFile) {
+  const stories = new Map();
+  for (const statement of sourceFile.statements) {
+    if (
+      !ts.isVariableStatement(statement)
+      || !statement.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)
+    ) continue;
+    for (const declaration of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name)) continue;
+      const initializer = unwrapExpression(declaration.initializer);
+      let displayName = null;
+      let tags = [];
+      if (initializer && ts.isObjectLiteralExpression(initializer)) {
+        const nameProperty = initializer.properties.find(property =>
+          ts.isPropertyAssignment(property) && propertyName(property) === 'name'
+        );
+        const nameInitializer = nameProperty && unwrapExpression(nameProperty.initializer);
+        if (
+          nameInitializer
+          && (ts.isStringLiteral(nameInitializer) || ts.isNoSubstitutionTemplateLiteral(nameInitializer))
+        ) displayName = nameInitializer.text;
+        const tagsProperty = initializer.properties.find(property =>
+          ts.isPropertyAssignment(property) && propertyName(property) === 'tags'
+        );
+        const tagsInitializer = tagsProperty && unwrapExpression(tagsProperty.initializer);
+        if (tagsInitializer && ts.isArrayLiteralExpression(tagsInitializer)) {
+          tags = tagsInitializer.elements
+            .filter(element => ts.isStringLiteral(element) || ts.isNoSubstitutionTemplateLiteral(element))
+            .map(element => element.text);
+        }
+      }
+      stories.set(declaration.name.text, { displayName, tags });
+    }
+  }
+  return stories;
+}
+
+function anatomyRationaleHeader(content) {
+  const firstImport = content.search(/^import\s/m);
+  const header = content.slice(0, firstImport < 0 ? content.length : firstImport);
+  const marker = header.indexOf('@anatomy-rationale:');
+  return marker < 0 ? '' : header.slice(marker);
+}
+
+function hasScopedAnatomyRationale(rationaleHeader, section) {
+  const sectionIndex = rationaleHeader.indexOf(section);
+  if (sectionIndex < 0) return false;
+  const afterSection = rationaleHeader.slice(sectionIndex);
+  const separators = ['—', ' covered by ', ' represented as ', ' 集中在 ', ' 以 '];
+  const separator = separators
+    .map(value => ({ value, index: afterSection.indexOf(value) }))
+    .filter(candidate => candidate.index >= 0)
+    .sort((a, b) => a.index - b.index)[0];
+  if (!separator) return false;
+  const reason = afterSection
+    .slice(separator.index + separator.value.length)
+    .replace(/^[/\s*]+/gm, '')
+    .trim();
+  return reason.length >= 8;
+}
+
 const violations = {
   numbering: [],          // anatomy stories 不該有序號(2026-04-26 起 deprecated)
   nonAnatomyNumbering: [], // showcase/principles 不該有 numbering
@@ -110,25 +196,44 @@ const violations = {
   emptyStory: [],          // story render returns empty
   englishPlaceholder: [],  // 中文 stories 內 hardcoded English placeholder
   // === New(2026-04-26 rules-derived audit gap fix)===
-  anatomyCanonicalName: [], // anatomy 5-canonical(Overview/Inspector/ColorMatrix/SizeMatrix/StateBehavior)缺 / 名字錯
+  anatomyCanonicalName: [], // anatomy 6-canonical export / 中文顯示名 / omission rationale 漂移
   anatomyNumberingGap: [],  // anatomy 編號跳號(6 後面是 8)
-  showcaseDefault: [],      // showcase 缺 Default OR AllVariants
+  showcaseRepresentative: [], // showcase 缺任何 reader-facing representative story
   perSizeSplit: [],         // hasSizes 卻拆 Small/Medium/Large(該 AllSizes grid)
-  principlesCore: [],       // principles 缺 ≥ 2 universal core(periodic verify)
+  principlesCore: [],       // principles 缺完整 integrated 或 split decision core
   asciiArt: [],             // 視覺符號(│─└┤ box drawing / ASCII arrow flow)
   // === 「人話」 proxies(2026-04-26 補)===
   noRealBrand: [],          // showcase story render 缺真實業務 brand reference
   thinDescription: [],      // parameters.docs.description.{component,story} stub / 太短 / 缺
   abstractName: [],         // story name 抽象代號(無描述性)
   literalMarkdownEmphasis: [], // JSX canvas 會原樣顯示 **星號**,不是 Markdown renderer
+  storyVisibility: [],     // technical probes 必保留 index/test 但退出 sidebar + Autodocs
 };
 let autoFixed = 0;
+
+function checkStoryVisibility(file, content, exportedStories) {
+  if (/tags:\s*\[[^\]]*['"]!autodocs['"]/.test(content)) {
+    violations.storyVisibility.push({ file, issue: 'replace !autodocs with the scoped test-only visibility role' });
+  }
+  for (const [exportName, story] of exportedStories) {
+    if (!story.tags.includes('test-only')) continue;
+    if (story.tags.includes('!dev') || story.tags.includes('!test')) {
+      violations.storyVisibility.push({
+        file,
+        issue: `${exportName} combines test-only with !dev/!test and therefore disappears from its test surface`,
+      });
+    }
+  }
+}
 
 for (const file of walk(STORIES_DIR)) {
   const isAnatomy = file.endsWith('.anatomy.stories.tsx');
   const isPrinciples = file.endsWith('.principles.stories.tsx');
   let content = readFileSync(file, 'utf-8');
   let modified = false;
+  const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const exportedStories = exportedStoryDefinitions(sourceFile);
+  checkStoryVisibility(file, content, exportedStories);
 
   // === Check 1: Anatomy numbering — DEPRECATED 2026-04-26 ===
   // user 反饋:序號(`'1. 元件總覽'` 等)無價值且容易跳號。改成 anatomy story name
@@ -253,18 +358,29 @@ for (const file of walk(STORIES_DIR)) {
     }
   }
 
-  // === Check 5a: Anatomy canonical names(2026-04-26 rules-derived)===
-  // Per anatomy-standard.md L25-33: anatomy MUST use canonical export names
+  // === Check 5a: Anatomy 6-canonical export + exact reader-facing names ===
+  // Present sections require the exact canonical `name:`. A genuinely N/A section
+  // must be named in the file-header @anatomy-rationale block with a non-empty reason;
+  // a broad file-level marker never exempts unrelated sections.
   if (isAnatomy) {
-    const exportMatches = [...content.matchAll(/^export const ([A-Z]\w+)/gm)].map(m => m[1]);
-    const canonicalNames = new Set(['Overview', 'Inspector', 'ColorMatrix', 'SizeMatrix', 'StateBehavior', 'Accessibility']);
-    // At minimum need Overview;non-canonical names allowed(extras)but core 5 should be present
-    const hasOverview = exportMatches.includes('Overview');
-    if (!hasOverview && exportMatches.length > 0) {
-      violations.anatomyCanonicalName.push({
-        file: basename(file),
-        issue: 'missing Overview canonical export'
-      });
+    const rationaleHeader = anatomyRationaleHeader(content);
+    for (const [exportName, expectedDisplayName] of Object.entries(anatomyCanonicalDisplayNames)) {
+      const story = exportedStories.get(exportName);
+      if (story) {
+        if (story.displayName !== expectedDisplayName) {
+          violations.anatomyCanonicalName.push({
+            file: basename(file),
+            issue: `${exportName} name=${JSON.stringify(story.displayName)}; expected ${JSON.stringify(expectedDisplayName)}`,
+          });
+        }
+      } else if (exportName === 'Overview' || !hasScopedAnatomyRationale(rationaleHeader, exportName)) {
+        violations.anatomyCanonicalName.push({
+          file: basename(file),
+          issue: exportName === 'Overview'
+            ? 'missing required Overview export'
+            : `missing ${exportName} without scoped @anatomy-rationale reason`,
+        });
+      }
     }
   }
 
@@ -297,8 +413,11 @@ for (const file of walk(STORIES_DIR)) {
   // components(Calendar/Chart/Carousel)的 first scenario 即 Default。實際只需 ≥ 1 export。
   if (!isAnatomy && !file.endsWith('.principles.stories.tsx')) {
     const exportMatches = [...content.matchAll(/^export const ([A-Z]\w+)/gm)].map(m => m[1]);
-    if (exportMatches.length === 0) {
-      violations.showcaseDefault.push({ file: basename(file), firstStory: '(empty)' });
+    const readerFacingExports = exportMatches.filter(exportName =>
+      !exportedStories.get(exportName)?.tags.includes('test-only')
+    );
+    if (readerFacingExports.length === 0) {
+      violations.showcaseRepresentative.push({ file: basename(file) });
     }
   }
 
@@ -315,23 +434,25 @@ for (const file of walk(STORIES_DIR)) {
     }
   }
 
-  // === Check 5e: Principles ≥ 1 decision story(v3 integrated 2026-04-26)===
-  // 對齊 Polaris/Material/Ant:ONE integrated `UsageGuidance` 已足夠
-  // 接受 (a) UsageGuidance 單一 OR (b) legacy WhenToUse/WhenNotToUse/Vs*Rule ≥ 1
-  // OR (c) 任 ≥ 2 exports total
+  // === Check 5e: Principles decision guidance ===
+  // ONE complete integrated `UsageGuidance` is sufficient. Split style needs at
+  // least two distinct decision dimensions; arbitrary extra stories do not earn
+  // compliance merely by increasing the export count.
   if (file.endsWith('.principles.stories.tsx')) {
     const exportMatches = [...content.matchAll(/^export const ([A-Z]\w+)/gm)].map(m => m[1]);
     const hasIntegrated = exportMatches.includes('UsageGuidance');
-    const hasLegacy = exportMatches.some(e =>
-      e === 'WhenToUse' || e === 'WhenNotToUse' || e === 'WhatItIs' || e === 'UsageScenarioRule' ||
-      /^Vs[A-Z]/.test(e) || /[A-Z][a-z]+Vs[A-Z]/.test(e) ||
-      /^(Forbidden|Donts|Pitfalls|Prohibitions|NonGoals|VisualDonts)/.test(e)
-    );
-    const valid = hasIntegrated || hasLegacy || exportMatches.length >= 2;
+    const decisionDimensions = new Set();
+    for (const exportName of exportMatches) {
+      if (exportName === 'WhenToUse' || exportName === 'WhatItIs' || exportName === 'UsageScenarioRule') decisionDimensions.add('when-to-use');
+      if (exportName === 'WhenNotToUse' || /^(Forbidden|Donts|Pitfalls|Prohibitions|NonGoals|VisualDonts)/.test(exportName)) decisionDimensions.add('when-not-to-use');
+      if (/^Vs[A-Z]/.test(exportName) || /[A-Z][a-z]+Vs[A-Z]/.test(exportName)) decisionDimensions.add('sibling-boundary');
+      if (exportName === 'ContentGuidelines') decisionDimensions.add('content-guidelines');
+    }
+    const valid = hasIntegrated || decisionDimensions.size >= 2;
     if (!valid && exportMatches.length > 0) {
       violations.principlesCore.push({
         file: basename(file),
-        coreCount: exportMatches.length,
+        coreCount: decisionDimensions.size,
         exports: exportMatches
       });
     }
@@ -420,6 +541,30 @@ for (const file of walk(STORIES_DIR)) {
   if (modified) writeFileSync(file, content);
 }
 
+// Consumer-template technical probes share the same Storybook runtime but are
+// outside the DS content corpus above. Scan their tags without applying DS prose
+// or three-layer requirements.
+for (const file of walk('apps/template/src')) {
+  const content = readFileSync(file, 'utf-8');
+  const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  checkStoryVisibility(file, content, exportedStoryDefinitions(sourceFile));
+}
+
+const sharedPreview = readFileSync('packages/storybook-config/preview.tsx', 'utf-8');
+if (!/stories:\s*\{[\s\S]*filter:[\s\S]*!story\.tags\?\.includes\('test-only'\)/.test(sharedPreview)) {
+  violations.storyVisibility.push({
+    file: 'packages/storybook-config/preview.tsx',
+    issue: 'shared Autodocs test-only filter missing',
+  });
+}
+const sharedManager = readFileSync('packages/storybook-config/addons/ds-devmode/manager.tsx', 'utf-8');
+if (!/sidebar:\s*\{[\s\S]*filters:[\s\S]*!item\.tags\?\.includes\('test-only'\)/.test(sharedManager)) {
+  violations.storyVisibility.push({
+    file: 'packages/storybook-config/addons/ds-devmode/manager.tsx',
+    issue: 'shared sidebar test-only filter missing',
+  });
+}
+
 const totalViolations = Object.values(violations).reduce((s, arr) => s + arr.length, 0);
 
 console.log('=== Content quality audit ===\n');
@@ -464,9 +609,9 @@ if (violations.anatomyNumberingGap.length > 0) {
   violations.anatomyNumberingGap.slice(0, 10).forEach(v => console.log(`  • ${v.file}: ${v.gap}`));
 }
 
-if (violations.showcaseDefault.length > 0) {
-  console.log(`\n[P1] Showcase missing Default/AllVariants: ${violations.showcaseDefault.length}`);
-  violations.showcaseDefault.slice(0, 10).forEach(v => console.log(`  • ${v.file}: first=${v.firstStory}`));
+if (violations.showcaseRepresentative.length > 0) {
+  console.log(`\n[P1] Showcase missing a representative reader-facing story: ${violations.showcaseRepresentative.length}`);
+  violations.showcaseRepresentative.slice(0, 10).forEach(v => console.log(`  • ${v.file}`));
 }
 
 if (violations.perSizeSplit.length > 0) {
@@ -475,8 +620,8 @@ if (violations.perSizeSplit.length > 0) {
 }
 
 if (violations.principlesCore.length > 0) {
-  console.log(`\n[P0] Principles missing ≥ 2 universal core: ${violations.principlesCore.length}`);
-  violations.principlesCore.slice(0, 10).forEach(v => console.log(`  • ${v.file}: core=${v.coreCount}/2 exports=[${v.exports.join(', ')}]`));
+  console.log(`\n[P0] Principles missing integrated UsageGuidance or ≥2 split decision dimensions: ${violations.principlesCore.length}`);
+  violations.principlesCore.slice(0, 10).forEach(v => console.log(`  • ${v.file}: decision dimensions=${v.coreCount}/2 exports=[${v.exports.join(', ')}]`));
 }
 
 if (violations.asciiArt.length > 0) {
@@ -504,6 +649,11 @@ if (violations.literalMarkdownEmphasis.length > 0) {
   violations.literalMarkdownEmphasis.slice(0, 10).forEach(v =>
     console.log(`  • ${v.file}: ${v.count}× ${v.samples.map(s => `"${s}"`).join(', ')}`)
   );
+}
+
+if (violations.storyVisibility.length > 0) {
+  console.log(`\n[P0] Storybook technical-probe visibility drift: ${violations.storyVisibility.length}`);
+  violations.storyVisibility.slice(0, 10).forEach(v => console.log(`  • ${v.file}: ${v.issue}`));
 }
 
 if (violations.linkTo.length > 0) {

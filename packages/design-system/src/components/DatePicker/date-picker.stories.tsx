@@ -11,7 +11,7 @@ const meta: Meta<typeof DatePicker> = {
   parameters: {
     docs: {
       description: {
-        component: '日期選擇元件。外觀同 Select，Calendar icon 取代 ChevronDown。支援 clearable 和格式化選項。',
+        component: '用於表單中選擇或顯示單一絕對日期；日期加時間使用 `showTime`。日期範圍改用 `DatePicker.Range`，瀏覽月／週／日事件改用 Calendar，只需輸入純文字日期時改用 Input。',
       },
     },
   },
@@ -91,7 +91,6 @@ export const Modes: Story = {
         <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
         <DatePicker value="2026-04-02" onChange={() => {}} />
       </div>
-      {/* @story-trait-rationale: pre-existing trait gaps tracked separately */}
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">view</h3>
         <DatePicker mode="view" value="2026-04-02" />

@@ -137,7 +137,7 @@ ChromeHeader 內部用 `<header>` element(非 `<div>`)。HTML5 spec 允許 secti
 - 我們既有 spec:`tabs.spec.md` 「出現在 Dialog / Sidebar / 任何 header」段「Consumer 把 Tabs 放在 header 區域內、移除 header 自己的 `border-b`,讓 Tabs 接管」
 - 我們既有禁止:`tabs.spec.md`「禁止事項」段「Dialog / Sidebar header 內不得同時有 header `border-b` 和 TabsList `border-b`——會出現雙線」
 
-**Counter-pattern(reject)**:Material UI 走「container 畫 border + tabs 不畫」(`<Box sx={{ borderBottom: 1 }}><Tabs>...</Tabs></Box>`)— 本 DS reject 此方向,理由:tabs underline 需 base line(MUI 2px indicator 浮空是另一派視覺語言,跨派遷移成本高且既有 spec 已 codify Primer 派)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**Counter-pattern(reject)**:Material UI 採 parent-owned separator、Tabs 只負責 active indicator；本 DS 不採此方向。既有契約把 separator 與 active indicator 視為 TabsList 的同一組狀態邊界，改成 parent-owned 會同時更換責任歸屬與既有 consumer contract。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
 
 ### Rule W2:Tabs 水平 padding 對齊 header(by inheritance,不重複設)
 
@@ -270,7 +270,7 @@ ChromeHeader / SurfaceHeader 新增 `tabsSlot?: ReactNode` prop。提供時自�
 </ChromeHeader>
 ```
 
-**不開**:`density?: 'md'|'lg'` 自由 prop(M21 違反 — 任意 density 等於 cva-on-pattern,該由 density context 決定)。`lockDensity="lg"` 原為 fullscreen viewer escape hatch,但 **2026-06-15 起無 consumer 使用** — FileViewer 改為全 surface 繼承 page density(原本只鎖兩個 header、沒鎖 body → 左緣不對齊,圖二 bug)。density lock 一律設在 **surface 根**而非 header primitive(見 `density.spec.md` anti-pattern)。其餘 consumer 走 `inherit`(跟 page density)。**Grep evidence**(historical 錨,migration 已完成):migration 前 `Sidebar` + `FileViewer Toolbar/InfoPanel` 各自手刻同一 signature `flex items-center gap-2 shrink-0 h-[var(--chrome-header-height)] border-b border-divider px-[var(--layout-space-loose)]`(production 重複 contract,非 premature abstraction)→ 過 M21 prop variant test 3 條(`<Sidebar>` 等近親 grep / 3 家世界級 page-header primitive / value 結構不同)→ 抽成本 primitive。**現況**:全部已消費 `<ChromeHeader>`(`sidebar.tsx:479` / `file-viewer.tsx:340` Toolbar + `:474` InfoPanel),grep 全 repo 已無此手刻 signature(除 `chrome-header.tsx` primitive 本身)。
+**不開**:`density?: 'md'|'lg'` 自由 prop(M21 違反 — 任意 density 等於 cva-on-pattern,該由 density context 決定)。`lockDensity="lg"` 原為 fullscreen viewer escape hatch,但 **2026-06-15 起無 consumer 使用**；FileViewer 已改為全 surface 繼承 page density。density lock 一律設在 **surface 根**而非 header primitive(見 `density.spec.md` anti-pattern)，其餘 consumer 走 `inherit`。`ChromeHeader` 的抽取依據是 Sidebar 與 FileViewer 曾重複擁有同一份 header contract；目前兩者皆直接消費此 primitive，實作位置見 `sidebar.tsx` / `file-viewer.tsx`，歷史 signature 留在 git history 而非 spec。
 
 ### 空 children / action state 契約(rendering contract)
 

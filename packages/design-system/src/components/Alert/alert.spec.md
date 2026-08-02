@@ -28,7 +28,6 @@ benchmark:
   - Polaris Banner: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Banner
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Alert 設計原則
 
@@ -38,7 +37,7 @@ Alert 是**持久性通知**，嵌入在頁面中。用於系統狀態提示、�
 
 **實作基礎**：消費 Notice primitive（共享 Toast 的 layout + icon + theme 策略）。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 2（List item layout）**——由 Notice primitive own（Notice 消費 `patterns/element-anatomy/item-anatomy.spec.md`「List item layout」reading-mode 規格），Alert 透過 Notice 間接繼承,不直接消費 item-anatomy。
+**Layout Family**：本元件透過 Notice 間接繼承 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 2（List item layout）** reading-mode 規格,不直接消費 item-anatomy。
 
 ---
 

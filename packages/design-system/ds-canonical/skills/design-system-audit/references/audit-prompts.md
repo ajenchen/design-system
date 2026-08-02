@@ -967,10 +967,10 @@ Working directory: <verified-repository-root>
    - `isSelectionSingle` → States only
    - `isMatrixHeavy` → ≥ 4 matrix stories
    - `isStructural` → 結構變體 stories(無固定數,過 earn-existence)
-   - `isInternal` → 1 Default + ≤ 1 composition scenario
+   - `isInternal` → 1 representative primitive story + ≤ 1 composition scenario(不強迫命名 Default)
 4. 缺哪個 → 過 spec.md「邊界案例 scope」找 N/A rationale。**有 rationale = `deviation ✓`,無 rationale = P0**
-5. universal `Default` 缺 → P1 warn
-6. 多餘 stories → 過 earn-existence 2-test → 失敗 retire 候選 P1
+5. showcase 完全沒有 reader-facing representative story → P0；不得因 export 不叫 `Default` 而報錯
+6. `Default` 只有 minimal baseline 本身通過 earn-existence 才保留；多餘 stories → 過 earn-existence 2-test → 失敗 retire 候選 P1
 
 Report format:
 ```
@@ -995,25 +995,25 @@ Working directory: <verified-repository-root>
 對 `packages/design-system/src/components/*/` 每元件:
 
 1. 讀 `*.principles.stories.tsx` 列 `export const X` 名稱
-2. **核心規則**:每元件 principle stories `export const` 數 ≥ 2(對齊 audit-content-quality.mjs 寬鬆 ≥ 2)
+2. **核心規則**:ONE complete `UsageGuidance` sufficient；不得以 export 數量當內容品質 proxy
 3. 計算 universal core 命中數(v3 schema):
-   - **`UsageGuidance`** 命中 → 視為「has core」(整合 schema,等同 ≥ 2 core)
+   - **`UsageGuidance`** 命中 → 驗內容是否同時涵蓋「何時用 + 何時不用 + sibling boundary」；完整即「has core」
    - 或 split style:`WhenToUse`(legacy `UsageScenarioRule` / `WhatItIs` 算)+ `WhenNotToUse`(legacy `Forbidden*` / `Donts` / `Pitfalls` / `Prohibitions` / `NonGoals` / `VisualDonts` 算)+ `Vs*Rule` + `ContentGuidelines` ≥ 2 → 「has core」
 4. 違反:
-   - **P0**:exports < 2(不夠教學量)
-   - **P0**:無任一 universal core(`UsageGuidance` / split / legacy 都無)
+   - **P0**:`UsageGuidance` 不完整，且 split decision dimensions < 2
+   - **P0**:無 universal decision core(`UsageGuidance` / split / legacy 都無)
    - **P1**:用 deprecated naming(`Forbidden*` / `Donts` etc.)→ rename target(整合到 `UsageGuidance` 或改 `WhenNotToUse`)
-5. 多餘 stories → 過 earn-existence 2-test(對齊 Dim 24/25)→ retire 候選
+5. 額外 stories 必教 distinct topic 並過 earn-existence 2-test(對齊 Dim 24/25)；為湊第二篇或重演 anatomy/showcase → retire 候選
 
 Report format:
 ```
-[P0] {component}({file}):exports < 2(only N)— 補 component-specific *Rule 或 ContentGuidelines
-[P0] {component}:無 universal core(無 UsageGuidance 也無 split style)
+[P0] {component}({file}):UsageGuidance 缺 {when-to-use|when-not-to-use|sibling-boundary}，且 split dimensions={N}/2
+[P0] {component}:無 universal decision core(無完整 UsageGuidance 也無合格 split style)
 [P1] {component}:deprecated naming `{OldName}` → 整合到 `UsageGuidance` 或 rename `WhenNotToUse`
 deviation ✓: {component} 在 spec.md 邊界案例 scope 標 N/A,因 {rationale}
 ```
 
-End: `N components scanned, K P0 (exports<2 OR no core), J P1 (deprecated naming), I retire candidates`. Under 400 words. Don't fix.
+End: `N components scanned, K P0 (incomplete/no core), J P1 (deprecated naming), I extra-story retire candidates`. Under 400 words. Don't fix.
 
 ---
 
@@ -1133,16 +1133,21 @@ Grep story `name:` field 含 `L1-L7 | canonical | spec X | phase Y | stream [A-Z
 
 Grep `.stories.tsx` body 含 `Option A/B/C` / `按鈕一` / `Foo/Bar/Baz` / `Lorem ipsum` / `Hello World` / `Test 1/2` 等。對齊 Polaris/Carbon 共識用 Jira/Stripe/Notion 真情境。
 
-## 43. Reader-facing guidance 品質(Autodocs 導讀 + Rule note)
+## 43. Reader-facing guidance + technical-probe classification
 
-**Type**: AI-judgement(NO-SAMPLE per audit-full-sweep canonical:DS-wide ALL reader-facing Autodocs owners + principles stories,不 sample)/ **Canonical**: `rules/story-rules.md`「Autodocs component 導讀必寫」+ `references/example-selection.md` / **Home**:對應 story owner
+**Type**: AI-judgement(NO-SAMPLE per audit-full-sweep canonical:DS-wide ALL reader-facing Autodocs owners + principles + story visibility roles,不 sample)/ **Canonical**: `rules/story-rules.md`「Autodocs component 導讀必寫」+「Technical probe visibility」+ `references/example-selection.md` / **Home**:對應 story owner
 
 1. 全讀 `tags:['autodocs']` owner 的 `parameters.docs.description.component`：是否先說解決什麼，
    再說何時用／何時改用近親；只重複名稱、props/API、內部代號或空泛「用於展示」均不合格。
 2. 全讀 `.principles.stories.tsx` Rule notes：是否說明原則為何，而非只下結論。
 3. 兩者都檢查不必要的中英夾雜(技術術語例外)。
+4. 全讀 `tags:['test-only']` stories：是否真的只供 hover/focus/open snapshot、perf、import smoke 等
+   automation；reader-facing scenario 被標 test-only = P0。Technical probe 用 `!autodocs` 或再搭
+   `!dev` / `!test` 導致 direct/index/test surface 消失 = P0。
 
-`audit-content-quality.mjs` 只機械驗存在、非 stub 與最低資訊量；script PASS 不得取代上述逐段語意判讀。
+`audit-content-quality.mjs` 機械驗存在、非 stub、最低資訊量與 visibility role；
+`test-storybook-test-only-semantics.mjs` 驗 shared sidebar/Autodocs filter + known probe inventory。
+兩者 PASS 不得取代上述逐段語意與分類判讀。
 
 ## 44. Internal vs Components 分類三 test
 
@@ -1162,7 +1167,7 @@ Per-element folder verify 三 test:(a) 有預設視覺?(b) 直接 `<X>` 有視�
 
 ## 46. Manual vs Mechanical boundary
 
-**Type**: Absolute / **Canonical**: `category-templates.md` v2 trait-based / **Home**: 檔頭 `// @story-trait-rationale: <reason>`(= `check_story_invariants.sh` R3 機械 escape;舊名 `@manual-trait-allow` 無實作已廢)
+**Type**: Absolute / **Canonical**: `category-templates.md` v2 trait-based / **Home**: scoped `// @story-trait-rationale: <declared-trait> -> <existing-story-export> — <non-deferred reason>`。Marker 只處理該 trait；trait/target 必存在，禁止 file-wide escape 與 defer 文案。
 
 Per-元件 grep `.stories.tsx`(非 anatomy/principles),若含 trait-derived `AllSizes` / `AllVariants` / `WithIcon` hand-written export 而非 import auto-compile = anti-pattern(該 migrate 進 auto-compile)。
 

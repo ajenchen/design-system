@@ -22,7 +22,7 @@ protection, apps, secrets, and required checks are activated.
 The locked execution contract requires Node.js 22.13.0 or newer, Bash, Git, `jq`, and Python 3.
 Native Windows is unsupported; use the committed Linux devcontainer or WSL2. The host npm only
 launches the setup script and may be npm 10 or newer. All authoritative npm operations use the
-independently downloaded and lock-verified exact npm 11.18.0 runtime. Unsupported or incomplete
+independently downloaded and lock-verified exact npm 11.19.0 runtime. Unsupported or incomplete
 hosts fail before dependency installation or repository mutation.
 
 ## Provider-neutral behavior
@@ -60,6 +60,13 @@ Automatic template delivery is owned upstream by the release mirror. It opens a 
 the exact published snapshot; a consumer does not carry a second release-dispatch/updater workflow.
 Repository Actions defaults remain read-only, and ordinary delivery requires no hosted environment or
 App credential in the consumer.
+
+The provider-neutral standard release order is exactly
+`pr-checks → merge → publish → readback → consumer`. The upstream release mirror owns template
+delivery. A registered product receiver is downstream-only: it pins every manifest discovered from
+the root workspace declaration to the exact release, regenerates the single npm lock, and derives
+both status and staging paths from `sync-exact-workspace-dependencies.mjs --list-receiver-paths`.
+It may open a protected PR; it may not publish, direct-write `main`, or replace mirror authority.
 
 Protected `main` requires the single `Verify consumer` context from `audit.yml`. That workflow performs
 one locked install followed by typecheck, import lint, and build. The normal PR review and protected

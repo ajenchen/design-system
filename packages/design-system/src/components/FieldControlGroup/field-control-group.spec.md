@@ -12,7 +12,6 @@ benchmark:
   - Chakra UI Group + InputGroup: github.com/chakra-ui/chakra-ui/blob/main/apps/www/content/docs/components/input.mdx
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — Ant Space.Compact + Bootstrap input-group + Chakra Group claims verified via WebFetch + inline URL. -->
 
 # FieldControlGroup 設計原則
 

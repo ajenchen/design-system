@@ -23,7 +23,6 @@ const meta: Meta<typeof App> = {
       },
     },
   },
-  tags: ['autodocs'],
 }
 
 export default meta

@@ -12,7 +12,6 @@ benchmark:
   - Carbon Tag: github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/Tag
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Chip 設計原則
 
@@ -21,7 +20,7 @@ benchmark:
 Chip 是 **Material Design Filter Chip** 的實作——用於從多個選項裡**選取任意數量（多選）或單一選項（單選）**，視覺上是一排獨立的 pill。
 基於 Radix ToggleGroup，橋接設計系統 token。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 3（Pill Layout）action trigger sub-profile**。內部結構 `[startIcon?] [<span px-1>label</span>] [suffix badge? + endIcon?]` 繼承 Button canonical（code docblock 明寫「鏡射 Button」）。SSOT 在 `components/Button/button.spec.md`「Pill Layout」章節。Chip 特有視覺（`rounded-full`、單一固定 `h-field-sm` size、hover/selected 色彩規則）寫在本 spec 下方章節。
+**Layout Family**：本元件是 `components/Button/button.spec.md`「Pill Layout」所擁有的 **Family 3（Pill Layout）action trigger sub-profile** 消費者。內部結構 `[startIcon?] [<span px-1>label</span>] [suffix badge? + endIcon?]` 繼承 Button canonical（code docblock 明寫「鏡射 Button」）。Chip 特有視覺（`rounded-full`、單一固定 `h-field-sm` size、hover/selected 色彩規則）寫在本 spec 下方章節。
 
 ---
 
@@ -95,7 +94,7 @@ Material 3 filter chip 在 selected 時會把 startIcon 換成 `Check`。我們�
 
 Chip **只有一個 size**，對應 `h-field-sm`（md density 28px / lg density 32px）。
 
-對齊 Material 3 / Atlassian / Polaris / Ant Design 的世界級共識：chips 使用單一高度，不暴露 size prop。使用場景（filter bar、tag panel）高度一致，多 size 不增加表達力、只增加 API 負擔。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Chip 使用單一高度，不暴露 size prop。既有使用場景（filter bar、tag panel）共享同一密度，多 size 不增加語意表達力，只會擴張 API 與組合分歧。
 
 **為什麼用 `--field-height-sm` 不用獨立 token**：chip 高度仍需 density 感知，沿用 `field-height-sm` 保證跟 Button / Input 的 density 節奏一致。若未來需要跟 form 高度解耦再新增 `--chip-height`。
 

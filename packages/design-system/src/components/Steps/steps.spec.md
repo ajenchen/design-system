@@ -24,17 +24,15 @@ benchmark:
   - MUI Stepper: github.com/mui/material-ui/tree/master/packages/mui-material/src/Stepper
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # Steps 設計原則
 
 **流程進度指示器**:把多步驟任務的「現在走到哪、完成了哪些、還剩哪些」視覺化為一條有序的 indicator + label 序列。
 
-**實作基礎**：組合元件——Icon / number indicator + Text 有序序列，無 external primitive base。Radix / shadcn 無對應 Steps primitive。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**實作基礎**：本 DS 自建的組合元件——Icon / number indicator + Text 有序序列，由 parent 統一推導進度與 focus state。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 2（List item layout）** 消費者。結構繼承 `patterns/element-anatomy/item-anatomy.spec.md`「List item layout」章節的 **scanning-mode** 規格——跟 MenuItem / TreeItem 同 scanning-family：label `text-body`、description 縮 `text-caption`（sm/md）+ `leading-compact`（非 reading-mode 的 body + default leading），consume `--item-gap-label-desc-scanning` token。Steps 有明文例外：indicator inline 對齊 label 第一行（不走 24px 閾值）。
+**Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 2（List item layout）** 消費者。結構繼承其「List item layout」章節的 **scanning-mode** 規格——跟 MenuItem / TreeItem 同 scanning-family：label `text-body`、description 縮 `text-caption`（sm/md）+ `leading-compact`（非 reading-mode 的 body + default leading），consume `--item-gap-label-desc-scanning` token。Steps 有明文例外：indicator inline 對齊 label 第一行（不走 24px 閾值）。
 
-> 命名選 `Steps`(複數)而非 `Stepper`——`stepper` 在 web 有 HTML `<input type="number">` 計數器的歷史包袱(spinbutton 也叫 stepper),`Steps` 更精確地表達「一組有序步驟」。對齊 Ant Design 的命名慣例。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+> 命名選 `Steps`(複數)而非 `Stepper`——`stepper` 在 web 也常指 HTML `<input type="number">` 的數值增減控件，`Steps` 更精確地表達「一組有序步驟」，避免 API 語意衝突。
 
 ---
 
@@ -115,9 +113,9 @@ Column rhythm **優先於**「大 prefix 視覺重量平衡文字塊」的需求
 - MenuItem / SidebarMenuButton 是「一堆選項的列表」——每個 row 獨立,視覺重量平衡是主要考量
 - Steps 是「一條有連接關係的進度路徑」——column/row rhythm 是元件本身,任何破壞 rhythm 的對齊都不可接受
 
-### 業界共識
+### 對齊不變量
 
-Material Stepper、Ant Design Steps、GitHub Workflows、Linear、Notion Checklist——**全部**走「indicator anchored to label 第一行」,**沒有任何世界級 stepper 把 indicator 對齊到文字塊中心**。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**Indicator 固定 anchored to label 第一行**。這是連接線能夠穿過同一節奏軸的前提；如果依 description 有無改為對齊文字塊中心，同一組 Steps 的 indicators 就會上下漂移。
 
 ### 對齊公式
 
@@ -222,7 +220,7 @@ Per-item `state="error"` prop 存在但是 **escape hatch**,僅用在 inline JSX
 ### Outer ring 的關鍵設計
 
 - **Bounding box 固定**:focus 外環以 box-shadow 表達,不改變 indicator 的 bounding box——focused / non-focused 佔用完全相同的寬高(md=24px,lg=32px,sm=24px hit area)
-- **Surface gap + ring 兩層外環**:內圈先用 surface 色拉開一段 gap,外圈再疊 ring 色,形成「indicator 外有一圈帶間隙的環」——精確 gap / ring 寬度與 box-shadow 值見 steps.tsx `getOuterRingShadow`(對齊 Polaris / shadcn focus-ring surface-gap idiom)<!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **Surface gap + ring 兩層外環**:內圈先用 surface 色拉開一段 gap,外圈再疊 ring 色,形成「indicator 外有一圈帶間隙的環」——精確 gap / ring 寬度與 box-shadow 值見 steps.tsx `getOuterRingShadow`。兩層 shadow 不改變 bounding box，因此不會推動連接線或文字。
 - **Ring 色由 state 決定**:`error` → `--error-hover`;non-linear `current` → `--border-hover`;其餘(含 linear current / completed / upcoming / reachable)→ `--info-hover`
 
 ### State × Focus 視覺矩陣(md/lg)
@@ -265,7 +263,7 @@ sm 的 8px dot 用同一套 `getOuterRingShadow` box-shadow halo 在 dot 外圍�
 
 **不會**出現 linear current 的 filled 藍——這對齊使用者 mental model「我只是在看,這步還沒做」。non-linear current 與 upcoming 同為 `bg-secondary` 底,被選中(focused)的 step 以 `--border-hover` 外環標示。sm 尺寸的 dot 在 non-linear current 仍用 `fg-disabled` 灰點(8px dot 最小化呈現)。
 
-**Ring 不是 selection marker**。Steps 不是 SelectMenu / DropdownMenu 這類 selection control;ring 是 focus marker 單一語意。`CLAUDE.md` 的「選擇 / 狀態視覺」規則 B 指出的 `bg-neutral-selected`、radio 圓圈等 selection 視覺**都不適用 Steps**——Steps 用 box-shadow 外環表達「you are here」,不是「你選中了這個」。
+**Ring 不是 selection marker**。Steps 不是 SelectMenu / DropdownMenu 這類 selection control;ring 是 focus marker 單一語意。`patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」規則 B 指出的 `bg-neutral-selected`、radio 圓圈等 selection 視覺**都不適用 Steps**——Steps 用 box-shadow 外環表達「you are here」,不是「你選中了這個」。
 
 ---
 
@@ -286,7 +284,7 @@ disabled > error > focused > default
 
 Steps 的 step 本身是「狀態載體」,跟 Field 的「label 只是欄位名,error 靠 help text 表達」不同。Steps 的 label 在視覺上屬於 indicator 的延伸資訊,兩者應該一起講故事:紅 ✕ indicator + 紅 label 形成一致的 error visual language,讓使用者一眼看出這步出了什麼錯(description 不變色,見下段)。
 
-這跟 `CLAUDE.md` 的「Label 永遠 foreground」原則不衝突——那是 Field 家族的規則(edit / readonly / disabled 三態的欄位容器)。Steps 是**進度指示器**不是**輸入容器**,label 色彩跟著 step state 走是正確做法。
+這跟 `components/Field/field.spec.md`「樣式規範」的 FieldLabel foreground 原則不衝突——那是 Field 家族的規則(edit / readonly / disabled 三態的欄位容器)。Steps 是**進度指示器**不是**輸入容器**,label 色彩跟著 step state 走是正確做法。
 
 ### Description 沒有 error 變色
 
@@ -387,12 +385,12 @@ Description 在 error state 下維持 `text-fg-secondary`(跟其他 state 一樣
 </Steps>
 ```
 
-### 為什麼 parent-controlled 是世界級做法
+### 為什麼使用 parent-controlled
 
 1. **Single source of truth**:所有狀態集中在 parent,不可能發生「多個 step 同時是 current」「completedValues 跟 item state 互相矛盾」這類 bug。
 2. **Derived state**:每個 step 的 state 由 parent props 推導,consumer 不手算,不會漂移。
 3. **無 side effect**:Steps 不偷偷 mutate 進度狀態(completedValues / errorValues),進度變動都走 parent 的 state setter,讓應用層完整掌控推進邏輯(驗證 → 加入 completedValues → 推進 value)。
-4. **對齊業界**:Ant Design Steps(`current` + `status`)、Material Stepper(`activeStep`)、Radix Tabs(`value`)全部用此模式。開發者從這些系統來的直覺可直接套用,學習曲線接近零。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+4. **API 一致**:`value` / `completedValues` / `errorValues` 都是明確的 parent inputs，與本 DS 其他 controlled composite 的狀態所有權相同，開發者不需猜測 item 內部狀態。
 
 ### Per-item `state` escape hatch
 
@@ -453,7 +451,7 @@ Item-level **內容狀態色彩**(completed / current / upcoming / error indicat
 - `../../patterns/element-anatomy/item-anatomy.tsx` — Indicator 32px 尺寸依據（`AVATAR_SIZE.block.sm/md = 32`;`AVATAR_SIZE` 常數住 item-anatomy,非 avatar.tsx — Avatar 本身 size 為任意 number）
 - `../../tokens/uiSize/uiSize.spec.md` — `field-height-xs` 地板規則 + Icon 尺寸 Tier
 - `../../tokens/color/color.spec.md` — Primary token
-- CLAUDE.md「選擇 / 狀態視覺必須對齊既有 canonical」— Steps 不用 `bg-neutral-selected` 的理由
+- `patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」— Steps 不用 `bg-neutral-selected` 的理由
 
 ## A11y 預設
 

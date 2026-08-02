@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "design-system",
   "description": "Generated authority/DS-author Claude Code convenience adapter for canonical skills and hook feedback. Its hooks no-op outside an exact DS-author target, and the plugin must only be assigned to authority-only endpoints because plugin skills and commands are provider-discovered. Product governance comes from the immutable @qijenchen/design-system snapshot and protected hard gates; this plugin is not a policy source of truth.",
-  "version": "0.1.0-beta.106",
+  "version": "0.1.0-beta.107",
   "author": {
     "name": "qijenchen"
   },

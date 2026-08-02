@@ -184,34 +184,15 @@ export const PureBehaviorPrimitiveRule: Story = {
   render: () => (
     <div>
       <Rule
-        title="HoverCard 不含視覺樣式——bg / border / shadow / padding 由 consumer 決定"
-        note="HoverCard 本身只提供 z-index、動畫、sideOffset。視覺由消費者(ProfileCard / OverflowIndicator / custom)各自決定,符合不同場景的視覺語言"
+        title="HoverCard 只擁有觸發、定位與開關行為"
+        note="背景、邊框、陰影、圓角與內距必須由真正的內容 owner 決定：ProfileCard 是明色人員資訊卡，OverflowIndicator 可是緊湊清單。若 HoverCard 自帶一套 chrome，兩個 consumer 都必須 override，結果反而會產生漂移。"
       >
-        <div className="flex gap-6">
-          <HoverCard>
-            <HoverCardTrigger asChild>
-              <Button variant="tertiary" size="sm">亮色 Card 樣式</Button>
-            </HoverCardTrigger>
-            <HoverCardContent className="bg-surface-raised border border-border rounded-lg p-4 shadow-[var(--elevation-200)]">
-              <div className="w-48 text-body">ProfileCard 風格:亮底 + 邊框 + elevation</div>
-            </HoverCardContent>
-          </HoverCard>
-
-          <HoverCard>
-            <HoverCardTrigger asChild>
-              <Button variant="tertiary" size="sm">深色 Tooltip 樣式</Button>
-            </HoverCardTrigger>
-            <HoverCardContent className="bg-tooltip text-on-emphasis rounded-md px-3 py-2" data-theme="dark">
-              <div className="w-48 text-caption">OverflowIndicator 風格:深底 + compact</div>
-            </HoverCardContent>
-          </HoverCard>
-        </div>
-        <Label>↑ 同一個 HoverCard primitive 兩種視覺——consumer 根據場景選樣式</Label>
+        <Label>完整的亮色／深色渲染對照請看「設計規格 / 視覺變體」；這裡保留的是 ownership 判斷。</Label>
       </Rule>
 
       <Rule
-        title="Avatar 自動整合(建議 pattern)"
-        note="人員類 Avatar 透過 `hoverCard` prop 自動 wrap HoverCardTrigger,不需要 consumer 手動組合。統一人員 hover 提供 ProfileCard 的體驗"
+        title="人員 Avatar 由 Avatar / ProfileCard 組合擁有視覺"
+        note="人員場景使用 Avatar 的 `hoverCard` prop 連接互動，content 依 ProfileCard 規格撰寫；consumer 不重複手組 HoverCardTrigger，也不讓底層 primitive 擁有人員卡片樣式。"
       >
         <div className="flex items-center gap-3">
           <Avatar src="https://i.pravatar.cc/80?u=ada-chen" alt="Ada Chen" size={40} hoverCard={
@@ -223,7 +204,7 @@ export const PureBehaviorPrimitiveRule: Story = {
           } />
           <span className="text-body">Ada Chen</span>
         </div>
-        <Label>↑ Avatar hoverCard prop 自動整合,無需手動 HoverCardTrigger</Label>
+        <Label>Avatar 負責 trigger 整合，ProfileCard 負責內容與 chrome，HoverCard 只負責行為。</Label>
       </Rule>
     </div>
   ),

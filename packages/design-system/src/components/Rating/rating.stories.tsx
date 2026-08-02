@@ -12,7 +12,7 @@ const meta: Meta<typeof Rating> = {
     docs: {
       description: {
         component:
-          '星星評分元件——離散 1–5 分。interactive 送出評分 / readOnly 展示平均分；precision full 整星 / half 半星。',
+          '用於讓使用者給出離散星等，或唯讀顯示已提交的個人／平均評分。連續數值改用 Slider，二元喜好改用 Switch 或 icon button，完成進度改用 ProgressBar / CircularProgress。',
       },
     },
   },
@@ -112,8 +112,8 @@ export const InField: Story = {
   },
 }
 
-/* @story-trait-rationale: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。 */
-// @story-trait-rationale: Disabled retired per audit Dim 24 —
+/* @story-history: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。 */
+// @story-history: Disabled retired per audit Dim 24 —
 //   disabled 覆蓋已由 anatomy.stories.tsx StateBehavior 的 disabled live case
 //   (value=4 disabled)owns;對齊 Checkbox / Switch / RadioGroup 同 Family
 //   已 retire 的獨立 Disabled story,不重複展示同一 state。

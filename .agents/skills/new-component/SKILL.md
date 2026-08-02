@@ -154,7 +154,7 @@ traits:
 
 1. **`{name}.stories.tsx` 展示**:per Phase 5.0 declared traits → 對照 `category-templates.md` 衍生 required core stories(`hasVariants` → AllVariants / `hasSizes` → AllSizes / `isOverlay` → OpenSnapshot 等)。再加 1-2 真實業務 scenario(Jira / Stripe / Notion 過 earn-existence)。Hook `check_story_invariants.sh` R3 category(原 check_story_category.sh folded 折入)write-time 攔不符 trait core。
 2. **`{name}.anatomy.stories.tsx` 設計規格**:5-story 標準(Overview + SizeMatrix + ColorMatrix + StateBehavior + Inspector)或合理 subset + rationale。
-3. **`{name}.principles.stories.tsx` 設計原則**(對齊 Polaris/Carbon/Ant canonical,2026-04-26):universal core ≥ 2 of {`WhenToUse` / `WhenNotToUse` / `Vs{Sibling}Rule` / `ContentGuidelines`}。do / don't 情境對照,每則 Rule title + Rule note + 範例。Hook `check_canonical_propagation.sh` E.1(原 `check_principles_canonical.sh` folded)write-time 攔不符。
+3. **`{name}.principles.stories.tsx` 設計原則**:預設單一完整 `UsageGuidance`(何時用 + 何時不用 + sibling boundary)即 sufficient。只有 distinct topic 通過 earn-existence 才加第二篇；若採 split style，至少涵蓋 2 個不同 decision dimensions(`WhenToUse` / `WhenNotToUse` / `Vs{Sibling}Rule` / `ContentGuidelines`)。Hook `check_canonical_propagation.sh` E.1 write-time 同規則。
 
 **兩個 test**:
 - 「人」test — 遮標題 5 秒讀者看懂情境?

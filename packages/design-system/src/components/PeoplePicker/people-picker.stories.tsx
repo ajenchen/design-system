@@ -1,10 +1,10 @@
-// @story-trait-rationale: pre-existing isInputLike WithError trait gap tracked separately (see L62/L72 inline rationale); this edit only adds explicit variant="primary" to the primary-CTA Button per new tertiary/text default migration
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { PeoplePicker } from '@/design-system/components/PeoplePicker/people-picker'
 import type { PersonValue } from './person-display'
 import { Button } from '@/design-system/components/Button/button'
+import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
 
 const meta: Meta = {
   title: 'Design System/Components/PeoplePicker/展示',
@@ -12,7 +12,7 @@ const meta: Meta = {
   parameters: {
     docs: {
       description: {
-        component: '人員選擇元件。外觀同 Select，value 前面多 avatar。多人時 avatar 堆疊。',
+        component: '用於指派、邀請或選擇一位或多位人員，並以 Avatar 幫助辨識同名成員。非人員的單選／多選改用 Select / Combobox；只顯示人員資訊時改用 ProfileCard、Avatar.Group 或 list。',
       },
     },
   },
@@ -62,7 +62,6 @@ const samplePeople = [
   },
 ]
 
-// @story-trait-rationale: pre-existing trait gaps (Default/WithError) tracked separately; this PR scope = add view mode card to mode showcase only.
 /* ── 單人（互動） ── */
 const SinglePicker = () => {
   const [val, setVal] = React.useState<PersonValue | null>(samplePeople[0])
@@ -72,7 +71,6 @@ const SinglePicker = () => {
         <h3 className="text-body font-bold text-foreground mb-2">edit（可互動）</h3>
         <PeoplePicker value={val} people={samplePeople} onChange={(v) => setVal(v[0] ?? null)} aria-label="負責人(edit mode demo)" />
       </div>
-      {/* @story-trait-rationale: pre-existing trait gaps tracked separately */}
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">view</h3>
         <PeoplePicker mode="view" value={samplePeople[0]} />
@@ -92,6 +90,27 @@ const SinglePicker = () => {
 export const Single: Story = {
   name: '單人',
   render: () => <SinglePicker />,
+}
+
+function PeoplePickerErrorExample() {
+  const [value, setValue] = React.useState<PersonValue | null>(null)
+  return (
+    <Field required invalid={value == null} className="max-w-xs">
+      <FieldLabel>任務負責人</FieldLabel>
+      <PeoplePicker
+        value={value}
+        people={samplePeople}
+        onChange={next => setValue(next[0] ?? null)}
+        aria-label="任務負責人"
+      />
+      {value == null && <FieldError>請指派一位任務負責人</FieldError>}
+    </Field>
+  )
+}
+
+export const WithError: Story = {
+  name: '驗證錯誤',
+  render: () => <PeoplePickerErrorExample />,
 }
 
 /* ── 多人（互動） ── */

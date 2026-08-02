@@ -171,19 +171,19 @@ else
 fi
 teardown_proj
 
-# ── Test 7: rationale escape allowlist ──────────────────────────────────────
-echo "Test 7: @story-trait-rationale escape → pass"
+# ── Test 7: valid scoped rationale ───────────────────────────────────────────
+echo "Test 7: valid scoped @story-trait-rationale → pass"
 setup_proj
 cat > "$TMP_PROJ/src/design-system/components/Foo/foo.spec.md" <<EOF
 ---
 traits:
-  - hasSizes
+  - isInputLike
 ---
 EOF
-run_hook "// @story-trait-rationale: experimental design exploration
-export const Small = {};" "$TMP_PROJ/src/design-system/components/Foo/foo.stories.tsx"
+run_hook "// @story-trait-rationale: isInputLike -> Validation — Validation renders invalid chrome and recovery, so an error-only duplicate adds no teaching value.
+export const Validation = {};" "$TMP_PROJ/src/design-system/components/Foo/foo.stories.tsx"
 if [ "$EXIT" = "0" ] && [ -z "$STDOUT" ]; then
-  echo "  PASS  Test 7 rationale escape works"; PASS=$((PASS+1))
+  echo "  PASS  Test 7 scoped rationale works"; PASS=$((PASS+1))
 else
   echo "  FAIL  Test 7 (exit=$EXIT, output=${STDOUT:0:200})"
   FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 7"
@@ -244,15 +244,159 @@ EOF
 STORY_REL="src/design-system/components/Foo/foo.stories.tsx"
 STORY_PATH="$TMP_PROJ/$STORY_REL"
 cat > "$STORY_PATH" <<EOF
-// @story-trait-rationale: legacy exception being removed
-export const Default = {};
+// @story-trait-rationale: hasSizes -> Baseline — Baseline renders the complete size comparison in one reader-facing scenario.
+export const Baseline = {};
 EOF
-run_proposed_hook "export const Default = {};" "$STORY_PATH" "$STORY_REL"
+run_proposed_hook "export const Baseline = {};" "$STORY_PATH" "$STORY_REL"
 if [ "$EXIT" = "2" ] && echo "$STDOUT" | grep -q "missing AllSizes"; then
   echo "  PASS  Test 10 stale disk marker gives no proposed-state exemption"; PASS=$((PASS+1))
 else
   echo "  FAIL  Test 10 (exit=$EXIT, output=${STDOUT:0:200})"
   FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 10"
+fi
+teardown_proj
+
+# ── Test 11: legacy file-wide marker is malformed ───────────────────────────
+echo "Test 11: legacy file-wide trait marker → block"
+setup_proj
+cat > "$TMP_PROJ/src/design-system/components/Foo/foo.spec.md" <<EOF
+---
+traits:
+  - hasSizes
+---
+EOF
+run_hook "// @story-trait-rationale: experimental design exploration
+export const Baseline = {};" "$TMP_PROJ/src/design-system/components/Foo/foo.stories.tsx"
+if [ "$EXIT" = "2" ] && echo "$STDOUT" | grep -q "malformed @story-trait-rationale"; then
+  echo "  PASS  Test 11 file-wide escape blocked"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 11 (exit=$EXIT, output=${STDOUT:0:240})"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 11"
+fi
+teardown_proj
+
+# ── Test 12: rationale trait must be declared ────────────────────────────────
+echo "Test 12: rationale for undeclared trait → block"
+setup_proj
+cat > "$TMP_PROJ/src/design-system/components/Foo/foo.spec.md" <<EOF
+---
+traits:
+  - hasSizes
+---
+EOF
+run_hook "// @story-trait-rationale: isInputLike -> Validation — Validation already renders the resolved invalid state.
+export const Validation = {};
+export const AllSizes = {};" "$TMP_PROJ/src/design-system/components/Foo/foo.stories.tsx"
+if [ "$EXIT" = "2" ] && echo "$STDOUT" | grep -q "trait not declared in spec"; then
+  echo "  PASS  Test 12 undeclared trait blocked"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 12 (exit=$EXIT, output=${STDOUT:0:240})"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 12"
+fi
+teardown_proj
+
+# ── Test 13: rationale target must exist ─────────────────────────────────────
+echo "Test 13: rationale target missing → block"
+setup_proj
+cat > "$TMP_PROJ/src/design-system/components/Foo/foo.spec.md" <<EOF
+---
+traits:
+  - isInputLike
+---
+EOF
+run_hook "// @story-trait-rationale: isInputLike -> Validation — Validation already renders the resolved invalid state.
+export const Baseline = {};" "$TMP_PROJ/src/design-system/components/Foo/foo.stories.tsx"
+if [ "$EXIT" = "2" ] && echo "$STDOUT" | grep -q "target export missing: Validation"; then
+  echo "  PASS  Test 13 missing target blocked"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 13 (exit=$EXIT, output=${STDOUT:0:240})"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 13"
+fi
+teardown_proj
+
+# ── Test 14: deferred reasons are not rationales ─────────────────────────────
+echo "Test 14: deferred rationale → block"
+setup_proj
+cat > "$TMP_PROJ/src/design-system/components/Foo/foo.spec.md" <<EOF
+---
+traits:
+  - isInputLike
+---
+EOF
+run_hook "// @story-trait-rationale: isInputLike -> Validation — WithError is tracked separately for later.
+export const Validation = {};" "$TMP_PROJ/src/design-system/components/Foo/foo.stories.tsx"
+if [ "$EXIT" = "2" ] && echo "$STDOUT" | grep -q "reason is deferred"; then
+  echo "  PASS  Test 14 deferred reason blocked"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 14 (exit=$EXIT, output=${STDOUT:0:240})"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 14"
+fi
+teardown_proj
+
+# ── Test 15: marker only satisfies its exact trait ───────────────────────────
+echo "Test 15: scoped marker cannot exempt another trait"
+setup_proj
+cat > "$TMP_PROJ/src/design-system/components/Foo/foo.spec.md" <<EOF
+---
+traits:
+  - hasSizes
+  - isInputLike
+---
+EOF
+run_hook "// @story-trait-rationale: hasSizes -> Baseline — Baseline renders every supported size in one comparison.
+export const Baseline = {};" "$TMP_PROJ/src/design-system/components/Foo/foo.stories.tsx"
+if [ "$EXIT" = "2" ] && echo "$STDOUT" | grep -q "isInputLike → missing WithError" && ! echo "$STDOUT" | grep -q "hasSizes → missing"; then
+  echo "  PASS  Test 15 exact-trait scope enforced"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 15 (exit=$EXIT, output=${STDOUT:0:260})"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 15"
+fi
+teardown_proj
+
+# ── Test 16: typed anatomy export receives structural credit ────────────────
+echo "Test 16: typed anatomy SizeMatrix → pass"
+setup_proj
+cat > "$TMP_PROJ/src/design-system/components/Foo/foo.spec.md" <<EOF
+---
+traits:
+  - hasSizes
+---
+EOF
+cat > "$TMP_PROJ/src/design-system/components/Foo/foo.anatomy.stories.tsx" <<EOF
+import type { StoryObj } from '@storybook/react';
+type Story = StoryObj;
+export const SizeMatrix: Story = {};
+EOF
+run_hook "export const Representative = {};" "$TMP_PROJ/src/design-system/components/Foo/foo.stories.tsx"
+if [ "$EXIT" = "0" ] && [ -z "$STDOUT" ]; then
+  echo "  PASS  Test 16 typed anatomy export credited"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 16 (exit=$EXIT, output=${STDOUT:0:240})"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 16"
+fi
+teardown_proj
+
+# ── Test 17: scoped anatomy omission rationale receives credit ───────────────
+echo "Test 17: anatomy SizeMatrix rationale → pass"
+setup_proj
+cat > "$TMP_PROJ/src/design-system/components/Foo/foo.spec.md" <<EOF
+---
+traits:
+  - hasSizes
+---
+EOF
+cat > "$TMP_PROJ/src/design-system/components/Foo/foo.anatomy.stories.tsx" <<EOF
+// @anatomy-rationale:
+//   SizeMatrix represented by Overview — the component has one fixed visual tier.
+import type { StoryObj } from '@storybook/react';
+export const Overview = {};
+EOF
+run_hook "export const Representative = {};" "$TMP_PROJ/src/design-system/components/Foo/foo.stories.tsx"
+if [ "$EXIT" = "0" ] && [ -z "$STDOUT" ]; then
+  echo "  PASS  Test 17 anatomy rationale credited"; PASS=$((PASS+1))
+else
+  echo "  FAIL  Test 17 (exit=$EXIT, output=${STDOUT:0:240})"
+  FAIL=$((FAIL+1)); FAILED="${FAILED}\n  - Test 17"
 fi
 teardown_proj
 

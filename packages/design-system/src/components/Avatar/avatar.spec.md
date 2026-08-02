@@ -12,7 +12,6 @@ benchmark:
   - Polaris Avatar: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Avatar
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Avatar 設計原則
 
@@ -69,7 +68,7 @@ Avatar 是視覺身份標識——代表一個人、一個實體（專案、組�
 
 **`onViewMore` 為 hover context 必含**(2026-04-23 canonical):
 hover ProfileCard 是 preview,所有 preview 必提供「看完整資料」的路徑。
-缺 `onViewMore` 使用者點不到完整 profile → hover 成單向死路。對齊 Slack / Linear / Notion / Figma / Gmail hover-profile popover 必有 "View profile" link 的世界級 pattern。詳 `../ProfileCard/profile-card.spec.md`「View more」canonical。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+缺 `onViewMore` 使用者點不到完整 profile → hover 成單向死路。詳 `../ProfileCard/profile-card.spec.md`「View more」canonical；該 action 是從 preview 進入完整資料的必要路徑。
 
 **適用範圍(ALL person avatars,無例外)**:PeoplePicker tag / table cell 頭像 / sidebar user / comment author / avatar 堆疊 / Dialog·Sheet member list / FileItem rich author / Menu·Dropdown assignee·owner / chat·thread·notification 頭像。
 
@@ -141,7 +140,7 @@ Avatar 堆疊的「+N」hover 也出 **HoverCard**（不是 Tooltip）——列�
 | Text fallback 字體 | `round(size × 0.5)`（fill 模式用 `font-size:50cqi`） | 16px |
 
 - Icon 60%：業界標準（Material Design、Apple HIG）
-- Text 50%：業界標準（Material Design、GitHub），且自動對齊我們的字體 scale（10→12→16→20px） <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- Text 50%：讓 initials 與圓形留出一致內距，且自動對齊本 DS 字體 scale（10→12→16→20px）
 
 ### 常用尺寸參考
 

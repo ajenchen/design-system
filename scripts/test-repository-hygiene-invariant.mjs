@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { validateFutureReservedEntries } from './repository-hygiene-invariant.mjs'
 
 const run = () => spawnSync(process.execPath, ['--', 'scripts/repository-hygiene-invariant.mjs', '--profile=authority', '--check'], {
   encoding: 'utf8',
@@ -25,6 +26,10 @@ function makeSymlinkFixture({ missing = null, broken = null } = {}) {
     if (broken === 'commands' && target === '.claude/commands') continue
     mkdirSync(join(root, target), { recursive: true })
   }
+  mkdirSync(join(root, '.changeset'), { recursive: true })
+  mkdirSync(join(root, 'infra/governance'), { recursive: true })
+  writeFileSync(join(root, '.changeset/config.json'), '{"fixture":"changeset"}\n')
+  writeFileSync(join(root, 'infra/governance/release-workflow.json'), '{"fixture":"release-owner"}\n')
   const links = {
     '.claude/snapshots-baseline': '../infra/governance/baseline/visual/targeted',
     commands: '.claude/commands',
@@ -50,6 +55,32 @@ for (const path of [transient, duplicateA, duplicateB]) {
 }
 
 if (run() !== 0) throw new Error('repository hygiene baseline must pass')
+
+const policy = JSON.parse(readFileSync('packages/design-system/ds-canonical/references/repository-hygiene-policy.json', 'utf8'))
+const authorityProfile = policy.profiles.authority
+const authorityInventory = spawnSync('git', ['ls-files'], { encoding: 'utf8' }).stdout.split('\n').filter(Boolean)
+const validationInput = {
+  profileName: 'authority',
+  inventoryPaths: authorityInventory,
+  now: new Date('2026-08-02T00:00:00Z'),
+}
+validateFutureReservedEntries({ ...validationInput, profile: structuredClone(authorityProfile) })
+for (const missingField of ['owner', 'purpose', 'activationCondition', 'lifecycle']) {
+  const profile = structuredClone(authorityProfile)
+  delete profile.futureReservedEntries[0][missingField]
+  let rejected = false
+  try { validateFutureReservedEntries({ ...validationInput, profile }) }
+  catch { rejected = true }
+  if (!rejected) throw new Error(`future-reserved declaration missing ${missingField} must fail closed`)
+}
+{
+  const profile = structuredClone(authorityProfile)
+  profile.futureReservedEntries[0].lifecycle.date = '2026-08-01'
+  let rejected = false
+  try { validateFutureReservedEntries({ ...validationInput, profile }) }
+  catch { rejected = true }
+  if (!rejected) throw new Error('lapsed future-reserved lifecycle must fail closed')
+}
 
 try {
   writeFileSync(transient, 'temporary meta-test artifact\n')
@@ -90,4 +121,4 @@ for (const fixtureCase of [
     rmSync(fixture, { recursive: true, force: true })
   }
 }
-console.log('✅ repository hygiene paired mutation PASS(transient + duplicate fail closed; restore PASS)')
+console.log('✅ repository hygiene paired mutation PASS(transient + duplicate + future-reserved four-field/lifecycle fail closed; restore PASS)')

@@ -2,6 +2,12 @@
 
 從 template 生新 product app — 1 command, 自動 setup。
 
+本流程使用 Day-0 已存在的 provider-neutral bootstrap；Claude、Codex 與未來已註冊 provider
+都讀同一份 authority，不建立 provider 私有流程。執行環境最低為 Node 22.13.0。標準發版只走
+`pr-checks → merge → publish → readback → consumer` 五步：上游 release mirror 擁有 template
+交付權；已註冊 product receiver 只能動態發現所有 workspace manifest、exact pin／更新 lock、
+以同一動態 path set 做 status/staging 並開 protected PR，不得 publish 或 direct-write `main`。
+
 ## Generator command
 
 ```
@@ -53,7 +59,7 @@ export default function App() {
 
 ## Deploy(Dashboard 連線後自動,帳密不進 Git)
 
-新 app 自動進 Storybook(`netlify.toml:14` `build.command = "npm run build-storybook"`)；變更經 required checks 與 review 後合併 PR 到 `main`，Netlify 便會自動 rebuild，可見於 `https://<your-netlify-site>/?path=/story/apps-<name>-...`。
+新 app 自動進 Storybook(`netlify.toml:13` `build.command = "npm run build-storybook"`)；變更經 required checks 與 review 後合併 PR 到 `main`，Netlify 便會自動 rebuild，可見於 `https://<your-netlify-site>/?path=/story/apps-<name>-...`。
 
 **Fork user 第一次 setup**:
 - `npm run setup:netlify` 只做唯讀診斷並列 Dashboard 步驟；它不安裝、不下載、不呼叫 Netlify CLI，也不自動登入或建站。看到 exit 2 / `MANUAL ACTION REQUIRED` 是預期的 fail-closed 狀態。

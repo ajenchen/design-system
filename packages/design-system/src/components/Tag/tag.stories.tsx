@@ -61,7 +61,7 @@ export const Dismissable: Story = {
 // remove action 應由 fg-muted 只前進一階到 fg-secondary。
 export const DismissHoverState: Story = {
   name: '移除標籤懸停狀態',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => (
     <div className="flex items-center gap-2">
       <Tag color="neutral" onRemove={() => {}}>付款待確認</Tag>

@@ -12,8 +12,6 @@ benchmark:
   - Ant Design Popover: github.com/ant-design/ant-design/tree/master/components/popover
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # Popover 設計原則
 
 ## 定位
@@ -31,9 +29,9 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 - Row inline action(panel list row 內 Eye / drag / suffix toggle)→ `patterns/element-anatomy/inline-action.spec.md`「尺寸對照」table(md = 16+18 hover bg)
 - Footer action button → `action-bar.spec.md`(輕量 chrome,sm canonical)
 
-**觸發距離 canonical**：`sideOffset = 8`（px）—— trigger 到 Popover 邊緣的垂直/水平間距。8px 是世界級浮層 idiom（Notion / Linear / Figma / Stripe 皆約 6-8px）;< 4px 會讓浮層貼死 trigger 失去「另一層」感,> 12px 會拉斷 trigger ↔ content 的視覺關聯。shadcn 預設 4px 太緊(Radix 原生預設 0 更貼),本 DS 改為 8 對齊 overlay primitive 的呼吸感。Dialog 不適用(居中或 full-screen)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**觸發距離 canonical**：`sideOffset = 8`（px）—— trigger 到 Popover 邊緣的垂直/水平間距。小於 4px 會讓浮層貼死 trigger 失去「另一層」感，大於 12px 會拉斷 trigger ↔ content 的視覺關聯。本 DS 固定 8px 作為 overlay primitive 的共用呼吸距離；Dialog 居中或 full-screen，不適用此規則。
 
-**Viewport 邊距 canonical**:`collisionPadding = 8`(px)——浮層與 viewport 邊緣的最小間距。當 popover 原本要貼近 viewport 邊(trigger 在頁面最右側、或視窗很窄),Radix 會自動推開 8px 讓浮層不貼死邊界。世界級對照:macOS / iOS / Notion / Figma 的 overflow 選單永遠留視覺呼吸距。`sideOffset` 管 trigger↔popover,`collisionPadding` 管 popover↔viewport,兩者互補。Consumer 不需傳 — 預設值是 canonical。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**Viewport 邊距 canonical**:`collisionPadding = 8`(px)——浮層與 viewport 邊緣的最小間距。當 popover 原本要貼近 viewport 邊(trigger 在頁面最右側、或視窗很窄)，定位 primitive 會自動推開 8px，防止內容與螢幕邊界相黏。`sideOffset` 管 trigger↔popover，`collisionPadding` 管 popover↔viewport，兩者互補。Consumer 不需傳 — 預設值是 canonical。
 
 **Align 對齊 canonical(跨浮層 SSOT)**:`align` 必須跟隨 trigger 在容器中的位置,**不是自由選擇**:
 
@@ -43,7 +41,7 @@ Popover 是**點擊觸發的浮層容器**——提供定位、動畫、焦點�
 | **置中**(toolbar 中央、modal 內置中按鈕) | `"center"`(default)| Popover 與 trigger 中心對齊 |
 | **右側 / 右上**(page header right、設定按鈕、overflow menu) | `"end"` | Popover 與 trigger 右邊緣對齊,向左展開 |
 
-**為什麼**:Popover 通常比 trigger 寬。align 錯方向會 (1)溢出容器邊緣 / 被 viewport 裁切、(2)視覺上 popover「沒黏在 trigger 那一側」產生 disconnect,使用者以為兩者無關。世界級對照:Figma / Notion / Linear / Stripe / Material / Ant Design 一律遵循(trigger 靠哪邊、浮層跟著靠哪邊)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**為什麼**:Popover 通常比 trigger 寬。align 錯方向會 (1)溢出容器邊緣 / 被 viewport 裁切、(2)視覺上 popover「沒黏在 trigger 那一側」產生 disconnect，使用者以為兩者無關。因此 trigger 靠哪邊，浮層就跟著靠哪邊。
 
 **SSOT 適用範圍(2026-04-20 精緻化)**:本規則是**「結構化浮層」的 canonical** —— Popover / DropdownMenu / Coachmark / SelectMenu 嚴格遵守(這些浮層寬度通常比 trigger 寬、且有結構化內容,錯方向必視覺 disconnect)。
 
@@ -166,7 +164,7 @@ canonical 判斷:「使用者 click 單項是否立即改變系統狀態?」是 
 
 焦點 / 鍵盤 / ARIA 行為分兩層——**DS 覆寫**(改 Radix 預設)與 **Radix 內建**(沿用)：
 
-- **開啟焦點(DS 覆寫)**：DS 以 `onOpenAutoFocus` 覆寫 Radix 預設 autofocus(見 `popover.tsx` `handlePopoverOpenAutoFocus`),開啟時把焦點落在 body 第一個**表單控件**(`input` / `textarea` / `select` / `button`,排除右上 close X);查無表單控件時退回 footer 按鈕,再無則落在 content 容器(`role="dialog"`)本身。Radix 預設會先 focus 右上 close X,DS 覆寫以避免觸發 tooltip leak(對齊 Material / Polaris「open 時 focus 落首個有意義控制」;selector 與 `dialog.tsx handleOpenAutoFocus` 同一套 DS canonical)。**注意**:(1) 若移除此 default handler,行為會回退成 Radix 預設 focus close X;(2) selector 只認表單控件——body 若只含 `a[href]` / `[tabindex]` / `contenteditable` 類可聚焦內容,焦點會落在 content 容器而非該內容,consumer 需自傳 `onOpenAutoFocus` 指定要聚焦的元素 <!-- @benchmark-unverified: Material / Polaris focus-on-open pattern per frontmatter benchmark list; DS canonical selector = dialog.tsx handleOpenAutoFocus -->
+- **開啟焦點(DS 覆寫)**：DS 以 `onOpenAutoFocus` 覆寫底層 primitive 的預設 autofocus(見 `popover.tsx` `handlePopoverOpenAutoFocus`),開啟時把焦點落在 body 第一個**表單控件**(`input` / `textarea` / `select` / `button`,排除右上 close X);查無表單控件時退回 footer 按鈕,再無則落在 content 容器(`role="dialog"`)本身。原預設會先 focus 右上 close X,DS 覆寫以避免觸發 tooltip leak，selector 與 `dialog.tsx handleOpenAutoFocus` 共用同一套 DS canonical。**注意**:(1) 若移除此 default handler,行為會回退成底層預設 focus close X;(2) selector 只認表單控件——body 若只含 `a[href]` / `[tabindex]` / `contenteditable` 類可聚焦內容,焦點會落在 content 容器而非該內容,consumer 需自傳 `onOpenAutoFocus` 指定要聚焦的元素。
 - **關閉返回(Radix 內建)**：關閉時 focus return to trigger
 - **Esc 關閉(Radix 內建)**：按 Esc 自動關閉並返回焦點
 - **Focus trap(Radix 內建,僅 modal)**：`modal={true}` 時焦點鎖在 content 內

@@ -17,7 +17,7 @@ const meta: Meta<typeof FieldControlGroup> = {
   parameters: {
     docs: {
       description: {
-        component: '多個 Field controls 視覺接合成一個 input frame(border-collapse)。對齊 Ant Space.Compact / Bootstrap input-group idiom。',
+        component: '用於將同一答案的多個 control 接合成一個視覺輸入框，例如國碼＋電話或幣別＋金額。彼此獨立的表單問題改用 FieldGroup，一題多選項改用 RadioGroup / Checkbox，只有單一 control 時直接用 Field。',
       },
     },
     layout: 'padded',
@@ -158,5 +158,5 @@ export const FilterRow: Story = {
   },
 }
 
-/* @story-trait-rationale: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx 的
+/* @story-history: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx 的
    ChildSizeAlignment 只展示 children 尺寸接合；FieldControlGroup 本身不擁有 size API。 */

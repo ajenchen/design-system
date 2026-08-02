@@ -70,7 +70,7 @@ export const Overview: Story = {
 }
 
 export const Inspector: Story = {
-  name: '屬性一覽',
+  name: '元件檢閱器',
   render: () => (
     <div className="max-w-[860px]">
       <table className="w-full">
@@ -94,6 +94,72 @@ export const Inspector: Story = {
           <PropRow name="label" type="string" def="—" desc="view 按鈕 aria-label(「編輯 {label}」)+ 控件 aria-label" />
         </tbody>
       </table>
+    </div>
+  ),
+}
+
+export const ColorMatrix: Story = {
+  name: '色彩對照表',
+  render: () => (
+    <div className="max-w-[860px] space-y-6">
+      <p className="text-body text-fg-secondary">
+        InlineEdit 只擁有 view 態的 affordance；edit 態直接委派 Field control。下表對齊
+        <code> inline-edit.tsx</code> 的 state class，沒有另造一套 palette。
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-caption">
+          <thead>
+            <tr className="border-b-2 border-border text-left">
+              <th className="p-2">狀態</th><th className="p-2">背景</th><th className="p-2">邊框</th><th className="p-2">文字</th><th className="p-2">Owner</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-divider"><td className="p-2 font-mono">view</td><td className="p-2 font-mono">transparent</td><td className="p-2 font-mono">transparent</td><td className="p-2 font-mono">--foreground</td><td className="p-2">InlineEdit</td></tr>
+            <tr className="border-b border-divider"><td className="p-2 font-mono">view:hover</td><td className="p-2 font-mono">--neutral-hover</td><td className="p-2 font-mono">transparent</td><td className="p-2 font-mono">--foreground</td><td className="p-2">InlineEdit</td></tr>
+            <tr className="border-b border-divider"><td className="p-2 font-mono">view:focus-visible</td><td className="p-2 font-mono">transparent</td><td className="p-2 font-mono">--primary</td><td className="p-2 font-mono">--foreground</td><td className="p-2">InlineEdit</td></tr>
+            <tr className="border-b border-divider"><td className="p-2 font-mono">editable=false</td><td className="p-2 font-mono">transparent</td><td className="p-2 font-mono">transparent</td><td className="p-2 font-mono">--foreground</td><td className="p-2">純 view，不灰化</td></tr>
+            <tr><td className="p-2 font-mono">edit</td><td className="p-2 font-mono">--surface</td><td className="p-2 font-mono">--border / --primary focus</td><td className="p-2 font-mono">--foreground</td><td className="p-2">renderEdit 的 Field control</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div className="grid grid-cols-[140px_1fr] items-center gap-x-6 gap-y-4 rounded-lg border border-divider p-4">
+        <span className="text-caption font-medium text-fg-secondary">可編：hover / Tab</span>
+        <Stateful value="更新付款條件" label="任務標題" />
+        <span className="text-caption font-medium text-fg-secondary">鎖定：無 affordance</span>
+        <Stateful value="SO-20481" label="訂單編號" editable={false} />
+      </div>
+    </div>
+  ),
+}
+
+export const SizeMatrix: Story = {
+  name: '尺寸對照表',
+  render: () => (
+    <div className="max-w-[860px] space-y-6">
+      <p className="text-body text-fg-secondary">
+        size 只選擇 Field family 的幾何：view 與 edit 共用相同高度、左右內距與字級；standalone 與
+        未顯式指定 size 的 Field 預設採 <code>sm</code>。
+      </p>
+      <table className="w-full text-caption">
+        <thead>
+          <tr className="border-b-2 border-border text-left">
+            <th className="p-2">size</th><th className="p-2">高度 token</th><th className="p-2">水平內距</th><th className="p-2">字級</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="border-b border-divider"><td className="p-2 font-mono">sm（預設）</td><td className="p-2 font-mono">--field-height-sm</td><td className="p-2 font-mono">--field-px</td><td className="p-2 font-mono">text-body</td></tr>
+          <tr className="border-b border-divider"><td className="p-2 font-mono">md</td><td className="p-2 font-mono">--field-height-md</td><td className="p-2 font-mono">--field-px</td><td className="p-2 font-mono">text-body</td></tr>
+          <tr><td className="p-2 font-mono">lg</td><td className="p-2 font-mono">--field-height-lg</td><td className="p-2 font-mono">--field-px</td><td className="p-2 font-mono">text-body-lg</td></tr>
+        </tbody>
+      </table>
+      <div className="grid grid-cols-[80px_1fr] items-center gap-x-6 gap-y-4 rounded-lg border border-divider p-4">
+        {(['sm', 'md', 'lg'] as const).map(size => (
+          <React.Fragment key={size}>
+            <span className="font-mono text-caption text-fg-muted">{size}</span>
+            <Stateful value={`季度營運報告（${size}）`} label={`${size} 尺寸標題`} size={size} />
+          </React.Fragment>
+        ))}
+      </div>
     </div>
   ),
 }
@@ -168,7 +234,7 @@ export const InFieldCascade: Story = {
 }
 
 export const Accessibility: Story = {
-  name: '無障礙',
+  name: '無障礙與鍵盤',
   render: () => (
     <div className="max-w-[640px] text-body text-fg-secondary">
       <ul className="ml-5 list-disc space-y-1">

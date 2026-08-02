@@ -10,7 +10,6 @@ benchmark:
   - Ant Design Progress: github.com/ant-design/ant-design/tree/master/components/progress
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # CircularProgress 設計原則
 
@@ -122,13 +121,13 @@ export interface CircularProgressProps extends React.HTMLAttributes<HTMLSpanElem
 | 切到 `<Empty>` 或其他 state component | 全頁 overlay → 內容出現;或 empty state |
 | CircularProgress 直接消失 | 非同步操作完成,UI 回到預設態 |
 
-**世界級慣例**:Gmail / Dropbox / Google Drive 上傳完成即消失;iOS Activity Indicator 完成隱藏;Figma / Notion async fetch 完成切到實際內容。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+進度完成後必把 indicator 替換為實際內容或完成結果；已完成的工作不再呈現「仍在處理」的動態訊號。
 
 **為什麼不留 100%**:`CircularProgress` 語義是「進行中」,停在 100% 跟「完成」的語義衝突,使用者看到「滿的 circle」會困惑「還在跑嗎?」。
 
 ### 不設 `status` prop — 完成 / 失敗由 consumer 端 swap
 
-世界級 DS(Material / Chakra / Ant / Polaris)**沒有**「success / error CircularProgress」variant——完成與失敗的語義應由 consumer 在業務邏輯上**替換 CircularProgress 為實際內容**(Check icon + label / 結果 / 錯誤訊息等),不讓 progress 指示器本身做狀態 morph(綠底空心 circle + check icon 並排是 anti-pattern)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+CircularProgress **沒有**「success / error」variant。完成與失敗的語義由 consumer 在業務邏輯上**替換 CircularProgress 為實際內容**(Check icon + label / 結果 / 錯誤訊息等),不讓 progress 指示器本身做狀態 morph(綠底空心 circle + check icon 並排是 anti-pattern)。
 
 ```tsx
 // ✅ canonical — consumer 端 swap
@@ -152,14 +151,14 @@ export interface CircularProgressProps extends React.HTMLAttributes<HTMLSpanElem
 | 情境 | 建議 size | 為什麼 |
 |------|----------|--------|
 | field-height 相關容器(Button loading / Input loading / DataTable cell / Field control loading 等) | 對齊容器的 iconSize(本 DS 全部是 `sm/md = 16 / lg = 20`) | 與容器內其他 icon 視覺同刻度,避免 row 內 icon 跳高低 |
-| 獨立使用 / 全頁 / Empty overlay / Coachmark media 等無 field-height 約束 | 預設 24(傳統 Material 標準)— 需要更大(例如 Empty 大圖)可 32 / 48 | 無參考尺寸時走 DS 預設,不憑感覺挑 | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+| 獨立使用 / 全頁 / Empty overlay / Coachmark media 等無 field-height 約束 | 預設 24；需要更大(例如 Empty 大圖)可 32 / 48 | 無參考尺寸時走 DS 預設,不憑感覺挑 |
 
 **實作保證**:
 - Button / Input / Field 等 **元件內部自動傳對的 size**(consumer 不用傳)— 來源:這些元件本來就知道自己的 `iconSize`(`field-controls.spec.md` 中 `sm/md=16, lg=20`)
 - DataTable **cell 內 inline 指示器**由 consumer 手寫 render,size 對齊 cell icon 刻度 **`16`(sm/md table) / `20`(lg table)** — 對齊 `data-table.spec.md` 十一之一(cell icon size canonical,非 CircularProgress 專屬規則)。**整表 refresh loading** 則走 `data-table.spec.md` 十三:容器疊 `<CircularProgress/>` 24px center + table `opacity-disabled`(DataTable 禁內建 loading prop)
 - 獨立使用 CircularProgress 的元件 **預設走 24** — 已是 `<CircularProgress />` default
 
-世界級對照:Material / Ant / Carbon 的 inline loading 全部 16dp;Material 獨立使用標準 = 40dp(desktop)/ 24dp(compact)。本 DS 收斂成「inline 跟 context 走 16 或 20,獨立走 24」兩檔,不暴露更多 size 階。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+本 DS 收斂成「inline 跟 field context 走 16 或 20，獨立使用走 24」兩類；32 / 48 只供有明確大型 host 的 composition，不再暴露其他 size 階。
 
 ### 顏色策略:固定 `text-info` + consumer 覆寫
 
@@ -257,7 +256,7 @@ CircularProgress 是**最薄的 circular progress primitive**,刻意避免多維
 - `<Spinner size={N} aria-label="..."/>` → `<CircularProgress size={N} aria-label="..."/>`
 - 新增能力:`<CircularProgress value={N}/>` 支援 determinate
 
-遷移理由:世界級命名對齊 Material / Chakra,支援 determinate 需求(user 2026-04-20 提出),元件數減少(廢除重複的 Spinner 名稱)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+遷移理由:`CircularProgress` 同時涵蓋 indeterminate 與 determinate contract，廢除只描述單一動畫形態的重複 `Spinner` 名稱，減少元件與 import 分歧。
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

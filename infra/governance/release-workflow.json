@@ -8,6 +8,14 @@
     "humanOnly": ["login", "mfa", "oauth", "credential-reference"],
     "resumeAfterHumanAction": "AUTO"
   },
+  "deepAuditReleasePolicy": {
+    "iterationBoundary": "one-branch-one-pr-candidate-validation",
+    "publishAsIterationLoop": false,
+    "maximumFinalReleasesPerAudit": 1,
+    "additionalReleaseCondition": "separately-evidenced-post-publish-blocker-or-security-incident",
+    "allowedAdditionalReleaseFailureClasses": ["post-publish-blocker", "security-incident"],
+    "requiredIncidentFields": ["incidentId", "failureClass", "publishedVersion", "evidenceRef"]
+  },
   "steps": [
     {
       "id": "pr-checks",

@@ -1,4 +1,3 @@
-// @story-trait-rationale: D3 mechanical migration (size:N → meta.width) — preexisting Default/WithError trait gap unrelated to this edit; tracked separately
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions
 // (per .claude/references/story-baseline-registry.json#DataTable)
 import React from 'react'
@@ -7,6 +6,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { NumberInput } from './number-input'
 import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
+import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
 import '@/design-system/components/DataTable/column-types'
 
 const meta: Meta<typeof NumberInput> = {
@@ -21,7 +21,6 @@ const meta: Meta<typeof NumberInput> = {
 export default meta
 type Story = StoryObj<typeof NumberInput>
 
-// @story-trait-rationale: pre-existing trait gaps (Default/WithError) tracked separately; this PR scope = add view mode card to Modes story only.
 /* ── 四模式 ── */
 export const Modes: Story = {
   name: '四模式',
@@ -48,6 +47,22 @@ export const Modes: Story = {
       </div>
     )
   },
+}
+
+function NumberInputErrorExample() {
+  const [value, setValue] = React.useState<number | null>(null)
+  return (
+    <Field required invalid={value == null} className="max-w-xs">
+      <FieldLabel>採購數量</FieldLabel>
+      <NumberInput value={value} onChange={setValue} min={1} aria-label="採購數量" />
+      {value == null && <FieldError>請輸入至少 1 件商品</FieldError>}
+    </Field>
+  )
+}
+
+export const WithError: Story = {
+  name: '驗證錯誤',
+  render: () => <NumberInputErrorExample />,
 }
 
 /* ── 尺寸與 Button 對齊 ── */

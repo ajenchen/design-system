@@ -11,7 +11,6 @@ benchmark:
   - Ant Design Carousel: github.com/ant-design/ant-design/tree/master/components/carousel
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Carousel 設計原則
 
@@ -27,7 +26,7 @@ Carousel 用於在**有限空間內輪播同類視覺內容**——單次只顯�
 
 ## 世界級對照
 
-- **shadcn Carousel**(主要參考):API 結構與 Embla engine 選擇對齊 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **Embla engine**:本元件只包裝已採用的 carousel engine，DS API 擁有結構、按鈕與內容規範
 - **Ant Design Carousel**:dots indicator 在底部中央的慣例來源
 - **Material / Polaris**:無獨立 Carousel 元件——Material 建議用 image list / hero module;Polaris 明確不支援 auto-playing carousel(a11y 疑慮)
 - **Swiper**:獨立 library,功能遠超 DS 需求(3D effects / virtualization / zoom 等);本 DS 刻意**不選 Swiper**,因為 Embla 更輕量、tree-shakable,且本 DS 的 carousel 用途單純(hero banner / product image / testimonial),Swiper 的 feature 90% 不會用到,屬過度工程
@@ -118,18 +117,18 @@ Tabs 和 Carousel 都能「按順序切換下方內容」,但**語意與視覺�
 
 ### 箭頭覆蓋範圍(canonical)
 
-箭頭屬 **hover-only overlay**,可以**蓋在圖片 / media / 深色背景 canvas** 上(對齊 Airbnb / Instagram / Netflix hero carousel 的做法)。但**不得壓在文字資訊上面**—— title / description / testimonial / caption 等**文字內容** 是主訊息,被 overlay 遮蓋會破壞閱讀。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+箭頭屬 **hover-only overlay**,可以**蓋在圖片 / media / 深色背景 canvas** 上。但**不得壓在文字資訊上面**—— title / description / testimonial / caption 等**文字內容** 是主訊息,被 overlay 遮蓋會破壞閱讀。
 
 **判斷法**:
 - ✅ 箭頭疊在 image / video / gradient background / solid card bg —— OK(背景可辨識箭頭無資訊損失)
 - ❌ 箭頭疊在 title text / body paragraph / testimonial quote / product description —— 違反(user 看不完文字 + 被遮)
 
-**修法(若發生)**:(a) 把文字區域左右內縮、避開箭頭覆蓋區(具體內縮值屬 story / code 層決策);或 (b) 改把箭頭移到 carousel **外側**(stacked controls,對齊 Ant Carousel dotPosition=outside 思路)。world-class 對照:Notion Slider / Stripe testimonial section 皆用「箭頭外移 + 內容 center」當文字較長時。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**修法(若發生)**:(a) 把文字區域左右內縮、避開箭頭覆蓋區(具體內縮值屬 story / code 層決策);或 (b) 改把箭頭移到 carousel **外側**。選擇由內容是否仍有完整、不被 controls 覆蓋的閱讀區決定。
 
 ### 視覺規格
 
 - **基於 DS Button**:`<Button variant="tertiary" size="md" iconOnly />`(variant/size 為 **default,可覆寫**——見「Arrow Props」)——對齊 DS 規則,唯 shape 覆寫 `rounded-full`(media carousel documented 例外,見下一條「形狀 documented 例外」);其餘視覺全繼承 Button tertiary,不另自訂
-- **形狀 documented 例外**:override `rounded-md` → **`rounded-full`**(圓形)。理由:media carousel 視覺取向,圓形箭頭減少方塊感、不壓迫媒體內容(對齊 **Instagram / Airbnb / Notion Gallery / Apple Photos / Google Photos lightbox 世界級慣例** — 媒體 overlay 控制器圓形)。本 DS 內 Button default 是 `rounded-md`,這裡是唯一文明 override,documented 例外記錄即為本段(同步 `carousel.tsx` Button `className="rounded-full"` 旁 inline 註解)。**不傳染**:其他元件的 Button 仍走 rounded-md <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **形狀 documented 例外**:override `rounded-md` → **`rounded-full`**(圓形)。理由:media carousel 的 overlay control 需要與矩形媒體 frame 清楚分層，圓形也讓 icon 在各方向保持相同 inset。本 DS 內 Button default 是 `rounded-md`,這裡是唯一文明 override,documented 例外記錄即為本段(同步 `carousel.tsx` Button `className="rounded-full"` 旁 inline 註解)。**不傳染**:其他元件的 Button 仍走 rounded-md。
 - 尺寸:`size="md"` 對應 `--field-height-md`(default/md 32px / lg 36px),iconOnly 正方形;形狀 **`rounded-full`**(documented 例外,見上一條)
 - 為什麼 tertiary:`bg-surface` + `border-border`,hover 僅改 text/border 為 `primary-hover`——無 bg-hover tint,視覺最輕,不搶 media 權重;secondary 有 neutral 邊框+hover 較重,primary 有底色更搶焦點,均不合適
 - 背景 / 邊框 / hover / focus-visible:全部繼承 Button tertiary variant 的 token,不自訂
@@ -138,7 +137,7 @@ Tabs 和 Carousel 都能「按順序切換下方內容」,但**語意與視覺�
 
 ### Arrow Props(API 契約,2026-07-18 決策14)
 
-`CarouselPrevious` / `CarouselNext` 開放**完整 Button props**——對齊 shadcn Carousel 的 `React.ComponentProps<typeof Button>` idiom(source `https://github.com/shadcn-ui/ui` `apps/www/registry/default/ui/carousel.tsx` CarouselPrevious/Next) <!-- @benchmark-unverified: shadcn Carousel arrow 轉發 Button props 為已知 pattern,確切行號未逐一 WebFetch 驗 -->。consumer 可換 `variant` / `size`、綁 analytics `onClick`、傳 `data-*` / `id`:
+`CarouselPrevious` / `CarouselNext` 開放**完整 Button props**，因為兩者就是帶方向與定位預設的 DS Button wrapper。consumer 可換 `variant` / `size`、綁 analytics `onClick`、傳 `data-*` / `id`:
 
 | Prop | 指向 | 說明 |
 |------|------|------|
@@ -198,7 +197,7 @@ Carousel 常疊在圖片上,沿用 Instagram / Airbnb / Ant Carousel 的「白�
 - dots 排列過密、點擊區過小、失去 indicator 功能
 - **改用 Grid**(一眼看全)或 **Gallery with thumbnails**(縮圖列表 + 大圖預覽)
 
-世界級 SaaS 的 hero carousel 幾乎都 ≤ 5 張(Airbnb 4–5 / Netflix 3 / Stripe 3)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Hero carousel 建議 ≤ 5 張；超過此數量時，使用者難以預期循環範圍，也不應以 carousel 隱藏大量可瀏覽內容。
 
 **8+ 項時元件行為**:dots 仍按標準尺寸全數渲染(無自動縮小 / 省略 / 停止渲染)——「≤ 7」是 UX 建議非元件強制,排列過密時應改 Grid,非期待 dots 自動降級。
 

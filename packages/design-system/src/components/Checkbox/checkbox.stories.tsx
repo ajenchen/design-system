@@ -1,4 +1,4 @@
-// @story-trait-rationale: hasSizes/hasInteractiveStates 由 anatomy.stories.tsx SizeMatrix + StateBehavior
+// @story-history: hasSizes/hasInteractiveStates 由 anatomy.stories.tsx SizeMatrix + StateBehavior
 // owns 完整 trait grid;展示層 States 保留為 compact all-states overview(對齊 Switch 同 Family 檔頭豁免,
 // 2026-07-14 audit Dim 46 補),跟 anatomy focused subsection 不同教學,不另開抽象 Default/AllSizes。
 import type { Meta, StoryObj } from '@storybook/react'
@@ -16,7 +16,6 @@ const meta: Meta<typeof Checkbox> = {
 export default meta
 type Story = StoryObj<typeof Checkbox>
 
-// @story-trait-rationale: pre-existing trait gaps tracked separately; this PR scope = add Modes story with view card.
 /* ── 四模式 ── */
 export const Modes: Story = {
   name: '四模式',
@@ -114,7 +113,7 @@ export const Horizontal: Story = {
   ),
 }
 
-// @story-trait-rationale: Disabled retired 2026-05-17 per audit Dim 24/25 strict re-run —
+// @story-history: Disabled retired 2026-05-17 per audit Dim 24/25 strict re-run —
 //   anatomy.stories.tsx StateBehavior「Disabled — 品牌色移除,統一 neutral」段(L535-558)已 cover。
 //   非 trait-required(`isSelectionMulti` 不 mandate Disabled);RadioGroup 同 Family 已 retire 同類。
 //   States showcase (compact all-states overview)保留,跟 anatomy「focused subsection」不同教學。

@@ -11,8 +11,6 @@ benchmark:
   - MUI X Date Pickers (Time): github.com/mui/mui-x/tree/master/packages/x-date-pickers
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — all claims have inline URL or per-claim @benchmark-unverified retract. M22 inline cites added 2026-05-03 v11. -->
-
 # TimePicker 設計原則
 
 ## 定位
@@ -25,7 +23,7 @@ TimePicker 是**單一時間**(時/分/秒)輸入與顯示元件,對齊 Ant Desi
 - **Trigger**:`<div role="combobox">` + `fieldWrapperStyles`(視覺 = Input wrapper;**不用 `<button>`** —— 避免內層 `ItemInlineAction` 清除 button 構成 nested-interactive,對齊 Select / Combobox 同 pattern。Radix PopoverTrigger 在 `asChild` 下只 compose onClick 與 aria / data attributes,**不** inject 任何 onKeyDown——Enter / Space / ↓ 鍵盤開啟由 trigger 顯式 `onKeyDown` 實作,對齊 select.tsx canonical + APG combobox required keys)
 - **Popup**:`<Popover>`(消費 `patterns/overlay-surface/` 的 surface chrome)
 - **Panel 主體**:**自建** 2-3 欄 column picker(時 / 分 / 秒),**不引入第三方 time library**——自建讓 DS own 視覺與交互(對齊 Ant Design 的 Panel 結構 — [react-component/picker TimePanel](https://github.com/react-component/picker/tree/master/src/PickerPanel/TimePanel) + 本 DS token)
-- **世界級對照**:Ant Design TimePicker([source](https://github.com/react-component/picker/tree/master/src/PickerPanel/TimePanel))/ Material DateTimePicker([mui-x DigitalClock](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/DigitalClock/DigitalClock.tsx))/ iOS native time picker `@benchmark-unverified`(closed-source)——共同行為:column scroll selector、minuteStep 支援、Now / OK footer、clearable
+- **交互契約**:column scroll selector、minuteStep、Now / OK footer 與 clearable 共同構成這個元件的最小完整流程
 
 ---
 
@@ -148,14 +146,14 @@ Panel 展開後的 column picker 結構:
 
 **為什麼 selected 走 neutral 非 primary**(2026-04-21 canonical):TimePicker panel 是「**列表選中**」語意 — user 在時 / 分 / 秒選項間切換,跟 `SelectMenu` / `MenuItem` 同流派(單選 list → `bg-neutral-selected`)。**DatePicker date cell selected 用 `bg-primary`** 是因為那是「**最終選定日期**」的強 affordance(確定性)。兩者不同語意,不互調。
 
-對齊 SelectMenu / MenuItem 的好處:consumer 看 TimePicker 面板知道這是「選一個項目」,跟 Select 下拉選單認知一致(Ant Design TimePicker panel 同樣採 neutral selected — [picker style source](https://github.com/ant-design/ant-design/blob/master/components/date-picker/style/panel.ts) `@benchmark-unverified` exact line)。
+對齊 SelectMenu / MenuItem 的好處:consumer 看 TimePicker 面板便知道這是「選一個項目」，跟 Select 下拉選單使用同一套 selection 語言。
 
 ### Spacing + 結構(2026-04-21 canonical,2026-04-21 window width 修正)
 
 - Footer 內 padding = `--layout-space-tight`(12px @ md density);**消費 `<SurfaceFooter>` SSOT**(border-t + py + gap + justify + shrink-0),px 經 `className` override 回 tight——因滿欄 column 面板無 chrome-padded body 內縮邊可對齊(見 `overlay-surface.spec.md` SurfaceFooter「footer px = body 內縮原則」例外);此刻按鈕 `mr-auto` 推右,視覺等同原 justify-between(零視覺變化)
-- **Panel 容器固定寬:2 欄(時 / 分)`w-40`(160px)/ 3 欄(時 / 分 / 秒)`w-60`(240px)**;**每欄 `flex-1 h-full` 等分**容器寬(非固定 `w-12`)。**分隔「:」移除**(AR8 canonical — Ant TimePicker / Google Calendar 同樣不加 `:`,靠 column 間距自明 `@benchmark-unverified` visual)
+- **Panel 容器固定寬:2 欄(時 / 分)`w-40`(160px)/ 3 欄(時 / 分 / 秒)`w-60`(240px)**;**每欄 `flex-1 h-full` 等分**容器寬(非固定 `w-12`)。**分隔「:」移除**(AR8 canonical，以 column 間距表達欄位分界)
 - Scrollable list 用 **`<ScrollArea>`**(對齊 DS 跨 OS 一致 overlay 捲軸 canonical);不 raw `overflow-y-auto`
-- **Scroll-into-view**:mount = `behavior:'auto'`(避閃爍),後續 `value` 變更 = `behavior:'smooth'`(對齊 iOS / Material / Ant timepicker idiom)。SSOT 在 `time-columns.tsx` `TimeColumn` useEffect
+- **Scroll-into-view**:mount = `behavior:'auto'`(避閃爍),後續 `value` 變更 = `behavior:'smooth'`(讓選取移動保持可追蹤)。SSOT 在 `time-columns.tsx` `TimeColumn` useEffect
 - 每 item **`h-field-sm`(28px @ md / 32px @ lg)對齊 DatePicker date cell**(跨 picker 視覺一致)
 - Panel 容器高 `h-[216px]`(含 footer);TimeColumns 為 `flex-1 min-h-0`,實際可捲動 list 高 = 216 − footer 實高(Button sm 28px + `py-tight` 12px×2 + border-t 1px ≈ 53px @ md)≈ **~163px**(約可見 5-6 個 item)
 
@@ -168,11 +166,7 @@ Panel 展開後的 column picker 結構:
 | HH:mm(預設)| 2 欄 | `w-40` = **160px** | ~80px |
 | HH:mm:ss(showSeconds=true)| 3 欄 | `w-60` = **240px** | ~80px |
 
-**世界級對照**:
-- Ant Design TimePicker:每欄 ~56px,3 欄 ~170px(Panel 含 footer)`@benchmark-unverified` visual measurement(visual sampling,not source-citable as exact pixel)
-- Google Calendar Quick-Time:~150-170px
-- Material 3 TimePicker dial:~180px(含 AM/PM)`@benchmark-unverified` visual measurement
-- 本 DS:2 欄 160px / 3 欄 240px,**符合世界級緊湊節奏**
+**寬度 rationale**:本 DS 以每欄約 80px 保留雙位數字的穩定 hit area；2 欄 160px、3 欄 240px，欄數變化不壓縮單欄可操作面積。
 
 **showSeconds 切換時 panel 寬度會跟著變**(刻意):
 - showSeconds=false 的 panel 本就應該更窄(`w-40`),兩欄 + 大量留白會顯得 panel 空洞
@@ -221,7 +215,7 @@ N/A — TimePicker 是純同步輸入,無 async 狀態。
 
 ---
 
-## Dismiss / Clear 規則(對齊 CLAUDE.md canonical)
+## Dismiss / Clear 規則(對齊 `packages/design-system/ds-canonical/references/props-naming.md` callback canonical)
 
 - **關閉 Panel** → `onOpenChange(false)`(Popover 內建)/ outside click / Esc —— 這是 **overlay close**,不是 `onClear`
 - **清空值** → `clearable={true}` 在 trigger 的 endAction slot 顯示 `X` 透過 `ItemInlineActionButton`(canonical),點擊 `onChange("")`

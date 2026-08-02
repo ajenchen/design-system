@@ -1,4 +1,5 @@
-// @story-trait-rationale: isInputLike WithError 由 Field 消費者處理(LinkInput 在 Field 內透過 fieldCtx.invalid 自動套 error border);showcase 不重複 Field state machine 覆蓋的 case。
+// @story-trait-rationale: isInputLike -> Validation — Validation 已示範 malformed URL 的錯誤邊框與修正流程；另開 error-only story 會重複同一驗證情境。
+// @story-history: isInputLike WithError 由 Field 消費者處理(LinkInput 在 Field 內透過 fieldCtx.invalid 自動套 error border);showcase 不重複 Field state machine 覆蓋的 case。
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { LinkInput } from './link-input'
@@ -12,7 +13,7 @@ const meta: Meta<typeof LinkInput> = {
   parameters: {
     docs: {
       description: {
-        component: 'URL 輸入元件。有合法 URL 時以藍色連結顯示，Pencil icon 觸發編輯。blur 時驗證格式。',
+        component: '用於儲存、驗證與直接開啟單一外部 URL，在連結閱讀態與輸入編輯態間切換。Slug、Email 或內部 router path 改用 Input，需同時編輯顯示文字與 URL 時改用連結編輯器。',
       },
     },
   },
@@ -99,7 +100,6 @@ export const Modes: Story = {
         <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
         <LinkInput value="https://github.com" onChange={() => {}} />
       </div>
-      {/* @story-trait-rationale: pre-existing trait gaps tracked separately */}
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">view</h3>
         <LinkInput mode="view" value="https://github.com" />

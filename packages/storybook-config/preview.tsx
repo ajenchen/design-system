@@ -38,6 +38,13 @@ export const sharedGlobalTypes = {
 }
 
 export const sharedParameters = {
+  docs: {
+    // Technical probes stay addressable by direct URL and remain in the story
+    // index for a11y/interaction runners, but do not teach readers in Autodocs.
+    stories: {
+      filter: (story: { tags?: string[] }) => !story.tags?.includes('test-only'),
+    },
+  },
   controls: {
     matchers: {
       color: /(background|color)$/i,

@@ -26,7 +26,7 @@ SelectionItem 是 **Checkbox 和 RadioGroup 共用的 item 佈局 primitive**—
 
 **實作基礎**：自建 internal primitive——純視覺佈局 + padding 公式，無 external primitive base。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 2（List item layout）** 消費者。結構繼承 `patterns/element-anatomy/item-anatomy.spec.md`「List item layout」章節的 reading-mode 規格。SelectionItem 是 Family 2 的 SelectionItem variant：`control` slot 放 Checkbox/Radio indicator，`prefix` slot 專供 icon/avatar——兩者是獨立 slot、可並存（如 `<Checkbox icon>` 同時有 indicator + icon，見「結構」段的 3-slot 圖）。
+**Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 2（List item layout）** 消費者。結構繼承其「List item layout」章節的 reading-mode 規格。SelectionItem 是 Family 2 的 SelectionItem variant：`control` slot 放 Checkbox/Radio indicator，`prefix` slot 專供 icon/avatar——兩者是獨立 slot、可並存（如 `<Checkbox icon>` 同時有 indicator + icon，見「結構」段的 3-slot 圖）。
 
 ---
 

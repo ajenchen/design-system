@@ -55,7 +55,7 @@ export const Overview: Story = {
 
 /* Export id 保留 corpus 穩定；此矩陣只改 child size，FieldControlGroup 本身沒有 size API。 */
 export const SizeMatrix: Story = {
-  name: '子元件尺寸對齊',
+  name: '尺寸對照表',
   render: () => (
     <div className="flex flex-col gap-6 w-[420px]">
       {(['sm', 'md', 'lg'] as const).map(size => (
@@ -103,7 +103,7 @@ export const StateBehavior: Story = {
 
 /* Accessibility */
 export const Accessibility: Story = {
-  name: '無障礙',
+  name: '無障礙與鍵盤',
   render: () => (
     <div className="flex flex-col gap-3 w-[420px]">
       <p className="text-body">

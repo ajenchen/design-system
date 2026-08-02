@@ -19,8 +19,6 @@ benchmark:
   - Ant Design Input.TextArea: github.com/ant-design/ant-design/tree/master/components/input
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # Textarea 設計原則
 
 ## 定位
@@ -99,7 +97,7 @@ sm 與 md 視覺相同（純命名 mapping，對齊 Field family）。
 - **為何不與 `--table-cell-py` 同式**:DataTable cell 的 padding 載體是**無邊框**的 cell(且 edit 以 `!h-full` 釘高),故其公式合法地不帶 `− 1px`;兩式並存、各有載體,不可互抄。
 - **機械鎖**:`scripts/inline-edit-view-geometry-invariant.mjs` 逐 size 驗「Textarea edit py == fieldViewGeometry 多行 view py == 該 token」,並驗 token 公式本身未漂移。
 - **Rationale**:Textarea 是**多行輸入**,高度由內容 / rows 決定是本質特徵——若硬綁 field-height 只有單行高度,multi-line 場景無法表達。字體 tier 仍對齊 Field family(sm/md 共 text-body、lg 切 text-body-lg),確保並排單行 Input 的視覺 rhythm 一致
-- **世界級對照**:Ant Design `<Input.TextArea>` rows 決定高度、autoSize object 配置 min/max / Material MUI `<TextField multiline>` 用 minRows/maxRows / Polaris `<TextField multiline>` 同流派——全部 textarea 的 container 高度獨立於 field-height,只繼承字體 / padding / border token <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **契約邊界**:Textarea 的 container 高度獨立於 field-height，只繼承字體 / padding / border token；rows 與內容高度才是多行 control 的垂直尺寸來源
 
 ---
 

@@ -1,4 +1,4 @@
-// @story-trait-rationale: Carousel 是 composite UX showcase(Hero banner + Product gallery 兩個 hero scenario)
+// @story-history: Carousel 是 composite UX showcase(Hero banner + Product gallery 兩個 hero scenario)
 // 而非 prop-variant control;互動 state 由 embla 內建處理(arrow visibility hover-revealed / dots active state)
 // 在 hero story 內已 demonstrate。Trait gap pre-existing(非本 audit fix scope),allowlist for image-content fix。
 import type { Meta } from '@storybook/react'

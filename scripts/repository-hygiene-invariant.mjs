@@ -5,8 +5,8 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { lstatSync, readFileSync, readlinkSync, statSync } from 'node:fs'
-import { basename, dirname, join, relative, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { basename, dirname, join, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const POLICY_PATH = resolve(SCRIPT_DIR, '../packages/design-system/ds-canonical/references/repository-hygiene-policy.json')
@@ -81,13 +81,101 @@ function isTransientName(path) {
   return segments.some((segment) => /^(?:tmp|temp|scratch|debug)$/i.test(segment))
 }
 
-function excludedFromDuplicateScan(path, policy) {
+function excludedFromDuplicateScan(path, policy, futureReservedPrefixes = []) {
   if (startsWithAny(path, policy.duplicateExcludedPrefixes)) return true
+  if (startsWithAny(path, futureReservedPrefixes)) return true
   const segments = path.split('/')
   return segments.some((segment) => policy.duplicateExcludedSegments.includes(segment))
 }
 
+function isRepositoryRelativePath(path, { requireTrailingSlash = false } = {}) {
+  if (typeof path !== 'string' || !path.trim() || path !== path.trim() || path.startsWith('/')) return false
+  if (path.includes('\\') || (requireTrailingSlash && !path.endsWith('/'))) return false
+  const normalized = requireTrailingSlash ? path.slice(0, -1) : path
+  return !normalized.split('/').some((segment) => segment === '' || segment === '.' || segment === '..')
+}
+
+function concreteFutureText(value) {
+  return typeof value === 'string'
+    && value.trim() === value
+    && value.length >= 40
+    && !/(?:\bTBD\b|\bTODO\b|maybe useful|future use|someday|可能有用|以後再說|未定)/i.test(value)
+}
+
+export function validateFutureReservedEntries({ profileName, profile, inventoryPaths, now = new Date() }) {
+  if (!Array.isArray(profile.futureReservedEntries)) {
+    throw new Error(`malformed future-reserved entries in profile:${profileName}`)
+  }
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime())) throw new Error('invalid future-reserved validation clock')
+
+  const seenPrefixes = new Set()
+  for (const [index, entry] of profile.futureReservedEntries.entries()) {
+    const label = `${profileName}/futureReservedEntries[${index}]`
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) throw new Error(`${label}:entry must be an object`)
+    const keys = Object.keys(entry).sort()
+    const required = ['activationCondition', 'lifecycle', 'owner', 'pathPrefix', 'purpose'].sort()
+    if (keys.length !== required.length || keys.some((key, keyIndex) => key !== required[keyIndex])) {
+      throw new Error(`${label}:exact fields required:pathPrefix,owner,purpose,activationCondition,lifecycle`)
+    }
+    if (!isRepositoryRelativePath(entry.pathPrefix, { requireTrailingSlash: true }) || seenPrefixes.has(entry.pathPrefix)) {
+      throw new Error(`${label}:pathPrefix must be a unique repository-relative directory prefix`)
+    }
+    if ([...seenPrefixes].some((prefix) => prefix.startsWith(entry.pathPrefix) || entry.pathPrefix.startsWith(prefix))) {
+      throw new Error(`${label}:future-reserved prefixes must not overlap`)
+    }
+    seenPrefixes.add(entry.pathPrefix)
+    const topLevel = entry.pathPrefix.split('/')[0]
+    if (typeof profile.topLevelPurposes?.[topLevel] !== 'string') {
+      throw new Error(`${label}:pathPrefix top-level home is undeclared:${topLevel}`)
+    }
+    if (entry.pathPrefix.split('/').filter(Boolean).length === 1
+      && !/future[- ]reserved/i.test(profile.topLevelPurposes[topLevel])) {
+      throw new Error(`${label}:whole-home exemption requires an explicitly future-reserved top-level purpose`)
+    }
+    if (!isRepositoryRelativePath(entry.owner) || !inventoryPaths.includes(entry.owner)) {
+      throw new Error(`${label}:owner must be a present repository-relative canonical file:${String(entry.owner)}`)
+    }
+    if (entry.owner.startsWith(entry.pathPrefix)) throw new Error(`${label}:owner cannot be inside its own future-reserved prefix`)
+    if (!concreteFutureText(entry.purpose)) throw new Error(`${label}:purpose is missing or non-concrete`)
+    if (!concreteFutureText(entry.activationCondition) || !entry.activationCondition.includes(entry.owner)) {
+      throw new Error(`${label}:activationCondition must be concrete and name its owner`)
+    }
+    const lifecycle = entry.lifecycle
+    const lifecycleKeys = lifecycle && typeof lifecycle === 'object' && !Array.isArray(lifecycle)
+      ? Object.keys(lifecycle).sort()
+      : []
+    if (lifecycleKeys.join('\0') !== ['date', 'mode', 'onLapse'].sort().join('\0')
+      || !['review-by', 'expire-on'].includes(lifecycle.mode)
+      || !/^\d{4}-\d{2}-\d{2}$/.test(lifecycle.date ?? '')
+      || lifecycle.onLapse !== 'reclassify-or-remove') {
+      throw new Error(`${label}:lifecycle requires mode(review-by|expire-on), ISO date, and reclassify-or-remove`)
+    }
+    const lifecycleAt = Date.parse(`${lifecycle.date}T00:00:00Z`)
+    if (!Number.isFinite(lifecycleAt) || lifecycleAt <= now.getTime()) {
+      throw new Error(`${label}:future-reserved lifecycle lapsed:${lifecycle.date}`)
+    }
+    if (!inventoryPaths.some((path) => path.startsWith(entry.pathPrefix))) {
+      throw new Error(`${label}:declared future-reserved prefix has no repository content`)
+    }
+  }
+
+  for (const [topLevel, purpose] of Object.entries(profile.topLevelPurposes ?? {})) {
+    if (!/future[- ]reserved/i.test(purpose)) continue
+    if (!profile.futureReservedEntries.some((entry) => entry.pathPrefix.split('/')[0] === topLevel)) {
+      throw new Error(`${profileName}/${topLevel}:future-reserved purpose lacks the four-field declaration`)
+    }
+  }
+  return profile.futureReservedEntries.map((entry) => entry.pathPrefix)
+}
+
 export function auditRepositoryHygiene({ root, profileName, policy }) {
+  if (policy?.schemaVersion !== 2
+    || policy.authority !== 'packages/design-system/ds-canonical/references/repository-hygiene.md'
+    || !Array.isArray(policy.transientExemptPrefixes)
+    || !Array.isArray(policy.duplicateExcludedPrefixes)
+    || !Array.isArray(policy.duplicateExcludedSegments)) {
+    throw new Error('malformed repository-hygiene policy identity')
+  }
   const profile = policy.profiles?.[profileName]
   if (!profile) throw new Error(`unknown profile:${profileName}`)
   if (!profile.topLevelPurposes || !profile.declaredSymlinks || !Array.isArray(profile.duplicateExemptGroups)) {
@@ -117,8 +205,11 @@ export function auditRepositoryHygiene({ root, profileName, policy }) {
       symlinks.set(rel, readlinkSync(join(root, rel)))
       continue
     }
-    if (info.isFile() && info.size > 0 && !excludedFromDuplicateScan(rel, policy)) duplicateCandidates.push(rel)
+    if (info.isFile() && info.size > 0) duplicateCandidates.push(rel)
   }
+
+  const futureReservedPrefixes = validateFutureReservedEntries({ profileName, profile, inventoryPaths: present })
+  const duplicateScanPaths = duplicateCandidates.filter((rel) => !excludedFromDuplicateScan(rel, policy, futureReservedPrefixes))
 
   for (const topLevel of [...topLevels].sort()) {
     const purpose = profile.topLevelPurposes[topLevel]
@@ -156,7 +247,7 @@ export function auditRepositoryHygiene({ root, profileName, policy }) {
   }
 
   const byHash = new Map()
-  for (const rel of duplicateCandidates) {
+  for (const rel of duplicateScanPaths) {
     const digest = createHash('sha256').update(readFileSync(join(root, rel))).digest('hex')
     const group = byHash.get(digest) ?? []
     group.push(rel)
@@ -187,33 +278,38 @@ export function auditRepositoryHygiene({ root, profileName, policy }) {
     inventoryPaths: present.length,
     topLevelHomes: topLevels.size,
     symlinks: symlinks.size,
-    duplicateCandidates: duplicateCandidates.length,
+    duplicateCandidates: duplicateScanPaths.length,
+    futureReservedPrefixes: futureReservedPrefixes.length,
     duplicateGroups,
     exemptDuplicateGroups,
     violations,
   })
 }
 
-const args = parseArgs(process.argv.slice(2))
-let policy
-try { policy = JSON.parse(readFileSync(POLICY_PATH, 'utf8')) }
-catch (error) {
-  console.error(`❌ repository-hygiene-invariant FAIL:cannot read policy:${error.message}`)
-  process.exit(1)
+function main() {
+  const args = parseArgs(process.argv.slice(2))
+  let policy
+  try { policy = JSON.parse(readFileSync(POLICY_PATH, 'utf8')) }
+  catch (error) {
+    console.error(`❌ repository-hygiene-invariant FAIL:cannot read policy:${error.message}`)
+    return 1
+  }
+
+  let result
+  try { result = auditRepositoryHygiene({ root: args.root, profileName: args.profile, policy }) }
+  catch (error) {
+    console.error(`❌ repository-hygiene-invariant FAIL:${error.message}`)
+    return 1
+  }
+
+  if (args.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
+  else if (result.ok) {
+    console.log(`✅ repository-hygiene-invariant PASS(profile=${result.profile};paths=${result.inventoryPaths};homes=${result.topLevelHomes};symlinks=${result.symlinks};future-reserved=${result.futureReservedPrefixes};duplicate-groups=${result.duplicateGroups},declared=${result.exemptDuplicateGroups})`)
+  } else {
+    console.error(`❌ repository-hygiene-invariant FAIL(${result.violations.length};profile=${result.profile}):`)
+    for (const violation of result.violations) console.error(`   - ${violation.rule} ${violation.path}: ${violation.message}`)
+  }
+  return result.ok ? 0 : 1
 }
 
-let result
-try { result = auditRepositoryHygiene({ root: args.root, profileName: args.profile, policy }) }
-catch (error) {
-  console.error(`❌ repository-hygiene-invariant FAIL:${error.message}`)
-  process.exit(1)
-}
-
-if (args.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
-else if (result.ok) {
-  console.log(`✅ repository-hygiene-invariant PASS(profile=${result.profile};paths=${result.inventoryPaths};homes=${result.topLevelHomes};symlinks=${result.symlinks};duplicate-groups=${result.duplicateGroups},declared=${result.exemptDuplicateGroups})`)
-} else {
-  console.error(`❌ repository-hygiene-invariant FAIL(${result.violations.length};profile=${result.profile}):`)
-  for (const violation of result.violations) console.error(`   - ${violation.rule} ${violation.path}: ${violation.message}`)
-}
-process.exit(result.ok ? 0 : 1)
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) process.exit(main())

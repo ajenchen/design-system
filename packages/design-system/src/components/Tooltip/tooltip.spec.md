@@ -12,8 +12,6 @@ benchmark:
   - Polaris Tooltip: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Tooltip
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # Tooltip 設計原則
 
 ## 定位
@@ -37,7 +35,7 @@ Tooltip 的判斷標準是：**畫面上的資訊是否已經足夠讓使用者�
 
 **Warm-up pattern（暖機模式）：**
 
-1. 使用者首次 hover 某個觸發器 → 等待初始延遲，確認是刻意停留而非滑鼠路過（NNGroup 研究：低於此閾值會導致隨意移動滑鼠時螢幕不停閃爍）
+1. 使用者首次 hover 某個觸發器 → 等待初始延遲，確認是刻意停留而非滑鼠路過，避免游標掃過畫面時提示持續閃爍
 2. Tooltip 出現後，使用者移到下一個觸發器 → 在掃描窗口期內，tooltip 即時切換，不再等待（toolbar 逐一掃描場景）
 3. 使用者離開所有觸發器超過掃描窗口期 → 系統冷卻，下次 hover 重新等待初始延遲
 
@@ -75,19 +73,19 @@ Tooltip 底色是深色，子元素永遠套用 dark theme token（透過 `data-
 
 ## Align 對齊
 
-**Tooltip 走「輕量浮層」例外**(見 `../Popover/popover.spec.md`「SSOT 適用範圍」)—— hover 觸發、純文字展示、寬度極窄(max 280px),Radix 預設 `center` 貼合指標即可。不強制對齊 structured overlay 的 trigger-position canonical。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**Tooltip 走「輕量浮層」例外**(見 `../Popover/popover.spec.md`「SSOT 適用範圍」)—— hover 觸發、純文字展示、寬度極窄(max 280px),底層定位採預設 `center` 貼合指標即可。不強制對齊 structured overlay 的 trigger-position canonical。
 
 ## Edge collision(避免貼 viewport 邊)
 
 **`collisionPadding` default = 8**(消費 `OVERLAY_COLLISION_PADDING` overlay 家族 canonical,與 Popover 一致;HoverCard 是 documented exception 特意用 12 補 Radix rounding,見 `hover-card.tsx` 註解),Radix `avoidCollisions` 預設 true 會自動翻邊,但 padding 0 會讓 tooltip **貼齊 viewport 邊緣**(視覺上擠)。default 8 讓 tooltip 跟 viewport 邊保留最少 8px 呼吸距離。consumer 需自訂傳 prop 即可覆寫。
 
-世界級對照:Material Tooltip `margin: 14px` default / Polaris Tooltip 8-12px — 本 DS 選 8 對齊 overlay 家族共用常數。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+本 DS 選 8px 是為了與 overlay 家族共用 collision 常數，避免單一元件另立近似值。
 
 ## 最大寬度（元件級常數）
 
 Tooltip 最大寬度 **280px**（見 `.tsx` 的 `max-w-[280px]`）——超過換行。避免單條 tooltip 占據過大空間遮蔽內容，同時保證文字可完整呈現（見「內容完整性」節，tooltip 是資訊終點，不截斷）。
 
-對照世界級：Material tooltip 約 250–300px、Apple HIG tooltip 限制在可讀寬度——**單一元件的 canonical 寬度屬於該元件自己的 design spec，不抽為跨元件 token**。Token 系統只管共享值（如 `--field-height-*`、`--layout-space-*`）；單一元件獨有的結構常數留在 component code + 本 spec。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**單一元件的 canonical 寬度屬於該元件自己的 design spec，不抽為跨元件 token**。Token 系統只管共享值（如 `--field-height-*`、`--layout-space-*`）；單一元件獨有的結構常數留在 component code + 本 spec。
 
 ## 邊界狀態
 

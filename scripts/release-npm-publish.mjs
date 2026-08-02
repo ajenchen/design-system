@@ -85,7 +85,7 @@ async function assertStableReleaseTag({ token, repository, tag, gitHead }) {
 
 function assertTrustedPublisherRuntime(npmCli) {
   const version = execFileSync(npmCli, ['--version'], { encoding: 'utf8' }).trim()
-  if (version !== '11.18.0') throw new Error(`lock-bound npm 11.18.0 is required for Trusted Publishing; found ${version}`)
+  if (version !== '11.19.0') throw new Error(`lock-bound npm 11.19.0 is required for Trusted Publishing; found ${version}`)
   if (process.env.GITHUB_ACTIONS !== 'true' || process.env.RUNNER_ENVIRONMENT !== 'github-hosted') {
     throw new Error('OIDC Trusted Publishing is restricted to a GitHub-hosted Actions runner')
   }

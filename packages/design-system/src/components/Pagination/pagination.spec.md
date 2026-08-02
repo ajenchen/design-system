@@ -28,7 +28,7 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 
 **Layout Family**:非 4-family — self-contained composite(nav 橫排 control row);個別按鈕消費 Family 3(Button Pill)。
 
-**樣式派系**(2026-07-05 user 拍板):數字頁碼派(上下頁箭頭 + 數字 + ellipsis 摺疊)——shadcn / MUI / Ant / Atlassian 同派;非 Polaris(純上下頁)/ Carbon(page Select 可跳頁 + 上下頁,無數字鈕列)派。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**樣式派系**(2026-07-05 user 拍板):本系統採數字頁碼列(上下頁箭頭 + 數字 + ellipsis 摺疊)，使用者可同時看見目前位置、鄰近頁與頭尾邊界。純上下頁或 page Select 是不同導覽模式，不在此元件內並存。
 
 ---
 
@@ -63,7 +63,7 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 ◀ 上一頁   1   …   4  [5]  6   …   12   下一頁 ▶
 ```
 
-- **格位配置**:boundary 1 + sibling 1(= MUI `boundaryCount` / `siblingCount` 預設 1/1;內部常數,v1 不開 props——未來若開放,命名必沿用 MUI)。最大格位 = 首尾各 1 + 當前頁左右各 1 + 當前頁 + 2 顆 ellipsis = **7 格**,超過即摺疊。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **格位配置**:boundary 1 + sibling 1(內部常數,v1 不開 props)。最大格位 = 首尾各 1 + 當前頁左右各 1 + 當前頁 + 2 顆 ellipsis = **7 格**,超過即摺疊。若未來有多個消費者需要不同視窗，再將 boundary / sibling 設定開為受控 API。
 - **Ellipsis 非互動**:純指示符號(`MoreHorizontal` icon + `aria-hidden`),不可點——對齊 MUI / shadcn(非互動 ellipsis)。**Ant 為可點 jump-5 派**(rc-pagination 預設把省略格渲染成 `jump-prev` / `jump-next`:hover 顯 «/»、click 跳 5 頁,`https://github.com/react-component/pagination`);本 DS 選非互動,快速跳頁留給未來 `showQuickJumper`。Breadcrumb 的可點 ellipsis 是 collapse dropdown 場景,語意不同。
 - **上下頁按鈕**:iconOnly(`ChevronLeft` / `ChevronRight`),在第一頁 / 最後一頁時 `disabled`。
 - 頁碼格位由內部演算法產生;兩顆省略號各自身分穩定,翻頁時不互相 remount(演算法簽名與 React key 等實作細節由 `pagination.tsx` 檔內註解單一持有,spec 不重述——職責分離)。
@@ -83,7 +83,7 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 ```
 
 - `showTotal`(opt-in):左側 range 格式「第 x–y 筆,共 N 筆」——Ant「1-20 of 85 items」/ MUI「1–5 of 13」/ Carbon「1–10 of 128 items」三家共識,非單純總數。
-- `pageSizeOptions`(opt-in):頁碼右側「N 筆/頁」選單(文案內嵌 = Ant「20 / page」同款;消費既有 `Select size="sm"`);變更每頁筆數自動回第 1 頁——MUI TablePagination / TanStack `autoResetPageIndex` 派;Ant 為 preserve-position(clamp)派,本 DS 採 reset-to-1 避免換大 pageSize 後停在超界頁的 clamp 歧義。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- `pageSizeOptions`(opt-in):頁碼右側顯示「N 筆/頁」選單，並消費既有 `Select size="sm"`。變更每頁筆數時自動回第 1 頁，避免換大 pageSize 後停在超界頁而出現 clamp 歧義。
 - 兩者皆未開 = 純頁碼 inline 形態(consumer layout 決定對齊;表格情境靠右由 DataTable 處理)。
 
 ---
@@ -131,7 +131,7 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 
 **驗證**:Storybook a11y 面板 0 critical violation;純鍵盤可完成翻頁與跳頁。
 
-**SizeMatrix N/A rationale**:本元件無 size 軸(單一尺寸,按鈕固定 `size="sm"`)——頁碼列是 chrome 級導覽,不隨 Field 密度縮放(Ant / MUI / Carbon 的 size 變體服務其自家 density 系統;本 DS 表格密度由 DataTable size 控制、分頁列不連動)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**SizeMatrix N/A rationale**:本元件無 size 軸(單一尺寸,按鈕固定 `size="sm"`)——頁碼列是 chrome 級導覽,不隨 Field 密度縮放。本 DS 表格密度由 DataTable size 控制，分頁列保持穩定高度與命中區，不連動。
 
 ## 相關
 

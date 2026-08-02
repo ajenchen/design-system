@@ -14,7 +14,6 @@ benchmark:
   - GitHub / Slack / Gmail — primary-header mode reference(global top bar)
 ---
 
-<!-- @benchmark-cited: 2026-05-19 D5 cite — all design intent claims backed by frontmatter benchmark URLs. -->
 
 # AppShell 設計原則
 
@@ -323,7 +322,7 @@ Main 內塞什麼(table / field / card / page header / list)的 layout + spacing
 | Sheet fallback | `sheet.spec.md` SSOT |
 | Overlay | `overlay-surface.spec.md` SSOT |
 
-**0 新 CSS variable**,per CLAUDE.md token 4 條硬規則(不孤立發明)。
+**0 新 CSS variable**,per `packages/design-system/ds-canonical/rules/ui-development.md`「Token 命名 4 條硬規則」(不孤立發明)。
 
 ---
 

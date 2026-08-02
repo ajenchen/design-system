@@ -75,7 +75,7 @@ export const SizeAlignment: Story = {
   ),
 }
 
-/* @story-trait-rationale: WithIcon retired per F migration 2026-05-15 — anatomy.stories.tsx auto-compile owns icon slot showcase。 */
+/* @story-history: WithIcon retired per F migration 2026-05-15 — anatomy.stories.tsx auto-compile owns icon slot showcase。 */
 /* ── endAction（Inline Action 宣告式 API） ── */
 export const EndAction: Story = {
   name: '尾端操作',
@@ -144,7 +144,7 @@ export const ErrorState: Story = {
   ),
 }
 
-// @story-trait-rationale: BorderStates retired 2026-05-17 per audit Dim 24/25 strict re-run —
+// @story-history: BorderStates retired 2026-05-17 per audit Dim 24/25 strict re-run —
 //   anatomy.stories.tsx StateBehavior「Focus — border-primary」section 已 cover hover/focus 邊框互動
 //   (同 2 inputs 同 placeholder「點擊或 Tab 觀察 focus 邊框」)。Showcase tier 展示 anatomy 已覆蓋
 //   不教新原則 = retire。ErrorState 已滿足 isInputLike + hasInteractiveStates trait mandate。

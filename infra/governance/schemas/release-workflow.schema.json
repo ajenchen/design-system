@@ -4,7 +4,7 @@
   "title": "Canonical five-step release workflow",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "schemaVersion", "profile", "decisionAuthority", "steps", "legacyMechanisms", "automation"],
+  "required": ["$schema", "schemaVersion", "profile", "decisionAuthority", "deepAuditReleasePolicy", "steps", "legacyMechanisms", "automation"],
   "properties": {
     "$schema": {"const": "schemas/release-workflow.schema.json"},
     "schemaVersion": {"const": 1},
@@ -29,6 +29,31 @@
           "maxItems": 4
         },
         "resumeAfterHumanAction": {"const": "AUTO"}
+      }
+    },
+    "deepAuditReleasePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["iterationBoundary", "publishAsIterationLoop", "maximumFinalReleasesPerAudit", "additionalReleaseCondition", "allowedAdditionalReleaseFailureClasses", "requiredIncidentFields"],
+      "properties": {
+        "iterationBoundary": {"const": "one-branch-one-pr-candidate-validation"},
+        "publishAsIterationLoop": {"const": false},
+        "maximumFinalReleasesPerAudit": {"const": 1},
+        "additionalReleaseCondition": {"const": "separately-evidenced-post-publish-blocker-or-security-incident"},
+        "allowedAdditionalReleaseFailureClasses": {
+          "type": "array",
+          "prefixItems": [{"const": "post-publish-blocker"}, {"const": "security-incident"}],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "requiredIncidentFields": {
+          "type": "array",
+          "prefixItems": [{"const": "incidentId"}, {"const": "failureClass"}, {"const": "publishedVersion"}, {"const": "evidenceRef"}],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+        }
       }
     },
     "steps": {

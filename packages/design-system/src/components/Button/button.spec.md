@@ -47,7 +47,6 @@ benchmark:
   - Carbon Button: github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/Button
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 > **Foundational SSOT rationale**(cap 800,2026-04-25 approved):
 > Family 3 (Pill Layout) SSOT owner。SegmentedControlItem / Chip / Tag 繼承 Pill 結構;Dismiss canonical(X icon 色處理)cascade 到全 DS inline actions;Button sm/md/lg 與 Field sm/md/lg size pairing 是系統級 invariant。scope 本質 > 單一元件。
@@ -59,7 +58,7 @@ benchmark:
 Button 是最基礎的互動元件，用於觸發操作或導覽。
 基於 shadcn/ui Button，橋接設計系統 token，支援 uiSize 自動縮放。
 
-**Layout Family**：本元件是 **CLAUDE.md 4-Family Model Family 3（Pill Layout）的 SSOT 擁有者 + action trigger sub-profile canonical**。SegmentedControlItem / Chip / Tag 繼承本元件的 Pill Layout 結構。
+**Layout Family**：依 `patterns/element-anatomy/element-anatomy.spec.md` 的 4-Family taxonomy,本元件是 **Family 3（Pill Layout）的 SSOT 擁有者 + action trigger sub-profile canonical**。SegmentedControlItem / Chip / Tag 繼承本元件的 Pill Layout 結構。
 
 ---
 
@@ -143,7 +142,7 @@ Tag md 和 Button xs 同 24px，但：
 - Tag md `px-1` / text-body 14px / font-normal / cursor-text
 - Button xs `px-2` / text-caption 12px / font-medium / cursor-pointer
 
-**不統一的世界級理由**（對照 Material / Polaris / Atlassian / Ant / Carbon 共識）： <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**不統一的 DS 內部理由**：
 - **padding 跟著 role**：action 要大命中區 + 視覺重量；indicator 要緊湊低視覺權重
 - **font-weight 跟著 role**：action medium（吸引點擊）；indicator normal（passive 讀取）
 - **font-size 跟著 pairing**：Tag md pair Field md（14px field typography）；Button xs 是 standalone utility button（compact toolbar，用 12px）

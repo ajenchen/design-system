@@ -25,7 +25,7 @@ Skeleton 是**載入中的內容佔位符**——在資料載入完成前，用�
 ## 何時用
 
 - **初次載入資料的 list / table / card grid**：保留內容形狀讓使用者預期佈局
-- **非同步載入的 dashboard widget / chart**：資料來之前填滿空間避免跳動
+- **非同步載入的 dashboard widget / chart**：資料抵達前保留既定版面區域，降低 cumulative layout shift
 - **內容切換後的短暫載入**：router 切換、tab 切換後的過渡狀態
 - **已知佈局結構的等待**：佈局固定 + 資料動態的場景
 
@@ -51,7 +51,7 @@ Skeleton 是**載入中的內容佔位符**——在資料載入完成前，用�
 | 典型用途 | 初次載入 list / grid | Button loading、cell 載入、inline 等待 |
 
 **判準**:
-- **有已知佈局結構需保留 → Skeleton**(佔位、防跳動)
+- **有已知佈局結構需保留 → Skeleton**(預留結構與空間)
 - **小區塊 / inline 等待 → CircularProgress**(無 value,indeterminate)
 - **長載入換手**(先 Skeleton、超時換 progress):> 3s 的 fallback 規則見「A11y 預設」「替代文字」段
 

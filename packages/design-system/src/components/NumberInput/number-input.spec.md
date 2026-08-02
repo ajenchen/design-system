@@ -23,7 +23,7 @@ NumberInput 是**數值的**輸入與顯示元件。格式化邏輯：`toLocaleS
 
 本元件採 **controlled-only**:`value` + `onChange`,不支援 `defaultValue` uncontrolled fallback(value pair V1)。對齊 Field 家族 canonical(Combobox / DatePicker / TimePicker / SelectMenu 同,rationale 見各 spec 同名段);NumberInput 另因 raw 輸入 ↔ 格式化值的 parse pipeline 以 `null` 為空值 sentinel,dual-mode 會複製 parse 狀態。未來要改 dual-mode 需 `useControllableState` helper,屬 major API 擴充。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 4（Field control layout）** 消費者。結構繼承 `components/Field/field-controls.spec.md` 的 `fieldWrapperStyles + [startIcon?] [<editable>] [endAction?]` 規格,視覺對齊 Family 1（Menu item）讓 SelectMenu trigger + options 連續一致。
+**Layout Family**：本元件是 `components/Field/field-controls.spec.md` 所擁有的 **Family 4（Field control layout）** 消費者。結構繼承其 `fieldWrapperStyles + [startIcon?] [<editable>] [endAction?]` 規格,視覺對齊 Family 1（Menu item）讓 SelectMenu trigger + options 連續一致。
 
 ---
 
@@ -38,12 +38,12 @@ NumberInput 是**數值的**輸入與顯示元件。格式化邏輯：`toLocaleS
 
 | 場景 | 改用 | 原因 |
 |------|------|------|
-| 純文字 / 看起來像數字的字串（電話、郵遞區號）| `Input` | 電話不是算術型數字，不需要千分位 / 不該用 step |
+| 數字識別碼（電話、郵遞區號）| `Input` | 這些值不參與算術，不需要千分位或 step |
 | 日期 / 時間戳 | `DatePicker` | 需要日期語意和 picker 互動 |
 | 視覺調整數值（音量、亮度、滑動調整）| `Slider` | 使用者目標是「感受」而非「輸入精確值」 |
 | 大量帶小數的科學計算 | `Input` + 自訂驗證 | 極端精度需求超出 NumberInput 格式化能力 |
 
-**常見誤解**:(1)「看起來像數字」≠ 數值——電話 / 郵遞區號 / 身分證號用 `Input`(見上表);(2)百分比 value 直接存 `85` 非 `0.85`,`suffix='%'` 純顯示;(3)NumberInput **無** step ↑↓ stepper——純值輸入,加減互動走 `endSlot`(見禁止事項)。
+**常見誤解**:(1)只含數字字元的識別碼不等於算術數值——電話 / 郵遞區號 / 身分證號用 `Input`(見上表);(2)百分比 value 直接存 `85` 非 `0.85`,`suffix='%'` 純顯示;(3)NumberInput **無** step ↑↓ stepper——純值輸入,加減互動走 `endSlot`(見禁止事項)。
 
 ---
 
@@ -107,7 +107,7 @@ col.accessor('price', {
 - **Loading**:NumberInput 不提供 loading state(`NumberInputProps` 無 `loading` prop、無 `CircularProgress` / `aria-busy` 邏輯)。數值輸入為同步操作,無 async fetch 語意;若需 async 場景(如遠端校驗)請走外層 Field validation + `endSlot` 自訂 spinner。
 - **Empty(null / undefined / 空字串)**:View / readonly mode 渲半形 `-`(hyphen + `text-foreground`,disabled → fg-disabled);Edit mode placeholder 走 default placeholder color。
 - **Invalid input**(non-numeric):input 為 `type="text" inputMode="decimal"`,onChange 以 `Number(raw)` parse,NaN 時忽略不觸發 `onChange`(value 維持原值);搭配 Field validation 渲 error variant(`aria-invalid="true"` + wrapper `border-error`(hover 時 `border-error-hover`)+ 下方 error message)。
-- **輸入中間態**(`-`、`1.`、`0.0` 等 parse 後 lossy 的 raw 字串,2026-07-05 D4 codify):edit mode 以 internal draft string 承載——輸入期間 DOM 顯示 draft 原字串(負號、尾點不被 controlled 回寫吃掉),parse 成功即時同步 `onChange(parsed)`;blur / Enter commit(清 draft、顯示回 committed value,不合法殘字自然還原)、Escape 棄未提交 draft 字串、顯示回 committed value(NumberInput 為 live-commit,每次合法 parse 即 onChange,故非回復 pre-edit 原值;真 revert 需另存 snapshot,屬 API 擴充)。value 面語意不變:`''` / `'-'` 視為 `null`。對齊 Ant InputNumber / Adobe Spectrum NumberField internal draft canonical。 <!-- @benchmark-unverified -->
+- **輸入中間態**(`-`、`1.`、`0.0` 等 parse 後 lossy 的 raw 字串,2026-07-05 D4 codify):edit mode 以 internal draft string 承載——輸入期間 DOM 顯示 draft 原字串(負號、尾點不被 controlled 回寫吃掉),parse 成功即時同步 `onChange(parsed)`;blur / Enter commit(清 draft、顯示回 committed value,不合法殘字自然還原)、Escape 棄未提交 draft 字串、顯示回 committed value(NumberInput 為 live-commit,每次合法 parse 即 onChange,故非回復 pre-edit 原值;真 revert 需另存 snapshot,屬 API 擴充)。value 面語意不變:`''` / `'-'` 視為 `null`。draft 與 committed value 分層是為了同時保留可繼續輸入的文字與對外數值契約。
 - **負數 / 超大數字**:`toLocaleString(locale)` 自動處理負號與千分位分組,無特殊 prop。
 - **科學記號輸入**(`1e5`):`Number(raw)` parse 為 `100000`,非 NaN 即觸發 `onChange`(`number-input.tsx:150-152`)。
 - **精度上限**:`precision` > 6 為禁止事項(浮點精度雜訊),極端精度走 `Input` + 自驗證。
@@ -118,7 +118,7 @@ col.accessor('price', {
 
 ## 相關
 
-- `../Input/input.spec.md` — 純文字（含電話 / 郵遞區號等「看起來像數字」的資料）
+- `../Input/input.spec.md` — 純文字與數字識別碼（電話 / 郵遞區號等）
 - `../DatePicker/date-picker.spec.md` — 日期
 - `../Slider/slider.spec.md` — 視覺調整數值（音量、亮度）
 - `../Field/field-controls.spec.md` — Field Control 共用規則（mode / size / endAction / error）

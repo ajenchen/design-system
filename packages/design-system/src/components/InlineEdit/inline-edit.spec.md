@@ -15,7 +15,7 @@ benchmark:
 
 # InlineEdit 設計原則
 
-**Layout Family**:composite。**edit 態委派 Family 4（Field Control Layout）**——直接渲染 Field 控件（預設 `<Input>`），幾何/邊框/focus 全繼承 `fieldWrapperStyles`，不新增 layout primitive。**view 態幾何同樣委派 Family 4（Model A,不自帶 geometry cva）**——值-格式化路徑委派 `<Control mode="view">`、純值/標題路徑套 `fieldViewGeometry` helper（見「幾何典範」）;本體只疊 hover bg + focus 藍框 + 隱形 Pressable（絕對定位透明 `<button>`），負責「看起來像純內容、hover 才有 affordance、點擊進 edit」。
+**Layout Family**:composite。**edit 態委派 Family 4（Field Control Layout）**——直接渲染 Field 控件（預設 `<Input>`），其 layout / focus contract 由 Field 擁有，不新增 primitive。**view 態同樣委派 Family 4（Model A）**——值-格式化路徑委派 `<Control mode="view">`、純值/標題路徑委派 `fieldViewGeometry`（見「幾何典範」）；InlineEdit 本體只擁有可編輯提示、啟動與 focus 生命週期。
 
 ## 定位
 

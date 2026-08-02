@@ -9,9 +9,9 @@ import { resolveExactNpmRuntimeContract } from './lib/verified-exact-npm-runtime
 import { runVerifiedNpm } from './run-verified-npm.mjs'
 
 const exactNpm = {
-  version: '11.18.0',
-  resolved: 'https://registry.npmjs.org/npm/-/npm-11.18.0.tgz',
-  integrity: 'sha512-T67M4L5wNm0cZ7EBLErcEkY1SmzEW/WJ+SADBzsFUY1UdAPfFHXFQtZ6SEXiK0+vzXysCvAsepbMaBTwnrAD+w==',
+  version: '11.19.0',
+  resolved: 'https://registry.npmjs.org/npm/-/npm-11.19.0.tgz',
+  integrity: 'sha512-SDd/hHg3KqHE5Ht2NHWxNYNtqCQ2pXAPLl6OtQhPyED5PHsRfrOtO199MZTIG2cQoQ1ZRI9t28shrD+2cr3AAw==',
 }
 const exactOverlay = {
   alias: 'npm-runtime-brace-expansion-patch',
@@ -20,6 +20,14 @@ const exactOverlay = {
   version: '5.0.8',
   resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.8.tgz',
   integrity: 'sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg==',
+}
+const exactSecondaryOverlay = {
+  alias: 'npm-runtime-tar-patch',
+  spec: 'npm:tar@7.5.22',
+  package: 'tar',
+  version: '7.5.22',
+  resolved: 'https://registry.npmjs.org/tar/-/tar-7.5.22.tgz',
+  integrity: 'sha512-MFO/QzvtAOmJbkhOaCTvbGcFN9L9b+JunIsDwaKljSOdcLMea3NJ1k9Usz/rjdfSXTq4dfzfeS7W4p4YOAAHeA==',
 }
 
 function git(cwd, args) {
@@ -37,6 +45,7 @@ function repository(path) {
     devDependencies: {
       npm: exactNpm.version,
       [exactOverlay.alias]: exactOverlay.spec,
+      [exactSecondaryOverlay.alias]: exactSecondaryOverlay.spec,
     },
   })}\n`)
   writeFileSync(join(path, 'package-lock.json'), `${JSON.stringify({
@@ -50,6 +59,7 @@ function repository(path) {
         devDependencies: {
           npm: exactNpm.version,
           [exactOverlay.alias]: exactOverlay.spec,
+          [exactSecondaryOverlay.alias]: exactSecondaryOverlay.spec,
         },
       },
       'node_modules/npm': {
@@ -62,6 +72,13 @@ function repository(path) {
         version: exactOverlay.version,
         resolved: exactOverlay.resolved,
         integrity: exactOverlay.integrity,
+        dev: true,
+      },
+      [`node_modules/${exactSecondaryOverlay.alias}`]: {
+        name: exactSecondaryOverlay.package,
+        version: exactSecondaryOverlay.version,
+        resolved: exactSecondaryOverlay.resolved,
+        integrity: exactSecondaryOverlay.integrity,
         dev: true,
       },
     },
@@ -136,13 +153,20 @@ test('candidate dependency install applies and verifies the exact runtime overla
     version: runtimeOverlay.version,
     integrity: runtimeOverlay.integrity,
     target: runtimeOverlay.target,
+    secondaryAlias: runtimeOverlay.secondaryAlias,
+    secondaryPackage: runtimeOverlay.secondaryPackage,
+    secondaryVersion: runtimeOverlay.secondaryVersion,
+    secondaryIntegrity: runtimeOverlay.secondaryIntegrity,
+    secondaryTarget: runtimeOverlay.secondaryTarget,
+    secondaryTreeDigest: 'c'.repeat(64),
     treeDigest: runtimeOverlay.treeDigest,
     auditClosureDigest: 'b'.repeat(64),
     auditClosure: Object.freeze([
-      Object.freeze({ path: 'node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.8', dependency: null }),
-      Object.freeze({ path: 'node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: Object.freeze({ name: 'brace-expansion', range: '^5.0.5' }) }),
+      Object.freeze({ path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.8', dependency: null }),
+      Object.freeze({ path: 'node_modules/npm/node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: Object.freeze({ name: 'brace-expansion', range: '^5.0.5' }) }),
+      Object.freeze({ path: 'node_modules/npm/node_modules/tar', name: 'tar', version: '7.5.22', dependency: null }),
       Object.freeze({ path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.8', dependency: null }),
-      Object.freeze({ path: 'node_modules/eslint', name: 'eslint', version: '10.8.0', dependency: Object.freeze({ name: 'minimatch', range: '^10.2.5' }) }),
+      Object.freeze({ path: 'node_modules/npm-runtime-tar-patch', name: 'tar', version: '7.5.22', dependency: null }),
     ]),
   })
   const auditReport = JSON.stringify({
@@ -152,37 +176,46 @@ test('candidate dependency install applies and verifies the exact runtime overla
         name: 'brace-expansion',
         severity: 'high',
         isDirect: false,
-        range: '<=5.0.7',
+        range: '4.0.0 - 5.0.7',
         nodes: ['node_modules/npm/node_modules/brace-expansion'],
-        effects: ['minimatch'],
+        effects: [],
         via: [{
-          source: 1124334,
+          source: 1130591,
           name: 'brace-expansion',
           dependency: 'brace-expansion',
           url: 'https://github.com/advisories/GHSA-mh99-v99m-4gvg',
           severity: 'high',
-          range: '<=5.0.7',
+          range: '>=4.0.0 <5.0.8',
         }],
       },
-      minimatch: {
-        name: 'minimatch',
-        severity: 'high',
-        isDirect: false,
-        via: ['brace-expansion'],
-        nodes: ['node_modules/minimatch'],
-        effects: ['eslint'],
-      },
-      eslint: {
-        name: 'eslint',
-        severity: 'high',
+      npm: {
+        name: 'npm',
+        severity: 'moderate',
         isDirect: true,
-        via: ['minimatch'],
-        nodes: ['node_modules/eslint'],
+        via: ['tar'],
+        nodes: ['node_modules/npm'],
         effects: [],
+        range: '<=10.9.8 || >=11.0.0-pre.0',
+      },
+      tar: {
+        name: 'tar',
+        severity: 'moderate',
+        isDirect: false,
+        range: '<=7.5.20',
+        nodes: ['node_modules/npm/node_modules/tar'],
+        effects: ['npm'],
+        via: [{
+          source: 1124287,
+          name: 'tar',
+          dependency: 'tar',
+          url: 'https://github.com/advisories/GHSA-r292-9mhp-454m',
+          severity: 'moderate',
+          range: '<=7.5.20',
+        }],
       },
     },
     metadata: {
-      vulnerabilities: { info: 0, low: 0, moderate: 0, high: 3, critical: 0, total: 3 },
+      vulnerabilities: { info: 0, low: 0, moderate: 2, high: 1, critical: 0, total: 3 },
     },
   })
   const result = await installCandidateDependencies({
@@ -219,10 +252,10 @@ test('candidate dependency install applies and verifies the exact runtime overla
         : { status: 0 }
     },
   })
-  assert.equal(result.npm, '11.18.0')
+  assert.equal(result.npm, '11.19.0')
   assert.equal(result.securityOverlay, installedOverlay)
   assert.equal(result.vulnerabilityAudit.status, 'passed')
-  assert.deepEqual(result.vulnerabilityAudit.remediatedFindings, ['brace-expansion', 'eslint', 'minimatch'])
+  assert.deepEqual(result.vulnerabilityAudit.remediatedFindings, ['brace-expansion', 'npm', 'tar'])
   assert.equal(cleaned, 1)
   assert.deepEqual(events, [
     'ci --legacy-peer-deps --ignore-scripts --registry=https://registry.npmjs.org/',
@@ -321,7 +354,7 @@ test('candidate dependency install rejects a runtime without the exact security 
       }),
       runner: () => ({ status: 0 }),
     }),
-    /verified npm 11\.18\.0 capability with the exact security overlay is required/,
+    /verified npm 11\.19\.0 capability with the exact security overlay is required/,
   )
   assert.equal(cleaned, 1)
 })

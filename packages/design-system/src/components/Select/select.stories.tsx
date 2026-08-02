@@ -1,4 +1,3 @@
-// @story-trait-rationale: D3 mechanical migration (size:N → meta.width) — preexisting Default/WithError trait gap unrelated to this edit; tracked separately
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions
 // (per .claude/references/story-baseline-registry.json#DataTable)
 import React from 'react'
@@ -6,7 +5,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Select } from './select'
 import { Button } from '@/design-system/components/Button/button'
-import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import '@/design-system/components/DataTable/column-types'
 
@@ -46,7 +45,6 @@ export const Modes: Story = {
           <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
           <Select options={statusOptions} value={value} onChange={setValue} aria-label="狀態(edit mode demo)" />
         </div>
-        {/* @story-trait-rationale: pre-existing trait gaps tracked separately */}
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">view</h3>
           <Select mode="view" options={statusOptions} value={value} aria-label="狀態(view 模式示範)" />
@@ -66,6 +64,32 @@ export const Modes: Story = {
       </div>
     )
   },
+}
+
+function SelectErrorExample() {
+  const [value, setValue] = React.useState('')
+  return (
+    <Field required invalid={!value} className="max-w-xs">
+      <FieldLabel>出貨倉庫</FieldLabel>
+      <Select
+        options={[
+          { value: 'taipei', label: '台北倉' },
+          { value: 'taichung', label: '台中倉' },
+          { value: 'kaohsiung', label: '高雄倉' },
+        ]}
+        value={value}
+        onChange={setValue}
+        placeholder="選擇出貨倉庫"
+        aria-label="出貨倉庫"
+      />
+      {!value && <FieldError>請選擇出貨倉庫</FieldError>}
+    </Field>
+  )
+}
+
+export const WithError: Story = {
+  name: '驗證錯誤',
+  render: () => <SelectErrorExample />,
 }
 
 /* ── 寬度軸 hug(任務詳情 metadata)── */
@@ -101,7 +125,7 @@ export const HugWidth: Story = {
   },
 }
 
-// @story-trait-rationale: DisplayMode(plain/tag × edit/readonly)retired 2026-07-17 per audit Dim 24 —
+// @story-history: DisplayMode(plain/tag × edit/readonly)retired 2026-07-17 per audit Dim 24 —
 //   為 anatomy.stories.tsx ColorMatrix(plain/tag × edit/readonly/disabled 完整矩陣)的嚴格子集;
 //   plain vs tag 的選用原則另由 principles.stories.tsx DisplayModeRule 承載。展示版無新增約束
 //   (earn-existence 2-test 雙 NO)→ retire。display 模式 canonical home = anatomy ColorMatrix + principles DisplayModeRule。

@@ -87,8 +87,7 @@ Dialog 和 Popover 的**結構化 sub-components 共用 primitive**——提供 
   <div className="py-2">                       {/* list outer wrapper:menu group 8px breathing */}
     {items.map(item => (
       <MenuItem key={item.id} className="px-[var(--layout-space-loose)]">{item.label}</MenuItem>
-      // 或 hand-craft Family 2 row(prefix+content)時:
-      // <div className="flex items-center gap-3 py-2 px-[var(--layout-space-loose)] rounded-md hover:bg-neutral-hover">
+      // Family 2 row 請直接消費 item-anatomy primitives；utility 組合由其 source 擁有。
     ))}
   </div>
 </DialogBody>
@@ -407,7 +406,7 @@ border-l border-divider">`)/ Atlassian `modal-dialog/examples/101-full-height-il
 
 - **Close 按鈕渲染**:由 consumer(Dialog / Sheet / Popover)自己包 `<Button iconOnly dismiss>` 在 Header 內,綁各自 Radix Close primitive。SurfaceHeader 本身不渲染 close,避免 pattern 與 consumer 的職責耦合。
 - **viewport-fill 高度邏輯**:Dialog 特有(填滿 viewport - inset),由 DialogContent 自行計算 `height: calc(100vh - inset*2)`,與 Body 協作 `flex-1 overflow-y-auto`。
-- **radius / border / shadow / bg**:浮層外殼職責,由 Dialog / Popover 的 Content 自己套(都套同一組 token:`bg-surface-raised` / `border-border` / `rounded-lg` / `shadow-[var(--elevation-200)]`——這部分 CLAUDE.md 已經寫明對齊規則,不另外抽 primitive)。
+- **radius / border / shadow / bg**:浮層外殼職責,由 Dialog / Popover 的 Content 自己套(都套同一組 token:`bg-surface-raised` / `border-border` / `rounded-lg` / `shadow-[var(--elevation-200)]`——由本段記錄共同 consumer contract,並遵循 `packages/design-system/ds-canonical/rules/ui-development.md`「Token 命名 4 條硬規則」,不另外抽 primitive)。
 
 ---
 

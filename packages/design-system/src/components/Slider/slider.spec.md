@@ -25,8 +25,6 @@ benchmark:
   - MUI Slider: github.com/mui/material-ui/tree/master/packages/mui-material/src/Slider
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # Slider 設計原則
 
 **數值範圍選取器**——基於 Radix Slider primitive,橋接設計系統 token。
@@ -66,7 +64,7 @@ benchmark:
 
 ### 一種視覺,多種容器尺寸
 
-**track / thumb 是單一視覺規格**(track 4px、thumb 16px、邊框 2px,皆不隨 `size` 變):thumb 是位置指示器,必須夠大好捕捉(Fitts's Law),等比縮小會直接傷可用性;世界級同款——Material 3(track 4dp / thumb 20dp)/ iOS(3pt / 28pt)/ Ant(4px / 14px)/ Radix,全部 thumb / track 尺寸獨立於 form-size system。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**track / thumb 是單一視覺規格**(track 4px、thumb 16px、邊框 2px,皆不隨 `size` 變):thumb 是位置指示器，必須夠大才容易捕捉；等比縮小會直接降低命中率。因此 `size` 只調整容器與 Field 的對齊高度，thumb / track 保留同一操作量體。
 
 `size?: 'sm' | 'md' | 'lg'`(預設 `md`)**只控 root 容器外高 `h-field-*`**,內部視覺 `flex items-center` 垂直置中——Slider 丟進 `Field` 與 Input / Select / NumberInput 並排時對齊 field-height tier(否則一排 sm field 混一個 md 高 slider,rhythm 會崩),同時保持「一種尺寸,任何 context 長得都一樣」;API 與其他 field 元件一致(都有 `size`),消費者不需特別記「Slider 沒有 size」。focus 不加 ring / halo,改用 border 階變(詳「視覺規格」表)。
 
@@ -93,7 +91,7 @@ benchmark:
 
 ### 為什麼 thumb 是**白底 + 邊框**,不是**實心 primary**
 
-實心 primary thumb 會讓 thumb fill 與 range fill 使用同一 token → 失去位置辨識語意(特別是 range mode 兩個 thumb 與 primary range 共存時)。白底 + 邊框讓 thumb 與 range 視覺可區分——thumb 作為位置指示器,必須能從 range 中辨別。這是 Material 3 / iOS / Linear 的共同解法。
+實心 primary thumb 會讓 thumb fill 與 range fill 使用同一 token → 失去位置辨識語意(特別是 range mode 兩個 thumb 與 primary range 共存時)。白底 + 邊框讓 thumb 與 range 視覺可區分——thumb 作為位置指示器,必須能從 range 中辨別。
 
 ### 為什麼 Track 底色維持「灰色凹槽」身分,不跟 enabled state 變動
 
@@ -112,7 +110,7 @@ Range 填滿色和 Thumb border 色**永遠是同一個 token**:
 
 ### 為什麼 hover / active 用陰影不用色變
 
-Slider 不是 button——它是「當前位置指示器」,底色不該動(動了會暗示是另一個狀態);「不用色變」指 thumb 底色與 range 填色;thumb border 仍有同色相變化:hover / focus 升 hover 階(淺一階 lift)、按壓拖曳深至 `primary-active`(2026-07-06 修語:原文「加深至 primary-hover」與 token 實際方向相反,見視覺規格表)。陰影(elevation)是世界級 slider 的標準 hover 語言:Material 3 的 state layer + elevation、iOS slider 的 scale + shadow、Linear 的 drop shadow。對齊 `elevation.spec.md` 的 `--elevation-100` / `--elevation-200`。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Slider 不是 button——它是「當前位置指示器」,底色不該動(動了會暗示是另一個狀態);「不用色變」指 thumb 底色與 range 填色;thumb border 仍有同色相變化:hover / focus 升 hover 階(淺一階 lift)、按壓拖曳深至 `primary-active`(2026-07-06 修語:原文「加深至 primary-hover」與 token 實際方向相反,見視覺規格表)。陰影只提供深度與拖曳回饋，對齊 `elevation.spec.md` 的 `--elevation-100` / `--elevation-200`，不改寫數值 state 的色彩。
 
 ---
 
@@ -138,7 +136,7 @@ Slider 不是 button——它是「當前位置指示器」,底色不該動(動�
 
 ### Range mode(雙 thumb)
 
-Radix Slider 原生支援多 thumb——只要 `value` / `defaultValue` 傳長度 > 1 的 array,就自動渲染對應數量的 thumb,range(填滿段)落在最小和最大 thumb 之間。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+底層 Slider 支援多 thumb——只要 `value` / `defaultValue` 傳長度 > 1 的 array,就自動渲染對應數量的 thumb,range(填滿段)落在最小和最大 thumb 之間。
 
 ```tsx
 // 單值
@@ -201,10 +199,9 @@ Radix Slider 原生支援多 thumb——只要 `value` / `defaultValue` 傳長�
 
 Disabled slider 要傳達的兩件事——thumb 位置、range 長度——**完全不依賴顏色**(灰階後 x 座標與填滿佔比一模一樣),失去藍色零資訊損失,故走灰階派(同 Checkbox:state 由形狀 / 位置承載、顏色是裝飾)。Switch 是唯一 opacity 特例:on/off 的主載體是顏色(thumb 位移 / check icon 只是弱輔助線索),灰階會讓兩態近乎無法區分——此 rationale 不適用 Slider。
 
-### 為什麼 shadcn / Material 3 用 opacity 仍然不是理由
+### 為什麼不直接套 opacity
 
-- **shadcn 的 Slider 用 `opacity-50`**:shadcn 追求「最短 code path」,不是「設計嚴謹」,它對所有 disabled 元件都 lazy-apply opacity。這是實作偷懶,不是 design decision。
-- **Material 3 的 38% opacity 全局規則**:M3 是為 Android 生態系設計的,opacity-based disabled 能跟 Android 原生控件的視覺一致。我們的系統是 web,不受此約束,且 Button / Checkbox / Input 已經選了灰階路線,Slider 跟進對齊才是 system consistency 的正確解。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Opacity 會同時削弱 track、range、thumb 與邊框，讓元件所有層級一起沉沒；而本 DS 已有明確的 disabled semantic tokens。Slider 跟 Button / Checkbox / Input 使用灰階 swap，保留 thumb 位置與 range 長度的結構對比，也避免「灰階後再整體透明」的雙重降級。
 
 ### 常見錯誤(避免)
 

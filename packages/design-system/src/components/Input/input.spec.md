@@ -17,7 +17,6 @@ benchmark:
   - Carbon TextInput: github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/TextInput
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Input 設計原則
 
@@ -27,7 +26,7 @@ Input 是**純文字**的輸入與顯示元件。格式化邏輯為 identity（v
 
 共用規則見 `../Field/field-controls.spec.md`。本文件只記錄 Input 特有的原則。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 4（Field control layout）** 消費者。結構繼承 `components/Field/field-controls.spec.md` 的 `fieldWrapperStyles + [startIcon?] [<editable>] [endAction?]` 規格,視覺對齊 Family 1（Menu item）讓 SelectMenu trigger + options 連續一致。
+**Layout Family**：本元件是 `components/Field/field-controls.spec.md` 所擁有的 **Family 4（Field control layout）** 消費者。結構繼承其 `fieldWrapperStyles + [startIcon?] [<editable>] [endAction?]` 規格,視覺對齊 Family 1（Menu item）讓 SelectMenu trigger + options 連續一致。
 
 ---
 
@@ -160,10 +159,10 @@ Input 有**一個公開** visual chrome variant `default`(+ 一個 `@internal` �
 **邊界(內容超寬)**:寬度上限 = 父容器可用寬(wrapper `inline-flex w-auto` shrink-to-fit);超過後 input 不再增寬,溢出文字走原生水平捲動。不支援 `field-sizing` 的瀏覽器退化 `w-auto`(fallback 細節見 tsx jsDoc)。
 
 **禁止**:
-- ❌ **表單 Field 內**——Field 欄位必須欄寬對齊,寬度隨值跳動會破壞 grid layout
-- ❌ **放在主表單欄位區**——auto-width 讓欄寬隨值跳動、破壞 grid 對齊;autoWidth 適用 toolbar / page-body inline 場景,搭 `variant="default"`(小尺寸有框輸入,如 FileViewer zoom;`bare` 2026-07-09 退役)
+- ❌ **表單 Field 內**——Field 欄位必須遵守共享欄寬；內容驅動寬度會破壞 grid alignment contract
+- ❌ **放在主表單欄位區**——主表單需要穩定的 column sizing；`autoWidth` 只適用 toolbar / page-body inline 場景，使用 `variant="default"`（`bare` 已退役）
 
-**世界級對照**:VS Code settings inline input 用同 pattern;Notion property field、Airtable cell edit 皆 auto-size。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Auto-size 只服務 inline editing：view 與 edit 共用內容寬度，避免進入編輯態時欄位突然撐滿整列。
 
 ---
 

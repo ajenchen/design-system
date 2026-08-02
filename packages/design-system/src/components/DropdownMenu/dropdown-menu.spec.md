@@ -19,7 +19,7 @@ benchmark:
 DropdownMenu 是按鈕觸發的**動作選單**——使用者從中選擇一個動作並立即執行。
 基於 Radix DropdownMenu（shadcn 包裝），item 佈局消費 MenuItem primitive。
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 1（Menu item layout）** 消費者。結構繼承 `patterns/element-anatomy/item-anatomy.spec.md`「Menu item layout」章節的 scanning-mode 規格。
+**Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 1（Menu item layout）** 消費者。結構繼承其「Menu item layout」章節的 scanning-mode 規格。
 
 ### 與 SelectMenu 的區別
 

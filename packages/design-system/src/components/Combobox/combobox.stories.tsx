@@ -1,4 +1,3 @@
-// @story-trait-rationale: D3 mechanical migration (size:N → meta.width) — preexisting Default/WithError trait gap unrelated to this edit; tracked separately
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithBulkActions
 // Combobox 為主元件;當 stories 內 wrap DataTable 演示 cell-context,baseline = DataTable WithBulkActions(per .claude/references/story-baseline-registry.json#DataTable)
 import React from 'react'
@@ -8,6 +7,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { Combobox } from './combobox'
 import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
+import { Field, FieldError, FieldLabel } from '@/design-system/components/Field/field'
 import '@/design-system/components/DataTable/column-types'
 
 const categoryOptions = [
@@ -30,7 +30,6 @@ const meta: Meta<typeof Combobox> = {
 export default meta
 type Story = StoryObj<typeof Combobox>
 
-// @story-trait-rationale: pre-existing trait gaps (Default/WithError) tracked separately; this PR scope = add view mode card to Modes story only.
 /* ── 四模式 ── */
 export const Modes: Story = {
   name: '四模式',
@@ -74,6 +73,29 @@ export const Modes: Story = {
   },
 }
 
+function ComboboxErrorExample() {
+  const [value, setValue] = React.useState<string[]>([])
+  return (
+    <Field required invalid={value.length === 0} className="max-w-sm">
+      <FieldLabel>商品類別</FieldLabel>
+      <Combobox
+        options={categoryOptions}
+        value={value}
+        onChange={setValue}
+        searchable
+        aria-label="商品類別"
+        placeholder="選擇至少一個類別"
+      />
+      {value.length === 0 && <FieldError>請至少選擇一個商品類別</FieldError>}
+    </Field>
+  )
+}
+
+export const WithError: Story = {
+  name: '驗證錯誤',
+  render: () => <ComboboxErrorExample />,
+}
+
 /* ── 尺寸與 Button 對齊 ── */
 export const SizeAlignment: Story = {
   name: '三種尺寸',
@@ -96,7 +118,7 @@ export const SizeAlignment: Story = {
   },
 }
 
-// @story-trait-rationale: 原 WrapModes(單行 vs 換行)retired 2026-07-17(Dim 24 earn-existence)—
+// @story-history: 原 WrapModes(單行 vs 換行)retired 2026-07-17(Dim 24 earn-existence)—
 //   單行/wrap × edit/readonly 矩陣已由 anatomy「狀態行為」(單行溢出 + readonly 溢出 + edit/readonly wrap)
 //   完整覆蓋機制,wrap 選擇原則由 principles「Wrap 模式選擇」(WrapRule)owns。展示層不重演矩陣(三層定位);
 //   principles 使用指引頁對應 LinkTo(單行 vs 換行)同步移除。

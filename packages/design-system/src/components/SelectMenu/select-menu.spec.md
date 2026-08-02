@@ -13,8 +13,6 @@ benchmark:
   - Ant Design DatePicker (value/defaultValue API): ant.design/components/date-picker
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # SelectMenu 設計原則
 
 ## 定位
@@ -34,7 +32,7 @@ SelectMenu 是 **Popover + Command 組成的完整下拉選單浮層**——提�
 **為什麼**:
 - 內部狀態複雜(search filter / range / menu open state)跟 `value` 雙向 sync 會產生 race condition
 - Consumer 幾乎一定有外部 state(form library / app state),強制 controlled 消除 ambiguity
-- 世界級對照:Ant Design DatePicker(`value`「To set date」+ `defaultValue`「To set default date」,ant.design/components/date-picker)/ Material MUI Select(`value` controlled + `defaultValue`「Use when the component is not controlled」,mui.com/material-ui/api/select/)/ Radix Select(「Can be controlled or uncontrolled」`value`+`defaultValue`,radix-ui.com/primitives/docs/components/select)皆支援 dual-mode;我們選 controlled-only 對齊狀態一致性優先 <!-- @benchmark-cited: 2026-05-30 WebFetch 三家 API 實證 value+defaultValue dual-mode(MUI Select API / Ant DatePicker API / Radix Select),URL inline -->
+- value 軸由外層選值元件持有；SelectMenu 不再建立第二份可漂移的 selection state，因此刻意不開 uncontrolled fallback
 
 **若未來 value 軸要改 dual-mode**:DS 已有 `useControllable` helper(open 軸與 Select 皆已消費),另需測試 controlled↔uncontrolled switch 場景,屬 major API 擴充。
 
@@ -76,7 +74,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 **定位**:SelectMenu 的 `sideOffset` 與 `align` 直接走 Popover canonical——`sideOffset=8` / `align` 跟隨 trigger 位置(見 `../Popover/popover.spec.md`「Align 對齊 canonical(跨浮層 SSOT)」)。SelectMenu 不自訂浮層定位規則。
 
-**視覺 vs 語意**(2026-04-20 精緻化):SelectMenu 的 **width 預設跟 trigger(input)同寬**(Radix trigger-width),此時 `start` / `end` 兩種 align 呈現視覺完全相同(popover 正好跟 input 貼合,左右邊緣對齊無差異)。但當 consumer 傳 `minWidth` 大於 input 寬度(例:長 option label 要空間展示)、或 option 內容撐開導致 popover 寬於 trigger,**align 的視覺差異立刻顯現**——此時嚴格照 structured overlay canonical(trigger 在左 → start / 右 → end)。(SelectMenu `align` prop 僅暴露 `'start' | 'end'`,不開放底層 Radix 的 `center`。) <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**視覺 vs 語意**(2026-04-20 精緻化):SelectMenu 的 **width 預設跟 trigger(input)同寬**(底層 trigger-width),此時 `start` / `end` 兩種 align 呈現視覺完全相同(popover 正好跟 input 貼合,左右邊緣對齊無差異)。但當 consumer 傳 `minWidth` 大於 input 寬度(例:長 option label 要空間展示)、或 option 內容撐開導致 popover 寬於 trigger,**align 的視覺差異立刻顯現**——此時嚴格照 structured overlay canonical(trigger 在左 → start / 右 → end)。(SelectMenu `align` prop 僅暴露 `'start' | 'end'`,不開放底層的 `center`。)
 
 換言之 SelectMenu **永遠照 canonical**,只是大多數情況 width=trigger-width 讓 canonical 視覺上被 mask,一旦 popover 突破 trigger 寬度 canonical 立刻生效。規則沒例外,只是呈現條件。
 
@@ -126,7 +124,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 - **Creatable 時**：即使搜尋無結果，仍顯示 create row 讓使用者補建選項（顯示條件見「Creatable」段）
 - **非 creatable**：顯示 emptyText 提示使用者修改搜尋詞
-- **SR 播報**（2026-07-05 D4）：empty / loading 空狀態同步經 visually-hidden `role="status"` + `aria-live="polite"` live region 播報（cmdk CommandEmpty 是 `role="presentation"`，SR 使用者原本聽不到 0 結果；對齊 `empty.spec.md`「動態 filter no-results 容器需 `aria-live="polite"`」+ react-select A11yText）。SSOT 在 SelectMenu 一處，Select / Combobox / PeoplePicker 全體受益。
+- **SR 播報**（2026-07-05 D4）：empty 結果經 visually-hidden `role="status"` + `aria-live="polite"` live region 播報（cmdk CommandEmpty 是 `role="presentation"`，SR 使用者原本聽不到 0 結果）；loading 則由畫面內具 `aria-label="載入選項中"` 的 `role="status"` wrapper 播報，避免雙重 announcement。SSOT 在 SelectMenu 一處，Select / Combobox / PeoplePicker 全體受益。
 
 ---
 
@@ -135,12 +133,12 @@ Popover（浮動容器，handle 展開 / 定位）
 非同步載入選項時，consumer 透過 `loading={true}` 控制：
 
 - **Trigger 不變**：dropdown 隨時可開（user 看 chevron 不會被 disable）
-- **Dropdown 開啟時**（2026-07-04 Q3 拍板措辭修訂）：spinner 只在**無可顯示選項時**佔 empty slot，渲 panel-center `<Empty icon={<CircularProgress size={48}/>} className="py-6"/>`（cmdk `CommandEmpty` 機制）；**已有 options 時保留顯示不清空**（MUI Autocomplete 官方「only if there are no suggestions to show」共識）
-- **CircularProgress 預設 24px**，但在 Empty wrapper 內 48px（取代 Empty 的 48px Avatar icon slot）
+- **Dropdown 開啟時**（2026-07-04 Q3 拍板措辭修訂）：spinner 只在**無可顯示選項時**佔 empty slot，渲 panel-center `<div role="status" aria-label="載入選項中" className="flex items-center justify-center py-6"><CircularProgress size={48}/></div>`（cmdk `CommandEmpty` 機制）；**已有 options 時保留顯示不清空**，避免背景更新期間抹掉仍可用的 stale results
+- **CircularProgress** 使用 48px;named status wrapper own `py-6` 與置中，不經 Empty，避免把「正在載入」誤表達成「確定沒有」及 phantom icon gap
 
-對齊 MUI Autocomplete loading dropdown-body + Ant Select loading idiom + DS `empty.spec.md`「禁止事項」段「loading 用 Empty + CircularProgress compose」SSOT（SelectMenu loading 用法 canonical row 見 `empty.spec.md`「現有消費者」表）。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+本行為對齊 DS `empty.spec.md`「禁止事項」spinner-only loading 不用 Empty 的 SSOT（SelectMenu loading 用法 canonical row 見 `empty.spec.md`「現有消費者」表）。
 
-**消費**：Select / Combobox forward `loading` prop 到 SelectMenu（PeoplePicker 尚未暴露 / 轉發 `loading`，見 `people-picker.spec.md`「邊界案例」），本元件不需 consumer 直接知道 Empty + CircularProgress 組合（封裝在內）。
+**消費**：Select / Combobox forward `loading` prop 到 SelectMenu（PeoplePicker 尚未暴露 / 轉發 `loading`，見 `people-picker.spec.md`「邊界案例」），本元件封裝 named status + CircularProgress 組合。
 
 ---
 
@@ -158,7 +156,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 - **Disabled option**:individual MenuItem 透過 `disabled?: boolean` 控制(SelectMenu primitive option contract)。視覺繼承 `MenuItem` SSOT:text → `text-fg-disabled`(M24)、無 hover bg、`aria-disabled="true"`、Enter / click 不觸發 onChange、鍵盤導覽自動 skip。
 - **Disabled trigger**:trigger 由 consumer(Select / Combobox / PeoplePicker)的 `disabled` prop own,本元件不獨立 disable trigger。
-- **Loading**:已 codify(見「Loading」段),`loading=true` 且無可顯示選項時 empty slot 渲 panel-center Empty + CircularProgress 48px(stale options 保留)。
+- **Loading**:已 codify(見「Loading」段),`loading=true` 且無可顯示選項時 empty slot 渲 panel-center named status + CircularProgress 48px(stale options 保留)。
 - **Empty**:已 codify(見「Empty state」段),搜尋無結果 + 非 creatable 時渲 emptyText;creatable 時保留 create row(可鍵盤選取)。
 - **Creatable + search 與既有選項完全同名**(忽略大小寫):create row 隱藏(防重複建立,`select-menu.tsx:261-266`);選取既有選項為唯一路徑。
 - **Dark mode**:走 Popover / MenuItem semantic token 自動 adapt。

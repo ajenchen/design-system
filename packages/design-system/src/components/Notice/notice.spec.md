@@ -22,8 +22,6 @@ benchmark:
   - Carbon Notification: github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/Notification
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # Notice 設計原則
 
 **Toast / Alert 共用的視覺佈局層**——跟 MenuItem 為 SelectMenu / DropdownMenu 共用是同一個架構概念。Notice 只負責 layout 和 icon 選擇，色彩由消費者透過 `data-theme` 控制。
@@ -34,9 +32,9 @@ Notice 是純視覺 primitive，不是獨立使用的元件。消費者：
 - **Toast**：浮動 + 自動消失（Sonner）
 - **Alert**：inline / fixed 持久通知
 
-**Layout Family**：CLAUDE.md 4-Family Model **Family 2（List item layout）** 消費者。結構繼承 `patterns/element-anatomy/item-anatomy.spec.md`「List item layout」章節的 reading-mode 規格。Notice 語意為 notification（非 row collection），但視覺排版遵循 Family 2 確保跨元件視覺一致。
+**Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 2（List item layout）** 消費者。結構繼承其「List item layout」章節的 reading-mode 規格。Notice 語意為 notification（非 row collection），但視覺排版遵循 Family 2 確保跨元件視覺一致。
 
-**尺寸偏離（documented exception）**：Notice / Alert / Toast **單一固定 size**——不實作 Family 2 baseline 的 sm/md/lg，padding 預設不隨 density 變（`px-4 py-3` 固定；唯一例外：Alert `placement="fixed"` 水平 px 改 density-aware，詳「Padding」段）。通知用單一 prominent size 強化「搶注意」的目的性，對齊世界級共識（Material Banner/Snackbar、Polaris Banner、Atlassian InlineMessage、GitHub Flash）。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**尺寸偏離（documented exception）**：Notice / Alert / Toast **單一固定 size**——不實作 Family 2 baseline 的 sm/md/lg，padding 預設不隨 density 變（`px-4 py-3` 固定；唯一例外：Alert `placement="fixed"` 水平 px 改 density-aware，詳「Padding」段）。通知是跨頁面密度的高顯著性語意，固定尺寸才不會因宿主密度變成另一種優先序。
 
 ## Typography
 
@@ -54,7 +52,7 @@ Notice 是純視覺 primitive，不是獨立使用的元件。消費者：
 
 | 屬性 | 值 | 理由 |
 |---|---|---|
-| px | `px-4`（16px） | 世界級系統共識（Atlassian/GitHub/Material/Linear 都是 16px） | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+| px | `px-4`（16px） | 與 Alert / Toast 通知家族的內容邊距一致 |
 | py | `py-3`（12px） | 介於 row（7px）和 section（16px）之間，通知的 sweet spot |
 | gap | `gap-2`（8px） | 跟 item-layout icon-text gap 一致 |
 

@@ -70,7 +70,7 @@ export const FilterPanel: Story = {
  */
 export const OpenSnapshot: Story = {
   name: '開啟狀態',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => (
     <Popover defaultOpen>
       <PopoverTrigger asChild>

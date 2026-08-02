@@ -2,7 +2,7 @@
 
 # Color 設計原則
 
-> **Foundational SSOT rationale**(2026-04-24 approved,cap 1000 — 2026-05-22 raised 800→1000 per /knowledge-prune deep audit + CLAUDE.md「foundational SSOT 例外 ≤ 800-1200」range):
+> **Foundational SSOT rationale**(2026-04-24 approved,cap 1000 — 2026-05-22 raised 800→1000 per /knowledge-prune deep audit + `AGENTS.md`「行數預算」的 foundational SSOT 例外 ≤ 800-1200 range):
 > Token 系統 SSOT,涵蓋 primitive / semantic 兩層色彩架構、disabled 兩策略、Hover/Active 公式推導、新增語意色相 4-step 流程、neutral interaction 雙 family、nested theme。跨 30+ 元件消費,改一 token 影響全 DS。218 行語義色定義是純 token structural canonical 無法 reference out;不可拆不失原則。
 
 ## 架構流派定位

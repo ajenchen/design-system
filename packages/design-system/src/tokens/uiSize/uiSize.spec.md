@@ -201,7 +201,7 @@ Tailwind：`h-tab-sm` / `h-tab-md` / `h-tab-lg`。
 
 ## Chrome Header Height
 
-應用程式 chrome 區域(Sidebar header、app top bar、主內容 page header)的高度。**定義在 DS package `packages/design-system/src/tokens/uiSize/uiSize.css`**(2026-05-23 per Phase A Decision 1 從 consumer-app `src/globals.css` 搬入,user verbatim「決策一照你建議」— 為了 npm-package install 後 consumer 不需自設 token,符 M17 SSOT 鐵律)。雖然它是**跨佈局層級**的 token(跨多元件而非單一 component scope),DS package 自包避免 consumer 漏設造成 header 高度崩潰。
+應用程式 chrome 區域(Sidebar header、app top bar、主內容 page header)共用的高度語義。Authority 定義在 DS package `packages/design-system/src/tokens/uiSize/uiSize.css`，確保 package consumer 不需重複宣告。這是跨佈局層級 token；本節擁有其語意與 consumer 清單，source 擁有確切宣告。
 
 **Cross-family canonical SSOT pointer**:chrome + overlay 兩 header 家族的完整視覺契約(border / padding / withTabs lockstep / size 對應 / Token equality enforcement)詳 `patterns/header-canonical/header-canonical.spec.md`。本節僅 codify token 本身定義 + consumer 清單。
 
@@ -317,7 +317,7 @@ Overlay family 套 v5 `data-unbounded` slot trick(Button unbounded → SurfaceHe
 #### 選錯的後果(驗證 decision tree 的重要性)
 
 - **Fixed-height 套到能 grow 的 chrome**(e.g. 把 Dialog 改 fixed-h 48):DialogDescription 被剪切 → 違反 modal 作為完整決策 context 的職責
-- **Padding-based 套到剛性 chrome**(e.g. 把 Sidebar header 改 padding-based):長 workspace 名稱時 chrome 跳動 → 違反 sidebar 剛性佈局職責
+- **Padding-based 套到剛性 chrome**(e.g. 把 Sidebar header 改 padding-based):高度會變成內容驅動，違反 sidebar 的固定 chrome contract
 - **overlay 用 xs dismiss(size 而非 layout-slot trick)**:touch target 變 24 違反 a11y,且 dismiss 按鈕尺寸與 overlay chrome 比例不協調 — v5 trick 同時保視覺 + a11y + 幾何
 
 ---

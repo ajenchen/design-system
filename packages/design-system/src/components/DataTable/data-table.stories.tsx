@@ -141,7 +141,7 @@ const meta: Meta<typeof DataTable> = {
   parameters: {
     docs: {
       description: {
-        component: '基於 TanStack Table 的資料表格，支援虛擬捲動、排序、多種尺寸。',
+        component: '用於對齊掃視多筆同結構資料，並在需要時加上排序、篩選、選取或列內編輯。單一實體的唯讀屬性改用 DescriptionList，深層階層改用 TreeView，少量圖文資料則用自訂 list / grid。',
       },
     },
   },
@@ -873,7 +873,7 @@ export const NestedRows: Story = {
 
 export const NestedRowsExpanderHoverState: Story = {
   name: '巢狀列展開鈕：滑鼠移過狀態',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => {
     const [expanded, setExpanded] = React.useState<Record<string, boolean>>({})
     return (
@@ -2232,7 +2232,7 @@ export const RoadmapAllInOne: Story = {
 export const RoadmapPerfBudget: Story = {
   name: '效能預算量測',
   parameters: { layout: 'fullscreen' },
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => {
     const bigData = React.useMemo(() => {
       const arr: RoadmapItem[] = []

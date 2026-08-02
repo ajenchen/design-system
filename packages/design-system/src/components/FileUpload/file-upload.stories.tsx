@@ -1,4 +1,4 @@
-// @story-trait-rationale: hasInteractiveStates 的 Disabled / States 由 anatomy.stories.tsx StateBehavior auto-compile owns(2026-05-15 F-migration);showcase 層展示真實上傳 / 自訂內容情境。
+// @story-history: hasInteractiveStates 的 Disabled / States 由 anatomy.stories.tsx StateBehavior auto-compile owns(2026-05-15 F-migration);showcase 層展示真實上傳 / 自訂內容情境。
 import type { Meta } from '@storybook/react'
 import { expect, userEvent, within } from '@storybook/test'
 import { useState } from 'react'
@@ -130,7 +130,7 @@ export const WithFileList = {
 // FileUpload 內建 files 清單自己渲染 remove Button,story 不以 className 模擬 hover。
 export const RemoveHoverState = {
   name: '移除檔案懸停狀態',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => (
     <div className="max-w-lg">
       <FileUpload

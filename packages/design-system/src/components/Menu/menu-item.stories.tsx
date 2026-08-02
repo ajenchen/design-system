@@ -56,7 +56,7 @@ export const Default: Story = {
   ),
 }
 
-// @story-trait-rationale: WithStartIcon retired 2026-05-17 per audit Dim 24/25 strict re-run —
+// @story-history: WithStartIcon retired 2026-05-17 per audit Dim 24/25 strict re-run —
 //   違 story-rules.md L42 explicit ban「❌ WithStartIcon+WithEndIcon → ✓ WithIcon grid」。
 //   anatomy.stories.tsx Overview/Inspector/ColorMatrix/SizeMatrix(L218/276/395/572)已 cover startIcon。
 //   WithDescription(下)教 icon+description block layout 是 distinct teaching,保留。
@@ -205,7 +205,7 @@ export const Creatable: Story = {
   ),
 }
 
-// @story-trait-rationale: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。
+// @story-history: AllSizes retired per F migration 2026-05-15 — anatomy.stories.tsx SizeMatrix auto-compile owns size showcase。
 // ── 完整範例 ──
 
 const FullExampleDemo = () => {

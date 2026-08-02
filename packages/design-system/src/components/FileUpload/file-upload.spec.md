@@ -16,7 +16,6 @@ benchmark:
   - Polaris DropZone: github.com/Shopify/polaris/tree/main/polaris-react/src/components/DropZone
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # FileUpload 設計原則
 
@@ -24,7 +23,7 @@ benchmark:
 
 FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點擊觸發檔案選取浮窗。核心職責是「上傳觸發 + 拖放偵測」;它**不 own 單筆檔案列的視覺規格**(狀態圖示 / 縮圖 / 進度條 / 列排版屬 `FileItem` 的 SSOT),但**可 orchestrate 內建清單**——透過 `files` prop 內部組合 `FileItem` 渲染已上傳清單(dual-path,見「Props 行為」與「禁止事項」);consumer 自組 `FileItem` 清單亦合法。
 
-**實作基礎**:自建 — native HTML5 `<input type="file">` + drag-and-drop event(dragenter/dragover/dragleave/drop)+ DOM-level state 切換。無 external primitive,因為 Radix 沒 File Upload 對應 primitive,其他 UI kit 的 file upload 多數也是自建這層。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**實作基礎**:自建 — native HTML5 `<input type="file">` + drag-and-drop event(dragenter/dragover/dragleave/drop)+ DOM-level state 切換。選擇 native input 是為了保留檔案選取語意與瀏覽器安全邊界；drag state 只增補同一 input contract。
 
 **Layout Family**:非上述 family — self-contained primitive(獨立拖放區視覺,無 slot 結構)。
 
@@ -70,7 +69,7 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 - **disabled** = 永久 / 條件性不可用,變灰 + cursor-not-allowed;user 知道「現在不能用」
 - 混用會破壞語意 — `loading=true` 時不要同時 `disabled=true`
 
-**為什麼用 dashed border**:世界級 dropzone 的共識(Ant / Polaris / GitHub drag-drop 都如此)——dashed 暗示「暫時、可放下」,solid border 暗示「永久邊界」。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**為什麼用 dashed border**:dashed 表示「可放下的暫時目標」，與永久容器使用的 solid boundary 區分；drag-active 再用 state token 提升可放置訊號。
 
 ---
 
@@ -121,7 +120,7 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 - ❌ **不在 FileUpload 裡自己重刻 FileItem primitives**(自畫 status icon / thumbnail / progress bar / row layout):那些是 `FileItem` 的 SSOT;FileUpload 若內建 list,**必 consume 既有 `<FileItem>`,不 replicate**
   - 2026-04-24 canonical 明確化:DS 提供 dual path — (a) FileUpload own via `files` prop composing FileItem(見「Props 行為」`files`)(b) consumer 自組 `{files.map(f => <FileItem ... />)}` 仍合法（2026-06-03 修:原引用「Post-upload file list」節為 phantom — 該節從未寫出,只剩 dangling reference）
   - 禁止的是「自己重畫 FileItem 視覺規格」(status 色 / thumbnail ratio / progress bar 等),不是「內建 list」本身
-  - 世界級對照:Material / Ant / Carbon 皆 FileUpload own list,用自家 FileItem primitive composing;本 DS 採相同 pattern(2026-04-24) <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+  - FileUpload 擁有 upload lifecycle，row anatomy 則直接組合既有 FileItem primitive，避免平行維護第二套 file row
 - ❌ **不用 FileUpload 做非檔案觸發**(例:「點擊開啟浮層」——那是 Popover / Dialog)
 - ❌ **不移除 dashed border**(改 solid 會與「持久邊界」的視覺語意衝突,使用者直覺失靈)
 - ❌ **不把 multiple+bulk 當 default**:單檔是 80% 的場景(大頭照、單張附件),預設 `multiple=false` 讓使用者少一步判斷
@@ -157,8 +156,7 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 - `../FileItem/file-item.spec.md` — 已上傳檔案的 list row 渲染(配對元件)
 - `../Empty/empty.spec.md` — 本元件預設 children 消費,「icon + title + description」SSOT
 - `../Button/button.spec.md` — `variant="button"` 消費的觸發元件(見「兩種觸發外觀」)
-- Ant Design `Upload.Dragger` 原始參考 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
-- Polaris `DropZone` 原始參考 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- 本 spec 的 Anatomy / 狀態表與 `file-upload.tsx` — canonical authority
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

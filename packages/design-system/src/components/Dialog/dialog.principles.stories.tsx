@@ -177,76 +177,24 @@ export const HeightBehaviorRule: Story = {
   render: () => (
     <div>
       <Rule
-        title="預設（填滿 viewport）— 內容量動態可能變化"
-        note="`height = 100vh - inset*2`，body 區捲動。防止動態內容（非同步載入、展開 section）造成 dialog 跳動。適合內容不確定大小的場景"
+        title="內容會載入、展開或變化：使用預設高度"
+        note="預先穩定 dialog 的可用高度，讓 body 獨立捲動，可避免異步資料或展開區塊使整個浮層上下跳動。設定面板、動態清單與未知長度的內容應保留預設值。"
       >
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="tertiary">預設高度（填滿）</Button>
-          </DialogTrigger>
-          <DialogContent maxWidth={520}>
-            <DialogHeader>
-              <DialogTitle>設定</DialogTitle>
-            </DialogHeader>
-            <DialogBody>
-              <div className="space-y-4">
-                {[
-                  '桌面通知音效',
-                  '頻道訊息通知',
-                  '直接訊息通知',
-                  '@提及推播',
-                  '@頻道全員推播',
-                  '執行緒回覆通知',
-                  '關鍵字監控',
-                  '行動裝置推播',
-                  '推播延遲(秒)',
-                  '推播閒置觸發',
-                  '訊息預覽顯示',
-                  '勿擾時段開始',
-                  '勿擾時段結束',
-                  '週末勿擾',
-                  '假日勿擾',
-                  'Email 摘要頻率',
-                  'Email 摘要時段',
-                  '未讀提醒週期',
-                  '靜音指定頻道',
-                  '通知摘要訂閱',
-                ].map((label, i) => (
-                  <Input key={i} placeholder={label} />
-                ))}
-              </div>
-            </DialogBody>
-            <DialogFooter>
-              <Button variant="tertiary">取消</Button>
-              <Button variant="primary">儲存</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        <Label>↑ 填滿 viewport + body 捲動，穩定不跳動</Label>
+        <Label>判斷關鍵是「開啟後內容高度還會不會變」，不是當下看起來有幾行。</Label>
       </Rule>
 
       <Rule
-        title="autoHeight — 內容量已知且穩定"
-        note="高度隨內容，超過 viewport 時才套 max-height。適合確認框、短表單、訊息提示——避免短內容撐滿整個螢幕的尷尬視覺"
+        title="內容已知且穩定：使用 autoHeight"
+        note="確認框、短表單與固定文案可讓浮層貼合內容，避免少量資訊佔滿視窗。若未來會加入異步 section，應回到預設高度，不要為當前快照選 autoHeight。"
       >
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="tertiary">autoHeight（短內容）</Button>
-          </DialogTrigger>
-          <DialogContent autoHeight maxWidth={440}>
-            <DialogHeader>
-              <DialogTitle>確認操作</DialogTitle>
-            </DialogHeader>
-            <DialogBody>
-              <p className="text-body">您確定要繼續嗎？此動作會影響所有訂閱使用者。</p>
-            </DialogBody>
-            <DialogFooter>
-              <Button variant="tertiary">取消</Button>
-              <Button variant="primary">繼續</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        <Label>↑ 只有一句話 + 兩顆按鈕，autoHeight 讓 dialog 剛好貼合內容</Label>
+        <Label>「刪除專案？」這類單一決策適合 autoHeight；會增減區塊的設定流程不適合。</Label>
+      </Rule>
+
+      <Rule
+        title="內容長度不只是高度問題"
+        note="超過三步、需長時間停留，或使用者必須同時參照背景頁面的流程，應改用獨立頁面或 Sheet。Dialog 的 modal 阻斷成本不會因為可捲動就消失。"
+      >
+        <Label>高度 mode 只解決佈局穩定性；工作流載體仍要先在 Dialog、Sheet 與獨立頁面之間做選擇。</Label>
       </Rule>
     </div>
   ),

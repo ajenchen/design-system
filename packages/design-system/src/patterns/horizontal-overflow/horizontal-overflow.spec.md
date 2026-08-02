@@ -91,7 +91,7 @@ scope: utility primitives module (use-overflow-items hooks: useScrollEdges + use
 
 ### 為什麼不做成封閉的 `<HorizontalOverflowContainer>`?
 
-- Tabs 的 underline border owner 在 **list 內部**(`TABS_LIST_BASE` 套 `border-b border-divider`),outer 不畫;Chip 的 pill border(`rounded-full border border-border`)屬於**個別 chip item**(`chipVariants`,chip.tsx:50),overflow 容器 outer 本身是 chromeless 的 `relative`(scroll 模式,chip.tsx:170)/ `flex items-center gap-2`(menu 模式,chip.tsx:295)wrapper,既無 pill border 也不需 outer `border-b`——讓 fade mask + scroll arrow 在透明 outer 上運作。Owner 升 list 是 2026-05-19 fix:outer `border-b` + inner `overflow-x-auto` → browser y auto-promote(CSS overflow-3 spec:一軸 auto 時另軸 visible compute auto)→ active underline `after:bottom:-1px` 1px clip + 1px 垂直可捲 bug
+- Tabs 的 separator owner 是 **list**，Chip 的 boundary owner 是**各 item**；兩者的 outer container 都只負責 overflow orchestration。責任歸屬不同，不能藏進同一個封閉 container prop。確切 utility、DOM 結構與歷史瀏覽器修復由 `tabs.tsx` / `chip.tsx` source comments 與 regression checks 擁有。
 - Tabs 用 `TabsPrimitive.List` 作為 inner list;Chip 用 `ToggleGroupPrimitive.Root`
 - Tabs 用 `DropdownMenuItem + selected`(單選);Chip 用 `DropdownMenuCheckboxItem`(多選)
 - Tabs 有 `gap-[var(--layout-space-loose)]`;Chip 有 `gap-2`
@@ -131,7 +131,7 @@ return (
 )
 ```
 
-> **Why `overflow-y-hidden`(2026-05-19 codify)**:CSS overflow-3 spec 強制「一軸 auto/scroll/hidden 時另軸 visible compute auto」。`overflow-x-auto` 單獨設 + active underline `after:bottom:-1px` 落在 box 外 → y auto-promote → 1px 垂直可捲 + underline 初始 1px clip bug。明示 `overflow-y-hidden` 阻 promote。對齊 Primer UnderlineNav `overflow-x:auto; overflow-y:hidden` 公開實作。
+> **雙軸 overflow contract(2026-05-19 codify)**:啟用水平捲動時必同時抑制垂直捲動，避免 CSS overflow 軸計算讓 active indicator 進入非預期的垂直 scroll range。確切 utility 由各 consumer source 擁有；Primer UnderlineNav 採同一雙軸約束。
 
 ### 典型 menu 模式組裝
 

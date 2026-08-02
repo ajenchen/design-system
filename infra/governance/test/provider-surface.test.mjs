@@ -381,6 +381,7 @@ test('cloud post-create paths preserve authority and product-consumer role bound
 
   const productConfig = readJson(resolve(REPO_ROOT, 'template/ds-product-template/.devcontainer/devcontainer.json'))
   const productManifest = readJson(resolve(REPO_ROOT, 'template/ds-product-template/package.json'))
+  assert.equal(productConfig.name, 'Design System Consumer')
   assert.deepEqual(productConfig.postCreateCommand, ['node', '.devcontainer/post-create.mjs'])
   const productWrapper = readFileSync(resolve(REPO_ROOT, 'template/ds-product-template/.devcontainer/post-create.mjs'), 'utf8')
   assert.match(productWrapper, /from '\.\.\/scripts\/lib\/workspace-post-create\.mjs'/)

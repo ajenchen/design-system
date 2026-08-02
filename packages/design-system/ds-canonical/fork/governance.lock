@@ -7,7 +7,7 @@
     {
       "schemaVersion": 1,
       "file": "AGENTS.md",
-      "sha256": "3d40f4b5d3ea78f6c9ca5bd18daa531dc758d77df21a5e7ef35a3336cd71f906",
+      "sha256": "a37c1317a52acce74ef605e3247878383bb4f99deecb98af0167d98d7cbbbe9c",
       "source": "common instruction compatibility alias",
       "classification": null,
       "destination": null
@@ -255,7 +255,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "697d186cfe0882ee2ce1b02ecc4c3258ab42b125bab6d70c7be868fa271132f7",
+      "sha256": "cafed99be010eed1ff80459022348f8eb96f01fb3e8eadb4cb1dc10ed7d7d3e0",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -271,7 +271,7 @@
     {
       "schemaVersion": 1,
       "file": "common/instruction.md",
-      "sha256": "3d40f4b5d3ea78f6c9ca5bd18daa531dc758d77df21a5e7ef35a3336cd71f906",
+      "sha256": "a37c1317a52acce74ef605e3247878383bb4f99deecb98af0167d98d7cbbbe9c",
       "source": "scripts/fork-role-sources/AGENTS.product.md + AGENTS.md#canonical-decision-authority",
       "classification": null,
       "destination": null
@@ -295,7 +295,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/0235cf6b3fd402a3717881dc205b5bf77aed7632e7d7d6f1811a40e3033bd816.blob",
-      "sha256": "e2da0a86241d8d019545b63e6285d2ca049ce95fe6aed4264149df2108c4ade0",
+      "sha256": "fcd6e3c8293899857ce1b48c8dd07c507060533600821e55bf547ac3e1e980d5",
       "source": "scripts/schemas/upgrade-evidence-receipt.schema.json",
       "classification": null,
       "destination": "scripts/schemas/upgrade-evidence-receipt.schema.json"
@@ -319,7 +319,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/24ad71c8613ddcf6fd23818cb3bb477a1fb6d83af4550b0bad43099813088686.blob",
-      "sha256": "1668412229466b1e5092218606817711c46c5307b7fc7b77abf6fff089b9b4c7",
+      "sha256": "79ebd4ccf0f1207a7ce1f31e51c40b052feeb1b8d51467d7e4e171410c70db24",
       "source": "template/ds-product-template/.devcontainer/devcontainer.json",
       "classification": null,
       "destination": ".devcontainer/devcontainer.json"
@@ -359,7 +359,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
-      "sha256": "0b3c22a322174b179a2f499b0c08bbda996f90fac9be29a074bd5b1ae3435ffe",
+      "sha256": "c80d842482a3c2c16ba0d8802e1418e2560f68edcd56fe0b3125a7f6e1c9d4ec",
       "source": "scripts/lib/governance-dependency-bootstrap.mjs",
       "classification": null,
       "destination": "scripts/lib/governance-dependency-bootstrap.mjs"
@@ -371,6 +371,14 @@
       "source": "scripts/setup-workspace.mjs",
       "classification": null,
       "destination": "scripts/setup-workspace.mjs"
+    },
+    {
+      "schemaVersion": 1,
+      "file": "consumer/managed-files/5aeda1df235815f40dd755951f2b868d4e02035653d4536a8dde209cdc75b493.blob",
+      "sha256": "3c9453e5228d7eaf1bfef3350585746e1aff1475411cb7cf8696bf9acdb048cf",
+      "source": "scripts/lib/exact-workspace-dependencies.mjs",
+      "classification": null,
+      "destination": "scripts/lib/exact-workspace-dependencies.mjs"
     },
     {
       "schemaVersion": 1,
@@ -430,6 +438,14 @@
     },
     {
       "schemaVersion": 1,
+      "file": "consumer/managed-files/7ab15a8aeca39485d7b9b57234bbc4a69e0b9e70b4a851dfe10f6447127cee78.blob",
+      "sha256": "29ce6aaab16fd7a939eff6e556e8548291fad28df88d578627153c9508bf6e31",
+      "source": "scripts/sync-exact-workspace-dependencies.mjs",
+      "classification": null,
+      "destination": "scripts/sync-exact-workspace-dependencies.mjs"
+    },
+    {
+      "schemaVersion": 1,
       "file": "consumer/managed-files/7b17835d0ceb17cdcdcaf930540a3e5d0943a34a747ac43c12ca8cd485c11581.blob",
       "sha256": "29eb02c844515e6e94a063503c4682e8a1a87a3976b26067e725e5491cc6bc45",
       "source": "infra/governance/schemas/visual-baseline-review-policy.schema.json",
@@ -439,7 +455,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/7eb6cc60abfdabaf6617c336058fad1454ccde08889295767bfd9b7fd153cc6e.blob",
-      "sha256": "50f54769a7a32fdc5b97036410018bed87808c2dbdffc47cc292967e5de3da8f",
+      "sha256": "935a669b33d5da4e15166c68f8996060d5e609a317dd68198044f830edc2a76c",
       "source": "scripts/lib/verified-exact-npm-runtime.mjs",
       "classification": null,
       "destination": "scripts/lib/verified-exact-npm-runtime.mjs"
@@ -455,7 +471,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/884721550b56308812b20917adac7a12f36fdb4ecda6b02460a7f5a219c0c966.blob",
-      "sha256": "bc58561386e0df62306a5d7246e51647847732efa3de84426bada9978ff6da5c",
+      "sha256": "4545d0dac5d869c58ec26f37ff6ed70a255f61f9cf406efd41e99a9aeaa885b2",
       "source": "packages/design-system/ds-canonical/templates/consumer-governance.md",
       "classification": null,
       "destination": "governance/consumer-governance.md"
@@ -575,7 +591,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/e71c65f45c6af7ce12b6b3c0d8028f185da5b719e2050c9b2a6b243d41ae4878.blob",
-      "sha256": "a2ca30c164ef55277cc783a79450eb1bff203b936acbfad3bc94a8c644cfd173",
+      "sha256": "f3ed24be76d87ffbcaed08f39491d385a14f0e870a5b952e3407ba0ef0cd4e08",
       "source": "scripts/audit-consumer-a11y.mjs",
       "classification": null,
       "destination": "scripts/audit-consumer-a11y.mjs"
@@ -647,7 +663,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "ed10949aa7cd907585adf2ffb03379b416f82b0325b0b608d31b9bd22fec1045",
+      "sha256": "b9205c06d6f3ab5ab1ce46a62bfbaedda02c62cd474bcb5f9931bbb54acae985",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -679,7 +695,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_escape_marker_abuse.sh",
-      "sha256": "836b252a2671402edb1fb775a7c5166a66945497bf26721547ea4c0c91a9cf77",
+      "sha256": "1307a70e7ff776a6f100e173d93f6b2b8b58cc535c15688c08afa61ad1bc5651",
       "source": "check_escape_marker_abuse.sh",
       "classification": "SHIP_REWRITTEN",
       "destination": null
@@ -895,7 +911,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "41e4883c64d7e0676c49e2dc0cbeed2c85ab25e7d3574344d6cd5af4b8e79cfe",
+      "sha256": "7bf621f0fc438620b5c1cc3cb7a48b9f1bee6df14916ef2a00ad5163f66be982",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -903,7 +919,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "d92cc77eb725aadb92add11e63cc3e366886949f0535825a97e60d1571998a66",
+      "sha256": "ab530bcbfcc6c48bf4b6d3e12f343184c64b898cbf89f3c00ecb92fbf40f1ba6",
       "source": null,
       "classification": null,
       "destination": null
@@ -1159,7 +1175,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "697d186cfe0882ee2ce1b02ecc4c3258ab42b125bab6d70c7be868fa271132f7",
+      "sha256": "cafed99be010eed1ff80459022348f8eb96f01fb3e8eadb4cb1dc10ed7d7d3e0",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null

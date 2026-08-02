@@ -1,5 +1,6 @@
-// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
+// @anatomy-rationale:
 //   SizeMatrix N/A — 無 size 軸(按鈕固定 size="sm",chrome 級導覽不隨密度縮放;詳 pagination.spec.md「SizeMatrix N/A rationale」)
+// @anatomy-exempt: anatomy specs / token 對照表格用 raw <table>,非業務資料表。業務資料表才用 <DataTable>。
 import React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Pagination } from './pagination'
@@ -40,7 +41,7 @@ export const Overview: Story = {
 }
 
 export const Inspector: InspectorStory = {
-  name: '互動檢視',
+  name: '元件檢閱器',
   args: { page: 5, total: 240 },
   argTypes: {
     page: { control: { type: 'number', min: 1, max: 500 } },
@@ -55,7 +56,7 @@ export const Inspector: InspectorStory = {
 }
 
 export const ColorMatrix: Story = {
-  name: '色彩對照',
+  name: '色彩對照表',
   render: () => (
     <div className="flex flex-col gap-6">
       <Desc>
@@ -123,7 +124,7 @@ export const StateBehavior: Story = {
 }
 
 export const Accessibility: Story = {
-  name: '無障礙',
+  name: '無障礙與鍵盤',
   render: () => (
     <div className="flex flex-col gap-4 max-w-[720px]">
       <H3>A11y 預設</H3>

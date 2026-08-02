@@ -20,8 +20,6 @@ benchmark:
   - Polaris RadioButton: github.com/Shopify/polaris/tree/main/polaris-react/src/components/RadioButton
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # RadioGroup 設計原則
 
 ## 定位
@@ -76,7 +74,7 @@ RadioGroup 是**互斥單選且全選項可見**的表單控件——從 2-5 個
 
 - **現況**:控件 sm=16 / md=16 / lg=20px(不等於 `--field-height-sm/md/lg` = 28/32/36px)
 - **Rationale**:Radio 與 Checkbox 視覺語言共用(只是形狀 round vs square),rationale 完全繼承 Checkbox——控件是選擇指示器(indicator)不是容器,走 icon tier(16/16/20),行高對齊透過 SelectionItem 的 `py = (field-height - 1lh) / 2` 保證
-- **世界級對照**:Material 3 Radio = 20px / Ant Design Radio = 16px / Polaris RadioButton = 16px——全部獨立於 field-height,與 Checkbox 控件尺寸對齊 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- Radio 指示器尺寸獨立於 field-height，並與本 DS Checkbox 的選取控件量體對齊；Field 尺寸只影響列高與周邊間距。
 
 ---
 

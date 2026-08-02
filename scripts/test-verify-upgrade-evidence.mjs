@@ -61,7 +61,7 @@ const provenance = {
     { name: '@qijenchen/storybook-config', version, integrity: `sha512-${Buffer.alloc(64, 2).toString('base64')}` },
   ],
 }
-const toolchain = { node: 'v22.22.0', npm: '11.18.0' }
+const toolchain = { node: 'v22.22.0', npm: '11.19.0' }
 
 const authority = {
   schemaVersion: 1,

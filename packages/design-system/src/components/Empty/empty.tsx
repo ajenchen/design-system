@@ -8,7 +8,7 @@ import { useRowSize } from '@/design-system/patterns/element-anatomy/item-anatom
  * Empty — 空狀態視覺元件
  *
  * 居中垂直堆疊:icon(Avatar) → title → description → action。
- * 所有 slot 皆可選,預設只需 description。
+ * description 必填；icon / title / action 可選。
  *
  * 間距固定,不隨 density 變（Empty 是展示性元件,不是工作區域元件）:
  *   icon → text = mb-4（16px）
@@ -25,8 +25,8 @@ export interface EmptyProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: LucideIcon | React.ReactElement
   /** 標題(可選,font-medium,適用於首次引導) */
   title?: string
-  /** 說明文字 */
-  description?: string
+  /** 必填的情境說明；不得用空字串代替載入中或其他狀態。 */
+  description: string
   /** 行動按鈕(可選) */
   action?: React.ReactNode
   /**

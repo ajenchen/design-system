@@ -6,7 +6,7 @@
  * Per user 2026-05-27 verbatim「確保跟 ds repo 一模一樣」+「全盤避免 minimal mock 抹平」+ M31 codex synthesis.
  *
  * 規則(SSOT):
- *   1. DS owns per-component canonical pixels — 62/62 components 三層 stories(展示/設計規格/設計原則)在 DS Storybook
+ *   1. DS owns per-component canonical pixels — 全部 manifest-discovered public components 的三層 stories(展示/設計規格/設計原則)在 DS Storybook
  *   2. PW(consumer template)只 owns 真實業務 composition demos(AppShell Dashboard 等)
  *   3. 想看「所有 DS 元件」default render → link 連 DS deployed Storybook(2026-06-03 移除壞掉+冗餘的 iframe 嵌入:在合併部署裡 iframe 等於把同一 Storybook 嵌進自己 → X-Frame-Options SAMEORIGIN 下渲染失敗,且連結指標 Import Smoke 已有一份)
  *   4. **禁** PW 重寫 `<DS.X minimal props>` — 必 drift(2026-05-27 5+ bug 錨例:CircularProgress size=32 / RadioGroup raw item 沒 SelectionItem / DataTable one-col / LinkInput placeholder mock / Empty 缺 icon)
@@ -36,6 +36,7 @@ type Story = StoryObj
 
 export const ImportSmoke: Story = {
   name: 'DS 公開 API import smoke',
+  tags: ['test-only'],
   render: () => (
     // @layout-space-magic-ok: portal 入口 dev artifact(import smoke + export dump)debug 外框,非 consumer 產品 layout,不適用 layoutSpace 親疏 token
     <div className="p-6 space-y-4" data-testid="all-ds-import-smoke">

@@ -14,13 +14,29 @@ files from names alone:
 2. generated provider or release projection;
 3. fixture/baseline;
 4. archive/evidence;
-5. future-reserved asset with a concrete owning home or manifest;
+5. future-reserved asset with a policy declaration that names all four required fields: owner,
+   concrete purpose, activation condition, and review/expiry lifecycle;
 6. transient junk.
 
 Only class 6 is automatically removable. Classes 2-5 are not redundancy. A zero-reference grep
 is evidence, not deletion authority:dynamic entrypoints, package exports, workflow paths,
 fixtures, templates, compatibility projections, and explicitly future-planned consumers must be
 checked first.
+
+"Future use" by itself is not a classification. A class-5 exemption exists only when
+`repository-hygiene-policy.json` binds the exact path prefix to:
+
+1. an existing repository-relative canonical owner;
+2. a concrete retained purpose (not "maybe useful", `TBD`, or a generic parking area);
+3. a concrete activation condition that names the evidence/authority which would turn the asset
+   into active work; and
+4. a machine-checkable `review-by` or `expire-on` date plus the fail-closed lapse action
+   `reclassify-or-remove`.
+
+Missing any field means the asset cannot use the future-reserved exemption and must be classified
+by its current role. Passing the four-field contract is necessary, not permission to keep unrelated
+temporary/editor junk. On the lifecycle date the invariant fails until the declaration is reviewed,
+renewed with evidence, activated, or removed.
 
 ## Mechanical core
 
@@ -33,16 +49,19 @@ enforces:
 - every tracked symlink and target is declared;
 - exact-content duplicates outside generated/fixture/baseline/archive homes are rejected unless
   a narrow path-set exception has a reason.
+- every future-reserved prefix satisfies the four-field contract, has a present canonical owner,
+  and has not crossed its review/expiry date.
 
 Exceptions must be path-bound and explain the retained role. Blanket filename or directory
-exceptions are forbidden.
+exceptions are forbidden. Future-reserved declarations are narrow classification exemptions, not
+an alternate archive or backlog; an undeclared or incomplete "future use" claim fails closed.
 
 ## Judgment layer
 
 After the mechanical gate, inspect ambiguous files and homes against package exports, npm scripts,
 workflow references, story globs, test discovery, ownership manifests, and `rg` references. Prefer
 moving a valid file into its owning home over deleting it. Remove only high-confidence junk;
-preserve future-use material when its purpose is concrete.
+preserve future-use material only when the four-field declaration is complete and current.
 
 Ignored local caches/builds (`node_modules`, `dist`, `storybook-static`, reference media) are not
 Git repository content. Report their size separately when local disk hygiene is in scope, but do

@@ -523,7 +523,7 @@ export const WithTabsInHeader = {
  */
 export const OpenSnapshot = {
   name: '開啟狀態',
-  tags: ['!autodocs'],
+  tags: ['test-only'],
   render: () => (
     <Dialog defaultOpen>
       <DialogTrigger asChild>

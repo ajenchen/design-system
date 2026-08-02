@@ -29,8 +29,6 @@ benchmark:
   - Carbon ContentSwitcher: github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/ContentSwitcher
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
-
 # SegmentedControl 設計原則
 
 ## 定位
@@ -39,7 +37,7 @@ SegmentedControl 是**互斥多選一的 compact control**——從 2–5 個選
 
 **SegmentedControl 的選值可以驅動下方內容變化**——這是正當用法，不要誤以為它只能當表單輸入（「切 value 不能切 view」是錯的二分法）。
 
-**Layout Family**：每個 SegmentedControlItem 是 CLAUDE.md 4-Family Model **Family 3（Pill Layout）action trigger sub-profile** 的消費者——內部結構 `[startIcon?] [<span px-1>label</span>] [suffix]` 繼承 Button canonical。SSOT 在 `components/Button/button.spec.md`「Pill Layout」章節。SegmentedControl 外層容器的「分段連體」（`-ml-px` border 重疊、首尾 `rounded-l-md/rounded-r-md`）是本元件特有視覺規格，非 Family 3 共用。
+**Layout Family**：每個 SegmentedControlItem 是 `components/Button/button.spec.md`「Pill Layout」所擁有的 **Family 3（Pill Layout）action trigger sub-profile** 消費者——內部結構 `[startIcon?] [<span px-1>label</span>] [suffix]` 繼承 Button canonical。SegmentedControl 外層容器的「分段連體」（`-ml-px` border 重疊、首尾 `rounded-l-md/rounded-r-md`）是本元件特有視覺規格，非 Family 3 共用。
 
 ---
 
@@ -151,7 +149,7 @@ SegmentedControl 必須能塞進 `Field` 容器（就像 `Input` / `Button` / `S
 - **false（hug content）★default**：SegmentedControl 寬度由 item 總寬決定，items 各自照內容寬度排列
 - **true**：SegmentedControl 撐滿父容器，所有 item 等分該寬度。fullWidth 與 size 正交——只影響寬度分配，高度仍由 `size` 決定（xs fullWidth 仍是 24px 固定）
 
-> **不論 `fullWidth` 為何，items 之間永遠等寬或全由內容決定，不存在「撐滿但各自不同寬」的混血模式**。這是 SegmentedControl 的身份特徵，對齊 Apple HIG、Material 3 Segmented Button、Carbon ContentSwitcher 等世界級系統：「all segments have the same width」是 segmented 的視覺定義之一。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+> **不論 `fullWidth` 為何，items 之間永遠等寬或全由內容決定，不存在「撐滿但各自不同寬」的混血模式**。這是 SegmentedControl 的身份特徵：同一選擇組的 segments 應共享一種寬度邏輯，否則視覺重量會被 label 長度誤導。
 
 ### fullWidth 的判準：**跟著容器尺度走，跟 label 長度無關**
 
@@ -220,7 +218,7 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 
 ### focus-visible
 
-由 Radix ToggleGroup 原生處理——左右箭頭在 items 間移動 focus，空白/Enter 選取。Focus ring 對齊 Button：`ring-2 ring-ring ring-offset-1`。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+由底層 ToggleGroup 處理——左右箭頭在 items 間移動 focus，空白/Enter 選取。Focus ring 對齊 Button：`ring-2 ring-ring ring-offset-1`。
 
 ---
 

@@ -10,7 +10,6 @@ benchmark:
   - Shepherd onboarding: github.com/shipshapecode/shepherd
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Coachmark 設計原則
 
@@ -22,7 +21,7 @@ Coachmark 是**主動推送的功能介紹浮層**——anchor 到特定 UI 元�
 
 **Layout Family**:非上述 family — composite / multi-section(Media / Body / Footer 多區塊組合)。
 
-**世界級對照**:Apple HIG「Coachmark」(Apple 命名原處)/ Material「Feature Discovery」/ Ant Design `<Tour>` / Shepherd.js / react-joyride / Intercom Product Tours。命名採 Apple HIG 詞彙(最早且最廣泛被理解的術語)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+`Coachmark` 在本 DS 專指錨定目標、用於解說功能或分步導覽的暫時性浮層；命名不延伸到一般 Tooltip、Popover 或 Dialog。
 
 ---
 
@@ -32,7 +31,7 @@ Coachmark **就是** Popover 的 composition —— 不是競品。改 Popover �
 
 - **預設比 Popover 寬一階**:容納 media + 多行 description(主動推送內容量 > 篩選面板);固定單一寬度、無 size variant,具體寬度值見 `coachmark.tsx`
 - **外殼移除預設 padding 並裁切圓角**:讓 Media 邊緣貼齊外殼圓角;Body / Footer 各自消費 overlay-surface padding token(實作見 `coachmark.tsx`)
-- **Footer `justify-between`**:step 計數(左)+ actions(右),對齊 Ant Tour / Intercom convention <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **Footer `justify-between`**:step 計數(左)+ actions(右)，把目前位置與可執行導覽分成兩個穩定區域
 
 SSOT 規則:**Coachmark 不重寫 Popover 的任何視覺 token**,只加自己結構層的差異。
 
@@ -162,7 +161,7 @@ const steps = [
 
 ## Footer 按鈕順序
 
-Previous(可選)→ Skip(可選)→ Next / Done。對齊 Ant Tour / Intercom convention: <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Previous(可選)→ Skip(可選)→ Next / Done。動作順序由可逆導覽、退出流程、提交當前步驟三種語意排列:
 
 - **Previous 最左**——回到上一步(負方向,視覺權重低)
 - **Skip 中間**——exit escape hatch,tertiary 不搶焦點;**未傳 `onPrev` 時顯示**(有 `onPrev` 或單步則隱藏,見 CTA 語義表)
@@ -180,7 +179,7 @@ Previous(可選)→ Skip(可選)→ Next / Done。對齊 Ant Tour / Intercom con
 | Media 背景 | `bg-muted` | illustration / 透明 PNG 底色 |
 | Title | `text-body-lg font-medium text-foreground` | body 主 title(16px),比 kind header 的 `PopoverTitle` 小標籤(`text-body` 14px)重一階——主教學訊息是視覺主角 |
 | Description | `text-body text-fg-secondary` | 主說明文字 |
-| Step 計數 | `text-body text-fg-secondary tabular-nums` | 跟 body 內文同字體;數字等寬,切換步驟不跳動 |
+| Step 計數 | `text-body text-fg-secondary tabular-nums` | 跟 body 內文同字體；固定數字 advance width，切換步驟時維持量測穩定 |
 | Body padding | `px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]` | overlay-surface SSOT(PopoverBody) |
 | Footer padding | 同上 | overlay-surface SSOT(PopoverFooter) |
 | Width | 比 Popover 預設寬一階(固定,具體 class 見 `coachmark.tsx`) | 固定;consumer 可 className 覆寫 |
@@ -228,7 +227,7 @@ disabled / layout-space 繼承 Popover(鎖 `data-layout-space="md"` 保持 heade
 - `../Tooltip/tooltip.spec.md` — hover 觸發純文字提示
 - `../HoverCard/hover-card.spec.md` — hover 觸發互動浮層
 - `../Notice/notice.spec.md` — 系統通知 / 錯誤訊息
-- Apple HIG Coachmarks / Ant Design `<Tour>` / Shepherd.js — 世界級對照 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- 本 spec 的 Anatomy / 導覽狀態表與 `coachmark.tsx` — canonical authority
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

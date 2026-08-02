@@ -11,7 +11,6 @@ benchmark:
   - Carbon DataTable (batch actions): github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/DataTable
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # BulkActionBar 設計原則
 
@@ -21,7 +20,7 @@ benchmark:
 
 **Layout Family**:非 1-4 family — composite / multi-section(自 own layout:clear 區 + count 區 + batch actions 區;**不含** page-level primary / hint banner,見下方同名段)。
 
-**世界級對照**:Linear bulk action toolbar / Polaris IndexTable bulk actions / Material DataGrid `<GridToolbar>` selection mode / Notion database row selection bar / Gmail / GitHub Issues 多選 toolbar。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+其 identity 由 selection lifecycle 決定：零選取時不存在，非零選取時呈現只作用於該 selection 的 actions；永遠顯示的 page toolbar 不屬於本 primitive。
 
 ---
 
@@ -89,14 +88,14 @@ benchmark:
 
 | Placement variant | Buttons size | 理由 |
 |--|--|--|
-| **default**(footer 浮層 / page-bottom 區段)| **md** | 視覺 weight 對齊 Dialog footer commit 系 / page primary-button bar(md)/ Linear/Notion/Asana world-class 共識 | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+| **default**(footer 浮層 / page-bottom 區段)| **md** | 與 DS Dialog footer commit 系及 page primary-button bar 共用 action measure |
 | **top-toolbar 變體**(未來)| sm | 覆蓋 sm-density toolbar / GitHub-style;variant prop 驅動 override |
 
 #### Count text color canonical(2026-05-04 升 SSOT)
 
 | 元素 | Token / weight | 理由 |
 |--|--|--|
-| **count(`已選 N 項`)** | `text-foreground` + `font-medium` | state-bearing 主資訊(user 在 selection mode + N items),非裝飾 → primary foreground。對齊 Linear / Notion / Carbon / Polaris 共識;muted 化會弱化 state signal | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+| **count(`已選 N 項`)** | `text-foreground` + `font-medium` | state-bearing 主資訊(user 在 selection mode + N items),非裝飾 → primary foreground；muted 化會弱化 state signal |
 | **`hiddenByFilter` suffix(`· M 個被 filter 隱藏`)** | `text-fg-muted` + `font-normal` | 次資訊,視覺層次低於 count |
 | **clear X icon** | dismiss md(自動 fg-muted)| chrome dismiss canonical |
 
@@ -120,7 +119,7 @@ BulkActionBar 是 plain block(無 positioning 邏輯),consumer 用 flex column �
 </div>
 ```
 
-**為什麼撤 top-replace**:Polaris IndexTable / Material DataGrid / GitHub / Gmail 等「替代 toolbar」做法在 selection 期間**喪失 filter / sort / search 功能**,user workflow 斷裂(「我選了 50 個再 filter 出 status=error 子集 batch action」這種常見 workflow 卡關)。本 DS 採 Linear / Notion / Apple Mail / iOS Files / Atlassian additive 派 — toolbar 永遠保留。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**為什麼撤 top-replace**:selection 期間若替換原 toolbar，filter / sort / search 會消失，像「先選 50 個、再 filter 出 status=error 子集」的 workflow 會斷裂。本 DS 採 additive composition，原 toolbar 永遠保留。
 
 ### Layout 行為(4 use case 全 covered by inline composition)
 
@@ -150,7 +149,7 @@ interface BulkActionBarProps extends React.HTMLAttributes<HTMLDivElement> {
   hiddenByFilter?: number
   /** 擴選整個 dataset 後的真總數;number 時 count 顯示此值,否則 fallback selection.length(見「Extend dataset pattern」) */
   totalSelected?: number | null
-  /** i18n labels(Partial,merge with default;對齊 Material localeText / Polaris i18n 慣例 — @benchmark-unverified) */
+  /** i18n labels(Partial,merge with exported canonical defaults) */
   labels?: Partial<BulkActionBarLabels>
   className?: string
 }
@@ -165,7 +164,7 @@ interface BulkActionBarLabels {
 }
 ```
 
-完整 default labels 由 component 內 export `BULK_ACTION_BAR_DEFAULT_LABELS`,consumer 可 spread 後 override(對齊 Material `defaultLocale` 模式)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+完整 default labels 由 component 內 export `BULK_ACTION_BAR_DEFAULT_LABELS`,consumer 可 spread 後 override；單一 default object 避免 runtime 文案與文件範例各自漂移。
 
 **Hint banner(擴 dataset 提示)不在本 API**:由 consumer 用 `<Alert variant="info" placement="fixed">` 配 ReactNode title 帶 inline link 自組,黏在 BulkActionBar 上方。Alert / Notice 的 `title` + `description` 已支援 ReactNode(2026-04-28)。
 
@@ -177,11 +176,11 @@ interface BulkActionBarLabels {
 - **防重複提交**:同一批次操作進行中,consumer 對該 action Button 設 `loading` / `disabled` 阻止連點觸發多次(語義同 `../Field/form-validation.spec.md` double-submit 防護,但 owner 在 consumer 而非 bar)
 - **選取保留**:操作進行中 `selection` 維持不變、bar 持續可見;**成功**後才由 consumer 清空 `selection`(觸發 bar 自動隱藏),**失敗**則保留選取讓 user 重試
 
-對齊 Polaris BulkActions(action `loading` 由 consumer 提供)/ Material DataGrid batch action 慣例。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+這個 ownership 跟 `actions` 為 consumer-injected ReactNode 的 API 一致：bar 不知道 action promise，也不應另建第二套 async state。
 
 ### Extend dataset pattern(totalSelected)
 
-「本頁全選 → hint 點擊 → 擴選整個 dataset」2-step 後,consumer 把 `totalSelected` 設為 dataset 真總數,count 區改顯示該值(否則 fallback `selection.length`)——避免 Alert 顯「已選 5370」但 bar 仍顯「已選 50」的不同步(2026-05-13 ship)。對齊 Gmail / Linear / Notion 全選 dataset hint pattern。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+「本頁全選 → hint 點擊 → 擴選整個 dataset」2-step 後,consumer 把 `totalSelected` 設為 dataset 真總數,count 區改顯示該值(否則 fallback `selection.length`)——避免 Alert 顯「已選 5370」但 bar 仍顯「已選 50」的不同步(2026-05-13 ship)。
 
 **可見性與反向選取(DataTable all 模式,2026-06-22)**:顯示判準 = `selection.length > 0 || (totalSelected ?? 0) > 0`。反向選取(`{ mode:'all', excluded }`)下若可見列全被 excluded、`selection`(可見代表)為空但 `totalSelected > 0`(全集仍有選取),bar **仍顯示**(否則「已選 N 個但 bar 消失」矛盾)。對應 `data-table.spec.md`「L2 選取」inverted 模型。
 
@@ -189,7 +188,7 @@ interface BulkActionBarLabels {
 
 ## a11y 預設
 
-- BulkActionBar 整體用 `role="group"` + `aria-label`(default `"批次操作"`,由 `labels.ariaLabel ?? labels.toolbarAriaLabel` 決定,可 override)。**降級 rationale(2026-07-06 user 拍板)**:原宣告 `role="toolbar"` 但未實作 APG toolbar 方向鍵 roving 契約(AT 告知「工具列」但方向鍵無反應 = 空承諾);改 `role="group"` 語意誠實,Tab 序照 DOM(見下)。Gmail / Linear bulk bar 實務同款。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- BulkActionBar 整體用 `role="group"` + `aria-label`(default `"批次操作"`,由 `labels.ariaLabel ?? labels.toolbarAriaLabel` 決定,可 override)。**降級 rationale(2026-07-06 user 拍板)**:原宣告 `role="toolbar"` 但未實作 APG toolbar 方向鍵 roving 契約(AT 告知「工具列」但方向鍵無反應 = 空承諾);改 `role="group"` 語意誠實,Tab 序照 DOM(見下)。
 - count 文字用 `aria-live="polite"` + `aria-atomic="true"`(selection 變更時 SR 整句重讀「已選 3 項」)
 - Clear button:`aria-label="清除選取"`
 - Hint banner 用 `role="status"` + `aria-live="polite"`(state 切換時通知)
@@ -201,7 +200,7 @@ interface BulkActionBarLabels {
 ## 視覺與動畫
 
 - **出現 / 消失**:有選取(`selection.length > 0` **或** `totalSelected > 0`)直接 mount;歸零回 null 直接 unmount(無 fade 動畫)。inline composition 下自然 reflow;consumer 需固定高度時自擺 placeholder(見「禁止事項」)
-- **底色**:**無底色 contrast**,跟 page 同色(`bg-canvas` / `bg-surface` 視 placement 繼承)。對齊 Notion / Linear minimalist — 用文字內容切換呈現「mode」,**不**用底色 highlight。**不像 Polaris 那種顯著底色變化** <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **底色**:**無底色 contrast**,跟 page 同色(`bg-canvas` / `bg-surface` 視 placement 繼承)。Selection mode 由 count、clear 與 actions 的內容變化表達，不另用底色製造第二個狀態訊號。
 - **邊界**:**無外框邊界**(融入 page chrome)— 恆 **`border-top` border-divider 切割 layout**(bar 是 page 結構,不是 floating overlay,不用 box-shadow 製造「浮層」誤導)。top-toolbar 變體為未來項(見「Size canonical」)
 - **與 table 的關係**:inline composition — bar 接在 DataTable 下方,toolbar 永遠保留(見「Placement」)
 - **Action variant**:**一律 `tertiary`**(含 destructive,icon+label 辨識危險)— **不用 primary、不用 danger 紅填色**(紅色強調留給 dialog 內確認最終 action,見「Slot」rationale)

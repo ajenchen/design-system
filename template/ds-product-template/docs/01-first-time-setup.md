@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node 22.12.0+, npm 10+ as the launcher, Git, Bash, `jq`, and Python 3. Governance npm operations use exact lock-verified npm 11.18.0.
+- Node 22.13.0+, npm 10+ as the launcher, Git, Bash, `jq`, and Python 3. Governance npm operations use exact lock-verified npm 11.19.0.
 - Claude Code, Codex, or another agent that can read `AGENTS.md`
 
 The exact governance checker intentionally fails closed when Bash, `jq`, or Python 3 is unavailable,
@@ -19,7 +19,7 @@ cd <repository>
 npm run setup:all
 ```
 
-`setup:all` is the single local, devcontainer, and hosted-setup entrypoint. It first executes the
+`setup:all` is the provider-neutral single local, devcontainer, and hosted-setup entrypoint. It first executes the
 role-specific `setup:governance` primitive, then installs and version-probes the lock-bound CLI
 capabilities declared by the provider toolchain registry. CLI provisioning is not independent-review
 activation or certification. A usable review still requires an activated managed broker, an exact
@@ -29,7 +29,7 @@ must report `REVIEW-BLOCKED`. The host provider process remains vendor-managed; 
 never claims to replace or certify that host runtime.
 
 A successful command prints `scope=local-bootstrap`, `providerCertification=not-checked`, and
-`externalActivationRequired=true`. Treat these as an explicit boundary: the checkout bootstrap is
+`externalActivationRequired=false`. Treat these as an explicit boundary: the checkout bootstrap is
 verified, but cloud/provider runtime certification and external activation still require their
 independent target-bound evidence and readback.
 
@@ -62,6 +62,15 @@ Do not move installation into SessionStart. The repository SessionStart adapter 
 read-only so opening or resuming any local/cloud agent cannot mutate the checkout.
 
 Now start the provider you prefer (`claude`, `codex`, or another registered interface). `AGENTS.md`, provider adapters, and skill views already exist before the session starts. No plugin or session-time install is required. A future provider is admitted through the registry, adapter, compatibility, review-binding, and target-bound certification contracts; an unknown executable is never silently treated as supported.
+
+## Release authority
+
+Every provider uses the same standard five-step release SSOT:
+`pr-checks → merge → publish → readback → consumer`. The upstream release mirror alone delivers an
+exact snapshot to the template repository. A registered product receiver is downstream-only: it
+dynamically discovers every root-workspace `package.json`, pins governed packages to one exact
+release, updates the single package lock, uses that same dynamic path set for status and staging,
+and opens a protected PR. It cannot publish or write protected `main`.
 
 ## Verify product creation
 

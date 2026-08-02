@@ -161,12 +161,23 @@ if [ -z "$PLUGIN_JSON" ]; then exit 0; fi
 LOCAL_VERSION=$(jq -r '.version // ""' "$PLUGIN_JSON" 2>/dev/null)
 if [ -z "$LOCAL_VERSION" ]; then exit 0; fi
 
-# Fetch latest marketplace.json from GitHub raw (5s timeout, fail silently if offline)
-REMOTE_VERSION=$(curl -sS --max-time 5 \
+# Fetch latest marketplace.json from GitHub raw (5s timeout). Network failure, timeout, an empty
+# response, or malformed/nonconforming JSON is an explicit compatibility-probe skip. Keep each
+# fallible command in a conditional so an inherited errexit/pipefail state cannot turn this
+# non-authoritative probe into an undefined child exit.
+REMOTE_BODY=""
+if ! REMOTE_BODY=$(curl -sS --max-time 5 \
   "https://raw.githubusercontent.com/ajenchen/design-system/main/.claude-plugin/marketplace.json" \
-  2>/dev/null | jq -r '.metadata.version // ""' 2>/dev/null)
-
-if [ -z "$REMOTE_VERSION" ] || [ "$REMOTE_VERSION" = "null" ]; then exit 0; fi
+  2>/dev/null); then
+  exit 0
+fi
+[ -n "$REMOTE_BODY" ] || exit 0
+REMOTE_VERSION=""
+if ! REMOTE_VERSION=$(printf '%s' "$REMOTE_BODY" \
+  | jq -er 'if type == "object" and (.metadata | type == "object") and (.metadata.version | type == "string") and (.metadata.version | length > 0) then .metadata.version else empty end' \
+      2>/dev/null); then
+  exit 0
+fi
 
 if [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
   # Dim 75 current contract:the marketplace version is a Claude-only compatibility diagnostic,

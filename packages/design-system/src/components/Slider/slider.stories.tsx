@@ -1,4 +1,4 @@
-// @story-trait-rationale: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration)。
+// @story-history: hasSizes 由 anatomy.stories.tsx SizeMatrix auto-compile owns size showcase(2026-05-15 F-migration)。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { Slider } from './slider'
@@ -17,7 +17,7 @@ export default meta
 
 type Story = StoryObj<typeof Slider>
 
-// @story-trait-rationale: Default / Range retired 2026-05-17 per audit Dim 24 —
+// @story-history: Default / Range retired 2026-05-17 per audit Dim 24 —
 //   anatomy.stories.tsx Overview(含 Anatomy + Range mode 子段)已 cover baseline + range showcase。
 //   展示層保留 typical 情境(SizeAlignment / MinMaxStep / Disabled 等),避免跟 anatomy 重複。
 
@@ -75,7 +75,7 @@ export const MinMaxStep: Story = {
   },
 }
 
-// @story-trait-rationale: Disabled retired 2026-05-17 per audit Dim 24 —
+// @story-history: Disabled retired 2026-05-17 per audit Dim 24 —
 //   anatomy.stories.tsx StateBehavior 已 cover disabled state(單值 + 範圍)。展示層保留 SizeAlignment + MinMaxStep + OnCommit。
 //   2026-06-11:刪除 zombie export `Disabled_REMOVED`,對齊 DS-wide comment-only 退役慣例(deep-audit dim25)。
 

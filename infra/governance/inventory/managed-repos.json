@@ -121,6 +121,8 @@
         {"pattern": "scripts/setup-provider-cli-toolchain.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/setup-workspace.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/workflow-static-validation.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/sync-exact-workspace-dependencies.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
+        {"pattern": "scripts/lib/exact-workspace-dependencies.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/sync-all.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/verify-upgrade-evidence.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},
         {"pattern": "scripts/verify-upgrade-provenance.mjs", "mode": "upstream-managed", "owner": "design-system-governance"},

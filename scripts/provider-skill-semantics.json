@@ -187,8 +187,8 @@
       "description": "Run the complete design-system audit rubric with evidence, checkpoints, and deterministic verification.",
       "declaredIdentifiers": [],
       "allowedAssumptions": ["provider-identity", "provider-surface-path", "provider-transport"],
-      "assumptionFindingCount": 47,
-      "assumptionFingerprint": "sha256:81ad8cbfdaf441b4c5395ae9aa66477d77a7c787bc8a00a1d5edf26468f7da3f"
+      "assumptionFindingCount": 45,
+      "assumptionFingerprint": "sha256:30d9ac1a839a29b236d77bb8cce9ad17195581843d8a78ed4417458df157fc4e"
     },
     {
       "name": "ensure-canonical",
