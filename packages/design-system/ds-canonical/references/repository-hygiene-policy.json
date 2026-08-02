@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "authority": "packages/design-system/ds-canonical/references/repository-hygiene.md",
   "transientExemptPrefixes": [
     ".claude/logs/",
@@ -71,6 +71,19 @@
         "skills": ".claude/skills",
         "snapshots-baseline": "infra/governance/baseline/visual/curated"
       },
+      "futureReservedEntries": [
+        {
+          "pathPrefix": ".changeset/",
+          "owner": "infra/governance/release-workflow.json",
+          "purpose": "Retain the reviewed Changesets configuration as an optional version-authoring surface without inserting it into the standard five-step release graph.",
+          "activationCondition": "infra/governance/release-workflow.json must explicitly declare a Changesets version-authoring step and the root package scripts must wire that exact step before these files become active release input.",
+          "lifecycle": {
+            "mode": "review-by",
+            "date": "2026-11-02",
+            "onLapse": "reclassify-or-remove"
+          }
+        }
+      ],
       "duplicateExemptGroups": [
         {
           "paths": [
@@ -104,12 +117,13 @@
         "npm-shrinkwrap.json": "installed governance dependency lock",
         "package-lock.json": "exact npm dependency lock",
         "package.json": "workspace manifest",
-        "patches": "versioned package patches or reserved patch home",
+        "patches": "versioned dependency patches",
         "schemas": "installed governance schemas",
         "scripts": "product and governance automation",
         "tsconfig.json": "workspace TypeScript configuration"
       },
       "declaredSymlinks": {},
+      "futureReservedEntries": [],
       "duplicateExemptGroups": [
         {
           "paths": ["apps/template/src/main.tsx", "apps/work/src/main.tsx"],
