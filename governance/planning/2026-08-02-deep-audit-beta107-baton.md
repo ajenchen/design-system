@@ -61,7 +61,7 @@
    check fails. Do not add candidate/soak/signature/activation ceremony.
 5. From a clean checkout of the exact protected beta.107 main tree, prepare the immutable formal
    run with `node scripts/prepare-deep-audit-run.mjs --self-provider codex --self-surface
-   codex-desktop-local --author-provider codex --self-runtime local --second-opinion-waiver user
+   local --author-provider codex --self-runtime codex-desktop --second-opinion-waiver user
    --replace-active --json`; execute/check the deterministic plan with the required build/network/
    published-release capability flags, rerun full a11y and 496-scenario visual evidence, and finish
    the judgment/governance coverage ledger. Never reuse beta.106 receipts as beta.107 receipts.

@@ -1,11 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://qijenchen.dev/schemas/deep-audit-evidence-contract.schema.json",
-  "title": "Deep-audit immutable run and evidence envelope contract",
+  "title": "Deep-audit immutable run, waived self-review, and evidence envelope contract",
   "oneOf": [
     {"$ref": "#/$defs/runManifest"},
     {"$ref": "#/$defs/historicalRunManifest"},
     {"$ref": "#/$defs/activePointer"},
+    {"$ref": "#/$defs/waivedSelfReview"},
     {"$ref": "#/$defs/evidenceEnvelope"}
   ],
   "$defs": {
@@ -154,6 +155,83 @@
     "activePointer": {
       "type": "object", "additionalProperties": false, "required": ["schemaVersion", "evidenceKind", "runId", "manifestSha256"],
       "properties": {"schemaVersion": {"const": 1}, "evidenceKind": {"const": "deep-audit-active-run"}, "runId": {"$ref": "#/$defs/runId"}, "manifestSha256": {"$ref": "#/$defs/sha256"}}
+    },
+    "waivedSelfReviewFinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["severity", "path", "line", "claim", "actual", "recommendation"],
+      "properties": {
+        "severity": {"$ref": "#/$defs/severity"},
+        "path": {"$ref": "#/$defs/safePath"},
+        "line": {"type": "integer", "minimum": 1},
+        "claim": {"$ref": "#/$defs/nonEmpty"},
+        "actual": {"$ref": "#/$defs/nonEmpty"},
+        "recommendation": {"$ref": "#/$defs/nonEmpty"}
+      }
+    },
+    "waivedJudgmentReview": {
+      "type": "object", "additionalProperties": false,
+      "required": ["dim", "status", "summary", "findings"],
+      "properties": {
+        "dim": {"type": "integer", "minimum": 1, "maximum": 91},
+        "status": {"enum": ["PASS", "FINDINGS", "UNOBSERVED"]},
+        "summary": {"$ref": "#/$defs/nonEmpty"},
+        "findings": {"type": "array", "items": {"$ref": "#/$defs/waivedSelfReviewFinding"}}
+      },
+      "allOf": [{
+        "if": {"properties": {"status": {"const": "FINDINGS"}}, "required": ["status"]},
+        "then": {"properties": {"findings": {"type": "array", "minItems": 1}}},
+        "else": {"properties": {"findings": {"type": "array", "maxItems": 0}}}
+      }]
+    },
+    "waivedA1bReview": {
+      "type": "object", "additionalProperties": false,
+      "required": ["component", "status", "summary", "claimsReviewed", "findings"],
+      "properties": {
+        "component": {"$ref": "#/$defs/nonEmpty"},
+        "status": {"enum": ["PASS", "FINDINGS", "UNOBSERVED"]},
+        "summary": {"$ref": "#/$defs/nonEmpty"},
+        "claimsReviewed": {"type": "integer", "minimum": 0},
+        "findings": {"type": "array", "items": {"$ref": "#/$defs/waivedSelfReviewFinding"}}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "FINDINGS"}}, "required": ["status"]},
+          "then": {"properties": {"findings": {"type": "array", "minItems": 1}}},
+          "else": {"properties": {"findings": {"type": "array", "maxItems": 0}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "UNOBSERVED"}}, "required": ["status"]},
+          "then": {"properties": {"claimsReviewed": {"type": "integer", "const": 0}}},
+          "else": {"properties": {"claimsReviewed": {"type": "integer", "minimum": 1}}}
+        }
+      ]
+    },
+    "waivedSelfReview": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "evidenceKind", "runId", "manifestSha256", "head", "tree", "indexDigest", "inventoryDigest", "rubricDigest", "worktreeFingerprint", "authorProvider", "providerIdentityDigest", "reviewSelectionDigest", "provider", "reviewedAt", "reviewMethod", "independent", "assurance", "secondOpinionPerformed", "judgmentReviews", "componentA1bReviews"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "evidenceKind": {"const": "deep-audit-waived-self-review"},
+        "runId": {"$ref": "#/$defs/runId"},
+        "manifestSha256": {"$ref": "#/$defs/sha256"},
+        "head": {"$ref": "#/$defs/gitOid"},
+        "tree": {"$ref": "#/$defs/gitOid"},
+        "indexDigest": {"$ref": "#/$defs/sha256"},
+        "inventoryDigest": {"$ref": "#/$defs/sha256"},
+        "rubricDigest": {"$ref": "#/$defs/sha256"},
+        "worktreeFingerprint": {"$ref": "#/$defs/sha256"},
+        "authorProvider": {"$ref": "#/$defs/providerId"},
+        "providerIdentityDigest": {"$ref": "#/$defs/sha256"},
+        "reviewSelectionDigest": {"$ref": "#/$defs/sha256"},
+        "provider": {"$ref": "#/$defs/manifestProvider"},
+        "reviewedAt": {"$ref": "#/$defs/isoTime"},
+        "reviewMethod": {"const": "local-self-review-import"},
+        "independent": {"const": false},
+        "assurance": {"const": "self-attested"},
+        "secondOpinionPerformed": {"const": false},
+        "judgmentReviews": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/waivedJudgmentReview"}},
+        "componentA1bReviews": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/waivedA1bReview"}}
+      }
     },
     "genericProducer": {
       "type": "object", "additionalProperties": false, "required": ["providerId", "runtime", "runtimeSurface", "runtimeProfileId", "model", "transport", "runtimeCertificationDigest"],

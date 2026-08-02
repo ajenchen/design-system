@@ -27,10 +27,13 @@ import {
   loadCiEvidencePlan,
 } from './lib/ci-evidence-plan.mjs'
 import { validateCiObservationDocument } from './lib/ci-evidence-pipeline.mjs'
+import {
+  loadAuditCoverageTiers,
+  loadWaivedSelfReviewBundle,
+  waivedSelfReviewContract,
+} from './lib/waived-self-review.mjs'
 
 const DEFAULT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const REQUIRED_DIMENSION_COUNT = 91
-const SUPPORTED_TIERS = new Set(['DETERMINISTIC', 'PURE-JUDGMENT', 'HOOK-ENFORCED', 'CI-ENFORCED'])
 
 function fail(message) {
   throw new Error(`deep-audit coverage verification failed closed:${message}`)
@@ -48,22 +51,6 @@ function parseArgs(argv) {
     index += 1
   }
   return result
-}
-
-function matrixTiers(repoRoot) {
-  const source = readFileSync(resolve(repoRoot, 'scripts/audit-coverage-matrix.mjs'), 'utf8')
-  const entries = [...source.matchAll(/(\d+):\s*\{\s*tier:\s*'([^']+)'/g)].map((match) => [Number(match[1]), match[2]])
-  const expected = Array.from({ length: REQUIRED_DIMENSION_COUNT }, (_, index) => index + 1)
-  const numbers = entries.map(([number]) => number).sort((left, right) => left - right)
-  if (entries.length !== REQUIRED_DIMENSION_COUNT || new Set(numbers).size !== REQUIRED_DIMENSION_COUNT
-    || numbers.some((number, index) => number !== expected[index])
-    || entries.some(([, tier]) => !SUPPORTED_TIERS.has(tier))) {
-    fail(`audit coverage matrix must enumerate dimensions 1..${REQUIRED_DIMENSION_COUNT} exactly once`)
-  }
-  const byTier = Object.fromEntries([...SUPPORTED_TIERS].map((tier) => [tier, []]))
-  for (const [number, tier] of entries) byTier[tier].push(number)
-  for (const values of Object.values(byTier)) values.sort((left, right) => left - right)
-  return byTier
 }
 
 function exact(value, expected, label) {
@@ -155,28 +142,35 @@ function validateHookReceipt(envelope, dim, active, hookState, hookCoverage) {
   exact(envelope.payload.replayReceipt.focusedContracts, expectedFocused, `hook dim ${dim} focused contracts`)
 }
 
-function expectedPathSet(tiers, providers, components) {
+function expectedPathSet(tiers, providers, components, { secondOpinionWaived = false } = {}) {
   const paths = new Set(['run-manifest.json'])
   for (const dim of tiers.DETERMINISTIC) paths.add(`deterministic/dim-${dim}.json`)
-  for (const provider of providers) for (const dim of tiers['PURE-JUDGMENT']) paths.add(`judgment/${provider}/dim-${dim}.json`)
+  if (secondOpinionWaived) paths.add(waivedSelfReviewContract.relativePath)
+  else for (const provider of providers) for (const dim of tiers['PURE-JUDGMENT']) paths.add(`judgment/${provider}/dim-${dim}.json`)
   for (const dim of tiers['HOOK-ENFORCED']) paths.add(`hook-residue/dim-${dim}.json`)
   for (const dim of tiers['CI-ENFORCED']) paths.add(`ci-enforced/dim-${dim}.json`)
-  for (const provider of providers) for (const component of components) paths.add(`component-a1b/${provider}/${component}.json`)
+  if (!secondOpinionWaived) {
+    for (const provider of providers) for (const component of components) paths.add(`component-a1b/${provider}/${component}.json`)
+  }
   return paths
 }
 
-function scanClosedRunTree(active, expectedFiles, providers) {
+function scanClosedRunTree(active, expectedFiles, providers, { allowModelTranscripts = true } = {}) {
   const allowedDirectories = new Set([''])
   for (const path of expectedFiles) {
     const segments = path.split('/')
     for (let index = 1; index < segments.length; index += 1) allowedDirectories.add(segments.slice(0, index).join('/'))
   }
-  for (const provider of providers) {
-    allowedDirectories.add(`judgment/${provider}/_transcripts`)
-    allowedDirectories.add(`component-a1b/${provider}/_transcripts`)
+  if (allowModelTranscripts) {
+    for (const provider of providers) {
+      allowedDirectories.add(`judgment/${provider}/_transcripts`)
+      allowedDirectories.add(`component-a1b/${provider}/_transcripts`)
+    }
   }
   const escapedProviders = providers.map((provider) => provider.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
-  const transcriptPattern = new RegExp(`^(?:judgment|component-a1b)/(?:${escapedProviders})/_transcripts/[a-f0-9]{64}\\.json$`)
+  const transcriptPattern = allowModelTranscripts
+    ? new RegExp(`^(?:judgment|component-a1b)/(?:${escapedProviders})/_transcripts/[a-f0-9]{64}\\.json$`)
+    : null
   const discoveredTranscripts = new Set()
   const walk = (directory) => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -189,8 +183,9 @@ function scanClosedRunTree(active, expectedFiles, providers) {
         walk(absolute)
       } else if (info.isFile()) {
         if (info.nlink !== 1) fail(`active run contains hard-link evidence:${path}`)
-        if (!expectedFiles.has(path) && !transcriptPattern.test(path)) fail(`active run contains an unknown/mixed evidence file:${path}`)
-        if (transcriptPattern.test(path)) discoveredTranscripts.add(path)
+        const isTranscript = transcriptPattern?.test(path) ?? false
+        if (!expectedFiles.has(path) && !isTranscript) fail(`active run contains an unknown/mixed evidence file:${path}`)
+        if (isTranscript) discoveredTranscripts.add(path)
       } else fail(`active run contains unsupported evidence type:${path}`)
     }
   }
@@ -259,7 +254,7 @@ function verifyModelTranscriptClosure(active, explicitRoot, modelEnvelopes, disc
   }
 }
 
-export function summarizeDeepAuditCompliance({ totalGaps, envelopes } = {}) {
+export function summarizeDeepAuditCompliance({ totalGaps, envelopes, waivedSelfReview = null } = {}) {
   if (!Number.isSafeInteger(totalGaps) || totalGaps < 0 || !Array.isArray(envelopes)) {
     fail('compliance summary inputs are invalid')
   }
@@ -288,6 +283,15 @@ export function summarizeDeepAuditCompliance({ totalGaps, envelopes } = {}) {
       && !envelope.payload.brokerReceipt && envelope.payload.accessReceipt?.status !== 'verified') {
       trustDowngrades.unverifiedModelCoverage += 1
     }
+  }
+  if (waivedSelfReview !== null) {
+    findings.judgment += waivedSelfReview.judgmentReviews
+      .reduce((sum, review) => sum + review.findings.length, 0)
+    findings.componentA1b += waivedSelfReview.componentA1bReviews
+      .reduce((sum, review) => sum + review.findings.length, 0)
+    // A local self-attestation can close enumeration coverage for a user-waived
+    // run, but it is intentionally not verified model/independent evidence.
+    trustDowngrades.unverifiedModelCoverage += 1
   }
   const coverageStatus = totalGaps === 0 ? 'complete' : 'incomplete'
   const findingCount = Object.values(findings).reduce((sum, count) => sum + count, 0)
@@ -332,11 +336,13 @@ export function verifyDeepAuditCoverage({
     fail('active run author provider is not the current/self provider or collides with the independent peer')
   }
   const providers = manifestProviders
-  const tiers = matrixTiers(active.repository)
+  const tiers = loadAuditCoverageTiers(active.repository)
   rejectLegacyOrPoisonedRoot(active)
   const components = active.manifest.components.map((item) => item.name)
-  const expectedFiles = expectedPathSet(tiers, providers, components)
-  const discoveredTranscripts = scanClosedRunTree(active, expectedFiles, providers)
+  const expectedFiles = expectedPathSet(tiers, providers, components, { secondOpinionWaived })
+  const discoveredTranscripts = scanClosedRunTree(active, expectedFiles, providers, {
+    allowModelTranscripts: !secondOpinionWaived,
+  })
   const planState = loadDeterministicDeepAuditPlan({ repoRoot: active.repository })
   assertDeterministicMatrixParity(planState, { repoRoot: active.repository })
   const hookState = loadHookEvidencePlan({ repoRoot: active.repository })
@@ -356,6 +362,9 @@ export function verifyDeepAuditCoverage({
   }
   const envelopes = []
   const modelEnvelopes = []
+  const waivedSelfReview = secondOpinionWaived
+    ? loadWaivedSelfReviewBundle({ activeRun: active, explicitRoot, tiers })
+    : null
   for (const dim of tiers.DETERMINISTIC) {
     const envelope = readEnvelope(active, explicitRoot, `deterministic/dim-${dim}.json`)
     if (!envelope) gaps.deterministic.push(dim)
@@ -364,16 +373,23 @@ export function verifyDeepAuditCoverage({
       envelopes.push(envelope)
     }
   }
-  const expectedJudgmentCoverage = judgmentCoverage(active.manifest)
-  for (const provider of providers) {
-    for (const dim of tiers['PURE-JUDGMENT']) {
-      const envelope = readEnvelope(active, explicitRoot, `judgment/${provider}/dim-${dim}.json`)
-      if (!envelope) gaps.judgment[provider].push(dim)
-      else {
-        if (envelope.producer.providerId !== provider || envelope.payload.dim !== dim || envelope.command.exitCode !== 0) fail(`judgment receipt identity/completion mismatches:${provider}/dim-${dim}`)
-        exact(envelope.coverage, expectedJudgmentCoverage, `judgment ${provider} dim ${dim} coverage`)
-        envelopes.push(envelope)
-        modelEnvelopes.push(envelope)
+  if (secondOpinionWaived) {
+    if (waivedSelfReview === null) {
+      gaps.judgment[providers[0]].push(...tiers['PURE-JUDGMENT'])
+      gaps.componentA1b[providers[0]].push(...components)
+    }
+  } else {
+    const expectedJudgmentCoverage = judgmentCoverage(active.manifest)
+    for (const provider of providers) {
+      for (const dim of tiers['PURE-JUDGMENT']) {
+        const envelope = readEnvelope(active, explicitRoot, `judgment/${provider}/dim-${dim}.json`)
+        if (!envelope) gaps.judgment[provider].push(dim)
+        else {
+          if (envelope.producer.providerId !== provider || envelope.payload.dim !== dim || envelope.command.exitCode !== 0) fail(`judgment receipt identity/completion mismatches:${provider}/dim-${dim}`)
+          exact(envelope.coverage, expectedJudgmentCoverage, `judgment ${provider} dim ${dim} coverage`)
+          envelopes.push(envelope)
+          modelEnvelopes.push(envelope)
+        }
       }
     }
   }
@@ -415,15 +431,17 @@ export function verifyDeepAuditCoverage({
     }
   }
   if (ciObservationDigests.size > 1) fail('CI dimension receipts mix different full observation payloads')
-  for (const provider of providers) {
-    for (const component of components) {
-      const envelope = readEnvelope(active, explicitRoot, `component-a1b/${provider}/${component}.json`)
-      if (!envelope) gaps.componentA1b[provider].push(component)
-      else {
-        if (envelope.producer.providerId !== provider || envelope.payload.component !== component || envelope.command.exitCode !== 0) fail(`A1b receipt identity/completion mismatches:${provider}/${component}`)
-        exact(envelope.coverage, componentCoverage(active.manifest, component), `A1b ${provider}/${component} coverage`)
-        envelopes.push(envelope)
-        modelEnvelopes.push(envelope)
+  if (!secondOpinionWaived) {
+    for (const provider of providers) {
+      for (const component of components) {
+        const envelope = readEnvelope(active, explicitRoot, `component-a1b/${provider}/${component}.json`)
+        if (!envelope) gaps.componentA1b[provider].push(component)
+        else {
+          if (envelope.producer.providerId !== provider || envelope.payload.component !== component || envelope.command.exitCode !== 0) fail(`A1b receipt identity/completion mismatches:${provider}/${component}`)
+          exact(envelope.coverage, componentCoverage(active.manifest, component), `A1b ${provider}/${component} coverage`)
+          envelopes.push(envelope)
+          modelEnvelopes.push(envelope)
+        }
       }
     }
   }
@@ -431,7 +449,11 @@ export function verifyDeepAuditCoverage({
   const totalGaps = gaps.deterministic.length + gaps.hookResidue.length + gaps.ciEnforced.length
     + Object.values(gaps.judgment).reduce((sum, values) => sum + values.length, 0)
     + Object.values(gaps.componentA1b).reduce((sum, values) => sum + values.length, 0)
-  const compliance = summarizeDeepAuditCompliance({ totalGaps, envelopes })
+  const compliance = summarizeDeepAuditCompliance({
+    totalGaps,
+    envelopes,
+    waivedSelfReview: waivedSelfReview?.bundle ?? null,
+  })
   return {
     schemaVersion: 4,
     evidenceKind: 'deep-audit-coverage-verification',

@@ -443,6 +443,7 @@
       "scripts/test-governance-anchor-preflight.mjs",
       "scripts/test-governance-build-graph.mjs",
       "scripts/test-header-tabs-slot-invariants.mjs",
+      "scripts/test-import-waived-self-review.mjs",
       "scripts/test-inline-edit-view-geometry-invariant.mjs",
       "scripts/test-install-candidate-dependencies.mjs",
       "scripts/test-item-content-leading-coherence.mjs",

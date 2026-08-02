@@ -40,3 +40,21 @@ This canonical workflow contains no provider, model, version, API, context-lengt
 4. Re-run deterministic gates against the final diff and record both coverage and remaining risk.
 
 A user may explicitly request a single-provider audit. It must be labelled single-provider and must never claim independent review.
+
+### Exact user-waiver route
+
+When the active run has `reviewSelection.kind=provider-review-capability-selection-waived`,
+`waiverAuthority=user`, `self=author`, and `peer=null`, do not dispatch a peer/model or
+materialize synthetic broker envelopes. Complete the local review against the frozen run,
+write the canonical self-attested JSON bundle, then import it once with:
+
+`node scripts/import-waived-self-review.mjs --input <absolute-or-repository-contained-path> [--evidence-root <path>] --json`
+
+Bundle shape SSOT: `scripts/schemas/deep-audit-evidence-contract.schema.json#/$defs/waivedSelfReview`.
+
+The bundle must enumerate the current coverage-matrix `PURE-JUDGMENT` dimensions and every
+frozen manifest component; the importer binds it to the exact run/manifest/Git/inventory/
+rubric/provider identities at `review/waived-self-review.json`. `PASS`, `FINDINGS`, and
+`UNOBSERVED` are explicit records. This route is always `independent=false` and
+`assurance=self-attested`; coverage may be complete, but `unverifiedModelCoverage` remains a
+trust downgrade and `promotionEligible=false`.

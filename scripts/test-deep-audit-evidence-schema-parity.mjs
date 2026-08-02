@@ -148,6 +148,35 @@ assert.equal(
   true,
   `run-manifest v3 historical golden failed direct Ajv:${deepValidator.ajv.errorsText(deepValidator.validate.errors)}`,
 )
+const waivedSelfReviewGolden = schemaSample(schemas.deep.$defs.waivedSelfReview, schemas.deep)
+waivedSelfReviewGolden.authorProvider = 'claude'
+waivedSelfReviewGolden.provider.id = 'claude'
+waivedSelfReviewGolden.provider.reviewPeerId = null
+waivedSelfReviewGolden.componentA1bReviews[0].claimsReviewed = 1
+assert.equal(
+  directDeepAccepts(waivedSelfReviewGolden),
+  true,
+  `waived self-review golden failed direct Ajv:${deepValidator.ajv.errorsText(deepValidator.validate.errors)}`,
+)
+assert.equal(validateDeepAuditEvidenceContractSchema(waivedSelfReviewGolden, { repoRoot: ROOT }), true)
+for (const [label, mutate] of [
+  ['independence-forgery', value => { value.independent = true }],
+  ['second-opinion-forgery', value => { value.secondOpinionPerformed = true }],
+  ['assurance-upgrade', value => { value.assurance = 'independent' }],
+  ['open-model-identity', value => { value.model = 'forbidden' }],
+  ['missing-judgment-list', value => { delete value.judgmentReviews }],
+  ['unsafe-finding-path', value => {
+    value.judgmentReviews[0].status = 'FINDINGS'
+    value.judgmentReviews[0].findings = [{
+      severity: 'material', path: '../escape', line: 1,
+      claim: 'claim', actual: 'actual', recommendation: 'recommendation',
+    }]
+  }],
+]) {
+  const poison = structuredClone(waivedSelfReviewGolden)
+  mutate(poison)
+  assert.equal(directDeepAccepts(poison), false, `Ajv accepted waived self-review poison:${label}`)
+}
 for (const [label, mutate] of [
   ['author-missing', value => { delete value.authorProvider }],
   ['identity-digest-missing', value => { delete value.providerIdentityDigest }],
