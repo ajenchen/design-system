@@ -10,7 +10,7 @@
   "contractDigest": "sha256:4d2d96ed0ba92b9043febe03c536dfcf59c7c5285569445c1599020b7f4a2667",
   "files": [
     {
-      "hash": "sha256:f7a71f9f975f30b1fde6461f94f4965e0145a3c2879377fbebd18b40fd792c76",
+      "hash": "sha256:cd9e02c704b1665d0264aba23019602b64fe0ef870c31599434c6c63c2e49a0f",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 74732,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:b421de2bec90f84e73b52a4b84543e224d04d1a7d2fa9bcb4491da39bbdfc704",
+      "hash": "sha256:ccd9f892d35f49debba4202324b0472568e1b8a6c907c16530a22bc7377087f2",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 169077,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:f5fa419182ec80aa06af23a4f27d96f4946ba5d2d16524b732dfcb70a589c6d0",
+  "inputDigest": "sha256:6e6ff8e5b8649085f0ae6c9a379654d776cc31459e06c0413f2f9f24801e394e",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -138,10 +138,10 @@
           "targetDigest": "sha256:bc58dbf54772fee014ea0902c347e8857b3787f8502510715c383b8046818fcd"
         },
         {
-          "expectedTargetDigest": "sha256:8c8f36d6c10d63754873938965f3a915825aadbcc4c46a4746543dfd0c70b343",
+          "expectedTargetDigest": "sha256:0e7252aa2e4da0b644d7851b33cb632136dfd25581d27c15cdee1915dd97bddc",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:b07f06ea0c228bafae0d6ce4868e0190ae81d3de98f8cefd9519083588bc22a5",
-          "targetDigest": "sha256:8c8f36d6c10d63754873938965f3a915825aadbcc4c46a4746543dfd0c70b343"
+          "sourceDigest": "sha256:471c7e41de764a7ee388c5fb64b000ef6eb9ab8f42ce65820a74a71cb3d0cf85",
+          "targetDigest": "sha256:0e7252aa2e4da0b644d7851b33cb632136dfd25581d27c15cdee1915dd97bddc"
         },
         {
           "expectedTargetDigest": "sha256:b71c9a39fab91baa251682be5450fb2ae974abd6f3f13bf8f3f438c8de102f63",
@@ -361,10 +361,10 @@
           "targetDigest": "sha256:b2a70ea7a9edc9a25fceca06cdd50dac5e6cf75e9ffa494f203d407b9591b01b"
         },
         {
-          "expectedTargetDigest": "sha256:c9e8da4ced33108820022203b02de1819956f990014fadf5712de591cd91b5cb",
+          "expectedTargetDigest": "sha256:0dd3aaf05dfb25cf36b0ed3523b12fdd975eab38e93798a032f3cc3780ad637b",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:b07f06ea0c228bafae0d6ce4868e0190ae81d3de98f8cefd9519083588bc22a5",
-          "targetDigest": "sha256:c9e8da4ced33108820022203b02de1819956f990014fadf5712de591cd91b5cb"
+          "sourceDigest": "sha256:471c7e41de764a7ee388c5fb64b000ef6eb9ab8f42ce65820a74a71cb3d0cf85",
+          "targetDigest": "sha256:0dd3aaf05dfb25cf36b0ed3523b12fdd975eab38e93798a032f3cc3780ad637b"
         },
         {
           "expectedTargetDigest": "sha256:b9da47c4227209a03b97581c050fac898a25e28e7d9c6dcf5754b55c5554ed37",
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:81d3ee508d22c4bf3a91dd19223eac3f12ab585e63fe5cd3ba00941aeb8711ea",
+  "snapshotDigest": "sha256:f8fadb678da78f0ef1eceeda2378b7278c1e069535d01036308826e65a6ff619",
   "sources": [
     {
       "hash": "sha256:b62504c87a4d0464032b667f6936bc42f0c3138e50967c8321f814bb9b0541fc",
@@ -667,7 +667,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 25,
-      "hash": "sha256:1715fd7f440b5bebe0c71546b0a5b2df73617e1bcac08a2c67ce8ffffda012c3",
+      "hash": "sha256:673b746fe82b17b72a0c486b3a026710bc793cb153eba5673aee9a7ead5994ba",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -689,7 +689,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:200dd60db51fe6482230bead644053741dc9ca3255067526a86afeb60ae588db",
+      "hash": "sha256:8a1cb17d21a2554cffff9040fef857c1746fd0f3f15f4bae4dab0fd96687b6d9",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1048,93 +1048,93 @@
       "type": "file"
     },
     {
-      "hash": "sha256:2a66d1a6fcb464cabdc2265dd2bbf6478fa26ac55a8b232995426a7c929471de",
+      "hash": "sha256:12603bec0493c6879a82f2bc73b7ebcfaec3f17f52c95ee973340b90883a9702",
       "id": "deep-audit-coverage-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-verify-deep-audit-coverage.mjs",
-      "size": 42998,
+      "size": 47008,
       "type": "file"
     },
     {
-      "hash": "sha256:a27bea79842717f877368bfb26a1c01b17c8809c63256298135cae8ee00a61a7",
+      "hash": "sha256:bf150a05715cbd7ad9f00171db6d17ebdf9311e6554076d6eea5129578dcbf74",
       "id": "deep-audit-coverage-verifier",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/verify-deep-audit-coverage.mjs",
-      "size": 27427,
+      "size": 30304,
       "type": "file"
     },
     {
-      "hash": "sha256:66e631f17b60e063bf772c319abd5a3d9656e8b2cadcf6a4c91beb4f03fd9b6d",
+      "hash": "sha256:db7e287dc21137730fe8d77678c9eeb9c6ae9cb4567984b8a2e404130d8fe989",
       "id": "deep-audit-deterministic-plan",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/deep-audit-deterministic-plan.json",
-      "size": 20600,
+      "size": 20771,
       "type": "file"
     },
     {
-      "hash": "sha256:8c8e790db71b101f07481f6b0f474232e2fdf54b463a6817d638297c9d5df43b",
+      "hash": "sha256:695096fe789c0befd8ac6b00cc9390131eaaea1b6ec92bd80dc934cc7f2b7d45",
       "id": "deep-audit-deterministic-plan-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/lib/deep-audit-deterministic-plan.mjs",
-      "size": 11546,
+      "size": 12937,
       "type": "file"
     },
     {
-      "hash": "sha256:17801e3893f71ff6041b405d6ef864090bdc2a0a65c6e2eabdc33d1676b94024",
+      "hash": "sha256:f9bba1dc63dc13b631b04b426f65e4a6e94851ba6ca378173d371d08647d39a0",
       "id": "deep-audit-deterministic-plan-schema",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/schemas/deep-audit-deterministic-plan.schema.json",
-      "size": 4153,
+      "size": 4635,
       "type": "file"
     },
     {
-      "hash": "sha256:4ca9da5b7592754d1c7a7026705ac3d706880520cd8aa0ecaa025869880ecf56",
+      "hash": "sha256:f03e904ce98d598743caea865268b560215c6a057fd16fe2267cee6ca7d662be",
       "id": "deep-audit-deterministic-runner",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/run-deterministic-deep-audit.mjs",
-      "size": 26892,
+      "size": 32610,
       "type": "file"
     },
     {
-      "hash": "sha256:b2bb5075f851b074ed40430f7c58e87c1c265736df7d2e0053dafe31ca2e0859",
+      "hash": "sha256:6ff4669aa5e628360b91925a67a08dd2330d4e5bd50fbee92dab1aa967a0e231",
       "id": "deep-audit-deterministic-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-run-deterministic-deep-audit.mjs",
-      "size": 27958,
+      "size": 32049,
       "type": "file"
     },
     {
-      "hash": "sha256:d468a495dcb2754cc6b01d162e8ffc051b3bf3c3f0e9446cef3712a232f3a809",
+      "hash": "sha256:1b051029b81a3d44f3231d5c22ac74fdf4bcfb22648e1fcce280ecdecb80b104",
       "id": "deep-audit-evidence-contract",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/lib/deep-audit-evidence-contract.mjs",
-      "size": 146349,
+      "size": 147790,
       "type": "file"
     },
     {
-      "hash": "sha256:0adf3d7241df0fee9fd5d7a8d8ca637036bdeb5c43f67df3366cf6516914a656",
+      "hash": "sha256:824418ebee02d9ee9916c649bdde9cc5add237aa2f5ad7c97bb704336162e93d",
       "id": "deep-audit-evidence-contract-schema",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/schemas/deep-audit-evidence-contract.schema.json",
-      "size": 49106,
+      "size": 50399,
       "type": "file"
     },
     {
-      "hash": "sha256:c9cdae539ac46b57de3cbe79aee39797fd23363a0ceeb40a16cd5f6502b18abc",
+      "hash": "sha256:aea9247eb6e342cc83f9bbbea6263eda2fb87c341b65333ec04438fba1c53d48",
       "id": "deep-audit-evidence-schema-parity-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-deep-audit-evidence-schema-parity.mjs",
-      "size": 16099,
+      "size": 16743,
       "type": "file"
     },
     {
@@ -2654,7 +2654,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 34,
-      "hash": "sha256:a36ab4f61fbe02aef7c3887b64d86bd6518537e02710fa61a149c3b5103efc24",
+      "hash": "sha256:2d9c1e31e2118c2b49463de1945159a52aa48ebcdfcde95b97d90dc895503c97",
       "id": "governance-control-plane-libraries",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2676,7 +2676,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:a77ac31f7289be33cc13b06697934e35c928a8de48ba6abf88a33f9db3e42cb1",
+      "hash": "sha256:efec84fac594a52c8fc34bbccf2fe50e1436931cb5cc4cf1a976d5b043039522",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3893,7 +3893,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 39,
-      "hash": "sha256:0cff70574fac18691526cb4664bc7619b41ee554edc1f5f65904553965fe45f8",
+      "hash": "sha256:a4a464c94032d06317c92fd1014e3769e34cca3e94646ef24099e2936171ba14",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -4348,7 +4348,7 @@
         "scripts/generated/"
       ],
       "files": 397,
-      "hash": "sha256:eba128e56338ead0e60780474a4458259cf221100081e3ab020474857e85f441",
+      "hash": "sha256:73253b2170a368f1de223d46d3cb18f97c4da74da21b2e2eed760fb5965c2f75",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -4438,12 +4438,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:8e8a3b94d1e4c85a4a0c28ae5a176eda560c84933ffd394490fd77bb6a3c2009",
+      "hash": "sha256:064ca246527e43cd138eafd92d3f4aed78e7334865ab488a27b9b09af013d3ab",
       "id": "staged-rollout-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/lib/staged-rollout.mjs",
-      "size": 298289,
+      "size": 299653,
       "type": "file"
     },
     {
@@ -4474,12 +4474,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:7d540e5b186783ca2a3d033e3a8151bdad1026e50877476af62817c75a473c3d",
+      "hash": "sha256:4dba96574afee6d381ab7b5a8061a182259d908dbbef609023712ce10fba0878",
       "id": "staged-rollout-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/staged-rollout.test.mjs",
-      "size": 201461,
+      "size": 202787,
       "type": "file"
     },
     {

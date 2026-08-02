@@ -271,9 +271,38 @@
       "type": "object", "additionalProperties": false, "required": ["argv", "exitCode", "startedAt", "finishedAt", "stdoutSha256", "stderrSha256", "stdoutTail", "stderrTail", "generatedOutputReceipt"],
       "properties": {"argv": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}}, "exitCode": {"type": "integer"}, "startedAt": {"$ref": "#/$defs/isoTime"}, "finishedAt": {"$ref": "#/$defs/isoTime"}, "stdoutSha256": {"$ref": "#/$defs/sha256"}, "stderrSha256": {"$ref": "#/$defs/sha256"}, "stdoutTail": {"type": "string"}, "stderrTail": {"type": "string"}, "generatedOutputReceipt": {"$ref": "#/$defs/generatedOutputReceipt"}}
     },
-    "deterministicPayload": {
+    "deterministicObservedPayload": {
       "type": "object", "additionalProperties": false, "required": ["dim", "name", "planDigest", "capabilities", "commandIds", "commands", "findings", "summary", "sandboxReceipt"],
       "properties": {"dim": {"type": "integer", "minimum": 1, "maximum": 91}, "name": {"$ref": "#/$defs/nonEmpty"}, "planDigest": {"$ref": "#/$defs/sha256"}, "capabilities": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}}, "commandIds": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}}, "commands": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/deterministicCommand"}}, "findings": {"type": "array"}, "summary": {"$ref": "#/$defs/nonEmpty"}, "sandboxReceipt": {"$ref": "#/$defs/sandbox"}}
+    },
+    "deterministicUnobservedPayload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["dim", "name", "planDigest", "capabilities", "commandIds", "status", "reasonCode", "credentialReferences", "observedAt", "summary"],
+      "properties": {
+        "dim": {"const": 83},
+        "name": {"$ref": "#/$defs/nonEmpty"},
+        "planDigest": {"$ref": "#/$defs/sha256"},
+        "capabilities": {"const": ["local", "network", "published-release"]},
+        "commandIds": {"const": ["published-live-deploy"]},
+        "status": {"const": "UNOBSERVED"},
+        "reasonCode": {"const": "NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT"},
+        "credentialReferences": {
+          "type": "object", "additionalProperties": false,
+          "required": ["required", "observed"],
+          "properties": {
+            "required": {"const": ["NETLIFY_LIVE_BASIC_AUTH", "NETLIFY_PREVIEW_PASSWORD"]},
+            "observed": {"type": "array", "maxItems": 0}
+          }
+        },
+        "observedAt": {"$ref": "#/$defs/isoTime"},
+        "summary": {"$ref": "#/$defs/nonEmpty"}
+      }
+    },
+    "deterministicPayload": {
+      "oneOf": [
+        {"$ref": "#/$defs/deterministicObservedPayload"},
+        {"$ref": "#/$defs/deterministicUnobservedPayload"}
+      ]
     },
     "judgmentFinding": {
       "type": "object", "additionalProperties": false, "required": ["path", "line", "severity", "rule", "problem", "recommendation"],

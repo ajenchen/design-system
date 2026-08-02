@@ -363,6 +363,10 @@ Phase 1-3 覆蓋 D1+D2;D3-D6 chain 專門 skill。**模式**:高效(default)scop
 Deep final report 的收斂回執使用固定、可機械驗證的字串:`knowledge-prune: same-run complete`、`governance-coverage: same-run reconciled`（並列出各 `UNOBSERVED`），以及 `second opinion: waived by user`／`second opinion: not required by task`／可驗證的 required peer review 其一。回執缺席時 final report 必須 fail closed，不得把 recovery trigger 當作已完成證據。
 若 user 明確只豁免本次 second opinion，formal run 準備必顯式帶 `--second-opinion-waiver user`，把 exact one-run authority 固定進 immutable manifest；報告文字不能反向替未授權 run 補造 waiver，也不得和任何 peer selection 參數並用。
 
+Formal deterministic coverage 的 credential-gated dim 83 若兩個 accepted credential references（`NETLIFY_LIVE_BASIC_AUTH`、`NETLIFY_PREVIEW_PASSWORD`）都缺席，必執行 canonical recorder `node scripts/run-deterministic-deep-audit.mjs --record-unobserved=NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT --dims=83`，產出 typed `UNOBSERVED` receipt。該 receipt 只能封閉「是否逐 dim 枚舉」的 coverage gap；不得含 command execution / sandbox receipt、不得標 PASS，且必產生 trust downgrade、維持 `promotionEligible=false`。任一 reference 存在但失效時應 fail closed，不可冒充「缺席」。
+
+`node scripts/verify-deep-audit-coverage.mjs` 預設仍以 promotion eligibility 為 exit gate。只有任務明確接受 single-provider／self-attested coverage closure 時，才使用 `--require coverage`；此模式只在所有 expected evidence 存在、通過 closed-schema 與 frozen-run 驗證、`coverageStatus=complete` 時 exit 0，並仍完整回報 findings、`UNOBSERVED` 與 trust downgrades，不把 coverage completeness 等同 clean compliance 或 release approval。
+
 Deep mode 的 full D10 同時依 [runtime evidence retention canonical](../../references/runtime-evidence-retention.md) 枚舉各 observed worktree 的 runtime evidence、保留 live/genuine/unexpired closure，並自主回收可安全判定的 unreferenced blocked/failed/stale whole run；禁止 partial CAS pruning 或新增 user approval ceremony。
 
 **Recovery trigger（非主路徑）**:post-audit final report validator hook(`check_audit_post_report_validator.sh`)若偵測 deep run 漏掉 same-run prune／coverage receipt，才 emit `prune-chain-trigger` 讓 `inject_pending_self_audit.sh` 下 turn 補救。這不能取代上段同一 run 的直接 phase，也不能讓缺 receipt 的 deep-audit final verdict 通過。

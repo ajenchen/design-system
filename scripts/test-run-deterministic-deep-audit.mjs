@@ -187,6 +187,101 @@ test('plan validator and CLI reject unsafe or unknown argv', () => {
   assert.throws(() => parseDeterministicRunnerArgs(['--execute', '--mystery']), /unknown option/)
   assert.throws(() => parseDeterministicRunnerArgs(['--allow-build']), /require --execute/)
   assert.throws(() => parseDeterministicRunnerArgs(['--execute', '--allow-published-release']), /also requires --allow-network/)
+  const unobserved = parseDeterministicRunnerArgs([
+    '--record-unobserved=NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT',
+    '--dims=83',
+  ])
+  assert.equal(unobserved.recordUnobserved, 'NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT')
+  assert.deepEqual(unobserved.dims, [83])
+  assert.throws(
+    () => parseDeterministicRunnerArgs(['--record-unobserved=NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT', '--dims=83', '--execute']),
+    /cannot be combined/,
+  )
+  assert.throws(
+    () => parseDeterministicRunnerArgs(['--record-unobserved=NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT', '--dims=84']),
+    /restricted to exact --dims=83/,
+  )
+  const misplacedPolicy = structuredClone(JSON.parse(readFileSync(PLAN_PATH, 'utf8')))
+  misplacedPolicy.dimensions.find((dimension) => dimension.dim === 84).unobservedPolicy = structuredClone(
+    misplacedPolicy.dimensions.find((dimension) => dimension.dim === 83).unobservedPolicy,
+  )
+  assert.throws(
+    () => validateDeterministicDeepAuditPlan(misplacedPolicy, { repoRoot: ROOT }),
+    /not the exact credential-gated live-deploy exception/,
+  )
+})
+
+test('credentialless dim 83 records one exact UNOBSERVED receipt without executing or claiming PASS', async () => {
+  const planState = loadDeterministicDeepAuditPlan({ repoRoot: ROOT })
+  const dimension = planState.dimensionByNumber.get(83)
+  const activeRun = {
+    manifestSha256: 'a'.repeat(64),
+    manifest: { worktreeFingerprint: 'b'.repeat(64), inventory: [] },
+  }
+  let commandsExecuted = 0
+  const result = await deterministicRunnerTestHarness.recordUnobserved({
+    repoRoot: ROOT,
+    planState,
+    dimension,
+    args: {
+      recordUnobserved: 'NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT',
+    },
+    environment: {},
+    now: new Date('2026-08-02T04:00:00.000Z'),
+    dependencies: {
+      loadActiveRun: async () => activeRun,
+      expandCoverage: () => ({
+        inventoryPaths: ['scripts/verify-published-deploy.mjs'],
+        inventoryDigest: 'c'.repeat(64),
+        filesScanned: 1,
+      }),
+      buildEnvelope: (value) => value,
+      runCommand: async () => { commandsExecuted += 1 },
+    },
+  })
+  assert.equal(commandsExecuted, 0)
+  assert.equal(result.mode, 'record-unobserved')
+  assert.equal(result.status, 'UNOBSERVED')
+  assert.equal(result.commandsExecuted, 0)
+  assert.equal(result.dimensionsReceipted, 1)
+  assert.equal(result.testPublications.length, 1)
+  const publication = result.testPublications[0]
+  assert.equal(publication.appendExistingCategory, true)
+  assert.equal(publication.items[0].relativePath, 'deterministic/dim-83.json')
+  const { envelope } = publication.items[0]
+  assert.equal(envelope.payload.dim, 83)
+  assert.equal(envelope.payload.status, 'UNOBSERVED')
+  assert.equal(envelope.payload.reasonCode, 'NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT')
+  assert.deepEqual(envelope.payload.capabilities, ['local', 'network', 'published-release'])
+  assert.deepEqual(envelope.payload.credentialReferences, {
+    required: ['NETLIFY_LIVE_BASIC_AUTH', 'NETLIFY_PREVIEW_PASSWORD'],
+    observed: [],
+  })
+  assert.match(envelope.payload.summary, /credential-gated live render was not observed/)
+  assert.match(envelope.payload.summary, /CI dimensions 64\/66.*propagation evidence/)
+  assert.deepEqual(envelope.command.argv, [
+    'node',
+    'scripts/run-deterministic-deep-audit.mjs',
+    '--record-unobserved=NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT',
+    '--dims=83',
+  ])
+  assert.equal(Object.hasOwn(envelope.payload, 'commands'), false)
+  assert.equal(Object.hasOwn(envelope.payload, 'sandboxReceipt'), false)
+
+  await assert.rejects(
+    () => deterministicRunnerTestHarness.recordUnobserved({
+      repoRoot: ROOT,
+      planState,
+      dimension,
+      args: { recordUnobserved: 'NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT' },
+      environment: { NETLIFY_PREVIEW_PASSWORD: 'present-but-redacted' },
+      now: new Date('2026-08-02T04:00:00.000Z'),
+      dependencies: {
+        loadActiveRun: async () => { throw new Error('credential check must happen first') },
+      },
+    }),
+    /cannot record credential absence.*NETLIFY_PREVIEW_PASSWORD/,
+  )
 })
 
 test('production runner rejects dependency/model overrides and the test seam cannot publish', async () => {

@@ -191,6 +191,7 @@ for (const [label, mutate] of [
 const baseEnvelope = schemaSample(schemas.deep.$defs.evidenceEnvelope, schemas.deep)
 const cases = [
   ['deterministic/local', 'deep-audit-deterministic', 'genericProducer', 'deterministicPayload'],
+  ['deterministic/unobserved', 'deep-audit-deterministic', 'genericProducer', 'deterministicUnobservedPayload'],
   ['judgment/legacy', 'deep-audit-judgment', 'concreteProducer', 'legacyJudgmentPayload'],
   ['judgment/managed', 'deep-audit-judgment', 'concreteProducer', 'managedJudgmentPayload'],
   ['hook/local', 'deep-audit-hook-residue', 'genericProducer', 'hookPayload'],
@@ -235,6 +236,16 @@ for (const [label, golden] of goldens) {
   assertPoisonRejected(`${label}:coverage-open`, golden, value => { value.coverage.unexpected = true })
   assertPoisonRejected(`${label}:payload-open`, golden, value => { value.payload.unexpected = true })
   assertPoisonRejected(`${label}:payload-missing`, golden, value => { value.payload = {} })
+}
+
+for (const [label, mutate] of [
+  ['reason', value => { value.payload.reasonCode = 'CREDENTIAL_UNKNOWN' }],
+  ['dimension', value => { value.payload.dim = 84 }],
+  ['observed-reference', value => { value.payload.credentialReferences.observed = ['NETLIFY_PREVIEW_PASSWORD'] }],
+  ['commands-forgery', value => { value.payload.commands = [] }],
+  ['sandbox-forgery', value => { value.payload.sandboxReceipt = {} }],
+]) {
+  assertPoisonRejected(`deterministic/unobserved:${label}`, goldens.get('deterministic/unobserved'), mutate)
 }
 
 const frozenSchemaManifest = {

@@ -10,7 +10,8 @@ const meta: Meta<typeof TooltipContent> = {
   parameters: {
     docs: {
       description: {
-        component: '補充畫面上未能清楚傳達的資訊。hover 或 focus 時出現。',
+        component:
+          '為圖示按鈕、截斷文字或不熟悉的控制項補上簡短、不可互動的說明，hover 或 focus 時出現。較豐富或可互動的內容改用 HoverCard 或 Popover；關鍵狀態、錯誤或必須操作的資訊則應直接顯示或使用 Alert。',
       },
     },
   },

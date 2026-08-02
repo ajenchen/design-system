@@ -11,8 +11,10 @@ import {
 } from './lib/deep-audit-evidence-contract.mjs'
 import {
   DETERMINISTIC_CAPABILITY_ORDER,
+  NETLIFY_LIVE_UNOBSERVED_REASON,
   assertDeterministicMatrixParity,
   canonicalDeterministicRunnerArgv,
+  canonicalDeterministicUnobservedRunnerArgv,
   deterministicCapabilitiesForDimension,
   expandDeterministicCoverage,
   loadDeterministicDeepAuditPlan,
@@ -45,6 +47,7 @@ export function parseDeterministicRunnerArgs(argv) {
     allowBuild: false,
     allowNetwork: false,
     allowPublishedRelease: false,
+    recordUnobserved: null,
     profile: 'all',
     dims: null,
   }
@@ -55,6 +58,7 @@ export function parseDeterministicRunnerArgs(argv) {
     else if (token === '--allow-build') result.allowBuild = true
     else if (token === '--allow-network') result.allowNetwork = true
     else if (token === '--allow-published-release') result.allowPublishedRelease = true
+    else if (token.startsWith('--record-unobserved=')) result.recordUnobserved = token.slice('--record-unobserved='.length)
     else if (token.startsWith('--profile=')) result.profile = token.slice('--profile='.length)
     else if (token.startsWith('--dims=')) {
       const raw = token.slice('--dims='.length)
@@ -65,6 +69,14 @@ export function parseDeterministicRunnerArgs(argv) {
   if (!PROFILE_VALUES.has(result.profile)) fail(`unknown profile:${result.profile}`)
   if (result.dims && result.profile !== 'all') fail('--dims cannot be combined with a non-all --profile')
   if (result.check && result.execute) fail('--check cannot be combined with --execute')
+  if (result.recordUnobserved !== null) {
+    if (result.recordUnobserved !== NETLIFY_LIVE_UNOBSERVED_REASON) fail(`unknown unobserved reason:${result.recordUnobserved}`)
+    if (result.check || result.execute) fail('--record-unobserved cannot be combined with --check or --execute')
+    if (result.allowBuild || result.allowNetwork || result.allowPublishedRelease) fail('--record-unobserved cannot accept execution capability flags')
+    if (result.profile !== 'all' || result.dims?.length !== 1 || result.dims[0] !== 83) {
+      fail('--record-unobserved is restricted to exact --dims=83')
+    }
+  }
   if (!result.execute && (result.allowBuild || result.allowNetwork || result.allowPublishedRelease)) fail('capability flags require --execute')
   if (result.allowPublishedRelease && !result.allowNetwork) fail('--allow-published-release also requires --allow-network')
   return result
@@ -295,6 +307,94 @@ function commandPayload(result) {
     stdoutTail: outputTail(result.stdout),
     stderrTail: outputTail(result.stderr),
     generatedOutputReceipt: result.generatedOutputReceipt,
+  }
+}
+
+function presentCredentialReferences(policy, environment) {
+  return policy.requiredCredentialReferences.filter((reference) => (
+    typeof environment?.[reference] === 'string' && environment[reference].length > 0
+  ))
+}
+
+async function recordDeterministicUnobservedCore({
+  repoRoot,
+  planState,
+  dimension,
+  args,
+  environment = process.env,
+  now = new Date(),
+  dependencies = {},
+}) {
+  if (args.recordUnobserved !== NETLIFY_LIVE_UNOBSERVED_REASON || dimension?.dim !== 83) {
+    fail('unobserved evidence is restricted to the canonical credential-gated dim 83 route')
+  }
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime())) fail('unobserved observation time is invalid')
+  const policy = dimension.unobservedPolicy
+  if (!policy || policy.reasonCode !== args.recordUnobserved) fail('dim 83 lacks its exact unobserved policy binding')
+  const observedReferences = presentCredentialReferences(policy, environment)
+  if (observedReferences.length) {
+    fail(`cannot record credential absence while a required reference is present:${observedReferences.join(',')}`)
+  }
+
+  const loadRun = dependencies.loadActiveRun ?? ((options) => loadActiveDeepAuditRun(options))
+  const expandCoverage = dependencies.expandCoverage ?? expandDeterministicCoverage
+  const buildEnvelope = dependencies.buildEnvelope ?? buildDeepAuditEvidenceEnvelope
+  const writeBatch = dependencies.writeBatch ?? ((options) => writeDeepAuditEvidenceEnvelopeBatch(options))
+  const activeRun = await loadRun({ repoRoot, requireCurrent: true })
+  const coverage = expandCoverage(planState, activeRun.manifest, dimension.dim)
+  const observedAt = now.toISOString()
+  const commandArgv = canonicalDeterministicUnobservedRunnerArgv({
+    dim: dimension.dim,
+    reasonCode: policy.reasonCode,
+  })
+  const payload = {
+    dim: dimension.dim,
+    name: dimension.name,
+    planDigest: planState.planDigest,
+    capabilities: deterministicCapabilitiesForDimension(planState, dimension.dim),
+    commandIds: dimension.commandIds,
+    status: 'UNOBSERVED',
+    reasonCode: policy.reasonCode,
+    credentialReferences: {
+      required: policy.requiredCredentialReferences,
+      observed: [],
+    },
+    observedAt,
+    summary: "Dim 83's credential-gated live render was not observed because no accepted Netlify credential reference was available; CI dimensions 64/66 separately own protected release, mirror, and consumer propagation evidence.",
+  }
+  const envelope = buildEnvelope({
+    activeRun,
+    evidenceKind: 'deep-audit-deterministic',
+    producer: deepAuditEvidenceContract.genericProducer,
+    command: {
+      argv: commandArgv,
+      cwd: '.',
+      exitCode: 0,
+      startedAt: observedAt,
+      finishedAt: observedAt,
+    },
+    coveragePaths: coverage.inventoryPaths,
+    payload,
+  })
+  const relativePath = `deterministic/dim-${dimension.dim}.json`
+  const published = await writeBatch({
+    repoRoot,
+    items: [{ relativePath, envelope }],
+    appendExistingCategory: true,
+  })
+  if (!published || published.count !== 1 || !Array.isArray(published.paths) || published.paths.length !== 1) {
+    fail('atomic unobserved evidence publication returned an incomplete receipt')
+  }
+  return {
+    schemaVersion: 1,
+    evidenceKind: 'deep-audit-deterministic-run-result',
+    mode: 'record-unobserved',
+    status: 'UNOBSERVED',
+    reasonCode: policy.reasonCode,
+    planDigest: planState.planDigest,
+    commandsExecuted: 0,
+    dimensionsReceipted: 1,
+    receipts: [{ dim: dimension.dim, relativePath, path: published.paths[0] }],
   }
 }
 
@@ -577,6 +677,27 @@ export const deterministicRunnerTestHarness = Object.freeze({
     })
     return { ...result, testPublications: publications }
   },
+  async recordUnobserved(options = {}) {
+    if (!options || typeof options !== 'object' || Array.isArray(options)) fail('test options must be an object')
+    const { dependencies = {}, ...executionOptions } = options
+    if (!dependencies || typeof dependencies !== 'object' || Array.isArray(dependencies)) fail('test dependencies must be an object')
+    if (Object.hasOwn(dependencies, 'writeBatch')) fail('test harness forbids publication dependencies:writeBatch')
+    const publications = []
+    const result = await recordDeterministicUnobservedCore({
+      ...executionOptions,
+      dependencies: {
+        ...dependencies,
+        writeBatch: async (value) => {
+          publications.push(value)
+          return {
+            count: value.items.length,
+            paths: value.items.map((item) => `memory://deterministic-test/${item.relativePath}`),
+          }
+        },
+      },
+    })
+    return { ...result, testPublications: publications }
+  },
 })
 
 export async function runDeterministicDeepAudit(argv = process.argv.slice(2), options = {}) {
@@ -590,11 +711,24 @@ export async function runDeterministicDeepAudit(argv = process.argv.slice(2), op
   assertDeterministicMatrixParity(planState, { repoRoot })
   const dimensions = selectDeterministicDimensions(planState, args)
   if (!dimensions.length) fail(`profile ${args.profile} selected no dimensions`)
+  if (args.recordUnobserved !== null) {
+    return recordDeterministicUnobservedCore({
+      repoRoot,
+      planState,
+      dimension: dimensions[0],
+      args,
+    })
+  }
   if (!args.execute) return deterministicPlanView(planState, dimensions, args)
   return executeDeterministicDeepAuditCore({ repoRoot, planState, dimensions, args })
 }
 
 function printHuman(result) {
+  if (result.mode === 'record-unobserved') {
+    console.log(`Deterministic deep-audit: dim 83 UNOBSERVED (${result.reasonCode})`)
+    console.log(`  ${result.receipts[0].relativePath}`)
+    return
+  }
   if (result.mode === 'execute') {
     console.log(`Deterministic deep-audit: ${result.commandsExecuted} command(s), ${result.dimensionsReceipted} independent receipt(s)`)
     for (const receipt of result.receipts) console.log(`  dim ${receipt.dim}: ${receipt.relativePath}`)

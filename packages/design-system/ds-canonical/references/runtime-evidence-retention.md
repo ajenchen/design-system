@@ -52,6 +52,27 @@ A full bundle may be built only after a peer capability selection and dispatch s
 immediately before the existing dispatch/archive path needs it. Repeated attempts for the same
 frozen target should reuse existing valid immutable evidence rather than create parallel copies.
 
+## Typed unobserved deterministic coverage
+
+The credential-gated published-live-deploy dimension may be recorded as `UNOBSERVED` only when
+both accepted credential references, `NETLIFY_LIVE_BASIC_AUTH` and `NETLIFY_PREVIEW_PASSWORD`, are
+absent or empty. The canonical recorder is:
+
+```text
+node scripts/run-deterministic-deep-audit.mjs --record-unobserved=NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT --dims=83
+```
+
+The closed receipt records the exact reason and empty observed-reference set. It contains no
+deployment command observations or sandbox receipt and never claims PASS. If either reference is
+present but unusable, execution must fail closed rather than reclassify it as absent.
+
+A valid typed `UNOBSERVED` receipt closes enumeration coverage only. It adds a trust downgrade,
+keeps compliance blocked and `promotionEligible=false`, and remains visible in verifier output.
+The verifier's default exit gate requires promotion eligibility. An explicitly authorized
+single-provider or self-attested audit may use `--require coverage`, which exits successfully only
+when every expected evidence artifact validates and `coverageStatus=complete`; it does not suppress
+findings or upgrade compliance/release authority.
+
 ## Deep-audit and prune procedure
 
 A full/deep audit and knowledge-prune D10 must:

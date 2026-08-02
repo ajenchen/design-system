@@ -13,6 +13,11 @@ const DEFAULT_REPO_ROOT = resolve(SCRIPT_ROOT, '..')
 export const DEFAULT_DETERMINISTIC_PLAN_PATH = resolve(SCRIPT_ROOT, 'deep-audit-deterministic-plan.json')
 const DEFAULT_SCHEMA_PATH = resolve(SCRIPT_ROOT, 'schemas/deep-audit-deterministic-plan.schema.json')
 export const DETERMINISTIC_CAPABILITY_ORDER = Object.freeze(['local', 'build', 'network', 'published-release'])
+export const NETLIFY_LIVE_UNOBSERVED_REASON = 'NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT'
+export const NETLIFY_LIVE_CREDENTIAL_REFERENCES = Object.freeze([
+  'NETLIFY_LIVE_BASIC_AUTH',
+  'NETLIFY_PREVIEW_PASSWORD',
+])
 
 function fail(message) {
   throw new Error(`deterministic deep-audit plan blocked:${message}`)
@@ -117,13 +122,28 @@ export function validateDeterministicDeepAuditPlan(plan, { repoRoot = DEFAULT_RE
   const dimensionByNumber = new Map()
   const referencedCommands = new Set()
   for (const dimension of plan.dimensions) {
-    exactKeys(dimension, ['dim', 'name', 'commandIds', 'coverage'], `dimension ${dimension.dim}`)
+    exactKeys(
+      dimension,
+      dimension.unobservedPolicy
+        ? ['dim', 'name', 'commandIds', 'coverage', 'unobservedPolicy']
+        : ['dim', 'name', 'commandIds', 'coverage'],
+      `dimension ${dimension.dim}`,
+    )
     if (dimensionByNumber.has(dimension.dim)) fail(`duplicate dimension:${dimension.dim}`)
     for (const commandId of dimension.commandIds) {
       if (!commandById.has(commandId)) fail(`dimension ${dimension.dim} references unknown command:${commandId}`)
       referencedCommands.add(commandId)
     }
     for (const pattern of [...dimension.coverage.include, ...dimension.coverage.exclude]) safePattern(pattern, `dimension ${dimension.dim} coverage`)
+    if (dimension.unobservedPolicy) {
+      exactKeys(dimension.unobservedPolicy, ['reasonCode', 'requiredCredentialReferences'], `dimension ${dimension.dim} unobserved policy`)
+      if (dimension.dim !== 83
+        || stableStringify(dimension.commandIds) !== '["published-live-deploy"]'
+        || dimension.unobservedPolicy.reasonCode !== NETLIFY_LIVE_UNOBSERVED_REASON
+        || stableStringify(dimension.unobservedPolicy.requiredCredentialReferences) !== stableStringify(NETLIFY_LIVE_CREDENTIAL_REFERENCES)) {
+        fail(`dimension ${dimension.dim} unobserved policy is not the exact credential-gated live-deploy exception`)
+      }
+    }
     dimensionByNumber.set(dimension.dim, dimension)
   }
   const orphanCommands = [...commandById.keys()].filter((id) => !referencedCommands.has(id))
@@ -192,4 +212,16 @@ export function canonicalDeterministicRunnerArgv({ dims, allowBuild = false, all
   if (allowNetwork) argv.push('--allow-network')
   if (allowPublishedRelease) argv.push('--allow-published-release')
   return argv
+}
+
+export function canonicalDeterministicUnobservedRunnerArgv({ dim, reasonCode } = {}) {
+  if (dim !== 83 || reasonCode !== NETLIFY_LIVE_UNOBSERVED_REASON) {
+    fail('canonical unobserved runner argv is restricted to the credential-gated dim 83 route')
+  }
+  return [
+    'node',
+    'scripts/run-deterministic-deep-audit.mjs',
+    `--record-unobserved=${reasonCode}`,
+    '--dims=83',
+  ]
 }

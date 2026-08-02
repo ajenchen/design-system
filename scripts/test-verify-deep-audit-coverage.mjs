@@ -35,10 +35,20 @@ import {
 } from './lib/deep-audit-evidence-contract.mjs'
 import {
   hookDimensionNumbers,
+  parseVerifierArgs,
   resolveVerifierProviderAssertions,
   summarizeDeepAuditCompliance,
+  validateDeterministicReceipt,
+  verifierExitCode,
   verifyDeepAuditCoverage,
 } from './verify-deep-audit-coverage.mjs'
+import {
+  NETLIFY_LIVE_CREDENTIAL_REFERENCES,
+  NETLIFY_LIVE_UNOBSERVED_REASON,
+  canonicalDeterministicUnobservedRunnerArgv,
+  expandDeterministicCoverage,
+  loadDeterministicDeepAuditPlan,
+} from './lib/deep-audit-deterministic-plan.mjs'
 import { loadHookEvidencePlan } from './lib/hook-evidence-plan.mjs'
 
 const fixture = mkdtempSync(join(tmpdir(), 'deep-audit-contract-'))
@@ -242,6 +252,9 @@ try {
   write('packages/design-system/src/components/alpha/alpha.tsx', 'export const alpha = 1\n')
   write('packages/design-system/src/components/Retired/retired.tsx', 'export const Retired = 1\n')
   write('scripts/test-fixture.mjs', 'process.stdout.write("fixture complete\\n")\n')
+  write('scripts/verify-published-deploy.mjs', '// fixture published-deploy verifier\n')
+  write('template/ds-product-template/.storybook/main.ts', 'export default {}\n')
+  write('.github/workflows/mirror-to-published-template.yml', 'name: fixture mirror\n')
   // The build-graph loader validates the same closed provider registry contract as production.
   // Copy the canonical registry + schema instead of maintaining a stale, permissive mini-shape.
   write('packages/governance/canonical/providers.json', readFileSync(resolve(repositoryRoot, 'packages/governance/canonical/providers.json'), 'utf8'))
@@ -762,7 +775,81 @@ try {
   })
   assert.equal(downgradedSummary.complianceStatus, 'blocked')
   assert.equal(downgradedSummary.promotionEligible, false)
-  console.log('✓ coverage completeness cannot hide findings or untrusted execution/containment downgrades')
+
+  assert.deepEqual(parseVerifierArgs(['--require', 'coverage', '--json']), {
+    json: true,
+    require: 'coverage',
+  })
+  assert.equal(parseVerifierArgs([]).require, 'promotion')
+  throwsBlocked(() => parseVerifierArgs(['--require=trust']), /--require must be coverage or promotion/)
+  throwsBlocked(
+    () => parseVerifierArgs(['--require=coverage', '--require=promotion']),
+    /--require may only be provided once/,
+  )
+  assert.equal(verifierExitCode({ coverageStatus: 'complete', promotionEligible: false }, 'coverage'), 0)
+  assert.equal(verifierExitCode({ coverageStatus: 'incomplete', promotionEligible: true }, 'coverage'), 1)
+  assert.equal(verifierExitCode({ coverageStatus: 'complete', promotionEligible: false }), 1)
+  assert.equal(verifierExitCode({ coverageStatus: 'complete', promotionEligible: true }, 'promotion'), 0)
+
+  const deterministicPlanState = loadDeterministicDeepAuditPlan({ repoRoot: repositoryRoot })
+  const dim83 = deterministicPlanState.dimensionByNumber.get(83)
+  const unobservedCoverage = expandDeterministicCoverage(deterministicPlanState, activeSecond.manifest, 83)
+  const unobservedCommand = {
+    ...command(),
+    argv: canonicalDeterministicUnobservedRunnerArgv({
+      dim: 83,
+      reasonCode: NETLIFY_LIVE_UNOBSERVED_REASON,
+    }),
+  }
+  const unobservedEnvelope = buildDeepAuditEvidenceEnvelope({
+    activeRun: activeSecond,
+    evidenceKind: 'deep-audit-deterministic',
+    producer: deepAuditEvidenceContract.genericProducer,
+    command: unobservedCommand,
+    coveragePaths: unobservedCoverage.inventoryPaths,
+    payload: {
+      dim: 83,
+      name: dim83.name,
+      planDigest: deterministicPlanState.planDigest,
+      capabilities: ['local', 'network', 'published-release'],
+      commandIds: ['published-live-deploy'],
+      status: 'UNOBSERVED',
+      reasonCode: NETLIFY_LIVE_UNOBSERVED_REASON,
+      credentialReferences: {
+        required: [...NETLIFY_LIVE_CREDENTIAL_REFERENCES],
+        observed: [],
+      },
+      observedAt: unobservedCommand.finishedAt,
+      summary: 'Published live deployment was not observed because no accepted credential reference was supplied.',
+    },
+  })
+  assert.deepEqual(
+    validateDeterministicReceipt(unobservedEnvelope, 83, activeSecond, deterministicPlanState),
+    { status: 'UNOBSERVED', reasonCode: NETLIFY_LIVE_UNOBSERVED_REASON },
+  )
+  for (const poison of [
+    envelope => { envelope.payload.reasonCode = 'CREDENTIAL_UNKNOWN' },
+    envelope => { envelope.payload.credentialReferences.observed = ['NETLIFY_PREVIEW_PASSWORD'] },
+    envelope => { envelope.command.argv = ['node', 'scripts/run-deterministic-deep-audit.mjs', '--dims=83'] },
+  ]) {
+    const poisoned = structuredClone(unobservedEnvelope)
+    poison(poisoned)
+    throwsBlocked(
+      () => validateDeterministicReceipt(poisoned, 83, activeSecond, deterministicPlanState),
+      /deep-audit coverage verification failed closed/,
+    )
+  }
+  const unobservedSummary = summarizeDeepAuditCompliance({
+    totalGaps: 0,
+    envelopes: [unobservedEnvelope],
+  })
+  assert.equal(unobservedSummary.coverageStatus, 'complete')
+  assert.equal(unobservedSummary.complianceStatus, 'blocked')
+  assert.equal(unobservedSummary.promotionEligible, false)
+  assert.equal(unobservedSummary.trustDowngrades.unobservedDeterministicCoverage, 1)
+  assert.equal(verifierExitCode(unobservedSummary, 'coverage'), 0)
+  assert.equal(verifierExitCode(unobservedSummary), 1)
+  console.log('✓ coverage-only completion accepts typed UNOBSERVED evidence without hiding promotion downgrades')
 
   const alias = resolve(activeSecond.runRoot, 'deterministic/dim-1-alias.json')
   linkSync(resolve(activeSecond.runRoot, 'deterministic/dim-1.json'), alias)

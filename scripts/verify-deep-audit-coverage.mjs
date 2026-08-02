@@ -15,8 +15,11 @@ import {
 } from './lib/deep-audit-evidence-contract.mjs'
 import { resolveRuntimeEvidencePath } from './lib/governance-runtime-evidence.mjs'
 import {
+  NETLIFY_LIVE_CREDENTIAL_REFERENCES,
+  NETLIFY_LIVE_UNOBSERVED_REASON,
   assertDeterministicMatrixParity,
   canonicalDeterministicRunnerArgv,
+  canonicalDeterministicUnobservedRunnerArgv,
   deterministicCapabilitiesForDimension,
   expandDeterministicCoverage,
   loadDeterministicDeepAuditPlan,
@@ -39,11 +42,20 @@ function fail(message) {
   throw new Error(`deep-audit coverage verification failed closed:${message}`)
 }
 
-function parseArgs(argv) {
-  const result = { json: false }
+export function parseVerifierArgs(argv) {
+  const result = { json: false, require: 'promotion' }
+  let requirementWasExplicit = false
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index]
     if (token === '--json') { result.json = true; continue }
+    if (token === '--require' || token.startsWith('--require=')) {
+      if (requirementWasExplicit) fail('--require may only be provided once')
+      const value = token.startsWith('--require=') ? token.slice('--require='.length) : argv[++index]
+      if (!['coverage', 'promotion'].includes(value)) fail('--require must be coverage or promotion')
+      result.require = value
+      requirementWasExplicit = true
+      continue
+    }
     if (!['--repo-root', '--evidence-root', '--self-provider', '--peer-provider', '--author-provider'].includes(token)) fail(`unknown option:${token}`)
     const value = argv[index + 1]
     if (!value || value.startsWith('--')) fail(`${token} requires a value`)
@@ -82,13 +94,34 @@ function expectedDeterministicRunner(payload, command, planState) {
   exact(command.argv, canonicalDeterministicRunnerArgv({ dims, allowBuild, allowNetwork, allowPublishedRelease }), `deterministic dim ${payload.dim} runner argv`)
 }
 
-function validateDeterministicReceipt(envelope, dim, active, planState) {
+export function validateDeterministicReceipt(envelope, dim, active, planState) {
   const dimension = planState.dimensionByNumber.get(dim)
   if (!dimension) fail(`deterministic dim ${dim} is absent from the canonical execution plan`)
   const payload = envelope.payload
   if (payload.dim !== dim || payload.name !== dimension.name || payload.planDigest !== planState.planDigest) fail(`deterministic dim ${dim} plan identity mismatches`)
   exact(payload.capabilities, deterministicCapabilitiesForDimension(planState, dim), `deterministic dim ${dim} capabilities`)
   exact(payload.commandIds, dimension.commandIds, `deterministic dim ${dim} command ids`)
+  if (payload.status === 'UNOBSERVED') {
+    const policy = dimension.unobservedPolicy
+    if (!policy || dim !== 83
+      || payload.reasonCode !== policy.reasonCode
+      || payload.reasonCode !== NETLIFY_LIVE_UNOBSERVED_REASON
+      || payload.observedAt !== envelope.command.finishedAt) {
+      fail(`deterministic dim ${dim} UNOBSERVED identity/reason mismatches canonical policy`)
+    }
+    exact(payload.credentialReferences, {
+      required: [...NETLIFY_LIVE_CREDENTIAL_REFERENCES],
+      observed: [],
+    }, `deterministic dim ${dim} credential-reference receipt`)
+    exact(
+      envelope.command.argv,
+      canonicalDeterministicUnobservedRunnerArgv({ dim, reasonCode: policy.reasonCode }),
+      `deterministic dim ${dim} UNOBSERVED runner argv`,
+    )
+    if (envelope.command.exitCode !== 0) fail(`deterministic dim ${dim} UNOBSERVED recorder did not complete`)
+    exact(envelope.coverage, expandDeterministicCoverage(planState, active.manifest, dim), `deterministic dim ${dim} coverage`)
+    return { status: 'UNOBSERVED', reasonCode: policy.reasonCode }
+  }
   if (payload.commands.length !== dimension.commandIds.length) fail(`deterministic dim ${dim} command receipt count mismatches`)
   for (let index = 0; index < dimension.commandIds.length; index += 1) {
     const planned = planState.commandById.get(dimension.commandIds[index])
@@ -98,6 +131,7 @@ function validateDeterministicReceipt(envelope, dim, active, planState) {
   }
   expectedDeterministicRunner(payload, envelope.command, planState)
   exact(envelope.coverage, expandDeterministicCoverage(planState, active.manifest, dim), `deterministic dim ${dim} coverage`)
+  return { status: 'PASS', reasonCode: null }
 }
 
 function judgmentCoverage(manifest) {
@@ -268,6 +302,7 @@ export function summarizeDeepAuditCompliance({ totalGaps, envelopes, waivedSelfR
     untrustedDependencies: 0,
     unverifiedContainment: 0,
     unverifiedModelCoverage: 0,
+    unobservedDeterministicCoverage: 0,
   }
   for (const envelope of envelopes) {
     if (envelope.evidenceKind === 'deep-audit-judgment') findings.judgment += envelope.payload.findings.length
@@ -282,6 +317,9 @@ export function summarizeDeepAuditCompliance({ totalGaps, envelopes, waivedSelfR
     if (['deep-audit-judgment', 'deep-audit-component-a1b'].includes(envelope.evidenceKind)
       && !envelope.payload.brokerReceipt && envelope.payload.accessReceipt?.status !== 'verified') {
       trustDowngrades.unverifiedModelCoverage += 1
+    }
+    if (envelope.evidenceKind === 'deep-audit-deterministic' && envelope.payload.status === 'UNOBSERVED') {
+      trustDowngrades.unobservedDeterministicCoverage += 1
     }
   }
   if (waivedSelfReview !== null) {
@@ -362,6 +400,7 @@ export function verifyDeepAuditCoverage({
   }
   const envelopes = []
   const modelEnvelopes = []
+  const deterministicUnobserved = []
   const waivedSelfReview = secondOpinionWaived
     ? loadWaivedSelfReviewBundle({ activeRun: active, explicitRoot, tiers })
     : null
@@ -369,7 +408,14 @@ export function verifyDeepAuditCoverage({
     const envelope = readEnvelope(active, explicitRoot, `deterministic/dim-${dim}.json`)
     if (!envelope) gaps.deterministic.push(dim)
     else {
-      validateDeterministicReceipt(envelope, dim, active, planState)
+      const validation = validateDeterministicReceipt(envelope, dim, active, planState)
+      if (validation.status === 'UNOBSERVED') {
+        deterministicUnobserved.push({
+          dim,
+          capability: deterministicCapabilitiesForDimension(planState, dim),
+          reasonCode: validation.reasonCode,
+        })
+      }
       envelopes.push(envelope)
     }
   }
@@ -477,6 +523,7 @@ export function verifyDeepAuditCoverage({
     componentCount: components.length,
     gaps,
     totalGaps,
+    unobserved: { deterministic: deterministicUnobserved },
     ...compliance,
   }
 }
@@ -494,7 +541,8 @@ function printHuman(result) {
   for (const provider of Object.keys(result.gaps.componentA1b)) console.log(`A1b ${provider} gaps:${result.gaps.componentA1b[provider].join(',') || 'none'}`)
   console.log(`coverage:${result.coverageStatus}; compliance:${result.complianceStatus}; promotion:${result.promotionEligible ? 'eligible' : 'blocked'}`)
   console.log(`findings:judgment=${result.findings.judgment}, A1b=${result.findings.componentA1b}, hook-warning=${result.findings.hookWarnings}, hook-blocking=${result.findings.hookBlocking}`)
-  console.log(`trust downgrades:dependencies=${result.trustDowngrades.untrustedDependencies}, containment=${result.trustDowngrades.unverifiedContainment}, model-coverage=${result.trustDowngrades.unverifiedModelCoverage}`)
+  console.log(`UNOBSERVED deterministic:${result.unobserved.deterministic.map((item) => `dim-${item.dim}:${item.reasonCode}`).join(',') || 'none'}`)
+  console.log(`trust downgrades:dependencies=${result.trustDowngrades.untrustedDependencies}, containment=${result.trustDowngrades.unverifiedContainment}, model-coverage=${result.trustDowngrades.unverifiedModelCoverage}, deterministic-unobserved=${result.trustDowngrades.unobservedDeterministicCoverage}`)
   console.log(result.promotionEligible ? '✅ immutable run evidence is complete, clean, and promotion-eligible' : '❌ immutable run is not promotion-eligible')
 }
 
@@ -510,7 +558,7 @@ export function resolveVerifierProviderAssertions(args = {}, environment = proce
 }
 
 export function main(argv = process.argv.slice(2)) {
-  const args = parseArgs(argv)
+  const args = parseVerifierArgs(argv)
   const providerAssertions = resolveVerifierProviderAssertions(args)
   const result = verifyDeepAuditCoverage({
     repoRoot: args['repo-root'] ?? DEFAULT_ROOT,
@@ -519,7 +567,14 @@ export function main(argv = process.argv.slice(2)) {
   })
   if (args.json) process.stdout.write(`${stableStringify(result, 2)}\n`)
   else printHuman(result)
-  return result.promotionEligible ? 0 : 1
+  return verifierExitCode(result, args.require)
+}
+
+export function verifierExitCode(result, requirement = 'promotion') {
+  if (!['coverage', 'promotion'].includes(requirement)) fail('verifier requirement is invalid')
+  return requirement === 'coverage'
+    ? (result.coverageStatus === 'complete' ? 0 : 1)
+    : (result.promotionEligible ? 0 : 1)
 }
 
 const IS_MAIN = (() => {

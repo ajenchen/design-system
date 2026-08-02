@@ -517,13 +517,13 @@ const TabsTrigger = React.forwardRef<
   // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
   const hasSuffix = badge != null || EndIcon !== undefined
-  // inlineAction 幾何:trigger 以 paddingRight 預留 action 空間 — icon 寬 + 原 gap(有 badge/endIcon
-  // 時 4px = suffix 內 gap-1;僅 action 時 8px = slot 間 gap-2)。2026-07-05 修 button-巢-button
+  // inlineAction 幾何:trigger 以 paddingRight 預留 action 空間 — icon 寬 + sibling
+  // canonical gap-2(8px)。badge/endIcon 是 trigger 內 suffix，不得壓縮與獨立 action 的間距。2026-07-05 修 button-巢-button
   // (sibling 佈局);2026-07-18 決策1 再進化:action 不再是 tablist DOM 內的 sibling(axe
   // aria-required-children critical),改 portal 到 TabsList 的 overlay 層(tablist 外),以量測座標
   // 定位在 trigger 右緣。trigger 仍在 tablist 內(Radix roving focus 要求)。
   const hasAction = inlineAction != null
-  const actionPaddingRight = hasAction ? iconSize + (hasSuffix ? 4 : 8) : undefined
+  const actionPaddingRight = hasAction ? iconSize + 8 : undefined
 
   // 量測 trigger 位置(viewport-relative,涵蓋 none/scroll/menu 三模式),同步 overlay 內 action 座標。
   const triggerElRef = React.useRef<HTMLButtonElement | null>(null)

@@ -1977,6 +1977,29 @@ function validatePayload(payload, evidenceKind, {
 } = {}) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) fail('evidence payload must be an object')
   if (evidenceKind === 'deep-audit-deterministic') {
+    if (payload.status === 'UNOBSERVED') {
+      exactKeys(payload, [
+        'dim', 'name', 'planDigest', 'capabilities', 'commandIds', 'status', 'reasonCode',
+        'credentialReferences', 'observedAt', 'summary',
+      ], 'deterministic unobserved payload')
+      if (payload.dim !== 83
+        || payload.reasonCode !== 'NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT'
+        || stableStringify(payload.capabilities) !== '["local","network","published-release"]'
+        || stableStringify(payload.commandIds) !== '["published-live-deploy"]') {
+        fail('deterministic unobserved payload is not the exact credential-gated dim 83 route')
+      }
+      exactKeys(payload.credentialReferences, ['required', 'observed'], 'deterministic unobserved credential references')
+      if (stableStringify(payload.credentialReferences.required)
+          !== '["NETLIFY_LIVE_BASIC_AUTH","NETLIFY_PREVIEW_PASSWORD"]'
+        || stableStringify(payload.credentialReferences.observed) !== '[]') {
+        fail('deterministic unobserved credential-reference receipt is invalid')
+      }
+      nonEmptyString(payload.name, 'deterministic unobserved payload name')
+      if (!SHA256.test(payload.planDigest)) fail('deterministic unobserved payload planDigest is invalid')
+      validIso(payload.observedAt, 'deterministic unobserved payload observedAt')
+      nonEmptyString(payload.summary, 'deterministic unobserved payload summary')
+      return
+    }
     exactKeys(payload, ['dim', 'name', 'planDigest', 'capabilities', 'commandIds', 'commands', 'findings', 'summary', 'sandboxReceipt'], 'deterministic payload')
     if (!Number.isInteger(payload.dim)) fail('deterministic payload dim is invalid')
     nonEmptyString(payload.name, 'deterministic payload name')

@@ -81,7 +81,9 @@ import {
   resolveRuntimeEvidencePath,
 } from '../../../scripts/lib/governance-runtime-evidence.mjs'
 import {
+  NETLIFY_LIVE_UNOBSERVED_REASON,
   assertDeterministicMatrixParity,
+  deterministicCapabilitiesForDimension,
   loadDeterministicDeepAuditPlan,
 } from '../../../scripts/lib/deep-audit-deterministic-plan.mjs'
 import { loadHookEvidencePlan } from '../../../scripts/lib/hook-evidence-plan.mjs'
@@ -1014,6 +1016,20 @@ function validateCoverageTopology(value, activeRun, label, { repoRoot = REPOSITO
   const providerIds = [value.providers.self, value.providers.peer].filter(provider => provider !== null)
   exactObjectKeys(value.gaps.judgment, providerIds, `${label} judgment gaps`)
   exactObjectKeys(value.gaps.componentA1b, providerIds, `${label} component A1b gaps`)
+  exactObjectKeys(value.unobserved, ['deterministic'], `${label} unobserved evidence`)
+  invariant(Array.isArray(value.unobserved.deterministic), `${label} deterministic unobserved evidence must be an array`)
+  for (const [index, item] of value.unobserved.deterministic.entries()) {
+    exactObjectKeys(item, ['dim', 'capability', 'reasonCode'], `${label} deterministic unobserved evidence ${index}`)
+    invariant(
+      item.dim === 83
+        && stableStringify(item.capability, 0) === stableStringify(deterministicCapabilitiesForDimension(
+          loadDeterministicDeepAuditPlan({ repoRoot }),
+          item.dim,
+        ), 0)
+        && item.reasonCode === NETLIFY_LIVE_UNOBSERVED_REASON,
+      `${label} deterministic unobserved evidence ${index} is not the canonical credential-gated dim 83 route`,
+    )
+  }
   return topology
 }
 
@@ -1022,7 +1038,7 @@ function validateFullCoverageProof(value, activeRun, options = {}) {
     'schemaVersion', 'evidenceKind', 'runId', 'manifestSha256', 'head', 'tree', 'inventoryDigest',
     'rubricDigest', 'worktreeFingerprint', 'authorProvider', 'providerIdentityDigest', 'providers', 'secondOpinion', 'tiers', 'componentCount', 'gaps',
     'totalGaps', 'coverageStatus', 'complianceStatus', 'promotionEligible', 'status',
-    'findings', 'trustDowngrades',
+    'findings', 'trustDowngrades', 'unobserved',
   ], 'deep-audit coverage proof')
   invariant(value.schemaVersion === 4 && value.evidenceKind === 'deep-audit-coverage-verification', 'deep-audit coverage proof identity is invalid or stale')
   const binding = activeRunBinding(activeRun)
@@ -1041,7 +1057,8 @@ function validateFullCoverageProof(value, activeRun, options = {}) {
   for (const providerGaps of [value.gaps?.judgment, value.gaps?.componentA1b]) gapLists.push(...Object.values(providerGaps ?? {}))
   invariant(gapLists.length > 3 && gapLists.every(list => Array.isArray(list) && list.length === 0), 'deep-audit coverage proof hides unresolved gaps')
   exactObjectKeys(value.findings, ['judgment', 'componentA1b', 'hookWarnings', 'hookBlocking'], 'deep-audit coverage findings')
-  exactObjectKeys(value.trustDowngrades, ['untrustedDependencies', 'unverifiedContainment', 'unverifiedModelCoverage'], 'deep-audit coverage trust downgrades')
+  exactObjectKeys(value.trustDowngrades, ['untrustedDependencies', 'unverifiedContainment', 'unverifiedModelCoverage', 'unobservedDeterministicCoverage'], 'deep-audit coverage trust downgrades')
+  invariant(value.trustDowngrades.unobservedDeterministicCoverage === value.unobserved.deterministic.length, 'deep-audit coverage proof unobserved evidence/trust downgrade counts differ')
   invariant(Object.values(value.findings).every(count => Number.isSafeInteger(count) && count === 0), 'deep-audit coverage proof contains compliance findings')
   invariant(Object.values(value.trustDowngrades).every(count => Number.isSafeInteger(count) && count === 0), 'deep-audit coverage proof contains trust downgrades')
   return topology
@@ -1165,7 +1182,7 @@ function validatePremergeCoverageProof(value, activeRun, options = {}) {
     'schemaVersion', 'evidenceKind', 'runId', 'manifestSha256', 'head', 'tree', 'inventoryDigest',
     'rubricDigest', 'worktreeFingerprint', 'authorProvider', 'providerIdentityDigest', 'providers', 'secondOpinion', 'tiers', 'componentCount', 'gaps',
     'totalGaps', 'coverageStatus', 'complianceStatus', 'promotionEligible', 'status',
-    'findings', 'trustDowngrades',
+    'findings', 'trustDowngrades', 'unobserved',
   ], 'PR-head certification coverage proof')
   invariant(value.schemaVersion === 4 && value.evidenceKind === 'deep-audit-coverage-verification', 'PR-head certification coverage identity is invalid')
   const binding = activeRunBinding(activeRun)
@@ -1177,7 +1194,8 @@ function validatePremergeCoverageProof(value, activeRun, options = {}) {
   invariant(emptyLists.length > 3 && emptyLists.every(list => Array.isArray(list) && list.length === 0), 'PR-head certification has unexpected pre-merge gaps')
   invariant(stableStringify(value.gaps?.ciEnforced, 0) === stableStringify(topology.ciEnforced, 0), 'PR-head certification pending CI dimensions must be exactly post-release dims 64 and 66 from the frozen set')
   exactObjectKeys(value.findings, ['judgment', 'componentA1b', 'hookWarnings', 'hookBlocking'], 'PR-head certification findings')
-  exactObjectKeys(value.trustDowngrades, ['untrustedDependencies', 'unverifiedContainment', 'unverifiedModelCoverage'], 'PR-head certification trust downgrades')
+  exactObjectKeys(value.trustDowngrades, ['untrustedDependencies', 'unverifiedContainment', 'unverifiedModelCoverage', 'unobservedDeterministicCoverage'], 'PR-head certification trust downgrades')
+  invariant(value.trustDowngrades.unobservedDeterministicCoverage === value.unobserved.deterministic.length, 'PR-head certification unobserved evidence/trust downgrade counts differ')
   invariant(Object.values(value.findings).every(count => count === 0) && Object.values(value.trustDowngrades).every(count => count === 0), 'PR-head certification contains findings or trust downgrades')
   return topology
 }
