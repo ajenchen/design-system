@@ -352,10 +352,10 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           }}
         />
         {loading ? (
-          <Empty
-            icon={<CircularProgress size={48} />}
-            title={loadingTitle}
-          />
+          <div role="status" aria-label={loadingTitle} className="flex flex-col items-center text-center">
+            <div className="mb-4"><CircularProgress size={48} /></div>
+            <span aria-hidden className="text-body-lg font-medium text-foreground">{loadingTitle}</span>
+          </div>
         ) : (
           children ?? (
             <Empty

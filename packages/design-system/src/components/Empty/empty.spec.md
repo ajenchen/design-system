@@ -55,7 +55,7 @@ benchmark:
 
 - **Icon**(`icon?: LucideIcon | ReactElement`,預設無):LucideIcon 會自動包 48px neutral Avatar + 28px icon;ReactElement 原樣渲染(consumer 可自帶 Illustration、ColorAvatar、CircularProgress)
 - **Title**(`title?: string`,預設無):主要標題,foreground + medium 字重,居中
-- **Description**(`description?: string`,預設無 — 但是唯一必有的 slot):說明文字,次要色、居中
+- **Description**(`description: string`,必填且不得為空):說明「缺什麼／為何空／下一步」的文字,次要色、居中。Icon、title、action 都不能取代 description
 - **Action**(`action?: ReactNode`,預設無):CTA Button 或任何操作,居中
 
 ## 間距
@@ -164,12 +164,12 @@ Empty primitive 不自帶 role；consumer 擁有 table、search region 或 initi
 | 元件 | 消費方式 | Padding 落點 |
 |---|---|---|
 | DataTable | 外層 `<div className="flex-1 flex items-center justify-center py-12">` 包 `<Empty description={emptyState} />`(有框置中) | wrapper div(非 Empty className) |
-| SelectMenu | `<Empty description={emptyText} className="py-6" />`(loading 時 `<Empty icon={<CircularProgress size={48}/>} className="py-6" />`) | Empty className |
+| SelectMenu | 無結果時 `<Empty description={emptyText} className="py-6" />`;spinner-only loading 改由具 accessible name 的 `role="status"` wrapper 包 `<CircularProgress size={48}/>` | Empty className / loading wrapper |
 | Combobox | 透過 SelectMenu(dropdown 即 SelectMenu primitive)→ 無結果時顯 SelectMenu 的 `<Empty>` | 同 SelectMenu |
 
 ## 禁止事項
 
-- ❌ 把 Empty 拿來顯示 loading state(無 description 又無 spinner)— Empty 是「確定沒有」語意,loading 用 `<Skeleton>` / `<CircularProgress>` 或 `<Empty icon={<CircularProgress />}/>` compose
+- ❌ 把 Empty 拿來當 spinner-only loading host — Empty 是「確定沒有」語意;loading 用 `<Skeleton>`，或用具 accessible name 的 `role="status"` wrapper 包 `<CircularProgress>`。只有確實有空狀態解釋時才可在 Empty 內含進度視覺，且仍必須傳 meaningful description
 - ❌ 把 Empty 拿來顯示 error state(只有 description)— error 需明確 action(重試 / 報告 / 聯絡支援),用 `<Alert>` + 重試 button
 - ❌ Empty title / description 文案太抽象(「Nothing here」「No data」)— 應描述「缺什麼資料」+「為什麼空」+「下一步動作」，讓空狀態本身可以指引恢復路徑
 - ❌ Action button 用 destructive variant — Empty 是引導 onboarding 心境,destructive 視覺敵意衝突
@@ -192,7 +192,7 @@ Empty 是 **pure layout primitive**(排列 icon / title / description / action �
 ## 相關
 
 - `../Avatar/avatar.tsx` — Icon 渲染實作
-- `../CircularProgress/circular-progress.spec.md` — Loading 狀態(非「空」而是「還沒來」;全頁 loading 可 `<Empty icon={<CircularProgress size={48}/>}/>` compose)
+- `../CircularProgress/circular-progress.spec.md` — Loading 狀態(非「空」而是「還沒來」;spinner-only loading 用具 accessible name 的 `role="status"` host)
 - `../Alert/alert.spec.md` — Error 狀態（非中性空，是需處理的問題）
 - `../FileUpload/file-upload.spec.md` — **本元件 consumer**:FileUpload 預設 children 直接渲染 `<Empty icon={Upload} title description />`,共用 icon+title+desc SSOT
 - `../../tokens/typography/typography.spec.md` — Typography tier

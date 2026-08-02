@@ -10,8 +10,8 @@
 #            排除 `packages/design-system/src/` + `node_modules/`
 #   - Content:tool_input.new_string // tool_input.content
 #   - Global escape:content 含 `@ds-misuse-allow:` → silent exit 0
-#   - Consumer anti-patterns include bare RadioGroupItem / minimal DataTable / placeholder-only
-#     LinkInput / incomplete Empty / closed overlay stories / token bypasses. CircularProgress's
+#   - Consumer anti-patterns include bare RadioGroupItem / placeholder-only LinkInput / closed
+#     overlay stories / token bypasses. One-column DataTable and CircularProgress's
 #     numeric size API is intentionally allowed and has explicit 16/20/32/48 canonical contexts.
 #   - BLOCKER:exit 2 + stderr 含 "CONSUMER-DS-PRIMITIVE-MISUSE BLOCKER"
 #   - 非觸發 tool / out-of-scope path / 空 content → silent exit 0
@@ -155,6 +155,10 @@ expect_block "10. P2 bare <RadioGroupItem> → BLOCK"
 run_hook "$PROD_TSX" 'export const R = () => <DS.SelectionItem control={<DS.RadioGroupItem value="a" />} label="選項 A" />'
 expect_silent "11. P2 nearmiss <SelectionItem control={<RadioGroupItem>}> → silent"
 
+# 11b. DataTable column count is business schema,not a misuse heuristic.
+run_hook "$PROD_TSX" 'export const T = () => <DS.DataTable columns={[{ accessorKey: "name", header: "名稱" }]} data={rows} />'
+expect_silent "11b. one-column <DataTable> is valid → silent"
+
 # ── P4 LinkInput(broad-vs-narrow symmetry)────────────────────────────────────
 
 # 12. POSITIVE:LinkInput placeholder-only(無 value)→ BLOCK
@@ -164,20 +168,6 @@ expect_block "12. P4 <LinkInput placeholder-only> → BLOCK"
 # 13. NEGATIVE:LinkInput 有 value prop(canonical link/edit pattern)→ silent
 run_hook "$PROD_TSX" 'export const L = () => <DS.LinkInput placeholder="https://example.com" value={url} onChange={setUrl} />'
 expect_silent "13. P4 nearmiss <LinkInput value={url}> → silent"
-
-# ── P5 Empty(broad-vs-narrow symmetry)────────────────────────────────────────
-
-# 14. POSITIVE:Empty title 無 icon 無 description → BLOCK
-run_hook "$PROD_TSX" 'export const E = () => <DS.Empty title="尚無檔案" />'
-expect_block "14. P5 <Empty title-only> → BLOCK"
-
-# 15. NEGATIVE:Empty title + description(canonical「預設只需 description」)→ silent
-run_hook "$PROD_TSX" 'export const E = () => <DS.Empty title="尚無檔案" description="點右上角上傳第一份文件" />'
-expect_silent "15. P5 nearmiss <Empty title+description> → silent"
-
-# 16. NEGATIVE:Empty title + icon(也滿足 canonical)→ silent
-run_hook "$PROD_TSX" 'export const E = () => <DS.Empty title="尚無檔案" icon={<DS.FileIcon />} />'
-expect_silent "16. P5 nearmiss <Empty title+icon> → silent"
 
 # ── P6 overlay(.stories.tsx scope-gated;prod tsx 不攔)────────────────────────
 

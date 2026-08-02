@@ -119,6 +119,8 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 
 ### 六之二、Column 寬度 API + 不變條件(2026-05-06 v14.3)
 
+**Column 數量不是品質判準。** 單欄 DataTable 是有效用法（例如只需選取名稱的清單、窄容器中的唯一核心屬性）；`columns` 的數量由業務 schema 決定，不得用「至少兩欄」類 hook 把單欄當成 minimal mock。品質應檢查欄位語意、真實資料與容器布局，不是欄位數。
+
 **命名**:`meta.width` / `meta.minWidth` / `meta.maxWidth`(px)。**不用 TanStack `size`** — DS 內 `size` 既定為 `'sm'|'md'|'lg'` density(49+ 處),避 namespace 衝突。內部 pre-process copy 到 TanStack root,resize feature 正常。No-resize default:`width` = reserve(cell ≥ width,flex 可 grow,不可 shrink)。`enableColumnResize=true`:`width` = 初始,`minWidth` = 拖拉下限(default 80)。**不變條件(invariants,L2 test + hook 守)**:(1) cell width = column width(跟 padding/state/mode 無關)(2) view↔edit cell width 0 delta (3) view↔edit cell height 0 delta(textarea `field-sizing:content`)(4) Field 填滿 cell 高度(1px 容差於 cell.border-r)(5) No-resize column ≥ meta.width。對應 `scripts/data-table-invariants.mjs`(script 內 I1-I3 label 字串仍用 `display↔edit` — 2026-07-16 FieldMode display→view 更名前的歷史命名,語意同 view↔edit)。改 `columnSizeStyle` / 切 layout 必跑 invariant test 才 commit。
 
 ### 六之三、Runtime perf budget canonical(2026-05-14 codex+Layer A)

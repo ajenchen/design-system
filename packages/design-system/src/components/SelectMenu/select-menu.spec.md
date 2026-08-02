@@ -124,7 +124,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 - **Creatable 時**：即使搜尋無結果，仍顯示 create row 讓使用者補建選項（顯示條件見「Creatable」段）
 - **非 creatable**：顯示 emptyText 提示使用者修改搜尋詞
-- **SR 播報**（2026-07-05 D4）：empty / loading 空狀態同步經 visually-hidden `role="status"` + `aria-live="polite"` live region 播報（cmdk CommandEmpty 是 `role="presentation"`，SR 使用者原本聽不到 0 結果；對齊 `empty.spec.md`「動態 filter no-results 容器需 `aria-live="polite"`」+ react-select A11yText）。SSOT 在 SelectMenu 一處，Select / Combobox / PeoplePicker 全體受益。
+- **SR 播報**（2026-07-05 D4）：empty 結果經 visually-hidden `role="status"` + `aria-live="polite"` live region 播報（cmdk CommandEmpty 是 `role="presentation"`，SR 使用者原本聽不到 0 結果）；loading 則由畫面內具 `aria-label="載入選項中"` 的 `role="status"` wrapper 播報，避免雙重 announcement。SSOT 在 SelectMenu 一處，Select / Combobox / PeoplePicker 全體受益。
 
 ---
 
@@ -133,12 +133,12 @@ Popover（浮動容器，handle 展開 / 定位）
 非同步載入選項時，consumer 透過 `loading={true}` 控制：
 
 - **Trigger 不變**：dropdown 隨時可開（user 看 chevron 不會被 disable）
-- **Dropdown 開啟時**（2026-07-04 Q3 拍板措辭修訂）：spinner 只在**無可顯示選項時**佔 empty slot，渲 panel-center `<Empty icon={<CircularProgress size={48}/>} className="py-6"/>`（cmdk `CommandEmpty` 機制）；**已有 options 時保留顯示不清空**（MUI Autocomplete 官方「only if there are no suggestions to show」共識）
-- **CircularProgress 預設 24px**，但在 Empty wrapper 內 48px（取代 Empty 的 48px Avatar icon slot）
+- **Dropdown 開啟時**（2026-07-04 Q3 拍板措辭修訂）：spinner 只在**無可顯示選項時**佔 empty slot，渲 panel-center `<div role="status" aria-label="載入選項中" className="flex items-center justify-center py-6"><CircularProgress size={48}/></div>`（cmdk `CommandEmpty` 機制）；**已有 options 時保留顯示不清空**，避免背景更新期間抹掉仍可用的 stale results
+- **CircularProgress** 使用 48px;named status wrapper own `py-6` 與置中，不經 Empty，避免把「正在載入」誤表達成「確定沒有」及 phantom icon gap
 
-本行為對齊 DS `empty.spec.md`「禁止事項」段「loading 用 Empty + CircularProgress compose」SSOT（SelectMenu loading 用法 canonical row 見 `empty.spec.md`「現有消費者」表）。
+本行為對齊 DS `empty.spec.md`「禁止事項」spinner-only loading 不用 Empty 的 SSOT（SelectMenu loading 用法 canonical row 見 `empty.spec.md`「現有消費者」表）。
 
-**消費**：Select / Combobox forward `loading` prop 到 SelectMenu（PeoplePicker 尚未暴露 / 轉發 `loading`，見 `people-picker.spec.md`「邊界案例」），本元件不需 consumer 直接知道 Empty + CircularProgress 組合（封裝在內）。
+**消費**：Select / Combobox forward `loading` prop 到 SelectMenu（PeoplePicker 尚未暴露 / 轉發 `loading`，見 `people-picker.spec.md`「邊界案例」），本元件封裝 named status + CircularProgress 組合。
 
 ---
 
@@ -156,7 +156,7 @@ Popover（浮動容器，handle 展開 / 定位）
 
 - **Disabled option**:individual MenuItem 透過 `disabled?: boolean` 控制(SelectMenu primitive option contract)。視覺繼承 `MenuItem` SSOT:text → `text-fg-disabled`(M24)、無 hover bg、`aria-disabled="true"`、Enter / click 不觸發 onChange、鍵盤導覽自動 skip。
 - **Disabled trigger**:trigger 由 consumer(Select / Combobox / PeoplePicker)的 `disabled` prop own,本元件不獨立 disable trigger。
-- **Loading**:已 codify(見「Loading」段),`loading=true` 且無可顯示選項時 empty slot 渲 panel-center Empty + CircularProgress 48px(stale options 保留)。
+- **Loading**:已 codify(見「Loading」段),`loading=true` 且無可顯示選項時 empty slot 渲 panel-center named status + CircularProgress 48px(stale options 保留)。
 - **Empty**:已 codify(見「Empty state」段),搜尋無結果 + 非 creatable 時渲 emptyText;creatable 時保留 create row(可鍵盤選取)。
 - **Creatable + search 與既有選項完全同名**(忽略大小寫):create row 隱藏(防重複建立,`select-menu.tsx:261-266`);選取既有選項為唯一路徑。
 - **Dark mode**:走 Popover / MenuItem semantic token 自動 adapt。

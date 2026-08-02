@@ -102,10 +102,9 @@ export interface SelectMenuProps {
   /** 多選 footer 全選列文字(2026-07-05 D4:原「全部」字面 hardcode,無法覆寫也無法 i18n) */
   selectAllLabel?: string
   /** Loading 狀態(2026-05-15 audit B fix;2026-07-04 Q3 拍板措辭修訂)
-   *  true → 無可顯示選項時 empty slot(cmdk CommandEmpty)渲 `<Empty icon={<CircularProgress size={48}/>} className="py-6" />`
-   *  (純 spinner,無 description);已有 options 時保留顯示不清空(MUI Autocomplete「only if there are
-   *  no suggestions」共識)。trigger 不變,user 隨時可開 dropdown。DS `empty.spec.md`「loading = Empty +
-   *  CircularProgress compose」SSOT。
+   *  true → 無可顯示選項時 empty slot(cmdk CommandEmpty)渲可命名的
+   *  `role="status"` wrapper + 48px CircularProgress；已有 options 時保留顯示不清空
+   *  (MUI Autocomplete「only if there are no suggestions」共識)。trigger 不變,user 隨時可開 dropdown。
    */
   loading?: boolean
 
@@ -152,8 +151,9 @@ export interface SelectMenuProps {
 // cmdk CommandEmpty 渲染為 role="presentation" div、cmdk 全鏈無 aria-live,且 DOM focus 停在
 // combobox input(aria-activedescendant 虛擬焦點)→ SR 使用者搜尋到 0 結果或 loading 佔位時
 // 聽不到任何播報(loading spinner 的 CircularProgress 無 label 時更是 aria-hidden)。
-// 補 visually-hidden polite live region,鏡射 CommandEmpty 可見內容(cmdk Empty 只在
-// filtered.count === 0 渲染:loading → 載入文案;否則 → emptyText)。對齊 react-select A11yText /
+// 補 visually-hidden polite live region,鏡射 CommandEmpty 的無結果文字。Loading 改由可見
+// spinner 的 `role="status"` + `aria-label` 直接宣告，避免同一狀態重複播報。
+// cmdk Empty 只在 filtered.count === 0 渲染。對齊 react-select A11yText /
 // APG combobox no-results 播報 + empty.spec.md「動態 filter no-results 容器需 aria-live="polite"」。
 // SSOT 放 SelectMenu 一處 → Select / Combobox / PeoplePicker 全體受益。
 function SelectMenuLiveStatus({ loading, emptyText }: { loading: boolean; emptyText: string }) {
@@ -161,7 +161,7 @@ function SelectMenuLiveStatus({ loading, emptyText }: { loading: boolean; emptyT
   return (
     <div role="status" aria-live="polite" className="sr-only">
       {filteredCount === 0
-        ? (loading ? '載入中…' /* i18n-allow: DS default SR-only 播報文案 */ : emptyText)
+        ? (loading ? null : emptyText)
         : null}
     </div>
   )
@@ -440,7 +440,11 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
               style={{ minHeight: getMenuListMinHeight(size, minRows) }}
             >
               {loading
-                ? <Empty icon={<CircularProgress size={48}/>} className="py-6" />
+                ? (
+                    <div role="status" aria-label="載入選項中" className="flex items-center justify-center py-6">
+                      <CircularProgress size={48} />
+                    </div>
+                  )
                 : <Empty description={emptyText} className="py-6" />}
             </CommandEmpty>
 

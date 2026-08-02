@@ -113,7 +113,7 @@ $(echo -e "$VIOLATIONS")
     - PW(consumer)owns 真實業務 composition demos(AppShell Dashboard etc.)
     - Catalog → DS canonical Storybook iframe/link proxy,**禁** PW 重寫 <DS.X minimal mock>
 
-  歷史錨點 2026-05-27 7 bugs:CircularProgress size=32 hardcode / RadioGroup raw item 沒 SelectionItem / DataTable one-col / LinkInput placeholder mock / Empty 缺 icon / Overlay trigger-only / Tooltip context — ALL 從 PW hand-mock minimal-prop drift.
+  歷史錨點 2026-05-27 7 bugs:CircularProgress size=32 hardcode / RadioGroup raw item 沒 SelectionItem / DataTable mock 欄位語意薄弱 / LinkInput placeholder mock / Empty 缺說明 / Overlay trigger-only / Tooltip context — ALL 從 PW hand-mock minimal-prop drift.
 
   修法 2 選 1:
     (a) 改用 DS canonical Storybook iframe portal(per template AllDsComponents.stories.tsx#DsCanonicalPortal pattern)
@@ -249,21 +249,9 @@ if grep -qE '<(DS\.)?RadioGroupItem\b' <<<"$CONTENT" && ! grep -qE 'SelectionIte
   VIOLATIONS="${VIOLATIONS}  - <RadioGroupItem> 沒 wrap <SelectionItem control={<RadioGroupItem>}> (per selection-item.spec.md:23 SSOT spacing/padding)\n"
 fi
 
-# Pattern 2: <DataTable columns={[…]}> with literal single column
-if grep -qE '<(DS\.)?DataTable[^>]+columns=\{\[\s*\{[^}]+\}\s*\]\}' <<<"$CONTENT" && ! grep -qE 'columns=\{[^}]*\},\s*\{' <<<"$CONTENT"; then
-  VIOLATIONS="${VIOLATIONS}  - <DataTable columns={[single-col]}> minimal one-column = 違反 data-table.spec.md canonical(min 2 cols for meaningful render)\n"
-fi
-
-# Pattern 3: <LinkInput placeholder=...> without value prop
+# Pattern 2: <LinkInput placeholder=...> without value prop
 if grep -qE '<(DS\.)?LinkInput[^>]+placeholder=' <<<"$CONTENT" && ! grep -qE '<(DS\.)?LinkInput[^>]+(value|defaultValue)=' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - <LinkInput placeholder=...> 沒 value prop = placeholder-only mode 抹平 link/edit canonical (per link-input.spec.md:18,48-58)\n"
-fi
-
-# Pattern 5: <Empty title=...> without icon and without description
-if grep -qE '<(DS\.)?Empty[^>]+title=' <<<"$CONTENT" && \
-   ! grep -qE '<(DS\.)?Empty[^>]+icon=' <<<"$CONTENT" && \
-   ! grep -qE '<(DS\.)?Empty[^>]+description=' <<<"$CONTENT"; then
-  VIOLATIONS="${VIOLATIONS}  - <Empty title=...> 無 icon 無 description = 違反 Empty.tsx:11「預設只需 description」minimal mock looks weird\n"
 fi
 
 # Pattern 8: 硬寫色值 / 字級 / shadow 繞過 DS token(2026-06-02 CF conformance-model 補主防線 —
