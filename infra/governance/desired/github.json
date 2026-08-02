@@ -90,7 +90,7 @@
           }
         }
       ],
-      "immutableReleases": false,
+      "immutableReleases": true,
       "requiredChecks": [
         {
           "context": "Verify(tsc + tests + compile + build)",
@@ -222,15 +222,14 @@
       "immutableReleases": false,
       "requiredChecks": [
         {
-          "baseTrusted": true,
           "context": "Verify consumer",
           "forbidCandidateControlledSkip": true,
           "integration": "githubActions",
           "requireUnconditionalPullRequest": true,
           "requiredEvents": [
-            "repository_dispatch"
+            "pull_request"
           ],
-          "trustSource": "protected-base-workflow",
+          "trustSource": "repository-workflow",
           "workflow": ".github/workflows/audit.yml",
           "workflowIdentity": {
             "contentSha256": "3cb259c8d83d8d378a6d282b0cde0a8884d96c51cf49e655405c3e416e646726",

@@ -154,27 +154,53 @@
     "releasePublishedConsumer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["repository", "defaultBranch", "delivery", "readbackPath", "packages"],
+      "required": ["repository", "defaultBranch", "delivery", "readbackPath", "packages", "requiredCheck"],
       "properties": {
         "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
         "defaultBranch": {"type": "string", "pattern": "^[A-Za-z0-9._/-]+$"},
         "delivery": {"const": "release-published-pr"},
         "readbackPath": {"const": "package-lock.json"},
-        "packages": {"$ref": "#/$defs/consumerPackages"}
+        "packages": {"$ref": "#/$defs/consumerPackages"},
+        "requiredCheck": {"$ref": "#/$defs/pullRequestConsumerCheck"}
       }
     },
     "repositoryDispatchConsumer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["repository", "defaultBranch", "dispatchEvent", "delivery", "readbackPath", "packages"],
+      "required": ["repository", "defaultBranch", "dispatchEvent", "delivery", "readbackPath", "packages", "requiredCheck"],
       "properties": {
         "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
         "defaultBranch": {"type": "string", "pattern": "^[A-Za-z0-9._/-]+$"},
         "dispatchEvent": {"const": "design-system-published"},
         "delivery": {"const": "repository-dispatch-pr"},
         "readbackPath": {"const": "package-lock.json"},
-        "packages": {"$ref": "#/$defs/consumerPackages"}
+        "packages": {"$ref": "#/$defs/consumerPackages"},
+        "requiredCheck": {"$ref": "#/$defs/protectedReceiverCheck"}
       }
+    },
+    "consumerCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["context", "integration", "producerWorkflow", "producerEvent", "producerHead"],
+      "properties": {
+        "context": {"const": "Verify consumer"},
+        "integration": {"const": "githubActions"},
+        "producerWorkflow": {"type": "string", "pattern": "^\\.github/workflows/.+\\.ya?ml$"},
+        "producerEvent": {"enum": ["pull_request", "repository_dispatch"]},
+        "producerHead": {"enum": ["pull-request-head", "pull-request-base"]}
+      }
+    },
+    "pullRequestConsumerCheck": {
+      "allOf": [
+        {"$ref": "#/$defs/consumerCheck"},
+        {"type": "object", "properties": {"producerWorkflow": {"const": ".github/workflows/audit.yml"}, "producerEvent": {"const": "pull_request"}, "producerHead": {"const": "pull-request-head"}}}
+      ]
+    },
+    "protectedReceiverCheck": {
+      "allOf": [
+        {"$ref": "#/$defs/consumerCheck"},
+        {"type": "object", "properties": {"producerWorkflow": {"const": ".github/workflows/sync-design-system.yml"}, "producerEvent": {"const": "repository_dispatch"}, "producerHead": {"const": "pull-request-base"}}}
+      ]
     },
     "consumerPackages": {
       "type": "array",

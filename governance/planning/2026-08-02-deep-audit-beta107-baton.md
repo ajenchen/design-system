@@ -1,95 +1,82 @@
 <!-- Authority/status: governance/planning/registry.json -->
-# Deep Audit beta.107 → beta.108 incident active baton — 2026-08-02
+# Deep Audit beta.107 → beta.108 closure record — 2026-08-02
 
-> **ACTIVE / NOT A FINAL VERDICT.** This is the cross-session continuation ledger for the
-> current Deep Audit. Machine state, exact Git readback, and
-> `infra/governance/release-workflow.json` override prose if they differ.
+> **CLOSED AS INCOMPLETE; THIS IS NOT A PASS.** The executable campaign is over because the
+> immutable beta.108 release cannot acquire the two missing historical CI receipts without a new
+> release identity. This record preserves the exact gap and the release-neutral canonical repair;
+> it must never be used to claim complete Deep Audit coverage.
 
-## Authority and hard constraints
+## Decision authority and UI/UX boundary
 
-- Engineering, governance, Git, PR, required-CI remediation, merge, release, readback, and
-  exact-version consumer upgrades are `AUTO`. Ask only for a genuinely unresolved product/UI/UX
-  SSOT choice. Human-only runtime boundaries remain login/MFA/OAuth/credential reference.
-- No unresolved UI/UX decision currently blocks this campaign. The approved DataTable/Empty
-  recommendations may be implemented. The mode-discriminated controlled-only public type
-  prototype was deliberately reverted and must not be shipped without a separate decision.
-- This run has an explicit one-run second-opinion waiver from the user. Its exact receipt is
-  `second opinion: waived by user`.
-- A Deep Audit must finish remediation and candidate verification before publication. beta.107 was
-  the one ordinary final release. Its post-publish formal prepare exposed a release-blocking SSOT
-  contradiction in the audit harness and a stale shipped cross-agent workflow. The exact incident
-  record below authorizes one additional beta.108 release; do not publish any intermediate version.
+- Engineering, governance, Git, PR, CI, merge, release, readback, consumer propagation, and
+  recoverable Knowledge Prune actions were `AUTO`.
+- No unresolved UI/UX SSOT choice entered beta.108. The audit observed the existing `Tag` solid
+  green + white contrast debt (2.47:1); changing that visual baseline still requires an explicit
+  UI/UX decision, so this campaign did not alter it.
+- The user waived second opinion for this run only. The waiver does not waive deterministic, hook,
+  CI, Storybook-content, repository-hygiene, or knowledge-prune evidence.
 
-## Post-publish blocker incident
+## Immutable release result
 
-- `incidentId`: `DA-2026-08-02-FORMAL-AUDIT-SSOT`
-- `failureClass`: `post-publish-blocker`
-- `publishedVersion`: `0.1.0-beta.107`
-- `evidenceRef`: this baton's `Observed evidence` list
+- Design System PR: `ajenchen/design-system#37`
+- Frozen PR head/tree: `31585bc75382a46a42213cafb3ce4eebbaccba61` /
+  `003d5407b76a204ba7e651ca36b407bced72988b`
+- Protected main, tag, and release commit: `70a56cc1e05ef0a2fd8b94415d01629203b2d49d`
+- Version/tag: `0.1.0-beta.108` / `v0.1.0-beta.108`
+- GitHub release: `https://github.com/ajenchen/design-system/releases/tag/v0.1.0-beta.108`
+- Storybook: `https://ajenchen.github.io/design-system/`
+- Exact six-asset release-set SHA-256:
+  `a166f97a374181c1130d05e44d2375617bd967bee09fdbb064c9258adb109b60`
+- The release record was recreated from the exact downloaded bytes after repository immutable
+  releases were enabled. npm was not republished and beta.109 was not created.
+- Work Management propagation PR `#34` merged beta.108; PR `#35` repaired stale consumer
+  documentation/test readback. Protected main consumes the exact beta.108 package locks.
 
-Observed evidence:
+## Formal Deep Audit result
 
-- Formal prepare rejected beta.107 because the governed Node pre-script argv lacked the required
-  `--` sentinel and the Storybook test-only harness was absent from the canonical inventory.
-- The user-waived run had no executable self-review import route even though prepare and verifier
-  required that evidence.
-- CI dimensions 64/66 still depended on `candidateRelease`, external activation, and offline
-  completion-attestor ceremony that the standard five-step release SSOT explicitly retired or made
-  non-blocking.
-- The beta.107 republish gate now correctly rejects the shipped cross-agent skill change until a
-  strictly newer immutable package version exists.
+- Run ID: `15cad169-5c0f-4381-badd-106e48e5199b`
+- Run manifest SHA-256:
+  `ca8ca652396dfd63466cc69b9768334d7bc07f772949850d1dbb132f4a481631`
+- Deterministic dimensions: complete, including typed dimension 83 `UNOBSERVED` with
+  `NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT`.
+- Hook envelopes: complete.
+- Waived self review: imported; substantive findings remain findings, not promotion evidence.
+- Knowledge Prune phases 0–5: complete. No tracked transient or redundant repository artifact was
+  found; `.changeset/` is the only governed future-reserved surface. Forty-eight stale unreferenced
+  runtime runs (~931.4 MiB) were moved recoverably to Trash and two valid runs were retained.
+- Coverage status: `incomplete`. The only gaps are CI dimensions 64 and 66; deterministic,
+  judgment, and hook gap lists are empty. `promotionEligible` remains `false`.
 
-## Live Git state
+## Why dimensions 64 and 66 cannot be backfilled
 
-- Branch: `codex/deep-audit-beta108-final`
-- Current integration worktree on the originating host:
-  `/private/tmp/ds-formal-prep-fix.rtMJdR/source` (convenience only; never authority)
-- Released base: protected `origin/main@67b01dc2a92198cc0eab0e05a0faea2b8cbd3628`
-- Always start with `git status --short`, `git rev-parse HEAD`, `git fetch origin main`, and
-  `npm run release:status`; do not infer live state from this document's snapshot.
+The frozen SSOT declared the product consumer `Verify consumer` producer as `audit.yml` on
+`repository_dispatch`, but the exact governed `audit.yml` accepts only `push` and `pull_request`.
+The beta.108 receiver instead emitted a custom check from `sync-design-system.yml`; its check did
+not bind an Actions-run `details_url`. Later PR #35 produced a real `audit.yml` `pull_request` check,
+but it is not the frozen protected-base dispatch receipt and its PR binding is not the beta.108
+propagation identity. A new dispatch is always attached to the then-current default-branch head, so
+it cannot recreate the historical PR base. Treating either artifact as PASS would fabricate
+provenance.
 
-## Durable completed work
+## Canonical repair for the next release identity
 
-- Integrated remediation covers provider-neutral authority/runtime gaps, future-reserved hygiene
-  contracts, RadioGroup/Tabs state coherence, M22 benchmark evidence-debt closure, Storybook
-  anatomy/reader/test-only/content governance, reader guidance, and consumer/template/Netlify
-  release safeguards.
-- Knowledge Prune same-run phases 0–5 completed. Mechanical and semantic repository hygiene found
-  zero tracked transient artifacts; the only future-reserved tracked surface is `.changeset/`, now
-  bound to owner/purpose/activation/lifecycle. Forty-eight stale unreferenced runtime runs
-  (~931.4 MiB) were moved recoverably to Trash; two valid runs were preserved.
-- Formal beta.106 baseline evidence is historical only: deterministic 25 commands/24 receipts
-  passed; Storybook had 213 story files, 981 exports, and 71 docs entries; visual audit covered 124
-  scenarios x light/dark x md/lg = 496 with zero diff. A11y scanned 981/981 stories and found 5,034
-  serious color-contrast nodes against the accepted 5,108-node baseline (74-node improvement, no
-  regression). Do not relabel that debt as WCAG AA pass.
-- Netlify authenticated L3 remains `UNOBSERVED` without a credential reference; L1/L2 passed. This
-  does not authorize a fake PASS and does not block ordinary release unless a five-step action
-  actually requires that credential.
+This release-neutral closure makes the five-step workflow fail closed without adding ceremony:
 
-## Remaining execution order
+- ordinary product required checks truthfully bind `audit.yml` + `pull_request`;
+- the Work Management release receiver remains protected-base `sync-design-system.yml` +
+  `repository_dispatch`, but its same-name receipt must bind the current Actions run, PR head, and
+  PR base exactly;
+- release automation verifies the check App, producer workflow/event/head, exact version and
+  release commit before merging a consumer PR;
+- repository immutable releases are canonical desired state, are enabled before publish, and a
+  published GitHub Release is incomplete unless `isImmutable=true`;
+- the normal path remains exactly `pr-checks → merge → publish → readback → consumer`; no candidate,
+  offline-signature, soak, external-activation, or extra-release loop is restored.
 
-1. Finish the formal-audit SSOT repairs: typed user-waived self review, typed credential-gated
-   `UNOBSERVED`, and CI 64/66 readback from the canonical five-step workflow rather than retired
-   candidate/signature ceremony. Regenerate canonical projections once and run focused tests.
-2. Bump the single version input from beta.107 to beta.108, regenerate, run all candidate gates once,
-   and commit a clean frozen tree. No source change is allowed after the immutable run is prepared.
-3. Prepare the run with `node scripts/prepare-deep-audit-run.mjs --self-provider codex --self-surface
-   local --author-provider codex --self-runtime codex-desktop --second-opinion-waiver user
-   --replace-active --json`; import the substantive 25-dimension/65-component self-attested review,
-   execute 39 hook envelopes and all deterministic dimensions once. Netlify L3 without a credential
-   reference must be recorded as typed `UNOBSERVED`, never PASS or a coverage gap.
-4. Run `npm run release:auto` once for beta.108. It alone performs
-   `pr-checks -> merge -> publish -> readback -> consumer`; remediate the same PR if required CI fails.
-5. From that exact release tree, produce the standard five-step live CI evidence for dimensions
-   64/66 and verify complete self-attested coverage. The explicit waiver keeps independent promotion
-   ineligible; it must not turn complete coverage into a fabricated independent-review claim.
-6. Final report must include the literal receipts below, all `UNOBSERVED` surfaces, exact release
-   and Storybook URLs, PR/main/tag/npm/consumer readbacks, and the three mandatory self-improvement
-   lines. Only then close this baton and mark its registry row `completed / executable:false` in a
-   release-neutral governance/docs PR; beta.109 is forbidden.
+These repairs govern future releases. They do not mutate beta.108 evidence and do not authorize
+beta.109.
 
-## Required final receipts
+## Required receipts
 
 ```text
 knowledge-prune: same-run complete
@@ -97,8 +84,13 @@ governance-coverage: same-run reconciled
 second opinion: waived by user
 ```
 
-## Completion condition
+`governance-coverage: same-run reconciled` means the same-run ledger and its two exact gaps are
+reconciled and recorded; it does **not** mean coverage is complete.
 
-Completion is not "source fixed" or "PR opened". It requires beta.108's five release steps to read
-complete, the exact protected-main formal Deep Audit to finish without fabricated evidence, and
-this baton to be closed in `governance/planning/registry.json`.
+## Self-improvement capture
+
+- New false-positive pattern: none; the CI failure was a real producer/event contradiction.
+- New meta-pattern: a required-check name is not evidence; release SSOT must bind App + Actions run
+  + workflow + event + PR head/base.
+- Corrected contradiction: immutable-release and consumer-check provenance now live in the
+  canonical five-step release workflow, desired GitHub model, validators, and regression tests.

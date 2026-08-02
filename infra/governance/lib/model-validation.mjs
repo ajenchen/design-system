@@ -557,12 +557,12 @@ export function validateDesiredGithub(inventory, desired) {
       invariant(
         consumerCheck.context === 'Verify consumer'
           && consumerCheck.integration === 'githubActions'
-          && consumerCheck.trustSource === 'protected-base-workflow'
+          && consumerCheck.trustSource === 'repository-workflow'
           && consumerCheck.workflow === '.github/workflows/audit.yml'
           && consumerCheck.requiredEvents?.length === 1
-          && consumerCheck.requiredEvents[0] === 'repository_dispatch'
-          && consumerCheck.baseTrusted === true,
-        'product-consumer required check must be the protected-default receiver Verify consumer receipt',
+          && consumerCheck.requiredEvents[0] === 'pull_request'
+          && consumerCheck.baseTrusted === undefined,
+        'product-consumer required check must be the canonical pull-request Verify consumer job',
       )
     }
     invariant(Array.isArray(profile.rulesets) && profile.rulesets.length > 0, `${profileName} must define rulesets`)
@@ -632,7 +632,7 @@ export function validateDesiredGithub(inventory, desired) {
       }
       checkNames.add(check.context)
     }
-    invariant(profileName !== 'product-consumer' || baseTrustedChecks === 1, 'product-consumer must require exactly one protected-default receiver receipt')
+    invariant(profileName !== 'product-consumer' || baseTrustedChecks === 0, 'product-consumer required check must use native pull-request workflow provenance')
     invariant(profileName !== 'published-template' || baseTrustedChecks === 0, 'published-template must rely on its normal pull-request workflow without a Governance App verdict')
     invariant(profile.rulesets.length === 3, `${profileName} must define exactly the three canonical managed rulesets`)
     const rulesetNames = new Set()
@@ -772,7 +772,7 @@ export function validateDesiredGithub(inventory, desired) {
     }
     const externalLedgerEnvironments = profile.environments.filter(environment => environment.name === 'governance-external-ledger')
     if (profileName === 'design-system-authority') {
-      invariant(profile.immutableReleases === false, 'design-system-authority must not restore external immutable-release activation as a prerequisite')
+      invariant(profile.immutableReleases === true, 'design-system-authority must require immutable GitHub Releases')
       invariant(profile.environments.length === 2, 'design-system-authority must retain only npm-release and governance-external-ledger environments')
       invariant(profile.environments.some(environment => environment.name === 'npm-release'), 'design-system-authority must retain npm-release')
       invariant(externalLedgerEnvironments.length === 1, 'design-system-authority must declare exactly one governance-external-ledger environment')

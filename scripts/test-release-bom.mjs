@@ -102,7 +102,8 @@ test('GitHub Release helper reads back the exact asset name, size, and digest', 
   assert.match(githubPublisher, /release', 'upload'/)
   assert.match(githubPublisher, /release', 'edit'/)
   assert.match(githubPublisher, /observed\.digest !== wanted\.digest \|\| observed\.size !== wanted\.size/)
-  assert.doesNotMatch(githubPublisher, /immutable releases setting|requires immutable/i)
+  assert.match(githubPublisher, /state\.isImmutable !== true/)
+  assert.match(readFileSync('scripts/release-orchestrator.mjs', 'utf8'), /repos\/\$\{repository\}\/immutable-releases/)
 
   const files = Array.from({ length: 6 }, (_, index) => ({
     name: `asset-${index}`,

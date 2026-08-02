@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const WORKFLOW_PATH = resolve(ROOT, 'infra/governance/release-workflow.json')
+const GITHUB_DESIRED_PATH = resolve(ROOT, 'infra/governance/desired/github.json')
 const PACKAGE_PATHS = Object.freeze({
   '@qijenchen/design-system': 'packages/design-system/package.json',
   '@qijenchen/governance': 'packages/governance/package.json',
@@ -61,6 +62,14 @@ export function validateReleaseWorkflow(workflow) {
   )
   invariant(workflow.steps.every(step => step.authority === 'AUTO'), 'every release step must be AUTO')
   invariant(workflow.legacyMechanisms.every(item => item.standardRelease === 'non-blocking' || item.standardRelease === 'retired'), 'legacy mechanisms must not block standard release')
+  for (const target of workflow.automation?.consumers ?? []) {
+    const check = target.requiredCheck
+    invariant(check?.context === 'Verify consumer', `consumer ${target.repository} must require Verify consumer`)
+    invariant(check.integration === 'githubActions', `consumer ${target.repository} must use GitHub Actions verification`)
+    invariant(/^\.github\/workflows\/.+\.ya?ml$/.test(check.producerWorkflow || ''), `consumer ${target.repository} verification workflow is invalid`)
+    invariant(['pull_request', 'repository_dispatch'].includes(check.producerEvent), `consumer ${target.repository} verification event is invalid`)
+    invariant(['pull-request-head', 'pull-request-base'].includes(check.producerHead), `consumer ${target.repository} verification head binding is invalid`)
+  }
   return workflow
 }
 
@@ -183,7 +192,7 @@ function latestRun(repository, workflowFile, protectedMainSha) {
 }
 
 export function buildPullRequestLookupArgs(repository, branch) {
-  const fields = 'number,state,mergeStateStatus,mergeable,headRefOid,statusCheckRollup,url'
+  const fields = 'number,state,mergeStateStatus,mergeable,headRefOid,baseRefOid,url'
   return {
     view: ['pr', 'view', '--repo', repository, branch, '--json', fields],
     allStates: ['pr', 'list', '--repo', repository, '--state', 'all', '--head', branch, '--limit', '1', '--json', fields],
@@ -222,14 +231,85 @@ function withRequiredChecks(repository, pullRequest) {
   return { ...pullRequest, requiredChecks: requiredPullRequestChecks(repository, pullRequest.number) }
 }
 
-function matchingConsumerPullRequest(repository, version) {
+function expectedConsumerBranch(target, version) {
+  if (target.delivery === 'release-published-pr') return `automation/release-v${version}`
+  if (target.delivery === 'repository-dispatch-pr') return `automation/design-system-${version}`
+  throw new Error(`consumer ${target.repository} delivery has no deterministic branch identity`)
+}
+
+export function matchesConsumerPullRequest(target, row, version, releaseCommit) {
+  if (!row || row.state === 'CLOSED') return false
+  const binding = `${row.title}\n${row.body || ''}`
+  return row.headRefName === expectedConsumerBranch(target, version)
+    && row.baseRefName === target.defaultBranch
+    && binding.includes(version)
+    && binding.includes(releaseCommit)
+}
+
+function matchingConsumerPullRequest(target, version, releaseCommit) {
   const rows = ghJson([
-    'pr', 'list', '--repo', repository, '--state', 'open', '--limit', '50',
-    '--json', 'number,title,headRefName,headRefOid,statusCheckRollup,url',
+    'pr', 'list', '--repo', target.repository, '--state', 'all', '--limit', '100',
+    '--json', 'number,title,body,state,headRefName,headRefOid,baseRefName,baseRefOid,mergeCommit,url',
   ], { allowFailure: true })
   if (!Array.isArray(rows)) return null
-  const found = rows.find(row => `${row.title}\n${row.headRefName}`.includes(version)) || null
-  return found ? withRequiredChecks(repository, found) : null
+  const found = rows.find(row => matchesConsumerPullRequest(target, row, version, releaseCommit)) || null
+  return found ? withRequiredChecks(target.repository, found) : null
+}
+
+function normalizeWorkflowPath(path) {
+  return `${path || ''}`.replace(/@[^@]+$/, '')
+}
+
+export function validateConsumerCheckProvenance(target, pullRequest, checkRun, workflowRun, integration) {
+  const expected = target?.requiredCheck
+  if (!expected || !pullRequest || !checkRun || !workflowRun || !integration) return false
+  const expectedWorkflowHead = expected.producerHead === 'pull-request-base'
+    ? pullRequest.baseRefOid
+    : pullRequest.headRefOid
+  return checkRun.name === expected.context
+    && checkRun.head_sha === pullRequest.headRefOid
+    && checkRun.app?.id === integration.id
+    && checkRun.app?.slug === integration.slug
+    && checkRun.status === 'completed'
+    && checkRun.conclusion === 'success'
+    && normalizeWorkflowPath(workflowRun.path) === expected.producerWorkflow
+    && workflowRun.event === expected.producerEvent
+    && workflowRun.head_sha === expectedWorkflowHead
+    && workflowRun.status === 'completed'
+    && workflowRun.conclusion === 'success'
+}
+
+function consumerCheckReadback(target, pullRequest, desired) {
+  if (!pullRequest) return { trusted: false, reason: 'release-bound consumer PR is unavailable' }
+  const expected = target.requiredCheck
+  const integration = desired.integrations?.[expected.integration]
+  if (!integration) return { trusted: false, reason: `integration ${expected.integration} is unavailable` }
+  const response = ghJson([
+    'api', `repos/${target.repository}/commits/${pullRequest.headRefOid}/check-runs?per_page=100`,
+    '-H', 'Accept: application/vnd.github+json',
+  ], { allowFailure: true })
+  const candidates = Array.isArray(response?.check_runs)
+    ? response.check_runs.filter(run => run.name === expected.context).sort((left, right) => right.id - left.id)
+    : []
+  for (const checkRun of candidates) {
+    const match = `${checkRun.details_url || ''}`.match(/^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/([1-9][0-9]*)(?:\/.*)?$/)
+    if (!match) continue
+    const workflowRun = ghJson(['api', `repos/${target.repository}/actions/runs/${match[1]}`], { allowFailure: true })
+    if (validateConsumerCheckProvenance(target, pullRequest, checkRun, workflowRun, integration)) {
+      return { trusted: true, checkRunId: checkRun.id, workflowRunId: workflowRun.id }
+    }
+  }
+  return { trusted: false, reason: `${expected.context} is not bound to ${expected.producerWorkflow} ${expected.producerEvent}` }
+}
+
+function ensureImmutableReleases(repository) {
+  const endpoint = `repos/${repository}/immutable-releases`
+  let state = ghJson(['api', endpoint], { allowFailure: true })
+  if (state?.enabled !== true) {
+    gh(['api', '--method', 'PUT', endpoint])
+    state = ghJson(['api', endpoint])
+  }
+  invariant(state?.enabled === true, `repository ${repository} immutable releases could not be enabled`)
 }
 
 export function buildPublishedTemplatePullRequestCreateArgs(target, { version, commit }) {
@@ -297,17 +377,26 @@ export function buildFiveStepStatus(workflow, observation) {
   const publishedRelease = Boolean(
     observation.release
       && !observation.release.isDraft
+      && observation.release.isImmutable === true
       && observation.release.publishedAt
       && /^[a-f0-9]{40}$/.test(observation.releaseCommitSha || ''),
   )
-  const publish = publishedRelease
+  const mutablePublishedRelease = Boolean(
+    observation.release
+      && !observation.release.isDraft
+      && observation.release.publishedAt
+      && observation.release.isImmutable !== true,
+  )
+  const publish = mutablePublishedRelease
+    ? 'failed'
+    : publishedRelease
     ? 'complete'
     : observation.publishRun && PENDING_STATUSES.has(`${observation.publishRun.status}`.toLowerCase())
       ? 'running'
       : merge === 'complete' ? 'ready' : 'pending'
   const readback = publishedRelease && observation.npmPackages.every(item => item.exactVersion) ? 'complete' : publish === 'complete' ? 'pending' : 'blocked'
   const consumer = readback === 'complete'
-    ? observation.consumers.every(item => item.exactVersion) ? 'complete' : 'pending'
+    ? observation.consumers.every(item => item.exactVersion && item.checkReadback?.trusted === true) ? 'complete' : 'pending'
     : 'blocked'
   return [
     { id: 'pr-checks', authority: 'AUTO', status: prChecks },
@@ -320,6 +409,7 @@ export function buildFiveStepStatus(workflow, observation) {
 
 export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
   gh(['auth', 'status'])
+  const desired = readJson(GITHUB_DESIRED_PATH)
   const { repository, defaultBranch, publishWorkflow, packages, consumers } = workflow.automation
   const branch = run('git', ['branch', '--show-current']).stdout
   const headSha = run('git', ['rev-parse', 'HEAD^{commit}']).stdout
@@ -330,7 +420,17 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
   const tagRef = ghJson(['api', `repos/${repository}/git/ref/tags/${encodeURIComponent(tag)}`], { allowFailure: true })
   const tagCommitSha = tagRef?.object?.sha || null
   const releaseCommitSha = tagCommitSha || main?.sha || null
-  const release = ghJson(['release', 'view', tag, '--repo', repository, '--json', 'tagName,isDraft,isPrerelease,publishedAt,url'], { allowFailure: true })
+  const release = ghJson(['release', 'view', tag, '--repo', repository, '--json', 'tagName,isDraft,isImmutable,isPrerelease,publishedAt,url'], { allowFailure: true })
+  const consumerObservations = consumers.map(target => {
+    const exactVersion = release ? consumerPackageReadback(target, version) : false
+    const targetPullRequest = release ? matchingConsumerPullRequest(target, version, releaseCommitSha) : null
+    return {
+      ...target,
+      exactVersion,
+      pullRequest: targetPullRequest,
+      checkReadback: release ? consumerCheckReadback(target, targetPullRequest, desired) : { trusted: false, reason: 'release is unavailable' },
+    }
+  })
   return {
     repository,
     branch,
@@ -345,11 +445,7 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
     release,
     publishRun: latestRun(repository, publishWorkflow.file, releaseCommitSha),
     npmPackages: packages.map(name => ({ name, exactVersion: release ? npmPackageReadback(name, version) : false })),
-    consumers: consumers.map(target => ({
-      ...target,
-      exactVersion: release ? consumerPackageReadback(target, version) : false,
-      pullRequest: release ? matchingConsumerPullRequest(target.repository, version) : null,
-    })),
+    consumers: consumerObservations,
   }
 }
 
@@ -472,11 +568,13 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
     }
 
     if (incomplete.id === 'publish') {
+      invariant(incomplete.status !== 'failed', `published GitHub Release ${observation.tag} is not immutable`)
       if (incomplete.status === 'running') {
         if (noWait) return report
         watchRun(observation.repository, observation.publishRun)
         continue
       }
+      ensureImmutableReleases(observation.repository)
       const previousRunId = observation.publishRun?.databaseId || null
       const publishPlan = buildPublishMutationPlan(workflow, {
         tag: observation.tag,
@@ -500,14 +598,29 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
       continue
     }
 
-    for (const target of observation.consumers.filter(item => !item.exactVersion)) {
+    for (const target of observation.consumers.filter(item => !item.exactVersion || item.checkReadback?.trusted !== true)) {
+      invariant(
+        !(target.exactVersion && target.checkReadback?.trusted !== true),
+        `consumer ${target.repository} has the exact package version but lacks trusted release-check provenance: ${target.checkReadback?.reason || 'unknown reason'}`,
+      )
       if (target.pullRequest) {
+        if (target.pullRequest.state === 'MERGED') {
+          invariant(
+            target.checkReadback?.trusted === true,
+            `merged consumer PR lacks trusted release-check provenance: ${target.pullRequest.url}: ${target.checkReadback?.reason || 'unknown reason'}`,
+          )
+          continue
+        }
         const checks = checkRollupStatus(target.pullRequest.requiredChecks)
         invariant(checks !== 'failed', `consumer PR failed checks: ${target.pullRequest.url}`)
         if (checks === 'pending') {
           if (!noWait) gh(['pr', 'checks', `${target.pullRequest.number}`, '--repo', target.repository, '--required', '--watch', '--interval', '10'])
           continue
         }
+        invariant(
+          target.checkReadback?.trusted === true,
+          `consumer PR check provenance differs from SSOT: ${target.pullRequest.url}: ${target.checkReadback?.reason || 'unknown reason'}`,
+        )
         gh([
           'pr', 'merge', `${target.pullRequest.number}`, '--repo', target.repository,
           '--squash', '--delete-branch', '--match-head-commit', target.pullRequest.headRefOid,

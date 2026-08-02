@@ -83,11 +83,17 @@ function fixture() {
     const repo = inventory.repositories.find((item) => item.id === planned.repositoryId)
     const profile = desired.profiles[repo.desiredProfile]
     const policy = profile.requiredChecks[0]
+    const releaseTarget = workflow.automation.consumers.find((target) => target.repository === repo.github)
+    const receiptPolicy = {
+      context: releaseTarget.requiredCheck.context,
+      workflow: releaseTarget.requiredCheck.producerWorkflow,
+      requiredEvents: [releaseTarget.requiredCheck.producerEvent],
+    }
     const prHead = oid(String(index + 5))
     const consumerCommit = oid(String(index + 7))
     const consumerTree = oid(index === 0 ? '9' : 'a')
     const consumerBase = oid(index === 0 ? 'b' : 'c')
-    const packageNames = workflow.automation.consumers.find((target) => target.repository === repo.github).packages
+    const packageNames = releaseTarget.packages
     return {
       repositoryId: repo.id,
       role: repo.role,
@@ -121,7 +127,13 @@ function fixture() {
         })),
       },
       auditWorkflow: { path: policy.workflow, contentSha256: policy.workflowIdentity.contentSha256, gitBlobSha: policy.workflowIdentity.gitBlobSha },
-      requiredCheck: check(repo.github, policy, index + 680, prHead, policy.requiredEvents[0] === 'repository_dispatch' ? consumerBase : prHead),
+      requiredCheck: check(
+        repo.github,
+        receiptPolicy,
+        index + 680,
+        prHead,
+        releaseTarget.requiredCheck.producerHead === 'pull-request-base' ? consumerBase : prHead,
+      ),
     }
   })
   const observation = {

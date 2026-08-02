@@ -312,8 +312,8 @@
           },
           "product-consumer": {
             "checkContext": "Verify consumer",
-            "oidcSubjectMode": "protected-ref",
-            "trustSource": "protected-base-workflow"
+            "oidcSubjectMode": "pull-request",
+            "trustSource": "repository-workflow"
           }
         },
         "requiredRulesetName": "fleet/verified-main",

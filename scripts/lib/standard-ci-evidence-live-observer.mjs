@@ -89,19 +89,24 @@ function checkRun(client, repository, headSha, expected) {
     && run.app?.id === expected.integration.id && run.app?.slug === expected.integration.slug
     && run.status === 'completed' && run.conclusion === 'success').sort((left, right) => right.id - left.id)
   if (matches.length === 0) fail(`${repository}@${headSha} lacks ${expected.context}`)
-  const run = matches[0]
-  const match = String(run.details_url ?? '').match(/^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/([1-9][0-9]*)(?:\/.*)?$/)
-  if (!match) fail(`${repository} ${expected.context} does not bind a GitHub Actions run`)
-  const workflow = normalizeWorkflowRun(client.request('GET', `/repos/${repository}/actions/runs/${match[1]}`), repository)
-  return {
-    name: run.name,
-    headSha: run.head_sha,
-    status: run.status,
-    conclusion: run.conclusion,
-    appId: run.app.id,
-    appSlug: run.app.slug,
-    workflowRun: workflow,
+  for (const run of matches) {
+    const match = String(run.details_url ?? '').match(/^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/([1-9][0-9]*)(?:\/.*)?$/)
+    if (!match) continue
+    const workflow = normalizeWorkflowRun(client.request('GET', `/repos/${repository}/actions/runs/${match[1]}`), repository)
+    if (expected.workflow && (workflow.path !== expected.workflow
+      || workflow.event !== expected.event
+      || workflow.headSha !== (expected.workflowHeadSha ?? headSha))) continue
+    return {
+      name: run.name,
+      headSha: run.head_sha,
+      status: run.status,
+      conclusion: run.conclusion,
+      appId: run.app.id,
+      appSlug: run.app.slug,
+      workflowRun: workflow,
+    }
   }
+  fail(`${repository} ${expected.context} does not bind the required GitHub Actions producer`)
 }
 
 function mainHead(client, repo) {
@@ -196,9 +201,11 @@ export async function collectStandardFiveStepLiveObservation(options = {}) {
     const repo = inventory.repositories.find((item) => item.id === planned.repositoryId)
     const profile = desired.profiles[repo.desiredProfile]
     const checkPolicy = profile.requiredChecks.find((item) => item.context === planned.requiredCheck)
+    const releaseTarget = workflow.automation.consumers.find((target) => target.repository === repo.github)
+    if (!releaseTarget || releaseTarget.requiredCheck?.context !== checkPolicy?.context) fail(`${repo.id} release/check SSOT differs`)
     const consumerMain = mainHead(client, repo)
     const sourcePullRequest = mergedPullRequest(client, repo.github, consumerMain.head, repo.defaultBranch)
-    const packageNames = workflow.automation.consumers.find((target) => target.repository === repo.github).packages
+    const packageNames = releaseTarget.packages
     const audit = contentIdentity(client, repo.github, checkPolicy.workflow, consumerMain.head)
     consumers.push({
       repositoryId: repo.id,
@@ -213,8 +220,13 @@ export async function collectStandardFiveStepLiveObservation(options = {}) {
       packageLock: lockReadback(client, repo, consumerMain.head, packageNames),
       auditWorkflow: { path: audit.path, contentSha256: audit.contentSha256, gitBlobSha: audit.gitBlobSha },
       requiredCheck: checkRun(client, repo.github, sourcePullRequest.head, {
-        context: checkPolicy.context,
+        context: releaseTarget.requiredCheck.context,
         integration: desired.integrations[checkPolicy.integration],
+        workflow: releaseTarget.requiredCheck.producerWorkflow,
+        event: releaseTarget.requiredCheck.producerEvent,
+        workflowHeadSha: releaseTarget.requiredCheck.producerHead === 'pull-request-base'
+          ? sourcePullRequest.baseHead
+          : sourcePullRequest.head,
       }),
     })
   }
@@ -238,6 +250,8 @@ export async function collectStandardFiveStepLiveObservation(options = {}) {
       requiredCheck: checkRun(client, authorityRepo.github, activeRun.manifest.head, {
         context: authorityCheckPolicy.context,
         integration: desired.integrations[authorityCheckPolicy.integration],
+        workflow: authorityCheckPolicy.workflow,
+        event: 'pull_request',
       }),
       releaseWorkflow,
       mirrorWorkflow,
