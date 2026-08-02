@@ -12,7 +12,6 @@ benchmark:
   - Polaris Combobox: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Combobox
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Combobox 設計原則
 
@@ -33,7 +32,7 @@ Combobox 是**多選下拉**的輸入與顯示元件。選中值以 Tag 陣列�
 **為什麼**:
 - 內部狀態複雜(search filter / range / menu open state)跟 `value` 雙向 sync 會產生 race condition
 - Consumer 幾乎一定有外部 state(form library / app state),強制 controlled 消除 ambiguity
-- 世界級對照:Ant AutoComplete / MUI Autocomplete(frontmatter benchmark)皆支援 dual-mode(`defaultValue`);我們選 controlled-only 對齊狀態一致性優先 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- 本 API 目前採 controlled-only；query、value 與 async options 的 ownership 由 consumer 明確持有，避免元件內外同時維護來源不明的選取狀態
 
 **若未來要改 dual-mode**:需引入 `useControllableState` helper + 測試 controlled↔uncontrolled switch 場景,屬 major API 擴充,目前不在 scope。
 
@@ -126,7 +125,7 @@ Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒�
 
 ## Loading
 
-`loading?: boolean`(forward 給 SelectMenu SSOT,2026-05-15 audit B 補;措辭對齊 `select.spec.md`「Loading」2026-07-04 Q3 拍板 — 不清空 stale options):spinner 只在**無可顯示選項時**佔 empty slot 顯 `<Empty icon={<CircularProgress size={48}/>}/>`(cmdk `CommandEmpty` 機制;已有 options 時保留顯示,不取代)。Trigger 不變,user 隨時可開。對齊 MUI Autocomplete「loading 只在無 suggestions 時顯 loadingText」共識(cite 詳 select.spec.md 同段)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+`loading?: boolean`(forward 給 SelectMenu SSOT,2026-05-15 audit B 補;措辭對齊 `select.spec.md`「Loading」2026-07-04 Q3 拍板 — 不清空 stale options):spinner 只在**無可顯示選項時**佔 empty slot 顯 `<Empty icon={<CircularProgress size={48}/>}/>`(cmdk `CommandEmpty` 機制;已有 options 時保留顯示,不取代)。Trigger 不變,user 隨時可開。這可保留仍可選的 stale options，同時只在沒有內容可呈現時讓 loading 佔據 empty slot。
 
 ---
 

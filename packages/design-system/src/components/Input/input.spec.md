@@ -17,7 +17,6 @@ benchmark:
   - Carbon TextInput: github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/TextInput
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Input 設計原則
 
@@ -163,7 +162,7 @@ Input 有**一個公開** visual chrome variant `default`(+ 一個 `@internal` �
 - ❌ **表單 Field 內**——Field 欄位必須遵守共享欄寬；內容驅動寬度會破壞 grid alignment contract
 - ❌ **放在主表單欄位區**——主表單需要穩定的 column sizing；`autoWidth` 只適用 toolbar / page-body inline 場景，使用 `variant="default"`（`bare` 已退役）
 
-**世界級對照**:VS Code settings inline input 用同 pattern;Notion property field、Airtable cell edit 皆 auto-size。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Auto-size 只服務 inline editing：view 與 edit 共用內容寬度，避免進入編輯態時欄位突然撐滿整列。
 
 ---
 

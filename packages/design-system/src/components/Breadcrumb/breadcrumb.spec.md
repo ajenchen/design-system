@@ -23,7 +23,6 @@ benchmark:
   - Carbon Breadcrumb: github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/Breadcrumb
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Breadcrumb 設計原則
 
@@ -61,7 +60,7 @@ Breadcrumb 顯示「當前頁面在資訊階層中的位置」，同時提供快
 | **Sidebar nav** | Sidebar 是全局導覽 chrome;Breadcrumb 是 content header 內 inline path | 局部位置 anchor,不取代全局 nav |
 | **Link / page header** | Link 是單一導覽動作;Breadcrumb 是 parent-chain 完整路徑 | 路徑 ≥ 3 層需要可逐層回上 |
 
-對齊 Polaris Breadcrumbs / Material Breadcrumb / Atlassian Breadcrumbs 共識:nav inside page header,不取代 sidebar。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Breadcrumb 是 page header 內的階層定位提示，不取代承載全域與跨區導覽的 sidebar。
 
 ---
 
@@ -137,7 +136,7 @@ Breadcrumb 顯示「當前頁面在資訊階層中的位置」，同時提供快
 
 ## Single-line + Overflow / 長路徑處理(2026-05-10 升級)
 
-**Single-line canonical**:BreadcrumbList 預設 `flex-nowrap`,**不 wrap 到下一行**。對齊 Material UI / GitHub / Notion / Linear / Atlassian 共識(WebFetch verified Material UI source `Breadcrumbs.js renderItemsBeforeAndAfter`)。路徑過長走中段折疊,非 multi-line wrap。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**Single-line canonical**:BreadcrumbList 預設 `flex-nowrap`,**不 wrap 到下一行**。路徑過長走中段折疊,非 multi-line wrap；如此保留單一由左至右的 ancestry scan path。
 
 當路徑層級太深(> 4–5 層)且容器寬度有限,world-class 作法是**中段折疊**:
 
@@ -150,7 +149,7 @@ Breadcrumb 顯示「當前頁面在資訊階層中的位置」，同時提供快
 - `<BreadcrumbEllipsis>` 消費 `ItemInlineActionButton` primitive(per inline-action.spec.md predicate + M1 SSOT 消費),`overlayTrigger=true` 內建 DropdownMenu open 視覺鎖
 - 包 `<DropdownMenuTrigger asChild>` 提供點 ⋯ 展開互動
 
-**v2 shipped Phase B**(2026-05-10):declarative `items` prop + `maxItems`(**default 4**,user-tuned;Material UI source 預設 8)+ `itemsBeforeCollapse`(default 1)+ `itemsAfterCollapse`(default 1)auto-collapse mode。對齊 Material UI source `Breadcrumbs.js renderItemsBeforeAndAfter` mechanism(2026-05-10 WebFetch verified)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**v2 shipped Phase B**(2026-05-10):declarative `items` prop + `maxItems`(**default 4**,user-tuned)+ `itemsBeforeCollapse`(default 1)+ `itemsAfterCollapse`(default 1)auto-collapse mode。Collapse 保留 root 與目前位置兩端，中段只透過 ellipsis 展開。
 
 ```tsx
 <BreadcrumbList
@@ -198,7 +197,7 @@ Breadcrumb 顯示「當前頁面在資訊階層中的位置」，同時提供快
 
 ## Title-breadcrumb-end 同步 canonical(2026-05-10 新增)
 
-**Breadcrumb 末位 `<BreadcrumbPage>` 文字 = page title `<h2>` / `<h3>` / `<h4>` 內容**。對齊 GitHub / Notion / Linear / Atlassian / Material UI examples 共識。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**Breadcrumb 末位 `<BreadcrumbPage>` 文字 = page title `<h2>` / `<h3>` / `<h4>` 內容**。兩處必共享同一頁面 identity，禁止同頁出現兩個互相矛盾的名稱。
 
 具體 pairing(per BreadcrumbList size):
 - `size="sm"` + 末位 `<BreadcrumbPage>X</BreadcrumbPage>` + `<h4>X</h4>` 同字
@@ -237,7 +236,7 @@ Breadcrumb 顯示「當前頁面在資訊階層中的位置」，同時提供快
 
 互動 `Inspector`(切 `size` / `showHomeIcon` / `pathLength` / `maxItems` / collapse 設定,即時看路徑深度 × 折疊行為)搭配 `CollapseMatrix` / `SizeMatrix` / `ColorMatrix` / `StateBehavior` / 元件特有 `UsageExamples` 結構矩陣 + 真實場景,完整覆蓋 collapse 策略 × size × 當前頁狀態的決策維度。
 
-ColorMatrix 已建:展示 BreadcrumbLink / Page / Separator / Ellipsis 四種節點的 default / hover / focus 色彩矩陣,採 fg-muted → fg-secondary → foreground 的階層策略(對齊 GitHub / Notion / Linear)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+ColorMatrix 已建:展示 BreadcrumbLink / Page / Separator / Ellipsis 四種節點的 default / hover / focus 色彩矩陣,採 fg-muted → fg-secondary → foreground 的 DS 內部資訊階層。
 
 ---
 

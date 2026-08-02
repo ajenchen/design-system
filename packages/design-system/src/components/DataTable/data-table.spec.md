@@ -13,7 +13,6 @@ benchmark:
   - Carbon DataTable: github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/DataTable
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # DataTable 設計原則
 
@@ -152,7 +151,7 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 
 **Canonical**:Row actions 一律 `Button iconOnly variant="text" size="xs"`(固定 24px),不隨 row tier 放大,**不套 `dismiss` prop**(Trash/Delete = `onRemove` 語意,不是 dismiss)。**Why 固定 24**:row actions 是「dense utility affordance」(輔助 ≠ 資料本體),固定 24 讓資料 cell 為視覺重心;放大會違反「data 本體 / action 輔助」階層。對照 `patterns/element-anatomy/inline-action.spec.md` Real case 表「DataTable row dedicated action column」row。
 
-**世界級對照**:Material DataGrid `GridActionsCellItem`(IconButton small)/ Polaris IndexTable hover 20-24px / Atlassian Dynamic Table small iconOnly / Apple HIG Finder list row ≤24px — 全派固定不放大。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Action measure 固定不隨 row tier 放大；row tier 只調整資料內容與 padding，utility affordance 維持同一視覺權重。
 
 **收納邏輯(consumer 自建)**:`rowActions` 是 raw callback `(row)=>ReactNode`,DataTable 原樣渲染回傳內容,**不代管計數 / 不自動 MoreVertical 收納**。建議 consumer 自行實作:1-2 個 → icon buttons 並排(全 size="xs");3+ → 前 1-2 個 inline + MoreVertical dropdown(全 size="xs";dropdown 包含所有操作,確保鍵盤可存取全部)。**Header/body 寬度同步**(DataTable 代管):header 渲染同一 `rowActions` 輸出但設為 invisible 佔位,確保 header 和 body 的 right region 同寬。
 
@@ -162,7 +161,7 @@ SSOT → `patterns/element-anatomy/inline-action.spec.md`「Real case 表」+ Pr
 
 | 位置 | Primitive |
 |------|-----------|
-| Header cell internal(sort / ⌄ menu / filter funnel / pin)| `ItemInlineActionButton` `size="md"`(對齊 AG Grid / Material / Airtable / Notion / Polaris) | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+| Header cell internal(sort / ⌄ menu / filter funnel / pin)| `ItemInlineActionButton` `size="md"`，讓 action 與 header label 共用同一 item anatomy |
 | **Multi-sort header(≥2 columns sorted)** | **隱藏 header arrow + 取消排序 dropdown option**(K7,2026-05-04)— 無 order 編號的單個 arrow 在 multi-sort 是 partial info → 反而混淆;user 走 SortManager panel 看完整 priority(SSOT)。0/1 sort 仍秀 arrow 完整資訊。理由:現行 DS 不顯 sort order 編號,跟 Airtable / Linear / Atlassian / Carbon 純箭頭派一致;multi-sort 時這派需 SortManager fallback(world-class 共識) |
 | Body cell internal(view endAction / clear / edit indicator)| Field family endAction(自動繼承)。**View 態零恆顯型別 icon(2026-07-08 A 案)**:editable affordance = hover outline(SSOT → field.spec.md L4/L6,`nakedCellEditableDisplayHover`);boolean = live Checkbox(AG Grid 同);url = hover Pencil(click-opens-link 與 edit 衝突的功能性入口,非型別 indicator)。**cell 空值 = 全空白**(2026-07-08 B 案,SSOT → field-controls.spec.md「null / undefined 值」surface 分流表) |
 | Row dedicated action column | Button `xs iconOnly` 24px(見「九、Row Actions」) |
@@ -186,13 +185,13 @@ Cell 已 `flex items-center`,consumer render 直接 inline-flex + gap-2。Icon s
 
 ### 十三、狀態處理職責邊界
 
-DataTable 只管「column + data」;Loading / Error / Disabled-整表由 consumer 外層處理。Empty 自動渲 `Empty`。Dark mode / density 走 token。**Loading**(無資料 → 外層 `Skeleton × N rows`;有資料 refresh → 容器疊 `<CircularProgress/>` 24px center + table `opacity-disabled` reuse,**禁**:內建 loading prop / Empty 套 loading / 自定義 opacity)。對齊 Ant Table Spin center / MUI X `noRowsVariant=skeleton`。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+DataTable 只管「column + data」;Loading / Error / Disabled-整表由 consumer 外層處理。Empty 自動渲 `Empty`。Dark mode / density 走 token。**Loading**(無資料 → 外層 `Skeleton × N rows`;有資料 refresh → 容器疊 `<CircularProgress/>` 24px center + table `opacity-disabled` reuse,**禁**:內建 loading prop / Empty 套 loading / 自定義 opacity)。Skeleton 表示尚無 row shape，refresh overlay 則保留目前資料與 table geometry。
 
 ---
 
 ## 捲軸(pinned header / column + scroll canonical)
 
-3-panel(left-pinned / center-scroll / right-pinned),center body 用 **native `overflow-x-auto`**(非 ScrollArea),header 透過 JS `onScroll` 同步 scrollLeft。對齊 Linear / Notion / Airbnb / Ant ProTable / TanStack 主流。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL --> **不用 `<ScrollArea>` 的理由**:Radix viewport nested div 會 break scrollLeft 同步;pinned column 需「左右獨立 scroll + 中央共享 scroll state」,單一 viewport 不適配。
+3-panel(left-pinned / center-scroll / right-pinned),center body 用 **native `overflow-x-auto`**(非 ScrollArea),header 透過 JS `onScroll` 同步 scrollLeft。**不用 `<ScrollArea>` 的理由**:Radix viewport nested div 會 break scrollLeft 同步;pinned column 需「左右獨立 scroll + 中央共享 scroll state」,單一 viewport 不適配。
 
 **Tech debt**:macOS auto-hide vs Windows/Linux 常駐 scrollbar,cross-OS 視覺寬度差異 — consumer 可 override `::-webkit-scrollbar` 樣式;ScrollArea 重構列 post-v1。
 
@@ -200,7 +199,7 @@ DataTable 只管「column + data」;Loading / Error / Disabled-整表由 consume
 
 ## L2:選取(Selection)
 
-DataTable 的 row selection layer。提供 controlled/uncontrolled state + 視覺 + 鍵盤,搭配獨立 `BulkActionBar` primitive 完成批次 workflow。**世界級對照**:Material DataGrid `rowSelectionModel` / Polaris IndexTable `selectedResources` / Linear / Notion 全 controlled-first + uncontrolled fallback。AG Grid 的 imperative `gridRef.api` 不採(違背 React idiom + 既有 Field/Switch/Checkbox controllable 慣例)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+DataTable 的 row selection layer。提供 controlled/uncontrolled state + 視覺 + 鍵盤,搭配獨立 `BulkActionBar` primitive 完成批次 workflow。State contract 跟既有 Field/Switch/Checkbox controllable 慣例一致，不另開 imperative grid-ref mutation path。
 
 ### 一、State 模式(discriminated union,2026-06-22 支援反向選取 inverted)
 
@@ -225,12 +224,12 @@ preserveSelectionOnFilter?: boolean   // default false
 
 - **位置**:最左,自動 left-pin(不論 consumer pin 哪些 cols)
 - **寬度**:固定 40px(system col;不可 resize、不可隱藏)
-- **顯示時機**:**always visible**(對齊 Linear 2024 / Polaris / Material consensus,不允 hover-show) <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **顯示時機**:**always visible**；selection affordance 不依賴 pointer hover，鍵盤與觸控使用者也能直接發現
 - **Header tri-state**:none / indeterminate / all,使用既有 Checkbox `indeterminate` prop
 
 ### 三、全選邏輯(2-step pattern + 反向選取 inverted)
 
-對齊 ref 圖 + Linear / Gmail / Notion 2-step + MUI X v8 / AG Grid inverted: <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+全選採兩階段，並以 inverted model 表示大型資料集：
 
 1. Header checkbox click(none → all)→ 選**目前可見** rows(filter 後 visible-only)= `{ mode:'include', ids:[…visible] }`
 2. 全頁可見已選 → BulkActionBar hint:「已選取本頁 N 個。**點此選取全部 M 個**」
@@ -244,24 +243,24 @@ preserveSelectionOnFilter?: boolean   // default false
 - click checkbox → toggle 該 row
 - **shift-click checkbox** → 從 anchor row 到當前 row 區間選(內部 track anchor)
 - header checkbox click → toggle 全可見
-- **整 cell 區可點擊**(canonical):cell padding 任何位置(不只視覺 checkbox/radio 本體)點擊都觸發 toggle / select。對齊 Linear / Apple Mail / Material DataGrid — 增 hit target 不要求精準瞄準。Disabled row 不觸發。實作:select cell 容器 div onClick 委派到 toggleRow / setSelection <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **整 cell 區可點擊**(canonical):cell padding 任何位置(不只視覺 checkbox/radio 本體)點擊都觸發 toggle / select，擴大 hit target 且不要求精準瞄準。Disabled row 不觸發。實作:select cell 容器 div onClick 委派到 toggleRow / setSelection
 
 ### 五、Disabled rows
 
 - prop:`isRowSelectable?: (row) => boolean`
-- 視覺:**僅 checkbox disabled + 灰**;**row 其他 cell 內容正常 render**(對齊 Material DataGrid / Polaris)— row 的資料仍有資訊價值 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- 視覺:**僅 checkbox disabled + 灰**;**row 其他 cell 內容正常 render**——不可選取不代表該 row 的資料失去資訊價值
 - 全選跳過 disabled rows
 
 ### 六、Selection × filter / sort 互動
 
-- **`include` 模式**:filter 套用 → filtered-out 的 selected rows 預設清掉(對齊 Material / AG Grid / Polaris / GitHub / Gmail consensus) <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **`include` 模式**:filter 套用 → filtered-out 的 selected rows 預設清掉，避免使用者對目前看不見的列執行批次操作
 - **`all`(反向)模式**:語意 = 「全部**符合當前 filter**的列 − excluded」→ filter 變動時 selection set 隨 filter **自然重算**(M 跟著變),`excluded` 保留不清(被 filter 掉的 excluded 列無害,回到該 filter 時仍排除);**不**套用上面的 include-mode 清除。consumer 計數用更新後的全集筆數 M(consumer 自持)。
 - **opt-in `preserveSelectionOnFilter={true}`**(僅 include 模式)→ 給 productivity scope(Linear / Airtable 用法),保留 hidden selected,BulkActionBar 顯示「{visible} selected ({hidden} hidden by filter)」
 - sort 套用 → selection 全保留(sort 不影響可見性,兩 mode 同)
 
 ### 七、BulkActionBar 整合(inline composition canonical)
 
-`BulkActionBar` 是獨立 primitive(`../BulkActionBar/`),不內建。Consumer flex-column 容器 inline composition,**toolbar 永遠保留**(filter / sort / search selection 期間仍可用,additive 派 — 對齊 Linear / Notion / Apple Mail / iOS Files)。Hint banner 用 `<Alert variant="neutral" placement="fixed">` + ReactNode title(資訊性 hint 非 info hue,canonical 見 `data-table.stories.tsx` WithBulkActions)。4 layout use case 詳 `../BulkActionBar/bulk-action-bar.spec.md`。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+`BulkActionBar` 是獨立 primitive(`../BulkActionBar/`),不內建。Consumer flex-column 容器 inline composition,**toolbar 永遠保留**，讓 filter / sort / search 在 selection 期間仍可用。Hint banner 用 `<Alert variant="neutral" placement="fixed">` + ReactNode title(資訊性 hint 非 info hue,canonical 見 `data-table.stories.tsx` WithBulkActions)。4 layout use case 詳 `../BulkActionBar/bulk-action-bar.spec.md`。
 
 ### 八、a11y 預設
 
@@ -269,7 +268,7 @@ preserveSelectionOnFilter?: boolean   // default false
 - header checkbox `aria-label="全選可見列"`
 - 鍵盤:`Space` toggle / `Shift+Space` 擴 range / `Cmd/Ctrl+A` 選全可見 / `Esc` clear
 - Selection 變更可選 `aria-live="polite"` 通知(consumer-implemented)
-- **Multi mode 用 Checkbox / Single mode 用 Radio**(對齊 Material DataGrid / Polaris IndexTable 共識,same-row consistency 全 sm)。Single mode 內部 wrap `RadioGroupPrimitive.Root` 提供 context,header checkbox 抑制(single 無「全選」概念)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **Multi mode 用 Checkbox / Single mode 用 Radio**，兩者在同一 row density 使用 sm。Single mode 內部 wrap `RadioGroupPrimitive.Root` 提供 context,header checkbox 抑制(single 無「全選」概念)。
 
 ### 九、L2 禁止事項
 
@@ -283,7 +282,7 @@ preserveSelectionOnFilter?: boolean   // default false
 
 ## L4:Advanced Filter(進階篩選 panel)
 
-DataTable toolbar 的「篩選」按鈕展開 `<DataTableFilterPanel>` — flat 或 1-level nested boolean expression builder。實作 sub-file `data-table-filter-panel.tsx`(同 SortManager 對齊 sub-file pattern,**不另開 5-file**:spec / stories 都消費本檔)。**M8 對標**:ClickUp 為主 + Notion / Airtable / Coda / Linear。Image ref:user 提供 ClickUp-style 截圖(2026-05-02)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+DataTable toolbar 的「篩選」按鈕展開 `<DataTableFilterPanel>` — flat 或 1-level nested boolean expression builder。實作 sub-file `data-table-filter-panel.tsx`(同 SortManager 對齊 sub-file pattern,**不另開 5-file**:spec / stories 都消費本檔)。結構 authority 是本節型別與 user 提供的 2026-05-02 reference image；外部產品名稱不作規則證據。
 
 ### 一、Mode
 
@@ -327,7 +326,7 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 | `number` | `<NumberInput>` | |
 | `date_single` | `<DatePicker>` | |
 | `date_range` | `<DatePickerRange>` | Ant-style split-input |
-| `date_relative` | `<Select groups>` 13 option × 3 group | 過去 / 目前 / 未來(對齊 Linear / Notion idiom 2026-05-04) | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+| `date_relative` | `<Select groups>` 13 option × 3 group | 過去 / 目前 / 未來三個時間方向群組 |
 | `datetime_single` | `<DatePicker showTime>` | `meta.includeTime=true` 時 promote |
 | `datetime_range` | `<DatePickerRange showTime>` | 同上 |
 | `select_multi` | `<Combobox>` | |
@@ -337,7 +336,7 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 
 - 第 1 row conjunction 是靜態 `Where` label(`px-[var(--field-px)]` 對齊下方 Field value 起點 = 12px)
 - field 未選 → operator + value picker disabled;同 group 共用 conjunction(第 2 條 row 是唯一可改的 And/Or Select,改動連動整 group;第 3 條起唯讀顯示當前 conjunction — A6 canonical)
-- **空狀態(兩態,G fix 2026-05-04 v2)**:initial mount 且 value 空且 `maxConditions` 尚有容量 → auto-add 1 條空 condition row(field 未選 → operator / value 自動 disabled;讓 user 直接看到 row shape,不必先點 CTA;useRef gate 只 mount 一次);`maxConditions=0` 不 auto-add。user 手動刪光 → 只顯 inline `+ 加篩選` CTA、不 re-add(尊重清空意圖,對齊 Notion / Airtable / Linear) <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **空狀態(兩態,G fix 2026-05-04 v2)**:initial mount 且 value 空且 `maxConditions` 尚有容量 → auto-add 1 條空 condition row(field 未選 → operator / value 自動 disabled;讓 user 直接看到 row shape,不必先點 CTA;useRef gate 只 mount 一次);`maxConditions=0` 不 auto-add。user 手動刪光 → 只顯 inline `+ 加篩選` CTA、不 re-add，尊重已明確執行的清空意圖
 - **CTA 位置**:緊貼最後一條 row(**廢 SurfaceFooter**),條件與「加入」屬同一語境;root-level「加篩選 / 加入篩選器」用 `tertiary`(輕量但有邊界,符合 root-CTA 重量),group 內「加入巢狀篩選」才用 `text`(更輕,inline 於 group 內)
 - **Trash / 刪除**:row 是 form-control row → text Button(non Inline Action,違 item-anatomy canonical)
 - **And/Or Select** `minRows={2}`(2 選項顯式縮 menu 高度);**Where padding** `px-[var(--field-px)]` align Field
@@ -364,13 +363,13 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 - ❌ 同 group 混 AND / OR(boolean ambiguity)
 - ❌ 動態切換 `mode`(會丟 group 結構,mount 後鎖死)
 - ❌ 1+ 層 nest(型別禁;UI 不提供 add-group-inside-group button)
-- ❌ Drag handle reorder filter(filter 順序對結果無影響,對齊 ClickUp / Airtable / Notion) <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- ❌ Drag handle reorder filter(filter 順序不改變 boolean expression 的求值結果，提供 reorder 只會產生虛假 affordance)
 - ❌ Composite column 直接 filter(拆 atomic column)
 - ❌ 自開 5-file 結構(spec / stories 合進本 spec + `data-table.stories.tsx`,對齊 SortManager sub-file pattern)
 
 ---
 
-## L4 Inline Edit / Nested rows / Row drag(2026-05-04;對齊 Notion / Airtable type-aware editor + Jira drag idiom @benchmark-unverified)
+## L4 Inline Edit / Nested rows / Row drag(2026-05-04)
 
 ### Inline create row(表格底部「+ 新增」列)— 只定義 idle 態(2026-07-08 WM 戰役 codify,user 拍板)
 
@@ -427,8 +426,8 @@ Row drag + column reorder + TreeView 共用 `lib/drag-visual.ts`:source `opacity
 
 `enableRowDrag?: boolean` + `onRowReorder?: (sourceId, targetId, 'before' | 'after')`。Library:@dnd-kit/core(v15.0 Path B 用 `useDraggable` + `useDroppable`,不用 `@dnd-kit/sortable`)。**必填 `getRowId`**(否則 dnd 用 row.index reorder 後錯位)。
 
-- **Handle**:Button tertiary iconOnly xs(GripVertical)24px chip,所有 state(idle / hover / aria-disabled)統一 `bg-surface-raised`(border / shadow 已 retire,2026-05-12 per user「我有叫你加 elevation 嗎」),fixed-position 浮層貼 row 左緣、不佔 column 空間(位置 JS 計算,實作見 `data-table.tsx`);**hover-reveal** 由 JS 控 visibility / opacity(row 或 handle hover 顯示;drag 中 source 強制顯示、其他列隱藏)。對齊 Jira backlog(@benchmark-unverified,M22)。Tertiary chip 非 ItemInlineAction 因透明背景撞 table border。
-- **Sort × Drag 互斥**:sort.length>0 → handle disabled+Tooltip。**Top-level only**(`row.depth>0` 不顯 handle)。**Position**:active vs over 視覺位置 → `'after'`/`'before'` 對齊 `arrayMove`。**Consumer-managed mutation**:`onRowReorder(sourceId, targetId, position)`,DS 不持 row order(Notion/Airtable/Linear)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **Handle**:Button tertiary iconOnly xs(GripVertical)24px chip,所有 state(idle / hover / aria-disabled)統一 `bg-surface-raised`(border / shadow 已 retire,2026-05-12 per user「我有叫你加 elevation 嗎」),fixed-position 浮層貼 row 左緣、不佔 column 空間(位置 JS 計算,實作見 `data-table.tsx`);**hover-reveal** 由 JS 控 visibility / opacity(row 或 handle hover 顯示;drag 中 source 強制顯示、其他列隱藏)。Tertiary chip 非 ItemInlineAction 因透明背景撞 table border。
+- **Sort × Drag 互斥**:sort.length>0 → handle disabled+Tooltip。**Top-level only**(`row.depth>0` 不顯 handle)。**Position**:active vs over 視覺位置 → `'after'`/`'before'` 對齊 `arrayMove`。**Consumer-managed mutation**:`onRowReorder(sourceId, targetId, position)`,DS 不持 row order，因為資料排序與 persistence authority 都在 consumer。
 - **Virtualization 整合**(v3 2026-05-05):enableRowDrag 自動把 overscan 拉到 `Math.max(overscan, 5)` + drag 期 freeze `measureElement` + `modifiers={[snapToCursorModifier]}`(ghost top-left 對齊 cursor,不鎖軸)。**3-panel mirror sync**:primary 永遠 = center region(v15.4 撤銷「left 優先」— multi-instance same-id 是 dnd-kit anti-pattern,且 pinned column 是「鎖定欄」語意非 drag 起點),只有 center 掛 `useDraggable`;mirror region(left / right pinned)只掛 `useDroppable`,drag 期以 `useDndContext` 同步 source 半透視覺(Path B source 留原位,無 row transform);handle 只 render primary(center)避雙觸發。**Cross-parent drop 禁止**(已知 limit):nested 只同 top-level 重排,collisionDetection 過濾,顯 invalid signal。
 
 ---
@@ -458,9 +457,9 @@ Row drag + column reorder + TreeView 共用 `lib/drag-visual.ts`:source `opacity
 
 ## Overlay + cell error SSOT(Phase 9)
 
-**Overlay**:viewport `position:fixed inset:0` layer。`getCellRect()` 從 `getBoundingClientRect()` 取 float coords no rounding。Paint:hover/selected ring `outline outline-offset:-1px` in-place(range outer ring 已 2026-05-10 retire — range 視覺只剩 cell-bg `--primary-subtle` `[data-range-cell]`,bg 已足以標示範圍、外框冗餘);active editor host portal opaque `<div>` z 3(cell 保持 view 態)。**Viewport clip**(Issue 6):body panel 加 `data-datatable-panel="left|center|right"`;`getCellGeometry()` return cell+panel rect;`<ClipMask>` panel rect `overflow:hidden`,內部 `toRelRect()` 轉 mask-relative(hover/selected ring 按 panel clip,不畫出 pin boundary)。Active editor host **不 clip**。對齊 AG Grid `cellsForRangeSet` / Glide / Notion sticky-cell mask。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**Overlay**:viewport `position:fixed inset:0` layer。`getCellRect()` 從 `getBoundingClientRect()` 取 float coords no rounding。Paint:hover/selected ring `outline outline-offset:-1px` in-place(range outer ring 已 2026-05-10 retire — range 視覺只剩 cell-bg `--primary-subtle` `[data-range-cell]`,bg 已足以標示範圍、外框冗餘);active editor host portal opaque `<div>` z 3(cell 保持 view 態)。**Viewport clip**(Issue 6):body panel 加 `data-datatable-panel="left|center|right"`;`getCellGeometry()` return cell+panel rect;`<ClipMask>` panel rect `overflow:hidden`,內部 `toRelRect()` 轉 mask-relative(hover/selected ring 按 panel clip,不畫出 pin boundary)。Active editor host **不 clip**，因為 editor 必能越過 cell paint layer 接收互動。
 
-**Cell errors**(Issue 9):`cellErrors?: Record<string, string|string[]>` prop key `${rowId}:${colId}`。Cell view 態渲 error 14px `text-error` 下方 gap-1;array→`<ul><li>`;single→`<span>`。`aria-describedby` + `aria-invalid` + `<span role="alert">`。`overflow:visible` 當有 error(搭 `autoRowHeight`)。**Per-row state SSOT** cell-render wrapper(`items-X` 等)必 consume `effectiveAutoRowForCell`,禁 global `autoRowHeight`(audit `audit-data-table-row-mode-ssot.mjs` 強制)。**Edit-clears-own-cell** 自動清視覺,consumer onCellCommit validate 後回填。**a11y caveat**:≥ 5 同時 `role="alert"` 第一次 paint AT 噪音 → consumer 可考 `role="status"` fallback。對齊 AG Grid `cellClassRules='ag-cell-error'` + Material X errorMessage + Airtable validation。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**Cell errors**(Issue 9):`cellErrors?: Record<string, string|string[]>` prop key `${rowId}:${colId}`。Cell view 態渲 error 14px `text-error` 下方 gap-1;array→`<ul><li>`;single→`<span>`。`aria-describedby` + `aria-invalid` + `<span role="alert">`。`overflow:visible` 當有 error(搭 `autoRowHeight`)。**Per-row state SSOT** cell-render wrapper(`items-X` 等)必 consume `effectiveAutoRowForCell`,禁 global `autoRowHeight`(audit `audit-data-table-row-mode-ssot.mjs` 強制)。**Edit-clears-own-cell** 自動清視覺,consumer onCellCommit validate 後回填。**a11y caveat**:≥ 5 同時 `role="alert"` 第一次 paint AT 噪音 → consumer 可考 `role="status"` fallback，避免初次 paint 同時打斷多次。
 
 ---
 
@@ -468,7 +467,7 @@ Row drag + column reorder + TreeView 共用 `lib/drag-visual.ts`:source `opacity
 
 - ❌ 不使用斑馬紋——hover 已足夠區分行，斑馬紋增加狀態組合的視覺複雜度
 - ❌ 無隱藏內容、無 frozen column、非 inline edit 的表格不加外框
-- ❌ 非 inlineEdit table 的 body cell 之間不加垂直分隔線——靠 header 建立的欄位邊界引導即可。inlineEdit table 的 body cells **4 邊均有 1px divider**(grid editing surface canonical;對齊 AG Grid / Material X cellEditable) <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- ❌ 非 inlineEdit table 的 body cell 之間不加垂直分隔線——靠 header 建立的欄位邊界引導即可。inlineEdit table 的 body cells **4 邊均有 1px divider**，因為每個 cell 都是可進入的獨立 editing surface
 - ❌ Toolbar 不內建在 DataTable 裡——toolbar 是外部組合，職責分離
 - ❌ 截斷文字不無條件顯示 tooltip——只有實際被截斷時才顯示
 - ❌ Tag 不可被外層 overflow-hidden 裁掉邊框——Tag 自身 shrink + 內部文字 truncate

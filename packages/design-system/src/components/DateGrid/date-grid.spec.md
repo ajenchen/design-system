@@ -12,7 +12,6 @@ benchmark:
   - MUI X Date Pickers: github.com/mui/mui-x/tree/master/packages/x-date-pickers
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 <!-- M22 retrofit DONE 2026-05-03 v11(real source URLs added inline below)-->
 
@@ -37,10 +36,10 @@ DateGrid 是 **DatePicker 內部的 date-grid primitive**(月份格網 + 前後�
 | Ant Design | inline 行事曆(含事件) | 無(DatePicker 自建 panel) |
 | Apple HIG / Fantastical | event 檢視 | 無(DatePicker inline) |
 | Material MUI | `<Calendar>` 已棄 → `<DateCalendar>`(date picker grid,single-date only;Range 走另元件 `<DateRangeCalendar>`)— source: [github.com/mui/mui-x](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/DateCalendar/DateCalendar.tsx) | `<DateCalendar>` |
-| React Aria | `<Calendar>`(date picker grid)— source: [react-spectrum.adobe.com](https://react-spectrum.adobe.com/react-aria/Calendar.html) `@benchmark-unverified`(WebFetch 403)| `<Calendar>` |
+| React Aria | `<Calendar>`(date picker grid)— source: [React Aria Calendar](https://react-spectrum.adobe.com/react-aria/Calendar.html) | `<Calendar>` |
 | **本 DS** | **`<Calendar>`**(event 檢視 canvas,見 `../Calendar/`) | **`<DateGrid>`**(本元件) |
 
-結論:Material / React Aria 用 `Calendar` 指 date-picker-grid 有點誤導(user 以為是 event 檢視);本 DS 對齊 Notion / Google / Ant / Apple 的大眾認知,**`Calendar` 給 event view**、**`DateGrid` 給 date picker grid**。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+結論:本 DS 用 **`Calendar` 表示 event view**、用 **`DateGrid` 表示 date-picker grid**。兩個名稱直接反映資料模型與 interaction contract，避免 consumer 以同一 component identity 混用事件瀏覽與日期選取。
 
 ---
 
@@ -92,7 +91,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 
 ## 五種 cell state canonical(2026-04-21,AR43 定案)
 
-世界級對照 — Ant Design([github.com/ant-design/ant-design](https://github.com/ant-design/ant-design/tree/master/components/date-picker))/ Google Calendar / macOS Calendar / Material 3([mui/mui-x DateCalendar](https://github.com/mui/mui-x/blob/master/packages/x-date-pickers/src/DateCalendar/DateCalendar.tsx))的 picker grid 共通做法 `@benchmark-unverified`(visual claims,non-source-citable):
+本 DS picker grid 的視覺狀態 contract：
 - today 不做 ring circle(跟 hover ring 混淆),改用 underline 或 dot
 - selected 用藍底白字圓,range 端點共用同樣視覺
 - range 中段用灰底 rectangle track,跟端點的圓相切成連續 pill
@@ -108,7 +107,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | **selected / range 端點** | 藍底白字圓 | button `primary` 底 + `on-emphasis` 字 | range_start / range_end 共用此視覺 |
 | **range 端點 cell bg** | 灰底半圓 track,**高度 = button**,向 middle 外擴 2px bridge gap | `neutral-selected`;class 細節見「Range track canonical」+ tsx | 圓弧半徑 = button 半徑無錯位;舊版 cell-level bg 圓弧半徑 16px 比 button 14px 大 = 視覺 misalign |
 | **range track(中間)** | 灰底矩形,**高度 = button**(28×28 @ md),左右各外擴 2px 接合相鄰 cell | `neutral-selected`;button 透明顯露 track(class 細節見 tsx)| track 高度跟 selected 圓一致,不留 2px「fat」邊;相鄰 pseudo 接合連貫橫向 track |
-| **hover(未選中)** | 藍圈 outline(無 fill) | button hover ring 色 `primary-hover`(2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階,FileUpload / Slider thumb hover 同族;base 專屬持續選中與 focus),無 bg(ring 寬度等 class 細節見 tsx)| 細 ring 對齊 Apple HIG `@benchmark-unverified` / Ant `@benchmark-unverified`(visual,non-source-citable) |
+| **hover(未選中)** | 藍圈 outline(無 fill) | button hover ring 色 `primary-hover`(2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階,FileUpload / Slider thumb hover 同族;base 專屬持續選中與 focus),無 bg(ring 寬度等 class 細節見 tsx)| outline 保留 cell 底色，與 selected fill 明確區分 |
 
 ## 組合狀態(state stacking order)
 
@@ -132,7 +131,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
   - title text vertical center Y 一致 = 12 + 12 = 24px(from container top)
   - ⚠️ 改 DateGrid `p-3` → 必同步改 `TimePickerSidePanel pt-3`(root 刻意 bottom = 0,見 date-picker.tsx docblock),否則對齊破
 
-**為什麼用 `h-field-sm` 而非固定 `h-9`**:picker grid 在 lg density 下也要跟 Input 系統一起放大,`h-field-sm` 在 md = 28px / lg = 32px,比 Ant/Google 固定 36px(`@benchmark-unverified` visual measurement)稍緊但對齊本 DS 的 field 家族。day cell 尺寸雖固定,但**隨 density 縮放**,視覺跟 popup 內其他欄位(Input / Button)保持比例。
+**為什麼用 `h-field-sm` 而非固定 `h-9`**:picker grid 在 lg density 下也要跟 Input 系統一起放大,`h-field-sm` 在 md = 28px / lg = 32px。day cell 尺寸雖固定,但**隨 density 縮放**,視覺跟 popup 內其他欄位(Input / Button)保持比例。
 
 ## Nav button canonical(2026-05-03 v9)
 
@@ -153,7 +152,7 @@ Prev/Next chevron 用 `<Button variant="text" size="xs" iconOnly>`(DS primitive 
 
 ## Range track canonical(2026-05-03 v8)
 
-對齊 Ant `cell-range-start::before { border-radius: 9999px 0 0 9999px }`(stadium pattern): <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Range 起訖使用 stadium 端點，讓連續區間有清楚的開始、延伸與結束：
 - `range_start` / `range_end` cell pseudo:左 / 右半圓 stadium,向 middle 側外擴 2px bridge gap(class 細節見 tsx `range_start` / `range_end`)
 - `range_middle` cell pseudo:滿 cell 高矩形、左右各外擴 2px,無 rounding(class 細節見 tsx)
 - pseudo 蓋全 cell + bridge 4px gap → button 圓的 corner triangle 看到 pseudo bg(對齊 button 圓的左/右半弧,無「凸出」)

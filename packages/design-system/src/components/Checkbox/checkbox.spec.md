@@ -22,7 +22,6 @@ benchmark:
 
 <!-- @spec-budget-exception: SSOT-heavy 例外(`AGENTS.md`「行數預算」的 foundational SSOT 例外 ≤800-1200)— 本檔持有跨元件 SSOT:「與 Switch 的分界」(~45 行)+「Clamp 政策(Label/Description 行數)」(~35 行);2026-07-14 knowledge-prune P2 結論「殘餘超標內容全是 canonical,再砍必動 meaning」(.claude/logs/prune-p2-candidates.md)。 -->
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Checkbox 設計原則
 
@@ -133,7 +132,7 @@ Checkbox 和 Radio 是**表單內的選擇控件**，視覺語言完全一致，
 
 - **現況**:控件 sm=16 / md=16 / lg=20px(不等於 `--field-height-sm/md/lg` = 28/32/36px)
 - **Rationale**:Checkbox 控件是**選擇指示器**(indicator),不是容器;field-height 是「可編輯 control 的容器高度」,indicator 視覺上要明顯小於容器,才符合「選項前有個小方框」的心智模型。控件本體走 icon tier(sm/md=16, lg=20),行高對齊透過 SelectionItem 的 `py = (field-height - 1lh) / 2` 保證(控件垂直置中於 1lh 容器)
-- **世界級對照**:Material 3 Checkbox = 18px touch target 內的 18px container / Ant Design Checkbox = 16px 控件 / Polaris Checkbox = 16px——全部獨立於 field-height,控件 icon 與 field 分離是共識 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **幾何 owner**:Checkbox control 與 field-height 分開管理；field row 擁有可點範圍與垂直置中，control source 擁有 icon box 的確切尺寸。
 
 ---
 
@@ -264,7 +263,7 @@ Checkbox 值走 `onCheckedChange`(非 value/onChange 型控件),接 `useFormVali
 
 ## 群組模式(CheckboxGroup)
 
-**`<CheckboxGroup>`** 是多選 Checkbox 的 layout primitive,跟 `<Checkbox>` **同資料夾**(合併於 2026-04-21,原單獨 `CheckboxGroup/` folder 併入)。對齊 Ant Design `Checkbox.Group` / Chakra `CheckboxGroup` / Mantine `Checkbox.Group` 世界級:standalone + group 家族同資料夾。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**`<CheckboxGroup>`** 是多選 Checkbox 的 layout primitive,跟 `<Checkbox>` **同資料夾**(合併於 2026-04-21,原單獨 `CheckboxGroup/` folder 併入)。兩者共享 selection semantics、Field integration 與 group context，因此由同一元件家族維護。
 
 ### Canonical 鐵律:零外部 gap
 

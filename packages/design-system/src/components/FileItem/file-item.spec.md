@@ -11,7 +11,6 @@ benchmark:
   - shadcn Attachment (2026-06 chat 套件): ui.shadcn.com/docs/components/attachment
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # FileItem 設計原則
 
@@ -21,7 +20,7 @@ benchmark:
 
 **Layout Family**：本元件是 `patterns/element-anatomy/item-anatomy.spec.md` 所擁有的 **Family 2（List item layout）** 消費者。結構繼承其「List item layout」章節,兩 mode 皆採 scanning-mode 規格（見下「Typography」段:FileItem 固定傳 ItemContent `mode="scanning"`）。FileItem 在 rich mode 用 avatar 作 item boundary。
 
-**命名 rationale**：`compact / rich` 表達精簡 vs 完整內容呈現（對齊 Discord embed type='rich' / Slack rich preview / Notion rich text 世界級 idiom）。不叫 `lg/sm`——兩者是資訊量不同的展示策略，不是同一結構的尺寸縮放。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**命名 rationale**：`compact / rich` 表達精簡 vs 完整內容呈現。不叫 `lg/sm`——兩者是資訊量不同的展示策略，不是同一結構的尺寸縮放。
 
 ---
 
@@ -364,7 +363,7 @@ Consumer 自行組合。按 `patterns/element-anatomy/item-anatomy.spec.md`「Pr
 } />
 ```
 
-**為什麼 row action 固定 Button xs(24)**:row 放大不代表 action 要放大——世界級 DS(Material DataGrid / Polaris / Atlassian / Apple HIG)row action 都是固定小 icon button(20–24),row 高度變化只影響 row padding 與 content,不影響 action 尺寸。compact row 雖矮,但 Button 24 透過 suffix wrapper 的 data-unbounded margin trick 收斂到 1lh footprint(同 chrome SurfaceHeader dismiss canonical),不會填滿 row。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**為什麼 row action 固定 Button xs(24)**:row 放大不代表 action 要放大；row 高度變化只影響資料 padding 與 content，utility action 維持固定的輔助權重。compact row 雖矮,但 Button 24 透過 suffix wrapper 的 data-unbounded margin trick 收斂到 1lh footprint(同 chrome SurfaceHeader dismiss canonical),不會填滿 row。
 
 **Trash/Delete 不是 dismiss 語意**:`dismiss` 嚴格保留給「X close overlay session」(Dialog / Sheet / Popover / Alert close X)。Row 的 Trash/Delete 語意是 `onRemove`(從集合移除一個 item,見 `.claude/rules/ui-development.md`「元件 Props 命名」「onRemove」),**不套 Button `dismiss` prop**:Button `variant="text"` 預設 icon 已是 fg-muted → foreground,hover 弱化視覺自然呈現(兩 mode 同)。
 

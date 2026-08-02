@@ -10,7 +10,6 @@ benchmark:
   - cmdk (shadcn Command base): github.com/pacocoursey/cmdk
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # Command 設計原則
 
@@ -152,25 +151,25 @@ Command 是 **internal primitive**(SelectMenu 底層消費,app 不直接使用,�
 
 四個關鍵決策,各自有世界級先例支撐:
 
-**(1) 單欄 + grouped sections(non-multi-pane)— 對齊 Linear / Raycast / VS Code / Notion 多家共識** <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**(1) 單欄 + grouped sections(non-multi-pane)**
 
 macOS Spotlight 的 multi-pane / blur background 適合 system-level launcher(全 OS 範圍 routing),但 disruptive — 不適合 inline 元件場景(SelectMenu 內嵌 Cmd-K 模式)。Linear / Raycast / VS Code 共識「單欄 + group」適合 productivity tool 內嵌使用,且 cmdk lib(shadcn/Vercel)default 結構符合此哲學。
 
 捨棄 multi-pane 的代價是「無 inline preview 直觀度」(Spotlight 可預覽檔案內容),但 DS 場景是命令清單非檔案 browser,接受。
 
-**(2) Search input always visible at top — 對齊 Linear / Raycast / Notion / VS Code 共識** <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**(2) Search input always visible at top**
 
 input always visible 提示使用者「這是 search-driven」,對齊 input-first mental model。捨「only on focus 才出現 input」(節省垂直空間)的代價是「無法 list 看完再搜尋」,但 Cmd-K 場景 default 預期 search,不是 list browse。
 
-**(3) Cmd+K(Apple)/ Ctrl+K(Windows)為觸發 shortcut — 對齊 Linear / Notion / Vercel / Slack / GitHub 共識** <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**(3) Cmd+K(Apple)/ Ctrl+K(Windows)為觸發 shortcut**
 
-Cmd-K 已成 productivity tool 的 universal idiom(Linear 推廣後 Notion / Vercel / Stripe / Slack 統一),使用者跨 app 預期一致。捨棄 Raycast 的 Option+Space(global launcher conflict)/ Spotlight Cmd+Space(macOS 內建衝突)/ VS Code Cmd+P(file-only,跟 Cmd+Shift+P 命令分流)的差異化代價接受 — 對齊主流 idiom 比差異化重要。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Cmd-K / Ctrl-K 不與 OS 級 launcher 綁定，且能用同一語意跨平台觸發產品內命令面板。File-only navigation 或全域 launcher shortcut 不屬於本元件責任。
 
 **(4) Internal primitive 哲學 — app 不直接用 Command,必透過 SelectMenu / CommandDialog wrapper**
 
 cmdk / shadcn / Radix 默認開放 app 直接消費 primitive — 但本 DS 走 Material `<Autocomplete>` 一體 / Polaris 一體封裝哲學,把 search + popover + value-binding 包進 SelectMenu(form context)或 `CommandDialog`(cmdk + Radix Dialog 包裝,global Cmd+K)。
 
-捨棄「app code 直接 import Command 客製」的代價是「自由度受限」(無法在 app 內客製 cmdk filter logic),但 DS 一致性更重要 — 若 SelectMenu / CommandDialog 不夠用,回 DS 開新 wrapper 而不是繞過抽象層(對齊 SSOT 消費 canonical M1)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+捨棄「app code 直接 import Command 客製」的代價是「自由度受限」(無法在 app 內客製 cmdk filter logic),但 DS 一致性更重要 — 若 SelectMenu / CommandDialog 不夠用,回 DS 開新 wrapper 而不是繞過抽象層(SSOT 消費 canonical M1)。
 
 ---
 

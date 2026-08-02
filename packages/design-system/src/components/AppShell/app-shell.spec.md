@@ -14,7 +14,6 @@ benchmark:
   - GitHub / Slack / Gmail — primary-header mode reference(global top bar)
 ---
 
-<!-- @benchmark-cited: 2026-05-19 D5 cite — all design intent claims backed by frontmatter benchmark URLs. -->
 
 # AppShell 設計原則
 

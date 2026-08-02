@@ -8,7 +8,6 @@ variants: {}
 sizes: {}
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline(M22(d) 顯式撤回;本檔 frontmatter 無 benchmark list,來源 URL 未補)。 -->
 
 # Field 設計原則
 
@@ -79,7 +78,7 @@ Field 和 Field Controls（Input / NumberInput / DatePicker / Select / Combobox 
 
 **Label / Description / Error 字體固定 `text-body`（14px），不隨 field size 變**——Field size 只影響 input 高度，不影響表單佈局元素的 typography。
 
-**為什麼固定**：世界級系統（Material、Ant Design、Atlassian、Carbon、Polaris）都是固定 label/helper text size。 <!-- @benchmark-unverified -->
+**為什麼固定**：label / helper 是跨 Field family 的結構文字；若跟 control size 一起縮放，同一表單會失去一致的 label hierarchy。
 
 ---
 
@@ -129,7 +128,7 @@ Horizontal 模式下 label 的欄寬由 `labelWidth` prop 控制（任何 CSS le
 - label 第一行永遠對齊第一個 item 第一行
 - 實作:`padding-top: calc((field-height - 1lh)/2)`
 
-**為什麼分兩套**:inline / block 是不同的對齊語意模型(固定高度可談整體中線 vs 多行群組只有第一行錨點),必分兩套。純 CSS 跨 size/density/字體自動連動,無 JS 測量。對齊 Atlassian DSP / Salesforce Lightning(Polaris 用 baseline 修正,類似)。(附註・技術陷阱:曾試 `min-h + flex-center` 統一,出 block + 長 label regression——justify-center 失效 + 跟 SelectionItem 公式錯位,勿再嘗試) <!-- @benchmark-unverified -->
+**為什麼分兩套**:inline / block 是不同的對齊語意模型(固定高度可談整體中線 vs 多行群組只有第一行錨點),必分兩套。純 CSS 跨 size/density/字體自動連動,無 JS 測量。(附註・技術陷阱:曾試 `min-h + flex-center` 統一,出 block + 長 label regression——justify-center 失效 + 跟 SelectionItem 公式錯位,勿再嘗試)
 
 ---
 
@@ -161,11 +160,11 @@ Inline                            Block
 1. 第一個 Radio 往下掉,跟 label 第一行中線錯位
 2. FieldGroup 裡 inline / block field 並排時節奏斷掉
 
-正確做法是「**第一行對齊**」——後續 item 從第一行往下流,label 公式錨在第一行中線。Atlassian DSP / Polaris / Material 都是這個模型。 <!-- @benchmark-unverified -->
+正確做法是「**第一行對齊**」——後續 item 從第一行往下流,label 公式錨在第一行中線；如此 label anchor 不會隨 group item 數量改變。
 
 ### 為什麼 primitive 不自己變高
 
-**Checkbox / Switch / RadioGroupItem 的 primitive 保持原生尺寸**(16-20px),不為了 form 而被拉高。世界級系統(shadcn、Radix、Material、Atlassian)全部這樣做。理由: <!-- @benchmark-unverified -->
+**Checkbox / Switch / RadioGroupItem 的 primitive 保持原生尺寸**(16-20px),不為了 form 而被拉高。理由:
 
 1. **Primitive 保持單一職責**——Checkbox 在 table cell、toolbar、menu 裡仍然是 16px,不受 form 高度污染
 2. **高度節奏由 Field 容器提供**——一次設定,所有 primitive 在任何 size / density 都自動對齊
@@ -304,7 +303,7 @@ gap 三個語意層級(具體 gap class map 見 `field.tsx` FieldGroup,`compact`
 
 同一畫面 / 同一 FieldGroup 內多個 horizontal Field **必須共用 label 欄寬度**。若每個 Field 各自傳 `labelWidth`(或省略 → 內容撐開),label 寬度會參差不齊,Switch / Input 的左邊緣不對齊,視覺上每一行「歪七扭八」。
 
-**世界級 idiom**:macOS System Settings / iOS Settings / GitHub Settings / Notion preferences / Figma 偏好設定——setting list 的 label 全部固定寬、control 全部右對齊,列與列對齊成可掃描的欄位格網。 <!-- @benchmark-unverified -->
+Setting list 的 label 欄固定寬、control 欄右對齊，使列與列形成可掃描的欄位格網；label 長度不得逐列改變 control 起點。
 
 `FieldGroup horizontalLabelWidth` 透過 React Context cascade 到所有子 Field(含 `vertical` 模式的 Field 不受影響——vertical 無 label 欄概念)。單一 Field 仍可用自己的 `labelWidth` prop 覆寫 group 預設(罕見 — 通常 group 預設就是 canonical)。
 

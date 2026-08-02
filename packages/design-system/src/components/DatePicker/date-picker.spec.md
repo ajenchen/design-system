@@ -12,7 +12,6 @@ benchmark:
   - react-day-picker: github.com/gpbl/react-day-picker
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — all world-class DS claims below have inline URL or per-claim retract. Frontmatter benchmark list expanded with canonical doc URLs. -->
 
 # DatePicker 設計原則
 
@@ -103,13 +102,13 @@ DatePicker 使用**本 DS 自建 DateGrid** + Popover 而非瀏覽器原生 `<in
 DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混淆:
 
 - **正常(未 hover)** — 黑字透明底(base reading state)
-- **today** — 文字下方藍色底線(**非 ring circle**,避免與 hover 混淆,對齊 [Ant DatePicker](https://ant.design/components/date-picker) `today` cell underline / Google Calendar / macOS Calendar <!-- @benchmark-unverified: Google Calendar + macOS Calendar 無公開 spec URL,visual observation -->)
+- **today** — 文字下方藍色底線(**非 ring circle**,避免與 hover 混淆)；today 是持續參考點，不與 hover 的瞬時 outline 共用形狀
 - **disabled** — 灰底圓圈 + 淺灰字(與 outside month 視覺略有區隔)
 - **selected**(single / range 端點) — **藍底白字圓**
 - **range track**(中間日期) — 灰底矩形橫條,與端點圓接縫形成連續 bar(實作層級詳 `date-grid.tsx` cell anatomy 註解)
 - **hover**(未選中) — 藍圈 outline **無 fill**(非 filled 避免跟 selected 混淆)
 
-**為什麼 selected 用 primary 非 neutral**:DatePicker 的 selected 是「**最終選定日期**」強 affordance,用 primary 顯示確定性(對齊 [Ant DatePicker selected blue fill](https://ant.design/components/date-picker) / Google Calendar / Notion Calendar 慣例 <!-- @benchmark-unverified: Google Calendar + Notion Calendar 無公開 spec URL,visual observation -->)。**對照 TimePicker 選項 selected 用 `bg-neutral-selected`**(見 `time-picker.spec.md`),因為 TimePicker panel 是「**列表選中**」語意(user 在時分選項間切換),跟 SelectMenu 同流派。兩者差異 codified 在各 spec,不互調。
+**為什麼 selected 用 primary 非 neutral**:DatePicker 的 selected 是「**最終選定日期**」強 affordance,用 primary 顯示確定性。**對照 TimePicker 選項 selected 用 `bg-neutral-selected`**(見 `time-picker.spec.md`),因為 TimePicker panel 是「**列表選中**」語意(user 在時分選項間切換),跟 SelectMenu 同流派。兩者差異 codified 在各 spec,不互調。
 
 **State stacking(組合狀態處理)**:
 - today + selected → **selected 勝出**(藍底白字圓)
@@ -176,7 +175,7 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 ### Popover 行為
 
-- 用 `mode="single"` + 自管 `rangeModifiers`(**不**用 RDP 內建 `mode="range"`——其 click 配對邏輯與 activeEnd 衝突,見 date-picker.tsx Range DateGrid「mode='single' + manual modifiers」註解);`numberOfMonths={showTime ? 1 : 2}`(date-only Range 兩月並列對齊 [Ant RangePicker](https://ant.design/components/date-picker#rangepicker);showTime Range 1 月,對齊 Ant `multiplePanel=false` <!-- @benchmark-unverified: Airbnb / Booking 無公開 DS spec URL,visual observation -->)
+- 用 `mode="single"` + 自管 `rangeModifiers`(**不**用 RDP 內建 `mode="range"`——其 click 配對邏輯與 activeEnd 衝突,見 date-picker.tsx Range DateGrid「mode='single' + manual modifiers」註解);`numberOfMonths={showTime ? 1 : 2}`：date-only Range 兩月並列以便同時看起訖範圍，showTime Range 保留一月讓時間 controls 有穩定空間
 - 點 date → 依 `activeEnd` 更新對應端點(start | end);auto-advance 至 end 等選
 - showTime=false:兩端點都填好 → Popover **自動關閉**
 - showTime=true:`needConfirm=true`(default),user 按「確定」才 commit + close

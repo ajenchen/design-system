@@ -10,13 +10,12 @@ benchmark:
   - MUI X Date Pickers: github.com/mui/mui-x/tree/master/packages/x-date-pickers
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — Notion/Google/Fantastical/macOS Calendar references retained as visual product references with per-claim @benchmark-unverified inline (closed-source, no canonical DS doc URL exists). Frontmatter benchmark URLs cover OSS Ant + MUI. -->
 
 # Calendar 設計原則
 
 ## 定位
 
-Calendar 是**月事件檢視 canvas**,讓 user 瀏覽、定位、快速增減月份事件。週 / 日 timeline 不在本元件 API 中；若未來實作，需以真實行為與獨立規格重新提案，不先保留空 prop / variant。對齊 Notion Calendar / Google Calendar / Fantastical / macOS Calendar 的 month-view 模型 <!-- @benchmark-unverified: closed-source product visual references, no public DS spec URL; visual sampling -->。
+Calendar 是**月事件檢視 canvas**,讓 user 瀏覽、定位、快速增減月份事件。週 / 日 timeline 不在本元件 API 中；若未來實作，需以真實行為與獨立規格重新提案，不先保留空 prop / variant。月檢視是本元件唯一已驗證、可維護的 interaction model。
 
 **Layout Family**:**非 4-Family,屬 page-composite**(見 `patterns/element-anatomy/element-anatomy.spec.md`「Page-composite」段)。多區塊 layout(Toolbar / Grid / EventTile / SidePanel),各自 own 自己的 anatomy。
 

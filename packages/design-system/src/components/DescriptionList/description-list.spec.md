@@ -10,11 +10,10 @@ benchmark:
   - Polaris DescriptionList: github.com/Shopify/polaris/tree/main/polaris-react/src/components/DescriptionList
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # DescriptionList 設計原則
 
-唯讀 label + value 展示元件，用於呈現結構化的屬性資訊。HTML 語義為 `dl` + `dt` + `dd`，對齊 Atlassian、Shopify Polaris 慣例。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+唯讀 label + value 展示元件，用於呈現結構化的屬性資訊。HTML 語義固定為 `dl` + `dt` + `dd`，讓屬性名稱與值保有原生 definition-list 關係。
 
 ## 定位
 
@@ -51,7 +50,7 @@ benchmark:
 | orientation | Layout | 典型情境 | 世界級對照 |
 |-----------|--------|---------|-----------|
 | `vertical`(預設)| label 在上 / value 在下 | ProfileCard detail、sidebar 長 value(地址、bio) | Atlassian DescriptionList、Polaris DescriptionList |
-| `horizontal` | label 左 / value 右對齊 | **file info panel / 訂單詳情 / settings summary**(短 value 的 metadata 列) | Google Drive file info、Notion file panel、iOS Settings | <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+| `horizontal` | label 左 / value 右對齊 | **file info panel / 訂單詳情 / settings summary**(短 value 的 metadata 列) | label 欄形成可掃描軸，value 保留較寬內容區 |
 
 **判斷法**:
 - value 預期長(多字、可能換行)→ vertical(讓 value 佔滿寬)
@@ -102,7 +101,7 @@ benchmark:
 - 每個 item `py-[var(--layout-space-tight)]`(density-aware,形成 cell-like row 高度)
 - 每個 item 底部 `border-b border-divider`,`last:border-b-0`——row 之間視覺格線,key 長度不一時易於對齊掃描
 - **何時開 divided**:長列表(≥ 4 rows)/ key 長度差異大(短 vs 長 label 並排易顯亂) → divided 可對齊格線;短列表(< 4 rows)且 key 長度相近 → 不需 divided(border 反而噪音)
-- **世界級對照**:Google Drive 詳細資訊面板 / Notion 檔案屬性 / iOS Settings list rows,divided 是 file info / settings 的 canonical 呈現 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **使用判準**:divided 適用需要逐列掃描與明確 row boundary 的 file info / settings 表面；單一短清單不為裝飾而強加 divider
 
 ## Props
 
@@ -140,7 +139,7 @@ consumer 要在 DL 上方加 section heading(「基本資料」/「團隊資訊�
 
 **為什麼相等**(Gestalt proximity canonical):heading 與下方 items 的關係是「擁有 / 歸屬」—— 相同距離讓視覺上 heading 與 items 形成一個群組。若拉大 gap(例 `mb-4`),heading 看似與 items「分離」,失去歸屬感;若縮小 gap(例 `mb-0`),heading 與 items 黏在一起無呼吸。
 
-**世界級對照**:iOS Settings / Notion properties / Ant Descriptions / Polaris Card.Section — heading 和 items 之間的 gap 皆與 item-item gap 相等(或近似)。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+Heading 與第一個 item 的 gap 使用同一 section rhythm，不另開一個只供 heading 的距離 tier；確切 token 由本元件 source 擁有。
 
 **Heading typography 建議**:`text-body font-medium text-foreground`(同 item label size,靠 weight 區分層級),不用加粗 / 放大 / 換色——讓 heading 是「標籤」不是「標題」。
 

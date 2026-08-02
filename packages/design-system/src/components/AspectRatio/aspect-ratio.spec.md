@@ -8,7 +8,6 @@ benchmark:
   - Radix AspectRatio primitive: github.com/radix-ui/primitives/tree/main/packages/react/aspect-ratio
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # AspectRatio 設計原則
 
@@ -21,7 +20,7 @@ AspectRatio 是**固定長寬比容器** primitive——確保內部 children(�
 **Layout Family**:非上述 family — self-contained primitive(container 型 layout,無 slot 結構,只暴露 `ratio` 數值 + children)。
 
 **世界級對照**:
-- shadcn `AspectRatio`(本元件主要參考)— 同 Radix 薄包裝 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- 實作維持 Radix primitive 的薄包裝，不加入額外 sizing policy
 - Ant Design 無獨立元件(用 CSS aspect-ratio 或自訂 padding-bottom)
 - Material 無獨立元件(image/Card 元件內建 props)
 
@@ -51,7 +50,7 @@ AspectRatio 是**固定長寬比容器** primitive——確保內部 children(�
 | **Skeleton** | Skeleton 是 loading placeholder + 預設尺寸;AspectRatio 是 ratio container | 內含 image / chart 等需保 ratio 的 ready content |
 | **Empty(image slot)** | Empty 是 page-state 元件;AspectRatio 是 layout primitive | 結構性 ratio 鎖,跟 content state 無關 |
 
-對齊 Radix AspectRatio / Material `<Box sx={{aspectRatio}}>` / Polaris MediaCard primitive 慣例:純結構 layout 元件。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+AspectRatio 是純結構 layout 元件：只建立比例 box，不擁有 media styling、loading state 或內容語意。
 
 ---
 
@@ -138,7 +137,7 @@ AspectRatio 是 Radix `AspectRatioPrimitive.Root` 的薄包裝:用 `React.forwar
 - `../Coachmark/coachmark.spec.md` — **本元件 consumer**:media 區預設 `mediaRatio=16/9`
 - `../Carousel/carousel.spec.md` — 未來 consumer(item image 統一 ratio)
 - Radix AspectRatio — `@radix-ui/react-aspect-ratio`
-- shadcn AspectRatio — 參考實作 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- 本元件 source 與 Radix wrapper contract — production authority
 
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 

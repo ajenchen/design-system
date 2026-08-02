@@ -12,7 +12,6 @@ benchmark:
   - Polaris Image: github.com/Shopify/polaris/tree/main/polaris-react/src/components/Image
 ---
 
-<!-- @benchmark-cited: D5 retrofit 2026-05-18 — body claims marked per-claim @benchmark-unverified inline; canonical source URLs in frontmatter benchmark list. -->
 
 # FileViewer 設計原則
 
@@ -24,7 +23,7 @@ FileViewer 是**可延伸的網頁檔案預覽殼層(modal fullscreen)**——�
 
 **Layout Family**:**非上述 family — composite / multi-region**(Toolbar + Viewport + 可選 InfoPanel + 可選 Filmstrip)。見下「Layout Family Rationale」段。
 
-**世界級對照**:Figma file preview / Google Drive 檢視器 / Dropbox preview / macOS Preview.app / Google Photos lightbox / Notion attachment viewer。共同行為:fullscreen modal / toolbar 含 zoom & download & close / 多檔 filmstrip / ← → 切換 / Esc 關閉 / I 切換 info panel。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+FileViewer 的完整行為 contract 是 fullscreen modal、zoom/download/close toolbar、多檔 filmstrip、← → 切換、Esc 關閉與 I 切換 info panel；缺任一入口都視為同一 viewer workflow 的斷鏈。
 
 ---
 
@@ -36,7 +35,7 @@ FileViewer 是**可延伸的網頁檔案預覽殼層(modal fullscreen)**——�
 - Family 3 是單行 pill;FileViewer 是 multi-region layout
 - Family 4 是可編輯資料輸入;FileViewer 是資訊消費介面
 
-**自 own layout 合理**:世界級 file viewer(Figma / Google Drive / Dropbox / macOS Preview)皆為 fullscreen overlay + fixed toolbar strip + flex viewport + optional side panel + optional bottom strip 的結構。這是 viewer 領域 canonical,不適合塞進既有 row / pill family。 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+**自 own layout 合理**:FileViewer 是 fullscreen overlay + fixed toolbar strip + flex viewport + optional side panel + optional bottom strip 的 composite surface。這個結構跨多區且有自己的 viewport ownership，不適合塞進既有 row / pill family。
 
 Family 的 canonical 規定的是「同用途同 layout」;FileViewer 用途(fullscreen preview shell)目前系統內唯一,無共用需求。未來若新增其他 fullscreen viewer(如 `MediaGallery`),再考慮是否升為共用 family / pattern。
 
@@ -197,14 +196,14 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 
 ## ImageRenderer 規則
 
-- 消費 `react-zoom-pan-pinch`(zoom + pan 行為 primitive,無 UI);世界級產品 Figma / Miro / PhotoSwipe 同流派 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- 消費 `react-zoom-pan-pinch`(zoom + pan 行為 primitive,無 UI)；DS 自己擁有 toolbar、倍率顯示與 fit policy
 - **圖 render 走 natural size**(不 object-contain):transform scale 管實際顯示大小;避免 CSS pre-scale 跟 transform scale 雙重縮放導致 fit-to-* 算法混淆
-- **onLoad 自動 fit-to-page**(世界級 canonical:Figma / Preview.app / Acrobat 開圖預設 fit-page,非 100%)——renderer 計算 `min(cw/iw, ch/ih)` 對應的 zoom %(`image-renderer.tsx` computeFitScale),透過 `onZoomChange` 回報 shell 更新 UI 顯示真實倍率(例:40%)。**邊界**:fit scale 受 `MIN_SCALE = 10%` 下限與 `Math.floor` 夾制 —— 所需倍率 < 10% 的超大圖仍溢出(clamp 到 10%),floor 亦刻意留 ~1% under-fill 保對稱置中,故「完整可見」在極端尺寸為近似而非絕對 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **onLoad 自動 fit-to-page**——renderer 計算 `min(cw/iw, ch/ih)` 對應的 zoom %(`image-renderer.tsx` computeFitScale),透過 `onZoomChange` 回報 shell 更新 UI 顯示真實倍率(例:40%)。初始目標是先看見完整內容而非任意 100%。**邊界**:fit scale 受 `MIN_SCALE = 10%` 下限與 `Math.floor` 夾制 —— 所需倍率 < 10% 的超大圖仍溢出(clamp 到 10%),floor 亦刻意留 ~1% under-fill 保對稱置中,故「完整可見」在極端尺寸為近似而非絕對
 - **zoom = 100% 語義 = natural pixel size**(跟 Figma / Preview 一致),不是 CSS-contained 的 fit scale
 - Scroll wheel 縮放;`zoom > 100%` 時可拖曳 pan
-- **Wheel step canonical 為 `0.03`(每 tick ~3% scale delta)**——對齊 Figma / Preview.app / Photoshop 細緻度。原 0.1(10%)太粗,接近 Google Slides 離散慣例非世界級連續 zoom。**react-zoom-pan-pinch@4 的 wheel zoom = `scale + delta × step` 加法線性**(`handleCalculateWheelZoom`,`dist/index.esm.js:1265`;**非** multiplicative/log —— 乘算 `scale × exp(delta×step)` 只用於 setup `smooth` 開啟時的按鈕 zoom path)。註:lib 型別**無** `smoothStep` / `smoothScroll` key(僅 setup-level `smooth?: boolean` 走按鈕 exp path、不影響 wheel);trackpad 平滑度目前無對應 wheel prop 可調 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **Wheel step canonical 為 `0.03`(每 tick ~3% scale delta)**——原 0.1(10%)在連續 wheel input 中跳幅過大。**react-zoom-pan-pinch@4 的 wheel zoom = `scale + delta × step` 加法線性**(`handleCalculateWheelZoom`,`dist/index.esm.js:1265`;**非** multiplicative/log —— 乘算 `scale × exp(delta×step)` 只用於 setup `smooth` 開啟時的按鈕 zoom path)。註:lib 型別**無** `smoothStep` / `smoothScroll` key(僅 setup-level `smooth?: boolean` 走按鈕 exp path、不影響 wheel);trackpad 平滑度目前無對應 wheel prop 可調
 - **Zoom anchor(中心點)canonical**:
-  - **Wheel zoom** — anchor 固定在 **cursor pointer 位置**(react-zoom-pan-pinch default,對齊 Figma / Photoshop / 瀏覽器 cmd-scroll canonical)。user 滑鼠指哪,zoom 就以那點為中心,內容不會「跑掉」 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+  - **Wheel zoom** — anchor 固定在 **cursor pointer 位置**(react-zoom-pan-pinch default)。user 滑鼠指哪,zoom 就以那點為中心,避免正在檢視的內容在縮放時「跑掉」
   - **± button zoom / preset / fit / input 打字**(沒 cursor 位置時)— 走 library canonical `api.centerView(targetScale, 200)`,自動處理 scale + 置中 + animation + bounds。**不自算 `setTransform`**(動畫期間讀 stale positionX 會漂)
   - **Fit to width / page** — 算 scale emit 回 shell,經由 `centerView` 重新置中
   - **100% 重設**(user 按 `0` 鍵;雙擊是 fit↔100% 條件式 toggle,見下「雙擊」bullet)— `centerZoomedOut: true` 讓 ≤100% 時自動 center,避免內容停在容器角落
@@ -272,7 +271,7 @@ Shell 看到 `pageNumber` capability 時自動在 toolbar 顯示 page navigator(
 
 ## InfoPanel 規則
 
-- **寬度固定 w-80(320px)**——對齊 Figma right panel(320)的業界慣例;Google Photos 用 360 偏寬,FileViewer 走 Figma 偏窄以讓 viewport 多一些空間 <!-- @benchmark-unverified: see frontmatter benchmark list for canonical DS source URL -->
+- **寬度固定 w-80(320px)**——Info panel 使用穩定 measure，避免 metadata 長短改變 viewport；選 320px 是為保留更多 media viewport 空間
 - **Header 高度 = `--chrome-header-height`**(隨 page density:48 md / 56 lg)——與 Toolbar 等高,視覺對齊;消費 `<ChromeHeader>`(繼承 page,2026-06-15 移除 lockDensity)
 - **內容分兩區**:
   - 「說明」Textarea:edit mode = 可編輯 native textarea;**readOnly mode 依 DS Textarea canonical 分兩態** —— **有值** → native `<textarea readOnly>`(仍可聚焦 / 選取 / 複製),**空值** → display `<div>` 顯 emptyDisplay(`-`;field-controls readonly canonical,非 placeholder)
