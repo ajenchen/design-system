@@ -1,4 +1,5 @@
 // @story-trait-rationale: hasSizes 由 anatomy.stories.tsx SizeMatrix owns size showcase;hasInteractiveStates 由 anatomy.stories.tsx StateBehavior owns(展示層 Disabled + AllWithStartIcon story 2026-07-17 Dim 24 retire — 分別與 anatomy StateBehavior disabled 列 / Overview startIcon slot + principles TriggerSlots 全 icon 示範重複)。
+import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import { ChevronDown, Archive, Pin, EyeOff } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs'
@@ -10,6 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
+import { Button } from '@/design-system/components/Button/button'
 
 const meta: Meta<typeof Tabs> = {
   title: 'Design System/Components/Tabs/展示',
@@ -140,6 +142,110 @@ export const OverflowMenu: Story = {
       </Tabs>
     </div>
   ),
+}
+
+function TabsStateContractHarness() {
+  const [controlledValue, setControlledValue] = React.useState('overview')
+
+  return (
+    <div className="flex max-w-lg flex-col gap-6">
+      <section data-testid="tabs-no-default">
+        <Tabs>
+          <TabsList aria-label="未預選頁籤">
+            <TabsTrigger value="overview">總覽</TabsTrigger>
+            <TabsTrigger value="members">成員</TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview">總覽內容</TabsContent>
+          <TabsContent value="members">成員內容</TabsContent>
+        </Tabs>
+      </section>
+
+      <section data-testid="tabs-default-value">
+        <Tabs defaultValue="overview">
+          <TabsList aria-label="預設頁籤">
+            <TabsTrigger value="overview">總覽</TabsTrigger>
+            <TabsTrigger value="members">成員</TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview">預設總覽內容</TabsContent>
+          <TabsContent value="members">預設成員內容</TabsContent>
+        </Tabs>
+      </section>
+
+      <section data-testid="tabs-controlled">
+        <Tabs value={controlledValue} onValueChange={setControlledValue}>
+          <TabsList aria-label="受控頁籤">
+            <TabsTrigger value="overview">總覽</TabsTrigger>
+            <TabsTrigger value="members">成員</TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview">受控總覽內容</TabsContent>
+          <TabsContent value="members">受控成員內容</TabsContent>
+        </Tabs>
+        <Button type="button" size="sm" variant="tertiary" onClick={() => setControlledValue('overview')}>
+          外部切回總覽
+        </Button>
+      </section>
+
+      <section data-testid="tabs-overflow-proxy" className="w-[240px]">
+        <Tabs defaultValue="overview">
+          <TabsList overflow="menu" aria-label="工作區頁籤">
+            {workspaceSettingsTabs.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+            ))}
+          </TabsList>
+          {workspaceSettingsTabs.map((tab) => (
+            <TabsContent key={tab.value} value={tab.value}>{tab.content}</TabsContent>
+          ))}
+        </Tabs>
+      </section>
+    </div>
+  )
+}
+
+// Covers no-default first selection,defaultValue,controlled updates,and overflow-menu proxy.
+export const StateContract: Story = {
+  name: '狀態同步驗證',
+  tags: ['!autodocs'],
+  parameters: { chromatic: { disableSnapshot: true } },
+  render: () => <TabsStateContractHarness />,
+  play: async ({ canvasElement }) => {
+    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
+    const canvas = within(canvasElement)
+
+    const noDefault = within(canvas.getByTestId('tabs-no-default'))
+    const warnings: string[] = []
+    const originalWarn = console.warn
+    console.warn = (...args: unknown[]) => { warnings.push(args.map(String).join(' ')) }
+    try {
+      await userEvent.click(noDefault.getByRole('tab', { name: '總覽' }))
+      await waitFor(() => {
+        expect(noDefault.getByRole('tab', { name: '總覽' })).toHaveAttribute('aria-selected', 'true')
+      })
+      expect(warnings.filter((message) => message.includes('changing from uncontrolled to controlled'))).toHaveLength(0)
+    } finally {
+      console.warn = originalWarn
+    }
+
+    const defaultValue = within(canvas.getByTestId('tabs-default-value'))
+    expect(defaultValue.getByRole('tab', { name: '總覽' })).toHaveAttribute('aria-selected', 'true')
+    await userEvent.click(defaultValue.getByRole('tab', { name: '成員' }))
+    expect(defaultValue.getByRole('tab', { name: '成員' })).toHaveAttribute('aria-selected', 'true')
+
+    const controlled = within(canvas.getByTestId('tabs-controlled'))
+    await userEvent.click(controlled.getByRole('tab', { name: '成員' }))
+    expect(controlled.getByRole('tab', { name: '成員' })).toHaveAttribute('aria-selected', 'true')
+    await userEvent.click(controlled.getByRole('button', { name: '外部切回總覽' }))
+    expect(controlled.getByRole('tab', { name: '總覽' })).toHaveAttribute('aria-selected', 'true')
+
+    const overflow = within(canvas.getByTestId('tabs-overflow-proxy'))
+    const menuTrigger = await overflow.findByRole('button', { name: /頁籤選單/ })
+    await userEvent.click(menuTrigger)
+    const page = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await page.findByRole('menuitem', { name: '安全性' }))
+    await waitFor(() => {
+      expect(overflow.getByRole('tab', { name: '安全性' })).toHaveAttribute('aria-selected', 'true')
+      expect(overflow.getByText('雙重驗證與登入裝置管理')).toBeVisible()
+    })
+  },
 }
 
 // @story-trait-rationale: overflow 機制對照(none / scroll / menu side-by-side)由 anatomy

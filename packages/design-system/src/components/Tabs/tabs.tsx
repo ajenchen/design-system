@@ -21,6 +21,7 @@ import {
   OverflowMenuTriggerButton,
 } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
+import { useControllable } from '@/design-system/hooks/use-controllable'
 
 /**
  * Tabs — 基於 Radix Tabs，橋接設計系統 token
@@ -115,22 +116,18 @@ const Tabs = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Root>,
   TabsProps
 >(({ value, onValueChange, defaultValue, children, ...props }, ref) => {
-  // 內部維護一份 uncontrolled state，讓 overflow menu 的 proxy 有 onValueChange 可呼叫
-  const [internalValue, setInternalValue] = React.useState<string | undefined>(defaultValue)
-  const isControlled = value !== undefined
-  const currentValue = isControlled ? value : internalValue
-
-  const handleValueChange = React.useCallback(
-    (next: string) => {
-      if (!isControlled) setInternalValue(next)
-      onValueChange?.(next)
-    },
-    [isControlled, onValueChange]
-  )
+  // Wrapper mirror 是 Tabs 與 overflow menu proxy 的共同 SSOT。空字串代表尚未選取，
+  // 因此 Radix 從 mount 起恆為 controlled；未提供 defaultValue 的第一次選取也不會
+  // 從 value=undefined 翻成字串而觸發 uncontrolled → controlled 警告。
+  const [currentValue, setCurrentValue] = useControllable<string>({
+    value,
+    defaultValue: defaultValue ?? '',
+    onChange: onValueChange,
+  })
 
   const valueContext = React.useMemo(
-    () => ({ value: currentValue, onValueChange: handleValueChange }),
-    [currentValue, handleValueChange]
+    () => ({ value: currentValue, onValueChange: setCurrentValue }),
+    [currentValue, setCurrentValue]
   )
 
   return (
@@ -138,7 +135,7 @@ const Tabs = React.forwardRef<
       <TabsPrimitive.Root
         ref={ref}
         value={currentValue}
-        onValueChange={handleValueChange}
+        onValueChange={setCurrentValue}
         {...props}
       >
         {children}

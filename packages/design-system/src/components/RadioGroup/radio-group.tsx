@@ -12,6 +12,7 @@ import type { LucideIcon } from "lucide-react"
 import type { AvatarData } from "@/design-system/components/Avatar/avatar"
 import { fieldWrapperStyles } from "@/design-system/components/Field/field-wrapper"
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
+import { useControllable } from '@/design-system/hooks/use-controllable'
 
 // ── RadioGroup view mode ────────────────────────────────────────────────────
 // RadioGroup mode='view' 時:Group 不渲染 Radix primitive(無 radio 視覺),
@@ -79,13 +80,41 @@ function findSelectedRadioLabel(children: React.ReactNode, selectedValue: string
 const RadioGroup = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Root>,
   RadioGroupProps
->(({ className, mode, variant: _chrome, value, defaultValue, ...props }, ref) => {
+>(({ className, mode, variant: _chrome, value, defaultValue, onValueChange, children, ...props }, ref) => {
   // 2026-06-08 SSOT cascade:resolvedMode 經 resolver hook 讀 fieldCtx(原 root 完全不讀 → <Field disabled>/<Field mode> 失效)
   const resolvedMode = useResolvedFieldMode({ mode, disabled: (props as { disabled?: boolean }).disabled })
   const emptyDisplay = useFieldEmptyDisplay()
   const fieldCtx = useFieldContext()
   // readonly 灰框 size:走 SSOT resolver(RadioGroup 無 size prop → ctx > 'md')
   const resolvedBoxSize = useResolvedFieldSize(undefined, 'md') as 'sm' | 'md' | 'lg'
+
+  // Wrapper 持有 value 的單一 resolved state，讓 uncontrolled edit 內的選擇在切換
+  // view / readonly 時仍可讀取；否則值只住在 Radix Root，非 edit 分支會退回 defaultValue。
+  // Radix 一律收到 controlled value，避免 mode remount 後重建另一份 internal state。
+  const isControlled = value !== undefined
+  const [resolvedValue, setResolvedValue] = useControllable<string>({
+    value: value === null ? '' : value,
+    defaultValue: defaultValue ?? '',
+    onChange: onValueChange,
+  })
+
+  // form.reset() 不會觸發 Radix onValueChange；uncontrolled wrapper 取得狀態所有權後，
+  // 需把 resolved value 明確歸回 defaultValue。resolvedMode 進 deps，切回 edit 時會
+  // 重新綁定目前 Root 所在的 form；view/readonly 分支仍在同一 form 時也能保持 reset 語意。
+  const innerRef = React.useRef<HTMLDivElement | null>(null)
+  React.useEffect(() => {
+    if (isControlled) return
+    const form = innerRef.current?.closest('form')
+    if (!form) return
+    const handleReset = () => setResolvedValue(defaultValue ?? '')
+    form.addEventListener('reset', handleReset)
+    return () => form.removeEventListener('reset', handleReset)
+  }, [defaultValue, isControlled, resolvedMode, setResolvedValue])
+  const setRef = React.useCallback((element: HTMLDivElement | null) => {
+    innerRef.current = element
+    if (typeof ref === 'function') ref(element)
+    else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = element
+  }, [ref])
   // mode='view' — 純展示 selected option 的 label,不渲染任何 radio control 視覺。
   // 對齊 Carbon read-only single-select(只顯示 selected 內容)+ Airtable / Notion read-only。
   // 實作:walk children 找 control.value === selectedValue 的 SelectionItem,render label plain text。
@@ -103,18 +132,17 @@ const RadioGroup = React.forwardRef<
     dir: _dir,
     loop: _loop,
     asChild: _asChild,
-    children: _children,
     ...restDomProps
   } = props as RadioGroupProps & { asChild?: boolean }
 
   if (resolvedMode === 'view') {
-    const selectedValue = (value ?? defaultValue) as string | undefined
+    const selectedValue = resolvedValue || undefined
     if (!selectedValue) {
-      return <div {...restDomProps} ref={ref as React.Ref<HTMLDivElement>} role="group" className={cn('grid', className)}><span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span></div>
+      return <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}><span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span></div>
     }
-    const selectedLabel = findSelectedRadioLabel(props.children, selectedValue)
+    const selectedLabel = findSelectedRadioLabel(children, selectedValue)
     return (
-      <div {...restDomProps} ref={ref as React.Ref<HTMLDivElement>} role="group" className={cn('grid', className)}>
+      <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}>
         <span className="text-foreground">{selectedLabel ?? selectedValue}</span>
       </div>
     )
@@ -125,13 +153,13 @@ const RadioGroup = React.forwardRef<
   // (= Select readonly 同款呈現:同為「單選資料」,鎖定時呈現一致)。
   // standalone readonly(無 Field)維持原樣鎖互動(ReadonlyContext 路徑)。
   if (resolvedMode === 'readonly' && fieldCtx?.hasFieldWrapper === true) {
-    const selectedValue = (value ?? defaultValue) as string | undefined
-    const selectedLabel = selectedValue ? findSelectedRadioLabel(props.children, selectedValue) : null
+    const selectedValue = resolvedValue || undefined
+    const selectedLabel = selectedValue ? findSelectedRadioLabel(children, selectedValue) : null
     const boxSize = resolvedBoxSize
     return (
       <div
         {...restDomProps}
-        ref={ref as React.Ref<HTMLDivElement>}
+        ref={setRef}
         role="radiogroup"
         aria-readonly="true"
         aria-labelledby={fieldCtx?.labelId}
@@ -158,8 +186,8 @@ const RadioGroup = React.forwardRef<
       <RadioGroupDisabledContext.Provider value={resolvedMode === 'disabled'}>
         <RadioGroupPrimitive.Root
           className={cn("grid", className)}
-          value={value}
-          defaultValue={defaultValue}
+          value={resolvedValue}
+          onValueChange={setResolvedValue}
           // Field 內:role="radiogroup" 的 <div> 無法被 <label for> 命名 → 自讀 fieldCtx 接
           // aria-labelledby / aria-invalid / aria-describedby(field-context.ts「下游 control 需自讀
           // labelId」;對齊 slider.tsx / Rating / TimePicker 的 fieldLabelId 接線 + 上方 readonly-in-Field 分支)。
@@ -173,8 +201,10 @@ const RadioGroup = React.forwardRef<
           aria-readonly={resolvedMode === 'readonly' || undefined}
           {...props}
           disabled={resolvedMode === 'disabled'}
-          ref={ref}
-        />
+          ref={setRef}
+        >
+          {children}
+        </RadioGroupPrimitive.Root>
       </RadioGroupDisabledContext.Provider>
     </RadioGroupReadonlyContext.Provider>
   )
