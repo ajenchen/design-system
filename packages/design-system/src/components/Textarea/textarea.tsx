@@ -19,8 +19,8 @@ import { useControllable } from '@/design-system/hooks/use-controllable'
  *   - view 渲染 <div> + white-space:pre-wrap 保留多行文本
  *
  * ── Padding 規則 ───────────────────────────────────────────────────────
- * 多行內容必須有上下內距才能閱讀舒適。不沿用 Input 的 items-center，
- * 改用 py-2（8px）固定上下內距 + px-[var(--field-px)]（12px token，左右內距 SSOT，與 Input/Field family 一致）。
+ * 多行內容必須有上下內距才能閱讀舒適。不沿用 Input 的 items-center；
+ * 上下內距使用 size 對應的 `--field-control-py-*` token，左右使用 `--field-px`，與同 size Input/Field family 幾何一致。
  *
  * ── Size ────────────────────────────────────────────────────────────────
  * sm / md → text-body（14px）
@@ -83,8 +83,8 @@ const textareaVariants = cva(
       { mode: 'edit', variant: 'default', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
       {
         // 2026-07-16 round16 Model A(user GO,推翻 2026-05-13 Path Ⅰ 的 `!px-0 !py-0`):
-        // Textarea view×default = **edit 幾何減 chrome** — 保留 base `px-[var(--field-px)] py-2`(= edit 內距),
-        // 只拔 border/bg。多行 read↔edit 零跳(view 與 edit 同一顆 Textarea、py-2 天生一致)。跟 Field wrapper
+        // Textarea view×default = **edit 幾何減 chrome** — 保留 base 的 field-px 與
+        // size 對應 field-control-py token(= edit 內距),只拔 border/bg。多行 read↔edit 零跳。跟 Field wrapper
         // view×default 同 SSOT(field-wrapper.tsx)。
         mode: 'view',
         variant: 'default',

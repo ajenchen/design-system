@@ -1,5 +1,5 @@
 <!-- Authority/status: governance/planning/registry.json -->
-# Deep Audit beta.107 active baton — 2026-08-02
+# Deep Audit beta.107 → beta.108 incident active baton — 2026-08-02
 
 > **ACTIVE / NOT A FINAL VERDICT.** This is the cross-session continuation ledger for the
 > current Deep Audit. Machine state, exact Git readback, and
@@ -15,15 +15,36 @@
   prototype was deliberately reverted and must not be shipped without a separate decision.
 - This run has an explicit one-run second-opinion waiver from the user. Its exact receipt is
   `second opinion: waived by user`.
-- A Deep Audit must finish remediation and candidate verification before publication. It gets one
-  ordinary final release only. beta.107 is that release; do not publish an intermediate version.
+- A Deep Audit must finish remediation and candidate verification before publication. beta.107 was
+  the one ordinary final release. Its post-publish formal prepare exposed a release-blocking SSOT
+  contradiction in the audit harness and a stale shipped cross-agent workflow. The exact incident
+  record below authorizes one additional beta.108 release; do not publish any intermediate version.
+
+## Post-publish blocker incident
+
+- `incidentId`: `DA-2026-08-02-FORMAL-AUDIT-SSOT`
+- `failureClass`: `post-publish-blocker`
+- `publishedVersion`: `0.1.0-beta.107`
+- `evidenceRef`: this baton's `Observed evidence` list
+
+Observed evidence:
+
+- Formal prepare rejected beta.107 because the governed Node pre-script argv lacked the required
+  `--` sentinel and the Storybook test-only harness was absent from the canonical inventory.
+- The user-waived run had no executable self-review import route even though prepare and verifier
+  required that evidence.
+- CI dimensions 64/66 still depended on `candidateRelease`, external activation, and offline
+  completion-attestor ceremony that the standard five-step release SSOT explicitly retired or made
+  non-blocking.
+- The beta.107 republish gate now correctly rejects the shipped cross-agent skill change until a
+  strictly newer immutable package version exists.
 
 ## Live Git state
 
-- Branch: `codex/deep-audit-beta107-final`
+- Branch: `codex/deep-audit-beta108-final`
 - Current integration worktree on the originating host:
-  `/private/tmp/ds-beta107-final.Integrate` (convenience only; never authority)
-- Base: protected `origin/main@54d317ef18291156f21bfef35d8bcd34b8598afb`
+  `/private/tmp/ds-formal-prep-fix.rtMJdR/source` (convenience only; never authority)
+- Released base: protected `origin/main@67b01dc2a92198cc0eab0e05a0faea2b8cbd3628`
 - Always start with `git status --short`, `git rev-parse HEAD`, `git fetch origin main`, and
   `npm run release:status`; do not infer live state from this document's snapshot.
 
@@ -48,26 +69,25 @@
 
 ## Remaining execution order
 
-1. Integrate the approved DataTable single-column/Empty loading remediation commit, then regenerate
-   canonical projections once. Do not add a new public loading component if existing accessible
-   `CircularProgress` composition closes the contract without geometry change.
-2. Run focused combined checks, then the canonical candidate gates once (not once per commit):
-   content audit, Storybook test-only semantics, citation hook tests, DS/stories/storybook-config
-   typechecks, `governance:generate`, `governance:check`, and `git diff --check`.
-3. Change the version input in `packages/design-system/package.json` from beta.106 to beta.107,
-   run `npm run governance:generate`, verify synchronized manifests/locks, and commit.
-4. Run `npm run release:auto`. It alone performs
-   `pr-checks -> merge -> publish -> readback -> consumer`; remediate the same PR if a required
-   check fails. Do not add candidate/soak/signature/activation ceremony.
-5. From a clean checkout of the exact protected beta.107 main tree, prepare the immutable formal
-   run with `node scripts/prepare-deep-audit-run.mjs --self-provider codex --self-surface
-   codex-desktop-local --author-provider codex --self-runtime local --second-opinion-waiver user
-   --replace-active --json`; execute/check the deterministic plan with the required build/network/
-   published-release capability flags, rerun full a11y and 496-scenario visual evidence, and finish
-   the judgment/governance coverage ledger. Never reuse beta.106 receipts as beta.107 receipts.
+1. Finish the formal-audit SSOT repairs: typed user-waived self review, typed credential-gated
+   `UNOBSERVED`, and CI 64/66 readback from the canonical five-step workflow rather than retired
+   candidate/signature ceremony. Regenerate canonical projections once and run focused tests.
+2. Bump the single version input from beta.107 to beta.108, regenerate, run all candidate gates once,
+   and commit a clean frozen tree. No source change is allowed after the immutable run is prepared.
+3. Prepare the run with `node scripts/prepare-deep-audit-run.mjs --self-provider codex --self-surface
+   local --author-provider codex --self-runtime codex-desktop --second-opinion-waiver user
+   --replace-active --json`; import the substantive 25-dimension/65-component self-attested review,
+   execute 39 hook envelopes and all deterministic dimensions once. Netlify L3 without a credential
+   reference must be recorded as typed `UNOBSERVED`, never PASS or a coverage gap.
+4. Run `npm run release:auto` once for beta.108. It alone performs
+   `pr-checks -> merge -> publish -> readback -> consumer`; remediate the same PR if required CI fails.
+5. From that exact release tree, produce the standard five-step live CI evidence for dimensions
+   64/66 and verify complete self-attested coverage. The explicit waiver keeps independent promotion
+   ineligible; it must not turn complete coverage into a fabricated independent-review claim.
 6. Final report must include the literal receipts below, all `UNOBSERVED` surfaces, exact release
    and Storybook URLs, PR/main/tag/npm/consumer readbacks, and the three mandatory self-improvement
-   lines. Only then mark this registry row `completed / executable:false`.
+   lines. Only then close this baton and mark its registry row `completed / executable:false` in a
+   release-neutral governance/docs PR; beta.109 is forbidden.
 
 ## Required final receipts
 
@@ -79,6 +99,6 @@ second opinion: waived by user
 
 ## Completion condition
 
-Completion is not "source fixed" or "PR opened". It requires beta.107's five release steps to read
+Completion is not "source fixed" or "PR opened". It requires beta.108's five release steps to read
 complete, the exact protected-main formal Deep Audit to finish without fabricated evidence, and
 this baton to be closed in `governance/planning/registry.json`.

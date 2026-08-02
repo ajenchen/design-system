@@ -208,8 +208,8 @@ export const StateBehavior: Story = {
   ),
 }
 
-// auto-sm 靠 Field 偵測 child 靜態 `fieldPreferredSize`(對齊 detectControlLayout 讀 fieldLayout)——
-//   **必 InlineEdit 為 Field 直接子**(包一層 wrapper 元件會遮蔽靜態,Field 偵測不到 → 退回 md)。
+// auto-sm 雙通道：Field 對直接 child 同步偵測 `fieldPreferredSize`；wrapper / memo / HOC
+// 遮蔽 static 時，InlineEdit 掛載後主動註冊偏好，Field 控件槽隨即跟上。顯式 size 優先。
 function CascadeDemo() {
   const [title, setTitle] = React.useState('Fix flaky checkout e2e test')
   const [owner, setOwner] = React.useState('')

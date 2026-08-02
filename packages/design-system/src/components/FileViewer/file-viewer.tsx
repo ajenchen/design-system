@@ -969,6 +969,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
             'data-[state=open]:animate-in data-[state=closed]:animate-out',
             'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
             'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+            className,
           )}
           // FileViewer 是 fullscreen content-consumption dialog：開啟即把焦點放到 shell，
           // 讓 Radix FocusScope 立即接管、但不誤觸第一個 toolbar control/Tooltip。

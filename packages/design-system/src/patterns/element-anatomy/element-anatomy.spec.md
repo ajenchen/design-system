@@ -211,7 +211,9 @@ Consumer 自建 chrome-like div 帶 bg/border/shadow 時,參考上表或就近�
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。
 
+- `button.spec.md`
 - `calendar.spec.md`
+- `field-controls.spec.md`
 - `field.spec.md`
 - `item-anatomy.spec.md`
 - `time-picker.spec.md`

@@ -287,8 +287,8 @@ export const Overview = {
         <H3>display 模式一覽</H3>
         <div className="flex flex-col gap-2">
           {([
-            { display: 'plain' as const, desc: '（預設）狀態、類別等純文字選項。原生 select 純文字 + ChevronDown' },
-            { display: 'tag' as const, desc: '需要視覺標記的選項（顏色標籤、優先級等）。Tag 元件 + 隱藏 select overlay' },
+            { display: 'plain' as const, desc: '（預設）狀態、類別等純文字選項。桌面使用 custom trigger + SelectMenu；觸控裝置使用 NativeSelect + ChevronDown' },
+            { display: 'tag' as const, desc: '需要視覺標記的選項。桌面以 custom trigger 開 SelectMenu；觸控裝置才在 Tag 上疊 native select overlay' },
           ]).map(({ display, desc }) => (
             <div key={display} className="flex items-center gap-4">
               <div className="w-52 shrink-0">

@@ -640,7 +640,7 @@ Sheet 開啟狀態**不持久化**。
 
 ## 與其他元件的關係
 
-- **TreeView**：放在 SidebarContent 內；icon 模式由 Sidebar 透過 CSS 自動隱藏；`context="sidebar"` 讓 TreeView 用 sidebar 的 padding token
+- **TreeView**：放在 SidebarContent 內；icon 模式不會自動隱藏，TreeView／可收合 tree group 的承載 group 必須傳 `className="group-data-[collapsible=icon]:hidden"`；`context="sidebar"` 讓 TreeView 使用 sidebar padding token
 - **Command（Cmd+K）**：icon 模式下深層頁面跳轉的逃生艙
 - **Tabs**：Settings 等頁面的 in-page secondary nav
 - **DropdownMenu**：SidebarHeader 的 workspace switcher、SidebarFooter 的 user menu
@@ -676,7 +676,8 @@ Item-level default / hover / selected / disabled **色彩**完全共用 item-ana
 - **Active item**:`SidebarMenuButton` 帶 `id` + 命中 `activeId` 時自動加 `data-active="true"`,呈現選取底色（`bg-neutral-selected`)。**目前僅視覺 + `data-active` attribute,不設 `aria-current="page"`**——SR 讀不到「current page」語意。`variant="meta"` 永不參與 selection（`data-active` 永遠 false）。
 - **快捷鍵不衝突**:`Cmd+B` / `Ctrl+B` 是 industry-standard(VS Code / Linear / shadcn),DS 內建在 `SidebarProvider` 的 `window` keydown handler,判斷 `key==="b" && (metaKey||ctrlKey)` 後 `preventDefault` + toggle,避免穿透到 browser bookmark bar(`Cmd+B` 在 Safari 是 favorites)。**三道 guard(2026-07-05 D4 修)**:(1) `defaultPrevented`——app 層 editor 已處理同快捷鍵時不 double-fire;(2) `isComposing`——IME 組字中不攔;(3) 可編輯 target——`<input>` / `<textarea>` / `contentEditable` 內按 `Cmd/Ctrl+B` 不 toggle(bold 等編輯語意優先,對齊 VS Code / Linear 快捷鍵讓位可編輯區慣例)。**目前無 opt-out prop**(無 `disableShortcut`)。
 - **Collapsed accessible name(2026-07-05 D4 修)**:icon 模式 label 以 `sr-only` 視覺隱藏(非 display:none),SidebarMenuButton 對 SR 保留 accessible name(WCAG 4.1.2);Tooltip 僅 hover 提示、不供名;badge / inline actions 仍 display:none(補充資訊,供名責任在 label)。
-- **Mobile sheet focus trap**:`md` breakpoint 以下切 Sheet 模式時,Radix Dialog 自帶 focus trap + Esc dismiss(詳 sheet.spec.md)。**關閉焦點還原**:mobile Sheet **無顯式 `<SheetTrigger>`**(open state 由外部 `SidebarTrigger` → `setOpenMobile` 控制,非 Radix DialogTrigger),故關閉後焦點還原走 Radix FocusScope 預設(還原到開啟前的聚焦元素),**不保證**回到 `SidebarTrigger`;若需確定性還原,consumer 應把觸發 button 與 Sheet 綁成 `SheetTrigger`。
+- **Mobile sheet focus trap**:`md` breakpoint 以下切 Sheet 模式時,Radix Dialog 自帶 focus trap + Esc dismiss(詳 sheet.spec.md)。**關閉焦點還原**:mobile Sheet 無顯式 `<SheetTrigger>`，SidebarTrigger 會直接傳入自身作為 opener；快捷鍵路徑則在 `setOpenMobile(true)` 前記錄當下聚焦元素。Sheet 關閉時透過 `onCloseAutoFocus` 還原仍連線的 opener；若 opener 已卸載則不強搶焦。
+- **Provider cardinality**:每個 document／app shell 只掛一個 SidebarProvider。多 Provider 的 local trigger 仍各自隔離，但 document-level Cmd/Ctrl+B shortcut 沒有 active-provider arbitration，不屬支援拓撲。
 - **Collapsible group**:`<SidebarGroup collapsible>` 的**尾端 chevron button**(`Collapsible.Trigger asChild` 包 `ItemInlineActionButton`)帶 `aria-expanded` + `aria-controls` 指向 GroupContent id,SR 可朗讀展開狀態(label 本身維持 `role="presentation"`,不承載 aria-expanded)。
 - **Sticky header / footer focus order**:Tab 順序按 DOM 順序 — Header → Content → Footer,SidebarTrigger 在 Pattern A/B 都位於 page top-left,Tab 第一站即可達。
 - **不使用 `SidebarMenuSub`**:避免 nested menu aria-tree 複雜度,階層交給 TreeView(`role="tree"` + `aria-level`)。

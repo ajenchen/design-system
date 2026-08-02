@@ -113,7 +113,7 @@ export const ActionRule: Story = {
     <div>
       <Rule
         title="Toast action — 讓使用者短暫內復原"
-        note="Undo pattern:執行後 toast 出現 + 「復原」按鈕,使用者有一段時間(含 action 預設 10 秒;2026-07-05 D4)可以反悔。Gmail / Linear / Slack 都用這個 pattern"
+        note="動作完成後顯示 Toast 與「復原」按鈕，讓使用者在含 action 的預設 10 秒內反悔。只有後端確實能還原的動作才適合這個模式"
       >
         <Button
           variant="tertiary"
@@ -189,7 +189,7 @@ export const DurationRule: Story = {
 
       <Rule
         title="有 action → 預設自動加長為 10000ms"
-        note="兩行描述 + undo action 需要更多時間——含鍵盤使用者 Tab 到 action 的路徑(鍵盤焦點不暫停倒數;2026-07-05 D4)。DS 在 action 存在時預設 duration = 10000ms,無需手動指定;內容特多可自行覆寫"
+        note="兩行描述與 undo action 需要更多時間，也要留給鍵盤使用者 Tab 到 action；鍵盤焦點不會暫停倒數。有 action 時預設 duration 為 10000ms，無需手動指定，內容特別多時才覆寫"
       >
         <Button
           variant="tertiary"

@@ -124,6 +124,19 @@
         }
       }
     },
+    "unobservedPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reasonCode", "requiredCredentialReferences"],
+      "properties": {
+        "reasonCode": {
+          "const": "NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT"
+        },
+        "requiredCredentialReferences": {
+          "const": ["NETLIFY_LIVE_BASIC_AUTH", "NETLIFY_PREVIEW_PASSWORD"]
+        }
+      }
+    },
     "dimension": {
       "type": "object",
       "additionalProperties": false,
@@ -137,7 +150,8 @@
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
         },
-        "coverage": { "$ref": "#/$defs/coverage" }
+        "coverage": { "$ref": "#/$defs/coverage" },
+        "unobservedPolicy": { "$ref": "#/$defs/unobservedPolicy" }
       }
     }
   }

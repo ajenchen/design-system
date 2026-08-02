@@ -147,8 +147,8 @@ export const ColumnTypeRule: Story = {
         </Rule>
 
         <Rule
-          title="擴充新 type:到 cell-registry.tsx 註冊"
-          note="新增資料類型(如 `percentage`、`relative-time`)在 `cell-registry.tsx` 的 `cellRegistry` map 註冊對應 Cell component(view/edit 渲染 SSOT);`column-types.ts` 只設 align / default metadata。兩處對齊後自動跟所有 DataTable 整合,不在單一 table 硬寫"
+          title="擴充新 type：在 DataTable 的類型登錄處統一定義"
+          note="新增資料類型（如 `percentage`、`relative-time`）時，應一次定義檢視、編輯、對齊與預設設定。完成後所有 DataTable 會共用同一套行為，不需在單一表格重複格式化"
         >
           <Label>讓 column type 系統成為 single source of truth,所有 table 受惠同一次更新</Label>
         </Rule>
@@ -268,4 +268,3 @@ export const NotSpreadsheetRule: Story = {
     </div>
   ),
 }
-

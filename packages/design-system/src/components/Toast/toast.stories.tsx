@@ -134,3 +134,108 @@ export const Interactive = {
     </div>
   ),
 }
+
+/**
+ * Deterministic regression contract for Sonner's fixed polite viewport and the DS-owned sibling
+ * announcers. Kept test-only because the reader-facing accessibility explanation lives in the
+ * anatomy story; this story mechanically proves the DOM and repeated-message behavior.
+ */
+export const LiveRegionContract = {
+  name: '朗讀區域互動',
+  tags: ['test-only'],
+  render: () => (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        data-testid="toast-live-neutral"
+        onClick={() => toast({
+          variant: 'neutral',
+          title: '相同通知',
+          description: '連續觸發仍必須播報',
+          action: { label: '復原', onClick: () => {} },
+          duration: 60000,
+        })}
+      >
+        neutral
+      </Button>
+      <Button data-testid="toast-live-info" onClick={() => toast({ variant: 'info', title: '資訊通知', duration: 60000 })}>info</Button>
+      <Button data-testid="toast-live-success" onClick={() => toast({ variant: 'success', title: '成功通知', duration: 60000 })}>success</Button>
+      <Button data-testid="toast-live-warning" onClick={() => toast({ variant: 'warning', title: '警告通知', duration: 60000 })}>warning</Button>
+      <Button data-testid="toast-live-error" onClick={() => toast({ variant: 'error', title: '錯誤通知', duration: 60000 })}>error</Button>
+      <Toaster />
+    </div>
+  ),
+  play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+    const { expect, userEvent, waitFor, within } = await import('@storybook/test')
+    const canvas = within(canvasElement)
+    const sonnerRegion = canvasElement.querySelector<HTMLElement>('section[aria-live="polite"]')
+    const politeRegion = canvasElement.querySelector<HTMLElement>('[data-toast-live-region="polite"]')
+    const assertiveRegion = canvasElement.querySelector<HTMLElement>('[data-toast-live-region="assertive"]')
+
+    await expect(sonnerRegion).not.toBeNull()
+    await expect(politeRegion).not.toBeNull()
+    await expect(assertiveRegion).not.toBeNull()
+    if (!sonnerRegion || !politeRegion || !assertiveRegion) return
+
+    // Sonner viewport and both DS announcers must be siblings; neither DS region may be nested in
+    // Sonner's hard-coded polite region.
+    await expect(politeRegion.parentElement).toBe(sonnerRegion.parentElement)
+    await expect(assertiveRegion.parentElement).toBe(sonnerRegion.parentElement)
+    await expect(sonnerRegion.contains(politeRegion)).toBe(false)
+    await expect(sonnerRegion.contains(assertiveRegion)).toBe(false)
+    await expect(politeRegion).toHaveAttribute('role', 'status')
+    await expect(politeRegion).toHaveAttribute('aria-live', 'polite')
+    await expect(assertiveRegion).toHaveAttribute('role', 'alert')
+    await expect(assertiveRegion).toHaveAttribute('aria-live', 'assertive')
+
+    const MutationObserverCtor = canvasElement.ownerDocument.defaultView?.MutationObserver
+    if (!MutationObserverCtor) throw new Error('MutationObserver is required for the Toast live-region contract')
+    let politeChildMutations = 0
+    const observer = new MutationObserverCtor((records) => {
+      politeChildMutations += records.filter((record) => record.type === 'childList').length
+    })
+    observer.observe(politeRegion, { childList: true })
+
+    await userEvent.click(canvas.getByTestId('toast-live-neutral'))
+    await waitFor(() => expect(politeRegion).toHaveTextContent('相同通知。連續觸發仍必須播報'))
+    const firstSequence = politeRegion.dataset.announcementSequence
+    const mutationsAfterFirstTrigger = politeChildMutations
+
+    const visualContent = await waitFor(() => {
+      const node = canvasElement.querySelector<HTMLElement>('[data-toast-visual-content]')
+      expect(node).not.toBeNull()
+      return node
+    })
+    await expect(visualContent).toHaveAttribute('role', 'group')
+    await expect(visualContent).toHaveAttribute('aria-live', 'off')
+    await expect(visualContent?.closest('[aria-hidden="true"]')).toBeNull()
+    const visualToast = visualContent?.closest<HTMLElement>('[data-sonner-toast]')
+    await expect(visualToast).toHaveAttribute('tabindex', '0')
+    await expect(visualContent?.querySelector('[aria-label="關閉通知"]')).not.toBeNull()
+    await expect(visualContent?.textContent).toContain('復原')
+    // There may be aria-live="off" visual groups, but no active nested live region.
+    await expect(sonnerRegion.querySelector('[aria-live="polite"], [aria-live="assertive"]')).toBeNull()
+
+    await userEvent.click(canvas.getByTestId('toast-live-neutral'))
+    await waitFor(() => expect(politeRegion.dataset.announcementSequence).not.toBe(firstSequence))
+    await waitFor(() => expect(politeChildMutations).toBeGreaterThan(mutationsAfterFirstTrigger))
+
+    for (const [testId, message] of [
+      ['toast-live-info', '資訊通知'],
+      ['toast-live-success', '成功通知'],
+    ] as const) {
+      await userEvent.click(canvas.getByTestId(testId))
+      await waitFor(() => expect(politeRegion).toHaveTextContent(message))
+    }
+    await expect(assertiveRegion).toBeEmptyDOMElement()
+
+    for (const [testId, message] of [
+      ['toast-live-warning', '警告通知'],
+      ['toast-live-error', '錯誤通知'],
+    ] as const) {
+      await userEvent.click(canvas.getByTestId(testId))
+      await waitFor(() => expect(assertiveRegion).toHaveTextContent(message))
+    }
+
+    observer.disconnect()
+  },
+}

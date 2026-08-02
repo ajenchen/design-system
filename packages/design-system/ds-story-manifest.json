@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-08-02T02:24:05.645Z"
+    "generatedAt": "2026-08-02T04:37:12.616Z"
   },
   "components": {
     "accordion": {
@@ -1679,7 +1679,8 @@
       "tiers": {
         "展示": [
           "design-system-components-toast-展示--with-description",
-          "design-system-components-toast-展示--interactive"
+          "design-system-components-toast-展示--interactive",
+          "design-system-components-toast-展示--live-region-contract"
         ],
         "設計規格": [
           "design-system-components-toast-設計規格--overview",
@@ -1751,5 +1752,5 @@
     }
   },
   "totalComponents": 65,
-  "totalStories": 942
+  "totalStories": 943
 }

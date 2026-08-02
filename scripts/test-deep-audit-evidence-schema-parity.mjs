@@ -15,6 +15,7 @@ const PATHS = {
   deep: 'scripts/schemas/deep-audit-evidence-contract.schema.json',
   managed: 'scripts/schemas/managed-ci-sandbox-receipt.schema.json',
   observation: 'scripts/schemas/ci-evidence-observation.schema.json',
+  standardObservation: 'scripts/schemas/standard-ci-evidence-observation.schema.json',
   transcript: 'infra/governance/schemas/model-broker-transcript.schema.json',
   shardResult: 'infra/governance/schemas/model-broker-shard-result.schema.json',
   modelReleaseAuthority: 'infra/governance/schemas/managed-ci-model-release-authority-binding.schema.json',
@@ -103,7 +104,7 @@ function compile(schema, dependencies) {
   return { ajv, validate: ajv.compile(schema) }
 }
 
-const deepValidator = compile(schemas.deep, [schemas.managed, schemas.observation])
+const deepValidator = compile(schemas.deep, [schemas.managed, schemas.observation, schemas.standardObservation])
 const runManifestGolden = schemaSample(schemas.deep.$defs.runManifest, schemas.deep)
 runManifestGolden.authorProvider = 'claude'
 runManifestGolden.providers.self.id = 'claude'
@@ -148,6 +149,35 @@ assert.equal(
   true,
   `run-manifest v3 historical golden failed direct Ajv:${deepValidator.ajv.errorsText(deepValidator.validate.errors)}`,
 )
+const waivedSelfReviewGolden = schemaSample(schemas.deep.$defs.waivedSelfReview, schemas.deep)
+waivedSelfReviewGolden.authorProvider = 'claude'
+waivedSelfReviewGolden.provider.id = 'claude'
+waivedSelfReviewGolden.provider.reviewPeerId = null
+waivedSelfReviewGolden.componentA1bReviews[0].claimsReviewed = 1
+assert.equal(
+  directDeepAccepts(waivedSelfReviewGolden),
+  true,
+  `waived self-review golden failed direct Ajv:${deepValidator.ajv.errorsText(deepValidator.validate.errors)}`,
+)
+assert.equal(validateDeepAuditEvidenceContractSchema(waivedSelfReviewGolden, { repoRoot: ROOT }), true)
+for (const [label, mutate] of [
+  ['independence-forgery', value => { value.independent = true }],
+  ['second-opinion-forgery', value => { value.secondOpinionPerformed = true }],
+  ['assurance-upgrade', value => { value.assurance = 'independent' }],
+  ['open-model-identity', value => { value.model = 'forbidden' }],
+  ['missing-judgment-list', value => { delete value.judgmentReviews }],
+  ['unsafe-finding-path', value => {
+    value.judgmentReviews[0].status = 'FINDINGS'
+    value.judgmentReviews[0].findings = [{
+      severity: 'material', path: '../escape', line: 1,
+      claim: 'claim', actual: 'actual', recommendation: 'recommendation',
+    }]
+  }],
+]) {
+  const poison = structuredClone(waivedSelfReviewGolden)
+  mutate(poison)
+  assert.equal(directDeepAccepts(poison), false, `Ajv accepted waived self-review poison:${label}`)
+}
 for (const [label, mutate] of [
   ['author-missing', value => { delete value.authorProvider }],
   ['identity-digest-missing', value => { delete value.providerIdentityDigest }],
@@ -162,6 +192,7 @@ for (const [label, mutate] of [
 const baseEnvelope = schemaSample(schemas.deep.$defs.evidenceEnvelope, schemas.deep)
 const cases = [
   ['deterministic/local', 'deep-audit-deterministic', 'genericProducer', 'deterministicPayload'],
+  ['deterministic/unobserved', 'deep-audit-deterministic', 'genericProducer', 'deterministicUnobservedPayload'],
   ['judgment/legacy', 'deep-audit-judgment', 'concreteProducer', 'legacyJudgmentPayload'],
   ['judgment/managed', 'deep-audit-judgment', 'concreteProducer', 'managedJudgmentPayload'],
   ['hook/local', 'deep-audit-hook-residue', 'genericProducer', 'hookPayload'],
@@ -208,8 +239,18 @@ for (const [label, golden] of goldens) {
   assertPoisonRejected(`${label}:payload-missing`, golden, value => { value.payload = {} })
 }
 
+for (const [label, mutate] of [
+  ['reason', value => { value.payload.reasonCode = 'CREDENTIAL_UNKNOWN' }],
+  ['dimension', value => { value.payload.dim = 84 }],
+  ['observed-reference', value => { value.payload.credentialReferences.observed = ['NETLIFY_PREVIEW_PASSWORD'] }],
+  ['commands-forgery', value => { value.payload.commands = [] }],
+  ['sandbox-forgery', value => { value.payload.sandboxReceipt = {} }],
+]) {
+  assertPoisonRejected(`deterministic/unobserved:${label}`, goldens.get('deterministic/unobserved'), mutate)
+}
+
 const frozenSchemaManifest = {
-  inventory: ['deep', 'managed', 'observation'].map(name => ({
+  inventory: ['deep', 'managed', 'observation', 'standardObservation'].map(name => ({
     path: PATHS[name],
     kind: 'file',
     sha256: sha256(readFileSync(resolve(ROOT, PATHS[name]))),

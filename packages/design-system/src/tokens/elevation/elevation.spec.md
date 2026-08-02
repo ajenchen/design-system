@@ -42,7 +42,7 @@ elevation-100 < elevation-200，數字越大浮起越高。`*-hover` 兩枚為�
 
 ## 浮層間距（sideOffset）
 
-所有從觸發元件彈出的浮層（Tooltip、Popover、SelectMenu、Dropdown、HoverCard、Coachmark）與觸發元件的間距統一 **8px**（`sideOffset={8}`）。
+所有從觸發元件彈出的浮層（Tooltip、Popover、SelectMenu、DropdownMenu、HoverCard、Coachmark）與觸發元件的間距統一 **8px**（`sideOffset={8}`）。
 
 不因浮層類型或位置而異——一致的間距讓使用者建立穩定的空間預期。
 

@@ -1,11 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://qijenchen.dev/schemas/deep-audit-evidence-contract.schema.json",
-  "title": "Deep-audit immutable run and evidence envelope contract",
+  "title": "Deep-audit immutable run, waived self-review, and evidence envelope contract",
   "oneOf": [
     {"$ref": "#/$defs/runManifest"},
     {"$ref": "#/$defs/historicalRunManifest"},
     {"$ref": "#/$defs/activePointer"},
+    {"$ref": "#/$defs/waivedSelfReview"},
     {"$ref": "#/$defs/evidenceEnvelope"}
   ],
   "$defs": {
@@ -155,6 +156,83 @@
       "type": "object", "additionalProperties": false, "required": ["schemaVersion", "evidenceKind", "runId", "manifestSha256"],
       "properties": {"schemaVersion": {"const": 1}, "evidenceKind": {"const": "deep-audit-active-run"}, "runId": {"$ref": "#/$defs/runId"}, "manifestSha256": {"$ref": "#/$defs/sha256"}}
     },
+    "waivedSelfReviewFinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["severity", "path", "line", "claim", "actual", "recommendation"],
+      "properties": {
+        "severity": {"$ref": "#/$defs/severity"},
+        "path": {"$ref": "#/$defs/safePath"},
+        "line": {"type": "integer", "minimum": 1},
+        "claim": {"$ref": "#/$defs/nonEmpty"},
+        "actual": {"$ref": "#/$defs/nonEmpty"},
+        "recommendation": {"$ref": "#/$defs/nonEmpty"}
+      }
+    },
+    "waivedJudgmentReview": {
+      "type": "object", "additionalProperties": false,
+      "required": ["dim", "status", "summary", "findings"],
+      "properties": {
+        "dim": {"type": "integer", "minimum": 1, "maximum": 91},
+        "status": {"enum": ["PASS", "FINDINGS", "UNOBSERVED"]},
+        "summary": {"$ref": "#/$defs/nonEmpty"},
+        "findings": {"type": "array", "items": {"$ref": "#/$defs/waivedSelfReviewFinding"}}
+      },
+      "allOf": [{
+        "if": {"properties": {"status": {"const": "FINDINGS"}}, "required": ["status"]},
+        "then": {"properties": {"findings": {"type": "array", "minItems": 1}}},
+        "else": {"properties": {"findings": {"type": "array", "maxItems": 0}}}
+      }]
+    },
+    "waivedA1bReview": {
+      "type": "object", "additionalProperties": false,
+      "required": ["component", "status", "summary", "claimsReviewed", "findings"],
+      "properties": {
+        "component": {"$ref": "#/$defs/nonEmpty"},
+        "status": {"enum": ["PASS", "FINDINGS", "UNOBSERVED"]},
+        "summary": {"$ref": "#/$defs/nonEmpty"},
+        "claimsReviewed": {"type": "integer", "minimum": 0},
+        "findings": {"type": "array", "items": {"$ref": "#/$defs/waivedSelfReviewFinding"}}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "FINDINGS"}}, "required": ["status"]},
+          "then": {"properties": {"findings": {"type": "array", "minItems": 1}}},
+          "else": {"properties": {"findings": {"type": "array", "maxItems": 0}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "UNOBSERVED"}}, "required": ["status"]},
+          "then": {"properties": {"claimsReviewed": {"type": "integer", "const": 0}}},
+          "else": {"properties": {"claimsReviewed": {"type": "integer", "minimum": 1}}}
+        }
+      ]
+    },
+    "waivedSelfReview": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "evidenceKind", "runId", "manifestSha256", "head", "tree", "indexDigest", "inventoryDigest", "rubricDigest", "worktreeFingerprint", "authorProvider", "providerIdentityDigest", "reviewSelectionDigest", "provider", "reviewedAt", "reviewMethod", "independent", "assurance", "secondOpinionPerformed", "judgmentReviews", "componentA1bReviews"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "evidenceKind": {"const": "deep-audit-waived-self-review"},
+        "runId": {"$ref": "#/$defs/runId"},
+        "manifestSha256": {"$ref": "#/$defs/sha256"},
+        "head": {"$ref": "#/$defs/gitOid"},
+        "tree": {"$ref": "#/$defs/gitOid"},
+        "indexDigest": {"$ref": "#/$defs/sha256"},
+        "inventoryDigest": {"$ref": "#/$defs/sha256"},
+        "rubricDigest": {"$ref": "#/$defs/sha256"},
+        "worktreeFingerprint": {"$ref": "#/$defs/sha256"},
+        "authorProvider": {"$ref": "#/$defs/providerId"},
+        "providerIdentityDigest": {"$ref": "#/$defs/sha256"},
+        "reviewSelectionDigest": {"$ref": "#/$defs/sha256"},
+        "provider": {"$ref": "#/$defs/manifestProvider"},
+        "reviewedAt": {"$ref": "#/$defs/isoTime"},
+        "reviewMethod": {"const": "local-self-review-import"},
+        "independent": {"const": false},
+        "assurance": {"const": "self-attested"},
+        "secondOpinionPerformed": {"const": false},
+        "judgmentReviews": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/waivedJudgmentReview"}},
+        "componentA1bReviews": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/waivedA1bReview"}}
+      }
+    },
     "genericProducer": {
       "type": "object", "additionalProperties": false, "required": ["providerId", "runtime", "runtimeSurface", "runtimeProfileId", "model", "transport", "runtimeCertificationDigest"],
       "properties": {"providerId": {"const": "generic"}, "runtime": {"const": "deterministic-script"}, "runtimeSurface": {"const": "local"}, "runtimeProfileId": {"type": "null"}, "model": {"const": "none"}, "transport": {"const": "local-process"}, "runtimeCertificationDigest": {"type": "null"}}
@@ -193,9 +271,38 @@
       "type": "object", "additionalProperties": false, "required": ["argv", "exitCode", "startedAt", "finishedAt", "stdoutSha256", "stderrSha256", "stdoutTail", "stderrTail", "generatedOutputReceipt"],
       "properties": {"argv": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}}, "exitCode": {"type": "integer"}, "startedAt": {"$ref": "#/$defs/isoTime"}, "finishedAt": {"$ref": "#/$defs/isoTime"}, "stdoutSha256": {"$ref": "#/$defs/sha256"}, "stderrSha256": {"$ref": "#/$defs/sha256"}, "stdoutTail": {"type": "string"}, "stderrTail": {"type": "string"}, "generatedOutputReceipt": {"$ref": "#/$defs/generatedOutputReceipt"}}
     },
-    "deterministicPayload": {
+    "deterministicObservedPayload": {
       "type": "object", "additionalProperties": false, "required": ["dim", "name", "planDigest", "capabilities", "commandIds", "commands", "findings", "summary", "sandboxReceipt"],
       "properties": {"dim": {"type": "integer", "minimum": 1, "maximum": 91}, "name": {"$ref": "#/$defs/nonEmpty"}, "planDigest": {"$ref": "#/$defs/sha256"}, "capabilities": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}}, "commandIds": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}}, "commands": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/deterministicCommand"}}, "findings": {"type": "array"}, "summary": {"$ref": "#/$defs/nonEmpty"}, "sandboxReceipt": {"$ref": "#/$defs/sandbox"}}
+    },
+    "deterministicUnobservedPayload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["dim", "name", "planDigest", "capabilities", "commandIds", "status", "reasonCode", "credentialReferences", "observedAt", "summary"],
+      "properties": {
+        "dim": {"const": 83},
+        "name": {"$ref": "#/$defs/nonEmpty"},
+        "planDigest": {"$ref": "#/$defs/sha256"},
+        "capabilities": {"const": ["local", "network", "published-release"]},
+        "commandIds": {"const": ["published-live-deploy"]},
+        "status": {"const": "UNOBSERVED"},
+        "reasonCode": {"const": "NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT"},
+        "credentialReferences": {
+          "type": "object", "additionalProperties": false,
+          "required": ["required", "observed"],
+          "properties": {
+            "required": {"const": ["NETLIFY_LIVE_BASIC_AUTH", "NETLIFY_PREVIEW_PASSWORD"]},
+            "observed": {"type": "array", "maxItems": 0}
+          }
+        },
+        "observedAt": {"$ref": "#/$defs/isoTime"},
+        "summary": {"$ref": "#/$defs/nonEmpty"}
+      }
+    },
+    "deterministicPayload": {
+      "oneOf": [
+        {"$ref": "#/$defs/deterministicObservedPayload"},
+        {"$ref": "#/$defs/deterministicUnobservedPayload"}
+      ]
     },
     "judgmentFinding": {
       "type": "object", "additionalProperties": false, "required": ["path", "line", "severity", "rule", "problem", "recommendation"],
@@ -283,7 +390,16 @@
         "attestation": {"type": "object", "additionalProperties": false, "required": ["binding", "signatures"], "properties": {"binding": {"$ref": "#/$defs/ciAttestationBinding"}, "signatures": {"type": "array", "minItems": 1, "maxItems": 5, "items": {"$ref": "#/$defs/ciSignature"}}}}
       }
     },
-    "ciPayload": {"type": "object", "additionalProperties": false, "required": ["dim", "capability", "receipt"], "properties": {"dim": {"type": "integer", "minimum": 1, "maximum": 91}, "capability": {"$ref": "#/$defs/nonEmpty"}, "receipt": {"$ref": "#/$defs/ciTrustReceipt"}}},
+    "standardCiTrustReceipt": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contract", "observationSha256", "observation"],
+      "properties": {
+        "contract": {"const": "standard-five-step-live-observation-v1"},
+        "observationSha256": {"$ref": "#/$defs/sha256"},
+        "observation": {"$ref": "https://qijenchen.dev/schemas/standard-ci-evidence-observation-v1.json"}
+      }
+    },
+    "ciPayload": {"type": "object", "additionalProperties": false, "required": ["dim", "capability", "receipt"], "properties": {"dim": {"type": "integer", "minimum": 1, "maximum": 91}, "capability": {"$ref": "#/$defs/nonEmpty"}, "receipt": {"oneOf": [{"$ref": "#/$defs/ciTrustReceipt"}, {"$ref": "#/$defs/standardCiTrustReceipt"}]}}},
     "evidenceEnvelope": {
       "type": "object", "additionalProperties": false,
       "required": ["schemaVersion", "contractVersion", "evidenceKind", "runId", "manifestSha256", "head", "tree", "inventoryDigest", "rubricDigest", "worktreeBefore", "worktreeAfter", "producer", "command", "environment", "coverage", "payload"],

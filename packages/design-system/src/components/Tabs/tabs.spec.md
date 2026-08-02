@@ -88,6 +88,8 @@ TabsContent ← 對應被選中的 trigger
 - `endIcon` **純視覺 indicator only**（方向 / 狀態 — ChevronDown 暗示「展開後看到子內容」、Pin / Star 狀態徽記）。**不拼 click 行為** — 點到 endIcon 跟點到 tab body 同效果（切 tab）
 - `inlineAction`（2026-05-21 加）拆分 click target：點到 inlineAction 走它自己的 handler 不切 tab；典型如「『更多 ▾』tab 後綴點開 overflow dropdown 不切 tab」。**DOM 結構(2026-07-18 決策1 axe 正規修)**:inlineAction **portal 到 `TabsList` 的 overlay 層(`role=tablist` 之外的 sibling div)**,以 trigger 的量測座標(viewport-relative,涵蓋 none/scroll/menu)定位在 trigger 右緣預留的 paddingRight 區。**為什麼不放 tablist 內**:`role=tablist` 只能擁有 `role=tab`(ARIA required-children);inlineAction(`button[aria-haspopup]`)DOM-在 tablist 內會觸發 axe critical,故 portal 出去。trigger 本身仍在 tablist 內(底層 primitive 的 roving focus 要求 trigger 為 List React 子代)。**演進史**:2026-07-05 先修 button-巢-button(nested-interactive serious,改 sibling 佈局);2026-07-18 再修 button-在-tablist(required-children critical,改 portal overlay)。**代價(user 2026-07-18 拍板接受)**:鍵盤 Tab 序 = 全部 tab 之後才到 action(action 現為 overlay 內獨立 tab stop)。click 天然分流(action portal 出 trigger 子樹,不冒泡)。
 
+  **可視 viewport 契約(2026-08-02 regression fix)**:實際 viewport = overlay 與 trigger 所有 overflow-clipping ancestors 的交集。trigger 完全不相交時不 render action；部分相交時僅在 canonical trailing action slot 完整可見才 render。**禁 clamp** action 到 viewport 內，否則會侵入 label/suffix 並破壞 canonical 8px content→action gap。consumer `style` 可合併其他 key，但不可覆寫該 padding reservation。
+
   **⚠️ ARIA required-children 鐵律(泛化,防同類 regression)**:任何 composite widget 容器(`role=tablist` / `listbox` / `menu` / `radiogroup` / `tree`)只能擁有其 required child role;要在容器「格子」旁塞獨立互動 element(action / dropdown trigger)時,**必 portal 出容器 DOM 子樹 + 量測定位**(aria-owns 不可行:axe required-children 計 DOM-owned 子代,不因 aria-owns 排除)。對齊 W3C ARIA APG composite-widget owned-elements 規範。
 
 ### 對標對象與故意的偏離

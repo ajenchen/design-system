@@ -15,8 +15,11 @@ import {
 } from './lib/deep-audit-evidence-contract.mjs'
 import { resolveRuntimeEvidencePath } from './lib/governance-runtime-evidence.mjs'
 import {
+  NETLIFY_LIVE_CREDENTIAL_REFERENCES,
+  NETLIFY_LIVE_UNOBSERVED_REASON,
   assertDeterministicMatrixParity,
   canonicalDeterministicRunnerArgv,
+  canonicalDeterministicUnobservedRunnerArgv,
   deterministicCapabilitiesForDimension,
   expandDeterministicCoverage,
   loadDeterministicDeepAuditPlan,
@@ -27,20 +30,32 @@ import {
   loadCiEvidencePlan,
 } from './lib/ci-evidence-plan.mjs'
 import { validateCiObservationDocument } from './lib/ci-evidence-pipeline.mjs'
+import {
+  loadAuditCoverageTiers,
+  loadWaivedSelfReviewBundle,
+  waivedSelfReviewContract,
+} from './lib/waived-self-review.mjs'
 
 const DEFAULT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const REQUIRED_DIMENSION_COUNT = 91
-const SUPPORTED_TIERS = new Set(['DETERMINISTIC', 'PURE-JUDGMENT', 'HOOK-ENFORCED', 'CI-ENFORCED'])
 
 function fail(message) {
   throw new Error(`deep-audit coverage verification failed closed:${message}`)
 }
 
-function parseArgs(argv) {
-  const result = { json: false }
+export function parseVerifierArgs(argv) {
+  const result = { json: false, require: 'promotion' }
+  let requirementWasExplicit = false
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index]
     if (token === '--json') { result.json = true; continue }
+    if (token === '--require' || token.startsWith('--require=')) {
+      if (requirementWasExplicit) fail('--require may only be provided once')
+      const value = token.startsWith('--require=') ? token.slice('--require='.length) : argv[++index]
+      if (!['coverage', 'promotion'].includes(value)) fail('--require must be coverage or promotion')
+      result.require = value
+      requirementWasExplicit = true
+      continue
+    }
     if (!['--repo-root', '--evidence-root', '--self-provider', '--peer-provider', '--author-provider'].includes(token)) fail(`unknown option:${token}`)
     const value = argv[index + 1]
     if (!value || value.startsWith('--')) fail(`${token} requires a value`)
@@ -48,22 +63,6 @@ function parseArgs(argv) {
     index += 1
   }
   return result
-}
-
-function matrixTiers(repoRoot) {
-  const source = readFileSync(resolve(repoRoot, 'scripts/audit-coverage-matrix.mjs'), 'utf8')
-  const entries = [...source.matchAll(/(\d+):\s*\{\s*tier:\s*'([^']+)'/g)].map((match) => [Number(match[1]), match[2]])
-  const expected = Array.from({ length: REQUIRED_DIMENSION_COUNT }, (_, index) => index + 1)
-  const numbers = entries.map(([number]) => number).sort((left, right) => left - right)
-  if (entries.length !== REQUIRED_DIMENSION_COUNT || new Set(numbers).size !== REQUIRED_DIMENSION_COUNT
-    || numbers.some((number, index) => number !== expected[index])
-    || entries.some(([, tier]) => !SUPPORTED_TIERS.has(tier))) {
-    fail(`audit coverage matrix must enumerate dimensions 1..${REQUIRED_DIMENSION_COUNT} exactly once`)
-  }
-  const byTier = Object.fromEntries([...SUPPORTED_TIERS].map((tier) => [tier, []]))
-  for (const [number, tier] of entries) byTier[tier].push(number)
-  for (const values of Object.values(byTier)) values.sort((left, right) => left - right)
-  return byTier
 }
 
 function exact(value, expected, label) {
@@ -95,13 +94,34 @@ function expectedDeterministicRunner(payload, command, planState) {
   exact(command.argv, canonicalDeterministicRunnerArgv({ dims, allowBuild, allowNetwork, allowPublishedRelease }), `deterministic dim ${payload.dim} runner argv`)
 }
 
-function validateDeterministicReceipt(envelope, dim, active, planState) {
+export function validateDeterministicReceipt(envelope, dim, active, planState) {
   const dimension = planState.dimensionByNumber.get(dim)
   if (!dimension) fail(`deterministic dim ${dim} is absent from the canonical execution plan`)
   const payload = envelope.payload
   if (payload.dim !== dim || payload.name !== dimension.name || payload.planDigest !== planState.planDigest) fail(`deterministic dim ${dim} plan identity mismatches`)
   exact(payload.capabilities, deterministicCapabilitiesForDimension(planState, dim), `deterministic dim ${dim} capabilities`)
   exact(payload.commandIds, dimension.commandIds, `deterministic dim ${dim} command ids`)
+  if (payload.status === 'UNOBSERVED') {
+    const policy = dimension.unobservedPolicy
+    if (!policy || dim !== 83
+      || payload.reasonCode !== policy.reasonCode
+      || payload.reasonCode !== NETLIFY_LIVE_UNOBSERVED_REASON
+      || payload.observedAt !== envelope.command.finishedAt) {
+      fail(`deterministic dim ${dim} UNOBSERVED identity/reason mismatches canonical policy`)
+    }
+    exact(payload.credentialReferences, {
+      required: [...NETLIFY_LIVE_CREDENTIAL_REFERENCES],
+      observed: [],
+    }, `deterministic dim ${dim} credential-reference receipt`)
+    exact(
+      envelope.command.argv,
+      canonicalDeterministicUnobservedRunnerArgv({ dim, reasonCode: policy.reasonCode }),
+      `deterministic dim ${dim} UNOBSERVED runner argv`,
+    )
+    if (envelope.command.exitCode !== 0) fail(`deterministic dim ${dim} UNOBSERVED recorder did not complete`)
+    exact(envelope.coverage, expandDeterministicCoverage(planState, active.manifest, dim), `deterministic dim ${dim} coverage`)
+    return { status: 'UNOBSERVED', reasonCode: policy.reasonCode }
+  }
   if (payload.commands.length !== dimension.commandIds.length) fail(`deterministic dim ${dim} command receipt count mismatches`)
   for (let index = 0; index < dimension.commandIds.length; index += 1) {
     const planned = planState.commandById.get(dimension.commandIds[index])
@@ -111,6 +131,7 @@ function validateDeterministicReceipt(envelope, dim, active, planState) {
   }
   expectedDeterministicRunner(payload, envelope.command, planState)
   exact(envelope.coverage, expandDeterministicCoverage(planState, active.manifest, dim), `deterministic dim ${dim} coverage`)
+  return { status: 'PASS', reasonCode: null }
 }
 
 function judgmentCoverage(manifest) {
@@ -155,28 +176,35 @@ function validateHookReceipt(envelope, dim, active, hookState, hookCoverage) {
   exact(envelope.payload.replayReceipt.focusedContracts, expectedFocused, `hook dim ${dim} focused contracts`)
 }
 
-function expectedPathSet(tiers, providers, components) {
+function expectedPathSet(tiers, providers, components, { secondOpinionWaived = false } = {}) {
   const paths = new Set(['run-manifest.json'])
   for (const dim of tiers.DETERMINISTIC) paths.add(`deterministic/dim-${dim}.json`)
-  for (const provider of providers) for (const dim of tiers['PURE-JUDGMENT']) paths.add(`judgment/${provider}/dim-${dim}.json`)
+  if (secondOpinionWaived) paths.add(waivedSelfReviewContract.relativePath)
+  else for (const provider of providers) for (const dim of tiers['PURE-JUDGMENT']) paths.add(`judgment/${provider}/dim-${dim}.json`)
   for (const dim of tiers['HOOK-ENFORCED']) paths.add(`hook-residue/dim-${dim}.json`)
   for (const dim of tiers['CI-ENFORCED']) paths.add(`ci-enforced/dim-${dim}.json`)
-  for (const provider of providers) for (const component of components) paths.add(`component-a1b/${provider}/${component}.json`)
+  if (!secondOpinionWaived) {
+    for (const provider of providers) for (const component of components) paths.add(`component-a1b/${provider}/${component}.json`)
+  }
   return paths
 }
 
-function scanClosedRunTree(active, expectedFiles, providers) {
+function scanClosedRunTree(active, expectedFiles, providers, { allowModelTranscripts = true } = {}) {
   const allowedDirectories = new Set([''])
   for (const path of expectedFiles) {
     const segments = path.split('/')
     for (let index = 1; index < segments.length; index += 1) allowedDirectories.add(segments.slice(0, index).join('/'))
   }
-  for (const provider of providers) {
-    allowedDirectories.add(`judgment/${provider}/_transcripts`)
-    allowedDirectories.add(`component-a1b/${provider}/_transcripts`)
+  if (allowModelTranscripts) {
+    for (const provider of providers) {
+      allowedDirectories.add(`judgment/${provider}/_transcripts`)
+      allowedDirectories.add(`component-a1b/${provider}/_transcripts`)
+    }
   }
   const escapedProviders = providers.map((provider) => provider.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
-  const transcriptPattern = new RegExp(`^(?:judgment|component-a1b)/(?:${escapedProviders})/_transcripts/[a-f0-9]{64}\\.json$`)
+  const transcriptPattern = allowModelTranscripts
+    ? new RegExp(`^(?:judgment|component-a1b)/(?:${escapedProviders})/_transcripts/[a-f0-9]{64}\\.json$`)
+    : null
   const discoveredTranscripts = new Set()
   const walk = (directory) => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -189,8 +217,9 @@ function scanClosedRunTree(active, expectedFiles, providers) {
         walk(absolute)
       } else if (info.isFile()) {
         if (info.nlink !== 1) fail(`active run contains hard-link evidence:${path}`)
-        if (!expectedFiles.has(path) && !transcriptPattern.test(path)) fail(`active run contains an unknown/mixed evidence file:${path}`)
-        if (transcriptPattern.test(path)) discoveredTranscripts.add(path)
+        const isTranscript = transcriptPattern?.test(path) ?? false
+        if (!expectedFiles.has(path) && !isTranscript) fail(`active run contains an unknown/mixed evidence file:${path}`)
+        if (isTranscript) discoveredTranscripts.add(path)
       } else fail(`active run contains unsupported evidence type:${path}`)
     }
   }
@@ -259,7 +288,7 @@ function verifyModelTranscriptClosure(active, explicitRoot, modelEnvelopes, disc
   }
 }
 
-export function summarizeDeepAuditCompliance({ totalGaps, envelopes } = {}) {
+export function summarizeDeepAuditCompliance({ totalGaps, envelopes, waivedSelfReview = null } = {}) {
   if (!Number.isSafeInteger(totalGaps) || totalGaps < 0 || !Array.isArray(envelopes)) {
     fail('compliance summary inputs are invalid')
   }
@@ -273,6 +302,7 @@ export function summarizeDeepAuditCompliance({ totalGaps, envelopes } = {}) {
     untrustedDependencies: 0,
     unverifiedContainment: 0,
     unverifiedModelCoverage: 0,
+    unobservedDeterministicCoverage: 0,
   }
   for (const envelope of envelopes) {
     if (envelope.evidenceKind === 'deep-audit-judgment') findings.judgment += envelope.payload.findings.length
@@ -288,6 +318,18 @@ export function summarizeDeepAuditCompliance({ totalGaps, envelopes } = {}) {
       && !envelope.payload.brokerReceipt && envelope.payload.accessReceipt?.status !== 'verified') {
       trustDowngrades.unverifiedModelCoverage += 1
     }
+    if (envelope.evidenceKind === 'deep-audit-deterministic' && envelope.payload.status === 'UNOBSERVED') {
+      trustDowngrades.unobservedDeterministicCoverage += 1
+    }
+  }
+  if (waivedSelfReview !== null) {
+    findings.judgment += waivedSelfReview.judgmentReviews
+      .reduce((sum, review) => sum + review.findings.length, 0)
+    findings.componentA1b += waivedSelfReview.componentA1bReviews
+      .reduce((sum, review) => sum + review.findings.length, 0)
+    // A local self-attestation can close enumeration coverage for a user-waived
+    // run, but it is intentionally not verified model/independent evidence.
+    trustDowngrades.unverifiedModelCoverage += 1
   }
   const coverageStatus = totalGaps === 0 ? 'complete' : 'incomplete'
   const findingCount = Object.values(findings).reduce((sum, count) => sum + count, 0)
@@ -332,11 +374,13 @@ export function verifyDeepAuditCoverage({
     fail('active run author provider is not the current/self provider or collides with the independent peer')
   }
   const providers = manifestProviders
-  const tiers = matrixTiers(active.repository)
+  const tiers = loadAuditCoverageTiers(active.repository)
   rejectLegacyOrPoisonedRoot(active)
   const components = active.manifest.components.map((item) => item.name)
-  const expectedFiles = expectedPathSet(tiers, providers, components)
-  const discoveredTranscripts = scanClosedRunTree(active, expectedFiles, providers)
+  const expectedFiles = expectedPathSet(tiers, providers, components, { secondOpinionWaived })
+  const discoveredTranscripts = scanClosedRunTree(active, expectedFiles, providers, {
+    allowModelTranscripts: !secondOpinionWaived,
+  })
   const planState = loadDeterministicDeepAuditPlan({ repoRoot: active.repository })
   assertDeterministicMatrixParity(planState, { repoRoot: active.repository })
   const hookState = loadHookEvidencePlan({ repoRoot: active.repository })
@@ -356,24 +400,42 @@ export function verifyDeepAuditCoverage({
   }
   const envelopes = []
   const modelEnvelopes = []
+  const deterministicUnobserved = []
+  const waivedSelfReview = secondOpinionWaived
+    ? loadWaivedSelfReviewBundle({ activeRun: active, explicitRoot, tiers })
+    : null
   for (const dim of tiers.DETERMINISTIC) {
     const envelope = readEnvelope(active, explicitRoot, `deterministic/dim-${dim}.json`)
     if (!envelope) gaps.deterministic.push(dim)
     else {
-      validateDeterministicReceipt(envelope, dim, active, planState)
+      const validation = validateDeterministicReceipt(envelope, dim, active, planState)
+      if (validation.status === 'UNOBSERVED') {
+        deterministicUnobserved.push({
+          dim,
+          capability: deterministicCapabilitiesForDimension(planState, dim),
+          reasonCode: validation.reasonCode,
+        })
+      }
       envelopes.push(envelope)
     }
   }
-  const expectedJudgmentCoverage = judgmentCoverage(active.manifest)
-  for (const provider of providers) {
-    for (const dim of tiers['PURE-JUDGMENT']) {
-      const envelope = readEnvelope(active, explicitRoot, `judgment/${provider}/dim-${dim}.json`)
-      if (!envelope) gaps.judgment[provider].push(dim)
-      else {
-        if (envelope.producer.providerId !== provider || envelope.payload.dim !== dim || envelope.command.exitCode !== 0) fail(`judgment receipt identity/completion mismatches:${provider}/dim-${dim}`)
-        exact(envelope.coverage, expectedJudgmentCoverage, `judgment ${provider} dim ${dim} coverage`)
-        envelopes.push(envelope)
-        modelEnvelopes.push(envelope)
+  if (secondOpinionWaived) {
+    if (waivedSelfReview === null) {
+      gaps.judgment[providers[0]].push(...tiers['PURE-JUDGMENT'])
+      gaps.componentA1b[providers[0]].push(...components)
+    }
+  } else {
+    const expectedJudgmentCoverage = judgmentCoverage(active.manifest)
+    for (const provider of providers) {
+      for (const dim of tiers['PURE-JUDGMENT']) {
+        const envelope = readEnvelope(active, explicitRoot, `judgment/${provider}/dim-${dim}.json`)
+        if (!envelope) gaps.judgment[provider].push(dim)
+        else {
+          if (envelope.producer.providerId !== provider || envelope.payload.dim !== dim || envelope.command.exitCode !== 0) fail(`judgment receipt identity/completion mismatches:${provider}/dim-${dim}`)
+          exact(envelope.coverage, expectedJudgmentCoverage, `judgment ${provider} dim ${dim} coverage`)
+          envelopes.push(envelope)
+          modelEnvelopes.push(envelope)
+        }
       }
     }
   }
@@ -385,8 +447,8 @@ export function verifyDeepAuditCoverage({
       envelopes.push(envelope)
     }
   }
-  const ciPlanState = loadCiEvidencePlan({ repoRoot: active.repository })
-  const canonicalCi = loadCanonicalCiModels(ciPlanState, { repoRoot: active.repository })
+  let ciPlanState = null
+  let canonicalCi = null
   const ciObservationDigests = new Set()
   for (const dim of tiers['CI-ENFORCED']) {
     const envelope = readEnvelope(active, explicitRoot, `ci-enforced/dim-${dim}.json`)
@@ -394,36 +456,46 @@ export function verifyDeepAuditCoverage({
     else {
       if (envelope.payload.dim !== dim) fail(`CI receipt identity mismatches:dim-${dim}`)
       exact(envelope.coverage, { inventoryPaths: active.manifest.rubricPaths, inventoryDigest: active.manifest.rubricDigest, filesScanned: active.manifest.rubricPaths.length }, `CI dim ${dim} coverage`)
-      const observationPayload = envelope.payload.receipt.observationPayload
-      const payloadSha256 = envelope.payload.receipt.observation.apiPayloadSha256
-      validateCiObservationDocument({
-        $schema: 'schemas/ci-evidence-observation.schema.json',
-        schemaVersion: 1,
-        kind: 'ci-enforced-content-addressed-observation',
-        payloadSha256,
-        payload: observationPayload,
-      }, {
-        repoRoot: active.repository,
-        planState: ciPlanState,
-        activeRun: active,
-        models: canonicalCi.models,
-        modelBindings: canonicalCi.bindings,
-        now: new Date(),
-      })
+      const receipt = envelope.payload.receipt
+      let payloadSha256
+      if (receipt.contract === 'standard-five-step-live-observation-v1') {
+        payloadSha256 = receipt.observationSha256
+      } else {
+        ciPlanState ??= loadCiEvidencePlan({ repoRoot: active.repository })
+        canonicalCi ??= loadCanonicalCiModels(ciPlanState, { repoRoot: active.repository })
+        const observationPayload = receipt.observationPayload
+        payloadSha256 = receipt.observation.apiPayloadSha256
+        validateCiObservationDocument({
+          $schema: 'schemas/ci-evidence-observation.schema.json',
+          schemaVersion: 1,
+          kind: 'ci-enforced-content-addressed-observation',
+          payloadSha256,
+          payload: observationPayload,
+        }, {
+          repoRoot: active.repository,
+          planState: ciPlanState,
+          activeRun: active,
+          models: canonicalCi.models,
+          modelBindings: canonicalCi.bindings,
+          now: new Date(),
+        })
+      }
       ciObservationDigests.add(payloadSha256)
       envelopes.push(envelope)
     }
   }
   if (ciObservationDigests.size > 1) fail('CI dimension receipts mix different full observation payloads')
-  for (const provider of providers) {
-    for (const component of components) {
-      const envelope = readEnvelope(active, explicitRoot, `component-a1b/${provider}/${component}.json`)
-      if (!envelope) gaps.componentA1b[provider].push(component)
-      else {
-        if (envelope.producer.providerId !== provider || envelope.payload.component !== component || envelope.command.exitCode !== 0) fail(`A1b receipt identity/completion mismatches:${provider}/${component}`)
-        exact(envelope.coverage, componentCoverage(active.manifest, component), `A1b ${provider}/${component} coverage`)
-        envelopes.push(envelope)
-        modelEnvelopes.push(envelope)
+  if (!secondOpinionWaived) {
+    for (const provider of providers) {
+      for (const component of components) {
+        const envelope = readEnvelope(active, explicitRoot, `component-a1b/${provider}/${component}.json`)
+        if (!envelope) gaps.componentA1b[provider].push(component)
+        else {
+          if (envelope.producer.providerId !== provider || envelope.payload.component !== component || envelope.command.exitCode !== 0) fail(`A1b receipt identity/completion mismatches:${provider}/${component}`)
+          exact(envelope.coverage, componentCoverage(active.manifest, component), `A1b ${provider}/${component} coverage`)
+          envelopes.push(envelope)
+          modelEnvelopes.push(envelope)
+        }
       }
     }
   }
@@ -431,7 +503,11 @@ export function verifyDeepAuditCoverage({
   const totalGaps = gaps.deterministic.length + gaps.hookResidue.length + gaps.ciEnforced.length
     + Object.values(gaps.judgment).reduce((sum, values) => sum + values.length, 0)
     + Object.values(gaps.componentA1b).reduce((sum, values) => sum + values.length, 0)
-  const compliance = summarizeDeepAuditCompliance({ totalGaps, envelopes })
+  const compliance = summarizeDeepAuditCompliance({
+    totalGaps,
+    envelopes,
+    waivedSelfReview: waivedSelfReview?.bundle ?? null,
+  })
   return {
     schemaVersion: 4,
     evidenceKind: 'deep-audit-coverage-verification',
@@ -455,6 +531,7 @@ export function verifyDeepAuditCoverage({
     componentCount: components.length,
     gaps,
     totalGaps,
+    unobserved: { deterministic: deterministicUnobserved },
     ...compliance,
   }
 }
@@ -472,7 +549,8 @@ function printHuman(result) {
   for (const provider of Object.keys(result.gaps.componentA1b)) console.log(`A1b ${provider} gaps:${result.gaps.componentA1b[provider].join(',') || 'none'}`)
   console.log(`coverage:${result.coverageStatus}; compliance:${result.complianceStatus}; promotion:${result.promotionEligible ? 'eligible' : 'blocked'}`)
   console.log(`findings:judgment=${result.findings.judgment}, A1b=${result.findings.componentA1b}, hook-warning=${result.findings.hookWarnings}, hook-blocking=${result.findings.hookBlocking}`)
-  console.log(`trust downgrades:dependencies=${result.trustDowngrades.untrustedDependencies}, containment=${result.trustDowngrades.unverifiedContainment}, model-coverage=${result.trustDowngrades.unverifiedModelCoverage}`)
+  console.log(`UNOBSERVED deterministic:${result.unobserved.deterministic.map((item) => `dim-${item.dim}:${item.reasonCode}`).join(',') || 'none'}`)
+  console.log(`trust downgrades:dependencies=${result.trustDowngrades.untrustedDependencies}, containment=${result.trustDowngrades.unverifiedContainment}, model-coverage=${result.trustDowngrades.unverifiedModelCoverage}, deterministic-unobserved=${result.trustDowngrades.unobservedDeterministicCoverage}`)
   console.log(result.promotionEligible ? '✅ immutable run evidence is complete, clean, and promotion-eligible' : '❌ immutable run is not promotion-eligible')
 }
 
@@ -488,7 +566,7 @@ export function resolveVerifierProviderAssertions(args = {}, environment = proce
 }
 
 export function main(argv = process.argv.slice(2)) {
-  const args = parseArgs(argv)
+  const args = parseVerifierArgs(argv)
   const providerAssertions = resolveVerifierProviderAssertions(args)
   const result = verifyDeepAuditCoverage({
     repoRoot: args['repo-root'] ?? DEFAULT_ROOT,
@@ -497,7 +575,14 @@ export function main(argv = process.argv.slice(2)) {
   })
   if (args.json) process.stdout.write(`${stableStringify(result, 2)}\n`)
   else printHuman(result)
-  return result.promotionEligible ? 0 : 1
+  return verifierExitCode(result, args.require)
+}
+
+export function verifierExitCode(result, requirement = 'promotion') {
+  if (!['coverage', 'promotion'].includes(requirement)) fail('verifier requirement is invalid')
+  return requirement === 'coverage'
+    ? (result.coverageStatus === 'complete' ? 0 : 1)
+    : (result.promotionEligible ? 0 : 1)
 }
 
 const IS_MAIN = (() => {

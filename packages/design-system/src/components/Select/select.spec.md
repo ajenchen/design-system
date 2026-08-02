@@ -243,7 +243,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 ### plain 模式
 
-- 原生 select 純文字 + ChevronDown
+- 桌面使用 custom trigger + SelectMenu；觸控裝置使用 NativeSelect 的純文字 + ChevronDown
 - **Icon-binding 矩陣**(icon kind canonical,2026-05-09 clarified):
 
 | Icon 角色 | Prop | 語意 | 色彩 | 優先序 |
@@ -255,8 +255,8 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 ### tag 模式
 
-- Tag 元件呈現選中值 + 隱藏的原生 select overlay
-- Tag 設為 `pointer-events-none`，點擊穿透到底層 select
+- 桌面使用 Tag 呈現選中值並由 custom trigger 開啟 SelectMenu；觸控裝置才在 Tag 上疊隱藏的 native select overlay
+- 觸控 overlay 路徑的 Tag 設為 `pointer-events-none`，點擊穿透到底層 select
 - edit 模式：Tag + ChevronDown + 可選 clear
 - readonly：Tag 顯示，**ChevronDown 不顯示**（純值、不可開選單）；disabled：Tag 顯示 + **ChevronDown 保留**（類型身份 indicator，fg-disabled），不可開選單
 

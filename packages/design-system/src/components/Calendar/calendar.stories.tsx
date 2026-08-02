@@ -12,7 +12,7 @@ const meta: Meta<typeof Calendar> = {
     docs: {
       description: {
         component:
-          '月事件檢視 canvas。對齊 Notion Calendar / Google Calendar;與 DatePicker(選日期 form control)**職責不同**,見 spec。',
+          '以月檢視瀏覽與安排多筆事件，適合團隊行程、內容排程與資源規劃。若使用者只需在表單中選一個日期，應使用 DatePicker；Calendar 不是日期輸入欄位。',
       },
     },
   },

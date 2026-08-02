@@ -928,7 +928,7 @@ export const Accessibility = {
         <ul className="list-disc list-inside text-caption text-fg-secondary space-y-1">
           <li>Trigger:<code>{`<div role="combobox" tabIndex={0}>`}</code> + <code>aria-haspopup="dialog"</code> + <code>aria-expanded={`{open}`}</code></li>
           <li>Trigger 必含 accessible name(<code>aria-label</code> / 外層 <code>{`<label>`}</code> / fieldCtx label)</li>
-          <li>Popover content:<code>role="dialog"</code>;單一日期 popover 由 trigger 的 <code>role="combobox"</code> accessible name 標示(dialog 本身不重覆 <code>aria-label</code>)。Range popover 加 <code>aria-label="日期區間選擇"</code></li>
+          <li>Popover content:<code>role="dialog"</code>;單一日期 popover 使用 <code>aria-label="日期選擇"</code>，Range popover 使用 <code>aria-label="日期區間選擇"</code></li>
           <li>Range 雙 trigger:<code>aria-expanded</code> 對應只當該 trigger active 時 true</li>
         </ul>
       </section>

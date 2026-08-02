@@ -1187,7 +1187,7 @@ test('workspace dependency authority discovers, pins, verifies, and lists receiv
 
   const listed = spawnSync(
     process.execPath,
-    [join(process.cwd(), 'scripts/sync-exact-workspace-dependencies.mjs'), '--list-receiver-paths'],
+    ['--', join(process.cwd(), 'scripts/sync-exact-workspace-dependencies.mjs'), '--list-receiver-paths'],
     { cwd: root, encoding: 'utf8' },
   )
   assert.equal(listed.status, 0, listed.stderr)

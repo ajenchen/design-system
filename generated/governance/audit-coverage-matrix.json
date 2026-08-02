@@ -391,7 +391,7 @@
     },
     "64": {
       "tier": "CI-ENFORCED",
-      "mechanism": "protected-main PR + exact release attestation + mirror/fleet PR propagation;no direct-main or mutable dispatch path",
+      "mechanism": "standard five-step live observation:PR tree=squash-merge tree=tag tree + immutable release/BOM/npm provenance;no candidate freeze,external activation,offline attestor,or import ceremony",
       "id": "DS-DIM-064",
       "critical": true
     },
@@ -403,7 +403,7 @@
     },
     "66": {
       "tier": "CI-ENFORCED",
-      "mechanism": "Release workflow_run → GitHub App mirror PR + consumer required audit/visual checks;no PAT/direct-main dispatch",
+      "mechanism": "repository_dispatch mirror + exact template/work-management lockfiles and Verify consumer required checks;dim64/66 share one atomic live-observation digest",
       "id": "DS-DIM-066",
       "critical": true
     },

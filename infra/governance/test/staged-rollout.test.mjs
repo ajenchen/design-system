@@ -880,7 +880,13 @@ function coverageProof({ complete, certificationRun = CERT_RUN }) {
     promotionEligible: complete,
     status: complete ? 'complete-clean' : 'incomplete',
     findings: { judgment: 0, componentA1b: 0, hookWarnings: 0, hookBlocking: 0 },
-    trustDowngrades: { untrustedDependencies: 0, unverifiedContainment: 0, unverifiedModelCoverage: 0 },
+    trustDowngrades: {
+      untrustedDependencies: 0,
+      unverifiedContainment: 0,
+      unverifiedModelCoverage: 0,
+      unobservedDeterministicCoverage: 0,
+    },
+    unobserved: { deterministic: [] },
   }
 }
 
@@ -3478,6 +3484,14 @@ test('PR-head certification permits only pending CI dimensions 64 and 66 and can
   for (const [label, mutate, expected] of [
     ['unexpected pending dimension', coverage => { coverage.gaps.ciEnforced = [64, 65] }, /exactly post-release dims 64 and 66/],
     ['circular early full completion', coverage => Object.assign(coverage, coverageProof({ complete: true })), /only the typed post-release gap set pending/],
+    ['typed unobserved deterministic evidence', coverage => {
+      coverage.unobserved.deterministic = [{
+        dim: 83,
+        capability: ['local', 'network', 'published-release'],
+        reasonCode: 'NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT',
+      }]
+      coverage.trustDowngrades.unobservedDeterministicCoverage = 1
+    }, /contains findings or trust downgrades/],
     ['author impersonates peer', coverage => { coverage.authorProvider = coverage.providers.peer }, /author provider differs from the committed run/],
     ['provider identity digest substituted', coverage => { coverage.providerIdentityDigest = 'f'.repeat(64) }, /provider identity digest differs from the committed run/],
   ]) {
@@ -3528,6 +3542,22 @@ test('full completion accepts the same immutable user-waived single-provider top
   const full = evidenceValue(ledger.receipts[8], 'full-deep-audit-verification-v1')
   assert.deepEqual(full.coverage.providers, { self: 'claude', peer: null })
   assert.equal(full.coverage.secondOpinion, 'waived-by-user')
+
+  const unobserved = bindWaivedCertification(ledgerFixture({ receiptCount: 9 }))
+  const unobservedFull = evidenceValue(unobserved.receipts[8], 'full-deep-audit-verification-v1')
+  unobservedFull.coverage.unobserved.deterministic = [{
+    dim: 83,
+    capability: ['local', 'network', 'published-release'],
+    reasonCode: 'NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT',
+  }]
+  unobservedFull.coverage.trustDowngrades.unobservedDeterministicCoverage = 1
+  unobservedFull.ciImport.coverageSha256 = sha256(stableStringify(unobservedFull.coverage, 0))
+  replaceEvidenceValue(unobserved.receipts[8], 'full-deep-audit-verification-v1', unobservedFull)
+  resignFrom(unobserved, 8)
+  assert.throws(
+    () => validate(unobserved, { certificationRun: WAIVED_CERT_RUN }),
+    /incomplete, non-clean, or not promotion-eligible|contains trust downgrades/,
+  )
 })
 
 test('dirty candidate-freeze run cannot be reused as the committed PR-head certification run', () => {

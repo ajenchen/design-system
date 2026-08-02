@@ -258,7 +258,7 @@ export function readAndPlanChannel(npmCli, ordered, targetVersion, targetTag) {
   })
 }
 
-export async function validateRegistryPackage(npmCli, item, identity) {
+export async function validateRegistryPackage(npmCli, item, identity, { fetchImpl = fetch } = {}) {
   const found = npmView(npmCli, `${item.name}@${item.version}`, 'dist')
   if (found.kind !== 'found' || !found.value || typeof found.value !== 'object') {
     throw new Error(`${item.name}@${item.version}: registry read-back is missing`)
@@ -277,7 +277,7 @@ export async function validateRegistryPackage(npmCli, item, identity) {
   if (attestationUrl.origin !== npmRegistry || !attestationUrl.pathname.startsWith('/-/npm/v1/attestations/')) {
     throw new Error(`${item.name}@${item.version}: npm attestation URL is not canonical`)
   }
-  const response = await fetch(attestationUrl, { signal: AbortSignal.timeout(15_000) })
+  const response = await fetchImpl(attestationUrl, { signal: AbortSignal.timeout(15_000) })
   if (!response.ok) throw new Error(`${item.name}@${item.version}: attestation fetch failed with HTTP ${response.status}`)
   const envelope = await response.json()
   const provenance = envelope.attestations?.find((entry) => entry.predicateType === provenanceType)
@@ -288,6 +288,21 @@ export async function validateRegistryPackage(npmCli, item, identity) {
     throw new Error(`${item.name}@${item.version}: signed provenance payload is invalid`)
   }
   validateProvenanceStatement(statement, { ...item, ...identity })
+  return Object.freeze({
+    name: item.name,
+    version: item.version,
+    integrity: dist.integrity,
+    shasum: dist.shasum,
+    tarball: dist.tarball,
+    attestationUrl: attestationUrl.href,
+    provenancePredicate: provenanceType,
+    provenancePayloadSha256: createHash('sha256').update(Buffer.from(payload, 'base64')).digest('hex'),
+    repository: identity.repository,
+    workflow: identity.workflow,
+    workflowRef: identity.workflowRef,
+    gitCommit: identity.gitHead,
+    builderId: identity.builderId,
+  })
 }
 
 export async function waitForPublishedPackage(npmCli, item, identity) {

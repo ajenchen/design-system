@@ -77,7 +77,7 @@
       "completion": {
         "acceptedExitCodes": [0],
         "minimumOutputMatches": [{ "pattern": "[1-9][0-9]* component\\(s\\) canonical aligned", "minimum": 1 }],
-        "rejectOutputPatterns": ["0 component(s) canonical aligned", "; [1-9][0-9]* skipped", "Cannot find module", "SyntaxError", "ReferenceError"]
+        "rejectOutputPatterns": ["\\b0 component\\(s\\) canonical aligned", "; [1-9][0-9]* skipped", "Cannot find module", "SyntaxError", "ReferenceError"]
       }
     },
     {
@@ -135,7 +135,7 @@
       "completion": {
         "acceptedExitCodes": [0],
         "minimumOutputMatches": [{ "pattern": "running axe-core against [1-9][0-9]* stories", "minimum": 1 }],
-        "rejectOutputPatterns": ["0 stories", "storybook-static/index.json not found", "Cannot find module", "SyntaxError", "ReferenceError"]
+        "rejectOutputPatterns": ["\\b0 stories\\b", "storybook-static/index.json not found", "Cannot find module", "SyntaxError", "ReferenceError"]
       }
     },
     {
@@ -166,7 +166,7 @@
       "completion": {
         "acceptedExitCodes": [0],
         "minimumOutputMatches": [{ "pattern": "scope=all,跑 [1-9][0-9]* scenario", "minimum": 1 }],
-        "rejectOutputPatterns": ["0 scenario", "storybook 未跑", "storybook 120s 未就緒", "Cannot find module", "SyntaxError", "ReferenceError"]
+        "rejectOutputPatterns": ["\\b0 scenario\\b", "storybook 未跑", "storybook 120s 未就緒", "Cannot find module", "SyntaxError", "ReferenceError"]
       }
     },
     {
@@ -179,7 +179,7 @@
       "completion": {
         "acceptedExitCodes": [0],
         "minimumOutputMatches": [{ "pattern": "Found [1-9][0-9]* identity-verify mapping", "minimum": 1 }],
-        "rejectOutputPatterns": ["0 個 identity-opt-in mapping", "gate is vacuous", "static dir not found", "Cannot find module", "SyntaxError", "ReferenceError"]
+        "rejectOutputPatterns": ["\\b0 個 identity-opt-in mapping", "gate is vacuous", "static dir not found", "Cannot find module", "SyntaxError", "ReferenceError"]
       }
     },
     {
@@ -282,7 +282,7 @@
     { "dim": 50, "name": "Bundle-size budget", "commandIds": ["build-library", "build-production-app", "bundle-size"], "coverage": { "include": ["package.json", "package-lock.json", "tsconfig.json", "tsconfig.app.json", "tsconfig.node.json", "vite.config.ts", "src/**/*.{ts,tsx,css}", "packages/design-system/package.json", "packages/design-system/bundle-budget.json", "packages/design-system/vite.config.ts", "packages/design-system/tsconfig.json", "packages/design-system/src/**/*.{ts,tsx,css}", "packages/storybook-config/package.json", "packages/storybook-config/tsconfig.json", "packages/storybook-config/**/*.{ts,tsx}"], "exclude": ["packages/**/dist/**"] } },
     { "dim": 51, "name": "Theme-density visual matrix", "commandIds": ["build-library", "build-storybook", "visual-theme-density-matrix"], "coverage": { "include": ["package.json", "package-lock.json", "scripts/visual-audit.mjs", "scripts/visual-assertions.json", "scripts/lib/a11y-static-server.mjs", "scripts/lib/storybook-render-health.mjs", "scripts/lib/governance-runtime-evidence.mjs", "scripts/lib/governance-visual-baselines.mjs", "scripts/lib/visual-audit-interaction.mjs", "scripts/test-visual-audit-interaction.mjs", ".storybook/**", "packages/design-system/package.json", "packages/design-system/vite.config.ts", "packages/design-system/tsconfig.json", "packages/design-system/src/**/*.{ts,tsx,css}", "packages/storybook-config/package.json", "packages/storybook-config/tsconfig.json", "packages/storybook-config/**/*.{ts,tsx}", "infra/governance/baseline/visual/curated/**"], "exclude": ["packages/**/dist/**"] } },
     { "dim": 77, "name": "Composition-fidelity non-vacuous mappings", "commandIds": ["build-library", "build-storybook", "composition-fidelity"], "coverage": { "include": ["scripts/composition-fidelity-visual-diff.mjs", "apps/template/**/*.ts", "apps/template/**/*.tsx", "packages/design-system/src/**/*.stories.tsx"], "exclude": [] } },
-    { "dim": 83, "name": "Published template live deployment", "commandIds": ["published-live-deploy"], "coverage": { "include": ["scripts/verify-published-deploy.mjs", "template/ds-product-template/.storybook/main.ts", ".github/workflows/mirror-to-published-template.yml"], "exclude": [] } },
+    { "dim": 83, "name": "Published template live deployment", "commandIds": ["published-live-deploy"], "coverage": { "include": ["scripts/verify-published-deploy.mjs", "template/ds-product-template/.storybook/main.ts", ".github/workflows/mirror-to-published-template.yml"], "exclude": [] }, "unobservedPolicy": { "reasonCode": "NETLIFY_LIVE_CREDENTIAL_REFERENCE_ABSENT", "requiredCredentialReferences": ["NETLIFY_LIVE_BASIC_AUTH", "NETLIFY_PREVIEW_PASSWORD"] } },
     { "dim": 84, "name": "Two-scenario architecture", "commandIds": ["two-scenario-architecture"], "coverage": { "include": ["scripts/test-2-scenario-architecture.mjs", "scripts/build-published-template-mirror.mjs", "packages/design-system/ds-canonical/**", "packages/governance/canonical/providers.json", "apps/template/**", "template/ds-product-template/**", ".github/workflows/mirror-to-published-template.yml"], "exclude": [] } },
     { "dim": 85, "name": "Canonical provider-view freshness", "commandIds": ["canonical-mirror-freshness"], "coverage": { "include": ["scripts/sync-ds-canonical.mjs", "packages/design-system/ds-canonical/**", "packages/governance/canonical/**", ".claude/**", ".agents/**"], "exclude": [".claude/logs/**"] } },
     { "dim": 86, "name": "Plugin structure", "commandIds": ["plugin-structure"], "coverage": { "include": ["scripts/plugin-structure-validate.mjs", ".claude-plugin/**", "hooks/hooks.json", "packages/governance/canonical/providers.json", "packages/design-system/package.json", "packages/storybook-config/package.json", "packages/governance/package.json"], "exclude": [] } },

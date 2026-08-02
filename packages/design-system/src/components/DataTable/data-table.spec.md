@@ -320,6 +320,8 @@ interface DataTableFilterPanelProps<TData> {
 
 `filter-operators.ts` 的 `OPERATOR_REGISTRY: Record<ColumnType, OperatorSpec[]>` 是唯一 truth。Panel 完全 data-driven:field 選 → load op set → 選 op → 由 `valueShape` dispatch picker(`data-table-filter-value-picker.tsx`,@internal;2026-07-14 file-size 拆檔自 panel)。`is_set` / `is_not_set` / `is_true` / `is_false`(`ValueShape='none'`)不渲 picker。
 
+`ValueShape` 是 DataTable 篩選編輯器的封閉內部命名空間；其中 `text` 只表示以 `<Input>` 編輯篩選值，與 Button 等元件各自命名空間中的同名視覺 variant 無關，不可跨 namespace 合併或推導語意。
+
 ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 
 | Shape | Picker | 備註 |

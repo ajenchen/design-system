@@ -67,7 +67,7 @@ export const UsageGuidance: Story = {
 
         <Rule
           title="❌ 不用其他 calendar library 平行實作"
-          note="Date Range / DateTime 已內建(DatePicker.Range / showTime,見下方近親規則)且都基於本 DateGrid(`../DateGrid/date-grid.tsx`);未來任何日曆類擴充也走 DateGrid,而非引入第二個 library——避免兩套視覺語言在同一系統並存"
+          note="DatePicker.Range 與 showTime 已共用同一套日曆格線與互動。日曆類功能應延伸這個共用基礎，不要在同一產品另引入第二套視覺與操作邏輯"
         >
           <Label>實作細節見 Design System / Components / DatePicker / 設計規格</Label>
         </Rule>
@@ -90,7 +90,7 @@ export const UsageGuidance: Story = {
 
         <Rule
           title="❌ 不用 DatePicker 選時間(時 / 分 / 秒)→ TimePicker"
-          note="只選時間改用 TimePicker。如需同時選日期 + 時間 → DatePicker 加 showTime prop(canonical 2026-05-02,Ant idiom;非獨立並列組合,見 spec「showTime」段)。Notion calendar event 的 time 欄是獨立 TimePicker"
+          note="只選時間時使用 TimePicker；需同時選日期與時間時，在 DatePicker 啟用 showTime，不要並排兩個不相關的輸入控制"
         >
           <Label warn>時間用 TimePicker,日期 + 時間用 showTime prop</Label>
         </Rule>
