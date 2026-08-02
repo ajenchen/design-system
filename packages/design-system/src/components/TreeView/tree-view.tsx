@@ -174,6 +174,8 @@ interface TreeViewContextValue {
   toggleExpand: (id: string) => void
   select: (id: string) => void
   setFocusedId: (id: string | null) => void
+  /** Pointer activation 後把 DOM focus 還給 virtual-focus tree root。 */
+  focusTree: () => void
   registerNode: (id: string, parentId: string | null, hasChildren: boolean, label?: React.ReactNode, icon?: LucideIcon) => void
   getNodeInfo: (id: string) => NodeInfo | undefined
   unregisterNode: (id: string) => void
@@ -356,6 +358,11 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
 
     // ── Focus state ──
     const [focusedId, setFocusedId] = React.useState<string | null>(null)
+    const treeRef = React.useRef<HTMLDivElement>(null)
+    React.useImperativeHandle(ref, () => treeRef.current!)
+    const focusTree = React.useCallback(() => {
+      treeRef.current?.focus({ preventScroll: true })
+    }, [])
 
     // ── Virtual focus id prefix ──
     // DOM focus 永遠停在 role=tree 容器(單一 tab stop);目前 node 透過 aria-activedescendant
@@ -755,6 +762,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         toggleExpand,
         select,
         setFocusedId,
+        focusTree,
         registerNode,
         unregisterNode,
         getNodeInfo,
@@ -775,6 +783,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         toggleExpand,
         select,
         setFocusedId,
+        focusTree,
         registerNode,
         unregisterNode,
         getNodeInfo,
@@ -782,9 +791,6 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     )
 
     // ── Keyboard handler ──
-    const treeRef = React.useRef<HTMLDivElement>(null)
-    React.useImperativeHandle(ref, () => treeRef.current!)
-
     const handleMouseDown = React.useCallback(() => {
       isKeyboardRef.current = false
     }, [])
@@ -1051,7 +1057,7 @@ export interface TreeItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   icon?: LucideIcon
   /**
    * Checkbox(多選模式,label 前方)。傳入 ReactNode(Checkbox 元件)。
-   * 位置:在 icon 之後、label 之前。
+   * 位置:在 chevron 之後、indicator/icon 之前。
    * 此 slot 僅是 treeitem selection 的視覺鏡像；有效 React element 會由 TreeItem
    * 強制正規化為 `aria-hidden` + `tabIndex=-1`，不形成第二個 node tab stop。
    * 單選模式通常不需要(用 bg-neutral-selected 表達選中)。
@@ -1118,7 +1124,7 @@ export interface TreeItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
-  ({ id, label, icon: Icon, checkbox, inlineActions, inlineActionsSlot, actionsReveal = 'hover', indicator, disabled, children, className, ...props }, ref) => {
+  ({ id, label, icon: Icon, checkbox, inlineActions, inlineActionsSlot, actionsReveal = 'hover', indicator, disabled, children, className, style, onClick, ...props }, ref) => {
     const ctx = useTreeView()
     const depth = React.useContext(DepthContext)
     const {
@@ -1134,6 +1140,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
       toggleExpand,
       select,
       setFocusedId,
+      focusTree,
       registerNode,
       unregisterNode,
       isKeyboardRef,
@@ -1184,26 +1191,52 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
 
     // ── Handlers ──
     const handleRowClick = React.useCallback(
-      (e: React.MouseEvent) => {
-        if (disabled) return
+      (e: React.MouseEvent<HTMLDivElement>) => {
+        onClick?.(e)
+        if (e.defaultPrevented || disabled) return
         e.stopPropagation()
+        // Virtual-focus contract:DOM focus 必留在 tree root。先 focus 再設定 clicked id，
+        // 避免 root onFocus 的「初次進入選第一項」初始化覆寫 pointer target。
+        focusTree()
         setFocusedId(id)
         select(id)
         if (expandOnSelect && hasChildren) {
           toggleExpand(id)
         }
       },
-      [id, disabled, select, setFocusedId, expandOnSelect, hasChildren, toggleExpand]
+      [id, disabled, onClick, focusTree, select, setFocusedId, expandOnSelect, hasChildren, toggleExpand]
     )
 
     const handleChevronClick = React.useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation()
         if (disabled) return
+        focusTree()
+        setFocusedId(id)
         toggleExpand(id)
       },
-      [id, disabled, toggleExpand]
+      [id, disabled, focusTree, setFocusedId, toggleExpand]
     )
+
+    // dnd-kit PointerSensor listener 與 consumer DOM callback 必安全 compose：consumer 先收到
+    // event，可用 preventDefault 取消 drag；未取消才執行 internal listener。`...props` 會先
+    // spread，這份 composed map 隨後覆蓋同名 pointer listener，避免任一方被靜默吃掉。
+    const composedDragListeners = dragListeners
+      ? Object.fromEntries(
+          Object.entries(dragListeners).map(([eventName, internalHandler]) => [
+            eventName,
+            (event: React.SyntheticEvent<HTMLElement>) => {
+              const consumerHandler = (props as Record<string, unknown>)[eventName]
+              if (typeof consumerHandler === 'function') {
+                ;(consumerHandler as (event: React.SyntheticEvent<HTMLElement>) => void)(event)
+              }
+              if (!event.defaultPrevented) {
+                ;(internalHandler as (event: React.SyntheticEvent<HTMLElement>) => void)(event)
+              }
+            },
+          ])
+        ) as typeof dragListeners
+      : undefined
 
     // ── Chevron(永遠存在:expandable = 旋轉箭頭;leaf = placeholder 佔位) ──
     // 消費 `<ItemPrefix>` SSOT — 永遠 h-[1lh] 對齊 label 第一行中線(item-anatomy 對應)。
@@ -1270,6 +1303,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
 
           {/* Row: draggable + droppable 都在這一行(合併 ref),確保碰撞偵測只看行高 */}
           <div
+            {...props}
             ref={(node) => {
               // 合併 drag + drop ref 到同一個 element
               if (draggable) setDragRef(node)
@@ -1298,12 +1332,13 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               className,
             )}
             style={{
+              ...style,
+              // Structural indent 由 TreeView SSOT 最終擁有，consumer style 不得抹掉。
               paddingLeft: indentPx > 0
                 ? `calc(var(--tree-px) + ${indentPx}px)`
                 : 'var(--tree-px)',
               paddingRight: 'var(--tree-px)',
             }}
-            onClick={handleRowClick}
             // 2026-07-05 D4 修:只 spread listeners,不 spread dnd-kit attributes —
             // useDraggable 預設 attributes 注入 role="button" + tabIndex=0 + aria-pressed +
             // aria-describedby(鍵盤拖曳指示):role=button 污染 treeitem 語意、tabIndex=0
@@ -1312,8 +1347,8 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             // sensors 僅 PointerSensor(無 KeyboardSensor),這些 attrs 換不到鍵盤拖曳能力;
             // 鍵盤重排(2026-07-14 v1)走容器 handleKeyDown 的 Cmd/Ctrl+Shift+Arrow 分支,非 dnd-kit sensor。
             // aria-roledescription 保留在上方 treeitem 元素(有 role 才合法)。
-            {...(draggable ? dragListeners : {})}
-            {...props}
+            {...(draggable ? composedDragListeners : {})}
+            onClick={handleRowClick}
           >
             {chevronSlot}
 

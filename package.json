@@ -42,6 +42,7 @@
     "release:status": "node scripts/release-orchestrator.mjs status",
     "test:datatable-invariants": "node scripts/data-table-invariants.mjs",
     "test:header-tabs-slot-invariants": "node scripts/header-tabs-slot-invariants.mjs",
+    "check:tabs-inline-action-geometry": "node --test scripts/tabs-inline-action-geometry.test.mjs",
     "audit:coverage-matrix": "node scripts/audit-coverage-matrix.mjs",
     "audit:deterministic-plan": "node scripts/run-deterministic-deep-audit.mjs --check",
     "test:deterministic-deep-audit": "node --test scripts/test-run-deterministic-deep-audit.mjs",

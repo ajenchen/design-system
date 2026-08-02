@@ -73,9 +73,10 @@ type SidebarContextProps = {
   open: boolean
   setOpen: (open: boolean) => void
   openMobile: boolean
-  setOpenMobile: (open: boolean) => void
+  setOpenMobile: (open: boolean | ((current: boolean) => boolean), opener?: HTMLElement) => void
+  mobileOpenerRef: React.MutableRefObject<HTMLElement | null>
   isMobile: boolean
-  toggleSidebar: () => void
+  toggleSidebar: (opener?: HTMLElement) => void
   // 全 sidebar 共用的 size(sm/md/lg)——透過 SidebarProvider 一次設定,
   // 下游所有 SidebarMenuButton / SidebarGroupLabel / SidebarMenuSkeleton 自動繼承。
   size: SidebarSize
@@ -165,7 +166,20 @@ const SidebarProvider = React.forwardRef<
       [activeIdProp, onActiveChange]
     )
     const isMobile = useIsNarrowViewport()
-    const [openMobile, setOpenMobile] = React.useState(false)
+    const [openMobile, setOpenMobileState] = React.useState(false)
+    const openMobileRef = React.useRef(false)
+    const mobileOpenerRef = React.useRef<HTMLElement | null>(null)
+    const setOpenMobile = React.useCallback((value: boolean | ((current: boolean) => boolean), opener?: HTMLElement) => {
+      const current = openMobileRef.current
+      const next = typeof value === "function" ? value(current) : value
+      if (next && !current && typeof document !== "undefined") {
+        mobileOpenerRef.current = opener ?? (
+          document.activeElement instanceof HTMLElement ? document.activeElement : null
+        )
+      }
+      openMobileRef.current = next
+      setOpenMobileState(next)
+    }, [])
 
     const [_open, _setOpen] = React.useState(defaultOpen)
     const open = openProp ?? _open
@@ -182,9 +196,9 @@ const SidebarProvider = React.forwardRef<
       [openProp, setOpenProp, open]
     )
 
-    const toggleSidebar = React.useCallback(() => {
+    const toggleSidebar = React.useCallback((opener?: HTMLElement) => {
       return isMobile
-        ? setOpenMobile((o) => !o)
+        ? setOpenMobile((o) => !o, opener)
         : setOpen((o) => !o)
     }, [isMobile, setOpen, setOpenMobile])
 
@@ -228,6 +242,7 @@ const SidebarProvider = React.forwardRef<
         isMobile,
         openMobile,
         setOpenMobile,
+        mobileOpenerRef,
         toggleSidebar,
         size,
         activeId,
@@ -325,7 +340,7 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const { isMobile, state, openMobile, setOpenMobile, mobileOpenerRef } = useSidebar()
     const insetStyle: React.CSSProperties | undefined = viewportInsetTop
       ? { top: viewportInsetTop, height: `calc(100svh - ${viewportInsetTop})` }
       : undefined
@@ -351,6 +366,12 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
+            onCloseAutoFocus={(event) => {
+              event.preventDefault()
+              const opener = mobileOpenerRef.current
+              mobileOpenerRef.current = null
+              if (opener?.isConnected) opener.focus({ preventScroll: true })
+            }}
             className="w-[var(--sidebar-width)] bg-surface p-0 text-foreground [&>button]:hidden"
             style={
               {
@@ -448,8 +469,9 @@ const SidebarTrigger = React.forwardRef<
       aria-label="切換側邊欄" /* i18n-allow: DS default;consumer 經 {...props} override */
       className={className}
       onClick={(event) => {
+        const opener = event.currentTarget
         onClick?.(event)
-        toggleSidebar()
+        toggleSidebar(opener)
       }}
       {...props}
     />

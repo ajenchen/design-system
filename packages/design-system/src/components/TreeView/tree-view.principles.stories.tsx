@@ -59,7 +59,7 @@ export const UsageGuidance: Story = {
           note="檔案資料夾、組織架構、專案 / 子專案 / 任務。每個 node 有 children 就可展開,沒有就是 leaf"
         >
           <div className="border border-border rounded-lg p-3 w-80">
-            <TreeView defaultExpandedIds={['docs', 'photos', 'downloads']}>
+            <TreeView aria-label="文件與下載資料夾樹" defaultExpandedIds={['docs', 'photos', 'downloads']}>
               <TreeItem id="docs" label="Documents" icon={Folder}>
                 <TreeItem id="resume" label="Resume.pdf" icon={FileText} />
                 <TreeItem id="photos" label="Photos" icon={Folder}>
@@ -105,7 +105,7 @@ export const UsageGuidance: Story = {
           note="TreeView 為階層而設計——若資料本質是平面(使用者清單、訂單清單),用 DataTable 更自然,TreeView 的遞迴結構徒增 overhead"
         >
           <div className="border border-border rounded-lg p-3 w-80">
-            <TreeView>
+            <TreeView aria-label="平面使用者清單反例">
               <TreeItem id="alice" label="Alice" icon={User} />
               <TreeItem id="bob" label="Bob" icon={User} />
               <TreeItem id="charlie" label="Charlie" icon={User} />
@@ -137,7 +137,7 @@ export const ExpandSelectSeparationRule: Story = {
           note="兩個獨立的互動區——點 chevron 只展開不選,點 label 只選不展開(除非 consumer 顯式 opt-in expandOnSelect)。世界級 tree 元件的共識(VS Code、macOS Finder、Linear)"
         >
           <div className="border border-border rounded-lg p-3 w-80">
-            <TreeView selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
+            <TreeView aria-label="展開與選取行為範例" selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
               <TreeItem id="docs" label="Documents" icon={Folder}>
                 <TreeItem id="resume" label="Resume.pdf" icon={FileText} />
                 <TreeItem id="photos" label="Photos" icon={Folder}>
@@ -169,7 +169,7 @@ export const IndentRule: Story = {
         note="indentStep = chevronSize + gap-2,跟 item-layout 的 prefix-content gap 一致。讓 indent 視覺跟 item-layout 融為一體,而非獨立數字系統"
       >
         <div className="border border-border rounded-lg p-3 w-80">
-          <TreeView defaultExpandedIds={['eng', 'frontend', 'backend']}>
+          <TreeView aria-label="工程團隊縮排範例" defaultExpandedIds={['eng', 'frontend', 'backend']}>
             <TreeItem id="eng" label="Engineering" icon={Users}>
               <TreeItem id="frontend" label="Frontend" icon={Users}>
                 <TreeItem id="alice" label="Alice" icon={User} />

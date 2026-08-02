@@ -19,7 +19,7 @@ export const Overview: Story = {
         <H3>Anatomy</H3>
         <Desc>TreeView 是階層結構的遞迴元件——一個 TreeItem 就是一個 node,有 children 就可展開,沒有就是 leaf。基於 Radix Collapsible 實作展開/收合,自建 tree 結構 + ARIA tree 鍵盤導覽(Radix 沒有 Tree primitive)。</Desc>
         <div className="border border-border rounded-lg p-4 max-w-md">
-          <TreeView defaultExpandedIds={['docs', 'photos']}>
+          <TreeView aria-label="文件樹範例" defaultExpandedIds={['docs', 'photos']}>
             <TreeItem id="docs" label="Documents" icon={Folder}>
               <TreeItem id="resume" label="Resume.pdf" icon={FileText} />
               <TreeItem id="photos" label="Photos" icon={Folder}>
@@ -207,7 +207,7 @@ export const SizeMatrix: Story = {
           {(['sm', 'md', 'lg'] as const).map(size => (
             <div key={size} className="border border-dashed border-divider rounded-md p-4 max-w-md">
               <div className="text-caption text-fg-muted mb-2 font-mono">size="{size}"</div>
-              <TreeView size={size} defaultExpandedIds={['docs', 'photos']}>
+              <TreeView aria-label={`${size} 尺寸文件樹`} size={size} defaultExpandedIds={['docs', 'photos']}>
                 <TreeItem id="docs" label="Documents" icon={Folder}>
                   <TreeItem id="resume" label="Resume.pdf" icon={FileText} />
                   <TreeItem id="photos" label="Photos" icon={Folder}>
@@ -349,7 +349,7 @@ export const StateBehavior: Story = {
           <H3>Selected vs Expanded 語意分離</H3>
           <Desc>Chevron 負責展開/收合,label 負責選取——兩者獨立(除非 consumer 顯式 opt-in `expandOnSelect`)。世界級 tree 的共識(VS Code / Finder / Linear)。</Desc>
           <div className="border border-border rounded-lg p-4 max-w-md">
-            <TreeView selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
+            <TreeView aria-label="選取與展開範例" selectedIds={selected} onSelectedChange={setSelected} defaultExpandedIds={['docs', 'photos']}>
               <TreeItem id="docs" label="Documents(可點展開)" icon={Folder}>
                 <TreeItem id="resume" label="Resume.pdf(選取中)" icon={FileText} />
                 <TreeItem id="photos" label="Photos(可點展開)" icon={Folder}>
@@ -365,7 +365,7 @@ export const StateBehavior: Story = {
           <H3>Hover inline actions(suffix)</H3>
           <Desc>hover node 時 suffix 顯示 inline action(重新命名、刪除等)。non-hover 時 suffix 隱藏。</Desc>
           <div className="border border-border rounded-lg p-4 max-w-md">
-            <TreeView defaultExpandedIds={['eng', 'frontend']}>
+            <TreeView aria-label="工程團隊樹" defaultExpandedIds={['eng', 'frontend']}>
               <TreeItem id="eng" label="Engineering" icon={Users}>
                 <TreeItem id="frontend" label="Frontend" icon={Users}>
                   <TreeItem

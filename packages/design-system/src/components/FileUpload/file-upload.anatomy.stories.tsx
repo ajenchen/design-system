@@ -88,9 +88,9 @@ export const Overview: Story = {
                 ['disabled', 'boolean', 'false', '完全停用(語意 token bg-disabled + cursor-not-allowed;互動由 handler isBlocked guard 擋,非 pointer-events-none)'],
                 ['variant', "'dropzone' | 'button'", "'dropzone'", '觸發外觀:dropzone 大拖放區(drag + click)/ button 緊湊按鈕(click-only,form-friendly)'],
                 ['buttonLabel', 'string', "'Choose file'", "variant='button' 的按鈕文字"],
-                ['title', 'string', "'Click or drag file here to upload'", '預設結構(Empty)的主標題'],
-                ['description', 'string', '單/多檔字串自動切換', '預設結構(Empty)的副標題'],
-                ['children', 'ReactNode', '—', '傳入則整個覆寫預設 Empty 結構(consumer 完全客製)'],
+                ['title', 'string', "'Click or drag file here to upload'", 'dropzone 預設結構(Empty)的主標題；button 忽略'],
+                ['description', 'string', '單/多檔字串自動切換', 'dropzone 預設結構(Empty)的副標題；button 忽略'],
+                ['children', 'ReactNode', '—', 'dropzone 傳入則整個覆寫預設 Empty；button 忽略'],
                 ['loading', 'boolean', 'false', '(deferred — 頭像/無清單單檔場景待定義,已從 showcase 移除)async 處理中:CircularProgress 取代內容、isBlocked guard 擋互動、aria-busy=true'],
                 ['loadingTitle', 'string', "'上傳中…'", 'loading 狀態的文字標題(deferred)'],
                 ['files', 'FileUploadStatus[]', '—', '內建檔案清單。傳入 → drop zone 下方渲染列表(經由 FileItem);不傳 → 不顯示'],
@@ -440,7 +440,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `file-upload.spec.md` 「A11y 預設」段。摘要:\n\n-  role=\"button\"  +  tabIndex=0 (disabled 時  -1 )\n- Enter / Space 鍵觸發檔案選取浮窗(模擬 click)\n-  aria-disabled={true}  當 disabled\n-  <input type=\"file\">  以  hidden (display:none) 隱藏,移出無障礙樹;互動由外層  role=\"button\"  wrapper 承載,accessible name 來自 wrapper 內 Empty 的 title + description 文字"}</p>
+      <p className="whitespace-pre-line">{"詳 `file-upload.spec.md` 「A11y 預設」段。摘要:\n\n- dropzone 使用 role=\"button\" + tabIndex=0(disabled/loading 時 -1)，Enter / Space 開啟選檔；accessible name 來自預設 Empty 文字或自訂 children / aria-label\n- button variant 使用原生 DS Button，accessible name 來自 buttonLabel\n- <input type=\"file\"> 以 hidden(display:none) 隱藏，移出無障礙樹；互動由當前 variant 的可見觸發元件承載"}</p>
     </div>
   ),
 }

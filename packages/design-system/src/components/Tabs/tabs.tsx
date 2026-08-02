@@ -22,6 +22,12 @@ import {
 } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { useControllable } from '@/design-system/hooks/use-controllable'
+import {
+  getTabsInlineActionPaddingRight,
+  mergeTabsInlineActionStyle,
+  resolveTabsInlineActionPosition,
+  type TabsInlineActionClipRect,
+} from './tabs-inline-action-geometry'
 
 /**
  * Tabs — 基於 Radix Tabs，橋接設計系統 token
@@ -65,6 +71,37 @@ const TabsContext = React.createContext<TabsContextValue>({ size: 'md' })
 // aria-owns 不可行:axe required-children 計 DOM-owned 子代,不因 aria-owns 排除。
 // 代價(user 2026-07-18 接受):鍵盤 Tab 序 = 全部 tab 後才到 action(action 現為 overlay 內獨立 tab stop)。
 const TabsActionOverlayContext = React.createContext<HTMLDivElement | null>(null)
+
+const TABS_ACTION_CLIPPING_OVERFLOW = new Set(['auto', 'scroll', 'hidden', 'clip', 'overlay'])
+
+function getTabsActionClippingAncestors(triggerEl: HTMLElement): HTMLElement[] {
+  const ancestors: HTMLElement[] = []
+  let current = triggerEl.parentElement
+  while (current) {
+    const style = window.getComputedStyle(current)
+    if (
+      TABS_ACTION_CLIPPING_OVERFLOW.has(style.overflowX) ||
+      TABS_ACTION_CLIPPING_OVERFLOW.has(style.overflowY)
+    ) {
+      ancestors.push(current)
+    }
+    current = current.parentElement
+  }
+  return ancestors
+}
+
+function toTabsActionClipRect(element: HTMLElement): TabsInlineActionClipRect {
+  const rect = element.getBoundingClientRect()
+  const style = window.getComputedStyle(element)
+  return {
+    left: rect.left,
+    right: rect.right,
+    top: rect.top,
+    bottom: rect.bottom,
+    clipX: TABS_ACTION_CLIPPING_OVERFLOW.has(style.overflowX),
+    clipY: TABS_ACTION_CLIPPING_OVERFLOW.has(style.overflowY),
+  }
+}
 
 // ── Root ──
 // Wrap Radix Tabs 以支援 value/onValueChange 的 context pass-through
@@ -511,7 +548,7 @@ interface TabsTriggerProps
 const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
   TabsTriggerProps
->(({ className, startIcon: StartIcon, badge, endIcon: EndIcon, inlineAction, children, ...props }, ref) => {
+>(({ className, startIcon: StartIcon, badge, endIcon: EndIcon, inlineAction, children, style, ...props }, ref) => {
   const { size } = React.useContext(TabsContext)
   const overlayEl = React.useContext(TabsActionOverlayContext)
   // 2026-05-18 改 import ICON_SIZE SSOT(per user『做完』approval,消除 M17 違反 7+ 重複 ternary)
@@ -523,7 +560,7 @@ const TabsTrigger = React.forwardRef<
   // aria-required-children critical),改 portal 到 TabsList 的 overlay 層(tablist 外),以量測座標
   // 定位在 trigger 右緣。trigger 仍在 tablist 內(Radix roving focus 要求)。
   const hasAction = inlineAction != null
-  const actionPaddingRight = hasAction ? iconSize + 8 : undefined
+  const actionPaddingRight = getTabsInlineActionPaddingRight(iconSize, hasAction)
 
   // 量測 trigger 位置(viewport-relative,涵蓋 none/scroll/menu 三模式),同步 overlay 內 action 座標。
   const triggerElRef = React.useRef<HTMLButtonElement | null>(null)
@@ -541,16 +578,23 @@ const TabsTrigger = React.forwardRef<
     if (!hasAction || !overlayEl) return
     const el = triggerElRef.current
     if (!el) return
+    const clippingAncestors = getTabsActionClippingAncestors(el)
     const compute = () => {
       const t = triggerElRef.current?.getBoundingClientRect()
       const o = overlayEl.getBoundingClientRect()
       if (!t) return
-      setActionPos({ left: t.right - o.left, top: t.top - o.top, height: t.height })
+      setActionPos(resolveTabsInlineActionPosition({
+        trigger: t,
+        overlay: o,
+        clips: clippingAncestors.map(toTabsActionClipRect),
+        actionWidth: iconSize,
+      }))
     }
     compute()
     const ro = new ResizeObserver(compute)
     ro.observe(el)
     ro.observe(overlayEl)
+    for (const clippingAncestor of clippingAncestors) ro.observe(clippingAncestor)
     window.addEventListener('resize', compute)
     window.addEventListener('scroll', compute, true) // capture:含 scroll-mode 捲動容器內部捲動
     return () => {
@@ -558,14 +602,14 @@ const TabsTrigger = React.forwardRef<
       window.removeEventListener('resize', compute)
       window.removeEventListener('scroll', compute, true)
     }
-  }, [hasAction, overlayEl])
+  }, [hasAction, iconSize, overlayEl])
 
   const trigger = (
     <TabsPrimitive.Trigger
       ref={setTriggerRef}
       className={cn(tabsTriggerVariants({ size }), className)}
-      style={hasAction ? { paddingRight: actionPaddingRight } : undefined}
       {...props}
+      style={mergeTabsInlineActionStyle(style, actionPaddingRight)}
     >
       {StartIcon && <StartIcon size={iconSize} aria-hidden />}
       {children != null && <span>{children}</span>}

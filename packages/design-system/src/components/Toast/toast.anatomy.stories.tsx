@@ -304,6 +304,11 @@ export const StateBehavior: Story = {
             </tbody>
           </table>
         </div>
+        <p className="text-footnote text-fg-muted mt-3">
+          role / aria-live 由 Toaster 的兩個 stable sr-only sibling regions 承載。Sonner 視覺 viewport
+          固定是 polite，所以可見 toast 本身明確設為 role=&quot;group&quot; + aria-live=&quot;off&quot;；
+          內部 action / dismiss 仍在 accessibility tree 中可聚焦、可閱讀。
+        </p>
       </div>
       <Toaster />
     </div>
@@ -317,7 +322,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"詳 `toast.spec.md` 「A11y 預設」段。摘要:\n\n-   預設  （success / info / neutral）： role=\"status\"  +  aria-live=\"polite\" ——screen reader 在空閒時讀出，不中斷使用者\n-   error / warning 升級  ： role=\"alert\"  +  aria-live=\"assertive\" ——立即中斷朗讀通知使用者\n-   由本 DS 在 outer wrapper 上依 variant 設 role / aria-live  ：非 sonner 內建（sonner runtime 本身 0 個 role,只有外層 <section> 容器固定 aria-live=polite），consumer 無需額外處理\n-   關閉按鈕  ：畫面上可見的 X 由 Notice 渲染（<Button dismiss> 自帶 aria-label='關閉通知'），非 sonner 內建 close 鈕；若 consumer 自訂 action,務必為自訂互動元素提供  aria-label "}</p>
+      <p className="whitespace-pre-line">{"詳 `toast.spec.md` 「A11y 預設」段。摘要:\n\n-   success / info / neutral  → Toaster sibling role=\"status\" + aria-live=\"polite\"\n-   warning / error  → Toaster sibling role=\"alert\" + aria-live=\"assertive\"\n-   Sonner 視覺 section 寫死 aria-live=\"polite\"；可見 toast root 設 role=\"group\" + aria-live=\"off\"，不巢狀 active live region、也不用 aria-hidden 隱藏 action / dismiss\n-   連續相同訊息會 replace announcer text node，每次都有可觀察 mutation\n-   consumer 只在 app root 掛一個 <Toaster />，不另建 live region；多個 Toaster 會重複視覺與播報，不受支援\n-   X 關閉鈕由 Notice 渲染，自帶 aria-label='關閉通知'"}</p>
     </div>
   ),
 }

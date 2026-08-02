@@ -178,7 +178,7 @@ export const Inline: Story = {
       <div>
         <Card
           title="專案截止日 widget"
-          desc="參考 Linear / Height — 專案側欄的 deadline 選擇器,常駐顯示不需點開浮層。Calendar 是 inline primitive,不自包 Popover。"
+          desc="參考 Linear / Height — 專案側欄的 deadline 選擇器,常駐顯示不需點開浮層。DateGrid 是 inline primitive,不自包 Popover。"
         >
           <div className="flex flex-col gap-3 w-fit">
             <div className="flex items-center justify-between px-1">

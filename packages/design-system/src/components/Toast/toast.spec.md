@@ -77,10 +77,13 @@ Toast 是**短暫的浮動通知，自動消失**。用於操作結果回饋（�
 
 ## A11y 預設
 
-- **預設**（success / info / neutral）：`role="status"` + `aria-live="polite"`——screen reader 在空閒時讀出，不中斷使用者
-- **error / warning 升級**：`role="alert"` + `aria-live="assertive"`——立即中斷朗讀通知使用者
-- **由本 DS 在 outer wrapper 上設定**：上述 `role` / `aria-live` 是 Toast 自己依 variant 算出 `isCritical` 後手動設在自家 wrapper div 上的（見 `.tsx` L49-51 / L59 / L72），**非** sonner 內建——sonner runtime 本身 0 個 `role`，只有外層 `<section>` 容器固定的 `aria-live="polite"`（包住所有 toast 的 region，不隨 variant 變）。consumer 無需額外處理。
-  - 已知結構限制：`error` / `warning` 的 `aria-live="assertive"` div 巢狀在 sonner `<section>` 的 `aria-live="polite"` 內（nested live region）。screen reader 對巢狀 live region 的處理依實作而異;若需嚴格保證 assertive 立即朗讀，consumer 應在 app 層另設獨立 live region。
+- **預設**（success / info / neutral）：`Toaster` 的 stable sibling `role="status"` + `aria-live="polite"` 在 screen reader 空閒時讀出，不中斷使用者。
+- **error / warning 升級**：另一個 stable sibling `role="alert"` + `aria-live="assertive"` 立即播報。severity 完全由 `variant` 路由，沒有 per-instance 降級開關。
+- **DS 自帶完整 announcer**：consumer 只需在 app root 掛一次 `<Toaster />`，不必、也不應另建 live region。`Toaster` 就地渲染三個 DOM siblings：Sonner 視覺 `<section aria-live="polite">`、DS polite region、DS assertive region；後兩者不在 Sonner section 內。
+- **視覺 Toast 不是 live region**：Sonner 2.0.7 在 `dist/index.mjs` 寫死 viewport `<section aria-live="polite" aria-relevant="additions text" aria-atomic="false">`，`Toaster` props 沒有對應 override；每則 visual toast 則是 `tabIndex=0` 的 `<li data-sonner-toast>`，custom JSX 放在其內。DS 因此把 custom visual root 設為 `role="group" aria-live="off"`，將其從 Sonner 父層 polite 變更播報中切出，避免重複播報或 warning / error 被父層降成 polite。`aria-live` 是 inherited ARIA state，明確 `off` 是對父層的局部 override，且不會從 accessibility tree 隱藏內容。
+- **不用 `aria-hidden` 隱藏視覺 Toast**：Sonner `<li>` 仍可由 ⌥T / Alt+T hotkey 聚焦，group 內的標題、描述、action 和 dismiss 仍可被閱讀與操作。含互動子元素的 toast 不可包在 `aria-hidden` 中。
+- **連續相同訊息仍會播報**：`toast()` 每次呼叫都產生單調遞增 sequence，announcer 會 replace live region 的 text node；即使文案完全相同也有可觀察的 child-list mutation，不會因 React 相同 string 而被略過。
+- **SSR-safe**：module scope 只保留 listener / sequence，render 期間不讀 `window` / `document`；DOM text-node 更新只在 client `useEffect` 訂閱後執行。`Toaster` 尚未 mount 前呼叫 `toast()` 不會製造 server-side DOM side effect，app-level 合約仍是先在 root 安裝單一 `Toaster`。
 - **關閉按鈕**：畫面上可見的 X 關閉鈕由 Notice 渲染（`<Button dismiss aria-label="關閉通知">`，見 `../Notice/notice.tsx`），已自帶 `aria-label`，不是 sonner 內建 close 鈕（本 DS 用 `sonner.custom` + `unstyled`，未開 `closeButton`）。若 consumer 自訂 `action`，務必為自訂互動元素提供 `aria-label`。
 - **自動關閉計時器與鍵盤暫停路徑**（2026-07-05 D4）：sonner 計時器只在滑鼠 hover / pointer 按住 / 分頁切離時暫停——**Tab 鍵盤焦點進入 toast 不暫停倒數**（sonner 2.x 行為，`expanded / interacting` 只由 mouse / pointer 事件設定）。鍵盤替代路徑是 sonner 內建 hotkey **⌥T（Option+T / Alt+T）**：焦點跳入 toast 區域並展開 stack（`expanded=true`）→ 倒數暫停，焦點離開後恢復。為給鍵盤使用者足夠反應時間，含 `action` 的 toast 預設 `duration` 加長為 10000ms（見「API」段；WCAG 2.2.1 Timing Adjustable）。
 
@@ -148,7 +151,9 @@ Toast 的 public API 是 `toast()` 函式(imperative 觸發)+ `<Toaster />` Prov
 - `toast(...)` 是 imperative API(sonner 負責 queue / stack / animation / auto-dismiss),consumer 不需持有 DOM ref
 - `<Toaster />` 是 Provider(sonner 內部管理 viewport container),consumer 在 app root 放一次,無 consumer-facing DOM operation
 
-**sonner 已實作 stack / viewport 內部**(Toaster 就地渲染外層 `<section aria-live="polite">` viewport region,以 CSS `position: fixed` 覆蓋 viewport——非 portal,sonner 不用 `createPortal`)。多則同時觸發時 sonner 不是 queue 到 DOM 外,而是全部渲染進 DOM、預設只顯示最近 3 則(`visibleToasts=3`)、超出項以 `data-visible=false` 隱藏堆疊。我們不再 wrap 一層,保持與 sonner 直接對應,避免 API 膨脹。per-variant 的 `role=status/alert` 由本 DS 在自家 toast wrapper 上設(見「A11y 預設」段),非 sonner 提供。
+**sonner 已實作 stack / viewport 內部**(Toaster 就地渲染外層 `<section aria-live="polite">` viewport region,以 CSS `position: fixed` 覆蓋 viewport——非 portal,sonner 不用 `createPortal`)。多則同時觸發時 sonner 不是 queue 到 DOM 外,而是全部渲染進 DOM、預設只顯示最近 3 則(`visibleToasts=3`)、超出項以 `data-visible=false` 隱藏堆疊。DS 另渲染的 polite / assertive announcer 是 Sonner section 的 siblings，不加視覺 wrapper、不影響 geometry。
+
+**app-level-one 是強制合約**：每個 application root 只能 mount 一個 `<Toaster />`。Sonner 使用 module-global toast store，DS announcer 也是 module-global event stream；同一 app 掛多個 Toaster 會讓每個 instance 都渲染同一批視覺 toast、也同時訂閱同一訊息，導致重複視覺與重複播報。DS 不假裝支援 multi-Toaster；各頁 / feature 不另掛，共用 app-shell 那一個。Storybook 每個獨立 story root 各掛一個不違反此合約。
 
 若 consumer 需要程式化控制(`toast.dismiss(id)` / `toast.promise(...)`),使用 sonner 原生 API,Toast 元件層不重新暴露。
 

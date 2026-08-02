@@ -61,11 +61,7 @@ Button 的 `iconOnly` 模式已內建自動 tooltip（以 `aria-label` 驅動）
 
 ## 內容完整性
 
-Tooltip 是資訊的終點——tooltip 內不能再觸發 tooltip。內容必須完整呈現，不截斷、不省略。
-
-- Tag 在 tooltip 內不設 max-width，文字完整顯示
-- 多個 tag 自然換行（flex-wrap），tooltip 高度隨內容撐開
-- 不在 tooltip 內使用需要 hover 才能看到的元素
+Tooltip 是資訊的終點——內容只能是短篇、不可互動且能直接完整呈現的文字，不得再觸發 tooltip，也不應依賴截斷或省略。Tag、多標籤、卡片或其他 rich content 改用 HoverCard；需要操作的內容使用 Popover。
 
 ## 子元素色彩
 

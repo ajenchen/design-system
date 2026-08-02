@@ -28,6 +28,71 @@ export interface ToastOptions {
   duration?: number
 }
 
+type ToastAnnouncement = {
+  level: 'polite' | 'assertive'
+  message: string
+  sequence: number
+}
+
+type ToastAnnouncementListener = (announcement: ToastAnnouncement) => void
+
+const toastAnnouncementListeners = new Set<ToastAnnouncementListener>()
+let toastAnnouncementSequence = 0
+
+function subscribeToToastAnnouncements(listener: ToastAnnouncementListener) {
+  toastAnnouncementListeners.add(listener)
+  return () => {
+    toastAnnouncementListeners.delete(listener)
+  }
+}
+
+function publishToastAnnouncement(options: ToastOptions) {
+  const isCritical = options.variant === 'error' || options.variant === 'warning'
+  const announcement: ToastAnnouncement = {
+    level: isCritical ? 'assertive' : 'polite',
+    message: [options.title, options.description].filter(Boolean).join('。'),
+    sequence: ++toastAnnouncementSequence,
+  }
+
+  toastAnnouncementListeners.forEach((listener) => listener(announcement))
+}
+
+function ToastLiveRegions() {
+  const politeRef = React.useRef<HTMLDivElement>(null)
+  const assertiveRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => subscribeToToastAnnouncements((announcement) => {
+    const region = announcement.level === 'assertive' ? assertiveRef.current : politeRef.current
+    if (!region) return
+
+    // Replace the text node instead of assigning the same React string again. That guarantees an
+    // observable child-list mutation even when two consecutive toasts have identical copy.
+    region.dataset.announcementSequence = String(announcement.sequence)
+    region.replaceChildren(region.ownerDocument.createTextNode(announcement.message))
+  }), [])
+
+  return (
+    <>
+      <div
+        ref={politeRef}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-toast-live-region="polite"
+        className="sr-only"
+      />
+      <div
+        ref={assertiveRef}
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        data-toast-live-region="assertive"
+        className="sr-only"
+      />
+    </>
+  )
+}
+
 function ToastInner({
   id,
   variant = 'neutral',
@@ -45,13 +110,15 @@ function ToastInner({
     <Button variant="tertiary" size="xs" onClick={() => { action.onClick(); dismiss() }}>{action.label}</Button>
   ) : undefined
 
-  // ── Live region 由 outer Toast wrapper 擁有(WAI-ARIA + toast.spec.md「A11y 預設」段 canonical) ──
-  // Notice(inner layout)不再帶 role,避免 nested live region。
-  // - error / warning → role="alert" + aria-live="assertive"(中斷朗讀)
-  // - info / success / neutral → role="status" + aria-live="polite"(空閒朗讀)
-  const isCritical = variant === 'error' || variant === 'warning'
-  const liveRole = isCritical ? 'alert' : 'status'
-  const liveLevel = isCritical ? 'assertive' : 'polite'
+  // Sonner 2.0.7 owns a fixed aria-live="polite" section around every visual toast and does not
+  // expose an override. Mark our custom visual subtree as non-live so it remains readable/focusable
+  // through Sonner's tabIndex=0 toast + ⌥T hotkey without becoming a nested live region. The two
+  // stable sibling regions rendered by <Toaster> own announcements and severity routing.
+  const visualA11yProps = {
+    role: 'group',
+    'aria-live': 'off',
+    'data-toast-visual-content': '',
+  } as const
 
   // ── 1. Shadow wrapper（統一,永遠在頁面 theme） ──
   // ── 2+3. Bg + theme layer ──
@@ -59,7 +126,7 @@ function ToastInner({
   if (isInverse) {
     // bg-surface-raised 需要跟 data-theme 同層翻轉
     return (
-      <div role={liveRole} aria-live={liveLevel} className="rounded-lg overflow-hidden" style={{ boxShadow: 'var(--elevation-200)' }}>
+      <div {...visualA11yProps} className="rounded-lg overflow-hidden" style={{ boxShadow: 'var(--elevation-200)' }}>
         <div data-theme={inverseTheme} className="bg-surface-raised text-foreground">
           <Notice variant={variant} iconClassName={variant === 'success' ? 'text-success' : undefined}
             endContent={actionButton} onDismiss={dismiss} {...rest} />
@@ -72,7 +139,7 @@ function ToastInner({
   const theme = variant === 'warning' ? 'light' : 'dark'
 
   return (
-    <div role={liveRole} aria-live={liveLevel} className="rounded-lg overflow-hidden" style={{ boxShadow: 'var(--elevation-200)' }}>
+    <div {...visualA11yProps} className="rounded-lg overflow-hidden" style={{ boxShadow: 'var(--elevation-200)' }}>
       <div className={bg}>
         <div data-theme={theme} className="text-foreground">
           <Notice variant={variant} endContent={actionButton} onDismiss={dismiss} {...rest} />
@@ -86,7 +153,9 @@ export function toast(options: ToastOptions) {
   // 2026-07-05 D4:sonner 計時器不因鍵盤 Tab 焦點暫停(僅 hover / pointer 按住 / ⌥T hotkey)——
   // 含 action(復原/重試)預設 10s,給鍵盤使用者足夠時間 Tab 到 action(user 拍板;對齊 Polaris toast with action ≥10s)
   const { duration = options.action ? 10000 : 4000, ...rest } = options
-  return sonnerToast.custom((id) => <ToastInner id={id} {...rest} />, { duration })
+  const id = sonnerToast.custom((toastId) => <ToastInner id={toastId} {...rest} />, { duration })
+  publishToastAnnouncement(options)
+  return id
 }
 
 export interface ToasterProps {
@@ -100,11 +169,14 @@ export interface ToasterProps {
 const Toaster = React.forwardRef<HTMLDivElement, ToasterProps>(
   ({ position = 'bottom-right', ...props }, _ref) => {
     return (
-      <SonnerToaster
-        position={position}
-        toastOptions={{ unstyled: true, className: 'w-[360px]' }}
-        {...props}
-      />
+      <>
+        <SonnerToaster
+          position={position}
+          toastOptions={{ unstyled: true, className: 'w-[360px]' }}
+          {...props}
+        />
+        <ToastLiveRegions />
+      </>
     )
   },
 )

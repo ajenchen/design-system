@@ -243,6 +243,7 @@ try {
     'scripts/schemas/deep-audit-evidence-contract.schema.json',
     'scripts/schemas/managed-ci-sandbox-receipt.schema.json',
     'scripts/schemas/ci-evidence-observation.schema.json',
+    'scripts/schemas/standard-ci-evidence-observation.schema.json',
   ]) write(path, readFileSync(resolve(repositoryRoot, path), 'utf8'))
   write('packages/design-system/ds-canonical/rules/fixture.md', '# fixture rule\n')
   write('packages/design-system/ds-canonical/skills/fixture/SKILL.md', '# fixture skill\n')

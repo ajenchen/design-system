@@ -86,11 +86,11 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 
 > **FileUpload 常出現在 form**(`*Excel file` 欄位等)—— `variant` 只決定「觸發外觀大小」,**非「form vs 非 form」**;兩者都常在 form 裡。
 
-## children 插槽 vs 預設結構
+## dropzone children 插槽 vs 預設結構
 
 **預設**:直接渲染 `<Empty icon={Upload} title description />`——**重用 Empty 元件擁有的「icon + title + description 垂直居中」SSOT**(`../Empty/empty.spec.md`)。FileUpload 自己不重畫這套 layout,避免字體 / gap / icon 尺寸未來雙邊漂移。
 
-**覆寫**:傳 children 整個替換(不渲染 Empty)。典型場景:
+**覆寫**:`variant="dropzone"` 傳 children 時整個替換(不渲染 Empty)。`variant="button"` 固定渲染以 `buttonLabel` 命名的原生 DS Button，忽略 `children`、`title`、`description`。dropzone 典型客製場景:
 - 加檔案大小提示(「最大 10 MB」)
 - 加範例圖(「拖拉一張 JPG 進來」)
 - 加機構 branding(CompanyLogo + 客製文案)
@@ -143,11 +143,10 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 
 ## A11y 預設
 
-- `role="button"` + `tabIndex=0`(disabled 或 loading 時 `-1`)
-- Enter / Space 鍵觸發檔案選取浮窗(模擬 click)
-- `aria-disabled={true}` 當 disabled
-- `<input type="file">` 以 `className="hidden"`(`display:none`)隱藏 — 移出無障礙樹、不可聚焦;互動由外層 `role="button"` wrapper 承載
-- **Accessible name(name-from-content + custom children 例外)**:預設(未傳 children)時 name 來自 wrapper 內 `<Empty>` 的 title + description 文字,非 input 本身。**但 `children` 會整個覆寫預設結構**——若 consumer 傳入**只有 icon / branding 圖像、無可見文字**的 children,`role="button"` wrapper 就失去 accessible name(SR 讀不出用途)。此情況 consumer **必須**在 `<FileUpload>` root 傳 `aria-label`(經 `{...props}` spread 到 wrapper div),或確保 children 內含可見文字。dropzone 與 button 兩 variant 同理
+- **dropzone**:`role="button"` + `tabIndex=0`(disabled 或 loading 時 `-1`)，Enter / Space 開啟檔案選取浮窗，disabled 時帶 `aria-disabled=true`。
+- **button**:使用原生 DS `<Button>`，鍵盤與 disabled 語意由 button 元素提供；accessible name 來自 `buttonLabel`，不使用 dropzone 的 children/name-from-content 規則。
+- `<input type="file">` 以 `className="hidden"`(`display:none`)隱藏，移出無障礙樹且不可聚焦；互動由當前 variant 的可見觸發元件承載。
+- **dropzone accessible name(name-from-content + custom children 例外)**:預設(未傳 children)時 name 來自 wrapper 內 `<Empty>` 的 title + description 文字,非 input 本身。若 consumer 傳入**只有 icon / branding 圖像、無可見文字**的 children，`role="button"` wrapper 會失去 accessible name；此時必須在 `<FileUpload>` root 傳 `aria-label`，或確保 children 含可見文字。
 
 ---
 

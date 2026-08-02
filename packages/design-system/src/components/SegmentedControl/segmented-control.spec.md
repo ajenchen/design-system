@@ -242,7 +242,7 @@ Items 之間 `-ml-px`（除了第一個）讓相鄰 border 重疊、視覺上只
 - ❌ 超過 5 個 item——用 Select / RadioGroup
 - ❌ `iconOnly` 與帶 label 的 item 混搭——必須全組一致
 - ❌ 使用 `endIcon` 或 `danger` / `loading` prop——不在支援範圍
-- ❌ 用 SegmentedControl 切換整塊 content view——應用 Tabs
+- ❌ 用 SegmentedControl 切換含自身 header、toolbar 或多個 section 的整塊 container——應用 Tabs；單一 chart、list 或 form section 的局部內容變體仍可使用 SegmentedControl
 - ❌ 用 SegmentedControl 做表單多選（multi-select）——應用 CheckboxGroup
 - ❌ 未傳 `value` 時預設「全都未選」——SegmentedControl 必須有 default value，這是 radio 語意
 - ❌ `iconOnly` 時省略 item 的 `aria-label`——tooltip 由元件自動產生，但 label 是必要輸入

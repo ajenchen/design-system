@@ -244,7 +244,7 @@ Sidebar 是頁面級容器,padding 應該跟其他頁面區塊的間距一致(�
 
 **為什麼**:tree 是任意深度的遞迴結構,沒有任何方式可以壓縮成單排 icon。Gmail / Linear / Notion 一致採取「隱藏」——使用者要看 tree 必須先展開 sidebar。詳見 `sidebar.spec.md` 的 icon 模式規則。
 
-實作上由 Sidebar 元件透過 CSS `group-data-[collapsible=icon]:hidden` 自動隱藏,TreeView 本身不需特殊處理。
+Sidebar 不會自動辨識任意 tree 容器；consumer 必須在承載 TreeView／可收合 tree group 的 wrapper 傳 `className="group-data-[collapsible=icon]:hidden"`，讓 Sidebar group state 在 icon 模式隱藏整塊 tree。TreeView 本身不改變資料或互動模式。
 
 ### 為什麼 menu 用 px-3
 

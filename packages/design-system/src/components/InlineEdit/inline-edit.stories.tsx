@@ -211,9 +211,9 @@ export const MultilineDescription: Story = {
 export const VerticalFieldForm: Story = {
   name: '詳情面板:垂直欄位就地編輯',
   render: () => {
-    // Assignee 的 state 提到 story 本體(不包 wrapper 元件)—— InlineEdit 必須是 <Field> 的直接子,
-    // Field 才讀得到靜態 fieldPreferredSize='sm';包一層 wrapper 會遮蔽它 → 控件槽退回 md(32px),
-    // 與同表其他 sm(28px)列不齊(對照 inline-edit.anatomy.stories.tsx CascadeDemo)。
+    // InlineEdit 是 <Field> 的直接子時，Field 同步讀取靜態 fieldPreferredSize='sm'；若經過
+    // wrapper / memo / HOC，InlineEdit 仍會在掛載時註冊偏好，讓 Field 控件槽跟上 sm。
+    // Field 或 InlineEdit 顯式 size 永遠優先(對照 anatomy CascadeDemo)。
     const [assignee, setAssignee] = React.useState('Alex Rivera')
     const [status, setStatus] = React.useState('in-progress')
     const [desc, setDesc] = React.useState('Safari 上點擊結帳時,e2e 測試會間歇性失敗。')

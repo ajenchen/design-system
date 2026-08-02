@@ -11,8 +11,8 @@ import { Button } from '@/design-system/components/Button/button'
  * FileUpload — 拖放 / 點擊上傳區塊
  *
  * 世界級對照:Ant Design `Upload.Dragger`、Polaris `DropZone`、Material community MUI-File-Input。
- * 與本 DS 既有 FileItem(顯示已上傳檔案)配對 — 這裡 own「上傳觸發 + 拖放偵測」,
- * 上傳後的檔案清單顯示交給 consumer 用 FileItem 渲染。
+ * 與本 DS 既有 FileItem(顯示已上傳檔案)配對 — 這裡 own「上傳觸發 + 拖放偵測」；
+ * 上傳後可由 `files` 走內建 FileItem 清單，也可由 consumer 自行組合 FileItem。
  *
  * ── 4 狀態(2026-06-03 修正)──
  * idle     (default) — border-dashed border-border  bg-surface
@@ -23,10 +23,11 @@ import { Button } from '@/design-system/components/Button/button'
  * ── variant ──
  * dropzone(預設)大拖放區 + drag;button 緊湊 Button 觸發(form-friendly,click-only)
  *
- * ── children 插槽 ──
+ * ── dropzone children 插槽 ──
  * 預設渲染 `<Empty icon={Upload} title description />` — 重用 Empty 元件 own
  * 的「icon + title + description 垂直居中」SSOT 避免視覺漂移。Empty 改字體 /
  * gap / icon 尺寸時 FileUpload 自動跟進。若 consumer 傳 children 則整個覆寫。
+ * button variant 只顯示以 `buttonLabel` 命名的原生 DS Button，忽略此展示插槽。
  *
  * ── API ──
  * onUpload: 使用者選取或拖放檔案時觸發,回傳 File[](至少 1 個)。
@@ -80,11 +81,11 @@ export interface FileUploadProps extends Omit<React.HTMLAttributes<HTMLDivElemen
   loading?: boolean
   /** Loading 狀態的文字標題(預設「上傳中…」) */
   loadingTitle?: string
-  /** 標題文字(預設「Click or drag file here to upload」) */
+  /** dropzone 標題文字(預設「Click or drag file here to upload」；button variant 忽略) */
   title?: string
-  /** 說明文字(預設依 multiple:單檔「Support for a single file upload」、multiple 多檔「Support for a single or bulk upload」) */
+  /** dropzone 說明文字(預設依 multiple 切換；button variant 忽略) */
   description?: string
-  /** 若傳入 children,覆寫預設 Empty 結構 */
+  /** dropzone:若傳入 children,覆寫預設 Empty 結構；button variant 忽略 */
   children?: React.ReactNode
   /**
    * Uploaded / uploading 檔案清單。傳入 → FileUpload 在 drop zone 下方渲染列表。

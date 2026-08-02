@@ -343,7 +343,7 @@ const Switch = React.forwardRef<
         }}
         className={cn(
           'inline-flex items-start gap-3 select-none',
-          effectiveDisabled ? 'cursor-not-allowed' : readOnly ? 'cursor-default' : 'cursor-pointer'
+          effectiveDisabled ? 'cursor-not-allowed' : effectiveReadOnly ? 'cursor-default' : 'cursor-pointer'
         )}
       >
         {/* Label↔desc gap typography-mode-aware:

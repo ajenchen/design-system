@@ -107,59 +107,86 @@ export const Stepper: Story = {
 
 // ── Multi-select with Checkbox ───────────────────────────────────────────
 
-const CheckboxTree = () => {
-  const [checked, setChecked] = React.useState<Record<string, boolean>>({
-    'read': true, 'read-docs': true, 'read-media': true,
-    'write': false, 'write-docs': true, 'write-media': false,
-  })
+const PERMISSION_GROUPS: Record<string, readonly string[]> = {
+  read: ['read-docs', 'read-media'],
+  write: ['write-docs', 'write-media'],
+}
 
-  const toggle = (id: string) => {
-    setChecked((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
+const CheckboxTree = () => {
+  const [selectedIds, setSelectedIds] = React.useState(
+    () => new Set(['read', 'read-docs', 'read-media', 'write-docs'])
+  )
+
+  const handleSelectedChange = React.useCallback((proposedIds: Set<string>) => {
+    setSelectedIds((previousIds) => {
+      const nextIds = new Set(proposedIds)
+      const changedId = [...new Set([...previousIds, ...proposedIds])]
+        .find((id) => previousIds.has(id) !== proposedIds.has(id))
+
+      // 點 parent 時整組 cascade；點 child 時再由 children 真實狀態推導 parent。
+      const changedChildren = changedId ? PERMISSION_GROUPS[changedId] : undefined
+      if (changedId && changedChildren) {
+        for (const childId of changedChildren) {
+          if (proposedIds.has(changedId)) nextIds.add(childId)
+          else nextIds.delete(childId)
+        }
+      }
+
+      for (const [parentId, childIds] of Object.entries(PERMISSION_GROUPS)) {
+        if (childIds.every((childId) => nextIds.has(childId))) nextIds.add(parentId)
+        else nextIds.delete(parentId)
+      }
+      return nextIds
+    })
+  }, [])
 
   // parent 的 indeterminate 邏輯
-  const readAll = checked['read-docs'] && checked['read-media']
-  const readNone = !checked['read-docs'] && !checked['read-media']
-  const writeAll = checked['write-docs'] && checked['write-media']
-  const writeNone = !checked['write-docs'] && !checked['write-media']
+  const readAll = PERMISSION_GROUPS.read.every((id) => selectedIds.has(id))
+  const readSome = PERMISSION_GROUPS.read.some((id) => selectedIds.has(id))
+  const writeAll = PERMISSION_GROUPS.write.every((id) => selectedIds.has(id))
+  const writeSome = PERMISSION_GROUPS.write.some((id) => selectedIds.has(id))
 
   return (
     <div>
       <button type="button" className="sr-only">樹狀清單之前</button>
       <div className="w-[300px] border border-divider rounded-lg bg-surface overflow-hidden py-2">
-        <TreeView selectionMode="multiple" aria-label="權限選擇" defaultExpandedIds={['read', 'write']}>
-        <TreeItem
-          id="read"
-          icon={Folder}
-          label="讀取權限"
-          checkbox={
-            <Checkbox
-              size="md"
-              checked={readAll ? true : readNone ? false : 'indeterminate'}
-              aria-label="讀取權限"
-            />
-          }
-          onClick={() => { const next = !readAll; setChecked((p) => ({ ...p, read: next, 'read-docs': next, 'read-media': next })) }}
+        <TreeView
+          selectionMode="multiple"
+          aria-label="權限選擇"
+          selectedIds={selectedIds}
+          onSelectedChange={handleSelectedChange}
+          defaultExpandedIds={['read', 'write']}
         >
-          <TreeItem id="read-docs" icon={FileText} label="文件" checkbox={<Checkbox size="md" checked={checked['read-docs']} aria-label="讀取文件" />} onClick={() => toggle('read-docs')} />
-          <TreeItem id="read-media" icon={Image} label="媒體檔案" checkbox={<Checkbox size="md" checked={checked['read-media']} aria-label="讀取媒體檔案" />} onClick={() => toggle('read-media')} />
-        </TreeItem>
-        <TreeItem
-          id="write"
-          icon={Folder}
-          label="寫入權限"
-          checkbox={
-            <Checkbox
-              size="md"
-              checked={writeAll ? true : writeNone ? false : 'indeterminate'}
-              aria-label="寫入權限"
-            />
-          }
-          onClick={() => { const next = !writeAll; setChecked((p) => ({ ...p, write: next, 'write-docs': next, 'write-media': next })) }}
-        >
-          <TreeItem id="write-docs" icon={FileText} label="文件" checkbox={<Checkbox size="md" checked={checked['write-docs']} aria-label="寫入文件" />} onClick={() => toggle('write-docs')} />
-          <TreeItem id="write-media" icon={Image} label="媒體檔案" checkbox={<Checkbox size="md" checked={checked['write-media']} aria-label="寫入媒體檔案" />} onClick={() => toggle('write-media')} />
-        </TreeItem>
+          <TreeItem
+            id="read"
+            icon={Folder}
+            label="讀取權限"
+            checkbox={
+              <Checkbox
+                size="md"
+                checked={readAll ? true : readSome ? 'indeterminate' : false}
+                aria-label="讀取權限"
+              />
+            }
+          >
+            <TreeItem id="read-docs" icon={FileText} label="文件" />
+            <TreeItem id="read-media" icon={Image} label="媒體檔案" />
+          </TreeItem>
+          <TreeItem
+            id="write"
+            icon={Folder}
+            label="寫入權限"
+            checkbox={
+              <Checkbox
+                size="md"
+                checked={writeAll ? true : writeSome ? 'indeterminate' : false}
+                aria-label="寫入權限"
+              />
+            }
+          >
+            <TreeItem id="write-docs" icon={FileText} label="文件" />
+            <TreeItem id="write-media" icon={Image} label="媒體檔案" />
+          </TreeItem>
         </TreeView>
       </div>
       <button type="button" className="sr-only">樹狀清單之後</button>
@@ -182,6 +209,15 @@ export const WithCheckbox: Story = {
       await expect(checkbox).toHaveAttribute('aria-hidden', 'true')
       await expect(checkbox).toHaveAttribute('tabindex', '-1')
     }
+
+    const readRow = canvasElement.querySelector<HTMLElement>('[data-tree-row="read"]')
+    const readDocsItem = canvasElement.querySelector<HTMLElement>('[data-tree-id="read-docs"]')
+    if (!readRow || !readDocsItem) throw new Error('TreeView 多選測試節點不存在')
+
+    await userEvent.click(readRow)
+    await expect(tree).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    await expect(tree).toHaveAttribute('aria-activedescendant', readDocsItem.id)
 
     before.focus()
     await userEvent.tab()
