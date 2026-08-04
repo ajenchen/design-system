@@ -2,22 +2,18 @@
 
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { createHash, generateKeyPairSync } from 'node:crypto'
+import { generateKeyPairSync } from 'node:crypto'
 import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import test from 'node:test'
-import {
-  externalActivationPolicyDigest,
-  loadExternalActivationPolicy,
-  resolveExternalActivationProfile,
-} from '../infra/governance/lib/external-activation.mjs'
 import { issuerRegistryDigest } from '../infra/governance/lib/issuer-registry.mjs'
 import {
   privilegedChangeSet,
@@ -28,8 +24,15 @@ const BASE_SHA = '1'.repeat(40)
 const HEAD_SHA = '2'.repeat(40)
 const REPOSITORY = 'ajenchen/design-system'
 const NOW = new Date('2026-07-20T00:30:00Z')
-const PRODUCTION_PROFILE = 'PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM'
-const MAXIMUM_PROFILE = 'MAXIMUM_ASSURANCE_MULTI_CUSTODIAN_WORM'
+// Phase A (baton §8.1): the verifier no longer reads the external-activation /
+// release-tag ceremony policies. The retired policy keys are tolerated as inert
+// data because the protected base verifies candidates that still carry them;
+// these are frozen fixture stand-ins, not consumed values.
+const RETIRED_ACTIVATION_FIXTURE = {
+  externalActivationPolicyDigest: 'a'.repeat(64),
+  authorizationProfileId: 'PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM',
+  authorizationProfileDigest: 'b'.repeat(64),
+}
 const canonicalClaudeRequiredFixtureChecks = JSON.parse(readFileSync(
   join(import.meta.dirname, '../infra/governance/providers/runtime-conformance.json'),
   'utf8',
@@ -77,8 +80,8 @@ function registry(records) {
 function trustDocuments(records, {
   bootstrap = records.length === 0,
   quorum = 1,
-  profileId = PRODUCTION_PROFILE,
   privilegedAllowedKeyIds = null,
+  trimmed = false,
 } = {}) {
   const issuers = registry(records)
   const digest = issuerRegistryDigest(issuers)
@@ -94,24 +97,16 @@ function trustDocuments(records, {
   const releaseTagKeyIds = records
     .filter(item => item.roles.length === 1 && item.roles[0] === 'release-tag-authorizer')
     .map(item => item.keyId)
-  const externalActivationPolicy = structuredClone(loadExternalActivationPolicy())
-  externalActivationPolicy.activeProfile = profileId
-  const activationPolicyDigest = externalActivationPolicyDigest(externalActivationPolicy)
-  const externalActivationProfile = resolveExternalActivationProfile(externalActivationPolicy, {
-    expectedPolicyDigest: activationPolicyDigest,
-    profileId,
-  })
   return {
-    externalActivationPolicy,
     issuers,
     policy: {
       $schema: 'schemas/privileged-trust-roots.schema.json',
       schemaVersion: 2,
       repository: REPOSITORY,
       algorithm: 'ed25519',
-      externalActivationPolicyDigest: activationPolicyDigest,
-      authorizationProfileId: externalActivationProfile.id,
-      authorizationProfileDigest: externalActivationProfile.sha256,
+      // Legacy shape carries the retired activation keys; the trimmed Phase-B
+      // target shape omits them. The verifier must accept both during Phase A.
+      ...(trimmed ? {} : RETIRED_ACTIVATION_FIXTURE),
       maxAuthorizationTtlMinutes: 60,
       clockSkewSeconds: 0,
       authorizationDirectory: 'governance/authorizations',
@@ -177,20 +172,16 @@ function trustDocuments(records, {
         },
       ],
     },
+    // Inert Phase-A ceremony data: written to disk so fixtures mirror the real
+    // trusted base, never read by the verifier, deleted outright in Phase B.
     releaseTag: {
       $schema: 'schemas/release-tag-authorization-policy.schema.json',
       schemaVersion: 2,
       repository: REPOSITORY,
       algorithm: 'ed25519',
-      externalActivationPolicyDigest: activationPolicyDigest,
-      authorizationProfileId: externalActivationProfile.id,
-      authorizationProfileDigest: externalActivationProfile.sha256,
-      releaseAuthorization: structuredClone(externalActivationProfile.releaseAuthorization),
-      maxAuthorizationTtlMinutes: 60,
-      clockSkewSeconds: 0,
       issuerRegistryDigest: digest,
       allowedKeyIds: releaseTagKeyIds,
-      requiredSignerQuorum: externalActivationProfile.releaseAuthorization.minimumSignerQuorum,
+      requiredSignerQuorum: 1,
     },
   }
 }
@@ -198,7 +189,6 @@ function trustDocuments(records, {
 function fixture({
   signer = false,
   quorum = 1,
-  profileId = PRODUCTION_PROFILE,
 } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'privileged-change-'))
   const trusted = join(root, 'trusted')
@@ -224,11 +214,9 @@ function fixture({
       : [...records, ...releaseSigners.map(item => item.record).filter(record => !records.some(item => item.keyId === record.keyId))]
     const documents = trustDocuments(installedRecords, {
       quorum,
-      profileId,
       ...options,
       bootstrap,
     })
-    write(base, 'infra/governance/external-activation-policy.json', `${JSON.stringify(documents.externalActivationPolicy, null, 2)}\n`)
     write(base, 'infra/governance/trust/issuers.json', `${JSON.stringify(documents.issuers, null, 2)}\n`)
     write(base, 'infra/governance/privileged-trust-roots.json', `${JSON.stringify(documents.policy, null, 2)}\n`)
     write(base, 'infra/governance/release-rings.json', `${JSON.stringify(documents.rings, null, 2)}\n`)
@@ -280,51 +268,57 @@ test('single-owner initial trust configuration rejects multiple privileged/root 
   )
 })
 
-test('maximum-assurance initial trust configuration fails closed below two distinct privileged/root signer subjects', async () => {
-  const root = fixture({ quorum: 2, profileId: MAXIMUM_PROFILE })
-  const signer = issuer('maximum-only-one')
-  root.install(root.candidate, [signer.record], { bootstrap: false })
+// Phase A: the ceremony profile selector is gone; the single-owner production band applies
+// unconditionally, so every multi-custodian quorum shape is now structurally unreachable.
+test('multi-custodian quorum shapes fail closed after the ceremony profile retirement', async () => {
+  const underQuorum = fixture({ quorum: 2 })
+  underQuorum.install(underQuorum.candidate, [issuer('multi-only-one').record], { bootstrap: false })
   await assert.rejects(
-    privilegedChangeSet({ trustedRoot: root.trusted, candidateRoot: root.candidate }),
+    privilegedChangeSet({ trustedRoot: underQuorum.trusted, candidateRoot: underQuorum.candidate }),
     /lacks quorum 2 for privileged-change-authorizer|lacks quorum 2 for root-rotator/,
+  )
+  const twoKeys = fixture({ quorum: 2 })
+  twoKeys.install(twoKeys.candidate, [issuer('multi-one').record, issuer('multi-two').record], { bootstrap: false })
+  await assert.rejects(
+    privilegedChangeSet({ trustedRoot: twoKeys.trusted, candidateRoot: twoKeys.candidate }),
+    /requires exactly one governed key carrying both privileged-change-authorizer and root-rotator roles/,
   )
 })
 
-test('privileged trust policy is content-addressed to the active canonical assurance profile', async () => {
-  const mutations = [
-    {
-      label: 'external policy digest',
-      mutate: policy => { policy.externalActivationPolicyDigest = 'd'.repeat(64) },
-      pattern: /external activation policy digest is stale or substituted/,
-    },
-    {
-      label: 'active profile identity',
-      mutate: policy => { policy.authorizationProfileId = MAXIMUM_PROFILE },
-      pattern: /profile differs from the active canonical profile/,
-    },
-    {
-      label: 'active profile digest',
-      mutate: policy => { policy.authorizationProfileDigest = 'e'.repeat(64) },
-      pattern: /profile digest is stale or substituted/,
-    },
-    {
-      label: 'single-owner quorum widening',
-      mutate: policy => { policy.trustRootQuorum = 2 },
-      pattern: /quorum is invalid for profile PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM/,
-    },
-  ]
-  for (const mutation of mutations) {
-    const root = fixture({ signer: true })
-    const policyPath = join(root.candidate, 'infra/governance/privileged-trust-roots.json')
-    const policy = JSON.parse(readFileSync(policyPath, 'utf8'))
-    mutation.mutate(policy)
-    writeFileSync(policyPath, `${JSON.stringify(policy, null, 2)}\n`)
-    await assert.rejects(
-      privilegedChangeSet({ trustedRoot: root.trusted, candidateRoot: root.candidate }),
-      mutation.pattern,
-      mutation.label,
-    )
-  }
+test('retired activation policy keys are inert Phase-A data, and unknown keys still fail closed', async () => {
+  // Mutating a retired key is no longer a validated ceremony binding — but the bytes still
+  // land in changedPaths, so the change cannot happen silently.
+  const mutated = fixture({ signer: true })
+  const mutatedPolicyPath = join(mutated.candidate, 'infra/governance/privileged-trust-roots.json')
+  const mutatedPolicy = JSON.parse(readFileSync(mutatedPolicyPath, 'utf8'))
+  mutatedPolicy.externalActivationPolicyDigest = 'd'.repeat(64)
+  writeFileSync(mutatedPolicyPath, `${JSON.stringify(mutatedPolicy, null, 2)}\n`)
+  const result = await verifyPrivilegedChange({ trustedRoot: mutated.trusted, candidateRoot: mutated.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
+  assert.equal(result.verified, true)
+  assert.ok(result.changedPaths.includes('infra/governance/privileged-trust-roots.json'))
+
+  // Tolerance is exact-shape: legacy keys or none, never arbitrary extensions.
+  const open = fixture({ signer: true })
+  const openPolicyPath = join(open.candidate, 'infra/governance/privileged-trust-roots.json')
+  const openPolicy = JSON.parse(readFileSync(openPolicyPath, 'utf8'))
+  openPolicy.futureCeremonyOptIn = true
+  writeFileSync(openPolicyPath, `${JSON.stringify(openPolicy, null, 2)}\n`)
+  await assert.rejects(
+    verifyPrivilegedChange({ trustedRoot: open.trusted, candidateRoot: open.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW }),
+    /privileged trust-root policy has an invalid or open shape/,
+  )
+})
+
+// The Phase-B enablement invariant: once this tolerant verifier is the protected base, a
+// candidate may drop the retired activation keys and delete the ceremony policy files.
+test('trimmed trust-root shape without ceremony files verifies against a legacy trusted base', async () => {
+  const root = fixture({ signer: true })
+  root.install(root.candidate, [root.signer.record], { bootstrap: false, trimmed: true })
+  rmSync(join(root.candidate, 'infra/governance/release-tag-authorization-policy.json'))
+  const result = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
+  assert.equal(result.verified, true)
+  assert.ok(result.changedPaths.includes('infra/governance/privileged-trust-roots.json'))
+  assert.ok(result.changedPaths.includes('infra/governance/release-tag-authorization-policy.json'), 'ceremony file deletion must surface in the change set')
 })
 
 test('canonical source keeps ordinary structural activation free of ceremony and a raw two-registry-key gate', async () => {
@@ -344,8 +338,13 @@ test('canonical source keeps ordinary structural activation free of ceremony and
     /--control-plane-genesis|validateControlPlaneGenesisChallengeTransition|prepareControlPlaneGenesisChallenge|verifyControlPlaneGenesis/,
     'post-closure verifier retained an explicit open-Genesis opt-in path',
   )
+  // Phase A: the verifier must not consume the retired ceremony modules or profile selector.
+  assert.doesNotMatch(
+    source,
+    /external-activation\.mjs|release-tag-authorization\.mjs|resolveTrustRootProfile|validateReleaseTagAuthorizationPolicy/,
+    'retired activation-cluster consumption returned to the verifier',
+  )
   const policy = JSON.parse(readFileSync(join(process.cwd(), 'infra/governance/privileged-trust-roots.json'), 'utf8'))
-  assert.equal(policy.authorizationProfileId, PRODUCTION_PROFILE)
   assert.equal(policy.trustRootQuorum, 1)
   for (const path of [
     '.github/workflows/ssot-sync-dispatch.yml',
@@ -411,16 +410,20 @@ test('removed per-change ceremony options and CLI flags fail closed', async () =
   }
 })
 
-test('maximum-assurance registry rotation and revocation require the existing multi-signer root-rotator quorum', async () => {
-  const root = fixture({ quorum: 2, profileId: MAXIMUM_PROFILE })
-  const signers = [issuer('one'), issuer('two'), issuer('three')]
-  for (const base of [root.trusted, root.candidate]) root.install(base, signers.slice(0, 2).map(item => item.record), { bootstrap: false })
-  const revoked = { ...signers[0].record, status: 'revoked', revokedAt: '2026-07-20T00:00:00.000Z' }
-  root.install(root.candidate, [revoked, signers[1].record, signers[2].record], { bootstrap: false })
-  const candidatePolicyPath = join(root.candidate, 'infra/governance/privileged-trust-roots.json')
-  const candidatePolicy = JSON.parse(readFileSync(candidatePolicyPath, 'utf8'))
-  candidatePolicy.allowedKeyIds = [signers[1].record.keyId, signers[2].record.keyId]
-  writeFileSync(candidatePolicyPath, `${JSON.stringify(candidatePolicy, null, 2)}\n`)
+test('single-owner key rotation hands the allowlist to the successor under append-only lineage', async () => {
+  const root = fixture({ quorum: 1 })
+  const previous = issuer('rotation-previous')
+  const successor = issuer('rotation-successor')
+  for (const base of [root.trusted, root.candidate]) {
+    root.install(base, [previous.record], { bootstrap: false })
+  }
+  root.install(root.candidate, [
+    { ...previous.record, status: 'revoked', revokedAt: '2026-07-20T00:00:00.000Z' },
+    successor.record,
+  ], {
+    bootstrap: false,
+    privilegedAllowedKeyIds: [successor.record.keyId],
+  })
   for (const [path, field] of [
     ['infra/governance/release-rings.json', 'attestationPolicy'],
     ['infra/governance/providers/runtime-conformance.json', null],
@@ -428,7 +431,7 @@ test('maximum-assurance registry rotation and revocation require the existing mu
     const target = join(root.candidate, path)
     const data = JSON.parse(readFileSync(target, 'utf8'))
     const policy = field ? data[field] : data
-    policy.allowedKeyIds = [signers[1].record.keyId, signers[2].record.keyId]
+    policy.allowedKeyIds = [successor.record.keyId]
     writeFileSync(target, `${JSON.stringify(data, null, 2)}\n`)
   }
   // 3B:合法輪換 + 撤銷(append-only)結構性通過;lineage 破壞案由
@@ -436,20 +439,6 @@ test('maximum-assurance registry rotation and revocation require the existing mu
   const rotation = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
   assert.equal(rotation.verified, true)
   assert.ok(rotation.changedPaths.includes('infra/governance/trust/issuers.json'))
-})
-
-test('maximum-assurance release-tag authorization policy rotation requires the existing root-rotator quorum', async () => {
-  const root = fixture({ quorum: 2, profileId: MAXIMUM_PROFILE })
-  const signers = [issuer('release-policy-root-one'), issuer('release-policy-root-two')]
-  for (const base of [root.trusted, root.candidate]) root.install(base, signers.map(item => item.record), { bootstrap: false })
-  const releasePolicyPath = join(root.candidate, 'infra/governance/release-tag-authorization-policy.json')
-  const releasePolicy = JSON.parse(readFileSync(releasePolicyPath, 'utf8'))
-  releasePolicy.maxAuthorizationTtlMinutes = 61
-  writeFileSync(releasePolicyPath, `${JSON.stringify(releasePolicy, null, 2)}\n`)
-  // 3B:policy 檔屬特權 closure,變更以 changedPaths 精確揭露並結構性通過。
-  const result = await verifyPrivilegedChange({ trustedRoot: root.trusted, candidateRoot: root.candidate, repository: REPOSITORY, baseSha: BASE_SHA, candidateHeadSha: HEAD_SHA, now: NOW })
-  assert.equal(result.verified, true)
-  assert.ok(result.changedPaths.includes('infra/governance/release-tag-authorization-policy.json'))
 })
 
 test('issuer revocation is structural without ceremony time anchor and reactivation stays fail-closed(3B)', async () => {

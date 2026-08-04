@@ -3030,12 +3030,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:eea1271dad180a5d774d7ebc010206ad42ed504e4dfb33be3b1859cf30d8b191",
+      "hash": "sha256:3571106ac53b7601bd7ed3565a883a31229df88ecdfd763cb3cbac6eb58c639b",
       "id": "privileged-change-adversarial-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/test-privileged-change-authorization.mjs",
-      "size": 33672,
+      "size": 33443,
       "type": "file"
     },
     {
@@ -3048,12 +3048,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9b7a9e56b01b8be2b1ad3bdda38045668a305cfa7add7f9d649ed0b6716b886d",
+      "hash": "sha256:937ca07bcec60dd43cef1749e521dbcad6bfeed7c99c8622ba5aff81725c1416",
       "id": "privileged-change-verifier",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/verify-privileged-change.mjs",
-      "size": 27720,
+      "size": 26199,
       "type": "file"
     },
     {
@@ -3381,7 +3381,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 40,
-      "hash": "sha256:383aeac572e6b8816139943eea68e5f7a26043ed2730dda8bfa81b923edec440",
+      "hash": "sha256:501963f8366e5ece3279a02d2602faf7e65d467ebfaf54d7b90a6bca503aeca8",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3836,7 +3836,7 @@
         "scripts/generated/"
       ],
       "files": 401,
-      "hash": "sha256:3b87934a6170be2ea378eaf72b5fa23d7a5f8a2600b2aaf402dc782abd2fa97d",
+      "hash": "sha256:a82abcc2bd104c00ceb93d5dce8a2decc93862f10ea86266f55722deb611d4fd",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

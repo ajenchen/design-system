@@ -287,3 +287,51 @@ sealed corpus(預設關、不擾民)、deep-audit **判準層**(deterministic di
 `scripts/*.mjs` 279 支(其中 `test-*.mjs` 120 支)、`scripts/lib` 60 模組 1.8MB、
 `package.json` 146 個 scripts 中 89 個是治理/audit/release、`test:governance-harnesses` >10 分鐘、
 pre-commit 每次跑 `governance:generate`。**本次 commit 卡死,就是 pre-commit 機械過重的直接體驗。**
+
+## §8 簡化執行記錄(2026-08-04 batch 1-2 完成;batch 3 手術圖)
+
+- **Batch 1 ✅ merged(#40)**:殭屍 release-preflight/tamper 全鏈 −3.9k 行;index 權威發佈 + 聊天核准憲章同批
+- **Batch 2 ✅ merged(#41)**:promotionEligible 可達化(complete coverage + 零 findings;downgrade 只註記);
+  build-graph harness 測試的鏡像時代殭屍斷言 tombstone(此類測試不在 PR gate,是既記錄的覆蓋債)
+- **Batch 3 手術圖(external-activation 降級;實測遠大於 §7 預估)**:
+  叢集實際 = **12,628 行 lib**:staged-rollout.mjs 5015 / external-operator.mjs 2527 /
+  external-activation.mjs 2285 / external-ledger-writer.mjs 1796 / rollout-state-machine.mjs 544 /
+  completion-readiness.mjs 461(+schemas+13 test 檔)。
+  **糾纏點(拆前必斷乾淨)**:(a) `release-trust-preflight.mjs:16` import activation 路徑常數 ——
+  該檔是**必留** live 機制(staged-rollout-plan.json:318 mechanismRefs);(b)
+  `verify-upgrade-provenance.mjs:236` 讀 activation evidence 欄位;(c) enterprise 測試束
+  (package.json:142)混居:**必留** managed-host-assurance / release-trust-preflight /
+  issuer-registry(release 鏈仍用),**可退** activation-readiness / external-activation /
+  external-operator / external-surface-evidence / external-ledger-writer / completion-readiness /
+  rollout-state-machine / staged-rollout / reconcile-github(後者本就帶 App 拆除期殘紅)/
+  release-tag-authorization(查:若 release.yml 消費則留)。
+  **降級後形態**:external-activation-requirements.json 留作純文件 checklist(保 npm trusted
+  publisher / 2FA / rollback-drill 三真項),schema 鬆綁為 documentation-only;六 lib + 可退測試刪除;
+  release-trust-preflight 的 activation 讀取改為 optional-absent(fail-open on absence,
+  presence 時仍驗)——或直接移除該讀取若其唯一用途是 activation 儀式。
+
+### §8.1 Batch 3 可達圖定稿(2026-08-04 Fable 全鏈稽核;取代 §8 初估)
+
+**真實規模 ~48-50k 行**(六核心 lib 16,610 只是零頭):tests 10,064 / schemas 4,179 /
+workflows 2,817(build-managed-ci-executors 2,608!)/ managed-CI 圈 ~11,700 / data 1,722。
+**三大風險與解法**:
+1. **Anchor bootstrap 死鎖**:governance-anchor(pull_request_target)用**舊 base** 的
+   verify-privileged-change 讀 candidate 樹的 activation/tag-auth policy(fail-closed)→
+   **兩階段**:Phase A 先出「tolerant verifier」PR(不再讀叢集 policy、容忍兩種 key 形狀,
+   candidate 檔案全保留 → 舊 verifier 綠)→ merge → Phase B 才刪檔+修 trust-roots keys。
+2. **ci.yml 模組載入鏈**:PR gate 經 model-validation.test → consumerctl/reconcile-github
+   import 到叢集;刪檔與斷 import 必同 commit,push 前本地重放 ci.yml 精確命令 +
+   harness suite governance-infra-remainder / governance-script-remainder。
+3. **Mirror/release 證據對稱**(MIRROR-EVIDENCE-008):activation-boundary proof 是 mirror
+   必要資產;producer+validator+receipt schema+scaffold-lock 一個 PR 內對稱移除,
+   verify-upgrade-provenance 的 trust-preflight 分支(無 live producer)同批刪,
+   consumer 傳播靠下一次 five-step release 帶到 template/WM。
+**KEEP 白名單(有 live 鏈,不動)**:issuer-registry(anchor+fork consumer)/
+managed-host-assurance(零叢集 import 已驗)/ external-surface-evidence(runtime-certification
+live)/ verify-upgrade-provenance 本體(release+sync-all+fork ×3 live)/ reconcile-github+
+consumerctl(fleet plane,需斷其叢集 import 的大 sever)/ model-validation 本體(斷 rollout 分支)。
+**Inventory 同步鏈**:canonical manifest 移 ~45 個 required id → generate+snapshot;
+harness-source-inventory suites[3]/[5]+pairedMeta → sync-harness-authority-bindings;
+desired/github.json 的 external-ledger environment → workflow-identities propose/apply;
+package.json 十餘條 ceremony scripts;test-governance-build-graph:658-662 期望;fork/template/WM
+經正常 release 傳播。
