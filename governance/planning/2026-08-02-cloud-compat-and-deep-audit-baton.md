@@ -367,3 +367,4 @@ package.json 十餘條 ceremony scripts;test-governance-build-graph:658-662 期�
   留給 promotion-family 批次)、managed-ci-oidc-broker/trusted-authority/finalization/
   activated-workflow-contract 四份 zombie data(deep-audit broker 儀式 = §7 item 4 批次)、
   genesis lib(§7 item 3)、hook exit-code 粒度(§7 item 8)。
+- **Anchor 死鎖二號解鎖 ✅ merged(#44,4a262d4b)**:anchor policy step 原以 trusted 自身 manifest 驗 candidate(任何 manifest 變更必死);改為 trusted code + candidate manifest,carrier 閉包 Phase-A 容忍(本 PR 重新收緊為 exact-2)。
