@@ -368,3 +368,4 @@ package.json 十餘條 ceremony scripts;test-governance-build-graph:658-662 期�
   activated-workflow-contract 四份 zombie data(deep-audit broker 儀式 = §7 item 4 批次)、
   genesis lib(§7 item 3)、hook exit-code 粒度(§7 item 8)。
 - **Anchor 死鎖二號解鎖 ✅ merged(#44,4a262d4b)**:anchor policy step 原以 trusted 自身 manifest 驗 candidate(任何 manifest 變更必死);改為 trusted code + candidate manifest,carrier 閉包 Phase-A 容忍(本 PR 重新收緊為 exact-2)。
+- **Batch 4(§7 item 8)hook 滅團粒度 ✅**:單支 hook 崩潰/壞輸出在生產 lane 降為該支 GOVERNANCE_WARNING 續跑其餘;strict/CI lane 與 reserved marker 一律整批 fail-closed(classifyProviderHookChildFailure 純函式 + transport 單元測試釘住)。

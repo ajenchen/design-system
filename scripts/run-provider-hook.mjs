@@ -298,6 +298,7 @@ let providerHookIssueMessage
 let formatProviderHookContext
 let formatProviderStopDecision
 let interpretProviderHookChildResult
+let classifyProviderHookChildFailure
 let buildProviderHookStdinInvocation
 let sanitizeProviderHookEnvironment
 let providerHookExecutablePath
@@ -340,11 +341,13 @@ try {
   formatProviderHookContext = outputTransport.formatProviderHookContext
   formatProviderStopDecision = outputTransport.formatProviderStopDecision
   interpretProviderHookChildResult = outputTransport.interpretProviderHookChildResult
+  classifyProviderHookChildFailure = outputTransport.classifyProviderHookChildFailure
   if (typeof buildProviderHookStdinInvocation !== 'function'
     || typeof sanitizeProviderHookEnvironment !== 'function'
     || typeof formatProviderHookContext !== 'function'
     || typeof formatProviderStopDecision !== 'function'
     || typeof interpretProviderHookChildResult !== 'function'
+    || typeof classifyProviderHookChildFailure !== 'function'
     || typeof providerHookExecutablePath !== 'string'
     || !providerHookExecutablePath) {
     throw new TypeError('provider hook output transport exports are invalid')
@@ -2145,6 +2148,12 @@ for (const prepared of preparedDescriptors) {
     if (prepared.outputMode === 'diagnostic') {
       if (status !== 0) {
         const detail = String(stderr || stdout || `child exited ${status}`).trim().slice(0, 4000)
+        if (classifyProviderHookChildFailure({ strict: hookStrictIntegrity, stderr }) === 'degrade-hook') {
+          // One crashed diagnostic hook must not silence its whole settings group
+          // (baton §7 item 8): warn for this hook only, keep enforcing the rest.
+          warnDegraded(`hook degraded (this hook only): ${prepared.hookName}: exit-${status}: ${detail || 'no diagnostic'}`)
+          continue
+        }
         failIntegrity(`provider diagnostic hook failed:${prepared.hookName}:exit-${status}:${detail || 'no diagnostic'}`)
       }
       if (stdout.length) {
@@ -2167,7 +2176,15 @@ for (const prepared of preparedDescriptors) {
         stderr,
       })
     } catch (error) {
-      failIntegrity(`provider hook adapter blocked:${prepared.hookName}:${error?.code || 'PROVIDER_HOOK_CHILD_RESULT_INTEGRITY_FAILURE'}`)
+      const detail = `${prepared.hookName}:${error?.code || 'PROVIDER_HOOK_CHILD_RESULT_INTEGRITY_FAILURE'}:exit-${status}`
+      if (classifyProviderHookChildFailure({ strict: hookStrictIntegrity, stderr }) === 'degrade-hook') {
+        // Crashed/malformed enforcement output is never reported as success: it
+        // surfaces as a per-hook degradation warning while the remaining hooks in
+        // the group still run (previously the whole group was skipped silently).
+        warnDegraded(`hook degraded (this hook only): ${detail}`)
+        continue
+      }
+      failIntegrity(`provider hook adapter blocked:${detail}`)
     }
     if (interpreted.kind === 'policy-block') {
       await writeBoundedProviderOutput(process.stderr, `${interpreted.reason}\n`, `policy:${prepared.hookName}`)
