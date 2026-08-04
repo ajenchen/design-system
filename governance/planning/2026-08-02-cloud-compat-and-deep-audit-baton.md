@@ -369,3 +369,15 @@ package.json 十餘條 ceremony scripts;test-governance-build-graph:658-662 期�
   genesis lib(§7 item 3)、hook exit-code 粒度(§7 item 8)。
 - **Anchor 死鎖二號解鎖 ✅ merged(#44,4a262d4b)**:anchor policy step 原以 trusted 自身 manifest 驗 candidate(任何 manifest 變更必死);改為 trusted code + candidate manifest,carrier 閉包 Phase-A 容忍(本 PR 重新收緊為 exact-2)。
 - **Batch 4(§7 item 8)hook 滅團粒度 ✅**:單支 hook 崩潰/壞輸出在生產 lane 降為該支 GOVERNANCE_WARNING 續跑其餘;strict/CI lane 與 reserved marker 一律整批 fail-closed(classifyProviderHookChildFailure 純函式 + transport 單元測試釘住)。
+
+### §8.3 Batch 5+6 手術圖(deep-audit 儀式層;2026-08-04 可達圖定稿)
+
+**目標**(§7 items 4+5):拆 model-broker/entitlement/certification 儀式(從未認證過任何 peer,每次真實 run 都 waived 繞過)+ waived-self-review 匯入機械;保留 REVIEW-BLOCKED fail-closed 語意與 provider/model/version 記錄(run-manifest 欄位 + verify 分支)。
+
+**KEEP(活鏈,已驗)**:model-invocation-profiles.json + schema(runtime-conformance 的 claude-review-capability-probe 消費)/ provider-review-binding(AGENTS canonical)/ model-release-registry 家族(model-validation 活)/ deep-audit-evidence-contract 本體 / verify-deep-audit-coverage / deep-audit-review-archive 本體 / model-evidence-plan 本體(dim 清單 owner)。
+
+**KILL 候選**:scripts/lib/{model-evidence-broker,model-broker-transcript,model-api-transport,model-access-receipt,model-audit-contract,managed-ci-sandbox-receipt,waived-self-review}.mjs、run-model-deep-audit.mjs、import-waived-self-review.mjs、retired-model-entrypoint.mjs、review-core-parity-optin.mjs(查 consumer)、tests {model-deep-audit-safety,model-evidence-broker-hardening,managed-envelope-binding,import-waived-self-review}、schemas {model-evidence-broker,model-broker-shard-result,model-broker-transcript,managed-ci-sandbox-receipt,managed-ci-finalized-receipt,managed-ci-activated-workflow-contract,managed-ci-oidc-broker-policy,managed-ci-trusted-authority-policy,managed-ci-authority-finalization-protocol}、data {model-evidence-broker.json,managed-ci-activated-workflow-contract.json,managed-ci-oidc-broker-policy.json,managed-ci-trusted-authority-policy.json}。
+
+**Severs**:deep-audit-evidence-contract(model-access-receipt/sandbox-receipt/broker-transcript/invocation-profiles import → judgment/A1b 證據改 manifest-waiver 路徑;transportReceipt/accessReceipt 驗證鏈重塑)/ deep-audit-review-archive(broker import)/ model-evidence-plan(api-transport import)/ prepare-deep-audit-run(waiver 進 manifest 欄位)/ verify-deep-audit-coverage(waived bundle 讀取 → manifest 欄位;loadWaivedSelfReviewBundle 退場)/ test-deep-audit-{evidence-schema-parity,review-archive} / registries(manifest ids、harness 三件套、build-graph sources、package.json scripts test:model-evidence*、audit:model-evidence*)。
+
+**先例**:batch 3 的 anchor/manifest 死鎖已由 #44 根治,本批單 PR 直落;graph 工具輸出存 scratchpad graph-b56.txt。
