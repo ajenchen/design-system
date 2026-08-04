@@ -351,6 +351,8 @@ export function governanceCarrierProjectionMap(sources) {
 
 export function assertCanonicalGovernanceCarrierProjectionMap(bindings) {
   invariant(bindings instanceof Map, 'carrier projection bindings must be a Map')
+  // Exact closure over the post-retirement projection map (the #44 transition
+  // tolerance is retired together with the activation cluster).
   const expected = Object.values(PROJECTIONS)
     .map(definition => definition.path)
     .sort()

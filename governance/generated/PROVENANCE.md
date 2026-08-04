@@ -217,7 +217,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-build-graph-schema | `scripts/schemas/governance-build-graph.schema.json` | `sha256:238e8acaf96ab284b9e2352e8857524acaa665eb8969a454f26e0da184c22744` |
 | governance-build-graph-tests | `scripts/test-governance-build-graph.mjs` | `sha256:d7ddcef366acb8f4ee44a2d9af5325cfcbcd2770903f3199b6d12ef58919302c` |
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:c943d9703b1f995b0d447a8fba86bf882316da6e04fb6a6007d1880cba8fcc30` |
-| governance-control-plane-libraries | `infra/governance/lib/` | `sha256:92ea1b39ed3e64c48a89a62436fe36e24ce2aa45459b038a9294224833d735d1` |
+| governance-control-plane-libraries | `infra/governance/lib/` | `sha256:4bed2f566ea4e264b4c723da7eb578859b18e3d9b855abc33215d3480417d6f3` |
 | governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:6b56950289a555adc81661cc4ad13791c518948908204c11547c6ff46b4d053a` |
 | governance-control-plane-tests | `infra/governance/test/` | `sha256:9be0c9c9e4bb52e23f072c3925baa436d17a8da15b921e83054c27abc38c9ef4` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:5e179f234148dc7bef40c7974a23eda6563f6416e6809004f168a47fbbfb4075` |
@@ -245,7 +245,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-package-cli-corpus | `packages/governance/bin/` | `sha256:f8b353bf7bf71a9c3cf3ad13f1927fff908a459b1e2bb396fa37c46e12b8c0b0` |
 | governance-package-contract | `packages/governance/package.json` | `sha256:c1152c0658b26df77440140297802444bebe4d1a2986c5017cc71ebc45fcc6a9` |
 | governance-package-readme | `packages/governance/README.md` | `sha256:b641280efb0522ac75abb902cd60ab4dec509488295e056079fc97eaad598500` |
-| governance-package-runtime-corpus | `packages/governance/src/` | `sha256:d56e2a69ba7284efaec1e7f374e9d6d7141f15202ea5cba3c64010e2507a2e5b` |
+| governance-package-runtime-corpus | `packages/governance/src/` | `sha256:416880758b5b086470b90889b2c632a5756ad47a25c9c2f9f685616c918dfcf8` |
 | governance-package-test-corpus | `packages/governance/test/` | `sha256:aee7f385def44df393defe463c7d1a8bc0e6fcbbc393623c8a3e8063f408116c` |
 | governance-playwright-runtime-library | `infra/governance/lib/playwright-runtime.mjs` | `sha256:62df0bd1c94d1859b9348eb488357a4eae136340d5f016bbeba0c7e87559843a` |
 | governance-playwright-runtime-tests | `infra/governance/test/playwright-runtime.test.mjs` | `sha256:401b08d5317a1ff7bdf0f55ca59ac4d63a59fd409ac17d1873d884c1f7b1de03` |
