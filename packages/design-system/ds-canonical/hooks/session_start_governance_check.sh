@@ -217,8 +217,8 @@ elif [ -d "$HOOKS_DIR" ]; then
     2>/dev/null | wc -l | tr -d ' ')
   HOOK_COUNT=${HOOK_COUNT:-0}
 fi
-# 2026-07-31 canonical inventory:同一個 find predicate 算得現值 60,已抵 hard cap、
-# headroom=0。60 維持為邊界,不是新基準的自動調升理由；下一支 first-class hook 必先由
+# 2026-08-05 canonical inventory:同一個 find predicate 算得現值 59(2026-08-04 退役潮
+# 收回 1 支,headroom=1)。60 維持為邊界,不是新基準的自動調升理由；下一支 first-class hook 必先由
 # /knowledge-prune retire / consolidate 既有 hook。降 cap 仍屬治理 substantive
 # (soft 26 已在 27+ 提供 advisory),留 /knowledge-prune 評估。
 if [ "$HOOK_COUNT" -gt 60 ]; then

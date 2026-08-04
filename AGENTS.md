@@ -110,7 +110,7 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 | **Stakeholder 產出 / 稽核** | `# 稽核 canonical` |
 | **User 糾正後** | `# 治理 canonical`(home 判斷) |
 | **跨 provider 討論 / 多輪震盪 / 任何 peer 輸出** | 由 `packages/governance/src/provider-review-binding.mjs` `resolveProviderReviewBinding` 依 `packages/governance/canonical/providers.json` 選 peer;產品第二意見 → `/independent-review`;重大 governance/release → `/deep-audit-cross-codex`;詳 `# Independent second opinion` |
-| **PR merge 後 / session start branch 健檢** | `# Git solo-work canonical` |
+| **PR merge 後 / session start branch 健檢** | `# Git / release canonical` |
 
 **找不到** → 進 `# 遇不確定時的協議`；產品／UI／UX SSOT 真取捨不自決，純工程由最高 certified capability 依證據自決並驗證。
 
@@ -194,6 +194,7 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 | 工具靜默陷阱:`rsync -a` 等長同秒跳過(必 `--checksum`)/ `rg` 黏寫 `-rn` 的 `-r`=replace / `mktemp -d` 失敗回空 → `cd ""`=原地 → trap 刪掉 cwd | 寫後斷言 + flag 分開寫；mktemp 後必 `[ -n "$V" ]` + `[ -d "$V" ]` 才可正規化／註冊 cleanup(2026-07-28 事故 anchor) |
 | DS css 不在 tokens.css aggregator 也沒被 tsx import = orphan | consumer 靜默拿不到 |
 | storybook-smoke 驗舊 build = 假綠 | smoke script 已加 stale-build guard |
+| hook 測試直跑留 fixture `.git/` 進 corpus | `git status` 不顯 `.git` 目錄但 snapshot tree fingerprint 全算 → trio 反覆漂移;測試必經 run-all.sh(自帶 fixture 隔離),清 debris 用 `find -type f` 對照 `git ls-files`(2026-08-05 事故 anchor) |
 
 新 bug → 歸 Meta-Pattern OR 本表 1 行;> 10 條 = 漏寫,評估 meta-merge 既有 M-rule。
 

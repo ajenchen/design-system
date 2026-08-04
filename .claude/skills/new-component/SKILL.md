@@ -5,7 +5,7 @@ description: Create-phase workflow for building a new design-system component fr
 
 <!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/new-component/SKILL.md; provider: claude; do not edit this adapter view. -->
 
-<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=claude; strategy=generated-binding-header; assumptionCount=27; assumptionFingerprint=sha256:71f78a9d04cc05968e8d305f9324ae0b225a117cae65d521a625a6026e7b332d; evidence=packages/governance/canonical/providers.json#claude -->
+<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=claude; strategy=generated-binding-header; assumptionCount=26; assumptionFingerprint=sha256:f2eb5fef7002cc24d0253fff065a2275b859faab278cc0f2292cbe425f724e87; evidence=packages/governance/canonical/providers.json#claude -->
 
 ## Provider binding contract
 
@@ -162,7 +162,7 @@ traits:
 
 ### Phase 6 — Self quality-gate(exit check)
 
-**Mandatory**。chain `/component-quality-gate` 走 35 項 checklist + Phase 4.5 visual audit(Layer A + B)+ **Dim 27 code quality audit**(2026-04-24 新:`node scripts/code-quality-audit.mjs --scope=component:{Name} --check`,P0 violation 必 block)。對齊 CLAUDE.md 稽核 canonical Tier 1 stakeholder-gate:元件要 merge 前 code + visual + clean-code 三層過關。
+**Mandatory**。chain `/component-quality-gate` 走 35 項 checklist + Phase 4.5 visual audit(Layer A + B)+ **Dim 27 code quality audit**(2026-04-24 新:`node scripts/code-quality-audit.mjs --scope=component:{Name} --check`,P0 violation 必 block)。對齊 AGENTS.md `# 稽核 canonical` Tier 1 stakeholder-gate:元件要 merge 前 code + visual + clean-code 三層過關。
 
 **如何 chain**:
 1. Invoke `/component-quality-gate` skill,以本元件為 scope

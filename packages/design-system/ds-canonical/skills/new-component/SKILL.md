@@ -151,7 +151,7 @@ traits:
 
 ### Phase 6 — Self quality-gate(exit check)
 
-**Mandatory**。chain `/component-quality-gate` 走 35 項 checklist + Phase 4.5 visual audit(Layer A + B)+ **Dim 27 code quality audit**(2026-04-24 新:`node scripts/code-quality-audit.mjs --scope=component:{Name} --check`,P0 violation 必 block)。對齊 CLAUDE.md 稽核 canonical Tier 1 stakeholder-gate:元件要 merge 前 code + visual + clean-code 三層過關。
+**Mandatory**。chain `/component-quality-gate` 走 35 項 checklist + Phase 4.5 visual audit(Layer A + B)+ **Dim 27 code quality audit**(2026-04-24 新:`node scripts/code-quality-audit.mjs --scope=component:{Name} --check`,P0 violation 必 block)。對齊 AGENTS.md `# 稽核 canonical` Tier 1 stakeholder-gate:元件要 merge 前 code + visual + clean-code 三層過關。
 
 **如何 chain**:
 1. Invoke `/component-quality-gate` skill,以本元件為 scope

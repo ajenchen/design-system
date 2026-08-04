@@ -1167,15 +1167,14 @@ export function validateHarnessRegistry(registry, { repoRoot = DEFAULT_REPO_ROOT
   invariant(/distinct from both the author and current provider/.test(combinedText(secondOpinion, 'proves')), 'Second-opinion Harness must require author/current/peer separation')
   invariant(/product consumers receive a separate read-only independent-review workflow/.test(combinedText(secondOpinion, 'proves')) && /without ds-author, release, deep-audit-remediation or mutation authority/.test(combinedText(secondOpinion, 'proves')), 'Second-opinion Harness must preserve the product-consumer independent-review role boundary')
   invariant(
-    /model-backed deep-audit evidence is separately bound/.test(combinedText(secondOpinion, 'proves'))
-      && /rather than inferred from the review binding/.test(combinedText(secondOpinion, 'proves')),
+    /entitlement review lane validates peer binding, profile and entitlement readback/.test(combinedText(secondOpinion, 'proves'))
+      && /response substitution fail-closed/.test(combinedText(secondOpinion, 'proves')),
     'Second-opinion Harness must separate review binding from model identity authority',
   )
   invariant(/one provider reviewing itself/.test(combinedText(secondOpinion, 'doesNotProve')), 'Second-opinion Harness must reject same-provider independence claims')
   invariant(
-    /current signed model-release authority/.test(combinedText(secondOpinion, 'doesNotProve'))
-      && /managed-broker execution evidence/.test(combinedText(secondOpinion, 'doesNotProve'))
-      && /target-bound runtime certification/.test(combinedText(secondOpinion, 'doesNotProve')),
+    /waived self-review is an independent review/i.test(combinedText(secondOpinion, 'doesNotProve'))
+      && /unverified model coverage visible/.test(combinedText(secondOpinion, 'doesNotProve')),
     'Second-opinion Harness must not infer live or promotion-eligible model execution from local review wiring',
   )
   const fakeGreen = byDomain.get('fake-green')

@@ -28,7 +28,7 @@
     "schemaPath": "infra/governance/schemas/harness-authority-contracts.schema.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-authority-contracts",
-    "sha256": "d6b316413a71631b913436aaf71ff3e8622907944fc9d3d5947aa26301de5c94",
+    "sha256": "a5ea9ff4865f0965fd4299311da4534816b3d76db996224b02c3e3e6bff19d6e",
     "schemaSha256": "bba73861c87bc3047b70376e891a9464d525e9648fadd6e7d8fb406b57d10dce",
     "projectionPolicy": "registry-authority-and-claim-fields-are-exact-derived-projections"
   },
@@ -542,16 +542,16 @@
       "executionClass": "fixture-integration",
       "certificationClaim": "local-harness-only",
       "proves": [
-        "Deep audit binds explicit author identity to a provider-neutral highest-certified independent-review policy; the selected reviewer provider is distinct from both the author and current provider; source freeze may remain REVIEW-BLOCKED without inventing a peer/model, while prepare and dispatch require an exact distinct provider/profile/model selection receipt.",
-        "The existing canonical broker protocol prepares ordered content-addressed request envelopes, verifies exact carrier and result closure, persists a cycle-safe immutable portable review bundle plus exact All-Harness receipt archive, and reduces the complete registered 26-judgment plus 64-component task graph without sampling; managed execution reuses the same canonical completion core as a deployment wrapper.",
-        "Registered providers resolve the highest policy-eligible certified capability through the provider, capability, certification, invocation and model-release registries; model-backed deep-audit evidence is separately bound to exact selected provider/profile/model authority rather than inferred from the review binding; the same portable content-addressed exchange core accepts either a subscription-entitlement or managed route wrapper without changing canonical semantics.",
+        "Deep audit binds explicit author identity to a provider-neutral highest-certified independent-review policy; the selected reviewer provider is distinct from both the author and current provider; source freeze may remain REVIEW-BLOCKED without inventing a peer/model, while prepare requires an exact distinct provider/profile/model selection receipt.",
+        "The model-broker execution layer retired 2026-08-04: judgment and A1b model envelopes fail closed outright, broker or managed receipts are permanently rejected, and the waived self-review route (recorded waiver, self-attested coverage, visible unverifiedModelCoverage) is the only review path a deep-audit run can carry.",
+        "Registered providers resolve the highest policy-eligible certified capability through the provider, capability, certification and invocation registries; the entitlement review lane validates peer binding, profile and entitlement readback for the exact target with response substitution fail-closed.",
         "Product consumers receive a separate read-only independent-review workflow without DS-author, release, deep-audit-remediation or mutation authority.",
         "Unknown providers and author/peer collisions fail REVIEW-BLOCKED or ADAPTER-BLOCKED."
       ],
       "doesNotProve": [
         "A second opinion occurred unless immutable, read-only peer evidence from a separate execution context is present.",
         "One provider reviewing itself is independent review.",
-        "A provider/model is live or promotion-eligible without current signed model-release authority, managed-broker execution evidence and target-bound runtime certification."
+        "A waived self-review is an independent review; its receipt records the waiver and keeps unverified model coverage visible rather than claiming certified evidence."
       ]
     },
     {

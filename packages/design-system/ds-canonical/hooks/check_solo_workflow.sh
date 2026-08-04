@@ -1,7 +1,7 @@
 #!/bin/bash
 set -uo pipefail
 # PreToolUse hook: enforce protected-main solo-work canonical (M28)
-# SSOT: governance/memory/feedback_solo_dev_workflow.md + AGENTS.md # Git solo-work canonical
+# SSOT: governance/memory/feedback_solo_dev_workflow.md + AGENTS.md # Git / release canonical
 #
 # Blocks 2 violations:
 #   R1. A second working branch in the same session(checkout -b or switch -c).

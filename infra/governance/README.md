@@ -189,14 +189,14 @@ node --test infra/governance/test/*.test.mjs
 
 # Provider-neutral evidence plans/checks: all commands below are read-only.
 # They do not call a model, open network access, write evidence, or mutate Git/GitHub/npm/WM.
+# (audit:model-evidence-plan retired 2026-08-04 with the model-broker execution layer.)
 npm run audit:deterministic-plan
 npm run audit:hook-evidence-plan
 npm run audit:ci-evidence-plan
-npm run audit:model-evidence-plan
 npm run audit:provider-neutral-residue
 
 # Focused poison/adversarial coverage for deterministic, hook transport, CI,
-# brokered model evidence, and SSOT portability.
+# and SSOT portability.
 npm run test:governance-evidence-control-plane
 
 # 全 provider-neutral graph：release fields → provider views → plugin aliases →
