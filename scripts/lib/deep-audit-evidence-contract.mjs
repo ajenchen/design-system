@@ -52,25 +52,12 @@ import {
   resolvePolicyIssuer,
   validateRegistryPolicyBinding,
 } from '../../infra/governance/lib/issuer-registry.mjs'
-import { validateModelAccessReceipt } from './model-access-receipt.mjs'
-import {
-  buildComponentClaimInventory,
-  buildComponentClaimReceipt,
-} from './component-claim-inventory.mjs'
-import {
-  validateManagedCiSandboxReceiptShape,
-} from './managed-ci-sandbox-receipt.mjs'
-import {
-  validateModelBrokerTranscript,
-} from './model-broker-transcript.mjs'
 import { resolveDeepAuditRubricPaths } from '../governance-build-graph.mjs'
 import { validateProviderRegistry } from '../../infra/governance/lib/model-validation.mjs'
 import { resolveCertificationCanary } from '../../infra/governance/lib/common.mjs'
 import { certificationCarrierPolicyForRole } from '../../infra/governance/lib/role-surface-policy.mjs'
 import { resolveLocalRepositoryIdentity } from '../../infra/governance/lib/repository-subject-proof.mjs'
 import { validateStandardFiveStepReceipt } from './standard-ci-evidence.mjs'
-
-export { validateManagedCiSandboxReceiptShape }
 
 const CONTRACT_VERSION = 1
 const MANIFEST_SCHEMA_VERSION = 4
@@ -83,7 +70,6 @@ const SHA256 = /^[a-f0-9]{64}$/
 const GIT_OID = /^[a-f0-9]{40,64}$/
 const DEEP_AUDIT_SCHEMA_PATHS = Object.freeze({
   contract: 'scripts/schemas/deep-audit-evidence-contract.schema.json',
-  managedSandbox: 'scripts/schemas/managed-ci-sandbox-receipt.schema.json',
   ciObservation: 'scripts/schemas/ci-evidence-observation.schema.json',
   standardCiObservation: 'scripts/schemas/standard-ci-evidence-observation.schema.json',
 })
@@ -194,7 +180,6 @@ export function validateDeepAuditEvidenceContractSchema(document, { repoRoot = p
     addFormats(ajv)
     let validate
     try {
-      ajv.addSchema(schemas.managedSandbox)
       ajv.addSchema(schemas.ciObservation)
       ajv.addSchema(schemas.standardCiObservation)
       validate = ajv.compile(schemas.contract)
@@ -1579,114 +1564,6 @@ function validateExecutionEnvironment(environment, manifest, { requireCurrent = 
   }
 }
 
-function validateModelTransportReceipt(receipt, coverage, label) {
-  exactKeys(receipt, [
-    'promptSha256', 'promptBytes', 'responseSha256', 'responseBytes', 'providerRunId', 'sessionId',
-    'coverageInventoryDigest', 'transcriptReference', 'transcriptSha256', 'transcriptBytes',
-    'invocationProfileDigest', 'resultSchemaSha256',
-  ], label)
-  for (const key of ['promptSha256', 'responseSha256', 'transcriptSha256', 'invocationProfileDigest', 'resultSchemaSha256']) {
-    if (!SHA256.test(receipt[key])) fail(`${label}.${key} is invalid`)
-  }
-  if (!Number.isSafeInteger(receipt.promptBytes) || receipt.promptBytes <= 0
-    || !Number.isSafeInteger(receipt.responseBytes) || receipt.responseBytes <= 0
-    || !Number.isSafeInteger(receipt.transcriptBytes) || receipt.transcriptBytes <= 0) fail(`${label} byte counts are invalid`)
-  nonEmptyString(receipt.providerRunId, `${label}.providerRunId`)
-  nonEmptyString(receipt.sessionId, `${label}.sessionId`)
-  if (receipt.coverageInventoryDigest !== coverage?.inventoryDigest) fail(`${label} coverage assertion mismatches the envelope`)
-  const reference = safeRelativePath(receipt.transcriptReference, `${label}.transcriptReference`)
-  if (!/^(?:judgment|component-a1b)\/[a-z][a-z0-9-]*\/_transcripts\/[a-f0-9]{64}\.json$/.test(reference)
-    || !reference.endsWith(`/${receipt.transcriptSha256}.json`)) fail(`${label} transcript reference is not content-addressed`)
-}
-
-function validateModelAccessReceiptShape(receipt, coverage, label) {
-  exactKeys(receipt, [
-    'schemaVersion', 'status', 'traceFormat', 'traceSha256', 'traceBytes',
-    'coverageInventoryDigest', 'contentAccessPaths', 'missingPaths', 'outsideCoveragePaths',
-    'forbiddenToolUses', 'nonContentToolUseCount',
-  ], label)
-  if (receipt.schemaVersion !== 1 || !['verified', 'coverage-unverified'].includes(receipt.status)) fail(`${label} identity/status is invalid`)
-  if (!['claude-stream-json', 'codex-jsonl-unverifiable', 'unavailable'].includes(receipt.traceFormat)
-    || !SHA256.test(receipt.traceSha256) || !Number.isSafeInteger(receipt.traceBytes) || receipt.traceBytes <= 0
-    || receipt.coverageInventoryDigest !== coverage?.inventoryDigest
-    || !Number.isSafeInteger(receipt.nonContentToolUseCount) || receipt.nonContentToolUseCount < 0) fail(`${label} trace binding is invalid`)
-  for (const field of ['contentAccessPaths', 'missingPaths', 'outsideCoveragePaths', 'forbiddenToolUses']) {
-    if (!Array.isArray(receipt[field]) || receipt[field].some((value) => typeof value !== 'string' || !value)
-      || new Set(receipt[field]).size !== receipt[field].length
-      || receipt[field].some((value, index) => index > 0 && value <= receipt[field][index - 1])) fail(`${label}.${field} must be unique and sorted`)
-  }
-  const expectedPaths = coverage?.inventoryPaths ?? []
-  if (receipt.contentAccessPaths.some((path) => !expectedPaths.includes(path))
-    || receipt.missingPaths.some((path) => !expectedPaths.includes(path))) fail(`${label} coverage partition contains a foreign path`)
-  const observedPartition = [...receipt.contentAccessPaths, ...receipt.missingPaths].sort()
-  if (stableStringify(observedPartition) !== stableStringify(expectedPaths)) fail(`${label} does not partition exact frozen coverage`)
-  if (receipt.outsideCoveragePaths.length !== 0) fail(`${label} records out-of-coverage content access`)
-  if (receipt.forbiddenToolUses.length !== 0) fail(`${label} records a forbidden tool invocation`)
-  const verifiable = receipt.traceFormat === 'claude-stream-json' && receipt.missingPaths.length === 0
-  if ((receipt.status === 'verified') !== verifiable) fail(`${label} status does not match trace-backed coverage`)
-}
-
-function validateJudgmentFinding(finding, label) {
-  exactKeys(finding, ['path', 'line', 'severity', 'rule', 'problem', 'recommendation'], label)
-  safeRelativePath(finding.path, `${label}.path`)
-  if (!Number.isSafeInteger(finding.line) || finding.line <= 0) fail(`${label}.line is invalid`)
-  if (!['blocking', 'material', 'marginal'].includes(finding.severity)) fail(`${label}.severity is invalid`)
-  for (const key of ['rule', 'problem', 'recommendation']) nonEmptyString(finding[key], `${label}.${key}`)
-}
-
-function validateFalseClaim(finding, label) {
-  exactKeys(finding, ['claimId', 'path', 'line', 'severity', 'claim', 'actual', 'recommendation'], label)
-  if (!SHA256.test(finding.claimId)) fail(`${label}.claimId is invalid`)
-  safeRelativePath(finding.path, `${label}.path`)
-  if (!Number.isSafeInteger(finding.line) || finding.line <= 0) fail(`${label}.line is invalid`)
-  if (!['blocking', 'material', 'marginal'].includes(finding.severity)) fail(`${label}.severity is invalid`)
-  for (const key of ['claim', 'actual', 'recommendation']) nonEmptyString(finding[key], `${label}.${key}`)
-}
-
-function validateComponentClaimReceipt(receipt, payload, { manifest, repoRoot } = {}) {
-  exactKeys(receipt, [
-    'schemaVersion', 'status', 'claimInventoryDigest', 'claimCount', 'verdictDigest',
-    'verifiedCount', 'falseCount', 'unverifiableCount', 'supportingSourceSetDigest',
-    'supportingSourceCount', 'dependencySourceFindingsDigest', 'dependencySourceFindingCount',
-  ], 'A1b claim receipt')
-  if (receipt.schemaVersion !== 1 || !['verified', 'unverifiable'].includes(receipt.status)
-    || !SHA256.test(receipt.claimInventoryDigest) || !SHA256.test(receipt.verdictDigest)
-    || !SHA256.test(receipt.supportingSourceSetDigest) || !SHA256.test(receipt.dependencySourceFindingsDigest)
-    || !Number.isSafeInteger(receipt.claimCount) || receipt.claimCount <= 0
-    || !Number.isSafeInteger(receipt.verifiedCount) || receipt.verifiedCount < 0
-    || !Number.isSafeInteger(receipt.falseCount) || receipt.falseCount < 0
-    || !Number.isSafeInteger(receipt.unverifiableCount) || receipt.unverifiableCount < 0
-    || !Number.isSafeInteger(receipt.supportingSourceCount) || receipt.supportingSourceCount <= 0
-    || !Number.isSafeInteger(receipt.dependencySourceFindingCount) || receipt.dependencySourceFindingCount < 0
-    || receipt.verifiedCount + receipt.falseCount + receipt.unverifiableCount !== receipt.claimCount
-    || (receipt.status === 'verified') !== (receipt.unverifiableCount === 0 && receipt.dependencySourceFindingCount === 0)) {
-    fail('A1b claim receipt counts/identity are invalid')
-  }
-  if (!repoRoot) fail('A1b claim receipt validation requires repository bytes')
-  let inventory
-  try { inventory = buildComponentClaimInventory({ repoRoot, manifest, component: payload.component }) }
-  catch (error) { fail(`A1b deterministic claim inventory is invalid:${error.message}`) }
-  if (receipt.claimInventoryDigest !== inventory.claimInventoryDigest
-    || receipt.claimCount !== inventory.claimCount || payload.claimsVerified !== inventory.claimCount
-    || receipt.falseCount !== payload.falseClaims.length
-    || receipt.supportingSourceSetDigest !== inventory.supportingSourceSetDigest
-    || receipt.supportingSourceCount !== inventory.supportingSourceCount
-    || receipt.dependencySourceFindingsDigest !== inventory.dependencySourceFindingsDigest
-    || receipt.dependencySourceFindingCount !== inventory.dependencySourceFindingCount) {
-    fail('A1b claim receipt does not bind the complete frozen claim/dependency-source inventory')
-  }
-  const claimById = new Map(inventory.claims.map((claim) => [claim.claimId, claim]))
-  const ids = new Set()
-  for (const falseClaim of payload.falseClaims) {
-    const claim = claimById.get(falseClaim.claimId)
-    if (!claim || ids.has(falseClaim.claimId) || claim.path !== falseClaim.path || claim.line !== falseClaim.line) {
-      fail(`A1b false claim does not match a unique frozen claim:${falseClaim.claimId}`)
-    }
-    ids.add(falseClaim.claimId)
-  }
-  return inventory
-}
-
 function validateSandboxReceipt(receipt, manifest, label, {
   repoRoot,
   manifestSha256,
@@ -1996,19 +1873,10 @@ function validatePayload(payload, evidenceKind, {
     return
   }
   if (evidenceKind === 'deep-audit-judgment') {
-    exactKeys(payload, ['dim', 'findings', 'transportReceipt', 'accessReceipt', 'sandboxReceipt'], 'judgment payload')
-    if (!Number.isInteger(payload.dim) || !Array.isArray(payload.findings)) fail('judgment payload is invalid')
-    const coveragePaths = new Set(coverage?.inventoryPaths ?? [])
-    payload.findings.forEach((finding, index) => {
-      validateJudgmentFinding(finding, `judgment finding[${index}]`)
-      if (!coveragePaths.has(finding.path)) fail(`judgment finding path is outside exact coverage:${finding.path}`)
-    })
-    validateModelTransportReceipt(payload.transportReceipt, coverage, 'judgment transport receipt')
-    validateModelAccessReceiptShape(payload.accessReceipt, coverage, 'judgment access receipt')
-    validateSandboxReceipt(payload.sandboxReceipt, manifest, 'judgment sandbox receipt', {
-      repoRoot, manifestSha256, now, evidenceKind, selectedProvider, evidenceEnvelopeDigest,
-    })
-    return
+    // The model-broker execution layer retired 2026-08-04 (baton §8.3): no
+    // transport can legitimately produce a judgment model envelope any more.
+    // Judgment coverage flows exclusively through the waived self-review route.
+    fail('deep-audit judgment model envelopes retired 2026-08-04 with the model-broker execution layer; judgment coverage flows through the waived self-review route')
   }
   if (evidenceKind === 'deep-audit-hook-residue') {
     exactKeys(payload, ['dim', 'capability', 'enforcementSuiteReceipt', 'replayReceipt', 'sandboxReceipt'], 'hook payload')
@@ -2083,21 +1951,9 @@ function validatePayload(payload, evidenceKind, {
     return
   }
   if (evidenceKind === 'deep-audit-component-a1b') {
-    exactKeys(payload, ['component', 'claimsVerified', 'falseClaims', 'transportReceipt', 'accessReceipt', 'claimReceipt', 'sandboxReceipt'], 'A1b payload')
-    nonEmptyString(payload.component, 'A1b payload component')
-    if (!Number.isInteger(payload.claimsVerified) || payload.claimsVerified <= 0 || !Array.isArray(payload.falseClaims)) fail('A1b payload is invalid')
-    const coveragePaths = new Set(coverage?.inventoryPaths ?? [])
-    payload.falseClaims.forEach((finding, index) => {
-      validateFalseClaim(finding, `A1b falseClaim[${index}]`)
-      if (!coveragePaths.has(finding.path)) fail(`A1b falseClaim path is outside exact coverage:${finding.path}`)
-    })
-    validateModelTransportReceipt(payload.transportReceipt, coverage, 'A1b transport receipt')
-    validateModelAccessReceiptShape(payload.accessReceipt, coverage, 'A1b access receipt')
-    validateComponentClaimReceipt(payload.claimReceipt, payload, { manifest, repoRoot })
-    validateSandboxReceipt(payload.sandboxReceipt, manifest, 'A1b sandbox receipt', {
-      repoRoot, manifestSha256, now, evidenceKind, selectedProvider, evidenceEnvelopeDigest,
-    })
-    return
+    // Same retirement as judgment envelopes: component-A1b model envelopes have
+    // no legitimate producer; the waived self-review route carries A1b coverage.
+    fail('deep-audit component-a1b model envelopes retired 2026-08-04 with the model-broker execution layer; A1b coverage flows through the waived self-review route')
   }
   fail(`unsupported evidence kind:${evidenceKind}`)
 }
@@ -2242,172 +2098,6 @@ export function writeDeepAuditEvidenceEnvelope({
   return { path: target, envelope }
 }
 
-export function validateDeepAuditModelTranscriptArtifact({ bytes, relativePath, envelope, repoRoot = null, manifest = null } = {}) {
-  if (!Buffer.isBuffer(bytes) || bytes.length === 0) fail('model transcript artifact bytes are empty')
-  const digest = sha256(bytes)
-  const managed = envelope.payload?.brokerReceipt !== undefined
-  const receipt = managed ? envelope.payload.brokerReceipt : envelope.payload.transportReceipt
-  if (relativePath !== receipt.transcriptReference || digest !== receipt.transcriptSha256
-    || bytes.length !== receipt.transcriptBytes) fail('model transcript artifact does not match its transport receipt')
-  if (managed) {
-    if (!repoRoot || !manifest) fail('managed model broker transcript validation requires repository bytes and manifest')
-    const expectedKind = envelope.evidenceKind === 'deep-audit-judgment' ? 'judgment' : 'component-a1b'
-    const expectedSubject = expectedKind === 'judgment' ? envelope.payload.dim : envelope.payload.component
-    let claimInventory = null
-    if (expectedKind === 'component-a1b') {
-      try { claimInventory = buildComponentClaimInventory({ repoRoot, manifest, component: expectedSubject }) }
-      catch (error) { fail(`managed model broker A1b inventory is invalid:${error.message}`) }
-    }
-    let transcript
-    try {
-      transcript = validateModelBrokerTranscript({
-        repoRoot,
-        bytes,
-        manifest,
-        manifestSha256: envelope.manifestSha256,
-        task: {
-          kind: expectedKind,
-          subject: expectedSubject,
-          coverage: envelope.coverage,
-          claimInventory,
-        },
-        provider: {
-          providerId: envelope.producer.providerId,
-          runtime: envelope.producer.runtime,
-          requestModelId: envelope.producer.model,
-          runtimeCertificationDigest: envelope.producer.runtimeCertificationDigest,
-          modelReleaseId: receipt.modelReleaseId,
-          modelReleaseBindingDigest: receipt.modelReleaseBindingDigest,
-          modelReleaseRegistryDigest: receipt.modelReleaseRegistryDigest,
-        },
-        managedAttestationBinding: envelope.payload.sandboxReceipt.attestation.binding,
-      })
-    } catch (error) { fail(`managed model broker transcript is invalid:${error.message}`) }
-    const broker = transcript.broker
-    const authority = transcript.provider.modelReleaseAuthorityBinding
-    for (const [receiptKey, transcriptValue] of [
-      ['brokerPlanDigest', broker.planDigest],
-      ['invocationRegistryDigest', broker.invocationRegistryDigest],
-      ['brokerProfileDigest', broker.brokerProfileDigest],
-      ['selectedProfileDigest', broker.selectedProfileDigest],
-      ['modelIdentityPolicyDigest', broker.modelIdentityPolicyDigest],
-      ['requestModelId', transcript.provider.requestModelId],
-      ['observedResponseModelId', transcript.provider.requestModelId],
-      ['modelReleaseId', transcript.provider.modelReleaseId],
-      ['modelReleaseBindingDigest', transcript.provider.modelReleaseBindingDigest],
-      ['modelReleaseRegistryDigest', transcript.provider.modelReleaseRegistryDigest],
-      ['modelReleaseAuthorityBindingDigest', sha256(stableStringify(authority))],
-      ['effectivePromotionBindingDigest', transcript.provider.effectivePromotionBindingDigest],
-      ['modelReleaseValidFrom', authority.modelReleaseValidFrom],
-      ['modelReleaseValidUntil', authority.modelReleaseValidUntil],
-      ['providerInvocationWindow', authority.providerInvocationWindow],
-      ['exchangeInvocationObservations', authority.exchangeInvocationObservations],
-      ['modelAuthorityReceiptDigest', sha256(stableStringify(authority.authorityReceipt))],
-      ['modelAuthorityReadbackDigest', sha256(stableStringify(authority.sourceReadback))],
-      ['modelAuthorityRevocationRegistryDigest', authority.revocationReadback.bodySha256],
-      ['modelAuthorityRevocationReadbackDigest', sha256(stableStringify(authority.revocationReadback))],
-      ['modelAuthorityAuditReadbackDigest', sha256(stableStringify(authority.auditReadback))],
-      ['modelAuthorityReplayLedgerReceiptDigest', authority.authorityReceipt.replayLedgerReceiptDigest],
-      ['providerInvocationWindowDigest', sha256(stableStringify(authority.providerInvocationWindow))],
-      ['exchangeInvocationObservationsDigest', sha256(stableStringify(authority.exchangeInvocationObservations))],
-      ['modelAuthorityPolicyDigest', transcript.provider.modelAuthorityPolicyDigest],
-      ['modelAuthorityBindingSchemaDigest', transcript.provider.modelAuthorityBindingSchemaDigest],
-      ['modelAuthorityIssuerRegistryDigest', transcript.provider.modelAuthorityIssuerRegistryDigest],
-      ['resultSchemaSha256', broker.resultSchemaSha256],
-      ['shardSetDigest', broker.shardSetDigest],
-      ['shardCount', broker.shardCount],
-      ['reductionDigest', broker.reductionDigest],
-      ['managedAttestationDigest', transcript.managedAttestationDigest],
-    ]) if (stableStringify(receipt[receiptKey]) !== stableStringify(transcriptValue)) fail(`managed model broker receipt/transcript mismatches:${receiptKey}`)
-    if (expectedKind === 'judgment') {
-      if (transcript.outcome.dim !== envelope.payload.dim
-        || stableStringify(transcript.outcome.findings) !== stableStringify(envelope.payload.findings)) {
-        fail('managed model broker judgment outcome mismatches envelope')
-      }
-    } else if (transcript.outcome.component !== envelope.payload.component
-      || transcript.outcome.claimsVerified !== envelope.payload.claimsVerified
-      || stableStringify(transcript.outcome.falseClaims) !== stableStringify(envelope.payload.falseClaims)
-      || stableStringify(transcript.outcome.claimReceipt) !== stableStringify(envelope.payload.claimReceipt)) {
-      fail('managed model broker A1b outcome mismatches envelope')
-    }
-    return transcript
-  }
-  let transcript
-  try { transcript = JSON.parse(bytes.toString('utf8')) } catch (error) { fail(`model transcript artifact is invalid JSON:${error.message}`) }
-  exactKeys(transcript, [
-    'schemaVersion', 'evidenceKind', 'runId', 'manifestSha256', 'task', 'provider', 'invocation',
-    'coverage', 'prompt', 'stdout', 'stderr', 'result', 'accessReceipt', 'claimReceipt',
-  ], 'model transcript')
-  if (transcript.schemaVersion !== 1 || transcript.evidenceKind !== 'deep-audit-model-transcript'
-    || transcript.runId !== envelope.runId || transcript.manifestSha256 !== envelope.manifestSha256) fail('model transcript run identity mismatches')
-  exactKeys(transcript.task, ['kind', 'subject'], 'model transcript task')
-  const expectedKind = envelope.evidenceKind === 'deep-audit-judgment' ? 'judgment' : 'component-a1b'
-  const expectedSubject = expectedKind === 'judgment' ? envelope.payload.dim : envelope.payload.component
-  if (transcript.task.kind !== expectedKind || transcript.task.subject !== expectedSubject) fail('model transcript task identity mismatches')
-  exactKeys(transcript.provider, ['providerId', 'runtime', 'model'], 'model transcript provider')
-  for (const key of ['providerId', 'runtime', 'model']) if (transcript.provider[key] !== envelope.producer[key]) fail(`model transcript provider ${key} mismatches`)
-  exactKeys(transcript.invocation, [
-    'profileDigest', 'resultSchemaSha256', 'executable', 'argv', 'cwd', 'snapshotRoot', 'startedAt', 'finishedAt',
-    'exitCode', 'providerRunId', 'sessionId',
-  ], 'model transcript invocation')
-  if (transcript.invocation.profileDigest !== receipt.invocationProfileDigest
-    || transcript.invocation.resultSchemaSha256 !== receipt.resultSchemaSha256) fail('model transcript profile/schema digest mismatches')
-  nonEmptyString(transcript.invocation.executable, 'model transcript executable')
-  if (!Array.isArray(transcript.invocation.argv) || transcript.invocation.argv.length === 0
-    || transcript.invocation.argv.some((arg) => typeof arg !== 'string' || !arg || DANGEROUS_MODEL_ARGUMENTS.has(arg))) fail('model transcript argv is invalid or unsafe')
-  if (transcript.invocation.cwd !== '.') fail('model transcript cwd must be repository-relative dot')
-  if (!isAbsolute(transcript.invocation.snapshotRoot)) fail('model transcript snapshotRoot must be the absolute disposable root used for trace normalization')
-  validIso(transcript.invocation.startedAt, 'model transcript startedAt')
-  validIso(transcript.invocation.finishedAt, 'model transcript finishedAt')
-  if (!Number.isInteger(transcript.invocation.exitCode) || transcript.invocation.exitCode !== 0
-    || transcript.invocation.startedAt !== envelope.command.startedAt
-    || transcript.invocation.finishedAt !== envelope.command.finishedAt
-    || transcript.invocation.exitCode !== envelope.command.exitCode
-    || stableStringify([transcript.invocation.executable, ...transcript.invocation.argv]) !== stableStringify(envelope.command.argv)) fail('model transcript command receipt mismatches envelope')
-  if (transcript.invocation.providerRunId !== receipt.providerRunId || transcript.invocation.sessionId !== receipt.sessionId) fail('model transcript run/session identity mismatches')
-  exactKeys(transcript.coverage, ['inventoryDigest', 'filesScanned'], 'model transcript coverage')
-  if (transcript.coverage.inventoryDigest !== envelope.coverage.inventoryDigest
-    || transcript.coverage.filesScanned !== envelope.coverage.filesScanned) fail('model transcript coverage mismatches')
-  if (typeof transcript.prompt !== 'string' || Buffer.byteLength(transcript.prompt) !== receipt.promptBytes
-    || sha256(transcript.prompt) !== receipt.promptSha256) fail('model transcript prompt bytes/digest mismatches')
-  if (typeof transcript.stdout !== 'string' || typeof transcript.stderr !== 'string') fail('model transcript raw provider output is invalid')
-  if (stableStringify(transcript.accessReceipt) !== stableStringify(envelope.payload.accessReceipt)) fail('model transcript access receipt mismatches envelope')
-  try {
-    validateModelAccessReceipt(transcript.accessReceipt, {
-      providerId: envelope.producer.providerId,
-      stdout: transcript.stdout,
-      snapshotRoot: transcript.invocation.snapshotRoot,
-      coveragePaths: envelope.coverage.inventoryPaths,
-      coverageInventoryDigest: envelope.coverage.inventoryDigest,
-    })
-  } catch (error) { fail(`model transcript access proof is invalid:${error.message}`) }
-  const responseBytes = Buffer.from(`${stableStringify(transcript.result)}\n`)
-  if (responseBytes.length !== receipt.responseBytes || sha256(responseBytes) !== receipt.responseSha256) fail('model transcript structured response digest mismatches')
-  if (expectedKind === 'judgment') {
-    if (transcript.result?.dim !== envelope.payload.dim
-      || stableStringify(transcript.result.findings) !== stableStringify(envelope.payload.findings)) fail('model transcript judgment result mismatches envelope')
-    if (transcript.claimReceipt !== null) fail('judgment transcript cannot contain an A1b claim receipt')
-  } else {
-    if (transcript.result?.component !== envelope.payload.component
-      || transcript.result.claimsVerified !== envelope.payload.claimsVerified
-      || stableStringify(transcript.result.falseClaims) !== stableStringify(envelope.payload.falseClaims)
-      || stableStringify(transcript.claimReceipt) !== stableStringify(envelope.payload.claimReceipt)) fail('model transcript A1b result mismatches envelope')
-    if (!repoRoot) fail('model transcript A1b validation requires repository bytes')
-    let inventory
-    let rebuiltReceipt
-    try {
-      inventory = buildComponentClaimInventory({ repoRoot, manifest, component: envelope.payload.component })
-      rebuiltReceipt = buildComponentClaimReceipt({
-        claimInventory: inventory,
-        claimVerdicts: transcript.result.claimVerdicts,
-        falseClaims: transcript.result.falseClaims,
-      })
-    } catch (error) { fail(`model transcript A1b claim closure is invalid:${error.message}`) }
-    if (stableStringify(rebuiltReceipt) !== stableStringify(envelope.payload.claimReceipt)) fail('model transcript A1b claim receipt is not reproducible')
-  }
-  return transcript
-}
-
 /**
  * Publish one producer's complete receipt set after validating and staging
  * every item. A new category uses one directory rename. Deterministic profiles
@@ -2537,26 +2227,9 @@ export function writeDeepAuditEvidenceEnvelopeBatch({
     return { relativePath, bytes: artifact.bytes }
   })
   if (isModelBatch) {
-    if (artifactRows.length !== items.length) fail('model evidence requires exactly one transcript artifact per envelope')
-    if (new Set(artifactRows.map((artifact) => artifact.relativePath)).size !== artifactRows.length) {
-      fail('model evidence batch contains duplicate transcript artifact paths')
-    }
-    const transcriptPattern = new RegExp(`^${publishRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/_transcripts/([a-f0-9]{64})\\.json$`)
-    const artifactByPath = new Map(artifactRows.map((artifact) => [artifact.relativePath, artifact]))
-    const referenced = new Set()
-    for (const item of items) {
-      const reference = (item.envelope.payload.brokerReceipt ?? item.envelope.payload.transportReceipt).transcriptReference
-      if (referenced.has(reference)) fail(`model transcript is referenced by more than one envelope:${reference}`)
-      referenced.add(reference)
-      const artifact = artifactByPath.get(reference)
-      if (!artifact) fail(`model transcript artifact is missing:${reference}`)
-      const match = reference.match(transcriptPattern)
-      if (!match || match[1] !== sha256(artifact.bytes)) fail(`model transcript artifact path is not content addressed:${reference}`)
-      validateDeepAuditModelTranscriptArtifact({ bytes: artifact.bytes, relativePath: reference, envelope: item.envelope, repoRoot: active.repository, manifest: active.manifest })
-    }
-    if (artifactRows.some((artifact) => !referenced.has(artifact.relativePath))) {
-      fail('model evidence batch contains an unreferenced transcript artifact')
-    }
+    // Unreachable once envelope validation rejects judgment/A1b kinds, kept
+    // explicit: the retired model layer cannot publish transcript artifacts.
+    fail('model evidence batches retired 2026-08-04 with the model-broker execution layer')
   } else if (artifactRows.length !== 0) {
     fail('non-model evidence batch cannot contain transcript artifacts')
   }

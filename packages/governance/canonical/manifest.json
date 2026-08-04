@@ -392,18 +392,6 @@
       "required": true
     },
     {
-      "id": "deep-audit-model-evidence-broker",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/model-evidence-broker.json",
-      "required": true
-    },
-    {
-      "id": "deep-audit-model-evidence-broker-schema",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/schemas/model-evidence-broker.schema.json",
-      "required": true
-    },
-    {
       "id": "deep-audit-model-result-schema",
       "ownerRepo": "design-system",
       "path": "infra/governance/schemas/model-deep-audit-result.schema.json",
@@ -483,39 +471,15 @@
       "required": true
     },
     {
-      "id": "deep-audit-model-evidence-plan-library",
-      "ownerRepo": "design-system",
-      "path": "scripts/lib/model-evidence-plan.mjs",
-      "required": true
-    },
-    {
       "id": "deep-audit-model-api-transport",
       "ownerRepo": "design-system",
       "path": "scripts/lib/model-api-transport.mjs",
       "required": true
     },
     {
-      "id": "deep-audit-model-evidence-broker-library",
+      "id": "deep-audit-model-evidence-plan-library",
       "ownerRepo": "design-system",
-      "path": "scripts/lib/model-evidence-broker.mjs",
-      "required": true
-    },
-    {
-      "id": "deep-audit-model-broker-transcript-library",
-      "ownerRepo": "design-system",
-      "path": "scripts/lib/model-broker-transcript.mjs",
-      "required": true
-    },
-    {
-      "id": "deep-audit-model-broker-shard-result-schema",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/schemas/model-broker-shard-result.schema.json",
-      "required": true
-    },
-    {
-      "id": "deep-audit-model-broker-transcript-schema",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/schemas/model-broker-transcript.schema.json",
+      "path": "scripts/lib/model-evidence-plan.mjs",
       "required": true
     },
     {
@@ -531,99 +495,9 @@
       "required": true
     },
     {
-      "id": "deep-audit-model-access-receipt-library",
-      "ownerRepo": "design-system",
-      "path": "scripts/lib/model-access-receipt.mjs",
-      "required": true
-    },
-    {
-      "id": "deep-audit-model-audit-contract-library",
-      "ownerRepo": "design-system",
-      "path": "scripts/lib/model-audit-contract.mjs",
-      "required": true
-    },
-    {
-      "id": "deep-audit-review-archive-library",
-      "ownerRepo": "design-system",
-      "path": "scripts/lib/deep-audit-review-archive.mjs",
-      "required": true
-    },
-    {
-      "id": "deep-audit-model-runner",
-      "ownerRepo": "design-system",
-      "path": "scripts/run-model-deep-audit.mjs",
-      "required": true
-    },
-    {
-      "id": "deep-audit-review-archive-tests",
-      "ownerRepo": "design-system",
-      "path": "scripts/test-deep-audit-review-archive.mjs",
-      "required": true
-    },
-    {
-      "id": "deep-audit-model-safety-tests",
-      "ownerRepo": "design-system",
-      "path": "scripts/test-model-deep-audit-safety.mjs",
-      "required": true
-    },
-    {
-      "id": "deep-audit-model-evidence-broker-hardening-tests",
-      "ownerRepo": "design-system",
-      "path": "scripts/test-model-evidence-broker-hardening.mjs",
-      "required": true
-    },
-    {
-      "id": "provider-neutral-review-core-tests",
-      "ownerRepo": "design-system",
-      "path": "scripts/review-core-parity-optin.mjs",
-      "required": true
-    },
-    {
-      "id": "deep-audit-managed-envelope-binding-tests",
-      "ownerRepo": "design-system",
-      "path": "scripts/test-managed-envelope-binding.mjs",
-      "required": true
-    },
-    {
       "id": "deep-audit-evidence-schema-parity-tests",
       "ownerRepo": "design-system",
       "path": "scripts/test-deep-audit-evidence-schema-parity.mjs",
-      "required": true
-    },
-    {
-      "id": "managed-ci-activated-workflow-contract",
-      "ownerRepo": "design-system",
-      "path": "scripts/managed-ci-activated-workflow-contract.json",
-      "required": true
-    },
-    {
-      "id": "managed-ci-activated-workflow-contract-schema",
-      "ownerRepo": "design-system",
-      "path": "scripts/schemas/managed-ci-activated-workflow-contract.schema.json",
-      "required": true
-    },
-    {
-      "id": "managed-ci-sandbox-receipt-schema",
-      "ownerRepo": "design-system",
-      "path": "scripts/schemas/managed-ci-sandbox-receipt.schema.json",
-      "required": true
-    },
-    {
-      "id": "managed-ci-sandbox-receipt-validator",
-      "ownerRepo": "design-system",
-      "path": "scripts/lib/managed-ci-sandbox-receipt.mjs",
-      "required": true
-    },
-    {
-      "id": "managed-ci-finalized-receipt-schema",
-      "ownerRepo": "design-system",
-      "path": "scripts/schemas/managed-ci-finalized-receipt.schema.json",
-      "required": true
-    },
-    {
-      "id": "managed-ci-authority-finalization-protocol-schema",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/schemas/managed-ci-authority-finalization-protocol.schema.json",
       "required": true
     },
     {
@@ -660,30 +534,6 @@
       "id": "managed-ci-model-release-authority-tests",
       "ownerRepo": "design-system",
       "path": "scripts/test-model-release-authority.mjs",
-      "required": true
-    },
-    {
-      "id": "managed-ci-oidc-broker-policy",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/providers/managed-ci-oidc-broker-policy.json",
-      "required": true
-    },
-    {
-      "id": "managed-ci-oidc-broker-policy-schema",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/schemas/managed-ci-oidc-broker-policy.schema.json",
-      "required": true
-    },
-    {
-      "id": "managed-ci-trusted-authority-policy",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/providers/managed-ci-trusted-authority-policy.json",
-      "required": true
-    },
-    {
-      "id": "managed-ci-trusted-authority-policy-schema",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/schemas/managed-ci-trusted-authority-policy.schema.json",
       "required": true
     },
     {

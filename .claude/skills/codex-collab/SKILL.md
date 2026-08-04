@@ -15,7 +15,7 @@ Read and follow the complete provider-neutral workflow at `packages/design-syste
 - `reviewSelectionPolicy: highest-certified-independent-review-v1`
 - `reviewClass: tier-0-governance`
 - `independentPeerProvider: selected-and-frozen-at-review-prepare-time`
-- `transport: scripts/run-model-deep-audit.mjs`
+- `transport: scripts/lib/retired-model-entrypoint.mjs`
 - `targetCertificationContract: not-declared`
 - `sameProviderPeer: invalid`
 - `authorProviderRequired: false`

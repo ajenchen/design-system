@@ -167,6 +167,7 @@ test('anchor CLI executes one fixed protected-base governance command without a 
     join(trusted, 'packages/governance/bin/governance.mjs'),
     'check',
     '--repo', candidate,
+    '--manifest', join(candidate, 'packages/governance/canonical/manifest.json'),
     '--role', 'ds-author',
     '--hooks-off',
   ])

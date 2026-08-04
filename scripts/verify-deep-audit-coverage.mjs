@@ -10,7 +10,6 @@ import {
   loadActiveDeepAuditRun,
   stableStringify,
   validateDeepAuditEvidenceEnvelope,
-  validateDeepAuditModelTranscriptArtifact,
   validateDeepAuditRunProviderBindings,
 } from './lib/deep-audit-evidence-contract.mjs'
 import { resolveRuntimeEvidencePath } from './lib/governance-runtime-evidence.mjs'
@@ -129,27 +128,6 @@ export function validateDeterministicReceipt(envelope, dim, active, planState) {
   return { status: 'PASS', reasonCode: null }
 }
 
-function judgmentCoverage(manifest) {
-  const rubric = new Set(manifest.rubricPaths)
-  const inventoryPaths = manifest.inventory
-    .filter((row) => row.kind !== 'missing'
-      && (row.path.startsWith('packages/design-system/') || rubric.has(row.path)))
-    .map((row) => row.path)
-    .sort()
-  if (inventoryPaths.length === 0) fail('canonical judgment coverage is empty')
-  return {
-    inventoryPaths,
-    inventoryDigest: digestInventorySelection(manifest, inventoryPaths),
-    filesScanned: inventoryPaths.length,
-  }
-}
-
-function componentCoverage(manifest, component) {
-  const record = manifest.components.find((item) => item.name === component)
-  if (!record) fail(`A1b component is absent from frozen inventory:${component}`)
-  return { inventoryPaths: record.paths, inventoryDigest: record.digest, filesScanned: record.paths.length }
-}
-
 function validateHookReceipt(envelope, dim, active, hookState, hookCoverage) {
   const dimension = hookState.plan.dimensions.find((item) => item.dim === dim)
   if (!dimension) fail(`hook dim ${dim} is absent from canonical hook evidence plan`)
@@ -171,36 +149,23 @@ function validateHookReceipt(envelope, dim, active, hookState, hookCoverage) {
   exact(envelope.payload.replayReceipt.focusedContracts, expectedFocused, `hook dim ${dim} focused contracts`)
 }
 
-function expectedPathSet(tiers, providers, components, { secondOpinionWaived = false } = {}) {
+function expectedPathSet(tiers) {
+  // Post-retirement (2026-08-04) the waived self-review is the only review
+  // route, so judgment/A1b model envelope paths no longer exist.
   const paths = new Set(['run-manifest.json'])
   for (const dim of tiers.DETERMINISTIC) paths.add(`deterministic/dim-${dim}.json`)
-  if (secondOpinionWaived) paths.add(waivedSelfReviewContract.relativePath)
-  else for (const provider of providers) for (const dim of tiers['PURE-JUDGMENT']) paths.add(`judgment/${provider}/dim-${dim}.json`)
+  paths.add(waivedSelfReviewContract.relativePath)
   for (const dim of tiers['HOOK-ENFORCED']) paths.add(`hook-residue/dim-${dim}.json`)
   for (const dim of tiers['CI-ENFORCED']) paths.add(`ci-enforced/dim-${dim}.json`)
-  if (!secondOpinionWaived) {
-    for (const provider of providers) for (const component of components) paths.add(`component-a1b/${provider}/${component}.json`)
-  }
   return paths
 }
 
-function scanClosedRunTree(active, expectedFiles, providers, { allowModelTranscripts = true } = {}) {
+function scanClosedRunTree(active, expectedFiles) {
   const allowedDirectories = new Set([''])
   for (const path of expectedFiles) {
     const segments = path.split('/')
     for (let index = 1; index < segments.length; index += 1) allowedDirectories.add(segments.slice(0, index).join('/'))
   }
-  if (allowModelTranscripts) {
-    for (const provider of providers) {
-      allowedDirectories.add(`judgment/${provider}/_transcripts`)
-      allowedDirectories.add(`component-a1b/${provider}/_transcripts`)
-    }
-  }
-  const escapedProviders = providers.map((provider) => provider.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
-  const transcriptPattern = allowModelTranscripts
-    ? new RegExp(`^(?:judgment|component-a1b)/(?:${escapedProviders})/_transcripts/[a-f0-9]{64}\\.json$`)
-    : null
-  const discoveredTranscripts = new Set()
   const walk = (directory) => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const absolute = resolve(directory, entry.name)
@@ -212,14 +177,11 @@ function scanClosedRunTree(active, expectedFiles, providers, { allowModelTranscr
         walk(absolute)
       } else if (info.isFile()) {
         if (info.nlink !== 1) fail(`active run contains hard-link evidence:${path}`)
-        const isTranscript = transcriptPattern?.test(path) ?? false
-        if (!expectedFiles.has(path) && !isTranscript) fail(`active run contains an unknown/mixed evidence file:${path}`)
-        if (isTranscript) discoveredTranscripts.add(path)
+        if (!expectedFiles.has(path)) fail(`active run contains an unknown/mixed evidence file:${path}`)
       } else fail(`active run contains unsupported evidence type:${path}`)
     }
   }
   walk(active.runRoot)
-  return discoveredTranscripts
 }
 
 function rejectLegacyOrPoisonedRoot(active) {
@@ -253,34 +215,6 @@ function readEnvelope(active, explicitRoot, relativePath) {
     repoRoot: active.repository,
   })
   return envelope
-}
-
-function verifyModelTranscriptClosure(active, explicitRoot, modelEnvelopes, discoveredTranscripts) {
-  const referencedTranscripts = new Set()
-  for (const envelope of modelEnvelopes) {
-    const reference = (envelope.payload.brokerReceipt ?? envelope.payload.transportReceipt).transcriptReference
-    const category = envelope.evidenceKind === 'deep-audit-judgment' ? 'judgment' : 'component-a1b'
-    const expectedPrefix = `${category}/${envelope.producer.providerId}/_transcripts/`
-    if (!reference.startsWith(expectedPrefix)) fail(`model transcript reference crosses its provider/category boundary:${reference}`)
-    if (referencedTranscripts.has(reference)) fail(`model transcript is referenced by multiple evidence envelopes:${reference}`)
-    referencedTranscripts.add(reference)
-    if (!discoveredTranscripts.has(reference)) fail(`referenced model transcript is missing:${reference}`)
-    const transcriptPath = resolveRuntimeEvidencePath({
-      repoRoot: active.repository,
-      explicitRoot,
-      relativePath: `deep-audit/runs/${active.manifest.runId}/${reference}`,
-    })
-    validateDeepAuditModelTranscriptArtifact({
-      bytes: readFileSync(transcriptPath),
-      relativePath: reference,
-      envelope,
-      repoRoot: active.repository,
-      manifest: active.manifest,
-    })
-  }
-  for (const transcript of discoveredTranscripts) {
-    if (!referencedTranscripts.has(transcript)) fail(`active run contains an unreferenced model transcript:${transcript}`)
-  }
 }
 
 export function summarizeDeepAuditCompliance({ totalGaps, envelopes, waivedSelfReview = null } = {}) {
@@ -361,8 +295,11 @@ export function verifyDeepAuditCoverage({
   const active = loadActiveDeepAuditRun({ repoRoot, explicitRoot, requireCurrent: true })
   validateDeepAuditRunProviderBindings(active.manifest, { repoRoot: active.repository })
   const secondOpinionWaived = active.manifest.reviewSelection?.kind === 'provider-review-capability-selection-waived'
-  if (active.manifest.providers.peer === null && !secondOpinionWaived) {
-    fail(`active run review selection is ${active.manifest.reviewSelection.selectionStatus}:${active.manifest.reviewSelection.selectionReasonCode}`)
+  if (!secondOpinionWaived) {
+    // The model-broker execution layer retired 2026-08-04 (baton §8.3): no
+    // transport exists that could produce peer judgment/A1b model envelopes, so
+    // the waived self-review route is the only valid review selection.
+    fail('deep-audit runs without a waived self-review are retired 2026-08-04 (model-broker execution layer removed); reviewSelection must be provider-review-capability-selection-waived')
   }
   const manifestProviders = secondOpinionWaived
     ? [active.manifest.providers.self.id]
@@ -378,10 +315,8 @@ export function verifyDeepAuditCoverage({
   const tiers = loadAuditCoverageTiers(active.repository)
   rejectLegacyOrPoisonedRoot(active)
   const components = active.manifest.components.map((item) => item.name)
-  const expectedFiles = expectedPathSet(tiers, providers, components, { secondOpinionWaived })
-  const discoveredTranscripts = scanClosedRunTree(active, expectedFiles, providers, {
-    allowModelTranscripts: !secondOpinionWaived,
-  })
+  const expectedFiles = expectedPathSet(tiers)
+  scanClosedRunTree(active, expectedFiles)
   const planState = loadDeterministicDeepAuditPlan({ repoRoot: active.repository })
   assertDeterministicMatrixParity(planState, { repoRoot: active.repository })
   const hookState = loadHookEvidencePlan({ repoRoot: active.repository })
@@ -400,7 +335,6 @@ export function verifyDeepAuditCoverage({
     componentA1b: Object.fromEntries(providers.map((provider) => [provider, []])),
   }
   const envelopes = []
-  const modelEnvelopes = []
   const deterministicUnobserved = []
   const waivedSelfReview = secondOpinionWaived
     ? loadWaivedSelfReviewBundle({ activeRun: active, explicitRoot, tiers })
@@ -420,25 +354,9 @@ export function verifyDeepAuditCoverage({
       envelopes.push(envelope)
     }
   }
-  if (secondOpinionWaived) {
-    if (waivedSelfReview === null) {
-      gaps.judgment[providers[0]].push(...tiers['PURE-JUDGMENT'])
-      gaps.componentA1b[providers[0]].push(...components)
-    }
-  } else {
-    const expectedJudgmentCoverage = judgmentCoverage(active.manifest)
-    for (const provider of providers) {
-      for (const dim of tiers['PURE-JUDGMENT']) {
-        const envelope = readEnvelope(active, explicitRoot, `judgment/${provider}/dim-${dim}.json`)
-        if (!envelope) gaps.judgment[provider].push(dim)
-        else {
-          if (envelope.producer.providerId !== provider || envelope.payload.dim !== dim || envelope.command.exitCode !== 0) fail(`judgment receipt identity/completion mismatches:${provider}/dim-${dim}`)
-          exact(envelope.coverage, expectedJudgmentCoverage, `judgment ${provider} dim ${dim} coverage`)
-          envelopes.push(envelope)
-          modelEnvelopes.push(envelope)
-        }
-      }
-    }
+  if (waivedSelfReview === null) {
+    gaps.judgment[providers[0]].push(...tiers['PURE-JUDGMENT'])
+    gaps.componentA1b[providers[0]].push(...components)
   }
   for (const dim of tiers['HOOK-ENFORCED']) {
     const envelope = readEnvelope(active, explicitRoot, `hook-residue/dim-${dim}.json`)
@@ -467,21 +385,6 @@ export function verifyDeepAuditCoverage({
     }
   }
   if (ciObservationDigests.size > 1) fail('CI dimension receipts mix different full observation payloads')
-  if (!secondOpinionWaived) {
-    for (const provider of providers) {
-      for (const component of components) {
-        const envelope = readEnvelope(active, explicitRoot, `component-a1b/${provider}/${component}.json`)
-        if (!envelope) gaps.componentA1b[provider].push(component)
-        else {
-          if (envelope.producer.providerId !== provider || envelope.payload.component !== component || envelope.command.exitCode !== 0) fail(`A1b receipt identity/completion mismatches:${provider}/${component}`)
-          exact(envelope.coverage, componentCoverage(active.manifest, component), `A1b ${provider}/${component} coverage`)
-          envelopes.push(envelope)
-          modelEnvelopes.push(envelope)
-        }
-      }
-    }
-  }
-  verifyModelTranscriptClosure(active, explicitRoot, modelEnvelopes, discoveredTranscripts)
   const totalGaps = gaps.deterministic.length + gaps.hookResidue.length + gaps.ciEnforced.length
     + Object.values(gaps.judgment).reduce((sum, values) => sum + values.length, 0)
     + Object.values(gaps.componentA1b).reduce((sum, values) => sum + values.length, 0)

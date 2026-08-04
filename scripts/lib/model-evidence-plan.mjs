@@ -15,6 +15,9 @@ import {
   stableStringify,
 } from './deep-audit-evidence-contract.mjs'
 import { buildComponentClaimReceipt } from './component-claim-inventory.mjs'
+// model-api-transport survives the 2026-08-04 broker retirement as a PURE
+// CONTRACT module (no I/O, no model invocation): it validates the live
+// invocation-profile registry and the response-substitution fail-closed rules.
 import {
   buildBrokerApiRequest,
   selectBrokerApiResult,

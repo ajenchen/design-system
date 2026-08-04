@@ -381,3 +381,19 @@ package.json 十餘條 ceremony scripts;test-governance-build-graph:658-662 期�
 **Severs**:deep-audit-evidence-contract(model-access-receipt/sandbox-receipt/broker-transcript/invocation-profiles import → judgment/A1b 證據改 manifest-waiver 路徑;transportReceipt/accessReceipt 驗證鏈重塑)/ deep-audit-review-archive(broker import)/ model-evidence-plan(api-transport import)/ prepare-deep-audit-run(waiver 進 manifest 欄位)/ verify-deep-audit-coverage(waived bundle 讀取 → manifest 欄位;loadWaivedSelfReviewBundle 退場)/ test-deep-audit-{evidence-schema-parity,review-archive} / registries(manifest ids、harness 三件套、build-graph sources、package.json scripts test:model-evidence*、audit:model-evidence*)。
 
 **先例**:batch 3 的 anchor/manifest 死鎖已由 #44 根治,本批單 PR 直落;graph 工具輸出存 scratchpad graph-b56.txt。
+
+### §8.4 Batch 5+6 執行記錄(2026-08-04 完成)
+
+**KEEP 修正(M12,手術中證據推翻原 KILL 候選)**:
+- `scripts/lib/model-api-transport.mjs` **KEEP**——誤刪後還原(byte-for-byte 自 488786b6):它是純合約模組(validateBrokerApiProfile / validateProviderResponseSelector 驗活的 invocation profiles;response-substitution fail-closed),model-evidence-plan 活鏈消費;manifest id `deep-audit-model-api-transport` 與 build-graph source 保留。
+- waived-self-review 三件套 **KEEP**——beta.108 真實 evidence 的載體;batch-2 achievable gate 依賴。
+- entitlement review-lane contract fns(model-evidence-plan + evidence-contract 內)**KEEP**——未來明確要求 independent review 的唯一 lane。
+- `retired-model-entrypoint.mjs` **KEEP(重寫)**——providers.json codex-collab transport,typed REVIEW-BLOCKED(reasonCode MODEL_BROKER_EXECUTION_RETIRED)。
+
+**實際 KILL(本批刪除)**:run-model-deep-audit / review-core-parity-optin / model-evidence-broker / model-broker-transcript / model-access-receipt / model-audit-contract / managed-ci-sandbox-receipt / deep-audit-review-archive 各 .mjs;tests {model-deep-audit-safety, model-evidence-broker-hardening, managed-envelope-binding, deep-audit-review-archive, review-bundle-materialization-guard};schemas {managed-ci-sandbox-receipt, managed-ci-finalized-receipt, managed-ci-activated-workflow-contract, model-broker-shard-result, model-broker-transcript, model-evidence-broker};data {model-evidence-broker.json, managed-ci-activated-workflow-contract.json, managed-ci-oidc-broker-policy(+schema), managed-ci-trusted-authority-policy(+schema)}。
+
+**Severs 落地**:evidence-contract judgment/A1b 分支 fail-closed(schema `not:{}` + code fail)/ 非 waived manifests typed fail / expectedPathSet waived-only / schema 15 defs 撤 / registry 三件套 + manifest(−24 id, +1 transport 還原)+ build-graph(−20)+ package.json(−5 scripts)同步 / CODEOWNERS 24 條 stale path rule 清除 / infra/governance/README.md §3-4 與 independent-review evidence-contract.md 改寫為退役後合約。
+
+**額外抓到的 main 上潛在 drift**:test-workflow-security「anchor CLI」argv 期望缺 #44 的 `--manifest`(PR gate 刻意不含十分鐘 harness suite → #44 綠著 merge、紅在 harness);本批補上,59/59 綠。
+
+**驗證**:coverage/deterministic/parity/build-graph/snapshot/harness-registry 串跑 31/31;waived-import PASS;workflow-security 59/59;CI focused lane replay 33/33+minima;generate+check PASS(.claude 兩 view 因 sandbox deny 由 generator 輸出逐位元組投影,cmp 驗證 BYTE-IDENTICAL)。隔離 harness(pristine main)其餘失敗均環境性:vite dist 未建、Playwright 未裝、npm runtime overlay 未 provision、consumerctl 6 例先前已證 pre-existing。

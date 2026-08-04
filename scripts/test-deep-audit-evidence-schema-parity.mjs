@@ -12,12 +12,11 @@ import {
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const PATHS = {
+  // The managed sandbox / broker transcript / shard-result schemas retired
+  // 2026-08-04 with the model-broker execution layer (§8.3).
   deep: 'scripts/schemas/deep-audit-evidence-contract.schema.json',
-  managed: 'scripts/schemas/managed-ci-sandbox-receipt.schema.json',
   observation: 'scripts/schemas/ci-evidence-observation.schema.json',
   standardObservation: 'scripts/schemas/standard-ci-evidence-observation.schema.json',
-  transcript: 'infra/governance/schemas/model-broker-transcript.schema.json',
-  shardResult: 'infra/governance/schemas/model-broker-shard-result.schema.json',
   modelReleaseAuthority: 'infra/governance/schemas/managed-ci-model-release-authority-binding.schema.json',
 }
 const readSchema = path => JSON.parse(readFileSync(resolve(ROOT, path), 'utf8'))
@@ -104,7 +103,7 @@ function compile(schema, dependencies) {
   return { ajv, validate: ajv.compile(schema) }
 }
 
-const deepValidator = compile(schemas.deep, [schemas.managed, schemas.observation, schemas.standardObservation])
+const deepValidator = compile(schemas.deep, [schemas.observation, schemas.standardObservation])
 const runManifestGolden = schemaSample(schemas.deep.$defs.runManifest, schemas.deep)
 runManifestGolden.authorProvider = 'claude'
 runManifestGolden.providers.self.id = 'claude'
@@ -193,12 +192,8 @@ const baseEnvelope = schemaSample(schemas.deep.$defs.evidenceEnvelope, schemas.d
 const cases = [
   ['deterministic/local', 'deep-audit-deterministic', 'genericProducer', 'deterministicPayload'],
   ['deterministic/unobserved', 'deep-audit-deterministic', 'genericProducer', 'deterministicUnobservedPayload'],
-  ['judgment/legacy', 'deep-audit-judgment', 'concreteProducer', 'legacyJudgmentPayload'],
-  ['judgment/managed', 'deep-audit-judgment', 'concreteProducer', 'managedJudgmentPayload'],
   ['hook/local', 'deep-audit-hook-residue', 'genericProducer', 'hookPayload'],
   ['ci/signed', 'deep-audit-ci-enforced', 'genericProducer', 'ciPayload'],
-  ['a1b/legacy', 'deep-audit-component-a1b', 'concreteProducer', 'legacyA1bPayload'],
-  ['a1b/managed', 'deep-audit-component-a1b', 'concreteProducer', 'managedA1bPayload'],
 ]
 const goldens = new Map(cases.map(([label, evidenceKind, producerDefinition, payloadDefinition]) => {
   const envelope = structuredClone(baseEnvelope)
@@ -250,7 +245,7 @@ for (const [label, mutate] of [
 }
 
 const frozenSchemaManifest = {
-  inventory: ['deep', 'managed', 'observation', 'standardObservation'].map(name => ({
+  inventory: ['deep', 'observation', 'standardObservation'].map(name => ({
     path: PATHS[name],
     kind: 'file',
     sha256: sha256(readFileSync(resolve(ROOT, PATHS[name]))),
@@ -267,67 +262,38 @@ assert.throws(() => validateDeepAuditEvidenceContractSchema(goldens.get('determi
   manifest: substitutedManifest,
 }), /schema dependency differs from frozen manifest/)
 
-for (const label of ['judgment/legacy', 'judgment/managed', 'a1b/legacy', 'a1b/managed']) {
-  assertPoisonRejected(`${label}:generic-producer`, goldens.get(label), value => {
-    value.producer = schemaSample(schemas.deep.$defs.genericProducer, schemas.deep)
-  })
-}
-for (const label of ['judgment/managed', 'a1b/managed']) {
-  assertPoisonRejected(`${label}:sandbox-signature-open`, goldens.get(label), value => {
-    value.payload.sandboxReceipt.attestation.signatures[0].unexpected = true
-  })
-  assertPoisonRejected(`${label}:sandbox-ref-open`, goldens.get(label), value => {
-    value.payload.sandboxReceipt.unexpected = true
-  })
+// Judgment/A1b model envelopes retired 2026-08-04 with the model-broker
+// execution layer: any envelope carrying those kinds must fail both the direct
+// Ajv gate and the runtime schema gate, regardless of payload shape.
+for (const retiredKind of ['deep-audit-judgment', 'deep-audit-component-a1b']) {
+  const retiredEnvelope = structuredClone(baseEnvelope)
+  retiredEnvelope.evidenceKind = retiredKind
+  retiredEnvelope.payload = { any: 'payload' }
+  assert.equal(directDeepAccepts(retiredEnvelope), false, `Ajv accepted retired envelope kind:${retiredKind}`)
+  assert.throws(
+    () => validateDeepAuditEvidenceContractSchema(retiredEnvelope, { repoRoot: ROOT }),
+    /deep-audit contract schema failed/,
+    `runtime schema gate accepted retired envelope kind:${retiredKind}`,
+  )
 }
 assertPoisonRejected('ci/signed:receipt-signature-open', goldens.get('ci/signed'), value => {
   value.payload.receipt.attestation.signatures[0].unexpected = true
 })
 
-assert.equal(
-  schemas.deep.$defs.managedSandbox.$ref,
-  'https://qijenchen.dev/schemas/managed-ci-sandbox-receipt-v1.json',
-)
 const expectedPayloadRefs = {
   'deep-audit-deterministic': '#/$defs/deterministicPayload',
-  'deep-audit-judgment': '#/$defs/judgmentPayload',
   'deep-audit-hook-residue': '#/$defs/hookPayload',
   'deep-audit-ci-enforced': '#/$defs/ciPayload',
-  'deep-audit-component-a1b': '#/$defs/a1bPayload',
 }
 for (const branch of schemas.deep.$defs.evidenceEnvelope.allOf) {
   const kind = branch.if.properties.evidenceKind.const
-  assert.equal(branch.then.properties.payload.$ref, expectedPayloadRefs[kind])
   if (['deep-audit-judgment', 'deep-audit-component-a1b'].includes(kind)) {
-    assert.equal(branch.then.properties.producer.$ref, '#/$defs/concreteProducer')
+    assert.deepEqual(branch.then.not, {}, `retired envelope branch must reject everything:${kind}`)
+    continue
   }
+  assert.equal(branch.then.properties.payload.$ref, expectedPayloadRefs[kind])
 }
 
-const transcriptValidator = compile(schemas.transcript, [schemas.shardResult, schemas.modelReleaseAuthority])
-const transcriptGolden = schemaSample(schemas.transcript, schemas.transcript)
-assert.equal(
-  transcriptValidator.validate(transcriptGolden),
-  true,
-  `transcript golden failed strict Ajv:${transcriptValidator.ajv.errorsText(transcriptValidator.validate.errors)}`,
-)
-for (const [label, mutate] of [
-  ['exchange-open', value => { value.exchanges[0].unexpected = true }],
-  ['request-open', value => { value.exchanges[0].request.unexpected = true }],
-  ['response-open', value => { value.exchanges[0].response.unexpected = true }],
-  ['result-open', value => { value.exchanges[0].result.unexpected = true }],
-  ['result-missing', value => { delete value.exchanges[0].result }],
-]) {
-  const poison = structuredClone(transcriptGolden)
-  mutate(poison)
-  assert.equal(transcriptValidator.validate(poison), false, `transcript schema accepted poison:${label}`)
-}
-assert.equal(schemas.transcript.$defs.exchange.properties.result.$ref, schemas.shardResult.$id)
-for (const definition of ['exchange', 'request', 'response']) {
-  assert.equal(schemas.transcript.$defs[definition].additionalProperties, false)
-  assert.deepEqual(
-    [...schemas.transcript.$defs[definition].required].sort(),
-    Object.keys(schemas.transcript.$defs[definition].properties).sort(),
-  )
-}
-
-console.log('✅ deep-audit evidence/transcript strict-schema golden + poison runtime parity PASS')
+// The broker transcript/shard-result schema parity retired 2026-08-04 with the
+// model-broker execution layer (§8.3).
+console.log('✓ deep-audit evidence schema parity holds for the surviving evidence kinds')

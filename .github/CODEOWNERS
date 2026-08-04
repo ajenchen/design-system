@@ -15,39 +15,15 @@
 /.devcontainer/ @ajenchen
 
 # Managed-CI activation trust bundle (explicit defense in depth)
-/.github/workflows/deep-audit-managed.yml @ajenchen
-/.github/workflows/build-managed-ci-executors.yml @ajenchen
-/infra/governance/managed-ci-executor/ @ajenchen
-/infra/governance/managed-ci-class-adapters/ @ajenchen
-/infra/governance/providers/managed-ci-executor-supply-chain.json @ajenchen
-/infra/governance/providers/managed-ci-trusted-authority-policy.json @ajenchen
 /infra/governance/providers/managed-ci-model-release-authority-policy.json @ajenchen
-/infra/governance/schemas/managed-ci-executor-supply-chain.schema.json @ajenchen
-/infra/governance/schemas/managed-ci-trusted-authority-policy.schema.json @ajenchen
 /infra/governance/schemas/managed-ci-model-release-authority-policy.schema.json @ajenchen
 /infra/governance/schemas/managed-ci-model-release-authority-binding.schema.json @ajenchen
-/scripts/managed-ci-activated-workflow-contract.json @ajenchen
-/scripts/managed-ci-trusted-execution-plan.json @ajenchen
-/scripts/schemas/managed-ci-activated-workflow-contract.schema.json @ajenchen
-/scripts/schemas/managed-ci-trusted-execution-plan.schema.json @ajenchen
-/scripts/schemas/managed-ci-finalized-receipt.schema.json @ajenchen
-/scripts/lib/managed-ci-trusted-execution-plan.mjs @ajenchen
 /scripts/lib/model-release-authority.mjs @ajenchen
 /scripts/test-fixtures/model-release-authority-fixture.mjs @ajenchen
 /scripts/test-model-release-authority.mjs @ajenchen
-/scripts/verify-managed-ci-trusted-execution.mjs @ajenchen
-/scripts/test-managed-ci-trusted-execution.mjs @ajenchen
 /scripts/governance-build-graph.json @ajenchen
 
 # Protected external-ledger writer (explicit defense in depth)
-/.github/workflows/external-ledger-writer.yml @ajenchen
-/infra/governance/bin/external-ledger-writer.mjs @ajenchen
-/infra/governance/lib/external-ledger-writer.mjs @ajenchen
-/infra/governance/schemas/external-ledger-writer-dispatch.schema.json @ajenchen
-/infra/governance/schemas/external-ledger-writer-plan.schema.json @ajenchen
-/infra/governance/schemas/external-ledger-artifact-identity.schema.json @ajenchen
-/infra/governance/schemas/external-ledger-writer-receipt.schema.json @ajenchen
-/infra/governance/test/external-ledger-writer.test.mjs @ajenchen
 
 # Canonical DS and published-template sources
 /packages/design-system/ds-canonical/ @ajenchen
