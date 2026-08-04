@@ -129,7 +129,10 @@ if [ -n "$BENCH_DIR" ] && [ -x "$BENCH_FETCHER" ]; then
     SHOULD_AUTO_FETCH=1
     FETCH_REASON="never fetched"
   else
-    LAST_TS=$(stat -f '%m' "$LAST_FETCH_FILE" 2>/dev/null || echo "0")
+    # GNU coreutils first, BSD/macOS second — same portability order as stop_passive_logging.sh:181.
+    # Without the GNU form this silently returned 0 on Linux, which made every staleness window
+    # look infinitely old on containerized hosts.
+    LAST_TS=$(stat -c '%Y' "$LAST_FETCH_FILE" 2>/dev/null || stat -f '%m' "$LAST_FETCH_FILE" 2>/dev/null || echo "0")
     NOW=$(date +%s)
     DAYS=$(( (NOW - LAST_TS) / 86400 ))
     if [ "$DAYS" -gt 30 ]; then
@@ -156,7 +159,7 @@ if [ -n "$RECENT_FIX_COMMITS" ]; then
       if grep -q "scan-similar-bugs" <<<"$line"; then
         TS=$(echo "$line" | jq -r '.ts // empty' 2>/dev/null)
         if [ -n "$TS" ]; then
-          TS_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$TS" +%s 2>/dev/null || echo 0)
+          TS_EPOCH=$(date -u -d "$TS" +%s 2>/dev/null || date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$TS" +%s 2>/dev/null || echo 0)
           if [ "$TS_EPOCH" -gt "$DAY_AGO_EPOCH" ]; then
             RECENT_SCAN_INVOKE=1
             break

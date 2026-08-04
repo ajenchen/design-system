@@ -31,17 +31,21 @@ const commandsContract = {
   requiredEntries: ['README.md'],
 }
 
-test('generate is deterministic/idempotent and rejects retargeting without overwrite', t => {
+test('generate is deterministic/idempotent and retargets a stale alias atomically', t => {
   const root = fixture()
   t.after(() => rmSync(root, { recursive: true, force: true }))
   assert.equal(syncPluginAliases(root, [contract])[0].changed, true)
   assert.equal(lstatSync(join(root, 'skills')).isSymbolicLink(), true)
   assert.equal(readlinkSync(join(root, 'skills')), '.claude/skills')
   assert.equal(syncPluginAliases(root, [contract])[0].changed, false)
+  // A registry-driven retarget converges the stale link to the contract instead of refusing:
+  // refusal froze legitimate governed changes (2026-08-04 hooks/scripts retarget). The replacement
+  // is applied via exclusive temp create + rename, so the path never has a missing window.
   rmSync(join(root, 'skills'))
   symlinkSync('.claude', join(root, 'skills'))
-  assert.throws(() => syncPluginAliases(root, [contract]), /retargeted alias/)
-  assert.equal(readlinkSync(join(root, 'skills')), '.claude')
+  assert.equal(syncPluginAliases(root, [contract])[0].changed, true)
+  assert.equal(readlinkSync(join(root, 'skills')), '.claude/skills')
+  assert.equal(syncPluginAliases(root, [contract])[0].changed, false)
 })
 
 test('generator never clobbers regular user content', t => {

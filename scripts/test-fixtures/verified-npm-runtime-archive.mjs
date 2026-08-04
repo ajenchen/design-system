@@ -96,7 +96,7 @@ export function buildDeterministicNpmRuntimeArchive({
   const securityOverlayTarballBytes = deterministicArchive([
     ['package/package.json', `${JSON.stringify({
       name: 'brace-expansion',
-      version: '5.0.8',
+      version: '5.0.9',
       main: './dist/commonjs/index.js',
       exports: { '.': { require: './dist/commonjs/index.js' } },
     })}\n`, 0o644],
@@ -104,8 +104,8 @@ export function buildDeterministicNpmRuntimeArchive({
   ])
   const securityOverlayArtifact = Object.freeze({
     name: 'brace-expansion',
-    version: '5.0.8',
-    resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.8.tgz',
+    version: '5.0.9',
+    resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz',
     integrity: `sha512-${createHash('sha512').update(securityOverlayTarballBytes).digest('base64')}`,
   })
   const secondarySecurityOverlayTarballBytes = deterministicArchive([
@@ -153,8 +153,8 @@ export function installCanonicalNpmHttpsFixture({
       },
       {
         name: 'brace-expansion',
-        version: '5.0.8',
-        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.8.tgz',
+        version: '5.0.9',
+        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz',
       },
     )
     assert.ok(Buffer.isBuffer(securityOverlayTarballBytes) && securityOverlayTarballBytes.length > 0)

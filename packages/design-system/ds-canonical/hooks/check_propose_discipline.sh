@@ -113,10 +113,30 @@ if [ -z "$HAS_CLAIM" ]; then
   exit 0
 fi
 
-# Detect cite patterns
-# Accept: file.spec.md:42 | file.css:42 | file.tsx:42 | file.ts:42 | L42 | line 42 | semantic.css#L42
+# Detect cite patterns.
+# The rule's intent is "a claim must be verifiable", so the accepted forms must cover every place a
+# verifiable claim can live — not only design-system file types. Governance and CI claims live in
+# .mjs/.sh/.yml/.json, and claims about provider behaviour can only be sourced to external product
+# documentation, which has no repo line number. Keeping the narrow list turned honest citations into
+# BLOCKERs (2026-08-02: citing run-provider-hook.mjs and the official sandboxing docs was rejected),
+# which is the same "predicate narrower than intent" defect M7 warns about.
+# Accept: <file>.<ext>:42 for the source types below | L42 | L42-50 | #L42 | line 42 | https://… URL
+#
+# Deploy previews are not sources. Every solo-workflow reply carries a per-branch Netlify preview URL
+# (AGENTS.md, Git solo-work canonical step 2/5), so counting any URL as a citation would switch this
+# check off for exactly the replies it is meant to police. Negative-list rather than allowlist: an
+# allowlist of "real" documentation hosts drifts and reproduces the too-narrow predicate this hook
+# was widened to fix.
+# Blank out the URL text only. Dropping whole lines would also discard a real file:line citation that
+# happens to share a line with the preview link. Host-anchored: `[^/[:space:]]*` before the
+# alternation means the match must land in the authority component, so a documentation URL that
+# merely mentions "localhost" in its path or fragment is not blanked (2026-08-04 adversarial
+# review). ajenchen.github.io is this repo's own deployed Storybook — a deploy artifact, not a
+# source; scoped to the exact host so genuinely external *.github.io documentation still counts.
+NON_SOURCE_URL='https?://[^/[:space:]]*(\.netlify\.app|localhost|127\.0\.0\.1|0\.0\.0\.0|ajenchen\.github\.io)[^[:space:]]*'
+CITE_CANDIDATES=$(sed -E "s#${NON_SOURCE_URL}#(deploy-preview)#g" <<<"$LAST_REPLY")
 HAS_CITE=""
-if grep -qE '\.(spec\.md|css|tsx|ts|json):[0-9]+|#L[0-9]+|line[[:space:]]+[0-9]+|L[0-9]+-[0-9]+|L[0-9]+' <<<"$LAST_REPLY"; then
+if grep -qE '\.(spec\.md|md|css|tsx|ts|mjs|cjs|js|json|sh|ya?ml|toml):[0-9]+|#L[0-9]+|line[[:space:]]+[0-9]+|L[0-9]+-[0-9]+|L[0-9]+|https?://[^[:space:]]+' <<<"$CITE_CANDIDATES"; then
   HAS_CITE="found"
 fi
 
@@ -125,7 +145,8 @@ if [ -z "$HAS_CITE" ]; then
 🚨 PROPOSE-WITHOUT-CITE BLOCKER(2026-05-27 user verbatim「沒有好好按照規則和 ssot 跑設計」)
 
   你 reply 含 claim keyword(規定 / 必配 / 必須用 / canonical 寫 / spec 寫 / 強制)
-  但**無 file:line cite**(`.spec.md:42` / `.css:42` / `.tsx:42` / `L42` / `line 42` 任一)。
+  但**無可驗證 cite**(`.spec.md:42` / `.tsx:42` / `.mjs:42` / `.sh:42` / `.yml:42` /
+  `L42` / `line 42` / 外部官方文件 URL 任一)。
 
   Anchor 2026-05-27:我憑印象斷言「DS spec 規定 caption + muted」,user grep verify
   發現 semantic.css L49 只是 token use-case 描述,**沒「必配」rule**。瞎掰造成 user

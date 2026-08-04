@@ -34,7 +34,6 @@ const ROOTS = [
   'packages/governance/test/**/*.test.mjs',
   'scripts/**/test-*.mjs',
   'packages/design-system/ds-canonical/hooks/tests/**/test_*.sh{,.broken}',
-  '.claude/hooks/tests/**/test_*.sh{,.broken}',
 ]
 const CANONICAL_HOOK_RUNTIME_ROOT = 'packages/design-system/ds-canonical/hooks'
 const CANONICAL_HOOK_ROOT = `${CANONICAL_HOOK_RUNTIME_ROOT}/tests`
@@ -206,16 +205,10 @@ function fixture() {
       closurePolicy: 'claim-contract-and-schema-are-static-all-harness-receipt-inputs',
     },
     gateMetaExclusions: { path: 'scripts/gate-meta-test-exclusions.json', sha256: digest(gatePath) },
-    generatedMirrors: [{
-      id: 'claude-hook-behavioral-tests',
-      canonicalRoot: CANONICAL_HOOK_ROOT,
-      mirrorRoot: GENERATED_HOOK_ROOT,
-      include: ['run-all.sh', '**/*.mjs', '**/test_*.sh', '**/test_*.sh.broken'],
-      treeSha256: hookTreeDigest(root),
-    }],
+    generatedMirrors: [],
     canonicalHookStaticHelpers: {
       root: CANONICAL_HOOK_RUNTIME_ROOT,
-      policy: 'all-active-mjs-exact-digest-and-consumer-bound;shell-dynamic-node-code-forbidden;generated-test-helper-mirror-bound',
+      policy: 'all-active-mjs-exact-digest-and-consumer-bound;shell-dynamic-node-code-forbidden',
       entries: [
         {
           path: canonicalHookRuntimeHelperPath,
@@ -311,10 +304,6 @@ test('actual inventory schemas compile and the canonical registry is dynamically
     ...inventory.direct,
     ...inventory.externalExclusions,
     ...inventory.reviewedDisabled.map(entry => entry.path),
-    ...inventory.reviewedDisabled.map(entry => entry.path.replace('packages/design-system/ds-canonical', '.claude')),
-    ...inventory.suites
-      .find(suite => suite.id === 'canonical-hook-behavioral')
-      .members.map(path => path.replace('packages/design-system/ds-canonical', '.claude')),
     ...JSON.parse(readFileSync(resolve(ROOT, inventory.nonGovernance.path), 'utf8')).entries.map(entry => entry.path),
   ])].sort(compareUtf8Bytes)
   assert.deepEqual(classified, discoverHarnessSources(ROOT))
@@ -360,39 +349,26 @@ test('declared globs include underscores and direct plus paired-meta is the only
   }
 })
 
-test('recursive hook ownership runs only the canonical aggregate and digest-binds the generated mirror', () => {
+test('recursive hook ownership runs only the canonical aggregate and rejects reintroduced mirrors', () => {
   const { root, inventory, registry } = fixture()
   try {
     assert.equal(validateHarnessSourceInventory(inventory, { repoRoot: root, registry }), true)
     const hookSuite = inventory.suites.find(suite => suite.id === 'canonical-hook-behavioral')
     assert.deepEqual(hookSuite.execution.command, ['bash', `${CANONICAL_HOOK_ROOT}/run-all.sh`])
     assert.deepEqual(hookSuite.members, [`${CANONICAL_HOOK_ROOT}/test_fixture.sh`])
-    assert.equal(registry.entries[0].commands.some(command => command.includes(`${GENERATED_HOOK_ROOT}/run-all.sh`)), false)
 
-    const mirrorAggregate = structuredClone(inventory)
-    mirrorAggregate.suites[0].execution.command[1] = `${GENERATED_HOOK_ROOT}/run-all.sh`
-    assert.throws(() => validateHarnessSourceInventory(mirrorAggregate, { repoRoot: root, registry }), /aggregate command is invalid/)
+    // The generated mirror retired 2026-08-04: declaring one again must fail closed.
+    const reintroducedMirror = structuredClone(inventory)
+    reintroducedMirror.generatedMirrors = [{
+      id: 'claude-hook-behavioral-tests',
+      canonicalRoot: CANONICAL_HOOK_ROOT,
+      mirrorRoot: '.claude/hooks/tests',
+      include: ['run-all.sh', '**/*.mjs', '**/test_*.sh', '**/test_*.sh.broken'],
+      treeSha256: hookTreeDigest(root),
+    }]
+    assert.throws(() => validateHarnessSourceInventory(reintroducedMirror, { repoRoot: root, registry }), /retired and must stay empty/)
 
-    const mirrorDirectRegistry = structuredClone(registry)
-    mirrorDirectRegistry.entries[0].commands.push(['node', `${GENERATED_HOOK_ROOT}/test_fixture.sh`])
-    assert.throws(() => validateHarnessSourceInventory(inventory, { repoRoot: root, registry: mirrorDirectRegistry }), /direct sources differ/)
-
-    writeFileSync(join(root, GENERATED_HOOK_ROOT, 'test_fixture.sh'), '#!/usr/bin/env bash\nfalse\n')
-    assert.throws(() => validateHarnessSourceInventory(inventory, { repoRoot: root, registry }), /mirror differs/)
-
-    writeFileSync(
-      join(root, GENERATED_HOOK_ROOT, 'test_fixture.sh'),
-      readFileSync(join(root, CANONICAL_HOOK_ROOT, 'test_fixture.sh')),
-    )
-    writeFileSync(join(root, GENERATED_HOOK_ROOT, 'fixture-helper.mjs'), 'process.exit(1)\n')
-    assert.throws(() => validateHarnessSourceInventory(inventory, { repoRoot: root, registry }), /mirror differs/)
-    writeFileSync(
-      join(root, GENERATED_HOOK_ROOT, 'fixture-helper.mjs'),
-      readFileSync(join(root, CANONICAL_HOOK_ROOT, 'fixture-helper.mjs')),
-    )
     write(root, `${CANONICAL_HOOK_ROOT}/nested/test_new.sh`, '#!/usr/bin/env bash\ntrue\n')
-    write(root, `${GENERATED_HOOK_ROOT}/nested/test_new.sh`, '#!/usr/bin/env bash\ntrue\n')
-    inventory.generatedMirrors[0].treeSha256 = hookTreeDigest(root)
     assert.throws(() => validateHarnessSourceInventory(inventory, { repoRoot: root, registry }), /recursive hook-test tree/)
   } finally {
     rmSync(root, { recursive: true, force: true })
@@ -403,9 +379,9 @@ test('disabled .broken hook tests are discovered, digest-bound, owner-assigned a
   const { root, inventory, registry } = fixture()
   try {
     const brokenPath = `${CANONICAL_HOOK_ROOT}/test_retired.sh.broken`
-    const brokenMirror = `${GENERATED_HOOK_ROOT}/test_retired.sh.broken`
     assert.ok(discoverHarnessSources(root).includes(brokenPath))
-    assert.ok(discoverHarnessSources(root).includes(brokenMirror))
+    // The retired mirror tree is invisible to discovery even when stale leftovers exist on disk.
+    assert.ok(!discoverHarnessSources(root).some(path => path.startsWith('.claude/hooks/')))
     assert.equal(validateHarnessSourceInventory(inventory, { repoRoot: root, registry }), true)
 
     const undeclared = structuredClone(inventory)
@@ -429,8 +405,6 @@ test('disabled .broken hook tests are discovered, digest-bound, owner-assigned a
     assert.throws(() => validateHarnessSourceInventory(vagueRemediation, { repoRoot: root, registry }), /remediation is not substantive/)
 
     write(root, `${CANONICAL_HOOK_ROOT}/test_silent_escape.sh.broken`, '#!/usr/bin/env bash\nfalse\n')
-    write(root, `${GENERATED_HOOK_ROOT}/test_silent_escape.sh.broken`, '#!/usr/bin/env bash\nfalse\n')
-    inventory.generatedMirrors[0].treeSha256 = hookTreeDigest(root)
     assert.throws(() => validateHarnessSourceInventory(inventory, { repoRoot: root, registry }), /reviewed disabled debt differs/)
   } finally {
     rmSync(root, { recursive: true, force: true })

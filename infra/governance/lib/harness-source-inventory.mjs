@@ -29,7 +29,6 @@ export const HARNESS_SOURCE_ROOTS = Object.freeze([
   'packages/governance/test/**/*.test.mjs',
   'scripts/**/test-*.mjs',
   'packages/design-system/ds-canonical/hooks/tests/**/test_*.sh{,.broken}',
-  '.claude/hooks/tests/**/test_*.sh{,.broken}',
 ])
 export const HARNESS_STATIC_EXECUTION_FIXTURE_ROOT = 'scripts/test-fixtures/transitive-execution'
 export const HARNESS_EXECUTION_BOUNDARY = 'Committed test-source plus registered static-execution-fixture closure with structured argv, exact fixture digests, stripped credentials, isolated HOME/TMP and bounded process groups; entrypoint and registered Node fixture AST review is defense-in-depth, not arbitrary imported-dependency containment; this is not an OS sandbox and does not certify containment against arbitrary concurrent worktree or external writes.'
@@ -38,13 +37,11 @@ const SOURCE_ROOT_MATCHERS = Object.freeze([
   { directory: 'packages/governance/test', matches: name => name.endsWith('.test.mjs') },
   { directory: 'scripts', matches: name => name.startsWith('test-') && name.endsWith('.mjs') },
   { directory: 'packages/design-system/ds-canonical/hooks/tests', matches: name => name.startsWith('test_') && (name.endsWith('.sh') || name.endsWith('.sh.broken')) },
-  { directory: '.claude/hooks/tests', matches: name => name.startsWith('test_') && (name.endsWith('.sh') || name.endsWith('.sh.broken')) },
 ])
 const CANONICAL_HOOK_SUITE_ID = 'canonical-hook-behavioral'
 const CANONICAL_HOOK_TEST_ROOT = 'packages/design-system/ds-canonical/hooks/tests'
 const CANONICAL_HOOK_ROOT = 'packages/design-system/ds-canonical/hooks'
 const CANONICAL_HOOK_RUNNER = `${CANONICAL_HOOK_TEST_ROOT}/run-all.sh`
-const CLAUDE_HOOK_TEST_MIRROR_ROOT = '.claude/hooks/tests'
 const CHILD_PROCESS_MODULES = new Set(['child_process', 'node:child_process'])
 const NODE_MODULE_MODULES = new Set(['module', 'node:module'])
 const DYNAMIC_CODE_MODULES = new Set(['node:vm', 'vm'])
@@ -2022,34 +2019,20 @@ export function discoverHarnessSources(repoRoot = DEFAULT_HARNESS_SOURCE_REPO_RO
   return discovered.sort(compareUtf8Bytes)
 }
 
+// The `.claude/hooks` mirror was retired on 2026-08-04: the runtime dispatcher, the plugin
+// hooks/scripts alias, and npm run hooks:test all read the canonical corpus directly, so a
+// digest-bound second copy protected nothing while forcing every hook edit through a write-denied
+// path. The inventory keeps the field so a mirror cannot be silently reintroduced without a schema
+// change; it must stay empty.
 export function deriveHarnessGeneratedMirrorBinding(inventory, {
   repoRoot = DEFAULT_HARNESS_SOURCE_REPO_ROOT,
 } = {}) {
-  invariant(Array.isArray(inventory?.generatedMirrors) && inventory.generatedMirrors.length === 1, 'Harness source inventory must bind the generated hook-test mirror exactly once')
-  const mirror = inventory.generatedMirrors[0]
-  exactKeys(mirror, ['id', 'canonicalRoot', 'mirrorRoot', 'include', 'treeSha256'], 'Harness generated mirror binding')
-  invariant(mirror.id === 'claude-hook-behavioral-tests', 'Harness generated mirror identity is invalid')
-  invariant(mirror.canonicalRoot === CANONICAL_HOOK_TEST_ROOT, 'Harness generated mirror canonical root is invalid')
-  invariant(mirror.mirrorRoot === CLAUDE_HOOK_TEST_MIRROR_ROOT, 'Harness generated mirror root is invalid')
   invariant(
-    JSON.stringify(mirror.include) === JSON.stringify(['run-all.sh', '**/*.mjs', '**/test_*.sh', '**/test_*.sh.broken']),
-    'Harness generated mirror include policy is invalid',
+    Array.isArray(inventory?.generatedMirrors) && inventory.generatedMirrors.length === 0,
+    'Harness source inventory generated mirrors are retired and must stay empty',
   )
-  invariant(/^[a-f0-9]{64}$/.test(mirror.treeSha256), 'Harness generated mirror tree digest is invalid')
-  const canonicalHookTree = hookTreeManifest(repoRoot, mirror.canonicalRoot, 'Harness canonical hook-test tree')
-  const generatedHookTree = hookTreeManifest(repoRoot, mirror.mirrorRoot, 'Harness generated hook-test mirror')
-  invariant(
-    JSON.stringify(generatedHookTree.records) === JSON.stringify(canonicalHookTree.records),
-    'Harness generated hook-test mirror differs from its canonical tree',
-  )
-  return Object.freeze({
-    binding: Object.freeze({
-      ...mirror,
-      treeSha256: canonicalHookTree.treeSha256,
-    }),
-    canonicalHookTree,
-    generatedHookTree,
-  })
+  const canonicalHookTree = hookTreeManifest(repoRoot, CANONICAL_HOOK_TEST_ROOT, 'Harness canonical hook-test tree')
+  return Object.freeze({ canonicalHookTree })
 }
 
 export function validateHarnessSourceInventory(inventory, {
@@ -2192,7 +2175,7 @@ export function validateHarnessSourceInventory(inventory, {
     'Harness canonical hook static-helper root is not canonical',
   )
   invariant(
-    inventory.canonicalHookStaticHelpers.policy === 'all-active-mjs-exact-digest-and-consumer-bound;shell-dynamic-node-code-forbidden;generated-test-helper-mirror-bound',
+    inventory.canonicalHookStaticHelpers.policy === 'all-active-mjs-exact-digest-and-consumer-bound;shell-dynamic-node-code-forbidden',
     'Harness canonical hook static-helper policy is diluted',
   )
   invariant(
@@ -2279,15 +2262,8 @@ export function validateHarnessSourceInventory(inventory, {
     classified.add(path)
   }
 
-  const generatedMirror = deriveHarnessGeneratedMirrorBinding(inventory, { repoRoot })
-  const mirror = inventory.generatedMirrors[0]
-  const { canonicalHookTree, generatedHookTree } = generatedMirror
-  invariant(mirror.treeSha256 === generatedMirror.binding.treeSha256, 'Harness generated hook-test mirror digest drifted')
+  const { canonicalHookTree } = deriveHarnessGeneratedMirrorBinding(inventory, { repoRoot })
   validateCanonicalActiveHookCoverage(repoRoot, canonicalHookTree)
-  for (const record of generatedHookTree.records) {
-    if (!isActiveHookTestPath(record.path)) continue
-    addRole(`${mirror.mirrorRoot}/${record.path}`, 'generated-mirror')
-  }
 
   invariant(Array.isArray(inventory.reviewedDisabled), 'Harness reviewed disabled debt must be an array')
   const expectedDisabled = canonicalHookTree.records
@@ -2317,9 +2293,6 @@ export function validateHarnessSourceInventory(inventory, {
     const absolute = resolveRegularRepoFile(repoRoot, item.path, 'Harness reviewed disabled source')
     invariant(sha256(readFileSync(absolute)) === item.sha256, `Harness reviewed disabled source digest drifted:${item.path}`)
     addRole(item.path, 'reviewed-disabled-debt')
-    const mirrorPath = item.path.replace(CANONICAL_HOOK_TEST_ROOT, CLAUDE_HOOK_TEST_MIRROR_ROOT)
-    resolveRegularRepoFile(repoRoot, mirrorPath, 'Harness generated disabled source mirror')
-    addRole(mirrorPath, 'generated-disabled-debt')
     disabledPaths.push(item.path)
   }
   invariant(JSON.stringify(disabledPaths) === JSON.stringify([...new Set(disabledPaths)].sort(compareUtf8Bytes)), 'Harness reviewed disabled debt entries must be sorted and unique')

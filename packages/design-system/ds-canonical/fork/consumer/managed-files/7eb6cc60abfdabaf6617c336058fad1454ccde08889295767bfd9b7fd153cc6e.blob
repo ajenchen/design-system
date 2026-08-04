@@ -40,9 +40,9 @@ const MAX_ARCHIVE_ENTRIES = 5_000
 const MAX_ARCHIVE_PATH_BYTES = 256
 const textDecoder = new TextDecoder('utf-8', { fatal: true })
 const NPM_RUNTIME_OVERLAY_ALIAS = 'npm-runtime-brace-expansion-patch'
-const NPM_RUNTIME_OVERLAY_SPEC = 'npm:brace-expansion@5.0.8'
+const NPM_RUNTIME_OVERLAY_SPEC = 'npm:brace-expansion@5.0.9'
 const NPM_RUNTIME_OVERLAY_PACKAGE = 'brace-expansion'
-const NPM_RUNTIME_OVERLAY_VERSION = '5.0.8'
+const NPM_RUNTIME_OVERLAY_VERSION = '5.0.9'
 const NPM_RUNTIME_OVERLAY_REPLACED_VERSION = '5.0.7'
 const NPM_RUNTIME_OVERLAY_TARGET = 'node_modules/brace-expansion'
 const NPM_RUNTIME_OVERLAY_CONSUMER = 'node_modules/minimatch'
@@ -302,7 +302,7 @@ export async function downloadCanonicalNpmTarball(url, { timeoutMs = 30_000 } = 
 export async function downloadCanonicalNpmSecurityOverlayTarball(url, { timeoutMs = 30_000 } = {}) {
   return downloadCanonicalRegistryTarball(url, {
     label: 'canonical npm security overlay',
-    pathPattern: /^\/(?:brace-expansion\/-\/brace-expansion-5\.0\.8|tar\/-\/tar-7\.5\.22)\.tgz$/,
+    pathPattern: /^\/(?:brace-expansion\/-\/brace-expansion-5\.0\.9|tar\/-\/tar-7\.5\.22)\.tgz$/,
     timeoutMs,
   })
 }

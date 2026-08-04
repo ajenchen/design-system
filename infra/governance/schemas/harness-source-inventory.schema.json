@@ -31,8 +31,7 @@
         "infra/governance/test/**/*.test.mjs",
         "packages/governance/test/**/*.test.mjs",
         "scripts/**/test-*.mjs",
-        "packages/design-system/ds-canonical/hooks/tests/**/test_*.sh{,.broken}",
-        ".claude/hooks/tests/**/test_*.sh{,.broken}"
+        "packages/design-system/ds-canonical/hooks/tests/**/test_*.sh{,.broken}"
       ]
     },
     "executionBoundary": {
@@ -51,10 +50,8 @@
     "gateMetaExclusions": {"$ref": "#/$defs/gateDigestBinding"},
     "generatedMirrors": {
       "type": "array",
-      "description": "Digest-bound generated test mirrors are source identities, not additional execution owners.",
-      "minItems": 1,
-      "maxItems": 1,
-      "items": {"$ref": "#/$defs/generatedMirrorBinding"}
+      "description": "Retired 2026-08-04: the .claude/hooks mirror had no runtime consumer and forced every hook edit through a write-denied path. The field stays so reintroducing a mirror requires an explicit schema change; it must remain empty.",
+      "maxItems": 0
     },
     "canonicalHookStaticHelpers": {
       "type": "object",
@@ -63,7 +60,7 @@
       "required": ["root", "policy", "entries"],
       "properties": {
         "root": {"const": "packages/design-system/ds-canonical/hooks"},
-        "policy": {"const": "all-active-mjs-exact-digest-and-consumer-bound;shell-dynamic-node-code-forbidden;generated-test-helper-mirror-bound"},
+        "policy": {"const": "all-active-mjs-exact-digest-and-consumer-bound;shell-dynamic-node-code-forbidden"},
         "entries": {
           "type": "array",
           "minItems": 1,
@@ -150,18 +147,6 @@
       "properties": {
         "path": {"const": "infra/governance/providers/harness-non-governance-exclusions.json"},
         "sha256": {"$ref": "#/$defs/sha256"}
-      }
-    },
-    "generatedMirrorBinding": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "canonicalRoot", "mirrorRoot", "include", "treeSha256"],
-      "properties": {
-        "id": {"const": "claude-hook-behavioral-tests"},
-        "canonicalRoot": {"const": "packages/design-system/ds-canonical/hooks/tests"},
-        "mirrorRoot": {"const": ".claude/hooks/tests"},
-        "include": {"const": ["run-all.sh", "**/*.mjs", "**/test_*.sh", "**/test_*.sh.broken"]},
-        "treeSha256": {"$ref": "#/$defs/sha256"}
       }
     },
     "reviewedDisabledEntry": {

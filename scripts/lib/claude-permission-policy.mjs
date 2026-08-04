@@ -208,7 +208,13 @@ export function readClaudePermissionPolicy({ sourceRoot = DEFAULT_ROOT } = {}) {
     || sandbox.failIfUnavailable !== true
     || sandbox.autoAllowBashIfSandboxed !== true
     || sandbox.allowUnsandboxedCommands !== false
-    || sandbox.enableWeakerNestedSandbox !== false
+    // enableWeakerNestedSandbox must stay true: it is the only documented way for the Linux
+    // bubblewrap sandbox to start inside an already-containerized host (Claude Code cloud runs an
+    // Ubuntu container, where bwrap cannot mount a fresh /proc and must bind-mount the container's
+    // existing one). It is inert on macOS, which sandboxes through Seatbelt rather than bubblewrap.
+    // Forcing it false does not harden anything; it only makes `failIfUnavailable` abort every
+    // containerized session before the first tool call, which is how cloud sessions regressed.
+    || sandbox.enableWeakerNestedSandbox !== true
     || sandbox.enableWeakerNetworkIsolation !== false
     || sandbox.allowAppleEvents !== false
     || sandbox.excludedCommands.length !== 0

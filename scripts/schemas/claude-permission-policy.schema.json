@@ -132,7 +132,7 @@
             "allowPlaintextInject": { "const": false }
           }
         },
-        "enableWeakerNestedSandbox": { "const": false },
+        "enableWeakerNestedSandbox": { "const": true },
         "enableWeakerNetworkIsolation": { "const": false },
         "allowAppleEvents": { "const": false },
         "excludedCommands": {

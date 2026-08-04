@@ -2175,7 +2175,10 @@ function verifyClaudeDelivery({ desired, release, readback, hostRoot, platform, 
   invariant(sha256(readFileSync(installedHookViewPath)) === sha256(hookViewBytes), 'Claude installed hook registration view digest mismatch')
   const canonicalDigest = candidatePrefixDigest(candidateSourceFiles, 'packages/design-system/ds-canonical/hooks', 'candidate canonical Claude hook corpus')
   const installedCanonicalDigest = treeDigest(installedHookPath, 'installed Claude hook corpus')
-  const scriptDigest = candidatePrefixDigest(candidateSourceFiles, '.claude/hooks', 'candidate Claude plugin hook scripts')
+  // hooks/scripts aliases the canonical corpus directly since the .claude/hooks mirror retired
+  // (2026-08-04), so the installed alias materialization must match the same canonical digest —
+  // there is no second candidate tree to compare against anymore.
+  const scriptDigest = canonicalDigest
   const installedScriptDigest = treeDigest(installedHookScriptsPath, 'installed Claude plugin hook scripts')
   const runtimeDependencies = buildExpectedClaudePluginRuntime(candidateSourceFiles)
   for (const expected of runtimeDependencies.roots) {
@@ -2277,7 +2280,6 @@ export function verifyManagedHostAssurance({
     desired.releaseBinding.marketplaceManifest,
     desired.releaseBinding.pluginManifest,
     'hooks/hooks.json',
-    '.claude/hooks',
   ]
   const suppliedReadbacks = Object.keys(effectiveReadbacks).length > 0
   const candidateSourceFiles = release.status === 'ready' && suppliedReadbacks

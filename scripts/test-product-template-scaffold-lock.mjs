@@ -301,7 +301,7 @@ test('actual clean-room mirror closes every generated provider/fork scaffold fil
     'npm-runtime-brace-expansion-patch': mirrorManifest.devDependencies['npm-runtime-brace-expansion-patch'],
     'npm-runtime-tar-patch': mirrorManifest.devDependencies['npm-runtime-tar-patch'],
   }, {
-    'npm-runtime-brace-expansion-patch': 'npm:brace-expansion@5.0.8',
+    'npm-runtime-brace-expansion-patch': 'npm:brace-expansion@5.0.9',
     'npm-runtime-tar-patch': 'npm:tar@7.5.22',
   })
   assert.deepEqual(mirrorManifest.overrides, {

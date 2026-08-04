@@ -6,8 +6,7 @@
     "infra/governance/test/**/*.test.mjs",
     "packages/governance/test/**/*.test.mjs",
     "scripts/**/test-*.mjs",
-    "packages/design-system/ds-canonical/hooks/tests/**/test_*.sh{,.broken}",
-    ".claude/hooks/tests/**/test_*.sh{,.broken}"
+    "packages/design-system/ds-canonical/hooks/tests/**/test_*.sh{,.broken}"
   ],
   "executionBoundary": "Committed test-source plus registered static-execution-fixture closure with structured argv, exact fixture digests, stripped credentials, isolated HOME/TMP and bounded process groups; entrypoint and registered Node fixture AST review is defense-in-depth, not arbitrary imported-dependency containment; this is not an OS sandbox and does not certify containment against arbitrary concurrent worktree or external writes.",
   "authorityContract": {
@@ -19,23 +18,10 @@
     "path": "scripts/gate-meta-test-exclusions.json",
     "sha256": "e2719682bf8a7a5e61ae6de0ce81bf2303862c8221f5ce24af7cda67ffd26132"
   },
-  "generatedMirrors": [
-    {
-      "id": "claude-hook-behavioral-tests",
-      "canonicalRoot": "packages/design-system/ds-canonical/hooks/tests",
-      "mirrorRoot": ".claude/hooks/tests",
-      "include": [
-        "run-all.sh",
-        "**/*.mjs",
-        "**/test_*.sh",
-        "**/test_*.sh.broken"
-      ],
-      "treeSha256": "662321437af867efb4a827a518b1f1e7fc6ac426d6303aade2d5e42c7d6ce0de"
-    }
-  ],
+  "generatedMirrors": [],
   "canonicalHookStaticHelpers": {
     "root": "packages/design-system/ds-canonical/hooks",
-    "policy": "all-active-mjs-exact-digest-and-consumer-bound;shell-dynamic-node-code-forbidden;generated-test-helper-mirror-bound",
+    "policy": "all-active-mjs-exact-digest-and-consumer-bound;shell-dynamic-node-code-forbidden",
     "entries": [
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",

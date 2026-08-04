@@ -328,8 +328,11 @@ if (process.argv[2] === 'audit' && process.argv.includes('--audit-level=high')) 
     vulnerabilities: {
       'brace-expansion': {
         name: 'brace-expansion', severity: 'high', isDirect: false,
-        via: [{ source: 1130591, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-mh99-v99m-4gvg', severity: 'high', range: '>=4.0.0 <5.0.8' }],
-        effects: [], range: '4.0.0 - 5.0.7', nodes: ['node_modules/npm/node_modules/brace-expansion'],
+        via: [
+          { source: 1130591, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-mh99-v99m-4gvg', severity: 'high', range: '>=4.0.0 <5.0.8' },
+          { source: 1130734, name: 'brace-expansion', dependency: 'brace-expansion', url: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895', severity: 'high', range: '>=4.0.0 <5.0.9' },
+        ],
+        effects: [], range: '4.0.0 - 5.0.8', nodes: ['node_modules/npm/node_modules/brace-expansion'],
       },
       npm: {
         name: 'npm', severity: 'moderate', isDirect: true, via: ['tar'], effects: [],
@@ -406,7 +409,7 @@ fs.writeFileSync(path.join(installedMinimatch, 'package.json'), JSON.stringify({
 fs.writeFileSync(path.join(installedMinimatch, 'index.js'), "const { expand } = require('brace-expansion')\\nexports.minimatch = (value, pattern) => expand(pattern).includes(value)\\n")
 fs.writeFileSync(path.join(installedTar, 'package.json'), JSON.stringify({ name: 'tar', version: '7.5.19' }) + '\\n')
 for (const [directory, manifest] of [
-  ['npm-runtime-brace-expansion-patch', { name: 'brace-expansion', version: '5.0.8' }],
+  ['npm-runtime-brace-expansion-patch', { name: 'brace-expansion', version: '5.0.9' }],
   ['npm-runtime-tar-patch', { name: 'tar', version: '7.5.22' }],
 ]) {
   const target = path.join(process.cwd(), 'node_modules', directory)

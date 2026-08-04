@@ -25,6 +25,7 @@ import {
 import { hostname, tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { runClosedGit } from '../../packages/governance/src/closed-tool-execution.mjs'
 import {
   buildProviderAdapterTargets,
   checkProviderAdapterTargets,
@@ -656,6 +657,18 @@ function validateAuthorityGenerationJournal(root, {
   return { root, journalPath, journal, transactionRoot, targets }
 }
 
+function gitIndexHoldsExactSymlink(root, path, target) {
+  try {
+    const listing = runClosedGit(['ls-files', '-s', '--', path], { cwd: root })
+    const match = listing.stdout.match(/^120000 ([0-9a-f]{40,64}) 0\t/)
+    if (!match) return false
+    const blob = runClosedGit(['cat-file', 'blob', match[1]], { cwd: root })
+    return blob.stdout === target
+  } catch {
+    return false
+  }
+}
+
 export function assertAuthorityGenerationIdle({ root = MODULE_ROOT } = {}) {
   root = canonicalRepositoryRoot(root)
   const journalPath = authorityGenerationJournalPath(root)
@@ -733,6 +746,7 @@ export function runAtomicAuthorityGenerationTransaction({
   invariant(typeof verifyWorkspace === 'function' && typeof verifyLive === 'function', 'authority generation verification callbacks are invalid')
   const recovered = recoverInterruptedAuthorityGeneration({ root, targetPaths: targets })
   reapAbandonedAuthorityGenerationStaging({ root })
+  const indexAuthoritativeSymlinks = []
   const transactionId = randomUUID()
   const transactionRoot = expectedAuthorityGenerationRoot(root, transactionId)
   const workspaceRoot = join(transactionRoot, 'workspace')
@@ -818,6 +832,22 @@ export function runAtomicAuthorityGenerationTransaction({
         failureInjector?.({ phase: 'after-target', index, entry, transactionId })
         continue
       }
+      // A symlink output whose exact after-image is already recorded in the Git index is committed
+      // even when this checkout cannot rewrite the live link (a sandboxed session's read-only
+      // path). Every fresh checkout materializes the committed link, and the index-aware stage
+      // checks in verifyLive still validate the repository, so only this checkout stays stale.
+      // Genuine drift — the index absent or disagreeing with the staged content — still publishes.
+      // The skip is reported to the caller: a precommit that stages outputs from the working tree
+      // afterwards would silently clobber the index entry back to the stale link (that is exactly
+      // how the first retarget commit shipped the wrong target), so it must restore these entries.
+      if (entry.before.kind === 'symlink' && entry.after.kind === 'symlink') {
+        const stagedTarget = readlinkSync(join(workspaceRoot, entry.path))
+        if (gitIndexHoldsExactSymlink(root, entry.path, stagedTarget)) {
+          indexAuthoritativeSymlinks.push({ path: entry.path, target: stagedTarget })
+          failureInjector?.({ phase: 'after-target', index, entry, transactionId })
+          continue
+        }
+      }
       removeAuthorityEntry(root, entry.path, 'authority generation publish target')
       if (entry.after.present) {
         const staged = join(workspaceRoot, entry.path)
@@ -845,7 +875,7 @@ export function runAtomicAuthorityGenerationTransaction({
     fsyncDirectory(root)
     rmSync(transactionRoot, { recursive: true, force: true })
     fsyncDirectory(dirname(root))
-    return { recovered, transactionId, targetCount: entries.length, authorityFingerprint: authorityBefore }
+    return { recovered, transactionId, targetCount: entries.length, authorityFingerprint: authorityBefore, indexAuthoritativeSymlinks }
   } catch (error) {
     if (journalCreated && pathEntryExists(authorityGenerationJournalPath(root))) {
       try {

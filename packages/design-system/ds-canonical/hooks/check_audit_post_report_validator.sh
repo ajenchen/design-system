@@ -45,7 +45,12 @@ IS_FINAL_REPORT=0
 case "$FILE_PATH" in
   */audit-report-*.json) IS_FINAL_REPORT=1 ;;
   */project_audit_progress.md) ;;
+  # Generic final-report names fire too: gating on one exact prefix let a differently-named
+  # final report skip the whole validator family (2026-08-04 adversarial review, evasion 4).
+  # Renaming the artifact past these patterns remains possible; that residual is documented
+  # in the deep-audit skill rather than chased with an ever-longer list.
   */C1-final-report*.md) IS_FINAL_REPORT=1 ;;
+  */final-report*.md|*/final_report*.md|*-final-report*.md) IS_FINAL_REPORT=1 ;;
   *) exit 0 ;;
 esac
 
@@ -131,7 +136,20 @@ DIM_TOTAL=$(
   node -- "$HOOK_DIR/lib/audit-report-validator.mjs" \
     expected-dimensions "$AUDIT_MATRIX" 2>/dev/null || echo 91
 )
-DIM_COUNT=$(grep -oiE '\bdim[[:space:]]+[0-9]{1,2}\b' "$FILE_PATH" 2>/dev/null | grep -oE '[0-9]+' | sort -un | wc -l | tr -d ' ')
+# Counts every dimension notation the corpus actually uses: `dim N`, `維度 N`, `第N維`, and `DN`.
+# A report written in any single notation the counter did not know scored 0 unique dimensions,
+# which silently disabled every dim-gated validator below — including M (2026-08-04 adversarial
+# review, evasion 3). `D` tokens are isolated with `tr` instead of boundary classes: BSD grep has
+# no `\b`, and a bracket-class boundary consumed by `grep -o` swallows the separator between
+# adjacent tokens (`D8,D9` counted one of two).
+DIM_COUNT=$(
+  {
+    grep -oiE '\bdim[[:space:]]+[0-9]{1,2}\b' "$FILE_PATH" 2>/dev/null
+    grep -oE '維度[[:space:]]*[0-9]{1,2}' "$FILE_PATH" 2>/dev/null
+    grep -oE '第[[:space:]]*[0-9]{1,2}[[:space:]]*維' "$FILE_PATH" 2>/dev/null
+    tr -c '[:alnum:]' '\n' < "$FILE_PATH" 2>/dev/null | grep -E '^D[0-9]{1,2}$'
+  } | grep -oE '[0-9]+' | sort -un | wc -l | tr -d ' '
+)
 DIM_COUNT=${DIM_COUNT:-0}
 if [ "$DIM_COUNT" -lt "$DIM_TOTAL" ]; then
   WARNINGS="${WARNINGS}\n  ⚠️ [B] Dim coverage:report 提到 ${DIM_COUNT} unique dim,< ${DIM_TOTAL} 期望。確認全 dim NO-SAMPLE（PURE-JUDGMENT/requiresAgent dim 必有 per-dim agent-output 非散文提號）"
@@ -288,12 +306,54 @@ if [ "${DIM_COUNT:-0}" -ge 10 ]; then
   fi
 fi
 
+# ─ Validator M: coverage verdict truthfulness ────────────────────────────────────────────
+# Validator L only proves the three receipt strings are present. A run whose machine verdict is
+# coverageStatus=incomplete could therefore ship a final report that reads like a pass, because
+# nothing compared the prose against the verifier. That is exactly how the beta.108 Deep Audit was
+# recorded as closed while dimensions 64/66 stayed unpassed (2026-08-02). The rule is not "coverage
+# must be complete" — closing incomplete is legitimate — it is "an incomplete verdict must be stated
+# in the report", so silence can never imply completion.
+ACTIVE_RUN_MANIFEST="$PROJECT_DIR/.git/governance-runtime/evidence/deep-audit/active-run.json"
+if [ "${DIM_COUNT:-0}" -ge 10 ] && [ "$IS_FINAL_REPORT" -eq 1 ] && [ -f "$ACTIVE_RUN_MANIFEST" ]; then
+  # The active-run guard mirrors Validator R's existence guard: with no deep-audit run in flight
+  # there is no machine verdict to compare prose against, and blocking every large report until the
+  # author writes 「未通過結案」 would demand a false statement (2026-08-04 adversarial review).
+  # Deleting the manifest to dodge M leaves a hole in the evidence chain that the coverage verifier
+  # itself reports fail-closed, so the guard is not a silent escape hatch.
+  #
+  # Two steps, not one pipeline: under `set -o pipefail` a failing verifier makes the whole pipeline
+  # non-zero *after* the parser has already printed its own "unknown", so `|| echo unknown` appended a
+  # second one and the status read "unknownunknown". Parsed with jq, not `node -e` — inline dynamic
+  # Node code in an active hook violates the harness shell-safety policy (assertReviewedBashSafety).
+  COVERAGE_JSON=$(node "$PROJECT_DIR/scripts/verify-deep-audit-coverage.mjs" --repo-root "$PROJECT_DIR" --json 2>/dev/null || true)
+  COVERAGE_STATUS=$(printf '%s' "$COVERAGE_JSON" | jq -r '.coverageStatus // "unknown"' 2>/dev/null || true)
+  COVERAGE_STATUS=${COVERAGE_STATUS:-unknown}
+  if [ "$COVERAGE_STATUS" = unknown ]; then
+    # An active run exists but the verifier could not produce a verdict. That is machinery failure,
+    # not audit failure — block, but tell the author to fix the verifier, never to confess a failure
+    # that was not established ('unknown' conflated with 'incomplete' produced exactly that wrong
+    # instruction; 2026-08-04 adversarial review).
+    WARNINGS="${WARNINGS}\n  🔴 [M] Deep-audit run 進行中但 coverage verifier 無法產出 verdict(unknown):先修 verifier / evidence 鏈再出 final report,不得在無 verdict 下宣稱通過或未通過。"
+    CRITICAL_FAIL=1
+  elif [ "$COVERAGE_STATUS" != complete ]; then
+    # Deliberately narrow phrases, all byte-stable under any locale (multibyte runs live inside
+    # groups; no bare quantifier on a multibyte char, no byte-counted {n,m} over CJK). The numeric
+    # form requires a NONZERO count — 「0 個未通過」 asserts the opposite of the verdict and used to
+    # match. Machine-field spellings (coverageStatus…incomplete) are NOT accepted: quoting last
+    # round's verdict inside a pass-reading sentence matched them (2026-08-04 adversarial review).
+    if ! grep -qiE 'closed as incomplete|this is not a pass|not a pass;|未通過結案|結案但未通過|以未通過|未完成覆蓋|[1-9][0-9]*[[:space:]]*(個[[:space:]]*)?(維度[[:space:]]*)?未通過' "$FILE_PATH" 2>/dev/null; then
+      WARNINGS="${WARNINGS}\n  🔴 [M] Coverage verdict 為 '${COVERAGE_STATUS}' 但 final report 未明記未通過:允許以 incomplete 結案,但必須逐字寫出(例如『CLOSED AS INCOMPLETE; THIS IS NOT A PASS』或『N 個維度未通過』,N 非零),不得讓三段回執字串暗示已完成。"
+      CRITICAL_FAIL=1
+    fi
+  fi
+fi
+
 # ─ Validator BLOCK gate(2026-05-31 fix infra-audit self-finding:原 hook 只 exit 0 + additionalContext
 #   soft-inject = 我過度宣稱「BLOCKER」。改:critical fail → stderr + exit 2 真 block PostToolUse。
 #   2026-07-10 user「只有 SSOT UI/UX 才交拍板,要確保」:Validator H 原在本 gate 之後 = CRITICAL_FAIL 白設
 #   死旗(hunt finding #62)→ 搬到 gate 前,H 現在真擋)─
 if [ "${CRITICAL_FAIL:-0}" -eq 1 ]; then
-  printf '🚨 AUDIT-REPORT VALIDATOR BLOCK(C/F/G/H/I/J/K/L/R critical):%b\n\n此 deep-audit report 不合格,補齊上述後重出 report。' "$WARNINGS" >&2
+  printf '🚨 AUDIT-REPORT VALIDATOR BLOCK(C/F/G/H/I/J/K/L/M/R critical):%b\n\n此 deep-audit report 不合格,補齊上述後重出 report。' "$WARNINGS" >&2
   exit 2
 fi
 

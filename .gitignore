@@ -141,3 +141,8 @@ ds-competitive-positioning.md
 
 # WM 產品設計稿素材(user 本機參考用,不入 DS repo)
 reference/
+
+# Retired provider mirror (2026-08-04): the runtime dispatcher and the plugin hooks/scripts alias
+# both read packages/design-system/ds-canonical/hooks directly; nothing consumes this tree anymore.
+# Ignored so stale local leftovers from pre-removal checkouts cannot be re-added by a broad git add.
+.claude/hooks/

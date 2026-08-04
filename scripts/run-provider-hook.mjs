@@ -36,7 +36,14 @@ import {
 } from './lib/closed-tool-execution.mjs'
 import { compareUtf8Bytes } from '../packages/governance/src/canonical-order.mjs'
 const CORPUS_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const CLOSED_PRIVATE_RUNTIME_BASE = resolveClosedPrivateRuntimeBase()
+// Resolved lazily and memoized. An unusable private runtime base (restricted or non-writable
+// TMPDIR, which is common on containerized hosts) must surface through the fail-open handler
+// declared below — one warning line, exit 0 — instead of throwing at module scope, where it
+// escapes every protection and crashes the adapter before a single hook is dispatched.
+let closedPrivateRuntimeBaseCache = null
+const closedPrivateRuntimeBase = () => (
+  closedPrivateRuntimeBaseCache ??= resolveClosedPrivateRuntimeBase()
+)
 // Hooks are write-time accelerators, not the trust boundary — final enforcement lives in
 // the provider-neutral verifier, protected CI, and required checks. By default an adapter
 // or infrastructure failure degrades to one warning line and skips the hook batch
@@ -696,7 +703,7 @@ function createAuthenticatedHookCorpusSnapshot(canonicalRegistry) {
 
   let snapshotRoot = ''
   try {
-    snapshotRoot = realpathSync(mkdtempSync(join(CLOSED_PRIVATE_RUNTIME_BASE, 'governance-hook-corpus-')))
+    snapshotRoot = realpathSync(mkdtempSync(join(closedPrivateRuntimeBase(),'governance-hook-corpus-')))
     hookCorpusSnapshotRoots.add(snapshotRoot)
     chmodSync(snapshotRoot, 0o700)
     for (const entry of authenticated) writePrivateHookCorpusEntry(snapshotRoot, entry)
@@ -931,7 +938,7 @@ function writePrivateTranscriptSnapshot(body, descriptor) {
   let root = ''
   let handle = null
   try {
-    root = mkdtempSync(join(CLOSED_PRIVATE_RUNTIME_BASE, 'governance-transcript-tail-'))
+    root = mkdtempSync(join(closedPrivateRuntimeBase(),'governance-transcript-tail-'))
     transcriptSnapshotRoots.add(root)
     const rootInfo = lstatSync(root, { bigint: true })
     if (rootInfo.isSymbolicLink() || !rootInfo.isDirectory() || (rootInfo.mode & 0o077n) !== 0n || realpathSync(root) !== root) {

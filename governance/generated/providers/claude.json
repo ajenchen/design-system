@@ -1,6 +1,6 @@
 {
   "_provenance": {
-    "contractDigest": "sha256:4d2d96ed0ba92b9043febe03c536dfcf59c7c5285569445c1599020b7f4a2667",
+    "contractDigest": "sha256:d317120f4a40893e4c2d6eeba561763c207726d2a911cfa1364cb1043f8e8714",
     "generated": true,
     "generator": "@qijenchen/governance",
     "generatorVersion": "0.1.0-beta.108",
@@ -99,7 +99,6 @@
       "repositoryManagedTrees": {
         "commands": ".claude/commands",
         "contextForkAgents": ".claude/agents",
-        "hooks": ".claude/hooks",
         "references": ".claude/references",
         "rules": ".claude/rules"
       },

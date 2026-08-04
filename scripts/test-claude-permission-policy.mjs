@@ -127,7 +127,9 @@ assert.equal(base.sandbox.failIfUnavailable, true)
 assert.equal(base.sandbox.autoAllowBashIfSandboxed, true)
 assert.equal(base.sandbox.allowUnsandboxedCommands, false)
 assert.equal(base.sandbox.network.allowAllUnixSockets, false)
-assert.equal(base.sandbox.enableWeakerNestedSandbox, false)
+// Nested-sandbox support is required, not optional: without it the Linux bubblewrap sandbox cannot
+// start inside a containerized host and `failIfUnavailable` aborts the session. Inert on macOS.
+assert.equal(base.sandbox.enableWeakerNestedSandbox, true)
 assert.equal(base.sandbox.enableWeakerNetworkIsolation, false)
 assert.equal(base.sandbox.allowAppleEvents, false)
 assert.deepEqual(base.sandbox.excludedCommands, [])
@@ -206,7 +208,7 @@ try {
     [value => { value.sandbox.allowUnsandboxedCommands = true }, /closed schema|sandbox must be fail-closed/],
     [value => { value.sandbox.network.allowedDomains = ['github.com'] }, /closed schema|sandbox must be fail-closed/],
     [value => { value.sandbox.network.allowAllUnixSockets = true }, /closed schema|sandbox must be fail-closed/],
-    [value => { value.sandbox.enableWeakerNestedSandbox = true }, /closed schema|sandbox must be fail-closed/],
+    [value => { value.sandbox.enableWeakerNestedSandbox = false }, /closed schema|sandbox must be fail-closed/],
     [value => { value.sandbox.enableWeakerNetworkIsolation = true }, /closed schema|sandbox must be fail-closed/],
     [value => { value.sandbox.allowAppleEvents = true }, /closed schema|sandbox must be fail-closed/],
     [value => { value.sandbox.excludedCommands = ['git'] }, /closed schema|sandbox must be fail-closed/],

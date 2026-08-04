@@ -63,3 +63,41 @@ jobs:
       - name: Build React 19 consumer template
         working-directory: apps/template
         run: npm run build
+
+  # The 60 governance hooks are shell, and until now nothing ever executed them on Linux — they were
+  # only ever run on the maintainer's macOS. That is how BSD-only `stat -c` / `date -d` fallbacks
+  # reached cloud sessions, where they silently returned 0 and made every staleness window look
+  # infinitely old. Running the suite on ubuntu-24.04 turns cloud portability into a merge-time
+  # invariant instead of an after-the-fact repair. Kept out of `verify` so a hook failure is legible
+  # on its own, and deliberately excludes the ten-minute governance harness suite, which stays
+  # outside the PR gate.
+  hooks-linux:
+    name: Governance hooks(Linux portability)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      # Asserted rather than assumed: the hooks shell out to these, and a missing interpreter
+      # would otherwise surface as an unrelated-looking hook failure.
+      - name: Assert hook interpreters are present
+        run: |
+          for tool in bash jq git node python3 perl; do
+            command -v "$tool" >/dev/null || { echo "missing hook interpreter: $tool" >&2; exit 1; }
+          done
+
+      - name: Run the canonical hook test suite
+        run: npm run hooks:test

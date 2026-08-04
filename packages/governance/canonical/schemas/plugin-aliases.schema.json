@@ -34,6 +34,15 @@
               {
                 "type": "object",
                 "additionalProperties": false,
+                "required": ["kind", "key"],
+                "properties": {
+                  "kind": { "const": "canonicalRoot" },
+                  "key": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
                 "required": ["kind"],
                 "properties": { "kind": { "const": "skillView" } }
               }
