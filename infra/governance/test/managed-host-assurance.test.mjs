@@ -172,7 +172,6 @@ function candidateSourceSnapshot() {
     '.claude-plugin/marketplace.json',
     '.claude-plugin/plugin.json',
     'hooks/hooks.json',
-    '.claude/hooks',
     'generated/governance',
     'scripts',
     'packages/governance/canonical',
@@ -224,7 +223,8 @@ function installClaudePlugin({ current, release, hostRoot }) {
   copyRepoPath(resolve(REPO_ROOT, '.claude-plugin/marketplace.json'), resolve(root, '.claude-plugin/marketplace.json'))
   copyRepoPath(resolve(REPO_ROOT, '.claude-plugin/plugin.json'), resolve(root, '.claude-plugin/plugin.json'))
   copyRepoPath(resolve(REPO_ROOT, 'hooks/hooks.json'), resolve(root, 'hooks/hooks.json'))
-  copyRepoPath(resolve(REPO_ROOT, '.claude/hooks'), resolve(root, 'hooks/scripts'))
+  // hooks/scripts aliases the canonical corpus since the .claude/hooks mirror retired (2026-08-04).
+  copyRepoPath(resolve(REPO_ROOT, 'packages/design-system/ds-canonical/hooks'), resolve(root, 'hooks/scripts'))
   copyRepoPath(resolve(REPO_ROOT, 'packages/design-system/ds-canonical/hooks'), resolve(root, 'packages/design-system/ds-canonical/hooks'))
   copyRepoPath(resolve(REPO_ROOT, 'packages/design-system/ds-canonical/references'), resolve(root, 'packages/design-system/ds-canonical/references'))
   copyRepoPath(resolve(REPO_ROOT, 'packages/design-system/ds-canonical/rules'), resolve(root, 'packages/design-system/ds-canonical/rules'))
@@ -239,7 +239,7 @@ function installClaudePlugin({ current, release, hostRoot }) {
   copyRepoPath(resolve(REPO_ROOT, 'generated/governance'), resolve(root, 'generated/governance'))
   const files = inventory(root)
   const canonicalDigest = inventoryDigest(resolve(REPO_ROOT, 'packages/design-system/ds-canonical/hooks'))
-  const scriptDigest = inventoryDigest(resolve(REPO_ROOT, '.claude/hooks'))
+  const scriptDigest = canonicalDigest
   const runtimeDependencies = buildExpectedClaudePluginRuntime(current.candidateSourceFiles)
   const canonicalHookCorpusSha256 = sha256(stableStringify({ canonicalDigest, hookViewSha256: sha256(readFileSync(resolve(REPO_ROOT, 'hooks/hooks.json'))), scriptDigest, runtimeDependencySha256: runtimeDependencies.runtimeDependencySha256 }, 0))
   return { root, logicalRoot, hookDelivery: {

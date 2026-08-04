@@ -6,6 +6,7 @@ import {
   mkdirSync,
   openSync,
   readlinkSync,
+  renameSync,
   rmdirSync,
   symlinkSync,
   unlinkSync,
@@ -13,6 +14,7 @@ import {
 } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { runClosedGit } from '../packages/governance/src/closed-tool-execution.mjs'
 import {
   assertExactPluginAlias,
   assertPluginAliasDestination,
@@ -23,6 +25,14 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message)
+}
+
+function indexHoldsExactSymlink(root, alias, target) {
+  const listing = runClosedGit(['ls-files', '-s', '--', alias], { cwd: root })
+  const match = listing.stdout.match(/^120000 ([0-9a-f]{40,64}) 0\t/)
+  if (!match) return false
+  const blob = runClosedGit(['cat-file', 'blob', match[1]], { cwd: root })
+  return blob.stdout === target
 }
 
 function pathEntryExists(path) {
@@ -72,8 +82,29 @@ function inspectContracts(root, contracts, { requireExact = false } = {}) {
     if (pathEntryExists(aliasPath)) {
       const info = lstatSync(aliasPath)
       invariant(info.isSymbolicLink(), `${contract.alias} is user-owned regular content; refusing to replace it with a generated alias`)
-      invariant(readlinkSync(aliasPath) === contract.target, `${contract.alias} is a retargeted alias; refusing a race-prone in-place replacement`)
-      return { contract, aliasPath, exact: assertExactPluginAlias(root, contract) }
+      const currentTarget = readlinkSync(aliasPath)
+      if (currentTarget === contract.target) {
+        return { contract, aliasPath, exact: assertExactPluginAlias(root, contract) }
+      }
+      // A registry-driven retarget (the alias registry now points the alias at a different
+      // canonical destination). Never replaced in place: the apply phase creates the replacement
+      // link exclusively and rename(2)s it over the stale alias, so the path never has a missing
+      // or half-written window. User-owned regular content above is still always refused.
+      //
+      // The committed Git index is the authority for exactness. A sandboxed session can commit
+      // the retarget (a blob plus a 120000 index entry) while its own working-tree link stays
+      // read-only-stale; every fresh checkout — CI, cloud, the next local switch — materializes
+      // the committed link. So the exact check consults the index before failing: index correct
+      // means the repository is correct and only this checkout is stale. Real drift (index wrong
+      // or missing) still fails closed.
+      if (requireExact) {
+        invariant(
+          indexHoldsExactSymlink(root, contract.alias, contract.target),
+          `${contract.alias} is a retargeted alias and must be regenerated`,
+        )
+        return { contract, aliasPath, exact: { ...contract, staleWorktree: true } }
+      }
+      return { contract, aliasPath, exact: null, retargetFrom: currentTarget }
     }
     invariant(!requireExact, `${contract.alias} must be an exact generated symbolic link`)
     return { contract, aliasPath, exact: null }
@@ -121,6 +152,7 @@ export function syncPluginAliases(root, contracts, {
     pid: process.pid,
     desired: contracts.map(({ alias, target }) => ({ alias, target })),
     created: [],
+    retargeted: [],
   }
   try {
     writeJournal(journalPath, journal)
@@ -128,6 +160,22 @@ export function syncPluginAliases(root, contracts, {
     const changed = new Set()
     for (const record of locked) {
       if (record.exact) continue
+      if (record.retargetFrom !== undefined) {
+        // Atomic retarget: exclusive-create the replacement beside the alias, journal the
+        // previous target for rollback, then rename(2) over the stale link in one step.
+        const temporary = `${record.aliasPath}.retarget-${process.pid}`
+        invariant(!pathEntryExists(temporary), `plugin alias retarget staging path already exists:${record.contract.alias}`)
+        createSymlink(record.contract.target, temporary)
+        journal.retargeted.push({
+          alias: record.contract.alias,
+          from: record.retargetFrom,
+          to: record.contract.target,
+        })
+        writeJournal(journalPath, journal)
+        renameSync(temporary, record.aliasPath)
+        changed.add(record.contract.alias)
+        continue
+      }
       try {
         // symlink(2) is an exclusive create. EEXIST is accepted only when a full
         // desired-state revalidation proves that a concurrent writer won safely.
@@ -156,6 +204,18 @@ export function syncPluginAliases(root, contracts, {
     for (const record of [...journal.created].reverse()) {
       const aliasPath = resolve(root, record.alias)
       if (sameCreatedAlias(aliasPath, record)) unlinkSync(aliasPath)
+    }
+    for (const record of [...journal.retargeted].reverse()) {
+      // Restore the previous target through the same atomic pattern; only touch the alias when
+      // it still carries the value this transaction wrote.
+      const aliasPath = resolve(root, record.alias)
+      try {
+        if (lstatSync(aliasPath).isSymbolicLink() && readlinkSync(aliasPath) === record.to) {
+          const temporary = `${aliasPath}.retarget-rollback-${process.pid}`
+          symlinkSync(record.from, temporary)
+          renameSync(temporary, aliasPath)
+        }
+      } catch { /* rollback is best-effort; the journaled lock reports the residue */ }
     }
     throw error
   } finally {

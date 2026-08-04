@@ -244,7 +244,7 @@
         "repositoryInstructionSource": "packages/design-system/ds-canonical/adapters/claude-root-instructions.md",
         "instructionView": { "materializerId": "markdown-relative-at-import-v1" },
         "productInstructionSource": "scripts/fork-role-sources/CLAUDE.product.md",
-        "repositoryManagedTrees": { "contextForkAgents": ".claude/agents", "commands": ".claude/commands", "hooks": ".claude/hooks", "references": ".claude/references", "rules": ".claude/rules" },
+        "repositoryManagedTrees": { "contextForkAgents": ".claude/agents", "commands": ".claude/commands", "references": ".claude/references", "rules": ".claude/rules" },
         "productManagedTrees": {},
         "skillView": { "directory": ".claude/skills", "materializerId": "agent-skills-directory-v1" },
         "hookView": {

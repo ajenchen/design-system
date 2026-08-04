@@ -152,6 +152,12 @@ export function resolvePluginAliasPlan(root, {
     if (record.source.kind === 'repositoryManagedTree') {
       invariant(Object.hasOwn(provider.adapter.repositoryManagedTrees || {}, record.source.key), `plugin alias ${record.id} references an unknown repository managed tree:${record.source.key}`)
       destination = provider.adapter.repositoryManagedTrees[record.source.key]
+    } else if (record.source.kind === 'canonicalRoot') {
+      // Aliases the provider-neutral canonical corpus directly. Introduced when the `.claude/hooks`
+      // mirror was retired (2026-08-04): the runtime dispatcher already reads the canonical root, so
+      // the plugin layout links straight to it instead of shipping a second copy of every hook.
+      invariant(Object.hasOwn(providers.canonical.roots || {}, record.source.key), `plugin alias ${record.id} references an unknown canonical root:${record.source.key}`)
+      destination = providers.canonical.roots[record.source.key]
     } else {
       invariant(record.source.kind === 'skillView' && provider.adapter.skillView?.directory, `plugin alias ${record.id} has no provider skill view`)
       destination = provider.adapter.skillView.directory

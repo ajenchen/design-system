@@ -95,7 +95,7 @@ jobs:
       # would otherwise surface as an unrelated-looking hook failure.
       - name: Assert hook interpreters are present
         run: |
-          for tool in bash jq git node; do
+          for tool in bash jq git node python3 perl; do
             command -v "$tool" >/dev/null || { echo "missing hook interpreter: $tool" >&2; exit 1; }
           done
 

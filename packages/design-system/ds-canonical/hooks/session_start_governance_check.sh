@@ -159,7 +159,7 @@ if [ -n "$RECENT_FIX_COMMITS" ]; then
       if grep -q "scan-similar-bugs" <<<"$line"; then
         TS=$(echo "$line" | jq -r '.ts // empty' 2>/dev/null)
         if [ -n "$TS" ]; then
-          TS_EPOCH=$(date -u -d "$TS" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$TS" +%s 2>/dev/null || echo 0)
+          TS_EPOCH=$(date -u -d "$TS" +%s 2>/dev/null || date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$TS" +%s 2>/dev/null || echo 0)
           if [ "$TS_EPOCH" -gt "$DAY_AGO_EPOCH" ]; then
             RECENT_SCAN_INVOKE=1
             break

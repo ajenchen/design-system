@@ -41,10 +41,10 @@ function compareUtf8Bytes(left, right) {
 
 function synchronizeHarnessAuthorityBindings() {
   const inventory = readHarnessSourceInventory(HARNESS_INVENTORY_PATH)
-  const generatedMirror = deriveHarnessGeneratedMirrorBinding(inventory, { repoRoot: ROOT })
   const gateMeta = createGateMetaTestInventory({ root: ROOT })
   const nextInventory = structuredClone(inventory)
-  nextInventory.generatedMirrors = [generatedMirror.binding]
+  // Mirror retired 2026-08-04; the field stays empty so a reintroduction needs a schema change.
+  nextInventory.generatedMirrors = []
   nextInventory.gateMetaExclusions.sha256 = sha256(readFileSync(resolve(ROOT, nextInventory.gateMetaExclusions.path)))
   nextInventory.pairedMeta.members = gateMeta.runnable
     .map(({ file }) => `scripts/${file}`)
@@ -62,9 +62,10 @@ function synchronizeHarnessAuthorityBindings() {
   })
   const canonicalHookSuite = nextInventory.suites.find(item => item.id === 'canonical-hook-behavioral')
   invariant(canonicalHookSuite, 'Harness canonical hook behavioral suite is missing')
-  canonicalHookSuite.members = generatedMirror.canonicalHookTree.records
+  const { canonicalHookTree } = deriveHarnessGeneratedMirrorBinding(nextInventory, { repoRoot: ROOT })
+  canonicalHookSuite.members = canonicalHookTree.records
     .filter(record => /(?:^|\/)test_[A-Za-z0-9._-]+\.sh$/.test(record.path))
-    .map(record => `${generatedMirror.binding.canonicalRoot}/${record.path}`)
+    .map(record => `packages/design-system/ds-canonical/hooks/tests/${record.path}`)
     .sort(compareUtf8Bytes)
   const inventoryBytes = canonicalJsonBytes(nextInventory)
 

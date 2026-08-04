@@ -48,7 +48,7 @@ const temporary = []
 const version = '1.2.3-beta.4'
 const exactNpmVersion = '11.19.0'
 const exactNpmIntegrity = 'sha512-SDd/hHg3KqHE5Ht2NHWxNYNtqCQ2pXAPLl6OtQhPyED5PHsRfrOtO199MZTIG2cQoQ1ZRI9t28shrD+2cr3AAw=='
-const exactNpmOverlaySpec = 'npm:brace-expansion@5.0.8'
+const exactNpmOverlaySpec = 'npm:brace-expansion@5.0.9'
 const exactNpmOverlayIntegrity = 'sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg=='
 const exactNpmSecondaryOverlaySpec = 'npm:tar@7.5.22'
 const exactNpmSecondaryOverlayIntegrity = 'sha512-MFO/QzvtAOmJbkhOaCTvbGcFN9L9b+JunIsDwaKljSOdcLMea3NJ1k9Usz/rjdfSXTq4dfzfeS7W4p4YOAAHeA=='
@@ -128,8 +128,8 @@ function fixture({
       },
       'node_modules/npm-runtime-brace-expansion-patch': {
         name: 'brace-expansion',
-        version: '5.0.8',
-        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.8.tgz',
+        version: '5.0.9',
+        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz',
         integrity: exactNpmOverlayIntegrity,
         dev: true,
       },
@@ -325,10 +325,10 @@ const runtimeFactory = async () => {
     treeDigest: overlay.treeDigest,
     auditClosureDigest: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
     auditClosure: [
-      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.8', dependency: null },
+      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.9', dependency: null },
       { path: 'node_modules/npm/node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
       { path: 'node_modules/npm/node_modules/tar', name: 'tar', version: '7.5.22', dependency: null },
-      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.8', dependency: null },
+      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.9', dependency: null },
       { path: 'node_modules/npm-runtime-tar-patch', name: 'tar', version: '7.5.22', dependency: null },
     ],
   }
@@ -689,28 +689,37 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     treeDigest,
     auditClosureDigest: 'c'.repeat(64),
     auditClosure: [
-      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.8', dependency: null },
+      { path: 'node_modules/npm/node_modules/brace-expansion', name: 'brace-expansion', version: '5.0.9', dependency: null },
       { path: 'node_modules/npm/node_modules/minimatch', name: 'minimatch', version: '10.2.5', dependency: { name: 'brace-expansion', range: '^5.0.5' } },
       { path: 'node_modules/npm/node_modules/tar', name: 'tar', version: '7.5.22', dependency: null },
-      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.8', dependency: null },
+      { path: 'node_modules/npm-runtime-brace-expansion-patch', name: 'brace-expansion', version: '5.0.9', dependency: null },
       { path: 'node_modules/npm-runtime-tar-patch', name: 'tar', version: '7.5.22', dependency: null },
     ],
   }
+  // The exact dual-advisory registry state served since 2026-08-04 (GHSA-rgw5-rvv9-x895 landed).
   const finding = {
     name: 'brace-expansion',
     severity: 'high',
     isDirect: false,
     via: [{
-      source: 1124334,
+      source: 1130591,
       name: 'brace-expansion',
       dependency: 'brace-expansion',
       title: 'fixture title is non-authoritative',
       url: 'https://github.com/advisories/GHSA-mh99-v99m-4gvg',
       severity: 'high',
-      range: '<=5.0.7',
+      range: '>=4.0.0 <5.0.8',
+    }, {
+      source: 1130734,
+      name: 'brace-expansion',
+      dependency: 'brace-expansion',
+      title: 'fixture title is non-authoritative',
+      url: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895',
+      severity: 'high',
+      range: '>=4.0.0 <5.0.9',
     }],
     effects: [],
-    range: '<=5.0.7',
+    range: '4.0.0 - 5.0.8',
     nodes: ['node_modules/npm/node_modules/brace-expansion'],
     fixAvailable: true,
   }
@@ -743,9 +752,35 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
         range: '<=7.5.20',
         nodes: ['node_modules/npm/node_modules/tar'],
       },
+      'ip-address': {
+        name: 'ip-address',
+        severity: 'high',
+        isDirect: false,
+        via: [
+          { source: 1130722, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-mwp4-54f8-5fhr', severity: 'high', range: '<=10.3.0' },
+          { source: 1130723, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-4xrf-jv44-h6hh', severity: 'moderate', range: '>=10.1.1 <=10.2.1' },
+          { source: 1130724, name: 'ip-address', dependency: 'ip-address', url: 'https://github.com/advisories/GHSA-22jq-vg5j-6vgg', severity: 'moderate', range: '>=10.1.1 <=10.2.0' },
+        ],
+        effects: [],
+        range: '<=10.3.0',
+        nodes: ['node_modules/npm/node_modules/ip-address'],
+      },
+      undici: {
+        name: 'undici',
+        severity: 'moderate',
+        isDirect: false,
+        via: [
+          { source: 1130716, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-8xcm-r25x-g524', severity: 'moderate', range: '<6.28.0' },
+          { source: 1130727, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-m8rv-5g2x-5cg5', severity: 'moderate', range: '<6.28.0' },
+          { source: 1130732, name: 'undici', dependency: 'undici', url: 'https://github.com/advisories/GHSA-v3r7-h72x-cjcm', severity: 'moderate', range: '<6.28.0' },
+        ],
+        effects: [],
+        range: '<=6.27.0',
+        nodes: ['node_modules/npm/node_modules/undici'],
+      },
     },
     metadata: {
-      vulnerabilities: { info: 0, low: 0, moderate: 2, high: 1, critical: 0, total: 3 },
+      vulnerabilities: { info: 0, low: 0, moderate: 3, high: 2, critical: 0, total: 5 },
       dependencies: { prod: 0, dev: 0, optional: 0, peer: 0, peerOptional: 0, total: 0 },
     },
   }
@@ -756,18 +791,20 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     installedOverlayReceipt: options.installedOverlayReceipt ?? installedOverlayReceipt,
   })
   const receipt = evaluate()
-  assert.deepEqual(receipt.remediatedFindings, ['brace-expansion', 'npm', 'tar'])
+  assert.deepEqual(receipt.remediatedFindings, ['brace-expansion', 'ip-address', 'npm', 'tar', 'undici'])
   assert.equal(receipt.effectiveHigh, 0)
   assert.equal(receipt.effectiveModerate, 0)
   assert.equal(receipt.effectiveCritical, 0)
 
-  const renumberedAdvisory = structuredClone(report)
-  renumberedAdvisory.vulnerabilities['brace-expansion'].range = '4.0.0 - 5.0.7'
-  renumberedAdvisory.vulnerabilities['brace-expansion'].via[0].source = 1130591
-  renumberedAdvisory.vulnerabilities['brace-expansion'].via[0].range = '>=4.0.0 <5.0.8'
-  assert.deepEqual(evaluate(renumberedAdvisory).remediatedFindings, ['brace-expansion', 'npm', 'tar'])
+  // A superseded registry state (the pre-2026-08-04 single-advisory shape) must NOT be accepted:
+  // the preimage list pins the current exact state only, so both a stale shape and a renumbered
+  // hybrid fail closed.
+  const staleAdvisory = structuredClone(report)
+  staleAdvisory.vulnerabilities['brace-expansion'].range = '4.0.0 - 5.0.7'
+  staleAdvisory.vulnerabilities['brace-expansion'].via = [staleAdvisory.vulnerabilities['brace-expansion'].via[0]]
+  assert.throws(() => evaluate(staleAdvisory), /exact remediated bundled preimage/)
 
-  const hybridAdvisory = structuredClone(renumberedAdvisory)
+  const hybridAdvisory = structuredClone(report)
   hybridAdvisory.vulnerabilities['brace-expansion'].via[0].source = 1124334
   assert.throws(() => evaluate(hybridAdvisory), /exact remediated bundled preimage/)
 

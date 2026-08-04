@@ -17,8 +17,8 @@ function makeSymlinkFixture({ missing = null, broken = null } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'repository-hygiene-symlink-'))
   const targets = [
     '.claude/commands',
-    '.claude/hooks',
     '.claude/skills',
+    'packages/design-system/ds-canonical/hooks',
     'infra/governance/baseline/visual/targeted',
     'infra/governance/baseline/visual/curated',
   ]
@@ -33,7 +33,7 @@ function makeSymlinkFixture({ missing = null, broken = null } = {}) {
   const links = {
     '.claude/snapshots-baseline': '../infra/governance/baseline/visual/targeted',
     commands: '.claude/commands',
-    'hooks/scripts': '../.claude/hooks',
+    'hooks/scripts': '../packages/design-system/ds-canonical/hooks',
     skills: '.claude/skills',
     'snapshots-baseline': 'infra/governance/baseline/visual/curated',
   }

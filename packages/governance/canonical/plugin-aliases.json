@@ -12,7 +12,7 @@
     {
       "id": "hooks-scripts",
       "alias": "hooks/scripts",
-      "source": { "kind": "repositoryManagedTree", "key": "hooks" },
+      "source": { "kind": "canonicalRoot", "key": "hooks" },
       "requiredEntries": ["README.md"]
     },
     {

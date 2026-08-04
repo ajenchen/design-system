@@ -128,8 +128,12 @@ fi
 # allowlist of "real" documentation hosts drifts and reproduces the too-narrow predicate this hook
 # was widened to fix.
 # Blank out the URL text only. Dropping whole lines would also discard a real file:line citation that
-# happens to share a line with the preview link.
-NON_SOURCE_URL='https?://[^[:space:]]*(\.netlify\.app|localhost|127\.0\.0\.1|0\.0\.0\.0)[^[:space:]]*'
+# happens to share a line with the preview link. Host-anchored: `[^/[:space:]]*` before the
+# alternation means the match must land in the authority component, so a documentation URL that
+# merely mentions "localhost" in its path or fragment is not blanked (2026-08-04 adversarial
+# review). ajenchen.github.io is this repo's own deployed Storybook — a deploy artifact, not a
+# source; scoped to the exact host so genuinely external *.github.io documentation still counts.
+NON_SOURCE_URL='https?://[^/[:space:]]*(\.netlify\.app|localhost|127\.0\.0\.1|0\.0\.0\.0|ajenchen\.github\.io)[^[:space:]]*'
 CITE_CANDIDATES=$(sed -E "s#${NON_SOURCE_URL}#(deploy-preview)#g" <<<"$LAST_REPLY")
 HAS_CITE=""
 if grep -qE '\.(spec\.md|md|css|tsx|ts|mjs|cjs|js|json|sh|ya?ml|toml):[0-9]+|#L[0-9]+|line[[:space:]]+[0-9]+|L[0-9]+-[0-9]+|L[0-9]+|https?://[^[:space:]]+' <<<"$CITE_CANDIDATES"; then

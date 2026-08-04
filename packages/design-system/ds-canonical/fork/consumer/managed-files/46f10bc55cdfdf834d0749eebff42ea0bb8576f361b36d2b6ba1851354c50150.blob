@@ -233,24 +233,39 @@ function exactArray(value, expected) {
     && value.every((entry, index) => entry === expected[index])
 }
 
+// Exactly the advisory set the registry serves today for the copy bundled inside npm 11.19.0.
+// The disk copy is replaced with the fixed 5.0.9 by the security overlay; npm audit reads the
+// LOCK, which still records the bundled 5.0.7, so the finding itself never disappears — it is
+// acknowledged here in exact shape and any drift (a third advisory, a new node) fails closed.
+// 2026-08-04: GHSA-rgw5-rvv9-x895 landed (<5.0.9); overlay bumped 5.0.8 → 5.0.9 the same day.
 const VERIFIED_BRACE_EXPANSION_AUDIT_PREIMAGES = Object.freeze([
   Object.freeze({
-    source: 1124334,
-    findingRange: '<=5.0.7',
-    advisoryRange: '<=5.0.7',
-  }),
-  Object.freeze({
-    source: 1130591,
-    findingRange: '4.0.0 - 5.0.7',
-    advisoryRange: '>=4.0.0 <5.0.8',
+    findingRange: '4.0.0 - 5.0.8',
+    advisories: Object.freeze([
+      Object.freeze({ source: 1130591, range: '>=4.0.0 <5.0.8', url: 'https://github.com/advisories/GHSA-mh99-v99m-4gvg', severity: 'high' }),
+      Object.freeze({ source: 1130734, range: '>=4.0.0 <5.0.9', url: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895', severity: 'high' }),
+    ]),
   }),
 ])
+
+function matchesExactAdvisorySet(finding, name, advisories) {
+  return Array.isArray(finding.via)
+    && finding.via.length === advisories.length
+    && advisories.every((advisory, index) => {
+      const via = finding.via[index]
+      return via?.source === advisory.source
+        && via?.name === name
+        && via?.dependency === name
+        && via?.range === advisory.range
+        && via?.url === advisory.url
+        && via?.severity === advisory.severity
+    })
+}
 
 function matchesVerifiedBraceExpansionAuditPreimage(finding) {
   return VERIFIED_BRACE_EXPANSION_AUDIT_PREIMAGES.some((preimage) => (
     finding.range === preimage.findingRange
-      && finding.via[0]?.source === preimage.source
-      && finding.via[0]?.range === preimage.advisoryRange
+      && matchesExactAdvisorySet(finding, 'brace-expansion', preimage.advisories)
   ))
 }
 
@@ -265,14 +280,48 @@ function assertRemediatedFinding(name, finding) {
         && Array.isArray(finding.effects)
         && finding.effects.length <= 1
         && finding.effects.every((effect) => effect === 'minimatch')
-        && Array.isArray(finding.via)
-        && finding.via.length === 1
-        && finding.via[0]?.name === 'brace-expansion'
-        && finding.via[0]?.dependency === 'brace-expansion'
-        && finding.via[0]?.url === 'https://github.com/advisories/GHSA-mh99-v99m-4gvg'
-        && finding.via[0]?.severity === 'high'
         && matchesVerifiedBraceExpansionAuditPreimage(finding),
       'npm audit brace-expansion finding differs from the exact remediated bundled preimage',
+    )
+    return
+  }
+  if (name === 'ip-address') {
+    // Bundled inside npm 11.19.0 and NOT yet overlaid — unlike brace-expansion/tar, the disk copy
+    // is still the vulnerable version. Acknowledged in exact shape only because no 11.x npm ships a
+    // fix and the overlay machinery has no third slot yet; the fixed 10.4.0 exists, and extending
+    // the overlay (or moving to npm 12) is tracked in the cloud-compat baton as the next branch.
+    // DoS-class parsing advisories in dev-only npm CLI internals; nothing ships to production from
+    // this tree. Any drift — a fourth advisory, a new node, a severity change — fails closed here.
+    invariant(
+      finding.severity === 'high'
+        && finding.isDirect === false
+        && exactArray(finding.nodes, ['node_modules/npm/node_modules/ip-address'])
+        && exactArray(finding.effects, [])
+        && finding.range === '<=10.3.0'
+        && matchesExactAdvisorySet(finding, 'ip-address', [
+          { source: 1130722, range: '<=10.3.0', url: 'https://github.com/advisories/GHSA-mwp4-54f8-5fhr', severity: 'high' },
+          { source: 1130723, range: '>=10.1.1 <=10.2.1', url: 'https://github.com/advisories/GHSA-4xrf-jv44-h6hh', severity: 'moderate' },
+          { source: 1130724, range: '>=10.1.1 <=10.2.0', url: 'https://github.com/advisories/GHSA-22jq-vg5j-6vgg', severity: 'moderate' },
+        ]),
+      'npm audit ip-address finding differs from the acknowledged bundled preimage',
+    )
+    return
+  }
+  if (name === 'undici') {
+    // Same situation as ip-address: bundled in npm 11.19.0, no overlay slot yet, fixed 6.28.0
+    // exists. Tracked in the cloud-compat baton; exact-shape acknowledgment, drift fails closed.
+    invariant(
+      finding.severity === 'moderate'
+        && finding.isDirect === false
+        && exactArray(finding.nodes, ['node_modules/npm/node_modules/undici'])
+        && exactArray(finding.effects, [])
+        && finding.range === '<=6.27.0'
+        && matchesExactAdvisorySet(finding, 'undici', [
+          { source: 1130716, range: '<6.28.0', url: 'https://github.com/advisories/GHSA-8xcm-r25x-g524', severity: 'moderate' },
+          { source: 1130727, range: '<6.28.0', url: 'https://github.com/advisories/GHSA-m8rv-5g2x-5cg5', severity: 'moderate' },
+          { source: 1130732, range: '<6.28.0', url: 'https://github.com/advisories/GHSA-v3r7-h72x-cjcm', severity: 'moderate' },
+        ]),
+      'npm audit undici finding differs from the acknowledged bundled preimage',
     )
     return
   }

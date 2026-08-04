@@ -337,8 +337,11 @@ record(!/\.claude\/\{logs,memory\}[^\n]*\[ -d \]/.test(JSON.stringify(hookClassi
 const graph = json('scripts/governance-build-graph.json')
 const pluginAliases = json('packages/governance/canonical/plugin-aliases.json')
 const pluginAliasProvider = providerRegistry.providers.find((provider) => provider.id === pluginAliases.providerId)
-const harnessMirrorProviderSources = ['.claude/hooks/tests/']
+// The generated hook-test mirror retired 2026-08-04; harness bindings read canonical sources only.
+const harnessMirrorProviderSources = []
 const expectedPluginProviderSources = (pluginAliases.aliases || []).map((alias) => {
+  // canonicalRoot aliases point at provider-neutral canonical trees, which are legitimate build
+  // sources rather than generated provider views, so they are intentionally excluded here.
   const destination = alias.source?.kind === 'repositoryManagedTree'
     ? pluginAliasProvider?.adapter?.repositoryManagedTrees?.[alias.source.key]
     : alias.source?.kind === 'skillView'

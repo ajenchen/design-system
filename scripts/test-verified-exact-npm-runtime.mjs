@@ -137,7 +137,7 @@ function securityOverlayArchive() {
       path: 'package/package.json',
       body: `${JSON.stringify({
         name: 'brace-expansion',
-        version: '5.0.8',
+        version: '5.0.9',
         main: './dist/commonjs/index.js',
         exports: { '.': { require: './dist/commonjs/index.js' } },
       })}\n`,
@@ -172,8 +172,8 @@ function repositoryFixture(bytes, { overlayBytes, secondaryOverlayBytes } = {}) 
   const overlayArtifact = overlayBytes
     ? {
         name: 'brace-expansion',
-        version: '5.0.8',
-        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.8.tgz',
+        version: '5.0.9',
+        resolved: 'https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz',
         integrity: `sha512-${createHash('sha512').update(overlayBytes).digest('base64')}`,
       }
     : null
@@ -187,7 +187,7 @@ function repositoryFixture(bytes, { overlayBytes, secondaryOverlayBytes } = {}) 
     : null
   const devDependencies = {
     npm: version,
-    ...(overlayArtifact ? { 'npm-runtime-brace-expansion-patch': 'npm:brace-expansion@5.0.8' } : {}),
+    ...(overlayArtifact ? { 'npm-runtime-brace-expansion-patch': 'npm:brace-expansion@5.0.9' } : {}),
     ...(secondaryOverlayArtifact ? { 'npm-runtime-tar-patch': 'npm:tar@7.5.22' } : {}),
   }
   write(join(root, 'package.json'), `${JSON.stringify({ name: 'consumer', version: '0.0.0', devDependencies }, null, 2)}\n`)
@@ -271,10 +271,10 @@ test('prepare downloads only the canonical lock URL and ignores perfect-looking 
       repository.secondaryOverlayArtifact.resolved,
     ])
     assert.equal(runtime.securityOverlay.status, 'applied')
-    assert.equal(runtime.securityOverlay.version, '5.0.8')
+    assert.equal(runtime.securityOverlay.version, '5.0.9')
     assert.equal(
       JSON.parse(readFileSync(join(runtime.packageRoot, 'node_modules/brace-expansion/package.json'), 'utf8')).version,
-      '5.0.8',
+      '5.0.9',
     )
     assert.equal(
       JSON.parse(readFileSync(join(runtime.packageRoot, 'node_modules/tar/package.json'), 'utf8')).version,

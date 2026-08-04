@@ -67,7 +67,7 @@
       "declaredSymlinks": {
         ".claude/snapshots-baseline": "../infra/governance/baseline/visual/targeted",
         "commands": ".claude/commands",
-        "hooks/scripts": "../.claude/hooks",
+        "hooks/scripts": "../packages/design-system/ds-canonical/hooks",
         "skills": ".claude/skills",
         "snapshots-baseline": "infra/governance/baseline/visual/curated"
       },

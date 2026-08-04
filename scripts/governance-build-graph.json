@@ -77,9 +77,18 @@
     {
       "id": "release-version",
       "auditScope": "none",
-      "generate": ["node", "scripts/sync-version-to-all-manifests.mjs"],
-      "check": ["node", "scripts/sync-version-to-all-manifests.mjs", "--check"],
-      "runtimeEntrypoints": ["scripts/sync-version-to-all-manifests.mjs"],
+      "generate": [
+        "node",
+        "scripts/sync-version-to-all-manifests.mjs"
+      ],
+      "check": [
+        "node",
+        "scripts/sync-version-to-all-manifests.mjs",
+        "--check"
+      ],
+      "runtimeEntrypoints": [
+        "scripts/sync-version-to-all-manifests.mjs"
+      ],
       "sources": [
         ".claude-plugin/marketplace.json",
         ".claude-plugin/plugin.json",
@@ -123,9 +132,18 @@
     {
       "id": "provider-adapters",
       "auditScope": "none",
-      "generate": ["node", "scripts/sync-ds-canonical.mjs"],
-      "check": ["node", "scripts/sync-ds-canonical.mjs", "--check"],
-      "runtimeEntrypoints": ["scripts/sync-ds-canonical.mjs"],
+      "generate": [
+        "node",
+        "scripts/sync-ds-canonical.mjs"
+      ],
+      "check": [
+        "node",
+        "scripts/sync-ds-canonical.mjs",
+        "--check"
+      ],
+      "runtimeEntrypoints": [
+        "scripts/sync-ds-canonical.mjs"
+      ],
       "sources": [
         "AGENTS.md",
         "packages/design-system/ds-canonical/adapters/",
@@ -167,26 +185,44 @@
         "scripts/schemas/provider-skill-semantics.schema.json",
         "scripts/sync-ds-canonical.mjs"
       ],
-      "sourceResolvers": ["provider-contract"],
+      "sourceResolvers": [
+        "provider-contract"
+      ],
       "sourceExcludes": [],
-      "outputs": ["packages/design-system/AGENTS.md", "packages/design-system/CLAUDE.md"],
-      "outputResolvers": ["root-provider-views"],
+      "outputs": [
+        "packages/design-system/AGENTS.md",
+        "packages/design-system/CLAUDE.md"
+      ],
+      "outputResolvers": [
+        "root-provider-views"
+      ],
       "sourceOutputOverlaps": []
     },
     {
       "id": "plugin-aliases",
       "auditScope": "none",
-      "generate": ["node", "scripts/sync-plugin-aliases.mjs", "--generate"],
-      "check": ["node", "scripts/sync-plugin-aliases.mjs", "--check"],
-      "runtimeEntrypoints": ["scripts/sync-plugin-aliases.mjs"],
+      "generate": [
+        "node",
+        "scripts/sync-plugin-aliases.mjs",
+        "--generate"
+      ],
+      "check": [
+        "node",
+        "scripts/sync-plugin-aliases.mjs",
+        "--check"
+      ],
+      "runtimeEntrypoints": [
+        "scripts/sync-plugin-aliases.mjs"
+      ],
       "sources": [
         ".claude/commands/",
-        ".claude/hooks/",
         ".claude/skills/",
+        "packages/design-system/ds-canonical/hooks/",
         "packages/governance/canonical/plugin-aliases.json",
         "packages/governance/canonical/providers.json",
         "packages/governance/canonical/schemas/plugin-aliases.schema.json",
         "packages/governance/canonical/schemas/providers.schema.json",
+        "packages/governance/src/closed-tool-execution.mjs",
         "scripts/lib/plugin-alias-contract.mjs",
         "scripts/sync-plugin-aliases.mjs",
         "scripts/test-plugin-alias-contract.mjs",
@@ -195,17 +231,27 @@
       "sourceResolvers": [],
       "sourceExcludes": [],
       "outputs": [],
-      "outputResolvers": ["plugin-alias-views"],
+      "outputResolvers": [
+        "plugin-alias-views"
+      ],
       "sourceOutputOverlaps": []
     },
     {
       "id": "harness-authority-bindings",
       "auditScope": "none",
-      "generate": ["node", "scripts/sync-harness-authority-bindings.mjs"],
-      "check": ["node", "scripts/sync-harness-authority-bindings.mjs", "--check"],
-      "runtimeEntrypoints": ["scripts/sync-harness-authority-bindings.mjs"],
+      "generate": [
+        "node",
+        "scripts/sync-harness-authority-bindings.mjs"
+      ],
+      "check": [
+        "node",
+        "scripts/sync-harness-authority-bindings.mjs",
+        "--check"
+      ],
+      "runtimeEntrypoints": [
+        "scripts/sync-harness-authority-bindings.mjs"
+      ],
       "sources": [
-        ".claude/hooks/tests/",
         "infra/governance/lib/common.mjs",
         "infra/governance/lib/consumer-upgrade-protocol.mjs",
         "infra/governance/lib/harness-source-inventory.mjs",
@@ -245,9 +291,18 @@
     {
       "id": "fork-template",
       "auditScope": "none",
-      "generate": ["node", "scripts/build-fork-governance.mjs"],
-      "check": ["node", "scripts/build-fork-governance.mjs", "--check"],
-      "runtimeEntrypoints": ["scripts/build-fork-governance.mjs"],
+      "generate": [
+        "node",
+        "scripts/build-fork-governance.mjs"
+      ],
+      "check": [
+        "node",
+        "scripts/build-fork-governance.mjs",
+        "--check"
+      ],
+      "runtimeEntrypoints": [
+        "scripts/build-fork-governance.mjs"
+      ],
       "sources": [
         "AGENTS.md",
         "CLAUDE.md",
@@ -267,11 +322,11 @@
         "packages/design-system/src/tokens/utility-registry.schema.json",
         "packages/governance/src/closed-tool-execution.mjs",
         "packages/storybook-config/package.json",
-    "packages/governance/canonical/provider-lifecycle.json",
-    "packages/governance/canonical/schemas/provider-lifecycle.schema.json",
-    "packages/governance/src/authority-decision-evidence.mjs",
-    "packages/governance/src/canonical-order.mjs",
-    "packages/governance/src/provider-hook-normalization.mjs",
+        "packages/governance/canonical/provider-lifecycle.json",
+        "packages/governance/canonical/schemas/provider-lifecycle.schema.json",
+        "packages/governance/src/authority-decision-evidence.mjs",
+        "packages/governance/src/canonical-order.mjs",
+        "packages/governance/src/provider-hook-normalization.mjs",
         "packages/governance/src/provider-review-binding.mjs",
         "infra/governance/consumer-upgrade-protocol.json",
         "infra/governance/release-workflow.json",
@@ -299,8 +354,12 @@
         "template/ds-product-template/.npmrc",
         "template/ds-product-template/package.json"
       ],
-      "sourceResolvers": ["provider-contract"],
-      "sourceExcludes": ["scripts/generated/"],
+      "sourceResolvers": [
+        "provider-contract"
+      ],
+      "sourceExcludes": [
+        "scripts/generated/"
+      ],
       "outputs": [
         "packages/design-system/ds-canonical/fork/",
         "packages/design-system/scripts",
@@ -310,15 +369,26 @@
         "template/ds-product-template/.claude/agents/",
         "template/ds-product-template/.claude/hooks/"
       ],
-      "outputResolvers": ["product-provider-views"],
+      "outputResolvers": [
+        "product-provider-views"
+      ],
       "sourceOutputOverlaps": []
     },
     {
       "id": "baseline-mirrors",
       "auditScope": "none",
-      "generate": ["node", "scripts/sync-governance-baseline-mirrors.mjs"],
-      "check": ["node", "scripts/sync-governance-baseline-mirrors.mjs", "--check"],
-      "runtimeEntrypoints": ["scripts/sync-governance-baseline-mirrors.mjs"],
+      "generate": [
+        "node",
+        "scripts/sync-governance-baseline-mirrors.mjs"
+      ],
+      "check": [
+        "node",
+        "scripts/sync-governance-baseline-mirrors.mjs",
+        "--check"
+      ],
+      "runtimeEntrypoints": [
+        "scripts/sync-governance-baseline-mirrors.mjs"
+      ],
       "sources": [
         "infra/governance/baseline/visual/",
         "packages/governance/src/closed-tool-execution.mjs",
@@ -341,9 +411,18 @@
     {
       "id": "governance-metadata",
       "auditScope": "none",
-      "generate": ["node", "scripts/generate-governance-metadata.mjs"],
-      "check": ["node", "scripts/generate-governance-metadata.mjs", "--check"],
-      "runtimeEntrypoints": ["scripts/generate-governance-metadata.mjs"],
+      "generate": [
+        "node",
+        "scripts/generate-governance-metadata.mjs"
+      ],
+      "check": [
+        "node",
+        "scripts/generate-governance-metadata.mjs",
+        "--check"
+      ],
+      "runtimeEntrypoints": [
+        "scripts/generate-governance-metadata.mjs"
+      ],
       "sources": [
         ".claude-plugin/",
         ".github/",
@@ -401,8 +480,18 @@
     {
       "id": "control-plane",
       "auditScope": "deep-audit-rubric",
-      "generate": ["npm", "run", "--silent", "governance:snapshot:generate"],
-      "check": ["npm", "run", "--silent", "governance:snapshot:check"],
+      "generate": [
+        "npm",
+        "run",
+        "--silent",
+        "governance:snapshot:generate"
+      ],
+      "check": [
+        "npm",
+        "run",
+        "--silent",
+        "governance:snapshot:check"
+      ],
       "runtimeEntrypoints": [
         "packages/governance/bin/governance.mjs",
         "scripts/governance-snapshot.mjs",
@@ -476,25 +565,25 @@
         "infra/governance/test/harness-runner.test.mjs",
         "infra/governance/test/harness-source-inventory.test.mjs",
         "infra/governance/test/playwright-runtime.test.mjs",
-    "scripts/ensure-playwright-browsers.mjs",
-    "scripts/setup-governance-hooks.mjs",
-    "scripts/test-setup-governance-hooks.mjs",
-    "scripts/setup-authority-governance.mjs",
-    "scripts/workflow-static-validation.mjs",
-    "scripts/setup-provider-cli-toolchain.mjs",
-    "scripts/setup-workspace.mjs",
-    "scripts/lib/governance-dependency-bootstrap.mjs",
-    "scripts/lib/verified-exact-npm-runtime.mjs",
-    "scripts/lib/worktree-fingerprint.mjs",
-    "scripts/lib/workspace-post-create.mjs",
-    "infra/governance/schemas/provider-cli-toolchain.schema.json",
-    "scripts/install-candidate-dependencies.mjs",
-    "scripts/run-verified-npm.mjs",
-    ".github/workflows/governance-anchor.yml",
-    "scripts/governance-anchor-preflight.mjs",
-    "scripts/test-governance-anchor-preflight.mjs",
-    ".github/workflows/release.yml",
-    ".github/workflows/mirror-to-published-template.yml",
+        "scripts/ensure-playwright-browsers.mjs",
+        "scripts/setup-governance-hooks.mjs",
+        "scripts/test-setup-governance-hooks.mjs",
+        "scripts/setup-authority-governance.mjs",
+        "scripts/workflow-static-validation.mjs",
+        "scripts/setup-provider-cli-toolchain.mjs",
+        "scripts/setup-workspace.mjs",
+        "scripts/lib/governance-dependency-bootstrap.mjs",
+        "scripts/lib/verified-exact-npm-runtime.mjs",
+        "scripts/lib/worktree-fingerprint.mjs",
+        "scripts/lib/workspace-post-create.mjs",
+        "infra/governance/schemas/provider-cli-toolchain.schema.json",
+        "scripts/install-candidate-dependencies.mjs",
+        "scripts/run-verified-npm.mjs",
+        ".github/workflows/governance-anchor.yml",
+        "scripts/governance-anchor-preflight.mjs",
+        "scripts/test-governance-anchor-preflight.mjs",
+        ".github/workflows/release.yml",
+        ".github/workflows/mirror-to-published-template.yml",
         "infra/governance/schemas/hook-evidence-plan.schema.json",
         "infra/governance/schemas/consumer-upgrade-protocol.schema.json",
         "infra/governance/schemas/consumer-control-plane-baseline-receipt.schema.json",
@@ -637,9 +726,17 @@
         "template/ds-product-template/governance/",
         "template/ds-product-template/schemas/provider-cli-toolchain.schema.json"
       ],
-      "sourceResolvers": ["governance-manifest", "root-provider-views"],
-      "sourceExcludes": ["packages/design-system/ds-canonical/fork/preamble.md"],
-      "outputs": ["governance/generated/", "governance/control-plane.lock.json"],
+      "sourceResolvers": [
+        "governance-manifest",
+        "root-provider-views"
+      ],
+      "sourceExcludes": [
+        "packages/design-system/ds-canonical/fork/preamble.md"
+      ],
+      "outputs": [
+        "governance/generated/",
+        "governance/control-plane.lock.json"
+      ],
       "outputResolvers": [],
       "sourceOutputOverlaps": []
     }

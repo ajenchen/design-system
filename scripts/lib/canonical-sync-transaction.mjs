@@ -25,6 +25,7 @@ import {
 import { hostname, tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { runClosedGit } from '../../packages/governance/src/closed-tool-execution.mjs'
 import {
   buildProviderAdapterTargets,
   checkProviderAdapterTargets,
@@ -656,6 +657,18 @@ function validateAuthorityGenerationJournal(root, {
   return { root, journalPath, journal, transactionRoot, targets }
 }
 
+function gitIndexHoldsExactSymlink(root, path, target) {
+  try {
+    const listing = runClosedGit(['ls-files', '-s', '--', path], { cwd: root })
+    const match = listing.stdout.match(/^120000 ([0-9a-f]{40,64}) 0\t/)
+    if (!match) return false
+    const blob = runClosedGit(['cat-file', 'blob', match[1]], { cwd: root })
+    return blob.stdout === target
+  } catch {
+    return false
+  }
+}
+
 export function assertAuthorityGenerationIdle({ root = MODULE_ROOT } = {}) {
   root = canonicalRepositoryRoot(root)
   const journalPath = authorityGenerationJournalPath(root)
@@ -815,6 +828,19 @@ export function runAtomicAuthorityGenerationTransaction({
       // the host makes an already-correct path read-only. The post-check still verifies every
       // output, so skipping a no-op publish cannot weaken the closure.
       if (authoritySnapshotEqual(entry.before, entry.after)) {
+        failureInjector?.({ phase: 'after-target', index, entry, transactionId })
+        continue
+      }
+      // A symlink output whose exact after-image is already recorded in the Git index is committed
+      // even when this checkout cannot rewrite the live link (a sandboxed session's read-only
+      // path). Every fresh checkout materializes the committed link, and the index-aware stage
+      // checks in verifyLive still validate the repository, so only this checkout stays stale.
+      // Genuine drift — the index absent or disagreeing with the staged content — still publishes.
+      if (
+        entry.before.kind === 'symlink'
+        && entry.after.kind === 'symlink'
+        && gitIndexHoldsExactSymlink(root, entry.path, readlinkSync(join(workspaceRoot, entry.path)))
+      ) {
         failureInjector?.({ phase: 'after-target', index, entry, transactionId })
         continue
       }

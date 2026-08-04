@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "de8872b62a34182a4e30600b27f92ade1a594cef006aac2d347ba404040cd0c6",
+    "forkCorpusLockSha256": "0cdee938851432d1809f9e613a5b008231bc8fe869c4b01779ae1d637b0a8d77",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "ed952a7261b1a43d2a727b094e45ebf3e2deb7d6f0c6776b9b8a663675a5cfb8",
@@ -109,9 +109,9 @@
       "scripts/lib/closed-tool-execution.mjs": "131255a302f1b403fe95dd6251e180d7f3ce920faf6cbfe90496b52d192d93c3",
       "scripts/lib/consumer-control-plane-policy.mjs": "ea8b11ddc5c964ea742ccba5e6a3bc2f215db5d165afe2cca96192812287750c",
       "scripts/lib/exact-workspace-dependencies.mjs": "3c9453e5228d7eaf1bfef3350585746e1aff1475411cb7cf8696bf9acdb048cf",
-      "scripts/lib/governance-dependency-bootstrap.mjs": "c80d842482a3c2c16ba0d8802e1418e2560f68edcd56fe0b3125a7f6e1c9d4ec",
+      "scripts/lib/governance-dependency-bootstrap.mjs": "79b84cd0a7a8f262d1445503528e1251bb510517efb56550aad659c53c6b3cec",
       "scripts/lib/provider-lifecycle.mjs": "9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7",
-      "scripts/lib/verified-exact-npm-runtime.mjs": "935a669b33d5da4e15166c68f8996060d5e609a317dd68198044f830edc2a76c",
+      "scripts/lib/verified-exact-npm-runtime.mjs": "811ed3390a4ff6b4e818a5ce8b5c0ce34e10f48fb443b6177d6e4c8e14fa9670",
       "scripts/lib/workspace-post-create.mjs": "f3ddc6db740d5c4d48b1c6e16c55222325e4d1c16fe6644a455e7b7e5bea0a0d",
       "scripts/lib/worktree-fingerprint.mjs": "70a8bdbceade964d009f6a46c9e57a93bc9fd58c28971ea14ad1b5ffeaaf7250",
       "scripts/lint-ds-internal-imports.mjs": "86edd952fb5c3871896515440693abeb08c1d1da9f887fa073b9ddda1363f572",

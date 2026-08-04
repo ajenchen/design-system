@@ -71,7 +71,7 @@ test('regular directory, retargeted link, dangling link, and symlink destination
 test('canonical aliases derive targets from the provider registry without a second target map', () => {
   assert.deepEqual(resolvePluginAliasContracts(ROOT).map(({ id, alias, target, destination }) => ({ id, alias, target, destination })), [
     { id: 'commands', alias: 'commands', target: '.claude/commands', destination: '.claude/commands' },
-    { id: 'hooks-scripts', alias: 'hooks/scripts', target: '../.claude/hooks', destination: '.claude/hooks' },
+    { id: 'hooks-scripts', alias: 'hooks/scripts', target: '../packages/design-system/ds-canonical/hooks', destination: 'packages/design-system/ds-canonical/hooks' },
     { id: 'skills', alias: 'skills', target: '.claude/skills', destination: '.claude/skills' },
   ])
 })

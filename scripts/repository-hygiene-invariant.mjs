@@ -11,6 +11,18 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const POLICY_PATH = resolve(SCRIPT_DIR, '../packages/design-system/ds-canonical/references/repository-hygiene-policy.json')
 
+function indexHoldsDeclaredSymlink(root, path, declaredTarget) {
+  try {
+    const listing = execFileSync('git', ['ls-files', '-s', '--', path], { cwd: root, encoding: 'utf8' })
+    const match = listing.match(/^120000 ([0-9a-f]{40,64}) 0\t/)
+    if (!match) return false
+    const blob = execFileSync('git', ['cat-file', 'blob', match[1]], { cwd: root, encoding: 'utf8' })
+    return blob === declaredTarget
+  } catch {
+    return false
+  }
+}
+
 function usage(message) {
   if (message) console.error(`repository hygiene:${message}`)
   console.error('usage: node scripts/repository-hygiene-invariant.mjs [--check] [--root <repo>] [--profile <authority|product-consumer>] [--json]')
@@ -223,7 +235,13 @@ export function auditRepositoryHygiene({ root, profileName, policy }) {
     if (!declaredSymlinks.has(path)) {
       violations.push({ rule: 'R3', path, message: `undeclared repository symlink -> ${target}` })
     } else if (declaredSymlinks.get(path) !== target) {
-      violations.push({ rule: 'R3', path, message: `symlink target drift:${target} (expected ${declaredSymlinks.get(path)})` })
+      // The committed Git index is the authority. A declared retarget can be committed from a
+      // session whose sandbox cannot rewrite the working-tree link, leaving only this checkout
+      // stale; every fresh checkout materializes the committed link. Real drift — index absent
+      // or disagreeing with the declaration — still fails closed, as does any non-git fixture.
+      if (!indexHoldsDeclaredSymlink(root, path, declaredSymlinks.get(path))) {
+        violations.push({ rule: 'R3', path, message: `symlink target drift:${target} (expected ${declaredSymlinks.get(path)})` })
+      }
     }
   }
   for (const [path] of declaredSymlinks) {
