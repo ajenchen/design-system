@@ -162,7 +162,7 @@ Tag 是 inline label，用於分類標籤、狀態標記、多選已選值。不
 | purple | `--color-purple-1` | `--color-purple-7` | `--color-purple-6` | `--on-emphasis`（白） |
 | magenta | `--color-magenta-1` | `--color-magenta-7` | `--color-magenta-6` | `--on-emphasis`（白） |
 
-**Solid 文字色規則（on-emphasis 配對,2026-06-04）**：依 step-6 底色明暗分桶，合規門檻 = WCAG **large/bold 3:1**（solid Tag 視為大粗字，user 拍板「以最低為原則」）。底夠深 → `--on-emphasis`（白）；底太亮(白字連 3:1 都不過)→ `--on-emphasis-dark`（深，= `black-a85`，原 `warning-foreground` 改名）：**yellow / amber / orange / lime** 四個。**★ green 例外**：green-6 白字實測 2.47（連 3:1 都不過），但維持白字（沿用慣見「綠底白字」觀感）= documented exception，待日後評估是否調 green-6。**SSOT**：上表機械對應 `tokens/categorical-color.ts`（`CAT_SUBTLE` / `CAT_SOLID`，1:1 + 對比由 `categorical-color-invariants.mjs` I4 機械驗，green exempt）。
+**Solid 文字色規則（on-emphasis 配對,2026-06-04）**：依 step-6 底色明暗分桶，合規門檻 = WCAG **large/bold 3:1**（solid Tag 視為大粗字，user 拍板「以最低為原則」）。底夠深 → `--on-emphasis`（白）；底太亮(白字連 3:1 都不過)→ `--on-emphasis-dark`（深，= `black-a85`，原 `warning-foreground` 改名）：**yellow / amber / orange / lime** 四個。**★ green 例外**：green-6 白字實測 2.47（連 3:1 都不過），但維持白字（沿用慣見「綠底白字」觀感）= documented exception。2026-08-04 複審後決策已定：維持現狀（Ant Tag 同樣出貨綠底白字；無實際使用問題證據），非待辦，勿再重開。**SSOT**：上表機械對應 `tokens/categorical-color.ts`（`CAT_SUBTLE` / `CAT_SOLID`，1:1 + 對比由 `categorical-color-invariants.mjs` I4 機械驗，green exempt）。
 
 ### Dismiss 行為（Inline Action 客製）
 

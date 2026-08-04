@@ -161,7 +161,7 @@
       ],
       "allowPlaintextInject": false
     },
-    "enableWeakerNestedSandbox": false,
+    "enableWeakerNestedSandbox": true,
     "enableWeakerNetworkIsolation": false,
     "allowAppleEvents": false,
     "excludedCommands": []

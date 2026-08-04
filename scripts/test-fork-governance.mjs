@@ -811,6 +811,21 @@ const codexResults = []
       codexResults.push(`  codex hooks.json: ❌ commands=${cmds.length} / unresolved=${badPath.length} / structured-relative=${rootPinned} / events=${sameEvents} / manifest=${sameLaunchers}`); fail++
     } else codexResults.push(`  codex hooks.json: ✅ ${actualEvents.length} events → fixed env-clean command / zero shell interpolation → governance/bin 的 ${manifestLaunchers.length} shared thin adapters`)
   }
+  // 5c-bis The template's committed Claude settings are a canonical source, not a generated view, so
+  // `governance:generate` never rewrites them. Its sandbox block nevertheless has to carry the same
+  // contract as the policy every generated view is built from, and nothing compared the two — which is
+  // how the template kept shipping `enableWeakerNestedSandbox: false` after the policy flipped it to
+  // true, handing every new fork a cloud session that dies before its first tool call. Compared against
+  // the policy source rather than a generated artifact so a pending regeneration cannot fake a drift.
+  const tplSandbox = JSON.parse(
+    readFileSync(join(ROOT, 'template/ds-product-template/.claude/settings.json'), 'utf8'),
+  ).sandbox
+  const policySandbox = JSON.parse(
+    readFileSync(join(ROOT, 'packages/design-system/ds-canonical/adapters/claude-settings-base.json'), 'utf8'),
+  ).sandbox
+  if (JSON.stringify(tplSandbox) !== JSON.stringify(policySandbox)) {
+    codexResults.push('  template sandbox parity: ❌ template/.claude/settings.json 的 sandbox 段與 canonical policy(claude-settings-base.json)已分叉;template 是 canonical-source,generate 不會修它,需手動同步'); fail++
+  } else codexResults.push('  template sandbox parity: ✅ template settings.sandbox == canonical policy sandbox(deep-equal)')
   // 5d Product-role skill inventory must be provider-symmetric. The product-safe reviewer is
   // present for both providers while the DS-author canonical reviewer stays excluded.
   const codexIndependent = join(FORK_OUT, 'providers/codex/skills/independent-review/SKILL.md')

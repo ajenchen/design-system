@@ -1988,7 +1988,7 @@ test('templates bind exact release tags, absolute runtimes, first-launch bootstr
     assert.equal(claude.sandbox.network.allowManagedDomainsOnly, true)
     assert.deepEqual(claude.sandbox.network.allowUnixSockets, [])
     assert.equal(claude.sandbox.network.allowAllUnixSockets, false)
-    assert.equal(claude.sandbox.enableWeakerNestedSandbox, false)
+    assert.equal(claude.sandbox.enableWeakerNestedSandbox, true)
     assert.equal(claude.sandbox.enableWeakerNetworkIsolation, false)
     assert.equal(claude.sandbox.allowAppleEvents, false)
     assert.deepEqual(claude.sandbox.excludedCommands, [])

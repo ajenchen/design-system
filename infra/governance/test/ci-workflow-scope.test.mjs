@@ -12,10 +12,17 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   const source = readWorkflow('ci.yml')
   const workflow = parseWorkflowSemantics(source)
   assert.deepEqual(Object.keys(workflow.on).sort(), ['pull_request', 'push', 'workflow_dispatch'])
-  assert.deepEqual(Object.keys(workflow.jobs), ['verify'])
+  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['hooks-linux', 'verify'])
   assert.equal(workflow.jobs.verify.name, 'Verify(tsc + tests + compile + build)')
   assert.equal(workflow.jobs.verify.timeoutMinutes, 15)
-  assert.equal((source.match(/setup:dependencies/g) ?? []).length, 1)
+  // The shell hooks only ever ran on macOS, which is how BSD-only `stat -c` / `date -d` fallbacks
+  // shipped to Linux cloud sessions. This job is their Linux regression gate; it stays inside the
+  // fast PR scope and stays out of `verify` so a hook failure reads as a hook failure.
+  assert.equal(workflow.jobs['hooks-linux'].name, 'Governance hooks(Linux portability)')
+  assert.equal(workflow.jobs['hooks-linux'].timeoutMinutes, 15)
+  assert.match(source, /npm run hooks:test/)
+  // Each job installs once; the count tracks the job count rather than being pinned to one.
+  assert.equal((source.match(/setup:dependencies/g) ?? []).length, Object.keys(workflow.jobs).length)
   for (const command of [
     'npm run build:lib',
     'npx --no-install tsc -b',

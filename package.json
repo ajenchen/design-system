@@ -31,7 +31,7 @@
     "composition-fidelity": "node scripts/composition-fidelity-visual-diff.mjs",
     "icons:scan": "node scripts/scan-asymmetric-icons.mjs",
     "devmode:test": "node scripts/test-devmode-visual.mjs",
-    "hooks:test": "bash .claude/hooks/tests/run-all.sh",
+    "hooks:test": "bash packages/design-system/ds-canonical/hooks/tests/run-all.sh",
     "size": "size-limit",
     "size:why": "size-limit --why",
     "a11y:check": "node scripts/audit-a11y.mjs",

@@ -131,7 +131,14 @@ DIM_TOTAL=$(
   node -- "$HOOK_DIR/lib/audit-report-validator.mjs" \
     expected-dimensions "$AUDIT_MATRIX" 2>/dev/null || echo 91
 )
-DIM_COUNT=$(grep -oiE '\bdim[[:space:]]+[0-9]{1,2}\b' "$FILE_PATH" 2>/dev/null | grep -oE '[0-9]+' | sort -un | wc -l | tr -d ' ')
+# Counts English `dim N` and Chinese `維度 N` alike. A Chinese-only report used to score 0 unique
+# dimensions, which silently disabled every dim-gated validator below — including M.
+DIM_COUNT=$(
+  {
+    grep -oiE '\bdim[[:space:]]+[0-9]{1,2}\b' "$FILE_PATH" 2>/dev/null
+    grep -oE '維度[[:space:]]*[0-9]{1,2}' "$FILE_PATH" 2>/dev/null
+  } | grep -oE '[0-9]+' | sort -un | wc -l | tr -d ' '
+)
 DIM_COUNT=${DIM_COUNT:-0}
 if [ "$DIM_COUNT" -lt "$DIM_TOTAL" ]; then
   WARNINGS="${WARNINGS}\n  ⚠️ [B] Dim coverage:report 提到 ${DIM_COUNT} unique dim,< ${DIM_TOTAL} 期望。確認全 dim NO-SAMPLE（PURE-JUDGMENT/requiresAgent dim 必有 per-dim agent-output 非散文提號）"
@@ -285,6 +292,33 @@ if [ "${DIM_COUNT:-0}" -ge 10 ]; then
   elif [ "$SAME_RUN_PRUNE" -ne 1 ] || [ "$SAME_RUN_GOVERNANCE_COVERAGE" -ne 1 ]; then
     TRIGGER_PRUNE=1
     WARNINGS="${WARNINGS}\n  • [L] Recovery only:deep progress 尚缺 same-run knowledge-prune / governance-coverage receipt；在 final report 前完成同一輪收斂。"
+  fi
+fi
+
+# ─ Validator M: coverage verdict truthfulness ────────────────────────────────────────────
+# Validator L only proves the three receipt strings are present. A run whose machine verdict is
+# coverageStatus=incomplete could therefore ship a final report that reads like a pass, because
+# nothing compared the prose against the verifier. That is exactly how the beta.108 Deep Audit was
+# recorded as closed while dimensions 64/66 stayed unpassed (2026-08-02). The rule is not "coverage
+# must be complete" — closing incomplete is legitimate — it is "an incomplete verdict must be stated
+# in the report", so silence can never imply completion.
+if [ "${DIM_COUNT:-0}" -ge 10 ] && [ "$IS_FINAL_REPORT" -eq 1 ]; then
+  # Two steps, not one pipeline: under `set -o pipefail` a failing verifier makes the whole pipeline
+  # non-zero *after* the parser has already printed its own "unknown", so `|| echo unknown` appended a
+  # second one and the status read "unknownunknown".
+  COVERAGE_JSON=$(node "$PROJECT_DIR/scripts/verify-deep-audit-coverage.mjs" --json 2>/dev/null || true)
+  COVERAGE_STATUS=$(
+    printf '%s' "$COVERAGE_JSON" \
+      | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(String(JSON.parse(s).coverageStatus||"unknown"))}catch{process.stdout.write("unknown")}})' 2>/dev/null
+  )
+  COVERAGE_STATUS=${COVERAGE_STATUS:-unknown}
+  if [ "$COVERAGE_STATUS" != complete ]; then
+    # Deliberately narrow phrases. A bare `未通過` substring let a report claim the opposite of the
+    # verdict — "全部通過,無未通過項" matched and passed. An admission has to read as an admission.
+    if ! grep -qiE 'closed as incomplete|this is not a pass|not a pass;|coverage[[:space:]]*status[^[:alnum:]]{0,4}incomplete|coverageStatus[^[:alnum:]]{0,4}incomplete|未通過結案|結案但未通過|以未通過|未完成覆蓋|[0-9]+[[:space:]]*個?[^[:space:]]{0,4}未通過' "$FILE_PATH" 2>/dev/null; then
+      WARNINGS="${WARNINGS}\n  🔴 [M] Coverage verdict 為 '${COVERAGE_STATUS}' 但 final report 未明記未通過:允許以 incomplete 結案,但必須逐字寫出(例如『CLOSED AS INCOMPLETE; THIS IS NOT A PASS』或列出未通過的 dim),不得讓三段回執字串暗示已完成。"
+      CRITICAL_FAIL=1
+    fi
   fi
 fi
 
