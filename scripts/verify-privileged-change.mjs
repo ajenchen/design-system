@@ -12,29 +12,31 @@ import {
 } from '../infra/governance/lib/issuer-registry.mjs'
 import { validateAttestationPolicy } from '../infra/governance/lib/attestation.mjs'
 import { validateRuntimeProfile } from '../infra/governance/lib/provider-runtime-conformance.mjs'
-import { validateReleaseTagAuthorizationPolicy } from '../infra/governance/lib/release-tag-authorization.mjs'
-import {
-  externalActivationPolicyDigest,
-  resolveExternalActivationProfile,
-} from '../infra/governance/lib/external-activation.mjs'
+// Phase A of the activation-cluster retirement (2026-08-04, baton §8.1): this verifier no longer
+// reads or validates the external-activation / release-tag-authorization ceremony policies. It
+// runs from the PROTECTED BASE against candidate trees (governance-anchor pull_request_target), so
+// retirement is two-phase to avoid a bootstrap deadlock: Phase A ships a verifier that tolerates
+// both trust-root shapes while candidates still carry the ceremony files; only after this is the
+// protected base may Phase B delete the files and the legacy keys.
 
 const POLICY_KEYS = [
   '$schema', 'schemaVersion', 'repository', 'algorithm', 'maxAuthorizationTtlMinutes',
   'clockSkewSeconds', 'authorizationDirectory', 'issuerRegistryDigest', 'allowedKeyIds',
   'protectedPaths', 'protectedPrefixes', 'trustRootQuorum', 'bootstrap',
+]
+// Tolerated-but-ignored during Phase A; rejected again after Phase B removes them for good.
+const RETIRED_ACTIVATION_POLICY_KEYS = [
   'externalActivationPolicyDigest', 'authorizationProfileId', 'authorizationProfileDigest',
 ]
 const BOOTSTRAP_KEYS = ['schemaVersion', 'enabled', 'ownerLogins', 'nonce', 'maxCommentTtlMinutes']
 const shaPattern = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/
 const REGISTRY_PATH = 'infra/governance/trust/issuers.json'
 const POLICY_PATH = 'infra/governance/privileged-trust-roots.json'
-const EXTERNAL_ACTIVATION_POLICY_PATH = 'infra/governance/external-activation-policy.json'
 const RELEASE_RINGS_PATH = 'infra/governance/release-rings.json'
 const RUNTIME_PROFILE_PATH = 'infra/governance/providers/runtime-conformance.json'
 const RELEASE_TAG_POLICY_PATH = 'infra/governance/release-tag-authorization-policy.json'
 const SEMANTIC_MANIFEST_PATH = 'packages/governance/canonical/manifest.json'
 const CONTROL_PLANE_GENESIS_COMMENT_MARKER = 'DS-GOVERNANCE-CONTROL-PLANE-GENESIS-V1 '
-const PRODUCTION_PROFILE = 'PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM'
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message)
@@ -149,34 +151,12 @@ function walkFiles(root, prefix) {
   return files
 }
 
-function resolveTrustRootProfile(root, policy) {
-  const externalActivationPolicy = readRegularJson(
-    root,
-    EXTERNAL_ACTIVATION_POLICY_PATH,
-    'external activation policy',
-  )
-  const policyDigest = externalActivationPolicyDigest(externalActivationPolicy)
-  invariant(
-    policy.externalActivationPolicyDigest === policyDigest,
-    'privileged trust-root external activation policy digest is stale or substituted',
-  )
-  invariant(
-    policy.authorizationProfileId === externalActivationPolicy.activeProfile,
-    'privileged trust-root profile differs from the active canonical profile',
-  )
-  const profile = resolveExternalActivationProfile(externalActivationPolicy, {
-    expectedPolicyDigest: policy.externalActivationPolicyDigest,
-    profileId: policy.authorizationProfileId,
-  })
-  invariant(
-    policy.authorizationProfileDigest === profile.sha256,
-    'privileged trust-root profile digest is stale or substituted',
-  )
-  return { externalActivationPolicy, profile }
-}
-
 function validatePolicy(policy, registry, { root, now = new Date() } = {}) {
-  invariant(exactKeys(policy, POLICY_KEYS), 'privileged trust-root policy has an invalid or open shape')
+  // Phase A shape tolerance: accept the trimmed shape or the legacy shape that still carries the
+  // retired activation keys (which are no longer read or validated).
+  const policyShapeValid = exactKeys(policy, POLICY_KEYS)
+    || exactKeys(policy, [...POLICY_KEYS, ...RETIRED_ACTIVATION_POLICY_KEYS])
+  invariant(policyShapeValid, 'privileged trust-root policy has an invalid or open shape')
   invariant(policy.$schema === 'schemas/privileged-trust-roots.schema.json', 'privileged trust-root schema reference is invalid')
   invariant(policy.schemaVersion === 2 && policy.algorithm === 'ed25519', 'privileged trust-root policy version/algorithm is invalid')
   invariant(typeof policy.repository === 'string' && /^[^/]+\/[^/]+$/.test(policy.repository), 'privileged trust-root repository is invalid')
@@ -191,19 +171,11 @@ function validatePolicy(policy, registry, { root, now = new Date() } = {}) {
   for (const key of ['protectedPaths', 'protectedPrefixes', 'allowedKeyIds']) invariant(Array.isArray(policy[key]), `privileged trust-root ${key} must be an array`)
   invariant(new Set(policy.protectedPaths).size === policy.protectedPaths.length && new Set(policy.protectedPrefixes).size === policy.protectedPrefixes.length, 'privileged trust-root paths must be unique')
   invariant(policy.protectedPrefixes.every(prefix => prefix.endsWith('/')), 'privileged protected prefixes must end in /')
-  const { profile } = resolveTrustRootProfile(root, policy)
-  invariant(
-    policy.trustRootQuorum >= profile.releaseAuthorization.minimumSignerQuorum
-      && policy.trustRootQuorum <= profile.releaseAuthorization.maximumSignerQuorum
-      && (
-        profile.releaseAuthorization.minimumSignerQuorum !== profile.releaseAuthorization.maximumSignerQuorum
-        || policy.trustRootQuorum === profile.releaseAuthorization.minimumSignerQuorum
-      ),
-    `privileged trust-root quorum is invalid for profile ${profile.id}`,
-  )
+  // The ceremony profile's quorum band collapsed to the single-owner production reality; the
+  // static 1..5 bound above plus quorum=1 here is the whole remaining contract (baton §8.1).
   const privilegedBinding = validateRegistryPolicyBinding(policy, registry, {
     role: 'privileged-change-authorizer',
-    quorum: profile.id === PRODUCTION_PROFILE ? 1 : policy.trustRootQuorum,
+    quorum: 1,
     now,
     allowUnactivated: policy.bootstrap.enabled,
   })
@@ -217,7 +189,9 @@ function validatePolicy(policy, registry, { root, now = new Date() } = {}) {
     invariant(policy.allowedKeyIds.length === 0 && registry.issuers.length === 0, 'one-time bootstrap requires an empty issuer registry and no allowed keys')
   } else {
     invariant(policy.allowedKeyIds.length >= policy.trustRootQuorum, 'closed bootstrap requires enough allowed keys for the active trust-root quorum')
-    if (profile.id === PRODUCTION_PROFILE) {
+    {
+      // Single-owner production is the deployment's only shape (baton §8.1): the ceremony
+      // profile selector is gone, and the strictest band it ever selected applies always.
       invariant(
         policy.allowedKeyIds.length === 1
           && privilegedBinding.eligible.length === 1
@@ -237,16 +211,6 @@ export function readTrustRootPolicy(trustedRoot, { now = new Date() } = {}) {
     registry,
     { root: trustedRoot, now },
   )
-  const { externalActivationPolicy } = resolveTrustRootProfile(trustedRoot, policy)
-  const releaseTagPolicy = readRegularJson(trustedRoot, RELEASE_TAG_POLICY_PATH, 'release-tag authorization policy')
-  validateReleaseTagAuthorizationPolicy(releaseTagPolicy, {
-    issuerRegistry: registry,
-    now,
-    allowUnactivated: policy.bootstrap.enabled,
-    externalActivationPolicy,
-    expectedExternalActivationPolicyDigest: policy.externalActivationPolicyDigest,
-  })
-  invariant(releaseTagPolicy.repository === policy.repository, 'release-tag and privileged trust-root repository bindings differ')
   validateSemanticSourceClosure(trustedRoot, policy)
   return policy
 }
@@ -291,12 +255,15 @@ function trustProjection(root) {
   const policy = readRegularJson(root, POLICY_PATH, 'privileged trust-root policy')
   const rings = readRegularJson(root, RELEASE_RINGS_PATH, 'release-rings policy')
   const runtime = readRegularJson(root, RUNTIME_PROFILE_PATH, 'runtime conformance profile')
-  const releaseTag = readRegularJson(root, RELEASE_TAG_POLICY_PATH, 'release-tag authorization policy')
+  // Phase A tolerance: the retired release-tag ceremony policy may already be absent from one
+  // side; its bytes still participate in change detection while present so a candidate cannot
+  // silently rewrite it, and absence on both sides is simply the post-retirement steady state.
+  const releaseTag = entry(root, RELEASE_TAG_POLICY_PATH).type === 'absent'
+    ? null
+    : readRegularJson(root, RELEASE_TAG_POLICY_PATH, 'release-tag authorization policy')
   return {
     privileged: {
-      externalActivationPolicyDigest: policy.externalActivationPolicyDigest,
-      authorizationProfileId: policy.authorizationProfileId,
-      authorizationProfileDigest: policy.authorizationProfileDigest,
+      retiredActivationKeys: RETIRED_ACTIVATION_POLICY_KEYS.map((key) => policy[key] ?? null),
       issuerRegistryDigest: policy.issuerRegistryDigest,
       allowedKeyIds: policy.allowedKeyIds,
       trustRootQuorum: policy.trustRootQuorum,
@@ -324,17 +291,8 @@ function validateCandidateTrustConfiguration(candidateRoot, { now = new Date() }
   const runtime = readRegularJson(candidateRoot, RUNTIME_PROFILE_PATH, 'runtime conformance profile')
   validateRuntimeProfile(runtime, { issuerRegistry: registry, now, allowUnactivated: false })
   invariant(runtime.allowedKeyIds.length > 0, 'candidate runtime policy must configure registry key references')
-  const releaseTag = readRegularJson(candidateRoot, RELEASE_TAG_POLICY_PATH, 'release-tag authorization policy')
-  const { externalActivationPolicy } = resolveTrustRootProfile(candidateRoot, policy)
-  validateReleaseTagAuthorizationPolicy(releaseTag, {
-    issuerRegistry: registry,
-    now,
-    allowUnactivated: false,
-    externalActivationPolicy,
-    expectedExternalActivationPolicyDigest: policy.externalActivationPolicyDigest,
-  })
-  invariant(releaseTag.repository === policy.repository, 'candidate release-tag and privileged repository bindings differ')
-  invariant(releaseTag.allowedKeyIds.length > 0, 'candidate release-tag policy must configure dedicated registry key references')
+  // Ceremony policies (external-activation / release-tag-authorization) are no longer validated:
+  // they had no live consumer (baton §8.1 reachability audit) and Phase B removes their files.
   return { registry, policy }
 }
 

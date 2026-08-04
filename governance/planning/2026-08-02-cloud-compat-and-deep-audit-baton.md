@@ -309,3 +309,29 @@ pre-commit 每次跑 `governance:generate`。**本次 commit 卡死,就是 pre-c
   publisher / 2FA / rollback-drill 三真項),schema 鬆綁為 documentation-only;六 lib + 可退測試刪除;
   release-trust-preflight 的 activation 讀取改為 optional-absent(fail-open on absence,
   presence 時仍驗)——或直接移除該讀取若其唯一用途是 activation 儀式。
+
+### §8.1 Batch 3 可達圖定稿(2026-08-04 Fable 全鏈稽核;取代 §8 初估)
+
+**真實規模 ~48-50k 行**(六核心 lib 16,610 只是零頭):tests 10,064 / schemas 4,179 /
+workflows 2,817(build-managed-ci-executors 2,608!)/ managed-CI 圈 ~11,700 / data 1,722。
+**三大風險與解法**:
+1. **Anchor bootstrap 死鎖**:governance-anchor(pull_request_target)用**舊 base** 的
+   verify-privileged-change 讀 candidate 樹的 activation/tag-auth policy(fail-closed)→
+   **兩階段**:Phase A 先出「tolerant verifier」PR(不再讀叢集 policy、容忍兩種 key 形狀,
+   candidate 檔案全保留 → 舊 verifier 綠)→ merge → Phase B 才刪檔+修 trust-roots keys。
+2. **ci.yml 模組載入鏈**:PR gate 經 model-validation.test → consumerctl/reconcile-github
+   import 到叢集;刪檔與斷 import 必同 commit,push 前本地重放 ci.yml 精確命令 +
+   harness suite governance-infra-remainder / governance-script-remainder。
+3. **Mirror/release 證據對稱**(MIRROR-EVIDENCE-008):activation-boundary proof 是 mirror
+   必要資產;producer+validator+receipt schema+scaffold-lock 一個 PR 內對稱移除,
+   verify-upgrade-provenance 的 trust-preflight 分支(無 live producer)同批刪,
+   consumer 傳播靠下一次 five-step release 帶到 template/WM。
+**KEEP 白名單(有 live 鏈,不動)**:issuer-registry(anchor+fork consumer)/
+managed-host-assurance(零叢集 import 已驗)/ external-surface-evidence(runtime-certification
+live)/ verify-upgrade-provenance 本體(release+sync-all+fork ×3 live)/ reconcile-github+
+consumerctl(fleet plane,需斷其叢集 import 的大 sever)/ model-validation 本體(斷 rollout 分支)。
+**Inventory 同步鏈**:canonical manifest 移 ~45 個 required id → generate+snapshot;
+harness-source-inventory suites[3]/[5]+pairedMeta → sync-harness-authority-bindings;
+desired/github.json 的 external-ledger environment → workflow-identities propose/apply;
+package.json 十餘條 ceremony scripts;test-governance-build-graph:658-662 期望;fork/template/WM
+經正常 release 傳播。
