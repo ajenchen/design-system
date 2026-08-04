@@ -446,8 +446,6 @@ const explicitEvidenceControlPlaneSources = {
   'managed-ci-model-release-authority-library': 'scripts/lib/model-release-authority.mjs',
   'managed-ci-model-release-authority-fixture': 'scripts/test-fixtures/model-release-authority-fixture.mjs',
   'managed-ci-model-release-authority-tests': 'scripts/test-model-release-authority.mjs',
-  'exact-fleet-reconcile-bootstrap-transaction-schema': 'infra/governance/schemas/fleet-reconcile-bootstrap-transaction.schema.json',
-  'exact-fleet-reconcile-bootstrap-replay-receipt-schema': 'infra/governance/schemas/fleet-reconcile-bootstrap-replay-receipt.schema.json',
   'consumer-repository-path-topology-library': 'infra/governance/lib/repository-path-topology.mjs',
   'consumer-repository-path-topology-tests': 'infra/governance/test/repository-path-topology.test.mjs',
   'provider-compatibility-matrix': 'infra/governance/providers/compatibility-matrix.json',

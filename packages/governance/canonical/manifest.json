@@ -1804,18 +1804,6 @@
       "required": true
     },
     {
-      "id": "exact-fleet-reconcile-bootstrap-transaction-schema",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/schemas/fleet-reconcile-bootstrap-transaction.schema.json",
-      "required": true
-    },
-    {
-      "id": "exact-fleet-reconcile-bootstrap-replay-receipt-schema",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/schemas/fleet-reconcile-bootstrap-replay-receipt.schema.json",
-      "required": true
-    },
-    {
       "id": "exact-external-surface-evidence-schema",
       "ownerRepo": "design-system",
       "path": "infra/governance/schemas/external-surface-evidence.schema.json",

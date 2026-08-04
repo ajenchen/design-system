@@ -12,9 +12,6 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import {
-  CONTROL_PLANE_GENESIS_TOMBSTONES,
-} from './lib/control-plane-genesis-transition.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const GATE = join(ROOT, 'scripts/check-provider-neutral-ssot-residue.mjs')
@@ -26,7 +23,14 @@ const FAILURE = 'packages/design-system/ds-canonical/references/failure-class-re
 const GRAPH = 'scripts/governance-build-graph.json'
 const HOOK_CLASSIFICATION = 'scripts/fork-hook-classification.json'
 const MEMORY = 'governance/memory/MEMORY.md'
-const TOMBSTONES = CONTROL_PLANE_GENESIS_TOMBSTONES.map(item => item.path)
+// Mirrors RETIRED_CONTROL_PLANE_TOMBSTONES in the gate under test.
+const TOMBSTONES = [
+  '.claude/commands/gov-status.md',
+  '.claude/hooks/check_post_main_ssot_propagate.sh',
+  '.github/workflows/ssot-sync-dispatch.yml',
+  'packages/design-system/ds-canonical/commands/gov-status.md',
+  'packages/design-system/ds-canonical/hooks/check_post_main_ssot_propagate.sh',
+]
 
 function indexedMemoryFiles(root = ROOT) {
   const index = readFileSync(join(root, MEMORY), 'utf8').split(/\n---\s*\n/u, 1)[0]
@@ -42,6 +46,8 @@ const required = [
   FAILURE,
   'packages/design-system/ds-canonical/hooks/check_story_invariants.sh',
   'packages/design-system/ds-canonical/hooks/check_opacity_token_usage.sh',
+  'packages/design-system/ds-canonical/hooks/check_layout_space_magic_numbers.sh',
+  'packages/design-system/ds-canonical/hooks/check_escape_marker_abuse.sh',
   'packages/design-system/ds-canonical/hooks/check_consumer_code_quality.sh',
   'packages/design-system/ds-canonical/hooks/lib/_token_hygiene.sh',
   'packages/design-system/ds-canonical/skills/story-writing/SKILL.md',
@@ -58,7 +64,6 @@ const required = [
   'packages/governance/canonical/plugin-aliases.json',
   HOOK_CLASSIFICATION,
   GRAPH,
-  'scripts/lib/control-plane-genesis-transition.mjs',
 ]
 
 function activateMemory(root, filename, body) {
@@ -207,8 +212,9 @@ try {
 
   install(fixture)
   mutateJson(fixture, GRAPH, value => {
-    const stage = value.stages.find(item => item.id === 'harness-authority-bindings')
-    stage.sources = stage.sources.map(source => source === '.claude/hooks/tests/' ? '.claude/hooks/' : source)
+    // The generated hook-test mirror retired 2026-08-04: harness bindings must
+    // consume zero provider views, so reintroducing one must fail closed.
+    value.stages.find(item => item.id === 'harness-authority-bindings').sources.unshift('.claude/hooks/')
   })
   const widenedHarnessMirror = run(fixture)
   assert.notEqual(widenedHarnessMirror.status, 0, 'Harness authority projection accepted a widened generated provider source')

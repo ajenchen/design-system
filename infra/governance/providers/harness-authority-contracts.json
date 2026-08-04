@@ -1752,9 +1752,7 @@
         "consumer-fanout-dispatch-evidence-schema",
         "consumer-bootstrap-managed-repos-schema",
         "exact-fleet-reconcile-journal-schema",
-        "exact-github-desired-schema",
-        "exact-fleet-reconcile-bootstrap-transaction-schema",
-        "exact-fleet-reconcile-bootstrap-replay-receipt-schema"
+        "exact-github-desired-schema"
       ],
       "executedTestOwners": [
         {
@@ -1859,9 +1857,7 @@
           "kind": "proves",
           "text": "Authority-policy bootstrap journals remain local non-promotion evidence and are accepted only after exact ordered event replay through the canonical signed mirror protocol, independent head verification and content-addressed readback.",
           "sourceIds": [
-            "exact-fleet-reconcile-cli",
-            "exact-fleet-reconcile-bootstrap-transaction-schema",
-            "exact-fleet-reconcile-bootstrap-replay-receipt-schema"
+            "exact-fleet-reconcile-cli"
           ],
           "executionOwners": [
             {

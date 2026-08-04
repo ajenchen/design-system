@@ -317,7 +317,7 @@ function resolveGraphStages({ root, graph, providers, providersPath, manifest, m
     // provider surfaces before generating its snapshot. They remain outputs of
     // provider-adapters (and are therefore excluded from canonical source
     // fingerprints), but they are also explicit upstream inputs to the
-    // control-plane stage and its one-time genesis closure.
+    // control-plane stage.
     'root-provider-views': () => ({
       sources: [
         ...(graph.stages.find((stage) => stage.id === 'provider-adapters')?.outputs ?? []),
@@ -575,11 +575,11 @@ function resolveGovernanceBuildGraph({ repoRoot = ROOT, providerRegistry = null 
   }
 }
 
-// The one-time control-plane genesis verifier must classify the proposed Git
-// tree with the candidate graph while the trusted base can still contain
-// legacy protected-root shapes. It receives only the fully schema/topology/
-// runtime-validated semantic graph; ordinary generation and checks continue
-// through loadGovernanceBuildGraph and its complete live filesystem guard.
+// Semantic-only load for callers that must classify a proposed Git tree with
+// the candidate graph before any live filesystem exists at the target shape.
+// It returns only the fully schema/topology/runtime-validated semantic graph;
+// ordinary generation and checks continue through loadGovernanceBuildGraph
+// and its complete live filesystem guard.
 export function loadGovernanceBuildGraphSemanticDefinition(options = {}) {
   return resolveGovernanceBuildGraph(options).graph
 }

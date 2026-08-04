@@ -397,3 +397,21 @@ package.json 十餘條 ceremony scripts;test-governance-build-graph:658-662 期�
 **額外抓到的 main 上潛在 drift**:test-workflow-security「anchor CLI」argv 期望缺 #44 的 `--manifest`(PR gate 刻意不含十分鐘 harness suite → #44 綠著 merge、紅在 harness);本批補上,59/59 綠。
 
 **驗證**:coverage/deterministic/parity/build-graph/snapshot/harness-registry 串跑 31/31;waived-import PASS;workflow-security 59/59;CI focused lane replay 33/33+minima;generate+check PASS(.claude 兩 view 因 sandbox deny 由 generator 輸出逐位元組投影,cmp 驗證 BYTE-IDENTICAL)。隔離 harness(pristine main)其餘失敗均環境性:vite dist 未建、Playwright 未裝、npm runtime overlay 未 provision、consumerctl 6 例先前已證 pre-existing。
+
+### §8.5 Batch 7 genesis 退役執行記錄(2026-08-05 完成;§7 item 3)
+
+現況前提:transition state 已 `closed`(build-graph.json 內嵌 record 實測)→ 全部 OPEN/RETAIN 分支為死路;手術大半機械。
+
+**刪除**:`scripts/lib/control-plane-genesis-transition.mjs`(710 行)+ `scripts/test-control-plane-genesis-transition.mjs`(371 行)+ build-graph.json 內嵌 `controlPlaneGenesisTransition` record(2KB)+ schema $defs 7 個 + 孤兒 schemas `fleet-reconcile-bootstrap-{transaction,replay-receipt}.schema.json`(genesis challenge/receipt 形狀,零 runtime consumer)+ verify-privileged-change 內無 caller 的 genesis receipt 家族(validateControlPlaneGenesisReceipt/commentBody/digest/marker,61 行)。
+
+**Severs(死分支拆除 + 活語意 inline)**:
+- sync-governance-baseline-mirrors:retained 三函式 + lifecycle load 全拆;plain symlink verify/generate 為唯一路徑。
+- build-fork-governance:genesisPreservationMap/assertGenesisScriptsAlias/generateGenesisScriptsAlias → `assertRetiredScriptsAliasAbsent`/`removeRetiredScriptsAlias`(保留 `packages/design-system/scripts` 永不重現 invariant);preamble/template-hook OPEN 區塊刪除。
+- governance-protected-roots:兩條 baseline symlink 路徑(`.claude/snapshots-baseline`/`snapshots-baseline`)inline 為常數。
+- check-provider-neutral-ssot-residue:5 條 tombstone inline 為 `RETIRED_CONTROL_PLANE_TOMBSTONES`,絕不重現檢查保留。
+- harness-source-inventory lib:transitionInactiveCanonicalHookNames 死函式拆除。
+- registries:manifest −2 id / build-graph −6 ref / harness contracts+registry 重投影。
+
+**不動(同名異義)**:provider-lifecycle ledger genesis、reconcile-github transaction-journal genesis、test-consumer-governance/test-future-provider-fork-surface 的 lifecycle genesis fixture。
+
+**另抓 2 個 pre-existing main drift**(harness-only 測試不在 PR gate,與 workflow-security 同類):residue test fixture 缺 utility-registry consumed_by 兩個 hook(check_layout_space_magic_numbers/check_escape_marker_abuse);widened-mirror poison 因 hook-test mirror 已退役成 no-op → 改注入式 poison。皆修復。

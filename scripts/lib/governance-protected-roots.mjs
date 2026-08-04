@@ -12,12 +12,11 @@ import {
   assertClosedGitLocalConfiguration,
   runClosedGit,
 } from './closed-tool-execution.mjs'
-import {
-  CONTROL_PLANE_GENESIS_CLOSED_BASELINE_PATHS,
-} from './control-plane-genesis-transition.mjs'
-
 const CLASSIFICATIONS = new Set(['canonical-source', 'generated-output', 'non-authority-exclusion'])
-const GENESIS_TREE_TO_SYMLINK_OUTPUTS = new Set(CONTROL_PLANE_GENESIS_CLOSED_BASELINE_PATHS)
+// Closed-baseline compatibility symlinks left behind by the retired
+// control-plane genesis transition (baton §8.5); their authority trees live at
+// infra/governance/baseline/visual/{targeted,curated}.
+const GENESIS_TREE_TO_SYMLINK_OUTPUTS = new Set(['.claude/snapshots-baseline', 'snapshots-baseline'])
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message)

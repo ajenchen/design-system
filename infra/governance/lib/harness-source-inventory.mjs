@@ -15,11 +15,6 @@ import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { createGateMetaTestInventory } from '../../../scripts/lib/gate-meta-test-inventory.mjs'
-import {
-  assertControlPlaneGenesisTombstones,
-  CONTROL_PLANE_GENESIS_OPEN_STATE,
-  loadControlPlaneGenesisTransition,
-} from '../../../scripts/lib/control-plane-genesis-transition.mjs'
 import { compareUtf8Bytes } from './common.mjs'
 
 const GOVERNANCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -400,22 +395,12 @@ function isActiveHookTestPath(path) {
   return basename(path).startsWith('test_') && path.endsWith('.sh')
 }
 
-function transitionInactiveCanonicalHookNames(repoRoot) {
-  const root = canonicalRepoRoot(repoRoot)
-  if (!existsSync(resolve(root, 'scripts/governance-build-graph.json'))) return new Set()
-  const transition = loadControlPlaneGenesisTransition({ root })
-  if (transition.state !== CONTROL_PLANE_GENESIS_OPEN_STATE) return new Set()
-  const prefix = `${CANONICAL_HOOK_ROOT}/`
-  return new Set(assertControlPlaneGenesisTombstones({ root, transition })
-    .map(item => item.path)
-    .filter(path => path.startsWith(prefix) && !path.slice(prefix.length).includes('/'))
-    .map(path => path.slice(prefix.length)))
-}
-
 function validateCanonicalActiveHookCoverage(repoRoot, canonicalHookTree) {
   const root = canonicalRepoRoot(repoRoot)
   const absoluteRoot = resolveRegularRepoDirectory(root, CANONICAL_HOOK_ROOT, 'Harness canonical hook root')
-  const transitionInactive = transitionInactiveCanonicalHookNames(root)
+  // The control-plane genesis transition closed and its machinery retired
+  // 2026-08-04 (baton §8.5); no canonical hook is transition-inactive anymore.
+  const transitionInactive = new Set()
   const active = []
   for (const entry of readdirSync(absoluteRoot, { withFileTypes: true }).sort((left, right) => compareUtf8Bytes(left.name, right.name))) {
     const repoPath = `${CANONICAL_HOOK_ROOT}/${entry.name}`

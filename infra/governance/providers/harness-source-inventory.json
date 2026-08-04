@@ -327,7 +327,6 @@
         "scripts/test-canonical-path-containment.mjs",
         "scripts/test-check-codex-freshness-authorization.mjs",
         "scripts/test-claude-permission-policy.mjs",
-        "scripts/test-control-plane-genesis-transition.mjs",
         "scripts/test-deep-audit-evidence-schema-parity.mjs",
         "scripts/test-design-system-codemod.mjs",
         "scripts/test-deterministic-vite-output.mjs",
