@@ -94,3 +94,13 @@ blocked/failed/stale runs. Never use repository duplicate rules to delete part o
 Run the same classification for every locally available registered repository. A repository that
 is unavailable in the current runtime is **unobserved**, never PASS; its repo-local audit/release
 gate remains the authority.
+
+## World-class benchmark(M8/M22;2026-08-04 backfill — canonical 制定時漏做,本節補齊)
+
+| System | Convention(verbatim/paraphrase) | Source | Status |
+|---|---|---|---|
+| Turborepo | `apps/` for applications and services、`packages/` for libraries and tooling;「Turborepo does not support nested packages like `apps/**` or `packages/**`」(flat nesting only);每 package 自帶 `package.json` 成獨立小專案;「If you ever find yourself writing `../` to get from one package to another, you likely have an opportunity to re-think your approach」 | github.com/vercel/turborepo `apps/docs/content/docs/crafting-your-repository/structuring-a-repository.mdx` | VERIFIED(raw 實取) |
+| Carbon | monorepo(Yarn workspaces + Lerna);元件住 `packages/react/src/components` 每元件一資料夾、樣式住 `packages/styles/scss/components`;快取產物不入 repo(「You do not need to commit any `.yarn/cache` tarballs」,non-committed cache strategy) | github.com/carbon-design-system/carbon `docs/developer-handbook.md` | VERIFIED(raw 實取) |
+| Nx | 「common convention … separating applications from packages(shared libraries)」;`libs/`/`packages/` 皆可,分組依 scope(所屬 app 或 app 內區塊);structure 可自訂但「good to have a plan in place」 | nx.dev/docs/concepts/decisions/folder-structure | search-only confidence(nx.dev 不在網域白名單,依官方頁搜尋摘要;maintainer 於 nrwl/nx discussion #16184 未表態單一命名) |
+
+**對照結論**:本 repo 的 R1-R4 + future-reserved 契約與三家一致或更嚴——`apps/`+`packages/` 頂層分家(Turborepo/Nx 同構)、每 package 自為 project(Turborepo 同構)、生成/快取產物不入 tracked tree 或以 generated 家分類(Carbon non-committed cache 同構,本 repo 更進一步:generated 家有 drift check)。三家皆**無**「未來保留檔案」的機械契約——本 repo 的四欄位 future-reserved 契約(owner/用途/啟用條件/複審期限,逾期 fail-closed)為超出業界基線的自有強化,屬 justified 差異而非 drift。

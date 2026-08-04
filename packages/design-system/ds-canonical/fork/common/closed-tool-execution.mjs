@@ -66,12 +66,14 @@ const CLOSED_HOOK_EXECUTABLE_CANDIDATES = Object.freeze({
     bash: Object.freeze(['/bin/bash']),
     git: Object.freeze(['/usr/bin/git']),
     jq: Object.freeze(['/usr/bin/jq']),
+    perl: Object.freeze(['/usr/bin/perl']),
     python3: Object.freeze(['/usr/bin/python3']),
   }),
   linux: Object.freeze({
     bash: Object.freeze(['/usr/bin/bash', '/bin/bash']),
     git: Object.freeze(['/usr/bin/git']),
     jq: Object.freeze(['/usr/bin/jq']),
+    perl: Object.freeze(['/usr/bin/perl']),
     python3: Object.freeze(['/usr/bin/python3']),
   }),
 })
@@ -717,7 +719,9 @@ export function materializeClosedHookToolProfile({
   )
   const canonicalRepo = canonicalRepositoryRoot(repoRoot)
   const executableRecords = Object.fromEntries(
-    ['bash', 'git', 'jq', 'node', 'python3'].map((label) => [
+    // perl added 2026-08-04: three canonical hooks and the hardcoded-strings lib shell out to it,
+    // so the pinned tool profile has to declare it like every other hook interpreter.
+    ['bash', 'git', 'jq', 'node', 'perl', 'python3'].map((label) => [
       label,
       resolveClosedHookExecutable({
         label,

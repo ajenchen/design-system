@@ -1201,7 +1201,7 @@ export function validateInstalledForkCorpus(projectDir) {
     || manifest.consumer.executionRuntime.nativeWindowsPolicy !== 'unsupported-fail-closed'
     || JSON.stringify(manifest.consumer.executionRuntime.supportedHostPlatforms) !== JSON.stringify(['darwin', 'linux'])
     || JSON.stringify(manifest.consumer.executionRuntime.windowsCompatibilityEnvironments) !== JSON.stringify(['devcontainer-linux', 'wsl2-linux'])
-    || JSON.stringify(manifest.consumer.executionRuntime.requiredExecutables) !== JSON.stringify(['bash', 'git', 'jq', 'node', 'python3'])
+    || JSON.stringify(manifest.consumer.executionRuntime.requiredExecutables) !== JSON.stringify(['bash', 'git', 'jq', 'node', 'perl', 'python3'])
     || JSON.stringify(manifest.consumer.executionRuntime.requiredPathClasses) !== JSON.stringify(['plain', 'space-containing'])
     || bom.payload.executionRuntimeSha256 !== sha256(JSON.stringify(manifest.consumer.executionRuntime))
   ) throw new Error('installed consumer execution runtime contract is invalid or unbound')

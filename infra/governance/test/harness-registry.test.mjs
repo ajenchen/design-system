@@ -416,7 +416,6 @@ test('Harness registry is closed, complete and bound to real no-symlink authorit
     1_860_000,
   )
   assert.deepEqual(registry.runner.requiredConsumers.map(consumer => consumer.path), [
-    'scripts/release-preflight.mjs',
     '.devcontainer/post-create.mjs',
   ])
   assert.deepEqual(registry.runner.requiredConsumers.at(-1), {

@@ -10,12 +10,10 @@ const ROOT = realpathSync(resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const inventory = createGateMetaTestInventory({ root: ROOT })
 
 assert.deepEqual(inventory.excluded.map((entry) => entry.stem), [
-  'check-governance-tamper',
   'check-src-republish',
   'codex-run-guarded',
 ])
 assert.deepEqual(inventory.excludedByClass['deterministic-isolated'].map((entry) => entry.stem), [
-  'check-governance-tamper',
   'check-src-republish',
   'codex-run-guarded',
 ])

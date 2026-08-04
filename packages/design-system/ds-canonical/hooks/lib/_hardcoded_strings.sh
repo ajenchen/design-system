@@ -37,6 +37,11 @@ fi
 
 # Detect hardcoded user-facing CJK / English labels via perl oneliner
 # (macOS-portable: perl is always present; grep -P / pcregrep / rg 不一定有)
+# 缺 perl = 這道 i18n 防線無法判 → 明確 BLOCK,不得靜默放行(fail-closed;cloud 前提宣告)。
+if ! command -v perl >/dev/null 2>&1; then
+  echo '🚨 _hardcoded_strings: required interpreter perl is unavailable — i18n gate cannot run(fail-closed)' >&2
+  exit 2
+fi
 #
 # Perl logic(per line):
 #  1. 跳過 `// ...` 單行註解(但不影響行內其他 content 判斷 — 我們直接跳整行簡化)

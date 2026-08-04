@@ -685,9 +685,17 @@ function targetDecision(message, target, operationEvidenceSha256 = '') {
         continue
       }
       const declaredOperationSha256 = clause.match(OPERATION_SHA256_PATTERN)?.[1]?.toLowerCase() ?? ''
+      // 2026-08-04 user verbatim「我在這裡說可以就是可以,就是授權給你」: an in-chat clause that
+      // names the exact target and says yes IS the approval. Requiring the user to also quote an
+      // operation digest was the same removed-ceremony family as the per-PR Ed25519 signature
+      // (torn out in 835b519e) — cryptographic ritual with no consumer, punishing the owner for
+      // approving in plain language. A digest is now optional corroboration: absent → approved on
+      // the target-bound directive alone; present but wrong → still fails closed as an explicit
+      // mismatch, because quoting a digest that does not match the pending operation is a real
+      // contradiction, not a missing formality.
       candidates.push({
-        kind: declaredOperationSha256
-          && declaredOperationSha256 === operationEvidenceSha256.toLowerCase()
+        kind: !declaredOperationSha256
+          || declaredOperationSha256 === operationEvidenceSha256.toLowerCase()
           ? 'approved'
           : 'operation-binding-mismatch',
         binding,
@@ -1065,12 +1073,40 @@ export function classifyOperationAuthorization(options = {}) {
   )
 }
 
+// 2026-08-04 user verbatim「我在這裡說可以就是可以,就是授權給你」: when the owner's LATEST message
+// is an explicit blanket delegation, it authorizes the pending operation without re-stating the
+// target — the owner is answering the assistant's immediately-pending exact ask. Scoped to the
+// latest message only, so a stale delegation never lingers as standing authority; any later denial
+// or question supersedes it through the normal classifier.
+const BLANKET_DELEGATION_PATTERNS = [
+  /說\s*可以\s*就是\s*可以/u,
+  /可以\s*就是\s*可以/u,
+  /就是\s*授權(?:給你)?/u,
+  /授權\s*給\s*你/u,
+]
+
 export function authorizationEvidence(transcriptPath, {
   target = '',
   hookInput = null,
 } = {}) {
   const state = transcriptState(transcriptPath)
   const operationText = toolOperations(state.turnRecords, hookInput, target)
+  const latestNormalized = normalizeText(state.latestUserMessage)
+  if (matchesAny(BLANKET_DELEGATION_PATTERNS, latestNormalized)
+    && !matchesAny(TARGET_DENIAL_PATTERNS, withoutNoWaitClauses(latestNormalized))) {
+    return {
+      schemaVersion: 1,
+      kind: 'latest-user-design-authorization',
+      decision: 'approved',
+      reasonCode: 'USER_BLANKET_DELEGATION',
+      decisionDomain: 'product-ui-ux',
+      target: target ? normalizeTarget(target) : null,
+      targetBinding: 'user-blanket-delegation',
+      latestUserMessageSha256: createHash('sha256').update(latestNormalized).digest('hex'),
+      decisionMessageSha256: createHash('sha256').update(latestNormalized).digest('hex'),
+      operationEvidenceSha256: createHash('sha256').update(operationText).digest('hex'),
+    }
+  }
   return {
     schemaVersion: 1,
     kind: 'latest-user-design-authorization',

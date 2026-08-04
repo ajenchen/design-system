@@ -22,6 +22,7 @@ import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { execFileSync } from 'node:child_process'
 import Ajv2020 from 'ajv/dist/2020.js'
+import { runClosedGit } from '../packages/governance/src/closed-tool-execution.mjs'
 import {
   compareUtf8Bytes,
   hasUsableVersionedTranscript,
@@ -1518,13 +1519,45 @@ export function checkProviderAdapterTargets(options = {}) {
     assertNoSymlinkComponents(outputRoot, root, 'provider managed output tree')
     for (const path of walkFiles(root, { root, label: 'provider managed output tree' })) actual.add(resolve(path))
   }
+  // Index-authoritative windows: while a transaction publishes a sandbox-denied view through the
+  // Git index (user 2026-08-04 授權:commit 為真相,工作樹由下一次正常 git 操作自癒), the live
+  // check accepts a stale working-tree file whose INDEX blob equals the expected bytes. Scoped to
+  // the exact paths the running transaction declares via env — a plain `--check` outside that
+  // window stays strictly disk-based, so on-disk tamper detection is not weakened.
+  const indexAuthoritativePrefixes = (() => {
+    try {
+      const raw = process.env.GOVERNANCE_INDEX_AUTHORITATIVE_PATHS
+      const parsed = raw ? JSON.parse(raw) : []
+      return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : []
+    } catch { return [] }
+  })()
+  const underIndexAuthority = (relPath) => indexAuthoritativePrefixes.some(
+    (prefix) => relPath === prefix || relPath.startsWith(`${prefix}/`),
+  )
+  const indexBlobEquals = (relPath, content) => {
+    try {
+      const shown = runClosedGit(['show', `:${relPath}`], {
+        cwd: outputRoot,
+        output: 'buffer',
+        maxOutputBytes: 64 * 1024 * 1024,
+      })
+      return shown.status === 0 && Buffer.compare(shown.stdout, content) === 0
+    } catch { return false }
+  }
   const drift = []
   for (const [path, target] of expected) {
-    if (!existsSync(path)) drift.push({ path: posix(relative(outputRoot, path)), kind: 'missing' })
-    else if (!readFileSync(path).equals(target.content)) drift.push({ path: posix(relative(outputRoot, path)), kind: 'content' })
-    else if ((statSync(path).mode & 0o777) !== target.mode) drift.push({ path: posix(relative(outputRoot, path)), kind: 'mode' })
+    const relPath = posix(relative(outputRoot, path))
+    const indexOk = underIndexAuthority(relPath) && indexBlobEquals(relPath, target.content)
+    if (!existsSync(path)) { if (!indexOk) drift.push({ path: relPath, kind: 'missing' }) }
+    else if (!readFileSync(path).equals(target.content)) { if (!indexOk) drift.push({ path: relPath, kind: 'content' }) }
+    else if ((statSync(path).mode & 0o777) !== target.mode) drift.push({ path: relPath, kind: 'mode' })
   }
-  for (const path of actual) if (!expected.has(path)) drift.push({ path: posix(relative(outputRoot, path)), kind: 'extra' })
+  for (const path of actual) {
+    if (expected.has(path)) continue
+    const relPath = posix(relative(outputRoot, path))
+    if (underIndexAuthority(relPath)) continue
+    drift.push({ path: relPath, kind: 'extra' })
+  }
   return { ...built, drift: drift.sort((a, b) => compareUtf8Bytes(a.path, b.path)) }
 }
 

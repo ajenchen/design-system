@@ -901,12 +901,11 @@ function executionTopology(inventory) {
 }
 
 function validateRequiredConsumers(runner, repoRoot, packageJson) {
+  // scripts/release-preflight.mjs was removed 2026-08-04: canonical had retired it
+  // (ds-canonical/rules/self-verify.md「retired release:preflight 不得回流」) and its only
+  // consumer was this contract requiring its own wrapper to exist — a zombie kept alive by
+  // its keeper. The harness suite itself stays owned by test:governance-harnesses directly.
   const expected = [
-    {
-      path: 'scripts/release-preflight.mjs',
-      invocationKind: 'js-reviewed-shell-wrapper',
-      argv: ['npm', 'run', '--silent', 'test:governance-harnesses'],
-    },
     {
       path: '.devcontainer/post-create.mjs',
       invocationKind: 'js-authority-setup-wrapper',

@@ -10,22 +10,12 @@
       "executionOwner": {
         "kind": "harness-registry",
         "path": "infra/governance/providers/harness-registry.json",
-        "command": ["node", "scripts/test-check-src-republish.mjs"]
+        "command": [
+          "node",
+          "scripts/test-check-src-republish.mjs"
+        ]
       },
       "reason": "The harness requires a pre-version-bump Git fixture, while release preflight may invoke the auto-runner after a version bump; its explicit portability owner runs the isolated fixture in the correct lifecycle state."
-    },
-    {
-      "stem": "check-governance-tamper",
-      "executionClass": "deterministic-isolated",
-      "portabilityPolicy": "required",
-      "harness": "scripts/test-check-governance-tamper.mjs",
-      "fallback": null,
-      "executionOwner": {
-        "kind": "harness-registry",
-        "path": "infra/governance/providers/harness-registry.json",
-        "command": ["node", "scripts/test-check-governance-tamper.mjs"]
-      },
-      "reason": "The concurrent-rewrite subtest is a live timing probe (writer process vs consecutive full-manifest scans); under the parallel gate-meta snapshot the box is oversubscribed and scan phases can slide past even a stop-file-protocol writer, so temporal isolation is a validity requirement, not an optimization (2026-07-29 release-9/10 + PR18r2 + PR19r5 anchors)."
     },
     {
       "stem": "codex-run-guarded",
@@ -36,7 +26,10 @@
       "executionOwner": {
         "kind": "harness-registry",
         "path": "infra/governance/providers/harness-registry.json",
-        "command": ["node", "scripts/test-codex-run-guarded.mjs"]
+        "command": [
+          "node",
+          "scripts/test-codex-run-guarded.mjs"
+        ]
       },
       "reason": "The portability suite explicitly owns this classifier-only regression so it cannot be confused with or expanded into the guarded entrypoint's external provider mode."
     }

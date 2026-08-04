@@ -85,15 +85,15 @@
         },
         "requiredConsumers": {
           "type": "array",
-          "minItems": 2,
-          "maxItems": 2,
+          "minItems": 1,
+          "maxItems": 1,
           "items": {
             "type": "object",
             "additionalProperties": false,
             "required": ["path", "invocationKind", "argv"],
             "properties": {
-              "path": {"enum": ["scripts/release-preflight.mjs", ".devcontainer/post-create.mjs"]},
-              "invocationKind": {"enum": ["js-reviewed-shell-wrapper", "js-authority-setup-wrapper"]},
+              "path": {"enum": [".devcontainer/post-create.mjs"]},
+              "invocationKind": {"enum": ["js-authority-setup-wrapper"]},
               "argv": {"$ref": "#/$defs/consumerCommand"}
             }
           }

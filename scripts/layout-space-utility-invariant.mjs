@@ -12,7 +12,7 @@
 //   註:comment / docstring 裡寫 `px-loose` 當「鬆散 padding」簡寫 = 無害(不渲染),本 lint 不攔。
 //   只攔**真 className / cn() 字串**裡的裸名。改 `px-[var(--layout-space-<name>)]` 即修。
 //
-// Run: `node scripts/layout-space-utility-invariant.mjs`(release-preflight 已 chain)。fail → exit 1。
+// Run: `node scripts/layout-space-utility-invariant.mjs`(deterministic audit chain)。fail → exit 1。
 
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'

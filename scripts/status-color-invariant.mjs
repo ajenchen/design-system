@@ -9,7 +9,7 @@
 //   不該出現 --primary 狀態填色;真有互動 --primary 需求 → 加 per-line `// status-color-allow: <理由>` 逃生)。
 //
 // 對齊 feedback_ssot_mechanical_p0_not_p1_warn(SSOT canonical = P0 機械強制 with per-line escape)。
-// Run: `node scripts/status-color-invariant.mjs`(release-preflight 已 chain)。fail → exit 1。
+// Run: `node scripts/status-color-invariant.mjs`(deterministic audit chain)。fail → exit 1。
 
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'

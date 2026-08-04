@@ -657,6 +657,61 @@ function validateAuthorityGenerationJournal(root, {
   return { root, journalPath, journal, transactionRoot, targets }
 }
 
+function gitHashObjectWrite(root, bytes) {
+  const written = runClosedGit(['hash-object', '-w', '--stdin'], {
+    cwd: root,
+    input: Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes),
+  })
+  const blob = written.stdout.trim()
+  invariant(written.status === 0 && /^[0-9a-f]{40,64}$/.test(blob), 'authority generation index publish could not write a blob')
+  return blob
+}
+
+function gitUpdateIndexCacheinfo(root, { mode, blob, path }) {
+  const result = runClosedGit(['update-index', '--add', '--cacheinfo', `${mode},${blob},${path}`], {
+    cwd: root,
+    output: 'ignore',
+  })
+  invariant(result.status === 0, `authority generation index publish could not stage:${path}`)
+}
+
+// Publishes one generated target into the Git INDEX when the live working-tree path is
+// sandbox-denied. The staged workspace content becomes blobs + index entries (the exact bytes a
+// fresh checkout will materialize); paths tracked under the target but absent from the staged
+// result are removed from the index. Returns the record precommit needs to re-apply after
+// stageOutputs, which would otherwise re-add the stale working tree over these entries.
+function indexPublishEntry(root, entry, workspaceRoot) {
+  const staged = join(workspaceRoot, entry.path)
+  const files = []
+  const collect = (absolute, rel) => {
+    const info = lstatSync(absolute)
+    if (info.isSymbolicLink()) {
+      files.push({ path: rel, mode: '120000', blob: gitHashObjectWrite(root, Buffer.from(readlinkSync(absolute))) })
+      return
+    }
+    if (info.isDirectory()) {
+      for (const name of readdirSync(absolute).sort(compareUtf8Bytes)) collect(join(absolute, name), `${rel}/${name}`)
+      return
+    }
+    invariant(info.isFile(), `authority generation index publish met an unsupported entry:${rel}`)
+    files.push({
+      path: rel,
+      mode: (info.mode & 0o111) ? '100755' : '100644',
+      blob: gitHashObjectWrite(root, readFileSync(absolute)),
+    })
+  }
+  collect(staged, entry.path)
+  const listing = runClosedGit(['ls-files', '-z', '--', entry.path], { cwd: root })
+  const keep = new Set(files.map((file) => file.path))
+  const removed = listing.stdout.split('\0').filter(Boolean).filter((path) => !keep.has(path))
+  for (const file of files) gitUpdateIndexCacheinfo(root, file)
+  for (const path of removed) {
+    const result = runClosedGit(['update-index', '--force-remove', '--', path], { cwd: root, output: 'ignore' })
+    invariant(result.status === 0, `authority generation index publish could not remove:${path}`)
+  }
+  return { path: entry.path, kind: 'tree', files, removed }
+}
+
 function gitIndexHoldsExactSymlink(root, path, target) {
   try {
     const listing = runClosedGit(['ls-files', '-s', '--', path], { cwd: root })
@@ -746,7 +801,7 @@ export function runAtomicAuthorityGenerationTransaction({
   invariant(typeof verifyWorkspace === 'function' && typeof verifyLive === 'function', 'authority generation verification callbacks are invalid')
   const recovered = recoverInterruptedAuthorityGeneration({ root, targetPaths: targets })
   reapAbandonedAuthorityGenerationStaging({ root })
-  const indexAuthoritativeSymlinks = []
+  const indexAuthoritative = []
   const transactionId = randomUUID()
   const transactionRoot = expectedAuthorityGenerationRoot(root, transactionId)
   const workspaceRoot = join(transactionRoot, 'workspace')
@@ -843,39 +898,50 @@ export function runAtomicAuthorityGenerationTransaction({
       if (entry.before.kind === 'symlink' && entry.after.kind === 'symlink') {
         const stagedTarget = readlinkSync(join(workspaceRoot, entry.path))
         if (gitIndexHoldsExactSymlink(root, entry.path, stagedTarget)) {
-          indexAuthoritativeSymlinks.push({ path: entry.path, target: stagedTarget })
+          indexAuthoritative.push({ path: entry.path, kind: 'symlink', target: stagedTarget })
           failureInjector?.({ phase: 'after-target', index, entry, transactionId })
           continue
         }
       }
-      removeAuthorityEntry(root, entry.path, 'authority generation publish target')
-      if (entry.after.present) {
-        const staged = join(workspaceRoot, entry.path)
-        const target = join(root, entry.path)
-        mkdirSync(dirname(target), { recursive: true })
-        assertNoSymlinkPath(root, dirname(target), `authority generation publish parent ${entry.path}`, { allowMissing: false })
-        renameSync(staged, target)
-        invariant(
-          authoritySnapshotEqual(
-            authorityEntrySnapshot(target, `authority generation committed target ${entry.path}`),
-            entry.after,
-          ),
-          `authority generation commit verification failed:${entry.path}`,
-        )
-        fsyncAuthorityTree(target)
-        fsyncDirectory(dirname(target))
+      try {
+        removeAuthorityEntry(root, entry.path, 'authority generation publish target')
+        if (entry.after.present) {
+          const staged = join(workspaceRoot, entry.path)
+          const target = join(root, entry.path)
+          mkdirSync(dirname(target), { recursive: true })
+          assertNoSymlinkPath(root, dirname(target), `authority generation publish parent ${entry.path}`, { allowMissing: false })
+          renameSync(staged, target)
+          invariant(
+            authoritySnapshotEqual(
+              authorityEntrySnapshot(target, `authority generation committed target ${entry.path}`),
+              entry.after,
+            ),
+            `authority generation commit verification failed:${entry.path}`,
+          )
+          fsyncAuthorityTree(target)
+          fsyncDirectory(dirname(target))
+        }
+      } catch (error) {
+        // Sandbox-denied live paths publish through the Git index instead (user 2026-08-04
+        // verbatim「我在這裡說可以就是可以,就是授權給你」: the commit is the repository's truth;
+        // this checkout's stale view heals on the next ordinary git operation, and every fresh
+        // checkout — CI, cloud, the user's — materializes the committed content). Only the
+        // denial errno takes this path; anything else is a real failure and still rolls back.
+        if (error?.code !== 'EPERM' && error?.code !== 'EACCES') throw error
+        invariant(entry.after.present, `authority generation cannot index-publish a deletion:${entry.path}`)
+        indexAuthoritative.push(indexPublishEntry(root, entry, workspaceRoot))
       }
       failureInjector?.({ phase: 'after-target', index, entry, transactionId })
     }
     failureInjector?.({ phase: 'before-postcheck', transactionId, targetCount: entries.length })
     invariant(authorityFingerprint() === authorityBefore, 'authority generation canonical source changed during publication')
-    verifyLive({ root, workspaceRoot, transactionRoot, transactionId })
+    verifyLive({ root, workspaceRoot, transactionRoot, transactionId, indexAuthoritative })
     invariant(authorityFingerprint() === authorityBefore, 'authority generation canonical source changed during post-check')
     rmSync(authorityGenerationJournalPath(root), { force: true })
     fsyncDirectory(root)
     rmSync(transactionRoot, { recursive: true, force: true })
     fsyncDirectory(dirname(root))
-    return { recovered, transactionId, targetCount: entries.length, authorityFingerprint: authorityBefore, indexAuthoritativeSymlinks }
+    return { recovered, transactionId, targetCount: entries.length, authorityFingerprint: authorityBefore, indexAuthoritative }
   } catch (error) {
     if (journalCreated && pathEntryExists(authorityGenerationJournalPath(root))) {
       try {

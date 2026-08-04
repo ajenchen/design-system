@@ -11,7 +11,7 @@
  * sizes.when/禁止事項)+ storybook-static/index.json(story id → URL)。**禁手維護** —— CI / preflight
  * 用 --check drift gate 強制每 release 從 source 重生(對齊 ds-story-manifest pattern)。
  *
- * Run:postbuild-storybook + release-preflight + ci.yml --check + release.yml audit gate。
+ * Run:postbuild-storybook + ci.yml --check + release.yml audit gate。
  */
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'

@@ -10,7 +10,7 @@
 //        實測 WCAG contrast 必 ≥3:1(oklch→相對亮度,green documented exception exempt)。
 //
 // 改 categorical-color.ts / 加色相必跑此 script。fail → exit 1。
-// Run: `node scripts/categorical-color-invariants.mjs`(release-preflight 已 chain)。
+// Run: `node scripts/categorical-color-invariants.mjs`(deterministic audit chain)。
 
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'

@@ -223,6 +223,11 @@ if [ -f "$FILE_PATH" ] && [ "$ALLOW_C3" = "0" ]; then
   grep -qE '//[[:space:]]*@primitive-padding-allow:' <<<"$ON_DISK_FIRST" && ALLOW_C3=1
 fi
 if [ "$ALLOW_C3" = "0" ]; then
+  # 缺 perl = C3 防線無法判 → 明確 BLOCK,不得靜默放行(fail-closed;cloud 前提宣告)。
+  if ! command -v perl >/dev/null 2>&1; then
+    echo '🚨 check_pattern_invariants: required interpreter perl is unavailable — C3 gate cannot run(fail-closed)' >&2
+    exit 2
+  fi
   PRIMITIVES_REGEX='DateGrid|Calendar|Surface|SurfaceHeader|SurfaceBody|SurfaceFooter'
   VIOLATIONS_C3=$(printf '%s' "$NEW_CONTENT" | perl -0777 -ne '
     while (/<div\b[^>]*className\s*=\s*["\x27`][^"\x27`]*\bp-\d+[^"\x27`]*["\x27`][^>]*>(?:[^<]*<(?!\/div\b)){0,8}\s*<('"$PRIMITIVES_REGEX"')\b/gs) {

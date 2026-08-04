@@ -1254,7 +1254,7 @@ const executionRuntimeValid = Boolean(
   && executionRuntime.nativeWindowsPolicy === 'unsupported-fail-closed'
   && JSON.stringify(executionRuntime.supportedHostPlatforms) === JSON.stringify(['darwin', 'linux'])
   && JSON.stringify(executionRuntime.windowsCompatibilityEnvironments) === JSON.stringify(['devcontainer-linux', 'wsl2-linux'])
-  && JSON.stringify(executionRuntime.requiredExecutables) === JSON.stringify(['bash', 'git', 'jq', 'node', 'python3'])
+  && JSON.stringify(executionRuntime.requiredExecutables) === JSON.stringify(['bash', 'git', 'jq', 'node', 'perl', 'python3'])
   && JSON.stringify(executionRuntime.requiredPathClasses) === JSON.stringify(['plain', 'space-containing'])
 )
 if (!executionRuntimeValid) add('GOV-RUNTIME-001', 'BLOCKER', 'installed consumer execution runtime contract is missing, open-shaped, or unsupported')

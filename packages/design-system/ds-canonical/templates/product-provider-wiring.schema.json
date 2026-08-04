@@ -43,11 +43,12 @@
             { "const": "git" },
             { "const": "jq" },
             { "const": "node" },
+            { "const": "perl" },
             { "const": "python3" }
           ],
           "items": false,
-          "minItems": 5,
-          "maxItems": 5
+          "minItems": 6,
+          "maxItems": 6
         },
         "requiredPathClasses": {
           "type": "array",

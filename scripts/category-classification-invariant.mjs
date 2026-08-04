@@ -11,7 +11,7 @@
 //   (機械 render test 判斷,如 element-anatomy 本質是 internal)屬 judgment audit dim,不在此(P3 遷移處理)。
 //
 // 逃生:`// category-classify-allow: <理由>` 寫在該 unit 的 spec.md 檔首。
-// Run: `node scripts/category-classification-invariant.mjs`(release-preflight chain)。fail → exit 1。
+// Run: `node scripts/category-classification-invariant.mjs`(deterministic audit chain)。fail → exit 1。
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'

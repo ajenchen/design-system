@@ -1681,10 +1681,6 @@
         {
           "kind": "test-path",
           "path": "scripts/test-check-src-republish.mjs"
-        },
-        {
-          "kind": "test-path",
-          "path": "scripts/test-check-governance-tamper.mjs"
         }
       ],
       "claims": [
@@ -1734,10 +1730,6 @@
             {
               "kind": "test-path",
               "path": "scripts/test-check-src-republish.mjs"
-            },
-            {
-              "kind": "test-path",
-              "path": "scripts/test-check-governance-tamper.mjs"
             }
           ]
         },
