@@ -28,7 +28,7 @@
     "schemaPath": "infra/governance/schemas/harness-authority-contracts.schema.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-authority-contracts",
-    "sha256": "18ab82058fc38537258fbae0bdebb3a40e03fad47d34283cb12a55126a053d4b",
+    "sha256": "c57d2f83476268b8c066396ebd2069f0860bca49c78a7c7cac99e156ed934fde",
     "schemaSha256": "bba73861c87bc3047b70376e891a9464d525e9648fadd6e7d8fb406b57d10dce",
     "projectionPolicy": "registry-authority-and-claim-fields-are-exact-derived-projections"
   },
@@ -37,7 +37,7 @@
     "path": "infra/governance/providers/harness-source-inventory.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-source-inventory",
-    "sha256": "ad52c39ee99bcde35980e2dc3b8bc2371481654074af12ec3afc7aed9d98f9a4",
+    "sha256": "2b42931708874452481456ee8eaf2db8763a0f25f1e4b658ce9946bd3555949d",
     "closurePolicy": "every-discovered-source-exactly-one-execution-or-reviewed-exclusion"
   },
   "runner": {
@@ -507,9 +507,6 @@
       "testPaths": [
         "infra/governance/test/provider-surface.test.mjs",
         "scripts/test-deep-audit-evidence-schema-parity.mjs",
-        "scripts/test-deep-audit-review-archive.mjs",
-        "scripts/test-model-deep-audit-safety.mjs",
-        "scripts/test-model-evidence-broker-hardening.mjs",
         "scripts/test-provider-review-binding.mjs",
         "scripts/test-review-capability-selection.mjs",
         "scripts/test-codex-run-guarded.mjs"
@@ -522,8 +519,6 @@
         "infra/governance/providers/certifications.json",
         "infra/governance/model-evidence-plan.json",
         "infra/governance/schemas/model-evidence-plan.schema.json",
-        "infra/governance/model-evidence-broker.json",
-        "infra/governance/schemas/model-evidence-broker.schema.json",
         "infra/governance/schemas/model-deep-audit-result.schema.json",
         "infra/governance/providers/model-invocation-profiles.json",
         "infra/governance/schemas/model-invocation-profiles.schema.json",
@@ -534,21 +529,12 @@
         "infra/governance/providers/model-release-registry.json",
         "infra/governance/schemas/model-release-registry.schema.json",
         "infra/governance/schemas/model-release-documentation-assertion.schema.json",
-        "infra/governance/schemas/model-broker-shard-result.schema.json",
-        "infra/governance/schemas/model-broker-transcript.schema.json",
         "scripts/lib/deep-audit-evidence-contract.mjs",
-        "scripts/lib/deep-audit-review-archive.mjs",
-        "scripts/lib/model-api-transport.mjs",
-        "scripts/lib/model-broker-transcript.mjs",
         "scripts/lib/model-evidence-plan.mjs",
-        "scripts/lib/model-evidence-broker.mjs",
         "scripts/lib/component-dependency-source-inventory.mjs",
         "scripts/lib/component-claim-inventory.mjs",
-        "scripts/lib/model-access-receipt.mjs",
-        "scripts/lib/model-audit-contract.mjs",
         "scripts/lib/model-release-registry.mjs",
         "scripts/lib/model-release-authority.mjs",
-        "scripts/run-model-deep-audit.mjs",
         "packages/design-system/ds-canonical/skills/independent-review/SKILL.md",
         "packages/design-system/ds-canonical/skills/deep-audit-cross-codex/SKILL.md",
         "packages/design-system/ds-canonical/templates/product-launchers/independent-review.mjs"

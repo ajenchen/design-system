@@ -53,15 +53,11 @@
     "audit:ci-evidence-plan": "node scripts/produce-standard-ci-evidence.mjs --plan",
     "audit:ci-evidence-check": "node scripts/produce-standard-ci-evidence.mjs --check",
     "audit:ci-evidence-observe": "node scripts/produce-standard-ci-evidence.mjs --observe --allow-network",
-    "audit:model-evidence-plan": "node scripts/run-model-deep-audit.mjs --json",
-    "audit:model-evidence-check": "node scripts/run-model-deep-audit.mjs --check --json",
     "audit:provider-neutral-residue": "node scripts/check-provider-neutral-ssot-residue.mjs",
     "test:ci-evidence": "node --test scripts/test-standard-five-step-ci-evidence.mjs",
-    "test:model-evidence": "node scripts/test-model-evidence-broker-hardening.mjs && node scripts/test-review-bundle-materialization-guard.mjs && node scripts/test-model-deep-audit-safety.mjs && node scripts/test-deep-audit-evidence-schema-parity.mjs",
-    "test:model-evidence:managed": "node scripts/test-managed-envelope-binding.mjs && node scripts/test-model-release-authority.mjs",
     "test:provider-neutral-residue": "node scripts/test-check-provider-neutral-ssot-residue.mjs && node scripts/check-provider-neutral-ssot-residue.mjs",
     "test:audit-coverage-tier-sync": "node scripts/test-audit-coverage-tier-sync.mjs",
-    "test:governance-evidence-control-plane": "npm run --silent test:audit-coverage-tier-sync && npm run --silent test:deterministic-deep-audit && npm run --silent test:waived-self-review && npm run --silent test:hook-evidence && npm run --silent test:ci-evidence && npm run --silent test:model-evidence && npm run --silent test:provider-neutral-residue",
+    "test:governance-evidence-control-plane": "npm run --silent test:audit-coverage-tier-sync && npm run --silent test:deterministic-deep-audit && npm run --silent test:waived-self-review && npm run --silent test:hook-evidence && npm run --silent test:ci-evidence && npm run --silent test:provider-neutral-residue",
     "audit:datatable-row-mode": "node scripts/audit-data-table-row-mode-ssot.mjs",
     "audit:spec-deadlinks": "node scripts/audit-spec-deadlinks.mjs",
     "audit:hook-test-coverage": "node scripts/audit-hook-test-coverage.mjs",
@@ -139,8 +135,7 @@
     "test:privileged-change-authorization": "node --test scripts/test-privileged-change-authorization.mjs",
     "test:consumer-source-harness": "node --test scripts/test-consumer-source-harness.mjs",
     "test:product-template-scaffold": "node --test scripts/test-product-template-scaffold-lock.mjs",
-    "test:writer-evidence": "node --test scripts/test-product-template-scaffold-lock.mjs scripts/test-verify-upgrade-evidence.mjs scripts/test-verify-mirror-evidence.mjs scripts/test-verify-mirror-release.mjs",
-    "test:review-core": "node scripts/review-core-parity-optin.mjs"
+    "test:writer-evidence": "node --test scripts/test-product-template-scaffold-lock.mjs scripts/test-verify-upgrade-evidence.mjs scripts/test-verify-mirror-evidence.mjs scripts/test-verify-mirror-release.mjs"
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",

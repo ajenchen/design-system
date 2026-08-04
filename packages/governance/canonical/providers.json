@@ -276,7 +276,7 @@
           "GOVERNANCE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP": "CLAUDE_BYPASS_SIDEBAR_MENU_BUTTON_WRAP"
         },
         "skillBindings": {
-          "codex-collab": { "self": "claude", "selectionPolicy": "highest-certified-independent-review-v1", "reviewClass": "tier-0-governance", "transport": "scripts/run-model-deep-audit.mjs", "invocation": { "strategy": "main-context" } },
+          "codex-collab": { "self": "claude", "selectionPolicy": "highest-certified-independent-review-v1", "reviewClass": "tier-0-governance", "transport": "scripts/lib/retired-model-entrypoint.mjs", "invocation": { "strategy": "main-context" } },
           "deep-audit-cross-codex": { "self": "claude", "selectionPolicy": "highest-certified-independent-review-v1", "reviewClass": "tier-0-governance", "transport": "content-addressed-model-broker-exchange-v1", "invocation": { "strategy": "main-context" }, "certificationContract": "exact-provider-runtime-surface-role-target-v1" },
           "canonical-reviewer": { "self": "claude", "selectionPolicy": "highest-certified-independent-review-v1", "reviewClass": "tier-0-governance", "transport": "external-or-orchestrator", "invocation": { "strategy": "native-context-fork", "context": "fork", "agent": "canonical-reviewer" } },
           "independent-review": { "self": "claude", "selectionPolicy": "highest-certified-independent-review-v1", "reviewClass": "tier-0-governance", "transport": "content-addressed-model-broker-exchange-v1", "invocation": { "strategy": "main-context" }, "certificationContract": "exact-provider-runtime-surface-role-target-v1" }

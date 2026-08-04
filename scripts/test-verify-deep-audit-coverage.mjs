@@ -241,7 +241,6 @@ try {
   ]) write(path, '{}\n')
   for (const path of [
     'scripts/schemas/deep-audit-evidence-contract.schema.json',
-    'scripts/schemas/managed-ci-sandbox-receipt.schema.json',
     'scripts/schemas/ci-evidence-observation.schema.json',
     'scripts/schemas/standard-ci-evidence-observation.schema.json',
   ]) write(path, readFileSync(resolve(repositoryRoot, path), 'utf8'))
@@ -689,9 +688,12 @@ try {
 
   const second = prepareDeepAuditRun({ repoRoot: fixture, selfProvider: 'claude', peerProvider: 'codex', selfSurface: 'local', peerSurface: 'local', replaceActive: true })
   const activeSecond = loadActiveDeepAuditRun({ repoRoot: fixture })
+  // A peer-bound run can still be PREPARED (the manifest records the selection),
+  // but coverage verification fails closed: the model-broker execution layer
+  // retired 2026-08-04, so only the waived self-review route can verify.
   throwsBlocked(
     () => verifyDeepAuditCoverage({ repoRoot: fixture, authorProvider: 'codex' }),
-    /--author-provider differs from the active run manifest/,
+    /without a waived self-review are retired 2026-08-04/,
   )
   const batch = [1, 2].map((dim) => ({
     relativePath: `deterministic/dim-${dim}.json`,
@@ -859,17 +861,41 @@ try {
   assert.equal(verifierExitCode(unobservedSummary), 0)
   console.log('✓ coverage-only completion accepts typed UNOBSERVED evidence without hiding trust downgrades')
 
-  const alias = resolve(activeSecond.runRoot, 'deterministic/dim-1-alias.json')
-  linkSync(resolve(activeSecond.runRoot, 'deterministic/dim-1.json'), alias)
+  // Tree-poison probes need a WAIVED active run: the retirement gate (2026-08-04)
+  // rejects peer-bound manifests before any evidence tree is scanned.
+  prepareDeepAuditRun({
+    repoRoot: fixture,
+    selfProvider: 'claude',
+    selfSurface: 'local',
+    secondOpinionWaiver: 'user',
+    replaceActive: true,
+  })
+  const activePoison = loadActiveDeepAuditRun({ repoRoot: fixture })
+  writeDeepAuditEvidenceEnvelopeBatch({
+    repoRoot: fixture,
+    items: [{
+      relativePath: 'deterministic/dim-1.json',
+      envelope: buildDeepAuditEvidenceEnvelope({
+        activeRun: activePoison,
+        evidenceKind: 'deep-audit-deterministic',
+        producer: deepAuditEvidenceContract.genericProducer,
+        command: command(),
+        coveragePaths,
+        payload: deterministicPayload(1, activePoison.manifest),
+      }),
+    }],
+  })
+  const alias = resolve(activePoison.runRoot, 'deterministic/dim-1-alias.json')
+  linkSync(resolve(activePoison.runRoot, 'deterministic/dim-1.json'), alias)
   throwsBlocked(() => verifyDeepAuditCoverage({ repoRoot: fixture }), /hard-link evidence/)
   unlinkSync(alias)
   const outside = resolve(fixture, 'outside-hook-evidence')
   mkdirSync(outside)
-  const hookLink = resolve(activeSecond.runRoot, 'hook-residue')
+  const hookLink = resolve(activePoison.runRoot, 'hook-residue')
   symlinkSync(outside, hookLink)
   throwsBlocked(() => verifyDeepAuditCoverage({ repoRoot: fixture }), /symbolic-link evidence/)
   unlinkSync(hookLink)
-  const legacy = resolve(activeSecond.deepAuditRoot, 'judgment')
+  const legacy = resolve(activePoison.deepAuditRoot, 'judgment')
   mkdirSync(legacy)
   writeFileSync(resolve(legacy, 'flat.json'), '{"status":"verified"}\n')
   throwsBlocked(() => verifyDeepAuditCoverage({ repoRoot: fixture }), /legacy\/poisoned flat evidence/)

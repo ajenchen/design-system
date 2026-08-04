@@ -1222,8 +1222,6 @@
         "provider-surface-certifications",
         "deep-audit-model-evidence-plan",
         "deep-audit-model-evidence-plan-schema",
-        "deep-audit-model-evidence-broker",
-        "deep-audit-model-evidence-broker-schema",
         "deep-audit-model-result-schema",
         "model-invocation-profiles",
         "model-invocation-profiles-schema",
@@ -1234,21 +1232,12 @@
         "model-release-registry",
         "model-release-registry-schema",
         "model-release-documentation-assertion-schema",
-        "deep-audit-model-broker-shard-result-schema",
-        "deep-audit-model-broker-transcript-schema",
         "deep-audit-evidence-contract",
-        "deep-audit-review-archive-library",
-        "deep-audit-model-api-transport",
-        "deep-audit-model-broker-transcript-library",
         "deep-audit-model-evidence-plan-library",
-        "deep-audit-model-evidence-broker-library",
         "component-dependency-source-inventory",
         "component-claim-inventory",
-        "deep-audit-model-access-receipt-library",
-        "deep-audit-model-audit-contract-library",
         "model-release-registry-library",
         "managed-ci-model-release-authority-library",
-        "deep-audit-model-runner",
         "exact-independent-review-skill",
         "exact-deep-audit-skill",
         "product-independent-review-launcher"
@@ -1261,18 +1250,6 @@
         {
           "kind": "test-path",
           "path": "scripts/test-deep-audit-evidence-schema-parity.mjs"
-        },
-        {
-          "kind": "test-path",
-          "path": "scripts/test-deep-audit-review-archive.mjs"
-        },
-        {
-          "kind": "test-path",
-          "path": "scripts/test-model-deep-audit-safety.mjs"
-        },
-        {
-          "kind": "test-path",
-          "path": "scripts/test-model-evidence-broker-hardening.mjs"
         },
         {
           "kind": "test-path",
@@ -1332,35 +1309,16 @@
           "sourceIds": [
             "deep-audit-model-evidence-plan",
             "deep-audit-model-evidence-plan-schema",
-            "deep-audit-model-evidence-broker",
-            "deep-audit-model-evidence-broker-schema",
             "deep-audit-model-result-schema",
-            "deep-audit-model-broker-shard-result-schema",
-            "deep-audit-model-broker-transcript-schema",
             "deep-audit-evidence-contract",
-            "deep-audit-review-archive-library",
-            "deep-audit-model-api-transport",
-            "deep-audit-model-broker-transcript-library",
             "deep-audit-model-evidence-plan-library",
-            "deep-audit-model-evidence-broker-library",
             "component-dependency-source-inventory",
-            "component-claim-inventory",
-            "deep-audit-model-access-receipt-library",
-            "deep-audit-model-audit-contract-library",
-            "deep-audit-model-runner"
+            "component-claim-inventory"
           ],
           "executionOwners": [
             {
               "kind": "test-path",
-              "path": "scripts/test-deep-audit-review-archive.mjs"
-            },
-            {
-              "kind": "test-path",
-              "path": "scripts/test-model-evidence-broker-hardening.mjs"
-            },
-            {
-              "kind": "test-path",
-              "path": "scripts/test-model-deep-audit-safety.mjs"
+              "path": "infra/governance/test/provider-surface.test.mjs"
             }
           ]
         },
@@ -1380,8 +1338,6 @@
             "model-release-registry",
             "model-release-registry-library",
             "deep-audit-evidence-contract",
-            "deep-audit-model-broker-transcript-library",
-            "deep-audit-model-runner",
             "exact-deep-audit-skill"
           ],
           "executionOwners": [
@@ -1438,14 +1394,9 @@
           "text": "A second opinion occurred unless immutable, read-only peer evidence from a separate execution context is present.",
           "sourceIds": [
             "provider-review-binding-library",
-            "deep-audit-evidence-contract",
-            "deep-audit-model-runner"
+            "deep-audit-evidence-contract"
           ],
           "executionOwners": [
-            {
-              "kind": "test-path",
-              "path": "scripts/test-model-deep-audit-safety.mjs"
-            },
             {
               "kind": "test-path",
               "path": "scripts/test-deep-audit-evidence-schema-parity.mjs"
@@ -1483,7 +1434,7 @@
           "executionOwners": [
             {
               "kind": "test-path",
-              "path": "scripts/test-model-deep-audit-safety.mjs"
+              "path": "infra/governance/test/provider-surface.test.mjs"
             }
           ]
         }
