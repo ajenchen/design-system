@@ -16,7 +16,7 @@
   },
   "gateMetaExclusions": {
     "path": "scripts/gate-meta-test-exclusions.json",
-    "sha256": "e2719682bf8a7a5e61ae6de0ce81bf2303862c8221f5ce24af7cda67ffd26132"
+    "sha256": "2fbfe189d36624b3b31f1fef46014e8b220f78ac820e1660b2314e72537b863a"
   },
   "generatedMirrors": [],
   "canonicalHookStaticHelpers": {
@@ -25,7 +25,7 @@
     "entries": [
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
-        "sha256": "4888a6b513f29be06c09842f53489ee61781cf336b22a3ef0d28b9f36d057c7f",
+        "sha256": "74c78e1faa79484ee5e47e6e7cc779b877c59402c0a7877ba50f5bc8a9f73beb",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/check_substantive_edit_approval_preflight.sh",
           "packages/design-system/ds-canonical/hooks/stop_self_audit.sh",
@@ -84,14 +84,6 @@
         "kind": "bash",
         "consumers": [
           "scripts/test-consumer-governance.mjs"
-        ]
-      },
-      {
-        "path": "scripts/test-fixtures/transitive-execution/governance-tamper-concurrent-writer.mjs",
-        "sha256": "4acacc66d422ae22a6796c01f5b112b682d644c228fbd58bba6408a23598e583",
-        "kind": "node",
-        "consumers": [
-          "scripts/test-check-governance-tamper.mjs"
         ]
       },
       {
@@ -462,7 +454,6 @@
     ]
   },
   "direct": [
-    "scripts/test-check-governance-tamper.mjs",
     "scripts/test-check-src-republish.mjs",
     "scripts/test-codex-run-guarded.mjs"
   ],

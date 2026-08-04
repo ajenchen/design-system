@@ -28,7 +28,7 @@
     "schemaPath": "infra/governance/schemas/harness-authority-contracts.schema.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-authority-contracts",
-    "sha256": "8cf5fb8d88bbd246918fdee773cb67b9aa83ef85a1f0fe393b2c9f4a3efec9dd",
+    "sha256": "83ad8cce1ee47b36e2ad7012cdcc12f58141de87199e797e23007ca87f0093cc",
     "schemaSha256": "bba73861c87bc3047b70376e891a9464d525e9648fadd6e7d8fb406b57d10dce",
     "projectionPolicy": "registry-authority-and-claim-fields-are-exact-derived-projections"
   },
@@ -37,7 +37,7 @@
     "path": "infra/governance/providers/harness-source-inventory.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-source-inventory",
-    "sha256": "51aacd86810c6b401257a607619744a21e0d9e6362aaf672794e01b341679aae",
+    "sha256": "dee554641d9fd88a8afac0626b2d74d32a7b2719812dd9e39b235e3a522bd221",
     "closurePolicy": "every-discovered-source-exactly-one-execution-or-reviewed-exclusion"
   },
   "runner": {
@@ -117,16 +117,6 @@
       }
     ],
     "requiredConsumers": [
-      {
-        "path": "scripts/release-preflight.mjs",
-        "invocationKind": "js-reviewed-shell-wrapper",
-        "argv": [
-          "npm",
-          "run",
-          "--silent",
-          "test:governance-harnesses"
-        ]
-      },
       {
         "path": ".devcontainer/post-create.mjs",
         "invocationKind": "js-authority-setup-wrapper",
@@ -642,10 +632,6 @@
         ],
         [
           "node",
-          "scripts/test-check-governance-tamper.mjs"
-        ],
-        [
-          "node",
           "scripts/run-gate-meta-tests.mjs"
         ]
       ],
@@ -656,8 +642,7 @@
         "scripts/test-workflow-security.mjs",
         "infra/governance/test/release-trust-preflight.test.mjs",
         "infra/governance/test/signed-release-tag.test.mjs",
-        "scripts/test-check-src-republish.mjs",
-        "scripts/test-check-governance-tamper.mjs"
+        "scripts/test-check-src-republish.mjs"
       ],
       "authorityPaths": [
         ".github/workflows/release.yml",

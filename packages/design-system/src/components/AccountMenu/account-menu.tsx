@@ -102,7 +102,7 @@ export const AccountMenu = React.forwardRef<HTMLButtonElement, AccountMenuProps>
     onSignOut,
     children,
     align = 'end',
-    triggerAriaLabel = '帳號與設定',
+    triggerAriaLabel = '帳號與設定', // i18n-allow: spec 預設 aria-label(account-menu.spec.md),consumer 以同名 prop 覆蓋
     open,
     defaultOpen,
     onOpenChange,
@@ -128,12 +128,16 @@ export const AccountMenu = React.forwardRef<HTMLButtonElement, AccountMenuProps>
         <DropdownMenuTrigger asChild>
           {/* 互動感由 focus-visible ring 提供(無 hover bg,chrome 輕量 entry),不放大到 field height
               — per app-shell.spec.md「Avatar 尺寸 + 邊距」+ header-canonical.spec.md 4.5 */}
+          {/* size-6 = Avatar 24 的幾何鎖:trigger 是 Radix 的 anchor box,沒鎖尺寸時 flex 預設
+              align-items: stretch 會把按鈕撐高(實測 min-h-32 容器 → 96px anchor → 選單視覺間距
+              44px,遠離 elevation.spec.md 的 8px canonical)。鎖死後 anchor ≡ avatar,任何容器
+              都維持 sideOffset=8 的視覺意圖;shrink-0 防壓縮對偶。user 2026-08-04 拍板。 */}
           <button
             {...triggerProps}
             ref={ref}
             type="button"
             aria-label={triggerAriaLabel}
-            className="flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+            className="flex size-6 shrink-0 items-center justify-center self-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           >
             {/* 24 per header-canonical.spec.md 4.5 chrome header avatar canonical(brand + account 同尺寸); sync with --chrome-header-avatar-size */}
             <Avatar size={24} {...avatar} alt={avatar.alt ?? user.name} />

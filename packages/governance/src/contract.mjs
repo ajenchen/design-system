@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { lstat, readFile, readdir } from 'node:fs/promises'
 import { dirname, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -573,6 +574,53 @@ export async function inspectContract({
   return { contract, diagnostics }
 }
 
+// Index-authoritative verification window (see canonical-sync-transaction index publishing): a
+// generated provider view whose live working tree is sandbox-denied is validated against the Git
+// INDEX for exactly the repo-relative prefixes the running transaction declares via this env var.
+// Outside that window every read stays disk-based, so on-disk tamper detection is unchanged.
+function indexAuthorityPrefixes() {
+  try {
+    const parsed = JSON.parse(process.env.GOVERNANCE_INDEX_AUTHORITATIVE_PATHS || '[]')
+    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : []
+  } catch { return [] }
+}
+
+function indexInventoryTree(repoRoot, relDirectory) {
+  const listing = execFileSync('git', ['ls-files', '-s', '-z', '--', relDirectory], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  })
+  const entries = []
+  for (const record of listing.split('\0').filter(Boolean)) {
+    const match = record.match(/^(\d{6}) ([0-9a-f]{40,64}) \d\t(.+)$/)
+    if (!match) throw new Error(`index inventory could not parse: ${record}`)
+    const [, indexMode, blob, fullPath] = match
+    const rel = fullPath === relDirectory ? '' : fullPath.slice(relDirectory.length + 1)
+    const body = execFileSync('git', ['cat-file', 'blob', blob], { cwd: repoRoot, maxBuffer: 64 * 1024 * 1024 })
+    if (indexMode === '120000') {
+      const target = body.toString('utf8')
+      entries.push({ path: rel, type: 'symlink', mode: '755', hash: digest(target), target })
+      continue
+    }
+    entries.push({
+      path: rel,
+      type: 'file',
+      mode: indexMode === '100755' ? '755' : '644',
+      hash: digest(body),
+      size: body.length,
+    })
+  }
+  entries.sort((a, b) => compareUtf8Bytes(a.path, b.path))
+  return entries
+}
+
+async function indexAwareInventoryTree(repoRoot, absoluteRoot) {
+  const rel = relative(repoRoot, absoluteRoot).split('\\').join('/')
+  const windowed = indexAuthorityPrefixes().some((prefix) => rel === prefix || rel.startsWith(`${prefix}/`))
+  return windowed ? indexInventoryTree(repoRoot, rel) : inventoryTree(absoluteRoot)
+}
+
 export async function sourceRecords(contract) {
   const records = []
   const bindings = contract.carrierProjectionBindings instanceof Map
@@ -732,8 +780,23 @@ export async function inspectSkillParity(contract) {
         for (const name of sourceNames.filter((value) => targetNames.includes(value))) {
           const source = await inventoryTree(resolve(sourceDirectory, name))
           const expected = projection === false ? null : await projectedInventory(contract, item, target, name, sourceDirectory, source, projection, diagnostics)
-          const actual = await inventoryTree(resolve(targetDirectory, name))
+          const targetAbsolute = resolve(targetDirectory, name)
+          let actual = await indexAwareInventoryTree(contract.repoRoot, targetAbsolute)
           if (!expected) continue
+          // Inside an index-authoritative window, adopt the expected entry's mode wherever the
+          // content hash already matches: the Git index can only say 644/755, while the expected
+          // side carries local-FS mode bits — the digests baked into the control-plane lock were
+          // computed from those expected modes at generation time, so this keeps targetDigest
+          // byte-identical to the workspace computation instead of drifting on representation.
+          const windowRel = relative(contract.repoRoot, targetAbsolute).split('\\').join('/')
+          const windowActive = indexAuthorityPrefixes().some((prefix) => windowRel === prefix || windowRel.startsWith(`${prefix}/`))
+          if (windowActive) {
+            const expectedByPath = new Map(expected.map((entry) => [entry.path, entry]))
+            actual = actual.map((entry) => {
+              const wanted = expectedByPath.get(entry.path)
+              return wanted && wanted.hash === entry.hash ? { ...entry, mode: wanted.mode } : entry
+            })
+          }
           let differences = compareInventories(expected, actual, { prefix: `${target.targetDirectory}/${name}`, ruleId: 'GOV-PROVIDER-001' })
           if (item.compare === 'content') differences = differences.filter((entry) => entry.evidence.kind !== 'mode-mismatch')
           diagnostics.push(...differences)

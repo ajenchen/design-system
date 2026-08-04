@@ -45,8 +45,13 @@
       "repository": "ajenchen/design-system",
       "profile": "design-system-authority",
       "actionsWorkflowPermissions": true,
-      "rulesets": ["fleet/base-integrity", "fleet/verified-main"],
-      "environments": ["governance-external-ledger"],
+      "rulesets": [
+        "fleet/base-integrity",
+        "fleet/verified-main"
+      ],
+      "environments": [
+        "governance-external-ledger"
+      ],
       "irreversibleActionsAllowed": false,
       "staleResourceDeletionAllowed": false,
       "exactReadbackRequired": true,
@@ -125,12 +130,16 @@
       "predecessor": null,
       "scope": "local",
       "capabilities": {
-        "standard": ["local-evidence-write"],
+        "standard": [
+          "local-evidence-write"
+        ],
         "promotion": [],
         "rollback": []
       },
       "evidenceContracts": {
-        "standard": ["staged-rollout-prepare-verification-v4"],
+        "standard": [
+          "staged-rollout-prepare-verification-v4"
+        ],
         "promotion": [],
         "rollback": []
       },
@@ -176,12 +185,16 @@
       "predecessor": "candidate-freeze",
       "scope": "external",
       "capabilities": {
-        "standard": ["github-admin-write"],
+        "standard": [
+          "github-admin-write"
+        ],
         "promotion": [],
         "rollback": []
       },
       "evidenceContracts": {
-        "standard": ["github-policy-bootstrap-readback-v1"],
+        "standard": [
+          "github-policy-bootstrap-readback-v1"
+        ],
         "promotion": [],
         "rollback": []
       },
@@ -199,12 +212,17 @@
       "predecessor": "github-policy-bootstrap",
       "scope": "external",
       "capabilities": {
-        "standard": ["git-commit-write", "github-pr-write"],
+        "standard": [
+          "git-commit-write",
+          "github-pr-write"
+        ],
         "promotion": [],
         "rollback": []
       },
       "evidenceContracts": {
-        "standard": ["protected-pr-readback-v1"],
+        "standard": [
+          "protected-pr-readback-v1"
+        ],
         "promotion": [],
         "rollback": []
       },
@@ -221,12 +239,18 @@
       "predecessor": "commit-pr-open",
       "scope": "local",
       "capabilities": {
-        "standard": ["managed-ci-readback", "model-broker-readback", "trusted-dependency-materialization"],
+        "standard": [
+          "managed-ci-readback",
+          "model-broker-readback",
+          "trusted-dependency-materialization"
+        ],
         "promotion": [],
         "rollback": []
       },
       "evidenceContracts": {
-        "standard": ["pr-head-certification-v1"],
+        "standard": [
+          "pr-head-certification-v1"
+        ],
         "promotion": [],
         "rollback": []
       },
@@ -247,12 +271,17 @@
       "predecessor": "pr-head-certification",
       "scope": "external",
       "capabilities": {
-        "standard": ["github-pr-merge", "github-readback"],
+        "standard": [
+          "github-pr-merge",
+          "github-readback"
+        ],
         "promotion": [],
         "rollback": []
       },
       "evidenceContracts": {
-        "standard": ["github-hard-gates-readback-v1"],
+        "standard": [
+          "github-hard-gates-readback-v1"
+        ],
         "promotion": [],
         "rollback": []
       },
@@ -268,17 +297,24 @@
       "predecessor": "merge-post-gates",
       "scope": "external",
       "capabilities": {
-        "standard": ["github-tag-write", "github-release-write", "npm-publish"],
+        "standard": [
+          "github-tag-write",
+          "github-release-write",
+          "npm-publish"
+        ],
         "promotion": [],
         "rollback": []
       },
       "evidenceContracts": {
-        "standard": ["release-trust-preflight-v4", "release-bom-v5", "verified-immutable-release-v2"],
+        "standard": [
+          "release-trust-preflight-v4",
+          "release-bom-v5",
+          "verified-immutable-release-v2"
+        ],
         "promotion": [],
         "rollback": []
       },
       "mechanismRefs": [
-        "scripts/release-preflight.mjs",
         "scripts/release-trust-preflight.mjs",
         "scripts/build-release-bom.mjs",
         "scripts/release-bom-contract.mjs",
@@ -292,12 +328,18 @@
       "predecessor": "immutable-release-bom",
       "scope": "external",
       "capabilities": {
-        "standard": ["github-pr-write", "fleet-rollout"],
+        "standard": [
+          "github-pr-write",
+          "fleet-rollout"
+        ],
         "promotion": [],
         "rollback": []
       },
       "evidenceContracts": {
-        "standard": ["template-exact-version-upgrade-v2", "rollout-completion-attestation-v1"],
+        "standard": [
+          "template-exact-version-upgrade-v2",
+          "rollout-completion-attestation-v1"
+        ],
         "promotion": [],
         "rollback": []
       },
@@ -315,12 +357,19 @@
       "predecessor": "template-fleet-rollout",
       "scope": "external",
       "capabilities": {
-        "standard": ["github-pr-write", "wm-canary"],
+        "standard": [
+          "github-pr-write",
+          "wm-canary"
+        ],
         "promotion": [],
         "rollback": []
       },
       "evidenceContracts": {
-        "standard": ["consumer-governance-bootstrap-readback-v1", "wm-exact-version-canary-v2", "rollout-completion-attestation-v1"],
+        "standard": [
+          "consumer-governance-bootstrap-readback-v1",
+          "wm-exact-version-canary-v2",
+          "rollout-completion-attestation-v1"
+        ],
         "promotion": [],
         "rollback": []
       },
@@ -357,12 +406,18 @@
       "predecessor": "wm-canary",
       "scope": "local",
       "capabilities": {
-        "standard": ["managed-ci-import", "model-broker-readback", "local-evidence-write"],
+        "standard": [
+          "managed-ci-import",
+          "model-broker-readback",
+          "local-evidence-write"
+        ],
         "promotion": [],
         "rollback": []
       },
       "evidenceContracts": {
-        "standard": ["full-deep-audit-verification-v1"],
+        "standard": [
+          "full-deep-audit-verification-v1"
+        ],
         "promotion": [],
         "rollback": []
       },
@@ -378,12 +433,16 @@
       "predecessor": "rollout-completion",
       "scope": "local",
       "capabilities": {
-        "standard": ["soak-observation"],
+        "standard": [
+          "soak-observation"
+        ],
         "promotion": [],
         "rollback": []
       },
       "evidenceContracts": {
-        "standard": ["candidate-bound-soak-72h-v1"],
+        "standard": [
+          "candidate-bound-soak-72h-v1"
+        ],
         "promotion": [],
         "rollback": []
       },
@@ -399,13 +458,23 @@
       "scope": "external",
       "capabilities": {
         "standard": [],
-        "promotion": ["fleet-promotion"],
-        "rollback": ["fleet-rollback"]
+        "promotion": [
+          "fleet-promotion"
+        ],
+        "rollback": [
+          "fleet-rollback"
+        ]
       },
       "evidenceContracts": {
         "standard": [],
-        "promotion": ["rollout-completion-attestation-v1"],
-        "rollback": ["previous-good-release-v1", "fleet-recovery-authorization-v2", "fleet-reconcile-journal-v6"]
+        "promotion": [
+          "rollout-completion-attestation-v1"
+        ],
+        "rollback": [
+          "previous-good-release-v1",
+          "fleet-recovery-authorization-v2",
+          "fleet-reconcile-journal-v6"
+        ]
       },
       "mechanismRefs": [
         "infra/governance/bin/reconcile-github.mjs",

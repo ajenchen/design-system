@@ -86,6 +86,11 @@ fi
 # Detect benchmark claim keywords + check inline citation in same paragraph
 # 用 perl -0777 slurp 比 awk simpler;每個含 benchmark keyword 的「段」(連續非空行)
 # 必含 citation evidence。
+# 缺 perl = 這道 M22 防線無法判 → 明確 BLOCK,不得靜默放行(fail-closed;cloud 前提宣告)。
+if ! command -v perl >/dev/null 2>&1; then
+  echo '🚨 check_benchmark_citation: required interpreter perl is unavailable — M22 citation gate cannot run(fail-closed)' >&2
+  exit 2
+fi
 VIOLATIONS=$(printf '%s' "$NEW_CONTENT" | perl -0777 -ne '
   my $bench = qr/(Ant Design|Material(\s+X|\s+Design|\s+UI|\s+3)?|Polaris|Atlassian|Carbon|shadcn|Radix UI?|Apple HIG|Notion|Airtable|ClickUp|Figma|Linear)/;
   my $cite = qr/(https?:\/\/(www\.)?(ant-design|material|polaris\.shopify|atlassian\.design|carbon|shadcn|ui\.shadcn|radix-ui|github|developer\.apple)|#L\d|snapshots\/|@benchmark-unverified)/;

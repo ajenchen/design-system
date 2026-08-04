@@ -891,7 +891,7 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
     supportedHostPlatforms: ['darwin', 'linux'],
     nativeWindowsPolicy: 'unsupported-fail-closed',
     windowsCompatibilityEnvironments: ['devcontainer-linux', 'wsl2-linux'],
-    requiredExecutables: ['bash', 'git', 'jq', 'node', 'python3'],
+    requiredExecutables: ['bash', 'git', 'jq', 'node', 'perl', 'python3'],
     requiredPathClasses: ['plain', 'space-containing'],
   })
   assert.equal(SETUP_GOVERNANCE_MINIMUM_NODE_VERSION, runtime.minimumNodeVersion)

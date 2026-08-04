@@ -14,7 +14,7 @@
  *
  * 用法:
  *   node scripts/sync-template-canonical-app.mjs           # 同步 SSOT → COPY(寫)
- *   node scripts/sync-template-canonical-app.mjs --check    # 驗 SSOT == COPY,漂移 exit 1(release-preflight gate)
+ *   node scripts/sync-template-canonical-app.mjs --check    # 驗 SSOT == COPY,漂移 exit 1(deterministic audit chain gate)
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'

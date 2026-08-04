@@ -78,7 +78,9 @@ export const Inspector: Story = {
     children: { control: false },
   },
   render: args => (
-    <div className="flex min-h-32 justify-end rounded-md border border-dashed border-divider p-4">
+    // items-start:容器只示範放置,不得成為 anchor 幾何的一部分(flex 預設 stretch 曾把
+    // trigger 撐成 96px 高,選單因此離 avatar 44px;根因層已在 account-menu.tsx 鎖 size-6)
+    <div className="flex min-h-32 items-start justify-end rounded-md border border-dashed border-divider p-4">
       <AccountMenu {...args} />
     </div>
   ),

@@ -1835,6 +1835,7 @@
         "git",
         "jq",
         "node",
+        "perl",
         "python3"
       ],
       "requiredPathClasses": [

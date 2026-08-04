@@ -8,7 +8,7 @@
 //   所以「DS src(含 stories/components)改了 push main、但 AI 忘記 bump 並完成上述 dispatch」→ npm 版本 stale →
 //   consumer `npm install @beta` 解析到同版本 = no-op → 拿不到新 code。**完全沒有機械閘擋這個**。
 //
-// 本 gate(CI main-push + release-preflight + release.yml 三處跑):
+// 本 gate(CI main-push + release.yml 兩處跑):
 //   baseline = npm registry 的 unauthenticated HTTPS readback；transport/schema/tag 缺失一律 fail-closed，
 //   不再用 ambient npm、PATH Git 或 warn-only skip。
 //   diff **npm 真實 publish surface**(SSOT = packages/design-system/package.json "files" 欄)

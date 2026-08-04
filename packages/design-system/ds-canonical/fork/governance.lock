@@ -7,7 +7,7 @@
     {
       "schemaVersion": 1,
       "file": "AGENTS.md",
-      "sha256": "a37c1317a52acce74ef605e3247878383bb4f99deecb98af0167d98d7cbbbe9c",
+      "sha256": "6b9aa8747d9ddc9bd9a78de88a0c3d65f5b100ea917c4dd69be4d889b8299438",
       "source": "common instruction compatibility alias",
       "classification": null,
       "destination": null
@@ -255,7 +255,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "7c7123900e053de27db20bba1f8ff14c8954fd9934518d73cb896294c3d80d88",
+      "sha256": "de8b8a9739dc9736cfe28004cbbc462dae525485202c871af9265d4dd8049740",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -263,7 +263,7 @@
     {
       "schemaVersion": 1,
       "file": "common/closed-tool-execution.mjs",
-      "sha256": "131255a302f1b403fe95dd6251e180d7f3ce920faf6cbfe90496b52d192d93c3",
+      "sha256": "eacd0cd92c5bff03e40ff4e82c02fae9bf2e6f543f157eef3d41c3ed8b7d3cb6",
       "source": "packages/governance/src/closed-tool-execution.mjs",
       "classification": null,
       "destination": null
@@ -271,7 +271,7 @@
     {
       "schemaVersion": 1,
       "file": "common/instruction.md",
-      "sha256": "a37c1317a52acce74ef605e3247878383bb4f99deecb98af0167d98d7cbbbe9c",
+      "sha256": "6b9aa8747d9ddc9bd9a78de88a0c3d65f5b100ea917c4dd69be4d889b8299438",
       "source": "scripts/fork-role-sources/AGENTS.product.md + AGENTS.md#canonical-decision-authority",
       "classification": null,
       "destination": null
@@ -279,7 +279,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/governance-check.mjs",
-      "sha256": "393f5a016baac5a345e9c08a93c14bdb575b66570fd475a7fa86bc2e8002dd33",
+      "sha256": "1c4c4455910f1e88aebb84add9f756717395519d84913beafaa654a9f1c3126e",
       "source": "scripts/governance-check.mjs",
       "classification": null,
       "destination": null
@@ -287,7 +287,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/lib/closed-tool-execution.mjs",
-      "sha256": "131255a302f1b403fe95dd6251e180d7f3ce920faf6cbfe90496b52d192d93c3",
+      "sha256": "eacd0cd92c5bff03e40ff4e82c02fae9bf2e6f543f157eef3d41c3ed8b7d3cb6",
       "source": "packages/governance/src/closed-tool-execution.mjs",
       "classification": null,
       "destination": null
@@ -327,7 +327,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/2d1ef5617a5ce3c39ad9aae1c42af7d199f9270c0a0ccb490b63d62dbc6913db.blob",
-      "sha256": "131255a302f1b403fe95dd6251e180d7f3ce920faf6cbfe90496b52d192d93c3",
+      "sha256": "eacd0cd92c5bff03e40ff4e82c02fae9bf2e6f543f157eef3d41c3ed8b7d3cb6",
       "source": "packages/governance/src/closed-tool-execution.mjs",
       "classification": null,
       "destination": "scripts/lib/closed-tool-execution.mjs"
@@ -391,7 +391,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/63061e05969667005020166ea2ae7df3c96663f7a928e7dd3eebc1471022df56.blob",
-      "sha256": "763c61964a4a971a664222e5dc0dd54564bdc9430b5a90f56021cca19d48596a",
+      "sha256": "8d2058e9b32307a80e3a564f18abac6ea093d09e79164f468af5e1893217283f",
       "source": "scripts/refresh-fork-launchers.mjs",
       "classification": null,
       "destination": "scripts/refresh-fork-launchers.mjs"
@@ -743,7 +743,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_pattern_invariants.sh",
-      "sha256": "9618abe020720ccd7e797704d66516fc019579ae32750990642047f994355a7d",
+      "sha256": "6670a8f2021b34c7c6dd5abd465867845938dfe26e53abbf595f6318637dae35",
       "source": "check_pattern_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -823,7 +823,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/approval-evidence.mjs",
-      "sha256": "4888a6b513f29be06c09842f53489ee61781cf336b22a3ef0d28b9f36d057c7f",
+      "sha256": "74c78e1faa79484ee5e47e6e7cc779b877c59402c0a7877ba50f5bc8a9f73beb",
       "source": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
       "classification": null,
       "destination": null
@@ -911,7 +911,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "74c12400e756a3dc5d158da8e2da0c2b106d72252ba2a011e227fa8c8d54d27f",
+      "sha256": "f11eb16bed79c1b2fffb105862861e74f1f9cb3adf70bf31c669c0e6337a4a99",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -919,7 +919,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "c7380e584c55e56638052efddcf8e7c7229b3643cce475d033113d3abdf3cc19",
+      "sha256": "88c399b7faef8f58639d72a1ff2e7a665761806f01757414b3febc21200abe2c",
       "source": null,
       "classification": null,
       "destination": null
@@ -1175,7 +1175,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "7c7123900e053de27db20bba1f8ff14c8954fd9934518d73cb896294c3d80d88",
+      "sha256": "de8b8a9739dc9736cfe28004cbbc462dae525485202c871af9265d4dd8049740",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null

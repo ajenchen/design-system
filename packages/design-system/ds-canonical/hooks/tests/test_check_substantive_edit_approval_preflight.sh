@@ -220,12 +220,14 @@ expect_block "6c. no transcript + ambiguous production operation → BLOCK" "PRO
 run_hook "Edit" "$PROD_TSX" "$TX_APPROVAL" "$APPROVED_UI_OPERATION"
 expect_pass_silent "7. exact Button UI choice + matching operation digest → pass"
 
+# 2026-08-04 user verbatim「我在這裡說可以就是可以,就是授權給你」: a target-bound directive
+# approves WITHOUT quoting an operation digest — the digest requirement was the removed per-PR
+# signature family (835b519e). A quoted-but-WRONG digest still fails closed (next case).
 TX_APPROVAL_MISSING_OPERATION="$TMP_DIR/tx_approval_missing_operation.jsonl"
 build_transcript "$TX_APPROVAL_MISSING_OPERATION" \
   "Button hover 顏色採用藍色並請修改 Button"
 run_hook "Edit" "$PROD_TSX" "$TX_APPROVAL_MISSING_OPERATION" "$APPROVED_UI_OPERATION"
-expect_block "7. target-wide UI approval without operation digest → BLOCK" \
-  "EXACT_UI_UX_OPERATION_BINDING_MISSING_OR_MISMATCH"
+expect_pass_silent "7. target-bound UI approval without operation digest → pass(chat approval is the approval)"
 
 TX_APPROVAL_SUBSTITUTED_OPERATION="$TMP_DIR/tx_approval_substituted_operation.jsonl"
 build_transcript "$TX_APPROVAL_SUBSTITUTED_OPERATION" \

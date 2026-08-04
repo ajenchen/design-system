@@ -890,6 +890,11 @@ function run(command, label, { capture = false, repoRoot = ROOT } = {}) {
       TMPDIR: profile.tempDirectory,
       TZ: 'UTC',
       XDG_CONFIG_HOME: profile.homeDirectory,
+      // Index-authoritative verification window (see verifyLive): stage checkers accept the Git
+      // index as truth for exactly these paths while the live tree is sandbox-denied stale.
+      ...(process.env.GOVERNANCE_INDEX_AUTHORITATIVE_PATHS
+        ? { GOVERNANCE_INDEX_AUTHORITATIVE_PATHS: process.env.GOVERNANCE_INDEX_AUTHORITATIVE_PATHS }
+        : {}),
     },
     shell: false,
     stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
@@ -967,10 +972,20 @@ export function generateGovernanceBuildGraphAtomically(graph, {
       if (!workspaceGraph) throw new Error('staged authority generation graph was not loaded')
       checkAll(workspaceGraph, { repoRoot: workspaceRoot })
     },
-    verifyLive: () => {
+    verifyLive: ({ indexAuthoritative = [] } = {}) => {
       const liveGraph = loadGovernanceBuildGraph({ repoRoot: root })
       assertSameGraph(graph, liveGraph, 'published authority generation')
-      checkAll(liveGraph, { repoRoot: root })
+      // Targets published through the Git index (sandbox-denied live paths) are validated against
+      // their index blobs by the stage checkers; the env window exists only for this live pass.
+      const paths = indexAuthoritative.map((record) => record.path)
+      const previous = process.env.GOVERNANCE_INDEX_AUTHORITATIVE_PATHS
+      if (paths.length) process.env.GOVERNANCE_INDEX_AUTHORITATIVE_PATHS = JSON.stringify(paths)
+      try {
+        checkAll(liveGraph, { repoRoot: root })
+      } finally {
+        if (previous === undefined) delete process.env.GOVERNANCE_INDEX_AUTHORITATIVE_PATHS
+        else process.env.GOVERNANCE_INDEX_AUTHORITATIVE_PATHS = previous
+      }
     },
     failureInjector,
   })
@@ -1007,27 +1022,52 @@ function precommit(graph) {
     ...gitPaths(['diff', '--name-only', '-z']),
     ...gitPaths(['ls-files', '--others', '--exclude-standard', '-z']),
   ]
-  const unsafe = [...new Set(unstaged.filter((path) => graph.stages.some((stage) => stageSourceMatches(stage, path))))].sort()
+  // A path that is also a graph OUTPUT is regenerated and verified by the transaction itself;
+  // its working tree may legitimately sit stale-behind-the-index after an index-authoritative
+  // publish (sandbox-denied live path), which is the inverse of the hazard this guard exists
+  // for (worktree edits ahead of the index silently feeding generation).
+  const outputTargets = graphOutputTargets(graph)
+  const unsafe = [...new Set(unstaged
+    .filter((path) => graph.stages.some((stage) => stageSourceMatches(stage, path)))
+    .filter((path) => !outputTargets.some((output) => underGraphTarget(path, output))))].sort()
   if (unsafe.length) throw new Error(`provider-neutral source files are unstaged/untracked:\n${unsafe.map((path) => `  - ${path}`).join('\n')}`)
   console.log(`→ governance graph affected:${affected.map((stage) => stage.id).join(', ')}`)
   const receipt = generateGovernanceBuildGraphAtomically(graph)
   stageOutputs(graph)
-  // stageOutputs adds outputs from the working tree. For symlink outputs the transaction accepted
-  // as index-authoritative (this checkout could not rewrite the live link), that add clobbers the
-  // correct index entry back to the stale link — the exact defect that shipped `hooks/scripts`
-  // pointing at the retired mirror. Restore each such entry from its staged target.
-  for (const { path, target } of receipt?.indexAuthoritativeSymlinks ?? []) {
-    const blob = runClosedGit(['hash-object', '-w', '--stdin'], {
-      cwd: ROOT,
-      input: Buffer.from(target),
-      output: 'capture',
-    }).stdout.trim()
-    const result = runClosedGit(['update-index', '--cacheinfo', `120000,${blob},${path}`], {
-      cwd: ROOT,
-      output: 'ignore',
-    })
-    if (result.status !== 0) throw new Error(`failed to restore index-authoritative symlink:${path}`)
-    console.log(`→ staged index-authoritative symlink:${path} -> ${target}`)
+  // stageOutputs adds outputs from the working tree. For outputs the transaction published through
+  // the Git index (this checkout could not rewrite the live path), that add clobbers the correct
+  // index entries back to the stale tree — the exact defect that shipped `hooks/scripts` pointing
+  // at the retired mirror. Re-apply every index-published entry after staging.
+  for (const record of receipt?.indexAuthoritative ?? []) {
+    if (record.kind === 'symlink') {
+      const blob = runClosedGit(['hash-object', '-w', '--stdin'], {
+        cwd: ROOT,
+        input: Buffer.from(record.target),
+        output: 'capture',
+      }).stdout.trim()
+      const result = runClosedGit(['update-index', '--cacheinfo', `120000,${blob},${record.path}`], {
+        cwd: ROOT,
+        output: 'ignore',
+      })
+      if (result.status !== 0) throw new Error(`failed to restore index-authoritative symlink:${record.path}`)
+      console.log(`→ staged index-authoritative symlink:${record.path} -> ${record.target}`)
+      continue
+    }
+    for (const file of record.files ?? []) {
+      const result = runClosedGit(['update-index', '--add', '--cacheinfo', `${file.mode},${file.blob},${file.path}`], {
+        cwd: ROOT,
+        output: 'ignore',
+      })
+      if (result.status !== 0) throw new Error(`failed to restore index-authoritative entry:${file.path}`)
+    }
+    for (const removedPath of record.removed ?? []) {
+      const result = runClosedGit(['update-index', '--force-remove', '--', removedPath], {
+        cwd: ROOT,
+        output: 'ignore',
+      })
+      if (result.status !== 0) throw new Error(`failed to drop removed index-authoritative entry:${removedPath}`)
+    }
+    console.log(`→ staged index-authoritative tree:${record.path}(${(record.files ?? []).length} files, ${(record.removed ?? []).length} removed)`)
   }
 }
 

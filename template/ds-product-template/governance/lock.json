@@ -42,13 +42,13 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "0cdee938851432d1809f9e613a5b008231bc8fe869c4b01779ae1d637b0a8d77",
+    "forkCorpusLockSha256": "41c1086902acd11deba362dc22b1afcc5d57feacd27752a6973ee6d9f7c39cc0",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "ed952a7261b1a43d2a727b094e45ebf3e2deb7d6f0c6776b9b8a663675a5cfb8",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
-    "executionRuntimeSha256": "b52ceb86e290913b6ecf1b2b0db330ad6ea2e0e9bfd77483aca24d69623be79b",
-    "commonInstructionSha256": "a37c1317a52acce74ef605e3247878383bb4f99deecb98af0167d98d7cbbbe9c",
+    "executionRuntimeSha256": "d9377cc45308731f287d7b1711b7c38fc4e02ff8f84729bcbbf01bb52d136904",
+    "commonInstructionSha256": "6b9aa8747d9ddc9bd9a78de88a0c3d65f5b100ea917c4dd69be4d889b8299438",
     "providerArtifactDigests": {
       "claude": {
         "instructionSha256": "f56a44c730506258cc7e2581dbdd31bfd1e6d13d60dc8a8ee8bcc398228453fb",
@@ -57,8 +57,8 @@
         "treeDigests": {}
       },
       "codex": {
-        "instructionSha256": "a37c1317a52acce74ef605e3247878383bb4f99deecb98af0167d98d7cbbbe9c",
-        "hookSha256": "7c7123900e053de27db20bba1f8ff14c8954fd9934518d73cb896294c3d80d88",
+        "instructionSha256": "6b9aa8747d9ddc9bd9a78de88a0c3d65f5b100ea917c4dd69be4d889b8299438",
+        "hookSha256": "de8b8a9739dc9736cfe28004cbbc462dae525485202c871af9265d4dd8049740",
         "skillsSha256": "a4f57953384153f393c3db3008f1967f637e0dc1d7cb149b8c47f020b62278ee",
         "treeDigests": {}
       },
@@ -72,7 +72,7 @@
     "mergeSurfaceDigests": {
       "claude": "5c197ea686f697ea84d88a591f762dfd0ecbbf84f24a942c7d4f7d2e15f6acff"
     },
-    "governanceCheckSha256": "393f5a016baac5a345e9c08a93c14bdb575b66570fd475a7fa86bc2e8002dd33",
+    "governanceCheckSha256": "1c4c4455910f1e88aebb84add9f756717395519d84913beafaa654a9f1c3126e",
     "utilityRegistrySha256": "ac430d50ee82c19eb678f725c00eec23a0e25b33ec4bad81d3bf6e2fa9fa64ff",
     "sharedSkillsSha256": "8b0a4563714a8b6226890f2a94b5fa28036960035e040c0224d4c127fc17efe6",
     "sharedSkillCount": 11,
@@ -106,7 +106,7 @@
       "scripts/consumer-source-harness.mjs": "725072155d0b15b373bf6befb333cd2085dc8a38fff8538b4f4c8ea56f9c5308",
       "scripts/lib/a11y-static-server.mjs": "3ae8ca74a66ca5f155d1a1d0c97280d41f07556274c8c077705a489ebe6a7018",
       "scripts/lib/canonical-path-containment.mjs": "0244e31dc3be5015bed3efd65a5a77086a2e4676e9ac79cd0801c8cde6a74fcd",
-      "scripts/lib/closed-tool-execution.mjs": "131255a302f1b403fe95dd6251e180d7f3ce920faf6cbfe90496b52d192d93c3",
+      "scripts/lib/closed-tool-execution.mjs": "eacd0cd92c5bff03e40ff4e82c02fae9bf2e6f543f157eef3d41c3ed8b7d3cb6",
       "scripts/lib/consumer-control-plane-policy.mjs": "ea8b11ddc5c964ea742ccba5e6a3bc2f215db5d165afe2cca96192812287750c",
       "scripts/lib/exact-workspace-dependencies.mjs": "3c9453e5228d7eaf1bfef3350585746e1aff1475411cb7cf8696bf9acdb048cf",
       "scripts/lib/governance-dependency-bootstrap.mjs": "79b84cd0a7a8f262d1445503528e1251bb510517efb56550aad659c53c6b3cec",
@@ -116,7 +116,7 @@
       "scripts/lib/worktree-fingerprint.mjs": "70a8bdbceade964d009f6a46c9e57a93bc9fd58c28971ea14ad1b5ffeaaf7250",
       "scripts/lint-ds-internal-imports.mjs": "86edd952fb5c3871896515440693abeb08c1d1da9f887fa073b9ddda1363f572",
       "scripts/product-template-scaffold-lock.mjs": "9134dabf11af7a2445a6a026fc23201e8aba3ef5aeb7da1d2159e92956dd32d2",
-      "scripts/refresh-fork-launchers.mjs": "763c61964a4a971a664222e5dc0dd54564bdc9430b5a90f56021cca19d48596a",
+      "scripts/refresh-fork-launchers.mjs": "8d2058e9b32307a80e3a564f18abac6ea093d09e79164f468af5e1893217283f",
       "scripts/release-bom-contract.mjs": "75d736f86c7f695dc88a1982d547998d510e8050c4847abe387227b6662b87c2",
       "scripts/schemas/product-template-scaffold-lock.schema.json": "1318af59f12546b3cda059a1d94923d9a969bef4c5a476ebb46e42f8c853d19a",
       "scripts/schemas/release-bom.schema.json": "6969482588a25533dc1896be63c3c9629aced1cbeb745b99822db764682dc4a4",

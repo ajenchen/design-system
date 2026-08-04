@@ -455,11 +455,11 @@ End: `N checked, L1 V1 violations, L2 V2 violations, L3 V3 content issues. Top 5
 
 # Group E — System-level (P1 priority)
 
-## 14. 命名一致性
+## 14. 命名一致性與 repository hygiene(2026-08-04 同步 dim 14 更名「Naming and repository hygiene」)
 
 **Type**: Absolute
-**Canonical source**: `packages/design-system/ds-canonical/references/naming-conventions.md` (PascalCase/kebab-case/camelCase 規則 + suffix 鐵律)
-**Rationale home**: N/A — naming rules are meta-rules with no legit exemption
+**Canonical source**: `packages/design-system/ds-canonical/references/naming-conventions.md`(命名)+ `references/repository-hygiene.md` 與 `repository-hygiene-policy.json`(topology;deterministic checker = `scripts/repository-hygiene-invariant.mjs`)
+**Rationale home**: N/A — naming rules are meta-rules with no legit exemption;hygiene 例外只認 policy json 內 path-bound 宣告
 
 ```
 Your job: audit the codebase against `packages/design-system/ds-canonical/references/naming-conventions.md`.
@@ -474,6 +474,14 @@ Checks:
 7. Storybook title = `Design System/{Components|Internal|Patterns|Tokens}/{Name}/{子頁中文}`
 8. Suffix 統一: `.spec.md` / `.stories.tsx` / `.anatomy.stories.tsx` / `.principles.stories.tsx` — no custom suffixes
 9. Single-file comment language consistency (中 file → 中 comments, 英 file → 英 comments)
+
+Repository hygiene(mechanical primary):
+10. Run `node scripts/repository-hygiene-invariant.mjs --profile=authority --check` — PASS 字面必在;
+    FAIL 逐條列 R1(transient junk)/R2(top-level 未宣告用途)/R3(symlink 漂移)/R4(重複內容)/
+    future-reserved 契約逾期
+11. Judgment layer(LLM supplement,不取代 checker):six-class 歸類存疑檔(active/generated/
+    fixture/archive/future-reserved/junk)、sub-folder 內容與其家 charter 是否相符;
+    「zero-reference grep 是證據,不是刪除授權」— 判 retire 必附 owner + 影響面
 
 Report: `path — violation — suggested correction`
 
