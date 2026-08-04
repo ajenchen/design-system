@@ -12,7 +12,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 
 | ID | Owner path | Digest |
 |---|---|---|
-| agent-bootstrap | `AGENTS.md` | `sha256:d48a15c5935ffd2661a4ae77d2b67b4a20f895a55251302f60dddd32f9551f28` |
+| agent-bootstrap | `AGENTS.md` | `sha256:bdca35397bfc564577d31f01f4f62181816b9b3a74c6c508a52c06ada65f38e3` |
 | audit-coverage-matrix-source | `scripts/audit-coverage-matrix.mjs` | `sha256:895d4090e5092caa15af04a3133541b90c4fd33ee3f394b4b14aa8aaaf12892d` |
 | audit-rubric | `packages/design-system/ds-canonical/skills/design-system-audit/references/audit-prompts.md` | `sha256:ac18242353d7469a352618263df964e813a2d5017ff1a1c51222964e662fcd00` |
 | authority-decision-evidence-library | `packages/governance/src/authority-decision-evidence.mjs` | `sha256:6bf0a2394ad9df7dc3117b17a175c1e14bb16073b11dbd6ff11b4e6a94800781` |
