@@ -10,7 +10,7 @@
   "contractDigest": "sha256:d317120f4a40893e4c2d6eeba561763c207726d2a911cfa1364cb1043f8e8714",
   "files": [
     {
-      "hash": "sha256:63fbd3d0a1a5a1fa883bcc3ba8768aa5f6b40dc0ade2c282891a39f85626eaca",
+      "hash": "sha256:7e7fa8415034f3b86af5b0d07983f5e06766c8a6ec218722a5336177103b719c",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 74732,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:22ccc8cd8640b11f4854ad20382ca98f5d55a254eb9ab503de8644db97e4af6a",
+      "hash": "sha256:9a05540dd7016fc4eae88c3101cd3c669a3984b9e0fa9c7d15e1efe25c1e7ca9",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 169076,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:fac31dab2bdbd35eed94c7872538f8d33f025400b26d424a457510f7f3f1f99a",
+  "inputDigest": "sha256:e46eb4bc5bd54ba9c5d333507284719268b0e5c5e9e71ced6866d2a8a8361baf",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:fd90c236b0b8bdaefd3726beb3c21b4e344a693a91bffcaef58eef5fd28b7cb5",
+  "snapshotDigest": "sha256:6253efbc3d3f45c9b68b3f0fba5410685f9bd8efa920e473f9881166fe68e46e",
   "sources": [
     {
       "hash": "sha256:0887152159a411e01aa6771d109d79bbe1ea009b5eefebd7cff38d6cc4b5b664",
@@ -2654,7 +2654,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 34,
-      "hash": "sha256:bde00c1b9e635f6ec72892a50d472a86ee232288f6b99d600a96c474e1fc5068",
+      "hash": "sha256:1004cad20626455b5fb6cff2c38c2b28aa11c41054ba5aeededc5098632c142d",
       "id": "governance-control-plane-libraries",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2918,7 +2918,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 12,
-      "hash": "sha256:cd1cfbc87c2cab7177e5a9b66610ccce13f055c61b3f4d90f567a2a3dd95bed5",
+      "hash": "sha256:6d8886ab0dd5a89d7dc65e831faad459fcb6cce0e2b6796e98ecadadcc9c1480",
       "id": "governance-package-runtime-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

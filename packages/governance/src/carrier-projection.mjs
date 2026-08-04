@@ -376,11 +376,14 @@ export function governanceCarrierProjectionMap(sources) {
 
 export function assertCanonicalGovernanceCarrierProjectionMap(bindings) {
   invariant(bindings instanceof Map, 'carrier projection bindings must be a Map')
-  const expected = Object.values(PROJECTIONS)
-    .map(definition => definition.path)
-    .sort()
+  const expected = new Set(Object.values(PROJECTIONS).map(definition => definition.path))
   const actual = [...bindings.keys()].sort()
-  invariant(actual.length === expected.length && actual.every((path, index) => path === expected[index]), 'canonical carrier projection closure is incomplete or contains extra paths')
+  // Phase A tolerance (activation-cluster retirement, baton §8.1): a manifest may
+  // declare a SUBSET of the known projections — the retirement PR removes the
+  // external-activation carrier while this code still runs from the protected base.
+  // Unknown projections remain fail-closed; the deletion PR ships the re-tightened
+  // exact-closure map without the retired projection.
+  invariant(actual.every(path => expected.has(path)), 'canonical carrier projection closure contains unknown paths')
   return true
 }
 
