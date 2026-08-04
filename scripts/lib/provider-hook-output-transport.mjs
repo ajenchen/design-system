@@ -508,6 +508,21 @@ export function normalizeProviderHookChildFailure({ status, outputMode, blocking
   }
 }
 
+/**
+ * Decides how the adapter batch responds to ONE hook whose child result failed
+ * integrity interpretation (crash exit, wrong channel, malformed envelope).
+ * Fail-closed stays absolute for strict/CI lanes and for any child that emits
+ * the reserved adapter marker (spoofing or truly broken). Otherwise the batch
+ * degrades exactly one hook — a visible GOVERNANCE_WARNING with the hook name —
+ * and keeps enforcing the rest, so a single crashed hook can no longer silence
+ * its whole settings group (the cloud-crash amplifier, baton §7 item 8).
+ * A degraded hook is never reported as successful enforcement.
+ */
+export function classifyProviderHookChildFailure({ strict = false, stderr = '' } = {}) {
+  if (typeof stderr === 'string' && stderr.includes(CHILD_INTEGRITY_MARKER)) return 'fail-closed'
+  return strict ? 'fail-closed' : 'degrade-hook'
+}
+
 export const providerHookOutputContract = Object.freeze({
   contextEvents: Object.freeze([...CONTEXT_EVENTS]),
   stopEvent: 'Stop',

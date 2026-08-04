@@ -10,6 +10,7 @@ import {
   buildProviderHookLaunchArgv,
   buildProviderHookStdinInvocation,
   formatProviderHookContext,
+  classifyProviderHookChildFailure,
   formatProviderStopDecision,
   interpretProviderHookChildResult,
   normalizeProviderHookChildFailure,
@@ -732,4 +733,15 @@ assert.equal(
 assert.throws(() => formatProviderHookContext({ transport: 'system-message', event: 'Unknown', message: 'x' }), /event is unsupported/)
 assert.throws(() => formatProviderStopDecision({ transport: 'unknown', reason: 'x' }), /transport is unsupported/)
 assert.throws(() => formatProviderStopDecision({ transport: 'invalid-stale-transport', reason: 'x' }), /transport is unsupported/)
+
+// Per-hook degradation classifier (baton §7 item 8): one crashed hook degrades
+// only itself in the production lane; strict lanes and any child carrying the
+// reserved adapter marker stay fail-closed for the whole batch.
+assert.equal(classifyProviderHookChildFailure({ strict: false, stderr: 'segfault noise' }), 'degrade-hook')
+assert.equal(classifyProviderHookChildFailure({ strict: false, stderr: '' }), 'degrade-hook')
+assert.equal(classifyProviderHookChildFailure({ strict: true, stderr: 'segfault noise' }), 'fail-closed')
+assert.equal(
+  classifyProviderHookChildFailure({ strict: false, stderr: `${providerHookOutputContract.childIntegrityMarker} spoof attempt` }),
+  'fail-closed',
+)
 console.log('✓ provider hook output transport strictly separates policy blocks from child-result integrity failures')
