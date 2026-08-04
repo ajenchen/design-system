@@ -222,10 +222,18 @@ export function runGovernanceAnchorVersionProjection(argv = process.argv.slice(2
         `GOVERNANCE-ANCHOR-VERSION-PROJECTION protected-base-verifier=${plan.trusted.version} candidate-target-generator=${plan.candidate.version} projected=${plan.projected}`,
       )
       const governanceBin = resolve(plan.trusted.root, 'packages/governance/bin/governance.mjs')
+      // The protected base contributes the CODE that executes this policy; the manifest
+      // under test must be the CANDIDATE's own, or every legitimate canonical-manifest
+      // change deadlocks against the base's snapshot (expected views would embed the
+      // base manifest's contract digest — the Phase A bootstrap-deadlock family,
+      // baton §8.1 risk 1). Candidate self-consistency is enforced here with trusted
+      // code; cross-tree closure of privileged changes stays with verify-privileged-change.
+      const candidateManifest = resolve(plan.candidate.root, 'packages/governance/canonical/manifest.json')
       const result = spawn(process.execPath, [
         governanceBin,
         'check',
         '--repo', plan.candidate.root,
+        '--manifest', candidateManifest,
         '--role', 'ds-author',
         '--hooks-off',
       ], {
