@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import {
   buildStandardDimensionPayloads,
@@ -12,7 +13,7 @@ import {
 } from './lib/standard-ci-evidence.mjs'
 import { parseStandardCiEvidenceArgs } from './produce-standard-ci-evidence.mjs'
 
-const ROOT = resolve(new URL('..', import.meta.url).pathname)
+const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const oid = (value) => value.repeat(40)
 const hash = (value) => value.repeat(64)
 const integrity = (value) => `sha512-${Buffer.alloc(64, value).toString('base64')}`

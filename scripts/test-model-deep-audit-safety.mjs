@@ -4,7 +4,6 @@ import { createHash } from 'node:crypto'
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import { createManagedCiActivationFixture } from '../infra/governance/test/fixtures/managed-ci-activation-fixture.mjs'
 import {
   buildModelAccessReceipt,
   validateModelAccessReceipt,
@@ -626,38 +625,39 @@ await assert.rejects(
   runModelDeepAudit(['--execute', '--allow-model', '--managed-broker', '--provider', 'codex', '--surface', 'local', '--model', 'gpt-5.6-sol', '--kind', 'judgment'], { repoRoot: process.cwd() }),
   /broker activation is blocked; no model was invoked/,
 )
-const activeManagedFixture = createManagedCiActivationFixture({
-  repoRoot: process.cwd(),
-  issuerRegistry: JSON.parse(readFileSync('infra/governance/trust/issuers.json', 'utf8')),
-  runtimeProfile: JSON.parse(readFileSync('infra/governance/providers/runtime-conformance.json', 'utf8')),
-  observedAt: '2026-07-24T00:00:00.000Z',
-})
-try {
-  const activeArgs = parseModelDeepAuditArgs([
-    '--execute',
-    '--allow-model',
-    '--managed-broker',
-    '--provider',
-    'codex',
-    '--surface',
-    'local',
-    '--model',
-    'gpt-5.6-sol',
-    '--kind',
-    'judgment',
-  ])
-  const convergence = assertBrokerActivation({
-    args: activeArgs,
+// The managed-CI executor cluster is retired (2026-08-04): even a fully valid
+// managed-broker argument tuple over the certified content-only profile must
+// stay permanently fail-closed and never invoke a model.
+const retiredActivationArgs = parseModelDeepAuditArgs([
+  '--execute',
+  '--allow-model',
+  '--managed-broker',
+  '--provider',
+  'codex',
+  '--surface',
+  'local',
+  '--model',
+  'gpt-5.6-sol',
+  '--kind',
+  'judgment',
+])
+assert.throws(
+  () => assertBrokerActivation({
+    args: retiredActivationArgs,
     profileState: canonicalProfiles,
     brokerState: loadModelEvidenceBrokerPlan({ repoRoot: process.cwd() }),
-    managedState: activeManagedFixture.managedCiState,
-  })
-  assert.equal(convergence.status, 'converged')
-  assert.equal(convergence.activationBinding.executionClass, 'model-broker')
-} finally {
-  activeManagedFixture.dispose()
-}
-console.log('✓ production API rejects injected seams and legacy repository-reading execution; blocked managed activation invokes no model and verified managed activation reaches the next exact gate')
+  }),
+  /broker activation is blocked; no model was invoked/,
+)
+assert.throws(
+  () => assertBrokerActivation({
+    args: { ...retiredActivationArgs, provider: 'unregistered-provider' },
+    profileState: canonicalProfiles,
+    brokerState: loadModelEvidenceBrokerPlan({ repoRoot: process.cwd() }),
+  }),
+  /not bound to a repository-unmounted content-only broker profile/,
+)
+console.log('✓ production API rejects injected seams and legacy repository-reading execution; retired managed activation stays permanently fail-closed and invokes no model')
 
 const legacyFiles = [
   'scripts/codex-run-guarded.mjs',

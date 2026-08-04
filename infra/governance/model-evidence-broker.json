@@ -59,33 +59,5 @@
     "promptContent": "exact-content-addressed-shard",
     "response": "schema-closed-per-shard",
     "reducer": "deterministic-exact-shard-closure"
-  },
-  "activation": {
-    "contract": "managed-ci-activation-convergence-v1",
-    "executionClass": "model-broker",
-    "canonicalDesiredState": "managed-execution-required",
-    "materializedState": {
-      "carrierPath": "scripts/managed-ci-trusted-execution-plan.json",
-      "activationPointer": "/activation",
-      "verificationReceiptKind": "managed-ci-activation-verification-receipt-v2"
-    },
-    "externalReadback": {
-      "carrierPath": "infra/governance/external-activation-requirements.json",
-      "carrierProjection": "external-activation-state-v1",
-      "requiredStatus": "verified"
-    },
-    "requiredReceiptBindings": [
-      "planDigest",
-      "profileDigest",
-      "executionClass",
-      "evidenceKind",
-      "selectedProvider",
-      "networkPolicyDigest",
-      "isolationPolicyDigest",
-      "permissionsDigest",
-      "workflowIdentityDigest",
-      "containerImageDigest"
-    ],
-    "failureMode": "fail-closed"
   }
 }

@@ -84,7 +84,7 @@ test('deep audit validates one candidate branch and permits only one final publi
 test('legacy ceremonies cannot enter the standard release blocking graph', () => {
   const expected = new Map([
     ['candidate-freeze', 'retired'],
-    ['external-activation', 'non-blocking'],
+    ['external-activation', 'retired'],
     ['model-certification', 'non-blocking'],
     ['offline-signatures', 'retired'],
     ['72h-soak', 'retired'],

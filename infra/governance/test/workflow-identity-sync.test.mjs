@@ -34,7 +34,6 @@ const REVISION = Object.freeze({ commitSha: '1'.repeat(40), treeSha: '2'.repeat(
 const MUTATED = Object.freeze([
   '.github/workflows/ci.yml',
   '.github/workflows/release.yml',
-  '.github/workflows/external-ledger-writer.yml',
 ])
 
 function workflowBindings(desired) {
@@ -98,7 +97,7 @@ function build(fx) {
   })
 }
 
-test('three unique stale workflows fan out to exactly four authority bindings and every consumer source is still read once', t => {
+test('two unique stale workflows fan out to exactly three authority bindings and every consumer source is still read once', t => {
   const fx = fixture(t)
   const counts = new Map()
   const result = synchronizeWorkflowIdentities(fx.desired(), {
@@ -109,14 +108,14 @@ test('three unique stale workflows fan out to exactly four authority bindings an
       return { text: readFileSync(path, 'utf8') }
     },
   })
-  assert.equal(result.changes.length, 4)
-  assert.equal(new Set(result.changes.map(change => change.sourceId)).size, 3)
+  assert.equal(result.changes.length, 3)
+  assert.equal(new Set(result.changes.map(change => change.sourceId)).size, 2)
   assert.equal(result.uniqueWorkflowCount, counts.size)
   assert.ok([...counts.values()].every(count => count === 1))
 
   const proposal = build(fx).proposal
-  assert.equal(proposal.changes.length, 4)
-  assert.equal(proposal.requiredChangedPaths.length, 4)
+  assert.equal(proposal.changes.length, 3)
+  assert.equal(proposal.requiredChangedPaths.length, 3)
   assert.ok(proposal.changes.every(change => change.after.semanticVersion === 2))
   assert.equal(proposal.authorizationStatus, 'not-performed')
 })

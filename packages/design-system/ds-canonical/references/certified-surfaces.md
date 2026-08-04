@@ -19,16 +19,11 @@ required-check/readback chain have been activated in this repository. Historical
 guide a new probe, but cannot be replayed as current certification after the provider registry,
 runtime profile, hook contract, package, operating environment, or distribution version changes.
 
-The activated-authority workflow builder already exists:
-`managedCiActivatedWorkflowDocument` and `renderManagedCiActivatedWorkflow` in
-`scripts/lib/managed-ci-trusted-execution-plan.mjs` render only the closed reviewed workflow
-contract. Builder availability is not activation. The committed
-`scripts/managed-ci-trusted-execution-plan.json` still has null external activation bindings,
-including workflow/repository identity, executor provenance, authority attestations, signer
-readback, and every execution-class image supply-chain digest. The verifier therefore requires the
-pinned manual refusal scaffold and reports the managed workflow blocked. No transport, hosted
-runtime, certification, or enforcement claim is valid until an external authority supplies those
-bindings and the committed verifier accepts their exact readback.
+The managed-CI executor cluster (trusted-execution plan, executor supply chain, activation
+bindings) was retired on 2026-08-04 with the activation-cluster removal — it never activated and
+had no live consumer. Managed broker execution is therefore permanently fail-closed: any receipt
+claiming `managed-ci-attested` dependency trust is rejected outright, and no hosted-runtime,
+transport, certification, or enforcement claim can be derived from the retired machinery.
 
 ## Promotion rule
 

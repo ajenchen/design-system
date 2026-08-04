@@ -460,7 +460,7 @@ test('Harness registry is closed, complete and bound to real no-symlink authorit
   assert.equal(validate(escapedPath), false, 'Harness registry accepted a path escape')
 
   const broadOnlyAuthority = structuredClone(registry)
-  broadOnlyAuthority.entries[0].authorityPaths.push('infra/governance/lib/external-activation.mjs')
+  broadOnlyAuthority.entries[0].authorityPaths.push('AGENTS.md')
   assert.throws(
     () => validateHarnessRegistry(broadOnlyAuthority),
     /authorityPaths drifted from the independent claim contract/,
@@ -781,7 +781,6 @@ test('independent claim authority SSOT rejects missing claims, sources, owners a
     ['fleet', 'infra/governance/schemas/consumer-fanout-dispatch-evidence.schema.json'],
     ['fleet', 'infra/governance/schemas/fleet-reconcile-bootstrap-transaction.schema.json'],
     ['fleet', 'infra/governance/schemas/fleet-reconcile-bootstrap-replay-receipt.schema.json'],
-    ['evidence', 'scripts/lib/ci-evidence-live-observer.mjs'],
     ['fake-green', 'scripts/audit-gate-meta-test-coverage.mjs'],
   ]
   for (const [domain, path] of criticalAuthorities) {

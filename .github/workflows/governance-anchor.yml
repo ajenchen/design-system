@@ -49,55 +49,7 @@ jobs:
           : > "$RUNNER_TEMP/npmrc-global-empty"
           npm run --silent setup:dependencies
 
-      - name: Recognize only an exact signed external-ledger carrier transaction
-        if: startsWith(github.event.pull_request.head.ref, 'governance/external-ledger/')
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          BASE_REF: ${{ github.event.pull_request.base.ref }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
-          PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_STATE: ${{ github.event.pull_request.state }}
-          PR_DRAFT: ${{ github.event.pull_request.draft }}
-          MAINTAINER_CAN_MODIFY: ${{ github.event.pull_request.maintainer_can_modify }}
-        run: |
-          set -euo pipefail
-          /usr/bin/mkdir -p -m 700 "$RUNNER_TEMP/gh-home"
-          PR_JSON=$(
-            /usr/bin/env -i \
-              PATH=/usr/bin:/bin \
-              HOME="$RUNNER_TEMP/gh-home" \
-              GH_TOKEN="$GH_TOKEN" \
-              GH_PROMPT_DISABLED=1 \
-              /usr/bin/gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER"
-          )
-          PR_TITLE=$(/usr/bin/jq -er '.title | strings' <<<"$PR_JSON")
-          PR_BODY=$(/usr/bin/jq -er '(.body // "") | strings' <<<"$PR_JSON")
-          unset GH_TOKEN PR_JSON
-          node trusted/infra/governance/bin/external-ledger-writer.mjs verify-pr-head
-            --trusted-root "$GITHUB_WORKSPACE/trusted" \
-            --candidate-root "$GITHUB_WORKSPACE/candidate" \
-            --repository "$GITHUB_REPOSITORY" \
-            --base-sha "$BASE_SHA" \
-            --base-ref "$BASE_REF" \
-            --head-sha "$HEAD_SHA" \
-            --head-ref "$HEAD_REF" \
-            --head-repository "$HEAD_REPOSITORY" \
-            --pr-author "$PR_AUTHOR" \
-            --pr-author-type "$PR_AUTHOR_TYPE" \
-            --pr-number "$PR_NUMBER" \
-            --pr-state "$PR_STATE" \
-            --pr-draft "$PR_DRAFT" \
-            --pr-title "$PR_TITLE" \
-            --pr-body "$PR_BODY" \
-            --maintainer-can-modify "$MAINTAINER_CAN_MODIFY"
-
       - name: Verify all other privileged closure changes structurally
-        if: ${{ !startsWith(github.event.pull_request.head.ref, 'governance/external-ledger/') }}
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}

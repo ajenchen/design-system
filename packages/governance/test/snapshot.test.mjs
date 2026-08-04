@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import test from 'node:test'
 import {
-  EXTERNAL_ACTIVATION_CARRIER_PATH,
   PROVIDER_CERTIFICATION_CARRIER_PATH,
   REVIEW_CAPABILITY_CERTIFICATION_CARRIER_PATH,
   projectGovernanceCarrierBytes,
@@ -129,41 +128,6 @@ test('manifest source paths have exactly one canonical owner id', async (t) => {
 })
 
 test('carrier projections exclude only production-written state and retain immutable policy axes', () => {
-  const activation = {
-    $schema: 'schemas/external-activation-requirements.schema.json',
-    schemaVersion: 4,
-    policy: { path: 'infra/governance/external-activation-policy.json', sha256: 'a'.repeat(64) },
-    requirements: [{
-      id: 'example',
-      kind: 'github-repository',
-      repository: 'example/repository',
-      desiredPath: 'desired.json#/example',
-      requiredFor: ['objective-completion'],
-      status: 'not-activated',
-      evidence: null,
-      observedAt: null,
-      expiresAt: null,
-      condition: 'Exact signed readback is required.',
-      reason: 'Mutable state must not redefine policy.',
-    }],
-  }
-  const projectActivation = value => projectGovernanceCarrierBytes({
-    path: EXTERNAL_ACTIVATION_CARRIER_PATH,
-    projectionId: 'external-activation-state-v1',
-    bytes: Buffer.from(JSON.stringify(value)),
-  })
-  const activated = structuredClone(activation)
-  Object.assign(activated.requirements[0], {
-    status: 'activated',
-    evidence: { signed: true },
-    observedAt: '2026-07-25T00:00:00.000Z',
-    expiresAt: '2026-07-26T00:00:00.000Z',
-  })
-  assert.deepEqual(projectActivation(activated), projectActivation(activation))
-  const staticActivationDrift = structuredClone(activated)
-  staticActivationDrift.requirements[0].reason = 'Substituted policy.'
-  assert.notDeepEqual(projectActivation(staticActivationDrift), projectActivation(activation))
-
   const certification = {
     $schema: '../schemas/provider-surface-certification.schema.json',
     schemaVersion: 2,
@@ -269,11 +233,11 @@ test('carrier projections exclude only production-written state and retain immut
 
 test('carrier projections reject ambiguous or non-canonical JSON bytes', () => {
   const duplicate = Buffer.from(
-    '{"$schema":"schemas/external-activation-requirements.schema.json","schemaVersion":4,"schemaVersion":4,"policy":{},"requirements":[]}',
+    '{"$schema":"../schemas/provider-surface-certification.schema.json","schemaVersion":2,"schemaVersion":2,"certifications":[]}',
   )
   const project = bytes => projectGovernanceCarrierBytes({
-    path: EXTERNAL_ACTIVATION_CARRIER_PATH,
-    projectionId: 'external-activation-state-v1',
+    path: PROVIDER_CERTIFICATION_CARRIER_PATH,
+    projectionId: 'provider-certification-state-v1',
     bytes,
   })
   assert.throws(() => project(duplicate), /duplicate object key/)

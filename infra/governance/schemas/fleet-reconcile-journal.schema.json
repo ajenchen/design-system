@@ -1,50 +1,28 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://qijenchen.dev/schemas/fleet-reconcile-journal-v6.json",
+  "$id": "https://qijenchen.dev/schemas/fleet-reconcile-journal-v7.json",
   "title": "Fail-closed fleet reconciliation transaction journal",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "schemaVersion", "transactionId", "planDigest", "candidatePlanDigest", "candidateRelease",
-    "verifiedReleaseEvidenceDigest", "externalActivationDigest", "externalActivationInventoryDigest", "externalActivationDesiredDigest", "externalActivationRequirements", "externalActivationPolicy", "externalActivationInventory", "externalActivationDesired", "externalActivationMutationBoundaryContract", "externalActivationMutationBoundaryContractDigest", "evidenceDurabilityClass", "mirrorIdentity", "inventoryDigest", "desiredDigest", "attestationPolicyDigest",
-    "historicalControlPlane", "historicalControlPlaneDigest", "rolloutWave", "parallelBudget", "state",
-    "startedAt", "rollbackAttempted", "recoveryInstruction", "actions", "repoBindings", "rollbackPlan",
-    "rollbackPlanDigest", "authorizationEnvelopeDigest", "events", "eventHeadDigest", "offHostReceipts"
+    "schemaVersion", "transactionId", "planDigest", "candidateRelease",
+    "verifiedReleaseEvidenceDigest", "evidenceDurabilityClass", "inventoryDigest", "desiredDigest", "attestationPolicyDigest",
+    "historicalControlPlane", "historicalControlPlaneDigest", "state",
+    "startedAt", "rollbackAttempted", "recoveryInstruction", "actions", "rollbackPlan",
+    "rollbackPlanDigest", "authorizationEnvelopeDigest", "events", "eventHeadDigest"
   ],
   "properties": {
-    "schemaVersion": {"const": 6},
+    "schemaVersion": {"const": 7},
     "transactionId": {"type": "string", "pattern": "^github-reconcile-[0-9]+-[a-f0-9]{12}$"},
     "planDigest": {"$ref": "#/$defs/sha256"},
-    "candidatePlanDigest": {"$ref": "#/$defs/sha256"},
     "candidateRelease": {"$ref": "release-rings.schema.json#/properties/candidateRelease"},
-    "verifiedReleaseEvidenceDigest": {"$ref": "#/$defs/sha256"},
-    "externalActivationDigest": {"$ref": "#/$defs/sha256"},
-    "externalActivationInventoryDigest": {"$ref": "#/$defs/sha256"},
-    "externalActivationDesiredDigest": {"$ref": "#/$defs/sha256"},
-    "externalActivationRequirements": {"$ref": "https://qijenchen.dev/schemas/external-activation-requirements-v4.json"},
-    "externalActivationPolicy": {"$ref": "https://qijenchen.dev/schemas/external-activation-policy-v1.json"},
-    "externalActivationInventory": {"$ref": "managed-repos.schema.json"},
-    "externalActivationDesired": {"$ref": "github-desired.schema.json"},
-    "externalActivationMutationBoundaryContract": {"$ref": "https://qijenchen.dev/schemas/github-mutation-boundary-contract-v1.json"},
-    "externalActivationMutationBoundaryContractDigest": {"$ref": "#/$defs/sha256"},
-    "evidenceDurabilityClass": {"enum": ["local-content-addressed-fsync-v1", "independent-append-only-off-host-v1"]},
-    "mirrorIdentity": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/mirrorIdentity"}]},
+    "verifiedReleaseEvidenceDigest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]},
+    "evidenceDurabilityClass": {"const": "local-content-addressed-fsync-v1"},
     "inventoryDigest": {"$ref": "#/$defs/sha256"},
     "desiredDigest": {"$ref": "#/$defs/sha256"},
     "attestationPolicyDigest": {"$ref": "#/$defs/sha256"},
     "historicalControlPlane": {"$ref": "#/$defs/historicalControlPlane"},
     "historicalControlPlaneDigest": {"$ref": "#/$defs/sha256"},
-    "rolloutWave": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["ring", "wave", "repoIds"],
-      "properties": {
-        "ring": {"type": "string", "minLength": 1},
-        "wave": {"type": "string", "minLength": 1},
-        "repoIds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
-      }
-    },
-    "parallelBudget": {"type": "integer", "minimum": 1},
     "state": {"enum": ["prepared", "applying", "verified", "failed-partial-state-possible", "recovery-observed", "manual-recovery-required", "rolling-back", "rolled-back-verified", "rollback-blocked"]},
     "startedAt": {"type": "string", "format": "date-time"},
     "completedAt": {"type": "string", "format": "date-time"},
@@ -53,7 +31,6 @@
     "rollbackAttempted": {"type": "boolean"},
     "recoveryInstruction": {"type": "string", "minLength": 1},
     "actions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/action"}},
-    "repoBindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/repoBinding"}},
     "rollbackPlan": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/rollbackStep"}},
     "rollbackPlanDigest": {"$ref": "#/$defs/sha256"},
     "authorizationEnvelopeDigest": {"$ref": "#/$defs/sha256"},
@@ -65,7 +42,6 @@
     ,"rollbackAuthorizationEventHeadDigest": {"$ref": "#/$defs/sha256"}
     ,"events": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/event"}}
     ,"eventHeadDigest": {"$ref": "#/$defs/sha256"}
-    ,"offHostReceipts": {"type": "array", "items": {"$ref": "#/$defs/offHostReceipt"}}
   },
   "$defs": {
     "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
@@ -118,59 +94,6 @@
         "readbackPath": {"type": ["string", "null"]},
         "recoveryObservation": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/snapshot"}]},
         "rollbackStatus": {"type": ["string", "null"], "enum": [null, "already-at-before-image", "blocked-drift", "blocked-manual", "compensating", "rolled-back-verified", "blocked-error"]}
-      }
-    },
-    "offHostReceipt": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["schemaVersion", "kind", "protocolVersion", "provider", "endpoint", "tenant", "container", "principal", "receiptId", "transactionId", "sequence", "eventDigest", "eventHeadDigest", "idempotencyKey", "requestNonce", "requestDigest", "receivedAt", "retainedUntil", "appendOnly", "independentAdministration", "signingKeyId", "signatureAlgorithm", "signature", "receiptSha256"],
-      "properties": {
-        "schemaVersion": {"const": 1},
-        "kind": {"const": "fleet-reconcile-off-host-ack"},
-        "protocolVersion": {"const": "fleet-reconcile-mirror-v1"},
-        "provider": {"type": "string", "minLength": 1},
-        "endpoint": {"type": "string", "format": "uri", "pattern": "^https://"},
-        "tenant": {"type": "string", "minLength": 1},
-        "container": {"type": "string", "minLength": 1},
-        "principal": {"type": "string", "minLength": 1},
-        "receiptId": {"type": "string", "minLength": 1},
-        "transactionId": {"type": "string", "pattern": "^github-reconcile-[0-9]+-[a-f0-9]{12}$"},
-        "sequence": {"type": "integer", "minimum": 1},
-        "eventDigest": {"$ref": "#/$defs/sha256"},
-        "eventHeadDigest": {"$ref": "#/$defs/sha256"},
-        "idempotencyKey": {"$ref": "#/$defs/sha256"},
-        "requestNonce": {"type": "string", "format": "uuid"},
-        "requestDigest": {"$ref": "#/$defs/sha256"},
-        "receivedAt": {"type": "string", "format": "date-time"},
-        "retainedUntil": {"type": "string", "format": "date-time"},
-        "appendOnly": {"const": true},
-        "independentAdministration": {"const": true},
-        "signingKeyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
-        "signatureAlgorithm": {"const": "ed25519"},
-        "signature": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
-        "receiptSha256": {"$ref": "#/$defs/sha256"}
-      }
-    },
-    "mirrorIdentity": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["protocolVersion", "provider", "endpoint", "tenant", "container", "wormMode", "lifecyclePolicyDigest", "minimumRetentionDays", "writerPrincipal", "verifierPrincipal", "adapterCommandSha256", "receiptSigningKeyId", "receiptSigningPublicKeySpki", "receiptSigningPublicKeySpkiSha256", "signatureAlgorithm"],
-      "properties": {
-        "protocolVersion": {"const": "fleet-reconcile-mirror-v1"},
-        "provider": {"type": "string", "minLength": 1},
-        "endpoint": {"type": "string", "format": "uri", "pattern": "^https://"},
-        "tenant": {"type": "string", "minLength": 1},
-        "container": {"type": "string", "minLength": 1},
-        "wormMode": {"const": "compliance-object-lock"},
-        "lifecyclePolicyDigest": {"$ref": "#/$defs/sha256"},
-        "minimumRetentionDays": {"type": "integer", "minimum": 30, "maximum": 3650},
-        "writerPrincipal": {"type": "string", "minLength": 1},
-        "verifierPrincipal": {"type": "string", "minLength": 1},
-        "adapterCommandSha256": {"$ref": "#/$defs/sha256"},
-        "receiptSigningKeyId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
-        "receiptSigningPublicKeySpki": {"type": "string", "pattern": "^[A-Za-z0-9+/]+={0,2}$"},
-        "receiptSigningPublicKeySpkiSha256": {"$ref": "#/$defs/sha256"},
-        "signatureAlgorithm": {"const": "ed25519"}
       }
     },
     "historicalControlPlane": {
@@ -232,22 +155,6 @@
         "readbackPath": {"type": ["string", "null"]},
         "recoveryObservation": {"$ref": "#/$defs/snapshot"},
         "rollbackStatus": {"enum": ["already-at-before-image", "blocked-drift", "blocked-manual", "compensating", "rolled-back-verified", "blocked-error"]}
-      }
-    },
-    "repoBinding": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["repoId", "github", "ring", "wave", "defaultBranchHeadSha", "observedStateDigest", "predicateDigest", "actionsDigest", "applyAuthorization"],
-      "properties": {
-        "repoId": {"type": "string", "minLength": 1},
-        "github": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
-        "ring": {"type": "string", "minLength": 1},
-        "wave": {"type": "string", "minLength": 1},
-        "defaultBranchHeadSha": {"type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$"},
-        "observedStateDigest": {"$ref": "#/$defs/sha256"},
-        "predicateDigest": {"$ref": "#/$defs/sha256"},
-        "actionsDigest": {"$ref": "#/$defs/sha256"},
-        "applyAuthorization": {"$ref": "release-rings.schema.json#/$defs/attestation"}
       }
     },
     "rollbackStep": {

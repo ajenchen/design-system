@@ -27,16 +27,14 @@ import {
 } from '../lib/repository-subject-proof.mjs'
 import { certificationCarrierPolicyForRole, loadRoleSurfacePolicy } from '../lib/role-surface-policy.mjs'
 import { normalizeRuntimeValidationContext } from '../lib/runtime-certification.mjs'
-import {
-  externalActivationPolicyDigest,
-  loadExternalActivationPolicy,
-} from '../lib/external-activation.mjs'
 
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), 'fixtures/github')
 const GOVERNANCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const REPO_ROOT = resolve(GOVERNANCE_ROOT, '../..')
 const inventory = readJson(resolve(FIXTURES, 'inventory.json'))
 const desired = readJson(resolve(FIXTURES, 'desired.json'))
+// The external-ledger writer environment is retired with its ceremony.
+desired.managedEnvironmentNames = ['npm-release', 'governance-upgrade']
 const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
 const certifications = readJson(resolve(FIXTURES, 'certifications.json'))
 const canonicalInventory = readJson(resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json'))
@@ -705,17 +703,23 @@ test('canonical GitHub profile minima reject required-check, environment, releas
     tagRuleset.rules.unshift({ type: 'creation' })
   })
   expectDesiredPoison(value => {
-    const duplicate = structuredClone(value.profiles['design-system-authority'].environments
-      .find(environment => environment.name === 'governance-external-ledger'))
-    duplicate.waitTimer = 1
-    value.profiles['design-system-authority'].environments.push(duplicate)
-  })
-  expectDesiredPoison(value => {
-    const environments = value.profiles['design-system-authority'].environments
-    const npmIndex = environments.findIndex(environment => environment.name === 'npm-release')
-    const duplicate = structuredClone(environments.find(environment => environment.name === 'governance-external-ledger'))
-    duplicate.waitTimer = 1
-    environments[npmIndex] = duplicate
+    // Restoring the retired external-ledger writer environment must fail closed.
+    value.profiles['design-system-authority'].environments.push({
+      name: 'governance-external-ledger',
+      waitTimer: 0,
+      preventSelfReview: false,
+      reviewers: [],
+      rollout: 'always',
+      workflow: '.github/workflows/external-ledger-writer.yml',
+      workflowIdentity: {
+        contentSha256: 'a'.repeat(64),
+        gitBlobSha: 'b'.repeat(40),
+        semanticVersion: 2,
+        semanticSha256: 'c'.repeat(64),
+      },
+      credentialIntegration: 'governanceWriterApp',
+      deploymentBranchPolicy: { protectedBranches: true, customBranchPolicies: false },
+    })
   })
   expectDesiredPoison(value => { value.integrations.githubActions.required = false })
   for (const integration of ['governanceCheckApp', 'governanceWriterApp']) {
@@ -1195,51 +1199,6 @@ test('consumer doctor validates all control-plane ledgers before inspecting a ch
       `${invalid.name} must fail before checkout inspection`,
     )
   }
-})
-
-test('release-ring soak semantics follow the single canonical deployment profile and fail closed on cross-profile substitution', () => {
-  const productionRings = structuredClone(externalRuntimeRings)
-  assert.equal(
-    validateReleaseRings(inventory, productionRings, {
-      now,
-      issuerRegistry: externalIssuerRegistry,
-    }),
-    true,
-  )
-
-  const blockingSubstitution = structuredClone(productionRings)
-  for (const ring of blockingSubstitution.rings) {
-    ring.promotionPredicates.find(predicate => predicate.type === 'soak-observation').type = 'soak-complete'
-  }
-  assert.throws(
-    () => validateReleaseRings(inventory, blockingSubstitution, {
-      now,
-      issuerRegistry: externalIssuerRegistry,
-    }),
-    /PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM requires release-ring predicate soak-observation/,
-  )
-
-  const maximumPolicy = structuredClone(loadExternalActivationPolicy())
-  maximumPolicy.activeProfile = 'MAXIMUM_ASSURANCE_MULTI_CUSTODIAN_WORM'
-  const maximumPolicyDigest = externalActivationPolicyDigest(maximumPolicy)
-  assert.throws(
-    () => validateReleaseRings(inventory, productionRings, {
-      now,
-      issuerRegistry: externalIssuerRegistry,
-      activationPolicy: maximumPolicy,
-      expectedActivationPolicyDigest: maximumPolicyDigest,
-    }),
-    /MAXIMUM_ASSURANCE_MULTI_CUSTODIAN_WORM requires release-ring predicate soak-complete/,
-  )
-  assert.equal(
-    validateReleaseRings(inventory, blockingSubstitution, {
-      now,
-      issuerRegistry: externalIssuerRegistry,
-      activationPolicy: maximumPolicy,
-      expectedActivationPolicyDigest: maximumPolicyDigest,
-    }),
-    true,
-  )
 })
 
 function fixtureGit(repoRoot, args) {

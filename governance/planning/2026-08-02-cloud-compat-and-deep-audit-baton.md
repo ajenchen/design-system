@@ -335,3 +335,35 @@ harness-source-inventory suites[3]/[5]+pairedMeta → sync-harness-authority-bin
 desired/github.json 的 external-ledger environment → workflow-identities propose/apply;
 package.json 十餘條 ceremony scripts;test-governance-build-graph:658-662 期望;fork/template/WM
 經正常 release 傳播。
+
+### §8.2 Batch 3 Phase A+B 執行記錄(2026-08-04)
+
+- **Phase A ✅ merged(#42,408974db)**:tolerant verifier(不讀叢集 policy、容忍兩種 trust-root 形狀、
+  單一 production band 無條件化);測試重寫 25/25 含 Phase-B enablement case;anchor 死鎖模擬
+  (main 舊 verifier 實跑 candidate 樹)PASS。
+- **Phase B(本 branch)**:activation cluster 全鏈拆除 —— 8 libs + 4 bins + 12 tests + 19 schemas +
+  4 policy/data + managed-ci-executor/class-adapters 目錄 + 3 workflows(external-ledger-writer /
+  build-managed-ci-executors / deep-audit-managed)+ ci-evidence enforced lane + verify-mirror-activation-boundary
+  + release-tag-authorization/release-trust-preflight CLIs。Severs:reconcile-github 5,324→2,251 行
+  (journal v7,保留 protected-main preflight/issuer lineage/fresh rollback authorization/drift guards)、
+  model-validation rollout 分支斷開 + external-ledger environment 禁復活不變量、fleet-recovery-authorization
+  quorum 內聯(production 1/maximum 2..5 語意不變)、check-branch-protection mutation-boundary-only 模式整段移除
+  (零外部 caller)、verify-mirror-evidence 只留 validateMirrorRoot 家族、deep-audit-evidence-contract
+  managed-ci-attested 永久 fail-closed、verify-deep-audit-coverage 只認 standard-five-step observation、
+  model-evidence-broker activation 段 + schema 對稱移除、anchor ledger step 移除、workflow-security −682 行。
+  Inventory 鏈:canonical manifest 446→388 sources、roles.json −8 id、harness registry/contracts/inventory
+  投影收斂(7/7)、build-graph stage sources −52、package.json −17 ceremony scripts、desired/github.json +
+  schema 拆 governance-external-ledger environment、trust-roots + schema 落 trimmed 形狀、
+  fleet-reconcile-journal schema v7、release-workflow external-activation → retired(schema 同步)、
+  README/certified-surfaces 全段對齊現實、external-assurance-checklist.md 新增(npm trusted publisher/2FA/
+  rollback drill 三真項)。
+- **驗證**:privileged-change 25/25、workflow-security 59/59、issuer-registry 7/7、harness-registry 7/7、
+  model-validation 17/17、reconcile-github 48/48、consumerctl 37/43(6 failures 與 main 樹逐字相同 =
+  pre-existing consumer-bootstrap fixture drift)、governance-data/workflow-identity-sync/release-workflow/
+  standard-five-step 全綠、ci.yml PR-gate 精確重放全綠(build:lib/tsc/focused tests/graph check)、
+  in-sandbox governance:generate + governance:check PASS。
+- **殘留(記錄,非 blocker)**:verify-upgrade-provenance 的 dormant trust-evidence 驗證分支(僅在資產
+  存在時驗,生產者已刪 = 永不觸發;完整退場需跨 release-evidence/finalizer-handoff 5+ 檔協調,
+  留給 promotion-family 批次)、managed-ci-oidc-broker/trusted-authority/finalization/
+  activated-workflow-contract 四份 zombie data(deep-audit broker 儀式 = §7 item 4 批次)、
+  genesis lib(§7 item 3)、hook exit-code 粒度(§7 item 8)。

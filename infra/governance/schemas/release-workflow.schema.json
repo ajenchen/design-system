@@ -140,7 +140,7 @@
       }
     },
     "legacyCandidateFreeze": {"allOf": [{"$ref": "#/$defs/legacyBase"}, {"type": "object", "properties": {"id": {"const": "candidate-freeze"}, "standardRelease": {"const": "retired"}}}]},
-    "legacyExternalActivation": {"allOf": [{"$ref": "#/$defs/legacyBase"}, {"type": "object", "properties": {"id": {"const": "external-activation"}, "standardRelease": {"const": "non-blocking"}}}]},
+    "legacyExternalActivation": {"allOf": [{"$ref": "#/$defs/legacyBase"}, {"type": "object", "properties": {"id": {"const": "external-activation"}, "standardRelease": {"const": "retired"}}}]},
     "legacyModelCertification": {"allOf": [{"$ref": "#/$defs/legacyBase"}, {"type": "object", "properties": {"id": {"const": "model-certification"}, "standardRelease": {"const": "non-blocking"}}}]},
     "legacyOfflineSignatures": {"allOf": [{"$ref": "#/$defs/legacyBase"}, {"type": "object", "properties": {"id": {"const": "offline-signatures"}, "standardRelease": {"const": "retired"}}}]},
     "legacySoak": {"allOf": [{"$ref": "#/$defs/legacyBase"}, {"type": "object", "properties": {"id": {"const": "72h-soak"}, "standardRelease": {"const": "retired"}}}]},

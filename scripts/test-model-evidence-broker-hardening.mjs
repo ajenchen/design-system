@@ -334,60 +334,41 @@ try {
     taskDescriptors: [emptyTextDescriptor],
     planState: basePlan,
   }))
-  assert.deepEqual(basePlan.plan.activation, {
-    contract: 'managed-ci-activation-convergence-v1',
-    executionClass: 'model-broker',
-    canonicalDesiredState: 'managed-execution-required',
-    materializedState: {
-      carrierPath: 'scripts/managed-ci-trusted-execution-plan.json',
-      activationPointer: '/activation',
-      verificationReceiptKind: 'managed-ci-activation-verification-receipt-v2',
-    },
-    externalReadback: {
-      carrierPath: 'infra/governance/external-activation-requirements.json',
-      carrierProjection: 'external-activation-state-v1',
-      requiredStatus: 'verified',
-    },
-    requiredReceiptBindings: [
-      'planDigest',
-      'profileDigest',
-      'executionClass',
-      'evidenceKind',
-      'selectedProvider',
-      'networkPolicyDigest',
-      'isolationPolicyDigest',
-      'permissionsDigest',
-      'workflowIdentityDigest',
-      'containerImageDigest',
-    ],
-    failureMode: 'fail-closed',
-  })
-  const activationPlanRoot = resolve(fixture, 'activation-plan')
+  // The managed-CI activation cluster was retired 2026-08-04: the closed plan
+  // schema no longer declares an "activation" section, and any resurrected
+  // activation state must fail schema validation instead of becoming source.
+  assert.equal(Object.hasOwn(basePlan.plan, 'activation'), false)
+  const closedPlanRoot = resolve(fixture, 'closed-plan')
   for (const path of [
     'infra/governance/schemas/model-evidence-broker.schema.json',
     'infra/governance/schemas/model-broker-shard-result.schema.json',
   ]) {
-    const target = resolve(activationPlanRoot, path)
+    const target = resolve(closedPlanRoot, path)
     mkdirSync(dirname(target), { recursive: true })
     writeFileSync(target, readFileSync(resolve(process.cwd(), path)))
   }
-  const activationPlanPath = resolve(activationPlanRoot, 'infra/governance/model-evidence-broker.json')
-  mkdirSync(dirname(activationPlanPath), { recursive: true })
-  const expectActivationPlanPoison = (mutate) => {
+  const closedPlanPath = resolve(closedPlanRoot, 'infra/governance/model-evidence-broker.json')
+  mkdirSync(dirname(closedPlanPath), { recursive: true })
+  const expectClosedPlanPoison = (mutate) => {
     const plan = structuredClone(basePlan.plan)
-    mutate(plan.activation)
-    writeFileSync(activationPlanPath, `${JSON.stringify(plan, null, 2)}\n`)
+    mutate(plan)
+    writeFileSync(closedPlanPath, `${JSON.stringify(plan, null, 2)}\n`)
     assert.throws(
-      () => loadModelEvidenceBrokerPlan({ repoRoot: activationPlanRoot }),
+      () => loadModelEvidenceBrokerPlan({ repoRoot: closedPlanRoot }),
       /plan schema validation failed/,
     )
   }
-  expectActivationPlanPoison(activation => { activation.status = 'active' })
-  expectActivationPlanPoison(activation => { activation.managedExecutionPlanDigest = 'a'.repeat(64) })
-  expectActivationPlanPoison(activation => { activation.contract = 'parallel-broker-activation-v1' })
-  expectActivationPlanPoison(activation => { activation.executionClass = 'github-observer' })
-  expectActivationPlanPoison(activation => { delete activation.externalReadback })
-  console.log('✓ broker source stores only the closed managed convergence contract; mutable or partial activation state cannot become canonical source')
+  expectClosedPlanPoison(plan => {
+    plan.activation = {
+      contract: 'managed-ci-activation-convergence-v1',
+      executionClass: 'model-broker',
+      status: 'active',
+    }
+  })
+  expectClosedPlanPoison(plan => { plan.activation = { status: 'active' } })
+  expectClosedPlanPoison(plan => { plan.unreviewedSection = true })
+  expectClosedPlanPoison(plan => { delete plan.executionMode })
+  console.log('✓ broker source stores only the closed schema shape; retired activation state or any undeclared section cannot become canonical source')
 
   const unicodeRoot = resolve(fixture, 'unicode-order')
   const unicodeSpecPath = 'packages/widget/Widget.spec.md'

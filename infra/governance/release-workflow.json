@@ -5,7 +5,12 @@
   "decisionAuthority": {
     "engineering": "AUTO",
     "ask": "unresolved-product-ui-ux-ssot-choice",
-    "humanOnly": ["login", "mfa", "oauth", "credential-reference"],
+    "humanOnly": [
+      "login",
+      "mfa",
+      "oauth",
+      "credential-reference"
+    ],
     "resumeAfterHumanAction": "AUTO"
   },
   "deepAuditReleasePolicy": {
@@ -13,56 +18,114 @@
     "publishAsIterationLoop": false,
     "maximumFinalReleasesPerAudit": 1,
     "additionalReleaseCondition": "separately-evidenced-post-publish-blocker-or-security-incident",
-    "allowedAdditionalReleaseFailureClasses": ["post-publish-blocker", "security-incident"],
-    "requiredIncidentFields": ["incidentId", "failureClass", "publishedVersion", "evidenceRef"]
+    "allowedAdditionalReleaseFailureClasses": [
+      "post-publish-blocker",
+      "security-incident"
+    ],
+    "requiredIncidentFields": [
+      "incidentId",
+      "failureClass",
+      "publishedVersion",
+      "evidenceRef"
+    ]
   },
   "steps": [
     {
       "id": "pr-checks",
       "authority": "AUTO",
-      "completion": ["required-ci-check-green", "conversation-resolved"]
+      "completion": [
+        "required-ci-check-green",
+        "conversation-resolved"
+      ]
     },
     {
       "id": "merge",
       "authority": "AUTO",
-      "completion": ["protected-main-merge", "protected-main-readback"]
+      "completion": [
+        "protected-main-merge",
+        "protected-main-readback"
+      ]
     },
     {
       "id": "publish",
       "authority": "AUTO",
-      "completion": ["npm-publish-success"]
+      "completion": [
+        "npm-publish-success"
+      ]
     },
     {
       "id": "readback",
       "authority": "AUTO",
-      "completion": ["github-release-readback", "github-release-immutable", "npm-exact-version-readback"]
+      "completion": [
+        "github-release-readback",
+        "github-release-immutable",
+        "npm-exact-version-readback"
+      ]
     },
     {
       "id": "consumer",
       "authority": "AUTO",
-      "completion": ["template-main-exact-version", "work-management-main-exact-version", "actions-bound-consumer-check-provenance"]
+      "completion": [
+        "template-main-exact-version",
+        "work-management-main-exact-version",
+        "actions-bound-consumer-check-provenance"
+      ]
     }
   ],
   "legacyMechanisms": [
-    {"id": "candidate-freeze", "standardRelease": "retired", "reason": "The exact PR head plus required CI already identifies the releasable bytes."},
-    {"id": "external-activation", "standardRelease": "non-blocking", "reason": "The broad assurance inventory is advisory; only credentials actually needed by a five-step action may pause that action."},
-    {"id": "model-certification", "standardRelease": "non-blocking", "reason": "Provider certification can add assurance but cannot block the standard small-team release."},
-    {"id": "offline-signatures", "standardRelease": "retired", "reason": "A parallel offline approval ceremony is not part of the standard release path."},
-    {"id": "72h-soak", "standardRelease": "retired", "reason": "Post-release observation may continue asynchronously and never delays standard release completion."},
-    {"id": "fleet-promotion", "standardRelease": "retired", "reason": "Exact-version consumer PR, merge, and readback replace a separate promotion ceremony."}
+    {
+      "id": "candidate-freeze",
+      "standardRelease": "retired",
+      "reason": "The exact PR head plus required CI already identifies the releasable bytes."
+    },
+    {
+      "id": "external-activation",
+      "standardRelease": "retired",
+      "reason": "The activation-cluster machinery was removed 2026-08-04; credentials actually needed by a five-step action still pause only that action."
+    },
+    {
+      "id": "model-certification",
+      "standardRelease": "non-blocking",
+      "reason": "Provider certification can add assurance but cannot block the standard small-team release."
+    },
+    {
+      "id": "offline-signatures",
+      "standardRelease": "retired",
+      "reason": "A parallel offline approval ceremony is not part of the standard release path."
+    },
+    {
+      "id": "72h-soak",
+      "standardRelease": "retired",
+      "reason": "Post-release observation may continue asynchronously and never delays standard release completion."
+    },
+    {
+      "id": "fleet-promotion",
+      "standardRelease": "retired",
+      "reason": "Exact-version consumer PR, merge, and readback replace a separate promotion ceremony."
+    }
   ],
   "automation": {
     "repository": "ajenchen/design-system",
     "defaultBranch": "main",
-    "publishWorkflow": {"file": "release.yml", "dispatchEvent": "stage-protected-release"},
-    "packages": ["@qijenchen/design-system", "@qijenchen/governance", "@qijenchen/storybook-config"],
+    "publishWorkflow": {
+      "file": "release.yml",
+      "dispatchEvent": "stage-protected-release"
+    },
+    "packages": [
+      "@qijenchen/design-system",
+      "@qijenchen/governance",
+      "@qijenchen/storybook-config"
+    ],
     "consumers": [
       {
         "repository": "ajenchen/ds-product-template",
         "defaultBranch": "main",
         "delivery": "release-published-pr",
         "readbackPath": "package-lock.json",
-        "packages": ["@qijenchen/design-system", "@qijenchen/storybook-config"],
+        "packages": [
+          "@qijenchen/design-system",
+          "@qijenchen/storybook-config"
+        ],
         "requiredCheck": {
           "context": "Verify consumer",
           "integration": "githubActions",
@@ -77,7 +140,10 @@
         "dispatchEvent": "design-system-published",
         "delivery": "repository-dispatch-pr",
         "readbackPath": "package-lock.json",
-        "packages": ["@qijenchen/design-system", "@qijenchen/storybook-config"],
+        "packages": [
+          "@qijenchen/design-system",
+          "@qijenchen/storybook-config"
+        ],
         "requiredCheck": {
           "context": "Verify consumer",
           "integration": "githubActions",

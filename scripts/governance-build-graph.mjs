@@ -994,19 +994,28 @@ export function generateGovernanceBuildGraphAtomically(graph, {
 function stageOutputs(graph) {
   verifyGitBoundary()
   const outputs = graphOutputTargets(graph)
-  const trackedOutputs = new Set(gitPaths(['ls-files', '-z', '--', ...outputs]))
-  const stageableOutputs = outputs.filter((output) => (
-    existsSync(join(ROOT, output))
-      || [...trackedOutputs].some((path) => underGraphTarget(path, output))
-  ))
+  const stageableOutputs = outputs.flatMap((output) => {
+    const bare = output.endsWith('/') ? output.slice(0, -1) : output
+    let stat = null
+    try { stat = lstatSync(join(ROOT, bare)) } catch { stat = null }
+    // A tree-declared output whose worktree entry is a symlink must be staged as
+    // the link object itself: `git add -- <path>/` fails "beyond a symbolic link".
+    if (stat?.isSymbolicLink()) return [bare]
+    if (stat) return [output]
+    // Absent from the worktree: index-authoritative or sandbox-denied content.
+    // A raw `git add -A` here would stage a deletion of the correct index
+    // entries; the canonical-sync transaction receipt re-apply owns those.
+    return []
+  })
   for (let offset = 0; offset < stageableOutputs.length; offset += 100) {
     const result = runClosedGit(['add', '-A', '--', ...stageableOutputs.slice(offset, offset + 100)], {
       cwd: ROOT,
-      output: 'ignore',
+      output: 'capture',
       timeoutMs: 30_000,
     })
     if (result.error || result.signal !== null || result.status !== 0) {
-      throw new Error(`stage generated governance views failed (${result.status ?? result.signal ?? result.error?.message})`)
+      const detail = (result.stderr || result.error?.message || '').toString().trim().split('\n').slice(0, 3).join('; ')
+      throw new Error(`stage generated governance views failed (${result.status ?? result.signal ?? result.error?.message})${detail ? `: ${detail}` : ''}`)
     }
   }
 }

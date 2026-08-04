@@ -8,11 +8,6 @@ import {
   validateIssuerRegistry,
   validateRegistryPolicyBinding,
 } from './issuer-registry.mjs'
-import {
-  externalActivationPolicyDigest,
-  loadExternalActivationPolicy,
-  resolveExternalActivationProfile,
-} from './external-activation.mjs'
 
 const AUTHORIZATION_KEYS = [
   'schemaVersion',
@@ -55,6 +50,12 @@ const PRIVILEGED_POLICY_KEYS = [
 const BOOTSTRAP_KEYS = ['schemaVersion', 'enabled', 'ownerLogins', 'nonce', 'maxCommentTtlMinutes']
 const PRODUCTION_PROFILE = 'PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM'
 const MAXIMUM_PROFILE = 'MAXIMUM_ASSURANCE_MULTI_CUSTODIAN_WORM'
+// The retired external-activation catalog fixed these signer-quorum bounds per
+// assurance profile; the invariant survives here as plain data.
+const PROFILE_RELEASE_AUTHORIZATION = Object.freeze({
+  [PRODUCTION_PROFILE]: Object.freeze({ minimumSignerQuorum: 1, maximumSignerQuorum: 1 }),
+  [MAXIMUM_PROFILE]: Object.freeze({ minimumSignerQuorum: 2, maximumSignerQuorum: 5 }),
+})
 
 const clone = value => JSON.parse(JSON.stringify(value))
 const exactKeys = (value, keys) => value && typeof value === 'object' && !Array.isArray(value)
@@ -81,7 +82,7 @@ export function validateHistoricalControlPlane(bundle) {
   return true
 }
 
-function validatePrivilegedPolicy(policy, registry, now, externalActivationPolicy) {
+function validatePrivilegedPolicy(policy, registry, now) {
   invariant(exactKeys(policy, PRIVILEGED_POLICY_KEYS), 'Current privileged trust-root policy has an invalid or open shape')
   invariant(policy.$schema === 'schemas/privileged-trust-roots.schema.json', 'Current privileged trust-root policy schema reference is invalid')
   invariant(policy.schemaVersion === 2 && policy.algorithm === 'ed25519', 'Current privileged trust-root policy version/algorithm is invalid')
@@ -89,14 +90,11 @@ function validatePrivilegedPolicy(policy, registry, now, externalActivationPolic
   invariant(Number.isInteger(policy.maxAuthorizationTtlMinutes) && policy.maxAuthorizationTtlMinutes >= 1 && policy.maxAuthorizationTtlMinutes <= 1440, 'Current privileged authorization TTL is invalid')
   invariant(Number.isInteger(policy.clockSkewSeconds) && policy.clockSkewSeconds >= 0 && policy.clockSkewSeconds <= 300, 'Current privileged authorization clock skew is invalid')
   invariant(Number.isInteger(policy.trustRootQuorum) && policy.trustRootQuorum >= 1 && policy.trustRootQuorum <= 5, 'Current privileged trust-root quorum is invalid')
-  const activationPolicyDigest = externalActivationPolicyDigest(externalActivationPolicy)
-  invariant(policy.externalActivationPolicyDigest === activationPolicyDigest, 'Current privileged trust-root external activation policy digest is stale or substituted')
-  invariant(policy.authorizationProfileId === externalActivationPolicy.activeProfile, 'Current privileged trust-root profile differs from the active canonical profile')
-  const profile = resolveExternalActivationProfile(externalActivationPolicy, {
-    expectedPolicyDigest: policy.externalActivationPolicyDigest,
-    profileId: policy.authorizationProfileId,
-  })
-  invariant(policy.authorizationProfileDigest === profile.sha256, 'Current privileged trust-root profile digest is stale or substituted')
+  invariant(/^[a-f0-9]{64}$/.test(policy.externalActivationPolicyDigest ?? ''), 'Current privileged trust-root external activation policy digest is invalid')
+  invariant(policy.authorizationProfileId === PRODUCTION_PROFILE || policy.authorizationProfileId === MAXIMUM_PROFILE,
+    `Current privileged trust-root profile is unknown: ${policy.authorizationProfileId}`)
+  invariant(/^[a-f0-9]{64}$/.test(policy.authorizationProfileDigest ?? ''), 'Current privileged trust-root profile digest is invalid')
+  const profile = { id: policy.authorizationProfileId, releaseAuthorization: PROFILE_RELEASE_AUTHORIZATION[policy.authorizationProfileId] }
   invariant(
     policy.trustRootQuorum >= profile.releaseAuthorization.minimumSignerQuorum
       && policy.trustRootQuorum <= profile.releaseAuthorization.maximumSignerQuorum
@@ -231,7 +229,6 @@ export function verifyFleetRecoveryAuthorization(authorization, {
   attestationPolicy,
   privilegedPolicy,
   issuerRegistry,
-  externalActivationPolicy = loadExternalActivationPolicy(),
   expectedJournalEventHeadDigest = journal.eventHeadDigest,
   now = new Date(),
 }) {
@@ -240,12 +237,7 @@ export function verifyFleetRecoveryAuthorization(authorization, {
   invariant(now instanceof Date && Number.isFinite(now.getTime()), 'Fleet recovery authorization verification time is invalid')
   validateIssuerRegistry(issuerRegistry)
   validateAttestationPolicy(attestationPolicy, { issuerRegistry, now, allowUnactivated: false })
-  const privilegedProfile = validatePrivilegedPolicy(
-    privilegedPolicy,
-    issuerRegistry,
-    now,
-    externalActivationPolicy,
-  )
+  const privilegedProfile = validatePrivilegedPolicy(privilegedPolicy, issuerRegistry, now)
   invariant(attestationPolicy.issuerRegistryDigest === privilegedPolicy.issuerRegistryDigest, 'Current apply and privileged policies do not share one issuer registry')
   const authorities = inventory?.repositories?.filter(repository => repository.role === 'authority') ?? []
   invariant(authorities.length === 1 && privilegedPolicy.repository === authorities[0].github, 'Current privileged trust-root policy is not scoped to the sole inventory authority repository')

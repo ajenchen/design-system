@@ -268,15 +268,10 @@
         "kind": "members"
       },
       "members": [
-        "infra/governance/test/activation-readiness-canonical-inputs.test.mjs",
         "infra/governance/test/authority-setup.test.mjs",
         "infra/governance/test/check-run-trust.test.mjs",
         "infra/governance/test/ci-workflow-scope.test.mjs",
-        "infra/governance/test/completion-readiness.test.mjs",
         "infra/governance/test/consumerctl.test.mjs",
-        "infra/governance/test/external-activation.test.mjs",
-        "infra/governance/test/external-ledger-writer.test.mjs",
-        "infra/governance/test/external-operator.test.mjs",
         "infra/governance/test/external-surface-evidence.test.mjs",
         "infra/governance/test/governance-data.test.mjs",
         "infra/governance/test/harness-registry.test.mjs",
@@ -290,13 +285,9 @@
         "infra/governance/test/provider-surface.test.mjs",
         "infra/governance/test/reconcile-github.test.mjs",
         "infra/governance/test/release-evidence.test.mjs",
-        "infra/governance/test/release-tag-authorization.test.mjs",
-        "infra/governance/test/release-trust-preflight.test.mjs",
         "infra/governance/test/release-workflow.test.mjs",
         "infra/governance/test/repository-path-topology.test.mjs",
-        "infra/governance/test/rollout-state-machine.test.mjs",
         "infra/governance/test/signed-release-tag.test.mjs",
-        "infra/governance/test/staged-rollout.test.mjs",
         "infra/governance/test/workflow-identity-sync.test.mjs",
         "infra/governance/test/workflow-trust.test.mjs"
       ]
@@ -351,7 +342,6 @@
         "scripts/test-governance-visual-baselines.mjs",
         "scripts/test-hook-evidence-plan.mjs",
         "scripts/test-instruction-mirror-safety.mjs",
-        "scripts/test-managed-ci-trusted-execution.mjs",
         "scripts/test-managed-envelope-binding.mjs",
         "scripts/test-model-deep-audit-safety.mjs",
         "scripts/test-model-evidence-broker-hardening.mjs",
@@ -430,7 +420,6 @@
       "scripts/test-layout-space-utility-invariant.mjs",
       "scripts/test-mirror-run-artifact-identity.mjs",
       "scripts/test-naming-structure-invariant.mjs",
-      "scripts/test-produce-ci-enforced-evidence.mjs",
       "scripts/test-produce-hook-enforced-evidence.mjs",
       "scripts/test-product-template-scaffold-lock.mjs",
       "scripts/test-propose-provider-cli-package-content.mjs",
@@ -447,7 +436,6 @@
       "scripts/test-sync-memory.mjs",
       "scripts/test-sync-plugin-aliases.mjs",
       "scripts/test-verify-deep-audit-coverage.mjs",
-      "scripts/test-verify-mirror-activation-boundary.mjs",
       "scripts/test-verify-mirror-evidence.mjs",
       "scripts/test-verify-mirror-release.mjs",
       "scripts/test-verify-upgrade-evidence.mjs"

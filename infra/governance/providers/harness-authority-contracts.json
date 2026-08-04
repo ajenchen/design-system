@@ -524,18 +524,12 @@
       "entryId": "rollback-and-recovery",
       "domain": "rollback",
       "authoritySourceIds": [
-        "staged-rollout-plan",
-        "exact-fleet-reconcile-cli",
-        "staged-rollout-library"
+        "exact-fleet-reconcile-cli"
       ],
       "executedTestOwners": [
         {
           "kind": "test-path",
           "path": "scripts/test-sync-all-transaction.mjs"
-        },
-        {
-          "kind": "test-path",
-          "path": "infra/governance/test/staged-rollout.test.mjs"
         },
         {
           "kind": "test-path",
@@ -550,7 +544,7 @@
           "kind": "proves",
           "text": "Local upgrade rollback restores authenticated before-images byte-for-byte.",
           "sourceIds": [
-            "staged-rollout-library"
+            "exact-fleet-reconcile-cli"
           ],
           "executionOwners": [
             {
@@ -566,15 +560,9 @@
           "kind": "proves",
           "text": "Fleet rollback requires a previous-good immutable release, fresh authorization and remote-state re-observation.",
           "sourceIds": [
-            "staged-rollout-plan",
-            "exact-fleet-reconcile-cli",
-            "staged-rollout-library"
+            "exact-fleet-reconcile-cli"
           ],
           "executionOwners": [
-            {
-              "kind": "test-path",
-              "path": "infra/governance/test/staged-rollout.test.mjs"
-            },
             {
               "kind": "test-path",
               "path": "infra/governance/test/reconcile-github.test.mjs"
@@ -588,8 +576,7 @@
           "kind": "proves",
           "text": "Partial external mutation is recorded as possible partial state and never mislabeled as automatic rollback.",
           "sourceIds": [
-            "exact-fleet-reconcile-cli",
-            "staged-rollout-library"
+            "exact-fleet-reconcile-cli"
           ],
           "executionOwners": [
             {
@@ -605,7 +592,6 @@
           "kind": "does-not-prove",
           "text": "A live GitHub rollback drill or off-host recovery objective has completed.",
           "sourceIds": [
-            "staged-rollout-plan",
             "exact-fleet-reconcile-cli"
           ],
           "executionOwners": [
@@ -622,12 +608,12 @@
           "kind": "does-not-prove",
           "text": "Irreversible external provider actions have a safe inverse.",
           "sourceIds": [
-            "staged-rollout-library"
+            "exact-fleet-reconcile-cli"
           ],
           "executionOwners": [
             {
               "kind": "test-path",
-              "path": "infra/governance/test/staged-rollout.test.mjs"
+              "path": "scripts/test-sync-all-transaction.mjs"
             }
           ]
         }
@@ -1649,9 +1635,7 @@
         "exact-release-finalizer-mirror-handoff",
         "release-stage-run-identity",
         "exact-upgrade-provenance-verifier",
-        "exact-candidate-dependency-installer",
-        "release-trust-preflight-verifier",
-        "release-tag-authorization-policy"
+        "exact-candidate-dependency-installer"
       ],
       "executedTestOwners": [
         {
@@ -1672,10 +1656,6 @@
         },
         {
           "kind": "test-path",
-          "path": "infra/governance/test/release-trust-preflight.test.mjs"
-        },
-        {
-          "kind": "test-path",
           "path": "infra/governance/test/signed-release-tag.test.mjs"
         },
         {
@@ -1689,7 +1669,7 @@
           "entryId": "release-supply-chain",
           "domain": "release",
           "kind": "proves",
-          "text": "Release BOM, tag authorization, workflow identity and finalization receipts are closed and digest-bound.",
+          "text": "Release BOM, workflow identity and finalization receipts are closed and digest-bound.",
           "sourceIds": [
             "release-workflow",
             "exact-github-actions-artifact-identity-library",
@@ -1698,9 +1678,7 @@
             "exact-release-finalizer-mirror-handoff",
             "release-stage-run-identity",
             "exact-upgrade-provenance-verifier",
-            "exact-candidate-dependency-installer",
-            "release-trust-preflight-verifier",
-            "release-tag-authorization-policy"
+            "exact-candidate-dependency-installer"
           ],
           "executionOwners": [
             {
@@ -1721,10 +1699,6 @@
             },
             {
               "kind": "test-path",
-              "path": "infra/governance/test/release-trust-preflight.test.mjs"
-            },
-            {
-              "kind": "test-path",
               "path": "infra/governance/test/signed-release-tag.test.mjs"
             },
             {
@@ -1742,18 +1716,12 @@
           "sourceIds": [
             "release-workflow",
             "exact-upgrade-provenance-verifier",
-            "exact-candidate-dependency-installer",
-            "release-trust-preflight-verifier",
-            "release-tag-authorization-policy"
+            "exact-candidate-dependency-installer"
           ],
           "executionOwners": [
             {
               "kind": "test-path",
               "path": "scripts/test-install-candidate-dependencies.mjs"
-            },
-            {
-              "kind": "test-path",
-              "path": "infra/governance/test/release-trust-preflight.test.mjs"
             },
             {
               "kind": "test-path",
@@ -1790,13 +1758,12 @@
           "kind": "does-not-prove",
           "text": "Empty or pending issuer policies authorize a release.",
           "sourceIds": [
-            "release-trust-preflight-verifier",
-            "release-tag-authorization-policy"
+            "release-workflow"
           ],
           "executionOwners": [
             {
               "kind": "test-path",
-              "path": "infra/governance/test/release-trust-preflight.test.mjs"
+              "path": "scripts/test-release-bom.mjs"
             }
           ]
         }
@@ -1834,11 +1801,9 @@
         "consumer-fanout-dispatch-evidence-schema",
         "consumer-bootstrap-managed-repos-schema",
         "exact-fleet-reconcile-journal-schema",
-        "exact-fleet-reconcile-bootstrap-transaction-schema",
-        "exact-fleet-reconcile-bootstrap-replay-receipt-schema",
         "exact-github-desired-schema",
-        "staged-rollout-library",
-        "staged-rollout-plan"
+        "exact-fleet-reconcile-bootstrap-transaction-schema",
+        "exact-fleet-reconcile-bootstrap-replay-receipt-schema"
       ],
       "executedTestOwners": [
         {
@@ -1847,15 +1812,7 @@
         },
         {
           "kind": "test-path",
-          "path": "infra/governance/test/rollout-state-machine.test.mjs"
-        },
-        {
-          "kind": "test-path",
           "path": "infra/governance/test/reconcile-github.test.mjs"
-        },
-        {
-          "kind": "test-path",
-          "path": "infra/governance/test/staged-rollout.test.mjs"
         }
       ],
       "claims": [
@@ -1881,8 +1838,7 @@
             "exact-model-validation-library",
             "managed-host-release-binding",
             "consumer-bootstrap-managed-repos-schema",
-            "exact-github-desired-schema",
-            "staged-rollout-plan"
+            "exact-github-desired-schema"
           ],
           "executionOwners": [
             {
@@ -1891,15 +1847,7 @@
             },
             {
               "kind": "test-path",
-              "path": "infra/governance/test/rollout-state-machine.test.mjs"
-            },
-            {
-              "kind": "test-path",
               "path": "infra/governance/test/reconcile-github.test.mjs"
-            },
-            {
-              "kind": "test-path",
-              "path": "infra/governance/test/staged-rollout.test.mjs"
             }
           ]
         },
@@ -1958,23 +1906,16 @@
           "entryId": "fleet-plan-and-reconcile",
           "domain": "fleet",
           "kind": "proves",
-          "text": "Authority-policy bootstrap journals remain local non-promotion evidence; candidate freeze accepts them only after exact ordered event replay through the canonical signed mirror protocol, independent head verification, canonical activation binding, and content-addressed readback.",
+          "text": "Authority-policy bootstrap journals remain local non-promotion evidence and are accepted only after exact ordered event replay through the canonical signed mirror protocol, independent head verification and content-addressed readback.",
           "sourceIds": [
             "exact-fleet-reconcile-cli",
-            "exact-fleet-reconcile-mirror-library",
             "exact-fleet-reconcile-bootstrap-transaction-schema",
-            "exact-fleet-reconcile-bootstrap-replay-receipt-schema",
-            "staged-rollout-library",
-            "staged-rollout-plan"
+            "exact-fleet-reconcile-bootstrap-replay-receipt-schema"
           ],
           "executionOwners": [
             {
               "kind": "test-path",
               "path": "infra/governance/test/reconcile-github.test.mjs"
-            },
-            {
-              "kind": "test-path",
-              "path": "infra/governance/test/staged-rollout.test.mjs"
             }
           ]
         },
@@ -1988,17 +1929,12 @@
             "exact-fleet-reconcile-cli",
             "exact-model-validation-library",
             "managed-host-release-binding",
-            "consumer-control-plane-update-readback-verification-schema",
-            "staged-rollout-plan"
+            "consumer-control-plane-update-readback-verification-schema"
           ],
           "executionOwners": [
             {
               "kind": "test-path",
-              "path": "infra/governance/test/rollout-state-machine.test.mjs"
-            },
-            {
-              "kind": "test-path",
-              "path": "infra/governance/test/staged-rollout.test.mjs"
+              "path": "infra/governance/test/consumerctl.test.mjs"
             }
           ]
         },
@@ -2019,10 +1955,6 @@
             {
               "kind": "test-path",
               "path": "infra/governance/test/reconcile-github.test.mjs"
-            },
-            {
-              "kind": "test-path",
-              "path": "infra/governance/test/staged-rollout.test.mjs"
             }
           ]
         }
@@ -2033,8 +1965,6 @@
       "domain": "evidence",
       "authoritySourceIds": [
         "deep-audit-evidence-contract",
-        "deep-audit-ci-evidence-pipeline",
-        "deep-audit-ci-live-observer",
         "deep-audit-ci-observation-schema",
         "exact-governance-common-library",
         "exact-model-validation-library",
@@ -2042,9 +1972,7 @@
         "exact-runtime-certification-library",
         "exact-repository-subject-proof-library",
         "exact-external-surface-evidence-library",
-        "external-operator-library",
         "exact-runtime-conformance-cli",
-        "external-operator-cli",
         "exact-runtime-promotion-cli",
         "model-invocation-profiles",
         "provider-runtime-conformance-profile",
@@ -2056,11 +1984,6 @@
         "external-surface-import-receipt-schema",
         "external-runtime-certification-proposal-schema",
         "provider-review-capability-certification-proposal-schema",
-        "external-ledger-transaction-handoff-schema",
-        "external-activation-signing-request-schema",
-        "external-activation-signature-bundle-schema",
-        "external-activation-proposal-schema",
-        "external-operator-block-result-schema",
         "provider-role-surface-policy-schema",
         "consumer-bootstrap-managed-repos-schema",
         "issuer-registry-schema",
@@ -2073,16 +1996,7 @@
         "exact-safe-filesystem-library",
         "exact-fork-governance-builder",
         "governance-runtime-dependency-closure-library",
-        "external-ledger-writer-workflow",
-        "external-ledger-writer-library",
-        "external-ledger-writer-cli",
-        "external-ledger-writer-dispatch-schema",
-        "external-ledger-writer-plan-schema",
-        "external-ledger-writer-artifact-identity-schema",
-        "external-ledger-writer-receipt-schema",
         "governance-anchor-workflow",
-        "governance-anchor-preflight",
-        "privileged-change-verifier",
         "agent-bootstrap",
         "canonical-hook-approval-evidence-helper",
         "authority-decision-evidence-library",
@@ -2109,19 +2023,7 @@
         },
         {
           "kind": "test-path",
-          "path": "scripts/test-workflow-security.mjs"
-        },
-        {
-          "kind": "test-path",
           "path": "infra/governance/test/external-surface-evidence.test.mjs"
-        },
-        {
-          "kind": "test-path",
-          "path": "infra/governance/test/external-operator.test.mjs"
-        },
-        {
-          "kind": "test-path",
-          "path": "infra/governance/test/external-ledger-writer.test.mjs"
         },
         {
           "kind": "test-path",
@@ -2137,10 +2039,6 @@
         },
         {
           "kind": "test-path",
-          "path": "scripts/test-produce-ci-enforced-evidence.mjs"
-        },
-        {
-          "kind": "test-path",
           "path": "scripts/test-authority-decision-evidence.mjs"
         }
       ],
@@ -2153,8 +2051,6 @@
           "text": "Deterministic, hook, model, CI and provider-runtime evidence share closed schema and immutable subject bindings; a role-selected canary subject is proven by exact object/ancestry/change-set readback without recursive self-certification.",
           "sourceIds": [
             "deep-audit-evidence-contract",
-            "deep-audit-ci-evidence-pipeline",
-            "deep-audit-ci-live-observer",
             "deep-audit-ci-observation-schema",
             "exact-governance-common-library",
             "exact-model-validation-library",
@@ -2162,9 +2058,7 @@
             "exact-runtime-certification-library",
             "exact-repository-subject-proof-library",
             "exact-external-surface-evidence-library",
-            "external-operator-library",
             "exact-runtime-conformance-cli",
-            "external-operator-cli",
             "model-invocation-profiles",
             "provider-runtime-conformance-profile",
             "provider-surface-certifications-schema",
@@ -2188,19 +2082,11 @@
             },
             {
               "kind": "test-path",
-              "path": "infra/governance/test/external-operator.test.mjs"
-            },
-            {
-              "kind": "test-path",
               "path": "infra/governance/test/model-validation.test.mjs"
             },
             {
               "kind": "test-path",
               "path": "infra/governance/test/provider-runtime-conformance.test.mjs"
-            },
-            {
-              "kind": "test-path",
-              "path": "scripts/test-produce-ci-enforced-evidence.mjs"
             }
           ]
         },
@@ -2216,18 +2102,9 @@
             "issuer-registry",
             "external-runtime-certification-proposal-schema",
             "provider-review-capability-certification-proposal-schema",
-            "external-ledger-transaction-handoff-schema",
-            "external-activation-signing-request-schema",
-            "external-activation-signature-bundle-schema",
-            "external-activation-proposal-schema",
-            "external-operator-block-result-schema",
             "issuer-registry-schema"
           ],
           "executionOwners": [
-            {
-              "kind": "test-path",
-              "path": "infra/governance/test/external-operator.test.mjs"
-            },
             {
               "kind": "test-path",
               "path": "infra/governance/test/provider-runtime-conformance.test.mjs"
@@ -2286,41 +2163,6 @@
           "entryId": "evidence-provenance-and-parity",
           "domain": "evidence",
           "kind": "proves",
-          "text": "Reviewed certification and activation handoffs are serialized into exact protected-default one-parent pull requests: runtime certification atomically adds its content-addressed evidence plus ledger, provider review certification atomically adds the exact runtime and review-capability evidence plus both ledgers, activation changes only its ledger, and same-run artifact/App identity, expiring base CAS, exact tree/commit/PR readback, mutually exclusive protected-base routing and merge-gate replay fail closed.",
-          "sourceIds": [
-            "provider-review-capability-certification-proposal-schema",
-            "external-ledger-transaction-handoff-schema",
-            "external-ledger-writer-workflow",
-            "external-ledger-writer-library",
-            "external-ledger-writer-cli",
-            "external-ledger-writer-dispatch-schema",
-            "external-ledger-writer-plan-schema",
-            "external-ledger-writer-artifact-identity-schema",
-            "external-ledger-writer-receipt-schema",
-            "governance-anchor-workflow",
-            "governance-anchor-preflight",
-            "privileged-change-verifier"
-          ],
-          "executionOwners": [
-            {
-              "kind": "test-path",
-              "path": "infra/governance/test/external-ledger-writer.test.mjs"
-            },
-            {
-              "kind": "test-path",
-              "path": "scripts/test-governance-anchor-preflight.mjs"
-            },
-            {
-              "kind": "test-path",
-              "path": "scripts/test-workflow-security.mjs"
-            }
-          ]
-        },
-        {
-          "claimId": "evidence-provenance-and-parity.proves.06",
-          "entryId": "evidence-provenance-and-parity",
-          "domain": "evidence",
-          "kind": "proves",
           "text": "Canonical Decision Authority remains one AGENTS.md SSOT; deterministic content-addressed receipts bind its exact policy, classifier, provider registry, provider/surface/session/target/operation scope and shared root/fork adapters. Operation-only Standing Authorization accepts only closed governance-action targets whose exact operation digest matches, while UI/UX, human-only, destructive/bypass, malformed, stale, replayed, substituted, tampered and unknown-provider evidence fails closed across local, cloud, remote and CI structural surfaces without claiming runtime certification.",
           "sourceIds": [
             "agent-bootstrap",
@@ -2347,15 +2189,9 @@
           "sourceIds": [
             "exact-runtime-certification-library",
             "exact-runtime-promotion-cli",
-            "issuer-registry",
-            "external-ledger-transaction-handoff-schema",
-            "external-activation-proposal-schema"
+            "issuer-registry"
           ],
           "executionOwners": [
-            {
-              "kind": "test-path",
-              "path": "infra/governance/test/external-operator.test.mjs"
-            },
             {
               "kind": "test-path",
               "path": "infra/governance/test/provider-runtime-conformance.test.mjs"
@@ -2416,15 +2252,9 @@
           "kind": "does-not-prove",
           "text": "A transient workflow artifact, writer receipt, local fixture or open pull request proves neither protected-main merge nor live external activation/certification; durable authority still requires protected Git and merged-ledger readback.",
           "sourceIds": [
-            "external-ledger-writer-workflow",
-            "external-ledger-writer-receipt-schema",
             "governance-anchor-workflow"
           ],
           "executionOwners": [
-            {
-              "kind": "test-path",
-              "path": "infra/governance/test/external-ledger-writer.test.mjs"
-            },
             {
               "kind": "test-path",
               "path": "scripts/test-governance-anchor-preflight.mjs"
