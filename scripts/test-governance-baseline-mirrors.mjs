@@ -2,9 +2,7 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import {
-  chmodSync,
   existsSync,
-  linkSync,
   lstatSync,
   mkdirSync,
   mkdtempSync,
@@ -13,38 +11,14 @@ import {
   realpathSync,
   rmSync,
   symlinkSync,
-  writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import {
-  CONTROL_PLANE_GENESIS_CLOSED_STATE,
-  CONTROL_PLANE_GENESIS_OPEN_STATE,
-  controlPlaneGenesisTransitionDigest,
-} from './lib/control-plane-genesis-transition.mjs'
 import { syncBaselineMirrors } from './sync-governance-baseline-mirrors.mjs'
 
 const REPOSITORY_ROOT = realpathSync(join(import.meta.dirname, '..'))
-const CURRENT_TRANSITION = JSON.parse(readFileSync(
-  join(REPOSITORY_ROOT, 'scripts/governance-build-graph.json'),
-  'utf8',
-)).controlPlaneGenesisTransition
 const CURATED_SOURCE = 'infra/governance/baseline/visual/curated/accordion-faq.png'
 const CURATED_MIRROR = 'snapshots-baseline/accordion-faq.png'
-
-assert.equal(CURRENT_TRANSITION.state, CONTROL_PLANE_GENESIS_CLOSED_STATE)
-assert.equal(CURRENT_TRANSITION.releaseAllowed, true)
-
-function openTransition() {
-  const transition = structuredClone(CURRENT_TRANSITION)
-  transition.state = CONTROL_PLANE_GENESIS_OPEN_STATE
-  transition.releaseAllowed = false
-  transition.contentDigest = controlPlaneGenesisTransitionDigest(transition)
-  return transition
-}
-
-const OPEN_TRANSITION = openTransition()
-const closedTransition = () => structuredClone(CURRENT_TRANSITION)
 
 function runGit(args, cwd = REPOSITORY_ROOT) {
   const result = spawnSync('/usr/bin/git', args, {
@@ -84,91 +58,14 @@ function fixture() {
   return root
 }
 
-function assertOpenCheckRejects(root, mutate, pattern, cleanup = null) {
-  syncBaselineMirrors({ root, transition: OPEN_TRANSITION })
-  mutate()
-  assert.throws(
-    () => syncBaselineMirrors({ root, transition: OPEN_TRANSITION, check: true }),
-    pattern,
-  )
-  cleanup?.()
-  syncBaselineMirrors({ root, transition: OPEN_TRANSITION })
-  syncBaselineMirrors({ root, transition: OPEN_TRANSITION, check: true })
-}
-
+// The control-plane genesis transition closed and its retained-tree machinery
+// retired 2026-08-04 (baton §8.5); the mirrors are plain authenticated
+// symlinks onto the provider-neutral visual baseline collections.
 {
   const root = fixture()
   try {
-    syncBaselineMirrors({ root, transition: OPEN_TRANSITION })
-    syncBaselineMirrors({ root, transition: OPEN_TRANSITION, check: true })
-    assert.equal(lstatSync(join(root, 'snapshots-baseline')).isDirectory(), true)
-    assert.equal(lstatSync(join(root, 'snapshots-baseline')).isSymbolicLink(), false)
-    assert.equal(lstatSync(join(root, '.claude/snapshots-baseline')).isDirectory(), true)
-    assert.equal(lstatSync(join(root, '.claude/snapshots-baseline')).isSymbolicLink(), false)
-    assert.deepEqual(
-      readFileSync(join(root, CURATED_MIRROR)),
-      readFileSync(join(root, CURATED_SOURCE)),
-    )
-
-    // The open transition preserves the exact Genesis compatibility tree while
-    // the provider-neutral authority remains free to accept newly approved
-    // baselines. A source addition must not mutate or block the preserved tree.
-    writeFileSync(
-      join(root, 'infra/governance/baseline/visual/curated/approved-after-genesis.png'),
-      'new approved canonical baseline\n',
-    )
-    syncBaselineMirrors({ root, transition: OPEN_TRANSITION })
-    syncBaselineMirrors({ root, transition: OPEN_TRANSITION, check: true })
-    assert.equal(existsSync(join(root, 'snapshots-baseline/approved-after-genesis.png')), false)
-
-    assertOpenCheckRejects(
-      root,
-      () => writeFileSync(join(root, CURATED_MIRROR), 'tampered\n'),
-      /preserved tree digest drift/,
-    )
-    assertOpenCheckRejects(
-      root,
-      () => rmSync(join(root, CURATED_MIRROR)),
-      /preserved tree leaf count drift/,
-    )
-    assertOpenCheckRejects(
-      root,
-      () => writeFileSync(join(root, 'snapshots-baseline/transition-extra.png'), 'extra\n'),
-      /preserved tree leaf count drift/,
-    )
-    assertOpenCheckRejects(
-      root,
-      () => chmodSync(join(root, CURATED_MIRROR), 0o755),
-      /preserved tree digest drift/,
-    )
-    assertOpenCheckRejects(
-      root,
-      () => {
-        rmSync(join(root, CURATED_MIRROR))
-        symlinkSync(join(root, CURATED_SOURCE), join(root, CURATED_MIRROR))
-      },
-      /preserved tree contains a symbolic link/,
-    )
-    assertOpenCheckRejects(
-      root,
-      () => {
-        rmSync(join(root, CURATED_MIRROR))
-        linkSync(join(root, CURATED_SOURCE), join(root, CURATED_MIRROR))
-      },
-      /unsupported or hard-linked entry/,
-      () => rmSync(join(root, CURATED_MIRROR)),
-    )
-  } finally {
-    rmSync(root, { recursive: true, force: true })
-  }
-}
-
-{
-  const root = fixture()
-  const transition = closedTransition()
-  try {
-    syncBaselineMirrors({ root, transition })
-    syncBaselineMirrors({ root, transition, check: true })
+    syncBaselineMirrors({ root })
+    syncBaselineMirrors({ root, check: true })
     assert.equal(readlinkSync(join(root, 'snapshots-baseline')), 'infra/governance/baseline/visual/curated')
     assert.equal(readlinkSync(join(root, '.claude/snapshots-baseline')), '../infra/governance/baseline/visual/targeted')
     assert.deepEqual(
@@ -178,16 +75,16 @@ function assertOpenCheckRejects(root, mutate, pattern, cleanup = null) {
 
     rmSync(join(root, '.claude'), { recursive: true })
     assert.throws(
-      () => syncBaselineMirrors({ root, transition, check: true }),
+      () => syncBaselineMirrors({ root, check: true }),
       /mirror is missing/,
     )
-    syncBaselineMirrors({ root, transition })
+    syncBaselineMirrors({ root })
     assert.equal(lstatSync(join(root, '.claude/snapshots-baseline')).isSymbolicLink(), true)
 
     rmSync(join(root, 'snapshots-baseline'))
     symlinkSync('infra/governance/baseline/visual/targeted', join(root, 'snapshots-baseline'))
     assert.throws(
-      () => syncBaselineMirrors({ root, transition, check: true }),
+      () => syncBaselineMirrors({ root, check: true }),
       /link text drift|target drift/,
     )
   } finally {
@@ -197,12 +94,11 @@ function assertOpenCheckRejects(root, mutate, pattern, cleanup = null) {
 
 {
   const root = fixture()
-  const transition = closedTransition()
   const outside = mkdtempSync(join(tmpdir(), 'baseline-mirror-outside-'))
   try {
     symlinkSync(outside, join(root, '.claude'))
     assert.throws(
-      () => syncBaselineMirrors({ root, transition }),
+      () => syncBaselineMirrors({ root }),
       /symbolic-link ancestor/,
     )
     assert.equal(existsSync(join(outside, 'snapshots-baseline')), false)
@@ -214,11 +110,10 @@ function assertOpenCheckRejects(root, mutate, pattern, cleanup = null) {
 
 {
   const root = fixture()
-  const transition = closedTransition()
   try {
     mkdirSync(join(root, 'snapshots-baseline'))
     assert.throws(
-      () => syncBaselineMirrors({ root, transition }),
+      () => syncBaselineMirrors({ root }),
       /refusing to replace non-symlink/,
     )
   } finally {
@@ -226,4 +121,4 @@ function assertOpenCheckRejects(root, mutate, pattern, cleanup = null) {
   }
 }
 
-console.log('✓ open-tree drift/repair and closed-symlink baseline mirror tests pass')
+console.log('✓ symlink baseline mirror generation, drift detection, and containment tests pass')

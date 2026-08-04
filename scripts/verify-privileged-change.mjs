@@ -36,7 +36,6 @@ const RELEASE_RINGS_PATH = 'infra/governance/release-rings.json'
 const RUNTIME_PROFILE_PATH = 'infra/governance/providers/runtime-conformance.json'
 const RELEASE_TAG_POLICY_PATH = 'infra/governance/release-tag-authorization-policy.json'
 const SEMANTIC_MANIFEST_PATH = 'packages/governance/canonical/manifest.json'
-const CONTROL_PLANE_GENESIS_COMMENT_MARKER = 'DS-GOVERNANCE-CONTROL-PLANE-GENESIS-V1 '
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message)
@@ -296,14 +295,6 @@ function validateCandidateTrustConfiguration(candidateRoot, { now = new Date() }
   return { registry, policy }
 }
 
-function controlPlaneGenesisReceiptDigest(receipt) {
-  const unsigned = { ...receipt }
-  delete unsigned.receiptDigest
-  return createHash('sha256')
-    .update(`qijenchen-control-plane-genesis-receipt-v1\n${stable(unsigned)}`)
-    .digest('hex')
-}
-
 function closedGit(root, args, label) {
   const result = spawnSync('/usr/bin/git', ['-C', resolve(root), ...args], {
     cwd: resolve(root),
@@ -331,67 +322,6 @@ export function verifyGitCheckoutIdentity(root, { head, tree, label }) {
   invariant(closedGit(root, ['status', '--porcelain=v1', '-z', '--untracked-files=all'],
     `${label} worktree readback`).length === 0,
   `${label} checkout contains uncommitted or untracked bytes`)
-}
-
-export function validateControlPlaneGenesisReceipt(receipt) {
-  invariant(exactKeys(receipt, [
-    'schemaVersion', 'kind', 'challenge', 'challengeDigest', 'authorization',
-    'verifiedAt', 'receiptDigest',
-  ]), 'control-plane genesis receipt has an invalid or open shape')
-  invariant(receipt.schemaVersion === 1 && receipt.kind === 'control-plane-genesis-verification',
-    'control-plane genesis receipt identity is invalid')
-  invariant(exactKeys(receipt.challenge, [
-    'schemaVersion', 'kind', 'repository', 'pullRequest', 'baseSha', 'baseTree',
-    'candidateHeadSha', 'candidateHeadTree', 'changedPaths', 'changedPathsDigest',
-    'controlPlaneClosureDigest', 'controlPlaneStageDigest', 'buildGraphDigest',
-    'manifestDigest', 'inventoryDigest', 'desiredDigest', 'controlPlaneLockDigest',
-    'issuerRegistryDigest',
-  ]), 'control-plane genesis receipt challenge has an invalid or open shape')
-  invariant(receipt.challenge.schemaVersion === 1 && receipt.challenge.kind === 'control-plane-genesis-challenge',
-    'control-plane genesis challenge identity is invalid')
-  invariant(receipt.challenge.repository === 'ajenchen/design-system'
-    && Number.isSafeInteger(receipt.challenge.pullRequest) && receipt.challenge.pullRequest > 0,
-  'control-plane genesis challenge repository or PR identity is invalid')
-  for (const field of ['baseSha', 'baseTree', 'candidateHeadSha', 'candidateHeadTree']) {
-    invariant(shaPattern.test(receipt.challenge[field]), `control-plane genesis challenge ${field} is invalid`)
-  }
-  const paths = receipt.challenge.changedPaths
-  invariant(Array.isArray(paths) && paths.length > 0 && new Set(paths).size === paths.length
-    && stable(paths) === stable([...paths].sort()), 'control-plane genesis challenge changed paths are invalid')
-  for (const field of [
-    'changedPathsDigest', 'controlPlaneClosureDigest', 'controlPlaneStageDigest',
-    'buildGraphDigest', 'manifestDigest', 'inventoryDigest', 'desiredDigest',
-    'controlPlaneLockDigest', 'issuerRegistryDigest',
-  ]) invariant(/^[a-f0-9]{64}$/.test(receipt.challenge[field] ?? ''), `control-plane genesis challenge ${field} is invalid`)
-  invariant(receipt.challenge.changedPathsDigest === createHash('sha256').update(stable(paths)).digest('hex'),
-    'control-plane genesis challenge changed-path digest is invalid')
-  invariant(receipt.challengeDigest === createHash('sha256')
-    .update(`qijenchen-control-plane-genesis-challenge-v1\n${stable(receipt.challenge)}`)
-    .digest('hex'), 'control-plane genesis challenge digest is invalid')
-  invariant(exactKeys(receipt.authorization, ['kind', 'commentId', 'commentDigest', 'ownerLogin', 'createdAt'])
-    && receipt.authorization.kind === 'github-owner-comment'
-    && /^[1-9][0-9]*$/.test(receipt.authorization.commentId)
-    && /^[a-f0-9]{64}$/.test(receipt.authorization.commentDigest)
-    && receipt.authorization.ownerLogin === 'ajenchen',
-  'control-plane genesis authorization identity is invalid')
-  for (const [field, value] of [['authorization createdAt', receipt.authorization.createdAt], ['verifiedAt', receipt.verifiedAt]]) {
-    const parsed = new Date(value)
-    invariant(Number.isFinite(parsed.getTime()) && parsed.toISOString() === value, `control-plane genesis receipt ${field} is invalid`)
-  }
-  invariant(new Date(receipt.authorization.createdAt) <= new Date(receipt.verifiedAt),
-    'control-plane genesis receipt predates its authorization')
-  invariant(receipt.receiptDigest === controlPlaneGenesisReceiptDigest(receipt),
-    'control-plane genesis receipt digest is invalid')
-  return receipt
-}
-
-export function controlPlaneGenesisCommentBody({ challenge, challengeDigest, expiresAt, nonce }) {
-  return `${CONTROL_PLANE_GENESIS_COMMENT_MARKER}${stable({
-    challenge,
-    challengeDigest,
-    expiresAt,
-    nonce,
-  })}`
 }
 
 export async function verifyPrivilegedChange({

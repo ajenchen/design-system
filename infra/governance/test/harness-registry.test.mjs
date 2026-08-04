@@ -779,8 +779,6 @@ test('independent claim authority SSOT rejects missing claims, sources, owners a
     ['mirror', 'scripts/generate-product-template-package-lock.mjs'],
     ['release', 'scripts/release-bom-contract.mjs'],
     ['fleet', 'infra/governance/schemas/consumer-fanout-dispatch-evidence.schema.json'],
-    ['fleet', 'infra/governance/schemas/fleet-reconcile-bootstrap-transaction.schema.json'],
-    ['fleet', 'infra/governance/schemas/fleet-reconcile-bootstrap-replay-receipt.schema.json'],
     ['fake-green', 'scripts/audit-gate-meta-test-coverage.mjs'],
   ]
   for (const [domain, path] of criticalAuthorities) {

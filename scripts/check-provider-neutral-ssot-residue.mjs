@@ -17,14 +17,17 @@ import {
   realpathSync,
 } from 'node:fs'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
-import {
-  CONTROL_PLANE_GENESIS_CLOSED_STATE,
-  CONTROL_PLANE_GENESIS_OPEN_STATE,
-  CONTROL_PLANE_GENESIS_TOMBSTONES,
-  assertControlPlaneGenesisTombstones,
-  loadControlPlaneGenesisTransition,
-} from './lib/control-plane-genesis-transition.mjs'
 import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
+
+// Legacy paths retired by the closed control-plane genesis transition
+// (machinery removed 2026-08-04, baton §8.5); they must never rematerialize.
+const RETIRED_CONTROL_PLANE_TOMBSTONES = Object.freeze([
+  '.claude/commands/gov-status.md',
+  '.claude/hooks/check_post_main_ssot_propagate.sh',
+  '.github/workflows/ssot-sync-dispatch.yml',
+  'packages/design-system/ds-canonical/commands/gov-status.md',
+  'packages/design-system/ds-canonical/hooks/check_post_main_ssot_propagate.sh',
+])
 
 function valueOf(flag) {
   const index = process.argv.indexOf(flag)
@@ -107,21 +110,8 @@ function pathEntryExists(relativePath) {
   }
 }
 
-const genesisTransition = loadControlPlaneGenesisTransition({ root: ROOT })
-if (genesisTransition.state === CONTROL_PLANE_GENESIS_OPEN_STATE) {
-  try {
-    assertControlPlaneGenesisTombstones({
-      root: ROOT,
-      materializationRoot: ROOT,
-      transition: genesisTransition,
-    })
-  } catch (error) {
-    errors.push(error.message)
-  }
-} else if (genesisTransition.state === CONTROL_PLANE_GENESIS_CLOSED_STATE) {
-  for (const { path } of CONTROL_PLANE_GENESIS_TOMBSTONES) {
-    record(!pathEntryExists(path), `closed transition legacy tombstone must remain absent:${path}`)
-  }
+for (const path of RETIRED_CONTROL_PLANE_TOMBSTONES) {
+  record(!pathEntryExists(path), `closed transition legacy tombstone must remain absent:${path}`)
 }
 
 const agents = text('AGENTS.md')

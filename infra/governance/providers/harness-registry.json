@@ -28,7 +28,7 @@
     "schemaPath": "infra/governance/schemas/harness-authority-contracts.schema.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-authority-contracts",
-    "sha256": "c57d2f83476268b8c066396ebd2069f0860bca49c78a7c7cac99e156ed934fde",
+    "sha256": "d6b316413a71631b913436aaf71ff3e8622907944fc9d3d5947aa26301de5c94",
     "schemaSha256": "bba73861c87bc3047b70376e891a9464d525e9648fadd6e7d8fb406b57d10dce",
     "projectionPolicy": "registry-authority-and-claim-fields-are-exact-derived-projections"
   },
@@ -37,7 +37,7 @@
     "path": "infra/governance/providers/harness-source-inventory.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-source-inventory",
-    "sha256": "2b42931708874452481456ee8eaf2db8763a0f25f1e4b658ce9946bd3555949d",
+    "sha256": "c0894bdcc6f948d32b344bec85eb1b9ce5946f6660bf6ab548d0fef2521c1630",
     "closurePolicy": "every-discovered-source-exactly-one-execution-or-reviewed-exclusion"
   },
   "runner": {
@@ -691,9 +691,7 @@
         "infra/governance/schemas/consumer-fanout-dispatch-evidence.schema.json",
         "infra/governance/schemas/managed-repos.schema.json",
         "infra/governance/schemas/fleet-reconcile-journal.schema.json",
-        "infra/governance/schemas/github-desired.schema.json",
-        "infra/governance/schemas/fleet-reconcile-bootstrap-transaction.schema.json",
-        "infra/governance/schemas/fleet-reconcile-bootstrap-replay-receipt.schema.json"
+        "infra/governance/schemas/github-desired.schema.json"
       ],
       "executionClass": "fixture-integration",
       "certificationClaim": "external-readback-required",
