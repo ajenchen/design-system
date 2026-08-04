@@ -703,14 +703,17 @@ assert.deepEqual(ids('scripts/governance-check.mjs'), ['control-plane', 'fork-te
 assert.deepEqual(ids('scripts/run-provider-hook.mjs'), ['control-plane', 'fork-template', 'provider-adapters'])
 assert.deepEqual(ids('packages/governance/src/authority-decision-evidence.mjs'), ['control-plane', 'fork-template', 'provider-adapters'])
 assert.deepEqual(ids('packages/governance/src/provider-hook-normalization.mjs'), ['control-plane', 'fork-template', 'provider-adapters'])
-assert.deepEqual(ids('packages/design-system/ds-canonical/hooks/registrations.json'), ['control-plane', 'fork-template', 'provider-adapters'])
+// plugin-aliases joined 2026-08-04: the hooks/scripts alias now targets the canonical hook corpus
+// directly (canonicalRoot source kind), so alias validation re-runs when the corpus changes.
+assert.deepEqual(ids('packages/design-system/ds-canonical/hooks/registrations.json'), ['control-plane', 'fork-template', 'plugin-aliases', 'provider-adapters'])
 assert.deepEqual(ids('.codex/hooks.json'), ['control-plane', 'provider-adapters'])
 assert.deepEqual(ids('generated/governance/provider-hook-coverage.json'), ['control-plane', 'provider-adapters'])
 assert.deepEqual(ids('generated/governance/provider-runtime-validator.mjs'), ['control-plane', 'provider-adapters'])
 assert.deepEqual(ids('scripts/test-authority-decision-evidence.mjs'), ['control-plane', 'fork-template'])
 assert.deepEqual(ids('packages/governance/canonical/schemas/provider-hook-coverage.schema.json'), ['control-plane', 'provider-adapters'])
 assert.deepEqual(ids('.agents/skills/canonical-reviewer/SKILL.md'), ['control-plane', 'provider-adapters'])
-assert.deepEqual(ids('.claude/hooks/check_consumer_code_quality.sh'), ['control-plane', 'plugin-aliases', 'provider-adapters'])
+// Tombstone: the .claude/hooks mirror retired 2026-08-04 — no stage may consume or produce it.
+assert.deepEqual(ids('.claude/hooks/check_consumer_code_quality.sh'), [])
 assert.deepEqual(ids('.claude/commands/README.md'), ['control-plane', 'plugin-aliases', 'provider-adapters'])
 assert.deepEqual(ids('.claude/skills/prototype/SKILL.md'), ['control-plane', 'plugin-aliases', 'provider-adapters'])
 assert.deepEqual(ids('.claude/agents/canonical-reviewer.md'), ['control-plane', 'provider-adapters'])
@@ -720,16 +723,18 @@ assert.deepEqual(ids('.claude/agents/canonical-reviewer.md'), ['control-plane', 
 // consumers promotes `.claude`/`.codex`/`.agents` to an SSOT.
 for (const stage of graph.stages.filter((candidate) => candidate.id !== 'provider-adapters')) {
   const providerViewSources = stage.sources.filter((source) => /^(?:\.claude|\.codex|\.agents)(?:\/|$)/.test(source))
+  // .claude/hooks mirror retired 2026-08-04: the hooks/scripts alias reads the canonical corpus
+  // (canonicalRoot source kind) and the harness bindings read canonical tests directly, so no
+  // stage lists the retired mirror as a provider-view source anymore.
   if (stage.id === 'plugin-aliases') {
-    assert.deepEqual(providerViewSources, ['.claude/commands/', '.claude/hooks/', '.claude/skills/'])
+    assert.deepEqual(providerViewSources, ['.claude/commands/', '.claude/skills/'])
   } else if (stage.id === 'harness-authority-bindings') {
-    assert.deepEqual(providerViewSources, ['.claude/hooks/tests/'])
+    assert.deepEqual(providerViewSources, [])
   } else if (stage.id === 'control-plane') {
     assert.deepEqual(providerViewSources, [
       '.agents/skills/',
       '.claude/agents/',
       '.claude/commands/',
-      '.claude/hooks/',
       '.claude/references/',
       '.claude/rules/',
       '.claude/settings.json',

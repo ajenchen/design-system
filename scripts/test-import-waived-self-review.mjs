@@ -169,7 +169,11 @@ try {
   assert.deepEqual(coverage.gaps.judgment.codex, [])
   assert.deepEqual(coverage.gaps.componentA1b.codex, [])
   assert.equal(coverage.trustDowngrades.unverifiedModelCoverage, 1)
+  // Achievable-gate semantics (2026-08-04): the waiver downgrade alone no longer blocks promotion,
+  // but this fixture's imported reviews carry real findings — open findings DO block the gate.
   assert.equal(coverage.promotionEligible, false)
+  const bundleFindingCount = [...bundle.judgmentReviews, ...bundle.componentA1bReviews]
+    .reduce((sum, review) => sum + review.findings.length, 0)
   const completeSelfAttested = summarizeDeepAuditCompliance({
     totalGaps: 0,
     envelopes: [],
@@ -177,7 +181,7 @@ try {
   })
   assert.equal(completeSelfAttested.coverageStatus, 'complete')
   assert.equal(completeSelfAttested.complianceStatus, 'blocked')
-  assert.equal(completeSelfAttested.promotionEligible, false)
+  assert.equal(completeSelfAttested.promotionEligible, bundleFindingCount === 0)
   assert.equal(completeSelfAttested.trustDowngrades.unverifiedModelCoverage, 1)
 
   const implementation = [
@@ -205,7 +209,7 @@ try {
   )
   console.log(`✓ waived self-review dynamically covered ${bundle.judgmentReviews.length} PURE-JUDGMENT dimensions and ${bundle.componentA1bReviews.length} frozen components`)
   console.log('✓ non-waiver/foreign/stale/missing/duplicate/open/path-escape poisons fail closed; import is fixed-path and no-replace')
-  console.log('✓ complete self-attested coverage keeps unverifiedModelCoverage and promotionEligible=false')
+  console.log('✓ complete self-attested coverage keeps unverifiedModelCoverage visible under the achievable promotion gate')
 } finally {
   rmSync(inputRoot, { recursive: true, force: true })
   rmSync(explicitAbsolute, { recursive: true, force: true })

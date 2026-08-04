@@ -64,5 +64,7 @@ The bundle must enumerate the current coverage-matrix `PURE-JUDGMENT` dimensions
 frozen manifest component; the importer binds it to the exact run/manifest/Git/inventory/
 rubric/provider identities at `review/waived-self-review.json`. `PASS`, `FINDINGS`, and
 `UNOBSERVED` are explicit records. This route is always `independent=false` and
-`assurance=self-attested`; coverage may be complete, but `unverifiedModelCoverage` remains a
-trust downgrade and `promotionEligible=false`.
+`assurance=self-attested`; coverage may be complete, and `unverifiedModelCoverage` remains a
+loudly-visible trust downgrade(`complianceStatus=blocked` + counts)。`promotionEligible` 自
+2026-08-04 起是可達 gate:complete coverage + 零 open findings 即通過——trust downgrade 是誠實
+註記而非結構性永假(永遠同值的 gate 零資訊量;§7 item 9)。
