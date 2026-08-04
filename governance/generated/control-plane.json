@@ -1,6 +1,6 @@
 {
   "_provenance": {
-    "contractDigest": "sha256:d317120f4a40893e4c2d6eeba561763c207726d2a911cfa1364cb1043f8e8714",
+    "contractDigest": "sha256:fbee57731966dedcb0e4f56faf165d8115c1b18f36180d9ef1d9e7ba29c18198",
     "generated": true,
     "generator": "@qijenchen/governance",
     "generatorVersion": "0.1.0-beta.108",
@@ -4104,7 +4104,7 @@
   "registryDigests": {
     "gates": "sha256:5e49fe84e81dd3062a331a8ad8efb6fd4ec232c31508242aee20afc4bf51f69e",
     "providers": "sha256:edf9f98c3b0c496158109bbafc05b6119a5e9224ae22923a3f0ffb73129081bb",
-    "roles": "sha256:ab395d164bf20f7337205bbf2ece98e612165f9c3c1b9ae0f7554bde035ba9b0",
+    "roles": "sha256:0ac09e6bfe5c59b83eca4e014def9f0ced38497b2494ef6bf11bc64169544af5",
     "rules": "sha256:8972b2acba7ca13084cadce6a86aed6f2bd8a77d24c4d8717f8c6e6b49acd204"
   },
   "role": "ds-author",

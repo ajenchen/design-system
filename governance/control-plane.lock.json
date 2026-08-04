@@ -1,72 +1,72 @@
 {
   "_provenance": {
-    "contractDigest": "sha256:d317120f4a40893e4c2d6eeba561763c207726d2a911cfa1364cb1043f8e8714",
+    "contractDigest": "sha256:fbee57731966dedcb0e4f56faf165d8115c1b18f36180d9ef1d9e7ba29c18198",
     "generated": true,
     "generator": "@qijenchen/governance",
     "generatorVersion": "0.1.0-beta.108",
     "manifestId": "qijenchen-provider-neutral-governance",
     "role": "ds-author"
   },
-  "contractDigest": "sha256:d317120f4a40893e4c2d6eeba561763c207726d2a911cfa1364cb1043f8e8714",
+  "contractDigest": "sha256:fbee57731966dedcb0e4f56faf165d8115c1b18f36180d9ef1d9e7ba29c18198",
   "files": [
     {
-      "hash": "sha256:63fbd3d0a1a5a1fa883bcc3ba8768aa5f6b40dc0ade2c282891a39f85626eaca",
+      "hash": "sha256:f69cb4b62718ee19c7178eae7ac2c6192a26a39bc84104960c17539bd025bc66",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 74732,
       "type": "file"
     },
     {
-      "hash": "sha256:d9fb89111fd25181655dacff51fb3417a9ea0dabc0e07bfb4d26c59b89d4aec2",
+      "hash": "sha256:39dc66e477790ff48cd42bccf9a82e177398091fe5938dc9822858c0bd66c13a",
       "mode": "0755",
       "path": "adapters/claude-hook.mjs",
       "size": 303,
       "type": "file"
     },
     {
-      "hash": "sha256:202cf890b24d60effb3442682411ed5532347d7ec05a4f309b1a5933f7fe30fa",
+      "hash": "sha256:a5689db347338c08a565a560f05f20b36db8dd60324a83d42a94e31020cfb68b",
       "mode": "0755",
       "path": "adapters/codex-hook.mjs",
       "size": 302,
       "type": "file"
     },
     {
-      "hash": "sha256:6e6020c8e75fbb4e1a35a41c70ae3706e2b235bc367becb6fb0567909900710f",
+      "hash": "sha256:87f447e1c9d1e87c54b88c211ed0c175484e1d3b616f4c989112688e66cacdc9",
       "mode": "0755",
       "path": "adapters/generic-hook.mjs",
       "size": 304,
       "type": "file"
     },
     {
-      "hash": "sha256:22ccc8cd8640b11f4854ad20382ca98f5d55a254eb9ab503de8644db97e4af6a",
+      "hash": "sha256:c0ea0176715f47e3ee83ae2d1867d4945456c6d23447e90f35de8d49a5172b4f",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 169076,
       "type": "file"
     },
     {
-      "hash": "sha256:b2cebc1ed02ea8859adff0abd614623f0d2f784c13db0cf71daeddb09c2cdd98",
+      "hash": "sha256:2d683a088649ba23691b3b6c26edf6bf01281df6bf9e356122804dbfc5918681",
       "mode": "0644",
       "path": "providers/claude.json",
       "size": 9246,
       "type": "file"
     },
     {
-      "hash": "sha256:b158ac8366f469f1da98290f30a98a0b0506fad456577f7a3170e2c984623538",
+      "hash": "sha256:a04c751f81a4398d1476a423f945fcb4faeea32c10897fafd73d7b95ee45b540",
       "mode": "0644",
       "path": "providers/codex.json",
       "size": 7350,
       "type": "file"
     },
     {
-      "hash": "sha256:7768293a2c3a92ba14008153e9b69ac04228bd5ed4461d51d5625a1953eced4c",
+      "hash": "sha256:32d1eceff79013ec47962df41d64d15dd2c215efea37ab695ea21ed86365de4e",
       "mode": "0644",
       "path": "providers/generic.json",
       "size": 4016,
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:fac31dab2bdbd35eed94c7872538f8d33f025400b26d424a457510f7f3f1f99a",
+  "inputDigest": "sha256:3e800f64a757a0ae8cb0852bc337eeb2de02d3ec31610788ac8793310f8eb3c0",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:fd90c236b0b8bdaefd3726beb3c21b4e344a693a91bffcaef58eef5fd28b7cb5",
+  "snapshotDigest": "sha256:72819124011bb1f40be11ad783523d0b580cc145f70bb2dc44092aca0990ed0b",
   "sources": [
     {
       "hash": "sha256:0887152159a411e01aa6771d109d79bbe1ea009b5eefebd7cff38d6cc4b5b664",
