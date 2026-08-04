@@ -415,3 +415,18 @@ package.json 十餘條 ceremony scripts;test-governance-build-graph:658-662 期�
 **不動(同名異義)**:provider-lifecycle ledger genesis、reconcile-github transaction-journal genesis、test-consumer-governance/test-future-provider-fork-surface 的 lifecycle genesis fixture。
 
 **另抓 2 個 pre-existing main drift**(harness-only 測試不在 PR gate,與 workflow-security 同類):residue test fixture 缺 utility-registry consumed_by 兩個 hook(check_layout_space_magic_numbers/check_escape_marker_abuse);widened-mirror poison 因 hook-test mirror 已退役成 no-op → 改注入式 poison。皆修復。
+
+### §8.6 beta.109 五步 release + lean-audit 執行記錄(2026-08-05)
+
+**beta.109 五步全 AUTO 完成**(gh CLI 因 sandbox trustd 不可達 → operations 由 orchestrator exported builders 生成、authenticated curl 執行,語意零漂移):
+1. pr-checks:#49 version bump 六 lanes 綠。2. merge:c42e4f4e。3. publish:tag + stage-protected-release dispatch → release.yml run 30929722295 success。4. readback:GitHub Release v0.1.0-beta.109 immutable=true + npm 三包 beta dist-tag = 0.1.0-beta.109。5. consumer:template PR #29 merged(lock 讀回 ✓);WM 端連環根因(→下)修復後 PR #42 merged,lock 讀回 ✓。
+
+**WM consumer 傳播連環根因**(beta.109 是第一個改到 Claude canonical 的 release,暴露五層):
+1. receiver 手刻步驟從不刷新 Claude adapter 投影(refresh CLI 是 dry-run-only;寫入 capability 鎖在 sync-all 交易)→ WM #40 改走 canonical sync-all。
+2. WM .gitignore 缺 upgrade journal 行(template parity drift)→ 交易被自己的 journal 判 dirty(#40 一併修)。
+3. package.json 缺 npm-runtime-tar-patch alias(base 合約)(#40 一併修)。
+4. checkout credential extraheader 被交易封閉 Git 邊界拒絕 → WM #41 unset/restore 包住。
+5. beta.108 交易工具鏈的 npm-audit exact preimage 已隨 registry advisory 過期 → 該 hop 無法用舊工具鏈 bootstrap;手工完成一次完整 sync(WM #42,governance-check 0 diagnostics),此後 main 上是 beta.109 工具鏈,後續 release 可全自動。
+5'. DS release-workflow.json WM requiredCheck 對稱化為 audit.yml/pull_request(與 template 同形,#50),移除 receiver 自發 check 特例;provenance 綁定不變。
+
+**Lean audit(user 四問:harness 必要性/冗餘/牛刀殺雞/資源效率 + workflow SSOT/跨環境)**:6 維 finders + adversarial critic(7 agents,891k tokens)。判定:harness 本體 SOUND(247 members 全活、SSOT pins 全對、PR gate 刻意排除十分鐘 suite 屬已文件化取捨),但 2 個 REAL-WASTE:官方入口在 pristine main 永紅(consumerctl 6 drift)+ 治理 battery 無任何 CI lane(rot 機制)。batch A(#50)修 HIGH:consumerctl 43/43、dead scripts ×4、stale 文本/指標/registry 全同步。**未清完(排程)**:fleet 層 rings/soak 退役決策(release-rings.json 仍強制 canon 已退役的 soak/promotion 謂詞,~9.6k 行)、model-release-authority 鏈退役、audit-workflow-security 雙跑、41 個無引用 npm scripts 盤點、branch sprawl、audit-receipt 17MB 無 retention、governance battery CI lane(nightly)——見 audit-results.json(scratchpad)完整 findings。
