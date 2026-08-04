@@ -160,15 +160,15 @@ test('consumer completion requires an Actions-bound producer matching the releas
     app: integration,
   }
   const workflowRun = {
-    path: '.github/workflows/sync-design-system.yml',
-    event: 'repository_dispatch',
-    head_sha: pullRequest.baseRefOid,
+    path: '.github/workflows/audit.yml',
+    event: 'pull_request',
+    head_sha: pullRequest.headRefOid,
     status: 'completed',
     conclusion: 'success',
   }
   assert.equal(validateConsumerCheckProvenance(target, pullRequest, checkRun, workflowRun, integration), true)
-  assert.equal(validateConsumerCheckProvenance(target, pullRequest, checkRun, { ...workflowRun, event: 'pull_request' }, integration), false)
-  assert.equal(validateConsumerCheckProvenance(target, pullRequest, checkRun, { ...workflowRun, head_sha: pullRequest.headRefOid }, integration), false)
+  assert.equal(validateConsumerCheckProvenance(target, pullRequest, checkRun, { ...workflowRun, event: 'repository_dispatch' }, integration), false)
+  assert.equal(validateConsumerCheckProvenance(target, pullRequest, checkRun, { ...workflowRun, head_sha: pullRequest.baseRefOid }, integration), false)
 })
 
 test('consumer PR matching rejects a release identity copied onto the wrong branch or base', () => {

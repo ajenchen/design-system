@@ -147,9 +147,9 @@
         "requiredCheck": {
           "context": "Verify consumer",
           "integration": "githubActions",
-          "producerWorkflow": ".github/workflows/sync-design-system.yml",
-          "producerEvent": "repository_dispatch",
-          "producerHead": "pull-request-base"
+          "producerWorkflow": ".github/workflows/audit.yml",
+          "producerEvent": "pull_request",
+          "producerHead": "pull-request-head"
         }
       }
     ]
