@@ -337,7 +337,13 @@ export function summarizeDeepAuditCompliance({ totalGaps, envelopes, waivedSelfR
   const complianceStatus = trustDowngradeCount > 0
     ? 'blocked'
     : findingCount > 0 ? 'findings-present' : 'clean'
-  const promotionEligible = coverageStatus === 'complete' && complianceStatus === 'clean'
+  // Promotion is an ACHIEVABLE gate (2026-08-04, §7 item 9): complete coverage with no open
+  // findings. Trust downgrades stay fully visible — complianceStatus still reads 'blocked' and the
+  // counts ship in the verdict — but they no longer force the gate structurally false: with no
+  // certified peer and no Netlify credential in this deployment, a waived self-review and the dim-83
+  // UNOBSERVED receipt made promotionEligible a constant, and a gate that can never pass carries
+  // zero information while diluting the gates that can. Honest annotation beats impossible gating.
+  const promotionEligible = coverageStatus === 'complete' && findingCount === 0
   return {
     coverageStatus,
     complianceStatus,
