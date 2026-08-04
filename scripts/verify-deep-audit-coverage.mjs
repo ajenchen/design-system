@@ -26,11 +26,6 @@ import {
 } from './lib/deep-audit-deterministic-plan.mjs'
 import { loadHookEvidencePlan, selectFrozenHookInventory } from './lib/hook-evidence-plan.mjs'
 import {
-  loadCanonicalCiModels,
-  loadCiEvidencePlan,
-} from './lib/ci-evidence-plan.mjs'
-import { validateCiObservationDocument } from './lib/ci-evidence-pipeline.mjs'
-import {
   loadAuditCoverageTiers,
   loadWaivedSelfReviewBundle,
   waivedSelfReviewContract,
@@ -453,8 +448,6 @@ export function verifyDeepAuditCoverage({
       envelopes.push(envelope)
     }
   }
-  let ciPlanState = null
-  let canonicalCi = null
   const ciObservationDigests = new Set()
   for (const dim of tiers['CI-ENFORCED']) {
     const envelope = readEnvelope(active, explicitRoot, `ci-enforced/dim-${dim}.json`)
@@ -463,30 +456,13 @@ export function verifyDeepAuditCoverage({
       if (envelope.payload.dim !== dim) fail(`CI receipt identity mismatches:dim-${dim}`)
       exact(envelope.coverage, { inventoryPaths: active.manifest.rubricPaths, inventoryDigest: active.manifest.rubricDigest, filesScanned: active.manifest.rubricPaths.length }, `CI dim ${dim} coverage`)
       const receipt = envelope.payload.receipt
-      let payloadSha256
-      if (receipt.contract === 'standard-five-step-live-observation-v1') {
-        payloadSha256 = receipt.observationSha256
-      } else {
-        ciPlanState ??= loadCiEvidencePlan({ repoRoot: active.repository })
-        canonicalCi ??= loadCanonicalCiModels(ciPlanState, { repoRoot: active.repository })
-        const observationPayload = receipt.observationPayload
-        payloadSha256 = receipt.observation.apiPayloadSha256
-        validateCiObservationDocument({
-          $schema: 'schemas/ci-evidence-observation.schema.json',
-          schemaVersion: 1,
-          kind: 'ci-enforced-content-addressed-observation',
-          payloadSha256,
-          payload: observationPayload,
-        }, {
-          repoRoot: active.repository,
-          planState: ciPlanState,
-          activeRun: active,
-          models: canonicalCi.models,
-          modelBindings: canonicalCi.bindings,
-          now: new Date(),
-        })
+      // The enforced-plan observation lane retired with the activation cluster
+      // (2026-08-04); the standard five-step live observation is the only
+      // contract a CI dimension receipt may carry.
+      if (receipt.contract !== 'standard-five-step-live-observation-v1') {
+        fail(`CI dim ${dim} receipt carries a retired observation contract:${receipt.contract}`)
       }
-      ciObservationDigests.add(payloadSha256)
+      ciObservationDigests.add(receipt.observationSha256)
       envelopes.push(envelope)
     }
   }

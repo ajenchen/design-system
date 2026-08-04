@@ -11,7 +11,8 @@ import {
 } from './common.mjs'
 import Ajv2020 from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
-import { validateRolloutShape, verifyApplyAuthorization, verifyCompletionAttestation } from './rollout-state-machine.mjs'
+import { validateAttestationPolicy, verifySignedAttestation } from './attestation.mjs'
+import { validateCandidateRelease } from './release-evidence.mjs'
 import {
   validateCertificationRuntimeEvidence,
   validateExternalRepositoryIdentityClosure,
@@ -40,10 +41,20 @@ const EVIDENCE_KINDS = new Set(['command-output', 'artifact-digest', 'github-che
 const WAIVER_STATUSES = new Set(['active', 'expired', 'revoked', 'closed'])
 const WAIVER_RISKS = new Set(['low', 'medium', 'high', 'critical'])
 const WAIVER_CONTROL_TYPES = new Set(['ruleset', 'required-check', 'environment', 'provider-surface', 'ownership', 'compatibility'])
+const PROMOTION_PREDICATE_TYPES = new Set([
+  'manual-blockers-clear',
+  'soak-complete',
+  'soak-observation',
+  'required-checks-green',
+  'provider-surfaces-certified',
+  'no-active-waiver-at-or-above',
+  'plan-conflict-free',
+  'upstream-waves-promoted',
+])
+const SOAK_PREDICATE_TYPES = new Set(['soak-complete', 'soak-observation'])
 const CANONICAL_MANAGED_ENVIRONMENT_NAMES = Object.freeze([
   'npm-release',
   'governance-upgrade',
-  'governance-external-ledger',
 ])
 const DEFAULT_MATRIX_PATH = resolve(GOVERNANCE_ROOT, 'providers/compatibility-matrix.json')
 const DEFAULT_RUNTIME_PROFILE_PATH = resolve(GOVERNANCE_ROOT, 'providers/runtime-conformance.json')
@@ -221,16 +232,14 @@ export function validateProviderRegistry(matrix, runtimeProfile, {
 export function validateReleaseRings(inventory, rings, {
   now = new Date(),
   issuerRegistry = loadIssuerRegistry(),
-  activationPolicy,
-  expectedActivationPolicyDigest,
 } = {}) {
   validateDeterministicDocumentSchema('rings', rings)
-  validateRolloutShape(inventory, rings, {
-    issuerRegistry,
-    now,
-    activationPolicy,
-    expectedActivationPolicyDigest,
-  })
+  invariant(rings?.schemaVersion === 3, 'Release rings schemaVersion must be 3')
+  validateAttestationPolicy(rings.attestationPolicy, { issuerRegistry, now })
+  invariant(rings.candidateRelease === null || (typeof rings.candidateRelease === 'object' && !Array.isArray(rings.candidateRelease)), 'candidateRelease must be null or an object')
+  if (rings.candidateRelease) validateCandidateRelease(rings.candidateRelease)
+  invariant(Array.isArray(rings.evidence), 'Release ring evidence ledger must be an array')
+  invariant(rings.evidence.length === 0, 'Release ring self-declared evidence is unsupported without an externally verifiable binding')
   invariant(Array.isArray(rings.rings) && rings.rings.length > 0, 'Release rings must contain at least one ring')
   invariant(rings.assignments && typeof rings.assignments === 'object' && !Array.isArray(rings.assignments), 'Release rings assignments must be an object')
   const repositoriesById = new Map(inventory.repositories.map(repository => [repository.id, repository]))
@@ -238,6 +247,7 @@ export function validateReleaseRings(inventory, rings, {
   for (const repoId of Object.keys(rings.assignments)) invariant(repoIds.has(repoId), `Release-ring assignment references unknown repo ${repoId}`)
   const ringIds = new Set()
   const ringOrders = new Set()
+  const waveIdsByRing = new Map()
   for (const [ringIndex, ring] of rings.rings.entries()) {
     nonEmptyString(ring?.id, 'Release ring id must be a non-empty string')
     invariant(!ringIds.has(ring.id), `Duplicate release ring id ${ring.id}`)
@@ -247,6 +257,29 @@ export function validateReleaseRings(inventory, rings, {
     nonEmptyString(ring.purpose, `Release ring ${ring.id} purpose must be a non-empty string`)
     invariant(Number.isInteger(ring.minimumSoakHours) && ring.minimumSoakHours >= 1, `Release ring ${ring.id} minimumSoakHours must be a positive integer`)
     invariant(Number.isInteger(ring.maxParallel) && ring.maxParallel >= 1, `Release ring ${ring.id} maxParallel must be a positive integer`)
+    invariant(Array.isArray(ring.waves) && ring.waves.length > 0, `Release ring ${ring.id} must define waves`)
+    const waveIds = new Set()
+    const waveOrders = new Set()
+    for (const wave of ring.waves) {
+      invariant(typeof wave.id === 'string' && wave.id.trim() !== '', `Release ring ${ring.id} wave id is required`)
+      invariant(!waveIds.has(wave.id), `Duplicate wave ${ring.id}/${wave.id}`)
+      invariant(Number.isInteger(wave.order) && wave.order >= 0 && !waveOrders.has(wave.order), `Release ring ${ring.id} wave order is invalid or duplicated`)
+      invariant(Number.isInteger(wave.maxParallel) && wave.maxParallel >= 1 && wave.maxParallel <= ring.maxParallel, `Release ring ${ring.id}/${wave.id} maxParallel exceeds its ring budget`)
+      waveIds.add(wave.id)
+      waveOrders.add(wave.order)
+    }
+    invariant(Array.isArray(ring.promotionPredicates) && ring.promotionPredicates.length > 0, `Release ring ${ring.id} must define typed promotion predicates`)
+    invariant(ring.promotionPredicates.filter(predicate => SOAK_PREDICATE_TYPES.has(predicate.type)).length === 1, `Release ring ${ring.id} must define exactly one soak policy`)
+    const predicateIds = new Set()
+    for (const predicate of ring.promotionPredicates) {
+      invariant(typeof predicate.id === 'string' && predicate.id.trim() !== '', `Release ring ${ring.id} predicate id is required`)
+      invariant(!predicateIds.has(predicate.id), `Duplicate release ring predicate ${ring.id}/${predicate.id}`)
+      invariant(PROMOTION_PREDICATE_TYPES.has(predicate.type), `Unsupported release ring predicate ${predicate.type}`)
+      if (predicate.type === 'no-active-waiver-at-or-above') invariant(WAIVER_RISKS.has(predicate.risk), `Predicate ${predicate.id} has invalid waiver risk`)
+      if (predicate.type === 'provider-surfaces-certified' && predicate.surfaces !== undefined) invariant(Array.isArray(predicate.surfaces) && predicate.surfaces.length > 0, `Predicate ${predicate.id} surfaces must be non-empty`)
+      predicateIds.add(predicate.id)
+    }
+    waveIdsByRing.set(ring.id, waveIds)
     ringIds.add(ring.id)
     ringOrders.add(ring.order)
   }
@@ -255,6 +288,7 @@ export function validateReleaseRings(inventory, rings, {
     const assignment = rings.assignments[repo.id]
     invariant(assignment && typeof assignment === 'object', `Missing release-ring assignment for ${repo.id}`)
     invariant(ringIds.has(assignment.ring), `Unknown release ring ${assignment.ring ?? '<missing>'} for ${repo.id}`)
+    invariant(waveIdsByRing.get(assignment.ring).has(assignment.wave), `Release-ring assignment ${repo.id} references unknown wave ${assignment.ring}/${assignment.wave}`)
   }
 
   const ringByRole = new Map()
@@ -283,26 +317,26 @@ export function validateReleaseRings(inventory, rings, {
     invariant(Array.isArray(assignment.manualBlockers), `Release-ring manualBlockers must be an array for ${repo.id}`)
     for (const blocker of assignment.manualBlockers) nonEmptyString(blocker, `Release-ring manual blocker must be non-empty for ${repo.id}`)
     if (assignment.applyAuthorization) {
-      const envelope = verifyApplyAuthorization(assignment.applyAuthorization, {
+      const envelope = verifySignedAttestation(assignment.applyAuthorization, rings.attestationPolicy, {
+        kind: 'apply-authorization',
         repoId: repo.id,
         github: repo.github,
-        ringId: assignment.ring,
-        waveId: assignment.wave,
+        ring: assignment.ring,
+        wave: assignment.wave,
         candidateRelease: rings.candidateRelease,
         issuerRegistryDigest: rings.attestationPolicy.issuerRegistryDigest,
-        attestationPolicy: rings.attestationPolicy,
       }, { now, issuerRegistry })
       invariant(envelope.valid, `Invalid signed apply authorization for ${repo.id}: ${envelope.failures.join('; ')}`)
     }
     if (assignment.completionAttestation) {
-      const envelope = verifyCompletionAttestation(assignment.completionAttestation, {
+      const envelope = verifySignedAttestation(assignment.completionAttestation, rings.attestationPolicy, {
+        kind: 'readback-completion',
         repoId: repo.id,
         github: repo.github,
-        ringId: assignment.ring,
-        waveId: assignment.wave,
+        ring: assignment.ring,
+        wave: assignment.wave,
         candidateRelease: rings.candidateRelease,
         issuerRegistryDigest: rings.attestationPolicy.issuerRegistryDigest,
-        attestationPolicy: rings.attestationPolicy,
       }, { now, issuerRegistry })
       invariant(envelope.valid, `Invalid signed completion attestation for ${repo.id}: ${envelope.failures.join('; ')}`)
     }
@@ -770,24 +804,17 @@ export function validateDesiredGithub(inventory, desired) {
       invariant(upgradeEnvironment.deploymentBranchPolicy?.protectedBranches === true && upgradeEnvironment.deploymentBranchPolicy?.customBranchPolicies === false, `${profileName} governance-upgrade must load only from protected branches`)
       invariant(profile.actionsWorkflowPermissions.can_approve_pull_request_reviews === false, `${profileName} must disable the built-in GITHUB_TOKEN PR writer when governance-upgrade uses the Writer App`)
     }
-    const externalLedgerEnvironments = profile.environments.filter(environment => environment.name === 'governance-external-ledger')
+    // The external-ledger writer ceremony is retired; no profile may reintroduce
+    // its environment or credentials.
+    invariant(
+      profile.environments.every(environment => environment.name !== 'governance-external-ledger'),
+      `${profileName} must not restore the retired governance-external-ledger environment`,
+    )
     if (profileName === 'design-system-authority') {
       invariant(profile.immutableReleases === true, 'design-system-authority must require immutable GitHub Releases')
-      invariant(profile.environments.length === 2, 'design-system-authority must retain only npm-release and governance-external-ledger environments')
+      invariant(profile.environments.length === 1, 'design-system-authority must retain only the npm-release environment')
       invariant(profile.environments.some(environment => environment.name === 'npm-release'), 'design-system-authority must retain npm-release')
-      invariant(externalLedgerEnvironments.length === 1, 'design-system-authority must declare exactly one governance-external-ledger environment')
-      const externalLedgerEnvironment = externalLedgerEnvironments[0]
-      invariant(externalLedgerEnvironment.workflow === '.github/workflows/external-ledger-writer.yml',
-        'governance-external-ledger must bind the protected external-ledger writer workflow')
-      invariant(externalLedgerEnvironment.credentialIntegration === 'governanceWriterApp',
-        'governance-external-ledger must use the dedicated Governance Writer App')
-      invariant(externalLedgerEnvironment.rollout === 'always',
-        'governance-external-ledger must exist before candidate freeze and external activation')
-      invariant(externalLedgerEnvironment.deploymentBranchPolicy?.protectedBranches === true
-        && externalLedgerEnvironment.deploymentBranchPolicy?.customBranchPolicies === false,
-      'governance-external-ledger must load only from protected branches')
-    } else invariant(externalLedgerEnvironments.length === 0,
-      `${profileName} must not receive authority external-ledger writer credentials`)
+    }
     for (const check of profile.requiredChecks.filter(item => item.trustSource === 'protected-base-workflow' && item.integration !== 'githubActions')) {
       const verdictEnvironment = profile.environments.find(environment => environment.name === 'governance-check-verdict')
       invariant(verdictEnvironment, `${profileName} protected-base check ${check.context} requires governance-check-verdict environment`)
@@ -810,8 +837,6 @@ function validateDeterministicGovernanceModelCore({
   runtimeProfile = defaultRuntimeProfile(),
   adapterRegistry = defaultAdapterRegistry(),
   issuerRegistry = loadIssuerRegistry(),
-  activationPolicy,
-  expectedActivationPolicyDigest,
   now = new Date(),
 }, { requireWorkflowIdentitySourceRepositories }) {
   invariant(desired?.schemaVersion === 1, 'Desired GitHub schemaVersion must be 1')
@@ -844,12 +869,7 @@ function validateDeterministicGovernanceModelCore({
       `Repository ${repo.id} accepted control-plane update binding does not match profile ${repo.upgradeProtocolProfile}`,
     )
   }
-  validateReleaseRings(inventory, rings, {
-    now,
-    issuerRegistry,
-    activationPolicy,
-    expectedActivationPolicyDigest,
-  })
+  validateReleaseRings(inventory, rings, { now, issuerRegistry })
   validateDesiredGithub(inventory, desired)
   assertNoEmbeddedSecrets({ inventory, desired, rings, roleSurfacePolicy, matrix, runtimeProfile })
   return true
@@ -872,8 +892,6 @@ function validateGovernanceModelCore({
   runtimeProfile = defaultRuntimeProfile(),
   adapterRegistry = defaultAdapterRegistry(),
   issuerRegistry = loadIssuerRegistry(),
-  activationPolicy,
-  expectedActivationPolicyDigest,
   repoRoot,
   runtimeIdentity,
   externalRepositoryIdentities,
@@ -888,8 +906,6 @@ function validateGovernanceModelCore({
     runtimeProfile,
     adapterRegistry,
     issuerRegistry,
-    activationPolicy,
-    expectedActivationPolicyDigest,
     now,
   }, {
     requireWorkflowIdentitySourceRepositories,

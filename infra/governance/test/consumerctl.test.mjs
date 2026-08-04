@@ -72,7 +72,7 @@ import {
   validateProtocolLock,
 } from '../lib/consumer-upgrade-protocol.mjs'
 import { issuerRegistryDigest } from '../lib/issuer-registry.mjs'
-import { issueApplyAuthorization } from '../lib/rollout-state-machine.mjs'
+import { issueSignedAttestation } from '../lib/attestation.mjs'
 import { createExternalRuntimeCertificationFixture } from './fixtures/external-runtime-certification-fixture.mjs'
 import {
   RELEASE_PACKAGE_NAMES,
@@ -777,19 +777,22 @@ function fleetFixture({
     completionAttestation: null,
     manualBlockers: [],
   }
-  assignment.applyAuthorization = issueApplyAuthorization({
+  // The rollout-state-machine wrapper is retired; the fixture signs the same
+  // attestation payload directly through the canonical attestation library.
+  assignment.applyAuthorization = issueSignedAttestation({
+    kind: 'apply-authorization',
     repoId: 'consumer',
     github: 'ajenchen/consumer',
-    ringId: assignment.ring,
-    waveId: assignment.wave,
+    ring: assignment.ring,
+    wave: assignment.wave,
     candidateRelease,
-    candidatePlanDigest: '4'.repeat(64),
-    predicateResults: [{ id: 'approved', type: 'manual-blockers-clear', pass: true, evidenceDigest: '5'.repeat(64), message: 'approved' }],
     verifiedReleaseEvidenceDigest: '6'.repeat(64),
-    attestationPolicy,
+    candidatePlanDigest: '4'.repeat(64),
+    predicateDigest: '5'.repeat(64),
     stateDigest: '7'.repeat(64),
     defaultBranchHeadSha: '8'.repeat(40),
-    actions: [],
+    actionsDigest: sha256(stableStringify([], 0)),
+    issuerRegistryDigest: attestationPolicy.issuerRegistryDigest,
     signerKeyId: 'fleet-authorizer',
     subject: 'fleet-authorizer-subject',
     privateKey,
@@ -878,6 +881,8 @@ function externalCertifiedConsumerFixture(t) {
   const githubFixtures = resolve(GOVERNANCE_ROOT, 'test/fixtures/github')
   const managed = readJson(resolve(githubFixtures, 'inventory.json'))
   const desired = readJson(resolve(githubFixtures, 'desired.json'))
+  // The external-ledger writer environment is retired with its ceremony.
+  desired.managedEnvironmentNames = ['npm-release', 'governance-upgrade']
   const rings = readJson(resolve(githubFixtures, 'rings-eligible.json'))
   const certificationSource = readJson(resolve(githubFixtures, 'certifications.json'))
   const canonicalManaged = readJson(resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json'))

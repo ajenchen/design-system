@@ -28,7 +28,7 @@
     "schemaPath": "infra/governance/schemas/harness-authority-contracts.schema.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-authority-contracts",
-    "sha256": "83ad8cce1ee47b36e2ad7012cdcc12f58141de87199e797e23007ca87f0093cc",
+    "sha256": "18ab82058fc38537258fbae0bdebb3a40e03fad47d34283cb12a55126a053d4b",
     "schemaSha256": "bba73861c87bc3047b70376e891a9464d525e9648fadd6e7d8fb406b57d10dce",
     "projectionPolicy": "registry-authority-and-claim-fields-are-exact-derived-projections"
   },
@@ -37,7 +37,7 @@
     "path": "infra/governance/providers/harness-source-inventory.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-source-inventory",
-    "sha256": "dee554641d9fd88a8afac0626b2d74d32a7b2719812dd9e39b235e3a522bd221",
+    "sha256": "ad52c39ee99bcde35980e2dc3b8bc2371481654074af12ec3afc7aed9d98f9a4",
     "closurePolicy": "every-discovered-source-exactly-one-execution-or-reviewed-exclusion"
   },
   "runner": {
@@ -278,13 +278,10 @@
       ],
       "testPaths": [
         "scripts/test-sync-all-transaction.mjs",
-        "infra/governance/test/staged-rollout.test.mjs",
         "infra/governance/test/reconcile-github.test.mjs"
       ],
       "authorityPaths": [
-        "infra/governance/staged-rollout-plan.json",
-        "infra/governance/bin/reconcile-github.mjs",
-        "infra/governance/lib/staged-rollout.mjs"
+        "infra/governance/bin/reconcile-github.mjs"
       ],
       "executionClass": "fixture-integration",
       "certificationClaim": "local-harness-only",
@@ -640,7 +637,6 @@
         "scripts/test-release-finalizer-mirror-handoff.mjs",
         "scripts/test-install-candidate-dependencies.mjs",
         "scripts/test-workflow-security.mjs",
-        "infra/governance/test/release-trust-preflight.test.mjs",
         "infra/governance/test/signed-release-tag.test.mjs",
         "scripts/test-check-src-republish.mjs"
       ],
@@ -652,14 +648,12 @@
         "scripts/release-finalizer-mirror-handoff.mjs",
         "scripts/release-stage-run-identity.mjs",
         "scripts/verify-upgrade-provenance.mjs",
-        "scripts/install-candidate-dependencies.mjs",
-        "infra/governance/lib/release-trust-preflight.mjs",
-        "infra/governance/release-tag-authorization-policy.json"
+        "scripts/install-candidate-dependencies.mjs"
       ],
       "executionClass": "fixture-integration",
       "certificationClaim": "external-readback-required",
       "proves": [
-        "Release BOM, tag authorization, workflow identity and finalization receipts are closed and digest-bound.",
+        "Release BOM, workflow identity and finalization receipts are closed and digest-bound.",
         "Candidate bytes cannot self-certify trusted execution or bypass protected-main identity."
       ],
       "doesNotProve": [
@@ -680,9 +674,7 @@
       ],
       "testPaths": [
         "infra/governance/test/consumerctl.test.mjs",
-        "infra/governance/test/rollout-state-machine.test.mjs",
-        "infra/governance/test/reconcile-github.test.mjs",
-        "infra/governance/test/staged-rollout.test.mjs"
+        "infra/governance/test/reconcile-github.test.mjs"
       ],
       "authorityPaths": [
         "scripts/build-fork-governance.mjs",
@@ -713,11 +705,9 @@
         "infra/governance/schemas/consumer-fanout-dispatch-evidence.schema.json",
         "infra/governance/schemas/managed-repos.schema.json",
         "infra/governance/schemas/fleet-reconcile-journal.schema.json",
-        "infra/governance/schemas/fleet-reconcile-bootstrap-transaction.schema.json",
-        "infra/governance/schemas/fleet-reconcile-bootstrap-replay-receipt.schema.json",
         "infra/governance/schemas/github-desired.schema.json",
-        "infra/governance/lib/staged-rollout.mjs",
-        "infra/governance/staged-rollout-plan.json"
+        "infra/governance/schemas/fleet-reconcile-bootstrap-transaction.schema.json",
+        "infra/governance/schemas/fleet-reconcile-bootstrap-replay-receipt.schema.json"
       ],
       "executionClass": "fixture-integration",
       "certificationClaim": "external-readback-required",
@@ -725,7 +715,7 @@
         "Fleet planning respects repository roles, release rings, waves, evidence predicates and least-privilege mutation boundaries.",
         "Fleet check and apply require a bounded exact-quorum, canonical-order, externally signed independent-review receipt whose canonical plan bytes and every governance input are reloaded and CAS-checked with monotonic live time immediately before dispatch.",
         "Fleet dispatch evidence has a closed bounded schema and never converts accepted-but-unread requests into a completion claim.",
-        "Authority-policy bootstrap journals remain local non-promotion evidence; candidate freeze accepts them only after exact ordered event replay through the canonical signed mirror protocol, independent head verification, canonical activation binding, and content-addressed readback.",
+        "Authority-policy bootstrap journals remain local non-promotion evidence and are accepted only after exact ordered event replay through the canonical signed mirror protocol, independent head verification and content-addressed readback.",
         "Unknown external state, stale receipts and incomplete certification block rollout instead of becoming a green default."
       ],
       "doesNotProve": [
@@ -758,20 +748,14 @@
         "scripts/test-deep-audit-evidence-schema-parity.mjs",
         "scripts/test-visual-baseline-review.mjs",
         "scripts/test-governance-anchor-preflight.mjs",
-        "scripts/test-workflow-security.mjs",
         "infra/governance/test/external-surface-evidence.test.mjs",
-        "infra/governance/test/external-operator.test.mjs",
-        "infra/governance/test/external-ledger-writer.test.mjs",
         "infra/governance/test/model-validation.test.mjs",
         "infra/governance/test/provider-runtime-conformance.test.mjs",
         "infra/governance/test/reconcile-github.test.mjs",
-        "scripts/test-produce-ci-enforced-evidence.mjs",
         "scripts/test-authority-decision-evidence.mjs"
       ],
       "authorityPaths": [
         "scripts/lib/deep-audit-evidence-contract.mjs",
-        "scripts/lib/ci-evidence-pipeline.mjs",
-        "scripts/lib/ci-evidence-live-observer.mjs",
         "scripts/schemas/ci-evidence-observation.schema.json",
         "infra/governance/lib/common.mjs",
         "infra/governance/lib/model-validation.mjs",
@@ -779,9 +763,7 @@
         "infra/governance/lib/runtime-certification.mjs",
         "infra/governance/lib/repository-subject-proof.mjs",
         "infra/governance/lib/external-surface-evidence.mjs",
-        "infra/governance/lib/external-operator.mjs",
         "infra/governance/bin/conform-provider-runtime.mjs",
-        "infra/governance/bin/external-operator.mjs",
         "infra/governance/bin/promote-runtime-evidence.mjs",
         "infra/governance/providers/model-invocation-profiles.json",
         "infra/governance/providers/runtime-conformance.json",
@@ -793,11 +775,6 @@
         "infra/governance/schemas/external-surface-import-receipt.schema.json",
         "infra/governance/schemas/external-runtime-certification-proposal.schema.json",
         "infra/governance/schemas/provider-review-capability-certification-proposal.schema.json",
-        "infra/governance/schemas/external-ledger-transaction-handoff.schema.json",
-        "infra/governance/schemas/external-activation-signing-request.schema.json",
-        "infra/governance/schemas/external-activation-signature-bundle.schema.json",
-        "infra/governance/schemas/external-activation-proposal.schema.json",
-        "infra/governance/schemas/external-operator-block-result.schema.json",
         "infra/governance/schemas/role-surface-policy.schema.json",
         "infra/governance/schemas/managed-repos.schema.json",
         "infra/governance/schemas/issuer-registry.schema.json",
@@ -810,16 +787,7 @@
         "packages/design-system/tools/shared/safe-filesystem.mjs",
         "scripts/build-fork-governance.mjs",
         "scripts/lib/runtime-dependency-closure.mjs",
-        ".github/workflows/external-ledger-writer.yml",
-        "infra/governance/lib/external-ledger-writer.mjs",
-        "infra/governance/bin/external-ledger-writer.mjs",
-        "infra/governance/schemas/external-ledger-writer-dispatch.schema.json",
-        "infra/governance/schemas/external-ledger-writer-plan.schema.json",
-        "infra/governance/schemas/external-ledger-artifact-identity.schema.json",
-        "infra/governance/schemas/external-ledger-writer-receipt.schema.json",
         ".github/workflows/governance-anchor.yml",
-        "scripts/governance-anchor-preflight.mjs",
-        "scripts/verify-privileged-change.mjs",
         "AGENTS.md",
         "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
         "packages/governance/src/authority-decision-evidence.mjs",
@@ -834,7 +802,6 @@
         "Local or unsigned evidence cannot be relabeled as managed or certified evidence.",
         "Visual-baseline proposals bind the governed Git origin and HEAD commit/tree, fully decoded CRC-valid PNG candidate/baseline inventories, file modes, explicit non-placeholder per-image statements, trust-policy bytes and exact review rows; unsigned approval, cross-repository replay, arbitrary callbacks, policy/issuer/image substitution, links, contention and partial publication fail closed.",
         "The same role-portable trust-policy bytes resolve under authority and BOM-managed consumer governance roots; this tool version rejects every managed-broker activation attempt until canonical signed broker/model-authority receipt validators are reused.",
-        "Reviewed certification and activation handoffs are serialized into exact protected-default one-parent pull requests: runtime certification atomically adds its content-addressed evidence plus ledger, provider review certification atomically adds the exact runtime and review-capability evidence plus both ledgers, activation changes only its ledger, and same-run artifact/App identity, expiring base CAS, exact tree/commit/PR readback, mutually exclusive protected-base routing and merge-gate replay fail closed.",
         "Canonical Decision Authority remains one AGENTS.md SSOT; deterministic content-addressed receipts bind its exact policy, classifier, provider registry, provider/surface/session/target/operation scope and shared root/fork adapters. Operation-only Standing Authorization accepts only closed governance-action targets whose exact operation digest matches, while UI/UX, human-only, destructive/bypass, malformed, stale, replayed, substituted, tampered and unknown-provider evidence fails closed across local, cloud, remote and CI structural surfaces without claiming runtime certification."
       ],
       "doesNotProve": [

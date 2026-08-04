@@ -1,18 +1,15 @@
 import { stableJson } from './common.mjs'
 
-export const EXTERNAL_ACTIVATION_CARRIER_PATH = 'infra/governance/external-activation-requirements.json'
 export const PROVIDER_CERTIFICATION_CARRIER_PATH = 'infra/governance/providers/certifications.json'
 export const REVIEW_CAPABILITY_CERTIFICATION_CARRIER_PATH = 'infra/governance/providers/review-capability-certifications.json'
 
 export const GOVERNANCE_CARRIER_PROJECTION_IDS = Object.freeze([
-  'external-activation-state-v1',
   'provider-certification-state-v1',
   'review-capability-certification-state-v1',
 ])
 
 export const GOVERNANCE_CARRIER_MAX_BYTES = 8 * 1024 * 1024
 const UTF8 = new TextDecoder('utf-8', { fatal: true })
-const ACTIVATION_STATE_KEYS = Object.freeze(['status', 'evidence', 'observedAt', 'expiresAt'])
 const CERTIFICATION_RECORD_KEYS = new Set([
   'id',
   'provider',
@@ -201,24 +198,6 @@ function parseCarrierJson(bytes, label) {
   }
 }
 
-function externalActivationProjection(bytes) {
-  const ledger = parseCarrierJson(bytes, 'external activation ledger')
-  exactKeys(ledger, ['$schema', 'schemaVersion', 'policy', 'requirements'], 'external activation ledger')
-  invariant(ledger.$schema === 'schemas/external-activation-requirements.schema.json' && ledger.schemaVersion === 4, 'external activation ledger identity/version is invalid')
-  plainObject(ledger.policy, 'external activation policy binding')
-  invariant(Array.isArray(ledger.requirements) && ledger.requirements.length > 0, 'external activation requirements must be a non-empty array')
-  const ids = new Set()
-  const projected = structuredClone(ledger)
-  for (const [index, requirement] of projected.requirements.entries()) {
-    plainObject(requirement, `external activation requirement[${index}]`)
-    invariant(typeof requirement.id === 'string' && requirement.id.length > 0 && !ids.has(requirement.id), `external activation requirement id is invalid or duplicated:${String(requirement.id)}`)
-    invariant(ACTIVATION_STATE_KEYS.every(key => Object.hasOwn(requirement, key)), `external activation requirement state is incomplete:${requirement.id}`)
-    for (const key of ACTIVATION_STATE_KEYS) delete requirement[key]
-    ids.add(requirement.id)
-  }
-  return Buffer.from(stableJson(projected))
-}
-
 function projectedCertificationTarget(target, recordId, targetIds) {
   allowedKeys(
     target,
@@ -338,10 +317,6 @@ function reviewCapabilityCertificationProjection(bytes) {
 }
 
 const PROJECTIONS = Object.freeze({
-  'external-activation-state-v1': Object.freeze({
-    path: EXTERNAL_ACTIVATION_CARRIER_PATH,
-    project: externalActivationProjection,
-  }),
   'provider-certification-state-v1': Object.freeze({
     path: PROVIDER_CERTIFICATION_CARRIER_PATH,
     project: providerCertificationProjection,
@@ -376,14 +351,13 @@ export function governanceCarrierProjectionMap(sources) {
 
 export function assertCanonicalGovernanceCarrierProjectionMap(bindings) {
   invariant(bindings instanceof Map, 'carrier projection bindings must be a Map')
-  const expected = new Set(Object.values(PROJECTIONS).map(definition => definition.path))
+  // Exact closure over the post-retirement projection map (the #44 transition
+  // tolerance is retired together with the activation cluster).
+  const expected = Object.values(PROJECTIONS)
+    .map(definition => definition.path)
+    .sort()
   const actual = [...bindings.keys()].sort()
-  // Phase A tolerance (activation-cluster retirement, baton §8.1): a manifest may
-  // declare a SUBSET of the known projections — the retirement PR removes the
-  // external-activation carrier while this code still runs from the protected base.
-  // Unknown projections remain fail-closed; the deletion PR ships the re-tightened
-  // exact-closure map without the retired projection.
-  invariant(actual.every(path => expected.has(path)), 'canonical carrier projection closure contains unknown paths')
+  invariant(actual.length === expected.length && actual.every((path, index) => path === expected[index]), 'canonical carrier projection closure is incomplete or contains extra paths')
   return true
 }
 

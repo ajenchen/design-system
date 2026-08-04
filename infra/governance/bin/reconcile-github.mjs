@@ -11,7 +11,6 @@ import {
   mkdtempSync,
   openSync,
   readFileSync,
-  readdirSync,
   realpathSync,
   renameSync,
   rmSync,
@@ -37,23 +36,9 @@ import {
 } from '../lib/common.mjs'
 import { validateAttestationPolicy } from '../lib/attestation.mjs'
 import {
-  certificationKey,
   createPartialInventoryFixtureValidator,
-  validateCertifications,
   validateGovernanceModel,
-  validateReleaseRings,
-  validateWaivers,
 } from '../lib/model-validation.mjs'
-import {
-  candidateActionsDigest,
-  candidatePlanDigest,
-  evaluatePromotionPredicates,
-  evaluateReleaseRingSoak,
-  predicateEvidenceDigest,
-  resolveRolloutWave,
-  verifyApplyAuthorization,
-  verifyCompletionAttestation,
-} from '../lib/rollout-state-machine.mjs'
 import { validateRequiredCheckProducer } from '../lib/check-run-trust.mjs'
 import {
   resolveVerifiedCandidateRelease,
@@ -61,7 +46,7 @@ import {
   verifiedReleaseEvidenceDigest as digestVerifiedReleaseEvidence,
 } from '../lib/release-evidence.mjs'
 import { validateWorkflowIdentity, workflowIdentity } from '../lib/workflow-trust.mjs'
-import { issuerRegistryDigest, loadIssuerRegistry, validateIssuerRegistryLineage } from '../lib/issuer-registry.mjs'
+import { loadIssuerRegistry, validateIssuerRegistryLineage } from '../lib/issuer-registry.mjs'
 import {
   historicalControlPlaneDigest,
   normalizeHistoricalControlPlane,
@@ -69,39 +54,11 @@ import {
   verifyFleetRecoveryAuthorization,
 } from '../lib/fleet-recovery-authorization.mjs'
 import {
-  assertExternalActivationReady,
-  EXTERNAL_ACTIVATION_POLICY_DIGEST,
-  externalActivationPolicyDigest,
-  GITHUB_MUTATION_BOUNDARY_CONTRACT_DIGEST,
-  githubMutationBoundaryContractDigest,
-  GITHUB_MUTATION_BOUNDARY_CONTRACT_PATH,
-  loadExternalActivationPolicy,
-  resolveExternalActivationProfile,
-  validateExternalActivationRequirements,
-} from '../lib/external-activation.mjs'
-import {
   normalizeRuntimeValidationContext,
   resolveGitHubRuntimeValidationContext,
   runtimeCertificationPaths,
 } from '../lib/runtime-certification.mjs'
-import {
-  FLEET_RECONCILE_MIRROR_PROTOCOL,
-  FLEET_RECONCILE_MIRROR_IDENTITY_KEYS as MIRROR_IDENTITY_KEYS,
-  buildFleetReconcileHeadVerificationRequest as headVerificationRequest,
-  buildFleetReconcileEventMirrorRequest as eventMirrorRequest,
-  validateFleetReconcileHeadVerification as validateHeadVerification,
-  validateFleetReconcileHeadVerificationRequest as validateHeadVerificationRequest,
-  validateFleetReconcileMirrorIdentity as validateMirrorIdentity,
-  validateFleetReconcileOffHostReceipt as validateOffHostReceipt,
-  verifyFleetReconcileJournalOffHost as verifyJournalOffHost,
-} from '../lib/fleet-reconcile-mirror.mjs'
 import { GITHUB_API_VERSION } from '../../../scripts/lib/github-mutation-boundary.mjs'
-import {
-  controlPlaneGenesisCommentBody,
-  validateControlPlaneGenesisReceipt,
-  verifyGitCheckoutIdentity,
-} from '../../../scripts/verify-privileged-change.mjs'
-import { ensureRuntimeEvidenceDirectory } from '../../../scripts/lib/governance-runtime-evidence.mjs'
 
 const DEFAULT_INVENTORY = resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json')
 const DEFAULT_DESIRED = resolve(GOVERNANCE_ROOT, 'desired/github.json')
@@ -110,132 +67,7 @@ const DEFAULT_CERTIFICATIONS = resolve(GOVERNANCE_ROOT, 'providers/certification
 const DEFAULT_WAIVERS = resolve(GOVERNANCE_ROOT, 'waivers.json')
 const DEFAULT_PRIVILEGED_POLICY = resolve(GOVERNANCE_ROOT, 'privileged-trust-roots.json')
 const DEFAULT_RUNTIME_PROFILE = resolve(GOVERNANCE_ROOT, 'providers/runtime-conformance.json')
-const DEFAULT_EXTERNAL_ACTIVATION_REQUIREMENTS = resolve(GOVERNANCE_ROOT, 'external-activation-requirements.json')
-const DEFAULT_EXTERNAL_ACTIVATION_POLICY = resolve(GOVERNANCE_ROOT, 'external-activation-policy.json')
-const DEFAULT_GITHUB_MUTATION_BOUNDARY_CONTRACT = resolve(
-  GOVERNANCE_ROOT,
-  GITHUB_MUTATION_BOUNDARY_CONTRACT_PATH.replace(/^infra\/governance\//, ''),
-)
-const DEFAULT_STAGED_ROLLOUT_PLAN = resolve(GOVERNANCE_ROOT, 'staged-rollout-plan.json')
-const DEFAULT_AUTHORITY_POLICY = resolve(GOVERNANCE_ROOT, '../../AGENTS.md')
-const AUTHORITY_BOOTSTRAP_TRANSACTION_CLASS = 'authority-policy-bootstrap'
-const AUTHORITY_BOOTSTRAP_PLAN_KIND = 'github-authority-policy-bootstrap-plan'
-const AUTHORITY_BOOTSTRAP_TRANSACTION_KIND = 'github-authority-policy-bootstrap-transaction'
-const AUTHORITY_BOOTSTRAP_DURABILITY_CLASS = 'bootstrap-local-recoverable'
-const AUTHORITY_BOOTSTRAP_REPLAY_KIND = 'github-authority-policy-bootstrap-durable-replay'
-const AUTHORITY_BOOTSTRAP_REPLAY_PURPOSE = 'candidate-freeze-durability-prerequisite'
-const AUTHORITY_BOOTSTRAP_MIRROR_REQUIREMENT_ID = 'activate-off-host-append-only-reconcile-evidence-mirror'
 const FLEET_RECONCILE_LOCAL_DURABILITY_CLASS = 'local-content-addressed-fsync-v1'
-const FLEET_RECONCILE_OFF_HOST_DURABILITY_CLASS = 'independent-append-only-off-host-v1'
-export const AUTHORITY_BOOTSTRAP_REPLAY_RECEIPT_RELATIVE_ROOT = 'staged-rollout/authority-bootstrap-replay/sha256'
-const AUTHORITY_BOOTSTRAP_PLAN_KEYS = new Set([
-  'schemaVersion',
-  'kind',
-  'transactionClass',
-  'mode',
-  'readOnly',
-  'promotionEligible',
-  'managedEvidence',
-  'repositoryId',
-  'repository',
-  'defaultBranch',
-  'defaultBranchHeadSha',
-  'defaultBranchTreeSha',
-  'inventoryDigest',
-  'desiredDigest',
-  'stagedRolloutPlanDigest',
-  'bootstrapBoundaryDigest',
-  'authorityPolicyDigest',
-  'projection',
-  'projectionDigest',
-  'genesisReceipt',
-  'genesisReceiptDigest',
-  'genesisReadbackTrust',
-  'genesisReadbackDigest',
-  'observedStateDigest',
-  'conflicts',
-  'actions',
-  'actionsDigest',
-  'rollbackPlan',
-  'rollbackPlanDigest',
-  'planDigest',
-])
-const AUTHORITY_BOOTSTRAP_PROJECTION_KEYS = new Set([
-  'transactionClass',
-  'repositoryId',
-  'repository',
-  'defaultBranch',
-  'profile',
-  'actionsWorkflowPermissions',
-  'rulesets',
-  'environments',
-  'requiredChecks',
-  'immutableReleases',
-  'releaseMutationAllowed',
-  'staleResourceDeletionAllowed',
-])
-const AUTHORITY_BOOTSTRAP_ALLOWED_ACTION_KINDS = new Set([
-  'create-environment',
-  'create-ruleset',
-  'update-actions-workflow-permissions',
-  'update-environment',
-  'update-ruleset',
-])
-const AUTHORITY_BOOTSTRAP_JOURNAL_KEYS = new Set([
-  'schemaVersion',
-  'kind',
-  'transactionClass',
-  'durabilityClass',
-  'offHostMirrored',
-  'promotionEligible',
-  'managedEvidence',
-  'transactionId',
-  'plan',
-  'planDigest',
-  'state',
-  'startedAt',
-  'completedAt',
-  'failedAt',
-  'error',
-  'rollbackAttempted',
-  'recoveryInstruction',
-  'actions',
-  'rollbackPlan',
-  'rollbackPlanDigest',
-  'authorizationEnvelopeDigest',
-  'recoveredAt',
-  'recoveryFailures',
-  'rollbackAuthorizationEventHeadDigest',
-  'rollbackStartedAt',
-  'rollbackCompletedAt',
-  'rollbackBlockers',
-  'events',
-  'eventHeadDigest',
-  'offHostReceipts',
-])
-const AUTHORITY_BOOTSTRAP_REPLAY_KEYS = new Set([
-  'schemaVersion',
-  'kind',
-  'protocolVersion',
-  'purpose',
-  'promotionEligible',
-  'managedEvidence',
-  'managedEvidenceScope',
-  'requirementId',
-  'activationRequirementDigest',
-  'sourceJournal',
-  'sourceJournalDigest',
-  'mirrorIdentity',
-  'mirrorIdentityDigest',
-  'eventReceipts',
-  'eventReceiptsDigest',
-  'headVerificationRequest',
-  'headVerification',
-  'replayedAt',
-  'convergenceReadback',
-  'convergenceReadbackDigest',
-  'receiptDigest',
-])
 
 const clone = value => JSON.parse(JSON.stringify(value))
 
@@ -626,139 +458,6 @@ function validateModelCore(inventory, desired, rings, certifications, waivers, n
 
 export function validateModel(inventory, desired, rings, certifications, waivers, now = new Date(), issuerRegistry = loadIssuerRegistry(), runtimeProfile, runtimeValidationContext = {}) {
   return validateModelCore(inventory, desired, rings, certifications, waivers, now, issuerRegistry, runtimeProfile, runtimeValidationContext, true)
-}
-
-export function computeEligibility({
-  repo,
-  inventory,
-  desired,
-  rings,
-  certifications,
-  waivers,
-  now = new Date(),
-  issuerRegistry = loadIssuerRegistry(),
-  runtimeProfile,
-  runtimeValidationContext = {},
-  activationPolicy,
-  expectedActivationPolicyDigest,
-}) {
-  validateInventoryForEligibility({
-    inventory,
-    desired,
-    rings,
-    certifications,
-    waivers,
-    now,
-    issuerRegistry,
-    runtimeProfile,
-    runtimeValidationContext,
-    activationPolicy,
-    expectedActivationPolicyDigest,
-  })
-  const assignment = rings.assignments[repo.id]
-  const ring = rings.rings.find(candidate => candidate.id === assignment.ring)
-  const blockers = [...(assignment.manualBlockers ?? [])]
-  const soakPredicate = ring.promotionPredicates.find(predicate => (
-    predicate.type === 'soak-complete' || predicate.type === 'soak-observation'
-  ))
-  const soak = evaluateReleaseRingSoak({
-    predicate: soakPredicate,
-    repo,
-    ring,
-    assignment,
-    candidateRelease: rings.candidateRelease,
-    now,
-    activationPolicy,
-    expectedActivationPolicyDigest,
-  })
-  if (!soak.pass) blockers.push(soak.message)
-
-  const priorOrder = Math.max(-1, ...rings.rings.filter(candidate => candidate.order < ring.order).map(candidate => candidate.order))
-  if (priorOrder >= 0) {
-    const priorRingIds = new Set(rings.rings.filter(candidate => candidate.order === priorOrder).map(candidate => candidate.id))
-    const unpromoted = Object.entries(rings.assignments).filter(([id, value]) => {
-      if (!priorRingIds.has(value.ring)) return false
-      const upstreamRepo = inventory.repositories.find(item => item.id === id)
-      return !verifyCompletionAttestation(value.completionAttestation, {
-        repoId: id,
-        github: upstreamRepo?.github,
-        ringId: value.ring,
-        waveId: value.wave,
-        candidateRelease: rings.candidateRelease,
-        issuerRegistryDigest: rings.attestationPolicy.issuerRegistryDigest,
-        attestationPolicy: rings.attestationPolicy,
-      }, { now, issuerRegistry }).valid
-    }).map(([id]) => id)
-    if (unpromoted.length > 0) blockers.push(`upstream ring is not promoted: ${unpromoted.join(', ')}`)
-  }
-
-  const certificationMap = new Map((certifications?.certifications ?? []).map(item => [certificationKey(item.provider, item.runtimeKind, item.surface, item.repositoryRole), item]))
-  for (const requirement of repo.providerSurfacesRequired ?? []) {
-    const [provider, runtimeKind, surface] = requirement.split('/')
-    const certification = certificationMap.get(certificationKey(provider, runtimeKind, surface, repo.role))
-    if (!certification || certification.status !== 'certified') blockers.push(`provider surface not certified: ${requirement}/${repo.role}`)
-    else if (certification.expiresAt && new Date(certification.expiresAt) <= now) blockers.push(`provider surface certification expired: ${requirement}`)
-  }
-
-  for (const waiver of waivers?.waivers ?? []) {
-    if (waiver.scope?.repository !== repo.id && waiver.scope?.repository !== repo.github) continue
-    if (waiver.status === 'active' && new Date(waiver.expiresAt) <= now) blockers.push(`active waiver expired: ${waiver.id}`)
-    if (waiver.status === 'active' && ['critical', 'high'].includes(waiver.risk)) blockers.push(`open ${waiver.risk} waiver: ${waiver.id}`)
-  }
-  const authorization = verifyApplyAuthorization(assignment.applyAuthorization, {
-    repoId: repo.id,
-    github: repo.github,
-    ringId: assignment.ring,
-    waveId: assignment.wave,
-    candidateRelease: rings.candidateRelease,
-    issuerRegistryDigest: rings.attestationPolicy.issuerRegistryDigest,
-    attestationPolicy: rings.attestationPolicy,
-  }, { now, issuerRegistry })
-  const completion = verifyCompletionAttestation(assignment.completionAttestation, {
-    repoId: repo.id,
-    github: repo.github,
-    ringId: assignment.ring,
-    waveId: assignment.wave,
-    candidateRelease: rings.candidateRelease,
-    issuerRegistryDigest: rings.attestationPolicy.issuerRegistryDigest,
-    attestationPolicy: rings.attestationPolicy,
-  }, { now, issuerRegistry })
-  return { eligible: blockers.length === 0 && authorization.valid, promoted: completion.valid, ring: ring.id, wave: assignment.wave, blockers: [...blockers, ...authorization.failures] }
-}
-
-function validateInventoryForEligibility({
-  inventory,
-  desired,
-  rings,
-  certifications,
-  waivers,
-  now,
-  issuerRegistry,
-  runtimeProfile,
-  runtimeValidationContext,
-  activationPolicy,
-  expectedActivationPolicyDigest,
-}) {
-  // Keep direct callers fail-closed too; buildPlan additionally validates desired GitHub state.
-  validateInventory(inventory)
-  validateReleaseRings(inventory, rings, {
-    now,
-    issuerRegistry,
-    activationPolicy,
-    expectedActivationPolicyDigest,
-  })
-  const context = normalizeRuntimeValidationContext(runtimeValidationContext, { inventory })
-  validateCertifications(certifications, {
-    now,
-    issuerRegistry,
-    runtimeProfile,
-    inventory,
-    desiredGithub: desired,
-    repoRoot: context.repoRoot,
-    runtimeIdentity: context.runtimeIdentity,
-    externalRepositoryIdentities: context.externalRepositoryIdentities,
-  })
-  validateWaivers(inventory, waivers)
 }
 
 export function materializeProfile(repo, desired, rings, eligibility) {
@@ -1391,515 +1090,6 @@ export function diffRepository(repo, materialized, observed, desired, now = new 
   }
 }
 
-export function validateAuthorityBootstrapBoundary(boundary) {
-  const expectedKeys = [
-    'actionsWorkflowPermissions',
-    'crashRecoveryRequired',
-    'environments',
-    'exactReadbackRequired',
-    'irreversibleActionsAllowed',
-    'kind',
-    'position',
-    'profile',
-    'repository',
-    'repositoryId',
-    'rollbackRequired',
-    'rulesets',
-    'staleResourceDeletionAllowed',
-    'transactionClass',
-  ]
-  invariant(boundary && typeof boundary === 'object' && !Array.isArray(boundary)
-    && stableStringify(Object.keys(boundary).sort(), 0) === stableStringify(expectedKeys.sort(), 0),
-  'authority policy bootstrap boundary has an invalid or open shape')
-  invariant(boundary.kind === 'authority-github-policy-bootstrap-convergence-v1'
-    && ['after-candidate-freeze-before-protected-pr', 'before-candidate-freeze'].includes(boundary.position)
-    && boundary.transactionClass === AUTHORITY_BOOTSTRAP_TRANSACTION_CLASS,
-  'authority policy bootstrap boundary identity is invalid')
-  invariant(boundary.repositoryId === 'design-system'
-    && boundary.repository === 'ajenchen/design-system'
-    && boundary.profile === 'design-system-authority',
-  'authority policy bootstrap boundary repository/profile binding is invalid')
-  invariant(boundary.actionsWorkflowPermissions === true
-    && boundary.irreversibleActionsAllowed === false
-    && boundary.staleResourceDeletionAllowed === false
-    && boundary.exactReadbackRequired === true
-    && boundary.crashRecoveryRequired === true
-    && boundary.rollbackRequired === true,
-  'authority policy bootstrap boundary weakens convergence safety')
-  invariant(Array.isArray(boundary.rulesets) && boundary.rulesets.length === 2
-    && stableStringify(boundary.rulesets, 0) === stableStringify(['fleet/base-integrity', 'fleet/verified-main'], 0),
-  'authority policy bootstrap boundary ruleset closure is invalid')
-  // 1B(2026-07-29):governance-check-verdict 環境隨 App verdict 層拆除。
-  invariant(Array.isArray(boundary.environments) && boundary.environments.length === 1
-    && stableStringify(boundary.environments, 0) === stableStringify(['governance-external-ledger'], 0),
-  'authority policy bootstrap boundary environment closure is invalid')
-  return boundary
-}
-
-export function materializeAuthorityBootstrapProjection({ inventory, desired, stagedRolloutPlan }) {
-  const boundary = validateAuthorityBootstrapBoundary(stagedRolloutPlan?.bootstrapBoundary?.githubPolicyConvergence)
-  const authorityRepos = inventory?.repositories?.filter(repo => repo.role === 'authority') ?? []
-  invariant(authorityRepos.length === 1, 'authority policy bootstrap requires exactly one registered authority repository')
-  const repo = authorityRepos[0]
-  invariant(repo.id === boundary.repositoryId
-    && repo.github === boundary.repository
-    && repo.desiredProfile === boundary.profile
-    && repo.defaultBranch === 'main',
-  'authority policy bootstrap inventory binding differs from its canonical boundary')
-  const profile = desired?.profiles?.[repo.desiredProfile]
-  invariant(profile, 'authority policy bootstrap desired profile is missing')
-  const rulesets = []
-  for (const name of boundary.rulesets) {
-    const source = profile.rulesets.find(ruleset => ruleset.name === name)
-    invariant(source && source.target === 'branch' && source.enforcement === 'active'
-      && Array.isArray(source.bypass_actors) && source.bypass_actors.length === 0,
-    `authority policy bootstrap ruleset is unsafe or missing: ${name}`)
-    const ruleset = clone(source)
-    delete ruleset.rollout
-    if (name === 'fleet/verified-main') {
-      ruleset.rules = ruleset.rules.filter(rule => rule.type === 'pull_request')
-      invariant(ruleset.rules.length === 1, 'authority policy bootstrap verified-main projection must contain exactly one pull-request rule')
-    } else {
-      invariant(source.rollout === 'always', `authority policy bootstrap ruleset is not an always-on prerequisite: ${name}`)
-      invariant(!ruleset.rules.some(rule => rule.type === 'required_status_checks'), `authority policy bootstrap ruleset depends on unavailable status checks: ${name}`)
-    }
-    invariant(!ruleset.rules.some(rule => rule.type === 'required_status_checks'), `authority policy bootstrap projection contains App-dependent status checks: ${name}`)
-    rulesets.push(ruleset)
-  }
-  const environments = boundary.environments.map(name => {
-    const source = profile.environments.find(environment => environment.name === name)
-    invariant(source?.rollout === 'always', `authority policy bootstrap environment is not an always-on prerequisite: ${name}`)
-    return {
-      name: source.name,
-      wait_timer: source.waitTimer,
-      prevent_self_review: source.preventSelfReview,
-      reviewers: clone(source.reviewers),
-      deployment_branch_policy: {
-        protected_branches: source.deploymentBranchPolicy.protectedBranches,
-        custom_branch_policies: source.deploymentBranchPolicy.customBranchPolicies,
-      },
-    }
-  })
-  const projection = {
-    transactionClass: AUTHORITY_BOOTSTRAP_TRANSACTION_CLASS,
-    repositoryId: repo.id,
-    repository: repo.github,
-    defaultBranch: repo.defaultBranch,
-    profile: repo.desiredProfile,
-    actionsWorkflowPermissions: clone(profile.actionsWorkflowPermissions),
-    rulesets,
-    environments,
-    requiredChecks: [],
-    immutableReleases: false,
-    releaseMutationAllowed: false,
-    staleResourceDeletionAllowed: false,
-  }
-  return { boundary, repo, profile, projection }
-}
-
-function authorityBootstrapMaterialized(projection) {
-  return {
-    profile: null,
-    actionsWorkflowPermissions: clone(projection.actionsWorkflowPermissions),
-    rulesets: clone(projection.rulesets),
-    environments: clone(projection.environments),
-    declaredEnvironments: [],
-    requiredChecks: [],
-    immutableReleases: false,
-    tagPolicy: { allowCreation: false, sourceWorkflow: null },
-    assignment: null,
-    eligibility: { eligible: true, promoted: false, ring: 'ring-0-authority', wave: 'control-plane-bootstrap', blockers: [] },
-  }
-}
-
-function authorityBootstrapObservedStateDigest(repo, observed) {
-  return sha256(stableStringify({
-    repository: repo.github,
-    defaultBranchHeadSha: observed.defaultBranchHeadSha,
-    defaultBranchTreeSha: observed.defaultBranchTreeSha,
-    metadata: {
-      fullName: observed.metadata.full_name,
-      defaultBranch: observed.metadata.default_branch,
-      visibility: observed.metadata.visibility,
-    },
-    rulesets: observed.rulesets.map(normalizeRuleset).sort((left, right) => compareUtf8Bytes(left.name, right.name)),
-    environments: observed.environments.map(normalizeEnvironment).sort((left, right) => compareUtf8Bytes(left.name, right.name)),
-    actionsWorkflowPermissions: normalizeActionsWorkflowPermissions(observed.actionsWorkflowPermissions),
-  }, 0))
-}
-
-export function diffAuthorityBootstrapRepository(repo, projection, observed, desired) {
-  const conflicts = []
-  const actions = []
-  if (observed.metadata.full_name !== repo.github) conflicts.push(`API identity mismatch: expected ${repo.github}, got ${observed.metadata.full_name}`)
-  if (observed.metadata.default_branch !== repo.defaultBranch) conflicts.push(`Default branch mismatch: expected ${repo.defaultBranch}, got ${observed.metadata.default_branch}`)
-  if (observed.metadata.visibility !== repo.visibility) conflicts.push(`Visibility mismatch: expected ${repo.visibility}, got ${observed.metadata.visibility}`)
-  invariant(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(observed.defaultBranchTreeSha ?? ''), 'authority policy bootstrap default-branch tree identity is invalid')
-  const allowedRulesets = new Set(projection.rulesets.map(ruleset => ruleset.name))
-  const unexpectedRulesets = observed.rulesetSummaries
-    .filter(ruleset => ruleset.name.startsWith(desired.managedRulesetPrefix) && !allowedRulesets.has(ruleset.name))
-    .map(ruleset => ruleset.name)
-    .sort(compareUtf8Bytes)
-  if (unexpectedRulesets.length) conflicts.push(`authority bootstrap found out-of-scope managed rulesets: ${unexpectedRulesets.join(', ')}`)
-  const allowedEnvironments = new Set(projection.environments.map(environment => environment.name))
-  const unexpectedEnvironments = observed.environmentSummaries
-    .filter(environment => desired.managedEnvironmentNames.includes(environment.name) && !allowedEnvironments.has(environment.name))
-    .map(environment => environment.name)
-    .sort(compareUtf8Bytes)
-  if (unexpectedEnvironments.length) conflicts.push(`authority bootstrap found out-of-scope managed environments: ${unexpectedEnvironments.join(', ')}`)
-
-  const desiredPermissions = normalizeActionsWorkflowPermissions(projection.actionsWorkflowPermissions)
-  const observedPermissions = normalizeActionsWorkflowPermissions(observed.actionsWorkflowPermissions)
-  if (!deepEqual(observedPermissions, desiredPermissions)) {
-    const path = `/repos/${repo.github}/actions/permissions/workflow`
-    actions.push(managedAction(
-      {
-        kind: 'update-actions-workflow-permissions',
-        method: 'PUT',
-        path,
-        body: desiredPermissions,
-        resource: 'actions-workflow-permissions',
-      },
-      observedPermissions,
-      { safety: 'automatic', method: 'PUT', path, body: observedPermissions },
-    ))
-  }
-  for (const desiredRuleset of projection.rulesets) {
-    const summary = observed.rulesetSummaries.find(item => item.name === desiredRuleset.name)
-    const remote = observed.rulesets.find(item => item.name === desiredRuleset.name)
-    const body = normalizeRuleset(desiredRuleset)
-    if (!summary) actions.push(managedAction(
-      { kind: 'create-ruleset', method: 'POST', path: `/repos/${repo.github}/rulesets`, body, resource: desiredRuleset.name },
-      null,
-      { safety: 'automatic', method: 'DELETE', pathSource: 'readbackPath' },
-    ))
-    else if (!deepEqual(normalizeRuleset(remote), body)) actions.push(managedAction(
-      { kind: 'update-ruleset', method: 'PUT', path: `/repos/${repo.github}/rulesets/${summary.id}`, body, resource: desiredRuleset.name },
-      normalizeRuleset(remote),
-      { safety: 'automatic', method: 'PUT', path: `/repos/${repo.github}/rulesets/${summary.id}`, body: normalizeRuleset(remote) },
-    ))
-  }
-  for (const desiredEnvironment of projection.environments) {
-    const remote = observed.environments.find(item => item.name === desiredEnvironment.name)
-    const body = clone(desiredEnvironment)
-    delete body.name
-    if (!remote || !deepEqual(normalizeEnvironment(remote), desiredEnvironment)) {
-      actions.push(managedAction(
-        { kind: remote ? 'update-environment' : 'create-environment', method: 'PUT', path: `/repos/${repo.github}/environments/${encodeURIComponent(desiredEnvironment.name)}`, body, resource: desiredEnvironment.name },
-        remote ? normalizeEnvironment(remote) : null,
-        remote
-          ? { safety: 'automatic', method: 'PUT', path: `/repos/${repo.github}/environments/${encodeURIComponent(desiredEnvironment.name)}`, body: (() => { const previous = normalizeEnvironment(remote); delete previous.name; return previous })() }
-          : { safety: 'automatic', method: 'DELETE', path: `/repos/${repo.github}/environments/${encodeURIComponent(desiredEnvironment.name)}` },
-      ))
-    }
-  }
-  actions.sort((left, right) => compareUtf8Bytes(`${left.resource}:${left.kind}`, `${right.resource}:${right.kind}`))
-  invariant(actions.every(action => AUTHORITY_BOOTSTRAP_ALLOWED_ACTION_KINDS.has(action.kind)
-    && action.compensation?.safety === 'automatic'
-    && !action.kind.startsWith('delete-')
-    && action.kind !== 'enable-immutable-releases'),
-  'authority policy bootstrap projection contains a forbidden or irreversible action')
-  if (actions.length) validateActionTransactionClass(actions)
-  return {
-    repoId: repo.id,
-    github: repo.github,
-    defaultBranchHeadSha: observed.defaultBranchHeadSha,
-    defaultBranchTreeSha: observed.defaultBranchTreeSha,
-    observedStateDigest: authorityBootstrapObservedStateDigest(repo, observed),
-    conflicts: [...new Set(conflicts)],
-    actions,
-  }
-}
-
-function bindAuthorityBootstrapActions(actions, repo) {
-  return actions.map((action, index) => ({
-    ...clone(action),
-    actionId: `${repo.id}:${String(index + 1).padStart(3, '0')}:${action.kind}:${action.resource}`,
-    github: repo.github,
-    repoId: repo.id,
-    status: 'pending',
-  }))
-}
-
-function authorityBootstrapPlanDigest(plan) {
-  const unsigned = clone(plan)
-  delete unsigned.planDigest
-  return sha256(`qijenchen-authority-policy-bootstrap-plan-v1\n${stableStringify(unsigned, 0)}`)
-}
-
-export function validateAuthorityBootstrapPlan(plan) {
-  invariant(plan && typeof plan === 'object' && !Array.isArray(plan), 'authority policy bootstrap plan is invalid')
-  assertClosedKeys(plan, AUTHORITY_BOOTSTRAP_PLAN_KEYS,
-    'authority policy bootstrap plan has an invalid or open shape')
-  invariant(Object.keys(plan).length === AUTHORITY_BOOTSTRAP_PLAN_KEYS.size,
-    'authority policy bootstrap plan is incomplete')
-  invariant(plan.schemaVersion === 1
-    && plan.kind === AUTHORITY_BOOTSTRAP_PLAN_KIND
-    && plan.transactionClass === AUTHORITY_BOOTSTRAP_TRANSACTION_CLASS
-    && plan.mode === 'plan'
-    && plan.readOnly === true
-    && plan.promotionEligible === false
-    && plan.managedEvidence === false,
-  'authority policy bootstrap plan identity or evidence class is invalid')
-  for (const field of [
-    'inventoryDigest', 'desiredDigest', 'stagedRolloutPlanDigest', 'bootstrapBoundaryDigest',
-    'authorityPolicyDigest', 'projectionDigest', 'genesisReceiptDigest', 'observedStateDigest',
-    'genesisReadbackDigest', 'actionsDigest', 'rollbackPlanDigest', 'planDigest',
-  ]) invariant(/^[a-f0-9]{64}$/.test(plan[field] ?? ''), `authority policy bootstrap plan ${field} is invalid`)
-  invariant(plan.repositoryId === 'design-system'
-    && plan.repository === 'ajenchen/design-system'
-    && plan.defaultBranch === 'main'
-    && /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(plan.defaultBranchHeadSha ?? '')
-    && /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(plan.defaultBranchTreeSha ?? ''),
-  'authority policy bootstrap plan target identity is invalid')
-  assertClosedKeys(plan.projection, AUTHORITY_BOOTSTRAP_PROJECTION_KEYS,
-    'authority policy bootstrap projection has an invalid or open shape')
-  invariant(Object.keys(plan.projection).length === AUTHORITY_BOOTSTRAP_PROJECTION_KEYS.size
-    && plan.projection.transactionClass === AUTHORITY_BOOTSTRAP_TRANSACTION_CLASS
-    && plan.projection.repositoryId === plan.repositoryId
-    && plan.projection.repository === plan.repository
-    && plan.projection.defaultBranch === plan.defaultBranch
-    && plan.projection.profile === 'design-system-authority'
-    && Array.isArray(plan.projection.requiredChecks) && plan.projection.requiredChecks.length === 0
-    && plan.projection.immutableReleases === false
-    && plan.projection.releaseMutationAllowed === false
-    && plan.projection.staleResourceDeletionAllowed === false,
-  'authority policy bootstrap projection identity or safety class is invalid')
-  invariant(plan.projectionDigest === sha256(stableStringify(plan.projection, 0)),
-    'authority policy bootstrap projection digest mismatch')
-  validateControlPlaneGenesisReceipt(plan.genesisReceipt)
-  invariant(plan.genesisReceiptDigest === plan.genesisReceipt.receiptDigest
-    && plan.genesisReceipt.challenge.repository === plan.repository
-    && plan.genesisReceipt.challenge.baseSha === plan.defaultBranchHeadSha
-    && plan.genesisReceipt.challenge.baseTree === plan.defaultBranchTreeSha,
-  'authority policy bootstrap genesis receipt target binding is invalid')
-  invariant(['github-live', 'fixture-untrusted'].includes(plan.genesisReadbackTrust)
-    && /^[a-f0-9]{64}$/.test(plan.genesisReadbackDigest ?? ''),
-  'authority policy bootstrap genesis readback trust class or digest is invalid')
-  invariant(Array.isArray(plan.conflicts) && plan.conflicts.every(item => typeof item === 'string' && item.length > 0),
-    'authority policy bootstrap plan conflicts are invalid')
-  invariant(Array.isArray(plan.actions)
-    && plan.actions.every(action => AUTHORITY_BOOTSTRAP_ALLOWED_ACTION_KINDS.has(action.kind)
-      && action.compensation?.safety === 'automatic'
-      && !action.kind.startsWith('delete-')
-      && action.kind !== 'enable-immutable-releases'
-      && action.github === plan.repository
-      && action.repoId === plan.repositoryId
-      && typeof action.actionId === 'string'
-      && action.actionId.startsWith(`${plan.repositoryId}:`)
-      && action.status === 'pending'),
-  'authority policy bootstrap plan contains a forbidden action')
-  invariant(plan.actionsDigest === candidateActionsDigest(plan.actions), 'authority policy bootstrap action digest mismatch')
-  invariant(deepEqual(plan.rollbackPlan, rollbackPlanFor(plan.actions))
-    && plan.rollbackPlanDigest === rollbackPlanDigest(plan.rollbackPlan),
-  'authority policy bootstrap rollback plan is invalid')
-  invariant(plan.planDigest === authorityBootstrapPlanDigest(plan), 'authority policy bootstrap plan digest mismatch')
-  return plan
-}
-
-function verifyLiveControlPlaneGenesisReceipt(client, receipt, {
-  now = new Date(),
-  privilegedPolicy = readJson(DEFAULT_PRIVILEGED_POLICY),
-} = {}) {
-  validateControlPlaneGenesisReceipt(receipt)
-  invariant(client && typeof client.request === 'function',
-    'control-plane genesis live verification requires the trusted GitHub transport')
-  invariant(now instanceof Date && Number.isFinite(now.getTime()),
-    'control-plane genesis live verification time is invalid')
-  const challenge = receipt.challenge
-  const pull = client.request('GET',
-    `/repos/${challenge.repository}/pulls/${challenge.pullRequest}`)
-  invariant(pull?.state === 'open'
-    && pull?.merged_at === null
-    && pull?.base?.repo?.full_name === challenge.repository
-    && pull?.base?.ref === 'main'
-    && pull?.base?.sha === challenge.baseSha
-    && pull?.head?.repo?.full_name === challenge.repository
-    && pull?.head?.sha === challenge.candidateHeadSha,
-  'control-plane genesis pull-request readback differs from its exact authority target')
-  const baseCommit = client.request('GET',
-    `/repos/${challenge.repository}/git/commits/${challenge.baseSha}`)
-  const candidateCommit = client.request('GET',
-    `/repos/${challenge.repository}/git/commits/${challenge.candidateHeadSha}`)
-  invariant(baseCommit?.sha === challenge.baseSha
-    && baseCommit?.tree?.sha === challenge.baseTree
-    && candidateCommit?.sha === challenge.candidateHeadSha
-    && candidateCommit?.tree?.sha === challenge.candidateHeadTree,
-  'control-plane genesis GitHub commit/tree readback differs from the verified challenge')
-  const files = fetchCompleteCollection(client,
-    `/repos/${challenge.repository}/pulls/${challenge.pullRequest}/files?per_page=100`, {
-      select: value => value,
-      totalCount: () => null,
-      identity: file => (
-        typeof file?.filename === 'string' && file.filename.length > 0
-          ? `filename:${file.filename}`
-          : ''
-      ),
-      label: `control-plane genesis PR files for ${challenge.repository}#${challenge.pullRequest}`,
-    })
-  const changedPaths = files.map((file, index) => {
-    invariant(file?.status === 'added' || file?.status === 'modified',
-      `control-plane genesis PR file ${index} has forbidden status ${file?.status}`)
-    invariant(typeof file.filename === 'string' && file.filename.length > 0
-      && file.previous_filename === undefined,
-    `control-plane genesis PR file ${index} has an invalid or renamed path`)
-    return file.filename
-  }).sort(compareUtf8Bytes)
-  invariant(new Set(changedPaths).size === changedPaths.length
-    && deepEqual(changedPaths, challenge.changedPaths),
-  'control-plane genesis challenge does not equal the complete GitHub PR changed-path set')
-  const comments = fetchCompleteCollection(client,
-    `/repos/${challenge.repository}/issues/${challenge.pullRequest}/comments?per_page=100`, {
-      select: value => value,
-      totalCount: () => null,
-      label: `control-plane genesis comments for ${challenge.repository}#${challenge.pullRequest}`,
-    })
-  const matches = comments.filter(comment => String(comment?.id) === receipt.authorization.commentId)
-  invariant(matches.length === 1, 'control-plane genesis authorization comment is missing or duplicated')
-  const comment = matches[0]
-  const commentCreatedAt = new Date(comment.created_at)
-  const commentUpdatedAt = new Date(comment.updated_at)
-  invariant(comment.author_association === 'OWNER'
-    && comment.user?.login === receipt.authorization.ownerLogin
-    && comment.user?.login === challenge.repository.split('/')[0]
-    && Number.isFinite(commentCreatedAt.getTime())
-    && Number.isFinite(commentUpdatedAt.getTime())
-    && commentCreatedAt.toISOString() === receipt.authorization.createdAt
-    && commentUpdatedAt.getTime() === commentCreatedAt.getTime()
-    && sha256(comment.body ?? '') === receipt.authorization.commentDigest,
-  'control-plane genesis authorization comment provenance or immutable bytes differ')
-  const marker = 'DS-GOVERNANCE-CONTROL-PLANE-GENESIS-V1 '
-  invariant(typeof comment.body === 'string' && comment.body.startsWith(marker),
-    'control-plane genesis authorization comment marker is invalid')
-  let payload
-  try { payload = JSON.parse(comment.body.slice(marker.length)) } catch {
-    throw new Error('control-plane genesis authorization comment payload is invalid')
-  }
-  invariant(payload && typeof payload === 'object' && !Array.isArray(payload)
-    && stableStringify(Object.keys(payload).sort(), 0)
-      === stableStringify(['challenge', 'challengeDigest', 'expiresAt', 'nonce'].sort(), 0),
-  'control-plane genesis authorization comment has an invalid or open payload')
-  const expiresAt = new Date(payload.expiresAt)
-  invariant(Number.isFinite(expiresAt.getTime()) && expiresAt > now
-    && payload.nonce === privilegedPolicy?.bootstrap?.nonce
-    && comment.body === controlPlaneGenesisCommentBody({
-      challenge,
-      challengeDigest: receipt.challengeDigest,
-      expiresAt: payload.expiresAt,
-      nonce: privilegedPolicy.bootstrap.nonce,
-    }),
-  'control-plane genesis authorization comment is expired, substituted, or bound to another policy')
-  return {
-    pullRequestId: String(pull.id),
-    baseCommit: challenge.baseSha,
-    baseTree: challenge.baseTree,
-    candidateCommit: challenge.candidateHeadSha,
-    candidateTree: challenge.candidateHeadTree,
-    changedPathsDigest: challenge.changedPathsDigest,
-    commentId: receipt.authorization.commentId,
-    commentDigest: receipt.authorization.commentDigest,
-    readbackDigest: sha256(`qijenchen-control-plane-genesis-live-readback-v1\n${stableStringify({
-      repository: challenge.repository,
-      pullRequest: challenge.pullRequest,
-      pullRequestId: String(pull.id),
-      baseCommit: challenge.baseSha,
-      baseTree: challenge.baseTree,
-      candidateCommit: challenge.candidateHeadSha,
-      candidateTree: challenge.candidateHeadTree,
-      changedPaths,
-      commentId: receipt.authorization.commentId,
-      commentDigest: receipt.authorization.commentDigest,
-    }, 0)}`),
-  }
-}
-
-function buildAuthorityBootstrapPlanCore({
-  inventory,
-  desired,
-  stagedRolloutPlan,
-  client,
-  genesisReceipt,
-  authorityPolicyDigest = null,
-  canonicalInventoryBytesDigest = null,
-  canonicalDesiredBytesDigest = null,
-}, productionLive) {
-  validateControlPlaneGenesisReceipt(genesisReceipt)
-  const { boundary, repo, projection } = materializeAuthorityBootstrapProjection({ inventory, desired, stagedRolloutPlan })
-  const resolvedAuthorityPolicyDigest = authorityPolicyDigest ?? sha256(readFileSync(DEFAULT_AUTHORITY_POLICY))
-  const resolvedInventoryBytesDigest = canonicalInventoryBytesDigest ?? sha256(readFileSync(DEFAULT_INVENTORY))
-  const resolvedDesiredBytesDigest = canonicalDesiredBytesDigest ?? sha256(readFileSync(DEFAULT_DESIRED))
-  let liveGenesisReadback = null
-  if (productionLive) {
-    assertTrustedLiveGitHubClient(client, 'live authority policy bootstrap planning')
-    verifyGitCheckoutIdentity(resolve(GOVERNANCE_ROOT, '../..'), {
-      head: genesisReceipt.challenge.candidateHeadSha,
-      tree: genesisReceipt.challenge.candidateHeadTree,
-      label: 'live authority policy bootstrap candidate',
-    })
-    invariant(authorityPolicyDigest === null && canonicalInventoryBytesDigest === null && canonicalDesiredBytesDigest === null,
-      'live authority bootstrap refuses caller-injected canonical source digests')
-    invariant(deepEqual(inventory, readJson(DEFAULT_INVENTORY))
-      && deepEqual(desired, readJson(DEFAULT_DESIRED))
-      && deepEqual(stagedRolloutPlan, readJson(DEFAULT_STAGED_ROLLOUT_PLAN)),
-    'live authority bootstrap refuses substituted canonical source objects')
-    liveGenesisReadback = verifyLiveControlPlaneGenesisReceipt(client, genesisReceipt)
-  }
-  invariant(genesisReceipt.challenge.repository === repo.github
-    && genesisReceipt.challenge.baseSha
-    && genesisReceipt.challenge.baseTree
-    && genesisReceipt.challenge.inventoryDigest === resolvedInventoryBytesDigest
-    && genesisReceipt.challenge.desiredDigest === resolvedDesiredBytesDigest,
-  'authority policy bootstrap genesis receipt differs from the current canonical authority source')
-  const materialized = authorityBootstrapMaterialized(projection)
-  const observed = fetchRepositoryState(client, repo, materialized, desired)
-  invariant(observed.defaultBranchHeadSha === genesisReceipt.challenge.baseSha
-    && observed.defaultBranchTreeSha === genesisReceipt.challenge.baseTree,
-  'authority policy bootstrap live base commit/tree differs from the verified genesis PR base')
-  const diff = diffAuthorityBootstrapRepository(repo, projection, observed, desired)
-  const actions = bindAuthorityBootstrapActions(diff.actions, repo)
-  const rollbackPlan = rollbackPlanFor(actions)
-  const plan = {
-    schemaVersion: 1,
-    kind: AUTHORITY_BOOTSTRAP_PLAN_KIND,
-    transactionClass: AUTHORITY_BOOTSTRAP_TRANSACTION_CLASS,
-    mode: 'plan',
-    readOnly: true,
-    promotionEligible: false,
-    managedEvidence: false,
-    repositoryId: repo.id,
-    repository: repo.github,
-    defaultBranch: repo.defaultBranch,
-    defaultBranchHeadSha: diff.defaultBranchHeadSha,
-    defaultBranchTreeSha: diff.defaultBranchTreeSha,
-    inventoryDigest: sha256(stableStringify(inventory, 0)),
-    desiredDigest: sha256(stableStringify(desired, 0)),
-    stagedRolloutPlanDigest: sha256(stableStringify(stagedRolloutPlan, 0)),
-    bootstrapBoundaryDigest: sha256(stableStringify(boundary, 0)),
-    authorityPolicyDigest: resolvedAuthorityPolicyDigest,
-    projection: clone(projection),
-    projectionDigest: sha256(stableStringify(projection, 0)),
-    genesisReceipt: clone(genesisReceipt),
-    genesisReceiptDigest: genesisReceipt.receiptDigest,
-    genesisReadbackTrust: productionLive ? 'github-live' : 'fixture-untrusted',
-    genesisReadbackDigest: productionLive
-      ? liveGenesisReadback.readbackDigest
-      : sha256(`qijenchen-control-plane-genesis-fixture-readback-v1\n${genesisReceipt.receiptDigest}`),
-    observedStateDigest: diff.observedStateDigest,
-    conflicts: diff.conflicts,
-    actions,
-    actionsDigest: candidateActionsDigest(actions),
-    rollbackPlan,
-    rollbackPlanDigest: rollbackPlanDigest(rollbackPlan),
-    planDigest: null,
-  }
-  plan.planDigest = authorityBootstrapPlanDigest(plan)
-  return validateAuthorityBootstrapPlan(plan)
-}
-
-export function buildAuthorityBootstrapPlan(options) {
-  return buildAuthorityBootstrapPlanCore(options, true)
-}
-
 function buildPlanCore({ inventory, desired, rings, certifications, waivers, client, verifiedReleaseEvidence = null, repoId, now = new Date(), issuerRegistry = loadIssuerRegistry(), runtimeProfile, runtimeValidationContext = {} }, productionLive) {
   const validateCandidateReleaseEvidence = () => {
     if (rings.candidateRelease === null) invariant(verifiedReleaseEvidence === null, 'verified release evidence must be null without a candidate release')
@@ -1923,107 +1113,32 @@ function buildPlanCore({ inventory, desired, rings, certifications, waivers, cli
   invariant(repositories.length > 0, `Unknown repository id ${repoId}`)
   const prepared = repositories.map(repo => {
     const assignment = rings.assignments[repo.id]
-    // Candidate diffing always materializes the promoted target. Authorization is
-    // evaluated afterwards so receipt validation cannot influence its own digest.
-    const eligibility = { eligible: true, promoted: true, ring: assignment.ring, wave: assignment.wave, blockers: [] }
+    // Diffing always materializes the converged protected target. Manual holds
+    // surface as conflicts so a held repository can never be mutated.
+    const eligibility = { eligible: true, promoted: true, ring: assignment.ring, wave: assignment.wave, blockers: [...(assignment.manualBlockers ?? [])] }
     return { repo, materialized: materializeProfile(repo, desired, rings, eligibility) }
   })
   // Transaction preflight: every repository is fully read before any mutation can begin.
   const observed = prepared.map(item => fetchRepositoryState(client, item.repo, item.materialized, desired))
   assertLiveIdentitySnapshot(productionLive, prepared.map(item => item.repo), observed, effectiveRuntimeValidationContext)
   const candidates = prepared.map((item, index) => diffRepository(item.repo, item.materialized, observed[index], desired, now))
-  const digestInput = candidates.map(candidate => ({
-    repoId: candidate.repoId,
-    github: candidate.github,
-    ring: candidate.ring,
-    defaultBranchHeadSha: candidate.defaultBranchHeadSha,
-    observedStateDigest: candidate.observedStateDigest,
-    actions: candidate.actions,
-    deferredActions: candidate.deferredActions,
-    conflicts: candidate.conflicts,
-  }))
-  const immutableCandidatePlanDigest = candidatePlanDigest({
-    candidateRelease: rings.candidateRelease,
-    verifiedReleaseEvidenceDigest: releaseEvidenceDigest,
-    repoCandidates: digestInput,
-  })
-  const evaluatedByRepo = new Map()
-  const ringOrder = new Map(rings.rings.map(ring => [ring.id, ring.order]))
-  const evaluationOrder = candidates.map((candidate, index) => ({ candidate, index })).sort((left, right) => ringOrder.get(left.candidate.ring) - ringOrder.get(right.candidate.ring) || left.index - right.index)
-  for (const { candidate, index } of evaluationOrder) {
-    const item = prepared[index]
-    const assignment = rings.assignments[item.repo.id]
-    const ring = rings.rings.find(value => value.id === assignment.ring)
-    const predicateResults = evaluatePromotionPredicates({
-      repo: item.repo,
-      ring,
-      assignment,
-      rings,
-      certifications,
-      waivers,
-      evidenceLedger: rings.evidence,
-      materialized: item.materialized,
-      observed: observed[index],
-      desired,
-      candidateRelease: rings.candidateRelease,
-      verifiedReleaseEvidenceDigest: releaseEvidenceDigest,
-      candidatePlanDigest: immutableCandidatePlanDigest,
-      candidatesByRepo: evaluatedByRepo,
-      candidateConflicts: candidate.conflicts,
-      now,
-      issuerRegistry,
-    })
-    evaluatedByRepo.set(candidate.repoId, { ...candidate, predicateResults })
-  }
-  const evaluated = candidates.map(candidate => evaluatedByRepo.get(candidate.repoId))
-  const rollout = resolveRolloutWave({
-    inventory: { ...inventory, repositories },
-    rings,
-    candidateRelease: rings.candidateRelease,
-    verifiedReleaseEvidenceDigest: releaseEvidenceDigest,
-    candidatePlanDigest: immutableCandidatePlanDigest,
-    repoCandidates: evaluated,
-    now,
-    issuerRegistry,
-  })
-  const selected = new Set(rollout.selectedRepoIds)
-  const repoPlans = evaluated.map(candidate => {
+  const repoPlans = candidates.map(candidate => {
     const assignment = rings.assignments[candidate.repoId]
-    const predicateBlockers = candidate.predicateResults.filter(result => !result.pass).map(result => result.message)
-    const completion = verifyCompletionAttestation(assignment.completionAttestation, {
-      repoId: candidate.repoId,
-      github: candidate.github,
-      ringId: assignment.ring,
-      waveId: assignment.wave,
-      candidateRelease: rings.candidateRelease,
-      verifiedReleaseEvidenceDigest: releaseEvidenceDigest,
-      candidatePlanDigest: immutableCandidatePlanDigest,
-      predicateDigest: predicateEvidenceDigest(candidate.predicateResults),
-      stateDigest: candidate.observedStateDigest,
-      defaultBranchHeadSha: candidate.defaultBranchHeadSha,
-      actionsDigest: candidateActionsDigest(candidate.actions),
-      issuerRegistryDigest: rings.attestationPolicy.issuerRegistryDigest,
-      attestationPolicy: rings.attestationPolicy,
-    }, { now, issuerRegistry })
     return {
       ...candidate,
-      applyAuthorization: clone(assignment.applyAuthorization),
-      completionAttestation: clone(assignment.completionAttestation),
-      candidateActions: candidate.actions,
-      deferredActions: candidate.deferredActions,
-      actions: selected.has(candidate.repoId) ? candidate.actions : [],
-      selectedForApply: selected.has(candidate.repoId),
+      wave: assignment.wave,
+      candidateActions: clone(candidate.actions),
       eligibility: {
-        eligible: selected.has(candidate.repoId),
-        promoted: candidate.actions.length === 0 && candidate.conflicts.length === 0 && completion.valid,
-        ring: rings.assignments[candidate.repoId].ring,
-        wave: rings.assignments[candidate.repoId].wave,
-        blockers: predicateBlockers,
+        eligible: candidate.conflicts.length === 0,
+        promoted: candidate.conflicts.length === 0 && candidate.actions.length === 0 && candidate.deferredActions.length === 0,
+        ring: assignment.ring,
+        wave: assignment.wave,
+        blockers: [],
       },
     }
   })
   const plan = {
-    schemaVersion: 6,
+    schemaVersion: 7,
     mode: 'plan',
     readOnly: true,
     scope: {
@@ -2038,8 +1153,6 @@ function buildPlanCore({ inventory, desired, rings, certifications, waivers, cli
     attestationPolicyDigest: sha256(stableStringify(rings.attestationPolicy, 0)),
     candidateRelease: clone(rings.candidateRelease),
     verifiedReleaseEvidenceDigest: releaseEvidenceDigest,
-    candidatePlanDigest: immutableCandidatePlanDigest,
-    rollout,
     repoPlans,
     summary: {
       registeredInventory: {
@@ -2049,14 +1162,6 @@ function buildPlanCore({ inventory, desired, rings, certifications, waivers, cli
         deferredActions: repoPlans.reduce((sum, item) => sum + item.deferredActions.length, 0),
         conflicts: repoPlans.reduce((sum, item) => sum + item.conflicts.length, 0),
       },
-      selectedWave: {
-        repositories: repoPlans.filter(item => item.selectedForApply).length,
-        managedChanges: repoPlans.filter(item => item.selectedForApply).reduce((sum, item) => sum + item.actions.length + item.deferredActions.length, 0),
-        actions: repoPlans.reduce((sum, item) => sum + item.actions.length, 0),
-        deferredActions: repoPlans.filter(item => item.selectedForApply).reduce((sum, item) => sum + item.deferredActions.length, 0),
-        conflicts: repoPlans.filter(item => item.selectedForApply).reduce((sum, item) => sum + item.conflicts.length, 0),
-      },
-      rolloutBlockers: rollout.blockers.length,
     },
   }
   plan.planDigest = sha256(stableStringify(plan, 0))
@@ -2207,8 +1312,7 @@ function readLiveTime(clock, label, notBefore = null) {
 }
 
 const RELOADABLE_GOVERNANCE_KEYS = [
-  'inventory', 'desired', 'rings', 'certifications', 'waivers', 'runtimeProfile',
-  'issuerRegistry', 'activationRequirements', 'activationInventory', 'activationDesired', 'activationPolicy', 'mutationBoundaryContract',
+  'inventory', 'desired', 'rings', 'certifications', 'waivers', 'runtimeProfile', 'issuerRegistry',
 ]
 
 function assertCurrentGovernanceReload(reloadCurrentGovernance, baseline) {
@@ -2226,67 +1330,11 @@ function assertCurrentRollbackReload(reloadCurrentGovernance, baseline) {
   if (!reloadCurrentGovernance) return true
   const current = reloadCurrentGovernance()
   invariant(current && typeof current === 'object' && !Array.isArray(current), 'Current rollback governance reload returned an invalid model')
-  for (const key of ['inventory', 'desired', 'rings', 'privilegedPolicy', 'issuerRegistry', 'externalActivationPolicy']) {
+  for (const key of ['inventory', 'desired', 'rings', 'privilegedPolicy', 'issuerRegistry']) {
     invariant(Object.prototype.hasOwnProperty.call(current, key), `Current rollback governance reload omitted ${key}`)
     invariant(deepEqual(current[key], baseline[key]), `Rollback refused: canonical governance SSOT changed during transaction: ${key}`)
   }
   return true
-}
-
-function fleetReconcileDurabilityClassFromProfile(profile) {
-  invariant(profile?.requiredRequirementIdsByScope
-    && Array.isArray(profile.requiredRequirementIdsByScope['fleet-rollout']),
-  'Fleet reconcile durability class requires one validated external activation profile')
-  return profile.requiredRequirementIdsByScope['fleet-rollout'].includes(AUTHORITY_BOOTSTRAP_MIRROR_REQUIREMENT_ID)
-    ? FLEET_RECONCILE_OFF_HOST_DURABILITY_CLASS
-    : FLEET_RECONCILE_LOCAL_DURABILITY_CLASS
-}
-
-function fleetReconcileDurabilityClassFromPolicy(policy, expectedPolicyDigest) {
-  return fleetReconcileDurabilityClassFromProfile(resolveExternalActivationProfile(policy, {
-    expectedPolicyDigest,
-  }))
-}
-
-function validateFleetReconcileDurabilityAdapter(journal, offHostMirror) {
-  if (journal.evidenceDurabilityClass === FLEET_RECONCILE_LOCAL_DURABILITY_CLASS) {
-    invariant(journal.mirrorIdentity === null, 'Local fleet journal must not claim an off-host mirror identity')
-    invariant(offHostMirror === undefined || offHostMirror === null,
-      'Local fleet journal does not accept or claim an off-host/WORM adapter')
-    return true
-  }
-  invariant(journal.evidenceDurabilityClass === FLEET_RECONCILE_OFF_HOST_DURABILITY_CLASS,
-    `Unknown fleet journal evidence durability class: ${journal.evidenceDurabilityClass}`)
-  invariant(offHostMirror && typeof offHostMirror.append === 'function'
-    && typeof offHostMirror.verify === 'function',
-  'Maximum-assurance fleet journal requires the activated off-host append-only mirror adapter')
-  validateMirrorIdentity(journal.mirrorIdentity)
-  invariant(offHostMirror.adapterCommandSha256 === journal.mirrorIdentity.adapterCommandSha256,
-    'Off-host mirror adapter artifact differs from the signed activation identity')
-  return true
-}
-
-function verifyFleetReconcileDurability(journal, offHostMirror, { at } = {}) {
-  validateFleetReconcileDurabilityAdapter(journal, offHostMirror)
-  if (journal.evidenceDurabilityClass === FLEET_RECONCILE_LOCAL_DURABILITY_CLASS) {
-    invariant(journal.offHostReceipts.length === 0,
-      'Local fleet journal cannot contain or claim off-host/WORM receipts')
-    return {
-      evidenceDurabilityClass: journal.evidenceDurabilityClass,
-      eventHeadDigest: journal.eventHeadDigest,
-      eventCount: journal.events.length,
-      offHostVerified: false,
-    }
-  }
-  return verifyJournalOffHost(journal, offHostMirror, {
-    expectedProvider: journal.mirrorIdentity.provider,
-    at,
-  })
-}
-
-function fleetJournalHasPendingOffHostReceipt(journal) {
-  return journal.evidenceDurabilityClass === FLEET_RECONCILE_OFF_HOST_DURABILITY_CLASS
-    && journal.events.length === journal.offHostReceipts.length + 1
 }
 
 function writeJournalSnapshot(path, journal, { create = false } = {}) {
@@ -2299,8 +1347,6 @@ function writeJournalSnapshot(path, journal, { create = false } = {}) {
     invariant(previous.transactionId === journal.transactionId, 'Transaction journal identity changed during append')
     invariant(Array.isArray(previous.events) && Array.isArray(journal.events)
       && stableStringify(journal.events.slice(0, previous.events.length), 0) === stableStringify(previous.events, 0), 'Transaction journal event chain was rewritten or truncated')
-    invariant(Array.isArray(previous.offHostReceipts) && Array.isArray(journal.offHostReceipts)
-      && stableStringify(journal.offHostReceipts.slice(0, previous.offHostReceipts.length), 0) === stableStringify(previous.offHostReceipts, 0), 'Transaction journal off-host receipts were rewritten or truncated')
   }
   const temporary = `${path}.${randomUUID()}.tmp`
   const body = `${stableStringify(journal)}\n`
@@ -2331,14 +1377,9 @@ function appendJournalEvent(path, journal, {
   type,
   subjectActionId = null,
   at,
-  offHostMirror,
-  mirrorIdentity = journal.mirrorIdentity,
   create = false,
 }) {
   invariant(at instanceof Date && Number.isFinite(at.getTime()), 'Transaction journal event time is invalid')
-  validateFleetReconcileDurabilityAdapter(journal, offHostMirror)
-  invariant(deepEqual(mirrorIdentity, journal.mirrorIdentity),
-    'Transaction journal durability identity was substituted during append')
   const directory = dirname(path)
   mkdirSync(directory, { recursive: true })
   const lockPath = `${path}.append.lock`
@@ -2360,9 +1401,7 @@ function appendJournalEvent(path, journal, {
       authorizationEnvelopeDigest: journal.authorizationEnvelopeDigest,
       runtimeState: journalRuntimeState(journal),
       stateDigest: journalStateDigest(journal),
-      mirrorRequestNonce: journal.evidenceDurabilityClass === FLEET_RECONCILE_OFF_HOST_DURABILITY_CLASS
-        ? randomUUID()
-        : null,
+      mirrorRequestNonce: null,
       eventDigest: null,
     }
     if (journal.events.length > 0) invariant(at >= new Date(journal.events.at(-1).at), 'Transaction journal event clock regressed')
@@ -2370,71 +1409,11 @@ function appendJournalEvent(path, journal, {
     journal.events.push(event)
     journal.eventHeadDigest = event.eventDigest
     writeJournalSnapshot(path, journal, { create })
-    if (journal.evidenceDurabilityClass === FLEET_RECONCILE_LOCAL_DURABILITY_CLASS) return event
-    const request = eventMirrorRequest(journal, event)
-    const receipt = clone(offHostMirror.append(request))
-    validateOffHostReceipt(receipt, { journal, event, mirrorIdentity, request, at, requireFresh: true })
-    invariant(!journal.offHostReceipts.some(item => item.receiptId === receipt.receiptId), `Off-host journal receipt id was reused: ${receipt.receiptId}`)
-    journal.offHostReceipts.push(receipt)
-    writeJournalSnapshot(path, journal)
     return event
   } finally {
     closeSync(lockDescriptor)
     unlinkSync(lockPath)
   }
-}
-
-function repairPendingOffHostReceipt(journalPath, journal, offHostMirror, { issuerRegistry, clock, managedCiValidationContext }) {
-  if (journal.evidenceDurabilityClass === FLEET_RECONCILE_LOCAL_DURABILITY_CLASS) {
-    validateFleetReconcileDurabilityAdapter(journal, offHostMirror)
-    validateTransactionJournal(journal, {
-      mode: 'historical-observation',
-      issuerRegistry,
-      managedCiValidationContext,
-    })
-    return journal
-  }
-  if (journal.events.length === journal.offHostReceipts.length) return journal
-  validateTransactionJournal(journal, {
-    mode: 'historical-observation',
-    issuerRegistry,
-    allowPendingOffHostReceipt: true,
-    managedCiValidationContext,
-  })
-  invariant(offHostMirror && typeof offHostMirror.append === 'function' && typeof offHostMirror.verify === 'function', 'Pending off-host acknowledgement repair requires the activated mirror adapter')
-  invariant(offHostMirror.adapterCommandSha256 === journal.mirrorIdentity.adapterCommandSha256, 'Pending acknowledgement repair adapter differs from signed activation evidence')
-  const event = journal.events.at(-1)
-  const request = eventMirrorRequest(journal, event)
-  const receipt = clone(offHostMirror.append(request))
-  validateOffHostReceipt(receipt, {
-    journal,
-    event,
-    mirrorIdentity: journal.mirrorIdentity,
-    request,
-    at: new Date(event.at),
-  })
-  const repairAt = readLiveTime(clock, 'Pending off-host acknowledgement repair', new Date(event.at))
-  const lockPath = `${journalPath}.append.lock`
-  let lockDescriptor
-  try {
-    lockDescriptor = openSync(lockPath, 'wx', 0o600)
-    const current = readJson(journalPath)
-    invariant(current.eventHeadDigest === journal.eventHeadDigest
-      && current.events.length === journal.events.length
-      && current.offHostReceipts.length === journal.offHostReceipts.length, 'Pending acknowledgement journal changed before exact receipt attachment')
-    invariant(!current.offHostReceipts.some(item => item.receiptId === receipt.receiptId), 'Pending acknowledgement repair receipt id was already used')
-    current.offHostReceipts.push(receipt)
-    journal.offHostReceipts.push(receipt)
-    writeJournalSnapshot(journalPath, journal)
-  } finally {
-    if (lockDescriptor !== undefined) {
-      closeSync(lockDescriptor)
-      unlinkSync(lockPath)
-    }
-  }
-  verifyFleetReconcileDurability(journal, offHostMirror, { at: repairAt })
-  validateTransactionJournal(journal, { mode: 'historical-observation', issuerRegistry, managedCiValidationContext })
-  return journal
 }
 
 function readbackPath(action, response) {
@@ -2481,17 +1460,15 @@ function rollbackPlanDigest(rollbackPlan) {
 }
 
 const JOURNAL_ROOT_KEYS = new Set([
-  'schemaVersion', 'transactionId', 'planDigest', 'candidatePlanDigest', 'candidateRelease', 'verifiedReleaseEvidenceDigest',
-  'externalActivationDigest', 'externalActivationInventoryDigest', 'externalActivationDesiredDigest', 'externalActivationRequirements', 'externalActivationPolicy', 'externalActivationInventory', 'externalActivationDesired',
-  'externalActivationMutationBoundaryContract', 'externalActivationMutationBoundaryContractDigest',
-  'evidenceDurabilityClass', 'mirrorIdentity',
-  'rolloutWave', 'parallelBudget', 'state', 'startedAt', 'completedAt', 'failedAt', 'error',
+  'schemaVersion', 'transactionId', 'planDigest', 'candidateRelease', 'verifiedReleaseEvidenceDigest',
+  'evidenceDurabilityClass',
+  'state', 'startedAt', 'completedAt', 'failedAt', 'error',
   'rollbackAttempted', 'recoveryInstruction', 'actions', 'rollbackPlan', 'rollbackPlanDigest',
-  'inventoryDigest', 'desiredDigest', 'attestationPolicyDigest', 'repoBindings',
+  'inventoryDigest', 'desiredDigest', 'attestationPolicyDigest',
   'historicalControlPlane', 'historicalControlPlaneDigest',
   'authorizationEnvelopeDigest', 'recoveredAt', 'recoveryFailures', 'rollbackStartedAt',
   'rollbackCompletedAt', 'rollbackBlockers',
-  'events', 'eventHeadDigest', 'offHostReceipts', 'rollbackAuthorizationEventHeadDigest',
+  'events', 'eventHeadDigest', 'rollbackAuthorizationEventHeadDigest',
 ])
 const ACTION_RUNTIME_KEYS = new Set(['status', 'responseId', 'readbackPath', 'recoveryObservation', 'rollbackStatus'])
 const ACTION_FIXED_KEYS = new Set(['kind', 'method', 'path', 'body', 'resource', 'beforeImage', 'expectedApplied', 'compensation', 'actionId', 'github', 'repoId'])
@@ -2611,19 +1588,9 @@ function authorizationEnvelope(journal) {
     desiredDigest: journal.desiredDigest,
     attestationPolicyDigest: journal.attestationPolicyDigest,
     planDigest: journal.planDigest,
-    candidatePlanDigest: journal.candidatePlanDigest,
     candidateRelease: journal.candidateRelease,
     verifiedReleaseEvidenceDigest: journal.verifiedReleaseEvidenceDigest,
-    externalActivationDigest: journal.externalActivationDigest,
-    externalActivationInventoryDigest: journal.externalActivationInventoryDigest,
-    externalActivationDesiredDigest: journal.externalActivationDesiredDigest,
-    externalActivationPolicyDigest: externalActivationPolicyDigest(journal.externalActivationPolicy),
-    externalActivationMutationBoundaryContractDigest: journal.externalActivationMutationBoundaryContractDigest,
     evidenceDurabilityClass: journal.evidenceDurabilityClass,
-    mirrorIdentity: journal.mirrorIdentity,
-    rolloutWave: journal.rolloutWave,
-    parallelBudget: journal.parallelBudget,
-    repoBindings: journal.repoBindings,
     actions: journal.actions.map(fixedAction),
     rollbackPlan: journal.rollbackPlan,
   }
@@ -2648,18 +1615,6 @@ function validateHistoricalInventory(inventory) {
   validateInventory(inventory, { providerIds, providerRuntimeKinds, providerSurfaces })
 }
 
-export function transactionJournalActivationDigestExpectations(journal, mode) {
-  invariant(mode === 'current-apply' || mode === 'historical-observation', `Unknown transaction-journal validation mode ${mode}`)
-  return {
-    expectedPolicyDigest: mode === 'historical-observation'
-      ? externalActivationPolicyDigest(journal.externalActivationPolicy)
-      : EXTERNAL_ACTIVATION_POLICY_DIGEST,
-    expectedMutationBoundaryContractDigest: mode === 'historical-observation'
-      ? journal.externalActivationMutationBoundaryContractDigest
-      : GITHUB_MUTATION_BOUNDARY_CONTRACT_DIGEST,
-  }
-}
-
 export function validateTransactionJournal(journal, {
   inventory,
   desired,
@@ -2667,33 +1622,16 @@ export function validateTransactionJournal(journal, {
   now = new Date(),
   issuerRegistry,
   mode = 'current-apply',
-  allowPendingOffHostReceipt = false,
-  managedCiValidationContext,
-  expectedActivationPolicyDigest,
 } = {}) {
   assertClosedKeys(journal, JOURNAL_ROOT_KEYS, 'Transaction journal has an invalid or open shape')
-  for (const key of ['schemaVersion', 'transactionId', 'planDigest', 'candidatePlanDigest', 'candidateRelease', 'verifiedReleaseEvidenceDigest', 'externalActivationDigest', 'externalActivationInventoryDigest', 'externalActivationDesiredDigest', 'externalActivationRequirements', 'externalActivationPolicy', 'externalActivationInventory', 'externalActivationDesired', 'externalActivationMutationBoundaryContract', 'externalActivationMutationBoundaryContractDigest', 'evidenceDurabilityClass', 'mirrorIdentity', 'rolloutWave', 'parallelBudget', 'state', 'startedAt', 'rollbackAttempted', 'recoveryInstruction', 'actions', 'rollbackPlan', 'rollbackPlanDigest', 'inventoryDigest', 'desiredDigest', 'attestationPolicyDigest', 'historicalControlPlane', 'historicalControlPlaneDigest', 'repoBindings', 'authorizationEnvelopeDigest', 'events', 'eventHeadDigest', 'offHostReceipts']) invariant(Object.prototype.hasOwnProperty.call(journal, key), `Transaction journal is missing ${key}`)
-  invariant(journal.schemaVersion === 6, 'Transaction journal schemaVersion must be 6')
+  for (const key of ['schemaVersion', 'transactionId', 'planDigest', 'candidateRelease', 'verifiedReleaseEvidenceDigest', 'evidenceDurabilityClass', 'state', 'startedAt', 'rollbackAttempted', 'recoveryInstruction', 'actions', 'rollbackPlan', 'rollbackPlanDigest', 'inventoryDigest', 'desiredDigest', 'attestationPolicyDigest', 'historicalControlPlane', 'historicalControlPlaneDigest', 'authorizationEnvelopeDigest', 'events', 'eventHeadDigest']) invariant(Object.prototype.hasOwnProperty.call(journal, key), `Transaction journal is missing ${key}`)
+  invariant(journal.schemaVersion === 7, 'Transaction journal schemaVersion must be 7')
   invariant(typeof journal.transactionId === 'string' && /^github-reconcile-[0-9]+-[a-f0-9]{12}$/.test(journal.transactionId), 'Transaction journal id is invalid')
-  invariant(/^[a-f0-9]{64}$/.test(journal.planDigest ?? '') && /^[a-f0-9]{64}$/.test(journal.candidatePlanDigest ?? ''), 'Transaction journal plan digest is invalid')
-  invariant(/^[a-f0-9]{64}$/.test(journal.verifiedReleaseEvidenceDigest ?? ''), 'Transaction journal verified release evidence digest is invalid')
-  invariant(/^[a-f0-9]{64}$/.test(journal.externalActivationDigest ?? ''), 'Transaction journal external activation digest is invalid')
-  const activationDigestExpectations = transactionJournalActivationDigestExpectations(journal, mode)
-  if (mode === 'current-apply' && expectedActivationPolicyDigest !== undefined) {
-    invariant(/^[a-f0-9]{64}$/.test(expectedActivationPolicyDigest),
-      'Current-apply expected external activation policy digest is invalid')
-    activationDigestExpectations.expectedPolicyDigest = expectedActivationPolicyDigest
-  }
-  const expectedDurabilityClass = fleetReconcileDurabilityClassFromPolicy(
-    journal.externalActivationPolicy,
-    activationDigestExpectations.expectedPolicyDigest,
-  )
-  invariant(journal.evidenceDurabilityClass === expectedDurabilityClass,
-    'Transaction journal evidence durability class differs from its exact active profile')
-  if (expectedDurabilityClass === FLEET_RECONCILE_LOCAL_DURABILITY_CLASS) {
-    invariant(journal.mirrorIdentity === null,
-      'Local fleet journal must not claim an off-host mirror identity')
-  } else validateMirrorIdentity(journal.mirrorIdentity)
+  invariant(/^[a-f0-9]{64}$/.test(journal.planDigest ?? ''), 'Transaction journal plan digest is invalid')
+  if (journal.candidateRelease === null) invariant(journal.verifiedReleaseEvidenceDigest === null, 'Transaction journal verified release evidence digest must be null without a candidate release')
+  else invariant(/^[a-f0-9]{64}$/.test(journal.verifiedReleaseEvidenceDigest ?? ''), 'Transaction journal verified release evidence digest is invalid')
+  invariant(journal.evidenceDurabilityClass === FLEET_RECONCILE_LOCAL_DURABILITY_CLASS,
+    `Unknown fleet journal evidence durability class: ${journal.evidenceDurabilityClass}`)
   const canonicalJournalTime = (field, required = false) => {
     if (!Object.prototype.hasOwnProperty.call(journal, field)) {
       invariant(!required, `Transaction journal is missing ${field}`)
@@ -2712,20 +1650,10 @@ export function validateTransactionJournal(journal, {
   invariant(mode === 'current-apply' || mode === 'historical-observation', `Unknown transaction-journal validation mode ${mode}`)
   validateActionTransactionClass(journal.actions)
   invariant(Array.isArray(journal.events) && journal.events.length > 0, 'Transaction journal must contain an append-only event chain')
-  invariant(Array.isArray(journal.offHostReceipts), 'Transaction journal off-host receipt set is invalid')
-  if (expectedDurabilityClass === FLEET_RECONCILE_LOCAL_DURABILITY_CLASS) {
-    invariant(journal.offHostReceipts.length === 0,
-      'Local fleet journal cannot contain or claim off-host/WORM receipts')
-  } else {
-    invariant(journal.offHostReceipts.length === journal.events.length
-      || (allowPendingOffHostReceipt && journal.offHostReceipts.length + 1 === journal.events.length),
-    'Maximum-assurance transaction journal requires one off-host acknowledgement per event')
-  }
   let previousDigest = JOURNAL_GENESIS_DIGEST
   let previousAt = null
   let previousRuntimeState = null
   const runtimeActionIds = journal.actions.map(action => action.actionId)
-  const receiptIds = new Set()
   for (let index = 0; index < journal.events.length; index += 1) {
     const event = journal.events[index]
     assertClosedKeys(event, new Set(JOURNAL_EVENT_KEYS), `Transaction journal event ${index} has an invalid or open shape`)
@@ -2737,24 +1665,13 @@ export function validateTransactionJournal(journal, {
       && event.previousDigest === previousDigest
       && event.authorizationEnvelopeDigest === journal.authorizationEnvelopeDigest
       && /^[a-f0-9]{64}$/.test(event.stateDigest ?? '')
-      && (expectedDurabilityClass === FLEET_RECONCILE_LOCAL_DURABILITY_CLASS
-        ? event.mirrorRequestNonce === null
-        : typeof event.mirrorRequestNonce === 'string' && /^[0-9a-f-]{36}$/.test(event.mirrorRequestNonce))
+      && event.mirrorRequestNonce === null
       && event.eventDigest === eventDigest(event), `Transaction journal event ${index} chain binding is invalid`)
     const at = new Date(event.at)
     invariant(Number.isFinite(at.getTime()) && at.toISOString() === event.at && (!previousAt || at >= previousAt), `Transaction journal event ${index} time is invalid or regressed`)
     validateRuntimeStateShape(event.runtimeState, runtimeActionIds)
     invariant(event.stateDigest === sha256(`fleet-reconcile-state-v2\n${stableStringify({ authorizationEnvelopeDigest: event.authorizationEnvelopeDigest, runtimeState: event.runtimeState }, 0)}`), `Transaction journal event ${index} state digest is invalid`)
     validateRuntimeTransition(previousRuntimeState, event.runtimeState, event.type, event.subjectActionId, event.at)
-    const receipt = journal.offHostReceipts[index]
-    if (expectedDurabilityClass === FLEET_RECONCILE_LOCAL_DURABILITY_CLASS) {
-      invariant(receipt === undefined,
-        'Local fleet journal event cannot contain or claim an off-host/WORM receipt')
-    } else if (receipt) {
-      invariant(!receiptIds.has(receipt.receiptId), `Transaction journal receipt ${index} id is duplicated`)
-      validateOffHostReceipt(receipt, { journal, event, mirrorIdentity: journal.mirrorIdentity, at })
-      receiptIds.add(receipt.receiptId)
-    } else invariant(allowPendingOffHostReceipt && index === journal.events.length - 1, 'Transaction journal has a non-terminal missing off-host receipt')
     previousDigest = event.eventDigest
     previousAt = at
     previousRuntimeState = event.runtimeState
@@ -2777,154 +1694,29 @@ export function validateTransactionJournal(journal, {
   invariant(journal.inventoryDigest === sha256(stableStringify(historical.inventory, 0)), 'Transaction journal historical inventory digest mismatch')
   invariant(journal.desiredDigest === sha256(stableStringify(historical.desired, 0)), 'Transaction journal historical desired-state digest mismatch')
   invariant(journal.attestationPolicyDigest === sha256(stableStringify(historical.attestationPolicy, 0)), 'Transaction journal historical attestation-policy digest mismatch')
-  invariant(journal.externalActivationInventoryDigest === sha256(stableStringify(journal.externalActivationInventory, 0)), 'Transaction journal external activation inventory digest mismatch')
-  invariant(journal.externalActivationDesiredDigest === sha256(stableStringify(journal.externalActivationDesired, 0)), 'Transaction journal external activation desired-state digest mismatch')
-  invariant(journal.externalActivationMutationBoundaryContractDigest === githubMutationBoundaryContractDigest(journal.externalActivationMutationBoundaryContract),
-    'Transaction journal mutation-boundary contract digest mismatch')
-  const activation = assertExternalActivationReady(journal.externalActivationRequirements, {
-    scope: 'fleet-rollout',
-    inventory: journal.externalActivationInventory,
-    desired: journal.externalActivationDesired,
-    mutationBoundaryContract: journal.externalActivationMutationBoundaryContract,
-    rings: { attestationPolicy: historical.attestationPolicy },
-    issuerRegistry: historical.issuerRegistry,
-    policy: journal.externalActivationPolicy,
-    ...activationDigestExpectations,
-    now: signatureTime,
-    managedCiValidationContext,
-  })
-  invariant(activation.digest === journal.externalActivationDigest, 'Transaction journal signed external activation snapshot digest mismatch')
-  const activatedDurabilityClass = activation.requiredRequirementIds.includes(
-    AUTHORITY_BOOTSTRAP_MIRROR_REQUIREMENT_ID,
-  )
-    ? FLEET_RECONCILE_OFF_HOST_DURABILITY_CLASS
-    : FLEET_RECONCILE_LOCAL_DURABILITY_CLASS
-  invariant(activatedDurabilityClass === journal.evidenceDurabilityClass,
-    'Transaction journal durability class differs from its signed activation readiness')
-  if (activatedDurabilityClass === FLEET_RECONCILE_OFF_HOST_DURABILITY_CLASS) {
-    const mirrorRequirement = journal.externalActivationRequirements.requirements.find(
-      requirement => requirement.id === AUTHORITY_BOOTSTRAP_MIRROR_REQUIREMENT_ID,
-    )
-    invariant(mirrorRequirement?.status === 'activated' && mirrorRequirement.evidence?.payload?.observedResource,
-      'Maximum-assurance journal signed activation snapshot lacks its activated mirror requirement')
-    const signedMirrorIdentity = Object.fromEntries(MIRROR_IDENTITY_KEYS.map(
-      key => [key, clone(mirrorRequirement.evidence.payload.observedResource[key])],
-    ))
-    invariant(deepEqual(signedMirrorIdentity, journal.mirrorIdentity),
-      'Transaction journal mirror identity differs from signed external activation evidence')
-  } else {
-    invariant(journal.mirrorIdentity === null && journal.offHostReceipts.length === 0,
-      'Production-grade local durability cannot claim maximum-assurance mirror evidence')
-  }
 
-  let verificationPolicy = historical.attestationPolicy
-  let verificationRegistry = historical.issuerRegistry
-  let verificationTime = signatureTime
   if (mode === 'current-apply') {
     invariant(inventory && desired && rings, 'Current-apply journal validation requires current inventory, desired state, and release-ring policy')
-    verificationRegistry = issuerRegistry ?? loadIssuerRegistry()
+    const verificationRegistry = issuerRegistry ?? loadIssuerRegistry()
     validateInventory(inventory)
     invariant(journal.inventoryDigest === sha256(stableStringify(inventory, 0)), 'Transaction journal inventory digest mismatch')
     invariant(journal.desiredDigest === sha256(stableStringify(desired, 0)), 'Transaction journal desired-state digest mismatch')
     invariant(journal.attestationPolicyDigest === sha256(stableStringify(rings.attestationPolicy, 0)), 'Transaction journal attestation-policy digest mismatch')
     invariant(historicalControlPlaneDigest(normalizeHistoricalControlPlane({ inventory, desired, attestationPolicy: rings.attestationPolicy, issuerRegistry: verificationRegistry })) === journal.historicalControlPlaneDigest, 'Transaction journal historical bundle differs from the current apply control plane')
-    verificationPolicy = rings.attestationPolicy
-    verificationTime = now
   } else {
     const currentLineageRegistry = issuerRegistry ?? loadIssuerRegistry()
     validateIssuerRegistryLineage(historical.issuerRegistry, currentLineageRegistry, { historicalAt: signatureTime })
   }
   invariant(Array.isArray(journal.actions) && journal.actions.length > 0, 'Transaction journal must contain managed actions')
-  invariant(Array.isArray(journal.repoBindings) && journal.repoBindings.length > 0, 'Transaction journal must contain signed repository bindings')
   const repoById = new Map(historical.inventory.repositories.map(repo => [repo.id, repo]))
   for (const action of journal.actions) validateManagedAction(action, repoById, historical.desired)
   const actionIds = new Set(journal.actions.map(action => action.actionId))
   invariant(actionIds.size === journal.actions.length, 'Transaction journal contains duplicate action ids')
-  const bindingRepos = new Set()
-  for (const binding of journal.repoBindings) {
-    assertClosedKeys(binding, new Set(['repoId', 'github', 'ring', 'wave', 'defaultBranchHeadSha', 'observedStateDigest', 'predicateDigest', 'actionsDigest', 'applyAuthorization']), 'Transaction journal repository binding has an invalid or open shape')
-    invariant(!bindingRepos.has(binding.repoId), `Transaction journal contains duplicate binding ${binding.repoId}`)
-    const repo = repoById.get(binding.repoId)
-    invariant(repo?.github === binding.github, `Transaction journal binding references unmanaged repository ${binding.repoId}`)
-    if (mode === 'current-apply') {
-      const assignment = rings.assignments[binding.repoId]
-      invariant(assignment?.ring === binding.ring && assignment?.wave === binding.wave, `Transaction journal binding ring/wave mismatch for ${binding.repoId}`)
-    }
-    const actions = journal.actions.filter(action => action.repoId === binding.repoId).map(originalPlanAction)
-    invariant(candidateActionsDigest(actions) === binding.actionsDigest, `Transaction journal action digest mismatch for ${binding.repoId}`)
-    const authorization = verifyApplyAuthorization(binding.applyAuthorization, {
-      repoId: binding.repoId,
-      github: binding.github,
-      ringId: binding.ring,
-      waveId: binding.wave,
-      candidateRelease: journal.candidateRelease,
-      verifiedReleaseEvidenceDigest: journal.verifiedReleaseEvidenceDigest,
-      candidatePlanDigest: journal.candidatePlanDigest,
-      predicateDigest: binding.predicateDigest,
-      stateDigest: binding.observedStateDigest,
-      defaultBranchHeadSha: binding.defaultBranchHeadSha,
-      actionsDigest: binding.actionsDigest,
-      issuerRegistryDigest: verificationPolicy.issuerRegistryDigest,
-      attestationPolicy: verificationPolicy,
-    }, { now: verificationTime, issuerRegistry: verificationRegistry })
-    invariant(authorization.valid, `Transaction journal authorization failed for ${binding.repoId}: ${authorization.failures.join('; ')}`)
-    bindingRepos.add(binding.repoId)
-  }
-  invariant(journal.actions.every(action => bindingRepos.has(action.repoId)), 'Transaction journal contains an action without a signed repository binding')
   const expectedRollback = rollbackPlanFor(journal.actions)
   invariant(deepEqual(expectedRollback, journal.rollbackPlan), 'Transaction journal rollback plan differs from managed actions')
   invariant(rollbackPlanDigest(journal.rollbackPlan) === journal.rollbackPlanDigest, 'Rollback plan digest mismatch')
   invariant(journal.authorizationEnvelopeDigest === journalAuthorizationEnvelopeDigest(journal), 'Transaction journal authorization envelope digest mismatch')
   return true
-}
-
-function externalActivationForApply({
-  activationRequirements,
-  activationInventory,
-  activationDesired,
-  activationPolicy,
-  mutationBoundaryContract,
-  expectedActivationPolicyDigest,
-  rings,
-  issuerRegistry,
-  at,
-  managedCiValidationContext,
-}) {
-  invariant(activationRequirements && activationInventory && activationDesired && mutationBoundaryContract,
-    'Apply requires the signed external activation ledger and explicit authority inventory/desired/contract inputs')
-  const readiness = assertExternalActivationReady(activationRequirements, {
-    scope: 'fleet-rollout',
-    inventory: activationInventory,
-    desired: activationDesired,
-    mutationBoundaryContract,
-    rings,
-    issuerRegistry,
-    policy: activationPolicy,
-    expectedPolicyDigest: expectedActivationPolicyDigest,
-    now: at,
-    managedCiValidationContext,
-  })
-  const evidenceDurabilityClass = readiness.requiredRequirementIds.includes(
-    AUTHORITY_BOOTSTRAP_MIRROR_REQUIREMENT_ID,
-  )
-    ? FLEET_RECONCILE_OFF_HOST_DURABILITY_CLASS
-    : FLEET_RECONCILE_LOCAL_DURABILITY_CLASS
-  if (evidenceDurabilityClass === FLEET_RECONCILE_LOCAL_DURABILITY_CLASS) {
-    return {
-      readiness,
-      evidenceDurabilityClass,
-      provider: null,
-      mirrorIdentity: null,
-    }
-  }
-  const mirrors = activationRequirements.requirements.filter(
-    requirement => requirement.id === AUTHORITY_BOOTSTRAP_MIRROR_REQUIREMENT_ID,
-  )
-  invariant(mirrors.length === 1 && mirrors[0].status === 'activated', 'Apply requires exactly one activated durable fleet evidence mirror')
-  const claims = mirrors[0].evidence?.payload?.observedResource
-  const mirrorIdentity = Object.fromEntries(MIRROR_IDENTITY_KEYS.map(key => [key, clone(claims?.[key])]))
-  validateMirrorIdentity(mirrorIdentity)
-  return { readiness, evidenceDurabilityClass, provider: mirrorIdentity.provider, mirrorIdentity }
 }
 
 function recomputeApplyGuard({ plan, journal, client, inventory, desired, rings, certifications, waivers, runtimeProfile, runtimeValidationContext, issuerRegistry, at, productionLive }) {
@@ -2936,9 +1728,8 @@ function recomputeApplyGuard({ plan, journal, client, inventory, desired, rings,
     runtimeValidationContext,
   }, productionLive)
   validateModelCore(inventory, desired, rings, certifications, waivers, at, issuerRegistry, runtimeProfile, effectiveRuntimeValidationContext, productionLive)
-  const candidates = []
+  const candidateByRepo = new Map()
   const observedByRepo = new Map()
-  const materializedByRepo = new Map()
   for (const repoPlan of plan.repoPlans) {
     const repo = inventory.repositories.find(item => item.id === repoPlan.repoId)
     invariant(repo?.github === repoPlan.github, `Apply refused: inventory repository identity drift for ${repoPlan.repoId}`)
@@ -2948,11 +1739,10 @@ function recomputeApplyGuard({ plan, journal, client, inventory, desired, rings,
       promoted: true,
       ring: assignment.ring,
       wave: assignment.wave,
-      blockers: [],
+      blockers: [...(assignment.manualBlockers ?? [])],
     })
     const observed = fetchRepositoryState(client, repo, materialized, desired)
-    candidates.push(diffRepository(repo, materialized, observed, desired, at))
-    materializedByRepo.set(repo.id, materialized)
+    candidateByRepo.set(repo.id, diffRepository(repo, materialized, observed, desired, at))
     observedByRepo.set(repo.id, observed)
   }
   assertLiveIdentitySnapshot(
@@ -2961,65 +1751,10 @@ function recomputeApplyGuard({ plan, journal, client, inventory, desired, rings,
     plan.repoPlans.map(repoPlan => observedByRepo.get(repoPlan.repoId)),
     effectiveRuntimeValidationContext,
   )
-  const candidateByRepo = new Map(candidates.map(candidate => [candidate.repoId, candidate]))
-  const evaluatedByRepo = new Map()
-  const ringOrder = new Map(rings.rings.map(ring => [ring.id, ring.order]))
-  const evaluationOrder = [...candidates].sort((left, right) => ringOrder.get(left.ring) - ringOrder.get(right.ring))
-  for (const candidate of evaluationOrder) {
-    const repo = inventory.repositories.find(item => item.id === candidate.repoId)
-    const assignment = rings.assignments[repo.id]
-    const ring = rings.rings.find(value => value.id === assignment.ring)
-    const predicateResults = evaluatePromotionPredicates({
-      repo,
-      ring,
-      assignment,
-      rings,
-      certifications,
-      waivers,
-      evidenceLedger: rings.evidence,
-      materialized: materializedByRepo.get(repo.id),
-      observed: observedByRepo.get(repo.id),
-      desired,
-      candidateRelease: rings.candidateRelease,
-      verifiedReleaseEvidenceDigest: plan.verifiedReleaseEvidenceDigest,
-      candidatePlanDigest: plan.candidatePlanDigest,
-      candidatesByRepo: evaluatedByRepo,
-      candidateConflicts: candidate.conflicts,
-      now: at,
-      issuerRegistry,
-    })
-    evaluatedByRepo.set(repo.id, { ...candidate, predicateResults })
-  }
   for (const repoPlan of plan.repoPlans) {
-    const candidate = evaluatedByRepo.get(repoPlan.repoId)
+    const candidate = candidateByRepo.get(repoPlan.repoId)
     invariant(candidate.defaultBranchHeadSha === repoPlan.defaultBranchHeadSha, `Apply refused: default-branch head drift for ${repoPlan.repoId}`)
-    invariant(deepEqual(candidate.predicateResults, repoPlan.predicateResults), `Apply refused: current promotion predicate evidence drift for ${repoPlan.repoId}`)
-  }
-  const rollout = resolveRolloutWave({
-    inventory,
-    rings,
-    candidateRelease: plan.candidateRelease,
-    verifiedReleaseEvidenceDigest: plan.verifiedReleaseEvidenceDigest,
-    candidatePlanDigest: plan.candidatePlanDigest,
-    repoCandidates: plan.repoPlans.map(repoPlan => ({
-      repoId: repoPlan.repoId,
-      github: repoPlan.github,
-      ring: repoPlan.ring,
-      defaultBranchHeadSha: repoPlan.defaultBranchHeadSha,
-      observedStateDigest: repoPlan.observedStateDigest,
-      actions: repoPlan.candidateActions,
-      deferredActions: repoPlan.deferredActions,
-      conflicts: repoPlan.conflicts,
-      predicateResults: evaluatedByRepo.get(repoPlan.repoId).predicateResults,
-    })),
-    now: at,
-    issuerRegistry,
-  })
-  invariant(deepEqual(rollout, plan.rollout), 'Apply refused: current rollout wave, authorization clock, or parallel budget changed')
-
-  for (const repoPlan of plan.repoPlans) {
-    const candidate = evaluatedByRepo.get(repoPlan.repoId)
-    if (!repoPlan.selectedForApply) {
+    if (repoPlan.candidateActions.length === 0) {
       invariant(candidate.observedStateDigest === repoPlan.observedStateDigest
         && deepEqual(candidate.actions, repoPlan.candidateActions)
         && deepEqual(candidate.deferredActions, repoPlan.deferredActions)
@@ -3046,92 +1781,47 @@ function applyPlanCore(plan, client, {
   runtimeProfile,
   runtimeValidationContext = {},
   verifiedReleaseEvidence,
-  activationRequirements,
-  activationInventory = inventory,
-  activationDesired = desired,
-  activationPolicy,
-  mutationBoundaryContract,
-  expectedActivationPolicyDigest,
-  offHostMirror,
   now = new Date(),
   clock = () => new Date(),
   reloadCurrentGovernance,
   issuerRegistry = loadIssuerRegistry(),
-  managedCiValidationContext,
 }, productionLive) {
   invariant(journalPath, 'Apply requires a transaction journal path')
-  invariant(!productionLive || managedCiValidationContext === undefined || managedCiValidationContext === null,
-    'Live GitHub apply refuses an injected managed CI validation context')
-  invariant(inventory && desired && rings && certifications && waivers && runtimeProfile && mutationBoundaryContract,
-    'Apply requires the complete current governance model and explicit mutation-boundary contract')
+  invariant(inventory && desired && rings && certifications && waivers && runtimeProfile,
+    'Apply requires the complete current governance model')
   invariant(typeof clock === 'function', 'Apply requires a live clock source')
   const injectedRuntimeValidationContext = normalizeRuntimeValidationContext(runtimeValidationContext, { inventory })
   invariant(!productionLive || Object.keys(injectedRuntimeValidationContext).length === 0,
     'Live GitHub apply refuses an injected runtime validation identity')
   invariant(!productionLive || typeof reloadCurrentGovernance === 'function', 'Live GitHub apply requires per-write canonical governance SSOT reload')
-  const governanceBaseline = clone({ inventory, desired, rings, certifications, waivers, runtimeProfile, issuerRegistry, activationRequirements, activationInventory, activationDesired, activationPolicy, mutationBoundaryContract })
+  const governanceBaseline = clone({ inventory, desired, rings, certifications, waivers, runtimeProfile, issuerRegistry })
   assertCurrentGovernanceReload(reloadCurrentGovernance, governanceBaseline)
   invariant(!existsSync(journalPath), `Apply refused: transaction journal path already exists and is immutable: ${journalPath}`)
   invariant(plan.inventoryDigest === sha256(stableStringify(inventory, 0)), 'Apply refused: inventory digest mismatch')
   invariant(plan.desiredDigest === sha256(stableStringify(desired, 0)), 'Apply refused: desired-state digest mismatch')
   invariant(plan.attestationPolicyDigest === sha256(stableStringify(rings.attestationPolicy, 0)), 'Apply refused: attestation trust-policy digest mismatch')
-  validateVerifiedReleaseEvidence(verifiedReleaseEvidence, rings.candidateRelease)
-  invariant(plan.verifiedReleaseEvidenceDigest === digestVerifiedReleaseEvidence(verifiedReleaseEvidence, rings.candidateRelease), 'Apply refused: verified release evidence drifted')
+  if (rings.candidateRelease === null) {
+    invariant(verifiedReleaseEvidence === null || verifiedReleaseEvidence === undefined, 'Apply refused: verified release evidence must be null without a candidate release')
+    invariant(plan.verifiedReleaseEvidenceDigest === null, 'Apply refused: verified release evidence drifted')
+  } else {
+    validateVerifiedReleaseEvidence(verifiedReleaseEvidence, rings.candidateRelease)
+    invariant(plan.verifiedReleaseEvidenceDigest === digestVerifiedReleaseEvidence(verifiedReleaseEvidence, rings.candidateRelease), 'Apply refused: verified release evidence drifted')
+  }
   const planPayload = clone(plan)
   delete planPayload.planDigest
   invariant(sha256(stableStringify(planPayload, 0)) === plan.planDigest, 'Apply refused: reconciliation plan digest mismatch')
-  const recomputedCandidateDigest = candidatePlanDigest({
-    candidateRelease: plan.candidateRelease,
-    verifiedReleaseEvidenceDigest: plan.verifiedReleaseEvidenceDigest,
-    repoCandidates: plan.repoPlans.map(repo => ({
-      repoId: repo.repoId,
-      github: repo.github,
-      ring: repo.ring,
-      defaultBranchHeadSha: repo.defaultBranchHeadSha,
-      observedStateDigest: repo.observedStateDigest,
-      actions: repo.candidateActions,
-      deferredActions: repo.deferredActions,
-      conflicts: repo.conflicts,
-    })),
-  })
-  invariant(recomputedCandidateDigest === plan.candidatePlanDigest, 'Apply refused: candidate plan digest mismatch')
-  const selectedPlans = plan.repoPlans.filter(repo => repo.selectedForApply)
-  invariant(plan.schemaVersion === 6 && plan.rollout?.current, 'Apply refused: no current rollout wave exists')
+  invariant(plan.schemaVersion === 7 && plan.mode === 'plan', 'Apply refused: reconciliation plan identity is invalid')
   invariant(plan.scope?.coverage === 'registered-opt-in-inventory'
     && plan.scope.registeredRepositoryCount === inventory.repositories.length
     && plan.scope.plannedRepositoryCount === inventory.repositories.length
     && plan.scope.unregisteredDescendants === 'not-covered', 'Apply refused: plan is not the full registered opt-in inventory scope')
-  invariant(selectedPlans.length > 0, 'Apply refused: current wave has no signed-authorization-approved repository')
-  invariant(selectedPlans.length <= plan.rollout.budget, 'Apply refused: current wave exceeds its parallel budget')
-  invariant(selectedPlans.every(repo => repo.conflicts.length === 0 && repo.eligibility.eligible && repo.predicateResults.every(result => result.pass)), 'Apply refused: current-wave preflight or typed promotion predicate failed')
+  const conflicted = plan.repoPlans.filter(repo => repo.conflicts.length > 0)
+  invariant(conflicted.length === 0, `Apply refused: fleet preflight has conflicts: ${conflicted.map(repo => repo.repoId).join(', ')}`)
+  const selectedPlans = plan.repoPlans.filter(repo => repo.candidateActions.length > 0)
+  invariant(selectedPlans.length > 0, 'Apply refused: plan contains no managed action')
+  validateActionTransactionClass(selectedPlans.flatMap(repo => repo.candidateActions))
   const initialAt = readLiveTime(clock, 'Apply')
-  const activation = externalActivationForApply({ activationRequirements, activationInventory, activationDesired, activationPolicy, mutationBoundaryContract, expectedActivationPolicyDigest, rings, issuerRegistry, at: initialAt, managedCiValidationContext })
-  validateFleetReconcileDurabilityAdapter({
-    evidenceDurabilityClass: activation.evidenceDurabilityClass,
-    mirrorIdentity: activation.mirrorIdentity,
-  }, offHostMirror)
-  for (const repo of selectedPlans) {
-    const assignment = rings.assignments[repo.repoId]
-    const authorization = verifyApplyAuthorization(repo.applyAuthorization, {
-      repoId: repo.repoId,
-      github: repo.github,
-      ringId: assignment.ring,
-      waveId: assignment.wave,
-      candidateRelease: plan.candidateRelease,
-      verifiedReleaseEvidenceDigest: plan.verifiedReleaseEvidenceDigest,
-      candidatePlanDigest: plan.candidatePlanDigest,
-      predicateDigest: predicateEvidenceDigest(repo.predicateResults),
-      stateDigest: repo.observedStateDigest,
-      defaultBranchHeadSha: repo.defaultBranchHeadSha,
-      actionsDigest: candidateActionsDigest(repo.candidateActions),
-      issuerRegistryDigest: rings.attestationPolicy.issuerRegistryDigest,
-      attestationPolicy: rings.attestationPolicy,
-    }, { now: initialAt, issuerRegistry })
-    invariant(authorization.valid, `Apply refused: ${repo.repoId} signed authorization failed: ${authorization.failures.join('; ')}`)
-  }
-  invariant(plan.repoPlans.filter(repo => !repo.selectedForApply).every(repo => repo.actions.length === 0), 'Apply refused: plan contains actions outside the current wave')
-  validateActionTransactionClass(selectedPlans.flatMap(repo => repo.actions))
-  const actions = selectedPlans.flatMap(repo => repo.actions.map((action, index) => ({
+  const actions = selectedPlans.flatMap(repo => repo.candidateActions.map((action, index) => ({
     ...clone(action),
     actionId: `${repo.repoId}:${String(index + 1).padStart(3, '0')}:${action.kind}:${action.resource}`,
     github: repo.github,
@@ -3139,17 +1829,6 @@ function applyPlanCore(plan, client, {
     status: 'pending',
   })))
   const rollbackPlan = rollbackPlanFor(actions)
-  const repoBindings = selectedPlans.map(repo => ({
-    repoId: repo.repoId,
-    github: repo.github,
-    ring: rings.assignments[repo.repoId].ring,
-    wave: rings.assignments[repo.repoId].wave,
-    defaultBranchHeadSha: repo.defaultBranchHeadSha,
-    observedStateDigest: repo.observedStateDigest,
-    predicateDigest: predicateEvidenceDigest(repo.predicateResults),
-    actionsDigest: candidateActionsDigest(repo.candidateActions),
-    applyAuthorization: clone(repo.applyAuthorization),
-  }))
   const historicalControlPlane = normalizeHistoricalControlPlane({
     inventory,
     desired,
@@ -3157,94 +1836,55 @@ function applyPlanCore(plan, client, {
     issuerRegistry,
   })
   const journal = {
-    schemaVersion: 6,
+    schemaVersion: 7,
     transactionId: `github-reconcile-${initialAt.getTime()}-${plan.planDigest.slice(0, 12)}`,
     planDigest: plan.planDigest,
-    candidatePlanDigest: plan.candidatePlanDigest,
     candidateRelease: clone(plan.candidateRelease),
     verifiedReleaseEvidenceDigest: plan.verifiedReleaseEvidenceDigest,
-    externalActivationDigest: activation.readiness.digest,
-    externalActivationInventoryDigest: sha256(stableStringify(activationInventory, 0)),
-    externalActivationDesiredDigest: sha256(stableStringify(activationDesired, 0)),
-    externalActivationRequirements: clone(activationRequirements),
-    externalActivationPolicy: clone(activationPolicy),
-    externalActivationInventory: clone(activationInventory),
-    externalActivationDesired: clone(activationDesired),
-    externalActivationMutationBoundaryContract: clone(mutationBoundaryContract),
-    externalActivationMutationBoundaryContractDigest: githubMutationBoundaryContractDigest(mutationBoundaryContract),
-    evidenceDurabilityClass: activation.evidenceDurabilityClass,
-    mirrorIdentity: clone(activation.mirrorIdentity),
+    evidenceDurabilityClass: FLEET_RECONCILE_LOCAL_DURABILITY_CLASS,
     inventoryDigest: plan.inventoryDigest,
     desiredDigest: plan.desiredDigest,
     attestationPolicyDigest: plan.attestationPolicyDigest,
     historicalControlPlane,
     historicalControlPlaneDigest: historicalControlPlaneDigest(historicalControlPlane),
-    rolloutWave: clone(plan.rollout.current),
-    parallelBudget: plan.rollout.budget,
     state: 'prepared',
     startedAt: initialAt.toISOString(),
     rollbackAttempted: false,
     recoveryInstruction: 'Use --recover-journal for historical-bundle-bound observation only. --rollback-journal additionally requires a fresh profile-bound --rollback-authorization under the current apply and privileged root policies.',
     actions,
-    repoBindings,
     rollbackPlan,
     rollbackPlanDigest: rollbackPlanDigest(rollbackPlan),
     authorizationEnvelopeDigest: null,
     events: [],
     eventHeadDigest: JOURNAL_GENESIS_DIGEST,
-    offHostReceipts: [],
   }
   journal.authorizationEnvelopeDigest = journalAuthorizationEnvelopeDigest(journal)
   recomputeApplyGuard({ plan, journal: null, client, inventory, desired, rings, certifications, waivers, runtimeProfile, runtimeValidationContext, issuerRegistry, at: initialAt, productionLive })
-  appendJournalEvent(journalPath, journal, { type: 'prepared', at: initialAt, offHostMirror, create: true })
-  validateTransactionJournal(journal, {
-    inventory, desired, rings, now: initialAt, issuerRegistry, managedCiValidationContext, expectedActivationPolicyDigest,
-  })
-  verifyFleetReconcileDurability(journal, offHostMirror, { at: initialAt })
+  appendJournalEvent(journalPath, journal, { type: 'prepared', at: initialAt, create: true })
+  validateTransactionJournal(journal, { inventory, desired, rings, now: initialAt, issuerRegistry })
   let lastEventAt = initialAt
   try {
     journal.state = 'applying'
-    appendJournalEvent(journalPath, journal, { type: 'applying', at: initialAt, offHostMirror })
+    appendJournalEvent(journalPath, journal, { type: 'applying', at: initialAt })
     for (const action of journal.actions) {
       const writeAt = readLiveTime(clock, 'Apply', lastEventAt)
       assertCurrentGovernanceReload(reloadCurrentGovernance, governanceBaseline)
-      const currentActivation = externalActivationForApply({ activationRequirements, activationInventory, activationDesired, activationPolicy, mutationBoundaryContract, expectedActivationPolicyDigest, rings, issuerRegistry, at: writeAt, managedCiValidationContext })
-      invariant(currentActivation.readiness.digest === journal.externalActivationDigest
-        && currentActivation.evidenceDurabilityClass === activation.evidenceDurabilityClass
-        && currentActivation.provider === activation.provider,
-      'Apply refused: external activation ledger or durability identity changed during transaction')
-      validateTransactionJournal(journal, {
-        inventory, desired, rings, now: writeAt, issuerRegistry, managedCiValidationContext, expectedActivationPolicyDigest,
-      })
-      verifyFleetReconcileDurability(journal, offHostMirror, { at: writeAt })
+      validateTransactionJournal(journal, { inventory, desired, rings, now: writeAt, issuerRegistry })
       recomputeApplyGuard({ plan, journal, client, inventory, desired, rings, certifications, waivers, runtimeProfile, runtimeValidationContext, issuerRegistry, at: writeAt, productionLive })
       const decisionAt = readLiveTime(clock, 'Apply', writeAt)
       assertCurrentGovernanceReload(reloadCurrentGovernance, governanceBaseline)
       if (decisionAt.getTime() !== writeAt.getTime()) {
-        const decisionActivation = externalActivationForApply({ activationRequirements, activationInventory, activationDesired, activationPolicy, mutationBoundaryContract, expectedActivationPolicyDigest, rings, issuerRegistry, at: decisionAt, managedCiValidationContext })
-        invariant(decisionActivation.readiness.digest === journal.externalActivationDigest
-          && decisionActivation.evidenceDurabilityClass === activation.evidenceDurabilityClass
-          && decisionActivation.provider === activation.provider,
-        'Apply refused: external activation ledger or durability identity changed before mutation')
         recomputeApplyGuard({ plan, journal, client, inventory, desired, rings, certifications, waivers, runtimeProfile, runtimeValidationContext, issuerRegistry, at: decisionAt, productionLive })
       }
       const before = observeActionState(client, action)
       invariant(deepEqual(before, action.beforeImage), `Pre-apply drift for ${action.repoId}/${action.resource}`)
       action.status = 'applying'
-      appendJournalEvent(journalPath, journal, { type: 'action-applying', subjectActionId: action.actionId, at: decisionAt, offHostMirror })
+      appendJournalEvent(journalPath, journal, { type: 'action-applying', subjectActionId: action.actionId, at: decisionAt })
       lastEventAt = decisionAt
       const mutationAt = readLiveTime(clock, 'Apply mutation', decisionAt)
       lastEventAt = mutationAt
       assertCurrentGovernanceReload(reloadCurrentGovernance, governanceBaseline)
-      const mutationActivation = externalActivationForApply({ activationRequirements, activationInventory, activationDesired, activationPolicy, mutationBoundaryContract, expectedActivationPolicyDigest, rings, issuerRegistry, at: mutationAt, managedCiValidationContext })
-      invariant(mutationActivation.readiness.digest === journal.externalActivationDigest
-        && mutationActivation.evidenceDurabilityClass === activation.evidenceDurabilityClass
-        && mutationActivation.provider === activation.provider,
-      'Apply refused: external activation ledger or durability identity changed at the mutation boundary')
-      validateTransactionJournal(journal, {
-        inventory, desired, rings, now: mutationAt, issuerRegistry, managedCiValidationContext, expectedActivationPolicyDigest,
-      })
-      verifyFleetReconcileDurability(journal, offHostMirror, { at: mutationAt })
+      validateTransactionJournal(journal, { inventory, desired, rings, now: mutationAt, issuerRegistry })
       recomputeApplyGuard({ plan, journal, client, inventory, desired, rings, certifications, waivers, runtimeProfile, runtimeValidationContext, issuerRegistry, at: mutationAt, productionLive })
       const mutationBefore = observeActionState(client, action)
       invariant(deepEqual(mutationBefore, action.beforeImage), `Pre-apply drift at mutation boundary for ${action.repoId}/${action.resource}`)
@@ -3252,42 +1892,32 @@ function applyPlanCore(plan, client, {
       action.responseId = response?.id ?? null
       action.readbackPath = readbackPath(action, response)
       action.status = 'applied-unverified'
-      appendJournalEvent(journalPath, journal, { type: 'action-applied-unverified', subjectActionId: action.actionId, at: mutationAt, offHostMirror })
+      appendJournalEvent(journalPath, journal, { type: 'action-applied-unverified', subjectActionId: action.actionId, at: mutationAt })
       invariant(verifyAppliedAction(client, action), `Exact readback mismatch for ${action.repoId}/${action.resource}`)
       action.status = 'verified'
-      appendJournalEvent(journalPath, journal, { type: 'action-verified', subjectActionId: action.actionId, at: mutationAt, offHostMirror })
+      appendJournalEvent(journalPath, journal, { type: 'action-verified', subjectActionId: action.actionId, at: mutationAt })
     }
     journal.state = 'verified'
     const completedAt = readLiveTime(clock, 'Apply', lastEventAt)
     journal.completedAt = completedAt.toISOString()
-    appendJournalEvent(journalPath, journal, { type: 'verified', at: completedAt, offHostMirror })
-    verifyFleetReconcileDurability(journal, offHostMirror, { at: completedAt })
-    validateTransactionJournal(journal, {
-      inventory, desired, rings, now: completedAt, issuerRegistry, managedCiValidationContext, expectedActivationPolicyDigest,
-    })
+    appendJournalEvent(journalPath, journal, { type: 'verified', at: completedAt })
+    validateTransactionJournal(journal, { inventory, desired, rings, now: completedAt, issuerRegistry })
     return { applied: true, transactionId: journal.transactionId, journalPath, actions: journal.actions.map(action => ({ repoId: action.repoId, kind: action.kind, resource: action.resource })) }
   } catch (error) {
-    if (fleetJournalHasPendingOffHostReceipt(journal)) {
-      throw new Error(`Reconciliation stopped with an externally unacknowledged journal event; no further event or rollback was fabricated. Repair only by exact live mirror receipt read-back for ${journalPath}: ${error.message}`, { cause: error })
-    }
     journal.state = 'failed-partial-state-possible'
     const failedAt = readLiveTime(clock, 'Apply failure journal', lastEventAt)
     journal.failedAt = failedAt.toISOString()
     journal.error = error.message
-    appendJournalEvent(journalPath, journal, { type: 'failed-partial-state-possible', at: failedAt, offHostMirror })
+    appendJournalEvent(journalPath, journal, { type: 'failed-partial-state-possible', at: failedAt })
     throw new Error(`Reconciliation failed; no rollback was claimed or attempted. Inspect ${journalPath}, then use --rollback-journal only if its compensations remain safe: ${error.message}`, { cause: error })
   }
 }
 
 function recoverTransactionCore(journalPath, client, {
   issuerRegistry = loadIssuerRegistry(),
-  offHostMirror,
   clock = () => new Date(),
   reloadIssuerRegistry,
-  managedCiValidationContext,
 } = {}, productionLive) {
-  invariant(!productionLive || managedCiValidationContext === undefined || managedCiValidationContext === null,
-    'Live GitHub recovery refuses an injected managed CI validation context')
   invariant(!productionLive || typeof reloadIssuerRegistry === 'function', 'Live GitHub recovery requires current issuer-registry SSOT reload')
   const issuerRegistryBaseline = clone(issuerRegistry)
   const assertIssuerRegistryCurrent = () => {
@@ -3295,11 +1925,9 @@ function recoverTransactionCore(journalPath, client, {
   }
   assertIssuerRegistryCurrent()
   const journal = readJson(journalPath)
-  repairPendingOffHostReceipt(journalPath, journal, offHostMirror, { issuerRegistry, clock, managedCiValidationContext })
-  validateTransactionJournal(journal, { mode: 'historical-observation', issuerRegistry, managedCiValidationContext })
+  validateTransactionJournal(journal, { mode: 'historical-observation', issuerRegistry })
   const lastEventAt = new Date(journal.events.at(-1).at)
   const observationAt = readLiveTime(clock, 'Recovery', lastEventAt)
-  verifyFleetReconcileDurability(journal, offHostMirror, { at: observationAt })
   const failures = []
   for (const action of journal.actions ?? []) {
     try {
@@ -3320,10 +1948,8 @@ function recoverTransactionCore(journalPath, client, {
   appendJournalEvent(journalPath, journal, {
     type: journal.state,
     at: recoveredAt,
-    offHostMirror,
   })
-  verifyFleetReconcileDurability(journal, offHostMirror, { at: recoveredAt })
-  validateTransactionJournal(journal, { mode: 'historical-observation', issuerRegistry, managedCiValidationContext })
+  validateTransactionJournal(journal, { mode: 'historical-observation', issuerRegistry })
   return { observed: failures.length === 0, rolledBack: false, failures, journalPath }
 }
 
@@ -3334,18 +1960,12 @@ function rollbackTransactionCore(journalPath, client, {
   privilegedPolicy,
   recoveryAuthorization,
   clock = () => new Date(),
-  offHostMirror,
   reloadCurrentGovernance,
   issuerRegistry = loadIssuerRegistry(),
-  managedCiValidationContext,
-  externalActivationPolicy = loadExternalActivationPolicy(),
 }, productionLive) {
-  invariant(!productionLive || managedCiValidationContext === undefined || managedCiValidationContext === null,
-    'Live GitHub rollback refuses an injected managed CI validation context')
   const journal = readJson(journalPath)
-  repairPendingOffHostReceipt(journalPath, journal, offHostMirror, { issuerRegistry, clock, managedCiValidationContext })
-  validateTransactionJournal(journal, { mode: 'historical-observation', issuerRegistry, managedCiValidationContext })
-  invariant(journal.schemaVersion === 6, 'Rollback requires a v6 transaction journal')
+  validateTransactionJournal(journal, { mode: 'historical-observation', issuerRegistry })
+  invariant(journal.schemaVersion === 7, 'Rollback requires a v7 transaction journal')
   invariant(['failed-partial-state-possible', 'manual-recovery-required', 'recovery-observed', 'rollback-blocked'].includes(journal.state), `Rollback refused from journal state ${journal.state}`)
   invariant(rollbackPlanDigest(journal.rollbackPlan) === journal.rollbackPlanDigest, 'Rollback plan digest mismatch')
   invariant(inventory && desired && rings?.attestationPolicy && privilegedPolicy, 'Rollback requires the current inventory, desired state, apply policy, and privileged root policy')
@@ -3357,13 +1977,11 @@ function rollbackTransactionCore(journalPath, client, {
     rings,
     privilegedPolicy,
     issuerRegistry,
-    externalActivationPolicy,
   })
   assertCurrentRollbackReload(reloadCurrentGovernance, governanceBaseline)
   validateInventory(inventory)
   const lastJournalEventAt = new Date(journal.events.at(-1).at)
   const authorizationAt = readLiveTime(clock, 'Rollback', lastJournalEventAt)
-  verifyFleetReconcileDurability(journal, offHostMirror, { at: authorizationAt })
   verifyFleetRecoveryAuthorization(recoveryAuthorization, {
     journal,
     inventory,
@@ -3372,7 +1990,6 @@ function rollbackTransactionCore(journalPath, client, {
     privilegedPolicy,
     issuerRegistry,
     now: authorizationAt,
-    ...(externalActivationPolicy ? { externalActivationPolicy } : {}),
   })
   journal.rollbackAuthorizationEventHeadDigest = recoveryAuthorization.journalEventHeadDigest
   const byId = new Map(journal.actions.map(action => [action.actionId, action]))
@@ -3381,14 +1998,13 @@ function rollbackTransactionCore(journalPath, client, {
   const rollbackStartedAt = authorizationAt
   journal.rollbackStartedAt = rollbackStartedAt.toISOString()
   journal.state = 'rolling-back'
-  appendJournalEvent(journalPath, journal, { type: 'rolling-back', at: rollbackStartedAt, offHostMirror })
+  appendJournalEvent(journalPath, journal, { type: 'rolling-back', at: rollbackStartedAt })
   let lastEventAt = rollbackStartedAt
   for (const step of journal.rollbackPlan) {
     const action = byId.get(step.actionId)
     invariant(action, `Rollback plan references missing action ${step.actionId}`)
     const writeAt = readLiveTime(clock, 'Rollback', lastEventAt)
     assertCurrentRollbackReload(reloadCurrentGovernance, governanceBaseline)
-    verifyFleetReconcileDurability(journal, offHostMirror, { at: writeAt })
     try {
       verifyFleetRecoveryAuthorization(recoveryAuthorization, {
         journal,
@@ -3399,39 +2015,37 @@ function rollbackTransactionCore(journalPath, client, {
         issuerRegistry,
         expectedJournalEventHeadDigest: journal.rollbackAuthorizationEventHeadDigest,
         now: writeAt,
-        ...(externalActivationPolicy ? { externalActivationPolicy } : {}),
       })
       const remote = observeActionState(client, action)
       if (deepEqual(remote, action.beforeImage)) {
         action.rollbackStatus = 'already-at-before-image'
-        appendJournalEvent(journalPath, journal, { type: 'rollback-already-restored', subjectActionId: action.actionId, at: writeAt, offHostMirror })
+        appendJournalEvent(journalPath, journal, { type: 'rollback-already-restored', subjectActionId: action.actionId, at: writeAt })
         lastEventAt = writeAt
         continue
       }
       if (!deepEqual(remote, action.expectedApplied)) {
         blocked.push(`${action.repoId}/${action.resource}: rollback drift; remote no longer matches this transaction`)
         action.rollbackStatus = 'blocked-drift'
-        appendJournalEvent(journalPath, journal, { type: 'rollback-blocked-drift', subjectActionId: action.actionId, at: writeAt, offHostMirror })
+        appendJournalEvent(journalPath, journal, { type: 'rollback-blocked-drift', subjectActionId: action.actionId, at: writeAt })
         lastEventAt = writeAt
         continue
       }
       if (step.compensation.safety !== 'automatic') {
         blocked.push(`${action.repoId}/${action.resource}: ${step.compensation.reason}`)
         action.rollbackStatus = 'blocked-manual'
-        appendJournalEvent(journalPath, journal, { type: 'rollback-blocked-manual', subjectActionId: action.actionId, at: writeAt, offHostMirror })
+        appendJournalEvent(journalPath, journal, { type: 'rollback-blocked-manual', subjectActionId: action.actionId, at: writeAt })
         lastEventAt = writeAt
         continue
       }
       const path = step.compensation.pathSource === 'readbackPath' ? action.readbackPath : step.compensation.path
       invariant(path, `Rollback path unavailable for ${action.repoId}/${action.resource}`)
       action.rollbackStatus = 'compensating'
-      appendJournalEvent(journalPath, journal, { type: 'rollback-compensating', subjectActionId: action.actionId, at: writeAt, offHostMirror })
+      appendJournalEvent(journalPath, journal, { type: 'rollback-compensating', subjectActionId: action.actionId, at: writeAt })
       lastEventAt = writeAt
       const mutationAt = readLiveTime(clock, 'Rollback mutation', writeAt)
       lastEventAt = mutationAt
       assertCurrentRollbackReload(reloadCurrentGovernance, governanceBaseline)
-      validateTransactionJournal(journal, { mode: 'historical-observation', issuerRegistry, managedCiValidationContext })
-      verifyFleetReconcileDurability(journal, offHostMirror, { at: mutationAt })
+      validateTransactionJournal(journal, { mode: 'historical-observation', issuerRegistry })
       verifyFleetRecoveryAuthorization(recoveryAuthorization, {
         journal,
         inventory,
@@ -3441,18 +2055,17 @@ function rollbackTransactionCore(journalPath, client, {
         issuerRegistry,
         expectedJournalEventHeadDigest: journal.rollbackAuthorizationEventHeadDigest,
         now: mutationAt,
-        ...(externalActivationPolicy ? { externalActivationPolicy } : {}),
       })
       const mutationRemote = observeActionState(client, action)
       if (deepEqual(mutationRemote, action.beforeImage)) {
         action.rollbackStatus = 'already-at-before-image'
-        appendJournalEvent(journalPath, journal, { type: 'rollback-already-restored', subjectActionId: action.actionId, at: mutationAt, offHostMirror })
+        appendJournalEvent(journalPath, journal, { type: 'rollback-already-restored', subjectActionId: action.actionId, at: mutationAt })
         continue
       }
       if (!deepEqual(mutationRemote, action.expectedApplied)) {
         blocked.push(`${action.repoId}/${action.resource}: rollback drift at mutation boundary; remote no longer matches this transaction`)
         action.rollbackStatus = 'blocked-drift'
-        appendJournalEvent(journalPath, journal, { type: 'rollback-blocked-drift', subjectActionId: action.actionId, at: mutationAt, offHostMirror })
+        appendJournalEvent(journalPath, journal, { type: 'rollback-blocked-drift', subjectActionId: action.actionId, at: mutationAt })
         continue
       }
       const response = client.request(step.compensation.method, path, step.compensation.body)
@@ -3460,12 +2073,12 @@ function rollbackTransactionCore(journalPath, client, {
       const restored = observeActionState(client, action)
       invariant(deepEqual(restored, action.beforeImage), `Rollback exact readback mismatch for ${action.repoId}/${action.resource}`)
       action.rollbackStatus = 'rolled-back-verified'
-      appendJournalEvent(journalPath, journal, { type: 'rollback-action-verified', subjectActionId: action.actionId, at: mutationAt, offHostMirror })
+      appendJournalEvent(journalPath, journal, { type: 'rollback-action-verified', subjectActionId: action.actionId, at: mutationAt })
     } catch (error) {
       blocked.push(`${action.repoId}/${action.resource}: ${error.message}`)
       action.rollbackStatus = 'blocked-error'
       const blockedAt = readLiveTime(clock, 'Rollback failure journal', lastEventAt)
-      appendJournalEvent(journalPath, journal, { type: 'rollback-blocked-error', subjectActionId: action.actionId, at: blockedAt, offHostMirror })
+      appendJournalEvent(journalPath, journal, { type: 'rollback-blocked-error', subjectActionId: action.actionId, at: blockedAt })
       lastEventAt = blockedAt
     }
   }
@@ -3473,1462 +2086,9 @@ function rollbackTransactionCore(journalPath, client, {
   journal.rollbackCompletedAt = rollbackCompletedAt.toISOString()
   journal.rollbackBlockers = blocked
   journal.state = blocked.length === 0 ? 'rolled-back-verified' : 'rollback-blocked'
-  appendJournalEvent(journalPath, journal, { type: journal.state, at: rollbackCompletedAt, offHostMirror })
-  verifyFleetReconcileDurability(journal, offHostMirror, { at: rollbackCompletedAt })
-  validateTransactionJournal(journal, { mode: 'historical-observation', issuerRegistry, managedCiValidationContext })
+  appendJournalEvent(journalPath, journal, { type: journal.state, at: rollbackCompletedAt })
+  validateTransactionJournal(journal, { mode: 'historical-observation', issuerRegistry })
   return { rolledBack: blocked.length === 0, blocked, journalPath }
-}
-
-function authorityBootstrapAuthorizationEnvelope(journal) {
-  return {
-    transactionClass: journal.transactionClass,
-    durabilityClass: journal.durabilityClass,
-    planDigest: journal.planDigest,
-    genesisReceiptDigest: journal.plan.genesisReceiptDigest,
-    authorityPolicyDigest: journal.plan.authorityPolicyDigest,
-    inventoryDigest: journal.plan.inventoryDigest,
-    desiredDigest: journal.plan.desiredDigest,
-    stagedRolloutPlanDigest: journal.plan.stagedRolloutPlanDigest,
-    bootstrapBoundaryDigest: journal.plan.bootstrapBoundaryDigest,
-    projectionDigest: journal.plan.projectionDigest,
-    target: {
-      repositoryId: journal.plan.repositoryId,
-      repository: journal.plan.repository,
-      defaultBranch: journal.plan.defaultBranch,
-      defaultBranchHeadSha: journal.plan.defaultBranchHeadSha,
-      defaultBranchTreeSha: journal.plan.defaultBranchTreeSha,
-    },
-    actions: journal.actions.map(fixedAction),
-    rollbackPlan: journal.rollbackPlan,
-  }
-}
-
-function authorityBootstrapAuthorizationEnvelopeDigest(journal) {
-  return sha256(`qijenchen-authority-policy-bootstrap-authorization-v1\n${stableStringify(authorityBootstrapAuthorizationEnvelope(journal), 0)}`)
-}
-
-function authorityBootstrapRollbackAuthorizationDigest(journal, preRollbackEventHeadDigest) {
-  invariant(/^[a-f0-9]{64}$/.test(preRollbackEventHeadDigest ?? ''),
-    'authority policy bootstrap rollback pre-event head digest is invalid')
-  return sha256(`qijenchen-authority-policy-bootstrap-rollback-standing-delegation-v1\n${stableStringify({
-    transactionId: journal.transactionId,
-    planDigest: journal.planDigest,
-    genesisReceiptDigest: journal.plan.genesisReceiptDigest,
-    authorityPolicyDigest: journal.plan.authorityPolicyDigest,
-    authorizationEnvelopeDigest: journal.authorizationEnvelopeDigest,
-    preRollbackEventHeadDigest,
-  }, 0)}`)
-}
-
-function validateAuthorityBootstrapJournalTime(journal, field, required = false) {
-  if (!Object.prototype.hasOwnProperty.call(journal, field)) {
-    invariant(!required, `authority policy bootstrap journal is missing ${field}`)
-    return null
-  }
-  const parsed = new Date(journal[field])
-  invariant(Number.isFinite(parsed.getTime()) && parsed.toISOString() === journal[field],
-    `authority policy bootstrap journal ${field} is invalid`)
-  return parsed
-}
-
-export function validateAuthorityBootstrapJournal(journal, {
-  inventory,
-  desired,
-  stagedRolloutPlan,
-  authorityPolicyDigest,
-} = {}) {
-  assertClosedKeys(journal, AUTHORITY_BOOTSTRAP_JOURNAL_KEYS,
-    'authority policy bootstrap journal has an invalid or open shape')
-  for (const key of [
-    'schemaVersion', 'kind', 'transactionClass', 'durabilityClass', 'offHostMirrored',
-    'promotionEligible', 'managedEvidence', 'transactionId', 'plan', 'planDigest',
-    'state', 'startedAt', 'rollbackAttempted', 'recoveryInstruction', 'actions',
-    'rollbackPlan', 'rollbackPlanDigest', 'authorizationEnvelopeDigest', 'events',
-    'eventHeadDigest', 'offHostReceipts',
-  ]) invariant(Object.prototype.hasOwnProperty.call(journal, key),
-    `authority policy bootstrap journal is missing ${key}`)
-  invariant(journal.schemaVersion === 1
-    && journal.kind === AUTHORITY_BOOTSTRAP_TRANSACTION_KIND
-    && journal.transactionClass === AUTHORITY_BOOTSTRAP_TRANSACTION_CLASS
-    && journal.durabilityClass === AUTHORITY_BOOTSTRAP_DURABILITY_CLASS
-    && journal.offHostMirrored === false
-    && journal.promotionEligible === false
-    && journal.managedEvidence === false,
-  'authority policy bootstrap journal identity or evidence class is invalid')
-  invariant(/^github-reconcile-[0-9]+-[a-f0-9]{12}$/.test(journal.transactionId ?? ''),
-    'authority policy bootstrap transaction id is invalid')
-  validateAuthorityBootstrapPlan(journal.plan)
-  invariant(journal.planDigest === journal.plan.planDigest,
-    'authority policy bootstrap journal plan digest mismatch')
-  validateAuthorityBootstrapJournalTime(journal, 'startedAt', true)
-  for (const field of [
-    'completedAt', 'failedAt', 'recoveredAt', 'rollbackStartedAt', 'rollbackCompletedAt',
-  ]) validateAuthorityBootstrapJournalTime(journal, field)
-  invariant([
-    'prepared', 'applying', 'verified', 'failed-partial-state-possible',
-    'recovery-observed', 'manual-recovery-required', 'rolling-back',
-    'rolled-back-verified', 'rollback-blocked',
-  ].includes(journal.state), 'authority policy bootstrap journal state is invalid')
-  invariant(typeof journal.recoveryInstruction === 'string' && journal.recoveryInstruction.length > 0,
-    'authority policy bootstrap recovery instruction is invalid')
-  invariant(Array.isArray(journal.actions)
-    && journal.actions.every(action => AUTHORITY_BOOTSTRAP_ALLOWED_ACTION_KINDS.has(action.kind)
-      && action.compensation?.safety === 'automatic'
-      && !action.kind.startsWith('delete-')
-      && action.kind !== 'enable-immutable-releases'),
-  'authority policy bootstrap journal contains a forbidden action')
-  const historicalInventory = inventory ?? {
-    schemaVersion: 1,
-    repositories: [{
-      id: journal.plan.repositoryId,
-      github: journal.plan.repository,
-      role: 'authority',
-      defaultBranch: journal.plan.defaultBranch,
-    }],
-  }
-  const repoById = new Map(historicalInventory.repositories.map(repo => [repo.id, repo]))
-  for (const action of journal.actions) validateManagedAction(action, repoById, desired ?? {
-    managedRulesetPrefix: 'fleet/',
-    managedEnvironmentNames: journal.plan.projection.environments.map(item => item.name),
-  })
-  invariant(new Set(journal.actions.map(action => action.actionId)).size === journal.actions.length,
-    'authority policy bootstrap journal contains duplicate action ids')
-  const expectedActions = journal.plan.actions.map((action, index) => ({
-    ...clone(action),
-    actionId: `${journal.plan.repositoryId}:${String(index + 1).padStart(3, '0')}:${action.kind}:${action.resource}`,
-    github: journal.plan.repository,
-    repoId: journal.plan.repositoryId,
-  }))
-  invariant(deepEqual(journal.actions.map(fixedAction), expectedActions.map(fixedAction)),
-    'authority policy bootstrap journal actions differ from the reviewed plan')
-  invariant(deepEqual(journal.rollbackPlan, rollbackPlanFor(journal.actions))
-    && journal.rollbackPlanDigest === rollbackPlanDigest(journal.rollbackPlan),
-  'authority policy bootstrap journal rollback plan is invalid')
-  invariant(journal.authorizationEnvelopeDigest === authorityBootstrapAuthorizationEnvelopeDigest(journal),
-    'authority policy bootstrap authorization envelope digest mismatch')
-  invariant(Array.isArray(journal.offHostReceipts) && journal.offHostReceipts.length === 0,
-    'authority policy bootstrap local journal may not masquerade as off-host evidence')
-  invariant(Array.isArray(journal.events) && journal.events.length > 0,
-    'authority policy bootstrap journal lacks its append-only event chain')
-  let previousDigest = JOURNAL_GENESIS_DIGEST
-  let previousAt = null
-  let previousRuntimeState = null
-  const actionIds = journal.actions.map(action => action.actionId)
-  for (let index = 0; index < journal.events.length; index += 1) {
-    const event = journal.events[index]
-    assertClosedKeys(event, new Set(JOURNAL_EVENT_KEYS),
-      `authority policy bootstrap event ${index} has an invalid or open shape`)
-    invariant(event.schemaVersion === 1
-      && event.sequence === index + 1
-      && event.transactionId === journal.transactionId
-      && event.previousDigest === previousDigest
-      && event.authorizationEnvelopeDigest === journal.authorizationEnvelopeDigest
-      && event.eventDigest === eventDigest(event),
-    `authority policy bootstrap event ${index} chain binding is invalid`)
-    const at = new Date(event.at)
-    invariant(Number.isFinite(at.getTime()) && at.toISOString() === event.at
-      && (!previousAt || at >= previousAt),
-    `authority policy bootstrap event ${index} time is invalid or regressed`)
-    validateRuntimeStateShape(event.runtimeState, actionIds)
-    invariant(event.stateDigest === sha256(`fleet-reconcile-state-v2\n${stableStringify({
-      authorizationEnvelopeDigest: event.authorizationEnvelopeDigest,
-      runtimeState: event.runtimeState,
-    }, 0)}`), `authority policy bootstrap event ${index} state digest is invalid`)
-    validateRuntimeTransition(previousRuntimeState, event.runtimeState, event.type,
-      event.subjectActionId, event.at)
-    previousDigest = event.eventDigest
-    previousAt = at
-    previousRuntimeState = event.runtimeState
-  }
-  invariant(journal.eventHeadDigest === previousDigest
-    && journal.events.at(-1).stateDigest === journalStateDigest(journal)
-    && deepEqual(journal.events.at(-1).runtimeState, journalRuntimeState(journal)),
-  'authority policy bootstrap latest event does not bind the current state')
-  if (journal.state === 'verified') invariant(typeof journal.completedAt === 'string'
-    && journal.actions.every(action => action.status === 'verified'),
-  'verified authority policy bootstrap journal is incomplete')
-  if (journal.state === 'failed-partial-state-possible') invariant(typeof journal.failedAt === 'string'
-    && typeof journal.error === 'string' && journal.error.length > 0,
-  'failed authority policy bootstrap journal lacks failure evidence')
-  if (['recovery-observed', 'manual-recovery-required'].includes(journal.state)) {
-    invariant(typeof journal.recoveredAt === 'string' && Array.isArray(journal.recoveryFailures),
-      'recovered authority policy bootstrap journal lacks observation evidence')
-  }
-  if (['rolling-back', 'rolled-back-verified', 'rollback-blocked'].includes(journal.state)) {
-    const latestRollbackStart = journal.events.filter(event => event.type === 'rolling-back').at(-1)
-    invariant(journal.rollbackAttempted === true && typeof journal.rollbackStartedAt === 'string'
-      && latestRollbackStart
-      && journal.rollbackAuthorizationEventHeadDigest
-        === authorityBootstrapRollbackAuthorizationDigest(journal, latestRollbackStart.previousDigest),
-    'authority policy bootstrap rollback lacks its standing-delegation binding')
-  }
-  if (['rolled-back-verified', 'rollback-blocked'].includes(journal.state)) {
-    invariant(typeof journal.rollbackCompletedAt === 'string' && Array.isArray(journal.rollbackBlockers),
-      'authority policy bootstrap rollback lacks completion evidence')
-  }
-  if (inventory) invariant(journal.plan.inventoryDigest === sha256(stableStringify(inventory, 0)),
-    'authority policy bootstrap current inventory differs from the reviewed plan')
-  if (desired) invariant(journal.plan.desiredDigest === sha256(stableStringify(desired, 0)),
-    'authority policy bootstrap current desired state differs from the reviewed plan')
-  if (stagedRolloutPlan) {
-    invariant(journal.plan.stagedRolloutPlanDigest === sha256(stableStringify(stagedRolloutPlan, 0)),
-      'authority policy bootstrap current staged rollout plan differs from the reviewed plan')
-    validateAuthorityBootstrapBoundary(stagedRolloutPlan.bootstrapBoundary?.githubPolicyConvergence)
-  }
-  if (authorityPolicyDigest) invariant(journal.plan.authorityPolicyDigest === authorityPolicyDigest,
-    'authority policy bootstrap current Decision Authority source differs from the reviewed plan')
-  return journal
-}
-
-export function authorityBootstrapJournalDigest(journal) {
-  return sha256(`qijenchen-authority-policy-bootstrap-journal-v1\n${stableStringify(journal, 0)}`)
-}
-
-function authorityBootstrapReplayReceiptDigest(receipt) {
-  const unsigned = clone(receipt)
-  delete unsigned.receiptDigest
-  return sha256(`qijenchen-authority-policy-bootstrap-durable-replay-v1\n${stableStringify(unsigned, 0)}`)
-}
-
-function authorityBootstrapMirrorIdentityDigest(identity) {
-  validateMirrorIdentity(identity)
-  return sha256(`qijenchen-authority-policy-bootstrap-mirror-identity-v1\n${stableStringify(identity, 0)}`)
-}
-
-function authorityBootstrapActivationRequirementDigest(requirement) {
-  return sha256(`qijenchen-authority-policy-bootstrap-mirror-activation-v1\n${stableStringify(requirement, 0)}`)
-}
-
-function authorityBootstrapConvergenceReadback(journal, convergence) {
-  invariant(
-    convergence
-      && /^[a-f0-9]{64}$/.test(convergence.observedStateDigest ?? '')
-      && Array.isArray(convergence.actions)
-      && convergence.actions.length === 0,
-    'authority policy bootstrap durable replay requires exact live convergence',
-  )
-  return {
-    repository: journal.plan.repository,
-    defaultBranchHeadSha: journal.plan.defaultBranchHeadSha,
-    defaultBranchTreeSha: journal.plan.defaultBranchTreeSha,
-    observedStateDigest: convergence.observedStateDigest,
-    remainingActionsDigest: candidateActionsDigest(convergence.actions),
-    eventHeadDigest: journal.eventHeadDigest,
-    genesisReadbackDigest: journal.plan.genesisReadbackDigest,
-  }
-}
-
-export function resolveActivatedAuthorityBootstrapMirrorIdentity({
-  activationRequirements,
-  inventory,
-  desired,
-  rings,
-  issuerRegistry,
-  activationPolicy,
-  mutationBoundaryContract,
-  now = new Date(),
-  managedCiValidationContext,
-}) {
-  validateExternalActivationRequirements(activationRequirements, {
-    inventory,
-    desired,
-    rings,
-    issuerRegistry,
-    policy: activationPolicy,
-    expectedPolicyDigest: externalActivationPolicyDigest(activationPolicy),
-    expectedMutationBoundaryContractDigest: githubMutationBoundaryContractDigest(mutationBoundaryContract),
-    now,
-    managedCiValidationContext,
-    mutationBoundaryContract,
-  })
-  const matches = activationRequirements.requirements.filter(requirement => (
-    requirement.id === AUTHORITY_BOOTSTRAP_MIRROR_REQUIREMENT_ID
-      && requirement.kind === 'durable-evidence-mirror'
-      && requirement.repository === 'ajenchen/design-system'
-  ))
-  invariant(matches.length === 1,
-    'authority policy bootstrap durable replay requires exactly one canonical mirror activation')
-  const requirement = matches[0]
-  invariant(requirement.status === 'activated' && requirement.evidence?.payload?.observedResource,
-    'authority policy bootstrap durable replay mirror is not activated')
-  const claims = requirement.evidence.payload.observedResource
-  const mirrorIdentity = Object.fromEntries(MIRROR_IDENTITY_KEYS.map(key => [key, clone(claims[key])]))
-  validateMirrorIdentity(mirrorIdentity)
-  return {
-    requirement,
-    requirementDigest: authorityBootstrapActivationRequirementDigest(requirement),
-    mirrorIdentity,
-    mirrorIdentityDigest: authorityBootstrapMirrorIdentityDigest(mirrorIdentity),
-  }
-}
-
-export function validateAuthorityBootstrapDurableReplayReceipt(receipt, {
-  activationRequirement = null,
-  requiredRetentionAt = null,
-  requireTrustedActivation = false,
-  expectedConvergenceReadback = null,
-} = {}) {
-  assertClosedKeys(receipt, AUTHORITY_BOOTSTRAP_REPLAY_KEYS,
-    'authority policy bootstrap durable replay receipt has an invalid or open shape')
-  invariant(Object.keys(receipt).length === AUTHORITY_BOOTSTRAP_REPLAY_KEYS.size,
-    'authority policy bootstrap durable replay receipt is incomplete')
-  invariant(receipt.schemaVersion === 1
-    && receipt.kind === AUTHORITY_BOOTSTRAP_REPLAY_KIND
-    && receipt.purpose === AUTHORITY_BOOTSTRAP_REPLAY_PURPOSE
-    && receipt.promotionEligible === false
-    && receipt.managedEvidence === true
-    && receipt.managedEvidenceScope === 'signed-mirror-event-chain-and-head-only'
-    && receipt.requirementId === AUTHORITY_BOOTSTRAP_MIRROR_REQUIREMENT_ID,
-  'authority policy bootstrap durable replay receipt identity or evidence class is invalid')
-  const journal = validateAuthorityBootstrapJournal(receipt.sourceJournal)
-  invariant(journal.state === 'verified'
-    && journal.actions.every(action => action.status === 'verified')
-    && journal.offHostMirrored === false
-    && journal.offHostReceipts.length === 0,
-  'authority policy bootstrap durable replay source journal is not a complete local bootstrap transaction')
-  invariant(receipt.sourceJournalDigest === authorityBootstrapJournalDigest(journal),
-    'authority policy bootstrap durable replay source journal digest mismatch')
-  validateMirrorIdentity(receipt.mirrorIdentity)
-  invariant(receipt.protocolVersion === receipt.mirrorIdentity.protocolVersion
-    && receipt.mirrorIdentityDigest === authorityBootstrapMirrorIdentityDigest(receipt.mirrorIdentity),
-  'authority policy bootstrap durable replay mirror identity mismatch')
-  if (requireTrustedActivation) invariant(activationRequirement,
-    'trusted authority policy bootstrap durable replay validation requires the canonical activation requirement')
-  if (activationRequirement) {
-    invariant(activationRequirement.id === receipt.requirementId
-      && activationRequirement.status === 'activated'
-      && receipt.activationRequirementDigest
-        === authorityBootstrapActivationRequirementDigest(activationRequirement),
-    'authority policy bootstrap durable replay activation requirement is stale or substituted')
-    const claims = activationRequirement.evidence?.payload?.observedResource
-    const expectedIdentity = claims
-      ? Object.fromEntries(MIRROR_IDENTITY_KEYS.map(key => [key, clone(claims[key])]))
-      : null
-    invariant(expectedIdentity && deepEqual(expectedIdentity, receipt.mirrorIdentity),
-      'authority policy bootstrap durable replay mirror identity differs from canonical activation')
-  } else invariant(/^[a-f0-9]{64}$/.test(receipt.activationRequirementDigest ?? ''),
-    'authority policy bootstrap durable replay activation requirement digest is invalid')
-  invariant(Array.isArray(receipt.eventReceipts)
-    && receipt.eventReceipts.length === journal.events.length
-    && new Set(receipt.eventReceipts.map(item => item.receiptId)).size === receipt.eventReceipts.length,
-  'authority policy bootstrap durable replay event receipt coverage is partial or duplicated')
-  const mirrorJournal = { ...journal, mirrorIdentity: clone(receipt.mirrorIdentity) }
-  const requestedAt = new Date(receipt.headVerificationRequest?.requestedAt)
-  invariant(Number.isFinite(requestedAt.getTime())
-    && requestedAt.toISOString() === receipt.headVerificationRequest.requestedAt,
-  'authority policy bootstrap durable replay head request time is invalid')
-  let previousReceivedAt = null
-  for (let index = 0; index < journal.events.length; index += 1) {
-    const event = journal.events[index]
-    const eventReceipt = receipt.eventReceipts[index]
-    const receivedAt = new Date(eventReceipt?.receivedAt)
-    invariant(Number.isFinite(receivedAt.getTime())
-      && receivedAt.toISOString() === eventReceipt.receivedAt
-      && receivedAt >= new Date(event.at)
-      && (!previousReceivedAt || receivedAt >= previousReceivedAt)
-      && receivedAt.getTime() <= requestedAt.getTime() + FLEET_RECONCILE_MIRROR_PROTOCOL.clockSkewMs,
-    `authority policy bootstrap durable replay event ${index + 1} has invalid temporal provenance`)
-    const request = eventMirrorRequest(mirrorJournal, event)
-    validateOffHostReceipt(eventReceipt, {
-      journal: mirrorJournal,
-      event,
-      mirrorIdentity: receipt.mirrorIdentity,
-      request,
-      at: receivedAt,
-    })
-    previousReceivedAt = receivedAt
-  }
-  invariant(receipt.eventReceiptsDigest
-    === sha256(`qijenchen-authority-policy-bootstrap-event-receipts-v1\n${stableStringify(receipt.eventReceipts, 0)}`),
-  'authority policy bootstrap durable replay event receipt digest mismatch')
-  validateHeadVerificationRequest(receipt.headVerificationRequest, {
-    journal: mirrorJournal,
-    mirrorIdentity: receipt.mirrorIdentity,
-    at: requestedAt,
-  })
-  const expectedHeadRequest = headVerificationRequest(mirrorJournal, {
-    mirrorIdentity: receipt.mirrorIdentity,
-    requestNonce: receipt.headVerificationRequest.requestNonce,
-    requestedAt,
-  })
-  invariant(deepEqual(receipt.headVerificationRequest, expectedHeadRequest),
-    'authority policy bootstrap durable replay head request is substituted')
-  validateHeadVerification(receipt.headVerification, {
-    journal: mirrorJournal,
-    mirrorIdentity: receipt.mirrorIdentity,
-    request: receipt.headVerificationRequest,
-    at: requestedAt,
-  })
-  assertClosedKeys(receipt.convergenceReadback, new Set([
-    'repository', 'defaultBranchHeadSha', 'defaultBranchTreeSha', 'observedStateDigest',
-    'remainingActionsDigest', 'eventHeadDigest', 'genesisReadbackDigest',
-  ]), 'authority policy bootstrap durable replay convergence readback has an invalid or open shape')
-  invariant(
-    receipt.convergenceReadback.repository === journal.plan.repository
-      && receipt.convergenceReadback.defaultBranchHeadSha === journal.plan.defaultBranchHeadSha
-      && receipt.convergenceReadback.defaultBranchTreeSha === journal.plan.defaultBranchTreeSha
-      && /^[a-f0-9]{64}$/.test(receipt.convergenceReadback.observedStateDigest ?? '')
-      && receipt.convergenceReadback.remainingActionsDigest === candidateActionsDigest([])
-      && receipt.convergenceReadback.eventHeadDigest === journal.eventHeadDigest
-      && receipt.convergenceReadback.genesisReadbackDigest === journal.plan.genesisReadbackDigest,
-    'authority policy bootstrap durable replay convergence readback differs from its verified source transaction',
-  )
-  if (expectedConvergenceReadback) invariant(
-    deepEqual(receipt.convergenceReadback, expectedConvergenceReadback),
-    'authority policy bootstrap durable replay convergence readback differs from live exact readback',
-  )
-  invariant(
-    receipt.convergenceReadbackDigest === sha256(
-      `qijenchen-authority-policy-bootstrap-convergence-readback-v1\n${stableStringify(receipt.convergenceReadback, 0)}`,
-    ),
-    'authority policy bootstrap durable replay convergence readback digest mismatch',
-  )
-  invariant(receipt.replayedAt === receipt.headVerification.verifiedAt,
-  'authority policy bootstrap durable replay completion/readback binding is invalid')
-  if (requiredRetentionAt !== null) {
-    const requiredAt = requiredRetentionAt instanceof Date
-      ? requiredRetentionAt
-      : new Date(requiredRetentionAt)
-    invariant(Number.isFinite(requiredAt.getTime()),
-      'authority policy bootstrap durable replay required retention time is invalid')
-    for (const evidence of [...receipt.eventReceipts, receipt.headVerification]) {
-      invariant(new Date(evidence.retainedUntil) >= requiredAt,
-        'authority policy bootstrap durable replay retention does not cover the required boundary')
-    }
-  }
-  invariant(receipt.receiptDigest === authorityBootstrapReplayReceiptDigest(receipt),
-    'authority policy bootstrap durable replay receipt digest mismatch')
-  return receipt
-}
-
-function writeAuthorityBootstrapReplayReceipt(receiptRoot, receipt) {
-  const root = resolve(receiptRoot)
-  mkdirSync(root, { recursive: true })
-  const rootInfo = lstatSync(root)
-  invariant(rootInfo.isDirectory() && !rootInfo.isSymbolicLink() && realpathSync(root) === root,
-    'authority policy bootstrap durable replay receipt root is unsafe')
-  const path = resolve(root, `${receipt.receiptDigest}.json`)
-  invariant(dirname(path) === root,
-    'authority policy bootstrap durable replay receipt path escapes its content-addressed root')
-  const body = `${stableStringify(receipt)}\n`
-  if (existsSync(path)) {
-    invariant(readFileSync(path, 'utf8') === body,
-      'authority policy bootstrap durable replay receipt CAS path contains different bytes')
-    return path
-  }
-  const temporary = resolve(root, `.${receipt.receiptDigest}.${process.pid}.${randomUUID()}.tmp`)
-  let descriptor = null
-  try {
-    descriptor = openSync(temporary, 'wx', 0o600)
-    writeFileSync(descriptor, body)
-    fsyncSync(descriptor)
-    closeSync(descriptor)
-    descriptor = null
-    linkSync(temporary, path)
-    unlinkSync(temporary)
-    const directoryDescriptor = openSync(root, 'r')
-    try { fsyncSync(directoryDescriptor) } finally { closeSync(directoryDescriptor) }
-  } finally {
-    if (descriptor !== null) closeSync(descriptor)
-    if (existsSync(temporary)) unlinkSync(temporary)
-  }
-  invariant(readFileSync(path, 'utf8') === body,
-    'authority policy bootstrap durable replay receipt exact readback failed')
-  return path
-}
-
-function acquireAuthorityBootstrapReplayLock(receiptRoot, replayIdentityDigest, {
-  timeoutMs = 30_000,
-} = {}) {
-  invariant(/^[a-f0-9]{64}$/.test(replayIdentityDigest ?? ''),
-    'authority policy bootstrap durable replay lock identity is invalid')
-  const root = resolve(receiptRoot)
-  mkdirSync(root, { recursive: true })
-  const rootInfo = lstatSync(root)
-  invariant(rootInfo.isDirectory() && !rootInfo.isSymbolicLink() && realpathSync(root) === root,
-    'authority policy bootstrap durable replay lock root is unsafe')
-  const path = resolve(root, `.${replayIdentityDigest}.lock`)
-  invariant(dirname(path) === root,
-    'authority policy bootstrap durable replay lock path escapes its receipt root')
-  const deadline = Date.now() + timeoutMs
-  const body = `${stableStringify({
-    schemaVersion: 1,
-    kind: 'authority-bootstrap-durable-replay-local-lock',
-    replayIdentityDigest,
-    pid: process.pid,
-  }, 0)}\n`
-  for (;;) {
-    const temporary = resolve(
-      root,
-      `.${replayIdentityDigest}.${process.pid}.${randomUUID()}.pending-lock`,
-    )
-    let descriptor = null
-    let published = false
-    try {
-      descriptor = openSync(temporary, 'wx', 0o600)
-      writeFileSync(descriptor, body)
-      fsyncSync(descriptor)
-      try {
-        linkSync(temporary, path)
-        published = true
-      } catch (error) {
-        if (error?.code !== 'EEXIST') throw error
-      }
-      unlinkSync(temporary)
-      if (published) {
-        const directoryDescriptor = openSync(root, 'r')
-        try { fsyncSync(directoryDescriptor) } finally { closeSync(directoryDescriptor) }
-        invariant(readFileSync(path, 'utf8') === body,
-          'authority policy bootstrap durable replay lock exact readback failed')
-        return { path, descriptor, body }
-      }
-    } catch (error) {
-      if (descriptor !== null) closeSync(descriptor)
-      if (existsSync(temporary)) unlinkSync(temporary)
-      throw error
-    }
-    closeSync(descriptor)
-    descriptor = null
-    let owner
-    try {
-      const bytes = readFileSync(path, 'utf8')
-      owner = JSON.parse(bytes)
-      invariant(
-        bytes === `${stableStringify(owner, 0)}\n`
-          && owner.kind === 'authority-bootstrap-durable-replay-local-lock'
-          && owner.replayIdentityDigest === replayIdentityDigest
-          && Number.isSafeInteger(owner.pid)
-          && owner.pid > 0,
-        'authority policy bootstrap durable replay lock record is invalid',
-      )
-    } catch (readError) {
-      if (readError?.code === 'ENOENT') continue
-      throw new Error(`authority policy bootstrap durable replay lock is unreadable or untrusted: ${readError.message}`)
-    }
-    let ownerAlive = true
-    try { process.kill(owner.pid, 0) } catch (probeError) {
-      if (probeError?.code === 'ESRCH') ownerAlive = false
-      else if (probeError?.code !== 'EPERM') throw probeError
-    }
-    if (!ownerAlive) {
-      const stale = resolve(root, `.${replayIdentityDigest}.${randomUUID()}.stale-lock`)
-      try {
-        renameSync(path, stale)
-        unlinkSync(stale)
-        continue
-      } catch (recoveryError) {
-        if (recoveryError?.code === 'ENOENT') continue
-        throw new Error(`authority policy bootstrap durable replay stale-lock recovery failed: ${recoveryError.message}`)
-      }
-    }
-    invariant(Date.now() < deadline,
-      'authority policy bootstrap durable replay lock remained held by a live process')
-    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25)
-  }
-}
-
-function releaseAuthorityBootstrapReplayLock(lock) {
-  try {
-    invariant(readFileSync(lock.path, 'utf8') === lock.body,
-      'authority policy bootstrap durable replay lock ownership changed')
-    unlinkSync(lock.path)
-  } finally {
-    closeSync(lock.descriptor)
-  }
-}
-
-function findAuthorityBootstrapReplayReceipt(receiptRoot, {
-  sourceJournalDigest,
-  mirrorIdentityDigest,
-  activationRequirementDigest,
-  activationRequirement,
-  requiredRetentionAt,
-  expectedConvergenceReadback,
-}) {
-  const root = resolve(receiptRoot)
-  if (!existsSync(root)) return null
-  const rootInfo = lstatSync(root)
-  invariant(rootInfo.isDirectory() && !rootInfo.isSymbolicLink() && realpathSync(root) === root,
-    'authority policy bootstrap durable replay receipt root is unsafe')
-  const matches = []
-  for (const name of readdirSync(root).sort(compareUtf8Bytes)) {
-    if (!/^[a-f0-9]{64}\.json$/.test(name)) continue
-    const path = resolve(root, name)
-    const info = lstatSync(path)
-    invariant(info.isFile() && !info.isSymbolicLink() && info.nlink === 1
-      && realpathSync(path) === path,
-      `authority policy bootstrap durable replay CAS entry is unsafe: ${name}`)
-    const before = readFileSync(path)
-    let candidate
-    try {
-      candidate = JSON.parse(before.toString('utf8'))
-    } catch (error) {
-      throw new Error(`authority policy bootstrap durable replay CAS entry is invalid JSON: ${name}: ${error.message}`)
-    }
-    const after = readFileSync(path)
-    invariant(before.equals(after)
-      && before.equals(Buffer.from(`${stableStringify(candidate)}\n`, 'utf8')),
-    `authority policy bootstrap durable replay CAS entry changed or has non-canonical bytes: ${name}`)
-    if (candidate?.kind !== AUTHORITY_BOOTSTRAP_REPLAY_KIND
-      || candidate.sourceJournalDigest !== sourceJournalDigest
-      || candidate.mirrorIdentityDigest !== mirrorIdentityDigest
-      || candidate.activationRequirementDigest !== activationRequirementDigest) continue
-    validateAuthorityBootstrapDurableReplayReceipt(candidate, {
-      activationRequirement,
-      requireTrustedActivation: true,
-      requiredRetentionAt,
-      expectedConvergenceReadback,
-    })
-    invariant(name === `${candidate.receiptDigest}.json`,
-      'authority policy bootstrap durable replay receipt filename differs from its digest')
-    matches.push({ path, receipt: candidate })
-  }
-  invariant(matches.length <= 1,
-    'authority policy bootstrap durable replay has multiple receipts for one source/activation identity')
-  return matches[0] ?? null
-}
-
-function appendAuthorityBootstrapEvent(path, journal, {
-  type,
-  subjectActionId = null,
-  at,
-  create = false,
-}) {
-  invariant(at instanceof Date && Number.isFinite(at.getTime()),
-    'authority policy bootstrap event time is invalid')
-  const directory = dirname(path)
-  mkdirSync(directory, { recursive: true })
-  const lockPath = `${path}.append.lock`
-  let lockDescriptor
-  try {
-    lockDescriptor = openSync(lockPath, 'wx', 0o600)
-  } catch (error) {
-    throw new Error(`authority policy bootstrap journal lock is unavailable: ${lockPath}: ${error.message}`)
-  }
-  try {
-    const event = {
-      schemaVersion: 1,
-      sequence: journal.events.length + 1,
-      transactionId: journal.transactionId,
-      type,
-      subjectActionId,
-      at: at.toISOString(),
-      previousDigest: journal.eventHeadDigest,
-      authorizationEnvelopeDigest: journal.authorizationEnvelopeDigest,
-      runtimeState: journalRuntimeState(journal),
-      stateDigest: journalStateDigest(journal),
-      mirrorRequestNonce: randomUUID(),
-      eventDigest: null,
-    }
-    if (journal.events.length > 0) invariant(at >= new Date(journal.events.at(-1).at),
-      'authority policy bootstrap event clock regressed')
-    event.eventDigest = eventDigest(event)
-    journal.events.push(event)
-    journal.eventHeadDigest = event.eventDigest
-    writeJournalSnapshot(path, journal, { create })
-    return event
-  } finally {
-    closeSync(lockDescriptor)
-    unlinkSync(lockPath)
-  }
-}
-
-function assertAuthorityBootstrapSourcesCurrent(reloadCurrentGovernance, baseline) {
-  if (!reloadCurrentGovernance) return true
-  const current = reloadCurrentGovernance()
-  invariant(current && typeof current === 'object' && !Array.isArray(current),
-    'authority policy bootstrap governance reload returned an invalid model')
-  for (const key of ['inventory', 'desired', 'stagedRolloutPlan', 'authorityPolicyDigest']) {
-    invariant(Object.prototype.hasOwnProperty.call(current, key),
-      `authority policy bootstrap governance reload omitted ${key}`)
-    invariant(deepEqual(current[key], baseline[key]),
-      `authority policy bootstrap refused: canonical source changed during transaction: ${key}`)
-  }
-  return true
-}
-
-function authorityBootstrapReplayTrustBaseline({
-  inventory,
-  desired,
-  stagedRolloutPlan,
-  authorityPolicyDigest,
-  rings,
-  issuerRegistry,
-  activationRequirements,
-  activationPolicy,
-  mutationBoundaryContract,
-}) {
-  return clone({
-    inventory,
-    desired,
-    stagedRolloutPlan,
-    authorityPolicyDigest,
-    rings,
-    issuerRegistry,
-    activationRequirements,
-    activationPolicy,
-    mutationBoundaryContract,
-  })
-}
-
-function assertAuthorityBootstrapReplayTrustCurrent(reloadCurrentGovernance, baseline) {
-  invariant(typeof reloadCurrentGovernance === 'function',
-    'authority policy bootstrap durable replay requires a complete canonical trust reload')
-  const current = reloadCurrentGovernance()
-  invariant(current && typeof current === 'object' && !Array.isArray(current),
-    'authority policy bootstrap durable replay trust reload returned an invalid model')
-  const keys = [
-    'inventory', 'desired', 'stagedRolloutPlan', 'authorityPolicyDigest', 'rings',
-    'issuerRegistry', 'activationRequirements', 'activationPolicy', 'mutationBoundaryContract',
-  ]
-  invariant(
-    Object.keys(current).length === keys.length
-      && keys.every(key => Object.prototype.hasOwnProperty.call(current, key)),
-    'authority policy bootstrap durable replay trust reload is incomplete or open',
-  )
-  for (const key of keys) invariant(
-    deepEqual(current[key], baseline[key]),
-    `authority policy bootstrap durable replay refused: canonical trust source changed during transaction: ${key}`,
-  )
-  return true
-}
-
-function recomputeAuthorityBootstrapGuard(plan, client, {
-  inventory,
-  desired,
-  stagedRolloutPlan,
-}, journal = null) {
-  validateAuthorityBootstrapPlan(plan)
-  const { repo, projection } = materializeAuthorityBootstrapProjection({
-    inventory,
-    desired,
-    stagedRolloutPlan,
-  })
-  const observed = fetchRepositoryState(client, repo,
-    authorityBootstrapMaterialized(projection), desired)
-  invariant(observed.defaultBranchHeadSha === plan.defaultBranchHeadSha
-    && observed.defaultBranchTreeSha === plan.defaultBranchTreeSha,
-  'authority policy bootstrap live default-branch commit/tree drifted')
-  const current = diffAuthorityBootstrapRepository(repo, projection, observed, desired)
-  invariant(current.conflicts.length === 0,
-    `authority policy bootstrap live state has conflicts: ${current.conflicts.join('; ')}`)
-  if (!journal) {
-    invariant(deepEqual(bindAuthorityBootstrapActions(current.actions, repo), plan.actions)
-      && current.observedStateDigest === plan.observedStateDigest,
-    'authority policy bootstrap live state differs from the reviewed plan')
-  } else {
-    const remaining = journal.actions
-      .filter(action => !['verified'].includes(action.status))
-    invariant(
-      deepEqual(current.actions, remaining.map(originalPlanAction)),
-      'authority policy bootstrap remaining live actions differ from the reviewed transaction')
-    for (const action of journal.actions) {
-      const expected = action.status === 'verified' ? action.expectedApplied : action.beforeImage
-      invariant(deepEqual(observeActionState(client, action), expected),
-        `authority policy bootstrap action-state replay differs for ${action.resource}`)
-    }
-  }
-  return current
-}
-
-function replayAuthorityBootstrapJournalToDurableMirrorCore(journalPath, client, offHostMirror, {
-  receiptRoot,
-  evidenceRoot = null,
-  inventory,
-  desired,
-  stagedRolloutPlan,
-  authorityPolicyDigest = null,
-  rings,
-  issuerRegistry,
-  activationRequirements,
-  activationPolicy,
-  mutationBoundaryContract,
-  clock = () => new Date(),
-  reloadCurrentGovernance,
-  managedCiValidationContext,
-} = {}, productionLive) {
-  invariant(typeof journalPath === 'string' && journalPath.length > 0,
-    'authority policy bootstrap durable replay requires a journal path')
-  if (!productionLive) invariant(typeof receiptRoot === 'string' && receiptRoot.length > 0,
-    'authority policy bootstrap durable replay fixture requires a content-addressed receipt root')
-  const resolvedReceiptRoot = productionLive
-    ? ensureRuntimeEvidenceDirectory({
-        repoRoot: resolve(GOVERNANCE_ROOT, '../..'),
-        explicitRoot: evidenceRoot,
-        relativePath: AUTHORITY_BOOTSTRAP_REPLAY_RECEIPT_RELATIVE_ROOT,
-      })
-    : resolve(receiptRoot)
-  invariant(typeof resolvedReceiptRoot === 'string' && resolvedReceiptRoot.length > 0,
-    'authority policy bootstrap durable replay requires a content-addressed receipt root')
-  invariant(inventory && desired && stagedRolloutPlan && rings && issuerRegistry
-    && activationRequirements && activationPolicy && mutationBoundaryContract,
-  'authority policy bootstrap durable replay requires the complete canonical trust model')
-  invariant(offHostMirror
-    && typeof offHostMirror.append === 'function'
-    && typeof offHostMirror.verify === 'function',
-  'authority policy bootstrap durable replay requires the activated append/verify adapter')
-  const resolvedAuthorityPolicyDigest = authorityPolicyDigest ?? sha256(readFileSync(DEFAULT_AUTHORITY_POLICY))
-  if (productionLive) {
-    invariant(authorityPolicyDigest === null
-      && receiptRoot === undefined
-      && (managedCiValidationContext === undefined || managedCiValidationContext === null)
-      && typeof reloadCurrentGovernance === 'function',
-    'live authority policy bootstrap durable replay refuses injected authority/runtime identity')
-    assertTrustedLiveGitHubClient(client, 'live authority policy bootstrap durable replay')
-    invariant(deepEqual(inventory, readJson(DEFAULT_INVENTORY))
-      && deepEqual(desired, readJson(DEFAULT_DESIRED))
-      && deepEqual(stagedRolloutPlan, readJson(DEFAULT_STAGED_ROLLOUT_PLAN))
-      && deepEqual(rings, readJson(DEFAULT_RINGS))
-      && deepEqual(activationRequirements, readJson(DEFAULT_EXTERNAL_ACTIVATION_REQUIREMENTS))
-      && deepEqual(activationPolicy, loadExternalActivationPolicy(DEFAULT_EXTERNAL_ACTIVATION_POLICY))
-      && deepEqual(mutationBoundaryContract, readJson(DEFAULT_GITHUB_MUTATION_BOUNDARY_CONTRACT))
-      && issuerRegistryDigest(issuerRegistry) === issuerRegistryDigest(loadIssuerRegistry()),
-    'live authority policy bootstrap durable replay refuses substituted canonical source objects')
-  }
-  const baseline = authorityBootstrapReplayTrustBaseline({
-    inventory,
-    desired,
-    stagedRolloutPlan,
-    authorityPolicyDigest: resolvedAuthorityPolicyDigest,
-    rings,
-    issuerRegistry,
-    activationRequirements,
-    activationPolicy,
-    mutationBoundaryContract,
-  })
-  assertAuthorityBootstrapReplayTrustCurrent(reloadCurrentGovernance, baseline)
-  const journal = readJson(journalPath)
-  validateAuthorityBootstrapJournal(journal, {
-    inventory,
-    desired,
-    stagedRolloutPlan,
-    authorityPolicyDigest: resolvedAuthorityPolicyDigest,
-  })
-  invariant(journal.state === 'verified'
-    && journal.actions.every(action => action.status === 'verified'),
-  'authority policy bootstrap durable replay requires a fully verified bootstrap journal')
-  if (productionLive) verifyGitCheckoutIdentity(resolve(GOVERNANCE_ROOT, '../..'), {
-    head: journal.plan.genesisReceipt.challenge.candidateHeadSha,
-    tree: journal.plan.genesisReceipt.challenge.candidateHeadTree,
-    label: 'live authority policy bootstrap durable replay candidate',
-  })
-  const startedAt = readLiveTime(clock, 'authority policy bootstrap durable replay')
-  if (productionLive) invariant(
-    verifyLiveControlPlaneGenesisReceipt(client, journal.plan.genesisReceipt, { now: startedAt }).readbackDigest
-      === journal.plan.genesisReadbackDigest,
-    'authority policy bootstrap durable replay genesis authorization changed',
-  )
-  assertAuthorityBootstrapReplayTrustCurrent(reloadCurrentGovernance, baseline)
-  const convergence = recomputeAuthorityBootstrapGuard(journal.plan, client, {
-    inventory,
-    desired,
-    stagedRolloutPlan,
-  }, journal)
-  const expectedConvergenceReadback = authorityBootstrapConvergenceReadback(journal, convergence)
-  const activation = resolveActivatedAuthorityBootstrapMirrorIdentity({
-    activationRequirements,
-    inventory,
-    desired,
-    rings,
-    issuerRegistry,
-    activationPolicy,
-    mutationBoundaryContract,
-    now: startedAt,
-    managedCiValidationContext,
-  })
-  invariant(offHostMirror.adapterCommandSha256 === activation.mirrorIdentity.adapterCommandSha256,
-    'authority policy bootstrap durable replay adapter differs from canonical activation')
-  const sourceJournalDigest = authorityBootstrapJournalDigest(journal)
-  const replayIdentityDigest = sha256(
-    `qijenchen-authority-policy-bootstrap-replay-identity-v1\n${sourceJournalDigest}\n${activation.mirrorIdentityDigest}\n${activation.requirementDigest}`,
-  )
-  const replayLock = acquireAuthorityBootstrapReplayLock(resolvedReceiptRoot, replayIdentityDigest)
-  try {
-    assertAuthorityBootstrapReplayTrustCurrent(reloadCurrentGovernance, baseline)
-    const lockedConvergence = recomputeAuthorityBootstrapGuard(journal.plan, client, {
-      inventory,
-      desired,
-      stagedRolloutPlan,
-    }, journal)
-    invariant(
-      deepEqual(lockedConvergence, convergence),
-      'authority policy bootstrap live convergence changed while durable replay waited for its lock',
-    )
-    const lockedConvergenceReadback = authorityBootstrapConvergenceReadback(
-      journal,
-      lockedConvergence,
-    )
-    const existing = findAuthorityBootstrapReplayReceipt(resolvedReceiptRoot, {
-      sourceJournalDigest,
-      mirrorIdentityDigest: activation.mirrorIdentityDigest,
-      activationRequirementDigest: activation.requirementDigest,
-      activationRequirement: activation.requirement,
-      requiredRetentionAt: startedAt,
-      expectedConvergenceReadback: lockedConvergenceReadback,
-    })
-    if (existing) return {
-      replayed: false,
-      existing: true,
-      receiptPath: existing.path,
-      receipt: existing.receipt,
-    }
-    const mirrorJournal = { ...journal, mirrorIdentity: clone(activation.mirrorIdentity) }
-    const eventReceipts = []
-    let lastLiveObservationAt = startedAt
-    for (const event of journal.events) {
-    assertAuthorityBootstrapReplayTrustCurrent(reloadCurrentGovernance, baseline)
-    const request = eventMirrorRequest(mirrorJournal, event)
-    const eventReceipt = clone(offHostMirror.append(request))
-    const receiptObservedAt = readLiveTime(
-      clock,
-      `authority policy bootstrap durable replay event ${event.sequence} acknowledgement`,
-      lastLiveObservationAt,
-    )
-    lastLiveObservationAt = receiptObservedAt
-    const receivedAt = new Date(eventReceipt?.receivedAt)
-    invariant(Number.isFinite(receivedAt.getTime())
-      && receivedAt.toISOString() === eventReceipt.receivedAt
-      && receivedAt >= new Date(event.at),
-    `authority policy bootstrap durable replay event ${event.sequence} has invalid receipt time`)
-    validateOffHostReceipt(eventReceipt, {
-      journal: mirrorJournal,
-      event,
-      mirrorIdentity: activation.mirrorIdentity,
-      request,
-      at: receiptObservedAt,
-      requireFresh: false,
-    })
-    invariant(!eventReceipts.some(item => item.receiptId === eventReceipt.receiptId),
-      `authority policy bootstrap durable replay reused receipt id ${eventReceipt.receiptId}`)
-      eventReceipts.push(eventReceipt)
-    }
-    invariant(eventReceipts.length === journal.events.length,
-      'authority policy bootstrap durable replay did not cover every event')
-    assertAuthorityBootstrapReplayTrustCurrent(reloadCurrentGovernance, baseline)
-    const verificationAt = readLiveTime(
-    clock,
-    'authority policy bootstrap durable replay verification',
-    lastLiveObservationAt,
-  )
-    const finalActivation = resolveActivatedAuthorityBootstrapMirrorIdentity({
-    activationRequirements,
-    inventory,
-    desired,
-    rings,
-    issuerRegistry,
-    activationPolicy,
-    mutationBoundaryContract,
-    now: verificationAt,
-    managedCiValidationContext,
-  })
-    invariant(
-    finalActivation.requirementDigest === activation.requirementDigest
-      && finalActivation.mirrorIdentityDigest === activation.mirrorIdentityDigest,
-    'authority policy bootstrap durable replay activation identity changed during transaction',
-  )
-    const headRequest = headVerificationRequest(mirrorJournal, {
-    mirrorIdentity: activation.mirrorIdentity,
-    requestedAt: verificationAt,
-  })
-    const headVerification = clone(offHostMirror.verify(headRequest))
-    validateHeadVerification(headVerification, {
-    journal: mirrorJournal,
-    mirrorIdentity: activation.mirrorIdentity,
-    request: headRequest,
-    at: verificationAt,
-  })
-    assertAuthorityBootstrapReplayTrustCurrent(reloadCurrentGovernance, baseline)
-    const finalConvergence = recomputeAuthorityBootstrapGuard(journal.plan, client, {
-    inventory,
-    desired,
-    stagedRolloutPlan,
-  }, journal)
-    invariant(deepEqual(finalConvergence, convergence),
-      'authority policy bootstrap live convergence changed during durable replay')
-    const convergenceReadback = authorityBootstrapConvergenceReadback(journal, finalConvergence)
-    invariant(
-      deepEqual(convergenceReadback, expectedConvergenceReadback),
-      'authority policy bootstrap durable replay convergence readback changed during transaction',
-    )
-    const receipt = {
-    schemaVersion: 1,
-    kind: AUTHORITY_BOOTSTRAP_REPLAY_KIND,
-    protocolVersion: activation.mirrorIdentity.protocolVersion,
-    purpose: AUTHORITY_BOOTSTRAP_REPLAY_PURPOSE,
-    promotionEligible: false,
-    managedEvidence: true,
-    managedEvidenceScope: 'signed-mirror-event-chain-and-head-only',
-    requirementId: activation.requirement.id,
-    activationRequirementDigest: activation.requirementDigest,
-    sourceJournal: clone(journal),
-    sourceJournalDigest,
-    mirrorIdentity: clone(activation.mirrorIdentity),
-    mirrorIdentityDigest: activation.mirrorIdentityDigest,
-    eventReceipts,
-    eventReceiptsDigest: sha256(
-      `qijenchen-authority-policy-bootstrap-event-receipts-v1\n${stableStringify(eventReceipts, 0)}`,
-    ),
-    headVerificationRequest: headRequest,
-    headVerification,
-    replayedAt: headVerification.verifiedAt,
-    convergenceReadback,
-    convergenceReadbackDigest: sha256(
-      `qijenchen-authority-policy-bootstrap-convergence-readback-v1\n${stableStringify(convergenceReadback, 0)}`,
-    ),
-    receiptDigest: null,
-  }
-    receipt.receiptDigest = authorityBootstrapReplayReceiptDigest(receipt)
-    validateAuthorityBootstrapDurableReplayReceipt(receipt, {
-    activationRequirement: activation.requirement,
-    requireTrustedActivation: true,
-    requiredRetentionAt: verificationAt,
-    expectedConvergenceReadback: convergenceReadback,
-  })
-    assertAuthorityBootstrapReplayTrustCurrent(reloadCurrentGovernance, baseline)
-    const receiptPath = writeAuthorityBootstrapReplayReceipt(resolvedReceiptRoot, receipt)
-    const readback = readJson(receiptPath)
-    validateAuthorityBootstrapDurableReplayReceipt(readback, {
-    activationRequirement: activation.requirement,
-    requireTrustedActivation: true,
-    requiredRetentionAt: verificationAt,
-    expectedConvergenceReadback: convergenceReadback,
-  })
-    invariant(deepEqual(readback, receipt),
-      'authority policy bootstrap durable replay receipt readback differs from produced evidence')
-    return {
-      replayed: true,
-      existing: false,
-      receiptPath,
-      receipt,
-    }
-  } finally {
-    releaseAuthorityBootstrapReplayLock(replayLock)
-  }
-}
-
-function applyAuthorityBootstrapPlanCore(plan, client, {
-  journalPath,
-  inventory,
-  desired,
-  stagedRolloutPlan,
-  authorityPolicyDigest = null,
-  clock = () => new Date(),
-  reloadCurrentGovernance,
-} = {}, productionLive) {
-  invariant(journalPath, 'authority policy bootstrap apply requires a journal path')
-  invariant(inventory && desired && stagedRolloutPlan,
-    'authority policy bootstrap apply requires canonical inventory, desired state, and staged rollout plan')
-  invariant(!existsSync(journalPath),
-    `authority policy bootstrap journal path already exists and is immutable: ${journalPath}`)
-  const resolvedAuthorityPolicyDigest = authorityPolicyDigest ?? sha256(readFileSync(DEFAULT_AUTHORITY_POLICY))
-  if (productionLive) invariant(authorityPolicyDigest === null,
-    'live authority policy bootstrap refuses an injected Decision Authority digest')
-  if (productionLive) assertTrustedLiveGitHubClient(client, 'live authority policy bootstrap apply')
-  if (productionLive) verifyGitCheckoutIdentity(resolve(GOVERNANCE_ROOT, '../..'), {
-    head: plan.genesisReceipt.challenge.candidateHeadSha,
-    tree: plan.genesisReceipt.challenge.candidateHeadTree,
-    label: 'live authority policy bootstrap apply candidate',
-  })
-  if (productionLive) invariant(deepEqual(inventory, readJson(DEFAULT_INVENTORY))
-    && deepEqual(desired, readJson(DEFAULT_DESIRED))
-    && deepEqual(stagedRolloutPlan, readJson(DEFAULT_STAGED_ROLLOUT_PLAN)),
-  'live authority policy bootstrap apply refuses substituted canonical source objects')
-  invariant(!productionLive || typeof reloadCurrentGovernance === 'function',
-    'live authority policy bootstrap requires per-write canonical source reload')
-  validateAuthorityBootstrapPlan(plan)
-  if (productionLive) {
-    const liveGenesisReadback = verifyLiveControlPlaneGenesisReceipt(client, plan.genesisReceipt)
-    invariant(plan.genesisReadbackTrust === 'github-live'
-      && plan.genesisReadbackDigest === liveGenesisReadback.readbackDigest,
-    'live authority policy bootstrap genesis GitHub readback differs from the reviewed plan')
-  }
-  invariant(plan.inventoryDigest === sha256(stableStringify(inventory, 0))
-    && plan.desiredDigest === sha256(stableStringify(desired, 0))
-    && plan.stagedRolloutPlanDigest === sha256(stableStringify(stagedRolloutPlan, 0))
-    && plan.authorityPolicyDigest === resolvedAuthorityPolicyDigest,
-  'authority policy bootstrap plan differs from current canonical source')
-  invariant(plan.conflicts.length === 0,
-    `authority policy bootstrap plan has conflicts: ${plan.conflicts.join('; ')}`)
-  const baseline = clone({
-    inventory,
-    desired,
-    stagedRolloutPlan,
-    authorityPolicyDigest: resolvedAuthorityPolicyDigest,
-  })
-  assertAuthorityBootstrapSourcesCurrent(reloadCurrentGovernance, baseline)
-  recomputeAuthorityBootstrapGuard(plan, client, { inventory, desired, stagedRolloutPlan })
-  const initialAt = readLiveTime(clock, 'authority policy bootstrap apply')
-  const actions = plan.actions.map(action => ({
-    ...clone(action),
-    status: 'pending',
-  }))
-  const journal = {
-    schemaVersion: 1,
-    kind: AUTHORITY_BOOTSTRAP_TRANSACTION_KIND,
-    transactionClass: AUTHORITY_BOOTSTRAP_TRANSACTION_CLASS,
-    durabilityClass: AUTHORITY_BOOTSTRAP_DURABILITY_CLASS,
-    offHostMirrored: false,
-    promotionEligible: false,
-    managedEvidence: false,
-    transactionId: `github-reconcile-${initialAt.getTime()}-${plan.planDigest.slice(0, 12)}`,
-    plan: clone(plan),
-    planDigest: plan.planDigest,
-    state: 'prepared',
-    startedAt: initialAt.toISOString(),
-    rollbackAttempted: false,
-    recoveryInstruction: 'This bootstrap-local journal is non-promotion evidence. Recover by exact live readback; before candidate-freeze, replay its event chain through the canonical durable external ledger and bind the resulting receipt.',
-    actions,
-    rollbackPlan: rollbackPlanFor(actions),
-    rollbackPlanDigest: null,
-    authorizationEnvelopeDigest: null,
-    events: [],
-    eventHeadDigest: JOURNAL_GENESIS_DIGEST,
-    offHostReceipts: [],
-  }
-  journal.rollbackPlanDigest = rollbackPlanDigest(journal.rollbackPlan)
-  journal.authorizationEnvelopeDigest = authorityBootstrapAuthorizationEnvelopeDigest(journal)
-  appendAuthorityBootstrapEvent(journalPath, journal, {
-    type: 'prepared',
-    at: initialAt,
-    create: true,
-  })
-  validateAuthorityBootstrapJournal(journal, {
-    inventory, desired, stagedRolloutPlan,
-    authorityPolicyDigest: resolvedAuthorityPolicyDigest,
-  })
-  let lastEventAt = initialAt
-  try {
-    journal.state = 'applying'
-    appendAuthorityBootstrapEvent(journalPath, journal, { type: 'applying', at: initialAt })
-    for (const action of journal.actions) {
-      const decisionAt = readLiveTime(clock, 'authority policy bootstrap apply', lastEventAt)
-      assertAuthorityBootstrapSourcesCurrent(reloadCurrentGovernance, baseline)
-      if (productionLive) invariant(
-        verifyLiveControlPlaneGenesisReceipt(client, plan.genesisReceipt, { now: decisionAt }).readbackDigest
-          === plan.genesisReadbackDigest,
-        'authority policy bootstrap genesis authorization changed before mutation',
-      )
-      recomputeAuthorityBootstrapGuard(plan, client, {
-        inventory, desired, stagedRolloutPlan,
-      }, journal)
-      invariant(deepEqual(observeActionState(client, action), action.beforeImage),
-        `authority policy bootstrap pre-apply drift for ${action.resource}`)
-      action.status = 'applying'
-      appendAuthorityBootstrapEvent(journalPath, journal, {
-        type: 'action-applying',
-        subjectActionId: action.actionId,
-        at: decisionAt,
-      })
-      lastEventAt = decisionAt
-      const mutationAt = readLiveTime(clock, 'authority policy bootstrap mutation', decisionAt)
-      lastEventAt = mutationAt
-      assertAuthorityBootstrapSourcesCurrent(reloadCurrentGovernance, baseline)
-      if (productionLive) invariant(
-        verifyLiveControlPlaneGenesisReceipt(client, plan.genesisReceipt, { now: mutationAt }).readbackDigest
-          === plan.genesisReadbackDigest,
-        'authority policy bootstrap genesis authorization changed at mutation boundary',
-      )
-      recomputeAuthorityBootstrapGuard(plan, client, {
-        inventory, desired, stagedRolloutPlan,
-      }, journal)
-      validateAuthorityBootstrapJournal(journal, {
-        inventory, desired, stagedRolloutPlan,
-        authorityPolicyDigest: resolvedAuthorityPolicyDigest,
-      })
-      invariant(deepEqual(observeActionState(client, action), action.beforeImage),
-        `authority policy bootstrap mutation-boundary drift for ${action.resource}`)
-      const response = client.request(action.method, action.path, action.body)
-      action.responseId = response?.id ?? null
-      action.readbackPath = readbackPath(action, response)
-      action.status = 'applied-unverified'
-      appendAuthorityBootstrapEvent(journalPath, journal, {
-        type: 'action-applied-unverified',
-        subjectActionId: action.actionId,
-        at: mutationAt,
-      })
-      invariant(verifyAppliedAction(client, action),
-        `authority policy bootstrap exact readback mismatch for ${action.resource}`)
-      action.status = 'verified'
-      appendAuthorityBootstrapEvent(journalPath, journal, {
-        type: 'action-verified',
-        subjectActionId: action.actionId,
-        at: mutationAt,
-      })
-    }
-    journal.state = 'verified'
-    const completedAt = readLiveTime(clock, 'authority policy bootstrap completion', lastEventAt)
-    journal.completedAt = completedAt.toISOString()
-    appendAuthorityBootstrapEvent(journalPath, journal, { type: 'verified', at: completedAt })
-    validateAuthorityBootstrapJournal(journal, {
-      inventory, desired, stagedRolloutPlan,
-      authorityPolicyDigest: resolvedAuthorityPolicyDigest,
-    })
-    return {
-      applied: true,
-      promotionEligible: false,
-      managedEvidence: false,
-      transactionId: journal.transactionId,
-      journalPath,
-      eventHeadDigest: journal.eventHeadDigest,
-      actions: journal.actions.map(action => ({
-        repoId: action.repoId,
-        kind: action.kind,
-        resource: action.resource,
-      })),
-    }
-  } catch (error) {
-    journal.state = 'failed-partial-state-possible'
-    const failedAt = readLiveTime(clock, 'authority policy bootstrap failure journal', lastEventAt)
-    journal.failedAt = failedAt.toISOString()
-    journal.error = error.message
-    appendAuthorityBootstrapEvent(journalPath, journal, {
-      type: 'failed-partial-state-possible',
-      at: failedAt,
-    })
-    throw new Error(`authority policy bootstrap failed; exact recovery or compensating rollback is required: ${error.message}`, { cause: error })
-  }
-}
-
-function recoverAuthorityBootstrapTransactionCore(journalPath, client, {
-  clock = () => new Date(),
-  inventory,
-  desired,
-  stagedRolloutPlan,
-  authorityPolicyDigest = null,
-  reloadCurrentGovernance,
-} = {}, productionLive) {
-  const resolvedAuthorityPolicyDigest = authorityPolicyDigest ?? sha256(readFileSync(DEFAULT_AUTHORITY_POLICY))
-  if (productionLive) invariant(authorityPolicyDigest === null
-    && inventory && desired && stagedRolloutPlan
-    && typeof reloadCurrentGovernance === 'function',
-  'live authority policy bootstrap recovery requires canonical source reload and refuses injected authority identity')
-  if (productionLive) {
-    assertTrustedLiveGitHubClient(client, 'live authority policy bootstrap recovery')
-    invariant(deepEqual(inventory, readJson(DEFAULT_INVENTORY))
-      && deepEqual(desired, readJson(DEFAULT_DESIRED))
-      && deepEqual(stagedRolloutPlan, readJson(DEFAULT_STAGED_ROLLOUT_PLAN)),
-    'live authority policy bootstrap recovery refuses substituted canonical source objects')
-  }
-  const baseline = inventory && desired && stagedRolloutPlan
-    ? clone({
-        inventory,
-        desired,
-        stagedRolloutPlan,
-        authorityPolicyDigest: resolvedAuthorityPolicyDigest,
-      })
-    : null
-  if (baseline) assertAuthorityBootstrapSourcesCurrent(reloadCurrentGovernance, baseline)
-  const journal = readJson(journalPath)
-  if (productionLive) verifyGitCheckoutIdentity(resolve(GOVERNANCE_ROOT, '../..'), {
-    head: journal.plan?.genesisReceipt?.challenge?.candidateHeadSha,
-    tree: journal.plan?.genesisReceipt?.challenge?.candidateHeadTree,
-    label: 'live authority policy bootstrap recovery candidate',
-  })
-  validateAuthorityBootstrapJournal(journal, baseline ?? {})
-  invariant(['prepared', 'applying', 'failed-partial-state-possible'].includes(journal.state),
-    `authority policy bootstrap recovery refused from state ${journal.state}`)
-  const observationAt = readLiveTime(clock, 'authority policy bootstrap recovery',
-    new Date(journal.events.at(-1).at))
-  const failures = []
-  for (const action of journal.actions) {
-    try {
-      const remote = observeActionState(client, action)
-      action.recoveryObservation = remote
-      if (deepEqual(remote, action.expectedApplied)) action.status = 'verified'
-      else if (deepEqual(remote, action.beforeImage)) action.status = 'not-applied'
-      else failures.push(`${action.repoId}/${action.resource}: remote state matches neither before-image nor expected state`)
-    } catch (error) {
-      failures.push(`${action.repoId}/${action.resource}: ${error.message}`)
-    }
-  }
-  journal.state = failures.length === 0 ? 'recovery-observed' : 'manual-recovery-required'
-  journal.recoveredAt = observationAt.toISOString()
-  journal.recoveryFailures = failures
-  if (baseline) assertAuthorityBootstrapSourcesCurrent(reloadCurrentGovernance, baseline)
-  appendAuthorityBootstrapEvent(journalPath, journal, {
-    type: journal.state,
-    at: observationAt,
-  })
-  validateAuthorityBootstrapJournal(journal, baseline ?? {})
-  return {
-    observed: failures.length === 0,
-    rolledBack: false,
-    failures,
-    journalPath,
-    eventHeadDigest: journal.eventHeadDigest,
-  }
-}
-
-function rollbackAuthorityBootstrapTransactionCore(journalPath, client, {
-  clock = () => new Date(),
-  inventory,
-  desired,
-  stagedRolloutPlan,
-  authorityPolicyDigest = null,
-  reloadCurrentGovernance,
-} = {}, productionLive) {
-  const resolvedAuthorityPolicyDigest = authorityPolicyDigest ?? sha256(readFileSync(DEFAULT_AUTHORITY_POLICY))
-  if (productionLive) invariant(authorityPolicyDigest === null
-    && inventory && desired && stagedRolloutPlan
-    && typeof reloadCurrentGovernance === 'function',
-  'live authority policy bootstrap rollback requires canonical source reload and refuses injected authority identity')
-  if (productionLive) {
-    assertTrustedLiveGitHubClient(client, 'live authority policy bootstrap rollback')
-    invariant(deepEqual(inventory, readJson(DEFAULT_INVENTORY))
-      && deepEqual(desired, readJson(DEFAULT_DESIRED))
-      && deepEqual(stagedRolloutPlan, readJson(DEFAULT_STAGED_ROLLOUT_PLAN)),
-    'live authority policy bootstrap rollback refuses substituted canonical source objects')
-  }
-  const baseline = inventory && desired && stagedRolloutPlan
-    ? clone({
-        inventory,
-        desired,
-        stagedRolloutPlan,
-        authorityPolicyDigest: resolvedAuthorityPolicyDigest,
-      })
-    : null
-  if (baseline) assertAuthorityBootstrapSourcesCurrent(reloadCurrentGovernance, baseline)
-  const journal = readJson(journalPath)
-  if (productionLive) verifyGitCheckoutIdentity(resolve(GOVERNANCE_ROOT, '../..'), {
-    head: journal.plan?.genesisReceipt?.challenge?.candidateHeadSha,
-    tree: journal.plan?.genesisReceipt?.challenge?.candidateHeadTree,
-    label: 'live authority policy bootstrap rollback candidate',
-  })
-  validateAuthorityBootstrapJournal(journal, baseline ?? {})
-  invariant([
-    'failed-partial-state-possible', 'recovery-observed',
-    'manual-recovery-required', 'rollback-blocked',
-  ].includes(journal.state),
-  `authority policy bootstrap rollback refused from state ${journal.state}`)
-  const startedAt = readLiveTime(clock, 'authority policy bootstrap rollback',
-    new Date(journal.events.at(-1).at))
-  journal.rollbackAttempted = true
-  journal.rollbackAuthorizationEventHeadDigest = authorityBootstrapRollbackAuthorizationDigest(
-    journal,
-    journal.eventHeadDigest,
-  )
-  journal.rollbackStartedAt = startedAt.toISOString()
-  journal.state = 'rolling-back'
-  appendAuthorityBootstrapEvent(journalPath, journal, {
-    type: 'rolling-back',
-    at: startedAt,
-  })
-  let lastEventAt = startedAt
-  const byId = new Map(journal.actions.map(action => [action.actionId, action]))
-  const blocked = []
-  for (const step of journal.rollbackPlan) {
-    const action = byId.get(step.actionId)
-    invariant(action, `authority policy bootstrap rollback references missing action ${step.actionId}`)
-    const decisionAt = readLiveTime(clock, 'authority policy bootstrap rollback', lastEventAt)
-    let actionLastEventAt = decisionAt
-    try {
-      if (baseline) assertAuthorityBootstrapSourcesCurrent(reloadCurrentGovernance, baseline)
-      const remote = observeActionState(client, action)
-      if (deepEqual(remote, action.beforeImage)) {
-        action.rollbackStatus = 'already-at-before-image'
-        appendAuthorityBootstrapEvent(journalPath, journal, {
-          type: 'rollback-already-restored',
-          subjectActionId: action.actionId,
-          at: decisionAt,
-        })
-        lastEventAt = decisionAt
-        continue
-      }
-      if (!deepEqual(remote, action.expectedApplied)) {
-        blocked.push(`${action.repoId}/${action.resource}: rollback drift`)
-        action.rollbackStatus = 'blocked-drift'
-        appendAuthorityBootstrapEvent(journalPath, journal, {
-          type: 'rollback-blocked-drift',
-          subjectActionId: action.actionId,
-          at: decisionAt,
-        })
-        lastEventAt = decisionAt
-        continue
-      }
-      invariant(step.compensation.safety === 'automatic',
-        `authority policy bootstrap rollback contains a non-automatic compensation for ${action.resource}`)
-      action.rollbackStatus = 'compensating'
-      appendAuthorityBootstrapEvent(journalPath, journal, {
-        type: 'rollback-compensating',
-        subjectActionId: action.actionId,
-        at: decisionAt,
-      })
-      const mutationAt = readLiveTime(clock, 'authority policy bootstrap rollback mutation',
-        decisionAt)
-      actionLastEventAt = mutationAt
-      lastEventAt = mutationAt
-      if (baseline) assertAuthorityBootstrapSourcesCurrent(reloadCurrentGovernance, baseline)
-      validateAuthorityBootstrapJournal(journal, baseline ?? {})
-      const mutationRemote = observeActionState(client, action)
-      if (!deepEqual(mutationRemote, action.expectedApplied)) {
-        if (deepEqual(mutationRemote, action.beforeImage)) {
-          action.rollbackStatus = 'already-at-before-image'
-          appendAuthorityBootstrapEvent(journalPath, journal, {
-            type: 'rollback-already-restored',
-            subjectActionId: action.actionId,
-            at: mutationAt,
-          })
-        } else {
-          blocked.push(`${action.repoId}/${action.resource}: rollback mutation-boundary drift`)
-          action.rollbackStatus = 'blocked-drift'
-          appendAuthorityBootstrapEvent(journalPath, journal, {
-            type: 'rollback-blocked-drift',
-            subjectActionId: action.actionId,
-            at: mutationAt,
-          })
-        }
-        lastEventAt = mutationAt
-        continue
-      }
-      const path = step.compensation.pathSource === 'readbackPath'
-        ? action.readbackPath
-        : step.compensation.path
-      invariant(path, `authority policy bootstrap rollback path unavailable for ${action.resource}`)
-      const response = client.request(step.compensation.method, path, step.compensation.body)
-      if (step.compensation.recreatedResource && response?.id) {
-        action.readbackPath = `/repos/${action.github}/rulesets/${response.id}`
-      }
-      invariant(deepEqual(observeActionState(client, action), action.beforeImage),
-        `authority policy bootstrap rollback exact readback mismatch for ${action.resource}`)
-      action.rollbackStatus = 'rolled-back-verified'
-      appendAuthorityBootstrapEvent(journalPath, journal, {
-        type: 'rollback-action-verified',
-        subjectActionId: action.actionId,
-        at: mutationAt,
-      })
-      lastEventAt = mutationAt
-    } catch (error) {
-      blocked.push(`${action.repoId}/${action.resource}: ${error.message}`)
-      action.rollbackStatus = 'blocked-error'
-      const blockedAt = readLiveTime(
-        clock,
-        'authority policy bootstrap rollback failure',
-        actionLastEventAt,
-      )
-      appendAuthorityBootstrapEvent(journalPath, journal, {
-        type: 'rollback-blocked-error',
-        subjectActionId: action.actionId,
-        at: blockedAt,
-      })
-      lastEventAt = blockedAt
-    }
-  }
-  const completedAt = readLiveTime(clock, 'authority policy bootstrap rollback completion',
-    lastEventAt)
-  journal.rollbackCompletedAt = completedAt.toISOString()
-  journal.rollbackBlockers = blocked
-  journal.state = blocked.length === 0 ? 'rolled-back-verified' : 'rollback-blocked'
-  appendAuthorityBootstrapEvent(journalPath, journal, {
-    type: journal.state,
-    at: completedAt,
-  })
-  validateAuthorityBootstrapJournal(journal, baseline ?? {})
-  return {
-    rolledBack: blocked.length === 0,
-    blocked,
-    journalPath,
-    eventHeadDigest: journal.eventHeadDigest,
-  }
 }
 
 // Production entrypoints always enforce live identity derivation. The fixture seam is
@@ -4954,28 +2114,6 @@ export function rollbackTransaction(journalPath, client, options) {
   return rollbackTransactionCore(journalPath, client, options, true)
 }
 
-export function applyAuthorityBootstrapPlan(plan, client, options) {
-  return applyAuthorityBootstrapPlanCore(plan, client, options, true)
-}
-
-export function recoverAuthorityBootstrapTransaction(journalPath, client, options) {
-  return recoverAuthorityBootstrapTransactionCore(journalPath, client, options, true)
-}
-
-export function rollbackAuthorityBootstrapTransaction(journalPath, client, options) {
-  return rollbackAuthorityBootstrapTransactionCore(journalPath, client, options, true)
-}
-
-export function replayAuthorityBootstrapJournalToDurableMirror(journalPath, client, offHostMirror, options) {
-  return replayAuthorityBootstrapJournalToDurableMirrorCore(
-    journalPath,
-    client,
-    offHostMirror,
-    options,
-    true,
-  )
-}
-
 export const reconcileFixtureTestHarness = Object.freeze({
   validatePartialInventoryModel(inventory, desired, rings, certifications, waivers, now = new Date(), issuerRegistry = loadIssuerRegistry(), runtimeProfile, runtimeValidationContext = {}) {
     return validateModelCore(inventory, desired, rings, certifications, waivers, now, issuerRegistry, runtimeProfile, runtimeValidationContext, false)
@@ -4986,159 +2124,43 @@ export const reconcileFixtureTestHarness = Object.freeze({
   buildPlan(options) {
     return buildPlanCore(options, false)
   },
-  buildAuthorityBootstrapPlan(options) {
-    return buildAuthorityBootstrapPlanCore(options, false)
-  },
   applyPlan(plan, client, options) {
     return applyPlanCore(plan, client, options, false)
-  },
-  applyAuthorityBootstrapPlan(plan, client, options) {
-    return applyAuthorityBootstrapPlanCore(plan, client, options, false)
   },
   recoverTransaction(journalPath, client, options) {
     return recoverTransactionCore(journalPath, client, options, false)
   },
-  recoverAuthorityBootstrapTransaction(journalPath, client, options) {
-    return recoverAuthorityBootstrapTransactionCore(journalPath, client, options, false)
-  },
   rollbackTransaction(journalPath, client, options) {
     return rollbackTransactionCore(journalPath, client, options, false)
-  },
-  rollbackAuthorityBootstrapTransaction(journalPath, client, options) {
-    return rollbackAuthorityBootstrapTransactionCore(journalPath, client, options, false)
-  },
-  replayAuthorityBootstrapJournalToDurableMirror(journalPath, client, offHostMirror, options) {
-    return replayAuthorityBootstrapJournalToDurableMirrorCore(
-      journalPath,
-      client,
-      offHostMirror,
-      options,
-      false,
-    )
   },
 })
 
 function printPlan(plan) {
   const inventory = plan.summary.registeredInventory
-  const wave = plan.summary.selectedWave
-  console.log(`GitHub reconciliation plan ${plan.planDigest}: registered opt-in scope ${inventory.repositories}/${plan.scope.registeredRepositoryCount} repo(s), ${inventory.managedChanges} managed change(s) (${inventory.candidateActions} reversible candidate, ${inventory.deferredActions} deferred irreversible), ${inventory.conflicts} repository conflict(s); selected wave ${wave.repositories} repo(s), ${wave.managedChanges} managed change(s), ${wave.conflicts} conflict(s); ${plan.summary.rolloutBlockers} rollout blocker(s). Unregistered descendants are not covered.`)
+  console.log(`GitHub reconciliation plan ${plan.planDigest}: registered opt-in scope ${inventory.repositories}/${plan.scope.registeredRepositoryCount} repo(s), ${inventory.managedChanges} managed change(s) (${inventory.candidateActions} reversible candidate, ${inventory.deferredActions} deferred irreversible), ${inventory.conflicts} repository conflict(s). Unregistered descendants are not covered.`)
   for (const repo of plan.repoPlans) {
     console.log(`\n${repo.repoId} (${repo.github}) [eligible=${repo.eligibility.eligible}]`)
     for (const conflict of repo.conflicts) console.log(`  BLOCK ${conflict}`)
-    for (const action of repo.actions) console.log(`  ${action.kind} ${action.resource}`)
+    for (const action of repo.candidateActions) console.log(`  ${action.kind} ${action.resource}`)
     for (const action of repo.deferredActions) console.log(`  DEFER irreversible ${action.kind} ${action.resource}`)
-    if (repo.actions.length === 0 && repo.deferredActions.length === 0 && repo.conflicts.length === 0) console.log('  aligned')
+    if (repo.candidateActions.length === 0 && repo.deferredActions.length === 0 && repo.conflicts.length === 0) console.log('  aligned')
   }
 }
 
 export async function main(argv = process.argv.slice(2)) {
   const flags = parseFlags(argv, {
-    apply: 'boolean', json: 'boolean', repo: 'string', inventory: 'string', desired: 'string', rings: 'string', certifications: 'string', waivers: 'string', journal: 'string', 'recover-journal': 'string', 'rollback-journal': 'string', 'rollback-authorization': 'string', 'privileged-policy': 'string', 'issuer-registry': 'string', 'fixture-dir': 'string', 'external-activation-requirements': 'string', 'external-activation-policy': 'string', 'mutation-boundary-contract': 'string', 'off-host-mirror-command': 'string', 'off-host-mirror-token-env': 'string', 'authority-bootstrap': 'boolean', 'genesis-receipt': 'string', 'staged-rollout-plan': 'string', 'replay-authority-bootstrap-journal': 'string', 'evidence-root': 'string',
+    apply: 'boolean', json: 'boolean', repo: 'string', inventory: 'string', desired: 'string', rings: 'string', certifications: 'string', waivers: 'string', journal: 'string', 'recover-journal': 'string', 'rollback-journal': 'string', 'rollback-authorization': 'string', 'privileged-policy': 'string', 'issuer-registry': 'string', 'fixture-dir': 'string',
   })
   invariant(flags._.length === 0, `Unexpected arguments: ${flags._.join(' ')}`)
-  invariant(!flags['evidence-root'] || flags['replay-authority-bootstrap-journal'],
-    '--evidence-root is accepted only for authority policy bootstrap durable replay')
-  invariant(!(flags['fixture-dir'] && (flags.apply || flags['recover-journal'] || flags['rollback-journal'] || flags['replay-authority-bootstrap-journal'])), 'Fixture API clients are plan/test-only and cannot produce apply, recovery, rollback, or durable replay artifacts')
+  invariant(!(flags['fixture-dir'] && (flags.apply || flags['recover-journal'] || flags['rollback-journal'])), 'Fixture API clients are plan/test-only and cannot produce apply, recovery, or rollback artifacts')
   const client = flags['fixture-dir'] ? new FixtureApiClient(resolve(flags['fixture-dir'])) : new GhApiClient()
-  invariant(
-    Boolean(flags['off-host-mirror-command']) === Boolean(flags['off-host-mirror-token-env']),
-    'Off-host mirror command and token environment name must be supplied together',
-  )
-  const mirrorTokenEnvironmentName = flags['off-host-mirror-token-env']
-  if (mirrorTokenEnvironmentName !== undefined) {
-    invariant(
-      /^[A-Z][A-Z0-9_]{0,127}$/.test(mirrorTokenEnvironmentName)
-        && /(?:TOKEN|SECRET|PASSWORD|API_KEY)$/.test(mirrorTokenEnvironmentName),
-      'Off-host mirror token environment name is invalid',
-    )
-  }
-  const offHostMirror = flags['off-host-mirror-command']
-    ? new CommandOffHostMirror(resolve(flags['off-host-mirror-command']), {
-        credential: process.env[mirrorTokenEnvironmentName],
-      })
-    : null
-  if (flags['replay-authority-bootstrap-journal']) {
-    invariant(!flags.apply && !flags['recover-journal'] && !flags['rollback-journal']
-      && !flags['authority-bootstrap'],
-    '--replay-authority-bootstrap-journal cannot be combined with another mutation mode')
-    invariant(!flags.inventory && !flags.desired && !flags.rings && !flags.certifications
-      && !flags.waivers && !flags['issuer-registry'] && !flags['external-activation-requirements']
-      && !flags['external-activation-policy'] && !flags['mutation-boundary-contract']
-      && !flags['staged-rollout-plan'],
-    'authority policy bootstrap durable replay refuses substituted canonical source paths')
-    invariant(offHostMirror,
-      'authority policy bootstrap durable replay requires the activated off-host mirror adapter')
-    const replayInventory = readJson(DEFAULT_INVENTORY)
-    const replayDesired = readJson(DEFAULT_DESIRED)
-    const replayStagedRolloutPlan = readJson(DEFAULT_STAGED_ROLLOUT_PLAN)
-    const replayRings = readJson(DEFAULT_RINGS)
-    const replayIssuerRegistry = loadIssuerRegistry()
-    const replayActivationRequirements = readJson(DEFAULT_EXTERNAL_ACTIVATION_REQUIREMENTS)
-    const replayActivationPolicy = loadExternalActivationPolicy(DEFAULT_EXTERNAL_ACTIVATION_POLICY)
-    const replayMutationBoundaryContract = readJson(DEFAULT_GITHUB_MUTATION_BOUNDARY_CONTRACT)
-    const result = replayAuthorityBootstrapJournalToDurableMirror(
-      resolve(flags['replay-authority-bootstrap-journal']),
-      client,
-      offHostMirror,
-      {
-        evidenceRoot: flags['evidence-root'] ?? process.env.GOVERNANCE_EVIDENCE_ROOT ?? null,
-        inventory: replayInventory,
-        desired: replayDesired,
-        stagedRolloutPlan: replayStagedRolloutPlan,
-        rings: replayRings,
-        issuerRegistry: replayIssuerRegistry,
-        activationRequirements: replayActivationRequirements,
-        activationPolicy: replayActivationPolicy,
-        mutationBoundaryContract: replayMutationBoundaryContract,
-        reloadCurrentGovernance: () => ({
-          inventory: readJson(DEFAULT_INVENTORY),
-          desired: readJson(DEFAULT_DESIRED),
-          stagedRolloutPlan: readJson(DEFAULT_STAGED_ROLLOUT_PLAN),
-          authorityPolicyDigest: sha256(readFileSync(DEFAULT_AUTHORITY_POLICY)),
-          rings: readJson(DEFAULT_RINGS),
-          issuerRegistry: loadIssuerRegistry(),
-          activationRequirements: readJson(DEFAULT_EXTERNAL_ACTIVATION_REQUIREMENTS),
-          activationPolicy: loadExternalActivationPolicy(DEFAULT_EXTERNAL_ACTIVATION_POLICY),
-          mutationBoundaryContract: readJson(DEFAULT_GITHUB_MUTATION_BOUNDARY_CONTRACT),
-        }),
-      },
-    )
-    console.log(flags.json
-      ? stableStringify(result)
-      : `Authority bootstrap durable replay ${result.existing ? 'read back' : 'completed'}: ${result.receiptPath}`)
-    return { result, client }
-  }
   if (flags['recover-journal']) {
     invariant(!flags.apply && !flags['rollback-journal'], '--recover-journal cannot be combined with --apply or --rollback-journal')
     const recoveryJournalPath = resolve(flags['recover-journal'])
-    const recoveryJournal = readJson(recoveryJournalPath)
-    if (recoveryJournal?.kind === AUTHORITY_BOOTSTRAP_TRANSACTION_KIND) {
-      invariant(!flags.inventory && !flags.desired && !flags['staged-rollout-plan'],
-        'authority policy bootstrap recovery refuses substituted canonical source paths')
-      invariant(!offHostMirror, 'authority policy bootstrap recovery does not accept or fabricate off-host managed evidence')
-      const recoveryInventory = readJson(DEFAULT_INVENTORY)
-      const recoveryDesired = readJson(DEFAULT_DESIRED)
-      const recoveryStagedRolloutPlan = readJson(DEFAULT_STAGED_ROLLOUT_PLAN)
-      const result = recoverAuthorityBootstrapTransaction(recoveryJournalPath, client, {
-        inventory: recoveryInventory,
-        desired: recoveryDesired,
-        stagedRolloutPlan: recoveryStagedRolloutPlan,
-        reloadCurrentGovernance: () => ({
-          inventory: readJson(DEFAULT_INVENTORY),
-          desired: readJson(DEFAULT_DESIRED),
-          stagedRolloutPlan: readJson(DEFAULT_STAGED_ROLLOUT_PLAN),
-          authorityPolicyDigest: sha256(readFileSync(DEFAULT_AUTHORITY_POLICY)),
-        }),
-      })
-      console.log(flags.json ? stableStringify(result) : `${result.observed ? 'Bootstrap recovery state observed' : 'Bootstrap manual recovery required'}: ${result.journalPath}`)
-      if (!result.observed) process.exitCode = 2
-      return { result, client }
-    }
     const recoveryIssuerRegistryPath = flags['issuer-registry'] ? resolve(flags['issuer-registry']) : null
     const recoveryIssuerRegistry = recoveryIssuerRegistryPath ? loadIssuerRegistry(recoveryIssuerRegistryPath) : loadIssuerRegistry()
     const result = recoverTransaction(recoveryJournalPath, client, {
       issuerRegistry: recoveryIssuerRegistry,
-      offHostMirror,
       reloadIssuerRegistry: () => recoveryIssuerRegistryPath ? loadIssuerRegistry(recoveryIssuerRegistryPath) : loadIssuerRegistry(),
     })
     console.log(flags.json ? stableStringify(result) : `${result.observed ? 'Recovery state observed (no rollback claimed)' : 'Manual recovery required'}: ${result.journalPath}`)
@@ -5162,40 +2184,12 @@ export async function main(argv = process.argv.slice(2)) {
   if (flags['rollback-journal']) {
     invariant(!flags.apply, '--rollback-journal cannot be combined with --apply')
     const rollbackJournalPath = resolve(flags['rollback-journal'])
-    const rollbackJournal = readJson(rollbackJournalPath)
-    if (rollbackJournal?.kind === AUTHORITY_BOOTSTRAP_TRANSACTION_KIND) {
-      invariant(!flags.inventory && !flags.desired,
-        'authority policy bootstrap rollback refuses substituted canonical source paths')
-      invariant(!flags['rollback-authorization'], 'authority policy bootstrap rollback is bound to its genesis receipt and does not accept a substitute authorization')
-      invariant(!offHostMirror, 'authority policy bootstrap rollback does not accept or fabricate off-host managed evidence')
-      const stagedRolloutPlan = readJson(DEFAULT_STAGED_ROLLOUT_PLAN)
-      const result = rollbackAuthorityBootstrapTransaction(rollbackJournalPath, client, {
-        inventory,
-        desired,
-        stagedRolloutPlan,
-        reloadCurrentGovernance: () => ({
-          inventory: readJson(DEFAULT_INVENTORY),
-          desired: readJson(DEFAULT_DESIRED),
-          stagedRolloutPlan: readJson(DEFAULT_STAGED_ROLLOUT_PLAN),
-          authorityPolicyDigest: sha256(readFileSync(DEFAULT_AUTHORITY_POLICY)),
-        }),
-      })
-      console.log(flags.json ? stableStringify(result) : `${result.rolledBack ? 'Bootstrap compensating rollback readback-verified' : 'Bootstrap rollback blocked'}: ${result.journalPath}`)
-      if (!result.rolledBack) process.exitCode = 2
-      return { result, client }
-    }
     invariant(flags['rollback-authorization'], '--rollback-journal requires --rollback-authorization')
     const liveRuntimeValidationContext = resolveRuntimeValidationContext({ client, inventory, certifications, runtimeProfile })
     validateModel(inventory, desired, rings, certifications, waivers, new Date(), issuerRegistry, runtimeProfile, liveRuntimeValidationContext)
     const recoveryAuthorization = readJson(resolve(flags['rollback-authorization']))
     const privilegedPolicyPath = resolve(flags['privileged-policy'] ?? DEFAULT_PRIVILEGED_POLICY)
     const privilegedPolicy = readJson(privilegedPolicyPath)
-    const rollbackActivationPolicyPath = resolve(
-      flags['external-activation-policy'] ?? DEFAULT_EXTERNAL_ACTIVATION_POLICY,
-    )
-    const rollbackExternalActivationPolicy = loadExternalActivationPolicy(
-      rollbackActivationPolicyPath,
-    )
     const result = rollbackTransaction(rollbackJournalPath, client, {
       inventory,
       desired,
@@ -5203,69 +2197,19 @@ export async function main(argv = process.argv.slice(2)) {
       privilegedPolicy,
       recoveryAuthorization,
       issuerRegistry,
-      externalActivationPolicy: rollbackExternalActivationPolicy,
-      offHostMirror,
       reloadCurrentGovernance: () => ({
         inventory: readJson(inventoryPath),
         desired: readJson(desiredPath),
         rings: readJson(ringsPath),
         privilegedPolicy: readJson(privilegedPolicyPath),
         issuerRegistry: issuerRegistryPath ? loadIssuerRegistry(issuerRegistryPath) : loadIssuerRegistry(),
-        externalActivationPolicy: loadExternalActivationPolicy(rollbackActivationPolicyPath),
       }),
     })
     console.log(flags.json ? stableStringify(result) : `${result.rolledBack ? 'Compensating rollback readback-verified' : 'Rollback blocked'}: ${result.journalPath}`)
     if (!result.rolledBack) process.exitCode = 2
     return { result, client }
   }
-  if (flags['authority-bootstrap']) {
-    invariant(flags['genesis-receipt'], '--authority-bootstrap requires --genesis-receipt')
-    invariant(!flags.repo && !flags.inventory && !flags.desired && !flags.rings
-      && !flags.certifications && !flags.waivers && !flags['staged-rollout-plan'],
-    '--authority-bootstrap has a closed canonical authority scope and refuses source/fleet/release overrides')
-    invariant(!offHostMirror,
-      '--authority-bootstrap is bootstrap-local non-promotion evidence and refuses an off-host managed-evidence adapter')
-    const stagedRolloutPlanPath = resolve(flags['staged-rollout-plan'] ?? DEFAULT_STAGED_ROLLOUT_PLAN)
-    const stagedRolloutPlan = readJson(stagedRolloutPlanPath)
-    const genesisReceipt = readJson(resolve(flags['genesis-receipt']))
-    const planBuilder = flags['fixture-dir']
-      ? reconcileFixtureTestHarness.buildAuthorityBootstrapPlan
-      : buildAuthorityBootstrapPlan
-    const plan = planBuilder({
-      inventory,
-      desired,
-      stagedRolloutPlan,
-      genesisReceipt,
-      client,
-    })
-    if (flags.apply) {
-      invariant(!flags['fixture-dir'], 'fixture API clients cannot apply authority policy bootstrap actions')
-      const journalPath = resolve(flags.journal
-        ?? resolve(GOVERNANCE_ROOT, `runtime/authority-bootstrap-journal-${Date.now()}-${plan.planDigest.slice(0, 12)}.json`))
-      const result = applyAuthorityBootstrapPlan(plan, client, {
-        journalPath,
-        inventory,
-        desired,
-        stagedRolloutPlan,
-        reloadCurrentGovernance: () => ({
-          inventory: readJson(inventoryPath),
-          desired: readJson(desiredPath),
-          stagedRolloutPlan: readJson(stagedRolloutPlanPath),
-          authorityPolicyDigest: sha256(readFileSync(DEFAULT_AUTHORITY_POLICY)),
-        }),
-      })
-      console.log(flags.json
-        ? stableStringify({ plan, result })
-        : `Authority bootstrap applied and readback-verified ${result.actions.length} action(s); journal=${journalPath}`)
-      return { plan, result, client }
-    }
-    if (flags.json) console.log(stableStringify(plan))
-    else console.log(`Authority policy bootstrap plan ${plan.planDigest}: ${plan.actions.length} reversible action(s), ${plan.conflicts.length} conflict(s); promotionEligible=false.`)
-    if (plan.conflicts.length > 0) process.exitCode = 2
-    return { plan, client }
-  }
-  // Network resolution is explicit and completes before the pure plan builder can
-  // inspect or materialize any signed apply authorization.
+  // Network resolution is explicit and completes before the pure plan builder runs.
   const verifiedReleaseEvidence = rings.candidateRelease
     ? await resolveVerifiedCandidateRelease(rings.candidateRelease)
     : null
@@ -5273,12 +2217,6 @@ export async function main(argv = process.argv.slice(2)) {
   const plan = planBuilder({ inventory, desired, rings, certifications, waivers, client, verifiedReleaseEvidence, repoId: flags.repo, issuerRegistry, runtimeProfile })
   if (flags.apply) {
     invariant(!flags.repo, '--apply requires full-fleet preflight; --repo is plan-only')
-    const activationRequirementsPath = resolve(flags['external-activation-requirements'] ?? DEFAULT_EXTERNAL_ACTIVATION_REQUIREMENTS)
-    const activationPolicyPath = resolve(flags['external-activation-policy'] ?? DEFAULT_EXTERNAL_ACTIVATION_POLICY)
-    const mutationBoundaryContractPath = resolve(flags['mutation-boundary-contract'] ?? DEFAULT_GITHUB_MUTATION_BOUNDARY_CONTRACT)
-    const activationRequirements = readJson(activationRequirementsPath)
-    const activationPolicy = loadExternalActivationPolicy(activationPolicyPath)
-    const mutationBoundaryContract = readJson(mutationBoundaryContractPath)
     const journalPath = resolve(flags.journal ?? resolve(GOVERNANCE_ROOT, `runtime/reconcile-journal-${Date.now()}-${plan.planDigest.slice(0, 12)}.json`))
     const result = applyPlan(plan, client, {
       journalPath,
@@ -5289,12 +2227,6 @@ export async function main(argv = process.argv.slice(2)) {
       waivers,
       runtimeProfile,
       verifiedReleaseEvidence,
-      activationRequirements,
-      activationInventory: inventory,
-      activationDesired: desired,
-      activationPolicy,
-      mutationBoundaryContract,
-      offHostMirror,
       issuerRegistry,
       reloadCurrentGovernance: () => ({
         inventory: readJson(inventoryPath),
@@ -5304,11 +2236,6 @@ export async function main(argv = process.argv.slice(2)) {
         waivers: readJson(waiversPath),
         runtimeProfile: readJson(runtimeProfilePath),
         issuerRegistry: issuerRegistryPath ? loadIssuerRegistry(issuerRegistryPath) : loadIssuerRegistry(),
-        activationRequirements: readJson(activationRequirementsPath),
-        activationInventory: readJson(inventoryPath),
-        activationDesired: readJson(desiredPath),
-        activationPolicy: loadExternalActivationPolicy(activationPolicyPath),
-        mutationBoundaryContract: readJson(mutationBoundaryContractPath),
       }),
     })
     console.log(flags.json ? stableStringify({ plan, result }) : `Applied and readback-verified ${result.actions.length} action(s); journal=${journalPath}`)
@@ -5316,7 +2243,7 @@ export async function main(argv = process.argv.slice(2)) {
   }
   if (flags.json) console.log(stableStringify(plan))
   else printPlan(plan)
-  if (plan.summary.registeredInventory.conflicts > 0 || plan.summary.rolloutBlockers > 0) process.exitCode = 2
+  if (plan.summary.registeredInventory.conflicts > 0) process.exitCode = 2
   return { plan, client }
 }
 

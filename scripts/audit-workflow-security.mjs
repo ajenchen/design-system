@@ -3,51 +3,11 @@
 // this repository check keeps workflow trust boundaries enforceable in CI.
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { createHash } from 'node:crypto'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { compareUtf8Bytes } from './lib/provider-lifecycle.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const MANAGED_CI_SUPPLY_CHAIN_POLICY = JSON.parse(readFileSync(
-  join(ROOT, 'infra/governance/providers/managed-ci-executor-supply-chain.json'),
-  'utf8',
-))
-const MANAGED_CI_ATTESTATION_COUNT = [
-  MANAGED_CI_SUPPLY_CHAIN_POLICY.attestations?.provenance?.predicateType,
-  MANAGED_CI_SUPPLY_CHAIN_POLICY.attestations?.sbom?.predicateType,
-  'https://qijenchen.dev/attestations/managed-ci-image-handoff/v2',
-].filter(Boolean).length
-// Deliberately independent from the mutable policy file: any byte change to the
-// privileged workflow or a sensitive shell body requires an explicit auditor review.
-const MANAGED_CI_WORKFLOW_SHA256 = '907599cb201de7c14f370de0d87c7856b5169bcd59f88b0e689026b5e6e4856b'
-const MANAGED_CI_BUILD_RUN_SHA256 = Object.freeze([
-  '558cda32fa544c7135953828bc3576fabc5cc2e875450c383fb76a74494933eb',
-  '929c3918a5c2f9cc6e90e6f85f782286ca7c1080e49276ba3e43a842721289dc',
-  '428fa47dda7106ee9b6b909caf2fc4805da10ddde980276cedd0c1ef52a88301',
-  'e7cb3a224a6ca3fa78345aa864747625ec09277a299a3a9072830a00b59f76f0',
-  '931bb9a94fdf664a5cd5fd919525d097201adef7a2953cabc8ff745d00721964',
-  '52e0337f0b7f57c6b67f45cbe2b4cf02faaf8d13789dcbed96a6309e84fe6aad',
-])
-const MANAGED_CI_SBOM_RUN_SHA256 = Object.freeze([
-  'd15638b35f0c90cc483ddf107e95ba2d6ad150db14397d4a1d03e52f8a5db704',
-  '1e84a4ded92da1e575232202e411c00cc8623b8495a7ea6ffc58358eb73094ab',
-  'de2069f2367a00d526bac3cab2a529bc4453663183173f75e63e604cd9640986',
-  'f93a932e23f0cc4e7cdc3d7d84a831893ae8628a769d33e31d86d08c1efdec4c',
-  'dd38eb592768728c2e87eea843c90f3415d7d7b95f89f068fae10cf5eec1088e',
-  'c5055a74cdcb20c13e5adb5c02c401c6a0e1f8ca1131d7bc5811a54051daf1e9',
-])
-const MANAGED_CI_BIND_RUN_SHA256 = Object.freeze([
-  'd15638b35f0c90cc483ddf107e95ba2d6ad150db14397d4a1d03e52f8a5db704',
-  '417250b5baff2f01176bc9e2c99c06370bedfc39920b1d077a590a2df94d6443',
-])
-const MANAGED_CI_ATTEST_RUN_SHA256 = Object.freeze([
-  '558cda32fa544c7135953828bc3576fabc5cc2e875450c383fb76a74494933eb',
-  'c1fb54a5a6e280fd0d987ce68ba5b9607af1c238ba0f13356820017be26923bc',
-  '15ab6d19115ebe3c933cb62c3413845b69021887aeb5f1b102d6bbff2a03999c',
-  'fedb09cd1469d4d4c1a909b26a56a587ca184da5831e8273b4c7cb3f24b767e7',
-  '4b0cc65e5433f57a2223876e2007abb5f2bcd0f77551e34b6c07350fb9107e84',
-])
 const WORKFLOW_DIRS = ['.github/workflows', 'template/ds-product-template/.github/workflows']
 const REQUIRED_PR_WORKFLOWS = [
   '.github/workflows/ci.yml',
@@ -89,14 +49,6 @@ function workflowJobBlocks(source) {
   }))
 }
 
-function workflowTopLevelKeys(source) {
-  return [...source.matchAll(/^([A-Za-z0-9_-]+):/gm)].map(match => match[1])
-}
-
-function jobTopLevelKeys(block) {
-  return [...block.matchAll(/^    ([A-Za-z0-9_-]+):/gm)].map(match => match[1])
-}
-
 function workflowStepBlocks(block) {
   const lines = block.split(/\r?\n/)
   const starts = []
@@ -104,27 +56,6 @@ function workflowStepBlocks(block) {
     if (/^      - [A-Za-z0-9_-]+:/.test(lines[index])) starts.push(index)
   }
   return starts.map((start, index) => lines.slice(start, starts[index + 1] ?? lines.length).join('\n'))
-}
-
-function stepTopLevelKeys(block) {
-  const first = block.match(/^      - ([A-Za-z0-9_-]+):/)?.[1]
-  const rest = [...block.matchAll(/^        ([A-Za-z0-9_-]+):/gm)].map(match => match[1])
-  return first ? [first, ...rest] : rest
-}
-
-function stepUses(block) {
-  return block.match(/^(?:      - |        )uses:\s*([^\s#]+)/m)?.[1] ?? null
-}
-
-function literalRunBody(block) {
-  const lines = block.split(/\r?\n/)
-  const runAt = lines.findIndex(line => /^        run:\s*\|\s*$/.test(line))
-  if (runAt < 0) return null
-  const body = lines.slice(runAt + 1)
-  if (body.some(line => line && !line.startsWith('          '))) return null
-  while (body.at(-1) === '') body.pop()
-  if (!body.length) return null
-  return `${body.map(line => line.slice(10)).join('\n')}\n`
 }
 
 function stepRunSource(block) {
@@ -182,10 +113,6 @@ function dynamicNodeCodeKind(runSource) {
   return bareNode.test(source) ? 'bare stdin code' : null
 }
 
-function sha256(value) {
-  return typeof value === 'string' ? createHash('sha256').update(value).digest('hex') : null
-}
-
 function eventBlock(preJobs, event) {
   const lines = preJobs.split(/\r?\n/)
   const start = lines.findIndex((line) => new RegExp(`^  ${event}:\\s*(?:#.*)?$`).test(line))
@@ -209,21 +136,6 @@ function workflowEventNames(preJobs) {
     if (match) events.push(match[1])
   }
   return events
-}
-
-function continuedShellCommands(block, marker) {
-  const lines = block.split(/\r?\n/)
-  const commands = []
-  for (let index = 0; index < lines.length; index += 1) {
-    if (!lines[index].includes(marker)) continue
-    const command = [lines[index]]
-    while (command.at(-1).trimEnd().endsWith('\\') && index + 1 < lines.length) {
-      index += 1
-      command.push(lines[index])
-    }
-    commands.push(command.join('\n'))
-  }
-  return commands
 }
 
 function executableSource(source) {
@@ -274,22 +186,7 @@ function exactRunnerLabel(block) {
   const scalar = block.match(/^    runs-on:\s*([^\s#]+)\s*(?:#.*)?$/m)?.[1]
   if (scalar) return scalar === 'ubuntu-24.04'
   const list = block.match(/^    runs-on:\s*(?:#.*)?\n((?:      - [^\n]+\n?)+)/m)?.[1]
-  if (!list) return null
-  const labels = [...list.matchAll(/^      - ([^\s#]+)\s*(?:#.*)?$/gm)].map(match => match[1])
-  return JSON.stringify(labels) === JSON.stringify(['self-hosted', 'linux', 'x64', 'qijenchen-managed-ci-v1'])
-}
-
-function everyAuthorityUseHasSignedTagRecheck(block, marker) {
-  const source = executableSource(block)
-  const positions = [...source.matchAll(marker)].map(match => match.index)
-  if (positions.length === 0) return false
-  let boundary = 0
-  for (const position of positions) {
-    const preAuthority = source.slice(boundary, position)
-    if (!/node\s+scripts\/release-remote-tag\.mjs[\s\S]*--expected[\s\S]*--token-env/.test(preAuthority)) return false
-    boundary = position + 1
-  }
-  return true
+  return list ? false : null
 }
 
 export function auditWorkflowSources(sources, {
@@ -417,7 +314,7 @@ export function auditWorkflowSources(sources, {
     for (const [job, block] of workflowJobBlocks(source)) {
       const runnerIsExact = exactRunnerLabel(block)
       if (runnerIsExact === false) {
-        add(file, 'WF-RUNNER-PIN', `job ${job}: runs-on must be the exact ubuntu-24.04 image or the closed managed-CI label set`)
+        add(file, 'WF-RUNNER-PIN', `job ${job}: runs-on must be the exact ubuntu-24.04 image`)
       }
       const permissions = jobPermissionMap(block) ?? workflowPermissionMap(source)
       const writeAll = permissions['*'] === 'write'
@@ -457,291 +354,6 @@ export function auditWorkflowSources(sources, {
     if (!pullRequest) add(file, 'WF-REQUIRED-TRIGGER', 'required workflow must run on pull_request')
     else if (/^\s{4}(?:paths|paths-ignore):/m.test(pullRequest)) {
       add(file, 'WF-REQUIRED-UNCONDITIONAL', 'required pull_request workflow may not use path filters')
-    }
-  }
-
-  const managedBuilderFile = '.github/workflows/build-managed-ci-executors.yml'
-  const managedBuilder = sources[managedBuilderFile] || ''
-  if (managedBuilder) {
-    const jobs = workflowJobBlocks(managedBuilder)
-    const build = jobs.get('build-and-push') || ''
-    const sbom = jobs.get('generate-sbom') || ''
-    const bind = jobs.get('bind-image-set') || ''
-    const attest = jobs.get('attest-image') || ''
-    const buildPermissions = jobPermissionMap(build)
-    const sbomPermissions = jobPermissionMap(sbom)
-    const bindPermissions = jobPermissionMap(bind)
-    const attestPermissions = jobPermissionMap(attest)
-    const exactJobClosure = JSON.stringify([...jobs.keys()])
-      === JSON.stringify(['build-and-push', 'generate-sbom', 'bind-image-set', 'attest-image'])
-    // GitHub does not expose the runner context to job-level `env`, so the builder binds
-    // DOCKER_CONFIG in its first step through $GITHUB_ENV. That step is asserted separately and the
-    // canonical ten builder steps keep their original indexes below.
-    const buildStepBlocks = workflowStepBlocks(build)
-    const dockerConfigStep = buildStepBlocks[0] || ''
-    const buildSteps = buildStepBlocks.slice(1)
-    const sbomSteps = workflowStepBlocks(sbom)
-    const bindSteps = workflowStepBlocks(bind)
-    const attestSteps = workflowStepBlocks(attest)
-    const buildUses = buildSteps.map(stepUses).filter(Boolean)
-    const sbomUses = sbomSteps.map(stepUses).filter(Boolean)
-    const bindUses = bindSteps.map(stepUses).filter(Boolean)
-    const attestUses = attestSteps.map(stepUses).filter(Boolean)
-    const exactWorkflowShape = JSON.stringify(workflowTopLevelKeys(managedBuilder))
-      === JSON.stringify(['name', 'on', 'permissions', 'concurrency', 'jobs'])
-    const exactJobShapes = (
-      JSON.stringify(jobTopLevelKeys(build))
-        === JSON.stringify(['if', 'runs-on', 'timeout-minutes', 'permissions', 'strategy', 'steps'])
-      && JSON.stringify(jobTopLevelKeys(sbom))
-        === JSON.stringify(['if', 'needs', 'runs-on', 'timeout-minutes', 'permissions', 'strategy', 'steps'])
-      && JSON.stringify(jobTopLevelKeys(bind))
-        === JSON.stringify(['if', 'needs', 'runs-on', 'timeout-minutes', 'permissions', 'outputs', 'steps'])
-      && JSON.stringify(jobTopLevelKeys(attest))
-        === JSON.stringify(['if', 'needs', 'runs-on', 'timeout-minutes', 'permissions', 'strategy', 'steps'])
-    )
-    const exactAttestStepShapes = JSON.stringify(attestSteps.map(stepTopLevelKeys))
-      === JSON.stringify([
-        ['name', 'uses', 'with'],
-        ['name', 'env', 'run'],
-        ['name', 'uses', 'with'],
-        ['name', 'id', 'env', 'run'],
-        ['name', 'id', 'uses', 'with'],
-        ['name', 'env', 'run'],
-        ['name', 'id', 'uses', 'with'],
-        ['name', 'env', 'run'],
-        ['name', 'id', 'uses', 'with'],
-        ['name', 'env', 'run'],
-        ['name', 'uses', 'with'],
-      ])
-    const exactBuildStepShapes = JSON.stringify(buildSteps.map(stepTopLevelKeys))
-      === JSON.stringify([
-        ['name', 'uses', 'with'],
-        ['name', 'env', 'run'],
-        ['name', 'run'],
-        ['name', 'id', 'uses', 'with'],
-        ['name', 'env', 'run'],
-        ['name', 'uses', 'with'],
-        ['name', 'id', 'env', 'run'],
-        ['name', 'if', 'run'],
-        ['name', 'env', 'run'],
-        ['name', 'uses', 'with'],
-      ])
-    const exactSbomStepShapes = JSON.stringify(sbomSteps.map(stepTopLevelKeys))
-      === JSON.stringify([
-        ['name', 'env', 'run'],
-        ['name', 'uses', 'with'],
-        ['name', 'run'],
-        ['name', 'env', 'run'],
-        ['name', 'env', 'run'],
-        ['name', 'env', 'run'],
-        ['name', 'env', 'run'],
-        ['name', 'uses', 'with'],
-      ])
-    const exactBuildRunBodies = JSON.stringify([1, 2, 4, 6, 7, 8]
-      .map(index => sha256(literalRunBody(buildSteps[index] || ''))))
-      === JSON.stringify(MANAGED_CI_BUILD_RUN_SHA256)
-    const buildProgram = literalRunBody(buildSteps[6] || '')
-    const archiveMaterializeAt = buildProgram.indexOf(
-      '/usr/bin/git -c tar.umask=0022 archive --format=tar --mtime="@$SOURCE_COMMIT_TIME"',
-    )
-    const archiveMemberClosureAt = buildProgram.indexOf('test "$(tar -tf "$CONTEXT_ARCHIVE")"')
-    const archiveModeClosureAt = buildProgram.indexOf('/usr/bin/python3 - "$CONTEXT_ARCHIVE"')
-    const archiveBlobClosureAt = buildProgram.indexOf('verify_archived_blob runtime/managed-ci-runtime.mjs')
-    const archiveDigestAt = buildProgram.indexOf('CONTEXT_ARCHIVE_SHA256="$(sha256sum "$CONTEXT_ARCHIVE"')
-    const archiveReadOnlyAt = buildProgram.indexOf('chmod 0400 "$CONTEXT_ARCHIVE"')
-    const registryPushAt = buildProgram.indexOf('/usr/bin/docker buildx build')
-    const prePushArchiveValidationClosed = (
-      archiveMaterializeAt >= 0
-      && archiveMaterializeAt < archiveMemberClosureAt
-      && archiveMemberClosureAt < archiveModeClosureAt
-      && archiveModeClosureAt < archiveBlobClosureAt
-      && archiveBlobClosureAt < archiveDigestAt
-      && archiveDigestAt < archiveReadOnlyAt
-      && archiveReadOnlyAt < registryPushAt
-      && !buildProgram.slice(0, archiveReadOnlyAt).includes('/usr/bin/docker buildx build')
-      && !buildProgram.includes('| /usr/bin/docker buildx build')
-      && buildProgram.slice(registryPushAt).includes('- 0<&"$CONTEXT_ARCHIVE_FD"')
-    )
-    const exactSbomRunBodies = JSON.stringify([0, 2, 3, 4, 5, 6]
-      .map(index => sha256(literalRunBody(sbomSteps[index] || ''))))
-      === JSON.stringify(MANAGED_CI_SBOM_RUN_SHA256)
-    const exactBindRunBodies = JSON.stringify([0, 5]
-      .map(index => sha256(literalRunBody(bindSteps[index] || ''))))
-      === JSON.stringify(MANAGED_CI_BIND_RUN_SHA256)
-    const exactAttestRunBodies = JSON.stringify([1, 3, 5, 7, 9]
-      .map(index => sha256(literalRunBody(attestSteps[index] || ''))))
-      === JSON.stringify(MANAGED_CI_ATTEST_RUN_SHA256)
-    const exactAttestUses = JSON.stringify(attestUses) === JSON.stringify([
-      'actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5',
-      'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c',
-      'actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6',
-      'actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6',
-      'actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6',
-      'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a',
-    ])
-    const exactBuildUses = JSON.stringify(buildUses) === JSON.stringify([
-      'actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5',
-      'docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f',
-      'docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9',
-      'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a',
-    ])
-    const exactSbomUses = JSON.stringify(sbomUses) === JSON.stringify([
-      'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c',
-      'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a',
-    ])
-    const exactBindUses = JSON.stringify(bindUses) === JSON.stringify([
-      'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c',
-      'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c',
-      'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c',
-      'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c',
-      'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a',
-    ])
-    const exactWorkflowBytes = sha256(managedBuilder) === MANAGED_CI_WORKFLOW_SHA256
-      && MANAGED_CI_SUPPLY_CHAIN_POLICY.builder?.workflowSourceSha256 === MANAGED_CI_WORKFLOW_SHA256
-    if (
-      !exactWorkflowBytes
-      || !exactJobClosure
-      || !exactWorkflowShape
-      || !exactJobShapes
-      || buildSteps.length !== 10
-      || !/name:\s*Bind DOCKER_CONFIG to the runner-scoped temp directory/.test(dockerConfigStep)
-      || !/test -d "\$RUNNER_TEMP"/.test(dockerConfigStep)
-      || !/DOCKER_CONFIG=%s\/managed-ci-docker-config/.test(dockerConfigStep)
-      || !/>> "\$GITHUB_ENV"/.test(dockerConfigStep)
-      || sbomSteps.length !== 8
-      || bindSteps.length !== 7
-      || attestSteps.length !== 11
-      || !exactBuildUses
-      || !exactSbomUses
-      || !exactBindUses
-      || !exactAttestUses
-      || !exactAttestStepShapes
-      || !exactBuildStepShapes
-      || !exactSbomStepShapes
-      || !exactBuildRunBodies
-      || !exactSbomRunBodies
-      || !exactBindRunBodies
-      || !exactAttestRunBodies
-      || JSON.stringify(buildPermissions) !== JSON.stringify({ contents: 'read', packages: 'write' })
-      || JSON.stringify(sbomPermissions) !== JSON.stringify({ actions: 'read', packages: 'read' })
-      || JSON.stringify(bindPermissions) !== JSON.stringify({ actions: 'read' })
-      || JSON.stringify(attestPermissions) !== JSON.stringify({
-        actions: 'read', contents: 'read', 'id-token': 'write', attestations: 'write',
-      })
-      || !needsJob(sbom, 'build-and-push')
-      || !needsJob(bind, 'generate-sbom')
-      || !needsJob(attest, 'bind-image-set')
-      || ![build, sbom, bind, attest].every(block => /^    if:\s*github\.ref == 'refs\/heads\/main'\s*$/m.test(block))
-      || /docker\/build-push-action@/.test(managedBuilder)
-      || /\$HOME\/\.docker|~\/\.docker/.test(build)
-      || /^          version:/m.test(buildSteps[3] || '')
-      || !/^          driver:\s*docker-container\s*$/m.test(buildSteps[3] || '')
-      || !/^          driver-opts:\s*image=moby\/buildkit:v0\.31\.2@sha256:2f5adac4ecd194d9f8c10b7b5d7bceb5186853db1b26e5abd3a657af0b7e26ec\s*$/m.test(buildSteps[3] || '')
-      || !/^          buildkitd-flags:\s*--debug=false\s*$/m.test(buildSteps[3] || '')
-      || !/^          cache-binary:\s*false\s*$/m.test(buildSteps[3] || '')
-      || !/d41ece72044243b4f58b343441ae37446d9c29a7d6b5e11c61847bbcf8f7dfda/.test(buildSteps[2] || '')
-      || !/\/usr\/bin\/git -c tar\.umask=0022 archive --format=tar --mtime="@\$SOURCE_COMMIT_TIME"/.test(buildSteps[6] || '')
-      || !/> "\$CONTEXT_ARCHIVE"/.test(buildSteps[6] || '')
-      || !/\/usr\/bin\/python3 - "\$CONTEXT_ARCHIVE"/.test(buildSteps[6] || '')
-      || !/\("runtime\/managed-ci-runtime\.mjs", "file", 0o644, 0, 0\)/.test(buildSteps[6] || '')
-      || !/chmod 0400 "\$CONTEXT_ARCHIVE"/.test(buildSteps[6] || '')
-      || !/- 0<&"\$CONTEXT_ARCHIVE_FD"/.test(buildSteps[6] || '')
-      || !prePushArchiveValidationClosed
-      || MANAGED_CI_SUPPLY_CHAIN_POLICY.attestations?.provenance?.prePushContextValidationRequired !== true
-      || !/--builder "\$BUILDX_BUILDER"/.test(buildSteps[6] || '')
-      || !/--network none/.test(buildSteps[6] || '')
-      || !/--provenance=false/.test(buildSteps[6] || '')
-      || !/--sbom=false/.test(buildSteps[6] || '')
-      || !/context-archive-mtime-epoch/.test(buildSteps[6] || '')
-      || !/context-archive-sha256/.test(buildSteps[6] || '')
-      || !/\/usr\/bin\/docker logout ghcr\.io/.test(buildSteps[7] || '')
-      || !/0d6be741479eddd2c8644a288990c04f3df0d609bbc1599a005532a9dff63509/.test(sbomSteps[2] || '')
-      || !/6c1eb5c6f15c177fa3dd727ee186c61a660a3939a4e1dc1bc4b3e00eafec098e/.test(sbomSteps[2] || '')
-      || !/exec \/usr\/bin\/env -i/.test(sbomSteps[4] || '')
-      || !/GHCR_READ_TOKEN:\s*\$\{\{\s*secrets\.GITHUB_TOKEN\s*\}\}/.test(sbomSteps[4] || '')
-      || !/SYFT_REGISTRY_AUTH_AUTHORITY="ghcr\.io"/.test(sbomSteps[4] || '')
-      || sbomSteps.some((step, index) => ![4, 5].includes(index) && /\bsecrets\./.test(step))
-      || !/--arg imageSubject "\$IMAGE_SUBJECT"/.test(sbomSteps[6] || '')
-      || !/\.metadata\.component\.name == \$imageSubject/.test(sbomSteps[6] || '')
-      || !/--arg imageSubject "\$IMAGE_SUBJECT"/.test(attestSteps[3] || '')
-      || !/\.metadata\.component\.name == \$imageSubject/.test(attestSteps[3] || '')
-      || /\$imageInput|IMAGE_INPUT=/.test(`${sbomSteps[6] || ''}\n${attestSteps[3] || ''}`)
-      || !/projectionCanonical="\$\(jq -cS/.test(attestSteps[3] || '')
-      || !/printf '%s\\n' "\$projectionCanonical" > "\$projectionFile"/.test(attestSteps[3] || '')
-      || /printf '%s' "\$projectionCanonical"/.test(attestSteps[3] || '')
-      || /anchore\/sbom-action@/.test(managedBuilder)
-      || /actions\/attest@/.test(build)
-      || /(?:packages:\s*write|docker\/(?:login|build-push)-action@|\bsecrets\.)/.test(attest)
-      || (attest.match(/actions\/attest@[a-f0-9]{40}/g) || []).length !== MANAGED_CI_ATTESTATION_COUNT
-      || (attest.match(/push-to-registry:\s*false/g) || []).length !== MANAGED_CI_ATTESTATION_COUNT
-      || (attest.match(/create-storage-record:\s*false/g) || []).length !== MANAGED_CI_ATTESTATION_COUNT
-      || !/^        id:\s*provenance\s*$/m.test(attestSteps[4] || '')
-      || !/^          predicate-type:\s*https:\/\/slsa\.dev\/provenance\/v1\s*$/m.test(attestSteps[4] || '')
-      || !/^          predicate-path:\s*\$\{\{\s*steps\.image\.outputs\.provenance\s*\}\}\s*$/m.test(attestSteps[4] || '')
-      || !/^        id:\s*sbom\s*$/m.test(attestSteps[6] || '')
-      || !/^          sbom-path:\s*\$\{\{\s*steps\.image\.outputs\.sbom\s*\}\}\s*$/m.test(attestSteps[6] || '')
-      || /^\s*predicate-(?:type|path):/m.test(attestSteps[6] || '')
-      || !/^        id:\s*handoff\s*$/m.test(attestSteps[8] || '')
-      || !/^          predicate-type:\s*https:\/\/qijenchen\.dev\/attestations\/managed-ci-image-handoff\/v2\s*$/m.test(attestSteps[8] || '')
-      || !/^          predicate-path:\s*\$\{\{\s*steps\.image\.outputs\.predicate\s*\}\}\s*$/m.test(attestSteps[8] || '')
-      || /push-to-registry:\s*true|artifact-metadata:\s*write/.test(attest)
-    ) {
-      add(managedBuilderFile, 'WF-MANAGED-CI-PRIVILEGE-SEPARATION', 'managed executor writer, read-only SBOM generator, digest binder, and OIDC-only attester must be four byte-closed jobs with an exact verified toolchain and no combined authority')
-    }
-    if (
-      !/steps\.build\.outputs\.digest/.test(build)
-      || !/https:\/\/actions\.github\.io\/buildtypes\/workflow\/v1/.test(build)
-      || !/SBOM_DIGEST/.test(sbom)
-      || !/CONTEXT_ARCHIVE_MTIME_EPOCH/.test(build)
-      || !/CONTEXT_ARCHIVE_SHA256/.test(build)
-      || !/CONTEXT_DIGEST/.test(build)
-      || !/MATERIALS_DIGEST/.test(build)
-      || !/TOOLCHAIN_DIGEST/.test(build)
-      || !/24\.14\.0-bookworm-slim/.test(build)
-      || !/4bd6219054c8bebcd26a66bfd8ca0bd6e1024b4b97474c59bb7ee3bbcbef4fe8/.test(build)
-      || !/a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e/.test(build)
-      || !/2f5adac4ecd194d9f8c10b7b5d7bceb5186853db1b26e5abd3a657af0b7e26ec/.test(build)
-      || !/0d6be741479eddd2c8644a288990c04f3df0d609bbc1599a005532a9dff63509/.test(sbom)
-      || !/6c1eb5c6f15c177fa3dd727ee186c61a660a3939a4e1dc1bc4b3e00eafec098e/.test(sbom)
-      || !/managed-ci-image-binding-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}-\$\{\{ matrix\.execution-class \}\}/.test(sbom)
-      || !/CONTEXT_ARCHIVE_SOURCE/.test(sbom)
-      || !/\.context\.tar/.test(sbom)
-      || (bind.match(/managed-ci-image-binding-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}-(?:dependency-acquisition|deterministic-hook-audit|model-broker|github-observer)/g) || []).length !== 4
-      || !/test "\$\(sha256sum "\$SBOM" \| cut -d' ' -f1\)" = "\$\(jq -r '\.sbom\.sha256' "\$FILE"\)"/.test(bind)
-      || !/contexts\/\$EXECUTION_CLASS\.tar/.test(bind)
-      || !/cmp -s/.test(bind)
-      || !/cmp -s "\$EXPECTED_PATHS" "\$ACTUAL_PATHS"/.test(bind)
-      || !/artifact_id:\s*\$\{\{\s*steps\.retain\.outputs\.artifact-id\s*\}\}/.test(bind)
-      || !/artifact_digest:\s*\$\{\{\s*steps\.retain\.outputs\.artifact-digest\s*\}\}/.test(bind)
-      || !/manifest_sha256:\s*\$\{\{\s*steps\.bind\.outputs\.manifest_sha256\s*\}\}/.test(bind)
-      || !/managed-ci-image-set-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/.test(bind)
-      || !/artifact-ids:\s*\$\{\{\s*needs\.bind-image-set\.outputs\.artifact_id\s*\}\}/.test(attest)
-      || !/EXPECTED_ARTIFACT_DIGEST:\s*\$\{\{\s*needs\.bind-image-set\.outputs\.artifact_digest\s*\}\}/.test(attest)
-      || !/EXPECTED_MANIFEST_SHA256:\s*\$\{\{\s*needs\.bind-image-set\.outputs\.manifest_sha256\s*\}\}/.test(attest)
-      || !/sha256sum "\$MANIFEST"[\s\S]{0,120}\$EXPECTED_MANIFEST_SHA256/.test(attest)
-      || !/ORIGINAL_CONTEXT_ARCHIVE/.test(attest)
-      || !/cmp -s "\$ORIGINAL_CONTEXT_ARCHIVE" "\$FRESH_CONTEXT_ARCHIVE"/.test(attest)
-      || !/--mtime="@\$SOURCE_COMMIT_TIME"/.test(attest)
-      || !/\[\.\[\]\.sourceTree\] \| unique \| if length == 1 then \.\[0\]/.test(bind)
-      || !/\.workflow\.sha == \$workflowSha/.test(bind)
-      || !/test "\$\(sha256sum "\$SBOM_PATH" \| cut -d' ' -f1\)" = "\$SBOM_DIGEST"/.test(attest)
-      || !/buildDefinition:/.test(attest)
-      || !/resolvedDependencies:/.test(attest)
-      || !/recipeDigest: \$image\.build\.recipe\.sha256/.test(attest)
-      || !/buildContextArchiveMtimeEpoch: \$image\.build\.context\.archiveMtimeEpoch/.test(attest)
-      || !/buildContextArchiveSha256: \$image\.build\.context\.archiveSha256/.test(attest)
-      || !/buildContextDigest: \$image\.build\.context\.sha256/.test(attest)
-      || !/materialsDigest: \$image\.build\.materials\.sha256/.test(attest)
-      || !/toolchainDigest: \$image\.build\.toolchain\.sha256/.test(attest)
-      || !/dockerfileFrontendDigest: \$image\.build\.toolchain\.dockerfileFrontend\.subjectDigest/.test(attest)
-      || !/buildxBinarySha256: \$image\.build\.toolchain\.buildx\.linuxAmd64Sha256/.test(attest)
-      || !/buildkitImageDigest: \$image\.build\.toolchain\.buildkit\.subjectDigest/.test(attest)
-      || !/syftArchiveSha256: \$image\.build\.toolchain\.syft\.linuxAmd64ArchiveSha256/.test(attest)
-      || !/syftBinarySha256: \$image\.build\.toolchain\.syft\.linuxAmd64BinarySha256/.test(attest)
-      || !/managed-ci-image-handoff-v2/.test(attest)
-      || !/predicate-type:\s*https:\/\/qijenchen\.dev\/attestations\/managed-ci-image-handoff\/v2/.test(attest)
-    ) {
-      add(managedBuilderFile, 'WF-MANAGED-CI-DIGEST-HANDOFF', 'managed executor attestation must consume one same-run immutable artifact ID and bind its archive digest, exact manifest SHA-256, closed class/subject, and pushed OCI digest before minting authority')
     }
   }
 

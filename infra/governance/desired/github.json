@@ -41,8 +41,7 @@
   },
   "managedEnvironmentNames": [
     "npm-release",
-    "governance-upgrade",
-    "governance-external-ledger"
+    "governance-upgrade"
   ],
   "managedRulesetPrefix": "fleet/",
   "profiles": {
@@ -67,25 +66,6 @@
             "contentSha256": "d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f",
             "gitBlobSha": "253a5cd3da120cf4af02f36c29bcbdca4c4b352d",
             "semanticSha256": "577ad48cb5e844684d8ffbd709a5716df2e9c2a9cd1682164749b2928d8dbc1c",
-            "semanticVersion": 2
-          }
-        },
-        {
-          "credentialIntegration": "governanceWriterApp",
-          "deploymentBranchPolicy": {
-            "customBranchPolicies": false,
-            "protectedBranches": true
-          },
-          "name": "governance-external-ledger",
-          "preventSelfReview": false,
-          "reviewers": [],
-          "rollout": "always",
-          "waitTimer": 0,
-          "workflow": ".github/workflows/external-ledger-writer.yml",
-          "workflowIdentity": {
-            "contentSha256": "db2dc5b3349a6162d4596c885fb154a9af80db8bd248c9a0da96b9c1472b7bbb",
-            "gitBlobSha": "91c7acd44e7e9d371dee2de22a9f62e57289afa5",
-            "semanticSha256": "a4699700b5ffea396862189162c8d9be4e8f87441484527b8a951d1d060e3878",
             "semanticVersion": 2
           }
         }

@@ -70,11 +70,6 @@ import {
   verifyEntitlementAvailabilityEvidence,
 } from '../packages/governance/src/provider-review-binding.mjs'
 import {
-  loadManagedCiTrustedExecutionPlan,
-  managedCiModelBrokerActivationLifecycleStatus,
-  managedCiModelBrokerActivationConvergence,
-} from './lib/managed-ci-trusted-execution-plan.mjs'
-import {
   archiveGenuineCrossProviderReviewEvidence,
   archiveAllHarnessPassReceipt,
   buildDeepAuditSourceChangeSummary,
@@ -1436,7 +1431,11 @@ export function buildGenuineProviderNeutralReviewArchiveHandoff({
 function modelPlanView({ args, planState, profileState, schemaState, brokerState, managedState, activeRun = null, repoRoot }) {
   const providerIds = Object.keys(profileState.profiles).sort()
   if (args.provider && !providerIds.includes(args.provider)) fail(`provider has no broker-content-only invocation profile:${args.provider}`)
-  const activationLifecycle = managedCiModelBrokerActivationLifecycleStatus(managedState)
+  const activationLifecycle = {
+    materializedState: 'retired',
+    externalReadbackState: 'retired',
+    managedExecutionActive: false,
+  }
   const selectedKinds = args.kind ? [args.kind] : [...KINDS]
   const tasks = activeRun
     ? Object.fromEntries(selectedKinds.map((kind) => [kind, taskList(kind, planState, activeRun.manifest, repoRoot).map((task) => task.subject)]))
@@ -1453,8 +1452,8 @@ function modelPlanView({ args, planState, profileState, schemaState, brokerState
     brokerProfileDigest: profileState.brokerProfileDigest,
     brokerPlanDigest: brokerState.planDigest,
     brokerExecutionMode: brokerState.plan.executionMode,
-    brokerActivationContract: brokerState.plan.activation.contract,
-    brokerCanonicalDesiredState: brokerState.plan.activation.canonicalDesiredState,
+    brokerActivationContract: 'retired',
+    brokerCanonicalDesiredState: 'retired',
     brokerMaterializedState: activationLifecycle.materializedState,
     brokerExternalReadbackState: activationLifecycle.externalReadbackState,
     managedExecutionActive: activationLifecycle.managedExecutionActive,
@@ -1502,17 +1501,9 @@ export function assertBrokerActivation({ args, profileState, brokerState, manage
     || profile.workingDirectory !== 'not-applicable-repository-unmounted') {
     fail(`provider is not bound to a repository-unmounted content-only broker profile:${args.provider}`)
   }
-  if (!managedState.active) {
-    fail('content-addressed model broker activation is blocked; no model was invoked')
-  }
-  return managedCiModelBrokerActivationConvergence(
-    managedState,
-    brokerState.plan.activation,
-    {
-      evidenceKind: args.kind === 'judgment' ? 'deep-audit-judgment' : 'deep-audit-component-a1b',
-      selectedProvider: args.provider,
-    },
-  )
+  // The managed-CI executor cluster is retired (2026-08-04): managed broker
+  // execution can never activate, so this stays permanently fail-closed.
+  fail('content-addressed model broker activation is blocked; no model was invoked')
 }
 
 function contentAddressedEvidenceBytes(repoRoot, reference, sha256Digest, label) {
@@ -1769,7 +1760,9 @@ export async function runModelDeepAudit(argv = process.argv.slice(2), options = 
   const profileState = loadModelInvocationProfiles({ repoRoot })
   const schemaState = modelResultSchemaState({ repoRoot })
   const brokerState = loadModelEvidenceBrokerPlan({ repoRoot })
-  const managedState = loadManagedCiTrustedExecutionPlan({ repoRoot })
+  // Managed-CI trusted execution is retired; the frozen state keeps every
+  // managed-broker path fail-closed without reading the removed plan.
+  const managedState = { active: false, blockers: ['managed-ci-executor-cluster-retired-2026-08-04'] }
   if (args.provider && !profileState.profiles[args.provider]) fail(`provider has no broker-content-only invocation profile:${args.provider}`)
   if (args.provider && args.model) validateImmutableModelForProfile(profileState.profiles[args.provider], args.model)
   if (!args.execute) {

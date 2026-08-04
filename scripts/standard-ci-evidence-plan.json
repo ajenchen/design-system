@@ -40,6 +40,6 @@
   ],
   "legacyMaximumAssurance": {
     "blocking": false,
-    "command": "node scripts/produce-ci-enforced-evidence.mjs"
+    "status": "retired-2026-08-04-with-activation-cluster"
   }
 }

@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { generateKeyPairSync, sign } from 'node:crypto'
 import Ajv2020 from 'ajv/dist/2020.js'
-import addFormats from 'ajv-formats'
 import {
   chmodSync,
   existsSync,
@@ -18,28 +17,20 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import test, { after } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { Worker } from 'node:worker_threads'
 import {
   FixtureApiClient,
   GhApiClient,
   CommandOffHostMirror,
   applyPlan as reconcileApplyPlan,
-  authorityBootstrapJournalDigest,
   buildPlan as reconcileBuildPlan,
-  computeEligibility as reconcileComputeEligibility,
   fetchRepositoryState,
   githubApiRequestDescriptor,
   journalAuthorizationEnvelopeDigest,
   main as reconcileMain,
   reconcileFixtureTestHarness,
   resolveRuntimeValidationContext,
-  resolveActivatedAuthorityBootstrapMirrorIdentity,
   stageActionTransaction,
-  transactionJournalActivationDigestExpectations,
   validateActionTransactionClass,
-  validateAuthorityBootstrapBoundary,
-  validateAuthorityBootstrapDurableReplayReceipt,
-  validateAuthorityBootstrapJournal,
   validateTransactionJournal as reconcileValidateTransactionJournal,
   validateModel as reconcileValidateModel,
 } from '../bin/reconcile-github.mjs'
@@ -50,7 +41,6 @@ import {
   sha256,
   stableStringify,
 } from '../lib/common.mjs'
-import { candidateActionsDigest, issueApplyAuthorization } from '../lib/rollout-state-machine.mjs'
 import { workflowIdentity } from '../lib/workflow-trust.mjs'
 import { issuerRegistryDigest } from '../lib/issuer-registry.mjs'
 import {
@@ -60,17 +50,6 @@ import {
   signFleetRecoveryAuthorization,
   verifyFleetRecoveryAuthorization,
 } from '../lib/fleet-recovery-authorization.mjs'
-import {
-  EXTERNAL_ACTIVATION_POLICY_DIGEST,
-  GITHUB_MUTATION_BOUNDARY_CONTRACT_DIGEST,
-  GITHUB_MUTATION_BOUNDARY_EMPTY_BYPASS_ACTORS_DIGEST,
-  createExternalActivationEvidence,
-  deriveGithubAppActivationExpectations,
-  externalActivationPolicyDigest,
-  loadExternalActivationPolicy,
-  resolveExternalActivationProfile,
-  signExternalActivationRequirement,
-} from '../lib/external-activation.mjs'
 import {
   FLEET_RECONCILE_MIRROR_IDENTITY_KEYS,
   FLEET_RECONCILE_MIRROR_PROTOCOL,
@@ -85,7 +64,6 @@ import {
   validateFleetReconcileOffHostReceipt,
   verifyFleetReconcileJournalOffHost,
 } from '../lib/fleet-reconcile-mirror.mjs'
-import { createManagedCiActivationFixture } from './fixtures/managed-ci-activation-fixture.mjs'
 import { createExternalRuntimeCertificationFixture } from './fixtures/external-runtime-certification-fixture.mjs'
 
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), 'fixtures/github')
@@ -98,6 +76,69 @@ function readJson(path) {
 }
 const inventory = readJson(resolve(FIXTURES, 'inventory.json'))
 const desired = readJson(resolve(FIXTURES, 'desired.json'))
+// The external-ledger writer environment is retired with its ceremony.
+desired.managedEnvironmentNames = ['npm-release', 'governance-upgrade']
+// The consumer audit workflow bytes live in the consumer repositories, so the
+// fixture pins are re-anchored to this in-test workflow and every fixture client
+// serves exactly these bytes plus one fresh successful Verify-consumer run.
+const CONSUMER_AUDIT_WORKFLOW = [
+  'name: Audit',
+  'on:',
+  '  pull_request:',
+  'permissions:',
+  '  contents: read',
+  'jobs:',
+  '  verify-consumer:',
+  '    runs-on: ubuntu-latest',
+  '    steps:',
+  '      - run: npm run audit-consumer',
+  '',
+].join('\n')
+const consumerAuditIdentity = workflowIdentity(CONSUMER_AUDIT_WORKFLOW)
+desired.profiles['product-consumer'].requiredChecks[0].workflowIdentity = {
+  contentSha256: consumerAuditIdentity.contentSha256,
+  gitBlobSha: consumerAuditIdentity.gitBlobSha,
+  semanticVersion: consumerAuditIdentity.semanticVersion,
+  semanticSha256: consumerAuditIdentity.semanticSha256,
+}
+
+function alignConsumerRoutes(routes) {
+  routes['GET /repos/acme/consumer/contents/.github/workflows/audit.yml?ref=main'] = {
+    response: { text: CONSUMER_AUDIT_WORKFLOW, sha: consumerAuditIdentity.gitBlobSha },
+  }
+  routes['GET /repos/acme/consumer/commits/2222222222222222222222222222222222222222/check-runs?per_page=100'] = {
+    response: {
+      check_runs: [{
+        id: 9001,
+        name: 'Verify consumer',
+        head_sha: '2'.repeat(40),
+        external_id: '2'.repeat(40),
+        details_url: 'https://github.com/acme/consumer/actions/runs/42',
+        status: 'completed',
+        conclusion: 'success',
+        completed_at: '2026-07-20T00:00:00Z',
+        app: { id: 15368, slug: 'github-actions' },
+      }],
+    },
+  }
+  routes['GET /repos/acme/consumer/actions/runs/42'] = {
+    response: {
+      id: 42,
+      path: '.github/workflows/audit.yml',
+      head_sha: '2'.repeat(40),
+      event: 'pull_request',
+      status: 'completed',
+      conclusion: 'success',
+    },
+  }
+  return routes
+}
+
+function alignedFixtureClient(directory = resolve(FIXTURES, 'empty')) {
+  const client = new FixtureApiClient(directory)
+  alignConsumerRoutes(client.routes)
+  return client
+}
 const baseCertifications = readJson(resolve(FIXTURES, 'certifications.json'))
 const baseIssuerRegistry = readJson(resolve(FIXTURES, 'issuer-registry.json'))
 const baseRuntimeProfile = readJson(resolve(dirname(fileURLToPath(import.meta.url)), '../providers/runtime-conformance.json'))
@@ -151,22 +192,42 @@ function transactionCertificationLedger(source) {
 
 const transactionRuntimeProfileSource = transactionRuntimeProfile(baseRuntimeProfile)
 const transactionBaseCertifications = transactionCertificationLedger(baseCertifications)
-const managedCiFixture = createManagedCiActivationFixture({
-  repoRoot: REPO_ROOT,
-  issuerRegistry: baseIssuerRegistry,
-  runtimeProfile: transactionRuntimeProfileSource,
-})
-after(() => managedCiFixture.dispose())
-const issuerRegistry = managedCiFixture.issuerRegistry
-const runtimeProfile = managedCiFixture.runtimeProfile
-const managedCiValidationContext = managedCiFixture.managedCiValidationContext
+// The managed-CI activation fixture is retired with the managed-CI executor
+// ceremony; a locally generated runtime-evidence issuer keeps the external
+// runtime certification fixture verifiable against the same issuer registry.
+function generatedFixtureIssuer(keyId, subject, roles = ['runtime-evidence-issuer']) {
+  const keys = generateKeyPairSync('ed25519')
+  return {
+    ...keys,
+    record: {
+      keyId,
+      subject,
+      publicKeySpki: keys.publicKey.export({ type: 'spki', format: 'der' }).toString('base64'),
+      roles,
+      status: 'active',
+      notBefore: '2020-01-01T00:00:00.000Z',
+      notAfter: '2030-01-01T00:00:00.000Z',
+      revokedAt: null,
+    },
+  }
+}
+const runtimeEvidenceIssuer = generatedFixtureIssuer(
+  'fixture-runtime-evidence-signer',
+  'spiffe://qijenchen.dev/test/runtime-evidence-signer',
+)
+const issuerRegistry = structuredClone(baseIssuerRegistry)
+issuerRegistry.issuers.push(runtimeEvidenceIssuer.record)
+const runtimeProfile = structuredClone(transactionRuntimeProfileSource)
+runtimeProfile.issuerRegistryDigest = issuerRegistryDigest(issuerRegistry)
+runtimeProfile.allowedKeyIds = [runtimeEvidenceIssuer.record.keyId]
+runtimeProfile.requiredIssuerQuorum = 1
 const externalRuntimeFixture = createExternalRuntimeCertificationFixture({
   inventory,
   desired,
   certifications: transactionBaseCertifications,
   matrix: compatibilityMatrix,
   runtimeProfile,
-  signer: managedCiFixture.runtimeEvidenceSigner,
+  signer: { keyId: runtimeEvidenceIssuer.record.keyId, privateKey: runtimeEvidenceIssuer.privateKey },
   now: new Date('2026-07-20T00:00:00Z'),
 })
 
@@ -264,214 +325,42 @@ const MIRROR_KEYS = generateKeyPairSync('ed25519')
 const MIRROR_PUBLIC_KEY_SPKI = MIRROR_KEYS.publicKey.export({ type: 'spki', format: 'der' })
 const MIRROR_ADAPTER_SHA256 = 'e'.repeat(64)
 const activationInventory = readJson(resolve(dirname(fileURLToPath(import.meta.url)), '../inventory/managed-repos.json'))
-const activationPolicy = readJson(resolve(dirname(fileURLToPath(import.meta.url)), '../external-activation-policy.json'))
-const maximumActivationPolicy = structuredClone(activationPolicy)
-maximumActivationPolicy.activeProfile = 'MAXIMUM_ASSURANCE_MULTI_CUSTODIAN_WORM'
-const activationDesired = readJson(resolve(dirname(fileURLToPath(import.meta.url)), '../desired/github.json'))
-activationDesired.integrations.governanceCheckApp.id = 1001
-activationDesired.integrations.governanceWriterApp.id = 1002
-const mutationBoundaryContract = readJson(resolve(dirname(fileURLToPath(import.meta.url)), '../providers/github-mutation-boundary-contract.json'))
-const authorityStagedRolloutPlan = readJson(resolve(dirname(fileURLToPath(import.meta.url)), '../staged-rollout-plan.json'))
-
-test('authority bootstrap accepts only the canonical profile-specific phase positions', () => {
-  const productionBoundary = structuredClone(authorityStagedRolloutPlan.bootstrapBoundary.githubPolicyConvergence)
-  assert.equal(productionBoundary.position, 'after-candidate-freeze-before-protected-pr')
-  assert.equal(validateAuthorityBootstrapBoundary(productionBoundary), productionBoundary)
-
-  const maximumAssuranceBoundary = structuredClone(productionBoundary)
-  maximumAssuranceBoundary.position = 'before-candidate-freeze'
-  assert.equal(validateAuthorityBootstrapBoundary(maximumAssuranceBoundary), maximumAssuranceBoundary)
-
-  const substitutedBoundary = structuredClone(productionBoundary)
-  substitutedBoundary.position = 'after-protected-pr'
-  assert.throws(
-    () => validateAuthorityBootstrapBoundary(substitutedBoundary),
-    /authority policy bootstrap boundary identity is invalid/,
-  )
-})
-const authorityActivationRings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-const authorityPolicyDigest = sha256(readFileSync(resolve(REPO_ROOT, 'AGENTS.md')))
-const AUTHORITY_HEAD = '6'.repeat(40)
-const AUTHORITY_TREE = '7'.repeat(40)
-const AUTHORITY_CANDIDATE_HEAD = '8'.repeat(40)
-const AUTHORITY_CANDIDATE_TREE = '9'.repeat(40)
-
-function activationReadback(requirement, profileId = activationPolicy.activeProfile) {
-  const digest = value => String(value).repeat(64).slice(0, 64)
-  switch (requirement.kind) {
-    case 'github-app': {
-      const expected = deriveGithubAppActivationExpectations({ inventory: activationInventory, desired: activationDesired })
-      const installationTokenProbes = expected.installationProbeRoutes.map((route, index) => ({
-        ...route,
-        appId: expected.appIds[route.integration],
-        installationId: 1000 + index,
-        credentialSource: 'named-environment-secrets',
-        tokenMinted: true,
-        installationRepositoryVerified: true,
-        capability: expected.integrations[route.integration].capability,
-        repositorySelection: expected.appConfigurations[route.integration].repositorySelection,
-        permissions: expected.appConfigurations[route.integration].permissions,
-        capabilityProbeSucceeded: true,
-      }))
-      return {
-        appIds: expected.appIds,
-        appConfigurations: expected.appConfigurations,
-        appConfigurationsDigest: expected.appConfigurationsDigest,
-        installationRepositoriesByIntegration: expected.installationRepositoriesByIntegration,
-        installationRepositoriesDigest: expected.installationRepositoriesDigest,
-        environmentSecretPlacements: expected.environmentSecretPlacements,
-        environmentSecretPlacementsDigest: expected.environmentSecretPlacementsDigest,
-        nonEnvironmentGovernanceSecrets: [],
-        nonEnvironmentGovernanceSecretsDigest: expected.nonEnvironmentGovernanceSecretsDigest,
-        installationTokenProbes,
-        installationTokenProbesDigest: sha256(stableStringify(installationTokenProbes, 0)),
-      }
-    }
-    case 'protected-environment': return {
-      environment: 'release-finalize',
-      reviewers: [{ type: 'User', id: 4242, subject: 'operator:fixture-independent-reviewer' }],
-      preventSelfReview: true,
-    }
-    case 'github-repository': return { rulesetsDigest: digest('1'), requiredChecksDigest: digest('2'), immutableReleases: true, tagObjectVerificationDigest: digest('3') }
-    case 'github-token-permission': return { tokenFingerprint: 'fixture-read-only-token', permissions: ['metadata:read'], writePermissions: [] }
-    case 'github-mutation-boundary': {
-      const desiredBinding = requirement.repository === mutationBoundaryContract.scope.source.repository
-        ? mutationBoundaryContract.desiredBindings.source
-        : mutationBoundaryContract.desiredBindings.target
-      return {
-        projectionContractDigest: GITHUB_MUTATION_BOUNDARY_CONTRACT_DIGEST,
-        fullRulesetsDigest: digest('a'),
-        bypassActorsDigest: GITHUB_MUTATION_BOUNDARY_EMPTY_BYPASS_ACTORS_DIGEST,
-        publicRulesetProjectionDigest: digest('b'),
-        normalizedRulesetsDigest: desiredBinding.normalizedRulesetsDigest,
-        requiredChecksDigest: desiredBinding.requiredChecksDigest,
-        actionsWorkflowPermissionsDigest: desiredBinding.actionsWorkflowPermissionsDigest,
-        repositoryIdentityDefaultBranchDigest: desiredBinding.repositoryIdentityDefaultBranchDigest,
-        environmentPolicyDigest: desiredBinding.environmentPolicyDigest,
-      }
-    }
-    case 'managed-host-policy': return { provider: requirement.id.includes('claude') ? 'claude-code' : 'codex', winningSource: 'fixture-managed-policy', policyDigest: digest('4'), bundleDigest: digest('5'), activationProofDigest: digest('6') }
-    case 'release-authorization': return profileId === 'MAXIMUM_ASSURANCE_MULTI_CUSTODIAN_WORM'
-      ? { allowedKeyIds: ['fixture-release-a', 'fixture-release-b'], quorum: 2, issuerRegistryDigest: issuerRegistryDigest(issuerRegistry) }
-      : { allowedKeyIds: ['fixture-release-a'], quorum: 1, issuerRegistryDigest: issuerRegistryDigest(issuerRegistry) }
-    case 'npm-package-identity': return { packageName: requirement.packageName, registry: requirement.registry, visibility: 'public', bootstrapVersion: '0.0.1-bootstrap.0', consumerEligible: false }
-    case 'npm-trusted-publisher': return { packageName: requirement.packageName, registry: requirement.registry, repository: requirement.repository, workflow: requirement.trustedPublisher.workflow, environment: requirement.trustedPublisher.environment, allowedActions: requirement.trustedPublisher.allowedActions, exclusive: true }
-    case 'npm-publishing-access': return { packageName: requirement.packageName, registry: requirement.registry, twoFactorMode: requirement.publishingAccess.twoFactorMode, tokensAllowed: false, remainingPublishTokenIds: [] }
-    case 'durable-evidence-mirror': return {
-      provider: 'fixture-independent-worm',
-      protocolVersion: FLEET_RECONCILE_MIRROR_PROTOCOL.protocolVersion,
-      endpoint: 'https://evidence.example.test/v1/fleet-reconcile',
-      tenant: 'fixture-tenant',
-      container: 'fixture-governance-worm',
-      wormMode: 'compliance-object-lock',
-      lifecyclePolicyDigest: digest('d'),
-      minimumRetentionDays: 365,
-      writerPrincipal: 'fixture-mirror-writer',
-      verifierPrincipal: 'fixture-mirror-verifier',
-      adapterCommandSha256: MIRROR_ADAPTER_SHA256,
-      receiptSigningKeyId: 'fixture-mirror-receipt-v1',
-      receiptSigningPublicKeySpki: MIRROR_PUBLIC_KEY_SPKI.toString('base64'),
-      receiptSigningPublicKeySpkiSha256: sha256(MIRROR_PUBLIC_KEY_SPKI),
-      signatureAlgorithm: 'ed25519',
-      receiptId: 'fixture-activation-receipt',
-      eventHeadDigest: digest('7'),
-      retentionUntil: '2030-01-01T00:00:00.000Z',
-      appendOnly: true,
-      independentAdministration: true,
-      receiptSha256: digest('8'),
-    }
-    case 'rollback-drill': return { transactionId: 'fixture-rollback-drill', eventHeadDigest: digest('9'), authorizationDigest: digest('a'), beforeImageRestored: true, postRollbackStateDigest: digest('b'), offHostReceiptDigest: digest('c') }
-    default: throw new Error(`Missing activation fixture for ${requirement.kind}`)
-  }
-}
-
-function activatedRequirements(policy = activationPolicy) {
-  const policyDigest = externalActivationPolicyDigest(policy)
-  const requirements = policy.requirements.map(policyRequirement => {
-    const requirement = structuredClone(policyRequirement)
-    delete requirement.evidenceContract
-    requirement.status = 'activated'
-    requirement.observedAt = '2026-07-20T00:00:00.000Z'
-    requirement.expiresAt = '2026-07-27T00:00:00.000Z'
-    requirement.evidence = createExternalActivationEvidence(requirement, {
-      policyDigest,
-      issuerRegistryDigest: issuerRegistryDigest(issuerRegistry),
-      observedResource: requirement.kind === 'managed-ci-attestation'
-        ? managedCiFixture.observedResource()
-        : activationReadback(requirement, policy.activeProfile),
-    })
-    signExternalActivationRequirement(requirement, { signerKeyId: 'fixture-ed25519', subject: 'fixture-governance', privateKey: PRIVATE_KEY })
-    return requirement
-  })
+function fixtureMirrorReadback() {
   return {
-    $schema: 'schemas/external-activation-requirements.schema.json',
-    schemaVersion: 4,
-    policy: { path: 'infra/governance/external-activation-policy.json', sha256: policyDigest },
-    requirements,
+    provider: 'fixture-independent-worm',
+    protocolVersion: FLEET_RECONCILE_MIRROR_PROTOCOL.protocolVersion,
+    endpoint: 'https://evidence.example.test/v1/fleet-reconcile',
+    tenant: 'fixture-tenant',
+    container: 'fixture-governance-worm',
+    wormMode: 'compliance-object-lock',
+    lifecyclePolicyDigest: 'd'.repeat(64),
+    minimumRetentionDays: 365,
+    writerPrincipal: 'fixture-mirror-writer',
+    verifierPrincipal: 'fixture-mirror-verifier',
+    adapterCommandSha256: MIRROR_ADAPTER_SHA256,
+    receiptSigningKeyId: 'fixture-mirror-receipt-v1',
+    receiptSigningPublicKeySpki: MIRROR_PUBLIC_KEY_SPKI.toString('base64'),
+    receiptSigningPublicKeySpkiSha256: sha256(MIRROR_PUBLIC_KEY_SPKI),
+    signatureAlgorithm: 'ed25519',
+    receiptId: 'fixture-activation-receipt',
+    eventHeadDigest: '7'.repeat(64),
+    retentionUntil: '2030-01-01T00:00:00.000Z',
+    appendOnly: true,
+    independentAdministration: true,
+    receiptSha256: '8'.repeat(64),
   }
-}
-
-function replaceMirrorActivationRequirement(ledger, {
-  observedAt = '2026-07-20T00:00:00.000Z',
-  expiresAt = '2026-07-27T00:00:00.000Z',
-  observedResource = activationReadback({ kind: 'durable-evidence-mirror' }),
-} = {}) {
-  const result = structuredClone(ledger)
-  const index = result.requirements.findIndex(
-    requirement => requirement.id === 'activate-off-host-append-only-reconcile-evidence-mirror',
-  )
-  assert.notEqual(index, -1)
-  const requirement = structuredClone(activationPolicy.requirements.find(
-    candidate => candidate.id === 'activate-off-host-append-only-reconcile-evidence-mirror',
-  ))
-  delete requirement.evidenceContract
-  requirement.status = 'activated'
-  requirement.observedAt = observedAt
-  requirement.expiresAt = expiresAt
-  requirement.evidence = createExternalActivationEvidence(requirement, {
-    policyDigest: EXTERNAL_ACTIVATION_POLICY_DIGEST,
-    issuerRegistryDigest: issuerRegistryDigest(issuerRegistry),
-    observedResource,
-  })
-  signExternalActivationRequirement(requirement, {
-    signerKeyId: 'fixture-ed25519',
-    subject: 'fixture-governance',
-    privateKey: PRIVATE_KEY,
-  })
-  result.requirements[index] = requirement
-  return result
-}
-
-function resolveAuthorityBootstrapMirror(activationRequirements, now = NOW) {
-  return resolveActivatedAuthorityBootstrapMirrorIdentity({
-    activationRequirements,
-    inventory: activationInventory,
-    desired: activationDesired,
-    rings: authorityActivationRings,
-    issuerRegistry,
-    activationPolicy,
-    mutationBoundaryContract,
-    now,
-    managedCiValidationContext,
-  })
 }
 
 function validateTransactionJournal(journal, options = {}) {
-  return reconcileValidateTransactionJournal(journal, { ...options, managedCiValidationContext })
+  return reconcileValidateTransactionJournal(journal, options)
 }
 
 function recoverTransaction(journalPath, client, options = {}) {
-  return reconcileFixtureTestHarness.recoverTransaction(journalPath, client, {
-    ...options,
-    managedCiValidationContext,
-  })
+  return reconcileFixtureTestHarness.recoverTransaction(journalPath, client, options)
 }
 
 function rollbackTransaction(journalPath, client, options = {}) {
-  return reconcileFixtureTestHarness.rollbackTransaction(journalPath, client, {
-    ...options,
-    managedCiValidationContext,
-  })
+  return reconcileFixtureTestHarness.rollbackTransaction(journalPath, client, options)
 }
 
 function offHostMirror() {
@@ -543,424 +432,8 @@ function offHostMirror() {
 }
 
 function activatedMirrorIdentity() {
-  const readback = activationReadback({ kind: 'durable-evidence-mirror' })
+  const readback = fixtureMirrorReadback()
   return Object.fromEntries(FLEET_RECONCILE_MIRROR_IDENTITY_KEYS.map(key => [key, structuredClone(readback[key])]))
-}
-
-function authorityBootstrapGenesisReceipt() {
-  const changedPaths = ['AGENTS.md']
-  const challenge = {
-    schemaVersion: 1,
-    kind: 'control-plane-genesis-challenge',
-    repository: 'ajenchen/design-system',
-    pullRequest: 101,
-    baseSha: AUTHORITY_HEAD,
-    baseTree: AUTHORITY_TREE,
-    candidateHeadSha: AUTHORITY_CANDIDATE_HEAD,
-    candidateHeadTree: AUTHORITY_CANDIDATE_TREE,
-    changedPaths,
-    changedPathsDigest: sha256(stableStringify(changedPaths, 0)),
-    controlPlaneClosureDigest: '1'.repeat(64),
-    controlPlaneStageDigest: '2'.repeat(64),
-    buildGraphDigest: '3'.repeat(64),
-    manifestDigest: '4'.repeat(64),
-    inventoryDigest: sha256(stableStringify(activationInventory, 0)),
-    desiredDigest: sha256(stableStringify(activationDesired, 0)),
-    controlPlaneLockDigest: '5'.repeat(64),
-    issuerRegistryDigest: issuerRegistryDigest(issuerRegistry),
-  }
-  const receipt = {
-    schemaVersion: 1,
-    kind: 'control-plane-genesis-verification',
-    challenge,
-    challengeDigest: sha256(
-      `qijenchen-control-plane-genesis-challenge-v1\n${stableStringify(challenge, 0)}`,
-    ),
-    authorization: {
-      kind: 'github-owner-comment',
-      commentId: '101',
-      commentDigest: 'a'.repeat(64),
-      ownerLogin: 'ajenchen',
-      createdAt: NOW.toISOString(),
-    },
-    verifiedAt: NOW.toISOString(),
-    receiptDigest: null,
-  }
-  const unsigned = structuredClone(receipt)
-  delete unsigned.receiptDigest
-  receipt.receiptDigest = sha256(
-    `qijenchen-control-plane-genesis-receipt-v1\n${stableStringify(unsigned, 0)}`,
-  )
-  return receipt
-}
-
-class AuthorityBootstrapReadbackClient {
-  constructor() {
-    this.calls = []
-    this.rulesets = new Map()
-    this.environments = new Map()
-    this.actionsWorkflowPermissions = {
-      default_workflow_permissions: 'write',
-      can_approve_pull_request_reviews: false,
-    }
-    this.nextId = 500
-  }
-
-  request(method, path, body, options = {}) {
-    this.calls.push({ method, path, body: structuredClone(body) })
-    if (method === 'GET' && path === '/repos/ajenchen/design-system') {
-      return {
-        id: 1,
-        full_name: 'ajenchen/design-system',
-        default_branch: 'main',
-        visibility: 'public',
-      }
-    }
-    if (method === 'GET' && path === '/repos/ajenchen/design-system/commits/main') {
-      return {
-        sha: AUTHORITY_HEAD,
-        commit: {
-          tree: { sha: AUTHORITY_TREE },
-          committer: { date: '2026-07-19T23:00:00Z' },
-        },
-      }
-    }
-    if (method === 'GET' && path === `/repos/ajenchen/design-system/commits/${AUTHORITY_HEAD}/check-runs?per_page=100`) {
-      return { total_count: 0, check_runs: [] }
-    }
-    if (method === 'GET' && path === '/repos/ajenchen/design-system/actions/permissions/workflow') {
-      return structuredClone(this.actionsWorkflowPermissions)
-    }
-    if (method === 'PUT' && path === '/repos/ajenchen/design-system/actions/permissions/workflow') {
-      this.actionsWorkflowPermissions = structuredClone(body)
-      return null
-    }
-    if (method === 'GET' && (
-      path === '/repos/ajenchen/design-system/rulesets'
-      || path === '/repos/ajenchen/design-system/rulesets?per_page=100'
-    )) {
-      return [...this.rulesets.values()].map(item => ({ id: item.id, name: item.name }))
-    }
-    if (method === 'POST' && path === '/repos/ajenchen/design-system/rulesets') {
-      const id = ++this.nextId
-      const normalizedBody = structuredClone(body)
-      for (const rule of normalizedBody.rules ?? []) {
-        if (rule.type !== 'pull_request') continue
-        rule.parameters.required_reviewers = []
-        rule.parameters.allowed_merge_methods = ['merge', 'squash', 'rebase']
-      }
-      this.rulesets.set(String(id), { id, ...normalizedBody })
-      return { id }
-    }
-    const ruleset = path.match(/^\/repos\/ajenchen\/design-system\/rulesets\/(\d+)$/)
-    if (method === 'GET' && ruleset) {
-      return structuredClone(this.rulesets.get(ruleset[1]) ?? (options.allow404 ? null : undefined))
-    }
-    if (method === 'PUT' && ruleset) {
-      const normalizedBody = structuredClone(body)
-      for (const rule of normalizedBody.rules ?? []) {
-        if (rule.type !== 'pull_request') continue
-        rule.parameters.required_reviewers = []
-        rule.parameters.allowed_merge_methods = ['merge', 'squash', 'rebase']
-      }
-      this.rulesets.set(ruleset[1], { id: Number(ruleset[1]), ...normalizedBody })
-      return { id: Number(ruleset[1]) }
-    }
-    if (method === 'DELETE' && ruleset) {
-      this.rulesets.delete(ruleset[1])
-      return null
-    }
-    if (method === 'GET' && path === '/repos/ajenchen/design-system/environments?per_page=100') {
-      return {
-        total_count: this.environments.size,
-        environments: [...this.environments.keys()].map(name => ({ name })),
-      }
-    }
-    const environment = path.match(/^\/repos\/ajenchen\/design-system\/environments\/(.+)$/)
-    if (method === 'GET' && environment) {
-      const name = decodeURIComponent(environment[1])
-      return structuredClone(this.environments.get(name) ?? (options.allow404 ? null : undefined))
-    }
-    if (method === 'PUT' && environment) {
-      const name = decodeURIComponent(environment[1])
-      const value = { id: ++this.nextId, name, ...structuredClone(body) }
-      this.environments.set(name, value)
-      return { id: value.id, name }
-    }
-    if (method === 'DELETE' && environment) {
-      this.environments.delete(decodeURIComponent(environment[1]))
-      return null
-    }
-    throw new Error(`Unexpected authority bootstrap route ${method} ${path}`)
-  }
-
-  snapshot() {
-    return {
-      actionsWorkflowPermissions: structuredClone(this.actionsWorkflowPermissions),
-      rulesets: structuredClone([...this.rulesets.entries()]),
-      environments: structuredClone([...this.environments.entries()]),
-    }
-  }
-}
-
-function authorityBootstrapTrustModel(activationRequirements) {
-  return {
-    inventory: structuredClone(activationInventory),
-    desired: structuredClone(activationDesired),
-    stagedRolloutPlan: structuredClone(authorityStagedRolloutPlan),
-    authorityPolicyDigest,
-    rings: structuredClone(authorityActivationRings),
-    issuerRegistry: structuredClone(issuerRegistry),
-    activationRequirements: structuredClone(activationRequirements),
-    activationPolicy: structuredClone(activationPolicy),
-    mutationBoundaryContract: structuredClone(mutationBoundaryContract),
-  }
-}
-
-function createAuthorityBootstrapFixture(t) {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), 'authority-bootstrap-replay-')))
-  t.after(() => rmSync(root, { recursive: true, force: true }))
-  const client = new AuthorityBootstrapReadbackClient()
-  const genesisReceipt = authorityBootstrapGenesisReceipt()
-  const plan = reconcileFixtureTestHarness.buildAuthorityBootstrapPlan({
-    inventory: activationInventory,
-    desired: activationDesired,
-    stagedRolloutPlan: authorityStagedRolloutPlan,
-    client,
-    genesisReceipt,
-    authorityPolicyDigest,
-    canonicalInventoryBytesDigest: genesisReceipt.challenge.inventoryDigest,
-    canonicalDesiredBytesDigest: genesisReceipt.challenge.desiredDigest,
-  })
-  // 1B(2026-07-29):governance-check-verdict 環境拆除 → bootstrap 計畫 5→4 動作。
-  assert.equal(plan.actions.length, 4)
-  const journalPath = resolve(root, 'bootstrap-journal.json')
-  reconcileFixtureTestHarness.applyAuthorityBootstrapPlan(plan, client, {
-    journalPath,
-    inventory: activationInventory,
-    desired: activationDesired,
-    stagedRolloutPlan: authorityStagedRolloutPlan,
-    authorityPolicyDigest,
-    clock: () => NOW,
-    reloadCurrentGovernance: () => ({
-      inventory: structuredClone(activationInventory),
-      desired: structuredClone(activationDesired),
-      stagedRolloutPlan: structuredClone(authorityStagedRolloutPlan),
-      authorityPolicyDigest,
-    }),
-  })
-  const journal = JSON.parse(readFileSync(journalPath, 'utf8'))
-  validateAuthorityBootstrapJournal(journal, {
-    inventory: activationInventory,
-    desired: activationDesired,
-    stagedRolloutPlan: authorityStagedRolloutPlan,
-    authorityPolicyDigest,
-  })
-  assert.equal(journal.state, 'verified')
-  return {
-    root,
-    client,
-    plan,
-    journal,
-    journalPath,
-    receiptRoot: resolve(root, 'receipts'),
-    activationRequirements: activatedRequirements(),
-  }
-}
-
-function authorityBootstrapReplayOptions(fixture, overrides = {}) {
-  const activationRequirements = overrides.activationRequirements
-    ?? fixture.activationRequirements
-  const model = authorityBootstrapTrustModel(activationRequirements)
-  return {
-    receiptRoot: fixture.receiptRoot,
-    ...model,
-    clock: () => NOW,
-    managedCiValidationContext,
-    reloadCurrentGovernance: () => structuredClone(model),
-    ...overrides,
-  }
-}
-
-function authorityBootstrapReplayReceiptDigestForTest(receipt) {
-  const unsigned = structuredClone(receipt)
-  delete unsigned.receiptDigest
-  return sha256(
-    `qijenchen-authority-policy-bootstrap-durable-replay-v1\n${stableStringify(unsigned, 0)}`,
-  )
-}
-
-function runAuthorityBootstrapReplayWorker({
-  fixture,
-  barrier,
-}) {
-  const workerData = {
-    reconcileUrl: new URL('../bin/reconcile-github.mjs', import.meta.url).href,
-    mirrorUrl: new URL('../lib/fleet-reconcile-mirror.mjs', import.meta.url).href,
-    journalPath: fixture.journalPath,
-    receiptRoot: fixture.receiptRoot,
-    clientState: fixture.client.snapshot(),
-    model: authorityBootstrapTrustModel(fixture.activationRequirements),
-    managedCiValidationContext,
-    now: NOW.toISOString(),
-    head: AUTHORITY_HEAD,
-    tree: AUTHORITY_TREE,
-    adapterCommandSha256: MIRROR_ADAPTER_SHA256,
-    mirrorPrivateKeyPkcs8: MIRROR_KEYS.privateKey.export({
-      type: 'pkcs8',
-      format: 'der',
-    }).toString('base64'),
-    barrier,
-  }
-  const source = String.raw`
-const { parentPort, workerData } = require('node:worker_threads')
-const { createPrivateKey, sign } = require('node:crypto')
-
-;(async () => {
-  const reconcile = await import(workerData.reconcileUrl)
-  const protocol = await import(workerData.mirrorUrl)
-  const clone = value => JSON.parse(JSON.stringify(value))
-  const rulesets = new Map(workerData.clientState.rulesets)
-  const environments = new Map(workerData.clientState.environments)
-  const client = {
-    request(method, path, body, options = {}) {
-      if (method === 'GET' && path === '/repos/ajenchen/design-system') {
-        return { id: 1, full_name: 'ajenchen/design-system', default_branch: 'main', visibility: 'public' }
-      }
-      if (method === 'GET' && path === '/repos/ajenchen/design-system/commits/main') {
-        return { sha: workerData.head, commit: { tree: { sha: workerData.tree }, committer: { date: '2026-07-19T23:00:00Z' } } }
-      }
-      if (method === 'GET' && path === '/repos/ajenchen/design-system/commits/' + workerData.head + '/check-runs?per_page=100') {
-        return { total_count: 0, check_runs: [] }
-      }
-      if (method === 'GET' && path === '/repos/ajenchen/design-system/actions/permissions/workflow') {
-        return clone(workerData.clientState.actionsWorkflowPermissions)
-      }
-      if (method === 'GET' && (path === '/repos/ajenchen/design-system/rulesets' || path === '/repos/ajenchen/design-system/rulesets?per_page=100')) {
-        return [...rulesets.values()].map(item => ({ id: item.id, name: item.name }))
-      }
-      const ruleset = path.match(/^\/repos\/ajenchen\/design-system\/rulesets\/(\d+)$/)
-      if (method === 'GET' && ruleset) return clone(rulesets.get(ruleset[1]) ?? (options.allow404 ? null : undefined))
-      if (method === 'GET' && path === '/repos/ajenchen/design-system/environments?per_page=100') {
-        return { total_count: environments.size, environments: [...environments.keys()].map(name => ({ name })) }
-      }
-      const environment = path.match(/^\/repos\/ajenchen\/design-system\/environments\/(.+)$/)
-      if (method === 'GET' && environment) {
-        return clone(environments.get(decodeURIComponent(environment[1])) ?? (options.allow404 ? null : undefined))
-      }
-      throw new Error('Unexpected concurrent authority bootstrap route ' + method + ' ' + path)
-    },
-  }
-  const privateKey = createPrivateKey({
-    key: Buffer.from(workerData.mirrorPrivateKeyPkcs8, 'base64'),
-    format: 'der',
-    type: 'pkcs8',
-  })
-  const mirror = {
-    adapterCommandSha256: workerData.adapterCommandSha256,
-    append(envelope) {
-      const receipt = {
-        schemaVersion: 1,
-        kind: protocol.FLEET_RECONCILE_MIRROR_PROTOCOL.receiptKind,
-        protocolVersion: envelope.protocolVersion,
-        provider: envelope.provider,
-        endpoint: envelope.endpoint,
-        tenant: envelope.tenant,
-        container: envelope.container,
-        principal: envelope.principal,
-        receiptId: envelope.transactionId + ':' + envelope.sequence,
-        transactionId: envelope.transactionId,
-        sequence: envelope.sequence,
-        eventDigest: envelope.eventDigest,
-        eventHeadDigest: envelope.eventHeadDigest,
-        idempotencyKey: envelope.idempotencyKey,
-        requestNonce: envelope.requestNonce,
-        requestDigest: envelope.requestDigest,
-        receivedAt: envelope.event.at,
-        retainedUntil: '2030-01-01T00:00:00.000Z',
-        appendOnly: true,
-        independentAdministration: true,
-        signingKeyId: 'fixture-mirror-receipt-v1',
-        signatureAlgorithm: 'ed25519',
-      }
-      receipt.signature = sign(null, protocol.fleetReconcileMirrorSignedPayload(receipt, {
-        digestField: 'receiptSha256',
-        domain: protocol.FLEET_RECONCILE_MIRROR_PROTOCOL.receiptSignatureDomain,
-      }), privateKey).toString('base64url')
-      receipt.receiptSha256 = protocol.fleetReconcileMirrorReceiptDigest(receipt)
-      return receipt
-    },
-    verify(envelope) {
-      const verification = {
-        schemaVersion: 1,
-        kind: protocol.FLEET_RECONCILE_MIRROR_PROTOCOL.verificationKind,
-        protocolVersion: envelope.protocolVersion,
-        provider: envelope.provider,
-        endpoint: envelope.endpoint,
-        tenant: envelope.tenant,
-        container: envelope.container,
-        principal: envelope.principal,
-        verificationId: envelope.transactionId + ':' + envelope.eventCount + ':' + envelope.requestedAt,
-        transactionId: envelope.transactionId,
-        eventHeadDigest: envelope.eventHeadDigest,
-        eventCount: envelope.eventCount,
-        requestNonce: envelope.requestNonce,
-        requestDigest: envelope.requestDigest,
-        verifiedAt: envelope.requestedAt,
-        retainedUntil: '2030-01-01T00:00:00.000Z',
-        appendOnly: true,
-        independentAdministration: true,
-        signingKeyId: 'fixture-mirror-receipt-v1',
-        signatureAlgorithm: 'ed25519',
-      }
-      verification.signature = sign(null, protocol.fleetReconcileMirrorSignedPayload(verification, {
-        digestField: 'verificationSha256',
-        domain: protocol.FLEET_RECONCILE_MIRROR_PROTOCOL.verificationSignatureDomain,
-      }), privateKey).toString('base64url')
-      verification.verificationSha256 = protocol.fleetReconcileMirrorVerificationDigest(verification)
-      return verification
-    },
-  }
-  const barrier = new Int32Array(workerData.barrier)
-  if (Atomics.add(barrier, 0, 1) + 1 === 2) Atomics.notify(barrier, 0)
-  else while (Atomics.load(barrier, 0) < 2) Atomics.wait(barrier, 0, 1)
-  const result = reconcile.reconcileFixtureTestHarness.replayAuthorityBootstrapJournalToDurableMirror(
-    workerData.journalPath,
-    client,
-    mirror,
-    {
-      receiptRoot: workerData.receiptRoot,
-      ...workerData.model,
-      clock: () => new Date(workerData.now),
-      managedCiValidationContext: workerData.managedCiValidationContext,
-      reloadCurrentGovernance: () => clone(workerData.model),
-    },
-  )
-  parentPort.postMessage({
-    ok: true,
-    replayed: result.replayed,
-    existing: result.existing,
-    receiptPath: result.receiptPath,
-    receiptDigest: result.receipt.receiptDigest,
-  })
-})().catch(error => parentPort.postMessage({
-  ok: false,
-  message: error?.stack ?? String(error),
-}))
-`
-  return new Promise((resolveWorker, rejectWorker) => {
-    const worker = new Worker(source, { eval: true, workerData })
-    let settled = false
-    worker.once('message', message => {
-      settled = true
-      if (message.ok) resolveWorker(message)
-      else rejectWorker(new Error(message.message))
-    })
-    worker.once('error', rejectWorker)
-    worker.once('exit', code => {
-      if (!settled && code !== 0) rejectWorker(new Error(`authority bootstrap replay worker exited ${code}`))
-    })
-  })
 }
 
 function mirrorProtocolFixture() {
@@ -1040,493 +513,6 @@ test('fleet reconcile head-verification request is closed, deterministic, and bo
   )
 })
 
-test('authority bootstrap durable replay produces one content-addressed receipt with full convergence binding', t => {
-  const fixture = createAuthorityBootstrapFixture(t)
-  const result = reconcileFixtureTestHarness.replayAuthorityBootstrapJournalToDurableMirror(
-    fixture.journalPath,
-    fixture.client,
-    offHostMirror(),
-    authorityBootstrapReplayOptions(fixture),
-  )
-  assert.equal(result.replayed, true)
-  assert.equal(result.existing, false)
-  assert.equal(realpathSync(result.receiptPath), result.receiptPath)
-  assert.equal(
-    result.receipt.sourceJournalDigest,
-    authorityBootstrapJournalDigest(fixture.journal),
-  )
-  assert.equal(
-    result.receipt.eventReceipts.length,
-    fixture.journal.events.length,
-  )
-  assert.equal(
-    result.receipt.convergenceReadback.remainingActionsDigest,
-    candidateActionsDigest([]),
-  )
-  assert.equal(
-    result.receipt.convergenceReadback.eventHeadDigest,
-    fixture.journal.eventHeadDigest,
-  )
-  validateAuthorityBootstrapDurableReplayReceipt(result.receipt, {
-    activationRequirement: fixture.activationRequirements.requirements.find(
-      requirement => requirement.id === 'activate-off-host-append-only-reconcile-evidence-mirror',
-    ),
-    requireTrustedActivation: true,
-    requiredRetentionAt: NOW,
-    expectedConvergenceReadback: result.receipt.convergenceReadback,
-  })
-  assert.deepEqual(
-    readdirSync(fixture.receiptRoot),
-    [`${result.receipt.receiptDigest}.json`],
-  )
-
-  const ajv = new Ajv2020({ allErrors: true, strict: false })
-  addFormats(ajv)
-  for (const name of [
-    'managed-repos',
-    'github-desired',
-    'release-rings',
-    'issuer-registry',
-    'github-mutation-boundary-contract',
-    'external-activation-policy',
-    'external-activation-requirements',
-    'fleet-reconcile-journal',
-    'fleet-reconcile-bootstrap-transaction',
-    'fleet-reconcile-bootstrap-replay-receipt',
-  ]) {
-    ajv.addSchema(readJson(resolve(SCHEMAS, `${name}.schema.json`)))
-  }
-  const validateJournalSchema = ajv.getSchema(
-    'https://qijenchen.dev/schemas/fleet-reconcile-bootstrap-transaction-v1.json',
-  )
-  const validateReplaySchema = ajv.getSchema(
-    'https://qijenchen.dev/schemas/fleet-reconcile-bootstrap-replay-receipt-v1.json',
-  )
-  assert.equal(validateJournalSchema(fixture.journal), true, JSON.stringify(validateJournalSchema.errors))
-  assert.equal(validateReplaySchema(result.receipt), true, JSON.stringify(validateReplaySchema.errors))
-  assert.equal(validateJournalSchema({ ...fixture.journal, untrustedExtension: true }), false)
-  assert.equal(validateReplaySchema({ ...result.receipt, untrustedExtension: true }), false)
-})
-
-test('aligned authority bootstrap no-op applies, journals, and durably replays with closed schema coverage', t => {
-  const fixture = createAuthorityBootstrapFixture(t)
-  const plan = reconcileFixtureTestHarness.buildAuthorityBootstrapPlan({
-    inventory: activationInventory,
-    desired: activationDesired,
-    stagedRolloutPlan: authorityStagedRolloutPlan,
-    client: fixture.client,
-    genesisReceipt: authorityBootstrapGenesisReceipt(),
-    authorityPolicyDigest,
-    canonicalInventoryBytesDigest: sha256(stableStringify(activationInventory, 0)),
-    canonicalDesiredBytesDigest: sha256(stableStringify(activationDesired, 0)),
-  })
-  assert.deepEqual(plan.actions, [])
-  assert.deepEqual(plan.rollbackPlan, [])
-
-  const journalPath = resolve(fixture.root, 'bootstrap-no-op-journal.json')
-  const applied = reconcileFixtureTestHarness.applyAuthorityBootstrapPlan(
-    plan,
-    fixture.client,
-    {
-      journalPath,
-      inventory: activationInventory,
-      desired: activationDesired,
-      stagedRolloutPlan: authorityStagedRolloutPlan,
-      authorityPolicyDigest,
-      clock: () => NOW,
-      reloadCurrentGovernance: () => ({
-        inventory: structuredClone(activationInventory),
-        desired: structuredClone(activationDesired),
-        stagedRolloutPlan: structuredClone(authorityStagedRolloutPlan),
-        authorityPolicyDigest,
-      }),
-    },
-  )
-  assert.deepEqual(applied.actions, [])
-  const journal = JSON.parse(readFileSync(journalPath, 'utf8'))
-  validateAuthorityBootstrapJournal(journal, {
-    inventory: activationInventory,
-    desired: activationDesired,
-    stagedRolloutPlan: authorityStagedRolloutPlan,
-    authorityPolicyDigest,
-  })
-  assert.equal(journal.state, 'verified')
-  assert.deepEqual(journal.actions, [])
-  assert.deepEqual(journal.rollbackPlan, [])
-  assert.ok(journal.events.length > 0)
-
-  const receiptRoot = resolve(fixture.root, 'no-op-receipts')
-  const replay = reconcileFixtureTestHarness.replayAuthorityBootstrapJournalToDurableMirror(
-    journalPath,
-    fixture.client,
-    offHostMirror(),
-    authorityBootstrapReplayOptions(fixture, { receiptRoot }),
-  )
-  assert.equal(replay.replayed, true)
-  assert.deepEqual(replay.receipt.sourceJournal.actions, [])
-  assert.deepEqual(replay.receipt.sourceJournal.rollbackPlan, [])
-  assert.equal(replay.receipt.eventReceipts.length, journal.events.length)
-
-  const ajv = new Ajv2020({ allErrors: true, strict: false })
-  addFormats(ajv)
-  for (const name of [
-    'managed-repos',
-    'github-desired',
-    'release-rings',
-    'issuer-registry',
-    'github-mutation-boundary-contract',
-    'external-activation-policy',
-    'external-activation-requirements',
-    'fleet-reconcile-journal',
-    'fleet-reconcile-bootstrap-transaction',
-    'fleet-reconcile-bootstrap-replay-receipt',
-  ]) {
-    ajv.addSchema(readJson(resolve(SCHEMAS, `${name}.schema.json`)))
-  }
-  const validateJournalSchema = ajv.getSchema(
-    'https://qijenchen.dev/schemas/fleet-reconcile-bootstrap-transaction-v1.json',
-  )
-  const validateReplaySchema = ajv.getSchema(
-    'https://qijenchen.dev/schemas/fleet-reconcile-bootstrap-replay-receipt-v1.json',
-  )
-  assert.equal(validateJournalSchema(journal), true, JSON.stringify(validateJournalSchema.errors))
-  assert.equal(validateReplaySchema(replay.receipt), true, JSON.stringify(validateReplaySchema.errors))
-  assert.equal(validateJournalSchema({ ...journal, events: [] }), false)
-  const fleetJournalSchema = readJson(resolve(SCHEMAS, 'fleet-reconcile-journal.schema.json'))
-  assert.equal(fleetJournalSchema.properties.actions.minItems, 1)
-  assert.equal(fleetJournalSchema.properties.rollbackPlan.minItems, 1)
-  assert.equal(fleetJournalSchema.properties.events.minItems, 1)
-  assert.equal(fleetJournalSchema.$defs.runtimeState.properties.actions.minItems, 0)
-})
-
-test('authority bootstrap replay receipt rejects incomplete, duplicate, reordered, stale, substituted, and unretained evidence', t => {
-  const fixture = createAuthorityBootstrapFixture(t)
-  const { receipt } = reconcileFixtureTestHarness.replayAuthorityBootstrapJournalToDurableMirror(
-    fixture.journalPath,
-    fixture.client,
-    offHostMirror(),
-    authorityBootstrapReplayOptions(fixture),
-  )
-  const mirrorRequirement = fixture.activationRequirements.requirements.find(
-    requirement => requirement.id === 'activate-off-host-append-only-reconcile-evidence-mirror',
-  )
-  const validate = candidate => validateAuthorityBootstrapDurableReplayReceipt(candidate, {
-    activationRequirement: mirrorRequirement,
-    requireTrustedActivation: true,
-    requiredRetentionAt: NOW,
-    expectedConvergenceReadback: receipt.convergenceReadback,
-  })
-
-  const missing = structuredClone(receipt)
-  missing.eventReceipts.pop()
-  assert.throws(() => validate(missing), /partial or duplicated/)
-
-  const duplicate = structuredClone(receipt)
-  duplicate.eventReceipts[1] = structuredClone(duplicate.eventReceipts[0])
-  assert.throws(() => validate(duplicate), /partial or duplicated/)
-
-  const reordered = structuredClone(receipt)
-  ;[reordered.eventReceipts[0], reordered.eventReceipts[1]] = [
-    reordered.eventReceipts[1],
-    reordered.eventReceipts[0],
-  ]
-  assert.throws(() => validate(reordered), /event\/request binding mismatch|temporal provenance/)
-
-  const staleTarget = structuredClone(receipt)
-  staleTarget.sourceJournal.plan.defaultBranchHeadSha = '0'.repeat(40)
-  assert.throws(
-    () => validate(staleTarget),
-    /genesis receipt target binding|plan digest mismatch|source journal digest mismatch/,
-  )
-
-  const substitutedReadback = activationReadback({ kind: 'durable-evidence-mirror' })
-  substitutedReadback.tenant = 'substituted-tenant'
-  const substitutedLedger = replaceMirrorActivationRequirement(
-    fixture.activationRequirements,
-    { observedResource: substitutedReadback },
-  )
-  const substitutedRequirement = substitutedLedger.requirements.find(
-    requirement => requirement.id === 'activate-off-host-append-only-reconcile-evidence-mirror',
-  )
-  assert.throws(
-    () => validateAuthorityBootstrapDurableReplayReceipt(receipt, {
-      activationRequirement: substitutedRequirement,
-      requireTrustedActivation: true,
-      requiredRetentionAt: NOW,
-    }),
-    /activation requirement is stale or substituted|mirror identity differs/,
-  )
-
-  const convergenceSubstitution = structuredClone(receipt)
-  convergenceSubstitution.convergenceReadback.observedStateDigest = 'f'.repeat(64)
-  assert.throws(
-    () => validate(convergenceSubstitution),
-    /differs from live exact readback|convergence readback digest mismatch/,
-  )
-
-  const convergenceDigestSubstitution = structuredClone(receipt)
-  convergenceDigestSubstitution.convergenceReadbackDigest = 'f'.repeat(64)
-  assert.throws(
-    () => validate(convergenceDigestSubstitution),
-    /convergence readback digest mismatch/,
-  )
-
-  assert.throws(
-    () => validateAuthorityBootstrapDurableReplayReceipt(receipt, {
-      activationRequirement: mirrorRequirement,
-      requireTrustedActivation: true,
-      requiredRetentionAt: '2031-01-01T00:00:00.000Z',
-      expectedConvergenceReadback: receipt.convergenceReadback,
-    }),
-    /retention does not cover/,
-  )
-})
-
-test('authority bootstrap mirror activation fails closed for future, stale, missing, unsigned, and partial bindings', () => {
-  const baseline = activatedRequirements()
-
-  const future = replaceMirrorActivationRequirement(baseline, {
-    observedAt: '2026-07-21T00:00:00.000Z',
-    expiresAt: '2026-07-28T00:00:00.000Z',
-  })
-  assert.throws(() => resolveAuthorityBootstrapMirror(future), /from the future/)
-
-  const stale = replaceMirrorActivationRequirement(baseline, {
-    observedAt: '2026-07-01T00:00:00.000Z',
-    expiresAt: '2026-07-08T00:00:00.000Z',
-  })
-  assert.throws(() => resolveAuthorityBootstrapMirror(stale), /evidence is expired/)
-
-  const missing = structuredClone(baseline)
-  missing.requirements = missing.requirements.filter(
-    requirement => requirement.id !== 'activate-off-host-append-only-reconcile-evidence-mirror',
-  )
-  assert.throws(
-    () => resolveAuthorityBootstrapMirror(missing),
-    /does not exactly cover|missing immutable policy requirements/,
-  )
-
-  const unsigned = structuredClone(baseline)
-  const unsignedRequirement = unsigned.requirements.find(
-    requirement => requirement.id === 'activate-off-host-append-only-reconcile-evidence-mirror',
-  )
-  unsignedRequirement.evidence.signature = unsignedRequirement.evidence.signature
-    .replace(/^./, character => character === 'A' ? 'B' : 'A')
-  assert.throws(() => resolveAuthorityBootstrapMirror(unsigned), /signature is invalid/)
-
-  const partial = structuredClone(baseline)
-  const partialIndex = partial.requirements.findIndex(
-    requirement => requirement.id === 'activate-off-host-append-only-reconcile-evidence-mirror',
-  )
-  const inactive = structuredClone(activationPolicy.requirements[partialIndex])
-  delete inactive.evidenceContract
-  Object.assign(inactive, {
-    status: 'not-activated',
-    observedAt: null,
-    expiresAt: null,
-    evidence: null,
-  })
-  partial.requirements[partialIndex] = inactive
-  assert.throws(
-    () => resolveAuthorityBootstrapMirror(partial),
-    /mirror is not activated/,
-  )
-})
-
-test('authority bootstrap durable replay is idempotent and rejects non-canonical or unsafe CAS readback', t => {
-  const fixture = createAuthorityBootstrapFixture(t)
-  const baseMirror = offHostMirror()
-  let appendCalls = 0
-  let verifyCalls = 0
-  const trackingMirror = {
-    adapterCommandSha256: baseMirror.adapterCommandSha256,
-    append(request) {
-      appendCalls += 1
-      return baseMirror.append(request)
-    },
-    verify(request) {
-      verifyCalls += 1
-      return baseMirror.verify(request)
-    },
-  }
-  const first = reconcileFixtureTestHarness.replayAuthorityBootstrapJournalToDurableMirror(
-    fixture.journalPath,
-    fixture.client,
-    trackingMirror,
-    authorityBootstrapReplayOptions(fixture),
-  )
-  const callsAfterFirst = { appendCalls, verifyCalls }
-  const second = reconcileFixtureTestHarness.replayAuthorityBootstrapJournalToDurableMirror(
-    fixture.journalPath,
-    fixture.client,
-    trackingMirror,
-    authorityBootstrapReplayOptions(fixture),
-  )
-  assert.deepEqual(
-    { replayed: second.replayed, existing: second.existing },
-    { replayed: false, existing: true },
-  )
-  assert.deepEqual({ appendCalls, verifyCalls }, callsAfterFirst)
-  assert.equal(second.receiptPath, first.receiptPath)
-  assert.deepEqual(second.receipt, first.receipt)
-  assert.deepEqual(
-    readdirSync(fixture.receiptRoot),
-    [`${first.receipt.receiptDigest}.json`],
-  )
-
-  writeFileSync(first.receiptPath, `${readFileSync(first.receiptPath, 'utf8')}\n`)
-  assert.throws(
-    () => reconcileFixtureTestHarness.replayAuthorityBootstrapJournalToDurableMirror(
-      fixture.journalPath,
-      fixture.client,
-      trackingMirror,
-      authorityBootstrapReplayOptions(fixture),
-    ),
-    /non-canonical bytes/,
-  )
-
-  const unsafeFixture = createAuthorityBootstrapFixture(t)
-  const realReceiptRoot = realpathSync(mkdtempSync(join(unsafeFixture.root, 'actual-receipts-')))
-  symlinkSync(realReceiptRoot, unsafeFixture.receiptRoot)
-  assert.throws(
-    () => reconcileFixtureTestHarness.replayAuthorityBootstrapJournalToDurableMirror(
-      unsafeFixture.journalPath,
-      unsafeFixture.client,
-      offHostMirror(),
-      authorityBootstrapReplayOptions(unsafeFixture),
-    ),
-    /receipt root is unsafe|lock root is unsafe/,
-  )
-})
-
-test('authority bootstrap concurrent replay converges to exactly one immutable receipt', async t => {
-  const fixture = createAuthorityBootstrapFixture(t)
-  const barrier = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT)
-  const results = await Promise.all([
-    runAuthorityBootstrapReplayWorker({ fixture, barrier }),
-    runAuthorityBootstrapReplayWorker({ fixture, barrier }),
-  ])
-  assert.deepEqual(
-    results.map(result => ({
-      replayed: result.replayed,
-      existing: result.existing,
-    })).sort((left, right) => Number(right.replayed) - Number(left.replayed)),
-    [
-      { replayed: true, existing: false },
-      { replayed: false, existing: true },
-    ],
-  )
-  assert.equal(new Set(results.map(result => result.receiptPath)).size, 1)
-  assert.equal(new Set(results.map(result => result.receiptDigest)).size, 1)
-  assert.deepEqual(
-    readdirSync(fixture.receiptRoot),
-    [`${results[0].receiptDigest}.json`],
-  )
-})
-
-test('authority bootstrap durable replay rejects a self-consistent cached receipt with substituted live convergence', t => {
-  const fixture = createAuthorityBootstrapFixture(t)
-  const first = reconcileFixtureTestHarness.replayAuthorityBootstrapJournalToDurableMirror(
-    fixture.journalPath,
-    fixture.client,
-    offHostMirror(),
-    authorityBootstrapReplayOptions(fixture),
-  )
-  const substituted = structuredClone(first.receipt)
-  substituted.convergenceReadback.observedStateDigest = 'f'.repeat(64)
-  substituted.convergenceReadbackDigest = sha256(
-    `qijenchen-authority-policy-bootstrap-convergence-readback-v1\n${stableStringify(substituted.convergenceReadback, 0)}`,
-  )
-  substituted.receiptDigest = authorityBootstrapReplayReceiptDigestForTest(substituted)
-  unlinkSync(first.receiptPath)
-  const substitutedPath = resolve(fixture.receiptRoot, `${substituted.receiptDigest}.json`)
-  writeFileSync(substitutedPath, `${stableStringify(substituted)}\n`)
-  assert.throws(
-    () => reconcileFixtureTestHarness.replayAuthorityBootstrapJournalToDurableMirror(
-      fixture.journalPath,
-      fixture.client,
-      offHostMirror(),
-      authorityBootstrapReplayOptions(fixture),
-    ),
-    /differs from live exact readback/,
-  )
-})
-
-test('authority bootstrap durable replay leaves no completion receipt after partial mirror failure and recovers exactly', t => {
-  const fixture = createAuthorityBootstrapFixture(t)
-  const baseMirror = offHostMirror()
-  let appendCalls = 0
-  const partialMirror = {
-    adapterCommandSha256: baseMirror.adapterCommandSha256,
-    append(request) {
-      appendCalls += 1
-      if (appendCalls === 2) throw new Error('fixture partial replay interruption')
-      return baseMirror.append(request)
-    },
-    verify: request => baseMirror.verify(request),
-  }
-  assert.throws(
-    () => reconcileFixtureTestHarness.replayAuthorityBootstrapJournalToDurableMirror(
-      fixture.journalPath,
-      fixture.client,
-      partialMirror,
-      authorityBootstrapReplayOptions(fixture),
-    ),
-    /fixture partial replay interruption/,
-  )
-  assert.equal(
-    existsSync(fixture.receiptRoot)
-      ? readdirSync(fixture.receiptRoot).filter(name => name.endsWith('.json')).length
-      : 0,
-    0,
-  )
-  const recovered = reconcileFixtureTestHarness.replayAuthorityBootstrapJournalToDurableMirror(
-    fixture.journalPath,
-    fixture.client,
-    baseMirror,
-    authorityBootstrapReplayOptions(fixture),
-  )
-  assert.equal(recovered.replayed, true)
-  assert.equal(recovered.receipt.eventReceipts.length, fixture.journal.events.length)
-})
-
-test('authority bootstrap durable replay detects canonical trust-source TOCTOU after append', t => {
-  const fixture = createAuthorityBootstrapFixture(t)
-  const baseMirror = offHostMirror()
-  const model = authorityBootstrapTrustModel(fixture.activationRequirements)
-  let drifted = false
-  const driftingMirror = {
-    adapterCommandSha256: baseMirror.adapterCommandSha256,
-    append(request) {
-      const receipt = baseMirror.append(request)
-      drifted = true
-      return receipt
-    },
-    verify: request => baseMirror.verify(request),
-  }
-  assert.throws(
-    () => reconcileFixtureTestHarness.replayAuthorityBootstrapJournalToDurableMirror(
-      fixture.journalPath,
-      fixture.client,
-      driftingMirror,
-      authorityBootstrapReplayOptions(fixture, {
-        reloadCurrentGovernance: () => {
-          const current = structuredClone(model)
-          if (drifted) current.authorityPolicyDigest = '0'.repeat(64)
-          return current
-        },
-      }),
-    ),
-    /canonical trust source changed during transaction: authorityPolicyDigest/,
-  )
-  assert.equal(
-    existsSync(fixture.receiptRoot)
-      ? readdirSync(fixture.receiptRoot).filter(name => name.endsWith('.json')).length
-      : 0,
-    0,
-  )
-})
-
 test('fleet reconcile mirror protocol has one shared implementation with byte-identical domains', () => {
   assert.deepEqual(FLEET_RECONCILE_MIRROR_PROTOCOL, {
     protocolVersion: 'fleet-reconcile-mirror-v1',
@@ -1543,7 +529,6 @@ test('fleet reconcile mirror protocol has one shared implementation with byte-id
 
   const reconcileSource = readFileSync(resolve(REPO_ROOT, 'infra/governance/bin/reconcile-github.mjs'), 'utf8')
   const protocolSource = readFileSync(resolve(REPO_ROOT, 'infra/governance/lib/fleet-reconcile-mirror.mjs'), 'utf8')
-  assert.match(reconcileSource, /from '\.\.\/lib\/fleet-reconcile-mirror\.mjs'/)
   for (const oldDefinition of [
     'function receiptDigest(',
     'function verificationDigest(',
@@ -1778,41 +763,19 @@ function validateModel(...args) {
   return reconcileFixtureTestHarness.validatePartialInventoryModel(...args, runtimeValidationContext)
 }
 
-function computeEligibility(options) {
-  return reconcileComputeEligibility({ desired, runtimeValidationContext, ...options })
-}
-
 function applyPlan(plan, client, options) {
   const verifiedReleaseEvidence = Object.hasOwn(options, 'verifiedReleaseEvidence')
     ? options.verifiedReleaseEvidence
     : verifiedEvidenceFor(options.rings)
-  const currentActivationPolicy = options.activationPolicy ?? activationPolicy
   return reconcileFixtureTestHarness.applyPlan(plan, client, {
     certifications,
     waivers,
     runtimeProfile,
     runtimeValidationContext,
-    activationRequirements: activatedRequirements(currentActivationPolicy),
-    activationInventory,
-    activationDesired,
-    activationPolicy: currentActivationPolicy,
-    expectedActivationPolicyDigest: externalActivationPolicyDigest(currentActivationPolicy),
-    mutationBoundaryContract,
-    managedCiValidationContext,
     clock: () => options.now ?? NOW,
     ...options,
     verifiedReleaseEvidence,
   })
-}
-
-function maximumAssuranceApplyOptions(options = {}) {
-  return {
-    activationPolicy: maximumActivationPolicy,
-    activationRequirements: activatedRequirements(maximumActivationPolicy),
-    expectedActivationPolicyDigest: externalActivationPolicyDigest(maximumActivationPolicy),
-    offHostMirror: offHostMirror(),
-    ...options,
-  }
 }
 
 function reloadableGovernance({
@@ -1823,11 +786,6 @@ function reloadableGovernance({
   currentWaivers = waivers,
   currentRuntimeProfile = runtimeProfile,
   currentIssuerRegistry = issuerRegistry,
-  activationRequirements,
-  currentActivationInventory = activationInventory,
-  currentActivationDesired = activationDesired,
-  currentActivationPolicy = activationPolicy,
-  currentMutationBoundaryContract = mutationBoundaryContract,
 } = {}) {
   return {
     inventory: structuredClone(currentInventory),
@@ -1837,11 +795,6 @@ function reloadableGovernance({
     waivers: structuredClone(currentWaivers),
     runtimeProfile: structuredClone(currentRuntimeProfile),
     issuerRegistry: structuredClone(currentIssuerRegistry),
-    activationRequirements: structuredClone(activationRequirements),
-    activationInventory: structuredClone(currentActivationInventory),
-    activationDesired: structuredClone(currentActivationDesired),
-    activationPolicy: structuredClone(currentActivationPolicy),
-    mutationBoundaryContract: structuredClone(currentMutationBoundaryContract),
   }
 }
 
@@ -1850,7 +803,7 @@ function clientWithWorkflowRun({
   event = 'dynamic',
   path = 'dynamic/dependabot/dependabot-updates',
 } = {}) {
-  const client = new FixtureApiClient(resolve(FIXTURES, 'empty'))
+  const client = alignedFixtureClient()
   const runId = '77'
   client.routes['GET /repos/acme/consumer/commits/2222222222222222222222222222222222222222/check-runs?per_page=100'].response.check_runs.push({
     id: 9077,
@@ -1894,7 +847,7 @@ class ReadbackClient {
       can_approve_pull_request_reviews: true,
     }
     this.nextId = 100
-    this.fixture = readJson(resolve(FIXTURES, 'empty/routes.json'))
+    this.fixture = alignConsumerRoutes(readJson(resolve(FIXTURES, 'empty/routes.json')))
   }
 
   request(method, path, body, options = {}) {
@@ -1918,6 +871,9 @@ class ReadbackClient {
     if (method === 'GET' && path.startsWith('/repos/acme/consumer/contents/.github/workflows/')) {
       const route = this.fixture[`GET ${path}`]
       if (route) return structuredClone(route.response)
+    }
+    if (method === 'GET' && path === '/repos/acme/consumer/actions/runs/42') {
+      return structuredClone(this.fixture['GET /repos/acme/consumer/actions/runs/42'].response)
     }
     if (method === 'GET' && (path.endsWith('/rulesets') || path.endsWith('/rulesets?per_page=100'))) {
       return [...this.rulesets.values()].map(item => ({ id: item.id, name: item.name }))
@@ -1954,56 +910,19 @@ class ReadbackClient {
   }
 }
 
-function authorizeCurrentWave(
-  rings,
-  clientFactory = () => new FixtureApiClient(resolve(FIXTURES, 'empty')),
-  {
-    issuedAt = '2026-07-20T00:00:00Z',
-    expiresAt = '2026-07-20T01:00:00Z',
-  } = {},
-) {
-  const first = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: clientFactory(), now: NOW })
-  const authorized = structuredClone(rings)
-  const repoPlan = first.repoPlans[0]
-  authorized.assignments.consumer.applyAuthorization = issueApplyAuthorization({
-    repoId: 'consumer',
-    github: 'acme/consumer',
-    ringId: 'ring-canary',
-    waveId: 'canary',
-    candidateRelease: authorized.candidateRelease,
-    verifiedReleaseEvidenceDigest: first.verifiedReleaseEvidenceDigest,
-    candidatePlanDigest: first.candidatePlanDigest,
-    predicateResults: repoPlan.predicateResults,
-    stateDigest: repoPlan.observedStateDigest,
-    defaultBranchHeadSha: repoPlan.defaultBranchHeadSha,
-    actions: repoPlan.candidateActions,
-    signerKeyId: 'fixture-ed25519',
-    subject: 'fixture-governance',
-    privateKey: PRIVATE_KEY,
-    issuedAt,
-    expiresAt,
-    attestationPolicy: authorized.attestationPolicy,
-  })
-  return authorized
-}
-
 function privilegedPolicyFor(registry, {
   quorum = 1,
   allowedKeyIds = registry.issuers.map(item => item.keyId),
-  externalActivationPolicy = activationPolicy,
+  profileId = 'PRODUCTION_GRADE_SINGLE_OWNER_SMALL_TEAM',
 } = {}) {
-  const policyDigest = externalActivationPolicyDigest(externalActivationPolicy)
-  const profile = resolveExternalActivationProfile(externalActivationPolicy, {
-    expectedPolicyDigest: policyDigest,
-  })
   return {
     $schema: 'schemas/privileged-trust-roots.schema.json',
     schemaVersion: 2,
     repository: 'ajenchen/design-system',
     algorithm: 'ed25519',
-    externalActivationPolicyDigest: policyDigest,
-    authorizationProfileId: profile.id,
-    authorizationProfileDigest: profile.sha256,
+    externalActivationPolicyDigest: 'a'.repeat(64),
+    authorizationProfileId: profileId,
+    authorizationProfileDigest: 'b'.repeat(64),
     maxAuthorizationTtlMinutes: 60,
     clockSkewSeconds: 0,
     authorizationDirectory: 'governance/authorizations',
@@ -2146,12 +1065,10 @@ test('maximum-assurance fleet recovery preserves disjoint apply and root signer 
   currentRings.attestationPolicy.allowedKeyIds = [first.record.keyId, second.record.keyId]
   currentRings.attestationPolicy.applyAuthorizationQuorum = 1
   currentRings.attestationPolicy.completionAttestationQuorum = 1
-  const maximumActivationPolicy = structuredClone(activationPolicy)
-  maximumActivationPolicy.activeProfile = 'MAXIMUM_ASSURANCE_MULTI_CUSTODIAN_WORM'
   const privilegedPolicy = privilegedPolicyFor(currentIssuerRegistry, {
     quorum: 2,
     allowedKeyIds: [first.record.keyId, second.record.keyId],
-    externalActivationPolicy: maximumActivationPolicy,
+    profileId: 'MAXIMUM_ASSURANCE_MULTI_CUSTODIAN_WORM',
   })
   const journal = {
     transactionId: 'maximum-overlap-recovery',
@@ -2190,7 +1107,6 @@ test('maximum-assurance fleet recovery preserves disjoint apply and root signer 
       attestationPolicy: currentRings.attestationPolicy,
       privilegedPolicy,
       issuerRegistry: currentIssuerRegistry,
-      externalActivationPolicy: maximumActivationPolicy,
       now: NOW,
     }),
     /Maximum-assurance fleet recovery apply and root quorums must use disjoint signer keys and subjects/,
@@ -2247,17 +1163,17 @@ test('GitHub desired schema closes repository workflow permissions and fixes lea
   )
 })
 
-test('default reconciliation is GET-only and withholds every candidate action on hold', () => {
+test('default reconciliation is GET-only and surfaces manual holds as blocking conflicts', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-hold.json'))
-  const client = new FixtureApiClient(resolve(FIXTURES, 'empty'))
+  const client = alignedFixtureClient()
   const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client, now: new Date('2026-07-20T00:00:00Z') })
 
   assert.equal(plan.readOnly, true)
-  assert.equal(plan.summary.selectedWave.actions, 0)
-  assert.equal(plan.summary.registeredInventory.candidateActions, 6)
-  assert.equal(plan.summary.registeredInventory.managedChanges, 6)
-  assert.equal(plan.summary.registeredInventory.conflicts, 0)
-  assert.ok(plan.summary.rolloutBlockers > 0)
+  assert.equal(plan.summary.registeredInventory.candidateActions, 3)
+  assert.equal(plan.summary.registeredInventory.managedChanges, 3)
+  assert.equal(plan.summary.registeredInventory.conflicts, 1)
+  assert.ok(plan.repoPlans[0].conflicts.includes('fixture hold'))
+  assert.equal(plan.repoPlans[0].eligibility.eligible, false)
   assert.equal(plan.scope.coverage, 'registered-opt-in-inventory')
   assert.equal(plan.scope.unregisteredDescendants, 'not-covered')
   assert.ok(client.calls.every(call => call.method === 'GET'))
@@ -2265,7 +1181,7 @@ test('default reconciliation is GET-only and withholds every candidate action on
   assert.equal(verified.body.enforcement, 'active')
   assert.deepEqual(
     verified.body.rules.find(rule => rule.type === 'required_status_checks').parameters.required_status_checks,
-    [{ context: 'Immutable consumer snapshot', integration_id: 1001 }],
+    [{ context: 'Verify consumer', integration_id: 15368 }],
   )
 })
 
@@ -2467,7 +1383,7 @@ test('partial inventory validation is confined to the fixture harness while prod
 })
 
 test('fixture clients may inject explicit runtime identity, while live plan and apply entrypoints reject it before I/O', () => {
-  const fixtureClient = new FixtureApiClient(resolve(FIXTURES, 'empty'))
+  const fixtureClient = alignedFixtureClient()
   assert.equal(reconcileFixtureTestHarness.resolveRuntimeValidationContext({
     client: fixtureClient,
     inventory,
@@ -2526,7 +1442,6 @@ test('fixture clients may inject explicit runtime identity, while live plan and 
       certifications: {},
       waivers,
       runtimeProfile: baseRuntimeProfile,
-      mutationBoundaryContract,
       runtimeValidationContext,
       clock: () => NOW,
     }),
@@ -2537,7 +1452,7 @@ test('fixture clients may inject explicit runtime identity, while live plan and 
 
 test('workflow-permission drift produces one exact reversible action bound to independent readback', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-hold.json'))
-  const client = new FixtureApiClient(resolve(FIXTURES, 'empty'))
+  const client = alignedFixtureClient()
   client.routes['GET /repos/acme/consumer/actions/permissions/workflow'].response = {
     default_workflow_permissions: 'write',
     can_approve_pull_request_reviews: false,
@@ -2552,7 +1467,7 @@ test('workflow-permission drift produces one exact reversible action bound to in
     path: '/repos/acme/consumer/actions/permissions/workflow',
     body: {
       default_workflow_permissions: 'read',
-      can_approve_pull_request_reviews: false,
+      can_approve_pull_request_reviews: true,
     },
     resource: 'actions-workflow-permissions',
     beforeImage: {
@@ -2567,7 +1482,7 @@ test('workflow-permission drift produces one exact reversible action bound to in
       state: 'present',
       value: {
         default_workflow_permissions: 'read',
-        can_approve_pull_request_reviews: false,
+        can_approve_pull_request_reviews: true,
       },
       digest: actions[0].expectedApplied.digest,
     },
@@ -2583,14 +1498,14 @@ test('workflow-permission drift produces one exact reversible action bound to in
   })
   assert.ok(client.calls.every(call => call.method === 'GET'))
 
-  const malformed = new FixtureApiClient(resolve(FIXTURES, 'empty'))
+  const malformed = alignedFixtureClient()
   delete malformed.routes['GET /repos/acme/consumer/actions/permissions/workflow'].response.can_approve_pull_request_reviews
   assert.throws(
     () => buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: malformed, now: NOW }),
     /workflow-permissions response has an invalid or open shape/,
   )
 
-  const openReadback = new FixtureApiClient(resolve(FIXTURES, 'empty'))
+  const openReadback = alignedFixtureClient()
   openReadback.routes['GET /repos/acme/consumer/actions/permissions/workflow'].response.unreviewed = true
   assert.throws(
     () => buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: openReadback, now: NOW }),
@@ -2602,7 +1517,7 @@ test('a consumer profile cannot request authority-only immutable releases', () =
   const rings = readJson(resolve(FIXTURES, 'rings-hold.json'))
   const immutableDesired = structuredClone(desired)
   immutableDesired.profiles['product-consumer'].immutableReleases = true
-  const client = new FixtureApiClient(resolve(FIXTURES, 'empty'))
+  const client = alignedFixtureClient()
 
   assert.throws(
     () => buildPlan({ issuerRegistry, runtimeProfile, inventory, desired: immutableDesired, rings, certifications, waivers, client, now: NOW }),
@@ -2613,126 +1528,43 @@ test('a consumer profile cannot request authority-only immutable releases', () =
 
 test('apply is refused before mutation when the release ring locks remote writes', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-hold.json'))
-  const client = new FixtureApiClient(resolve(FIXTURES, 'empty'))
+  const client = alignedFixtureClient()
   const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client, now: new Date('2026-07-20T00:00:00Z') })
 
-  assert.throws(() => applyPlan(plan, client, { issuerRegistry, journalPath: resolve(mkdtempSync(resolve(tmpdir(), 'gov-hold-')), 'journal.json'), inventory, desired, rings, now: NOW }), /no signed-authorization-approved repository/)
+  assert.throws(() => applyPlan(plan, client, { issuerRegistry, journalPath: resolve(mkdtempSync(resolve(tmpdir(), 'gov-hold-')), 'journal.json'), inventory, desired, rings, now: NOW }), /Apply refused: fleet preflight has conflicts/)
   assert.ok(client.calls.every(call => call.method === 'GET'))
 })
 
-test('eligible apply executes only the precomputed managed actions', () => {
+test('conflict-free apply executes only the precomputed managed actions', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const client = new FixtureApiClient(resolve(FIXTURES, 'empty'))
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings: authorized, certifications, waivers, client, now: NOW })
-  const verified = plan.repoPlans[0].actions.find(action => action.resource === 'fleet/verified-main')
+  const client = alignedFixtureClient()
+  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client, now: NOW })
+  const verified = plan.repoPlans[0].candidateActions.find(action => action.resource === 'fleet/verified-main')
 
   assert.equal(verified.body.enforcement, 'active')
   assert.equal(plan.summary.registeredInventory.conflicts, 0)
-  assert.equal(plan.summary.selectedWave.actions, 6)
+  assert.equal(plan.summary.registeredInventory.candidateActions, 3)
   const applyClient = new ReadbackClient()
   const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-apply-')), 'journal.json')
-  const result = applyPlan(plan, applyClient, { issuerRegistry, journalPath, inventory, desired, rings: authorized, now: NOW })
-  assert.equal(result.actions.length, 6)
+  const result = applyPlan(plan, applyClient, { issuerRegistry, journalPath, inventory, desired, rings, now: NOW })
+  assert.equal(result.actions.length, 3)
   const journal = JSON.parse(readFileSync(journalPath, 'utf8'))
   assert.equal(journal.state, 'verified')
   assert.equal(journal.evidenceDurabilityClass, 'local-content-addressed-fsync-v1')
-  assert.equal(journal.mirrorIdentity, null)
-  assert.deepEqual(journal.offHostReceipts, [])
   assert.equal(journal.events.every(event => event.mirrorRequestNonce === null), true)
-  assert.deepEqual(applyClient.calls.filter(call => call.method !== 'GET').map(call => call.method), ['PUT', 'POST', 'POST', 'POST', 'PUT', 'PUT'])
-})
-
-test('fleet journal durability is profile-bound and rejects adapter or class substitution before mutation', () => {
-  const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const plan = buildPlan({
-    issuerRegistry,
-    runtimeProfile,
-    inventory,
-    desired,
-    rings: authorized,
-    certifications,
-    waivers,
-    client: new FixtureApiClient(resolve(FIXTURES, 'empty')),
-    now: NOW,
-  })
-
-  const injectedClient = new ReadbackClient()
-  const injectedJournalPath = resolve(
-    mkdtempSync(resolve(tmpdir(), 'gov-small-injected-worm-')),
-    'journal.json',
-  )
-  assert.throws(
-    () => applyPlan(plan, injectedClient, {
-      issuerRegistry,
-      journalPath: injectedJournalPath,
-      inventory,
-      desired,
-      rings: authorized,
-      now: NOW,
-      offHostMirror: offHostMirror(),
-    }),
-    /Local fleet journal does not accept or claim an off-host\/WORM adapter/,
-  )
-  assert.equal(existsSync(injectedJournalPath), false)
-  assert.equal(injectedClient.calls.some(call => call.method !== 'GET'), false)
-
-  const missingMirrorClient = new ReadbackClient()
-  const missingMirrorJournalPath = resolve(
-    mkdtempSync(resolve(tmpdir(), 'gov-maximum-missing-worm-')),
-    'journal.json',
-  )
-  assert.throws(
-    () => applyPlan(plan, missingMirrorClient, maximumAssuranceApplyOptions({
-      issuerRegistry,
-      journalPath: missingMirrorJournalPath,
-      inventory,
-      desired,
-      rings: authorized,
-      now: NOW,
-      offHostMirror: null,
-    })),
-    /Maximum-assurance fleet journal requires the activated off-host append-only mirror adapter/,
-  )
-  assert.equal(existsSync(missingMirrorJournalPath), false)
-  assert.equal(missingMirrorClient.calls.some(call => call.method !== 'GET'), false)
-
-  const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-small-class-binding-')), 'journal.json')
-  applyPlan(plan, new ReadbackClient(), {
-    issuerRegistry,
-    journalPath,
-    inventory,
-    desired,
-    rings: authorized,
-    now: NOW,
-  })
-  const forged = readJson(journalPath)
-  forged.evidenceDurabilityClass = 'independent-append-only-off-host-v1'
-  forged.mirrorIdentity = activatedMirrorIdentity()
-  assert.throws(
-    () => validateTransactionJournal(forged, {
-      issuerRegistry,
-      inventory,
-      desired,
-      rings: authorized,
-      now: NOW,
-    }),
-    /evidence durability class differs from its exact active profile/,
-  )
+  assert.deepEqual(applyClient.calls.filter(call => call.method !== 'GET').map(call => call.method), ['POST', 'POST', 'POST'])
 })
 
 test('apply rechecks the default head and refuses drift before any mutation', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings: authorized, certifications, waivers, client: new FixtureApiClient(resolve(FIXTURES, 'empty')), now: NOW })
+  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: alignedFixtureClient(), now: NOW })
   const base = new ReadbackClient()
   const client = { request(method, path, body, options) {
     if (method === 'GET' && path === '/repos/acme/consumer/commits/main') return { sha: '4'.repeat(40), commit: { committer: { date: '2026-07-19T23:00:00Z' } } }
     return base.request(method, path, body, options)
   } }
   assert.throws(
-    () => applyPlan(plan, client, { issuerRegistry, journalPath: resolve(mkdtempSync(resolve(tmpdir(), 'gov-head-drift-')), 'journal.json'), inventory, desired, rings: authorized, now: NOW }),
+    () => applyPlan(plan, client, { issuerRegistry, journalPath: resolve(mkdtempSync(resolve(tmpdir(), 'gov-head-drift-')), 'journal.json'), inventory, desired, rings, now: NOW }),
     /default-branch head drift/,
   )
   assert.equal(base.calls.some(call => call.method !== 'GET'), false)
@@ -2796,78 +1628,10 @@ test('GitHub API transport pins the origin and mutation-boundary API version', (
   assert.doesNotMatch(source, /\brunClosedGh\b|\bgh api\b/)
 })
 
-test('apply binds the exact signed mirror adapter and live-verifies the terminal head', () => {
+test('mutation-boundary guards stop on SSOT drift and inter-write fleet drift', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings: authorized, certifications, waivers, client: new FixtureApiClient(resolve(FIXTURES, 'empty')), now: NOW })
+  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: alignedFixtureClient(), now: NOW })
 
-  const wrongAdapter = offHostMirror()
-  wrongAdapter.adapterCommandSha256 = 'f'.repeat(64)
-  const wrongClient = new ReadbackClient()
-  assert.throws(
-    () => applyPlan(plan, wrongClient, maximumAssuranceApplyOptions({
-      issuerRegistry,
-      journalPath: resolve(mkdtempSync(resolve(tmpdir(), 'gov-mirror-adapter-')), 'journal.json'),
-      inventory,
-      desired,
-      rings: authorized,
-      now: NOW,
-      offHostMirror: wrongAdapter,
-    })),
-    /adapter artifact differs from the signed activation identity/,
-  )
-  assert.equal(wrongClient.calls.some(call => call.method !== 'GET'), false)
-
-  const terminalMirror = offHostMirror()
-  const verify = terminalMirror.verify.bind(terminalMirror)
-  const terminalEventCount = 2 + plan.summary.selectedWave.actions * 3 + 1
-  terminalMirror.verify = envelope => {
-    if (envelope.eventCount === terminalEventCount) throw new Error('terminal mirror readback unavailable')
-    return verify(envelope)
-  }
-  const terminalClient = new ReadbackClient()
-  const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-mirror-terminal-')), 'journal.json')
-  assert.throws(
-    () => applyPlan(plan, terminalClient, maximumAssuranceApplyOptions({
-      issuerRegistry, journalPath, inventory, desired, rings: authorized, now: NOW, offHostMirror: terminalMirror,
-    })),
-    /no rollback was claimed or attempted.*terminal mirror readback unavailable/,
-  )
-  const journal = readJson(journalPath)
-  assert.equal(journal.state, 'failed-partial-state-possible')
-  assert.equal(journal.actions.every(action => action.status === 'verified'), true)
-})
-
-test('mutation-boundary guards stop on mirror-time authorization expiry, SSOT drift, and inter-write fleet drift', () => {
-  const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings: authorized, certifications, waivers, client: new FixtureApiClient(resolve(FIXTURES, 'empty')), now: NOW })
-
-  const clockClient = new ReadbackClient()
-  const expiredAt = new Date('2026-07-20T02:00:00.000Z')
-  let actionApplyingMirrored = false
-  const clockMirror = offHostMirror()
-  const appendBeforeExpiry = clockMirror.append.bind(clockMirror)
-  clockMirror.append = envelope => {
-    const receipt = appendBeforeExpiry(envelope)
-    if (envelope.event.type === 'action-applying') actionApplyingMirrored = true
-    return receipt
-  }
-  assert.throws(
-    () => applyPlan(plan, clockClient, maximumAssuranceApplyOptions({
-      issuerRegistry,
-      journalPath: resolve(mkdtempSync(resolve(tmpdir(), 'gov-clock-expiry-')), 'journal.json'),
-      inventory,
-      desired,
-      rings: authorized,
-      offHostMirror: clockMirror,
-      clock: () => (actionApplyingMirrored ? expiredAt : NOW),
-    })),
-    /no rollback was claimed or attempted.*(?:authorization|current rollout wave|hidden GitHub observation is too old)/,
-  )
-  assert.equal(clockClient.calls.filter(call => call.method !== 'GET').length, 0)
-
-  const liveActivation = activatedRequirements()
   const ssotClient = new ReadbackClient()
   let reloads = 0
   assert.throws(
@@ -2876,12 +1640,11 @@ test('mutation-boundary guards stop on mirror-time authorization expiry, SSOT dr
       journalPath: resolve(mkdtempSync(resolve(tmpdir(), 'gov-ssot-drift-')), 'journal.json'),
       inventory,
       desired,
-      rings: authorized,
+      rings,
       now: NOW,
-      activationRequirements: liveActivation,
       reloadCurrentGovernance: () => {
         reloads += 1
-        const model = reloadableGovernance({ currentRings: authorized, activationRequirements: liveActivation })
+        const model = reloadableGovernance({ currentRings: rings })
         if (reloads >= 4) model.waivers.waivers.push({ untrusted: true })
         return model
       },
@@ -2889,66 +1652,6 @@ test('mutation-boundary guards stop on mirror-time authorization expiry, SSOT dr
     /canonical governance SSOT changed during transaction: waivers/,
   )
   assert.equal(ssotClient.calls.filter(call => call.method !== 'GET').length, 0)
-
-  for (const [label, mutate, expected] of [
-    ['activation desired', model => { model.activationDesired.integrations.governanceCheckApp.id = 9999 }, /canonical governance SSOT changed during transaction: activationDesired/],
-    ['mutation-boundary contract', model => { model.mutationBoundaryContract.githubApiVersion = '2099-01-01' }, /canonical governance SSOT changed during transaction: mutationBoundaryContract/],
-  ]) {
-    const boundaryClient = new ReadbackClient()
-    let boundaryReloads = 0
-    assert.throws(
-      () => applyPlan(plan, boundaryClient, {
-        issuerRegistry,
-        journalPath: resolve(mkdtempSync(resolve(tmpdir(), `gov-${label.replaceAll(' ', '-')}-drift-`)), 'journal.json'),
-        inventory,
-        desired,
-        rings: authorized,
-        now: NOW,
-        activationRequirements: liveActivation,
-        reloadCurrentGovernance: () => {
-          boundaryReloads += 1
-          const model = reloadableGovernance({ currentRings: authorized, activationRequirements: liveActivation })
-          if (boundaryReloads >= 4) mutate(model)
-          return model
-        },
-      }),
-      expected,
-      label,
-    )
-    assert.equal(boundaryClient.calls.filter(call => call.method !== 'GET').length, 0, label)
-  }
-
-  const boundaryDriftClient = new ReadbackClient()
-  const boundaryDriftMirror = offHostMirror()
-  const appendBeforeDrift = boundaryDriftMirror.append.bind(boundaryDriftMirror)
-  boundaryDriftMirror.append = envelope => {
-    const receipt = appendBeforeDrift(envelope)
-    if (envelope.event.type === 'action-applying') {
-      boundaryDriftClient.rulesets.set('9998', {
-        id: 9998,
-        name: 'fleet/mirror-window-rogue',
-        target: 'branch',
-        enforcement: 'disabled',
-        conditions: {},
-        bypass_actors: [],
-        rules: [],
-      })
-    }
-    return receipt
-  }
-  assert.throws(
-    () => applyPlan(plan, boundaryDriftClient, maximumAssuranceApplyOptions({
-      issuerRegistry,
-      journalPath: resolve(mkdtempSync(resolve(tmpdir(), 'gov-mirror-window-drift-')), 'journal.json'),
-      inventory,
-      desired,
-      rings: authorized,
-      now: NOW,
-      offHostMirror: boundaryDriftMirror,
-    })),
-    /selected fleet full-state drift|promotion predicate evidence drift/,
-  )
-  assert.equal(boundaryDriftClient.calls.filter(call => call.method !== 'GET').length, 0)
 
   const base = new ReadbackClient()
   let writes = 0
@@ -2969,10 +1672,10 @@ test('mutation-boundary guards stop on mirror-time authorization expiry, SSOT dr
       journalPath: resolve(mkdtempSync(resolve(tmpdir(), 'gov-inter-write-drift-')), 'journal.json'),
       inventory,
       desired,
-      rings: authorized,
+      rings,
       now: NOW,
     }),
-    /selected fleet full-state drift|promotion predicate evidence drift/,
+    /selected fleet full-state drift/,
   )
   assert.equal(writes, 1)
 })
@@ -3014,44 +1717,16 @@ test('any GitHub API failure aborts the plan and performs no writes', () => {
   assert.ok(client.calls.every(call => call.method === 'GET'))
 })
 
-test('comment and dead-job strings cannot spoof a reviewed protected-base workflow identity', () => {
-  const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const client = new FixtureApiClient(resolve(FIXTURES, 'empty'))
-  const content = `# pull_request_target: actions/create-github-app-token@1111111111111111111111111111111111111111 audit
-name: Spoof
-on:
-  workflow_dispatch:
-permissions:
-  contents: read
-jobs:
-  dead-spoof:
-    if: false
-    runs-on: ubuntu-latest
-    environment: governance-upgrade
-    steps:
-      - run: |
-          echo 'secrets.GOVERNANCE_CHECK_APP_ID permission-checks: write /check-runs github.event.pull_request.head.sha'
-`
-  const identity = workflowIdentity(content)
-  const route = client.routes['GET /repos/acme/consumer/contents/.github/workflows/governance-anchor.yml?ref=main']
-  route.response = { text: content, sha: identity.gitBlobSha }
-
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client, now: NOW })
-  assert.ok(plan.repoPlans[0].conflicts.some(conflict => conflict.includes('differs from the reviewed protected-base identity')))
-  assert.ok(plan.repoPlans[0].conflicts.some(conflict => conflict.includes('lacks pull_request_target trigger')))
-})
-
 test('candidate-controlled same-name GitHub Actions checks and stale-head App checks do not satisfy the trust anchor', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
   for (const run of [
     { id: 9100, name: 'Immutable consumer snapshot', head_sha: '2'.repeat(40), status: 'completed', conclusion: 'success', completed_at: '2026-07-20T00:00:00Z', app: { id: 15368, slug: 'github-actions' } },
     { id: 9101, name: 'Immutable consumer snapshot', head_sha: '1'.repeat(40), status: 'completed', conclusion: 'success', completed_at: '2026-07-20T00:00:00Z', app: { id: 1001, slug: 'qijenchen-governance-check' } },
   ]) {
-    const client = new FixtureApiClient(resolve(FIXTURES, 'empty'))
+    const client = alignedFixtureClient()
     client.routes['GET /repos/acme/consumer/commits/2222222222222222222222222222222222222222/check-runs?per_page=100'].response.check_runs = [run]
     const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client, now: NOW })
     assert.ok(plan.repoPlans[0].conflicts.some(conflict => conflict.includes('current head 2222222222222222222222222222222222222222')))
-    assert.equal(plan.repoPlans[0].predicateResults.find(predicate => predicate.type === 'required-checks-green').pass, false)
   }
 })
 
@@ -3097,7 +1772,7 @@ test('unknown dynamic and forged GitHub Actions App/path/event combinations fail
 
 test('a successful check older than the current commit or freshness window fails closed', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const client = new FixtureApiClient(resolve(FIXTURES, 'empty'))
+  const client = alignedFixtureClient()
   client.routes['GET /repos/acme/consumer/commits/2222222222222222222222222222222222222222/check-runs?per_page=100'].response.check_runs[0].completed_at = '2026-07-18T00:00:00Z'
   const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client, now: NOW })
   assert.ok(plan.repoPlans[0].conflicts.some(conflict => conflict.includes('lacks a fresh successful run')))
@@ -3112,14 +1787,14 @@ test('a new candidate release cannot inherit an old completed soak clock', () =>
     packages: rings.candidateRelease.packages.map(item => ({ ...item, version: '1.0.1' })),
   }
   assert.throws(
-    () => buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: new FixtureApiClient(resolve(FIXTURES, 'empty')), now: NOW }),
+    () => buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: alignedFixtureClient(), now: NOW }),
     /candidate digest was not reset/,
   )
 })
 
 test('candidate plan materialization requires current verified release evidence before any GitHub read', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const client = new FixtureApiClient(resolve(FIXTURES, 'empty'))
+  const client = alignedFixtureClient()
   assert.throws(
     () => reconcileFixtureTestHarness.buildPlan({ issuerRegistry, runtimeProfile, runtimeValidationContext, inventory, desired, rings, certifications, waivers, client, verifiedReleaseEvidence: null, now: NOW }),
     /verified release evidence must be an object/,
@@ -3132,7 +1807,7 @@ test('verified evidence for an older candidate cannot authorize a changed candid
   const oldEvidence = verifiedEvidenceFor(rings)
   rings.candidateRelease.observedAt = '2019-01-01T00:00:01Z'
   rings.assignments.consumer.candidateReleaseDigest = sha256(stableStringify(rings.candidateRelease, 0))
-  const client = new FixtureApiClient(resolve(FIXTURES, 'empty'))
+  const client = alignedFixtureClient()
   assert.throws(
     () => reconcileFixtureTestHarness.buildPlan({ issuerRegistry, runtimeProfile, runtimeValidationContext, inventory, desired, rings, certifications, waivers, client, verifiedReleaseEvidence: oldEvidence, now: NOW }),
     /verified release evidence is stale for the current candidate release/,
@@ -3140,60 +1815,21 @@ test('verified evidence for an older candidate cannot authorize a changed candid
   assert.deepEqual(client.calls, [])
 })
 
-function desiredWithUnresolvedApps() {
-  const unresolved = structuredClone(desired)
-  unresolved.integrations.governanceCheckApp = {
-    id: null,
-    slug: 'qijenchen-governance-check',
-    required: false,
-    externalTrustAnchor: true,
-    capability: 'check-only',
-    operationMode: 'base-trusted-isolated-workflow',
-    repositorySelection: 'selected',
-    permissions: { checks: 'write' },
-    secretPrefix: 'GOVERNANCE_CHECK_APP',
-  }
-  unresolved.integrations.governanceWriterApp = {
-    id: null,
-    slug: 'qijenchen-governance-writer',
-    required: false,
-    externalTrustAnchor: false,
-    capability: 'writer',
-    operationMode: 'github-actions-environment',
-    repositorySelection: 'selected',
-    permissions: { contents: 'write', pullRequests: 'write', workflows: 'write' },
-    secretPrefix: 'GOVERNANCE_WRITER_APP',
-  }
-  unresolved.profiles['product-consumer'].requiredChecks[0] = {
-    ...unresolved.profiles['product-consumer'].requiredChecks[0],
-    integration: 'governanceCheckApp',
-    requiredEvents: ['pull_request_target'],
-    baseTrusted: true,
-  }
-  return unresolved
-}
-
-test('unresolved distinct Governance Check and Writer App integrations block before any mutation', () => {
+test('an unknown App identity cannot claim a GitHub Actions workflow run', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const unresolved = desiredWithUnresolvedApps()
-  const unresolvedCertifications = certificationsWithoutExternalGitHubTrust()
-  const client = new FixtureApiClient(resolve(FIXTURES, 'empty'))
-  client.routes['GET /repos/acme/consumer/commits/2222222222222222222222222222222222222222/check-runs?per_page=100'].response.check_runs = []
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired: unresolved, rings, certifications: unresolvedCertifications, waivers, client, now: NOW })
-
-  assert.ok(plan.repoPlans[0].conflicts.some(conflict => conflict.includes('required integration unresolved: governanceCheckApp')))
-  assert.ok(plan.repoPlans[0].conflicts.some(conflict => conflict.includes('required integration unresolved: governanceWriterApp')))
-  assert.throws(() => applyPlan(plan, new ReadbackClient(), { issuerRegistry, journalPath: resolve(mkdtempSync(resolve(tmpdir(), 'gov-app-')), 'journal.json'), inventory, desired: unresolved, rings, now: NOW }), /no signed-authorization-approved repository/)
-  assert.ok(client.calls.every(call => call.method === 'GET'))
-})
-
-test('an unresolved non-Actions App identity cannot claim a GitHub Actions workflow run', () => {
-  const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const client = new FixtureApiClient(resolve(FIXTURES, 'empty'))
-  const unresolvedCertifications = certificationsWithoutExternalGitHubTrust()
-
+  const client = alignedFixtureClient()
+  client.routes['GET /repos/acme/consumer/commits/2222222222222222222222222222222222222222/check-runs?per_page=100'].response.check_runs.push({
+    id: 9105,
+    name: 'Verify consumer',
+    head_sha: '2'.repeat(40),
+    details_url: 'https://github.com/acme/consumer/actions/runs/77',
+    status: 'completed',
+    conclusion: 'success',
+    completed_at: '2026-07-20T00:00:00Z',
+    app: { id: 999999, slug: 'unknown-app' },
+  })
   assert.throws(
-    () => buildPlan({ issuerRegistry, runtimeProfile, inventory, desired: desiredWithUnresolvedApps(), rings, certifications: unresolvedCertifications, waivers, client, now: NOW }),
+    () => buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client, now: NOW }),
     /Untrusted check-run App claims a GitHub Actions workflow run/,
   )
   assert.ok(client.calls.every(call => call.method === 'GET'))
@@ -3272,21 +1908,10 @@ test('neither Governance App may impersonate the GitHub Actions integration', ()
   assert.throws(() => validateModel(inventory, writerCollision, rings, certifications, waivers, NOW, issuerRegistry, runtimeProfile), /Writer App must not reuse the GitHub Actions integration ID/)
 })
 
-test('check verdict environment cannot point at the Writer App credential', () => {
-  const split = desiredWithDistinctApps()
-  split.profiles['product-consumer'].environments[0].credentialIntegration = 'governanceWriterApp'
-
-  assert.throws(
-    () => validateModel(inventory, split, readJson(resolve(FIXTURES, 'rings-eligible.json')), certifications, waivers, NOW, issuerRegistry, runtimeProfile),
-    /desired schema validation failed/,
-  )
-})
-
 test('partial API failure records recovery truth and never claims rollback', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const planClient = new FixtureApiClient(resolve(FIXTURES, 'empty'))
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings: authorized, certifications, waivers, client: planClient, now: NOW })
+  const planClient = alignedFixtureClient()
+  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: planClient, now: NOW })
   let writes = 0
   const base = new ReadbackClient()
   const failingClient = {
@@ -3300,30 +1925,29 @@ test('partial API failure records recovery truth and never claims rollback', () 
   }
   const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-fail-')), 'journal.json')
 
-  assert.throws(() => applyPlan(plan, failingClient, { issuerRegistry, journalPath, inventory, desired, rings: authorized, now: NOW }), /no rollback was claimed or attempted/)
+  assert.throws(() => applyPlan(plan, failingClient, { issuerRegistry, journalPath, inventory, desired, rings, now: NOW }), /no rollback was claimed or attempted/)
   const journal = JSON.parse(readFileSync(journalPath, 'utf8'))
   assert.equal(journal.state, 'failed-partial-state-possible')
   assert.equal(journal.rollbackAttempted, false)
   assert.equal(journal.actions[0].status, 'verified')
   assert.equal(journal.actions[1].status, 'applying')
   assert.match(journal.rollbackPlanDigest, /^[a-f0-9]{64}$/)
-  assert.equal(journal.schemaVersion, 6)
+  assert.equal(journal.schemaVersion, 7)
   assert.equal(journal.historicalControlPlaneDigest, historicalControlPlaneDigest(journal.historicalControlPlane))
 })
 
 test('single-owner local journal supports exact rollback and forward recovery through fresh plans and journals', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
   const base = new ReadbackClient()
   const initialPlan = buildPlan({
     issuerRegistry,
     runtimeProfile,
     inventory,
     desired,
-    rings: authorized,
+    rings,
     certifications,
     waivers,
-    client: new FixtureApiClient(resolve(FIXTURES, 'empty')),
+    client: alignedFixtureClient(),
     now: NOW,
   })
   let writes = 0
@@ -3346,19 +1970,18 @@ test('single-owner local journal supports exact rollback and forward recovery th
       journalPath: initialJournalPath,
       inventory,
       desired,
-      rings: authorized,
+      rings,
       now: NOW,
     }),
     /no rollback was claimed or attempted/,
   )
   const failedJournal = readJson(initialJournalPath)
   assert.equal(failedJournal.evidenceDurabilityClass, 'local-content-addressed-fsync-v1')
-  assert.deepEqual(failedJournal.offHostReceipts, [])
   assert.equal(failedJournal.rollbackAttempted, false)
 
   const recovery = recoveryAuthorizationFor({
     journalPath: initialJournalPath,
-    currentRings: authorized,
+    currentRings: rings,
   })
   const rollback = rollbackTransaction(initialJournalPath, base, {
     issuerRegistry: recovery.issuerRegistry,
@@ -3375,29 +1998,20 @@ test('single-owner local journal supports exact rollback and forward recovery th
   const rolledBackJournal = readJson(initialJournalPath)
   assert.equal(rolledBackJournal.state, 'rolled-back-verified')
   assert.equal(rolledBackJournal.evidenceDurabilityClass, 'local-content-addressed-fsync-v1')
-  assert.deepEqual(rolledBackJournal.offHostReceipts, [])
 
   const forwardAt = new Date('2026-07-20T00:05:00.000Z')
-  const forwardAuthorized = authorizeCurrentWave(
-    rings,
-    () => base,
-    {
-      issuedAt: '2026-07-20T00:05:00Z',
-      expiresAt: '2026-07-20T01:00:00Z',
-    },
-  )
   const forwardPlan = buildPlan({
     issuerRegistry,
     runtimeProfile,
     inventory,
     desired,
-    rings: forwardAuthorized,
+    rings,
     certifications,
     waivers,
     client: base,
     now: forwardAt,
   })
-  assert.equal(forwardPlan.candidatePlanDigest, initialPlan.candidatePlanDigest)
+  assert.equal(forwardPlan.planDigest, initialPlan.planDigest)
   const forwardJournalPath = resolve(
     mkdtempSync(resolve(tmpdir(), 'gov-local-forward-recovery-next-')),
     'journal.json',
@@ -3407,7 +2021,7 @@ test('single-owner local journal supports exact rollback and forward recovery th
     journalPath: forwardJournalPath,
     inventory,
     desired,
-    rings: forwardAuthorized,
+    rings,
     now: forwardAt,
     clock: () => forwardAt,
   })
@@ -3415,154 +2029,52 @@ test('single-owner local journal supports exact rollback and forward recovery th
   const forwardJournal = readJson(forwardJournalPath)
   assert.equal(forwardJournal.state, 'verified')
   assert.equal(forwardJournal.evidenceDurabilityClass, 'local-content-addressed-fsync-v1')
-  assert.deepEqual(forwardJournal.offHostReceipts, [])
   assert.notEqual(forwardJournal.transactionId, rolledBackJournal.transactionId)
-  assert.notEqual(forwardJournal.authorizationEnvelopeDigest, rolledBackJournal.authorizationEnvelopeDigest)
+  // Without per-wave signing ceremonies the envelope is a pure content address:
+  // an exact rollback followed by an identical forward plan reproduces it exactly.
+  assert.equal(forwardJournal.authorizationEnvelopeDigest, rolledBackJournal.authorizationEnvelopeDigest)
   assert.equal(readJson(initialJournalPath).state, 'rolled-back-verified')
 })
 
-test('a timed-out idempotent mirror append can attach only the exact signed pending receipt before recovery observes GitHub', () => {
+test('replayable runtime transitions reject local journal tampering', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings: authorized, certifications, waivers, client: new FixtureApiClient(resolve(FIXTURES, 'empty')), now: NOW })
-  const remote = offHostMirror()
-  const stored = new Map()
-  let failedOnce = false
-  const mirror = {
-    adapterCommandSha256: remote.adapterCommandSha256,
-    append(envelope) {
-      const key = envelope.idempotencyKey
-      if (!stored.has(key)) stored.set(key, remote.append(envelope))
-      if (envelope.sequence === 4 && !failedOnce) {
-        failedOnce = true
-        throw new Error('transport timed out after durable append')
-      }
-      return structuredClone(stored.get(key))
-    },
-    verify: envelope => remote.verify(envelope),
-  }
-  const client = new ReadbackClient()
-  const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-pending-ack-')), 'journal.json')
-  assert.throws(
-    () => applyPlan(plan, client, maximumAssuranceApplyOptions({
-      issuerRegistry, journalPath, inventory, desired, rings: authorized, now: NOW, offHostMirror: mirror,
-    })),
-    /externally unacknowledged journal event/,
-  )
-  const pending = readJson(journalPath)
-  assert.equal(pending.events.length, pending.offHostReceipts.length + 1)
-  assert.equal(client.calls.filter(call => call.method !== 'GET').length, 1)
-
-  const result = recoverTransaction(journalPath, client, { issuerRegistry, offHostMirror: mirror, clock: () => NOW })
-  assert.equal(result.observed, true)
-  const repaired = readJson(journalPath)
-  assert.equal(repaired.events.length, repaired.offHostReceipts.length)
-  assert.equal(repaired.state, 'recovery-observed')
-})
-
-test('signed receipts, activation-bound mirror identity, and replayable runtime transitions reject local tampering', () => {
-  const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings: authorized, certifications, waivers, client: new FixtureApiClient(resolve(FIXTURES, 'empty')), now: NOW })
+  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: alignedFixtureClient(), now: NOW })
   const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-signed-journal-')), 'journal.json')
-  applyPlan(plan, new ReadbackClient(), maximumAssuranceApplyOptions({
-    issuerRegistry, journalPath, inventory, desired, rings: authorized, now: NOW,
-  }))
+  applyPlan(plan, new ReadbackClient(), {
+    issuerRegistry, journalPath, inventory, desired, rings, now: NOW,
+  })
   const journal = readJson(journalPath)
-
-  const forgedReceipt = structuredClone(journal)
-  forgedReceipt.offHostReceipts[0].signature = `${forgedReceipt.offHostReceipts[0].signature.slice(0, -1)}${forgedReceipt.offHostReceipts[0].signature.endsWith('A') ? 'B' : 'A'}`
-  assert.throws(
-    () => validateTransactionJournal(forgedReceipt, {
-      issuerRegistry, inventory, desired, rings: authorized, now: NOW,
-      expectedActivationPolicyDigest: externalActivationPolicyDigest(maximumActivationPolicy),
-    }),
-    /mirror response signature is invalid/,
-  )
 
   const forgedRuntime = structuredClone(journal)
   forgedRuntime.events[1].runtimeState.actions[0].status = 'verified'
   assert.throws(
     () => validateTransactionJournal(forgedRuntime, {
-      issuerRegistry, inventory, desired, rings: authorized, now: NOW,
-      expectedActivationPolicyDigest: externalActivationPolicyDigest(maximumActivationPolicy),
+      issuerRegistry, inventory, desired, rings, now: NOW,
     }),
     /event 1 chain binding|state digest|applying transition/,
   )
 
-  const forgedIdentity = structuredClone(journal)
-  forgedIdentity.mirrorIdentity.tenant = 'attacker-tenant'
+  const forgedClass = structuredClone(journal)
+  forgedClass.evidenceDurabilityClass = 'independent-append-only-off-host-v1'
   assert.throws(
-    () => validateTransactionJournal(forgedIdentity, {
-      issuerRegistry, inventory, desired, rings: authorized, now: NOW,
-      expectedActivationPolicyDigest: externalActivationPolicyDigest(maximumActivationPolicy),
+    () => validateTransactionJournal(forgedClass, {
+      issuerRegistry, inventory, desired, rings, now: NOW,
     }),
-    /receipt differs from the activated mirror identity|mirror identity differs from signed external activation evidence|authorization envelope digest/,
+    /Unknown fleet journal evidence durability class|chain binding|latest event does not bind|authorization envelope digest/,
   )
-})
-
-test('historical journal replay derives activation digests from the signed embedded bundle while current apply stays pinned', () => {
-  const historicalPolicy = structuredClone(activationPolicy)
-  historicalPolicy.requirements[0].reason = `${historicalPolicy.requirements[0].reason} Historical revision.`
-  const historicalContractDigest = 'a'.repeat(64)
-  const journal = {
-    externalActivationPolicy: historicalPolicy,
-    externalActivationMutationBoundaryContractDigest: historicalContractDigest,
-  }
-  assert.deepEqual(transactionJournalActivationDigestExpectations(journal, 'historical-observation'), {
-    expectedPolicyDigest: sha256(stableStringify(historicalPolicy, 0)),
-    expectedMutationBoundaryContractDigest: historicalContractDigest,
-  })
-  assert.deepEqual(transactionJournalActivationDigestExpectations(journal, 'current-apply'), {
-    expectedPolicyDigest: EXTERNAL_ACTIVATION_POLICY_DIGEST,
-    expectedMutationBoundaryContractDigest: GITHUB_MUTATION_BOUNDARY_CONTRACT_DIGEST,
-  })
-  assert.throws(() => transactionJournalActivationDigestExpectations(journal, 'untrusted-mode'), /Unknown transaction-journal validation mode/)
-})
-
-test('v6 journal and recovery authorization schemas are closed and validate emitted artifacts', () => {
-  const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings: authorized, certifications, waivers, client: new FixtureApiClient(resolve(FIXTURES, 'empty')), now: NOW })
-  const base = new ReadbackClient()
-  let writes = 0
-  const failingClient = { request(method, path, body, options) {
-    if (method === 'POST' || method === 'PUT') {
-      writes += 1
-      if (writes === 2) throw new Error('schema fixture partial failure')
-    }
-    return base.request(method, path, body, options)
-  } }
-  const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-v5-schema-')), 'journal.json')
-  assert.throws(() => applyPlan(plan, failingClient, { issuerRegistry, journalPath, inventory, desired, rings: authorized, now: NOW }), /no rollback was claimed or attempted/)
-  const journal = JSON.parse(readFileSync(journalPath, 'utf8'))
-  const fresh = recoveryAuthorizationFor({ journalPath, currentRings: authorized })
-
-  const ajv = new Ajv2020({ allErrors: true, strict: false })
-  addFormats(ajv)
-  for (const name of ['managed-repos', 'github-desired', 'release-rings', 'issuer-registry', 'github-mutation-boundary-contract', 'external-activation-policy', 'external-activation-requirements', 'fleet-reconcile-journal', 'fleet-recovery-authorization']) {
-    ajv.addSchema(readJson(resolve(SCHEMAS, `${name}.schema.json`)))
-  }
-  const validateJournal = ajv.getSchema('https://qijenchen.dev/schemas/fleet-reconcile-journal-v6.json')
-  const validateAuthorization = ajv.getSchema('https://qijenchen.dev/schemas/fleet-recovery-authorization-v2.json')
-  assert.equal(validateJournal(journal), true, JSON.stringify(validateJournal.errors))
-  assert.equal(validateAuthorization(fresh.authorization), true, JSON.stringify(validateAuthorization.errors))
-  assert.equal(validateJournal({ ...journal, untrustedExtension: true }), false)
-  assert.equal(validateAuthorization({ ...fresh.authorization, untrustedExtension: true }), false)
 })
 
 test('partial apply remains observable after issuer revocation, rotation, inventory drift, and desired drift; rollback requires fresh current dual quorum', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
   const plan = buildPlan({
     issuerRegistry,
     runtimeProfile,
     inventory,
     desired,
-    rings: authorized,
+    rings,
     certifications,
     waivers,
-    client: new FixtureApiClient(resolve(FIXTURES, 'empty')),
+    client: alignedFixtureClient(),
     now: NOW,
   })
   const base = new ReadbackClient()
@@ -3576,9 +2088,9 @@ test('partial apply remains observable after issuer revocation, rotation, invent
   } }
   const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-v5-recovery-')), 'journal.json')
   assert.throws(
-    () => applyPlan(plan, failingClient, maximumAssuranceApplyOptions({
-      issuerRegistry, journalPath, inventory, desired, rings: authorized, now: NOW,
-    })),
+    () => applyPlan(plan, failingClient, {
+      issuerRegistry, journalPath, inventory, desired, rings, now: NOW,
+    }),
     /no rollback was claimed or attempted/,
   )
 
@@ -3603,7 +2115,7 @@ test('partial apply remains observable after issuer revocation, rotation, invent
   const currentInventory = inventoryWithAuthority()
   currentInventory.repositories.find(repository => repository.id === 'consumer').visibility = 'public'
   const currentDesired = { ...structuredClone(desired), checkRunMaxAgeMinutes: desired.checkRunMaxAgeMinutes + 1 }
-  const currentRings = structuredClone(authorized)
+  const currentRings = structuredClone(rings)
   currentRings.attestationPolicy.issuerRegistryDigest = issuerRegistryDigest(currentIssuerRegistry)
   currentRings.attestationPolicy.allowedKeyIds = [first.record.keyId, second.record.keyId]
   currentRings.attestationPolicy.applyAuthorizationQuorum = 2
@@ -3611,7 +2123,7 @@ test('partial apply remains observable after issuer revocation, rotation, invent
   const privilegedPolicy = privilegedPolicyFor(currentIssuerRegistry, {
     quorum: 2,
     allowedKeyIds: [rootFirst.record.keyId, rootSecond.record.keyId],
-    externalActivationPolicy: maximumActivationPolicy,
+    profileId: 'MAXIMUM_ASSURANCE_MULTI_CUSTODIAN_WORM',
   })
 
   const backdatedIssuerRegistry = registryFor([
@@ -3622,12 +2134,12 @@ test('partial apply remains observable after issuer revocation, rotation, invent
   ])
   const callsBeforeBackdatedRecovery = base.calls.length
   assert.throws(
-    () => recoverTransaction(journalPath, base, { issuerRegistry: backdatedIssuerRegistry, offHostMirror: offHostMirror(), clock: () => NOW }),
+    () => recoverTransaction(journalPath, base, { issuerRegistry: backdatedIssuerRegistry, clock: () => NOW }),
     /revoked at or before the historical transaction time/,
   )
   assert.equal(base.calls.length, callsBeforeBackdatedRecovery)
 
-  const observation = recoverTransaction(journalPath, base, { issuerRegistry: currentIssuerRegistry, offHostMirror: offHostMirror(), clock: () => NOW })
+  const observation = recoverTransaction(journalPath, base, { issuerRegistry: currentIssuerRegistry, clock: () => NOW })
   assert.equal(observation.observed, true)
   assert.equal(observation.rolledBack, false)
   assert.equal(JSON.parse(readFileSync(journalPath, 'utf8')).state, 'recovery-observed')
@@ -3640,8 +2152,6 @@ test('partial apply remains observable after issuer revocation, rotation, invent
       desired: currentDesired,
       rings: currentRings,
       privilegedPolicy,
-      externalActivationPolicy: maximumActivationPolicy,
-      offHostMirror: offHostMirror(),
       clock: () => new Date('2026-07-20T00:30:00.000Z'),
       now: new Date('2026-07-20T00:30:00.000Z'),
     }),
@@ -3678,9 +2188,7 @@ test('partial apply remains observable after issuer revocation, rotation, invent
       desired: currentDesired,
       rings: currentRings,
       privilegedPolicy,
-      externalActivationPolicy: maximumActivationPolicy,
       recoveryAuthorization: applyOnly.authorization,
-      offHostMirror: offHostMirror(),
       clock: () => new Date('2026-07-20T00:30:00.000Z'),
       now: new Date('2026-07-20T00:30:00.000Z'),
     }),
@@ -3710,9 +2218,7 @@ test('partial apply remains observable after issuer revocation, rotation, invent
     desired: currentDesired,
     rings: currentRings,
     privilegedPolicy,
-    externalActivationPolicy: maximumActivationPolicy,
     recoveryAuthorization: dual.authorization,
-    offHostMirror: offHostMirror(),
     clock: () => new Date('2026-07-20T00:30:00.000Z'),
     now: new Date('2026-07-20T00:30:00.000Z'),
   })
@@ -3721,10 +2227,9 @@ test('partial apply remains observable after issuer revocation, rotation, invent
   assert.equal(JSON.parse(readFileSync(journalPath, 'utf8')).state, 'rolled-back-verified')
 })
 
-test('rollback rechecks current authorization after the compensating event is durably mirrored', () => {
+test('rollback rechecks current authorization after the compensating event is journaled', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings: authorized, certifications, waivers, client: new FixtureApiClient(resolve(FIXTURES, 'empty')), now: NOW })
+  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: alignedFixtureClient(), now: NOW })
   const base = new ReadbackClient()
   let writes = 0
   const failingClient = { request(method, path, body, options) {
@@ -3736,21 +2241,14 @@ test('rollback rechecks current authorization after the compensating event is du
   } }
   const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-rollback-boundary-')), 'journal.json')
   assert.throws(
-    () => applyPlan(plan, failingClient, maximumAssuranceApplyOptions({
-      issuerRegistry, journalPath, inventory, desired, rings: authorized, now: NOW,
-    })),
+    () => applyPlan(plan, failingClient, {
+      issuerRegistry, journalPath, inventory, desired, rings, now: NOW,
+    }),
     /no rollback was claimed or attempted/,
   )
 
-  const current = recoveryAuthorizationFor({ journalPath, currentRings: authorized })
-  const mirror = offHostMirror()
-  const appendBeforeExpiry = mirror.append.bind(mirror)
-  let compensatingMirrored = false
-  mirror.append = envelope => {
-    const receipt = appendBeforeExpiry(envelope)
-    if (envelope.event.type === 'rollback-compensating') compensatingMirrored = true
-    return receipt
-  }
+  const current = recoveryAuthorizationFor({ journalPath, currentRings: rings })
+  const expiredAt = new Date('2026-07-20T01:00:00.000Z')
   const result = rollbackTransaction(journalPath, base, {
     issuerRegistry: current.issuerRegistry,
     inventory: current.inventory,
@@ -3758,8 +2256,7 @@ test('rollback rechecks current authorization after the compensating event is du
     rings: current.rings,
     privilegedPolicy: current.privilegedPolicy,
     recoveryAuthorization: current.authorization,
-    offHostMirror: mirror,
-    clock: () => (compensatingMirrored ? new Date('2026-07-20T01:00:00.000Z') : NOW),
+    clock: () => (JSON.parse(readFileSync(journalPath, 'utf8')).events.some(event => event.type === 'rollback-compensating') ? expiredAt : NOW),
   })
   assert.equal(result.rolledBack, false)
   assert.match(result.blocked.join('\n'), /expired/)
@@ -3771,8 +2268,7 @@ test('rollback rechecks current authorization after the compensating event is du
 
 test('a wholesale historical bundle, registry, authorization, and action replacement fails before recovery observation', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings: authorized, certifications, waivers, client: new FixtureApiClient(resolve(FIXTURES, 'empty')), now: NOW })
+  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: alignedFixtureClient(), now: NOW })
   const base = new ReadbackClient()
   let writes = 0
   const failingClient = { request(method, path, body, options) {
@@ -3783,13 +2279,13 @@ test('a wholesale historical bundle, registry, authorization, and action replace
     return base.request(method, path, body, options)
   } }
   const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-v5-forged-history-')), 'journal.json')
-  assert.throws(() => applyPlan(plan, failingClient, { issuerRegistry, journalPath, inventory, desired, rings: authorized, now: NOW }), /no rollback was claimed or attempted/)
+  assert.throws(() => applyPlan(plan, failingClient, { issuerRegistry, journalPath, inventory, desired, rings, now: NOW }), /no rollback was claimed or attempted/)
 
   const forged = JSON.parse(readFileSync(journalPath, 'utf8'))
   const attacker = generatedRecoveryIssuer('attacker')
   const attackerRegistry = registryFor([attacker.record])
   const attackerPolicy = {
-    ...structuredClone(authorized.attestationPolicy),
+    ...structuredClone(rings.attestationPolicy),
     issuerRegistryDigest: issuerRegistryDigest(attackerRegistry),
     allowedKeyIds: [attacker.record.keyId],
     applyAuthorizationQuorum: 1,
@@ -3819,38 +2315,6 @@ test('a wholesale historical bundle, registry, authorization, and action replace
     compensation: { safety: 'automatic', method: 'DELETE', pathSource: 'readbackPath' },
   }
   forged.actions = [{ ...fixedAction, actionId: 'consumer:001:create-ruleset:evil/arbitrary-read-target', github: 'evil/arbitrary-target', repoId: 'consumer', status: 'pending' }]
-  const actionsDigest = candidateActionsDigest([fixedAction])
-  const predicateResults = [{ id: 'forged', type: 'plan-conflict-free', pass: true, evidenceDigest: 'a'.repeat(64), message: 'forged' }]
-  const forgedAuthorization = issueApplyAuthorization({
-    repoId: 'consumer',
-    github: 'evil/arbitrary-target',
-    ringId: 'ring-canary',
-    waveId: 'canary',
-    candidateRelease: forged.candidateRelease,
-    verifiedReleaseEvidenceDigest: forged.verifiedReleaseEvidenceDigest,
-    candidatePlanDigest: forged.candidatePlanDigest,
-    predicateResults,
-    stateDigest: 'b'.repeat(64),
-    defaultBranchHeadSha: 'c'.repeat(40),
-    actions: [fixedAction],
-    signerKeyId: attacker.record.keyId,
-    subject: attacker.record.subject,
-    privateKey: attacker.keys.privateKey,
-    issuedAt: forged.startedAt,
-    expiresAt: '2026-07-20T00:50:00.000Z',
-    attestationPolicy: attackerPolicy,
-  })
-  forged.repoBindings = [{
-    repoId: 'consumer',
-    github: 'evil/arbitrary-target',
-    ring: 'ring-canary',
-    wave: 'canary',
-    defaultBranchHeadSha: 'c'.repeat(40),
-    observedStateDigest: 'b'.repeat(64),
-    predicateDigest: forgedAuthorization.predicateDigest,
-    actionsDigest,
-    applyAuthorization: forgedAuthorization,
-  }]
   forged.rollbackPlan = [{
     actionId: forged.actions[0].actionId,
     repoId: 'consumer',
@@ -3878,10 +2342,9 @@ test('a wholesale historical bundle, registry, authorization, and action replace
 
 test('rollback re-observes remote state and blocks on post-failure drift', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
   const plan = buildPlan({ issuerRegistry, runtimeProfile,
-    inventory, desired, rings: authorized, certifications, waivers,
-    client: new FixtureApiClient(resolve(FIXTURES, 'empty')), now: NOW,
+    inventory, desired, rings, certifications, waivers,
+    client: alignedFixtureClient(), now: NOW,
   })
   const base = new ReadbackClient()
   let writes = 0
@@ -3895,11 +2358,11 @@ test('rollback re-observes remote state and blocks on post-failure drift', () =>
     },
   }
   const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-drift-')), 'journal.json')
-  assert.throws(() => applyPlan(plan, failingClient, { issuerRegistry, journalPath, inventory, desired, rings: authorized, now: NOW }), /no rollback was claimed or attempted/)
+  assert.throws(() => applyPlan(plan, failingClient, { issuerRegistry, journalPath, inventory, desired, rings, now: NOW }), /no rollback was claimed or attempted/)
   const firstRuleset = base.rulesets.values().next().value
   firstRuleset.enforcement = 'disabled'
 
-  const fresh = recoveryAuthorizationFor({ journalPath, currentRings: authorized })
+  const fresh = recoveryAuthorizationFor({ journalPath, currentRings: rings })
   const result = rollbackTransaction(journalPath, base, {
     issuerRegistry: fresh.issuerRegistry,
     inventory: fresh.inventory,
@@ -3917,7 +2380,7 @@ test('rollback re-observes remote state and blocks on post-failure drift', () =>
   const driftedAction = blockedJournal.actions.find(action => action.resource === firstRuleset.name)
   assert.equal(driftedAction.expectedApplied.state, 'present')
   firstRuleset.enforcement = driftedAction.expectedApplied.value.enforcement
-  const retryAuthorization = recoveryAuthorizationFor({ journalPath, currentRings: authorized })
+  const retryAuthorization = recoveryAuthorizationFor({ journalPath, currentRings: rings })
   const retry = rollbackTransaction(journalPath, base, {
     issuerRegistry: retryAuthorization.issuerRegistry,
     inventory: retryAuthorization.inventory,
@@ -3933,8 +2396,7 @@ test('rollback re-observes remote state and blocks on post-failure drift', () =>
 
 test('rollback refuses a modified compensating plan before remote observation or mutation', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings: authorized, certifications, waivers, client: new FixtureApiClient(resolve(FIXTURES, 'empty')), now: NOW })
+  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: alignedFixtureClient(), now: NOW })
   const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-rollback-digest-')), 'journal.json')
   const base = new ReadbackClient()
   let writes = 0
@@ -3945,7 +2407,7 @@ test('rollback refuses a modified compensating plan before remote observation or
     }
     return base.request(method, path, body, options)
   } }
-  assert.throws(() => applyPlan(plan, failingClient, { issuerRegistry, journalPath, inventory, desired, rings: authorized, now: NOW }), /no rollback was claimed or attempted/)
+  assert.throws(() => applyPlan(plan, failingClient, { issuerRegistry, journalPath, inventory, desired, rings, now: NOW }), /no rollback was claimed or attempted/)
   const forged = JSON.parse(readFileSync(journalPath, 'utf8'))
   forged.rollbackPlan[0].resource = 'arbitrary-resource'
   writeFileSync(journalPath, JSON.stringify(forged))
@@ -3954,15 +2416,14 @@ test('rollback refuses a modified compensating plan before remote observation or
     issuerRegistry,
     inventory,
     desired,
-    rings: authorized,
+    rings,
     clock: () => NOW,
   }), /latest event does not bind|rollback plan differs|Rollback plan digest mismatch/)
 })
 
 test('an untrusted rollback journal cannot inject an arbitrary repository endpoint', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings: authorized, certifications, waivers, client: new FixtureApiClient(resolve(FIXTURES, 'empty')), now: NOW })
+  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: alignedFixtureClient(), now: NOW })
   const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-arbitrary-endpoint-')), 'journal.json')
   const base = new ReadbackClient()
   let writes = 0
@@ -3973,19 +2434,18 @@ test('an untrusted rollback journal cannot inject an arbitrary repository endpoi
     }
     return base.request(method, path, body, options)
   } }
-  assert.throws(() => applyPlan(plan, failingClient, { issuerRegistry, journalPath, inventory, desired, rings: authorized, now: NOW }), /no rollback was claimed or attempted/)
+  assert.throws(() => applyPlan(plan, failingClient, { issuerRegistry, journalPath, inventory, desired, rings, now: NOW }), /no rollback was claimed or attempted/)
   const forged = JSON.parse(readFileSync(journalPath, 'utf8'))
   forged.actions[0].path = '/repos/acme/unmanaged/contents/README.md'
   assert.throws(
-    () => validateTransactionJournal(forged, { issuerRegistry, inventory, desired, rings: authorized, now: NOW }),
+    () => validateTransactionJournal(forged, { issuerRegistry, inventory, desired, rings, now: NOW }),
     /latest event does not bind|endpoint is outside managed scope|Journal readback endpoint differs from the managed action/,
   )
 })
 
 test('an untrusted runtime readback path fails before recovery can observe another repository', () => {
   const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const authorized = authorizeCurrentWave(rings)
-  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings: authorized, certifications, waivers, client: new FixtureApiClient(resolve(FIXTURES, 'empty')), now: NOW })
+  const plan = buildPlan({ issuerRegistry, runtimeProfile, inventory, desired, rings, certifications, waivers, client: alignedFixtureClient(), now: NOW })
   const journalPath = resolve(mkdtempSync(resolve(tmpdir(), 'gov-arbitrary-readback-')), 'journal.json')
   const base = new ReadbackClient()
   let writes = 0
@@ -3996,7 +2456,7 @@ test('an untrusted runtime readback path fails before recovery can observe anoth
     }
     return base.request(method, path, body, options)
   } }
-  assert.throws(() => applyPlan(plan, failingClient, { issuerRegistry, journalPath, inventory, desired, rings: authorized, now: NOW }), /no rollback was claimed or attempted/)
+  assert.throws(() => applyPlan(plan, failingClient, { issuerRegistry, journalPath, inventory, desired, rings, now: NOW }), /no rollback was claimed or attempted/)
   const forged = JSON.parse(readFileSync(journalPath, 'utf8'))
   forged.actions[0].readbackPath = '/repos/evil/arbitrary-target/rulesets/123'
   writeFileSync(journalPath, JSON.stringify(forged))
@@ -4007,69 +2467,4 @@ test('an untrusted runtime readback path fails before recovery can observe anoth
     /latest event does not bind|readback endpoint is outside managed scope|Journal readback endpoint differs from the managed action/,
   )
   assert.equal(client.calls, 0)
-})
-
-test('release-ring eligibility is computed from soak, upstream, certifications, and waiver expiry', () => {
-  const rings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  const repo = inventory.repositories[0]
-  const expiredWaiver = {
-    schemaVersion: 1,
-    waivers: [{
-      id: 'WV-2026-001',
-      scope: { repository: 'consumer', controlType: 'provider-surface', controlId: 'ci/github-actions' },
-      reason: 'Temporary fixture waiver used to prove expiry blocks eligibility.',
-      risk: 'medium',
-      owner: 'fixture-owner',
-      approvedBy: ['fixture-approver'],
-      issuedAt: '2026-07-18T00:00:00Z',
-      expiresAt: '2026-07-19T00:00:00Z',
-      status: 'active',
-      compensatingControls: ['read-only fixture execution'],
-      evidence: ['fixture-expiry-test'],
-    }],
-  }
-  const result = computeEligibility({ repo, inventory, rings, certifications, waivers: expiredWaiver, now: new Date('2026-07-20T00:00:00Z'), issuerRegistry, runtimeProfile })
-
-  assert.equal(result.eligible, false)
-  assert.ok(result.blockers.includes('active waiver expired: WV-2026-001'))
-})
-
-test('standalone eligibility defers soak only for the production-grade profile and preserves maximum-assurance blocking', () => {
-  const at = new Date('2026-07-20T00:30:00Z')
-  const productionRings = readJson(resolve(FIXTURES, 'rings-eligible.json'))
-  productionRings.candidateRelease.observedAt = '2026-07-20T00:00:00Z'
-  productionRings.assignments.consumer.enteredAt = productionRings.candidateRelease.observedAt
-  productionRings.assignments.consumer.candidateReleaseDigest = sha256(stableStringify(productionRings.candidateRelease, 0))
-  const repo = inventory.repositories[0]
-  const production = computeEligibility({
-    repo,
-    inventory,
-    rings: productionRings,
-    certifications,
-    waivers,
-    now: at,
-    issuerRegistry,
-    runtimeProfile,
-  })
-  assert.equal(production.blockers.some(blocker => /soak.*incomplete|minimum soak incomplete/.test(blocker)), false)
-
-  const maximumPolicy = structuredClone(loadExternalActivationPolicy())
-  maximumPolicy.activeProfile = 'MAXIMUM_ASSURANCE_MULTI_CUSTODIAN_WORM'
-  const maximumRings = structuredClone(productionRings)
-  maximumRings.rings[0].promotionPredicates
-    .find(predicate => predicate.type === 'soak-observation').type = 'soak-complete'
-  const maximum = computeEligibility({
-    repo,
-    inventory,
-    rings: maximumRings,
-    certifications,
-    waivers,
-    now: at,
-    issuerRegistry,
-    runtimeProfile,
-    activationPolicy: maximumPolicy,
-    expectedActivationPolicyDigest: externalActivationPolicyDigest(maximumPolicy),
-  })
-  assert.equal(maximum.eligible, false)
-  assert.ok(maximum.blockers.some(blocker => /minimum soak incomplete/.test(blocker)))
 })

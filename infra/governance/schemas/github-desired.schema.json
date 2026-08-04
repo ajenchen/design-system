@@ -27,8 +27,7 @@
     "managedEnvironmentNames": {
       "const": [
         "npm-release",
-        "governance-upgrade",
-        "governance-external-ledger"
+        "governance-upgrade"
       ]
     },
     "profiles": {
@@ -179,11 +178,10 @@
             },
             "environments": {
               "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
+              "minItems": 1,
+              "maxItems": 1,
               "allOf": [
-                {"$ref": "#/$defs/containsNpmReleaseEnvironment"},
-                {"$ref": "#/$defs/containsGovernanceExternalLedgerEnvironment"}
+                {"$ref": "#/$defs/containsNpmReleaseEnvironment"}
               ]
             }
           }
@@ -333,12 +331,6 @@
       "minContains": 1,
       "maxContains": 1
     },
-    "containsGovernanceExternalLedgerEnvironment": {
-      "type": "array",
-      "contains": {"$ref": "#/$defs/governanceExternalLedgerEnvironmentIdentity"},
-      "minContains": 1,
-      "maxContains": 1
-    },
     "governanceCheckVerdictEnvironmentIdentity": {
       "type": "object",
       "required": ["name", "workflow", "credentialIntegration", "rollout", "waitTimer", "preventSelfReview", "reviewers", "deploymentBranchPolicy"],
@@ -384,20 +376,6 @@
       "properties": {
         "name": {"const": "governance-upgrade"},
         "workflow": {"const": ".github/workflows/sync-design-system.yml"},
-        "credentialIntegration": {"const": "governanceWriterApp"},
-        "rollout": {"const": "always"},
-        "waitTimer": {"const": 0},
-        "preventSelfReview": {"const": false},
-        "reviewers": {"const": []},
-        "deploymentBranchPolicy": {"const": {"protectedBranches": true, "customBranchPolicies": false}}
-      }
-    },
-    "governanceExternalLedgerEnvironmentIdentity": {
-      "type": "object",
-      "required": ["name", "workflow", "credentialIntegration", "rollout", "waitTimer", "preventSelfReview", "reviewers", "deploymentBranchPolicy"],
-      "properties": {
-        "name": {"const": "governance-external-ledger"},
-        "workflow": {"const": ".github/workflows/external-ledger-writer.yml"},
         "credentialIntegration": {"const": "governanceWriterApp"},
         "rollout": {"const": "always"},
         "waitTimer": {"const": 0},
@@ -555,7 +533,7 @@
       "additionalProperties": false,
       "required": ["name", "workflow", "workflowIdentity", "rollout", "waitTimer", "preventSelfReview", "reviewers", "deploymentBranchPolicy"],
       "properties": {
-        "name": {"enum": ["npm-release", "governance-check-verdict", "governance-upgrade", "governance-external-ledger"]},
+        "name": {"enum": ["npm-release", "governance-check-verdict", "governance-upgrade"]},
         "workflow": {"type": "string", "pattern": "^\\.github/workflows/.+\\.ya?ml$"},
         "workflowIdentity": {"$ref": "#/$defs/workflowIdentity"},
         "credentialIntegration": {"type": "string", "minLength": 1},

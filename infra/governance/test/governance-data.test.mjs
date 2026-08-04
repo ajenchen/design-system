@@ -96,35 +96,17 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   assert.deepEqual(desired.profiles['published-template'].requiredChecks[0].requiredEvents, ['pull_request'])
   assert.equal(desired.profiles['published-template'].requiredChecks[0].trustSource, 'repository-workflow')
   assert.equal(desired.profiles['published-template'].requiredChecks[0].workflow, '.github/workflows/audit.yml')
+  // The external-ledger writer environment retired with the activation cluster
+  // (2026-08-04); the authority profile carries exactly the npm-release environment.
   assert.deepEqual(
     desired.profiles['design-system-authority'].environments.map(environment => environment.name),
-    ['npm-release', 'governance-external-ledger'],
+    ['npm-release'],
   )
-  const externalLedgerEnvironment = desired.profiles['design-system-authority'].environments.find(
-    environment => environment.name === 'governance-external-ledger',
-  )
-  assert.deepEqual(
-    {
-      workflow: externalLedgerEnvironment.workflow,
-      credentialIntegration: externalLedgerEnvironment.credentialIntegration,
-      rollout: externalLedgerEnvironment.rollout,
-      deploymentBranchPolicy: externalLedgerEnvironment.deploymentBranchPolicy,
-    },
-    {
-      workflow: '.github/workflows/external-ledger-writer.yml',
-      credentialIntegration: 'governanceWriterApp',
-      rollout: 'always',
-      deploymentBranchPolicy: {
-        customBranchPolicies: false,
-        protectedBranches: true,
-      },
-    },
-  )
-  for (const profileName of ['published-template', 'product-consumer']) {
+  for (const profileName of ['design-system-authority', 'published-template', 'product-consumer']) {
     assert.equal(
       desired.profiles[profileName].environments.some(environment => environment.name === 'governance-external-ledger'),
       false,
-      `${profileName} must not receive the authority external-ledger credential`,
+      `${profileName} must not restore the retired external-ledger environment`,
     )
   }
   const npmRelease = desired.profiles['design-system-authority'].environments.find(environment => environment.name === 'npm-release')
@@ -201,33 +183,26 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   const desiredValidatorContract = validateDesiredGithub.toString()
   assert.match(desiredValidatorContract, /product-consumer required check must be the canonical pull-request Verify consumer job/)
   assert.match(desiredValidatorContract, /must allow GitHub Actions to create upgrade pull requests/)
-  assert.match(desiredValidatorContract, /externalLedgerEnvironment\.workflow === '\.github\/workflows\/external-ledger-writer\.yml'[\s\S]*governance-external-ledger must bind the protected external-ledger writer workflow/)
-  assert.match(desiredValidatorContract, /externalLedgerEnvironment\.credentialIntegration === 'governanceWriterApp'[\s\S]*governance-external-ledger must use the dedicated Governance Writer App/)
-  const missingExternalLedgerEnvironment = structuredClone(desired)
-  missingExternalLedgerEnvironment.profiles['design-system-authority'].environments = (
-    missingExternalLedgerEnvironment.profiles['design-system-authority'].environments.filter(
-      environment => environment.name !== 'governance-external-ledger',
-    )
-  )
+  // The external-ledger writer environment retired with the activation cluster:
+  // the validator now enforces that no profile can restore it.
+  assert.match(desiredValidatorContract, /must not restore the retired governance-external-ledger environment/)
+  const restoredExternalLedgerEnvironment = structuredClone(desired)
+  restoredExternalLedgerEnvironment.profiles['design-system-authority'].environments.push({
+    name: 'governance-external-ledger',
+    workflow: '.github/workflows/mirror-to-published-template.yml',
+    workflowIdentity: structuredClone(
+      desired.profiles['design-system-authority'].environments[0].workflowIdentity,
+    ),
+    credentialIntegration: 'governanceWriterApp',
+    rollout: 'always',
+    waitTimer: 0,
+    preventSelfReview: false,
+    reviewers: [],
+    deploymentBranchPolicy: { protectedBranches: true, customBranchPolicies: false },
+  })
   assert.throws(
-    () => validateModel(inventory, missingExternalLedgerEnvironment, rings, certifications, waivers, NOW),
-    /desired schema validation failed|must declare exactly one governance-external-ledger environment/,
-  )
-  const wrongExternalLedgerWorkflow = structuredClone(desired)
-  wrongExternalLedgerWorkflow.profiles['design-system-authority'].environments.find(
-    environment => environment.name === 'governance-external-ledger',
-  ).workflow = '.github/workflows/mirror-to-published-template.yml'
-  assert.throws(
-    () => validateModel(inventory, wrongExternalLedgerWorkflow, rings, certifications, waivers, NOW),
-    /desired schema validation failed|must bind the protected external-ledger writer workflow/,
-  )
-  const externalLedgerCandidateOnly = structuredClone(desired)
-  externalLedgerCandidateOnly.profiles['design-system-authority'].environments.find(
-    environment => environment.name === 'governance-external-ledger',
-  ).rollout = 'on-promotion'
-  assert.throws(
-    () => validateModel(inventory, externalLedgerCandidateOnly, rings, certifications, waivers, NOW),
-    /desired schema validation failed|must exist before candidate freeze and external activation/,
+    () => validateModel(inventory, restoredExternalLedgerEnvironment, rings, certifications, waivers, NOW),
+    /desired schema validation failed|must not restore the retired governance-external-ledger environment/,
   )
   const npmWriterInjection = structuredClone(desired)
   npmWriterInjection.profiles['design-system-authority'].environments.find(environment => environment.name === 'npm-release').credentialIntegration = 'governanceWriterApp'
@@ -236,7 +211,7 @@ test('live governance model encodes exact trust anchors, solo review settings, t
     /desired schema validation failed:.*design-system-authority\/environments/,
   )
   assert.match(desiredValidatorContract, /environment\.name === 'npm-release'[\s\S]*npm-release must remain OIDC-only/)
-  assert.deepEqual(desired.managedEnvironmentNames, ['npm-release', 'governance-upgrade', 'governance-external-ledger'])
+  assert.deepEqual(desired.managedEnvironmentNames, ['npm-release', 'governance-upgrade'])
   assert.equal(rings.schemaVersion, 3)
   assert.equal(rings.candidateRelease, null)
   for (const ring of rings.rings) {

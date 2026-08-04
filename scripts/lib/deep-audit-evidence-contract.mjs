@@ -58,16 +58,9 @@ import {
   buildComponentClaimReceipt,
 } from './component-claim-inventory.mjs'
 import {
-  loadManagedCiTrustedExecutionPlan,
-  managedCiExpectedAttestedRunnerEnvironment,
-  managedCiExpectedRawReceiptBinding,
-} from './managed-ci-trusted-execution-plan.mjs'
-import {
-  validateManagedCiSandboxReceipt,
   validateManagedCiSandboxReceiptShape,
 } from './managed-ci-sandbox-receipt.mjs'
 import {
-  validateModelBrokerReceipt,
   validateModelBrokerTranscript,
 } from './model-broker-transcript.mjs'
 import { resolveDeepAuditRubricPaths } from '../governance-build-graph.mjs'
@@ -1720,47 +1713,11 @@ function validateSandboxReceipt(receipt, manifest, label, {
     'externalWriteContainment',
     'cleanup',
   ]
-  const managed = receipt?.dependencyTrust === 'managed-ci-attested'
-  if (managed) {
-    if (!repoRoot || !manifestSha256) fail(`${label} managed CI validation requires repository trust roots and active manifest digest`)
-    if (!evidenceKind) fail(`${label} managed CI validation requires an evidence kind`)
-    const frozenLockfile = manifest.inventory.find(row => row.path === 'package-lock.json' && row.kind === 'file')
-    if (!frozenLockfile) fail(`${label} frozen manifest lacks package-lock.json`)
-    let managedState
-    let expectedManaged
-    try {
-      managedState = loadManagedCiTrustedExecutionPlan({ repoRoot, requireActivated: true })
-      expectedManaged = managedCiExpectedRawReceiptBinding(managedState, { evidenceKind, selectedProvider })
-      validateManagedCiSandboxReceipt({
-        receipt,
-        repoRoot,
-        now,
-        expected: {
-          manifestVerificationDigest: digestSandboxVerification(manifest),
-          dependencyLockfileSha256: frozenLockfile.sha256,
-          activeRun: {
-            runId: manifest.runId,
-            manifestSha256,
-            head: manifest.head,
-            tree: manifest.tree,
-          },
-          receiptBinding: expectedManaged,
-          workflow: {
-            repository: managedState.plan.workflow.repository,
-            path: managedState.plan.workflow.path,
-            event: managedState.plan.workflow.event,
-            head: manifest.head,
-            tree: manifest.tree,
-          },
-          runnerEnvironment: managedCiExpectedAttestedRunnerEnvironment(managedState),
-          evidenceEnvelopeDigest,
-          maxAgeSeconds: managedState.plan.observation.maxAgeSeconds,
-        },
-      })
-    } catch (error) {
-      fail(`${label} managed CI receipt validation failed:${error.message}`)
-    }
-    return
+  // 'managed-ci-attested' dependencyTrust is unacceptable since the managed-CI
+  // executor cluster retirement (2026-08-04): its attestation plan no longer
+  // exists, so such a receipt can only be forged — fail closed.
+  if (receipt?.dependencyTrust === 'managed-ci-attested') {
+    fail(`${label} claims managed-ci attestation, but the managed-CI executor cluster is retired`)
   }
   exactKeys(receipt, localKeys, label)
   for (const key of [
@@ -2039,27 +1996,15 @@ function validatePayload(payload, evidenceKind, {
     return
   }
   if (evidenceKind === 'deep-audit-judgment') {
-    const managed = payload?.sandboxReceipt?.dependencyTrust === 'managed-ci-attested'
-    exactKeys(payload, managed
-      ? ['dim', 'findings', 'brokerReceipt', 'sandboxReceipt']
-      : ['dim', 'findings', 'transportReceipt', 'accessReceipt', 'sandboxReceipt'], 'judgment payload')
+    exactKeys(payload, ['dim', 'findings', 'transportReceipt', 'accessReceipt', 'sandboxReceipt'], 'judgment payload')
     if (!Number.isInteger(payload.dim) || !Array.isArray(payload.findings)) fail('judgment payload is invalid')
     const coveragePaths = new Set(coverage?.inventoryPaths ?? [])
     payload.findings.forEach((finding, index) => {
       validateJudgmentFinding(finding, `judgment finding[${index}]`)
       if (!coveragePaths.has(finding.path)) fail(`judgment finding path is outside exact coverage:${finding.path}`)
     })
-    if (managed) {
-      try {
-        validateModelBrokerReceipt(payload.brokerReceipt, {
-          coverageInventoryDigest: coverage?.inventoryDigest,
-          managedAttestationBinding: payload.sandboxReceipt?.attestation?.binding,
-        })
-      } catch (error) { fail(`judgment broker receipt is invalid:${error.message}`) }
-    } else {
-      validateModelTransportReceipt(payload.transportReceipt, coverage, 'judgment transport receipt')
-      validateModelAccessReceiptShape(payload.accessReceipt, coverage, 'judgment access receipt')
-    }
+    validateModelTransportReceipt(payload.transportReceipt, coverage, 'judgment transport receipt')
+    validateModelAccessReceiptShape(payload.accessReceipt, coverage, 'judgment access receipt')
     validateSandboxReceipt(payload.sandboxReceipt, manifest, 'judgment sandbox receipt', {
       repoRoot, manifestSha256, now, evidenceKind, selectedProvider, evidenceEnvelopeDigest,
     })
@@ -2138,10 +2083,7 @@ function validatePayload(payload, evidenceKind, {
     return
   }
   if (evidenceKind === 'deep-audit-component-a1b') {
-    const managed = payload?.sandboxReceipt?.dependencyTrust === 'managed-ci-attested'
-    exactKeys(payload, managed
-      ? ['component', 'claimsVerified', 'falseClaims', 'brokerReceipt', 'claimReceipt', 'sandboxReceipt']
-      : ['component', 'claimsVerified', 'falseClaims', 'transportReceipt', 'accessReceipt', 'claimReceipt', 'sandboxReceipt'], 'A1b payload')
+    exactKeys(payload, ['component', 'claimsVerified', 'falseClaims', 'transportReceipt', 'accessReceipt', 'claimReceipt', 'sandboxReceipt'], 'A1b payload')
     nonEmptyString(payload.component, 'A1b payload component')
     if (!Number.isInteger(payload.claimsVerified) || payload.claimsVerified <= 0 || !Array.isArray(payload.falseClaims)) fail('A1b payload is invalid')
     const coveragePaths = new Set(coverage?.inventoryPaths ?? [])
@@ -2149,17 +2091,8 @@ function validatePayload(payload, evidenceKind, {
       validateFalseClaim(finding, `A1b falseClaim[${index}]`)
       if (!coveragePaths.has(finding.path)) fail(`A1b falseClaim path is outside exact coverage:${finding.path}`)
     })
-    if (managed) {
-      try {
-        validateModelBrokerReceipt(payload.brokerReceipt, {
-          coverageInventoryDigest: coverage?.inventoryDigest,
-          managedAttestationBinding: payload.sandboxReceipt?.attestation?.binding,
-        })
-      } catch (error) { fail(`A1b broker receipt is invalid:${error.message}`) }
-    } else {
-      validateModelTransportReceipt(payload.transportReceipt, coverage, 'A1b transport receipt')
-      validateModelAccessReceiptShape(payload.accessReceipt, coverage, 'A1b access receipt')
-    }
+    validateModelTransportReceipt(payload.transportReceipt, coverage, 'A1b transport receipt')
+    validateModelAccessReceiptShape(payload.accessReceipt, coverage, 'A1b access receipt')
     validateComponentClaimReceipt(payload.claimReceipt, payload, { manifest, repoRoot })
     validateSandboxReceipt(payload.sandboxReceipt, manifest, 'A1b sandbox receipt', {
       repoRoot, manifestSha256, now, evidenceKind, selectedProvider, evidenceEnvelopeDigest,

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
-import { readFileSync, realpathSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import {
   evaluateBranchProtectionPolicy,
   materializeExpectedBranchRulesets,
@@ -10,19 +10,9 @@ import {
   parseBranchProtectionArgs,
   resolveManagedRepositoryPolicy,
 } from './check-branch-protection.mjs'
-import {
-  loadGithubMutationBoundaryContract,
-  projectPublicRulesets,
-  sha256,
-  stableJson,
-} from './lib/github-mutation-boundary.mjs'
-import { validateMirrorActivationBoundaryProof } from './verify-mirror-activation-boundary.mjs'
 
 const desired = JSON.parse(readFileSync('infra/governance/desired/github.json', 'utf8'))
 const inventory = JSON.parse(readFileSync('infra/governance/inventory/managed-repos.json', 'utf8'))
-const releaseSourceRoot = realpathSync(process.cwd())
-const mutationContract = loadGithubMutationBoundaryContract({ repoRoot: releaseSourceRoot })
-const proofPath = '/tmp/mirror-activation-boundary-proof.json'
 const integrations = structuredClone(desired.integrations)
 for (const integration of Object.values(integrations)) if (!integration.id) integration.id = 424242
 const expected = materializeExpectedBranchRulesets(desired.profiles['design-system-authority'], integrations)
@@ -76,7 +66,7 @@ const mutations = [
   ['required check removed', rulesets => {
     const rule = rulesets.flatMap(ruleset => ruleset.rules).find(candidate => candidate.type === 'required_status_checks')
     rule.parameters.required_status_checks.pop()
-  }, /differs from exact desired policy/],
+  }, /must contain required status checks|differs from exact desired policy/],
   ['required check App substituted', rulesets => {
     const rule = rulesets.flatMap(ruleset => ruleset.rules).find(candidate => candidate.type === 'required_status_checks')
     rule.parameters.required_status_checks[0].integration_id += 1
@@ -102,27 +92,19 @@ const weakened = structuredClone(desired.profiles['design-system-authority'])
 weakened.rulesets.forEach(ruleset => { ruleset.rules = ruleset.rules.filter(rule => rule.type !== 'non_fast_forward') })
 assert.throws(() => materializeExpectedBranchRulesets(weakened, integrations), /omits non_fast_forward/)
 
-assert.deepEqual(parseBranchProtectionArgs([]), { check: false, repository: null, environment: null, mutationBoundaryOnly: false, activationProof: null, releaseSourceRoot: null })
+assert.deepEqual(parseBranchProtectionArgs([]), { check: false, repository: null, environment: null })
 assert.throws(() => parseBranchProtectionArgs(['--check']), /requires --repository OWNER\/REPO/)
 assert.deepEqual(
   parseBranchProtectionArgs(['--check', '--repository', 'ajenchen/ds-product-template']),
-  { check: true, repository: 'ajenchen/ds-product-template', environment: null, mutationBoundaryOnly: false, activationProof: null, releaseSourceRoot: null },
+  { check: true, repository: 'ajenchen/ds-product-template', environment: null },
 )
 assert.deepEqual(
   parseBranchProtectionArgs(['--repository', 'ajenchen/design-system', '--check']),
-  { check: true, repository: 'ajenchen/design-system', environment: null, mutationBoundaryOnly: false, activationProof: null, releaseSourceRoot: null },
+  { check: true, repository: 'ajenchen/design-system', environment: null },
 )
 assert.deepEqual(
-  parseBranchProtectionArgs(['--check', '--repository', 'ajenchen/design-system', '--environment', 'governance-mirror']),
-  { check: true, repository: 'ajenchen/design-system', environment: 'governance-mirror', mutationBoundaryOnly: false, activationProof: null, releaseSourceRoot: null },
-)
-assert.deepEqual(
-  parseBranchProtectionArgs(['--mutation-boundary-only', '--check', '--repository', 'ajenchen/ds-product-template', '--activation-proof', proofPath, '--release-source-root', releaseSourceRoot]),
-  { check: true, repository: 'ajenchen/ds-product-template', environment: null, mutationBoundaryOnly: true, activationProof: proofPath, releaseSourceRoot },
-)
-assert.deepEqual(
-  parseBranchProtectionArgs(['--check', '--repository', 'ajenchen/design-system', '--environment', 'governance-mirror', '--mutation-boundary-only', '--activation-proof', proofPath, '--release-source-root', releaseSourceRoot]),
-  { check: true, repository: 'ajenchen/design-system', environment: 'governance-mirror', mutationBoundaryOnly: true, activationProof: proofPath, releaseSourceRoot },
+  parseBranchProtectionArgs(['--check', '--repository', 'ajenchen/design-system', '--environment', 'npm-release']),
+  { check: true, repository: 'ajenchen/design-system', environment: 'npm-release' },
 )
 for (const [argv, pattern] of [
   [['--repository', 'ajenchen/design-system'], /only with --check/],
@@ -130,81 +112,24 @@ for (const [argv, pattern] of [
   [['--check', '--repository', 'ajenchen/design-system', '--repository', 'ajenchen/ds-product-template'], /duplicate argument: --repository/],
   [['--check', '--repository'], /requires OWNER\/REPO/],
   [['--check', '--repository', 'not-a-repository'], /must be OWNER\/REPO/],
-  [['--check', '--environment', 'governance-mirror'], /requires --repository OWNER\/REPO/],
-  [['--repository', 'ajenchen/design-system', '--environment', 'governance-mirror'], /allowed only with --check/],
+  [['--check', '--environment', 'npm-release'], /requires --repository OWNER\/REPO/],
+  [['--repository', 'ajenchen/design-system', '--environment', 'npm-release'], /allowed only with --check/],
   [['--check', '--repository', 'ajenchen/design-system', '--environment'], /requires NAME/],
-  [['--check', '--repository', 'ajenchen/design-system', '--environment', '../governance-mirror'], /closed GitHub environment name/],
-  [['--check', '--repository', 'ajenchen/design-system', '--environment', 'governance-mirror', '--environment', 'npm-release'], /duplicate argument: --environment/],
-  [['--mutation-boundary-only'], /only with --check --repository/],
-  [['--check', '--mutation-boundary-only'], /only with --check --repository/],
-  [['--repository', 'ajenchen/design-system', '--mutation-boundary-only'], /only with --check --repository/],
-  [['--check', '--repository', 'ajenchen/design-system', '--environment', 'governance-mirror', '--mutation-boundary-only'], /requires --activation-proof/],
-  [['--check', '--repository', 'ajenchen/design-system', '--environment', 'governance-mirror', '--mutation-boundary-only', '--activation-proof', 'relative.json', '--release-source-root', releaseSourceRoot], /exact absolute path/],
-  [['--check', '--repository', 'ajenchen/design-system', '--environment', 'governance-mirror', '--mutation-boundary-only', '--activation-proof', proofPath, '--release-source-root', 'relative'], /exact absolute path/],
-  [['--check', '--repository', 'ajenchen/design-system', '--environment', 'governance-mirror', '--mutation-boundary-only', '--activation-proof', proofPath, '--release-source-root', releaseSourceRoot, '--mutation-boundary-only'], /duplicate argument: --mutation-boundary-only/],
-  [['--check', '--repository', 'ajenchen/design-system', '--mutation-boundary-only', '--activation-proof', proofPath, '--release-source-root', releaseSourceRoot], /repository\/environment scope differs/],
-  [['--check', '--repository', 'ajenchen/ds-product-template', '--environment', 'governance-mirror', '--mutation-boundary-only', '--activation-proof', proofPath, '--release-source-root', releaseSourceRoot], /repository\/environment scope differs/],
-  [['--check', '--repository', 'ajenchen/ds-product-template', '--activation-proof', proofPath], /allowed only with --mutation-boundary-only/],
+  [['--check', '--repository', 'ajenchen/design-system', '--environment', '../npm-release'], /closed GitHub environment name/],
+  [['--check', '--repository', 'ajenchen/design-system', '--environment', 'npm-release', '--environment', 'governance-external-ledger'], /duplicate argument: --environment/],
+  // The mutation-boundary-only mode was removed 2026-08-04 with the external
+  // activation cluster: its flags must fail closed as unknown arguments.
+  [['--mutation-boundary-only'], /unknown argument: --mutation-boundary-only/],
+  [['--check', '--repository', 'ajenchen/design-system', '--mutation-boundary-only'], /unknown argument: --mutation-boundary-only/],
+  [['--check', '--repository', 'ajenchen/design-system', '--activation-proof', '/tmp/proof.json'], /unknown argument: --activation-proof/],
+  [['--check', '--repository', 'ajenchen/design-system', '--release-source-root', '/tmp'], /unknown argument: --release-source-root/],
   [['--check', '--tag', 'v1.2.3'], /unknown argument: --tag/],
 ]) assert.throws(() => parseBranchProtectionArgs(argv), pattern)
-
-assert.throws(
-  () => observeBranchProtectionPolicy({
-    mutationBoundaryOnly: true,
-    inventory,
-    desired,
-    ghJson: () => { throw new Error('network must not run') },
-  }),
-  /mutation-boundary-only verification requires an explicit repository/,
-)
-assert.throws(
-  () => observeBranchProtectionPolicy({
-    repository: 'ajenchen/design-system',
-    mutationBoundaryOnly: 'true',
-    inventory,
-    desired,
-    ghJson: () => { throw new Error('network must not run') },
-  }),
-  /mutation-boundary-only mode must be boolean/,
-)
 
 const integrationIds = {
   'github-actions': desired.integrations.githubActions.id,
   'qijenchen-governance-check': desired.integrations.governanceCheckApp.id ?? 424241,
   'qijenchen-governance-writer': desired.integrations.governanceWriterApp.id ?? 424242,
-}
-
-function materializePublicRulesets(profile, resolved, repository) {
-  const checks = profile.requiredChecks.map(check => ({
-    context: check.context,
-    integration_id: resolved[check.integration].id,
-  }))
-  return profile.rulesets.map((source, index) => {
-    const ruleset = structuredClone(source)
-    delete ruleset.rollout
-    ruleset.rules = ruleset.rules.map(rule => {
-      if (rule.type !== 'required_status_checks') return rule
-      const normalized = structuredClone(rule)
-      assert.equal(normalized.parameters.fromProfile, true)
-      delete normalized.parameters.fromProfile
-      normalized.parameters.required_status_checks = structuredClone(checks)
-      return normalized
-    })
-    delete ruleset.bypass_actors
-    return {
-      id: 100 + index,
-      name: ruleset.name,
-      target: ruleset.target,
-      source_type: 'Repository',
-      source: repository,
-      enforcement: ruleset.enforcement,
-      created_at: `2026-07-23T00:0${index}:00.000Z`,
-      updated_at: `2026-07-23T00:1${index}:00.000Z`,
-      node_id: `RULESET_${100 + index}`,
-      conditions: ruleset.conditions,
-      rules: ruleset.rules,
-    }
-  })
 }
 
 function observerFixture({
@@ -218,7 +143,6 @@ function observerFixture({
   environmentResponse = null,
   mutateRulesets = () => {},
   appOverrides = {},
-  metadataOnlyRulesets = false,
 } = {}) {
   const selectedRepo = inventoryValue.repositories.find(item => item.github === (repository ?? currentRepository))
   const profile = selectedRepo ? desiredValue.profiles?.[selectedRepo.desiredProfile] : null
@@ -227,14 +151,12 @@ function observerFixture({
     if (integration.id === null) integration.id = integrationIds[integration.slug]
   }
   const rulesets = profile
-    ? metadataOnlyRulesets
-      ? materializePublicRulesets(profile, resolved, selectedRepo.github)
-      : materializeExpectedBranchRulesets(profile, resolved).map((ruleset, index) => ({
-        id: 100 + index,
-        source_type: 'Repository',
-        source: selectedRepo.github,
-        ...ruleset,
-      }))
+    ? materializeExpectedBranchRulesets(profile, resolved).map((ruleset, index) => ({
+      id: 100 + index,
+      source_type: 'Repository',
+      source: selectedRepo.github,
+      ...ruleset,
+    }))
     : []
   mutateRulesets(rulesets)
   const desiredEnvironment = profile?.environments?.find(item => item.name === environmentName)
@@ -300,93 +222,20 @@ function observerFixture({
   return { ghJson, calls, rulesets }
 }
 
-const proofNow = new Date('2026-07-23T01:00:00.000Z')
-const proofObservedAt = '2026-07-23T00:55:00.000Z'
-const proofExpiresAt = '2026-07-23T01:30:00.000Z'
-const baselinePublicRulesets = Object.fromEntries(
-  ['ajenchen/design-system', 'ajenchen/ds-product-template'].map(repository => [
-    repository,
-    observerFixture({ repository, metadataOnlyRulesets: true }).rulesets,
-  ]),
-)
-
-function activationProofFor(overrides = {}) {
-  const publicRulesetsByRepository = {
-    ...baselinePublicRulesets,
-    ...(overrides.publicRulesetsByRepository ?? {}),
-  }
-  const boundary = (repository, scope, requirementId) => ({
-    repository,
-    requirementId,
-    observedAt: proofObservedAt,
-    expiresAt: proofExpiresAt,
-    publicRulesetProjectionDigest: projectPublicRulesets(
-      publicRulesetsByRepository[repository],
-      mutationContract.contract,
-    ).sha256,
-    normalizedRulesetsDigest: mutationContract.contract.desiredBindings[scope].normalizedRulesetsDigest,
-    environmentPolicyDigest: mutationContract.contract.desiredBindings[scope].environmentPolicyDigest,
-    environmentClassification: scope === 'source'
-      ? { kind: 'named-protected-environment', name: 'governance-mirror' }
-      : { kind: 'absent', name: null },
-  })
-  const proof = {
-    schemaVersion: 1,
-    kind: 'mirror-activation-boundary-proof-v1',
-    release: {
-      repository: 'ajenchen/design-system',
-      commit: '1'.repeat(40),
-      tree: '2'.repeat(40),
-    },
-    bindings: {
-      requirementsSha256: sha256(readFileSync('infra/governance/external-activation-requirements.json')),
-      policyDigest: sha256(stableJson(JSON.parse(readFileSync('infra/governance/external-activation-policy.json', 'utf8')))),
-      projectionContractDigest: mutationContract.sha256,
-    },
-    minimumExpiresAt: proofExpiresAt,
-    boundaries: [
-      boundary('ajenchen/design-system', 'source', 'activate-design-system-mirror-mutation-boundary'),
-      boundary('ajenchen/ds-product-template', 'target', 'activate-product-template-mirror-mutation-boundary'),
-    ],
-  }
-  Object.assign(proof, overrides.proof ?? {})
-  return proof
-}
-
-function testActivationProofVerifier({ proof, expectedCommit, expectedTree, expectedExternalActivationRequirementsSha256, now }) {
-  validateMirrorActivationBoundaryProof(proof, { now })
-  assert.equal(expectedCommit, proof.release.commit)
-  assert.equal(expectedTree, proof.release.tree)
-  assert.equal(expectedExternalActivationRequirementsSha256, proof.bindings.requirementsSha256)
-  return proof
-}
-
-function observeMutationBoundary({ fixture, repository, environment = null, proof = activationProofFor(), ...overrides }) {
-  return observeBranchProtectionPolicy({
-    repository,
-    environment,
-    mutationBoundaryOnly: true,
-    activationProof: proof,
-    releaseSourceRoot,
-    mutationBoundaryContract: mutationContract,
-    now: proofNow,
-    clock: () => proofNow,
-    activationProofVerifier: testActivationProofVerifier,
-    inventory,
-    desired,
-    ghJson: fixture.ghJson,
-    ...overrides,
-  })
-}
-
 for (const repository of ['ajenchen/design-system', 'ajenchen/ds-product-template']) {
   const fixture = observerFixture({ repository })
   const result = observeBranchProtectionPolicy({ repository, inventory, desired, ghJson: fixture.ghJson })
   assert.equal(result.ok, true, `${repository} exact managed profile should pass`)
   assert.equal(result.repository, repository)
   assert.equal(result.profileName, inventory.repositories.find(item => item.github === repository).desiredProfile)
-  assert.equal(result.verificationMode, 'FULL')
-  assert.equal(result.actionsWorkflowPermissionsVerified, true)
+  assert.equal(result.defaultBranch, inventory.repositories.find(item => item.github === repository).defaultBranch)
+  assert.equal(result.environmentName, null)
+  assert.deepEqual(result.failures, [])
+  assert.deepEqual(
+    Object.keys(result).sort(),
+    ['defaultBranch', 'environmentName', 'failures', 'ok', 'profileName', 'repository'],
+    'verdict must keep the exact closed shape',
+  )
   assert.equal(fixture.calls.some(args => args[0] === 'repo'), false, 'explicit repository must not be replaced by cwd inference')
   assert.ok(fixture.calls.filter(args => args[0] === 'api').every(args => args[2] === 'GET'), 'checker performed a non-GET GitHub API operation')
   assert.equal(
@@ -396,173 +245,18 @@ for (const repository of ['ajenchen/design-system', 'ajenchen/ds-product-templat
   )
 }
 
-const mutationBoundary = observerFixture({
+const substitutedApp = observerFixture({
   repository: 'ajenchen/design-system',
-  environmentName: 'governance-mirror',
-  metadataOnlyRulesets: true,
-})
-const mutationBoundaryResult = observeMutationBoundary({
-  fixture: mutationBoundary,
-  repository: 'ajenchen/design-system',
-  environment: 'governance-mirror',
-})
-assert.equal(mutationBoundaryResult.ok, true, 'exact signed + live mutation boundary should pass without Administration(read)')
-assert.equal(mutationBoundaryResult.verificationMode, 'MUTATION-BOUNDARY-ONLY')
-assert.equal(mutationBoundaryResult.actionsWorkflowPermissionsVerified, false)
-assert.equal(mutationBoundaryResult.bypassActorsDirectlyObserved, false)
-assert.equal(mutationBoundaryResult.signedActivationProofVerified, true)
-assert.equal(mutationBoundaryResult.publicRulesetProjectionVerified, true)
-assert.equal(
-  mutationBoundary.calls.some(args => args.at(-1).includes('/actions/permissions/workflow')),
-  false,
-  'mutation-boundary-only mode must not read Actions workflow permissions',
-)
-
-const targetMutationBoundary = observerFixture({
-  repository: 'ajenchen/ds-product-template',
-  metadataOnlyRulesets: true,
-})
-const targetMutationBoundaryResult = observeMutationBoundary({
-  fixture: targetMutationBoundary,
-  repository: 'ajenchen/ds-product-template',
-})
-assert.equal(targetMutationBoundaryResult.ok, true, 'target signed + live mutation boundary must pass without a synthetic environment')
-assert.equal(targetMutationBoundaryResult.environmentName, null)
-assert.equal(targetMutationBoundaryResult.publicRulesetProjectionVerified, true)
-
-const mutationBoundaryRulesetDrift = observerFixture({
-  repository: 'ajenchen/design-system',
-  environmentName: 'governance-mirror',
-  metadataOnlyRulesets: true,
-  mutateRulesets: rulesets => { rulesets[0].updated_at = '2026-07-23T00:59:00.000Z' },
-})
-assert.throws(
-  () => observeMutationBoundary({
-    fixture: mutationBoundaryRulesetDrift,
-    repository: 'ajenchen/design-system',
-    environment: 'governance-mirror',
-  }),
-  /live public ruleset projection differs/,
-  'public timestamp drift must invalidate the fresh signed hidden-bypass binding',
-)
-
-const unexpectedlyPrivilegedRuleset = observerFixture({
-  repository: 'ajenchen/design-system',
-  environmentName: 'governance-mirror',
-  metadataOnlyRulesets: true,
-  mutateRulesets: rulesets => { rulesets[0].bypass_actors = [] },
-})
-assert.throws(
-  () => observeMutationBoundary({
-    fixture: unexpectedlyPrivilegedRuleset,
-    repository: 'ajenchen/design-system',
-    environment: 'governance-mirror',
-  }),
-  /unexpectedly exposed bypass actors/,
-  'metadata-only runtime must not silently change authority when bypass actors appear',
-)
-
-const inheritedRuleset = observerFixture({
-  repository: 'ajenchen/design-system',
-  environmentName: 'governance-mirror',
-  metadataOnlyRulesets: true,
-  mutateRulesets: rulesets => {
-    rulesets[0].source_type = 'Organization'
-    rulesets[0].source = 'ajenchen'
-  },
-})
-assert.throws(
-  () => observeMutationBoundary({
-    fixture: inheritedRuleset,
-    repository: 'ajenchen/design-system',
-    environment: 'governance-mirror',
-  }),
-  /parent or foreign ruleset is forbidden/,
-  'includes_parents readback must reject inherited policy instead of treating it as repository-owned',
-)
-
-const expiredAfterRead = observerFixture({
-  repository: 'ajenchen/design-system',
-  environmentName: 'governance-mirror',
-  metadataOnlyRulesets: true,
-})
-assert.throws(
-  () => observeMutationBoundary({
-    fixture: expiredAfterRead,
-    repository: 'ajenchen/design-system',
-    environment: 'governance-mirror',
-    clock: () => new Date('2026-07-23T01:31:00.000Z'),
-  }),
-  /minimum remaining validity|proof has expired/,
-  'proof freshness must be revalidated after all live network reads',
-)
-
-const contractSubstitutionProof = activationProofFor()
-contractSubstitutionProof.bindings.projectionContractDigest = 'f'.repeat(64)
-assert.throws(
-  () => observeMutationBoundary({
-    fixture: mutationBoundary,
-    repository: 'ajenchen/design-system',
-    environment: 'governance-mirror',
-    proof: contractSubstitutionProof,
-  }),
-  /projection contract differs/,
-)
-
-for (const mutate of [
-  contract => { contract.githubApiVersion = '2023-01-01' },
-  contract => { delete contract.githubApiVersion },
-]) {
-  const substitutedContract = structuredClone(mutationContract)
-  mutate(substitutedContract.contract)
-  assert.throws(
-    () => observeMutationBoundary({
-      fixture: mutationBoundary,
-      repository: 'ajenchen/design-system',
-      environment: 'governance-mirror',
-      mutationBoundaryContract: substitutedContract,
-    }),
-    /API version|open or incomplete shape|protocol/,
-  )
-}
-
-const desiredSubstitutionProof = activationProofFor()
-desiredSubstitutionProof.boundaries[0].normalizedRulesetsDigest = 'e'.repeat(64)
-assert.throws(
-  () => observeMutationBoundary({
-    fixture: mutationBoundary,
-    repository: 'ajenchen/design-system',
-    environment: 'governance-mirror',
-    proof: desiredSubstitutionProof,
-  }),
-  /normalized rulesets differ from desired/,
-)
-
-const openProof = activationProofFor()
-openProof.unreviewed = true
-assert.throws(
-  () => observeMutationBoundary({
-    fixture: mutationBoundary,
-    repository: 'ajenchen/design-system',
-    environment: 'governance-mirror',
-    proof: openProof,
-  }),
-  /invalid or open shape/,
-)
-
-const mutationBoundaryAppDrift = observerFixture({
-  repository: 'ajenchen/design-system',
-  environmentName: 'governance-mirror',
-  metadataOnlyRulesets: true,
   appOverrides: { 'qijenchen-governance-check': { id: 999999, slug: 'qijenchen-governance-check' } },
 })
-const mutationBoundaryAppVerdict = observeMutationBoundary({
-  fixture: mutationBoundaryAppDrift,
+const substitutedAppVerdict = observeBranchProtectionPolicy({
   repository: 'ajenchen/design-system',
-  environment: 'governance-mirror',
+  inventory,
+  desired,
+  ghJson: substitutedApp.ghJson,
 })
-assert.equal(mutationBoundaryAppVerdict.ok, false, 'mutation-boundary-only mode must still reject live App ID substitution')
-assert.match(mutationBoundaryAppVerdict.failures.join('\n'), /differs from exact desired policy/)
+assert.equal(substitutedAppVerdict.ok, false, 'live App ID substitution behind an unchanged slug must fail closed')
+assert.match(substitutedAppVerdict.failures.join('\n'), /live GitHub App identity differs from exact desired policy/)
 
 const defaultFixture = observerFixture({ repository: null, currentRepository: 'ajenchen/design-system' })
 const defaultResult = observeBranchProtectionPolicy({ inventory, desired, ghJson: defaultFixture.ghJson })
@@ -603,7 +297,7 @@ for (const mutate of [
 
 const driftedPermissions = observerFixture({
   repository: 'ajenchen/ds-product-template',
-  permissions: { default_workflow_permissions: 'read', can_approve_pull_request_reviews: true },
+  permissions: { default_workflow_permissions: 'read', can_approve_pull_request_reviews: false },
 })
 const permissionVerdict = observeBranchProtectionPolicy({
   repository: 'ajenchen/ds-product-template',
@@ -643,47 +337,47 @@ assert.throws(
   /GitHub App identity is unresolved/,
 )
 
-const mirrorEnvironment = observerFixture({
+const releaseEnvironment = observerFixture({
   repository: 'ajenchen/design-system',
-  environmentName: 'governance-mirror',
+  environmentName: 'npm-release',
 })
-const mirrorEnvironmentVerdict = observeBranchProtectionPolicy({
+const releaseEnvironmentVerdict = observeBranchProtectionPolicy({
   repository: 'ajenchen/design-system',
-  environment: 'governance-mirror',
+  environment: 'npm-release',
   inventory,
   desired,
-  ghJson: mirrorEnvironment.ghJson,
+  ghJson: releaseEnvironment.ghJson,
 })
-assert.equal(mirrorEnvironmentVerdict.ok, true, 'governance-mirror must pass its exact design-system authority profile')
-assert.equal(mirrorEnvironmentVerdict.environmentName, 'governance-mirror')
+assert.equal(releaseEnvironmentVerdict.ok, true, 'npm-release must pass its exact design-system authority profile')
+assert.equal(releaseEnvironmentVerdict.environmentName, 'npm-release')
 assert.deepEqual(
-  mirrorEnvironment.calls.find(args => args.at(-1).includes('/environments/'))?.slice(0, 3),
+  releaseEnvironment.calls.find(args => args.at(-1).includes('/environments/'))?.slice(0, 3),
   ['api', '-X', 'GET'],
   'zero-value environment rules may be omitted while deployment_branch_policy remains exact',
 )
-const environmentCalls = mirrorEnvironment.calls.filter(args => args.at(-1).includes('/environments/'))
+const environmentCalls = releaseEnvironment.calls.filter(args => args.at(-1).includes('/environments/'))
 assert.equal(environmentCalls.length, 1, 'environment readback must use exactly one endpoint')
 assert.equal(environmentCalls[0][2], 'GET', 'environment readback must be GET-only')
 
 const nonDefaultEnvironmentDesired = structuredClone(desired)
-const nonDefaultMirror = nonDefaultEnvironmentDesired.profiles['design-system-authority'].environments.find(item => item.name === 'governance-mirror')
-nonDefaultMirror.waitTimer = 5
-nonDefaultMirror.preventSelfReview = true
-nonDefaultMirror.reviewers = [{ type: 'User', id: 42 }]
+const nonDefaultRelease = nonDefaultEnvironmentDesired.profiles['design-system-authority'].environments.find(item => item.name === 'npm-release')
+nonDefaultRelease.waitTimer = 5
+nonDefaultRelease.preventSelfReview = true
+nonDefaultRelease.reviewers = [{ type: 'User', id: 42 }]
 const omittedNonDefaultRules = observerFixture({
   repository: 'ajenchen/design-system',
   desiredValue: nonDefaultEnvironmentDesired,
-  environmentName: 'governance-mirror',
+  environmentName: 'npm-release',
   environmentResponse: {
     id: 9001,
-    name: 'governance-mirror',
+    name: 'npm-release',
     protection_rules: [{ id: 9103, node_id: 'ENV_BRANCH_POLICY', type: 'branch_policy' }],
     deployment_branch_policy: { protected_branches: true, custom_branch_policies: false },
   },
 })
 const omittedNonDefaultVerdict = observeBranchProtectionPolicy({
   repository: 'ajenchen/design-system',
-  environment: 'governance-mirror',
+  environment: 'npm-release',
   inventory,
   desired: nonDefaultEnvironmentDesired,
   ghJson: omittedNonDefaultRules.ghJson,
@@ -693,21 +387,21 @@ assert.match(omittedNonDefaultVerdict.failures.join('\n'), /wait_timer differs/)
 assert.match(omittedNonDefaultVerdict.failures.join('\n'), /prevent_self_review differs/)
 assert.match(omittedNonDefaultVerdict.failures.join('\n'), /reviewer set differs/)
 
-const templateMirrorEnvironment = observerFixture({
+const templateReleaseEnvironment = observerFixture({
   repository: 'ajenchen/ds-product-template',
-  environmentName: 'governance-mirror',
+  environmentName: 'npm-release',
 })
 assert.throws(
   () => observeBranchProtectionPolicy({
     repository: 'ajenchen/ds-product-template',
-    environment: 'governance-mirror',
+    environment: 'npm-release',
     inventory,
     desired,
-    ghJson: templateMirrorEnvironment.ghJson,
+    ghJson: templateReleaseEnvironment.ghJson,
   }),
-  /environment is not declared by selected desired profile:governance-mirror/,
+  /environment is not declared by selected desired profile:npm-release/,
 )
-assert.equal(templateMirrorEnvironment.calls.length, 0, 'profile-invalid environment must fail before GitHub readback')
+assert.equal(templateReleaseEnvironment.calls.length, 0, 'profile-invalid environment must fail before GitHub readback')
 
 const missingEnvironment = observerFixture({ repository: 'ajenchen/design-system', environmentName: 'missing-environment' })
 assert.throws(
@@ -723,25 +417,25 @@ assert.throws(
 
 const ambiguousEnvironmentDesired = structuredClone(desired)
 ambiguousEnvironmentDesired.profiles['design-system-authority'].environments.push(
-  structuredClone(ambiguousEnvironmentDesired.profiles['design-system-authority'].environments.find(item => item.name === 'governance-mirror')),
+  structuredClone(ambiguousEnvironmentDesired.profiles['design-system-authority'].environments.find(item => item.name === 'npm-release')),
 )
 assert.throws(
   () => observeBranchProtectionPolicy({
     repository: 'ajenchen/design-system',
-    environment: 'governance-mirror',
+    environment: 'npm-release',
     inventory,
     desired: ambiguousEnvironmentDesired,
     ghJson: () => { throw new Error('network must not run') },
   }),
-  /selected desired profile environment is ambiguous:governance-mirror/,
+  /selected desired profile environment is ambiguous:npm-release/,
 )
 
-function environmentFixture(mutator, { metadataOnlyRulesets = false } = {}) {
-  const source = observerFixture({ repository: 'ajenchen/design-system', environmentName: 'governance-mirror', metadataOnlyRulesets })
-  const desiredEnvironment = desired.profiles['design-system-authority'].environments.find(item => item.name === 'governance-mirror')
+function environmentFixture(mutator) {
+  const source = observerFixture({ repository: 'ajenchen/design-system', environmentName: 'npm-release' })
+  const desiredEnvironment = desired.profiles['design-system-authority'].environments.find(item => item.name === 'npm-release')
   const response = {
     id: 9001,
-    name: 'governance-mirror',
+    name: 'npm-release',
     protection_rules: [
       { id: 9101, node_id: 'ENV_WAIT', type: 'wait_timer', wait_timer: desiredEnvironment.waitTimer },
       { id: 9102, node_id: 'ENV_REVIEWERS', type: 'required_reviewers', prevent_self_review: desiredEnvironment.preventSelfReview, reviewers: [] },
@@ -751,30 +445,13 @@ function environmentFixture(mutator, { metadataOnlyRulesets = false } = {}) {
   mutator(response)
   return observerFixture({
     repository: 'ajenchen/design-system',
-    environmentName: 'governance-mirror',
-    metadataOnlyRulesets,
+    environmentName: 'npm-release',
     environmentResponse: response,
     mutateRulesets: rulesets => {
       rulesets.splice(0, rulesets.length, ...source.rulesets)
     },
   })
 }
-
-const mutationBoundaryEnvironmentDrift = environmentFixture(value => {
-  value.protection_rules.find(rule => rule.type === 'wait_timer').wait_timer = 5
-}, { metadataOnlyRulesets: true })
-const mutationBoundaryEnvironmentVerdict = observeMutationBoundary({
-  fixture: mutationBoundaryEnvironmentDrift,
-  repository: 'ajenchen/design-system',
-  environment: 'governance-mirror',
-})
-assert.equal(mutationBoundaryEnvironmentVerdict.ok, false, 'mutation-boundary-only mode must still reject environment drift')
-assert.match(mutationBoundaryEnvironmentVerdict.failures.join('\n'), /wait_timer differs/)
-assert.equal(
-  mutationBoundaryEnvironmentDrift.calls.some(args => args.at(-1).includes('/actions/permissions/workflow')),
-  false,
-  'environment verification in mutation-boundary-only mode must still skip only Actions workflow permissions',
-)
 
 for (const [label, mutate, pattern] of [
   ['weakened deployment branch policy', value => { value.deployment_branch_policy.protected_branches = false }, /deployment branch policy differs/],
@@ -785,7 +462,7 @@ for (const [label, mutate, pattern] of [
   const fixture = environmentFixture(mutate)
   const result = observeBranchProtectionPolicy({
     repository: 'ajenchen/design-system',
-    environment: 'governance-mirror',
+    environment: 'npm-release',
     inventory,
     desired,
     ghJson: fixture.ghJson,
@@ -810,7 +487,7 @@ for (const [label, mutate, pattern] of [
   assert.throws(
     () => observeBranchProtectionPolicy({
       repository: 'ajenchen/design-system',
-      environment: 'governance-mirror',
+      environment: 'npm-release',
       inventory,
       desired,
       ghJson: fixture.ghJson,
@@ -820,4 +497,4 @@ for (const [label, mutate, pattern] of [
   )
 }
 
-console.log('✅ branch-protection paired mutation: FULL direct admin read + fresh signed hidden-state proof + live public ruleset/App/environment readback fail closed')
+console.log('✅ branch-protection FULL observer: exact managed rulesets + live App identity + Actions permissions + environment policy readback all fail closed')
