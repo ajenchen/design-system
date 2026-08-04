@@ -64,7 +64,7 @@ jobs:
         working-directory: apps/template
         run: npm run build
 
-  # The 60 governance hooks are shell, and until now nothing ever executed them on Linux — they were
+  # The governance hooks are shell, and until now nothing ever executed them on Linux — they were
   # only ever run on the maintainer's macOS. That is how BSD-only `stat -c` / `date -d` fallbacks
   # reached cloud sessions, where they silently returned 0 and made every staleness window look
   # infinitely old. Running the suite on ubuntu-24.04 turns cloud portability into a merge-time

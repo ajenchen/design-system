@@ -110,7 +110,7 @@ Bootstrap(AGENTS.md + CLAUDE.md 合計)target ≤ 250 / transition ≤ 400 / har
 | **Stakeholder 產出 / 稽核** | `# 稽核 canonical` |
 | **User 糾正後** | `# 治理 canonical`(home 判斷) |
 | **跨 provider 討論 / 多輪震盪 / 任何 peer 輸出** | 由 `packages/governance/src/provider-review-binding.mjs` `resolveProviderReviewBinding` 依 `packages/governance/canonical/providers.json` 選 peer;產品第二意見 → `/independent-review`;重大 governance/release → `/deep-audit-cross-codex`;詳 `# Independent second opinion` |
-| **PR merge 後 / session start branch 健檢** | `# Git solo-work canonical` |
+| **PR merge 後 / session start branch 健檢** | `# Git / release canonical` |
 
 **找不到** → 進 `# 遇不確定時的協議`；產品／UI／UX SSOT 真取捨不自決，純工程由最高 certified capability 依證據自決並驗證。
 

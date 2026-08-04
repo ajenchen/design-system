@@ -7,7 +7,7 @@
 //   (5) No-resize column ≥ meta.width
 //
 // 改 columnSizeStyle / 切 layout 必跑此 script,fail → exit 1 阻 commit。
-// Run: `npm run test:invariants` 或 `node scripts/data-table-invariants.mjs`
+// Run: `npm run test:datatable-invariants` 或 `node scripts/data-table-invariants.mjs`
 
 import { chromium } from 'playwright'
 import http from 'node:http'

@@ -407,7 +407,7 @@ function controlPlaneFixture(t, {
   })
   const oldWorkflow = 'name: old protected workflow\n'
   writeBootstrapTree(roots.current, {
-    '.github/workflows/sync-design-system.yml': { content: oldWorkflow },
+    '.github/workflows/audit.yml': { content: oldWorkflow },
     'scripts/sync-all.mjs': { content: 'export const version = "old"\n', mode: 0o755 },
     'package.json': { content: oldPackage },
     'apps/local.txt': { content: 'consumer product data\n', mode: 0o644 },
@@ -415,7 +415,7 @@ function controlPlaneFixture(t, {
   if (baseSourceRoot) cpSync(baseSourceRoot, roots.base, { recursive: true })
   else {
     writeBootstrapTree(roots.base, {
-      '.github/workflows/sync-design-system.yml': { content: oldWorkflow },
+      '.github/workflows/audit.yml': { content: oldWorkflow },
       'scripts/sync-all.mjs': { content: 'export const version = "old"\n', mode: 0o755 },
       'package.json': { content: oldPackage },
     })
@@ -426,7 +426,7 @@ function controlPlaneFixture(t, {
     payload: { forkCorpusLockSha256 },
   }, 2)}\n`)
   writeBootstrapTree(roots.incoming, {
-    '.github/workflows/sync-design-system.yml': { content: ordinaryOnly ? oldWorkflow : 'name: reviewed protected workflow\n' },
+    '.github/workflows/audit.yml': { content: ordinaryOnly ? oldWorkflow : 'name: reviewed protected workflow\n' },
     'scripts/sync-all.mjs': {
       content: ordinaryOnly
         ? 'export const version = "old"\n'
@@ -1344,8 +1344,8 @@ test('fleet fanout without a reviewed runtime identity snapshot is not ready and
 
 test('fleet fanout enumerates every registered opt-in product consumer without claiming global template-lineage discovery', () => {
   const propagationContract = readFileSync(new URL('../../../packages/design-system/ds-canonical/skills/knowledge-prune/references/phase-z-cross-repo-ssot-propagation.md', import.meta.url), 'utf8')
-  assert.match(propagationContract, /For each registered opt-in consumer selected in the current ring\/wave/)
-  assert.match(propagationContract, /Unregistered template descendants remain self-service and are not fleet-covered/)
+  assert.match(propagationContract, /owned only by `infra\/governance\/release-workflow\.json`/)
+  assert.match(propagationContract, /reviewed exact-version PRs land in the template and WM/)
   assert.doesNotMatch(propagationContract, /every consumer receives an exact-version PR/i)
 
   const fixture = fleetFixture()
@@ -2227,7 +2227,7 @@ test('reviewed control-plane update materializes only a fresh full snapshot and 
     /stale for the exact roots or governance sources|substituted despite its digest binding/,
   )
   assert.equal(existsSync(fixture.outputRoot), false)
-  const beforeWorkflow = readFileSync(resolve(fixture.roots.current, '.github/workflows/sync-design-system.yml'), 'utf8')
+  const beforeWorkflow = readFileSync(resolve(fixture.roots.current, '.github/workflows/audit.yml'), 'utf8')
   const snapshot = materializeConsumerControlPlaneUpdateSnapshot(fixture)
   assert.equal(snapshot.materializedSnapshotTreeSha256, fixture.plan.expectedSnapshot.treeSha256)
   const gitTreeCheckRoot = resolve(dirname(fixture.outputRoot), 'materialized-git-tree-check')
@@ -2238,7 +2238,7 @@ test('reviewed control-plane update materializes only a fresh full snapshot and 
     execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { cwd: gitTreeCheckRoot, encoding: 'utf8' }).trim(),
   )
   assert.equal(existsSync(fixture.marker), false, 'candidate scripts are copied as data and never executed')
-  assert.equal(readFileSync(resolve(fixture.roots.current, '.github/workflows/sync-design-system.yml'), 'utf8'), beforeWorkflow, 'live consumer root remains untouched')
+  assert.equal(readFileSync(resolve(fixture.roots.current, '.github/workflows/audit.yml'), 'utf8'), beforeWorkflow, 'live consumer root remains untouched')
   assert.equal(
     verifyMaterializedConsumerControlPlaneUpdateSnapshot({ plan: fixture.plan, materializedRoot: fixture.outputRoot }).verificationDigest,
     snapshot.verificationDigest,

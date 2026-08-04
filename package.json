@@ -23,7 +23,6 @@
     "preview": "vite preview",
     "storybook": "npm -w @qijenchen/storybook-config run build && storybook dev -p 6006",
     "build-storybook": "npm -w @qijenchen/storybook-config run build && storybook build --output-dir storybook-static && node scripts/gen-ds-story-manifest.mjs",
-    "tokens:export": "node scripts/export-tokens.mjs",
     "visual-audit": "node scripts/visual-audit.mjs --auto-start",
     "visual-audit:headed": "node scripts/visual-audit.mjs --auto-start --headed",
     "ds:migrate": "node packages/design-system/tools/codemods/cli.mjs",
@@ -118,8 +117,6 @@
     "governance:attest": "node packages/governance/bin/governance.mjs attest --repo . --role ds-author --hooks-off",
     "test:governance-control-plane": "npm -w @qijenchen/governance test",
     "test:governance-harnesses": "node infra/governance/bin/run-harnesses.mjs",
-    "test:governance-fleet": "node --test infra/governance/test/authority-setup.test.mjs infra/governance/test/check-run-trust.test.mjs infra/governance/test/consumerctl.test.mjs infra/governance/test/governance-data.test.mjs infra/governance/test/harness-registry.test.mjs infra/governance/test/harness-runner.test.mjs infra/governance/test/harness-source-inventory.test.mjs infra/governance/test/model-validation.test.mjs infra/governance/test/playwright-runtime.test.mjs infra/governance/test/provider-runtime-conformance.test.mjs infra/governance/test/provider-surface.test.mjs infra/governance/test/release-evidence.test.mjs infra/governance/test/repository-path-topology.test.mjs infra/governance/test/signed-release-tag.test.mjs infra/governance/test/workflow-identity-sync.test.mjs infra/governance/test/workflow-trust.test.mjs",
-    "test:governance-portability-safety": "node scripts/test-governance-build-graph.mjs && node --test scripts/test-governance-protected-roots.mjs scripts/test-plugin-alias-contract.mjs scripts/test-sync-plugin-aliases.mjs scripts/test-score-infra-best-practice.mjs scripts/test-check-codex-freshness-authorization.mjs scripts/test-design-system-codemod.mjs scripts/test-visual-baseline-review.mjs scripts/test-visual-audit-interaction.mjs && node scripts/test-canonical-path-containment.mjs && node scripts/test-claude-permission-policy.mjs && node scripts/test-governance-runtime-evidence.mjs && node scripts/test-calc-self-audit-baseline.mjs && node scripts/test-audit-preflight.mjs && node scripts/test-verify-deep-audit-coverage.mjs && node scripts/test-governance-visual-baselines.mjs && node scripts/test-governance-baseline-mirrors.mjs && node scripts/test-neutral-audit-evidence.mjs && node scripts/test-run-gate-meta-tests-isolation.mjs && npm run --silent test:excluded-gate-meta-tests && npm run --silent test:gate-meta-exclusion-inventory && node scripts/test-provider-lifecycle.mjs && node scripts/test-sync-version-safety.mjs && node scripts/test-instruction-mirror-safety.mjs && node scripts/test-build-fork-filesystem-safety.mjs && node scripts/test-sync-ds-canonical-recovery.mjs && node scripts/test-sync-atomicity.mjs && node scripts/test-sync-memory.mjs && node scripts/test-future-provider-fork-surface.mjs && npm run --silent test:setup-governance && npm run --silent test:governance-evidence-control-plane",
     "test:gate-meta-isolation": "node scripts/test-run-gate-meta-tests-isolation.mjs",
     "test:excluded-gate-meta-tests": "node scripts/test-codex-run-guarded.mjs && node scripts/test-check-src-republish.mjs",
     "test:gate-meta-exclusion-inventory": "node scripts/test-gate-meta-test-exclusion-inventory.mjs",
@@ -134,7 +131,6 @@
     "test:governance-anchor": "node --test scripts/test-governance-anchor-preflight.mjs",
     "test:privileged-change-authorization": "node --test scripts/test-privileged-change-authorization.mjs",
     "test:consumer-source-harness": "node --test scripts/test-consumer-source-harness.mjs",
-    "test:product-template-scaffold": "node --test scripts/test-product-template-scaffold-lock.mjs",
     "test:writer-evidence": "node --test scripts/test-product-template-scaffold-lock.mjs scripts/test-verify-upgrade-evidence.mjs scripts/test-verify-mirror-evidence.mjs scripts/test-verify-mirror-release.mjs"
   },
   "dependencies": {

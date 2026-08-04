@@ -1,7 +1,7 @@
 #!/bin/bash
 # PreToolUse feedback gate: never use protected main/master as an editing workbench.
 # Remote GitHub rulesets are the hard authority; this local hook catches the mistake earlier.
-# SSOT: AGENTS.md # Git solo-work canonical + governance/memory/feedback_solo_dev_workflow.md
+# SSOT: AGENTS.md # Git / release canonical + governance/memory/feedback_solo_dev_workflow.md
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 set -uo pipefail

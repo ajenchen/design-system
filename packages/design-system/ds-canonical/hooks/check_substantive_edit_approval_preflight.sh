@@ -2,8 +2,8 @@
 # check_substantive_edit_approval_preflight.sh — Pre-action gate for substantive design edits.
 #
 # Purpose: PRE-flight 偵測 packages/design-system/src/**.{tsx,ts,css} edit；工程 remediation
-# 依 Standing Authorization 執行，產品／UI／UX 真取捨則須有 current-scope exact
-# target + exact operation-digest 決策證據，否則 P0 BLOCKER(stderr + exit 2)。
+# 依 Standing Authorization 執行，產品／UI／UX 真取捨則須有 user 對 exact target + choice 的
+# 明確核准（operation digest 為可選佐證，不得強制；835b519e 先例），否則 P0 BLOCKER(stderr + exit 2)。
 #
 # 對比 stop_self_audit.sh post-action BLOCKER:本 hook 是 PRE-action gate,
 # 在 edit 落地前就攔(propose-only OR exact target-bound decision evidence),

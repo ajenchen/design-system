@@ -1270,7 +1270,7 @@
           "entryId": "provider-adaptive-independent-review",
           "domain": "second-opinion",
           "kind": "proves",
-          "text": "Deep audit binds explicit author identity to a provider-neutral highest-certified independent-review policy; the selected reviewer provider is distinct from both the author and current provider; source freeze may remain REVIEW-BLOCKED without inventing a peer/model, while prepare and dispatch require an exact distinct provider/profile/model selection receipt.",
+          "text": "Deep audit binds explicit author identity to a provider-neutral highest-certified independent-review policy; the selected reviewer provider is distinct from both the author and current provider; source freeze may remain REVIEW-BLOCKED without inventing a peer/model, while prepare requires an exact distinct provider/profile/model selection receipt.",
           "sourceIds": [
             "provider-skill-semantics",
             "exact-provider-registry",
@@ -1305,7 +1305,7 @@
           "entryId": "provider-adaptive-independent-review",
           "domain": "second-opinion",
           "kind": "proves",
-          "text": "The existing canonical broker protocol prepares ordered content-addressed request envelopes, verifies exact carrier and result closure, persists a cycle-safe immutable portable review bundle plus exact All-Harness receipt archive, and reduces the complete registered 26-judgment plus 64-component task graph without sampling; managed execution reuses the same canonical completion core as a deployment wrapper.",
+          "text": "The model-broker execution layer retired 2026-08-04: judgment and A1b model envelopes fail closed outright, broker or managed receipts are permanently rejected, and the waived self-review route (recorded waiver, self-attested coverage, visible unverifiedModelCoverage) is the only review path a deep-audit run can carry.",
           "sourceIds": [
             "deep-audit-model-evidence-plan",
             "deep-audit-model-evidence-plan-schema",
@@ -1327,7 +1327,7 @@
           "entryId": "provider-adaptive-independent-review",
           "domain": "second-opinion",
           "kind": "proves",
-          "text": "Registered providers resolve the highest policy-eligible certified capability through the provider, capability, certification, invocation and model-release registries; model-backed deep-audit evidence is separately bound to exact selected provider/profile/model authority rather than inferred from the review binding; the same portable content-addressed exchange core accepts either a subscription-entitlement or managed route wrapper without changing canonical semantics.",
+          "text": "Registered providers resolve the highest policy-eligible certified capability through the provider, capability, certification and invocation registries; the entitlement review lane validates peer binding, profile and entitlement readback for the exact target with response substitution fail-closed.",
           "sourceIds": [
             "exact-provider-registry",
             "provider-review-binding-library",
@@ -1424,7 +1424,7 @@
           "entryId": "provider-adaptive-independent-review",
           "domain": "second-opinion",
           "kind": "does-not-prove",
-          "text": "A provider/model is live or promotion-eligible without current signed model-release authority, managed-broker execution evidence and target-bound runtime certification.",
+          "text": "A waived self-review is an independent review; its receipt records the waiver and keeps unverified model coverage visible rather than claiming certified evidence.",
           "sourceIds": [
             "provider-surface-certifications",
             "model-invocation-profiles",
