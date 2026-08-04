@@ -1010,8 +1010,25 @@ function precommit(graph) {
   const unsafe = [...new Set(unstaged.filter((path) => graph.stages.some((stage) => stageSourceMatches(stage, path))))].sort()
   if (unsafe.length) throw new Error(`provider-neutral source files are unstaged/untracked:\n${unsafe.map((path) => `  - ${path}`).join('\n')}`)
   console.log(`→ governance graph affected:${affected.map((stage) => stage.id).join(', ')}`)
-  generateGovernanceBuildGraphAtomically(graph)
+  const receipt = generateGovernanceBuildGraphAtomically(graph)
   stageOutputs(graph)
+  // stageOutputs adds outputs from the working tree. For symlink outputs the transaction accepted
+  // as index-authoritative (this checkout could not rewrite the live link), that add clobbers the
+  // correct index entry back to the stale link — the exact defect that shipped `hooks/scripts`
+  // pointing at the retired mirror. Restore each such entry from its staged target.
+  for (const { path, target } of receipt?.indexAuthoritativeSymlinks ?? []) {
+    const blob = runClosedGit(['hash-object', '-w', '--stdin'], {
+      cwd: ROOT,
+      input: Buffer.from(target),
+      output: 'capture',
+    }).stdout.trim()
+    const result = runClosedGit(['update-index', '--cacheinfo', `120000,${blob},${path}`], {
+      cwd: ROOT,
+      output: 'ignore',
+    })
+    if (result.status !== 0) throw new Error(`failed to restore index-authoritative symlink:${path}`)
+    console.log(`→ staged index-authoritative symlink:${path} -> ${target}`)
+  }
 }
 
 const IS_MAIN = process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))

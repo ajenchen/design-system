@@ -2101,12 +2101,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:13b549b7ca70edbf603f412cf8cc184ab25ad4b8a1ce1c505e3ce4ba3e8d3cef",
+      "hash": "sha256:3234a02b51cdb748c58375e16a02e5c989d0c30c4824f0ec1a5abd2053d57db4",
       "id": "governance-build-graph-runner",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/governance-build-graph.mjs",
-      "size": 49927,
+      "size": 50891,
       "type": "file"
     },
     {
@@ -3381,7 +3381,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 40,
-      "hash": "sha256:e415a3ba2f1fe9fb83c4f4d2337ba877c9e2cba020190ddd15132677fde8520f",
+      "hash": "sha256:383aeac572e6b8816139943eea68e5f7a26043ed2730dda8bfa81b923edec440",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3836,7 +3836,7 @@
         "scripts/generated/"
       ],
       "files": 405,
-      "hash": "sha256:a7cbdc22aada3a95430c440f7780cc6f806968e70cea1502376737f8b14ed6fb",
+      "hash": "sha256:e917ab3cfbcd206a3a23d27428a4055a0bcfab4271a1b45fe5322073f17f4c2e",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

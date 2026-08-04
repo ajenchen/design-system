@@ -38,10 +38,15 @@
 - alias generator 支援 registry 驅動的原子 retarget(temp + rename,永無缺席窗口;
   拒絕覆蓋使用者一般檔案的安全線不變)
 - **實證**:`governance:generate` + `governance:check` 於沙箱內完整通過(exit 0),
-  commit 不再需要任何沙箱外動作。殘餘:本機工作樹的 `hooks/scripts` symlink 與 `.claude/hooks`
-  殘檔在下次非沙箱 git checkout 時自癒;`.claude/settings.json`/`skills`/`commands`/`agents`
+  commit 不再需要任何沙箱外動作。`.claude/settings.json`/`skills`/`commands`/`agents`
   仍是唯讀生成物,但 settings 極少變動、skills/commands/agents 是 Claude Code 原生 discovery
   真消費者(不可拆),其變動頻率遠低於 hooks
+- **第一次 retarget commit 出過一個真 bug(獨立稽核 + CI 各自抓到,已修)**:pre-commit 的
+  `stageOutputs` 在 publish 之後從工作樹 `git add` outputs,把 index 手術過的 symlink 蓋回舊指向
+  → commit 進去的 blob 是 `../.claude/hooks`(所以「下次 checkout 自癒」的說法當時是錯的 ——
+  committed blob 本身就舊)。修法:transaction 回報 index-authoritative symlink 清單,
+  precommit 在 stageOutputs 之後逐一還原 index entry(`governance-build-graph.mjs` precommit 段)。
+  CI fresh checkout 的 `plugin-aliases check` 紅燈是這顆 bug 的機械證據,fail-closed 正常運作
 
 **架構層的根本解(已執行,上述為執行記錄;以下保留原始分析)**:
 runtime 根本不讀 `.claude/hooks/**` ——

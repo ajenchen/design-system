@@ -746,6 +746,7 @@ export function runAtomicAuthorityGenerationTransaction({
   invariant(typeof verifyWorkspace === 'function' && typeof verifyLive === 'function', 'authority generation verification callbacks are invalid')
   const recovered = recoverInterruptedAuthorityGeneration({ root, targetPaths: targets })
   reapAbandonedAuthorityGenerationStaging({ root })
+  const indexAuthoritativeSymlinks = []
   const transactionId = randomUUID()
   const transactionRoot = expectedAuthorityGenerationRoot(root, transactionId)
   const workspaceRoot = join(transactionRoot, 'workspace')
@@ -836,13 +837,16 @@ export function runAtomicAuthorityGenerationTransaction({
       // path). Every fresh checkout materializes the committed link, and the index-aware stage
       // checks in verifyLive still validate the repository, so only this checkout stays stale.
       // Genuine drift — the index absent or disagreeing with the staged content — still publishes.
-      if (
-        entry.before.kind === 'symlink'
-        && entry.after.kind === 'symlink'
-        && gitIndexHoldsExactSymlink(root, entry.path, readlinkSync(join(workspaceRoot, entry.path)))
-      ) {
-        failureInjector?.({ phase: 'after-target', index, entry, transactionId })
-        continue
+      // The skip is reported to the caller: a precommit that stages outputs from the working tree
+      // afterwards would silently clobber the index entry back to the stale link (that is exactly
+      // how the first retarget commit shipped the wrong target), so it must restore these entries.
+      if (entry.before.kind === 'symlink' && entry.after.kind === 'symlink') {
+        const stagedTarget = readlinkSync(join(workspaceRoot, entry.path))
+        if (gitIndexHoldsExactSymlink(root, entry.path, stagedTarget)) {
+          indexAuthoritativeSymlinks.push({ path: entry.path, target: stagedTarget })
+          failureInjector?.({ phase: 'after-target', index, entry, transactionId })
+          continue
+        }
       }
       removeAuthorityEntry(root, entry.path, 'authority generation publish target')
       if (entry.after.present) {
@@ -871,7 +875,7 @@ export function runAtomicAuthorityGenerationTransaction({
     fsyncDirectory(root)
     rmSync(transactionRoot, { recursive: true, force: true })
     fsyncDirectory(dirname(root))
-    return { recovered, transactionId, targetCount: entries.length, authorityFingerprint: authorityBefore }
+    return { recovered, transactionId, targetCount: entries.length, authorityFingerprint: authorityBefore, indexAuthoritativeSymlinks }
   } catch (error) {
     if (journalCreated && pathEntryExists(authorityGenerationJournalPath(root))) {
       try {
