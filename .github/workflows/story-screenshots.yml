@@ -21,10 +21,6 @@ on:
         required: false
         default: false
         type: boolean
-  # 暫時 push trigger(PAT 無 Actions:write;native-parity 驗證完、merge 前移除)
-  push:
-    branches: ['claude/peoplepicker-probe-split']
-    paths: ['packages/design-system/src/components/**']
 
 permissions:
   contents: read
@@ -65,16 +61,11 @@ jobs:
 
       - name: Screenshot stories
         env:
-          # inputs 經 env 傳遞,不直接內插進 shell(script-injection 慣例);push trigger 無 inputs
-          # 時 fallback 桌機 regression set(暫時,隨 push trigger 一起移除)
-          STORIES: ${{ inputs.stories || 'design-system-components-peoplepicker-展示--single,design-system-components-peoplepicker-展示--multi,design-system-components-peoplepicker-展示--clearable,design-system-components-peoplepicker-展示--stack-remove-overlay-probe' }}
-          VIEWPORT: ${{ inputs.viewport || '800x900' }}
+          # inputs 經 env 傳遞,不直接內插進 shell(script-injection 慣例)
+          STORIES: ${{ inputs.stories }}
+          VIEWPORT: ${{ inputs.viewport }}
           TOUCH: ${{ inputs.touch && '--touch' || '' }}
         run: node scripts/story-screenshots.mjs --stories="$STORIES" --viewport="$VIEWPORT" $TOUCH
-
-      - name: Screenshot touch-emulated stories(暫時,隨 push trigger 一起移除)
-        if: ${{ github.event_name == 'push' }}
-        run: node scripts/story-screenshots.mjs --stories='design-system-components-peoplepicker-展示--single,design-system-components-peoplepicker-展示--multi,design-system-components-peoplepicker-展示--clearable,design-system-components-combobox-展示--modes,design-system-components-select-展示--modes' --touch --out=story-screenshots/touch
 
       - name: Upload screenshots
         if: always()
