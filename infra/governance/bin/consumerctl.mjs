@@ -1742,6 +1742,9 @@ function bootstrapSourceInput(flags, inventoryBytes, inventory) {
     candidateRelease: rings.candidateRelease,
     releaseBomBytes: readArtifactBytes(flags['release-bom'], 'release BOM'),
     requiredChecksDigest: flags['required-checks-digest'],
+    // 具名確認的 consumer-owned 路徑(逗號分隔)。空值 = 不確認任何路徑(嚴格預設)。
+    // 每筆都必須真的對應一處 consumer-owned 分歧,否則 fail-closed(禁廣列稀釋)。
+    acknowledgeConsumerOwned: (flags['acknowledge-consumer-owned'] ?? '').split(',').map(v => v.trim()).filter(Boolean),
   }
 }
 
@@ -2000,6 +2003,7 @@ export async function main(argv = process.argv.slice(2), dependencies = {}) {
   if (bootstrapSourceCommands.has(command)) {
     const commonFlags = [
       'inventory', 'rings', 'repo-id', 'root', 'base', 'incoming', 'release-bom', 'required-checks-digest', 'json',
+      'acknowledge-consumer-owned',
     ]
     const commandFlags = {
       'plan-bootstrap': commonFlags,

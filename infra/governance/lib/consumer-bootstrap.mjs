@@ -863,7 +863,10 @@ function candidateCorpusReceipt(binding, incomingRoot, scaffoldLockBytes) {
   }
 }
 
-function buildDecisions(policy, manifests) {
+// acknowledgedConsumerOwned:呼叫端具名確認「這些 consumer-owned 路徑的 incoming 變動不套用,
+// 保留 consumer 現況」。只對 `consumer-owned` 生效;`authority` 分歧永遠 blocking(不可確認)。
+// 清單會進 plan 物件 → planDigest,materialize 以 expected-plan-digest 綁定,竄改即不符。
+function buildDecisions(policy, manifests, acknowledgedConsumerOwned = new Set()) {
   const maps = {
     current: manifestMap(manifests.current),
     base: manifestMap(manifests.base),
@@ -891,6 +894,29 @@ function buildDecisions(policy, manifests) {
     }
 
     if (ownership.mode === 'consumer-owned' || ownership.mode === 'authority') {
+      // consumer 現況已與 incoming 相同 → 沒有任何待決事項,不是衝突(2026-08-05:原本無條件
+      // 只比 base vs incoming,造成「consumer 早就一致卻仍算衝突」的假陽性)。
+      if (!sameState(states.base, states.incoming) && sameState(states.current, states.incoming)) {
+        preserved.push({
+          path,
+          ownershipMode: ownership.mode,
+          owner: ownership.owner,
+          reason: 'already-at-reviewed-snapshot',
+          ...states,
+        })
+        continue
+      }
+      // 具名確認:保留 consumer 現況,且此決定被記錄進 plan(→ planDigest)。
+      if (!sameState(states.base, states.incoming) && ownership.mode === 'consumer-owned' && acknowledgedConsumerOwned.has(path)) {
+        preserved.push({
+          path,
+          ownershipMode: ownership.mode,
+          owner: ownership.owner,
+          reason: 'acknowledged-consumer-owned-divergence',
+          ...states,
+        })
+        continue
+      }
       if (!sameState(states.base, states.incoming)) {
         conflicts.push({
           path,
@@ -1000,8 +1026,19 @@ export function createConsumerBootstrapMaterializationPlan({
   releaseBomBytes,
   requiredChecksDigest,
   protocolLoaded,
+  // 具名確認清單(consumer-owned 路徑)。normalize:去空白、去重、排序 —— 讓同一組確認
+  // 無論輸入順序都得到相同 planDigest;非法輸入 fail-closed。
+  acknowledgeConsumerOwned = [],
 } = {}) {
   exactKeys(roots, ['base', 'current', 'incoming'], 'consumer bootstrap roots')
+  invariant(Array.isArray(acknowledgeConsumerOwned), 'acknowledgeConsumerOwned must be an array of repository paths')
+  const acknowledgedPaths = [...new Set(acknowledgeConsumerOwned.map(entry => {
+    invariant(typeof entry === 'string' && entry.trim().length > 0, 'acknowledgeConsumerOwned entries must be non-empty repository paths')
+    const value = entry.trim()
+    invariant(!value.startsWith('/') && !value.includes('\\') && !value.split('/').some(part => !part || part === '.' || part === '..'),
+      `acknowledgeConsumerOwned entry is not a canonical repository path: ${value}`)
+    return value
+  }))].sort(comparePath)
   const binding = loadBootstrapBindings({ inventoryBytes, repoId, candidateRelease, releaseBomBytes, requiredChecksDigest, protocolLoaded })
   const scanned = {
     current: scanSnapshotRoot(roots.current, 'current consumer snapshot'),
@@ -1016,7 +1053,7 @@ export function createConsumerBootstrapMaterializationPlan({
   }
   const manifests = Object.fromEntries(Object.entries(scanned).map(([name, item]) => [name, item.manifest]))
   const policy = binding.inventory.ownershipPolicies[binding.repository.ownershipPolicy]
-  const decisions = buildDecisions(policy, manifests)
+  const decisions = buildDecisions(policy, manifests, new Set(acknowledgedPaths))
   const expectedSnapshot = expectedManifest(manifests.current, decisions.actions)
   const plan = {
     $schema: CONSUMER_BOOTSTRAP_PLAN_SCHEMA,
@@ -1060,6 +1097,9 @@ export function createConsumerBootstrapMaterializationPlan({
       bootstrapEvidenceContract: binding.profile.bootstrapEvidenceContract,
     },
     roots: manifests,
+    // 具名確認清單進 plan → planDigest;materialize 端以 expected-plan-digest 綁定,
+    // 事後增刪任何一筆都會 digest 不符而 fail-closed。
+    acknowledgedConsumerOwned: acknowledgedPaths,
     ...decisions,
     expectedSnapshot,
     summary: {
@@ -1070,6 +1110,14 @@ export function createConsumerBootstrapMaterializationPlan({
     },
     reviewReady: decisions.conflicts.length === 0,
     planDigest: '',
+  }
+  {
+    const usedForPreservation = new Set(decisions.preserved
+      .filter(entry => entry.reason === 'acknowledged-consumer-owned-divergence')
+      .map(entry => entry.path))
+    const unusedAcknowledgements = acknowledgedPaths.filter(path => !usedForPreservation.has(path))
+    invariant(unusedAcknowledgements.length === 0,
+      `acknowledgeConsumerOwned lists paths with no consumer-owned divergence to acknowledge: ${unusedAcknowledgements.join(', ')}`)
   }
   plan.planDigest = planDigest(plan)
   return validateConsumerBootstrapMaterializationPlan(plan)
@@ -1507,6 +1555,7 @@ export function createConsumerControlPlaneUpdatePlan({
   })
   const { manifests, sourceBindings } = scanned
   const policy = binding.inventory.ownershipPolicies[binding.repository.ownershipPolicy]
+  // control-plane lane 不開放具名確認(其 base/incoming 已由 scaffold lock 綁定,無此需求)
   const decisions = buildDecisions(policy, manifests)
   const protectedControlPlaneChanges = classifyProtectedControlPlaneChanges(roots, manifests)
   invariant(

@@ -5,175 +5,504 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "$schema", "schemaVersion", "kind", "readOnly", "mutationAuthorized",
-    "candidateCodeExecutionAllowed", "repository", "candidate", "protocol", "roots",
-    "actions", "conflicts", "preserved", "expectedSnapshot", "summary", "reviewReady", "planDigest"
+    "$schema",
+    "schemaVersion",
+    "kind",
+    "readOnly",
+    "mutationAuthorized",
+    "candidateCodeExecutionAllowed",
+    "repository",
+    "candidate",
+    "protocol",
+    "roots",
+    "actions",
+    "conflicts",
+    "preserved",
+    "expectedSnapshot",
+    "summary",
+    "reviewReady",
+    "planDigest",
+    "acknowledgedConsumerOwned"
   ],
   "properties": {
-    "$schema": {"const": "https://qijenchen.dev/schemas/consumer-bootstrap-plan-v1.schema.json"},
-    "schemaVersion": {"const": 1},
-    "kind": {"const": "consumer-governance-reviewed-bootstrap-materialization-plan"},
-    "readOnly": {"const": true},
-    "mutationAuthorized": {"const": false},
-    "candidateCodeExecutionAllowed": {"const": false},
-    "repository": {"$ref": "#/$defs/repository"},
-    "candidate": {"$ref": "#/$defs/candidate"},
-    "protocol": {"$ref": "#/$defs/protocol"},
+    "$schema": {
+      "const": "https://qijenchen.dev/schemas/consumer-bootstrap-plan-v1.schema.json"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "consumer-governance-reviewed-bootstrap-materialization-plan"
+    },
+    "readOnly": {
+      "const": true
+    },
+    "mutationAuthorized": {
+      "const": false
+    },
+    "candidateCodeExecutionAllowed": {
+      "const": false
+    },
+    "repository": {
+      "$ref": "#/$defs/repository"
+    },
+    "candidate": {
+      "$ref": "#/$defs/candidate"
+    },
+    "protocol": {
+      "$ref": "#/$defs/protocol"
+    },
     "roots": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["current", "base", "incoming"],
+      "required": [
+        "current",
+        "base",
+        "incoming"
+      ],
       "properties": {
-        "current": {"$ref": "#/$defs/manifest"},
-        "base": {"$ref": "#/$defs/manifest"},
-        "incoming": {"$ref": "#/$defs/manifest"}
+        "current": {
+          "$ref": "#/$defs/manifest"
+        },
+        "base": {
+          "$ref": "#/$defs/manifest"
+        },
+        "incoming": {
+          "$ref": "#/$defs/manifest"
+        }
       }
     },
-    "actions": {"type": "array", "items": {"$ref": "#/$defs/action"}},
-    "conflicts": {"type": "array", "items": {"$ref": "#/$defs/conflict"}},
-    "preserved": {"type": "array", "items": {"$ref": "#/$defs/preserved"}},
-    "expectedSnapshot": {"$ref": "#/$defs/manifest"},
+    "actions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/action"
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/conflict"
+      }
+    },
+    "preserved": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/preserved"
+      }
+    },
+    "expectedSnapshot": {
+      "$ref": "#/$defs/manifest"
+    },
     "summary": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["actions", "conflicts", "preserved", "expectedEntries"],
+      "required": [
+        "actions",
+        "conflicts",
+        "preserved",
+        "expectedEntries"
+      ],
       "properties": {
-        "actions": {"type": "integer", "minimum": 0},
-        "conflicts": {"type": "integer", "minimum": 0},
-        "preserved": {"type": "integer", "minimum": 0},
-        "expectedEntries": {"type": "integer", "minimum": 0}
+        "actions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "conflicts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "preserved": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expectedEntries": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
-    "reviewReady": {"type": "boolean"},
-    "planDigest": {"$ref": "#/$defs/sha256"}
+    "reviewReady": {
+      "type": "boolean"
+    },
+    "planDigest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "acknowledgedConsumerOwned": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/repoPath"
+      },
+      "uniqueItems": true
+    }
   },
   "$defs": {
-    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
-    "gitOid": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
-    "repoPath": {"type": "string", "minLength": 1, "pattern": "^[^\\u0000-\\u001f\\u007f\\\\]+$"},
-    "mode": {"type": "string", "pattern": "^0[0-7]{3}$"},
-    "ownershipMode": {"enum": ["authority", "generated", "upstream-managed", "three-way", "consumer-owned", "ambiguous"]},
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "gitOid": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "repoPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\\u0000-\\u001f\\u007f\\\\]+$"
+    },
+    "mode": {
+      "type": "string",
+      "pattern": "^0[0-7]{3}$"
+    },
+    "ownershipMode": {
+      "enum": [
+        "authority",
+        "generated",
+        "upstream-managed",
+        "three-way",
+        "consumer-owned",
+        "ambiguous"
+      ]
+    },
     "entry": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "mode", "size", "sha256"],
+      "required": [
+        "path",
+        "mode",
+        "size",
+        "sha256"
+      ],
       "properties": {
-        "path": {"$ref": "#/$defs/repoPath"},
-        "mode": {"$ref": "#/$defs/mode"},
-        "size": {"type": "integer", "minimum": 0},
-        "sha256": {"$ref": "#/$defs/sha256"}
+        "path": {
+          "$ref": "#/$defs/repoPath"
+        },
+        "mode": {
+          "$ref": "#/$defs/mode"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
       }
     },
-    "state": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/entry"}]},
+    "state": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/entry"
+        }
+      ]
+    },
     "manifest": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["treeSha256", "entryCount", "entries"],
+      "required": [
+        "treeSha256",
+        "entryCount",
+        "entries"
+      ],
       "properties": {
-        "treeSha256": {"$ref": "#/$defs/sha256"},
-        "entryCount": {"type": "integer", "minimum": 0},
-        "entries": {"type": "array", "items": {"$ref": "#/$defs/entry"}}
+        "treeSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "entryCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entry"
+          }
+        }
       }
     },
     "repository": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "github", "inventorySha256", "ownershipPolicy", "profileId", "postAcceptanceProfile"],
+      "required": [
+        "id",
+        "github",
+        "inventorySha256",
+        "ownershipPolicy",
+        "profileId",
+        "postAcceptanceProfile"
+      ],
       "properties": {
-        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
-        "github": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
-        "inventorySha256": {"$ref": "#/$defs/sha256"},
-        "ownershipPolicy": {"type": "string", "minLength": 1},
-        "profileId": {"const": "legacy-bootstrap-v2"},
-        "postAcceptanceProfile": {"const": "reviewed-bootstrap-established-v2"}
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "github": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "inventorySha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "ownershipPolicy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profileId": {
+          "const": "legacy-bootstrap-v2"
+        },
+        "postAcceptanceProfile": {
+          "const": "reviewed-bootstrap-established-v2"
+        }
       }
     },
     "candidate": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "id", "version", "sourceCommit", "sourceTree", "candidateReleaseSha256", "releaseBomSha256",
-        "consumerLockSha256", "forkCorpusLockSha256", "templateStaticTreeSha256", "requiredChecksDigest"
+        "id",
+        "version",
+        "sourceCommit",
+        "sourceTree",
+        "candidateReleaseSha256",
+        "releaseBomSha256",
+        "consumerLockSha256",
+        "forkCorpusLockSha256",
+        "templateStaticTreeSha256",
+        "requiredChecksDigest"
       ],
       "properties": {
-        "id": {"type": "string", "minLength": 1},
-        "version": {"type": "string", "minLength": 1},
-        "sourceCommit": {"$ref": "#/$defs/gitOid"},
-        "sourceTree": {"$ref": "#/$defs/gitOid"},
-        "candidateReleaseSha256": {"$ref": "#/$defs/sha256"},
-        "releaseBomSha256": {"$ref": "#/$defs/sha256"},
-        "consumerLockSha256": {"$ref": "#/$defs/sha256"},
-        "forkCorpusLockSha256": {"$ref": "#/$defs/sha256"},
-        "templateStaticTreeSha256": {"$ref": "#/$defs/sha256"},
-        "requiredChecksDigest": {"$ref": "#/$defs/sha256"}
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceCommit": {
+          "$ref": "#/$defs/gitOid"
+        },
+        "sourceTree": {
+          "$ref": "#/$defs/gitOid"
+        },
+        "candidateReleaseSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "releaseBomSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "consumerLockSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "forkCorpusLockSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "templateStaticTreeSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "requiredChecksDigest": {
+          "$ref": "#/$defs/sha256"
+        }
       }
     },
     "protocol": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "protocolId", "specificationSha256", "schemaSha256", "implementationSha256",
-        "bootstrapImplementationSha256", "bootstrapPlanSchemaSha256",
-        "bootstrapSnapshotVerificationSchemaSha256", "bootstrapReadbackVerificationSchemaSha256",
-        "bootstrapPromotionProposalSchemaSha256", "managedReposSchemaSha256",
-        "entryMode", "bootstrapEvidenceContract"
+        "protocolId",
+        "specificationSha256",
+        "schemaSha256",
+        "implementationSha256",
+        "bootstrapImplementationSha256",
+        "bootstrapPlanSchemaSha256",
+        "bootstrapSnapshotVerificationSchemaSha256",
+        "bootstrapReadbackVerificationSchemaSha256",
+        "bootstrapPromotionProposalSchemaSha256",
+        "managedReposSchemaSha256",
+        "entryMode",
+        "bootstrapEvidenceContract"
       ],
       "properties": {
-        "protocolId": {"const": "protected-base-reconstruction-v2"},
-        "specificationSha256": {"$ref": "#/$defs/sha256"},
-        "schemaSha256": {"$ref": "#/$defs/sha256"},
-        "implementationSha256": {"$ref": "#/$defs/sha256"},
-        "bootstrapImplementationSha256": {"$ref": "#/$defs/sha256"},
-        "bootstrapPlanSchemaSha256": {"$ref": "#/$defs/sha256"},
-        "bootstrapSnapshotVerificationSchemaSha256": {"$ref": "#/$defs/sha256"},
-        "bootstrapReadbackVerificationSchemaSha256": {"$ref": "#/$defs/sha256"},
-        "bootstrapPromotionProposalSchemaSha256": {"$ref": "#/$defs/sha256"},
-        "managedReposSchemaSha256": {"$ref": "#/$defs/sha256"},
-        "entryMode": {"const": "one-time-reviewed-full-snapshot-pr"},
-        "bootstrapEvidenceContract": {"const": "consumer-governance-bootstrap-readback-v1"}
+        "protocolId": {
+          "const": "protected-base-reconstruction-v2"
+        },
+        "specificationSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "schemaSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "implementationSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "bootstrapImplementationSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "bootstrapPlanSchemaSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "bootstrapSnapshotVerificationSchemaSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "bootstrapReadbackVerificationSchemaSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "bootstrapPromotionProposalSchemaSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "managedReposSchemaSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "entryMode": {
+          "const": "one-time-reviewed-full-snapshot-pr"
+        },
+        "bootstrapEvidenceContract": {
+          "const": "consumer-governance-bootstrap-readback-v1"
+        }
       }
     },
     "action": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "ownershipMode", "owner", "operation", "reason", "base", "current", "incoming"],
+      "required": [
+        "path",
+        "ownershipMode",
+        "owner",
+        "operation",
+        "reason",
+        "base",
+        "current",
+        "incoming"
+      ],
       "properties": {
-        "path": {"$ref": "#/$defs/repoPath"},
-        "ownershipMode": {"enum": ["generated", "upstream-managed", "three-way"]},
-        "owner": {"type": "string", "minLength": 1},
-        "operation": {"enum": ["replace", "delete"]},
-        "reason": {"enum": ["reviewed-full-snapshot-replacement", "three-way-incoming-change"]},
-        "base": {"$ref": "#/$defs/state"},
-        "current": {"$ref": "#/$defs/state"},
-        "incoming": {"$ref": "#/$defs/state"}
+        "path": {
+          "$ref": "#/$defs/repoPath"
+        },
+        "ownershipMode": {
+          "enum": [
+            "generated",
+            "upstream-managed",
+            "three-way"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "enum": [
+            "replace",
+            "delete"
+          ]
+        },
+        "reason": {
+          "enum": [
+            "reviewed-full-snapshot-replacement",
+            "three-way-incoming-change"
+          ]
+        },
+        "base": {
+          "$ref": "#/$defs/state"
+        },
+        "current": {
+          "$ref": "#/$defs/state"
+        },
+        "incoming": {
+          "$ref": "#/$defs/state"
+        }
       }
     },
     "conflict": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "ownershipMode", "owner", "reason", "base", "current", "incoming"],
+      "required": [
+        "path",
+        "ownershipMode",
+        "owner",
+        "reason",
+        "base",
+        "current",
+        "incoming"
+      ],
       "properties": {
-        "path": {"$ref": "#/$defs/repoPath"},
-        "ownershipMode": {"$ref": "#/$defs/ownershipMode"},
-        "owner": {"type": ["string", "null"]},
-        "reason": {"enum": ["ambiguous-ownership", "incoming-touches-non-upstream-owned-path", "three-way-content-conflict"]},
-        "base": {"$ref": "#/$defs/state"},
-        "current": {"$ref": "#/$defs/state"},
-        "incoming": {"$ref": "#/$defs/state"}
+        "path": {
+          "$ref": "#/$defs/repoPath"
+        },
+        "ownershipMode": {
+          "$ref": "#/$defs/ownershipMode"
+        },
+        "owner": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "enum": [
+            "ambiguous-ownership",
+            "incoming-touches-non-upstream-owned-path",
+            "three-way-content-conflict"
+          ]
+        },
+        "base": {
+          "$ref": "#/$defs/state"
+        },
+        "current": {
+          "$ref": "#/$defs/state"
+        },
+        "incoming": {
+          "$ref": "#/$defs/state"
+        }
       }
     },
     "preserved": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "ownershipMode", "owner", "reason", "base", "current", "incoming"],
+      "required": [
+        "path",
+        "ownershipMode",
+        "owner",
+        "reason",
+        "base",
+        "current",
+        "incoming"
+      ],
       "properties": {
-        "path": {"$ref": "#/$defs/repoPath"},
-        "ownershipMode": {"enum": ["authority", "generated", "upstream-managed", "three-way", "consumer-owned"]},
-        "owner": {"type": "string", "minLength": 1},
-        "reason": {"enum": ["consumer-or-authority-owned", "already-at-reviewed-snapshot", "three-way-consumer-only-change"]},
-        "base": {"$ref": "#/$defs/state"},
-        "current": {"$ref": "#/$defs/state"},
-        "incoming": {"$ref": "#/$defs/state"}
+        "path": {
+          "$ref": "#/$defs/repoPath"
+        },
+        "ownershipMode": {
+          "enum": [
+            "authority",
+            "generated",
+            "upstream-managed",
+            "three-way",
+            "consumer-owned"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "enum": [
+            "consumer-or-authority-owned",
+            "already-at-reviewed-snapshot",
+            "three-way-consumer-only-change",
+            "acknowledged-consumer-owned-divergence"
+          ]
+        },
+        "base": {
+          "$ref": "#/$defs/state"
+        },
+        "current": {
+          "$ref": "#/$defs/state"
+        },
+        "incoming": {
+          "$ref": "#/$defs/state"
+        }
       }
     }
   }

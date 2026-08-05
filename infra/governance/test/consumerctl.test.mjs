@@ -1280,9 +1280,88 @@ test('legacy bootstrap readback accepts any inventory-declared legacy product co
   )
 })
 
+test('acknowledged consumer-owned divergence is named, digest-bound, and never silently widened', () => {
+  // 2026-08-05 根因修法:consumer-owned 路徑的 incoming 變動原本一律 blocking(忽略 consumer
+  // 現況),導致任何 consumer 全樹輸入永遠 reviewReady:false;現場繞法是偷偷限縮輸入樹,但那會
+  // 讓 receipt 宣稱比事實更強。改為「具名確認」——每個保留 consumer 現況的路徑都要列出來,
+  // 清單進 planDigest,materialize 端以 expected-plan-digest 綁定。
+  const temporaryRoot = mkdtempSync(join(tmpdir(), 'bootstrap-ack-'))
+  const roots = {
+    current: resolve(temporaryRoot, 'current'),
+    base: resolve(temporaryRoot, 'base'),
+    incoming: resolve(temporaryRoot, 'incoming'),
+  }
+  // apps/** 是 consumer-owned;incoming 動了它(scaffold 每次發版都會動)
+  writeBootstrapTree(roots.current, {
+    '.claude/skills/a.txt': { content: 'old managed file\n', mode: 0o644 },
+    'apps/app.txt': { content: 'consumer product data\n', mode: 0o644 },
+  })
+  writeBootstrapTree(roots.base, {
+    '.claude/skills/a.txt': { content: 'old managed file\n', mode: 0o644 },
+    'apps/app.txt': { content: 'template sample\n', mode: 0o644 },
+  })
+  writeBootstrapTree(roots.incoming, {
+    '.claude/skills/a.txt': { content: 'reviewed managed file\n', mode: 0o644 },
+    'apps/app.txt': { content: 'template sample v2\n', mode: 0o644 },
+  })
+  const release = bootstrapRelease()
+  const context = {
+    inventoryBytes: readFileSync(resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json')),
+    repoId: 'work-management',
+    roots,
+    candidateRelease: release.candidateRelease,
+    releaseBomBytes: release.releaseBomBytes,
+    requiredChecksDigest: '3'.repeat(64),
+  }
+
+  // (1) 未確認 → 仍是 blocking conflict(預設嚴格不變)
+  const unacknowledged = createConsumerBootstrapMaterializationPlan(context)
+  assert.equal(unacknowledged.reviewReady, false)
+  assert.ok(unacknowledged.conflicts.some(entry => entry.path === 'apps/app.txt'))
+  assert.deepEqual(unacknowledged.acknowledgedConsumerOwned, [])
+
+  // (2) 具名確認 → 該路徑改列 preserved,理由具名,計畫可用
+  const acknowledged = createConsumerBootstrapMaterializationPlan({
+    ...context,
+    acknowledgeConsumerOwned: ['apps/app.txt'],
+  })
+  assert.equal(acknowledged.reviewReady, true)
+  assert.deepEqual(acknowledged.acknowledgedConsumerOwned, ['apps/app.txt'])
+  const preservedEntry = acknowledged.preserved.find(entry => entry.path === 'apps/app.txt')
+  assert.equal(preservedEntry?.reason, 'acknowledged-consumer-owned-divergence')
+
+  // (3) 清單改變 → planDigest 必變(事後增刪確認無法冒充同一份計畫)
+  assert.notEqual(acknowledged.planDigest, unacknowledged.planDigest)
+
+  // (4) 確認清單不得含「沒有分歧可確認」的路徑(禁廣列稀釋)
+  assert.throws(
+    () => createConsumerBootstrapMaterializationPlan({
+      ...context,
+      acknowledgeConsumerOwned: ['apps/app.txt', '.claude/skills/a.txt'],
+    }),
+    /no consumer-owned divergence to acknowledge/,
+  )
+
+  // (5) 非法路徑 fail-closed
+  for (const bad of ['/abs/path', 'a/../b', '']) {
+    assert.throws(
+      () => createConsumerBootstrapMaterializationPlan({ ...context, acknowledgeConsumerOwned: [bad] }),
+      /acknowledgeConsumerOwned/,
+    )
+  }
+})
+
 test('consumer registration is a closed, no-mutation proposal constrained to the inventory authority and product ring', () => {
   const managed = readJson(resolve(GOVERNANCE_ROOT, 'inventory/managed-repos.json'))
-  const rings = readJson(resolve(GOVERNANCE_ROOT, 'release-rings.json'))
+  // 註冊的前提是「候選之間」(consumerctl.mjs:315)。測試不得耦合 live rollout 狀態:
+  // 真實 release-rings 在有 immutable candidate 時本來就該拒絕註冊(2026-08-05 實證),
+  // 故此處顯式建構註冊窗口狀態。
+  const rings = (() => {
+    const source = readJson(resolve(GOVERNANCE_ROOT, 'release-rings.json'))
+    const assignments = Object.fromEntries(Object.entries(source.assignments)
+      .map(([id, assignment]) => [id, { ...assignment, candidateReleaseDigest: null }]))
+    return { ...source, candidateRelease: null, assignments }
+  })()
   const roleSurfacePolicy = readJson(resolve(GOVERNANCE_ROOT, 'providers/role-surface-policy.json'))
   const request = {
     repoId: 'pilot-product',
