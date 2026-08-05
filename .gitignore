@@ -146,3 +146,4 @@ reference/
 # both read packages/design-system/ds-canonical/hooks directly; nothing consumes this tree anymore.
 # Ignored so stale local leftovers from pre-removal checkouts cannot be re-added by a broad git add.
 .claude/hooks/
+story-screenshots/

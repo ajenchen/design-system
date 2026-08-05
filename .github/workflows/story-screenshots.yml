@@ -1,0 +1,70 @@
+name: Story Screenshots
+
+# Dispatch-only 工具 lane:對指定 story id 產出 PNG artifact(M13 screenshot verify
+# 的 CI 代跑路徑 — 本機 sandbox 無法啟動瀏覽器時用)。非 required check、無排程,
+# 不進 five-step release blocking graph。
+
+on:
+  workflow_dispatch:
+    inputs:
+      stories:
+        description: 'Comma-separated storybook story ids'
+        required: true
+        type: string
+      viewport:
+        description: 'Viewport WxH'
+        required: false
+        default: '800x900'
+        type: string
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash -eo pipefail {0}
+
+jobs:
+  screenshots:
+    name: Screenshot requested stories
+    runs-on: ubuntu-24.04
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: '0'
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install and audit with the lock-verified npm runtime
+        run: npm run --silent setup:dependencies
+
+      - name: Install Playwright chromium
+        run: npm run --silent setup:playwright -- --with-deps
+
+      - name: Build DS lib + types
+        run: npm run build:lib 2>&1 | tail -5
+
+      - name: Build Storybook
+        run: npm run build-storybook 2>&1 | tail -5
+
+      - name: Screenshot stories
+        env:
+          # inputs 經 env 傳遞,不直接內插進 shell(script-injection 慣例)
+          STORIES: ${{ inputs.stories }}
+          VIEWPORT: ${{ inputs.viewport }}
+        run: node scripts/story-screenshots.mjs --stories="$STORIES" --viewport="$VIEWPORT"
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: story-screenshots
+          path: story-screenshots/
+          if-no-files-found: error
