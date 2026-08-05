@@ -985,6 +985,17 @@ function buildDecisions(policy, manifests, acknowledgedConsumerOwned = new Set()
         reason: 'three-way-consumer-only-change',
         ...states,
       })
+    } else if (acknowledgedConsumerOwned.has(path)) {
+      // 三方皆不同的真實情境:consumer 的 package.json / lock 與 template 本質不同名。
+      // 具名確認 = 明確選擇保留 consumer 現況,並把該選擇記進 plan → planDigest。
+      // (未確認時仍為 blocking conflict,預設嚴格不變。)
+      preserved.push({
+        path,
+        ownershipMode: ownership.mode,
+        owner: ownership.owner,
+        reason: 'acknowledged-three-way-divergence',
+        ...states,
+      })
     } else {
       conflicts.push({
         path,
@@ -1113,7 +1124,7 @@ export function createConsumerBootstrapMaterializationPlan({
   }
   {
     const usedForPreservation = new Set(decisions.preserved
-      .filter(entry => entry.reason === 'acknowledged-consumer-owned-divergence')
+      .filter(entry => entry.reason === 'acknowledged-consumer-owned-divergence' || entry.reason === 'acknowledged-three-way-divergence')
       .map(entry => entry.path))
     const unusedAcknowledgements = acknowledgedPaths.filter(path => !usedForPreservation.has(path))
     invariant(unusedAcknowledgements.length === 0,

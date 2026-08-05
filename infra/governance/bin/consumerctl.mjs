@@ -1959,6 +1959,9 @@ export async function main(argv = process.argv.slice(2), dependencies = {}) {
     'scaffold-lock': 'string',
     'baseline-receipt': 'string',
     'required-checks-digest': 'string',
+    // 具名確認的路徑清單(逗號分隔);涵蓋 consumer-owned 與 three-way 兩種 ownership 的
+    // consumer-retained 分歧。authority 分歧永不可確認。
+    'acknowledge-consumer-owned': 'string',
     output: 'string',
     'materialized-root': 'string',
     readback: 'string',

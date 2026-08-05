@@ -1,7 +1,7 @@
 <!-- Authority/status: governance/planning/registry.json -->
 # work-management reviewed bootstrap —— 已驗證程序、真實阻擋點與根因修法
 
-**狀態**:reference(**不可照現況執行** —— 見「為什麼現在不執行」;根因修好後才可跑)
+**狀態**:reference(內容升級已完成;僅剩 profile promotion 待獨立 attestation —— 見「為什麼現在不執行」;根因修好後才可跑)
 **建立 / 最後更新**:2026-08-05
 **適用**:consumer `ajenchen/work-management`(profile `legacy-bootstrap-v2`,現停在 0.1.0-beta.111)
 **目標版本**:0.1.0-beta.115(最新 immutable release;template main 對應 mirror commit `10e3160`)
@@ -34,7 +34,27 @@
 - **Step 0 已完成**(PR #68):`release-rings.json` 的 candidate 已由 v0.1.0-beta.115 的 release
   BOM bytes 機械推導寫入,三個 assignment digest 同步重設,`governance:check` PASS。
 
-## 為什麼現在不執行(真正的阻擋點)
+## 執行結果(2026-08-05,已完成)
+
+根因修法(DS PR #71 + #72 具名確認機制)落地後,本程序**已實跑完成**:
+
+- `plan-bootstrap`:reviewReady **true**、conflicts **0**、actions 7、preserved 251
+  planDigest `9fc9ec23a4377e46…`;三個 consumer-retained 分歧具名確認並進入 digest
+  (`apps/template/package.json` consumer-owned;`package.json`、`package-lock.json` three-way)
+- `requiredChecksDigest` = `087dde12e2038a17…`,由 `infra/governance/desired/github.json`
+  的 product-consumer profile `requiredChecks` 以 `sha256(stableStringify(...))` 推導(可重現,非佔位)
+- `materialize-bootstrap` → 258 entries;`check-bootstrap-materialization` 獨立重算通過
+- WM PR #47 的 `Verify consumer` 綠 → squash merge `e7133806`
+- **讀回 WM protected main:`package.json` 與 `package-lock.json` 皆為 0.1.0-beta.115** ✅
+
+**剩餘一步(human-only)**:`check-bootstrap-readback` → `plan-bootstrap-promotion` 需要
+`reviewAuthorization`(`kind: independent-engineering-attestation`,含 actorId /
+ authorizationDigest / authorizedAt)。作者不能自簽,故待獨立審查者提供。其餘 25/30 欄位已由
+本次執行的真實事實填妥:`governance/planning/2026-08-05-wm-bootstrap-readback-template.json`。
+完成 promotion 後 WM profile 才會由 `legacy-bootstrap-v2` 進 `reviewed-bootstrap-established-v2`,
+之後即享 ordinary sync。
+
+## 原本的阻擋點(已解除,保留記錄)
 
 `plan-bootstrap` 對 consumer-owned 路徑**只比 `--base` vs `--incoming`,完全忽略 consumer 現況
 `current`**(`consumer-bootstrap.mjs:893-894`)。而 scaffold 的 `apps/**` 每次發版必變、

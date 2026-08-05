@@ -491,7 +491,8 @@
             "consumer-or-authority-owned",
             "already-at-reviewed-snapshot",
             "three-way-consumer-only-change",
-            "acknowledged-consumer-owned-divergence"
+            "acknowledged-consumer-owned-divergence",
+            "acknowledged-three-way-divergence"
           ]
         },
         "base": {

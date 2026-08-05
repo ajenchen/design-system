@@ -111,6 +111,12 @@
       "reason": "Closed incomplete beta.108 Deep Audit record: immutable historical CI dimensions 64/66 remain explicitly unpassed, while the future canonical producer contract is repaired release-neutrally."
     },
     {
+      "path": "governance/planning/2026-08-05-wm-bootstrap-readback-template.json",
+      "status": "reference",
+      "executable": false,
+      "reason": "WM reviewed bootstrap 的 readback 模板:25/30 欄位由本次實跑的真實事實填妥,reviewAuthorization(獨立工程師 attestation)待補 —— 作者不得自簽。"
+    },
+    {
       "path": "governance/planning/2026-08-05-wm-reviewed-bootstrap.md",
       "status": "reference",
       "executable": false,
