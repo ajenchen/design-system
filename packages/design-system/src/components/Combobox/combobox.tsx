@@ -711,7 +711,10 @@ function NativeCombobox({
               // z-10;wrap 分支 OverflowTagList 無 wrapper div 時尤其必要);pointer-events-none 讓
               // 非互動顯示區 tap 穿透 overlay(spec「點擊任何位置喚起原生 picker」);[&_button]:auto
               // 回收 remove X / Tag onRemove 點擊。
-              ? <span className="relative z-10 min-w-0 flex-1 inline-flex items-center pointer-events-none [&_button]:pointer-events-auto">{tagRenderer(item, () => handleRemove(item.value))}</span>
+              // 幾何必須與 OverflowTagList non-wrap wrapper(`shrink-0 max-w-full`,L312)一致:
+              // wrap 分支 renderer 輸出是 flex row 的直接子項,若帶 `flex-1` 會被拉伸填滿列寬
+              // (2026-08-05 user 抓「手機兩顆 tag gap 怪」的 root cause)。
+              ? <span className="relative z-10 shrink-0 max-w-full inline-flex items-center pointer-events-none [&_button]:pointer-events-auto">{tagRenderer(item, () => handleRemove(item.value))}</span>
               : <Tag size={size} className="shrink-0 relative z-10" onClick={() => { selectRef.current?.showPicker?.(); selectRef.current?.focus() }}
                   onRemove={() => handleRemove(item.value)}>{item.label}</Tag>
           )}

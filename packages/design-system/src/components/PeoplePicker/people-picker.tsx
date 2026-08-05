@@ -177,8 +177,11 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   // (`multiDisplay='pill'` + Tag `avatar` prop),每顆 pill 自帶 X = Combobox tag 移除 SSOT。
   // 桌機(fine pointer)完全不受影響:仍是 avatar stack + 圓形 +N + hover X。
   // consumer 顯式傳 'pill' 時本行為 no-op(同值)。hook 必在任何 early return 前呼叫(React #310)。
+  // **只在 form surface 降階**(2026-08-05):table-cell / inline-edit / toolbar 維持 stack —
+  // cell 的 view↔edit 像素對齊與固定列高契約不得被 pill 的 wrap 破壞(user:「尤其是 table
+  // 的部分」)。cell 觸控編輯本就走原生 picker,移除成員在 picker 內完成。
   const isTouch = useIsTouchDevice()
-  const effectiveMultiDisplay = isTouch && isMulti ? 'pill' : multiDisplay
+  const effectiveMultiDisplay = isTouch && isMulti && surface === 'form' ? 'pill' : multiDisplay
 
   // 2026-07-05 D3 P0 修:以下派生 + 4 hooks 原宣告在 view/readonly/single/pill 四個 early return
   // 之後 — 同一 mounted instance 的 resolvedMode 於 edit↔view/disabled 切換(<Field mode>/<Field

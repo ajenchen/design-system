@@ -339,6 +339,7 @@
         "scripts/test-governance-runtime-evidence.mjs",
         "scripts/test-governance-visual-baselines.mjs",
         "scripts/test-hook-evidence-plan.mjs",
+        "scripts/test-hover-revealed-affordances.mjs",
         "scripts/test-instruction-mirror-safety.mjs",
         "scripts/test-neutral-audit-evidence.mjs",
         "scripts/test-plugin-alias-contract.mjs",
