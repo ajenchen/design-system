@@ -120,6 +120,10 @@ function validateArgs(args, environment, root) {
   const allowed = new Set([
     'install', 'ci', 'audit', 'signatures', '--prefix', suppliedPrefix, '--package-lock-only',
     '--ignore-scripts', '--legacy-peer-deps', '--no-audit', '--no-fund', '--audit-level=high',
+    // 2026-08-05:強制向 registry 重新驗證 packument。CI runner 還原的 npm cache 會回吐
+    // stale metadata,令 --package-lock-only 產出釘住前一版的 lock(beta.112/113 兩次實證)。
+    // 供應鏈語意上只增加新鮮度驗證、不放寬任何來源或完整性檢查。
+    '--prefer-online',
     `--registry=${REGISTRY}`,
   ])
   invariant(args.every((value) => allowed.has(value)), `npm ${command} contains an unreviewed option`)
