@@ -58,8 +58,10 @@ export const Default: Story = {
     }
 
     // ── Pattern A:submit 在最後一步,送出後整個 wizard 替換成 success banner ──
-    // 世界級 wizard UX(Ant / Linear / Stripe 常見):最後一步的 submit 按下後,
-    // stepper 不再顯示,改成一個 success card(+ 重置 button for demo 用)。
+    // Pattern A:最後一步 submit 按下後 stepper 不再顯示,整個 wizard 替換成
+    // success card;「再填一份申請」是成功頁的真實產品 action(Google Forms
+    // 「Submit another response」同款,https://support.google.com/docs/answer/2839588),
+    // 非 demo 治具。
     if (submitted) {
       return (
         <div className="w-[480px] flex flex-col gap-4 p-6 bg-muted rounded-md border border-border">

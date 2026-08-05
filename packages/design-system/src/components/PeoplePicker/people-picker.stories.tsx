@@ -122,7 +122,6 @@ const MultiPicker = () => {
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">edit（可互動,多選）</h3>
         <PeoplePicker value={val} people={samplePeople} onChange={setVal} aria-label="專案協作者(edit multi demo)" />
-        <Button variant="text" size="xs" onClick={() => setVal(samplePeople.slice(0, 4))}>重設協作者</Button>
       </div>
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">readonly</h3>
@@ -145,7 +144,6 @@ export const Multi: Story = {
     await waitFor(() => expect(canvas.getByRole('button', { name: '移除 Diana Huang' })).toHaveFocus())
     await userEvent.click(canvas.getByRole('button', { name: '移除 Diana Huang' }))
     await waitFor(() => expect(canvas.getByRole('combobox', { name: '專案協作者(edit multi demo)' })).toHaveFocus())
-    await userEvent.click(canvas.getByRole('button', { name: '重設協作者' }))
   },
 }
 
