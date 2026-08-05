@@ -20,11 +20,6 @@ updates:
       - "dependencies"
       - "auto-sync"
 
-  # GitHub Actions — workflows 自己 dep 也跟
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 3
-    labels:
-      - "ci"
+  # (github-actions 生態已移除 2026-08-05:action pins 屬 DS-managed 檔案
+  #  (audit.yml 等 digest 綁 governance/lock.json),consumer 端 bump PR 永遠
+  #  不可 merge;升級由 DS canonical 集中處理並經 release 傳播。)
