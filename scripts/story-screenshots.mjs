@@ -38,8 +38,9 @@ let failures = 0
 for (const id of stories) {
   await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(600)
-  // story 404 / render error 必須顯性 fail,不可產出誤導性空白截圖
-  const errorText = await page.locator('.sb-show-errordisplay, .sb-nopreview').count()
+  // story 404 / render error 必須顯性 fail,不可產出誤導性空白截圖。
+  // 必以 :visible 過濾 — .sb-nopreview 正常渲染時也存在(僅 hidden),裸 count 全數誤報(2026-08-05 首跑實證)
+  const errorText = await page.locator('.sb-show-errordisplay:visible, .sb-nopreview:visible').count()
   const file = join(outDir, `${id.replaceAll('/', '_')}.png`)
   await page.screenshot({ path: file, fullPage: true })
   if (errorText > 0) {
