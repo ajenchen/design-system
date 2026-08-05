@@ -440,3 +440,9 @@ package.json 十餘條 ceremony scripts;test-governance-build-graph:658-662 期�
 - **E consumer overlay-alias 遷移**:已由 WM #40 receiver align 步驟永久解決(機械讀安裝 contract,未來 bump 免手動);DS 側 transaction 不需改。
 - **F receipts retention**:`.claude/logs` 502 檔為 planning/memory/archive 的歷史證據連結(load-bearing),保留;未來若需瘦身走 archive-to-release-assets 工具(LOW,未 justify)。
 - **G branch sprawl**:本地 44→14(30 刪,12 個 tree-not-in-main 保守保留)+ remote 全清(僅 main)。
+
+### §8.8 beta.110/111 consumer 傳播與 provenance 修復(2026-08-05)
+
+- **beta.110 五步完成**:#52 → b078a474 → tag+dispatch → immutable+npm 讀回 → template #30(mirror 首跑 lock 停 109 = 發版後 registry 傳播時差,redispatch 後綠)+ WM #44(手工全量一致,0 diagnostics)。
+- **WM sync-all 首戰連環牆(續 §8.6)**:6) WM 樹 hoist 的 brace-expansion 5.0.8 使 GOV-DEPENDENCY-BOOTSTRAP-001 exact preimage 多一個 node → WM #43 overrides 釘 5.0.9(與 DS 同形)。7) **GOV-SUPPLY-002 真相 = DS 端形狀 bug**:npm 11.19 `audit signatures --json` 只輸出 `{invalid,missing}`,從無 `verified` 陣列;verifiedProvenanceStatement 要求假想形狀 → consumer sync-all 交易永紅(路徑先前無測試,首次在 CI 跑到)。修法(#53):audit 保留為失敗閘;SLSA bundles 改由 registry attestations endpoint 讀回,同 DSSE/predicate 封閉驗證;對 production beta.110 attestations live 驗證;新增 test-upgrade-provenance-shape(7 負例)入 harness。
+- **beta.111**:承載 #53;WM 最後一次手工 sync 把修復 scripts 帶上 WM main;**beta.112+ consumer 升級恢復全自動**(前提鏈:sync-all 入口 #40 + journal gitignore #40 + tar alias #40 + extraheader #41 + brace pin #43 + provenance 形狀 #53 全數落 WM main)。
