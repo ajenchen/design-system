@@ -47,6 +47,11 @@
 - WM PR #47 的 `Verify consumer` 綠 → squash merge `e7133806`
 - **讀回 WM protected main:`package.json` 與 `package-lock.json` 皆為 0.1.0-beta.115** ✅
 
+**下一輪的執行順序(2026-08-05 user 選 B;必守)**:attestation 依契約必須**早於 merge**
+(`consumer-upgrade-protocol.mjs:184` `authorizedAt <= mergedAt <= observedAt`)。本輪先 merge 才想到
+要簽,導致此輪 promotion 無法在不造假的前提下完成 —— 下次發版跑 bootstrap 時,**PR 綠燈後先停下
+取得 user 的 exact 授權(該時刻即 authorizedAt),再 merge**,然後 readback + promotion 一次做完。
+
 **剩餘一步(human-only)**:`check-bootstrap-readback` → `plan-bootstrap-promotion` 需要
 `reviewAuthorization`(`kind: independent-engineering-attestation`,含 actorId /
  authorizationDigest / authorizedAt)。作者不能自簽,故待獨立審查者提供。其餘 25/30 欄位已由
