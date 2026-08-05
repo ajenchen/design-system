@@ -348,7 +348,9 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         'bg-surface-strong text-on-emphasis hover:bg-surface-strong-hover',
         // a11y(codex P1 fix):opacity 而非 display:none — element 在 DOM/tab-order,
         // keyboard 可達。Hover / focus-within / focus-visible 三條件之一觸發。
-        'opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100 focus-visible:opacity-100',
+        // Touch 恆顯(2026-08-05 user 拍板 A 案):`(pointer: coarse)` 無 hover 可觸發 →
+        // pointer-coarse variant 直接 opacity-100;桌機(fine pointer)維持 hover-gated 不變。
+        'opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100',
         'transition-opacity duration-150 motion-reduce:duration-0',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       ].join(' ')}

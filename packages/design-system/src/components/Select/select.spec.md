@@ -241,9 +241,11 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 **`selectedItemRenderer` 優先於兩種顯示模式**(2026-07-08 A 案回歸修正):設定時已選值改渲 consumer renderer 輸出(status icon+text / PersonDisplay 等),且 **edit / view / readonly / disabled 4 mode 共享同一 renderer**(`field-controls.spec.md` 共享 contract (a),禁 edit-only)。renderer 輸出屬「值內容」— `mode="view"` 照常渲染(無 chrome 無 chevron);與 affordance(chevron/outline)分層見 `field.spec.md` L6。
 
+**雙分支同 SSOT(2026-08-05 修)**:觸控 NativeSelect edit 有值時同樣渲 renderer 輸出為可見層(native `<select>` 沿 tag 模式既有透明 overlay pattern,tap 開原生 picker;空值走原生 placeholder)——先前 native edit 只顯 option 純文字,PeoplePicker 手機單人因此無 avatar = touch 分支漏接 display 層(canonical 違反)。**Root invariant:display-layer renderer props 必雙分支(Custom/Native)同消費;新增 renderer-affecting prop 必同步 NativeSelect。**
+
 ### plain 模式
 
-- 桌面使用 custom trigger + SelectMenu；觸控裝置使用 NativeSelect 的純文字 + ChevronDown
+- 桌面使用 custom trigger + SelectMenu；觸控裝置使用 NativeSelect 的純文字 + ChevronDown(`selectedItemRenderer` 設定時觸控同渲 renderer 輸出,見「雙分支同 SSOT」段)
 - **Icon-binding 矩陣**(icon kind canonical,2026-05-09 clarified):
 
 | Icon 角色 | Prop | 語意 | 色彩 | 優先序 |

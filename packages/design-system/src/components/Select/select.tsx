@@ -537,7 +537,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
         aria-required={fieldCtx?.required || undefined}
         aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
         aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
-        className={cn(bareInputStyles, 'cursor-pointer appearance-none', !value && 'text-fg-muted', !isTextDisplay && value && 'absolute inset-0 w-full h-full opacity-0 z-0')}
+        className={cn(bareInputStyles, 'cursor-pointer appearance-none', !value && 'text-fg-muted', value && (!isTextDisplay || selectedItemRenderer) && 'absolute inset-0 w-full h-full opacity-0 z-0')}
         {...props}
       >
         {placeholder && <option value="" disabled>{placeholder}</option>}
@@ -559,6 +559,27 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     const label = selectedOpt?.label ?? value
     const nativeTagVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
     const SelectedOptIcon = selectedOpt?.icon
+
+    // Display-layer parity(2026-08-05 user 拍板):selectedItemRenderer 有值 → 渲 renderer 輸出為
+    // 可見層(PeoplePicker 單人手機 = avatar+人名,與桌機同 SSOT),native <select> 沿 tag 模式既有
+    // pattern 作透明 overlay(tap 開原生 picker)。原 native edit 只顯 option 純文字 = touch 分支
+    // 從未接 display 層的病根。空值 fall through 原分支(native placeholder)。selectedOpt 查無
+    // (async options 未到)→ fallback {value,label:value},renderer 端自行降級(initials)。
+    if (selectedItemRenderer && value) {
+      return (
+        <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'relative', className)}
+          style={{ paddingRight: 'var(--field-px)' }} data-field-mode="edit" data-error={error ? '' : undefined}>
+          {/* wrapper class 對齊 select.tsx CustomSelect renderer wrapper + PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS
+              (flex-1 min-w-0 → 長名 truncate 有 width constraint);pointer-events-none → tap 穿透到 select overlay */}
+          <span className="relative z-10 pointer-events-none flex-1 min-w-0 inline-flex items-center">
+            {selectedItemRenderer(selectedOpt ?? { value, label: value })}
+          </span>
+          {selectEl}
+          {clearEl}
+          {chevronEl}
+        </div>
+      )
+    }
 
     if (!isTextDisplay) {
       return (

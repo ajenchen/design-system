@@ -623,6 +623,11 @@ function focusAfterTagRemoval(container: HTMLElement | null, owner: HTMLElement 
 function NativeCombobox({
   mode, variant: variantProp, width, error = false, size = 'md', options, value = [], onChange, placeholder,
   className, disabled: disabledProp, wrap = false, clearable = false, showDisplayEndIcon = false,
+  // Display-layer parity(2026-08-05 user 拍板):renderer / overflow props 必雙分支(custom/native)
+  // 同消費 — 原 native 硬編碼 <Tag> 令 PeoplePicker 手機 edit 掉回文字 pill、avatar stack 全滅
+  // (touch 分支從未接 display 層的病根)。新增 renderer-affecting prop 時必同步本 destructure。
+  tagRenderer, renderHiddenTag, tagWrapperClassName, overflowWrapperClassName,
+  overflowShape, visibleCountOverride, tagAreaGapPx, tagAreaPaddingLeftPx,
   __triggerRef,
   'aria-label': ariaLabel,
 }: ComboboxInternalProps) {
@@ -655,6 +660,7 @@ function NativeCombobox({
   const items = value.map(v => ({ value: v, label: options.find(o => o.value === v)?.label ?? v }))
   const unselected = options.filter(o => !value.includes(o.value))
   const tagHeight = size === 'sm' ? 20 : 24
+  const tagAreaGap = tagAreaGapPx ?? GAP
 
   const selectDropdown = unselected.length > 0 ? (
     <select ref={selectRef} value="" onChange={(e) => handleAdd(e.target.value)}
@@ -684,13 +690,25 @@ function NativeCombobox({
           edit path tagArea 對齊 view path L293 已 ship 的 `overflow-hidden` fix。原 `overflow-visible`
           讓 tag 視覺越界蓋 chevron / +N indicator(useOverflowCount measurement 對但 CSS overflow 仍露)。
           M10 violation root cause:2026-05-15 F1 Q3 只 fix display path,edit + Native(L518)沒同步。 */}
-      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: GAP }}
+      {/* Display-layer parity(2026-08-05):OverflowTagList 消費與 CustomCombobox(L859-867)同一組
+          renderer / overflow props — tagRenderer 存在(PeoplePicker avatar stack 等)→ 手機 edit 與
+          桌機同視覺;未傳 → 原 <Tag> 文字 pill 預設不變。 */}
+      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}
         onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}>
         <OverflowTagList containerRef={tagAreaRef} items={items} size={size} wrap={wrap}
+          tagWrapperClassName={tagWrapperClassName}
+          overflowWrapperClassName={overflowWrapperClassName}
+          gap={tagAreaGap}
+          overflowShape={overflowShape}
+          visibleCountOverride={visibleCountOverride}
           renderTag={(item) => (
-            <Tag size={size} className="shrink-0 relative z-10" onClick={() => { selectRef.current?.showPicker?.(); selectRef.current?.focus() }}
-              onRemove={() => handleRemove(item.value)}>{item.label}</Tag>
-          )} onRemove={handleRemove} trailing={value.length === 0 ? selectDropdown : undefined} />
+            tagRenderer
+              ? tagRenderer(item, () => handleRemove(item.value))
+              : <Tag size={size} className="shrink-0 relative z-10" onClick={() => { selectRef.current?.showPicker?.(); selectRef.current?.focus() }}
+                  onRemove={() => handleRemove(item.value)}>{item.label}</Tag>
+          )}
+          renderHiddenTag={renderHiddenTag}
+          onRemove={handleRemove} trailing={value.length === 0 ? selectDropdown : undefined} />
       </div>
       {value.length > 0 && selectDropdown}
       <ItemSuffix className={cn('relative z-10 pointer-events-none', wrap && 'self-start')}

@@ -195,6 +195,17 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 ---
 
+## 觸控裝置(native 分支)
+
+觸控裝置(`(pointer: coarse)`,`use-is-touch-device.ts`)上 wrapped Select / Combobox 切至 native 分支(下拉 = 原生 `<select>` picker)。**Display 層與桌機同 SSOT — 「Trigger display SSOT canonical table」§B-§D 對觸控同樣成立**(2026-08-05 user 拍板;先前 native 分支硬編碼純文字/文字 Tag,手機 edit 單人無 avatar、多人掉回矩形 pill = canonical 違反,已修):
+
+- **單人 edit**:avatar + 人名(`selectedItemRenderer` 經 NativeSelect 透明 overlay pattern,見 `select.spec.md`「雙分支同 SSOT」);無 inline search,tap 開原生選單
+- **多人 edit**:avatar stack + 圓形 +N(display props 由 NativeCombobox 消費,見 `combobox.spec.md`「Display 層雙分支同 SSOT」)
+- **移除鈕恆顯**:touch 無 hover → `AvatarDismissOverlay` 以 `pointer-coarse:opacity-100` 恆顯(2026-08-05 user 拍板 A 案;桌機 fine pointer 維持 hover / focus 才顯,DOM/tab-order 兩端一致)
+- 一鍵清空 X(`clearable`)由基座 native 分支自行渲染,觸控同樣可用
+
+---
+
 ## PersonValue 型別
 
 ```tsx

@@ -179,6 +179,8 @@ Combobox 依裝置走兩條不同實作（觸控偵測自動切換）：
 
 **手機 / 觸控裝置**:改用隱藏的原生 `<select>`（tab-focusable，方向鍵導覽，原生 picker），以保留行動裝置 screen reader / 語音輸入 / OS-level 整合。有值時這個 `<select>` 以全幅透明 overlay 蓋住整個欄位，點擊任何位置都會喚起原生 picker。
 
+**Display 層雙分支同 SSOT(2026-08-05 修)**:NativeCombobox 的 OverflowTagList 消費與 CustomCombobox **同一組** renderer / overflow props(`tagRenderer` / `renderHiddenTag` / `tagWrapperClassName` / `overflowWrapperClassName` / `overflowShape` / `visibleCountOverride` / `tagAreaGapPx` / `tagAreaPaddingLeftPx`)——`tagRenderer` 存在(如 PeoplePicker avatar stack)時手機 edit 與桌機同視覺;未傳維持原 `<Tag>` 文字 pill 預設。先前 native 硬編碼 `<Tag>`,PeoplePicker 手機 edit 掉回文字 pill = touch 分支漏接 display 層(canonical 違反)。**Root invariant:新增 renderer-affecting prop 必同步 NativeCombobox destructure。**
+
 兩條路徑共通點：欄位內多個 `<div>` / `<Tag>` 上的 `onClick` 是 mouse 優化的點擊區，**不是鍵盤介面**——鍵盤使用者不經過它們，但兩條路徑都已各自提供完整鍵盤可達性。
 
 **為什麼這些 click target 不加 `role="button" tabIndex`**: 若每個點擊區都加 `tabIndex={0}` 會搶走真正聚焦目標（桌機的 combobox 容器 / 手機的原生 select）的 tab focus，反而破壞鍵盤體驗。「單一鍵盤聚焦點 + 多個滑鼠點擊區」是混合型控制項的世界級 canonical pattern（Material / Atlassian / GitHub issue filter 共識）。
