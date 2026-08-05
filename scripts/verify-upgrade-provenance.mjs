@@ -403,23 +403,27 @@ function collectVerifiedPayloads(value, payloads, visited = new Set()) {
   }
 }
 
-export function verifiedProvenanceStatement(auditReport, expected) {
+// npm 11.19 `audit signatures --json` emits only the closed `{invalid, missing}`
+// failure sets — there is no `verified` bundle array in the JSON output (the
+// human formatter's "verified" line is CLI-only). The audit report therefore
+// gates registry signature/attestation FAILURES, while the per-package SLSA
+// provenance bundles are read back directly from the canonical registry
+// attestations endpoint and passed in by the caller.
+export function verifiedProvenanceStatement(auditReport, expected, attestationReadback) {
   if (!auditReport || !Array.isArray(auditReport.invalid) || !Array.isArray(auditReport.missing)) {
     throw new Error('npm signature audit JSON has an invalid closed result shape')
   }
   if (auditReport.invalid.length || auditReport.missing.length) {
     throw new Error('npm signature audit contains invalid or missing registry evidence')
   }
-  if (!Array.isArray(auditReport.verified)) {
-    throw new Error('npm signature audit lacks --json verified provenance bundles')
+  if (attestationReadback?.registry !== 'https://registry.npmjs.org/') {
+    throw new Error(`${expected.name}@${expected.version}: attestation readback came from a non-canonical registry`)
   }
-  const matches = auditReport.verified.filter((item) => item?.name === expected.name && item?.version === expected.version)
-  if (matches.length !== 1) throw new Error(`${expected.name}@${expected.version}: expected exactly one verified npm attestation entry`)
-  if (matches[0].registry !== 'https://registry.npmjs.org/') {
-    throw new Error(`${expected.name}@${expected.version}: verified attestation came from a non-canonical registry`)
+  if (!Array.isArray(attestationReadback.attestations) || attestationReadback.attestations.length === 0) {
+    throw new Error(`${expected.name}@${expected.version}: canonical registry returned no attestation bundles`)
   }
   const payloads = new Set()
-  collectVerifiedPayloads(matches[0].attestationBundles, payloads)
+  collectVerifiedPayloads(attestationReadback.attestations, payloads)
   const statements = []
   for (const payload of payloads) {
     let statement
@@ -673,6 +677,18 @@ async function fetchOk(fetchImpl, url, options, label) {
   return response
 }
 
+// Canonical-registry attestation readback for one exact package release. npm's
+// own `audit signatures --json` never exposes the verified bundles, so the SLSA
+// provenance statements are read back from the registry attestations endpoint
+// and validated with the same DSSE/predicate closure as before.
+export async function fetchNpmAttestationReadback({ name, version }, { fetchImpl = fetch } = {}) {
+  const registry = 'https://registry.npmjs.org/'
+  const url = `${registry}-/npm/v1/attestations/${encodeURIComponent(name)}@${encodeURIComponent(version)}`
+  const response = await fetchOk(fetchImpl, url, { headers: { Accept: 'application/json' } }, `${name}@${version} npm attestation`)
+  const body = await response.json()
+  return { registry, attestations: body?.attestations }
+}
+
 export async function resolveImmutableReleaseSnapshot({
   repository,
   tag,
@@ -859,7 +875,7 @@ export async function resolveImmutableReleaseSnapshot({
   }
 }
 
-export async function verifyUpgradeProvenance({ auditReport, packages, version, policy, releaseLookup = resolveImmutableReleaseSnapshot, ordinaryRelease = false }) {
+export async function verifyUpgradeProvenance({ auditReport, packages, version, policy, releaseLookup = resolveImmutableReleaseSnapshot, ordinaryRelease = false, attestationLookup = fetchNpmAttestationReadback }) {
   validateUpgradeTrustPolicy(policy)
   if (!Array.isArray(packages) || packages.length !== policy.upgradePackages.length) {
     throw new Error('upgrade provenance requires the exact trusted package set')
@@ -879,7 +895,8 @@ export async function verifyUpgradeProvenance({ auditReport, packages, version, 
   })
   const immutable = validateImmutableReleaseSnapshot({ ...snapshot, packages, version, policy, ordinaryRelease })
   for (const item of packages) {
-    const statement = verifiedProvenanceStatement(auditReport, item)
+    const attestationReadback = await attestationLookup(item)
+    const statement = verifiedProvenanceStatement(auditReport, item, attestationReadback)
     validateProvenanceStatement(statement, {
       ...item,
       repository: policy.repository,
