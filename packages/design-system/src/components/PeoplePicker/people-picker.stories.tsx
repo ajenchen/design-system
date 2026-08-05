@@ -134,6 +134,17 @@ const MultiPicker = () => {
 export const Multi: Story = {
   name: '多人',
   render: () => <MultiPicker />,
+}
+
+// Roving-focus 契約 probe:逐一移除 chip 時焦點依序落到下一個移除鈕,移除
+// 最後一人後回到 combobox。破壞性互動(清空全員)只屬測試,不得寄生在
+// reader-facing 展示 story(anchor:2026-08-05 user 抓「多人一打開就自己清空」;
+// 前身還為此加過「重設協作者」假 UI,ccf83b24)。story-rules「Technical probe
+// visibility」canonical:標 test-only,自 sidebar/Autodocs 排除,test runner 照跑。
+export const MultiRemoveFocusContract: Story = {
+  name: '移除焦點接力驗證',
+  tags: ['test-only'],
+  render: () => <MultiPicker />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(await canvas.findByRole('button', { name: '移除 Alice Chen' }))
