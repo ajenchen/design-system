@@ -17,7 +17,6 @@ const PATHS = {
   deep: 'scripts/schemas/deep-audit-evidence-contract.schema.json',
   observation: 'scripts/schemas/ci-evidence-observation.schema.json',
   standardObservation: 'scripts/schemas/standard-ci-evidence-observation.schema.json',
-  modelReleaseAuthority: 'infra/governance/schemas/managed-ci-model-release-authority-binding.schema.json',
 }
 const readSchema = path => JSON.parse(readFileSync(resolve(ROOT, path), 'utf8'))
 const schemas = Object.fromEntries(Object.entries(PATHS).map(([name, path]) => [name, readSchema(path)]))

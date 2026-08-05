@@ -808,13 +808,11 @@ function fleetFixture({
       id: 'ring-canary',
       order: 2,
       purpose: 'Fixture product wave.',
-      minimumSoakHours: 72,
       maxParallel: 1,
       waves: [{ id: 'canary', order: 0, maxParallel: 1 }],
       promotionPredicates: [
         { id: 'upstream', type: 'upstream-waves-promoted' },
         { id: 'manual', type: 'manual-blockers-clear' },
-        { id: 'soak', type: 'soak-observation' },
         { id: 'checks', type: 'required-checks-green' },
         { id: 'surfaces', type: 'provider-surfaces-certified', surfaces: managed.repositories[0].providerSurfacesRequired },
         { id: 'waiver', type: 'no-active-waiver-at-or-above', risk: 'high' },

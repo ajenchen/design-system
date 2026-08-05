@@ -26,13 +26,12 @@ import {
   validateImmutableModelForProfile,
   validateProviderResponseSelector,
 } from './model-api-transport.mjs'
-import { loadModelReleaseRegistry, resolvePromotionEligibleModelRelease } from './model-release-registry.mjs'
+import { loadModelReleaseRegistry } from './model-release-registry.mjs'
 import { verifyProviderCliRuntimeForCertification } from '../setup-provider-cli-toolchain.mjs'
 
 export {
   buildBrokerApiRequest,
   loadModelReleaseRegistry,
-  resolvePromotionEligibleModelRelease,
   selectBrokerApiResult,
   selectBrokerResultWithSelector,
   validateBrokerApiProfile,

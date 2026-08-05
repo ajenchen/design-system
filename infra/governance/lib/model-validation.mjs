@@ -41,17 +41,17 @@ const EVIDENCE_KINDS = new Set(['command-output', 'artifact-digest', 'github-che
 const WAIVER_STATUSES = new Set(['active', 'expired', 'revoked', 'closed'])
 const WAIVER_RISKS = new Set(['low', 'medium', 'high', 'critical'])
 const WAIVER_CONTROL_TYPES = new Set(['ruleset', 'required-check', 'environment', 'provider-surface', 'ownership', 'compatibility'])
+// soak-complete / soak-observation retired 2026-08-05 with the soak time
+// ceremony (canon: soak is non-blocking/retired for the standard profile);
+// their absence from this closed enum fail-closes any reintroduction.
 const PROMOTION_PREDICATE_TYPES = new Set([
   'manual-blockers-clear',
-  'soak-complete',
-  'soak-observation',
   'required-checks-green',
   'provider-surfaces-certified',
   'no-active-waiver-at-or-above',
   'plan-conflict-free',
   'upstream-waves-promoted',
 ])
-const SOAK_PREDICATE_TYPES = new Set(['soak-complete', 'soak-observation'])
 const CANONICAL_MANAGED_ENVIRONMENT_NAMES = Object.freeze([
   'npm-release',
   'governance-upgrade',
@@ -255,7 +255,7 @@ export function validateReleaseRings(inventory, rings, {
     invariant(!ringOrders.has(ring.order), `Duplicate release ring order ${ring.order}`)
     if (ringIndex > 0) invariant(rings.rings[ringIndex - 1].order < ring.order, 'Release rings must be declared in strictly increasing order')
     nonEmptyString(ring.purpose, `Release ring ${ring.id} purpose must be a non-empty string`)
-    invariant(Number.isInteger(ring.minimumSoakHours) && ring.minimumSoakHours >= 1, `Release ring ${ring.id} minimumSoakHours must be a positive integer`)
+    invariant(ring.minimumSoakHours === undefined, `Release ring ${ring.id} carries the retired soak field minimumSoakHours`)
     invariant(Number.isInteger(ring.maxParallel) && ring.maxParallel >= 1, `Release ring ${ring.id} maxParallel must be a positive integer`)
     invariant(Array.isArray(ring.waves) && ring.waves.length > 0, `Release ring ${ring.id} must define waves`)
     const waveIds = new Set()
@@ -269,7 +269,6 @@ export function validateReleaseRings(inventory, rings, {
       waveOrders.add(wave.order)
     }
     invariant(Array.isArray(ring.promotionPredicates) && ring.promotionPredicates.length > 0, `Release ring ${ring.id} must define typed promotion predicates`)
-    invariant(ring.promotionPredicates.filter(predicate => SOAK_PREDICATE_TYPES.has(predicate.type)).length === 1, `Release ring ${ring.id} must define exactly one soak policy`)
     const predicateIds = new Set()
     for (const predicate of ring.promotionPredicates) {
       invariant(typeof predicate.id === 'string' && predicate.id.trim() !== '', `Release ring ${ring.id} predicate id is required`)
@@ -313,7 +312,7 @@ export function validateReleaseRings(inventory, rings, {
     invariant(repo.releaseRing === assignment.ring, `Release-ring drift for ${repo.id}`)
     const enteredAt = validDate(assignment.enteredAt, `Invalid release-ring enteredAt for ${repo.id}`)
     invariant(assignment.candidateReleaseDigest === candidateReleaseDigest, `Release-ring candidate digest was not reset for ${repo.id}`)
-    if (candidateObservedAt) invariant(enteredAt >= candidateObservedAt, `Release-ring soak for ${repo.id} predates the verified candidate release`)
+    if (candidateObservedAt) invariant(enteredAt >= candidateObservedAt, `Release-ring entry for ${repo.id} predates the verified candidate release`)
     invariant(Array.isArray(assignment.manualBlockers), `Release-ring manualBlockers must be an array for ${repo.id}`)
     for (const blocker of assignment.manualBlockers) nonEmptyString(blocker, `Release-ring manual blocker must be non-empty for ${repo.id}`)
     if (assignment.applyAuthorization) {

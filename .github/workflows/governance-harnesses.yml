@@ -1,0 +1,49 @@
+name: Governance harnesses(nightly)
+
+# The full 13-domain governance harness suite (~65 minutes) is deliberately kept
+# out of the PR gate (ci.yml documents that trade-off). Until now it had NO CI
+# execution lane at all, so harness-only tests could rot on main for days
+# (2026-08-04/05 lean audit: three such breakages). This nightly lane bounds
+# that rot window to one day without slowing pull requests. It is not a
+# required check and never blocks the five-step release.
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.repository }}-governance-harnesses
+  cancel-in-progress: false
+
+jobs:
+  all-harness:
+    name: All-Harness(full governance suite)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - name: Checkout protected main
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Provision lock-matched Playwright browsers
+        run: npm run setup:playwright -- --with-deps
+
+      - name: Run the full governance harness suite
+        run: npm run --silent test:governance-harnesses
