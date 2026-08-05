@@ -15,12 +15,6 @@
 /.devcontainer/ @ajenchen
 
 # Managed-CI activation trust bundle (explicit defense in depth)
-/infra/governance/providers/managed-ci-model-release-authority-policy.json @ajenchen
-/infra/governance/schemas/managed-ci-model-release-authority-policy.schema.json @ajenchen
-/infra/governance/schemas/managed-ci-model-release-authority-binding.schema.json @ajenchen
-/scripts/lib/model-release-authority.mjs @ajenchen
-/scripts/test-fixtures/model-release-authority-fixture.mjs @ajenchen
-/scripts/test-model-release-authority.mjs @ajenchen
 /scripts/governance-build-graph.json @ajenchen
 
 # Protected external-ledger writer (explicit defense in depth)

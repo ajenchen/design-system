@@ -501,42 +501,6 @@
       "required": true
     },
     {
-      "id": "managed-ci-model-release-authority-policy",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/providers/managed-ci-model-release-authority-policy.json",
-      "required": true
-    },
-    {
-      "id": "managed-ci-model-release-authority-policy-schema",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/schemas/managed-ci-model-release-authority-policy.schema.json",
-      "required": true
-    },
-    {
-      "id": "managed-ci-model-release-authority-binding-schema",
-      "ownerRepo": "design-system",
-      "path": "infra/governance/schemas/managed-ci-model-release-authority-binding.schema.json",
-      "required": true
-    },
-    {
-      "id": "managed-ci-model-release-authority-library",
-      "ownerRepo": "design-system",
-      "path": "scripts/lib/model-release-authority.mjs",
-      "required": true
-    },
-    {
-      "id": "managed-ci-model-release-authority-fixture",
-      "ownerRepo": "design-system",
-      "path": "scripts/test-fixtures/model-release-authority-fixture.mjs",
-      "required": true
-    },
-    {
-      "id": "managed-ci-model-release-authority-tests",
-      "ownerRepo": "design-system",
-      "path": "scripts/test-model-release-authority.mjs",
-      "required": true
-    },
-    {
       "id": "external-surface-import-receipt-schema",
       "ownerRepo": "design-system",
       "path": "infra/governance/schemas/external-surface-import-receipt.schema.json",

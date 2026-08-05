@@ -500,7 +500,7 @@ test('governance model rejects role-surface drift and requires exact ledger/inve
   )
 })
 
-test('release-ring policy rejects omitted gates, weakened soak and parallelism, reordered roles, and self-declared evidence', () => {
+test('release-ring policy rejects omitted gates, retired soak reintroduction, weakened parallelism, reordered roles, and self-declared evidence', () => {
   const expectRejection = (mutate, pattern) => {
     const poisoned = structuredClone(externalRuntimeRings)
     mutate(poisoned)
@@ -529,8 +529,15 @@ test('release-ring policy rejects omitted gates, weakened soak and parallelism, 
     },
     /rings schema validation failed/,
   )
+  // soak retired 2026-08-05: reintroducing the field or predicate fails closed
   expectRejection(
     value => { productReleaseRing(value).minimumSoakHours = 1 },
+    /rings schema validation failed/,
+  )
+  expectRejection(
+    value => {
+      productReleaseRing(value).promotionPredicates.push({ id: 'post-release-soak-observation', type: 'soak-observation' })
+    },
     /rings schema validation failed/,
   )
   expectRejection(
@@ -541,7 +548,6 @@ test('release-ring policy rejects omitted gates, weakened soak and parallelism, 
     value => {
       const ring = productReleaseRing(value)
       ring.order = 3
-      ring.minimumSoakHours = 24
       ring.promotionPredicates = ring.promotionPredicates
         .filter(predicate => predicate.type !== 'upstream-waves-promoted')
       ring.promotionPredicates
@@ -577,7 +583,6 @@ test('release-ring policy rejects omitted gates, weakened soak and parallelism, 
   )
 
   for (const mutate of [
-    value => { productReleaseRing(value).minimumSoakHours = 0 },
     value => { productReleaseRing(value).maxParallel = 999999 },
     value => {
       productReleaseRing(value).promotionPredicates = productReleaseRing(value).promotionPredicates

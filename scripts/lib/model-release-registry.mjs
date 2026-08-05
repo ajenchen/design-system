@@ -3,11 +3,6 @@ import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs'
 import { isAbsolute, relative, resolve, sep } from 'node:path'
 import Ajv2020 from 'ajv/dist/2020.js'
 import addFormats from 'ajv-formats'
-import {
-  modelReleaseAuthoritySha256,
-  stableModelReleaseAuthorityStringify,
-  validateModelReleaseAuthorityBinding,
-} from './model-release-authority.mjs'
 
 export const DEFAULT_MODEL_RELEASE_REGISTRY = 'infra/governance/providers/model-release-registry.json'
 export const DEFAULT_MODEL_RELEASE_REGISTRY_SCHEMA = 'infra/governance/schemas/model-release-registry.schema.json'
@@ -115,81 +110,8 @@ export function loadModelReleaseRegistry({
   }
 }
 
-export function resolvePromotionEligibleModelRelease({
-  state,
-  profile,
-  providerId,
-  requestModelId,
-  authorityBinding,
-  authorityPolicyState,
-  issuerRegistry,
-} = {}) {
-  if (!state?.byId || !profile || profile.providerId !== providerId) {
-    fail('release resolution inputs are invalid')
-  }
-  const id = `${providerId}/${requestModelId}`
-  if (!profile.modelIdentity?.allowedModelReleaseIds?.includes(id)) fail(`release is not allowed by the selected transport profile:${id}`)
-  const record = state.byId.get(id)
-  if (!record || record.providerId !== providerId || record.requestModelId !== requestModelId || record.id !== id) {
-    fail(`release is absent from the protected registry:${id}`)
-  }
-  if (record.promotionEligible !== false || record.identityAssurance !== 'reviewed-provider-documentation-assertion'
-    || record.responseModelPolicy.kind !== 'exact' || record.responseModelPolicy.expectedModelId !== requestModelId
-    || record.weightProof !== 'not-provided'
-    || record.reproducibilityScope !== 'request-response-evidence-only-serving-infrastructure-may-vary') {
-    fail(`canonical record is not the exact fail-closed identity-only claim:${id}`)
-  }
-  let authority
-  try {
-    authority = validateModelReleaseAuthorityBinding(authorityBinding, {
-      policyState: authorityPolicyState,
-      releaseState: state,
-      profileState: { profiles: { [providerId]: profile } },
-      issuerRegistry,
-    })
-  } catch (error) {
-    fail(`external four-document authority binding is required and invalid:${error.message}`)
-  }
-  if (authority.binding.modelReleaseId !== id
-    || authority.binding.requestModelId !== requestModelId
-    || authority.binding.observedResponseModelId !== requestModelId) {
-    fail(`external authority binding is detached from the selected provider/model:${id}`)
-  }
-  const effectivePromotionBinding = {
-    schemaVersion: 1,
-    kind: 'externally-verified-model-release-promotion-v1',
-    canonicalRecordPromotionEligible: false,
-    providerId,
-    requestModelId,
-    observedResponseModelId: authority.binding.observedResponseModelId,
-    modelReleaseId: id,
-    modelReleaseBindingDigest: authority.binding.modelReleaseBindingDigest,
-    modelReleaseRegistryDigest: authority.binding.modelReleaseRegistryDigest,
-    modelIdentityPolicyDigest: authority.binding.modelIdentityPolicyDigest,
-    modelReleaseAuthorityBindingDigest: modelReleaseAuthoritySha256(stableModelReleaseAuthorityStringify(authority.binding)),
-    modelReleaseValidFrom: authority.binding.modelReleaseValidFrom,
-    modelReleaseValidUntil: authority.binding.modelReleaseValidUntil,
-    providerInvocationWindow: structuredClone(authority.binding.providerInvocationWindow),
-    exchangeInvocationObservations: structuredClone(authority.exchangeInvocationObservations),
-    modelAuthorityReceiptDigest: authority.digests.modelAuthorityReceiptDigest,
-    modelAuthorityReadbackDigest: authority.digests.modelAuthorityReadbackDigest,
-    modelAuthorityRevocationRegistryDigest: authority.digests.modelAuthorityRevocationRegistryDigest,
-    modelAuthorityRevocationReadbackDigest: authority.digests.modelAuthorityRevocationReadbackDigest,
-    modelAuthorityAuditReadbackDigest: authority.digests.modelAuthorityAuditReadbackDigest,
-    modelAuthorityReplayLedgerReceiptDigest: authority.binding.authorityReceipt.replayLedgerReceiptDigest,
-    providerInvocationWindowDigest: authority.digests.providerInvocationWindowDigest,
-    exchangeInvocationObservationsDigest: authority.digests.exchangeInvocationObservationsDigest,
-    authorityPolicyDigest: authority.digests.authorityPolicyDigest,
-    authorityBindingSchemaDigest: authority.digests.authorityBindingSchemaDigest,
-    issuerRegistryDigest: authority.digests.issuerRegistryDigest,
-  }
-  return {
-    record,
-    modelReleaseId: id,
-    modelReleaseBindingDigest: sha256(stable(record)),
-    modelReleaseRegistryDigest: state.registryDigest,
-    modelReleaseAuthorityBinding: authority.binding,
-    effectivePromotionBinding,
-    effectivePromotionBindingDigest: sha256(stable(effectivePromotionBinding)),
-  }
-}
+// resolvePromotionEligibleModelRelease and the managed-CI model-release
+// authority chain (policy, signed four-document binding, external replay
+// ledger) retired 2026-08-05: the promotion route had zero live callers and
+// its authority endpoint machinery was retired with the activation cluster.
+// Registry records remain identity-only, fail-closed claims.

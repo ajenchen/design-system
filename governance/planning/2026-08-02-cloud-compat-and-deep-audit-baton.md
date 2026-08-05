@@ -430,3 +430,13 @@ package.json 十餘條 ceremony scripts;test-governance-build-graph:658-662 期�
 5'. DS release-workflow.json WM requiredCheck 對稱化為 audit.yml/pull_request(與 template 同形,#50),移除 receiver 自發 check 特例;provenance 綁定不變。
 
 **Lean audit(user 四問:harness 必要性/冗餘/牛刀殺雞/資源效率 + workflow SSOT/跨環境)**:6 維 finders + adversarial critic(7 agents,891k tokens)。判定:harness 本體 SOUND(247 members 全活、SSOT pins 全對、PR gate 刻意排除十分鐘 suite 屬已文件化取捨),但 2 個 REAL-WASTE:官方入口在 pristine main 永紅(consumerctl 6 drift)+ 治理 battery 無任何 CI lane(rot 機制)。batch A(#50)修 HIGH:consumerctl 43/43、dead scripts ×4、stale 文本/指標/registry 全同步。**未清完(排程)**:fleet 層 rings/soak 退役決策(release-rings.json 仍強制 canon 已退役的 soak/promotion 謂詞,~9.6k 行)、model-release-authority 鏈退役、audit-workflow-security 雙跑、41 個無引用 npm scripts 盤點、branch sprawl、audit-receipt 17MB 無 retention、governance battery CI lane(nightly)——見 audit-results.json(scratchpad)完整 findings。
+
+### §8.7 Batch B 執行記錄(2026-08-05;lean-audit 餘項全清)
+
+- **A soak 儀式退役**:release-rings.json 3 rings 摘除 `minimumSoakHours` + `soak-observation` 謂詞;schema(counts 5/6/6 + containsSoakPolicy def + 2 個 soak oneOf 分支)與 model-validation(封閉 enum 排除 soak 型別 + `minimumSoakHours` 出現即 fail-closed)同步;fixtures(rings-hold/eligible/consumerctl)清理;poison 測試改「retired 再引入必炸」。**`provider-surfaces-certified` 謂詞保留**——它是 ring↔role surface 綁定(role-surface-policy parity + consumerctl registration 消費),只在 fleet reconcile 規劃層評估,不在 release blocking graph;名稱歷史遺留,語意非 certification 儀式。
+- **B model-release-authority 鏈退役**:`resolvePromotionEligibleModelRelease`(零呼叫者)+ authority lib(310 行)+ policy/2 schemas/fixture/test 刪除;manifest −6 id / build-graph −6 / inventory −1 / CODEOWNERS −6;model-release-registry 保留 identity-only fail-closed 驗證。
+- **C nightly harness lane**:`.github/workflows/governance-harnesses.yml`(cron 03:00 UTC + dispatch,非 required check),rot 窗界 ≤24h;workflow-security 12 workflows PASS。同場抓到 batch A 的 ci.yml identity drift(identities check 也不在 PR gate)→ propose/apply-reviewed 流程收斂。
+- **D alias 雙跑**:accepted-by-design——closed source-discovery(每個 test 檔必分類)+ gate-meta pairing(gate 必有 test-<gate>)雙約束下,消除 ~30s 重複執行需 schema 手術;成本>收益,維持原狀。
+- **E consumer overlay-alias 遷移**:已由 WM #40 receiver align 步驟永久解決(機械讀安裝 contract,未來 bump 免手動);DS 側 transaction 不需改。
+- **F receipts retention**:`.claude/logs` 502 檔為 planning/memory/archive 的歷史證據連結(load-bearing),保留;未來若需瘦身走 archive-to-release-assets 工具(LOW,未 justify)。
+- **G branch sprawl**:本地 44→14(30 刪,12 個 tree-not-in-main 保守保留)+ remote 全清(僅 main)。

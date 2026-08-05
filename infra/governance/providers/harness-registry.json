@@ -28,7 +28,7 @@
     "schemaPath": "infra/governance/schemas/harness-authority-contracts.schema.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-authority-contracts",
-    "sha256": "a5ea9ff4865f0965fd4299311da4534816b3d76db996224b02c3e3e6bff19d6e",
+    "sha256": "3b4c698666229f54807e3a189a8b32b94d2a6e2daa2df266d3cbce5f28278dc6",
     "schemaSha256": "bba73861c87bc3047b70376e891a9464d525e9648fadd6e7d8fb406b57d10dce",
     "projectionPolicy": "registry-authority-and-claim-fields-are-exact-derived-projections"
   },
@@ -37,7 +37,7 @@
     "path": "infra/governance/providers/harness-source-inventory.json",
     "schemaVersion": 2,
     "kind": "provider-neutral-governance-harness-source-inventory",
-    "sha256": "c0894bdcc6f948d32b344bec85eb1b9ce5946f6660bf6ab548d0fef2521c1630",
+    "sha256": "0f56748361d96768bf4c4debdcfacc4f790eaffc17c6493b3858349f85beb9d4",
     "closurePolicy": "every-discovered-source-exactly-one-execution-or-reviewed-exclusion"
   },
   "runner": {
@@ -534,7 +534,6 @@
         "scripts/lib/component-dependency-source-inventory.mjs",
         "scripts/lib/component-claim-inventory.mjs",
         "scripts/lib/model-release-registry.mjs",
-        "scripts/lib/model-release-authority.mjs",
         "packages/design-system/ds-canonical/skills/independent-review/SKILL.md",
         "packages/design-system/ds-canonical/skills/deep-audit-cross-codex/SKILL.md",
         "packages/design-system/ds-canonical/templates/product-launchers/independent-review.mjs"

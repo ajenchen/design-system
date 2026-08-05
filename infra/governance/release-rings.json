@@ -21,50 +21,143 @@
       "id": "ring-0-authority",
       "order": 0,
       "purpose": "Validate the governance authority and generated adapters before consumer rollout.",
-      "minimumSoakHours": 24,
       "maxParallel": 1,
-      "waves": [{"id": "canary", "order": 0, "maxParallel": 1}],
+      "waves": [
+        {
+          "id": "canary",
+          "order": 0,
+          "maxParallel": 1
+        }
+      ],
       "promotionPredicates": [
-        {"id": "manual-blockers-clear", "type": "manual-blockers-clear"},
-        {"id": "post-release-soak-observation", "type": "soak-observation"},
-        {"id": "required-checks-green", "type": "required-checks-green"},
-        {"id": "required-provider-surfaces-certified", "type": "provider-surfaces-certified", "surfaces": ["codex/codex-cli/local", "codex/codex-desktop/local", "codex/codex-desktop/remote-control", "codex/codex-cloud/cloud", "claude-code/claude-code-cli/local", "claude-code/claude-code-cli/remote-control", "claude-code/claude-code-cloud/cloud", "ci/github-actions/github-actions"]},
-        {"id": "no-open-critical-waiver", "type": "no-active-waiver-at-or-above", "risk": "critical"},
-        {"id": "reconcile-plan-conflict-free", "type": "plan-conflict-free"}
+        {
+          "id": "manual-blockers-clear",
+          "type": "manual-blockers-clear"
+        },
+        {
+          "id": "required-checks-green",
+          "type": "required-checks-green"
+        },
+        {
+          "id": "required-provider-surfaces-certified",
+          "type": "provider-surfaces-certified",
+          "surfaces": [
+            "codex/codex-cli/local",
+            "codex/codex-desktop/local",
+            "codex/codex-desktop/remote-control",
+            "codex/codex-cloud/cloud",
+            "claude-code/claude-code-cli/local",
+            "claude-code/claude-code-cli/remote-control",
+            "claude-code/claude-code-cloud/cloud",
+            "ci/github-actions/github-actions"
+          ]
+        },
+        {
+          "id": "no-open-critical-waiver",
+          "type": "no-active-waiver-at-or-above",
+          "risk": "critical"
+        },
+        {
+          "id": "reconcile-plan-conflict-free",
+          "type": "plan-conflict-free"
+        }
       ]
     },
     {
       "id": "ring-1-template-canary",
       "order": 1,
       "purpose": "Prove the published template mirror and clean-clone/cloud path.",
-      "minimumSoakHours": 24,
       "maxParallel": 1,
-      "waves": [{"id": "canary", "order": 0, "maxParallel": 1}],
+      "waves": [
+        {
+          "id": "canary",
+          "order": 0,
+          "maxParallel": 1
+        }
+      ],
       "promotionPredicates": [
-        {"id": "upstream-promoted", "type": "upstream-waves-promoted"},
-        {"id": "manual-blockers-clear", "type": "manual-blockers-clear"},
-        {"id": "post-release-soak-observation", "type": "soak-observation"},
-        {"id": "required-checks-green", "type": "required-checks-green"},
-        {"id": "required-provider-surfaces-certified", "type": "provider-surfaces-certified", "surfaces": ["codex/codex-desktop/remote-control", "codex/codex-cloud/cloud", "claude-code/claude-code-cli/remote-control", "claude-code/claude-code-cloud/cloud", "ci/github-actions/github-actions"]},
-        {"id": "no-open-high-waiver", "type": "no-active-waiver-at-or-above", "risk": "high"},
-        {"id": "upgrade-plan-conflict-free", "type": "plan-conflict-free"}
+        {
+          "id": "upstream-promoted",
+          "type": "upstream-waves-promoted"
+        },
+        {
+          "id": "manual-blockers-clear",
+          "type": "manual-blockers-clear"
+        },
+        {
+          "id": "required-checks-green",
+          "type": "required-checks-green"
+        },
+        {
+          "id": "required-provider-surfaces-certified",
+          "type": "provider-surfaces-certified",
+          "surfaces": [
+            "codex/codex-desktop/remote-control",
+            "codex/codex-cloud/cloud",
+            "claude-code/claude-code-cli/remote-control",
+            "claude-code/claude-code-cloud/cloud",
+            "ci/github-actions/github-actions"
+          ]
+        },
+        {
+          "id": "no-open-high-waiver",
+          "type": "no-active-waiver-at-or-above",
+          "risk": "high"
+        },
+        {
+          "id": "upgrade-plan-conflict-free",
+          "type": "plan-conflict-free"
+        }
       ]
     },
     {
       "id": "ring-2-product-canary",
       "order": 2,
       "purpose": "Use work-management as the real-product canary and root-cause feedback loop.",
-      "minimumSoakHours": 72,
       "maxParallel": 1,
-      "waves": [{"id": "canary", "order": 0, "maxParallel": 1}],
+      "waves": [
+        {
+          "id": "canary",
+          "order": 0,
+          "maxParallel": 1
+        }
+      ],
       "promotionPredicates": [
-        {"id": "upstream-promoted", "type": "upstream-waves-promoted"},
-        {"id": "manual-blockers-clear", "type": "manual-blockers-clear"},
-        {"id": "post-release-soak-observation", "type": "soak-observation"},
-        {"id": "required-checks-green", "type": "required-checks-green"},
-        {"id": "required-provider-surfaces-certified", "type": "provider-surfaces-certified", "surfaces": ["codex/codex-cli/local", "codex/codex-desktop/local", "codex/codex-desktop/remote-control", "codex/codex-cloud/cloud", "claude-code/claude-code-cli/local", "claude-code/claude-code-cli/remote-control", "claude-code/claude-code-cloud/cloud", "ci/github-actions/github-actions"]},
-        {"id": "no-open-high-waiver", "type": "no-active-waiver-at-or-above", "risk": "high"},
-        {"id": "upgrade-plan-conflict-free", "type": "plan-conflict-free"}
+        {
+          "id": "upstream-promoted",
+          "type": "upstream-waves-promoted"
+        },
+        {
+          "id": "manual-blockers-clear",
+          "type": "manual-blockers-clear"
+        },
+        {
+          "id": "required-checks-green",
+          "type": "required-checks-green"
+        },
+        {
+          "id": "required-provider-surfaces-certified",
+          "type": "provider-surfaces-certified",
+          "surfaces": [
+            "codex/codex-cli/local",
+            "codex/codex-desktop/local",
+            "codex/codex-desktop/remote-control",
+            "codex/codex-cloud/cloud",
+            "claude-code/claude-code-cli/local",
+            "claude-code/claude-code-cli/remote-control",
+            "claude-code/claude-code-cloud/cloud",
+            "ci/github-actions/github-actions"
+          ]
+        },
+        {
+          "id": "no-open-high-waiver",
+          "type": "no-active-waiver-at-or-above",
+          "risk": "high"
+        },
+        {
+          "id": "upgrade-plan-conflict-free",
+          "type": "plan-conflict-free"
+        }
       ]
     }
   ],

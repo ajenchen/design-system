@@ -1237,7 +1237,6 @@
         "component-dependency-source-inventory",
         "component-claim-inventory",
         "model-release-registry-library",
-        "managed-ci-model-release-authority-library",
         "exact-independent-review-skill",
         "exact-deep-audit-skill",
         "product-independent-review-launcher"
@@ -1428,8 +1427,7 @@
           "sourceIds": [
             "provider-surface-certifications",
             "model-invocation-profiles",
-            "model-release-registry",
-            "managed-ci-model-release-authority-library"
+            "model-release-registry"
           ],
           "executionOwners": [
             {

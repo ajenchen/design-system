@@ -340,7 +340,6 @@
         "scripts/test-governance-visual-baselines.mjs",
         "scripts/test-hook-evidence-plan.mjs",
         "scripts/test-instruction-mirror-safety.mjs",
-        "scripts/test-model-release-authority.mjs",
         "scripts/test-neutral-audit-evidence.mjs",
         "scripts/test-plugin-alias-contract.mjs",
         "scripts/test-privileged-change-authorization.mjs",

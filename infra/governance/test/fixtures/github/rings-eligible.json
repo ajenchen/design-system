@@ -7,7 +7,9 @@
     "maxCompletionTtlMinutes": 10080,
     "clockSkewSeconds": 0,
     "issuerRegistryDigest": "e76d982c32b933135e04a2bc0a4c164dcf341edfd3fe1978ae0308ce61a534a9",
-    "allowedKeyIds": ["fixture-ed25519"],
+    "allowedKeyIds": [
+      "fixture-ed25519"
+    ],
     "applyAuthorizationQuorum": 1,
     "completionAttestationQuorum": 1
   },
@@ -18,25 +20,86 @@
     "sourceTree": "2222222222222222222222222222222222222222",
     "bomSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "packages": [
-      {"name": "@qijenchen/design-system", "version": "1.0.0", "integrity": "sha512-AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ=="},
-      {"name": "@qijenchen/governance", "version": "1.0.0", "integrity": "sha512-AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg=="},
-      {"name": "@qijenchen/storybook-config", "version": "1.0.0", "integrity": "sha512-AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw=="}
+      {
+        "name": "@qijenchen/design-system",
+        "version": "1.0.0",
+        "integrity": "sha512-AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ=="
+      },
+      {
+        "name": "@qijenchen/governance",
+        "version": "1.0.0",
+        "integrity": "sha512-AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg=="
+      },
+      {
+        "name": "@qijenchen/storybook-config",
+        "version": "1.0.0",
+        "integrity": "sha512-AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw=="
+      }
     ],
     "observedAt": "2019-01-01T00:00:00Z"
   },
   "evidence": [],
-  "rings": [{
-    "id": "ring-canary", "order": 2, "purpose": "Exercise the eligible fixture path.", "minimumSoakHours": 72, "maxParallel": 1,
-    "waves": [{"id": "canary", "order": 0, "maxParallel": 1}],
-    "promotionPredicates": [
-      {"id": "upstream", "type": "upstream-waves-promoted"},
-      {"id": "manual-clear", "type": "manual-blockers-clear"},
-      {"id": "soak", "type": "soak-observation"},
-      {"id": "checks", "type": "required-checks-green"},
-      {"id": "provider-surfaces", "type": "provider-surfaces-certified", "surfaces": ["codex/codex-cli/local", "codex/codex-desktop/local", "codex/codex-desktop/remote-control", "codex/codex-cloud/cloud", "claude-code/claude-code-cli/local", "claude-code/claude-code-cli/remote-control", "claude-code/claude-code-cloud/cloud", "ci/github-actions/github-actions"]},
-      {"id": "waiver", "type": "no-active-waiver-at-or-above", "risk": "high"},
-      {"id": "plan", "type": "plan-conflict-free"}
-    ]
-  }],
-  "assignments": {"consumer": {"ring": "ring-canary", "wave": "canary", "enteredAt": "2020-01-01T00:00:00Z", "candidateReleaseDigest": "6f7167299104305982c0ae5a8a5d132d3f4d1e03f7c8cd6cbc7c2c587a282789", "applyAuthorization": null, "completionAttestation": null, "manualBlockers": []}}
+  "rings": [
+    {
+      "id": "ring-canary",
+      "order": 2,
+      "purpose": "Exercise the eligible fixture path.",
+      "maxParallel": 1,
+      "waves": [
+        {
+          "id": "canary",
+          "order": 0,
+          "maxParallel": 1
+        }
+      ],
+      "promotionPredicates": [
+        {
+          "id": "upstream",
+          "type": "upstream-waves-promoted"
+        },
+        {
+          "id": "manual-clear",
+          "type": "manual-blockers-clear"
+        },
+        {
+          "id": "checks",
+          "type": "required-checks-green"
+        },
+        {
+          "id": "provider-surfaces",
+          "type": "provider-surfaces-certified",
+          "surfaces": [
+            "codex/codex-cli/local",
+            "codex/codex-desktop/local",
+            "codex/codex-desktop/remote-control",
+            "codex/codex-cloud/cloud",
+            "claude-code/claude-code-cli/local",
+            "claude-code/claude-code-cli/remote-control",
+            "claude-code/claude-code-cloud/cloud",
+            "ci/github-actions/github-actions"
+          ]
+        },
+        {
+          "id": "waiver",
+          "type": "no-active-waiver-at-or-above",
+          "risk": "high"
+        },
+        {
+          "id": "plan",
+          "type": "plan-conflict-free"
+        }
+      ]
+    }
+  ],
+  "assignments": {
+    "consumer": {
+      "ring": "ring-canary",
+      "wave": "canary",
+      "enteredAt": "2020-01-01T00:00:00Z",
+      "candidateReleaseDigest": "6f7167299104305982c0ae5a8a5d132d3f4d1e03f7c8cd6cbc7c2c587a282789",
+      "applyAuthorization": null,
+      "completionAttestation": null,
+      "manualBlockers": []
+    }
+  }
 }
