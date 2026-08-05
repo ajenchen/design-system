@@ -1,3 +1,4 @@
+<!-- Authority/status: governance/planning/registry.json -->
 # work-management 升級到 0.1.0-beta.113 —— 已驗證的 reviewed bootstrap 程序
 
 **狀態**:active(可執行;程序已對 disposable clone 實跑通過,尚未對 WM protected main 執行)
