@@ -198,7 +198,11 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     // Combobox DOM-based useOverflowCount(非 deterministic 那個算法)。修:用 root 自己當 trigger,
     // 從 root 內找 tagArea(flex-1 min-w-0 div)。
     const calc = () => {
-      const trigger = root.matches('[role="combobox"]') ? root : root.querySelector<HTMLElement>('[role="combobox"]')
+      // 2026-08-05 native-parity fix(touch 實圖抓「多人只剩 +N」):NativeCombobox root 無
+      // role="combobox"(a11y 在隱藏 <select> 上)→ 原查法 trigger=null → available=0 → 全
+      // overflow。雙分支通用:查無 combobox role 時 root 自身就是 trigger(native __triggerRef
+      // 即 field wrapper root),tagArea(flex-1 min-w-0)兩分支同構。
+      const trigger = root.matches('[role="combobox"]') ? root : (root.querySelector<HTMLElement>('[role="combobox"]') ?? root)
       const tagArea = trigger?.querySelector<HTMLElement>('div[class*="flex-1"][class*="min-w-0"]')
       const available = tagArea?.clientWidth ?? trigger?.clientWidth ?? 0
       const visible = getAvatarStackVisibleCount({
