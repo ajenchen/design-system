@@ -29,7 +29,7 @@ import {
   validateProductTemplateScaffoldLock,
   verifyProductTemplateScaffold,
 } from './product-template-scaffold-lock.mjs'
-import { generateProductTemplatePackageLock } from './generate-product-template-package-lock.mjs'
+import { generateProductTemplatePackageLock, assertProductTemplateLockPinsVersion } from './generate-product-template-package-lock.mjs'
 import {
   assertRuntimeDependencyClosureDirectory,
   assertRuntimeDependencyClosureEntries,
@@ -87,6 +87,39 @@ test('schema mirror and deterministic byte-sorted full static inventory are clos
   assert.equal(first.entries.find(item => item.path === 'scripts/create-app.mjs').mode, '755')
   const ajv = new Ajv2020({ allErrors: true, strict: true })
   assert.equal(ajv.validate(PRODUCT_TEMPLATE_SCAFFOLD_LOCK_JSON_SCHEMA, first), true, JSON.stringify(ajv.errors))
+})
+
+test('generated lock must pin the exact released version(registry propagation fail-closed)', async () => {
+  // 2026-08-05 anchor:beta.112 / beta.113 兩次實證 —— npm 傳播未完成時 `--package-lock-only`
+  // 靜默解析到前一版,mirror 仍開 PR,直到 consumer `npm ci` 才炸。
+  const { mkdtempSync, writeFileSync: write } = await import('node:fs')
+  const { tmpdir } = await import('node:os')
+  const { join } = await import('node:path')
+  const dir = mkdtempSync(join(tmpdir(), 'lock-pin-'))
+  const lockFor = version => JSON.stringify({
+    name: 'product-template',
+    packages: {
+      '': { name: 'product-template' },
+      'node_modules/@qijenchen/design-system': { version },
+      'node_modules/@qijenchen/storybook-config': { version },
+    },
+  })
+
+  write(join(dir, 'package-lock.json'), lockFor('0.1.0-beta.113'))
+  const ok = assertProductTemplateLockPinsVersion({ prefix: dir, expectedVersion: '0.1.0-beta.113' })
+  assert.equal(ok.packages['@qijenchen/design-system'], '0.1.0-beta.113')
+
+  // stale lock(傳播延遲)必 fail-closed
+  write(join(dir, 'package-lock.json'), lockFor('0.1.0-beta.112'))
+  assert.throws(
+    () => assertProductTemplateLockPinsVersion({ prefix: dir, expectedVersion: '0.1.0-beta.113' }),
+    /pins @qijenchen\/design-system@0\.1\.0-beta\.112, expected 0\.1\.0-beta\.113/,
+  )
+
+  // 套件缺席 / 版本格式錯亦 fail-closed
+  write(join(dir, 'package-lock.json'), JSON.stringify({ packages: { '': {} } }))
+  assert.throws(() => assertProductTemplateLockPinsVersion({ prefix: dir, expectedVersion: '0.1.0-beta.113' }), /missing @qijenchen/)
+  assert.throws(() => assertProductTemplateLockPinsVersion({ prefix: dir, expectedVersion: 'latest' }), /expected exact version is invalid/)
 })
 
 test('lock declaration and executable package-lock generator share one exact npm argv authority', async () => {
@@ -348,7 +381,7 @@ test('release and fresh-writer workflows keep the scaffold provenance chain wire
   assert.match(mirror, /gh release view[\s\S]*\.isDraft == false[\s\S]*\.publishedAt/)
   assert.match(mirror, /gh release download[\s\S]*release-set\.mjs[\s\S]*build-release-bom\.mjs --verify/)
   assert.match(mirror, /product-template-scaffold-lock\.mjs --verify[\s\S]*--phase source/)
-  assert.match(mirror, /node source\/scripts\/generate-product-template-package-lock\.mjs --prefix "\$mirror"/)
+  assert.match(mirror, /node source\/scripts\/generate-product-template-package-lock\.mjs --prefix "\$mirror" --expect-version "\$\{RELEASE_TAG#v\}"/)
   assert.match(mirror, /product-template-scaffold-lock\.mjs --verify[\s\S]*--phase published/)
   assert.doesNotMatch(mirror, /npm install --global|\bnpx\s+-y\b/)
   const verify = mirror.indexOf('Verify six-file release set, BOM, and npm readback')

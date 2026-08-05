@@ -399,7 +399,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/65410b66e8799a560e07b71779c186fed2a0ef50575ac44745df7a0938a9c2b4.blob",
-      "sha256": "9134dabf11af7a2445a6a026fc23201e8aba3ef5aeb7da1d2159e92956dd32d2",
+      "sha256": "7fc069b6ba5f62907eed574d9ae53c5202463fd79b55aa41101b3e2587e99072",
       "source": "scripts/product-template-scaffold-lock.mjs",
       "classification": null,
       "destination": "scripts/product-template-scaffold-lock.mjs"

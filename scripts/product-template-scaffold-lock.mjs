@@ -27,6 +27,10 @@ export const PRODUCT_TEMPLATE_PACKAGE_LOCK_NPM_COMMAND = Object.freeze([
   '--legacy-peer-deps',
   '--no-audit',
   '--no-fund',
+  // 強制向 registry 重新驗證 metadata(2026-08-05 病根修):CI runner 還原的 npm cache 會
+  // 回吐 stale packument,npm 直接回報 'up to date' 而不重新解析 → 產出的 lock 仍釘前一版,
+  // mirror 照樣開 PR,直到 consumer 的 `npm ci` 才炸(beta.112 / beta.113 兩次實證)。
+  '--prefer-online',
 ])
 export const PRODUCT_TEMPLATE_PACKAGE_LOCK_GENERATOR = `npm@${GOVERNANCE_DEPENDENCY_EXACT_NPM_VERSION} ${PRODUCT_TEMPLATE_PACKAGE_LOCK_NPM_COMMAND.join(' ')}`
 export const PRODUCT_TEMPLATE_GENERATED_ENTRIES = Object.freeze([

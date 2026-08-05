@@ -139,7 +139,7 @@ jobs:
             --root "$mirror" \
             --lock "$GITHUB_WORKSPACE/release-artifacts/product-template-scaffold.lock.json" \
             --phase source
-          node source/scripts/generate-product-template-package-lock.mjs --prefix "$mirror"
+          node source/scripts/generate-product-template-package-lock.mjs --prefix "$mirror" --expect-version "${RELEASE_TAG#v}"
           node source/scripts/product-template-scaffold-lock.mjs --verify \
             --root "$mirror" \
             --lock "$GITHUB_WORKSPACE/release-artifacts/product-template-scaffold.lock.json" \
