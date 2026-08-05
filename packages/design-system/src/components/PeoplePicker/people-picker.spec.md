@@ -81,6 +81,18 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 ---
 
+## 一鍵清空(clearable)
+
+`clearable`(2026-08-05 加)機械轉發 wrapped Select(single)/ Combobox(multi)——X 的渲染、位置與清空行為 SSOT 在基座與 family canonical,本元件不另定義:
+
+- **幾何**:有值時 clear X 在 ChevronDown 左(`../Field/field-controls.spec.md`「下拉箭頭與類型身份 indicator」段)
+- **單選**:清除後回 placeholder 態(`../Select/select.spec.md`「Clearable」);wrapper 把基座 clear 的空字串映射為 `onChange([])`,不進 people 回查(fallback 會產生空名假人員)
+- **多選**:clear all 一次清除所有已選人員(`../Combobox/combobox.spec.md`「Clearable」),與 per-chip 移除並存
+- **何時開**:繼承 select.spec.md「何時開 clearable」判準——「無選擇是有效狀態」(選填人員欄位如觀察者 / 可清的人員 filter)開;必須有人(assignee 必填)不開
+- 只在 edit 模式顯示;readonly / disabled 不渲(基座行為)
+
+---
+
 ## 與 Select / Combobox 的分界
 
 | | PeoplePicker | Select | Combobox |

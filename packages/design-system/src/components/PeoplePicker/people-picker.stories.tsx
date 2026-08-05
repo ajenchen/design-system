@@ -158,6 +158,31 @@ export const MultiRemoveFocusContract: Story = {
   },
 }
 
+/* ── 一鍵清空(選填欄位) ── */
+// X 在 ChevronDown 左(family SSOT field-controls.spec.md「下拉箭頭」段)。「無選擇是有效
+// 狀態」的選填欄位才開 clearable(select.spec.md「何時開」)——代理人 / 觀察者是典型選填人員欄位。
+const ClearablePicker = () => {
+  const [delegate, setDelegate] = React.useState<PersonValue | null>(samplePeople[1])
+  const [watchers, setWatchers] = React.useState<PersonValue[]>(samplePeople.slice(2, 5))
+  return (
+    <div className="flex flex-col gap-6 max-w-xs">
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">單人(代理人,選填)</h3>
+        <PeoplePicker clearable value={delegate} people={samplePeople} onChange={(v) => setDelegate(v[0] ?? null)} aria-label="代理人(選填)" />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">多人(觀察者,選填)</h3>
+        <PeoplePicker clearable value={watchers} people={samplePeople} onChange={setWatchers} aria-label="觀察者(選填)" />
+      </div>
+    </div>
+  )
+}
+
+export const Clearable: Story = {
+  name: '一鍵清空(選填欄位)',
+  render: () => <ClearablePicker />,
+}
+
 /* ── 尺寸與 Button 對齊 ── */
 const SizePicker = ({ size }: { size: 'sm' | 'md' | 'lg' }) => {
   const [val, setVal] = React.useState<PersonValue | null>(samplePeople[0])

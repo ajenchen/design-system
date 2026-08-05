@@ -1115,6 +1115,7 @@
           "design-system-components-peoplepicker-展示--with-error",
           "design-system-components-peoplepicker-展示--multi",
           "design-system-components-peoplepicker-展示--multi-remove-focus-contract",
+          "design-system-components-peoplepicker-展示--clearable",
           "design-system-components-peoplepicker-展示--size-alignment",
           "design-system-components-peoplepicker-展示--async-directory-load"
         ],
@@ -1754,5 +1755,5 @@
     }
   },
   "totalComponents": 65,
-  "totalStories": 945
+  "totalStories": 946
 }
