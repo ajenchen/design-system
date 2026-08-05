@@ -1614,7 +1614,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 13,
-      "hash": "sha256:d39ae2a81c2cf7f1be47cea106f6c7b4b31b2f8e59289075bebce39318d59a2d",
+      "hash": "sha256:e91a3e9b28c19df5d52dff97a136d4ea4a233d81c8181be70ef4a15d3687ef87",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
