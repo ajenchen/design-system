@@ -21,10 +21,6 @@ on:
         required: false
         default: false
         type: boolean
-  # 暫時 push trigger(review-fix 驗證輪;驗證後移除)
-  push:
-    branches: ['claude/peoplepicker-probe-split']
-    paths: ['packages/design-system/src/components/**']
 
 permissions:
   contents: read
@@ -69,11 +65,7 @@ jobs:
           STORIES: ${{ inputs.stories }}
           VIEWPORT: ${{ inputs.viewport }}
           TOUCH: ${{ inputs.touch && '--touch' || '' }}
-        run: node scripts/story-screenshots.mjs --stories="${STORIES:-design-system-components-peoplepicker-展示--multi}" --viewport="${VIEWPORT:-800x900}" $TOUCH
-
-      - name: Screenshot touch-emulated stories(暫時,隨 push trigger 一起移除)
-        if: ${{ github.event_name == 'push' }}
-        run: node scripts/story-screenshots.mjs --stories='design-system-components-peoplepicker-展示--single,design-system-components-peoplepicker-展示--multi,design-system-components-peoplepicker-展示--clearable,design-system-components-select-展示--modes' --touch --out=story-screenshots/touch
+        run: node scripts/story-screenshots.mjs --stories="$STORIES" --viewport="$VIEWPORT" $TOUCH
 
       - name: Upload screenshots
         if: always()
