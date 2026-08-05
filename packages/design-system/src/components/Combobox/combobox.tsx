@@ -18,6 +18,15 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 const GAP = 4
 
+// 非-wrap tag 列 clip SSOT(4-path 共用:OverflowTagList base / readonly / native edit / custom edit):
+// 2026-05-18 F2 以 overflow-hidden 修「窄容器 tags 水平越界蓋 chevron / +N」,但雙軸 hidden 副作用
+// 是垂直同裁 — PeoplePicker stack hover 的 AvatarDismissOverlay(`-top-px` + 2px ring,
+// person-display.tsx v15.15,早於 F2)上緣被切(user 2026-08-05 抓「曾經沒有這問題」= F2 前確實沒有)。
+// 雙贏 = overflow-x-clip:水平維持 clip(F2 bug 不回歸;`clip` 不建 scroll container),垂直 visible
+// (overlay / avatar ring 完整)。**不可**改 overflow-x-hidden:單軸 hidden 令另一軸 visible 計算成
+// auto → 生 scroll container,垂直反而可捲。
+const tagRowOverflowClass = 'overflow-x-clip'
+
 const tagPadding: Record<string, string> = {
   sm: 'px-[calc((var(--field-height-sm)_-_1.25rem)_/_2)]',
   md: 'px-[calc((var(--field-height-md)_-_1.5rem)_/_2)]',
@@ -355,7 +364,7 @@ function ComboboxTagStack({
   // `data-table.spec.md:233`「禁硬裁無 ellipsis」+ MUI X / Ant Table column.ellipsis 共識。
   // (2026-05-14 nakedCellRowModeAlign 同保留 — autoRowHeight cell first-line align canonical。)
   return (
-    <div ref={ownRef} className={cn('flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : 'overflow-hidden')} style={{ gap: GAP }}>
+    <div ref={ownRef} className={cn('flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: GAP }}>
       {content}
     </div>
   )
@@ -551,7 +560,7 @@ function ReadonlyMultiSelect({
         // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 view 不對稱。
         // 2026-06-27 對齊 edit path(L598-617):wrap 時 items-start + chevron self-start/tagHeight 鎖第一行;
         // paddingRight: var(--field-px) re-assert 右緣 12px(tagPadding 對稱 calc 會吃掉右緣,跟 edit 一致)。
-        wrap ? 'flex-wrap items-start py-1' : 'overflow-hidden', className)}
+        wrap ? 'flex-wrap items-start py-1' : tagRowOverflowClass, className)}
       style={{ gap: GAP, paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode={resolvedMode}
       aria-disabled={resolvedMode === 'disabled' ? true : undefined}>
       {hasTags ? (
@@ -675,7 +684,7 @@ function NativeCombobox({
           edit path tagArea 對齊 view path L293 已 ship 的 `overflow-hidden` fix。原 `overflow-visible`
           讓 tag 視覺越界蓋 chevron / +N indicator(useOverflowCount measurement 對但 CSS overflow 仍露)。
           M10 violation root cause:2026-05-15 F1 Q3 只 fix display path,edit + Native(L518)沒同步。 */}
-      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : 'overflow-hidden')} style={{ gap: GAP }}
+      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: GAP }}
         onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}>
         <OverflowTagList containerRef={tagAreaRef} items={items} size={size} wrap={wrap}
           renderTag={(item) => (
@@ -844,7 +853,7 @@ function CustomCombobox({
       {/* 2026-05-18 #6A Round 1 Step 2/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict cite combobox.tsx:648):
           CustomCombobox edit non-wrap tagArea 對齊 L293 view + L451 readonly + L518 native edit 已 ship 的 overflow-hidden fix。
           原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。M10 propagation 完整 4-path align。 */}
-      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : 'overflow-hidden')} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
+      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
         {value.length > 0 ? (
           <OverflowTagList containerRef={tagAreaRef} items={items} size={size} wrap={wrap}
             tagWrapperClassName={tagWrapperClassName}

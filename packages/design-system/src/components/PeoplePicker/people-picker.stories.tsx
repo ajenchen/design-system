@@ -158,6 +158,21 @@ export const MultiRemoveFocusContract: Story = {
   },
 }
 
+// Stack 移除鈕完整性 probe:AvatarDismissOverlay(`-top-px` + 2px ring,person-display.tsx)
+// 必須完整可見,不被 tag 列裁切(combobox.tsx tagRowOverflowClass 只裁水平;anchor:2026-08-05
+// user 抓「hover X 上緣被裁」— 2026-05-18 F2 雙軸 overflow-hidden 副作用)。screenshot lane
+// 無 hover 能力,以 keyboard focus 觸發 group-focus-within 顯示 overlay。
+export const StackRemoveOverlayProbe: Story = {
+  name: '移除鈕完整性驗證',
+  tags: ['test-only'],
+  render: () => <MultiPicker />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const btn = await canvas.findByRole('button', { name: '移除 Alice Chen' })
+    btn.focus()
+  },
+}
+
 /* ── 一鍵清空(選填欄位) ── */
 // X 在 ChevronDown 左(family SSOT field-controls.spec.md「下拉箭頭」段)。「無選擇是有效
 // 狀態」的選填欄位才開 clearable(select.spec.md「何時開」)——代理人 / 觀察者是典型選填人員欄位。

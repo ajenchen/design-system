@@ -7,7 +7,9 @@
  * 只產出人眼判讀用截圖。
  *
  * 前置:storybook-static/ 已建(npm run build-storybook)。
- * 用法:node scripts/story-screenshots.mjs --stories=<id1,id2,...> [--out=story-screenshots] [--viewport=800x900]
+ * 用法:node scripts/story-screenshots.mjs --stories=<id1,id2,...> [--out=story-screenshots] [--viewport=800x900] [--touch]
+ *   --touch:行動裝置模擬(hasTouch + isMobile → Chromium `(pointer: coarse)` match),
+ *   驗證 useIsTouchDevice native 分支(Select/Combobox 觸控路徑)的實際渲染。
  */
 import { mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -32,8 +34,9 @@ const [vw, vh] = arg('viewport', '800x900').split('x').map(Number)
 mkdirSync(outDir, { recursive: true })
 
 const server = await startA11yStaticServer({ rootDirectory: join(PROJECT_ROOT, 'storybook-static'), defaultFile: 'iframe.html' })
+const touch = process.argv.includes('--touch')
 const browser = await chromium.launch({ headless: true })
-const page = await browser.newPage({ viewport: { width: vw, height: vh } })
+const page = await browser.newPage({ viewport: { width: vw, height: vh }, hasTouch: touch, isMobile: touch })
 let failures = 0
 for (const id of stories) {
   await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'networkidle' })
