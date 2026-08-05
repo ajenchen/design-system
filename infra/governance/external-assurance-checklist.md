@@ -22,5 +22,11 @@
 - staged-rollout plan / rollout state machine / completion readiness
 - managed-CI executor 供應鏈與 trusted execution plan
 - release-tag 簽章授權 policy 與 release-trust-preflight 資產
+  - **消費端契約同步(2026-08-05)**:標準 six-file release 不產生 `npm-finalization-receipt.json` /
+    `release-trust-preflight.json`,故 upgrade evidence 的 `finalizationReceiptSha256` /
+    `releaseTrustEvidenceSha256` **允許 null**(present → 仍嚴格 sha256;兩者必成對;key 不得缺席;
+    null↔非null 互換仍被 authority 重建擋下)。此前 validator 無條件要求 sha256,令 consumer
+    自動升級恆 fail-closed(WM 長期只能手動同步的真因)。SSOT: `scripts/verify-upgrade-evidence.mjs`
+    canonicalProvenance + `scripts/schemas/upgrade-evidence-receipt.schema.json`。
 
 理由與可達圖:`governance/planning/2026-08-02-cloud-compat-and-deep-audit-baton.md` §7-§8.1。

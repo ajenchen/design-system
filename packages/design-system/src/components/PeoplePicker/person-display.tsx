@@ -348,13 +348,10 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         'bg-surface-strong text-on-emphasis hover:bg-surface-strong-hover',
         // a11y(codex P1 fix):opacity 而非 display:none — element 在 DOM/tab-order,
         // keyboard 可達。Hover / focus-within / focus-visible 三條件之一觸發。
-        // Touch 恆顯(2026-08-05 user 拍板 A 案):`(pointer: coarse)` 無 hover 可觸發 →
-        // pointer-coarse variant 直接 opacity-100;桌機(fine pointer)維持 hover-gated 不變。
-        'opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100',
-        // Review fix(2026-08-05 F7):touch 恆顯後 12px 視覺即 tap 目標過小 → pointer-coarse 以
-        // before 擴 hit 至 24×24(視覺不變)。上限受 stack 22px pitch 限制(再大會蓋鄰位 X;
-        // z 序 first-item-highest,重疊時左者勝)。桌機 fine pointer 不擴(hover-reveal 已含指向)。
-        "pointer-coarse:before:content-[''] pointer-coarse:before:absolute pointer-coarse:before:-inset-1.5",
+        // **不加 touch 恆顯**(2026-08-05 user 否決前一版 A 案:「一般狀態直接把所有成員 avatar
+        // 的 X 都秀出來,這樣看起來超亂」)。觸控的多人移除改由 PeoplePicker 自動降階為既有
+        // pill 型態(Combobox tag SSOT,每顆 pill 自帶 X)承擔 — 見 people-picker.spec.md
+        // 「觸控裝置(native 分支)」。本 overlay 維持 hover / focus 才顯的桌機語意。
         'transition-opacity duration-150 motion-reduce:duration-0',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       ].join(' ')}

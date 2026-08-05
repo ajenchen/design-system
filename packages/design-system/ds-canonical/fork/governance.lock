@@ -295,7 +295,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/0235cf6b3fd402a3717881dc205b5bf77aed7632e7d7d6f1811a40e3033bd816.blob",
-      "sha256": "fcd6e3c8293899857ce1b48c8dd07c507060533600821e55bf547ac3e1e980d5",
+      "sha256": "a464b3dcc8f3f94ca997f5771e14626cc400c101e4e7625ff416a89f2af37bbc",
       "source": "scripts/schemas/upgrade-evidence-receipt.schema.json",
       "classification": null,
       "destination": "scripts/schemas/upgrade-evidence-receipt.schema.json"
@@ -511,7 +511,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/9791c85388d2e2e2bd564e2550fadc3351c4c960a47ce838098afcba7544eb90.blob",
-      "sha256": "f4452640d34cb28dbddbca9919f4bc5d3caec7c35879f9e69fd5f6c8485b2ffc",
+      "sha256": "2e4aa0050c39708929a96753dc639149b058b5b76fb281a1a6fe3c1ab09ebbae",
       "source": "scripts/verify-upgrade-evidence.mjs",
       "classification": null,
       "destination": "scripts/verify-upgrade-evidence.mjs"

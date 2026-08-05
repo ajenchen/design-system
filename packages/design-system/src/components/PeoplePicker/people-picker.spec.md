@@ -200,8 +200,9 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 觸控裝置(`(pointer: coarse)`,`use-is-touch-device.ts`)上 wrapped Select / Combobox 切至 native 分支(下拉 = 原生 `<select>` picker)。**Display 層與桌機同 SSOT — 「Trigger display SSOT canonical table」§B-§D 對觸控同樣成立**(2026-08-05 user 拍板;先前 native 分支硬編碼純文字/文字 Tag,手機 edit 單人無 avatar、多人掉回矩形 pill = canonical 違反,已修):
 
 - **單人 edit**:avatar + 人名(`selectedItemRenderer` 經 NativeSelect 透明 overlay pattern,見 `select.spec.md`「雙分支同 SSOT」);無 inline search,tap 開原生選單
-- **多人 edit**:avatar stack + 圓形 +N(display props 由 NativeCombobox 消費,見 `combobox.spec.md`「Display 層雙分支同 SSOT」)。顯示層非互動區 pointer 穿透(renderer 輸出套「抬升 z-10 + pointer-events-none + 按鈕 [&_button] 回收」三件套)— tap 任意處喚起原生 picker;**+N 在 touch 為指示器**(無 hover 開不了 popover;完整名單檢視與增刪走原生 picker 本身,原生多選單列出全員)
-- **移除鈕恆顯**:touch 無 hover → `AvatarDismissOverlay` 以 `pointer-coarse:opacity-100` 恆顯(2026-08-05 user 拍板 A 案;桌機 fine pointer 維持 hover / focus 才顯,DOM/tab-order 兩端一致)。tap 目標以 `pointer-coarse:before` 擴至 24×24(視覺 12px 不變;上限受 stack 22px pitch 制約,z 序 first-item-highest 重疊左者勝)
+- **多人 edit → 自動降階 pill(2026-08-05 user 拍板)**:觸控多選一律走既有 `multiDisplay='pill'`(**不是新型態**:Combobox tag SSOT + Tag `avatar` prop,見「多選顯示樣式(multiDisplay)」),每顆 pill 自帶 X = Combobox「個別移除」canonical。**理由**:stack 的移除鈕是 hover-reveal,觸控無 hover;而讓每個 avatar 恆顯 X 視覺過載(user 否決前一版)。consumer 顯式傳 `'pill'` 時此降階為 no-op;**桌機(fine pointer)完全不受影響** — 仍是 avatar stack + 圓形 +N + hover X。實作 `people-picker.tsx` `effectiveMultiDisplay`(`useIsTouchDevice`)
+- **顯示層 pointer 契約**:renderer 輸出套「抬升 z-10 + pointer-events-none + 按鈕 `[&_button]` 回收」三件套(NativeCombobox 消費同一組 display props,見 `combobox.spec.md`「Display 層雙分支同 SSOT」)— pill 本體 tap 穿透喚起原生 picker(新增成員),pill 上的 X 照常可點(移除成員)
+- **選單**:觸控走原生 `<select>` picker(Combobox 觸控 SSOT,平台 a11y 最佳);原生選項無法渲 avatar 屬平台限制,桌機選單維持 PeoplePicker avatar + description 選項不變
 - 一鍵清空 X(`clearable`)由基座 native 分支自行渲染,觸控同樣可用
 
 ---

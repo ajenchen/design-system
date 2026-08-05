@@ -103,6 +103,15 @@ test('committed v2 JSON Schema accepts the canonical receipt and rejects an open
   const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema)
   assert.equal(validate(receipt), true, JSON.stringify(validate.errors))
   assert.equal(validate({ ...receipt, attacker: true }), false)
+  // Ordinary six-file release(retired ceremony 資產不存在)→ 兩 receipt 欄為 null 合法
+  const ordinaryProvenance = { ...provenance, finalizationReceiptSha256: null, releaseTrustEvidenceSha256: null }
+  assert.equal(validate({ ...receipt, provenance: ordinaryProvenance }), true, 'ordinary release provenance must validate')
+  // key 缺席仍必拒(閉合 shape 不因可為 null 而放寬)
+  for (const field of ['finalizationReceiptSha256', 'releaseTrustEvidenceSha256']) {
+    const withoutKey = { ...provenance }
+    delete withoutKey[field]
+    assert.equal(validate({ ...receipt, provenance: withoutKey }), false, `missing ${field}`)
+  }
   for (const field of [
     'tagObject', 'gitTree', 'releaseSetSha256',
     'finalizationReceiptSha256', 'releaseTrustEvidenceSha256',
@@ -220,6 +229,37 @@ test('rejects open receipts, digest substitution, output substitution and operat
   assert.throws(() => validateUpgradeReceipt({ ...common, receipt: { ...receipt, operations: [...receipt.operations, receipt.operations[0]], paths: [...receipt.paths, receipt.paths[0]] } }), /duplicate/)
 })
 
+test('accepts an ordinary six-file release whose retired ceremony receipts are absent', () => {
+  // 2026-08-05:標準 release 從不產生 npm-finalization-receipt.json / release-trust-preflight.json
+  // (producer 端輸出 null)。null 必須合法,否則 consumer 自動升級永遠 fail-closed。
+  const ordinaryProvenance = { ...provenance, finalizationReceiptSha256: null, releaseTrustEvidenceSha256: null }
+  const ordinaryAuthority = { ...authority, provenance: ordinaryProvenance }
+  const validated = validateUpgradeReceipt({
+    receipt: { ...receipt, provenance: ordinaryProvenance, authoritySha256: upgradeAuthoritySha256(ordinaryAuthority) },
+    patchBytes: patch,
+    expectedBaseSha: base,
+    expectedVersion: version,
+    expectedAuthoritySha256: upgradeAuthoritySha256(ordinaryAuthority),
+    authority: ordinaryAuthority,
+  })
+  assert.equal(validated.provenance.finalizationReceiptSha256, null)
+  assert.equal(validated.provenance.releaseTrustEvidenceSha256, null)
+})
+
+test('rejects a half-present ceremony receipt pair', () => {
+  // present-but-unpaired = 證據鏈殘缺,必 fail-closed(兩方向都測)
+  const common = { patchBytes: patch, expectedBaseSha: base, expectedVersion: version }
+  for (const half of [
+    { finalizationReceiptSha256: 'c'.repeat(64), releaseTrustEvidenceSha256: null },
+    { finalizationReceiptSha256: null, releaseTrustEvidenceSha256: 'd'.repeat(64) },
+  ]) {
+    assert.throws(
+      () => validateUpgradeReceipt({ ...common, receipt: { ...receipt, provenance: { ...provenance, ...half } } }),
+      /paired release trust evidence/,
+    )
+  }
+})
+
 test('rejects malformed and semantically detached immutable-release provenance', () => {
   const common = { patchBytes: patch, expectedBaseSha: base, expectedVersion: version }
   for (const field of [
@@ -277,6 +317,17 @@ test('binds every immutable-release identity into protected-base authority', () 
       field,
     )
   }
+  // anti-downgrade:把「有 ceremony 證據」的 release 整組冒充成 ordinary(兩欄同時改 null,
+  // 本身是合法 shape、過得了配對律)仍必被 authority 重建比對擋下 — 這是可為 null 之後
+  // 最關鍵的一條防線(2026-08-05)。
+  assert.throws(
+    () => validateUpgradeReceipt({
+      ...common,
+      receipt: { ...receipt, provenance: { ...provenance, finalizationReceiptSha256: null, releaseTrustEvidenceSha256: null } },
+    }),
+    /receipt provenance differs from protected-base reconstruction/,
+    'ordinary-shape downgrade',
+  )
 })
 
 test('routes workflow-executed package script changes to recurring reviewed control-plane update', () => {

@@ -109,8 +109,8 @@
         "bomSha256": { "$ref": "#/$defs/sha256" },
         "releaseAssetDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
         "releaseSetSha256": { "$ref": "#/$defs/sha256" },
-        "finalizationReceiptSha256": { "$ref": "#/$defs/sha256" },
-        "releaseTrustEvidenceSha256": { "$ref": "#/$defs/sha256" },
+        "finalizationReceiptSha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "releaseTrustEvidenceSha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
         "packages": {
           "type": "array",
           "prefixItems": [

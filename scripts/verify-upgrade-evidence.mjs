@@ -181,9 +181,18 @@ function canonicalProvenance(value, label = 'upgrade provenance') {
   invariant(GIT_OBJECT.test(value.gitCommit || ''), `${label}.gitCommit is invalid`)
   invariant(GIT_OBJECT.test(value.gitTree || ''), `${label}.gitTree is invalid`)
   invariant(SHA256.test(value.bomSha256 || '') && value.releaseAssetDigest === `sha256:${value.bomSha256}`, `${label} immutable Release BOM binding is invalid`)
-  for (const field of ['releaseSetSha256', 'finalizationReceiptSha256', 'releaseTrustEvidenceSha256']) {
-    invariant(SHA256.test(value[field] || ''), `${label}.${field} is invalid`)
+  invariant(SHA256.test(value.releaseSetSha256 || ''), `${label}.releaseSetSha256 is invalid`)
+  // 兩個 finalizer evidence 資產屬 opt-in 高保證車道 —— 已 retired ceremony,標準 six-file
+  // release 不產生(producer 端 verify-upgrade-provenance.mjs:657-658 即輸出 null,並將其排除
+  // 出 releaseSetSha256)。契約:**有值 → 必為 sha256(present-but-wrong 仍 fail-closed);
+  // 無值 → 必為 null(key 不得缺席,exactKeys 守閉合 shape);且兩者必成對**(對齊 producer
+  // 配對律)。2026-08-05 修:原本無條件要求 sha256 → 標準 release 的 consumer 自動升級
+  // 永遠不可能通過(WM 長期只能手動同步的真因)。
+  for (const field of ['finalizationReceiptSha256', 'releaseTrustEvidenceSha256']) {
+    invariant(value[field] === null || SHA256.test(value[field] || ''), `${label}.${field} is invalid`)
   }
+  invariant((value.finalizationReceiptSha256 === null) === (value.releaseTrustEvidenceSha256 === null),
+    `${label} finalization receipt requires its paired release trust evidence`)
   return {
     repository: value.repository,
     workflow: value.workflow,
