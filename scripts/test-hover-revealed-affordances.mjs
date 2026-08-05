@@ -32,6 +32,30 @@ const REGISTRY = [
     anchor: 'hoverAction &&',
     scope: 'row',
   },
+  {
+    label: 'ItemInlineAction menu-item / tree-item / row 三 scope',
+    file: 'packages/design-system/src/patterns/element-anatomy/item-anatomy.tsx',
+    anchor: 'opacity-0 group-hover/menu-item:opacity-100',
+    scope: 'menu-item',
+  },
+  {
+    label: 'Sidebar menu-item action',
+    file: 'packages/design-system/src/components/Sidebar/sidebar.tsx',
+    anchor: 'opacity-0 group-hover/menu-item:opacity-100',
+    scope: 'menu-item',
+  },
+  {
+    label: 'Carousel arrow wrapper',
+    file: 'packages/design-system/src/components/Carousel/carousel.tsx',
+    anchor: 'const arrowWrapperClass',
+    scope: 'carousel',
+  },
+  {
+    label: 'DataTable url cell 編輯連結',
+    file: 'packages/design-system/src/components/DataTable/cell-registry.tsx',
+    anchor: "aria-label=\"編輯連結\"",
+    scope: 'cell',
+  },
 ]
 
 let failures = 0
@@ -48,7 +72,7 @@ for (const entry of REGISTRY) {
   const hasHidden = /opacity-0\b/.test(block)
   const hasHoverReveal = new RegExp(`group-hover/${entry.scope}:opacity-100`).test(block)
     || /group-hover(?:\/[a-z-]+)?:opacity-100/.test(block)
-  const hasFocusReveal = /group-focus-within(?:\/[a-z-]+)?:opacity-100|group-has-\[:focus-visible\](?:\/[a-z-]+)?:opacity-100|focus-visible:opacity-100/.test(block)
+  const hasFocusReveal = /group-focus-within(?:\/[a-z-]+)?:opacity-100|group-has-\[:focus-visible\](?:\/[a-z-]+)?:opacity-100|focus-visible:opacity-100|(?:^|[\s'"`])focus-within:opacity-100/m.test(block)
   const problems = []
   if (!hasHidden) problems.push('缺 `opacity-0` 初始隱藏 → 會無條件恆顯')
   if (!hasHoverReveal) problems.push('缺 `group-hover/…:opacity-100` 揭示條件')

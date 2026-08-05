@@ -468,7 +468,9 @@ function UrlCell({ value, meta, mode, size, isEditable, onRequestEdit, onCommit,
           iconOnly
           startIcon={Pencil}
           aria-label="編輯連結"
-          className={cn('ml-1 opacity-0 group-hover/cell:opacity-100 transition-opacity motion-reduce:duration-0')}
+          // focus 揭示為 a11y 必要條件(2026-08-05 收尾稽核抓:原本只有 hover → 鍵盤 Tab
+          // 到一顆看不見的按鈕)。契約與 guard:scripts/test-hover-revealed-affordances.mjs
+          className={cn('ml-1 opacity-0 group-hover/cell:opacity-100 group-focus-within/cell:opacity-100 focus-visible:opacity-100 transition-opacity motion-reduce:duration-0')}
           onClick={(e) => {
             e.stopPropagation()
             onRequestEdit?.()

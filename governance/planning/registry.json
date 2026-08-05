@@ -111,10 +111,10 @@
       "reason": "Closed incomplete beta.108 Deep Audit record: immutable historical CI dimensions 64/66 remain explicitly unpassed, while the future canonical producer contract is repaired release-neutrally."
     },
     {
-      "path": "governance/planning/2026-08-05-wm-reviewed-bootstrap-to-beta113.md",
-      "status": "active",
-      "executable": true,
-      "reason": "WM 唯一支援的 reviewed bootstrap 程序(已對 disposable clone 實跑驗證);含 release-rings candidate 耦合缺口的長期修法。"
+      "path": "governance/planning/2026-08-05-wm-reviewed-bootstrap.md",
+      "status": "reference",
+      "executable": false,
+      "reason": "WM reviewed bootstrap 的已驗證程序與真實阻擋點記錄(reference,非可執行):唯一能通過的繞法(限縮輸入樹)會產生比事實更強的 receipt 宣稱,需先落地 plan-bootstrap 的 --acknowledge-consumer-owned 根因修法才可執行。"
     },
     {
       "path": "governance/planning/cell-indicator-ssot-rfc.md",
