@@ -355,6 +355,7 @@
         "scripts/test-sync-atomicity.mjs",
         "scripts/test-sync-ds-canonical-recovery.mjs",
         "scripts/test-sync-version-safety.mjs",
+        "scripts/test-upgrade-provenance-shape.mjs",
         "scripts/test-verified-exact-npm-runtime.mjs",
         "scripts/test-visual-audit-interaction.mjs",
         "scripts/test-visual-baseline-review.mjs",

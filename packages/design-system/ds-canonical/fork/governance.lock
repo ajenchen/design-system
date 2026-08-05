@@ -431,7 +431,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/794bb911ba8ebef58ab0d44a55b9968a19d2c62bcfb310b1ee3a84166f087f21.blob",
-      "sha256": "1902716115df20d4b8831e7c497abc82f9d3b848a06ca6b7cc1fe64def37a31b",
+      "sha256": "8a643a60eaf64bf131a2a4da197d5670a52e4705d11402b53fb32ae93302f6ef",
       "source": "scripts/verify-upgrade-provenance.mjs",
       "classification": null,
       "destination": "scripts/verify-upgrade-provenance.mjs"
