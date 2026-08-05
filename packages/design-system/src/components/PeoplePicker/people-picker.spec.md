@@ -81,6 +81,18 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 ---
 
+## 一鍵清空(clearable)
+
+`clearable`(2026-08-05 加)機械轉發 wrapped Select(single)/ Combobox(multi)——X 的渲染、位置與清空行為 SSOT 在基座與 family canonical,本元件不另定義:
+
+- **幾何**:有值時 clear X 在 ChevronDown 左(`../Field/field-controls.spec.md`「下拉箭頭與類型身份 indicator」段)
+- **單選**:清除後回 placeholder 態(`../Select/select.spec.md`「Clearable」);wrapper 把基座 clear 的空字串映射為 `onChange([])`,不進 people 回查(fallback 會產生空名假人員)
+- **多選**:clear all 一次清除所有已選人員(`../Combobox/combobox.spec.md`「全部清除」),與 per-chip 移除並存
+- **何時開**:繼承 select.spec.md「何時開 clearable」判準——「無選擇是有效狀態」(選填人員欄位如觀察者 / 可清的人員 filter)開;必須有人(assignee 必填)不開
+- 只在 edit 模式顯示;readonly / disabled 不渲(基座行為)
+
+---
+
 ## 與 Select / Combobox 的分界
 
 | | PeoplePicker | Select | Combobox |
@@ -180,6 +192,17 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 - **非人員多選 → Combobox**
 
 **常見誤解**:(1)「PeoplePicker 只是 Combobox + avatar 皮」— 它有自己一層 SSOT(avatar 12px 固定 inset / 圓形 +N chip / avatar-presence placeholder 規則),見上方 §A 繼承表;(2)「拿來展示 team 名單」— 它是選擇器,純展示用 `Avatar.Group` / `ProfileCard`(見禁止事項)。
+
+---
+
+## 觸控裝置(native 分支)
+
+觸控裝置(`(pointer: coarse)`,`use-is-touch-device.ts`)上 wrapped Select / Combobox 切至 native 分支(下拉 = 原生 `<select>` picker)。**Display 層與桌機同 SSOT — 「Trigger display SSOT canonical table」§B-§D 對觸控同樣成立**(2026-08-05 user 拍板;先前 native 分支硬編碼純文字/文字 Tag,手機 edit 單人無 avatar、多人掉回矩形 pill = canonical 違反,已修):
+
+- **單人 edit**:avatar + 人名(`selectedItemRenderer` 經 NativeSelect 透明 overlay pattern,見 `select.spec.md`「雙分支同 SSOT」);無 inline search,tap 開原生選單
+- **多人 edit**:avatar stack + 圓形 +N(display props 由 NativeCombobox 消費,見 `combobox.spec.md`「Display 層雙分支同 SSOT」)。顯示層非互動區 pointer 穿透(renderer 輸出套「抬升 z-10 + pointer-events-none + 按鈕 [&_button] 回收」三件套)— tap 任意處喚起原生 picker;**+N 在 touch 為指示器**(無 hover 開不了 popover;完整名單檢視與增刪走原生 picker 本身,原生多選單列出全員)
+- **移除鈕恆顯**:touch 無 hover → `AvatarDismissOverlay` 以 `pointer-coarse:opacity-100` 恆顯(2026-08-05 user 拍板 A 案;桌機 fine pointer 維持 hover / focus 才顯,DOM/tab-order 兩端一致)。tap 目標以 `pointer-coarse:before` 擴至 24×24(視覺 12px 不變;上限受 stack 22px pitch 制約,z 序 first-item-highest 重疊左者勝)
+- 一鍵清空 X(`clearable`)由基座 native 分支自行渲染,觸控同樣可用
 
 ---
 

@@ -134,6 +134,17 @@ const MultiPicker = () => {
 export const Multi: Story = {
   name: '多人',
   render: () => <MultiPicker />,
+}
+
+// Roving-focus 契約 probe:逐一移除 chip 時焦點依序落到下一個移除鈕,移除
+// 最後一人後回到 combobox。破壞性互動(清空全員)只屬測試,不得寄生在
+// reader-facing 展示 story(anchor:2026-08-05 user 抓「多人一打開就自己清空」;
+// 前身還為此加過「重設協作者」假 UI,ccf83b24)。story-rules「Technical probe
+// visibility」canonical:標 test-only,自 sidebar/Autodocs 排除,test runner 照跑。
+export const MultiRemoveFocusContract: Story = {
+  name: '移除焦點接力驗證',
+  tags: ['test-only'],
+  render: () => <MultiPicker />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(await canvas.findByRole('button', { name: '移除 Alice Chen' }))
@@ -145,6 +156,46 @@ export const Multi: Story = {
     await userEvent.click(canvas.getByRole('button', { name: '移除 Diana Huang' }))
     await waitFor(() => expect(canvas.getByRole('combobox', { name: '專案協作者(edit multi demo)' })).toHaveFocus())
   },
+}
+
+// Stack 移除鈕完整性 probe:AvatarDismissOverlay(`-top-px` + 2px ring,person-display.tsx)
+// 必須完整可見,不被 tag 列裁切(combobox.tsx tagRowOverflowClass 只裁水平;anchor:2026-08-05
+// user 抓「hover X 上緣被裁」— 2026-05-18 F2 雙軸 overflow-hidden 副作用)。screenshot lane
+// 無 hover 能力,以 keyboard focus 觸發 group-focus-within 顯示 overlay。
+export const StackRemoveOverlayProbe: Story = {
+  name: '移除鈕完整性驗證',
+  tags: ['test-only'],
+  render: () => <MultiPicker />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const btn = await canvas.findByRole('button', { name: '移除 Alice Chen' })
+    btn.focus()
+  },
+}
+
+/* ── 一鍵清空(選填欄位) ── */
+// X 在 ChevronDown 左(family SSOT field-controls.spec.md「下拉箭頭」段)。「無選擇是有效
+// 狀態」的選填欄位才開 clearable(select.spec.md「何時開」)——代理人 / 觀察者是典型選填人員欄位。
+const ClearablePicker = () => {
+  const [delegate, setDelegate] = React.useState<PersonValue | null>(samplePeople[1])
+  const [watchers, setWatchers] = React.useState<PersonValue[]>(samplePeople.slice(2, 5))
+  return (
+    <div className="flex flex-col gap-6 max-w-xs">
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">單人(代理人,選填)</h3>
+        <PeoplePicker clearable value={delegate} people={samplePeople} onChange={(v) => setDelegate(v[0] ?? null)} aria-label="代理人(選填)" />
+      </div>
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">多人(觀察者,選填)</h3>
+        <PeoplePicker clearable value={watchers} people={samplePeople} onChange={setWatchers} aria-label="觀察者(選填)" />
+      </div>
+    </div>
+  )
+}
+
+export const Clearable: Story = {
+  name: '一鍵清空(選填欄位)',
+  render: () => <ClearablePicker />,
 }
 
 /* ── 尺寸與 Button 對齊 ── */

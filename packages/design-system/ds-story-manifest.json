@@ -821,6 +821,7 @@
           "design-system-components-fileupload-展示--resume-upload",
           "design-system-components-fileupload-展示--bulk-image-upload",
           "design-system-components-fileupload-展示--with-file-list",
+          "design-system-components-fileupload-展示--file-list-remove-focus-contract",
           "design-system-components-fileupload-展示--remove-hover-state",
           "design-system-components-fileupload-展示--custom-children",
           "design-system-components-fileupload-展示--button-variant"
@@ -1113,6 +1114,9 @@
           "design-system-components-peoplepicker-展示--single",
           "design-system-components-peoplepicker-展示--with-error",
           "design-system-components-peoplepicker-展示--multi",
+          "design-system-components-peoplepicker-展示--multi-remove-focus-contract",
+          "design-system-components-peoplepicker-展示--stack-remove-overlay-probe",
+          "design-system-components-peoplepicker-展示--clearable",
           "design-system-components-peoplepicker-展示--size-alignment",
           "design-system-components-peoplepicker-展示--async-directory-load"
         ],
@@ -1752,5 +1756,5 @@
     }
   },
   "totalComponents": 65,
-  "totalStories": 943
+  "totalStories": 947
 }

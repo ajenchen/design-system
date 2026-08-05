@@ -88,7 +88,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | deep-audit-waived-self-review-library | `scripts/lib/waived-self-review.mjs` | `sha256:3623dc5ca9ca7674e00ca261294b8bda1cd71bb237d86d6eb487a43c02e46de7` |
 | deep-audit-waived-self-review-tests | `scripts/test-import-waived-self-review.mjs` | `sha256:c40f5c06ccfaafa54e6955b9c1e0eab34418760ac5e56c62b09add528b4b421b` |
 | design-system-migration-tools | `packages/design-system/tools` | `sha256:78a15fb174eab993cb4c25142ce72523659d28a3b19698ca5812ba0aca2e96ac` |
-| design-system-package-contract | `packages/design-system/package.json` | `sha256:f5e1f1940f6936602869e3fd405955c7ad6ae3470660ae23cd083249150ad4ce` |
+| design-system-package-contract | `packages/design-system/package.json` | `sha256:9bfb8691cc8d06c94f04529351cd450f5672f541a1c0f943284f4ac6f45c74ea` |
 | design-system-utility-registry | `packages/design-system/src/tokens/utility-registry.json` | `sha256:ac430d50ee82c19eb678f725c00eec23a0e25b33ec4bad81d3bf6e2fa9fa64ff` |
 | design-system-utility-registry-schema | `packages/design-system/src/tokens/utility-registry.schema.json` | `sha256:6e41f5522ab3e2d0364042bb433e129dceba1e85db170c2785d4271cc48e889c` |
 | development-container-contract | `.devcontainer/` | `sha256:61e19cd5eafeb2b6d8ee66f055f5dd3691c8e42cf91103056367917c059b36d7` |
@@ -188,7 +188,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | github-mutation-boundary-contract | `infra/governance/providers/github-mutation-boundary-contract.json` | `sha256:fab980731bdc2e9d7a36654411d91bf9c60641bd5d752f451dcc60aea045b39c` |
 | github-mutation-boundary-contract-schema | `infra/governance/schemas/github-mutation-boundary-contract.schema.json` | `sha256:4dcb67ba79814a0afa7ee4f520de231d4fa1bba82faab932d6b90045698827b9` |
 | github-mutation-boundary-library | `scripts/lib/github-mutation-boundary.mjs` | `sha256:5f403db0db88d9b2c30221c23d6217c535ea9bd78c7c1ace67ddbcfd4fc48023` |
-| github-repository-governance | `.github/` | `sha256:78f2273ee32a2f2e1a25c0fe6b0e265f854731dbdc57ca498735d4e331d51c78` |
+| github-repository-governance | `.github/` | `sha256:498e892a8571e546dad554cc00c4097d33b76470f5fa29f78b6784e93bb2830d` |
 | governance-anchor-preflight | `scripts/governance-anchor-preflight.mjs` | `sha256:3f87bcdcf95f85c73351646a5f818b088d6528cc6bd3c811054087fd58b4fdfa` |
 | governance-anchor-preflight-tests | `scripts/test-governance-anchor-preflight.mjs` | `sha256:68d4daa86461a8fd0ce155bcb696e98da93bc22a21094e8d8dd350cc9b0a72a5` |
 | governance-anchor-workflow | `.github/workflows/governance-anchor.yml` | `sha256:3790e6703b497ce973f3e412f412e536587b2d04d8499e27a921b69611150373` |
@@ -346,8 +346,8 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:5cbc55c7a74ef4f50613453cb75dde812747b6eb1e4ccdcb7f26f2b0ea07f5de` |
-| repository-ignore-boundary | `.gitignore` | `sha256:227ae98e9d7769a1c1e2335ecdd336f2ae6833e25bf26ddc1a5db23531ff4547` |
+| repository-automation-corpus | `scripts` | `sha256:1aaee49a1b5579eca2d1b04f79b1ce4c298b008496f448b2a1d76501dbaf507f` |
+| repository-ignore-boundary | `.gitignore` | `sha256:d8e1d26e0c7939e61f8f70303b93d4a5aa3a5d55bf638633ea6a2961e52b1a72` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
 | review-capability-registry | `infra/governance/providers/review-capability-registry.json` | `sha256:f5a9ac8f0a5dff377efa2e807b65861bddc4cfe67cf9d855f61fe173a3ca2a30` |
@@ -366,7 +366,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | workflow-identity-manager | `infra/governance/bin/sync-workflow-identities.mjs` | `sha256:8b8ffc42c6d8946981605d66d72295f3ecd702087453f1236a69bcf4c24b7a30` |
 | workflow-identity-proposal-schema | `infra/governance/schemas/workflow-identity-proposal.schema.json` | `sha256:b661ebc3db93c72357f0e73e25b63da827a5e7b1ef6c5163e8cbe12e470c2a84` |
 | workflow-static-validation-helper | `scripts/workflow-static-validation.mjs` | `sha256:8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305` |
-| workspace-lockfile | `package-lock.json` | `sha256:e4acfcd407a826e59689348404c48f9ebe54cd36d3e12587662202568077577c` |
+| workspace-lockfile | `package-lock.json` | `sha256:cba531571217966bd4b9c22549381fb4647bc986e769d1cc5a36bfb8d178b891` |
 
 ## Provider skill parity
 

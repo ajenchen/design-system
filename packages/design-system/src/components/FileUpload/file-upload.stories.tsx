@@ -85,9 +85,7 @@ export const BulkImageUpload = {
 // 不傳 `files` 則自動回 pre-2026-04-24 consumer-composed pattern(無須 story 示範「不傳 prop」)。
 
 // 2026-04-24 canonical:內建 `files` prop — FileUpload own success state display
-export const WithFileList = {
-  name: '內建 files 屬性',
-  render: () => {
+const FileListDemo = () => {
     type UploadItem = { id: string; name: string; size?: number; status?: 'uploading' | 'completed' | 'error'; progress?: number; description?: string }
     const [items, setItems] = useState<UploadItem[]>([
       { id: '1', name: '2026-Q1-report.pdf', size: 2_500_000, status: 'completed' },
@@ -118,7 +116,20 @@ export const WithFileList = {
         />
       </div>
     )
-  },
+}
+
+export const WithFileList = {
+  name: '內建 files 屬性',
+  render: () => <FileListDemo />,
+}
+
+// Roving-focus 契約 probe:移除檔案後焦點落到下一個移除鈕。破壞性互動(移除
+// 檔案)只屬測試,不得寄生在 reader-facing 展示 story(同 PeoplePicker
+// 2026-08-05 anchor;story-rules「Technical probe visibility」canonical)。
+export const FileListRemoveFocusContract = {
+  name: '移除焦點接力驗證',
+  tags: ['test-only'],
+  render: () => <FileListDemo />,
   play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(await canvas.findByRole('button', { name: '移除 2026-Q1-report.pdf' }))

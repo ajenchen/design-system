@@ -18,6 +18,15 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 const GAP = 4
 
+// 非-wrap tag 列 clip SSOT(4-path 共用:OverflowTagList base / readonly / native edit / custom edit):
+// 2026-05-18 F2 以 overflow-hidden 修「窄容器 tags 水平越界蓋 chevron / +N」,但雙軸 hidden 副作用
+// 是垂直同裁 — PeoplePicker stack hover 的 AvatarDismissOverlay(`-top-px` + 2px ring,
+// person-display.tsx v15.15,早於 F2)上緣被切(user 2026-08-05 抓「曾經沒有這問題」= F2 前確實沒有)。
+// 雙贏 = overflow-x-clip:水平維持 clip(F2 bug 不回歸;`clip` 不建 scroll container),垂直 visible
+// (overlay / avatar ring 完整)。**不可**改 overflow-x-hidden:單軸 hidden 令另一軸 visible 計算成
+// auto → 生 scroll container,垂直反而可捲。
+const tagRowOverflowClass = 'overflow-x-clip'
+
 const tagPadding: Record<string, string> = {
   sm: 'px-[calc((var(--field-height-sm)_-_1.25rem)_/_2)]',
   md: 'px-[calc((var(--field-height-md)_-_1.5rem)_/_2)]',
@@ -355,7 +364,7 @@ function ComboboxTagStack({
   // `data-table.spec.md:233`「禁硬裁無 ellipsis」+ MUI X / Ant Table column.ellipsis 共識。
   // (2026-05-14 nakedCellRowModeAlign 同保留 — autoRowHeight cell first-line align canonical。)
   return (
-    <div ref={ownRef} className={cn('flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : 'overflow-hidden')} style={{ gap: GAP }}>
+    <div ref={ownRef} className={cn('flex-1 min-w-0 flex items-center', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: GAP }}>
       {content}
     </div>
   )
@@ -551,7 +560,7 @@ function ReadonlyMultiSelect({
         // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 view 不對稱。
         // 2026-06-27 對齊 edit path(L598-617):wrap 時 items-start + chevron self-start/tagHeight 鎖第一行;
         // paddingRight: var(--field-px) re-assert 右緣 12px(tagPadding 對稱 calc 會吃掉右緣,跟 edit 一致)。
-        wrap ? 'flex-wrap items-start py-1' : 'overflow-hidden', className)}
+        wrap ? 'flex-wrap items-start py-1' : tagRowOverflowClass, className)}
       style={{ gap: GAP, paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode={resolvedMode}
       aria-disabled={resolvedMode === 'disabled' ? true : undefined}>
       {hasTags ? (
@@ -614,6 +623,11 @@ function focusAfterTagRemoval(container: HTMLElement | null, owner: HTMLElement 
 function NativeCombobox({
   mode, variant: variantProp, width, error = false, size = 'md', options, value = [], onChange, placeholder,
   className, disabled: disabledProp, wrap = false, clearable = false, showDisplayEndIcon = false,
+  // Display-layer parity(2026-08-05 user 拍板):renderer / overflow props 必雙分支(custom/native)
+  // 同消費 — 原 native 硬編碼 <Tag> 令 PeoplePicker 手機 edit 掉回文字 pill、avatar stack 全滅
+  // (touch 分支從未接 display 層的病根)。新增 renderer-affecting prop 時必同步本 destructure。
+  tagRenderer, renderHiddenTag, tagWrapperClassName, overflowWrapperClassName,
+  overflowShape, visibleCountOverride, tagAreaGapPx, tagAreaPaddingLeftPx,
   __triggerRef,
   'aria-label': ariaLabel,
 }: ComboboxInternalProps) {
@@ -646,6 +660,7 @@ function NativeCombobox({
   const items = value.map(v => ({ value: v, label: options.find(o => o.value === v)?.label ?? v }))
   const unselected = options.filter(o => !value.includes(o.value))
   const tagHeight = size === 'sm' ? 20 : 24
+  const tagAreaGap = tagAreaGapPx ?? GAP
 
   const selectDropdown = unselected.length > 0 ? (
     <select ref={selectRef} value="" onChange={(e) => handleAdd(e.target.value)}
@@ -675,13 +690,33 @@ function NativeCombobox({
           edit path tagArea 對齊 view path L293 已 ship 的 `overflow-hidden` fix。原 `overflow-visible`
           讓 tag 視覺越界蓋 chevron / +N indicator(useOverflowCount measurement 對但 CSS overflow 仍露)。
           M10 violation root cause:2026-05-15 F1 Q3 只 fix display path,edit + Native(L518)沒同步。 */}
-      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : 'overflow-hidden')} style={{ gap: GAP }}
+      {/* Display-layer parity(2026-08-05):OverflowTagList 消費與 CustomCombobox(L859-867)同一組
+          renderer / overflow props — tagRenderer 存在(PeoplePicker avatar stack 等)→ 手機 edit 與
+          桌機同視覺;未傳 → 原 <Tag> 文字 pill 預設不變。 */}
+      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}
         onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}>
         <OverflowTagList containerRef={tagAreaRef} items={items} size={size} wrap={wrap}
+          tagWrapperClassName={tagWrapperClassName}
+          // Review fix(2026-08-05 F2):+N 抬到 overlay 上(可見不被壓)且 pointer 穿透 —
+          // touch 無 hover 開不了 HoverCard,tap 穿透開原生 picker(原生多選單列全員含 hidden,
+          // 即 touch 的 overflow 檢視/增刪路徑)。桌機 CustomCombobox 呼叫端不變。
+          overflowWrapperClassName={cn(overflowWrapperClassName, 'relative z-10 pointer-events-none')}
+          gap={tagAreaGap}
+          overflowShape={overflowShape}
+          visibleCountOverride={visibleCountOverride}
           renderTag={(item) => (
-            <Tag size={size} className="shrink-0 relative z-10" onClick={() => { selectRef.current?.showPicker?.(); selectRef.current?.focus() }}
-              onRemove={() => handleRemove(item.value)}>{item.label}</Tag>
-          )} onRemove={handleRemove} trailing={value.length === 0 ? selectDropdown : undefined} />
+            tagRenderer
+              // Review fix(2026-08-05 F1/F3):renderer 輸出必套「抬升+穿透+按鈕回收」三件套 —
+              // relative z-10 抬到透明 native <select> overlay(z-0)之上(對齊 default <Tag> 的
+              // z-10;wrap 分支 OverflowTagList 無 wrapper div 時尤其必要);pointer-events-none 讓
+              // 非互動顯示區 tap 穿透 overlay(spec「點擊任何位置喚起原生 picker」);[&_button]:auto
+              // 回收 remove X / Tag onRemove 點擊。
+              ? <span className="relative z-10 min-w-0 flex-1 inline-flex items-center pointer-events-none [&_button]:pointer-events-auto">{tagRenderer(item, () => handleRemove(item.value))}</span>
+              : <Tag size={size} className="shrink-0 relative z-10" onClick={() => { selectRef.current?.showPicker?.(); selectRef.current?.focus() }}
+                  onRemove={() => handleRemove(item.value)}>{item.label}</Tag>
+          )}
+          renderHiddenTag={renderHiddenTag}
+          onRemove={handleRemove} trailing={value.length === 0 ? selectDropdown : undefined} />
       </div>
       {value.length > 0 && selectDropdown}
       <ItemSuffix className={cn('relative z-10 pointer-events-none', wrap && 'self-start')}
@@ -844,7 +879,7 @@ function CustomCombobox({
       {/* 2026-05-18 #6A Round 1 Step 2/4(per user 拍板「決策6選a」+ codex M31 Step 5 verdict cite combobox.tsx:648):
           CustomCombobox edit non-wrap tagArea 對齊 L293 view + L451 readonly + L518 native edit 已 ship 的 overflow-hidden fix。
           原 overflow-visible 讓 tag 越界蓋 chevron / +N indicator(user 圖三)。M10 propagation 完整 4-path align。 */}
-      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : 'overflow-hidden')} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
+      <div ref={tagAreaRef} className={cn('flex-1 min-w-0 flex items-center relative', nakedCellRowModeAlign, wrap ? 'flex-wrap' : tagRowOverflowClass)} style={{ gap: tagAreaGap, paddingLeft: tagAreaPaddingLeftPx }}>
         {value.length > 0 ? (
           <OverflowTagList containerRef={tagAreaRef} items={items} size={size} wrap={wrap}
             tagWrapperClassName={tagWrapperClassName}

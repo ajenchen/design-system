@@ -119,6 +119,13 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
    */
   searchIn?: 'menu' | 'trigger'
   /**
+   * 一鍵清空(2026-08-05):X 在 ChevronDown 左,family SSOT → field-controls.spec.md「下拉箭頭」段。
+   * 機械轉發 wrapped Select(single)/ Combobox(multi)的 `clearable` — X 渲染與清空行為 SSOT 在基座
+   * (SelectClearButton / Combobox clear),本 wrapper 不另 render。何時開的判準繼承 select.spec.md
+   * 「Clearable」:「無選擇是有效狀態」(選填欄位 / 可清 filter)才開;必填欄位不開。
+   */
+  clearable?: boolean
+  /**
    * View 態是否渲 ChevronDown + Field naked wrapper(D-path opt-in,2026-05-08)
    * — DataTable cell view↔edit 像素級對齊用。預設 false(裸 PersonDisplay,backward compat)。
    * 設 true 時 view 走 fieldWrapperStyles(naked variant)+ ItemSuffix ChevronDown,
@@ -149,6 +156,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   pillShowAvatar = true,
   pillWrap = true,
   searchIn = 'menu',
+  clearable = false,
   showDisplayEndIcon = false,
   'aria-label': ariaLabel,
   ...rest
@@ -190,7 +198,11 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     // Combobox DOM-based useOverflowCount(非 deterministic 那個算法)。修:用 root 自己當 trigger,
     // 從 root 內找 tagArea(flex-1 min-w-0 div)。
     const calc = () => {
-      const trigger = root.matches('[role="combobox"]') ? root : root.querySelector<HTMLElement>('[role="combobox"]')
+      // 2026-08-05 native-parity fix(touch 實圖抓「多人只剩 +N」):NativeCombobox root 無
+      // role="combobox"(a11y 在隱藏 <select> 上)→ 原查法 trigger=null → available=0 → 全
+      // overflow。雙分支通用:查無 combobox role 時 root 自身就是 trigger(native __triggerRef
+      // 即 field wrapper root),tagArea(flex-1 min-w-0)兩分支同構。
+      const trigger = root.matches('[role="combobox"]') ? root : (root.querySelector<HTMLElement>('[role="combobox"]') ?? root)
       const tagArea = trigger?.querySelector<HTMLElement>('div[class*="flex-1"][class*="min-w-0"]')
       const available = tagArea?.clientWidth ?? trigger?.clientWidth ?? 0
       const visible = getAvatarStackVisibleCount({
@@ -295,7 +307,9 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
 
   // ── single mode → wraps Select ────────────────────────────────────────────
   if (!isMulti) {
-    const handleSingleChange = (name: string) => onChange?.([findPerson(people, name)])
+    // clearable X 清空時 Select emit onChange('') — 空字串必映射為空陣列,
+    // 不可進 findPerson(fallback 會回 '' 字串 = 假人員)。清除後回 placeholder 態(select.spec.md「Clearable」)。
+    const handleSingleChange = (name: string) => onChange?.(name ? [findPerson(people, name)] : [])
     return (
       <Select
         ref={ref as React.Ref<HTMLDivElement>}
@@ -308,6 +322,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         value={selectedNames[0] ?? null}
         onChange={handleSingleChange}
         searchable
+        clearable={clearable}
         placeholder={placeholder}
         // 2026-05-12 Issue 4:placeholder = trigger empty。2026-07-04 Q4:emptyText 走 Select →
         // SelectMenu 接線(search-empty 語意,與 trigger-empty 分離)。
@@ -347,6 +362,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // 2026-07-14 deep-audit fix:searchIn 補 forward(原漏傳 → pill 模式永遠 Combobox default 'menu',
         // documented multi opt-in `searchIn='trigger'` silently 無效;stack branch 已傳,對齊 M30 forward 全 surface)
         searchIn={searchIn}
+        clearable={clearable}
         searchPlaceholder={searchPlaceholder}
         searchAriaLabel={searchAriaLabel}
         // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty hint('請選擇人員')
@@ -413,6 +429,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       onChange={handleMultiChange}
       searchable
       searchIn={searchIn}
+      clearable={clearable}
       searchPlaceholder={searchPlaceholder}
       searchAriaLabel={searchAriaLabel}
       // 2026-05-12 Stream C Issue 4(codex Q3):placeholder = trigger empty('請選擇人員');emptyText = search-empty(僅 backward-compat forward 1 cycle)
