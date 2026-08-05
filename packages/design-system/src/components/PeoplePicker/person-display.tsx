@@ -348,6 +348,10 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         'bg-surface-strong text-on-emphasis hover:bg-surface-strong-hover',
         // a11y(codex P1 fix):opacity 而非 display:none — element 在 DOM/tab-order,
         // keyboard 可達。Hover / focus-within / focus-visible 三條件之一觸發。
+        // **此行是移除鈕可見性的唯一 gating,刪掉 = 全部恆顯**(2026-08-05 anchor:撤 A 案時
+        // 連同本行一起刪除,造成桌機 stack 所有 avatar 的 X 無條件顯示;mechanical guard
+        // 見 scripts/test-avatar-dismiss-gating.mjs)。
+        'opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100 focus-visible:opacity-100',
         // **不加 touch 恆顯**(2026-08-05 user 否決前一版 A 案:「一般狀態直接把所有成員 avatar
         // 的 X 都秀出來,這樣看起來超亂」)。觸控的多人移除改由 PeoplePicker 自動降階為既有
         // pill 型態(Combobox tag SSOT,每顆 pill 自帶 X)承擔 — 見 people-picker.spec.md
