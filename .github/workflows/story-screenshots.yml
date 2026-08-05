@@ -21,10 +21,6 @@ on:
         required: false
         default: false
         type: boolean
-  # 暫時 push trigger(regression 驗證輪;驗證後移除)
-  push:
-    branches: ['claude/fix-dismiss-gating-and-pill-gap']
-    paths: ['packages/design-system/src/components/**']
 
 permissions:
   contents: read
@@ -69,15 +65,7 @@ jobs:
           STORIES: ${{ inputs.stories }}
           VIEWPORT: ${{ inputs.viewport }}
           TOUCH: ${{ inputs.touch && '--touch' || '' }}
-        run: node scripts/story-screenshots.mjs --stories="${STORIES:-design-system-components-peoplepicker-展示--multi}" --viewport="${VIEWPORT:-800x900}" $TOUCH
-
-      - name: Screenshot touch-emulated stories(暫時)
-        if: ${{ github.event_name == 'push' }}
-        run: node scripts/story-screenshots.mjs --stories='design-system-components-peoplepicker-展示--multi,design-system-components-peoplepicker-展示--clearable' --touch --out=story-screenshots/touch
-
-      - name: Screenshot table cell surface(暫時 — 防 table 被牽連)
-        if: ${{ github.event_name == 'push' }}
-        run: node scripts/story-screenshots.mjs --stories='design-system-components-datatable-展示--inline-edit' --touch --out=story-screenshots/table-touch || node scripts/story-screenshots.mjs --stories='design-system-components-datatable-展示--row-auto-height-inline-edit' --touch --out=story-screenshots/table-touch
+        run: node scripts/story-screenshots.mjs --stories="$STORIES" --viewport="$VIEWPORT" $TOUCH
 
       - name: Upload screenshots
         if: always()
