@@ -2204,12 +2204,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ab3c27173a70b0d6f6e57e4f2cc73775b8ed8ad963caeb1263e715b6315ec844",
+      "hash": "sha256:97689ce5819c7dbb1619c902648d0c1819f5d4fbee805a30382bdf01a68cb4b7",
       "id": "managed-host-release-binding",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/release-rings.json",
-      "size": 5477,
+      "size": 6692,
       "type": "file"
     },
     {
