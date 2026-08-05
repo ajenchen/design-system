@@ -38,6 +38,7 @@ import {
   findPerson,
 } from './people-picker-helpers'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
+import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 export { PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS, getPeoplePickerTagWrapperClass }
 
 // ── PeoplePicker ────────────────────────────────────────────────────────────
@@ -170,6 +171,14 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   const resolvedVariant: FieldVariantInternal = useResolvedFieldVariant(variantProp)
   const isMulti = Array.isArray(value)
   const isEmpty = !value || (isMulti && value.length === 0)
+  // 觸控多選一律走既有 pill 型態(2026-08-05 user 拍板:「手機上自動把多選 people picker 改成
+  // combobox 的型態,所有樣式互動都是 combobox 的 SSOT,不要再造輪子」)。理由:stack 的移除鈕
+  // 是 hover-reveal,觸控沒有 hover;恆顯 X 又太亂(user 否決)。pill 是 DS 既有 canonical
+  // (`multiDisplay='pill'` + Tag `avatar` prop),每顆 pill 自帶 X = Combobox tag 移除 SSOT。
+  // 桌機(fine pointer)完全不受影響:仍是 avatar stack + 圓形 +N + hover X。
+  // consumer 顯式傳 'pill' 時本行為 no-op(同值)。hook 必在任何 early return 前呼叫(React #310)。
+  const isTouch = useIsTouchDevice()
+  const effectiveMultiDisplay = isTouch && isMulti ? 'pill' : multiDisplay
 
   // 2026-07-05 D3 P0 修:以下派生 + 4 hooks 原宣告在 view/readonly/single/pill 四個 early return
   // 之後 — 同一 mounted instance 的 resolvedMode 於 edit↔view/disabled 切換(<Field mode>/<Field
@@ -186,7 +195,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   const stackContainerRef = React.useRef<HTMLDivElement | null>(null)
   const [stackVisibleCount, setStackVisibleCount] = React.useState<number | undefined>(undefined)
   React.useLayoutEffect(() => {
-    if (resolvedMode !== 'edit' || !isMulti || multiDisplay !== 'stack' || selectedNames.length <= 1) {
+    if (resolvedMode !== 'edit' || !isMulti || effectiveMultiDisplay !== 'stack' || selectedNames.length <= 1) {
       setStackVisibleCount(undefined); return
     }
     const root = stackContainerRef.current
@@ -217,7 +226,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     const ro = new ResizeObserver(calc)
     ro.observe(root)
     return () => ro.disconnect()
-  }, [resolvedMode, isMulti, multiDisplay, selectedNames.length, size])
+  }, [resolvedMode, isMulti, effectiveMultiDisplay, selectedNames.length, size])
   // Merge ref:forward to parent + capture for ResizeObserver
   const mergedStackRef = React.useCallback((el: HTMLDivElement | null) => {
     stackContainerRef.current = el
@@ -345,7 +354,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   }
 
   // ── multi 'pill' → wraps Combobox(對齊 GitHub Reviewers / Combobox idiom)────
-  if (multiDisplay === 'pill') {
+  // 觸控多選亦走此分支(effectiveMultiDisplay,見上方 isTouch 註解)。
+  if (effectiveMultiDisplay === 'pill') {
     const handleMultiChange = (next: string[]) => {
       onChange?.(next.map(name => findPerson(people, name)))
     }

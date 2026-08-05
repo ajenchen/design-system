@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "8cb7885eaa9f60430dcb6bd98ab332d371aa14cd35f1e06d9e89d2659af0cc53",
+    "forkCorpusLockSha256": "13eee833dc4bc595610b14843a7615254f9f6fab1d00b8983b2f58c6ef65d961",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "18b077f879905fd4e565ce15f7e06ccbb05f6a0bffacc190772fe2461a7c68e8",
@@ -120,14 +120,14 @@
       "scripts/release-bom-contract.mjs": "75d736f86c7f695dc88a1982d547998d510e8050c4847abe387227b6662b87c2",
       "scripts/schemas/product-template-scaffold-lock.schema.json": "1318af59f12546b3cda059a1d94923d9a969bef4c5a476ebb46e42f8c853d19a",
       "scripts/schemas/release-bom.schema.json": "6969482588a25533dc1896be63c3c9629aced1cbeb745b99822db764682dc4a4",
-      "scripts/schemas/upgrade-evidence-receipt.schema.json": "fcd6e3c8293899857ce1b48c8dd07c507060533600821e55bf547ac3e1e980d5",
+      "scripts/schemas/upgrade-evidence-receipt.schema.json": "a464b3dcc8f3f94ca997f5771e14626cc400c101e4e7625ff416a89f2af37bbc",
       "scripts/setup-governance.mjs": "2d5bf5ef149595854681c5744a431c2c231ead7d8699571a453783b39e556518",
       "scripts/setup-provider-cli-toolchain.mjs": "b34e11d02a7aa71d001ef8f1a42af4cf97d1b8b82360f5779cb927370f5ee15a",
       "scripts/setup-workspace.mjs": "95dc0fef1f7570efe277a66f7edf4640055ad6abbae0245615eceb9b041560e9",
       "scripts/sync-all.mjs": "938c706cad79a4bd538359c9b74cb9253a4c74b5f1342cbfc1625600425d8bfd",
       "scripts/sync-exact-workspace-dependencies.mjs": "29ce6aaab16fd7a939eff6e556e8548291fad28df88d578627153c9508bf6e31",
       "scripts/verify-consumer-css-entry.mjs": "a16545ea8d4f5224d8133f0bb0b68d5489d8e106fe7594488a78e0e5718b99cc",
-      "scripts/verify-upgrade-evidence.mjs": "f4452640d34cb28dbddbca9919f4bc5d3caec7c35879f9e69fd5f6c8485b2ffc",
+      "scripts/verify-upgrade-evidence.mjs": "2e4aa0050c39708929a96753dc639149b058b5b76fb281a1a6fe3c1ab09ebbae",
       "scripts/verify-upgrade-provenance.mjs": "8a643a60eaf64bf131a2a4da197d5670a52e4705d11402b53fb32ae93302f6ef",
       "scripts/workflow-static-validation.mjs": "8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305"
     }
