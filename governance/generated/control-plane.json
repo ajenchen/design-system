@@ -2204,12 +2204,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ab3c27173a70b0d6f6e57e4f2cc73775b8ed8ad963caeb1263e715b6315ec844",
+      "hash": "sha256:97689ce5819c7dbb1619c902648d0c1819f5d4fbee805a30382bdf01a68cb4b7",
       "id": "managed-host-release-binding",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/release-rings.json",
-      "size": 5477,
+      "size": 6692,
       "type": "file"
     },
     {
@@ -2710,7 +2710,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 41,
-      "hash": "sha256:44784b9e109b51d3bddde9ef4e17b17de69f00438e9bad22417e1cc05ccfde0a",
+      "hash": "sha256:1c368d6650bb6e7497f8cffcaf6b024d62fb16bf9d38589fb2f3512574ffde8e",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
