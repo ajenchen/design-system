@@ -351,6 +351,10 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         // Touch 恆顯(2026-08-05 user 拍板 A 案):`(pointer: coarse)` 無 hover 可觸發 →
         // pointer-coarse variant 直接 opacity-100;桌機(fine pointer)維持 hover-gated 不變。
         'opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100',
+        // Review fix(2026-08-05 F7):touch 恆顯後 12px 視覺即 tap 目標過小 → pointer-coarse 以
+        // before 擴 hit 至 24×24(視覺不變)。上限受 stack 22px pitch 限制(再大會蓋鄰位 X;
+        // z 序 first-item-highest,重疊時左者勝)。桌機 fine pointer 不擴(hover-reveal 已含指向)。
+        "pointer-coarse:before:content-[''] pointer-coarse:before:absolute pointer-coarse:before:-inset-1.5",
         'transition-opacity duration-150 motion-reduce:duration-0',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       ].join(' ')}

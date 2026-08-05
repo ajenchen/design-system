@@ -697,13 +697,21 @@ function NativeCombobox({
         onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}>
         <OverflowTagList containerRef={tagAreaRef} items={items} size={size} wrap={wrap}
           tagWrapperClassName={tagWrapperClassName}
-          overflowWrapperClassName={overflowWrapperClassName}
+          // Review fix(2026-08-05 F2):+N 抬到 overlay 上(可見不被壓)且 pointer 穿透 —
+          // touch 無 hover 開不了 HoverCard,tap 穿透開原生 picker(原生多選單列全員含 hidden,
+          // 即 touch 的 overflow 檢視/增刪路徑)。桌機 CustomCombobox 呼叫端不變。
+          overflowWrapperClassName={cn(overflowWrapperClassName, 'relative z-10 pointer-events-none')}
           gap={tagAreaGap}
           overflowShape={overflowShape}
           visibleCountOverride={visibleCountOverride}
           renderTag={(item) => (
             tagRenderer
-              ? tagRenderer(item, () => handleRemove(item.value))
+              // Review fix(2026-08-05 F1/F3):renderer 輸出必套「抬升+穿透+按鈕回收」三件套 —
+              // relative z-10 抬到透明 native <select> overlay(z-0)之上(對齊 default <Tag> 的
+              // z-10;wrap 分支 OverflowTagList 無 wrapper div 時尤其必要);pointer-events-none 讓
+              // 非互動顯示區 tap 穿透 overlay(spec「點擊任何位置喚起原生 picker」);[&_button]:auto
+              // 回收 remove X / Tag onRemove 點擊。
+              ? <span className="relative z-10 min-w-0 flex-1 inline-flex items-center pointer-events-none [&_button]:pointer-events-auto">{tagRenderer(item, () => handleRemove(item.value))}</span>
               : <Tag size={size} className="shrink-0 relative z-10" onClick={() => { selectRef.current?.showPicker?.(); selectRef.current?.focus() }}
                   onRemove={() => handleRemove(item.value)}>{item.label}</Tag>
           )}

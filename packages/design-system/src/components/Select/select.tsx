@@ -526,6 +526,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
       return <ReadonlyDisplay mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} showDisplayEndIcon={showDisplayEndIcon} selectedItemRenderer={selectedItemRenderer} />
     }
 
+    const selectedOpt = options?.find(o => o.value === value)
     const selectEl = (
       <select
         ref={setSelectRef}
@@ -537,7 +538,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
         aria-required={fieldCtx?.required || undefined}
         aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
         aria-errormessage={ariaErrorMessageProp ?? (error ? fieldCtx?.errorId : undefined)}
-        className={cn(bareInputStyles, 'cursor-pointer appearance-none', !value && 'text-fg-muted', value && (!isTextDisplay || selectedItemRenderer) && 'absolute inset-0 w-full h-full opacity-0 z-0')}
+        className={cn(bareInputStyles, 'cursor-pointer appearance-none', !value && 'text-fg-muted', value && (!isTextDisplay || (selectedItemRenderer && selectedOpt)) && 'absolute inset-0 w-full h-full opacity-0 z-0')}
         {...props}
       >
         {placeholder && <option value="" disabled>{placeholder}</option>}
@@ -555,7 +556,6 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
         <ChevronDown size={iconSize} className="text-fg-muted" aria-hidden />
       </ItemSuffix>
     )
-    const selectedOpt = options?.find(o => o.value === value)
     const label = selectedOpt?.label ?? value
     const nativeTagVariant = selectedOpt?.tagVariant as 'blue' | 'green' | 'red' | 'yellow' | 'neutral' | undefined
     const SelectedOptIcon = selectedOpt?.icon
@@ -565,14 +565,17 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     // pattern 作透明 overlay(tap 開原生 picker)。原 native edit 只顯 option 純文字 = touch 分支
     // 從未接 display 層的病根。空值 fall through 原分支(native placeholder)。selectedOpt 查無
     // (async options 未到)→ fallback {value,label:value},renderer 端自行降級(initials)。
-    if (selectedItemRenderer && value) {
+    if (selectedItemRenderer && value && selectedOpt) {
       return (
         <div className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'relative', className)}
           style={{ paddingRight: 'var(--field-px)' }} data-field-mode="edit" data-error={error ? '' : undefined}>
-          {/* wrapper class 對齊 select.tsx CustomSelect renderer wrapper + PEOPLE_PICKER_LENGTH1_WRAPPER_CLASS
-              (flex-1 min-w-0 → 長名 truncate 有 width constraint);pointer-events-none → tap 穿透到 select overlay */}
-          <span className="relative z-10 pointer-events-none flex-1 min-w-0 inline-flex items-center">
-            {selectedItemRenderer(selectedOpt ?? { value, label: value })}
+          {/* Review fix(2026-08-05 F5/F6):StartIcon + nakedCellRowModeAlign 與桌機 renderer 分支
+              (CustomSelect,gate 同為 selectedOpt truthy — renderer 公開契約只收 options 真實 entry,
+              async options 未到 fall through 原生文字分支,與桌機 fallback 對稱)逐項對齊;
+              pointer-events-none → tap 穿透 select overlay 開原生 picker。 */}
+          {StartIcon && <ItemPrefix><StartIcon size={iconSize} className="text-fg-muted pointer-events-none" aria-hidden /></ItemPrefix>}
+          <span className={cn('relative z-10 pointer-events-none flex-1 min-w-0 inline-flex items-center', nakedCellRowModeAlign)}>
+            {selectedItemRenderer(selectedOpt)}
           </span>
           {selectEl}
           {clearEl}
