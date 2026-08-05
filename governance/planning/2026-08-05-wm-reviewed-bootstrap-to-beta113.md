@@ -74,6 +74,21 @@ scaffold 的 `apps/template/package.json` 每次發版都變 → 永遠 `reviewR
 consumer-owned delta;該 delta 在同一個 PR 內手動對齊(版本號 + lock)。
 **這是本程序唯一的操作判斷點**,列此供覆核。
 
+## 執行環境限制(2026-08-05 實測)
+
+`consumerctl` 凡觸及 GitHub 的階段(doctor / plan-bootstrap 取 required-checks digest 等)
+會經 `infra/governance/bin/reconcile-github.mjs:199-206` 的**刻意 hermetic 子行程**發出請求 ——
+該子行程只帶 `GITHUB_TOKEN` / `HOME` / `LANG` / `LC_ALL` / `NO_COLOR`,**不帶 proxy 變數**。
+在只能經 proxy 連外的 sandbox 中會得到 `getaddrinfo ENOTFOUND api.github.com`。
+
+這是供應鏈上刻意的封閉邊界,**不要為了跑通而放寬**;要執行本程序請在可直連 GitHub 的
+環境(或明確評估後以受審方式加入 proxy 透傳)進行。
+
+**Step 0 已完成**(2026-08-05):`release-rings.json` 的 candidate 已由 v0.1.0-beta.115 的
+release BOM 機械推導寫入,三個 assignment digest 同步重設,`governance:check` PASS。
+下次接手可直接從 Step 1(materialize 三份輸入樹)開始,但需先確認 candidate 是否仍對應
+當時最新的 published release。
+
 ## 完整逐步指令
 
 完整指令(含 curl REST 取資產、每步 fail-closed 檢查、rollback)保存於本次 workflow
