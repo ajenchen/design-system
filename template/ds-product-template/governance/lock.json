@@ -42,7 +42,7 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "8b3f0a7b469265f6b666e319f3ee79fc2101a0d27596716bdfba0f813cd3c5d8",
+    "forkCorpusLockSha256": "00859257a2d057e877bcfeb5f4bf9531585cb9eaa58edfd3872a9634e0aa0ea0",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
     "providerLifecycleSha256": "811b160b56b2c2128a26912e81f0956dd3f12a30c0de7b748429ade4a4811a38",
@@ -115,7 +115,7 @@
       "scripts/lib/workspace-post-create.mjs": "f3ddc6db740d5c4d48b1c6e16c55222325e4d1c16fe6644a455e7b7e5bea0a0d",
       "scripts/lib/worktree-fingerprint.mjs": "70a8bdbceade964d009f6a46c9e57a93bc9fd58c28971ea14ad1b5ffeaaf7250",
       "scripts/lint-ds-internal-imports.mjs": "86edd952fb5c3871896515440693abeb08c1d1da9f887fa073b9ddda1363f572",
-      "scripts/product-template-scaffold-lock.mjs": "9134dabf11af7a2445a6a026fc23201e8aba3ef5aeb7da1d2159e92956dd32d2",
+      "scripts/product-template-scaffold-lock.mjs": "7fc069b6ba5f62907eed574d9ae53c5202463fd79b55aa41101b3e2587e99072",
       "scripts/refresh-fork-launchers.mjs": "8d2058e9b32307a80e3a564f18abac6ea093d09e79164f468af5e1893217283f",
       "scripts/release-bom-contract.mjs": "75d736f86c7f695dc88a1982d547998d510e8050c4847abe387227b6662b87c2",
       "scripts/schemas/product-template-scaffold-lock.schema.json": "1318af59f12546b3cda059a1d94923d9a969bef4c5a476ebb46e42f8c853d19a",
