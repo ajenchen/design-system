@@ -29,8 +29,8 @@
     "audit:a11y": "node scripts/audit-consumer-a11y.mjs"
   },
   "dependencies": {
-    "@qijenchen/design-system": "0.1.0-beta.109",
-    "@qijenchen/storybook-config": "0.1.0-beta.109",
+    "@qijenchen/design-system": "0.1.0-beta.110",
+    "@qijenchen/storybook-config": "0.1.0-beta.110",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
