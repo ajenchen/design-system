@@ -63,8 +63,8 @@ Field 和 Field Controls（Input / NumberInput / DatePicker / Select / Combobox 
 
 Field 若需要次要 action（如「重設」「全選」「從範本帶入」），**唯一預留位置 = label 行最右端**（label 與 action 兩端對齊）：
 
-- 形式：超連結樣文字（link-like text），**字級同 FieldLabel**（`text-body` 14px）。
-- 硬約束：**不得增加 label 行高度**（避免 field 被撐高）；action 行高跟隨 label 行。
+- 形式：超連結樣文字（link-like text），**字級與行高皆同 FieldLabel**（`text-body` 14px、同 label 的 leading）——同字級同行高即天然等高，這是「不增高」的機制核心（user 2026-08-05 確認）。
+- 硬約束：**不得增加 label 行高度**（避免 field 被撐高）。等高機制之外還需三個盒模型條件缺一不可：(1) **零垂直 padding、無固定高度盒**——禁用 DS `Button`（xs 也自帶 `h-field-xs` 固定盒 + 自身 leading，`button.tsx` xs variant），必須是純文字元素；(2) **單行 `whitespace-nowrap`**（換行即行盒 ×2）；(3) **hit target 以 pseudo-element／負 margin 擴大**，不得用 padding 滿足 a11y 觸控目標（underline／focus ring 不佔佈局，無礙）。
 - 此位置是 field 次要 action 的**專屬 slot**——禁止把次要 action 放在 control 下方、error 位置或 field 外圍（那些位置屬 description/error/表單層動作）。
 - 對齊世界級：Polaris TextField `labelAction`（https://polaris.shopify.com/components/selection-and-input/text-field 的「With label action」example；2026-08-05 WebFetch 驗證 prop 存在）。
 - 狀態：**2026-08-05 user 拍板記錄,尚未實作**。實作時走 `<FieldLabelAction>` 類 slot + `/component-quality-gate`；在那之前任何 story/產品範例**不得**自行發明次要 action 擺位（anchor：PeoplePicker 多人 story 曾把 play() 測試用「重設協作者」按鈕誤植為 control 下方的產品 UI,2026-08-05 移除）。
