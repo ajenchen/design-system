@@ -100,7 +100,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 | 資料類型 | **人員**（含 Avatar） | 任意（純文字）| 任意（純文字）|
 | 單選 / 多選 | 兩者皆支援（value 類型決定）| 單選 | 多選 |
 | 視覺 prefix | Avatar（必備） | 可選 startIcon | 無 |
-| 底層實作 | Popover + Command + SelectMenu | 桌機自建 listbox（`role="combobox"` div + cmdk SelectMenu，`select.tsx:582`）/ 觸控 native `<select>`(`select.tsx` NativeSelect) | 桌機自建 listbox（`role="combobox"` div + cmdk SelectMenu + Tag overlay，`combobox.tsx:728`）/ 觸控 native `<select>`(`combobox.tsx` NativeCombobox) |
+| 底層實作 | Popover + Command + SelectMenu | 桌機自建 listbox（`role="combobox"` div + cmdk SelectMenu，`select.tsx:816`）/ 觸控 native `<select>`(`select.tsx` NativeSelect) | 桌機自建 listbox（`role="combobox"` div + cmdk SelectMenu + Tag overlay，`combobox.tsx:840`）/ 觸控 native `<select>`(`combobox.tsx` NativeCombobox) |
 | 搜尋 | 永遠啟用（人名本質）；single = inline-trigger（wrap `<Select searchable>`），multi 預設 panel-top（`searchIn='menu'`，`searchIn='trigger'` opt-in）— 對齊本 spec L91-92 SSOT 表 | 可選 `searchable`（單選短列表 → inline-trigger only）| 可選 `searchable` + `searchIn='menu' \| 'trigger'`（多選 → 兩種模式）|
 
 **搜尋型態 SSOT canonical**（A1-A5 spec,2026-05-11;2026-05-12 補 PeoplePicker multi `searchIn` opt-in）：
@@ -135,7 +135,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 | 空、closed | placeholder「請選擇人員」+ 按空間 ellipsis |
 | 選 1 人、closed | avatar + 人名 + 按空間 ellipsis(`PersonDisplay`,`person-display.tsx:137-152`)|
 | open + inline-search、未選 | input cursor + placeholder「請選擇人員」(trigger empty placeholder,**不**用「搜尋…」)|
-| open + inline-search、選 1 人 | input cursor + 該人名 overlay(本人名字當記憶提示,按空間 ellipsis;`select.tsx:204-205` `triggerEmptyPlaceholder = placeholder \|\| '搜尋…'` + `showSelectedOverlay` span 顯人名,2026-05-15 Bug 2 fix 改 span overlay 取代原 native placeholder)|
+| open + inline-search、選 1 人 | input cursor + 該人名 overlay(本人名字當記憶提示,按空間 ellipsis;`select.tsx:286,301` `triggerEmptyPlaceholder = placeholder \|\| '搜尋…'` + `showSelectedOverlay` span 顯人名,2026-05-15 Bug 2 fix 改 span overlay 取代原 native placeholder)|
 | open + panel-search、選 1 人 | avatar + 人名 + ellipsis(搜尋框在 panel 內,trigger 視覺不變)|
 
 #### C. 多人 length=1 trigger SSOT(降階為單人視覺)
@@ -159,17 +159,17 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 | 共享項 | SSOT owner |
 |---|---|
-| Avatar 左 inset 距 trigger.left = 12px 固定(不隨 size/density 漂移)| 本 spec L175「Avatar 左 inset SSOT」段 + `people-picker.tsx:371` `!px-[var(--field-px)]` inject(form context)/ `!px-[var(--table-cell-px)]`(naked variant table cell)|
+| Avatar 左 inset 距 trigger.left = 12px 固定(不隨 size/density 漂移)| 本 spec L175「Avatar 左 inset SSOT」段 + `people-picker.tsx:463` `!px-[var(--field-px)]` inject(form context)/ `!px-[var(--table-cell-px)]`(naked variant table cell)|
 | Avatar+人名視覺 | `person-display.tsx:137-152` `PersonDisplay`(共享 renderer)|
 | 人名按空間 ellipsis | `person-display.tsx:150` `truncate flex-1 min-w-0` |
 | Placeholder ellipsis(inline-search active 時)| `field-wrapper.tsx:244` `bareInputStyles` 含 `truncate` |
-| Empty-state inline-search placeholder(未選時 → trigger empty placeholder) | `select.tsx:204` `triggerEmptyPlaceholder = placeholder \|\| '搜尋…'` / `combobox.tsx` CustomCombobox inline input `items.length === 0 ? placeholder : ''`(2026-05-15 Drift A fix 對齊 PeoplePicker SSOT)|
+| Empty-state inline-search placeholder(未選時 → trigger empty placeholder) | `select.tsx:286` `triggerEmptyPlaceholder = placeholder \|\| '搜尋…'` / `combobox.tsx:909` CustomCombobox inline input `items.length === 0 ? placeholder : ''`(2026-05-15 Drift A fix 對齊 PeoplePicker SSOT)|
 
 **Avatar-presence → placeholder 規則(2026-05-15 user verbatim「只要有 avatar 存在,placeholder 都是空的,只會出現 cursor,這樣才不會造成混亂」)**:
 
 | 場景 | avatar 是否可見 | placeholder 行為 |
 |---|---|---|
-| 單人 inline-search、已選、open | ❌(input **取代** avatar/name,avatar 消失)| 該人名以 span overlay 顯示(memory aid)— `select.tsx:204-205`(2026-05-15 Bug 2 fix 改 span overlay)|
+| 單人 inline-search、已選、open | ❌(input **取代** avatar/name,avatar 消失)| 該人名以 span overlay 顯示(memory aid)— `select.tsx:286,301`(2026-05-15 Bug 2 fix 改 span overlay)|
 | 單人 inline-search、未選、open | ❌(從來沒 avatar)| placeholder = **trigger empty placeholder「請選擇人員」** |
 | 多人 inline-search、length≥1、open | ✅(avatar/stack 仍在,input 在 trailing)| **placeholder = '' 純 cursor**(避免跟 avatar 重複)|
 | 多人 inline-search、length=0、open | ❌(empty)| placeholder = **trigger empty placeholder「請選擇人員」** — `combobox.tsx` CustomCombobox inline input(Drift A fix)|
