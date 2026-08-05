@@ -4,8 +4,8 @@
   "kind": "provider-lifecycle-ledger",
   "immutableHead": {
     "providerInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
-    "releaseVersion": "0.1.0-beta.109",
-    "snapshotSha256": "172fb0f27392b68d6399c5f658cde49e51446f1a9e0094fb359fcf306c3ef161"
+    "releaseVersion": "0.1.0-beta.110",
+    "snapshotSha256": "b11dad6b99dbfcdf0963a136768bb3d6dda9a746b5500bccdf35d3dacb7b0667"
   },
   "snapshots": [
     {
@@ -1166,6 +1166,83 @@
     {
       "releaseVersion": "0.1.0-beta.110",
       "previousSnapshotSha256": "172fb0f27392b68d6399c5f658cde49e51446f1a9e0094fb359fcf306c3ef161",
+      "providers": [
+        {
+          "id": "claude",
+          "discovery": {
+            "providerRootNames": [
+              ".claude"
+            ],
+            "instructionNames": [
+              "CLAUDE.md"
+            ],
+            "instructionOverrideNames": [
+              "CLAUDE.local.md",
+              "CLAUDE.override.md"
+            ],
+            "configPaths": [
+              ".claude/settings.json",
+              ".claude/settings.local.json",
+              ".mcp.json"
+            ],
+            "pluginRootNames": [
+              ".claude-plugin"
+            ]
+          },
+          "surfaces": [
+            {
+              "path": ".claude/settings.json",
+              "kind": "file"
+            },
+            {
+              "path": ".claude/skills",
+              "kind": "tree"
+            },
+            {
+              "path": "CLAUDE.md",
+              "kind": "file"
+            }
+          ]
+        },
+        {
+          "id": "codex",
+          "discovery": {
+            "providerRootNames": [
+              ".agents",
+              ".codex"
+            ],
+            "instructionNames": [
+              "AGENTS.md"
+            ],
+            "instructionOverrideNames": [
+              "AGENTS.local.md",
+              "AGENTS.override.md"
+            ],
+            "configPaths": [
+              ".codex/config.toml",
+              ".codex/hooks.json"
+            ],
+            "pluginRootNames": [
+              ".codex-plugin"
+            ]
+          },
+          "surfaces": [
+            {
+              "path": ".agents/skills",
+              "kind": "tree"
+            },
+            {
+              "path": ".codex/hooks.json",
+              "kind": "file"
+            }
+          ]
+        }
+      ],
+      "retiredProviders": []
+    },
+    {
+      "releaseVersion": "0.1.0-beta.111",
+      "previousSnapshotSha256": "b11dad6b99dbfcdf0963a136768bb3d6dda9a746b5500bccdf35d3dacb7b0667",
       "providers": [
         {
           "id": "claude",
