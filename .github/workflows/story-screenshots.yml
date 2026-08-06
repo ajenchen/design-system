@@ -24,7 +24,7 @@ on:
   # 暫時 push trigger(分隔線落點視覺驗證;驗證後移除)
   push:
     branches: ['claude/divider-rule-ssot']
-    paths: ['packages/design-system/src/components/**']
+    paths: ['packages/design-system/src/components/**', '.github/workflows/story-screenshots.yml']
 
 permissions:
   contents: read
