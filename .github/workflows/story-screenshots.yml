@@ -21,10 +21,6 @@ on:
         required: false
         default: false
         type: boolean
-  # 暫時 push trigger(分隔線落點視覺驗證;驗證後移除)
-  push:
-    branches: ['claude/divider-rule-ssot']
-    paths: ['packages/design-system/src/components/**', '.github/workflows/story-screenshots.yml']
 
 permissions:
   contents: read
@@ -69,7 +65,7 @@ jobs:
           STORIES: ${{ inputs.stories }}
           VIEWPORT: ${{ inputs.viewport }}
           TOUCH: ${{ inputs.touch && '--touch' || '' }}
-        run: node scripts/story-screenshots.mjs --stories="${STORIES:-design-system-internal-notice-設計規格--overview}" --viewport="${VIEWPORT:-900x700}" $TOUCH
+        run: node scripts/story-screenshots.mjs --stories="$STORIES" --viewport="$VIEWPORT" $TOUCH
 
       - name: Upload screenshots
         if: always()
