@@ -171,6 +171,29 @@ export function pinExactWorkspaceDependencies(rootPath, expectedVersion) {
     }
   }
 
+  // An upgrade transaction bumps only the repository root, so its reconstruction nests the previous
+  // release under every workspace that still asked for it. Realigning the manifests above is not
+  // enough: `npm install --package-lock-only` then reports "up to date" and leaves those nested
+  // entries behind, because npm only adds what is missing — it never prunes a satisfied-but-
+  // extraneous node — and the exact-version verification below would fail on a lock nobody can fix
+  // by re-running the install. Dropping the off-version nested entries lets that install re-validate
+  // against a consistent lock; a workspace that genuinely needs its own copy simply gets it back,
+  // and verifyExactWorkspaceDependencies stays the authority either way.
+  const lockPath = discoverDependencyLockPath(root)
+  const lockAbsolute = resolve(root, lockPath)
+  const packageLock = readJson(lockAbsolute, lockPath)
+  if (packageLock.packages && typeof packageLock.packages === 'object' && !Array.isArray(packageLock.packages)) {
+    const stale = Object.keys(packageLock.packages).filter((entryPath) => (
+      GOVERNED_WORKSPACE_PACKAGES.some((packageName) => entryPath.endsWith(`/node_modules/${packageName}`))
+      && packageLock.packages[entryPath]?.version !== expectedVersion
+    ))
+    if (stale.length) {
+      for (const entryPath of stale) delete packageLock.packages[entryPath]
+      writeFileSync(lockAbsolute, `${JSON.stringify(packageLock, null, 2)}\n`)
+      changed.push(lockPath)
+    }
+  }
+
   return Object.freeze(changed)
 }
 
