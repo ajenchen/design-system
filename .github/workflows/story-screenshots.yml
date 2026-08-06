@@ -69,7 +69,7 @@ jobs:
           STORIES: ${{ inputs.stories }}
           VIEWPORT: ${{ inputs.viewport }}
           TOUCH: ${{ inputs.touch && '--touch' || '' }}
-        run: node scripts/story-screenshots.mjs --stories="${STORIES:-design-system-components-alert-展示--corner-action-group,design-system-components-toast-展示--interactive}" --viewport="${VIEWPORT:-900x700}" $TOUCH
+        run: node scripts/story-screenshots.mjs --stories="${STORIES:-design-system-internal-notice-設計規格--overview}" --viewport="${VIEWPORT:-900x700}" $TOUCH
 
       - name: Upload screenshots
         if: always()
