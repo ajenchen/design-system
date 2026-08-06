@@ -238,6 +238,13 @@ async function fixture(t, { trustedVersion = '0.1.0-beta.93', candidateVersion =
   }
   const snapshot = releaseSnapshot(candidateVersion)
   const releaseLookup = async () => snapshot
+  // Provenance now reads a registry attestation readback, so the fixture must serve the same
+  // bundles it mutates; without this the gate would reach the public registry and every negative
+  // case would fail on the real package instead of the injected mutation.
+  const attestationLookup = async ({ name, version }) => ({
+    registry: 'https://registry.npmjs.org/',
+    attestations: auditReport.verified.find(item => item.name === name && item.version === version)?.attestationBundles,
+  })
   return {
     trustedRoot: trusted,
     candidateRoot: candidate,
@@ -250,6 +257,7 @@ async function fixture(t, { trustedVersion = '0.1.0-beta.93', candidateVersion =
     auditReport,
     snapshot,
     releaseLookup,
+    attestationLookup,
   }
 }
 

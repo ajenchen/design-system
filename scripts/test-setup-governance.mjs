@@ -31,12 +31,18 @@ import {
 } from './setup-governance.mjs'
 import { buildCorpus } from './build-fork-governance.mjs'
 import { mergeRequiredPackageScripts } from './refresh-fork-launchers.mjs'
-import { PRODUCT_TEMPLATE_PACKAGE_LOCK_GENERATOR } from './product-template-scaffold-lock.mjs'
+import {
+  PRODUCT_TEMPLATE_PACKAGE_LOCK_GENERATOR,
+  PRODUCT_TEMPLATE_PACKAGE_LOCK_NPM_COMMAND,
+} from './product-template-scaffold-lock.mjs'
 import {
   PROTECTED_CONTROL_PLANE_EXACT_PATHS,
   PROTECTED_CONTROL_PLANE_PATH_PREFIXES,
 } from './lib/consumer-control-plane-policy.mjs'
-import { evaluateVerifiedHighVulnerabilityAudit } from './lib/governance-dependency-bootstrap.mjs'
+import {
+  evaluateVerifiedHighVulnerabilityAudit,
+  runClosedBootstrapStep,
+} from './lib/governance-dependency-bootstrap.mjs'
 import {
   discoverPackageManifestPaths,
   discoverReceiverDependencyPaths,
@@ -671,6 +677,25 @@ test('platform and command contract is closed and native Windows is unsupported'
   assert.match(bootstrapSource, /for \(let index = 0; index < GOVERNANCE_DEPENDENCY_NPM_STEPS\.length; index \+= 1\)/)
   assert.match(bootstrapSource, /runVerifiedHighVulnerabilityAudit\(process\.execPath, \[npmRuntime\.cli, \.\.\.args\]/)
   assert.doesNotMatch(source, /node_modules\/npm\/bin\/npm-cli\.js/)
+  assert.match(bootstrapSource, /stdio: \['inherit', 2, 'inherit'\]/)
+  assert.doesNotMatch(bootstrapSource, /stdio: 'inherit'/)
+})
+
+test('bootstrap npm chatter never enters the parent machine-readable stdout', () => {
+  // Callers such as `sync-all.mjs --json` promise a machine-readable stdout. An inherited fd 1
+  // interleaves npm chatter with that report and breaks every consumer of `--json` (jq in the
+  // consumer sync workflow, JSON.parse in these fixtures) even when the upgrade itself succeeded.
+  let observed = null
+  runClosedBootstrapStep('npm-fixture', ['ci'], {
+    root: process.cwd(),
+    environment: process.env,
+    errorPrefix: 'GOV-STDOUT-PURITY-TEST',
+    runner: (command, args, options) => {
+      observed = options
+      return { status: 0 }
+    },
+  })
+  assert.deepEqual(observed.stdio, ['inherit', 2, 'inherit'])
 })
 
 test('overlay-aware audit excludes only the exact verified bundled preimages and otherwise fails closed', () => {
@@ -952,9 +977,12 @@ test('canonical execution runtime is the single machine SSOT for setup, package 
 
   const upgradeEvidenceSchema = JSON.parse(readFileSync('scripts/schemas/upgrade-evidence-receipt.schema.json', 'utf8'))
   assert.equal(upgradeEvidenceSchema.$defs.toolchain.properties.npm.const, runtime.exactNpmVersion)
+  // The invariant here is the version binding: the generator string must carry the canonical
+  // exact npm version. Re-listing the flags would duplicate their SSOT, and that duplicate is
+  // exactly what went stale when `--prefer-online` was added to the canonical command (#63).
   assert.equal(
     PRODUCT_TEMPLATE_PACKAGE_LOCK_GENERATOR,
-    `npm@${runtime.exactNpmVersion} install --package-lock-only --ignore-scripts --legacy-peer-deps --no-audit --no-fund`,
+    `npm@${runtime.exactNpmVersion} ${PRODUCT_TEMPLATE_PACKAGE_LOCK_NPM_COMMAND.join(' ')}`,
   )
 
   const workflowPaths = ['template/ds-product-template/.github/workflows/audit.yml']

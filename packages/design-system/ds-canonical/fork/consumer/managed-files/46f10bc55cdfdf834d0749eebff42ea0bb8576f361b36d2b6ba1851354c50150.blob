@@ -217,7 +217,13 @@ export function runClosedBootstrapStep(command, args, {
     cwd: root,
     env: environment,
     shell: false,
-    stdio: 'inherit',
+    // npm progress lines are diagnostics, not program output. Callers such as
+    // `sync-all.mjs --json` promise a machine-readable stdout, and an inherited fd 1 would
+    // interleave npm chatter with that report (2026-08-06: a consumer upgrade applied
+    // cleanly yet its workflow died on `jq: Invalid numeric literal` because `npm warn` and
+    // `added 4 packages` landed in the report file). Route child stdout to this process's
+    // stderr so the logs stay visible while stdout stays a closed machine channel.
+    stdio: ['inherit', 2, 'inherit'],
     timeout: timeoutMs,
     windowsHide: true,
   })

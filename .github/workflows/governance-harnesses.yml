@@ -45,5 +45,12 @@ jobs:
       - name: Provision lock-matched Playwright browsers
         run: npm run setup:playwright -- --with-deps
 
+      # setup:all(scripts/setup-workspace.mjs)installs the provider CLI toolchain right after role
+      # governance setup. This lane hand-rolls the same bootstrap and omitted that stage, so every
+      # member that certifies a provider CLI runtime binding died on a missing prerequisite instead
+      # of on an assertion. Must run after setup:dependencies (needs the lock-bound npm).
+      - name: Provision the locked provider CLI toolchain
+        run: npm run setup:provider-cli
+
       - name: Run the full governance harness suite
         run: npm run --silent test:governance-harnesses
