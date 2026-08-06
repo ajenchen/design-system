@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "role": "template-consumer",
   "release": {
-    "designSystem": "0.1.0-beta.116",
-    "storybookConfig": "0.1.0-beta.116"
+    "designSystem": "0.1.0-beta.117",
+    "storybookConfig": "0.1.0-beta.117"
   },
   "upgradeTrust": {
     "schemaVersion": 1,
@@ -42,10 +42,10 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "385682c0a5ed04efa60cf5ce3e45bd33e86ec33b73581fe07912e3e8d5cc4a30",
+    "forkCorpusLockSha256": "92a7a449773f392fb29ef81c5709e240acd72c96b30343d656fdb63b01af730a",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
-    "providerLifecycleSha256": "070e10807ce68a14f8bb01bf9ccfb6737bd77208f94178c220f1e7785230d5c7",
+    "providerLifecycleSha256": "9a9f921c2dc064d4cf3d0dd0b7fc45e3e322d373ff5c29222bde9e25f33a7223",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "d9377cc45308731f287d7b1711b7c38fc4e02ff8f84729bcbbf01bb52d136904",
     "commonInstructionSha256": "a72c51a412d6cdb3961d691744013c8362e826626a330cecf4a296a6f4d93a5c",
