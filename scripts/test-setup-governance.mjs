@@ -1258,6 +1258,27 @@ test('workspace dependency authority discovers, pins, verifies, and lists receiv
   assert.equal(listed.status, 0, listed.stderr)
   assert.deepEqual(listed.stdout.trim().split('\n'), verified.receiverPaths)
 
+  // An upgrade transaction bumps only the root, so its reconstruction nests the previous release
+  // under each workspace that still asked for it. `npm install --package-lock-only` never prunes
+  // such a satisfied-but-extraneous node, so pinning must drop it or the exact-version check fails
+  // on a lock that re-running the install cannot repair (2026-08-06 consumer sync).
+  packageLock.packages['apps/alpha/node_modules/@qijenchen/design-system'] = { version: stale }
+  packageLock.packages['packages/future/node_modules/@qijenchen/governance'] = { version: expected }
+  writeFileSync(join(root, 'package-lock.json'), `${JSON.stringify(packageLock, null, 2)}\n`)
+  assert.throws(
+    () => verifyExactWorkspaceDependencies(root, expected),
+    /apps\/alpha\/node_modules\/@qijenchen\/design-system=1\.2\.3-beta\.3/,
+  )
+  assert.deepEqual(pinExactWorkspaceDependencies(root, expected), ['package-lock.json'])
+  const pruned = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'))
+  assert.equal(pruned.packages['apps/alpha/node_modules/@qijenchen/design-system'], undefined)
+  assert.deepEqual(
+    pruned.packages['packages/future/node_modules/@qijenchen/governance'],
+    { version: expected },
+    'an on-version nested entry is legitimate and must survive',
+  )
+  verifyExactWorkspaceDependencies(root, expected)
+
   writeFileSync(join(root, 'npm-shrinkwrap.json'), `${JSON.stringify(packageLock)}\n`)
   assert.throws(
     () => discoverReceiverDependencyPaths(root),
