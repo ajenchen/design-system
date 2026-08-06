@@ -320,6 +320,10 @@ export async function verifyCandidate({
   registryLookup = liveRegistry,
   auditReport,
   releaseLookup,
+  // Provenance moved from the audit-signatures bundles to a live registry attestation readback
+  // (522612a5); without forwarding that seam this gate reaches the public registry and no
+  // injected fixture can exercise the negative cases.
+  attestationLookup,
   preinstallEvidence = null,
 }) {
   const evidence = preinstallEvidence ? validatePreinstallEvidence(preinstallEvidence, candidateRoot) : null
@@ -342,6 +346,7 @@ export async function verifyCandidate({
     version: locked.designSystem,
     policy: locked.policy,
     ...(releaseLookup ? { releaseLookup } : {}),
+    ...(attestationLookup ? { attestationLookup } : {}),
   })
   return { designSystem: locked.designSystem, files: locked.files, provenance }
 }

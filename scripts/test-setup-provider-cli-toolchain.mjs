@@ -44,6 +44,10 @@ const NPM_RUNTIME_CONTRACT = resolveExactNpmRuntimeContract(REPOSITORY_ROOT)
 const NPM_OVERLAY = NPM_RUNTIME_CONTRACT.securityOverlay
 const NPM_OVERLAY_SPEC = `npm:${NPM_OVERLAY.package}@${NPM_OVERLAY.version}`
 const NPM_OVERLAY_ARTIFACT = CALLER_LOCK.packages[`node_modules/${NPM_OVERLAY.alias}`]
+// The npm runtime contract pins two dev-only security overlays; a fixture that supplies only the
+// primary alias fails closed in resolveExactNpmRuntimeContract before any toolchain assertion.
+const NPM_SECONDARY_OVERLAY_SPEC = `npm:${NPM_OVERLAY.secondaryPackage}@${NPM_OVERLAY.secondaryVersion}`
+const NPM_SECONDARY_OVERLAY_ARTIFACT = CALLER_LOCK.packages[`node_modules/${NPM_OVERLAY.secondaryAlias}`]
 const TEST_PLATFORM = process.platform === 'darwin' ? 'darwin' : 'linux'
 const TEST_ARCH = process.arch === 'arm64' ? 'arm64' : 'x64'
 const TEST_PLATFORM_ID = `${TEST_PLATFORM}-${TEST_ARCH}`
@@ -269,6 +273,7 @@ function fixture(t, { role = 'authority', manifestBytes = AUTHORITY_MANIFEST, lo
     devDependencies: {
       npm: NPM_ARTIFACT.version,
       [NPM_OVERLAY.alias]: NPM_OVERLAY_SPEC,
+      [NPM_OVERLAY.secondaryAlias]: NPM_SECONDARY_OVERLAY_SPEC,
     },
   }
   const packageLock = {
@@ -283,6 +288,7 @@ function fixture(t, { role = 'authority', manifestBytes = AUTHORITY_MANIFEST, lo
         devDependencies: {
           npm: NPM_ARTIFACT.version,
           [NPM_OVERLAY.alias]: NPM_OVERLAY_SPEC,
+          [NPM_OVERLAY.secondaryAlias]: NPM_SECONDARY_OVERLAY_SPEC,
         },
       },
       'node_modules/npm': {
@@ -294,6 +300,9 @@ function fixture(t, { role = 'authority', manifestBytes = AUTHORITY_MANIFEST, lo
       },
       [`node_modules/${NPM_OVERLAY.alias}`]: {
         ...NPM_OVERLAY_ARTIFACT,
+      },
+      [`node_modules/${NPM_OVERLAY.secondaryAlias}`]: {
+        ...NPM_SECONDARY_OVERLAY_ARTIFACT,
       },
     },
   }

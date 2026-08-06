@@ -34,19 +34,15 @@ function assertClosedPrerequisiteCalls(calls, platform) {
 
 function runtimeFactory(root) {
   const artifact = resolveExactNpmRuntimeContract(root)
+  // Spread the contract instead of re-listing fields, exactly like the sibling stub in
+  // scripts/test-setup-governance.mjs: re-listing went stale the moment the second overlay
+  // (npm-runtime-tar-patch) was pinned, and the stale stub failed the real capability assertion.
   const securityOverlay = {
     schemaVersion: 1,
     kind: 'verified-npm-runtime-security-overlay-receipt',
     status: 'applied',
-    identityDigest: artifact.securityOverlay.identityDigest,
+    ...artifact.securityOverlay,
     npmVersion: artifact.version,
-    package: artifact.securityOverlay.package,
-    version: artifact.securityOverlay.version,
-    integrity: artifact.securityOverlay.integrity,
-    target: artifact.securityOverlay.target,
-    replacedVersion: artifact.securityOverlay.replacedVersion,
-    consumer: artifact.securityOverlay.consumer,
-    consumerVersion: artifact.securityOverlay.consumerVersion,
     treeDigest: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
   }
   const installedOverlay = {

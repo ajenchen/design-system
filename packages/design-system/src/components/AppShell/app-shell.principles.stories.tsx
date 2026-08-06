@@ -26,7 +26,7 @@ export const UsageGuidance: Story = {
           </li>
           <li>
             • 需要右側詳情面板(議題詳情 / inspector / 成員資料)跟 main 並存——如 Linear 點選議題後右側展開詳情。開合行為見{' '}
-            <LinkTo kind="Design System/Components/AppShell/設計規格" name="右側面板開合行為(兩種模式)"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">設計規格 → 右側面板開合行為</span></LinkTo>
+            <LinkTo kind="Design System/Components/AppShell/設計規格" name="狀態行為"><span className="text-primary hover:text-primary-hover font-medium cursor-pointer">設計規格 → 狀態行為(右側面板開合)</span></LinkTo>
           </li>
         </ul>
       </section>
