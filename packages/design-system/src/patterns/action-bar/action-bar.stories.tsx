@@ -183,7 +183,7 @@ export const Structure: Story = {
             <Button variant="text" size="sm" iconOnly startIcon={MoreVertical} aria-label="更多操作" />
           </ButtonGroup>
         </ToolbarFrame>
-        <Label>有框按鈕結尾（tertiary + primary）→ 接無框工具操作，視覺差異已標記邊界，不加分隔線</Label>
+        <Label>有框按鈕結尾（tertiary + primary）→ 接無框工具操作：沒有對上任何加線理由，所以不加</Label>
       </Rule>
     </div>
   ),
@@ -258,7 +258,7 @@ export const Dividers: Story = {
 
       <Rule
         title="不觸發 — 有框 ↔ 無框接壤"
-        note="有框（primary / secondary / tertiary）接無框（text），視覺差異本身已是邊界信號，不需分隔線疊加"
+        note="有框接無框時邊界本來就看得見，「邊界看不見」這條理由不成立；若另有功能域切換等理由仍可加（見第五節）"
       >
         <ToolbarFrame title="專案列表">
           <ButtonGroup>
@@ -267,7 +267,7 @@ export const Dividers: Story = {
             <Button variant="text" size="sm" iconOnly startIcon={RefreshCw} aria-label="重新載入" />
           </ButtonGroup>
         </ToolbarFrame>
-        <Label>有框按鈕（primary）直接接無框按鈕（text）— 視覺差異已足夠，不需分隔線</Label>
+        <Label>有框按鈕（primary）直接接無框按鈕（text）— 無對應理由，預設不加</Label>
       </Rule>
 
       <Rule
@@ -288,7 +288,7 @@ export const Dividers: Story = {
 
       <Rule
         title="角色邊界 — 角色接壤：無群組溢出時，業務層以什麼結尾？"
-        note="業務層直接以真實按鈕結尾（沒有群組溢出）時：有框結尾 → 不加（視覺差異已足夠）；無框 text 結尾 → 必加（邊界不可見）"
+        note="業務層直接以真實按鈕結尾（沒有群組溢出）時：有框結尾 → 預設不加（邊界看得見）；無框 text 結尾 → 必加（理由 2 邊界看不見）"
       >
           <ToolbarFrame title="專案">
             <ButtonGroup>
@@ -298,7 +298,7 @@ export const Dividers: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>有框結尾 → 視覺差異已足夠，不加分隔線</Label>
+          <Label>有框結尾 → 無對應理由，預設不加</Label>
           <ToolbarFrame title="資料表">
             <ButtonGroup>
               <Button variant="text" size="sm" iconOnly startIcon={Filter} aria-label="篩選" />
@@ -323,7 +323,7 @@ export const Dividers: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>靠右對齊 — 有框業務操作接無框工具操作，視覺差異已足夠，不加分隔線</Label>
+          <Label>靠右對齊 — 有框業務操作接無框工具操作，無對應理由，預設不加</Label>
           <div className="flex items-center w-full px-[var(--layout-space-loose)] h-[52px] border border-border rounded-lg bg-surface">
             <ButtonGroup>
               <Button variant="primary" size="sm" startIcon={Plus}>新增</Button>
@@ -503,7 +503,7 @@ export const CommonMistakes: Story = {
               <Button variant="text" size="sm" iconOnly startIcon={Settings} aria-label="設定" />
             </ButtonGroup>
           </ToolbarFrame>
-          <Label>✅ 有框→無框，視覺差異已標記邊界，不加分隔線</Label>
+          <Label>✅ 有框→無框，無對應理由，預設不加</Label>
       </Rule>
 
       <Rule

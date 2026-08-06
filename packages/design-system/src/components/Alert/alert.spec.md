@@ -121,8 +121,8 @@ Alert 右側操作區(單一 suffix,對齊第一行靠右)可承載多個 action
 
 **規則**:
 - 同一 action group 所有 Button 同 `size="xs"`(跟 close X 對齊)
-- 多 action 之間用 `<ButtonDivider />` 分群(`refresh / share` 一群,`close` 一群)——Button 家族 action group 專用 divider(`button-group.tsx`,`role="separator"` 自帶 mx-1),canonical story 同此
-- 若只有 close X 則不需要 ButtonDivider(單一 action 即 group)
+- **分隔線由 DS 自動放,consumer 零自刻**(2026-08-06):Notice 基座在 `endContent` 與 close X 之間自動渲染 `<ButtonDivider />`(`notice.tsx`),Alert 與 Toast 共用此基座因此行為一致。Consumer 只需傳 `endContent`
+- 加不加的**語意 SSOT 在 `patterns/action-bar/action-bar.spec.md` 第五節**(理由 3 誤觸保護):關閉鈕左邊緊鄰其他操作按鈕才加;只有 close X 時不加(沒有東西需要被隔開)。本檔不重複定義
 
 **世界級對照**:
 - **Material Banner**(`<Banner actions={[...]}/>` 右上 close + 可加 refresh)
