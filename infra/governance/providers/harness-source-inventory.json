@@ -321,6 +321,7 @@
       },
       "members": [
         "scripts/test-2-scenario-architecture.mjs",
+        "scripts/test-action-divider-placement.mjs",
         "scripts/test-audit-coverage-tier-sync.mjs",
         "scripts/test-authority-decision-evidence.mjs",
         "scripts/test-build-fork-filesystem-safety.mjs",

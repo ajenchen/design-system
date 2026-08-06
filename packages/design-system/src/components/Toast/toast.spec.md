@@ -84,6 +84,7 @@ Toast 是**短暫的浮動通知，自動消失**。用於操作結果回饋（�
 - **不用 `aria-hidden` 隱藏視覺 Toast**：Sonner `<li>` 仍可由 ⌥T / Alt+T hotkey 聚焦，group 內的標題、描述、action 和 dismiss 仍可被閱讀與操作。含互動子元素的 toast 不可包在 `aria-hidden` 中。
 - **連續相同訊息仍會播報**：`toast()` 每次呼叫都產生單調遞增 sequence，announcer 會 replace live region 的 text node；即使文案完全相同也有可觀察的 child-list mutation，不會因 React 相同 string 而被略過。
 - **SSR-safe**：module scope 只保留 listener / sequence，render 期間不讀 `window` / `document`；DOM text-node 更新只在 client `useEffect` 訂閱後執行。`Toaster` 尚未 mount 前呼叫 `toast()` 不會製造 server-side DOM side effect，app-level 合約仍是先在 root 安裝單一 `Toaster`。
+- **action 與關閉鈕之間的分隔線**（2026-08-06 補；原本未定義）：由 Notice 基座自動放，與 Alert 完全一致——兩者共用同一個 suffix 容器與同一顆 X（`notice.tsx`）。語意 SSOT → `patterns/action-bar/action-bar.spec.md` 第五節理由 3（誤觸保護）：有 `action` 時加，只有 X 時不加。**不因 action 的 variant（tertiary 有框 / text 無框）而改變**——結構相同就該行為相同
 - **關閉按鈕**：畫面上可見的 X 關閉鈕由 Notice 渲染（`<Button dismiss aria-label="關閉通知">`，見 `../Notice/notice.tsx`），已自帶 `aria-label`，不是 sonner 內建 close 鈕（本 DS 用 `sonner.custom` + `unstyled`，未開 `closeButton`）。若 consumer 自訂 `action`，務必為自訂互動元素提供 `aria-label`。
 - **自動關閉計時器與鍵盤暫停路徑**（2026-07-05 D4）：sonner 計時器只在滑鼠 hover / pointer 按住 / 分頁切離時暫停——**Tab 鍵盤焦點進入 toast 不暫停倒數**（sonner 2.x 行為，`expanded / interacting` 只由 mouse / pointer 事件設定）。鍵盤替代路徑是 sonner 內建 hotkey **⌥T（Option+T / Alt+T）**：焦點跳入 toast 區域並展開 stack（`expanded=true`）→ 倒數暫停，焦點離開後恢復。為給鍵盤使用者足夠反應時間，含 `action` 的 toast 預設 `duration` 加長為 10000ms（見「API」段；WCAG 2.2.1 Timing Adjustable）。
 

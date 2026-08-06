@@ -6,6 +6,7 @@ import * as React from 'react'
 import { X as XIcon, Info, CircleCheck, TriangleAlert, XCircle, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/design-system/components/Button/button'
+import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import { ICON_SIZE, ItemContent, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 
 /**
@@ -155,6 +156,12 @@ const Notice = React.forwardRef<HTMLDivElement, NoticeProps>(
           // family canonical,overlay-surface.spec.md「Chrome dismiss size canonical」)。
           <ItemSuffix>
             {endContent}
+            {/* 誤觸保護分隔線由 DS 放,consumer 零自刻(同 Dialog 先例 dialog.tsx:184-193)。
+                語意 SSOT → action-bar.spec.md 第五節「誤觸保護」:關閉鈕左邊緊鄰其他操作按鈕時必加;
+                只有關閉鈕(無 endContent)時不加 —— 沒有東西需要被隔開。
+                Alert 與 Toast 共用本基座,因此兩者行為由結構保證一致(2026-08-06 codify:
+                先前只有 Alert 規範寫了分隔線、Toast 未定義,同基座同 layout 卻行為分歧)。 */}
+            {endContent != null && showDismiss && <ButtonDivider />}
             {showDismiss && (
               <Button
                 data-dismiss
