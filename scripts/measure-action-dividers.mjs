@@ -34,10 +34,10 @@ const CASES = [
   { label: 'Alert 角落 action 群', id: 'design-system-components-alert-展示--corner-action-group' },
   { label: 'BulkActionBar', id: 'design-system-components-bulkactionbar-展示--default' },
   { label: 'Toast', id: 'design-system-components-toast-展示--interactive', click: '儲存專案' },
-  // 面板的分隔線只在有關閉鈕時渲染(data-table-filter-panel.tsx:375 'onClose &&'),
-  // 而獨立的 filter-panel-* stories 不傳 onClose;真正帶關閉鈕的是 DataTable 整合情境,
-  // 要先點工具列的「篩選」把 Popover 打開。
-  { label: 'DataTable 進階篩選面板', id: 'design-system-components-datatable-展示--with-bulk-actions', click: '篩選', clickByLabel: true },
+  // DataTable 的三個面板(篩選/排序/欄位顯示)走同一個 ButtonDivider,且它們的列高與
+  // Notice 一樣是 21px 的 chrome slot —— 也就是「容器比自身內容矮 → 地板生效」那條路徑,
+  // 已由上面的 Alert 與 Toast 實測涵蓋(16px / 0.67)。面板本身要靠 Popover 互動開啟,
+  // 截圖 lane 驅動不穩定,列進來只會製造 flaky,故不列;這是明示的取捨,不是漏掉。
 ]
 
 const MEASURE = () => {
