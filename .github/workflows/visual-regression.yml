@@ -47,6 +47,15 @@ jobs:
       - name: Build Storybook
         run: npm run build-storybook 2>&1 | tail -5
 
+      # 分隔線幾何是「算出來幾 px」的不變式:class 完全相同也可能算出不同長度
+      # (2026-08-07 事故 — 同一條 canonical 跑出 13 / 16 / 24px)。靜態防線鎖不到,
+      # 只能實際渲染量。SSOT → action-bar.spec.md「分隔線幾何」。
+      - name: Measure action divider geometry
+        run: |
+          npx --yes http-server storybook-static -p 4173 --silent &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:4173/index.json >/dev/null && break; sleep 2; done
+          node scripts/measure-action-dividers.mjs --base http://127.0.0.1:4173
+
       - name: Visual regression diff(scope=all)
         run: |
           # Auto-start storybook static server inside visual-audit.mjs
