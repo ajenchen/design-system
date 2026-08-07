@@ -17,7 +17,7 @@ import {
 import { cn } from '@/lib/utils'
 import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
 import { Button } from '@/design-system/components/Button/button'
-import { Separator } from '@/design-system/components/Separator/separator'
+import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import { Input } from '@/design-system/components/Input/input'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { AspectRatio } from '@/design-system/components/AspectRatio/aspect-ratio'
@@ -390,9 +390,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <>
             {/* Zoom group:-/%/+/▼ 屬同類「縮放」操作,群組並在右側加分隔線跟其他動作分群 */}
             <ZoomInput value={zoom} onChange={onZoomChange} onFit={onFit} labels={labels} />
-            {/* zoom group → next action group divider(action-bar canonical;v11 升級成 Separator
-                元件,對齊 separator.spec.md「consumer 手動放置 toolbar 群組分隔線 = 用 Separator」)*/}
-            <Separator orientation="vertical" className="h-6 mx-1" />
+            {/* zoom group → next action group divider。幾何 SSOT = action-bar.spec.md「分隔線幾何」:
+                線長由 ButtonDivider 依「該列最高元件 − inset」自動算,不再手寫高度(舊 h-6 是寫死值,
+                與 DS 主要實作的 ButtonDivider 形成兩套機制)。*/}
+            <ButtonDivider />
           </>
         )}
         <Button
@@ -415,8 +416,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
           />
         )}
         {/* action-bar canonical:dismiss 前加分隔線跟其他動作分群(info/download = action group,
-            close = dismiss group;v11 升級成 Separator,對齊 separator.spec.md canonical)*/}
-        <Separator orientation="vertical" className="h-6 mx-1" />
+            close = dismiss group)。幾何同上,由 ButtonDivider 自動算。*/}
+        <ButtonDivider />
         {/* Close X 走 dismiss canonical(`<Button iconOnly dismiss />`)——對齊 CLAUDE.md
             `button.spec.md`「Dismiss 視覺類」+ `patterns/element-anatomy/item-anatomy.spec.md`
             「Dismiss canonical」:chrome corner close X = Button dismiss,不是 Inline Action。 */}

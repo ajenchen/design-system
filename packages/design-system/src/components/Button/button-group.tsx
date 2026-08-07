@@ -64,10 +64,37 @@ const ButtonGroup = React.forwardRef<HTMLDivElement, ButtonGroupProps>(
 )
 ButtonGroup.displayName = 'ButtonGroup'
 
+export interface ButtonDividerProps extends React.HTMLAttributes<HTMLDivElement> {
+  /**
+   * 群組排列方向。橫排群組畫直線（預設），直排群組畫橫線。寫死方向會讓
+   * `<ButtonGroup orientation="vertical">` 出現方向錯誤的線。
+   */
+  orientation?: 'horizontal' | 'vertical'
+  /**
+   * 是否對輔助科技宣告語意。預設 `true`（純視覺）→ `role="none"`，與 Separator primitive
+   * 預設一致（separator.spec.md:102「純視覺分隔，SR 不朗讀」）。動作群組的分組語意已由排列
+   * 順序與間距表達，線本身不切分內容，故不朗讀。
+   */
+  decorative?: boolean
+}
+
 /**
- * ButtonDivider — 按鈕群組內的分隔線
+ * ButtonDivider — action region 群組分隔線
  *
- * 自身左右各 4px，與相鄰按鈕形成 8px（gap）+ 4px（自身）= 12px 的視覺距離。
+ * **幾何 SSOT** → `patterns/action-bar/action-bar.spec.md`「分隔線幾何」：
+ * 線長 = 所在那一列**最高元件**的高度 − `--action-divider-inset`（8px），不短於
+ * `--action-divider-min`（16px），垂直置中。
+ *
+ * 兩層構造是必要的而非包裝：外層 `self-stretch` 取「該列最高元件」當基準——同一列的每條線
+ * 因此必然等長、不會參差；內層畫線並套 inset 與地板，置中由外層 `items-center` 負責，所以
+ * 地板生效時線仍置中。單層寫法（`self-stretch` + `min-h`）會被釘在行首，地板一啟動線就歪掉。
+ * 外層佔位與舊寫法完全相同，改動不位移任何同列元素。
+ *
+ * **前提**：必須放在自動高度的 cluster 內。直接置於固定高度容器（如 48px chrome header）時
+ * 基準會退化成容器高——CSS 無法在容器有明確高度時看見「最高手足」。由
+ * `scripts/test-action-divider-placement.mjs` 機械把關。
+ *
+ * **水平間距**：自身兩端各 4px，與 `gap-2` 容器合成 12px 視覺距離。
  *
  * @example
  * <ButtonGroup>
@@ -76,21 +103,34 @@ ButtonGroup.displayName = 'ButtonGroup'
  *   <Button variant="primary" danger size="sm" iconOnly startIcon={Trash2} aria-label="刪除" />
  * </ButtonGroup>
  */
-const ButtonDivider = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    role="separator"
-    className={cn(
-      'self-stretch w-px mx-1 my-1',
-      'bg-divider',
-      className,
-    )}
-    {...props}
-  />
-))
+const ButtonDivider = React.forwardRef<HTMLDivElement, ButtonDividerProps>(
+  ({ className, orientation = 'vertical', decorative = true, ...props }, ref) => {
+    const isVertical = orientation === 'vertical'
+    return (
+      <div
+        ref={ref}
+        role={decorative ? 'none' : 'separator'}
+        aria-orientation={decorative ? undefined : orientation}
+        data-orientation={orientation}
+        className={cn(
+          'flex shrink-0 self-stretch',
+          isVertical ? 'w-px mx-1 items-center' : 'h-px my-1 justify-center',
+          className,
+        )}
+        {...props}
+      >
+        <div
+          className={cn(
+            'bg-divider',
+            isVertical
+              ? 'w-px h-[calc(100%-var(--action-divider-inset))] min-h-[var(--action-divider-min)]'
+              : 'h-px w-[calc(100%-var(--action-divider-inset))] min-w-[var(--action-divider-min)]',
+          )}
+        />
+      </div>
+    )
+  },
+)
 ButtonDivider.displayName = 'ButtonDivider'
 
 export { ButtonGroup, ButtonDivider }

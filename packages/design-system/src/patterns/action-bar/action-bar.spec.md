@@ -285,10 +285,13 @@ Icon 的目的是幫助辨識，不是視覺對稱。
 
 **版面切分的 divider(pane `border-l` / 全高欄界 / 區塊邊界)不適用本段 — 那類是 border,兩側零 gap、貼齊版面。**
 
-- **幾何** = `<Separator orientation="vertical" className="h-6 mx-1" />` 於 `gap-2` 容器 → 兩側各 8+4 = 12px 對稱。DS 自家雙錨:ChromeHeader 容器自帶 gap-2(chrome-header.tsx:116)+ FileViewer toolbar(file-viewer.tsx:390,414)/ header-canonical.stories.tsx:68;ButtonGroup 同款幾何 = ButtonDivider `mx-1` 於 gap-2 群組(button-group.tsx:26「8px(gap)+ 4px(自身)= 12px」)。
-- **高度縮短、不 full-height**:`h-6`(24px)配 sm 控件(28px)矮一級;dense 情境(xs 控件 / gap-1 容器)降 `h-5 mx-1`(item-anatomy.stories.tsx inline-action 群先例)。原則:「divider 高 ≈ 相鄰控件內容高,比控件盒矮一級」。
-- **世界級對照**(對稱 + 縮短 = 4/4 共識):Ant Divider vertical 兩側 8px + 高 0.9em(https://github.com/ant-design/ant-design/blob/master/components/divider/style/index.ts)/ MUI toolbar demo `mx:0.5 my:1`(https://github.com/mui/material-ui/blob/master/docs/data/material/components/toggle-button/CustomizedDividers.tsx)/ Radix Toolbar demo `margin: 0 10px`(https://github.com/radix-ui/website/blob/main/components/demos/toolbar/css/styles.css)/ shadcn `h-4 mx-2`(sidebar-02 block)。DS 取自家既有雙錨值(M23 DS canonical 優先)。
-- **禁**:`h-full`(觸頂觸底)/ 單側 margin(不對稱)。
+**唯一實作 = `<ButtonDivider />`**(`components/Button/button-group.tsx`)。consumer 與 DS 元件都不得手寫高度,也不再用 `<Separator>` 畫 action region 群組線 —— 兩套機制是 2026-08-07 之前長度四散(13/16/24px)的根因。
+
+- **長度**(垂直軸唯一定義):**線長 = 所在那一列「最高元件」的高度 − `--action-divider-inset`(8px),不短於 `--action-divider-min`(16px),垂直置中**。基準是最高元件而非容器,故同列每條線必然等長(不參差),換尺寸階時自動跟著走:xs 24→16 / sm 28→20 / md 32→24 / lg 密度 36→28,比值 0.67–0.78。inset 8px 是我們尺寸階唯一可行值(世界級「撐滿再減」的兩家各減 16px,但最小控件 32px;套到我們 24px 的 xs 階只剩 8px,比 Button 圖示 16px 還矮一半)。min 16px 不是新常數,是**本公式在最小控件階的取值**(`--field-height-xs` 24px − 8px),故地板永不覆寫公式,只在「容器宣稱高度比自身內容還矮」時(如 `ItemSuffix` 的 `h-[1lh]`=21px 卻裝 24px 控件)修回誠實值;`--field-height-xs` 不隨 density 縮放,min 在任何密度成立。Token SSOT = `tokens/uiSize/uiSize.css`。
+- **前提**:必須住在**自動高度的 cluster** 內。直接置於固定高度容器(48/56px chrome header)時基準會退化成容器高 —— CSS 無法在容器有明確高度時看見「最高手足」。
+- **水平間距** = 自身兩端各 4px 於 `gap-2` 容器 → 兩側各 8+4 = 12px 對稱。
+- **世界級對照**(長度):做過真工具列的四家全部矮於控件,無一等高 —— VS Code 固定 16px(`height:16px`,同檔 `.codicon` 亦 16px,https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/ui/actionbar/actionbar.css)/ Primer `ActionBar.VerticalDivider` 固定 20px + `margin-top: calc((控件高 − 20px)/2)` 置中(https://github.com/primer/react/blob/main/packages/react/src/ActionBar/ActionBar.module.css)/ Fluent `ToolbarDivider` 因 Toolbar `alignItems:center` 落在 `minHeight: 20px` 地板(https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-divider/library/src/components/Divider/useDividerStyles.styles.ts)/ JetBrains `ActionToolbarImpl` 以最高按鈕反推(maxButtonHeight − 5px)。等長於控件的先例(Ant `Space.Compact` / Chakra `Group attached` / SLDS button-group / Atlassian split button)全屬**控件內部接縫**——線就是控件自己的邊框,與群組分隔線是不同問題。語意依據:Fluent「block dividers → strict distinction;inset → imply closer relationships」+ Material「full width 分隔不相關大區塊,inset 分隔區塊內相關內容」;工具列的兩個 action 群是同列近親 → 屬 inset 定義域。
+- **禁**:`h-full` / 手寫任何高度 class / 單側 margin / 用 `<Separator>` 畫 action region 群組線。
 
 ---
 
