@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9a35d2ead2de56971a9497538776094cf9c9e750839f93e9a0b449c7b4da0989",
   "files": [
     {
-      "hash": "sha256:1f996e36f77442e6e2cbec4ba9245e0e81116ae0091d3afb10a0b9e620a380bb",
+      "hash": "sha256:7f6f9a6946745ad21da3fcd3bf041e8f46db2070ed735c29065e9bee23abfc81",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ccb6ba225ad078220783c4e20e48886c0f5af5d3ab14b666347387c51c296505",
+      "hash": "sha256:3985eb0186f631dd20971ec5df6ab4f7c59563461f47c0940a8e50b29ceaea0a",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:1af5595e260e23d1d70705200e49c6686f00b32af2d78f03e6f4252a218ff5c0",
+  "inputDigest": "sha256:102d3c3e44588cf5b1865747e9fd0f2235667b1664c71a3d202b5b6298fb2b44",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:8ba4c7ba1e565d6697b292c517f658ce6a12ea89c56f4e8a9b893fc6e8b3b649",
+  "snapshotDigest": "sha256:1d7e419678c3751431c4cb027e6dd14009514f9572b74efe7ec590288243d8a8",
   "sources": [
     {
       "hash": "sha256:162d42307b502960ccc11fbe421e936e8a0161d3f523b9e8bc4d3fa2a411030f",
@@ -2271,7 +2271,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 52,
-      "hash": "sha256:e4effd5786e956b1a730ee56b6104313db5791c603cd3345e6befb66bf3d3c22",
+      "hash": "sha256:87d819c5272ab833aa46a991433bdf8f2ded8c4a345a2520ad283b9ee03ff0bb",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2716,12 +2716,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:38cceb40df128205424ec233ec76a8f6f2ad8b4375430717b3f99e3252372def",
+      "hash": "sha256:c07edce4439db8d5ca5c7a83e633e192e1e46191ce2168b6ac8f099f9793a9b0",
       "id": "managed-host-release-binding",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/release-rings.json",
-      "size": 6676,
+      "size": 5477,
       "type": "file"
     },
     {
@@ -3587,7 +3587,7 @@
         "scripts/generated/"
       ],
       "files": 370,
-      "hash": "sha256:2de082524ef6e154c7c0fb721cb239bc35bfdb83d1cf23dda4a1414e2936490c",
+      "hash": "sha256:94aed148acb9473f8a7229f0c17d5113cbbf5cfdf1ec7e47e4537e4e4988200e",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

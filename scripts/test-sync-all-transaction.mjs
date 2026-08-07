@@ -259,46 +259,13 @@ if (process.argv[2] === '--version') {
 const mode = fixture.FAKE_NPM_MODE
 const DS = '@qijenchen/design-system'
 const SB = '@qijenchen/storybook-config'
-const COMMIT = fixture.FAKE_RELEASE_COMMIT
-const purl = (name, version) => 'pkg:npm/' + encodeURIComponent(name).replace('%2F', '/') + '@' + version
-const digestHex = (integrity) => Buffer.from(integrity.slice('sha512-'.length), 'base64').toString('hex')
-const statement = (name, version, integrity) => ({
-  _type: 'https://in-toto.io/Statement/v1',
-  subject: [{ name: purl(name, version), digest: { sha512: digestHex(integrity) } }],
-  predicateType: 'https://slsa.dev/provenance/v1',
-  predicate: {
-    buildDefinition: {
-      externalParameters: { workflow: {
-        repository: 'https://github.com/ajenchen/design-system',
-        path: fixture.FAKE_PROVENANCE_MODE === 'wrong-workflow' ? '.github/workflows/attacker.yml' : '.github/workflows/release.yml',
-        ref: 'refs/heads/main',
-      } },
-      resolvedDependencies: [{
-        uri: 'git+https://github.com/ajenchen/design-system@refs/heads/main',
-        digest: { gitCommit: COMMIT },
-      }],
-    },
-    runDetails: { builder: { id: 'https://github.com/actions/runner/github-hosted' } },
-  },
-})
-const verified = (name, version, integrity) => ({
-  name, version, location: 'node_modules/' + name, registry: 'https://registry.npmjs.org/',
-  attestationBundles: [{
-    dsseEnvelope: {
-      payloadType: 'application/vnd.in-toto+json',
-      payload: Buffer.from(JSON.stringify(statement(name, version, integrity))).toString('base64'),
-      signatures: [{ sig: 'verified-fixture' }],
-    },
-    verificationMaterial: { certificate: { rawBytes: 'fixture' } },
-  }],
-})
+// npm 11.19 的 \`audit signatures --json\` 只吐封閉的 {invalid, missing} 失敗集合,沒有 verified
+// bundle 陣列(verify-upgrade-provenance.mjs:406-411)。SLSA provenance 改由 registry 的
+// attestations endpoint 讀回,由 fakeFetchSource 提供 —— 這裡刻意不再偽造 verified,否則 fixture
+// 會比真 npm 多給資訊,掩蓋 readback 路徑的回歸。
 if (process.argv[2] === 'audit' && process.argv[3] === 'signatures') {
   if (mode === 'signature-failure') process.exit(19)
-  const version = fixture.FAKE_RELEASE_VERSION
-  process.stdout.write(JSON.stringify({
-    invalid: [], missing: [],
-    verified: [verified(DS, version, fixture.FAKE_DS_SRI), verified(SB, version, fixture.FAKE_SB_SRI)],
-  }))
+  process.stdout.write(JSON.stringify({ invalid: [], missing: [] }))
   process.exit(0)
 }
 if (process.argv[2] === 'audit' && process.argv.includes('--audit-level=high')) {
@@ -536,6 +503,37 @@ const releaseUrl = 'https://api.github.com/repos/' + repository + '/releases/tag
 const refUrl = 'https://api.github.com/repos/' + repository + '/git/ref/tags/' + tag
 const tagObjectUrl = 'https://api.github.com/repos/' + repository + '/git/tags/' + immutableRelease.tagIdentity.tagObject
 const commitUrl = 'https://api.github.com/repos/' + repository + '/git/commits/' + commit
+// SLSA provenance 的唯一來源是 registry attestations endpoint(verify-upgrade-provenance.mjs
+// fetchNpmAttestationReadback),不是 npm CLI 輸出。wrong-workflow 模式在這裡改寫 workflow path,
+// GOV-SUPPLY-003 的負例才是真的走 readback 這條路被擋下來。
+const purl = (name) => 'pkg:npm/' + encodeURIComponent(name).replace('%2F', '/') + '@' + version
+const digestHex = (integrity) => Buffer.from(integrity.slice('sha512-'.length), 'base64').toString('hex')
+const provenanceStatement = (name, integrity) => ({
+  _type: 'https://in-toto.io/Statement/v1',
+  subject: [{ name: purl(name), digest: { sha512: digestHex(integrity) } }],
+  predicateType: 'https://slsa.dev/provenance/v1',
+  predicate: {
+    buildDefinition: {
+      externalParameters: { workflow: {
+        repository: 'https://github.com/' + repository,
+        path: mode === 'wrong-workflow' ? '.github/workflows/attacker.yml' : '.github/workflows/release.yml',
+        ref: 'refs/heads/main',
+      } },
+      resolvedDependencies: [{
+        uri: 'git+https://github.com/' + repository + '@refs/heads/main',
+        digest: { gitCommit: commit },
+      }],
+    },
+    runDetails: { builder: { id: 'https://github.com/actions/runner/github-hosted' } },
+  },
+})
+const attestationUrls = new Map([
+  ['@qijenchen/design-system', process.env.FAKE_DS_SRI],
+  ['@qijenchen/storybook-config', process.env.FAKE_SB_SRI],
+].map(([name, integrity]) => [
+  'https://registry.npmjs.org/-/npm/v1/attestations/' + encodeURIComponent(name) + '@' + encodeURIComponent(version),
+  { name, integrity },
+]))
 globalThis.fetch = async (input) => {
   const delay = Number(process.env.FAKE_FETCH_DELAY_MS || 0)
   if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
@@ -551,6 +549,22 @@ globalThis.fetch = async (input) => {
   if (url === refUrl) return new Response(JSON.stringify(immutableRelease.tagApi.reference), { status: 200 })
   if (url === tagObjectUrl) return new Response(JSON.stringify(immutableRelease.tagApi.tagObject), { status: 200 })
   if (url === commitUrl) return new Response(JSON.stringify({ sha: commit, tree: { sha: bom.source.gitTree } }), { status: 200 })
+  const attestation = attestationUrls.get(url)
+  if (attestation) {
+    return new Response(JSON.stringify({
+      attestations: [{
+        predicateType: 'https://slsa.dev/provenance/v1',
+        bundle: {
+          dsseEnvelope: {
+            payloadType: 'application/vnd.in-toto+json',
+            payload: Buffer.from(JSON.stringify(provenanceStatement(attestation.name, attestation.integrity))).toString('base64'),
+            signatures: [{ sig: 'verified-fixture' }],
+          },
+          verificationMaterial: { certificate: { rawBytes: 'fixture' } },
+        },
+      }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } })
+  }
   throw new Error('unexpected network request in provenance fixture:' + url)
 }
 `

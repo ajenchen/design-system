@@ -1759,7 +1759,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 52,
-      "hash": "sha256:e4effd5786e956b1a730ee56b6104313db5791c603cd3345e6befb66bf3d3c22",
+      "hash": "sha256:87d819c5272ab833aa46a991433bdf8f2ded8c4a345a2520ad283b9ee03ff0bb",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2204,12 +2204,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:38cceb40df128205424ec233ec76a8f6f2ad8b4375430717b3f99e3252372def",
+      "hash": "sha256:c07edce4439db8d5ca5c7a83e633e192e1e46191ce2168b6ac8f099f9793a9b0",
       "id": "managed-host-release-binding",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/release-rings.json",
-      "size": 6676,
+      "size": 5477,
       "type": "file"
     },
     {
@@ -3075,7 +3075,7 @@
         "scripts/generated/"
       ],
       "files": 370,
-      "hash": "sha256:2de082524ef6e154c7c0fb721cb239bc35bfdb83d1cf23dda4a1414e2936490c",
+      "hash": "sha256:94aed148acb9473f8a7229f0c17d5113cbbf5cfdf1ec7e47e4537e4e4988200e",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

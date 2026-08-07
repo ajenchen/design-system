@@ -14,31 +14,7 @@
     "applyAuthorizationQuorum": 1,
     "completionAttestationQuorum": 1
   },
-  "candidateRelease": {
-    "id": "ajenchen/design-system@v0.1.0-beta.118",
-    "version": "0.1.0-beta.118",
-    "sourceCommit": "2802968b5ecb27e8f1170094847489825151e5b9",
-    "sourceTree": "57c6e687a7a7e4bed51bbe18d3f4100e7367986b",
-    "bomSha256": "ef19a6dfe3cc66c57306fc034aed901482c13a9a563b9acbd3792cf9a4bb3b35",
-    "packages": [
-      {
-        "name": "@qijenchen/design-system",
-        "version": "0.1.0-beta.118",
-        "integrity": "sha512-vrnvDq5UmHLN5nlbDpE9JBE90qZ4MURbC8tNapKgp3mAUyqXO6029ssnAWIUre7Fc0N3gtNVMzD08KjvA3qTAA=="
-      },
-      {
-        "name": "@qijenchen/governance",
-        "version": "0.1.0-beta.118",
-        "integrity": "sha512-JFQ1arvm6GapLRHeWPtghdiq/wqr9rsRPnLqWazhTvXSU2H9z13xAGFtVrPnYSgzYIyGmc2KGrBchVhyAdx8bQ=="
-      },
-      {
-        "name": "@qijenchen/storybook-config",
-        "version": "0.1.0-beta.118",
-        "integrity": "sha512-goH/rjfkps3D25QmGI8avI/JUrXomZtO62krVpzDUboDAzB32KmfRI4839re88fPbsVJxxX8gjpXdJFUc9B/WA=="
-      }
-    ],
-    "observedAt": "2026-08-07T02:01:05Z"
-  },
+  "candidateRelease": null,
   "evidence": [],
   "rings": [
     {
@@ -190,7 +166,7 @@
       "ring": "ring-0-authority",
       "wave": "canary",
       "enteredAt": "2026-08-07T02:01:05Z",
-      "candidateReleaseDigest": "a15b7b4256ef3b4db77682d696e7df01709602bba3ff324d1f08516af53a365d",
+      "candidateReleaseDigest": null,
       "applyAuthorization": null,
       "completionAttestation": null,
       "manualBlockers": []
@@ -199,7 +175,7 @@
       "ring": "ring-1-template-canary",
       "wave": "canary",
       "enteredAt": "2026-08-07T02:01:05Z",
-      "candidateReleaseDigest": "a15b7b4256ef3b4db77682d696e7df01709602bba3ff324d1f08516af53a365d",
+      "candidateReleaseDigest": null,
       "applyAuthorization": null,
       "completionAttestation": null,
       "manualBlockers": []
@@ -208,7 +184,7 @@
       "ring": "ring-2-product-canary",
       "wave": "canary",
       "enteredAt": "2026-08-07T02:01:05Z",
-      "candidateReleaseDigest": "a15b7b4256ef3b4db77682d696e7df01709602bba3ff324d1f08516af53a365d",
+      "candidateReleaseDigest": null,
       "applyAuthorization": null,
       "completionAttestation": null,
       "manualBlockers": []
