@@ -9,18 +9,55 @@
  * 「算出來到底幾 px、置不置中、同列是否等長」必須實際渲染才知道。2026-08-07 事故就是
  * class 一模一樣、算出來卻是 13 / 16 / 24 三種長度。
  *
- * 用法:node scripts/measure-action-dividers.mjs --base <storybook-url> [--json]
- * 需要 Playwright(本機 sandbox 起不了瀏覽器時走 CI lane)。
+ * 用法:node scripts/measure-action-dividers.mjs --dir storybook-static [--json]
+ *       node scripts/measure-action-dividers.mjs --base <storybook-url> [--json]
+ * --dir 會用 node 內建 http 起靜態服務(不依賴 npx / 外部套件)。需要 Playwright;
+ * 本機 sandbox 起不了瀏覽器時走 visual-regression CI lane。
  */
+import { createReadStream, statSync } from 'node:fs'
+import { createServer } from 'node:http'
+import { extname, join, normalize, resolve as resolvePath } from 'node:path'
 import { chromium } from 'playwright'
 
 const arg = (name, fallback = null) => {
   const index = process.argv.indexOf(name)
   return index >= 0 ? process.argv[index + 1] : fallback
 }
-const BASE = arg('--base') || process.env.STORYBOOK_BASE
+
+// 靜態服務用 node 內建起,不透過 npx 抓外部套件(供應鏈規則:npx 必須 --no-install,
+// 見 scripts/audit-workflow-security.mjs WF-NPX)。
+const MIME = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml',
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.woff': 'font/woff',
+}
+async function serveStatic(root) {
+  const base = resolvePath(root)
+  const server = createServer((request, response) => {
+    const requested = decodeURIComponent((request.url || '/').split('?')[0])
+    const relative = normalize(requested).replace(/^(\.\.[/\\])+/, '')
+    let file = join(base, relative)
+    try { if (statSync(file).isDirectory()) file = join(file, 'index.html') } catch { /* 404 below */ }
+    try {
+      statSync(file)
+    } catch {
+      response.statusCode = 404
+      response.end('not found')
+      return
+    }
+    response.setHeader('content-type', MIME[extname(file)] || 'application/octet-stream')
+    createReadStream(file).pipe(response)
+  })
+  await new Promise(done => server.listen(0, '127.0.0.1', done))
+  return { url: `http://127.0.0.1:${server.address().port}`, close: () => server.close() }
+}
+
+const DIR = arg('--dir')
+const served = DIR ? await serveStatic(DIR) : null
+const BASE = served?.url || arg('--base') || process.env.STORYBOOK_BASE
 if (!BASE) {
-  console.error('usage: node scripts/measure-action-dividers.mjs --base <storybook-url>')
+  console.error('usage: node scripts/measure-action-dividers.mjs (--dir <storybook-static> | --base <url>)')
   process.exit(2)
 }
 const asJson = process.argv.includes('--json')
@@ -89,6 +126,7 @@ for (const testCase of CASES) {
   results.push({ ...testCase, lines: await page.evaluate(MEASURE) })
 }
 await browser.close()
+served?.close()
 
 const failures = []
 for (const result of results) {
