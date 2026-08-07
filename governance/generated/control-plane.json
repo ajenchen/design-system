@@ -166,7 +166,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 6,
-      "hash": "sha256:1c444a4780e88888486f4707d5930890bc072da5aa98b0f168324b8841a9b420",
+      "hash": "sha256:59566f03abcddd4001c35974aad9a00a1aed4ebc816a9ea31f4dc38b179bd42f",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
