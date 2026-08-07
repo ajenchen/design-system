@@ -311,12 +311,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ea8b11ddc5c964ea742ccba5e6a3bc2f215db5d165afe2cca96192812287750c",
+      "hash": "sha256:51aba211bb2f755eff7fa48bb060f9835356a62d2643ab5049147a9896c7bb72",
       "id": "consumer-control-plane-policy-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/lib/consumer-control-plane-policy.mjs",
-      "size": 2028,
+      "size": 2727,
       "type": "file"
     },
     {
@@ -3074,8 +3074,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 369,
-      "hash": "sha256:119993fd38bfe3d8dc76527c4081f48c57d36bdf7fedf59a471c74ed06a62fd2",
+      "files": 370,
+      "hash": "sha256:2de082524ef6e154c7c0fb721cb239bc35bfdb83d1cf23dda4a1414e2936490c",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

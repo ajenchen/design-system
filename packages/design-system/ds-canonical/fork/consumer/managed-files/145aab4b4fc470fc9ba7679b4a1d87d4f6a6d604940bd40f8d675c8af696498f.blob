@@ -17,8 +17,14 @@ export const PROTECTED_CONTROL_PLANE_PATH_PREFIXES = Object.freeze([
 export const REVIEWED_CONTROL_PLANE_UPDATE_COMMAND =
   'node infra/governance/bin/consumerctl.mjs plan-control-plane-update'
 
+// 兩條路都要講,只講前者會把 legacy-profile 的 consumer 導進死路:recurring lane 要求 profile 在
+// consumer-upgrade-protocol.json 的 reviewedControlPlaneUpdate.entryProfiles 內,legacy profile 不在,
+// 而要進去得先完成 promotion —— promotion 又要求一個「非作者」的獨立簽署,單人 fleet 無法滿足。
+// legacy profile 自己的 entry mode(one-time reviewed full-snapshot PR)一直是通的,由第二條指令固化。
 export const REVIEWED_CONTROL_PLANE_UPDATE_ROUTE =
   `use the recurring reviewed control-plane update protocol in the DS authority checkout; start with \`${REVIEWED_CONTROL_PLANE_UPDATE_COMMAND}\``
+  + '. If the consumer is still on a legacy bootstrap profile (not in reviewedControlPlaneUpdate.entryProfiles),'
+  + ' use its own one-time reviewed full-snapshot route instead: `node scripts/consumer-fullsnapshot-upgrade.mjs`'
 
 export function requiresReviewedControlPlaneUpdate(path) {
   invariant(typeof path === 'string' && path.length > 0, 'protected control-plane path must be a non-empty string')
