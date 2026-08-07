@@ -253,7 +253,7 @@ expect_silent "34. C18 aria-label 括號形 → silent"
 run_hook "$PROD_TSX" 'export const B = () => <><Button>A</Button><Separator orientation="vertical" className="h-6" /><Button>B</Button></>'
 expect_block "35. C17 vertical Separator 無 mx → BLOCK"
 
-# 36. C17 NEGATIVE:h-6 mx-1 canonical → silent
+# 36. C17 NEGATIVE:版面切分 Separator 自帶 mx- → silent(action region 群組線改用 ButtonDivider)
 run_hook "$PROD_TSX" 'export const B = () => <><Button>A</Button><Separator orientation="vertical" className="h-6 mx-1" /><Button>B</Button></>'
 expect_silent "36. C17 h-6 mx-1 canonical → silent"
 

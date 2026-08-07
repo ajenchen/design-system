@@ -524,12 +524,13 @@ if grep -qE '>[^<]*\{[a-zA-Z0-9_.]+\} *\(\{[a-zA-Z0-9_.]*(count|Count|length|tot
    ! grep -q '@count-in-label-ok:' <<<"$CONTENT"; then
   VIOLATIONS="${VIOLATIONS}  - 計數括號串接 {label} ({count}) → row header 用「標題左、純數字右 space-between + tabular-nums」(item-anatomy.spec.md:176);互動元素(tab/chip/button)用 badge slot。aria/純文字匯出層 → @count-in-label-ok: <rationale>\n"
 fi
-# C17 分隔線幾何:vertical Separator 無 mx- = 黏按鈕(action-bar.spec.md「分隔線幾何」h-6 mx-1;
-# ButtonGroup 內用 <ButtonDivider/>(mx built-in))。
+# C17 分隔線幾何:vertical Separator 無 mx- = 黏按鈕。2026-08-07 起 action region 群組線的
+# 唯一實作是 <ButtonDivider/>(長度由「該列最高元件 − inset」自動算,mx 內建);Separator 只剩
+# 版面切分用途,那類仍需自帶左右間距(action-bar.spec.md「分隔線幾何」)。
 SEP_TAGS=$(echo "$CONTENT" | grep -oE '<(DS\.)?Separator[^>]*orientation=["'"'"']vertical["'"'"'][^>]*' || true)
 if [ -n "$SEP_TAGS" ] && grep -qv 'mx-' <<<"$SEP_TAGS" && \
    ! grep -q '@separator-geometry-ok:' <<<"$CONTENT"; then
-  VIOLATIONS="${VIOLATIONS}  - vertical <Separator> 無 mx- = 分隔線黏按鈕 → toolbar 用 className=\"h-6 mx-1\"(dense h-5 mx-1);ButtonGroup 內用 <ButtonDivider/>(action-bar.spec.md「分隔線幾何」)。版面切分 divider → @separator-geometry-ok: <rationale>\n"
+  VIOLATIONS="${VIOLATIONS}  - vertical <Separator> 無 mx- = 分隔線黏按鈕 → action region 群組線改用 <ButtonDivider/>(長度自動、間距內建);純版面切分才用 Separator 並自帶 mx-(action-bar.spec.md「分隔線幾何」)。版面切分 divider → @separator-geometry-ok: <rationale>\n"
 fi
 # C20 連結字手刻 underline:color.spec.md「Action — Primary」= hover 換色不用底線;
 # dropzone 連結走 FileUpload children slot。no-underline / hover:underline 皆不中此 regex 形。
