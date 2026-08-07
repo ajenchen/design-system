@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -328,10 +328,22 @@ test('workflow identity validation is closed and version aware', () => {
   assert.match(validateWorkflowIdentity({ ...closedV2(identity), semanticSha256: identity.legacySemanticSha256 }, identity).join('\n'), /semanticSha256 differs.*v2/)
 })
 
+// 掃出所有宣告 workflowIdentity 的 schema,不寫死清單:寫死會在 schema 退役時變成 ENOENT
+// (release-trust-preflight-evidence.schema.json 於 187019de 隨 activation cluster 退役,清單卻留著),
+// 也會讓新加的 schema 靜默漏驗。
+function schemasDeclaringWorkflowIdentity() {
+  const dir = resolve(HERE, '../schemas')
+  const found = readdirSync(dir)
+    .filter(name => name.endsWith('.schema.json'))
+    .map(name => ({ name, schema: JSON.parse(readFileSync(resolve(dir, name), 'utf8')) }))
+    .filter(entry => entry.schema.$defs?.workflowIdentity)
+  assert.ok(found.length > 0, 'no schema declares $defs.workflowIdentity')
+  return found
+}
+
 test('desired and release-evidence schemas accept absent V1, explicit V1, and V2 closed identities', () => {
   const identity = workflowIdentity(BEHAVIOR_WORKFLOW)
-  for (const schemaName of ['github-desired.schema.json', 'release-trust-preflight-evidence.schema.json']) {
-    const schema = JSON.parse(readFileSync(resolve(HERE, '../schemas', schemaName), 'utf8'))
+  for (const { name: schemaName, schema } of schemasDeclaringWorkflowIdentity()) {
     const validate = new Ajv2020({ strict: false }).compile({
       $schema: 'https://json-schema.org/draft/2020-12/schema',
       ...schema.$defs.workflowIdentity,

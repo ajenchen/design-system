@@ -515,6 +515,10 @@ test('GitHub Actions evidence selects hard gates by repository role and rejects 
       oidcSubject: `repo:${tuple.repository.github}:pull_request`,
     },
   )
+  // 835b519e 拆掉 App verdict 層之後,product-consumer 的硬閘跟 authority 一樣走 repository-workflow
+  // 的原生 pull_request check(runtime-conformance.json hardGateByRepositoryRole),只有 checkContext
+  // 不同 —— governanceCheckApp 已降為 future-reserved,active profile 不得引用(infra/governance/README.md:333)。
+  // 角色選擇仍然被驗到:兩個角色解析出不同的 checkName。
   assert.deepEqual(
     {
       checkName: consumerPolicy.checkName,
@@ -523,12 +527,13 @@ test('GitHub Actions evidence selects hard gates by repository role and rejects 
       oidcSubject: consumerPolicy.oidcSubject,
     },
     {
-      checkName: 'Immutable consumer snapshot',
-      checkAppId: String(FIXTURE_DESIRED.integrations.governanceCheckApp.id),
-      event: 'pull_request_target',
-      oidcSubject: `repo:${consumerTuple.repository.github}:environment:governance-check-verdict`,
+      checkName: 'Verify consumer',
+      checkAppId: String(FIXTURE_DESIRED.integrations.githubActions.id),
+      event: 'pull_request',
+      oidcSubject: `repo:${consumerTuple.repository.github}:pull_request`,
     },
   )
+  assert.notEqual(consumerPolicy.checkName, authorityPolicy.checkName, 'role-selected hard gates collapsed into one check context')
   const baseline = evidenceFor(tuple, 40, context)
   const certification = certificationFor(tuple, baseline, { reference: `infra/governance/evidence/external-runtime/${'d'.repeat(64)}.json`, sha256: 'd'.repeat(64) })
   const options = evidence => bindingOptions(tuple, evidence, certification, context)
