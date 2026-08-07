@@ -34,7 +34,7 @@ const CASES = [
   { label: 'Alert 角落 action 群', id: 'design-system-components-alert-展示--corner-action-group' },
   { label: 'BulkActionBar', id: 'design-system-components-bulkactionbar-展示--default' },
   { label: 'Toast', id: 'design-system-components-toast-展示--interactive', click: '儲存專案' },
-  { label: 'DataTable 篩選面板', id: 'design-system-components-datatable-展示--filtering', click: '篩選' },
+  { label: 'DataTable 進階篩選面板', id: 'design-system-components-datatable-展示--filter-panel-with-conditions' },
 ]
 
 const MEASURE = () => {
@@ -100,7 +100,9 @@ for (const result of results) {
     }
   }
 }
-const measured = results.filter(result => result.lines.length).length
+const missing = results.filter(result => !result.lines.length).map(result => result.label)
+const measured = results.length - missing.length
+if (missing.length) failures.push(`這些情境沒量到任何分隔線(story id 或觸發方式不對,不得當成通過):${missing.join('、')}`)
 
 if (asJson) {
   console.log(JSON.stringify({ base: BASE, results, failures }, null, 2))
