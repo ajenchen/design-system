@@ -85,8 +85,9 @@ EOF_PH
   exit 2
 fi
 
-# 2026-07-10 批次 A:divider 幾何 canonical(h-6 mx-1 / h-5 mx-1,action-bar.spec.md「分隔線幾何」)
-# 是**正解**,不該被 magic-number 攔(原本懲罰 canonical 修法、放行違規 = 治理自我打架)。
+# 2026-07-10 批次 A:divider 幾何是**正解**,不該被 magic-number 攔(原本懲罰 canonical 修法、
+# 放行違規 = 治理自我打架)。2026-08-07 更新:action region 群組線的長度已由 ButtonDivider 讀
+# --action-divider-* token 自動算,不再出現硬值;此處放行的只剩版面切分 Separator 的間距寫法。
 governance_hook_grep_capture MAGIC_LINES_FILTERED 'layout-space canonical-divider filter failed' \
   "$MAGIC_LINES" -vE '(Separator|ButtonDivider)'
 MAGIC_LINES="$MAGIC_LINES_FILTERED"

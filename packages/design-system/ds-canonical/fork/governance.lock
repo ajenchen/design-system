@@ -663,7 +663,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_consumer_app_invariants.sh",
-      "sha256": "b9205c06d6f3ab5ab1ce46a62bfbaedda02c62cd474bcb5f9931bbb54acae985",
+      "sha256": "0cfd6f321e4de7e778be5869129aa82c846da3564d6913c75b7f66dd014f3191",
       "source": "check_consumer_app_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -727,7 +727,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_layout_space_magic_numbers.sh",
-      "sha256": "9cc344cce5898c98f00e61861cd483559c28fbb92e3784127ddd7cc2979bc746",
+      "sha256": "7a3d47170344945f6b07e331413b13d868f0655c82375f15bc6f1fde0b9a5a1e",
       "source": "check_layout_space_magic_numbers.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
