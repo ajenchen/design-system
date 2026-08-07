@@ -57,7 +57,7 @@ const incoming = resolve(required('--incoming'))
 const releaseBom = resolve(required('--release-bom'))
 const requiredChecksDigest = required('--required-checks-digest')
 const acknowledge = arg('--acknowledge-consumer-owned', '')
-const output = resolve(arg('--output') || join(consumerRoot, '..', `.fullsnapshot-${repoId}`))
+const outputOverride = arg('--output')
 const apply = process.argv.includes('--apply')
 
 const consumerctl = join(ROOT, 'infra/governance/bin/consumerctl.mjs')
@@ -92,18 +92,27 @@ if (!plan.reviewReady || (plan.conflicts || []).length) {
   }
   process.exit(1)
 }
+// materialize-bootstrap 拒絕寫進既有目錄(consumer-bootstrap.mjs:1202)—— 它必須是那棵樹的唯一
+// 寫入者。所以預設輸出路徑綁 planDigest:同一份 plan 的 dry-run 與 --apply 落在同一個目錄,不同
+// plan 永遠不會互相覆蓋。目錄已存在時**不刪除**(那可能是別人的資料),改由下一步的獨立重算判斷
+// 它是不是這份 plan 的合法產物;不是就 fail closed 並要求人自己處理。
+const output = resolve(outputOverride || join(consumerRoot, '..', `.fullsnapshot-${repoId}-${plan.planDigest.slice(0, 12)}`))
 mkdirSync(dirname(output), { recursive: true })
 const planFile = join(dirname(output), `plan-${repoId}.json`)
 writeFileSync(planFile, `${JSON.stringify(plan, null, 2)}\n`)
 
-console.log('── 2. materialize-bootstrap')
-const materialized = run([
-  'materialize-bootstrap', ...sourceArgs,
-  '--plan-file', planFile,
-  '--expected-plan-digest', plan.planDigest,
-  '--output', output,
-], 'materialize-bootstrap')
-console.log(`   entries=${materialized.entryCount} tree=${materialized.materializedSnapshotTreeSha256}`)
+if (existsSync(output)) {
+  console.log('── 2. materialize-bootstrap(略過:輸出目錄已存在,改由第 3 步證明它是本 plan 的產物)')
+} else {
+  console.log('── 2. materialize-bootstrap')
+  const materialized = run([
+    'materialize-bootstrap', ...sourceArgs,
+    '--plan-file', planFile,
+    '--expected-plan-digest', plan.planDigest,
+    '--output', output,
+  ], 'materialize-bootstrap')
+  console.log(`   entries=${materialized.entryCount} tree=${materialized.materializedSnapshotTreeSha256}`)
+}
 
 console.log('── 3. check-bootstrap-materialization(獨立重算)')
 const verified = run([
@@ -118,6 +127,7 @@ console.log(`   tree 相符=${treeMatches} readOnly=${verified.readOnly} candida
 console.log(`   verificationDigest ${verified.verificationDigest}`)
 if (!treeMatches || verified.readOnly !== true || verified.candidateCodeExecuted !== false) {
   console.error('✗ 獨立重算未通過,拒絕套用')
+  console.error(`  輸出目錄 ${output} 不是這份 plan 的合法產物。請自行檢查後移除,再重跑;本腳本不會替你刪。`)
   process.exit(1)
 }
 
@@ -138,8 +148,13 @@ inConsumer([join(consumerRoot, 'scripts/sync-exact-workspace-dependencies.mjs'),
 
 const lockPath = join(consumerRoot, 'package-lock.json')
 if (existsSync(lockPath)) {
-  // npm install --package-lock-only 只補缺的東西,不會清「已被滿足但多餘」的 nested node;
-  // 升級交易留下的舊版 nested entry 因此會活到 exact-version 檢查(2026-08-06 事故)。
+  // 先清 nested、再讓 npm 重建 lock —— 順序不可調換,而且兩步都不能少(對齊 consumer 端
+  // sync-design-system.yml 的同一段):
+  //   (a) npm install --package-lock-only 只補缺的東西,不會清「已被滿足但多餘」的 nested node,
+  //       升級交易留下的舊版 nested entry 因此會活到 exact-version 檢查(2026-08-06 事故)。
+  //   (b) 但 root dependencies 的 pin 只有 npm 會寫,--set 只改 manifest。少了這步,
+  //       lock 的 root 仍指向舊版,check 直接 WORKSPACE-EXACT-DEPENDENCY-001。
+  // 這不會假造通過:workspace 若真的需要自己那份,npm 會重新加回來,check 仍然說了算。
   const lock = JSON.parse(readFileSync(lockPath, 'utf8'))
   const stale = Object.keys(lock.packages || {}).filter(path => (
     /\/node_modules\/@qijenchen\/[^/]+$/.test(path) && lock.packages[path].version !== version
@@ -147,6 +162,12 @@ if (existsSync(lockPath)) {
   for (const path of stale) delete lock.packages[path]
   if (stale.length) writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`)
   console.log(`   清掉過期 nested entry:${stale.length} 筆`)
+  // --prefer-online:剛發布幾分鐘的版本可能被本機 npm cache 的舊 packument 蓋掉。
+  execFileSync('npm', [
+    'install', '--ignore-scripts', '--legacy-peer-deps', '--package-lock-only',
+    '--no-audit', '--no-fund', '--prefer-online',
+  ], { cwd: consumerRoot, stdio: ['inherit', 2, 'inherit'] })
+  console.log('   npm 重建 lock 完成')
 }
 
 const readmePath = join(consumerRoot, 'README.md')
