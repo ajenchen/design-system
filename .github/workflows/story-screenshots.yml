@@ -21,6 +21,10 @@ on:
         required: false
         default: false
         type: boolean
+  # 暫時 push trigger(分隔線幾何實測;驗證後同 PR 內移除)
+  push:
+    branches: ['claude/divider-geometry-ssot']
+    paths: ['.github/workflows/story-screenshots.yml']
 
 permissions:
   contents: read
@@ -65,7 +69,7 @@ jobs:
           STORIES: ${{ inputs.stories }}
           VIEWPORT: ${{ inputs.viewport }}
           TOUCH: ${{ inputs.touch && '--touch' || '' }}
-        run: node scripts/story-screenshots.mjs --stories="$STORIES" --viewport="$VIEWPORT" $TOUCH
+        run: node scripts/story-screenshots.mjs --stories="${STORIES:-design-system-components-alert-展示--corner-action-group,design-system-components-bulkactionbar-展示--default,design-system-components-toast-展示--interactive}" --viewport="${VIEWPORT:-900x700}" $TOUCH
 
       - name: Upload screenshots
         if: always()
