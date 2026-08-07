@@ -71,6 +71,14 @@ jobs:
           TOUCH: ${{ inputs.touch && '--touch' || '' }}
         run: node scripts/story-screenshots.mjs --stories="${STORIES:-design-system-components-alert-展示--corner-action-group,design-system-components-bulkactionbar-展示--default,design-system-components-toast-展示--interactive}" --viewport="${VIEWPORT:-900x700}" $TOUCH
 
+      # 分隔線幾何是「算出來幾 px」的不變式,class 一模一樣也可能算出三種長度(2026-08-07 事故)。
+      # 靜態防線鎖不到,只能實際渲染量。built storybook 用 http-server 起在本機再量。
+      - name: Measure action divider geometry
+        run: |
+          npx --yes http-server storybook-static -p 4173 --silent &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:4173/index.json >/dev/null && break; sleep 2; done
+          node scripts/measure-action-dividers.mjs --base http://127.0.0.1:4173
+
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
