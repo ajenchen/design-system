@@ -44,7 +44,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | consumer-bootstrap-snapshot-verification-schema | `infra/governance/schemas/consumer-bootstrap-snapshot-verification.schema.json` | `sha256:bb3e702c64f9c9e63a75fa33c3b597254d6bf12330b8ef244940cfbd76d36d44` |
 | consumer-control-plane-baseline-receipt-schema | `infra/governance/schemas/consumer-control-plane-baseline-receipt.schema.json` | `sha256:5466f1de7457698d336ef174d55624c521d997deb3cd67733798742708274af9` |
 | consumer-control-plane-cli | `infra/governance/bin/consumerctl.mjs` | `sha256:8edb1b7ecd7346de6eaecf9675ece5a4086a72d56f10e7f42dddae2ec6e6fe48` |
-| consumer-control-plane-policy-library | `scripts/lib/consumer-control-plane-policy.mjs` | `sha256:ea8b11ddc5c964ea742ccba5e6a3bc2f215db5d165afe2cca96192812287750c` |
+| consumer-control-plane-policy-library | `scripts/lib/consumer-control-plane-policy.mjs` | `sha256:51aba211bb2f755eff7fa48bb060f9835356a62d2643ab5049147a9896c7bb72` |
 | consumer-control-plane-tests | `infra/governance/test/consumerctl.test.mjs` | `sha256:b9894e10726a2af8f8a97af0cb731cee95852661bfcd9b0117c420ade6a3b3c4` |
 | consumer-control-plane-update-acceptance-proposal-schema | `infra/governance/schemas/consumer-control-plane-update-acceptance-proposal.schema.json` | `sha256:54c62a3e2405814cfd03725e9e9697ad519cc1ee73ef34ea3fe9e5716beeb609` |
 | consumer-control-plane-update-plan-schema | `infra/governance/schemas/consumer-control-plane-update-plan.schema.json` | `sha256:2edfd440b4bf67175de3236d33f1308f7ce0adb9b103a3c277053be4c5abb137` |
@@ -346,7 +346,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:119993fd38bfe3d8dc76527c4081f48c57d36bdf7fedf59a471c74ed06a62fd2` |
+| repository-automation-corpus | `scripts` | `sha256:2de082524ef6e154c7c0fb721cb239bc35bfdb83d1cf23dda4a1414e2936490c` |
 | repository-ignore-boundary | `.gitignore` | `sha256:d8e1d26e0c7939e61f8f70303b93d4a5aa3a5d55bf638633ea6a2961e52b1a72` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
