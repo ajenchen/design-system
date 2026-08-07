@@ -86,6 +86,7 @@ export {
   buttonVariants,
 } from './components/Button/index'
 export type {
+  ButtonDividerProps,
   ButtonProps,
 } from './components/Button/index'
 export {

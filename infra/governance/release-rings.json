@@ -15,29 +15,29 @@
     "completionAttestationQuorum": 1
   },
   "candidateRelease": {
-    "id": "ajenchen/design-system@v0.1.0-beta.115",
-    "version": "0.1.0-beta.115",
-    "sourceCommit": "e9c0411be2f04f041e77115769ad2ca9dfd6a17d",
-    "sourceTree": "62644004e1bdf94c56857898207507137aaf109f",
-    "bomSha256": "65fbe3ce50fde2ec7b42eabb27dbc913bb9b01fe3ad0660f1d99f0d4ae7307a8",
+    "id": "ajenchen/design-system@v0.1.0-beta.117",
+    "version": "0.1.0-beta.117",
+    "sourceCommit": "90b16b7acfa263ac1c8c504988390206c16723ae",
+    "sourceTree": "026922f1940e08f4186bf3708ed44a3dbea15622",
+    "bomSha256": "b6b65261c3287c7e76e2485a047107c97eaf6d06dd04898308064d68ca684a56",
     "packages": [
       {
         "name": "@qijenchen/design-system",
-        "version": "0.1.0-beta.115",
-        "integrity": "sha512-Bfc4vVqTcXgE5HjcPatu9WT40eZkZQj9rKKRHz46hsfjY6w1UDtH+gcMqnsuaAHqhBYVo/K8qf663sj5X3lUsQ=="
+        "version": "0.1.0-beta.117",
+        "integrity": "sha512-O1pUZXyK5iLdmkT4PKCFBOAqgfcLGu8IT8SVk/PRB8edfI8rDx36tneWm92SHfQ9ASzvTUQ/M237mGfSbrdfqA=="
       },
       {
         "name": "@qijenchen/governance",
-        "version": "0.1.0-beta.115",
-        "integrity": "sha512-yKyRSP8YnUGS0WzbmH1zkwCTrQ6GER5iiQFjzdpdaKWq0rvoIhJ2O3tXflWz2lnCGB7iq+B+sDfSoIqQejtYww=="
+        "version": "0.1.0-beta.117",
+        "integrity": "sha512-r2e398IbtRnIVUbTw41AOQZP4Qul2q6Uerzay62ZyQ2APaXUXlVy3sjngAwhBHoKqyiVprVHOtuJGJ8nSDOVIg=="
       },
       {
         "name": "@qijenchen/storybook-config",
-        "version": "0.1.0-beta.115",
-        "integrity": "sha512-pSj9b7fP0bzv7VP8ewCdVRpkON55Ocktu4cjedBpSs4vu2GVCnV9axVn/T6EEN0603NVHlIg3s1pMSgEyH8yJg=="
+        "version": "0.1.0-beta.117",
+        "integrity": "sha512-z9ig0nEpAwMAaI68bS2116Ixaj9HhWkh3ZzTM3LrNbZ5V0u9xQuEI1l8mVT9bd3xbg3pMaats3SKkByTWegD+A=="
       }
     ],
-    "observedAt": "2026-08-05T10:42:44.000Z"
+    "observedAt": "2026-08-06T13:37:39Z"
   },
   "evidence": [],
   "rings": [
@@ -189,8 +189,8 @@
     "design-system": {
       "ring": "ring-0-authority",
       "wave": "canary",
-      "enteredAt": "2026-08-05T10:42:44.000Z",
-      "candidateReleaseDigest": "034ef1d1175ffbc9bf0cbbdbc5f90c9bc71c432c5ed5ed923b92e946c6e827ee",
+      "enteredAt": "2026-08-06T13:37:39Z",
+      "candidateReleaseDigest": "3f4a43da439f11e19be139f566182e2c6382431626428fb1f8511b4097a7e5aa",
       "applyAuthorization": null,
       "completionAttestation": null,
       "manualBlockers": []
@@ -198,8 +198,8 @@
     "ds-product-template": {
       "ring": "ring-1-template-canary",
       "wave": "canary",
-      "enteredAt": "2026-08-05T10:42:44.000Z",
-      "candidateReleaseDigest": "034ef1d1175ffbc9bf0cbbdbc5f90c9bc71c432c5ed5ed923b92e946c6e827ee",
+      "enteredAt": "2026-08-06T13:37:39Z",
+      "candidateReleaseDigest": "3f4a43da439f11e19be139f566182e2c6382431626428fb1f8511b4097a7e5aa",
       "applyAuthorization": null,
       "completionAttestation": null,
       "manualBlockers": []
@@ -207,8 +207,8 @@
     "work-management": {
       "ring": "ring-2-product-canary",
       "wave": "canary",
-      "enteredAt": "2026-08-05T10:42:44.000Z",
-      "candidateReleaseDigest": "034ef1d1175ffbc9bf0cbbdbc5f90c9bc71c432c5ed5ed923b92e946c6e827ee",
+      "enteredAt": "2026-08-06T13:37:39Z",
+      "candidateReleaseDigest": "3f4a43da439f11e19be139f566182e2c6382431626428fb1f8511b4097a7e5aa",
       "applyAuthorization": null,
       "completionAttestation": null,
       "manualBlockers": []

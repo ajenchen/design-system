@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9a35d2ead2de56971a9497538776094cf9c9e750839f93e9a0b449c7b4da0989",
   "files": [
     {
-      "hash": "sha256:4f11b88e9a4be9a49bb74664aa7ce1b658ef15fb26f46ffa059a7869a0aa3447",
+      "hash": "sha256:79782888c4999867428358a528c110611dedeef222c611582e08cb0e907b4f87",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:89cccac6c1b5825cb388f7ba3819800d2bd47e73ddce6604ff68e07f69ca26dc",
+      "hash": "sha256:5e1bf643bbb6b8e5f7562a5bfac3208d7e3e8e3c89e6c7183442801bea2c7786",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:da03f9237df1d63d6435bcbbf4384853257f5d289bc5c272f8a13cd70cb55ea1",
+  "inputDigest": "sha256:9e6ab16a7668539e952ce651a46e3b8c2ff97066815074ffd080d871525b37c8",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:5bf0ca732a2bce8afbb546a1eb9ce796ae498791ed3bd8828025cb1298eb229f",
+  "snapshotDigest": "sha256:c53808a4e5bc608e9ed2c8316ecd212a460389cf7ecc6aec04cf3546cba2ad04",
   "sources": [
     {
       "hash": "sha256:162d42307b502960ccc11fbe421e936e8a0161d3f523b9e8bc4d3fa2a411030f",
@@ -2126,7 +2126,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 13,
-      "hash": "sha256:411d211ae15adbc6bfb31308ea2740e4d3c4a1817463ea4feeac9bf4cf1f4176",
+      "hash": "sha256:20b65417d9c110b65187a8b6d2272d66ba5e613cb1017af65a6eaca09f6f860c",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2716,12 +2716,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:97689ce5819c7dbb1619c902648d0c1819f5d4fbee805a30382bdf01a68cb4b7",
+      "hash": "sha256:6dabbd52403203572bd34c02db2a55db2943f809b2cdb679fa2c6dd096c4b099",
       "id": "managed-host-release-binding",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/release-rings.json",
-      "size": 6692,
+      "size": 6676,
       "type": "file"
     },
     {
@@ -3586,8 +3586,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 368,
-      "hash": "sha256:8287639a4bc694181f3d01ec2e4c4c1abcec1e18e88130aa2fc968da912f1750",
+      "files": 369,
+      "hash": "sha256:0a3e4713a4c74f543a073102edd8b07a87df71fa8174accf59ff64ac1bb77834",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3767,7 +3767,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:51fb858e214558856a8d78be006bb7bf1375cb48c1642ca9feaa69440aed58fe",
+      "hash": "sha256:5652092b6b27d1501fadedb16de1ff9b185c9d926319eba2d308b130e9c24181",
       "id": "workspace-lockfile",
       "mode": "0644",
       "ownerRepo": "design-system",

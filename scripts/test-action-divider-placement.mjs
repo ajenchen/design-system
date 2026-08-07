@@ -80,8 +80,49 @@ for (const rel of HANDCRAFT_SCOPE) {
   }
 }
 
+// ── (4) 幾何:線長只能由「該列最高元件 − inset」算出,不得寫死 ──────────────
+// 2026-08-07 事故:同一條 canonical 底下實測跑出 13 / 16 / 24px 三種長度。根因是兩套機制
+// 並存(ButtonDivider 撐滿容器 / Separator 寫死 h-6),而規範只鎖了左右間距、對長度零約束。
+const dividerSource = read('packages/design-system/src/components/Button/button-group.tsx')
+const GEOMETRY_REQUIRED = [
+  // 外層取「該列最高元件」當基準。少了它,長度就不再跟控件走。
+  { pattern: /'flex shrink-0 self-stretch'/, label: '外層 flex shrink-0 self-stretch(取該列基準 + 防壓縮)' },
+  // 內層套 inset 與地板,兩者都必須讀 token,不得寫死 px。
+  { pattern: /h-\[calc\(100%-var\(--action-divider-inset\)\)\]/, label: '內層垂直線 inset 讀 token' },
+  { pattern: /min-h-\[var\(--action-divider-min\)\]/, label: '內層垂直線地板讀 token' },
+  { pattern: /w-\[calc\(100%-var\(--action-divider-inset\)\)\]/, label: '內層水平線 inset 讀 token' },
+  { pattern: /min-w-\[var\(--action-divider-min\)\]/, label: '內層水平線地板讀 token' },
+  // 置中必須由外層負責:單層 self-stretch + min-height 會把線釘在行首,地板一生效就歪。
+  { pattern: /items-center/, label: '垂直線由外層 items-center 置中' },
+]
+for (const { pattern, label } of GEOMETRY_REQUIRED) {
+  if (!pattern.test(dividerSource)) {
+    fail(`button-group.tsx: ButtonDivider 缺少「${label}」—— 幾何 SSOT 見 action-bar.spec.md「分隔線幾何」`)
+  }
+}
+if (/self-stretch[^']*\bmy-1\b|\bh-full\b/.test(dividerSource)) {
+  fail('button-group.tsx: ButtonDivider 用了 h-full 或把 margin 當內縮 —— 內縮必須落在內層並讀 --action-divider-inset')
+}
+
+// ── (5) token 必須由公式推導,不得退化成兩個孤立常數 ──────────────────────
+const uiSize = read('packages/design-system/src/tokens/uiSize/uiSize.css')
+if (!/--action-divider-inset:\s*0\.5rem/.test(uiSize)) {
+  fail('uiSize.css: 缺 --action-divider-inset(8px)')
+}
+if (!/--action-divider-min:\s*calc\(var\(--field-height-xs\)\s*-\s*var\(--action-divider-inset\)\)/.test(uiSize)) {
+  fail('uiSize.css: --action-divider-min 必須由 calc(--field-height-xs − --action-divider-inset) 推導 —— 寫死常數會讓地板脫離公式,變成可獨立漂移的第二個值')
+}
+
+// ── (6) action region 群組線不得再用 Separator 手寫高度 ────────────────────
+const SEPARATOR_HEIGHT = /<Separator[^>]*orientation="vertical"[^>]*className="[^"]*\bh-\d/
+for (const rel of HANDCRAFT_SCOPE) {
+  if (SEPARATOR_HEIGHT.test(read(rel))) {
+    fail(`${rel}: action region 群組線仍用 <Separator> 手寫高度 —— 唯一實作是 <ButtonDivider />(action-bar.spec.md「分隔線幾何」)`)
+  }
+}
+
 if (failures) {
-  console.error(`\n❌ action region 分隔線落點契約失敗 ${failures} 項`)
+  console.error(`\n❌ action region 分隔線契約失敗 ${failures} 項`)
   process.exit(1)
 }
-console.log(`Action divider placement PASS (${AUTO_PLACERS.length} 個自動落點 + 2 個共用消費端 + ${HANDCRAFT_SCOPE.length} 個手刻掃描)`)
+console.log(`Action divider PASS (${AUTO_PLACERS.length} 自動落點 + 2 共用消費端 + ${HANDCRAFT_SCOPE.length} 手刻掃描 + ${GEOMETRY_REQUIRED.length} 幾何斷言 + token 公式 + Separator 高度掃描)`)

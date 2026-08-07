@@ -188,7 +188,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | github-mutation-boundary-contract | `infra/governance/providers/github-mutation-boundary-contract.json` | `sha256:fab980731bdc2e9d7a36654411d91bf9c60641bd5d752f451dcc60aea045b39c` |
 | github-mutation-boundary-contract-schema | `infra/governance/schemas/github-mutation-boundary-contract.schema.json` | `sha256:4dcb67ba79814a0afa7ee4f520de231d4fa1bba82faab932d6b90045698827b9` |
 | github-mutation-boundary-library | `scripts/lib/github-mutation-boundary.mjs` | `sha256:5f403db0db88d9b2c30221c23d6217c535ea9bd78c7c1ace67ddbcfd4fc48023` |
-| github-repository-governance | `.github/` | `sha256:411d211ae15adbc6bfb31308ea2740e4d3c4a1817463ea4feeac9bf4cf1f4176` |
+| github-repository-governance | `.github/` | `sha256:20b65417d9c110b65187a8b6d2272d66ba5e613cb1017af65a6eaca09f6f860c` |
 | governance-anchor-preflight | `scripts/governance-anchor-preflight.mjs` | `sha256:1803d168923ed43b1002468610ac8cd207c5506e739bd4d9649c74cf6bf2da47` |
 | governance-anchor-preflight-tests | `scripts/test-governance-anchor-preflight.mjs` | `sha256:203f9c6346446d727be5925af12b425ee35e33c6d55ecf934e21aa7b0555d3ca` |
 | governance-anchor-workflow | `.github/workflows/governance-anchor.yml` | `sha256:3790e6703b497ce973f3e412f412e536587b2d04d8499e27a921b69611150373` |
@@ -251,7 +251,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | managed-host-codex-bundle-schema | `infra/governance/schemas/codex-managed-hook-bundle.schema.json` | `sha256:02c08c3397a2f2b173b21dd1da6e11118f26dcb739cb6202aa234b526095bcc4` |
 | managed-host-deployment-contracts | `infra/governance/managed-host/` | `sha256:ab1c6673779a8ecb37b7a11b670327cedfd2583bb654f58972a69c34093cc0ac` |
 | managed-host-effective-readback-schema | `infra/governance/schemas/managed-host-effective-readback.schema.json` | `sha256:d59aadf0f897538614c5e6d5d4748cf32cfededbe0778729a70c8a54e2e40826` |
-| managed-host-release-binding | `infra/governance/release-rings.json` | `sha256:97689ce5819c7dbb1619c902648d0c1819f5d4fbee805a30382bdf01a68cb4b7` |
+| managed-host-release-binding | `infra/governance/release-rings.json` | `sha256:6dabbd52403203572bd34c02db2a55db2943f809b2cdb679fa2c6dd096c4b099` |
 | managed-host-verifier-cli | `infra/governance/bin/verify-managed-host-assurance.mjs` | `sha256:9ee202296df720791cf1095f504ce8e9f04d0f790a81ca86d962d586858d2d97` |
 | managed-host-verifier-library | `infra/governance/lib/managed-host-assurance.mjs` | `sha256:c70e02db8b855abbde85c5a2327a0dbfd4d8cb7d040838f9b599d38773746afe` |
 | model-invocation-profiles | `infra/governance/providers/model-invocation-profiles.json` | `sha256:c93c5bba9b165213eb94ad7d77fc4b216d60f70a6a0d7e8e6dfe0bd913f73431` |
@@ -346,7 +346,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:8287639a4bc694181f3d01ec2e4c4c1abcec1e18e88130aa2fc968da912f1750` |
+| repository-automation-corpus | `scripts` | `sha256:0a3e4713a4c74f543a073102edd8b07a87df71fa8174accf59ff64ac1bb77834` |
 | repository-ignore-boundary | `.gitignore` | `sha256:d8e1d26e0c7939e61f8f70303b93d4a5aa3a5d55bf638633ea6a2961e52b1a72` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
@@ -366,7 +366,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | workflow-identity-manager | `infra/governance/bin/sync-workflow-identities.mjs` | `sha256:8b8ffc42c6d8946981605d66d72295f3ecd702087453f1236a69bcf4c24b7a30` |
 | workflow-identity-proposal-schema | `infra/governance/schemas/workflow-identity-proposal.schema.json` | `sha256:b661ebc3db93c72357f0e73e25b63da827a5e7b1ef6c5163e8cbe12e470c2a84` |
 | workflow-static-validation-helper | `scripts/workflow-static-validation.mjs` | `sha256:8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305` |
-| workspace-lockfile | `package-lock.json` | `sha256:51fb858e214558856a8d78be006bb7bf1375cb48c1642ca9feaa69440aed58fe` |
+| workspace-lockfile | `package-lock.json` | `sha256:5652092b6b27d1501fadedb16de1ff9b185c9d926319eba2d308b130e9c24181` |
 
 ## Provider skill parity
 

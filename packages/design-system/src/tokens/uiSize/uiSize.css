@@ -35,6 +35,22 @@
   --field-control-py-md: calc((var(--field-height-md) - 1lh) / 2 - 1px);
   --field-control-py-lg: calc((var(--field-height-lg) - 1lh) / 2 - 1px);
 
+  /* Action-region 群組分隔線幾何 — 線長 = 該列最高元件 − inset,不短於 min,垂直置中。
+     基準是「該列最高元件」而非容器:同一列的每條線因此必然等長(不參差),換一個尺寸階的控件
+     時線自動跟著走,比值維持 0.67–0.78,落在世界級 action bar 帶內(VS Code 0.73 /
+     Primer ActionBar 0.63 / JetBrains 0.77–0.86)。
+     inset 取 8px 是我們尺寸階唯一可行值:世界級「撐滿再減」的兩家(MUI variant="middle"、
+     Primer SegmentedControl)各減 16px,但他們最小控件 32px;套到我們 24px 的 xs 階只剩 8px,
+     比 Button 圖示(16px)還矮一半。
+     min 不是新常數,它就是本公式在最小控件階的取值(--field-height-xs 24px − inset 8px = 16px),
+     所以地板永遠不覆寫公式,只在「容器宣稱的高度比它自己的內容還矮」時把結果修回誠實值。
+     --field-height-xs 明文不隨 density 縮放,故 min 在任何密度都成立;16px 同時等於 Button 的
+     圖示尺寸(button.tsx:416),與 VS Code 工具列分隔線同值(actionbar.css height:16px,同檔
+     .codicon 亦 16px)。
+     消費者:ButtonDivider(唯一實作點)。由 scripts/test-action-divider-placement.mjs 機械鎖。 */
+  --action-divider-inset: 0.5rem; /* 8px — 兩端各 4px */
+  --action-divider-min: calc(var(--field-height-xs) - var(--action-divider-inset)); /* 16px */
+
   /* Field horizontal padding — 固定 12px(不隨 size/density);form-context field 左右內距 SSOT。
      跟 --table-cell-px(cell-context)同 -px 慣例;Input/Select/Combobox/DatePicker/TimePicker/Textarea
      + tag 模式右緣 re-assert 全消費此 token(取代散落的 px-3 / inline 0.75rem,M17 SSOT 可傳播)。 */
