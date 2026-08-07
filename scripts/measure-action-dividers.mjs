@@ -46,17 +46,24 @@ const MEASURE = () => {
     const outer = line.parentElement
     const row = outer.parentElement
     const lineBox = line.getBoundingClientRect()
-    const rowBox = row.getBoundingClientRect()
-    const siblings = [...row.children]
+    const siblingBoxes = [...row.children]
       .filter(child => child !== outer)
-      .map(child => child.getBoundingClientRect().height)
-      .filter(height => height > 0)
-    const tallest = siblings.length ? Math.max(...siblings) : rowBox.height
+      .map(child => child.getBoundingClientRect())
+      .filter(box => box.height > 0)
+    const tallestBox = siblingBoxes.reduce(
+      (best, box) => (best && best.height >= box.height ? best : box),
+      null,
+    ) ?? row.getBoundingClientRect()
+    // 置中要對「它所分隔的控件」比,不是對父層盒 —— 父層常帶不對稱 padding
+    // (BulkActionBar 的 py-tight),拿父層算會把 padding 誤判成偏移。
+    const lineCenter = (lineBox.top + lineBox.bottom) / 2
+    const controlCenter = (tallestBox.top + tallestBox.bottom) / 2
     return {
       lineHeight: Number(lineBox.height.toFixed(1)),
-      tallestSibling: Number(tallest.toFixed(1)),
-      ratio: Number((lineBox.height / tallest).toFixed(2)),
-      centered: Math.abs((lineBox.top - rowBox.top) - (rowBox.bottom - lineBox.bottom)) < 0.75,
+      tallestSibling: Number(tallestBox.height.toFixed(1)),
+      ratio: Number((lineBox.height / tallestBox.height).toFixed(2)),
+      centerOffset: Number((lineCenter - controlCenter).toFixed(2)),
+      centered: Math.abs(lineCenter - controlCenter) < 0.75,
       width: Number(lineBox.width.toFixed(1)),
     }
   })
@@ -102,7 +109,7 @@ if (asJson) {
     console.log(`\n── ${result.label}`)
     if (!result.lines.length) { console.log('   (此 story 未渲染分隔線)'); continue }
     for (const line of result.lines) {
-      console.log(`   線 ${String(line.lineHeight).padStart(5)}px / 最高元件 ${String(line.tallestSibling).padStart(5)}px = ${line.ratio}  置中:${line.centered ? '✓' : '✗'}  寬 ${line.width}px`)
+      console.log(`   線 ${String(line.lineHeight).padStart(5)}px / 最高元件 ${String(line.tallestSibling).padStart(5)}px = ${line.ratio}  中心偏移 ${line.centerOffset}px ${line.centered ? '✓' : '✗'}  寬 ${line.width}px`)
     }
   }
 }
