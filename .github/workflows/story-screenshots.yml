@@ -24,7 +24,7 @@ on:
   # 暫時 push trigger(分隔線幾何實測;驗證後同 PR 內移除)
   push:
     branches: ['claude/divider-geometry-ssot']
-    paths: ['.github/workflows/story-screenshots.yml']
+    paths: ['.github/workflows/story-screenshots.yml', 'scripts/measure-action-dividers.mjs']
 
 permissions:
   contents: read
