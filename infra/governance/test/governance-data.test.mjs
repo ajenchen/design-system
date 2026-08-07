@@ -213,7 +213,25 @@ test('live governance model encodes exact trust anchors, solo review settings, t
   assert.match(desiredValidatorContract, /environment\.name === 'npm-release'[\s\S]*npm-release must remain OIDC-only/)
   assert.deepEqual(desired.managedEnvironmentNames, ['npm-release', 'governance-upgrade'])
   assert.equal(rings.schemaVersion, 3)
-  assert.equal(rings.candidateRelease, null)
+  // candidateRelease 不是「必須為 null」:consumerctl 的 plan-bootstrap 與 plan-control-plane-update
+  // 都以它綁定 exact immutable release(consumerctl.mjs:1737/1761),null 只在「兩次發版之間」成立。
+  // 因此這裡驗的是兩個合法狀態各自封閉,而不是釘死其中一個(釘死會讓 consumer 升級路線整條斷掉)。
+  if (rings.candidateRelease !== null) {
+    const candidate = rings.candidateRelease
+    assert.equal(candidate.id, `ajenchen/design-system@v${candidate.version}`)
+    assert.match(candidate.version, /^\d+\.\d+\.\d+-beta\.\d+$/)
+    assert.match(candidate.sourceCommit, /^[a-f0-9]{40}$/)
+    assert.match(candidate.sourceTree, /^[a-f0-9]{40}$/)
+    assert.match(candidate.bomSha256, /^[a-f0-9]{64}$/)
+    assert.deepEqual(candidate.packages.map(item => item.name).sort(), [
+      '@qijenchen/design-system', '@qijenchen/governance', '@qijenchen/storybook-config',
+    ])
+    for (const item of candidate.packages) {
+      assert.equal(item.version, candidate.version, `${item.name} is not pinned to the candidate version`)
+      assert.match(item.integrity, /^sha512-[A-Za-z0-9+/]+=*$/)
+    }
+    assert.ok(Number.isFinite(Date.parse(candidate.observedAt)), 'candidate observedAt is not a readback timestamp')
+  }
   for (const ring of rings.rings) {
     assert.ok(ring.waves.length > 0)
     assert.ok(ring.promotionPredicates.every(predicate => typeof predicate === 'object' && predicate.id && predicate.type))

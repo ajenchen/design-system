@@ -14,7 +14,31 @@
     "applyAuthorizationQuorum": 1,
     "completionAttestationQuorum": 1
   },
-  "candidateRelease": null,
+  "candidateRelease": {
+    "id": "ajenchen/design-system@v0.1.0-beta.119",
+    "version": "0.1.0-beta.119",
+    "sourceCommit": "4cafe156e4f452293b2c2343b9149587e356a4f6",
+    "sourceTree": "a091cf68f1def4c088a07eb35ec1a7dca75920ba",
+    "bomSha256": "76dc4a4300462abe85eae3077bad7daaf384a3dad76393e6458a38c0a59c3752",
+    "packages": [
+      {
+        "name": "@qijenchen/design-system",
+        "version": "0.1.0-beta.119",
+        "integrity": "sha512-qiO6EMsoBU4igr3K/M05AJzrpQ+L9nX0VigiV4jRQ6ejmj6c8kBmnRKn4siEMrQbF/GczE+L5oRCzTVpaas2Tg=="
+      },
+      {
+        "name": "@qijenchen/governance",
+        "version": "0.1.0-beta.119",
+        "integrity": "sha512-4CMyuhMx96CSWNSP1HPLorWCYxLq+hGQIqn9sfWLpYW/J0QvdA126N9BvzQmeHlFnO0xZ9z5LzXAhroo3J+n0Q=="
+      },
+      {
+        "name": "@qijenchen/storybook-config",
+        "version": "0.1.0-beta.119",
+        "integrity": "sha512-anW+deFveYeC5YDVpgWvARmalqJGPjSeGKHV1fjXx9bvRecMzqHLePzRhzD4N78e+K8l3Pis/DjBcwgLh2KnPA=="
+      }
+    ],
+    "observedAt": "2026-08-07T05:12:09Z"
+  },
   "evidence": [],
   "rings": [
     {
@@ -165,8 +189,8 @@
     "design-system": {
       "ring": "ring-0-authority",
       "wave": "canary",
-      "enteredAt": "2026-08-07T02:01:05Z",
-      "candidateReleaseDigest": null,
+      "enteredAt": "2026-08-07T05:12:09Z",
+      "candidateReleaseDigest": "abbebde64ec64f6cca13020cb1ae2ec4ae07c56c3c5fcf5cb0f0f2d51448a4d7",
       "applyAuthorization": null,
       "completionAttestation": null,
       "manualBlockers": []
@@ -174,8 +198,8 @@
     "ds-product-template": {
       "ring": "ring-1-template-canary",
       "wave": "canary",
-      "enteredAt": "2026-08-07T02:01:05Z",
-      "candidateReleaseDigest": null,
+      "enteredAt": "2026-08-07T05:12:09Z",
+      "candidateReleaseDigest": "abbebde64ec64f6cca13020cb1ae2ec4ae07c56c3c5fcf5cb0f0f2d51448a4d7",
       "applyAuthorization": null,
       "completionAttestation": null,
       "manualBlockers": []
@@ -183,8 +207,8 @@
     "work-management": {
       "ring": "ring-2-product-canary",
       "wave": "canary",
-      "enteredAt": "2026-08-07T02:01:05Z",
-      "candidateReleaseDigest": null,
+      "enteredAt": "2026-08-07T05:12:09Z",
+      "candidateReleaseDigest": "abbebde64ec64f6cca13020cb1ae2ec4ae07c56c3c5fcf5cb0f0f2d51448a4d7",
       "applyAuthorization": null,
       "completionAttestation": null,
       "manualBlockers": []

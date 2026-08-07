@@ -523,7 +523,11 @@ test('portable baseline and local files never become managed-host proof', () => 
     const evidence = verifyManagedHostAssurance({ repoRoot: REPO_ROOT, platform: 'linux', hostRoot, generatedAt: NOW })
     const codex = evidence.providers.find(item => item.id === 'codex')
     assert.equal(evidence.scope.portableRepoBaseline, 'declared-not-managed-host-proof')
-    assert.equal(evidence.releaseBinding.status, 'missing')
+    // releaseBinding 跟著 live rollout 狀態走(有 candidate → ready,兩次發版之間 → missing),
+    // 本測試的主題不是它。真正要證明的是:即使 release 綁定齊備,單靠 portable baseline 與本機檔案
+    // 仍然不能把結論升級成 managed-host proof。
+    const liveRings = readJson(resolve(GOVERNANCE_ROOT, 'release-rings.json'))
+    assert.equal(evidence.releaseBinding.status, liveRings.candidateRelease ? 'ready' : 'missing')
     assert.equal(evidence.overallStatus, 'external-activation-required')
     assert.equal(evidence.certification.status, 'not-certified')
     assert.equal(codex.localPolicyDiscovered, true)

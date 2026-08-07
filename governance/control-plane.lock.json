@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9a35d2ead2de56971a9497538776094cf9c9e750839f93e9a0b449c7b4da0989",
   "files": [
     {
-      "hash": "sha256:2e52696eec2b950a1b69ce327dffba30d5a21f2524a611ad32eafee7e7b560cf",
+      "hash": "sha256:a0a2ce4c61ee86d1e5241ff5764e1348312c32397f0f3ab7736b57028cb1ac16",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:3386732527a74b2810a831557fe65da4d036252e4dceac114c34e2be8e1b7ad1",
+      "hash": "sha256:1d7b3f528e45386dc8c8411ad96b5747cbfdd71bb47d5ed837060ad3fe6f2d37",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:c7933a1a071e8ec51e381f2db5e2ae137ca64d9d9544d26217e94eadceb0d4b2",
+  "inputDigest": "sha256:a64c25b8ccf3a3a1a7fcfb2339bd4cdf0b6dff6a955f2434972a52ea265a6ec3",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:2b2b6461f8c20aeb34cc742f884785cf1863eb268eaaa85defdd43e926f37918",
+  "snapshotDigest": "sha256:741bb79196873d31adb3e65675b7bc02138f4066b8e18c994eeb5f08be2dc2d9",
   "sources": [
     {
       "hash": "sha256:162d42307b502960ccc11fbe421e936e8a0161d3f523b9e8bc4d3fa2a411030f",
@@ -2271,7 +2271,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 52,
-      "hash": "sha256:87d819c5272ab833aa46a991433bdf8f2ded8c4a345a2520ad283b9ee03ff0bb",
+      "hash": "sha256:42da05f7dce439398582e7ea0b3cbac02dbdd365502d3415f9912723d1c92dd8",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2651,12 +2651,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0b85f139ccf25bed932af10099f1ff68485fda2506d640d3ceddb3c446dd9805",
+      "hash": "sha256:7f12e72be36d4c1305884c94b05bb1aff4613738bec8e81237a7947d8663d517",
       "id": "managed-host-adversarial-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/managed-host-assurance.test.mjs",
-      "size": 98944,
+      "size": 99359,
       "type": "file"
     },
     {
@@ -2716,12 +2716,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c07edce4439db8d5ca5c7a83e633e192e1e46191ce2168b6ac8f099f9793a9b0",
+      "hash": "sha256:12a3566d5840ca3e8422ce44267b08decf19ea79e6b76686cf04ac0ca8feb312",
       "id": "managed-host-release-binding",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/release-rings.json",
-      "size": 5477,
+      "size": 6676,
       "type": "file"
     },
     {
@@ -3587,7 +3587,7 @@
         "scripts/generated/"
       ],
       "files": 370,
-      "hash": "sha256:94aed148acb9473f8a7229f0c17d5113cbbf5cfdf1ec7e47e4537e4e4988200e",
+      "hash": "sha256:2129f9a463f48d36bda608a1a46e35a897f9e9ded710f9661a225156a1e87585",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

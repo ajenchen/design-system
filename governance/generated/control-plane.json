@@ -1759,7 +1759,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 52,
-      "hash": "sha256:87d819c5272ab833aa46a991433bdf8f2ded8c4a345a2520ad283b9ee03ff0bb",
+      "hash": "sha256:42da05f7dce439398582e7ea0b3cbac02dbdd365502d3415f9912723d1c92dd8",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2139,12 +2139,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0b85f139ccf25bed932af10099f1ff68485fda2506d640d3ceddb3c446dd9805",
+      "hash": "sha256:7f12e72be36d4c1305884c94b05bb1aff4613738bec8e81237a7947d8663d517",
       "id": "managed-host-adversarial-tests",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/test/managed-host-assurance.test.mjs",
-      "size": 98944,
+      "size": 99359,
       "type": "file"
     },
     {
@@ -2204,12 +2204,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:c07edce4439db8d5ca5c7a83e633e192e1e46191ce2168b6ac8f099f9793a9b0",
+      "hash": "sha256:12a3566d5840ca3e8422ce44267b08decf19ea79e6b76686cf04ac0ca8feb312",
       "id": "managed-host-release-binding",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/release-rings.json",
-      "size": 5477,
+      "size": 6676,
       "type": "file"
     },
     {
@@ -3075,7 +3075,7 @@
         "scripts/generated/"
       ],
       "files": 370,
-      "hash": "sha256:94aed148acb9473f8a7229f0c17d5113cbbf5cfdf1ec7e47e4537e4e4988200e",
+      "hash": "sha256:2129f9a463f48d36bda608a1a46e35a897f9e9ded710f9661a225156a1e87585",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
