@@ -2204,7 +2204,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:6dabbd52403203572bd34c02db2a55db2943f809b2cdb679fa2c6dd096c4b099",
+      "hash": "sha256:38cceb40df128205424ec233ec76a8f6f2ad8b4375430717b3f99e3252372def",
       "id": "managed-host-release-binding",
       "mode": "0644",
       "ownerRepo": "design-system",
