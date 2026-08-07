@@ -112,6 +112,9 @@ const ButtonDivider = React.forwardRef<HTMLDivElement, ButtonDividerProps>(
         role={decorative ? 'none' : 'separator'}
         aria-orientation={decorative ? undefined : orientation}
         data-orientation={orientation}
+        // 穩定標記:讓像素量測(scripts/measure-action-dividers.mjs)只鎖 action region 群組線,
+        // 不會誤抓版面切分家族(DataTable 欄界 / 欄寬把手 / Steps connector — 那些不適用本幾何)。
+        data-action-divider=""
         className={cn(
           'flex shrink-0 self-stretch',
           isVertical ? 'w-px mx-1 items-center' : 'h-px my-1 justify-center',

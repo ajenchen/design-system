@@ -41,12 +41,10 @@ const CASES = [
 ]
 
 const MEASURE = () => {
-  const isLine = element => {
-    const value = (element.className || '').toString()
-    return /\bbg-divider\b/.test(value) && /\bw-px\b|\bh-px\b/.test(value)
-  }
-  return [...document.querySelectorAll('*')].filter(isLine).map(line => {
-    const outer = line.parentElement
+  // 只鎖 action region 群組線。版面切分家族(DataTable 欄界 / 欄寬把手 / Steps connector)
+  // 同樣是 bg-divider + w-px,但規範明文不適用本節幾何,誤抓會製造假失敗。
+  return [...document.querySelectorAll('[data-action-divider]')].map(outer => {
+    const line = outer.firstElementChild
     const row = outer.parentElement
     const lineBox = line.getBoundingClientRect()
     const siblingBoxes = [...row.children]
