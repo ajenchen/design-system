@@ -4,7 +4,7 @@
     "type": "git",
     "url": "git+https://github.com/ajenchen/design-system.git"
   },
-  "version": "0.1.0-beta.118",
+  "version": "0.1.0-beta.119",
   "description": "Provider-neutral DS-author control plane for deterministic snapshots, adapters, checks, and evidence manifests.",
   "type": "module",
   "license": "UNLICENSED",
