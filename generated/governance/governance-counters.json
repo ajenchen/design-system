@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "counts": {
     "hooks": 59,
-    "mRules": 31,
+    "mRules": 32,
     "auditDims": 91,
     "auditDimMin": 1,
     "auditDimMax": 91,
@@ -40,7 +40,8 @@
     "M29",
     "M30",
     "M31",
-    "M32"
+    "M32",
+    "M36"
   ],
   "hookFiles": [
     "packages/design-system/ds-canonical/hooks/auto_regen_ds_barrel.sh",

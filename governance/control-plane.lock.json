@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9a35d2ead2de56971a9497538776094cf9c9e750839f93e9a0b449c7b4da0989",
   "files": [
     {
-      "hash": "sha256:607e5206feca33b691e520c48d1a43d0d5eb976603eccb3e5fc4bdab078895fe",
+      "hash": "sha256:46e8791782483f6c9fe2f8f9fa1b5e6568dc8e409387ad71918de0141de4a982",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9c00785dd2d898909085e895f654f2b4621d161d61d878450176b81de2e03278",
+      "hash": "sha256:71822f1c2e04d2574acbf6b1419a4856e7cc366f12ac4510c351d5084a5df791",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:7c428094b1fc75e11bd91fa018b17cbc8b27c51cf55ef3a0a1ffcbcbe56ffb35",
+  "inputDigest": "sha256:daa5ecbb426d06a75f010ba1cd9b3c8e8fef0f299c1673c13399c39b10f5fcae",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:8b0906016095c460c28cfce961618398980adb127c668f01e1e925ac9e3c6cbe",
+  "snapshotDigest": "sha256:02a8c9d5d55168f045ae55cdcc05bf4a4621e80bb447c766684e8fba5ee9b75a",
   "sources": [
     {
       "hash": "sha256:162d42307b502960ccc11fbe421e936e8a0161d3f523b9e8bc4d3fa2a411030f",
@@ -667,7 +667,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 25,
-      "hash": "sha256:8b8c162c50b68c37c13c042db2997e3ab2b5c3aee26c42f18c1d7bea3bbf048a",
+      "hash": "sha256:a08577f7d726f51c119498fe58992f085257125d58be86e426aaee3c97afb497",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -678,7 +678,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 6,
-      "hash": "sha256:59566f03abcddd4001c35974aad9a00a1aed4ebc816a9ea31f4dc38b179bd42f",
+      "hash": "sha256:11260ecba59b9a8bbbebcc9dab8f3b4241659e716a4ab0320fd5f99e55922a43",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2279,12 +2279,12 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:5e179f234148dc7bef40c7974a23eda6563f6416e6809004f168a47fbbfb4075",
+      "hash": "sha256:5bd89371c7db4ff059542e0896f218577937a4d7489c72ed9db86f1b5e8b6ff8",
       "id": "governance-counter-metadata",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "generated/governance/governance-counters.json",
-      "size": 5278,
+      "size": 5289,
       "type": "file"
     },
     {
@@ -3211,7 +3211,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 21,
-      "hash": "sha256:e65f2f1ab1c4be685f582b1c4aaf74c22cae7347e782c703a17895ec69b6cdc3",
+      "hash": "sha256:8a2042bfece3123c33a9feff9d56ec237af835e922ce016e78136d4d714d6784",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",

@@ -155,7 +155,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 25,
-      "hash": "sha256:8b8c162c50b68c37c13c042db2997e3ab2b5c3aee26c42f18c1d7bea3bbf048a",
+      "hash": "sha256:a08577f7d726f51c119498fe58992f085257125d58be86e426aaee3c97afb497",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -166,7 +166,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 6,
-      "hash": "sha256:59566f03abcddd4001c35974aad9a00a1aed4ebc816a9ea31f4dc38b179bd42f",
+      "hash": "sha256:11260ecba59b9a8bbbebcc9dab8f3b4241659e716a4ab0320fd5f99e55922a43",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1767,12 +1767,12 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:5e179f234148dc7bef40c7974a23eda6563f6416e6809004f168a47fbbfb4075",
+      "hash": "sha256:5bd89371c7db4ff059542e0896f218577937a4d7489c72ed9db86f1b5e8b6ff8",
       "id": "governance-counter-metadata",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "generated/governance/governance-counters.json",
-      "size": 5278,
+      "size": 5289,
       "type": "file"
     },
     {
@@ -2699,7 +2699,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 21,
-      "hash": "sha256:e65f2f1ab1c4be685f582b1c4aaf74c22cae7347e782c703a17895ec69b6cdc3",
+      "hash": "sha256:8a2042bfece3123c33a9feff9d56ec237af835e922ce016e78136d4d714d6784",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
