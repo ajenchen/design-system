@@ -366,7 +366,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | workflow-identity-manager | `infra/governance/bin/sync-workflow-identities.mjs` | `sha256:8b8ffc42c6d8946981605d66d72295f3ecd702087453f1236a69bcf4c24b7a30` |
 | workflow-identity-proposal-schema | `infra/governance/schemas/workflow-identity-proposal.schema.json` | `sha256:b661ebc3db93c72357f0e73e25b63da827a5e7b1ef6c5163e8cbe12e470c2a84` |
 | workflow-static-validation-helper | `scripts/workflow-static-validation.mjs` | `sha256:8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305` |
-| workspace-lockfile | `package-lock.json` | `sha256:28e9f525a9bb32a40938950af55b294624076f586b2041922d986c988431395e` |
+| workspace-lockfile | `package-lock.json` | `sha256:656bf073d1490a83b17acab396fe1287e9892397eacd2cab4c4e1e941f75354c` |
 
 ## Provider skill parity
 

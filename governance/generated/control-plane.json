@@ -3255,12 +3255,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:28e9f525a9bb32a40938950af55b294624076f586b2041922d986c988431395e",
+      "hash": "sha256:656bf073d1490a83b17acab396fe1287e9892397eacd2cab4c4e1e941f75354c",
       "id": "workspace-lockfile",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package-lock.json",
-      "size": 323928,
+      "size": 324121,
       "type": "file"
     }
   ],
