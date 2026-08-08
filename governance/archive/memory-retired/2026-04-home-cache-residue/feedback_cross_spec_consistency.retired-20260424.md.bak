@@ -1,0 +1,11 @@
+---
+name: Spec rules are in CLAUDE.md
+description: Spec interaction rules (read before answering, cross-check, world-class quality, shadcn framework) are defined in CLAUDE.md under "Spec 規則"
+type: feedback
+---
+
+所有 spec 相關的行為規則已寫入 CLAUDE.md「Spec 規則」區塊，為 single source of truth。不需要在記憶中重複定義。
+
+**Why:** CLAUDE.md 每次對話都在 context 中，比記憶更可靠。
+
+**How to apply:** 遵循 CLAUDE.md 的 Spec 規則。若需要修改規則，改 CLAUDE.md，不改記憶。

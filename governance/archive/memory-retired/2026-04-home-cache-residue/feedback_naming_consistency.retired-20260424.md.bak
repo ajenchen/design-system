@@ -1,0 +1,47 @@
+---
+name: feedback_naming_consistency
+description: Naming and language consistency is a meta rule — check existing patterns before naming anything, don't mix languages in one file
+type: feedback
+originSessionId: 138f4306-1a67-4fe7-9341-c585d88d643b
+---
+## 規則
+
+建立任何命名前（檔案、資料夾、變數、函式、CSS token、spec 章節標題、story 變數、API prop），**先 `ls` / `grep` 既有 pattern**，嚴格對齊不憑直覺。
+
+**Why:** 用戶先前發現 AI 提出的 `single-choice-input.spec.md` 這類命名與專案現有 pattern（`item-layout`、`action-bar` 等）不一致——沒查既有慣例就命名。不一致的命名會拖垮整個 DS 的世界級感。
+
+**How to apply:**
+
+### 檢查順序（建新命名前）
+1. `ls` 兄弟資料夾 / 鄰近類別的檔案看命名風格
+2. `grep` 現有類似概念的命名 pattern
+3. 確認大小寫風格（kebab-case / PascalCase / camelCase）對齊所在層級
+4. 若發現既有 pattern 不一致，**提出討論統一方向，不默默追加新風格**
+
+### 命名慣例（本專案）
+- 檔案 / 資料夾：kebab-case（`item-layout.tsx`、`item-layout/`）
+- React 元件 / TypeScript type：PascalCase（`ItemLayout`、`ItemLayoutProps`）
+- 函式 / hook / 變數：camelCase（`useOverflow`、`itemCount`）
+- CSS custom property：`--kebab-case-with-purpose`（`--field-height-md`）
+- Spec 章節標題：繁體中文（Props / API / Token / CSS 約定俗成英文例外）
+- Story 變數名：`{Concept}Rule`（principles）/ 簡短名詞（showcase / anatomy）
+- Story 標題 path：`Design System/Components/{ComponentName}/{中文子頁}`
+
+### 語言一致性（critical）
+- Spec.md 一律繁體中文（已定案）
+- Code identifier 一律英文
+- 單一檔案內註解統一語言，不中英夾雜
+- 同段落不跨語言（「Rule A」和「判斷法 A」擇一）
+
+### 檔案 suffix 不自創
+既有 suffix：`.tsx` / `.spec.md` / `.stories.tsx` / `.anatomy.stories.tsx` / `.principles.stories.tsx`
+不自創：`.design.md` / `.tokens.tsx` / `.guide.md` 等
+
+### Spec 章節標題不自創
+既有 SegmentedControl / Select spec 章節命名：
+「定位」「何時用」「何時不用」「與 X 的分界」「常見誤解」「禁止事項」「相關」
+
+新 spec 若涉及這些概念，**沿用既有標題，不寫變體**（不寫「What's this」「When NOT to use」「誤區」「相關文件」）。
+
+## 對應 CLAUDE.md
+詳見 CLAUDE.md「命名與語言一致性（Meta 規則）」段落——SSOT 在 CLAUDE.md，本 memory 是跨 session 第二層保險。

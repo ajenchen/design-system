@@ -1,0 +1,18 @@
+---
+name: feedback_file_responsibilities
+description: Each file must have a clear, non-overlapping role — spec for human/AI judgment, tsx for programmatic rules, stories for visual proof
+type: feedback
+---
+
+Every file must be concise and serve exactly one purpose. No redundancy across files.
+
+- **spec.md**: Design principles requiring human/AI judgment ("why" and "when to use"). No implementation details, no px values, no class names.
+- **tsx**: Programmatic design rules enforced by code (cva variants, TypeScript constraints, calc formulas). No design rationale.
+- **stories**: Visual proof of spec rules + tsx implementation. Generated FROM spec + tsx, not written independently.
+  - `.stories.tsx` = visual catalog of all variants/sizes/states
+  - `.anatomy.stories.tsx` = token/size inspector replacing Figma inspect
+  - `.principles.stories.tsx` = do/don't examples of every spec rule
+
+**Why:** The user has emphasized this multiple times. When files overlap or contain misplaced content, it causes contradictions (e.g., spec says default size is sm but code says md) and makes maintenance impossible.
+
+**How to apply:** Before writing any content, ask: "Is this a judgment call (→ spec), a programmatic rule (→ tsx), or a visual example (→ story)?" Never duplicate information across files — if spec changes, only spec changes; stories regenerate from spec + tsx.

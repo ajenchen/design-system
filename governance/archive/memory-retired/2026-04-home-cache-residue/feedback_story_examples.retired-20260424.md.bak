@@ -1,0 +1,38 @@
+---
+name: feedback_story_examples
+description: Story examples must use real-product scenarios (Jira, Slack, Figma, etc.) — never placeholders; one example must teach many similar cases
+type: feedback
+originSessionId: 138f4306-1a67-4fe7-9341-c585d88d643b
+---
+## 規則
+
+Storybook 範例必須同時滿足兩個 test：
+
+1. **「人」test**：任何設計師 / 開發者 / PM 打開 Storybook、**不看任何 label 和說明**、只看範例就能懂元件在做什麼。範例必須取自**真實產品情境**（Jira task status / Slack DM / Notion settings / Figma 工具列 / 電商付款流程），不是抽象佔位符
+2. **舉一反三 test**：讀者看完這幾個範例能**推出類似情境該怎麼用**——範例是「教學」不是「展示」。5 個具代表性的真實場景 > 20 個重複 placeholder
+
+**Why:** 用戶指出 Storybook 是公開文件,受眾是任何打開它的人(新設計師、新 PM、跨團隊開發者)——不是只有寫 story 的作者和 AI。用「Option A / Option B」「Lorem ipsum」「Rule A」這類抽象佔位,讀者需要反覆查 spec 才懂,失去 Storybook 作為快速理解工具的價值。世界級 DS(Polaris / Material / Atlassian)的 story 範例都用真實產品情境。
+
+**How to apply:**
+
+### ✅ 真實場景範例
+- 付款方式(信用卡 / 銀行轉帳 / 現金,附手續費 description)
+- 儲存草稿 / 放棄變更
+- Task status 即時切換(Jira style)
+- 全部 / 進行中 / 已完成 filter tab
+- Bluetooth / Wi-Fi / Dark mode 開關
+- 我同意服務條款 checkbox
+- 訂閱方案比較(Basic / Pro / Enterprise + 價格 description)
+
+### ❌ 避免
+- Option A / Option B / Option C(無意義)
+- Lorem ipsum / Test value / foo bar(佔位符)
+- 按鈕一 / 按鈕二
+- 內部代號(Rule A、Variant X、判斷法 1)
+- 抽象符號表達式(`│─ 業務 ─│`、`A → B`)
+
+### 自我檢查
+寫完範例後問自己:**「新加入的設計師打開 Storybook,能不能不看我的說明文字、光看範例就懂?」** 不能就回去改。
+
+## 對應 CLAUDE.md
+詳見 CLAUDE.md「元件完成清單 > Stories > 範例選擇原則(世界級標準)」段落——SSOT 在 CLAUDE.md,本 memory 是跨 session 第二層保險。

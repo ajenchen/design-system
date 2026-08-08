@@ -1,0 +1,92 @@
+---
+name: 連續 item 貼邊合法性 + 視覺容器 breathing invariant canonical
+description: 2026-04-22 session 新訂的 2 條 DS-wide 上游 canonical + 整套程式化防線
+type: project
+originSessionId: 7fa6c876-f1f7-4537-8cb3-1c97212e5a80
+---
+## 本 session 完成(2026-04-22 · 連續 + 容器 session)
+
+### 起點 bug(user 貼圖糾正)
+
+1. `ref/貼邊/sheet的範例的表單貼邊.png` — Sheet 表單 Field 全部貼邊 0 gap
+2. `ref/貼邊/rich file item之間黏在一起.png` — rich FileItem 3 個 card 邊框完全相黏
+
+### Root cause 1:Sheet/Dialog `className` 套錯層(bug)
+
+`SheetBody` / `DialogBody` forwardRef 時 `className` forward 到外層 ScrollArea wrapper,但 children 住在 inner `<div>`。consumer 傳 `flex flex-col gap-X` 實際套到 ScrollArea(無 flex child),inner div block flow → 0 gap。
+
+**Fix**:className forward 到 inner content div(ScrollArea 留 `flex-1 min-h-0`)。`0777658`
+
+### Root cause 2:list wrapper canonical 遺漏
+
+FileItem rich(border card)+ compact(bg-neutral-3)先前已訂 canonical,但 spec 只寫**單 item 視覺**沒寫**連續 item gap**,導致:
+- `file-upload.stories.tsx` rich list 加 `border rounded-lg overflow-hidden` 強制邊框合併
+- compact list 無 gap → bg 塊相連
+
+**Fix + 升 canonical**:`67fb51c` → `e6208ee`(v2 精修)→ `702a118`(刪冗餘 state section)→ `441e5e1`(公式 3 條)
+
+### 最終 3 條公式(item-anatomy「連續 item 貼邊合法性」)
+
+```
+1. 同類 standalone card/pill(bg + radius + inset)list → 必 gap
+2. 同類 permanent flush / permanent transparent list → 0 gap 合法(分隔靠 border-b / progress bar / connector)
+3. 混合視覺語言 list → 必取最保守 gap(分隔線型 + card 型相鄰會互相吸收 affordance)
+```
+
+### Root cause 3:視覺容器 breathing invariant 從未明文
+
+User 指出「底色跟底色內的元素必有間隔」+「卡片感元件不得貼齊有明確視覺邊界的父容器」—— 澄清後合併為**一條**DS-wide canonical。責任在**父容器**(chrome),不是子元件。
+
+**Canonical**(element-anatomy「視覺容器 breathing invariant」,`d953ab8`):
+
+> 任何有明確視覺邊界(permanent bg / border / shadow 三擇一)的容器**必有 inner padding**(rule),不讓內容物觸容器邊。責任在父容器,子元件 `w-full` responsive 不變。
+>
+> Guide(可偏離):chrome `--layout-space-*`、inline pill `px-1/2`、field `px-3`
+
+World-class 6 家共識(Material / Polaris / Atlassian / Ant / Apple HIG / Carbon)都在 chrome 層 own inner padding。
+
+## 整套程式化防線(M14 pipeline 5 層落地)
+
+| 層 | 落地 |
+|----|------|
+| Spec SSOT | `patterns/element-anatomy/item-anatomy.spec.md`「連續 item 貼邊合法性」+ `element-anatomy.spec.md`「視覺容器 breathing invariant」+ `file-item.spec.md`「List wrapper canonical」(單一 + mixed 決策表)|
+| CLAUDE.md signal | `# UI 開發規則` 加「視覺容器必有 inner breathing」one-liner + `# SSOT 消費 canonical` 2 entries |
+| Meta-Pattern | **M16 更新**:訂 standalone card/pill canonical 必同步訂(a) list-gap(b) **breathing invariant** |
+| Hook | `check_item_list_gap.sh`(P1 warn gap / P2 block 外框)+ `check_container_breathing.sh`(P1 warn)。hooks 15 → **16** |
+| Audit | 新 Dim 21(list wrapper gap,Consistency)+ Dim 22(視覺容器 breathing,Absolute)。audit 20 → **22**。SKILL.md 加 Group H「Consumer-layer consistency」|
+
+## FileItem 可下載狀態 2 use case(澄清)
+
+User 澄清:「可下載」= 2 種使用場景,不是 4 種機械排列:
+
+| Use case | status | progress bar | status icon | 背景 | 行為 |
+|----------|--------|--------------|------------|------|------|
+| **Type A** upload manager | `"completed"` | 100% 持續 | 綠 ✓ | 無 | hover-swap ✓→Download ↓ OR onClick row-click(兩者可並存) |
+| **Type B** form attachment | `undefined` | 無 | 無 | compact: `bg-neutral-3` / rich: card border | `onClick` row-click → download / FileViewer |
+
+Mixed(Type A + B 同 list,email 草稿情境):必 gap-1(分隔線型 + standalone pill 混合 affordance 會互相吸收)
+
+## 關鍵 world-class benchmark(登記在 spec 作 rationale)
+
+掃 6 家 × 4 情境(menu item / file list / table row / settings row):
+- default list row = flush + no radius + 0 gap + separator
+- standalone card stack(Material Card / Ant picture-card / Atlassian Stack)才 gap
+- M3 Nav drawer / Apple Inset Grouped = 關鍵反例(有 radius 但 permanent 透明 → 仍 0 gap)
+
+## 本 session commits(7 個)
+
+```
+0777658 fix(Sheet/Dialog): className 套錯層 bug
+67fb51c feat(canonical): 連續 item 貼邊合法性 + FileItem 2 use case + M16
+e6208ee refactor(v2): standalone vs flush 精修 + benchmark + state 表
+702a118 refactor: 刪 state 冗餘 + 補 mixed-list 決策
+441e5e1 fix: 公式補第 3 條 — 混合視覺語言吸收
+d953ab8 feat(canonical): 視覺容器 breathing invariant DS-wide
+1b02d8b feat(audit): Dim 21-22 + Group H + 20→22 同步
+```
+
+## 未來遇到相關情境時檢查
+
+1. 建新元件有 permanent bg/border/shadow → 查 element-anatomy「視覺容器 breathing invariant」+ item-anatomy「連續 item 貼邊合法性」
+2. Consumer 寫 `.map()` list → hook P1 warn 提醒 gap / 容器 padding
+3. 3 條公式判斷:同類 standalone / 同類 flush / 混合視覺語言 → gap 決策

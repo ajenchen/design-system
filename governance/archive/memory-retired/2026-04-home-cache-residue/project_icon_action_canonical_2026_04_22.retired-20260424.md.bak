@@ -1,0 +1,72 @@
+---
+name: Icon Action Primitive Canonical (2026-04-22)
+description: 3-primitive 決策樹(Decorative / Inline Action / Button) + Row ≤ 24 cap + Dismiss X only + Primitive Exposure L1/L2/L3
+type: project
+originSessionId: 7fa6c876-f1f7-4537-8cb3-1c97212e5a80
+---
+# Icon Action Primitive Canonical — 2026-04-22 final
+
+## 核心決策樹
+
+```
+Q1. icon 點了要做事嗎?
+    ├─ 否 → Decorative indicator(<Icon aria-hidden pointer-events-none />)
+    └─ 是 ↓
+Q2. 位置?
+    ├─ Host 內(chrome padding / content flow / row inline suffix)→ Inline Action
+    ├─ Row 獨立 action slot → 看 Q3
+    └─ Action group region(toolbar / chrome corner / standalone)→ Button
+Q3. Row 多大?
+    ├─ ≤ 24 → Inline Action
+    └─ ≥ 28 → Button iconOnly xs 固定 24
+```
+
+## Key rules
+
+- **Row action 絕對值 cap = 24px**,不隨 row tier 放大(Material / Polaris / Atlassian / Apple HIG 對照)
+- **Dismiss 嚴格 = X close only**:Trash/Delete/Clear/Remove 不是 dismiss
+- **Overlay chrome corner close X** = `<Button iconOnly dismiss size="sm" startIcon={X} />`(Dialog/Sheet/Popover/Alert/Toast/Coachmark 全統一)
+- **FileItem compact (row 24)** = ItemInlineActionButton;**rich (row 56)** = Button xs
+- **DataTable row action** = Button xs iconOnly 固定,所有 row tier 一致
+
+## Primitive Exposure Layer(CLAUDE.md canonical)
+
+- **L1 user-facing**:Button / Input / MenuItem / FileItem 等 — app code 直接 import
+- **L2 host slot API**(config):Input.endAction / MenuItem.inlineActions 等 — 宣告式
+- **L3 internal**(**不暴露給 app**):ItemInlineAction / ItemInlineActionButton — 給 row primitive 作者 compose 用
+
+## Why: application heuristic
+
+**Why:** 疊代 4 次才收斂(position → density → fixed-small → corner exception)— 每次 user 拉回才補世界級對照。根因是 M8 缺:訂 canonical 前沒 benchmark。已加入 CLAUDE.md Meta-Pattern M8。
+
+**How to apply:**
+- 看到「這個 icon 該用什麼 primitive」直接跑 Q1→Q2→Q3 決策樹
+- 新 host 元件的 embedded action 直接走 L2 config-based slot API(不給 ReactNode),防 consumer drift
+- 訂 predicate / canonical 前**必先** grep world-class 至少 3 家對照,不憑直覺開場
+
+## Commit
+
+`477a613 feat(canonical): Icon action primitive clean 3-layer + Row ≤ 24 cap`
+
+## Files touched(27 files)
+
+- Core canonical:`patterns/element-anatomy/item-anatomy.spec.md`(clean rewrite Predicate + Dismiss)
+- Governance:`CLAUDE.md`(+M8 + Primitive Exposure Layer)+ `.claude/hooks/check_spec_iteration_tag.sh`
+- Component specs + code:Button / DataTable / FileItem / Alert / Notice / Dialog / Sheet / Popover / overlay-surface / Dropdown(pre-existing JSX fix)
+- Stories:item-anatomy + Alert + FileItem(principles + anatomy)
+
+## Self-improvement capture(對齊 CLAUDE.md `# 自我升級機制` Phase F)
+
+- **新發現 FP pattern**(已回填 `audit-prompts.md` 常見 FP 記憶):
+  1. **Decorative indicator 誤列入 action predicate** — `pointer-events-none` + `aria-hidden` 的 icon 不屬 action 範疇;DatePicker Calendar icon / status dot / CircularProgress 初版誤收 Inline Action Cat 1。D6e 4-題 scan 明示排除
+  2. **Row action cap 違反** — row primitive 放大時 inline action 隨之放大(如 FileItem rich 56 row 配 Button md 32),破壞「絕對值 cap = 24」canonical。已加入 D6e Q2
+  3. **訂 canonical 無 benchmark 前置** — 本 session 疊代 4 次才收斂(position → density → fixed-small → corner exception);每次 user 拉回才補世界級對照。**根因**:M8 缺
+- **新確立 meta-pattern**(已進 CLAUDE.md `# Meta-Pattern 預警`):
+  - **M8 Benchmark-First**:訂 canonical 前必先 benchmark ≥3 家 world-class(Polaris / Material / Atlassian / Apple HIG / Ant / Carbon / Figma / Linear / Notion),不憑直覺開場
+  - **M9 Predicate Self-Test**:spec 含 decision tree + example 表時必走 4-題 coherence check(membership / cap / benchmark / empty category),對應 D6 新增子維 **D6e**
+- **修完的矛盾 / user 糾正**(已回填 canonical):
+  - Dismiss 嚴格 = X close only(Trash/Delete/Clear/Remove 不算)→ 寫進 `item-anatomy.spec.md`「Dismiss canonical」+ `button.spec.md`
+  - Row ≤ 24 cap 明文化 → `item-anatomy.spec.md`「Inline Action 設計規格」
+  - Primitive Exposure L1/L2/L3 三層 → CLAUDE.md new section;ItemInlineAction* 列 L3 不給 app import
+  - D6e 新子維 + Phase 0 全掃 → `principle-audit-protocol.md`
+  - audit-prompts.md 加 Group H Dim 22/23(D6e / Benchmark-First)+ FP 記憶 2 條

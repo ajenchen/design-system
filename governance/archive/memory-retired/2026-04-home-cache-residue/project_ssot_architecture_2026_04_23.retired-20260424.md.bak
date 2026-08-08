@@ -1,0 +1,91 @@
+---
+name: SSOT 架構(Token + Primitive)實作 + M17 meta-pattern
+description: 2026-04-23 session — 從 markdown 文字 canonical 升級到可傳播 SSOT(token + primitive),label-desc gap / ItemContent primitive / mode prop / suffix block formula / ItemPrefix 採用 + hook 擴充
+type: project
+originSessionId: 7fa6c876-f1f7-4537-8cb3-1c97212e5a80
+---
+## 起點(user 糾正)
+
+User 指出:
+> 「mt-0.5 canonical 只存 markdown 文字、13 consumer 各自 hard-code,今天雖 compliant 但明天改 2px → 4px 需手動 grep N 檔 = 假 SSOT」
+> 「各種尺寸的 menu item, selection item 以及 list item 等等都要是 SSOT,然後有參照的都要能夠一致的隨時同步」
+
+Agent audit 誤報「0 drift」。真實 grep:13+ consumer hard-code `mt-0.5`,
+架構根本不支持改值傳播。
+
+## 4 層 SSOT 架構(本 session 建立)
+
+### 層 1:Token(`tokens/layoutSpace/layoutSpace.css`)
+
+```css
+--item-gap-label-desc: 2px;  /* label ↔ description */
+--item-gap-content-bar: 8px; /* content ↔ progress bar */
+```
+
+### 層 2:Primitive(`patterns/element-anatomy/item-anatomy.tsx`)
+
+- **ItemContent**:封裝 `flex-col + label + description + mt-[token]` 結構
+  - Props:`label / description / mode / descriptionTone / descriptionWrap / labelClassName / descriptionClassName`
+  - `mode="scanning" | "reading"`(default reading)對齊 Material `dense` / Carbon `size` / Ant `size`
+  - `descriptionTone="secondary" | "error" | "muted"`
+- **ItemPrefix**:封裝 `h-[1lh] shrink-0 flex items-center` prefix wrapper
+- **ItemLabel / ItemSuffix / ItemInlineAction**:已存在,本 session 沒改
+
+### 層 3:Consumer
+
+- **使用 primitive**:FileItem(rich + compact 共用 contentRow + ItemContent)/ Notice(ItemPrefix)/ Sidebar / TreeView(部分)
+- **使用 token 直接**(9 處):Empty / Dialog / Notice / NameCard / SelectionItem / MenuItem / DescriptionList / Steps / Switch
+- **Suffix block formula** `calc(1lh+2px+desc_1lh)` 也 tokenize:2px → `var(--item-gap-label-desc)`
+
+### 層 4:Hook 防線(`check_item_content_primitive.sh`,17th hook)
+
+- **P1** warn:hardcoded `mt-0.5` / `gap-0.5`
+- **P2** warn:hardcoded `2px` in `calc(1lh+2px+...)` block formula
+- **P3** warn:hardcoded `h-[1lh] shrink-0 flex items-center` wrapper(應用 `<ItemPrefix>`)
+
+## Meta-Pattern M17 新增(CLAUDE.md)
+
+> **SSOT 必可傳播**:Canonical 只存 markdown 文字 ≠ 真 SSOT。同值 hardcode 在 3+ consumer = 必抽成 token / primitive / utility。
+> 真 SSOT 必是**可執行 value**,consumer 被動消費。改一處全 DS 同步。
+
+World-class 對照:Material / Carbon / Ant 的 density prop 派皆用 token + primitive
+達成「改一處全同步」。本 DS 走同路(A 派,比 `dense` 更 self-documenting)。
+
+## 世界級 benchmark(scanning vs reading)
+
+6 家 DS 共識:14/20 vs 16/24 兩擋 body。API 兩派:
+- A 派(密度 prop):Material `dense` / Carbon `size` / Ant `size` ← **本 DS**
+- B 派(token 手選):Polaris / Atlassian / Apple HIG
+
+## 本 session commits(6 個,全 pushed)
+
+```
+467619e refactor(SSOT): FileItem + Notice 消費 ItemPrefix primitive + hook P2/P3 擴充
+8addf07 feat(SSOT Phase 4): ItemContent mode prop + block formula tokenize + M17
+2f87f71 feat(enforcement): hook + spec + CLAUDE.md — label-desc SSOT 防未來 drift
+4b88f15 refactor(FileItem): compact + rich 消費 ItemContent primitive
+a201eb4 refactor(SSOT): 9 consumers mt-0.5/gap-0.5 硬寫 → token
+de75265 feat(ItemContent): SSOT primitive
+```
+
+## 核心能力獲得
+
+**User 原題**:「如果哪一天我希望 file item 改成遵循 select menu item(掃描模式)的 layout 也是很快的嗎?」
+
+**答案**:是。
+- Gap / typography tone:token 改一處全動
+- Scanning vs reading mode:`<ItemContent mode>` 一個 prop 切換
+- 未來改 scanning typography:只改 `--font-caption-size` token 一處全 DS 同步
+
+## 未來可繼續的 SSOT 候選
+
+- **MenuItem / SelectionItem 完整遷 `<ItemContent mode="scanning">`**:目前 cva 內部還有各自 typography 邏輯,未來可收斂
+- **Row 容器公式**:`flex items-start gap-2 px-3 py-2` 散落,可抽成 RowContainer primitive
+- **ICON_PX = 16 等常數**:已有 `ICON_SIZE` table,但 FileItem 還用自己的 const
+- **Empty 的 centered stack pattern**:獨立 pattern,不適合 ItemContent
+
+## 違反記憶(留意)
+
+- Agent audit 可能誤報 0 drift — grep 實證才是真。
+- Markdown canonical 只能描述 invariant,不能 enforce。Enforcement 靠 hook + primitive。
+- 本 session 稽核 vs 執行分權違反 1 次(64a1375 5 條 canonical 直接 commit),revert + 補流程。
