@@ -1,0 +1,11 @@
+---
+name: naming_convention
+description: Component props should be named by WHAT the content is, not WHERE it is — aligns with Material/Ant Design patterns
+type: feedback
+---
+
+元件 props 按「是什麼」命名，不按「在哪裡」命名。
+
+**Why:** prefix/suffix 只描述位置，不傳達內容類型。世界級設計系統（Material Chip: avatar/icon/deleteIcon, Ant Design: icon/closeIcon）都按內容本質命名，讓 TypeScript 能正確約束型別，也讓元件內部控制渲染細節（尺寸、互動樣式）。
+
+**How to apply:** 新增或修改元件 props 時，問「這個 slot 放的是什麼？」而不是「它在左邊還是右邊？」。例如 Tag 用 icon/avatar/onDismiss，不用 prefix/suffix。Button 用 startIcon/endIcon 是合理的，因為它們確實永遠是 icon，名稱同時傳達了位置和類型。

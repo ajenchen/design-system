@@ -1,0 +1,140 @@
+---
+name: Chrome header canonical + v5 dismiss canonical(2026-04-22 session 總結)
+description: 本 session 5 版震盪後 的 chrome header 設計原則最終整合 + SSOT entry 位置
+type: project
+originSessionId: 7fa6c876-f1f7-4537-8cb3-1c97212e5a80
+---
+## 本 session 完成(2026-04-22)
+
+### 1. Chrome header 2-pattern canonical(fixed-h vs padding-based)
+- **Fixed-h**(宣告不 grow):Sidebar / FileViewer toolbar / FileViewer InfoPanel / app top bar
+- **Padding-based**(宣告可 grow):Dialog / Sheet / Popover / Coachmark via SurfaceHeader
+- **SSOT entry**:`tokens/uiSize/uiSize.spec.md`「Chrome header 選型 canonical」— decision tree + 8 家世界級對照 + 分類查核表 + 新元件 checklist
+- **8 家世界級對標驗證**:Material / Polaris / Atlassian / Carbon / Ant / Apple HIG / Primer / Figma 全同 split ✓
+
+### 2. v5 Chrome dismiss / unbounded canonical(5 版震盪後定案)
+- **Overlay family**(Dialog / Sheet / Popover / Coachmark / FileViewer chrome):
+  - `<Button data-dismiss iconOnly dismiss size="sm" />`(**native sm** 28/32,touch target 不變)
+  - Button 自動加 `data-unbounded="true"` 屬性(variant="text" 或 dismiss 任一)
+  - SurfaceHeader CSS `[&_[data-unbounded]]:my-[calc((--field-height-xs - --field-height-sm)/2)]` → md -2px / lg -4px
+  - 效果:layout 佔位 = 24,header 只有 unbounded control 時 = 48/56 = `--chrome-header-height`
+- **Notification banner family**(Notice / Alert / Toast):
+  - `<Button dismiss size="xs" />`(banner 獨立 idiom,`px-4 py-3` fixed)
+- **震盪歷史** v1→v5 保留 `patterns/overlay-surface/overlay-surface.spec.md` 作 M12 FP 記憶
+
+### 3. Dialog data-layout-space="lg" 撤回
+- 先前設 `data-layout-space="lg"` 給 body 寬鬆呼吸,但跟 chrome-header-height 衝突(md header 實際 56 非 48)
+- 撤回後 Dialog 繼承 page density,跟 Sheet 對齊 canonical
+
+### 4. Avatar hover NameCard DS-wide canonical
+- Person avatar 自動 default NameCard hover(非 opt-in)
+- `AvatarData` 擴展 `hoverCard?: ReactNode`
+- 全 primitive(MenuItem / SelectionItem / DropdownMenu / SelectMenu)forward
+- DS stories 全 migration(Dialog / OverflowIndicator / Sidebar / item-anatomy / overflow anatomy)
+- Hook `check_avatar_hovercard.sh` 自動攔截新違規
+- Exempt:entity avatar(Empty icon / FileItem thumbnail / NameCard 內部避免循環)
+
+### 5. Meta-Pattern 新增 / 更新
+- **M12** rule-oscillation 規則:binary strict rule 寫前必 benchmark + counter-example + layer 確認
+- **M13** screenshot verify on 2nd mention:user 同主題第 2 次問必自動 invoke visual-audit
+- mindset #6 補「tell me once 不該 tell me twice」
+
+### 6. PeoplePicker/person-display.tsx refactor
+- 撤掉 local Avatar 自刻 → 用 DS Avatar primitive(M1 SSOT 遵守)
+- PersonAvatar helper 自動包 NameCard hoverCard
+
+### 7. Popover title 14px(non-modal canonical,reverted from session v3 mistake)
+- PopoverTitle:text-body-lg → **text-body**(14px)
+- `popover.spec.md`「Title typography canonical(non-modal 特化)」section(7 家世界級對照)
+- `overlay-surface.spec.md`「Overlay title typography canonical」family-level section
+- CLAUDE.md SSOT 消費清單 entry「Overlay title size(modal 16 vs non-modal 14)」
+
+### 8. Visual-audit interactive state BUG fix
+- `scripts/visual-audit.mjs`:發現 line 309-316 的 `mouse.move(0,0)` + `blur()` 在 screenshot 前 reset 掉 play() 設的狀態
+- Keyword-based detection(`hover|focus|tooltip|click|interactive|pressed|active|swap|open-snapshot`):對 interactive stories 跳過 reset + 等 1200ms
+- 驗證:`button-hover-focus-state` / `button-tooltip-visible` 現在真抓到 focus ring + tooltip
+
+### 9. 進階 DS 稽核結果(6 維 scope=all)
+
+**Phase 1 20 dims** (parallel 4 agents):
+- D1+D2 covered by 20 dims
+- P0 violations: **0**
+- P1 violations: **2**(shadcn alias 回流在 stories)— fixed
+- Soft-match: 6 count drift + 7 v5 suffix drift — fixed
+
+**Phase 3.5 D3 Performance**: 0 Critical / 0 High,8 Medium/Low tech debt(pre-existing,非 session-induced):
+- DataTable TruncateCell ResizeObserver per cell(建議 shared RO)
+- CheckboxGroup / SegmentedControl Provider value 未 memo
+- useInverseTheme MutationObserver fan-out(Notice / Alert / Toast 各一)
+- 其他 inline context value
+- 本 session 改動 files(Button / Avatar / overlay-surface / menu-item / selection-item / person-display)**clean**
+
+**Phase 3.5 D4 UX**: 4 findings 全 AUTO-fixed:
+- Avatar hoverCard keyboard blocked(本 session canonical 的 a11y gap 盲點)→ tabIndex + role="button" + aria-haspopup
+- Overlay animations 缺 motion-reduce(Dialog/Popover/DropdownMenu/HoverCard/Tooltip)→ 補
+- Rating 缺 Home/End → 補
+- Avatar status dot role="status" SR 噪音 → 改 aria-hidden
+
+**Phase 3.5 D5 Visual**: 62 scenarios / 0 violations
+
+### 10. D3 Perf Sprint(cfd64f8)— 全 DS tech debt 清空
+
+User 要求「把已經存在的問題都修一修」,本 commit 修完 D3 audit 7+1 處 pre-existing:
+- DataTable TruncateCell:per-cell RO(1000+)→ shared singleton RO + WeakMap dispatch
+- DataTable row hover:per-row closure(200+/render)→ table 層 event delegation + relatedTarget check
+- CheckboxGroup Provider:inline `{inGroup: true}` → module-level const hoist
+- SegmentedControl Provider:4-field `value={{...}}` → React.useMemo
+- ButtonGroup Provider:`{fullWidth: isVertical}` → 2 module consts(VERTICAL / HORIZONTAL)
+- DescriptionList / Chart / Breadcrumb Provider:inline → useMemo
+- Notice useInverseTheme:N MutationObservers(每 Notice/Alert/Toast 一個)→ singleton MO + useSyncExternalStore pub/sub
+- Avatar STATUS_DOT_COLOR:render body → module scope
+
+**驗證**:tsc clean / visual-audit 62 / 0 violations / 無 API 變動 / spec 不需 sync(pure perf)
+
+**DS state after cfd64f8**:D1-D5 全 6 維 0 findings,zero tech debt ✓
+
+### 11. Meta-Pattern M14 新增(本 session 最關鍵的 procedural rule)
+**對話結論 → AUTO integrate pipeline**:每次對話達成 canonical 結論,AI 必自動執行 5-8 層整合,不等 user 催:
+- World-class benchmark(≥3 家)→ Spec → Code → Hook → CLAUDE.md → Memory → 驗證
+- 違反 trigger:user 問「有沒有整合到 X」/「是不是該程式化」= M14 違反
+
+**為什麼加**:本 session 每個 canonical(chrome-header / dismiss 分家 / avatar hoverCard / popover 14px)都是 user 催才整合,AI 只改 code 忘 spec / CLAUDE.md / hook 同步。M14 強制 pipeline 自動化。
+
+## SSOT chain 記憶
+
+```
+CLAUDE.md(導航)
+  - SSOT 消費 canonical 清單:Chrome header 選型 / Overlay chrome dismiss
+  - 任務導航表:建立新 chrome header
+↓
+tokens/uiSize/uiSize.spec.md「Chrome header 選型 canonical」(DS-wide SSOT entry)
+  - Decision tree
+  - 2 pattern 對照
+  - 8 家世界級對照
+  - 本 DS 分類查核表
+  - 新元件 checklist
+↓
+patterns/overlay-surface/overlay-surface.spec.md
+  - 為什麼 SurfaceHeader padding-based(rationale)
+  - Chrome dismiss size canonical v5(實作細節)
+  - 震盪歷史 v1→v5(M12 FP 記憶)
+↓
+元件 spec(Dialog / Sheet / Popover / FileViewer / Sidebar)
+  - 元件特化 rationale
+  - cross-link 回 uiSize.spec.md 作 canonical 來源
+```
+
+## Commits(session 本日 chrome 相關)
+- d1a0039 dismiss 三家族分類(早期錯誤版本)+ PeoplePicker refactor
+- 996ee52 SurfaceHeader min-h(早期錯誤版本)+ Popover revert
+- f91b2dd uiSize token 登記 overlay
+- cf75f58 v5 chrome-unbounded canonical
+- 2f7792c Dialog data-layout-space=lg 撤回
+- 58ea6d2 fixed-h vs padding-based 設計原則
+- 23c8127 CLAUDE.md 整合 + uiSize decision tree polish
+
+## 未來遇到 chrome 選型時檢查
+1. 走 CLAUDE.md 任務導航表「建立新 chrome header」entry
+2. 到 uiSize.spec.md 跑 decision tree
+3. 若 overlay family → overlay-surface.spec.md 找實作細節
+4. 若 新元件需要特化 → spec 明文記 rationale

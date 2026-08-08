@@ -1,0 +1,49 @@
+---
+name: feedback_ssot_framework
+description: SSOT (Single Source of Truth) judgment framework for cross-component rules in the design system
+type: feedback
+originSessionId: 138f4306-1a67-4fe7-9341-c585d88d643b
+---
+## 規則
+
+Spec 的跨元件比較必須遵守 SSOT——一個 spec own 完整內容，其他用一行 pointer 指回。
+
+**Why:** 兩側同時寫完整比較保證會漂移（其中一側改了另一側沒跟上）。世界級 DS（Polaris / Material / Ant / Atlassian）都把比較放在元件 spec 內，沒有任何 DS 建立孤立的 `xxx-comparison.spec.md`。
+
+**How to apply:**
+
+### 需要 SSOT 的情境（深度比較 → 一個 owner）
+- 多維度分析（「與 X 的分界」分多個角度討論）
+- 情境對照表超過 3 rows
+- 涉及另一個元件的內部機制或權衡
+
+### 不需要 SSOT 的情境（本地引用即可）
+- 「何時不用」表格中一行帶過——兩側可並存，不會漂移
+- 「相關」links section 列出相關元件
+- 單純的 props / variants / 內部 state 描述
+
+### Ownership 判斷順序
+1. **通用預設元件 own**（Select owns vs RadioGroup；Input owns vs NumberInput——因為通用者是 fallback）
+2. **若一側 spec 明顯更深** → 深側 own（Tabs owns vs SegmentedControl）
+3. **若兩側對等** → 按字母序 anchor，避免循環爭議
+
+### 執行規則
+- Own 方寫深度 section；被指方寫**一行** pointer
+- Pointer **必須**明確指 anchor spec + section 名稱（不是只說「見 X spec」）
+- **Reciprocal 必須存在**——單向指向禁止
+
+## 本專案現有 SSOT anchors（截至 2026-04-18）
+- Tabs vs SegmentedControl → `tabs.spec.md`「Tabs 與 SegmentedControl 的分界」
+- Select vs RadioGroup → `select.spec.md`「與 RadioGroup 的分界」
+- Checkbox vs Switch → `checkbox.spec.md`「與 Switch 的分界」
+- HoverCard vs Tooltip → `hover-card.spec.md`「與 Tooltip 的分界」
+- Row primitives 共用 → `patterns/item-layout/item-layout.spec.md`
+- Field Controls 共用 → `components/Field/field-controls.spec.md`
+
+## 未來可能需要的 SSOT 判斷
+- Combobox vs CheckboxGroup（多選對照）
+- Dialog vs Sheet vs Popover（overlay 分界）
+- Toast vs Alert vs Notice（feedback 分界）
+- DropdownMenu vs Menu vs Select（menu/select 分界）
+
+這些遇到時再決定 anchor，別提前建。
