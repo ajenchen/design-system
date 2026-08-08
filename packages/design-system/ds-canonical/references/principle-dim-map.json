@@ -192,6 +192,11 @@
       "dims": [],
       "note": "hook check_pixel_quantified_audit;對 audit scripts 自身,不對 component"
     },
+    "M36": {
+      "name": "Provenance 不得升格 + 禁自鎖",
+      "dims": [],
+      "note": "非元件維度:作用於 AI 產出的文件與回覆(標『user 拍板』必附原話)與 governance 自鎖判斷。以文件內『來源總帳』格式 + PR review 落實,無 component-scope audit dim"
+    },
     "_retired": {
       "M27": "2026-05-15 → folded into M23(c)(framework prop name conflict child)",
       "M33": "2026-05-22 → folded into M20(AI self-correction sub-rule)",

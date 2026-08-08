@@ -27,8 +27,8 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:c0860d5e9b84ea8c6350306cb14fd1eb48ada821fe8a0dcccc7b7eeb0300df21` |
 | canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:f585dd991994b2a88ee89e6373c8c671a336ade25a36457983a962587384cb47` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:491289d4a6fb561a33704c20874b24058f53e4fbe21168393fe3882f37b1ffef` |
-| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:8b8c162c50b68c37c13c042db2997e3ab2b5c3aee26c42f18c1d7bea3bbf048a` |
-| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:59566f03abcddd4001c35974aad9a00a1aed4ebc816a9ea31f4dc38b179bd42f` |
+| canonical-references | `packages/design-system/ds-canonical/references` | `sha256:a08577f7d726f51c119498fe58992f085257125d58be86e426aaee3c97afb497` |
+| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:11260ecba59b9a8bbbebcc9dab8f3b4241659e716a4ab0320fd5f99e55922a43` |
 | canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:7783579d232c4eccdb19bf89a86dbcb340fedef6bda72a01d18568a5d82295ce` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:e63c52d89cfdbf6f6828f5ab0a8eda8f61b33108245284438e51638bb253c0cb` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:d34040525b980ab67af05de7f77e242b6645b5811c158fc0f48fca627d88a3da` |
@@ -204,7 +204,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-control-plane-libraries | `infra/governance/lib/` | `sha256:9e70bb963b8bd11c74b5d2b2063802848cf33cfe63306e200b74ea31aa4e2f8d` |
 | governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:9e06d545303a636183c70749582177e85fa2fa85ccd870d012ac45a88387458d` |
 | governance-control-plane-tests | `infra/governance/test/` | `sha256:42da05f7dce439398582e7ea0b3cbac02dbdd365502d3415f9912723d1c92dd8` |
-| governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:5e179f234148dc7bef40c7974a23eda6563f6416e6809004f168a47fbbfb4075` |
+| governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:5bd89371c7db4ff059542e0896f218577937a4d7489c72ed9db86f1b5e8b6ff8` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:78da16ea5ac91be3d8ba1fd1df198aa251dfd4de5b2abbe2d9036b041b2341c4` |
 | governance-github-desired-state | `infra/governance/desired/` | `sha256:315edb88eedfcf22525f4bba76f9677de7c6bb233ede5fdf8f61e2ec72b73db4` |
 | governance-harness-authority-contracts | `infra/governance/providers/harness-authority-contracts.json` | `sha256:3b4c698666229f54807e3a189a8b32b94d2a6e2daa2df266d3cbce5f28278dc6` |
@@ -305,7 +305,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | provider-lifecycle-schema | `packages/governance/canonical/schemas/provider-lifecycle.schema.json` | `sha256:807e126ffac67694193029f19b94e1b8d3e97282e70372b65bdd094a0604c2de` |
 | provider-lifecycle-validator | `scripts/lib/provider-lifecycle.mjs` | `sha256:9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7` |
 | provider-neutral-benchmark-policy | `governance/benchmarks` | `sha256:beb2a852c5371133b4f37e80fa69eb6719e21fc7c9153bd6feab726af44c4008` |
-| provider-neutral-memory | `governance/memory` | `sha256:e65f2f1ab1c4be685f582b1c4aaf74c22cae7347e782c703a17895ec69b6cdc3` |
+| provider-neutral-memory | `governance/memory` | `sha256:8a2042bfece3123c33a9feff9d56ec237af835e922ce016e78136d4d714d6784` |
 | provider-neutral-planning-ledger | `governance/planning` | `sha256:683d47ce6bfbb4490bb1569a6e67d5bc58d8883631997010e2282b362e99e9d4` |
 | provider-neutral-residue-guard | `scripts/check-provider-neutral-ssot-residue.mjs` | `sha256:6a880f5e07717898b27bfe723898d6601cea0a224c89fa4a9d13c1ff3c9bd225` |
 | provider-neutral-residue-guard-tests | `scripts/test-check-provider-neutral-ssot-residue.mjs` | `sha256:cea943b6508ab8c5d11fbf020e6758874f0d6f42256c8ab5c9a3020bcf09eeab` |
