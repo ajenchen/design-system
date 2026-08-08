@@ -2698,8 +2698,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 20,
-      "hash": "sha256:660c9afbe0f1bb93d38edcfa2bdde00118f34cfa57515e3b406bbbd3bb098e3d",
+      "files": 21,
+      "hash": "sha256:e65f2f1ab1c4be685f582b1c4aaf74c22cae7347e782c703a17895ec69b6cdc3",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3255,12 +3255,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:28e9f525a9bb32a40938950af55b294624076f586b2041922d986c988431395e",
+      "hash": "sha256:656bf073d1490a83b17acab396fe1287e9892397eacd2cab4c4e1e941f75354c",
       "id": "workspace-lockfile",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package-lock.json",
-      "size": 323928,
+      "size": 324121,
       "type": "file"
     }
   ],
