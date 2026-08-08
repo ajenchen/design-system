@@ -433,6 +433,22 @@ EOF
   fi
 fi
 
+# ── Mechanism 8: Provenance escalation(M36(a),2026-08-08 user directive)──
+# 把「我的推論」寫成「user 的決定」= 該 session 連犯 6 次的 failure mode
+# (「<768 modal 無入口是你拍板」/「X = 終結 session」/「392px user 接受」/ 816 讓位線 …)。
+# 同 provider 的對抗審查抓不到這一類(reviewer 無對話紀錄),只能在 reply 出口攔。
+# Detector:reply 出現歸因語 + 全文零個中文引號 = 引不出原話。
+# Escape 極簡:引 user 原話(「…」)或明寫「AI 推導 / AI 建議」即不 fire。
+if [ -n "$LAST_ASSISTANT" ]; then
+  ATTRIB_RE='(user (拍板|決定|核准)|你(拍板|的拍板)|已拍板|你最早的(拍板|決定))'
+  # 有引號 = 有引原話;明說 AI 推導/建議 = 已誠實降級;兩者皆為合格 escape
+  PROV_ESCAPE_RE='(「|」|AI 推導|AI 建議|未經拍板|前提錯誤|我捏造|本文自創)'
+  if grep -qE "$ATTRIB_RE" <<< "$LAST_ASSISTANT" \
+    && ! grep -qE "$PROV_ESCAPE_RE" <<< "$LAST_ASSISTANT"; then
+    WARNINGS="${WARNINGS}\n  • Provenance 升格(M36a):你寫了「user 拍板/決定」但整段沒有引 user 原話。立刻補引原話,或降級成「AI 推導 / AI 建議、user 採納」。問句不是同意。"
+  fi
+fi
+
 # ── Mechanism 6: capability-bound PushNotification gap ────────────────────
 # Provider-neutral runtime 不可假設 exact tool 存在。只有 adapter/registry 明確宣告
 # `push-notification` capability 時才檢查；缺宣告 = UNOBSERVED/nonblocking。
