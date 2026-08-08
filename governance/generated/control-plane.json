@@ -2056,12 +2056,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:987fe8deb3bd05bf6660f73154cc2286653264bda9b48c2aef583218c04dd740",
+      "hash": "sha256:015bab68d6260aa41799587065e907c01c7f3f9f2a9cd380c6d74e4d66eb0e64",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 16708,
+      "size": 16779,
       "type": "file"
     },
     {
@@ -3074,8 +3074,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 370,
-      "hash": "sha256:2129f9a463f48d36bda608a1a46e35a897f9e9ded710f9661a225156a1e87585",
+      "files": 371,
+      "hash": "sha256:aa3b4a14a46c977dd3f7d90e35c8de3116df774783414a80647dab3d6dfd31ca",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
