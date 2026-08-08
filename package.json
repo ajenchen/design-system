@@ -131,7 +131,8 @@
     "test:governance-anchor": "node --test scripts/test-governance-anchor-preflight.mjs",
     "test:privileged-change-authorization": "node --test scripts/test-privileged-change-authorization.mjs",
     "test:consumer-source-harness": "node --test scripts/test-consumer-source-harness.mjs",
-    "test:writer-evidence": "node --test scripts/test-product-template-scaffold-lock.mjs scripts/test-verify-upgrade-evidence.mjs scripts/test-verify-mirror-evidence.mjs scripts/test-verify-mirror-release.mjs"
+    "test:writer-evidence": "node --test scripts/test-product-template-scaffold-lock.mjs scripts/test-verify-upgrade-evidence.mjs scripts/test-verify-mirror-evidence.mjs scripts/test-verify-mirror-release.mjs",
+    "peer:evidence-pack": "node scripts/build-peer-evidence-pack.mjs"
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",
