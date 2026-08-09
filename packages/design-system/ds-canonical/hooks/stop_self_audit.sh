@@ -443,6 +443,13 @@ if [ -n "$LAST_ASSISTANT" ]; then
   ATTRIB_RE='(user (拍板|決定|核准)|你(拍板|的拍板)|已拍板|你最早的(拍板|決定))'
   # 有引號 = 有引原話;明說 AI 推導/建議 = 已誠實降級;兩者皆為合格 escape
   PROV_ESCAPE_RE='(「|」|AI 推導|AI 建議|未經拍板|前提錯誤|我捏造|本文自創)'
+  # M36(a) 引文完整性(2026-08-09):引 user 原話當裁決依據,但引文以徵詢語氣結尾
+  # (吧/嗎/?)= 那是提議不是拍板。錨例:把「…才對吧?」寫成「…才對」竄改語氣。
+  QUOTE_ASK_RE='「[^」]*(吧|嗎)[?？]?」|「[^」]*[?？]」'
+  if grep -qE "$ATTRIB_RE" <<< "$LAST_ASSISTANT" \
+    && grep -qE "$QUOTE_ASK_RE" <<< "$LAST_ASSISTANT"; then
+    WARNINGS="${WARNINGS}\n  • 引文語氣(M36a):你引的 user 原話以「吧/嗎/?」結尾——那是徵詢不是拍板。改標「user 提議、查證後採用」或「未決」;引文一律逐字,禁刪語氣詞。"
+  fi
   if grep -qE "$ATTRIB_RE" <<< "$LAST_ASSISTANT" \
     && ! grep -qE "$PROV_ESCAPE_RE" <<< "$LAST_ASSISTANT"; then
     WARNINGS="${WARNINGS}\n  • Provenance 升格(M36a):你寫了「user 拍板/決定」但整段沒有引 user 原話。立刻補引原話,或降級成「AI 推導 / AI 建議、user 採納」。問句不是同意。"
