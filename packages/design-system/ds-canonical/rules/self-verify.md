@@ -52,8 +52,7 @@ paths:
 - ❌ pass-through Explore / codex propose 沒 own-version 比稿
 - ❌ 宣告「全做完 / 全部完成」前沒自己跑 M10「改一處看三處」全庫 stale-ref 掃描 → 等 user 問「真的做完?」才補掃出 loose end(M7 BLOCKER;anchor:CF model 改完漏 3 ref / iceberg)
 - ❌ **宣告「已全盤稽核 / 邏輯都對過」但只驗了單句層級**(cite / 數字 / 引文),沒跑結論兩兩相容性掃描 → 假檢查。anchor:2026-08-09 agent UI 規格連跑數次「全盤稽核」全漏,user 抓「你在檢查的時候難道都沒有發現他們邏輯不通嗎」
-- ❌ **user 以問句結尾(好不好 / 行不行 / 可以嗎 / 對吧)卻不正面回答**,只鋪陳分析或轉問別的 → 結論永遠懸空,下一輪又要重新辯。必須先給「是 / 不是 / 有條件的是」再展開理由
-- ❌ **自己虛構一個矛盾再自己否掉**(「這看起來衝突…其實不衝突」)→ 浪費 user 時間,屬既有錯誤類型「自己製造矛盾(加戲)」。有疑問就直接問,沒疑問就別提
+- (溝通紀律——**問句必正面回答**、**禁自己虛構矛盾再自己否掉**——owner 在 `governance/memory/feedback_propose_discipline.md` Sub-rule 3,本檔不複述)
 - ❌ **重大 / SSOT / 模型改動只靠自 grep 就宣告完成** → 漏 fragility / 沒貫徹到 consumer。必跑 target-specific deterministic tests、required CI 與 applicable live readback；若 task／deliverable 明確要求 independent review 才把 reviewer receipt 列為 required，waived run 不得冒充已做
 
 - Linux kernel:`scripts/checkpatch.pl` pre-submit + `git log --oneline | head -3` 後 sign-off

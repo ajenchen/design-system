@@ -25,10 +25,10 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | canonical-hook-provider-marker-regex-helper | `packages/design-system/ds-canonical/hooks/lib/provider-marker-regex.mjs` | `sha256:7395275574a3d3c1b65b6e6fc58aedbbd95caf157e0cd5cf07d0107a4531bd65` |
 | canonical-hook-registration-output-contract-helper | `packages/design-system/ds-canonical/hooks/tests/registration-output-contracts.mjs` | `sha256:701a11169a6b0beab8c484bf901d9d1f9cbd0a72aa0049f9d082b63dfd1085bd` |
 | canonical-hook-tsx-governance-analysis-helper | `packages/design-system/ds-canonical/hooks/lib/tsx-governance-analysis.mjs` | `sha256:c0860d5e9b84ea8c6350306cb14fd1eb48ada821fe8a0dcccc7b7eeb0300df21` |
-| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:a8e1d23a0e9590ecc51b65bba84bc91ae93df89817200a679769558a1526f93a` |
+| canonical-hooks | `packages/design-system/ds-canonical/hooks` | `sha256:e89a574001f4ebb8bd3fb3db0ef330ed72904faf910e395862b548680d1a343a` |
 | canonical-product-templates | `packages/design-system/ds-canonical/templates` | `sha256:491289d4a6fb561a33704c20874b24058f53e4fbe21168393fe3882f37b1ffef` |
 | canonical-references | `packages/design-system/ds-canonical/references` | `sha256:a08577f7d726f51c119498fe58992f085257125d58be86e426aaee3c97afb497` |
-| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:45496005535671b5ca096316de1f1e52595a3341d04d59309d918e063f937851` |
+| canonical-rules | `packages/design-system/ds-canonical/rules` | `sha256:de2e404ae6f3b66783cfc704bc854818d8ea5d64b9f2dc4a6b68a080da8d86bf` |
 | canonical-skills | `packages/design-system/ds-canonical/skills` | `sha256:7783579d232c4eccdb19bf89a86dbcb340fedef6bda72a01d18568a5d82295ce` |
 | changeset-release-policy | `.changeset/config.json` | `sha256:e63c52d89cfdbf6f6828f5ab0a8eda8f61b33108245284438e51638bb253c0cb` |
 | claude-instruction-adapter | `packages/design-system/ds-canonical/adapters/claude-root-instructions.md` | `sha256:d34040525b980ab67af05de7f77e242b6645b5811c158fc0f48fca627d88a3da` |

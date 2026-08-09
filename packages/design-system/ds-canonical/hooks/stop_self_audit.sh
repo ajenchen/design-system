@@ -456,6 +456,28 @@ if [ -n "$LAST_ASSISTANT" ]; then
   fi
 fi
 
+# ── Mechanism 9: 問句必正面回答(2026-08-09 user directive)────────────────
+# SSOT = governance/memory/feedback_propose_discipline.md Sub-rule 3。
+# user 以「好不好 / 行不行 / 可以嗎 / 對吧 / 不是更 X 嗎」結尾 = 要一個裁決,
+# 不是要一段分析。reply 開頭沒表態 → 結論懸空,下一輪重辯同一題。
+# Detector 刻意保守:只看 user 訊息「最後一行」是否為徵詢句尾,且 reply 前 400 字
+# 完全沒有任何表態詞才 warn。
+if [ -n "$LAST_ASSISTANT" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] \
+  && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
+  USER_TEXT=$(sed -n "${LAST_USER_LINE}p" "$TRANSCRIPT_PATH" 2>/dev/null | \
+    jq -r '.message.content as $c | if ($c|type)=="string" then $c else ($c[]?.text // empty) end' 2>/dev/null)
+  USER_TAIL=$(printf '%s' "$USER_TEXT" | tr -d '\r' | grep -v '^[[:space:]]*$' | tail -1)
+  ASK_TAIL_RE='(好不好|行不行|可以嗎|對吧|是不是|要不要|不是更[^?？]*嗎|嗎[?？]?|吧[?？]?)[?？]?$'
+  # 表態詞:任何明確裁決開頭都算合格 escape
+  STANCE_RE='(^|[[:space:]])(是[,,。]|不是|對[,,。]|不對|可以|不可以|不行|同意|不同意|你對|我錯|正確|錯了|沒錯|會|不會|要|不要|已決|未決)'
+  if [ -n "$USER_TAIL" ] && printf '%s' "$USER_TAIL" | grep -qE "$ASK_TAIL_RE"; then
+    REPLY_HEAD=$(printf '%s' "$LAST_ASSISTANT" | head -c 400)
+    if ! printf '%s' "$REPLY_HEAD" | grep -qE "$STANCE_RE"; then
+      WARNINGS="${WARNINGS}\n  • 問句未正面回答:user 這則以徵詢語氣結尾(要裁決,不是要分析),但你開頭 400 字沒有任何表態。先給「是 / 不是 / 有條件的是(條件是什麼)」再展開;真的判不了就明說還缺什麼。"
+    fi
+  fi
+fi
+
 # ── Mechanism 6: capability-bound PushNotification gap ────────────────────
 # Provider-neutral runtime 不可假設 exact tool 存在。只有 adapter/registry 明確宣告
 # `push-notification` capability 時才檢查；缺宣告 = UNOBSERVED/nonblocking。
