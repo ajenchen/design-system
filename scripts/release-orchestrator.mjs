@@ -296,6 +296,18 @@ function ghShim(args, { allowFailure = false } = {}) {
     if (rows === null) return shimDone({ ok: false, code: 0, text: '' }, { allowFailure, label })
     return { ok: true, stdout: rows.length ? JSON.stringify(rows) : '', stderr: '' }
   }
+  if (args[0] === 'pr' && args[1] === 'create') {
+    const repository = flagValue(args, '--repo')
+    const base = flagValue(args, '--base')
+    const head = flagValue(args, '--head')
+    // --fill = 取最近一筆 commit 的標題/本文;顯式 --title/--body 優先
+    const title = flagValue(args, '--title') || run('git', ['log', '-1', '--pretty=%s']).stdout
+    const bodyText = flagValue(args, '--body') ?? run('git', ['log', '-1', '--pretty=%b']).stdout
+    const response = curlGitHub('POST', `repos/${repository}/pulls`,
+      { body: JSON.stringify({ title, head, base, body: bodyText }) })
+    if (!response.ok) return shimDone(response, { allowFailure, label })
+    return { ok: true, stdout: JSON.parse(response.text).html_url, stderr: '' }
+  }
   if (args[0] === 'pr' && args[1] === 'merge') {
     const repository = flagValue(args, '--repo')
     const matchHead = flagValue(args, '--match-head-commit')

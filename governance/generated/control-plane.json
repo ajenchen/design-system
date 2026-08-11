@@ -3075,7 +3075,7 @@
         "scripts/generated/"
       ],
       "files": 371,
-      "hash": "sha256:ea80dedbeb8d27ad81afa92f4dbd95afd755f24a149d13bbb3870276d03a24c2",
+      "hash": "sha256:0fd04bbf4ac4f5a6f4d521eb98fa8b3e2a4dfd7ffe3e91183c57ffaf831b0b6b",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3156,12 +3156,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:51675a753cf2a54f445dd86e4c0f4ea314cd60f188dd54ee78c767314e1ffd90",
+      "hash": "sha256:4a0b85cfa4324a47b1e925844eeec5491ca3a9563f9c8309f2531408966b1b7d",
       "id": "standard-release-orchestrator",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-orchestrator.mjs",
-      "size": 44185,
+      "size": 44946,
       "type": "file"
     },
     {
