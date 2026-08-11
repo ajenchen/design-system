@@ -104,20 +104,20 @@
   },
   "providerLifecycle": {
     "schemaVersion": 4,
-    "releaseVersion": "0.1.0-beta.119",
+    "releaseVersion": "0.1.0-beta.120",
     "immutableHead": {
       "providerInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
-      "releaseVersion": "0.1.0-beta.118",
-      "snapshotSha256": "1967a89f9de7202ac0596965af2d8fa5af9cacf7f3e19c1be5f48be047d805fc"
+      "releaseVersion": "0.1.0-beta.119",
+      "snapshotSha256": "89a97b3c47da235aee5ef83fab8836d26952facc015a9d98b17b2194a07d31ec"
     },
-    "ledgerSha256": "d183167f2c64fe6f4d00ac13f0d35976b79dc15c2d3d0ad3573b82476a70fe1c",
-    "previousSnapshotSha256": "1967a89f9de7202ac0596965af2d8fa5af9cacf7f3e19c1be5f48be047d805fc",
-    "currentSnapshotSha256": "89a97b3c47da235aee5ef83fab8836d26952facc015a9d98b17b2194a07d31ec",
+    "ledgerSha256": "bb65a4679cd5f2375c83397b880f6c94813c20b5ed8234d70558fe8471f533bb",
+    "previousSnapshotSha256": "89a97b3c47da235aee5ef83fab8836d26952facc015a9d98b17b2194a07d31ec",
+    "currentSnapshotSha256": "f80fc5b799f346357d0cce36dfbd485a6d02679887556de392eb19b883a8e74d",
     "currentProviderInventorySha256": "86e9d0668cb54ad1bf05c36e78b4aa80417d5f468c929dd3ddcf69c1afbf32e4",
     "retiredProviders": [],
     "currentSnapshot": {
-      "releaseVersion": "0.1.0-beta.119",
-      "previousSnapshotSha256": "1967a89f9de7202ac0596965af2d8fa5af9cacf7f3e19c1be5f48be047d805fc",
+      "releaseVersion": "0.1.0-beta.120",
+      "previousSnapshotSha256": "89a97b3c47da235aee5ef83fab8836d26952facc015a9d98b17b2194a07d31ec",
       "providers": [
         {
           "id": "claude",
@@ -193,8 +193,8 @@
       "retiredProviders": []
     },
     "immutableHeadSnapshot": {
-      "releaseVersion": "0.1.0-beta.118",
-      "previousSnapshotSha256": "e03b95342944512f9c084c0ac5fe5fba4b688924758ce725f16504eaec8af5a4",
+      "releaseVersion": "0.1.0-beta.119",
+      "previousSnapshotSha256": "1967a89f9de7202ac0596965af2d8fa5af9cacf7f3e19c1be5f48be047d805fc",
       "providers": [
         {
           "id": "claude",
