@@ -1326,7 +1326,10 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               !disabled && isSelected && selectionMode === 'single' && 'text-foreground',
               isDropTarget && dropTarget?.position === 'inside' && dropIndicatorInside,
               !disabled && 'hover:bg-neutral-hover hover:text-foreground',
-              !disabled && isSelected && selectionMode === 'single' && 'bg-neutral-selected',
+              // 2026-08-11 修偏移(SSOT = item-anatomy「選中 × 互動疊加」):先前 hover:bg-neutral-hover
+              //(0,2,0)蓋掉無修飾的 bg-neutral-selected(0,1,0)→ 選中列 hover 反而變淺 = bug。
+              // 釘住 hover 不變(twMerge 同組後者勝)+ 鍵盤焦點深一階 -focus。
+              !disabled && isSelected && selectionMode === 'single' && 'bg-neutral-selected hover:bg-neutral-selected focus-visible:bg-neutral-selected-focus',
               showRing && 'ring-2 ring-ring ring-inset',
               disabled && 'pointer-events-none text-fg-disabled cursor-default',
               className,

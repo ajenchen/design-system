@@ -614,13 +614,14 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 ### Selected state family
 
-用於持續 toggle on / 選中 element 的互動回饋。**三件成套，對應 rest / hover / :active 三種互動態**：
+用於持續 toggle on / 選中 element 的互動回饋。**四件成套（2026-08-11 user 拍板補 `-focus`；疊加行為 owner = `item-anatomy.spec.md`「選中 × 互動疊加」格）**：
 
 | Utility | Token | 用途 |
 |---|---|---|
-| `bg-neutral-selected` | neutral-2 | 持續 selected rest |
-| `bg-neutral-selected-hover` | neutral-1 | selected 上 hover（反向變淺，暗示「可取消」） |
-| `bg-neutral-selected-active` | neutral-3 | selected 上 `:active` 深一階 click 回饋 |
+| `bg-neutral-selected` | neutral-2 | 持續 selected rest；**選中列被滑鼠 hover 時亦釘住此值不變** |
+| `bg-neutral-selected-hover` | neutral-1 | **可取消切換鈕專屬**：pressed 上 hover 反向變淺，暗示「再點會釋放」（Fluent ToggleButton 同構；Carbon/Atlassian 同名 token 是變深，本 DS 反向為切換鈕語意的有意設計——**列元件禁用本 token**） |
+| `bg-neutral-selected-focus` | neutral-3 | **鍵盤焦點／反白停在選中列** → 深一階（游標可見，WCAG 2.4.7；滑鼠 hover 不觸發） |
+| `bg-neutral-selected-active` | neutral-3 | selected 上 `:active` 深一階 click 回饋（**按壓專屬，禁借給 hover／反白**——2026-07-05 D4 曾借用，2026-08-11 糾正） |
 
 ```tsx
 // toggle button pressed 狀態

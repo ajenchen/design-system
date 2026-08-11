@@ -745,6 +745,18 @@ export function recoverInterruptedAuthorityGeneration({
   if (!pathEntryExists(journalPath)) return { recovered: false, targetCount: 0 }
   const validated = validateAuthorityGenerationJournal(root, { targetPaths, activeTransactionId })
   for (const entry of validated.targets) {
+    // 2026-08-11 anti-self-lock fix(user directive「把過度設計的機制清理乾淨」):
+    // 復原只碰真正偏離的目標。目標現況與 journal 的 before 完全一致 → 無事可復原,跳過。
+    // 先前無條件全刪全復原,連沙箱禁寫的未變目標(.claude/agents 等)也要重寫 → EPERM →
+    // 復原本身失敗 → journal 永遠清不掉,整條 build graph 死鎖。forward path 早有
+    // EPERM → index-publish 後備(見 applyAuthority swap loop),rollback 對稱補上 skip-identical。
+    const absolute = join(root, entry.path)
+    try {
+      const current = authorityEntrySnapshot(absolute, `authority generation recovery current ${entry.path}`)
+      if (current.present === entry.before.present
+        && current.kind === entry.before.kind
+        && current.fingerprint === entry.before.fingerprint) continue
+    } catch { /* 快照失敗(hardlink 等)→ 走完整 restore */ }
     removeAuthorityEntry(root, entry.path, 'authority generation recovery target')
     if (entry.before.present) {
       const target = join(root, entry.path)

@@ -225,7 +225,9 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
         className={cn(
           menuItemVariants({ size }),
           !disabled && !selected && 'hover:bg-neutral-hover',
-          !disabled && selected && 'bg-neutral-selected',
+          // 2026-08-11(SSOT = item-anatomy「選中 × 互動疊加」):選中列滑鼠 hover 本就不變(上行條件互斥);
+          // 補鍵盤焦點深一階 -focus(twMerge 同組蓋過 base 的 focus-visible:bg-neutral-hover)。
+          !disabled && selected && 'bg-neutral-selected focus-visible:bg-neutral-selected-focus',
           // disabled 用 cursor-not-allowed(對齊 Button + Material/Polaris/Atlassian);
           // pointer-events-none 會讓 cursor 失效,改用 aria-disabled + onClick guard
           disabled && 'text-fg-disabled cursor-not-allowed',

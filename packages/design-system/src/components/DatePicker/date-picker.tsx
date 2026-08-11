@@ -1184,14 +1184,19 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                     // Cell 的 top-left + bottom-left corner triangle:pseudo 不蓋 + button 不蓋 →
                     // popover white 顯露(乾淨 breathing)
                     rangeStart: cn(
-                      '[&>button]:!bg-primary [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
+                      // 2026-08-11 修偏移:!bg-primary 連 hover 也壓死 → 端點 hover 零回饋,違反
+                      // date-grid.spec.md:119「選中日 hover 升階 primary→primary-hover」(端點可再點
+                      // 重選範圍 = 可取消家族,依 user 原則該有回饋)。補顯式 hover 升階(同 !important,
+                      // hover 變體更特定故 hover 時勝出;ring-0 壓制照舊,spec:118)。
+                      '[&>button]:!bg-primary [&>button]:hover:!bg-primary-hover [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
                       "before:content-[''] before:absolute before:inset-y-0",
                       'before:left-0 before:-right-[2px]',
                       'before:bg-neutral-selected before:pointer-events-none',
                       'before:rounded-l-full',  // ← stadium 左半圓 matches button 圓的左半弧
                     ),
                     rangeEnd: cn(
-                      '[&>button]:!bg-primary [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
+                      // 2026-08-11:同 rangeStart — 補 hover 升階(spec:119),鏡像。
+                      '[&>button]:!bg-primary [&>button]:hover:!bg-primary-hover [&>button]:!text-on-emphasis [&>button]:hover:!ring-0',
                       "before:content-[''] before:absolute before:inset-y-0",
                       'before:-left-[2px] before:right-0',
                       'before:bg-neutral-selected before:pointer-events-none',

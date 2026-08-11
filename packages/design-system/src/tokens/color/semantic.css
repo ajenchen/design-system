@@ -90,8 +90,9 @@
    │                                                                     │
    │  Selected state family（toggle on / 持續選中 element 的互動）       │
    │    --neutral-selected         rest 持續選中   = neutral-2            │
-   │    --neutral-selected-hover   hover（變淺）   = neutral-1            │
-   │    --neutral-selected-active  :active 深一階  = neutral-3            │
+   │    --neutral-selected-hover   切換鈕hover(變淺) = neutral-1          │
+   │    --neutral-selected-focus   鍵盤焦點 深一階  = neutral-3           │
+   │    --neutral-selected-active  按壓專屬 深一階  = neutral-3           │
    │                                                                     │
    │  --bg-disabled                互動元件 disabled 背景  = neutral-2    │
    │                                                                     │
@@ -133,7 +134,7 @@
    │  On-fill     --on-emphasis（白）/ --on-emphasis-dark（深,亮底用）   │
    │  Neutral     bg-neutral-hover / bg-neutral-active / bg-disabled     │
    │              bg-neutral-selected / bg-neutral-selected-hover /       │
-   │              bg-neutral-selected-active                              │
+   │              bg-neutral-selected-focus / bg-neutral-selected-active  │
    │              bg-muted / bg-secondary                                 │
    │  Border      border-border / border-border-hover / border-divider   │
    │  Focus       ring-ring                                               │
@@ -357,10 +358,17 @@
        --neutral-active  = :active 瞬間 click 回饋（transient）
        --neutral-selected = 持續 toggle on / 長時間選中（persistent）
 
-     典型消費者：Button text variant pressed、DropdownMenu 單選項目、
-     SelectMenu 單選項目、Tab active、menu item selected。 */
+     選中之上的疊加(2026-08-11 user 拍板;SSOT = item-anatomy.spec.md「選中 × 互動疊加」格):
+       -hover  = 可取消切換鈕專屬「hover 預告釋放」→ 變淺(Fluent ToggleButton 同構;Carbon/Atlassian
+                 同名 token 是變深,本 DS 反向是切換鈕語意的有意設計 — 列元件禁用本 token)
+       -focus  = 鍵盤焦點/反白停在「選中列」→ 深一階(游標可見性 WCAG 2.4.7;滑鼠 hover 一律釘住不變)
+       -active = 只有「按住」的瞬間(按壓專屬;禁借給 hover/反白 — 2026-07-05 D4 借用已於 2026-08-11 糾正)
+
+     典型消費者：Button toggle pressed(-hover 變淺/-active 按壓)、DropdownMenu/SelectMenu 單選項目、
+     SidebarMenuButton/TreeItem/TimePicker/MenuItem 選中列(皆 -focus)。 */
   --neutral-selected:         var(--color-neutral-2);
   --neutral-selected-hover:   var(--color-neutral-1);
+  --neutral-selected-focus:   var(--color-neutral-3);
   --neutral-selected-active:  var(--color-neutral-3);
 
   /* Static Subtle — 靜態弱化背景(2026-05-20 v3 註解濃縮原則,SSOT 詳 color.spec.md「Static Subtle Background」段)*/
@@ -533,6 +541,7 @@
   /* Neutral Interaction — Selected state family */
   --color-neutral-selected:          var(--neutral-selected);
   --color-neutral-selected-hover:    var(--neutral-selected-hover);
+  --color-neutral-selected-focus:    var(--neutral-selected-focus);
   --color-neutral-selected-active:   var(--neutral-selected-active);
 
   /* Surface Utility */

@@ -241,6 +241,12 @@
       "status": "superseded",
       "executable": false,
       "reason": "Current provider-neutral release, template, and fleet design supersede it."
+    },
+    {
+      "path": "governance/planning/2026-08-11-agent-ui-panel-spec.md",
+      "status": "reference",
+      "executable": false,
+      "reason": "Backlog by user directive (2026-08-11): complete ratified agent-panel spec archived with full context; must not modify DS canonical until user schedules implementation."
     }
   ]
 }

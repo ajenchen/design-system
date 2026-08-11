@@ -19,23 +19,9 @@ User 2026-05-15 + 2026-05-27 系列 directives codified per Rule-of-3 absorb pri
 - commit/tree clean/merge/branch →「存進版本紀錄/沒有未存改動/合併回主線/分支」
 - grep/rg/playwright/screenshot/gate/verified/done →「全庫搜尋/自動化瀏覽器測試/截圖/把關/驗過了/做完了」
 
-**Format**:
-```
-### 決策 N:<一句話標題,zero jargon>
+**Format**:`### 決策 N:<一句話標題>` → **現況**(目前行為,人話)→ **影響**(不改/改了會怎樣)→ **選項** A/B/C 各附後果 → **我推** X 因 Y。
 
-**現況**:<目前 code/spec 行為,人話>
-**影響**:<不改會怎樣 / 改了會怎樣,具體>
-**選項**:
-- A. <做法 1>(後果:...)
-- B. <做法 2>(後果:...)
-- C. <不動>(後果:...)
-**我推**:<A / B / C> 因 <理由>
-```
-
-**禁止**:`L1-L7` / `canonical` / `primitive` / `SSOT` / `consume` / `traits` / `M-rule` / `cva` / `tier` / `tokens` / `wrapper` 等內部術語 propose 內裸用。改翻成人話:
-- canonical/primitive/SSOT/spec →「主檔或標準寫法/共用零件/單一資料源/規格檔」
-- consume/traits/tier →「沿用/行為類型/層級」
-- tokens/wrapper →「設計變數/外殼」
+**禁止**:`L1-L7` / `canonical` / `primitive` / `SSOT` / `consume` / `traits` / `M-rule` / `cva` / `tier` / `tokens` / `wrapper` 等內部術語 propose 內裸用。翻譯:canonical/primitive/SSOT/spec →「主檔或標準寫法/共用零件/單一資料源/規格檔」;consume/traits/tier →「沿用/行為類型/層級」;tokens/wrapper →「設計變數/外殼」。
 
 **Anchor**:2026-05-15 user verbatim「要 user 決策必中文具體人話講(發生什麼/影響/選項 outcome)」。
 
@@ -45,10 +31,7 @@ User 2026-05-15 + 2026-05-27 系列 directives codified per Rule-of-3 absorb pri
 
 **Rule**:propose 含 claim「規定 / 必配 / canonical 寫 / spec 說 / 文件規定」必附 inline file:line cite。沒 cite = 視為瞎掰,自動撤回。
 
-**Format**:
-```
-**現況 + cite**:per `<file path>:<line>` 「<verbatim quote>」 → <implication>
-```
+**Format**:`**現況 + cite**:per <file>:<line> 「<逐字引文>」 → <推論>`
 
 **禁止**:「DS canonical 規定 X」/「spec 寫 Y」/「per 規範 Z」沒 cite。
 
@@ -95,3 +78,13 @@ M18 Q0(本 rule 是「人話」+「cite」的具體化)/ M22 benchmark cite mand
 **Why**:不正面回答會造成**結論漂移**——user 以為講定了,AI 沒登記成結論,下一輪就被當未決題重辯。與 [[meta-patterns]] M10 sub-rule「已成立的結論必須當場登記進總帳」是同一個 failure 的兩端。
 
 **How to apply**:回覆開頭先一句表態;若真的無法表態,明說「我還缺什麼才能判」,不要用分析填充。
+
+## Sub-rule 4 — 規則改動必附「具體情境 → 具體結果」表(2026-08-09)
+
+**Rule**:任何版位／互動規則的改動,**不得只寫機制**。必須同時附一張表:**列出具體情境,逐格寫出直接答案**(會不會 X / 會不會 Y / 使用者看到什麼 / 關掉回到哪)。寫完機制就交出去 = 逼 user 自己推,而且推不出來就得一題一題戳。
+
+**Anchor(2026-08-09)**:改完「一律疊加、不分類」之後,我寫了整段機制說明,卻沒有回答最直接的問題「從 agent 點的預覽到底會不會蓋住 agent?會不會重置舞台?」。user verbatim:「你他媽你腦袋真的有清楚嗎?那 Ai agent 點下去的預覽modal到底是會不會蓋住 Ai agent?還是重置舞台?你他媽話都講得不清楚,難怪規格書寫得跟屎一樣…你到底要怎樣才能強迫自己思考周到?每次都要我一個一個戳?」
+
+**Why**:機制正確 ≠ 讀者能推出結果。規則交錯時(疊加/重置/幾何/來源)人腦要同時持有四個維度才推得出一格答案——那是作者的工作,不是讀者的。
+
+**How to apply**:改規則 → 立刻自己跑 6-10 個具體情境 → 每格寫**直接答案**(會/不會,不是「依 X 而定」)→ 表放在規則正上方或正下方。**表跑不出來 = 規則還沒定完,不准交。**

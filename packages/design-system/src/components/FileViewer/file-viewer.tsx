@@ -292,11 +292,11 @@ const ZoomInput: React.FC<ZoomInputProps> = ({ value, onChange, onFit, labels })
                 <DropdownMenuItem
                   key={p}
                   onSelect={() => onChange(p)}
-                  data-state={selected ? 'checked' : undefined}
-                  className={cn(
-                    'tabular-nums',
-                    selected && 'bg-neutral-selected',
-                  )}
+                  // 2026-08-11 修偏移:原手刻 data-state + bg-neutral-selected(plain class 被 base
+                  // highlighted 洗淺 = drift)→ 消費 DropdownMenuItem 既有 selected prop,
+                  // 疊加行為(滑鼠釘住/鍵盤 -focus)隨 canonical SSOT 走(M23)。
+                  selected={selected}
+                  className="tabular-nums"
                 >
                   {p}%
                 </DropdownMenuItem>

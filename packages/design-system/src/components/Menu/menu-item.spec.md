@@ -157,7 +157,8 @@ Menu 的設計目的是「**快速掃視多個選項挑一個**」。垂直空�
 | default | transparent | foreground | — |
 | hover | `--neutral-hover` | foreground | 滑鼠 hover |
 | selected（單選） | `--neutral-selected` | foreground | bg 高亮（不用 ✓ 勾號，避免影響 prefix 對齊） |
-| **selected × hover（疊加）** | `--neutral-selected`（**selected 勝**） | foreground | 2026-07-04 Q2 拍板 M5 明文:bg 是唯一選中指示器,hover 不得洗掉。code = selected 時關 hover bg(menu-item.tsx)。對齊 Ant Menu `:not(-item-selected)` / VS Code list `:hover:not(.selected)`。**消費者差異**:DropdownMenu 在 selected × highlighted(鍵盤 cursor)深化一階為 `--neutral-selected-active`(2026-07-05 D4,WCAG 2.4.7 cursor 可見;dropdown-menu.tsx `selected && data-[highlighted]:bg-neutral-selected-active`)——此為 wrapper 層鍵盤 cursor 增強,MenuItem primitive 的 selected × hover(滑鼠)仍維持 `--neutral-selected` 不深化 |
+| **selected × hover（疊加）** | `--neutral-selected`（**selected 勝,釘住不變**） | foreground | owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)。2026-07-04 Q2:bg 是唯一選中指示器,hover 不得洗掉;code = selected 時關 hover bg(menu-item.tsx)。對齊 Ant Menu `:not(-item-selected)` / VS Code list `:hover:not(.selected)` |
+| **selected × 鍵盤焦點（疊加）** | `--neutral-selected-focus`（深一階） | foreground | 同上 owner。鍵盤沒有游標,深一階即游標(WCAG 2.4.7)。**舊文勘誤(2026-08-11)**:先前寫 DropdownMenu「僅鍵盤 cursor 深化」用 `-active`——實作上 Radix 反白滑鼠也觸發(規範與實作不符),且 `-active` 是按壓專屬 token;現已全家統一:滑鼠釘住、鍵盤 `-focus` 深化,無消費者差異 |
 | selected（多選） | transparent | foreground | checkbox 勾選 |
 | disabled | transparent | `--fg-disabled` | disabled prop |
 

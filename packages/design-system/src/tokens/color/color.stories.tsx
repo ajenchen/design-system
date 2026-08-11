@@ -343,8 +343,9 @@ export const Interactive: Story = {
             { label: 'Hover 回饋',         bg: 'var(--neutral-hover)',        token: 'bg-neutral-hover' },
             { label: 'Active 回饋（:active click）', bg: 'var(--neutral-active)', token: 'bg-neutral-active' },
             { label: 'Selected 持續選中',   bg: 'var(--neutral-selected)',     token: 'bg-neutral-selected' },
-            { label: 'Selected + Hover',    bg: 'var(--neutral-selected-hover)', token: 'bg-neutral-selected-hover' },
-            { label: 'Selected + Active',   bg: 'var(--neutral-selected-active)', token: 'bg-neutral-selected-active' },
+            { label: 'Selected + Hover（切換鈕專屬，變淺）', bg: 'var(--neutral-selected-hover)', token: 'bg-neutral-selected-hover' },
+            { label: 'Selected + 鍵盤焦點（深一階）', bg: 'var(--neutral-selected-focus)', token: 'bg-neutral-selected-focus' },
+            { label: 'Selected + Active（按壓專屬）', bg: 'var(--neutral-selected-active)', token: 'bg-neutral-selected-active' },
             { label: 'Disabled 狀態',      bg: 'var(--bg-disabled)',          token: 'bg-disabled' },
           ].map(({ label, bg, token }) => (
             <div

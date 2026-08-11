@@ -478,7 +478,13 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
                       // 對齊本日 DropdownMenu Q2 決策),內層 MenuItem 全透明。
                       className={cn(
                         'p-0 rounded-none',
-                        !multiple && isSelected(opt.value) && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected-active',
+                        // 2026-08-11 user 拍板糾正 D4 實作縫(SSOT = item-anatomy「選中 × 互動疊加」):
+                        // cmdk 反白訊號滑鼠也觸發,深化本應僅限鍵盤(D4 原意即「鍵盤 cursor」)。
+                        // 滑鼠 hover 選中項 → 釘住 bg-neutral-selected 不變(滑鼠自有游標,不需底色指位);
+                        // 鍵盤反白(data-selected 且非 :hover)→ -focus 深一階(游標可見,WCAG 2.4.7)。
+                        // not-hover 編譯為 :not(*:hover) + @media not (hover:hover)(POC 已驗),
+                        // 深化 (0,3,0) > 釘住 (0,2,0),與 CSS 順序無關;token 從借用的 -active 歸位 -focus。
+                        !multiple && isSelected(opt.value) && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected data-[selected=true]:not-hover:bg-neutral-selected-focus',
                       )}
                     >
                       <MenuItem
@@ -596,10 +602,10 @@ export const selectMenuMeta = {
 
   },
   // 'selected' = 單選 option 持續選中(bg-neutral-selected);'active' 保留 — cmdk virtual-focus on
-  // selected 走 bg-neutral-selected-active(active 階 token;2026-07-07 詞彙統一補修)。
+  // selected(鍵盤反白,非 hover)走 bg-neutral-selected-focus(2026-08-11 token 歸位:-active 回歸按壓專屬)。
   states: ['default', 'hover', 'active', 'selected', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-neutral-selected', 'bg-neutral-selected-active', 'bg-surface-raised', 'bg-transparent'],
+    bg: ['bg-neutral-selected', 'bg-neutral-selected-focus', 'bg-surface-raised', 'bg-transparent'],
     fg: ['text-fg-muted'],
     ring: [],
   },
