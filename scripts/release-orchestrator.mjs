@@ -155,13 +155,17 @@ function curlGitHub(method, path, { headers = [], body = null } = {}) {
   for (const header of headers) args.push('-H', header)
   if (body !== null) args.push('-H', 'Content-Type: application/json', '-d', body)
   args.push(url)
-  const result = spawnSync('curl', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 })
-  if (result.error) throw result.error
-  const raw = `${result.stdout}`
-  const marker = raw.lastIndexOf('__HTTP_STATUS__:')
-  const code = marker >= 0 ? Number(raw.slice(marker + 16).trim()) : 0
-  const text = marker >= 0 ? raw.slice(0, marker).replace(/\n$/, '') : raw
-  return { code, ok: code >= 200 && code < 300, text }
+  for (let attempt = 0; ; attempt += 1) {
+    const result = spawnSync('curl', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 })
+    if (result.error) throw result.error
+    const raw = `${result.stdout}`
+    const marker = raw.lastIndexOf('__HTTP_STATUS__:')
+    const code = marker >= 0 ? Number(raw.slice(marker + 16).trim()) : 0
+    const text = marker >= 0 ? raw.slice(0, marker).replace(/\n$/, '') : raw
+    // 瞬時網路抖動(HTTP 0 = curl 連線層失敗)重試兩次再定論,避免長輪詢被單次抖動打斷
+    if (code === 0 && attempt < 2) { sleep(3000); continue }
+    return { code, ok: code >= 200 && code < 300, text }
+  }
 }
 function shimDone(response, { allowFailure, label, mapText = null }) {
   if (!response.ok) {
@@ -183,39 +187,58 @@ function shimMapPull(p, detail = null) {
     mergeCommit: p.merge_commit_sha ? { oid: p.merge_commit_sha } : null,
   }
 }
+function shimRowFromStatus(status, conclusionRaw, name, workflow) {
+  const done = status === 'completed'
+  const conclusion = `${conclusionRaw || ''}`
+  const bucket = !done ? 'pending'
+    : conclusion === 'success' ? 'pass'
+    : ['neutral', 'skipped'].includes(conclusion) ? 'skipping'
+    : conclusion === 'cancelled' ? 'cancel' : 'fail'
+  return { bucket, name, state: done ? conclusion : 'pending', workflow }
+}
 function shimCheckRows(repository, headSha) {
   const response = curlGitHub('GET', `repos/${repository}/commits/${headSha}/check-runs?per_page=100`)
-  if (!response.ok) return null
-  const runs = JSON.parse(response.text).check_runs || []
-  return runs.map(item => {
-    const done = item.status === 'completed'
-    const conclusion = `${item.conclusion || ''}`
-    const bucket = !done ? 'pending'
-      : conclusion === 'success' ? 'pass'
-      : ['neutral', 'skipped'].includes(conclusion) ? 'skipping'
-      : conclusion === 'cancelled' ? 'cancel' : 'fail'
-    return { bucket, name: item.name, state: done ? conclusion : 'pending', workflow: item.app?.name || '' }
-  })
+  if (response.ok) {
+    const runs = JSON.parse(response.text).check_runs || []
+    return runs.map(item => shimRowFromStatus(item.status, item.conclusion, item.name, item.app?.name || ''))
+  }
+  // 2026-08-12 fallback:fine-grained token 的 Checks 讀取權可能只涵蓋部分 repo(403),
+  // 但 Actions 讀取權可用 — required check(如 WM 的「Verify consumer」)本就是 Actions job,
+  // 由 runs?head_sha → jobs 推導同一份列表,語意等價。
+  if (response.code !== 403) return null
+  const runsResponse = curlGitHub('GET', `repos/${repository}/actions/runs?head_sha=${headSha}&per_page=20`)
+  if (!runsResponse.ok) return null
+  const rows = []
+  for (const run of JSON.parse(runsResponse.text).workflow_runs || []) {
+    const jobsResponse = curlGitHub('GET', `repos/${repository}/actions/runs/${run.id}/jobs?per_page=100`)
+    if (!jobsResponse.ok) continue
+    for (const job of JSON.parse(jobsResponse.text).jobs || []) {
+      rows.push(shimRowFromStatus(job.status, job.conclusion, job.name, run.name || ''))
+    }
+  }
+  return rows
 }
 function flagValue(args, flag) {
   const index = args.indexOf(flag)
   return index >= 0 ? args[index + 1] : null
 }
-function ghShim(args, { allowFailure = false } = {}) {
+function ghShim(args, { allowFailure = false, input = null } = {}) {
   const label = `gh-shim ${args.join(' ')}`.slice(0, 120)
   if (args[0] === 'api') {
-    let method = 'GET'; const headers = []; const fields = {}; let endpoint = null
+    let method = 'GET'; const headers = []; const fields = {}; let endpoint = null; let useStdin = false
     for (let index = 1; index < args.length; index += 1) {
       const arg = args[index]
       if (arg === '--method') { method = args[++index] }
       else if (arg === '-H') { headers.push(args[++index]) }
       else if (arg === '-f' || arg === '-F') { const [key, ...rest] = args[++index].split('='); fields[key] = rest.join('=') }
+      else if (arg === '--input') { useStdin = args[++index] === '-' }
       else if (!endpoint) endpoint = arg
     }
     if (!endpoint) return null
     const hasFields = Object.keys(fields).length > 0
-    if (hasFields && method === 'GET') method = 'POST'
-    const response = curlGitHub(method, endpoint, { headers, body: hasFields ? JSON.stringify(fields) : null })
+    const body = useStdin ? (input ?? '') : hasFields ? JSON.stringify(fields) : null
+    if (body !== null && method === 'GET') method = 'POST'
+    const response = curlGitHub(method, endpoint, { headers, body })
     return shimDone(response, { allowFailure, label })
   }
   if (args[0] === 'release' && args[1] === 'view') {
@@ -501,6 +524,22 @@ function consumerCheckReadback(target, pullRequest, desired) {
     if (validateConsumerCheckProvenance(target, pullRequest, checkRun, workflowRun, integration)) {
       return { trusted: true, checkRunId: checkRun.id, workflowRunId: workflowRun.id }
     }
+  }
+  // 2026-08-12 等強度後備:fine-grained token 對部分 repo 無 Checks 讀取權(check-runs 403),
+  // 但 Actions 讀取權可用。同一條出處鏈(producerWorkflow 檔案 + producerEvent + exact head
+  // + run/job completed success + job 名 = required context)直接由 Actions API 驗證 —— 見證
+  // 端點不同,驗的性質相同;Actions run 本身即 github-actions integration 的產物。任一條件
+  // 不符仍 fail-closed。
+  const actionRuns = ghJson(['api', `repos/${target.repository}/actions/runs?head_sha=${pullRequest.headRefOid}&per_page=20`], { allowFailure: true })
+  for (const workflowRun of actionRuns?.workflow_runs || []) {
+    if (normalizeWorkflowPath(workflowRun.path) !== expected.producerWorkflow) continue
+    if (workflowRun.event !== expected.producerEvent) continue
+    if (workflowRun.head_sha !== pullRequest.headRefOid) continue
+    if (workflowRun.status !== 'completed' || workflowRun.conclusion !== 'success') continue
+    const jobs = ghJson(['api', `repos/${target.repository}/actions/runs/${workflowRun.id}/jobs?per_page=100`], { allowFailure: true })
+    const job = (jobs?.jobs || []).find(item =>
+      item.name === expected.context && item.status === 'completed' && item.conclusion === 'success')
+    if (job) return { trusted: true, checkRunId: job.id, workflowRunId: workflowRun.id }
   }
   return { trusted: false, reason: `${expected.context} is not bound to ${expected.producerWorkflow} ${expected.producerEvent}` }
 }

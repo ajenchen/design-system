@@ -2698,8 +2698,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 21,
-      "hash": "sha256:de1d3091099d9dc72f4230da176bbe5341e39854d311260334d6b3da4cfcb048",
+      "files": 22,
+      "hash": "sha256:f63efa6119fa15477f978c2adac168eee23a16ef16d90176dc6cc6eb38c57c98",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3074,8 +3074,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 371,
-      "hash": "sha256:0fd04bbf4ac4f5a6f4d521eb98fa8b3e2a4dfd7ffe3e91183c57ffaf831b0b6b",
+      "files": 374,
+      "hash": "sha256:f49531c39806d7792dd487580e640aaab9edc057df56b29e56385654c113790b",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3156,12 +3156,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4a0b85cfa4324a47b1e925844eeec5491ca3a9563f9c8309f2531408966b1b7d",
+      "hash": "sha256:e2519de1a7ccfe3af5dd99ac2a38bf88ad2df69be19fbcf9f9aabb349c1ce161",
       "id": "standard-release-orchestrator",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-orchestrator.mjs",
-      "size": 44946,
+      "size": 47656,
       "type": "file"
     },
     {
