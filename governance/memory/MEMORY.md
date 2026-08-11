@@ -23,6 +23,8 @@
 - [feedback_ai_ground_truth_unreliable_mechanical_primary.md](feedback_ai_ground_truth_unreliable_mechanical_primary.md) — AI self-audit unreliable;mechanical(pixel/DOM/tsc/playwright)= primary defense / AI judgement = supplementary only / new audit layer ALWAYS expand never replace(2026-05-27 + composition fidelity application,合 2 file)
 - [feedback_consume_existing_classification_ssot.md](feedback_consume_existing_classification_ssot.md) — 消費既有不憑直覺:(a)分類用既有 category-matrix.json 5-category SSOT 禁發明新框架(朝三暮四根因;對抗 workflow 抓出重造)+ anatomy pattern(item/header)對稱公開;(b)用元件前先讀其 spec variant/size/emphasis 按原則選不吃 cva 預設(Button CTA 必 explicit primary;chrome header icon=text);(c)**先找既有機制再發明、先實測再把動作丟回 user**(2026-07-31 錨例:解 push 死結的腳本上個 session 已寫好卻從零重推;sandbox 讀取是 deny-only 卻誤判成 allow-only)
 
+- [feedback_anti_self_lock_release_transport.md](feedback_anti_self_lock_release_transport.md) — 被擋先查對照表(gh/npm/TLS/journal/分類器 → 已建成的解),禁重發明禁問 user;immutable 版號不可重用;供應鏈閘是真警報(2026-08-11)
+
 ## Feedback (DS canonical / 視覺判斷)
 - [feedback_nearest_same_purpose_canonical.md](feedback_nearest_same_purpose_canonical.md) — 寫 stories wrap primitive 前必抄 production baseline(M35→M23(d);registry R8 + grep-baseline R7 + AppShell drift 錨例;2026-06-02 fold story_baseline_reference 同事件進來)
 
