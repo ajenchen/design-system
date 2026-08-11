@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { homedir } from 'node:os'
+import { dirname, resolve, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -101,11 +102,12 @@ export function loadReleaseWorkflow(path = WORKFLOW_PATH) {
   return validateReleaseWorkflow(readJson(path))
 }
 
-function run(command, args, { allowFailure = false, input } = {}) {
+function run(command, args, { allowFailure = false, input, env } = {}) {
   const result = spawnSync(command, args, {
     cwd: ROOT,
     encoding: 'utf8',
     input,
+    env: env || process.env,
     maxBuffer: 16 * 1024 * 1024,
     shell: false,
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -124,8 +126,197 @@ function run(command, args, { allowFailure = false, input } = {}) {
   return { ok: result.status === 0, stdout: result.stdout.trim(), stderr: result.stderr.trim() }
 }
 
-function gh(args, options) {
-  return run('gh', args, options)
+// 2026-08-11 anti-self-lock fix:gh 憑證來源接上專案 canonical credential reference
+//(~/.config/qijenchen-governance/github-token,與 git push / PR / merge 同一條已驗證通道)。
+// gh 自己存的 OAuth token 過期不該擋住流程——憑證存在,只是 gh 讀錯地方。
+// 環境已有 GH_TOKEN/GITHUB_TOKEN 時尊重之;credential 檔不存在則維持原行為(fail-closed 到
+// login 邊界)。此為 credential reference 消費,非 secret 落地:token 只進子行程環境。
+const GOVERNANCE_TOKEN_PATH = join(homedir(), '.config', 'qijenchen-governance', 'github-token')
+function governanceGhEnv() {
+  if (process.env.GH_TOKEN || process.env.GITHUB_TOKEN) return process.env
+  try {
+    const token = readFileSync(GOVERNANCE_TOKEN_PATH, 'utf8').trim()
+    if (token) return { ...process.env, GH_TOKEN: token }
+  } catch { /* 無 credential 檔 → 原行為 */ }
+  return process.env
+}
+
+// 2026-08-11 anti-self-lock fix(user directive):gh 的 Go TLS 在 sandbox 內不信代理憑證,
+// 但 curl 可通(同 token 已實測 merge PR)。以下 shim 把 orchestrator 用到的八種 gh 形狀
+// 翻譯成 GitHub REST + curl;未涵蓋的形狀 fallback 原 gh(會顯性 TLS 失敗,不靜默)。
+function curlGitHub(method, path, { headers = [], body = null } = {}) {
+  let token = ''
+  try { token = readFileSync(GOVERNANCE_TOKEN_PATH, 'utf8').trim() } catch { /* fallthrough */ }
+  if (!token) token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || ''
+  const url = /^https?:/.test(path) ? path : `https://api.github.com/${path.replace(/^\//, '')}`
+  const args = ['-sS', '-X', method, '-H', `Authorization: Bearer ${token}`,
+    '-H', 'Accept: application/vnd.github+json', '-H', 'User-Agent: release-orchestrator',
+    '-w', '\n__HTTP_STATUS__:%{http_code}']
+  for (const header of headers) args.push('-H', header)
+  if (body !== null) args.push('-H', 'Content-Type: application/json', '-d', body)
+  args.push(url)
+  const result = spawnSync('curl', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 })
+  if (result.error) throw result.error
+  const raw = `${result.stdout}`
+  const marker = raw.lastIndexOf('__HTTP_STATUS__:')
+  const code = marker >= 0 ? Number(raw.slice(marker + 16).trim()) : 0
+  const text = marker >= 0 ? raw.slice(0, marker).replace(/\n$/, '') : raw
+  return { code, ok: code >= 200 && code < 300, text }
+}
+function shimDone(response, { allowFailure, label, mapText = null }) {
+  if (!response.ok) {
+    if (allowFailure) return { ok: false, stdout: '', stderr: `HTTP ${response.code}` }
+    if (response.code === 401) throw new HumanBoundaryError('login/oauth/credential-reference', `HTTP 401 for ${label}`)
+    throw new Error(`${label} failed: HTTP ${response.code}: ${response.text.slice(0, 300)}`)
+  }
+  return { ok: true, stdout: mapText === null ? response.text : mapText, stderr: '' }
+}
+function shimMapPull(p, detail = null) {
+  return {
+    number: p.number,
+    state: p.merged_at || detail?.merged ? 'MERGED' : `${p.state || ''}`.toUpperCase(),
+    mergeStateStatus: `${detail?.mergeable_state || p.mergeable_state || ''}`.toUpperCase(),
+    mergeable: (detail?.mergeable ?? p.mergeable) === true ? 'MERGEABLE'
+      : (detail?.mergeable ?? p.mergeable) === false ? 'CONFLICTING' : 'UNKNOWN',
+    headRefOid: p.head?.sha, baseRefOid: p.base?.sha, url: p.html_url,
+    title: p.title, body: p.body, headRefName: p.head?.ref, baseRefName: p.base?.ref,
+    mergeCommit: p.merge_commit_sha ? { oid: p.merge_commit_sha } : null,
+  }
+}
+function shimCheckRows(repository, headSha) {
+  const response = curlGitHub('GET', `repos/${repository}/commits/${headSha}/check-runs?per_page=100`)
+  if (!response.ok) return null
+  const runs = JSON.parse(response.text).check_runs || []
+  return runs.map(item => {
+    const done = item.status === 'completed'
+    const conclusion = `${item.conclusion || ''}`
+    const bucket = !done ? 'pending'
+      : conclusion === 'success' ? 'pass'
+      : ['neutral', 'skipped'].includes(conclusion) ? 'skipping'
+      : conclusion === 'cancelled' ? 'cancel' : 'fail'
+    return { bucket, name: item.name, state: done ? conclusion : 'pending', workflow: item.app?.name || '' }
+  })
+}
+function flagValue(args, flag) {
+  const index = args.indexOf(flag)
+  return index >= 0 ? args[index + 1] : null
+}
+function ghShim(args, { allowFailure = false } = {}) {
+  const label = `gh-shim ${args.join(' ')}`.slice(0, 120)
+  if (args[0] === 'api') {
+    let method = 'GET'; const headers = []; const fields = {}; let endpoint = null
+    for (let index = 1; index < args.length; index += 1) {
+      const arg = args[index]
+      if (arg === '--method') { method = args[++index] }
+      else if (arg === '-H') { headers.push(args[++index]) }
+      else if (arg === '-f' || arg === '-F') { const [key, ...rest] = args[++index].split('='); fields[key] = rest.join('=') }
+      else if (!endpoint) endpoint = arg
+    }
+    if (!endpoint) return null
+    const hasFields = Object.keys(fields).length > 0
+    if (hasFields && method === 'GET') method = 'POST'
+    const response = curlGitHub(method, endpoint, { headers, body: hasFields ? JSON.stringify(fields) : null })
+    return shimDone(response, { allowFailure, label })
+  }
+  if (args[0] === 'release' && args[1] === 'view') {
+    const repository = flagValue(args, '--repo')
+    const response = curlGitHub('GET', `repos/${repository}/releases/tags/${encodeURIComponent(args[2])}`)
+    if (!response.ok) return shimDone(response, { allowFailure, label })
+    const release = JSON.parse(response.text)
+    return { ok: true, stdout: JSON.stringify({
+      tagName: release.tag_name, isDraft: release.draft, isImmutable: Boolean(release.immutable),
+      isPrerelease: release.prerelease, publishedAt: release.published_at, url: release.html_url,
+    }), stderr: '' }
+  }
+  if (args[0] === 'run' && args[1] === 'list') {
+    const repository = flagValue(args, '--repo')
+    const workflowFile = flagValue(args, '--workflow')
+    const limit = flagValue(args, '--limit') || '20'
+    const response = curlGitHub('GET', `repos/${repository}/actions/workflows/${encodeURIComponent(workflowFile)}/runs?per_page=${limit}`)
+    if (!response.ok) return shimDone(response, { allowFailure, label })
+    const rows = (JSON.parse(response.text).workflow_runs || []).map(item => ({
+      databaseId: item.id, status: item.status, conclusion: item.conclusion,
+      headSha: item.head_sha, event: item.event, createdAt: item.created_at, url: item.html_url,
+    }))
+    return { ok: true, stdout: JSON.stringify(rows), stderr: '' }
+  }
+  if (args[0] === 'run' && args[1] === 'watch') {
+    const repository = flagValue(args, '--repo')
+    for (;;) {
+      const response = curlGitHub('GET', `repos/${repository}/actions/runs/${args[2]}`)
+      if (!response.ok) return shimDone(response, { allowFailure, label })
+      const runState = JSON.parse(response.text)
+      if (runState.status === 'completed') {
+        if (runState.conclusion === 'success') return { ok: true, stdout: '', stderr: '' }
+        if (allowFailure) return { ok: false, stdout: '', stderr: `conclusion ${runState.conclusion}` }
+        throw new Error(`${label}: run concluded ${runState.conclusion}`)
+      }
+      sleep(15000)
+    }
+  }
+  if (args[0] === 'pr' && (args[1] === 'view' || args[1] === 'list')) {
+    const repository = flagValue(args, '--repo')
+    const owner = repository.split('/')[0]
+    if (args[1] === 'view') {
+      const branch = args.slice(2).find(arg => !arg.startsWith('--') && arg !== repository && !arg.includes(','))
+      const listResponse = curlGitHub('GET', `repos/${repository}/pulls?state=open&head=${owner}:${encodeURIComponent(branch)}&per_page=1`)
+      if (!listResponse.ok) return shimDone(listResponse, { allowFailure, label })
+      const rows = JSON.parse(listResponse.text)
+      if (!rows.length) return { ok: false, stdout: '', stderr: 'no pull requests found' }
+      const detailResponse = curlGitHub('GET', `repos/${repository}/pulls/${rows[0].number}`)
+      const detail = detailResponse.ok ? JSON.parse(detailResponse.text) : null
+      return { ok: true, stdout: JSON.stringify(shimMapPull(rows[0], detail)), stderr: '' }
+    }
+    const head = flagValue(args, '--head')
+    const limit = flagValue(args, '--limit') || '100'
+    const query = `state=all&per_page=${limit}${head ? `&head=${owner}:${encodeURIComponent(head)}` : ''}`
+    const response = curlGitHub('GET', `repos/${repository}/pulls?${query}`)
+    if (!response.ok) return shimDone(response, { allowFailure, label })
+    return { ok: true, stdout: JSON.stringify(JSON.parse(response.text).map(row => shimMapPull(row))), stderr: '' }
+  }
+  if (args[0] === 'pr' && args[1] === 'checks') {
+    const repository = flagValue(args, '--repo')
+    const prResponse = curlGitHub('GET', `repos/${repository}/pulls/${args[2]}`)
+    if (!prResponse.ok) return shimDone(prResponse, { allowFailure, label })
+    const headSha = JSON.parse(prResponse.text).head.sha
+    if (args.includes('--watch')) {
+      for (;;) {
+        const rows = shimCheckRows(repository, headSha)
+        if (rows === null) return shimDone({ ok: false, code: 0, text: '' }, { allowFailure, label })
+        if (rows.length && rows.every(row => row.bucket !== 'pending')) {
+          const failed = rows.filter(row => row.bucket === 'fail' || row.bucket === 'cancel')
+          if (!failed.length) return { ok: true, stdout: '', stderr: '' }
+          if (allowFailure) return { ok: false, stdout: '', stderr: failed.map(row => row.name).join(',') }
+          throw new Error(`${label}: required checks failed: ${failed.map(row => row.name).join(',')}`)
+        }
+        sleep(15000)
+      }
+    }
+    const rows = shimCheckRows(repository, headSha)
+    if (rows === null) return shimDone({ ok: false, code: 0, text: '' }, { allowFailure, label })
+    return { ok: true, stdout: rows.length ? JSON.stringify(rows) : '', stderr: '' }
+  }
+  if (args[0] === 'pr' && args[1] === 'merge') {
+    const repository = flagValue(args, '--repo')
+    const matchHead = flagValue(args, '--match-head-commit')
+    const prResponse = curlGitHub('GET', `repos/${repository}/pulls/${args[2]}`)
+    if (!prResponse.ok) return shimDone(prResponse, { allowFailure, label })
+    const pull = JSON.parse(prResponse.text)
+    const merge = curlGitHub('PUT', `repos/${repository}/pulls/${args[2]}/merge`,
+      { body: JSON.stringify({ merge_method: 'squash', ...(matchHead ? { sha: matchHead } : {}) }) })
+    if (!merge.ok) return shimDone(merge, { allowFailure, label })
+    if (args.includes('--delete-branch')) {
+      curlGitHub('DELETE', `repos/${repository}/git/refs/heads/${encodeURIComponent(pull.head.ref)}`)
+    }
+    return { ok: true, stdout: '', stderr: '' }
+  }
+  return null
+}
+
+function gh(args, options = {}) {
+  const shimmed = ghShim(args, options)
+  if (shimmed) return shimmed
+  return run('gh', args, { ...options, env: governanceGhEnv() })
 }
 
 function ghJson(args, { allowFailure = false, input } = {}) {
@@ -357,10 +548,14 @@ function consumerPackageReadback(target, version) {
 }
 
 function npmPackageReadback(name, version) {
-  const result = run('npm', ['view', `${name}@${version}`, 'version', '--json'], { allowFailure: true })
-  if (!result.ok || result.stdout === '') return false
+  // 2026-08-11 anti-self-lock fix:npm CLI 的網路路徑在 sandbox 內不通,registry 的 HTTPS
+  // 由 curl 直讀可通(同 M36(b') 第三問:傳輸不通 → 換已驗證等價傳輸,不是邊界)。
+  const encoded = name.replace('/', '%2F')
+  const result = spawnSync('curl', ['-sS', `https://registry.npmjs.org/${encoded}/${encodeURIComponent(version)}`],
+    { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 })
+  if (result.error || result.status !== 0 || !result.stdout) return false
   try {
-    return JSON.parse(result.stdout) === version
+    return JSON.parse(result.stdout).version === version
   } catch {
     return false
   }
@@ -408,9 +603,15 @@ export function buildFiveStepStatus(workflow, observation) {
 }
 
 export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
-  gh(['auth', 'status'])
   const desired = readJson(GITHUB_DESIRED_PATH)
   const { repository, defaultBranch, publishWorkflow, packages, consumers } = workflow.automation
+  // 2026-08-11 anti-self-lock fix(user directive「把過度設計的機制清理乾淨」):
+  // 憑證體檢改 target-bound。原本的 `gh auth status` 戳帳號級端點,repo-scoped
+  // fine-grained token 會被誤判 invalid(同顆 token 對 repo API 完全可用,實測可
+  // merge PR),orchestrator 卻因此把「憑證存在但體檢方式錯」誤判成 HUMAN_ONLY
+  // login 邊界。改驗「能否讀取目標 repo」= 本流程真正需要的能力;真 401 仍會被
+  // run() 分類為 login 邊界 fail-closed。
+  gh(['api', `repos/${repository}`])
   const branch = run('git', ['branch', '--show-current']).stdout
   const headSha = run('git', ['rev-parse', 'HEAD^{commit}']).stdout
   const main = ghJson(['api', `repos/${repository}/commits/${defaultBranch}`])
