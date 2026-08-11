@@ -314,10 +314,11 @@ const DropdownMenuItem = React.forwardRef<
         // = 選中資訊消失)。對齊 MenuItem(menu-item.tsx selected 時關 hover bg)+ Ant Menu
         // `:not(-item-selected)` + VS Code list `:hover:not(.selected)`;Radix highlighted 同時是
         // keyboard cursor,selected 項停留時維持 selected bg(DS bg 通道單一職責)。
-        // 2026-07-05 D4 補完 Q2 附帶條件:selected×highlighted(鍵盤 cursor 停留)用加深一階
-        // bg-neutral-selected-active(neutral-3;M23 nearest canonical = Button toggle active 同
-        // family)— 深化而非洗掉 selection,cursor 可感知(WCAG 2.4.7),對齊 MUI selectedOpacity+hover idiom。
-        selected && 'bg-neutral-selected data-[highlighted]:bg-neutral-selected-active',
+        // 2026-07-05 D4 補完 Q2 附帶條件:selected×highlighted(鍵盤 cursor 停留)深化一階,cursor 可感知
+        //(WCAG 2.4.7)。2026-08-11 user 拍板糾正兩處(SSOT = item-anatomy「選中 × 互動疊加」):
+        //(1) Radix highlighted 滑鼠也觸發,深化僅限鍵盤 — 滑鼠 hover 釘住不變(not-hover 分流,
+        //     深化 (0,3,0) > 釘住 (0,2,0));(2) token 從借用的 -active(按壓專屬)歸位 -focus。
+        selected && 'bg-neutral-selected data-[highlighted]:bg-neutral-selected data-[highlighted]:not-hover:bg-neutral-selected-focus',
         className,
       )}
       {...props}
@@ -509,7 +510,7 @@ const DropdownMenuRadioItem = React.forwardRef<
       // 因內層 MenuItem 自帶 `!bg-transparent` 會蓋掉子層 bg → 選中底色從不顯示。
       // 改 parent-bg pattern(對齊 DropdownMenuItem selected):RadioItem 上底色,MenuItem 透明讓它透出。
       // 2026-07-04 Q2:checked 亦勝 highlighted(同 DropdownMenuItem selected 規則)
-      className={cn(radixItemClass, 'data-[state=checked]:bg-neutral-selected data-[state=checked]:data-[highlighted]:bg-neutral-selected-active', className)}
+      className={cn(radixItemClass, 'data-[state=checked]:bg-neutral-selected data-[state=checked]:data-[highlighted]:bg-neutral-selected data-[state=checked]:data-[highlighted]:not-hover:bg-neutral-selected-focus', className)}
       {...props}
     >
       <MenuItem
@@ -557,10 +558,10 @@ export const dropdownMenuMeta = {
 
   },
   // 'selected' = 單選/checked item 持續選中(bg-neutral-selected);'active' 保留 — highlight-on-selected
-  // 走 bg-neutral-selected-active(active 階 token,M23 nearest canonical;2026-07-07 詞彙統一補修)。
+  // 走 bg-neutral-selected-focus(2026-08-11 token 歸位:-active 回歸按壓專屬;深化僅限鍵盤反白)。
   states: ['default', 'hover', 'active', 'selected', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-neutral-selected-active', 'bg-surface-raised', 'bg-transparent'],
+    bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-neutral-selected-focus', 'bg-surface-raised', 'bg-transparent'],
     fg: ['text-fg-disabled', 'text-fg-muted'],
     ring: ['ring-ring'], // 2026-07-05:Trigger focus canonical ring(對齊 Checkbox/Tabs 等 meta 慣例)
   },

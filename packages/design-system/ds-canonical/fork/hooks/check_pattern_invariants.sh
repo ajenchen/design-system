@@ -7,6 +7,7 @@
 #   C.3 primitive wrapper padding(原 check_primitive_wrapper_padding,P0 BLOCK exit 2)
 #   C.4 row slot handcraft(原 check_row_slot_handcraft,P0 BLOCK exit 2)
 #   C.5 弱化 icon hover 階梯(2026-07-30 user 拍板,P0 BLOCK exit 2)
+#   C.6 selected token 狀態語意(2026-08-11 user 拍板,P0 BLOCK exit 2)
 #
 # Why merge:皆 element-anatomy / overlay-surface SSOT 消費紀律 invariant,共用 INPUT
 # parsing + tsx filter,散裝是 M17 + Anthropic ≤ 15 hook best-practice 偏離。
@@ -19,6 +20,7 @@
 #   C.3: `// @primitive-padding-allow: <reason>`(檔案前 5 行)
 #   C.4: `// @row-slot-handcraft-allow: <reason>`(any line)
 #   C.5: `// @hover-ramp-allow: <reason>`(any line)
+#   C.6: `// @token-state-allow: <reason>`(any line)
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 
@@ -107,6 +109,44 @@ grep -q '[^[:space:]]' <<<"$NEW_CONTENT" || exit 0
 
 WORST=0
 record_worst() { local lvl=$1; [ "$lvl" -gt "$WORST" ] && WORST=$lvl; }
+
+# ── C.6 selected token 狀態語意(P0 BLOCK exit 2;2026-08-11 user 拍板)──────────
+# 教義(semantic.css + color.spec.md「Selected state family」):
+#   -active = 按壓專屬 / -hover = 可取消切換鈕變淺專屬 / 反白·鍵盤焦點深化 = -focus。
+# 兩年偏移錨:2026-07-05 D4 借 -active 裝反白、滑鼠搭便車,選單 vs sidebar 因此不一致。
+# 本規則攔「-active/-hover 出現在 hover/焦點/反白修飾鏈」的借用寫法(零誤判:合法用途已窮舉排除)。
+if ! grep -q '@token-state-allow' <<<"$NEW_CONTENT"; then
+  SUSPECT_C6=$(printf '%s' "$NEW_CONTENT" | grep -oE "[][A-Za-z0-9_=:.-]*bg-neutral-selected-(active|hover)" | while IFS= read -r tok; do
+    case "$tok" in
+      (*active:*) ;;                                # 修飾鏈含按壓(active:)= 合法按壓用途
+      (*hover:*bg-neutral-selected-hover) ;;        # 切換鈕 pressed 上 hover 變淺 = 誕生語意,合法
+      (*)
+        case "$tok" in
+          (*hover:*|*focus-visible:*|*focus:*|*data-\[highlighted*|*data-\[selected*)
+            printf '%s\n' "$tok" ;;
+        esac ;;
+    esac
+  done | sort -u)
+  if [ -n "$SUSPECT_C6" ]; then
+    cat >&2 <<EOF
+
+┄┄┄ C.6 check_pattern_invariants — selected token 狀態語意 BLOCKER ┄┄┄
+
+[P0] ${FILE_PATH}
+偵測按壓/切換鈕專屬 token 被借用到反白·焦點·hover 修飾鏈:
+$SUSPECT_C6
+
+教義(item-anatomy.spec.md「選中 × 互動疊加」+ color.spec.md「Selected state family」):
+  滑鼠 hover 選中列 → 釘住 bg-neutral-selected 不變
+  鍵盤反白/焦點停在選中列 → bg-neutral-selected-focus(深一階)
+  bg-neutral-selected-active → 只准出現在含 active:(按壓)的修飾鏈
+  bg-neutral-selected-hover  → 只准切換鈕 pressed 上 hover(變淺)
+例外:行尾 \\`// @token-state-allow: <reason>\\`
+
+EOF
+    record_worst 2
+  fi
+fi
 
 # ── C.1 overlay panel scroll chain(P1 WARN context)──────────────────────────
 if ! grep -q '@scroll-chain-allow' <<<"$NEW_CONTENT" \

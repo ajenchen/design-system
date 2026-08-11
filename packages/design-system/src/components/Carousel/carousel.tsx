@@ -411,7 +411,9 @@ const CarouselDots = React.forwardRef<
             // 跟其他「於飽和色底上的淺色前景」一致
             'bg-on-emphasis/60 hover:bg-on-emphasis/80',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-            i === selectedIndex ? 'w-6 bg-on-emphasis' : 'w-1.5',
+            // 2026-08-11 修偏移(item-anatomy「選中 × 互動疊加」同原則):現張 dot 再點 = no-op,
+            // 但 base hover /80(0,2,0)蓋過 plain bg(0,1,0)→ hover 反而變淡 = 意外。釘住不變。
+            i === selectedIndex ? 'w-6 bg-on-emphasis hover:bg-on-emphasis' : 'w-1.5',
           )}
         />
       ))}

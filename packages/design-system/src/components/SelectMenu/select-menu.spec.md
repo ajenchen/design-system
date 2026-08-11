@@ -170,10 +170,10 @@ Popover（浮動容器，handle 展開 / 定位）
 SelectMenu 是**多區塊 composite primitive**,色彩全數消費 DS semantic token、不新增 token;但 2026-07-05 D4 後互動色的 **owner 分層**如下(修正舊述「視覺完全繼承內層 primitive」):
 
 - **surface / border / elevation**:`PopoverContent` 自設 `bg-surface-raised` + `border-border` + `--elevation-200`(`select-menu.tsx:308-320`)。
-- **hover / selected 互動 bg**:owner 是**外層 cmdk `CommandItem`** —— 鍵盤 cursor base `bg-neutral-hover`(command.tsx `data-[selected=true]`)+ 單選 persistent selected `bg-neutral-selected` + selected × cursor 加深一階 `bg-neutral-selected-active`(`select-menu.tsx:439-442`,鏡射 DropdownMenu Q2/D4 canonical)。
+- **hover / selected 互動 bg**:owner 是**外層 cmdk `CommandItem`** —— 鍵盤 cursor base `bg-neutral-hover`(command.tsx `data-[selected=true]`)+ 單選 persistent selected `bg-neutral-selected`;**選中 × 疊加走 `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11)**:滑鼠 hover 釘住不變、鍵盤反白(非 :hover)深一階 `bg-neutral-selected-focus`(鏡射 DropdownMenu 同格)。
 - **內層 `MenuItem`**:強制 `!bg-transparent` 純視覺排版(`select-menu.tsx:460` 選項列 / `:489` create 列),不 own 互動 bg。
 
-**無 ColorMatrix 的理由不變**:上述全是既有 token family(`neutral-hover / neutral-selected / neutral-selected-active`,與 DropdownMenu / MenuItem 同組),SelectMenu 不擁有獨立色彩決策;加 ColorMatrix 只會重複 MenuItem / DropdownMenu / Popover 的矩陣。
+**無 ColorMatrix 的理由不變**:上述全是既有 token family(`neutral-hover / neutral-selected / neutral-selected-focus`,與 DropdownMenu / MenuItem 同組),SelectMenu 不擁有獨立色彩決策;加 ColorMatrix 只會重複 MenuItem / DropdownMenu / Popover 的矩陣。
 
 對應 anatomy story:保留 `Overview` / `Inspector` / `SizeMatrix` / `StateBehavior`,額外追加元件特有的 `ModeMatrix`(single / multi / searchable / creatable / grouped 等功能組合矩陣,這是 SelectMenu 真正的決策面向——取代 ColorMatrix)。
 

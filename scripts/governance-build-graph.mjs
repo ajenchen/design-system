@@ -760,7 +760,25 @@ export function governanceBuildGraphAuthorityFingerprint(graph, { repoRoot = ROO
     if (result.error || result.signal !== null || result.status !== 0) {
       throw new Error(`governance build graph cannot bind Git ${label} authority`)
     }
-    records.push(`git-${label}:${createHash('sha256').update(result.stdout).digest('hex')}`)
+    let payload = result.stdout
+    if (label === 'index') {
+      // 2026-08-11 anti-self-lock fix(user directive「把過度設計的機制清理乾淨」):
+      // index 指紋必須排除本 graph 自己的 output targets。sandbox 禁寫的 output 路徑
+      // (如 hooks/scripts)走 forward path 的 EPERM → index-publish 後備時,交易會在
+      // 發布途中合法改 index;若把 outputs 算進「canonical source」指紋,交易就把
+      // 自己的後備寫入誤判成「canonical source changed during publication」而必敗。
+      // outputs 是生成物不是 canonical 來源,本就不該入 authority fingerprint。
+      const outputs = graphOutputTargets(graph)
+      const kept = payload.toString('utf8').split('\0').filter((entry) => {
+        if (!entry) return false
+        const tab = entry.indexOf('\t')
+        if (tab < 0) return true
+        const path = entry.slice(tab + 1)
+        return !outputs.some((target) => path === target || path.startsWith(`${target}/`))
+      })
+      payload = Buffer.from(`${kept.join('\0')}\0`)
+    }
+    records.push(`git-${label}:${createHash('sha256').update(payload).digest('hex')}`)
   }
   return createHash('sha256').update(`${records.join('\n')}\n`).digest('hex')
 }

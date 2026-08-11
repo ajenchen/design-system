@@ -743,7 +743,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_pattern_invariants.sh",
-      "sha256": "6670a8f2021b34c7c6dd5abd465867845938dfe26e53abbf595f6318637dae35",
+      "sha256": "781f7558b4b0fbe97d5ec2dc6aa614515c0450be0357639ccb86d75ec68610e3",
       "source": "check_pattern_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -823,7 +823,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/approval-evidence.mjs",
-      "sha256": "74c78e1faa79484ee5e47e6e7cc779b877c59402c0a7877ba50f5bc8a9f73beb",
+      "sha256": "e4327059ef850f2d562a8629180b0bb760ff20dbd0a42920177456866575ea1c",
       "source": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
       "classification": null,
       "destination": null

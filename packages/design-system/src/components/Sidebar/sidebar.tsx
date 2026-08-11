@@ -943,6 +943,10 @@ const sidebarMenuButtonVariants = cva(
     "disabled:pointer-events-none disabled:text-fg-disabled",
     "aria-disabled:pointer-events-none aria-disabled:text-fg-disabled",
     "data-[active=true]:bg-neutral-selected data-[active=true]:text-foreground",
+    // 2026-08-11 user 拍板(SSOT = item-anatomy「選中 × 互動疊加」):滑鼠 hover 當前項釘住不變
+    //(先前無規則,靠編譯順序運氣;現寫成顯式,釘住 (0,3,0) > hover (0,2,0));
+    // 鍵盤焦點停在當前項 → -focus 深一階(游標可見;非當前項維持上方 focus-visible 的 hover 色)。
+    "data-[active=true]:hover:bg-neutral-selected data-[active=true]:focus-visible:bg-neutral-selected-focus",
     "group-has-[[data-sidebar=menu-action]]/menu-item:pr-8",
     // 2026-05-21 v5 restore label 硬隱藏(user 抓「label 沒消失」):
     // C* outer overflow-x:hidden 理論 clip,但 label.x=40 在 sidebar-width-icon=48 內 → 首字

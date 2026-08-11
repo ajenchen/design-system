@@ -167,7 +167,11 @@ Dialog 是容器，無整體 disabled / loading / empty 狀態——這些屬於
 
 ## 禁止事項
 
-- ❌ **不在 Dialog 內 nested Dialog**：modal 疊 modal 會形成焦點陷阱地獄（使用者無法預測 Esc 關哪一層），複雜多步驟流程改用單一 Dialog + 內部步驟切換
+- ❌ **不用 nested Dialog 承載多步驟流程**：一層一步的精靈式堆疊會讓使用者失去所在位置感，複雜多步驟流程改用單一 Dialog + 內部步驟切換。
+  **⚠️ 本條 2026-08-09 收窄**（原文是「不在 Dialog 內 nested Dialog」，理由寫「使用者無法預測 Esc 關哪一層」）。兩個問題：
+  （a）**該理由在本專案的技術棧不成立**——`@radix-ui/react-focus-scope` 的 `createFocusScopesStack()` 在新 scope 進入時 `pause()` 前一層、移除時 `resume()`；`@radix-ui/react-dismissable-layer` 以 layers 陣列索引判定，Esc 與 outside-click 只作用於最上層。堆疊順序是確定的，不是不可預測。
+  （b）**原文與本檔「何時用」段自相矛盾**——`:29` 明列「破壞性動作確認：刪除、**離開不儲存**」是 Dialog 用途，而「離開不儲存」的確認必然出現在正在編輯的 Dialog 之上。原文的全稱禁令讓這個既有用途無法表達。
+  **收窄後允許**：確認 / 警告 / 破壞性動作二次確認可疊在既有 Dialog 之上（Esc 只關最上層）。**仍禁止**：把流程步驟拆成一層層 Dialog。
 - ❌ **不用 Dialog 顯示非阻斷訊息**：成功 / 失敗的短暫回饋用 Toast；持續性系統狀態用 Alert。Dialog 的阻斷成本過高
 - ❌ **不把長 form wizard 塞 Dialog**：超過 3 步驟或表單高度接近全螢幕的流程改用獨立頁面或 Sheet，Dialog 不適合長時間停留
 - ❌ **不在 Dialog footer 把 primary action 放左側**：CTA 靠右（`justify-end`）是跨平台使用者期待（macOS / Windows / Web 主流皆如此），反向放置會降低可用性

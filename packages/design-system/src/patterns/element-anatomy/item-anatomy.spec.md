@@ -168,6 +168,15 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 - **預設文字色**: `text-fg-secondary`(neutral-8);icon 透過 currentColor 繼承
 - **Hover**: `bg-neutral-hover` + `text-foreground`
 - **Active / selected**: `bg-neutral-selected` + `text-foreground`；字重維持不變，避免 label metrics reflow
+- **選中 × 互動疊加（2026-08-11 user 拍板；本格是全家族唯一 owner，消費者禁自行發明）**：
+
+  | 疊加 | 底色 | 理由 |
+  |---|---|---|
+  | 選中列 × 滑鼠 hover | `bg-neutral-selected`（**釘住不變**） | hover 回饋 = 誠實回答「再點會發生什麼」；選中列再點無效果，且滑鼠使用者自有游標不需底色指位。對齊 Polaris Navigation / Carbon side-nav（兩家皆明文釘住） |
+  | 選中列 × 鍵盤焦點／反白 | `bg-neutral-selected-focus`（深一階） | 鍵盤使用者螢幕上沒有游標，深一階就是游標（WCAG 2.4.7）。虛擬焦點選單（cmdk／Radix 反白）以 `not-hover:` 分流滑鼠；真焦點元件用 `focus-visible:` |
+  | 選中列 × 按壓 | 列元件不設按壓底色；`--neutral-selected-active` 為**按壓專屬**（唯一消費者 Button toggle） | active = 瞬時按壓（2026-04-10 誕生教義）。2026-07-05 D4 借 `-active` 裝反白 + 訊號漏到滑鼠，2026-08-11 糾正歸位 |
+
+  消費者：SelectMenu／DropdownMenu（含 RadioItem）／SidebarMenuButton／TreeItem(single)／TimePicker 欄項／MenuItem／FileViewer 縮放選單。歷史偏移錨：TreeItem hover 反被洗淺、sidebar 靠編譯順序運氣不變、選單滑鼠 hover 搭鍵盤規則便車深化——同題四種即興，根因即本格缺席。
 - **無 rounded**: full-width fill
 - **無 gap 在 items 之間**: items 緊貼(SidebarMenu / TreeView / DropdownMenuGroup 容器不設 flex gap)
 - **Size variants**: sm / md / lg 跟 `--field-height-*` family 一致

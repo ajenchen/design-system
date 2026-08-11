@@ -181,7 +181,8 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
                 'flex items-center justify-center',
                 'cursor-pointer transition-colors',
                 'hover:bg-neutral-hover',
-                isSelected && 'bg-neutral-selected text-foreground hover:bg-neutral-selected',
+                // 2026-08-11(SSOT = item-anatomy「選中 × 互動疊加」):滑鼠釘住本就正確;補鍵盤焦點深一階。
+                isSelected && 'bg-neutral-selected text-foreground hover:bg-neutral-selected focus-visible:bg-neutral-selected-focus',
                 isDisabled && 'text-fg-disabled cursor-not-allowed hover:bg-transparent',
               )}
             >

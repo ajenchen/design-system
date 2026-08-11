@@ -1085,6 +1085,20 @@ const BLANKET_DELEGATION_PATTERNS = [
   /授權\s*給\s*你/u,
 ]
 
+// 2026-08-11 recognizer gap fix: a LATEST user message that OPENS with a bare approval token
+// (「可以，做到完整完美並自行驗證…」) is the same delegation speech-act as「說可以就是可以」——
+// the owner is answering the assistant's immediately-pending exact ask. Canonical authority:
+// AGENTS.md Decision Authority「最新一則 user 訊息的明確 blanket 授權即核准當下 pending 的
+// exact 提案」. Recognized ONLY when the message opens with the approval token AND contains no
+// denial, no question/discussion marker, and no tentative/conditional hedge (fail-closed on all).
+const LEADING_BARE_APPROVAL_PATTERN = /^(?:可以|好的|沒問題|就這樣做|照做)(?:$|[\s,，。!！])/u
+
+function isLeadingBareApprovalDelegation(latestNormalized) {
+  return LEADING_BARE_APPROVAL_PATTERN.test(latestNormalized)
+    && !matchesAny(TARGET_DISCUSSION_PATTERNS, latestNormalized)
+    && !matchesAny(TENTATIVE_OR_CONDITIONAL_UI_PATTERNS, latestNormalized)
+}
+
 export function authorizationEvidence(transcriptPath, {
   target = '',
   hookInput = null,
@@ -1092,7 +1106,8 @@ export function authorizationEvidence(transcriptPath, {
   const state = transcriptState(transcriptPath)
   const operationText = toolOperations(state.turnRecords, hookInput, target)
   const latestNormalized = normalizeText(state.latestUserMessage)
-  if (matchesAny(BLANKET_DELEGATION_PATTERNS, latestNormalized)
+  if ((matchesAny(BLANKET_DELEGATION_PATTERNS, latestNormalized)
+    || isLeadingBareApprovalDelegation(latestNormalized))
     && !matchesAny(TARGET_DENIAL_PATTERNS, withoutNoWaitClauses(latestNormalized))) {
     return {
       schemaVersion: 1,
