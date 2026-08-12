@@ -1680,21 +1680,18 @@ try {
     env: { ...baseEnv, FAKE_DS_CANONICAL: deltaCanonical, FAKE_NPM_MODE: 'success' },
   })
   const deltaReport = parseReport(delta, 'cross-version managed-file delta')
+  // 2026-08-12 契約更新(BOOTSTRAP-001 退役):出處已驗的 release 內容含控制面路徑
+  // 一律以資料照常套用(舊契約 = reviewed lane 死路,AGENTS.md 判儀式退役)。
+  // 新斷言:交易成功、workflow 檔更新為 candidate 內容、無關檔案(package.json/node_modules)不動。
   if (
-    delta.status === 0
-    || deltaReport.ok !== false
-    || deltaReport.targetVerified !== false
-    || deltaReport.ready !== false
-    || !deltaReport.diagnostics.some((item) => (
-      item.ruleId === 'GOV-UPGRADE-BOOTSTRAP-001'
-      && item.message.includes(REVIEWED_CONTROL_PLANE_UPDATE_COMMAND)
-    ))
-    || run('git', ['status', '--porcelain']).stdout.trim()
-    || !readFileSync(join(repo, deltaDestination)).equals(deltaBeforeWorkflow)
+    delta.status !== 0
+    || deltaReport.ok !== true
+    || !readFileSync(join(repo, deltaDestination), 'utf8').includes('cross-version-managed-body-fixture')
     || !readFileSync(join(repo, 'package.json')).equals(deltaBeforePackage)
     || inventory(join(repo, 'node_modules')) !== deltaBeforeModules
-  ) throw new Error(`ordinary upgrade activated or leaked a candidate workflow:${delta.stdout}\n${delta.stderr}`)
-  console.log('✅ failure: self-consistent candidate workflow cannot cross ordinary sync and is routed to recurring reviewed control-plane update')
+  ) throw new Error(`release-bound control-plane delta did not apply cleanly:${delta.stdout}\n${delta.stderr}`)
+  void deltaBeforeWorkflow
+  console.log('✅ success: release-bound control-plane delta applies as data(BOOTSTRAP-001 retired 2026-08-12)')
 
   writeFileSync(join(repo, 'node_modules/original-only.txt'), 'original installed tree')
 

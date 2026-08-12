@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "role": "template-consumer",
   "release": {
-    "designSystem": "0.1.0-beta.121",
-    "storybookConfig": "0.1.0-beta.121"
+    "designSystem": "0.1.0-beta.122",
+    "storybookConfig": "0.1.0-beta.122"
   },
   "upgradeTrust": {
     "schemaVersion": 1,
@@ -42,10 +42,10 @@
     "implementationSha256": "98b74118fb5b410b77ad2994aa9105fa7609c7353822f8c5213cce54d94f0af4"
   },
   "payload": {
-    "forkCorpusLockSha256": "13cb7d57f5b177f1846f949e65f8251a753aaa4d2c51aca37b370943f7fe0238",
+    "forkCorpusLockSha256": "7664e418874b1d725a7ee685f48da7ea2fc8bd175b0f43cfe6bce6390d442806",
     "discoveryPolicySha256": "fba289aeeb5a3f11139b9589f7ab08b5e8c8799c7bdf8f0ea57ebfeb8e7c9da6",
     "providerMaterializersSha256": "732e85b01a12e7dd19469e26e4427f0e0cfe5117a78fc9f69c2f0f89702f463a",
-    "providerLifecycleSha256": "68e102f5937fc6a0dbc573b18685ad0e90043f19680adbfbcadd62fb4bcb1c77",
+    "providerLifecycleSha256": "603e3edbc46805d5fda4b2cdc895073be365d6a9736e1101a2488ad6f36815e6",
     "providerInventorySha256": "00adf1c4f6b3367055a9cc3fdfe658660771b4c9931f696e12761a95076ad92c",
     "executionRuntimeSha256": "d9377cc45308731f287d7b1711b7c38fc4e02ff8f84729bcbbf01bb52d136904",
     "commonInstructionSha256": "a72c51a412d6cdb3961d691744013c8362e826626a330cecf4a296a6f4d93a5c",
@@ -124,10 +124,10 @@
       "scripts/setup-governance.mjs": "2d5bf5ef149595854681c5744a431c2c231ead7d8699571a453783b39e556518",
       "scripts/setup-provider-cli-toolchain.mjs": "b34e11d02a7aa71d001ef8f1a42af4cf97d1b8b82360f5779cb927370f5ee15a",
       "scripts/setup-workspace.mjs": "95dc0fef1f7570efe277a66f7edf4640055ad6abbae0245615eceb9b041560e9",
-      "scripts/sync-all.mjs": "938c706cad79a4bd538359c9b74cb9253a4c74b5f1342cbfc1625600425d8bfd",
+      "scripts/sync-all.mjs": "613e10b71405805af900ad328d6baf0ae0ce3a02e58085aab6984163b7f8ad1a",
       "scripts/sync-exact-workspace-dependencies.mjs": "29ce6aaab16fd7a939eff6e556e8548291fad28df88d578627153c9508bf6e31",
       "scripts/verify-consumer-css-entry.mjs": "a16545ea8d4f5224d8133f0bb0b68d5489d8e106fe7594488a78e0e5718b99cc",
-      "scripts/verify-upgrade-evidence.mjs": "2e4aa0050c39708929a96753dc639149b058b5b76fb281a1a6fe3c1ab09ebbae",
+      "scripts/verify-upgrade-evidence.mjs": "db1eddbcb8b155891642fa695594120113af35140818d88c21cf88756f88ee19",
       "scripts/verify-upgrade-provenance.mjs": "8a643a60eaf64bf131a2a4da197d5670a52e4705d11402b53fb32ae93302f6ef",
       "scripts/workflow-static-validation.mjs": "8e12bf2d73fc5e1200ddc6cc8437b27433fcd71f7d85d79b56756dcaac667305"
     }
