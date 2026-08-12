@@ -85,12 +85,12 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:e4327059ef850f2d562a8629180b0bb760ff20dbd0a42920177456866575ea1c",
+      "hash": "sha256:17f565e57f6c20de160bc73f758fa707ceeeeb6b7b2f151cde2155d335144e33",
       "id": "canonical-hook-approval-evidence-helper",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
-      "size": 51495,
+      "size": 52010,
       "type": "file"
     },
     {
@@ -133,7 +133,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 228,
-      "hash": "sha256:ba71b82a588c84008485a8b3818842b0b57335900684645eead81a135516e9d8",
+      "hash": "sha256:ee11d76931e100fa8b97cd17b07df242be199a266af05d2d3997cd825d520be2",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1834,7 +1834,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4b7fbe18ffa59522f496007c71f0c567ba1e02d8fb5d8a247150571903eb3240",
+      "hash": "sha256:919788e11c92122917aa5efc7eaf5aa0489fa8782f753eaeadec4e093af92dc8",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1897,7 +1897,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:d3ca2356d54849a14923f9cc69a9568fa3689ea4a91f9ddb003f56c0263dfe92",
+      "hash": "sha256:1b028c7087186937096eb8f50ce57dfdade97c80fc36287df885eadf1e03e42a",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2577,7 +2577,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:2ffe96b224bd532dc769db8f1e2870bd92b7dee9af641e5515fad6ee86b66dce",
+      "hash": "sha256:6415fc4f16af850accd7fb6f1de3b5ef34f6505fd6b999efb4597948caf98ebf",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2698,8 +2698,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 22,
-      "hash": "sha256:f63efa6119fa15477f978c2adac168eee23a16ef16d90176dc6cc6eb38c57c98",
+      "files": 23,
+      "hash": "sha256:1694c88373cb4d247a3cb73af21e9b64c9359c7b24d3e53d01cd5395f22594fd",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3075,7 +3075,7 @@
         "scripts/generated/"
       ],
       "files": 375,
-      "hash": "sha256:1e833ed65a25dccf5fc4f10ae28dcc262ea75e74c3a3f378a5e27f9741808e4c",
+      "hash": "sha256:ff6545265c81979b0c522e11122b7e8c20ab0c55eb8824ececc57a9511dbea43",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

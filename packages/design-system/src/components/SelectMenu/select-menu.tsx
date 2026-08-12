@@ -99,6 +99,8 @@ export interface SelectMenuProps {
   searchAriaLabel?: string
   /** 空選項提示 */
   emptyText?: string
+  /** 載入中狀態的無障礙文案(i18n:consumer 換語言時覆寫) */
+  loadingText?: string
   /** 多選 footer 全選列文字(2026-07-05 D4:原「全部」字面 hardcode,無法覆寫也無法 i18n) */
   selectAllLabel?: string
   /** Loading 狀態(2026-05-15 audit B fix;2026-07-04 Q3 拍板措辭修訂)
@@ -187,6 +189,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   searchPlaceholder = '搜尋…', // i18n-allow: DS default; consumer override via searchPlaceholder prop
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default; consumer override via searchAriaLabel prop
   emptyText = '沒有符合的選項', // i18n-allow: DS default; consumer override via emptyText prop
+  loadingText = '載入選項中', // i18n-allow: DS default; consumer override via loadingText prop
   selectAllLabel = '全部', // i18n-allow: DS default; consumer override via selectAllLabel prop
   loading = false,
   size = 'md',
@@ -441,7 +444,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
             >
               {loading
                 ? (
-                    <div role="status" aria-label="載入選項中" className="flex items-center justify-center py-6">
+                    <div role="status" aria-label={loadingText} className="flex items-center justify-center py-6">
                       <CircularProgress size={48} />
                     </div>
                   )

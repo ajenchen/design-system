@@ -72,7 +72,15 @@ function cacheObservation(homeRoot, cacheRoot, records) {
     const path = join(cacheRoot, name)
     assertNoSymlinkPath(homeRoot, path, `Claude memory cache entry ${name}`, { allowMissing: false })
     const info = lstatSync(path)
+    // 2026-08-12 anti-self-lock fix(user directive):cache 允許共存兩類 cache-local 內容,
+    // 本工具「只治理 *.md 鏡像」——
+    //  1. 目錄(如歷次 prune 的 retired/ 歸檔):跳過,不算 drift 也不刪(原本直接 throw =
+    //     整條同步死路)。symlink 仍 fail-closed。
+    //  2. 非 .md 檔(如 codex-brief-queue.jsonl 運行時狀態):跳過不刪(原本會被當 extra 刪除
+    //     = 破壞 harness 運行時資料)。
+    if (info.isDirectory() && !info.isSymbolicLink()) { console.log(`[sync-memory] cache-local directory left untouched: ${name}/`); continue }
     if (!info.isFile() || info.isSymbolicLink()) throw new Error(`memory cache may contain only regular files:${name}`)
+    if (!name.endsWith('.md')) { console.log(`[sync-memory] cache-local non-md file left untouched: ${name}`); continue }
     const record = expected.get(name)
     if (!record) { extras.push({ name, path }); drift.push({ name, kind: 'extra' }); continue }
     const sameContent = digest(readFileSync(path)) === digest(record.content)
