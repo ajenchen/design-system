@@ -1,11 +1,19 @@
 ---
 name: project-wm-ds-alignment-campaign
-description: WM↔DS 對齊戰役(2026-07-08)— 完整收官(2026-07-15):beta.84/85 已發版、WM main 已 push(4e83402,13/13 真綠)、零殘項
+description: WM 身分 = ds-product-template 生出的 consumer 試驗品(模擬 fork user、迭代 DS 全流程品質,每 session 必知);+ WM↔DS 對齊戰役完整收官(2026-07-15,beta.84/85、4e83402、零殘項)
 metadata:
   node_type: memory
   type: project
   originSessionId: 3fb5856b-7b97-40a4-afa1-5db311326bea
 ---
+
+## WM 是什麼(身分 SSOT,2026-07-28 user 指示每 session 必知;2026-08-12 自 home-only 版促升入 repo)
+
+**WM = work-management repo,由 `ds-product-template` template 出來的 consumer 實例,專門用來迭代 DS 的試驗品**:模擬「其他使用者 fork template 建產品」,確保 template→consumer 整條流程(exact-version 依賴、治理載入、升級、品質閘)都能產出完美品質的產品。DS 的 fleet/rollout 語意裡 WM 就是第一個真實 consumer。
+
+- 位置:`../work-management`(與 my-project 同層);remote `github.com/ajenchen/work-management`
+- 身分證據:package.json `name: "ds-product-template"`(template 血統);git 史 = template scaffold → 對齊戰役 → 歷次 automation sync;`.claude/skills/` 有在地 skill(DS 升級 smoke 時**必保留其在地修改**)
+- 操作能力(2026-08-12 實證更正,取代舊「可讀不可寫」):本 harness 已把 work-management 列 additional working directory **可直接讀寫**;fine-grained 憑證含 work-management(branch/push/PR/merge 當日全實證,#58-#61)。Checks API 對 WM 無讀取權 → 用 Actions runs/jobs 等強度替代(release orchestrator 已內建)。
 
 WM(work-management)ds問題.pdf 46 findings 根因戰役。交接 SSOT = `work-management/docs/2026-07-08-ds-alignment-handoff.md`;對帳 `node docs/ds-alignment/verify.mjs`(WM repo 腳本,本 DS repo 不存在)。**2026-07-14 收官**:beta.84 已發版 + WM lockfile 真綠(見文末「2026-07-14 發版收官」段);2026-07-10 re-audit 3 OPEN 已全收(見 `## 2026-07-10 收官 session`);**WM main 已 push(4e83402,2026-07-15,零殘項)**。
 

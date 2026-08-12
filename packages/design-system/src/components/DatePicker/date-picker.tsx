@@ -5,6 +5,7 @@ import { X, Calendar as CalendarIcon, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
+import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from '@/design-system/components/Popover/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
@@ -690,9 +691,9 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
               壓縮時 dialog 縮 + 內 calendar/footer 排序;原無 chain 致 calendar 末行被
               overflow-hidden 切掉、footer 推出 popover(user 報「位置改變就壞掉」根因)。 */}
           <div className="flex flex-col flex-1 min-h-0">
-            {/* Calendar 區包 overflow-y-auto:viewport 壓縮時 calendar 內滾(Material / Carbon
+            {/* Calendar 區包 ScrollArea(2026-08-12 自 raw overflow-y-auto 遷移,跨 OS 一致 overlay 捲軸;M25 chain 由 flex-1 min-h-0 照傳):viewport 壓縮時 calendar 內滾(Material / Carbon
                 date picker idiom)。footer 永遠 in-view(SurfaceFooter shrink-0)。 */}
-            <div className="flex-1 min-h-0 overflow-y-auto">
+            <ScrollArea className="flex-1 min-h-0">
               <CalendarTimeContainer
                 showTime={showTime}
                 showSeconds={showSeconds}
@@ -726,7 +727,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                   />
                 }
               />
-            </div>
+            </ScrollArea>
             {(showTime || needConfirm) && (
               // Footer:消費 SurfaceFooter SSOT(border-t + canonical px-loose py-tight padding,
               // 不再 hand-coded p-2 / Separator / ml-auto wrapper 三層垃圾)。
@@ -844,7 +845,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
   const iconSize = ICON_SIZE[size as 'sm' | 'md' | 'lg']
     const needConfirm = needConfirmProp ?? showTime
     const resolvedPlaceholder: [string, string] = placeholder ?? (
-      showTime ? ['Start date time', 'End date time'] : ['Start date', 'End date']
+      showTime ? ['Start date time', 'End date time'] : ['Start date', 'End date'] // i18n-allow: DS default; consumer override via placeholder prop
     )
 
     const [open, setOpen] = React.useState(false)
@@ -1134,7 +1135,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
               role="dialog")— 原內層第二個 role="dialog" 移除,避免 nested dialog 且外層 dialog 無名。
               2026-05-06 v9.1 M25 chain — 同 single DatePicker 修法,viewport 壓縮 calendar 內滾 + footer 永遠 in-view */}
           <div className="flex flex-col flex-1 min-h-0">
-            <div className="flex-1 min-h-0 overflow-y-auto">
+            <ScrollArea className="flex-1 min-h-0">
             <CalendarTimeContainer
               showTime={showTime}
               showSeconds={showSeconds}
@@ -1229,7 +1230,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                 />
               }
             />
-            </div>
+            </ScrollArea>
             {(showTime || needConfirm) && (
             // Footer 消費 SurfaceFooter SSOT(border-t + canonical px-loose py-tight)。
             // showTime Range 無「此刻」(對齊 Ant `showNow={multiple ? false : showNow}`)→ 只有 確定 走 justify-end。

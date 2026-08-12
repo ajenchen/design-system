@@ -1,33 +1,43 @@
 ---
-name: Codex 全存取沙箱常設授權(研究/審查 ad-hoc lane)
-description: User 2026-08-08 拍板:研究/審查類 ad-hoc codex 執行常設授權全存取沙箱旗標,不再逐次請示;brief 仍限 read-only 產出,受治理 broker 通道的既有禁令不受影響。
+name: Codex collab canonical(常設授權 + transport + dual-track 紀律,2026-08-12 三檔合併)
+description: 研究/審查 ad-hoc codex 常設授權全存取沙箱;地端 transport 4-test + 守衛入口 + 最強模型禁降檔 + 小 focused brief;M31 dual-track 三層禁 pass-through + brief 三 invariant + Phase-A-first + auto-mode 禁問
 type: feedback
 originSessionId: b1e3fe19-f71f-4828-b483-cf3fe2323f47
 ---
-# Codex 全存取沙箱常設授權(研究/審查 ad-hoc lane)
+# Codex collab canonical(2026-08-12 合併 dual_track_synthesizer + exec_transport,invariant 零損失)
 
-**Rule**:研究、審查、比稿類任務要跑 ad-hoc codex CLI 時,常設授權使用全存取沙箱旗標(`--sandbox danger-full-access` 或 `--dangerously-bypass-approvals-and-sandbox`),AI 不再逐次向 user 請示。
+**程序 SSOT** = `codex-collab/SKILL.md` + meta-patterns M31 + AGENTS.md「自主執行 canonical」;本檔 = user 授權事實(verbatim)+ sharp invariants。
 
-**User verbatim(2026-08-08)**:「我要授權codex永遠都可以做這種事啊,確保ssot不要再作繭自縛了,我授權該做的就自動做一做」。
+## A. 常設授權(user 2026-08-08 verbatim)
 
-**邊界(不變)**:
-- Brief 限 read-only 產出(findings / report);禁 codex 寫/刪/改 source code。
-- 本授權只覆蓋 ad-hoc 研究/審查 lane。受治理的 provider review broker(`infra/governance/providers/model-invocation-profiles.json` 的 `forbiddenArguments`)是另一條 lane,其禁令不因本授權放寬。
+「我要授權codex永遠都可以做這種事啊,確保ssot不要再作繭自縛了,我授權該做的就自動做一做」
+→ 研究/審查/比稿 ad-hoc codex 一律可用 `--sandbox danger-full-access` / `--dangerously-bypass-approvals-and-sandbox`,**不逐次請示**。
+**邊界不變**:brief 限 read-only 產出,禁 codex 寫/刪/改 source;受治理 provider broker lane 的 `forbiddenArguments` 禁令不因此放寬。
+**禁自鎖**(user:「你他媽不要又再作繭自縛為自己加鎖了」):授權內動作被自家 policy/schema/sandbox/hook 擋 → 解自己的鎖或用不放寬安全邊界的既有機制;禁丟回 user/要 user 付費/宣稱做不到。真人邊界僅 login/MFA/OAuth、缺 credential reference、plan 外付費、法律/帳號、產品-UI-UX 真取捨。同族 = M36(b)(b′)。
 
-**Why**:bypass 類旗標過去每案重新請示(首次授權 2026-05-27,原檔已退役,歷史見 `governance/archive/memory-retired/`),重問 = 作繭自縛。授權是 user 決策事實,feedback memory 是它的家;具體 transport / 指令仍屬 adapter 層,本檔不定 transport authority(2026-07-23 退役決策不變)。
+## B. Transport(地端)
 
-## 禁自鎖(user 2026-08-08 verbatim:「你他媽不要又再作繭自縛為自己加鎖了」)
+1. **4-test discovery 順序固定**:`node_modules/.bin/codex` → `which codex` → `~/.codex/auth.json` → `npx --yes @openai/codex --version`(2026-08-08 實測 0.147.0;npm cache EPERM 設 `NPM_CONFIG_CACHE`)。`which` 失敗 ≠ unreachable;**絕禁 Explore agent 當 codex 替身**(同模型,不滿 dual-track)。錨 2026-05-17 user:「你他媽你難道不知道這裡是地端?」
+2. **Claude 沙箱內 codex 起不來**(unix socket 被 `allowUnixSockets` 空清單擋)→ 解法 = queue + worker(user 跑一次 `codex-worker.sh`,AI 丟 brief 到 `/tmp/claude/codex-queue/`)或 user `!` 前綴代跑,輸出導 /tmp 檔案接手讀。
+3. **最強模型與算力,禁降檔**(user 2026-07-10 verbatim「應強制使用 codex 最新最強的模型與算力」):`~/.codex/config.toml` 為 SSOT(無 model pin + probe 出的最高 effort;`scripts/check-codex-freshness.mjs --probe` 機械維護),exec **不帶** `-m`/`-c model_reasoning_effort`。
+4. **守衛入口(硬)**:audit/dual-track 的 codex exec 必經 `node scripts/codex-run-guarded.mjs`;非 SUCCESS(QUOTA/AUTH/EMPTY/ERROR/TRANSPORT_MISSING)→ STOP + PushNotification 通知 user,**禁把空輸出當 0-findings**。錨 2026-07-10 user:「codex 額度不足你會知道嗎?應通知你,你要通知我讓我處理」。
+5. **大 brief 死局**:6+ 軸 DISCUSS-ONLY 大 brief 會燒光 budget 零產出(2026-05-29 r1-r4 錨)→ 只允許「拆 N 個 single-axis focused brief 並行 + 禁寫 plan、直接輸出 verdict」,**不允許降 effort 省成本**。
+6. Visual audit MCP:必 bypass 旗標(A. 常設授權涵蓋);sequential MCP 禁 batch `browser_run_code_unsafe`;截圖移出 repo root。錨 2026-05-27 62/62 PASS。
 
-**被自家設定擋住 ≠ 做不到**。2026-08-08 錨例:codex CLI 在 Claude 沙箱起不來,根因是**我們自己的** `scripts/schemas/claude-permission-policy.schema.json` 把 `allowAllUnixSockets` 釘成 `false` + `scripts/lib/claude-permission-policy.mjs:223-224` 非空即丟錯。我當時的反應是叫 user 去買 OpenAI API key——那是把自家的鎖當成外部事實,還讓 user 付錢繞過。
+## C. Dual-track 紀律(M31)
 
-**規則(硬)**:
-1. 授權內動作被**自家** policy / schema / sandbox / hook 擋住 → 先問「這鎖是不是我們自己下的?」是 → **解自己的鎖**(改 canonical owner + 走正常 PR)或改用不需放寬安全邊界的既有機制;**禁止**丟回 user、禁止要求 user 付費繞路、禁止宣稱做不到。
-2. 真正的 human-only boundary 只有:login/MFA/OAuth、缺 credential reference、plan 外付費、法律/帳號/組織權限、產品-UI-UX 真取捨。**自家治理設定不在此列**。
-3. 找替代路徑時**先找不動安全邊界的解**。本案最終解 = queue + worker 常駐(user 跑一次 `codex-worker.sh`,之後 AI 丟 brief 到 `/tmp/claude/codex-queue/` 自動執行),既用 user 既有訂閱、不需 API key、也不必放寬 sandbox。
+- **User verbatim(2026-05-10)**:「你跟 codex 都要各自驗證過…最後你整合出完美完整的版本」「避免你完全被 codex 的錯誤解法牽著走」「我就是要有 2nd opinion 的機制來監督…以 SSOT 為前提,**不以省工為前提**」。
+- **三層缺一違反**:Layer A(Claude own)+ B(codex own)+ C(比稿 synthesize);禁 pass-through / single-track /「codex 已查所以我不查」。錨:Issue 8 pass-through ship vs Issue 11 cite battle。
+- **Phase-A-first**(2026-05-29):啟 codex 前必先完成自己的完整 Phase A(跑 deterministic script ≠ Phase A)。
+- **Brief 三 invariant**(hook `check_codex_brief_invariants.sh`):全盤閱讀禁憑記憶 / per-finding triple-verify / NO-SAMPLE。
+- **Codex-first for root-cause-elusive bug**:自查窮盡仍無根因(CSS quirk/browser/async)→ 立刻丟 codex,不苦撐。錨:scrollbar-color Chrome 121+。
+- **Triple-verify before bothering user**(user:「到底是不是真的問題還是只是無病呻吟」):propose/報 problem 前 (1)grep DS-wide (2)Read spec/tsx (3)對照 canonical exception;任一 NO → 撤回。錨:2026-05-18 三題全誤報。
+- **Auto-mode 禁為 non-SSOT ASK**:governance/sync/命名/test 策略/跑不跑 prune → 自己 pick best execute 禁列 A/B/C;deep-audit 收尾 /knowledge-prune 必 AUTO-RUN 禁問。錨:2026-05-29 + 2026-06-11 兩度被怒糾。
+- **「trust 自己」= 完整 adversarial dual-track**,永不可解讀為 skip codex(180° 相反)。
 
-同族 M-rule:`meta-patterns.md` M36(b)。
+## Anti-pattern(永久 ban)
 
-**How to apply**:
-- 跑之前確認 brief 內含「禁寫/刪/改 source」約束,輸出導到 /tmp 檔案由 AI 接手讀。
-- Claude Code 的 Bash 沙箱擋 unix socket,codex app-server 在其中起不來(`Operation not permitted`);實務上請 user 以 `!` 前綴在自己 shell 跑,或在無此限制的環境執行。
-- 本 repo package.json 已無 `@openai/codex` dep;`npx --yes @openai/codex` 可直接取得 CLI(2026-08-08 實測 0.147.0)。`~/.codex/config.toml` 已設最強模型與 effort;不帶降檔 flag 即繼承(user 2026-07-10 directive:審查用最強模型與算力,禁降檔省成本)。
+❌ pass-through / single-track / 省工跳 verify ❌ `which codex` 失敗即斷言 unreachable / `sudo npm i -g` ❌ Explore 替身 ❌ 大 brief + 任何降檔 ❌ 空輸出當 clean ❌ brief 缺三 invariant ❌ ASK non-SSOT ❌ bypass 下允許 codex 改 source
+
+**Mechanical**:`check_codex_collab_5step.sh` / `check_codex_brief_invariants.sh` / `check_audit_sample_escape.sh` / `stop_self_audit.sh`(Phase-A-first + codex trace)/ `codex-run-guarded.mjs`。
+**Trigger**:「比稿 / 2nd opinion / dual-track / 不打折 / 不省工」→ codex-collab SKILL。

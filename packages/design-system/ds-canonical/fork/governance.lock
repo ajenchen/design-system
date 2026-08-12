@@ -823,7 +823,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/approval-evidence.mjs",
-      "sha256": "e4327059ef850f2d562a8629180b0bb760ff20dbd0a42920177456866575ea1c",
+      "sha256": "ad740dc46c91f969bee22bb2019572ce786513487bc00ab3056c9ba475db702b",
       "source": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
       "classification": null,
       "destination": null
@@ -919,7 +919,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "f789cc5205fadb8911f6285bb6a196f8414e11e9ae249eae45efaeddd4fc7170",
+      "sha256": "0cf21f2ba6ad0f9be32ce67d23129409cd1826d996e4a78617b25e2e3d054e21",
       "source": null,
       "classification": null,
       "destination": null

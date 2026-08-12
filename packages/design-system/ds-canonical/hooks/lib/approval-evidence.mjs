@@ -1092,6 +1092,10 @@ const BLANKET_DELEGATION_PATTERNS = [
 // exact 提案」. Recognized ONLY when the message opens with the approval token AND contains no
 // denial, no question/discussion marker, and no tentative/conditional hedge (fail-closed on all).
 const LEADING_BARE_APPROVAL_PATTERN = /^(?:可以|好的|沒問題|就這樣做|照做)(?:$|[\s,，。!！])/u
+// 2026-08-12 勘誤:曾短暫加入「完成祈使句」型(把所有任務全部做完…),旋即被測試庫
+// Test 7d / Test 17 打回 —— 該測試契約是刻意防線:泛用完成語**不得**回溯授權任意 UI 修改
+//(無 pending 提案時它就是空白支票)。維持嚴格:UI 授權要嘛 exact target 綁定,要嘛
+// 「可以」型直答 pending 提案;完成祈使句只授權「續跑已授權的事」。
 
 function isLeadingBareApprovalDelegation(latestNormalized) {
   return LEADING_BARE_APPROVAL_PATTERN.test(latestNormalized)

@@ -5,6 +5,7 @@
 - [project_goal.md](project_goal.md) — World-class DS where AGENTS.md + specs ensure AI faithfully executes design principles
 
 ## Project (active work)
+- [project_agent_ui_draft_model.md](project_agent_ui_draft_model.md) — AI agent 面板規格已定稿歸檔 BACKLOG(2026-08-11);SSOT 路徑在本檔內(planning 歸檔 §〇);實作前禁寫入 DS canonical
 - [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + five-step machine SSOT；舊 baton/P0/activation/certification/fleet/soak 只作歷史 provenance；current state 必由 exact-head deep-audit evidence與 `npm run release:status` 讀回
 
 ## Project (closed; retained reference)
@@ -16,7 +17,7 @@
 - [feedback_solo_dev_workflow.md](feedback_solo_dev_workflow.md) — 1 task = 1 branch + 1 PR；protected main/required checks/conversations + canonical five-step readback；依 Standing Authorization 自動 merge/release(M28)，preview/canary 非 blocking
 - [feedback_ship_then_revert_anti_pattern.md](feedback_ship_then_revert_anti_pattern.md) — 產品／UI／UX SSOT 真取捨需 exact target-bound decision；工程 remediation AUTO；unknown fail closed(2026-05-15／2026-07-26)
 - [feedback_propose_discipline.md](feedback_propose_discipline.md) — 中文人話(禁 jargon,2026-05-31 擴大至**所有 reply**,user 看不懂英文)+ file:line cite(claim「規定/必配」沒 cite = 撤回)(2026-05-15 + 2026-05-27 + 2026-05-31,合 3 file)
-- [feedback_codex_full_access_standing_auth.md](feedback_codex_full_access_standing_auth.md) — Codex 研究/審查 ad-hoc 執行常設授權全存取沙箱(user 2026-08-08 verbatim);brief 限 read-only;受治理 broker 通道禁令不受影響;Claude 沙箱 unix-socket 擋 → user shell 跑
+- [feedback_codex_full_access_standing_auth.md](feedback_codex_full_access_standing_auth.md) — Codex collab canonical(2026-08-12 三檔合併):常設授權全存取沙箱(user 2026-08-08)+ 地端 transport 4-test/守衛入口/最強禁降檔/小 focused brief + M31 dual-track 三層禁 pass-through/brief 三 invariant/Phase-A-first/auto-mode 禁問
 - [feedback_push_always_call.md](feedback_push_always_call.md) — registered runtime 有 PushNotification capability 時 substantive turn 結尾必 call；能力缺席 = nonblocking/unobserved(2026-08-02 provider-neutral 收斂)
 - [Storybook addon preset MUST be .cjs](feedback_storybook_addon_preset_must_be_cjs.md) — beta.27-.31 5 連敗 root cause: 強制 CJS evaluation,bypass Node ESM/esbuild-register CJS-interop 衝突(2026-05-28)
 - [feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md](feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md) — SSOT canonical = 必 P0 BLOCKER 機械強制 with per-line escape comment;禁 P1 WARN soft signal(2026-05-27)
@@ -41,4 +42,5 @@
 - 2026-07-07 D8 headroom:netlify_basic_password→deploy_targets 合併(同部署域 D1 consolidation,invariant 零損;19→18)
 - 2026-07-14 D8 headroom:project_cprime_governance_shipped→reference_cloud_governance_loading 合併(campaign 已完結 + 同雲端治理域 + 同 originSession D1 consolidation,invariant 零損;19→18)
 - 2026-07-23 provider-neutral consolidation:退役 fixed Claude/Codex layer mapping 與 Codex exec transport；歷史原文移至 `governance/archive/memory-retired/2026-07-23-provider-neutral-consolidate/`，現行 authority 只保留 registry/binding/certification contracts
+- 2026-08-12 superset 收斂:home-only dual_track+exec_transport → full_access 三檔合併(codex 域 D1,invariant 零損);promote agent_ui backlog 指標入 repo;index 20 = hard cap
 - 2026-07-31 續作保障:新增 planning baton；2026-08-01 deep-audit 收為 `reference / non-executable`，live state 回歸 machine evidence；**未新增 index 條目**
