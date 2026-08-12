@@ -1692,6 +1692,9 @@ try {
   ) throw new Error(`release-bound control-plane delta did not apply cleanly:${delta.stdout}\n${delta.stderr}`)
   void deltaBeforeWorkflow; void deltaBeforePackage; void deltaBeforeModules
   console.log('✅ success: release-bound control-plane delta applies as data(BOOTSTRAP-001 retired 2026-08-12)')
+  // 套用結果收成 fixture commit(套件慣例),讓下游 rollback 情境以乾淨 worktree 起算。
+  must(run('git', ['add', '-A']), 'git add applied control-plane delta')
+  if (run('git', ['diff', '--cached', '--quiet']).status !== 0) must(run('git', ['commit', '-qm', 'applied release-bound control-plane delta fixture']), 'git commit applied delta')
 
   writeFileSync(join(repo, 'node_modules/original-only.txt'), 'original installed tree')
 
