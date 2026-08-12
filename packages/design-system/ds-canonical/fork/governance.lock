@@ -511,7 +511,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/9791c85388d2e2e2bd564e2550fadc3351c4c960a47ce838098afcba7544eb90.blob",
-      "sha256": "2e4aa0050c39708929a96753dc639149b058b5b76fb281a1a6fe3c1ab09ebbae",
+      "sha256": "db1eddbcb8b155891642fa695594120113af35140818d88c21cf88756f88ee19",
       "source": "scripts/verify-upgrade-evidence.mjs",
       "classification": null,
       "destination": "scripts/verify-upgrade-evidence.mjs"
@@ -527,7 +527,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/ab072e7f2eca51f0e18a5e18c4b333260ee5d219a12cc6df5bb2d683f0b2734d.blob",
-      "sha256": "938c706cad79a4bd538359c9b74cb9253a4c74b5f1342cbfc1625600425d8bfd",
+      "sha256": "613e10b71405805af900ad328d6baf0ae0ce3a02e58085aab6984163b7f8ad1a",
       "source": "scripts/sync-all.mjs",
       "classification": null,
       "destination": "scripts/sync-all.mjs"
@@ -919,7 +919,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "0cf21f2ba6ad0f9be32ce67d23129409cd1826d996e4a78617b25e2e3d054e21",
+      "sha256": "1e5b1023bf448edc7ce230fe0296c181a39a1fed7124a922c72fee4653d24e73",
       "source": null,
       "classification": null,
       "destination": null

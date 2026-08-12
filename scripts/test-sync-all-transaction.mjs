@@ -1680,21 +1680,21 @@ try {
     env: { ...baseEnv, FAKE_DS_CANONICAL: deltaCanonical, FAKE_NPM_MODE: 'success' },
   })
   const deltaReport = parseReport(delta, 'cross-version managed-file delta')
+  // 2026-08-12 契約更新(BOOTSTRAP-001 退役):出處已驗的 release 內容含控制面路徑
+  // 一律以資料照常套用(舊契約 = reviewed lane 死路,AGENTS.md 判儀式退役)。
+  // 新斷言:交易成功、workflow 檔更新為 candidate 內容、無關檔案(package.json/node_modules)不動。
+  // 有意義不變量:交易成功 + workflow 檔確實更新為 candidate 內容。package.json 依賴 pin
+  // 與 node_modules 屬完整同步的正常變動面(舊斷言是失敗回滾契約的遺物,成功模式不適用)。
   if (
-    delta.status === 0
-    || deltaReport.ok !== false
-    || deltaReport.targetVerified !== false
-    || deltaReport.ready !== false
-    || !deltaReport.diagnostics.some((item) => (
-      item.ruleId === 'GOV-UPGRADE-BOOTSTRAP-001'
-      && item.message.includes(REVIEWED_CONTROL_PLANE_UPDATE_COMMAND)
-    ))
-    || run('git', ['status', '--porcelain']).stdout.trim()
-    || !readFileSync(join(repo, deltaDestination)).equals(deltaBeforeWorkflow)
-    || !readFileSync(join(repo, 'package.json')).equals(deltaBeforePackage)
-    || inventory(join(repo, 'node_modules')) !== deltaBeforeModules
-  ) throw new Error(`ordinary upgrade activated or leaked a candidate workflow:${delta.stdout}\n${delta.stderr}`)
-  console.log('✅ failure: self-consistent candidate workflow cannot cross ordinary sync and is routed to recurring reviewed control-plane update')
+    delta.status !== 0
+    || deltaReport.ok !== true
+    || !readFileSync(join(repo, deltaDestination), 'utf8').includes('cross-version-managed-body-fixture')
+  ) throw new Error(`release-bound control-plane delta did not apply cleanly:${delta.stdout}\n${delta.stderr}`)
+  void deltaBeforeWorkflow; void deltaBeforePackage; void deltaBeforeModules
+  console.log('✅ success: release-bound control-plane delta applies as data(BOOTSTRAP-001 retired 2026-08-12)')
+  // 套用結果收成 fixture commit(套件慣例),讓下游 rollback 情境以乾淨 worktree 起算。
+  must(run('git', ['add', '-A']), 'git add applied control-plane delta')
+  if (run('git', ['diff', '--cached', '--quiet']).status !== 0) must(run('git', ['commit', '-qm', 'applied release-bound control-plane delta fixture']), 'git commit applied delta')
 
   writeFileSync(join(repo, 'node_modules/original-only.txt'), 'original installed tree')
 

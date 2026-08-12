@@ -328,7 +328,18 @@ function ghShim(args, { allowFailure = false, input = null } = {}) {
     const bodyText = flagValue(args, '--body') ?? run('git', ['log', '-1', '--pretty=%b']).stdout
     const response = curlGitHub('POST', `repos/${repository}/pulls`,
       { body: JSON.stringify({ title, head, base, body: bodyText }) })
-    if (!response.ok) return shimDone(response, { allowFailure, label })
+    if (!response.ok) {
+      // 冪等:同 head 的 open PR 已存在(422)= 目標狀態已達成,回傳既有 PR(gh pr create 同語意)
+      if (response.code === 422 && response.text.includes('already exists')) {
+        const owner = repository.split('/')[0]
+        const existing = curlGitHub('GET', `repos/${repository}/pulls?state=open&head=${owner}:${encodeURIComponent(head)}&per_page=1`)
+        if (existing.ok) {
+          const rows = JSON.parse(existing.text)
+          if (rows.length) return { ok: true, stdout: rows[0].html_url, stderr: '' }
+        }
+      }
+      return shimDone(response, { allowFailure, label })
+    }
     return { ok: true, stdout: JSON.parse(response.text).html_url, stderr: '' }
   }
   if (args[0] === 'pr' && args[1] === 'merge') {

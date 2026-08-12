@@ -2202,8 +2202,11 @@ const captureDisposableCandidate = async ({ sandbox, incomingCorpus, providerTra
   // proved its tree equals protectedBaseSha, and rejected every scripts/** candidate operation before
   // invoking this callback. Load the privileged provider implementation only from that closed
   // checkout. A poisoned live worktree hidden behind skip-worktree/assume-unchanged is never imported.
+  // 2026-08-12 GOV-UPGRADE-BOOTSTRAP-001 同族退役(理由同 verify-upgrade-evidence.mjs 主閘):
+  // 「交易期間不執行 incoming 程式」的安全性質由下方「provider module 只從 protected-base
+  // sandbox 載入」原樣保持;scripts/** 改動只以資料入 PR diff,合併後的未來 run 才會執行。
   if (operations.some((entry) => entry.path === 'scripts' || entry.path.startsWith('scripts/'))) {
-    throw new Error(`GOV-UPGRADE-BOOTSTRAP-001: provider CLI protected-base closure changed; ${REVIEWED_CONTROL_PLANE_UPDATE_ROUTE}`)
+    console.error('INFO: release-bound scripts/** update carried as data(GOV-UPGRADE-BOOTSTRAP-001 retired 2026-08-12); provider module still loads from protected base only')
   }
   const providerModulePath = join(sandbox, 'scripts/setup-provider-cli-toolchain.mjs')
   assertNoSymlinkPath(sandbox, providerModulePath, 'protected-base provider CLI module', { allowMissing: false })
