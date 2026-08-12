@@ -1092,14 +1092,13 @@ const BLANKET_DELEGATION_PATTERNS = [
 // exact 提案」. Recognized ONLY when the message opens with the approval token AND contains no
 // denial, no question/discussion marker, and no tentative/conditional hedge (fail-closed on all).
 const LEADING_BARE_APPROVAL_PATTERN = /^(?:可以|好的|沒問題|就這樣做|照做)(?:$|[\s,，。!！])/u
-// 2026-08-12 第二型(同 canonical 條款):「把所有任務全部做完(不要留待辦)」類的完成祈使句
-// = 對當下 pending 提案的明確 blanket 授權(user 對 exact 清單下達「全做」)。
-// 同樣 fail-closed:含否定/問句/條件語即不成立。
-const COMPLETION_DIRECTIVE_PATTERN = /(?:把)?(?:所有|全部)(?:的)?(?:任務|工作|事情|殘項|待辦)?[^。!！?？]{0,12}(?:做完|完成|做到完|清完|收完)/u
+// 2026-08-12 勘誤:曾短暫加入「完成祈使句」型(把所有任務全部做完…),旋即被測試庫
+// Test 7d / Test 17 打回 —— 該測試契約是刻意防線:泛用完成語**不得**回溯授權任意 UI 修改
+//(無 pending 提案時它就是空白支票)。維持嚴格:UI 授權要嘛 exact target 綁定,要嘛
+// 「可以」型直答 pending 提案;完成祈使句只授權「續跑已授權的事」。
 
 function isLeadingBareApprovalDelegation(latestNormalized) {
-  return (LEADING_BARE_APPROVAL_PATTERN.test(latestNormalized)
-    || COMPLETION_DIRECTIVE_PATTERN.test(latestNormalized))
+  return LEADING_BARE_APPROVAL_PATTERN.test(latestNormalized)
     && !matchesAny(TARGET_DISCUSSION_PATTERNS, latestNormalized)
     && !matchesAny(TENTATIVE_OR_CONDITIONAL_UI_PATTERNS, latestNormalized)
 }
