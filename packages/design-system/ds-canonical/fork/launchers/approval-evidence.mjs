@@ -51,6 +51,15 @@ function jsonValues(text) {
   return values
 }
 
+function toolResultText(content) {
+  if (typeof content === 'string') return content
+  if (!Array.isArray(content)) return ''
+  return content
+    .filter((item) => item && typeof item === 'object' && item.type === 'text' && typeof item.text === 'string')
+    .map((item) => item.text)
+    .join('\n')
+}
+
 function transcriptState(transcriptPath) {
   const stat = statSync(transcriptPath)
   if (!stat.isFile()) throw new Error('transcript is not a regular file')
@@ -60,18 +69,75 @@ function transcriptState(transcriptPath) {
   const records = jsonValues(bounded.toString('utf8'))
   const userMessages = []
   let lastUserRecordIndex = -1
+  // AskUserQuestion selections are genuine user decisions delivered as harness-authored
+  // tool_result records (role:user), which `textContent` rightly excludes from user speech for
+  // every ORDINARY tool (tool output is data, not the user's voice). The selection event itself,
+  // however, is the user's — the assistant cannot author user-role records — so it is collected
+  // here as a distinct evidence channel. The approval bytes come only from the harness result
+  // text; the assistant-authored proposal text that preceded the question is captured separately
+  // and may contribute TARGET BINDING only, never approval semantics (canon: the user approves
+  // 「當下 pending 的 exact 提案」, and the pending proposal is what the assistant just presented).
+  const askUserQuestionToolUseIds = new Set()
+  const assistantTexts = []
+  for (const [index, record] of records.entries()) {
+    const message = record?.message || record
+    if (message?.role !== 'assistant' || !Array.isArray(message.content)) continue
+    for (const item of message.content) {
+      if (item && typeof item === 'object' && item.type === 'tool_use'
+        && item.name === 'AskUserQuestion' && typeof item.id === 'string') {
+        askUserQuestionToolUseIds.add(item.id)
+      }
+    }
+    const text = message.content
+      .filter((item) => item && typeof item === 'object' && item.type === 'text' && typeof item.text === 'string')
+      .map((item) => item.text)
+      .join('\n')
+      .trim()
+    if (text) assistantTexts.push({ index, text })
+  }
+  const plainUserRecordIndexes = []
+  let latestSelection = null
   for (const [index, record] of records.entries()) {
     const message = record?.message || record
     if (message?.role !== 'user') continue
+    if (Array.isArray(message.content)) {
+      for (const item of message.content) {
+        if (item && typeof item === 'object' && item.type === 'tool_result'
+          && askUserQuestionToolUseIds.has(item.tool_use_id)) {
+          const answerText = toolResultText(item.content).trim()
+          if (answerText) latestSelection = { index, answerText }
+        }
+      }
+    }
     const text = textContent(message.content).trim()
     if (!text) continue
+    // Harness-authored background events (task/monitor notifications) are recorded as
+    // user-role text but are explicitly NOT user input — their own banner says so. They must
+    // never count as user speech: as "latest user message" they would displace a genuine
+    // pending decision, and their free-form summaries could pattern-match approval or denial.
+    if (/^\[SYSTEM NOTIFICATION\b/u.test(text) || text.includes('<task-notification>')) continue
     userMessages.push(text)
     lastUserRecordIndex = index
+    plainUserRecordIndexes.push(index)
+  }
+  let latestAskUserSelection = null
+  if (latestSelection && latestSelection.index > lastUserRecordIndex) {
+    // Valid only while it is the newest user event: any later plain user message (a follow-up
+    // question, a denial, a new directive) supersedes the selection and flows through the
+    // ordinary classifier instead.
+    const plainBefore = plainUserRecordIndexes.filter((index) => index < latestSelection.index)
+    const proposalFloor = plainBefore.length ? plainBefore.at(-1) : -1
+    const proposalText = assistantTexts
+      .filter((entry) => entry.index > proposalFloor && entry.index < latestSelection.index)
+      .map((entry) => entry.text)
+      .join('\n')
+    latestAskUserSelection = { answerText: latestSelection.answerText, proposalText }
   }
   return {
     records,
     userMessages,
     latestUserMessage: userMessages.at(-1) ?? '',
+    latestAskUserSelection,
     turnRecords: lastUserRecordIndex >= 0 ? records.slice(lastUserRecordIndex + 1) : [],
   }
 }
@@ -1110,6 +1176,37 @@ export function authorizationEvidence(transcriptPath, {
   const state = transcriptState(transcriptPath)
   const operationText = toolOperations(state.turnRecords, hookInput, target)
   const latestNormalized = normalizeText(state.latestUserMessage)
+  const selection = state.latestAskUserSelection
+  if (selection) {
+    // A structured AskUserQuestion selection is the user saying yes to one exact presented
+    // choice. Approval semantics come exclusively from the harness-authored answer text
+    // (a decline, an "Other" answer that questions or forbids, or any tentative phrasing
+    // falls through to the ordinary fail-closed flow). Target binding may come from the
+    // answer or from the assistant proposal the question was attached to — binding alone
+    // grants nothing without the genuine selection event.
+    const answerNormalized = normalizeText(selection.answerText)
+    const answerIsClean = answerNormalized
+      && !matchesAny(TARGET_DENIAL_PATTERNS, withoutNoWaitClauses(answerNormalized))
+      && !matchesAny(TARGET_DISCUSSION_PATTERNS, answerNormalized)
+      && !matchesAny(TENTATIVE_OR_CONDITIONAL_UI_PATTERNS, answerNormalized)
+    const bindingAlias = answerIsClean
+      ? exactTargetBinding(`${selection.answerText}\n${selection.proposalText}`, target)
+      : null
+    if (bindingAlias) {
+      return {
+        schemaVersion: 1,
+        kind: 'latest-user-design-authorization',
+        decision: 'approved',
+        reasonCode: 'ASK_USER_QUESTION_SELECTION',
+        decisionDomain: 'product-ui-ux',
+        target: target ? normalizeTarget(target) : null,
+        targetBinding: `ask-user-question-selection:${bindingAlias}`,
+        latestUserMessageSha256: createHash('sha256').update(latestNormalized).digest('hex'),
+        decisionMessageSha256: createHash('sha256').update(answerNormalized).digest('hex'),
+        operationEvidenceSha256: createHash('sha256').update(operationText).digest('hex'),
+      }
+    }
+  }
   if ((matchesAny(BLANKET_DELEGATION_PATTERNS, latestNormalized)
     || isLeadingBareApprovalDelegation(latestNormalized))
     && !matchesAny(TARGET_DENIAL_PATTERNS, withoutNoWaitClauses(latestNormalized))) {

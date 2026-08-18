@@ -2190,7 +2190,11 @@ function DataTableInner<TData>(
             // 2026-05-18 改 per user 拍板「DataTable sort 跟 row size 變」+「做完」approval:
             // 原固定 14 違反 uiSize.spec.md Icon Tier(sm/md→16, lg→20)。改 ICON_SIZE[size]
             // 隨 DataTable size prop 變。
-            <SortIcon size={ICON_SIZE[size]} aria-hidden className="shrink-0 text-fg-secondary" />
+            // 顏色不釘死(2026-08-18 user 拍板「與 label 同色連動」):繼承點擊區文字色 —
+            // 靜止 fg-secondary、hover 隨父層 hover:text-foreground 與 label 同升。禁 fg-muted
+            //(muted 家 = 永遠在場的裝飾/affordance 標記;排序箭頭 = 套用後才出現的狀態資訊)、
+            // 禁 primary。SSOT → data-table.spec.md「Header cell internal」表 sort arrow 顏色列。
+            <SortIcon size={ICON_SIZE[size]} aria-hidden className="shrink-0" />
           )}
         </div>
         {/* 右區:⌄ menu(hover/focus-within 才顯;**不顯示時不佔位**)
