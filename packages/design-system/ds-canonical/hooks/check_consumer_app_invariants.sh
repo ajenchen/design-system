@@ -6,7 +6,7 @@
 #   r2_story_baseline = 原 check_consumer_story_baseline.sh(規則逐字搬入,BLOCKER 級別與 escape 標記不變)
 #   r3_ds_primitive_misuse = 原 check_consumer_ds_primitive_misuse.sh(規則逐字搬入,BLOCKER 級別與 escape 標記不變)
 #   r4_app_story_title = 原 check_consumer_app_story_title.sh(規則逐字搬入,BLOCKER 級別與 escape 標記不變)
-# 原檔 → .claude/hooks/retired/2026-06-11-prune-merge/
+# 原檔 → packages/design-system/ds-canonical/hooks/retired/2026-06-11-prune-merge/
 # 各規則跑在 pipeline 子 shell:規則內 exit 不中斷其他規則;任一 exit 2 → 整體 exit 2。
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire

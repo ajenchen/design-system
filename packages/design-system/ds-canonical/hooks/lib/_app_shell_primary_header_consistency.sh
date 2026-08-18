@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check_app_shell_primary_header_consistency.sh — PreToolUse Edit/Write
+# _app_shell_primary_header_consistency.sh — PreToolUse Edit/Write(chrome_header_dispatcher 消費;原 check_app_shell_primary_header_consistency.sh fold)
 #
 # 2026-05-21 ship per user directive「該程式化的就程式化」+「確認當有 global header 時,
 # sidebar 內的 header 應該要拿掉」+ world-class GitHub/Gmail/Figma 共識。

@@ -4,7 +4,7 @@
 
 ## Daily workflow
 
-1. **Working branch**:1 chat = 1 working branch(per `.claude/memory/feedback_solo_dev_workflow.md`)
+1. **Working branch**:1 chat = 1 working branch(per `governance/memory/feedback_solo_dev_workflow.md`)
 2. **Edit → commit → push branch**:每次 push 觸發 Netlify preview deploy(per-branch URL)
 3. **User 預檢 preview**:點 Netlify URL 看視覺 / 行為
 4. **User 拍板「push / OK / 合 main」**:才 merge to main(no PR)
