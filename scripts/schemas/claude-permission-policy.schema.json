@@ -50,7 +50,7 @@
       ],
       "properties": {
         "enabled": { "const": true },
-        "failIfUnavailable": { "const": true },
+        "failIfUnavailable": { "const": false },
         "autoAllowBashIfSandboxed": { "const": true },
         "allowUnsandboxedCommands": { "const": false },
         "network": {

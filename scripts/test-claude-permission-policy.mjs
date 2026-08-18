@@ -123,7 +123,10 @@ for (const rawCredentialOrEngineeringMutation of [
 assert.deepEqual(base.sandbox, policy.sandbox)
 assert.deepEqual(base.sandbox.network.allowedDomains, [])
 assert.equal(base.sandbox.enabled, true)
-assert.equal(base.sandbox.failIfUnavailable, true)
+// Repo-portable tiers must never carry the hard gate: this policy travels to fresh-container
+// cloud hosts where the Linux sandbox dependencies are absent and `failIfUnavailable: true`
+// blocks Claude Code from starting (2026-08-18 incident). The managed tier re-hardens it.
+assert.equal(base.sandbox.failIfUnavailable, false)
 assert.equal(base.sandbox.autoAllowBashIfSandboxed, true)
 assert.equal(base.sandbox.allowUnsandboxedCommands, false)
 assert.equal(base.sandbox.network.allowAllUnixSockets, false)
@@ -203,7 +206,7 @@ try {
   )
   for (const [mutate, pattern] of [
     [value => { value.sandbox.enabled = false }, /closed schema|sandbox must be fail-closed/],
-    [value => { value.sandbox.failIfUnavailable = false }, /closed schema|sandbox must be fail-closed/],
+    [value => { value.sandbox.failIfUnavailable = true }, /closed schema|sandbox must be fail-closed/],
     [value => { value.sandbox.autoAllowBashIfSandboxed = false }, /closed schema|sandbox must be fail-closed/],
     [value => { value.sandbox.allowUnsandboxedCommands = true }, /closed schema|sandbox must be fail-closed/],
     [value => { value.sandbox.network.allowedDomains = ['github.com'] }, /closed schema|sandbox must be fail-closed/],
@@ -302,6 +305,21 @@ const repositoryAdapter = buildProviderHookView({ providerId: 'claude' }).config
 assertClaudePermissionMaterialization(repositoryAdapter, policy, { label: 'repository Claude adapter' })
 assert.deepEqual(repositoryAdapter.permissions.allow, policy.dsAllow)
 assert.deepEqual(repositoryAdapter.sandbox, policy.sandbox)
+
+// The DS repository's committed `.claude/settings.json` is classified `non-authority-exclusion`
+// (protected-root-classification `claude-local-state`), so no generator ever rewrites it — the
+// same standing as the template settings covered by test-fork-governance 5c-bis. It still travels
+// with the repository into fresh-container cloud hosts, so its sandbox block must stay in exact
+// parity with the policy source; without this assertion it kept shipping the cloud-fatal
+// `failIfUnavailable: true` after the policy flipped (2026-08-18 incident).
+{
+  const committedRepoSettings = JSON.parse(readFileSync(new URL('../.claude/settings.json', import.meta.url), 'utf8'))
+  assert.deepEqual(
+    committedRepoSettings.sandbox,
+    policy.sandbox,
+    'committed .claude/settings.json sandbox drifted from the canonical permission-policy sandbox',
+  )
+}
 
 {
   const productGovernance = materializeClaudeGovernanceSettings({

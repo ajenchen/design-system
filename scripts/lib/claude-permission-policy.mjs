@@ -205,7 +205,17 @@ export function readClaudePermissionPolicy({ sourceRoot = DEFAULT_ROOT } = {}) {
   const sandbox = document.sandbox
   if (
     sandbox.enabled !== true
-    || sandbox.failIfUnavailable !== true
+    // failIfUnavailable must stay false in this policy document: every surface materialized from
+    // it travels with the repository (DS `.claude/settings.json`, product template, fork
+    // hook-config — compatibility-matrix `fresh-container` declares `repoConfigTravels: true`),
+    // and the official semantic is "a missing dependency such as bubblewrap on Linux blocks
+    // Claude Code from starting" (code.claude.com/docs/en/sandboxing). Cloud runs an Ubuntu
+    // container where bubblewrap/user-namespaces are unavailable, so `true` here kills every
+    // cloud session at initialization (2026-07-28 regression; incident 2026-08-18). The strict
+    // gate is, per the same doc, "intended for managed deployments": materializeClaudeSandbox
+    // re-hardens it to true on the managed tier, which never travels with the repo, and the
+    // local `.claude/settings.local.json` (untracked, higher precedence) carries it on dev hosts.
+    || sandbox.failIfUnavailable !== false
     || sandbox.autoAllowBashIfSandboxed !== true
     || sandbox.allowUnsandboxedCommands !== false
     // enableWeakerNestedSandbox must stay true: it is the only documented way for the Linux
@@ -312,6 +322,12 @@ export function materializeClaudeSandbox(profile, policy, {
     output.network.allowManagedDomainsOnly = true
   } else if (managedSettings === true) {
     throw new Error(`${label} must enable managed-only network-domain authority`)
+  }
+  if (managedSettings === true) {
+    // Managed settings never travel with the repository, so this is the one tier where the
+    // official "security gate for managed deployments" semantic of failIfUnavailable is safe
+    // and correct. Repo-portable tiers keep the policy value (false) — see the policy validator.
+    output.failIfUnavailable = true
   }
   return output
 }
