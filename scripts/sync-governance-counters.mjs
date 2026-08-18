@@ -128,6 +128,7 @@ for (const m of sessStartContent.matchAll(/(\d+)\s+active\s+M-rules/g)) {
 // 2026-05-23 升級:M-rule count text drift 跨多 file
 // SSOT pattern:`N active M-rules` 或 `N M-rules`(loose match,排 historical / planning / scratch / tmp)
 const mRuleTextFiles = [
+  'AGENTS.md',
   'CLAUDE.md',
   `${CANONICAL}/rules/README.md`,
   `${CANONICAL}/rules/meta-patterns.md`,
@@ -141,7 +142,7 @@ for (const rel of mRuleTextFiles) {
   const p = path.join(ROOT, rel)
   if (!fs.existsSync(p)) continue
   const c = fs.readFileSync(p, 'utf-8')
-  const matches = [...c.matchAll(/(\d+)\s+(?:active\s+)?M-rules?/g)]
+  const matches = [...c.matchAll(/(\d+)\s*(?:active|條)?\s*M-rules(?!-)/g)]
   for (const m of matches) {
     const declared = parseInt(m[1])
     if (declared !== mRuleCount) {
