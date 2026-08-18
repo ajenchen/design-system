@@ -14,7 +14,7 @@
 - `實測: {量到的值}`
 - `預期: {token 值或 ratio}`
 - `差異: {若 FAIL,寫出 diff 和推測破壞規則}`
-- `對應規則: {CLAUDE.md 章節 or spec.md 段落 or token 名}`
+- `對應規則: {AGENTS.md 章節 or spec.md 段落 or token 名}`
 
 ---
 
@@ -34,7 +34,7 @@
 
 **FAIL 範例**:DatePicker 量到 top=12 / right=12 / bottom=8 / left=12,spec 未宣告 bottom asymmetric → FAIL,建議討論是對齊 12 還是補 spec rationale
 
-**對應規則**:CLAUDE.md `# 稽核 canonical`「Consistency 類稽核必 Phase 0 全掃再判」(actual == canonical OR rationale-for-deviation;design-system-audit Dim 13 enforce)
+**對應規則**:AGENTS.md `# 稽核 canonical`「Consistency 類稽核必 Phase 0 全掃再判」(actual == canonical OR rationale-for-deviation;design-system-audit Dim 13 enforce)
 
 ---
 

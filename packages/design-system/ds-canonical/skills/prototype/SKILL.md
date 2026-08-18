@@ -7,7 +7,7 @@ description: Build UI prototypes / MVPs via a structured UX workflow — benchma
 
 Purpose: embody the UX designer's mental model for BUILDING PROTOTYPES — never design by gut; benchmark world-class, filter against DS + business, build multiple shortlisted proposals, self-audit, let stakeholders decide.
 
-This skill is the **structured version** of shared-governance Mindset #1「對標世界級」+ #4「真實業務場景」+ #5「猶豫就問」,and the orchestrator for `src/explorations/` folder usage.
+This skill is the **structured version** of shared-governance Mindset #1「對標世界級」+ #4「真實業務場景」+ #5「先證據、再分權」,and the orchestrator for `src/explorations/` folder usage.
 
 ## When to run
 
