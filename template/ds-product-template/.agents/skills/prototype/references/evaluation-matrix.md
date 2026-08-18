@@ -97,7 +97,7 @@ Phase 2 將 Phase 1 scan 結果變成可決策的評分表。
    - 不是只比視覺表皮;若 candidate 實際上是同個 object model 的 UI shape 變體,narrative 需明點出
    - 若候選會變更 object definition(拆分 / 合併 object),**扣 DS 一致性分**(代表與 product canonical object model 漂移)
 
-4. **對齊 Mindset #5「猶豫就問」**:
+4. **對齊 Mindset #5「先證據、再分權」**:
    - 若 candidate 的某部分無法評(資訊不足),**flag 而非猜**
 
 ---

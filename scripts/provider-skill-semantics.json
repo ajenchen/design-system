@@ -350,14 +350,11 @@
     {
       "name": "scan-similar-bugs",
       "sourceWorkflow": "packages/design-system/ds-canonical/skills/scan-similar-bugs/SKILL.md",
-      "classification": "provider-bound",
-      "projection": "provider-bound-copy",
-      "bindingProfile": "repository-legacy-surfaces-v1",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
       "description": "Extract a fixed bug's root pattern and exhaustively scan the applicable repository scope for recurrence.",
       "declaredIdentifiers": [],
-      "allowedAssumptions": [],
-      "assumptionFindingCount": 0,
-      "assumptionFingerprint": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "allowedAssumptions": []
     },
     {
       "name": "story-auto-compile-migrate",
@@ -395,11 +392,10 @@
       "description": "Run screenshot-grounded pixel and geometry review without guessing from code alone.",
       "declaredIdentifiers": [],
       "allowedAssumptions": [
-        "provider-identity",
         "provider-surface-path"
       ],
-      "assumptionFindingCount": 6,
-      "assumptionFingerprint": "sha256:e2819ca2bba6ac91c44d3c1a362e3515197ff305fa08bd6155413e4ce209d949"
+      "assumptionFindingCount": 4,
+      "assumptionFingerprint": "sha256:0fd67f1adf4fc31b0756f12522a1dfd7f0af40f3e4b08002f1ee18cac446f7fe"
     }
   ]
 }

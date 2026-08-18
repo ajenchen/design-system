@@ -5,7 +5,7 @@ description: Monthly provider-neutral governance health scan. Reads opt-in Git-o
 
 <!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/governance-health/SKILL.md; provider: codex; do not edit this adapter view. -->
 
-<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=codex; strategy=generated-binding-header; assumptionCount=8; assumptionFingerprint=sha256:a8f39a89fd53396d274780e6b5b4636a34dc496153fd21ce18d0bafb198ece52; evidence=packages/governance/canonical/providers.json#codex -->
+<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=codex; strategy=generated-binding-header; assumptionCount=5; assumptionFingerprint=sha256:ce07b69347835e41e0723f4f3b5357c855611cd26f73cebbf4f213849e158f88; evidence=packages/governance/canonical/providers.json#codex -->
 
 ## Provider binding contract
 
@@ -68,7 +68,7 @@ resolver 只允許真實 Git directory 下的 `governance-runtime/`，並逐檔�
 
 規則 fire > 50 次 / 6 月 = 該 rule 反覆觸發 = 問題普遍 = 值得上升 Meta-Pattern layer 收斂(對齊 mindset #6「大原則吸收瑣碎」)。
 
-Output: 「`check_item_list_gap.sh` 6 月 fired 78 次 → 提議擴充到 CLAUDE.md Meta-Pattern M18?」
+Output: 「`check_item_list_gap.sh` 6 月 fired 78 次 → 提議擴充到 `rules/meta-patterns.md` M18?」
 
 #### 2b. Dead rule → retire 候選
 
@@ -105,7 +105,7 @@ Output: 「過去 4 週 user 糾正 15 條,sample: ..., 提議:升級 M19「XX p
 - ...
 
 ## Codify 候選(pending corrections)
-- {topic} — {count} user corrections — propose: 擴充 CLAUDE.md {section}
+- {topic} — {count} user corrections — propose: 擴充 AGENTS.md / `rules/meta-patterns.md` {section}
 - ...
 
 ## 外部 benchmark

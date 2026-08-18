@@ -5,21 +5,12 @@ description: Auto-invoke after fix commits — extracts root-cause anti-pattern,
 
 <!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/scan-similar-bugs/SKILL.md; provider: claude; do not edit this adapter view. -->
 
-<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=claude; strategy=generated-binding-header; assumptionCount=2; assumptionFingerprint=sha256:69580682e9ebafb279438e8b2aaae9aa4dba1b18dbc490aa971e281f0f0e27c7; evidence=packages/governance/canonical/providers.json#claude -->
-
-## Provider binding contract
-
-This canonical workflow contains a committed inventory of legacy assumptions. Resolve them exactly as follows; an unavailable resolution or inventory drift is `ADAPTER-BLOCKED`:
-
-- `provider-identity`: Treat historical provider names as provenance labels, never as the current runtime identity.
-- `provider-surface-path`: Resolve legacy repository paths through generated views while treating ds-canonical as the semantic owner.
-
 # /scan-similar-bugs — Fix-time DS-wide Exhaustive Scan
 
 **目的**:任何 bug fix 提交後,**機械化掃 DS-wide 找同 pattern**,而非靠 model 記得 M10。
 
 **對齊**:
-- CLAUDE.md M10 「Proactive exhaustive scan」mechanical 落地
+- `rules/meta-patterns.md` M10 「Proactive exhaustive scan」mechanical 落地
 - mindset #1「不取巧」+ #2「優先消費既有」+ #6「meta 抽象」
 - 對齊 IDE「find similar / find references」+ Chrome DevTools「find usages」+ GitHub Copilot「related code」3+ 家世界級 idiom
 

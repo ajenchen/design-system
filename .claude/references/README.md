@@ -17,7 +17,6 @@ Agent 在執行時按需讀的深度 reference 檔 — audit protocol / FP 記�
 | `governance-audit-coverage.md` | 治理 home × 稽核機制 × 執行頻率覆蓋表 |
 | `item-anatomy-recipe.md` | 7 步建立新 row primitive workflow + audit grep guard |
 | `naming-conventions.md` | 命名詳表 + 禁止清單(AGENTS.md `# 命名與語言一致性` pointer) |
-| `preflight-gate-baseline.json` | Release preflight gate 的 content-addressed ratchet baseline |
 | `principle-dim-map.json` | M-rule / trait / hook → audit dim explicit mapping(SSOT for dim coverage) |
 | `props-naming.md` | Props callback / Badge / icon canonical 詳表 |
 | `repository-hygiene.md` + `repository-hygiene-policy.json` | Full/deep audit 的 repo 拓撲、冗餘分類與可攜機械政策 |

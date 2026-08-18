@@ -5,13 +5,12 @@ description: Pixel-level visual audit for design-system components based on user
 
 <!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/visual-audit/SKILL.md; provider: claude; do not edit this adapter view. -->
 
-<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=claude; strategy=generated-binding-header; assumptionCount=6; assumptionFingerprint=sha256:e2819ca2bba6ac91c44d3c1a362e3515197ff305fa08bd6155413e4ce209d949; evidence=packages/governance/canonical/providers.json#claude -->
+<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=claude; strategy=generated-binding-header; assumptionCount=4; assumptionFingerprint=sha256:0fd67f1adf4fc31b0756f12522a1dfd7f0af40f3e4b08002f1ee18cac446f7fe; evidence=packages/governance/canonical/providers.json#claude -->
 
 ## Provider binding contract
 
 This canonical workflow contains a committed inventory of legacy assumptions. Resolve them exactly as follows; an unavailable resolution or inventory drift is `ADAPTER-BLOCKED`:
 
-- `provider-identity`: Treat historical provider names as provenance labels, never as the current runtime identity.
 - `provider-surface-path`: Resolve legacy repository paths through generated views while treating ds-canonical as the semantic owner.
 
 # Visual Audit — screenshot-based pixel-level 稽核

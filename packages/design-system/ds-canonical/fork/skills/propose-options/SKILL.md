@@ -10,7 +10,7 @@ description: Auto-invoke when listing options / 建議 / 候選方案. Forces in
 **目的**:Claude 對 user 提建議 / 列 option list 時,**先跑 7 題原則自檢**,通過才寫進回覆。Reject 的不列 OR 列出時標 fail 原因。
 
 **對齊**:
-- CLAUDE.md mindset #1(不取巧)+ #2(消費既有)+ #5(猶豫就問)+ #6(meta 抽象)
+- AGENTS.md mindset #1(不取巧)+ #2(消費既有)+ #5(先證據、再分權)+ #6(meta 抽象)
 - M8 benchmark / M17 SSOT / M12 binary rule / 治理「加規則前 3 題」
 - 本 skill 是上述 meta 的**propose-time 落地** — meta 寫成文字不夠,要 mechanical workflow 釘住
 
@@ -163,7 +163,7 @@ User 已就「為什麼會給錯誤建議」糾正 ≥ 3 次:
 - (b) 是否有 reject option 曾被 list?(reject 不該被列出)
 - (c) 是否 user 仍質疑 propose 品質?(若是 → 7-Q 沒抓到的 gap → 加 Q5)
 
-回填到本 SKILL.md 或 CLAUDE.md M18(若需 escalate)。
+回填到本 SKILL.md 或 `rules/meta-patterns.md` M18(若需 escalate)。
 
 ---
 
