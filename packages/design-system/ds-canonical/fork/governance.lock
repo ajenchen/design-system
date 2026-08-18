@@ -255,7 +255,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/hooks.json",
-      "sha256": "de8b8a9739dc9736cfe28004cbbc462dae525485202c871af9265d4dd8049740",
+      "sha256": "d834c4cfa5a38d13660e5f1a17f80c71e2c83a4394f6858468230cae4d08a104",
       "source": "providers/codex/hook-config.json",
       "classification": null,
       "destination": null
@@ -911,7 +911,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/settings-hooks.json",
-      "sha256": "f11eb16bed79c1b2fffb105862861e74f1f9cb3adf70bf31c669c0e6337a4a99",
+      "sha256": "12208d27c858242190fbb1cf735c961e1905c7d1de513d90fbe0327e7435fd27",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + packages/governance/canonical/providers.json",
       "classification": null,
       "destination": null
@@ -927,7 +927,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/hook-config.json",
-      "sha256": "5c197ea686f697ea84d88a591f762dfd0ecbbf84f24a942c7d4f7d2e15f6acff",
+      "sha256": "5853d1fa036ce174cd67f19ea7e4971797f145e47e32c5201b8556146f895244",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:claude",
       "classification": null,
       "destination": null
@@ -1175,7 +1175,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/hook-config.json",
-      "sha256": "de8b8a9739dc9736cfe28004cbbc462dae525485202c871af9265d4dd8049740",
+      "sha256": "d834c4cfa5a38d13660e5f1a17f80c71e2c83a4394f6858468230cae4d08a104",
       "source": "packages/design-system/ds-canonical/templates/product-provider-wiring.json + providers.json:codex",
       "classification": null,
       "destination": null

@@ -441,6 +441,38 @@ package.json 十餘條 ceremony scripts;test-governance-build-graph:658-662 期�
 - **F receipts retention**:`.claude/logs` 502 檔為 planning/memory/archive 的歷史證據連結(load-bearing),保留;未來若需瘦身走 archive-to-release-assets 工具(LOW,未 justify)。
 - **G branch sprawl**:本地 44→14(30 刪,12 個 tree-not-in-main 保守保留)+ remote 全清(僅 main)。
 
+### §8.75 RC-1 終局:sandbox 硬閘 tier 分層執行記錄(2026-08-18;§3 step 1-2 落地)
+
+**觸發**:user 提供 2026-08-18 雲端 session 截圖 —— 初始化即斷、每則訊息「An error occurred while
+executing Claude Code」,與 §1 描述的症狀完全相同。這就是 §0-DONE RC-1 誠實註記所說「真正的證明
+是 merge 後第一個雲端 session 實測」的實測結果:**enableWeakerNestedSandbox 退路不足,雲端 image
+的 bubblewrap/user-namespace 前提不成立,`failIfUnavailable: true` 依官方語意直接擋住啟動**
+(官方 sandboxing 文件:「a missing dependency such as bubblewrap on Linux **blocks Claude Code
+from starting**」;Ubuntu 24.04+ 預設 AppArmor 擋 bwrap user namespace,容器內無從修)。
+排除其他回歸:`.claude/settings.json` 自 #39(2026-08-04)後零 commit 觸碰;beta.120-122 未動
+任何 session-init 面。
+
+**執行(依 §3 step 1-2 預寫方案,單 branch `2026-08-18-cloud-sandbox-tier-split`)**:
+1. **本機層先裝嚴格閘**(順序不可反):`.claude/settings.local.json`(gitignored、不旅行、
+   precedence 高於 repo 層)加完整嚴格 sandbox 段(`failIfUnavailable: true` + 全 credentials
+   deny 複本)。既有 232 條 permissions.allow 零損失。
+2. **Repo 層改可攜值**:policy 源 `claude-settings-base.json` + schema `const` + 驗證器全鏈
+   true→false(= Claude Code 官方預設語意:沙箱起不來 → 警告降級;雲端 fresh-container 本身即
+   隔離邊界,permissions.deny/ask 不經沙箱子系統、照常生效)。
+3. **Managed 層投影硬化**:`materializeClaudeSandbox` 於 `managedSettings: true` 時將
+   `failIfUnavailable` 硬化回 true(沿用 allowManagedDomainsOnly 的 managed-only 擴充慣例)——
+   官方文件明言此閘「intended for managed deployments」,managed 層不旅行,嚴格語意零損失。
+4. 生成視圖(DS `.claude`、template、fork hook-config)同步為 false;測試釘值同步
+   (poison 方向反轉:repo 層出現 true 即擋)。
+
+**旅行語意 SSOT 重申**:`infra/governance/providers/compatibility-matrix.json` `fresh-container`
+`repoConfigTravels: true / userConfigTravels: false` —— 會旅行的層永遠不得攜帶「環境不滿足即
+自殺」的硬閘;此原則已由驗證器機械鎖死(repo 層 `failIfUnavailable !== false` 即 throw)。
+
+**附帶抓到的 build graph 缺陷**:`governance:generate` 圖形跑器對 stage 1/4 增量誤跳
+(policy 源改動未觸發重生,直跑 `sync-ds-canonical.mjs` / `build-fork-governance.mjs` 才更新)——
+另記待辦,不阻擋本修復。
+
 ### §8.8 beta.110/111 consumer 傳播與 provenance 修復(2026-08-05)
 
 - **beta.110 五步完成**:#52 → b078a474 → tag+dispatch → immutable+npm 讀回 → template #30(mirror 首跑 lock 停 109 = 發版後 registry 傳播時差,redispatch 後綠)+ WM #44(手工全量一致,0 diagnostics)。
