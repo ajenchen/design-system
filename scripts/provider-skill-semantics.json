@@ -107,8 +107,8 @@
         "provider-identity",
         "provider-surface-path"
       ],
-      "assumptionFindingCount": 6,
-      "assumptionFingerprint": "sha256:b5e2cfe4a41bdd25605847b0d40fa92db96c4abf604decb830cb218b19ae38d9"
+      "assumptionFindingCount": 4,
+      "assumptionFingerprint": "sha256:45202f237adbed348e84e4979ac466eb73182b7c790475672b99a7b158317a33"
     },
     {
       "name": "canonical-reviewer",
@@ -220,8 +220,8 @@
         "provider-surface-path",
         "provider-transport"
       ],
-      "assumptionFindingCount": 45,
-      "assumptionFingerprint": "sha256:30d9ac1a839a29b236d77bb8cce9ad17195581843d8a78ed4417458df157fc4e"
+      "assumptionFindingCount": 46,
+      "assumptionFingerprint": "sha256:da64347276b581f624fd0d05fbc283f5c522c60659eb02cbf5f01c15c7fb2661"
     },
     {
       "name": "ensure-canonical",
@@ -244,8 +244,8 @@
         "provider-identity",
         "provider-surface-path"
       ],
-      "assumptionFindingCount": 8,
-      "assumptionFingerprint": "sha256:a8f39a89fd53396d274780e6b5b4636a34dc496153fd21ce18d0bafb198ece52"
+      "assumptionFindingCount": 5,
+      "assumptionFingerprint": "sha256:ce07b69347835e41e0723f4f3b5357c855611cd26f73cebbf4f213849e158f88"
     },
     {
       "name": "governance-status",
