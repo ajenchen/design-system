@@ -23,7 +23,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "a211a12548543efe8192ef04621cbf895fb2437e702d0c5bb02e6aaa4ed348a2",
+      "sha256": "79c21be4c19d148aa00982e207ec088f6c60f5617652875e8e6414943b64e055",
       "source": "providers/codex/skills/bug-fix-rhythm",
       "classification": null,
       "destination": null
@@ -103,7 +103,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/product-ui-audit/SKILL.md",
-      "sha256": "f4afd969ce6adcc0507b641c09efc4f16da1256b2efd1339ce9a53d1b222c404",
+      "sha256": "ba5195dcb5cf884186e44cc02fcdaa53aaae96ec8a7016386d413b302c23861b",
       "source": "providers/codex/skills/product-ui-audit",
       "classification": null,
       "destination": null
@@ -135,7 +135,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/propose-options/SKILL.md",
-      "sha256": "43a1ff6076eb20f84731e76811dfa02865a40ca1be35c9065b54bc94f3de7992",
+      "sha256": "a3aa1f2661b0e8a4c0731ab4977f45177dcf87ebf5b12aa954a2cd03425439f7",
       "source": "providers/codex/skills/propose-options",
       "classification": null,
       "destination": null
@@ -199,7 +199,7 @@
     {
       "schemaVersion": 1,
       "file": "codex/agents/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "8cccb175c19a11331e2cacaee9e37ed61cd0ffddd552e6ab90e7633b77d63935",
+      "sha256": "cb7139970d88642f099474d9b02c46a53962a1e1264e2fb94d12a704d977d407",
       "source": "providers/codex/skills/scan-similar-bugs",
       "classification": null,
       "destination": null
@@ -943,7 +943,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "adcebfa9fd544d131a13b6e05f36bede7dda1c9c41ef67a4c2523837acc68c4e",
+      "sha256": "25d7e0182327eabd4e9d68aa4bcaab8f75c05a09a4d8cc58128f7e4b747e0fc6",
       "source": "skills/bug-fix-rhythm/SKILL.md",
       "classification": null,
       "destination": null
@@ -1023,7 +1023,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/product-ui-audit/SKILL.md",
-      "sha256": "39e8d3f9b677c42c87d7d3f64c192b3e468c74508e645fc10eec2bd39109c747",
+      "sha256": "2d887a7ee79780846c243beabc2f3436065500be9817dac2de6a7a8500617eca",
       "source": "skills/product-ui-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1055,7 +1055,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/propose-options/SKILL.md",
-      "sha256": "31baafa4d968636ead8e42c0cf493da0bf0e49f00033a20514528d3991e88f91",
+      "sha256": "3f255412753d8cb40baaa4d9e94339f888cf1ee5f18721241b5a6d690b6e2642",
       "source": "skills/propose-options/SKILL.md",
       "classification": null,
       "destination": null
@@ -1119,7 +1119,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/claude/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "5f9f12493ea1b2777ba987a99f59340ec8a8bc1c84a788b0ceffdf07576b4fff",
+      "sha256": "763a68cf1f992ceaa2c377d790b600daefb99b8f5bcd92c21d9893709898dadc",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1183,7 +1183,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "a211a12548543efe8192ef04621cbf895fb2437e702d0c5bb02e6aaa4ed348a2",
+      "sha256": "79c21be4c19d148aa00982e207ec088f6c60f5617652875e8e6414943b64e055",
       "source": "skills/bug-fix-rhythm/SKILL.md",
       "classification": null,
       "destination": null
@@ -1263,7 +1263,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/product-ui-audit/SKILL.md",
-      "sha256": "f4afd969ce6adcc0507b641c09efc4f16da1256b2efd1339ce9a53d1b222c404",
+      "sha256": "ba5195dcb5cf884186e44cc02fcdaa53aaae96ec8a7016386d413b302c23861b",
       "source": "skills/product-ui-audit/SKILL.md",
       "classification": null,
       "destination": null
@@ -1295,7 +1295,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/propose-options/SKILL.md",
-      "sha256": "43a1ff6076eb20f84731e76811dfa02865a40ca1be35c9065b54bc94f3de7992",
+      "sha256": "a3aa1f2661b0e8a4c0731ab4977f45177dcf87ebf5b12aa954a2cd03425439f7",
       "source": "skills/propose-options/SKILL.md",
       "classification": null,
       "destination": null
@@ -1359,7 +1359,7 @@
     {
       "schemaVersion": 1,
       "file": "providers/codex/skills/scan-similar-bugs/SKILL.md",
-      "sha256": "8cccb175c19a11331e2cacaee9e37ed61cd0ffddd552e6ab90e7633b77d63935",
+      "sha256": "cb7139970d88642f099474d9b02c46a53962a1e1264e2fb94d12a704d977d407",
       "source": "skills/scan-similar-bugs/SKILL.md",
       "classification": null,
       "destination": null
@@ -1463,7 +1463,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/bug-fix-rhythm/SKILL.md",
-      "sha256": "a37c1dbc3f30065592e7ba3d82621837f1402cae3f6b35a4e8041bb344ae560c",
+      "sha256": "111fcc0e665ccf248252109e54c20468ac34b52a519b72a02b7d54e86735e1a9",
       "source": null,
       "classification": null,
       "destination": null
@@ -1543,7 +1543,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/product-ui-audit/SKILL.md",
-      "sha256": "84c454b4b8232bf5cb56e1e530e4c2471481074af6e6e7fd4a26654f7a27361f",
+      "sha256": "26c07c76bfe56a10bf26b95f826d9e3d8ef07a32f0806c2afde37aec0220d5a5",
       "source": null,
       "classification": null,
       "destination": null
@@ -1575,7 +1575,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/propose-options/SKILL.md",
-      "sha256": "9f1e8e27cf18382fa3537e978f7219476c5688f708f845abe2c27be8b81e7985",
+      "sha256": "9e5038f8e2193685781fa8434c57f58f2e991cf1d21497230b1c08a5ed5c6606",
       "source": null,
       "classification": null,
       "destination": null
@@ -1639,7 +1639,7 @@
     {
       "schemaVersion": 1,
       "file": "skills/scan-similar-bugs/SKILL.md",
-      "sha256": "3eb6382145b19400f051a5b1f9bd5cb20de950a9d34497c67432f16561388539",
+      "sha256": "ed1f91c49a5e968ceffd3c8a851efdce1e6f50ae64b9ebc06014d3bf0542551d",
       "source": null,
       "classification": null,
       "destination": null

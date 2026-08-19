@@ -120,7 +120,8 @@ for (const m of sessStartContent.matchAll(/(\d+)\s+audit\s+dims/g)) {
   const declared = parseInt(m[1])
   if (declared !== dimCount) drifts.push(`session_start_governance_check.sh text "${m[0]}" != actual ${dimCount}`)
 }
-for (const m of sessStartContent.matchAll(/(\d+)\s+active\s+M-rules/g)) {
+// 與下方多檔掃描同寬(broad-vs-narrow gap,M7/M34):可抓「N active M-rules」與「N 條 M-rules」
+for (const m of sessStartContent.matchAll(/(\d+)\s*(?:active|條)?\s*M-rules(?!-)/g)) {
   const declared = parseInt(m[1])
   if (declared !== mRuleCount) drifts.push(`session_start_governance_check.sh text "${m[0]}" != actual ${mRuleCount}`)
 }

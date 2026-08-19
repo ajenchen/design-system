@@ -8,7 +8,7 @@ description: Auto-invoke after fix commits — extracts root-cause anti-pattern,
 **目的**:任何 bug fix 提交後,**機械化掃 DS-wide 找同 pattern**,而非靠 model 記得 M10。
 
 **對齊**:
-- `rules/meta-patterns.md` M10 「Proactive exhaustive scan」mechanical 落地
+- `packages/design-system/ds-canonical/rules/meta-patterns.md` M10 「Proactive exhaustive scan」mechanical 落地
 - mindset #1「不取巧」+ #2「優先消費既有」+ #6「meta 抽象」
 - 對齊 IDE「find similar / find references」+ Chrome DevTools「find usages」+ GitHub Copilot「related code」3+ 家世界級 idiom
 

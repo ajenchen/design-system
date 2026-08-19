@@ -6,7 +6,7 @@
 
 ## Project (active work)
 - [project_agent_ui_draft_model.md](project_agent_ui_draft_model.md) — AI agent 面板規格已定稿歸檔 BACKLOG(2026-08-11);SSOT 路徑在本檔內(planning 歸檔 §〇);實作前禁寫入 DS canonical
-- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + five-step machine SSOT；舊 baton/P0/activation/certification/fleet/soak 只作歷史 provenance；current state 必由 exact-head deep-audit evidence與 `npm run release:status` 讀回
+- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + five-step machine SSOT + **WM 身分(每 session 必知)與 canary 操作檔案**；舊 baton/P0/activation/certification/fleet/soak 只作歷史 provenance；current state 必由 exact-head deep-audit evidence與 `npm run release:status` 讀回
 
 ## Feedback (workflow / collaboration discipline)
 - [feedback_audit_discipline_full_sweep_deterministic_preflight.md](feedback_audit_discipline_full_sweep_deterministic_preflight.md) — 稽核三 invariant:NO-SAMPLE 全盤 / 必 chain deterministic script / Preflight scan(合 3 file)
@@ -28,7 +28,7 @@
 
 ---
 **Prune history**(細節在 governance/archive/memory-retired/ + git log):
-- 2026-05-15 → 2026-06-11 六輪 prune/consolidate(D1/D2/D3 上游吸收 + codex-transport + M31 Phase fold + story_baseline fold + deploy_url/css-aggregator 合併;原文在 governance/archive/memory-retired/ 2026-05-27 ~ 2026-06-11 各目錄)
+- 2026-05-15 → 2026-06-11 六輪 prune/consolidate(D1/D2/D3 上游吸收 + codex-transport + M31 Phase fold + story_baseline fold + deploy_url/css-aggregator 合併;2026-05-27 起各輪原文在 governance/archive/memory-retired/ 對應目錄;2026-05-15 該輪為上游吸收無 archive 目錄,詳 git log)
 - 2026-07-07 D8 headroom:netlify_basic_password→deploy_targets 合併(同部署域 D1 consolidation,invariant 零損;19→18)
 - 2026-07-14 D8 headroom:project_cprime_governance_shipped→reference_cloud_governance_loading 合併(campaign 已完結 + 同雲端治理域 + 同 originSession D1 consolidation,invariant 零損;19→18)
 - 2026-07-23 provider-neutral consolidation:退役 fixed Claude/Codex layer mapping 與 Codex exec transport；歷史原文移至 `governance/archive/memory-retired/2026-07-23-provider-neutral-consolidate/`，現行 authority 只保留 registry/binding/certification contracts

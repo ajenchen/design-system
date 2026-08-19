@@ -57,7 +57,7 @@ resolver 只允許真實 Git directory 下的 `governance-runtime/`，並逐檔�
 
 規則 fire > 50 次 / 6 月 = 該 rule 反覆觸發 = 問題普遍 = 值得上升 Meta-Pattern layer 收斂(對齊 mindset #6「大原則吸收瑣碎」)。
 
-Output: 「`check_item_list_gap.sh` 6 月 fired 78 次 → 提議擴充到 `rules/meta-patterns.md` M18?」
+Output: 「`check_item_list_gap.sh` 6 月 fired 78 次 → 提議擴充到 `packages/design-system/ds-canonical/rules/meta-patterns.md` M18?」
 
 #### 2b. Dead rule → retire 候選
 
@@ -94,7 +94,7 @@ Output: 「過去 4 週 user 糾正 15 條,sample: ..., 提議:升級 M19「XX p
 - ...
 
 ## Codify 候選(pending corrections)
-- {topic} — {count} user corrections — propose: 擴充 AGENTS.md / `rules/meta-patterns.md` {section}
+- {topic} — {count} user corrections — propose: 擴充 AGENTS.md / `packages/design-system/ds-canonical/rules/meta-patterns.md` {section}
 - ...
 
 ## 外部 benchmark

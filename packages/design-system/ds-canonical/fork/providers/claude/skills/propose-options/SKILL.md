@@ -174,7 +174,7 @@ User 已就「為什麼會給錯誤建議」糾正 ≥ 3 次:
 - (b) 是否有 reject option 曾被 list?(reject 不該被列出)
 - (c) 是否 user 仍質疑 propose 品質?(若是 → 7-Q 沒抓到的 gap → 加 Q5)
 
-回填到本 SKILL.md 或 `rules/meta-patterns.md` M18(若需 escalate)。
+回填到本 SKILL.md 或 `node_modules/@qijenchen/design-system/ds-canonical/rules/meta-patterns.md` M18(若需 escalate)。
 
 ---
 

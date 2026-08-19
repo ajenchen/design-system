@@ -10,7 +10,7 @@ description: Batch-end-verify rhythm + parallel tool batch + user-listed N-rule 
 **目的**:當 session 有 ≥ 2 fixes(常見 visual bug session / user 列 N 條 numbered 規則),走 batch-end-verify rhythm,而非 per-fix verify cycle waste。**M32 split 後 (c)(d)(h1)(h2) 的 home**。
 
 **對齊**:
-- AGENTS.md mindset #6「大原則吸收瑣碎」+ `rules/meta-patterns.md` M14「對話結論 AUTO integrate」
+- AGENTS.md mindset #6「大原則吸收瑣碎」+ `node_modules/@qijenchen/design-system/ds-canonical/rules/meta-patterns.md` M14「對話結論 AUTO integrate」
 - Bazel incremental-build / GitHub Actions matrix-batch idiom(per-step incremental = waste,batch-end = canonical)
 - provider-neutral parallel execution canonical
 - Toyota TPS jidoka(per-station per-item verify,不可 skip 任何 item)

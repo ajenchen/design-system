@@ -105,7 +105,7 @@ canonical 手動分類。未掛載的 registered repo 是 unobserved，不可寫
 - **mindset #2 不憑直覺發明**:新數值(gap / padding / font-size)前有 grep 既有?
 - **mindset #3 改一處看三處**:若改 DS 的 cva defaultVariants,spec / docblock / anatomy 三方同步?
 - **mindset #4 真實業務場景**:stories / examples 用真實場景 (Jira / Stripe / Notion...)?無 `Option A/B/C` / `按鈕一` / `Rule A`?
-- **mindset #5 先證據、再分權**:code 裡有 TODO-未確認留白,且屬產品／UI／UX SSOT 真取捨(純工程不確定性應依證據自主收斂,不留 TODO)?
+- **mindset #5 先證據、再分權**:code 裡有 TODO-未確認留白?兩類都 flag——屬產品／UI／UX SSOT 真取捨 → 列入 user 決策清單;屬純工程 → 違反「依證據自主收斂」(工程不確定性不得留 TODO,應當場收斂)
 
 ### Dim 5 — 視覺幾何(Mindset #1 視覺擴充 + `node_modules/@qijenchen/design-system/ds-canonical/references/ui-dev-rules.md`「同 flex 列互動 slot 幾何鐵律」)
 

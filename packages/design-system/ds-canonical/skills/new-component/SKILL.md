@@ -103,7 +103,7 @@ requirement、近親 SSOT 與 benchmark 已唯一決定 positioning，直接記�
 1. **結構**:`forwardRef + cva + VariantProps + cn() + { Component, componentVariants } export`
 2. **cva 適用法**:className variant 用 cva;style prop variant 用 object map;結構 variant 用 conditional rendering(見 cva-patterns.md)
 3. **Props 命名**:按 `packages/design-system/ds-canonical/rules/ui-development.md`「元件 Props 命名」:
-   - 行為 → `onDismiss` / `onClose` / `onClear` / `onRemove`(語意分層,見 `references/props-naming.md`)
+   - 行為 → `onDismiss` / `onClose` / `onClear` / `onRemove`(語意分層,見 `packages/design-system/ds-canonical/references/props-naming.md`)
    - Slot icon → `startIcon` / `endIcon`(type `LucideIcon`)
    - Slot media → `avatar`(type `ReactNode`)
 4. **Token 消費**:Padding / icon size / hover bg / shadow 全走 token(見 `packages/design-system/ds-canonical/rules/ui-development.md` 三層分層)

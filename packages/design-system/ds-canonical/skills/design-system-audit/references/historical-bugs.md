@@ -218,6 +218,10 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 ### M10 — Proactive exhaustive scan
 2026-04-22 dismiss canonical migration 只改 Dialog/Sheet/Popover/Alert/Notice/Coachmark,漏 FileViewer 2 處 + action-bar stories 4 處;同時 Dialog autoFocus tooltip 洩漏 / body 未用 ScrollArea / layoutSpace uiSize 耦合 / list-in-dialog padding 大 — AI 全程知道或該察覺但沒主動講,user 7 個問題一次炸出來。根因:AI「做完」標準太鬆(只改 explicit 要的事),缺 proactive self-scan。
 
+2026-08 追錄:
+- 2026-08-07 `grep candidateRelease | head -20` 截掉 `consumerctl.mjs:1737/1761` 兩個 caller → 把還有人讀的欄位判成死狀態歸零 → 鎖死 legacy consumer 唯一升級路線(才剛在 #83 解開的死鎖)。root:盤 reader 清單時 grep 接 `head`/`-m` = 假陰性;`cmd | head` 的 exit code 屬 head,`&&` 分支報相反結論(必看 `PIPESTATUS`)。
+- 2026-08-09 agent UI 規格:「agent 切換會重置左側 modal 層數」定調後未入結論總帳,規格三處寫成「尚未定案」,據此跑兩輪無謂辯論,連自己推薦方案的賣點違背既有結論都沒看出來;前後多次「全盤稽核」全只驗單句證據,零次驗結論兩兩相容性。user 原話:「你在檢查的時候難道都沒有發現他們邏輯不通嗎?那你之前到底在檢查什麼」
+
 ### M11 — User-perspective interactive state walk
 2026-04-22 ListBody 修完 user 連抓 5 波:hover bg 貼邊違反不貼邊 / focus ring click 觸發擾人 / notification 範例不現實(誰會進 modal 又跳別處)/ menu py-2 沒對齊 / layoutSpace md reset selector 缺。每個都是 user 視角一看就知,AI 沒跑 7 題 state walk 就 commit。
 
@@ -239,9 +243,7 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 ### M17 — SSOT 必可傳播(非僅 markdown)
 2026-04-23 user 指出「mt-0.5 canonical 只存 markdown 文字、13 consumer 各自 hard-code,今天雖 compliant 但明天改 2px → 4px 需手動 grep N 檔 = 假 SSOT」。本 session migrate token + primitive + mode prop 後,改 `--item-gap-label-desc` 一處全 DS 同步。真 SSOT 必是可執行 value(token / primitive / utility class)。世界級對照:Material dense prop / Carbon size enum / Ant size enum / Polaris token,6 家皆透過 token + primitive 組合。
 
-### M10 — Proactive exhaustive scan(2026-08 追錄)
-- 2026-08-07 `grep candidateRelease | head -20` 截掉 `consumerctl.mjs:1737/1761` 兩個 caller → 把還有人讀的欄位判成死狀態歸零 → 鎖死 legacy consumer 唯一升級路線(才剛在 #83 解開的死鎖)。root:盤 reader 清單時 grep 接 `head`/`-m` = 假陰性;`cmd | head` 的 exit code 屬 head,`&&` 分支報相反結論(必看 `PIPESTATUS`)。
-- 2026-08-09 agent UI 規格:「agent 切換會重置左側 modal 層數」定調後未入結論總帳,規格三處寫成「尚未定案」,據此跑兩輪無謂辯論,連自己推薦方案的賣點違背既有結論都沒看出來;前後多次「全盤稽核」全只驗單句證據,零次驗結論兩兩相容性。user 原話:「你在檢查的時候難道都沒有發現他們邏輯不通嗎?那你之前到底在檢查什麼」
+## Meta-Pattern M18+ origins(2026-08-18 搬自 meta-patterns.md 長篇 example cells)
 
 ### M18 — Propose-time 自檢 gate(Q0 起源)
 2026-05-18 Sheet 補 / 5 元件 inline-action migrate / 5 元件 SurfaceBody migrate 三題全錯誤 propose 給 user 拍板,grep 後 0 個真 gap(Sheet 已完整 / 6 元件全消費 inline action / Dialog 走 ScrollArea canonical 不該用 SurfaceBody / HoverCard 是 behavior primitive / DatePicker TimePicker 是專用 layout / Sidebar 是 chrome 不是浮層)。User verbatim「不是老早就跟你說過要我決策前請先基於我們所有的檔案包括設計原則包括 ssot 包括所有實作代碼,自主自動驗證這些問題是否真的是問題」→ 催生 Q0 Pre-ASK self-verify。
