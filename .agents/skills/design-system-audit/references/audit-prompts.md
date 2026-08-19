@@ -402,7 +402,7 @@ End: `N files checked, V violations.` Under 600 words. Don't fix.
 
 **Type**: Consistency
 **Canonical source**: `/story-writing` anatomy-standard.md → 6 件套 (`Overview / Inspector / ColorMatrix / SizeMatrix / StateBehavior / Accessibility`) + 強制中文 `name:` 覆寫(含編號前綴)
-**Rationale home**: element .spec.md — replacing/omitting a 6-canonical section requires a rationale paragraph explaining why (e.g., "Badge 無互動狀態,不需 StateBehavior"). Renaming identifier is never allowed. **`*.anatomy.stories.tsx` 檔頭 `// @anatomy-rationale:` 註解列出 N/A sections + 一行原因 → legitimately N/A,不報為 violation**(對齊 hook `check_story_anatomy.sh` 同源處理)。
+**Rationale home**: element .spec.md — replacing/omitting a 6-canonical section requires a rationale paragraph explaining why (e.g., "Badge 無互動狀態,不需 StateBehavior"). Renaming identifier is never allowed. **`*.anatomy.stories.tsx` 檔頭 `// @anatomy-rationale:` 註解列出 N/A sections + 一行原因 → legitimately N/A,不報為 violation**(對齊 hook `check_story_invariants.sh` R1 同源處理;原 check_story_anatomy.sh 已 folded)。
 
 ```
 Your job: audit .anatomy.stories.tsx against canonical `/story-writing` anatomy-standard.md on THREE layers, enforcing the canonical「Consistency 類稽核」protocol.
@@ -1066,7 +1066,7 @@ Per-component grep `*.stories.tsx`(非 anatomy/principles)反 pattern:
 
 **Type**: Absolute / **Canonical**: `overlay-surface.spec.md`「List-as-region in overlay body」+ memory `feedback_layout_v6_canonical.md` / **Home**: 檔頭 `// overlay-body-stripped-variant-allow:`(必含 ≥ 3 家世界級對照 + multi-row hold)
 
-Per-overlay grep `components/(Dialog|Sheet|Popover)/*.tsx`(非 stories)反 pattern:`(flush|naked|bare|stripped|unpadded|noPadding|paddingless)\?:\s*boolean` 在 body component。對齊 Material/Atlassian/Mantine/shadcn 主流。違反 = list-as-region 該 consumer override(`!px-0 !pt-0`)+ 自管 list outer wrapper。Hook `check_overlay_handcraft.sh` Check 6 同源。
+Per-overlay grep `components/(Dialog|Sheet|Popover)/*.tsx`(非 stories)反 pattern:`(flush|naked|bare|stripped|unpadded|noPadding|paddingless)\?:\s*boolean` 在 body component。對齊 Material/Atlassian/Mantine/shadcn 主流。違反 = list-as-region 該 consumer override(`!px-0 !pt-0`)+ 自管 list outer wrapper。Hook `lib/_overlay_handcraft.sh` Check 6 同源(`post_edit_dispatcher.sh` 消費;原 check_overlay_handcraft.sh 2026-05-13 fold)。
 
 ## 32. Filter operator registry SSOT consumption
 
@@ -1243,10 +1243,10 @@ For each header tsx:
 5. **W5** — grep `<Tabs ... size="md"` in chrome header usage = violation(default sm)
 6. **W6** — grep `defaultVariants:\s*\{\s*size:\s*['"]md['"]` in `tabs.tsx` cva = violation
 
-Cross-reference companion hooks:
-- `check_tab_lg_chrome_header_equal.sh`(W3 mechanical)
-- `check_header_with_tabs_border.sh`(W1 mechanical)
-- `check_chrome_header_handcraft.sh`(Layer 3 ChromeHeader consumption)
+Cross-reference companion hooks(`chrome_header_dispatcher.sh` 消費;原 check_*.sh 2026-05-26 fold 為 lib/):
+- `lib/_tab_lg_chrome_header_equal.sh`(W3 mechanical)
+- `lib/_header_with_tabs_border.sh`(W1 mechanical)
+- `lib/_chrome_header_handcraft.sh`(Layer 3 ChromeHeader consumption)
 
 Report ONLY violations。Format:
 - `<Component>: W<N> violation — file:line — actual vs canonical`

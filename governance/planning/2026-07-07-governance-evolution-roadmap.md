@@ -2,7 +2,7 @@
 # 治理進化 roadmap(2026-07-07,SSOT — Level 9 plan doc)
 
 **來源**:user 提問「Fable 5 如何進化稽核/做產品 skill 使產出完美不打折 + 世界級 + 一致設計語言 + SSOT 不造輪」→ 8-agent 研究(3 路內部盤點 + 5 路世界級,全 URL+verbatim,artifact: deep-audit workflow wnk1hfk7x)→ user 拍板「確認全方位比之前好就直接做到完整完美」(2026-07-07)。
-**Memory pointer**:`project_governance_evolution_roadmap.md`。
+**Memory pointer**:原 `project_governance_evolution_roadmap.md` 已於 2026-08-18 prune 退役,歸檔於 `governance/archive/memory-retired/2026-08-18-prune/`;本檔 status 以 `governance/planning/registry.json` 為 SSOT。
 
 ## 核心模型:雙柱(user 質疑後定案)
 

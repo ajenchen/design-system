@@ -107,8 +107,8 @@
         "provider-identity",
         "provider-surface-path"
       ],
-      "assumptionFindingCount": 6,
-      "assumptionFingerprint": "sha256:b5e2cfe4a41bdd25605847b0d40fa92db96c4abf604decb830cb218b19ae38d9"
+      "assumptionFindingCount": 4,
+      "assumptionFingerprint": "sha256:45202f237adbed348e84e4979ac466eb73182b7c790475672b99a7b158317a33"
     },
     {
       "name": "canonical-reviewer",
@@ -220,8 +220,8 @@
         "provider-surface-path",
         "provider-transport"
       ],
-      "assumptionFindingCount": 45,
-      "assumptionFingerprint": "sha256:30d9ac1a839a29b236d77bb8cce9ad17195581843d8a78ed4417458df157fc4e"
+      "assumptionFindingCount": 46,
+      "assumptionFingerprint": "sha256:da64347276b581f624fd0d05fbc283f5c522c60659eb02cbf5f01c15c7fb2661"
     },
     {
       "name": "ensure-canonical",
@@ -244,8 +244,8 @@
         "provider-identity",
         "provider-surface-path"
       ],
-      "assumptionFindingCount": 8,
-      "assumptionFingerprint": "sha256:a8f39a89fd53396d274780e6b5b4636a34dc496153fd21ce18d0bafb198ece52"
+      "assumptionFindingCount": 5,
+      "assumptionFingerprint": "sha256:ce07b69347835e41e0723f4f3b5357c855611cd26f73cebbf4f213849e158f88"
     },
     {
       "name": "governance-status",
@@ -300,11 +300,10 @@
       "description": "Build a new design-system component through specification, implementation, stories, and quality gates.",
       "declaredIdentifiers": [],
       "allowedAssumptions": [
-        "provider-identity",
         "provider-surface-path"
       ],
-      "assumptionFindingCount": 26,
-      "assumptionFingerprint": "sha256:f2eb5fef7002cc24d0253fff065a2275b859faab278cc0f2292cbe425f724e87"
+      "assumptionFindingCount": 13,
+      "assumptionFingerprint": "sha256:7bfdbfda8e41087c243da76403a55d4e8da1db234205297bec94e49f9caa9eed"
     },
     {
       "name": "performance-audit",
@@ -336,8 +335,8 @@
         "provider-identity",
         "provider-surface-path"
       ],
-      "assumptionFindingCount": 6,
-      "assumptionFingerprint": "sha256:fc1fe71bd891a774d11183a0f72e67565e1a635560f0db11e8738d5596795561"
+      "assumptionFindingCount": 3,
+      "assumptionFingerprint": "sha256:3f2f72c912df95fa56c51f9620f6a76f5ce9fd59b3b1ab07c4e7d9b35fc939dd"
     },
     {
       "name": "prototype",
@@ -351,17 +350,11 @@
     {
       "name": "scan-similar-bugs",
       "sourceWorkflow": "packages/design-system/ds-canonical/skills/scan-similar-bugs/SKILL.md",
-      "classification": "provider-bound",
-      "projection": "provider-bound-copy",
-      "bindingProfile": "repository-legacy-surfaces-v1",
+      "classification": "provider-neutral",
+      "projection": "provider-copy",
       "description": "Extract a fixed bug's root pattern and exhaustively scan the applicable repository scope for recurrence.",
       "declaredIdentifiers": [],
-      "allowedAssumptions": [
-        "provider-identity",
-        "provider-surface-path"
-      ],
-      "assumptionFindingCount": 2,
-      "assumptionFingerprint": "sha256:69580682e9ebafb279438e8b2aaae9aa4dba1b18dbc490aa971e281f0f0e27c7"
+      "allowedAssumptions": []
     },
     {
       "name": "story-auto-compile-migrate",
@@ -399,11 +392,10 @@
       "description": "Run screenshot-grounded pixel and geometry review without guessing from code alone.",
       "declaredIdentifiers": [],
       "allowedAssumptions": [
-        "provider-identity",
         "provider-surface-path"
       ],
-      "assumptionFindingCount": 6,
-      "assumptionFingerprint": "sha256:e2819ca2bba6ac91c44d3c1a362e3515197ff305fa08bd6155413e4ce209d949"
+      "assumptionFindingCount": 4,
+      "assumptionFingerprint": "sha256:0fd67f1adf4fc31b0756f12522a1dfd7f0af40f3e4b08002f1ee18cac446f7fe"
     }
   ]
 }

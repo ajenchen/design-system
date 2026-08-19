@@ -6,11 +6,7 @@
 
 ## Project (active work)
 - [project_agent_ui_draft_model.md](project_agent_ui_draft_model.md) — AI agent 面板規格已定稿歸檔 BACKLOG(2026-08-11);SSOT 路徑在本檔內(planning 歸檔 §〇);實作前禁寫入 DS canonical
-- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + five-step machine SSOT；舊 baton/P0/activation/certification/fleet/soak 只作歷史 provenance；current state 必由 exact-head deep-audit evidence與 `npm run release:status` 讀回
-
-## Project (closed; retained reference)
-- [project_governance_evolution_roadmap.md](project_governance_evolution_roadmap.md) — 方向 1-3、6-7 已落地；方向 4-5 是有明確 trigger 的 future-reserved reference，不是 current backlog
-- [project_wm_ds_alignment_campaign.md](project_wm_ds_alignment_campaign.md) — WM↔DS 對齊戰役完整收官:beta.84/85 已發版、WM lockfile 真綠 13/13、CellSelect 包裝落地;WM main 已 push(4e83402,CAMPAIGN CLOSED);handoff 在 WM docs
+- [project_provider_neutral_governance.md](project_provider_neutral_governance.md) — PNG 現行索引 + five-step machine SSOT + **WM 身分(每 session 必知)與 canary 操作檔案**；舊 baton/P0/activation/certification/fleet/soak 只作歷史 provenance；current state 必由 exact-head deep-audit evidence與 `npm run release:status` 讀回
 
 ## Feedback (workflow / collaboration discipline)
 - [feedback_audit_discipline_full_sweep_deterministic_preflight.md](feedback_audit_discipline_full_sweep_deterministic_preflight.md) — 稽核三 invariant:NO-SAMPLE 全盤 / 必 chain deterministic script / Preflight scan(合 3 file)
@@ -26,21 +22,16 @@
 
 - [feedback_anti_self_lock_release_transport.md](feedback_anti_self_lock_release_transport.md) — 被擋先查對照表(gh/npm/TLS/journal/分類器 → 已建成的解),禁重發明禁問 user;immutable 版號不可重用;供應鏈閘是真警報(2026-08-11)
 
-## Feedback (DS canonical / 視覺判斷)
-- [feedback_nearest_same_purpose_canonical.md](feedback_nearest_same_purpose_canonical.md) — 寫 stories wrap primitive 前必抄 production baseline(M35→M23(d);registry R8 + grep-baseline R7 + AppShell drift 錨例;2026-06-02 fold story_baseline_reference 同事件進來)
-
 ## Reference
 - [reference_deploy_targets.md](reference_deploy_targets.md) — Deploy targets + URL 3-strategy 自動推導 + per-user override + transport self-awareness + Netlify 免費密碼 = Edge Function Basic Auth(STORYBOOK_BASIC_AUTH)+ Claude Code 直連 sandbox 雲端主路徑 + clone-on-demand(2026-06-11 合併 deploy_url_auto_detect;2026-07-07 合併 netlify_basic_password)
 - [reference_cloud_governance_loading.md](reference_cloud_governance_loading.md) — 雲端 sandbox 治理載入實證:committed .claude 全 4 hook event 會 fire / plugin 不可靠(#63028/#62174)/ --cloud 需 TTY / skills 不認 node_modules(2026-06-16)+ C-prime fork 治理 shipped beta.70；歷史單一 Claude cloud target/snapshot 曾親證 proactive 指引與機械強制生效，不構成目前或所有 cloud certification(2026-07-14 合併 project_cprime)
 
 ---
 **Prune history**(細節在 governance/archive/memory-retired/ + git log):
-- 2026-05-15 D3 retire 4(上游吸收)/ 2026-05-27 D1+D2 prune 8 / 2026-05-28 D3 4→2(20→18)
-- 2026-05-29 codex-transport 2→1 + M31 Phase fold(20→19)
-- 2026-06-02 quality-first prune:story_baseline fold + deep-audit 家族 Rule-of-3 清(19→18)
-- Historical provenance(2026-06-11):D8 headroom:codex directives→dual_track / deploy_url→deploy_targets 合併 + css-aggregator retire(教訓當時寫入 provider-specific adapter CLAUDE.md 失敗記憶索引;19→16;修 stale ×3)
+- 2026-05-15 → 2026-06-11 六輪 prune/consolidate(D1/D2/D3 上游吸收 + codex-transport + M31 Phase fold + story_baseline fold + deploy_url/css-aggregator 合併;2026-05-27 起各輪原文在 governance/archive/memory-retired/ 對應目錄;2026-05-15 該輪為上游吸收無 archive 目錄,詳 git log)
 - 2026-07-07 D8 headroom:netlify_basic_password→deploy_targets 合併(同部署域 D1 consolidation,invariant 零損;19→18)
 - 2026-07-14 D8 headroom:project_cprime_governance_shipped→reference_cloud_governance_loading 合併(campaign 已完結 + 同雲端治理域 + 同 originSession D1 consolidation,invariant 零損;19→18)
 - 2026-07-23 provider-neutral consolidation:退役 fixed Claude/Codex layer mapping 與 Codex exec transport；歷史原文移至 `governance/archive/memory-retired/2026-07-23-provider-neutral-consolidate/`，現行 authority 只保留 registry/binding/certification contracts
-- 2026-08-12 superset 收斂:home-only dual_track+exec_transport → full_access 三檔合併(codex 域 D1,invariant 零損);promote agent_ui backlog 指標入 repo;index 20 = hard cap
 - 2026-07-31 續作保障:新增 planning baton；2026-08-01 deep-audit 收為 `reference / non-executable`，live state 回歸 machine evidence；**未新增 index 條目**
+- 2026-08-12 superset 收斂:home-only dual_track+exec_transport → full_access 三檔合併(codex 域 D1,invariant 零損;home-only 來源,無 repo 原文可歸檔);promote agent_ui backlog 指標入 repo;index 20 = hard cap
+- 2026-08-18 D8 prune:nearest_same_purpose 完全吸收退役(M23(d) + story-rules + story-writing SKILL + story-baseline-registry 全覆蓋)/ governance_evolution_roadmap 純 pointer 退役(planning registry 已是 status SSOT)/ wm_ds_alignment_campaign 收官歸檔(live 操作檔案併入 project_provider_neutral_governance);20→17

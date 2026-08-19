@@ -822,7 +822,7 @@ rule_story_baseline_reference() {
       echo "   Read 其 helper(WorkspaceBrand / MAIN_NAV / PageContent / toolbar)當 baseline。" >&2
       echo "   詳 ${CANONICAL_RULE_REL}/story-rules.md 「Production-grade composition fidelity」 +" >&2
       echo "   ${CANONICAL_SKILL_REL}/story-writing/SKILL.md Phase 0 +" >&2
-      echo "   memory/feedback_nearest_same_purpose_canonical.md" >&2
+      echo "   ${CANONICAL_RULE_REL}/meta-patterns.md M23(d)" >&2
     fi
 
     # 偵測明顯 simplified mock anti-pattern
@@ -1007,7 +1007,7 @@ rule_story_archetype_registry() {
         echo "" >&2
         echo "   修法:Read baseline story + helpers,抄 production archetype。" >&2
         echo "   或加 \`// @story-baseline-allow: <reason>\` 檔頭豁免(audit-logged)。" >&2
-        echo "   詳 ${CANONICAL_RULE_REL}/meta-patterns.md M35 + governance/memory/feedback_nearest_same_purpose_canonical.md" >&2
+        echo "   詳 ${CANONICAL_RULE_REL}/meta-patterns.md M23(d)(原 M35,2026-05-22 folded)" >&2
         # 2026-06-02 升 P0 BLOCKER(block-severity record_worst);warn-severity context(2026-07-04 補實作)
         [ "$SEV" = "block" ] && record_worst 2
       fi

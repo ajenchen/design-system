@@ -5,7 +5,7 @@ description: Auto-invoke when listing options / 建議 / 候選方案. Forces in
 
 <!-- _generated: scripts/gen-codex-adapter.mjs; source: packages/design-system/ds-canonical/skills/propose-options/SKILL.md; provider: codex; do not edit this adapter view. -->
 
-<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=codex; strategy=generated-binding-header; assumptionCount=6; assumptionFingerprint=sha256:fc1fe71bd891a774d11183a0f72e67565e1a635560f0db11e8738d5596795561; evidence=packages/governance/canonical/providers.json#codex -->
+<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=codex; strategy=generated-binding-header; assumptionCount=3; assumptionFingerprint=sha256:3f2f72c912df95fa56c51f9620f6a76f5ce9fd59b3b1ab07c4e7d9b35fc939dd; evidence=packages/governance/canonical/providers.json#codex -->
 
 ## Provider binding contract
 
@@ -19,7 +19,7 @@ This canonical workflow contains a committed inventory of legacy assumptions. Re
 **目的**:Claude 對 user 提建議 / 列 option list 時,**先跑 7 題原則自檢**,通過才寫進回覆。Reject 的不列 OR 列出時標 fail 原因。
 
 **對齊**:
-- CLAUDE.md mindset #1(不取巧)+ #2(消費既有)+ #5(猶豫就問)+ #6(meta 抽象)
+- AGENTS.md mindset #1(不取巧)+ #2(消費既有)+ #5(先證據、再分權)+ #6(meta 抽象)
 - M8 benchmark / M17 SSOT / M12 binary rule / 治理「加規則前 3 題」
 - 本 skill 是上述 meta 的**propose-time 落地** — meta 寫成文字不夠,要 mechanical workflow 釘住
 
@@ -172,7 +172,7 @@ User 已就「為什麼會給錯誤建議」糾正 ≥ 3 次:
 - (b) 是否有 reject option 曾被 list?(reject 不該被列出)
 - (c) 是否 user 仍質疑 propose 品質?(若是 → 7-Q 沒抓到的 gap → 加 Q5)
 
-回填到本 SKILL.md 或 CLAUDE.md M18(若需 escalate)。
+回填到本 SKILL.md 或 `packages/design-system/ds-canonical/rules/meta-patterns.md` M18(若需 escalate)。
 
 ---
 

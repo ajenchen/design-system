@@ -14,13 +14,13 @@
 3. **改一處必看三處**——code / spec / story 三方聯動。改 cva `defaultVariants`／variant／token 前先 grep 該元件所有檔案,一次改完。
 4. **範例必真實業務場景**——Jira / Stripe / Notion / Figma 可辨識情境;禁 `Option A/B/C`、「按鈕一」、極端不現實、ASCII art。
 5. **先證據、再分權**——無前例的產品／UI／UX SSOT 決策:grep 既有 → 讀近親 spec → 仍有真實取捨才停下問。純工程不確定性由最高 certified model 依 canonical、tests、Harness 與 security gates 收斂;只有 task／deliverable 明確要求時才加 independent review,**不得用問 user 代替工程判斷**;禁憑直覺造新 pattern。
-6. **大原則吸收瑣碎**——同類 bug 反覆糾正 = meta 層沒抓住,見 `packages/design-system/ds-canonical/rules/meta-patterns.md`(31 active M-rules;M27/M33/M34/M35 已折入 M20/M7/M23(c)(d))。**AI 不需 user 提醒才找 root invariant**:rule 震盪 → 自跑 M12 benchmark + invariant test;user 第 2 次問 → 必截圖 verify(M13);對話結論 → AUTO 5-layer pipeline(M14);visual/behavior decision 前必先 WebFetch ≥ 3 source(M26);solo-work git ops 必先 grep canonical(M28);**視覺／結構 propose 前必 grep DS spec.md 找 owner SSOT(M29)並出 3-column 表,否則提案不被接受**。使用者 tell me once 不該要 tell me twice。
+6. **大原則吸收瑣碎**——同類 bug 反覆糾正 = meta 層沒抓住,見 `packages/design-system/ds-canonical/rules/meta-patterns.md`(32 active M-rules;M27/M33/M34/M35 已折入 M20/M7/M23(c)(d))。**AI 不需 user 提醒才找 root invariant**:rule 震盪 → 自跑 M12 benchmark + invariant test;user 第 2 次問 → 必截圖 verify(M13);對話結論 → AUTO 5-layer pipeline(M14);visual/behavior decision 前必先 WebFetch ≥ 3 source(M26);solo-work git ops 必先 grep canonical(M28);**視覺／結構 propose 前必 grep DS spec.md 找 owner SSOT(M29)並出 3-column 表,否則提案不被接受**。使用者 tell me once 不該要 tell me twice。
 
 # Rule Index(progressive disclosure — 編對應檔案前必先讀)
 
 | 檔案 | 何時必讀 |
 |---|---|
-| `packages/design-system/ds-canonical/rules/meta-patterns.md` | 每個任務(31 條 M-rules,fundamental)|
+| `packages/design-system/ds-canonical/rules/meta-patterns.md` | 每個任務(32 條 M-rules,fundamental)|
 | `packages/design-system/ds-canonical/rules/spec-rules.md` | 編任何 `*.spec.md` 或 DS 內容 |
 | `packages/design-system/ds-canonical/rules/ui-development.md` | 編任何 `.tsx`/`.ts`(Tailwind 5 條 / Token 4 條 / Props 命名 / shadcn / public-vs-internal)|
 | `packages/design-system/ds-canonical/rules/story-rules.md` | 編任何 `*.stories.tsx`(三層定位 / Title / 範例準則)|

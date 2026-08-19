@@ -120,7 +120,8 @@ for (const m of sessStartContent.matchAll(/(\d+)\s+audit\s+dims/g)) {
   const declared = parseInt(m[1])
   if (declared !== dimCount) drifts.push(`session_start_governance_check.sh text "${m[0]}" != actual ${dimCount}`)
 }
-for (const m of sessStartContent.matchAll(/(\d+)\s+active\s+M-rules/g)) {
+// 與下方多檔掃描同寬(broad-vs-narrow gap,M7/M34):可抓「N active M-rules」與「N 條 M-rules」
+for (const m of sessStartContent.matchAll(/(\d+)\s*(?:active|條)?\s*M-rules(?!-)/g)) {
   const declared = parseInt(m[1])
   if (declared !== mRuleCount) drifts.push(`session_start_governance_check.sh text "${m[0]}" != actual ${mRuleCount}`)
 }
@@ -128,6 +129,7 @@ for (const m of sessStartContent.matchAll(/(\d+)\s+active\s+M-rules/g)) {
 // 2026-05-23 升級:M-rule count text drift 跨多 file
 // SSOT pattern:`N active M-rules` 或 `N M-rules`(loose match,排 historical / planning / scratch / tmp)
 const mRuleTextFiles = [
+  'AGENTS.md',
   'CLAUDE.md',
   `${CANONICAL}/rules/README.md`,
   `${CANONICAL}/rules/meta-patterns.md`,
@@ -141,7 +143,7 @@ for (const rel of mRuleTextFiles) {
   const p = path.join(ROOT, rel)
   if (!fs.existsSync(p)) continue
   const c = fs.readFileSync(p, 'utf-8')
-  const matches = [...c.matchAll(/(\d+)\s+(?:active\s+)?M-rules?/g)]
+  const matches = [...c.matchAll(/(\d+)\s*(?:active|條)?\s*M-rules(?!-)/g)]
   for (const m of matches) {
     const declared = parseInt(m[1])
     if (declared !== mRuleCount) {

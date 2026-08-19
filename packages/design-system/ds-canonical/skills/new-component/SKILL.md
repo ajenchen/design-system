@@ -7,9 +7,9 @@ description: Create-phase workflow for building a new design-system component fr
 
 ## 存在意義
 
-`/component-quality-gate` 是 **review-phase** gate(元件做完後驗 35 項),但建 **create-phase** 沒 workflow guide → AI 每次從 CLAUDE.md 零散規則自己湊,容易漏規則、誤套 pattern。
+`/component-quality-gate` 是 **review-phase** gate(元件做完後驗 35 項),但建 **create-phase** 沒 workflow guide → AI 每次從 AGENTS.md + canonical rules 零散規則自己湊,容易漏規則、誤套 pattern。
 
-本 skill 填 create-phase 空缺:6 phase 帶著 AI 一步一步建元件,對齊 CLAUDE.md 所有規則(Layout Family / Props 命名 / Spec 7 維度 / Stories 真實業務場景 / visual audit),最後自動 chain `/component-quality-gate` 做 exit check。
+本 skill 填 create-phase 空缺:6 phase 帶著 AI 一步一步建元件,對齊 AGENTS.md + canonical rules 所有規則(Layout Family / Props 命名 / Spec 7 維度 / Stories 真實業務場景 / visual audit),最後自動 chain `/component-quality-gate` 做 exit check。
 
 **跟 /component-quality-gate 互補**:create(本 skill)在元件沒寫前先指引;quality-gate 在元件寫完後驗收。兩者不重疊。
 
@@ -28,7 +28,7 @@ description: Create-phase workflow for building a new design-system component fr
 
 - User 已給出新元件的 **名字 + 大致用途**(否則先對話釐清,再 invoke)
 - 元件 folder 不存在於 `packages/design-system/src/components/`(真的是新的)
-- 已讀 CLAUDE.md(skill 會 re-ref 關鍵章節,但 session 整體已有 context 更好)
+- 已讀 AGENTS.md(skill 會 re-ref 關鍵章節,但 session 整體已有 context 更好)
 
 ## Workflow(6 phase + 多 checkpoint)
 
@@ -46,13 +46,13 @@ description: Create-phase workflow for building a new design-system component fr
    - 禁止事項(往往透露 gotcha)
    - SSOT anchor(往哪指)
 3. **查世界級對照**:Polaris / Material / Atlassian / Ant / Apple HIG 有沒對應元件?**至少 2 個** DS 的做法,記 3 行筆記(naming / API / 視覺模式)。
-4. **查 baseline 狀況**:`ls packages/design-system/src/components/` 確認名字衝突;`grep` CLAUDE.md「失敗記憶索引」看有沒同類別的歷史 bug。
+4. **查 baseline 狀況**:`ls packages/design-system/src/components/` 確認名字衝突;`grep` AGENTS.md「失敗記憶索引」看有沒同類別的歷史 bug。
 5. **產出「primitive 覆蓋對照表」artifact**(2026-07-07 治理進化方向 3 洞 c,強制產物非心算):逐 anatomy 段列「這段 × 消費哪個既有 primitive」——row → item-anatomy、浮層 → overlay-surface、chrome 標題列 → ChromeHeader、橫向溢出 → horizontal-overflow、輸入 chrome → field-wrapper、pill → Button「Pill Layout」。**每段必有著落;對不上的段才准自建,且必附「自建 + 理由」**(進 spec 定位段)。寫 tsx 時此表轉錄為檔頭「── 消費的 SSOT ──」段(hook `check_ssot_header_declaration.sh` P0 驗新檔必有)。
 
 ### Checkpoint 1 — 定位 receipt / conditional P2H
 
 記錄:
-- 元件名稱(按 CLAUDE.md `# 命名與語言一致性` 三重 test)
+- 元件名稱(按 AGENTS.md `# 命名與語言一致性` 三重 test)
 - 近親元件清單 + 跟本元件的異同一句話
 - 世界級對照 2 個(Ant Design 叫 X / Material 叫 Y)
 - **primitive 覆蓋對照表**(Phase 1 step 5 artifact;自建段落 + 理由醒目標出)
@@ -64,9 +64,9 @@ requirement、近親 SSOT 與 benchmark 已唯一決定 positioning，直接記�
 
 ### Phase 2 — Layout Family 判定
 
-對齊 CLAUDE.md `# 4-Family Layout Model`。
+對齊 AGENTS.md `# 4-Family Layout Model`。
 
-**判斷流程**(照 CLAUDE.md 既有):
+**判斷流程**(照 AGENTS.md 既有):
 1. 垂直列表裡? → Family 1(menu)/ Family 2(reading)
 2. 單行可點擊 pill? → Family 3(action trigger / data indicator sub-profile)
 3. 單行可編輯? → Family 4(Field control,視覺對齊 Family 1)
@@ -103,7 +103,7 @@ requirement、近親 SSOT 與 benchmark 已唯一決定 positioning，直接記�
 1. **結構**:`forwardRef + cva + VariantProps + cn() + { Component, componentVariants } export`
 2. **cva 適用法**:className variant 用 cva;style prop variant 用 object map;結構 variant 用 conditional rendering(見 cva-patterns.md)
 3. **Props 命名**:按 `packages/design-system/ds-canonical/rules/ui-development.md`「元件 Props 命名」:
-   - 行為 → `onDismiss` / `onClose` / `onClear` / `onRemove`(語意分層,見 CLAUDE.md)
+   - 行為 → `onDismiss` / `onClose` / `onClear` / `onRemove`(語意分層,見 `packages/design-system/ds-canonical/references/props-naming.md`)
    - Slot icon → `startIcon` / `endIcon`(type `LucideIcon`)
    - Slot media → `avatar`(type `ReactNode`)
 4. **Token 消費**:Padding / icon size / hover bg / shadow 全走 token(見 `packages/design-system/ds-canonical/rules/ui-development.md` 三層分層)
@@ -169,7 +169,7 @@ traits:
 
 ## References
 
-- `references/new-component-checklist.md` — 完整 6 phase checklist + 各項 CLAUDE.md pointer
+- `references/new-component-checklist.md` — 完整 6 phase checklist + 各項 AGENTS.md pointer
 
 ## 相關 skill
 

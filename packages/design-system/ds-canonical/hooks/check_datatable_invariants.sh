@@ -3,7 +3,7 @@
 #
 # 2026-06-11 prune merge:r2 = 原 check_data_table_size_num_to_meta_width.sh
 # (TanStack size:number → meta.width wrap,M23(c) anchor;規則逐字搬入)。
-# 原檔 → .claude/hooks/retired/2026-06-11-prune-merge/
+# 原檔 → packages/design-system/ds-canonical/hooks/retired/2026-06-11-prune-merge/
 
 source "$(dirname "$0")/_log-fire.sh" 2>/dev/null && log_hook_fire
 

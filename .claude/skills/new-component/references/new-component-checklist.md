@@ -11,18 +11,18 @@
 - [ ] 抓到 Layout Family 宣告、API surface、禁止事項、SSOT anchor
 - [ ] 查至少 2 個世界級 DS(Polaris / Material / Atlassian / Ant / Apple HIG)對應元件
 - [ ] `ls packages/design-system/src/components/` 確認名字無衝突
-- [ ] grep CLAUDE.md `# 失敗記憶索引` 查同類歷史 bug
+- [ ] grep AGENTS.md `# 失敗記憶索引` 查同類歷史 bug
 
 ## Positioning evidence / conditional P2H checkpoint
 
-- [ ] 元件名通過「命名三重 test」(既有語言 / 世界級 idiom / 跨元件無衝突,見 CLAUDE.md `# 命名與語言一致性`)
+- [ ] 元件名通過「命名三重 test」(既有語言 / 世界級 idiom / 跨元件無衝突,見 AGENTS.md `# 命名與語言一致性`)
 - [ ] 記錄元件名 / 近親 / 世界級對照 / positioning 一句話
 - [ ] 若既有 SSOT 或 user 明確 requirement 已唯一決定，記 receipt 後自主接續
 - [ ] 只有多個可行 public component/UI semantics 仍並存時，取得 exact target-bound P2H decision
 
 ## Phase 2 — Layout Family 判定
 
-- [ ] 走 CLAUDE.md `# 4-Family Layout Model` 判斷流程
+- [ ] 走 AGENTS.md `# 4-Family Layout Model` 判斷流程
 - [ ] 若 Family 1/2 → 確認消費 `<MenuItem>` + slot components(不重寫 row 結構)
 - [ ] 若 Family 3 → follow `Button Pill Layout` canonical(見 button.spec.md)
 - [ ] 若 Family 4 → follow field-controls.spec.md

@@ -5,7 +5,7 @@ description: Batch-end-verify rhythm + parallel tool batch + user-listed N-rule 
 
 <!-- _generated: canonical provider skill projection; source: skills/bug-fix-rhythm/SKILL.md; provider: claude; do not edit this adapter view. -->
 
-<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=claude; strategy=generated-binding-header; assumptionCount=6; assumptionFingerprint=sha256:b5e2cfe4a41bdd25605847b0d40fa92db96c4abf604decb830cb218b19ae38d9; evidence=packages/governance/canonical/providers.json#claude -->
+<!-- provider-binding: profile=repository-legacy-surfaces-v1; provider=claude; strategy=generated-binding-header; assumptionCount=4; assumptionFingerprint=sha256:45202f237adbed348e84e4979ac466eb73182b7c790475672b99a7b158317a33; evidence=packages/governance/canonical/providers.json#claude -->
 
 ## Provider binding contract
 
@@ -21,7 +21,7 @@ This canonical workflow contains a committed inventory of legacy assumptions. Re
 **目的**:當 session 有 ≥ 2 fixes(常見 visual bug session / user 列 N 條 numbered 規則),走 batch-end-verify rhythm,而非 per-fix verify cycle waste。**M32 split 後 (c)(d)(h1)(h2) 的 home**。
 
 **對齊**:
-- CLAUDE.md mindset #6「大原則吸收瑣碎」+ M14「對話結論 AUTO integrate」
+- AGENTS.md mindset #6「大原則吸收瑣碎」+ `node_modules/@qijenchen/design-system/ds-canonical/rules/meta-patterns.md` M14「對話結論 AUTO integrate」
 - Bazel incremental-build / GitHub Actions matrix-batch idiom(per-step incremental = waste,batch-end = canonical)
 - provider-neutral parallel execution canonical
 - Toyota TPS jidoka(per-station per-item verify,不可 skip 任何 item)
@@ -103,7 +103,7 @@ Read / Grep / Glob 多檔需求 → **single message multi-tool-call**:
 
 每 fix 落地前 inline 判斷:
 
-- **Surgical**(CLAUDE.md「Scope classifier — Surgical visual bug」):pixel / token / class adjustment, no new SSOT / API / cross-component → AUTO ship 此 fix
+- **Surgical**(AGENTS.md「Scope classifier — Surgical visual bug」):pixel / token / class adjustment, no new SSOT / API / cross-component → AUTO ship 此 fix
 - **P2E engineering substantive**:治理／架構 SSOT、refactor、test、migration、adapter 或
   不改 public 行為的 cross-component invariant → **AUTO**，依 evidence + independent
   review + hard gates 自主完成。
