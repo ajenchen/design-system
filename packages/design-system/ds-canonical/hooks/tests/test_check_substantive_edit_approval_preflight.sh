@@ -687,6 +687,63 @@ STDERR_TEXT=$(cat "$STDERR")
 rm -f "$STDOUT" "$STDERR"
 expect_pass_silent "7k2. MultiEdit requires matching operation digest for every target"
 
+# ── 8. AskUserQuestion structured ratification(2026-08-18)──
+# 選項元件的回答 = 使用者本人對 exact 提案的核准(harness 寫入 tool_result,assistant 無法
+# 偽造 user-role 記錄)。核准位元組只取自 harness 答案文字;目標綁定可來自答案或提問所附的
+# assistant 提案文字(綁定本身不授權,沒有真實選擇事件什麼都不給)。之後出現的純文字 user
+# 訊息一律蓋過;背景任務通知(SYSTEM NOTIFICATION)永不算 user 發言。
+
+# Transcript: plain user ask → assistant proposal(含 target alias)→ AskUserQuestion → 使用者選擇
+build_ask_selection_transcript() {
+  local path="$1"; local proposal="$2"; local answer="$3"; local trailing="${4:-}"
+  : > "$path"
+  jq -n '{message:{role:"user",content:[{type:"text",text:"排序箭頭顏色到底怎麼定?研究一下"}]}}' >> "$path"
+  jq -n --arg t "$proposal" '{message:{role:"assistant",content:[{type:"text",text:$t}]}}' >> "$path"
+  jq -n '{message:{role:"assistant",content:[{type:"tool_use",id:"toolu_ask_1",name:"AskUserQuestion",input:{questions:[{question:"排序箭頭要怎麼定?",header:"排序箭頭",options:[]}]}}]}}' >> "$path"
+  jq -n --arg a "$answer" '{message:{role:"user",content:[{type:"tool_result",tool_use_id:"toolu_ask_1",content:[{type:"text",text:$a}]}]}}' >> "$path"
+  if [ -n "$trailing" ]; then
+    jq -n --arg t "$trailing" '{message:{role:"user",content:[{type:"text",text:$t}]}}' >> "$path"
+  fi
+}
+
+TX_ASK_OK="$TMP_DIR/tx_ask_ok.jsonl"
+build_ask_selection_transcript "$TX_ASK_OK" \
+  "提案:data-table.tsx 的排序箭頭拿掉釘死的 text-fg-secondary,改繼承點擊區文字色與 label 連動。" \
+  'The user answered: "排序箭頭拍板"="跟 label 連動(推薦)"'
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_ASK_OK"
+expect_pass_silent "8a. AskUserQuestion selection + proposal 含 target alias → approved"
+
+TX_ASK_NO_ALIAS="$TMP_DIR/tx_ask_no_alias.jsonl"
+build_ask_selection_transcript "$TX_ASK_NO_ALIAS" \
+  "提案:排序箭頭拿掉釘死的灰色,改繼承文字色。" \
+  'The user answered: "排序箭頭拍板"="跟 label 連動(推薦)"'
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_ASK_NO_ALIAS"
+expect_block "8b. selection 但提案與答案都無 target alias → fail closed" "data-table"
+
+TX_ASK_DENY="$TMP_DIR/tx_ask_deny.jsonl"
+build_ask_selection_transcript "$TX_ASK_DENY" \
+  "提案:data-table.tsx 的排序箭頭改繼承文字色。" \
+  'The user answered: "排序箭頭拍板"="先不要改,維持現狀"'
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_ASK_DENY"
+expect_block "8c. selection 答案含否決語 → fail closed" "data-table"
+
+TX_ASK_SUPERSEDED="$TMP_DIR/tx_ask_superseded.jsonl"
+build_ask_selection_transcript "$TX_ASK_SUPERSEDED" \
+  "提案:data-table.tsx 的排序箭頭改繼承文字色。" \
+  'The user answered: "排序箭頭拍板"="跟 label 連動(推薦)"' \
+  "等等,那 hover 的行為是不是還要再想想?"
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_ASK_SUPERSEDED"
+expect_block "8d. selection 之後有新的純文字 user 訊息 → 選擇被蓋過 fail closed" "data-table"
+
+TX_ASK_NOTIFY="$TMP_DIR/tx_ask_notify.jsonl"
+build_ask_selection_transcript "$TX_ASK_NOTIFY" \
+  "提案:data-table.tsx 的排序箭頭拿掉釘死的 text-fg-secondary,改繼承點擊區文字色。" \
+  'The user answered: "排序箭頭拍板"="跟 label 連動(推薦)"' \
+  "[SYSTEM NOTIFICATION - NOT USER INPUT]
+<task-notification>Background command completed</task-notification>"
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_ASK_NOTIFY"
+expect_pass_silent "8e. selection 之後只有背景通知 → 不蓋過,仍 approved"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"
