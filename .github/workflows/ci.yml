@@ -51,6 +51,18 @@ jobs:
           npm run build-storybook
           /usr/bin/git diff --exit-code -- packages/design-system/ds-story-manifest.json
 
+      # DataTable pixel invariants must run where a browser exists. The local macOS sandbox cannot
+      # launch Chromium (Mach lookup closed), which is exactly how the beta.100 multi-person cell
+      # centering regression shipped and survived a month: the only pixel gate lived in a pre-commit
+      # hook that (a) could not run in the authoring sandbox and (b) only triggered on DataTable's
+      # own files while the regression came from a PeoplePicker edit. This CI step closes both gaps:
+      # it runs on every PR regardless of which component changed (2026-08-20 user directive:
+      # 「所有 table-cell 內容都要合規,閘門要夠通用」).
+      - name: DataTable pixel invariants (browser)
+        run: |
+          npx --no-install playwright install chromium
+          node scripts/data-table-invariants.mjs
+
       - name: Focused governance and release SSOT checks
         run: |
           node --test infra/governance/test/ci-workflow-scope.test.mjs
