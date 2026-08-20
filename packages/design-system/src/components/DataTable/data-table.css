@@ -154,11 +154,38 @@
    paint-only 不入 box model,跟 `.dtCellGrid` SSOT pattern 一致。對齊 MUI X column pinning
    border+shadow option / AG Grid issue #1220。Codex M31 Layer C evaluated YES。
    ──────────────────────────────────────────────────────────── */
+/* 2026-08-20 機制統一(user 拍板):凍結邊界線從「內陰影」改為 1px 偽元素。
+   非整數縮放/Retina 下,瀏覽器對「陰影」與「背景色盒」的柵格化取整不同,造成
+   邊界線與欄間 w-px 短線粗細分家(有的 1 實體像素、有的 2)。全表 1px 線一律
+   「元素」機制後,任何縮放下柵格化一致。偽元素貼齊面板內緣(與原內陰影同位置),
+   不佔盒模型、不被 Windows 懸浮捲軸蓋(2026-05-12 改制原因保留)。 */
 .dtPanelBoundaryRight {
-  box-shadow: inset -1px 0 0 var(--divider);
+  position: relative;
+}
+
+.dtPanelBoundaryRight::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 1px;
+  background: var(--divider);
+  pointer-events: none;
 }
 
 .dtPanelBoundaryLeft {
-  box-shadow: inset 1px 0 0 var(--divider);
+  position: relative;
+}
+
+.dtPanelBoundaryLeft::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: var(--divider);
+  pointer-events: none;
 }
 

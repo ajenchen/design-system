@@ -183,6 +183,65 @@ for (const [size, expectPx] of Object.entries(ROW_TOKEN)) {
   record('I7', `fixed row 高 @${size} == --table-row-${size}(${expectPx}px)`, rowH !== null && Math.abs(rowH - expectPx) <= 1, `got ${rowH == null ? 'null' : rowH.toFixed(2)}px(應 ${expectPx};防 row 塌陷 regression)`)
 }
 
+// ── INVARIANT (8):全 cell 型別 view 態內容垂直置中(2026-08-20 user 拍板「所有 table-cell
+//    內容都要合規,閘門要夠通用」;錨例:beta.100 da3 批修把多選人員外殼改純 block →
+//    基線行盒把頭像串推頂 6.4px,一個月無人抓 — 因像素閘只掛 DataTable 自家檔)──
+//    量法:每個 body cell 取「可見內容子樹聯集框」中心 vs cell 中心,|Δ| ≤ 1.5px。
+await page.goto('http://localhost:7500/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story', { waitUntil: 'networkidle' })
+await page.waitForSelector('[role="row"]')
+await page.waitForTimeout(400)
+const centeringReport = await page.evaluate(() => {
+  const headers = [...document.querySelectorAll('[role="columnheader"]')].map(h => (h.textContent || '').trim().slice(0, 18))
+  const rows = [...document.querySelectorAll('[role="row"]')].slice(1, 4) // 前 3 個 body rows
+  const out = []
+  rows.forEach((row, ri) => {
+    ;[...row.children].forEach((cell, ci) => {
+      const cr = cell.getBoundingClientRect()
+      if (cr.height < 8 || cr.width < 8) return
+      let top = Infinity, bottom = -Infinity
+      for (const el of cell.querySelectorAll('*')) {
+        const cs = getComputedStyle(el)
+        if (cs.position === 'absolute' || cs.visibility === 'hidden' || cs.display === 'none') continue
+        const r = el.getBoundingClientRect()
+        if (r.height === 0 || r.width === 0) continue
+        // 只取葉層可見內容(圖、文字載體),避免高度=cell 的佈局容器稀釋量測
+        const isLeafContent = el.tagName === 'IMG' || (el.children.length === 0 && (el.textContent || '').trim())
+        if (!isLeafContent) continue
+        top = Math.min(top, r.top); bottom = Math.max(bottom, r.bottom)
+      }
+      if (top === Infinity) return // 空 cell
+      const delta = ((top + bottom) / 2) - ((cr.top + cr.bottom) / 2)
+      out.push({ col: headers[ci] || `col${ci}`, row: ri, delta: +delta.toFixed(2) })
+    })
+  })
+  return out
+})
+for (const c of centeringReport) {
+  record('I8', `cell 內容垂直置中 [${c.col}] row${c.row}`, Math.abs(c.delta) <= 1.5, `中心偏移 ${c.delta}px(>±1.5 = 內容被行盒/對齊鏈推離,防 beta.100 類迴歸)`)
+}
+
+// ── INVARIANT (9):1px 線畫法機制統一(2026-08-20 user 拍板)——凍結邊界必為 1px 偽元素,
+//    禁陰影畫線(非整數縮放下陰影與背景盒柵格化取整不同 → 粗細分家 1 vs 2 實體像素)──
+await page.goto('http://localhost:7500/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story', { waitUntil: 'networkidle' })
+await page.waitForSelector('[data-datatable-header-panel]')
+const lineReport = await page.evaluate(() => {
+  const panels = [...document.querySelectorAll('.dtPanelBoundaryRight, .dtPanelBoundaryLeft')]
+  return panels.map(p => {
+    const after = getComputedStyle(p, '::after')
+    return {
+      cls: p.className.includes('Right') ? 'Right' : 'Left',
+      afterW: after.width,
+      afterBg: after.backgroundColor,
+      shadow: getComputedStyle(p).boxShadow,
+    }
+  })
+})
+record('I9', `凍結邊界 panel 存在(${lineReport.length} 個)`, lineReport.length > 0, 'pinned story 找不到 boundary panel')
+for (const p of lineReport) {
+  record('I9', `boundary ${p.cls} = 1px 偽元素`, p.afterW === '1px' && p.afterBg !== 'rgba(0, 0, 0, 0)', `::after width=${p.afterW} bg=${p.afterBg}`)
+  record('I9', `boundary ${p.cls} 無陰影畫線`, p.shadow === 'none', `box-shadow=${p.shadow}(禁陰影畫線)`)
+}
+
 // ── Output ──
 console.log(`\n=== DataTable Invariants Test ===`)
 console.log(`PASS: ${passes.length}`)

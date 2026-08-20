@@ -83,7 +83,7 @@ DataTable 有三種尺寸（`sm`、`md`、`lg`），透過 `size` prop 控制。
 Table 分三層:
 - **Header**(固定頂部,結構性地在 scroll 容器外、body 上方——不用 CSS sticky,永遠固定在頂部):含 left / center / right 三區,center 區與 body center 的水平捲動 JS 同步 scrollLeft(center-header 跟隨 center-body 捲動位置,同步機制見「捲軸」段 + `data-table.tsx`)。Header bg 用 `--muted`(code `HEADER_BG = 'bg-muted'`,比 surface 深一階,同 anatomy ColorMatrix)
 - **Body viewport**:含 left / center / right 三區;center-body 是唯一的水平 scroll container、也是垂直 scroll container(`overflow-y-auto`),left / right body 不自行捲動(`overflow-hidden`,`scrollTop` 由 center 的 `onScroll` 同步兩側;AR44:V scroll 移進 region 自身,讓水平捲軸落在可視視窗底部,不必捲到內容底才看到)
-- **Left / Right 區**:寬度由凍結欄加總,不吃水平捲動;frozen 邊界線用 `.dtPanelBoundaryRight/Left` 的 `box-shadow: inset` 1px `var(--divider)`(paint-only 不佔 box model;2026-05-12 自 `border-divider` 改制 — Windows 常駐捲軸會蓋掉 outer-edge border),header + body panel 各套,視覺整欄高度;**Center 區**:flex-1,水平 overflow 自行處理
+- **Left / Right 區**:寬度由凍結欄加總,不吃水平捲動;frozen 邊界線用 `.dtPanelBoundaryRight/Left` 的 **1px 偽元素**(`::after`,`width:1px background:var(--divider)` 貼齊面板內緣;不佔 box model、不被 Windows 懸浮捲軸蓋 — 2026-05-12 自 `border-divider` 改制的理由保留),header + body panel 各套,視覺整欄高度。**畫線機制統一鐵律(2026-08-20 user 拍板)**:全表 1px 線(欄間短線 / 凍結邊界 / 外框)一律「元素/border」機制,**禁用陰影畫線** — 非整數縮放與 Retina 下瀏覽器對陰影與背景色盒的柵格化取整不同,會讓同規格的線出現 1 vs 2 實體像素的粗細分家(2026-08-20 user 報修錨例);**Center 區**:flex-1,水平 overflow 自行處理
 
 完整 class / overflow 規則見 `data-table.tsx`。
 
