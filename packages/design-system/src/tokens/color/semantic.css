@@ -392,6 +392,17 @@
   --chart-3:              var(--color-green-6);
   --chart-4:              var(--color-yellow-7);
   --chart-5:              var(--color-deep-orange-6);
+
+  /* Highlight — 文字反白與頁內搜尋配對(2026-08-28 拍板;SSOT 詳 color.spec.md「Highlight」段)
+     反白必半透明(VS Code theme-color「must not be opaque」鐵律)、只動底色不動字色(對比 ≥4.5:1 驗收)。
+     搜尋雙檔制 = VS Code findMatchBackground(current)/ findMatchHighlightBackground(others)普世慣例;
+     amber-3 / -5 對階 Radix step 3(UI element bg)/ step 5(Active/Selected bg);行內文字保持原色
+     → 底色停亮階,故 -current 不取 -active 映射的第 7 階(--amber-active 已佔且 -active = 按壓語意)。
+     Dark:-selection / -match 由 primitive 公式自動反轉;-current 需降一階覆寫 amber-4
+     (dark amber-5 白字對比 3.03 < 4.5,詳 dark 區塊註解)。 */
+  --text-selection:       color-mix(in oklch, var(--color-blue-5) 30%, transparent);
+  --search-match:         var(--color-amber-3);
+  --search-match-current: var(--color-amber-5);
 }
 
 
@@ -451,6 +462,12 @@
   --indigo-hover:         var(--color-indigo-7);
   --indigo-active:        var(--color-indigo-5);
 
+  /* Highlight — dark 唯一覆寫:-current 降一階 amber-4。
+     數學驗收(oklch→sRGB→WCAG):dark amber-5 配白字對比 3.03 過不了 4.5 鐵門檻;
+     amber-4 = 5.89 ✓ 且與 amber-3(全部配對)區辨 1.86 優於 light 的 1.31。
+     --text-selection / --search-match 由 primitive 公式自動反轉,不需覆寫。 */
+  --search-match-current: var(--color-amber-4);
+
   /* Inverse — dark mode 反轉（深字 + 黑色透明 overlay）
      overlay 值為 light mode neutral-* 的鏡射（black @ 2% / 4%）
      2026-05-20 fix:raw oklch → primitive --black-a85(既有 alpha token,L46)*/
@@ -495,6 +512,11 @@
   --color-success:               var(--success);
   --color-warning:               var(--warning);
   --color-notification:          var(--notification);
+
+  /* Highlight(反白 / 搜尋配對) */
+  --color-text-selection:        var(--text-selection);
+  --color-search-match:          var(--search-match);
+  --color-search-match-current:  var(--search-match-current);
 
   /* Presence Status(Avatar badge) */
   --color-status-online:         var(--status-online);

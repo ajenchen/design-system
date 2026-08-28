@@ -243,6 +243,33 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 <span className="bg-notification text-white">3</span>   // badge 計數
 ```
 
+### Highlight — 文字反白與搜尋配對
+
+| Token | Utility | 值 | 用途 |
+|-------|---------|------|------|
+| `--text-selection` | `bg-text-selection` | blue-5 @ 30% 半透明 | 文字反白(`::selection`)底色;全域樣式住 `styles/base.css`,只動底色不動字色 |
+| `--search-match` | `bg-search-match` | amber-3 | 頁內搜尋(Ctrl+F 類)**所有配對**的行內底色 |
+| `--search-match-current` | `bg-search-match-current` | amber-5(dark:amber-4) | 配對中**目前這一筆**(find 游標所在) |
+
+設計依據(2026-08-28 拍板):
+
+- **反白必半透明**:對齊 VS Code theme-color 對 selection 類 token 的鐵律「The color must not be opaque so as not to hide underlying decorations」(https://code.visualstudio.com/api/references/theme-color);反白後文字須維持對比 ≥ 4.5:1(https://developer.mozilla.org/en-US/docs/Web/CSS/::selection)
+- **搜尋雙檔制**是編輯器/瀏覽器普世慣例:VS Code `editor.findMatchBackground`(「Color of the current search match」)與 `editor.findMatchHighlightBackground`(「Color of the other search matches」)兩 token 分立;琥珀/黃族底色 = 瀏覽器原生 find 慣例
+- **對階**:amber-3 / -5 對齊 Radix scale 語意 step 3 =「UI element background」/ step 5 =「Active / Selected UI element background」(https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale);行內 highlight 鐵約束 = 文字保持原色可讀 → 底色停留亮階(≤ step 5)
+- **為何字尾是 `-current` 不是 `-active`**:`-active` 在本系統 = 按壓語意且映射第 7 階(`--amber-active` = amber-7,見「互動狀態推導」),同字不同映射會破壞一致性;`current` 取自 VS Code 官方描述原詞
+- **Dark**:`--text-selection` / `--search-match` 由 primitive 階梯公式自動反轉(1–5 變深)免 override;`--search-match-current` **需降一階覆寫 amber-4**——數學驗收(oklch→sRGB→WCAG)dark amber-5 配白字對比 3.03 過不了 4.5,amber-4 = 5.89 ✓ 且與 amber-3 區辨 1.86 優於 light 的 1.31。全組量測:light 反白 11.41 / amber-3 12.21 / amber-5 9.82;dark 反白 13.04 / amber-3 10.97 / amber-4 5.89(皆 ≥ 4.5)
+
+```tsx
+<mark className="bg-search-match text-inherit">報表</mark>          // 一般配對
+<mark className="bg-search-match-current text-inherit">報表</mark>  // 目前這一筆
+```
+
+禁止:
+
+- ❌ `<mark>` 用 UA 預設黃 — 必套 `bg-search-match`(或 `-current`)+ `text-inherit`
+- ❌ 搜尋配對語意裸用 `--color-amber-3/5` — 必經 semantic token(未來調色只動一處)
+- ❌ `--search-match-current` 借給按壓 / 持續選中場景 — 那是 `--neutral-active` / `--neutral-selected` 家族的域;`--text-selection` 亦禁借給資料列選取
+
 ### Identity — 品牌
 
 | Token | 用途 |

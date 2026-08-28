@@ -363,3 +363,41 @@ export const Interactive: Story = {
     </div>
   ),
 }
+export const FunctionalHighlight: Story = {
+  name: '反白與搜尋配對',
+  render: () => (
+    <div className="max-w-xl space-y-6">
+      <section className="space-y-2">
+        <h3 className="text-body font-medium">文字反白(::selection)</h3>
+        <p data-selection-demo className="rounded-md border border-border bg-surface p-4 text-body">
+          第三季營收報告已於 10 月 14 日送交財務委員會審閱,附件包含分區銷售明細與年度預測修正。
+        </p>
+        <span className="block text-caption text-fg-muted">
+          此段由 play 自動反白 — 底色 <code>--text-selection</code>(blue-5 @ 30% 半透明,字色不變)
+        </span>
+      </section>
+      <section className="space-y-2">
+        <h3 className="text-body font-medium">頁內搜尋配對(Ctrl+F)</h3>
+        <p className="rounded-md border border-border bg-surface p-4 text-body">
+          搜尋「報表」:月度<mark className="rounded-xs bg-search-match text-inherit">報表</mark>
+          已歸檔;季度<mark className="rounded-xs bg-search-match-current text-inherit">報表</mark>
+          為目前所在配對,尚待審核;年度<mark className="rounded-xs bg-search-match text-inherit">報表</mark>
+          排定下週產出。
+        </p>
+        <span className="block text-caption text-fg-muted">
+          全部配對 <code>bg-search-match</code>(amber-3)/ 目前這一筆 <code>bg-search-match-current</code>(amber-5)— 雙檔制對齊 VS Code find 與瀏覽器原生慣例
+        </span>
+      </section>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const target = canvasElement.querySelector('[data-selection-demo]')
+    if (target) {
+      const range = document.createRange()
+      range.selectNodeContents(target)
+      const selection = window.getSelection()
+      selection?.removeAllRanges()
+      selection?.addRange(range)
+    }
+  },
+}
