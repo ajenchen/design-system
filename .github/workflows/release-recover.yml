@@ -1,0 +1,172 @@
+name: Release Recover
+
+# Completes the GitHub Release ceremony for a release whose npm publish already
+# finished but whose Release job never ran (2026-08-28 beta.126 incident class).
+# It never publishes npm packages and never rebuilds them: the three tarballs are
+# rehydrated from the registry's own bytes and verified against the registry dist
+# digests plus the identity-bound Trusted Publishing provenance before any Release
+# write happens. Sidecars (SBOM / scaffold lock / BOM) regenerate from the exact
+# tag commit, and the standard release-github-release writer performs the same
+# draft → assets → publish → exact readback sequence as the release workflow.
+on:
+  repository_dispatch:
+    types: [recover-published-release]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.repository }}-release
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.event.client_payload.tag }}
+
+jobs:
+  resolve-recovery-request:
+    name: Bind recovery tag to a published ancestor of protected main
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.identity.outputs.tag }}
+      release_commit: ${{ steps.identity.outputs.commit }}
+      release_tree: ${{ steps.identity.outputs.tree }}
+    steps:
+      - name: Checkout protected default workflow source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve exact tag and require a protected-main ancestor
+        id: identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="$RELEASE_TAG"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(beta|next|rc)\.[0-9]+)?$ ]] || {
+            echo "recovery dispatch requires vX.Y.Z or vX.Y.Z-(beta|next|rc).N"
+            exit 1
+          }
+          /usr/bin/git fetch --force --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          /usr/bin/git fetch --force --no-tags origin "refs/tags/$tag:refs/tags/$tag"
+          main_commit="$(/usr/bin/git rev-parse refs/remotes/origin/main^{commit})"
+          event_commit="$(/usr/bin/git rev-parse "$GITHUB_SHA^{commit}")"
+          tag_commit="$(/usr/bin/git rev-parse "refs/tags/$tag^{commit}")"
+          test "$event_commit" = "$main_commit" || {
+            echo "stale dispatch workflow source: event $event_commit, current main $main_commit"
+            exit 1
+          }
+          # Recovery targets an already-tagged release commit that main has since moved past.
+          /usr/bin/git merge-base --is-ancestor "$tag_commit" "$main_commit" || {
+            echo "recovery tag $tag ($tag_commit) is not an ancestor of protected main"
+            exit 1
+          }
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "commit=$tag_commit" >> "$GITHUB_OUTPUT"
+          echo "tree=$(/usr/bin/git rev-parse "$tag_commit^{tree}")" >> "$GITHUB_OUTPUT"
+
+  recover-release-assets:
+    name: Rehydrate exact npm bytes and publish the six-file Release
+    needs: resolve-recovery-request
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout exact tagged release commit
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ needs.resolve-recovery-request.outputs.release_commit }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node and npm registry
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.14.0'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Rehydrate exact registry tarballs with provenance verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-artifacts
+          node scripts/release-recover-npm-assets.mjs \
+            --version "${RELEASE_TAG#v}" \
+            --artifacts "$GITHUB_WORKSPACE/release-artifacts" \
+            --git-head "${{ needs.resolve-recovery-request.outputs.release_commit }}"
+
+      - name: Generate deterministic release SBOM
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/run-verified-npm.mjs -- sbom --workspaces --package-lock-only --sbom-format=cyclonedx > "$RUNNER_TEMP/release.sbom.raw.json"
+          node scripts/release-sbom.mjs \
+            --input "$RUNNER_TEMP/release.sbom.raw.json" \
+            --output "$GITHUB_WORKSPACE/release-artifacts/release.sbom.cdx.json" \
+            --tag "$RELEASE_TAG" \
+            --git-tree "${{ needs.resolve-recovery-request.outputs.release_tree }}"
+
+      - name: Build product-template scaffold lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/build-published-template-mirror.mjs --out="$RUNNER_TEMP/release-product-template"
+          node scripts/product-template-scaffold-lock.mjs \
+            --root "$RUNNER_TEMP/release-product-template" \
+            --output "$GITHUB_WORKSPACE/release-artifacts/product-template-scaffold.lock.json" \
+            --version "${RELEASE_TAG#v}"
+
+      - name: Build and verify the release BOM
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/build-release-bom.mjs \
+            --repo "$GITHUB_WORKSPACE" \
+            --artifacts "$GITHUB_WORKSPACE/release-artifacts" \
+            --output "$GITHUB_WORKSPACE/release-artifacts/release-bom.json" \
+            --tag "$RELEASE_TAG" \
+            --git-head "${{ needs.resolve-recovery-request.outputs.release_commit }}" \
+            --git-tree "${{ needs.resolve-recovery-request.outputs.release_tree }}" \
+            --repository "$GITHUB_REPOSITORY" \
+            --main-ref refs/remotes/origin/main \
+            --require-sbom \
+            --require-clean \
+            --require-release-ref \
+            --allow-repository-dispatch
+          node scripts/build-release-bom.mjs --verify \
+            --repo "$GITHUB_WORKSPACE" \
+            --artifacts "$GITHUB_WORKSPACE/release-artifacts" \
+            --bom "$GITHUB_WORKSPACE/release-artifacts/release-bom.json" \
+            --tag "$RELEASE_TAG" \
+            --git-head "${{ needs.resolve-recovery-request.outputs.release_commit }}" \
+            --git-tree "${{ needs.resolve-recovery-request.outputs.release_tree }}" \
+            --repository "$GITHUB_REPOSITORY" \
+            --main-ref refs/remotes/origin/main \
+            --require-sbom \
+            --require-clean \
+            --require-release-ref \
+            --allow-repository-dispatch
+
+      - name: Bind the exact six-file release set
+        run: >-
+          node scripts/release-set.mjs
+          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Create, publish, and verify exact release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          node scripts/release-github-release.mjs
+          --artifacts "$GITHUB_WORKSPACE/release-artifacts"
+          --repository "$GITHUB_REPOSITORY"
+          --tag "${{ needs.resolve-recovery-request.outputs.tag }}"
+          --git-head "${{ needs.resolve-recovery-request.outputs.release_commit }}"
