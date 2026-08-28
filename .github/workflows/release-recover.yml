@@ -84,14 +84,22 @@ jobs:
           persist-credentials: false
 
       # The recovery tooling postdates the releases it recovers, so it always loads from
-      # protected main into a side directory; the tag tree stays the working tree for the
-      # sidecar generators that must reproduce the release's own content.
+      # protected main; it is then staged OUTSIDE the workspace because the governed
+      # dependency bootstrap fingerprints the worktree and fails closed on any
+      # unclassified path (recovery-tools/ tripped exactly that on the first run).
       - name: Checkout recovery tooling from protected main
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: main
           path: recovery-tools
           persist-credentials: false
+
+      - name: Stage recovery tooling outside the fingerprinted worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp -R recovery-tools "$RUNNER_TEMP/recovery-tools"
+          rm -rf recovery-tools
 
       - name: Set up Node and npm registry
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -108,7 +116,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release-artifacts
-          node recovery-tools/scripts/release-recover-npm-assets.mjs \
+          node "$RUNNER_TEMP/recovery-tools/scripts/release-recover-npm-assets.mjs" \
             --version "${RELEASE_TAG#v}" \
             --artifacts "$GITHUB_WORKSPACE/release-artifacts" \
             --git-head "${{ needs.resolve-recovery-request.outputs.release_commit }}"
