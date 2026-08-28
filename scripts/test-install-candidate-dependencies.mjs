@@ -197,32 +197,32 @@ test('candidate dependency install applies and verifies the exact runtime overla
       },
       npm: {
         name: 'npm',
-        severity: 'moderate',
+        severity: 'high',
         isDirect: true,
         via: ['tar'],
         nodes: ['node_modules/npm'],
         effects: [],
-        range: '<=10.9.8 || >=11.0.0-pre.0',
+        range: '<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || >=12.0.0-pre.0.0',
       },
       tar: {
         name: 'tar',
-        severity: 'moderate',
+        severity: 'high',
         isDirect: false,
         range: '<=7.5.20',
         nodes: ['node_modules/npm/node_modules/tar'],
         effects: ['npm'],
         via: [{
-          source: 1124287,
+          source: 1145647,
           name: 'tar',
           dependency: 'tar',
           url: 'https://github.com/advisories/GHSA-r292-9mhp-454m',
-          severity: 'moderate',
+          severity: 'high',
           range: '<=7.5.20',
         }],
       },
     },
     metadata: {
-      vulnerabilities: { info: 0, low: 0, moderate: 2, high: 1, critical: 0, total: 3 },
+      vulnerabilities: { info: 0, low: 0, moderate: 0, high: 3, critical: 0, total: 3 },
     },
   })
   const result = await installCandidateDependencies({

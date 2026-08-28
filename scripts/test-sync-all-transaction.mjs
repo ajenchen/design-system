@@ -302,16 +302,16 @@ if (process.argv[2] === 'audit' && process.argv.includes('--audit-level=high')) 
         effects: [], range: '4.0.0 - 5.0.8', nodes: ['node_modules/npm/node_modules/brace-expansion'],
       },
       npm: {
-        name: 'npm', severity: 'moderate', isDirect: true, via: ['tar'], effects: [],
-        range: '<=10.9.8 || >=11.0.0-pre.0', nodes: ['node_modules/npm'],
+        name: 'npm', severity: 'high', isDirect: true, via: ['tar'], effects: [],
+        range: '<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || >=12.0.0-pre.0.0', nodes: ['node_modules/npm'],
       },
       tar: {
-        name: 'tar', severity: 'moderate', isDirect: false,
-        via: [{ source: 1124287, name: 'tar', dependency: 'tar', url: 'https://github.com/advisories/GHSA-r292-9mhp-454m', severity: 'moderate', range: '<=7.5.20' }],
+        name: 'tar', severity: 'high', isDirect: false,
+        via: [{ source: 1145647, name: 'tar', dependency: 'tar', url: 'https://github.com/advisories/GHSA-r292-9mhp-454m', severity: 'high', range: '<=7.5.20' }],
         effects: ['npm'], range: '<=7.5.20', nodes: ['node_modules/npm/node_modules/tar'],
       },
     },
-    metadata: { vulnerabilities: { info: 0, low: 0, moderate: 2, high: 1, critical: 0, total: 3 } },
+    metadata: { vulnerabilities: { info: 0, low: 0, moderate: 0, high: 3, critical: 0, total: 3 } },
   }))
   process.exit(1)
 }
