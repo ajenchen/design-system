@@ -754,23 +754,23 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
       'brace-expansion': finding,
       npm: {
         name: 'npm',
-        severity: 'moderate',
+        severity: 'high',
         isDirect: true,
         via: ['tar'],
         effects: [],
-        range: '<=10.9.8 || >=11.0.0-pre.0',
+        range: '<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || >=12.0.0-pre.0.0',
         nodes: ['node_modules/npm'],
       },
       tar: {
         name: 'tar',
-        severity: 'moderate',
+        severity: 'high',
         isDirect: false,
         via: [{
-          source: 1124287,
+          source: 1145647,
           name: 'tar',
           dependency: 'tar',
           url: 'https://github.com/advisories/GHSA-r292-9mhp-454m',
-          severity: 'moderate',
+          severity: 'high',
           range: '<=7.5.20',
         }],
         effects: ['npm'],
@@ -805,7 +805,7 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
       },
     },
     metadata: {
-      vulnerabilities: { info: 0, low: 0, moderate: 3, high: 2, critical: 0, total: 5 },
+      vulnerabilities: { info: 0, low: 0, moderate: 1, high: 4, critical: 0, total: 5 },
       dependencies: { prod: 0, dev: 0, optional: 0, peer: 0, peerOptional: 0, total: 0 },
     },
   }

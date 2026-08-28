@@ -332,32 +332,38 @@ function assertRemediatedFinding(name, finding) {
     return
   }
   if (name === 'tar') {
+    // 2026-08-28 upstream re-score: GHSA-r292-9mhp-454m moderate→high (CVSS 7.5), advisory source
+    // renumbered 1124287→1145647, patched tar = 7.5.21. Our security overlay already ships 7.5.22,
+    // so exposure is unchanged — this pins the re-scored registry shape, drift still fails closed.
     invariant(
-      finding.severity === 'moderate'
+      finding.severity === 'high'
         && finding.isDirect === false
         && exactArray(finding.nodes, ['node_modules/npm/node_modules/tar'])
         && exactArray(finding.effects, ['npm'])
         && finding.range === '<=7.5.20'
         && Array.isArray(finding.via)
         && finding.via.length === 1
-        && finding.via[0]?.source === 1124287
+        && finding.via[0]?.source === 1145647
         && finding.via[0]?.name === 'tar'
         && finding.via[0]?.dependency === 'tar'
         && finding.via[0]?.url === 'https://github.com/advisories/GHSA-r292-9mhp-454m'
-        && finding.via[0]?.severity === 'moderate'
+        && finding.via[0]?.severity === 'high'
         && finding.via[0]?.range === '<=7.5.20',
       'npm audit tar finding differs from the exact remediated bundled preimage',
     )
     return
   }
   if (name === 'npm') {
+    // Follows the tar re-score; npm 11.19.1 ships fixed tar so the metavulnerability range now
+    // closes at 11.19.0 (our governed runtime). Moving to a fixed npm stays tracked in the
+    // cloud-compat baton alongside ip-address/undici.
     invariant(
-      finding.severity === 'moderate'
+      finding.severity === 'high'
         && finding.isDirect === true
         && exactArray(finding.via, ['tar'])
         && exactArray(finding.nodes, ['node_modules/npm'])
         && exactArray(finding.effects, [])
-        && finding.range === '<=10.9.8 || >=11.0.0-pre.0',
+        && finding.range === '<=10.9.8 || 11.0.0-pre.0 - 11.19.0 || >=12.0.0-pre.0.0',
       'npm audit npm metavulnerability differs from the verified tar overlay closure',
     )
     return
