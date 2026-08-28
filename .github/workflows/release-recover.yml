@@ -20,6 +20,8 @@ concurrency:
 
 env:
   RELEASE_TAG: ${{ github.event.client_payload.tag }}
+  # build-release-bom 的 repository-dispatch 身分守衛要求此變數與 tag 相等(release.yml 同款)。
+  RELEASE_DISPATCH_TAG: ${{ github.event.client_payload.tag }}
 
 jobs:
   resolve-recovery-request:
@@ -100,6 +102,12 @@ jobs:
           set -euo pipefail
           cp -R recovery-tools "$RUNNER_TEMP/recovery-tools"
           rm -rf recovery-tools
+
+      - name: Fetch exact main identity for the BOM dispatch guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          /usr/bin/git fetch --force --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
 
       - name: Set up Node and npm registry
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
