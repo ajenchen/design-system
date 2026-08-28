@@ -37,7 +37,11 @@ export { validateProvenanceStatement }
 export const npmRegistry = 'https://registry.npmjs.org'
 export const provenanceType = PROVENANCE_TYPE
 export const minimumStagedNpmVersion = '11.15.0'
-export const PUBLISHED_PACKAGE_READBACK_ATTEMPTS = 24
+// 180 × 5s = 15 分鐘上限。2026-08-28 beta.126 事故:大套件(design-system tarball)在 npm 端
+// 走非同步 staged 轉正,實測 >10 分鐘才 live;原 24 × 5s = 2 分鐘窗先到期 → run 判死 →
+// 重跑撞 E409(previously staged)→ 跨 run 重建位元組不同 → digest mismatch 永久卡死,
+// 版號被迫燒掉。讀回成功即刻返回,常態發布不受影響。
+export const PUBLISHED_PACKAGE_READBACK_ATTEMPTS = 180
 export const FINALIZER_WORKFLOW_PATH = '.github/workflows/release-finalize.yml'
 export const FINALIZER_WORKFLOW_EVENT = 'repository_dispatch'
 

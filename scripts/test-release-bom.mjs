@@ -89,7 +89,7 @@ test('setup-node registry placeholder is cleared without allowing a real npm cre
 })
 
 test('npm provenance readback tolerates normal registry propagation delay', () => {
-  assert.equal(PUBLISHED_PACKAGE_READBACK_ATTEMPTS, 24)
+  assert.equal(PUBLISHED_PACKAGE_READBACK_ATTEMPTS, 180)
 })
 
 test('retired staging and finalizer gates are absent from release', () => {

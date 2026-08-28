@@ -144,7 +144,15 @@ async function main() {
         `--registry=${npmRegistry}`,
       ])
       if (published.status !== 0) {
-        throw new Error(`${item.name}@${item.version}: npm publish failed (exit ${published.status ?? 'unknown'}): ${(published.stderr || published.stdout || '').trim().slice(0, 2000)}`)
+        const detail = (published.stderr || published.stdout || '').trim()
+        // E409「previously staged」= 前一次上傳仍在 npm 端非同步轉正(2026-08-28 beta.126 事故)。
+        // 不當場判死:交給下方讀回輪詢做最終判定——同 run 位元組會 match,跨 run 殘留 stage
+        // 轉正後會以 digest mismatch 精確失敗,而非誤導性的 publish crash。
+        if (/previously staged/iu.test(detail)) {
+          console.log(`ℹ️ ${item.name}@${item.version}: registry stage 仍在轉正中(E409),進入讀回等待`)
+        } else {
+          throw new Error(`${item.name}@${item.version}: npm publish failed (exit ${published.status ?? 'unknown'}): ${detail.slice(0, 2000)}`)
+        }
       }
       await waitForPublishedPackage(npmCli, item, context.identity)
       console.log(`✅ published and verified ${item.name}@${item.version}`)
