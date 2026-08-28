@@ -2926,12 +2926,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9723af6bca450d883cf776a47d0c91ec7667538c7b156656c71257ad272ff838",
+      "hash": "sha256:51b4a6195a612bb2dbbf21a63c0b004d037e2233275157a9b526863764e4ef22",
       "id": "release-npm-direct-publisher",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-npm-publish.mjs",
-      "size": 7577,
+      "size": 7611,
       "type": "file"
     },
     {
@@ -3075,7 +3075,7 @@
         "scripts/generated/"
       ],
       "files": 376,
-      "hash": "sha256:5b9b7174f3b2700c86c8dc464c602807d918abba91ab7fed322fcc08583b85ef",
+      "hash": "sha256:622ace8ac4e5d076a0a47fa3c7d3671e2fd0dbde9177daf44d1a1863b94570db",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

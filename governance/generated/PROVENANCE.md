@@ -330,7 +330,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-finalization-verifier | `scripts/release-npm-finalize-verify.mjs` | `sha256:6011ffa8111f18b2e0a64b069e8ea03bc15fb8a8e98156ab2ba1a9632af86f08` |
 | release-github-release-writer | `scripts/release-github-release.mjs` | `sha256:9c26299078fd67d5debe9834d2022ea49f11f1045e10a1456734d815ebca7aaa` |
 | release-npm-approver | `scripts/release-npm-approve.mjs` | `sha256:d97674d4757d156a43fe765487526ae63c7d97171c1df0194f2b3305ffe9f3b3` |
-| release-npm-direct-publisher | `scripts/release-npm-publish.mjs` | `sha256:9723af6bca450d883cf776a47d0c91ec7667538c7b156656c71257ad272ff838` |
+| release-npm-direct-publisher | `scripts/release-npm-publish.mjs` | `sha256:51b4a6195a612bb2dbbf21a63c0b004d037e2233275157a9b526863764e4ef22` |
 | release-npm-library | `scripts/release-npm-lib.mjs` | `sha256:d402993a7737388cadb504fd1300c6187befcc1d3b176307b0d10fb9aeb458ca` |
 | release-npm-promoter | `scripts/release-npm-promote.mjs` | `sha256:8abcf6e54c1fc996f457fa693ab6e123b390ae1c48d8ae4ba496fd224b67688c` |
 | release-npm-recovery | `scripts/release-npm-stage-recover.mjs` | `sha256:615c39a53d2208fa566b3025fee2f81bae81be8a999c0af927a8326320bbeb97` |
@@ -346,7 +346,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | release-workflow | `.github/workflows/release.yml` | `sha256:d0d547e11257b7cedf72a2f25982f2f51fd6f66e4d4a91389115efb29135ae2f` |
 | release-workflow-security-auditor | `scripts/audit-workflow-security.mjs` | `sha256:810632ebf499c9587e32ee45cd998dc887c6dc255d5bb705b69aba89597cde55` |
 | release-workflow-security-tests | `scripts/test-workflow-security.mjs` | `sha256:e4f8e14f19a67c7f902003ede60759beb1d55abcb5cc30ccb0d13468c5e441fa` |
-| repository-automation-corpus | `scripts` | `sha256:5b9b7174f3b2700c86c8dc464c602807d918abba91ab7fed322fcc08583b85ef` |
+| repository-automation-corpus | `scripts` | `sha256:622ace8ac4e5d076a0a47fa3c7d3671e2fd0dbde9177daf44d1a1863b94570db` |
 | repository-ignore-boundary | `.gitignore` | `sha256:d8e1d26e0c7939e61f8f70303b93d4a5aa3a5d55bf638633ea6a2961e52b1a72` |
 | review-capability-certifications | `infra/governance/providers/review-capability-certifications.json` | `sha256:acaec7cd260ab54eb8212aad545bd4d21f34ae98ae93b7adc3846d7d5150d8c1` |
 | review-capability-certifications-schema | `infra/governance/schemas/review-capability-certifications.schema.json` | `sha256:46e149e357f26816e41fc8946e507ecd43dee485a806fa14bbfc69dafa2e31f5` |
