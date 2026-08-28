@@ -260,4 +260,5 @@ DatePicker `today + selected`:藍 bar 疊在藍底隱形;`hover + disabled`:ring
 ### M36 — 禁推論升格 user 決定;禁自鎖
 - 2026-08-08 同一 session 連犯 4 次 provenance 升格(「<768 modal 無入口是你拍板」/「X = 終結 session」/「392px user 接受」/「816 讓位線」),user 原話「我他媽到底哪有拍板過這件事」;同日又因 `claude-permission-policy` 把 sandbox unix socket 鎖死,先叫 user 去買 API key 而非解自家鎖,user 原話「你他媽不要又再作繭自縛為自己加鎖了」。
 - 2026-08-11 一日連環五鎖:build graph journal 死鎖(復原全刪全蓋碰禁寫目標)/ authority fingerprint 把自家 index-publish 誤判竄改 / blanket 授權辨識漏「開頭裸可以」/ `gh auth status` 帳號級體檢擋 repo-scoped token / gh Go TLS 拒 sandbox 代理——五層全是自家機制,user 原話「不要再說有人擋你了,完全沒有」;逐層拆除後 release 全自動走通,零 user 指令。
+- 2026-08-28 hooks/scripts symlink 本地殘影(8/1 舊版 generator 合法生成、8/2 佈局改版後無人能寫回):我先誤稱「我們自己沙箱設的保護」(實查自家 settings `denyWrite=[]`,鎖是 Claude Code 對 hook 設定目錄的**平台內建**防注入保護),再指 `! git restore` 給 user(對話內 `!` 與 Bash **同一個沙箱**,必再被擋 = 指死路),user 原話「你不要再作繭自縛了,我說要做就做」;正解一行 `git update-index --skip-worktree`(只寫 `.git` 可寫區,不碰被鎖路徑)→ codify M36(b') 第 4 問(鎖的主人是誰 + 交 user 的指令必先驗證不在同牆內)。
 - 四路同 provider 對抗審查查不到 (a) 類(reviewer 無對話紀錄),故必須以 M36 rule + 來源總帳格式機械化。

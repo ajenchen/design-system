@@ -1012,6 +1012,23 @@ export function generateGovernanceBuildGraphAtomically(graph, {
 function stageOutputs(graph) {
   verifyGitBoundary()
   const outputs = graphOutputTargets(graph)
+  // A session-scoped `skip-worktree` bit on a generator-owned path (e.g. hiding the
+  // sandbox-unwritable hooks/scripts symlink drift) makes `git add` refuse it with a
+  // sparse-checkout error. The graph owns its outputs — clear the bit and proceed so a
+  // cosmetic local flag can never wedge generation; fail closed only if git cannot clear it.
+  const skipFlagged = runClosedGit(['ls-files', '-v'], { cwd: ROOT, output: 'capture', timeoutMs: 30_000 })
+    .stdout.split('\n')
+    .filter((line) => line.startsWith('S '))
+    .map((line) => line.slice(2))
+    .filter((path) => outputs.some((output) => underGraphTarget(path, output)))
+  if (skipFlagged.length) {
+    const cleared = runClosedGit(['update-index', '--no-skip-worktree', '--', ...skipFlagged], {
+      cwd: ROOT,
+      output: 'ignore',
+    })
+    if (cleared.status !== 0) throw new Error(`failed to clear skip-worktree bit on generated outputs:${skipFlagged.join(', ')}`)
+    console.log(`→ cleared session skip-worktree bit on generated outputs:${skipFlagged.join(', ')}`)
+  }
   const stageableOutputs = outputs.flatMap((output) => {
     const bare = output.endsWith('/') ? output.slice(0, -1) : output
     let stat = null

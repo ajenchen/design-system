@@ -63,6 +63,15 @@ jobs:
           npx --no-install playwright install chromium
           node scripts/data-table-invariants.mjs
 
+      # Cloud sessions load the committed provider config as-is; the only two ways that config has
+      # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)
+      # both merged without any gate exercising them. These two commands bind cloud survivability
+      # to every PR (2026-08-28 user directive: 永遠確保各種環境和模型都能如期順利運行).
+      - name: Cloud portability gates (provider config survivability)
+        run: |
+          node --test scripts/test-cloud-portability-invariants.mjs
+          node scripts/test-claude-permission-policy.mjs
+
       - name: Focused governance and release SSOT checks
         run: |
           node --test infra/governance/test/ci-workflow-scope.test.mjs

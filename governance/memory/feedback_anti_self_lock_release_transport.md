@@ -21,6 +21,7 @@ beta.120 五步發版全自動走通。判準已 codify 為 M36(b′) 三問(met
 | 「canonical source changed during publication」 | fingerprint 已排除自家 output targets(`governance-build-graph.mjs`) |
 | consumer 前置修復 PR 待合併 | `node scripts/consumer-pr-merge.mjs <owner/repo> <pr#>`(fail-closed:open+checks 全綠+exact-head 才合) |
 | harness 分類器擋單一命令 | 換自然等價工具(governed node script / Edit 工具 / payload 檔),**禁**拿去問 user;真人邊界僅 login/MFA/OAuth/付費/法律 |
+| hook 設定目錄(repo `hooks/`、`.claude/hooks`)寫入 EPERM | **平台(Claude Code)內建防 hook 注入保護,不是自家鎖**(自家 settings denyWrite=[] 仍 EPERM 即此類),不試圖解;worktree 檔與 index 的本地殘影(hooks/scripts symlink 2026-08-28 錨例)→ `git update-index --skip-worktree <path>`(只寫 `.git` 可寫區)即乾淨,逃生口 `--no-skip-worktree`;**禁**指路 `!`(與 Bash 同沙箱必再擋)或推 user 終端機。**注意**:生成器輸出路徑帶此標記會令 `git add` 吐 sparse-checkout 錯——build graph `stageOutputs` 已自我修復(自動清標後續跑),同錨例第二鎖 |
 
 **發版鐵律**:immutable tag 不可重用——publish 前先確認 `package.json` 版號**未曾發過**
 (`releases/tags/v<version>` 404 才可);已發過 → bump 新版。錨:beta.119 重用假完成事故。
