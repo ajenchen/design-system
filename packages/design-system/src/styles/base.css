@@ -46,6 +46,13 @@
     outline-offset: 2px;
   }
 
+  /* 文字反白 — 底色 token 化(--text-selection;SSOT = color.spec.md「Highlight」段)。
+     只動底色、不動字色:半透明品牌藍疊在原字色下,反白後文字對比 ≥4.5:1 由驗收量測保證
+     (MDN ::selection 對比要求)。 */
+  ::selection {
+    background-color: var(--text-selection);
+  }
+
   /* Button pointer cursor(Tailwind v4 移除 v3 的 button cursor,補回符合 UX 直覺) */
   button:not(:disabled),
   [role="button"]:not(:disabled) {
