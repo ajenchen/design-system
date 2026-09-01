@@ -3083,12 +3083,12 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:d8e1d26e0c7939e61f8f70303b93d4a5aa3a5d55bf638633ea6a2961e52b1a72",
+      "hash": "sha256:fba7d7f2ff1b50c841669af62d3b7d3d9538ec216a627b3843698655b190cf26",
       "id": "repository-ignore-boundary",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": ".gitignore",
-      "size": 3341,
+      "size": 3478,
       "type": "file"
     },
     {
