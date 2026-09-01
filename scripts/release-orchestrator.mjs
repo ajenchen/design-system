@@ -301,13 +301,38 @@ function ghShim(args, { allowFailure = false, input = null } = {}) {
     const repository = flagValue(args, '--repo')
     const prResponse = curlGitHub('GET', `repos/${repository}/pulls/${args[2]}`)
     if (!prResponse.ok) return shimDone(prResponse, { allowFailure, label })
-    const headSha = JSON.parse(prResponse.text).head.sha
+    const pull = JSON.parse(prResponse.text)
+    const headSha = pull.head.sha
+    // --required 過濾:merge 的權威 = base branch ruleset 的 required_status_checks
+    //(2026-09-02 修:原實作把「所有 check」都當 required,較 GitHub 權威更嚴 —— 當非必要
+    // check 因 base 自身時效性腐化(如 protected-base 安裝被新資安公告擊穿)紅燈時,會把
+    // canonical five-step 卡死在一個 GitHub 本就不要求的 check 上。rules API 讀不到時
+    // 退回全數視為 required(fail-closed 保守向)。)
+    let requiredContexts = null
+    if (args.includes('--required')) {
+      const baseBranch = pull.base?.ref || 'main'
+      const rulesResponse = curlGitHub('GET', `repos/${repository}/rules/branches/${encodeURIComponent(baseBranch)}`)
+      if (rulesResponse.ok) {
+        try {
+          const contexts = JSON.parse(rulesResponse.text)
+            .filter(rule => rule.type === 'required_status_checks')
+            .flatMap(rule => rule.parameters?.required_status_checks || [])
+            .map(check => check.context)
+            .filter(Boolean)
+          if (contexts.length) requiredContexts = new Set(contexts)
+        } catch { /* 保守向:解析失敗 → 全數視為 required */ }
+      }
+    }
+    const filterRequired = rows => (requiredContexts
+      ? rows.filter(row => requiredContexts.has(row.name))
+      : rows)
     if (args.includes('--watch')) {
       for (;;) {
         const rows = shimCheckRows(repository, headSha)
         if (rows === null) return shimDone({ ok: false, code: 0, text: '' }, { allowFailure, label })
-        if (rows.length && rows.every(row => row.bucket !== 'pending')) {
-          const failed = rows.filter(row => row.bucket === 'fail' || row.bucket === 'cancel')
+        const watched = filterRequired(rows)
+        if (watched.length && watched.every(row => row.bucket !== 'pending')) {
+          const failed = watched.filter(row => row.bucket === 'fail' || row.bucket === 'cancel')
           if (!failed.length) return { ok: true, stdout: '', stderr: '' }
           if (allowFailure) return { ok: false, stdout: '', stderr: failed.map(row => row.name).join(',') }
           throw new Error(`${label}: required checks failed: ${failed.map(row => row.name).join(',')}`)
@@ -317,7 +342,8 @@ function ghShim(args, { allowFailure = false, input = null } = {}) {
     }
     const rows = shimCheckRows(repository, headSha)
     if (rows === null) return shimDone({ ok: false, code: 0, text: '' }, { allowFailure, label })
-    return { ok: true, stdout: rows.length ? JSON.stringify(rows) : '', stderr: '' }
+    const filtered = filterRequired(rows)
+    return { ok: true, stdout: filtered.length ? JSON.stringify(filtered) : '', stderr: '' }
   }
   if (args[0] === 'pr' && args[1] === 'create') {
     const repository = flagValue(args, '--repo')
