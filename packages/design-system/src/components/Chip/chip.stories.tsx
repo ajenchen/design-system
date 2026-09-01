@@ -1,6 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import type { Meta, StoryObj } from '@storybook/react'
 import { useState } from 'react'
+import { FileText } from 'lucide-react'
 import { Chip, ChipGroup } from './chip'
 import { Badge } from '@/design-system/components/Badge/badge'
 
@@ -90,3 +91,21 @@ export const SingleSelection: Story = {
 //   anatomy.stories.tsx LayoutMatrix(3 layout values side-by-side)+ principles.stories.tsx LayoutRule
 //   已 cover layout 機制比較與業務情境。展示層保留 typical 情境(Default / States / WithBadge / SingleSelection)。
 //   注意:Chip 是 filter chip,不提供 dismiss / 可移除態(spec「禁止事項」),故無 Removable story。
+
+/** assist 分支(2026-09-02):按鈕語意、可獨立使用——智慧代理訊息內的附件開啟(真實消費場景)。 */
+export const AssistAttachments: Story = {
+  name: '按鈕語意附件',
+  render: () => (
+    <div className="max-w-xs rounded-md bg-secondary px-3 py-2">
+      <div className="mb-2 flex flex-wrap gap-2">
+        <Chip variant="assist" startIcon={FileText} aria-label="附件:sprint-42-backlog.csv" onClick={() => {}}>
+          sprint-42-backlog.csv
+        </Chip>
+        <Chip variant="assist" startIcon={FileText} aria-label="附件:排程規則.md" onClick={() => {}}>
+          排程規則.md
+        </Chip>
+      </div>
+      <p className="text-body">把這份待辦按優先級重排,衝突的排程幫我標出來。</p>
+    </div>
+  ),
+}

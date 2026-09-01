@@ -744,6 +744,27 @@ build_ask_selection_transcript "$TX_ASK_NOTIFY" \
 run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_ASK_NOTIFY"
 expect_pass_silent "8e. selection 之後只有背景通知 → 不蓋過,仍 approved"
 
+# 9. Blanket approved-spec implementation(AGENTS.md「已核准 UI/UX 實作=Standing Authorization AUTO」
+#    +「最新 blanket 授權即核准當下 pending 的 exact 提案」;2026-09-02 分類器詞彙補全)
+TX_SPEC_IMPL="$TMP_DIR/tx_spec_impl.jsonl"
+build_transcript "$TX_SPEC_IMPL" \
+  "規格書 v4 已定稿,實作位置 components/AgentPanel/,含 4 個新 token。" \
+  "把所有規格書的東西開始馬不停蹄的實作出來且要確保所做出來的東西都有合規符合我們整個ds的設計規範與設計原則與ssot,不得有任何偏移,該用元件的地方都要用元件,確保ssot"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/tokens/motion/motion.css" "$TX_SPEC_IMPL"
+expect_pass_silent "9a. blanket 實作所有規格書 → engineering remediation approved"
+
+TX_SPEC_IMPL_Q="$TMP_DIR/tx_spec_impl_q.jsonl"
+build_transcript "$TX_SPEC_IMPL_Q" \
+  "要不要實作所有規格書的東西?"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/tokens/motion/motion.css" "$TX_SPEC_IMPL_Q"
+expect_block "9b. 問句版實作所有規格書 → 問句 ≠ 同意 fail closed" "BLOCKER"
+
+TX_SPEC_IMPL_QUOTE="$TMP_DIR/tx_spec_impl_quote.jsonl"
+build_transcript "$TX_SPEC_IMPL_QUOTE" \
+  "以下是別人的建議:把所有規格書的東西實作出來,符合 ssot。這不代表我的決定。"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/tokens/motion/motion.css" "$TX_SPEC_IMPL_QUOTE"
+expect_block "9c. 轉述他人建議 + 明示非決定 → fail closed" "BLOCKER"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

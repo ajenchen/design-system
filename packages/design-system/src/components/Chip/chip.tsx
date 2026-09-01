@@ -20,10 +20,14 @@ import {
 } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
 
 /**
- * Chip — Material Design Filter Chip
+ * Chip — Material Design Chips(filter + assist 兩分支)
  *
- * 基於 Radix ToggleGroup，橋接設計系統 token。
- * 必須在 <ChipGroup> 內使用。
+ * filter(預設):基於 Radix ToggleGroup,多/單選 pill;必須在 <ChipGroup> 內使用。
+ * assist(2026-09-02 加,AgentPanel 附件拍板消費):M3 assist chip 分支 —— 按鈕語意、
+ * 無 toggle、無 selected 態(https://m3.material.io/components/chips/guidelines「Assist chips」);
+ * 渲染 plain button,可獨立使用(不需 ChipGroup)。兩分支視覺同款(單一 cva;
+ * assist 無 data-state 故 selected 樣式天然不生效),差異=結構分支(conditional rendering,
+ * 非 cva variant — 對齊 cva-patterns「結構 variant 用 conditional rendering」)。
  *
  * ── 內部結構（鏡射 Button）──
  *   [startIcon?] [<span px-1>label</span>] [<span gap-1>badge? + endIcon?</span>]
@@ -79,12 +83,7 @@ const chipVariants = cva(
   ]
 )
 
-export interface ChipProps
-  // 2026-07-14 dim-9 修:Omit 'asChild' — chip.spec.md 禁止事項明載「❌ 用 asChild——不支援」,
-  // 且內部固定渲染 {icon}{label}{suffix} 多 children 結構,asChild(Radix Slot 要求單一
-  // element child)會 runtime throw(CLAUDE.md 失敗記憶「asChild ? Slot : Native」條)。
-  // 型別層 Omit 讓誤用在編譯期失敗,對齊 spec-vs-type 一致。
-  extends Omit<React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item>, 'asChild'> {
+interface ChipSlotProps {
   /** 左側 icon（LucideIcon），最多一個 */
   startIcon?: LucideIcon
   /** 右側 badge（通常是計數指示器）*/
@@ -93,29 +92,65 @@ export interface ChipProps
   endIcon?: LucideIcon
 }
 
-const Chip = React.forwardRef<
-  React.ElementRef<typeof ToggleGroupPrimitive.Item>,
-  ChipProps
->(({ className, startIcon: StartIcon, badge, endIcon: EndIcon, children, ...props }, ref) => {
-  const hasSuffix = badge != null || EndIcon !== undefined
+export interface ChipFilterProps
+  // 2026-07-14 dim-9 修:Omit 'asChild' — chip.spec.md 禁止事項明載「❌ 用 asChild——不支援」,
+  // 且內部固定渲染 {icon}{label}{suffix} 多 children 結構,asChild(Radix Slot 要求單一
+  // element child)會 runtime throw(CLAUDE.md 失敗記憶「asChild ? Slot : Native」條)。
+  // 型別層 Omit 讓誤用在編譯期失敗,對齊 spec-vs-type 一致。
+  extends Omit<React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item>, 'asChild'>,
+    ChipSlotProps {
+  /** filter(預設):Radix ToggleGroup item,必須在 ChipGroup 內。 */
+  variant?: 'filter'
+}
 
-  return (
-    <ToggleGroupPrimitive.Item
-      ref={ref}
-      className={cn(chipVariants(), className)}
-      {...props}
-    >
-      {StartIcon && <StartIcon size={16} aria-hidden />}
-      {children != null && <span className="px-1">{children}</span>}
-      {hasSuffix && (
-        <span className="inline-flex items-center gap-1">
-          {badge}
-          {EndIcon && <EndIcon size={16} aria-hidden />}
-        </span>
-      )}
-    </ToggleGroupPrimitive.Item>
-  )
-})
+export interface ChipAssistProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    ChipSlotProps {
+  /** assist:M3 assist chip — 按鈕語意、無 toggle、無 selected 態;可獨立使用。 */
+  variant: 'assist'
+}
+
+export type ChipProps = ChipFilterProps | ChipAssistProps
+
+const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(
+  ({ className, startIcon: StartIcon, badge, endIcon: EndIcon, children, variant, ...props }, ref) => {
+    const hasSuffix = badge != null || EndIcon !== undefined
+    const inner = (
+      <>
+        {StartIcon && <StartIcon size={16} aria-hidden />}
+        {children != null && <span className="px-1">{children}</span>}
+        {hasSuffix && (
+          <span className="inline-flex items-center gap-1">
+            {badge}
+            {EndIcon && <EndIcon size={16} aria-hidden />}
+          </span>
+        )}
+      </>
+    )
+    // assist 分支:plain button(按鈕語意,無 toggle);selected 樣式因無 data-state 天然不生效。
+    if (variant === 'assist') {
+      return (
+        <button
+          ref={ref}
+          type="button"
+          className={cn(chipVariants(), className)}
+          {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+        >
+          {inner}
+        </button>
+      )
+    }
+    return (
+      <ToggleGroupPrimitive.Item
+        ref={ref}
+        className={cn(chipVariants(), className)}
+        {...(props as React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item>)}
+      >
+        {inner}
+      </ToggleGroupPrimitive.Item>
+    )
+  },
+)
 Chip.displayName = 'Chip'
 
 // ── ChipGroup ────────────────────────────────────────────────────────────────
@@ -392,6 +427,7 @@ export const chipMeta = {
   component: 'Chip',
   family: 3,
   // 2026-07-04 audit 填 Phase 2:Chip 單一視覺無 variant 軸(variants 留空為 intentional,非漏填)
+  // 2026-09-02:filter/assist 為結構分支(行為換 plain button,視覺同款)— 非視覺 variant 軸,不入此表
   variants: {},
   sizes: {
     // 單一尺寸:h-field-sm(28/32 依 density)、icon 16、text-body、px-3(cva 真值)

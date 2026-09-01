@@ -93,7 +93,7 @@ if ! command -v perl >/dev/null 2>&1; then
 fi
 VIOLATIONS=$(printf '%s' "$NEW_CONTENT" | perl -0777 -ne '
   my $bench = qr/(Ant Design|Material(\s+X|\s+Design|\s+UI|\s+3)?|Polaris|Atlassian|Carbon|shadcn|Radix UI?|Apple HIG|Notion|Airtable|ClickUp|Figma|Linear)/;
-  my $cite = qr/(https?:\/\/(www\.)?(ant-design|material|polaris\.shopify|atlassian\.design|carbon|shadcn|ui\.shadcn|radix-ui|github|developer\.apple)|#L\d|snapshots\/|@benchmark-unverified)/;
+  my $cite = qr/(https?:\/\/(www\.)?(m3\.material|ant-design|material|polaris\.shopify|atlassian\.design|carbon|shadcn|ui\.shadcn|radix-ui|github|developer\.apple)|#L\d|snapshots\/|@benchmark-unverified)/;
   # Iterate paragraphs(separated by blank lines)
   for my $para (split /\n\s*\n/) {
     next unless $para =~ $bench;

@@ -312,8 +312,8 @@ const ENGINEERING_INTENT_PATTERNS = [
 // Only an exact target-bound remediation scope may use that authority; generic engineering
 // delegation must never authorize an otherwise-unresolved product/UI/UX choice.
 const REMEDIATION_ACTION_PATTERNS = [
-  /\b(?:bugfix|fix|repair|correct|refactor|remediat(?:e|ion)|regression|align|alignment|conform|conformance|synchroni[sz]e|restore|mechanical)\b/iu,
-  /(?:修 bug|修復|修正|除錯|重構|修補|回歸|對齊|同步|機械|還原|恢復|符合|遵循)/u,
+  /\b(?:bugfix|fix|repair|correct|refactor|remediat(?:e|ion)|regression|align|alignment|conform|conformance|synchroni[sz]e|restore|mechanical|implement)\b/iu,
+  /(?:修 bug|修復|修正|除錯|重構|修補|回歸|對齊|同步|機械|還原|恢復|符合|遵循|實作|落地)/u,
 ]
 
 const EXISTING_REQUIREMENT_PATTERNS = [
@@ -525,7 +525,7 @@ const GLOBAL_UI_SCOPE_PATTERN =
   /(?:(?:所有|任何|全部)\s*(?:產品|design-system|DS)?\s*(?:ui|ux|介面|界面|視覺|互動|產品設計)|\b(?:all|every)\s+(?:product\s+|design-system\s+)?(?:ui|ux|visual|interaction)s?\b)/iu
 
 const GLOBAL_REMEDIATION_SCOPE_PATTERN =
-  /(?:(?:修復|修正|對齊|同步|還原|恢復).{0,32}(?:所有|任何|全部).{0,48}(?:bug|缺陷|回歸|無障礙|可及性|a11y|accessibility|既有|現有|SSOT|規格)|\b(?:fix|repair|correct|align|synchroni[sz]e|restore)\s+(?:all|every)\b.{0,48}\b(?:bugs?|regressions?|a11y|accessibility|existing|documented|canonical|ssot|spec)\b)/iu
+  /(?:(?:修復|修正|對齊|同步|還原|恢復|實作|落地).{0,32}(?:所有|任何|全部).{0,48}(?:bug|缺陷|回歸|無障礙|可及性|a11y|accessibility|既有|現有|SSOT|規格)|(?:所有|全部|任何).{0,24}(?:規格書|規格|SSOT|既有|現有|已拍板|已核准).{0,64}(?:實作|落地|修復|修正|對齊|同步)|\b(?:fix|repair|correct|align|synchroni[sz]e|restore|implement)\s+(?:all|every)\b.{0,48}\b(?:bugs?|regressions?|a11y|accessibility|existing|documented|canonical|ssot|spec)\b|\b(?:implement|build)\s+(?:the\s+)?(?:entire|whole|full|all\s+of\s+the)\s+(?:approved\s+|ratified\s+)?spec(?:ification)?\b)/iu
 
 const RESOLVED_UI_CHOICE_PATTERNS = [
   /(?:顏色|色彩|樣式|版型|間距|尺寸|大小|文案|標籤|圖示|互動|行為).{0,24}(?:改成|改為|換成|設為|採用|選擇|決定|統一)/u,
@@ -663,8 +663,11 @@ function scopedClassification(classification, { message = '', operationText = ''
 
 function remediationDecision(message, target) {
   const normalized = normalizeText(message)
+  // 問句/暫定/轉述不構成授權(M36:問句 ≠ 同意;引用 ≠ 決定)。
+  if (matchesAny(NON_AUTHORITATIVE_UI_STATEMENT_PATTERNS, normalized)) return null
   let latest = null
   for (const clause of messageClauses(normalized)) {
+    if (matchesAny(TARGET_DISCUSSION_PATTERNS, clause)) continue
     const binding = actionableTargetBinding(clause, target)
       ?? (GLOBAL_REMEDIATION_SCOPE_PATTERN.test(clause)
         ? 'global-engineering-remediation-scope'
