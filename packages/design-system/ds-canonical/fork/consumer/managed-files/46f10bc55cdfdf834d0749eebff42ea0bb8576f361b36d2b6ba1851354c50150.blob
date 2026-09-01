@@ -368,6 +368,55 @@ function assertRemediatedFinding(name, finding) {
     )
     return
   }
+  if (name === 'browserslist') {
+    // 2026-09-01: GHSA-c83g-rgw3-j3cx + GHSA-73wf-gq98-2v4g landed against browserslist <=4.28.6
+    // with NO fixed release published — the overlay machinery has nothing to ship. Both are
+    // availability-only (CVSS 7.5, A:H, no C/I): unbounded query-cache growth and a crash /
+    // prototype write via an untrusted browserslist-stats.json. Dev-only build tooling
+    // (@vitejs/plugin-react → @babel/core; storybook react-docgen); no browserslist code ships to
+    // production, and this repo pins no custom stats file. Acknowledged in exact shape only;
+    // adopting the first fixed release (then deleting this block and the chain below) is the
+    // tracked follow-up. Any drift — a third advisory, a new node, a severity change — fails closed.
+    invariant(
+      finding.severity === 'high'
+        && finding.isDirect === false
+        && exactArray(finding.nodes, ['node_modules/browserslist'])
+        && exactArray(finding.effects, ['@babel/helper-compilation-targets'])
+        && matchesExactAdvisorySet(finding, 'browserslist', [
+          { source: 1153171, range: '<=4.28.6', url: 'https://github.com/advisories/GHSA-c83g-rgw3-j3cx', severity: 'high' },
+          { source: 1153172, range: '<=4.28.6', url: 'https://github.com/advisories/GHSA-73wf-gq98-2v4g', severity: 'high' },
+        ]),
+      'npm audit browserslist finding differs from the acknowledged no-fix preimage',
+    )
+    return
+  }
+  // browserslist metavulnerability chain(2026-09-01,同上 root;鏈成員全 dev-only 建置工具)。
+  // 形狀採「封閉集合內子集」:overlay 狀態會消長 via/effects(例:glob 鏈被 overlay 關閉後
+  // @storybook/react-vite 的 via 只剩 react-docgen),但任何集合外的 node/effect/via 仍 fail
+  // closed。browserslist 修復版落地後整段一併刪除。
+  const BROWSERSLIST_CHAIN = {
+    '@babel/helper-compilation-targets': { nodes: ['node_modules/@babel/helper-compilation-targets'], effects: ['@babel/core'], via: ['browserslist'] },
+    '@babel/core': { nodes: ['node_modules/@babel/core'], effects: ['@vitejs/plugin-react', 'react-docgen'], via: ['@babel/helper-compilation-targets'] },
+    'react-docgen': { nodes: ['node_modules/react-docgen'], effects: ['@storybook/react-vite'], via: ['@babel/core'] },
+    '@vitejs/plugin-react': { nodes: ['apps/template/node_modules/@vitejs/plugin-react', 'node_modules/@vitejs/plugin-react'], effects: [], via: ['@babel/core'], isDirect: true },
+    '@storybook/react-vite': { nodes: ['node_modules/@storybook/react-vite'], effects: [], via: ['@joshwooding/vite-plugin-react-docgen-typescript', 'react-docgen'], isDirect: true },
+  }
+  const chain = BROWSERSLIST_CHAIN[name]
+  if (chain) {
+    const subsetOf = (actual, allowed) => Array.isArray(actual)
+      && actual.every((item) => typeof item === 'string' && allowed.includes(item))
+    invariant(
+      finding.severity === 'high'
+        && finding.isDirect === (chain.isDirect === true)
+        && subsetOf(finding.nodes, chain.nodes)
+        && finding.nodes.length > 0
+        && subsetOf(finding.effects, chain.effects)
+        && subsetOf(finding.via, chain.via)
+        && finding.via.length > 0,
+      `npm audit ${name} metavulnerability differs from the acknowledged browserslist chain shape`,
+    )
+    return
+  }
   invariant(false, `npm audit contains an unremediated high/moderate finding:${name}`)
 }
 
