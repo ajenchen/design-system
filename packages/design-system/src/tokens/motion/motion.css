@@ -6,7 +6,7 @@
  *   --motion-<measurement>-<variant>
  *   grep `--motion-` 即抓齊全 motion family。
  *
- * ── 2 個 sub-measurement family ──
+ * ── 3 個 sub-measurement family ──
  *
  * (A) delay(何時開/關 — hover open/close 延遲;Radix delayDuration/openDelay/closeDelay 吃 JS 鏡像)
  *   - plain 500ms → Tooltip 純文字提示(被動 hint,對齊 Material 3 / Apple HIG / shadcn-Radix 主流)
@@ -24,6 +24,18 @@
  *   - easing-exit  cubic-bezier(0.3,0,1,1):出場加速(Material standard-accelerate)。
  *   - enter-distance 0.5rem(8px):slide 位移,沿用現行 slide-*-2 = shadcn/Radix canonical。
  *   - enter-scale 0.95:zoom scale,沿用現行 zoom-95 = shadcn default。
+ *
+ * (C) 循環動態(repeatCount infinite 的呼吸/微光 loop — AgentPanel 家族引入,2026-09-02)
+ *   既有 easing-enter/exit 語意=單次進退場;循環動態的「起/收」是不同 measurement,故新增:
+ *   - easing-swell cubic-bezier(0.4,0.14,0.3,1):循環「起」段(吸氣/蓄勢)。
+ *       值=Carbon expressive 參考(carbondesignsystem.com motion/overview,productive/expressive 雙檔制)。
+ *   - easing-settle cubic-bezier(0.2,0,0.38,0.9):循環「收」段(吐氣/回落)。
+ *       值=Carbon productive 參考(同上)。
+ *   - duration-shimmer 2s:思考中文字微光週期(獨立於標誌 3s 一息家族)。
+ *       值=shadcn shimmer 逐字(ui.shadcn.com/docs/utils/shimmer:
+ *       `animation: tw-shimmer var(--shimmer-duration, 2s) linear infinite`;2026-09-02 實開頁複核)。
+ *   SMIL(SVG 動畫)無法消費 CSS var:agent-logo.tsx 內 keySplines 常數為 swell/settle
+ *   token 值的逐字鏡像(該檔檔頭註記;改值必同步兩處)。
  */
 
 :root {
@@ -39,4 +51,9 @@
   --motion-easing-exit: cubic-bezier(0.3, 0, 1, 1);
   --motion-enter-distance: 0.5rem;
   --motion-enter-scale: 0.95;
+
+  /* (C) 循環動態 */
+  --motion-easing-swell: cubic-bezier(0.4, 0.14, 0.3, 1);
+  --motion-easing-settle: cubic-bezier(0.2, 0, 0.38, 0.9);
+  --motion-duration-shimmer: 2s;
 }

@@ -94,6 +94,10 @@
   --sidebar-menu-icon-size: 1rem;   /* 16px sm/md row(per ICON_SIZE.sm/md);size=lg 罕見 case 下方 override 1.25rem(20px) */
   --sidebar-width-icon: calc(2 * var(--layout-space-loose, 1rem) + var(--sidebar-menu-icon-size));
 
+  /* AgentPanel — 智慧代理右側面板寬(2026-09-02;agent-panel.spec.md token table SSOT)
+     稿「Task-Desktop」全六畫面 rightSider 實測 400;命名同 --sidebar-width L4 layout 前例 */
+  --agent-panel-width: 25rem;      /* 400px */
+
   /* Tree Indent — TreeView + DataTable nested rows(SSOT,2026-05-04)
      公式:chevronSize + gap-2 = 16+8(sm/md)/ 20+8(lg)
      Consumer:TreeView depth indent / DataTable nested row depth indent */

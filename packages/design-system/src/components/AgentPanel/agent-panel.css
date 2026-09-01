@@ -1,0 +1,43 @@
+/**
+ * AgentPanel 家族樣式 — 思考中文字微光(agent-panel.spec.md「AgentThinking」節)。
+ *
+ * 參數=shadcn shimmer 逐字(ui.shadcn.com/docs/utils/shimmer,2026-09-02 實開頁複核):
+ * 帶寬 calc(3ch + 40px)、斜 20°(=linear-gradient 110deg)、
+ * var(--motion-duration-shimmer, 2s) linear infinite。
+ * 色階=基 fg-muted、亮帶 neutral-6(同一條中性階梯零新色;semantic.css fg-muted 映射)。
+ * 亮帶左→右掃過(拍板);prefers-reduced-motion 自停回靜態。
+ */
+.agent-shimmer {
+  --agent-shimmer-spread: calc(3ch + 40px);
+  background-image: linear-gradient(
+    110deg,
+    var(--fg-muted) calc(50% - var(--agent-shimmer-spread) / 2),
+    var(--color-neutral-6) 50%,
+    var(--fg-muted) calc(50% + var(--agent-shimmer-spread) / 2)
+  );
+  /* repeat 必開:no-repeat 下掃出畫布的區段無漆=透明字(2026-09-02 實機截圖抓出)。
+     tile 寬 200%,亮帶每 2 倍寬一條,單一視窗內恆只見一條=seamless loop。 */
+  background-size: 200% 100%;
+  background-repeat: repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: agent-shimmer var(--motion-duration-shimmer, 2s) linear infinite;
+}
+
+@keyframes agent-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-shimmer {
+    animation: none;
+    background: none;
+    color: var(--fg-muted);
+  }
+}

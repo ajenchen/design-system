@@ -19,6 +19,33 @@ export type {
   AccountMenuUser,
 } from './components/AccountMenu/index'
 export {
+  AgentConversation,
+  AgentDecisionCard,
+  AgentDecisionSummary,
+  AgentMessage,
+  AgentPanel,
+  AgentPanelHeader,
+  AgentPromptInput,
+  AgentThinking,
+  AgentToolbar,
+} from './components/AgentPanel/index'
+export type {
+  AgentAttachment,
+  AgentConversationProps,
+  AgentConversationSummary,
+  AgentDecisionCardProps,
+  AgentDecisionOption,
+  AgentDecisionQuestion,
+  AgentDecisionSummaryProps,
+  AgentMessageProps,
+  AgentPanelHeaderProps,
+  AgentPanelProps,
+  AgentPromptAttachment,
+  AgentPromptInputProps,
+  AgentThinkingProps,
+  AgentToolbarProps,
+} from './components/AgentPanel/index'
+export {
   Alert,
   alertVariants,
 } from './components/Alert/index'
@@ -134,6 +161,8 @@ export {
   chipVariants,
 } from './components/Chip/index'
 export type {
+  ChipAssistProps,
+  ChipFilterProps,
   ChipGroupLayout,
   ChipGroupProps,
   ChipProps,

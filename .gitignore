@@ -147,3 +147,6 @@ reference/
 # Ignored so stale local leftovers from pre-removal checkouts cannot be re-added by a broad git add.
 .claude/hooks/
 story-screenshots/
+
+# 治理 build graph 暫態 journal(commit 鏈產物,post-commit 自清;誤入 47e1515a 後出庫)
+.governance-build-graph-journal.json

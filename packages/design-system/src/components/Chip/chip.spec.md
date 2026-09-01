@@ -17,8 +17,15 @@ benchmark:
 
 ## 定位
 
-Chip 是 **Material Design Filter Chip** 的實作——用於從多個選項裡**選取任意數量（多選）或單一選項（單選）**，視覺上是一排獨立的 pill。
-基於 Radix ToggleGroup，橋接設計系統 token。
+Chip 是 **Material Design Chips** 的實作(M3 taxonomy:https://m3.material.io/components/chips/guidelines),涵蓋兩個分支:
+
+- **filter(預設)**:從多個選項裡**選取任意數量(多選)或單一選項(單選)**,視覺上是一排
+  獨立的 pill。基於 Radix ToggleGroup,必須在 ChipGroup 內。
+- **assist(`variant="assist"`,2026-09-02 加;AgentPanel 附件拍板消費)**:**按鈕語意**——
+  點擊觸發動作,無 toggle、無 selected 態(M3「Assist chips」同上 URL);渲染 plain button,
+  **可獨立使用**。視覺與 filter 同款(單一 cva;差異是結構分支非視覺 variant)。
+
+兩分支都橋接設計系統 token。
 
 **Layout Family**：本元件是 `components/Button/button.spec.md`「Pill Layout」所擁有的 **Family 3（Pill Layout）action trigger sub-profile** 消費者。內部結構 `[startIcon?] [<span px-1>label</span>] [suffix badge? + endIcon?]` 繼承 Button canonical（code docblock 明寫「鏡射 Button」）。Chip 特有視覺（`rounded-full`、單一固定 `h-field-sm` size、hover/selected 色彩規則）寫在本 spec 下方章節。
 
@@ -117,9 +124,10 @@ Chip 使用單一高度，不暴露 size prop。既有使用場景（filter bar�
 
 ---
 
-## ChipGroup — Chip 必須在群組內
+## ChipGroup — filter 分支必須在群組內
 
-Chip **不可單獨使用**，必須放在 `<ChipGroup>` 裡。跟 SegmentedControl / RadioGroup 的結構對齊。
+filter Chip **不可單獨使用**,必須放在 `<ChipGroup>` 裡。跟 SegmentedControl / RadioGroup
+的結構對齊。(assist 分支=按鈕語意,獨立使用,不進 ChipGroup。)
 
 ```tsx
 <ChipGroup type="multiple" value={tags} onValueChange={setTags}>
@@ -194,9 +202,10 @@ Chip 的 overflow 處理有三種模式：
 
 ## 禁止事項
 
-- ❌ Chip 單獨使用——必須在 ChipGroup 內
+- ❌ filter Chip 單獨使用——必須在 ChipGroup 內(assist 分支才可獨立)
+- ❌ assist Chip 放進 ChipGroup 當可選項——按鈕語意無 toggle,混用會誤導選取心智模型
 - ❌ 用 `danger` / `loading` / `pressed` / `asChild` / `iconOnly`——不支援
-- ❌ 加 dismiss X——用 Input chip / Tag 代替
+- ❌ 加 dismiss X——用 Input chip / Tag 代替(assist 分支同樣不支援 dismiss)
 - ❌ 手動改 `data-state` 或 `aria-pressed` / `aria-checked`——由 Radix 管理
 - ❌ 把 Chip 塞進 Field 當 form control——規模語意不對，用 SegmentedControl
 - ❌ Menu 模式搭配 uncontrolled（只給 `defaultValue`）——menu items 無法同步狀態，TS 不擋但 runtime 會看到 menu 勾選失效

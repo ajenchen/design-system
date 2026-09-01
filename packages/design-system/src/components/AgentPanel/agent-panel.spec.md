@@ -1,0 +1,226 @@
+---
+component: AgentPanel
+family: self-contained
+traits:
+  - hasInteractiveStates
+  - isStructural
+---
+
+# AgentPanel 家族(智慧代理面板)
+
+> 來源:提案規格 v4(2026-09-01 核心互動全數定案 + 2026-09-02 各單項拍板;Figma「Task-Desktop」
+> 智慧代理頁 30:306094 六畫面 + 54:174061 附件,間距皆節點實測)。本檔為入庫後唯一 SSOT。
+
+## 定位
+
+- 產品右側智慧代理面板:一個家族資料夾、9 個元件 + 2 個附屬資產(AgentLogo / AgentFab),
+  同 Sidebar 前例(單一 `agent-panel.tsx` 家族檔;標誌與 FAB 因 SVG 幾何量體獨立成
+  `agent-logo.tsx` / `agent-fab.tsx`)。
+- **實作基礎**:組合式——消費 ChromeHeader(header-canonical)、overlay-surface(SurfaceHeader/
+  Footer)、Popover surface 配方、SelectMenu 同源 primitives(Popover+Command+MenuItem)、
+  Radix Collapsible(經 animate-accordion)、RadioGroup、Chip(assist 分支)、Tag、
+  OverflowIndicator、CircularProgress、Dialog、Empty、Button 家族。無自建 primitive;
+  唯一自建=AgentLogo/AgentFab 的品牌 SVG 資產(無既有 primitive 可對應)。
+- **Layout Family**:self-contained 容器家族(面板=容器;各子元件按其節聲明消費對應 anatomy)。
+- **世界級對照**:GitHub Copilot Chat panel(VS Code 右側欄)/ Notion AI side panel /
+  Intercom Fin 面板同型:右欄固定寬 + chrome header + 卷軸訊息區 + 底部複合輸入。
+
+## Token(本家族新增 4 個)
+
+| Token | 值 | 家 | 出處 |
+|---|---|---|---|
+| `--agent-panel-width` | 25rem(400) | uiSize.css「Sidebar / Layout primitive sizing」段 | 稿全六畫面 rightSider 實測 400;命名同 `--sidebar-width` L4 layout 前例 |
+| `--motion-easing-swell` | cubic-bezier(0.4,0.14,0.3,1) | motion.css (C) 循環動態 | 循環「起」;Carbon expressive 參考 |
+| `--motion-easing-settle` | cubic-bezier(0.2,0,0.38,0.9) | motion.css (C) 循環動態 | 循環「收」;Carbon productive 參考 |
+| `--motion-duration-shimmer` | 2s | motion.css (C) 循環動態 | shadcn shimmer 逐字(2026-09-02 實開頁複核) |
+
+標誌/FAB 環的漸層停駐色=**品牌資產常數**(oklch 內嵌,色相落於 DS 藍 252-268 /
+土耳其藍 190-210 家族;非 semantic token——資產色不進 token 系統,同品牌 SVG 慣例)。
+SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle token 值的
+逐字鏡像(檔頭註記;改 token 必同步)。
+
+## 何時用
+
+- 產品頁右側需要常駐可開合的智慧代理對話(任務助理、資料問答、批次操作代理)。
+- 代理需要人類拍板時(AgentDecisionCard)、需要回顧歷史對話時(歷史浮層)。
+- 頁面需要一顆全域入口喚起代理(AgentFab,含有新訊招喚)。
+
+## 何時不用
+
+| 情境 | 改用 | 原因 |
+|---|---|---|
+| 單次確認/破壞性確認 | Dialog | 阻擋語意屬 modal,非代理協作卡 |
+| 靜態說明/導覽提示 | Coachmark / Tooltip | 無對話回合 |
+| 全螢幕沉浸式對話產品 | 產品自建頁面 | 面板定位=側欄輔助,非主畫面 |
+| 一般表單輸入 | Field 家族 | AgentPromptInput 是代理複合輸入盒,非通用欄位 |
+
+## 元件規格
+
+### 1. AgentPanel(容器)
+
+- 寬 `--agent-panel-width`、全高;面=`bg-surface`;左緣 `border-l border-divider`
+  (右側欄同目的 canonical:app-shell.tsx aside 前例)。
+- Anatomy:`[AgentPanelHeader][AgentConversation flex-1][AgentPromptInput]`;
+  AgentDecisionCard 出現時絕對定位貼底覆蓋輸入區。
+- 開合=淡入+自右滑入 `--motion-duration-surface`(模態面板級);減動作停。
+- A11y:`role="complementary"` + `aria-label="智慧代理"`。
+- 面板與 app 的推擠/斷點=backlog(本輪僅元件內規格)。
+
+### 2. AgentPanelHeader(標題列)
+
+- chrome header 家族:消費 `<ChromeHeader>`(padding-based 不鎖高:md 48 / lg 56 隨 page tier);
+  標題=chrome typography `text-body-lg font-medium`。
+- Anatomy:`[AgentLogo 24][gap-2][標題][chevron 行內動作]…[新對話 +][ButtonDivider][關閉 ×]`。
+  - 標誌+標題=側欄品牌區前例逐字(gap-2 + 24 標誌);標誌隨代理狀態動畫(思考=think 態)。
+  - chevron=ItemInlineActionButton(16/懸停底 18),恆向下,開歷史浮層。
+  - 關閉=`<Button dismiss size="sm">`(header 專屬 sm);新對話=Button text sm iconOnly。
+  - ButtonDivider 置於自動高度 actions cluster(gap-2)內(action-bar 規則 3 誤觸保護;
+    直接放固定高 chrome header 會退化為容器高)。
+- A11y:每鈕 `aria-label`;chevron `aria-haspopup="menu"` + `aria-expanded`。
+
+### 3. AgentConversation(訊息卷軸區)
+
+- `flex-1 overflow-y-auto`;內距 16(--layout-space-loose);**輪距 40**(我方↔代理)=
+  8+24(工具列 xs 高)+8,工具列絕對定位於輪距內,出現不推擠。
+- A11y:`role="log"` + `aria-live="polite"`。
+
+### 4. AgentMessage(訊息)
+
+- 我方:氣泡 `bg-secondary`、`rounded-md`、內距 8/12、max-width 85%、靠右;
+  進場=淡入+下滑 8、0.15s。代理:無氣泡、全寬、text-body;內文連結=Button link variant。
+- 附件列(氣泡內文字上方):**`<Chip variant="assist">`**(按鈕語意;位置距氣泡緣左 12/
+  上 8、與文字距 8)。A11y:`aria-label="附件:{檔名}"`。
+
+### 5. AgentThinking(思考塊)
+
+- Anatomy:`[標題+chevron][內文:border-l border-divider + 左縮排 12 + 上距 8 之步驟串流]`。
+- 標題狀態換字:進行中「思考中」/完成「思考過程」;AI 回覆中自動展開、回覆完自動收合。
+- Chevron=accordion 慣例(Suffix 位、rotate-180、150ms、motion-reduce 0)。
+- 微光:僅標題+正在寫入的最新一行;shadcn shimmer 參數(帶寬 3ch+40px、斜 20°、
+  `--motion-duration-shimmer` linear);色階=基 fg-muted、亮帶 neutral-6(同一條中性階梯);
+  reduced-motion 自停。完成步驟靜態。
+- 開合=Radix Collapsible + `animate-accordion-down/up`(200ms ease-out)。
+- A11y:標題=button + `aria-expanded`;內文不另設 aria-live(容器已是 live region)。
+
+### 6. AgentToolbar(訊息工具列)
+
+- 高 24;代理**最後一則**常駐;其他訊息懸停 0.15s 淡入;絕對定位於輪距內。
+- `[複製][ButtonDivider][讚][倒讚]`=Button text xs + Tooltip;各鈕 aria-label。
+
+### 7. AgentPromptInput(複合輸入盒)
+
+- Anatomy:`[附件列?][值(多行)][工具列:+ … 送出/停止]`;外框 border-border、radius 4。
+- 內距=欄位家族:上 `--field-control-py-md`、左右 `--field-px`、text-body;
+  單行=32 等高鐵律。總高驗算:1+28(附件列)+32+40(工具列)+1=102=稿。
+- 附件列=**Tag md**(相互間距 4、距內緣 4);超寬=OverflowIndicator(+N)。
+  分工:輸入中 Tag(可 dismiss)、送出後 Chip assist 視覺(2026-09-01 拍板之本家族分工)。
+- 工具列高 40、鈕 xs、內距 8;送出=Button primary xs;**送出↔停止**:代理進行中同鈕
+  同位換實心正方,0.15s 淡切;停止態 `aria-label="停止生成"`。
+- textarea `aria-label="訊息"`。
+
+### 8. AgentDecisionCard(決策卡)
+
+- 僅代理被阻擋、需人決策時出現;完全覆蓋輸入區、貼面板底。
+- 繼承 Popover surface(rounded-lg、border、elevation-200、compact header 45)+SurfaceFooter;
+  改寫:無下圓角;header 下、footer 上無分隔線;body 無內距;Other 輸入右/下各 12。
+- 關閉:僅 Skip 鈕與 header ×,兩者同一行為=跳過;無 Esc、無外點關閉(阻擋語意)。
+- 表單:≤3 題、一題一問、2-4 具名選項+Other 必備、預選最佳解、Skip=逃生口。
+- 選項=**RadioGroup md 包裝不改造**(Popover all-sm 律之顯式拍板豁免;footer 鈕維持 sm 守律)。
+- 進出=淡入+下滑 8、`--motion-duration-overlay`。
+- A11y:`role="group"` + `aria-labelledby`;radiogroup 原生鍵盤。
+
+### 9. AgentDecisionSummary(決策回執)
+
+- 決策完成後在對話流中的靜態回執:`border-border rounded-md`;問題=fg-secondary、
+  答案=foreground。無互動。
+
+### 附:歷史浮層(消費現成,不新增公開元件)
+
+- 可搜尋單選選單:SelectMenu 同源 primitives 之 DS 內部組合(Popover+Command+MenuItem;
+  SelectMenu 資料驅動 API 放不下列級行內動作與進度圖示替換,故同源組裝——metrics 全同:
+  容器 p-0/rounded-lg/elevation-200/minWidth 240、搜尋列 40、列 32/px-12/gap-8、組標 py-2)。
+- 錨=chevron 鈕下緣+8(OVERLAY_SIDE_OFFSET);懸停/聚焦浮出「改名/刪除」(ItemInlineAction
+  16/18,150ms 淡入);思考中列首圖示原地換 **CircularProgress 16**,等寬等高不動版面。
+- 改名=Dialog(Field「名稱」+Input 預填全選;儲存=更新類 dirty 規則;Enter=blur、
+  Esc=回復);刪除=Dialog 危險樣式(`primary + danger`);刪當前→切最近,全空→空狀態。
+- 選定→切換對話、標題同步、浮層關閉。
+
+### 附:空狀態
+
+- 問候區圖示位=`<AgentLogo state="attract" size={48} detail="full">`(招喚態邀請開始);
+  其餘照既有 Empty 元件(icon slot)。
+
+## AgentLogo(標誌;附屬資產)
+
+- 造型=user 提供黃金比例莫比烏斯 SVG 定稿(內橢圓長短軸比 φ、軸角 121.717°);
+  尺寸 16-48;**≤24 自動簡化**(去陰影提亮、兩停駐高對比=圖標光學校正慣例;
+  `detail` 可強制);>96 hero 用全細節。
+- 一息 3 秒家族(文字微光 2s 另計);緩動=swell/settle token 值。
+- 狀態(prop `state`;「招喚/漣漪」為本家族新造狀態名,定義唯一住所=本節):
+  - **still 靜止**:完全不動;出現/收起 0.15s 淡入淡出。
+  - **idle 待機**:純透明度呼吸 3s、最低 75%(非位移=減動作安全)。
+  - **attract 招喚**(空狀態/FAB 有新訊):脹 1.07+吸氣微亮(白疊層 0→14%→0)+遮罩單波
+    (雙色放射盤內藍 .5→過渡 .44→青 .34→邊緣 0;行程 560→830;遮罩護負空間、無模糊;
+    35% 拍點波離體與本體回落同拍)。`ripple={false}` 供 FAB 光圈代位。
+  - **think 思考**(=回覆中):啟動加速 0.3s(ease-in)→等速 0.6s/圈(linear)→結束減速
+    0.6s(state-exit ease-out;由 0.15s 狀態切換淡出承接);+負空間呼吸(洞橢圓↔正圓 6s)
+    +吸氣微亮(與圓化同拍,峰值 14% 與招喚統一)+色流動(色場定錨畫布=漸層同構逆轉)。
+- 轉場:狀態間 100-500ms 平滑接續、禁跳切;**減動作**:互動觸發必可停(WCAG 2.3.3);
+  常駐 loop 全停(嚴於條文),fallback=待機純透明度呼吸。
+- 多實例安全:漸層/遮罩 id 以 useId 唯一化。
+
+## AgentFab(浮動開關鈕;附屬資產)
+
+- 40 圓=`--field-height-lg` 於 lg 密度;圓形 iconOnly;面=`bg-surface-raised`+
+  `--elevation-200`(不寫死白色);內置 24 標誌(簡化檔自動生效)。
+- 外框=AI 觸發鈕特調:錐形(環向)漸層描邊 2px(整數寬+環向漸層=正圓對稱);
+  兩極=藍 258 / 土耳其藍 196(品牌資產常數;2026-09-02 對定稿標誌覆核:各落於兩緞帶
+  色相家族內 ✓——原「終覆核」未決項關閉)。
+- 動畫:待機=靜止(常駐邊角鈕,持續呼吸干擾周邊視野;面板標誌待機呼吸是另一明文檔);
+  有新訊=招喚態(標誌蓄勢;漣漪由邊框光圈代位:35% 拍點自邊框射出 r 21→27、寬 2.5、
+  .35→0,光圈漸層=環同兩極同方位);懸停=陰影升一級+微放大;點擊=開面板。
+- 減動作:光圈屬位移 loop → 全停(標誌內部自落待機呼吸)。
+- A11y:`aria-label="開啟智慧代理"`。
+
+## 動畫總表
+
+| 場景 | 動畫 | 級距 |
+|---|---|---|
+| 面板開合 | 淡入+右滑 | `--motion-duration-surface` 250ms |
+| 訊息/決策卡/工具列/送出↔停止 | 淡入(+`--motion-enter-distance` 8) | `--motion-duration-overlay` 150ms |
+| 思考塊開合 | Radix Collapsible+animate-accordion | 200ms ease-out |
+| 歷史浮層 | 照選單元件 | — |
+| 標誌狀態 | 一息 3s 家族(微光 2s 另計) | 見 AgentLogo 節 |
+| 減動作 | 互動觸發必可停;常駐 loop 全停 | 見 AgentLogo 節 |
+
+## 禁止事項
+
+- ❌ 手刻 chrome header / 浮層殼 / row 結構(必消費 ChromeHeader / overlay-surface /
+  MenuItem 家族)。
+- ❌ AgentDecisionCard 加 Esc / 外點關閉(阻擋語意)。
+- ❌ 標誌動畫另立第三種本體語言(蓄勢=招喚態同款;「變淡」已於 2026-09-02 收斂棄用)。
+- ❌ 附件在氣泡內用 Tag 或 FileItem(送出後=Chip assist 視覺;輸入中才是 Tag)。
+- ❌ 思考塊微光套到已完成步驟(僅標題+最新一行)。
+- ❌ 繞過 `--agent-panel-width` 寫死面板寬。
+
+## 邊界案例 scope
+
+- `hasVariants=false`:家族各元件無視覺 variant 軸(結構分支如 Chip assist 屬 Chip 元件)。
+- `hasSizes=false`:面板寬/列高/鈕尺寸全由消費的 primitive/token 決定,無獨立 size 軸。
+- Field 家族空值/驗證:AgentPromptInput 空值時送出鈕不可按;改名 Dialog 走
+  form-validation 更新類規則(未異動停用/dirty 亮/還原再停)。
+
+## Loading / 無障礙預設
+
+- 代理回覆中:列首 CircularProgress 16(歷史列)、送出鈕變停止、AgentThinking 展開+微光。
+- 全家族鍵盤:chevron/工具列/決策卡各自獨立焦點站;focus-visible 藍框;
+  radiogroup/menu 原生方向鍵。
+- 螢幕閱讀:面板 complementary、對話 log/polite、決策卡 group、停止態改名 aria-label。
+
+## 相關
+
+- `components/Sidebar/sidebar.spec.md`(家族資料夾前例)/ `patterns/header-canonical`
+  / `patterns/overlay-surface` / `components/Chip/chip.spec.md`(assist 分支)
+  / `components/Tag` / `components/OverflowIndicator` / `components/CircularProgress`
+  / `components/Empty` / `components/RadioGroup` / `components/Dialog`
+  / `tokens/motion/motion.css` / `tokens/uiSize/uiSize.css`。

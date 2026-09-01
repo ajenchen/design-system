@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-08-02T04:37:12.616Z"
+    "generatedAt": "2026-09-01T20:12:47.868Z"
   },
   "components": {
     "accordion": {
@@ -57,6 +57,29 @@
       },
       "openSnapshotIds": [
         "design-system-components-accountmenu-展示--open-snapshot"
+      ],
+      "exception": null
+    },
+    "agentpanel": {
+      "tiers": {
+        "展示": [
+          "design-system-components-agentpanel-展示--task-assistant",
+          "design-system-components-agentpanel-展示--decision-card-open",
+          "design-system-components-agentpanel-展示--decision-summary-in-flow",
+          "design-system-components-agentpanel-展示--empty-conversation",
+          "design-system-components-agentpanel-展示--logo-states",
+          "design-system-components-agentpanel-展示--fab-states"
+        ],
+        "設計規格": [
+          "design-system-components-agentpanel-設計規格--overview",
+          "design-system-components-agentpanel-設計規格--logo-size-ladder"
+        ],
+        "設計原則": [
+          "design-system-components-agentpanel-設計原則--usage-guidance"
+        ]
+      },
+      "openSnapshotIds": [
+        "design-system-components-agentpanel-展示--decision-card-open"
       ],
       "exception": null
     },
@@ -369,7 +392,8 @@
           "design-system-components-chip-展示--default",
           "design-system-components-chip-展示--states",
           "design-system-components-chip-展示--with-badge",
-          "design-system-components-chip-展示--single-selection"
+          "design-system-components-chip-展示--single-selection",
+          "design-system-components-chip-展示--assist-attachments"
         ],
         "設計規格": [
           "design-system-components-chip-設計規格--overview",
@@ -1755,6 +1779,6 @@
       "exception": null
     }
   },
-  "totalComponents": 65,
-  "totalStories": 947
+  "totalComponents": 66,
+  "totalStories": 957
 }
