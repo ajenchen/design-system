@@ -3255,7 +3255,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:530d3b7624c7d89ca5b810f179216724f3f41cb458613db61036e4e90bbb3c4e",
+      "hash": "sha256:fe66279768132dadfc4680181a18b75404c9dc2babc4d7fc1c6ed5ce74e1210f",
       "id": "workspace-lockfile",
       "mode": "0644",
       "ownerRepo": "design-system",
