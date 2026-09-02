@@ -62,6 +62,7 @@ jobs:
         run: |
           npx --no-install playwright install chromium
           node scripts/data-table-invariants.mjs
+          node scripts/agent-logo-continuity-invariant.mjs
 
       # Cloud sessions load the committed provider config as-is; the only two ways that config has
       # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)

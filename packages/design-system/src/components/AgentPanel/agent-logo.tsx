@@ -506,6 +506,8 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
 
     const defs = (
       <defs>
+        {/* 減速段基底 gradientTransform 必等於當下角度:SpinPair 卸載、SpinDecel 起跑前那一影格若基底是 0°,
+            色場會先跳回 0° 再接減速 = 色彩斷層(2026-09-03 user 抓「色彩沒有流暢回復」根因)。 */}
         <linearGradient
           id={ids.blue}
           gradientUnits="userSpaceOnUse"
@@ -513,6 +515,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
           y1="1055"
           x2="770"
           y2="110"
+          gradientTransform={isExit && exit ? `rotate(${-exit.angle} 627 627)` : undefined}
         >
           <GradientStops stops={BLUE_SURFACE} />
           {isThink && !isExit && <GradientCounterSpin id={ids.spinBlue} />}
@@ -527,6 +530,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
           y1="145"
           x2="650"
           y2="1090"
+          gradientTransform={isExit && exit ? `rotate(${-exit.angle} 627 627)` : undefined}
         >
           <GradientStops stops={PURPLE_SURFACE} />
           {isThink && !isExit && <GradientCounterSpin id={ids.spinPurple} />}
