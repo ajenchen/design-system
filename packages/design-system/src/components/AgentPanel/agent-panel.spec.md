@@ -319,28 +319,27 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
   `--layout-space-loose`(16/24;Material FAB 最小邊距同值);**面板開 → FAB 隱藏、面板關 → FAB 回來**
   (兩者互斥,開面板的入口與關面板的 × 不並存)。DS 預設入口仍是全域頂列右側鈕
   (`governance/planning/2026-08-11-agent-ui-panel-spec.md` 已裁),含滿高表格/分頁列的頁面一律用頂列入口。
-- **遮擋與收到邊**(`AgentFabDock`;2026-09-02 第一輪拍板方案 C 拖到邊,第二輪改為 Teambition 專案頁實測同構、
-  去拖曳):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),與表格分頁列「操作右」必撞 → 提供收到右緣:
-  - 只有**兩個位置**:展開 = 右下角 40 圓鈕(離邊 loose);收起 = `--field-height-sm` 28 貼右緣半圓鈕(只留內側
-    圓角、環只畫露出三邊、內置 16 標誌;招喚態同款蓄勢、光圈省略),**同一高度、只沿 x 平移**
-    (`--motion-duration-surface` 250ms + `--motion-easing-enter`;減動作直接落定)。不做拖曳、不做高度磁吸。
-  - **兩個位置都一段**:點主鈕即開面板(Copilot 停靠鈕、YouTube 小視窗、Intercom 皆一段;Teambition 收起後
-    要先展開再開 = 多一個動作,不採)。面板關閉回到使用者收起的位置(`placement / defaultPlacement /
-    onPlacementChange` 受控/非受控;DS 不寫 storage,要跨 session 記憶由 consumer 存)。
-  - **收合 / 展開小鈕**:滑鼠停在鈕群或鍵盤焦點在鈕群時 0.15s 淡入(Polaris / Carbon / Atlassian「hover 與 focus
-    都顯示」);視覺 18 圓盤(= `INLINE_ACTION_HOVER_BG_SIZE.md`,DS 最小圓盤階;Teambition 16 未達 WCAG)+
-    命中區 24(WCAG 2.5.8 最小目標);圖示 `chevrons-right`(收到右邊)/ `chevrons-left`(放回),方向配對 =
-    Lucide panel-right-close/open、Material right_panel_close/open、Fusion toggle-right/left 慣例,不用「−」
-    (最小化語意);展開時與 40 圓**右上角 45° 相切**、收起時與半圓**左上角 45° 相切**,貼著主鈕無縫
-    (WCAG 1.4.13 hoverable);`aria-expanded` + `aria-controls` 指向主鈕(WAI-ARIA disclosure)。
-  - 鍵盤:→ 收到右邊、← 放回右下角、Tab 順序主鈕 → 小鈕;右鍵 / Shift+F10 開 DropdownMenu(同一動作;DS 無
-    ContextMenu,以受控 DropdownMenu 代)。觸控:暫不處理(2026-09-02 user:「可以先不處理觸控」),選單為等價路徑。
-  - 對照:[Teambition 專案頁 hover 出現 16px「−」、整組右移 43px 露 18px 圓弧、點圓弧先展開](https://www.teambition.com/)
-    (2026-09-02 實測)、[M365 DAB 停靠小圖示一段點回](https://support.microsoft.com/en-us/office/foundations-experiences/copilot-dab/the-copilot-dynamic-action-button-in-word-excel-and-powerpoint)、
-    [Chrome 子母畫面 hover 才出現 24px 鈕 / 16px 圖示](https://raw.githubusercontent.com/chromium/chromium/main/chrome/browser/ui/views/overlay/video_overlay_window_views.cc)、
-    [WCAG 2.5.8 目標 ≥ 24](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)、
-    [WCAG 1.4.13 hoverable](https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus.html);
-    Material 明文 FAB 不被蓋、不移動([M3 FAB](https://m3.material.io/components/floating-action-button/guidelines))→ 收邊在 DS 為 opt-in。
+- **遮擋與收到邊**(`AgentFabDock`;2026-09-02 第一輪方案 C 拖到邊 → 第二輪 hover 小鈕 → 2026-09-03 第三輪
+  user 拍板「捨棄小鈕切換,回到拖曳,所見即所得」):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),
+  與表格分頁列「操作右」必撞 → 主鈕可**任意拖動**、拖到右緣收合:
+  - **兩種形態**:圓鈕 40(離邊 ≥ loose,舞台內任意位置)/ 收合鈕 `--field-height-sm` 28 貼右緣半圓(只留內側
+    圓角、環只畫露出三邊、內置 16 標誌;招喚態同款蓄勢、光圈省略)。**兩種形態點一下都直接開面板**(一段);
+    < 8px 位移視為點擊。
+  - **所見即所得**:拖曳中指標進入右緣 40px 帶(收合區)→ 鈕**當場**變成收合形(寬高圓角 0.15s 過渡、
+    標誌 24→16);離開收合區(遲滯 16px 防抖)→ 當場變回圓鈕。放開:收合形 → 吸到右緣、停在放開的高度;
+    圓鈕 → 停在放開處(夾在 loose 內距內)。左緣**沒有收合區**(往左丟不會收,只會停下)。落點吸附
+    `--motion-duration-surface` 250ms + enter;減動作直接落定。
+  - **等價路徑**:鍵盤 ←→↑↓ 16px 移動、→ 到右緣即收合、收合時 ← 展開到 loose 內距、Home 放回右下角;
+    右鍵 / Shift+F10 DropdownMenu「收到右邊 / 放回右下角」(DS 無 ContextMenu,以受控 DropdownMenu 代);
+    拖曳中 Esc 取消回原位。Tooltip「我是 AI,可以任意移動我」(2026-09-03 user 文案;拖曳中不顯示)。
+  - 位置由 consumer 受控/非受控(`placement / defaultPlacement / onPlacementChange`,`{kind:'float',x?,y?}` /
+    `{kind:'dock',y}`),DS 不寫 storage;要跨 session 記憶由 consumer 存。
+  - 對照:[Copilot DAB 可拖到內容區側邊變小圖示、拖回畫布即展開](https://support.microsoft.com/en-us/office/foundations-experiences/copilot-dab/the-copilot-dynamic-action-button-in-word-excel-and-powerpoint)、
+    [Windows Snap「拖到螢幕邊時 Snap 框當場顯示」= 拖曳中預告落點形狀](https://support.microsoft.com/en-us/windows/snap-your-windows-885a9b1e-a983-a3b1-16cd-c531795e6241)、
+    [Android Bubbles 任意拖、拖到底部才出現關閉區](https://developer.android.com/develop/ui/views/notifications/bubbles)、
+    [Teambition 專案頁 hover「−」收到右緣、點圓弧先展開](https://www.teambition.com/)(2026-09-02 實測;本 DS 收合後
+    一段即開、且形態在拖曳中就切換,比它少一步、回饋更早);Material 明文 FAB 不移動
+    ([M3 FAB](https://m3.material.io/components/floating-action-button/guidelines))→ 可拖在 DS 為 opt-in。
 - A11y:`aria-label="開啟智慧代理"`。
 
 ## 動畫總表

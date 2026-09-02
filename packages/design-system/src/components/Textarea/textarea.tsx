@@ -2,7 +2,7 @@
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
-import { FIELD_DEFAULT_CHROME_COMPOUNDS } from '@/design-system/components/Field/field-wrapper'
+import { fieldDefaultChromeCompounds } from '@/design-system/components/Field/field-wrapper'
 import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
@@ -72,9 +72,10 @@ const textareaVariants = cva(
       },
     },
     compoundVariants: [
-      // default 外框 × mode / error 全部來自 field-wrapper.tsx FIELD_DEFAULT_CHROME_COMPOUNDS
-      // (單行 wrapper / 多行 Textarea / 複合輸入盒三宿主同一份;Phase D 整併完成 2026-09-02)
-      ...FIELD_DEFAULT_CHROME_COMPOUNDS,
+      // default 外框 × mode / error 全部來自 field-wrapper.tsx fieldDefaultChromeCompounds('control')
+      // (單行 wrapper / 多行 Textarea / 複合輸入盒三宿主同一份;host='control' = textarea 自身可聚焦,
+      // readonly ring 用 focus-visible:、無 data-state 開啟態;Phase D 整併完成 2026-09-02)
+      ...fieldDefaultChromeCompounds('control'),
       // disabled 文字色為 Textarea 專屬追加(外框由共用 compounds 提供)
       { mode: 'disabled', variant: 'default', className: 'text-fg-disabled' },
       // (2026-07-09 `bare` chrome × mode compounds 退役已移除;error:true 為 variant-agnostic 保留)

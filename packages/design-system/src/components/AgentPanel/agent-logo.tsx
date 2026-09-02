@@ -334,7 +334,26 @@ function LogoBody({ ids, morph }: BodyProps) {
 function InhaleOverlay({ morph, dur }: { morph?: HoleMorphSpec; dur: string }) {
   const purpleMorph = morph ? <HoleMorph rest={D_PURPLE} round={D_PURPLE_ROUND} spec={morph} /> : null
   const blueMorph = morph ? <HoleMorph rest={D_BLUE} round={D_BLUE_ROUND} spec={morph} /> : null
+  // 減速段外包一層 1→0 的淡出(乘上呼吸包絡):不論呼吸走到哪一拍,停定那一刻亮度必回到基準
+  // (有始有終;呼吸元素本身不重啟、不跳)。
+  const rampOut = morph?.phase === 'spindown' ? (
+    <animate
+      key="ramp"
+      attributeName="opacity"
+      from="1"
+      to="0"
+      dur={morph.dur}
+      begin="indefinite"
+      data-begin-on-mount=""
+      fill="freeze"
+      calcMode="spline"
+      keyTimes="0;1"
+      keySplines={DECEL}
+    />
+  ) : null
   return (
+    <g opacity="1" pointerEvents="none">
+      {rampOut}
     <g opacity="0" pointerEvents="none">
       <animate
         attributeName="opacity"
@@ -349,6 +368,7 @@ function InhaleOverlay({ morph, dur }: { morph?: HoleMorphSpec; dur: string }) {
       />
       <path d={morph?.phase === 'spindown' ? D_BLUE_ROUND : D_BLUE} fill="#fff">{blueMorph}</path>
       <path d={morph?.phase === 'spindown' ? D_PURPLE_ROUND : D_PURPLE} fill="#fff">{purpleMorph}</path>
+    </g>
     </g>
   )
 }
@@ -456,6 +476,20 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
     /** think→think-exit 不換 key:洞形變 / 疊層節點不重掛、不重新 beginElement。 */
     const visualKey = isExit ? 'think' : visual
     useBeginAnimationsOnMount(innerRef, `${visualKey}:${ripple}`)
+    // 有始有終:still ↔ think 的交接瞬間兩邊長得一模一樣(定稿形、0°、無疊層),直接換、不淡入;
+    // 淡入只留給形態真的不同的交接(招喚 ↔ 其他)。2026-09-02 user 抓「最後沒有流暢回到起點」:
+    // 減速停定後再淡入 0.15s = 停定那一刻整顆先變透明再回來,就是那個斷層。
+    // 只在 key 真的換的那一次決定要不要淡入;同 key 的後續 render(think → think-exit)沿用同一決定,
+    // 否則 className 被重新加上會讓 CSS animation 重跑 = 減速起點閃一下。
+    const enterRef = React.useRef<{ key: string; seamless: boolean }>({ key: visualKey, seamless: false })
+    if (enterRef.current.key !== visualKey) {
+      const prev = enterRef.current.key
+      enterRef.current = {
+        key: visualKey,
+        seamless: (prev === 'still' && visualKey === 'think') || (prev === 'think' && visualKey === 'still'),
+      }
+    }
+    const seamless = enterRef.current.seamless
     const ids = {
       blue: `${uid}bs`,
       purple: `${uid}ps`,
@@ -636,7 +670,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
       >
         {defs}
         {/* 狀態切換:key 重建 + 0.15s 淡入(僅 opacity,不碰 transform 屬性),禁跳切;think→exit 同 key 不重掛。 */}
-        <g key={visualKey} className="agent-logo-enter">
+        <g key={visualKey} className={seamless ? undefined : 'agent-logo-enter'}>
           {content}
         </g>
       </svg>

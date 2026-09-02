@@ -30,25 +30,40 @@ import { cn } from '@/lib/utils'
  * readonly ring 同時給 `focus-visible:`(宿主本身可聚焦,如 <textarea>)與 `[&:has(:focus-visible)]:`(宿主是
  * wrapper,可聚焦元素在內)兩種選擇器,兩類宿主同一份字串。
  */
-export const FIELD_DEFAULT_CHROME_COMPOUNDS = [
-  {
-    mode: 'edit' as const,
-    variant: 'default' as const,
-    className: ['bg-surface border border-border', 'hover:border-border-hover', 'data-[state=open]:border-border-hover'],
-  },
-  { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
-  { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border border-transparent' },
-  {
-    mode: 'readonly' as const,
-    variant: 'default' as const,
-    className:
-      'bg-readonly border border-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 [&:has(:focus-visible)]:ring-2 [&:has(:focus-visible)]:ring-ring [&:has(:focus-visible)]:ring-offset-1',
-  },
-  { mode: 'disabled' as const, variant: 'default' as const, className: 'bg-disabled border border-transparent cursor-not-allowed' },
-  { mode: 'edit' as const, error: true as const, className: 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
-]
+export type FieldChromeHost =
+  /** 宿主是包住可聚焦控件的 wrapper(單行 Field wrapper / 複合輸入盒):readonly ring 用 `:has(:focus-visible)`,
+   *  overlay trigger 開啟時維持 hover 框(`data-[state=open]`)。 */
+  | 'wrapper'
+  /** 宿主本身就是可聚焦控件(`<textarea>`):readonly ring 用 `focus-visible:`,無 overlay 開啟態。 */
+  | 'control'
 
-/** 複合欄位宿主(AgentPromptInput 等)直接消費:只回傳外框互動 class,不含尺寸/內距。 */
+/** 依宿主型別產出 default 外框 compounds;字串與 2026-09-02 前各宿主自寫的版本逐字相同(class 等價證明:零增減)。 */
+export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
+  const wrapper = host === 'wrapper'
+  return [
+    {
+      mode: 'edit' as const,
+      variant: 'default' as const,
+      className: ['bg-surface border border-border', 'hover:border-border-hover', wrapper ? 'data-[state=open]:border-border-hover' : ''],
+    },
+    { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
+    { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border border-transparent' },
+    {
+      mode: 'readonly' as const,
+      variant: 'default' as const,
+      className: wrapper
+        ? 'bg-readonly border border-transparent [&:has(:focus-visible)]:ring-2 [&:has(:focus-visible)]:ring-ring [&:has(:focus-visible)]:ring-offset-1'
+        : 'bg-readonly border border-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+    },
+    { mode: 'disabled' as const, variant: 'default' as const, className: 'bg-disabled border border-transparent cursor-not-allowed' },
+    { mode: 'edit' as const, error: true as const, className: 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
+  ]
+}
+
+/** 單行 wrapper 用的 compounds(同 host='wrapper')。 */
+export const FIELD_DEFAULT_CHROME_COMPOUNDS = fieldDefaultChromeCompounds('wrapper')
+
+/** 複合欄位宿主(AgentPromptInput 等 wrapper 型)直接消費:只回傳外框互動 class,不含尺寸/內距。 */
 export const fieldChromeStyles = cva('transition-colors duration-150', {
   variants: {
     mode: { edit: '', view: '', readonly: '', disabled: '' },

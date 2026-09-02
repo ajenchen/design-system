@@ -38,6 +38,7 @@ beta.120 五步發版全自動走通。判準已 codify 為 M36(b′) 三問(met
 | publish job「registry read-back is missing」後重跑同版 → 「registry digest mismatch」 | npm 大包 staged 轉正可能 >18 分鐘(beta.131:CI 10:39 放棄、10:40 轉正);同版重跑會重新打包,跨 run 位元組不保證一致(本機兩次 build 一致、CI 第二次差 7 bytes)→ **禁重跑同版**,直接 bump 下一版重發;半發布的版本留在 npm 不回收(immutable),ledger 照記(2026-09-02) |
 | user 把指示寫在 artifact comment(非對話訊息)→ 寫入閘無 exact target 綁定 | 分類器只讀對話 user 訊息,comment 是工具結果(viewer data);目前做法=在 commit/PR 引用 thread id 當核准證據並以 Bash 套用 patch,**屬已知缺口**:正解要 harness 提供結構化 user-comment 事件或 user 在對話重述 exact target(2026-09-02) |
 | Workflow 子代理與主 session 共用同一個 Chrome MCP 分頁群 → 子代理 navigate 會搶走主 session 的分頁與前景,量到 `document.hidden=true`、hover/transition 凍結、click 落空 | 主 session 先 `tabs_create_mcp` 開專屬分頁並永遠帶 tabId;每次量測前 `screenshot` 帶到前景;需要點擊/動畫的動態量測等 workflow 跑完再做;靜態幾何(rect/computed style)不受影響(2026-09-02) |
+| Storybook dev server 在沙箱吐 `EMFILE: too many open files, watch`(ulimit 無效)→ 檔案改動不進 module graph、新 story 不進索引,curl 該模組看到舊碼 | 每輪驗證前用**新埠**重開 dev server(啟動時重新編譯/索引最新檔;舊埠 TaskStop),量測前 `curl <server>/<module path> \| grep <新符號>` 確認真的是新碼;靜態 build 10 分鐘只在收尾用(2026-09-03) |
 | `npm run sync-memory` 在沙箱 EPERM(home 鎖目錄) | 沙箱不准 Bash 寫 `~/.claude/projects`;改用 Write 檔案工具把 repo `governance/memory/*.md` 逐檔鏡射到 home(方向仍是 repo→home,2026-09-02) |
 
 **發版鐵律**:immutable tag 不可重用——publish 前先確認 `package.json` 版號**未曾發過**
