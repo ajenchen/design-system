@@ -381,8 +381,10 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
       return order.map((key) => ({ label: key, items: byGroup.get(key)! }))
     }, [conversations])
 
+    // 標題群 ↔ 動作群 gap = loose(2026-09-02 user 拍板:chevron 與右側按鈕至少 --layout-space-loose;
+    // ChromeHeader 預設 gap-2 是 slot 內間距,長標題截斷時 chevron 會貼到 28px 圖示鈕被讀成同一群)。
     return (
-      <ChromeHeader ref={ref} className={cn('bg-surface', className)} {...props}>
+      <ChromeHeader ref={ref} className={cn('gap-[var(--layout-space-loose)] bg-surface', className)} {...props}>
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <AgentLogo state={logoState} size={24} />
           <Popover open={historyOpen} onOpenChange={setHistoryOpen}>
