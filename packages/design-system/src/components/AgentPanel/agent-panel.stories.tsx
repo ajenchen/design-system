@@ -384,22 +384,6 @@ export const FabPanelToggle: Story = {
   },
 }
 
-/** 收起態樣張:入口鈕已貼右緣(有新訊,標誌蓄勢);拉離右緣會當場變回圓鈕、放開停在放開處;按 ← 或選單也能放回。 */
-export const FabDocked: Story = {
-  name: '入口鈕:已收到邊',
-  render: function FabDockedStory() {
-    const [placement, setPlacement] = React.useState<AgentFabPlacement>({ kind: 'dock', y: 200 })
-    return (
-      <div className="relative h-dvh bg-surface-sunken">
-        <p className="p-[var(--layout-space-loose)] text-body text-fg-secondary">
-          收起後點半圓鈕一樣直接開面板;把它往左拉就當場變回圓鈕。
-        </p>
-        <AgentFabDock attention placement={placement} onPlacementChange={setPlacement} onClick={noop} />
-      </div>
-    )
-  },
-}
-
 /** 標誌三態:靜止(=待機)/招喚/思考(動態資產矩陣;配色=自家色階 blue-3..7 / purple-3..7;減動作時一律回靜止)。 */
 export const LogoStates: Story = {
   name: '標誌三態',

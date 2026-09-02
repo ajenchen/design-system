@@ -16,7 +16,7 @@
  *   28 貼邊半圓形(Windows Snap「拖到邊時 Snap 框當場出現」的所見即所得),放開就吸到右緣、停在放開的高度;
  *   離開收合區則變回 40 圓鈕,放開就停在放開處(夾在舞台 loose 內距內)。左緣無收合區(往左丟不會收)。
  *   兩種形態點一下都直接開面板;< 8px 位移視為點擊。鍵盤 ←→↑↓ 16px 移動(→ 到底 = 收合、收合時 ← = 展開);
- *   Home = 放回右下角;右鍵 / Shift+F10 選單「收到右邊 / 放回右下角」。Tooltip「我是 AI,可以任意移動我」。
+ *   Home = 放回右下角;右鍵 / Shift+F10 選單「收到右邊 / 放回右下角」。Tooltip「問我或是推我到旁邊」。
  *   形態切換 --motion-duration-overlay、落點吸附 --motion-duration-surface + enter;減動作直接落定。
  *   位置由 consumer 受控/非受控(placement / defaultPlacement / onPlacementChange),DS 不寫 storage。
  * - 減動作:光圈屬常駐位移 loop → prefers-reduced-motion 全停(標誌內部自回靜止)。
@@ -156,9 +156,27 @@ const FAB_PX = 40
 const DOCK_PX = 28
 /** 拖曳啟動門檻 px(小於視為點擊;dnd-kit PointerSensor activationConstraint.distance 同量級)。 */
 const DRAG_THRESHOLD = 8
-/** 收合區:指標距右緣 ≤ 40(= 主鈕直徑)進入、≥ 56 離開(16 遲滯,避免邊界抖動)。 */
-const DOCK_ZONE_ENTER = FAB_PX
-const DOCK_ZONE_LEAVE = FAB_PX + 16
+/**
+ * 磁吸區域表(依序判定,第一個命中的算數;沒命中 = 自由放置):
+ * 每列 = 「指標在哪個區域 → 拖曳中預告成什麼形狀 → 放開吸到哪」。要加磁吸點(鏡像左緣、四角…)只在此表
+ * 加一列,拖曳 / 預告 / 吸附流程不變(spec「收到邊」節「區域 → 落點」表)。enter / leave 兩個門檻 = 16px 遲滯。
+ * 判定用**指標**位置(使用者的意圖在指尖;Windows Snap 看游標碰邊、Android Bubbles 看拖到關閉區),不用鈕的邊緣。
+ */
+interface SnapZone {
+  shape: Shape
+  /** 指標是否進入區域(尚未在此區時用 enter 門檻,已在此區時用 leave 門檻)。 */
+  contains: (p: { x: number; y: number }, stage: { w: number; h: number }, active: boolean) => boolean
+  /** 放開後的落點(左上座標由 resolve 端夾限)。 */
+  target: (p: { x: number; y: number }, stage: { w: number; h: number }, grab: { x: number; y: number }) => AgentFabPlacement
+}
+const SNAP_ZONES: SnapZone[] = [
+  {
+    // 右緣 40px 帶:收合成 28 半圓貼右緣,停在放開的高度。
+    shape: 'dock',
+    contains: (p, stage, active) => stage.w - p.x <= (active ? FAB_PX + 16 : FAB_PX),
+    target: (p, _stage, grab) => ({ kind: 'dock', y: p.y - Math.min(grab.y, DOCK_PX) }),
+  },
+]
 /** 鍵盤每步 16(同 AgentPanel 調寬步長)。 */
 const KEY_STEP = 16
 
@@ -248,15 +266,16 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
     const text = {
       dock: labels?.dock ?? '收到右邊', // i18n-allow: DS 預設文案,labels 可覆寫
       home: labels?.home ?? '放回右下角', // i18n-allow: DS 預設文案,labels 可覆寫
-      tooltip: labels?.tooltip ?? '我是 AI,可以任意移動我', // i18n-allow: DS 預設文案(2026-09-03 user 原話),labels 可覆寫
+      tooltip: labels?.tooltip ?? '問我或是推我到旁邊', // i18n-allow: DS 預設文案(2026-09-03 user 原話),labels 可覆寫
     }
     const buttonLabel = ariaLabel ?? '開啟智慧代理' // i18n-allow: DS 預設文案,aria-label prop 可覆寫
 
-    /** 放開:收合區 → 貼右緣、停在放開高度;否則 → 停在放開處。 */
-    const settle = (x: number, y: number, s: Shape) => {
-      if (s === 'dock') setPlacement({ kind: 'dock', y: clamp(y, inset, maxY('dock')) })
-      else setPlacement({ kind: 'float', x: clamp(x, inset, maxX), y: clamp(y, inset, maxY('float')) })
+    /** 放開:區域落點(夾限後)或自由放置。 */
+    const settleTo = (next: AgentFabPlacement) => {
+      if (next.kind === 'dock') setPlacement({ kind: 'dock', y: clamp(next.y, inset, maxY('dock')) })
+      else setPlacement({ kind: 'float', x: clamp(next.x ?? maxX, inset, maxX), y: clamp(next.y ?? maxY('float'), inset, maxY('float')) })
     }
+    const settle = (x: number, y: number, s: Shape) => settleTo(s === 'dock' ? { kind: 'dock', y } : { kind: 'float', x, y })
 
     const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
       if (e.button !== 0) return
@@ -272,10 +291,10 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
         d.moved = true
         const px = ev.clientX - rect.left
         const py = ev.clientY - rect.top
-        // 所見即所得:指標進收合區 → 拖曳中的鈕當場變 28 半圓;離開 → 變回 40 圓(16px 遲滯防抖)。
-        const distRight = rect.width - px
-        if (d.shape === 'float' && distRight <= DOCK_ZONE_ENTER) d.shape = 'dock'
-        else if (d.shape === 'dock' && distRight >= DOCK_ZONE_LEAVE) d.shape = 'float'
+        // 所見即所得:指標進磁吸區 → 拖曳中的鈕當場變成該區形狀;離開所有區 → 變回 40 圓(遲滯防抖)。
+        const stageSize = { w: rect.width, h: rect.height }
+        const hit = SNAP_ZONES.find((z) => z.contains({ x: px, y: py }, stageSize, d.shape === z.shape))
+        d.shape = hit ? hit.shape : 'float'
         const s = d.shape
         const sz = s === 'dock' ? DOCK_PX : FAB_PX
         // 跟指標:形態變小時以指標為中心重新對齊,避免鈕從指標下面跑掉。
@@ -302,8 +321,10 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
         }, 0)
         const px = ev.clientX - rect.left
         const py = ev.clientY - rect.top
-        const sz = d.shape === 'dock' ? DOCK_PX : FAB_PX
-        settle(px - Math.min(d.offX, sz), py - Math.min(d.offY, sz), d.shape)
+        const stageSize = { w: rect.width, h: rect.height }
+        const zone = SNAP_ZONES.find((z) => z.shape === d.shape && z.contains({ x: px, y: py }, stageSize, true))
+        if (zone) settleTo(zone.target({ x: px, y: py }, stageSize, { x: d.offX, y: d.offY }))
+        else settle(px - Math.min(d.offX, FAB_PX), py - Math.min(d.offY, FAB_PX), 'float')
       }
       // Esc = 取消拖曳、回原位。
       const onKey = (ev: KeyboardEvent) => {
@@ -386,7 +407,8 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
           dragging ? 'cursor-grabbing select-none' : 'cursor-grab',
           className,
         )}
-        style={{ left: pos.x, top: pos.y }}
+        // 舞台尺寸量到前先隱藏(否則首影格會以 0×0 舞台算成左上角再跳到右下角)。
+        style={{ left: pos.x, top: pos.y, visibility: stage.w > 0 ? undefined : 'hidden' }}
       >
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen} modal={false}>
           {/* 選單只由右鍵 / Shift+F10 開;錨點 = 蓋住鈕的透明 span(pointer-events-none,不攔點擊)。 */}

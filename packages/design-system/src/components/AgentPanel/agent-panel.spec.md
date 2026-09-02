@@ -331,7 +331,11 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
     `--motion-duration-surface` 250ms + enter;減動作直接落定。
   - **等價路徑**:鍵盤 ←→↑↓ 16px 移動、→ 到右緣即收合、收合時 ← 展開到 loose 內距、Home 放回右下角;
     右鍵 / Shift+F10 DropdownMenu「收到右邊 / 放回右下角」(DS 無 ContextMenu,以受控 DropdownMenu 代);
-    拖曳中 Esc 取消回原位。Tooltip「我是 AI,可以任意移動我」(2026-09-03 user 文案;拖曳中不顯示)。
+    拖曳中 Esc 取消回原位。Tooltip「問我或是推我到旁邊」(2026-09-03 user 文案;拖曳中不顯示)。
+  - **區域 → 落點表(可擴充)**:磁吸邏輯 = 依序判定指標所在區域,命中即決定「拖曳中預告的形狀 + 放開的落點」,
+    沒命中 = 自由放置;要加磁吸點(鏡像左緣、四角)只在 `agent-fab.tsx` `SNAP_ZONES` 加一列,流程不變。判準:
+    以指標判定(意圖在指尖)、一區一落點一形狀、邊界 16px 遲滯、區域不重疊且邊帶優先於角落、無命中不做
+    「最近磁吸點」(會從放開處跳走,違反所見即所得)。上緣 / 下緣永不設區(標題列 / 分頁列)。
   - 位置由 consumer 受控/非受控(`placement / defaultPlacement / onPlacementChange`,`{kind:'float',x?,y?}` /
     `{kind:'dock',y}`),DS 不寫 storage;要跨 session 記憶由 consumer 存。
   - 對照:[Copilot DAB 可拖到內容區側邊變小圖示、拖回畫布即展開](https://support.microsoft.com/en-us/office/foundations-experiences/copilot-dab/the-copilot-dynamic-action-button-in-word-excel-and-powerpoint)、
