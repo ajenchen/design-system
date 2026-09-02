@@ -29,9 +29,26 @@ export const UsageGuidance: StoryObj = {
         </ul>
       </section>
       <section>
+        <h3 className="text-body-lg font-medium">產題守則(AgentDecisionCard;完整版見 agent-panel.spec.md §8)</h3>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-fg-secondary">
+          <li>1–3 題,每題必須真的改變代理下一步;能一題就不問兩題,禁「計畫可以嗎?」類空問。</li>
+          <li>一題一步:一次只顯示一題,兩題以上才顯示「n / N」;末步才「送出」,其餘「下一題」;不設上一題。</li>
+          <li>題目=完整問句、以「?」結尾、句內點名決策對象(「公告要用哪種語氣?」);禁「確定嗎?」。</li>
+          <li>2–4 個具名選項:標籤單行、≤10 字、無句尾標點、同題平行結構,說「選了會怎樣」;每項附一行差異描述,比同一個維度。</li>
+          <li>「其他」由元件附加、永遠最後、常駐輸入格;代理不得自列「其他」;文字為空不得前進。</li>
+          <li>單選必預選推薦解且排第一,「(建議)」由元件標;不可逆/安全/法律/稱謂類題用 noDefault 不預選,把後果寫進描述。</li>
+          <li>單選為預設;答案本質可複選才 multiSelect,複選題選項不得互斥、不預選。</li>
+          <li>跳過=用預設繼續(非取消);跳過鈕與 × 同一行為;只有這兩個出口,無 Esc、無外點關閉。</li>
+          <li>題與題互不依賴;要分支就下一回合另開一張卡。題目與選項必是真實業務情境,禁 Option A/B/C。</li>
+        </ul>
+      </section>
+      <section>
         <h3 className="text-body-lg font-medium">動態紀律</h3>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-fg-secondary">
           <li>標誌三態(靜止=待機/招喚/思考)定義唯一住所=agent-panel.spec.md AgentLogo 節;禁另立本體語言。</li>
+          <li>呼吸包絡全家族共用:一息 3 秒,35% 吸頂、85% 回落、之後靜止空拍;呼出去的波 90% 才散盡。吸氣變亮、呼氣變暗,本體不變淡。</li>
+          <li>標誌配色=藍 252–266 與紫 294–304 兩條緞帶;入口鈕邊框與光圈只從 AgentLogo 的 AGENT_BRAND 取色,不得另寫色值。</li>
+          <li>每次進入狀態都從靜止起跑第一口氣;標誌本體與入口鈕光圈同一拍掛上、同相。</li>
           <li>常駐 loop 遵 prefers-reduced-motion 全停,一律回靜止。</li>
         </ul>
       </section>

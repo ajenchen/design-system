@@ -96,7 +96,9 @@
 
   /* AgentPanel — 智慧代理右側面板寬(2026-09-02;agent-panel.spec.md token table SSOT)
      稿「Task-Desktop」全六畫面 rightSider 實測 400;命名同 --sidebar-width L4 layout 前例 */
-  --agent-panel-width: 25rem;      /* 400px */
+  --agent-panel-width: 25rem;      /* 400px 預設 */
+  --agent-panel-width-min: 22.5rem; /* 360px 拖拉下限(2026-09-02 user 拍板) */
+  --agent-panel-width-max: 40rem;   /* 640px 拖拉上限(= AppShell ASIDE_WIDTH_MAX;runtime 另 clamp ≤50vw) */
 
   /* Tree Indent — TreeView + DataTable nested rows(SSOT,2026-05-04)
      公式:chevronSize + gap-2 = 16+8(sm/md)/ 20+8(lg)

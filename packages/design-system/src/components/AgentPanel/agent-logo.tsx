@@ -3,77 +3,105 @@
  *
  * ── 消費的 SSOT ──
  * - 造型:user 提供之黃金比例莫比烏斯 SVG 定稿(內橢圓長短軸比 φ=1.618、軸角 121.717°;
- *   agent-panel.spec.md「AgentLogo」節)。漸層停駐色=品牌資產常數(色相落於 DS 藍 252-268 /
- *   土耳其藍 190-210 家族;資產內嵌 oklch,非 semantic token — 詳 spec 同節)。
+ *   agent-panel.spec.md「AgentLogo」節)。漸層停駐色=品牌資產常數(色相落於 DS 藍 252-266 /
+ *   紫 294-304 家族,對應 primitives blue-6 258 / purple-6 294;資產內嵌 oklch,非 semantic
+ *   token — 詳 spec 同節;2026-09-02 user 拍板由藍→土耳其藍改為藍→紫)。
  * - 狀態動畫:agent-panel.spec.md「AgentLogo」節(靜止/招喚/思考;一息 3s 家族;
- *   2026-09-02 拍板:待機一律靜止,併入 still,無獨立呼吸態)。
- * - 緩動:--motion-easing-swell / --motion-easing-settle(tokens/motion/motion.css)。
- *   SMIL keySplines 不能吃 CSS var,以下常數為 token 值的逐字鏡像,改 token 必同步此處。
+ *   2026-09-02 拍板:待機一律靜止,併入 still,無獨立呼吸態)。呼吸包絡=吸 35% / 呼至 85% /
+ *   85–100% 靜止空拍(靜息 I:E ≈ 1:2 + 呼氣末停頓;spec「AgentLogo」節引用來源)。
+ * - 緩動:--motion-easing-swell / --motion-easing-settle / --motion-easing-exit
+ *   (tokens/motion/motion.css)。SMIL keySplines 不能吃 CSS var,以下常數為 token 值的逐字鏡像,
+ *   改 token 必同步此處。
+ * - 狀態切換:新狀態 0.15s 淡入(--motion-duration-overlay;agent-panel.css `.agent-logo-enter`)。
  * - 減動作:互動觸發必可停(WCAG 2.3.3);常駐 loop 全停 → 一律回靜止
  *   (agent-panel.spec.md「轉場與減動作」)。
  */
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import './agent-panel.css'
 
-/** 一息 3 秒(標誌狀態動畫家族共用節拍;文字微光 2s 另計 — spec「動畫總表」)。 */
-const BREATH_DUR = '3s'
-/** = var(--motion-easing-swell) 的 SMIL 鏡像。 */
-const SWELL = '0.4 0.14 0.3 1'
-/** = var(--motion-easing-settle) 的 SMIL 鏡像。 */
-const SETTLE = '0.2 0 0.38 0.9'
+/** 一息 3 秒(標誌狀態動畫家族共用節拍;文字微光 2s 另計 — spec「動畫總表」)。 @internal */
+export const BREATH_DUR = '3s'
+/** = var(--motion-easing-swell) 的 SMIL 鏡像(吸氣 / 所有「起」)。 @internal */
+export const SWELL = '0.4 0.14 0.3 1'
+/** = var(--motion-easing-settle) 的 SMIL 鏡像(呼氣 / 所有「收」)。 @internal */
+export const SETTLE = '0.2 0 0.38 0.9'
+/** = var(--motion-easing-exit) 的 SMIL 鏡像(加速起步)。 */
+const EXIT = '0.3 0 1 1'
+/** 靜止空拍(值不變,曲線無意義,填線性)。 */
+const HOLD = '0 0 1 1'
+/** 呼吸包絡:0 靜 → 35% 吸頂 → 85% 回落到底 → 100% 靜止空拍(本體 / 疊層 / 洞形變共用)。 @internal */
+export const BREATH_KEYTIMES = '0;.35;.85;1'
+/** @internal */
+export const BREATH_SPLINES = `${SWELL};${SETTLE};${HOLD}`
+/** 呼出去的波:0–35% 貼邊聚亮(吸)→ 35–90% 離體擴散(呼,比本體多 0.15s 餘韻)→ 90–100% 靜。 @internal */
+export const RIPPLE_KEYTIMES = '0;.35;.9;1'
+/** @internal */
+export const RIPPLE_SPLINES = `${SWELL};${SETTLE};${HOLD}`
+
+/**
+ * 品牌資產代表色(兩緞帶家族;FAB 環與光圈消費同一組 → repo 內唯一數值來源)。
+ * @internal AgentPanel 家族內部共用。
+ */
+export const AGENT_BRAND = {
+  blue: 'oklch(.72 .16 254)',
+  purple: 'oklch(.70 .17 300)',
+} as const
 
 /* ── 幾何(user 定稿 SVG 逐字;viewBox 0 0 1254 1254,圓心 627) ── */
-const D_TURQ =
+const D_PURPLE =
   'M 635.006,98.806 A 505.300,505.300 0 0 1 732.146,1099.915 C 566.063,1098.281 425.041,927.384 417.637,778.287 A 349.828,216.206 121.717474 1 0 885.536,308.027 C 847.485,198.771 746.887,109.003 635.006,98.806 Z'
 const D_BLUE =
   'M 635.006,98.806 A 505.300,505.300 0 1 0 732.146,1099.915 C 566.063,1098.281 425.041,927.384 417.637,778.287 A 349.828,216.206 121.717474 0 1 885.536,308.027 C 847.485,198.771 746.887,109.003 635.006,98.806 Z'
 /** 負空間呼吸(思考態):洞由橢圓變正圓的形變終點(弧端點重參數化,指令結構與原路徑同構)。 */
-const D_TURQ_ROUND =
+const D_PURPLE_ROUND =
   'M 635.006,98.806 A 505.300,505.300 0 0 1 732.146,1099.915 C 566.063,1098.281 425.041,927.384 419.706,711.508 A 283.017,283.017 121.717474 1 0 862.379,370.696 C 847.485,198.771 746.887,109.003 635.006,98.806 Z'
 const D_BLUE_ROUND =
   'M 635.006,98.806 A 505.300,505.300 0 1 0 732.146,1099.915 C 566.063,1098.281 425.041,927.384 419.706,711.508 A 283.017,283.017 121.717474 0 1 862.379,370.696 C 847.485,198.771 746.887,109.003 635.006,98.806 Z'
 
 type Stop = readonly [number, string, number?]
-/* 完整版(>24):五停駐雙緞帶 + 底面陰影 + 提亮(原稿逐層保留)。 */
+/* 完整版(>24):五停駐雙緞帶 + 底面陰影 + 提亮(原稿逐層保留)。
+ * 藍緞帶 252→266、紫緞帶 294→304:明度各跨 .38、彩度中段峰值貼 sRGB 色域上限不越界;
+ * 兩緞帶最近處相距 ≥38°,24px 簡化檔仍分得開(2026-09-02 配色研究候選 C)。 */
 const BLUE_SURFACE: readonly Stop[] = [
-  [0, 'oklch(.72 .15 252)'],
-  [0.28, 'oklch(.64 .19 255)'],
-  [0.58, 'oklch(.55 .21 260)'],
-  [0.82, 'oklch(.42 .21 265)'],
-  [1, 'oklch(.35 .19 268)'],
+  [0, 'oklch(.76 .13 252)'],
+  [0.28, 'oklch(.68 .17 255)'],
+  [0.58, 'oklch(.58 .21 258)'],
+  [0.82, 'oklch(.46 .21 262)'],
+  [1, 'oklch(.38 .19 266)'],
 ]
-const TURQ_SURFACE: readonly Stop[] = [
-  [0, 'oklch(.82 .12 190)'],
-  [0.3, 'oklch(.76 .12 194)'],
-  [0.58, 'oklch(.66 .13 199)'],
-  [0.82, 'oklch(.52 .12 205)'],
-  [1, 'oklch(.44 .11 210)'],
+const PURPLE_SURFACE: readonly Stop[] = [
+  [0, 'oklch(.82 .09 294)'],
+  [0.3, 'oklch(.74 .14 297)'],
+  [0.58, 'oklch(.64 .18 300)'],
+  [0.82, 'oklch(.52 .20 302)'],
+  [1, 'oklch(.44 .19 304)'],
 ]
-const TURQ_UNDERSIDE: readonly Stop[] = [
-  [0, 'oklch(.28 .08 210)', 0.82],
-  [0.34, 'oklch(.30 .08 208)', 0.47],
-  [0.74, 'oklch(.30 .08 208)', 0],
+const PURPLE_UNDERSIDE: readonly Stop[] = [
+  [0, 'oklch(.28 .10 302)', 0.82],
+  [0.34, 'oklch(.30 .10 300)', 0.47],
+  [0.74, 'oklch(.30 .10 300)', 0],
 ]
 const BLUE_LIFT: readonly Stop[] = [
-  [0, 'oklch(.85 .07 235)', 0.3],
-  [0.48, 'oklch(.85 .07 235)', 0.1],
-  [1, 'oklch(.85 .07 235)', 0],
+  [0, 'oklch(.86 .06 252)', 0.3],
+  [0.48, 'oklch(.86 .06 252)', 0.1],
+  [1, 'oklch(.86 .06 252)', 0],
 ]
 /* 簡化版(≤24):去陰影提亮、兩停駐高對比(圖標光學校正慣例;取五停駐頭尾)。 */
 const BLUE_SIMPLE: readonly Stop[] = [
-  [0, 'oklch(.72 .15 252)'],
-  [1, 'oklch(.35 .19 268)'],
+  [0, 'oklch(.76 .13 252)'],
+  [1, 'oklch(.38 .19 266)'],
 ]
-const TURQ_SIMPLE: readonly Stop[] = [
-  [0, 'oklch(.82 .12 190)'],
-  [1, 'oklch(.44 .11 210)'],
+const PURPLE_SIMPLE: readonly Stop[] = [
+  [0, 'oklch(.82 .09 294)'],
+  [1, 'oklch(.44 .19 304)'],
 ]
-/* 招喚漣漪:雙色放射盤(內藍→過渡→青→邊緣透明;波色呼應本體兩緞帶色相家族)。 */
+/* 招喚漣漪:雙色放射盤(內藍→靛過渡→紫→邊緣透明;波色呼應本體兩緞帶色相家族,中段 278 為兩極中點)。 */
 const WAVE_STOPS: readonly Stop[] = [
-  [0, 'oklch(.60 .18 250)', 0.5],
-  [0.55, 'oklch(.63 .15 220)', 0.44],
-  [0.8, 'oklch(.66 .12 196)', 0.34],
-  [1, 'oklch(.66 .12 196)', 0],
+  [0, 'oklch(.62 .19 254)', 0.5],
+  [0.55, 'oklch(.64 .18 278)', 0.44],
+  [0.8, 'oklch(.66 .17 300)', 0.34],
+  [1, 'oklch(.66 .17 300)', 0],
 ]
 
 /** 狀態:still 靜止(=待機)/ attract 招喚 / think 思考(=回覆中)。 */
@@ -111,6 +139,23 @@ export function usePrefersReducedMotion() {
   return reduced
 }
 
+/**
+ * SMIL `begin="0s"` 以文件時間軸為基準:狀態切換時才掛上的動畫會被視為早已開始
+ * (加速段直接凍在終點、呼吸從半途起跑)。改 `begin="indefinite"` + 掛載當下 beginElement():
+ * 每次進入狀態都從靜止起跑第一口氣;同一 commit 內掛上的多個動畫(標誌本體 / FAB 光圈)
+ * 拿到同一個文件時間 → 同相。
+ * @internal AgentPanel 家族內部共用。
+ */
+export function useBeginAnimationsOnMount(ref: React.RefObject<SVGSVGElement | null>, key: string) {
+  React.useLayoutEffect(() => {
+    const root = ref.current
+    if (!root) return
+    root.querySelectorAll<SVGAnimateElement>('[data-begin-on-mount]').forEach((el) => {
+      if (typeof el.beginElement === 'function') el.beginElement()
+    })
+  }, [ref, key])
+}
+
 function GradientStops({ stops }: { stops: readonly Stop[] }) {
   return (
     <>
@@ -126,63 +171,89 @@ function GradientStops({ stops }: { stops: readonly Stop[] }) {
   )
 }
 
-/** 思考態:色場定錨於畫布 — 漸層以本體旋轉的同構逆轉實現「幾何流過色場」。 */
-function GradientCounterSpin() {
+/**
+ * 兩段旋轉:啟動加速 0.3s(= 一息/10,exit 曲線)→ 等速 0.6s/圈(= 一息/5,linear=轉圈慣例)。
+ * 加速段 begin=indefinite 由掛載觸發;等速段以 syncbase `<id>.end` 銜接,保證每次進入都從 0° 起步。
+ */
+function SpinPair({
+  id,
+  attributeName,
+  from,
+  mid,
+  end,
+}: {
+  id: string
+  attributeName: 'transform' | 'gradientTransform'
+  from: string
+  mid: string
+  end: string
+}) {
   return (
     <>
       <animateTransform
-        attributeName="gradientTransform"
+        id={id}
+        attributeName={attributeName}
         type="rotate"
-        values="0 627 627;-90 627 627"
+        values={`${from};${mid}`}
         dur="0.3s"
-        begin="0s"
+        begin="indefinite"
+        data-begin-on-mount=""
         fill="freeze"
         calcMode="spline"
         keyTimes="0;1"
-        keySplines="0.6 0 1 1"
+        keySplines={EXIT}
       />
       <animateTransform
-        attributeName="gradientTransform"
+        attributeName={attributeName}
         type="rotate"
-        values="-90 627 627;-450 627 627"
+        values={`${mid};${end}`}
         dur="0.6s"
-        begin="0.3s"
+        begin={`${id}.end`}
         repeatCount="indefinite"
       />
     </>
   )
 }
 
-/** 思考態負空間呼吸:洞橢圓↔正圓,6s 一輪(吸 swell / 吐 settle)。 */
+/** 思考態:色場定錨於畫布 — 漸層以本體旋轉的同構逆轉實現「幾何流過色場」。 */
+function GradientCounterSpin({ id }: { id: string }) {
+  return (
+    <SpinPair id={id} attributeName="gradientTransform" from="0 627 627" mid="-90 627 627" end="-450 627 627" />
+  )
+}
+
+/** 思考態負空間呼吸:洞橢圓↔正圓,6s(=2 息)一輪,同一條呼吸包絡(吸 35% / 呼至 85% / 靜)。 */
 function HoleMorph({ from, round }: { from: string; round: string }) {
   return (
     <animate
       attributeName="d"
-      values={`${from};${round};${from}`}
-      keyTimes="0;.5;1"
+      values={`${from};${round};${from};${from}`}
+      keyTimes={BREATH_KEYTIMES}
       dur="6s"
+      begin="indefinite"
+      data-begin-on-mount=""
       repeatCount="indefinite"
       calcMode="spline"
-      keySplines={`${SWELL};${SETTLE}`}
+      keySplines={BREATH_SPLINES}
     />
   )
 }
 
 interface BodyProps {
-  ids: Record<'blue' | 'turq' | 'under' | 'lift', string>
+  ids: Record<'blue' | 'purple' | 'under' | 'lift', string>
   simplified: boolean
   morph: boolean
 }
 
 /** 本體雙緞帶(完整=4 層;簡化=2 層);morph=true 時掛負空間形變。 */
 function LogoBody({ ids, simplified, morph }: BodyProps) {
-  const turqMorph = morph ? <HoleMorph from={D_TURQ} round={D_TURQ_ROUND} /> : null
+  const purpleMorph = morph ? <HoleMorph from={D_PURPLE} round={D_PURPLE_ROUND} /> : null
   const blueMorph = morph ? <HoleMorph from={D_BLUE} round={D_BLUE_ROUND} /> : null
   return (
     <>
-      <path d={D_TURQ} fill={`url(#${ids.turq})`}>{turqMorph}</path>
+      <path d={D_PURPLE} fill={`url(#${ids.purple})`}>{purpleMorph}</path>
       {!simplified && (
-        <path d={D_TURQ} fill={`url(#${ids.under})`}>{turqMorph}</path>
+        <path d={D_PURPLE} fill={`url(#${ids.under})`}>{purpleMorph}</path>
       )}
       <path d={D_BLUE} fill={`url(#${ids.blue})`}>{blueMorph}</path>
       {!simplified && (
@@ -192,23 +263,29 @@ function LogoBody({ ids, simplified, morph }: BodyProps) {
   )
 }
 
-/** 吸氣微亮:白色疊層 0→14%→0(招喚與思考同一套語言;思考與 6s 圓化同拍)。 */
-function InhaleOverlay({ morph, dur, keyTimes }: { morph: boolean; dur: string; keyTimes: string }) {
-  const turqMorph = morph ? <HoleMorph from={D_TURQ} round={D_TURQ_ROUND} /> : null
+/**
+ * 吸氣微亮:白色疊層 0→14%→0(吸氣亮、呼氣暗;Apple Watch Breathe「脹=吸氣」同向)。
+ * 招喚與思考同一套語言、同一條呼吸包絡(思考與 6s 圓化同拍)。亮度包絡取代透明度包絡:
+ * 本體不透明度恆 1(白面上變淡=像停用;spec「禁止事項」)。
+ */
+function InhaleOverlay({ morph, dur }: { morph: boolean; dur: string }) {
+  const purpleMorph = morph ? <HoleMorph from={D_PURPLE} round={D_PURPLE_ROUND} /> : null
   const blueMorph = morph ? <HoleMorph from={D_BLUE} round={D_BLUE_ROUND} /> : null
   return (
     <g opacity="0" pointerEvents="none">
       <animate
         attributeName="opacity"
-        values="0;.14;0"
-        keyTimes={keyTimes}
+        values="0;.14;0;0"
+        keyTimes={BREATH_KEYTIMES}
         dur={dur}
+        begin="indefinite"
+        data-begin-on-mount=""
         repeatCount="indefinite"
         calcMode="spline"
-        keySplines={`${SWELL};${SETTLE}`}
+        keySplines={BREATH_SPLINES}
       />
       <path d={D_BLUE} fill="#fff">{blueMorph}</path>
-      <path d={D_TURQ} fill="#fff">{turqMorph}</path>
+      <path d={D_PURPLE} fill="#fff">{purpleMorph}</path>
     </g>
   )
 }
@@ -232,13 +309,19 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
     const simplified = detail === 'simplified' || (detail === 'auto' && size <= 24)
     /** 減動作:常駐 loop 全停,一律回靜止。 */
     const effectiveState: AgentLogoState = reduced ? 'still' : state
+    const innerRef = React.useRef<SVGSVGElement | null>(null)
+    React.useImperativeHandle(ref, () => innerRef.current as SVGSVGElement)
+    useBeginAnimationsOnMount(innerRef, `${effectiveState}:${simplified}:${ripple}`)
     const ids = {
       blue: `${uid}bs`,
-      turq: `${uid}ts`,
-      under: `${uid}tu`,
+      purple: `${uid}ps`,
+      under: `${uid}pu`,
       lift: `${uid}bl`,
       wave: `${uid}wg`,
       mask: `${uid}wm`,
+      spinBlue: `${uid}sb`,
+      spinPurple: `${uid}sp`,
+      spinBody: `${uid}sr`,
     }
     const isThink = effectiveState === 'think'
     const isAttract = effectiveState === 'attract'
@@ -254,18 +337,18 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
           y2="110"
         >
           <GradientStops stops={simplified ? BLUE_SIMPLE : BLUE_SURFACE} />
-          {isThink && <GradientCounterSpin />}
+          {isThink && <GradientCounterSpin id={ids.spinBlue} />}
         </linearGradient>
         <linearGradient
-          id={ids.turq}
+          id={ids.purple}
           gradientUnits="userSpaceOnUse"
           x1="990"
           y1="145"
           x2="650"
           y2="1090"
         >
-          <GradientStops stops={simplified ? TURQ_SIMPLE : TURQ_SURFACE} />
-          {isThink && <GradientCounterSpin />}
+          <GradientStops stops={simplified ? PURPLE_SIMPLE : PURPLE_SURFACE} />
+          {isThink && <GradientCounterSpin id={ids.spinPurple} />}
         </linearGradient>
         {!simplified && (
           <>
@@ -276,7 +359,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
               cy="815"
               r="520"
             >
-              <GradientStops stops={TURQ_UNDERSIDE} />
+              <GradientStops stops={PURPLE_UNDERSIDE} />
             </radialGradient>
             <radialGradient
               id={ids.lift}
@@ -307,81 +390,69 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
 
     let content: React.ReactNode
     if (isThink) {
-      // 兩段旋轉:啟動加速 0.3s(ease-in)→ 等速 0.6s/圈(linear=轉圈慣例);
-      // 平移座標系內旋轉不得帶圓心(帶了=轉心位移兩倍遠)。結束減速由狀態切換的
-      // 0.15s 淡出承接(SMIL loop 無終點,減速檔屬 state-exit,spec「AgentLogo」節)。
+      // 平移座標系內旋轉不得帶圓心(帶了=轉心位移兩倍遠)。結束無減速檔:SMIL loop 無終點,
+      // 由狀態切換的 0.15s 淡入承接(spec「AgentLogo」節)。
       content = (
         <g transform="translate(627 627)">
           <g>
-            <animateTransform
-              attributeName="transform"
-              type="rotate"
-              values="0;90"
-              dur="0.3s"
-              begin="0s"
-              fill="freeze"
-              calcMode="spline"
-              keyTimes="0;1"
-              keySplines="0.6 0 1 1"
-            />
-            <animateTransform
-              attributeName="transform"
-              type="rotate"
-              values="90;450"
-              dur="0.6s"
-              begin="0.3s"
-              repeatCount="indefinite"
-            />
+            <SpinPair id={ids.spinBody} attributeName="transform" from="0" mid="90" end="450" />
             <g transform="translate(-627 -627)">
               {body}
-              <InhaleOverlay morph dur="6s" keyTimes="0;.5;1" />
+              <InhaleOverlay morph dur="6s" />
             </g>
           </g>
         </g>
       )
     } else if (isAttract) {
-      // 招喚:蓄勢(本體脹 1.07 + 吸氣微亮)→ 35% 拍點波離體、本體回落同拍。
+      // 招喚:蓄勢(本體脹 1.07 + 吸氣微亮,波貼邊聚亮)→ 35% 呼氣起點波離體 → 85% 本體到底
+      // → 90% 餘暈散盡 → 靜止空拍。
       content = (
         <>
           {ripple && (
-          <g mask={`url(#${ids.mask})`}>
-            <circle cx="627" cy="627" r="560" fill={`url(#${ids.wave})`} opacity="0">
-              <animate
-                attributeName="r"
-                values="560;560;830"
-                keyTimes="0;.35;1"
-                dur={BREATH_DUR}
-                repeatCount="indefinite"
-                calcMode="spline"
-                keySplines={`0 0 1 1;${SETTLE}`}
-              />
-              <animate
-                attributeName="opacity"
-                values="0;1;0"
-                keyTimes="0;.35;1"
-                dur={BREATH_DUR}
-                repeatCount="indefinite"
-                calcMode="spline"
-                keySplines={`0 0 1 1;${SETTLE}`}
-              />
-            </circle>
-          </g>
+            <g mask={`url(#${ids.mask})`}>
+              <circle cx="627" cy="627" r="560" fill={`url(#${ids.wave})`} opacity="0">
+                <animate
+                  attributeName="r"
+                  values="560;560;830;830"
+                  keyTimes={RIPPLE_KEYTIMES}
+                  dur={BREATH_DUR}
+                  begin="indefinite"
+                  data-begin-on-mount=""
+                  repeatCount="indefinite"
+                  calcMode="spline"
+                  keySplines={`${HOLD};${SETTLE};${HOLD}`}
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0;1;0;0"
+                  keyTimes={RIPPLE_KEYTIMES}
+                  dur={BREATH_DUR}
+                  begin="indefinite"
+                  data-begin-on-mount=""
+                  repeatCount="indefinite"
+                  calcMode="spline"
+                  keySplines={RIPPLE_SPLINES}
+                />
+              </circle>
+            </g>
           )}
           <g transform="translate(627 627)">
             <g>
               <animateTransform
                 attributeName="transform"
                 type="scale"
-                values="1;1.07;1"
-                keyTimes="0;.35;1"
+                values="1;1.07;1;1"
+                keyTimes={BREATH_KEYTIMES}
                 dur={BREATH_DUR}
+                begin="indefinite"
+                data-begin-on-mount=""
                 repeatCount="indefinite"
                 calcMode="spline"
-                keySplines={`${SWELL};${SETTLE}`}
+                keySplines={BREATH_SPLINES}
               />
               <g transform="translate(-627 -627)">
                 {body}
-                <InhaleOverlay morph={false} dur={BREATH_DUR} keyTimes="0;.35;1" />
+                <InhaleOverlay morph={false} dur={BREATH_DUR} />
               </g>
             </g>
           </g>
@@ -393,7 +464,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
 
     return (
       <svg
-        ref={ref}
+        ref={innerRef}
         width={size}
         height={size}
         viewBox="0 0 1254 1254"
@@ -407,7 +478,10 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
         {...props}
       >
         {defs}
-        {content}
+        {/* 狀態切換:key 重建 + 0.15s 淡入(僅 opacity,不碰 transform 屬性),禁跳切。 */}
+        <g key={effectiveState} className="agent-logo-enter">
+          {content}
+        </g>
       </svg>
     )
   },

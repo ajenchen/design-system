@@ -116,6 +116,10 @@ function transcriptState(transcriptPath) {
     // never count as user speech: as "latest user message" they would displace a genuine
     // pending decision, and their free-form summaries could pattern-match approval or denial.
     if (/^\[SYSTEM NOTIFICATION\b/u.test(text) || text.includes('<task-notification>')) continue
+    // Harness-injected meta records (skill / reference text loaded by a tool call: `isMeta` +
+    // `sourceToolUseID`) are likewise not the user's voice — 2026-09-02 anchor: a loaded
+    // workflow-authoring reference displaced the user's real directive as "latest user message".
+    if (record?.isMeta === true || typeof record?.sourceToolUseID === 'string') continue
     userMessages.push(text)
     lastUserRecordIndex = index
     plainUserRecordIndexes.push(index)
@@ -180,9 +184,24 @@ function targetAliases(target) {
   const basename = segments.at(-1) ?? ''
   const stem = basename.replace(/\.[^.]+$/, '')
   const aliases = new Set([normalized, basename, stem])
+  // 2026-09-02 詞彙缺口:user 口語寫「agent logo」「AgentLogo」而非檔名 `agent-logo` → 同一 exact target。
+  const stemTokens = stem.split(/[-_.]+/u).filter(Boolean)
+  if (stemTokens.length > 1) {
+    aliases.add(stemTokens.join(' '))
+    aliases.add(stemTokens.join(''))
+  }
   const componentIndex = segments.lastIndexOf('components')
-  if (componentIndex >= 0 && segments[componentIndex + 1]) {
-    aliases.add(segments[componentIndex + 1])
+  const componentDir = componentIndex >= 0 ? segments[componentIndex + 1] ?? '' : ''
+  if (componentDir) {
+    aliases.add(componentDir)
+    // 家族檔(components/AgentPanel/agent-fab.tsx):檔名的家族前綴 = 目錄前綴 → 其餘 token
+    // (「fab」「logo」)就是 user 對該檔的日常稱呼;非家族檔不放寬(避免泛用字誤綁)。
+    const family = stemTokens[0] ?? ''
+    if (family && componentDir.toLowerCase().startsWith(family.toLowerCase()) && stemTokens.length > 1) {
+      const rest = stemTokens.slice(1)
+      aliases.add(rest.join(' '))
+      for (const token of rest) aliases.add(token)
+    }
   }
   return [...aliases].filter((alias) => alias.length >= 3)
 }
@@ -260,6 +279,18 @@ const TARGET_DISCUSSION_PATTERNS = [
   /\b(?:should\s+we|can\s+we|could\s+we|proposal|discuss|evaluate)\b/iu,
 ]
 
+/**
+ * 委託研究:user 先問「是否可以 X?」再說「仔細研究看怎樣最完美 / 照你建議」= 把該題交給 agent 依證據
+ * 收斂,不是等 user 拍板的未決題(2026-09-02;AGENTS.md「純工程不確定性由最高 certified model 收斂」)。
+ * 只有同一則訊息含委託語句時,問句 clause 才不算 discussion;單獨問句仍 fail closed(問句 ≠ 同意)。
+ */
+const UI_DELEGATED_RESEARCH_PATTERNS = [
+  /(?:研究|評估|判斷)(?:看|一下)?.{0,40}(?:最完美|最美觀|最好|最佳|最有質感|最合適|最自然|怎樣|如何|怎麼做)/u,
+  /(?:照|依|按)\s*(?:你|妳)(?:的)?\s*(?:建議|判斷|專業)/u,
+  /反正\s*(?:你|妳).{0,12}(?:研究|處理|決定|判斷)/u,
+  /\b(?:research|figure\s+out|decide)\b.{0,32}\b(?:best|optimal|most\s+(?:polished|natural|refined))\b/iu,
+]
+
 const TARGET_BINARY_QUESTION_PATTERNS = [
   /(?:是否|要不要|該不該|能不能|可不可以)/u,
   /\b(?:should\s+we|can\s+we|could\s+we)\b/iu,
@@ -273,7 +304,7 @@ const TARGETLESS_SCOPE_DENIAL_PATTERNS = [
 
 const UI_DECISION_MARKERS = [
   /\b(?:ui|ux|user-visible|product\s+semantics?|design\s+intent|component\s+contract|information\s+architecture|workflow|navigation|visual(?:\s+hierarchy)?|layout|spacing|padding|margin|gap|color|colour|typography|width|height|size|hover|focus|active|animation|transition|interaction|behavior|behaviour|content\s+semantics?|copy|label|icon|radius|shadow|border|opacity|variant|design\s+(?:token|rule)|state\s+machine|a11y|accessibility|wcag|aria|keyboard|disabled)\b/iu,
-  /(?:介面|界面|使用者可感知|產品語意|設計意圖|元件契約|資訊架構|工作流程|導覽|視覺(?:層級)?|外觀|樣式|佈局|布局|間距|留白|顏色|色彩|紅色|藍色|綠色|字體排印|尺寸|大小|寬度|高度|懸停|焦點|動畫|轉場|互動|行為|內容語意|文案|標籤|圖示|圓角|陰影|邊框|透明度|變體|設計 (?:token|規則)|狀態機|無障礙|可及性|鍵盤|停用)/u,
+  /(?:介面|界面|使用者可感知|產品語意|設計意圖|元件契約|資訊架構|工作流程|導覽|視覺(?:層級)?|外觀|樣式|佈局|布局|間距|留白|顏色|色彩|配色|色系|紅色|藍色|綠色|紫色|漸層|漣漪|光圈|字體排印|尺寸|大小|寬度|高度|懸停|焦點|動畫|節奏|轉場|互動|行為|內容語意|文案|標籤|圖示|標誌|logo|圓角|陰影|邊框|透明度|變體|設計 (?:token|規則)|狀態機|無障礙|可及性|鍵盤|停用)/u,
 ]
 
 const UI_OPERATION_MARKERS = [
@@ -513,7 +544,7 @@ const ENGINEERING_NON_REVOCATION_PATTERNS = [
 ]
 
 const UI_DIRECTIVE_PATTERNS = [
-  /(?:同意|核可|批准|拍板|採用|採納|選擇|決定|改成|改為|換成|設為|保留|移除|新增|使用)/u,
+  /(?:同意|核可|批准|拍板|採用|採納|選擇|決定|改成|改為|換成|換掉|替換|改掉|調整|更新|設為|保留|移除|新增|使用)/u,
   /(?:方案|選項|option)\s*[A-Za-z0-9一二三四五六七八九十]+/iu,
   /\b(?:approve|approved|adopt|choose|select|change\s+to|set\s+to|keep|remove|add|use)\b/iu,
 ]
@@ -711,6 +742,7 @@ function targetDecision(message, target, operationEvidenceSha256 = '') {
     matchesAny(NON_AUTHORITATIVE_UI_STATEMENT_PATTERNS, normalized)
     || matchesAny(TENTATIVE_OR_CONDITIONAL_UI_PATTERNS, normalized)
   const candidates = []
+  const delegatedResearch = clauses.some((clause) => matchesAny(UI_DELEGATED_RESEARCH_PATTERNS, clause))
   for (const clause of clauses) {
     const targetBinding = actionableTargetBinding(clause, target)
     const globalUiBinding = GLOBAL_UI_SCOPE_PATTERN.test(clause) ? 'global-ui-scope' : null
@@ -719,6 +751,8 @@ function targetDecision(message, target, operationEvidenceSha256 = '') {
     const denialText = withoutNoWaitClauses(clause)
     // 「要不要改」contains the bytes「不要改」but is a question, not a revocation.
     if (targetBinding && matchesAny(TARGET_BINARY_QUESTION_PATTERNS, clause)) {
+      // 同訊息已委託研究 → 問句是交辦題,不是未決題;不成為 discussion 也不成為 approval。
+      if (delegatedResearch && !matchesAny(TARGET_DENIAL_PATTERNS, denialText)) continue
       candidates.push({ kind: 'discussion', binding, message: normalized, clause })
       continue
     }
@@ -738,6 +772,7 @@ function targetDecision(message, target, operationEvidenceSha256 = '') {
       continue
     }
     if (targetBinding && matchesAny(TARGET_DISCUSSION_PATTERNS, clause)) {
+      if (delegatedResearch && !matchesAny(TARGET_DENIAL_PATTERNS, denialText)) continue
       candidates.push({ kind: 'discussion', binding, message: normalized, clause })
       continue
     }

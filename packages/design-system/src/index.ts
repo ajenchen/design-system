@@ -19,6 +19,9 @@ export type {
   AccountMenuUser,
 } from './components/AccountMenu/index'
 export {
+  AGENT_PANEL_WIDTH_DEFAULT,
+  AGENT_PANEL_WIDTH_MAX,
+  AGENT_PANEL_WIDTH_MIN,
   AgentConversation,
   AgentDecisionCard,
   AgentDecisionSummary,

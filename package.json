@@ -40,6 +40,7 @@
     "release:auto": "node scripts/release-orchestrator.mjs auto",
     "release:status": "node scripts/release-orchestrator.mjs status",
     "test:datatable-invariants": "node scripts/data-table-invariants.mjs",
+    "test:agent-panel-invariants": "node scripts/agent-panel-fixed-anatomy-invariant.mjs",
     "test:header-tabs-slot-invariants": "node scripts/header-tabs-slot-invariants.mjs",
     "check:tabs-inline-action-geometry": "node --test scripts/tabs-inline-action-geometry.test.mjs",
     "audit:coverage-matrix": "node scripts/audit-coverage-matrix.mjs",

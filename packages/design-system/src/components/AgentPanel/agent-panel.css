@@ -41,3 +41,19 @@
     color: var(--fg-muted);
   }
 }
+
+/* AgentLogo 狀態切換:新狀態 0.15s 淡入(只動 opacity;SVG <g> 的 transform 屬性不可被 CSS 動畫覆蓋,
+   故不用 tailwindcss-animate 的 animate-in)。減動作:直接出現。 */
+.agent-logo-enter {
+  animation: agent-logo-enter var(--motion-duration-overlay, 150ms) var(--motion-easing-enter, ease-out);
+}
+@keyframes agent-logo-enter {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .agent-logo-enter {
+    animation: none;
+  }
+}
