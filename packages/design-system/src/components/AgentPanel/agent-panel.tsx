@@ -86,6 +86,7 @@ import { CircularProgress } from '@/design-system/components/CircularProgress/ci
 import { RadioGroup, RadioGroupItem } from '@/design-system/components/RadioGroup/radio-group'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 import { CheckboxGroup } from '@/design-system/components/Checkbox/checkbox-group'
+import { SelectionItem } from '@/design-system/components/SelectionControl/selection-item'
 import { Chip } from '@/design-system/components/Chip/chip'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Input } from '@/design-system/components/Input/input'
@@ -218,7 +219,8 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
               e.preventDefault()
               applyWidth(next, true)
             }}
-            className="absolute inset-y-0 left-0 z-10 w-0 focus-visible:outline-none"
+            // 鍵盤聚焦可見:DataTable 欄寬把手同款 outline(WCAG 2.4.7);7px 熱區與 ResizeHandle 對齊。
+            className="absolute inset-y-0 -left-[3px] z-10 w-[7px] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
           >
             <ResizeHandle
               direction="horizontal"
@@ -306,6 +308,7 @@ function HistoryRow({
       )}
     >
       <MenuItem
+        labelMaxLines={1}
         role="presentation"
         selected={selected}
         className="!bg-transparent hover:!bg-transparent"
@@ -318,7 +321,21 @@ function HistoryRow({
         }
         endContent={
           // 行內動作恆在 DOM(鍵盤 Tab 可達);懸停/focus-visible 淡入=ItemSuffix hoverReveal SSOT。
+          /* MenuItem 的 endContent slot 內再包 ItemSuffix 只為 hoverReveal(opacity 淡入);兩層同盒
+             (h-[1lh] items-center ml-auto gap-2),不疊任何位移——非 drift(2026-09-02 覆核實測)。 */
           <ItemSuffix hoverReveal hoverGroup="menu-item">
+            {/* Enter/Space 在行內動作上 = 啟動該動作(stopPropagation 擋掉 cmdk 的 Enter=選列)。 */}
+            <span
+              className="contents"
+              onKeyDown={(e) => {
+                const target = e.target as HTMLElement
+                if ((e.key === 'Enter' || e.key === ' ') && target.closest('button')) {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  target.closest('button')?.click()
+                }
+              }}
+            >
             <ItemInlineAction
               action={{
                 icon: Pencil,
@@ -339,6 +356,7 @@ function HistoryRow({
                 },
               }}
             />
+                      </span>
           </ItemSuffix>
         }
       >
@@ -374,7 +392,16 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
     const [deleteTarget, setDeleteTarget] = React.useState<AgentConversationSummary | null>(null)
     const triggerRef = React.useRef<HTMLButtonElement>(null)
     /** Dialog 關閉後焦點回歷史觸發鈕(Popover 已因焦點外移關閉;WCAG 2.4.3)。 */
-    const returnFocus = () => triggerRef.current?.focus({ preventScroll: true })
+    // Dialog 關閉後焦點:歷史浮層仍開 → 交給 Radix 還原到觸發它的行內動作(改名/刪除);浮層已關
+    // → 延到下一個 macrotask 回標題觸發(晚於 FocusScope 還原到已消失元素 → body 的動作,2026-09-02 實測)。
+    const historyOpenRef = React.useRef(historyOpen)
+    historyOpenRef.current = historyOpen
+    const returnFocus = () => {
+      window.setTimeout(() => {
+        if (historyOpenRef.current) return
+        triggerRef.current?.focus({ preventScroll: true })
+      }, 0)
+    }
 
     const groups = React.useMemo(() => {
       const order: string[] = []
@@ -396,18 +423,21 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
           <AgentLogo state={logoState} size={24} />
           <Popover open={historyOpen} onOpenChange={setHistoryOpen}>
             <PopoverTrigger asChild>
-              {/* 標題+chevron=單一複合觸發鈕;chevron 裝飾指示(aria-hidden 由 Button endIcon 處理)。 */}
-              <Button
+              {/* 標題+chevron 複合觸發:幾何逐字沿用品牌區前例(238cdf91:gap-2 / chevron 16 / 零 padding),
+                  chevron 純指示、fg-muted 靜色、無懸停底(同 AgentThinking 標題列);原生 button 承接 Radix Slot props。 */}
+              <button
                 ref={triggerRef}
-                variant="text"
-                size="sm"
-                endIcon={ChevronDown}
+                type="button"
                 aria-haspopup="dialog"
                 aria-expanded={historyOpen}
-                className="min-w-0 max-w-full px-1 text-body-lg font-medium"
+                className={cn(
+                  'flex min-w-0 max-w-full cursor-pointer items-center gap-2 p-0 text-left',
+                  'rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                )}
               >
-                <span className="truncate">{title}</span>
-              </Button>
+                <span className="truncate text-body-lg font-medium">{title}</span>
+                <ChevronDown size={16} aria-hidden className="shrink-0 text-fg-muted" />
+              </button>
             </PopoverTrigger>
             <PopoverContent
               align="start"
@@ -492,7 +522,8 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
               }
             }}
           >
-            <DialogContent>
+            {/* 確認框/短表單:autoHeight 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
+            <DialogContent autoHeight maxWidth={440}>
               <DialogHeader>
                 <DialogTitle>刪除對話</DialogTitle>
               </DialogHeader>
@@ -547,7 +578,8 @@ function AgentRenameDialog({
   }
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent>
+      {/* 確認框/短表單:autoHeight 隨內容(dialog.spec.md 高度行為)、寬 440(DS 五個確認框 story 慣例)。 */}
+      <DialogContent autoHeight maxWidth={440}>
         <DialogHeader>
           <DialogTitle>改名對話</DialogTitle>
         </DialogHeader>
@@ -1024,6 +1056,7 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
   ({ questions, onSubmit, onSkip, className, ...props }, ref) => {
     const titleId = React.useId()
     const otherInputId = React.useId()
+    const optionIdBase = React.useId()
     if (import.meta.env?.DEV) warnDecisionRules(questions)
     const [step, setStep] = React.useState(0)
     const [answers, setAnswers] = React.useState<Record<string, string>>(() =>
@@ -1069,19 +1102,26 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
       option.value === recommendedValue ? `${option.label}${RECOMMENDED_SUFFIX}` : option.label
     const allOptions = [...question.options, { value: OTHER_VALUE, label: OTHER_LABEL }]
     const renderOtherInput = () => (
-      // 「其他」卡:常駐 32 高輸入格;距卡右/下各 12(卡 px 12;卡 py 8 + mb 4)。
-      <div className="mb-1 mt-1.5 pl-6">
+      // 「其他」卡:常駐 32 高輸入格;label 行框↔Input 8(mt-2);距卡右/下各 12(卡 px 12;卡 py 8 + mb 4);
+      // 左縮排 24 = radio 16 + gap 8,與 label 對齊(Polaris ChoiceChildren 同款)。
+      <div className="mb-1 mt-2 pl-6">
         <Input
           id={otherInputId}
           value={otherText[question.id] ?? ''}
           placeholder="輸入其他選項"
           aria-label="其他(自由輸入)"
+          aria-describedby={titleId}
           onFocus={() => (multi ? toggle(OTHER_VALUE, true) : select(OTHER_VALUE))}
           onChange={(e) => setOtherText((prev) => ({ ...prev, [question.id]: e.target.value }))}
           onClick={(e) => e.stopPropagation()}
         />
       </div>
     )
+    // 滑鼠/觸控點整張「其他」卡 → 聚焦輸入格(明確指向意圖);鍵盤方向鍵選中不搶焦點(APG radio roving),Tab 一步即到。
+    const focusOtherInput = () =>
+      window.setTimeout(() => (document.getElementById(otherInputId) as HTMLInputElement | null)?.focus(), 0)
+    // 灰底選項卡 = 唯一行距 owner(py 8);SelectionItem 自帶 py((32−1lh)/2=5.5)歸零,避免 double padding
+    // (checkbox.spec.md 零外部 gap 鐵律的反向:間距只能有一個 owner)。
     const cardClass = 'cursor-pointer rounded-md bg-secondary px-3 py-2'
     return (
       <div
@@ -1128,13 +1168,25 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
                     key={option.value}
                     data-state={checked ? 'checked' : 'unchecked'}
                     className={cardClass}
-                    onClick={() => toggle(option.value, !checked)}
+                    onClick={() => {
+                      toggle(option.value, !checked)
+                      if (isOther && !checked) focusOtherInput()
+                    }}
                   >
-                    <Checkbox
+                    <SelectionItem
                       size="md"
-                      checked={checked}
-                      onCheckedChange={(next) => toggle(option.value, next === true)}
-                      onClick={(e) => e.stopPropagation()}
+                      className="py-0"
+                      htmlFor={`${optionIdBase}-${option.value}`}
+                      control={
+                        <Checkbox
+                          id={`${optionIdBase}-${option.value}`}
+                          size="md"
+                          checked={checked}
+                          onCheckedChange={(next) => toggle(option.value, next === true)}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-controls={isOther ? otherInputId : undefined}
+                        />
+                      }
                       label={optionLabel(option)}
                       description={isOther ? undefined : (option as AgentDecisionOption).description}
                     />
@@ -1159,11 +1211,23 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
                     key={option.value}
                     data-state={checked ? 'checked' : 'unchecked'}
                     className={cardClass}
-                    onClick={() => select(option.value)}
+                    onClick={() => {
+                      select(option.value)
+                      if (isOther) focusOtherInput()
+                    }}
                   >
-                    <RadioGroupItem
-                      value={option.value}
+                    <SelectionItem
                       size="md"
+                      className="py-0"
+                      htmlFor={`${optionIdBase}-${option.value}`}
+                      control={
+                        <RadioGroupItem
+                          id={`${optionIdBase}-${option.value}`}
+                          value={option.value}
+                          size="md"
+                          aria-controls={isOther ? otherInputId : undefined}
+                        />
+                      }
                       label={optionLabel(option)}
                       description={isOther ? undefined : (option as AgentDecisionOption).description}
                     />
@@ -1174,11 +1238,18 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
             </RadioGroup>
           )}
         </ScrollArea>
-        {/* footer:Skip / 下一題 / 送出(最後一題);鈕 sm 守 Popover all-sm 律;無上分隔線。 */}
+        {/* footer:第一題=跳過(用預設繼續)、第二題起=上一題(答案保留;Material Stepper Back / GOV.UK Back 同款);
+            右=下一題 / 送出(末題);鈕 sm 守 Popover all-sm 律;無上分隔線;× 恆為跳過。 */}
         <SurfaceFooter className="border-t-0">
-          <Button variant="tertiary" size="sm" onClick={skip}>
-            跳過
-          </Button>
+          {step > 0 ? (
+            <Button variant="tertiary" size="sm" onClick={() => setStep((s) => Math.max(0, s - 1))}>
+              上一題
+            </Button>
+          ) : (
+            <Button variant="tertiary" size="sm" onClick={skip}>
+              跳過
+            </Button>
+          )}
           {isLast ? (
             <Button variant="primary" size="sm" disabled={!canAdvance} onClick={() => onSubmit?.(resolvedAnswers())}>
               送出

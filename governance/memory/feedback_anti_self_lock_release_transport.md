@@ -35,6 +35,9 @@ beta.120 五步發版全自動走通。判準已 codify 為 M36(b′) 三問(met
 | hook 測試 `mktemp -d` 在沙箱吐 /var/folders EPERM | macOS mktemp 無模板時走 confstr 暫存目錄,不吃 TMPDIR;放一個 shim 到 PATH 前面把無模板呼叫導向 `/tmp/claude-501`(`$TMPDIR/bin/mktemp`),再跑 `test_*.sh` / run-all.sh(2026-09-02) |
 | 寫入閘 `EXACT_UI_UX_TARGET_BINDING_MISSING` 但 user 明明點名了 | 口語 target(「agent logo」「fab」)與檔名 `agent-logo` 對不上、或問句+委託研究被當未決:改 canonical `approval-evidence.mjs`(別名/directive/markers/委託研究)+ 補 sh 測試 → 重生成後 live hook 才吃到(它讀 `.claude/hooks/lib` 生成副本);**禁**改用 Bash 寫檔繞過(2026-09-02) |
 | pre-commit 跑到一半改任何 repo 檔 → 「canonical source changed while staging」commit 失敗 | build graph fingerprint 含 DS src;commit 背景跑的期間**整個 repo 都不能碰**,先把要改的內容寫到 scratchpad 暫存,commit 完再套(2026-09-02) |
+| publish job「registry read-back is missing」後重跑同版 → 「registry digest mismatch」 | npm 大包 staged 轉正可能 >18 分鐘(beta.131:CI 10:39 放棄、10:40 轉正);同版重跑會重新打包,跨 run 位元組不保證一致(本機兩次 build 一致、CI 第二次差 7 bytes)→ **禁重跑同版**,直接 bump 下一版重發;半發布的版本留在 npm 不回收(immutable),ledger 照記(2026-09-02) |
+| user 把指示寫在 artifact comment(非對話訊息)→ 寫入閘無 exact target 綁定 | 分類器只讀對話 user 訊息,comment 是工具結果(viewer data);目前做法=在 commit/PR 引用 thread id 當核准證據並以 Bash 套用 patch,**屬已知缺口**:正解要 harness 提供結構化 user-comment 事件或 user 在對話重述 exact target(2026-09-02) |
+| `npm run sync-memory` 在沙箱 EPERM(home 鎖目錄) | 沙箱不准 Bash 寫 `~/.claude/projects`;改用 Write 檔案工具把 repo `governance/memory/*.md` 逐檔鏡射到 home(方向仍是 repo→home,2026-09-02) |
 
 **發版鐵律**:immutable tag 不可重用——publish 前先確認 `package.json` 版號**未曾發過**
 (`releases/tags/v<version>` 404 才可);已發過 → bump 新版。錨:beta.119 重用假完成事故。

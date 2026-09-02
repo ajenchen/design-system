@@ -18,7 +18,8 @@ import {
   type AgentPromptAttachment,
 } from './agent-panel'
 import { AgentLogo } from './agent-logo'
-import { AgentFab } from './agent-fab'
+import { AgentFab, AgentFabDock, AGENT_FAB_FLOAT, type AgentFabPlacement } from './agent-fab'
+import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Empty } from '@/design-system/components/Empty/empty'
@@ -286,14 +287,17 @@ const orderColumns: ColumnDef<OrderRow>[] = [
 ]
 
 /**
- * FAB ↔ 面板互斥:面板關閉時右下角出現入口鈕(距右、距下=loose);點開後鈕消失、焦點進面板。
- * 舞台=滿版表格 + 分頁列(內距 loose):入口鈕 44 外徑 + loose 內距正好壓在分頁列「操作右」帶上,
- * 這是 spec「遮擋」段所指的真實衝突;收起機制(拖到右緣 dock / 角落縮小鈕 / 移到頂列)待拍板。
+ * 入口鈕 ↔ 面板互斥 + 拖到邊收起(方案 C,2026-09-02 拍板):面板關閉時右下角出現入口鈕(內距 loose);
+ * 拖到舞台左/右 1/3 內放開 → 吸到該邊、保留高度、縮成 sm 貼邊半圓鈕;拖回中段 → 回右下角;點=開面板;
+ * 右鍵或 Shift+F10 開「收到右邊 / 收到左邊 / 放回右下角」選單;鍵盤 ←→ 換邊、↑↓ 16px。
+ * 位置由 consumer 受控(這裡用 state),面板開關不會重置使用者收起的位置。
+ * 舞台=滿高訂單表 + 分頁列:未收起時入口鈕會壓在分頁列右端,收到邊後不再遮擋。
  */
 export const FabPanelToggle: Story = {
-  name: '入口鈕與面板互斥',
+  name: '入口鈕:互斥與拖到邊收起',
   render: function FabToggleStory() {
     const [open, setOpen] = React.useState(false)
+    const [placement, setPlacement] = React.useState<AgentFabPlacement>(AGENT_FAB_FLOAT)
     return (
       <div className="relative flex h-dvh bg-surface-sunken">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col p-[var(--layout-space-loose)]">
@@ -309,21 +313,37 @@ export const FabPanelToggle: Story = {
           <AgentPanel>
             <AgentPanelHeader title="訂單異常排查" activeConversationId="c1" {...headerWiring} onClose={() => setOpen(false)} />
             <AgentConversation>
-              <AgentMessage role="agent">關閉我,入口鈕會回到右下角。</AgentMessage>
+              <AgentMessage role="agent">關閉我,入口鈕會回到你收起的位置。</AgentMessage>
             </AgentConversation>
             <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
           </AgentPanel>
         ) : (
-          <div className="absolute bottom-[var(--layout-space-loose)] right-[var(--layout-space-loose)]">
-            <AgentFab attention onClick={() => setOpen(true)} />
-          </div>
+          <AgentFabDock attention placement={placement} onPlacementChange={setPlacement} onClick={() => setOpen(true)} />
         )}
       </div>
     )
   },
 }
 
-/** 標誌三態:靜止(=待機)/招喚/思考(動態資產矩陣;藍→紫配色;減動作時一律回靜止)。 */
+/** 收起態樣張:入口鈕已貼右緣(offset 200)與貼左緣;可直接拖、鍵盤或選單操作。 */
+export const FabDocked: Story = {
+  name: '入口鈕:已收到邊',
+  render: function FabDockedStory() {
+    const [end, setEnd] = React.useState<AgentFabPlacement>({ side: 'end', offset: 200 })
+    const [start, setStart] = React.useState<AgentFabPlacement>({ side: 'start', offset: 120 })
+    return (
+      <div className="relative h-dvh bg-surface-sunken">
+        <p className="p-[var(--layout-space-loose)] text-body text-fg-secondary">
+          右緣一顆(有新訊)、左緣一顆(待機);拖到中段會回右下角。
+        </p>
+        <AgentFabDock attention placement={end} onPlacementChange={setEnd} onClick={noop} />
+        <AgentFabDock placement={start} onPlacementChange={setStart} onClick={noop} aria-label="開啟智慧代理(左)" />
+      </div>
+    )
+  },
+}
+
+/** 標誌三態:靜止(=待機)/招喚/思考(動態資產矩陣;配色=自家色階 blue-3..7 / purple-3..7;減動作時一律回靜止)。 */
 export const LogoStates: Story = {
   name: '標誌三態',
   render: () => (
@@ -343,6 +363,31 @@ export const LogoStates: Story = {
 }
 
 /** FAB:待機(靜止)與有新訊(招喚=標誌蓄勢+邊框光圈代位)。 */
+/**
+ * 思考 → 停止:按「思考 3 秒」進入思考(靜止起步 0.3s 加速到 600°/s),3 秒後離開思考 → 從當下角度
+ * 以 exit 鏡像曲線減速、落回正位 0°(0.6–1.46s)後才淡入靜止;一直思考的範例維持最快轉速不停。
+ */
+export const LogoThinkStop: Story = {
+  name: '標誌:思考起步與減速停止',
+  render: function LogoThinkStopStory() {
+    const [state, setState] = React.useState<'still' | 'think'>('still')
+    const timer = React.useRef<number | null>(null)
+    const start = () => {
+      if (timer.current) window.clearTimeout(timer.current)
+      setState('think')
+      timer.current = window.setTimeout(() => setState('still'), 3000)
+    }
+    React.useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current) }, [])
+    return (
+      <div className="flex items-center gap-12 p-12">
+        <AgentLogo state={state} size={72} detail="full" label={state} />
+        <Button variant="secondary" size="sm" onClick={start}>思考 3 秒</Button>
+        <span className="text-caption text-fg-muted">目前:{state === 'think' ? '思考中(等速)' : '靜止'}</span>
+      </div>
+    )
+  },
+}
+
 export const FabStates: Story = {
   name: 'FAB 兩態',
   render: () => (

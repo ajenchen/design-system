@@ -35,10 +35,12 @@ traits:
 | `--motion-duration-shimmer` | 2s | motion.css (C) 循環動態 | shadcn shimmer 逐字(2026-09-02 實開頁複核) |
 
 標誌/FAB 環的漸層停駐色=**品牌資產常數**(oklch 內嵌,色相落於 DS 藍 252-268 /
-紫 294-304 家族(對應 primitives blue-6 258 / purple-6 294;2026-09-02 user 拍板由藍→土耳其藍改為
-藍→紫,研究候選 C:兩緞帶明度各跨 .38、彩度中段峰值貼 sRGB 色域不越界、最近處相距 ≥38°;
-[GitHub Copilot Purple 296](https://brand.github.com/foundations/color) 同一帶);非 semantic token——
-資產色不進 token 系統,同品牌 SVG 慣例;FAB 環/光圈只 import `AGENT_BRAND`(agent-logo.tsx 唯一數值來源)。
+紫家族(2026-09-02 user 拍板由藍→土耳其藍改為藍→紫,再依「所有顏色都要根據我們的設計語言」改為
+**逐階取自自家 primitives.css light 色階**:藍緞帶 blue-3→7、紫緞帶 purple-3→7、紫底面陰影 purple-8、
+藍提亮 blue-2、招喚波 blue-5→indigo-5→purple-5、FAB 環/光圈 blue-4 / purple-4;色相固定 258 / 294,
+兩緞帶明度各跨 .37 保留原稿立體感,尾端停在 -7 使 dark `--surface-raised` 上仍可辨);品牌色不隨主題
+(`tokens/color/color.spec.md`「品牌」段),資產內嵌 light 數值而非 var(),每個常數行尾 `// = --color-xxx-N`
+由 `scripts/agent-logo-brand-scale-invariant.mjs` 機械比對(容差 .01);FAB 環/光圈只 import `AGENT_BRAND`。
 SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle token 值的
 逐字鏡像(檔頭註記;改 token 必同步)。
 
@@ -67,11 +69,13 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
   AgentDecisionCard 出現時絕對定位貼底覆蓋輸入區。
 - 開合=淡入+自右滑入 `--motion-duration-surface`(模態面板級);減動作停。
 - **可調寬**(`resizable`,預設開):左緣 `<ResizeHandle direction="horizontal" position="start">`
-  (app-shell aside 同款);寬度夾在 `--agent-panel-width-min` 360 ~ `--agent-panel-width-max` 640
+  (`patterns/resize-handle` 視覺 primitive:熱區 7、線 1、idle divider / hover border-hover / 拖曳中 primary,
+  與 DataTable 欄寬把手同視覺;DataTable 尚未 migrate 到此 primitive,resize-handle.spec.md Roadmap);寬度夾在 `--agent-panel-width-min` 360 ~ `--agent-panel-width-max` 640
   且 ≤ 視窗寬 50%(較小者勝);預設 `--agent-panel-width` 400。受控 `width`/`onWidthChange` 或
   非受控 `defaultWidth`。**無雙擊重設**(2026-09-02 拍板);以 Sheet 承載時同樣可拖(不衝突)。
   鍵盤:把手為 `role="separator"`(`aria-orientation="vertical"` + valuemin/max/now),
-  ←/→ 每步 16、Home=最窄、End=最寬;減動作不影響(無動畫)。
+  ←/→ 每步 16、Home=最窄、End=最寬(DataTable 欄寬把手同語意:箭頭往哪、邊緣就往哪);
+  聚焦可見=DataTable 同款 outline;減動作不影響(無動畫)。
 - A11y:`role="complementary"` + `aria-label="智慧代理"`。
 - 面板與 app 的推擠/斷點=backlog(本輪僅元件內規格)。
 
@@ -81,9 +85,11 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
   標題=chrome typography `text-body-lg font-medium`。
 - Anatomy:`[AgentLogo 24][gap-2][標題+chevron 複合觸發]…[新對話 +][ButtonDivider][關閉 ×]`。
   - 標誌+標題=側欄品牌區前例逐字(gap-2 + 24 標誌);標誌隨代理狀態動畫(思考=think 態)。
-  - **標題+chevron 是同一顆觸發**(`<Button variant="text" size="sm" endIcon={ChevronDown}>`,
-    標題 truncate):點標題或 chevron 都開歷史浮層;chevron 只是指示(同 AgentThinking 標題列與
-    Select 觸發器慣例),恆向下、不隨開合旋轉(2026-09-02 拍板)。
+  - **標題+chevron 是同一顆觸發**(原生 button,幾何逐字沿用品牌區前例:`gap-2`、標題
+    `text-body-lg font-medium` truncate、chevron 16 `text-fg-muted` 靜色、零 padding、無懸停底;
+    focus-visible ring 同 AgentThinking 標題列):點標題或 chevron 都開歷史浮層;chevron 只是指示,
+    恆向下、不隨開合旋轉(2026-09-02 拍板;第二輪覆核:禁用 Button 殼——會多出左 9 / 右 5 內距
+    與 28 高懸停底,破壞品牌區間距)。
   - 關閉=`<Button dismiss size="sm">`(header 專屬 sm);新對話=Button text sm iconOnly。
   - **固定 anatomy 恆渲染**:標題觸發、新對話 +、關閉 × 不因缺 callback 而消失——
     `onNewConversation`/`onClose` 為必填 prop;歷史相關 callback 可省略但列仍顯示
@@ -149,11 +155,19 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
   改寫:無下圓角;header 下、footer 上無分隔線;body 上下無內距、左右 `--layout-space-loose`。
 - Header:`[小標「n / N」(僅 N>1)][題目 text-body font-medium][×=跳過]`,items-start。
 - 選項卡(拍板樣張 2026-09-02):每個選項=灰底卡 `bg-secondary rounded-md px-3 py-2`,
-  **整卡可點**(卡片含 RadioGroupItem md label+description);卡間距 8;「其他」卡永遠最後、
-  **常駐 Input**(md 32,左縮排 24 對齊 label,距卡右/下各 12),聚焦即選中「其他」。
+  **整卡可點**;卡片組合 `SelectionItem`(**py 0**:卡的 py 8 是唯一行距 owner,SelectionItem 自帶
+  (32−1lh)/2 歸零,避免 double padding——`../Checkbox/checkbox.spec.md`「零外部 gap」鐵律的反向)
+  + RadioGroupItem md(複選=Checkbox md);radio↔label 8、label↔description 2;卡間距 8。
+  「其他」卡永遠最後、**常駐 Input**(md 32;label 行框↔Input 8;左縮排 24 = radio 16 + gap 8 對齊 label,
+  [Polaris ChoiceChildren 同款](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/Choice/Choice.module.css);
+  距卡右/下各 12);聚焦即選中「其他」;**滑鼠/觸控點整張「其他」卡 → 自動聚焦 Input**(明確指向意圖),
+  鍵盤方向鍵選中不搶焦點(APG radio roving,Tab 一步即到);radio `aria-controls` 指向 Input。
+  幾何:一般卡 8+21+2+21+8 = 60;「其他」卡 8+21+8+32+12 = 81。
 - 關閉:僅 Skip 鈕與 header ×,兩者同一行為=跳過;無 Esc、無外點關閉(阻擋語意)。
-- 步進:**一題一步**,footer=`[跳過(tertiary sm)][下一題|送出(primary sm)]`,末步才「送出」;
-  不設「上一題」(NN/g wizards 強制順序)。「其他」選中而文字為空 → 下一題/送出 disabled。
+- 步進:**一題一步**,footer 左鈕=第一題「跳過」(用預設繼續)、第二題起「上一題」(答案保留;
+  [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
+  2026-09-02 user 拍板);右鈕=「下一題」、末步「送出」;header × 恆為跳過。
+  「其他」選中而文字為空 → 下一題/送出 disabled。
 - 選項=**RadioGroup md 包裝不改造**(Popover all-sm 律之顯式拍板豁免;footer 鈕維持 sm 守律);
   預選項(`defaultValue`,省略=第一項)由元件在 label 後加「(建議)」。
 - 進出=淡入+下滑 8、`--motion-duration-overlay`。
@@ -164,7 +178,7 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 1. ⚙ **題數 1–3,每題必須改變代理下一步**;能一題就不問兩題;禁「計畫可以嗎?」類空問。
    ([Claude Agent SDK AskUserQuestion 1–4 題/次](https://code.claude.com/docs/en/agent-sdk/user-input),
    本 DS 收緊為 ≤3;[GOV.UK one thing per page](https://design-system.service.gov.uk/patterns/question-pages/))
-2. ⚙ **一題一步**:一次只顯示一題;N≥2 才顯示小標「n / N」;不可回頭改題(改答案走「其他」或下一回合)。
+2. ⚙ **一題一步**:一次只顯示一題;N≥2 才顯示小標「n / N」;第二題起可「上一題」回頭改答(答案保留),不可跳題。
    ([GOV.UK 需要才加簡單「Question 3 of 9」](https://design-system.service.gov.uk/patterns/question-pages/);
    [NN/g wizards 標出目前步、強制順序](https://www.nngroup.com/articles/wizards/))
 3. ⚙ **題目=一句完整問句、以「?」結尾、句內點名決策對象**(「公告要用哪種語氣?」);禁「確定嗎?」「注意!」。
@@ -188,7 +202,7 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 10. ⚙ **單選為預設;答案本質可複選才 `multiSelect`**(「要包含哪些章節?」):複選改 CheckboxGroup、選項不得互斥、
     **不預選**、仍附「其他」。([SDK multiSelect](https://code.claude.com/docs/en/agent-sdk/user-input);
     [GOV.UK checkboxes 不預選](https://design-system.service.gov.uk/components/checkboxes/))
-11. ⚙ **Skip=「全部用預設繼續」**(非取消、非關對話);Skip 鈕與 header × 同一行為;footer 只有兩鈕。
+11. ⚙ **Skip=「全部用預設繼續」**(非取消、非關對話);header × 恆為 Skip;footer 只有兩鈕(第一題 跳過/下一題,之後 上一題/下一題|送出)。
     ([Material ≤2 actions、肯定右否定左](https://m1.material.io/components/dialogs.html);[NN/g wizards allow exit midway](https://www.nngroup.com/articles/wizards/))
 12. **題與題互不依賴**:後題不因前題答案改變;需要分支 → 下一回合另開一張卡。
     ([NN/g wizards self-sufficient steps](https://www.nngroup.com/articles/wizards/))
@@ -207,14 +221,18 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
   SelectMenu 資料驅動 API 放不下列級行內動作與進度圖示替換,故同源組裝——metrics 全同:
   容器 p-0/rounded-lg/elevation-200/minWidth 240、搜尋列 40、列 32/px-12/gap-8、組標 py-2)。
 - 錨=標題觸發下緣+8(OVERLAY_SIDE_OFFSET);列=CommandItem `p-0 rounded-none` 包 MenuItem
-  (select-menu.tsx 同源:選中列 `bg-neutral-selected`);組標=CommandGroup `heading`(MenuItem header,
+  (select-menu.tsx 同源:選中列 `bg-neutral-selected`;標題單行截斷 `labelMaxLines={1}`,SelectMenu 列同款;
+  後綴=MenuItem endContent slot 內 ItemSuffix hoverReveal + ItemInlineAction 16/18、gap 8、距列右緣 12,
+  逐項對齊 inline-action.spec.md);組標=CommandGroup `heading`(MenuItem header,
   今天/昨天/更早)+ CommandSeparator;無結果=`<Empty>`(CommandEmpty);搜尋列 `h-8 py-0`(列高 40 守 SelectMenu)。
 - 懸停/聚焦浮出「改名/刪除」(ItemSuffix `hoverReveal` + ItemInlineAction 16/18,150ms 淡入;
-  鍵盤 Tab 可達、focus-visible 同樣顯示);思考中列首圖示原地換 **CircularProgress 16**,等寬等高不動版面。
-- 改名=Dialog(Field「名稱」+Input 預填全選、`required`;空白 → `invalid` + FieldError「名稱不可空白」,
-  儲存停用;Enter=儲存;Esc=Dialog 原生關閉=回復);刪除=Dialog 危險樣式(`primary + danger`)。
+  鍵盤 Tab 可達、focus-visible 同樣顯示;**Enter / Space 在行內動作上 = 啟動該動作**,不是選列
+  ——cmdk 的 Enter=選列在此以 stopPropagation 擋掉,2026-09-02 實測補);思考中列首圖示原地換 **CircularProgress 16**,等寬等高不動版面。
+- 改名=Dialog(`autoHeight` 隨內容、寬 440 = DS 確認框/短表單慣例;Field「名稱」+Input 預填全選、`required`;
+  空白 → `invalid` + FieldError「名稱不可空白」,儲存停用;Enter=儲存;Esc=Dialog 原生關閉=回復);
+  刪除=Dialog 危險樣式(`primary + danger`,同 autoHeight/440)。
   **刪當前對話契約**(consumer 實作,spec 定義):切到最近一則;全空→空狀態(NewConversation)。
-- 選定→切換對話、標題同步、浮層關閉;Dialog 關閉後焦點回標題觸發。
+- 選定→切換對話、標題同步、浮層關閉;Dialog 關閉後焦點:浮層仍開 → 回觸發它的行內動作(改名/刪除),浮層已關 → 回標題觸發。
 - 所有 callback(`onSelect/onRename/onDeleteConversation`)可省略,列與動作仍渲染(固定 anatomy 律)。
 
 ### 附:空狀態
@@ -243,9 +261,13 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
   - **attract 招喚**(空狀態/FAB 有新訊):呼吸包絡上的脹 1.07+吸氣微亮(白疊層 0→14%→0→0)
     +遮罩單波(雙色放射盤內藍 .5→靛 .44→紫 .34→邊緣 0;行程 560→830;0–35% 貼邊聚亮(swell)、
     35% 離體擴散(settle)、90% 散盡;遮罩護負空間、無模糊)。`ripple={false}` 供 FAB 光圈代位。
-  - **think 思考**(=回覆中):啟動加速 0.3s(=一息/10,exit 曲線)→等速 0.6s/圈(=一息/5,linear)
-    (SMIL loop 無終點,結束由 0.15s 狀態切換淡入承接);+負空間呼吸(洞橢圓↔正圓 6s=2 息,
-    同一條呼吸包絡)+吸氣微亮(與圓化同拍,峰值 14% 與招喚統一)+色流動(色場定錨畫布=漸層同構逆轉)。
+  - **think 思考**(=回覆中):靜止起步 → 加速 0.3s(=一息/10,exit 曲線,位移 126° 使交接速度連續)
+    → 等速 600°/s(0.6s/圈=一息/5,linear)**持續到離開思考,一直思考就不停**;離開思考 →
+    **減速段**:從當下角度以 exit 曲線的時間鏡像 (0,0,0.7,1) 續轉最小 ≥252° 且落回正位 0° 的角度
+    (時長 Δ/(ω·0.7) ∈ 0.6–1.46s,交接速度連續、停定即正位),停定後才 0.15s 淡入下一狀態;
+    加速未完即離開 → 等加速段結束再減速;<1 影格直接切。+負空間呼吸(洞橢圓↔正圓 6s=2 息,
+    同一條呼吸包絡,離開時不重掛、繼續到淡入覆蓋)+吸氣微亮(與圓化同拍,峰值 14% 與招喚統一)
+    +色流動(色場定錨畫布=漸層同構逆轉,減速段同步)。
 - 轉場:狀態切換=新狀態 0.15s 淡入(`--motion-duration-overlay`,只動 opacity),禁跳切;**減動作**:
   互動觸發必可停(WCAG 2.3.3);常駐 loop 全停(嚴於條文),一律回靜止、淡入亦停。
 - 多實例安全:漸層/遮罩 id 以 useId 唯一化。
@@ -266,9 +288,22 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
   `--layout-space-loose`(16/24;Material FAB 最小邊距同值);**面板開 → FAB 隱藏、面板關 → FAB 回來**
   (兩者互斥,開面板的入口與關面板的 × 不並存)。DS 預設入口仍是全域頂列右側鈕
   (`governance/planning/2026-08-11-agent-ui-panel-spec.md` 已裁),含滿高表格/分頁列的頁面一律用頂列入口。
-- **遮擋**:44 外徑 + loose 內距 = 佔右下 60×60(md)/ 68×68(lg),與表格分頁列「操作右」必撞;
-  收起機制(拖到右緣 dock / 角落縮小鈕 / 移到頂列)為未決 UI pattern → 見 story `FabPanelToggle`
-  與本輪報告,拍板後再入 spec。
+- **遮擋與收到邊**(`AgentFabDock`,2026-09-02 user 拍板方案 C):40 外徑 + loose 內距 = 佔右下
+  56×56(md)/ 64×64(lg),與表格分頁列「操作右」必撞 → 提供拖到邊收起:
+  - 只貼**左右**兩緣(Microsoft 365 Dynamic Action Button / Android chat heads 共識;禁貼上下:上緣
+    是 ChromeHeader、下緣常是分頁列);拖動 < 8px 視為點擊,超過門檻放開 → 落點在舞台左/右 1/3 內
+    吸到該邊並**保留放開時的 y**(夾限 loose ~ 舞台高−鈕高−loose),中段 → 回右下角。
+  - 收起態 = Button sm 尺寸(`--field-height-sm` 28/32)貼邊半圓鈕,只留內側圓角、環只畫露出三邊,
+    內置 16 標誌;招喚態同款蓄勢、光圈省略(貼邊會被裁)。點=開面板(同 FAB);面板關閉回到
+    **使用者收起的位置**(位置由 consumer 受控/非受控 `placement / defaultPlacement /
+    onPlacementChange`,DS 不寫 storage;要跨 session 記憶由 consumer 存);拖回中段 → 回 FAB 態。
+  - 鍵盤:←→ 換邊(貼邊時往反方向 = 回右下角)、貼邊時 ↑↓ 16px;右鍵 / Shift+F10 開 DropdownMenu
+    「收到右邊 / 收到左邊 / 放回右下角」(DS 無 ContextMenu,以受控 DropdownMenu 代)。
+  - 吸邊位移 `--motion-duration-surface` 250ms + `--motion-easing-enter`;減動作直接落定。
+  - 對照:[M365 DAB 拖到側邊變小圖示、點回](https://support.microsoft.com/en-us/office/foundations-experiences/copilot-dab/the-copilot-dynamic-action-button-in-word-excel-and-powerpoint)、
+    [Android Bubbles 貼左右緣半露](https://developer.android.com/develop/ui/views/notifications/bubbles)、
+    [iOS AssistiveTouch 拖到任一邊](https://support.apple.com/en-us/111794);Material 明文 FAB 不移動
+    ([M2 FAB](https://m2.material.io/components/buttons-floating-action-button))→ 可拖在 DS 為 opt-in。
 - A11y:`aria-label="開啟智慧代理"`。
 
 ## 動畫總表
@@ -282,7 +317,9 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 | 標誌招喚呼吸(本體/疊層/單波/FAB 光圈) | 一息 3s;35% 吸頂 / 85% 到底 / 90% 波散盡 / 靜止空拍 | swell → settle → 停 |
 | 標誌思考旋轉 | 起步 0.3s(exit)→ 0.6s/圈 linear | 一息/10、一息/5 |
 | 標誌思考洞形變+疊層 | 6s = 2 息,同一條呼吸包絡 | swell → settle → 停 |
+| 標誌思考減速停止 | 從當下角度以 exit 鏡像曲線續轉至正位 | 0.6–1.46s(Δ/(600°/s·0.7)) |
 | 標誌狀態切換 | 新狀態淡入 | `--motion-duration-overlay` 150ms |
+| 入口鈕吸邊 / 放回 | top / inset 位移 | `--motion-duration-surface` 250ms + enter |
 | 思考 chevron / 輸入框邊框 | transition | `--motion-duration-overlay` 150ms |
 | 減動作 | 互動觸發必可停;常駐 loop 全停、淡入停 | 見 AgentLogo 節 |
 

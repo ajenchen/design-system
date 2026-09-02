@@ -3,12 +3,16 @@
  *
  * ── 消費的 SSOT ──
  * - 造型:user 提供之黃金比例莫比烏斯 SVG 定稿(內橢圓長短軸比 φ=1.618、軸角 121.717°;
- *   agent-panel.spec.md「AgentLogo」節)。漸層停駐色=品牌資產常數(色相落於 DS 藍 252-266 /
- *   紫 294-304 家族,對應 primitives blue-6 258 / purple-6 294;資產內嵌 oklch,非 semantic
- *   token — 詳 spec 同節;2026-09-02 user 拍板由藍→土耳其藍改為藍→紫)。
+ *   agent-panel.spec.md「AgentLogo」節)。漸層停駐色=**自家色階逐階取值**(primitives.css light
+ *   段 blue-2..7 / indigo-5 / purple-3..8;品牌色不隨主題,color.spec.md「品牌」段);每個常數行尾
+ *   `// = --color-xxx-N` 是 scripts/agent-logo-brand-scale-invariant.mjs 的機械綁定,禁刪
+ *   (2026-09-02 user:「所有顏色都要根據我們的設計語言調整」→ 由自訂 oklch 改為自家色階)。
  * - 狀態動畫:agent-panel.spec.md「AgentLogo」節(靜止/招喚/思考;一息 3s 家族;
  *   2026-09-02 拍板:待機一律靜止,併入 still,無獨立呼吸態)。呼吸包絡=吸 35% / 呼至 85% /
  *   85–100% 靜止空拍(靜息 I:E ≈ 1:2 + 呼氣末停頓;spec「AgentLogo」節引用來源)。
+ * - 思考態轉速:靜止 → 0.3s 加速(exit 曲線,位移 126° = ω·T·(1−x1),交接速度連續)→ 600°/s 等速
+ *   (0.6s/圈)持續到離開思考 → 減速段用 exit 曲線的時間鏡像 (0,0,0.7,1),位移取最小 ≥252° 且
+ *   落回正位 0°(mod 360)的角度,時長 = Δ/(ω·0.7) ∈ [0.6, 1.46]s,停定後才淡入下一狀態。
  * - 緩動:--motion-easing-swell / --motion-easing-settle / --motion-easing-exit
  *   (tokens/motion/motion.css)。SMIL keySplines 不能吃 CSS var,以下常數為 token 值的逐字鏡像,
  *   改 token 必同步此處。
@@ -28,6 +32,15 @@ export const SWELL = '0.4 0.14 0.3 1'
 export const SETTLE = '0.2 0 0.38 0.9'
 /** = var(--motion-easing-exit) 的 SMIL 鏡像(加速起步)。 */
 const EXIT = '0.3 0 1 1'
+/** 減速 = exit 曲線的時間鏡像(起始斜率 1/0.7,速度連續);Material/Carbon 減速原則。 */
+const DECEL = '0 0 0.7 1'
+/** 思考態等速 600°/s(0.6s/圈)、加速 0.3s;交接速度連續 → 加速位移 = ω·T·(1−x1) = 126°。 */
+const SPIN_OMEGA = 600
+const SPIN_ACCEL_S = 0.3
+const SPIN_MID = 126
+/** 減速最小位移 = ω·0.6·0.7 = 252°;實際取最小 ≥252 且落回 0°(mod 360)的角度。 */
+const SPIN_DECEL_MIN = 252
+const FRAME_S = 1 / 60
 /** 靜止空拍(值不變,曲線無意義,填線性)。 */
 const HOLD = '0 0 1 1'
 /** 呼吸包絡:0 靜 → 35% 吸頂 → 85% 回落到底 → 100% 靜止空拍(本體 / 疊層 / 洞形變共用)。 @internal */
@@ -41,11 +54,12 @@ export const RIPPLE_SPLINES = `${SWELL};${SETTLE};${HOLD}`
 
 /**
  * 品牌資產代表色(兩緞帶家族;FAB 環與光圈消費同一組 → repo 內唯一數值來源)。
+ * 全部取自 primitives.css light 色階(品牌色不隨主題);行尾綁定供 invariant 腳本比對,禁刪。
  * @internal AgentPanel 家族內部共用。
  */
 export const AGENT_BRAND = {
-  blue: 'oklch(.72 .16 254)',
-  purple: 'oklch(.70 .17 300)',
+  blue: 'oklch(0.72 0.17 258)', // = --color-blue-4
+  purple: 'oklch(0.71 0.15 294)', // = --color-purple-4
 } as const
 
 /* ── 幾何(user 定稿 SVG 逐字;viewBox 0 0 1254 1254,圓心 627) ── */
@@ -61,47 +75,48 @@ const D_BLUE_ROUND =
 
 type Stop = readonly [number, string, number?]
 /* 完整版(>24):五停駐雙緞帶 + 底面陰影 + 提亮(原稿逐層保留)。
- * 藍緞帶 252→266、紫緞帶 294→304:明度各跨 .38、彩度中段峰值貼 sRGB 色域上限不越界;
- * 兩緞帶最近處相距 ≥38°,24px 簡化檔仍分得開(2026-09-02 配色研究候選 C)。 */
+ * 藍 blue-3→7、紫 purple-3→7:明度各跨 .37(原稿 .38)、彩度峰值在第 4 停駐(base-6);
+ * 色相固定 258 / 294(自家色階 h 恆定,兩緞帶相距 36°);尾端停在 -7 而非 -8:dark
+ * `--surface-raised`(L≈.24)上 blue-8(L .33)會糊進底面,-7(L .44)ΔL .20 仍可辨。 */
 const BLUE_SURFACE: readonly Stop[] = [
-  [0, 'oklch(.76 .13 252)'],
-  [0.28, 'oklch(.68 .17 255)'],
-  [0.58, 'oklch(.58 .21 258)'],
-  [0.82, 'oklch(.46 .21 262)'],
-  [1, 'oklch(.38 .19 266)'],
+  [0, 'oklch(0.81 0.10 258)'], // = --color-blue-3
+  [0.28, 'oklch(0.72 0.17 258)'], // = --color-blue-4
+  [0.58, 'oklch(0.63 0.20 258)'], // = --color-blue-5
+  [0.82, 'oklch(0.54 0.22 258)'], // = --color-blue-6
+  [1, 'oklch(0.44 0.20 258)'], // = --color-blue-7
 ]
 const PURPLE_SURFACE: readonly Stop[] = [
-  [0, 'oklch(.82 .09 294)'],
-  [0.3, 'oklch(.74 .14 297)'],
-  [0.58, 'oklch(.64 .18 300)'],
-  [0.82, 'oklch(.52 .20 302)'],
-  [1, 'oklch(.44 .19 304)'],
+  [0, 'oklch(0.80 0.09 294)'], // = --color-purple-3
+  [0.3, 'oklch(0.71 0.15 294)'], // = --color-purple-4
+  [0.58, 'oklch(0.62 0.18 294)'], // = --color-purple-5
+  [0.82, 'oklch(0.52 0.20 294)'], // = --color-purple-6
+  [1, 'oklch(0.43 0.19 294)'], // = --color-purple-7
 ]
 const PURPLE_UNDERSIDE: readonly Stop[] = [
-  [0, 'oklch(.28 .10 302)', 0.82],
-  [0.34, 'oklch(.30 .10 300)', 0.47],
-  [0.74, 'oklch(.30 .10 300)', 0],
+  [0, 'oklch(0.32 0.16 294)', 0.82], // = --color-purple-8
+  [0.34, 'oklch(0.32 0.16 294)', 0.47], // = --color-purple-8
+  [0.74, 'oklch(0.32 0.16 294)', 0], // = --color-purple-8
 ]
 const BLUE_LIFT: readonly Stop[] = [
-  [0, 'oklch(.86 .06 252)', 0.3],
-  [0.48, 'oklch(.86 .06 252)', 0.1],
-  [1, 'oklch(.86 .06 252)', 0],
+  [0, 'oklch(0.89 0.05 258)', 0.3], // = --color-blue-2
+  [0.48, 'oklch(0.89 0.05 258)', 0.1], // = --color-blue-2
+  [1, 'oklch(0.89 0.05 258)', 0], // = --color-blue-2
 ]
 /* 簡化版(≤24):去陰影提亮、兩停駐高對比(圖標光學校正慣例;取五停駐頭尾)。 */
 const BLUE_SIMPLE: readonly Stop[] = [
-  [0, 'oklch(.76 .13 252)'],
-  [1, 'oklch(.38 .19 266)'],
+  [0, 'oklch(0.81 0.10 258)'], // = --color-blue-3
+  [1, 'oklch(0.44 0.20 258)'], // = --color-blue-7
 ]
 const PURPLE_SIMPLE: readonly Stop[] = [
-  [0, 'oklch(.82 .09 294)'],
-  [1, 'oklch(.44 .19 304)'],
+  [0, 'oklch(0.80 0.09 294)'], // = --color-purple-3
+  [1, 'oklch(0.43 0.19 294)'], // = --color-purple-7
 ]
-/* 招喚漣漪:雙色放射盤(內藍→靛過渡→紫→邊緣透明;波色呼應本體兩緞帶色相家族,中段 278 為兩極中點)。 */
+/* 招喚漣漪:雙色放射盤(內藍→靛過渡→紫→邊緣透明;中段取 indigo,自家藍紫之間唯一色相)。 */
 const WAVE_STOPS: readonly Stop[] = [
-  [0, 'oklch(.62 .19 254)', 0.5],
-  [0.55, 'oklch(.64 .18 278)', 0.44],
-  [0.8, 'oklch(.66 .17 300)', 0.34],
-  [1, 'oklch(.66 .17 300)', 0],
+  [0, 'oklch(0.63 0.20 258)', 0.5], // = --color-blue-5
+  [0.55, 'oklch(0.62 0.23 265)', 0.44], // = --color-indigo-5
+  [0.8, 'oklch(0.62 0.18 294)', 0.34], // = --color-purple-5
+  [1, 'oklch(0.62 0.18 294)', 0], // = --color-purple-5
 ]
 
 /** 狀態:still 靜止(=待機)/ attract 招喚 / think 思考(=回覆中)。 */
@@ -172,8 +187,9 @@ function GradientStops({ stops }: { stops: readonly Stop[] }) {
 }
 
 /**
- * 兩段旋轉:啟動加速 0.3s(= 一息/10,exit 曲線)→ 等速 0.6s/圈(= 一息/5,linear=轉圈慣例)。
- * 加速段 begin=indefinite 由掛載觸發;等速段以 syncbase `<id>.end` 銜接,保證每次進入都從 0° 起步。
+ * 兩段旋轉:啟動加速 0.3s(= 一息/10,exit 曲線,位移 126° 使交接速度 = 600°/s 連續)→ 等速
+ * 0.6s/圈(= 一息/5,linear=轉圈慣例)。加速段 begin=indefinite 由掛載觸發;等速段以 syncbase
+ * `<id>.end` 銜接,保證每次進入都從 0° 起步。離開思考另有減速段(見 AgentLogo think-exit)。
  */
 function SpinPair({
   id,
@@ -195,7 +211,7 @@ function SpinPair({
         attributeName={attributeName}
         type="rotate"
         values={`${from};${mid}`}
-        dur="0.3s"
+        dur={`${SPIN_ACCEL_S}s`}
         begin="indefinite"
         data-begin-on-mount=""
         fill="freeze"
@@ -215,10 +231,42 @@ function SpinPair({
   )
 }
 
+/** 離開思考:從離開瞬間的角度續轉 Δ 到停(exit 鏡像曲線),fill=freeze;掛載後由 AgentLogo 觸發 beginElement。 */
+function SpinDecel({
+  attributeName,
+  from,
+  to,
+  dur,
+  center,
+}: {
+  attributeName: 'transform' | 'gradientTransform'
+  from: number
+  to: number
+  dur: number
+  center?: string
+}) {
+  const suffix = center ? ` ${center}` : ''
+  return (
+    <animateTransform
+      attributeName={attributeName}
+      type="rotate"
+      from={`${from}${suffix}`}
+      to={`${to}${suffix}`}
+      dur={`${dur}s`}
+      begin="indefinite"
+      data-begin-on-exit=""
+      fill="freeze"
+      calcMode="spline"
+      keyTimes="0;1"
+      keySplines={DECEL}
+    />
+  )
+}
+
 /** 思考態:色場定錨於畫布 — 漸層以本體旋轉的同構逆轉實現「幾何流過色場」。 */
 function GradientCounterSpin({ id }: { id: string }) {
   return (
-    <SpinPair id={id} attributeName="gradientTransform" from="0 627 627" mid="-90 627 627" end="-450 627 627" />
+    <SpinPair id={id} attributeName="gradientTransform" from="0 627 627" mid={`-${SPIN_MID} 627 627`} end={`-${SPIN_MID + 360} 627 627`} />
   )
 }
 
@@ -311,7 +359,90 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
     const effectiveState: AgentLogoState = reduced ? 'still' : state
     const innerRef = React.useRef<SVGSVGElement | null>(null)
     React.useImperativeHandle(ref, () => innerRef.current as SVGSVGElement)
-    useBeginAnimationsOnMount(innerRef, `${effectiveState}:${simplified}:${ripple}`)
+    /**
+     * 畫面狀態(visual)由 layout effect 驅動,而非直接吃 prop:離開思考時先讀活動畫的角度,
+     * 掛減速段轉到停(落回 0°),endEvent 後才切到新狀態淡入 —— 使用者看不到中間 render。
+     */
+    const [visual, setVisual] = React.useState<AgentLogoState | 'think-exit'>(effectiveState)
+    const [exit, setExit] = React.useState<{ angle: number; delta: number; dur: number } | null>(null)
+    const latestState = React.useRef(effectiveState)
+    latestState.current = effectiveState
+    const spinRef = React.useRef<SVGGElement | null>(null)
+    /** 進入思考的牆鐘時間:判斷「加速段是否已完成」用牆鐘,不用 SMIL 時間軸(背景分頁會凍在 0)。 */
+    const thinkEnteredAt = React.useRef(0)
+    React.useLayoutEffect(() => {
+      if (visual === 'think') thinkEnteredAt.current = performance.now()
+    }, [visual])
+    React.useLayoutEffect(() => {
+      if (visual === effectiveState) return
+      // 減速進行中:由減速段的 endEvent / timer 收尾(latestState),這裡不得搶先切換。
+      if (visual === 'think-exit') return
+      const leavingThink = visual === 'think' && effectiveState !== 'think'
+      if (!leavingThink || reduced) {
+        setExit(null)
+        setVisual(effectiveState)
+        return
+      }
+      const svg = innerRef.current
+      const g = spinRef.current
+      const accel = svg?.querySelector<SVGAnimateElement>('g > animateTransform[fill="freeze"]') ?? null
+      const start = (angle: number) => {
+        // 最小 ≥252° 且落回 0°(mod 360):停定後與 still 態正位無縫接軌。
+        const normalized = ((angle % 360) + 360) % 360
+        let delta = (360 - normalized) % 360
+        while (delta < SPIN_DECEL_MIN) delta += 360
+        setExit({ angle: normalized, delta, dur: delta / (SPIN_OMEGA * 0.7) })
+        setVisual('think-exit')
+      }
+      const elapsed = (performance.now() - thinkEnteredAt.current) / 1000
+      if (elapsed < FRAME_S || !svg) {
+        // 連一格都沒畫 → 直接切。
+        setVisual(effectiveState)
+        return
+      }
+      if (elapsed < SPIN_ACCEL_S && accel) {
+        // 加速未完 → 等加速段結束再減速(角度已知 = SPIN_MID,免讀 DOM);endEvent 沒來(分頁凍結)→ 牆鐘補位。
+        let started = false
+        const onEnd = () => {
+          if (started) return
+          started = true
+          start(SPIN_MID)
+        }
+        accel.addEventListener('endEvent', onEnd, { once: true })
+        const timer = window.setTimeout(onEnd, (SPIN_ACCEL_S - elapsed) * 1000 + 50)
+        return () => {
+          accel.removeEventListener('endEvent', onEnd)
+          window.clearTimeout(timer)
+        }
+      }
+      const m = g?.getCTM() ?? null
+      start(m ? (Math.atan2(m.b, m.a) * 180) / Math.PI : 0)
+    }, [effectiveState, visual, reduced])
+    React.useLayoutEffect(() => {
+      if (!exit) return
+      const svg = innerRef.current
+      if (!svg) return
+      const animations = [...svg.querySelectorAll<SVGAnimateElement>('[data-begin-on-exit]')]
+      animations.forEach((el) => el.beginElement())
+      let done = false
+      const finish = () => {
+        if (done) return
+        done = true
+        setExit(null)
+        setVisual(latestState.current)
+      }
+      const primary = animations[0]
+      primary?.addEventListener('endEvent', finish, { once: true })
+      const timer = window.setTimeout(finish, exit.dur * 1000 + 50)
+      return () => {
+        primary?.removeEventListener('endEvent', finish)
+        window.clearTimeout(timer)
+      }
+    }, [exit])
+    const isExit = visual === 'think-exit'
+    /** think→think-exit 不換 key:洞形變 / 疊層節點不重掛、不重新 beginElement。 */
+    const visualKey = isExit ? 'think' : visual
+    useBeginAnimationsOnMount(innerRef, `${visualKey}:${simplified}:${ripple}`)
     const ids = {
       blue: `${uid}bs`,
       purple: `${uid}ps`,
@@ -323,8 +454,8 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
       spinPurple: `${uid}sp`,
       spinBody: `${uid}sr`,
     }
-    const isThink = effectiveState === 'think'
-    const isAttract = effectiveState === 'attract'
+    const isThink = visual === 'think' || isExit
+    const isAttract = visual === 'attract'
 
     const defs = (
       <defs>
@@ -337,7 +468,10 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
           y2="110"
         >
           <GradientStops stops={simplified ? BLUE_SIMPLE : BLUE_SURFACE} />
-          {isThink && <GradientCounterSpin id={ids.spinBlue} />}
+          {isThink && !isExit && <GradientCounterSpin id={ids.spinBlue} />}
+          {isExit && exit && (
+            <SpinDecel attributeName="gradientTransform" from={-exit.angle} to={-(exit.angle + exit.delta)} dur={exit.dur} center="627 627" />
+          )}
         </linearGradient>
         <linearGradient
           id={ids.purple}
@@ -348,7 +482,10 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
           y2="1090"
         >
           <GradientStops stops={simplified ? PURPLE_SIMPLE : PURPLE_SURFACE} />
-          {isThink && <GradientCounterSpin id={ids.spinPurple} />}
+          {isThink && !isExit && <GradientCounterSpin id={ids.spinPurple} />}
+          {isExit && exit && (
+            <SpinDecel attributeName="gradientTransform" from={-exit.angle} to={-(exit.angle + exit.delta)} dur={exit.dur} center="627 627" />
+          )}
         </linearGradient>
         {!simplified && (
           <>
@@ -394,8 +531,12 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
       // 由狀態切換的 0.15s 淡入承接(spec「AgentLogo」節)。
       content = (
         <g transform="translate(627 627)">
-          <g>
-            <SpinPair id={ids.spinBody} attributeName="transform" from="0" mid="90" end="450" />
+          <g ref={spinRef} transform={isExit && exit ? `rotate(${exit.angle})` : undefined}>
+            {isExit && exit ? (
+              <SpinDecel key="decel" attributeName="transform" from={exit.angle} to={exit.angle + exit.delta} dur={exit.dur} />
+            ) : (
+              <SpinPair key="spin" id={ids.spinBody} attributeName="transform" from="0" mid={String(SPIN_MID)} end={String(SPIN_MID + 360)} />
+            )}
             <g transform="translate(-627 -627)">
               {body}
               <InhaleOverlay morph dur="6s" />
@@ -474,12 +615,13 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
         role={label ? 'img' : undefined}
         aria-label={label}
         aria-hidden={label ? undefined : true}
-        data-state={effectiveState}
+        data-state={visualKey}
+        data-phase={isExit ? 'exit' : undefined}
         {...props}
       >
         {defs}
-        {/* 狀態切換:key 重建 + 0.15s 淡入(僅 opacity,不碰 transform 屬性),禁跳切。 */}
-        <g key={effectiveState} className="agent-logo-enter">
+        {/* 狀態切換:key 重建 + 0.15s 淡入(僅 opacity,不碰 transform 屬性),禁跳切;think→exit 同 key 不重掛。 */}
+        <g key={visualKey} className="agent-logo-enter">
           {content}
         </g>
       </svg>
