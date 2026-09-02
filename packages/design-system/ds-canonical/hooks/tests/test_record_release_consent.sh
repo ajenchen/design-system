@@ -13,7 +13,7 @@ run "可以發版了" >/dev/null; check "2. 「可以發版了」→ 落地" yes
 grep -q '"source": "user-prompt-hook"' ".git/governance-runtime/release-consent/$HEAD.json" && { echo "  PASS  3. receipt 含 source"; PASS=$((PASS+1)); } || { echo "  FAIL  3. receipt 含 source"; FAIL=$((FAIL+1)); }
 run "先不要發版,我再看看" >/dev/null; check "4. 否定「先不要發版」→ 撤回" no
 run "發版" >/dev/null; check "5. 單字「發版」→ 落地" yes
-git switch -q main 2>/dev/null || git switch -q master; rm -f ".git/governance-runtime/release-consent/$HEAD.json"; run "發版" >/dev/null; check "6. 在 main 上說「發版」→ 不落地" no
+git switch -q main 2>/dev/null || git switch -q -c main; rm -f ".git/governance-runtime/release-consent/$HEAD.json"; run "發版" >/dev/null; check "6. 在 main 上說「發版」→ 不落地" no
 echo "Passed: $PASS / $((PASS+FAIL))"
 rm -rf "$TMP"
 [ "$FAIL" -eq 0 ]
