@@ -1,5 +1,5 @@
 /**
- * AgentFab — 智慧代理浮動開關鈕(AgentPanel 家族附屬資產)+ AgentFabDock(可拖到邊收起的定位殼)。
+ * AgentFab — 智慧代理浮動開關鈕(AgentPanel 家族附屬資產)+ AgentFabDock(「家 ↔ 貼邊」兩態定位殼)。
  *
  * ── 消費的 SSOT ──
  * - 40 圓 = --field-height-lg 於 lg 密度(uiSize.spec.md「lg 密度」表);圓形 iconOnly。
@@ -7,17 +7,21 @@
  * - 外框 = AI 觸發鈕特調:錐形(環向)漸層描邊 2px(整數寬+環向漸層=正圓對稱;
  *   spec「FAB」節)。配色兩極 = AgentLogo AGENT_BRAND(= 自家色階 blue-4 / purple-4;
  *   單一數值來源在 agent-logo.tsx,本檔只 import)。
- * - 內置 24 標誌;收起態內置 16 標誌(同一造型,無簡化檔)。
+ * - 內置 24 標誌;貼邊態內置 16 標誌(同一造型,無簡化檔)。
  * - 動畫:待機=靜止;有新訊=招喚態(標誌本體蓄勢,漣漪由邊框光圈代位:0–35% 貼邊聚亮 →
  *   35% 呼氣起點自邊框射出 r 21→27、寬 2.5、.35→0 → 90% 散盡 → 靜止空拍;與標誌同 dur /
  *   同 keyTimes / 同 swell→settle,同一 commit 掛載 → 同相);懸停=陰影升一級+微放大。
- * - 收到邊(AgentFabDock;2026-09-03 user 拍板第三輪:拖曳 + 所見即所得):主鈕可在舞台內**任意拖動**
- *   (Copilot DAB「drag the button」/ Android Bubbles);指標進入右緣 40px 帶 = 收合區,拖曳中的鈕**當場變成**
- *   28 貼邊半圓形(Windows Snap「拖到邊時 Snap 框當場出現」的所見即所得),放開就吸到右緣、停在放開的高度;
- *   離開收合區則變回 40 圓鈕,放開就停在放開處(夾在舞台 loose 內距內)。左緣無收合區(往左丟不會收)。
- *   兩種形態點一下都直接開面板;< 8px 位移視為點擊。鍵盤 ←→↑↓ 16px 移動(→ 到底 = 收合、收合時 ← = 展開);
- *   Home = 放回右下角;右鍵 / Shift+F10 選單「收到右邊 / 放回右下角」。Tooltip「問我或是推我到旁邊」。
- *   形態切換 --motion-duration-overlay、落點吸附 --motion-duration-surface + enter;減動作直接落定。
+ * - 兩態定位(AgentFabDock;2026-09-03 user 第四輪拍板,取代前三輪的自由座標):只有兩種合法位置 ——
+ *   「家」= 40 圓鈕,位置唯一在右下角(離右、下各 loose);「貼邊」= 28 半圓貼右緣,只有 y 可變(右緣帶內)。
+ *   拖 40 圓鈕:鈕跟著游標;整段拖曳期間右緣帶(寬 40、上下到 loose 內距)以藍色虛線框出;游標一進帶內,
+ *   預覽當場變成 28 半圓**貼在右緣、停在放開會落的高度**(帶內所見即所得),放開就落定;放開在帶外 → 飛回家。
+ *   拖 28 小鈕:不畫藍框;帶內沿 y 移動;一出帶外當場變回 40 圓、放開飛回家(帶外沒有自由位置)。
+ *   兩態點一下都直接開面板;< 8px 位移視為點擊。鍵盤:家 → 貼邊(停在帶底 = 家的高度);貼邊 ↑↓ 16px、
+ *   ← / Home 回家;Shift+F10 開選單;拖曳中 Esc 取消。右鍵選單依狀態只給一項(家:收到右邊;貼邊:放回右下角)。
+ *   藍框樣式與 FileUpload 拖入區同值(2px 虛線、primary-hover)但**不共用常數**(user 2026-09-03:語意不同,各自定義)。
+ *   動作:形態切換 --motion-duration-overlay(150ms,Carbon moderate-01「小型展開、短距離」)、飛回家 / 落點修正
+ *   --motion-duration-surface(250ms,Atlassian transitions 150–400「較長時長幫助追蹤空間變化」)+ enter 曲線、
+ *   藍框淡入淡出 150ms;prefers-reduced-motion 全部直接落定(motion.spec.md a11y 段;Atlassian / Fluent 同)。
  *   位置由 consumer 受控/非受控(placement / defaultPlacement / onPlacementChange),DS 不寫 storage。
  * - 減動作:光圈屬常駐位移 loop → prefers-reduced-motion 全停(標誌內部自回靜止)。
  */
@@ -138,71 +142,197 @@ const AgentFab = React.forwardRef<HTMLButtonElement, AgentFabProps>(
 AgentFab.displayName = 'AgentFab'
 
 /* ────────────────────────────────────────────────────────────────────────────
- * AgentFabDock — 可任意拖動 + 拖到右緣收合(所見即所得)的定位殼(spec「AgentFab」節「收到邊」)
+ * AgentFabDock — 「家 ↔ 貼邊」兩態定位殼:拖曳 + 右緣帶磁吸,所見即所得(spec「AgentFab」節「收到邊」)
  * ──────────────────────────────────────────────────────────────────────── */
 
 /**
- * 位置(相對舞台左上,px):float = 40 圓鈕,x/y 省略 = 右下角(離邊 loose);dock = 28 半圓鈕貼右緣,只記 y。
- * 單一物件避免形態與座標脫鉤。
+ * 位置:home = 40 圓鈕在右下角(位置唯一,不記座標);dock = 28 半圓貼右緣,只記 y(鈕頂到舞台頂,px,
+ * 由元件夾在右緣帶內)。沒有第三種位置 —— 放開在帶外一律回家,使用者不可能把鈕拖到難用的地方。
  */
-export type AgentFabPlacement = { kind: 'float'; x?: number; y?: number } | { kind: 'dock'; y: number }
+export type AgentFabPlacement = { kind: 'home' } | { kind: 'dock'; y: number }
 
-/** 預設位置:右下角展開。 */
-export const AGENT_FAB_HOME: AgentFabPlacement = { kind: 'float' }
+/** 預設位置:家(右下角)。 */
+export const AGENT_FAB_HOME: AgentFabPlacement = { kind: 'home' }
+
+type Shape = AgentFabPlacement['kind']
+interface Point {
+  x: number
+  y: number
+}
+interface Rect extends Point {
+  w: number
+  h: number
+}
+/** 舞台(offsetParent)尺寸與 loose 內距(px)。 */
+interface Stage {
+  w: number
+  h: number
+  inset: number
+}
 
 /** 主鈕直徑(= --field-height-lg 於 lg 密度 40)。 */
 const FAB_PX = 40
-/** 收合鈕高 / 露出寬(= --field-height-sm 28)。 */
+/** 貼邊鈕高 / 露出寬(= --field-height-sm 28)。 */
 const DOCK_PX = 28
 /** 拖曳啟動門檻 px(小於視為點擊;dnd-kit PointerSensor activationConstraint.distance 同量級)。 */
 const DRAG_THRESHOLD = 8
-/**
- * 磁吸區域表(依序判定,第一個命中的算數;沒命中 = 自由放置):
- * 每列 = 「指標在哪個區域 → 拖曳中預告成什麼形狀 → 放開吸到哪」。要加磁吸點(鏡像左緣、四角…)只在此表
- * 加一列,拖曳 / 預告 / 吸附流程不變(spec「收到邊」節「區域 → 落點」表)。enter / leave 兩個門檻 = 16px 遲滯。
- * 判定用**指標**位置(使用者的意圖在指尖;Windows Snap 看游標碰邊、Android Bubbles 看拖到關閉區),不用鈕的邊緣。
- */
-interface SnapZone {
-  shape: Shape
-  /** 指標是否進入區域(尚未在此區時用 enter 門檻,已在此區時用 leave 門檻)。 */
-  contains: (p: { x: number; y: number }, stage: { w: number; h: number }, active: boolean) => boolean
-  /** 放開後的落點(左上座標由 resolve 端夾限)。 */
-  target: (p: { x: number; y: number }, stage: { w: number; h: number }, grab: { x: number; y: number }) => AgentFabPlacement
-}
-const SNAP_ZONES: SnapZone[] = [
-  {
-    // 右緣 40px 帶:收合成 28 半圓貼右緣,停在放開的高度。
-    shape: 'dock',
-    contains: (p, stage, active) => stage.w - p.x <= (active ? FAB_PX + 16 : FAB_PX),
-    target: (p, _stage, grab) => ({ kind: 'dock', y: p.y - Math.min(grab.y, DOCK_PX) }),
-  },
-]
 /** 鍵盤每步 16(同 AgentPanel 調寬步長)。 */
 const KEY_STEP = 16
+/** 已在區內時再多 16px 才算離開(邊界防抖)。 */
+const HYSTERESIS = 16
+/**
+ * 右緣帶藍框:與 FileUpload 拖入區 drag-over 同值(file-upload.tsx:2px 虛線、primary-hover、圓角 md),
+ * 但刻意不共用常數 —— 那邊是「放檔進來」、這邊是「放鈕會貼邊」,語意不同,各自擁有(user 2026-09-03)。
+ */
+const SNAP_ZONE_FRAME_CLASSES = 'rounded-md border-2 border-dashed border-primary-hover'
 
-export interface AgentFabDockProps extends Omit<AgentFabProps, 'className' | 'onClick'> {
-  /** 受控位置。 */
-  placement?: AgentFabPlacement
-  /** 非受控初始位置;預設右下角。 */
-  defaultPlacement?: AgentFabPlacement
-  /** 位置變更(拖放 / 鍵盤 / 選單);consumer 自行決定要不要持久化(DS 不寫 storage)。 */
-  onPlacementChange?: (placement: AgentFabPlacement) => void
-  /** 點擊(開面板);兩種形態都一段,拖曳超過門檻的放開不觸發。 */
-  onClick?: React.MouseEventHandler<HTMLButtonElement>
-  /** 定位殼 className(殼為 absolute,舞台需 relative)。 */
-  className?: string
-  /** 文案(可覆寫供 i18n)。 */
-  labels?: { dock?: string; home?: string; tooltip?: string }
+const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(min, max))
+const dockMaxY = (s: Stage) => s.h - s.inset - DOCK_PX
+/**
+ * 兩態的殼左上座標(都以 left/top 表達,才能在拖曳、落定之間連續過渡)。殼恆為 40 寬、內容靠右:貼邊時 28 鈕
+ * 靠在殼的右緣 = 舞台右緣,形態過渡(40→28)在殼內縮、右緣不動 → 不會有任何一格超出舞台
+ * (2026-09-03 實測:以 left = 舞台寬 − 28 定位時,寬度過渡中會凸出右緣 12px,讓文件長出捲軸、舞台變窄)。
+ */
+const placementXY = (s: Stage, p: AgentFabPlacement): Point =>
+  p.kind === 'dock'
+    ? { x: s.w - FAB_PX, y: clamp(p.y, s.inset, dockMaxY(s)) }
+    : { x: s.w - s.inset - FAB_PX, y: s.h - s.inset - FAB_PX }
+const inRect = (p: Point, r: Rect, pad: number) =>
+  p.x >= r.x - pad && p.x <= r.x + r.w + pad && p.y >= r.y - pad && p.y <= r.y + r.h + pad
+
+/**
+ * 磁吸區域表:每列 = 「區域矩形(拖 40 圓鈕時就畫成藍框)+ 指標在此區時的落點」。拖曳中的預覽 = 落點本身
+ * (帶內所見即所得),放開就落定;指標不在任何區 → 40 圓鈕跟著游標,放開飛回家。判定用**指標**位置
+ * (意圖在指尖;Windows Snap 看游標碰邊、Android Bubbles 看拖到關閉區),已在區內時多 16px 遲滯才算離開。
+ * 要加磁吸點(鏡像左緣、四角…)只在此表加一列(必要時擴 AgentFabPlacement 的 kind),拖曳 / 預覽 / 藍框流程不變
+ * (spec「收到邊」節「區域 → 落點表」)。
+ */
+interface SnapZone {
+  rect: (s: Stage) => Rect
+  /** 指標在區內時的落點(y = 指標減去抓取偏移,夾在合法範圍)。 */
+  placement: (p: Point, grab: Point, s: Stage) => AgentFabPlacement
 }
+const SNAP_ZONES: readonly SnapZone[] = [
+  {
+    // 右緣帶:寬 40(= 圓鈕直徑),上下到 loose 內距(避開標題列 / 分頁列);落點 = 28 半圓貼右緣、停在指標高度。
+    rect: (s) => ({ x: s.w - FAB_PX, y: s.inset, w: FAB_PX, h: Math.max(0, s.h - 2 * s.inset) }),
+    placement: (p, grab, s) => ({ kind: 'dock', y: clamp(p.y - Math.min(grab.y, DOCK_PX), s.inset, dockMaxY(s)) }),
+  },
+]
+const findZone = (p: Point, s: Stage, active: SnapZone | null): SnapZone | null =>
+  active && inRect(p, active.rect(s), HYSTERESIS) ? active : (SNAP_ZONES.find((z) => inRect(p, z.rect(s), 0)) ?? null)
 
 function readPx(el: HTMLElement | null, variable: string, fallback: number) {
   if (!el) return fallback
   const value = Number.parseFloat(getComputedStyle(el).getPropertyValue(variable))
   return Number.isFinite(value) ? value : fallback
 }
-const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(min, max))
 
-type Shape = 'float' | 'dock'
+/** 拖曳中的暫態:左上座標 + 預覽落點(null = 不在任何磁吸區,放開飛回家)+ 從哪一態拖起(決定畫不畫藍框)。 */
+interface DragState extends Point {
+  placement: AgentFabPlacement | null
+  origin: Shape
+}
+
+/** 指標拖曳引擎:門檻、磁吸判定、放開落定、Esc 取消、吞掉拖曳後的 click;外殼只負責畫形狀與藍框。 */
+function useSnapDrag(opts: {
+  host: () => HTMLElement | null
+  inset: number
+  placement: AgentFabPlacement
+  commit: (next: AgentFabPlacement) => void
+}) {
+  const [drag, setDrag] = React.useState<DragState | null>(null)
+  const dragRef = React.useRef<{ startX: number; startY: number; moved: boolean; zone: SnapZone | null; last: AgentFabPlacement | null } | null>(null)
+  const suppressClickRef = React.useRef(false)
+  const swallowNextClick = () => {
+    // 拖曳放開後瀏覽器可能緊接著發 click(同元素)→ 吞掉;元素若已換態不會有 click → 下一 tick 清旗標。
+    suppressClickRef.current = true
+    window.setTimeout(() => {
+      suppressClickRef.current = false
+    }, 0)
+  }
+  const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return
+    const host = opts.host()
+    if (!host) return
+    const rect = host.getBoundingClientRect()
+    const stage: Stage = { w: rect.width, h: rect.height, inset: opts.inset }
+    const origin = opts.placement.kind
+    const cur = placementXY(stage, opts.placement)
+    const grab: Point = { x: e.clientX - rect.left - cur.x, y: e.clientY - rect.top - cur.y }
+    const onMove = (ev: PointerEvent) => {
+      const d = dragRef.current
+      if (!d) return
+      if (!d.moved && Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY) < DRAG_THRESHOLD) return
+      d.moved = true
+      const p: Point = { x: ev.clientX - rect.left, y: ev.clientY - rect.top }
+      d.zone = findZone(p, stage, d.zone)
+      if (d.zone) {
+        // 所見即所得:預覽就畫在放開會落的位置(貼右緣、指標高度)。
+        d.last = d.zone.placement(p, grab, stage)
+        setDrag({ ...placementXY(stage, d.last), placement: d.last, origin })
+      } else {
+        // 帶外:40 圓鈕跟著游標(夾在舞台內),放開飛回家。
+        d.last = null
+        setDrag({
+          x: clamp(p.x - Math.min(grab.x, FAB_PX), 0, stage.w - FAB_PX),
+          y: clamp(p.y - Math.min(grab.y, FAB_PX), 0, stage.h - FAB_PX),
+          placement: null,
+          origin,
+        })
+      }
+    }
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+      window.removeEventListener('keydown', onKey)
+      dragRef.current = null
+      setDrag(null)
+    }
+    const onUp = () => {
+      const d = dragRef.current
+      cleanup()
+      if (!d?.moved) return
+      swallowNextClick()
+      opts.commit(d.last ?? AGENT_FAB_HOME)
+    }
+    // Esc = 取消拖曳、回原位。
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key !== 'Escape' || !dragRef.current?.moved) return
+      ev.preventDefault()
+      swallowNextClick()
+      cleanup()
+    }
+    dragRef.current = { startX: e.clientX, startY: e.clientY, moved: false, zone: null, last: null }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+    window.addEventListener('keydown', onKey)
+  }
+  const onClickCapture = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!suppressClickRef.current) return
+    suppressClickRef.current = false
+    e.preventDefault()
+    e.stopPropagation()
+  }
+  return { drag, onPointerDown, onClickCapture }
+}
+
+export interface AgentFabDockProps extends Omit<AgentFabProps, 'className' | 'onClick'> {
+  /** 受控位置。 */
+  placement?: AgentFabPlacement
+  /** 非受控初始位置;預設家(右下角)。 */
+  defaultPlacement?: AgentFabPlacement
+  /** 位置變更(拖放 / 鍵盤 / 選單);consumer 自行決定要不要持久化(DS 不寫 storage)。 */
+  onPlacementChange?: (placement: AgentFabPlacement) => void
+  /** 點擊(開面板);兩態都一段,拖曳超過門檻的放開不觸發。 */
+  onClick?: React.MouseEventHandler<HTMLButtonElement>
+  /** 定位殼 className(殼為 absolute,舞台需 relative)。 */
+  className?: string
+  /** 文案(可覆寫供 i18n)。 */
+  labels?: { dock?: string; home?: string; tooltip?: string }
+}
 
 const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
   (
@@ -231,37 +361,35 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
     )
     const shellRef = React.useRef<HTMLDivElement | null>(null)
     React.useImperativeHandle(ref, () => shellRef.current as HTMLDivElement)
-    // 舞台尺寸(offsetParent;ResizeObserver 跟隨),座標一律以 left/top 表達才能在拖曳、吸附之間連續過渡。
-    const [stage, setStage] = React.useState({ w: 0, h: 0 })
+    const host = () => (shellRef.current?.offsetParent as HTMLElement | null) ?? null
+    // 舞台尺寸(offsetParent;ResizeObserver 跟隨)。
+    const [size, setSize] = React.useState({ w: 0, h: 0 })
     React.useLayoutEffect(() => {
-      const host = shellRef.current?.offsetParent as HTMLElement | null
-      if (!host) return
-      const update = () => setStage({ w: host.clientWidth, h: host.clientHeight })
+      const el = host()
+      if (!el) return
+      const update = () => setSize({ w: el.clientWidth, h: el.clientHeight })
       update()
       const ro = new ResizeObserver(update)
-      ro.observe(host)
+      ro.observe(el)
       return () => ro.disconnect()
     }, [])
+    // 首次量到舞台前的那一次 render 位置是假的(0×0 舞台);量測時讀 clientWidth 會逼瀏覽器先算完那個假位置,
+    // 若此時已掛 transition,首幀會從左上角飛進來 → 第一次真位置畫完(useEffect 在 paint 後)才開放過渡。
+    const [ready, setReady] = React.useState(false)
+    React.useEffect(() => {
+      if (size.w > 0) setReady(true)
+    }, [size.w])
     const inset = readPx(shellRef.current, '--layout-space-loose', 16)
-
-    const [drag, setDrag] = React.useState<{ x: number; y: number; shape: Shape } | null>(null)
-    const dragRef = React.useRef<{ startX: number; startY: number; offX: number; offY: number; moved: boolean; shape: Shape; cleanup: () => void } | null>(null)
-    const suppressClickRef = React.useRef(false)
+    const stage: Stage = { w: size.w, h: size.h, inset }
+    const { drag, onPointerDown, onClickCapture } = useSnapDrag({ host, inset, placement, commit: setPlacement })
     const [menuOpen, setMenuOpen] = React.useState(false)
 
-    const shape: Shape = drag ? drag.shape : placement.kind
-    const size = shape === 'dock' ? DOCK_PX : FAB_PX
-    const maxX = stage.w - inset - FAB_PX
-    const maxY = (s: Shape) => stage.h - inset - (s === 'dock' ? DOCK_PX : FAB_PX)
-
-    /** 目前應顯示的左上座標(未拖曳)。 */
-    const resting = (): { x: number; y: number } => {
-      if (placement.kind === 'dock') return { x: stage.w - DOCK_PX, y: clamp(placement.y, inset, maxY('dock')) }
-      const x = placement.x ?? maxX
-      const y = placement.y ?? maxY('float')
-      return { x: clamp(x, inset, maxX), y: clamp(y, inset, maxY('float')) }
-    }
-    const pos = drag ? { x: drag.x, y: drag.y } : resting()
+    const shape: Shape = drag ? (drag.placement?.kind ?? 'home') : placement.kind
+    const isDock = shape === 'dock'
+    const px = isDock ? DOCK_PX : FAB_PX
+    const pos: Point = drag ? { x: drag.x, y: drag.y } : placementXY(stage, placement)
+    /** 藍框只在拖 40 圓鈕時可見(拖小鈕不畫;user 2026-09-03)。 */
+    const showZones = drag?.origin === 'home'
 
     const text = {
       dock: labels?.dock ?? '收到右邊', // i18n-allow: DS 預設文案,labels 可覆寫
@@ -270,190 +398,120 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
     }
     const buttonLabel = ariaLabel ?? '開啟智慧代理' // i18n-allow: DS 預設文案,aria-label prop 可覆寫
 
-    /** 放開:區域落點(夾限後)或自由放置。 */
-    const settleTo = (next: AgentFabPlacement) => {
-      if (next.kind === 'dock') setPlacement({ kind: 'dock', y: clamp(next.y, inset, maxY('dock')) })
-      else setPlacement({ kind: 'float', x: clamp(next.x ?? maxX, inset, maxX), y: clamp(next.y ?? maxY('float'), inset, maxY('float')) })
-    }
-    const settle = (x: number, y: number, s: Shape) => settleTo(s === 'dock' ? { kind: 'dock', y } : { kind: 'float', x, y })
-
-    const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-      if (e.button !== 0) return
-      const host = shellRef.current?.offsetParent as HTMLElement | null
-      if (!host) return
-      const rect = host.getBoundingClientRect()
-      const cur = resting()
-      const start = { startX: e.clientX, startY: e.clientY, offX: e.clientX - rect.left - cur.x, offY: e.clientY - rect.top - cur.y, moved: false, shape: placement.kind as Shape, cleanup: () => {} }
-      const onMove = (ev: PointerEvent) => {
-        const d = dragRef.current
-        if (!d) return
-        if (!d.moved && Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY) < DRAG_THRESHOLD) return
-        d.moved = true
-        const px = ev.clientX - rect.left
-        const py = ev.clientY - rect.top
-        // 所見即所得:指標進磁吸區 → 拖曳中的鈕當場變成該區形狀;離開所有區 → 變回 40 圓(遲滯防抖)。
-        const stageSize = { w: rect.width, h: rect.height }
-        const hit = SNAP_ZONES.find((z) => z.contains({ x: px, y: py }, stageSize, d.shape === z.shape))
-        d.shape = hit ? hit.shape : 'float'
-        const s = d.shape
-        const sz = s === 'dock' ? DOCK_PX : FAB_PX
-        // 跟指標:形態變小時以指標為中心重新對齊,避免鈕從指標下面跑掉。
-        const x = s === 'dock' ? rect.width - DOCK_PX : px - Math.min(d.offX, sz)
-        const y = py - Math.min(d.offY, sz)
-        setDrag({ x, y, shape: s })
-      }
-      const cleanup = () => {
-        window.removeEventListener('pointermove', onMove)
-        window.removeEventListener('pointerup', onUp)
-        window.removeEventListener('pointercancel', onUp)
-        window.removeEventListener('keydown', onKey)
-        dragRef.current = null
-        setDrag(null)
-      }
-      const onUp = (ev: PointerEvent) => {
-        const d = dragRef.current
-        cleanup()
-        if (!d?.moved) return
-        // 拖曳放開後瀏覽器可能緊接著發 click(同元素)→ 吞掉;元素若已換態不會有 click → 下一 tick 清旗標。
-        suppressClickRef.current = true
-        window.setTimeout(() => {
-          suppressClickRef.current = false
-        }, 0)
-        const px = ev.clientX - rect.left
-        const py = ev.clientY - rect.top
-        const stageSize = { w: rect.width, h: rect.height }
-        const zone = SNAP_ZONES.find((z) => z.shape === d.shape && z.contains({ x: px, y: py }, stageSize, true))
-        if (zone) settleTo(zone.target({ x: px, y: py }, stageSize, { x: d.offX, y: d.offY }))
-        else settle(px - Math.min(d.offX, FAB_PX), py - Math.min(d.offY, FAB_PX), 'float')
-      }
-      // Esc = 取消拖曳、回原位。
-      const onKey = (ev: KeyboardEvent) => {
-        if (ev.key === 'Escape' && dragRef.current?.moved) {
-          ev.preventDefault()
-          suppressClickRef.current = true
-          window.setTimeout(() => {
-            suppressClickRef.current = false
-          }, 0)
-          cleanup()
-        }
-      }
-      start.cleanup = cleanup
-      dragRef.current = start
-      window.addEventListener('pointermove', onMove)
-      window.addEventListener('pointerup', onUp)
-      window.addEventListener('pointercancel', onUp)
-      window.addEventListener('keydown', onKey)
-    }
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (suppressClickRef.current) {
-        suppressClickRef.current = false
-        e.preventDefault()
-        return
-      }
-      onClick?.(e)
-    }
-
-    /** 鍵盤:←→↑↓ 16px;→ 到右緣 = 收合;收合時 ← = 展開到 loose 內距;Home = 放回右下角;Shift+F10 開選單。 */
+    /** 鍵盤:家 → 貼邊(帶底 = 家的高度);貼邊 ↑↓ 16px、← / Home 回家;Shift+F10 開選單。 */
     const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
       if (e.key === 'F10' && e.shiftKey) {
         e.preventDefault()
         setMenuOpen(true)
         return
       }
-      const cur = resting()
-      if (e.key === 'Home') {
+      if (placement.kind === 'home') {
+        if (e.key !== 'ArrowRight') return
+        e.preventDefault()
+        setPlacement({ kind: 'dock', y: dockMaxY(stage) })
+        return
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'Home') {
         e.preventDefault()
         setPlacement(AGENT_FAB_HOME)
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault()
-        if (placement.kind === 'dock') return
-        if (cur.x >= maxX) setPlacement({ kind: 'dock', y: clamp(cur.y, inset, maxY('dock')) })
-        else setPlacement({ kind: 'float', x: Math.min(cur.x + KEY_STEP, maxX), y: cur.y })
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault()
-        if (placement.kind === 'dock') setPlacement({ kind: 'float', x: maxX, y: clamp(cur.y, inset, maxY('float')) })
-        else setPlacement({ kind: 'float', x: Math.max(cur.x - KEY_STEP, inset), y: cur.y })
       } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault()
         const dy = e.key === 'ArrowUp' ? -KEY_STEP : KEY_STEP
-        if (placement.kind === 'dock') setPlacement({ kind: 'dock', y: clamp(cur.y + dy, inset, maxY('dock')) })
-        else setPlacement({ kind: 'float', x: cur.x, y: clamp(cur.y + dy, inset, maxY('float')) })
+        setPlacement({ kind: 'dock', y: clamp(placement.y + dy, inset, dockMaxY(stage)) })
       }
     }
 
-    const shared = {
-      onPointerDown,
-      onKeyDown,
-      onContextMenu: (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault()
-        setMenuOpen(true)
-      },
-      onClick: handleClick,
-      'aria-label': buttonLabel,
-      ...buttonProps,
-    }
     const dragging = drag !== null
-    const isDock = shape === 'dock'
-
     return (
-      <div
-        ref={shellRef}
-        data-placement={placement.kind}
-        data-shape={shape}
-        data-dragging={dragging ? '' : undefined}
-        className={cn(
-          'group/dock absolute z-20 inline-flex',
-          !dragging && !reduced && 'transition-[left,top] duration-[var(--motion-duration-surface)] ease-[var(--motion-easing-enter)]',
-          dragging ? 'cursor-grabbing select-none' : 'cursor-grab',
-          className,
-        )}
-        // 舞台尺寸量到前先隱藏(否則首影格會以 0×0 舞台算成左上角再跳到右下角)。
-        style={{ left: pos.x, top: pos.y, visibility: stage.w > 0 ? undefined : 'hidden' }}
-      >
-        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen} modal={false}>
-          {/* 選單只由右鍵 / Shift+F10 開;錨點 = 蓋住鈕的透明 span(pointer-events-none,不攔點擊)。 */}
-          <DropdownMenuTrigger asChild>
-            <span aria-hidden className="pointer-events-none absolute inset-0" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {placement.kind === 'float' && (
-              <DropdownMenuItem onSelect={() => setPlacement({ kind: 'dock', y: clamp(resting().y, inset, maxY('dock')) })}>{text.dock}</DropdownMenuItem>
-            )}
-            <DropdownMenuItem onSelect={() => setPlacement(AGENT_FAB_HOME)}>{text.home}</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <Tooltip open={dragging ? false : undefined}>
-          <TooltipTrigger asChild>
-            {/* 單一殼:寬高與圓角在兩形態間過渡(--motion-duration-overlay),拖曳中當場變形 = 所見即所得。 */}
-            <span
+      <>
+        {/* 磁吸區藍框:矩形直接來自區域表(邏輯與視覺同一份);淡入淡出 150ms、減動作直接落定;不攔指標。 */}
+        {SNAP_ZONES.map((zone, i) => {
+          const r = zone.rect(stage)
+          return (
+            <div
+              key={i}
+              aria-hidden
+              data-agent-fab-zone=""
               className={cn(
-                'inline-flex p-[2px] shadow-[var(--elevation-200)]',
-                'transition-[width,height,border-radius,box-shadow] duration-[var(--motion-duration-overlay)] ease-[var(--motion-easing-enter)] motion-reduce:transition-none',
-                isDock ? 'rounded-l-full pr-0' : 'rounded-full',
-                !dragging && 'hover:shadow-[var(--elevation-200-hover)]',
+                'pointer-events-none absolute z-10',
+                SNAP_ZONE_FRAME_CLASSES,
+                'transition-opacity duration-[var(--motion-duration-overlay)] motion-reduce:transition-none',
+                showZones ? 'opacity-100' : 'opacity-0',
               )}
-              style={{ background: RING_GRADIENT, width: size, height: size }}
-            >
-              <button
-                type="button"
+              style={{ left: r.x, top: r.y, width: r.w, height: r.h }}
+            />
+          )
+        })}
+        <div
+          ref={shellRef}
+          data-placement={placement.kind}
+          data-shape={shape}
+          data-dragging={dragging ? '' : undefined}
+          data-snapped={drag?.placement ? '' : undefined}
+          className={cn(
+            'group/dock absolute z-20 flex w-10 justify-end',
+            // 落點修正 / 飛回家 250ms + enter;拖曳中跟指標不過渡。
+            ready && !dragging && !reduced && 'transition-[left,top] duration-[var(--motion-duration-surface)] ease-[var(--motion-easing-enter)]',
+            dragging ? 'cursor-grabbing select-none' : 'cursor-grab',
+            className,
+          )}
+          // 舞台尺寸量到前先隱藏(否則首影格會以 0×0 舞台算成左上角再跳到右下角)。
+          style={{ left: pos.x, top: pos.y, visibility: stage.w > 0 ? undefined : 'hidden' }}
+        >
+          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen} modal={false}>
+            {/* 選單只由右鍵 / Shift+F10 開;錨點 = 蓋住鈕的透明 span(pointer-events-none,不攔點擊)。 */}
+            <DropdownMenuTrigger asChild>
+              <span aria-hidden className="pointer-events-none absolute inset-0" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {placement.kind === 'home' ? (
+                <DropdownMenuItem onSelect={() => setPlacement({ kind: 'dock', y: dockMaxY(stage) })}>{text.dock}</DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onSelect={() => setPlacement(AGENT_FAB_HOME)}>{text.home}</DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Tooltip open={dragging ? false : undefined}>
+            <TooltipTrigger asChild>
+              {/* 單一殼:寬高與圓角在兩態間過渡 150ms,拖曳中當場變形 = 所見即所得。 */}
+              <span
                 className={cn(
-                  'inline-flex h-full w-full cursor-[inherit] items-center justify-center border-none bg-surface-raised',
-                  isDock ? 'rounded-l-full' : 'rounded-full',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                  'inline-flex p-[2px] shadow-[var(--elevation-200)]',
+                  'transition-[width,height,border-radius,box-shadow] duration-[var(--motion-duration-overlay)] ease-[var(--motion-easing-enter)] motion-reduce:transition-none',
+                  isDock ? 'rounded-l-full pr-0' : 'rounded-full',
+                  !dragging && 'hover:shadow-[var(--elevation-200-hover)]',
                 )}
-                {...shared}
+                style={{ background: RING_GRADIENT, width: px, height: px }}
               >
-                <AgentLogo state={attention ? 'attract' : 'still'} ripple={false} size={isDock ? 16 : 24} />
-              </button>
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side={isDock ? 'left' : 'top'}>{text.tooltip}</TooltipContent>
-        </Tooltip>
-      </div>
+                <button
+                  type="button"
+                  className={cn(
+                    'inline-flex h-full w-full cursor-[inherit] items-center justify-center border-none bg-surface-raised',
+                    isDock ? 'rounded-l-full' : 'rounded-full',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                  )}
+                  aria-label={buttonLabel}
+                  onPointerDown={onPointerDown}
+                  onKeyDown={onKeyDown}
+                  onClickCapture={onClickCapture}
+                  onClick={onClick}
+                  onContextMenu={(e) => {
+                    e.preventDefault()
+                    setMenuOpen(true)
+                  }}
+                  {...buttonProps}
+                >
+                  <AgentLogo state={attention ? 'attract' : 'still'} ripple={false} size={isDock ? 16 : 24} />
+                </button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side={isDock ? 'left' : 'top'}>{text.tooltip}</TooltipContent>
+          </Tooltip>
+        </div>
+      </>
     )
   },
 )
 AgentFabDock.displayName = 'AgentFabDock'
 
 export { AgentFab, AgentFabDock }
-

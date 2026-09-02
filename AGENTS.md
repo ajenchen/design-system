@@ -160,6 +160,7 @@
 | DS css 不在 tokens.css aggregator 也沒被 tsx import = orphan | consumer 靜默拿不到 |
 | storybook-smoke 驗舊 build = 假綠 | smoke script 已加 stale-build guard |
 | hook 測試直跑留 fixture `.git/` 進 corpus | `git status` 不顯但 snapshot tree fingerprint 全算 → trio 漂移;測試必經 run-all.sh(自帶隔離),清 debris 用 `find -type f` 對照 `git ls-files`(2026-08-05) |
+| SMIL `begin="indefinite"` 動畫掛上後沒人 `beginElement()` = 永不起跑(靜默、base 值定格) | begin-once 守衛的觸發 key 必含每個會新掛動畫的狀態段(think→exit 同 key 漏掉 7 個 animate);驗證看 `getStartTime()` 是否丟例外,CI C6(2026-09-03) |
 
 新 bug → 歸 Meta-Pattern OR 本表 1 行;> 10 條 = 漏寫,評估 meta-merge 既有 M-rule。
 

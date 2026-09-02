@@ -319,27 +319,39 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
   `--layout-space-loose`(16/24;Material FAB 最小邊距同值);**面板開 → FAB 隱藏、面板關 → FAB 回來**
   (兩者互斥,開面板的入口與關面板的 × 不並存)。DS 預設入口仍是全域頂列右側鈕
   (`governance/planning/2026-08-11-agent-ui-panel-spec.md` 已裁),含滿高表格/分頁列的頁面一律用頂列入口。
-- **遮擋與收到邊**(`AgentFabDock`;2026-09-02 第一輪方案 C 拖到邊 → 第二輪 hover 小鈕 → 2026-09-03 第三輪
-  user 拍板「捨棄小鈕切換,回到拖曳,所見即所得」):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),
-  與表格分頁列「操作右」必撞 → 主鈕可**任意拖動**、拖到右緣收合:
-  - **兩種形態**:圓鈕 40(離邊 ≥ loose,舞台內任意位置)/ 收合鈕 `--field-height-sm` 28 貼右緣半圓(只留內側
-    圓角、環只畫露出三邊、內置 16 標誌;招喚態同款蓄勢、光圈省略)。**兩種形態點一下都直接開面板**(一段);
-    < 8px 位移視為點擊。
-  - **所見即所得**:拖曳中指標進入右緣 40px 帶(收合區)→ 鈕**當場**變成收合形(寬高圓角 0.15s 過渡、
-    標誌 24→16);離開收合區(遲滯 16px 防抖)→ 當場變回圓鈕。放開:收合形 → 吸到右緣、停在放開的高度;
-    圓鈕 → 停在放開處(夾在 loose 內距內)。左緣**沒有收合區**(往左丟不會收,只會停下)。落點吸附
-    `--motion-duration-surface` 250ms + enter;減動作直接落定。
-  - **等價路徑**:鍵盤 ←→↑↓ 16px 移動、→ 到右緣即收合、收合時 ← 展開到 loose 內距、Home 放回右下角;
-    右鍵 / Shift+F10 DropdownMenu「收到右邊 / 放回右下角」(DS 無 ContextMenu,以受控 DropdownMenu 代);
+- **遮擋與收到邊**(`AgentFabDock`;2026-09-02 第一輪方案 C 拖到邊 → 第二輪 hover 小鈕 → 第三輪拖曳自由座標 →
+  2026-09-03 第四輪 user 拍板「只有家與貼邊兩種位置」):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),
+  與表格分頁列「操作右」必撞 → 主鈕可拖到右緣貼邊:
+  - **只有兩種合法位置**:「家」= 圓鈕 40,位置唯一在右下角(離右、下各 loose;[Android FAB 官方範例
+    `layout_margin` 16dp](https://developer.android.com/develop/ui/views/components/floating-action-button)、Teambition 16,
+    lg 密度 24)/「貼邊」= 收合鈕 `--field-height-sm` 28 貼右緣半圓(只留內側圓角、環只畫露出三邊、內置 16 標誌;
+    招喚態同款蓄勢、光圈省略),只有 y 可變、夾在右緣帶內。沒有第三種位置,使用者不可能把鈕拖到難用的地方。
+    **兩種形態點一下都直接開面板**(一段);< 8px 位移視為點擊。
+  - **右緣帶**(磁吸區):寬 40(= 圓鈕直徑;游標離右緣 ≤ 40 即進帶,已在帶內時再多 16px 才算離開,遲滯防抖),
+    上下 = 舞台 loose 內距到 loose 內距(避開標題列 / 分頁列),同時是貼邊鈕合法 y 的範圍
+    (`loose ≤ y ≤ 舞台高 − loose − 28`)。判定用**指標**位置(意圖在指尖)。
+  - **拖 40 圓鈕(所見即所得)**:鈕全程跟著游標;整段拖曳期間右緣帶以**藍色虛線框**框出(2px 虛線、
+    `border-primary-hover`、圓角 md —— 與 FileUpload 拖入區 drag-over 同值,但語意不同、各自定義常數,不共用);
+    游標一進帶內,預覽當場變成貼邊鈕**貼在右緣、停在放開會落的高度**(帶內所見即所得,不預告在游標下);
+    放開在帶內 → 落定;放開在帶外 → 飛回家。
+  - **拖 28 貼邊鈕**:不畫藍框;帶內沿 y 移動維持貼邊鈕;一出帶外當場變回 40 圓鈕、放開飛回家。
+  - **等價路徑**:鍵盤 家 → `→` 貼邊(停在帶底 = 家的高度);貼邊 `↑↓` 16px、`←` / Home 回家;右鍵 / Shift+F10
+    DropdownMenu 依狀態只給一項(家:「收到右邊」/ 貼邊:「放回右下角」;DS 無 ContextMenu,以受控 DropdownMenu 代);
     拖曳中 Esc 取消回原位。Tooltip「問我或是推我到旁邊」(2026-09-03 user 文案;拖曳中不顯示)。
-  - **區域 → 落點表(可擴充)**:磁吸邏輯 = 依序判定指標所在區域,命中即決定「拖曳中預告的形狀 + 放開的落點」,
-    沒命中 = 自由放置;要加磁吸點(鏡像左緣、四角)只在 `agent-fab.tsx` `SNAP_ZONES` 加一列,流程不變。判準:
-    以指標判定(意圖在指尖)、一區一落點一形狀、邊界 16px 遲滯、區域不重疊且邊帶優先於角落、無命中不做
-    「最近磁吸點」(會從放開處跳走,違反所見即所得)。上緣 / 下緣永不設區(標題列 / 分頁列)。
-  - 位置由 consumer 受控/非受控(`placement / defaultPlacement / onPlacementChange`,`{kind:'float',x?,y?}` /
+  - **動作**(依 motion.spec.md;2026-09-03 對照四家後定):形態切換 `--motion-duration-overlay` 150ms
+    ([Carbon moderate-01 150ms「小型展開、短距離移動」](https://carbondesignsystem.com/elements/motion/overview/))/
+    飛回家與落點修正 `--motion-duration-surface` 250ms + enter 曲線([Atlassian transitions 150–400ms「較長時長幫助
+    追蹤空間變化」](https://atlassian.design/foundations/motion);拖曳中跟指標不過渡)/ 藍框淡入淡出 150ms;
+    prefers-reduced-motion 三者全部直接落定([Atlassian「全部停用仍可用」](https://atlassian.design/foundations/motion)、
+    [Fluent「提供 no motion 設定」](https://fluent2.microsoft.design/motion)、WCAG 2.3.3)。
+  - **區域 → 落點表(可擴充)**:磁吸邏輯 = 依序判定指標所在區域,命中即決定「預覽 = 落點」;沒命中 = 圓鈕跟游標、
+    放開回家;要加磁吸點(鏡像左緣、四角)只在 `agent-fab.tsx` `SNAP_ZONES` 加一列(區域矩形同時就是藍框),流程不變。
+    判準:以指標判定、一區一落點一形狀、邊界 16px 遲滯、區域不重疊且邊帶優先於角落、無命中不做「最近磁吸點」
+    (會從放開處跳走)。上緣 / 下緣永不設區(標題列 / 分頁列)。
+  - 位置由 consumer 受控/非受控(`placement / defaultPlacement / onPlacementChange`,`{kind:'home'}` /
     `{kind:'dock',y}`),DS 不寫 storage;要跨 session 記憶由 consumer 存。
   - 對照:[Copilot DAB 可拖到內容區側邊變小圖示、拖回畫布即展開](https://support.microsoft.com/en-us/office/foundations-experiences/copilot-dab/the-copilot-dynamic-action-button-in-word-excel-and-powerpoint)、
-    [Windows Snap「拖到螢幕邊時 Snap 框當場顯示」= 拖曳中預告落點形狀](https://support.microsoft.com/en-us/windows/snap-your-windows-885a9b1e-a983-a3b1-16cd-c531795e6241)、
+    [Windows Snap「拖到螢幕邊時 Snap 框當場顯示」= 拖曳中預告落點](https://support.microsoft.com/en-us/windows/snap-your-windows-885a9b1e-a983-a3b1-16cd-c531795e6241)、
     [Android Bubbles 任意拖、拖到底部才出現關閉區](https://developer.android.com/develop/ui/views/notifications/bubbles)、
     [Teambition 專案頁 hover「−」收到右緣、點圓弧先展開](https://www.teambition.com/)(2026-09-02 實測;本 DS 收合後
     一段即開、且形態在拖曳中就切換,比它少一步、回饋更早);Material 明文 FAB 不移動

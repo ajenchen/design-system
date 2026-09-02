@@ -767,7 +767,7 @@ const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
           )}
         >
           <span className={cn(thinking && 'agent-shimmer')}>
-            {thinking ? '思考中…' : '思考過程'}
+            {thinking ? '思考中' : '思考過程'}
           </span>
           {/* chevron=裝飾指示(accordion 慣例),不吃微光;色同 Select 觸發器 chevron(fg-muted)。 */}
           <ChevronDown

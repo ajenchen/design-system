@@ -475,7 +475,10 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
     const isExit = visual === 'think-exit'
     /** think→think-exit 不換 key:洞形變 / 疊層節點不重掛、不重新 beginElement。 */
     const visualKey = isExit ? 'think' : visual
-    useBeginAnimationsOnMount(innerRef, `${visualKey}:${ripple}`)
+    // 起跑鍵含 exit 段:減速時新掛的洞形變(圓→橢圓)與亮度淡出是 begin=indefinite,沒人 beginElement 就永不起跑
+    // → 整段減速洞持圓、停定瞬間跳回橢圓(2026-09-03 deploy-preview 逐格實測:7 個 animate 全 unresolved,
+    // 就是 user 看到的「圓回橢圓斷層」);已起跑的呼吸疊層由 data-begun 守衛不重啟。
+    useBeginAnimationsOnMount(innerRef, `${visualKey}:${ripple}:${isExit ? 'exit' : 'run'}`)
     // 有始有終:still ↔ think 的交接瞬間兩邊長得一模一樣(定稿形、0°、無疊層),直接換、不淡入;
     // 淡入只留給形態真的不同的交接(招喚 ↔ 其他)。2026-09-02 user 抓「最後沒有流暢回到起點」:
     // 減速停定後再淡入 0.15s = 停定那一刻整顆先變透明再回來,就是那個斷層。

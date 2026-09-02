@@ -9,12 +9,12 @@
   },
   "canonicalSources": [
     {
-      "hash": "sha256:df20300d3e2330d89cad8cab89a8bb61fff74fbf93ee7c6c2587b1dac199a8e5",
+      "hash": "sha256:a7f6ed0eefc06856a5f761b7f0f61c70f6686e32f3eba225fa36171d333000fc",
       "id": "agent-bootstrap",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "AGENTS.md",
-      "size": 23369,
+      "size": 23655,
       "type": "file"
     },
     {
@@ -2699,7 +2699,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 20,
-      "hash": "sha256:7e3e84d1d5c1fcd6bf6382b4fe1d29591c35e5621d9169fb04372289bfd8e3ac",
+      "hash": "sha256:3dae0c300809c6281f438b29f2991663412bc7c734a7696031d6b5ae652d6da9",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3075,7 +3075,7 @@
         "scripts/generated/"
       ],
       "files": 381,
-      "hash": "sha256:15578ca1daf95c695e5bd19003f714e6741e90d0c0764235e695198a13c61842",
+      "hash": "sha256:f27767679add56a37626ee0bdc908e90ee8a581db10b478ecfd9a24f2cc6a99f",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3255,7 +3255,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:24b06904d566c085ef53fc4c0048e2acf6499b3a586206bb1199c6aa478bd505",
+      "hash": "sha256:0daa256fb0ace71f210b54cf6482696fa25255d2d04642690907dc5bf7baf16d",
       "id": "workspace-lockfile",
       "mode": "0644",
       "ownerRepo": "design-system",

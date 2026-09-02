@@ -39,6 +39,7 @@ beta.120 五步發版全自動走通。判準已 codify 為 M36(b′) 三問(met
 | user 把指示寫在 artifact comment(非對話訊息)→ 寫入閘無 exact target 綁定 | 分類器只讀對話 user 訊息,comment 是工具結果(viewer data);目前做法=在 commit/PR 引用 thread id 當核准證據並以 Bash 套用 patch,**屬已知缺口**:正解要 harness 提供結構化 user-comment 事件或 user 在對話重述 exact target(2026-09-02) |
 | Workflow 子代理與主 session 共用同一個 Chrome MCP 分頁群 → 子代理 navigate 會搶走主 session 的分頁與前景,量到 `document.hidden=true`、hover/transition 凍結、click 落空 | 主 session 先 `tabs_create_mcp` 開專屬分頁並永遠帶 tabId;每次量測前 `screenshot` 帶到前景;需要點擊/動畫的動態量測等 workflow 跑完再做;靜態幾何(rect/computed style)不受影響(2026-09-02) |
 | Storybook dev server 在沙箱吐 `EMFILE: too many open files, watch`(ulimit 無效)→ 檔案改動不進 module graph、新 story 不進索引,curl 該模組看到舊碼 | 每輪驗證前用**新埠**重開 dev server(啟動時重新編譯/索引最新檔;舊埠 TaskStop),量測前 `curl <server>/<module path> \| grep <新符號>` 確認真的是新碼;靜態 build 10 分鐘只在收尾用(2026-09-03) |
+| Chrome MCP 分頁被其他視窗遮住(`document.hidden=true`)時 `setCurrentTime` 取樣對「剛 beginElement 還沒解析」的動畫無效、timer 節流到 1s、CDP 45s 逾時 | 先輪詢 `getStartTime()` 不丟例外再 pause+setCurrentTime;長流程改 fire-and-forget 寫 `window.__x` 再另一次呼叫讀回;真實影格(rAF)驗證只在 CI Playwright 可信(2026-09-03) |
 | `npm run sync-memory` 在沙箱 EPERM(home 鎖目錄) | 沙箱不准 Bash 寫 `~/.claude/projects`;改用 Write 檔案工具把 repo `governance/memory/*.md` 逐檔鏡射到 home(方向仍是 repo→home,2026-09-02) |
 
 **發版鐵律**:immutable tag 不可重用——publish 前先確認 `package.json` 版號**未曾發過**

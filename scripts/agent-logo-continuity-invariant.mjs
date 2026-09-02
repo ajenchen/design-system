@@ -10,6 +10,8 @@
  *   C3 減速起點基底 = 當下角度:SpinDecel 起跑前一影格的 <g transform> 與 <linearGradient gradientTransform> 基底
  *      等於離開思考瞬間的角度(否則會先閃回 0°)。
  *   C4 still ↔ think 交接不掛 agent-logo-enter(淡入只給招喚)。
+ *   C6 減速段沒有孤兒動畫:begin="indefinite" 的 animate 掛上後必被 beginElement(getStartTime 不丟例外);
+ *      2026-09-03 deploy-preview 逐格實測:洞形變 / 亮度淡出 7 個 animate 全 unresolved → 整段減速洞持圓、停定瞬間跳橢圓。
  * 沙箱起不了 Chromium → SKIPPED-ENV(exit 0),請在可開瀏覽器的環境(CI)補驗。
  */
 import { chromium } from 'playwright'
@@ -70,6 +72,7 @@ const result = await page.evaluate(async () => {
       hole: norm(getComputedStyle(S.querySelector('path')).d),
       overlay: ov,
       enter: !!S.querySelector('svg > g.agent-logo-enter'),
+      unresolved: [...S.querySelectorAll('animate,animateTransform')].filter((a) => { try { a.getStartTime(); return false } catch { return true } }).length,
     }
   }
   const rest = sample()
@@ -117,6 +120,7 @@ for (let i = 1; i < frames.length; i++) {
 record('C2', `無跳幀(fps≈${fps.toFixed(0)},角度每影格 ≤ ${maxStep.toFixed(1)}°、形狀 ≤ 60、疊層 ≤ 0.08)`, worst.body <= maxStep && worst.grad <= maxStep && worst.hole <= 60 && worst.overlay <= 0.08, `worst body ${worst.body.toFixed(1)}° grad ${worst.grad.toFixed(1)}° hole ${worst.hole.toFixed(0)} overlay ${worst.overlay.toFixed(3)}`)
 record('C3', '減速起點基底 = 離開思考瞬間角度(本體與色場)', !!firstExit && !!lastThink && wrapDelta(firstExit.bodyBase, lastThink.body) <= maxStep && wrapDelta(-firstExit.gradBase, lastThink.body) <= maxStep, firstExit && lastThink ? `bodyBase ${firstExit.bodyBase.toFixed(1)} vs ${lastThink.body.toFixed(1)}; gradBase ${firstExit.gradBase.toFixed(1)}` : 'no exit frame')
 record('C4', 'still ↔ think 交接不掛淡入 class', !!first && !first.enter && !!finalStill && !finalStill.enter, `enter@think ${first?.enter} enter@still ${finalStill?.enter}`)
+record('C6', '減速段無孤兒動畫(每個 animate 都已 beginElement)', !!firstExit && firstExit.unresolved === 0 && !!lastExit && lastExit.unresolved === 0 && !!lastThink && lastThink.unresolved === 0, `unresolved think ${lastThink?.unresolved} exit-start ${firstExit?.unresolved} exit-end ${lastExit?.unresolved}`)
 record('C5', '減速段結束落在正位後才切靜止(最後一個 exit 影格角度 ≡ 0)', !!lastExit && wrapDelta(lastExit.body, 0) <= maxStep && wrapDelta(lastExit.grad, 0) <= maxStep, lastExit ? `last exit body ${lastExit.body.toFixed(1)} grad ${lastExit.grad.toFixed(1)}` : 'no exit frame')
 const failed = findings.filter((f) => !f.pass)
 console.log(failed.length ? `✗ agent-logo-continuity ${failed.length} 條失敗` : `✅ agent-logo-continuity-invariant PASS(${frames.length} 影格)`)
