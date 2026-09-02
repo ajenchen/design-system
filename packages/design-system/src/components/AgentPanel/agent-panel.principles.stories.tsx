@@ -8,6 +8,7 @@ const meta: Meta = {
 export default meta
 
 export const UsageGuidance: StoryObj = {
+  name: '使用指引',
   render: () => (
     <article className="max-w-2xl space-y-6 text-body text-foreground">
       <section>
@@ -30,8 +31,8 @@ export const UsageGuidance: StoryObj = {
       <section>
         <h3 className="text-body-lg font-medium">動態紀律</h3>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-fg-secondary">
-          <li>標誌四態(靜止/待機/招喚/思考)定義唯一住所=agent-panel.spec.md AgentLogo 節;禁另立本體語言。</li>
-          <li>常駐 loop 遵 prefers-reduced-motion 全停;fallback=待機純透明度呼吸。</li>
+          <li>標誌三態(靜止=待機/招喚/思考)定義唯一住所=agent-panel.spec.md AgentLogo 節;禁另立本體語言。</li>
+          <li>常駐 loop 遵 prefers-reduced-motion 全停,一律回靜止。</li>
         </ul>
       </section>
     </article>

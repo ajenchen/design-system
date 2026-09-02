@@ -5,11 +5,12 @@
  * - 造型:user 提供之黃金比例莫比烏斯 SVG 定稿(內橢圓長短軸比 φ=1.618、軸角 121.717°;
  *   agent-panel.spec.md「AgentLogo」節)。漸層停駐色=品牌資產常數(色相落於 DS 藍 252-268 /
  *   土耳其藍 190-210 家族;資產內嵌 oklch,非 semantic token — 詳 spec 同節)。
- * - 狀態動畫:agent-panel.spec.md「AgentLogo」節(靜止/待機/招喚/思考;一息 3s 家族)。
+ * - 狀態動畫:agent-panel.spec.md「AgentLogo」節(靜止/招喚/思考;一息 3s 家族;
+ *   2026-09-02 拍板:待機一律靜止,併入 still,無獨立呼吸態)。
  * - 緩動:--motion-easing-swell / --motion-easing-settle(tokens/motion/motion.css)。
  *   SMIL keySplines 不能吃 CSS var,以下常數為 token 值的逐字鏡像,改 token 必同步此處。
- * - 減動作:互動觸發必可停(WCAG 2.3.3);常駐 loop 全停,以待機純透明度呼吸為 fallback
- *   (非位移動態;agent-panel.spec.md「轉場與減動作」)。
+ * - 減動作:互動觸發必可停(WCAG 2.3.3);常駐 loop 全停 → 一律回靜止
+ *   (agent-panel.spec.md「轉場與減動作」)。
  */
 import * as React from 'react'
 import { cn } from '@/lib/utils'
@@ -75,8 +76,8 @@ const WAVE_STOPS: readonly Stop[] = [
   [1, 'oklch(.66 .12 196)', 0],
 ]
 
-/** 狀態:still 靜止 / idle 待機 / attract 招喚 / think 思考(=回覆中)。 */
-export type AgentLogoState = 'still' | 'idle' | 'attract' | 'think'
+/** 狀態:still 靜止(=待機)/ attract 招喚 / think 思考(=回覆中)。 */
+export type AgentLogoState = 'still' | 'attract' | 'think'
 
 export interface AgentLogoProps extends React.SVGAttributes<SVGSVGElement> {
   /** 動態狀態;預設 still(靜止)。 */
@@ -229,9 +230,8 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
     const uid = React.useId().replace(/[^a-zA-Z0-9]/g, '')
     const reduced = usePrefersReducedMotion()
     const simplified = detail === 'simplified' || (detail === 'auto' && size <= 24)
-    /** 減動作:常駐 loop 全停,fallback = 待機純透明度呼吸(非位移)。 */
-    const effectiveState: AgentLogoState =
-      reduced && state !== 'still' ? 'idle' : state
+    /** 減動作:常駐 loop 全停,一律回靜止。 */
+    const effectiveState: AgentLogoState = reduced ? 'still' : state
     const ids = {
       blue: `${uid}bs`,
       turq: `${uid}ts`,
@@ -242,8 +242,6 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
     }
     const isThink = effectiveState === 'think'
     const isAttract = effectiveState === 'attract'
-    const isIdle = effectiveState === 'idle'
-    const reducedIdle = reduced && state !== 'still'
 
     const defs = (
       <defs>
@@ -389,22 +387,6 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
           </g>
         </>
       )
-    } else if (isIdle) {
-      // 待機:純透明度呼吸 3s、最低 75%(非位移=減動作安全;亦為減動作 fallback)。
-      content = (
-        <g>
-          <animate
-            attributeName="opacity"
-            values="1;.75;1"
-            keyTimes="0;.5;1"
-            dur={BREATH_DUR}
-            repeatCount="indefinite"
-            calcMode="spline"
-            keySplines={`${SWELL};${SETTLE}`}
-          />
-          {body}
-        </g>
-      )
     } else {
       content = body
     }
@@ -422,7 +404,6 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
         aria-label={label}
         aria-hidden={label ? undefined : true}
         data-state={effectiveState}
-        data-reduced-motion={reducedIdle ? '' : undefined}
         {...props}
       >
         {defs}
