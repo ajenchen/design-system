@@ -56,6 +56,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
+import { TEXTAREA_EDIT_CHROME, TEXTAREA_EDIT_FOCUS } from '@/design-system/components/Textarea/textarea'
 import {
   SurfaceHeader,
   SurfaceFooter,
@@ -413,10 +414,13 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                 />
               </button>
             </PopoverTrigger>
+            {/* 寬度 = Popover canonical w-72(288;popover.tsx 預設,不另訂):介於 ChatGPT 側欄 260 /
+                Claude 側欄 290(2026-09-02 實測),且在面板最窄 360 時仍容得下(標題左緣起 312)。
+                與觸發點距 = OVERLAY_SIDE_OFFSET 8(elevation.spec.md)。 */}
             <PopoverContent
               align="start"
               aria-label="歷史對話" // i18n-allow: DS 預設文案
-              className="w-auto min-w-60 overflow-hidden p-0"
+              className="overflow-hidden p-0"
             >
               <Command label="歷史對話" className="[&_[cmdk-input-wrapper]]:py-1">
                 {/* 搜尋列 40 = 32 + 8(select-menu.tsx 搜尋列同高)。 */}
@@ -596,25 +600,60 @@ function AgentRenameDialog({
 
 export type AgentConversationProps = React.HTMLAttributes<HTMLDivElement>
 
+/** 最後一則代理訊息的工具列常駐(其餘懸停);由 AgentConversation 判定,consumer 不設(SSOT)。 */
+const LastAgentMessageContext = React.createContext<boolean>(false)
+
 const AgentConversation = React.forwardRef<HTMLDivElement, AgentConversationProps>(
-  ({ className, children, ...props }, ref) => (
-    // 捲軸必用 ScrollArea(跨 OS 一致;Dialog body 同法)。
-    <ScrollArea fillX className="min-h-0 flex-1">
-      <div
-        ref={ref}
-        role="log"
-        aria-live="polite"
-        className={cn(
-          // 輪距 40 = 8 + 24(工具列)+ 8;工具列絕對定位於輪距內,出現不推擠。
-          'flex flex-col gap-10 p-[var(--layout-space-loose)]',
-          className,
-        )}
-        {...props}
-      >
-        {children}
-      </div>
-    </ScrollArea>
-  ),
+  ({ className, children, ...props }, ref) => {
+    // 找最後一則 role="agent" 的直接子訊息:它的工具列常駐,其他訊息懸停才顯(spec「AgentToolbar」)。
+    const items = React.Children.toArray(children)
+    let lastAgentIndex = -1
+    items.forEach((child, index) => {
+      if (React.isValidElement<AgentMessageProps>(child) && child.type === AgentMessage && (child.props.role ?? 'agent') === 'agent') {
+        lastAgentIndex = index
+      }
+    })
+    // 自動捲到最新:掛載時與訊息數增加時捲到底(使用者若已往上捲離底部 > 40px 則不打擾;
+    // ChatGPT / Claude 皆「貼底跟隨、離底不搶」);全家族一致,consumer 不自接。
+    const logRef = React.useRef<HTMLDivElement | null>(null)
+    React.useImperativeHandle(ref, () => logRef.current as HTMLDivElement)
+    const count = items.length
+    const wasNearBottomRef = React.useRef(true)
+    React.useLayoutEffect(() => {
+      const viewport = logRef.current?.closest<HTMLElement>('[data-radix-scroll-area-viewport]')
+      if (!viewport) return
+      if (wasNearBottomRef.current) viewport.scrollTop = viewport.scrollHeight
+      const onScroll = () => {
+        wasNearBottomRef.current = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= 40
+      }
+      viewport.addEventListener('scroll', onScroll, { passive: true })
+      return () => viewport.removeEventListener('scroll', onScroll)
+    }, [count])
+    return (
+      // 捲軸必用 ScrollArea(跨 OS 一致;Dialog body 同法)。
+      <ScrollArea fillX className="min-h-0 flex-1">
+        <div
+          ref={logRef}
+          role="log"
+          aria-live="polite"
+          className={cn(
+            // 輪距 40 = 8 + 24(工具列)+ 8;懸停工具列絕對定位於輪距內,出現不推擠。
+            // 底部 = --layout-space-bottom 48:最後內容(常駐工具列)→ 輸入盒動作(送出)= layoutSpace 規則 4
+            // 「內容 → action button = bottom」(layoutSpace.spec.md L118;2026-09-02 user 抓工具列貼輸入盒)。
+            'flex flex-col gap-10 p-[var(--layout-space-loose)] pb-[var(--layout-space-bottom)]',
+            className,
+          )}
+          {...props}
+        >
+          {items.map((child, index) => (
+            <LastAgentMessageContext.Provider key={(React.isValidElement(child) && child.key) || index} value={index === lastAgentIndex}>
+              {child}
+            </LastAgentMessageContext.Provider>
+          ))}
+        </div>
+      </ScrollArea>
+    )
+  },
 )
 AgentConversation.displayName = 'AgentConversation'
 
@@ -759,7 +798,10 @@ AgentThinking.displayName = 'AgentThinking'
  * ──────────────────────────────────────────────────────────────────────── */
 
 export interface AgentToolbarProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** 常駐顯示(代理最後一則);其他訊息=懸停淡入。 */
+  /**
+   * 常駐顯示。預設由 AgentConversation 判定:代理**最後一則**常駐,其餘懸停淡入(SSOT,consumer 不需設);
+   * 只在 AgentConversation 之外單獨使用時才需手動指定。
+   */
   pinned?: boolean
   onCopy?: () => void
   onLike?: () => void
@@ -767,15 +809,20 @@ export interface AgentToolbarProps extends React.HTMLAttributes<HTMLDivElement> 
 }
 
 const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
-  ({ pinned = false, onCopy, onLike, onDislike, className, children, ...props }, ref) => (
+  ({ pinned: pinnedProp, onCopy, onLike, onDislike, className, children, ...props }, ref) => {
+    const pinnedFromConversation = React.useContext(LastAgentMessageContext)
+    const pinned = pinnedProp ?? pinnedFromConversation
+    return (
     <div
       ref={ref}
       className={cn(
-        'absolute left-0 top-full mt-2 flex items-center gap-2',
+        'mt-2 flex h-6 items-center gap-2',
         'transition-opacity duration-[var(--motion-duration-overlay)] motion-reduce:transition-none',
+        // 常駐(最後一則)= 在流內佔位,底部才能守 --layout-space-bottom;懸停顯示 = 絕對定位於輪距內,
+        // 出現/消失完全不推擠版面(輪距 40 ≥ 8+24+8)。
         pinned
-          ? 'opacity-100'
-          : 'opacity-0 group-hover/agent-message:opacity-100 focus-within:opacity-100',
+          ? 'relative opacity-100'
+          : 'absolute left-0 top-full opacity-0 group-hover/agent-message:opacity-100 focus-within:opacity-100',
         className,
       )}
       {...props}
@@ -786,7 +833,8 @@ const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
       <Button variant="text" size="xs" iconOnly startIcon={ThumbsDown} aria-label="倒讚" onClick={() => onDislike?.()} />
       {children}
     </div>
-  ),
+    )
+  },
 )
 AgentToolbar.displayName = 'AgentToolbar'
 
@@ -885,8 +933,11 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
       <div
         ref={ref}
         className={cn(
-          'm-[var(--layout-space-loose)] mt-0 shrink-0 rounded-md border border-border bg-surface',
-          'focus-within:border-border-hover transition-colors duration-[var(--motion-duration-overlay)]',
+          'm-[var(--layout-space-loose)] mt-0 shrink-0 rounded-md transition-colors duration-150',
+          // 外框互動 = Textarea edit×default 同一組字串(TEXTAREA_EDIT_CHROME / _FOCUS):hover 一階
+          // border-hover、focus-within 主色;2026-09-02 user 抓「跟 Textarea 不一樣」→ 收斂為單一住所。
+          TEXTAREA_EDIT_CHROME,
+          TEXTAREA_EDIT_FOCUS,
           className,
         )}
         {...props}

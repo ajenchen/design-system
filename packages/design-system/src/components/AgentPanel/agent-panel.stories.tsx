@@ -59,28 +59,22 @@ const headerWiring = {
 const promptWiring = { onSubmit: noop, onRemoveAttachment: noop, onAddAttachment: noop }
 
 /** 任務助理完整對話:附件氣泡 + 思考塊 + 工具列 + 輸入盒(真實 Jira 型場景)。 */
+/**
+ * 門面:一問一答 + 思考塊 + 常駐工具列 + 回覆中的停止鈕。附件與多則回覆各自另有樣張(「附件」「多則回覆」),
+ * 讓門面只教主線。
+ */
 export const TaskAssistant: Story = {
   name: '任務助理完整對話',
   render: function TaskAssistantStory() {
     const [value, setValue] = React.useState('')
-    const [attachments, setAttachments] = React.useState<AgentPromptAttachment[]>([
-      { id: 't1', label: 'oncall-規範.pdf' },
-    ])
+    const [attachments, setAttachments] = React.useState<AgentPromptAttachment[]>([])
     return (
       <PanelFrame>
         <AgentPanel>
           <AgentPanelHeader title="衝刺待辦整理" logoState="think" activeConversationId="c1" {...headerWiring} />
           <AgentConversation>
-            <AgentMessage
-              role="user"
-              attachments={[
-                { id: 'a1', label: 'sprint-42-backlog.csv' },
-                { id: 'a2', label: '排程規則.md' },
-              ]}
-            >
-              把這份待辦按優先級重排,衝突的排程幫我標出來。
-            </AgentMessage>
-            <AgentMessage role="agent" toolbar={<AgentToolbar pinned onCopy={noop} onLike={noop} onDislike={noop} />}>
+            <AgentMessage role="user">把這份待辦按優先級重排,衝突的排程幫我標出來。</AgentMessage>
+            <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
               <AgentThinking
                 thinking
                 steps={[<span key="1">已讀取 48 筆待辦</span>, <span key="2">比對排程規則 12 條</span>]}
@@ -107,6 +101,85 @@ export const TaskAssistant: Story = {
       </PanelFrame>
     )
   },
+}
+
+/**
+ * 附件:送出後的氣泡附件 = Chip assist(相互間距 4);輸入中的附件 = Tag md 恆帶 ×,單列不換行、
+ * 超寬以「+N」浮層列出被藏的 Tag(useOverflowIndices + OverflowIndicator)。
+ */
+export const Attachments: Story = {
+  name: '附件:氣泡內與輸入盒溢出',
+  render: function AttachmentsStory() {
+    const [attachments, setAttachments] = React.useState<AgentPromptAttachment[]>([
+      { id: 'a1', label: 'sprint-42-backlog.csv' },
+      { id: 'a2', label: '排程規則.md' },
+      { id: 'a3', label: 'oncall-規範.pdf' },
+      { id: 'a4', label: '客訴-2026Q3.xlsx' },
+      { id: 'a5', label: '值班表-9月.csv' },
+    ])
+    return (
+      <PanelFrame>
+        <AgentPanel>
+          <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" {...headerWiring} />
+          <AgentConversation>
+            <AgentMessage
+              role="user"
+              attachments={[
+                { id: 'm1', label: 'sprint-42-backlog.csv' },
+                { id: 'm2', label: '排程規則.md' },
+              ]}
+            >
+              先看這兩份,衝突的排程幫我標出來。
+            </AgentMessage>
+            <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
+              兩份都讀完了。要一起比對值班表的話,把檔案加進來我再跑一次。
+            </AgentMessage>
+          </AgentConversation>
+          <AgentPromptInput
+            value=""
+            onValueChange={noop}
+            attachments={attachments}
+            onRemoveAttachment={(a) => setAttachments((prev) => prev.filter((x) => x.id !== a.id))}
+            onAddAttachment={() =>
+              setAttachments((prev) => [...prev, { id: `a${prev.length + 1}`, label: `附件-${prev.length + 1}.md` }])
+            }
+            onSubmit={noop}
+          />
+        </AgentPanel>
+      </PanelFrame>
+    )
+  },
+}
+
+/**
+ * 多則回覆:只有代理**最後一則**的工具列常駐,其餘回覆懸停(或鍵盤聚焦到工具列)才淡入,而且工具列
+ * 絕對定位在 40px 輪距內,出現與消失都不推擠版面;判定由 AgentConversation 自動完成,consumer 不設 pinned。
+ * 最後一則工具列到輸入盒 = --layout-space-bottom 48(內容 → 動作鈕)。
+ */
+export const MultipleReplies: Story = {
+  name: '多則回覆:工具列常駐與懸停',
+  render: () => (
+    <PanelFrame>
+      <AgentPanel>
+        <AgentPanelHeader title="Q3 客訴分類" activeConversationId="c3" {...headerWiring} />
+        <AgentConversation>
+          <AgentMessage role="user">把 Q3 的客訴按原因分類,各給我前三名。</AgentMessage>
+          <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
+            分成物流、品質、客服態度三類:物流延遲 41%、商品瑕疵 27%、回覆過慢 18%,其餘 14% 為零星原因。
+          </AgentMessage>
+          <AgentMessage role="user">物流那一類再細分,看是哪個倉。</AgentMessage>
+          <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
+            物流延遲主要來自北倉(62%),多集中在 8 月中旬颱風週;南倉 23%、外包倉 15%。
+          </AgentMessage>
+          <AgentMessage role="user">好,幫我寫一段給北倉主管的摘要。</AgentMessage>
+          <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
+            摘要草稿:8 月 12–18 日北倉出貨延遲客訴 214 件,佔全季物流客訴 62%;建議颱風週啟動備援出貨與主動通知。
+          </AgentMessage>
+        </AgentConversation>
+        <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
+      </AgentPanel>
+    </PanelFrame>
+  ),
 }
 
 /** 歷史浮層開啟(OpenSnapshot):分組、搜尋、思考中列、目前對話高亮、懸停/鍵盤浮出改名與刪除。 */
@@ -255,37 +328,6 @@ export const DecisionSummaryInFlow: Story = {
 }
 
 /** 拖拉寬度:左緣把手 360–640(且不超過視窗一半),鍵盤 ←/→ 每次 16;寬度由產品自存。 */
-export const ResizableWidth: Story = {
-  name: '拖拉寬度',
-  render: function ResizableStory() {
-    const [width, setWidth] = React.useState(400)
-    return (
-      <div className="flex h-dvh bg-surface-sunken">
-        <div className="flex flex-1 items-center justify-center text-body text-fg-secondary">
-          目前寬度 {width}px(拖左緣把手,或聚焦把手後按 ←/→)
-        </div>
-        <AgentPanel width={width} onWidthChange={setWidth}>
-          <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" {...headerWiring} />
-          <AgentConversation>
-            <AgentMessage role="agent">面板寬度 360 起跳、640 封頂,且永遠不超過視窗一半。</AgentMessage>
-          </AgentConversation>
-          <AgentPromptInput
-            value=""
-            onValueChange={noop}
-            attachments={[
-              { id: 'a1', label: 'sprint-42-backlog.csv' },
-              { id: 'a2', label: '排程規則.md' },
-              { id: 'a3', label: 'oncall-規範.pdf' },
-              { id: 'a4', label: '客訴-2026Q3.xlsx' },
-            ]}
-            {...promptWiring}
-          />
-        </AgentPanel>
-      </div>
-    )
-  },
-}
-
 /** 入口鈕遮擋樣張的資料:滿版訂單表(DataTable 分頁 archetype 同 data-table.stories WithPagination)。 */
 type OrderRow = { id: string; orderNo: string; customer: string; amount: number; placedAt: string }
 const ORDER_ROWS: OrderRow[] = Array.from({ length: 128 }, (_, i) => ({
@@ -370,18 +412,15 @@ export const LogoStates: Story = {
           <span className="text-caption text-fg-muted">{state}</span>
         </div>
       ))}
-      <div className="flex flex-col items-center gap-3">
-        <AgentLogo state="still" size={16} label="16" />
-        <span className="text-caption text-fg-muted">16</span>
-      </div>
     </div>
   ),
 }
 
 /** FAB:待機(靜止)與有新訊(招喚=標誌蓄勢+邊框光圈代位)。 */
 /**
- * 思考 → 停止:按「思考 3 秒」進入思考(靜止起步半圈時間加速到 0.75s/圈),3 秒後離開思考 → 從當下角度
- * 以 exit 鏡像曲線減速、落回正位 0°(0.75–1.82s)後才淡入靜止;一直思考的範例維持最快轉速不停。
+ * 思考 → 停止:按「思考 3 秒」進入思考(靜止起步半圈時間加速到 0.75s/圈,負空間同時由橢圓圓化),3 秒後離開
+ * 思考 → 從當下角度以 exit 鏡像曲線減速、負空間同步由圓回橢圓、落回正位 0°(0.75–1.82s)後才淡入靜止;
+ * 一直思考的範例維持最快轉速不停、洞持圓,只剩亮度呼吸。
  */
 export const LogoThinkStop: Story = {
   name: '標誌:思考起步與減速停止',

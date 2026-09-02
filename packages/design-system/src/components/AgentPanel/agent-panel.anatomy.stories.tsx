@@ -31,9 +31,9 @@ export const Overview: Story = {
           <AgentMessage role="user">我方氣泡:bg-secondary、圓角 4、內距 8/12、寬 ≤85%、靠右。</AgentMessage>
           <AgentMessage
             role="agent"
-            toolbar={<AgentToolbar pinned onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}
+            toolbar={<AgentToolbar onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}
           >
-            代理回覆:無氣泡、全寬、text-body;輪距 40 = 8+24(工具列)+8,工具列絕對定位於輪距內。
+            代理回覆:無氣泡、全寬、text-body;輪距 40 = 8+24(工具列)+8;最後一則工具列常駐(AgentConversation 判定)、底距輸入盒 48。
           </AgentMessage>
         </AgentConversation>
         <AgentPromptInput
@@ -84,7 +84,7 @@ export const StateBehavior: Story = {
       </div>
       <div className="flex gap-12">
         <div className="relative w-72 pb-10">
-          <div className="mb-2 text-caption text-fg-muted">工具列:代理最後一則=常駐</div>
+          <div className="mb-2 text-caption text-fg-muted">工具列:代理最後一則=常駐(單獨展示時以 pinned 覆寫)</div>
           <AgentMessage role="agent" toolbar={<AgentToolbar pinned onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>最後一則回覆。</AgentMessage>
         </div>
         <div className="relative w-72 pb-10">

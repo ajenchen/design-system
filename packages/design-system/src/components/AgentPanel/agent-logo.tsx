@@ -266,31 +266,46 @@ function GradientCounterSpin({ id }: { id: string }) {
 }
 
 /** 思考態負空間呼吸:洞橢圓↔正圓,6s(=2 息)一輪,同一條呼吸包絡(吸 35% / 呼至 85% / 靜)。 */
-function HoleMorph({ from, round }: { from: string; round: string }) {
+/**
+ * 負空間形變與轉速耦合(2026-09-02 由「6s 呼吸圓化」改為速度耦合:形狀說速度、亮度說呼吸):
+ * spinup = 起步加速段 橢圓 → 正圓(同 exit 曲線、同 0.375s,轉到最快時洞正好圓);
+ * spindown = 減速段 正圓 → 橢圓(同 DECEL 曲線、同減速時長,停定 0° 時洞正好回定稿形)。
+ * 等速期間 fill=freeze 持圓;每次進入狀態由 beginElement 起跑(useBeginAnimationsOnMount)。
+ */
+export interface HoleMorphSpec {
+  phase: 'spinup' | 'spindown'
+  /** 秒數字串(spinup 固定 SPIN_ACCEL_S;spindown = 減速段時長)。 */
+  dur: string
+}
+
+function HoleMorph({ rest, round, spec }: { rest: string; round: string; spec: HoleMorphSpec }) {
+  const up = spec.phase === 'spinup'
   return (
     <animate
+      key={spec.phase}
       attributeName="d"
-      values={`${from};${round};${from};${from}`}
-      keyTimes={BREATH_KEYTIMES}
-      dur="6s"
+      from={up ? rest : round}
+      to={up ? round : rest}
+      dur={spec.dur}
       begin="indefinite"
       data-begin-on-mount=""
-      repeatCount="indefinite"
+      fill="freeze"
       calcMode="spline"
-      keySplines={BREATH_SPLINES}
+      keyTimes="0;1"
+      keySplines={up ? EXIT : DECEL}
     />
   )
 }
 
 interface BodyProps {
   ids: Record<'blue' | 'purple' | 'under' | 'lift', string>
-  morph: boolean
+  morph?: HoleMorphSpec
 }
 
-/** 本體雙緞帶 4 層(面 + 底面陰影 + 面 + 提亮),所有尺寸同一造型;morph=true 時掛負空間形變。 */
+/** 本體雙緞帶 4 層(面 + 底面陰影 + 面 + 提亮),所有尺寸同一造型;morph 有值時掛負空間形變(耦合轉速)。 */
 function LogoBody({ ids, morph }: BodyProps) {
-  const purpleMorph = morph ? <HoleMorph from={D_PURPLE} round={D_PURPLE_ROUND} /> : null
-  const blueMorph = morph ? <HoleMorph from={D_BLUE} round={D_BLUE_ROUND} /> : null
+  const purpleMorph = morph ? <HoleMorph rest={D_PURPLE} round={D_PURPLE_ROUND} spec={morph} /> : null
+  const blueMorph = morph ? <HoleMorph rest={D_BLUE} round={D_BLUE_ROUND} spec={morph} /> : null
   return (
     <>
       <path d={D_PURPLE} fill={`url(#${ids.purple})`}>{purpleMorph}</path>
@@ -306,9 +321,9 @@ function LogoBody({ ids, morph }: BodyProps) {
  * 招喚與思考同一套語言、同一條呼吸包絡(思考與 6s 圓化同拍)。亮度包絡取代透明度包絡:
  * 本體不透明度恆 1(白面上變淡=像停用;spec「禁止事項」)。
  */
-function InhaleOverlay({ morph, dur }: { morph: boolean; dur: string }) {
-  const purpleMorph = morph ? <HoleMorph from={D_PURPLE} round={D_PURPLE_ROUND} /> : null
-  const blueMorph = morph ? <HoleMorph from={D_BLUE} round={D_BLUE_ROUND} /> : null
+function InhaleOverlay({ morph, dur }: { morph?: HoleMorphSpec; dur: string }) {
+  const purpleMorph = morph ? <HoleMorph rest={D_PURPLE} round={D_PURPLE_ROUND} spec={morph} /> : null
+  const blueMorph = morph ? <HoleMorph rest={D_BLUE} round={D_BLUE_ROUND} spec={morph} /> : null
   return (
     <g opacity="0" pointerEvents="none">
       <animate
@@ -507,7 +522,13 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
       </defs>
     )
 
-    const body = <LogoBody ids={ids} morph={isThink} />
+    // 洞形變耦合轉速:思考起步 spinup(0.375s)、離開思考 spindown(= 減速時長);靜止/招喚不掛。
+    const holeMorph: HoleMorphSpec | undefined = isThink
+      ? isExit && exit
+        ? { phase: 'spindown', dur: `${exit.dur}s` }
+        : { phase: 'spinup', dur: `${SPIN_ACCEL_S}s` }
+      : undefined
+    const body = <LogoBody ids={ids} morph={holeMorph} />
 
     let content: React.ReactNode
     if (isThink) {
@@ -523,7 +544,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
             )}
             <g transform="translate(-627 -627)">
               {body}
-              <InhaleOverlay morph dur="6s" />
+              <InhaleOverlay morph={holeMorph} dur="6s" />
             </g>
           </g>
         </g>
@@ -577,7 +598,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
               />
               <g transform="translate(-627 -627)">
                 {body}
-                <InhaleOverlay morph={false} dur={BREATH_DUR} />
+                <InhaleOverlay dur={BREATH_DUR} />
               </g>
             </g>
           </g>

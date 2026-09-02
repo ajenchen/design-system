@@ -115,7 +115,13 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 ### 3. AgentConversation(訊息卷軸區)
 
 - ScrollArea(跨 OS 一致捲軸;Dialog body 同法)包 `flex-1`;內距 16(--layout-space-loose);**輪距 40**(我方↔代理)=
-  8+24(工具列 xs 高)+8,工具列絕對定位於輪距內,出現不推擠。
+  8+24(工具列 xs 高)+8,懸停工具列絕對定位於輪距內,出現不推擠。
+- **底部內距 = `--layout-space-bottom` 48**:最後內容(常駐工具列)→ 輸入盒的送出動作 = layoutSpace 規則 4
+  「內容 → action button = bottom」(`tokens/layoutSpace/layoutSpace.spec.md` L118;2026-09-02 user 抓工具列貼輸入盒)。
+- **常駐判定 = 本元件**:直接子 `AgentMessage` 中最後一則 `role="agent"` 的工具列常駐(在流內佔位),
+  其餘懸停/鍵盤聚焦淡入(絕對定位,零推擠);consumer 不設 `pinned`(SSOT,各 agent 一致)。
+- **自動捲到最新**:掛載與訊息數增加時捲到底;使用者往上捲離底部 > 40px 時不搶捲(ChatGPT / Claude
+  「貼底跟隨、離底不擾」同款);由本元件實作,consumer 不自接。
 - A11y:`role="log"` + `aria-live="polite"`。
 
 ### 4. AgentMessage(訊息)
@@ -141,12 +147,15 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 
 ### 6. AgentToolbar(訊息工具列)
 
-- 高 24;代理**最後一則**常駐;其他訊息懸停 0.15s 淡入;絕對定位於輪距內。
+- 高 24;代理**最後一則**常駐(由 AgentConversation 判定,在流內佔位);其他訊息懸停/焦點 0.15s 淡入,
+  絕對定位於輪距內、不推擠版面。
 - `[複製][ButtonDivider][讚][倒讚]`=Button text xs + Tooltip;各鈕 aria-label。
 
 ### 7. AgentPromptInput(複合輸入盒)
 
-- Anatomy:`[附件列?][值(多行)][工具列:+ … 送出/停止]`;外框 border-border、radius 4。
+- Anatomy:`[附件列?][值(多行)][工具列:+ … 送出/停止]`;外框 = **Textarea edit×default 同一組字串**
+  (`textarea.tsx` `TEXTAREA_EDIT_CHROME` / `TEXTAREA_EDIT_FOCUS`:border-border、hover 一階 border-hover、
+  focus-within 主色;radius 4)。2026-09-02 user 抓「跟 Textarea 互動不同」→ 收斂為單一住所,禁自刻。
 - 內距=欄位家族:上 `--field-control-py-md`、左右 `--field-px`、text-body;
   單行=32 等高鐵律。總高驗算:1+28(附件列)+32+40(工具列)+1=102=稿。
 - 附件列=**Tag md 恆帶 ×**(`onRemoveAttachment` 必填;相互間距 4、距內緣 4);單列不換行,
@@ -228,6 +237,11 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 
 ### 附:歷史浮層(消費現成,不新增公開元件)
 
+- **寬度 = Popover canonical `w-72`(288)**,不另訂(2026-09-02 user 問「寬度訂多少」:實測 ChatGPT 側欄 260、
+  Claude 側欄 290,DS 既有 rich-popover 288 落在其間;面板最窄 360 時自標題左緣起仍有 312 可容)。
+- **與觸發點距 = `OVERLAY_SIDE_OFFSET` 8**(`tokens/elevation/overlay-geometry.ts`;實測 popper wrapper
+  translateY = 觸發鈕底 + 8;量測時分頁必在前景,背景分頁會凍在 slide-in 起點量到 0.5)。
+
 - 可搜尋單選選單:SelectMenu 同源 primitives 之 DS 內部組合(Popover+Command+MenuItem;
   SelectMenu 資料驅動 API 放不下列級行內動作與進度圖示替換,故同源組裝——metrics 全同:
   容器 p-0/rounded-lg/elevation-200/minWidth 240、搜尋列 40、列 32/px-12/gap-8、組標 py-2)。
@@ -280,9 +294,11 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
     [Fluent 1.5s](https://raw.githubusercontent.com/microsoft/fluentui/master/packages/react-components/react-spinner/library/src/components/Spinner/useSpinnerStyles.styles.ts)、[Ant 1.2s](https://raw.githubusercontent.com/ant-design/ant-design/master/components/spin/style/index.ts));
     快檔 0.69–0.75s([Carbon](https://raw.githubusercontent.com/carbon-design-system/carbon/main/packages/styles/scss/components/loading/_animation.scss)、[Bootstrap](https://getbootstrap.com/docs/5.3/components/spinners/));
     [600ms 讀成 urgent/frantic、1000–1800ms 中性](https://doveletter.dev/docs/compose-animations/custom-loading-spinner)→ 取快檔上緣 0.75s:有幹勁不慌,且實心雙緞帶比細弧線更吃轉速;
-    加速未完即離開 → 等加速段結束再減速;<1 影格直接切。+負空間呼吸(洞橢圓↔正圓 6s=2 息,
-    同一條呼吸包絡,離開時不重掛、繼續到淡入覆蓋)+吸氣微亮(與圓化同拍,峰值 14% 與招喚統一)
-    +色流動(色場定錨畫布=漸層同構逆轉,減速段同步)。
+    加速未完即離開 → 等加速段結束再減速;<1 影格直接切。+**負空間形變耦合轉速**(起步 0.375s 洞
+    橢圓→正圓、同 exit 曲線,轉到最快時洞正好圓;等速持圓;減速段正圓→橢圓、同 DECEL 曲線與時長,停定 0°
+    時洞正好回定稿形。2026-09-02 user 問「形變是否用在高速」→ 由 6s 呼吸圓化改為速度耦合:形狀說速度、
+    亮度說呼吸;對齊 squash-and-stretch「形變跟著速度」與 Dynamic Island「形隨動作」)+吸氣微亮(亮度
+    6s=2 息,峰值 14% 與招喚統一)+色流動(色場定錨畫布=漸層同構逆轉,減速段同步)。
 - 轉場:狀態切換=新狀態 0.15s 淡入(`--motion-duration-overlay`,只動 opacity),禁跳切;**減動作**:
   互動觸發必可停(WCAG 2.3.3);常駐 loop 全停(嚴於條文),一律回靜止、淡入亦停。
 - 多實例安全:漸層/遮罩 id 以 useId 唯一化。
@@ -331,7 +347,8 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 | 歷史浮層 | 照選單元件 | — |
 | 標誌招喚呼吸(本體/疊層/單波/FAB 光圈) | 一息 3s;35% 吸頂 / 85% 到底 / 90% 波散盡 / 靜止空拍 | swell → settle → 停 |
 | 標誌思考旋轉 | 起步 0.375s(=半圈,exit)→ 0.75s/圈 linear | 一息/8、一息/4 |
-| 標誌思考洞形變+疊層 | 6s = 2 息,同一條呼吸包絡 | swell → settle → 停 |
+| 標誌思考洞形變 | 起步 0.375s 橢圓→圓(exit)/ 減速段圓→橢圓(0,0,0.7,1) | 與轉速同拍;等速持圓 |
+| 標誌思考吸氣微亮 | 6s = 2 息 | swell → settle → 停 |
 | 標誌思考減速停止 | 從當下角度以 exit 鏡像曲線續轉至正位 | 0.75–1.82s(Δ/(480°/s·0.7)) |
 | 標誌狀態切換 | 新狀態淡入 | `--motion-duration-overlay` 150ms |
 | 入口鈕吸邊 / 放回 | top / inset 位移 | `--motion-duration-surface` 250ms + enter |

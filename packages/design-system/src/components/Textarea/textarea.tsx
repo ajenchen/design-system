@@ -32,6 +32,13 @@ import { useControllable } from '@/design-system/hooks/use-controllable'
 
 // Phase B1(2026-05-05):chrome variant(default / naked;`bare` 2026-07-09 退役),mode×chrome 的
 // chrome 規則由 compoundVariants 決定,鏡射 fieldWrapperStyles 對齊 canonical(Phase D 將整併進 fieldWrapperStyles)。
+/**
+ * 多行輸入盒的 edit×default 外框互動 SSOT(hover 一階 border-hover、focus-within 主色;
+ * field-controls.spec.md「互動狀態」)。Textarea 自身與 AgentPromptInput(複合輸入盒)共用,禁各自手刻。
+ */
+export const TEXTAREA_EDIT_CHROME = ['bg-surface border border-border', 'hover:border-border-hover']
+export const TEXTAREA_EDIT_FOCUS = 'focus-within:!border-primary focus-within:hover:!border-primary'
+
 const textareaVariants = cva(
   [
     'w-full rounded-md',
@@ -71,16 +78,14 @@ const textareaVariants = cva(
       },
     },
     compoundVariants: [
-      // default chrome × mode
+      // default chrome × mode(字串 SSOT = 下方 export 的 TEXTAREA_EDIT_CHROME / TEXTAREA_EDIT_FOCUS,
+      // AgentPromptInput 等多行複合輸入盒消費同一組,禁自刻)
       {
         mode: 'edit',
         variant: 'default',
-        className: [
-          'bg-surface border border-border',
-          'hover:border-border-hover',
-        ],
+        className: TEXTAREA_EDIT_CHROME,
       },
-      { mode: 'edit', variant: 'default', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
+      { mode: 'edit', variant: 'default', error: false, className: TEXTAREA_EDIT_FOCUS },
       {
         // 2026-07-16 round16 Model A(user GO,推翻 2026-05-13 Path Ⅰ 的 `!px-0 !py-0`):
         // Textarea view×default = **edit 幾何減 chrome** — 保留 base 的 field-px 與
