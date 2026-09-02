@@ -13,11 +13,14 @@
  *   同 keyTimes / 同 swell→settle,同一 commit 掛載 → 同相);懸停=陰影升一級+微放大。
  * - 兩態定位(AgentFabDock;2026-09-03 user 第四輪拍板,取代前三輪的自由座標):只有兩種合法位置 ——
  *   「家」= 40 圓鈕,位置唯一在右下角(離右、下各 loose);「貼邊」= 28 半圓貼右緣,只有 y 可變(右緣帶內)。
- *   拖 40 圓鈕:鈕跟著游標;整段拖曳期間右緣帶(寬 40、上下到 loose 內距)以藍色虛線框出;游標一進帶內,
- *   預覽當場變成 28 半圓**貼在右緣、停在放開會落的高度**(帶內所見即所得),放開就落定;放開在帶外 → 飛回家。
+ *   拖 40 圓鈕:鈕跟著游標;整段拖曳期間右緣帶(寬 36 = --field-height-md;上起 loose 內距,下到「貼邊鈕中心 ≤ 視窗
+ *   中心」且「貼邊鈕底 ≥ 家頂 − loose」兩條的較高者;user 2026-09-03 留言拍板:上半部才是貼邊區,避開右下角的家、
+ *   分頁列與工具列)以藍色虛線框出;游標一進帶內,預覽當場變成 28 半圓**貼在右緣、停在放開會落的高度**
+ *   (帶內所見即所得),放開就落定;放開在帶外 → 飛回家。
  *   拖 28 小鈕:不畫藍框;帶內沿 y 移動;一出帶外當場變回 40 圓、放開飛回家(帶外沒有自由位置)。
- *   兩態點一下都直接開面板;< 8px 位移視為點擊。鍵盤:家 → 貼邊(停在帶底 = 家的高度);貼邊 ↑↓ 16px、
- *   ← / Home 回家;Shift+F10 開選單;拖曳中 Esc 取消。右鍵選單依狀態只給一項(家:收到右邊;貼邊:放回右下角)。
+ *   兩態點一下都直接開面板;< 8px 位移視為點擊。鍵盤:家 → 貼邊(停在帶底);貼邊 ↑↓ 16px、← / Home 回家;
+ *   Shift+F10 開選單;拖曳中 Esc 取消。右鍵選單依狀態只給一項(家:收到右邊;貼邊:放回右下角)。
+ *   Tooltip 兩態不同:家「問我或是推我到旁邊」(邀請拖曳)/ 貼邊「開啟智慧代理」(user 2026-09-03:小鈕只寫開啟)。
  *   藍框樣式與 FileUpload 拖入區同值(2px 虛線、primary-hover)但**不共用常數**(user 2026-09-03:語意不同,各自定義)。
  *   動作:形態切換 --motion-duration-overlay(150ms,Carbon moderate-01「小型展開、短距離」)、飛回家 / 落點修正
  *   --motion-duration-surface(250ms,Atlassian transitions 150–400「較長時長幫助追蹤空間變化」)+ enter 曲線、
@@ -174,6 +177,8 @@ interface Stage {
 const FAB_PX = 40
 /** 貼邊鈕高 / 露出寬(= --field-height-sm 28)。 */
 const DOCK_PX = 28
+/** 右緣帶寬(= --field-height-md 36;user 2026-09-03 留言由 40 改 36,框比貼邊鈕寬 8px 剛好)。 */
+const BAND_PX = 36
 /** 拖曳啟動門檻 px(小於視為點擊;dnd-kit PointerSensor activationConstraint.distance 同量級)。 */
 const DRAG_THRESHOLD = 8
 /** 鍵盤每步 16(同 AgentPanel 調寬步長)。 */
@@ -187,7 +192,11 @@ const HYSTERESIS = 16
 const SNAP_ZONE_FRAME_CLASSES = 'rounded-md border-2 border-dashed border-primary-hover'
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(min, max))
-const dockMaxY = (s: Stage) => s.h - s.inset - DOCK_PX
+/**
+ * 貼邊鈕最低的 y(鈕頂):兩條上限取較嚴者 —— (a) 鈕中心 ≤ 視窗中心(上半部才是貼邊區);(b) 鈕底 ≥ 家頂 − loose
+ * (永不與家重疊、也不壓到分頁列)。矮視窗兩條都不夠時退到上內距(user 2026-09-03 留言拍板)。
+ */
+const dockMaxY = (s: Stage) => Math.max(s.inset, Math.floor(Math.min(s.h / 2 - DOCK_PX / 2, s.h - 2 * s.inset - FAB_PX - DOCK_PX)))
 /**
  * 兩態的殼左上座標(都以 left/top 表達,才能在拖曳、落定之間連續過渡)。殼恆為 40 寬、內容靠右:貼邊時 28 鈕
  * 靠在殼的右緣 = 舞台右緣,形態過渡(40→28)在殼內縮、右緣不動 → 不會有任何一格超出舞台
@@ -214,8 +223,8 @@ interface SnapZone {
 }
 const SNAP_ZONES: readonly SnapZone[] = [
   {
-    // 右緣帶:寬 40(= 圓鈕直徑),上下到 loose 內距(避開標題列 / 分頁列);落點 = 28 半圓貼右緣、停在指標高度。
-    rect: (s) => ({ x: s.w - FAB_PX, y: s.inset, w: FAB_PX, h: Math.max(0, s.h - 2 * s.inset) }),
+    // 右緣帶:寬 36,上起 loose 內距、下到貼邊鈕最低的底邊(= 藍框範圍 = 合法 y 範圍);落點 = 28 半圓貼右緣、停在指標高度。
+    rect: (s) => ({ x: s.w - BAND_PX, y: s.inset, w: BAND_PX, h: Math.max(0, dockMaxY(s) + DOCK_PX - s.inset) }),
     placement: (p, grab, s) => ({ kind: 'dock', y: clamp(p.y - Math.min(grab.y, DOCK_PX), s.inset, dockMaxY(s)) }),
   },
 ]
@@ -331,7 +340,7 @@ export interface AgentFabDockProps extends Omit<AgentFabProps, 'className' | 'on
   /** 定位殼 className(殼為 absolute,舞台需 relative)。 */
   className?: string
   /** 文案(可覆寫供 i18n)。 */
-  labels?: { dock?: string; home?: string; tooltip?: string }
+  labels?: { dock?: string; home?: string; tooltip?: string; tooltipDock?: string }
 }
 
 const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
@@ -395,10 +404,11 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
       dock: labels?.dock ?? '收到右邊', // i18n-allow: DS 預設文案,labels 可覆寫
       home: labels?.home ?? '放回右下角', // i18n-allow: DS 預設文案,labels 可覆寫
       tooltip: labels?.tooltip ?? '問我或是推我到旁邊', // i18n-allow: DS 預設文案(2026-09-03 user 原話),labels 可覆寫
+      tooltipDock: labels?.tooltipDock ?? '開啟智慧代理', // i18n-allow: DS 預設文案(小鈕只寫開啟;= aria-label),labels 可覆寫
     }
     const buttonLabel = ariaLabel ?? '開啟智慧代理' // i18n-allow: DS 預設文案,aria-label prop 可覆寫
 
-    /** 鍵盤:家 → 貼邊(帶底 = 家的高度);貼邊 ↑↓ 16px、← / Home 回家;Shift+F10 開選單。 */
+    /** 鍵盤:家 → 貼邊(停在帶底);貼邊 ↑↓ 16px、← / Home 回家;Shift+F10 開選單。 */
     const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
       if (e.key === 'F10' && e.shiftKey) {
         e.preventDefault()
@@ -505,7 +515,7 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
                 </button>
               </span>
             </TooltipTrigger>
-            <TooltipContent side={isDock ? 'left' : 'top'}>{text.tooltip}</TooltipContent>
+            <TooltipContent side={isDock ? 'left' : 'top'}>{isDock ? text.tooltipDock : text.tooltip}</TooltipContent>
           </Tooltip>
         </div>
       </>
