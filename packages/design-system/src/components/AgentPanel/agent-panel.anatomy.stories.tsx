@@ -49,7 +49,7 @@ export const Overview: Story = {
   ),
 }
 
-/** 標誌尺寸階:16/24(簡化)vs 32/48(完整)— 光學校正分檔。 */
+/** 標誌尺寸階:16 / 24 / 32 / 48 同一造型(2026-09-02 拍板:形狀規則,不設簡化檔)。 */
 export const LogoSizeLadder: Story = {
   name: '標誌尺寸階',
   render: () => (
@@ -59,7 +59,7 @@ export const LogoSizeLadder: Story = {
           <AgentLogo state="still" size={size} label={`${size}px`} />
           <span className="text-caption text-fg-muted">
             {size}
-            {size <= 24 ? '(簡化)' : '(完整)'}
+            {''}
           </span>
         </div>
       ))}

@@ -134,7 +134,7 @@ export const NewConversation: Story = {
         <AgentPanelHeader title="新對話" conversationEmpty {...headerWiring} />
         <div className="flex min-h-0 flex-1 items-center justify-center">
           <Empty
-            icon={<AgentLogo state="attract" size={48} detail="full" label="智慧代理" />}
+            icon={<AgentLogo state="attract" size={48} label="智慧代理" />}
             title="開始第一個對話"
             description="丟一個任務給代理,或把檔案拖進來。"
           />
@@ -189,6 +189,22 @@ export const DecisionCardOpen: Story = {
           <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
           <AgentDecisionCard questions={THREE_QUESTIONS} onSubmit={noop} onSkip={noop} />
         </div>
+      </AgentPanel>
+    </PanelFrame>
+  ),
+}
+
+/** 長標題:標題單行截斷,只有實際被截斷時 hover 才顯示完整名稱的 tooltip(tooltip.spec.md:32;引擎 `<TruncatedText>`)。 */
+export const TitleTruncated: Story = {
+  name: '長標題截斷與 tooltip',
+  render: () => (
+    <PanelFrame>
+      <AgentPanel>
+        <AgentPanelHeader title="2026 Q3 北區客訴分類與回覆範本整理(含 Zendesk 匯出與主管審核)" activeConversationId="c3" {...headerWiring} />
+        <AgentConversation>
+          <AgentMessage role="agent">標題太長會以「…」截斷;滑到標題上會用 tooltip 顯示完整名稱,沒截斷就不會出現。</AgentMessage>
+        </AgentConversation>
+        <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
       </AgentPanel>
     </PanelFrame>
   ),
@@ -350,13 +366,13 @@ export const LogoStates: Story = {
     <div className="flex items-end gap-12 p-12">
       {(['still', 'attract', 'think'] as const).map((state) => (
         <div key={state} className="flex flex-col items-center gap-3">
-          <AgentLogo state={state} size={72} detail="full" label={state} />
+          <AgentLogo state={state} size={72} label={state} />
           <span className="text-caption text-fg-muted">{state}</span>
         </div>
       ))}
       <div className="flex flex-col items-center gap-3">
-        <AgentLogo state="still" size={16} label="16 簡化" />
-        <span className="text-caption text-fg-muted">16(簡化)</span>
+        <AgentLogo state="still" size={16} label="16" />
+        <span className="text-caption text-fg-muted">16</span>
       </div>
     </div>
   ),
@@ -364,8 +380,8 @@ export const LogoStates: Story = {
 
 /** FAB:待機(靜止)與有新訊(招喚=標誌蓄勢+邊框光圈代位)。 */
 /**
- * 思考 → 停止:按「思考 3 秒」進入思考(靜止起步 0.3s 加速到 600°/s),3 秒後離開思考 → 從當下角度
- * 以 exit 鏡像曲線減速、落回正位 0°(0.6–1.46s)後才淡入靜止;一直思考的範例維持最快轉速不停。
+ * 思考 → 停止:按「思考 3 秒」進入思考(靜止起步半圈時間加速到 0.75s/圈),3 秒後離開思考 → 從當下角度
+ * 以 exit 鏡像曲線減速、落回正位 0°(0.75–1.82s)後才淡入靜止;一直思考的範例維持最快轉速不停。
  */
 export const LogoThinkStop: Story = {
   name: '標誌:思考起步與減速停止',
@@ -380,7 +396,7 @@ export const LogoThinkStop: Story = {
     React.useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current) }, [])
     return (
       <div className="flex items-center gap-12 p-12">
-        <AgentLogo state={state} size={72} detail="full" label={state} />
+        <AgentLogo state={state} size={72} label={state} />
         <Button variant="secondary" size="sm" onClick={start}>思考 3 秒</Button>
         <span className="text-caption text-fg-muted">目前:{state === 'think' ? '思考中(等速)' : '靜止'}</span>
       </div>

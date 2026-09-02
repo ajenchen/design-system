@@ -41,6 +41,7 @@ import { ChevronDown, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, Eye
 // 砍 useSortable + SortableContext 用 useDraggable + useDroppable 分離 hooks(對齊 DS 內 TreeView SSOT)。
 import { DndContext, DragOverlay, useDraggable, useDroppable, useDndContext, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, MeasuringStrategy, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
 import { cn } from '@/lib/utils'
+import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier } from '@/design-system/lib/drag-visual'
 import { nakedCellEditableDisplayHover, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
@@ -1183,9 +1184,13 @@ function DataTableInner<TData>(
   const columnSizingState = table.getState().columnSizing
   const isResizingColumn = table.getState().columnSizingInfo.isResizingColumn
   const prevColumnSizingRef = React.useRef(columnSizingState)
+  // 2026-09-02 SSOT 收斂:欄寬把手改消費 patterns/resize-handle(與 AgentPanel 同元件),拖拉中的
+  // live 更新不再經 TanStack getResizeHandler → 以本 ref 標記「拖拉中」讓下方 effect 不 fire;
+  // 放開 / 鍵盤每步由 onValueCommit 直接 fire onColumnResize 並推進 snapshot(避免 effect 二次 fire)。
+  const liveColumnResizeRef = React.useRef(false)
   React.useEffect(() => {
     if (!onColumnResize) return
-    if (isResizingColumn) return
+    if (isResizingColumn || liveColumnResizeRef.current) return
     const prev = prevColumnSizingRef.current
     Object.keys(columnSizingState).forEach(id => {
       if (columnSizingState[id] !== prev[id]) {
@@ -2273,77 +2278,39 @@ function DataTableInner<TData>(
             - role="separator" + aria-orientation="vertical" 對齊 WAI-ARIA(isResizable 時)*/}
         {(() => {
           const colId = header.column.id
-          const colMeta = header.column.columnDef.meta as { resizable?: boolean } | undefined
+          const colMeta = header.column.columnDef.meta as { resizable?: boolean; maxWidth?: number } | undefined
           // H3: meta.resizable === false 顯式 opt-out(default true)
           const colOptIn = colMeta?.resizable !== false
           const isResizable = enableColumnResize && !isSystemColumn(colId) && colOptIn
-          const isResizing = header.column.getIsResizing?.()
-          // 鍵盤 resize(WAI-ARIA window-splitter):方向鍵調整欄寬,公開目前值 + 下限。
-          // effectiveMinWidth 對齊 drag 路徑(resolveColumnSizing minSize),step 16px。
+          // effectiveMinWidth 對齊 drag 路徑(resolveColumnSizing minSize)。
           const effectiveMinWidth = header.column.columnDef.minSize ?? MIN_COLUMN_WIDTH
-          const currentWidth = Math.round(header.column.getSize())
-          const RESIZE_KEY_STEP = 16
-          // H2: 不論 showDivider,只要 isResizable 就 render hot zone(panel boundary col 仍可拖)
+          // H2: 不論 showDivider,只要 isResizable 就 render 把手(panel boundary col 仍可拖)
           if (!showDivider && !isResizable) return null
+          // 2026-09-02:欄寬把手 = patterns/resize-handle 同一顆元件(視覺 / 拖拉 / 鍵盤 / ARIA 全由它擁有;
+          // AgentPanel 面板寬同元件)。max 只取 consumer 的 meta.maxWidth(TanStack 的 maxSize 預設
+          // MAX_SAFE_INTEGER,不可當上限輸出);無上限 = 不輸出 aria-valuemax、End 停用。
           return (
-            <span
-              role={isResizable ? 'separator' : undefined}
-              aria-orientation={isResizable ? 'vertical' : undefined}
-              aria-label={isResizable ? '調整欄寬' : undefined}
-              // 鍵盤可操作 separator(WAI-ARIA window-splitter):focusable + 方向鍵調整 +
-              // 公開目前寬度 / 下限。aria-valuetext 給 SR px 值(避免無 valuemax 時被誤讀成百分比)。
-              tabIndex={isResizable ? 0 : undefined}
-              aria-valuenow={isResizable ? currentWidth : undefined}
-              aria-valuemin={isResizable ? effectiveMinWidth : undefined}
-              aria-valuetext={isResizable ? `${currentWidth}px` : undefined}
-              onKeyDown={isResizable ? (e: React.KeyboardEvent<HTMLSpanElement>) => {
-                let next: number | null = null
-                if (e.key === 'ArrowLeft') next = Math.max(effectiveMinWidth, currentWidth - RESIZE_KEY_STEP)
-                else if (e.key === 'ArrowRight') next = currentWidth + RESIZE_KEY_STEP
-                else if (e.key === 'Home') next = effectiveMinWidth
-                if (next == null) return
-                // stopPropagation:不讓方向鍵冒泡到 header 排序 / 欄位拖曳 keyboard listener。
-                e.preventDefault()
-                e.stopPropagation()
-                table.setColumnSizing((prev) => ({ ...prev, [colId]: next as number }))
-                // onColumnResize 由 columnSizing useEffect 自動 fire(非 drag 路徑不經 isResizingColumn)。
-              } : undefined}
-              className={cn(
-                'group/resize absolute top-0 bottom-0 right-0 -mr-[3px] w-[7px]',
-                isResizable && 'cursor-col-resize select-none',
-                isResizable && 'focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
-              )}
-              // 2026-05-12 fix v2(user 抓 R3 stopPropagation 沒生效):dnd-kit PointerSensor
-              // 監聽 `pointerdown`,我前一輪只 stop `onMouseDown` → pointerdown 仍冒泡 →
-              // drag activate。改用 `onPointerDownCapture` capture-phase 一次性吃 pointerdown
-              // event,**先** dnd-kit listener 拿到 → drag 不啟動;接著 emit synthesized
-              // mousedown 給 TanStack resize handler。對齊 AG Grid / Material X-Grid pinned-column
-              // resize idiom(resize handle 永遠 own pointer event,drag listener 不競爭)。
-              onPointerDownCapture={isResizable ? (e: React.PointerEvent<HTMLSpanElement>) => {
-                e.stopPropagation()
-                header.getResizeHandler?.()(e.nativeEvent)
-              } : undefined}
-              onTouchStart={isResizable ? (e: React.TouchEvent<HTMLSpanElement>) => {
-                e.stopPropagation()
-                header.getResizeHandler?.()(e.nativeEvent)
-              } : undefined}
-            >
-              {/* H2: 視覺 1px line 只在 showDivider 時 paint(panel boundary col by panel-r 接管,不重) */}
-              {showDivider && (
-              <span
-                aria-hidden
-                className={cn(
-                  'absolute right-[3px] w-px transition-colors',
-                  isResizing
-                    ? 'bg-primary'
-                    : isResizable
-                      ? 'bg-divider group-hover/resize:bg-[var(--border-hover)]'
-                      : 'bg-divider',
-                )}
-                style={{ top: 'var(--table-cell-py)', bottom: 'var(--table-cell-py)' }}
-              />
-              )}
-            </span>
+            <ResizeHandle
+              direction="horizontal"
+              position="end"
+              value={Math.round(header.column.getSize())}
+              min={effectiveMinWidth}
+              max={colMeta?.maxWidth}
+              ariaLabel="調整欄寬" // i18n-allow: DS 預設文案
+              disabled={!isResizable}
+              showLine={showDivider}
+              lineInsetStart="var(--table-cell-py)"
+              lineInsetEnd="var(--table-cell-py)"
+              onValueChange={(next) => {
+                liveColumnResizeRef.current = true
+                table.setColumnSizing((prev) => ({ ...prev, [colId]: next }))
+              }}
+              onValueCommit={(final) => {
+                liveColumnResizeRef.current = false
+                prevColumnSizingRef.current = { ...prevColumnSizingRef.current, [colId]: final }
+                onColumnResize?.(colId, final)
+              }}
+            />
           )
         })()}
       </div>

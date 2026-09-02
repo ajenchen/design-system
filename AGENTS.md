@@ -94,19 +94,20 @@
 
 # Git / release canonical(machine SSOT → `infra/governance/release-workflow.json`)
 
-**1 chat = 1 working branch + 1 PR**;protected `main` + required CI 不可繞過。所有 agent(Claude、Codex、未來 provider)只跑同一條五步:
+**1 chat = 1 working branch + 1 PR**;protected `main` + required CI 不可繞過。所有 agent(Claude、Codex、未來 provider)只跑同一條五步,**但合併前有一道人類閘**(2026-09-02 user 原話:「你要先把我們討論的東西部署到 netlify,等我確認後認為都沒問題,主動說要發版,你才會 push 到 GitHub main 同時更新 GitHub 上的 storybook 並發版到 NPM」):
 
 | 步驟 | AUTO 動作與完成條件 |
 |---|---|
-| 1 `pr-checks` | 編輯、生成、測試、commit、push、建立／更新唯一 PR;自行修到 required CI green 且 conversations resolved |
-| 2 `merge` | 以 exact-head CAS squash merge 進 protected `main`,立即讀回 main |
+| 1 `pr-checks` | 編輯、生成、測試、commit、push、建立／更新唯一 PR(**draft**);自行修到 required CI green 且 conversations resolved;**回報 Netlify deploy preview 連結**(`deploy-preview-<PR>--<site>.netlify.app`)給 user 檢視 |
+| 1.5 **發版同意(ASK)** | **user 看過預覽後在對話說「發版」**(exact target = 當前 PR head)→ hook `record_release_consent.sh` 自動落地 receipt(`.git/governance-runtime/release-consent/<headSha>.json`);缺 receipt 或 head 已變 → `release:auto` **停在預覽階段**印 `AWAITING_USER_RELEASE_CONSENT`,不合併、不發布;問句／否定不算同意 |
+| 2 `merge` | 有 receipt 後以 exact-head CAS squash merge 進 protected `main`,立即讀回 main |
 | 3 `publish` | 從 protected main 自動發布 immutable exact version;禁 mutable dependency tag |
 | 4 `readback` | 自動讀回 GitHub Release 與 npm 三包 exact version;未一致不得宣稱完成 |
 | 5 `consumer` | 自動建立、修復、合併 template 與 WM exact-version PR,讀回 consumer protected main |
 
-公開入口只有 `npm run release:auto`(安全續跑未完成步驟)與 `npm run release:status`(唯讀狀態)。唯一 ASK 是未解決的產品／UI／UX SSOT 真取捨;login/MFA/OAuth／缺 credential reference 只暫停當下動作,完成後 AUTO resume。`candidate-freeze`、broad external activation、model certification、offline signatures、72h soak、fleet promotion 對 standard small-team release 一律 non-blocking 或已退役,不得另建 approval/promotion 流程。完成後才清 remote/local branch 並 `git switch main && git pull --ff-only`。
+公開入口只有 `npm run release:auto`(安全續跑未完成步驟;合併前必檢查發版同意 receipt)、`npm run release:status`(唯讀狀態)與 `npm run release:consent -- --quote "<user 原話>"`(hook 失效時的手動落地,仍需 user 原話)。ASK 只有兩種:未解決的產品／UI／UX SSOT 真取捨、以及**發版同意**(每個 PR head 一次;預覽 → user 說「發版」);login/MFA/OAuth／缺 credential reference 只暫停當下動作,完成後 AUTO resume。`candidate-freeze`、broad external activation、model certification、offline signatures、72h soak、fleet promotion 對 standard small-team release 一律 non-blocking 或已退役,不得另建 approval/promotion 流程。完成後才清 remote/local branch 並 `git switch main && git pull --ff-only`。
 
-**禁止**:direct push main / 同 chat 多 branch 或多 PR / required CI、conversation 或 live readback bypass / mutable dependency tag / 把 external write、milestone 或 legacy ceremony 當人類核准 gate。
+**禁止**:direct push main / 同 chat 多 branch 或多 PR / required CI、conversation 或 live readback bypass / mutable dependency tag / 把 external write、milestone 或 legacy ceremony 當人類核准 gate / **未經 user 說「發版」就合併或發布**(2026-09-02 錨:beta.131 與 #122 在 user 還在看草稿時就被自動發出)。
 
 # 命名與語言一致性
 

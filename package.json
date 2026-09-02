@@ -39,6 +39,8 @@
     "typecheck:stories": "tsc -p packages/design-system/tsconfig.stories.json",
     "release:auto": "node scripts/release-orchestrator.mjs auto",
     "release:status": "node scripts/release-orchestrator.mjs status",
+    "release:consent": "node scripts/release-orchestrator.mjs consent",
+    "test:release-consent": "node scripts/test-release-consent.mjs",
     "test:datatable-invariants": "node scripts/data-table-invariants.mjs",
     "test:agent-panel-invariants": "node scripts/agent-panel-fixed-anatomy-invariant.mjs && node scripts/agent-logo-brand-scale-invariant.mjs",
     "test:header-tabs-slot-invariants": "node scripts/header-tabs-slot-invariants.mjs",

@@ -63,8 +63,10 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 
 ### 1. AgentPanel(容器)
 
-- 寬 `--agent-panel-width`、全高;面=`bg-surface`;左緣 `border-l border-divider`
-  (右側欄同目的 canonical:app-shell.tsx aside 前例)。
+- 寬 `--agent-panel-width`、全高;面=`bg-surface`;左緣分隔線**只有一個 owner**:可拖時由
+  ResizeHandle 的 1px line 擁有(idle divider / hover border-hover / 拖曳中 primary;DataTable 欄間同款),
+  `resizable=false` 才由容器畫 `border-l border-divider`(app-shell aside 前例)。兩者並存 = 2px 粗線
+  (2026-09-02 user 抓到「比 aside 粗」;第二輪雙層 -3px 偏移已由單一元件收斂)。
 - Anatomy:`[AgentPanelHeader][AgentConversation flex-1][AgentPromptInput]`;
   AgentDecisionCard 出現時絕對定位貼底覆蓋輸入區。
 - 開合=淡入+自右滑入 `--motion-duration-surface`(模態面板級);減動作停。
@@ -82,14 +84,20 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 ### 2. AgentPanelHeader(標題列)
 
 - chrome header 家族:消費 `<ChromeHeader>`(padding-based 不鎖高:md 48 / lg 56 隨 page tier);
-  標題=chrome typography `text-body-lg font-medium`。
+  標題=chrome typography `text-body-lg font-medium`(16;`header-canonical.spec.md`「Title typography」)。
+  **不取 14**(2026-09-02 user 問「可否客製選 14」→ 判定維持 16):14 是 non-modal 浮層(Popover / Coachmark /
+  Tooltip)的專屬檔(`popover.spec.md` Modal / Non-modal 字級表),AgentPanel 是與 AppShell aside 同級的常駐面板,
+  改 14 = 與相鄰 aside 標題不同級,且標誌 24 / 箭頭 20 是照 16 字配的 tier(縮字後箭頭偏大);垂直置中不受影響。
 - Anatomy:`[AgentLogo 24][gap-2][標題+chevron 複合觸發]…[新對話 +][ButtonDivider][關閉 ×]`。
   - 標誌+標題=側欄品牌區前例逐字(gap-2 + 24 標誌);標誌隨代理狀態動畫(思考=think 態)。
   - **標題+chevron 是同一顆觸發**(原生 button,幾何逐字沿用品牌區前例:`gap-2`、標題
-    `text-body-lg font-medium` truncate、chevron 16 `text-fg-muted` 靜色、零 padding、無懸停底;
-    focus-visible ring 同 AgentThinking 標題列):點標題或 chevron 都開歷史浮層;chevron 只是指示,
-    恆向下、不隨開合旋轉(2026-09-02 拍板;第二輪覆核:禁用 Button 殼——會多出左 9 / 右 5 內距
-    與 28 高懸停底,破壞品牌區間距)。
+    `text-body-lg font-medium` 單行截斷(消費 `<TruncatedText>`:截斷時才顯 tooltip 補全,
+    owner `tooltip.spec.md:32` / 引擎 `truncated-text.spec.md`;禁手刻 truncate span)、零 padding、無懸停底;focus-visible ring 同 AgentThinking
+    標題列):點標題或 chevron 都開歷史浮層;chevron 只是指示,**與 Select 觸發器 chevron 逐字同款**:
+    色 `text-fg-muted`(neutral-7,`../Field/field-controls.spec.md` icon 純指示方向)、線粗同全域 1.75、
+    尺寸走「字級↔icon tier」= 標題 text-body-lg 對應 `ICON_SIZE.lg` 20(select.tsx lg 同款)、
+    開啟時 `rotate-180`(select.tsx / AgentThinking 同款);第二輪覆核:禁用 Button 殼——會多出
+    左 9 / 右 5 內距與 28 高懸停底,破壞品牌區間距;第三輪:16 改 20 是 tier 對齊,非新值。
   - 關閉=`<Button dismiss size="sm">`(header 專屬 sm);新對話=Button text sm iconOnly。
   - **固定 anatomy 恆渲染**:標題觸發、新對話 +、關閉 × 不因缺 callback 而消失——
     `onNewConversation`/`onClose` 為必填 prop;歷史相關 callback 可省略但列仍顯示
@@ -237,14 +245,14 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 
 ### 附:空狀態
 
-- 問候區圖示位=`<AgentLogo state="attract" size={48} detail="full">`(招喚態邀請開始);
+- 問候區圖示位=`<AgentLogo state="attract" size={48}>`(招喚態邀請開始);
   其餘照既有 Empty 元件(icon slot)。
 
 ## AgentLogo(標誌;附屬資產)
 
 - 造型=user 提供黃金比例莫比烏斯 SVG 定稿(內橢圓長短軸比 φ、軸角 121.717°);
-  尺寸 16-48;**≤24 自動簡化**(去陰影提亮、兩停駐高對比=圖標光學校正慣例;
-  `detail` 可強制);>96 hero 用全細節。
+  尺寸 16-48;**所有尺寸同一造型**(4 層:面 + 底面陰影 + 面 + 提亮;2026-09-02 user 拍板:
+  形狀規則、不設簡化檔;原「≤24 自動簡化」與 `detail` prop 已移除)。
 - 一息 3 秒家族(文字微光 2s 另計);緩動=swell(吸/起)/ settle(呼/收)/ exit(加速起步)token 值。
 - **呼吸包絡(招喚與思考共用)**:0 靜 → **35% 吸頂**(脹 1.07、白疊層 14%)→ **85% 回落到底** →
   **85–100% 靜止空拍**;呼出去的波 0–35% 貼邊聚亮 → 35% 離體 → **90% 散盡**(比本體多 0.15s 餘韻)。
@@ -261,10 +269,14 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
   - **attract 招喚**(空狀態/FAB 有新訊):呼吸包絡上的脹 1.07+吸氣微亮(白疊層 0→14%→0→0)
     +遮罩單波(雙色放射盤內藍 .5→靛 .44→紫 .34→邊緣 0;行程 560→830;0–35% 貼邊聚亮(swell)、
     35% 離體擴散(settle)、90% 散盡;遮罩護負空間、無模糊)。`ripple={false}` 供 FAB 光圈代位。
-  - **think 思考**(=回覆中):靜止起步 → 加速 0.3s(=一息/10,exit 曲線,位移 126° 使交接速度連續)
-    → 等速 600°/s(0.6s/圈=一息/5,linear)**持續到離開思考,一直思考就不停**;離開思考 →
+  - **think 思考**(=回覆中):靜止起步 → 加速 0.375s(=半圈=一息/8,exit 曲線,位移 126° 使交接速度連續)
+    → 等速 **480°/s(0.75s/圈=一息/4)**,linear,**持續到離開思考,一直思考就不停**;離開思考 →
     **減速段**:從當下角度以 exit 曲線的時間鏡像 (0,0,0.7,1) 續轉最小 ≥252° 且落回正位 0° 的角度
-    (時長 Δ/(ω·0.7) ∈ 0.6–1.46s,交接速度連續、停定即正位),停定後才 0.15s 淡入下一狀態;
+    (時長 Δ/(ω·0.7) ∈ 0.75–1.82s,交接速度連續、停定即正位),停定後才 0.15s 淡入下一狀態。
+    轉速依據(2026-09-02 研究):主流平滑轉圈 1.0–1.57s/圈([MDC 1568ms](https://raw.githubusercontent.com/material-components/material-components-web/master/packages/mdc-circular-progress/_circular-progress.scss)、
+    [Fluent 1.5s](https://raw.githubusercontent.com/microsoft/fluentui/master/packages/react-components/react-spinner/library/src/components/Spinner/useSpinnerStyles.styles.ts)、[Ant 1.2s](https://raw.githubusercontent.com/ant-design/ant-design/master/components/spin/style/index.ts));
+    快檔 0.69–0.75s([Carbon](https://raw.githubusercontent.com/carbon-design-system/carbon/main/packages/styles/scss/components/loading/_animation.scss)、[Bootstrap](https://getbootstrap.com/docs/5.3/components/spinners/));
+    [600ms 讀成 urgent/frantic、1000–1800ms 中性](https://doveletter.dev/docs/compose-animations/custom-loading-spinner)→ 取快檔上緣 0.75s:有幹勁不慌,且實心雙緞帶比細弧線更吃轉速;
     加速未完即離開 → 等加速段結束再減速;<1 影格直接切。+負空間呼吸(洞橢圓↔正圓 6s=2 息,
     同一條呼吸包絡,離開時不重掛、繼續到淡入覆蓋)+吸氣微亮(與圓化同拍,峰值 14% 與招喚統一)
     +色流動(色場定錨畫布=漸層同構逆轉,減速段同步)。
@@ -275,7 +287,7 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 ## AgentFab(浮動開關鈕;附屬資產)
 
 - 40 圓=`--field-height-lg` 於 lg 密度;圓形 iconOnly;面=`bg-surface-raised`+
-  `--elevation-200`(不寫死白色);內置 24 標誌(簡化檔自動生效)。
+  `--elevation-200`(不寫死白色);內置 24 標誌(同一造型)。
 - 外框=AI 觸發鈕特調:錐形(環向)漸層描邊 2px(整數寬+環向漸層=正圓對稱);
   兩極=`AGENT_BRAND` 藍 254 / 紫 300(品牌資產常數,agent-logo.tsx 唯一數值來源;各落於兩緞帶
   色相家族內;2026-09-02 藍→紫改色)。
@@ -315,9 +327,9 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 | 思考塊開合 | Radix Collapsible+animate-accordion | 200ms ease-out |
 | 歷史浮層 | 照選單元件 | — |
 | 標誌招喚呼吸(本體/疊層/單波/FAB 光圈) | 一息 3s;35% 吸頂 / 85% 到底 / 90% 波散盡 / 靜止空拍 | swell → settle → 停 |
-| 標誌思考旋轉 | 起步 0.3s(exit)→ 0.6s/圈 linear | 一息/10、一息/5 |
+| 標誌思考旋轉 | 起步 0.375s(=半圈,exit)→ 0.75s/圈 linear | 一息/8、一息/4 |
 | 標誌思考洞形變+疊層 | 6s = 2 息,同一條呼吸包絡 | swell → settle → 停 |
-| 標誌思考減速停止 | 從當下角度以 exit 鏡像曲線續轉至正位 | 0.6–1.46s(Δ/(600°/s·0.7)) |
+| 標誌思考減速停止 | 從當下角度以 exit 鏡像曲線續轉至正位 | 0.75–1.82s(Δ/(480°/s·0.7)) |
 | 標誌狀態切換 | 新狀態淡入 | `--motion-duration-overlay` 150ms |
 | 入口鈕吸邊 / 放回 | top / inset 位移 | `--motion-duration-surface` 250ms + enter |
 | 思考 chevron / 輸入框邊框 | transition | `--motion-duration-overlay` 150ms |

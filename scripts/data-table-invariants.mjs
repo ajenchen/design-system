@@ -30,7 +30,9 @@ const server = http.createServer((req, res) => {
   const fp = join(STATIC, p); if (!existsSync(fp) || statSync(fp).isDirectory()) { res.writeHead(404); res.end(); return }
   res.writeHead(200, { 'content-type': MIME[extname(fp)] || 'application/octet-stream' }); res.end(readFileSync(fp))
 })
-await new Promise(r => server.listen(7500, r))
+// 動態取空埠:固定 7500 會被其他 session 的靜態伺服器佔住(EADDRINUSE)而在 pre-commit 誤阻 commit(2026-09-02)。
+await new Promise(r => server.listen(0, r))
+const BASE = `http://localhost:${server.address().port}`
 
 let browser
 try {
@@ -56,7 +58,7 @@ function record(invariant, label, pass, detail = '') {
 }
 
 // ── INVARIANT (5):No-resize column width ≥ meta.width ──
-await page.goto('http://localhost:7500/iframe.html?id=design-system-components-datatable-展示--row-auto-height-inline-edit&viewMode=story', { waitUntil: 'networkidle' })
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-auto-height-inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
 await page.waitForSelector('[role="row"][data-row-index]')
 await page.waitForTimeout(500)
 
@@ -142,7 +144,7 @@ for (const t of cellTypes) {
 // 此 I6 跨「全 cell-type」守門:任何 display cell 內文字載體 @lg computed font-size ≠ 16px(text-body-lg)
 // → fail。新增 cell 若漏掉 size 繼承 → 字卡 14px → CI 紅,不靠人 review(mechanical = primary defense)。
 // 用 Inspector @size=lg + pinnedLeft=false(全欄在同一 row,涵蓋 string/select/currency/date 多 cell-type)。
-await page.goto('http://localhost:7500/iframe.html?id=design-system-components-datatable-設計規格--inspector&viewMode=story&args=size:lg;pinnedLeft:false', { waitUntil: 'networkidle' })
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-設計規格--inspector&viewMode=story&args=size:lg;pinnedLeft:false`, { waitUntil: 'networkidle' })
 await page.waitForSelector('[role="columnheader"]')
 await page.waitForTimeout(500)
 const lgFonts = await page.evaluate(() => {
@@ -173,7 +175,7 @@ for (const c of lgFonts.cells) {
 // 用 Inspector(設計規格,fixed-height 非 autoRowHeight)@ sm/md/lg 三尺寸;預設密度 token(uiSize.css)。
 const ROW_TOKEN = { sm: 32, md: 40, lg: 48 }  // 預設密度 --table-row-{size}(uiSize.css:33-35)
 for (const [size, expectPx] of Object.entries(ROW_TOKEN)) {
-  await page.goto(`http://localhost:7500/iframe.html?id=design-system-components-datatable-設計規格--inspector&viewMode=story&args=size:${size};pinnedLeft:false`, { waitUntil: 'networkidle' })
+  await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-設計規格--inspector&viewMode=story&args=size:${size};pinnedLeft:false`, { waitUntil: 'networkidle' })
   await page.waitForSelector('[role="row"][data-row-index="0"]')
   await page.waitForTimeout(400)
   const rowH = await page.evaluate(() => {
@@ -187,7 +189,7 @@ for (const [size, expectPx] of Object.entries(ROW_TOKEN)) {
 //    內容都要合規,閘門要夠通用」;錨例:beta.100 da3 批修把多選人員外殼改純 block →
 //    基線行盒把頭像串推頂 6.4px,一個月無人抓 — 因像素閘只掛 DataTable 自家檔)──
 //    量法:每個 body cell 取「可見內容子樹聯集框」中心 vs cell 中心,|Δ| ≤ 1.5px。
-await page.goto('http://localhost:7500/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story', { waitUntil: 'networkidle' })
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
 await page.waitForSelector('[role="row"]')
 await page.waitForTimeout(400)
 const centeringReport = await page.evaluate(() => {
@@ -222,7 +224,7 @@ for (const c of centeringReport) {
 
 // ── INVARIANT (9):1px 線畫法機制統一(2026-08-20 user 拍板)——凍結邊界必為 1px 偽元素,
 //    禁陰影畫線(非整數縮放下陰影與背景盒柵格化取整不同 → 粗細分家 1 vs 2 實體像素)──
-await page.goto('http://localhost:7500/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story', { waitUntil: 'networkidle' })
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, { waitUntil: 'networkidle' })
 await page.waitForSelector('[data-datatable-header-panel]')
 const lineReport = await page.evaluate(() => {
   const panels = [...document.querySelectorAll('.dtPanelBoundaryRight, .dtPanelBoundaryLeft')]

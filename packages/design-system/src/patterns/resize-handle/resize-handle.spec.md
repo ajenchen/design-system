@@ -15,14 +15,15 @@ benchmark:
 
 ## 定位
 
-**Drag-to-resize 視覺共同 primitive**——統一 column resize / sidebar drag-resize / row resize / panel resize 的命中區、cursor 與視覺 line。
+**Drag-to-resize 完整 window-splitter widget**——統一 column resize / panel resize(未來 sidebar / row)的命中區、cursor、視覺 line、pointer 拖拉、鍵盤(←/→ 或 ↑/↓、Home/End)與 ARIA `separator` 契約(2026-09-02 v2;user directive「若雙方使用全然一致,務必變成同一個元件確保 SSOT」)。
 
-**消費者(計畫)**:
-- DataTable column resize(目前自畫 — Phase 2 migrate)
-- Sidebar drag-resize(目前無 — Phase 3 enable)
-- AppShell Aside drag-resize(目前無 — Phase 4 enable)
+**消費者**:
+- DataTable column resize(✅ 2026-09-02 migrate,原自畫 span 刪除)
+- AgentPanel 面板寬(✅ 2026-09-02;左緣 `position="start"`,360–640)
+- Sidebar drag-resize(Phase 3 enable)
+- AppShell Aside drag-resize(Phase 4 enable)
 
-**不耦合 drag math** — consumer 自管 width state(TanStack `header.getResizeHandler()` / 手刻 pointer math / `useResizeObserver` 各種路徑)。本 primitive only ship 視覺 + cursor，且固定 aria-hidden。
+**value-driven** — consumer 只持有尺寸 state,把 `value / min / max` 交給元件;拖拉與鍵盤算法、clamp、ARIA 由元件擁有,consumer 只接 `onValueChange`(拖拉中 live + 鍵盤每步)/ `onValueCommit`(放開;鍵盤每步亦 commit)。
 
 **Layout Family**:N/A(self-contained primitive,非 row-layout family member)。
 
@@ -35,17 +36,23 @@ benchmark:
 ```tsx
 <ResizeHandle
   direction="horizontal" | "vertical"
-  position="end"           // | "start"
-  isResizing?: boolean     // consumer 自管 drag state
-  disabled?: boolean       // consumer 自決 resizable opt-in
-  showLine?: boolean       // default true,false = consumer paint own line
-  lineInsetStart?: string  // line start inset(eg. var(--table-cell-py))
-  lineInsetEnd?: string    // line end inset
-  // …其餘 DOM 事件(onPointerDownCapture / onPointerDown / onTouchStart 等)非自有 typed prop
+  position="end"            // | "start":把手貼哪一緣,決定拖拉 delta 與方向鍵正負
+  value={number}            // 目前尺寸 px(consumer 持有)
+  min={number}
+  max={number}              // 省略 = 無上限:不輸出 aria-valuemax、End 停用
+  step={16}                 // 鍵盤每步,預設 16
+  ariaLabel="調整欄寬"       // 必填(APG separator 必有 aria-label / aria-labelledby)
+  ariaControls?: string     // 指向被調整的 pane
+  disabled?: boolean        // 只畫線;無 role / tabIndex / cursor / 拖拉
+  showLine?: boolean        // default true,false = consumer 已自己畫線
+  lineInsetStart?: string   // line 起點 inset(eg. var(--table-cell-py))
+  lineInsetEnd?: string
+  onValueChange={(next) => …}   // 拖拉中每次移動 + 鍵盤每步(live)
+  onValueCommit={(final) => …}  // pointerup / pointercancel 一次;鍵盤每步亦算 commit
 />
 ```
 
-上方為自有(own)props。drag handler(`onPointerDownCapture` / `onPointerDown` / `onTouchStart` 等)**非本元件 bespoke typed prop**,而是經 `ResizeHandleProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'role' | 'aria-label' | 'aria-orientation' | 'aria-hidden'>` 的 `...restProps` spread 透傳到底層 `<span>`(與 `onClick` / `onPointerMove` 等 generic DOM 事件同 status)。上述四個 ARIA props 由 primitive 固定為誠實的純 pointer decoration 契約，consumer 不可覆寫。consumer 接 drag math 即透過這些透傳事件,本 primitive 不耦合。
+`role / tabIndex / aria-value* / onKeyDown` 由元件擁有,consumer 不可覆寫。方向語意「箭頭往哪、邊緣就往哪」:`end` 把手往右/下拖或按 →/↓ = 變大;`start` 把手往左/上拖或按 ←/↑ = 變大(AgentPanel 左緣把手:← 變寬)。pointer:`onPointerDownCapture` + `stopPropagation`(不讓 dnd-kit 欄位拖曳搶事件)+ `preventDefault` + pointer capture;`touch-action: none`。
 
 **direction**:
 - `horizontal`(拖左右)→ `cursor: col-resize`
@@ -68,8 +75,10 @@ benchmark:
 
 ## a11y
 
-- 固定 `aria-hidden="true"`:目前只有 pointer hit target / visual line，沒有 focus、`aria-valuenow/min/max`、`aria-controls` 或 Arrow-key 行為，不能冒充 WAI-ARIA separator/window-splitter widget。
-- consumer 若把 resize 作為必要功能，必須另提供 keyboard-operable 等價控制；完整 splitter widget 需由新元件一次擁有 value、controls 與鍵盤 contract，不能在本 visual primitive 上零碎加 ARIA。
+- `role="separator"` + `aria-orientation`(horizontal 拖拉 → `vertical` 分隔線)+ `aria-valuenow / aria-valuemin / aria-valuetext="Npx"`(+ 有上限才 `aria-valuemax`;無上限時 valuetext 避免被讀成百分比)+ `aria-label` 必填;`tabIndex=0`;focus-visible = `outline-2 outline-offset-[-2px] outline-ring`(DataTable 既有字串)。
+- 鍵盤:←/→(horizontal)或 ↑/↓(vertical)每步 `step`、Home = min、End = max(有上限才);命中的鍵 preventDefault + stopPropagation(不冒泡到排序 / 欄位拖曳)。
+- `disabled` = 只畫線:無 role / tabIndex / cursor,`aria-hidden`。
+- 對照 [APG Window Splitter](https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/):Left/Right Arrow 移動垂直 splitter、Home/End 到極限。
 
 ## 何時用 / 何時不用
 

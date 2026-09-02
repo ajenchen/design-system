@@ -224,6 +224,7 @@
         "packages/design-system/ds-canonical/hooks/tests/test_log_skill_invokes.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_post_edit_dispatcher.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_provider_peer_symmetry.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_record_release_consent.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_registration_output_contracts.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_session_start_governance_check.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_audit_content_quality.sh",

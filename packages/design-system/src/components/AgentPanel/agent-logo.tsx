@@ -10,9 +10,9 @@
  * - 狀態動畫:agent-panel.spec.md「AgentLogo」節(靜止/招喚/思考;一息 3s 家族;
  *   2026-09-02 拍板:待機一律靜止,併入 still,無獨立呼吸態)。呼吸包絡=吸 35% / 呼至 85% /
  *   85–100% 靜止空拍(靜息 I:E ≈ 1:2 + 呼氣末停頓;spec「AgentLogo」節引用來源)。
- * - 思考態轉速:靜止 → 0.3s 加速(exit 曲線,位移 126° = ω·T·(1−x1),交接速度連續)→ 600°/s 等速
- *   (0.6s/圈)持續到離開思考 → 減速段用 exit 曲線的時間鏡像 (0,0,0.7,1),位移取最小 ≥252° 且
- *   落回正位 0°(mod 360)的角度,時長 = Δ/(ω·0.7) ∈ [0.6, 1.46]s,停定後才淡入下一狀態。
+ * - 思考態轉速:靜止 → 0.375s 加速(=半圈,exit 曲線,位移 126° = ω·T·(1−x1),交接速度連續)→ 480°/s
+ *   等速(0.75s/圈=一息/4)持續到離開思考 → 減速段用 exit 曲線的時間鏡像 (0,0,0.7,1),位移取最小 ≥252°
+ *   且落回正位 0°(mod 360)的角度,時長 = Δ/(ω·0.7) ∈ [0.75, 1.82]s,停定後才淡入下一狀態。
  * - 緩動:--motion-easing-swell / --motion-easing-settle / --motion-easing-exit
  *   (tokens/motion/motion.css)。SMIL keySplines 不能吃 CSS var,以下常數為 token 值的逐字鏡像,
  *   改 token 必同步此處。
@@ -34,12 +34,18 @@ export const SETTLE = '0.2 0 0.38 0.9'
 const EXIT = '0.3 0 1 1'
 /** 減速 = exit 曲線的時間鏡像(起始斜率 1/0.7,速度連續);Material/Carbon 減速原則。 */
 const DECEL = '0 0 0.7 1'
-/** 思考態等速 600°/s(0.6s/圈)、加速 0.3s;交接速度連續 → 加速位移 = ω·T·(1−x1) = 126°。 */
-const SPIN_OMEGA = 600
-const SPIN_ACCEL_S = 0.3
-const SPIN_MID = 126
-/** 減速最小位移 = ω·0.6·0.7 = 252°;實際取最小 ≥252 且落回 0°(mod 360)的角度。 */
-const SPIN_DECEL_MIN = 252
+/**
+ * 思考態等速 480°/s(0.75s/圈 = 一息/4):世界級快檔上緣(Bootstrap 0.75 / Carbon 0.69),比「600ms =
+ * frantic」(doveletter 實測)慢 25%、仍快於中性帶 1.0–1.8s → 讀成「有幹勁」不是「慌」;24px 每格轉 8°、
+ * 輪廓半圈 0.375s 脫離閃爍區(2026-09-02 轉速研究)。加速段 = 半圈時間(ω·T = 180 恆成立),
+ * 位移 = ω·T·(1−x1) = 126° 不隨轉速漂;減速最小位移 = 360·0.7 = 252°。
+ */
+const SPIN_OMEGA = 480
+const SPIN_PERIOD_S = 360 / SPIN_OMEGA
+const SPIN_ACCEL_S = SPIN_PERIOD_S / 2
+const SPIN_MID = SPIN_OMEGA * SPIN_ACCEL_S * 0.7
+/** 減速最小位移 = ω·P·0.7 = 252°;實際取最小 ≥252 且落回 0°(mod 360)的角度。 */
+const SPIN_DECEL_MIN = 360 * 0.7
 const FRAME_S = 1 / 60
 /** 靜止空拍(值不變,曲線無意義,填線性)。 */
 const HOLD = '0 0 1 1'
@@ -102,15 +108,6 @@ const BLUE_LIFT: readonly Stop[] = [
   [0.48, 'oklch(0.89 0.05 258)', 0.1], // = --color-blue-2
   [1, 'oklch(0.89 0.05 258)', 0], // = --color-blue-2
 ]
-/* 簡化版(≤24):去陰影提亮、兩停駐高對比(圖標光學校正慣例;取五停駐頭尾)。 */
-const BLUE_SIMPLE: readonly Stop[] = [
-  [0, 'oklch(0.81 0.10 258)'], // = --color-blue-3
-  [1, 'oklch(0.44 0.20 258)'], // = --color-blue-7
-]
-const PURPLE_SIMPLE: readonly Stop[] = [
-  [0, 'oklch(0.80 0.09 294)'], // = --color-purple-3
-  [1, 'oklch(0.43 0.19 294)'], // = --color-purple-7
-]
 /* 招喚漣漪:雙色放射盤(內藍→靛過渡→紫→邊緣透明;中段取 indigo,自家藍紫之間唯一色相)。 */
 const WAVE_STOPS: readonly Stop[] = [
   [0, 'oklch(0.63 0.20 258)', 0.5], // = --color-blue-5
@@ -125,10 +122,8 @@ export type AgentLogoState = 'still' | 'attract' | 'think'
 export interface AgentLogoProps extends React.SVGAttributes<SVGSVGElement> {
   /** 動態狀態;預設 still(靜止)。 */
   state?: AgentLogoState
-  /** 邊長 px;預設 24。≤24 自動切簡化造型(detail="auto")。 */
+  /** 邊長 px;預設 24。所有尺寸同一造型(2026-09-02 user 拍板:形狀規則,不設簡化檔)。 */
   size?: number
-  /** 造型細節檔;auto = size ≤ 24 用簡化版(去陰影提亮、兩停駐高對比)。 */
-  detail?: 'auto' | 'full' | 'simplified'
   /**
    * 招喚態漣漪;預設 true。AgentFab 置 false(按鈕內放不下漣漪,由邊框光圈代位 —
    * spec「FAB」節),本體蓄勢(脹 1.07+吸氣微亮)不變。
@@ -187,8 +182,8 @@ function GradientStops({ stops }: { stops: readonly Stop[] }) {
 }
 
 /**
- * 兩段旋轉:啟動加速 0.3s(= 一息/10,exit 曲線,位移 126° 使交接速度 = 600°/s 連續)→ 等速
- * 0.6s/圈(= 一息/5,linear=轉圈慣例)。加速段 begin=indefinite 由掛載觸發;等速段以 syncbase
+ * 兩段旋轉:啟動加速 = 半圈時間(exit 曲線,位移 126° 使交接速度 = 等速 連續)→ 等速 0.75s/圈
+ * (= 一息/4,linear=轉圈慣例)。加速段 begin=indefinite 由掛載觸發;等速段以 syncbase
  * `<id>.end` 銜接,保證每次進入都從 0° 起步。離開思考另有減速段(見 AgentLogo think-exit)。
  */
 function SpinPair({
@@ -223,7 +218,7 @@ function SpinPair({
         attributeName={attributeName}
         type="rotate"
         values={`${mid};${end}`}
-        dur="0.6s"
+        dur={`${SPIN_PERIOD_S}s`}
         begin={`${id}.end`}
         repeatCount="indefinite"
       />
@@ -289,24 +284,19 @@ function HoleMorph({ from, round }: { from: string; round: string }) {
 
 interface BodyProps {
   ids: Record<'blue' | 'purple' | 'under' | 'lift', string>
-  simplified: boolean
   morph: boolean
 }
 
-/** 本體雙緞帶(完整=4 層;簡化=2 層);morph=true 時掛負空間形變。 */
-function LogoBody({ ids, simplified, morph }: BodyProps) {
+/** 本體雙緞帶 4 層(面 + 底面陰影 + 面 + 提亮),所有尺寸同一造型;morph=true 時掛負空間形變。 */
+function LogoBody({ ids, morph }: BodyProps) {
   const purpleMorph = morph ? <HoleMorph from={D_PURPLE} round={D_PURPLE_ROUND} /> : null
   const blueMorph = morph ? <HoleMorph from={D_BLUE} round={D_BLUE_ROUND} /> : null
   return (
     <>
       <path d={D_PURPLE} fill={`url(#${ids.purple})`}>{purpleMorph}</path>
-      {!simplified && (
-        <path d={D_PURPLE} fill={`url(#${ids.under})`}>{purpleMorph}</path>
-      )}
+      <path d={D_PURPLE} fill={`url(#${ids.under})`}>{purpleMorph}</path>
       <path d={D_BLUE} fill={`url(#${ids.blue})`}>{blueMorph}</path>
-      {!simplified && (
-        <path d={D_BLUE} fill={`url(#${ids.lift})`}>{blueMorph}</path>
-      )}
+      <path d={D_BLUE} fill={`url(#${ids.lift})`}>{blueMorph}</path>
     </>
   )
 }
@@ -343,7 +333,6 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
     {
       state = 'still',
       size = 24,
-      detail = 'auto',
       ripple = true,
       label,
       className,
@@ -354,7 +343,6 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
   ) => {
     const uid = React.useId().replace(/[^a-zA-Z0-9]/g, '')
     const reduced = usePrefersReducedMotion()
-    const simplified = detail === 'simplified' || (detail === 'auto' && size <= 24)
     /** 減動作:常駐 loop 全停,一律回靜止。 */
     const effectiveState: AgentLogoState = reduced ? 'still' : state
     const innerRef = React.useRef<SVGSVGElement | null>(null)
@@ -442,7 +430,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
     const isExit = visual === 'think-exit'
     /** think→think-exit 不換 key:洞形變 / 疊層節點不重掛、不重新 beginElement。 */
     const visualKey = isExit ? 'think' : visual
-    useBeginAnimationsOnMount(innerRef, `${visualKey}:${simplified}:${ripple}`)
+    useBeginAnimationsOnMount(innerRef, `${visualKey}:${ripple}`)
     const ids = {
       blue: `${uid}bs`,
       purple: `${uid}ps`,
@@ -467,7 +455,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
           x2="770"
           y2="110"
         >
-          <GradientStops stops={simplified ? BLUE_SIMPLE : BLUE_SURFACE} />
+          <GradientStops stops={BLUE_SURFACE} />
           {isThink && !isExit && <GradientCounterSpin id={ids.spinBlue} />}
           {isExit && exit && (
             <SpinDecel attributeName="gradientTransform" from={-exit.angle} to={-(exit.angle + exit.delta)} dur={exit.dur} center="627 627" />
@@ -481,14 +469,12 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
           x2="650"
           y2="1090"
         >
-          <GradientStops stops={simplified ? PURPLE_SIMPLE : PURPLE_SURFACE} />
+          <GradientStops stops={PURPLE_SURFACE} />
           {isThink && !isExit && <GradientCounterSpin id={ids.spinPurple} />}
           {isExit && exit && (
             <SpinDecel attributeName="gradientTransform" from={-exit.angle} to={-(exit.angle + exit.delta)} dur={exit.dur} center="627 627" />
           )}
         </linearGradient>
-        {!simplified && (
-          <>
             <radialGradient
               id={ids.under}
               gradientUnits="userSpaceOnUse"
@@ -507,8 +493,6 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
             >
               <GradientStops stops={BLUE_LIFT} />
             </radialGradient>
-          </>
-        )}
         {isAttract && ripple && (
           <>
             <radialGradient id={ids.wave}>
@@ -523,7 +507,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
       </defs>
     )
 
-    const body = <LogoBody ids={ids} simplified={simplified} morph={isThink} />
+    const body = <LogoBody ids={ids} morph={isThink} />
 
     let content: React.ReactNode
     if (isThink) {

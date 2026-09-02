@@ -55,6 +55,7 @@ const StopFilled = createLucideIcon('StopFilled', [
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
+import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import {
   SurfaceHeader,
   SurfaceFooter,
@@ -80,6 +81,7 @@ import {
   ItemSuffix,
 } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { useOverflowIndices } from '@/design-system/patterns/horizontal-overflow/horizontal-overflow'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
@@ -149,8 +151,6 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
   ) => {
     const [uncontrolledWidth, setUncontrolledWidth] = React.useState(() => clampPanelWidth(defaultWidth))
     const resolvedWidth = clampPanelWidth(width ?? uncontrolledWidth)
-    const dragRef = React.useRef<{ startX: number; startWidth: number } | null>(null)
-    const [dragging, setDragging] = React.useState(false)
 
     const applyWidth = React.useCallback(
       (next: number, commit: boolean) => {
@@ -161,28 +161,6 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
       [width, onWidthChange],
     )
 
-    const onHandlePointerDown = (e: React.PointerEvent<HTMLSpanElement>) => {
-      e.preventDefault()
-      dragRef.current = { startX: e.clientX, startWidth: resolvedWidth }
-      setDragging(true)
-      const onMove = (ev: PointerEvent) => {
-        const drag = dragRef.current
-        if (!drag) return
-        // 把手在左緣:往左拖=變寬。
-        applyWidth(drag.startWidth + (drag.startX - ev.clientX), false)
-      }
-      const onUp = (ev: PointerEvent) => {
-        const drag = dragRef.current
-        dragRef.current = null
-        setDragging(false)
-        window.removeEventListener('pointermove', onMove)
-        window.removeEventListener('pointerup', onUp)
-        if (drag) applyWidth(drag.startWidth + (drag.startX - ev.clientX), true)
-      }
-      window.addEventListener('pointermove', onMove)
-      window.addEventListener('pointerup', onUp)
-    }
-
     if (!open) return null
     return (
       <div
@@ -190,8 +168,10 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
         role="complementary"
         aria-label="智慧代理" // i18n-allow: DS 預設,props 展開在後可覆寫
         className={cn(
-          'relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden',
-          'border-l border-divider bg-surface',
+          'relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-surface',
+          // 分隔線只有一個 owner:可拖時由 ResizeHandle 的 1px line 擁有(DataTable 欄間同款,hover/拖曳會變色);
+          // 不可拖才由容器畫 border-l(app-shell aside 前例)。兩者並存 = 2px 粗線(2026-09-02 user 抓到)。
+          !resizable && 'border-l border-divider',
           'animate-in fade-in-0 slide-in-from-right-4 duration-[var(--motion-duration-surface)] motion-reduce:animate-none',
           className,
         )}
@@ -199,36 +179,20 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
         {...props}
       >
         {resizable && (
-          // 視覺/滑鼠=ResizeHandle(固定 aria-hidden);鍵盤等價=WAI-ARIA window-splitter(DataTable 欄寬同慣例)。
-          <span
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="調整面板寬度" // i18n-allow: DS 預設文案
-            aria-valuenow={resolvedWidth}
-            aria-valuemin={PANEL_WIDTH_MIN}
-            aria-valuemax={PANEL_WIDTH_MAX}
-            aria-valuetext={`${resolvedWidth}px`}
-            tabIndex={0}
-            onKeyDown={(e) => {
-              let next: number | null = null
-              if (e.key === 'ArrowLeft') next = resolvedWidth + PANEL_RESIZE_KEY_STEP
-              else if (e.key === 'ArrowRight') next = resolvedWidth - PANEL_RESIZE_KEY_STEP
-              else if (e.key === 'Home') next = PANEL_WIDTH_MIN
-              else if (e.key === 'End') next = PANEL_WIDTH_MAX
-              if (next == null) return
-              e.preventDefault()
-              applyWidth(next, true)
-            }}
-            // 鍵盤聚焦可見:DataTable 欄寬把手同款 outline(WCAG 2.4.7);7px 熱區與 ResizeHandle 對齊。
-            className="absolute inset-y-0 -left-[3px] z-10 w-[7px] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
-          >
-            <ResizeHandle
-              direction="horizontal"
-              position="start"
-              isResizing={dragging}
-              onPointerDown={onHandlePointerDown}
-            />
-          </span>
+          // 同一顆 ResizeHandle 擁有視覺 / 拖拉 / 鍵盤 / ARIA(DataTable 欄寬同元件,2026-09-02 SSOT 收斂);
+          // 面板寬 clamp(360–640 且 ≤50vw)由 applyWidth 負責。
+          <ResizeHandle
+            direction="horizontal"
+            position="start"
+            value={resolvedWidth}
+            min={PANEL_WIDTH_MIN}
+            max={PANEL_WIDTH_MAX}
+            step={PANEL_RESIZE_KEY_STEP}
+            ariaLabel="調整面板寬度" // i18n-allow: DS 預設文案
+            className="z-10"
+            onValueChange={(next) => applyWidth(next, false)}
+            onValueCommit={(next) => applyWidth(next, true)}
+          />
         )}
         {children}
       </div>
@@ -435,8 +399,16 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                   'rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 )}
               >
-                <span className="truncate text-body-lg font-medium">{title}</span>
-                <ChevronDown size={16} aria-hidden className="shrink-0 text-fg-muted" />
+                {/* 單行截斷 → 截斷時才顯 tooltip 補全(tooltip.spec.md:32;引擎 truncated-text.spec.md),
+                    禁手刻 truncate span。 */}
+                <TruncatedText className="text-body-lg font-medium">{title}</TruncatedText>
+                {/* 指示 chevron 與 Select 觸發器逐字同款:同色 text-fg-muted、同線粗、同「字級↔icon tier」
+                    (標題 text-body-lg = Select lg → ICON_SIZE.lg 20)、開啟時 rotate-180。 */}
+                <ChevronDown
+                  size={ICON_SIZE.lg}
+                  aria-hidden
+                  className={cn('shrink-0 text-fg-muted transition-transform motion-reduce:duration-0', historyOpen && 'rotate-180')}
+                />
               </button>
             </PopoverTrigger>
             <PopoverContent
