@@ -97,7 +97,7 @@ export const AssistAttachments: Story = {
   name: '按鈕語意附件',
   render: () => (
     <div className="max-w-xs rounded-md bg-secondary px-3 py-2">
-      <div className="mb-2 flex flex-wrap gap-2">
+      <div className="mb-2 flex flex-wrap gap-1">
         <Chip variant="assist" startIcon={FileText} aria-label="附件:sprint-42-backlog.csv" onClick={() => {}}>
           sprint-42-backlog.csv
         </Chip>

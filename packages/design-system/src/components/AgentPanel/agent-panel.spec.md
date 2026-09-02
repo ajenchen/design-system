@@ -89,7 +89,8 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 - 我方:氣泡 `bg-secondary`、`rounded-md`、內距 8/12、max-width 85%、靠右;
   進場=淡入+下滑 8、0.15s。代理:無氣泡、全寬、text-body;內文連結=Button link variant。
 - 附件列(氣泡內文字上方):**`<Chip variant="assist">`**(按鈕語意;位置距氣泡緣左 12/
-  上 8、與文字距 8)。A11y:`aria-label="附件:{檔名}"`。
+  上 8、與文字距 8;**chip 相互垂直/水平間距 4**=與 Combobox 內 Tag 區間距一致
+  (combobox.tsx Tag area gap 預設 4;2026-09-02 拍板,非 ChipGroup filter 的 gap-2))。A11y:`aria-label="附件:{檔名}"`。
 
 ### 5. AgentThinking(思考塊)
 
