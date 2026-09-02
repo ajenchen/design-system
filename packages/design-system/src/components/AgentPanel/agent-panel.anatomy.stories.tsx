@@ -40,6 +40,9 @@ export const Overview: Story = {
           value=""
           onValueChange={() => {}}
           attachments={[{ id: 'a', label: '附件列 Tag md,間距 4' }]}
+          onSubmit={() => {}}
+          onRemoveAttachment={() => {}}
+          onAddAttachment={() => {}}
         />
       </AgentPanel>
     </div>
@@ -92,11 +95,11 @@ export const StateBehavior: Story = {
       <div className="flex gap-12">
         <div className="w-80">
           <div className="mb-2 text-caption text-fg-muted">送出(有內容可按)</div>
-          <AgentPromptInput value="幫我整理" onValueChange={() => {}} />
+          <AgentPromptInput value="幫我整理" onValueChange={() => {}} onSubmit={() => {}} onRemoveAttachment={() => {}} onAddAttachment={() => {}} />
         </div>
         <div className="w-80">
           <div className="mb-2 text-caption text-fg-muted">停止(代理進行中同位換實心正方)</div>
-          <AgentPromptInput value="" onValueChange={() => {}} busy onStop={() => {}} />
+          <AgentPromptInput value="" onValueChange={() => {}} onSubmit={() => {}} onRemoveAttachment={() => {}} onAddAttachment={() => {}} busy onStop={() => {}} />
         </div>
       </div>
     </div>

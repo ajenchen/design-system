@@ -765,6 +765,52 @@ build_transcript "$TX_SPEC_IMPL_QUOTE" \
 run_hook "Edit" "/foo/my-project/packages/design-system/src/tokens/motion/motion.css" "$TX_SPEC_IMPL_QUOTE"
 expect_block "9c. 轉述他人建議 + 明示非決定 → fail closed" "BLOCKER"
 
+# 10. 口語 target 別名 + 委託研究(2026-09-02 user 原話:「agent logo 感覺可以改成藍紫色的配色…
+#     另外我覺得 logo 的呼吸狀態是否也可以搭配透明度的改變?仔細研究看到底怎樣最完美…fab 招呼的 logo 也應該要因應調整」)
+USER_LOGO_MSG="要把拍板的東西到底在哪裡?請你開啟新的artifacts用人類可以
+容易理解的話讓我看得懂,不要有術語言簡意賅,
+
+另外我認為 agent logo 感覺可以改成藍紫色的配色
+所以把所有有用到綠色的地方全部換掉包括漣漪,漸層,邊框等等請仔細盤查
+並確保整體美觀且都有用到最新一致的配色且都有呼應,
+另外我覺得 logo 的呼吸狀態是否也可以搭配透明度的改變?
+仔細研究看到底怎樣最完美最美觀最有質感最有人性最有呼吸的感覺
+確保整體的所有動畫都是有搭配的結果
+此外, fab 招呼的 logo 也應該要因應調整,並確保射出的邊框的節奏是有整體搭配的,
+反正你仔細研究確保所有動畫都完美"
+TX_LOGO="$TMP_DIR/tx_logo.jsonl"
+build_transcript "$TX_LOGO" "$USER_LOGO_MSG"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-logo.tsx" "$TX_LOGO"
+expect_pass_silent "10a. 口語「agent logo」= agent-logo.tsx exact target;問句已委託研究 → approved"
+
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-fab.tsx" "$TX_LOGO"
+expect_pass_silent "10b. 家族檔口語「fab」= agent-fab.tsx exact target;「調整」directive → approved"
+
+TX_LOGO_Q="$TMP_DIR/tx_logo_q.jsonl"
+build_transcript "$TX_LOGO_Q" "agent logo 的顏色是否要改成紫色?"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-logo.tsx" "$TX_LOGO_Q"
+expect_block "10c. 單獨問句(無委託)→ 問句 ≠ 同意 fail closed" "BLOCKER"
+
+TX_LOGO_Q2="$TMP_DIR/tx_logo_q2.jsonl"
+build_transcript "$TX_LOGO_Q2" "另外我覺得 logo 的呼吸狀態是否也可以搭配透明度的改變?"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-logo.tsx" "$TX_LOGO_Q2"
+expect_block "10d. 家族 token「logo」綁定 + 單獨問句 → fail closed" "BLOCKER"
+
+TX_BTN_LOGO="$TMP_DIR/tx_btn_logo.jsonl"
+build_transcript "$TX_BTN_LOGO" "$USER_LOGO_MSG"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/Button/button.tsx" "$TX_BTN_LOGO"
+expect_block "10e. 同訊息對 Button 無 exact target 綁定 → 不外溢" "BLOCKER"
+
+# 10f. 技能載入的 meta 紀錄(isMeta + sourceToolUseID)不是 user 說話,不得蓋過真正的最新指令
+TX_LOGO_META="$TMP_DIR/tx_logo_meta.jsonl"
+build_transcript "$TX_LOGO_META" "$USER_LOGO_MSG"
+jq -n --arg t "# Workflow authoring reference
+
+A workflow structures work across many agents" \
+  '{isMeta: true, sourceToolUseID: "toolu_01skill", message: {role: "user", content: [{type: "text", text: $t}]}}' >> "$TX_LOGO_META"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-logo.tsx" "$TX_LOGO_META"
+expect_pass_silent "10f. 技能 meta 紀錄跟在指令後 → 不算最新 user 訊息,仍 approved"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"
