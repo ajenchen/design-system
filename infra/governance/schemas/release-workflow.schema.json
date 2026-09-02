@@ -12,7 +12,8 @@
     "deepAuditReleasePolicy",
     "steps",
     "legacyMechanisms",
-    "automation"
+    "automation",
+    "releaseConsent"
   ],
   "properties": {
     "$schema": {
@@ -182,7 +183,8 @@
         "defaultBranch",
         "publishWorkflow",
         "packages",
-        "consumers"
+        "consumers",
+        "preview"
       ],
       "properties": {
         "repository": {
@@ -225,6 +227,92 @@
             "$ref": "#/$defs/consumerTarget"
           },
           "minItems": 1
+        },
+        "preview": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "provider",
+            "site",
+            "pullRequestPattern",
+            "branchPattern"
+          ],
+          "properties": {
+            "provider": {
+              "const": "netlify"
+            },
+            "site": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+$"
+            },
+            "pullRequestPattern": {
+              "type": "string",
+              "pattern": "^https://.*\\{number\\}.*\\{site\\}.*$"
+            },
+            "branchPattern": {
+              "type": "string",
+              "pattern": "^https://.*\\{branchSlug\\}.*\\{site\\}.*$"
+            }
+          }
+        }
+      }
+    },
+    "releaseConsent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "gateBefore",
+        "receiptDir",
+        "binding",
+        "userVerbatim",
+        "consentPhrases",
+        "questionMarkers",
+        "denialMarkers"
+      ],
+      "properties": {
+        "required": {
+          "const": true
+        },
+        "gateBefore": {
+          "const": "merge"
+        },
+        "receiptDir": {
+          "const": ".git/governance-runtime/release-consent"
+        },
+        "binding": {
+          "const": "pull-request-head-sha"
+        },
+        "userVerbatim": {
+          "type": "string",
+          "minLength": 1
+        },
+        "consentPhrases": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "questionMarkers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "denialMarkers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
         }
       }
     }
@@ -253,6 +341,9 @@
           },
           "minItems": 1,
           "uniqueItems": true
+        },
+        "gate": {
+          "const": "user-release-consent"
         }
       }
     },
@@ -266,7 +357,8 @@
           "properties": {
             "id": {
               "const": "pr-checks"
-            }
+            },
+            "gate": false
           }
         }
       ]
@@ -281,8 +373,14 @@
           "properties": {
             "id": {
               "const": "merge"
+            },
+            "gate": {
+              "const": "user-release-consent"
             }
-          }
+          },
+          "required": [
+            "gate"
+          ]
         }
       ]
     },
@@ -296,7 +394,8 @@
           "properties": {
             "id": {
               "const": "publish"
-            }
+            },
+            "gate": false
           }
         }
       ]
@@ -311,7 +410,8 @@
           "properties": {
             "id": {
               "const": "readback"
-            }
+            },
+            "gate": false
           }
         }
       ]
@@ -326,7 +426,8 @@
           "properties": {
             "id": {
               "const": "consumer"
-            }
+            },
+            "gate": false
           }
         }
       ]

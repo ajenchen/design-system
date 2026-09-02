@@ -202,8 +202,8 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-build-graph-tests | `scripts/test-governance-build-graph.mjs` | `sha256:c394e11154608211709e92b88c0ec14e7eb0636c7a3f0b9ac10e1dfcd90607a2` |
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:90ea8b648deef6df59ba46f48069a551112cb41982cf9a771edeb2ad355db6ce` |
 | governance-control-plane-libraries | `infra/governance/lib/` | `sha256:9e70bb963b8bd11c74b5d2b2063802848cf33cfe63306e200b74ea31aa4e2f8d` |
-| governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:9e06d545303a636183c70749582177e85fa2fa85ccd870d012ac45a88387458d` |
-| governance-control-plane-tests | `infra/governance/test/` | `sha256:42da05f7dce439398582e7ea0b3cbac02dbdd365502d3415f9912723d1c92dd8` |
+| governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:e0b1de916c7199594c74f5ab8e94c84f6fe9c754f17f2340cec28696e69d1713` |
+| governance-control-plane-tests | `infra/governance/test/` | `sha256:6f58c73ea45379304640307757d0851c4c231f5c499d2df6645ac462e063033d` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:f2e839116fe8dcab86bd43567d773bae336b28755e4df8ef90bfe47aef304438` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:78da16ea5ac91be3d8ba1fd1df198aa251dfd4de5b2abbe2d9036b041b2341c4` |
 | governance-github-desired-state | `infra/governance/desired/` | `sha256:315edb88eedfcf22525f4bba76f9677de7c6bb233ede5fdf8f61e2ec72b73db4` |
@@ -356,9 +356,9 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | signed-release-tag-adversarial-tests | `infra/governance/test/signed-release-tag.test.mjs` | `sha256:3db02827a0d9edce2a07b559131836e3a0efa5ac45537a8388f7f97c37203587` |
 | signed-release-tag-verifier | `infra/governance/lib/signed-release-tag.mjs` | `sha256:d081048b17171cc3f469f2e460fb254023d3c866d35033cb689b366d2ddb8230` |
 | standard-release-orchestrator | `scripts/release-orchestrator.mjs` | `sha256:d453ebd499f009d129ce712011ea7acec5224f7242efa4d2c6bb1ef70af08475` |
-| standard-release-workflow | `infra/governance/release-workflow.json` | `sha256:c8d48dd942526102567735dfe2d75c0082147c9bcbc9e68a85e7b28f7be9b568` |
-| standard-release-workflow-schema | `infra/governance/schemas/release-workflow.schema.json` | `sha256:0e727ca66830af8e7f0adf5a5fa09c83dd21e8439d1a6d8a62d01b1f4a541bbd` |
-| standard-release-workflow-tests | `infra/governance/test/release-workflow.test.mjs` | `sha256:b922fbf53a785bccaf3100e95f3e9092d6f71307c26df7d1359381fbd71d5ace` |
+| standard-release-workflow | `infra/governance/release-workflow.json` | `sha256:610872f381dd6a3bebd10011f86fd866f84bce216b273bb9139771cf7565e2cc` |
+| standard-release-workflow-schema | `infra/governance/schemas/release-workflow.schema.json` | `sha256:41eb80c0963d2c200d24757df16a625c6625bd4d7ee80674d52910443b362708` |
+| standard-release-workflow-tests | `infra/governance/test/release-workflow.test.mjs` | `sha256:495a37740531a11472eb5b9ec2e6892df1b4c2fbdcff1bd8a99ee7a53573d5d1` |
 | storybook-package-contract | `packages/storybook-config/package.json` | `sha256:1338f07dad0ed2530245b97ec002928bcd20e1953ca0c075f011a48d2faaa39a` |
 | visual-baseline-review-policy | `infra/governance/visual-baseline-review-policy.json` | `sha256:339179f3bb7805f067c40cb22509734fa3f1cf2834129e64f6e0bf08aa70b334` |
 | visual-baseline-review-policy-schema | `infra/governance/schemas/visual-baseline-review-policy.schema.json` | `sha256:29eb02c844515e6e94a063503c4682e8a1a87a3976b26067e725e5491cc6bc45` |
