@@ -56,7 +56,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import { ChromeHeader } from '@/design-system/patterns/header-canonical/chrome-header'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
-import { TEXTAREA_EDIT_CHROME, TEXTAREA_EDIT_FOCUS } from '@/design-system/components/Textarea/textarea'
+import { fieldChromeStyles } from '@/design-system/components/Field/field-wrapper'
 import {
   SurfaceHeader,
   SurfaceFooter,
@@ -933,11 +933,11 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
       <div
         ref={ref}
         className={cn(
-          'm-[var(--layout-space-loose)] mt-0 shrink-0 rounded-md transition-colors duration-150',
-          // 外框互動 = Textarea edit×default 同一組字串(TEXTAREA_EDIT_CHROME / _FOCUS):hover 一階
-          // border-hover、focus-within 主色;2026-09-02 user 抓「跟 Textarea 不一樣」→ 收斂為單一住所。
-          TEXTAREA_EDIT_CHROME,
-          TEXTAREA_EDIT_FOCUS,
+          'm-[var(--layout-space-loose)] mt-0 shrink-0 rounded-md',
+          // 外框互動 = Field 家族 default chrome SSOT(field-wrapper.tsx fieldChromeStyles:單行 wrapper /
+          // Textarea / 複合輸入盒三宿主同一份 compounds):hover 一階 border-hover、focus-within 主色;
+          // 2026-09-02 user 抓「跟 Textarea 不一樣」→ 收斂為單一住所,禁自刻。
+          fieldChromeStyles({ mode: 'edit', variant: 'default', error: false }),
           className,
         )}
         {...props}

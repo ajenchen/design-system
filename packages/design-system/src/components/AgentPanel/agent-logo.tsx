@@ -160,8 +160,14 @@ export function useBeginAnimationsOnMount(ref: React.RefObject<SVGSVGElement | n
   React.useLayoutEffect(() => {
     const root = ref.current
     if (!root) return
+    // 只起跑「還沒起跑過」的動畫元素:狀態切換(think → think-exit)時同一顆呼吸疊層若被重新 beginElement,
+    // 亮度會從當下值跳回 0 = 斷層(2026-09-02 user 抓「圓回橢圓時有斷層」根因之一);新掛的元素(keyed)照常起跑。
     root.querySelectorAll<SVGAnimateElement>('[data-begin-on-mount]').forEach((el) => {
-      if (typeof el.beginElement === 'function') el.beginElement()
+      if (el.dataset.begun === '1') return
+      if (typeof el.beginElement === 'function') {
+        el.beginElement()
+        el.dataset.begun = '1'
+      }
     })
   }, [ref, key])
 }
@@ -306,12 +312,16 @@ interface BodyProps {
 function LogoBody({ ids, morph }: BodyProps) {
   const purpleMorph = morph ? <HoleMorph rest={D_PURPLE} round={D_PURPLE_ROUND} spec={morph} /> : null
   const blueMorph = morph ? <HoleMorph rest={D_BLUE} round={D_BLUE_ROUND} spec={morph} /> : null
+  // 基底 d = 該段起點形:spindown 段基底必為正圓,否則新掛的 animate 起跑前那一影格會先畫定稿橢圓再跳回正圓
+  // (一影格斷層;2026-09-02 user 抓「圓回橢圓不連貫」根因之二)。
+  const dPurple = morph?.phase === 'spindown' ? D_PURPLE_ROUND : D_PURPLE
+  const dBlue = morph?.phase === 'spindown' ? D_BLUE_ROUND : D_BLUE
   return (
     <>
-      <path d={D_PURPLE} fill={`url(#${ids.purple})`}>{purpleMorph}</path>
-      <path d={D_PURPLE} fill={`url(#${ids.under})`}>{purpleMorph}</path>
-      <path d={D_BLUE} fill={`url(#${ids.blue})`}>{blueMorph}</path>
-      <path d={D_BLUE} fill={`url(#${ids.lift})`}>{blueMorph}</path>
+      <path d={dPurple} fill={`url(#${ids.purple})`}>{purpleMorph}</path>
+      <path d={dPurple} fill={`url(#${ids.under})`}>{purpleMorph}</path>
+      <path d={dBlue} fill={`url(#${ids.blue})`}>{blueMorph}</path>
+      <path d={dBlue} fill={`url(#${ids.lift})`}>{blueMorph}</path>
     </>
   )
 }
@@ -337,8 +347,8 @@ function InhaleOverlay({ morph, dur }: { morph?: HoleMorphSpec; dur: string }) {
         calcMode="spline"
         keySplines={BREATH_SPLINES}
       />
-      <path d={D_BLUE} fill="#fff">{blueMorph}</path>
-      <path d={D_PURPLE} fill="#fff">{purpleMorph}</path>
+      <path d={morph?.phase === 'spindown' ? D_BLUE_ROUND : D_BLUE} fill="#fff">{blueMorph}</path>
+      <path d={morph?.phase === 'spindown' ? D_PURPLE_ROUND : D_PURPLE} fill="#fff">{purpleMorph}</path>
     </g>
   )
 }

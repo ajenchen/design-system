@@ -18,7 +18,7 @@ import {
   type AgentPromptAttachment,
 } from './agent-panel'
 import { AgentLogo } from './agent-logo'
-import { AgentFab, AgentFabDock, AGENT_FAB_FLOAT, type AgentFabPlacement } from './agent-fab'
+import { AgentFab, AgentFabDock, type AgentFabPlacement } from './agent-fab'
 import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -345,17 +345,17 @@ const orderColumns: ColumnDef<OrderRow>[] = [
 ]
 
 /**
- * 入口鈕 ↔ 面板互斥 + 拖到邊收起(方案 C,2026-09-02 拍板):面板關閉時右下角出現入口鈕(內距 loose);
- * 拖到舞台左/右 1/3 內放開 → 吸到該邊、保留高度、縮成 sm 貼邊半圓鈕;拖回中段 → 回右下角;點=開面板;
- * 右鍵或 Shift+F10 開「收到右邊 / 收到左邊 / 放回右下角」選單;鍵盤 ←→ 換邊、↑↓ 16px。
- * 位置由 consumer 受控(這裡用 state),面板開關不會重置使用者收起的位置。
+ * 入口鈕 ↔ 面板互斥 + 收到右邊(2026-09-02 第二輪拍板,Teambition 專案頁同構、去拖曳):面板關閉時右下角出現
+ * 入口鈕(離邊 loose);滑鼠停在鈕上或鍵盤焦點在鈕上會浮出一顆「»」小鈕,點它 → 入口鈕沿 x 軸滑到右緣、縮成
+ * sm 貼邊半圓鈕;收起後浮出的小鈕變「«」,點它滑回右下角。**兩個位置點主鈕都直接開面板(一段)**;
+ * 右鍵 / Shift+F10 開同一個選單、鍵盤 →/← 收合/展開。位置由 consumer 受控(這裡用 state),面板開關不重置。
  * 舞台=滿高訂單表 + 分頁列:未收起時入口鈕會壓在分頁列右端,收到邊後不再遮擋。
  */
 export const FabPanelToggle: Story = {
-  name: '入口鈕:互斥與拖到邊收起',
+  name: '入口鈕:互斥與收到右邊',
   render: function FabToggleStory() {
     const [open, setOpen] = React.useState(false)
-    const [placement, setPlacement] = React.useState<AgentFabPlacement>(AGENT_FAB_FLOAT)
+    const [placement, setPlacement] = React.useState<AgentFabPlacement>('float')
     return (
       <div className="relative flex h-dvh bg-surface-sunken">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col p-[var(--layout-space-loose)]">
@@ -383,19 +383,17 @@ export const FabPanelToggle: Story = {
   },
 }
 
-/** 收起態樣張:入口鈕已貼右緣(offset 200)與貼左緣;可直接拖、鍵盤或選單操作。 */
+/** 收起態樣張:入口鈕已貼右緣(有新訊,標誌蓄勢);滑過或 Tab 到它會浮出「«」小鈕,點小鈕、按 ← 或選單都能放回右下角。 */
 export const FabDocked: Story = {
   name: '入口鈕:已收到邊',
   render: function FabDockedStory() {
-    const [end, setEnd] = React.useState<AgentFabPlacement>({ side: 'end', offset: 200 })
-    const [start, setStart] = React.useState<AgentFabPlacement>({ side: 'start', offset: 120 })
+    const [placement, setPlacement] = React.useState<AgentFabPlacement>('collapsed')
     return (
       <div className="relative h-dvh bg-surface-sunken">
         <p className="p-[var(--layout-space-loose)] text-body text-fg-secondary">
-          右緣一顆(有新訊)、左緣一顆(待機);拖到中段會回右下角。
+          收起後點半圓鈕一樣直接開面板;滑過會浮出「«」小鈕。
         </p>
-        <AgentFabDock attention placement={end} onPlacementChange={setEnd} onClick={noop} />
-        <AgentFabDock placement={start} onPlacementChange={setStart} onClick={noop} aria-label="開啟智慧代理(左)" />
+        <AgentFabDock attention placement={placement} onPlacementChange={setPlacement} onClick={noop} />
       </div>
     )
   },

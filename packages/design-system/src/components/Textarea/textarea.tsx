@@ -2,6 +2,7 @@
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
+import { FIELD_DEFAULT_CHROME_COMPOUNDS } from '@/design-system/components/Field/field-wrapper'
 import type { FieldMode, FieldVariant, FieldVariantInternal } from '@/design-system/components/Field/field-types'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid } from '@/design-system/components/Field/field-context'
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
@@ -32,13 +33,6 @@ import { useControllable } from '@/design-system/hooks/use-controllable'
 
 // Phase B1(2026-05-05):chrome variant(default / naked;`bare` 2026-07-09 退役),mode×chrome 的
 // chrome 規則由 compoundVariants 決定,鏡射 fieldWrapperStyles 對齊 canonical(Phase D 將整併進 fieldWrapperStyles)。
-/**
- * 多行輸入盒的 edit×default 外框互動 SSOT(hover 一階 border-hover、focus-within 主色;
- * field-controls.spec.md「互動狀態」)。Textarea 自身與 AgentPromptInput(複合輸入盒)共用,禁各自手刻。
- */
-export const TEXTAREA_EDIT_CHROME = ['bg-surface border border-border', 'hover:border-border-hover']
-export const TEXTAREA_EDIT_FOCUS = 'focus-within:!border-primary focus-within:hover:!border-primary'
-
 const textareaVariants = cva(
   [
     'w-full rounded-md',
@@ -78,43 +72,12 @@ const textareaVariants = cva(
       },
     },
     compoundVariants: [
-      // default chrome × mode(字串 SSOT = 下方 export 的 TEXTAREA_EDIT_CHROME / TEXTAREA_EDIT_FOCUS,
-      // AgentPromptInput 等多行複合輸入盒消費同一組,禁自刻)
-      {
-        mode: 'edit',
-        variant: 'default',
-        className: TEXTAREA_EDIT_CHROME,
-      },
-      { mode: 'edit', variant: 'default', error: false, className: TEXTAREA_EDIT_FOCUS },
-      {
-        // 2026-07-16 round16 Model A(user GO,推翻 2026-05-13 Path Ⅰ 的 `!px-0 !py-0`):
-        // Textarea view×default = **edit 幾何減 chrome** — 保留 base 的 field-px 與
-        // size 對應 field-control-py token(= edit 內距),只拔 border/bg。多行 read↔edit 零跳。跟 Field wrapper
-        // view×default 同 SSOT(field-wrapper.tsx)。
-        mode: 'view',
-        variant: 'default',
-        className: 'bg-transparent border border-transparent',
-      },
-      {
-        mode: 'readonly',
-        variant: 'default',
-        // 2026-07-13 a11y(WCAG 2.4.7):readonly 有值渲 native <textarea readOnly> 可鍵盤聚焦,base
-        //   outline-none + border-transparent 無焦點指示 → 鏡射 field-wrapper.tsx readonly ring idiom
-        //   (field-controls.spec.md「readonly focus ring」)。textarea 為裸 focusable element,直接用
-        //   focus-visible:(非 :has()),僅鍵盤聚焦顯示、滑鼠點擊不觸發。
-        className: 'bg-readonly border border-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-      },
-      {
-        mode: 'disabled',
-        variant: 'default',
-        className: 'bg-disabled border border-transparent cursor-not-allowed text-fg-disabled',
-      },
+      // default 外框 × mode / error 全部來自 field-wrapper.tsx FIELD_DEFAULT_CHROME_COMPOUNDS
+      // (單行 wrapper / 多行 Textarea / 複合輸入盒三宿主同一份;Phase D 整併完成 2026-09-02)
+      ...FIELD_DEFAULT_CHROME_COMPOUNDS,
+      // disabled 文字色為 Textarea 專屬追加(外框由共用 compounds 提供)
+      { mode: 'disabled', variant: 'default', className: 'text-fg-disabled' },
       // (2026-07-09 `bare` chrome × mode compounds 退役已移除;error:true 為 variant-agnostic 保留)
-      {
-        mode: 'edit',
-        error: true,
-        className: 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error',
-      },
       // (2026-07-09 display×bare / readonly×bare / disabled×bare compounds 退役已移除)
       // naked chrome × mode — cell-as-input substrate(2026-05-06 v14 revert v12)。
       //   v12 `!absolute -inset-px` autoRowHeight 不相容 → revert v9 baseline + 保留 v13.3

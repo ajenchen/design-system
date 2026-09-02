@@ -11,21 +11,28 @@
  * - 動畫:待機=靜止;有新訊=招喚態(標誌本體蓄勢,漣漪由邊框光圈代位:0–35% 貼邊聚亮 →
  *   35% 呼氣起點自邊框射出 r 21→27、寬 2.5、.35→0 → 90% 散盡 → 靜止空拍;與標誌同 dur /
  *   同 keyTimes / 同 swell→settle,同一 commit 掛載 → 同相);懸停=陰影升一級+微放大。
- * - 收到邊(AgentFabDock,2026-09-02 user 拍板方案 C):只貼左右兩緣、放開吸到最近邊並保留 y、
- *   收起態 = Button sm 尺寸(--field-height-sm 28/32)貼邊半圓鈕(只留內側圓角)+ 16 標誌;
- *   點=開面板、拖回舞台中段=回右下角;鍵盤 ↑↓ 16px / ←→ 換邊、右鍵或 Shift+F10 開選單;
- *   吸邊位移 --motion-duration-surface + --motion-easing-enter;prefers-reduced-motion 直接落定。
- *   位置由 consumer 受控/非受控(placement / defaultPlacement / onPlacementChange),DS 不寫 storage。
+ * - 收到邊(AgentFabDock,2026-09-02 user 拍板第二輪:Teambition 專案頁實測同構、去拖曳):只有兩個位置——
+ *   展開 = 右下角 40 圓鈕(離邊 loose);收起 = Button sm 尺寸(--field-height-sm 28)貼右緣半圓鈕(只留內側
+ *   圓角)+ 16 標誌,同一高度、只沿 x 平移(--motion-duration-surface + enter;減動作直接落定)。
+ *   **兩個位置都一段點開面板**。滑鼠停在鈕群或鍵盤焦點在鈕群時淡入一顆「收合/展開」小鈕
+ *   (視覺 18 = 行內動作 hover 底盤階 INLINE_ACTION_HOVER_BG_SIZE.md、命中區 24 = WCAG 2.5.8 最小目標;
+ *   圖示 chevrons-right / chevrons-left = Lucide panel-close/open 方向配對;展開時與 40 圓右上角相切、
+ *   收起時與半圓左上角相切,兩者都貼著主鈕、中間無縫 = WCAG 1.4.13 hoverable);觸控暫不處理,
+ *   右鍵 / Shift+F10 選單與鍵盤 ←→ 為等價路徑。位置由 consumer 受控/非受控,DS 不寫 storage。
  * - 減動作:光圈屬常駐位移 loop → prefers-reduced-motion 全停(標誌內部自回靜止)。
  */
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import { ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
+import { INLINE_ACTION_HOVER_BG_SIZE } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import {
   AGENT_BRAND,
   AgentLogo,
@@ -134,64 +141,45 @@ const AgentFab = React.forwardRef<HTMLButtonElement, AgentFabProps>(
 AgentFab.displayName = 'AgentFab'
 
 /* ────────────────────────────────────────────────────────────────────────────
- * AgentFabDock — 可拖到邊收起的定位殼(方案 C;spec「AgentFab」節「收到邊」)
+ * AgentFabDock — 兩位置定位殼(展開 / 收到右緣)+ hover 收合小鈕(spec「AgentFab」節「收到邊」)
  * ──────────────────────────────────────────────────────────────────────── */
 
-/**
- * 位置:float = 舞台右下角(內距 loose,offset 忽略);start / end = 貼左 / 右緣,
- * offset = 鈕頂距舞台頂的 px(渲染時夾在 loose ~ 舞台高 − 鈕高 − loose)。單一物件避免 side 與 y 脫鉤。
- */
-export interface AgentFabPlacement {
-  side: 'float' | 'start' | 'end'
-  offset: number
-}
+/** 位置:float = 舞台右下角(離邊 loose);collapsed = 同一高度貼右緣的 28 半圓鈕。 */
+export type AgentFabPlacement = 'float' | 'collapsed'
 
-export const AGENT_FAB_FLOAT: AgentFabPlacement = { side: 'float', offset: 0 }
-
-/** 拖曳啟動門檻 px(小於視為點擊;dnd-kit PointerSensor activationConstraint.distance 同量級)。 */
-const DRAG_THRESHOLD = 8
-/** 鍵盤每步 16(同 AgentPanel 調寬步長)。 */
-const DOCK_KEY_STEP = 16
+/** 主鈕直徑(= --field-height-lg 於 lg 密度 40)。 */
+const FAB_PX = 40
+/** 收起鈕高(= --field-height-sm 28)。 */
+const COLLAPSED_PX = 28
+/** 小鈕視覺直徑 = 行內動作 md 的 hover 底盤階(18);命中區 24 = WCAG 2.5.8 最小目標。 */
+const TOGGLE_VISUAL_PX = INLINE_ACTION_HOVER_BG_SIZE.md
+const TOGGLE_HIT_PX = 24
+const SIN45 = Math.SQRT1_2
 
 export interface AgentFabDockProps extends Omit<AgentFabProps, 'className' | 'onClick'> {
   /** 受控位置。 */
   placement?: AgentFabPlacement
-  /** 非受控初始位置;預設右下角。 */
+  /** 非受控初始位置;預設右下角展開。 */
   defaultPlacement?: AgentFabPlacement
-  /** 位置變更(拖放吸邊 / 鍵盤 / 選單);consumer 自行決定要不要持久化(DS 不寫 storage)。 */
+  /** 位置變更(小鈕 / 選單 / 鍵盤);consumer 自行決定要不要持久化(DS 不寫 storage)。 */
   onPlacementChange?: (placement: AgentFabPlacement) => void
-  /** 可拖(預設 true);false 時只有鍵盤與選單。 */
-  draggable?: boolean
-  /** 點擊(開面板);拖曳超過門檻的放開不觸發。 */
+  /** 點擊(開面板);兩個位置都一段開啟。 */
   onClick?: React.MouseEventHandler<HTMLButtonElement>
   /** 定位殼 className(殼為 absolute,舞台需 relative)。 */
   className?: string
-  /** 選單文案(可覆寫供 i18n)。 */
-  menuLabels?: { dockEnd?: string; dockStart?: string; float?: string }
-}
-
-function clampOffset(offset: number, stage: HTMLElement | null, size: number, inset: number) {
-  if (!stage) return Math.max(inset, offset)
-  const max = Math.max(inset, stage.clientHeight - size - inset)
-  return Math.min(Math.max(inset, offset), max)
-}
-
-function readPx(el: HTMLElement | null, variable: string, fallback: number) {
-  if (!el) return fallback
-  const value = Number.parseFloat(getComputedStyle(el).getPropertyValue(variable))
-  return Number.isFinite(value) ? value : fallback
+  /** 文案(可覆寫供 i18n)。 */
+  labels?: { collapse?: string; expand?: string }
 }
 
 const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
   (
     {
       placement: placementProp,
-      defaultPlacement = AGENT_FAB_FLOAT,
+      defaultPlacement = 'float',
       onPlacementChange,
-      draggable = true,
       onClick,
       className,
-      menuLabels,
+      labels,
       attention = false,
       'aria-label': ariaLabel,
       ...buttonProps
@@ -199,184 +187,130 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
     ref,
   ) => {
     const reduced = usePrefersReducedMotion()
+    const uid = React.useId().replace(/[^a-zA-Z0-9]/g, '')
+    const fabId = `${uid}fab`
     const [uncontrolled, setUncontrolled] = React.useState<AgentFabPlacement>(defaultPlacement)
     const placement = placementProp ?? uncontrolled
-    const setPlacement = React.useCallback(
-      (next: AgentFabPlacement) => {
-        if (placementProp === undefined) setUncontrolled(next)
-        onPlacementChange?.(next)
-      },
-      [placementProp, onPlacementChange],
-    )
-    const shellRef = React.useRef<HTMLDivElement | null>(null)
-    React.useImperativeHandle(ref, () => shellRef.current as HTMLDivElement)
-    const dragRef = React.useRef<{ startX: number; startY: number; moved: boolean } | null>(null)
-    const [dragPos, setDragPos] = React.useState<{ x: number; y: number } | null>(null)
-    const suppressClickRef = React.useRef(false)
+    const collapsed = placement === 'collapsed'
+    const setPlacement = (next: AgentFabPlacement) => {
+      if (placementProp === undefined) setUncontrolled(next)
+      onPlacementChange?.(next)
+    }
+    const toggle = () => setPlacement(collapsed ? 'float' : 'collapsed')
     const [menuOpen, setMenuOpen] = React.useState(false)
-    const docked = placement.side !== 'float'
-    const stage = () => shellRef.current?.offsetParent as HTMLElement | null
-
-    const inset = readPx(shellRef.current, '--layout-space-loose', 16)
-    const dockSize = readPx(shellRef.current, '--field-height-sm', 28)
-    const fabSize = 40
-
-    /** 放開:舞台左右各 1/3 內 → 吸到該邊、保留 y;中段 → 回右下角。 */
-    const settle = (x: number, y: number) => {
-      const host = stage()
-      if (!host) return
-      const width = host.clientWidth
-      if (x < width / 3) setPlacement({ side: 'start', offset: clampOffset(y - dockSize / 2, host, dockSize, inset) })
-      else if (x > (width * 2) / 3) setPlacement({ side: 'end', offset: clampOffset(y - dockSize / 2, host, dockSize, inset) })
-      else setPlacement(AGENT_FAB_FLOAT)
+    const text = {
+      collapse: labels?.collapse ?? '收到右邊', // i18n-allow: DS 預設文案,labels 可覆寫
+      expand: labels?.expand ?? '放回右下角', // i18n-allow: DS 預設文案,labels 可覆寫
     }
+    const buttonLabel = ariaLabel ?? '開啟智慧代理' // i18n-allow: DS 預設文案,aria-label prop 可覆寫
 
-    const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-      if (!draggable || e.button !== 0) return
-      dragRef.current = { startX: e.clientX, startY: e.clientY, moved: false }
-      const onMove = (ev: PointerEvent) => {
-        const drag = dragRef.current
-        if (!drag) return
-        if (!drag.moved && Math.hypot(ev.clientX - drag.startX, ev.clientY - drag.startY) < DRAG_THRESHOLD) return
-        drag.moved = true
-        const rect = stage()?.getBoundingClientRect()
-        if (rect) setDragPos({ x: ev.clientX - rect.left, y: ev.clientY - rect.top })
-      }
-      const onUp = (ev: PointerEvent) => {
-        window.removeEventListener('pointermove', onMove)
-        window.removeEventListener('pointerup', onUp)
-        const drag = dragRef.current
-        dragRef.current = null
-        setDragPos(null)
-        if (!drag?.moved) return
-        // 拖曳放開後瀏覽器可能緊接著發 click(同元素)→ 吞掉;元素若已換態不會有 click → 下一 tick 清旗標,
-        // 避免吞到之後真正的點擊。
-        suppressClickRef.current = true
-        window.setTimeout(() => {
-          suppressClickRef.current = false
-        }, 0)
-        const rect = stage()?.getBoundingClientRect()
-        if (rect) settle(ev.clientX - rect.left, ev.clientY - rect.top)
-      }
-      window.addEventListener('pointermove', onMove)
-      window.addEventListener('pointerup', onUp)
-    }
-
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (suppressClickRef.current) {
-        suppressClickRef.current = false
-        e.preventDefault()
-        return
-      }
-      onClick?.(e)
-    }
-
-    /** 鍵盤:←→ 換邊(貼邊時往反方向 = 回右下角);貼邊時 ↑↓ 16px;Shift+F10 開選單。 */
+    /** 鍵盤:→ 收到右邊、← 放回右下角(與小鈕/選單等價);Shift+F10 開選單。 */
     const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-      const host = stage()
-      const size = docked ? dockSize : fabSize
       if (e.key === 'F10' && e.shiftKey) {
         e.preventDefault()
         setMenuOpen(true)
-        return
-      }
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      } else if (e.key === 'ArrowRight' && !collapsed) {
         e.preventDefault()
-        const target = e.key === 'ArrowLeft' ? 'start' : 'end'
-        if (placement.side === target) return
-        if (docked) setPlacement(AGENT_FAB_FLOAT)
-        else {
-          const top = host ? host.clientHeight - size - inset : inset
-          setPlacement({ side: target, offset: clampOffset(top, host, dockSize, inset) })
-        }
-        return
-      }
-      if (docked && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        setPlacement('collapsed')
+      } else if (e.key === 'ArrowLeft' && collapsed) {
         e.preventDefault()
-        const delta = e.key === 'ArrowUp' ? -DOCK_KEY_STEP : DOCK_KEY_STEP
-        setPlacement({ side: placement.side, offset: clampOffset(placement.offset + delta, host, dockSize, inset) })
+        setPlacement('float')
       }
     }
-
-    const labels = {
-      dockEnd: menuLabels?.dockEnd ?? '收到右邊', // i18n-allow: DS 預設文案,menuLabels 可覆寫
-      dockStart: menuLabels?.dockStart ?? '收到左邊', // i18n-allow: DS 預設文案,menuLabels 可覆寫
-      float: menuLabels?.float ?? '放回右下角', // i18n-allow: DS 預設文案,menuLabels 可覆寫
-    }
-    const dockTo = (side: 'start' | 'end') => {
-      const host = stage()
-      const current = docked ? placement.offset : host ? host.clientHeight - dockSize - inset : inset
-      setPlacement({ side, offset: clampOffset(current, host, dockSize, inset) })
-    }
-
-    // 定位:拖曳中跟指標;float 右下角;docked 貼邊 + offset(夾限於渲染時)。
-    const style: React.CSSProperties = dragPos
-      ? { left: dragPos.x - (docked ? dockSize : fabSize) / 2, top: dragPos.y - (docked ? dockSize : fabSize) / 2 }
-      : docked
-        ? { top: clampOffset(placement.offset, stage(), dockSize, inset), [placement.side === 'end' ? 'insetInlineEnd' : 'insetInlineStart']: 0 }
-        : { bottom: 'var(--layout-space-loose)', insetInlineEnd: 'var(--layout-space-loose)' }
-
     const shared = {
-      onPointerDown,
+      id: fabId,
       onKeyDown,
       onContextMenu: (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault()
         setMenuOpen(true)
       },
-      onClick: handleClick,
-      'aria-label': ariaLabel ?? '開啟智慧代理', // i18n-allow: DS 預設文案,aria-label prop 可覆寫
+      onClick,
+      'aria-label': buttonLabel,
       ...buttonProps,
     }
 
+    // 小鈕圓心:展開 = 40 圓右上 45° 切點外側;收起 = 半圓左上 45° 切點外側(往舞台內側,不出畫面)。
+    const r = collapsed ? COLLAPSED_PX / 2 : FAB_PX / 2
+    const t = TOGGLE_VISUAL_PX / 2
+    const cx = collapsed ? r - (r + t) * SIN45 : r + (r + t) * SIN45
+    const cy = r - (r + t) * SIN45
+    const toggleStyle: React.CSSProperties = {
+      width: TOGGLE_HIT_PX,
+      height: TOGGLE_HIT_PX,
+      left: cx - TOGGLE_HIT_PX / 2,
+      top: cy - TOGGLE_HIT_PX / 2,
+    }
+    const ToggleIcon = collapsed ? ChevronsLeft : ChevronsRight
+
     return (
       <div
-        ref={shellRef}
-        data-placement={placement.side}
-        data-dragging={dragPos ? '' : undefined}
+        ref={ref}
+        data-placement={placement}
         className={cn(
-          'absolute z-20',
-          !dragPos && !reduced &&
-            'transition-[top,bottom,inset-inline-start,inset-inline-end] duration-[var(--motion-duration-surface)] ease-[var(--motion-easing-enter)]',
-          dragPos && 'cursor-grabbing select-none',
+          'group/dock absolute z-20 inline-flex',
+          !reduced && 'transition-[inset-inline-end] duration-[var(--motion-duration-surface)] ease-[var(--motion-easing-enter)]',
           className,
         )}
-        style={style}
+        style={{ bottom: 'var(--layout-space-loose)', insetInlineEnd: collapsed ? 0 : 'var(--layout-space-loose)' }}
       >
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen} modal={false}>
           {/* 選單只由右鍵 / Shift+F10 開;錨點 = 蓋住鈕的透明 span(pointer-events-none,不攔點擊)。 */}
           <DropdownMenuTrigger asChild>
             <span aria-hidden className="pointer-events-none absolute inset-0" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align={placement.side === 'start' ? 'start' : 'end'}>
-            {placement.side !== 'end' && <DropdownMenuItem onSelect={() => dockTo('end')}>{labels.dockEnd}</DropdownMenuItem>}
-            {placement.side !== 'start' && <DropdownMenuItem onSelect={() => dockTo('start')}>{labels.dockStart}</DropdownMenuItem>}
-            {docked && <DropdownMenuItem onSelect={() => setPlacement(AGENT_FAB_FLOAT)}>{labels.float}</DropdownMenuItem>}
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={toggle}>{collapsed ? text.expand : text.collapse}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        {docked ? (
-          // 收起態:sm 尺寸貼邊半圓鈕,環只畫露出的三邊,內置 16 標誌;招喚態同款蓄勢、光圈省略(貼邊會被裁)。
-          <span
-            className={cn(
-              'inline-flex h-field-sm w-[var(--field-height-sm)] p-[2px] shadow-[var(--elevation-200)]',
-              placement.side === 'end' ? 'rounded-l-full pr-0' : 'rounded-r-full pl-0',
-            )}
-            style={{ background: RING_GRADIENT }}
-          >
-            <button
-              type="button"
-              className={cn(
-                'inline-flex h-full w-full cursor-pointer items-center justify-center border-none bg-surface-raised',
-                placement.side === 'end' ? 'rounded-l-full' : 'rounded-r-full',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              )}
-              {...shared}
-            >
-              <AgentLogo state={attention ? 'attract' : 'still'} ripple={false} size={16} />
-            </button>
-          </span>
+        {collapsed ? (
+          // 收起態:sm 尺寸貼邊半圓鈕,環只畫露出的三邊,內置 16 標誌;有新訊同款蓄勢、光圈省略(貼邊會被裁)。
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className="inline-flex h-field-sm w-[var(--field-height-sm)] rounded-l-full p-[2px] pr-0 shadow-[var(--elevation-200)] transition-shadow duration-[var(--motion-duration-overlay)] hover:shadow-[var(--elevation-200-hover)]"
+                style={{ background: RING_GRADIENT }}
+              >
+                <button
+                  type="button"
+                  className={cn(
+                    'inline-flex h-full w-full cursor-pointer items-center justify-center rounded-l-full border-none bg-surface-raised',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                  )}
+                  {...shared}
+                >
+                  <AgentLogo state={attention ? 'attract' : 'still'} ripple={false} size={16} />
+                </button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="left">{buttonLabel}</TooltipContent>
+          </Tooltip>
         ) : (
-          <AgentFab attention={attention} className={dragPos ? 'cursor-grabbing' : undefined} {...shared} />
+          <AgentFab attention={attention} {...shared} />
         )}
+        {/* 收合 / 展開小鈕:hover 鈕群或鍵盤焦點在鈕群時淡入(Polaris / Carbon / Atlassian「hover 與 focus 都顯示」);
+            視覺 18 圓盤 + 24 命中區;與主鈕 45° 相切、無縫。Tab 順序:主鈕 → 小鈕。 */}
+        <button
+          type="button"
+          aria-label={collapsed ? text.expand : text.collapse}
+          aria-expanded={!collapsed}
+          aria-controls={fabId}
+          onClick={toggle}
+          className={cn(
+            'absolute grid place-items-center rounded-full cursor-pointer',
+            'opacity-0 transition-opacity duration-[var(--motion-duration-overlay)] motion-reduce:transition-none',
+            'group-hover/dock:opacity-100 group-focus-within/dock:opacity-100',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+          )}
+          style={toggleStyle}
+        >
+          <span
+            aria-hidden
+            className="grid place-items-center rounded-full border border-border bg-surface-raised text-fg-muted shadow-[var(--elevation-100)]"
+            style={{ width: TOGGLE_VISUAL_PX, height: TOGGLE_VISUAL_PX }}
+          >
+            <ToggleIcon size={ICON_SIZE.md} />
+          </span>
+        </button>
       </div>
     )
   },
@@ -384,3 +318,4 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
 AgentFabDock.displayName = 'AgentFabDock'
 
 export { AgentFab, AgentFabDock }
+
