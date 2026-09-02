@@ -44,6 +44,7 @@ const CONVERSATIONS: AgentConversationSummary[] = [
 
 /** 任務助理完整對話:附件氣泡 + 思考塊 + 工具列 + 輸入盒(真實 Jira 型場景)。 */
 export const TaskAssistant: Story = {
+  name: '任務助理完整對話',
   render: function TaskAssistantStory() {
     const [value, setValue] = React.useState('')
     return (
@@ -101,10 +102,11 @@ export const TaskAssistant: Story = {
 
 /** 決策卡覆蓋輸入區(OpenSnapshot):代理被阻擋、需人拍板。 */
 export const DecisionCardOpen: Story = {
+  name: '決策卡覆蓋輸入區',
   render: () => (
     <PanelFrame>
       <AgentPanel>
-        <AgentPanelHeader title="發布公告草稿" logoState="idle" />
+        <AgentPanelHeader title="發布公告草稿" />
         <AgentConversation>
           <AgentMessage role="agent">
             公告已寫好兩個版本,語氣不同,需要你選一個再繼續排程。
@@ -136,6 +138,7 @@ export const DecisionCardOpen: Story = {
 
 /** 決策回執:拍板後在對話流中的靜態紀錄。 */
 export const DecisionSummaryInFlow: Story = {
+  name: '決策回執',
   render: () => (
     <PanelFrame>
       <AgentPanel>
@@ -157,6 +160,7 @@ export const DecisionSummaryInFlow: Story = {
 
 /** 空狀態:問候區=標誌招喚態(邀請開始對話)。 */
 export const EmptyConversation: Story = {
+  name: '空狀態',
   render: () => (
     <PanelFrame>
       <AgentPanel>
@@ -174,11 +178,12 @@ export const EmptyConversation: Story = {
   ),
 }
 
-/** 標誌四態:靜止/待機/招喚/思考(動態資產矩陣;減動作時自動降級待機呼吸)。 */
+/** 標誌三態:靜止(=待機)/招喚/思考(動態資產矩陣;減動作時一律回靜止)。 */
 export const LogoStates: Story = {
+  name: '標誌三態',
   render: () => (
     <div className="flex items-end gap-12 p-12">
-      {(['still', 'idle', 'attract', 'think'] as const).map((state) => (
+      {(['still', 'attract', 'think'] as const).map((state) => (
         <div key={state} className="flex flex-col items-center gap-3">
           <AgentLogo state={state} size={72} detail="full" label={state} />
           <span className="text-caption text-fg-muted">{state}</span>
@@ -194,6 +199,7 @@ export const LogoStates: Story = {
 
 /** FAB:待機(靜止)與有新訊(招喚=標誌蓄勢+邊框光圈代位)。 */
 export const FabStates: Story = {
+  name: 'FAB 兩態',
   render: () => (
     <div className="flex items-center gap-16 p-16">
       <div className="flex flex-col items-center gap-3">

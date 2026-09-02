@@ -9,10 +9,10 @@
  *   同 AgentLogo 漸層停駐;2026-09-02 對定稿標誌覆核:兩極各落於藍 252-268 /
  *   青 190-210 家族內 ✓)。
  * - 內置 24 標誌(AgentLogo 簡化檔自動生效)。
- * - 動畫:待機=靜止(常駐邊角鈕,持續呼吸干擾周邊視野);有新訊=招喚態
+ * - 動畫:待機=靜止(=標誌 still 態,2026-09-02 全家族統一);有新訊=招喚態
  *   (標誌本體蓄勢,漣漪由邊框光圈代位:35% 拍點自邊框射出 r 21→27、寬 2.5、.35→0);
  *   懸停=陰影升一級+微放大;皆 --motion-duration-overlay 過場。
- * - 減動作:光圈屬常駐位移 loop → prefers-reduced-motion 全停(標誌內部自落待機呼吸)。
+ * - 減動作:光圈屬常駐位移 loop → prefers-reduced-motion 全停(標誌內部自回靜止)。
  */
 import * as React from 'react'
 import { cn } from '@/lib/utils'
