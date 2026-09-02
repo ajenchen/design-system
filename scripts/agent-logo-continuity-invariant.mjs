@@ -5,13 +5,15 @@
  * 在真實瀏覽器(Playwright Chromium,前景 rAF 可跑)載入 storybook-static 的「標誌:思考起步與減速停止」,
  * 按下「思考 3 秒」後逐影格(rAF)取樣四個通道:本體角度、色場角度、負空間形狀(與定稿形距離)、亮度疊層不透明度,
  * 直到回到靜止。判定:
- *   C1 起點=終點:靜止 → 思考起步、減速停定 → 靜止,四通道逐一相等(角度 mod 360、形狀距離 0、疊層 0)。
+ *   C1 起點=終點:靜止 → 思考起步(rAF 第一格已是起跑後 ≤1 影格,容差 = 每影格最大位移)、減速停定 → 靜止
+ *      (四通道逐一相等:角度 mod 360、形狀距離 0、疊層 0)。
  *   C2 無跳幀:相鄰影格的角度差 ≤ 每影格最大位移(480°/s ÷ 實際 fps)× 1.5;形狀/亮度差 ≤ 容差。
  *   C3 減速起點基底 = 當下角度:SpinDecel 起跑前一影格的 <g transform> 與 <linearGradient gradientTransform> 基底
  *      等於離開思考瞬間的角度(否則會先閃回 0°)。
  *   C4 still ↔ think 交接不掛 agent-logo-enter(淡入只給招喚)。
- *   C6 減速段沒有孤兒動畫:begin="indefinite" 的 animate 掛上後必被 beginElement(getStartTime 不丟例外);
- *      2026-09-03 deploy-preview 逐格實測:洞形變 / 亮度淡出 7 個 animate 全 unresolved → 整段減速洞持圓、停定瞬間跳橢圓。
+ *   C6 減速段沒有孤兒動畫:減速起跑的第一格,svg 內每個 animate 都有 current interval(getStartTime 不丟例外);
+ *      只看這一格 —— fill=freeze 的動畫結束後 getStartTime 也會丟例外,等速中 / 停定後出現「無 interval」是正常的。
+ *      2026-09-03 deploy-preview 逐格實測:洞形變 / 亮度淡出 7 個 animate 全未起跑 → 整段減速洞持圓、停定瞬間跳橢圓。
  * 沙箱起不了 Chromium → SKIPPED-ENV(exit 0),請在可開瀏覽器的環境(CI)補驗。
  */
 import { chromium } from 'playwright'
@@ -106,7 +108,7 @@ const finalStill = [...frames].reverse().find((f) => f.state === 'still')
 const fps = frames.length / ((frames[frames.length - 1].t - frames[0].t) / 1000)
 const maxStep = (480 / fps) * 1.5
 
-record('C1a', '靜止 → 思考起步:角度/色場/形狀/疊層相等', !!first && wrapDelta(first.body, rest.body) < 1 && wrapDelta(first.grad, rest.grad) < 1 && first.holeDist < 1 && first.overlay < 0.02, first ? `body ${first.body.toFixed(1)} grad ${first.grad.toFixed(1)} hole ${first.holeDist.toFixed(0)} overlay ${first.overlay.toFixed(3)}` : 'no think frame')
+record('C1a', `靜止 → 思考起步:第一格與靜止差 ≤ 一影格(角度 ≤ ${maxStep.toFixed(1)}°、形狀 ≤ 60、疊層 ≤ 0.02)`, !!first && wrapDelta(first.body, rest.body) <= maxStep && wrapDelta(first.grad, rest.grad) <= maxStep && first.holeDist <= 60 && first.overlay < 0.02, first ? `body ${first.body.toFixed(1)} grad ${first.grad.toFixed(1)} hole ${first.holeDist.toFixed(0)} overlay ${first.overlay.toFixed(3)}` : 'no think frame')
 record('C1b', '減速停定 → 靜止:角度 ≡ 0、色場 ≡ 0、形狀 = 定稿、疊層 0', !!finalStill && wrapDelta(finalStill.body, 0) < 1 && wrapDelta(finalStill.grad, 0) < 1 && finalStill.holeDist < 1 && finalStill.overlay < 0.02, finalStill ? `body ${finalStill.body.toFixed(1)} grad ${finalStill.grad.toFixed(1)} hole ${finalStill.holeDist.toFixed(0)} overlay ${finalStill.overlay.toFixed(3)}` : 'no still frame')
 let worst = { body: 0, grad: 0, hole: 0, overlay: 0, at: -1 }
 for (let i = 1; i < frames.length; i++) {
@@ -120,7 +122,7 @@ for (let i = 1; i < frames.length; i++) {
 record('C2', `無跳幀(fps≈${fps.toFixed(0)},角度每影格 ≤ ${maxStep.toFixed(1)}°、形狀 ≤ 60、疊層 ≤ 0.08)`, worst.body <= maxStep && worst.grad <= maxStep && worst.hole <= 60 && worst.overlay <= 0.08, `worst body ${worst.body.toFixed(1)}° grad ${worst.grad.toFixed(1)}° hole ${worst.hole.toFixed(0)} overlay ${worst.overlay.toFixed(3)}`)
 record('C3', '減速起點基底 = 離開思考瞬間角度(本體與色場)', !!firstExit && !!lastThink && wrapDelta(firstExit.bodyBase, lastThink.body) <= maxStep && wrapDelta(-firstExit.gradBase, lastThink.body) <= maxStep, firstExit && lastThink ? `bodyBase ${firstExit.bodyBase.toFixed(1)} vs ${lastThink.body.toFixed(1)}; gradBase ${firstExit.gradBase.toFixed(1)}` : 'no exit frame')
 record('C4', 'still ↔ think 交接不掛淡入 class', !!first && !first.enter && !!finalStill && !finalStill.enter, `enter@think ${first?.enter} enter@still ${finalStill?.enter}`)
-record('C6', '減速段無孤兒動畫(每個 animate 都已 beginElement)', !!firstExit && firstExit.unresolved === 0 && !!lastExit && lastExit.unresolved === 0 && !!lastThink && lastThink.unresolved === 0, `unresolved think ${lastThink?.unresolved} exit-start ${firstExit?.unresolved} exit-end ${lastExit?.unresolved}`)
+record('C6', '減速起跑第一格無孤兒動畫(每個 animate 都有 current interval)', !!firstExit && firstExit.unresolved === 0, `unresolved@exit-start ${firstExit?.unresolved}(等速中 ${lastThink?.unresolved} / 停定後 ${lastExit?.unresolved} 為 freeze 結束,屬正常)`)
 record('C5', '減速段結束落在正位後才切靜止(最後一個 exit 影格角度 ≡ 0)', !!lastExit && wrapDelta(lastExit.body, 0) <= maxStep && wrapDelta(lastExit.grad, 0) <= maxStep, lastExit ? `last exit body ${lastExit.body.toFixed(1)} grad ${lastExit.grad.toFixed(1)}` : 'no exit frame')
 const failed = findings.filter((f) => !f.pass)
 console.log(failed.length ? `✗ agent-logo-continuity ${failed.length} 條失敗` : `✅ agent-logo-continuity-invariant PASS(${frames.length} 影格)`)
