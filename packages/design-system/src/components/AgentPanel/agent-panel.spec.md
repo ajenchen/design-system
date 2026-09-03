@@ -326,14 +326,21 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
   不是另一個獨立的東西 —— 代理在回覆時即使面板關著,入口鈕標誌照樣轉(`think`);有新訊 = 招喚(`attract`,標誌蓄勢
   + 邊框光圈);閒置 = 靜止(`still`)。兩種形態(40 圓 / 28 貼邊)都跟,尺寸變、狀態不變。光圈只給招喚態:思考態的
   訊號是標誌自己在轉,再加光圈會變成兩個 loop 互相打架。對照:[Android Bubbles 收合後仍以圖示承載該對話的動態](https://developer.android.com/develop/ui/views/notifications/bubbles)。
-- **放置與互斥**(2026-09-02 拍板):FAB 為 opt-in 浮動入口,固定於舞台右下、內距
+- **放置與互斥**(2026-09-02 拍板;2026-09-03 抽成元件):FAB 為 opt-in 浮動入口,固定於舞台右下、內距
   `--layout-space-loose`(16/24;Material FAB 最小邊距同值);**面板開 → FAB 隱藏、面板關 → FAB 回來**
-  (兩者互斥,開面板的入口與關面板的 × 不並存)。DS 預設入口仍是全域頂列右側鈕
+  (兩者互斥,開面板的入口與關面板的 × 不並存)。互斥、位置記憶與標誌狀態的**唯一住所 = `AgentPanelDock`**
+  (`<AgentPanelDock logoState={s}>{({ close, logoState }) => <AgentPanel>…</AgentPanel>}</AgentPanelDock>`,
+  外層容器需 `relative`):開時只渲染面板(× 接 `close`)、關時只渲染入口鈕(點一下開回來);產品端與所有 story
+  都用它,不各自寫一份 `open ? panel : fab`。DS 預設入口仍是全域頂列右側鈕
   (`governance/planning/2026-08-11-agent-ui-panel-spec.md` 已裁),含滿高表格/分頁列的頁面一律用頂列入口。
 - **遮擋與貼邊**(`AgentFabDock`;演進:2026-09-02 拖到邊 → hover 小鈕 → 拖曳自由座標 → 2026-09-03 user 拍板
   「只有家與貼邊兩種位置」→ 帶的幾何(寬 36、下半部)→ 帶的樣式(drop-target 底 + 三邊虛線框)。**用語統一**:
   位置叫「家 / 貼邊」、區域叫「帶」、動作文案叫「縮小按鈕 / 放大按鈕」,不再用「收到邊 / 收合 / 小鈕 / 藍框」):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),
   與表格分頁列「操作右」必撞 → 主鈕可拖到右緣貼邊:
+  - **可點區域 ≡ 看得見的形狀**:漸層環畫在 `<button>` 自己的 2px padding 上、內層 span 只負責面色;定位殼固定 40 寬
+    (形態過渡不凸出右緣)但 `pointer-events-none`。2026-09-03 user 回報「hover 小鈕左側時點不到」的根因就是這兩層:
+    貼邊時殼左側 12px 空白會攔截點擊、外圈 2px 漸層環又不是按鈕本體 —— 視覺 28、實際可點只有 26,左邊還多 14px 死區。
+    修後實測:視覺左緣起整片都是按鈕,左側落到底下的頁面。
   - **只有兩種合法位置**:「家」= 圓鈕 40,位置唯一在右下角(離右、下各 loose;[Android FAB 官方範例
     `layout_margin` 16dp](https://developer.android.com/develop/ui/views/components/floating-action-button)、Teambition 16,
     lg 密度 24)/「貼邊」= 收合鈕 `--field-height-sm` 28 貼右緣半圓(只留內側圓角、環只畫露出三邊、內置 16 標誌;
@@ -348,8 +355,8 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
     放開在帶內 → 落定;放開在帶外 → 飛回家。
   - **拖 28 貼邊鈕**:不顯示帶;帶內沿 y 移動維持貼邊鈕;一出帶外當場變回 40 圓鈕、放開飛回家。
   - **帶的樣式**(2026-09-03 user 拍板;SSOT = `color.spec.md`「Drop target」段):消費 DS「可放下的區域」配對 ——
-    底 `bg-drop-target`(`--primary` @ 16% **兩模式都半透明**:覆蓋在頁面內容上就不能不透明,VS Code theme-color 鐵律;
-    16% 取世界級保守端 Material dragged 0.16 / VS Code 0.18 / Atlassian ≈0.20)+ **三邊 2px dashed**
+    底 `bg-drop-target`(`--primary` @ 15% **兩模式都半透明**:覆蓋在頁面內容上就不能不透明,VS Code theme-color 鐵律;
+    15% = DS alpha 階梯上的既有階,且落在世界級區間 Material dragged 0.16 / VS Code 0.18 / Atlassian ≈0.20)+ **三邊 2px dashed**
     `border-drop-target-border`(= `--primary-hover`;dashed = DS「可放下的暫時目標」語彙,與 FileUpload 拖入區同一組 token)。
     **貼右緣那側不畫線、不留圓角**(`border-r-0 rounded-l-md`;Sheet / Sidebar / AppShell 側欄 / 貼邊鈕「環只畫露出三邊」同語言)。
     與 FileUpload 常駐拖入區的分工:那邊靜止就看得見、進入合法區只換邊框不填色;這裡憑空出現、需要整區底色才讀得出範圍,

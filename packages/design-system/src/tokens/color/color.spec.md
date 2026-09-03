@@ -274,13 +274,14 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 
 | Token | Utility | 值 | 用途 |
 |-------|---------|------|------|
-| `--drop-target` | `bg-drop-target` | `--primary` @ 16% 半透明(兩模式同一公式) | 合法放置 / 停靠區域的底色 |
+| `--drop-target` | `bg-drop-target` | `--primary` @ 15% 半透明(兩模式同一公式) | 合法放置 / 停靠區域的底色 |
 | `--drop-target-border` | `border-drop-target-border` | = `--primary-hover`(light blue-5 / dark blue-7) | 同一區域的邊框色 |
 
 設計依據(2026-09-03 拍板):
 
-- **底色必半透明**:區域覆蓋在別人的內容之上,沿用 Highlight 段同一條鐵律——VS Code theme-color「The color must not be opaque so as not to hide underlying decorations」(https://code.visualstudio.com/api/references/theme-color)。這也是它與 `--primary-subtle` 的分工:`-subtle` 是**元件自己的**淡底(不透明,底下沒有別人的內容:Button toggle 持續按下、TreeView inside-drop 整列、DataTable range cell);`--drop-target` 是**蓋在別人內容上的暫態區域**。
-- **16% 的來源**:世界級區間的保守端 —— Material 3 `dragged` state layer 0.16(拖曳是所有狀態中最高階,https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-sys-state.scss)、VS Code light `editorGroup.dropBackground` 0.18(https://github.com/microsoft/vscode/blob/main/src/vs/workbench/common/theme.ts)、Atlassian `color.background.selected.hovered` #CCE0FF ≈ 0.20。
+- **底色必半透明**:區域覆蓋在別人的內容之上,沿用 Highlight 段同一條鐵律——VS Code theme-color「The color must not be opaque so as not to hide underlying decorations」(https://code.visualstudio.com/api/references/theme-color)。這也是它與 `--primary-subtle` 的分工:`-subtle` 是**元件自己的**淡底(不透明,底下沒有別人的內容:Button toggle 持續按下、DataTable range cell);`--drop-target` 是**蓋在別人內容上的暫態區域**。
+- **為什麼是 15%(先對內、再對外)**:先取 **DS 自家 alpha 階梯上的既有階** —— `primitives.css` 的 `--_na5`(light)/ `--_na4`(dark)就是 15%,也是 `--black-a15` / `--white-a15` 用的那一階,是少數**兩個模式都存在**的階;不自創新階(`opacity.css` 禁新增)。再確認它落在世界級區間內:Material 3 `dragged` state layer 0.16(拖曳是所有狀態中最高階,https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-sys-state.scss)、VS Code light `editorGroup.dropBackground` 0.18(https://github.com/microsoft/vscode/blob/main/src/vs/workbench/common/theme.ts)、Atlassian `color.background.selected.hovered` #CCE0FF ≈ 0.20 —— 15% 是這個區間的下緣,對「暫態、只出現一兩秒、面積不小」的區域最不吵。
+  > 註:同為色相覆蓋層的 `--text-selection` 用 30%(不在階梯上),因為反白必須在文字上一眼可辨;drop target 是整片區域提示,不需要那麼重。階梯是「優先取用」不是「唯一合法」,偏離要像這樣寫明理由。
 - **一個公式兩個模式**:`--primary` 在 dark 由 primitive 階梯自動變亮,故不需 dark override,也不新開 opacity 階(`opacity.css` 禁新增)。
 - **邊框取 `--primary-hover`**:瞬時態一律歸 hover 階(同 FileUpload 拖入區 2026-07-06 的收斂);值與該元件原本硬指的 `--primary-hover` 相同 → 改消費本 token **零視覺差**,兩處從此同一 SSOT。
 
@@ -300,12 +301,12 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 
 | 視覺 | Token | 誰在用 |
 |---|---|---|
-| 可放下的**區域底**(蓋在別人內容上) | `--drop-target` | `AgentFabDock` 停靠帶 |
+| 可放下的**區域底**(蓋在別人內容上) | `--drop-target` | `AgentFabDock` 停靠帶、TreeView / nested row 的 inside-drop 整列(`lib/drag-visual.ts`) |
 | 該區域的**邊框** | `--drop-target-border` | `AgentFabDock` 停靠帶、`FileUpload` drag-over |
 | **插入位置線**(「放在這兩者之間」) | `--primary` 2px 實線(`lib/drag-visual.ts`) | DataTable row / column 重排、TreeView before/after |
-| 元件**自己的**選中 / 命中淡底(底下沒有別人的內容) | `--primary-subtle` | Button toggle 按下、DataTable range cell、TreeView inside-drop 整列 |
+| 元件**自己的**選中 / 命中淡底(底下沒有別人的內容) | `--primary-subtle` | Button toggle 按下、DataTable range cell(持續選取,非拖放) |
 
-> TreeView 的 inside-drop 整列淡底目前屬最後一列(它塗的是列自己的底,不是覆蓋層)。要不要把它也收進 `--drop-target`(視覺差:light 13/255、dark 8/255)是既有元件的視覺調整,列為待拍板,不在本次自動改。
+> 2026-09-03 收斂:TreeView / nested row 的 inside-drop 整列**已改用 `--drop-target`** —— 它蓋在該列的文字之上,正是「覆蓋層必半透明」要管的情形(VS Code 對應 token 就叫 `list.dropBackground`),而且「可以放進這一列」與「可以停靠在這條帶」是同一件事,不該有兩個 token。視覺差極小(light 13/255、dark 8/255)。DataTable 的範圍選取維持 `--primary-subtle`:那是**持續選取**,不是拖放目標。
 
 禁止:
 

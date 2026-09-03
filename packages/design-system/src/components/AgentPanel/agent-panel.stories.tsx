@@ -18,7 +18,7 @@ import {
   type AgentPromptAttachment,
 } from './agent-panel'
 import { AgentLogo, type AgentLogoState } from './agent-logo'
-import { AgentFab, AgentFabDock, AGENT_FAB_HOME, type AgentFabPlacement } from './agent-fab'
+import { AgentFab, AgentPanelDock, AGENT_FAB_HOME, type AgentFabPlacement } from './agent-fab'
 import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -34,9 +34,22 @@ type Story = StoryObj<typeof AgentPanel>
 
 const noop = () => {}
 
-/** 面板站右側全高:模擬 app 右欄環境。 */
-function PanelFrame({ children }: { children: React.ReactNode }) {
-  return <div className="flex h-dvh justify-end bg-canvas">{children}</div>
+/**
+ * 面板站右側全高(模擬 app 右欄環境)+ **面板 ↔ 入口鈕互斥外殼**:每個範例都能按 × 關閉,
+ * 關閉後右下角出現入口鈕(標誌狀態跟著 `logoState` 走),點一下開回來。
+ */
+function PanelFrame({
+  logoState = 'still',
+  children,
+}: {
+  logoState?: AgentLogoState
+  children: (props: { close: () => void; logoState: AgentLogoState }) => React.ReactNode
+}) {
+  return (
+    <div className="relative flex h-dvh justify-end bg-canvas">
+      <AgentPanelDock logoState={logoState}>{children}</AgentPanelDock>
+    </div>
+  )
 }
 
 const CONVERSATIONS: AgentConversationSummary[] = [
@@ -53,7 +66,6 @@ const headerWiring = {
   onRenameConversation: noop,
   onDeleteConversation: noop,
   onNewConversation: noop,
-  onClose: noop,
 }
 
 const promptWiring = { onSubmit: noop, onRemoveAttachment: noop, onAddAttachment: noop }
@@ -69,9 +81,10 @@ export const TaskAssistant: Story = {
     const [value, setValue] = React.useState('')
     const [attachments, setAttachments] = React.useState<AgentPromptAttachment[]>([])
     return (
-      <PanelFrame>
+      <PanelFrame logoState="think">
+        {({ close, logoState }) => (
         <AgentPanel>
-          <AgentPanelHeader title="衝刺待辦整理" logoState="think" activeConversationId="c1" {...headerWiring} />
+          <AgentPanelHeader title="衝刺待辦整理" logoState={logoState} activeConversationId="c1" {...headerWiring} onClose={close} />
           <AgentConversation>
             <AgentMessage role="user">把這份待辦按優先級重排,衝突的排程幫我標出來。</AgentMessage>
             <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
@@ -98,6 +111,7 @@ export const TaskAssistant: Story = {
             }
           />
         </AgentPanel>
+        )}
       </PanelFrame>
     )
   },
@@ -119,8 +133,9 @@ export const Attachments: Story = {
     ])
     return (
       <PanelFrame>
+        {({ close }) => (
         <AgentPanel>
-          <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" {...headerWiring} />
+          <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" {...headerWiring} onClose={close} />
           <AgentConversation>
             <AgentMessage
               role="user"
@@ -146,6 +161,7 @@ export const Attachments: Story = {
             onSubmit={noop}
           />
         </AgentPanel>
+        )}
       </PanelFrame>
     )
   },
@@ -160,8 +176,9 @@ export const MultipleReplies: Story = {
   name: '多則回覆:工具列常駐與懸停',
   render: () => (
     <PanelFrame>
+      {({ close }) => (
       <AgentPanel>
-        <AgentPanelHeader title="Q3 客訴分類" activeConversationId="c3" {...headerWiring} />
+        <AgentPanelHeader title="Q3 客訴分類" activeConversationId="c3" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="user">把 Q3 的客訴按原因分類,各給我前三名。</AgentMessage>
           <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={noop} onLike={noop} onDislike={noop} />}>
@@ -178,6 +195,7 @@ export const MultipleReplies: Story = {
         </AgentConversation>
         <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
       </AgentPanel>
+      )}
     </PanelFrame>
   ),
 }
@@ -187,13 +205,15 @@ export const HistoryOpen: Story = {
   name: '歷史浮層開啟',
   render: () => (
     <PanelFrame>
+      {({ close }) => (
       <AgentPanel>
-        <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" defaultHistoryOpen {...headerWiring} />
+        <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" defaultHistoryOpen {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">從標題或箭頭點開歷史;懸停或 Tab 到某一列會浮出改名與刪除。</AgentMessage>
         </AgentConversation>
         <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
       </AgentPanel>
+      )}
     </PanelFrame>
   ),
 }
@@ -203,8 +223,9 @@ export const NewConversation: Story = {
   name: '新對話(空狀態)',
   render: () => (
     <PanelFrame>
+      {({ close }) => (
       <AgentPanel>
-        <AgentPanelHeader title="新對話" conversationEmpty {...headerWiring} />
+        <AgentPanelHeader title="新對話" conversationEmpty {...headerWiring} onClose={close} />
         <div className="flex min-h-0 flex-1 items-center justify-center">
           <Empty
             icon={<AgentLogo state="attract" size={48} label="智慧代理" />}
@@ -214,6 +235,7 @@ export const NewConversation: Story = {
         </div>
         <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
       </AgentPanel>
+      )}
     </PanelFrame>
   ),
 }
@@ -253,8 +275,9 @@ export const DecisionCardOpen: Story = {
   name: '決策卡三題步進',
   render: () => (
     <PanelFrame>
+      {({ close }) => (
       <AgentPanel>
-        <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} />
+        <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">公告已寫好兩個版本,需要你決定語氣、發布時間與同步管道再繼續。</AgentMessage>
         </AgentConversation>
@@ -263,6 +286,7 @@ export const DecisionCardOpen: Story = {
           <AgentDecisionCard questions={THREE_QUESTIONS} onSubmit={noop} onSkip={noop} />
         </div>
       </AgentPanel>
+      )}
     </PanelFrame>
   ),
 }
@@ -272,13 +296,15 @@ export const TitleTruncated: Story = {
   name: '長標題截斷與 tooltip',
   render: () => (
     <PanelFrame>
+      {({ close }) => (
       <AgentPanel>
-        <AgentPanelHeader title="2026 Q3 北區客訴分類與回覆範本整理(含 Zendesk 匯出與主管審核)" activeConversationId="c3" {...headerWiring} />
+        <AgentPanelHeader title="2026 Q3 北區客訴分類與回覆範本整理(含 Zendesk 匯出與主管審核)" activeConversationId="c3" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">標題太長會以「…」截斷;滑到標題上會用 tooltip 顯示完整名稱,沒截斷就不會出現。</AgentMessage>
         </AgentConversation>
         <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
       </AgentPanel>
+      )}
     </PanelFrame>
   ),
 }
@@ -288,8 +314,9 @@ export const DecisionCardSingle: Story = {
   name: '決策卡單題',
   render: () => (
     <PanelFrame>
+      {({ close }) => (
       <AgentPanel>
-        <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} />
+        <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">只剩語氣沒定,選一個就能繼續。</AgentMessage>
         </AgentConversation>
@@ -298,6 +325,7 @@ export const DecisionCardSingle: Story = {
           <AgentDecisionCard questions={[THREE_QUESTIONS[0]]} onSubmit={noop} onSkip={noop} />
         </div>
       </AgentPanel>
+      )}
     </PanelFrame>
   ),
 }
@@ -307,8 +335,9 @@ export const DecisionSummaryInFlow: Story = {
   name: '決策回執',
   render: () => (
     <PanelFrame>
+      {({ close }) => (
       <AgentPanel>
-        <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} />
+        <AgentPanelHeader title="發布公告草稿" activeConversationId="c2" {...headerWiring} onClose={close} />
         <AgentConversation>
           <AgentMessage role="agent">
             已按你的選擇繼續:
@@ -323,6 +352,7 @@ export const DecisionSummaryInFlow: Story = {
         </AgentConversation>
         <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
       </AgentPanel>
+      )}
     </PanelFrame>
   ),
 }
@@ -362,7 +392,8 @@ export const FabPanelToggle: Story = {
     const [open, setOpen] = React.useState(false)
     const [placement, setPlacement] = React.useState<AgentFabPlacement>(AGENT_FAB_HOME)
     // 面板裡的代理狀態:入口鈕的標誌直接吃它 —— 關掉面板時代理若還在思考,入口鈕也在轉。
-    const [agentState, setAgentState] = React.useState<AgentLogoState>('still')
+    // 初始 = 招喚(有新訊等你看,同原本的範例);送出後 → 思考;完成 → 回招喚。
+    const [agentState, setAgentState] = React.useState<AgentLogoState>('attract')
     const [draft, setDraft] = React.useState('這批訂單的金額為什麼對不上?')
     const timer = React.useRef<number | null>(null)
     const askAgent = () => {
@@ -383,31 +414,34 @@ export const FabPanelToggle: Story = {
             getRowId={(row) => row.id}
           />
         </div>
-        {open ? (
-          <AgentPanel>
-            <AgentPanelHeader
-              title="訂單異常排查"
-              activeConversationId="c1"
-              logoState={agentState}
-              {...headerWiring}
-              onClose={() => setOpen(false)}
-            />
-            <AgentConversation>
-              <AgentMessage role="user">幫我查上週哪幾張訂單金額異常</AgentMessage>
-              <AgentMessage role="agent">
-                {agentState === 'think' ? '正在比對上週訂單…' : '關掉我看看:代理還在思考時,入口鈕的標誌也會跟著轉。'}
-              </AgentMessage>
-            </AgentConversation>
-            <AgentPromptInput value={draft} onValueChange={setDraft} {...promptWiring} onSubmit={askAgent} />
-          </AgentPanel>
-        ) : (
-          <AgentFabDock
-            logoState={agentState}
-            placement={placement}
-            onPlacementChange={setPlacement}
-            onClick={() => setOpen(true)}
-          />
-        )}
+        <AgentPanelDock
+          open={open}
+          onOpenChange={setOpen}
+          logoState={agentState}
+          placement={placement}
+          onPlacementChange={setPlacement}
+        >
+          {({ close, logoState }) => (
+            <AgentPanel>
+              <AgentPanelHeader
+                title="訂單異常排查"
+                activeConversationId="c1"
+                logoState={logoState}
+                {...headerWiring}
+                onClose={close}
+              />
+              <AgentConversation>
+                <AgentMessage role="user">幫我查上週哪幾張訂單金額異常</AgentMessage>
+                <AgentMessage role="agent">
+                  {logoState === 'think'
+                    ? '正在比對上週訂單…'
+                    : '關掉我看看:代理還在思考時,入口鈕的標誌也會跟著轉。'}
+                </AgentMessage>
+              </AgentConversation>
+              <AgentPromptInput value={draft} onValueChange={setDraft} {...promptWiring} onSubmit={askAgent} />
+            </AgentPanel>
+          )}
+        </AgentPanelDock>
       </div>
     )
   },

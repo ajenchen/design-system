@@ -132,25 +132,25 @@ const AgentFab = React.forwardRef<HTMLButtonElement, AgentFabProps>(
             </circle>
           </svg>
         )}
-        <span
-          className="inline-flex rounded-full p-[2px] shadow-[var(--elevation-200)] transition-shadow duration-[var(--motion-duration-overlay)] hover:shadow-[var(--elevation-200-hover)]"
+        {/* 漸層環畫在 button 自己身上(2px padding),整個看得見的圓 = 可點區域;環若做在外層 span,外圈 2px 就會是死區。 */}
+        <button
+          ref={ref}
+          type="button"
+          aria-label={ariaLabel ?? '開啟智慧代理'} // i18n-allow: DS 預設文案,aria-label prop 可覆寫
+          className={cn(
+            'inline-flex size-10 cursor-pointer items-center justify-center rounded-full border-none p-[2px]',
+            'shadow-[var(--elevation-200)] transition-[transform,box-shadow] duration-[var(--motion-duration-overlay)]',
+            'hover:scale-[1.04] hover:shadow-[var(--elevation-200-hover)] motion-reduce:transition-none motion-reduce:hover:scale-100',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            className,
+          )}
           style={{ background: RING_GRADIENT }}
+          {...props}
         >
-          <button
-            ref={ref}
-            type="button"
-            aria-label={ariaLabel ?? '開啟智慧代理'} // i18n-allow: DS 預設文案,aria-label prop 可覆寫
-            className={cn(
-              'inline-flex size-9 cursor-pointer items-center justify-center rounded-full border-none bg-surface-raised',
-              'transition-transform duration-[var(--motion-duration-overlay)] hover:scale-[1.04] motion-reduce:transition-none motion-reduce:hover:scale-100',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              className,
-            )}
-            {...props}
-          >
+          <span className="flex h-full w-full items-center justify-center rounded-full bg-surface-raised">
             <AgentLogo state={logoState} ripple={false} size={24} />
-          </button>
-        </span>
+          </span>
+        </button>
       </span>
     )
   },
@@ -480,7 +480,9 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
           data-dragging={dragging ? '' : undefined}
           data-snapped={drag?.placement ? '' : undefined}
           className={cn(
-            'group/dock absolute z-20 flex w-10 justify-end',
+            // 殼固定 40 寬(形態過渡不凸出右緣),但**不吃指標** —— 貼邊時左側 12px 是空白,
+            // 若殼可命中就會變成「看不見卻擋住點擊」的死區(2026-09-03 user 回報:hover 小鈕左側點不到)。
+            'group/dock pointer-events-none absolute z-20 flex w-10 justify-end',
             // 落點修正 / 飛回家 250ms + enter;拖曳中跟指標不過渡。
             ready && !dragging && !reduced && 'transition-[left,top] duration-[var(--motion-duration-surface)] ease-[var(--motion-easing-enter)]',
             dragging ? 'cursor-grabbing select-none' : 'cursor-grab',
@@ -504,37 +506,38 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
           </DropdownMenu>
           <Tooltip open={dragging ? false : undefined}>
             <TooltipTrigger asChild>
-              {/* 單一殼:寬高與圓角在兩態間過渡 150ms,拖曳中當場變形 = 所見即所得。 */}
-              <span
+              {/* 按鈕本身就是那個看得見的形狀(漸層環 = 自己的 2px padding):可點區域 ≡ 視覺,無死區;
+                  寬高與圓角在兩態間過渡 150ms,拖曳中當場變形 = 所見即所得。 */}
+              <button
+                type="button"
                 className={cn(
-                  'inline-flex p-[2px] shadow-[var(--elevation-200)]',
+                  'pointer-events-auto inline-flex cursor-[inherit] items-center justify-center border-none p-[2px] shadow-[var(--elevation-200)]',
                   'transition-[width,height,border-radius,box-shadow] duration-[var(--motion-duration-overlay)] ease-[var(--motion-easing-enter)] motion-reduce:transition-none',
                   isDock ? 'rounded-l-full pr-0' : 'rounded-full',
                   !dragging && 'hover:shadow-[var(--elevation-200-hover)]',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 )}
                 style={{ background: RING_GRADIENT, width: px, height: px }}
+                aria-label={buttonLabel}
+                onPointerDown={onPointerDown}
+                onKeyDown={onKeyDown}
+                onClickCapture={onClickCapture}
+                onClick={onClick}
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  setMenuOpen(true)
+                }}
+                {...buttonProps}
               >
-                <button
-                  type="button"
+                <span
                   className={cn(
-                    'inline-flex h-full w-full cursor-[inherit] items-center justify-center border-none bg-surface-raised',
+                    'flex h-full w-full items-center justify-center bg-surface-raised',
                     isDock ? 'rounded-l-full' : 'rounded-full',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                   )}
-                  aria-label={buttonLabel}
-                  onPointerDown={onPointerDown}
-                  onKeyDown={onKeyDown}
-                  onClickCapture={onClickCapture}
-                  onClick={onClick}
-                  onContextMenu={(e) => {
-                    e.preventDefault()
-                    setMenuOpen(true)
-                  }}
-                  {...buttonProps}
                 >
                   <AgentLogo state={logoState} ripple={false} size={isDock ? 16 : 24} />
-                </button>
-              </span>
+                </span>
+              </button>
             </TooltipTrigger>
             <TooltipContent side={isDock ? 'left' : 'top'}>{isDock ? text.tooltipDock : text.tooltip}</TooltipContent>
           </Tooltip>
@@ -545,4 +548,51 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
 )
 AgentFabDock.displayName = 'AgentFabDock'
 
-export { AgentFab, AgentFabDock }
+/* ────────────────────────────────────────────────────────────────────────────
+ * AgentPanelDock — 「面板 ↔ 入口鈕」互斥外殼(spec「放置與互斥」)
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface AgentPanelDockRenderProps {
+  /** 關閉面板 → 入口鈕回到上次的位置。接到 AgentPanelHeader 的 onClose。 */
+  close: () => void
+  /** 目前的代理狀態(與入口鈕標誌同一個值);接到 AgentPanelHeader 的 logoState。 */
+  logoState: AgentLogoState
+}
+
+export interface AgentPanelDockProps
+  extends Omit<AgentFabDockProps, 'onClick' | 'children' | 'logoState'> {
+  /** 面板是否開啟(受控);省略 = 非受控。 */
+  open?: boolean
+  /** 非受控初始開關;預設開。 */
+  defaultOpen?: boolean
+  onOpenChange?: (open: boolean) => void
+  /** 代理狀態:面板標題列與入口鈕標誌吃同一個值(關著面板也照跑)。 */
+  logoState?: AgentLogoState
+  /** 面板內容;關閉時不渲染(與入口鈕互斥)。 */
+  children: (props: AgentPanelDockRenderProps) => React.ReactNode
+}
+
+/**
+ * 面板與入口鈕互斥的唯一住所:開 → 只有面板(× 關閉);關 → 只有入口鈕(點一下開回來),
+ * 入口鈕位置與標誌狀態都留在這裡,產品端不必各自寫一份(2026-09-03 user:「所有範例的關閉按鈕都可以加上去了」)。
+ * 外層容器需 `relative`(入口鈕以 absolute 定位在其中)。
+ */
+const AgentPanelDock = React.forwardRef<HTMLDivElement, AgentPanelDockProps>(
+  ({ open: openProp, defaultOpen = true, onOpenChange, logoState = 'still', children, ...fabProps }, ref) => {
+    const [uncontrolled, setUncontrolled] = React.useState(defaultOpen)
+    const open = openProp ?? uncontrolled
+    const setOpen = React.useCallback(
+      (next: boolean) => {
+        if (openProp === undefined) setUncontrolled(next)
+        onOpenChange?.(next)
+      },
+      [openProp, onOpenChange],
+    )
+    const close = React.useCallback(() => setOpen(false), [setOpen])
+    if (open) return <>{children({ close, logoState })}</>
+    return <AgentFabDock ref={ref} logoState={logoState} onClick={() => setOpen(true)} {...fabProps} />
+  },
+)
+AgentPanelDock.displayName = 'AgentPanelDock'
+
+export { AgentFab, AgentFabDock, AgentPanelDock }
