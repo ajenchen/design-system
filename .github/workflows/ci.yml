@@ -61,6 +61,11 @@ jobs:
       - name: DataTable pixel invariants (browser)
         run: |
           npx --no-install playwright install chromium
+          # 純函式單測必須跟著跑:`distributeColumnWidths` 的「撞上限凍結 → 重分配」分支在任何 story
+          # 都走不到(餵進去的 maxes 是 columnDef.maxSize,TanStack 預設填 MAX_SAFE_INTEGER),
+          # 只靠下面的瀏覽器斷言等於零證據。2026-09-04 抓到:它被串在 `npm run test:datatable-invariants`
+          # 裡,而這裡是直接呼叫 .mjs → 單測從來沒在 CI 跑過。
+          node scripts/test-distribute-column-widths.mjs
           node scripts/data-table-invariants.mjs
           # AgentPanel 家族三支機械不變式一起跑(固定 anatomy / 標誌色階 / 思考動畫逐影格);
           # 原本只跑 continuity 一支,另外兩支在整個 repo 沒有任何 gate(2026-09-03 稽核抓到)。
