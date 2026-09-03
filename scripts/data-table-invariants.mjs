@@ -321,6 +321,8 @@ if (!gutterReport) {
   record('I11', 'center header/body panel 存在', false, 'panel selector 找不到')
 } else {
   record('I11', '該 story 真的有垂直溢出(否則這條測不到補償)', gutterReport.hasVerticalOverflow, `scrollHeight > clientHeight = ${gutterReport.hasVerticalOverflow}`)
+  // 沒抓到欄就沒量到東西:reduce 的初值 0 會讓下面那條「全部重合」空轉通過(假綠)。
+  record('I11', '真的量到多欄(否則下面的對齊斷言是空轉)', gutterReport.columns >= 2, `量到 ${gutterReport.columns} 欄`)
   record(
     'I11',
     'header 補的 padding-right 等於 body 垂直捲軸佔掉的寬度',
