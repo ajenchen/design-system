@@ -10,6 +10,7 @@ import {
   AgentPromptInput,
 } from './agent-panel'
 import { AGENT_BRAND, AgentLogo } from './agent-panel-logo'
+import { AgentPanelDock } from './agent-panel-fab'
 import { AgentThinking } from './agent-panel'
 import { H3, Desc, Td, Th, Swatch, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
@@ -154,6 +155,28 @@ export const StateBehavior: Story = {
         <div className="w-80">
           <div className="mb-2 text-caption text-fg-muted">停止(代理進行中同位換實心正方)</div>
           <AgentPromptInput value="" onValueChange={() => {}} onSubmit={() => {}} onRemoveAttachment={() => {}} onAddAttachment={() => {}} busy onStop={() => {}} />
+        </div>
+      </div>
+    </div>
+  ),
+}
+
+/** 入口鈕的兩個位置:在家(右下角 40 圓)與貼邊(右緣 28 半圓,只露內側一半)。
+ *  兩者都是同一顆鈕,靠拖曳或右鍵選單切換;展示層「入口鈕」可以實際拖。 */
+export const FabPlacements: Story = {
+  name: '入口鈕兩個位置',
+  render: () => (
+    <div className="flex gap-8 p-8 text-body">
+      <div className="flex flex-col gap-2">
+        <div className="text-caption text-fg-muted">在家:右下角 40 圓,招呼態帶邊框光圈</div>
+        <div className="relative h-64 w-96 overflow-hidden rounded-md border border-divider bg-canvas">
+          <AgentPanelDock defaultOpen={false} logoState="attract">{() => null}</AgentPanelDock>
+        </div>
+      </div>
+      <div className="flex flex-col gap-2">
+        <div className="text-caption text-fg-muted">貼邊:右緣 28 半圓,只露內側一半</div>
+        <div className="relative h-64 w-96 overflow-hidden rounded-md border border-divider bg-canvas">
+          <AgentPanelDock defaultOpen={false} defaultPlacement={{ kind: 'dock', y: 96 }}>{() => null}</AgentPanelDock>
         </div>
       </div>
     </div>

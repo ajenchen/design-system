@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-03T06:15:45.522Z"
+    "generatedAt": "2026-09-03T08:24:41.758Z"
   },
   "components": {
     "accordion": {
@@ -72,10 +72,7 @@
           "design-system-components-agentpanel-展示--title-truncated",
           "design-system-components-agentpanel-展示--decision-card-single",
           "design-system-components-agentpanel-展示--decision-summary-in-flow",
-          "design-system-components-agentpanel-展示--fab-panel-toggle",
-          "design-system-components-agentpanel-展示--fab-docked",
-          "design-system-components-agentpanel-展示--fab-context-menu",
-          "design-system-components-agentpanel-展示--fab-agent-state",
+          "design-system-components-agentpanel-展示--fab",
           "design-system-components-agentpanel-展示--logo-states",
           "design-system-components-agentpanel-展示--logo-think-stop",
           "design-system-components-agentpanel-展示--fab-states"
@@ -85,6 +82,7 @@
           "design-system-components-agentpanel-設計規格--size-matrix",
           "design-system-components-agentpanel-設計規格--color-matrix",
           "design-system-components-agentpanel-設計規格--state-behavior",
+          "design-system-components-agentpanel-設計規格--fab-placements",
           "design-system-components-agentpanel-設計規格--accessibility"
         ],
         "設計原則": [
@@ -1794,5 +1792,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 970
+  "totalStories": 968
 }

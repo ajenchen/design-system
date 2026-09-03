@@ -174,6 +174,23 @@
   pointer-events: none;
 }
 
+/* ────────────────────────────────────────────────────────────
+   Header 讓給垂直捲軸的那條 strip(2026-09-03 user 抓到)
+   ────────────────────────────────────────────────────────────
+   body 有垂直捲軸時,center header panel 補等寬的 `padding-inline-end` 讓兩邊內容盒等寬
+   (見 data-table.tsx 的 vScrollbarGutter)。但表頭底色與下分隔線是畫在 **header row** 上的,
+   padding 區在 row 之外 → 表頭右上角出現一塊沒有底色、也沒有分隔線的空白,正好在捲軸上方。
+   這裡把底色與分隔線補在 panel 上:底色同 HEADER_BG(`--muted`),分隔線用 inset shadow
+   (paint-only、不入盒模型,與 `.dtCellGrid` 同 pattern);row 自己的底色與 border 疊在上面同色,
+   看不出接縫。沒有捲軸時 padding = 0,strip 寬度為 0,完全不影響。
+   對照:AG Grid `.ag-header-row::after { content:''; flex:1 0 0; background: var(--ag-header-background-color) }`
+   (_general.css:259-276)、MUI X `.columnHeaders .scrollbarFiller { backgroundColor: headerBackground }`
+   (GridRootStyles.ts:793-806)—— 兩家都是「把讓出來的空間也塗成表頭」。 */
+.dtHeaderScrollbarFiller {
+  background-color: var(--muted);
+  box-shadow: inset 0 -1px 0 var(--divider);
+}
+
 .dtPanelBoundaryLeft {
   position: relative;
 }

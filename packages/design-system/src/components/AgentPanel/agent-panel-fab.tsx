@@ -654,13 +654,18 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
           </DropdownMenu>
           <Tooltip open={dragging ? false : undefined}>
             <TooltipTrigger asChild>
-              {/* 按鈕本身就是那個看得見的形狀(漸層環 = 自己的 2px padding):可點區域 ≡ 視覺,無死區;
-                  寬高與圓角在兩態間過渡 150ms,拖曳中當場變形 = 所見即所得。 */}
+              {/* 按鈕本身就是那個看得見的形狀(漸層環 = 自己的 2px padding);
+                  寬高與圓角在兩態間過渡 150ms,拖曳中當場變形 = 所見即所得。
+                  **命中區是矩形、比形狀略大**:圓角會讓「靠近左緣但偏離垂直中心」的點落在圓外
+                  (2026-09-03 實測命中圖:貼邊態 dy=±12 時最左 1–3px 點不到)—— user 回報
+                  「滑到小鈕左側點擊沒反應」的真因就是這個,不是狀態或量測問題。
+                  解法同 DS 既有的 hit-outset 慣例(ResizeHandle 命中區外推):放一片透明的矩形
+                  子元素撐出命中區,視覺形狀不變。 */}
               <button
                 type="button"
                 className={cn(
                   // touch-none:觸控上不讓瀏覽器把 pointerdown 解讀成捲動(同 resize-handle canonical),否則拖曳在手機不可用。
-                  'pointer-events-auto inline-flex touch-none cursor-[inherit] items-center justify-center border-none p-[2px] shadow-[var(--elevation-200)]',
+                  'relative pointer-events-auto inline-flex touch-none cursor-[inherit] items-center justify-center border-none p-[2px] shadow-[var(--elevation-200)]',
                   'transition-[width,height,border-radius,box-shadow,transform] duration-[var(--motion-duration-overlay)] ease-[var(--motion-easing-enter)] motion-reduce:transition-none',
                   spec.radius,
                   // 懸停 = 陰影升一級 + 微放大(與獨立 AgentFab 同一手感;spec「FAB」節)。
@@ -682,9 +687,14 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
                 }}
                 {...buttonProps}
               >
+                {/* 命中區:與按鈕同大的透明矩形(**不外推**)。子元素的盒是矩形,不受父層
+                    border-radius 影響命中判定,點在圓角外仍會冒泡到 button。
+                    刻意不做 -inset 外推:貼邊時按鈕已經齊在視窗右緣,任何外推都會讓文件寬多出幾 px
+                    而生出水平捲軸(user 明確要求各種 fab 狀態都不能讓視窗長出捲軸)。 */}
+                <span aria-hidden className="absolute inset-0" />
                 <span
                   className={cn(
-                    'flex h-full w-full items-center justify-center bg-surface-raised',
+                    'relative flex h-full w-full items-center justify-center bg-surface-raised',
                     spec.innerRadius,
                   )}
                 >

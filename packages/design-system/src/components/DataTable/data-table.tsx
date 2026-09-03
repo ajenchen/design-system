@@ -2322,7 +2322,11 @@ function DataTableInner<TData>(
                 <DropdownMenuItem
                   startIcon={ArrowUpDown}
                   onClick={() => {
-                    const cells = document.querySelectorAll<HTMLElement>(
+                    // 查詢限定在本表格內:同一頁若有兩個 DataTable 而欄位 id 相同(例如都叫 `name`),
+                    // 掃全文件會讓這一欄的寬度被另一張表的內容決定。旁邊的 collision detection
+                    // 早就因為同樣理由改用 tableRef,這裡補上(2026-09-03 稽核抓到)。
+                    const scope: ParentNode = tableRef.current ?? document
+                    const cells = scope.querySelectorAll<HTMLElement>(
                       `[role="cell"][data-column-id="${header.column.id}"]`,
                     )
                     let max = MIN_COLUMN_WIDTH
@@ -2712,8 +2716,12 @@ function DataTableInner<TData>(
           ref={centerHeaderRef}
           data-datatable-header-panel="center"
           onScroll={() => onSecondaryScroll(centerHeaderRef.current, 'x')}
-          className="flex-1 min-w-0 overflow-hidden"
-          style={vScrollbarGutter > 0 ? { paddingRight: vScrollbarGutter } : undefined}
+          // `dtHeaderScrollbarFiller`:讓給垂直捲軸的那條 strip 也要有表頭底色與下分隔線,
+          // 否則表頭右上角是一塊空白(2026-09-03 user 抓到)。見 data-table.css 同名 class。
+          className="dtHeaderScrollbarFiller flex-1 min-w-0 overflow-hidden"
+          // `paddingInlineEnd` 不是 `paddingRight`:RTL 下垂直捲軸渲染在 inline-end(左緣),
+          // 用實體方向會補錯邊,兩個內容盒不但沒補平、起點還各差一個捲軸寬(等效誤差 2g)。
+          style={vScrollbarGutter > 0 ? { paddingInlineEnd: vScrollbarGutter } : undefined}
         >
           {/* 2026-05-06 v13.1:retire `w-max min-w-full` — 改 `style={{minWidth: centerColsWidth}}`
               跟 body inner wrapper 同 SSOT。前 `w-max` 讓 header content max-content(label 短)

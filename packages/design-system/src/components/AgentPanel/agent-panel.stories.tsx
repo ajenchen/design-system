@@ -5,7 +5,6 @@
 // 都必須傳齊必填 callback;歷史浮層 OpenSnapshot、決策卡三題步進、拖拉寬度、FAB↔面板互斥補齊。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
-import { expect, userEvent, waitFor, within } from '@storybook/test'
 import {
   AgentPanel,
   AgentPanelHeader,
@@ -20,7 +19,7 @@ import {
   type AgentPromptAttachment,
 } from './agent-panel'
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
-import { AgentFab, AgentPanelDock, AGENT_FAB_HOME, type AgentFabPlacement } from './agent-panel-fab'
+import { AgentFab, AgentPanelDock } from './agent-panel-fab'
 import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -385,85 +384,15 @@ const orderColumns: ColumnDef<OrderRow>[] = [
   { accessorKey: 'placedAt', header: '成立日期' },
 ]
 
-/** 入口鈕與面板互斥:按 × 關閉面板 → 右下角出現入口鈕 → 點一下開回來(位置與狀態都由 `AgentPanelDock` 保管)。 */
-export const FabPanelToggle: Story = {
-  name: '入口鈕:關閉面板後點回來',
-  render: () => (
-    <div className="relative flex h-dvh bg-canvas">
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col p-[var(--layout-space-loose)]">
-        <DataTable
-          columns={orderColumns}
-          data={ORDER_ROWS}
-          height="100%"
-          pagination={{ pageSize: 20, pageSizeOptions: [10, 20, 50], showTotal: true }}
-          getRowId={(row) => row.id}
-        />
-      </div>
-      <AgentPanelDock>
-        {({ close }) => (
-          <AgentPanel>
-            <AgentPanelHeader title="訂單異常排查" activeConversationId="c1" {...headerWiring} onClose={close} />
-            <AgentConversation>
-              <AgentMessage role="agent">關掉我,右下角會出現入口鈕;點它就回來,收在哪就從哪回來。</AgentMessage>
-            </AgentConversation>
-            <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
-          </AgentPanel>
-        )}
-      </AgentPanelDock>
-    </div>
-  ),
-}
-
 /**
- * 入口鈕已收在右緣(OpenSnapshot:貼邊態非拖曳不可見,靠 placement 直接指定才截得到)。
- * 28 半圓只露內側、Tooltip 換成「開啟智慧代理」;右鍵可「放大按鈕」放回右下角。
+ * 入口鈕(唯一的入口鈕範例)。預設**面板是關的**、入口鈕在右下角**招呼**(邊框光圈)——
+ * 這就是使用者第一眼會看到的樣子。可以做的事都在這一個範例裡:
+ * 點它開面板 / 送出問題看標誌轉成思考 / 關掉面板標誌繼續轉 / 拖到左右緣收成半圓 / 右鍵切換大小。
+ * 貼邊與在家的靜態對照見「設計規格 → 入口鈕兩個位置」。
  */
-export const FabDocked: Story = {
-  name: '入口鈕:已貼邊',
-  render: () => (
-    <div className="relative flex h-dvh bg-canvas">
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col p-[var(--layout-space-loose)]">
-        <DataTable
-          columns={orderColumns}
-          data={ORDER_ROWS}
-          height="100%"
-          pagination={{ pageSize: 20, pageSizeOptions: [10, 20, 50], showTotal: true }}
-          getRowId={(row) => row.id}
-        />
-      </div>
-      <AgentPanelDock open={false} defaultPlacement={{ kind: 'dock', y: 420 }}>
-        {() => null}
-      </AgentPanelDock>
-    </div>
-  ),
-}
-
-/**
- * 入口鈕的右鍵選單(OpenSnapshot:非右鍵不可見的狀態,用 play 打開才截得到)。
- * 在家時只有「縮小按鈕」,貼邊時只有「放大按鈕」,各帶方向 icon(線 = 右緣、箭頭 = 鍵盤 → / ← 等價路徑)。
- */
-export const FabContextMenu: Story = {
-  name: '入口鈕:右鍵選單',
-  render: () => (
-    <div className="relative flex h-dvh bg-canvas">
-      <AgentPanelDock open={false}>{() => null}</AgentPanelDock>
-    </div>
-  ),
-  play: async ({ canvasElement }) => {
-    const fab = await within(canvasElement).findByRole('button', { name: '開啟智慧代理' })
-    await userEvent.pointer({ keys: '[MouseRight]', target: fab })
-    await waitFor(() => expect(document.querySelector('[role="menu"]')).toBeTruthy())
-  },
-}
-
-/**
- * 入口鈕的標誌跟著面板裡的代理走:送出訊息 → 代理思考 → 關掉面板,入口鈕也在轉;回覆完成轉招喚(邊框光圈)。
- * 拖曳與貼邊的幾何、動作時長見 `agent-panel.spec.md`「遮擋與貼邊」。
- */
-export const FabAgentState: Story = {
-  name: '入口鈕跟著代理狀態走',
-  render: function FabAgentStateStory() {
-    const [placement, setPlacement] = React.useState<AgentFabPlacement>(AGENT_FAB_HOME)
+export const Fab: Story = {
+  name: '入口鈕',
+  render: function FabStory() {
     const [agentState, setAgentState] = React.useState<AgentLogoState>('attract')
     const [draft, setDraft] = React.useState('這批訂單的金額為什麼對不上?')
     const timer = React.useRef<number | null>(null)
@@ -485,7 +414,7 @@ export const FabAgentState: Story = {
             getRowId={(row) => row.id}
           />
         </div>
-        <AgentPanelDock logoState={agentState} placement={placement} onPlacementChange={setPlacement}>
+        <AgentPanelDock defaultOpen={false} logoState={agentState}>
           {({ close, logoState }) => (
             <AgentPanel>
               <AgentPanelHeader
@@ -500,7 +429,7 @@ export const FabAgentState: Story = {
                 <AgentMessage role="agent">
                   {logoState === 'think'
                     ? '正在比對上週訂單…'
-                    : '送出問題讓我開始思考,再關掉面板 —— 入口鈕的標誌也會跟著轉。'}
+                    : '送出問題讓我開始思考,再關掉面板 —— 入口鈕的標誌也會跟著轉。拖我到左右緣可以收成半圓。'}
                 </AgentMessage>
               </AgentConversation>
               <AgentPromptInput value={draft} onValueChange={setDraft} {...promptWiring} onSubmit={askAgent} />

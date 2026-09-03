@@ -149,6 +149,13 @@ header 與 body 讀同一個整數)。
 | G | 右對齊欄被排序時,排序箭頭把標題推離右緣 20px(body 值仍貼右) | 該欄被單欄排序 / hover | 中 | **未修**:AG Grid 同樣把箭頭放在標籤右側,先視為既有慣例 |
 | H | `data-table.css` 的 `::-webkit-scrollbar` 客製(10px、track、thumb、corner)實測未生效,瀏覽器畫的是原生 15px | 一律 | 中(死碼 + 規格與 css 數字矛盾) | **未修**:疑為同檔 `@supports` 區塊重新宣告標準屬性導致 Chrome 忽略偽元素 |
 
+| I | 補償用實體方向屬性,RTL 下捲軸在另一邊 | `enableRtl` 類情境 | 中 | **已修**(改 `padding-inline-end`;面板邊界線與欄寬把手仍是實體方向,未修)|
+| J | 三處量測都是整數量化(`offsetWidth` / `clientWidth`),殘差餵回 flex 分配 | 縮放 110%、DPR 1.25/1.5 | 中低(≤1px) | **未修**:與已修的 15px 是同一類機制,只是量級不同;結構解同 (6) 末段 |
+| K | `MIN_COLUMN_WIDTH = 80` 是死碼(TanStack 預設 `minSize: 20` 永遠先命中),`maxSize` 預設 `MAX_SAFE_INTEGER` 被寫進每個 cell 的 inline style | 一律 | 中(契約與文件失效) | **未修**:需在 `columnSizeStyle` 比照 `ResizeHandle` 的繞法 |
+| L | 「自動調整寬度」量 `firstElementChild`(樹狀列量到 chevron)、不看 header 寬、`+32` 硬寫而實際 padding 由 token 決定 | 用該選單項時 | 中 | **部分修**(查詢範圍已限定本表格;量測元素與 buffer 未修)|
+| M | 欄間分隔線的歸屬 header 與 body 不對稱(右釘選 + rowActions 時同一位置 header 無線 / body 有線;拖曳中最後一格突然畫線)| 該組合 | 中低(1px 視覺)| **未修** |
+| N | `centerColsWidth` 被算兩次(`:1475` 與 `renderBodyRows` 內),註解宣稱是同一個 SSOT | 一律 | 低(今天數值相同)| **未修**:抽成單一來源即可 |
+
 **已用實測推翻的疑慮**:稽核擔心 header 的 `padding-right` 會讓水平捲動範圍比 body 少一個捲軸寬
 (Chromium 對區塊容器 inline-end padding 不算進 scrollable overflow)。實測相反:
 header `scrollWidth` 915 = body 900 + padding 15,兩邊捲動範圍都是 397,捲到最右端 header 與 body
