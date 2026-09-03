@@ -19,7 +19,7 @@ import {
   type AgentPromptAttachment,
 } from './agent-panel'
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
-import { AgentFab, AgentPanelDock } from './agent-panel-fab'
+import { AgentPanelDock } from './agent-panel-fab'
 import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -490,22 +490,3 @@ export const LogoThinkStop: Story = {
   },
 }
 
-export const FabStates: Story = {
-  name: '入口鈕三態(跟著面板裡的代理走)',
-  render: () => (
-    <div className="flex items-center gap-16 p-16">
-      {(
-        [
-          ['still', '閒置'],
-          ['attract', '有新訊(招喚:標誌蓄勢 + 邊框光圈)'],
-          ['think', '思考中(面板關著也照轉)'],
-        ] as const
-      ).map(([state, label]) => (
-        <div key={state} className="flex flex-col items-center gap-3">
-          <AgentFab logoState={state} />
-          <span className="text-caption text-fg-muted">{label}</span>
-        </div>
-      ))}
-    </div>
-  ),
-}

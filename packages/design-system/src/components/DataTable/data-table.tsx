@@ -365,74 +365,13 @@ const HEADER_PANEL = 'bg-muted border-b border-divider'
 // 可透過 `columnDef.minSize` override。
 export const MIN_COLUMN_WIDTH = 80
 
-/**
- * 欄寬分配:**算一次**,兩邊寫同一個整數。
- *
- * 這是 AG Grid v33(= 我們對照的那一代)的模型:欄寬由 JS 算進 `AgColumn.actualWidth`,
- * header cell 與 body cell 各自把**同一個整數**寫成 `style.width`,所以兩個容器寬度不同時,
- * 差額只會變成右端的空白,**不可能**被分攤到每一欄。我們原本把分配交給 CSS flex,由瀏覽器在
- * header 與 body 兩個容器裡各跑一次 —— 只要兩邊可用寬度差一點(捲軸、border、取整),
- * `flex-grow: 1` 就會把差額平均攤到每一欄並逐欄累積(2026-09-03 實測 7 欄:0 / 2.1 / 4.3 /
- * 6.4 / 8.6 / 10.7 / 12.9,增量恰為 15/7)。
- *
- * 取整用**前綴和游標**(`round(累積理想 − 累積已配)`,同 AG Grid `columnFlexService`):
- * 第 i 欄的取整誤差被第 i+1 欄吸收,總誤差固定 ±0.5px 不累積;最後把餘數補給最後一欄,
- * 保證總和 = 可用寬度。
- *
- * @param bases 每欄的基準寬(`col.getSize()`)
- * @param maxes 每欄的上限(無上限傳 undefined)
- * @param available 可用寬度;**一律取 body 的內容寬**(較窄的那個),header 多出來的部分變成尾端空白
- */
-export function distributeColumnWidths(
-  bases: number[],
-  maxes: (number | undefined)[],
-  available: number,
-): number[] {
-  const n = bases.length
-  if (n === 0) return []
-  const total = bases.reduce((a, b) => a + b, 0)
-  // 放不下 → 各自 base,水平溢出(與原本 `minWidth: baseSize` 不可 shrink 的行為一致)
-  if (!Number.isFinite(available) || available <= total) return bases.map((b) => Math.round(b))
-
-  // 撞到 maxWidth 的欄先凍結,剩餘空間重新分給沒凍結的(同 flexbox 的 resolve-flexible-lengths)
-  const frozen = new Array<boolean>(n).fill(false)
-  const out = new Array<number>(n).fill(0)
-  for (let guard = 0; guard <= n; guard++) {
-    const freeCols: number[] = []
-    let frozenWidth = 0
-    for (let i = 0; i < n; i++) (frozen[i] ? (frozenWidth += out[i]) : freeCols.push(i))
-    if (freeCols.length === 0) break
-    const freeBase = freeCols.reduce((a, i) => a + bases[i], 0)
-    const space = available - frozenWidth
-    const grow = Math.max(0, space - freeBase) / freeCols.length
-    let violated = false
-    for (const i of freeCols) {
-      const want = bases[i] + grow
-      const cap = maxes[i]
-      if (cap != null && Number.isFinite(cap) && want > cap) {
-        out[i] = cap
-        frozen[i] = true
-        violated = true
-      }
-    }
-    if (!violated) {
-      // 前綴和取整:誤差不累積
-      let idealRight = frozenWidth
-      let actualLeft = frozenWidth
-      for (const i of freeCols) {
-        idealRight += bases[i] + grow
-        const w = Math.round(idealRight - actualLeft)
-        out[i] = w
-        actualLeft += w
-      }
-      // 餘數給最後一欄,總和 = available
-      const last = freeCols[freeCols.length - 1]
-      out[last] += available - actualLeft
-      break
-    }
-  }
-  return out
-}
+// `distributeColumnWidths` 已抽成獨立純模組(`./column-widths`)—— 它是「每欄多寬」的唯一決定者,
+// 抽出來才能純函式單測(凍結分支在 story 裡走不到)。
+// **`import` 與 `export` 都要寫**:單純 `export { x } from './y'` 是 re-export,**不會**把名字帶進本模組
+// 的作用域,下面 `resolvedWidths` 就會 TS2304。而且 `tsc -b` 抓不到這條、`npm run build:lib` 才抓到
+// (失敗記憶索引既有條目:型別 surface 改動必跑 build:lib)。
+import { distributeColumnWidths } from './column-widths'
+export { distributeColumnWidths }
 
 function columnSizeStyle(
   col: { id: string; getSize: () => number; columnDef: { minSize?: number; maxSize?: number } },
@@ -451,7 +390,12 @@ function columnSizeStyle(
   // → text wrap 行數爆增 → autoRow cell 變高 → edit textarea rows=3 估算更不準 → shrink 看起來壞掉。
   // v9 直覺:沒明示 minSize 預設不 shrink 低於 size。enableColumnResize=true 仍 honour `MIN_COLUMN_WIDTH`
   // (因 user 主動拖拉時要能縮)。
-  const minSize = col.columnDef.minSize ?? (opts.resize ? MIN_COLUMN_WIDTH : baseSize)
+  // **`columnDef.minSize` 永遠不是 undefined**:TanStack v8 的 `defaultColumnSizing.minSize = 20` 會 merge
+  // 進每一個 columnDef,所以 `??` 從來沒有 fall back 過(同檔「自動調整寬度」與欄寬把手的註解已查證
+  // 這一點,兩處結論原本自相矛盾,2026-09-03 收斂)。真正的下限契約是 `meta.minWidth`;這裡拿不到 meta,
+  // 所以**只用可靠的那一半**:resize 模式取 DS 下限、非 resize 取 baseSize(= 不可 shrink 低於 `size`,
+  // 2026-05-06 v14.1 regression 的原意)。把手與 auto-fit 兩條真正會夾值的路徑都已改讀 `meta.minWidth`。
+  const minSize = opts.resize ? MIN_COLUMN_WIDTH : baseSize
   const maxSize = col.columnDef.maxSize
   // System columns 永遠 fixed(checkbox / drag handle 等內建欄位,不在 resize 集合)
   if (opts.isSystemCol) {
@@ -477,6 +421,50 @@ function columnSizeStyle(
   // (量測:Price view 130.5 → edit 118.5 = -12px)。
   // explicit basis = baseSize 讓 padding 不參與 base 計算 → view↔edit 寬度穩定。
   return { flex: `1 1 ${baseSize}px`, minWidth: baseSize, maxWidth: maxSize }
+}
+
+/** 自動調整寬度的餘裕(px)。padding 由 clone 繼承真實 CSS 帶進來,所以只需要一點呼吸空間
+ *  (v33 的 `autoSizePadding` 預設 20 是因為它也不另補 padding;我們同理只留小 buffer)。 */
+const AUTO_FIT_BUFFER = 8
+
+/**
+ * 量「內容真正需要的寬」—— 照 AG Grid v33 `AutoWidthCalculator.cloneItemIntoDummy` 的機制。
+ *
+ * **不能直接讀 DOM 的 `scrollWidth`**(2026-09-03 跨模型對照 v33 抓到的真缺陷):cell 內容走
+ * `TruncatedText` 的 `truncate`(= `overflow:hidden` + `white-space:nowrap` + ellipsis),而
+ * `overflow:hidden` 元素的 `scrollWidth` **不會超過自己的寬**,量到的是「現在的寬」而不是
+ * 「需要的寬」→ 按一次「自動調整寬度」只會 +buffer,被截斷的字永遠露不出來。
+ * typed cell(Field naked 撐滿 cell)與 `meta.wrap` 的 break-words 同理不溢出。
+ *
+ * 作法:深拷貝進一個離畫面的 dummy、**清掉限制寬度的那幾個 inline 值**後量 `offsetWidth`。
+ * class 與其餘樣式全保留、dummy 掛在表格內 → 字體、token、圖示、cell padding 都跟真實 cell 一致,
+ * 所以**不需要再加一個猜出來的 padding 常數**(舊版硬寫 `+32`,一旦 consumer override
+ * `--table-cell-px` 就漂移)。
+ */
+function measureNaturalWidth(els: HTMLElement[], host: HTMLElement): number {
+  if (els.length === 0) return 0
+  const dummy = document.createElement('div')
+  dummy.setAttribute('aria-hidden', 'true')
+  // position:fixed 逃出表格的 overflow;visibility:hidden 仍會排版(display:none 不會)。
+  dummy.style.cssText =
+    'position:fixed;top:-10000px;left:0;width:auto;visibility:hidden;pointer-events:none;'
+  host.appendChild(dummy)
+  let max = 0
+  try {
+    for (const el of els) {
+      const clone = el.cloneNode(true) as HTMLElement
+      clone.style.width = 'max-content'
+      clone.style.minWidth = '0'
+      clone.style.maxWidth = 'none'
+      clone.style.flex = 'none'
+      dummy.appendChild(clone)
+      if (clone.offsetWidth > max) max = clone.offsetWidth
+      dummy.removeChild(clone)
+    }
+  } finally {
+    host.removeChild(dummy)
+  }
+  return max
 }
 
 const SYSTEM_COL_IDS = new Set([SELECT_COL_ID, '__drag__', '__actions__'])
@@ -1320,13 +1308,22 @@ function DataTableInner<TData>(
    * 不用 `scrollbar-gutter: stable`:那會在沒有捲軸時也永久預留 15px,content-fit 看起來像恆有捲軸
    * (舊決策的理由成立);動態量測兩者兼顧。
    *
-   * 世界級對照(2026-09-03 讀原始碼):AG Grid v36 把 header 塞進 body 同一個捲動容器、真捲軸以
-   * `scrollbar-width: none` 收成 0 寬、可見捲軸是 absolute 的 `ag-fake-vertical-scroll`,且每欄寬度只算一次
-   * 寫進 `AgColumn.actualWidth` → 結構上不可能分歧;Glide Data Grid 整張表同一塊 canvas,同理。
-   * MUI X DataGrid 與我們同型(隱藏原生捲軸 + header 尾端 `GridScrollbarFillerCell`,寬 =
-   * `var(--DataGrid-hasScrollY) * var(--DataGrid-scrollbarSize)`),Handsontable 也是
-   * (`width -= getScrollbarWidth()`)。亦即「量到捲軸就把 header 縮同寬」有兩家直接前例;
-   * 要拿到結構性免疫得走 AG Grid 那條路(header 移進捲動容器 + 假捲軸),見 spec 不變條件 (6)(7)。
+   * 世界級對照(2026-09-03 讀 v33.3.2 第一手原始碼,經跨模型獨立取證):
+   * **結構性免疫來自「寬度只算一次」,不是來自「把 header 塞進捲動容器」** —— 這兩件事在
+   * AG Grid 是分開的,先前這段註解把它們綁在一起是錯的:
+   * - v33(= 我們對照的那一代)的 header **就是獨立 viewport**,由 `GridBodyScrollFeature`
+   *   同步 `scrollLeft`(跟我們一樣);而欄寬同時只算一次存進 `AgColumn.actualWidth`
+   *   (唯一寫入口 `setActualWidth`,進門先夾 min 再夾 max),`HeaderCellCtrl.setupWidth` 與
+   *   `CellPositionFeature.onWidthChanged` 各自訂閱同一個 `widthChanged`、各自讀同一個
+   *   `getActualWidth()` 寫成 inline px。**兩邊沒有任何 `flex-grow`**(`.ag-cell` 是
+   *   `position:absolute` + inline px)→ 分歧在結構上不可能發生。
+   * - 「header 移進 body 同一個捲動容器 + `ag-fake-vertical-scroll` 假捲軸」是 **v36**(2026 重寫)
+   *   才有的事,與能不能對齊無關,只改變捲軸的視覺落點。
+   * 亦即:我們現在的「算一次 + 兩邊寫同一個整數 + spacer 補 header 內容寬」就是 v33 的模型本身,
+   * 不需要為了對齊去改捲動容器結構。詳 spec 不變條件 (6)(7)。
+   * 另兩家同型前例(隱藏原生捲軸 + header 尾端補等寬):MUI X DataGrid 的
+   * `GridScrollbarFillerCell`(寬 = `var(--DataGrid-hasScrollY) * var(--DataGrid-scrollbarSize)`)、
+   * Handsontable 的 `width -= getScrollbarWidth()`;Glide Data Grid 整張表同一塊 canvas,同理免疫。
    */
   const [hScrollbarGutter, setHScrollbarGutter] = React.useState(0)
   /**
@@ -1573,14 +1570,31 @@ function DataTableInner<TData>(
   // user 報「header / row 對不起來」)。
   const centerColsWidth = centerCols.reduce((a, c) => a + c.getSize(), 0)
   /**
-   * Center 欄寬:**算一次**,header 與 body 共用同一組整數(見 `distributeColumnWidths` 的說明)。
+   * 欄寬:**算一次**,header 與 body 共用同一組整數(見 `distributeColumnWidths` 的說明)。
+   * 這個 Map 就是 AG Grid v33 `AgColumn.actualWidth` 的對應物 —— 唯一真相源,兩邊各自「讀」它、
+   * 沒有任何一邊自己重算分配(v33 是 `HeaderCellCtrl.setupWidth` 與 `CellPositionFeature.onWidthChanged`
+   * 各自訂閱同一個 `widthChanged`;我們是 React 受控渲染讓兩棵 DOM 在同一次 commit 讀同一個 Map,
+   * 對 React 而言更強 —— 不可能有一邊漏訂閱)。
+   *
+   * **三個區都要進來**(2026-09-03 跨模型對照 v33 原始碼後補上釘選區):v33 的
+   * `HeaderCellCtrl.setupWidth` / `CellPositionFeature.onWidthChanged` **不分區**,left/center/right
+   * 一律寫同一個 `getActualWidth()`;釘選欄只是不參與 flex 分配,不是不走「算一次」。
+   * 我先前只做 center,釘選區仍落回 `flex: 1 1 baseSize` 由瀏覽器在 header / body 兩個容器各跑一次
+   * ——那正是使用者最初回報「欄位對不齊、愈右邊差愈多」的同一個機制,只是換個區出現(spec 缺陷 B)。
+   * 我當時把修法定價成「要改成單一捲動容器才拿得到結構性免疫」是錯的:免疫來自「寬度單一來源」,
+   * v33 在 header 獨立 viewport 的架構下就已經做到,和捲動容器結構無關。
+   *
    * 可用寬度一律取 **body 的內容寬**(`centerBodyWidth`,已扣掉垂直捲軸);header 比它多出來的部分
-   * 變成尾端空白,由 panel 的表頭底色蓋住 —— 這就是 AG Grid v33 `CenterWidthFeature` 的 `addSpacer`。
-   * 拖拉欄寬模式(`enableColumnResize`)本來就走絕對寬,不進這條路。
+   * 變成尾端空白,由 panel 的表頭底色蓋住 —— 這就是 v33 `CenterWidthFeature` 的 `addSpacer`。
+   * 拖拉欄寬模式(`enableColumnResize`)本來就兩邊同源(同一個 `getSize()`),不進這條路。
    */
-  const centerWidths = React.useMemo(() => {
+  const resolvedWidths = React.useMemo(() => {
     const map = new Map<string, number>()
-    if (enableColumnResize || centerBodyWidth <= 0 || centerCols.length === 0) return map
+    if (enableColumnResize) return map
+    // 釘選欄不參與彈性分配(同 v33:只有 centerCols 進 flex service),但一樣寫成絕對整數。
+    for (const c of leftCols) map.set(c.id, Math.round(c.getSize()))
+    for (const c of rightCols) map.set(c.id, Math.round(c.getSize()))
+    if (centerBodyWidth <= 0 || centerCols.length === 0) return map
     const dataCols = centerCols.filter((c) => !isSystemColumn(c.id))
     const systemWidth = centerCols
       .filter((c) => isSystemColumn(c.id))
@@ -1592,7 +1606,7 @@ function DataTableInner<TData>(
     )
     dataCols.forEach((c, i) => map.set(c.id, widths[i]))
     return map
-  }, [centerCols, centerBodyWidth, enableColumnResize])
+  }, [leftCols, rightCols, centerCols, centerBodyWidth, enableColumnResize])
 
   // Header 寬度 → body region 同步（virtual mode 需要明確寬度）
   // **`useLayoutEffect` 不是 `useEffect`**(2026-09-03 稽核抓到):用 `useEffect` 時首次 mount 那一幀
@@ -1790,7 +1804,7 @@ function DataTableInner<TData>(
           // 才生效(避免雙線)— CSS 用 `:not(:last-child)` selector 處理。
           data-column-id={SELECT_COL_ID}
           className={cn('flex items-center justify-center shrink-0', !isDisabled && 'cursor-pointer')}
-          style={{ ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id), resolvedWidth: centerWidths.get(cell.column.id) }), ...cellPadding }}
+          style={{ ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id), resolvedWidth: resolvedWidths.get(cell.column.id) }), ...cellPadding }}
           onClick={onCellClick}
         >
           {mode === 'single' ? (
@@ -1972,7 +1986,7 @@ function DataTableInner<TData>(
           isEditingThisCell && !experimentalActiveEditorController && 'z-10',
         )}
         style={{
-          ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id), resolvedWidth: centerWidths.get(cell.column.id) }),
+          ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id), resolvedWidth: resolvedWidths.get(cell.column.id) }),
           // Padding override 只在 inline-edit cell(naked Field 撐滿 cell);portal mode cell 走正常 view padding
           ...(isEditingThisCell && !experimentalActiveEditorController ? {} : cellPadding),
           // Slice D Step 2(2026-05-10):flag 開時 set CSS variable 抑制 Field naked hover outline,
@@ -2301,7 +2315,7 @@ function DataTableInner<TData>(
           key={header.id}
           role="columnheader"
           className={cn('flex items-center justify-center shrink-0 select-none', !isHeaderDisabled && 'cursor-pointer')}
-          style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: centerWidths.get(header.column.id) }), ...cellPadding }}
+          style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: resolvedWidths.get(header.column.id) }), ...cellPadding }}
           onClick={isHeaderDisabled ? undefined : (e) => { e.stopPropagation(); toggleHeaderCheckbox() }}
         >
           {mode === 'multi' && (
@@ -2337,6 +2351,9 @@ function DataTableInner<TData>(
       <div
         key={header.id}
         role="columnheader"
+        // 無條件帶上:body cell 一直都有(見 cellEl),header 原本只在「啟用欄位拖曳」時由
+        // SortableColumnHeader 的 cloneElement 注入 → 沒啟用拖曳時「自動調整寬度」量不到 header。
+        data-column-id={header.column.id}
         aria-sort={sortDir === 'asc' ? 'ascending' : sortDir === 'desc' ? 'descending' : 'none'}
         className={cn(
           // **Inline action canonical**(2026-05-05 v2):header 用 `flex items-center gap-2`
@@ -2351,7 +2368,7 @@ function DataTableInner<TData>(
           align === 'right' && 'justify-end',
           align === 'center' && 'justify-center',
         )}
-        style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: centerWidths.get(header.column.id) }), ...cellPadding }}
+        style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: resolvedWidths.get(header.column.id) }), ...cellPadding }}
       >
         {/* 左區:label + sort indicator(整區 click → toggle sort;Shift+click 加 secondary,enableMultiSort 啟用時) */}
         <div
@@ -2431,19 +2448,33 @@ function DataTableInner<TData>(
                     // 查詢限定在本表格內:同一頁若有兩個 DataTable 而欄位 id 相同(例如都叫 `name`),
                     // 掃全文件會讓這一欄的寬度被另一張表的內容決定。旁邊的 collision detection
                     // 早就因為同樣理由改用 tableRef,這裡補上(2026-09-03 稽核抓到)。
-                    const scope: ParentNode = tableRef.current ?? document
-                    const cells = scope.querySelectorAll<HTMLElement>(
-                      `[role="cell"][data-column-id="${header.column.id}"]`,
-                    )
-                    let max = MIN_COLUMN_WIDTH
-                    cells.forEach(c => {
-                      const inner = c.firstElementChild as HTMLElement | null
-                      const w = (inner?.scrollWidth ?? c.scrollWidth) + 32 // + cellPadding 兩側 + buffer
-                      if (w > max) max = w
-                    })
+                    const host = tableRef.current
+                    if (!host) return
+                    // 查詢限定在本表格內:同一頁若有兩個 DataTable 而欄位 id 相同(例如都叫 `name`),
+                    // 掃全文件會讓這一欄的寬度被另一張表的內容決定。旁邊的 collision detection
+                    // 早就因為同樣理由改用 tableRef,這裡補上(2026-09-03 稽核抓到)。
+                    const sel = `[data-column-id="${header.column.id}"]`
+                    // **量 cell 本身,不是 `firstElementChild`**:樹狀列 cell 的第一個子元素是
+                    // 縮排/chevron 前綴 span(w-4 + mr-2 = 24px),量它會讓欄寬塌到下限、名稱被截斷。
+                    // **header 也要量**(v33 `skipHeaderOnAutoSize` 預設 false):標題比所有 cell 都長
+                    // 很常見(數字欄配「上次更新時間」這種標題),不量的話 auto-fit 後反而看不到欄位名。
+                    const targets = [
+                      ...host.querySelectorAll<HTMLElement>(`[role="cell"]${sel}`),
+                      ...host.querySelectorAll<HTMLElement>(`[role="columnheader"]${sel}`),
+                    ]
+                    const natural = measureNaturalWidth(targets, host)
+                    const meta = header.column.columnDef.meta as
+                      | { minWidth?: number; maxWidth?: number }
+                      | undefined
+                    // 下限讀**公開契約** `meta.minWidth`(不是 TanStack 的 `columnDef.minSize` ——
+                    // 它永遠被 defaultColumnSizing 填成 20,`??` 不會 fall back);上限同理只認 meta。
+                    const lo = meta?.minWidth ?? MIN_COLUMN_WIDTH
+                    const hi = meta?.maxWidth
+                    let next = Math.max(lo, Math.ceil(natural) + AUTO_FIT_BUFFER)
+                    if (hi != null) next = Math.min(next, hi)
                     header.column.resetSize?.()
-                    table.setColumnSizing(prev => ({ ...prev, [header.column.id]: max }))
-                    onColumnResize?.(header.column.id, max)
+                    table.setColumnSizing(prev => ({ ...prev, [header.column.id]: next }))
+                    onColumnResize?.(header.column.id, next)
                   }}
                 >
                   自動調整寬度
@@ -2467,12 +2498,20 @@ function DataTableInner<TData>(
             - role="separator" + aria-orientation="vertical" 對齊 WAI-ARIA(isResizable 時)*/}
         {(() => {
           const colId = header.column.id
-          const colMeta = header.column.columnDef.meta as { resizable?: boolean; maxWidth?: number } | undefined
+          const colMeta = header.column.columnDef.meta as
+            | { resizable?: boolean; minWidth?: number; maxWidth?: number }
+            | undefined
           // H3: meta.resizable === false 顯式 opt-out(default true)
           const colOptIn = colMeta?.resizable !== false
           const isResizable = enableColumnResize && !isSystemColumn(colId) && colOptIn
-          // effectiveMinWidth 對齊 drag 路徑(resolveColumnSizing minSize)。
-          const effectiveMinWidth = header.column.columnDef.minSize ?? MIN_COLUMN_WIDTH
+          // 下限讀**公開契約** `meta.minWidth`(spec 六之二:「`minWidth` = 拖拉下限(default 80)」)。
+          // **不可讀 `columnDef.minSize`**:TanStack v8 的 `defaultColumnSizing.minSize = 20` 會 merge
+          // 進每一個 columnDef,所以 `columnDef.minSize ?? MIN_COLUMN_WIDTH` 永遠拿到 20,那個 `??`
+          // 從來沒有 fall back 過 —— 使用者真的能把欄位拖到 20px(cell 左右 padding 合計就 24px,
+          // 內容區變負值 = 整格空白),比 spec 寫的 80 與 AG Grid 的 36 都低
+          // (2026-09-03 跨模型對照 v33 抓到;v33 是 `initMinAndMaxWidths` 把預設寫進 column 實例,
+          //  之後每次 `setActualWidth` 都夾得到,預設一定生效)。
+          const effectiveMinWidth = colMeta?.minWidth ?? MIN_COLUMN_WIDTH
           // H2: 不論 showDivider,只要 isResizable 就 render 把手(panel boundary col 仍可拖)
           if (!showDivider && !isResizable) return null
           // 2026-09-02:欄寬把手 = patterns/resize-handle 同一顆元件(視覺 / 拖拉 / 鍵盤 / ARIA 全由它擁有;
@@ -2819,11 +2858,18 @@ function DataTableInner<TData>(
             {renderHeaderRow(leftCols, false)}
           </div>
         )}
-        {/* Header 的 center 區保持 overflow-hidden(非 scroll)—— body 的 center 才有 scroll,
-            header 靠 JS 同步 scrollLeft(見 onCenterBodyScroll)。這樣不會出現雙 scrollbar。
-            V scrollbar 對齊(2026-09-03 修正舊取捨):body 出現垂直捲軸時內容盒少 ~15px,header 以**動態量到的**
-            同寬 padding-right 補齊,兩邊內容盒等寬 → 彈性欄寬分配結果一致、不再逐欄累積偏移。
-            沒有捲軸時 gutter = 0(macOS overlay 亦為 0)→ 完全不留空白,content-fit 依舊乾淨。 */}
+        {/* Header 的 center 區:**可捲但不顯示捲軸**(`overflow-x-auto` + 隱藏捲軸),沿用 DS 既有慣例
+            (Tabs / Chip / patterns/horizontal-overflow 同一組 class)。
+            2026-09-03 修正:原本是 `overflow-hidden`,理由寫「這樣不會出現雙 scrollbar」——**理由不成立**。
+            `overflow:hidden` 的盒子不接受滾輪/觸控板捲動,所以使用者把指標停在表頭上橫滑時表格不動;
+            AG Grid v33 的 `.ag-header-viewport` 正是 `overflow-x:auto` 搭 `scrollbar-width:none`
+            (它還 `implements ScrollPartner`),同時拿到「可捲」與「沒有第二條捲軸」。
+            兩邊仍由 `onCenterBodyScroll` / `onSecondaryScroll` 收斂到 center body 這個唯一真相源:
+            寫回相同值不會再觸發 scroll 事件,不會互相回打。
+            垂直捲軸的橫向補償**不在這裡**:body 出現垂直捲軸時內容盒少一個捲軸寬,補的是內層 wrapper 的
+            **內容寬**(`minWidth + vScrollbarSpacer`,見下方),對應 AG Grid `CenterWidthFeature(addSpacer)`;
+            2026-09-03 之前那版用 `padding-inline-end` 補,已隨「欄寬只算一次」一併移除
+            (v33 對 header 對齊一處 padding-right 都沒有)。 */}
         <div
           ref={centerHeaderRef}
           data-datatable-header-panel="center"
@@ -2831,7 +2877,10 @@ function DataTableInner<TData>(
           // 底色與下分隔線由 HEADER_PANEL 帶(不是 row):讓給垂直捲軸的那條 strip 也在 panel 內,
           // 因此自動帶到同一層底色與同一條分隔線 —— 表頭右上角不再是空白,而且因為只疊一層,
           // strip 與欄位區在 light / dark 都是同一個顏色(2026-09-03 user 抓到)。
-          className={cn(HEADER_PANEL, 'flex-1 min-w-0 overflow-hidden')}
+          className={cn(
+            HEADER_PANEL,
+            'flex-1 min-w-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+          )}
         >
           {/* 2026-05-06 v13.1:retire `w-max min-w-full` — 改 `style={{minWidth: centerColsWidth}}`
               跟 body inner wrapper 同 SSOT。前 `w-max` 讓 header content max-content(label 短)
@@ -3218,7 +3267,11 @@ function DataTableInner<TData>(
       // Column drag:snapshot header cell visual,strip transform/inline-styles
       const colId = e.active.data?.current?.columnId ?? id
       setActiveDragColId(colId)
-      const headerEl = document.querySelector<HTMLElement>(`[role="columnheader"][data-column-id="${colId}"]`)
+      // 查詢限定在本表格內:同頁兩張表若欄位 id 相同,全域查詢會克到**另一張表**的 header
+      // (寬度與排序箭頭狀態都是別張表的)。同一個 bug 在「自動調整寬度」與 collision detection
+      // 都已改用 tableRef,這一處 2026-09-03 才補上 —— 現有 story 就有三組同 id 的雙表。
+      const headerScope: ParentNode = tableRef.current ?? document
+      const headerEl = headerScope.querySelector<HTMLElement>(`[role="columnheader"][data-column-id="${colId}"]`)
       if (headerEl) {
         const clone = headerEl.cloneNode(true) as HTMLElement
         clone.style.position = 'static'

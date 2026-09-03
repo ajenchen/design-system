@@ -341,15 +341,25 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   「只有家與貼邊兩種位置」→ 帶的幾何(寬 36、下半部)→ 帶的樣式(drop-target 底 + 三邊虛線框)。**用語統一**:
   位置叫「家 / 貼邊」、區域叫「帶」、動作文案叫「縮小按鈕 / 放大按鈕」,不再用「收到邊 / 收合 / 小鈕 / 藍框」):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),
   與表格分頁列「操作右」必撞 → 主鈕可拖到右緣貼邊:
-  - **可點區域 = 整個矩形,不是圓角形狀**:漸層環畫在 `<button>` 自己的 2px padding 上、內層 span 只負責面色;
-    定位殼固定 40 寬(形態過渡不凸出右緣)但 `pointer-events-none`。**按鈕內另放一片與按鈕同大的透明矩形
-    子元素當命中區**——子元素的盒是矩形,不受父層 `border-radius` 影響命中判定,所以圓角外的角落也點得到。
-    2026-09-03 user 回報「hover 小鈕左側時點不到」有**兩個**根因,兩個都修了:(1) 殼左側空白攔截點擊、
-    外圈漸層環不是按鈕本體(已於同日先修:按鈕即形狀、殼 `pointer-events-none`);(2) 貼邊態是左側半圓,
-    **靠近左緣但偏離垂直中心的點落在圓外**——實測命中圖 dy=±12 時最左 1–3px 點不到,這才是殘留的死區。
-    命中矩形**刻意不外推**:貼邊時按鈕已齊在視窗右緣,任何外推都會讓文件寬多出幾 px 而生出水平捲軸
+  - **語意按鈕恆為 40×40 的透明矩形,可視形狀是它的內層**(靠右置中;漸層環 = 內層自己的 2px padding,
+    再內一層 span 只負責面色)。定位殼固定 40 寬(形態過渡不凸出右緣)且 `pointer-events-none`,
+    貼邊態用負的上下外距把 40 的命中盒塞回 28 高的可視盒 —— **可視位置與拍板過的 y 範圍一格都不動**。
+    這個分工讓 **DOM 盒 / 無障礙 target / 命中區永遠是同一個矩形**,一次解掉三種死區:
+    1. **圓角外的角落**:矩形盒沒有圓角,不會有「靠左緣但偏離垂直中心而落在圓外」的點
+       (2026-09-03 實測命中圖:dy=±12 時最左 1–3px 點不到)。
+    2. **可視 28 < 最小點擊尺寸**:Material 48dp / [Apple HIG 44pt](https://developer.apple.com/design/human-interface-guidelines/buttons) /
+       [WCAG 2.5.5 Target Size (Enhanced) 44 CSS px](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html)
+       都在 28 之上;殼本來就保留 40(= `--field-height-lg`,與家同一個數),補到 40 不佔任何新版面。
+       **這不是美觀問題而是量得出來的功能缺陷**:2026-09-03 於 1280×679 實測,貼邊鈕命中起點 x=1252、
+       同頁表格垂直捲軸帶 x∈[1248,1262] → **x∈[1248,1252) 這 4px 看起來是鈕左緣、實際上鈕不在那裡**,
+       殼又 `pointer-events-none` → 真滑鼠點下去命中的是**捲軸軌道**,表格往下翻一頁、面板不開,第二下同理
+       (user 原話:「點在小fab上卻直接捲動了table而沒開啟agent,再次點擊也沒效」)。
+    3. **浮層反過來蓋住自己的命中區**:Radix 的 Tooltip / DropdownMenu 以 `<button>` 為錨,錨是 40 而非 28,
+       8px 的 side offset 才不會壓進命中區最左 4px(這條由跨模型獨立審查抓到,2026-09-03)。
+    命中盒只往**內側與上下**長,右緣仍齊在舞台邊 —— 不會讓文件變寬而生出視窗捲軸
     (user 明確要求各種 fab 狀態都不能讓視窗長出捲軸;實測家/貼邊/拖曳全程 `scrollWidth − clientWidth = 0`)。
-    修後實測:視覺左緣起整片都是按鈕,左側落到底下的頁面。
+    機械閘:`scripts/agent-fab-hit-area-invariant.mjs`(掃 `elementFromPoint().closest('button')` 的真實命中測試,
+    斷言命中矩形 ≥ 40×40、不越舞台右/下緣、舞台零溢出;併在 `npm run test:agent-panel-invariants`)。
   - **只有兩種合法位置**:「家」= 圓鈕 40,位置唯一在右下角(離右、下各 loose;[Android FAB 官方範例
     `layout_margin` 16dp](https://developer.android.com/develop/ui/views/components/floating-action-button)、Teambition 16,
     lg 密度 24)/「貼邊」= 收合鈕 `--field-height-sm` 28 貼右緣半圓(只留內側圓角、環只畫露出三邊、內置 16 標誌;

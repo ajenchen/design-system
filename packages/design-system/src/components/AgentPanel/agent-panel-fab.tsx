@@ -239,10 +239,17 @@ interface ShapeSpec {
   tooltipSide: 'top' | 'left' | 'right' | 'bottom'
   /** 招喚態是否畫邊框光圈(貼邊態省略:半圓貼著視窗邊,波會被切一半)。 */
   glow: boolean
+  /**
+   * 語意 `<button>` 恆為 40×40(= FAB_PX)的透明矩形,可視形狀畫在內層並靠右置中;
+   * 本欄是**把 40 的命中盒塞回可視盒而不移動可視位置**用的負外距(見下方 `<button>` 註解)。
+   */
+  box: string
 }
 const SHAPES: Record<Shape, ShapeSpec> = {
-  home: { px: FAB_PX, logo: 24, radius: 'rounded-full', innerRadius: 'rounded-full', tooltipSide: 'top', glow: true },
-  dock: { px: DOCK_PX, logo: 16, radius: 'rounded-l-full pr-0', innerRadius: 'rounded-l-full', tooltipSide: 'left', glow: false },
+  // 在家:可視 40 = 命中盒 40,不需要負外距。
+  home: { px: FAB_PX, logo: 24, radius: 'rounded-full', innerRadius: 'rounded-full', tooltipSide: 'top', glow: true, box: '' },
+  // 貼邊:可視只露 28(高也 28),命中盒仍是 40 → 上下各收 6 讓殼高回到 28,可視位置一格都不動。
+  dock: { px: DOCK_PX, logo: 16, radius: 'rounded-l-full pr-0', innerRadius: 'rounded-l-full', tooltipSide: 'left', glow: false, box: '-my-1.5' },
 }
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(min, max))
@@ -448,7 +455,16 @@ function useSnapDrag(opts: {
   return { drag, onPointerDown, onClickCapture }
 }
 
-export interface AgentFabDockProps extends Omit<AgentFabProps, 'className' | 'onClick'> {
+/**
+ * 本元件**自己必須擁有**、不接受 consumer 覆寫的 button prop。
+ * 這些 handler 是拖曳引擎與選單的一部分(門檻判定、吞掉拖曳後的 click、右鍵開選單、鍵盤移動),
+ * 被覆寫等於把「點了卻沒開」種回去;而 `disabled` 沒有對應的視覺(鈕長得一模一樣),
+ * 傳了只會讓瀏覽器靜靜不派 click —— 型別層直接擋掉,比事後 debug 便宜
+ * (兩條都由 2026-09-03 跨模型獨立審查點出)。
+ */
+type FabOwnedButtonProps = 'onPointerDown' | 'onClickCapture' | 'onContextMenu' | 'onKeyDown' | 'disabled'
+
+export interface AgentFabDockProps extends Omit<AgentFabProps, 'className' | 'onClick' | FabOwnedButtonProps> {
   /** 受控位置。 */
   placement?: AgentFabPlacement
   /** 非受控初始位置;預設家(右下角)。 */
@@ -662,29 +678,35 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
           </DropdownMenu>
           <Tooltip open={dragging ? false : undefined}>
             <TooltipTrigger asChild>
-              {/* 按鈕本身就是那個看得見的形狀(漸層環 = 自己的 2px padding);
-                  寬高與圓角在兩態間過渡 150ms,拖曳中當場變形 = 所見即所得。
-                  **命中區是矩形、比形狀略大**:圓角會讓「靠近左緣但偏離垂直中心」的點落在圓外
-                  (2026-09-03 實測命中圖:貼邊態 dy=±12 時最左 1–3px 點不到)—— user 回報
-                  「滑到小鈕左側點擊沒反應」的真因就是這個,不是狀態或量測問題。
-                  解法同 DS 既有的 hit-outset 慣例(ResizeHandle 命中區外推):放一片透明的矩形
-                  子元素撐出命中區,視覺形狀不變。 */}
+              {/* **語意按鈕 = 40×40 的透明矩形,可視形狀是它的內層**(靠右置中)。
+                  這個分工讓 DOM 盒 / 無障礙 target / 命中區三者永遠是同一個矩形,一次解掉三種死區:
+                  (a) 圓角外的角落(矩形盒沒有圓角,不會有「落在圓外」的點);
+                  (b) 貼邊態可視只有 28,低於各家最小點擊尺寸(Material 48dp / Apple HIG 44pt /
+                      WCAG 2.5.5 AAA 44 CSS px),而殼本來就固定保留 40 寬,補到 40 不佔任何新版面;
+                  (c) Radix 的 Tooltip / DropdownMenu 以**按鈕**為錨 —— 錨是 40 而不是 28,浮層才不會
+                      反過來蓋住自己的命中區(28 錨 + 8px offset 會壓到命中區最左 4px)。
+                  這三種死區在 2026-09-03 都有實測數據:貼邊鈕命中起點 x=1252、表格垂直捲軸帶
+                  x∈[1248,1262] → x∈[1248,1252) 這 4px 看起來是鈕左緣、實際上鈕不在那裡,殼又
+                  `pointer-events-none`,真滑鼠點下去命中的是**捲軸軌道** → 表格往下翻一頁、面板不開,
+                  第二下同理(user 原話:「點在小fab上卻直接捲動了table而沒開啟agent,再次點擊也沒效」)。
+                  命中盒只往內側與上下長,右緣仍齊在舞台邊 → 不會讓文件變寬而生出視窗捲軸。
+                  機械閘:`scripts/agent-fab-hit-area-invariant.mjs`(命中矩形 ≥ 40×40、不越舞台、舞台零溢出)。 */}
               <button
                 type="button"
                 className={cn(
                   // touch-none:觸控上不讓瀏覽器把 pointerdown 解讀成捲動(同 resize-handle canonical),否則拖曳在手機不可用。
-                  'relative pointer-events-auto inline-flex touch-none cursor-[inherit] items-center justify-center border-none p-[2px] shadow-[var(--elevation-200)]',
-                  'transition-[width,height,border-radius,box-shadow,transform] duration-[var(--motion-duration-overlay)] ease-[var(--motion-easing-enter)] motion-reduce:transition-none',
-                  spec.radius,
-                  // 懸停 = 陰影升一級 + 微放大(與獨立 AgentFab 同一手感;spec「FAB」節)。
-                  !dragging && 'hover:scale-[1.04] hover:shadow-[var(--elevation-200-hover)] motion-reduce:hover:scale-100',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                  'group/fab pointer-events-auto inline-flex touch-none cursor-[inherit] items-center justify-end border-none bg-transparent p-0',
+                  'focus-visible:outline-none',
+                  spec.box,
                 )}
-                style={{ background: RING_GRADIENT, width: spec.px, height: spec.px }}
+                style={{ width: FAB_PX, height: FAB_PX }}
+                {...buttonProps}
                 ref={buttonRef}
                 aria-label={buttonLabel}
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
+                // 自有 handler 一律放在 spread **之後**:型別已擋(見 FabOwnedButtonProps),
+                // 這裡再擋一層執行期(JS consumer / as any 繞過型別)。
                 onPointerDown={onPointerDown}
                 onKeyDown={onKeyDown}
                 onClickCapture={onClickCapture}
@@ -693,20 +715,26 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
                   e.preventDefault()
                   setMenuOpen(true)
                 }}
-                {...buttonProps}
               >
-                {/* 命中區:與按鈕同大的透明矩形(**不外推**)。子元素的盒是矩形,不受父層
-                    border-radius 影響命中判定,點在圓角外仍會冒泡到 button。
-                    刻意不做 -inset 外推:貼邊時按鈕已經齊在視窗右緣,任何外推都會讓文件寬多出幾 px
-                    而生出水平捲軸(user 明確要求各種 fab 狀態都不能讓視窗長出捲軸)。 */}
-                <span aria-hidden className="absolute inset-0" />
+                {/* 可視形狀:漸層環 = 這一層自己的 2px padding,內層 span 只負責面色。
+                    寬高與圓角在兩態間過渡 150ms,拖曳中當場變形 = 所見即所得。 */}
                 <span
+                  aria-hidden
                   className={cn(
-                    'relative flex h-full w-full items-center justify-center bg-surface-raised',
-                    spec.innerRadius,
+                    'flex shrink-0 items-center justify-center p-[2px] shadow-[var(--elevation-200)]',
+                    'transition-[width,height,border-radius,box-shadow,transform] duration-[var(--motion-duration-overlay)] ease-[var(--motion-easing-enter)] motion-reduce:transition-none',
+                    spec.radius,
+                    // 懸停 = 陰影升一級 + 微放大(與獨立 AgentFab 同一手感;spec「FAB」節)。
+                    // 觸發源是**整個 40 命中盒**:滑到左側那 12px 也會放大,不會出現「看起來沒反應卻點得到」。
+                    !dragging && 'group-hover/fab:scale-[1.04] group-hover/fab:shadow-[var(--elevation-200-hover)] motion-reduce:group-hover/fab:scale-100',
+                    // 焦點圈畫在可視形狀上,不是那個 40 的透明盒(否則會出現一圈找不到主人的方框)。
+                    'group-focus-visible/fab:ring-2 group-focus-visible/fab:ring-ring group-focus-visible/fab:ring-offset-2',
                   )}
+                  style={{ background: RING_GRADIENT, width: spec.px, height: spec.px }}
                 >
-                  <AgentLogo state={logoState} ripple={false} size={spec.logo} />
+                  <span className={cn('flex h-full w-full items-center justify-center bg-surface-raised', spec.innerRadius)}>
+                    <AgentLogo state={logoState} ripple={false} size={spec.logo} />
+                  </span>
                 </span>
               </button>
             </TooltipTrigger>

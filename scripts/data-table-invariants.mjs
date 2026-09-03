@@ -11,7 +11,7 @@
 
 import { chromium } from 'playwright'
 import http from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -22,6 +22,21 @@ const STATIC = join(ROOT, 'storybook-static')
 if (!existsSync(STATIC)) {
   console.error('✗ storybook-static missing. Run `npm run build-storybook` first.')
   process.exit(1)
+}
+// **stale-build 守衛**(2026-09-03 補;失敗記憶索引既有條目:「storybook-smoke 驗舊 build = 假綠」):
+// 只檢查目錄存不存在會讓「改了 src 但沒重建」的情況拿到假綠 —— 量到的是上一版的 DOM。
+{
+  const SRC_DIR = join(ROOT, 'packages/design-system/src/components/DataTable')
+  const newestSrc = readdirSync(SRC_DIR)
+    .filter((f) => /\.(tsx?|css)$/.test(f))
+    .reduce((max, f) => Math.max(max, statSync(join(SRC_DIR, f)).mtimeMs), 0)
+  const builtAt = statSync(join(STATIC, 'index.json')).mtimeMs
+  if (newestSrc > builtAt) {
+    console.error('✗ storybook-static 比 DataTable 原始碼舊 —— 量到的會是上一版 DOM(假綠)。')
+    console.error(`   最新原始碼 ${new Date(newestSrc).toISOString()} > 建置 ${new Date(builtAt).toISOString()}`)
+    console.error('   請先跑 `npm run build-storybook`。')
+    process.exit(1)
+  }
 }
 
 const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff': 'font/woff', '.woff2': 'font/woff2' }
@@ -266,8 +281,11 @@ const alignReport = await page.evaluate(() => {
     return null
   }
   const heads = [...document.querySelectorAll('[role="columnheader"]')]
-  const row = [...document.querySelectorAll('[role="row"]')].find((r) => r.querySelector('[role="gridcell"]'))
-  const cells = row ? [...row.querySelectorAll('[role="gridcell"]')] : []
+  // **`role="cell"` 不是 `gridcell`**(2026-09-03 抓到:這條寫錯選擇器 → `row` 恆為 undefined →
+  // 迴圈零次 → **一條紀錄都不產生,看起來就像通過**)。DataTable 的 body cell 一律是 `role="cell"`;
+  // `gridcell` 只出現在 Calendar / DateGrid。下方另加「真的量到欄」守衛,防止再次空轉。
+  const row = [...document.querySelectorAll('[role="row"]')].find((r) => r.querySelector('[role="cell"]'))
+  const cells = row ? [...row.querySelectorAll('[role="cell"]')] : []
   return heads.slice(0, cells.length).map((h, i) => ({
     just: getComputedStyle(h).justifyContent,
     head: textRect(h),
@@ -287,6 +305,8 @@ for (const col of alignReport) {
     record('I10', `左對齊欄「${col.head.text}」標題與內容左緣一致`, delta <= 1.5, `header left ${col.head.left.toFixed(1)} vs cell left ${col.cell.left.toFixed(1)}, delta ${delta.toFixed(1)}`)
   }
 }
+// 空轉守衛:選擇器一旦再寫錯就會是「零斷言 = 假綠」,所以明確要求至少量到一欄。
+record('I10', '真的量到欄(否則上面的斷言是空轉)', alignReport.length > 0, `量到 ${alignReport.length} 欄`)
 
 // ── I11:欄寬「算一次」——header 與 body 讀同一個整數(2026-09-03 改為 AG Grid v33 模型)──
 // 舊模型把分配交給 CSS flex,由瀏覽器在 header 與 body 兩個容器各跑一次,只要可用寬度差一點
@@ -354,6 +374,74 @@ if (!widthReport) {
     )
   }
 }
+
+// ── I11c:「算一次」對**三個區**都成立(2026-09-03 補;原本 I11/I11b 只取 panel="center")──
+// 對照 AG Grid v33:`HeaderCellCtrl.setupWidth` 與 `CellPositionFeature.onWidthChanged` **不分區**,
+// left/center/right 一律寫同一個 `getActualWidth()`;釘選欄只是不參與 flex 分配,不是不走「算一次」。
+// 沒有這條斷言時,釘選區可以整區退回舊的 CSS flex 模型而 CI 全綠(那正是 2026-09-03 對照抓到的
+// 真缺陷:我先前只把 center 改成算一次)。
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, { waitUntil: 'networkidle' })
+await page.waitForSelector('[data-datatable-panel="center"]')
+const measureRegions = () => {
+  const out = []
+  for (const region of ['left', 'center', 'right']) {
+    const hp = document.querySelector(`[data-datatable-header-panel="${region}"]`)
+    const bp = document.querySelector(`[data-datatable-panel="${region}"]`)
+    if (!hp || !bp) continue
+    const heads = [...hp.querySelectorAll('[role="columnheader"]')]
+    const row = [...bp.querySelectorAll('[role="row"]')].find((r) => r.querySelector('[role="gridcell"], [role="cell"]'))
+    const cells = row ? [...row.querySelectorAll('[role="gridcell"], [role="cell"]')] : []
+    const n = Math.min(heads.length, cells.length)
+    let worstWidth = 0
+    let worstLeft = 0
+    for (let i = 0; i < n; i++) {
+      const h = heads[i].getBoundingClientRect()
+      const c = cells[i].getBoundingClientRect()
+      worstWidth = Math.max(worstWidth, Math.abs(h.width - c.width))
+      worstLeft = Math.max(worstLeft, Math.abs(h.left - c.left))
+    }
+    out.push({ region, columns: n, worstWidth, worstLeft })
+  }
+  return out
+}
+const regionReport = await page.evaluate(measureRegions)
+// **不能無條件要求每區都有欄**(2026-09-03 抓到會誤紅):`rowActions` 也會產生右區,但那一格
+// header 端是沒有 role 的 invisible 佔位 div、body 端才有 `role="cell"` → 右區 `n = 0`。
+// 所以改成:有 columnheader 的區才斷言;並用**兩支 story 合起來**保證三區都真的被斷言過
+// (`pinned-columns` 給 left+center,`row-drag-interactive` 有 `pinnedRightColumns` 給 right)。
+const assertedRegions = new Set()
+const recordRegions = (report, storyLabel) => {
+  for (const r of report) {
+    if (r.columns === 0) continue // 該區只有 rowActions 佔位格,沒有資料欄可比
+    assertedRegions.add(r.region)
+    record(
+      'I11c',
+      `${storyLabel} ${r.region} 區 ${r.columns} 欄的 header 與 cell 寬度是同一個整數`,
+      r.worstWidth <= 0.01,
+      `worst width delta ${r.worstWidth.toFixed(3)}px`,
+    )
+    record(
+      'I11c',
+      `${storyLabel} ${r.region} 區 ${r.columns} 欄的 header 與 cell 左緣全部重合`,
+      r.worstLeft <= 0.5,
+      `worst left delta ${r.worstLeft.toFixed(2)}px`,
+    )
+  }
+}
+recordRegions(regionReport, '欄位釘選')
+
+// 右釘選區:`row-drag-interactive`(列拖曳重排(含釘選欄))是全 repo 唯一帶 `pinnedRightColumns` 的 story。
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-drag-interactive&viewMode=story`, { waitUntil: 'networkidle' })
+await page.waitForSelector('[data-datatable-panel="center"]')
+recordRegions(await page.evaluate(measureRegions), '列拖曳重排')
+
+// 三區都必須真的被斷言過 —— 少一區就是「該區的欄寬可以整區退回舊模型而 CI 全綠」。
+record(
+  'I11c',
+  'left / center / right 三區都真的被斷言過(否則該區沒人守)',
+  ['left', 'center', 'right'].every((r) => assertedRegions.has(r)),
+  `已斷言:${[...assertedRegions].sort().join('/') || '無'}`,
+)
 
 // ── I11b:造出「捲軸佔版面」後,上面的恆等式仍必須成立 ────────────────────────────
 // CI 的 headless Chromium 是 overlay 捲軸(gutter = 0),自然狀態測不到補償分支;
