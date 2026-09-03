@@ -1425,6 +1425,20 @@ function DataTableInner<TData>(
     if (leftBodyRef.current) leftBodyRef.current.scrollTop = cb.scrollTop
     if (rightBodyRef.current) rightBodyRef.current.scrollTop = cb.scrollTop
   }, [])
+  // `overflow:hidden` 依 CSSOM 仍是 scrolling box:焦點移到視窗外的後代時(Tab 到 center header 裡
+  // 被截掉的欄寬把手 / ⌄ 選單、或 Tab 到 pinned 區被截掉的可編輯 cell),**瀏覽器會自己捲動那個盒子**。
+  // 原本同步是單向的(只有 center body 的 onScroll 會推給別人),所以那種捲動會留下永久錯位。
+  // 這裡把它導回唯一的真相來源:非主捲動區被捲動時,改成去捲 center body,center 的 onScroll
+  // 再把三個區一起校準。設回相同值不會再觸發 scroll 事件,不會形成迴圈。(2026-09-03 稽核抓到)
+  const onSecondaryScroll = React.useCallback((el: HTMLDivElement | null, axis: 'x' | 'y') => {
+    const cb = centerBodyRef.current
+    if (!cb || !el) return
+    if (axis === 'x') {
+      if (el.scrollLeft !== cb.scrollLeft) cb.scrollLeft = el.scrollLeft
+    } else if (el.scrollTop !== cb.scrollTop) {
+      cb.scrollTop = el.scrollTop
+    }
+  }, [])
 
   // ── Phase 9 Issue 1 fix(2026-05-10):range cells lifted compute + Set ────
   // 計算 spreadsheet range cell IDs(Shift+click rectangle from anchor↔focus),
@@ -1475,7 +1489,10 @@ function DataTableInner<TData>(
   const centerColsWidth = centerCols.reduce((a, c) => a + c.getSize(), 0)
 
   // Header 寬度 → body region 同步（virtual mode 需要明確寬度）
-  React.useEffect(() => {
+  // **`useLayoutEffect` 不是 `useEffect`**(2026-09-03 稽核抓到):用 `useEffect` 時首次 mount 那一幀
+  // `leftWidth` still 0 → body 的 pinned panel 走自己的固有寬(由 body 內容決定,和 header 是不同的數字)
+  // → 使用者會看到一幀對不齊。同檔的捲軸補償早就用 layout effect,兩處不一致。
+  React.useLayoutEffect(() => {
     const measure = () => {
       if (leftHeaderRef.current) setLeftWidth(leftHeaderRef.current.offsetWidth)
       if (rightHeaderRef.current) setRightWidth(rightHeaderRef.current.offsetWidth)
@@ -2450,8 +2467,12 @@ function DataTableInner<TData>(
           )
         })}
         {isRight && hasRowActions && (
-          <div className="flex items-center justify-end shrink-0 gap-2 invisible" aria-hidden="true" style={cellPadding}>
-            {/* 渲染一個假 row 的 actions 來佔位,確保 header 和 body 同寬(aria-hidden 避免 screen reader 讀出 invisible 內容)*/}
+          <div className="flex items-center justify-end shrink-0 gap-2 flex-1 invisible" aria-hidden="true" style={cellPadding}>
+            {/* 渲染一個假 row 的 actions 來佔位,確保 header 和 body 同寬(aria-hidden 避免 screen reader 讀出 invisible 內容)。
+                **`flex-1` 必須跟 body 那格一致**(2026-09-03 稽核抓到):body 的操作格是 `flex-1`
+                (basis 0 且會 grow),header 這格若只有固有寬,右側 pinned 區的剩餘空間在兩邊會分給
+                不同的項目集合 → 同一欄的 header 比 body 窄 `(P−F)/(n+1)`(n=1、P≈80 時就是 40px)。
+                目前 stories 沒有「pinned right + rowActions」的組合,所以是 API 允許但沒被看見的地雷。*/}
             {rows[0] && rowActions!(rows[0].original)}
           </div>
         )}
@@ -2690,6 +2711,7 @@ function DataTableInner<TData>(
         <div
           ref={centerHeaderRef}
           data-datatable-header-panel="center"
+          onScroll={() => onSecondaryScroll(centerHeaderRef.current, 'x')}
           className="flex-1 min-w-0 overflow-hidden"
           style={vScrollbarGutter > 0 ? { paddingRight: vScrollbarGutter } : undefined}
         >
@@ -2722,6 +2744,7 @@ function DataTableInner<TData>(
           <div
             ref={leftBodyRef}
             data-datatable-panel="left"
+            onScroll={() => onSecondaryScroll(leftBodyRef.current, 'y')}
             className="shrink-0 overflow-hidden dtPanelBoundaryRight"
             style={{
               width: leftWidth || undefined,
@@ -2729,7 +2752,11 @@ function DataTableInner<TData>(
               ...(isFillHeight && bodyMaxHeight != null ? { maxHeight: bodyMaxHeight } : hasHeightConstraint ? { maxHeight: height } : {}),
               // center 的水平捲軸吃掉它自己 15px 高,pinned 區沒有 → 不補的話 pinned 會比 center
               // 多露出一條列(見 hScrollbarGutter)。
-              ...(hScrollbarGutter > 0 ? { paddingBottom: hScrollbarGutter } : {}),
+              // **必須是 border 不是 padding**:`overflow` 的裁切邊是 **padding box**,padding 只會
+              // 讓 clientHeight 不變、列直接畫進 padding 區(實測 clientHeight 仍 300);
+              // border 在 padding box 外面,clientHeight 因此真的少 15(300 → 285),列才會被裁掉。
+              // 透明 border 之下 panel 底色照樣畫(background-clip 預設 border-box),看不出接縫。
+              ...(hScrollbarGutter > 0 ? { borderBottom: `${hScrollbarGutter}px solid transparent` } : {}),
             }}
           >
             {renderBodyRows(leftCols, false, false, leftWidth)}
@@ -2781,12 +2808,13 @@ function DataTableInner<TData>(
           <div
             ref={rightBodyRef}
             data-datatable-panel="right"
+            onScroll={() => onSecondaryScroll(rightBodyRef.current, 'y')}
             className="shrink-0 overflow-hidden dtPanelBoundaryLeft"
             style={{
               width: rightWidth || undefined,
               ...(isFillHeight && bodyMaxHeight != null ? { maxHeight: bodyMaxHeight } : hasHeightConstraint ? { maxHeight: height } : {}),
-              // 與 left 同理(見 hScrollbarGutter)。
-              ...(hScrollbarGutter > 0 ? { paddingBottom: hScrollbarGutter } : {}),
+              // 與 left 同理(見 hScrollbarGutter;必須是 border 不是 padding)。
+              ...(hScrollbarGutter > 0 ? { borderBottom: `${hScrollbarGutter}px solid transparent` } : {}),
             }}
           >
             {renderBodyRows(rightCols, false, true, rightWidth)}

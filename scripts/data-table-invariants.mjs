@@ -421,14 +421,15 @@ const pinnedReport = await page.evaluate(async (border) => {
   center.style.borderBottom = `${border}px solid transparent`
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
   await new Promise((r) => setTimeout(r, 200))
-  const visible = (el) => (el ? el.clientHeight - parseFloat(getComputedStyle(el).paddingBottom || '0') : null)
+  // clientHeight 已排除 border,所以它就是「裁切邊以內的可視高」——這正是要比的量。
+  // (padding 版本量不到:overflow 裁在 padding box,clientHeight 含 padding,列會畫進去。)
   const out = {
     hGutter: center.offsetHeight - center.clientHeight,
-    leftPadding: parseFloat(getComputedStyle(left).paddingBottom || '0'),
-    rightPadding: right ? parseFloat(getComputedStyle(right).paddingBottom || '0') : null,
+    leftPadding: parseFloat(getComputedStyle(left).borderBottomWidth || '0'),
+    rightPadding: right ? parseFloat(getComputedStyle(right).borderBottomWidth || '0') : null,
     centerVisible: center.clientHeight,
-    leftVisible: visible(left),
-    rightVisible: visible(right),
+    leftVisible: left.clientHeight,
+    rightVisible: right ? right.clientHeight : null,
     maxScroll: [
       left.scrollHeight - left.clientHeight,
       center.scrollHeight - center.clientHeight,
@@ -444,20 +445,20 @@ if (!pinnedReport) {
   record('I12', '造出佔版面的水平捲軸高度(補償分支確實被走到)', pinnedReport.hGutter >= SIM_H_BORDER, `量到 ${pinnedReport.hGutter}px`)
   record(
     'I12',
-    'pinned 區補的 padding-bottom 等於 center 被水平捲軸吃掉的高度',
+    'pinned 區補的透明下邊框等於 center 被水平捲軸吃掉的高度',
     Math.abs(pinnedReport.leftPadding - pinnedReport.hGutter) <= 0.5,
-    `left padding-bottom ${pinnedReport.leftPadding} vs hGutter ${pinnedReport.hGutter}`,
+    `left border-bottom ${pinnedReport.leftPadding} vs hGutter ${pinnedReport.hGutter}`,
   )
   record(
     'I12',
-    'pinned 與 center 的可視列高一致(否則 pinned 會多露出一條列)',
+    'pinned 與 center 的裁切邊以內可視列高一致(否則 pinned 會多露出一條列)',
     Math.abs(pinnedReport.leftVisible - pinnedReport.centerVisible) <= 0.5
       && (pinnedReport.rightVisible == null || Math.abs(pinnedReport.rightVisible - pinnedReport.centerVisible) <= 0.5),
     `left ${pinnedReport.leftVisible} / center ${pinnedReport.centerVisible} / right ${pinnedReport.rightVisible}`,
   )
   record(
     'I12',
-    '三區可捲動量一致(補 padding 不能藏住最後一列)',
+    '三區可捲動量一致(補的空間不能藏住最後一列)',
     Math.abs(pinnedReport.maxScroll[0] - pinnedReport.maxScroll[1]) <= 0.5
       && (pinnedReport.maxScroll[2] == null || Math.abs(pinnedReport.maxScroll[2] - pinnedReport.maxScroll[1]) <= 0.5),
     `maxScroll ${JSON.stringify(pinnedReport.maxScroll)}`,

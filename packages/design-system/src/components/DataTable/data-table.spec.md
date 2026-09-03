@@ -123,13 +123,36 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 
 **命名**:`meta.width` / `meta.minWidth` / `meta.maxWidth`(px)。**不用 TanStack `size`** — DS 內 `size` 既定為 `'sm'|'md'|'lg'` density(49+ 處),避 namespace 衝突。內部 pre-process copy 到 TanStack root,resize feature 正常。No-resize default:`width` = reserve(cell ≥ width,flex 可 grow,不可 shrink)。`enableColumnResize=true`:`width` = 初始,`minWidth` = 拖拉下限(default 80)。**不變條件(invariants,L2 test + hook 守)**:(1) cell width = column width(跟 padding/state/mode 無關)(2) view↔edit cell width 0 delta (3) view↔edit cell height 0 delta(textarea `field-sizing:content`)(4) Field 填滿 cell 高度(1px 容差於 cell.border-r)(5) No-resize column ≥ meta.width。(6) **header 與 body 的內容盒必須等寬**(橫軸)。根因不是捲軸,是**欄寬被算了兩次**:非拖拉模式的欄用 CSS flex(`flex: 1 1 baseSize`)由瀏覽器在 header 與 body **兩個不同容器裡各分配一次**;body 的 `overflow-y:auto` 捲軸吃掉 15px 後兩個容器寬度不同,`flex-grow: 1` 是**平均分配**剩餘空間,於是每欄少 15/n px 並逐欄累積(實測 7 欄:0 / 2.1 / 4.3 / 6.4 / 8.6 / 10.7 / 12.9,增量恰為 15/7;4 欄:0 / 3.8 / 7.5 / 11.3,增量恰為 15/4)。**只有「彈性分配 + 捲軸佔版面」同時成立才看得到**——水平溢出時欄寬是絕對值,15px 只吃掉右端餘白,所以多數表格看起來正常;拖拉模式(`enableColumnResize`)本來就用絕對 `width`,結構上免疫。作法:量 `centerHeader.clientWidth - centerBody.clientWidth`(量不變式本身,不是「捲軸多寬」這個代理值),補等寬 `padding-right` 到 center header panel。**不用** `scrollbar-gutter: stable` —— 那會在沒有捲軸時也永久預留空位,content-fit 看起來像恆有捲軸。
 
-(7) **pinned 與 center 的可視列高必須一致**(縱軸,同一根因的孿生)。center body 自己有 `overflow-x:auto`,水平捲軸吃掉它 15px 高;pinned 區沒有捲軸 → pinned 比 center 多露出一條列(實測 300 vs 285),無高度限制時則是表格底緣出現 15px 階差。作法:補等高 `padding-bottom` 給 left / right body panel。
+(7) **pinned 與 center 的可視列高必須一致**(縱軸,同一根因的孿生)。center body 自己有 `overflow-x:auto`,水平捲軸吃掉它 15px 高;pinned 區沒有捲軸 → pinned 比 center 多露出一條列(實測 300 vs 285),無高度限制時則是表格底緣出現 15px 階差。作法:補等高的**透明 `border-bottom`** 給 left / right body panel。**必須是 border 不是 padding**:`overflow` 的裁切邊是 **padding box**,padding 只會讓 `clientHeight` 不變、列直接畫進 padding 區(實測 padding 版本 `clientHeight` 仍 300,列從 y=784 畫到 799);border 在 padding box 外面,`clientHeight` 因此真的少 15(300 → 285),列才會被裁掉。透明 border 之下 panel 底色照樣畫(`background-clip` 預設 border-box),看不出接縫。
 
 **兩軸的量測**都由「每次 render 後」與 ResizeObserver 兩個來源驅動:列數變(分頁/篩選/展開)走前者,容器尺寸變(視窗/面板拖曳)走後者;padding 只加在 header 與 pinned 區,不會回頭改變 center body 尺寸,不形成量測迴圈。整數量測刻意用 `offsetWidth/clientWidth`(同一座標系),**不可**改用 `getBoundingClientRect()`—— 縮放時它與 `clientWidth` 不同座標系會算錯;非整數縮放下的殘差實測 ≤ 0.33px(次像素,不可見)。
 
 **世界級對照**(2026-09-03 讀原始碼):**AG Grid v36** 把 header 塞進 body 同一個捲動容器(`gridHeaderComp.ts` `eTopSection.prepend`),真捲軸以 `scrollbar-width: none` 收成 0 寬,可見捲軸是`ag-fake-vertical-scroll` 這個 absolute 兄弟元素,而且每欄寬度只算一次寫進 `AgColumn.actualWidth`,header cell 與 body cell 讀同一個整數 → 結構上不可能分歧;**Glide Data Grid** 整張表畫在同一塊 canvas,同理。**MUI X DataGrid** 與我們同型:隱藏原生捲軸、量到寬度後在 header 尾端放一個 `GridScrollbarFillerCell`(寬 = `var(--DataGrid-hasScrollY) * var(--DataGrid-scrollbarSize)`);**Handsontable** 更直接——`width = getWorkspaceWidth(); if (hasVerticalScroll()) width -= getScrollbarWidth()`。亦即「量到捲軸寬度就把 header 縮同寬」有兩家直接前例,不是取巧;差別在 AG Grid / Glide 是**單一容器**、我們與 MUI X / Handsontable 是**兩個容器 + 補償**。要拿到結構性免疫得走 AG Grid 那條路(header 移進捲動容器 + 假捲軸),那是另一個量級的改動且會改變捲軸的視覺位置,不在本次範圍。
 
 **機械閘** = `scripts/data-table-invariants.mjs` I11 / I11b(橫軸)+ I12(縱軸)。CI 的 headless Chromium 是 overlay 捲軸(gutter = 0),只驗自然狀態等於空轉——把 padding 整段拿掉 CI 照樣綠;I11b / I12 因此各用一條 15px 透明邊框造出與真捲軸同值的量測(`clientWidth` 不含 border、`offsetWidth` 含),補償分支在任何環境都會被走到(2026-09-03 實測:註入 `::-webkit-scrollbar` 寬度**無法**讓 CI 的捲軸佔版面,此路不通)。對應 `scripts/data-table-invariants.mjs`(script 內 I1-I3 label 字串仍用 `display↔edit` — 2026-07-16 FieldMode display→view 更名前的歷史命名,語意同 view↔edit)。改 `columnSizeStyle` / 切 layout 必跑 invariant test 才 commit。
+
+### 六之二之一、兩容器架構的已知缺陷清單(2026-09-03 對抗式稽核)
+
+header 與 body 是**兩個容器、各自跑一次 CSS flex 分配**(見不變條件 (6));下列缺陷全部源自這一點,
+補償只能讓「兩次計算的輸入相等」,不能讓它變成「一次計算」。已修的在上面,未修的列在這裡,
+避免下一個人以為都修完了。**AG Grid 對每一條都結構性免疫**(欄寬只算一次寫進 `AgColumn.actualWidth`,
+header 與 body 讀同一個整數)。
+
+| # | 缺陷 | 觸發條件 | 嚴重度 | 狀態 |
+|---|---|---|---|---|
+| A | `rowActions` 佔位欄:header 用固有寬、body 用 `flex-1`,右釘選區剩餘空間分給不同項目集合 | `pinnedRightColumns` 非空 **且** 有 `rowActions`(目前無 story 命中) | 高(可達數十 px) | **已修**(header 佔位補 `flex-1`) |
+| B | 釘選區寬度「量 header → state → 灌給 body」,首幀 0 + `offsetWidth` 取整 | 一律;非整數縮放 / DPR 1.25 放大誤差 | 中(首幀 + sub-pixel) | **部分修**(改 `useLayoutEffect` 消掉首幀;取整殘差仍在) |
+| C | `overflow:hidden` 的面板仍會被瀏覽器因 focus 捲動,而同步是單向的 | Tab 到 center header 被截掉的欄寬把手 / 釘選區被截掉的可編輯 cell | 中高(一旦發生永久錯位) | **已修**(次要捲動區導回 center body) |
+| D | 欄位群組(`columns: [...]` 巢狀)時 header 只渲染最上層、被葉 id 濾光 → 空白 header 列 | 任一欄用 TanStack 欄位群組寫法 | 高(完全對不上) | **未修**:等同「不支援卻沒擋」,需實作多層 header 或在型別層擋掉 |
+| E | 釘選欄 header 的 hover ⌄ 選單與排序箭頭改變面板固有寬 → center 欄寬重排 | 預設模式 + 釘選欄 header 內容寬 ≥ 該欄 size | 中高(滑過去就跳) | **未修**:需為圖示預留固定空間 |
+| F | `autoRowHeight` / cell error 時同一列在三區各自算高度;虛擬捲動只量 center | `autoRowHeight`、`cellErrors`、`meta.wrap` | 中高 | **未修**:需列高單一真相來源 |
+| G | 右對齊欄被排序時,排序箭頭把標題推離右緣 20px(body 值仍貼右) | 該欄被單欄排序 / hover | 中 | **未修**:AG Grid 同樣把箭頭放在標籤右側,先視為既有慣例 |
+| H | `data-table.css` 的 `::-webkit-scrollbar` 客製(10px、track、thumb、corner)實測未生效,瀏覽器畫的是原生 15px | 一律 | 中(死碼 + 規格與 css 數字矛盾) | **未修**:疑為同檔 `@supports` 區塊重新宣告標準屬性導致 Chrome 忽略偽元素 |
+
+**已用實測推翻的疑慮**:稽核擔心 header 的 `padding-right` 會讓水平捲動範圍比 body 少一個捲軸寬
+(Chromium 對區塊容器 inline-end padding 不算進 scrollable overflow)。實測相反:
+header `scrollWidth` 915 = body 900 + padding 15,兩邊捲動範圍都是 397,捲到最右端 header 與 body
+`scrollLeft` 同為 397、每欄位移 0。
 
 ### 六之三、Runtime perf budget canonical(2026-05-14 codex+Layer A)
 
