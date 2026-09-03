@@ -15,7 +15,7 @@ traits:
 
 - 產品右側智慧代理面板:一個家族資料夾、9 個元件 + 2 個附屬資產(AgentLogo / AgentFab),
   同 Sidebar 前例(單一 `agent-panel.tsx` 家族檔;標誌與 FAB 因 SVG 幾何量體獨立成
-  `agent-logo.tsx` / `agent-fab.tsx`)。
+  `agent-panel-logo.tsx` / `agent-panel-fab.tsx`)。
 - **實作基礎**:組合式——消費 ChromeHeader(header-canonical)、overlay-surface(SurfaceHeader/
   Footer)、Popover surface 配方、SelectMenu 同源 primitives(Popover+Command+MenuItem)、
   Radix Collapsible(經 animate-accordion)、RadioGroup、Chip(assist 分支)、Tag、
@@ -41,7 +41,7 @@ traits:
 兩緞帶明度各跨 .37 保留原稿立體感,尾端停在 -7 使 dark `--surface-raised` 上仍可辨);品牌色不隨主題
 (`tokens/color/color.spec.md`「品牌」段),資產內嵌 light 數值而非 var(),每個常數行尾 `// = --color-xxx-N`
 由 `scripts/agent-logo-brand-scale-invariant.mjs` 機械比對(容差 .01);FAB 環/光圈只 import `AGENT_BRAND`。
-SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle token 值的
+SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/settle token 值的
 逐字鏡像(檔頭註記;改 token 必同步)。
 
 ## 何時用
@@ -314,7 +314,7 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
 - 40 圓=`--field-height-lg` 於 lg 密度;圓形 iconOnly;面=`bg-surface-raised`+
   `--elevation-200`(不寫死白色);內置 24 標誌(同一造型)。
 - 外框=AI 觸發鈕特調:錐形(環向)漸層描邊 2px(整數寬+環向漸層=正圓對稱);
-  兩極=`AGENT_BRAND` 藍 254 / 紫 300(品牌資產常數,agent-logo.tsx 唯一數值來源;各落於兩緞帶
+  兩極=`AGENT_BRAND` 藍 254 / 紫 300(品牌資產常數,agent-panel-logo.tsx 唯一數值來源;各落於兩緞帶
   色相家族內;2026-09-02 藍→紫改色)。
 - 動畫:待機=靜止(=標誌 still 態;2026-09-02 拍板全家族待機一律靜止);
   有新訊=招喚態(標誌蓄勢;漣漪由邊框光圈代位:0–35% 貼邊聚亮至 .35(swell)→ 35% 呼氣起點
@@ -375,7 +375,7 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
     prefers-reduced-motion 三者全部直接落定([Atlassian「全部停用仍可用」](https://atlassian.design/foundations/motion)、
     [Fluent「提供 no motion 設定」](https://fluent2.microsoft.design/motion)、WCAG 2.3.3)。
   - **區域 → 落點表(可擴充)**:磁吸邏輯 = 依序判定指標所在區域,命中即決定「預覽 = 落點」;沒命中 = 圓鈕跟游標、
-    放開回家;要加磁吸點(鏡像左緣、四角)只在 `agent-fab.tsx` `SNAP_ZONES` 加一列(區域矩形同時就是帶的底色範圍),流程不變。
+    放開回家;要加磁吸點(鏡像左緣、四角)只在 `agent-panel-fab.tsx` `SNAP_ZONES` 加一列(區域矩形同時就是帶的底色範圍),流程不變。
     判準:以指標判定、一區一落點一形狀、邊界 16px 遲滯、區域不重疊且邊帶優先於角落、無命中不做「最近磁吸點」
     (會從放開處跳走)。上緣 / 下緣永不設區(標題列 / 分頁列)。
   - 位置由 consumer 受控/非受控(`placement / defaultPlacement / onPlacementChange`,`{kind:'home'}` /

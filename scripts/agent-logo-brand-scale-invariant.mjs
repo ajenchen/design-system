@@ -2,7 +2,7 @@
 // agent-logo-brand-scale-invariant — 守「標誌色永遠等於自家色階」(2026-09-02 user:「所有顏色都要根據我們的設計語言調整」)
 //
 //   1) 解析 primitives.css light 段的 `--color-<hue>-6` 基準 + `oklch(from var(...) calc(...) calc(...) h)` 公式,重算 1–10 階
-//   2) 解析 agent-logo.tsx 每個 `oklch(L C H)` 常數與同行尾 `// = --color-<hue>-<n>` 綁定
+//   2) 解析 agent-panel-logo.tsx 每個 `oklch(L C H)` 常數與同行尾 `// = --color-<hue>-<n>` 綁定
 //   3) L/C 容差 0.01、H 容差 0.5°;缺綁定 / 對不上 → exit 1(alpha 屬資產層次,不比)
 // Run: node scripts/agent-logo-brand-scale-invariant.mjs(含 selftest)
 
@@ -11,7 +11,7 @@ import path from 'node:path'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const CSS = 'packages/design-system/src/tokens/color/primitives.css'
-const TSX = 'packages/design-system/src/components/AgentPanel/agent-logo.tsx'
+const TSX = 'packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx'
 const TOL = 0.01
 const TOL_H = 0.5
 

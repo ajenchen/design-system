@@ -9,7 +9,7 @@ import {
   AgentToolbar,
   AgentPromptInput,
 } from './agent-panel'
-import { AgentLogo } from './agent-logo'
+import { AgentLogo } from './agent-panel-logo'
 import { AgentThinking } from './agent-panel'
 
 const meta: Meta<typeof AgentPanel> = {

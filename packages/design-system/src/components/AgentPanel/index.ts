@@ -3,3 +3,5 @@
 //   import { ... } from '@qijenchen/design-system/{components,patterns}/<Dir>'
 // Regenerate: node scripts/gen-component-indexes.mjs
 export * from './agent-panel'
+export * from './agent-panel-fab'
+export * from './agent-panel-logo'

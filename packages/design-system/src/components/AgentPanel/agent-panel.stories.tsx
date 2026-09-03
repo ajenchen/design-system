@@ -17,8 +17,8 @@ import {
   type AgentConversationSummary,
   type AgentPromptAttachment,
 } from './agent-panel'
-import { AgentLogo, type AgentLogoState } from './agent-logo'
-import { AgentFab, AgentPanelDock, AGENT_FAB_HOME, type AgentFabPlacement } from './agent-fab'
+import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
+import { AgentFab, AgentPanelDock, AGENT_FAB_HOME, type AgentFabPlacement } from './agent-panel-fab'
 import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import type { ColumnDef } from '@tanstack/react-table'

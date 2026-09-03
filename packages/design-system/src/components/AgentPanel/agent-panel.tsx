@@ -104,7 +104,7 @@ import {
   DialogTitle,
 } from '@/design-system/components/Dialog/dialog'
 import { ScrollArea } from '@/design-system/components/ScrollArea/scroll-area'
-import { AgentLogo, type AgentLogoState } from './agent-logo'
+import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
 import './agent-panel.css'
 
 /* ────────────────────────────────────────────────────────────────────────────

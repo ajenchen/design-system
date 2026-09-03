@@ -19,18 +19,28 @@ export type {
   AccountMenuUser,
 } from './components/AccountMenu/index'
 export {
+  AGENT_FAB_HOME,
   AGENT_PANEL_WIDTH_DEFAULT,
   AGENT_PANEL_WIDTH_MAX,
   AGENT_PANEL_WIDTH_MIN,
   AgentConversation,
   AgentDecisionCard,
   AgentDecisionSummary,
+  AgentFab,
+  AgentFabDock,
+  AgentLogo,
   AgentMessage,
   AgentPanel,
+  AgentPanelDock,
   AgentPanelHeader,
   AgentPromptInput,
   AgentThinking,
   AgentToolbar,
+  BREATH_DUR,
+  BREATH_KEYTIMES,
+  RIPPLE_KEYTIMES,
+  SETTLE,
+  SWELL,
 } from './components/AgentPanel/index'
 export type {
   AgentAttachment,
@@ -40,13 +50,21 @@ export type {
   AgentDecisionOption,
   AgentDecisionQuestion,
   AgentDecisionSummaryProps,
+  AgentFabDockProps,
+  AgentFabPlacement,
+  AgentFabProps,
+  AgentLogoProps,
+  AgentLogoState,
   AgentMessageProps,
+  AgentPanelDockProps,
+  AgentPanelDockRenderProps,
   AgentPanelHeaderProps,
   AgentPanelProps,
   AgentPromptAttachment,
   AgentPromptInputProps,
   AgentThinkingProps,
   AgentToolbarProps,
+  HoleMorphSpec,
 } from './components/AgentPanel/index'
 export {
   Alert,
@@ -631,6 +649,11 @@ export type {
 //   - patterns/horizontal-overflow
 //   - patterns/overlay-surface
 // 另有 public 元件內個別標 @internal jsDoc 的符號亦排除 front-door(2026-07-18 決策3;subpath 仍有):
+//   - components/AgentPanel:AGENT_BRAND
+//   - components/AgentPanel:BREATH_SPLINES
+//   - components/AgentPanel:RIPPLE_SPLINES
+//   - components/AgentPanel:useBeginAnimationsOnMount
+//   - components/AgentPanel:usePrefersReducedMotion
 //   - components/Button:ButtonGroupContext
 //   - components/DropdownMenu:floatingLayerClass
 //   - components/Field:FieldVariantInternal

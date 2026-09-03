@@ -6,7 +6,7 @@
  * - 面 = bg-surface-raised + --elevation-200(elevation.spec.md 配對規則;不寫死白色)。
  * - 外框 = AI 觸發鈕特調:錐形(環向)漸層描邊 2px(整數寬+環向漸層=正圓對稱;
  *   spec「FAB」節)。配色兩極 = AgentLogo AGENT_BRAND(= 自家色階 blue-4 / purple-4;
- *   單一數值來源在 agent-logo.tsx,本檔只 import)。
+ *   單一數值來源在 agent-panel-logo.tsx,本檔只 import)。
  * - 內置 24 標誌;貼邊態內置 16 標誌(同一造型,無簡化檔)。
  * - **標誌狀態跟著面板裡的代理走**(prop `logoState`,與 AgentPanelHeader 同名;2026-09-03 user 拍板):入口鈕 = 那個對話收起來的樣子,
  *   所以代理在思考時、即使面板關著,入口鈕的標誌也在轉;有新訊 = 招喚態(標誌蓄勢 + 邊框光圈);閒置 = 靜止。
@@ -53,7 +53,7 @@ import {
   SETTLE,
   useBeginAnimationsOnMount,
   usePrefersReducedMotion,
-} from './agent-logo'
+} from './agent-panel-logo'
 
 /** 靜止空拍段(值不變)。 */
 const HOLD = '0 0 1 1'
