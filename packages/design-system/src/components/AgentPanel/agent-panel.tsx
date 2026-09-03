@@ -7,8 +7,10 @@
  *   寬 --agent-panel-width(uiSize.css;可拖拉 360–640 且 ≤50vw,把手=ResizeHandle pattern,
  *   鍵盤等價=WAI-ARIA separator 同 DataTable 欄寬慣例);開合 --motion-duration-surface。
  * - 標題列:ChromeHeader(header-canonical;chrome 內控件一律 sm);品牌區=gap-2+24 標誌;
- *   標題+chevron=單一複合觸發鈕(Button text sm + endIcon,Polaris disclosure / Combobox 觸發器同構),
- *   chevron=裝飾性指示(inline-action.spec.md Q1);ButtonDivider 於 gap-2 cluster(action-bar 規則 3)。
+ *   標題+chevron=單一複合觸發鈕:**原生 `<button>`,不包 Button 殼**(Button 會多出左 9 / 右 5 內距
+ *   與 28 高的懸停底,見 agent-panel.spec.md「禁用 Button 殼」);語意仍同 Polaris disclosure /
+ *   Combobox 觸發器,chevron=裝飾性指示(inline-action.spec.md Q1);
+ *   ButtonDivider 於 gap-2 cluster(action-bar 規則 3)。
  *   **固定構件恆渲染**:+ / × / 標題觸發鈕不隨 callback 有無消失(2026-09-02 根因修正)。
  * - 歷史浮層:Popover+Command+MenuItem,列組裝逐字照 select-menu.tsx 原型(外層 CommandItem 單一
  *   互動 owner、內層 MenuItem role=presentation 透明、群組 heading、CommandSeparator、Empty);
@@ -396,8 +398,10 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
           <AgentLogo state={logoState} size={24} />
           <Popover open={historyOpen} onOpenChange={setHistoryOpen}>
             <PopoverTrigger asChild>
-              {/* 標題+chevron 複合觸發:幾何逐字沿用品牌區前例(238cdf91:gap-2 / chevron 16 / 零 padding),
-                  chevron 純指示、fg-muted 靜色、無懸停底(同 AgentThinking 標題列);原生 button 承接 Radix Slot props。 */}
+              {/* 標題+chevron 複合觸發:幾何沿用品牌區前例(238cdf91:gap-2 / 零 padding);
+                  **chevron 是 20 不是 16** —— 標題是 text-body-lg,依「字級↔icon tier」對齊 ICON_SIZE.lg
+                  (見下方 ChevronDown 的註解與 spec「箭頭 20」);chevron 純指示、fg-muted 靜色、
+                  無懸停底(同 AgentThinking 標題列);原生 button 承接 Radix Slot props。 */}
               <button
                 ref={triggerRef}
                 type="button"

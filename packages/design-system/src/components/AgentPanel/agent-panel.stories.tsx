@@ -3,6 +3,8 @@
 // 標誌/FAB 狀態矩陣屬本層(動態資產,anatomy 靜態矩陣載不動)。
 // 2026-09-02 review round:固定構件恆渲染(header +/×/標題觸發、輸入盒 +/Tag ×)後,每個 story
 // 都必須傳齊必填 callback;歷史浮層 OpenSnapshot、決策卡三題步進、拖拉寬度、FAB↔面板互斥補齊。
+// 2026-09-04:「拖拉寬度」一度在 6804d2ea 被刪成假宣稱,已補回 `ResizableWidth`(width /
+// onWidthChange / onWidthCommit / resizable 四個公開 prop 的唯一覆蓋)。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
@@ -367,7 +369,43 @@ export const DecisionSummaryInFlow: Story = {
   ),
 }
 
-/** 拖拉寬度:左緣把手 360–640(且不超過視窗一半),鍵盤 ←/→ 每次 16;寬度由產品自存。 */
+/** 拖拉寬度:左緣把手 360–640(且不超過視窗一半),鍵盤 ←/→ 每次 16;寬度由產品自存。
+ *  2026-09-04 補回:這支在 6804d2ea「story 重整」時被刪掉,但 `width` / `onWidthChange` /
+ *  `onWidthCommit` / `resizable` 四個公開 prop 因此在整個家族**零 story 覆蓋**(M15:拖寬、鍵盤
+ *  ←/→、360–640 夾值都沒有可截圖的狀態),而本檔檔頭仍宣稱「拖拉寬度…補齊」= 假宣稱。 */
+export const ResizableWidth: Story = {
+  name: '拖拉寬度',
+  render: function ResizableStory() {
+    const [width, setWidth] = React.useState(400)
+    const [committed, setCommitted] = React.useState(400)
+    return (
+      <div className="flex h-dvh bg-surface-sunken">
+        <div className="flex flex-1 flex-col items-center justify-center gap-1 text-body text-fg-secondary">
+          <span>目前寬度 {width}px(拖左緣把手,或聚焦把手後按 ←/→)</span>
+          <span className="text-caption text-fg-muted">放開後落地:{committed}px —— 產品拿這個值去存</span>
+        </div>
+        <AgentPanel width={width} onWidthChange={setWidth} onWidthCommit={setCommitted}>
+          <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" onClose={noop} {...headerWiring} />
+          <AgentConversation>
+            <AgentMessage role="agent">面板寬度 360 起跳、640 封頂,且永遠不超過視窗一半。</AgentMessage>
+          </AgentConversation>
+          <AgentPromptInput
+            value=""
+            onValueChange={noop}
+            attachments={[
+              { id: 'a1', label: 'sprint-42-backlog.csv' },
+              { id: 'a2', label: '排程規則.md' },
+              { id: 'a3', label: 'oncall-規範.pdf' },
+              { id: 'a4', label: '客訴-2026Q3.xlsx' },
+            ]}
+            {...promptWiring}
+          />
+        </AgentPanel>
+      </div>
+    )
+  },
+}
+
 /** 入口鈕遮擋樣張的資料:滿版訂單表(DataTable 分頁 archetype 同 data-table.stories WithPagination)。 */
 type OrderRow = { id: string; orderNo: string; customer: string; amount: number; placedAt: string }
 const ORDER_ROWS: OrderRow[] = Array.from({ length: 128 }, (_, i) => ({
@@ -387,7 +425,7 @@ const orderColumns: ColumnDef<OrderRow>[] = [
 /**
  * 入口鈕(唯一的入口鈕範例)。預設**面板是關的**、入口鈕在右下角**招呼**(邊框光圈)——
  * 這就是使用者第一眼會看到的樣子。可以做的事都在這一個範例裡:
- * 點它開面板 / 送出問題看標誌轉成思考 / 關掉面板標誌繼續轉 / 拖到左右緣收成半圓 / 右鍵切換大小。
+ * 點它開面板 / 送出問題看標誌轉成思考 / 關掉面板標誌繼續轉 / 拖到右緣收成半圓 / 右鍵切換大小。
  * 貼邊與在家的靜態對照見「設計規格 → 入口鈕兩個位置」。
  */
 export const Fab: Story = {
@@ -429,7 +467,7 @@ export const Fab: Story = {
                 <AgentMessage role="agent">
                   {logoState === 'think'
                     ? '正在比對上週訂單…'
-                    : '送出問題讓我開始思考,再關掉面板 —— 入口鈕的標誌也會跟著轉。拖我到左右緣可以收成半圓。'}
+                    : '送出問題讓我開始思考,再關掉面板 —— 入口鈕的標誌也會跟著轉。拖我到右緣可以收成半圓。'}
                 </AgentMessage>
               </AgentConversation>
               <AgentPromptInput value={draft} onValueChange={setDraft} {...promptWiring} onSubmit={askAgent} />

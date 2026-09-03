@@ -215,6 +215,7 @@ export const Accessibility: Story = {
         <tr><Td>AgentPromptInput</Td><Td>textarea aria-label=訊息;停止態 aria-label=停止生成</Td><Td>Enter 送出、Shift+Enter 換行</Td></tr>
         <tr><Td>AgentDecisionCard</Td><Td>role=group + aria-labelledby;radiogroup 原生</Td><Td>方向鍵選項;無 Esc(阻擋語意)</Td></tr>
         <tr><Td>AgentLogo / AgentFab</Td><Td>label 有→role=img;無→aria-hidden;FAB aria-label=開啟智慧代理</Td><Td>減動作:常駐 loop 全停回靜止</Td></tr>
+        <tr><Td>AgentFabDock(入口鈕)</Td><Td>button + aria-label(在家/貼邊各一句)+ aria-haspopup=menu + aria-expanded;命中矩形 = 可視形狀外接矩形</Td><Td>Enter/Space 開面板;在家 → 進貼邊;貼邊 ↑↓ 每步 16;← / Home 回家;Shift+F10 開選單;拖曳中 Esc 取消不落定</Td></tr>
       </tbody>
     </table>
   ),

@@ -374,7 +374,11 @@ import { distributeColumnWidths } from './column-widths'
 export { distributeColumnWidths }
 
 function columnSizeStyle(
-  col: { id: string; getSize: () => number; columnDef: { minSize?: number; maxSize?: number } },
+  col: {
+    id: string
+    getSize: () => number
+    columnDef: { minSize?: number; maxSize?: number; meta?: { minWidth?: number; maxWidth?: number } }
+  },
   opts: { resize: boolean; isSystemCol: boolean; resolvedWidth?: number },
 ): React.CSSProperties {
   const baseSize = col.getSize()
@@ -390,12 +394,15 @@ function columnSizeStyle(
   // → text wrap 行數爆增 → autoRow cell 變高 → edit textarea rows=3 估算更不準 → shrink 看起來壞掉。
   // v9 直覺:沒明示 minSize 預設不 shrink 低於 size。enableColumnResize=true 仍 honour `MIN_COLUMN_WIDTH`
   // (因 user 主動拖拉時要能縮)。
-  // **`columnDef.minSize` 永遠不是 undefined**:TanStack v8 的 `defaultColumnSizing.minSize = 20` 會 merge
-  // 進每一個 columnDef,所以 `??` 從來沒有 fall back 過(同檔「自動調整寬度」與欄寬把手的註解已查證
-  // 這一點,兩處結論原本自相矛盾,2026-09-03 收斂)。真正的下限契約是 `meta.minWidth`;這裡拿不到 meta,
-  // 所以**只用可靠的那一半**:resize 模式取 DS 下限、非 resize 取 baseSize(= 不可 shrink 低於 `size`,
-  // 2026-05-06 v14.1 regression 的原意)。把手與 auto-fit 兩條真正會夾值的路徑都已改讀 `meta.minWidth`。
-  const minSize = opts.resize ? MIN_COLUMN_WIDTH : baseSize
+  // 下限一律讀**公開契約** `meta.minWidth`,不讀 `columnDef.minSize`:
+  // TanStack v8 的 `defaultColumnSizing.minSize = 20` 會 merge 進每一個 columnDef,而本檔上游的
+  // pre-process 又會把 `meta.minWidth` copy 進去 —— 於是 `columnDef.minSize` 的語意是
+  // 「有宣告就是宣告值、沒宣告是 20」,`?? DS 下限` 那個 fallback 永遠不會 fire。
+  // **2026-09-04 修正**:我先前為了避開那個 20,把整條改成 `opts.resize ? MIN : baseSize`,
+  // 結果連 consumer 宣告的 `meta.minWidth` 也一起丟掉 —— 若宣告值 < 80(例如 40),把手的 `min`
+  // 是 40、`aria-valuenow` 會報 40,但 CSS 把實際寬度夾在 80 → 拖到底時畫面停住而數值繼續變,
+  // 可視寬度與無障礙數值不一致。直接讀 meta 才同時避開 20 又尊重宣告值(與 `meta.maxWidth` 對稱)。
+  const minSize = col.columnDef.meta?.minWidth ?? (opts.resize ? MIN_COLUMN_WIDTH : baseSize)
   const maxSize = col.columnDef.maxSize
   // System columns 永遠 fixed(checkbox / drag handle 等內建欄位,不在 resize 集合)
   if (opts.isSystemCol) {
@@ -441,7 +448,7 @@ const AUTO_FIT_BUFFER = 8
  * 所以**不需要再加一個猜出來的 padding 常數**(舊版硬寫 `+32`,一旦 consumer override
  * `--table-cell-px` 就漂移)。
  */
-function measureNaturalWidth(els: HTMLElement[], host: HTMLElement): number {
+function measureNaturalWidth(els: HTMLElement[], host: HTMLElement, cap: number): number {
   if (els.length === 0) return 0
   const dummy = document.createElement('div')
   dummy.setAttribute('aria-hidden', 'true')
@@ -455,7 +462,11 @@ function measureNaturalWidth(els: HTMLElement[], host: HTMLElement): number {
       const clone = el.cloneNode(true) as HTMLElement
       clone.style.width = 'max-content'
       clone.style.minWidth = '0'
-      clone.style.maxWidth = 'none'
+      // **上限 = 可視寬,不是 `none`**(2026-09-04 稽核抓到):`max-content` 對
+      // `white-space: pre-wrap` 的內容(`meta.wrap` 欄、autoRowHeight 的備註欄、Textarea 的 view 態)
+      // 等於「最長那一行完全不折」,一段長備註會量成數千 px 並直接寫進 columnSizing。
+      // 夾在可視寬:不換行的內容照樣拿到自然寬(它本來就比可視窄),會換行的內容最多撐到看得見的範圍。
+      clone.style.maxWidth = `${Math.max(0, Math.round(cap))}px`
       clone.style.flex = 'none'
       dummy.appendChild(clone)
       if (clone.offsetWidth > max) max = clone.offsetWidth
@@ -1506,12 +1517,19 @@ function DataTableInner<TData>(
   // H scroll 仍在 center-body,但因 center-body 現在有自己的 maxHeight,H scrollbar 落在 visible 視窗底部 → user 一眼看到。
   const leftBodyRef = React.useRef<HTMLDivElement>(null)
   const rightBodyRef = React.useRef<HTMLDivElement>(null)
+  /** 程式化同步中:此時次要區的 scroll 事件是我們自己寫進去的,不可以再回推 center body。 */
+  const syncingRef = React.useRef(false)
   const onCenterBodyScroll = React.useCallback(() => {
     const cb = centerBodyRef.current
     if (!cb) return
+    syncingRef.current = true
     if (centerHeaderRef.current) centerHeaderRef.current.scrollLeft = cb.scrollLeft
     if (leftBodyRef.current) leftBodyRef.current.scrollTop = cb.scrollTop
     if (rightBodyRef.current) rightBodyRef.current.scrollTop = cb.scrollTop
+    // scroll 事件是同一輪同步派發的,下一個 microtask 放行就不會擋到使用者真正的捲動。
+    queueMicrotask(() => {
+      syncingRef.current = false
+    })
   }, [])
   // `overflow:hidden` 依 CSSOM 仍是 scrolling box:焦點移到視窗外的後代時(Tab 到 center header 裡
   // 被截掉的欄寬把手 / ⌄ 選單、或 Tab 到 pinned 區被截掉的可編輯 cell),**瀏覽器會自己捲動那個盒子**。
@@ -1521,6 +1539,11 @@ function DataTableInner<TData>(
   const onSecondaryScroll = React.useCallback((el: HTMLDivElement | null, axis: 'x' | 'y') => {
     const cb = centerBodyRef.current
     if (!cb || !el) return
+    // **只接使用者自己捲次要區的事件**:`onCenterBodyScroll` 寫 `header.scrollLeft = body.scrollLeft`
+    // 也會觸發這裡,若兩邊可捲範圍剛好不等(例如補償過期,見 spec 缺陷 S),header 會把被夾過的值
+    // 推回 body → body 橫向回彈、末端捲不到。用旗標把程式化那一次濾掉,真相源永遠只有 center body。
+    // (2026-09-04 稽核抓到;header 改成可捲之後這條路徑才存在。)
+    if (syncingRef.current) return
     if (axis === 'x') {
       if (el.scrollLeft !== cb.scrollLeft) cb.scrollLeft = el.scrollLeft
     } else if (el.scrollTop !== cb.scrollTop) {
@@ -2357,9 +2380,9 @@ function DataTableInner<TData>(
       <div
         key={header.id}
         role="columnheader"
-        // 無條件帶上:body cell 一直都有(見 cellEl),header 原本只在「啟用欄位拖曳」時由
-        // SortableColumnHeader 的 cloneElement 注入 → 沒啟用拖曳時「自動調整寬度」量不到 header。
-        data-column-id={header.column.id}
+        // `data-column-id` 不在這裡寫:唯一的呼叫點 `DraggableHeaderCell`(見下方 renderHeaderRow)
+        // 的 `cloneElement` 已經**無條件**注入它(不在 disabled 三元運算內),不論有沒有啟用欄位拖曳。
+        // 2026-09-04 稽核抓到我先前在這裡重複寫了一次(值相同、行為零差異,但屬多餘),已移除。
         aria-sort={sortDir === 'asc' ? 'ascending' : sortDir === 'desc' ? 'descending' : 'none'}
         className={cn(
           // **Inline action canonical**(2026-05-05 v2):header 用 `flex items-center gap-2`
@@ -2456,9 +2479,6 @@ function DataTableInner<TData>(
                     // 早就因為同樣理由改用 tableRef,這裡補上(2026-09-03 稽核抓到)。
                     const host = tableRef.current
                     if (!host) return
-                    // 查詢限定在本表格內:同一頁若有兩個 DataTable 而欄位 id 相同(例如都叫 `name`),
-                    // 掃全文件會讓這一欄的寬度被另一張表的內容決定。旁邊的 collision detection
-                    // 早就因為同樣理由改用 tableRef,這裡補上(2026-09-03 稽核抓到)。
                     const sel = `[data-column-id="${header.column.id}"]`
                     // **量 cell 本身,不是 `firstElementChild`**:樹狀列 cell 的第一個子元素是
                     // 縮排/chevron 前綴 span(w-4 + mr-2 = 24px),量它會讓欄寬塌到下限、名稱被截斷。
@@ -2468,7 +2488,12 @@ function DataTableInner<TData>(
                       ...host.querySelectorAll<HTMLElement>(`[role="cell"]${sel}`),
                       ...host.querySelectorAll<HTMLElement>(`[role="columnheader"]${sel}`),
                     ]
-                    const natural = measureNaturalWidth(targets, host)
+                    // 量測上限取 center body 的可視內容寬:一欄不該 auto-fit 到比看得見的表格還寬。
+                    const natural = measureNaturalWidth(
+                      targets,
+                      host,
+                      centerBodyRef.current?.clientWidth ?? host.clientWidth,
+                    )
                     const meta = header.column.columnDef.meta as
                       | { minWidth?: number; maxWidth?: number }
                       | undefined

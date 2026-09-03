@@ -352,6 +352,10 @@ function useSnapDrag(opts: {
   }
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return
+    // 已在拖曳中就忽略:第二次 pointerdown 會覆寫 `dragRef` 與 `cleanupRef`,第一組
+    // pointermove/pointerup/pointercancel/keydown 就再也沒人移除(第一顆指標的 `onUp` 會因
+    // pointerId 不符直接 return,永遠走不到 cleanup),監聽器會活過元件卸載(2026-09-04 稽核抓到)。
+    if (dragRef.current) return
     const host = opts.host()
     if (!host) return
     e.preventDefault()
@@ -373,6 +377,10 @@ function useSnapDrag(opts: {
     const onMove = (ev: PointerEvent) => {
       const d = dragRef.current
       if (!d || ev.pointerId !== d.pointerId) return
+      // Esc 取消後**不再更新預覽**:`onKey` 只設 `cancelled` 並清掉預覽,刻意不拆監聽(手指還按著,
+      // 要等真正放開才結束)。少了這一行的話,下一個 pointermove 就會無條件重畫預覽鈕與右緣帶,
+      // 使用者看到的是「按了 Esc 卻只安靜一瞬間」(2026-09-04 稽核抓到)。
+      if (d.cancelled) return
       if (!d.moved && Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY) < DRAG_THRESHOLD) return
       d.moved = true
       const p: Point = { x: ev.clientX - originX, y: ev.clientY - originY }
@@ -697,8 +705,12 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
                   !dragging && 'hover:scale-[1.04] motion-reduce:hover:scale-100',
                   'focus-visible:outline-none',
                 )}
-                style={{ width: spec.px, height: spec.px }}
                 {...buttonProps}
+                // **尺寸寫在 spread 之後**:可視形狀改成 `h-full w-full` 之後,寬高的唯一住所就是這裡;
+                // 若排在 `{...buttonProps}` 之前,consumer 傳一個 `style` 就會整個蓋掉 width/height,
+                // 按鈕塌成 0×0、內層 100% of 0 也是 0 → 整顆鈕消失(2026-09-04 稽核抓到)。
+                // consumer 的其他 style 屬性照樣保留,只有尺寸由本元件擁有。
+                style={{ ...buttonProps.style, width: spec.px, height: spec.px }}
                 ref={buttonRef}
                 aria-label={buttonLabel}
                 aria-haspopup="menu"
