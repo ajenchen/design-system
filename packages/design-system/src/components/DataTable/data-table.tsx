@@ -1229,6 +1229,36 @@ function DataTableInner<TData>(
   const bodyRef = React.useRef<HTMLDivElement>(null)
   const centerHeaderRef = React.useRef<HTMLDivElement>(null)
   const centerBodyRef = React.useRef<HTMLDivElement>(null)
+  /**
+   * Center body 垂直捲軸實際佔掉的寬度(macOS overlay scrollbar = 0)。header 以同寬 padding-right 補齊,
+   * 兩邊的內容盒才會等寬 —— 欄寬是彈性分配的,少 15px 會讓**每一欄**都變寬,誤差逐欄累積
+   * (2026-09-03 實測:第 2 欄差 3.8px、第 3 欄 7.5px、第 4 欄 11.3px),不是原註解說的「右端微 misalign」。
+   * 不用 `scrollbar-gutter: stable`:那會在沒有捲軸時也永久預留 15px,content-fit 看起來像恆有捲軸(舊決策的理由成立);
+   * 動態量測兩者兼顧。對齊 AG Grid 的 header scrollbar spacer 作法。
+   */
+  const [vScrollbarGutter, setVScrollbarGutter] = React.useState(0)
+  const measureVScrollbarGutter = React.useCallback(() => {
+    const el = centerBodyRef.current
+    if (!el) return
+    const gutter = Math.max(0, Math.round(el.offsetWidth - el.clientWidth))
+    // 只在值真的變了才 setState:相同值 React bail out,不會遞迴。
+    setVScrollbarGutter((prev) => (prev === gutter ? prev : gutter))
+  }, [])
+  // 兩個觸發源缺一不可:
+  // (1) 每次 render 後量 — 列數變(分頁 / 篩選 / 展開巢狀 / 載入資料)時捲軸出現或消失,
+  //     這類變化不一定改變被觀察元素的 box size,ResizeObserver 未必送通知。
+  // (2) ResizeObserver — 容器尺寸變(視窗、面板拖曳寬度)不經 re-render 也要跟上。
+  React.useLayoutEffect(measureVScrollbarGutter)
+  React.useLayoutEffect(() => {
+    const el = centerBodyRef.current
+    if (!el) return
+    // padding 只加在 header 上,不會回頭改變 body 尺寸 → 不會形成量測迴圈。
+    const ro = new ResizeObserver(measureVScrollbarGutter)
+    ro.observe(el)
+    const inner = el.firstElementChild
+    if (inner) ro.observe(inner)
+    return () => ro.disconnect()
+  }, [measureVScrollbarGutter])
   const leftHeaderRef = React.useRef<HTMLDivElement>(null)
   const rightHeaderRef = React.useRef<HTMLDivElement>(null)
   const [leftWidth, setLeftWidth] = React.useState(0)
@@ -2628,14 +2658,14 @@ function DataTableInner<TData>(
         )}
         {/* Header 的 center 區保持 overflow-hidden(非 scroll)—— body 的 center 才有 scroll,
             header 靠 JS 同步 scrollLeft(見 onCenterBodyScroll)。這樣不會出現雙 scrollbar。
-            V scrollbar 對齊:centerBody **刻意不用** `scrollbar-gutter: stable`(決策見 centerBody
-            className 註解 — 永久預留 15px 會讓 content-fit 看起來像恆有 V 捲軸);trade-off =
-            V scroll 出現時 body 內側少 ~15px、header 不縮 → 右端微 misalign,content-fit 乾淨優先。
-            header 的 `scrollbar-gutter` 本就無效(overflow-hidden),刻意不設 */}
+            V scrollbar 對齊(2026-09-03 修正舊取捨):body 出現垂直捲軸時內容盒少 ~15px,header 以**動態量到的**
+            同寬 padding-right 補齊,兩邊內容盒等寬 → 彈性欄寬分配結果一致、不再逐欄累積偏移。
+            沒有捲軸時 gutter = 0(macOS overlay 亦為 0)→ 完全不留空白,content-fit 依舊乾淨。 */}
         <div
           ref={centerHeaderRef}
           data-datatable-header-panel="center"
           className="flex-1 min-w-0 overflow-hidden"
+          style={vScrollbarGutter > 0 ? { paddingRight: vScrollbarGutter } : undefined}
         >
           {/* 2026-05-06 v13.1:retire `w-max min-w-full` — 改 `style={{minWidth: centerColsWidth}}`
               跟 body inner wrapper 同 SSOT。前 `w-max` 讓 header content max-content(label 短)
@@ -2698,8 +2728,7 @@ function DataTableInner<TData>(
           // overflow-x/y: auto — 沒 overflow 就不顯 bar。wrapper minWidth 仍 trigger H 真 overflow。
           // **不**用 scrollbar-gutter: stable — 那會永遠保留 V 軸 15px 空間,
           // content fit 時看起來像「永遠有 V 捲軸」(Image #5 bug)。
-          // trade-off:V scroll 出現時 body 內側少 15px,header 不縮 → 右端微 misalign,
-          // 但 content fit 視覺乾淨優先(Mac 用戶 overlay scrollbar 不可見)。
+          // 對齊由 header 端的動態 padding-right 補(見 vScrollbarGutter),不再有 misalign trade-off。
           className="flex-1 min-w-0 overflow-x-auto overflow-y-auto focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
           // isFillHeight:用 JS 算的 px(bodyMaxHeight),bypass CSS % 在 flex 場景的不可靠 shrink。
           // 固定 px(300px etc):直接套 height。

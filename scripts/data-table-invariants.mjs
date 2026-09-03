@@ -288,6 +288,62 @@ for (const col of alignReport) {
   }
 }
 
+// ── I11:出現垂直捲軸時,header 與 body 的「內容盒」必須等寬(2026-09-03 user 抓到)──
+// 根因:body 有 overflow-y:auto,捲軸佔掉 15px → body content box 比 header 窄 15px;
+// 欄寬是彈性分配的,同一份 minWidth 在兩個不同寬度的容器裡分配結果不同 → 每一欄逐欄累積偏移
+// (實測第 2 欄 3.8px、第 3 欄 7.5px、第 4 欄 11.3px)。修法是 header 補等寬 padding-right(vScrollbarGutter)。
+// 這條驗的是不變式本身(兩邊內容盒等寬),不管捲軸實際寬度是 15px 還是 0(overlay)都成立。
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--virtual-scroll&viewMode=story`, { waitUntil: 'networkidle' })
+await page.waitForSelector('[data-datatable-header-panel="center"]')
+const gutterReport = await page.evaluate(() => {
+  const hp = document.querySelector('[data-datatable-header-panel="center"]')
+  const bp = document.querySelector('[data-datatable-panel="center"]')
+  if (!hp || !bp) return null
+  const cs = getComputedStyle(hp)
+  const headerContentWidth = hp.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+  const heads = [...hp.querySelectorAll('[role="columnheader"]')]
+  const row = [...bp.querySelectorAll('[role="row"]')].find((r) => r.querySelector('[role="gridcell"], [role="cell"]'))
+  const cells = row ? [...row.querySelectorAll('[role="gridcell"], [role="cell"]')] : []
+  return {
+    gutter: bp.offsetWidth - bp.clientWidth,
+    paddingRight: parseFloat(cs.paddingRight),
+    headerContentWidth,
+    bodyContentWidth: bp.clientWidth,
+    hasVerticalOverflow: bp.scrollHeight > bp.clientHeight,
+    worstColumnDelta: heads.slice(0, cells.length).reduce(
+      (m, h, i) => Math.max(m, Math.abs(h.getBoundingClientRect().left - cells[i].getBoundingClientRect().left)),
+      0,
+    ),
+    columns: cells.length,
+  }
+})
+if (!gutterReport) {
+  record('I11', 'center header/body panel 存在', false, 'panel selector 找不到')
+} else {
+  record('I11', '該 story 真的有垂直溢出(否則這條測不到補償)', gutterReport.hasVerticalOverflow, `scrollHeight > clientHeight = ${gutterReport.hasVerticalOverflow}`)
+  record(
+    'I11',
+    'header 補的 padding-right 等於 body 垂直捲軸佔掉的寬度',
+    Math.abs(gutterReport.paddingRight - gutterReport.gutter) <= 0.5,
+    `padding-right ${gutterReport.paddingRight} vs gutter ${gutterReport.gutter}`,
+  )
+  record(
+    'I11',
+    'header 與 body 內容盒等寬(彈性欄寬才會分配出同一組結果)',
+    Math.abs(gutterReport.headerContentWidth - gutterReport.bodyContentWidth) <= 0.5,
+    `header ${gutterReport.headerContentWidth.toFixed(1)} vs body ${gutterReport.bodyContentWidth.toFixed(1)}`,
+  )
+  record(
+    'I11',
+    `${gutterReport.columns} 欄的 header 與 cell 左緣全部重合`,
+    gutterReport.worstColumnDelta <= 0.5,
+    `worst column left delta ${gutterReport.worstColumnDelta.toFixed(2)}px`,
+  )
+  if (gutterReport.gutter === 0) {
+    console.log('  note[I11]:此環境的捲軸不佔版面(overlay scrollbar),gutter=0 → 補償分支未被實測,只驗到等寬不變式。')
+  }
+}
+
 // ── Output ──
 console.log(`\n=== DataTable Invariants Test ===`)
 console.log(`PASS: ${passes.length}`)
