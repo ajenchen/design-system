@@ -349,7 +349,9 @@ function applySelectIds(
   return { mode: 'all', excluded: Array.from(set) }
 }
 const cellPadding: React.CSSProperties = { paddingBlock: 'var(--table-cell-py)', paddingInline: 'var(--table-cell-px)' }
-const HEADER_BG = 'bg-muted'
+// 表頭面板:底色 + 下分隔線。**畫在 panel 不畫在 row**,因為 `--muted` 是半透明,
+// 兩層會疊出兩種深淺(見 renderHeaderRow 的註解)。三個 panel 共用同一個常數 = 單一住所。
+const HEADER_PANEL = 'bg-muted border-b border-divider'
 
 // Column sizing canonical(2026-05-06 v11 — table-level all-or-nothing,Notion / Airtable / Linear 共識):
 //   - **Table-level prop `enableColumnResize`** 控制全表 mode(per-column mixed 已 retire,跟 product
@@ -2445,8 +2447,14 @@ function DataTableInner<TData>(
     const hasVisibleChildren = headers.length > 0
     const RowTag = hasVisibleChildren ? 'div' : 'div'
     const rowRole = hasVisibleChildren ? 'row' : undefined
+    // 底色與下分隔線**不畫在 row 上**,改畫在三個 header panel 上(見 HEADER_PANEL)。
+    // 原因:`--muted` 是半透明(light `oklch(0 0 0 / 4%)` / dark `oklch(1 0 0 / …)`),
+    // panel 與 row 各畫一層會在重疊處疊成兩層 → 讓給捲軸的那條 strip(只有 panel)比欄位區
+    // 淺一階,深色模式則反過來偏暗(2026-09-03 user 抓到)。只留一層,兩邊才會同色。
+    // 對照:AG Grid 的 `.ag-header-row::after` 與 MUI X 的 `GridScrollbarFillerCell` 都是
+    // **row 裡的一格**,同樣只疊一次。
     return (
-      <RowTag role={rowRole} className={cn('flex items-center border-b border-divider', rowHeight, HEADER_BG)}>
+      <RowTag role={rowRole} className={cn('flex items-center', rowHeight)}>
         {headers.map((h, i) => {
           const showDivider = i < headers.length - 1 && !(isRight && i === headers.length - 1)
           const colId = h.column.id
@@ -2703,7 +2711,7 @@ function DataTableInner<TData>(
       {/* ══ HEADER（固定頂部，不在 scroll 內）══ */}
       <div role="rowgroup" className="flex">
         {hasLeft && (
-          <div ref={leftHeaderRef} data-datatable-header-panel="left" className="shrink-0 overflow-hidden dtPanelBoundaryRight">
+          <div ref={leftHeaderRef} data-datatable-header-panel="left" className={cn(HEADER_PANEL, 'shrink-0 overflow-hidden dtPanelBoundaryRight')}>
             {renderHeaderRow(leftCols, false)}
           </div>
         )}
@@ -2716,9 +2724,10 @@ function DataTableInner<TData>(
           ref={centerHeaderRef}
           data-datatable-header-panel="center"
           onScroll={() => onSecondaryScroll(centerHeaderRef.current, 'x')}
-          // `dtHeaderScrollbarFiller`:讓給垂直捲軸的那條 strip 也要有表頭底色與下分隔線,
-          // 否則表頭右上角是一塊空白(2026-09-03 user 抓到)。見 data-table.css 同名 class。
-          className="dtHeaderScrollbarFiller flex-1 min-w-0 overflow-hidden"
+          // 底色與下分隔線由 HEADER_PANEL 帶(不是 row):讓給垂直捲軸的那條 strip 也在 panel 內,
+          // 因此自動帶到同一層底色與同一條分隔線 —— 表頭右上角不再是空白,而且因為只疊一層,
+          // strip 與欄位區在 light / dark 都是同一個顏色(2026-09-03 user 抓到)。
+          className={cn(HEADER_PANEL, 'flex-1 min-w-0 overflow-hidden')}
           // `paddingInlineEnd` 不是 `paddingRight`:RTL 下垂直捲軸渲染在 inline-end(左緣),
           // 用實體方向會補錯邊,兩個內容盒不但沒補平、起點還各差一個捲軸寬(等效誤差 2g)。
           style={vScrollbarGutter > 0 ? { paddingInlineEnd: vScrollbarGutter } : undefined}
@@ -2732,7 +2741,7 @@ function DataTableInner<TData>(
           </div>
         </div>
         {hasRight && (
-          <div ref={rightHeaderRef} data-datatable-header-panel="right" className="shrink-0 overflow-hidden dtPanelBoundaryLeft">
+          <div ref={rightHeaderRef} data-datatable-header-panel="right" className={cn(HEADER_PANEL, 'shrink-0 overflow-hidden dtPanelBoundaryLeft')}>
             {renderHeaderRow(rightCols, true)}
           </div>
         )}
