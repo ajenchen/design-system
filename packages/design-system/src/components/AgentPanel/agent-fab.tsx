@@ -8,17 +8,20 @@
  *   spec「FAB」節)。配色兩極 = AgentLogo AGENT_BRAND(= 自家色階 blue-4 / purple-4;
  *   單一數值來源在 agent-logo.tsx,本檔只 import)。
  * - 內置 24 標誌;貼邊態內置 16 標誌(同一造型,無簡化檔)。
+ * - **標誌狀態跟著面板裡的代理走**(prop `logoState`,與 AgentPanelHeader 同名;2026-09-03 user 拍板):入口鈕 = 那個對話收起來的樣子,
+ *   所以代理在思考時、即使面板關著,入口鈕的標誌也在轉;有新訊 = 招喚態(標誌蓄勢 + 邊框光圈);閒置 = 靜止。
+ *   兩種形態(40 圓 / 28 貼邊)都跟。
  * - 動畫:待機=靜止;有新訊=招喚態(標誌本體蓄勢,漣漪由邊框光圈代位:0–35% 貼邊聚亮 →
  *   35% 呼氣起點自邊框射出 r 21→27、寬 2.5、.35→0 → 90% 散盡 → 靜止空拍;與標誌同 dur /
  *   同 keyTimes / 同 swell→settle,同一 commit 掛載 → 同相);懸停=陰影升一級+微放大。
- * - 兩態定位(AgentFabDock;2026-09-03 user 第四輪拍板,取代前三輪的自由座標):只有兩種合法位置 ——
+ * - 兩態定位(AgentFabDock;2026-09-03 user 拍板,取代早期的自由座標與 hover 小鈕):只有兩種合法位置 ——
  *   「家」= 40 圓鈕,位置唯一在右下角(離右、下各 loose);「貼邊」= 28 半圓貼右緣,只有 y 可變(右緣帶內)。
+ *   **用語**:位置 = 家 / 貼邊,區域 = 帶,選單文案 = 縮小按鈕 / 放大按鈕(不再用「收到邊 / 收合 / 小鈕 / 藍框」)。
  *   拖 40 圓鈕:鈕跟著游標;整段拖曳期間右緣帶(寬 36 = --field-height-md;上緣 = 貼邊鈕圓心落在視窗中線,
- *   下緣 = 貼邊鈕底 ≥ 家頂 − loose;user 2026-09-03 留言拍板:圓心從中線起、只能往下拖到家上方一個 loose,
- *   貼邊區在下半部、永不與家重疊)以底色標出(primary-subtle、貼右緣、內側圓角;見 SNAP_ZONE_CLASSES);游標一進帶內,
- *   預覽當場變成 28 半圓**貼在右緣、停在放開會落的高度**
+ *   下緣 = 貼邊鈕底離家頂一個 loose;貼邊區在下半部、永不與家重疊)以 drop-target 底色 + 三邊虛線框標出
+ *   (貼右緣那側不畫;見 SNAP_ZONE_CLASSES);游標一進帶內,預覽當場變成 28 半圓**貼在右緣、停在放開會落的高度**
  *   (帶內所見即所得),放開就落定;放開在帶外 → 飛回家。
- *   拖 28 小鈕:不顯示帶;帶內沿 y 移動;一出帶外當場變回 40 圓、放開飛回家(帶外沒有自由位置)。
+ *   拖 28 貼邊鈕:不顯示帶;帶內沿 y 移動;一出帶外當場變回 40 圓、放開飛回家(帶外沒有自由位置)。
  *   兩態點一下都直接開面板;< 8px 位移視為點擊。鍵盤:家 → 貼邊(停在帶底);貼邊 ↑↓ 16px、← / Home 回家;
  *   Shift+F10 開選單;拖曳中 Esc 取消。右鍵選單依狀態只給一項(家:縮小按鈕 ArrowRightToLine;貼邊:放大按鈕
  *   ArrowLeftFromLine —— 線 = 右緣、箭頭方向 = 鍵盤 → / ← 等價路徑;lucide 官方 tags collapse / expand 鏡像對
@@ -43,6 +46,7 @@ import { ArrowLeftFromLine, ArrowRightToLine } from 'lucide-react'
 import {
   AGENT_BRAND,
   AgentLogo,
+  type AgentLogoState,
   BREATH_DUR,
   RIPPLE_KEYTIMES,
   RIPPLE_SPLINES,
@@ -58,16 +62,22 @@ const RING_GRADIENT = `conic-gradient(from 220deg, ${AGENT_BRAND.blue}, ${AGENT_
 
 export interface AgentFabProps
   extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
-  /** 有新訊(招喚態):標誌蓄勢 + 邊框光圈呼出。 */
-  attention?: boolean
+  /**
+   * 標誌狀態 = **面板裡那個代理當下的狀態**(prop 名與 `AgentPanelHeader.logoState` 一致 —— 產品端同一個變數餵兩邊),面板關著也照跑(2026-09-03 user:「若開啟的 session 是思考中,
+   * FAB 的 logo 也應該是思考中」)—— 入口鈕是該對話收起來的樣子,不是另一個獨立的東西:
+   * `still` 靜止(閒置)/ `attract` 有新訊(標誌蓄勢 + 邊框光圈)/ `think` 思考中(代理正在回覆,標誌轉動)。
+   * 收合成 28 貼邊鈕時同樣跟著跑(尺寸變、狀態不變)。
+   */
+  logoState?: AgentLogoState
 }
 
 const AgentFab = React.forwardRef<HTMLButtonElement, AgentFabProps>(
-  ({ attention = false, className, 'aria-label': ariaLabel, ...props }, ref) => {
+  ({ logoState = 'still', className, 'aria-label': ariaLabel, ...props }, ref) => {
     const uid = React.useId().replace(/[^a-zA-Z0-9]/g, '')
     const reduced = usePrefersReducedMotion()
     const glowId = `${uid}fg`
-    const showGlow = attention && !reduced
+    // 光圈只給招喚態(有新訊要人回頭看);思考態的訊號是標誌自己在轉,不加光圈以免兩個 loop 打架。
+    const showGlow = logoState === 'attract' && !reduced
     const glowRef = React.useRef<SVGSVGElement | null>(null)
     useBeginAnimationsOnMount(glowRef, String(showGlow))
     return (
@@ -138,7 +148,7 @@ const AgentFab = React.forwardRef<HTMLButtonElement, AgentFabProps>(
             )}
             {...props}
           >
-            <AgentLogo state={attention ? 'attract' : 'still'} ripple={false} size={24} />
+            <AgentLogo state={logoState} ripple={false} size={24} />
           </button>
         </span>
       </span>
@@ -189,19 +199,17 @@ const KEY_STEP = 16
 /** 已在區內時再多 16px 才算離開(邊界防抖)。 */
 const HYSTERESIS = 16
 /**
- * 右緣帶(拖曳中才出現的區域型目標)= 底色 `bg-primary-subtle`、貼邊側無框無圓角、內側圓角 md、不畫線
- * (2026-09-03 user 問「要不要上底色、右邊要不要邊框」→ 四路研究後定):
- * - 底色消費 DS「區域內就是目標」的既有 canonical:lib/drag-visual.ts inside-drop highlight、DataTable 範圍選取
- *   (user 2026-05-10:「range 的 cell 本來就有顏色變化,那樣就夠了,不需要再有 2px 藍色的框」);light 為不透明 blue-1、
- *   dark 由 primitives 公式成 alpha ≈ .19,同一個 token 兩模式,不自創 alpha(color.spec.md 已拒 state-layer 流派)。
- * - 貼邊側不畫線、不留圓角 = Sheet / Sidebar / AppShell 側欄 / 貼邊鈕本身(環只畫露出三邊)的同一語言。
- * - 不用虛線框:DS 內 dashed 是 FileUpload「靜止就可見的常駐拖入區」語彙;拖曳中才出現的停靠區各家一律填色無框
- *   (Windows Snap「translucent overlay」https://support.microsoft.com/en-us/windows/snap-your-windows-885a9b1e-a983-a3b1-16cd-c531795e6241、
- *   macOS「highlighted area」https://support.apple.com/guide/mac-help/tile-app-windows-mchlef287e5d/mac、
- *   Atlassian「droppable area 換底色」https://atlassian.design/components/pragmatic-drag-and-drop/design-guidelines、
- *   VS Code editorGroup.dropBackground https://github.com/microsoft/vscode/blob/main/src/vs/workbench/common/theme.ts)。
+ * 右緣帶(拖曳中才出現的暫態停靠區)= DS「可放下的區域」配對 `--drop-target` 底 + `--drop-target-border` 虛線框,
+ * 貼邊那側不畫、不留圓角(2026-09-03 user 拍板;token 與兩種情境的分工 SSOT 在 color.spec.md「Drop target」段):
+ * - 底色半透明(覆蓋在頁面內容上就不能不透明,VS Code theme-color 鐵律),兩模式同一公式,不用 --primary-subtle
+ *   (那是元件自己的不透明淡底,底下沒有別人的內容)。
+ * - 三邊 dashed:dashed = DS 的「可放下的暫時目標」語彙(file-upload.spec.md);貼右緣那側不畫線不留圓角,
+ *   與 Sheet / Sidebar / AppShell 側欄 / 貼邊鈕(環只畫露出三邊)同一語言。
+ * - 與 FileUpload 常駐拖入區的分工:那邊靜止就看得見、進入合法區只換邊框不填色;這裡憑空出現、需要整區訊號,
+ *   而落點回饋由鈕自己的所見即所得預覽承擔。
  */
-const SNAP_ZONE_CLASSES = 'bg-primary-subtle rounded-l-md'
+const SNAP_ZONE_CLASSES =
+  'bg-drop-target border-2 border-r-0 border-dashed border-drop-target-border rounded-l-md'
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(min, max))
 /**
@@ -227,7 +235,7 @@ const inRect = (p: Point, r: Rect, pad: number) =>
  * (帶內所見即所得),放開就落定;指標不在任何區 → 40 圓鈕跟著游標,放開飛回家。判定用**指標**位置
  * (意圖在指尖;Windows Snap 看游標碰邊、Android Bubbles 看拖到關閉區),已在區內時多 16px 遲滯才算離開。
  * 要加磁吸點(鏡像左緣、四角…)只在此表加一列(必要時擴 AgentFabPlacement 的 kind),拖曳 / 預覽 / 底色流程不變
- * (spec「收到邊」節「區域 → 落點表」)。
+ * (spec「遮擋與貼邊」節「區域 → 落點表」)。
  */
 interface SnapZone {
   rect: (s: Stage) => Rect
@@ -365,7 +373,7 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
       onClick,
       className,
       labels,
-      attention = false,
+      logoState = 'still',
       'aria-label': ariaLabel,
       ...buttonProps
     },
@@ -524,7 +532,7 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
                   }}
                   {...buttonProps}
                 >
-                  <AgentLogo state={attention ? 'attract' : 'still'} ripple={false} size={isDock ? 16 : 24} />
+                  <AgentLogo state={logoState} ripple={false} size={isDock ? 16 : 24} />
                 </button>
               </span>
             </TooltipTrigger>

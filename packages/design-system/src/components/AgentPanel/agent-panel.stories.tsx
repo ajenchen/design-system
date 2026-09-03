@@ -17,7 +17,7 @@ import {
   type AgentConversationSummary,
   type AgentPromptAttachment,
 } from './agent-panel'
-import { AgentLogo } from './agent-logo'
+import { AgentLogo, type AgentLogoState } from './agent-logo'
 import { AgentFab, AgentFabDock, AGENT_FAB_HOME, type AgentFabPlacement } from './agent-fab'
 import { Button } from '@/design-system/components/Button/button'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
@@ -347,10 +347,12 @@ const orderColumns: ColumnDef<OrderRow>[] = [
 /**
  * 入口鈕 ↔ 面板互斥 + 拖到右緣貼邊(2026-09-03 第四輪拍板:只有「家」與「貼邊」兩種位置,所見即所得):面板關閉時
  * 右下角出現入口鈕(離邊 loose,Tooltip「問我或推走我」;貼邊後 Tooltip 只寫「開啟智慧代理」)。拖 40 圓鈕:鈕跟著
- * 游標、右緣帶(寬 36、從視窗中線到家上方一個 loose)亮出藍色底(primary-subtle,貼右緣、內側圓角);游標一進帶內,預覽當場變成 28 貼邊半圓、貼在右緣、停在
+ * 游標、右緣帶(寬 36、從視窗中線到家上方一個 loose)亮出 drop-target 半透明藍底 + 三邊虛線框(貼右緣那側不畫);游標一進帶內,預覽當場變成 28 貼邊半圓、貼在右緣、停在
  * 放開會落的高度;放開在帶內就落定,放開在帶外飛回右下角。
  * 拖 28 貼邊鈕:不顯示帶,帶內沿 y 移動,一出帶外當場變回 40 圓鈕、放開飛回家。**兩種形態點一下都直接開面板**;
- * 右鍵 / Shift+F10 選單依狀態只給一項(縮小按鈕 / 放大按鈕,帶前綴 icon)、鍵盤 → 貼邊、↑↓ 16px、← / Home 回家、拖曳中 Esc
+ * **入口鈕的標誌跟著面板裡的代理走**:送出訊息讓代理思考,再關掉面板 —— 入口鈕(不論 40 圓或 28 貼邊)也在轉;
+ * 回覆完成變招喚態(邊框光圈)提醒你回來看。右鍵 / Shift+F10 選單依狀態只給一項(縮小按鈕 / 放大按鈕,帶前綴 icon)、
+ * 鍵盤 → 貼邊、↑↓ 16px、← / Home 回家、拖曳中 Esc
  * 取消。位置由 consumer 受控(這裡用 state),面板開關不重置。舞台=滿高訂單表 + 分頁列:在家時入口鈕會壓在分頁列
  * 右端,貼邊後不再遮擋。
  */
@@ -359,6 +361,17 @@ export const FabPanelToggle: Story = {
   render: function FabToggleStory() {
     const [open, setOpen] = React.useState(false)
     const [placement, setPlacement] = React.useState<AgentFabPlacement>(AGENT_FAB_HOME)
+    // 面板裡的代理狀態:入口鈕的標誌直接吃它 —— 關掉面板時代理若還在思考,入口鈕也在轉。
+    const [agentState, setAgentState] = React.useState<AgentLogoState>('still')
+    const [draft, setDraft] = React.useState('這批訂單的金額為什麼對不上?')
+    const timer = React.useRef<number | null>(null)
+    const askAgent = () => {
+      if (timer.current) window.clearTimeout(timer.current)
+      setDraft('')
+      setAgentState('think')
+      timer.current = window.setTimeout(() => setAgentState('attract'), 6000)
+    }
+    React.useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current) }, [])
     return (
       <div className="relative flex h-dvh bg-canvas">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col p-[var(--layout-space-loose)]">
@@ -372,14 +385,28 @@ export const FabPanelToggle: Story = {
         </div>
         {open ? (
           <AgentPanel>
-            <AgentPanelHeader title="訂單異常排查" activeConversationId="c1" {...headerWiring} onClose={() => setOpen(false)} />
+            <AgentPanelHeader
+              title="訂單異常排查"
+              activeConversationId="c1"
+              logoState={agentState}
+              {...headerWiring}
+              onClose={() => setOpen(false)}
+            />
             <AgentConversation>
-              <AgentMessage role="agent">關閉我,入口鈕會回到你收起的位置。</AgentMessage>
+              <AgentMessage role="user">幫我查上週哪幾張訂單金額異常</AgentMessage>
+              <AgentMessage role="agent">
+                {agentState === 'think' ? '正在比對上週訂單…' : '關掉我看看:代理還在思考時,入口鈕的標誌也會跟著轉。'}
+              </AgentMessage>
             </AgentConversation>
-            <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
+            <AgentPromptInput value={draft} onValueChange={setDraft} {...promptWiring} onSubmit={askAgent} />
           </AgentPanel>
         ) : (
-          <AgentFabDock attention placement={placement} onPlacementChange={setPlacement} onClick={() => setOpen(true)} />
+          <AgentFabDock
+            logoState={agentState}
+            placement={placement}
+            onPlacementChange={setPlacement}
+            onClick={() => setOpen(true)}
+          />
         )}
       </div>
     )
@@ -404,7 +431,8 @@ export const LogoStates: Story = {
 /** FAB:待機(靜止)與有新訊(招喚=標誌蓄勢+邊框光圈代位)。 */
 /**
  * 思考 → 停止:按「思考 3 秒」進入思考(靜止起步半圈時間加速到 0.75s/圈,負空間同時由橢圓圓化),3 秒後離開
- * 思考 → 從當下角度以 exit 鏡像曲線減速、負空間同步由圓回橢圓、落回正位 0°(0.75–1.82s)後才淡入靜止;
+ * 思考 → 從當下角度以 exit 鏡像曲線減速、負空間同步由圓回橢圓、色場基底跟著當下角度、落回正位 0°(0.75–1.82s)
+ * 後直接接靜止(不淡入 —— 交接那一刻兩邊長得一樣);
  * 一直思考的範例維持最快轉速不停、洞持圓,只剩亮度呼吸。
  */
 export const LogoThinkStop: Story = {
@@ -429,17 +457,21 @@ export const LogoThinkStop: Story = {
 }
 
 export const FabStates: Story = {
-  name: 'FAB 兩態',
+  name: '入口鈕三態(跟著面板裡的代理走)',
   render: () => (
     <div className="flex items-center gap-16 p-16">
-      <div className="flex flex-col items-center gap-3">
-        <AgentFab />
-        <span className="text-caption text-fg-muted">待機</span>
-      </div>
-      <div className="flex flex-col items-center gap-3">
-        <AgentFab attention />
-        <span className="text-caption text-fg-muted">有新訊(招喚)</span>
-      </div>
+      {(
+        [
+          ['still', '閒置'],
+          ['attract', '有新訊(招喚:標誌蓄勢 + 邊框光圈)'],
+          ['think', '思考中(面板關著也照轉)'],
+        ] as const
+      ).map(([state, label]) => (
+        <div key={state} className="flex flex-col items-center gap-3">
+          <AgentFab logoState={state} />
+          <span className="text-caption text-fg-muted">{label}</span>
+        </div>
+      ))}
     </div>
   ),
 }

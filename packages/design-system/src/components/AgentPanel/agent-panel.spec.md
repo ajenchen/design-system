@@ -281,6 +281,9 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
   2026-09-02 user 問「呼吸是否搭配透明度」→ 研究結論採亮度包絡 + 靜止空拍,不加透明度。
 - **每次進入狀態從靜止起跑**:SMIL `begin="indefinite"` + 掛載當下 `beginElement()`(文件時間軸的
   `begin="0s"` 會讓晚掛的動畫從半途起跑、加速段直接凍在終點);同一 commit 掛上的標誌本體與 FAB 光圈同相。
+  **起跑鍵必含 exit 段**:think → 減速段新掛的洞形變與亮度淡出同樣是 `begin="indefinite"`,鍵不含該段 = 7 個
+  animate 永不起跑(整段減速洞持圓、停定瞬間跳回橢圓;2026-09-03 逐格實測的斷層根因);已起跑的呼吸疊層
+  由 `data-begun` 守衛不重啟。機械驗證 = `scripts/agent-logo-continuity-invariant.mjs` C6。
 - 狀態(prop `state`;「招喚/漣漪」為本家族新造狀態名,定義唯一住所=本節):
   - **still 靜止(=待機)**:完全不動。2026-09-02 拍板:待機一律靜止,不另立呼吸態,狀態分類收斂為三態。
   - **attract 招喚**(空狀態/FAB 有新訊):呼吸包絡上的脹 1.07+吸氣微亮(白疊層 0→14%→0→0)
@@ -289,7 +292,7 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
   - **think 思考**(=回覆中):靜止起步 → 加速 0.375s(=半圈=一息/8,exit 曲線,位移 126° 使交接速度連續)
     → 等速 **480°/s(0.75s/圈=一息/4)**,linear,**持續到離開思考,一直思考就不停**;離開思考 →
     **減速段**:從當下角度以 exit 曲線的時間鏡像 (0,0,0.7,1) 續轉最小 ≥252° 且落回正位 0° 的角度
-    (時長 Δ/(ω·0.7) ∈ 0.75–1.82s,交接速度連續、停定即正位),停定後才 0.15s 淡入下一狀態。
+    (時長 Δ/(ω·0.7) ∈ 0.75–1.82s,交接速度連續、停定即正位),**停定即接靜止、不淡入**(見「轉場」)。
     轉速依據(2026-09-02 研究):主流平滑轉圈 1.0–1.57s/圈([MDC 1568ms](https://raw.githubusercontent.com/material-components/material-components-web/master/packages/mdc-circular-progress/_circular-progress.scss)、
     [Fluent 1.5s](https://raw.githubusercontent.com/microsoft/fluentui/master/packages/react-components/react-spinner/library/src/components/Spinner/useSpinnerStyles.styles.ts)、[Ant 1.2s](https://raw.githubusercontent.com/ant-design/ant-design/master/components/spin/style/index.ts));
     快檔 0.69–0.75s([Carbon](https://raw.githubusercontent.com/carbon-design-system/carbon/main/packages/styles/scss/components/loading/_animation.scss)、[Bootstrap](https://getbootstrap.com/docs/5.3/components/spinners/));
@@ -299,7 +302,10 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
     時洞正好回定稿形。2026-09-02 user 問「形變是否用在高速」→ 由 6s 呼吸圓化改為速度耦合:形狀說速度、
     亮度說呼吸;對齊 squash-and-stretch「形變跟著速度」與 Dynamic Island「形隨動作」)+吸氣微亮(亮度
     6s=2 息,峰值 14% 與招喚統一)+色流動(色場定錨畫布=漸層同構逆轉,減速段同步)。
-- 轉場:狀態切換=新狀態 0.15s 淡入(`--motion-duration-overlay`,只動 opacity),禁跳切;**減動作**:
+- 轉場:狀態切換=新狀態 0.15s 淡入(`--motion-duration-overlay`,只動 opacity),禁跳切;**例外:still ↔ think
+  不淡入**——兩邊在交接那一刻本來就長得一模一樣(定稿形、0°、無疊層),淡入會讓整顆先變透明再回來 = 斷層
+  (2026-09-03 user「最後沒有流暢地把負空間以及色彩回復」根因之一);淡入只留給形態真的不同的交接(招喚 ↔ 其他)。
+  減速段的色場基底亦設為當下角度,否則起跑前一影格會閃回 0°。**減動作**:
   互動觸發必可停(WCAG 2.3.3);常駐 loop 全停(嚴於條文),一律回靜止、淡入亦停。
 - 多實例安全:漸層/遮罩 id 以 useId 唯一化。
 
@@ -315,12 +321,18 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
   自邊框射出 r 21→27(settle)→ 90% 散盡 → 靜止空拍;寬 2.5;與標誌同 dur/keyTimes/曲線、同一
   commit 掛載故同相;光圈漸層=環同兩極同方位);懸停=陰影升一級+微放大;點擊=開面板。
 - 減動作:光圈屬位移 loop → 全停(標誌內部自回靜止)。
+- **標誌狀態跟著面板裡的代理走**(prop `logoState`,與 `AgentPanelHeader.logoState` 同名 —— 產品端同一個變數餵兩邊;
+  2026-09-03 user 拍板「若開啟的 session 是思考中,FAB 的 logo 也應該是思考中」):入口鈕 = 那個對話**收起來的樣子**,
+  不是另一個獨立的東西 —— 代理在回覆時即使面板關著,入口鈕標誌照樣轉(`think`);有新訊 = 招喚(`attract`,標誌蓄勢
+  + 邊框光圈);閒置 = 靜止(`still`)。兩種形態(40 圓 / 28 貼邊)都跟,尺寸變、狀態不變。光圈只給招喚態:思考態的
+  訊號是標誌自己在轉,再加光圈會變成兩個 loop 互相打架。對照:[Android Bubbles 收合後仍以圖示承載該對話的動態](https://developer.android.com/develop/ui/views/notifications/bubbles)。
 - **放置與互斥**(2026-09-02 拍板):FAB 為 opt-in 浮動入口,固定於舞台右下、內距
   `--layout-space-loose`(16/24;Material FAB 最小邊距同值);**面板開 → FAB 隱藏、面板關 → FAB 回來**
   (兩者互斥,開面板的入口與關面板的 × 不並存)。DS 預設入口仍是全域頂列右側鈕
   (`governance/planning/2026-08-11-agent-ui-panel-spec.md` 已裁),含滿高表格/分頁列的頁面一律用頂列入口。
-- **遮擋與收到邊**(`AgentFabDock`;2026-09-02 第一輪方案 C 拖到邊 → 第二輪 hover 小鈕 → 第三輪拖曳自由座標 →
-  2026-09-03 第四輪 user 拍板「只有家與貼邊兩種位置」):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),
+- **遮擋與貼邊**(`AgentFabDock`;演進:2026-09-02 拖到邊 → hover 小鈕 → 拖曳自由座標 → 2026-09-03 user 拍板
+  「只有家與貼邊兩種位置」→ 帶的幾何(寬 36、下半部)→ 帶的樣式(drop-target 底 + 三邊虛線框)。**用語統一**:
+  位置叫「家 / 貼邊」、區域叫「帶」、動作文案叫「縮小按鈕 / 放大按鈕」,不再用「收到邊 / 收合 / 小鈕 / 藍框」):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),
   與表格分頁列「操作右」必撞 → 主鈕可拖到右緣貼邊:
   - **只有兩種合法位置**:「家」= 圓鈕 40,位置唯一在右下角(離右、下各 loose;[Android FAB 官方範例
     `layout_margin` 16dp](https://developer.android.com/develop/ui/views/components/floating-action-button)、Teambition 16,
@@ -331,23 +343,18 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
     再多 16px 才算離開,遲滯防抖);上緣 = 貼邊鈕圓心落在視窗中線(鈕頂 = 舞台高 ÷ 2 − 14);下緣 = 貼邊鈕底離家頂一個
     loose(鈕頂 = 舞台高 − 2·loose − 68)。貼邊鈕只能從中線往下拖到家上方,永不與家重疊、不壓分頁列;矮視窗放不下時整帶
     收成中線一點。帶(底色)= 這個矩形 = 貼邊鈕合法 y 範圍。判定用**指標**位置(意圖在指尖)。
-  - **拖 40 圓鈕(所見即所得)**:鈕全程跟著游標;整段拖曳期間右緣帶以**底色**標出(`bg-primary-subtle`、貼邊側無框
-    無圓角、內側圓角 md、不畫線;見下「帶的樣式」);
+  - **拖 40 圓鈕(所見即所得)**:鈕全程跟著游標;整段拖曳期間右緣帶以**底色 + 三邊虛線框**標出(見下「帶的樣式」);
     游標一進帶內,預覽當場變成貼邊鈕**貼在右緣、停在放開會落的高度**(帶內所見即所得,不預告在游標下);
     放開在帶內 → 落定;放開在帶外 → 飛回家。
   - **拖 28 貼邊鈕**:不顯示帶;帶內沿 y 移動維持貼邊鈕;一出帶外當場變回 40 圓鈕、放開飛回家。
-  - **帶的樣式**(2026-09-03 user 問「要不要上底色、右邊要不要邊框」→ 四路研究後定):底色 = `--primary-subtle`,消費 DS
-    「區域內就是目標」的兩個既有 canonical —— `lib/drag-visual.ts` inside-drop highlight 與 DataTable 範圍選取(user
-    2026-05-10 原話「range 的 cell 本來就有顏色變化,那樣就夠了,不需要再有 2px 藍色的框」);light 為不透明 blue-1、dark 由
-    primitives 公式成 alpha ≈ .19,同一個 token 兩模式,不自創 alpha(color.spec.md 已拒 Material state-layer 流派、
-    `--text-selection` 禁借)。貼邊側不畫線、不留圓角(Sheet / Sidebar / 貼邊鈕「環只畫露出三邊」同語言);不用虛線框
-    (dashed 是 FileUpload 靜止可見的常駐拖入區語彙;拖曳中才出現的停靠區各家一律填色無框:
-    [Windows Snap「translucent overlay」](https://support.microsoft.com/en-us/windows/snap-your-windows-885a9b1e-a983-a3b1-16cd-c531795e6241)、
-    [macOS 視窗並排「highlighted area」](https://support.apple.com/guide/mac-help/tile-app-windows-mchlef287e5d/mac)、
-    [Atlassian「droppable area 換底色、線只表相對位置」](https://atlassian.design/components/pragmatic-drag-and-drop/design-guidelines)、
-    [VS Code `editorGroup.dropBackground` 半透明無框](https://github.com/microsoft/vscode/blob/main/src/vs/workbench/common/theme.ts))。
-    light 若要像 Windows / VS Code 那樣透出底下內容,需新增 primary alpha 階(token 決策,未拍板前用 `--primary-subtle`)。
-  - **等價路徑**:鍵盤 家 → `→` 貼邊(停在帶底 = 家的高度);貼邊 `↑↓` 16px、`←` / Home 回家;右鍵 / Shift+F10
+  - **帶的樣式**(2026-09-03 user 拍板;SSOT = `color.spec.md`「Drop target」段):消費 DS「可放下的區域」配對 ——
+    底 `bg-drop-target`(`--primary` @ 16% **兩模式都半透明**:覆蓋在頁面內容上就不能不透明,VS Code theme-color 鐵律;
+    16% 取世界級保守端 Material dragged 0.16 / VS Code 0.18 / Atlassian ≈0.20)+ **三邊 2px dashed**
+    `border-drop-target-border`(= `--primary-hover`;dashed = DS「可放下的暫時目標」語彙,與 FileUpload 拖入區同一組 token)。
+    **貼右緣那側不畫線、不留圓角**(`border-r-0 rounded-l-md`;Sheet / Sidebar / AppShell 側欄 / 貼邊鈕「環只畫露出三邊」同語言)。
+    與 FileUpload 常駐拖入區的分工:那邊靜止就看得見、進入合法區只換邊框不填色;這裡憑空出現、需要整區底色才讀得出範圍,
+    落點回饋由鈕自己的所見即所得預覽承擔(對照表在 color.spec.md)。
+  - **等價路徑**:鍵盤 家 → `→` 貼邊(停在帶底 = 家頂上方一個 loose);貼邊 `↑↓` 16px、`←` / Home 回家;右鍵 / Shift+F10
     DropdownMenu 依狀態只給一項(家:「縮小按鈕」`ArrowRightToLine` / 貼邊:「放大按鈕」`ArrowLeftFromLine` —— 線 = 右緣、
     箭頭方向 = 鍵盤 → / ← 等價路徑,[lucide 官方 tags collapse / expand 鏡像對](https://github.com/lucide-icons/lucide/blob/main/icons/arrow-right-to-line.json);
     Maximize2 家族在 DS = 全螢幕、Panel 家族 = 面板本身,故不用;2026-09-03 user 拍板「縮小按鈕與放大按鈕

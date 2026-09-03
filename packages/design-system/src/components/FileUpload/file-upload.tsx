@@ -327,7 +327,9 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           // code 卻寫 base = claim-vs-code 反向 drift;瞬時態歸 hover 階,雙向全掃唯一 B 類違規),
           // 底色維持 surface(不變 bg)。state 信號靠邊框,非底色。
           // 2026-06-11 R2(M5 狀態疊加):hover 變 primary 僅限 idle —— disabled/loading 維持原邊框(spec「disabled 邊框不變色」;dropzone 狀態機無 error 態,error 屬 files 清單 FileItem status)
-          'data-[state=idle]:hover:border-primary-hover data-[state=drag-over]:border-primary-hover',
+          // 2026-09-03:改消費 DS「可放下的區域」配對 --drop-target-border(= --primary-hover,零視覺差),
+          // 與 AgentFabDock 停靠帶同一組 token;各自的組合仍不同(常駐區只換邊框、暫態區才填色 — color.spec.md「Drop target」)
+          'data-[state=idle]:hover:border-drop-target-border data-[state=drag-over]:border-drop-target-border',
           // loading(2026-06-03 Q4:移除 pointer-events-none — 它會讓 cursor-progress 失效;
           // 互動已由 handleClick + drag/key handlers 的 isBlocked guard 擋,不需 pointer-events-none)
           'data-[state=loading]:cursor-progress',

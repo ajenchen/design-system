@@ -403,6 +403,18 @@
   --text-selection:       color-mix(in oklch, var(--color-blue-5) 30%, transparent);
   --search-match:         var(--color-amber-3);
   --search-match-current: var(--color-amber-5);
+
+  /* Drop target — 「可以放到這裡」的區域配對(2026-09-03 user 拍板;SSOT 詳 color.spec.md「Drop target」段)
+     一組兩個:底色 + 邊框,任何 drag & drop / 磁吸停靠的合法區域都消費同一組,不各自定義。
+     底色必半透明(同 Highlight 段的「覆蓋在內容上就不能不透明」鐵律,VS Code theme-color:
+     「The color must not be opaque so as not to hide underlying decorations」)——這是它與 --primary-subtle
+     的分工:-subtle 是元件自己的淡底(不透明、底下沒有別人的內容),drop-target 是蓋在別人內容上的暫態區域。
+     16% = 世界級區間的保守端(Material 3 dragged state layer 0.16 / VS Code light editorGroup.dropBackground 0.18 /
+     Atlassian color.background.selected.hovered #CCE0FF ≈ 0.20);一個公式兩個模式(--primary 在 dark 由 primitive
+     自動變亮),不寫 dark override、不新開 opacity 階。
+     邊框 = --primary-hover(瞬時態歸 hover 階,與 FileUpload 拖入區既有值相同 → 該元件改消費本 token 零視覺差)。 */
+  --drop-target:          color-mix(in oklch, var(--primary) 16%, transparent);
+  --drop-target-border:   var(--primary-hover);
 }
 
 
@@ -535,6 +547,10 @@
   --color-success-active:        var(--success-active);
   --color-warning-hover:         var(--warning-hover);
   --color-warning-active:        var(--warning-active);
+
+  /* Drop target(可放下的區域:底色 + 邊框) */
+  --color-drop-target:           var(--drop-target);
+  --color-drop-target-border:    var(--drop-target-border);
 
   /* Subtle */
   --color-info-subtle:           var(--info-subtle);
