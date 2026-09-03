@@ -253,14 +253,33 @@ const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min)
 const dockMinY = (s: Stage) => Math.floor(s.h / 2 - DOCK_PX / 2)
 const dockMaxY = (s: Stage) => Math.max(dockMinY(s), s.h - 2 * s.inset - FAB_PX - DOCK_PX)
 /**
- * 兩態的殼左上座標(都以 left/top 表達,才能在拖曳、落定之間連續過渡)。殼恆為 40 寬、內容靠右:貼邊時 28 鈕
- * 靠在殼的右緣 = 舞台右緣,形態過渡(40→28)在殼內縮、右緣不動 → 不會有任何一格超出舞台
- * (2026-09-03 實測:以 left = 舞台寬 − 28 定位時,寬度過渡中會凸出右緣 12px,讓文件長出捲軸、舞台變窄)。
+ * 兩態的殼左上座標(拖曳引擎用:算抓取偏移與預覽落點)。殼恆為 40 寬、內容靠右:貼邊時 28 鈕靠在殼右緣 = 舞台右緣,
+ * 形態過渡(40→28)在殼內縮、右緣不動 → 過渡中不會凸出舞台。
  */
 const placementXY = (s: Stage, p: AgentFabPlacement): Point =>
   p.kind === 'dock'
     ? { x: s.w - FAB_PX, y: clamp(p.y, dockMinY(s), dockMaxY(s)) }
     : { x: s.w - s.inset - FAB_PX, y: s.h - s.inset - FAB_PX }
+
+/**
+ * **靜止時一律用 CSS `right` / `bottom` 從右下角錨定,不用量出來的 `left`**(2026-09-03 user 回報
+ * 「小鈕左側點不到」「切 story 回來鈕不見了」的共同根因):
+ * 以 `left = 量到的舞台寬 − 40` 定位時,只要量到的寬度比當下版面舊一格(捲軸出現的那一刻),鈕就會凸出可視區,
+ * 凸出的那段 `elementFromPoint` 回 null = 點不到;而且鈕自己造成的水平溢出會生出捲軸 → 舞台變窄 → 位置更偏,
+ * 量測與版面互相追成迴圈,ResizeObserver 判定 loop 後停手,鈕就卡在出界(或整顆看不見)的狀態。
+ * 用 right/bottom 錨定後:x 不需要任何量測,永遠貼齊 padding box 邊緣、不可能溢出;量測只剩「夾 y」與「動畫」用途,
+ * 因此**量不到尺寸時也照樣正確顯示**(不再需要 visibility 守衛)。
+ */
+const placementStyle = (s: Stage, p: AgentFabPlacement): React.CSSProperties => {
+  if (p.kind === 'dock') {
+    const y = s.h > 0 ? clamp(p.y, dockMinY(s), dockMaxY(s)) : Math.max(0, p.y)
+    return { left: 'auto', right: 0, top: y, bottom: 'auto' }
+  }
+  // 家:量到高度就用 top(才能和貼邊態的 top 互相過渡);還沒量到就用 bottom —— 位置一樣正確,只是第一格不做動畫。
+  return s.h > 0
+    ? { left: 'auto', right: s.inset, top: s.h - s.inset - FAB_PX, bottom: 'auto' }
+    : { left: 'auto', right: s.inset, top: 'auto', bottom: s.inset }
+}
 const inRect = (p: Point, r: Rect, pad: number) =>
   p.x >= r.x - pad && p.x <= r.x + r.w + pad && p.y >= r.y - pad && p.y <= r.y + r.h + pad
 
@@ -516,8 +535,7 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
         retry?.disconnect()
       }
     }, [])
-    // 首次量到舞台前的那一次 render 位置是假的(0×0 舞台);量測時讀 clientWidth 會逼瀏覽器先算完那個假位置,
-    // 若此時已掛 transition,首幀會從左上角飛進來 → 第一次真位置畫完(useEffect 在 paint 後)才開放過渡。
+    // 第一次量到舞台之前不開位置過渡(否則首幀會從預設位置滑進來);位置本身在量到之前就已正確(right/bottom 錨定)。
     const [ready, setReady] = React.useState(false)
     React.useEffect(() => {
       if (size.w > 0) setReady(true)
@@ -530,7 +548,9 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
     const shape: Shape = drag ? (drag.placement?.kind ?? 'home') : placement.kind
     const spec = SHAPES[shape]
     const isDock = shape === 'dock'
-    const pos: Point = drag ? { x: drag.x, y: drag.y } : placementXY(stage, placement)
+    const posStyle: React.CSSProperties = drag
+      ? { left: 'auto', right: Math.max(0, stage.w - drag.x - FAB_PX), top: drag.y, bottom: 'auto' }
+      : placementStyle(stage, placement)
     /** 帶只在拖 40 圓鈕時可見(拖小鈕不顯示;user 2026-09-03)。 */
     const showZones = drag?.origin === 'home'
 
@@ -582,7 +602,8 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
                 'transition-opacity duration-[var(--motion-duration-overlay)] motion-reduce:transition-none',
                 showZones ? 'opacity-100' : 'opacity-0',
               )}
-              style={{ left: r.x, top: r.y, width: r.w, height: r.h }}
+              // 同樣從右緣錨定(帶永遠貼右緣),避免用量到的 left 造成溢出迴圈。
+              style={{ right: 0, top: r.y, width: r.w, height: r.h }}
             />
           )
         })}
@@ -598,12 +619,12 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
             'group/dock pointer-events-none absolute z-20 flex w-10 justify-end',
             // 落點修正 / 飛回家 250ms + enter;拖曳中跟指標不過渡。
             ready && !dragging && !reflowing && !reduced &&
-              'transition-[left,top] duration-[var(--motion-duration-surface)] ease-[var(--motion-easing-enter)]',
+              'transition-[right,top] duration-[var(--motion-duration-surface)] ease-[var(--motion-easing-enter)]',
             dragging ? 'cursor-grabbing select-none' : 'cursor-grab',
             className,
           )}
           // 舞台尺寸量到前先隱藏(否則首影格會以 0×0 舞台算成左上角再跳到右下角)。
-          style={{ left: pos.x, top: pos.y, visibility: stage.w > 0 ? undefined : 'hidden' }}
+          style={posStyle}
         >
           {/* 招喚態光圈:與獨立 AgentFab 同一顆元件;貼邊態省略(半圓貼邊,波會被切一半)。 */}
           {logoState === 'attract' && !reduced && spec.glow && (

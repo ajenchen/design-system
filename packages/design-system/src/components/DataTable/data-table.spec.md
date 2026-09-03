@@ -140,7 +140,7 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 
 ### 七、Column Type
 
-**Column type 是資料行為的預設合約。** 指定 type 自動獲得對齊 / 渲染 / 排序 / 篩選行為,可在 column 層級覆寫。Header 對齊永遠跟該欄 body cell 一致。select/multiSelect 的 `meta.options` 消費 Select 的完整 `SelectOption` schema(M30 wrapper-extends-primitive;含 icon / iconClassName / description),`meta.selectedItemRenderer` 轉發 Select 同名 API 供 status 類彩色 cell(2026-07-08 補——原 `{value,label}` 窄型別 = 假 SSOT,WM 被迫手刻 bare trigger 實證)。
+**Column type 是資料行為的預設合約。** 指定 type 自動獲得對齊 / 渲染 / 排序 / 篩選行為,可在 column 層級覆寫。Header 對齊永遠跟該欄 body cell 一致(**機制**:對齊 class 必同時套在 header 外層與內層的排序點擊區 —— 點擊區是 `flex-1` 撐滿的,只套外層等於沒套,標題會被推回最左;`TruncatedText` 的 `text-right` 在 flex row 內是收縮寬度,救不了。**機械閘** = `scripts/data-table-invariants.mjs` I10:量標題文字與首列儲存格文字的邊緣,右對齊比右緣、置中比中線、左對齊比左緣,>1.5px 就紅。2026-09-03 user 抓到金額欄標題與數字對不齊,根因即此,規格早已這樣寫、程式沒做到)。select/multiSelect 的 `meta.options` 消費 Select 的完整 `SelectOption` schema(M30 wrapper-extends-primitive;含 icon / iconClassName / description),`meta.selectedItemRenderer` 轉發 Select 同名 API 供 status 類彩色 cell(2026-07-08 補——原 `{value,label}` 窄型別 = 假 SSOT,WM 被迫手刻 bare trigger 實證)。
 
 ### 八、Row 狀態
 

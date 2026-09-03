@@ -2183,6 +2183,12 @@ function DataTableInner<TData>(
           onKeyDown={canSort ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sortHandler?.(e as any) } } : undefined}
           className={cn(
             'flex items-center min-w-0 flex-1 gap-1 outline-none',
+            // 2026-09-03:對齊必須跟著傳到這一層 —— 這個點擊區是 flex-1(要撐滿才有夠大的排序點擊範圍),
+            // 外層的 justify-end 因此沒有剩餘空間可分配,標題會被推回最左,和右對齊的儲存格內容對不齊
+            // (實測 DataTable 自己的「分頁」story:金額 header 文字在 645、儲存格數字右緣在 919)。
+            // TruncatedText 的 text-right 也救不了:它在 flex row 內是收縮寬度,text-align 無作用。
+            align === 'right' && 'justify-end',
+            align === 'center' && 'justify-center',
             canSort && 'cursor-pointer hover:text-foreground transition-colors',
             // 2026-07-04:rounded-sm → rounded-md(radius.spec.md 設計哲學(4)rounded-sm 保留未使用,4px 一律 rounded-md)
             canSort && 'focus-visible:ring-2 focus-visible:ring-ring rounded-md',

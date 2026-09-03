@@ -244,6 +244,50 @@ for (const p of lineReport) {
   record('I9', `boundary ${p.cls} 無陰影畫線`, p.shadow === 'none', `box-shadow=${p.shadow}(禁陰影畫線)`)
 }
 
+// ── I10:右/置中對齊欄的「標題」與「儲存格內容」必須對齊同一邊(2026-09-03 user 抓到)──
+// 根因是 header 的點擊區為 flex-1(要撐滿才有夠大的排序點擊範圍),外層 justify-end 因此沒有剩餘空間可分配,
+// 標題被推回最左、和右對齊的數字對不齊;TruncatedText 的 text-right 在 flex row 內是收縮寬度,救不了。
+// 這條把「對齊」變成可量的像素事實,任何人再把 align class 從內層拿掉就會紅。
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--with-pagination&viewMode=story`, { waitUntil: 'networkidle' })
+await page.waitForSelector('[role="columnheader"]')
+const alignReport = await page.evaluate(() => {
+  const textRect = (el) => {
+    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+    let n
+    while ((n = w.nextNode())) {
+      const t = n.textContent.trim()
+      if (t) {
+        const r = document.createRange()
+        r.selectNodeContents(n)
+        const b = r.getBoundingClientRect()
+        if (b.width > 0) return { text: t.slice(0, 12), left: b.left, right: b.right }
+      }
+    }
+    return null
+  }
+  const heads = [...document.querySelectorAll('[role="columnheader"]')]
+  const row = [...document.querySelectorAll('[role="row"]')].find((r) => r.querySelector('[role="gridcell"]'))
+  const cells = row ? [...row.querySelectorAll('[role="gridcell"]')] : []
+  return heads.slice(0, cells.length).map((h, i) => ({
+    just: getComputedStyle(h).justifyContent,
+    head: textRect(h),
+    cell: textRect(cells[i]),
+  }))
+})
+for (const col of alignReport) {
+  if (!col.head || !col.cell) continue
+  if (col.just === 'flex-end') {
+    const delta = Math.abs(col.head.right - col.cell.right)
+    record('I10', `右對齊欄「${col.head.text}」標題與內容右緣一致`, delta <= 1.5, `header right ${col.head.right.toFixed(1)} vs cell right ${col.cell.right.toFixed(1)}, delta ${delta.toFixed(1)}`)
+  } else if (col.just === 'center') {
+    const delta = Math.abs((col.head.left + col.head.right) / 2 - (col.cell.left + col.cell.right) / 2)
+    record('I10', `置中欄「${col.head.text}」標題與內容中線一致`, delta <= 1.5, `delta ${delta.toFixed(1)}`)
+  } else {
+    const delta = Math.abs(col.head.left - col.cell.left)
+    record('I10', `左對齊欄「${col.head.text}」標題與內容左緣一致`, delta <= 1.5, `header left ${col.head.left.toFixed(1)} vs cell left ${col.cell.left.toFixed(1)}, delta ${delta.toFixed(1)}`)
+  }
+}
+
 // ── Output ──
 console.log(`\n=== DataTable Invariants Test ===`)
 console.log(`PASS: ${passes.length}`)
