@@ -295,6 +295,15 @@ for (const col of alignReport) {
 // 這條驗的是不變式本身(兩邊內容盒等寬),不管捲軸實際寬度是 15px 還是 0(overlay)都成立。
 await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--virtual-scroll&viewMode=story`, { waitUntil: 'networkidle' })
 await page.waitForSelector('[data-datatable-header-panel="center"]')
+// CI 的 headless Chromium 用 overlay 捲軸(不佔版面,gutter = 0)→ 補償分支不會被走到,
+// 這條就只驗到「等寬」而驗不到「補多少」。給該捲動容器 ::-webkit-scrollbar 明確寬度,
+// Chromium 會把它切回佔版面的傳統捲軸,讓 CI 跟 user 的 macOS 環境測到同一條路徑。
+await page.addStyleTag({
+  content: '[data-datatable-hscroll]::-webkit-scrollbar{width:15px;height:15px}'
+    + '[data-datatable-hscroll]::-webkit-scrollbar-thumb{background:#888}',
+})
+// 換捲軸寬度會改變 body 的內容盒 → ResizeObserver 重量 → header padding 更新;等它跑完再量。
+await page.waitForTimeout(400)
 const gutterReport = await page.evaluate(() => {
   const hp = document.querySelector('[data-datatable-header-panel="center"]')
   const bp = document.querySelector('[data-datatable-panel="center"]')
@@ -321,6 +330,8 @@ if (!gutterReport) {
   record('I11', 'center header/body panel 存在', false, 'panel selector 找不到')
 } else {
   record('I11', '該 story 真的有垂直溢出(否則這條測不到補償)', gutterReport.hasVerticalOverflow, `scrollHeight > clientHeight = ${gutterReport.hasVerticalOverflow}`)
+  // 捲軸必須真的佔到版面,否則 padding 永遠是 0,下面三條全部空轉。
+  record('I11', '捲軸真的佔到版面(補償分支才會被走到)', gutterReport.gutter > 0, `gutter = ${gutterReport.gutter}px`)
   // 沒抓到欄就沒量到東西:reduce 的初值 0 會讓下面那條「全部重合」空轉通過(假綠)。
   record('I11', '真的量到多欄(否則下面的對齊斷言是空轉)', gutterReport.columns >= 2, `量到 ${gutterReport.columns} 欄`)
   record(
@@ -341,9 +352,6 @@ if (!gutterReport) {
     gutterReport.worstColumnDelta <= 0.5,
     `worst column left delta ${gutterReport.worstColumnDelta.toFixed(2)}px`,
   )
-  if (gutterReport.gutter === 0) {
-    console.log('  note[I11]:此環境的捲軸不佔版面(overlay scrollbar),gutter=0 → 補償分支未被實測,只驗到等寬不變式。')
-  }
 }
 
 // ── Output ──
