@@ -587,7 +587,15 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
 
     const dragging = drag !== null
     return (
-      <>
+      // 入口鈕整層包在一個與舞台等大的 clip 圖層裡。
+      // 為什麼:招喚光圈畫在按鈕**外面** 2px、hover 又放大 1.04,鈕貼齊舞台右緣時這些裝飾會凸出去
+      // → 文件被撐寬 → 視窗長出水平捲軸 → clientWidth 少 15 → 連鎖再長出垂直捲軸
+      // (2026-09-03 實測:拖到右緣時 scrollWidth−clientWidth 由 0 變 12,兩根捲軸一起出現,放開還留著;
+      //  溢出元素就是 FabGlow 的 `absolute left-1/2 top-1/2 -translate-*`)。
+      // `overflow-clip` 只裁不捲:它不會變成捲動容器、也不會成為 fixed 的包含塊,所以裝飾在邊緣被切掉
+      // (那正是視覺上該有的樣子 —— 光圈被視窗邊緣切一半),而且**任何狀態都不可能再長出捲軸**。
+      // 圖層自己 `pointer-events-none`,按鈕仍是 `pointer-events-auto`,命中不受影響。
+      <div className="pointer-events-none absolute inset-0 overflow-clip">
         {/* 磁吸區底色:矩形直接來自區域表(邏輯與視覺同一份);淡入淡出 150ms、減動作直接落定;不攔指標。 */}
         {SNAP_ZONES.map((zone, i) => {
           const r = zone.rect(stage)
@@ -705,7 +713,7 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
             <TooltipContent side={spec.tooltipSide}>{isDock ? text.tooltipDock : text.tooltip}</TooltipContent>
           </Tooltip>
         </div>
-      </>
+      </div>
     )
   },
 )
