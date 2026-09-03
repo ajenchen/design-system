@@ -105,7 +105,7 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 | 類型 | 範圍 | 適用 |
 |------|------|------|
 | Header 分隔線 | 僅 header 區域（上下留 padding） | 一般非 frozen 欄位之間 |
-| Frozen 邊界線 | **整欄高度**（table 頂部到底部） | frozen column 與 scrollable area 的交界 |
+| Frozen 邊界線 | **整欄高度**(table 頂部到列區底部) | frozen column 與 scrollable area 的交界。有水平捲軸時,pinned 區補了等高的透明下邊框(見不變條件 (7)),而 `::after` 的 `bottom:0` 貼的是 padding box,所以線畫到**捲軸帶的上緣**為止 —— 這是對的:分隔線分的是列,捲軸帶不是列。AG Grid 同理(它的假水平捲軸在三個 row container 之外,pinned 分隔線也只到列區底)。**別把它改成畫穿捲軸帶** |
 
 一般 column 只在 header 有短線——body 的欄位邊界由 header 引導，不需額外視覺噪音。但 frozen column 的邊界是結構性的分隔（固定區域 vs 捲動區域），需要全高度的線來明確標示。Row actions 欄本質上是 frozen right column，左邊界也使用 full-height 分隔線。
 
