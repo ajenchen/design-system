@@ -351,7 +351,15 @@ function applySelectIds(
 const cellPadding: React.CSSProperties = { paddingBlock: 'var(--table-cell-py)', paddingInline: 'var(--table-cell-px)' }
 // 表頭面板:底色 + 下分隔線。**畫在 panel 不畫在 row**,因為 `--muted` 是半透明,
 // 兩層會疊出兩種深淺(見 renderHeaderRow 的註解)。三個 panel 共用同一個常數 = 單一住所。
-const HEADER_PANEL = 'bg-muted border-b border-divider'
+// 表頭面板:底色 + 下分隔線都畫在這裡(row 不畫)。
+// **分隔線用偽元素不用 `border-b`**(2026-09-04 對抗式稽核抓到):body row 的線含在 `rowHeight`
+// 的 border-box 之內(40 含線),而 panel 沒有指定高度 —— 掛 `border-b` 會讓表頭變成
+// row 40 + border 1 = **41**,比每一列高 1px、分隔線落在 40 的節奏之外,header cell 的置中
+// 也位移 0.5px。改用貼齊底緣的 1px 偽元素:不佔盒模型,表頭回到 40,線照樣橫跨整個 panel
+// (含讓給垂直捲軸的那條 strip —— 那正是把線從 row 搬到 panel 的原因)。
+// 機制與同檔既有的 `dtPanelBoundaryRight/Left::after`(凍結邊界線)一致,
+// 也符合「1px 線一律用元素/border 機制、禁用陰影」的鐵律。
+const HEADER_PANEL = 'bg-muted dtHeaderPanelUnderline'
 
 // Column sizing canonical(2026-05-06 v11 — table-level all-or-nothing,Notion / Airtable / Linear 共識):
 //   - **Table-level prop `enableColumnResize`** 控制全表 mode(per-column mixed 已 retire,跟 product
@@ -460,6 +468,13 @@ function measureNaturalWidth(els: HTMLElement[], host: HTMLElement, cap: number)
   try {
     for (const el of els) {
       const clone = el.cloneNode(true) as HTMLElement
+      // **清掉 clone 上的 `data-state="open"`**(2026-09-04 對抗式稽核抓到):這個 handler 是在
+      // Radix 的 `composeEventHandlers(props.onClick, handleSelect)` 裡先跑的,執行當下選單**還開著**
+      // → header 的 ⌄ 按鈕因 `has-[[data-state=open]]:inline-flex` 正在佔位,`cloneNode(true)` 把
+      // `data-state` 一起複製,clone 裡 `:has()` 依然命中 → 標題較長的欄位會多算一顆 ⌄ 加 gap(24px)。
+      // 清掉之後 clone 回到「沒有 hover、沒有開選單」的靜止外觀,量到的才是真正需要的寬度。
+      clone.querySelectorAll('[data-state="open"]').forEach((n) => n.removeAttribute('data-state'))
+      if (clone.getAttribute('data-state') === 'open') clone.removeAttribute('data-state')
       clone.style.width = 'max-content'
       clone.style.minWidth = '0'
       // **上限 = 可視寬,不是 `none`**(2026-09-04 稽核抓到):`max-content` 對
@@ -2625,10 +2640,14 @@ function DataTableInner<TData>(
     // 原因:`--muted` 是半透明(light `oklch(0 0 0 / 4%)` / dark `oklch(1 0 0 / …)`),
     // panel 與 row 各畫一層會在重疊處疊成兩層 → 讓給捲軸的那條 strip(只有 panel)比欄位區
     // 淺一階,深色模式則反過來偏暗(2026-09-03 user 抓到)。只留一層,兩邊才會同色。
-    // 對照:AG Grid 的 `.ag-header-row::after` 與 MUI X 的 `GridScrollbarFillerCell` 都是
-    // **row 裡的一格**,同樣只疊一次。
+    // 對照:MUI X 的 `GridScrollbarFillerCell` 是 row 裡的一格,同樣只疊一次。
+    // `pb-px`:分隔線改由 panel 的偽元素畫(不佔盒模型)之後,若 row 不留這 1px,內容盒會從 39
+    // 變 40,`items-center` 的文字中心跟著下移 0.5px —— body row 的線是含在自己 border-box 內的
+    // (39 內容 + 1 線),留 1px 才是同一個節奏。整列仍是 rowHeight(border-box)40,不影響對齊。
+    // (**註解不可寫成 `return (` 之後的 JSX 註解** —— `tsc -b` 會過但 esbuild 會炸,
+    //  見失敗記憶索引「JSX 註解放在根元素前」。)
     return (
-      <RowTag role={rowRole} className={cn('flex items-center', rowHeight)}>
+      <RowTag role={rowRole} className={cn('flex items-center pb-px', rowHeight)}>
         {headers.map((h, i) => {
           const showDivider = i < headers.length - 1 && !(isRight && i === headers.length - 1)
           const colId = h.column.id

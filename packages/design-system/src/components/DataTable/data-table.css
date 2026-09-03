@@ -159,6 +159,24 @@
    邊界線與欄間 w-px 短線粗細分家(有的 1 實體像素、有的 2)。全表 1px 線一律
    「元素」機制後,任何縮放下柵格化一致。偽元素貼齊面板內緣(與原內陰影同位置),
    不佔盒模型、不被 Windows 懸浮捲軸蓋(2026-05-12 改制原因保留)。 */
+/* 表頭面板的下分隔線:貼齊底緣的 1px 偽元素,**不佔盒模型**。
+   用 `border-b` 的話 panel(height:auto)會變成 row 40 + border 1 = 41,比 body 每一列高 1px
+   (body row 的線含在 rowHeight 的 border-box 內)。同 `.dtPanelBoundary*` 的機制。 */
+.dtHeaderPanelUnderline {
+  position: relative;
+}
+
+.dtHeaderPanelUnderline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--divider);
+  pointer-events: none;
+}
+
 .dtPanelBoundaryRight {
   position: relative;
 }
