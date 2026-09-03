@@ -36,7 +36,7 @@ const noop = () => {}
 
 /** 面板站右側全高:模擬 app 右欄環境。 */
 function PanelFrame({ children }: { children: React.ReactNode }) {
-  return <div className="flex h-dvh justify-end bg-surface-sunken">{children}</div>
+  return <div className="flex h-dvh justify-end bg-canvas">{children}</div>
 }
 
 const CONVERSATIONS: AgentConversationSummary[] = [
@@ -346,21 +346,21 @@ const orderColumns: ColumnDef<OrderRow>[] = [
 
 /**
  * 入口鈕 ↔ 面板互斥 + 拖到右緣貼邊(2026-09-03 第四輪拍板:只有「家」與「貼邊」兩種位置,所見即所得):面板關閉時
- * 右下角出現入口鈕(離邊 loose,Tooltip「問我或是推我到旁邊」;貼邊後 Tooltip 只寫「開啟智慧代理」)。拖 40 圓鈕:鈕跟著
- * 游標、右緣帶(寬 36、上起內距、下到視窗中線)亮出藍色虛線框;游標一進帶內,預覽當場變成 28 貼邊半圓、貼在右緣、停在
+ * 右下角出現入口鈕(離邊 loose,Tooltip「問我或推走我」;貼邊後 Tooltip 只寫「開啟智慧代理」)。拖 40 圓鈕:鈕跟著
+ * 游標、右緣帶(寬 36、從視窗中線到家上方一個 loose)亮出藍色底(primary-subtle,貼右緣、內側圓角);游標一進帶內,預覽當場變成 28 貼邊半圓、貼在右緣、停在
  * 放開會落的高度;放開在帶內就落定,放開在帶外飛回右下角。
- * 拖 28 貼邊鈕:不畫藍框,帶內沿 y 移動,一出帶外當場變回 40 圓鈕、放開飛回家。**兩種形態點一下都直接開面板**;
- * 右鍵 / Shift+F10 選單依狀態只給一項(收到右邊 / 放回右下角)、鍵盤 → 貼邊、↑↓ 16px、← / Home 回家、拖曳中 Esc
+ * 拖 28 貼邊鈕:不顯示帶,帶內沿 y 移動,一出帶外當場變回 40 圓鈕、放開飛回家。**兩種形態點一下都直接開面板**;
+ * 右鍵 / Shift+F10 選單依狀態只給一項(縮小按鈕 / 放大按鈕,帶前綴 icon)、鍵盤 → 貼邊、↑↓ 16px、← / Home 回家、拖曳中 Esc
  * 取消。位置由 consumer 受控(這裡用 state),面板開關不重置。舞台=滿高訂單表 + 分頁列:在家時入口鈕會壓在分頁列
  * 右端,貼邊後不再遮擋。
  */
 export const FabPanelToggle: Story = {
-  name: '入口鈕:互斥、拖動與收到右邊',
+  name: '入口鈕:互斥、拖動與貼邊',
   render: function FabToggleStory() {
     const [open, setOpen] = React.useState(false)
     const [placement, setPlacement] = React.useState<AgentFabPlacement>(AGENT_FAB_HOME)
     return (
-      <div className="relative flex h-dvh bg-surface-sunken">
+      <div className="relative flex h-dvh bg-canvas">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col p-[var(--layout-space-loose)]">
           <DataTable
             columns={orderColumns}

@@ -328,27 +328,40 @@ SMIL keySplines 無法消費 CSS var,`agent-logo.tsx` 內常數為 swell/settle 
     招喚態同款蓄勢、光圈省略),只有 y 可變、夾在右緣帶內。沒有第三種位置,使用者不可能把鈕拖到難用的地方。
     **兩種形態點一下都直接開面板**(一段);< 8px 位移視為點擊。
   - **右緣帶**(磁吸區;2026-09-03 user 留言拍板幾何):寬 36(= `--field-height-md`;游標離右緣 ≤ 36 即進帶,已在帶內時
-    再多 16px 才算離開,遲滯防抖);上緣 = 舞台 loose 內距;下緣 = 貼邊鈕最低的底邊,取兩條上限的較嚴者 ——
-    (a) 鈕中心 ≤ 視窗中心(上半部才是貼邊區),(b) 鈕底 ≥ 家頂 − loose(永不與家重疊、不壓分頁列);矮視窗兩條
-    都不夠時退到上內距。藍框 = 這個矩形 = 貼邊鈕合法 y 範圍。判定用**指標**位置(意圖在指尖)。
-    理由:右下角是家、分頁列與工具列的地盤,貼邊區留在上半部,藍框成一條乾淨的短帶。
-  - **拖 40 圓鈕(所見即所得)**:鈕全程跟著游標;整段拖曳期間右緣帶以**藍色虛線框**框出(2px 虛線、
-    `border-primary-hover`、圓角 md —— 與 FileUpload 拖入區 drag-over 同值,但語意不同、各自定義常數,不共用);
+    再多 16px 才算離開,遲滯防抖);上緣 = 貼邊鈕圓心落在視窗中線(鈕頂 = 舞台高 ÷ 2 − 14);下緣 = 貼邊鈕底離家頂一個
+    loose(鈕頂 = 舞台高 − 2·loose − 68)。貼邊鈕只能從中線往下拖到家上方,永不與家重疊、不壓分頁列;矮視窗放不下時整帶
+    收成中線一點。帶(底色)= 這個矩形 = 貼邊鈕合法 y 範圍。判定用**指標**位置(意圖在指尖)。
+  - **拖 40 圓鈕(所見即所得)**:鈕全程跟著游標;整段拖曳期間右緣帶以**底色**標出(`bg-primary-subtle`、貼邊側無框
+    無圓角、內側圓角 md、不畫線;見下「帶的樣式」);
     游標一進帶內,預覽當場變成貼邊鈕**貼在右緣、停在放開會落的高度**(帶內所見即所得,不預告在游標下);
     放開在帶內 → 落定;放開在帶外 → 飛回家。
-  - **拖 28 貼邊鈕**:不畫藍框;帶內沿 y 移動維持貼邊鈕;一出帶外當場變回 40 圓鈕、放開飛回家。
+  - **拖 28 貼邊鈕**:不顯示帶;帶內沿 y 移動維持貼邊鈕;一出帶外當場變回 40 圓鈕、放開飛回家。
+  - **帶的樣式**(2026-09-03 user 問「要不要上底色、右邊要不要邊框」→ 四路研究後定):底色 = `--primary-subtle`,消費 DS
+    「區域內就是目標」的兩個既有 canonical —— `lib/drag-visual.ts` inside-drop highlight 與 DataTable 範圍選取(user
+    2026-05-10 原話「range 的 cell 本來就有顏色變化,那樣就夠了,不需要再有 2px 藍色的框」);light 為不透明 blue-1、dark 由
+    primitives 公式成 alpha ≈ .19,同一個 token 兩模式,不自創 alpha(color.spec.md 已拒 Material state-layer 流派、
+    `--text-selection` 禁借)。貼邊側不畫線、不留圓角(Sheet / Sidebar / 貼邊鈕「環只畫露出三邊」同語言);不用虛線框
+    (dashed 是 FileUpload 靜止可見的常駐拖入區語彙;拖曳中才出現的停靠區各家一律填色無框:
+    [Windows Snap「translucent overlay」](https://support.microsoft.com/en-us/windows/snap-your-windows-885a9b1e-a983-a3b1-16cd-c531795e6241)、
+    [macOS 視窗並排「highlighted area」](https://support.apple.com/guide/mac-help/tile-app-windows-mchlef287e5d/mac)、
+    [Atlassian「droppable area 換底色、線只表相對位置」](https://atlassian.design/components/pragmatic-drag-and-drop/design-guidelines)、
+    [VS Code `editorGroup.dropBackground` 半透明無框](https://github.com/microsoft/vscode/blob/main/src/vs/workbench/common/theme.ts))。
+    light 若要像 Windows / VS Code 那樣透出底下內容,需新增 primary alpha 階(token 決策,未拍板前用 `--primary-subtle`)。
   - **等價路徑**:鍵盤 家 → `→` 貼邊(停在帶底 = 家的高度);貼邊 `↑↓` 16px、`←` / Home 回家;右鍵 / Shift+F10
-    DropdownMenu 依狀態只給一項(家:「收到右邊」/ 貼邊:「放回右下角」;DS 無 ContextMenu,以受控 DropdownMenu 代);
-    拖曳中 Esc 取消回原位。Tooltip 兩態不同:家「問我或是推我到旁邊」(2026-09-03 user 文案,邀請拖曳)/ 貼邊
+    DropdownMenu 依狀態只給一項(家:「縮小按鈕」`ArrowRightToLine` / 貼邊:「放大按鈕」`ArrowLeftFromLine` —— 線 = 右緣、
+    箭頭方向 = 鍵盤 → / ← 等價路徑,[lucide 官方 tags collapse / expand 鏡像對](https://github.com/lucide-icons/lucide/blob/main/icons/arrow-right-to-line.json);
+    Maximize2 家族在 DS = 全螢幕、Panel 家族 = 面板本身,故不用;2026-09-03 user 拍板「縮小按鈕與放大按鈕
+    + 前綴 icon」——「按鈕」點名對象,與 FileViewer 內容縮放的「放大 / 縮小」不混淆;DS 無 ContextMenu,以受控 DropdownMenu 代);
+    拖曳中 Esc 取消回原位。Tooltip 兩態不同:家「問我或推走我」(2026-09-03 user 文案,邀請拖曳)/ 貼邊
     「開啟智慧代理」(2026-09-03 user 留言:小鈕只寫開啟;= aria-label);拖曳中不顯示。
   - **動作**(依 motion.spec.md;2026-09-03 對照四家後定):形態切換 `--motion-duration-overlay` 150ms
     ([Carbon moderate-01 150ms「小型展開、短距離移動」](https://carbondesignsystem.com/elements/motion/overview/))/
     飛回家與落點修正 `--motion-duration-surface` 250ms + enter 曲線([Atlassian transitions 150–400ms「較長時長幫助
-    追蹤空間變化」](https://atlassian.design/foundations/motion);拖曳中跟指標不過渡)/ 藍框淡入淡出 150ms;
+    追蹤空間變化」](https://atlassian.design/foundations/motion);拖曳中跟指標不過渡)/ 帶底色淡入淡出 150ms;
     prefers-reduced-motion 三者全部直接落定([Atlassian「全部停用仍可用」](https://atlassian.design/foundations/motion)、
     [Fluent「提供 no motion 設定」](https://fluent2.microsoft.design/motion)、WCAG 2.3.3)。
   - **區域 → 落點表(可擴充)**:磁吸邏輯 = 依序判定指標所在區域,命中即決定「預覽 = 落點」;沒命中 = 圓鈕跟游標、
-    放開回家;要加磁吸點(鏡像左緣、四角)只在 `agent-fab.tsx` `SNAP_ZONES` 加一列(區域矩形同時就是藍框),流程不變。
+    放開回家;要加磁吸點(鏡像左緣、四角)只在 `agent-fab.tsx` `SNAP_ZONES` 加一列(區域矩形同時就是帶的底色範圍),流程不變。
     判準:以指標判定、一區一落點一形狀、邊界 16px 遲滯、區域不重疊且邊帶優先於角落、無命中不做「最近磁吸點」
     (會從放開處跳走)。上緣 / 下緣永不設區(標題列 / 分頁列)。
   - 位置由 consumer 受控/非受控(`placement / defaultPlacement / onPlacementChange`,`{kind:'home'}` /

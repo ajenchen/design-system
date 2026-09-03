@@ -24,7 +24,7 @@ type Story = StoryObj<typeof AgentPanel>
 export const Overview: Story = {
   name: '元件總覽',
   render: () => (
-    <div className="flex h-dvh justify-end bg-surface-sunken">
+    <div className="flex h-dvh justify-end bg-canvas">
       <AgentPanel>
         <AgentPanelHeader title="智慧代理" onNewConversation={() => {}} onClose={() => {}} />
         <AgentConversation>
