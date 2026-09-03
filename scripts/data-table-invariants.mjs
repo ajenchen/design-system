@@ -295,15 +295,6 @@ for (const col of alignReport) {
 // 這條驗的是不變式本身(兩邊內容盒等寬),不管捲軸實際寬度是 15px 還是 0(overlay)都成立。
 await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--virtual-scroll&viewMode=story`, { waitUntil: 'networkidle' })
 await page.waitForSelector('[data-datatable-header-panel="center"]')
-// CI 的 headless Chromium 用 overlay 捲軸(不佔版面,gutter = 0)→ 補償分支不會被走到,
-// 這條就只驗到「等寬」而驗不到「補多少」。給該捲動容器 ::-webkit-scrollbar 明確寬度,
-// Chromium 會把它切回佔版面的傳統捲軸,讓 CI 跟 user 的 macOS 環境測到同一條路徑。
-await page.addStyleTag({
-  content: '[data-datatable-hscroll]::-webkit-scrollbar{width:15px;height:15px}'
-    + '[data-datatable-hscroll]::-webkit-scrollbar-thumb{background:#888}',
-})
-// 換捲軸寬度會改變 body 的內容盒 → ResizeObserver 重量 → header padding 更新;等它跑完再量。
-await page.waitForTimeout(400)
 const gutterReport = await page.evaluate(() => {
   const hp = document.querySelector('[data-datatable-header-panel="center"]')
   const bp = document.querySelector('[data-datatable-panel="center"]')
@@ -330,8 +321,6 @@ if (!gutterReport) {
   record('I11', 'center header/body panel 存在', false, 'panel selector 找不到')
 } else {
   record('I11', '該 story 真的有垂直溢出(否則這條測不到補償)', gutterReport.hasVerticalOverflow, `scrollHeight > clientHeight = ${gutterReport.hasVerticalOverflow}`)
-  // 捲軸必須真的佔到版面,否則 padding 永遠是 0,下面三條全部空轉。
-  record('I11', '捲軸真的佔到版面(補償分支才會被走到)', gutterReport.gutter > 0, `gutter = ${gutterReport.gutter}px`)
   // 沒抓到欄就沒量到東西:reduce 的初值 0 會讓下面那條「全部重合」空轉通過(假綠)。
   record('I11', '真的量到多欄(否則下面的對齊斷言是空轉)', gutterReport.columns >= 2, `量到 ${gutterReport.columns} 欄`)
   record(
@@ -351,6 +340,65 @@ if (!gutterReport) {
     `${gutterReport.columns} 欄的 header 與 cell 左緣全部重合`,
     gutterReport.worstColumnDelta <= 0.5,
     `worst column left delta ${gutterReport.worstColumnDelta.toFixed(2)}px`,
+  )
+}
+
+// ── I11b:強制走到補償分支(不靠環境有沒有真捲軸)──────────────────────────────
+// user 的 macOS 捲軸佔 15px,CI 的 headless Chromium 是 overlay 捲軸(gutter = 0);
+// 註入 ::-webkit-scrollbar 寬度也無法讓它佔版面(2026-09-03 CI 實測仍是 0)。
+// 於是上面那組在 CI 只驗到「兩邊都沒被吃掉」——把 padding 整段拿掉,CI 照樣綠。
+// 這裡改用 clientWidth 的定義來造出同一個量:clientWidth 不含 border,offsetWidth 含,
+// 所以給 body panel 一條 15px 透明右邊框,元件量到的 `offsetWidth - clientWidth`
+// 與真捲軸完全同值,補償分支照走。本機對照(真捲軸 15px):加邊框後量到 30、padding 跟到 30、
+// 七欄位移維持 0 —— 補償是跟著量到的值走,不是寫死 15。
+const SIM_BORDER = 15
+const simulated = await page.evaluate(async (border) => {
+  const bp = document.querySelector('[data-datatable-panel="center"]')
+  const hp = document.querySelector('[data-datatable-header-panel="center"]')
+  if (!bp || !hp) return null
+  const baseline = bp.offsetWidth - bp.clientWidth
+  bp.style.borderRight = `${border}px solid transparent`
+  // ResizeObserver 在版面算完後才送通知,等兩個 frame 再加一點餘裕。
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+  await new Promise((r) => setTimeout(r, 200))
+  const cs = getComputedStyle(hp)
+  const heads = [...hp.querySelectorAll('[role="columnheader"]')]
+  const row = [...bp.querySelectorAll('[role="row"]')].find((r) => r.querySelector('[role="gridcell"], [role="cell"]'))
+  const cells = row ? [...row.querySelectorAll('[role="gridcell"], [role="cell"]')] : []
+  const out = {
+    baseline,
+    gutter: bp.offsetWidth - bp.clientWidth,
+    paddingRight: parseFloat(cs.paddingRight),
+    columns: cells.length,
+    worstColumnDelta: heads.slice(0, cells.length).reduce(
+      (m, h, i) => Math.max(m, Math.abs(h.getBoundingClientRect().left - cells[i].getBoundingClientRect().left)),
+      0,
+    ),
+  }
+  bp.style.borderRight = ''
+  return out
+}, SIM_BORDER)
+if (!simulated) {
+  record('I11b', 'center header/body panel 存在', false, 'panel selector 找不到')
+} else {
+  record(
+    'I11b',
+    `造出佔版面的 ${SIM_BORDER}px(補償分支確實被走到)`,
+    Math.abs(simulated.gutter - (simulated.baseline + SIM_BORDER)) <= 0.5,
+    `baseline ${simulated.baseline} + ${SIM_BORDER} → 量到 ${simulated.gutter}`,
+  )
+  record(
+    'I11b',
+    'header 的 padding-right 跟著量到的值走(不是寫死 15)',
+    Math.abs(simulated.paddingRight - simulated.gutter) <= 0.5,
+    `padding-right ${simulated.paddingRight} vs gutter ${simulated.gutter}`,
+  )
+  record('I11b', '真的量到多欄(否則下面的對齊斷言是空轉)', simulated.columns >= 2, `量到 ${simulated.columns} 欄`)
+  record(
+    'I11b',
+    `補償生效時 ${simulated.columns} 欄的 header 與 cell 左緣仍全部重合`,
+    simulated.worstColumnDelta <= 0.5,
+    `worst column left delta ${simulated.worstColumnDelta.toFixed(2)}px`,
   )
 }
 
