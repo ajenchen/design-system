@@ -24,11 +24,20 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 import './agent-panel.css'
 
-/** 一息 3 秒(標誌狀態動畫家族共用節拍;文字微光 2s 另計 — spec「動畫總表」)。 @internal */
+/**
+ * 一息 3 秒(標誌狀態動畫家族共用節拍;文字微光 2s 另計 — spec「動畫總表」)。
+ * @internal AgentPanel 家族內部共用(SMIL 實作常數,不進 npm front door)。
+ */
 export const BREATH_DUR = '3s'
-/** = var(--motion-easing-swell) 的 SMIL 鏡像(吸氣 / 所有「起」)。 @internal */
+/**
+ * = var(--motion-easing-swell) 的 SMIL 鏡像(吸氣 / 所有「起」)。
+ * @internal
+ */
 export const SWELL = '0.4 0.14 0.3 1'
-/** = var(--motion-easing-settle) 的 SMIL 鏡像(呼氣 / 所有「收」)。 @internal */
+/**
+ * = var(--motion-easing-settle) 的 SMIL 鏡像(呼氣 / 所有「收」)。
+ * @internal
+ */
 export const SETTLE = '0.2 0 0.38 0.9'
 /** = var(--motion-easing-exit) 的 SMIL 鏡像(加速起步)。 */
 const EXIT = '0.3 0 1 1'
@@ -49,13 +58,25 @@ const SPIN_DECEL_MIN = 360 * 0.7
 const FRAME_S = 1 / 60
 /** 靜止空拍(值不變,曲線無意義,填線性)。 */
 const HOLD = '0 0 1 1'
-/** 呼吸包絡:0 靜 → 35% 吸頂 → 85% 回落到底 → 100% 靜止空拍(本體 / 疊層 / 洞形變共用)。 @internal */
+/**
+ * 呼吸包絡:0 靜 → 35% 吸頂 → 85% 回落到底 → 100% 靜止空拍(本體 / 疊層 / 洞形變共用)。
+ * @internal
+ */
 export const BREATH_KEYTIMES = '0;.35;.85;1'
-/** @internal */
+/**
+ * 呼吸包絡對應的 keySplines。
+ * @internal
+ */
 export const BREATH_SPLINES = `${SWELL};${SETTLE};${HOLD}`
-/** 呼出去的波:0–35% 貼邊聚亮(吸)→ 35–90% 離體擴散(呼,比本體多 0.15s 餘韻)→ 90–100% 靜。 @internal */
+/**
+ * 呼出去的波:0–35% 貼邊聚亮(吸)→ 35–90% 離體擴散(呼,比本體多 0.15s 餘韻)→ 90–100% 靜。
+ * @internal
+ */
 export const RIPPLE_KEYTIMES = '0;.35;.9;1'
-/** @internal */
+/**
+ * 招喚波對應的 keySplines。
+ * @internal
+ */
 export const RIPPLE_SPLINES = `${SWELL};${SETTLE};${HOLD}`
 
 /**
@@ -277,6 +298,10 @@ function GradientCounterSpin({ id }: { id: string }) {
  * spinup = 起步加速段 橢圓 → 正圓(同 exit 曲線、同 0.375s,轉到最快時洞正好圓);
  * spindown = 減速段 正圓 → 橢圓(同 DECEL 曲線、同減速時長,停定 0° 時洞正好回定稿形)。
  * 等速期間 fill=freeze 持圓;每次進入狀態由 beginElement 起跑(useBeginAnimationsOnMount)。
+ */
+/**
+ * 負空間形變的段落規格(內部實作型別:只被同檔 HoleMorph / LogoBody / InhaleOverlay 消費)。
+ * @internal
  */
 export interface HoleMorphSpec {
   phase: 'spinup' | 'spindown'

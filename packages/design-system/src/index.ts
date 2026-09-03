@@ -36,11 +36,6 @@ export {
   AgentPromptInput,
   AgentThinking,
   AgentToolbar,
-  BREATH_DUR,
-  BREATH_KEYTIMES,
-  RIPPLE_KEYTIMES,
-  SETTLE,
-  SWELL,
 } from './components/AgentPanel/index'
 export type {
   AgentAttachment,
@@ -64,7 +59,6 @@ export type {
   AgentPromptInputProps,
   AgentThinkingProps,
   AgentToolbarProps,
-  HoleMorphSpec,
 } from './components/AgentPanel/index'
 export {
   Alert,
@@ -650,8 +644,14 @@ export type {
 //   - patterns/overlay-surface
 // 另有 public 元件內個別標 @internal jsDoc 的符號亦排除 front-door(2026-07-18 決策3;subpath 仍有):
 //   - components/AgentPanel:AGENT_BRAND
+//   - components/AgentPanel:BREATH_DUR
+//   - components/AgentPanel:BREATH_KEYTIMES
 //   - components/AgentPanel:BREATH_SPLINES
+//   - components/AgentPanel:HoleMorphSpec
+//   - components/AgentPanel:RIPPLE_KEYTIMES
 //   - components/AgentPanel:RIPPLE_SPLINES
+//   - components/AgentPanel:SETTLE
+//   - components/AgentPanel:SWELL
 //   - components/AgentPanel:useBeginAnimationsOnMount
 //   - components/AgentPanel:usePrefersReducedMotion
 //   - components/Button:ButtonGroupContext

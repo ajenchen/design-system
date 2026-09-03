@@ -71,18 +71,18 @@ export interface AgentFabProps
   logoState?: AgentLogoState
 }
 
-const AgentFab = React.forwardRef<HTMLButtonElement, AgentFabProps>(
-  ({ logoState = 'still', className, 'aria-label': ariaLabel, ...props }, ref) => {
-    const uid = React.useId().replace(/[^a-zA-Z0-9]/g, '')
-    const reduced = usePrefersReducedMotion()
-    const glowId = `${uid}fg`
-    // 光圈只給招喚態(有新訊要人回頭看);思考態的訊號是標誌自己在轉,不加光圈以免兩個 loop 打架。
-    const showGlow = logoState === 'attract' && !reduced
-    const glowRef = React.useRef<SVGSVGElement | null>(null)
-    useBeginAnimationsOnMount(glowRef, String(showGlow))
-    return (
-      <span className="relative inline-flex">
-        {showGlow && (
+/**
+ * 招喚態的邊框光圈(呼吸包絡上的一道外散波)。**兩顆入口鈕共用**:AgentFab 與 AgentFabDock 都渲染它,
+ * 否則產品實際用的 AgentFabDock 在有新訊時會完全沒有訊號(標誌的漣漪已被 ripple={false} 關掉,
+ * 因為按鈕內放不下)。貼邊態省略(28 半圓貼著視窗邊,波會被切一半)—— 見 spec「AgentFab」節。
+ * @internal AgentPanel 家族內部共用。
+ */
+function FabGlow() {
+  const uid = React.useId().replace(/[^a-zA-Z0-9]/g, '')
+  const glowId = `${uid}fg`
+  const glowRef = React.useRef<SVGSVGElement | null>(null)
+  useBeginAnimationsOnMount(glowRef, glowId)
+  return (
           <svg
             ref={glowRef}
             width="64"
@@ -131,7 +131,17 @@ const AgentFab = React.forwardRef<HTMLButtonElement, AgentFabProps>(
               />
             </circle>
           </svg>
-        )}
+  )
+}
+
+const AgentFab = React.forwardRef<HTMLButtonElement, AgentFabProps>(
+  ({ logoState = 'still', className, 'aria-label': ariaLabel, ...props }, ref) => {
+    const reduced = usePrefersReducedMotion()
+    // 光圈只給招喚態(有新訊要人回頭看);思考態的訊號是標誌自己在轉,不加光圈以免兩個 loop 打架。
+    const showGlow = logoState === 'attract' && !reduced
+    return (
+      <span className="relative inline-flex">
+        {showGlow && <FabGlow />}
         {/* 漸層環畫在 button 自己身上(2px padding),整個看得見的圓 = 可點區域;環若做在外層 span,外圈 2px 就會是死區。 */}
         <button
           ref={ref}
@@ -211,6 +221,30 @@ const HYSTERESIS = 16
 const SNAP_ZONE_CLASSES =
   'bg-drop-target border-2 border-r-0 border-dashed border-drop-target-border rounded-l-md'
 
+/**
+ * 形態表:每個合法位置(placement kind)長什麼樣、標誌多大、Tooltip 出現在哪、招喚要不要畫光圈。
+ * 要新增磁吸點(例如鏡像左緣)= 這裡加一列 + `SNAP_ZONES` 加一列 + `AgentFabPlacement` 加一個 kind,
+ * 拖曳 / 預覽 / 落定 / 鍵盤流程都不必動 —— 這張表就是「可擴充」的實際載體(spec「區域 → 落點表」)。
+ */
+interface ShapeSpec {
+  /** 鈕的外徑(正圓直徑或半圓寬高)。 */
+  px: number
+  /** 內置標誌尺寸。 */
+  logo: number
+  /** 外框圓角(貼邊那側不留圓角)。 */
+  radius: string
+  /** 內面圓角(跟著外框)。 */
+  innerRadius: string
+  /** Tooltip 出現方向(避開它貼住的那一邊)。 */
+  tooltipSide: 'top' | 'left' | 'right' | 'bottom'
+  /** 招喚態是否畫邊框光圈(貼邊態省略:半圓貼著視窗邊,波會被切一半)。 */
+  glow: boolean
+}
+const SHAPES: Record<Shape, ShapeSpec> = {
+  home: { px: FAB_PX, logo: 24, radius: 'rounded-full', innerRadius: 'rounded-full', tooltipSide: 'top', glow: true },
+  dock: { px: DOCK_PX, logo: 16, radius: 'rounded-l-full pr-0', innerRadius: 'rounded-l-full', tooltipSide: 'left', glow: false },
+}
+
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(min, max))
 /**
  * 貼邊鈕合法 y(鈕頂)範圍(user 2026-09-03 留言拍板):最高 = 圓心落在視窗中線(dockMinY);最低 = 鈕底離家頂
@@ -264,7 +298,12 @@ interface DragState extends Point {
   origin: Shape
 }
 
-/** 指標拖曳引擎:門檻、磁吸判定、放開落定、Esc 取消、吞掉拖曳後的 click;外殼只負責畫形狀與帶。 */
+/**
+ * 指標拖曳引擎:門檻、磁吸判定、放開落定、Esc / pointercancel 取消、吞掉拖曳後的 click;外殼只負責畫形狀與帶。
+ * 對齊 DS 既有的指標拖曳 canonical(patterns/resize-handle):preventDefault + setPointerCapture + pointerId 過濾 +
+ * touch-action none,否則觸控上 pointerdown 後瀏覽器接管捲動、指標移出視窗就收不到 pointerup。
+ * 取消語意與放開分離:pointercancel(系統手勢 / 捲動接管)與 Esc 都**不 commit**,位置回到 props。
+ */
 function useSnapDrag(opts: {
   host: () => HTMLElement | null
   inset: number
@@ -272,8 +311,19 @@ function useSnapDrag(opts: {
   commit: (next: AgentFabPlacement) => void
 }) {
   const [drag, setDrag] = React.useState<DragState | null>(null)
-  const dragRef = React.useRef<{ startX: number; startY: number; moved: boolean; zone: SnapZone | null; last: AgentFabPlacement | null } | null>(null)
+  const dragRef = React.useRef<{
+    pointerId: number
+    startX: number
+    startY: number
+    moved: boolean
+    cancelled: boolean
+    zone: SnapZone | null
+    last: AgentFabPlacement | null
+  } | null>(null)
   const suppressClickRef = React.useRef(false)
+  // 卸載時把還掛著的 window listener 收乾淨(拖曳中被卸載 = 路由切換 / 受控 open 翻成 true / story 重掛)。
+  const cleanupRef = React.useRef<() => void>(() => {})
+  React.useEffect(() => () => cleanupRef.current(), [])
   const swallowNextClick = () => {
     // 拖曳放開後瀏覽器可能緊接著發 click(同元素)→ 吞掉;元素若已換態不會有 click → 下一 tick 清旗標。
     suppressClickRef.current = true
@@ -285,17 +335,28 @@ function useSnapDrag(opts: {
     if (e.button !== 0) return
     const host = opts.host()
     if (!host) return
+    e.preventDefault()
+    const target = e.currentTarget
+    try {
+      target.setPointerCapture(e.pointerId)
+    } catch {
+      /* 舊瀏覽器 / 已釋放的指標:退回 window listener 即可 */
+    }
+    // 座標與渲染同源:absolute 子元素的原點是 padding box,故用 clientLeft/clientTop 與 clientWidth/clientHeight
+    // (getBoundingClientRect 是 border-box、含捲軸,兩者混用時只要舞台有邊框或捲軸就會整體偏移)。
     const rect = host.getBoundingClientRect()
-    const stage: Stage = { w: rect.width, h: rect.height, inset: opts.inset }
+    const originX = rect.left + host.clientLeft
+    const originY = rect.top + host.clientTop
+    const stage: Stage = { w: host.clientWidth, h: host.clientHeight, inset: opts.inset }
     const origin = opts.placement.kind
     const cur = placementXY(stage, opts.placement)
-    const grab: Point = { x: e.clientX - rect.left - cur.x, y: e.clientY - rect.top - cur.y }
+    const grab: Point = { x: e.clientX - originX - cur.x, y: e.clientY - originY - cur.y }
     const onMove = (ev: PointerEvent) => {
       const d = dragRef.current
-      if (!d) return
+      if (!d || ev.pointerId !== d.pointerId) return
       if (!d.moved && Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY) < DRAG_THRESHOLD) return
       d.moved = true
-      const p: Point = { x: ev.clientX - rect.left, y: ev.clientY - rect.top }
+      const p: Point = { x: ev.clientX - originX, y: ev.clientY - originY }
       d.zone = findZone(p, stage, d.zone)
       if (d.zone) {
         // 所見即所得:預覽就畫在放開會落的位置(貼右緣、指標高度)。
@@ -315,29 +376,48 @@ function useSnapDrag(opts: {
     const cleanup = () => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
-      window.removeEventListener('pointercancel', onUp)
+      window.removeEventListener('pointercancel', onCancel)
       window.removeEventListener('keydown', onKey)
+      try {
+        target.releasePointerCapture(e.pointerId)
+      } catch {
+        /* 已自動釋放 */
+      }
+      cleanupRef.current = () => {}
       dragRef.current = null
       setDrag(null)
     }
-    const onUp = () => {
+    const onUp = (ev: PointerEvent) => {
       const d = dragRef.current
+      if (!d || ev.pointerId !== d.pointerId) return
+      const { moved, cancelled, last } = d
       cleanup()
-      if (!d?.moved) return
+      if (!moved) return
+      // 取消過(Esc)只吞掉這一次 click,不改位置;正常放開才落定。
       swallowNextClick()
-      opts.commit(d.last ?? AGENT_FAB_HOME)
+      if (!cancelled) opts.commit(last ?? AGENT_FAB_HOME)
     }
-    // Esc = 取消拖曳、回原位。
+    // pointercancel = 互動被系統中止(觸控捲動接管 / 手勢),語意不是放開 → 不 commit。
+    const onCancel = (ev: PointerEvent) => {
+      const d = dragRef.current
+      if (!d || ev.pointerId !== d.pointerId) return
+      const moved = d.moved
+      cleanup()
+      if (moved) swallowNextClick()
+    }
+    // Esc = 取消拖曳、回原位;但**不拆監聽** —— 使用者手指還按著,要等真正放開才結束(否則那個 click 會漏出去開面板)。
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.key !== 'Escape' || !dragRef.current?.moved) return
+      const d = dragRef.current
+      if (ev.key !== 'Escape' || !d?.moved || d.cancelled) return
       ev.preventDefault()
-      swallowNextClick()
-      cleanup()
+      d.cancelled = true
+      setDrag(null)
     }
-    dragRef.current = { startX: e.clientX, startY: e.clientY, moved: false, zone: null, last: null }
+    dragRef.current = { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, moved: false, cancelled: false, zone: null, last: null }
+    cleanupRef.current = cleanup
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
-    window.addEventListener('pointercancel', onUp)
+    window.addEventListener('pointercancel', onCancel)
     window.addEventListener('keydown', onKey)
   }
   const onClickCapture = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -390,18 +470,51 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
       [placementProp, onPlacementChange],
     )
     const shellRef = React.useRef<HTMLDivElement | null>(null)
+    const buttonRef = React.useRef<HTMLButtonElement | null>(null)
     React.useImperativeHandle(ref, () => shellRef.current as HTMLDivElement)
     const host = () => (shellRef.current?.offsetParent as HTMLElement | null) ?? null
     // 舞台尺寸(offsetParent;ResizeObserver 跟隨)。
     const [size, setSize] = React.useState({ w: 0, h: 0 })
+    // 被動 reflow(拖視窗邊界)期間關掉位置過渡,否則鈕會以 250ms 緩動一路拖尾追在角落後面。
+    const [reflowing, setReflowing] = React.useState(false)
     React.useLayoutEffect(() => {
-      const el = host()
-      if (!el) return
-      const update = () => setSize({ w: el.clientWidth, h: el.clientHeight })
-      update()
-      const ro = new ResizeObserver(update)
-      ro.observe(el)
-      return () => ro.disconnect()
+      let ro: ResizeObserver | null = null
+      let retry: ResizeObserver | null = null
+      let reflowTimer = 0
+      let first = true
+      const attach = () => {
+        const el = host()
+        if (!el) return false
+        const update = () => {
+          if (!first) {
+            setReflowing(true)
+            window.clearTimeout(reflowTimer)
+            reflowTimer = window.setTimeout(() => setReflowing(false), 120)
+          }
+          first = false
+          setSize({ w: el.clientWidth, h: el.clientHeight })
+        }
+        update()
+        ro = new ResizeObserver(update)
+        ro.observe(el)
+        return true
+      }
+      // 掛載時祖先若是 display:none(收合的分頁 / 尚未啟用的路由),offsetParent 是 null;
+      // 改觀察殼自己,等它有尺寸(= 祖先顯示了)再解析一次,否則舞台永遠停在 0×0、鈕停在左上角。
+      if (!attach() && shellRef.current) {
+        retry = new ResizeObserver(() => {
+          if (attach()) {
+            retry?.disconnect()
+            retry = null
+          }
+        })
+        retry.observe(shellRef.current)
+      }
+      return () => {
+        window.clearTimeout(reflowTimer)
+        ro?.disconnect()
+        retry?.disconnect()
+      }
     }, [])
     // 首次量到舞台前的那一次 render 位置是假的(0×0 舞台);量測時讀 clientWidth 會逼瀏覽器先算完那個假位置,
     // 若此時已掛 transition,首幀會從左上角飛進來 → 第一次真位置畫完(useEffect 在 paint 後)才開放過渡。
@@ -415,8 +528,8 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
     const [menuOpen, setMenuOpen] = React.useState(false)
 
     const shape: Shape = drag ? (drag.placement?.kind ?? 'home') : placement.kind
+    const spec = SHAPES[shape]
     const isDock = shape === 'dock'
-    const px = isDock ? DOCK_PX : FAB_PX
     const pos: Point = drag ? { x: drag.x, y: drag.y } : placementXY(stage, placement)
     /** 帶只在拖 40 圓鈕時可見(拖小鈕不顯示;user 2026-09-03)。 */
     const showZones = drag?.origin === 'home'
@@ -484,19 +597,33 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
             // 若殼可命中就會變成「看不見卻擋住點擊」的死區(2026-09-03 user 回報:hover 小鈕左側點不到)。
             'group/dock pointer-events-none absolute z-20 flex w-10 justify-end',
             // 落點修正 / 飛回家 250ms + enter;拖曳中跟指標不過渡。
-            ready && !dragging && !reduced && 'transition-[left,top] duration-[var(--motion-duration-surface)] ease-[var(--motion-easing-enter)]',
+            ready && !dragging && !reflowing && !reduced &&
+              'transition-[left,top] duration-[var(--motion-duration-surface)] ease-[var(--motion-easing-enter)]',
             dragging ? 'cursor-grabbing select-none' : 'cursor-grab',
             className,
           )}
           // 舞台尺寸量到前先隱藏(否則首影格會以 0×0 舞台算成左上角再跳到右下角)。
           style={{ left: pos.x, top: pos.y, visibility: stage.w > 0 ? undefined : 'hidden' }}
         >
+          {/* 招喚態光圈:與獨立 AgentFab 同一顆元件;貼邊態省略(半圓貼邊,波會被切一半)。 */}
+          {logoState === 'attract' && !reduced && spec.glow && (
+            <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <FabGlow />
+            </span>
+          )}
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen} modal={false}>
-            {/* 選單只由右鍵 / Shift+F10 開;錨點 = 蓋住鈕的透明 span(pointer-events-none,不攔點擊)。 */}
+            {/* 選單只由右鍵 / Shift+F10 開;錨點 = 蓋住鈕的透明 span(pointer-events-none,不攔點擊)。
+                關閉後 Radix 會把焦點還給 trigger,但 trigger 是 aria-hidden 的錨點 → 顯式導回真正的按鈕。 */}
             <DropdownMenuTrigger asChild>
               <span aria-hidden className="pointer-events-none absolute inset-0" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent
+              align="end"
+              onCloseAutoFocus={(e) => {
+                e.preventDefault()
+                buttonRef.current?.focus()
+              }}
+            >
               {placement.kind === 'home' ? (
                 <DropdownMenuItem startIcon={ArrowRightToLine} onSelect={() => setPlacement({ kind: 'dock', y: dockMaxY(stage) })}>{text.dock}</DropdownMenuItem>
               ) : (
@@ -511,14 +638,19 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
               <button
                 type="button"
                 className={cn(
-                  'pointer-events-auto inline-flex cursor-[inherit] items-center justify-center border-none p-[2px] shadow-[var(--elevation-200)]',
-                  'transition-[width,height,border-radius,box-shadow] duration-[var(--motion-duration-overlay)] ease-[var(--motion-easing-enter)] motion-reduce:transition-none',
-                  isDock ? 'rounded-l-full pr-0' : 'rounded-full',
-                  !dragging && 'hover:shadow-[var(--elevation-200-hover)]',
+                  // touch-none:觸控上不讓瀏覽器把 pointerdown 解讀成捲動(同 resize-handle canonical),否則拖曳在手機不可用。
+                  'pointer-events-auto inline-flex touch-none cursor-[inherit] items-center justify-center border-none p-[2px] shadow-[var(--elevation-200)]',
+                  'transition-[width,height,border-radius,box-shadow,transform] duration-[var(--motion-duration-overlay)] ease-[var(--motion-easing-enter)] motion-reduce:transition-none',
+                  spec.radius,
+                  // 懸停 = 陰影升一級 + 微放大(與獨立 AgentFab 同一手感;spec「FAB」節)。
+                  !dragging && 'hover:scale-[1.04] hover:shadow-[var(--elevation-200-hover)] motion-reduce:hover:scale-100',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 )}
-                style={{ background: RING_GRADIENT, width: px, height: px }}
+                style={{ background: RING_GRADIENT, width: spec.px, height: spec.px }}
+                ref={buttonRef}
                 aria-label={buttonLabel}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
                 onPointerDown={onPointerDown}
                 onKeyDown={onKeyDown}
                 onClickCapture={onClickCapture}
@@ -532,14 +664,14 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
                 <span
                   className={cn(
                     'flex h-full w-full items-center justify-center bg-surface-raised',
-                    isDock ? 'rounded-l-full' : 'rounded-full',
+                    spec.innerRadius,
                   )}
                 >
-                  <AgentLogo state={logoState} ripple={false} size={isDock ? 16 : 24} />
+                  <AgentLogo state={logoState} ripple={false} size={spec.logo} />
                 </span>
               </button>
             </TooltipTrigger>
-            <TooltipContent side={isDock ? 'left' : 'top'}>{isDock ? text.tooltipDock : text.tooltip}</TooltipContent>
+            <TooltipContent side={spec.tooltipSide}>{isDock ? text.tooltipDock : text.tooltip}</TooltipContent>
           </Tooltip>
         </div>
       </>
@@ -561,6 +693,7 @@ export interface AgentPanelDockRenderProps {
 
 export interface AgentPanelDockProps
   extends Omit<AgentFabDockProps, 'onClick' | 'children' | 'logoState'> {
+  /** 入口鈕位置(受控);省略 = 由本元件保管,面板開關不會忘記(見下方註解)。 */
   /** 面板是否開啟(受控);省略 = 非受控。 */
   open?: boolean
   /** 非受控初始開關;預設開。 */
@@ -578,19 +711,52 @@ export interface AgentPanelDockProps
  * 外層容器需 `relative`(入口鈕以 absolute 定位在其中)。
  */
 const AgentPanelDock = React.forwardRef<HTMLDivElement, AgentPanelDockProps>(
-  ({ open: openProp, defaultOpen = true, onOpenChange, logoState = 'still', children, ...fabProps }, ref) => {
-    const [uncontrolled, setUncontrolled] = React.useState(defaultOpen)
-    const open = openProp ?? uncontrolled
+  (
+    {
+      open: openProp,
+      defaultOpen = true,
+      onOpenChange,
+      logoState = 'still',
+      children,
+      placement: placementProp,
+      defaultPlacement = AGENT_FAB_HOME,
+      onPlacementChange,
+      ...fabProps
+    },
+    ref,
+  ) => {
+    const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen)
+    const open = openProp ?? uncontrolledOpen
     const setOpen = React.useCallback(
       (next: boolean) => {
-        if (openProp === undefined) setUncontrolled(next)
+        if (openProp === undefined) setUncontrolledOpen(next)
         onOpenChange?.(next)
       },
       [openProp, onOpenChange],
     )
+    // 非受控位置**住在這裡**,不能住在 AgentFabDock —— 面板開著時那顆會被卸載,state 會跟著消失,
+    // 使用者收到邊、開面板、關面板後鈕就跑回右下角(2026-09-03 稽核抓到)。
+    const [uncontrolledPlacement, setUncontrolledPlacement] = React.useState<AgentFabPlacement>(defaultPlacement)
+    const placement = placementProp ?? uncontrolledPlacement
+    const handlePlacementChange = React.useCallback(
+      (next: AgentFabPlacement) => {
+        if (placementProp === undefined) setUncontrolledPlacement(next)
+        onPlacementChange?.(next)
+      },
+      [placementProp, onPlacementChange],
+    )
     const close = React.useCallback(() => setOpen(false), [setOpen])
     if (open) return <>{children({ close, logoState })}</>
-    return <AgentFabDock ref={ref} logoState={logoState} onClick={() => setOpen(true)} {...fabProps} />
+    return (
+      <AgentFabDock
+        ref={ref}
+        logoState={logoState}
+        placement={placement}
+        onPlacementChange={handlePlacementChange}
+        onClick={() => setOpen(true)}
+        {...fabProps}
+      />
+    )
   },
 )
 AgentPanelDock.displayName = 'AgentPanelDock'

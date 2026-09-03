@@ -62,7 +62,9 @@ jobs:
         run: |
           npx --no-install playwright install chromium
           node scripts/data-table-invariants.mjs
-          node scripts/agent-logo-continuity-invariant.mjs
+          # AgentPanel 家族三支機械不變式一起跑(固定 anatomy / 標誌色階 / 思考動畫逐影格);
+          # 原本只跑 continuity 一支,另外兩支在整個 repo 沒有任何 gate(2026-09-03 稽核抓到)。
+          npm run test:agent-panel-invariants
 
       # Cloud sessions load the committed provider config as-is; the only two ways that config has
       # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)

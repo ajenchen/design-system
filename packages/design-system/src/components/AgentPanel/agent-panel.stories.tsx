@@ -1,9 +1,11 @@
+// @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithPagination
 // @story-history: 家族展示層 = 真實業務場景 + OpenSnapshot 覆蓋(M15:defaultOpen/常駐可截圖);
 // 標誌/FAB 狀態矩陣屬本層(動態資產,anatomy 靜態矩陣載不動)。
 // 2026-09-02 review round:固定構件恆渲染(header +/×/標題觸發、輸入盒 +/Tag ×)後,每個 story
 // 都必須傳齊必填 callback;歷史浮層 OpenSnapshot、決策卡三題步進、拖拉寬度、FAB↔面板互斥補齊。
 import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
+import { expect, userEvent, waitFor, within } from '@storybook/test'
 import {
   AgentPanel,
   AgentPanelHeader,
@@ -27,7 +29,16 @@ import { Empty } from '@/design-system/components/Empty/empty'
 const meta: Meta<typeof AgentPanel> = {
   title: 'Design System/Components/AgentPanel/展示',
   component: AgentPanel,
-  parameters: { layout: 'fullscreen' },
+  tags: ['autodocs'],
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        component:
+          '產品頁右側常駐的智慧代理對話面板:一問一答、思考過程、決策卡與輸入盒。面板關閉時由右下角的入口鈕接手(兩者互斥,見「入口鈕」系列)。要的是一次性的表單或確認,用 Dialog;要的是欄位層級的說明,用 Field 家族。',
+      },
+    },
+  },
 }
 export default meta
 type Story = StoryObj<typeof AgentPanel>
@@ -293,7 +304,7 @@ export const DecisionCardOpen: Story = {
 
 /** 長標題:標題單行截斷,只有實際被截斷時 hover 才顯示完整名稱的 tooltip(tooltip.spec.md:32;引擎 `<TruncatedText>`)。 */
 export const TitleTruncated: Story = {
-  name: '長標題截斷與 tooltip',
+  name: '長標題截斷與 Tooltip',
   render: () => (
     <PanelFrame>
       {({ close }) => (
@@ -374,25 +385,85 @@ const orderColumns: ColumnDef<OrderRow>[] = [
   { accessorKey: 'placedAt', header: '成立日期' },
 ]
 
-/**
- * 入口鈕 ↔ 面板互斥 + 拖到右緣貼邊(2026-09-03 第四輪拍板:只有「家」與「貼邊」兩種位置,所見即所得):面板關閉時
- * 右下角出現入口鈕(離邊 loose,Tooltip「問我或推走我」;貼邊後 Tooltip 只寫「開啟智慧代理」)。拖 40 圓鈕:鈕跟著
- * 游標、右緣帶(寬 36、從視窗中線到家上方一個 loose)亮出 drop-target 半透明藍底 + 三邊虛線框(貼右緣那側不畫);游標一進帶內,預覽當場變成 28 貼邊半圓、貼在右緣、停在
- * 放開會落的高度;放開在帶內就落定,放開在帶外飛回右下角。
- * 拖 28 貼邊鈕:不顯示帶,帶內沿 y 移動,一出帶外當場變回 40 圓鈕、放開飛回家。**兩種形態點一下都直接開面板**;
- * **入口鈕的標誌跟著面板裡的代理走**:送出訊息讓代理思考,再關掉面板 —— 入口鈕(不論 40 圓或 28 貼邊)也在轉;
- * 回覆完成變招喚態(邊框光圈)提醒你回來看。右鍵 / Shift+F10 選單依狀態只給一項(縮小按鈕 / 放大按鈕,帶前綴 icon)、
- * 鍵盤 → 貼邊、↑↓ 16px、← / Home 回家、拖曳中 Esc
- * 取消。位置由 consumer 受控(這裡用 state),面板開關不重置。舞台=滿高訂單表 + 分頁列:在家時入口鈕會壓在分頁列
- * 右端,貼邊後不再遮擋。
- */
+/** 入口鈕與面板互斥:按 × 關閉面板 → 右下角出現入口鈕 → 點一下開回來(位置與狀態都由 `AgentPanelDock` 保管)。 */
 export const FabPanelToggle: Story = {
-  name: '入口鈕:互斥、拖動與貼邊',
-  render: function FabToggleStory() {
-    const [open, setOpen] = React.useState(false)
+  name: '入口鈕:關閉面板後點回來',
+  render: () => (
+    <div className="relative flex h-dvh bg-canvas">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col p-[var(--layout-space-loose)]">
+        <DataTable
+          columns={orderColumns}
+          data={ORDER_ROWS}
+          height="100%"
+          pagination={{ pageSize: 20, pageSizeOptions: [10, 20, 50], showTotal: true }}
+          getRowId={(row) => row.id}
+        />
+      </div>
+      <AgentPanelDock>
+        {({ close }) => (
+          <AgentPanel>
+            <AgentPanelHeader title="訂單異常排查" activeConversationId="c1" {...headerWiring} onClose={close} />
+            <AgentConversation>
+              <AgentMessage role="agent">關掉我,右下角會出現入口鈕;點它就回來,收在哪就從哪回來。</AgentMessage>
+            </AgentConversation>
+            <AgentPromptInput value="" onValueChange={noop} {...promptWiring} />
+          </AgentPanel>
+        )}
+      </AgentPanelDock>
+    </div>
+  ),
+}
+
+/**
+ * 入口鈕已收在右緣(OpenSnapshot:貼邊態非拖曳不可見,靠 placement 直接指定才截得到)。
+ * 28 半圓只露內側、Tooltip 換成「開啟智慧代理」;右鍵可「放大按鈕」放回右下角。
+ */
+export const FabDocked: Story = {
+  name: '入口鈕:已貼邊',
+  render: () => (
+    <div className="relative flex h-dvh bg-canvas">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col p-[var(--layout-space-loose)]">
+        <DataTable
+          columns={orderColumns}
+          data={ORDER_ROWS}
+          height="100%"
+          pagination={{ pageSize: 20, pageSizeOptions: [10, 20, 50], showTotal: true }}
+          getRowId={(row) => row.id}
+        />
+      </div>
+      <AgentPanelDock open={false} defaultPlacement={{ kind: 'dock', y: 420 }}>
+        {() => null}
+      </AgentPanelDock>
+    </div>
+  ),
+}
+
+/**
+ * 入口鈕的右鍵選單(OpenSnapshot:非右鍵不可見的狀態,用 play 打開才截得到)。
+ * 在家時只有「縮小按鈕」,貼邊時只有「放大按鈕」,各帶方向 icon(線 = 右緣、箭頭 = 鍵盤 → / ← 等價路徑)。
+ */
+export const FabContextMenu: Story = {
+  name: '入口鈕:右鍵選單',
+  render: () => (
+    <div className="relative flex h-dvh bg-canvas">
+      <AgentPanelDock open={false}>{() => null}</AgentPanelDock>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const fab = await within(canvasElement).findByRole('button', { name: '開啟智慧代理' })
+    await userEvent.pointer({ keys: '[MouseRight]', target: fab })
+    await waitFor(() => expect(document.querySelector('[role="menu"]')).toBeTruthy())
+  },
+}
+
+/**
+ * 入口鈕的標誌跟著面板裡的代理走:送出訊息 → 代理思考 → 關掉面板,入口鈕也在轉;回覆完成轉招喚(邊框光圈)。
+ * 拖曳與貼邊的幾何、動作時長見 `agent-panel.spec.md`「遮擋與貼邊」。
+ */
+export const FabAgentState: Story = {
+  name: '入口鈕跟著代理狀態走',
+  render: function FabAgentStateStory() {
     const [placement, setPlacement] = React.useState<AgentFabPlacement>(AGENT_FAB_HOME)
-    // 面板裡的代理狀態:入口鈕的標誌直接吃它 —— 關掉面板時代理若還在思考,入口鈕也在轉。
-    // 初始 = 招喚(有新訊等你看,同原本的範例);送出後 → 思考;完成 → 回招喚。
     const [agentState, setAgentState] = React.useState<AgentLogoState>('attract')
     const [draft, setDraft] = React.useState('這批訂單的金額為什麼對不上?')
     const timer = React.useRef<number | null>(null)
@@ -414,13 +485,7 @@ export const FabPanelToggle: Story = {
             getRowId={(row) => row.id}
           />
         </div>
-        <AgentPanelDock
-          open={open}
-          onOpenChange={setOpen}
-          logoState={agentState}
-          placement={placement}
-          onPlacementChange={setPlacement}
-        >
+        <AgentPanelDock logoState={agentState} placement={placement} onPlacementChange={setPlacement}>
           {({ close, logoState }) => (
             <AgentPanel>
               <AgentPanelHeader
@@ -435,7 +500,7 @@ export const FabPanelToggle: Story = {
                 <AgentMessage role="agent">
                   {logoState === 'think'
                     ? '正在比對上週訂單…'
-                    : '關掉我看看:代理還在思考時,入口鈕的標誌也會跟著轉。'}
+                    : '送出問題讓我開始思考,再關掉面板 —— 入口鈕的標誌也會跟著轉。'}
                 </AgentMessage>
               </AgentConversation>
               <AgentPromptInput value={draft} onValueChange={setDraft} {...promptWiring} onSubmit={askAgent} />
@@ -452,10 +517,16 @@ export const LogoStates: Story = {
   name: '標誌三態',
   render: () => (
     <div className="flex items-end gap-12 p-12">
-      {(['still', 'attract', 'think'] as const).map((state) => (
+      {(
+        [
+          ['still', '靜止(待機)'],
+          ['attract', '招喚(有新訊)'],
+          ['think', '思考中(代理回覆中)'],
+        ] as const
+      ).map(([state, label]) => (
         <div key={state} className="flex flex-col items-center gap-3">
-          <AgentLogo state={state} size={72} label={state} />
-          <span className="text-caption text-fg-muted">{state}</span>
+          <AgentLogo state={state} size={72} label={label} />
+          <span className="text-caption text-fg-muted">{label}</span>
         </div>
       ))}
     </div>

@@ -21,7 +21,7 @@
  *   附件列=Tag md 單列 + OverflowIndicator(+N,useOverflowIndices 量測);送出/停止=Button primary xs。
  * - 決策卡:SurfaceHeader(compact)+SurfaceFooter(overlay-surface);選項=灰底卡(--secondary、
  *   rounded-md、內距 8/12、整卡可點)包 RadioGroup md(Popover all-sm 律之拍板豁免;footer 鈕 sm 守律);
- *   一題一問步進(Skip / 下一題 / 送出);N>1 才顯示「n / N」小標;淡入+下滑 --motion-duration-overlay。
+ *   一題一問步進(跳過 / 上一題 / 下一題 / 送出);N>1 才顯示「n / N」小標;淡入+下滑 --motion-duration-overlay。
  * - 改名/刪除:Dialog(header md+X;body Field+Input;footer md 鈕;刪除=primary+danger;
  *   form-validation:儲存 dirty 規則、空名 blur 顯錯;Esc=Dialog 取消)。
  * - 空狀態:Empty icon slot 接 AgentLogo 招喚態。
@@ -129,8 +129,10 @@ export interface AgentPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   width?: number
   /** 非受控初始寬;預設 --agent-panel-width 400。 */
   defaultWidth?: number
-  /** 拖拉/鍵盤調整結束時回報(DS 不持久化,產品自存)。 */
+  /** 寬度變更時回報(**拖曳中每一格都發**,受控 consumer 才有即時回饋)。 */
   onWidthChange?: (width: number) => void
+  /** 拖拉放開 / 鍵盤一步結束時回報一次(要落地儲存的接這個;DS 不持久化,產品自存)。 */
+  onWidthCommit?: (width: number) => void
   /** 可拖拉(左緣把手);預設 true。Sheet 承載時同樣可拖。 */
   resizable?: boolean
 }
@@ -142,6 +144,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
       width,
       defaultWidth = PANEL_WIDTH_DEFAULT,
       onWidthChange,
+      onWidthCommit,
       resizable = true,
       className,
       style,
@@ -157,9 +160,12 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
       (next: number, commit: boolean) => {
         const clamped = clampPanelWidth(next)
         if (width === undefined) setUncontrolledWidth(clamped)
-        if (commit) onWidthChange?.(clamped)
+        // 每一格都發 onWidthChange:受控 consumer 才有拖曳中的即時回饋(原本只在放開時發 = 整段拖曳畫面不動);
+        // 放開 / 鍵盤一步再發 onWidthCommit,要落地儲存的接這個。
+        onWidthChange?.(clamped)
+        if (commit) onWidthCommit?.(clamped)
       },
-      [width, onWidthChange],
+      [width, onWidthChange, onWidthCommit],
     )
 
     if (!open) return null
@@ -585,7 +591,7 @@ function AgentRenameDialog({
           <Button variant="tertiary" onClick={() => onOpenChange(false)}>
             取消
           </Button>
-          <Button variant="primary" disabled={!dirty} onClick={commit}>
+          <Button variant="primary" disabled={!dirty || empty} onClick={commit}>
             儲存
           </Button>
         </DialogFooter>
@@ -617,18 +623,28 @@ const AgentConversation = React.forwardRef<HTMLDivElement, AgentConversationProp
     // ChatGPT / Claude 皆「貼底跟隨、離底不搶」);全家族一致,consumer 不自接。
     const logRef = React.useRef<HTMLDivElement | null>(null)
     React.useImperativeHandle(ref, () => logRef.current as HTMLDivElement)
-    const count = items.length
     const wasNearBottomRef = React.useRef(true)
     React.useLayoutEffect(() => {
-      const viewport = logRef.current?.closest<HTMLElement>('[data-radix-scroll-area-viewport]')
-      if (!viewport) return
-      if (wasNearBottomRef.current) viewport.scrollTop = viewport.scrollHeight
+      const log = logRef.current
+      const viewport = log?.closest<HTMLElement>('[data-radix-scroll-area-viewport]')
+      if (!log || !viewport) return
+      const stick = () => {
+        if (wasNearBottomRef.current) viewport.scrollTop = viewport.scrollHeight
+      }
+      stick()
       const onScroll = () => {
         wasNearBottomRef.current = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= 40
       }
       viewport.addEventListener('scroll', onScroll, { passive: true })
-      return () => viewport.removeEventListener('scroll', onScroll)
-    }, [count])
+      // 量**內容高度**而不是訊息則數:代理回覆是串流寫進同一則訊息的,則數不變但高度一直長,
+      // 只看則數會讓整段回覆期間都不跟隨(ChatGPT / Claude 皆貼底跟隨)。
+      const ro = new ResizeObserver(stick)
+      ro.observe(log)
+      return () => {
+        viewport.removeEventListener('scroll', onScroll)
+        ro.disconnect()
+      }
+    }, [])
     return (
       // 捲軸必用 ScrollArea(跨 OS 一致;Dialog body 同法)。
       <ScrollArea fillX className="min-h-0 flex-1">
@@ -777,7 +793,7 @@ const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
           />
         </CollapsiblePrimitive.Trigger>
         <CollapsiblePrimitive.Content
-          className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up"
+          className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up motion-reduce:animate-none"
         >
           {/* 完成步驟=fg-secondary(2026-09-02 拍板;原 muted 太淺);微光行基色由 agent-panel.css 自管。 */}
           <div className="mt-2 flex flex-col gap-1 border-l border-divider pl-3 text-fg-secondary">
@@ -803,9 +819,11 @@ export interface AgentToolbarProps extends React.HTMLAttributes<HTMLDivElement> 
    * 只在 AgentConversation 之外單獨使用時才需手動指定。
    */
   pinned?: boolean
-  onCopy?: () => void
-  onLike?: () => void
-  onDislike?: () => void
+  // 固定 anatomy:三顆鈕恆渲染且沒有內建行為 → 型別層必填,少接就編譯不過(M23(f):
+  // 「無內建行為的 callback 一律必填 prop」;可選會變成點了沒反應的死鈕)。
+  onCopy: () => void
+  onLike: () => void
+  onDislike: () => void
 }
 
 const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
@@ -827,10 +845,10 @@ const AgentToolbar = React.forwardRef<HTMLDivElement, AgentToolbarProps>(
       )}
       {...props}
     >
-      <Button variant="text" size="xs" iconOnly startIcon={Copy} aria-label="複製" onClick={() => onCopy?.()} />
+      <Button variant="text" size="xs" iconOnly startIcon={Copy} aria-label="複製" onClick={onCopy} />
       <ButtonDivider />
-      <Button variant="text" size="xs" iconOnly startIcon={ThumbsUp} aria-label="讚" onClick={() => onLike?.()} />
-      <Button variant="text" size="xs" iconOnly startIcon={ThumbsDown} aria-label="倒讚" onClick={() => onDislike?.()} />
+      <Button variant="text" size="xs" iconOnly startIcon={ThumbsUp} aria-label="讚" onClick={onLike} />
+      <Button variant="text" size="xs" iconOnly startIcon={ThumbsDown} aria-label="倒讚" onClick={onDislike} />
       {children}
     </div>
     )
@@ -983,7 +1001,7 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
               startIcon={StopFilled}
               aria-label="停止生成"
               onClick={() => onStop?.()}
-              className="animate-in fade-in-0 duration-[var(--motion-duration-overlay)]"
+              className="animate-in fade-in-0 duration-[var(--motion-duration-overlay)] motion-reduce:animate-none"
             />
           ) : (
             <Button
@@ -994,7 +1012,7 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
               aria-label="送出"
               disabled={!canSubmit}
               onClick={submit}
-              className="animate-in fade-in-0 duration-[var(--motion-duration-overlay)]"
+              className="animate-in fade-in-0 duration-[var(--motion-duration-overlay)] motion-reduce:animate-none"
             />
           )}
         </div>
@@ -1120,7 +1138,8 @@ const AgentDecisionCard = React.forwardRef<HTMLDivElement, AgentDecisionCardProp
     // 「其他」選中而文字為空 → 不得前進/送出(產題守則 7);複選一項未勾 → 亦不得前進。
     const canAdvance =
       (!otherSelected || (otherText[question.id] ?? '').trim() !== '') &&
-      (!multi || selectedSet.size > 0)
+      // 複選至少一項;單選必須有值 —— noDefault 的單選初值是空字串,沒補這一條會送出空答案。
+      (multi ? selectedSet.size > 0 : (answers[question.id] ?? '') !== '')
     const recommendedValue =
       !multi && !question.noDefault ? (question.defaultValue ?? question.options[0]?.value) : undefined
     const optionLabel = (option: AgentDecisionOption | { value: string; label: string }) =>

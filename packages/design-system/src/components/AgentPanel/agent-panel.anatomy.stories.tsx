@@ -1,4 +1,4 @@
-// @anatomy-rationale: Inspector + ColorMatrix + SizeMatrix N/A — 家族無視覺 variant/size 軸(全由消費的 primitive/token 決定;spec「邊界案例 scope」hasVariants=false/hasSizes=false),幾何規格由 Overview 標註;StateBehavior 與 Accessibility 見下。
+// @anatomy-rationale: Inspector N/A — 家族沒有 variant/size prop 可切換(面板寬是連續值、標誌狀態已由展示層「標誌三態」承載),即時預覽面板會退化成一個空殼;SizeMatrix / ColorMatrix 於本檔提供(2026-09-03 稽核補齊)
 // 設計規格層:結構解剖 + 幾何規格(輪距/內距/尺寸);動態行為見展示層。
 import type { Meta, StoryObj } from '@storybook/react'
 import {
@@ -9,8 +9,9 @@ import {
   AgentToolbar,
   AgentPromptInput,
 } from './agent-panel'
-import { AgentLogo } from './agent-panel-logo'
+import { AGENT_BRAND, AgentLogo } from './agent-panel-logo'
 import { AgentThinking } from './agent-panel'
+import { H3, Desc, Td, Th, Swatch, TokenCell } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
 
 const meta: Meta<typeof AgentPanel> = {
   title: 'Design System/Components/AgentPanel/設計規格',
@@ -49,20 +50,73 @@ export const Overview: Story = {
   ),
 }
 
-/** 標誌尺寸階:16 / 24 / 32 / 48 同一造型(2026-09-02 拍板:形狀規則,不設簡化檔)。 */
-export const LogoSizeLadder: Story = {
-  name: '標誌尺寸階',
+/** 尺寸對照表:家族三條尺寸軸(標誌 / 入口鈕 / 面板寬)與各自的 token 來源。 */
+export const SizeMatrix: Story = {
+  name: '尺寸對照表',
   render: () => (
-    <div className="flex items-end gap-8 p-12">
-      {[16, 24, 32, 48].map((size) => (
-        <div key={size} className="flex flex-col items-center gap-2">
-          <AgentLogo state="still" size={size} label={`${size}px`} />
-          <span className="text-caption text-fg-muted">
-            {size}
-            {''}
-          </span>
+    <div className="space-y-6 p-12">
+      <section>
+        <H3>標誌</H3>
+        <Desc>同一造型,不設簡化檔(2026-09-02 拍板);尺寸由消費點決定。</Desc>
+        <div className="mt-2 flex items-end gap-8">
+          {[16, 24, 32, 48].map((size) => (
+            <div key={size} className="flex flex-col items-center gap-2">
+              <AgentLogo state="still" size={size} label={`標誌 ${size}px`} />
+              <span className="text-caption text-fg-muted">{size}</span>
+            </div>
+          ))}
         </div>
-      ))}
+      </section>
+      <section>
+        <H3>尺寸來源</H3>
+        <table className="mt-2 w-full text-body">
+          <thead>
+            <tr><Th>用途</Th><Th>值</Th><Th>Token 來源</Th></tr>
+          </thead>
+          <tbody>
+            <tr><Td>入口鈕(家)</Td><Td mono>40</Td><Td><TokenCell token="--field-height-lg" display="lg 密度 40" /></Td></tr>
+            <tr><Td>入口鈕(貼邊)</Td><Td mono>28</Td><Td><TokenCell token="--field-height-sm" /></Td></tr>
+            <tr><Td>貼邊帶寬</Td><Td mono>36</Td><Td><TokenCell token="--field-height-md" /></Td></tr>
+            <tr><Td>面板寬(預設 / 最小 / 最大)</Td><Td mono>400 / 360 / 640</Td><Td><TokenCell token="--agent-panel-width" display="--agent-panel-width / -min / -max" /></Td></tr>
+            <tr><Td>標題列高</Td><Td mono>48 / 56</Td><Td><TokenCell token="--chrome-header-height" display="md / lg density" /></Td></tr>
+            <tr><Td>訊息輪距</Td><Td mono>40</Td><Td>8 + 24(工具列)+ 8</Td></tr>
+            <tr><Td>最後一則 → 輸入盒</Td><Td mono>48</Td><Td><TokenCell token="--layout-space-bottom" /></Td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  ),
+}
+
+/** 色彩對照表:標誌雙緞帶色階、招喚波、入口鈕環與停靠帶,全部標出 token 來源。 */
+export const ColorMatrix: Story = {
+  name: '色彩對照表',
+  render: () => (
+    <div className="space-y-6 p-12">
+      <section>
+        <H3>品牌兩極(入口鈕環 / 光圈)</H3>
+        <Desc>單一數值來源在 agent-panel-logo.tsx 的 AGENT_BRAND;等於自家色階,不隨主題改。</Desc>
+        <table className="mt-2 w-full text-body">
+          <thead><tr><Th /><Th>值</Th><Th>色階</Th></tr></thead>
+          <tbody>
+            <tr><Td><Swatch value={AGENT_BRAND.blue} /> 藍</Td><Td mono>{AGENT_BRAND.blue}</Td><Td><TokenCell token="--color-blue-4" /></Td></tr>
+            <tr><Td><Swatch value={AGENT_BRAND.purple} /> 紫</Td><Td mono>{AGENT_BRAND.purple}</Td><Td><TokenCell token="--color-purple-4" /></Td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section>
+        <H3>面與訊息</H3>
+        <table className="mt-2 w-full text-body">
+          <thead><tr><Th>用途</Th><Th>Token</Th></tr></thead>
+          <tbody>
+            <tr><Td>面板底 / 入口鈕面</Td><Td><TokenCell token="--surface" display="--surface / --surface-raised" /></Td></tr>
+            <tr><Td>我方氣泡</Td><Td><TokenCell token="--secondary" /></Td></tr>
+            <tr><Td>代理內文連結</Td><Td><TokenCell token="--primary" display="--primary / hover --primary-hover" /></Td></tr>
+            <tr><Td>左緣分隔線</Td><Td><TokenCell token="--divider" /></Td></tr>
+            <tr><Td>停靠帶底 / 邊框</Td><Td><TokenCell token="--drop-target" display="--drop-target / --drop-target-border" /></Td></tr>
+          </tbody>
+        </table>
+      </section>
     </div>
   ),
 }
@@ -110,17 +164,17 @@ export const StateBehavior: Story = {
 export const Accessibility: Story = {
   name: '無障礙與鍵盤',
   render: () => (
-    <table className="text-body [&_td]:px-3 [&_td]:py-1 [&_th]:px-3 [&_th]:py-1 [&_th]:text-left [&_th]:font-medium">
-      <thead><tr><th>元件</th><th>角色 / 屬性</th><th>鍵盤</th></tr></thead>
+    <table className="w-full text-body">
+      <thead><tr><Th>元件</Th><Th>角色 / 屬性</Th><Th>鍵盤</Th></tr></thead>
       <tbody>
-        <tr><td>AgentPanel</td><td>role=complementary + aria-label</td><td>開啟時焦點入 header</td></tr>
-        <tr><td>AgentPanelHeader chevron</td><td>aria-haspopup=menu + aria-expanded</td><td>Enter/Space 開歷史浮層;方向鍵走列</td></tr>
-        <tr><td>AgentConversation</td><td>role=log + aria-live=polite</td><td>—</td></tr>
-        <tr><td>AgentThinking</td><td>button + aria-expanded(內文不另設 aria-live)</td><td>Enter/Space 開合</td></tr>
-        <tr><td>AgentToolbar</td><td>各鈕 aria-label</td><td>Tab 逐鈕;focus-within 常駐顯示</td></tr>
-        <tr><td>AgentPromptInput</td><td>textarea aria-label=訊息;停止態 aria-label=停止生成</td><td>Enter 送出、Shift+Enter 換行</td></tr>
-        <tr><td>AgentDecisionCard</td><td>role=group + aria-labelledby;radiogroup 原生</td><td>方向鍵選項;無 Esc(阻擋語意)</td></tr>
-        <tr><td>AgentLogo / AgentFab</td><td>label 有→role=img;無→aria-hidden;FAB aria-label=開啟智慧代理</td><td>減動作:常駐 loop 全停回靜止</td></tr>
+        <tr><Td>AgentPanel</Td><Td>role=complementary + aria-label</Td><Td>無自動移焦;改名 / 刪除對話框關閉後焦點回標題觸發</Td></tr>
+        <tr><Td>AgentPanelHeader chevron</Td><Td>aria-haspopup=dialog + aria-expanded</Td><Td>Enter/Space 開歷史浮層;方向鍵走列</Td></tr>
+        <tr><Td>AgentConversation</Td><Td>role=log + aria-live=polite</Td><Td>—</Td></tr>
+        <tr><Td>AgentThinking</Td><Td>button + aria-expanded(內文不另設 aria-live)</Td><Td>Enter/Space 開合</Td></tr>
+        <tr><Td>AgentToolbar</Td><Td>各鈕 aria-label</Td><Td>Tab 逐鈕;focus-within 常駐顯示</Td></tr>
+        <tr><Td>AgentPromptInput</Td><Td>textarea aria-label=訊息;停止態 aria-label=停止生成</Td><Td>Enter 送出、Shift+Enter 換行</Td></tr>
+        <tr><Td>AgentDecisionCard</Td><Td>role=group + aria-labelledby;radiogroup 原生</Td><Td>方向鍵選項;無 Esc(阻擋語意)</Td></tr>
+        <tr><Td>AgentLogo / AgentFab</Td><Td>label 有→role=img;無→aria-hidden;FAB aria-label=開啟智慧代理</Td><Td>減動作:常駐 loop 全停回靜止</Td></tr>
       </tbody>
     </table>
   ),

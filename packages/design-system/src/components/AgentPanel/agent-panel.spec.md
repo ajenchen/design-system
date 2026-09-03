@@ -73,7 +73,8 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - **可調寬**(`resizable`,預設開):左緣 `<ResizeHandle direction="horizontal" position="start">`
   (`patterns/resize-handle` 視覺 primitive:熱區 7、線 1、idle divider / hover border-hover / 拖曳中 primary,
   與 DataTable 欄寬把手同視覺;DataTable 尚未 migrate 到此 primitive,resize-handle.spec.md Roadmap);寬度夾在 `--agent-panel-width-min` 360 ~ `--agent-panel-width-max` 640
-  且 ≤ 視窗寬 50%(較小者勝);預設 `--agent-panel-width` 400。受控 `width`/`onWidthChange` 或
+  且 ≤ 視窗寬 50%(較小者勝);預設 `--agent-panel-width` 400。受控 `width` +`onWidthChange`(拖曳中每格都發,
+  受控端才有即時回饋)/ `onWidthCommit`(放開或鍵盤一步發一次,要落地儲存接這個);或
   非受控 `defaultWidth`。**無雙擊重設**(2026-09-02 拍板);以 Sheet 承載時同樣可拖(不衝突)。
   鍵盤:把手為 `role="separator"`(`aria-orientation="vertical"` + valuemin/max/now),
   ←/→ 每步 16、Home=最窄、End=最寬(DataTable 欄寬把手同語意:箭頭往哪、邊緣就往哪);
@@ -83,7 +84,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
 ### 2. AgentPanelHeader(標題列)
 
-- chrome header 家族:消費 `<ChromeHeader>`(padding-based 不鎖高:md 48 / lg 56 隨 page tier);
+- chrome header 家族:消費 `<ChromeHeader>`(固定高 `--chrome-header-height`:md 48 / lg 56 隨 density);
   標題=chrome typography `text-body-lg font-medium`(16;`header-canonical.spec.md`「Title typography」)。
   **標題群 ↔ 動作群間距 = `--layout-space-loose`**(2026-09-02 user 拍板「chevron 至少與其右方按鈕距離 loose」):
   ChromeHeader 根層預設 `gap-2` 在長標題截斷時會讓 chevron 貼到 28px 圖示鈕(8px)、被讀成同一群;本面板以
@@ -127,7 +128,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 ### 4. AgentMessage(訊息)
 
 - 我方:氣泡 `bg-secondary`、`rounded-md`、內距 8/12、max-width 85%、靠右;
-  進場=淡入+下滑 8、0.15s。代理:無氣泡、全寬、text-body;內文連結=Button link variant。
+  進場=淡入+下滑 8、0.15s。代理:無氣泡、全寬、text-body;內文連結由代理層樣式提供(`text-primary` / hover `text-primary-hover` + 底線,長文閱讀需要底線可掃描),**不是** Button link variant。
 - 附件列(氣泡內文字上方):**`<Chip variant="assist">`**(按鈕語意;位置距氣泡緣左 12/
   上 8、與文字距 8;**chip 相互垂直/水平間距 4**=與 Combobox 內 Tag 區間距一致
   (combobox.tsx Tag area gap 預設 4;2026-09-02 拍板,非 ChipGroup filter 的 gap-2))。A11y:`aria-label="附件:{檔名}"`。
@@ -154,8 +155,9 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 ### 7. AgentPromptInput(複合輸入盒)
 
 - Anatomy:`[附件列?][值(多行)][工具列:+ … 送出/停止]`;外框 = **Textarea edit×default 同一組字串**
-  (`textarea.tsx` `TEXTAREA_EDIT_CHROME` / `TEXTAREA_EDIT_FOCUS`:border-border、hover 一階 border-hover、
-  focus-within 主色;radius 4)。2026-09-02 user 抓「跟 Textarea 互動不同」→ 收斂為單一住所,禁自刻。
+  (`components/Field/field-wrapper.tsx` 的 `fieldChromeStyles({ mode: 'edit', variant: 'default' })`:border-border、
+  hover 一階 border-hover、focus-within 主色;radius 4 —— 單行欄位 / Textarea / 本輸入盒三種宿主同一份)。
+  2026-09-02 user 抓「跟 Textarea 互動不同」→ 收斂為單一住所,禁自刻。
 - 內距=欄位家族:上 `--field-control-py-md`、左右 `--field-px`、text-body;
   單行=32 等高鐵律。總高驗算:1+28(附件列)+32+40(工具列)+1=102=稿。
 - 附件列=**Tag md 恆帶 ×**(`onRemoveAttachment` 必填;相互間距 4、距內緣 4);單列不換行,
@@ -183,7 +185,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   距卡右/下各 12);聚焦即選中「其他」;**滑鼠/觸控點整張「其他」卡 → 自動聚焦 Input**(明確指向意圖),
   鍵盤方向鍵選中不搶焦點(APG radio roving,Tab 一步即到);radio `aria-controls` 指向 Input。
   幾何:一般卡 8+21+2+21+8 = 60;「其他」卡 8+21+8+32+12 = 81。
-- 關閉:僅 Skip 鈕與 header ×,兩者同一行為=跳過;無 Esc、無外點關閉(阻擋語意)。
+- 關閉:header × 恆為跳過;第一題另有跳過鈕(第二題起左鈕換成上一題),兩者同一行為=跳過;無 Esc、無外點關閉(阻擋語意)。
 - 步進:**一題一步**,footer 左鈕=第一題「跳過」(用預設繼續)、第二題起「上一題」(答案保留;
   [Material Stepper Back](https://m1.material.io/components/steppers.html) / [GOV.UK Back link](https://design-system.service.gov.uk/components/back-link/) 同款,
   2026-09-02 user 拍板);右鈕=「下一題」、末步「送出」;header × 恆為跳過。
@@ -258,7 +260,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   刪除=Dialog 危險樣式(`primary + danger`,同 autoHeight/440)。
   **刪當前對話契約**(consumer 實作,spec 定義):切到最近一則;全空→空狀態(NewConversation)。
 - 選定→切換對話、標題同步、浮層關閉;Dialog 關閉後焦點:浮層仍開 → 回觸發它的行內動作(改名/刪除),浮層已關 → 回標題觸發。
-- 所有 callback(`onSelect/onRename/onDeleteConversation`)可省略,列與動作仍渲染(固定 anatomy 律)。
+- 所有 callback(`onSelectConversation` / `onRenameConversation` / `onDeleteConversation`)可省略,列與動作仍渲染(固定 anatomy 律)。
 
 ### 附:空狀態
 
@@ -314,7 +316,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - 40 圓=`--field-height-lg` 於 lg 密度;圓形 iconOnly;面=`bg-surface-raised`+
   `--elevation-200`(不寫死白色);內置 24 標誌(同一造型)。
 - 外框=AI 觸發鈕特調:錐形(環向)漸層描邊 2px(整數寬+環向漸層=正圓對稱);
-  兩極=`AGENT_BRAND` 藍 254 / 紫 300(品牌資產常數,agent-panel-logo.tsx 唯一數值來源;各落於兩緞帶
+  兩極=`AGENT_BRAND` 藍 258 / 紫 294(= `--color-blue-4` / `--color-purple-4`;品牌資產常數,agent-panel-logo.tsx 唯一數值來源;各落於兩緞帶
   色相家族內;2026-09-02 藍→紫改色)。
 - 動畫:待機=靜止(=標誌 still 態;2026-09-02 拍板全家族待機一律靜止);
   有新訊=招喚態(標誌蓄勢;漣漪由邊框光圈代位:0–35% 貼邊聚亮至 .35(swell)→ 35% 呼氣起點
@@ -331,7 +333,9 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   (兩者互斥,開面板的入口與關面板的 × 不並存)。互斥、位置記憶與標誌狀態的**唯一住所 = `AgentPanelDock`**
   (`<AgentPanelDock logoState={s}>{({ close, logoState }) => <AgentPanel>…</AgentPanel>}</AgentPanelDock>`,
   外層容器需 `relative`):開時只渲染面板(× 接 `close`)、關時只渲染入口鈕(點一下開回來);產品端與所有 story
-  都用它,不各自寫一份 `open ? panel : fab`。DS 預設入口仍是全域頂列右側鈕
+  都用它,不各自寫一份 `open ? panel : fab`(「入口鈕三態」那個 story 例外:它展示的是獨立 `AgentFab` 的三種標誌狀態,沒有面板可互斥)。
+  **一個舞台一個 Dock**:家的座標只有一組(右下角離邊 loose),同一個 relative 容器內放兩個 `AgentPanelDock` 會像素級重疊;
+  要在同一頁擺兩個代理入口,請各自給不同的 relative 舞台(2026-09-03 稽核補上的不變式)。DS 預設入口仍是全域頂列右側鈕
   (`governance/planning/2026-08-11-agent-ui-panel-spec.md` 已裁),含滿高表格/分頁列的頁面一律用頂列入口。
 - **遮擋與貼邊**(`AgentFabDock`;演進:2026-09-02 拖到邊 → hover 小鈕 → 拖曳自由座標 → 2026-09-03 user 拍板
   「只有家與貼邊兩種位置」→ 帶的幾何(寬 36、下半部)→ 帶的樣式(drop-target 底 + 三邊虛線框)。**用語統一**:
@@ -388,6 +392,13 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
     ([M3 FAB](https://m3.material.io/components/floating-action-button/guidelines))→ 可拖在 DS 為 opt-in。
 - A11y:`aria-label="開啟智慧代理"`。
 
+## 附:anatomy 分層 rationale(2026-09-03 稽核補)
+
+設計規格層提供 Overview / 尺寸對照表 / 色彩對照表 / 狀態行為 / 無障礙五節。**Inspector 判 N/A** 並寫在這裡(而不是只寫在
+story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板寬是連續值(拖拉/鍵盤即所見)、標誌狀態已由展示層
+「標誌三態」與「思考起步與減速停止」承載、入口鈕形態由位置決定而非 prop,即時預覽面板會退化成一個沒有旋鈕的空殼。
+其餘五節齊備,尺寸與色彩皆標 token 來源。
+
 ## 動畫總表
 
 | 場景 | 動畫 | 級距 |
@@ -421,7 +432,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - `hasVariants=false`:家族各元件無視覺 variant 軸(結構分支如 Chip assist 屬 Chip 元件)。
 - `hasSizes=false`:面板寬/列高/鈕尺寸全由消費的 primitive/token 決定,無獨立 size 軸。
 - Field 家族空值/驗證:AgentPromptInput 空值時送出鈕不可按;改名 Dialog 走
-  form-validation 更新類規則(未異動停用/dirty 亮/還原再停)。
+  form-validation 更新類規則(未異動停用/dirty 亮/還原再停;**空白時一併停用**,避免可按卻無反應)。
 
 ## Loading / 無障礙預設
 

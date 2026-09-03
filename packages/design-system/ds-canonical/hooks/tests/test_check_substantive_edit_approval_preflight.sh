@@ -780,20 +780,20 @@ USER_LOGO_MSG="要把拍板的東西到底在哪裡?請你開啟新的artifacts�
 反正你仔細研究確保所有動畫都完美"
 TX_LOGO="$TMP_DIR/tx_logo.jsonl"
 build_transcript "$TX_LOGO" "$USER_LOGO_MSG"
-run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-logo.tsx" "$TX_LOGO"
-expect_pass_silent "10a. 口語「agent logo」= agent-logo.tsx exact target;問句已委託研究 → approved"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx" "$TX_LOGO"
+expect_pass_silent "10a. 口語「agent logo」= agent-panel-logo.tsx exact target;問句已委託研究 → approved"
 
-run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-fab.tsx" "$TX_LOGO"
-expect_pass_silent "10b. 家族檔口語「fab」= agent-fab.tsx exact target;「調整」directive → approved"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_LOGO"
+expect_pass_silent "10b. 家族檔口語「fab」= agent-panel-fab.tsx exact target;「調整」directive → approved"
 
 TX_LOGO_Q="$TMP_DIR/tx_logo_q.jsonl"
 build_transcript "$TX_LOGO_Q" "agent logo 的顏色是否要改成紫色?"
-run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-logo.tsx" "$TX_LOGO_Q"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx" "$TX_LOGO_Q"
 expect_block "10c. 單獨問句(無委託)→ 問句 ≠ 同意 fail closed" "BLOCKER"
 
 TX_LOGO_Q2="$TMP_DIR/tx_logo_q2.jsonl"
 build_transcript "$TX_LOGO_Q2" "另外我覺得 logo 的呼吸狀態是否也可以搭配透明度的改變?"
-run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-logo.tsx" "$TX_LOGO_Q2"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx" "$TX_LOGO_Q2"
 expect_block "10d. 家族 token「logo」綁定 + 單獨問句 → fail closed" "BLOCKER"
 
 TX_BTN_LOGO="$TMP_DIR/tx_btn_logo.jsonl"
@@ -808,7 +808,7 @@ jq -n --arg t "# Workflow authoring reference
 
 A workflow structures work across many agents" \
   '{isMeta: true, sourceToolUseID: "toolu_01skill", message: {role: "user", content: [{type: "text", text: $t}]}}' >> "$TX_LOGO_META"
-run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-logo.tsx" "$TX_LOGO_META"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx" "$TX_LOGO_META"
 expect_pass_silent "10f. 技能 meta 紀錄跟在指令後 → 不算最新 user 訊息,仍 approved"
 
 echo ""

@@ -10,7 +10,7 @@
   "contractDigest": "sha256:9a35d2ead2de56971a9497538776094cf9c9e750839f93e9a0b449c7b4da0989",
   "files": [
     {
-      "hash": "sha256:ba159df9d8ab8259700a41e792452d50d0d302ea09c3dc3af1065dcda70479d7",
+      "hash": "sha256:5c58a00c8e3fe506d113206ec796eccacd93a4f176b7f409c0c89b23a473ecdf",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:336936f0a2295396ae50b5bc1916d65e64a1769918f3588905f5c505a6cfa23a",
+      "hash": "sha256:679f6972e0ed1f3df74bf95b6bc15ba43de049dcf4da2f74b5a1cae26db329f7",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:2bb2799a0c021bb42af714e1070d99c875b5bf4e0e84b913f3a71ad50dded035",
+  "inputDigest": "sha256:f4d80ae1ece9279f09a21f0719aed13a1e2d5a62e3908075bd460b42fd45d184",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:979f2efe1d7f4ea7f18375745503739097e76e63166587c997c575556e2c97ef",
+  "snapshotDigest": "sha256:9d1f60ac29a6e81ae98d8ac4e3d21f6d24532a18fce0709a4a8014a20c09b8e8",
   "sources": [
     {
       "hash": "sha256:a7f6ed0eefc06856a5f761b7f0f61c70f6686e32f3eba225fa36171d333000fc",
@@ -645,7 +645,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 230,
-      "hash": "sha256:07d552ef8765fe3939e86b3e855917bca9c23638b9fc4f569913bb8075b317e8",
+      "hash": "sha256:d9ce727de9ac6a58a507256f43c81c283ff243ff6006c3cee8f2a83e87d75b83",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2126,7 +2126,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 14,
-      "hash": "sha256:8714da555db9da6f4898a100ccaa5ed69340fe6d1905f68995e68768330cb19c",
+      "hash": "sha256:873ee1c4fbc7e28aa88a891215cc3168f31b2d6805beaaa45c78fce24b8d89dd",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
