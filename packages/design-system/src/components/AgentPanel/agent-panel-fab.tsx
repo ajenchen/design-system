@@ -239,17 +239,10 @@ interface ShapeSpec {
   tooltipSide: 'top' | 'left' | 'right' | 'bottom'
   /** 招喚態是否畫邊框光圈(貼邊態省略:半圓貼著視窗邊,波會被切一半)。 */
   glow: boolean
-  /**
-   * 語意 `<button>` 恆為 40×40(= FAB_PX)的透明矩形,可視形狀畫在內層並靠右置中;
-   * 本欄是**把 40 的命中盒塞回可視盒而不移動可視位置**用的負外距(見下方 `<button>` 註解)。
-   */
-  box: string
 }
 const SHAPES: Record<Shape, ShapeSpec> = {
-  // 在家:可視 40 = 命中盒 40,不需要負外距。
-  home: { px: FAB_PX, logo: 24, radius: 'rounded-full', innerRadius: 'rounded-full', tooltipSide: 'top', glow: true, box: '' },
-  // 貼邊:可視只露 28(高也 28),命中盒仍是 40 → 上下各收 6 讓殼高回到 28,可視位置一格都不動。
-  dock: { px: DOCK_PX, logo: 16, radius: 'rounded-l-full pr-0', innerRadius: 'rounded-l-full', tooltipSide: 'left', glow: false, box: '-my-1.5' },
+  home: { px: FAB_PX, logo: 24, radius: 'rounded-full', innerRadius: 'rounded-full', tooltipSide: 'top', glow: true },
+  dock: { px: DOCK_PX, logo: 16, radius: 'rounded-l-full pr-0', innerRadius: 'rounded-l-full', tooltipSide: 'left', glow: false },
 }
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), Math.max(min, max))
@@ -678,28 +671,33 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
           </DropdownMenu>
           <Tooltip open={dragging ? false : undefined}>
             <TooltipTrigger asChild>
-              {/* **語意按鈕 = 40×40 的透明矩形,可視形狀是它的內層**(靠右置中)。
-                  這個分工讓 DOM 盒 / 無障礙 target / 命中區三者永遠是同一個矩形,一次解掉三種死區:
-                  (a) 圓角外的角落(矩形盒沒有圓角,不會有「落在圓外」的點);
-                  (b) 貼邊態可視只有 28,低於各家最小點擊尺寸(Material 48dp / Apple HIG 44pt /
-                      WCAG 2.5.5 AAA 44 CSS px),而殼本來就固定保留 40 寬,補到 40 不佔任何新版面;
-                  (c) Radix 的 Tooltip / DropdownMenu 以**按鈕**為錨 —— 錨是 40 而不是 28,浮層才不會
-                      反過來蓋住自己的命中區(28 錨 + 8px offset 會壓到命中區最左 4px)。
-                  這三種死區在 2026-09-03 都有實測數據:貼邊鈕命中起點 x=1252、表格垂直捲軸帶
-                  x∈[1248,1262] → x∈[1248,1252) 這 4px 看起來是鈕左緣、實際上鈕不在那裡,殼又
-                  `pointer-events-none`,真滑鼠點下去命中的是**捲軸軌道** → 表格往下翻一頁、面板不開,
-                  第二下同理(user 原話:「點在小fab上卻直接捲動了table而沒開啟agent,再次點擊也沒效」)。
-                  命中盒只往內側與上下長,右緣仍齊在舞台邊 → 不會讓文件變寬而生出視窗捲軸。
-                  機械閘:`scripts/agent-fab-hit-area-invariant.mjs`(命中矩形 ≥ 40×40、不越舞台、舞台零溢出)。 */}
+              {/* **命中區 = 可視區,一格不多一格不少**(2026-09-04 user 拍板修正:
+                  「其實只要觸控範圍跟視覺範圍是對齊的話,此問題就解決了」)。
+                  作法:語意 `<button>` 的**尺寸就是可視尺寸**(貼邊 28、在家 40),但**不帶圓角** ——
+                  圓角會讓命中判定跟著切掉,而「靠近左緣但偏離垂直中心的點落在圓外」正是最早那個死區
+                  (2026-09-03 實測命中圖:貼邊態 dy=±12 時最左 1–3px 點不到)。圓角改畫在內層的可視 span 上,
+                  於是命中盒 = 可視形狀的**外接矩形**:看得到的每一點都點得到,連角落都算。
+                  DOM 盒 / 無障礙 target / 命中區 / Radix 錨點四者因此是同一個矩形。
+
+                  **刻意不外推到 40**(2026-09-03 那版的作法,已撤回):桌機的慣例是命中範圍貼齊視覺範圍
+                  (滑鼠指標夠精細,不需要 mobile 那種放大),而外推有兩個實測到的副作用 ——
+                  (1) Radix 以按鈕為錨,錨變 40 後 tooltip 離**可視形狀** 20px 而不是 8px;
+                  (2) hover 會被左側那條隱形帶觸發,而且它會從底下的表格搶走點擊。
+                  貼邊鈕若壓在別人的捲軸上,捲軸露出的那幾 px 本來就不屬於鈕 —— 點在那裡捲動內容
+                  是正確行為,不是死區。 */}
               <button
                 type="button"
                 className={cn(
                   // touch-none:觸控上不讓瀏覽器把 pointerdown 解讀成捲動(同 resize-handle canonical),否則拖曳在手機不可用。
-                  'group/fab pointer-events-auto inline-flex touch-none cursor-[inherit] items-center justify-end border-none bg-transparent p-0',
+                  // **不寫 `spec.radius`**:圓角只畫在內層,按鈕本身保持矩形,角落才點得到。
+                  'group/fab pointer-events-auto inline-flex touch-none cursor-[inherit] items-center justify-center border-none bg-transparent p-0',
+                  'transition-[width,height,transform] duration-[var(--motion-duration-overlay)] ease-[var(--motion-easing-enter)] motion-reduce:transition-none',
+                  // 懸停微放大掛在**按鈕**上:命中盒與可視形狀一起放大,兩者永遠同步
+                  // (掛在內層的話,放大後可視會比命中盒大一圈)。值與獨立 AgentFab 同一組。
+                  !dragging && 'hover:scale-[1.04] motion-reduce:hover:scale-100',
                   'focus-visible:outline-none',
-                  spec.box,
                 )}
-                style={{ width: FAB_PX, height: FAB_PX }}
+                style={{ width: spec.px, height: spec.px }}
                 {...buttonProps}
                 ref={buttonRef}
                 aria-label={buttonLabel}
@@ -721,16 +719,15 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
                 <span
                   aria-hidden
                   className={cn(
-                    'flex shrink-0 items-center justify-center p-[2px] shadow-[var(--elevation-200)]',
-                    'transition-[width,height,border-radius,box-shadow,transform] duration-[var(--motion-duration-overlay)] ease-[var(--motion-easing-enter)] motion-reduce:transition-none',
+                    'flex h-full w-full items-center justify-center p-[2px] shadow-[var(--elevation-200)]',
+                    'transition-[border-radius,box-shadow] duration-[var(--motion-duration-overlay)] ease-[var(--motion-easing-enter)] motion-reduce:transition-none',
                     spec.radius,
-                    // 懸停 = 陰影升一級 + 微放大(與獨立 AgentFab 同一手感;spec「FAB」節)。
-                    // 觸發源是**整個 40 命中盒**:滑到左側那 12px 也會放大,不會出現「看起來沒反應卻點得到」。
-                    !dragging && 'group-hover/fab:scale-[1.04] group-hover/fab:shadow-[var(--elevation-200-hover)] motion-reduce:group-hover/fab:scale-100',
-                    // 焦點圈畫在可視形狀上,不是那個 40 的透明盒(否則會出現一圈找不到主人的方框)。
+                    // 陰影升一級(微放大由按鈕負責,見上)。與獨立 AgentFab 同一組 token。
+                    !dragging && 'group-hover/fab:shadow-[var(--elevation-200-hover)]',
+                    // 焦點圈畫在可視形狀上,不是那個沒有圓角的按鈕盒(否則焦點圈會是方的)。
                     'group-focus-visible/fab:ring-2 group-focus-visible/fab:ring-ring group-focus-visible/fab:ring-offset-2',
                   )}
-                  style={{ background: RING_GRADIENT, width: spec.px, height: spec.px }}
+                  style={{ background: RING_GRADIENT }}
                 >
                   <span className={cn('flex h-full w-full items-center justify-center bg-surface-raised', spec.innerRadius)}>
                     <AgentLogo state={logoState} ripple={false} size={spec.logo} />

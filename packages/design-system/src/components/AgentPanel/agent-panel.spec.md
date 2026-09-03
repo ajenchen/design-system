@@ -341,25 +341,31 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   「只有家與貼邊兩種位置」→ 帶的幾何(寬 36、下半部)→ 帶的樣式(drop-target 底 + 三邊虛線框)。**用語統一**:
   位置叫「家 / 貼邊」、區域叫「帶」、動作文案叫「縮小按鈕 / 放大按鈕」,不再用「收到邊 / 收合 / 小鈕 / 藍框」):40 外徑 + loose 內距 = 佔右下 56×56(md)/ 64×64(lg),
   與表格分頁列「操作右」必撞 → 主鈕可拖到右緣貼邊:
-  - **語意按鈕恆為 40×40 的透明矩形,可視形狀是它的內層**(靠右置中;漸層環 = 內層自己的 2px padding,
-    再內一層 span 只負責面色)。定位殼固定 40 寬(形態過渡不凸出右緣)且 `pointer-events-none`,
-    貼邊態用負的上下外距把 40 的命中盒塞回 28 高的可視盒 —— **可視位置與拍板過的 y 範圍一格都不動**。
-    這個分工讓 **DOM 盒 / 無障礙 target / 命中區永遠是同一個矩形**,一次解掉三種死區:
-    1. **圓角外的角落**:矩形盒沒有圓角,不會有「靠左緣但偏離垂直中心而落在圓外」的點
-       (2026-09-03 實測命中圖:dy=±12 時最左 1–3px 點不到)。
-    2. **可視 28 < 最小點擊尺寸**:Material 48dp / [Apple HIG 44pt](https://developer.apple.com/design/human-interface-guidelines/buttons) /
-       [WCAG 2.5.5 Target Size (Enhanced) 44 CSS px](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html)
-       都在 28 之上;殼本來就保留 40(= `--field-height-lg`,與家同一個數),補到 40 不佔任何新版面。
-       **這不是美觀問題而是量得出來的功能缺陷**:2026-09-03 於 1280×679 實測,貼邊鈕命中起點 x=1252、
-       同頁表格垂直捲軸帶 x∈[1248,1262] → **x∈[1248,1252) 這 4px 看起來是鈕左緣、實際上鈕不在那裡**,
-       殼又 `pointer-events-none` → 真滑鼠點下去命中的是**捲軸軌道**,表格往下翻一頁、面板不開,第二下同理
-       (user 原話:「點在小fab上卻直接捲動了table而沒開啟agent,再次點擊也沒效」)。
-    3. **浮層反過來蓋住自己的命中區**:Radix 的 Tooltip / DropdownMenu 以 `<button>` 為錨,錨是 40 而非 28,
-       8px 的 side offset 才不會壓進命中區最左 4px(這條由跨模型獨立審查抓到,2026-09-03)。
-    命中盒只往**內側與上下**長,右緣仍齊在舞台邊 —— 不會讓文件變寬而生出視窗捲軸
-    (user 明確要求各種 fab 狀態都不能讓視窗長出捲軸;實測家/貼邊/拖曳全程 `scrollWidth − clientWidth = 0`)。
-    機械閘:`scripts/agent-fab-hit-area-invariant.mjs`(掃 `elementFromPoint().closest('button')` 的真實命中測試,
-    斷言命中矩形 ≥ 40×40、不越舞台右/下緣、舞台零溢出;併在 `npm run test:agent-panel-invariants`)。
+  - **命中區 = 可視區,一格不多一格不少**(2026-09-04 user 拍板:「其實只要觸控範圍跟視覺範圍是對齊的話,此問題就解決了」)。
+    作法:語意 `<button>` 的**尺寸就是可視尺寸**(貼邊 28、在家 40),但**不帶圓角** —— 圓角會讓命中判定
+    跟著被切掉,而「靠近左緣但偏離垂直中心的點落在圓外」正是最早那個死區(2026-09-03 實測命中圖:
+    貼邊態 dy=±12 時最左 1–3px 點不到)。圓角、漸層環(2px padding)、陰影都畫在**內層的可視 span**,
+    於是命中盒 = 可視形狀的**外接矩形**:看得到的每一點都點得到,連圓角外的角落都算。
+    **DOM 盒 / 無障礙 target / 命中區 / Radix 錨點四者是同一個矩形。** 定位殼固定 40 寬(形態過渡不凸出右緣)
+    且 `pointer-events-none`,殼與可視形狀之間的空白**不屬於鈕**。
+    - **刻意不外推**(2026-09-03 曾外推到 40×40,2026-09-04 撤回):桌機的慣例是命中範圍貼齊視覺範圍
+      —— 滑鼠指標夠精細,不需要 mobile 那種放大。外推有兩個實測到的副作用:(1) Radix 以按鈕為錨,
+      錨變成 40 後 tooltip 離**可視形狀** 20px 而不是 8px(sideOffset 8 是相對錨,不是相對看得見的形狀);
+      (2) hover 會被那條隱形帶觸發,而且它會從底下的內容(例如表格)搶走點擊 —— 那正是更早一版
+      「看不見卻擋住點擊」的死區。
+    - **貼邊鈕壓在別人的捲軸上時**:捲軸露出、鈕沒蓋到的那幾 px 本來就不屬於鈕,點在那裡捲動內容
+      是**正確行為**,不是死區。要讓那幾 px 也開面板,唯一不違反「命中=視覺」的作法是把鈕本身做大,
+      屬視覺決定,需另行拍板。
+    - **懸停微放大掛在按鈕上**(不是內層):命中盒與可視形狀一起放大,兩者永遠同步;掛在內層的話
+      放大後可視會比命中盒大一圈。陰影升一級畫在內層(陰影屬於那個看得見的形狀)。值與獨立
+      `AgentFab` 同一組(`scale-[1.04]` + `--elevation-200-hover`),沒有另訂。
+    - **機械閘**:`scripts/agent-fab-hit-area-invariant.mjs` 掃 `elementFromPoint().closest('button')` 的
+      **真實命中測試**(不是 class 或 rect 的字面值),斷言 **H1 命中矩形 = 可視外接矩形(容差 1.5px,
+      偏大偏小都紅)/ H4 可視形狀的四個角落都點得到 / H2 不越舞台右下緣 / H3 舞台零溢出**;
+      併在 `npm run test:agent-panel-invariants`。最小點擊尺寸的世界級對照
+      ([Apple HIG 44pt](https://developer.apple.com/design/human-interface-guidelines/buttons) /
+      [WCAG 2.5.5 Target Size (Enhanced) 44 CSS px](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html))
+      是**尺寸建議**,不是「命中要大於視覺」的依據 —— 要滿足它應該把**可視形狀**做大,而不是加隱形邊。
   - **只有兩種合法位置**:「家」= 圓鈕 40,位置唯一在右下角(離右、下各 loose;[Android FAB 官方範例
     `layout_margin` 16dp](https://developer.android.com/develop/ui/views/components/floating-action-button)、Teambition 16,
     lg 密度 24)/「貼邊」= 收合鈕 `--field-height-sm` 28 貼右緣半圓(只留內側圓角、環只畫露出三邊、內置 16 標誌;

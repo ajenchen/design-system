@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 // AgentFab 命中區不變條件 —— 守「看得到就點得到,且點得到不代表要長出捲軸」。
 //
-//   (H1) 任一形態下,入口鈕的**命中矩形** ≥ 40×40(= FAB_PX,DS 的最小點擊尺寸;
-//        Material 48dp / Apple HIG 44pt / WCAG 2.5.5 AAA 44 CSS px 都在這之上,40 是本 DS
-//        既有的 --field-height-lg,兩態同一個數)。
-//        貼邊態只露 28,若命中區跟著縮成 28,鈕左邊就會出現一條**指標穿透的縫**;那條縫底下
-//        往往正是被鈕蓋住的容器捲軸 → 真滑鼠點下去命中捲軸軌道,內容翻頁、面板不開。
-//        (2026-09-03 實測:鈕命中起點 x=1252、表格捲軸帶 x∈[1248,1262] → 4px 縫全落在軌道上。)
+//   (H1) 任一形態下,入口鈕的**命中矩形 = 可視形狀的外接矩形**(2026-09-04 user 拍板:
+//        「只要觸控範圍跟視覺範圍是對齊的話,此問題就解決了」)。不多也不少:
+//        - 少了 → 看得到卻點不到(最早的死區:貼邊態是左側半圓,靠近左緣但偏離垂直中心的點
+//          落在圓外,實測 dy=±12 時最左 1–3px 點不到);
+//        - 多了 → 隱形帶會從底下的內容搶走點擊,而且 Radix 以按鈕為錨,tooltip 會被推遠
+//          (2026-09-03 外推到 40 的那版實測:tooltip 離可視形狀 20px 而不是 8px)。
+//        桌機慣例就是命中貼齊視覺(滑鼠指標夠精細),不做 mobile 那種放大。
+//
+//   (H4) **四個角落都點得到**:圓角只畫在內層,按鈕本身是矩形 —— 這是 H1「等於外接矩形」
+//        真正要保住的東西,單看外框極值看不出角落有沒有被圓角切掉。
 //
 //   (H2) 命中矩形不得越過舞台右緣/下緣 —— 越過會讓文件變寬變高而生出視窗捲軸
 //        (user 明確要求:各種 fab 狀態都不該讓視窗突然出現水平或垂直捲軸)。
@@ -58,8 +62,10 @@ const passes = []
 const record = (id, label, pass, detail = '') =>
   pass ? passes.push(`✓ ${id} | ${label}`) : failures.push(`✗ ${id} | ${label} | ${detail}`)
 
-/** DS 最小點擊尺寸(= agent-panel-fab.tsx 的 FAB_PX / --field-height-lg)。 */
-const MIN_TARGET = 40
+/** 掃描窗外擴量(px):要能看出「命中區比可視大」與「比可視小」兩種偏差。 */
+const SCAN_PAD = 24
+/** 命中矩形與可視外接矩形的容差(px):整數取樣本身就有 1px 量化。 */
+const EDGE_TOLERANCE = 1.5
 
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } })
 await page.goto(`${BASE}/iframe.html?id=design-system-components-agentpanel-設計規格--fab-placements&viewMode=story`, { waitUntil: 'networkidle' })
@@ -67,23 +73,22 @@ await page.waitForSelector('[data-placement]')
 // 形態過渡(width/height/right/top)跑完再量,否則量到動畫中途的尺寸。
 await page.waitForTimeout(600)
 
-const measured = await page.evaluate((MIN) => {
-  const hitRect = (btn, shell) => {
-    const b = btn.getBoundingClientRect()
-    const s = shell.getBoundingClientRect()
-    // 掃描窗:比殼再外擴 MIN,才看得到「命中區比殼還大」與「比殼還小」兩種情形。
-    const x0 = Math.floor(Math.min(s.left, b.left) - MIN)
-    const x1 = Math.ceil(Math.max(s.right, b.right) + MIN)
-    const y0 = Math.floor(Math.min(s.top, b.top) - MIN)
-    const y1 = Math.ceil(Math.max(s.bottom, b.bottom) + MIN)
-    const hits = (x, y) => {
-      const el = document.elementFromPoint(x, y)
-      return !!el && el.closest('button') === btn
-    }
+const measured = await page.evaluate((PAD) => {
+  const hits = (btn) => (x, y) => {
+    const el = document.elementFromPoint(x, y)
+    return !!el && el.closest('button') === btn
+  }
+  const hitRect = (btn, visual) => {
+    const v = visual.getBoundingClientRect()
+    const x0 = Math.floor(v.left - PAD)
+    const x1 = Math.ceil(v.right + PAD)
+    const y0 = Math.floor(v.top - PAD)
+    const y1 = Math.ceil(v.bottom + PAD)
+    const h = hits(btn)
     let left = Infinity, right = -Infinity, top = Infinity, bottom = -Infinity
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
-        if (!hits(x, y)) continue
+        if (!h(x, y)) continue
         if (x < left) left = x
         if (x > right) right = x
         if (y < top) top = y
@@ -96,13 +101,24 @@ const measured = await page.evaluate((MIN) => {
   }
   return [...document.querySelectorAll('[data-placement]')].map((shell) => {
     const btn = shell.querySelector('button')
+    // 可視形狀 = 按鈕的內層(帶圓角、漸層環的那一片)。命中契約以它為準,不是以按鈕的 class 為準。
+    const visual = btn.firstElementChild
     const stage = shell.offsetParent
     const st = stage.getBoundingClientRect()
-    const b = btn.getBoundingClientRect()
+    const v = visual.getBoundingClientRect()
+    const h = hits(btn)
+    // 角落:從可視外接矩形的四角往內縮 1px 取樣(縮 1 是為了避開邊界的半像素)。
+    const corners = [
+      ['左上', v.left + 1, v.top + 1],
+      ['右上', v.right - 1, v.top + 1],
+      ['左下', v.left + 1, v.bottom - 1],
+      ['右下', v.right - 1, v.bottom - 1],
+    ].map(([name, x, y]) => ({ name, hit: h(Math.round(x), Math.round(y)) }))
     return {
       placement: shell.dataset.placement,
-      visible: { l: +b.left.toFixed(1), r: +b.right.toFixed(1), w: +b.width.toFixed(1), h: +b.height.toFixed(1) },
-      hit: hitRect(btn, shell),
+      visual: { l: +v.left.toFixed(1), r: +v.right.toFixed(1), t: +v.top.toFixed(1), b: +v.bottom.toFixed(1), w: +v.width.toFixed(1), h: +v.height.toFixed(1) },
+      hit: hitRect(btn, visual),
+      corners,
       stage: {
         r: +(st.left + stage.clientLeft + stage.clientWidth).toFixed(1),
         b: +(st.top + stage.clientTop + stage.clientHeight).toFixed(1),
@@ -111,21 +127,34 @@ const measured = await page.evaluate((MIN) => {
       },
     }
   })
-}, MIN_TARGET)
+}, SCAN_PAD)
 
 record('H0', '找得到入口鈕', measured.length > 0, `找到 ${measured.length} 顆`)
 
 for (const m of measured) {
   const tag = `placement=${m.placement}`
   if (!m.hit) {
-    record('H1', `${tag} 命中矩形 ≥ ${MIN_TARGET}×${MIN_TARGET}`, false, '命中矩形量不到:整顆鈕都點不到')
+    record('H1', `${tag} 命中矩形 = 可視外接矩形`, false, '命中矩形量不到:整顆鈕都點不到')
     continue
   }
+  const dl = Math.abs(m.hit.left - m.visual.l)
+  const dr = Math.abs(m.hit.right - (m.visual.r - 1))
+  const dt = Math.abs(m.hit.top - m.visual.t)
+  const db = Math.abs(m.hit.bottom - (m.visual.b - 1))
   record(
     'H1',
-    `${tag} 命中矩形 ≥ ${MIN_TARGET}×${MIN_TARGET}`,
-    m.hit.w >= MIN_TARGET && m.hit.h >= MIN_TARGET,
-    `可視 ${m.visible.w}×${m.visible.h} / 命中 ${m.hit.w}×${m.hit.h}(命中區小於最小點擊尺寸 → 鈕左緣會有指標穿透的縫)`,
+    `${tag} 命中矩形 = 可視外接矩形(不多不少)`,
+    dl <= EDGE_TOLERANCE && dr <= EDGE_TOLERANCE && dt <= EDGE_TOLERANCE && db <= EDGE_TOLERANCE,
+    `可視 [${m.visual.l},${m.visual.t}]–[${m.visual.r},${m.visual.b}] / 命中 [${m.hit.left},${m.hit.top}]–[${m.hit.right},${m.hit.bottom}] `
+      + `→ 四邊差 L${dl.toFixed(1)} R${dr.toFixed(1)} T${dt.toFixed(1)} B${db.toFixed(1)}`
+      + `(偏小 = 看得到卻點不到;偏大 = 隱形帶搶走底下內容的點擊,且 tooltip 會被推遠)`,
+  )
+  const missedCorners = m.corners.filter((c) => !c.hit).map((c) => c.name)
+  record(
+    'H4',
+    `${tag} 可視形狀的四個角落都點得到(圓角不得切掉命中)`,
+    missedCorners.length === 0,
+    `點不到的角:${missedCorners.join('、') || '無'}`,
   )
   record(
     'H2',

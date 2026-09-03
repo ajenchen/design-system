@@ -1340,7 +1340,13 @@ function DataTableInner<TData>(
     const body = centerBodyRef.current
     if (!body) return
     setCenterBodyWidth((prev) => (prev === body.clientWidth ? prev : body.clientWidth))
-    const vGutter = Math.max(0, Math.round(body.offsetWidth - body.clientWidth))
+    // 橫軸量的是**不變式本身**(header 與 body 的**內容盒等寬**),不是「捲軸多寬」這個代理值。
+    // `clientWidth` = padding box 減捲軸(不含 border),所以兩者相減 = header 必須讓出的量。
+    // **不可用 `body.offsetWidth − body.clientWidth`**(2026-09-03 抓到):那個式子把 body 自己的
+    // border 也算成捲軸寬,body 一旦有邊框就會多補;而且它問的是錯的問題 —— 今天差在垂直捲軸,
+    // 將來若差在 border、`scrollbar-gutter` 或別的東西,這一行一樣會把它補平。
+    const header = centerHeaderRef.current
+    const vGutter = header ? Math.max(0, Math.round(header.clientWidth - body.clientWidth)) : 0
     setVScrollbarSpacer((prev) => (prev === vGutter ? prev : vGutter))
     // 縱軸:水平捲軸只吃掉 center 的高度,pinned 區沒有 → pinned 會比 center 多顯示一條列。
     // 補等高的 padding-bottom 給 pinned 區,三個區的可視列高才一致(AG Grid 是把水平捲軸放到
