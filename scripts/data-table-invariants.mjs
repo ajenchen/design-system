@@ -402,6 +402,68 @@ if (!simulated) {
   )
 }
 
+// ── I12:水平捲軸只吃掉 center 的高度,pinned 區必須補等高(2026-09-03,同一根因的縱軸孿生)──
+// center body 自己有 overflow-x:auto,捲軸佔掉它 15px 高;pinned 區沒有捲軸 →
+// 不補的話 pinned 會比 center 多露出一條列(實測 300 vs 285)。AG Grid 是把水平捲軸放到
+// 三個 row container 之外(ag-fake-horizontal-scroll 是 .ag-root 的 flex 子項),達成同一個結果;
+// 我們留在 center 內、改用等高 padding-bottom 補平(對照 MUI X 的 scrollbar filler 思路)。
+// 與 I11b 同樣用透明邊框造出「捲軸佔位」,CI 的 overlay 捲軸環境才走得到補償分支。
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, { waitUntil: 'networkidle' })
+await page.waitForSelector('[data-datatable-panel="left"]')
+const SIM_H_BORDER = 15
+const pinnedReport = await page.evaluate(async (border) => {
+  const bodies = [...document.querySelectorAll('[data-datatable-panel="center"]')]
+  const idx = bodies.length > 1 ? 1 : 0
+  const center = bodies[idx]
+  const left = [...document.querySelectorAll('[data-datatable-panel="left"]')][idx]
+  const right = [...document.querySelectorAll('[data-datatable-panel="right"]')][idx]
+  if (!center || !left) return null
+  center.style.borderBottom = `${border}px solid transparent`
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+  await new Promise((r) => setTimeout(r, 200))
+  const visible = (el) => (el ? el.clientHeight - parseFloat(getComputedStyle(el).paddingBottom || '0') : null)
+  const out = {
+    hGutter: center.offsetHeight - center.clientHeight,
+    leftPadding: parseFloat(getComputedStyle(left).paddingBottom || '0'),
+    rightPadding: right ? parseFloat(getComputedStyle(right).paddingBottom || '0') : null,
+    centerVisible: center.clientHeight,
+    leftVisible: visible(left),
+    rightVisible: visible(right),
+    maxScroll: [
+      left.scrollHeight - left.clientHeight,
+      center.scrollHeight - center.clientHeight,
+      right ? right.scrollHeight - right.clientHeight : null,
+    ],
+  }
+  center.style.borderBottom = ''
+  return out
+}, SIM_H_BORDER)
+if (!pinnedReport) {
+  record('I12', 'pinned + center body panel 存在', false, 'panel selector 找不到')
+} else {
+  record('I12', '造出佔版面的水平捲軸高度(補償分支確實被走到)', pinnedReport.hGutter >= SIM_H_BORDER, `量到 ${pinnedReport.hGutter}px`)
+  record(
+    'I12',
+    'pinned 區補的 padding-bottom 等於 center 被水平捲軸吃掉的高度',
+    Math.abs(pinnedReport.leftPadding - pinnedReport.hGutter) <= 0.5,
+    `left padding-bottom ${pinnedReport.leftPadding} vs hGutter ${pinnedReport.hGutter}`,
+  )
+  record(
+    'I12',
+    'pinned 與 center 的可視列高一致(否則 pinned 會多露出一條列)',
+    Math.abs(pinnedReport.leftVisible - pinnedReport.centerVisible) <= 0.5
+      && (pinnedReport.rightVisible == null || Math.abs(pinnedReport.rightVisible - pinnedReport.centerVisible) <= 0.5),
+    `left ${pinnedReport.leftVisible} / center ${pinnedReport.centerVisible} / right ${pinnedReport.rightVisible}`,
+  )
+  record(
+    'I12',
+    '三區可捲動量一致(補 padding 不能藏住最後一列)',
+    Math.abs(pinnedReport.maxScroll[0] - pinnedReport.maxScroll[1]) <= 0.5
+      && (pinnedReport.maxScroll[2] == null || Math.abs(pinnedReport.maxScroll[2] - pinnedReport.maxScroll[1]) <= 0.5),
+    `maxScroll ${JSON.stringify(pinnedReport.maxScroll)}`,
+  )
+}
+
 // ── Output ──
 console.log(`\n=== DataTable Invariants Test ===`)
 console.log(`PASS: ${passes.length}`)
