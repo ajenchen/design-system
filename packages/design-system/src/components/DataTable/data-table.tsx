@@ -365,11 +365,86 @@ const HEADER_PANEL = 'bg-muted border-b border-divider'
 // 可透過 `columnDef.minSize` override。
 export const MIN_COLUMN_WIDTH = 80
 
+/**
+ * 欄寬分配:**算一次**,兩邊寫同一個整數。
+ *
+ * 這是 AG Grid v33(= 我們對照的那一代)的模型:欄寬由 JS 算進 `AgColumn.actualWidth`,
+ * header cell 與 body cell 各自把**同一個整數**寫成 `style.width`,所以兩個容器寬度不同時,
+ * 差額只會變成右端的空白,**不可能**被分攤到每一欄。我們原本把分配交給 CSS flex,由瀏覽器在
+ * header 與 body 兩個容器裡各跑一次 —— 只要兩邊可用寬度差一點(捲軸、border、取整),
+ * `flex-grow: 1` 就會把差額平均攤到每一欄並逐欄累積(2026-09-03 實測 7 欄:0 / 2.1 / 4.3 /
+ * 6.4 / 8.6 / 10.7 / 12.9,增量恰為 15/7)。
+ *
+ * 取整用**前綴和游標**(`round(累積理想 − 累積已配)`,同 AG Grid `columnFlexService`):
+ * 第 i 欄的取整誤差被第 i+1 欄吸收,總誤差固定 ±0.5px 不累積;最後把餘數補給最後一欄,
+ * 保證總和 = 可用寬度。
+ *
+ * @param bases 每欄的基準寬(`col.getSize()`)
+ * @param maxes 每欄的上限(無上限傳 undefined)
+ * @param available 可用寬度;**一律取 body 的內容寬**(較窄的那個),header 多出來的部分變成尾端空白
+ */
+export function distributeColumnWidths(
+  bases: number[],
+  maxes: (number | undefined)[],
+  available: number,
+): number[] {
+  const n = bases.length
+  if (n === 0) return []
+  const total = bases.reduce((a, b) => a + b, 0)
+  // 放不下 → 各自 base,水平溢出(與原本 `minWidth: baseSize` 不可 shrink 的行為一致)
+  if (!Number.isFinite(available) || available <= total) return bases.map((b) => Math.round(b))
+
+  // 撞到 maxWidth 的欄先凍結,剩餘空間重新分給沒凍結的(同 flexbox 的 resolve-flexible-lengths)
+  const frozen = new Array<boolean>(n).fill(false)
+  const out = new Array<number>(n).fill(0)
+  for (let guard = 0; guard <= n; guard++) {
+    const freeCols: number[] = []
+    let frozenWidth = 0
+    for (let i = 0; i < n; i++) (frozen[i] ? (frozenWidth += out[i]) : freeCols.push(i))
+    if (freeCols.length === 0) break
+    const freeBase = freeCols.reduce((a, i) => a + bases[i], 0)
+    const space = available - frozenWidth
+    const grow = Math.max(0, space - freeBase) / freeCols.length
+    let violated = false
+    for (const i of freeCols) {
+      const want = bases[i] + grow
+      const cap = maxes[i]
+      if (cap != null && Number.isFinite(cap) && want > cap) {
+        out[i] = cap
+        frozen[i] = true
+        violated = true
+      }
+    }
+    if (!violated) {
+      // 前綴和取整:誤差不累積
+      let idealRight = frozenWidth
+      let actualLeft = frozenWidth
+      for (const i of freeCols) {
+        idealRight += bases[i] + grow
+        const w = Math.round(idealRight - actualLeft)
+        out[i] = w
+        actualLeft += w
+      }
+      // 餘數給最後一欄,總和 = available
+      const last = freeCols[freeCols.length - 1]
+      out[last] += available - actualLeft
+      break
+    }
+  }
+  return out
+}
+
 function columnSizeStyle(
   col: { id: string; getSize: () => number; columnDef: { minSize?: number; maxSize?: number } },
-  opts: { resize: boolean; isSystemCol: boolean },
+  opts: { resize: boolean; isSystemCol: boolean; resolvedWidth?: number },
 ): React.CSSProperties {
   const baseSize = col.getSize()
+  // 已由 `distributeColumnWidths` 算好 → 寫絕對值,header 與 body 讀同一個整數(AG Grid v33 模型)。
+  // 這一支優先於下面所有分支:它就是「算一次」的出口。
+  if (opts.resolvedWidth != null) {
+    const w = opts.resolvedWidth
+    return { flex: `0 0 ${w}px`, width: w, minWidth: w, maxWidth: w }
+  }
   // **Regression fix(2026-05-06 v14.1)**:default fallback 從 `MIN_COLUMN_WIDTH (80)` 改回
   // `baseSize`(等於 v9 行為)。前 v11 column resize commit 改 fallback 為 80 後,enableColumnResize=false
   // 的 default flex case 全 column 可 shrink 到 80 → flex 均分忽視 `size` prop → Note 360 被擠到 204
@@ -1238,7 +1313,10 @@ function DataTableInner<TData>(
    * (2026-09-03 實測 7 欄:0 / 2.1 / 4.3 / 6.4 / 8.6 / 10.7 / 12.9,增量恰為 15/7)。
    * 拖拉模式用絕對 `width`,結構上免疫。
    *
-   * `vScrollbarGutter`(橫軸)= header 必須讓出的寬度;`hScrollbarGutter`(縱軸)= pinned 區必須補的高度。
+   * **橫軸已不需要補償**:欄寬改由 `distributeColumnWidths` 算一次、兩邊寫同一個絕對整數
+   * (AG Grid v33 模型),容器寬差只會變成 header 尾端的空白,不會攤到每一欄 —— 原本的
+   * `padding-inline-end` 補償因此在 2026-09-03 移除。`hScrollbarGutter`(縱軸)仍需要:
+   * 水平捲軸吃掉 center 的高度,pinned 區要補等高的透明下邊框才不會多露出一條列。
    * 不用 `scrollbar-gutter: stable`:那會在沒有捲軸時也永久預留 15px,content-fit 看起來像恆有捲軸
    * (舊決策的理由成立);動態量測兩者兼顧。
    *
@@ -1250,23 +1328,28 @@ function DataTableInner<TData>(
    * (`width -= getScrollbarWidth()`)。亦即「量到捲軸就把 header 縮同寬」有兩家直接前例;
    * 要拿到結構性免疫得走 AG Grid 那條路(header 移進捲動容器 + 假捲軸),見 spec 不變條件 (6)(7)。
    */
-  const [vScrollbarGutter, setVScrollbarGutter] = React.useState(0)
   const [hScrollbarGutter, setHScrollbarGutter] = React.useState(0)
+  /**
+   * Header 內容尾端要補的 spacer 寬 = center body 垂直捲軸佔掉的寬度。
+   * **不是 padding,是內容寬**:欄寬已是絕對值,加寬容器不會改變欄寬,只會延長可捲動內容 ——
+   * 這樣 header 與 body 的水平捲動範圍才相等(否則捲到最右端 header 會少 15px 而落後)。
+   * 這就是 AG Grid v33 `CenterWidthFeature` 的 `addSpacer`:
+   * `if (relevantWidth === 0 && verticalScrollShowing) totalWidth += getScrollbarWidth()`。
+   */
+  const [vScrollbarSpacer, setVScrollbarSpacer] = React.useState(0)
+  /** Center body 的內容寬(已扣掉垂直捲軸)—— 欄寬分配的唯一輸入。 */
+  const [centerBodyWidth, setCenterBodyWidth] = React.useState(0)
   const measureScrollbarGutters = React.useCallback(() => {
     const body = centerBodyRef.current
     if (!body) return
-    const header = centerHeaderRef.current
-    // 橫軸:量的是**不變式本身**(header 與 body 的內容盒等寬),不是「捲軸多寬」這個代理值。
-    // clientWidth = border box − border(padding 算在內),所以 header 的 clientWidth 不受自己的
-    // padding 影響,兩者相減就是 header 必須讓出的量。今天差在垂直捲軸,將來若差在 border、
-    // scrollbar-gutter 或別的東西,同一行程式一樣把它補平。
-    const vGap = header ? Math.max(0, Math.round(header.clientWidth - body.clientWidth)) : 0
+    setCenterBodyWidth((prev) => (prev === body.clientWidth ? prev : body.clientWidth))
+    const vGutter = Math.max(0, Math.round(body.offsetWidth - body.clientWidth))
+    setVScrollbarSpacer((prev) => (prev === vGutter ? prev : vGutter))
     // 縱軸:水平捲軸只吃掉 center 的高度,pinned 區沒有 → pinned 會比 center 多顯示一條列。
     // 補等高的 padding-bottom 給 pinned 區,三個區的可視列高才一致(AG Grid 是把水平捲軸放到
     // 三區之外,達到同一個結果)。
     const hGap = Math.max(0, Math.round(body.offsetHeight - body.clientHeight))
     // 只在值真的變了才 setState:相同值 React bail out,不會遞迴。
-    setVScrollbarGutter((prev) => (prev === vGap ? prev : vGap))
     setHScrollbarGutter((prev) => (prev === hGap ? prev : hGap))
   }, [])
   // 兩個觸發源缺一不可:
@@ -1489,6 +1572,27 @@ function DataTableInner<TData>(
   // 在 header(content max-content 小)vs body(content max-content 大)會 diverge 76+ px,
   // user 報「header / row 對不起來」)。
   const centerColsWidth = centerCols.reduce((a, c) => a + c.getSize(), 0)
+  /**
+   * Center 欄寬:**算一次**,header 與 body 共用同一組整數(見 `distributeColumnWidths` 的說明)。
+   * 可用寬度一律取 **body 的內容寬**(`centerBodyWidth`,已扣掉垂直捲軸);header 比它多出來的部分
+   * 變成尾端空白,由 panel 的表頭底色蓋住 —— 這就是 AG Grid v33 `CenterWidthFeature` 的 `addSpacer`。
+   * 拖拉欄寬模式(`enableColumnResize`)本來就走絕對寬,不進這條路。
+   */
+  const centerWidths = React.useMemo(() => {
+    const map = new Map<string, number>()
+    if (enableColumnResize || centerBodyWidth <= 0 || centerCols.length === 0) return map
+    const dataCols = centerCols.filter((c) => !isSystemColumn(c.id))
+    const systemWidth = centerCols
+      .filter((c) => isSystemColumn(c.id))
+      .reduce((a, c) => a + c.getSize(), 0)
+    const widths = distributeColumnWidths(
+      dataCols.map((c) => c.getSize()),
+      dataCols.map((c) => (c.columnDef as { maxSize?: number }).maxSize),
+      centerBodyWidth - systemWidth,
+    )
+    dataCols.forEach((c, i) => map.set(c.id, widths[i]))
+    return map
+  }, [centerCols, centerBodyWidth, enableColumnResize])
 
   // Header 寬度 → body region 同步（virtual mode 需要明確寬度）
   // **`useLayoutEffect` 不是 `useEffect`**(2026-09-03 稽核抓到):用 `useEffect` 時首次 mount 那一幀
@@ -1686,7 +1790,7 @@ function DataTableInner<TData>(
           // 才生效(避免雙線)— CSS 用 `:not(:last-child)` selector 處理。
           data-column-id={SELECT_COL_ID}
           className={cn('flex items-center justify-center shrink-0', !isDisabled && 'cursor-pointer')}
-          style={{ ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id) }), ...cellPadding }}
+          style={{ ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id), resolvedWidth: centerWidths.get(cell.column.id) }), ...cellPadding }}
           onClick={onCellClick}
         >
           {mode === 'single' ? (
@@ -1868,7 +1972,7 @@ function DataTableInner<TData>(
           isEditingThisCell && !experimentalActiveEditorController && 'z-10',
         )}
         style={{
-          ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id) }),
+          ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id), resolvedWidth: centerWidths.get(cell.column.id) }),
           // Padding override 只在 inline-edit cell(naked Field 撐滿 cell);portal mode cell 走正常 view padding
           ...(isEditingThisCell && !experimentalActiveEditorController ? {} : cellPadding),
           // Slice D Step 2(2026-05-10):flag 開時 set CSS variable 抑制 Field naked hover outline,
@@ -2197,7 +2301,7 @@ function DataTableInner<TData>(
           key={header.id}
           role="columnheader"
           className={cn('flex items-center justify-center shrink-0 select-none', !isHeaderDisabled && 'cursor-pointer')}
-          style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id) }), ...cellPadding }}
+          style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: centerWidths.get(header.column.id) }), ...cellPadding }}
           onClick={isHeaderDisabled ? undefined : (e) => { e.stopPropagation(); toggleHeaderCheckbox() }}
         >
           {mode === 'multi' && (
@@ -2247,7 +2351,7 @@ function DataTableInner<TData>(
           align === 'right' && 'justify-end',
           align === 'center' && 'justify-center',
         )}
-        style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id) }), ...cellPadding }}
+        style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: centerWidths.get(header.column.id) }), ...cellPadding }}
       >
         {/* 左區:label + sort indicator(整區 click → toggle sort;Shift+click 加 secondary,enableMultiSort 啟用時) */}
         <div
@@ -2728,15 +2832,13 @@ function DataTableInner<TData>(
           // 因此自動帶到同一層底色與同一條分隔線 —— 表頭右上角不再是空白,而且因為只疊一層,
           // strip 與欄位區在 light / dark 都是同一個顏色(2026-09-03 user 抓到)。
           className={cn(HEADER_PANEL, 'flex-1 min-w-0 overflow-hidden')}
-          // `paddingInlineEnd` 不是 `paddingRight`:RTL 下垂直捲軸渲染在 inline-end(左緣),
-          // 用實體方向會補錯邊,兩個內容盒不但沒補平、起點還各差一個捲軸寬(等效誤差 2g)。
-          style={vScrollbarGutter > 0 ? { paddingInlineEnd: vScrollbarGutter } : undefined}
         >
           {/* 2026-05-06 v13.1:retire `w-max min-w-full` — 改 `style={{minWidth: centerColsWidth}}`
               跟 body inner wrapper 同 SSOT。前 `w-max` 讓 header content max-content(label 短)
               vs body content max-content(Note 長 break-words)diverge → header / row width 不對齊 76px。
               統一 minWidth 公式後兩者永遠等寬,cells flex 均分結果一致。 */}
-          <div style={{ minWidth: centerColsWidth }}>
+          {/* minWidth 加上 spacer:見 `vScrollbarSpacer` —— 讓 header 與 body 的水平捲動範圍相等。 */}
+          <div style={{ minWidth: centerColsWidth + vScrollbarSpacer }}>
             {renderHeaderRow(centerCols, false)}
           </div>
         </div>
@@ -2801,7 +2903,8 @@ function DataTableInner<TData>(
           // overflow-x/y: auto — 沒 overflow 就不顯 bar。wrapper minWidth 仍 trigger H 真 overflow。
           // **不**用 scrollbar-gutter: stable — 那會永遠保留 V 軸 15px 空間,
           // content fit 時看起來像「永遠有 V 捲軸」(Image #5 bug)。
-          // 對齊由 header 端的動態 padding-right 補(見 vScrollbarGutter),不再有 misalign trade-off。
+          // 對齊不靠補償:欄寬由 `distributeColumnWidths` 算一次、header 與 body 寫同一個整數,
+          // 容器寬差只會變成 header 尾端空白(由 panel 的表頭底色蓋住)。
           className="flex-1 min-w-0 overflow-x-auto overflow-y-auto focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
           // isFillHeight:用 JS 算的 px(bodyMaxHeight),bypass CSS % 在 flex 場景的不可靠 shrink。
           // 固定 px(300px etc):直接套 height。
