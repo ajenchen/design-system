@@ -835,6 +835,11 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
     })),
     /advisory endpoint failed:503 Service Unavailable/,
   )
+  // An unrecognised payload names its top-level keys instead of blaming the schema.
+  assert.throws(
+    () => evaluate(JSON.stringify({ someOtherShape: true, code: 'E500' })),
+    /unrecognised audit payload\(keys:someOtherShape,code\)/,
+  )
   // A real report that merely lacks the expected version still reports as a schema problem.
   assert.throws(
     () => evaluate({ auditReportVersion: 3, vulnerabilities: {}, metadata: { vulnerabilities: {} } }, { exitStatus: 0 }),
