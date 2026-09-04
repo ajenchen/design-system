@@ -1370,6 +1370,21 @@ function DataTableInner<TData>(
   const [vScrollbarSpacer, setVScrollbarSpacer] = React.useState(0)
   /** Center body 的內容寬(已扣掉垂直捲軸)—— 欄寬分配的唯一輸入。 */
   const [centerBodyWidth, setCenterBodyWidth] = React.useState(0)
+  /**
+   * 缺陷 S 的觀測點:一個 0 高、`width:100%` 的空元素,擺在 center body 裡交給 ResizeObserver。
+   *
+   * **為什麼非它不可**:垂直捲軸出現時,center body 的 **border-box 一點都沒變**(捲軸是從內部
+   * 吃掉空間),所以觀察 body 本身的 RO 一次都不會響 —— 2026-09-03 實測:`clientWidth`
+   * 1143 → 1128 → 1143 期間 RO fire **0 次**。body 的內層 wrapper 也救不了:它的寬由(過期的)
+   * 欄寬決定而不是由容器決定,容器變窄時它反而溢出、寬度不變 → 同樣不響。
+   * `width: 100%` 是相對**內容盒**算的,捲軸一出現內容盒就變窄,這個元素的 border-box **真的**變了,
+   * RO 就一定會響(實測:容器 clientWidth 300 → 285 時,它同步 300 → 285)。
+   * 這正是 `spec.md` 缺陷 S 自己寫下的兩個解法之一,另一個是改捲動架構(見缺陷 O)。
+   *
+   * `aria-hidden` + `role="presentation"`:它是 `role="rowgroup"` 的子元素,不能被當成一個「列」
+   * (2026-07-29 WM beta.95 錨例:修 `scrollable-region-focusable` 反而引爆 `aria-required-children`)。
+   */
+  const widthSentinelRef = React.useRef<HTMLDivElement>(null)
   const measureScrollbarGutters = React.useCallback(() => {
     const body = centerBodyRef.current
     if (!body) return
@@ -1403,8 +1418,15 @@ function DataTableInner<TData>(
     // header 自己的尺寸變(視窗寬、面板拖曳)也要重量,否則只有 body 端的變化會被看到。
     const header = centerHeaderRef.current
     if (header) ro.observe(header)
-    const inner = body.firstElementChild
+    // **不可用 `firstElementChild`**:2026-09-04 起第一個子元素是下面那個寬度 sentinel,
+    // 不是列容器。要觀察的是列容器(它的寬 = 欄寬總和,欄集合變動時會變)。
+    const inner = body.querySelector(':scope > div:not([role="presentation"])')
     if (inner) ro.observe(inner)
+    // 缺陷 S:唯一能看到「捲軸出現/消失」的觀測點(理由見 widthSentinelRef 的宣告)。
+    // 沒有它,補償就只剩「React 重繪後量一次」一條路 —— 圖片載入撐高列、字體 swap、動畫結束
+    // 這些不經過 React 的變化會讓補償永遠停在過期值。
+    const sentinel = widthSentinelRef.current
+    if (sentinel) ro.observe(sentinel)
     return () => ro.disconnect()
   }, [measureScrollbarGutters])
 
@@ -3237,6 +3259,9 @@ function DataTableInner<TData>(
           {/* 2026-05-06 v13.1:retire `w-max min-w-full` — 改 `style={{minWidth: centerColsWidth}}`
               跟 header inner wrapper 同 SSOT。renderBodyRows 內部已用同 containerWidth 公式 wrap rows,
               此外層 wrapper minWidth 跟內層一致 = 兩層都 = centerColsWidth → header / body 對齊。 */}
+          {/* 缺陷 S 的寬度觀測點 —— 0 高、不佔版面、不進無障礙樹;放在列之前,
+              不影響 `.dtCellGrid:last-child` 這類依 DOM 位置的判定(缺陷 M)。 */}
+          <div ref={widthSentinelRef} role="presentation" aria-hidden className="h-0 w-full" />
           <div style={{ minWidth: centerColsWidth }}>
             {renderBodyRows(centerCols, true, false, centerColsWidth)}
           </div>

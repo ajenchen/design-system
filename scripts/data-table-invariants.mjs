@@ -892,6 +892,54 @@ rowHeightReport.forEach((t, i) => {
     `最差在第 ${t.worst.i} 列:${JSON.stringify(t.worst)}(>0.5 = 三區各算各的高度,同一列在左右釘選區與中段錯開)`)
 })
 
+/* ── I16:缺陷 S 的寬度觀測點 —— 它必須真的跟著「內容盒」走 ──────────────────────────
+ * 垂直捲軸出現時 center body 的 border-box 一點都沒變(捲軸從內部吃掉空間),所以觀察 body 本身的
+ * ResizeObserver 一次都不會響(2026-09-03 實測 fire 0 次)。補償因此只剩「React 重繪後量一次」,
+ * 圖片載入撐高列 / 字體 swap / 動畫結束這些不經 React 的變化會讓它停在過期值。
+ *
+ * 解法是放一個 `width:100%` 的哨兵 —— 它的 border-box **就是** clientWidth,所以捲軸一出現它就變。
+ * 這條閘驗的是那個等式本身,不是「有沒有加那個 class」。
+ *
+ * **不依賴真捲軸**:CI 的 headless Chromium 是 overlay 捲軸(gutter = 0),等真捲軸出現才驗會變成
+ * 空轉。改成注入一條 20px 的透明右邊框 —— `clientWidth` 不含 border,所以它造出的是與捲軸**同型**
+ * 的內容盒縮減(這也是本檔 I11b / I12 既有的模擬手法)。
+ */
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, { waitUntil: 'networkidle' })
+await page.waitForSelector('[data-datatable-hscroll]')
+await page.waitForTimeout(400)
+const SIM_V_BORDER = 20
+const sentinelReport = await page.evaluate((simPx) => {
+  const bodies = [...document.querySelectorAll('[data-datatable-hscroll]')]
+  return bodies.map((b) => {
+    const sen = b.querySelector(':scope > [role="presentation"]')
+    if (!sen) return { hasSentinel: false }
+    const natural = { sen: +sen.getBoundingClientRect().width.toFixed(2), client: b.clientWidth, h: sen.getBoundingClientRect().height }
+    // 造出與「垂直捲軸出現」同型的內容盒縮減
+    const prev = b.style.borderRight
+    b.style.borderRight = `${simPx}px solid transparent`
+    void b.offsetWidth
+    const shrunk = { sen: +sen.getBoundingClientRect().width.toFixed(2), client: b.clientWidth }
+    b.style.borderRight = prev
+    void b.offsetWidth
+    const restored = { sen: +sen.getBoundingClientRect().width.toFixed(2), client: b.clientWidth }
+    return { hasSentinel: true, ariaHidden: sen.getAttribute('aria-hidden') !== null, natural, shrunk, restored }
+  })
+}, SIM_V_BORDER)
+
+record('I16', `真的量到 center body(否則下面的斷言是空轉)`, sentinelReport.length > 0, `量到 ${sentinelReport.length} 個`)
+sentinelReport.forEach((r, i) => {
+  record('I16', `表 ${i + 1}:寬度哨兵存在、0 高、不進無障礙樹`, r.hasSentinel && r.natural?.h === 0 && r.ariaHidden,
+    JSON.stringify({ hasSentinel: r.hasSentinel, h: r.natural?.h, ariaHidden: r.ariaHidden }))
+  if (!r.hasSentinel) return
+  record('I16', `表 ${i + 1}:哨兵寬 === 內容盒寬(自然狀態)`, Math.abs(r.natural.sen - r.natural.client) <= 0.5,
+    `sentinel ${r.natural.sen} vs clientWidth ${r.natural.client}`)
+  record('I16', `表 ${i + 1}:內容盒縮 ${SIM_V_BORDER}px 時哨兵跟著縮(= 捲軸出現時 RO 會響)`,
+    Math.abs(r.shrunk.sen - r.shrunk.client) <= 0.5 && Math.abs(r.natural.sen - r.shrunk.sen - SIM_V_BORDER) <= 0.5,
+    `${r.natural.sen} → ${r.shrunk.sen}(clientWidth ${r.natural.client} → ${r.shrunk.client})`)
+  record('I16', `表 ${i + 1}:還原後回到原值(哨兵不會卡住)`, Math.abs(r.restored.sen - r.natural.sen) <= 0.5,
+    `${r.shrunk.sen} → ${r.restored.sen}(原 ${r.natural.sen})`)
+})
+
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))
