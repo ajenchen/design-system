@@ -710,8 +710,16 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
                 type="button"
                 className={cn(
                   // touch-none:觸控上不讓瀏覽器把 pointerdown 解讀成捲動(同 resize-handle canonical),否則拖曳在手機不可用。
-                  // **不寫 `spec.radius`**:圓角只畫在內層,按鈕本身保持矩形,角落才點得到。
+                  // **寫上 `spec.radius`,讓命中形狀 = 可視形狀**(2026-09-04 user 拍板:
+                  // 「按鈕的視覺 = 觸發事件的範圍 = 會觸發 tooltip 的範圍」)。
+                  // 圓角外的角落看不到,所以也不該點得到 —— 三者恆等,沒有例外可以解釋。
+                  // 先前寫成「按鈕保持矩形、圓角只畫內層」的理由是「角落才點得到」,那是把
+                  // **多**當成修正:使用者要的是相等,不是更大。
+                  // (2026-09-03 曾記錄「貼邊態 dy=±12 時最左 1–3px 點不到」並歸因於圓角命中 ——
+                  //  複核幾何後那是誤判:D 形在 dy=±12 的高度上,左緣本來就在 x≈6.8 而不是 x=0,
+                  //  那幾個點原本就在**視覺之外**,不該算死區。)
                   'group/fab pointer-events-auto inline-flex touch-none cursor-[inherit] items-center justify-center border-none bg-transparent p-0',
+                  spec.radius,
                   'transition-[width,height,transform] duration-[var(--motion-duration-overlay)] ease-[var(--motion-easing-enter)] motion-reduce:transition-none',
                   // 懸停微放大掛在**按鈕**上:命中盒與可視形狀一起放大,兩者永遠同步
                   // (掛在內層的話,放大後可視會比命中盒大一圈)。值與獨立 AgentFab 同一組。
