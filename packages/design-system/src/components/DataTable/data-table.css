@@ -37,67 +37,46 @@
 }
 
 /* ────────────────────────────────────────────────────────────
-   DataTable scrollbar canonical(2026-05-07 v15.13 Bug H interim CSS parity)
+   DataTable scrollbar canonical(2026-09-04 改寫;原 2026-05-07 v15.13 的 webkit 客製整段移除)
    ────────────────────────────────────────────────────────────
-   **Problem**:Windows 原生 V scrollbar (~17px) + 圓角 outer wrapper (`rounded-md
-   overflow-hidden`)→ scrollbar 一半被圓角 mask 裁切;corner(V/H 交叉處)用
-   browser default 灰色,跟 table surface 不一致 → user 看到「scrollbar 溢出 table」。
-   macOS overlay scrollbar(0px)沒這問題。
+   **原始目標**(2026-05-07):Windows 原生 V scrollbar (~17px) 配上圓角 outer wrapper 會被圓角
+   裁掉一半;V/H 交叉的 corner 用瀏覽器預設灰,跟 table surface 不一致。做法是走
+   **原生捲軸 + CSS 客製**(不是 ScrollArea 的自繪 overlay 捲軸)—— 這條路線本身是對的,
+   AG Grid / MUI DataGrid / Polaris IndexTable 都是這一派。
 
-   **Interim fix**(non-ScrollArea 路徑;ScrollArea migration 是獨立 RFC,本案不上):
-   - V scrollbar 也 customize(width 10px 對稱 H)
-   - `::-webkit-scrollbar-corner` themed(跟 track 同色,消除 cross-OS 視覺差)
-   - Firefox `scrollbar-width: thin` + `scrollbar-color`(已 set,line 55-56)
+   **但那套 `::-webkit-scrollbar` 從來沒有生效過**(2026-09-04 逐條隔離實測):
 
-   **對齊**:AG Grid theme-level scrollbar customization / MUI DataGrid scrollbar override
-   / Polaris IndexTable native+CSS pattern(world-class 派 native+CSS,非 ScrollArea)。
+     ::-webkit-scrollbar:horizontal { height: 10px }   →  實際 15px(無效)
+     ::-webkit-scrollbar:vertical   { width: 10px }    →  實際 15px(無效)
+     ::-webkit-scrollbar            { width/height:10px } →  實際 10px(有效)
 
-   ── 關鍵 fix(2026-04-30):scope 只給 :horizontal ──
-   原本 `::-webkit-scrollbar { display:block }` 套到雙軸 → V 軸也被強制顯
-   (即使無 overflow),使 content 小時仍見 V 捲軸 + 觸發 ~2px scrollHeight
-   discrepancy 讓 hasVScroll=true。修正:`:horizontal` only,V 軸跟隨
-   browser default(只在 overflow 顯)。
+   Chrome 的捲軸**尺寸只讀不帶偽類的那條規則**;`:horizontal` / `:vertical` 只能改外觀,改不了寬高。
+   2026-04-30 之所以拆成兩條偽類,是要躲「`display:block` 讓沒溢出的軸也冒出捲軸」——
+   但實測不帶偽類、且不寫 `display` 時**不會**誤顯(只有水平溢出時 v=0;完全不溢出時 0/0),
+   當初要躲的是 `display:block`,不是不帶偽類。所以那次修正躲掉了 bug,也順手把整組尺寸關掉了。
+   (ledger 缺陷 H 原本記載的「`@supports` 重新宣告標準屬性導致 Chrome 忽略偽元素」也是錯的 ——
+    把那個組合隔離重現出來是 10px,正常。)
+
+   **現在的選擇:只留 W3C 標準屬性,webkit 那一整套刪除。** 兩個可行修法各自的代價:
+   - 讓 webkit 那套真的生效(10px + themed track / thumb / corner / hover):控制最完整,
+     但 `::-webkit-scrollbar` 會**把 overlay 捲軸的機器強制變成佔版面的捲軸**(macOS 預設
+     「自動依滑鼠顯示」的使用者,會從沒有捲軸變成永遠留 10px)。為了 corner 與 hover 兩項
+     webkit-only 的加值,付這個代價不划算。
+   - 只留 `scrollbar-width: thin` + `scrollbar-color`(本段採用):W3C 標準、Firefox 也吃、
+     **不改變任何人現有的捲軸行為模式**(overlay 的還是 overlay、classic 的變細)。
+     實測 Chrome / macOS classic 由 15px → 11px。失去的是 corner 上色與 thumb hover
+     (Firefox 本來就沒有 hover,所以那是 webkit 專屬加值,不是既有承諾)。
+
+   **跟 ScrollArea 的關係**:機制上不可能共用 —— ScrollArea 是 Radix 自繪的 DOM 拇指(不吃版面寬),
+   這裡是瀏覽器原生捲軸(吃版面寬),沒有共同的樣式表面。**能共用的顏色早就已經是 SSOT**:
+   兩邊都吃 `--scrollbar-thumb` / `--scrollbar-track`(semantic.css:383-385,2026-05-09 抽出)。
+
+   實際寬度**不寫死在任何地方**:`measureScrollbarGutters` 每次量,所以 15 → 11 的變化
+   由量測自動流過去,補償邏輯不需要改。
 */
-[data-datatable-hscroll]::-webkit-scrollbar:horizontal {
-  height: 10px;
-  /* 移 display:block — 讓 browser overflow 時自動顯,不顯示空 bar */
-}
-[data-datatable-hscroll]::-webkit-scrollbar:vertical {
-  width: 10px;
-  /* 對稱 H,Windows native ~17px → 10px,跟 table 圓角 outer 兼容 */
-}
-[data-datatable-hscroll]::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
-}
-[data-datatable-hscroll]::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 5px;
-}
-[data-datatable-hscroll]::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-}
-[data-datatable-hscroll]::-webkit-scrollbar-corner {
-  background: var(--scrollbar-track);
-  /* V/H 交叉 corner 跟 track 同色,消除 Windows default 灰格 */
-}
-/* Firefox fallback:standard scrollbar properties only(no `::-webkit-scrollbar` support)。
-   Static thumb color;Firefox 沒 hover pseudo,本來就只能 static。 */
 [data-datatable-hscroll] {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-}
-
-/* Chromium / Safari fix(2026-05-10 user-reported scrollbar-thumb hover 顏色失效)。
-   Root cause(codex Q3.10 deep-dive):Chrome 121+ 支援標準 `scrollbar-color` 後,
-   標準屬性 override `::-webkit-scrollbar-thumb:hover` 的 background → hover rule 失效。
-   Cite: MDN ::-webkit-scrollbar / developer.chrome.com/docs/css-ui/scrollbar-styling
-   Fix: `@supports selector(::-webkit-scrollbar)` 偵測 webkit 引擎 → unset 標準屬性 →
-   webkit pseudo path 接管 → `:hover` rule 重新生效。 */
-@supports selector(::-webkit-scrollbar) {
-  [data-datatable-hscroll] {
-    scrollbar-width: auto;
-    scrollbar-color: auto;
-  }
 }
 
 /* ────────────────────────────────────────────────────────────

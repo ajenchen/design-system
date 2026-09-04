@@ -1617,6 +1617,55 @@ function DataTableInner<TData>(
   // 在 header(content max-content 小)vs body(content max-content 大)會 diverge 76+ px,
   // user 報「header / row 對不起來」)。
   const centerColsWidth = centerCols.reduce((a, c) => a + c.getSize(), 0)
+
+  /**
+   * 缺陷 Q:水平捲軸帶在釘選區底下要連續。
+   *
+   * center 底下那條凹槽是瀏覽器畫的真捲軸;釘選面板底下的同一條帶是我們用透明 border「讓位」
+   * 出來的,沒有凹槽 —— 所以整條帶只有中段有槽,兩側是平的,看起來像半截。
+   *
+   * v33 的做法是把水平捲軸抬成整表下方的一列 `.ag-body-horizontal-scroll`,左右兩端各放一個
+   * spacer,而且**spacer 自己帶 `overflow-x: scroll`**,靠瀏覽器在 spacer 裡也畫出同款凹槽;
+   * 只有當某個 spacer 同時是垂直捲軸的角落時才改成 `overflow-x: hidden`(`.ag-scroller-corner`)。
+   *
+   * 我們的水平捲軸長在 center body 裡(架構取捨,見缺陷 O),沒有那一列可放 spacer,所以取
+   * 同樣的**手段**而非同樣的結構:在釘選面板底部疊一條同高、`overflow-x: scroll` 的裝飾帶,
+   * 讓瀏覽器把凹槽畫在同一條線上。`pointer-events: none` —— 它只負責被畫出來,不接任何互動。
+   * gutter = 0 的平台(macOS overlay 捲軸)不渲染,零成本。
+   *
+   * **裡面必須是空的**:`overflow-x: scroll` 沒有溢出內容時瀏覽器只畫軌道、不畫拇指,那才是
+   * 「讓位帶」該有的樣子(v33 的 spacer 同理,裡面也是空的)。第一版我塞了 `width:200%` 的內容,
+   * 結果釘選區底下長出自己的拇指,看起來像兩條各自獨立的捲軸 —— 反而比原本的斷帶更糟。
+   */
+  const scrollbarTrough = hScrollbarGutter > 0 ? (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-x-0 bottom-0 overflow-x-scroll [scrollbar-width:thin]"
+      style={{ height: hScrollbarGutter, scrollbarColor: 'var(--scrollbar-thumb) var(--scrollbar-track)' }}
+    />
+  ) : null
+
+
+  /* ── 缺陷 D:欄位群組(巢狀 `columns`)明確不支援,開發期直接講出來 ────────────────────
+   * TanStack 的 `ColumnDef` 允許 `{ header, columns: [...] }` 的群組寫法,但我們的表頭只渲染
+   * 最上層、而且會被葉欄位的 id 濾光 —— 結果是一整條空白表頭、跟下面的資料完全對不上。
+   * 這不是「壞掉」而是「沒實作」:多層表頭要處理跨欄合併、與釘選 / 拖寬 / 虛擬捲動的交互,
+   * 是一個功能不是一個修補。**在做出來之前,誠實擋在開發期比默默畫錯好。**
+   *
+   * 為什麼不用型別擋:`columns` prop 目前是 `ColumnDef<TData, any>[]`,收窄型別會讓所有把欄位
+   * 宣告成 `ColumnDef<Row>[]` 的既有 consumer(含 work-management)編譯失敗 —— 那是真的副作用。
+   * 執行期只在開發環境印訊息,production 不進 bundle,對誰都不會有影響。
+   */
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return
+    const grouped = columns.filter((c) => Array.isArray((c as { columns?: unknown[] }).columns))
+    if (grouped.length === 0) return
+    console.error(
+      `[DataTable] 尚不支援欄位群組(巢狀 columns):${grouped.length} 個欄位定義帶了 \`columns\`。` +
+      '表頭只會渲染最上層並被葉欄位 id 濾光,結果是空白表頭且與資料對不齊。' +
+      '請先攤平成單層欄位(見 data-table.spec.md 兩容器缺陷清單 D)。',
+    )
+  }, [columns])
   /**
    * 欄寬:**算一次**,header 與 body 共用同一組整數(見 `distributeColumnWidths` 的說明)。
    * 這個 Map 就是 AG Grid v33 `AgColumn.actualWidth` 的對應物 —— 唯一真相源,兩邊各自「讀」它、
@@ -1943,7 +1992,10 @@ function DataTableInner<TData>(
   invalidRef.current = invalidDropActive
 
   // code-quality-allow: long-function — cell render 含 selection / pinned / type-aware formatter 三邏輯,拆會增 prop drilling
-  const cellEl = (cell: ReturnType<typeof rows[number]['getVisibleCells']>[number], _isLastInRow = false) => {
+  // 註:欄間線由 CSS `.dtCellGrid:last-child::after` 判定(見 data-table.css),不吃參數 ——
+  // 原本這裡有一個 `_isLastInRow` 參數從宣告日起就沒被用過,呼叫端還為它算了一段條件式,
+  // 讀起來像「列這側也有判斷」。2026-09-04 連同呼叫端一併移除(缺陷 M)。
+  const cellEl = (cell: ReturnType<typeof rows[number]['getVisibleCells']>[number]) => {
     // L2 selection:__select__ 欄自訂 render
     // multi 模式 → Checkbox(可多選)
     // single 模式 → Radio(單選 visual,對齊 Material DataGrid / Polaris IndexTable canonical)
@@ -2764,7 +2816,16 @@ function DataTableInner<TData>(
     return (
       <RowTag role={rowRole} className={cn('flex items-center pb-px', rowHeight)}>
         {headers.map((h, i) => {
-          const showDivider = i < headers.length - 1 && !(isRight && i === headers.length - 1)
+          // 缺陷 M(2026-09-04):**表頭與列的欄間線必須用同一個判準**。列那側是 CSS
+          // `.dtCellGrid:last-child::after { content: none }` —— 判的是「DOM 上的最後一個子元素」;
+          // 右釘選區後面還接一格 rowActions,所以最後一**欄**的 cell 不是 `:last-child`,照畫線。
+          // 表頭這側原本只看欄陣列的索引(`i < headers.length - 1`),不知道後面還有 rowActions,
+          // 於是同一個位置變成「列有線、表頭沒線」。補上 rowActions 這一項,兩邊判準就同義了。
+          // (原本那個 `&& !(isRight && i === headers.length - 1)` 是死碼:前半成立時後半恆為真。)
+          // AG Grid v33 是兩邊都無條件畫(`.ag-cell{border-right}` / `.ag-header-cell::before`),
+          // 靠外框蓋住最外緣;我們的區邊界另有 `dtLeftBoundary/dtRightBoundary` 專責,所以取
+          // 「本區最後一格不畫」,但**判準只有這一份語意**。
+          const showDivider = i < headers.length - 1 || (isRight && hasRowActions)
           const colId = h.column.id
           const meta = h.column.columnDef.meta as { locked?: boolean } | undefined
           const isLocked = meta?.locked === true
@@ -2927,7 +2988,7 @@ function DataTableInner<TData>(
           {dropIndicator?.type === 'row' && dropIndicator.id === row.id && dropIndicator.side === 'before' && (
             <div className={dropIndicatorRow.before} aria-hidden />
           )}
-          {getRegionCells(row, cols).map((cell, ci, arr) => cellEl(cell, ci === arr.length - 1 && !(isRight && hasRowActions)))}
+          {getRegionCells(row, cols).map((cell) => cellEl(cell))}
           {isRight && hasRowActions && (
             <div role="cell" className="flex items-center justify-end shrink-0 gap-2 flex-1" style={cellPadding}>
               {rowActions!(row.original)}
@@ -2968,8 +3029,12 @@ function DataTableInner<TData>(
     // 先前 non-virtual 走 `<>...</>`(無 wrapper),依靠 row 內 cells 自然寬推擠容器,
     // 跟 virtual 的 `minWidth: containerWidth` 行為不同,造成 story 1 / story 2 看起來水平
     // 捲軸出現時機不一致。現在統一靠 wrapper 的 minWidth 強制 overflow。
-    const colsWidth = cols.reduce((a, c) => a + c.getSize(), 0)
-    const containerWidth = regionWidth || colsWidth
+    // 缺陷 N(2026-09-04):中段總寬**只有 `centerColsWidth` 一個住所**,這裡不再自己重算一次。
+    // 原本 left/right 傳 regionWidth、center 落到本地重算的同一條公式 —— 兩份平行計算,
+    // 註解卻宣稱是同一個 SSOT;今天兩邊數值相同純屬巧合,改任一邊就會分岔(表頭與列的水平
+    // 捲動範圍就會差開)。AG Grid v33 的對應解是 `CenterWidthFeature`:表頭容器與列容器
+    // 共用**同一個 feature 實例**算寬,結構上不可能有第二份。
+    const containerWidth = regionWidth ?? cols.reduce((a, c) => a + c.getSize(), 0)
 
     if (useVirtual) {
       // 2026-05-13 (c) scroll-defer perf(per user 拍 Path (c) Roadmap >50ms 後 escalate):
@@ -3111,7 +3176,11 @@ function DataTableInner<TData>(
             ref={leftBodyRef}
             data-datatable-panel="left"
             onScroll={() => onSecondaryScroll(leftBodyRef.current, 'y')}
-            className="shrink-0 overflow-hidden"
+            // 缺陷 R(2026-09-04):**面板自己宣告底色**。下方讓位用的透明 border 之下,
+            // `background-clip` 預設是 border-box,所以有底色就會畫進那條帶;沒宣告的話露出的是
+            // root 的底色 —— 今天兩者剛好同色所以看不出來,但只要 consumer 給列 zebra / 選取底色,
+            // 最後一列的底色就不會延伸進那 15px,表格底緣會出現一條斷帶。
+            className="shrink-0 overflow-hidden bg-surface relative"
             style={{
               width: leftWidth || undefined,
               // isFillHeight 用 JS 算的 px;固定 px(300px 等)直接套
@@ -3126,6 +3195,7 @@ function DataTableInner<TData>(
             }}
           >
             {renderBodyRows(leftCols, false, false, leftWidth)}
+            {scrollbarTrough}
           </div>
         )}
         <div
@@ -3168,7 +3238,7 @@ function DataTableInner<TData>(
               跟 header inner wrapper 同 SSOT。renderBodyRows 內部已用同 containerWidth 公式 wrap rows,
               此外層 wrapper minWidth 跟內層一致 = 兩層都 = centerColsWidth → header / body 對齊。 */}
           <div style={{ minWidth: centerColsWidth }}>
-            {renderBodyRows(centerCols, true, false)}
+            {renderBodyRows(centerCols, true, false, centerColsWidth)}
           </div>
         </div>
         {hasRight && (
@@ -3176,7 +3246,8 @@ function DataTableInner<TData>(
             ref={rightBodyRef}
             data-datatable-panel="right"
             onScroll={() => onSecondaryScroll(rightBodyRef.current, 'y')}
-            className="shrink-0 overflow-hidden"
+            // 缺陷 R:同 left panel —— 面板自己宣告底色,讓位帶才屬於表格而不是背後的東西。
+            className="shrink-0 overflow-hidden bg-surface relative"
             style={{
               width: rightWidth || undefined,
               ...(isFillHeight && bodyMaxHeight != null ? { maxHeight: bodyMaxHeight } : hasHeightConstraint ? { maxHeight: height } : {}),
@@ -3185,6 +3256,7 @@ function DataTableInner<TData>(
             }}
           >
             {renderBodyRows(rightCols, false, true, rightWidth)}
+            {scrollbarTrough}
           </div>
         )}
       </div>
