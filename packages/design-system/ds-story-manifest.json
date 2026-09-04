@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-03T16:56:50.708Z"
+    "generatedAt": "2026-09-04T02:07:19.913Z"
   },
   "components": {
     "accordion": {
@@ -79,6 +79,7 @@
         ],
         "設計規格": [
           "design-system-components-agentpanel-設計規格--overview",
+          "design-system-components-agentpanel-設計規格--inspector",
           "design-system-components-agentpanel-設計規格--size-matrix",
           "design-system-components-agentpanel-設計規格--color-matrix",
           "design-system-components-agentpanel-設計規格--state-behavior",
@@ -1792,5 +1793,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 968
+  "totalStories": 969
 }

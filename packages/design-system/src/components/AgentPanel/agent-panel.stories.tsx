@@ -52,13 +52,19 @@ const noop = () => {}
  */
 function PanelFrame({
   logoState = 'still',
+  aside,
   children,
 }: {
   logoState?: AgentLogoState
+  /** 左側空白區的旁註(例如即時寬度讀數)。有需要旁註的範例照樣共用這個外殼,不另起一套版面。 */
+  aside?: React.ReactNode
   children: (props: { close: () => void; logoState: AgentLogoState }) => React.ReactNode
 }) {
   return (
     <div className="relative flex h-dvh justify-end bg-canvas">
+      {aside && (
+        <div className="flex flex-1 flex-col items-center justify-center gap-1 text-body text-fg-secondary">{aside}</div>
+      )}
       <AgentPanelDock logoState={logoState}>{children}</AgentPanelDock>
     </div>
   )
@@ -378,30 +384,38 @@ export const ResizableWidth: Story = {
   render: function ResizableStory() {
     const [width, setWidth] = React.useState(400)
     const [committed, setCommitted] = React.useState(400)
+    // 這一則原本自建版面且 `onClose={noop}` —— × 是本檔每個範例都保證可按的固定構件,
+    // 接空函式等於擺一顆按了沒反應的鈕,和檔頭寫的「每個範例都能按 × 關閉」自相矛盾。
+    // 改成共用 `PanelFrame`,寬度讀數放進它的 `aside`。
     return (
-      <div className="flex h-dvh bg-surface-sunken">
-        <div className="flex flex-1 flex-col items-center justify-center gap-1 text-body text-fg-secondary">
-          <span>目前寬度 {width}px(拖左緣把手,或聚焦把手後按 ←/→)</span>
-          <span className="text-caption text-fg-muted">放開後落地:{committed}px —— 產品拿這個值去存</span>
-        </div>
-        <AgentPanel width={width} onWidthChange={setWidth} onWidthCommit={setCommitted}>
-          <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" onClose={noop} {...headerWiring} />
-          <AgentConversation>
-            <AgentMessage role="agent">面板寬度 360 起跳、640 封頂,且永遠不超過視窗一半。</AgentMessage>
-          </AgentConversation>
-          <AgentPromptInput
-            value=""
-            onValueChange={noop}
-            attachments={[
-              { id: 'a1', label: 'sprint-42-backlog.csv' },
-              { id: 'a2', label: '排程規則.md' },
-              { id: 'a3', label: 'oncall-規範.pdf' },
-              { id: 'a4', label: '客訴-2026Q3.xlsx' },
-            ]}
-            {...promptWiring}
-          />
-        </AgentPanel>
-      </div>
+      <PanelFrame
+        aside={
+          <>
+            <span>目前寬度 {width}px(拖左緣把手,或聚焦把手後按 ←/→)</span>
+            <span className="text-caption text-fg-muted">放開後落地:{committed}px —— 產品拿這個值去存</span>
+          </>
+        }
+      >
+        {({ close }) => (
+          <AgentPanel width={width} onWidthChange={setWidth} onWidthCommit={setCommitted}>
+            <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" onClose={close} {...headerWiring} />
+            <AgentConversation>
+              <AgentMessage role="agent">面板寬度 360 起跳、640 封頂,且永遠不超過視窗一半。</AgentMessage>
+            </AgentConversation>
+            <AgentPromptInput
+              value=""
+              onValueChange={noop}
+              attachments={[
+                { id: 'a1', label: 'sprint-42-backlog.csv' },
+                { id: 'a2', label: '排程規則.md' },
+                { id: 'a3', label: 'oncall-規範.pdf' },
+                { id: 'a4', label: '客訴-2026Q3.xlsx' },
+              ]}
+              {...promptWiring}
+            />
+          </AgentPanel>
+        )}
+      </PanelFrame>
     )
   },
 }

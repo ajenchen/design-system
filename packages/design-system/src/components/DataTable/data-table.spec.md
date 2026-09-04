@@ -81,13 +81,16 @@ DataTable 有三種尺寸（`sm`、`md`、`lg`），透過 `size` prop 控制。
 ### 三、三區域架構（AG Grid 模式）
 
 Table 分三層:
-- **Header**(固定頂部,結構性地在 scroll 容器外、body 上方——不用 CSS sticky,永遠固定在頂部):含 left / center / right 三區,center 區與 body center 的水平捲動 JS 同步 scrollLeft(center-header 跟隨 center-body 捲動位置,同步機制見「捲軸」段 + `data-table.tsx`)。Header bg 用 `--muted`(code `HEADER_PANEL = 'bg-muted dtHeaderPanelUnderline'`(**底色 + 下分隔線 + 只疊一層是同一個不可分的不變條件**,畫在三個 header panel 上、row 不畫;舊常數名 `HEADER_BG` 已不存在)。
-  **下分隔線用 `::before`,不是 `border-b` 也不是 `::after`**,兩個理由缺一不可:
-  (a) 用 `border-b` 會讓 panel 從 40 變 41(body row 的線含在 `rowHeight` 的 border-box 內,而 panel 沒指定高度),表頭比每一列高 1px;
-  (b) **`::after` 已經被凍結邊界線 `.dtPanelBoundaryRight/Left::after` 佔用** —— 左右兩個 header panel 同時掛這兩個 class,一個元素只有一個 `::after`,兩條規則會合併成 `left:0 right:0 top:0 bottom:0 width:1px height:1px` = 角落一個 1×1 的點,**兩條線同時消失**(2026-09-04 user 回報「釘選欄 header 最右邊的分隔線消失了」「表頭下方分隔線沒延伸到底」的共同根因,由 7a8a2c3a 引入、同日修正)。
-  中央 panel 沒掛 boundary class 所以不會撞 —— 只驗中央會誤判成修好了,機械閘因此必須**逐 panel** 驗,比 surface 深一階,同 anatomy ColorMatrix)
+- **Header**(固定頂部,結構性地在 scroll 容器外、body 上方——不用 CSS sticky,永遠固定在頂部):含 left / center / right 三區,center 區與 body center 的水平捲動 JS 同步 scrollLeft(center-header 跟隨 center-body 捲動位置,同步機制見「捲軸」段 + `data-table.tsx`)。
+  **底色與下分隔線分屬兩個宿主**(2026-09-04 定案,兩者的約束不同):
+  - **底色**畫在三個 header panel 上(`HEADER_PANEL = 'bg-muted'`),row 不畫 —— `--muted` 半透明,**只准疊一層**,疊兩層會出現深淺差;讓給垂直捲軸的那條 strip 因為在 center panel 內,所以自動同色。
+  - **下分隔線**畫在**表頭列群組**(`.dtHeaderRowGroup::after`)上,一條橫貫整表。三個理由缺一不可:
+    (a) 用 `border-b` 會讓 panel 從 40 變 41(body row 的線含在 `rowHeight` 的 border-box 內,而 panel 沒指定高度),表頭比每一列高 1px;
+    (b) **不能畫在 header panel 上**:center header panel 是**捲動容器**,而絕對定位的子元素屬於捲動溢位內容,會跟著內容位移 —— 實測捲到底(`scrollLeft` = 382)時線的左緣跑到 x = −265,右側 382px 完全沒有線,缺口寬度恆等於 `scrollLeft`。列群組不捲動也不裁切,線因此天生橫貫整表(含 strip),也不會有分段接縫;
+    (c) 順帶消掉一個一個元素只有一個 `::after` 的碰撞:左右 header panel 同時掛凍結邊界線 `.dtPanelBoundaryRight/Left::after`,若下分隔線也用 `::after`,兩條規則會合併成 `left:0 right:0 top:0 bottom:0 width:1px height:1px` = 角落一個 1×1 的點,**兩條線同時消失**(2026-09-04 user 回報「釘選欄 header 最右邊的分隔線消失了」「表頭下方分隔線沒延伸到底」的共同根因,由 7a8a2c3a 引入、同日修正)。
+  機械閘 `I13` 因此必須**取像素**且必須**涵蓋捲動後的狀態**:第一版 I13 比的是 `getComputedStyle(::after).height` 與 border-box 高,兩個真 bug 都從這個盲點溜過去(見不變條件 (8))。
 - **Body viewport**:含 left / center / right 三區;center-body 是唯一的水平 scroll container、也是垂直 scroll container(`overflow-y-auto`),left / right body 不自行捲動(`overflow-hidden`,`scrollTop` 由 center 的 `onScroll` 同步兩側;AR44:V scroll 移進 region 自身,讓水平捲軸落在可視視窗底部,不必捲到內容底才看到)
-- **Left / Right 區**:寬度由凍結欄加總,不吃水平捲動;frozen 邊界線用 `.dtPanelBoundaryRight/Left` 的 **1px 偽元素**(`::after`,`width:1px background:var(--divider)` 貼齊面板內緣;不佔 box model、不被 Windows 懸浮捲軸蓋 — 2026-05-12 自 `border-divider` 改制的理由保留),header + body panel 各套,視覺整欄高度。**畫線機制統一鐵律(2026-08-20 user 拍板)**:全表 1px 線(欄間短線 / 凍結邊界 / 外框)一律「元素/border」機制,**禁用陰影畫線** — 非整數縮放與 Retina 下瀏覽器對陰影與背景色盒的柵格化取整不同,會讓同規格的線出現 1 vs 2 實體像素的粗細分家(2026-08-20 user 報修錨例);**Center 區**:flex-1,水平 overflow 自行處理
+- **Left / Right 區**:寬度 = 該區欄寬總和,**算出來的不是量出來的**(見不變條件 (9)),不吃水平捲動;frozen 邊界線是 **1px 偽元素**(`width:1px background:var(--divider)`,不佔 box model、不被 Windows 懸浮捲軸蓋 — 2026-05-12 自 `border-divider` 改制的理由保留),分兩段畫、**宿主不同**:表頭段在 header panel 上(`.dtPanelBoundaryRight/Left::after`,panel 高就是 40,`bottom:0` 即到底);列區段在**列區外層**上(`.dtLeftBoundary::before` / `.dtRightBoundary::after`,位置由 `--dt-left-w` / `--dt-right-w` 給,與面板寬同一個數字)。**列區段不能畫在釘選面板上**:面板自己是 `overflow:hidden`,而 `overflow` 的裁切邊是 **padding box**,面板底部那條等同水平捲軸高的透明 border 在它外面 —— 線無論怎麼負向延伸都畫不出來(2026-09-04 一度用 `bottom: calc(-1 * var(--dt-hscroll-gutter))`,版面盒延伸了、像素沒有,是假宣稱)。外層不裁切也不捲動,兩段相接即為視覺整欄高度、頂天立地。**畫線機制統一鐵律(2026-08-20 user 拍板)**:全表 1px 線(欄間短線 / 凍結邊界 / 外框)一律「元素/border」機制,**禁用陰影畫線** — 非整數縮放與 Retina 下瀏覽器對陰影與背景色盒的柵格化取整不同,會讓同規格的線出現 1 vs 2 實體像素的粗細分家(2026-08-20 user 報修錨例);**Center 區**:flex-1,水平 overflow 自行處理
 
 完整 class / overflow 規則見 `data-table.tsx`。
 
@@ -109,7 +112,7 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 | 類型 | 範圍 | 適用 |
 |------|------|------|
 | Header 分隔線 | 僅 header 區域（上下留 padding） | 一般非 frozen 欄位之間 |
-| Frozen 邊界線 | **整欄高度**(table 頂部到列區底部) | frozen column 與 scrollable area 的交界。有水平捲軸時,pinned 區補了等高的透明下邊框(見不變條件 (7)),而 `::after` 的 `bottom:0` 貼的是 padding box,所以線畫到**捲軸帶的上緣**為止 —— DS 自己的理由是:分隔線分的是列,捲軸帶不是列。(**2026-09-03 撤回背書**:先前這裡寫「AG Grid 同理…pinned 分隔線也只到列區底」—— v33.3.2 原始碼**正好相反**,它特地讓 `.ag-body-horizontal-scroll` 的 spacer 也帶 border,讓線**貫穿**捲軸帶到底。所以這個選擇目前只有 DS 自己的 rationale,沒有世界級背書;要改成貫穿見缺陷表 P。)|
+| Frozen 邊界線 | **整欄高度**(表頭頂端到表格底緣,**貫穿水平捲軸帶**) | frozen column 與 scrollable area 的交界。2026-09-04 起列區段畫在不裁切的列區外層上,所以有水平捲軸時線也一路畫到 border-box 底,不再停在捲軸帶上緣。與 v33.3.2 一致(它特地讓 `.ag-body-horizontal-scroll` 的 spacer 也帶 border 讓線貫穿);先前「只到列區底」的寫法連同其 DS-自有 rationale 一併作廢。|
 
 一般 column 只在 header 有短線——body 的欄位邊界由 header 引導，不需額外視覺噪音。但 frozen column 的邊界是結構性的分隔（固定區域 vs 捲動區域），需要全高度的線來明確標示。Row actions 欄本質上是 frozen right column，左邊界也使用 full-height 分隔線。
 
@@ -166,7 +169,7 @@ header 與 body 是**兩個容器、各自跑一次 CSS flex 分配**(見不變�
 | M | 欄間分隔線的歸屬 header 與 body 不對稱(右釘選 + rowActions 時同一位置 header 無線 / body 有線;拖曳中最後一格突然畫線)| 該組合 | 中低(1px 視覺)| **未修** |
 | N | `centerColsWidth` 被算兩次(`:1475` 與 `renderBodyRows` 內),註解宣稱是同一個 SSOT | 一律 | 低(今天數值相同)| **未修**:抽成單一來源即可 |
 | O | 垂直捲軸的位置:center 持有垂直捲軸 → 有右釘選區(`pinnedRightColumns` **或** `rowActions`)時捲軸落在 center 與右釘選區**之間**;v33 與 MUI X 都把它放在整表最右緣(v33 因此把 `.ag-pinned-right-header` 加寬一個捲軸寬,原始碼註解逐字:「we add extra space to keep header aligned with the body」) | 上述組合 + 捲軸佔版面的平台(Windows / Linux;macOS 與 CI headless 是 overlay,gutter = 0 不會出現任何帶) | 低(架構取捨的可見差異,非錯誤結果) | **不修,已登記為已知取捨**。2026-09-03 對抗式驗證推翻了「這是未登記缺陷」的判定:捲軸落在 center 早已明載於本規格「center-body 是唯一的水平**與垂直** scroll container」,捲軸視覺落點的差異也已在上方「世界級對照」明示;`PinnedColumns` story 的「垂直捲動 + Pinned + Row Actions」子案例(`height="300px"` + 50 列 + `rowActions`)正是此組合,機械閘 I12 載入的就是它;而「Windows 捲軸蓋住外緣邊界線」這個實際症狀 2026-05-12 已被抓到並針對性修過(邊界線改成不佔盒模型的 1px 偽元素)|
-| P | 凍結邊界線的垂直範圍只到水平捲軸帶上緣(`::after` 絕對定位的包含塊是 padding box,透明 border 在它外面),表格底緣少 15px | 捲軸佔版面的平台 + 有釘選欄 | 中低(1px 視覺缺口) | **已修**(2026-09-04,user 要求「頂天立地」):釘選 body 面板把實測的捲軸高寫成 CSS 變數 `--dt-hscroll-gutter`,`::after` 用 `bottom: calc(-1 * var(--dt-hscroll-gutter, 0px))` 負向拉出 padding box,貫穿到 border-box 底。沒有捲軸時變數為 0,行為與先前完全相同。**先前撤回的背書在此補正**:v33.3.2 確實是讓線貫穿的(它在 spacer 上補 border),所以貫穿才是與上游一致的做法 |
+| P | 凍結邊界線的垂直範圍只到水平捲軸帶上緣,表格底緣少 15px | 捲軸佔版面的平台 + 有釘選欄 | 中低(1px 視覺缺口) | **已修**(2026-09-04,user 要求「頂天立地」):線的**列區段改掛在列區外層**(`.dtLeftBoundary` / `.dtRightBoundary`),那一層不裁切也不捲動,高度就是三個面板的 border-box 高。**同日的第一次嘗試是假宣稱、已作廢**:用 `bottom: calc(-1 * var(--dt-hscroll-gutter))` 把 `::after` 負向拉出 padding box —— `overflow` 的裁切邊正是 padding box,面板自己 `overflow:hidden` 會把它裁掉,**版面盒延伸了、一個像素都沒畫**;而當時的 I13b 比的是 `getComputedStyle(::after).height`(255)與 border-box 高(255),兩個都是版面數字,所以給了假綠 —— 正是 M32 禁止的那一類。現在 I13 取像素並涵蓋捲動狀態。v33.3.2 確實是讓線貫穿的(它在 spacer 上補 border),貫穿才與上游一致 |
 | Q | 水平捲軸帶在釘選區底下不連續(pinned 底下那 15px 是透明 border,露出的是 root 底色;凹槽只在 center 段)→ 表格底緣看起來是半截捲軸帶;v33 讓 spacer 帶 `overflow-x: scroll` 刻意畫出同款凹槽,只有剩角落時才關掉。兩條捲軸交會的角同源:v33 用自己控制的 `ag-scroller-corner`,我們交給瀏覽器,而想救回底色的那段 CSS 是死碼(見缺陷 H)| 捲軸佔版面的平台 | 低(純視覺)| **未修**:與 H 同源,一起修才划算 |
 | U | 欄寬把手改用 `patterns/resize-handle` 後,pointerdown 多了 `preventDefault()`(舊路徑只有 `stopPropagation` 再交給 TanStack 的 handler,而那個 handler 不 preventDefault)→ **編輯中拖欄寬不再自動結算退出編輯**,cell 維持在編輯態、naked Field 隨欄寬即時變形,放開後仍在編輯 | `enableColumnResize` + 正在編輯某格時拖該欄的把手 | 低(行為變更,無資料遺失) | **不修,登記為既定行為**(2026-09-04 對抗式驗證已實機確認,非推測):拖欄寬時保住編輯內容比中途結算更合理,且與 DS 其他拖曳把手一致。列在此是為了讓下一個人知道這是刻意的,不是漏掉 |
 | T | 「自動調整寬度」的量測覆蓋與 view↔edit 0-delta 的機械斷言只涵蓋 string / select / textarea / currency 四種型別;date / time / person / multiPerson / boolean / url / multiSelect / avatar / tag、巢狀列 cell 與 `meta.wrap` 沒有斷言 | 這些型別 | 低(覆蓋缺口,非已知缺陷) | **未修**:`columnSizeStyle` 本輪大改,這些型別的 0-delta 目前只有推導。stale-build 守衛已讓現有四條的綠燈第一次有意義,擴充覆蓋是下一步 |

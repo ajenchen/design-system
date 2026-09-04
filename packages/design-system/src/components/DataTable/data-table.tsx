@@ -36,7 +36,7 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { TableScrollProvider } from '@/design-system/components/Field/field-context'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { ChevronDown, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, EyeOff, X as XIcon, GripVertical } from 'lucide-react'
+import { ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, EyeOff, X as XIcon, GripVertical } from 'lucide-react'
 // **v15.0 Path B**(對齊 user 「source 留原位 / indicator 為 drop preview / 不 auto-shift」directive):
 // 砍 useSortable + SortableContext 用 useDraggable + useDroppable 分離 hooks(對齊 DS 內 TreeView SSOT)。
 import { DndContext, DragOverlay, useDraggable, useDroppable, useDndContext, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, MeasuringStrategy, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
@@ -48,7 +48,7 @@ import { nakedCellEditableDisplayHover, fieldDisplayTextClass } from '@/design-s
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/design-system/components/DropdownMenu/dropdown-menu'
-import { ItemInlineActionButton } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { ItemInlineActionButton, ItemPrefix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { columnTypeDefaults, type ColumnType } from './column-types'
 import { resolveCellComponent, type CellComponentProps } from './cell-registry'
 import { DataTableInteractionLayer } from './data-table-interaction-layer'
@@ -359,7 +359,13 @@ const cellPadding: React.CSSProperties = { paddingBlock: 'var(--table-cell-py)',
 // (含讓給垂直捲軸的那條 strip —— 那正是把線從 row 搬到 panel 的原因)。
 // 機制與同檔既有的 `dtPanelBoundaryRight/Left::after`(凍結邊界線)一致,
 // 也符合「1px 線一律用元素/border 機制、禁用陰影」的鐵律。
-const HEADER_PANEL = 'bg-muted dtHeaderPanelUnderline'
+//
+// **線畫在外層的列群組上,不畫在三個 panel 上**(2026-09-04 第二次修正):panel 各自是
+// **捲動容器**,而絕對定位的子元素屬於捲動溢位內容 —— 會跟著內容一起位移。實測 center header
+// 捲到底(scrollLeft=382)時,線的左緣從 x=−265 起算,右側 382px 完全沒有線,缺口寬度恆等於
+// scrollLeft。線改掛在不捲動、不裁切的 header 列群組(`dtHeaderRowGroup`)上,一條橫貫整表,
+// 天生涵蓋讓給垂直捲軸的那條 strip,也不可能出現分段接縫。
+const HEADER_PANEL = 'bg-muted'
 
 // Column sizing canonical(2026-05-06 v11 — table-level all-or-nothing,Notion / Airtable / Linear 共識):
 //   - **Table-level prop `enableColumnResize`** 控制全表 mode(per-column mixed 已 retire,跟 product
@@ -1343,8 +1349,10 @@ function DataTableInner<TData>(
    *   `CellPositionFeature.onWidthChanged` 各自訂閱同一個 `widthChanged`、各自讀同一個
    *   `getActualWidth()` 寫成 inline px。**兩邊沒有任何 `flex-grow`**(`.ag-cell` 是
    *   `position:absolute` + inline px)→ 分歧在結構上不可能發生。
-   * - 「header 移進 body 同一個捲動容器 + `ag-fake-vertical-scroll` 假捲軸」是 **v36**(2026 重寫)
-   *   才有的事,與能不能對齊無關,只改變捲軸的視覺落點。
+   * - **更正(2026-09-04 對抗式稽核)**:假捲軸 **v33 就有**(`fakeVScrollComp.ts` /
+   *   `fakeHScrollComp.ts` / `abstractFakeScrollComp.ts` 都在 v33.3.2 的目錄樹裡,且出現在
+   *   `gridBodyComp` 的 template)。v36(2026 重寫)追加的只是「header 併進 body 同一個 scroller」。
+   *   兩者都與能不能對齊無關,只改變捲軸的視覺落點。spec.md:139 一直寫對,是這段註解沒同步。
    * 亦即:我們現在的「算一次 + 兩邊寫同一個整數 + spacer 補 header 內容寬」就是 v33 的模型本身,
    * 不需要為了對齊去改捲動容器結構。詳 spec 不變條件 (6)(7)。
    * 另兩家同型前例(隱藏原生捲軸 + header 尾端補等寬):MUI X DataGrid 的
@@ -1399,10 +1407,6 @@ function DataTableInner<TData>(
     if (inner) ro.observe(inner)
     return () => ro.disconnect()
   }, [measureScrollbarGutters])
-  const leftHeaderRef = React.useRef<HTMLDivElement>(null)
-  const rightHeaderRef = React.useRef<HTMLDivElement>(null)
-  const [leftWidth, setLeftWidth] = React.useState(0)
-  const [rightWidth, setRightWidth] = React.useState(0)
 
   // estimate 預設 size-aware 對齊 token(--table-row-{sm,md,lg} = 32/40/48 md density)
   // Q7 fix(2026-05-04):前用 hardcode 36 跟真高 40 差 4px,N rows 累積誤差呈現「table 慢慢長高」假象。
@@ -1652,21 +1656,55 @@ function DataTableInner<TData>(
     return map
   }, [leftCols, rightCols, centerCols, centerBodyWidth, enableColumnResize])
 
-  // Header 寬度 → body region 同步（virtual mode 需要明確寬度）
-  // **`useLayoutEffect` 不是 `useEffect`**(2026-09-03 稽核抓到):用 `useEffect` 時首次 mount 那一幀
-  // `leftWidth` still 0 → body 的 pinned panel 走自己的固有寬(由 body 內容決定,和 header 是不同的數字)
-  // → 使用者會看到一幀對不齊。同檔的捲軸補償早就用 layout effect,兩處不一致。
+  /**
+   * 釘選面板寬 = 該區欄寬總和(**算出來的,不是量出來的**)。
+   *
+   * 2026-09-04 從「量 header panel 的 `offsetWidth` → `setState` → 灌給 body panel」改成這樣。
+   * 舊路徑是本檔第二條「量 DOM → setState → 覆寫」的旁路,跟 `resolvedWidths` 想消滅的是同一個病,
+   * 只是換到面板這一層:欄位隱藏 / 釘選變動的那一幀,body 面板會被一個過期的寬度覆蓋掉自己已經
+   * 正確的固有寬;而 `ResizeObserver` 回呼裡直接 `setState`,只要量到的值在兩個數之間來回(非整數
+   * 縮放、字型載入、捲軸出現)就會變成無限更新迴圈(React #185「更新深度超過上限」)。
+   *
+   * 現在 header 與 body 兩個面板寫的是**同一個數字**,而且這個數字與每個 cell 拿到的寬度同源
+   * (`resolvedWidths`,拖拉模式下同為 `getSize()`)—— 對不齊在結構上不可能發生,也不再有回饋迴圈。
+   * 這正是 v33 `PinnedColumnService` 的做法:`leftWidth` 由欄寬相加算出,再分別推給 header
+   * (`setupHeaderPinnedWidth`)與 body(`SetPinnedWidthFeature`),兩邊都不量對方。
+   */
+  const panelWidth = React.useCallback(
+    (cols: typeof leftCols) => cols.reduce((a, c) => a + (resolvedWidths.get(c.id) ?? c.getSize()), 0),
+    [resolvedWidths],
+  )
+  const leftWidth = React.useMemo(() => panelWidth(leftCols), [panelWidth, leftCols])
+  const rightColsWidth = React.useMemo(() => panelWidth(rightCols), [panelWidth, rightCols])
+
+  /**
+   * `rowActions` 是右區唯一**不是欄位**的參與者:它的格子是 `flex-1` + 內容固有寬,沒有 `size`
+   * 可加總,所以那一種情形的面板寬**算不出來、只能量**(v33 沒有這個對應物 —— 它的操作欄也是一個
+   * 有寬度的 column,所以整條路徑都能算)。分開處理:
+   * - 沒有 `rowActions` → 右區全是欄位,和左區一樣用算的,header 與 body 寫同一個數字;
+   * - 有 `rowActions` → 量 header 面板,**而且此時 header 面板不可以寫死寬度**,否則就變成
+   *   「量自己 → setState → 寫回自己」的自我參照,那才是真正會炸成 React #185 的形狀。
+   * 量測一律先比對舊值再 setState(相同值不進 render),ResizeObserver 因此不可能自我激發。
+   *
+   * body 面板一定要拿到明確寬度:虛擬捲動時列是 `position:absolute`,面板沒有固有寬會塌成 0
+   * (2026-09-04 實測:改成純算出來時,右區 body 面板寬 = 0,整區消失)。
+   */
+  const rightHeaderRef = React.useRef<HTMLDivElement>(null)
+  const [measuredRightWidth, setMeasuredRightWidth] = React.useState(0)
   React.useLayoutEffect(() => {
+    if (!hasRowActions) return
+    const el = rightHeaderRef.current
+    if (!el) return
     const measure = () => {
-      if (leftHeaderRef.current) setLeftWidth(leftHeaderRef.current.offsetWidth)
-      if (rightHeaderRef.current) setRightWidth(rightHeaderRef.current.offsetWidth)
+      const w = Math.round(el.getBoundingClientRect().width)
+      setMeasuredRightWidth((prev) => (prev === w ? prev : w))
     }
     measure()
     const obs = new ResizeObserver(measure)
-    if (leftHeaderRef.current) obs.observe(leftHeaderRef.current)
-    if (rightHeaderRef.current) obs.observe(rightHeaderRef.current)
+    obs.observe(el)
     return () => obs.disconnect()
-  }, [hasLeft, hasRight, rows.length])
+  }, [hasRowActions, rightCols, rows.length])
+  const rightWidth = hasRowActions ? measuredRightWidth : rightColsWidth
 
   // 2026-07-09 root-cause fix(user 以 GitHub Pages 對比抓出 regression):
   //   舊 `h-table-row-${size}` 模板字串 Tailwind **靜態掃描看不到** → `.h-table-row-{sm,md,lg}` 規則
@@ -1681,8 +1719,13 @@ function DataTableInner<TData>(
   // 新:表格層 single onMouseOver / onMouseOut,透過 event.target.closest 找 data-row-index
   const enterLeaveHandlers = React.useMemo(() => {
     if (!enableHover) return { onMouseOver: undefined, onMouseOut: undefined }
+    // **判 `Element` 不判 `HTMLElement`**(2026-09-04 user 回報「hover inline action 後整列底色消失」
+    // 的根因):lucide 圖示渲染出來的是 `<svg>`/`<path>`,屬於 `SVGElement`,`instanceof HTMLElement`
+    // 恆為 false。指標移到 inline action 的圖示上時,`onMouseOut` 的 `relatedTarget` 判不出「還在同一列」
+    // 就把 `data-hovered` 刪了,接著 `onMouseOver` 又在這裡提早 return、沒把它補回來 —— 底色因此消失。
+    // `closest()` 定義在 `Element` 上,兩種元素都能用。
     const findRowIndex = (target: EventTarget | null): string | null => {
-      if (!(target instanceof HTMLElement)) return null
+      if (!(target instanceof Element)) return null
       const rowEl = target.closest<HTMLElement>('[data-row-index]')
       return rowEl?.dataset.rowIndex ?? null
     }
@@ -1691,7 +1734,7 @@ function DataTableInner<TData>(
         // v15.3:drag 進行中只允許 source row 自己被標 hover(維持 active 視覺
         // 對齊 Linear / Jira「source 維持 pressed 狀態」canonical)。其他 row 抑制。
         if (activeDragIdRef.current != null) {
-          const target = e.target instanceof HTMLElement ? e.target : null
+          const target = e.target instanceof Element ? e.target : null
           const rowEl = target?.closest<HTMLElement>('[data-sortable-row-id]')
           const isSource = rowEl?.dataset.sortableRowId === activeDragIdRef.current
           if (!isSource) return
@@ -1704,7 +1747,7 @@ function DataTableInner<TData>(
         const idx = findRowIndex(e.target)
         if (idx == null) return
         // 仍在同一 row 的子元素間 bubble(e.g. cell → text node)則 relatedTarget 還在 row 內
-        const related = e.relatedTarget instanceof HTMLElement ? e.relatedTarget.closest<HTMLElement>('[data-row-index]') : null
+        const related = e.relatedTarget instanceof Element ? e.relatedTarget.closest<HTMLElement>('[data-row-index]') : null
         if (related?.dataset.rowIndex === idx) return
         tableRef.current?.querySelectorAll(`[data-row-index="${idx}"]`).forEach((el) => delete (el as HTMLElement).dataset.hovered)
       },
@@ -1968,6 +2011,40 @@ function DataTableInner<TData>(
       return v != null && (Array.isArray(v) ? v.length > 0 : true)
     })
     const effectiveAutoRowForCell = autoRowHeight || rowHasAnyError
+    // ── L4 巢狀列的展開箭頭(2026-09-04 從手刻改為消費 primitive)──
+    // 原本是一段手刻 `<button className="w-4 h-4 mr-2">` + `<ChevronDown style={rotate(-90deg)}>`,
+    // 而且在 cell-error 與非 error 兩個分支各複製一份。三個可量的後果:
+    //   (a) lg 尺寸箭頭裝不進槽 —— 圖示是 `ICON_SIZE.lg`(20px),按鈕盒卻寫死 `w-4 h-4`(16px);
+    //   (b) lg 尺寸子列對不齊父列 —— 槽寬寫死 16+8=24,但縮排每層吃 `--tree-indent-lg`(28px),
+    //       每深一層錯開 4px;TreeView 的 `INDENT_STEP = chevronSize + 8` 兩邊同源所以不會錯;
+    //   (c) 多行 / cell error 時外層是 `items-start`,槽沒有 `h-[1lh]`,箭頭貼上緣而不是對齊
+    //       第一行文字中線 —— `ItemPrefix` 的 `h-[1lh]` 正是為此存在。
+    // 改成消費 `ItemPrefix`(槽,對齊第一行中線 + 鎖槽寬)+ `ItemInlineActionButton`(行內圖示按鈕
+    // SSOT:盒 = `ICON_SIZE[size]`、hover 底色 = `INLINE_ACTION_HOVER_BG_SIZE[size]`、
+    // `fg-muted → fg-secondary` 一階色彩梯)。槽寬 `iconSize` + `mr-2`(8px)= 24/24/28,與
+    // `--tree-indent-{sm,md,lg}` 逐尺寸相等,子列的箭頭因此永遠對齊父列的箭頭。
+    // 圖示改 `ChevronRight` + `rotate-90`(展開時),對齊 TreeView 的 chevron 慣例
+    // (tree-view.tsx:1244-1266),不再用 `ChevronDown` 反轉 −90 度這種繞法。
+    const nestedPrefix = showNestedPrefix ? (
+      <span
+        className="flex shrink-0"
+        style={{ paddingLeft: depth > 0 ? `calc(${depth} * var(--tree-indent-${size}, var(--tree-indent-md)))` : 0 }}
+      >
+        <ItemPrefix className="mr-2" style={{ width: iconSize }}>
+          {canExpand ? (
+            <ItemInlineActionButton
+              icon={ChevronRight}
+              size={size}
+              aria-label={isExpanded ? '收合' : '展開'}
+              aria-expanded={isExpanded}
+              iconClassName={cn('transition-transform motion-reduce:duration-0', isExpanded && 'rotate-90')}
+              onClick={(e) => { e.stopPropagation(); toggleExpand?.() }}
+            />
+          ) : null}
+        </ItemPrefix>
+      </span>
+    ) : null
+
     return (
       <div
         key={cell.id}
@@ -2059,27 +2136,7 @@ function DataTableInner<TData>(
         {hasCellError ? (
           <span className="flex flex-col self-stretch w-full min-w-0 gap-1">
             <span className="flex flex-1 min-w-0">
-              {showNestedPrefix && (
-                <span
-                  className="flex items-center shrink-0"
-                  style={{ paddingLeft: depth > 0 ? `calc(${depth} * var(--tree-indent-${size}, var(--tree-indent-md)))` : 0 }}
-                >
-                  {canExpand ? (
-                    <button
-                      type="button"
-                      aria-label={isExpanded ? '收合' : '展開'}
-                      aria-expanded={isExpanded}
-                      className="inline-flex items-center justify-center shrink-0 w-4 h-4 mr-2 text-fg-muted hover:text-fg-secondary rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform motion-reduce:duration-0"
-                      style={{ transform: isExpanded ? 'rotate(90deg)' : undefined }}
-                      onClick={(e) => { e.stopPropagation(); toggleExpand?.() }}
-                    >
-                      <ChevronDown size={iconSize} aria-hidden style={{ transform: 'rotate(-90deg)' }} />
-                    </button>
-                  ) : (
-                    <span aria-hidden className="shrink-0 w-4 h-4 mr-2" />
-                  )}
-                </span>
-              )}
+              {nestedPrefix}
               <span className={cn(
                 'flex-1 min-w-0 flex',
                 // 2026-05-12 Round 4.5 fix(codex M31 Layer C 抓漏)— error-cell branch 也用 per-row state
@@ -2103,28 +2160,7 @@ function DataTableInner<TData>(
           </span>
         ) : (
           <>
-            {/* L4 nested rows prefix(同上,無 error 時走 flex-row 原 path) */}
-            {showNestedPrefix && (
-              <span
-                className="flex items-center shrink-0"
-                style={{ paddingLeft: depth > 0 ? `calc(${depth} * var(--tree-indent-${size}, var(--tree-indent-md)))` : 0 }}
-              >
-                {canExpand ? (
-                  <button
-                    type="button"
-                    aria-label={isExpanded ? '收合' : '展開'}
-                    aria-expanded={isExpanded}
-                    className="inline-flex items-center justify-center shrink-0 w-4 h-4 mr-2 text-fg-muted hover:text-fg-secondary rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform motion-reduce:duration-0"
-                    style={{ transform: isExpanded ? 'rotate(90deg)' : undefined }}
-                    onClick={(e) => { e.stopPropagation(); toggleExpand?.() }}
-                  >
-                    <ChevronDown size={iconSize} aria-hidden style={{ transform: 'rotate(-90deg)' }} />
-                  </button>
-                ) : (
-                  <span aria-hidden className="shrink-0 w-4 h-4 mr-2" />
-                )}
-              </span>
-            )}
+            {nestedPrefix}
             <span className={cn(
               'flex-1 min-w-0 self-stretch flex',
               // 2026-05-12 fix root invariant(M32 b):用 `effectiveAutoRowForCell` 而非 global
@@ -2902,9 +2938,9 @@ function DataTableInner<TData>(
       {...props}
     >
       {/* ══ HEADER（固定頂部，不在 scroll 內）══ */}
-      <div role="rowgroup" className="flex">
+      <div role="rowgroup" className="flex dtHeaderRowGroup">
         {hasLeft && (
-          <div ref={leftHeaderRef} data-datatable-header-panel="left" className={cn(HEADER_PANEL, 'shrink-0 overflow-hidden dtPanelBoundaryRight')}>
+          <div data-datatable-header-panel="left" className={cn(HEADER_PANEL, 'shrink-0 overflow-hidden dtPanelBoundaryRight')} style={{ width: leftWidth || undefined }}>
             {renderHeaderRow(leftCols, false)}
           </div>
         )}
@@ -2942,7 +2978,14 @@ function DataTableInner<TData>(
           </div>
         </div>
         {hasRight && (
-          <div ref={rightHeaderRef} data-datatable-header-panel="right" className={cn(HEADER_PANEL, 'shrink-0 overflow-hidden dtPanelBoundaryLeft')}>
+          <div
+            ref={rightHeaderRef}
+            data-datatable-header-panel="right"
+            className={cn(HEADER_PANEL, 'shrink-0 overflow-hidden dtPanelBoundaryLeft')}
+            // 有 rowActions 時這裡是量測來源,**不能**寫死寬度(見 rightWidth 的說明);
+            // 沒有 rowActions 時寫算出來的數字,與 body 面板同源。
+            style={{ width: hasRowActions ? undefined : rightWidth || undefined }}
+          >
             {renderHeaderRow(rightCols, true)}
           </div>
         )}
@@ -2957,13 +3000,31 @@ function DataTableInner<TData>(
           flex-1 會強制 body 撐滿 outer = 不 hug content。預設 `flex: 0 1 auto` + min-h-0 =
           body intrinsic = content,被 outer maxHeight 約束時可 shrink 到 outer 分配空間。
           centerBody.maxHeight 用 JS 算 px(bypass CSS % flex 場景 buggy shrink)。 */}
-      <div ref={bodyRef} className={cn('flex items-start', isFillHeight && 'min-h-0 min-w-0')}>
+      {/* 凍結邊界線畫在**列區外層**,不畫在釘選面板上(2026-09-04 第二次修正)。
+          釘選面板自己是 `overflow-hidden`,而 `overflow` 的裁切邊是 **padding box** ——
+          面板底部那條等同水平捲軸高的透明 border 在 padding box 之外,線無論怎麼負向延伸都畫不出來
+          (前一版用 `bottom: calc(-1 * var(--dt-hscroll-gutter))` 是假宣稱:版面盒延伸了,像素沒有)。
+          這一層不裁切也不捲動,高度就是三個面板的 border-box 高,線因此真的頂天立地。
+          位置由 `--dt-left-w` / `--dt-right-w` 給,跟面板寬同一個 state,不可能對不齊。 */}
+      <div
+        ref={bodyRef}
+        className={cn(
+          'flex items-start',
+          isFillHeight && 'min-h-0 min-w-0',
+          hasLeft && 'dtLeftBoundary',
+          hasRight && 'dtRightBoundary',
+        )}
+        style={{
+          ...(hasLeft ? { ['--dt-left-w' as string]: `${leftWidth}px` } : {}),
+          ...(hasRight ? { ['--dt-right-w' as string]: `${rightWidth}px` } : {}),
+        }}
+      >
         {hasLeft && (
           <div
             ref={leftBodyRef}
             data-datatable-panel="left"
             onScroll={() => onSecondaryScroll(leftBodyRef.current, 'y')}
-            className="shrink-0 overflow-hidden dtPanelBoundaryRight"
+            className="shrink-0 overflow-hidden"
             style={{
               width: leftWidth || undefined,
               // isFillHeight 用 JS 算的 px;固定 px(300px 等)直接套
@@ -2974,14 +3035,7 @@ function DataTableInner<TData>(
               // 讓 clientHeight 不變、列直接畫進 padding 區(實測 clientHeight 仍 300);
               // border 在 padding box 外面,clientHeight 因此真的少 15(300 → 285),列才會被裁掉。
               // 透明 border 之下 panel 底色照樣畫(background-clip 預設 border-box),看不出接縫。
-              // `--dt-hscroll-gutter`:凍結邊界線的 `::after` 用它負向拉出 padding box,才能貫穿這條
-              // 透明 border 到 border-box 底(spec「整欄高度」;見 data-table.css 的 dtPanelBoundary*)。
-              ...(hScrollbarGutter > 0
-                ? {
-                    borderBottom: `${hScrollbarGutter}px solid transparent`,
-                    ['--dt-hscroll-gutter' as string]: `${hScrollbarGutter}px`,
-                  }
-                : {}),
+              ...(hScrollbarGutter > 0 ? { borderBottom: `${hScrollbarGutter}px solid transparent` } : {}),
             }}
           >
             {renderBodyRows(leftCols, false, false, leftWidth)}
@@ -3035,19 +3089,12 @@ function DataTableInner<TData>(
             ref={rightBodyRef}
             data-datatable-panel="right"
             onScroll={() => onSecondaryScroll(rightBodyRef.current, 'y')}
-            className="shrink-0 overflow-hidden dtPanelBoundaryLeft"
+            className="shrink-0 overflow-hidden"
             style={{
               width: rightWidth || undefined,
               ...(isFillHeight && bodyMaxHeight != null ? { maxHeight: bodyMaxHeight } : hasHeightConstraint ? { maxHeight: height } : {}),
               // 與 left 同理(見 hScrollbarGutter;必須是 border 不是 padding)。
-              // `--dt-hscroll-gutter`:凍結邊界線的 `::after` 用它負向拉出 padding box,才能貫穿這條
-              // 透明 border 到 border-box 底(spec「整欄高度」;見 data-table.css 的 dtPanelBoundary*)。
-              ...(hScrollbarGutter > 0
-                ? {
-                    borderBottom: `${hScrollbarGutter}px solid transparent`,
-                    ['--dt-hscroll-gutter' as string]: `${hScrollbarGutter}px`,
-                  }
-                : {}),
+              ...(hScrollbarGutter > 0 ? { borderBottom: `${hScrollbarGutter}px solid transparent` } : {}),
             }}
           >
             {renderBodyRows(rightCols, false, true, rightWidth)}

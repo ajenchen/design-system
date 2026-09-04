@@ -110,23 +110,36 @@
    World-class cite:AG Grid javascript-data-grid/cell-editing-start-stop / MUI X Data Grid
    editing — separation of grid interaction model from editor component。
    ──────────────────────────────────────────────────────────── */
+/* inlineEdit 模式的 body 欄間線。
+   2026-05-10 fix v2:只畫右邊,bottom 由 row.border-b 接管。
+   2026-05-12 fix v3(user 抓「pinned 分隔線還是 2px,不是說整個 table 格線 1px 嗎?」):
+   每個 panel(left/center/right)最右 cell 不該畫線,因為:
+     - Left panel 最右 cell 旁:凍結邊界線
+     - Center / Right panel 最右 cell 旁:outer container border(rounded-md)
+   重疊就會變成 2px 視覺,所以 `:last-child` 排除。
+   **2026-09-04 從內陰影改成 1px 偽元素**:這是全表最後一處還在用陰影畫線的地方,而它正上方
+   同一欄位置的表頭欄間線是真元素(ResizeHandle 內的 `<span bg-divider>`)—— 非整數縮放 / Retina
+   下瀏覽器對「陰影」與「背景色盒」的柵格化取整不同,同規格的線會出現 1 vs 2 實體像素、上下接不起來。
+   這正是 spec「全表 1px 線一律元素/border 機制、禁用陰影」那條鐵律要防的情形(2026-08-20 立)。
+   機制與 `.dtLeftBoundary::before` / `.dtHeaderRowGroup::after` 完全同型。 */
 .dtCellGrid {
-  /* 2026-05-10 fix v2:只保 right shadow(`inset -1px 0`),bottom 由 row.border-b 接管。
-     2026-05-12 fix v3(user 抓「pinned 分隔線還是 2px,不是說整個 table 格線 1px 嗎?」):
-     每個 panel(left/center/right)最右 cell 不該 paint shadow,因為:
-       - Left panel 最右 cell 旁:panel `border-r border-divider`(data-table.tsx:2169/2213)
-       - Center panel 最右 cell 旁:outer container border(rounded-md)
-       - Right panel 最右 cell 旁:outer container border
-     若 cell shadow 跟 panel/outer border 重疊 = 2px 視覺。
-     Fix v3:`:not(:last-child)` 排除每 panel 最右 cell,讓 panel/outer border 唯一 own
-     panel-boundary 視覺。對齊 data-table.spec.md「Paint」段 grid line 1px SSOT canonical(段名指法)。 */
-  box-shadow: inset -1px 0 0 var(--divider);
+  position: relative;
 }
 
-.dtCellGrid:last-child {
-  /* 每 panel 最右 cell:panel border-r 或 outer rounded border 接管。
-     cell shadow set 為 none 避免 2px 重疊。 */
-  box-shadow: none;
+.dtCellGrid::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 1px;
+  background: var(--divider);
+  pointer-events: none;
+}
+
+.dtCellGrid:last-child::after {
+  /* 每 panel 最右 cell:凍結邊界線或 outer rounded border 接管,不重複畫。 */
+  content: none;
 }
 
 /* Phase 9 Issue 1 fix(2026-05-10):range cells bg fill — cell 自身 bg layer
@@ -159,20 +172,23 @@
    邊界線與欄間 w-px 短線粗細分家(有的 1 實體像素、有的 2)。全表 1px 線一律
    「元素」機制後,任何縮放下柵格化一致。偽元素貼齊面板內緣(與原內陰影同位置),
    不佔盒模型、不被 Windows 懸浮捲軸蓋(2026-05-12 改制原因保留)。 */
-/* 表頭面板的下分隔線:貼齊底緣的 1px 偽元素,**不佔盒模型**。
+/* 表頭下分隔線:貼齊底緣的 1px 偽元素,**不佔盒模型**。
    用 `border-b` 的話 panel(height:auto)會變成 row 40 + border 1 = 41,比 body 每一列高 1px
-   (body row 的線含在 rowHeight 的 border-box 內)。同 `.dtPanelBoundary*` 的機制。 */
-.dtHeaderPanelUnderline {
+   (body row 的線含在 rowHeight 的 border-box 內)。同 `.dtPanelBoundary*` 的機制。
+
+   **畫在列群組上,不畫在三個 header panel 上**(2026-09-04 第二次修正,根因兩層):
+   1. panel 是**捲動容器**,絕對定位的子元素屬於捲動溢位內容,會跟著內容一起位移。實測 center
+      header 捲到底(scrollLeft=382)時線的左緣在 x=−265,右側 382px 完全沒有線 —— 缺口寬度
+      恆等於 scrollLeft。掛在不捲動的外層才不會被帶走。
+   2. 一個元素只有一個 `::after`。左/右 header panel 同時掛凍結邊界線,兩條規則會合併成
+      `left:0 right:0 top:0 bottom:0 width:1px height:1px`,在角落變成 1×1 的點、兩條線同時消失
+      (2026-09-04 user 回報「釘選欄 header 最右邊的分隔線消失」的直接原因)。分屬不同元素就不會撞。
+   一條線橫貫整表,也天生涵蓋讓給垂直捲軸的那條 strip,不會有分段接縫。 */
+.dtHeaderRowGroup {
   position: relative;
 }
 
-/* **必須用 `::before`,不能用 `::after`**(2026-09-04 user 回報「釘選欄 header 最右邊的分隔線消失」
-   的根因):左/右 header panel 同時掛 `dtPanelBoundaryRight/Left`,而那條凍結邊界線已經佔用了
-   `::after`。一個元素只有一個 `::after` —— 兩條規則會合併成
-   `left:0 right:0 top:0 bottom:0 width:1px height:1px`,結果是角落一個 1×1 的點,
-   **兩條線同時消失**(實測:header LEFT 的 ::after 量到 1px × 1px)。
-   center panel 沒有 boundary class 所以不會撞 —— 這正是為什麼只量 center 會誤判成修好了。 */
-.dtHeaderPanelUnderline::before {
+.dtHeaderRowGroup::after {
   content: '';
   position: absolute;
   left: 0;
@@ -185,20 +201,18 @@
   z-index: 1;
 }
 
+/* ── 凍結邊界線 ──
+   表頭段畫在 header panel 上(panel 高度就是 40,沒有捲軸帶要跨,`bottom:0` 即到底);
+   列區段畫在**列區外層** `.dtLeftBoundary` / `.dtRightBoundary` 上(見下)。 */
 .dtPanelBoundaryRight {
   position: relative;
 }
 
-/* `bottom` 要負向拉出 padding box:釘選 body 面板帶一條等同水平捲軸高的**透明 border-bottom**
-   (讓三區可視列高一致),而絕對定位的包含塊是 padding box —— 不補這一段,線會在捲軸帶上緣就停,
-   表格底端缺一個捲軸寬,達不到 spec 明文的「整欄高度(table 頂部到列區底部)」。
-   `--dt-hscroll-gutter` 由 tsx 依實測的捲軸高寫上;沒有捲軸時是 0,行為與先前完全相同。
-   (2026-09-04 user 回報「頂天立地」;spec 缺陷 P 由此結案,v33 也是讓線貫穿到底。) */
 .dtPanelBoundaryRight::after {
   content: '';
   position: absolute;
   top: 0;
-  bottom: calc(-1 * var(--dt-hscroll-gutter, 0px));
+  bottom: 0;
   right: 0;
   width: 1px;
   background: var(--divider);
@@ -209,15 +223,51 @@
   position: relative;
 }
 
-/* 同 `.dtPanelBoundaryRight::after` 的理由(見上)。 */
 .dtPanelBoundaryLeft::after {
   content: '';
   position: absolute;
   top: 0;
-  bottom: calc(-1 * var(--dt-hscroll-gutter, 0px));
+  bottom: 0;
   left: 0;
   width: 1px;
   background: var(--divider);
   pointer-events: none;
 }
 
+/* 列區段的凍結邊界線:掛在**列區外層**,不掛在釘選面板上。
+   釘選面板自己是 `overflow-hidden`,而 `overflow` 的裁切邊是 **padding box** —— 面板底部那條
+   等同水平捲軸高的透明 border 在 padding box 之外,線無論怎麼負向延伸都畫不出來
+   (前一版 `bottom: calc(-1 * var(--dt-hscroll-gutter))` 是假宣稱:版面盒延伸了、像素沒有,
+   而當時的 I13b 比的是 `getComputedStyle(::after).height`,量到的是版面不是畫面,所以假綠)。
+   外層不裁切也不捲動,高度就是三個面板的 border-box 高,線因此真的從頂到底。
+   `--dt-left-w` / `--dt-right-w` 由 tsx 寫上,與釘選面板寬同一個 state,線與面板邊緣必然同一像素。 */
+.dtLeftBoundary,
+.dtRightBoundary {
+  position: relative;
+}
+
+.dtLeftBoundary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* 佔左側面板的最後一個像素(等同原本掛在面板上的 `right: 0`)。 */
+  left: calc(var(--dt-left-w, 0px) - 1px);
+  width: 1px;
+  background: var(--divider);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.dtRightBoundary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* 佔右側面板的第一個像素(等同原本掛在面板上的 `left: 0`)。 */
+  right: calc(var(--dt-right-w, 0px) - 1px);
+  width: 1px;
+  background: var(--divider);
+  pointer-events: none;
+  z-index: 1;
+}

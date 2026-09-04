@@ -11,6 +11,7 @@
 
 import { chromium } from 'playwright'
 import http from 'node:http'
+import { inflateSync as zlibInflate } from 'node:zlib'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -258,6 +259,27 @@ for (const p of lineReport) {
   record('I9', `boundary ${p.cls} = 1px 偽元素`, p.afterW === '1px' && p.afterBg !== 'rgba(0, 0, 0, 0)', `::after width=${p.afterW} bg=${p.afterBg}`)
   record('I9', `boundary ${p.cls} 無陰影畫線`, p.shadow === 'none', `box-shadow=${p.shadow}(禁陰影畫線)`)
 }
+
+// I9 續:`.dtCellGrid`(inlineEdit 模式的 body 欄間線)。2026-09-04 補 —— 原本 I9 只掃釘選面板,
+// 而且載入的是非 inlineEdit 的 PinnedColumns story,`.dtCellGrid` 根本不在畫面上,所以它用陰影畫線
+// 這件事一直掃不到:表頭欄間線是真元素、正下方 body 是陰影,非整數縮放下粗細會分家。
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
+await page.waitForSelector('.dtCellGrid')
+const cellGridReport = await page.evaluate(() => {
+  const cells = [...document.querySelectorAll('.dtCellGrid')]
+  const shadowed = cells.filter((c) => getComputedStyle(c).boxShadow !== 'none').length
+  const withLine = cells.filter((c) => {
+    const a = getComputedStyle(c, '::after')
+    return a.content !== 'none' && a.width === '1px' && a.backgroundColor !== 'rgba(0, 0, 0, 0)'
+  }).length
+  const lastChildren = cells.filter((c) => c.matches(':last-child'))
+  const lastWithLine = lastChildren.filter((c) => getComputedStyle(c, '::after').content !== 'none').length
+  return { total: cells.length, shadowed, withLine, last: lastChildren.length, lastWithLine }
+})
+record('I9', `.dtCellGrid 存在(${cellGridReport.total} 個)`, cellGridReport.total > 0, 'inlineEdit story 找不到 .dtCellGrid')
+record('I9', '.dtCellGrid 無陰影畫線', cellGridReport.shadowed === 0, `${cellGridReport.shadowed} 個仍用 box-shadow 畫線(禁;表頭同欄位置是真元素,會粗細分家)`)
+record('I9', '.dtCellGrid 欄間線 = 1px 偽元素', cellGridReport.withLine === cellGridReport.total - cellGridReport.last, `畫線 ${cellGridReport.withLine} vs 應畫 ${cellGridReport.total - cellGridReport.last}`)
+record('I9', '.dtCellGrid 每 panel 最右 cell 不重複畫線', cellGridReport.lastWithLine === 0, `${cellGridReport.lastWithLine} 個最右 cell 仍畫線(會與凍結邊界/外框疊成 2px)`)
 
 // ── I10:右/置中對齊欄的「標題」與「儲存格內容」必須對齊同一邊(2026-09-03 user 抓到)──
 // 根因是 header 的點擊區為 flex-1(要撐滿才有夠大的排序點擊範圍),外層 justify-end 因此沒有剩餘空間可分配,
@@ -527,74 +549,143 @@ if (!simulated) {
   // `data-table.spec.md` 缺陷表 S,不在這條模擬的職責範圍。
 }
 
-// ── I13:分隔線必須「頂天立地 / 橫貫全表」(2026-09-04 user 回報三條線同時消失後補)──
-// 為什麼非有不可:2026-09-04 把表頭下分隔線從 `border-b` 改成 `::after` 偽元素時,沒察覺左右兩個
-// header panel 已經掛了 `dtPanelBoundaryRight/Left`(同樣用 `::after`)—— 一個元素只有一個 `::after`,
-// 兩條規則合併成 1×1 的點,**凍結邊界線與表頭底線在釘選區同時消失**,而 CI 當時**沒有任何一條**
-// 表頭分隔線的斷言,所以全綠。這一組就是補那個洞:
-//   I13a 表頭底線橫貫全表(三個 panel 的線段相接後 = 表格內緣寬)
-//   I13b 凍結邊界線在 header 段與 body 段都畫得出來,且兩段相接 = 從表頭頂到 body 底(頂天立地)
-//   I13c 每一條線都必須有非零的長度(擋掉「兩條 ::after 互撞塌成一點」這一類 silent 失效)
+// ── I13:分隔線必須真的「畫」出來,而且橫貫全表 / 頂天立地(2026-09-04)──
+// 為什麼這一組要取像素、不能量版面:第一版 I13 比的是 `getComputedStyle(el, '::after').height`
+// 與 border-box 高,兩者都是 255 → 斷言通過,但那條線被面板自己的 `overflow:hidden` 裁掉,
+// **一個像素都沒畫出來**;同一版也完全沒有「捲動之後線還在不在」這個維度,而表頭底線當時
+// 掛在捲動容器內,捲到底時右側 74% 沒有線。兩個真 bug 各自從版面量測的兩個盲點溜過去。
+// 這正是 M32「pixel-quantified verify ≠ attribute existence」禁止的那一類,所以改成:
+//   I13a 表頭底線沿底緣逐點取像素,scrollLeft=0 與 scrollLeft=max 兩種狀態都要整條一致
+//   I13b 凍結邊界線從表頭頂到列區底(**含讓給水平捲軸的那條帶**)逐點取像素,整條一致
+//   I13c 線色必須與旁邊的底色可分辨(擋掉「整條都沒畫,取樣點彼此當然一致」的退化通過)
+
+// 最小 PNG 解碼(Chromium 螢幕擷取固定是 8-bit、非交錯;deviceScaleFactor=1 時 CSS px = 裝置 px)。
+function decodePng(buf) {
+  let off = 8 // 跳過簽章
+  let w = 0, h = 0, colorType = 0
+  const idat = []
+  while (off < buf.length) {
+    const len = buf.readUInt32BE(off)
+    const type = buf.toString('ascii', off + 4, off + 8)
+    const data = buf.subarray(off + 8, off + 8 + len)
+    if (type === 'IHDR') {
+      w = data.readUInt32BE(0); h = data.readUInt32BE(4)
+      if (data[8] !== 8) throw new Error(`只支援 8-bit PNG,收到 ${data[8]}`)
+      colorType = data[9]
+      if (data[12] !== 0) throw new Error('只支援非交錯 PNG')
+    } else if (type === 'IDAT') idat.push(data)
+    else if (type === 'IEND') break
+    off += 12 + len
+  }
+  const ch = colorType === 6 ? 4 : colorType === 2 ? 3 : 0
+  if (!ch) throw new Error(`只支援 RGB/RGBA,colorType=${colorType}`)
+  const raw = zlibInflate(Buffer.concat(idat))
+  const out = Buffer.alloc(w * h * ch)
+  const stride = w * ch
+  for (let y = 0; y < h; y++) {
+    const filter = raw[y * (stride + 1)]
+    const line = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1))
+    for (let x = 0; x < stride; x++) {
+      const a = x >= ch ? out[y * stride + x - ch] : 0          // 左
+      const b = y > 0 ? out[(y - 1) * stride + x] : 0            // 上
+      const c = x >= ch && y > 0 ? out[(y - 1) * stride + x - ch] : 0 // 左上
+      let v = line[x]
+      if (filter === 1) v += a
+      else if (filter === 2) v += b
+      else if (filter === 3) v += (a + b) >> 1
+      else if (filter === 4) {
+        const pa = Math.abs(b - c), pb = Math.abs(a - c), pc = Math.abs(a + b - 2 * c)
+        v += pa <= pb && pa <= pc ? a : pb <= pc ? b : c
+      }
+      out[y * stride + x] = v & 0xff
+    }
+  }
+  return { w, h, ch, data: out }
+}
+const px = (img, x, y) => {
+  const i = (Math.round(y) * img.w + Math.round(x)) * img.ch
+  return [img.data[i], img.data[i + 1], img.data[i + 2]]
+}
+const dist = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2]))
+
 await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, { waitUntil: 'networkidle' })
 await page.waitForSelector('[data-datatable-panel="center"]')
 await page.waitForTimeout(500)
-const dividerReport = await page.evaluate(() => {
-  const roots = [...document.querySelectorAll('[data-datatable-panel="center"]')].map((c) => c.closest('.bg-surface') || c.parentElement.parentElement)
-  return roots.map((root, i) => {
-    const px = (v) => (v && v.endsWith('px') ? parseFloat(v) : 0)
-    const seg = (sel, pseudo) => {
-      const el = root.querySelector(sel)
-      if (!el) return null
-      const cs = getComputedStyle(el, pseudo)
-      if (cs.content === 'none') return { present: false, w: 0, h: 0 }
-      return { present: true, w: px(cs.width), h: px(cs.height) }
-    }
-    const rect = (sel) => {
-      const el = root.querySelector(sel)
-      return el ? el.getBoundingClientRect() : null
-    }
-    const hL = rect('[data-datatable-header-panel="left"]')
-    const hC = rect('[data-datatable-header-panel="center"]')
-    const hR = rect('[data-datatable-header-panel="right"]')
-    const bL = root.querySelector('[data-datatable-panel="left"]')
+
+// 幾何:表頭列群組(底線的宿主)、列區外層(邊界線的宿主)、釘選面板寬。
+const geom = await page.evaluate(() => {
+  const centers = [...document.querySelectorAll('[data-datatable-panel="center"]')]
+  return centers.map((c, i) => {
+    const bodyWrap = c.parentElement
+    const root = bodyWrap.parentElement
+    const headRow = root.querySelector('[role="rowgroup"].dtHeaderRowGroup')
+    const r = (el) => { const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, right: b.right, bottom: b.bottom } }
+    const hl = root.querySelector('[data-datatable-header-panel="left"]')
+    const hr = root.querySelector('[data-datatable-header-panel="right"]')
     return {
       table: i,
-      // 表頭底線:三段寬度加總 vs 表頭三個 panel 的實際橫向跨距
-      underline: {
-        left: seg('[data-datatable-header-panel="left"]', '::before'),
-        center: seg('[data-datatable-header-panel="center"]', '::before'),
-        right: seg('[data-datatable-header-panel="right"]', '::before'),
-        span: hL && hR ? +(hR.right - hL.left).toFixed(1) : hC ? +(hC.right - hC.left).toFixed(1) : 0,
-      },
-      // 凍結邊界線:header 段 + body 段
-      boundary: {
-        headerLeft: seg('[data-datatable-header-panel="left"]', '::after'),
-        bodyLeft: seg('[data-datatable-panel="left"]', '::after'),
-        headerRight: seg('[data-datatable-header-panel="right"]', '::after'),
-        bodyRight: seg('[data-datatable-panel="right"]', '::after'),
-        headerH: hL ? +hL.height.toFixed(1) : 0,
-        bodyBorderBox: bL ? +bL.getBoundingClientRect().height.toFixed(1) : 0,
-      },
+      root: r(root),
+      headRow: headRow ? r(headRow) : null,
+      bodyWrap: r(bodyWrap),
+      leftW: hl ? Math.round(hl.getBoundingClientRect().width) : 0,
+      rightW: hr ? Math.round(hr.getBoundingClientRect().width) : 0,
+      maxScroll: c.scrollWidth - c.clientWidth,
     }
   })
 })
-for (const r of dividerReport) {
-  const u = r.underline
-  const segSum = (u.left?.w || 0) + (u.center?.w || 0) + (u.right?.w || 0)
-  record('I13a', `表格 ${r.table} 表頭底線橫貫全表(三段相接 = 表頭跨距)`, Math.abs(segSum - u.span) <= 1, `三段 ${segSum} vs 跨距 ${u.span}(缺一段 = 釘選區沒有底線)`)
-  for (const [k, v] of Object.entries({ left: u.left, center: u.center, right: u.right })) {
-    if (!v || !v.present) continue
-    record('I13c', `表格 ${r.table} ${k} 表頭底線有非零寬度`, v.w > 0 && v.h > 0, `${v.w}×${v.h}(1×1 = 兩條 ::after 互撞塌成一點)`)
-  }
-  const b = r.boundary
-  for (const side of ['Left', 'Right']) {
-    const head = b[`header${side}`]
-    const body = b[`body${side}`]
-    if (!head || !head.present) continue
-    record('I13b', `表格 ${r.table} ${side} 凍結邊界線的 header 段畫得出來且滿高`, Math.abs(head.h - b.headerH) <= 1, `線高 ${head.h} vs 表頭高 ${b.headerH}`)
-    if (body && body.present) {
-      record('I13b', `表格 ${r.table} ${side} 凍結邊界線的 body 段貫穿到 border-box 底(含捲軸讓位帶)`, Math.abs(body.h - b.bodyBorderBox) <= 1, `線高 ${body.h} vs 面板 ${b.bodyBorderBox}`)
+
+// 沿一條線逐點取像素,回傳「與第一點的最大色差」與「與旁邊底色的最小色差」。
+const scanLine = (img, ox, oy, pts, refPts) => {
+  const on = pts.map(([x, y]) => px(img, x - ox, y - oy))
+  const off = refPts.map(([x, y]) => px(img, x - ox, y - oy))
+  const drift = Math.max(...on.map((p) => dist(p, on[0])))
+  const contrast = Math.min(...on.map((p, i) => dist(p, off[i])))
+  return { drift, contrast, n: on.length }
+}
+
+for (const g of geom) {
+  if (!g.headRow) continue
+  const shot = async () => decodePng(await page.screenshot({ clip: { x: Math.floor(g.root.x), y: Math.floor(g.root.y), width: Math.ceil(g.root.w), height: Math.ceil(g.root.h) } }))
+  const ox = Math.floor(g.root.x), oy = Math.floor(g.root.y)
+  const N = 40
+  const lerp = (a, b, i) => a + ((b - a) * i) / (N - 1)
+
+  for (const state of ['scrollLeft=0', 'scrollLeft=max']) {
+    if (state === 'scrollLeft=max' && g.maxScroll > 0) {
+      await page.evaluate((i) => { const c = [...document.querySelectorAll('[data-datatable-panel="center"]')][i]; c.scrollLeft = c.scrollWidth - c.clientWidth }, g.table)
+      await page.waitForTimeout(120)
+    } else if (state === 'scrollLeft=max') continue
+    const img = await shot()
+    // I13a 表頭底線:底緣那一列像素,從表格內緣左到內緣右(避開圓角 4px)
+    const yLine = g.headRow.bottom - 1
+    const onPts = [], offPts = []
+    for (let i = 0; i < N; i++) {
+      const x = lerp(g.headRow.x + 4, g.headRow.right - 5, i)
+      onPts.push([x, yLine]); offPts.push([x, yLine - 4]) // 參照:表頭底色
     }
+    const a = scanLine(img, ox, oy, onPts, offPts)
+    record('I13a', `表格 ${g.table} 表頭底線整條畫得出來(${state},${a.n} 點)`, a.drift <= 12, `取樣點最大色差 ${a.drift}(>12 = 有一段沒畫;捲動時線若跟著內容走,右側會整段缺)`)
+    record('I13c', `表格 ${g.table} 表頭底線與表頭底色可分辨(${state})`, a.contrast >= 4, `最小對比 ${a.contrast}(<4 = 整條都沒畫,取樣點當然彼此一致)`)
+  }
+  await page.evaluate((i) => { const c = [...document.querySelectorAll('[data-datatable-panel="center"]')][i]; c.scrollLeft = 0 }, g.table)
+  await page.waitForTimeout(120)
+
+  // I13b 凍結邊界線:從表頭頂掃到列區底(含捲軸讓位帶),整條必須同色
+  const img2 = await shot()
+  const top = g.headRow.y + 2, bot = g.bodyWrap.bottom - 2
+  for (const [side, lineX, refDx] of [
+    ['left', g.bodyWrap.x + g.leftW - 1, -3],
+    ['right', g.bodyWrap.right - g.rightW, 3],
+  ]) {
+    if ((side === 'left' ? g.leftW : g.rightW) === 0) continue
+    const onPts = [], offPts = []
+    for (let i = 0; i < N; i++) {
+      const y = lerp(top, bot, i)
+      onPts.push([lineX, y]); offPts.push([lineX + refDx, y])
+    }
+    const b = scanLine(img2, ox, oy, onPts, offPts)
+    record('I13b', `表格 ${g.table} ${side} 凍結邊界線從表頭頂畫到列區底(含捲軸讓位帶,${b.n} 點)`, b.drift <= 12, `取樣點最大色差 ${b.drift}(>12 = 底部捲軸帶那一段沒畫出來 —— 面板自己 overflow:hidden 會在 padding box 裁掉)`)
+    record('I13c', `表格 ${g.table} ${side} 凍結邊界線與相鄰底色可分辨`, b.contrast >= 4, `最小對比 ${b.contrast}`)
   }
 }
 

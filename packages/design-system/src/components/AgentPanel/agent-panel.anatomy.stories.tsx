@@ -1,5 +1,6 @@
 // @anatomy-rationale: Inspector N/A — 家族沒有 variant/size prop 可切換(面板寬是連續值、標誌狀態已由展示層「標誌三態」承載),即時預覽面板會退化成一個空殼;SizeMatrix / ColorMatrix 於本檔提供(2026-09-03 稽核補齊)
 // 設計規格層:結構解剖 + 幾何規格(輪距/內距/尺寸);動態行為見展示層。
+import * as React from 'react'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   AgentPanel,
@@ -49,6 +50,137 @@ export const Overview: Story = {
       </AgentPanel>
     </div>
   ),
+}
+
+/** 元件檢閱器:即時預覽 + 藍圖 + Inspect 面板(6-canonical 之一)。
+ *  面板是三段式容器,所以檢閱器盯的是**三段的垂直分工**與**寬度契約**——這兩件事決定了
+ *  consumer 把面板放進自家版面時會不會走鐘。互動的部分(拖寬、開合、標誌)在展示層。 */
+export const Inspector: Story = {
+  name: '元件檢閱器',
+  render: () => <InspectorView />,
+}
+
+const InspectorView = () => {
+  const [width, setWidth] = React.useState(400)
+  const clamped = Math.round(Math.min(Math.max(width, 360), 640))
+  return (
+    <div className="flex flex-col gap-6 p-8">
+      <div className="grid grid-cols-[1fr_340px] gap-6">
+        {/* 左:即時預覽 + 藍圖 */}
+        <div className="flex flex-col gap-6">
+          <div>
+            <H3>即時預覽</H3>
+            <Desc>
+              拉下面的滑桿改寬度,看三段怎麼分配:標題列與輸入盒是固定高,訊息區吃掉剩下的全部。
+              寬度夾在 360 ~ 640 之間,且永遠不超過視窗寬的一半(較小者勝)。
+            </Desc>
+            <div className="border border-divider rounded-lg overflow-hidden" style={{ height: 420 }}>
+              <div className="flex h-full justify-end bg-canvas">
+                <AgentPanel width={clamped} resizable={false}>
+                  <AgentPanelHeader title="衝刺待辦整理" activeConversationId="c1" onNewConversation={() => {}} onClose={() => {}} />
+                  <AgentConversation>
+                    <AgentMessage role="user">這週有哪幾筆待辦被重複指派?</AgentMessage>
+                    <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>
+                      有 6 筆同時掛在兩個人身上,已列在下面。
+                    </AgentMessage>
+                  </AgentConversation>
+                  <AgentPromptInput value="" onValueChange={() => {}} onSubmit={() => {}} onRemoveAttachment={() => {}} onAddAttachment={() => {}} />
+                </AgentPanel>
+              </div>
+            </div>
+            <label className="mt-3 flex items-center gap-3 text-footnote text-fg-muted">
+              <span className="font-mono">width</span>
+              <input
+                type="range"
+                min={320}
+                max={700}
+                value={width}
+                onChange={(e) => setWidth(Number(e.target.value))}
+                className="flex-1"
+                aria-label="面板寬度"
+              />
+              <span className="font-mono">
+                傳入 {width} → 實際 {clamped}
+                {width !== clamped ? '(已夾回範圍內)' : ''}
+              </span>
+            </label>
+          </div>
+
+          <div>
+            <H3>藍圖(Blueprint)</H3>
+            <Desc>
+              三段垂直分工:標題列與輸入盒各自量身高,中間的訊息區是唯一會伸縮的一段(`flex-1`)。
+              決策卡出現時絕對定位貼底覆蓋輸入區,不改變這個分工。
+            </Desc>
+            <div className="border border-divider rounded-lg p-4 bg-muted/40 max-w-[520px]">
+              <div className="border border-dashed border-primary-hover rounded px-2 py-1 mb-2">
+                <p className="text-body font-medium text-foreground">AgentPanelHeader</p>
+                <p className="text-footnote text-fg-muted mt-1 font-mono">固定高 · 消費 ChromeHeader(header-canonical)</p>
+              </div>
+              <div className="border border-dashed border-primary-hover rounded px-2 py-6 mb-2">
+                <p className="text-body font-medium text-foreground">AgentConversation</p>
+                <p className="text-footnote text-fg-muted mt-1 font-mono">
+                  flex-1 · ScrollArea · 內距 16 · 輪距 40 · 底距 48 · role=&quot;log&quot;
+                </p>
+              </div>
+              <div className="border border-dashed border-primary-hover rounded px-2 py-1">
+                <p className="text-body font-medium text-foreground">AgentPromptInput</p>
+                <p className="text-footnote text-fg-muted mt-1 font-mono">內容高 · 附件列 + 文字區 + 送出/停止</p>
+              </div>
+              <p className="text-footnote text-fg-muted mt-3 font-mono">
+                左緣 1px 線只有一個 owner:resizable → ResizeHandle;resizable=false → border-l
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 右:Inspect 面板 */}
+        <div>
+          <H3>Inspect 面板</H3>
+          <div className="border border-divider rounded-lg p-4 flex flex-col gap-4 text-caption">
+            <section>
+              <p className="font-mono text-fg-muted mb-2">WIDTH</p>
+              <ul className="flex flex-col gap-1">
+                <li><span className="font-mono">--agent-panel-width</span> · 400(預設)</li>
+                <li><span className="font-mono">--agent-panel-width-min</span> · 360</li>
+                <li><span className="font-mono">--agent-panel-width-max</span> · 640</li>
+                <li><span className="font-mono">視窗上限</span> · 50vw(與 max 取較小者)</li>
+                <li><span className="font-mono">鍵盤步進</span> · ←/→ 16 · Home 最窄 · End 最寬</li>
+              </ul>
+            </section>
+            <section>
+              <p className="font-mono text-fg-muted mb-2">LAYOUT</p>
+              <ul className="flex flex-col gap-1">
+                <li><span className="font-mono">訊息區內距</span> · 16(--layout-space-loose)</li>
+                <li><span className="font-mono">輪距</span> · 40 = 8 + 24(工具列 xs)+ 8</li>
+                <li><span className="font-mono">訊息區底距</span> · 48(--layout-space-bottom)</li>
+                <li><span className="font-mono">我方氣泡</span> · 內距 8/12 · 寬 ≤ 85% · 靠右</li>
+                <li><span className="font-mono">代理訊息</span> · 無氣泡 · 全寬</li>
+              </ul>
+            </section>
+            <section>
+              <p className="font-mono text-fg-muted mb-2">PUBLIC PROPS(容器)</p>
+              <ul className="flex flex-col gap-1">
+                <li><span className="font-mono">width</span> · number — 受控寬度</li>
+                <li><span className="font-mono">defaultWidth</span> · number — 非受控起始寬</li>
+                <li><span className="font-mono">onWidthChange</span> · 拖曳中每格都發(即時回饋)</li>
+                <li><span className="font-mono">onWidthCommit</span> · 放開/鍵盤一步發一次(要存這個)</li>
+                <li><span className="font-mono">resizable</span> · boolean,預設 true</li>
+              </ul>
+            </section>
+            <section>
+              <p className="font-mono text-fg-muted mb-2">不由 consumer 決定</p>
+              <ul className="flex flex-col gap-1">
+                <li>工具列常駐 — 由 AgentConversation 判定最後一則代理訊息</li>
+                <li>自動捲到最新 — 由 AgentConversation 實作(離底 &gt; 40 不搶捲)</li>
+                <li>固定構件(標題觸發 / + / ×)— 恆渲染,不以 callback 有無當開關</li>
+              </ul>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 /** 尺寸對照表:家族三條尺寸軸(標誌 / 入口鈕 / 面板寬)與各自的 token 來源。 */
@@ -137,14 +269,24 @@ export const StateBehavior: Story = {
           <AgentThinking steps={[<span key="1">已讀取 48 筆待辦</span>, <span key="2">比對排程規則 12 條</span>]} />
         </div>
       </div>
-      <div className="flex gap-12">
-        <div className="relative w-72 pb-10">
-          <div className="mb-2 text-caption text-fg-muted">工具列:代理最後一則=常駐(單獨展示時以 pinned 覆寫)</div>
-          <AgentMessage role="agent" toolbar={<AgentToolbar pinned onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>最後一則回覆。</AgentMessage>
+      {/* 常駐 vs 懸停必須放進 `AgentConversation` 裡示範,不能用 `pinned` 覆寫單獨一則:
+          spec.md「常駐判定 = 本元件」明文寫著 **consumer 不設 `pinned`**(由容器判定哪一則是
+          最後的代理訊息,各 agent 才會一致)。規格層 story 是讀者照抄的樣板,示範被規格禁止的
+          寫法等於教錯用法 —— 改成讓真實機制自己產生差異,順便把「憑什麼是這一則」也講清楚。 */}
+      <div className="w-[34rem]">
+        <div className="mb-2 text-caption text-fg-muted">
+          工具列常駐 vs 懸停:由 AgentConversation 判定「最後一則代理訊息」,consumer 不自己設 pinned
         </div>
-        <div className="relative w-72 pb-10">
-          <div className="mb-2 text-caption text-fg-muted">工具列:其他訊息=懸停淡入(移入看)</div>
-          <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>較早的回覆。</AgentMessage>
+        <div className="h-64 border border-divider rounded-md">
+          <AgentConversation>
+            <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>
+              已把 48 筆待辦按衝刺分組,其中 6 筆同時被指派給兩個人。(較早的回覆:工具列懸停才淡入)
+            </AgentMessage>
+            <AgentMessage role="user">那 6 筆先都給我。</AgentMessage>
+            <AgentMessage role="agent" toolbar={<AgentToolbar onCopy={() => {}} onLike={() => {}} onDislike={() => {}} />}>
+              已改派並標記為待確認。(最後一則代理訊息:工具列常駐,在流內佔位)
+            </AgentMessage>
+          </AgentConversation>
         </div>
       </div>
       <div className="flex gap-12">
