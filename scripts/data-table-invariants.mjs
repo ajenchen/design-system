@@ -96,63 +96,99 @@ for (const [colIdx, expected] of Object.entries(expectedMinWidths)) {
 }
 
 // ── INVARIANTS (1)(2)(3)(4):display↔edit stability ──
-const cellTypes = [
+// **覆蓋範圍 2026-09-04 從 4 種型別擴到 13 種**(缺陷 T)。原本只跑 RowAutoHeightInlineEdit 的
+// string / select / textarea / currency 四種;date / time / person / multiPerson / boolean / url /
+// multiSelect / number / tag 的 0-delta **只有推導、沒有斷言過**。`InlineEdit` story 本來就把 13 種
+// 型別全部放進可編輯欄(data-table.stories.tsx:625-637),缺的只是把閘指過去 —— 不必新增 story。
+const checkDisplayEditStability = async (storyId, cellTypes, waitSelector = '[role="row"][data-row-index]') => {
+  await page.goto(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, { waitUntil: 'networkidle' })
+  await page.waitForSelector(waitSelector)
+  await page.waitForTimeout(500)
+  for (const t of cellTypes) {
+    if (t.skipEdit) continue
+    const display = await page.evaluate(({ row, col }) => {
+      const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] [role="cell"]`)[col]
+      if (!cell) return null
+      const r = cell.getBoundingClientRect()
+      return { width: r.width, height: r.height, left: r.left, top: r.top }
+    }, t)
+    if (!display) {
+      // I1 真 assertion 路徑未進入 → 不可假綠,record fail
+      record('I1', `${t.label} display↔edit cell width 一致`, false, 'cell not found(I1 真測路徑未進入)')
+      continue
+    }
+
+    await page.mouse.click(display.left + display.width / 2, display.top + 20)
+    await page.waitForTimeout(500)
+
+    const edit = await page.evaluate(({ row, col }) => {
+      const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] [role="cell"]`)[col]
+      const field = cell.querySelector('[data-field-mode="edit"], textarea')
+      if (!field) return null
+      const cr = cell.getBoundingClientRect()
+      const fr = field.getBoundingClientRect()
+      const cellBorderR = parseFloat(window.getComputedStyle(cell).borderRightWidth) || 0
+      return { cellWidth: cr.width, cellHeight: cr.height, fieldWidth: fr.width, fieldHeight: fr.height, cellBorderR }
+    }, t)
+
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(300)
+
+    if (!edit) {
+      // 沒進 edit mode。**只有 boolean 與 url 是設計上就沒有 in-cell 編輯欄位的**,而且那是
+      // 程式碼裡明文排除的兩種:`data-table.tsx` 的鍵盤進 edit 判斷寫死
+      // `meta.type !== 'boolean' && meta.type !== 'url'`。這兩種標成 SKIP 並印出來,
+      // 讓覆蓋範圍是「明示的」而不是「靜默的」;其餘型別沒進 edit 就是真的壞了,照樣紅。
+      // (2026-09-04 逐格實測校正:multiSelect / person / multiPerson / date / time **都有**
+      //  in-cell Field —— date 會同時開 Popover,但 cell 內仍有 `data-field-mode="edit"`。
+      //  原本我憑印象把這五種標成「走 Popover 不適用」,量過才發現是錯的。)
+      if (t.noInCellField) {
+        console.log(`⏭  I1-4 ${t.label} — 設計上無 in-cell 編輯欄位(data-table.tsx 鍵盤 edit 判斷明文排除),不適用 0-delta 斷言`)
+        continue
+      }
+      record('I1', `${t.label} display↔edit cell width 一致`, false, 'no edit field — I1 真測路徑未進入')
+      record('I1-4', t.label, false, 'no edit field')
+      continue
+    }
+
+    const widthDelta = Math.abs(display.width - edit.cellWidth)
+    const heightDelta = Math.abs(display.height - edit.cellHeight)
+    const fieldVsCell = Math.abs(edit.cellHeight - edit.fieldHeight)
+
+    // I1:display↔edit cell 寬度一致(cell width = column width,跟 padding/state/mode 無關)
+    record('I1', `${t.label} display↔edit cell 寬度一致(>1px = fail)`, widthDelta <= 1, `display ${display.width.toFixed(2)} vs edit ${edit.cellWidth.toFixed(2)}, delta ${widthDelta.toFixed(2)}`)
+    record('I2', `${t.label} display↔edit width 0 delta`, widthDelta < 0.5, `delta ${widthDelta.toFixed(2)}`)
+    record('I3', `${t.label} display↔edit height 0 delta`, heightDelta < 0.5, `delta ${heightDelta.toFixed(2)}`)
+    record('I4', `${t.label} Field 填滿 cell 高度`, fieldVsCell < 1, `cell-field delta ${fieldVsCell.toFixed(2)}`)
+  }
+}
+
+// (a) 自動行高 + inline edit:原有四種型別 + 長文換行列
+await checkDisplayEditStability('design-system-components-datatable-展示--row-auto-height-inline-edit', [
   { row: 0, col: 0, label: 'SKU(string readonly)', skipEdit: true },
   { row: 0, col: 1, label: 'Product(string)' },
   { row: 0, col: 2, label: 'Category(select)' },
   { row: 0, col: 3, label: 'Note(textarea long-wrap)' },
   { row: 0, col: 4, label: 'Price(currency)' },
   { row: 2, col: 3, label: 'Note PRD-0003 long-wrap' },
-]
-for (const t of cellTypes) {
-  if (t.skipEdit) continue
-  const display = await page.evaluate(({ row, col }) => {
-    const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] [role="cell"]`)[col]
-    if (!cell) return null
-    const r = cell.getBoundingClientRect()
-    return { width: r.width, height: r.height, left: r.left, top: r.top }
-  }, t)
-  if (!display) {
-    // I1 真 assertion 路徑未進入 → 不可假綠,record fail
-    record('I1', `${t.label} display↔edit cell width 一致`, false, 'cell not found(I1 真測路徑未進入)')
-    continue
-  }
+])
 
-  await page.mouse.click(display.left + display.width / 2, display.top + 20)
-  await page.waitForTimeout(500)
-
-  const edit = await page.evaluate(({ row, col }) => {
-    const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] [role="cell"]`)[col]
-    const field = cell.querySelector('[data-field-mode="edit"], textarea')
-    if (!field) return null
-    const cr = cell.getBoundingClientRect()
-    const fr = field.getBoundingClientRect()
-    const cellBorderR = parseFloat(window.getComputedStyle(cell).borderRightWidth) || 0
-    return { cellWidth: cr.width, cellHeight: cr.height, fieldWidth: fr.width, fieldHeight: fr.height, cellBorderR }
-  }, t)
-
-  await page.keyboard.press('Escape')
-  await page.waitForTimeout(300)
-
-  if (!edit) {
-    // I1 真 assertion 路徑未進入(沒進 edit mode)→ 不可假綠,record fail
-    record('I1', `${t.label} display↔edit cell width 一致`, false, 'no edit field — I1 真測路徑未進入(may be intentional pattern e.g. multiPerson Popover)')
-    record('I1-4', t.label, false, 'no edit field(may be intentional pattern e.g. multiPerson Popover)')
-    continue
-  }
-
-  const widthDelta = Math.abs(display.width - edit.cellWidth)
-  const heightDelta = Math.abs(display.height - edit.cellHeight)
-  const fieldVsCell = Math.abs(edit.cellHeight - edit.fieldHeight)
-
-  // I1:display↔edit cell 寬度一致(cell width = column width,跟 padding/state/mode 無關)
-  // 真量 display cell rect.width vs edit cell rect.width,差異 > 1px → fail
-  record('I1', `${t.label} display↔edit cell 寬度一致(>1px = fail)`, widthDelta <= 1, `display ${display.width.toFixed(2)} vs edit ${edit.cellWidth.toFixed(2)}, delta ${widthDelta.toFixed(2)}`)
-
-  record('I2', `${t.label} display↔edit width 0 delta`, widthDelta < 0.5, `delta ${widthDelta.toFixed(2)}`)
-  record('I3', `${t.label} display↔edit height 0 delta`, heightDelta < 0.5, `delta ${heightDelta.toFixed(2)}`)
-  record('I4', `${t.label} Field 填滿 cell 高度`, fieldVsCell < 1, `cell-field delta ${fieldVsCell.toFixed(2)}`)
-}
+// (b) 固定行高 + inline edit:補齊其餘九種型別(缺陷 T)。欄序見 data-table.stories.tsx:625-637。
+await checkDisplayEditStability('design-system-components-datatable-展示--inline-edit', [
+  { row: 0, col: 0, label: 'SKU(string readonly)', skipEdit: true },
+  { row: 0, col: 1, label: 'Product(string)' },
+  { row: 0, col: 2, label: 'Qty(number)' },
+  { row: 0, col: 3, label: 'Category(select)' },
+  { row: 0, col: 4, label: 'Stock(select)' },
+  { row: 0, col: 5, label: 'Tags(multiSelect)' },
+  { row: 0, col: 6, label: 'Owner(person)' },
+  { row: 0, col: 7, label: 'Reviewers(multiPerson)' },
+  { row: 0, col: 8, label: 'In(boolean)', noInCellField: true },
+  { row: 0, col: 9, label: 'URL(url)', noInCellField: true },
+  { row: 0, col: 10, label: 'Price(currency)' },
+  { row: 0, col: 11, label: 'Release(date)' },
+  { row: 0, col: 12, label: 'Reminder(time)' },
+])
 
 // ── INVARIANT (6):cell/header 字級隨 size 對齊 Field family — 全 cell-type @lg 必 16px ──
 // Q2 機械防呆(2026-06-08 user 問「怎麼避免以後新 field 又漏傳 size」):
