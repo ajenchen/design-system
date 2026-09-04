@@ -772,6 +772,38 @@ console.log(`\n=== DataTable Invariants Test ===`)
 console.log(`PASS: ${passes.length}`)
 console.log(`FAIL: ${failures.length}\n`)
 if (passes.length > 0) console.log(passes.join('\n'))
+// ── I14:**自動行高的單行列高 == token**(2026-09-04 補;先前完全沒有閘門)──
+// I7 只驗「固定行高 == token」,而自動行高是由內容反推高度,是另一條路徑 —— 它一路靜默多 2px:
+// cell 垂直內距的公式假設「內容高 = 1lh」,但 view 態的內容載體(Field / Textarea 的 view × naked)
+// 自帶 1px 透明上下框(read↔edit 零跳的幾何佔位),實際內容高是 1lh + 2px。固定行高把它吸收掉
+// (高度被 h-table-row-* 釘死 + overflow-hidden),自動行高沒有可吸收的地方,於是 md 單行量到 42 而非 40。
+// 公式補上 `- 1px` 後,這條把「單行 = token」變成可量的事實,任何人再把它拿掉就會紅。
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-auto-height-inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
+await page.waitForSelector('[role="cell"]')
+for (const size of ['sm', 'md', 'lg']) {
+  const r = await page.evaluate((sz) => {
+    const t = document.querySelector('[role="table"]')
+    const host = t.closest('[data-table-size]') || t
+    const prev = host.getAttribute('data-table-size')
+    host.setAttribute('data-table-size', sz)
+    // token 是 rem,要先讓瀏覽器解析成 px,不能直接 parseFloat 字面值。
+    const probe = document.createElement('div')
+    probe.style.cssText = 'position:absolute;visibility:hidden'
+    probe.style.height = getComputedStyle(t).getPropertyValue(`--table-row-${sz}`)
+    t.appendChild(probe)
+    const tokenPx = probe.getBoundingClientRect().height
+    probe.remove()
+    const rows = [...t.querySelectorAll('[role="row"]')].filter((x) => x.querySelector('[role="cell"]'))
+    const heights = rows.map((x) => x.getBoundingClientRect().height)
+    const single = Math.min(...heights) // 單行列 = 最矮那列(多行列更高;末列無下分隔線)
+    if (prev) host.setAttribute('data-table-size', prev)
+    return { tokenPx: +tokenPx.toFixed(2), single: +single.toFixed(2), all: heights.map((h) => +h.toFixed(1)) }
+  }, size)
+  record('I14', `自動行高單行列高 @${size} == --table-row-${size}(${r.tokenPx}px)`,
+    Math.abs(r.single - r.tokenPx) <= 1,
+    `got ${r.single}px(應 ${r.tokenPx};列高分佈 ${r.all.join('/')}。多出來的 2px = 內容載體的透明框沒被 cell-py 公式扣掉)`)
+}
+
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))

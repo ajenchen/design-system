@@ -10,17 +10,30 @@
   --table-cell-px: var(--field-px);  /* 預設取自 --field-px(form/cell 同 12px content gutter SSOT);仍是 DataTable-scoped named token、可獨立 override(spec field-controls.spec.md:330 scoped 決策不變) */
 }
 
+/* **`- 1px` 不是微調,是把公式的前提補回來**(2026-09-04):
+   公式假設「內容高度 = 1lh」,但 view 態的內容載體(Field / Textarea 的 `view × naked`)自帶一圈
+   1px 透明上下框(`field-wrapper.tsx` / `textarea.tsx`),那圈框是 read↔edit 零跳的幾何佔位
+   (`field-controls.spec.md`;世界級同做法:Bootstrap `.form-control-plaintext` 的
+   `border: solid transparent; border-width: $input-border-width 0`、Atlassian inline-edit read-view 的
+   `borderColor:'transparent'` + `borderWidth: token('border.width.selected')`),本身是對的。
+   於是實際內容高是 **1lh + 2px** 而不是 1lh:固定行高把這 2px 吸收掉(高度被 `h-table-row-*` 釘死
+   + `overflow-hidden`),**自動行高卻是由內容反推高度**,2px 就直接進了總高 —— 實測 md 單行
+   自動行高 cell = 42 而不是 token 的 40。
+   Field 家族的 `--field-control-py-*`(`tokens/uiSize/uiSize.css`)為了同一個理由**早就帶 `- 1px`**;
+   這裡補上之後兩邊對稱。`uiSize.css` 那句「DataTable cell 的 padding 載體無邊框,故不帶 −1px」
+   是這個缺陷的根:**載體無邊框 ≠ 內容無邊框**。
+   固定行高不受影響有代數理由:置中盒的位置 = (H − c) / 2,與 padding 無關。 */
 [data-table-size="sm"] {
-  --table-cell-py: calc((var(--table-row-sm) - 1lh) / 2);
+  --table-cell-py: calc((var(--table-row-sm) - 1lh) / 2 - 1px);
 }
 
 :root,
 [data-table-size="md"] {
-  --table-cell-py: calc((var(--table-row-md) - 1lh) / 2);
+  --table-cell-py: calc((var(--table-row-md) - 1lh) / 2 - 1px);
 }
 
 [data-table-size="lg"] {
-  --table-cell-py: calc((var(--table-row-lg) - 1lh) / 2);
+  --table-cell-py: calc((var(--table-row-lg) - 1lh) / 2 - 1px);
 }
 
 /* ────────────────────────────────────────────────────────────

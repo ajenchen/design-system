@@ -105,6 +105,20 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 - **固定行高（預設，適合大多數場景）**：所有 row 同高、內容垂直置中——文字、tag、badge、avatar 等不同高度的元件都自然居中，不需處理對齊；文字一律截斷不換行（column 的 `wrap: true` 被忽略）
 - **自動行高（適合描述、備註等需完整顯示的欄位）**：row 高度由最高的 cell 決定、內容頂部對齊；垂直 padding 由目標行高推導（單行時製造置中效果，多行時保持頂部對齊）；`wrap: true` 的欄位可換行撐高 row
 
+**垂直內距公式（SSOT，`data-table.css`）**:
+
+```
+--table-cell-py = (var(--table-row-{size}) - 1lh) / 2 - 1px
+```
+
+`- 1px` **不是微調,是公式的前提**:view 態的內容載體(Field / Textarea 的 `view × naked`)自帶一圈 1px 透明上下框,那是 read↔edit 零跳的幾何佔位(`field-controls.spec.md`;世界級同做法:Bootstrap `.form-control-plaintext`、Atlassian inline-edit read-view),所以實際內容高是 **1lh + 2px** 而不是 1lh。固定行高把這 2px 吸收掉(高度被 `h-table-row-*` 釘死 + `overflow-hidden`),**自動行高是由內容反推高度,2px 會直接進總高**。Field 家族的 `--field-control-py-*`(`tokens/uiSize/uiSize.css`)為了同一個理由本來就帶 `- 1px`,兩式現在同型。
+
+**固定行高不受此項影響有代數理由**:置中盒的位置 = `(H − c) / 2`,與 padding 無關;改公式只會讓 header cell 的盒子從 40 縮到 38(row 仍 40、內容仍置中),而欄寬把手的 1px 線因為 inset 也是 `--table-cell-py`,兩邊同縮、線長不變(實測 21 → 21)。
+
+**機械閘**:`scripts/data-table-invariants.mjs` I7 驗固定行高 == token、**I14 驗自動行高單行 == token**(逐 sm/md/lg)。2026-09-04 之前只有 I7,所以這 2px 靜默存在。
+
+> **已知殘差(刻意不修)**:修正後單行自動 row = token + 1(那 1px 是列的下分隔線,在 border-box 之外),固定 row = token(分隔線含在 border-box 內)。這是「分隔線在不在高度預算裡」的結構性差異,不是同一個 bug;要抹平得寫成 `- 1.5px`,公式會失去可讀性,而且同一張表內所有 row 同模式所以看不出來。
+
 ### 五、Header vs Body 的視覺區隔
 
 **兩種垂直分隔線：**
@@ -249,6 +263,8 @@ Cell 已 `flex items-center`,consumer render 直接 inline-flex + gap-2。Icon s
 固定行高下 cell 單行,空間不足:純文字 `text-overflow: ellipsis`;Tag 文字內部 truncate(Tag bg 跟縮);multiSelect 動態 `+N`;Person avatar 不縮 name truncate;Link truncate。每個 view 態元件自管 truncation,Cell `overflow-hidden` 僅 safety net。截斷必顯 `...`(禁硬裁無 ellipsis)。截斷 hover 顯 tooltip。autoRowHeight wrap 模式不適用(可換行撐 row 高)。
 
 ### 十二、可推導值用 `calc()` 表達(不硬寫結果)— 上游動,下游自動跟著算
+
+行高與 cell 垂直內距的公式住在**第四節**(`--table-cell-py`),不在這裡重述——同一個公式只准有一個住所。列高 token 本身在 `tokens/uiSize`。
 
 ### 十三、狀態處理職責邊界
 

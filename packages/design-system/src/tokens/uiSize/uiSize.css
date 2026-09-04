@@ -30,7 +30,9 @@
      density 自動連動(引用 --field-height-*,lg density 覆寫後公式仍成立)。
      消費者:Textarea edit base + fieldViewGeometry 多行 view(兩者相等 = InlineEdit 多行零跳契約,
      由 scripts/inline-edit-view-geometry-invariant.mjs 機械鎖)。
-     DataTable cell 不消費此 token——cell 的 padding 載體無邊框,自有 --table-cell-py 公式。 */
+     DataTable cell 不消費此 token,自有 --table-cell-py 公式——但 2026-09-04 起**兩式同型、都帶 -1px**:
+     原註解寫「cell 的 padding 載體無邊框」所以不需要減,那是錯的(載體無邊框 ≠ 內容無邊框);
+     cell 內的內容載體同樣是 view × naked,自帶 1px 透明上下框,自動行高下那 2px 會進總高。 */
   --field-control-py-sm: calc((var(--field-height-sm) - 1lh) / 2 - 1px);
   --field-control-py-md: calc((var(--field-height-md) - 1lh) / 2 - 1px);
   --field-control-py-lg: calc((var(--field-height-lg) - 1lh) / 2 - 1px);
