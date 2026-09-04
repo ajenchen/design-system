@@ -2411,9 +2411,9 @@ function DataTableInner<TData>(
         </div>
       )
     }
-    const meta = header.column.columnDef.meta
-    const colType = meta?.type as ColumnType | undefined
-    const align = meta?.align ?? (colType ? columnTypeDefaults[colType].align : undefined)
+    // **表頭不讀 `meta.align`**(2026-09-04 user 拍板:「header 的規格就是要一致,只有內容會置右」):
+    // 對齊只作用在儲存格內容,表頭一律靠左,所以這裡刻意不算 `align` —— 留著一個沒人用的變數
+    // 會讓下一個人以為表頭還吃對齊。儲存格那側仍照常讀(見 `renderBodyRows` 的 cell 分支)。
     // Sort UI(Phase A.1):header cell 兩區結構
     //   左區(label + indicator slot):click → toggle sort 三態(asc → desc → none)
     //   右區:reserve future ⌄ menu(filter / hide / pin 等;hover 才出,A.x 加)

@@ -74,9 +74,6 @@ const TooltipContent = React.forwardRef<
       // Density:繼承 page density(2026-06-15 canonical)。Tooltip padding 寫死 px-3 py-2、內容 text-body,
       // 不消費任何 density / layout-space token → 鎖 density 對它是 inert(原 data-density="md" 是 409b91da
       // a11y 批次「對齊 Popover」順手加,非設計決策)→ 移除,讓全浮層行為一致(全繼承 page)。
-      // `data-slot` 是給 `tooltip.css` 的 `:has()` 用的鉤子(見該檔說明):popper wrapper 由 Radix
-      // 產生、拿不到 className,只能從外面靠這個屬性認出「這個 wrapper 裝的是 tooltip」。
-      data-slot="tooltip-content"
       className={cn(
         // **`pointer-events-none`:tooltip 不吃指標**(2026-09-04 user 回報「hover 出現 tooltip 的地方
         // 點下去打不開」的根因)。tooltip 是純提示 —— 本檔 `tooltipMeta.states` 自己就寫著
@@ -95,6 +92,12 @@ const TooltipContent = React.forwardRef<
       )}
       style={{ boxShadow: 'var(--elevation-200)', ...style }}
       {...props}
+      // `data-slot` 是 `tooltip.css` 的 `:has()` 鉤子(popper wrapper 由 Radix 產生、拿不到
+      // className,只能從外面靠這個屬性認出「這個 wrapper 裝的是 tooltip」)。
+      // **寫在 `{...props}` 之後**:它是不變條件的一半,不能被 consumer 的 props 覆蓋掉
+      // ——另一半(content 的 `pointer-events-none`)在 `cn()` 裡、className 排最後,
+      // consumer 仍可顯式覆寫,兩半的逃生口刻意不對稱(2026-09-04 對抗式稽核抓到)。
+      data-slot="tooltip-content"
     >
       <div data-theme="dark" className="contents">{children}</div>
     </TooltipPrimitive.Content>

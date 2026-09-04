@@ -686,13 +686,11 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          {/* `disableHoverableContent`(2026-09-04,同一個回報的另一半根因):Radix 預設允許指標從 trigger
-              移向 tooltip 內容而不關閉,而貼邊態的 tooltip 就開在鈕的**左邊**(`tooltipSide: 'left'`),
-              於是「tooltip 還開著」會延伸到鈕以外、點不到的地方 —— 使用者看到的正是「有 tooltip 卻點不開」。
-              關掉之後:tooltip 出現的範圍 === 指標在鈕上 === 可點擊範圍,三者恆等,
-              也就是 user 要求的「所有會出現 tooltip 的地方點下去都要可以開啟」。
-              本元件的 tooltip 是純提示、內容裡沒有可點的東西,不需要 hoverable。 */}
-          <Tooltip open={dragging ? false : undefined} disableHoverableContent>
+          {/* **不加 `disableHoverableContent`**(2026-09-04 對抗式稽核更正):我一度以為要靠它才能讓
+              「tooltip 出現的範圍 = 可點擊範圍」,那是誤判 —— 點不到的原因是 tooltip 自己吃指標,
+              已由 `tooltip.css` 的 `pointer-events: none` 從 primitive 層根治(全 DS 一致)。
+              留著它反而多一個零件,而且會讓指標離開 trigger 就立刻關閉,失去 WCAG 1.4.13 的 grace。 */}
+          <Tooltip open={dragging ? false : undefined}>
             <TooltipTrigger asChild>
               {/* **命中區 = 可視區,一格不多一格不少**(2026-09-04 user 拍板修正:
                   「其實只要觸控範圍跟視覺範圍是對齊的話,此問題就解決了」)。

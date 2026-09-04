@@ -16,8 +16,10 @@
    wrapper 由 Radix 產生、拿不到 className,所以只能從外面用屬性選擇器認出它。
 
    為什麼用 `:has(> [data-slot="tooltip-content"])` 而不是直接選 wrapper:
-     `[data-radix-popper-content-wrapper]` 是**所有** Radix 浮層共用的(Popover / DropdownMenu /
-     Select / Combobox / ContextMenu / HoverCard),那些浮層的內容是要點的,絕不能關掉指標。
+     `[data-radix-popper-content-wrapper]` 是**所有** Radix 浮層共用的 —— 本 DS 實際有的是
+     Popover、DropdownMenu、HoverCard(Select / Combobox / SelectMenu 走 Popover),那些浮層的
+     內容是要點的,絕不能關掉指標。(2026-09-04 更正:原文還列了 ContextMenu / Menubar,
+     但本 DS 根本沒有這兩個元件 —— 憑印象寫進 canonical 註解的無據宣稱,已刪。)
      用 `:has()` 限定「裡面裝的是 tooltip content」才關,其餘浮層完全不受影響。
      `:has()` 在本 DS 已是既有機制(`item-anatomy` 的 uniform prefix slot、`Sidebar` 的圖示混用偵測),
      不是為此新引入的依賴。
