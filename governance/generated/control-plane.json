@@ -1053,12 +1053,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0598ec2f7b2975f5948072bc9fdb7f24682f3e0abed3cca36696dd869dfc0ffc",
+      "hash": "sha256:30253df44ae9254f0209a283397644e1b172406b4d9d84283753864828d7c8ef",
       "id": "exact-governance-dependency-bootstrap-library",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/lib/governance-dependency-bootstrap.mjs",
-      "size": 24357,
+      "size": 25212,
       "type": "file"
     },
     {
@@ -3075,7 +3075,7 @@
         "scripts/generated/"
       ],
       "files": 383,
-      "hash": "sha256:a712b5aad26f2a2cd5026ed7988917049d706ce872fa3f6e8cf627c10a4bbf79",
+      "hash": "sha256:89309753d7c33da1fd4fbc3ba014e992c376947960c9c099314aabb01fed3bee",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

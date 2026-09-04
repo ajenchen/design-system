@@ -391,6 +391,16 @@ export function evaluateVerifiedHighVulnerabilityAudit({
   try { report = JSON.parse(String(stdout || '')) } catch {
     throw new Error('GOV-DEPENDENCY-BOOTSTRAP-001:npm audit did not produce closed JSON')
   }
+  // advisory 端點故障要跟「格式不認得」分開報(2026-09-04 實測):registry 掛掉時
+  // `npm audit --json` 吐的是 `{"message":"503 Service Unavailable - POST .../security/advisories/bulk",
+  // "method":"POST","uri":...}` —— 這個 JSON **parse 得過**,只是沒有 `auditReportVersion`,
+  // 於是舊版一律報「schema is unsupported」,把一次基礎設施故障誤診成格式問題,
+  // 下一個人會去查 npm 版本或 schema 而不是重跑。仍然 fail closed(沒有稽核結果就不放行),
+  // 只是訊息指向真正該做的事。
+  if (report && typeof report === 'object' && report.auditReportVersion === undefined
+    && typeof report.message === 'string' && typeof report.uri === 'string') {
+    throw new Error(`GOV-DEPENDENCY-BOOTSTRAP-001:npm audit advisory endpoint failed:${report.message}`)
+  }
   invariant(
     report?.auditReportVersion === 2
       && report.vulnerabilities

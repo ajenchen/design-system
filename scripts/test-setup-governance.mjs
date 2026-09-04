@@ -821,6 +821,26 @@ test('overlay-aware audit excludes only the exact verified bundled preimages and
   assert.equal(receipt.effectiveModerate, 0)
   assert.equal(receipt.effectiveCritical, 0)
 
+  // Advisory-endpoint failure must report itself, not masquerade as a schema problem
+  // (2026-09-04): when the registry advisory service is down, `npm audit --json` emits
+  // `{"message":"503 Service Unavailable - POST .../security/advisories/bulk","method":"POST","uri":...}`.
+  // That parses as JSON, so the old code fell through to the schema invariant and told the reader
+  // the schema was unsupported — sending them to check the npm version instead of re-running.
+  // Still fails closed; only the diagnosis changes.
+  assert.throws(
+    () => evaluate(JSON.stringify({
+      message: '503 Service Unavailable - POST https://registry.npmjs.org/-/npm/v1/security/advisories/bulk - Service Unavailable',
+      method: 'POST',
+      uri: 'https://registry.npmjs.org/-/npm/v1/security/advisories/bulk',
+    })),
+    /advisory endpoint failed:503 Service Unavailable/,
+  )
+  // A real report that merely lacks the expected version still reports as a schema problem.
+  assert.throws(
+    () => evaluate({ auditReportVersion: 3, vulnerabilities: {}, metadata: { vulnerabilities: {} } }, { exitStatus: 0 }),
+    /JSON schema is unsupported/,
+  )
+
   // A superseded registry state (the pre-2026-08-04 single-advisory shape) must NOT be accepted:
   // the preimage list pins the current exact state only, so both a stale shape and a renumbered
   // hybrid fail closed.
