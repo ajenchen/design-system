@@ -88,6 +88,28 @@ process_one() {
   outcome="$(node "$ROOT/scripts/codex-run-guarded.mjs" --classify --status "$status" --log-file "$log" --last-text "$(tail -c 4000 "$log")" 2>/dev/null | sed -n 's/^CODEX-OUTCOME: //p')"
   [ -n "$outcome" ] || outcome="ERROR"
 
+  # ── AUTH 自癒:worker 跑在 user 自己的終端機,寫得動 `~/.codex`,登入就該由這裡完成 ──
+  # Claude 的沙箱 write allow-list 不含 `~/.codex`(實測 `operation not permitted`),所以
+  # AI 那端**無法**完成登入 —— 它能把 OAuth 流程起起來,卻存不回 auth.json。
+  # 與其把使用者踢去另一個終端機打指令,不如由這裡直接把瀏覽器叫起來讓他按同意:
+  # OAuth 同意本來就只能是真人給的(AGENTS.md 的 human-only 邊界),但「打哪一行指令」不必是。
+  # 每個 brief 只自動重登一次(`.authretry` 旗標),避免帳號真的失效時無限迴圈。
+  if [ "$outcome" = "AUTH" ] && [ ! -e "$QUEUE/logs/$id.authretry" ]; then
+    : > "$QUEUE/logs/$id.authretry"
+    echo ""
+    echo "⚠ [$id] codex 認證已過期。現在開啟登入流程 —— 請在跳出的瀏覽器分頁按下同意。"
+    echo "  (登入完成後本 brief 會自動重跑,你不需要再做任何事。)"
+    echo ""
+    ( cd "$ROOT" && $CODEX login )
+    if [ $? -eq 0 ]; then
+      echo "✔ 登入完成,重新排入 [$id]"
+      mv "$claimed" "$QUEUE/inbox/$id.md"
+      rm -f "$QUEUE/outbox/$id.json" "$QUEUE/outbox/$id.done"
+      return 0
+    fi
+    echo "✗ 登入未完成;[$id] 的結果維持 AUTH,不重跑。"
+  fi
+
   {
     printf '{\n'
     printf '  "id": %s,\n' "$(printf '%s' "$id" | json_escape)"
