@@ -106,7 +106,20 @@ const firstExit = frames.find((f) => f.phase === 'exit')
 const lastExit = [...frames].reverse().find((f) => f.phase === 'exit')
 const finalStill = [...frames].reverse().find((f) => f.state === 'still')
 const fps = frames.length / ((frames[frames.length - 1].t - frames[0].t) / 1000)
-const maxStep = (480 / fps) * 1.5
+// **轉速從元件原始碼讀,不寫死**(2026-09-04):這裡原本硬編 `480`,與
+// `agent-panel-logo.tsx` 的 `SPIN_OMEGA` 是同一個值的第二個住所 —— 一改轉速,
+// 這個閘會拿舊值算容差:調快時容差偏小(假紅)、調慢時容差偏大(假綠,跳幀抓不到)。
+// 用正規表達式從單一真相源取值,對不上就直接失敗,不默默退回預設。
+const SPIN_OMEGA = (() => {
+  const src = readFileSync(join(ROOT, 'packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx'), 'utf8')
+  const m = src.match(/const\s+SPIN_OMEGA\s*=\s*(\d+(?:\.\d+)?)/)
+  if (!m) {
+    console.error('❌ 讀不到 agent-panel-logo.tsx 的 SPIN_OMEGA —— 容差無法計算,不以預設值蒙混。')
+    process.exit(1)
+  }
+  return Number(m[1])
+})()
+const maxStep = (SPIN_OMEGA / fps) * 1.5
 
 record('C1a', `靜止 → 思考起步:第一格與靜止差 ≤ 一影格(角度 ≤ ${maxStep.toFixed(1)}°、形狀 ≤ 60、疊層 ≤ 0.02)`, !!first && wrapDelta(first.body, rest.body) <= maxStep && wrapDelta(first.grad, rest.grad) <= maxStep && first.holeDist <= 60 && first.overlay < 0.02, first ? `body ${first.body.toFixed(1)} grad ${first.grad.toFixed(1)} hole ${first.holeDist.toFixed(0)} overlay ${first.overlay.toFixed(3)}` : 'no think frame')
 record('C1b', '減速停定 → 靜止:角度 ≡ 0、色場 ≡ 0、形狀 = 定稿、疊層 0', !!finalStill && wrapDelta(finalStill.body, 0) < 1 && wrapDelta(finalStill.grad, 0) < 1 && finalStill.holeDist < 1 && finalStill.overlay < 0.02, finalStill ? `body ${finalStill.body.toFixed(1)} grad ${finalStill.grad.toFixed(1)} hole ${finalStill.holeDist.toFixed(0)} overlay ${finalStill.overlay.toFixed(3)}` : 'no still frame')

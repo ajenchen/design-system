@@ -1,16 +1,21 @@
 #!/usr/bin/env node
 // AgentFab 命中區不變條件 —— 守「看得到就點得到,且點得到不代表要長出捲軸」。
 //
-//   (H1) 任一形態下,入口鈕的**命中矩形 = 可視形狀的外接矩形**(2026-09-04 user 拍板:
-//        「只要觸控範圍跟視覺範圍是對齊的話,此問題就解決了」)。不多也不少:
-//        - 少了 → 看得到卻點不到(最早的死區:貼邊態是左側半圓,靠近左緣但偏離垂直中心的點
-//          落在圓外,實測 dy=±12 時最左 1–3px 點不到);
-//        - 多了 → 隱形帶會從底下的內容搶走點擊,而且 Radix 以按鈕為錨,tooltip 會被推遠
-//          (2026-09-03 外推到 40 的那版實測:tooltip 離可視形狀 20px 而不是 8px)。
-//        桌機慣例就是命中貼齊視覺(滑鼠指標夠精細),不做 mobile 那種放大。
+//   (H1) **可視形狀內的每一點都點得到**(2026-09-04 user 拍板原話:
+//        「按鈕的視覺 = 觸發事件的範圍 = 會觸發 tooltip 的範圍」;
+//         「當我點擊按鈕的任何地方包括左側靠近邊邊的地方,只要還在按鈕範圍內就應該觸發事件」)。
+//        少一點都不行 —— 看得到卻點不到就是使用者說的「難按」。
 //
-//   (H4) **四個角落都點得到**:圓角只畫在內層,按鈕本身是矩形 —— 這是 H1「等於外接矩形」
-//        真正要保住的東西,單看外框極值看不出角落有沒有被圓角切掉。
+//   (H4) **可視形狀外的點不得點得到**(H1 的另一半,兩條合起來才是「命中 ≡ 視覺」)。
+//        容差只給次像素:瀏覽器對圓角的命中測試本身有抗鋸齒,超出形狀邊界 ≤1.5px 不算違規,
+//        再多就是隱形帶 —— 它會從底下的內容搶走點擊,而且 Radix 以按鈕為錨、tooltip 會被推遠
+//        (2026-09-03 外推到 40 的那版實測:tooltip 離可視形狀 20px 而不是 8px)。
+//
+//        **這兩條 2026-09-04 取代了舊契約「命中矩形 = 可視形狀的外接矩形 / 四個角落都點得到」。**
+//        舊契約的依據是一次誤判:當時記錄「貼邊態 dy=±12 時最左 1–3px 點不到」並歸因於圓角命中,
+//        但 D 形左半圓半徑 14、圓心 (14,14),在該高度左緣本來就在 x = 14 − √(14²−12²) ≈ 6.8 ——
+//        那幾個點原本就在**可視形狀之外**,不是死區。把「視覺外」誤讀成「死區」,才推導出
+//        「命中盒必須是外接矩形」。
 //
 //   (H2) 命中矩形不得越過舞台右緣/下緣 —— 越過會讓文件變寬變高而生出視窗捲軸
 //        (user 明確要求:各種 fab 狀態都不該讓視窗突然出現水平或垂直捲軸)。
@@ -64,7 +69,7 @@ const record = (id, label, pass, detail = '') =>
 
 /** 掃描窗外擴量(px):要能看出「命中區比可視大」與「比可視小」兩種偏差。 */
 const SCAN_PAD = 24
-/** 命中矩形與可視外接矩形的容差(px):整數取樣本身就有 1px 量化。 */
+/** 形狀外仍可點的容差(px):瀏覽器對圓角的命中測試有抗鋸齒,次像素溢出不算違規。 */
 const EDGE_TOLERANCE = 1.5
 
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } })
@@ -107,19 +112,47 @@ const measured = await page.evaluate((PAD) => {
     const st = stage.getBoundingClientRect()
     const v = visual.getBoundingClientRect()
     const h = hits(btn)
-    // 角落:從可視外接矩形的四角往內縮 1px 取樣(縮 1 是為了避開邊界的半像素)。
-    const corners = [
-      ['左上', v.left + 1, v.top + 1],
-      ['右上', v.right - 1, v.top + 1],
-      ['左下', v.left + 1, v.bottom - 1],
-      ['右下', v.right - 1, v.bottom - 1],
-    ].map(([name, x, y]) => ({ name, hit: h(Math.round(x), Math.round(y)) }))
+    // 「在可視形狀內嗎」= 圓角矩形的點內測試。半徑直接讀 computed style,所以這條斷言
+    // 對任何形態都成立(在家 rounded-full / 貼邊 rounded-l-full),不必為每個形態各寫一份幾何。
+    const cs = getComputedStyle(visual)
+    const px = (s) => Math.min(parseFloat(s) || 0, Math.min(v.width, v.height) / 2)
+    const rad = {
+      tl: px(cs.borderTopLeftRadius), tr: px(cs.borderTopRightRadius),
+      br: px(cs.borderBottomRightRadius), bl: px(cs.borderBottomLeftRadius),
+    }
+    /** 點在圓角矩形內?回傳 [是否在內, 若在外則距形狀邊界多遠(px)]。 */
+    const inShape = (x, y) => {
+      if (x < v.left || x > v.right || y < v.top || y > v.bottom) return [false, Infinity]
+      const cs4 = [
+        [v.left + rad.tl, v.top + rad.tl, rad.tl, x < v.left + rad.tl && y < v.top + rad.tl],
+        [v.right - rad.tr, v.top + rad.tr, rad.tr, x > v.right - rad.tr && y < v.top + rad.tr],
+        [v.right - rad.br, v.bottom - rad.br, rad.br, x > v.right - rad.br && y > v.bottom - rad.br],
+        [v.left + rad.bl, v.bottom - rad.bl, rad.bl, x < v.left + rad.bl && y > v.bottom - rad.bl],
+      ]
+      for (const [cx, cy, r, inCornerBox] of cs4) {
+        if (!inCornerBox || r <= 0) continue
+        const d = Math.hypot(x - cx, y - cy)
+        return d <= r ? [true, 0] : [false, d - r]
+      }
+      return [true, 0]
+    }
+    let inMiss = 0, inTotal = 0, outHit = 0, outWorst = 0
+    for (let y = Math.floor(v.top); y <= Math.ceil(v.bottom); y++) {
+      for (let x = Math.floor(v.left); x <= Math.ceil(v.right); x++) {
+        const sx = x + 0.5, sy = y + 0.5
+        const [inside, dist] = inShape(sx, sy)
+        const hit = h(sx, sy)
+        if (inside) { inTotal++; if (!hit) inMiss++ }
+        else if (hit) { outHit++; if (dist > outWorst) outWorst = dist }
+      }
+    }
+    const shape = { inTotal, inMiss, outHit, outWorst: +outWorst.toFixed(2), rad }
     const sh = shell.getBoundingClientRect()
     return {
       placement: shell.dataset.placement,
       visual: { l: +v.left.toFixed(1), r: +v.right.toFixed(1), t: +v.top.toFixed(1), b: +v.bottom.toFixed(1), w: +v.width.toFixed(1), h: +v.height.toFixed(1) },
       hit: hitRect(btn, visual),
-      corners,
+      shape,
       // 殼比鈕大出來的部分 = 看不見、不吃指標,卻仍在 tooltip 覆蓋範圍內的死區(H5)。
       shellSlack: { w: +(sh.width - v.width).toFixed(1), h: +(sh.height - v.height).toFixed(1) },
       stage: {
@@ -149,27 +182,22 @@ for (const m of measured) {
 for (const m of measured) {
   const tag = `placement=${m.placement}`
   if (!m.hit) {
-    record('H1', `${tag} 命中矩形 = 可視外接矩形`, false, '命中矩形量不到:整顆鈕都點不到')
+    record('H1', `${tag} 可視形狀內每一點都點得到`, false, '命中區完全量不到:整顆鈕都點不到')
     continue
   }
-  const dl = Math.abs(m.hit.left - m.visual.l)
-  const dr = Math.abs(m.hit.right - (m.visual.r - 1))
-  const dt = Math.abs(m.hit.top - m.visual.t)
-  const db = Math.abs(m.hit.bottom - (m.visual.b - 1))
   record(
     'H1',
-    `${tag} 命中矩形 = 可視外接矩形(不多不少)`,
-    dl <= EDGE_TOLERANCE && dr <= EDGE_TOLERANCE && dt <= EDGE_TOLERANCE && db <= EDGE_TOLERANCE,
-    `可視 [${m.visual.l},${m.visual.t}]–[${m.visual.r},${m.visual.b}] / 命中 [${m.hit.left},${m.hit.top}]–[${m.hit.right},${m.hit.bottom}] `
-      + `→ 四邊差 L${dl.toFixed(1)} R${dr.toFixed(1)} T${dt.toFixed(1)} B${db.toFixed(1)}`
-      + `(偏小 = 看得到卻點不到;偏大 = 隱形帶搶走底下內容的點擊,且 tooltip 會被推遠)`,
+    `${tag} 可視形狀內每一點都點得到(取樣 ${m.shape.inTotal} 點)`,
+    m.shape.inMiss === 0,
+    `形狀內有 ${m.shape.inMiss} 點點不到 —— 看得到卻點不到就是使用者說的「難按」`
+      + `(圓角半徑 tl${m.shape.rad.tl} tr${m.shape.rad.tr} br${m.shape.rad.br} bl${m.shape.rad.bl})`,
   )
-  const missedCorners = m.corners.filter((c) => !c.hit).map((c) => c.name)
   record(
     'H4',
-    `${tag} 可視形狀的四個角落都點得到(圓角不得切掉命中)`,
-    missedCorners.length === 0,
-    `點不到的角:${missedCorners.join('、') || '無'}`,
+    `${tag} 可視形狀外不得點得到(只容次像素)`,
+    m.shape.outWorst <= EDGE_TOLERANCE,
+    `形狀外仍可點 ${m.shape.outHit} 點,最遠超出邊界 ${m.shape.outWorst}px`
+      + `(≤${EDGE_TOLERANCE} 是瀏覽器圓角命中的抗鋸齒;再多就是隱形帶,會搶走底下內容的點擊)`,
   )
   record(
     'H2',

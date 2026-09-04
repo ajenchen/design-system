@@ -371,8 +371,12 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
       理論上會讓「拖欄寬時編輯中的 cell 自動結算」的時機改變 —— **未實測**(本機沙箱起不了 Chromium),
       不寫成已知行為。
     - **機械閘**:`scripts/agent-fab-hit-area-invariant.mjs` 掃 `elementFromPoint().closest('button')` 的
-      **真實命中測試**(不是 class 或 rect 的字面值),斷言 **H1 命中矩形 = 可視外接矩形(容差 1.5px,
-      偏大偏小都紅)/ H4 可視形狀的四個角落都點得到 / H2 不越舞台右下緣 / H3 舞台零溢出**;
+      **真實命中測試**(不是 class 或 rect 的字面值),逐點分類「在可視形狀內/外」(圓角半徑直接讀
+      computed style,所以任何形態都適用),斷言 **H1 可視形狀內每一點都點得到(0 個死點)/
+      H4 可視形狀外不得點得到(只容 1.5px 次像素,再多就是隱形帶)/ H5 定位殼不得大於鈕 /
+      H2 不越舞台右下緣 / H3 舞台零溢出**;
+      **注意此閘驗不到「鈕壓在原生捲軸上」那一條** —— `elementFromPoint` 看不到捲軸(它不是 DOM 元素),
+      那條只能用真實指標事件驗;
       併在 `npm run test:agent-panel-invariants`。最小點擊尺寸的世界級對照
       ([Apple HIG 44pt](https://developer.apple.com/design/human-interface-guidelines/buttons) /
       [WCAG 2.5.5 Target Size (Enhanced) 44 CSS px](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html))

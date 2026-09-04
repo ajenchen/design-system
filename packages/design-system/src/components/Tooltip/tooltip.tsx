@@ -75,14 +75,14 @@ const TooltipContent = React.forwardRef<
       // 不消費任何 density / layout-space token → 鎖 density 對它是 inert(原 data-density="md" 是 409b91da
       // a11y 批次「對齊 Popover」順手加,非設計決策)→ 移除,讓全浮層行為一致(全繼承 page)。
       className={cn(
-        // **`pointer-events-none`:tooltip 不吃指標**(2026-09-04 user 回報「hover 出現 tooltip 的地方
-        // 點下去打不開」的根因)。tooltip 是純提示 —— 本檔 `tooltipMeta.states` 自己就寫著
-        // 「Tooltip 浮層本身無互動 state」—— 但它預設會吃指標,於是浮層覆蓋到的那一整塊區域變成
-        // 「看得到提示、點不到底下的東西」。實測貼邊態的 AgentFab:tooltip 盒佔 x=1063–1171、
-        // 按鈕在 1179,滑到 1100 時 `elementFromPoint` 回的是 tooltip 自己。
-        // **content 與 wrapper 兩層都要設**(實測:只設 content,命中的變成 wrapper;兩層都設才穿透),
-        // wrapper 那一半在 `tooltip.css`。
-        "pointer-events-none",
+        // **刻意不設 `pointer-events: none`**(2026-09-04 撤回同日的錯誤改動):
+        // 讓 tooltip 穿透會直接命中 WCAG **F95**「Failure of SC 1.4.13 due to content shown on hover
+        // not being hoverable」—— 使用者(尤其用螢幕放大鏡的)無法把指標移上去閱讀。
+        // 世界級實證(2026-09-04 逐家查第一手 CSS,10 家):只有 AG Grid 與 Polaris 設穿透;
+        // Bootstrap / MUI / Ant / Radix / Carbon / Fluent / shadcn / Floating UI 都不設。
+        // MUI 更在遷移文件把「Tooltip 改成 interactive by default」直接連到 WCAG 1.4.13。
+        // 註:tooltip 與觸發點恆距 8px(`OVERLAY_SIDE_OFFSET`),兩者不重疊 ——
+        // 「tooltip 擋住觸發點的點擊」本來就不會發生,穿透解決的不是這個問題。
         "z-50 overflow-hidden rounded-md px-3 py-2 text-body font-normal text-on-emphasis bg-tooltip max-w-[280px] break-words",
         overlayMotion,
         "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
@@ -92,12 +92,6 @@ const TooltipContent = React.forwardRef<
       )}
       style={{ boxShadow: 'var(--elevation-200)', ...style }}
       {...props}
-      // `data-slot` 是 `tooltip.css` 的 `:has()` 鉤子(popper wrapper 由 Radix 產生、拿不到
-      // className,只能從外面靠這個屬性認出「這個 wrapper 裝的是 tooltip」)。
-      // **寫在 `{...props}` 之後**:它是不變條件的一半,不能被 consumer 的 props 覆蓋掉
-      // ——另一半(content 的 `pointer-events-none`)在 `cn()` 裡、className 排最後,
-      // consumer 仍可顯式覆寫,兩半的逃生口刻意不對稱(2026-09-04 對抗式稽核抓到)。
-      data-slot="tooltip-content"
     >
       <div data-theme="dark" className="contents">{children}</div>
     </TooltipPrimitive.Content>

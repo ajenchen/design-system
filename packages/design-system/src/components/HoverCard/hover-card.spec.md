@@ -54,7 +54,7 @@ Hover 觸發的**可互動浮層**，基於 Radix HoverCard。
 |---|---|---|
 | 觸發 | hover | hover |
 | **內容可互動** | 是——限滑鼠（Radix 設 content 內 tabbable node 為 `tabindex="-1"`，鍵盤不可達，見「A11y 預設」） | 否（純文字） |
-| 停留行為 | 滑鼠可移到浮層互動不消失 | 指標**穿透**浮層（`tooltip.css` 對 tooltip 的 popper wrapper 設 `pointer-events: none`，2026-09-04）——浮層仍在 Radix 的 grace area 內所以不會消失（WCAG 1.4.13 Hoverable 保留），但指標命中的是底下的元素，因此浮層不會擋住任何點擊，內容也無法選取或互動 |
+| 停留行為 | 滑鼠可移到浮層互動不消失 | 滑鼠可移到浮層而不消失（Radix grace area;WCAG 1.4.13 Hoverable 要求,見 F95），但內容**不可互動**——Tooltip 不放任何可點元素，需要互動內容一律改用 HoverCard |
 | 視覺樣式 | 由 consumer 決定（亮色 card 或深色 tooltip 風格皆可） | 統一深色背景 |
 | 典型用例 | ProfileCard、內容預覽、溢出清單 | icon 用途、shortcut、截斷文字補全 |
 

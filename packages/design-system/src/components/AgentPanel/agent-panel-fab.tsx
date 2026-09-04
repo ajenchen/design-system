@@ -686,26 +686,29 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          {/* **不加 `disableHoverableContent`**(2026-09-04 對抗式稽核更正):我一度以為要靠它才能讓
-              「tooltip 出現的範圍 = 可點擊範圍」,那是誤判 —— 點不到的原因是 tooltip 自己吃指標,
-              已由 `tooltip.css` 的 `pointer-events: none` 從 primitive 層根治(全 DS 一致)。
-              留著它反而多一個零件,而且會讓指標離開 trigger 就立刻關閉,失去 WCAG 1.4.13 的 grace。 */}
+          {/* **不加 `disableHoverableContent`**,用 Radix 預設(2026-09-04 定案):
+              tooltip 與觸發點恆距 8px(`OVERLAY_SIDE_OFFSET`),兩者不重疊,所以 tooltip 從來就不會
+              擋住這顆鈕的點擊 —— 我一度以為要靠這個旗標才能讓「tooltip 範圍 = 可點範圍」,那是誤判。
+              關掉 hoverable 反而會讓指標一離開 trigger 就立刻關閉,直接命中 WCAG **F95**
+              (Failure of SC 1.4.13:content shown on hover not being hoverable)。 */}
           <Tooltip open={dragging ? false : undefined}>
             <TooltipTrigger asChild>
-              {/* **命中區 = 可視區,一格不多一格不少**(2026-09-04 user 拍板修正:
-                  「其實只要觸控範圍跟視覺範圍是對齊的話,此問題就解決了」)。
-                  作法:語意 `<button>` 的**尺寸就是可視尺寸**(貼邊 28、在家 40),但**不帶圓角** ——
-                  圓角會讓命中判定跟著切掉,而「靠近左緣但偏離垂直中心的點落在圓外」正是最早那個死區
-                  (2026-09-03 實測命中圖:貼邊態 dy=±12 時最左 1–3px 點不到)。圓角改畫在內層的可視 span 上,
-                  於是命中盒 = 可視形狀的**外接矩形**:看得到的每一點都點得到,連角落都算。
-                  DOM 盒 / 無障礙 target / 命中區 / Radix 錨點四者因此是同一個矩形。
+              {/* **命中形狀 ≡ 可視形狀**(2026-09-04 user 拍板原話:
+                  「按鈕的視覺 = 觸發事件的範圍 = 會觸發 tooltip 的範圍」)。
+                  作法:語意 `<button>` 的尺寸與圓角**都等於可視形狀**(貼邊 28 + `rounded-l-full`、
+                  在家 40 + `rounded-full`);漸層環是這一層自己的 2px padding,內層 span 只負責面色,
+                  所以按鈕的 border box 邊緣就是使用者看到的邊緣。
+                  DOM 盒 / 無障礙 target / 命中區 / Radix 錨點四者是同一個形狀。
 
-                  **刻意不外推到 40**(2026-09-03 那版的作法,已撤回):桌機的慣例是命中範圍貼齊視覺範圍
-                  (滑鼠指標夠精細,不需要 mobile 那種放大),而外推有兩個實測到的副作用 ——
-                  (1) Radix 以按鈕為錨,錨變 40 後 tooltip 離**可視形狀** 20px 而不是 8px;
-                  (2) hover 會被左側那條隱形帶觸發,而且它會從底下的表格搶走點擊。
-                  貼邊鈕若壓在別人的捲軸上,捲軸露出的那幾 px 本來就不屬於鈕 —— 點在那裡捲動內容
-                  是正確行為,不是死區。 */}
+                  **不外推**(2026-09-03 曾外推到 40×40,已撤回):外推會生出隱形帶,搶走底下內容的點擊,
+                  並把 Radix 錨點推遠(tooltip 離可視形狀 20px 而不是 8px)。
+                  **也不內縮**:先前寫成「按鈕保持矩形、圓角只畫內層,角落才點得到」——
+                  那是把**多**當成修正,使用者要的是相等。
+
+                  **貼邊鈕壓在別人的捲軸上時,鈕贏**(同日 user 拍板:「按鈕是蓋在表格上,
+                  fab 通常也都是 z index 最上面的東西」)。實測貼邊鈕與 DataTable 垂直捲軸重疊約 11px,
+                  在重疊區以真實滑鼠點擊 → 面板開啟、`scrollTop` 不變。
+                  注意 `document.elementFromPoint` **看不到原生捲軸**,這一條只能用真實指標事件驗。 */}
               <button
                 type="button"
                 className={cn(
