@@ -2974,7 +2974,14 @@ function DataTableInner<TData>(
               // 讓 clientHeight 不變、列直接畫進 padding 區(實測 clientHeight 仍 300);
               // border 在 padding box 外面,clientHeight 因此真的少 15(300 → 285),列才會被裁掉。
               // 透明 border 之下 panel 底色照樣畫(background-clip 預設 border-box),看不出接縫。
-              ...(hScrollbarGutter > 0 ? { borderBottom: `${hScrollbarGutter}px solid transparent` } : {}),
+              // `--dt-hscroll-gutter`:凍結邊界線的 `::after` 用它負向拉出 padding box,才能貫穿這條
+              // 透明 border 到 border-box 底(spec「整欄高度」;見 data-table.css 的 dtPanelBoundary*)。
+              ...(hScrollbarGutter > 0
+                ? {
+                    borderBottom: `${hScrollbarGutter}px solid transparent`,
+                    ['--dt-hscroll-gutter' as string]: `${hScrollbarGutter}px`,
+                  }
+                : {}),
             }}
           >
             {renderBodyRows(leftCols, false, false, leftWidth)}
@@ -3033,7 +3040,14 @@ function DataTableInner<TData>(
               width: rightWidth || undefined,
               ...(isFillHeight && bodyMaxHeight != null ? { maxHeight: bodyMaxHeight } : hasHeightConstraint ? { maxHeight: height } : {}),
               // 與 left 同理(見 hScrollbarGutter;必須是 border 不是 padding)。
-              ...(hScrollbarGutter > 0 ? { borderBottom: `${hScrollbarGutter}px solid transparent` } : {}),
+              // `--dt-hscroll-gutter`:凍結邊界線的 `::after` 用它負向拉出 padding box,才能貫穿這條
+              // 透明 border 到 border-box 底(spec「整欄高度」;見 data-table.css 的 dtPanelBoundary*)。
+              ...(hScrollbarGutter > 0
+                ? {
+                    borderBottom: `${hScrollbarGutter}px solid transparent`,
+                    ['--dt-hscroll-gutter' as string]: `${hScrollbarGutter}px`,
+                  }
+                : {}),
             }}
           >
             {renderBodyRows(rightCols, false, true, rightWidth)}

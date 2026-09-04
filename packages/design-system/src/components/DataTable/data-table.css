@@ -166,7 +166,13 @@
   position: relative;
 }
 
-.dtHeaderPanelUnderline::after {
+/* **必須用 `::before`,不能用 `::after`**(2026-09-04 user 回報「釘選欄 header 最右邊的分隔線消失」
+   的根因):左/右 header panel 同時掛 `dtPanelBoundaryRight/Left`,而那條凍結邊界線已經佔用了
+   `::after`。一個元素只有一個 `::after` —— 兩條規則會合併成
+   `left:0 right:0 top:0 bottom:0 width:1px height:1px`,結果是角落一個 1×1 的點,
+   **兩條線同時消失**(實測:header LEFT 的 ::after 量到 1px × 1px)。
+   center panel 沒有 boundary class 所以不會撞 —— 這正是為什麼只量 center 會誤判成修好了。 */
+.dtHeaderPanelUnderline::before {
   content: '';
   position: absolute;
   left: 0;
@@ -175,17 +181,24 @@
   height: 1px;
   background: var(--divider);
   pointer-events: none;
+  /* 疊在凍結邊界線之上:兩條線在轉角交會時,水平線壓過去比較像一個完整的「田」字。 */
+  z-index: 1;
 }
 
 .dtPanelBoundaryRight {
   position: relative;
 }
 
+/* `bottom` 要負向拉出 padding box:釘選 body 面板帶一條等同水平捲軸高的**透明 border-bottom**
+   (讓三區可視列高一致),而絕對定位的包含塊是 padding box —— 不補這一段,線會在捲軸帶上緣就停,
+   表格底端缺一個捲軸寬,達不到 spec 明文的「整欄高度(table 頂部到列區底部)」。
+   `--dt-hscroll-gutter` 由 tsx 依實測的捲軸高寫上;沒有捲軸時是 0,行為與先前完全相同。
+   (2026-09-04 user 回報「頂天立地」;spec 缺陷 P 由此結案,v33 也是讓線貫穿到底。) */
 .dtPanelBoundaryRight::after {
   content: '';
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: calc(-1 * var(--dt-hscroll-gutter, 0px));
   right: 0;
   width: 1px;
   background: var(--divider);
@@ -196,11 +209,12 @@
   position: relative;
 }
 
+/* 同 `.dtPanelBoundaryRight::after` 的理由(見上)。 */
 .dtPanelBoundaryLeft::after {
   content: '';
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: calc(-1 * var(--dt-hscroll-gutter, 0px));
   left: 0;
   width: 1px;
   background: var(--divider);

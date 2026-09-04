@@ -527,6 +527,77 @@ if (!simulated) {
   // `data-table.spec.md` 缺陷表 S,不在這條模擬的職責範圍。
 }
 
+// ── I13:分隔線必須「頂天立地 / 橫貫全表」(2026-09-04 user 回報三條線同時消失後補)──
+// 為什麼非有不可:2026-09-04 把表頭下分隔線從 `border-b` 改成 `::after` 偽元素時,沒察覺左右兩個
+// header panel 已經掛了 `dtPanelBoundaryRight/Left`(同樣用 `::after`)—— 一個元素只有一個 `::after`,
+// 兩條規則合併成 1×1 的點,**凍結邊界線與表頭底線在釘選區同時消失**,而 CI 當時**沒有任何一條**
+// 表頭分隔線的斷言,所以全綠。這一組就是補那個洞:
+//   I13a 表頭底線橫貫全表(三個 panel 的線段相接後 = 表格內緣寬)
+//   I13b 凍結邊界線在 header 段與 body 段都畫得出來,且兩段相接 = 從表頭頂到 body 底(頂天立地)
+//   I13c 每一條線都必須有非零的長度(擋掉「兩條 ::after 互撞塌成一點」這一類 silent 失效)
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, { waitUntil: 'networkidle' })
+await page.waitForSelector('[data-datatable-panel="center"]')
+await page.waitForTimeout(500)
+const dividerReport = await page.evaluate(() => {
+  const roots = [...document.querySelectorAll('[data-datatable-panel="center"]')].map((c) => c.closest('.bg-surface') || c.parentElement.parentElement)
+  return roots.map((root, i) => {
+    const px = (v) => (v && v.endsWith('px') ? parseFloat(v) : 0)
+    const seg = (sel, pseudo) => {
+      const el = root.querySelector(sel)
+      if (!el) return null
+      const cs = getComputedStyle(el, pseudo)
+      if (cs.content === 'none') return { present: false, w: 0, h: 0 }
+      return { present: true, w: px(cs.width), h: px(cs.height) }
+    }
+    const rect = (sel) => {
+      const el = root.querySelector(sel)
+      return el ? el.getBoundingClientRect() : null
+    }
+    const hL = rect('[data-datatable-header-panel="left"]')
+    const hC = rect('[data-datatable-header-panel="center"]')
+    const hR = rect('[data-datatable-header-panel="right"]')
+    const bL = root.querySelector('[data-datatable-panel="left"]')
+    return {
+      table: i,
+      // 表頭底線:三段寬度加總 vs 表頭三個 panel 的實際橫向跨距
+      underline: {
+        left: seg('[data-datatable-header-panel="left"]', '::before'),
+        center: seg('[data-datatable-header-panel="center"]', '::before'),
+        right: seg('[data-datatable-header-panel="right"]', '::before'),
+        span: hL && hR ? +(hR.right - hL.left).toFixed(1) : hC ? +(hC.right - hC.left).toFixed(1) : 0,
+      },
+      // 凍結邊界線:header 段 + body 段
+      boundary: {
+        headerLeft: seg('[data-datatable-header-panel="left"]', '::after'),
+        bodyLeft: seg('[data-datatable-panel="left"]', '::after'),
+        headerRight: seg('[data-datatable-header-panel="right"]', '::after'),
+        bodyRight: seg('[data-datatable-panel="right"]', '::after'),
+        headerH: hL ? +hL.height.toFixed(1) : 0,
+        bodyBorderBox: bL ? +bL.getBoundingClientRect().height.toFixed(1) : 0,
+      },
+    }
+  })
+})
+for (const r of dividerReport) {
+  const u = r.underline
+  const segSum = (u.left?.w || 0) + (u.center?.w || 0) + (u.right?.w || 0)
+  record('I13a', `表格 ${r.table} 表頭底線橫貫全表(三段相接 = 表頭跨距)`, Math.abs(segSum - u.span) <= 1, `三段 ${segSum} vs 跨距 ${u.span}(缺一段 = 釘選區沒有底線)`)
+  for (const [k, v] of Object.entries({ left: u.left, center: u.center, right: u.right })) {
+    if (!v || !v.present) continue
+    record('I13c', `表格 ${r.table} ${k} 表頭底線有非零寬度`, v.w > 0 && v.h > 0, `${v.w}×${v.h}(1×1 = 兩條 ::after 互撞塌成一點)`)
+  }
+  const b = r.boundary
+  for (const side of ['Left', 'Right']) {
+    const head = b[`header${side}`]
+    const body = b[`body${side}`]
+    if (!head || !head.present) continue
+    record('I13b', `表格 ${r.table} ${side} 凍結邊界線的 header 段畫得出來且滿高`, Math.abs(head.h - b.headerH) <= 1, `線高 ${head.h} vs 表頭高 ${b.headerH}`)
+    if (body && body.present) {
+      record('I13b', `表格 ${r.table} ${side} 凍結邊界線的 body 段貫穿到 border-box 底(含捲軸讓位帶)`, Math.abs(body.h - b.bodyBorderBox) <= 1, `線高 ${body.h} vs 面板 ${b.bodyBorderBox}`)
+    }
+  }
+}
+
 // ── I12:水平捲軸只吃掉 center 的高度,pinned 區必須補等高(2026-09-03,同一根因的縱軸孿生)──
 // center body 自己有 overflow-x:auto,捲軸佔掉它 15px 高;pinned 區沒有捲軸 →
 // 不補的話 pinned 會比 center 多露出一條列(實測 300 vs 285)。AG Grid 是把水平捲軸放到
