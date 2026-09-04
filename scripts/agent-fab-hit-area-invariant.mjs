@@ -114,11 +114,14 @@ const measured = await page.evaluate((PAD) => {
       ['左下', v.left + 1, v.bottom - 1],
       ['右下', v.right - 1, v.bottom - 1],
     ].map(([name, x, y]) => ({ name, hit: h(Math.round(x), Math.round(y)) }))
+    const sh = shell.getBoundingClientRect()
     return {
       placement: shell.dataset.placement,
       visual: { l: +v.left.toFixed(1), r: +v.right.toFixed(1), t: +v.top.toFixed(1), b: +v.bottom.toFixed(1), w: +v.width.toFixed(1), h: +v.height.toFixed(1) },
       hit: hitRect(btn, visual),
       corners,
+      // 殼比鈕大出來的部分 = 看不見、不吃指標,卻仍在 tooltip 覆蓋範圍內的死區(H5)。
+      shellSlack: { w: +(sh.width - v.width).toFixed(1), h: +(sh.height - v.height).toFixed(1) },
       stage: {
         r: +(st.left + stage.clientLeft + stage.clientWidth).toFixed(1),
         b: +(st.top + stage.clientTop + stage.clientHeight).toFixed(1),
@@ -130,6 +133,18 @@ const measured = await page.evaluate((PAD) => {
 }, SCAN_PAD)
 
 record('H0', '找得到入口鈕', measured.length > 0, `找到 ${measured.length} 顆`)
+
+// (H5) **定位殼不得大於鈕** —— 2026-09-04 user 回報「hover 出現 tooltip 的地方點下去打不開」的根因之一。
+// 舊版把殼釘在 40 寬(`w-10`),貼邊時鈕只有 28,左側就多出 12px:看不見、`pointer-events-none` 不吃指標,
+// 但貼邊態的 tooltip 正好開在鈕的**左邊**,於是那條帶子同時滿足「tooltip 開著」與「點不到」。
+// 實測重現(修正前):hover 鈕中心 → tooltip 開;往左 6px → `elementFromPoint` 回底下的表格、tooltip 仍開;
+// 在那裡點下去面板不開。殼 = 鈕之後,這個帶子在結構上不存在。
+for (const m of measured) {
+  const tag = `[${m.placement}]`
+  record('H5', `${tag} 定位殼沒有比鈕大(不留看不見的死區)`,
+    Math.abs(m.shellSlack.w) <= 1 && Math.abs(m.shellSlack.h) <= 1,
+    `殼比鈕寬 ${m.shellSlack.w}px、高 ${m.shellSlack.h}px(>1 = 有一條看得到 tooltip 卻點不到的帶子)`)
+}
 
 for (const m of measured) {
   const tag = `placement=${m.placement}`

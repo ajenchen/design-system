@@ -639,9 +639,12 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
           data-dragging={dragging ? '' : undefined}
           data-snapped={drag?.placement ? '' : undefined}
           className={cn(
-            // 殼固定 40 寬(形態過渡不凸出右緣),但**不吃指標** —— 貼邊時左側 12px 是空白,
-            // 若殼可命中就會變成「看不見卻擋住點擊」的死區(2026-09-03 user 回報:hover 小鈕左側點不到)。
-            'group/dock pointer-events-none absolute z-20 flex w-10 justify-end',
+            // **殼跟著鈕縮,不再固定 40 寬**(2026-09-04 user 回報「hover 出現 tooltip 的地方點不開」的根因之一):
+            // 舊版把殼釘在 40,貼邊時鈕只有 28,左側就多出 12px 既不吃指標、又落在 tooltip 覆蓋範圍內的空白帶
+            // (實測:hover 鈕中心 → tooltip 開;往左移 6px → 命中的是底下的表格、tooltip 仍開著;點下去面板不開)。
+            // 殼是 `right` 錨定的,寬度縮到內容大小時右緣一樣不動,形態過渡(40→28)照樣不會凸出舞台,
+            // 所以固定 40 這件事本來就沒有必要 —— 拿掉之後「殼 = 鈕」,不可能再有看不見的死區。
+            'group/dock pointer-events-none absolute z-20 flex w-fit justify-end',
             // 落點修正 / 飛回家 250ms + enter;拖曳中跟指標不過渡。
             ready && !dragging && !reflowing && !reduced &&
               'transition-[right,top] duration-[var(--motion-duration-surface)] ease-[var(--motion-easing-enter)]',
@@ -677,7 +680,13 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Tooltip open={dragging ? false : undefined}>
+          {/* `disableHoverableContent`(2026-09-04,同一個回報的另一半根因):Radix 預設允許指標從 trigger
+              移向 tooltip 內容而不關閉,而貼邊態的 tooltip 就開在鈕的**左邊**(`tooltipSide: 'left'`),
+              於是「tooltip 還開著」會延伸到鈕以外、點不到的地方 —— 使用者看到的正是「有 tooltip 卻點不開」。
+              關掉之後:tooltip 出現的範圍 === 指標在鈕上 === 可點擊範圍,三者恆等,
+              也就是 user 要求的「所有會出現 tooltip 的地方點下去都要可以開啟」。
+              本元件的 tooltip 是純提示、內容裡沒有可點的東西,不需要 hoverable。 */}
+          <Tooltip open={dragging ? false : undefined} disableHoverableContent>
             <TooltipTrigger asChild>
               {/* **命中區 = 可視區,一格不多一格不少**(2026-09-04 user 拍板修正:
                   「其實只要觸控範圍跟視覺範圍是對齊的話,此問題就解決了」)。

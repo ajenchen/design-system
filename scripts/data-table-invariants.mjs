@@ -281,10 +281,13 @@ record('I9', '.dtCellGrid 無陰影畫線', cellGridReport.shadowed === 0, `${ce
 record('I9', '.dtCellGrid 欄間線 = 1px 偽元素', cellGridReport.withLine === cellGridReport.total - cellGridReport.last, `畫線 ${cellGridReport.withLine} vs 應畫 ${cellGridReport.total - cellGridReport.last}`)
 record('I9', '.dtCellGrid 每 panel 最右 cell 不重複畫線', cellGridReport.lastWithLine === 0, `${cellGridReport.lastWithLine} 個最右 cell 仍畫線(會與凍結邊界/外框疊成 2px)`)
 
-// ── I10:右/置中對齊欄的「標題」與「儲存格內容」必須對齊同一邊(2026-09-03 user 抓到)──
-// 根因是 header 的點擊區為 flex-1(要撐滿才有夠大的排序點擊範圍),外層 justify-end 因此沒有剩餘空間可分配,
-// 標題被推回最左、和右對齊的數字對不齊;TruncatedText 的 text-right 在 flex row 內是收縮寬度,救不了。
-// 這條把「對齊」變成可量的像素事實,任何人再把 align class 從內層拿掉就會紅。
+// ── I10:**表頭一律靠左**,對齊只作用在儲存格內容(2026-09-04 user 拍板)──
+// 「header 的規格就是要一致,只有內容會置右」。表頭是結構標籤,一整列標題要對齊同一條左緣;
+// 數值右對齊是為了讓位數在**資料之間**縱向比較,標題不是資料、不參與那個比較。
+// 這條 2026-09-03 的第一版守的正好是相反的事(要求標題跟著儲存格跑到右邊),那是我未經拍板的
+// 擅自改動,連同它一起撤回。現在拆成兩件各自可量的事實:
+//   (a) 所有欄位的**標題左緣**落在同一條線(彼此差 ≤1.5px)—— 任何人再把 align 傳回表頭就會紅;
+//   (b) 右對齊欄的**儲存格內容右緣**確實貼齊該 cell 的右內緣 —— 內容的對齊不能被順手拿掉。
 await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--with-pagination&viewMode=story`, { waitUntil: 'networkidle' })
 await page.waitForSelector('[role="columnheader"]')
 const alignReport = await page.evaluate(() => {
@@ -308,26 +311,38 @@ const alignReport = await page.evaluate(() => {
   // `gridcell` 只出現在 Calendar / DateGrid。下方另加「真的量到欄」守衛,防止再次空轉。
   const row = [...document.querySelectorAll('[role="row"]')].find((r) => r.querySelector('[role="cell"]'))
   const cells = row ? [...row.querySelectorAll('[role="cell"]')] : []
-  return heads.slice(0, cells.length).map((h, i) => ({
-    just: getComputedStyle(h).justifyContent,
-    head: textRect(h),
-    cell: textRect(cells[i]),
-  }))
+  return heads.slice(0, cells.length).map((h, i) => {
+    const hb = h.getBoundingClientRect()
+    const cb = cells[i].getBoundingClientRect()
+    const cs = getComputedStyle(h)
+    const ccs = getComputedStyle(cells[i])
+    return {
+      headJustify: cs.justifyContent,
+      cellJustify: ccs.justifyContent,
+      // 標題文字左緣相對於自己 cell 的左內緣 —— 用相對值才能跨欄比較(各欄起點不同)。
+      headPadLeft: parseFloat(cs.paddingLeft) || 0,
+      headTextOffset: (() => { const t = textRect(h); return t ? t.left - hb.left : null })(),
+      cellPadRight: parseFloat(ccs.paddingRight) || 0,
+      cellTextRightGap: (() => { const t = textRect(cells[i]); return t ? cb.right - t.right : null })(),
+      text: (textRect(h) || {}).text,
+    }
+  })
 })
 for (const col of alignReport) {
-  if (!col.head || !col.cell) continue
-  if (col.just === 'flex-end') {
-    const delta = Math.abs(col.head.right - col.cell.right)
-    record('I10', `右對齊欄「${col.head.text}」標題與內容右緣一致`, delta <= 1.5, `header right ${col.head.right.toFixed(1)} vs cell right ${col.cell.right.toFixed(1)}, delta ${delta.toFixed(1)}`)
-  } else if (col.just === 'center') {
-    const delta = Math.abs((col.head.left + col.head.right) / 2 - (col.cell.left + col.cell.right) / 2)
-    record('I10', `置中欄「${col.head.text}」標題與內容中線一致`, delta <= 1.5, `delta ${delta.toFixed(1)}`)
-  } else {
-    const delta = Math.abs(col.head.left - col.cell.left)
-    record('I10', `左對齊欄「${col.head.text}」標題與內容左緣一致`, delta <= 1.5, `header left ${col.head.left.toFixed(1)} vs cell left ${col.cell.left.toFixed(1)}, delta ${delta.toFixed(1)}`)
+  if (col.headTextOffset == null) continue
+  // (a) 標題一律靠左 = 文字左緣距 cell 左緣 == 該 cell 的左內距(沒有被 justify 推走)
+  const drift = Math.abs(col.headTextOffset - col.headPadLeft)
+  record('I10', `表頭「${col.text}」靠左(不跟欄位 align 走)`, drift <= 1.5,
+    `標題左緣距 cell 左緣 ${col.headTextOffset.toFixed(1)} vs 左內距 ${col.headPadLeft.toFixed(1)}(差 ${drift.toFixed(1)};>1.5 = 對齊又被傳回表頭)`)
+  record('I10', `表頭「${col.text}」不使用 justify 對齊`, col.headJustify === 'normal' || col.headJustify === 'flex-start',
+    `justify-content=${col.headJustify}(表頭不得出現 flex-end / center)`)
+  // (b) 右對齊欄的內容仍要貼齊右內緣
+  if (col.cellJustify === 'flex-end' && col.cellTextRightGap != null) {
+    const gap = Math.abs(col.cellTextRightGap - col.cellPadRight)
+    record('I10', `右對齊欄「${col.text}」的儲存格內容仍貼齊右內緣`, gap <= 1.5,
+      `內容右緣距 cell 右緣 ${col.cellTextRightGap.toFixed(1)} vs 右內距 ${col.cellPadRight.toFixed(1)}(差 ${gap.toFixed(1)})`)
   }
 }
-// 空轉守衛:選擇器一旦再寫錯就會是「零斷言 = 假綠」,所以明確要求至少量到一欄。
 record('I10', '真的量到欄(否則上面的斷言是空轉)', alignReport.length > 0, `量到 ${alignReport.length} 欄`)
 
 // ── I11:欄寬「算一次」——header 與 body 讀同一個整數(2026-09-03 改為 AG Grid v33 模型)──

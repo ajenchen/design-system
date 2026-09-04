@@ -198,7 +198,13 @@ header `scrollWidth` 915 = body 900 + padding 15,兩邊捲動範圍都是 397,�
 
 ### 七、Column Type
 
-**Column type 是資料行為的預設合約。** 指定 type 自動獲得對齊 / 渲染 / 排序 / 篩選行為,可在 column 層級覆寫。Header 對齊永遠跟該欄 body cell 一致(**機制**:對齊 class 必同時套在 header 外層與內層的排序點擊區 —— 點擊區是 `flex-1` 撐滿的,只套外層等於沒套,標題會被推回最左;`TruncatedText` 的 `text-right` 在 flex row 內是收縮寬度,救不了。**機械閘** = `scripts/data-table-invariants.mjs` I10:量標題文字與首列儲存格文字的邊緣,右對齊比右緣、置中比中線、左對齊比左緣,>1.5px 就紅。2026-09-03 user 抓到金額欄標題與數字對不齊,根因即此,規格早已這樣寫、程式沒做到)。select/multiSelect 的 `meta.options` 消費 Select 的完整 `SelectOption` schema(M30 wrapper-extends-primitive;含 icon / iconClassName / description),`meta.selectedItemRenderer` 轉發 Select 同名 API 供 status 類彩色 cell(2026-07-08 補——原 `{value,label}` 窄型別 = 假 SSOT,WM 被迫手刻 bare trigger 實證)。
+**Column type 是資料行為的預設合約。** 指定 type 自動獲得對齊 / 渲染 / 排序 / 篩選行為,可在 column 層級覆寫。
+
+**對齊只作用在儲存格內容,表頭一律靠左**(2026-09-04 user 拍板:「header 的規格就是要一致,只有內容會置右」)。表頭是結構標籤,一整列標題對齊同一條左緣才掃得順;數值右對齊的目的是讓位數在**資料之間**縱向比較,而標題不是資料、不參與那個比較。世界級對照:Polaris IndexTable 只在 body cell 右對齊數值、標題列維持左;Notion / Airtable / Linear 的數值欄標題同樣靠左。**機械閘** = `scripts/data-table-invariants.mjs` I10:量所有型別欄位的**標題左緣**必須落在同一條線(彼此差 ≤1.5px),同時量右對齊欄的**儲存格內容右緣**確實貼齊 cell 右內緣 —— 兩件事分開驗,任何一邊回頭去跟另一邊對齊就會紅。
+
+> **來源總帳(2026-09-04)**:2026-09-03 我曾把表頭一起推到右邊,並在此處寫成「Header 對齊永遠跟該欄 body cell 一致」——那句是**我自己推導的,不是 user 拍板**,且該次改動未經同意。已於 2026-09-04 撤回,本段為現行 SSOT。歷史事實一併記錄:`f8cec708`(2026-04-29,commit 主旨是 sort 重做)在標題與外層之間插入 `flex-1` 的排序點擊區,使外層的 `justify-end` 失去可分配空間,標題被推回最左 —— 在那之前標題文字實際上是靠右的(`text-right` 套在外層、內層 `TruncateCell` 為 `flex-1`)。也就是說「靠左」是那次副作用之後的狀態,而 user 要的正是這個狀態;現在由本段明文定為規格,不再依賴副作用。
+
+select/multiSelect 的 `meta.options` 消費 Select 的完整 `SelectOption` schema(M30 wrapper-extends-primitive;含 icon / iconClassName / description),`meta.selectedItemRenderer` 轉發 Select 同名 API 供 status 類彩色 cell(2026-07-08 補——原 `{value,label}` 窄型別 = 假 SSOT,WM 被迫手刻 bare trigger 實證)。
 
 ### 八、Row 狀態
 

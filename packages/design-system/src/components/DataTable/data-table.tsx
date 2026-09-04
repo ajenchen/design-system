@@ -2445,8 +2445,12 @@ function DataTableInner<TData>(
           // 對齊 cell wrapper + Field family size→font SSOT。色弱化由 text-fg-secondary 維持。
           'group relative flex items-center gap-2 text-fg-secondary font-normal shrink-0 overflow-hidden select-none',
           fieldDisplayTextClass(size),
-          align === 'right' && 'justify-end',
-          align === 'center' && 'justify-center',
+          // **表頭一律靠左,不跟著欄位的 align 走**(2026-09-04 user 拍板:「header 的規格就是要一致,
+          // 只有內容會置右」)。表頭是結構標籤,一整列標題對齊同一條左緣才掃得順;數值右對齊的目的是
+          // 讓小數點與位數在**資料之間**縱向比較,標題不是資料、不參與那個比較。
+          // 世界級對照(2026-09-04 讀第一手):Polaris IndexTable 的 `Cell` 只在 `flush`/數值 body cell
+          // 右對齊,標題列維持左;Notion / Airtable / Linear 的數值欄標題同樣靠左。
+          // 先前 2026-09-03 我把表頭一起推到右邊並寫進規格,是**未經拍板的擅自改動**,此處撤回。
         )}
         style={{ ...columnSizeStyle(header.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(header.column.id), resolvedWidth: resolvedWidths.get(header.column.id) }), ...cellPadding }}
       >
@@ -2459,18 +2463,14 @@ function DataTableInner<TData>(
           onKeyDown={canSort ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sortHandler?.(e as any) } } : undefined}
           className={cn(
             'flex items-center min-w-0 flex-1 gap-1 outline-none',
-            // 2026-09-03:對齊必須跟著傳到這一層 —— 這個點擊區是 flex-1(要撐滿才有夠大的排序點擊範圍),
-            // 外層的 justify-end 因此沒有剩餘空間可分配,標題會被推回最左,和右對齊的儲存格內容對不齊
-            // (實測 DataTable 自己的「分頁」story:金額 header 文字在 645、儲存格數字右緣在 919)。
-            // TruncatedText 的 text-right 也救不了:它在 flex row 內是收縮寬度,text-align 無作用。
-            align === 'right' && 'justify-end',
-            align === 'center' && 'justify-center',
+            // 這一層**不再跟著欄位 align 走**(見外層說明):表頭一律靠左。
+            // 排序點擊區維持 `flex-1` 撐滿,點擊範圍不縮水。
             canSort && 'cursor-pointer hover:text-foreground transition-colors',
             // 2026-07-04:rounded-sm → rounded-md(radius.spec.md 設計哲學(4)rounded-sm 保留未使用,4px 一律 rounded-md)
             canSort && 'focus-visible:ring-2 focus-visible:ring-ring rounded-md',
           )}
         >
-          <TruncatedText className={cn('min-w-0', align === 'right' && 'text-right', align === 'center' && 'text-center')}>
+          <TruncatedText className="min-w-0">
             {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
           </TruncatedText>
           {canSort && sortDir && !isMultiSort && (
