@@ -1706,6 +1706,85 @@ function DataTableInner<TData>(
   }, [hasRowActions, rightCols, rows.length])
   const rightWidth = hasRowActions ? measuredRightWidth : rightColsWidth
 
+  /* ── 缺陷 F:列高單一真相來源(2026-09-04)────────────────────────────────────────
+   * 兩容器架構下,同一列在 left / center / right 是**三個各自獨立的 DOM row**。固定行高時它們
+   * 吃同一個 token 所以自然同高;但 auto-height(`autoRowHeight` / `meta.wrap` / per-row cell error)
+   * 時每一區只看得到自己那幾欄,於是各算各的高度 —— 內容換行落在哪一區,哪一區就變高,其餘兩區
+   * 維持原高,同一列在三區錯開。虛擬捲動更糟:`vr.start` 全由 center 的量測推出,pinned 區比 center
+   * 高的那幾列會直接壓到下一列的位置。
+   *
+   * AG Grid v33 對這題的模型是「**算一次、廣播給該列的所有 GUI**」:`rowAutoHeightService`
+   * 取該列所有 autoHeight 欄的 max 收斂成一個純量存進 `rowNode.rowHeight`,再由
+   * `rowCtrl.onRowHeightChanged()` 推給 `allRowGuis`(同一列最多 4 份 GUI:左釘選 / 中間 / 右釘選 /
+   * full-width)。關鍵是 **max 跨區取**(`visibleColsService` 的 autoHeight 欄集合不分區)。
+   * 這裡照同一個模型。
+   *
+   * **量測為什麼不會自我激發**:先把上一輪寫上去的 inline height **整批清掉**,強制一次 reflow
+   * 後再讀 —— 讀到的永遠是「內容的自然高度」。若直接讀 `offsetHeight` 取 max,列高只會漲不會縮
+   * (內容變短時三區都讀到上一輪寫進去的 max,新 max 等於舊 max,永遠卡住)。清完立刻同步還原,
+   * 所以 ResizeObserver 在影格結束觀測到的盒子沒有淨變化,不會被自己的量測叫醒。
+   *
+   * **只在需要時跑**:單一區的表(沒有釘選欄也沒有 rowActions)本來就不可能錯位,直接跳過整個
+   * 量測 —— 強制 reflow 的成本只落在真的會出這個缺陷的組合上。
+   */
+  const anyAutoRow = autoRowHeight || (cellErrors != null && Object.keys(cellErrors).length > 0)
+  const multiRegion = hasLeft || hasRight
+  const [sharedRowHeights, setSharedRowHeights] = React.useState<Map<number, number>>(() => new Map())
+  const sharedRowHeightsRef = React.useRef(sharedRowHeights)
+  sharedRowHeightsRef.current = sharedRowHeights
+
+  const syncSharedRowHeights = React.useCallback(() => {
+    const prev = sharedRowHeightsRef.current
+    if (!anyAutoRow || !multiRegion) {
+      if (prev.size) setSharedRowHeights(new Map())
+      return
+    }
+    const panels = [leftBodyRef.current, centerBodyRef.current, rightBodyRef.current].filter(Boolean) as HTMLElement[]
+    if (panels.length < 2) {
+      if (prev.size) setSharedRowHeights(new Map())
+      return
+    }
+    const els: HTMLElement[] = []
+    for (const panel of panels) els.push(...panel.querySelectorAll<HTMLElement>('[data-row-auto][data-row-index]'))
+    if (els.length === 0) {
+      if (prev.size) setSharedRowHeights(new Map())
+      return
+    }
+    // 先存下現有 inline min-height(React 認為它已經寫上去了,不會替我們補寫回來),再整批清空。
+    const saved = els.map((el) => el.style.minHeight)
+    for (const el of els) el.style.minHeight = ''
+    const next = new Map<number, number>()
+    for (const el of els) {
+      const idx = Number(el.dataset.rowIndex)
+      if (!Number.isFinite(idx)) continue
+      // 用 getBoundingClientRect 而不是 offsetHeight:後者取整,三區各差 0.5px 時會被抹平成
+      // 「已經對齊」的假象(M32:量測要 pixel-quantified,不是四捨五入後的相等)。
+      const h = el.getBoundingClientRect().height
+      const cur = next.get(idx)
+      if (cur == null || h > cur) next.set(idx, h)
+    }
+    // 同步還原 —— 一定要在讓出這一幀之前做完,否則 ResizeObserver 會觀測到「高度歸零又長回來」。
+    els.forEach((el, i) => { el.style.minHeight = saved[i] })
+    if (next.size === prev.size && [...next].every(([k, v]) => Math.abs((prev.get(k) ?? -1) - v) < 0.5)) return
+    setSharedRowHeights(next)
+  }, [anyAutoRow, multiRegion])
+
+  React.useLayoutEffect(() => { syncSharedRowHeights() })
+  React.useEffect(() => {
+    if (!anyAutoRow || !multiRegion) return
+    // 換行取決於欄寬,欄寬取決於容器寬 —— 容器寬變了就要重算(視窗、面板拖曳、字型載入)。
+    const targets = [leftBodyRef.current, centerBodyRef.current, rightBodyRef.current].filter(Boolean) as HTMLElement[]
+    if (targets.length < 2) return
+    const ro = new ResizeObserver(() => syncSharedRowHeights())
+    for (const t of targets) ro.observe(t)
+    // 內容變動幾乎都經由 render(上面的 layout effect 沒有 dep array,每次 render 都會重量);
+    // **字型非同步載入是唯一的例外** —— 它換掉字面尺寸卻不觸發 render,不補這一條會在字型換上去的
+    // 那一刻留下永久錯位。
+    let alive = true
+    void document.fonts?.ready.then(() => { if (alive) syncSharedRowHeights() })
+    return () => { alive = false; ro.disconnect() }
+  }, [anyAutoRow, multiRegion, syncSharedRowHeights])
+
   // 2026-07-09 root-cause fix(user 以 GitHub Pages 對比抓出 regression):
   //   舊 `h-table-row-${size}` 模板字串 Tailwind **靜態掃描看不到** → `.h-table-row-{sm,md,lg}` 規則
   //   唯一靠 uiSize.spec.md 裡的 literal 被 content-detection 掃到才生成;戰役期間掃描樹變動後未生成
@@ -2827,8 +2906,16 @@ function DataTableInner<TData>(
             // 整列可拖的 affordance 由可見的 RowDragHandle Button 提供,不靠 cursor 暗示。
             // 之前 cursor-grab → drag 中 user 看到 cursor 變化反而干擾 indicator+ghost 的視覺焦點。
           )}
+          // 缺陷 F 的量測標記:只有 auto-height 的列需要跨區對齊,固定高的列本來就同高。
+          data-row-auto={effectiveAutoRow ? '' : undefined}
           style={{
             ...(opts?.virtual ? { transform: `translateY(${opts.start}px)` } : {}),
+            // 缺陷 F:列高單一真相來源 —— 三區同一列一律吃 `sharedRowHeights` 算出的同一個數字。
+            // 沒有量到(單區表 / 尚未量測)就維持原本各自 auto,不強加。
+            // 用 `minHeight` 而不是 `height`:兩者對齊結果相同(共用值 = 三區自然高度的 max,
+            // 所以沒有任何一區會超過它),但 `minHeight` 在內容意外變高時讓列自己長出來而不是被裁掉 /
+            // 溢出 —— 「修錯方向」的代價從「看不到內容」降成「暫時錯位一幀」。
+            ...(effectiveAutoRow && sharedRowHeights.has(idx) ? { minHeight: sharedRowHeights.get(idx) } : {}),
             ...(extra?.style ?? {}),
           }}
           {...hoverProps(idx)}

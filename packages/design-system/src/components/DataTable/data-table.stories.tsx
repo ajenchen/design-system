@@ -298,7 +298,18 @@ export const RowAutoHeightInlineEdit: Story = {
 
 export const RowAutoHeight: Story = {
   name: '自動行高',
-  render: () => (
+  render: function RowAutoHeightStory() {
+    // 虛擬捲動 pane 的資料:50 筆(> VIRTUAL_THRESHOLD 30)+ 長短交錯的備註,讓被撐高的列
+    // 隨捲動進出視窗 —— 缺陷 F 在虛擬模式下更嚴重(`vr.start` 全由 center 的量測推出)。
+    const virtualNotes = React.useMemo<Product[]>(() => generateLargeData(50).map((p, i) => ({
+      ...p,
+      note: i % 3 === 0
+        ? 'Requires cold-chain handling and customs pre-clearance; confirm the destination warehouse can accept refrigerated pallets before dispatch.'
+        : i % 3 === 1
+          ? 'Fragile — double-wall carton required.'
+          : 'Standard delivery.',
+    })), [])
+    return (
     <div className="flex flex-col gap-8">
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">固定行高（預設）</h3>
@@ -310,8 +321,52 @@ export const RowAutoHeight: Story = {
         <p className="text-caption text-fg-muted mb-3">內容頂部對齊，wrap 欄位可撐高 row</p>
         <DataTable columns={columnsWithNote} data={dataWithNotes} height="auto" autoRowHeight />
       </div>
+      {/* 缺陷 F 的覆蓋案例(2026-09-04):撐高的 Note 欄在 center，釘選的 SKU 與 Row Actions 各自在
+          另外兩個容器 —— 這是「同一列在三區各算各的高度」唯一會現形的組合，先前沒有任何 story 命中
+          (M15:沒有 story 覆蓋的狀態等於沒被截圖驗過)。三區同一列必須等高，機械閘 I15 逐列比對。 */}
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">自動行高 × 釘選欄 × Row Actions</h3>
+        <p className="text-caption text-fg-muted mb-3">
+          撐高的欄位在中段，釘選欄與 actions 在左右兩個獨立容器；同一列三區必須等高
+        </p>
+        <DataTable
+          columns={columnsWithNote}
+          data={dataWithNotes}
+          height="auto"
+          autoRowHeight
+          pinnedLeftColumns={['sku']}
+          rowActions={() => (
+            <>
+              <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
+              <Button variant="text" size="xs" iconOnly startIcon={Trash2} aria-label="刪除" />
+            </>
+          )}
+        />
+      </div>
+      {/* 同一個缺陷在虛擬模式下的版本:列的位移 `vr.start` 只由 center 的量測推出,pinned 區
+          比 center 高的列會直接壓到下一列的位置。共用列高之後 center 量到的就是共用值,三區同解。 */}
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">自動行高 × 釘選欄 × Row Actions × 虛擬捲動</h3>
+        <p className="text-caption text-fg-muted mb-3">
+          50 筆(超過虛擬門檻 30);捲動時被撐高的列進出視窗，三區仍須逐列等高
+        </p>
+        <DataTable
+          columns={columnsWithNote}
+          data={virtualNotes}
+          height="360px"
+          autoRowHeight
+          pinnedLeftColumns={['sku']}
+          rowActions={() => (
+            <>
+              <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
+              <Button variant="text" size="xs" iconOnly startIcon={Trash2} aria-label="刪除" />
+            </>
+          )}
+        />
+      </div>
     </div>
-  ),
+    )
+  },
 }
 
 /* ── Empty State ── */

@@ -804,6 +804,58 @@ for (const size of ['sm', 'md', 'lg']) {
     `got ${r.single}px(應 ${r.tokenPx};列高分佈 ${r.all.join('/')}。多出來的 2px = 內容載體的透明框沒被 cell-py 公式扣掉)`)
 }
 
+/* ── I15:列高單一真相來源(缺陷 F)—— 同一列在三區必須等高 ────────────────────────
+ * 兩容器架構下同一列是三個獨立 DOM row;auto-height 時每區只看得到自己那幾欄。
+ * 撐高的 Note 欄在 center、釘選的 SKU 在 left、Row Actions 在 right —— 這是缺陷唯一會現形的組合。
+ * 量的是 `getBoundingClientRect().height`(不是 offsetHeight:後者取整會把 0.5px 的錯位抹成「已對齊」)。
+ */
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-auto-height&viewMode=story`, { waitUntil: 'networkidle' })
+await page.waitForSelector('[data-datatable-panel="left"]')
+const rowHeightReport = await page.evaluate(() => {
+  // 掃**每一張**有三個區的表(第 3 個 pane 是非虛擬、第 4 個是虛擬 50 筆),不是只看第一張。
+  const tables = [...document.querySelectorAll('[data-datatable-panel="center"]')].map((c) => c.parentElement)
+  const out = []
+  for (const w of tables) {
+    const byIndex = new Map()
+    let regions = 0
+    for (const side of ['left', 'center', 'right']) {
+      const p = w.querySelector(`:scope > [data-datatable-panel="${side}"]`)
+      if (!p) continue
+      regions += 1
+      for (const row of p.querySelectorAll('[data-row-auto][data-row-index]')) {
+        const i = Number(row.getAttribute('data-row-index'))
+        // getBoundingClientRect 不是 offsetHeight:後者取整,三區各差 0.5px 時會被抹成「已對齊」的假象。
+        const h = row.getBoundingClientRect().height
+        if (!byIndex.has(i)) byIndex.set(i, {})
+        byIndex.get(i)[side] = +h.toFixed(2)
+      }
+    }
+    if (regions < 2 || byIndex.size === 0) continue
+    const rows = [...byIndex.entries()].map(([i, m]) => {
+      const hs = Object.values(m)
+      return { i, ...m, spread: +(Math.max(...hs) - Math.min(...hs)).toFixed(2), n: hs.length }
+    })
+    const allH = rows.flatMap((r) => ['left', 'center', 'right'].map((k) => r[k]).filter((v) => v != null))
+    out.push({
+      regions,
+      nRows: rows.length,
+      distinctHeights: [...new Set(allH)].length,
+      worst: rows.reduce((a, r) => (r.spread > a.spread ? r : a), { spread: -1 }),
+    })
+  }
+  return out
+})
+record('I15', '真的有多區 × auto-height 的表可量(否則下面的斷言是空轉)', rowHeightReport.length >= 2,
+  `量到 ${rowHeightReport.length} 張(story 第 3 pane 非虛擬 + 第 4 pane 虛擬 50 筆)`)
+rowHeightReport.forEach((t, i) => {
+  record('I15', `表 ${i + 1}:量到 ${t.regions} 個區、${t.nRows} 列 auto-height 列`, t.regions === 3 && t.nRows > 0,
+    JSON.stringify({ regions: t.regions, nRows: t.nRows }))
+  record('I15', `表 ${i + 1}:真的有被撐高的列(否則全表同高,對齊斷言恆真)`, t.distinctHeights >= 2,
+    `列高種類 ${t.distinctHeights}(全部一樣 = wrap 沒生效,這張表沒在測它該測的東西)`)
+  record('I15', `表 ${i + 1}:同一列在三區等高(最差 ${t.worst.spread}px)`, t.worst.spread <= 0.5,
+    `最差在第 ${t.worst.i} 列:${JSON.stringify(t.worst)}(>0.5 = 三區各算各的高度,同一列在左右釘選區與中段錯開)`)
+})
+
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))
