@@ -10,9 +10,11 @@
  * - 狀態動畫:agent-panel.spec.md「AgentLogo」節(靜止/招喚/思考;一息 3s 家族;
  *   2026-09-02 拍板:待機一律靜止,併入 still,無獨立呼吸態)。呼吸包絡=吸 35% / 呼至 85% /
  *   85–100% 靜止空拍(靜息 I:E ≈ 1:2 + 呼氣末停頓;spec「AgentLogo」節引用來源)。
- * - 思考態轉速:靜止 → 0.375s 加速(=半圈,exit 曲線,位移 126° = ω·T·(1−x1),交接速度連續)→ 480°/s
- *   等速(0.75s/圈=一息/4)持續到離開思考 → 減速段用 exit 曲線的時間鏡像 (0,0,0.7,1),位移取最小 ≥252°
- *   且落回正位 0°(mod 360)的角度,時長 = Δ/(ω·0.7) ∈ [0.75, 1.82]s,停定後才淡入下一狀態。
+ * - 思考態轉速:靜止 → 0.25s 加速(=半圈,exit 曲線,位移 126° = ω·T·(1−x1),交接速度連續)→ 720°/s
+ *   等速(0.5s/圈 = 一息/6;數值住所是 SPIN_TURNS_PER_BREATH,不是註解宣稱)持續到離開思考 → 減速段用
+ *   exit 曲線的時間鏡像 (0,0,0.7,1),位移取最小 ≥252° 且落回正位 0°(mod 360)的角度,
+ *   時長 = Δ/(ω·0.7) ∈ [0.50, 1.21]s,停定後才淡入下一狀態。
+ * - 轉心/波源/縮放中心一律用 LOGO_CX/LOGO_CY(外輪廓圓心),**不是** viewBox 中心 627,627。
  * - 緩動:--motion-easing-swell / --motion-easing-settle / --motion-easing-exit
  *   (tokens/motion/motion.css)。SMIL keySplines 不能吃 CSS var,以下常數為 token 值的逐字鏡像,
  *   改 token 必同步此處。
@@ -24,11 +26,13 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 import './agent-panel.css'
 
+/** 一息秒數 —— 家族節拍的唯一數值住所(`BREATH_DUR` 與思考轉速都由它推出)。 */
+const BREATH_S = 3
 /**
  * 一息 3 秒(標誌狀態動畫家族共用節拍;文字微光 2s 另計 — spec「動畫總表」)。
  * @internal AgentPanel 家族內部共用(SMIL 實作常數,不進 npm front door)。
  */
-export const BREATH_DUR = '3s'
+export const BREATH_DUR = `${BREATH_S}s`
 /**
  * = var(--motion-easing-swell) 的 SMIL 鏡像(吸氣 / 所有「起」)。
  * @internal
@@ -44,16 +48,27 @@ const EXIT = '0.3 0 1 1'
 /** 減速 = exit 曲線的時間鏡像(起始斜率 1/0.7,速度連續);Material/Carbon 減速原則。 */
 const DECEL = '0 0 0.7 1'
 /**
- * 思考態等速 480°/s(0.75s/圈 = 一息/4):世界級快檔上緣(Bootstrap 0.75 / Carbon 0.69),比「600ms =
- * frantic」(doveletter 實測)慢 25%、仍快於中性帶 1.0–1.8s → 讀成「有幹勁」不是「慌」;24px 每格轉 8°、
- * 輪廓半圈 0.375s 脫離閃爍區(2026-09-02 轉速研究)。加速段 = 半圈時間(ω·T = 180 恆成立),
- * 位移 = ω·T·(1−x1) = 126° 不隨轉速漂;減速最小位移 = 360·0.7 = 252°。
+ * 思考態等速轉速。**數值住所只有這個「一息切幾圈」**,ω 由它推出 —— 舊版把 480 寫死、把「= 一息/4」
+ * 只寫在註解裡,程式碼零綁定:改一息轉速不動、改轉速註解就過期(2026-09-04 改為真綁定)。
+ *
+ * 取 6 圈(0.5s/圈 = 720°/s)的依據全是第一手出貨值(單層等速旋轉,逐檔讀原始碼;URL 見
+ * spec「AgentLogo」節):出貨最快是 Chakra v2 的 0.45s,往下 Carbon 690ms、Bootstrap .75s、
+ * Radix Themes 800ms、Primer / Chakra v3 1s、Ant 1.2s、Material 3 1.333s、Fluent / VS Code 1.5s。
+ * 0.5s 落在「最快檔 0.45–0.69s」之內,不是自創的更快值;唯一更快的出貨值 0.45s 只多 11% 速度,
+ * 卻讓一息 = N 圈斷掉(3 / 0.45 = 6.67),不取。
+ *
+ * 閃爍:造型無 C2 對稱(洞心繞轉軸轉 180° 不落回自身)→ 整圈才重複一次 = 2.0 Hz,低於 WCAG 2.3.1
+ * 的 3 次/秒;且 24px 全圖僅 576 px²,遠低於其面積門檻 341×256 = 87,296 px²。
+ * 加速段 = 半圈時間(ω·T = 180 恆成立),位移 = ω·T·(1−x1) = 126° 不隨轉速漂。
  */
-const SPIN_OMEGA = 480
-const SPIN_PERIOD_S = 360 / SPIN_OMEGA
+const SPIN_TURNS_PER_BREATH = 6
+const SPIN_PERIOD_S = BREATH_S / SPIN_TURNS_PER_BREATH
+const SPIN_OMEGA = 360 / SPIN_PERIOD_S
 const SPIN_ACCEL_S = SPIN_PERIOD_S / 2
-const SPIN_MID = SPIN_OMEGA * SPIN_ACCEL_S * 0.7
-/** 減速最小位移 = ω·P·0.7 = 252°;實際取最小 ≥252 且落回 0°(mod 360)的角度。 */
+// 收到 1e-6:`ω·T·0.7` 在 IEEE754 下是 125.99999999999999,直接進 SVG 屬性會變成一長串小數
+// (`values="0;125.99999999999999"`),對畫面無感但讓 DOM 快照與人眼檢查都變難讀。
+const SPIN_MID = Math.round(SPIN_OMEGA * SPIN_ACCEL_S * 0.7 * 1e6) / 1e6
+/** 減速最小位移 = ω·P·0.7 = 252°(ω·P ≡ 360,故不隨轉速漂);實際取最小 ≥252 且落回 0°(mod 360)的角度。 */
 const SPIN_DECEL_MIN = 360 * 0.7
 const FRAME_S = 1 / 60
 /** 靜止空拍(值不變,曲線無意義,填線性)。 */
@@ -89,7 +104,26 @@ export const AGENT_BRAND = {
   purple: 'oklch(0.71 0.15 294)', // = --color-purple-4
 } as const
 
-/* ── 幾何(user 定稿 SVG 逐字;viewBox 0 0 1254 1254,圓心 627) ── */
+/* ── 幾何(user 定稿 SVG 逐字;viewBox 0 0 1254 1254) ── */
+/**
+ * 造型的外輪廓圓心 —— **不是 viewBox 中心(627,627)**。
+ *
+ * 墨色區 = 圓盤(r=505.300)減去內橢圓;圓盤圓心由外弧端點反解(SVG 1.1 §F.6.5)得
+ * (634.671, 604.106),與 viewBox 中心差 **24.145 單位 = 外半徑的 4.78%**。三重確認:端點反解 /
+ * 展平後聯集 bbox [129.4,98.8,1140.0,1109.4](寬高皆 1010.6 = 2R,中心 634.7,604.1)/
+ * 旗標排除法(只有此解讓紫弧掃 168.84° ≤ 180°,符合 large-arc-flag=0)。
+ *
+ * **所有旋轉 / 縮放 / 波源都必須用它**,繞 viewBox 中心會出兩個看得見的瑕疵:
+ * (a) 思考態外緣每圈在 9.209↔10.133px 之間進出 —— 24px 下峰對峰 **0.924px** 的偏心晃動,
+ *     讀起來像動畫沒對正,不是轉速;(b) 招喚態遮罩(r=512)本想留 6.7 單位的等寬餘量,偏心後
+ *     一側超出本體 17.4、對側多切 30.8,光暈起點與本體邊緣之間出現不對稱死環。
+ * 轉心選項比較(2026-09-04 覆算):外輪廓圓心對現況是 Pareto 支配 —— 外緣晃動 24.145 → **0**,
+ * 洞的公轉半徑 65.051 → 43.487(仍是主要運動載體);移到洞心則外緣晃動暴增到 43.487,更糟。
+ */
+const LOGO_CX = 634.671
+const LOGO_CY = 604.106
+/** `LOGO_CX LOGO_CY` 的 SVG 座標對字串(rotate / translate 的中心參數)。 */
+const LOGO_CENTER = `${LOGO_CX} ${LOGO_CY}`
 const D_PURPLE =
   'M 635.006,98.806 A 505.300,505.300 0 0 1 732.146,1099.915 C 566.063,1098.281 425.041,927.384 417.637,778.287 A 349.828,216.206 121.717474 1 0 885.536,308.027 C 847.485,198.771 746.887,109.003 635.006,98.806 Z'
 const D_BLUE =
@@ -209,8 +243,8 @@ function GradientStops({ stops }: { stops: readonly Stop[] }) {
 }
 
 /**
- * 兩段旋轉:啟動加速 = 半圈時間(exit 曲線,位移 126° 使交接速度 = 等速 連續)→ 等速 0.75s/圈
- * (= 一息/4,linear=轉圈慣例)。加速段 begin=indefinite 由掛載觸發;等速段以 syncbase
+ * 兩段旋轉:啟動加速 = 半圈時間(exit 曲線,位移 126° 使交接速度 = 等速 連續)→ 等速 SPIN_PERIOD_S/圈
+ * (= 一息 / SPIN_TURNS_PER_BREATH,linear=轉圈慣例)。加速段 begin=indefinite 由掛載觸發;等速段以 syncbase
  * `<id>.end` 銜接,保證每次進入都從 0° 起步。離開思考另有減速段(見 AgentLogo think-exit)。
  */
 function SpinPair({
@@ -288,14 +322,13 @@ function SpinDecel({
 /** 思考態:色場定錨於畫布 — 漸層以本體旋轉的同構逆轉實現「幾何流過色場」。 */
 function GradientCounterSpin({ id }: { id: string }) {
   return (
-    <SpinPair id={id} attributeName="gradientTransform" from="0 627 627" mid={`-${SPIN_MID} 627 627`} end={`-${SPIN_MID + 360} 627 627`} />
+    <SpinPair id={id} attributeName="gradientTransform" from={`0 ${LOGO_CENTER}`} mid={`-${SPIN_MID} ${LOGO_CENTER}`} end={`-${SPIN_MID + 360} ${LOGO_CENTER}`} />
   )
 }
 
-/** 思考態負空間呼吸:洞橢圓↔正圓,6s(=2 息)一輪,同一條呼吸包絡(吸 35% / 呼至 85% / 靜)。 */
 /**
  * 負空間形變與轉速耦合(2026-09-02 由「6s 呼吸圓化」改為速度耦合:形狀說速度、亮度說呼吸):
- * spinup = 起步加速段 橢圓 → 正圓(同 exit 曲線、同 0.375s,轉到最快時洞正好圓);
+ * spinup = 起步加速段 橢圓 → 正圓(同 exit 曲線、同 SPIN_ACCEL_S,轉到最快時洞正好圓);
  * spindown = 減速段 正圓 → 橢圓(同 DECEL 曲線、同減速時長,停定 0° 時洞正好回定稿形)。
  * 等速期間 fill=freeze 持圓;每次進入狀態由 beginElement 起跑(useBeginAnimationsOnMount)。
  */
@@ -353,7 +386,7 @@ function LogoBody({ ids, morph }: BodyProps) {
 
 /**
  * 吸氣微亮:白色疊層 0→14%→0(吸氣亮、呼氣暗;Apple Watch Breathe「脹=吸氣」同向)。
- * 招喚與思考同一套語言、同一條呼吸包絡(思考與 6s 圓化同拍)。亮度包絡取代透明度包絡:
+ * 招喚與思考同一套語言、同一條呼吸包絡(思考態的亮度自成 2 息一輪;圓化已改為耦合轉速)。亮度包絡取代透明度包絡:
  * 本體不透明度恆 1(白面上變淡=像停用;spec「禁止事項」)。
  */
 function InhaleOverlay({ morph, dur }: { morph?: HoleMorphSpec; dur: string }) {
@@ -543,12 +576,12 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
           y1="1055"
           x2="770"
           y2="110"
-          gradientTransform={isExit && exit ? `rotate(${-exit.angle} 627 627)` : undefined}
+          gradientTransform={isExit && exit ? `rotate(${-exit.angle} ${LOGO_CENTER})` : undefined}
         >
           <GradientStops stops={BLUE_SURFACE} />
           {isThink && !isExit && <GradientCounterSpin id={ids.spinBlue} />}
           {isExit && exit && (
-            <SpinDecel attributeName="gradientTransform" from={-exit.angle} to={-(exit.angle + exit.delta)} dur={exit.dur} center="627 627" />
+            <SpinDecel attributeName="gradientTransform" from={-exit.angle} to={-(exit.angle + exit.delta)} dur={exit.dur} center={LOGO_CENTER} />
           )}
         </linearGradient>
         <linearGradient
@@ -558,12 +591,12 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
           y1="145"
           x2="650"
           y2="1090"
-          gradientTransform={isExit && exit ? `rotate(${-exit.angle} 627 627)` : undefined}
+          gradientTransform={isExit && exit ? `rotate(${-exit.angle} ${LOGO_CENTER})` : undefined}
         >
           <GradientStops stops={PURPLE_SURFACE} />
           {isThink && !isExit && <GradientCounterSpin id={ids.spinPurple} />}
           {isExit && exit && (
-            <SpinDecel attributeName="gradientTransform" from={-exit.angle} to={-(exit.angle + exit.delta)} dur={exit.dur} center="627 627" />
+            <SpinDecel attributeName="gradientTransform" from={-exit.angle} to={-(exit.angle + exit.delta)} dur={exit.dur} center={LOGO_CENTER} />
           )}
         </linearGradient>
             <radialGradient
@@ -591,14 +624,14 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
             </radialGradient>
             <mask id={ids.mask} maskUnits="userSpaceOnUse" x="-600" y="-600" width="2454" height="2454">
               <rect x="-600" y="-600" width="2454" height="2454" fill="#fff" />
-              <circle cx="627" cy="627" r="512" fill="#000" />
+              <circle cx={LOGO_CX} cy={LOGO_CY} r="512" fill="#000" />
             </mask>
           </>
         )}
       </defs>
     )
 
-    // 洞形變耦合轉速:思考起步 spinup(0.375s)、離開思考 spindown(= 減速時長);靜止/招喚不掛。
+    // 洞形變耦合轉速:思考起步 spinup(= SPIN_ACCEL_S)、離開思考 spindown(= 減速時長);靜止/招喚不掛。
     const holeMorph: HoleMorphSpec | undefined = isThink
       ? isExit && exit
         ? { phase: 'spindown', dur: `${exit.dur}s` }
@@ -611,16 +644,16 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
       // 平移座標系內旋轉不得帶圓心(帶了=轉心位移兩倍遠)。結束無減速檔:SMIL loop 無終點,
       // 由狀態切換的 0.15s 淡入承接(spec「AgentLogo」節)。
       content = (
-        <g transform="translate(627 627)">
+        <g transform={`translate(${LOGO_CENTER})`}>
           <g ref={spinRef} transform={isExit && exit ? `rotate(${exit.angle})` : undefined}>
             {isExit && exit ? (
               <SpinDecel key="decel" attributeName="transform" from={exit.angle} to={exit.angle + exit.delta} dur={exit.dur} />
             ) : (
               <SpinPair key="spin" id={ids.spinBody} attributeName="transform" from="0" mid={String(SPIN_MID)} end={String(SPIN_MID + 360)} />
             )}
-            <g transform="translate(-627 -627)">
+            <g transform={`translate(${-LOGO_CX} ${-LOGO_CY})`}>
               {body}
-              <InhaleOverlay morph={holeMorph} dur="6s" />
+              <InhaleOverlay morph={holeMorph} dur={`${BREATH_S * 2}s`} />
             </g>
           </g>
         </g>
@@ -632,7 +665,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
         <>
           {ripple && (
             <g mask={`url(#${ids.mask})`}>
-              <circle cx="627" cy="627" r="560" fill={`url(#${ids.wave})`} opacity="0">
+              <circle cx={LOGO_CX} cy={LOGO_CY} r="560" fill={`url(#${ids.wave})`} opacity="0">
                 <animate
                   attributeName="r"
                   values="560;560;830;830"
@@ -658,7 +691,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
               </circle>
             </g>
           )}
-          <g transform="translate(627 627)">
+          <g transform={`translate(${LOGO_CENTER})`}>
             <g>
               <animateTransform
                 attributeName="transform"
@@ -672,7 +705,7 @@ const AgentLogo = React.forwardRef<SVGSVGElement, AgentLogoProps>(
                 calcMode="spline"
                 keySplines={BREATH_SPLINES}
               />
-              <g transform="translate(-627 -627)">
+              <g transform={`translate(${-LOGO_CX} ${-LOGO_CY})`}>
                 {body}
                 <InhaleOverlay dur={BREATH_DUR} />
               </g>
