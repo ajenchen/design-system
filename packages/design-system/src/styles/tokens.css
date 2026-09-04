@@ -42,6 +42,7 @@
    root-cause fix: src/globals.css 已 import for DS internal, 但 consumer-facing
    tokens.css aggregator 必須也包含, 不然 consumer 拿不到 → 跑版。 */
 @import './../components/DataTable/data-table.css';
+@import './../components/Tooltip/tooltip.css';
 @import './../patterns/header-canonical/header-canonical.css';
 
 /* Base layer — body typography(font-family var(--font-sans))+ reset + focus + button cursor。

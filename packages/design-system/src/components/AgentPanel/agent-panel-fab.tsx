@@ -383,7 +383,13 @@ function useSnapDrag(opts: {
       if (d.cancelled) return
       if (!d.moved && Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY) < DRAG_THRESHOLD) return
       d.moved = true
-      const p: Point = { x: ev.clientX - originX, y: ev.clientY - originY }
+      // 指標的 x 夾在舞台內再判磁吸區(2026-09-04 user 抓到):
+      // 右緣帶的矩形右界就是舞台右緣,而指標**可以**跑到視窗外(拖曳有 pointer capture,
+      // `clientX` 不受視窗邊界限制)。夾之前,「拖過頭」= 落在帶的右邊 = 判定不在帶內 → 放開飛回家,
+      // 但使用者的心智是「我已經推到最右邊了,而且更右邊根本沒有東西」。
+      // 夾在舞台內之後,「超出右緣」讀作「就在右緣」,與那個心智一致;往左拖遠仍然正常離開帶
+      // (夾的是上界,不是把所有位置都拉進來)。y 不夾 —— 帶的上下確實有合法的「不在帶內」區域。
+      const p: Point = { x: clamp(ev.clientX - originX, 0, stage.w), y: ev.clientY - originY }
       d.zone = findZone(p, stage, d.zone)
       if (d.zone) {
         // 所見即所得:預覽就畫在放開會落的位置(貼右緣、指標高度)。
