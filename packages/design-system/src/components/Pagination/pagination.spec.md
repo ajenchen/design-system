@@ -88,6 +88,48 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 
 ---
 
+## 窄容器階梯(RWD,2026-09-04)
+
+**量的是容器不是視窗。** 表格被側欄擠窄時,視窗可能還有 1440px —— Tailwind 的 `sm:`/`lg:` 與
+Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情境一律判「寬螢幕」不會動。
+[Carbon 是唯一用 container query 的一家](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/pagination/_pagination.scss#L43)
+(`container-type: inline-size` + `@container pagination (max-width: 42rem)`),量測語意對。
+我們用 `ResizeObserver` 而不是 CSS container query,因為第 2 階(改格位數)本來就得在 JS 做,
+用兩套機制守同一條階梯只會讓它們有機會不同步。
+
+**每一階砍掉的都不是導覽模型本身**,所以數字頁碼一路活到最窄 —— 這條線是 2026-09-04 user 定的
+(「rwd 確實要保持固定的瀏覽模式」);Carbon 窄式砍掉數字只留 ◀▶、Ant `simple` 把數字換成
+`n / N`,兩者都會在窄寬下切換成本規格「樣式派系」段明文排除的另一種導覽模式,故不採。
+
+| 階 | 砍掉什麼 | 性質 |
+|---|---|---|
+| 0 | — | 完整形態 |
+| 1 | 「N 筆/頁」選單 | **設定**,不是導覽 |
+| 2 | 格位 7 → 5(`sibling` 1 → 0) | **同一模式,視窗變小** |
+| 3 | 「第 x–y 筆,共 N 筆」 | opt-in **資訊** |
+| 再窄 | — | 一列不換行不截斷,整條橫向可捲 |
+
+- **資訊文字永遠不超過一行**(user 要求):`whitespace-nowrap` + `shrink-0`;階梯在它需要換行之前
+  就先砍別的,砍到最後是整段拿掉,不會有半行。沒有這兩個 class 時實測 440px 容器下分頁列高度
+  由 28px 爆成 147px(逐字斷行)。
+- **門檻不寫死**:總筆數變六位數、頁數變四位數時任何固定 px 都會錯。改成量各階的自然寬
+  (子元素寬總和 + gap;子元素都 `shrink-0`、文字 `nowrap`,所以該值與容器寬無關),記進快取後
+  挑最高的可容納階;快取只增不減 → 收斂,不會在兩階間來回跳。
+- **最後一階不加 scroll arrow**:`horizontal-overflow` 模組規定 overflow affordance 是 text iconOnly 的
+  ChevronLeft/Right —— 那跟分頁自己的上下頁箭頭長得一模一樣,同一列會分不清「捲動」還是「翻頁」。
+  代價是最後一階多出一條原生捲軸的高度(實測 28px → 43px),只在 ~200px 以下才會遇到。
+- **格位是既有參數,不是新機制**:`boundary` / `sibling` 本來就是摺疊演算法的入參;
+  [MUI `usePagination` 的 `boundaryCount=1` / `siblingCount=1`](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/usePagination/usePagination.js#L7)
+  與 [Primer 的 `marginPageCount=1` / `surroundingPageCount=2`](https://github.com/primer/react/blob/main/packages/react/src/Pagination/Pagination.tsx#L128)
+  都把這兩顆旋鈕開成公開 API,只是交給開發者手填。**「隨容器寬自動轉」沒有現成一家在做,是我們的組合**(M22 誠實標註)。
+- **機械閘** = `scripts/pagination-narrow-ladder-invariant.mjs`(`npm run test:pagination-invariants`),
+  載入「窄容器階梯」story 的五個固定寬度容器 —— 各自在掛載時由 layout effect 收斂,不依賴
+  ResizeObserver(背景分頁不送 RO callback,靠 RO 的驗證在很多環境會空轉)。
+  斷言:P1 資訊文字 ≤ 1 行(量 `rect.height / lineHeight`,不是查 class)/ P2 階梯單調不回頭 /
+  P3 每一階都還是數字頁碼 / P4 五個容器至少走過 3 個不同的階(否則本閘空轉)/ P5 隔一個 rAF 再量結果相同。
+
+---
+
 ## 邊界案例
 
 | 情境 | 行為 |
