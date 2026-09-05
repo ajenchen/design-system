@@ -1204,27 +1204,31 @@ scrollUxReport.forEach((r, i) => {
  * 手動 dispatch,並等兩幀讓 React 的 onScroll 跑完。
  */
 const syncReport = await page.evaluate(async () => {
-  // rAF 在被隱藏/節流的頁籤裡不會觸發,所以跟計時器賽跑:哪個先到算哪個。
-  // (只用 rAF 會在隱藏頁籤裡永遠掛住;只用計時器則在可見頁籤裡可能量在重繪之前。)
-  const frames = () => new Promise((r) => {
-    let done = false
-    const fin = () => { if (!done) { done = true; r() } }
-    requestAnimationFrame(() => requestAnimationFrame(fin))
-    setTimeout(fin, 120)
-  })
-  // **只有在瀏覽器沒有自己送 scroll 事件時才補送一顆**(2026-09-05 CI 紅燈修正)。
-  // 隱藏頁籤不派發 scroll 事件,所以本檔原本一律手動補送;但 CI 的頁籤是可見的,瀏覽器**會**送 ——
-  // 兩顆疊起來就變成同一次寫入產生兩個事件。元件的防回彈守衛用「一次性紀錄」擋第一顆(正確),
-  // 第二顆就沒有紀錄可比對,於是把 header 被夾過的值推回 center,造出一個現實中不存在的失敗
-  // (CI job 101317387250:I19b center 382 應 392)。真實瀏覽器一次寫入只會有一個事件。
-  const kick = async (el) => {
+  const settle = (ms = 200) => new Promise((r) => setTimeout(r, ms))
+  /**
+   * 寫一個捲動位置,然後等瀏覽器把整條事件鏈跑完。
+   *
+   * **絕不對「下游」元素補送 scroll 事件**(2026-09-05 兩次 CI 紅燈的真正原因,job 101317387250 /
+   * 101320337631 皆 `I19b center 382 應 392`):
+   * 寫 center 之後,元件會把值寫進 header,瀏覽器**自己**會為 header 送一顆 scroll,
+   * 防回彈紀錄在那一顆就被正確吞掉並清除。此時若閘再對 header 補送第二顆,它找不到紀錄,
+   * 就會把 header 被夾過的值推回 center —— 那是閘自己製造出來的失敗,現實中不存在
+   * (真實瀏覽器一次寫入只會有一顆事件)。
+   * 補送只保留給「連被寫入的那個元素自己都沒收到事件」的環境(隱藏頁籤不派發 scroll),
+   * 而且只補在被寫入的那個元素上。
+   */
+  const write = async (el, axis, value) => {
     let saw = false
     const mark = () => { saw = true }
-    el.addEventListener('scroll', mark, { once: true })
-    await frames()
-    if (!saw) el.dispatchEvent(new Event('scroll'))
+    el.addEventListener('scroll', mark)
+    const before = axis === 'x' ? el.scrollLeft : el.scrollTop
+    if (axis === 'x') el.scrollLeft = value
+    else el.scrollTop = value
+    const after = axis === 'x' ? el.scrollLeft : el.scrollTop
+    await settle()
+    if (!saw && after !== before) el.dispatchEvent(new Event('scroll'))
     el.removeEventListener('scroll', mark)
-    await frames()
+    await settle()
   }
   const out = []
   for (const cb of document.querySelectorAll('[data-datatable-hscroll]')) {
@@ -1234,30 +1238,32 @@ const syncReport = await page.evaluate(async () => {
     const header = cb.closest('[role="table"]')?.querySelector('[data-datatable-header-panel="center"]')
     const r = { canX: cb.scrollWidth > cb.clientWidth, canY: cb.scrollHeight > cb.clientHeight }
     if (r.canX && header) {
-      cb.scrollLeft = 0; await kick(cb)
-      header.scrollLeft = 200; await kick(header)
+      await write(cb, 'x', 0)
+      // 這一顆是「使用者捲 header」——header 才是被寫入的元素,補送(若需要)也只補在它身上。
+      await write(header, 'x', 200)
       r.headerRedirect = { center: cb.scrollLeft, header: header.scrollLeft }
       const max = cb.scrollWidth - cb.clientWidth
-      cb.scrollLeft = max; await kick(cb); await kick(header)
+      // 寫完 center 就結束:header 的事件由元件寫入時瀏覽器自己送,閘不得再補一顆(見 write 註解)。
+      await write(cb, 'x', max)
       r.noBounce = { max, center: cb.scrollLeft, header: header.scrollLeft }
       // 把 header 的可捲範圍縮小 40px(縮它的內容盒,不碰 body,才不會被補償邏輯抵消):
       // center 捲到 max → header 被夾在 max−40 → 那一筆事件值 = 被夾後的值 → 必須被認出並吞掉,center 不得被推回
       const inner = header.firstElementChild
       const prevMin = inner.style.minWidth
       inner.style.minWidth = `${inner.getBoundingClientRect().width - 40}px`
-      cb.scrollLeft = 0; await kick(cb)
-      cb.scrollLeft = max; await kick(cb); await kick(header)
-      r.mismatch = { center: cb.scrollLeft, expected: max, header: header.scrollLeft }
+      await write(cb, 'x', 0)
+      await write(cb, 'x', max)
+      r.mismatch = { center: cb.scrollLeft, expected: max, header: header.scrollLeft,
+        headerRange: header.scrollWidth - header.clientWidth }
       inner.style.minWidth = prevMin
-      cb.scrollLeft = 0; await kick(cb)
+      await write(cb, 'x', 0)
     }
     if (r.canY && left) {
-      cb.scrollTop = 0; await kick(cb)
-      left.scrollTop = 300; await kick(left)
-      // 導回後 center 自己的 scroll 事件由瀏覽器派發(隱藏頁籤不派發,故手動補一次),右側才會跟上
-      await kick(cb)
+      await write(cb, 'y', 0)
+      // 使用者捲左釘選欄 → 元件導回 center → center 的事件由瀏覽器自己送,右側跟著校準;閘不補送。
+      await write(left, 'y', 300)
       r.leftRedirect = { center: cb.scrollTop, left: left.scrollTop, right: right ? right.scrollTop : null }
-      cb.scrollTop = 0; await kick(cb)
+      await write(cb, 'y', 0)
     }
     out.push(r)
   }
@@ -1274,7 +1280,7 @@ syncReport.forEach((r, i) => {
       `max ${r.noBounce.max}:center ${r.noBounce.center} / header ${r.noBounce.header}`)
     record('I19b', `表 ${i + 1}:header 可捲範圍被縮小時,被夾過的那一筆被吞掉、center 不被推回(缺陷 γ)`,
       r.mismatch.center === r.mismatch.expected,
-      `center ${r.mismatch.center}(應停在 ${r.mismatch.expected};header 被夾在 ${r.mismatch.header})`)
+      `center ${r.mismatch.center}(應停在 ${r.mismatch.expected};header 被夾在 ${r.mismatch.header},其可捲範圍 ${r.mismatch.headerRange})`)
   } else {
     console.log(`⏭  I18a/I19 表 ${i + 1} — center 沒有水平溢出,不適用`)
   }
