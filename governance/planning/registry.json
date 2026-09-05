@@ -247,6 +247,12 @@
       "status": "reference",
       "executable": false,
       "reason": "Backlog by user directive (2026-08-11): complete ratified agent-panel spec archived with full context; must not modify DS canonical until user schedules implementation."
+    },
+    {
+      "path": "governance/planning/2026-09-04-agent-fab-hit-area-brief.md",
+      "status": "reference",
+      "executable": false,
+      "reason": "Second-opinion brief for the AgentFab hit-area report (2026-09-04): states the measured facts and the four questions to debate; carries no plan of record and must not be executed as one."
     }
   ]
 }

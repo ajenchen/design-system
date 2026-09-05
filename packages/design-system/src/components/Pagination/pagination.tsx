@@ -21,26 +21,87 @@ import { useControllable } from '@/design-system/hooks/use-controllable'
 // 最大格位 = 首尾各 1 + 當前頁左右各 1 + 當前頁 + 2 顆 ellipsis = 7,超過即摺疊。
 const BOUNDARY_COUNT = 1
 const SIBLING_COUNT = 1
+/**
+ * 窄容器時把 sibling 轉成 0 —— 格位 7 → 5(`1 … [5] … 12`)。
+ * 這**不是新機制,是轉既有參數**:`boundary` / `sibling` 本來就是摺疊演算法的入參,
+ * MUI(`usePagination` 的 `boundaryCount=1` / `siblingCount=1`)與 Primer
+ * (`marginPageCount=1` / `surroundingPageCount=2`)都把這兩顆旋鈕開成公開 API,
+ * 只是交給開發者手填。**「隨容器寬自動轉」是我們的組合,沒有現成一家這樣做**(M22 誠實標註)。
+ * 關鍵是它**不改變瀏覽模式**:一樣是數字頁碼派,只是視窗變小 —— 這條線是 2026-09-04 user 定的。
+ */
+const SIBLING_COUNT_NARROW = 0
 
 type PaginationSlot = number | 'ellipsis-start' | 'ellipsis-end'
 
+/**
+ * 窄容器階梯:每一階砍掉的都**不是導覽模型本身**,所以數字頁碼一路活到最窄。
+ *
+ *   0 full         第 1–20 筆,共 128 筆   ◀ 1 … 4 [5] 6 … 12 ▶   [20 筆/頁 ▾]
+ *   1 no-sizer     ── 收「每頁筆數」(是**設定**,不是導覽)
+ *   2 compact      ── 格位 7 → 5(**同一模式,視窗變小**;轉 sibling 參數)
+ *   3 pages-only   ── 收「第 x–y 筆」(是 opt-in **資訊**)
+ *   (再窄)         ── 一列不換行不截斷,整條橫向可捲
+ *
+ * **量的是容器不是視窗**(ResizeObserver,對齊 Carbon 用 container query 的量測語意):
+ * 視窗可能是 1440px 而表格被側欄擠成 300px,`sm:`/`lg:` 這類視窗斷點在那個情境一律判「寬螢幕」。
+ * 用 ResizeObserver 而不是 CSS container query,是因為第 2 階(改格位數)本來就得在 JS 做,
+ * 用兩套機制守同一條階梯只會讓它們有機會不同步。
+ *
+ * **門檻不寫死**:總筆數變六位數、頁數變四位數時任何固定 px 都會錯。改成量各階的自然寬
+ * (子元素寬總和 + gap —— 子元素都 `shrink-0`、文字 `nowrap`,所以那個值與容器寬無關),
+ * 記進 `needRef` 再挑最高的可容納階。`Math.max` 只增不減 → 收斂,不會在兩階之間來回跳。
+ */
+const NARROW_TIERS = 4 // 0 full / 1 no-sizer / 2 compact-pages / 3 pages-only
+
+function useNarrowTier(navRef: React.RefObject<HTMLElement>) {
+  const [tier, setTier] = React.useState(0)
+  const needRef = React.useRef<number[]>([])
+  const tierRef = React.useRef(tier)
+  tierRef.current = tier
+
+  const measure = React.useCallback(() => {
+    const el = navRef.current
+    if (!el) return
+    const kids = Array.from(el.children) as HTMLElement[]
+    if (kids.length === 0) return
+    const gap = parseFloat(getComputedStyle(el).columnGap || '0') || 0
+    const need = kids.reduce((a, k) => a + k.getBoundingClientRect().width, 0) + gap * (kids.length - 1)
+    const avail = el.clientWidth
+    const t = tierRef.current
+    needRef.current[t] = Math.max(needRef.current[t] ?? 0, need)
+    if (need > avail + 0.5 && t < NARROW_TIERS - 1) setTier(t + 1)
+    else if (t > 0 && (needRef.current[t - 1] ?? Infinity) <= avail) setTier(t - 1)
+  }, [navRef])
+
+  React.useLayoutEffect(() => { measure() })
+  React.useEffect(() => {
+    const el = navRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => measure())
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [navRef, measure])
+
+  return tier
+}
+
 // 摺疊演算法照 MUI usePagination(1/1 配置);兩顆 ellipsis 用 distinct 穩定 key
 // (Breadcrumb Math.random key remount 前車之鑑,breadcrumb.tsx:208-210)。
-function getPaginationRange(page: number, totalPages: number): PaginationSlot[] {
+function getPaginationRange(page: number, totalPages: number, siblingCount: number): PaginationSlot[] {
   const range = (start: number, end: number) =>
     Array.from({ length: end - start + 1 }, (_, i) => start + i)
 
   // 全部放得下(≤ 7 頁)→ 不摺疊
-  if (totalPages <= BOUNDARY_COUNT * 2 + SIBLING_COUNT * 2 + 3) return range(1, totalPages)
+  if (totalPages <= BOUNDARY_COUNT * 2 + siblingCount * 2 + 3) return range(1, totalPages)
 
   const startPages = range(1, BOUNDARY_COUNT)
   const endPages = range(totalPages - BOUNDARY_COUNT + 1, totalPages)
   const siblingsStart = Math.max(
-    Math.min(page - SIBLING_COUNT, totalPages - BOUNDARY_COUNT - SIBLING_COUNT * 2 - 1),
+    Math.min(page - siblingCount, totalPages - BOUNDARY_COUNT - siblingCount * 2 - 1),
     BOUNDARY_COUNT + 2,
   )
   const siblingsEnd = Math.min(
-    Math.max(page + SIBLING_COUNT, BOUNDARY_COUNT + SIBLING_COUNT * 2 + 2),
+    Math.max(page + siblingCount, BOUNDARY_COUNT + siblingCount * 2 + 2),
     totalPages - BOUNDARY_COUNT - 1,
   )
 
@@ -121,6 +182,15 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
       onChange: onPageChange,
     })
 
+    // 階梯量測掛在 nav 自己身上(容器,不是視窗);與 consumer 傳進來的 ref 合流。
+    const navRef = React.useRef<HTMLElement | null>(null)
+    const setNavRef = React.useCallback((node: HTMLElement | null) => {
+      navRef.current = node
+      if (typeof ref === 'function') ref(node as HTMLElement)
+      else if (ref) (ref as React.MutableRefObject<HTMLElement | null>).current = node
+    }, [ref])
+    const tier = useNarrowTier(navRef)
+
     // 無資料 → 不渲染(空狀態由 Empty / 列表層表達,詳 spec 邊界案例)
     if (total <= 0) return null
 
@@ -129,9 +199,12 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
     const safePageSize = Math.max(1, Math.floor(pageSize))
     const totalPages = Math.max(1, Math.ceil(total / safePageSize))
     const current = Math.min(Math.max(page, 1), totalPages)
-    const slots = getPaginationRange(current, totalPages)
-    const hasSizeChanger = !!pageSizeOptions && pageSizeOptions.length > 0
-    const hasExtras = showTotal || hasSizeChanger
+    const hasSizeChangerAtFull = !!pageSizeOptions && pageSizeOptions.length > 0
+    // 階梯:0 全開 / 1 收每頁筆數 / 2 格位 7→5 / 3 再收資訊文字
+    const hasSizeChanger = hasSizeChangerAtFull && tier < 1
+    const showTotalNow = showTotal && tier < 3
+    const slots = getPaginationRange(current, totalPages, tier < 2 ? SIBLING_COUNT : SIBLING_COUNT_NARROW)
+    const hasExtras = showTotal || hasSizeChangerAtFull
     const rangeStart = (current - 1) * safePageSize + 1
     const rangeEnd = Math.min(current * safePageSize, total)
     // 當前 pageSize 不在 options 內時補進清單頭(否則 Select trigger 顯示裸值失去「N 筆/頁」文案)
@@ -198,10 +271,14 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
 
     return (
       <nav
-        ref={ref}
+        ref={setNavRef}
         aria-label="Pagination"
         className={cn(
-          'flex items-center',
+          // `overflow-x-auto` 是階梯走完之後的最後一道:砍無可砍時整條橫向可捲,
+          // 不換行也不截斷(同 `tabs.spec.md` 對「整列放不下」的既有 canonical:走 overflow,
+          // 不是截斷單一 item)。**不加 scroll arrow** —— 那組 ChevronLeft/Right 跟分頁自己的
+          // 上下頁箭頭長得一模一樣,擺在同一列會分不清「捲動」還是「翻頁」。
+          'flex items-center overflow-x-auto',
           // 完整形態 =「資訊左、操作右」(Ant 源碼結構:total 文字最左 li、size changer 最右 li)
           hasExtras && 'w-full justify-between gap-[var(--layout-space-tight)]',
           className,
@@ -211,11 +288,14 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
         {hasExtras && (
           // i18n-allow: DS default(range 格式 = Ant/MUI/Carbon 共識);showTotal=false 時渲染
           // 空 span 佔 justify-between 左位,不含 stray 文字節點
-          <span className="text-body text-fg-secondary">
-            {showTotal ? `第 ${rangeStart}–${rangeEnd} 筆,共 ${total} 筆` : null}
+          // `whitespace-nowrap` + `shrink-0`:資訊文字**永遠不會超過一行**(2026-09-04 user 要求)。
+          // 沒有這兩個,flex 會把它壓到剩一個字寬再逐字斷行 —— 實測 440px 容器下分頁列高度
+          // 從 28px 爆成 147px。階梯在它需要換行之前就先砍別的,砍到最後是整段拿掉,不會有半行。
+          <span className="text-body text-fg-secondary shrink-0 whitespace-nowrap">
+            {showTotalNow ? `第 ${rangeStart}–${rangeEnd} 筆,共 ${total} 筆` : null}
           </span>
         )}
-        <div className="flex items-center gap-[var(--layout-space-tight)]">
+        <div className="flex shrink-0 items-center gap-[var(--layout-space-tight)]">
           {pageList}
           {hasSizeChanger && (
             <Select

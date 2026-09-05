@@ -480,6 +480,13 @@
             "runtime": "bash",
             "outputMode": "governance-context",
             "transcript": "stable-required"
+          },
+          {
+            "kind": "hook",
+            "hook": "record_release_consent.sh",
+            "runtime": "bash",
+            "outputMode": "governance-context",
+            "transcript": "optional"
           }
         ]
       }

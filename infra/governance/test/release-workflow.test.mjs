@@ -34,6 +34,14 @@ test('canonical release workflow validates and exposes exactly five AUTO steps',
   assert.deepEqual(workflow.steps.map(step => step.id), ['pr-checks', 'merge', 'publish', 'readback', 'consumer'])
   assert.ok(workflow.steps.every(step => step.authority === 'AUTO'))
   assert.deepEqual(workflow.steps[0].completion, ['required-ci-check-green', 'conversation-resolved'])
+  // 2026-09-02 user directive:合併前必有 user 對當前 PR head 的發版同意 receipt(預覽 → user 說「發版」→ 才合併)。
+  assert.equal(workflow.steps[1].gate, 'user-release-consent')
+  assert.equal(workflow.steps.filter(step => 'gate' in step).length, 1, 'only the merge step carries the human consent gate')
+  assert.deepEqual(
+    { required: workflow.releaseConsent.required, gateBefore: workflow.releaseConsent.gateBefore, binding: workflow.releaseConsent.binding },
+    { required: true, gateBefore: 'merge', binding: 'pull-request-head-sha' },
+  )
+  assert.ok(workflow.releaseConsent.consentPhrases.includes('發版'))
 })
 
 test('decision authority has one ASK class and only four resumable human runtime boundaries', () => {
@@ -108,10 +116,11 @@ test('live readbacks alone support safe resume without local candidate receipts'
   })
   assert.deepEqual(complete.map(step => step.status), ['complete', 'complete', 'complete', 'complete', 'complete'])
 
-  const beforeMerge = buildFiveStepStatus(workflow, {
+  const beforeMergeObservation = {
     onProtectedMain: false,
     pullRequest: {
       state: 'OPEN',
+      headRefOid: 'a'.repeat(40),
       requiredChecks: [{ bucket: 'pass', state: 'SUCCESS' }],
       statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }],
     },
@@ -119,6 +128,16 @@ test('live readbacks alone support safe resume without local candidate receipts'
     publishRun: null,
     npmPackages: workflow.automation.packages.map(name => ({ name, exactVersion: false })),
     consumers: workflow.automation.consumers.map(target => ({ ...target, exactVersion: false })),
+  }
+  const awaitingConsent = buildFiveStepStatus(workflow, { ...beforeMergeObservation, releaseConsent: null })
+  assert.deepEqual(
+    awaitingConsent.map(step => step.status),
+    ['complete', 'awaiting-consent', 'pending', 'blocked', 'blocked'],
+    'green required checks alone must stop at the preview stage until the user says 發版 for this PR head',
+  )
+  const beforeMerge = buildFiveStepStatus(workflow, {
+    ...beforeMergeObservation,
+    releaseConsent: { headSha: 'a'.repeat(40), quote: '發版', source: 'user-prompt-hook' },
   })
   assert.deepEqual(
     beforeMerge.map(step => step.status),

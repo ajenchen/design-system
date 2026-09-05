@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-02T07:42:29.145Z"
+    "generatedAt": "2026-09-04T13:32:46.684Z"
   },
   "components": {
     "accordion": {
@@ -64,20 +64,26 @@
       "tiers": {
         "展示": [
           "design-system-components-agentpanel-展示--task-assistant",
+          "design-system-components-agentpanel-展示--attachments",
+          "design-system-components-agentpanel-展示--multiple-replies",
           "design-system-components-agentpanel-展示--history-open",
           "design-system-components-agentpanel-展示--new-conversation",
           "design-system-components-agentpanel-展示--decision-card-open",
+          "design-system-components-agentpanel-展示--title-truncated",
           "design-system-components-agentpanel-展示--decision-card-single",
           "design-system-components-agentpanel-展示--decision-summary-in-flow",
           "design-system-components-agentpanel-展示--resizable-width",
-          "design-system-components-agentpanel-展示--fab-panel-toggle",
+          "design-system-components-agentpanel-展示--fab",
           "design-system-components-agentpanel-展示--logo-states",
-          "design-system-components-agentpanel-展示--fab-states"
+          "design-system-components-agentpanel-展示--logo-think-stop"
         ],
         "設計規格": [
           "design-system-components-agentpanel-設計規格--overview",
-          "design-system-components-agentpanel-設計規格--logo-size-ladder",
+          "design-system-components-agentpanel-設計規格--inspector",
+          "design-system-components-agentpanel-設計規格--size-matrix",
+          "design-system-components-agentpanel-設計規格--color-matrix",
           "design-system-components-agentpanel-設計規格--state-behavior",
+          "design-system-components-agentpanel-設計規格--fab-placements",
           "design-system-components-agentpanel-設計規格--accessibility"
         ],
         "設計原則": [
@@ -1122,6 +1128,7 @@
         "展示": [
           "design-system-components-pagination-展示--default",
           "design-system-components-pagination-展示--full-bar",
+          "design-system-components-pagination-展示--narrow-ladder",
           "design-system-components-pagination-展示--many-pages",
           "design-system-components-pagination-展示--states"
         ],
@@ -1787,5 +1794,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 963
+  "totalStories": 970
 }

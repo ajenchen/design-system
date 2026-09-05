@@ -44,7 +44,8 @@
       "completion": [
         "protected-main-merge",
         "protected-main-readback"
-      ]
+      ],
+      "gate": "user-release-consent"
     },
     {
       "id": "publish",
@@ -152,6 +153,49 @@
           "producerHead": "pull-request-head"
         }
       }
+    ],
+    "preview": {
+      "provider": "netlify",
+      "site": "ajenchen-design-system",
+      "pullRequestPattern": "https://deploy-preview-{number}--{site}.netlify.app/",
+      "branchPattern": "https://{branchSlug}--{site}.netlify.app/"
+    }
+  },
+  "releaseConsent": {
+    "required": true,
+    "gateBefore": "merge",
+    "receiptDir": ".git/governance-runtime/release-consent",
+    "binding": "pull-request-head-sha",
+    "userVerbatim": "按照我們規定的工作流程應該是你要先把我們討論的東西部署到 netlify,等我確認後認為都沒問題,主動說要發版,你才會 push 到 GitHub main 同時更新 GitHub 上的 storybook 並發版到 NPM(2026-09-02)",
+    "consentPhrases": [
+      "發版",
+      "發佈",
+      "發布",
+      "可以合併",
+      "推到 main",
+      "push to main",
+      "release it",
+      "ship it",
+      "publish it"
+    ],
+    "questionMarkers": [
+      "?",
+      "？",
+      "是否",
+      "要不要",
+      "可以嗎",
+      "嗎",
+      "該不該"
+    ],
+    "denialMarkers": [
+      "不要發版",
+      "先不要",
+      "不要發",
+      "還不要",
+      "暫停發版",
+      "don't release",
+      "do not release",
+      "hold"
     ]
   }
 }

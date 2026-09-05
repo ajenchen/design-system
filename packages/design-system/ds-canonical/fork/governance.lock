@@ -359,7 +359,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
-      "sha256": "0598ec2f7b2975f5948072bc9fdb7f24682f3e0abed3cca36696dd869dfc0ffc",
+      "sha256": "31192bbc68856544a2060ca8aadb9e47116c345f39a8787febd6ef56249a08ec",
       "source": "scripts/lib/governance-dependency-bootstrap.mjs",
       "classification": null,
       "destination": "scripts/lib/governance-dependency-bootstrap.mjs"
@@ -919,7 +919,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "426802765b375525a59dc02e56a0ad5fbd73fe7d729cf23739065433b89aa6d2",
+      "sha256": "dfa62c957ef978724a3717a13d108a2d26d975187993c0210cba7a07d902629d",
       "source": null,
       "classification": null,
       "destination": null

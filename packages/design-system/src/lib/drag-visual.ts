@@ -13,7 +13,9 @@
  * - **Drop indicator**(目標位置藍細線):2px(`h-0.5` / `w-0.5`)`bg-primary` absolute line:
  *   - **Row context**(TreeView / table row drag):水平線 在 target row 的 top(before)/ bottom(after)
  *   - **Column context**(table column reorder):垂直線 在 target column 的 left(before)/ right(after)
- * - **Inside-drop highlight**(nested target,如拖到 TreeView 子層 / Table nested row 內):整 row `bg-primary-subtle`
+ * - **Inside-drop highlight**(nested target,如拖到 TreeView 子層 / Table nested row 內):整 row `bg-drop-target`
+ *   (2026-09-03:由 `bg-primary-subtle` 改為 DS「可放下的區域」配對 —— 它蓋在該列自己的內容之上,依 color.spec
+ *   「Drop target」段必須半透明;`--primary-subtle` 是元件自己的不透明淡底,語意不同)
  *
  * ## Why centralize
  *
@@ -24,7 +26,7 @@
  * ## Token usage
  *
  * - `bg-primary`:semantic state token(`--primary`)— 跟 focus state ring color 同 source(M23 一致)
- * - `bg-primary-subtle`:semantic primary subtle(`--primary-subtle`)— inside-drop dim background
+ * - `bg-drop-target`:semantic 可放下的區域底(`--drop-target` = `--primary` @ 15%,兩模式皆半透明)— inside-drop highlight
  * - `h-0.5` / `w-0.5`:Tailwind size token = 2px(對齊 hairline divider thickness 概念)
  * - `opacity-disabled`:DS token var(--opacity-disabled)= 0.45(半透但仍清楚看到 outline;見下方 v14.5.2 note)
  */
@@ -103,8 +105,10 @@ export const dropIndicatorColumn = {
 
 /**
  * Nested 拖入 highlight(TreeView / nested rows 拖到子層)。整 row 加 background。
+ * 消費 DS「可放下的區域」配對的底色(`--drop-target`):它是覆蓋在該列文字之上的區域提示,
+ * 依 color.spec「Drop target」段必須半透明(VS Code `list.dropBackground` 同款)。
  */
-export const dropIndicatorInside = 'bg-primary-subtle' as const
+export const dropIndicatorInside = 'bg-drop-target' as const
 
 // ── Cursor classes ────────────────────────────────────────────────────────
 

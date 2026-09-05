@@ -94,7 +94,7 @@ sm 與 md 視覺相同（純命名 mapping，對齊 Field family）。
 
 - **目的**:單行內容時,Textarea 總高 **精確等於**同 size 的 Input(sm/md/lg = 28/32/36px),並排不再高低差。舊的固定 `py-2` 讓單行 Textarea 是 39/39/42px(比 Input 高 11/7/6px)。
 - **為何有 `− 1px`**:Textarea 兩態都在 border-box 內帶 1px 邊框(edit `border-border` / view `border-transparent`),少了這一項三個 size 都會**各高 2px**。同一常數對三 size 與 lg density 皆成立,無 per-size 特例。
-- **為何不與 `--table-cell-py` 同式**:DataTable cell 的 padding 載體是**無邊框**的 cell(且 edit 以 `!h-full` 釘高),故其公式合法地不帶 `− 1px`;兩式並存、各有載體,不可互抄。
+- **與 `--table-cell-py` 同樣帶 `− 1px`**(2026-09-04 更正):本句原寫「DataTable cell 的 padding 載體是**無邊框**的 cell,故其公式合法地不帶 `− 1px`」——**載體無邊框 ≠ 內容無邊框**,而那正是缺陷的根。DataTable cell 裡的內容載體(Field / Textarea 的 `view × naked`)自帶 1px 透明上下框(read↔edit 零跳的幾何佔位),所以實際內容高是 `1lh + 2px`。固定行高把這 2px 吸收掉(高度被 `h-table-row-*` 釘死 + `overflow-hidden`),**自動行高卻是由內容反推高度**,2px 就直接進了總高(實測 md 單行 42 而非 token 40)。`--table-cell-py` 已於同日補上 `− 1px`,兩式現在同型;兩者仍各有載體、各自宣告,不可互抄。
 - **機械鎖**:`scripts/inline-edit-view-geometry-invariant.mjs` 逐 size 驗「Textarea edit py == fieldViewGeometry 多行 view py == 該 token」,並驗 token 公式本身未漂移。
 - **Rationale**:Textarea 是**多行輸入**,高度由內容 / rows 決定是本質特徵——若硬綁 field-height 只有單行高度,multi-line 場景無法表達。字體 tier 仍對齊 Field family(sm/md 共 text-body、lg 切 text-body-lg),確保並排單行 Input 的視覺 rhythm 一致
 - **契約邊界**:Textarea 的 container 高度獨立於 field-height，只繼承字體 / padding / border token；rows 與內容高度才是多行 control 的垂直尺寸來源

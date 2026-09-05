@@ -368,7 +368,17 @@ function assertRemediatedFinding(name, finding) {
     )
     return
   }
-  invariant(false, `npm audit contains an unremediated high/moderate finding:${name}`)
+  // 帶出實際形狀(2026-09-04):只印名字的話,判斷「該修版本、該擴 overlay、還是誤報」需要在
+  // 本機重建一次同樣的樹才看得到 range 與路徑,而 CI 與本機的樹常常不一樣(fast-uri 就是這樣:
+  // 同一個 commit,`Verify` 5 筆、authority candidate 6 筆,多的那筆只有 CI 看得到)。
+  // 這些欄位是版本範圍與 node_modules 路徑,不含憑證。
+  const shape = [
+    `severity=${finding.severity}`,
+    `range=${String(finding.range).slice(0, 80)}`,
+    `nodes=${(Array.isArray(finding.nodes) ? finding.nodes : []).slice(0, 4).join('|') || '<none>'}`,
+    `via=${(Array.isArray(finding.via) ? finding.via : []).map((v) => (typeof v === 'string' ? v : v?.url)).filter(Boolean).slice(0, 4).join('|') || '<none>'}`,
+  ].join(' ')
+  invariant(false, `npm audit contains an unremediated high/moderate finding:${name}(${shape})`)
 }
 
 export function evaluateVerifiedHighVulnerabilityAudit({
@@ -390,6 +400,20 @@ export function evaluateVerifiedHighVulnerabilityAudit({
   let report
   try { report = JSON.parse(String(stdout || '')) } catch {
     throw new Error('GOV-DEPENDENCY-BOOTSTRAP-001:npm audit did not produce closed JSON')
+  }
+  // 沒有 `auditReportVersion` 的東西一律**帶著實際內容**報,不要只說「schema is unsupported」
+  // (2026-09-04):registry 的 advisory 服務掛掉時 `npm audit --json` 吐的是錯誤物件,例如
+  // `{"message":"503 Service Unavailable - POST .../security/advisories/bulk","method":"POST","uri":...}`
+  // —— 這個 JSON **parse 得過**,只是沒有 `auditReportVersion`,於是舊版一律報「格式不支援」,
+  // 把基礎設施故障誤診成格式問題,下一個人會去查 npm 版本而不是重跑。
+  // 這裡把「認得的錯誤形狀」與「認不得的東西」都變成可診斷的訊息:前者直接指名端點故障,
+  // 後者附上頂層鍵名與有界前綴(稽核輸出是漏洞報告或錯誤物件,不含憑證;長度夾在 200 字元)。
+  // 仍然 fail closed —— 沒有合格的稽核結果就不放行,改變的只有診斷品質。
+  if (report && typeof report === 'object' && !Array.isArray(report) && report.auditReportVersion === undefined) {
+    const summary = typeof report.message === 'string'
+      ? `advisory endpoint failed:${report.message.slice(0, 200)}`
+      : `unrecognised audit payload(keys:${Object.keys(report).slice(0, 12).join(',') || '<none>'})`
+    throw new Error(`GOV-DEPENDENCY-BOOTSTRAP-001:npm audit ${summary}`)
   }
   invariant(
     report?.auditReportVersion === 2

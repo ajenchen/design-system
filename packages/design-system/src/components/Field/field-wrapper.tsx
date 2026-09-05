@@ -22,6 +22,58 @@ import { cn } from '@/lib/utils'
 //
 // 高度:固定 h = field-height token(rem),與 Button 共用同一組 token。
 
+/**
+ * Field 家族「default 外框」互動 SSOT(mode × error → bg / border / hover / focus / ring)。
+ * 三個宿主共用同一份 compoundVariants:單行 wrapper(fieldWrapperStyles)、多行 Textarea(textareaVariants)、
+ * 複合輸入盒(AgentPromptInput 等經 `fieldChromeStyles(...)` 消費)。任何新的「像欄位的容器」一律消費
+ * `fieldChromeStyles`,禁自刻 border/hover/focus 字串(2026-09-02 user 抓 AgentPromptInput 與 Textarea 互動不同)。
+ * readonly ring 同時給 `focus-visible:`(宿主本身可聚焦,如 <textarea>)與 `[&:has(:focus-visible)]:`(宿主是
+ * wrapper,可聚焦元素在內)兩種選擇器,兩類宿主同一份字串。
+ */
+export type FieldChromeHost =
+  /** 宿主是包住可聚焦控件的 wrapper(單行 Field wrapper / 複合輸入盒):readonly ring 用 `:has(:focus-visible)`,
+   *  overlay trigger 開啟時維持 hover 框(`data-[state=open]`)。 */
+  | 'wrapper'
+  /** 宿主本身就是可聚焦控件(`<textarea>`):readonly ring 用 `focus-visible:`,無 overlay 開啟態。 */
+  | 'control'
+
+/** 依宿主型別產出 default 外框 compounds;字串與 2026-09-02 前各宿主自寫的版本逐字相同(class 等價證明:零增減)。 */
+export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
+  const wrapper = host === 'wrapper'
+  return [
+    {
+      mode: 'edit' as const,
+      variant: 'default' as const,
+      className: ['bg-surface border border-border', 'hover:border-border-hover', wrapper ? 'data-[state=open]:border-border-hover' : ''],
+    },
+    { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
+    { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border border-transparent' },
+    {
+      mode: 'readonly' as const,
+      variant: 'default' as const,
+      className: wrapper
+        ? 'bg-readonly border border-transparent [&:has(:focus-visible)]:ring-2 [&:has(:focus-visible)]:ring-ring [&:has(:focus-visible)]:ring-offset-1'
+        : 'bg-readonly border border-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+    },
+    { mode: 'disabled' as const, variant: 'default' as const, className: 'bg-disabled border border-transparent cursor-not-allowed' },
+    { mode: 'edit' as const, error: true as const, className: 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
+  ]
+}
+
+/** 單行 wrapper 用的 compounds(同 host='wrapper')。 */
+export const FIELD_DEFAULT_CHROME_COMPOUNDS = fieldDefaultChromeCompounds('wrapper')
+
+/** 複合欄位宿主(AgentPromptInput 等 wrapper 型)直接消費:只回傳外框互動 class,不含尺寸/內距。 */
+export const fieldChromeStyles = cva('transition-colors duration-150', {
+  variants: {
+    mode: { edit: '', view: '', readonly: '', disabled: '' },
+    variant: { default: '', naked: '' },
+    error: { true: '', false: '' },
+  },
+  compoundVariants: FIELD_DEFAULT_CHROME_COMPOUNDS,
+  defaultVariants: { mode: 'edit', variant: 'default', error: false },
+})
+
 export const fieldWrapperStyles = cva(
   [
     // K10 fix(2026-05-04):`group/field` 讓 inner placeholder/text 可透過 `group-data-[field-mode=...]/field:` 變體
@@ -98,81 +150,9 @@ export const fieldWrapperStyles = cva(
     // Combobox trigger 用 asChild,Radix 自動 set `data-state="open"` on trigger root → trigger
     // 視覺維持 hover 樣式直到浮層關閉(對齊 inline-action.spec.md「狀態極簡派」)。
     compoundVariants: [
-      // default variant chrome by mode
-      {
-        mode: 'edit',
-        variant: 'default',
-        className: [
-          'bg-surface border border-border',
-          'hover:border-border-hover',
-          // 2026-05-06 v13.3 SSOT canonical:focus-within `!important` 強制勝過 data-state attribute
-          // selector(specificity tie at 0,2,0;source order 後者勝)。
-          //
-          // 設計原則:**focus dominates everything**(M11 fix「focus-dominates-hover」延伸成
-          // 「focus-dominates-{hover,open,error-rest}」)。Cursor 在輸入框 = user 編輯中 = 必藍。
-          //
-          // 對齊世界級三家共識:
-          //   - Material Design 3:focus → primary line color
-          //   - Polaris(Shopify):focus state border-focus(藍)overrides hover/open
-          //   - Ant Design 5:`.ant-select-focused` blue,popover open + select option close 後
-          //     trigger 仍 focused → blue stays(focus return canonical via Radix `onCloseAutoFocus`)
-          //
-          // 副作用 — Ant 風「選後藍 / 取消灰」自動達成:
-          //   - 選 option close popover → Radix focus return to trigger → focus-within fires → 藍
-          //   - 點外取消 close popover → focus 移外 → focus-within 不 fire → 灰
-          //
-          // 2026-07-04 Q1 拍板修訂:「focus dominates everything」對 error 讓位(見 error variant
-          // 註解)— focus 藍只在 error:false compound(下方),error:true 走 error compound 紅。
-          'data-[state=open]:border-border-hover',
-        ],
-      },
-      { mode: 'edit', variant: 'default', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
-      {
-        // 2026-07-16 round16 Model A(user GO,推翻 2026-05-13 Path Ⅰ 的 `!px-0 !py-0`):
-        // view×default = **edit 幾何減 chrome** — 保留 size 軸的 `px-[var(--field-px)]` + `h-field-*`,
-        // 只拔 border/bg(透明)。理由 = view 用在 cell/inline-edit/詳情,要對齊的是「edit 的值位置」
-        // (非 label 左緣),故水平垂直都留 → view 與 edit 同一顆控件、只差 chrome → read↔edit 零跳。
-        // 世界級對照:Atlassian inline-edit(read=edit 幾何,靠容器負邊距對齊)+ Bootstrap
-        // `.form-control-plaintext`(`padding: $input-padding-y 0` 留 padding);我們比 Bootstrap 更徹底
-        // (連水平 px 也留),因用例是 align-to-edit 非 align-to-label。詳 field-controls.spec.md「軸一 view mode」
-        // + planning/2026-07-15-inline-edit-field-mode-remediation.md round16。
-        // ⚠️ view×default ≠ view×naked:naked = bare(cell substrate,host TD 給 padding);default = 留幾何。
-        mode: 'view',
-        variant: 'default',
-        className: 'bg-transparent border border-transparent',
-      },
-      {
-        mode: 'readonly',
-        variant: 'default',
-        // 2026-07-09 A11y fix(WCAG 2.4.7 Focus Visible):readonly **有值** 渲染 native `<input readOnly>`
-        // = 可 Tab 聚焦、可選取/複製,但原 compound 無任何 focus 指示 → 鍵盤使用者聚焦不可見 = 違反。
-        // 補 focus ring 採 **ring idiom**(`ring-2 ring-ring ring-offset-1`,與 Button/Checkbox/Tabs/
-        // Switch 同一套 focus-visible canonical;`--ring == --primary` semantic.css:334)而非 edit mode
-        // 的 `border-primary` idiom —— readonly 邊框 transparent 無可染;且 ring 語義 = 「可聚焦但非文字
-        // 輸入」(對齊 button/tab/checkbox 這類 focusable-非-text-entry 控件的視覺語言)。
-        // `:has(:focus-visible)`:readonly 渲 native `<input readOnly>`。⚠️ 瀏覽器對 text-entry 控件的
-        // :focus-visible 啟發式在滑鼠點擊時**亦 match**(text input 恆視為 focus-visible,對齊
-        // field-controls.spec.md「Focus 行為」段『文字輸入永遠 focus-visible、CSS 無法區分點擊與 Tab』),
-        // 故點擊 readonly input 也會顯 ring,勿宣稱僅鍵盤觸發(button 的 focus-visible 才滑鼠不觸發,
-        // input 不同;真要滑鼠抑制需 JS 追蹤 input modality,屬 API 擴充)。
-        className: 'bg-readonly border border-transparent [&:has(:focus-visible)]:ring-2 [&:has(:focus-visible)]:ring-ring [&:has(:focus-visible)]:ring-offset-1',
-      },
-      {
-        // 2026-05-13 R3.5(per codex Q3 verdict + user 拍「想盡辦法 auto-handle prereq」):
-        // 移除 `opacity-disabled` blanket — Avatar 已 fieldCtx-aware self-dim(avatar.tsx self-managed
-        // via `isDisabledInField` derivation)。Field wrapper 不再 host-control Avatar opacity。
-        // Inner content(text-fg-disabled / Avatar self-opacity)走具體 disabled token per color.spec.md:729。
-        mode: 'disabled',
-        variant: 'default',
-        className: 'bg-disabled border border-transparent cursor-not-allowed',
-      },
-      // (2026-07-09 `bare` variant 退役:原 edit×bare / edit×bare×error compounds 已移除。)
-      // error chrome(mode=edit 限定,variant 不分 — naked cell 內 error 同樣紅框,保留既有控件層行為):
-      {
-        mode: 'edit',
-        error: true,
-        className: 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error',
-      },
+      // default 外框 × mode / error 全部來自 FIELD_DEFAULT_CHROME_COMPOUNDS(單行/多行/複合三宿主同一份;
+      // 原本逐條寫在此處的 edit/view/readonly/disabled/error 字串與其 rationale 註解已上移到該常數)
+      ...FIELD_DEFAULT_CHROME_COMPOUNDS,
       // (2026-07-09 `bare` variant 退役:原 display×bare / readonly×bare / disabled×bare compounds 已移除。)
       // naked variant — cell-as-input substrate(Notion / Airtable / Excel canonical)
       //

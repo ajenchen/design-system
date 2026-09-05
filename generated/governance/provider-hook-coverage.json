@@ -6,7 +6,7 @@
     "canonicalHookRegistry": "packages/design-system/ds-canonical/hooks/registrations.json",
     "providerRegistry": "packages/governance/canonical/providers.json",
     "inputSha256": {
-      "hookRegistrations": "sha256:361c3a6de66b69be1db04147e59fdeae59f30b58fad3d042fd80b0dae9545bcc",
+      "hookRegistrations": "sha256:78169670a99f4bc9a991a45738bed0f5965fc10f4a68426ebbe80ce0962baded",
       "providerRegistry": "sha256:d1ff4891ea45e6969810bd918ef1bb776c5749c40e05ede66b232661080faabe",
       "coverageSchema": "sha256:7320ac4cf37a731f1e79428bad46561e285a491460c3daf16b9bb42bdd1765a4"
     }
@@ -24,8 +24,8 @@
       "hookEnforcement": "native-feedback-plus-ci",
       "projectionStatus": "complete-projection",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 61,
-      "projectedCount": 61,
+      "canonicalRegistrationCount": 62,
+      "projectedCount": 62,
       "excludedCount": 0,
       "projected": [
         {
@@ -950,6 +950,21 @@
           "projectedMatcher": "",
           "nativeCoverage": "projected",
           "certificationImpact": "runtime-certification-required"
+        },
+        {
+          "event": "UserPromptSubmit",
+          "canonicalMatcher": "",
+          "hook": "record_release_consent.sh",
+          "kind": "hook",
+          "runtime": "bash",
+          "outputMode": "governance-context",
+          "inputContract": "event-v1",
+          "transcriptRequirement": "optional",
+          "requirements": [],
+          "nativeEvent": "UserPromptSubmit",
+          "projectedMatcher": "",
+          "nativeCoverage": "projected",
+          "certificationImpact": "runtime-certification-required"
         }
       ],
       "excluded": []
@@ -960,8 +975,8 @@
       "hookEnforcement": "native-feedback-plus-ci",
       "projectionStatus": "partial-projection",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 61,
-      "projectedCount": 58,
+      "canonicalRegistrationCount": 62,
+      "projectedCount": 59,
       "excludedCount": 3,
       "projected": [
         {
@@ -1841,6 +1856,21 @@
           "projectedMatcher": "",
           "nativeCoverage": "projected",
           "certificationImpact": "runtime-certification-required"
+        },
+        {
+          "event": "UserPromptSubmit",
+          "canonicalMatcher": "",
+          "hook": "record_release_consent.sh",
+          "kind": "hook",
+          "runtime": "bash",
+          "outputMode": "governance-context",
+          "inputContract": "event-v1",
+          "transcriptRequirement": "optional",
+          "requirements": [],
+          "nativeEvent": "UserPromptSubmit",
+          "projectedMatcher": "",
+          "nativeCoverage": "projected",
+          "certificationImpact": "runtime-certification-required"
         }
       ],
       "excluded": [
@@ -1918,9 +1948,9 @@
       "hookEnforcement": "ci-only",
       "projectionStatus": "unavailable",
       "certificationClaim": "projection-only-not-runtime-certified",
-      "canonicalRegistrationCount": 61,
+      "canonicalRegistrationCount": 62,
       "projectedCount": 0,
-      "excludedCount": 61,
+      "excludedCount": 62,
       "projected": [],
       "excluded": [
         {
@@ -3032,6 +3062,24 @@
           "outputMode": "governance-context",
           "inputContract": "event-v1",
           "transcriptRequirement": "stable-required",
+          "requirements": [],
+          "nativeCoverage": "gap",
+          "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",
+          "detail": "This runtime has no declared native hook surface; hook-independent governance checks remain authoritative.",
+          "certificationImpact": "not-certified",
+          "authoritativeFallback": {
+            "status": "none"
+          }
+        },
+        {
+          "event": "UserPromptSubmit",
+          "canonicalMatcher": "",
+          "hook": "record_release_consent.sh",
+          "kind": "hook",
+          "runtime": "bash",
+          "outputMode": "governance-context",
+          "inputContract": "event-v1",
+          "transcriptRequirement": "optional",
           "requirements": [],
           "nativeCoverage": "gap",
           "reasonCode": "NATIVE_HOOK_API_UNAVAILABLE",

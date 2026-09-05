@@ -63,7 +63,7 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 ◀ 上一頁   1   …   4  [5]  6   …   12   下一頁 ▶
 ```
 
-- **格位配置**:boundary 1 + sibling 1(內部常數,v1 不開 props)。最大格位 = 首尾各 1 + 當前頁左右各 1 + 當前頁 + 2 顆 ellipsis = **7 格**,超過即摺疊。若未來有多個消費者需要不同視窗，再將 boundary / sibling 設定開為受控 API。
+- **格位配置**:boundary 1 固定;sibling 隨「窄容器階梯」(下節)走 —— 階 0–1 為 1、階 2–3 為 0(兩者都是內部常數,v1 不開 props)。完整形態最大格位 = 首尾各 1 + 當前頁左右各 1 + 當前頁 + 2 顆 ellipsis = **7 格**,超過即摺疊;階 2 起 sibling 0 → **5 格**。(2026-09-05 更正:原句「sibling 1 固定、7 格」與下節階 2「sibling 1 → 0」同檔矛盾。)若未來有多個消費者需要不同視窗，再將 boundary / sibling 設定開為受控 API。
 - **Ellipsis 非互動**:純指示符號(`MoreHorizontal` icon + `aria-hidden`),不可點——對齊 MUI / shadcn(非互動 ellipsis)。**Ant 為可點 jump-5 派**(rc-pagination 預設把省略格渲染成 `jump-prev` / `jump-next`:hover 顯 «/»、click 跳 5 頁,`https://github.com/react-component/pagination`);本 DS 選非互動,快速跳頁留給未來 `showQuickJumper`。Breadcrumb 的可點 ellipsis 是 collapse dropdown 場景,語意不同。
 - **上下頁按鈕**:iconOnly(`ChevronLeft` / `ChevronRight`),在第一頁 / 最後一頁時 `disabled`。
 - 頁碼格位由內部演算法產生;兩顆省略號各自身分穩定,翻頁時不互相 remount(演算法簽名與 React key 等實作細節由 `pagination.tsx` 檔內註解單一持有,spec 不重述——職責分離)。
@@ -85,6 +85,53 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 - `showTotal`(opt-in):左側 range 格式「第 x–y 筆,共 N 筆」——Ant「1-20 of 85 items」/ MUI「1–5 of 13」/ Carbon「1–10 of 128 items」三家共識,非單純總數。
 - `pageSizeOptions`(opt-in):頁碼右側顯示「N 筆/頁」選單，並消費既有 `Select size="sm"`。變更每頁筆數時自動回第 1 頁，避免換大 pageSize 後停在超界頁而出現 clamp 歧義。
 - 兩者皆未開 = 純頁碼 inline 形態(consumer layout 決定對齊;表格情境靠右由 DataTable 處理)。
+
+---
+
+## 窄容器階梯(RWD,2026-09-04)
+
+**量的是容器不是視窗。** 表格被側欄擠窄時,視窗可能還有 1440px —— Tailwind 的 `sm:`/`lg:` 與
+Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情境一律判「寬螢幕」不會動。
+[Carbon 是唯一用 container query 的一家](https://github.com/carbon-design-system/carbon/blob/main/packages/styles/scss/components/pagination/_pagination.scss#L43)
+(`container-type: inline-size` + `@container pagination (max-width: 42rem)`),量測語意對。
+我們用 `ResizeObserver` 而不是 CSS container query,因為第 2 階(改格位數)本來就得在 JS 做,
+用兩套機制守同一條階梯只會讓它們有機會不同步。
+
+**每一階砍掉的都不是導覽模型本身**,所以數字頁碼一路活到最窄 —— 這條線是 2026-09-04 user 定的
+(「rwd 確實要保持固定的瀏覽模式」);Carbon 窄式砍掉數字只留 ◀▶、Ant `simple` 把數字換成
+`n / N`,兩者都會在窄寬下切換成本規格「樣式派系」段明文排除的另一種導覽模式,故不採。
+
+| 階 | 砍掉什麼 | 性質 |
+|---|---|---|
+| 0 | — | 完整形態 |
+| 1 | 「N 筆/頁」選單 | **設定**,不是導覽 |
+| 2 | 格位 7 → 5(`sibling` 1 → 0) | **同一模式,視窗變小** |
+| 3 | 「第 x–y 筆,共 N 筆」 | opt-in **資訊** |
+| 再窄 | — | 一列不換行不截斷,整條橫向可捲 |
+
+- **資訊文字永遠不超過一行**(user 要求):`whitespace-nowrap` + `shrink-0`;階梯在它需要換行之前
+  就先砍別的,砍到最後是整段拿掉,不會有半行。沒有這兩個 class 時實測 440px 容器下分頁列高度
+  由 28px 爆成 147px(逐字斷行)。
+- **門檻不寫死**:總筆數變六位數、頁數變四位數時任何固定 px 都會錯。改成量各階的自然寬
+  (子元素寬總和 + gap;子元素都 `shrink-0`、文字 `nowrap`,所以該值與容器寬無關),記進快取後
+  挑最高的可容納階;快取只增不減 → 收斂,不會在兩階間來回跳。**副作用(2026-09-05 登記)**:快取記的是各階曾量到的
+  最大自然寬,`total` / `totalPages` / `pageSize` 變小之後(頁數從四位數變兩位數)仍用舊的較大值判斷,可能停在比
+  實際需要更窄的階,直到重新掛載;要修就在這些 prop 變動時清快取。
+- **最後一階不加 scroll arrow**:`horizontal-overflow` 模組規定 overflow affordance 是 text iconOnly 的
+  ChevronLeft/Right —— 那跟分頁自己的上下頁箭頭長得一模一樣,同一列會分不清「捲動」還是「翻頁」。
+  代價是最後一階多出一條原生捲軸的高度 —— **僅限捲軸佔版面的平台**(Windows / Linux classic 捲軸,實測 28px → 43px;
+  macOS overlay 捲軸與 CI headless 為 0px,2026-09-05 補此限定),只在 ~200px 以下才會遇到。不消費
+  `<ScrollArea orientation="horizontal">` 的理由同上:它的 affordance 不該出現在分頁列;`scroll-area.spec.md`「何時用」與
+  `horizontal-overflow.spec.md`「Canonical 規則」各留有指回本段的例外註記。
+- **格位是既有參數,不是新機制**:`boundary` / `sibling` 本來就是摺疊演算法的入參;
+  [MUI `usePagination` 的 `boundaryCount=1` / `siblingCount=1`](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/usePagination/usePagination.js#L7)
+  與 [Primer 的 `marginPageCount=1` / `surroundingPageCount=2`](https://github.com/primer/react/blob/main/packages/react/src/Pagination/Pagination.tsx#L128)
+  都把這兩顆旋鈕開成公開 API,只是交給開發者手填。**「隨容器寬自動轉」沒有現成一家在做,是我們的組合**(M22 誠實標註)。
+- **機械閘** = `scripts/pagination-narrow-ladder-invariant.mjs`(`npm run test:pagination-invariants`),
+  載入「窄容器階梯」story 的五個固定寬度容器 —— 各自在掛載時由 layout effect 收斂,不依賴
+  ResizeObserver(背景分頁不送 RO callback,靠 RO 的驗證在很多環境會空轉)。
+  斷言:P1 資訊文字 ≤ 1 行(量 `rect.height / lineHeight`,不是查 class)/ P2 階梯單調不回頭 /
+  P3 每一階都還是數字頁碼 / P4 五個容器至少走過 3 個不同的階(否則本閘空轉)/ P5 隔一個 rAF 再量結果相同。
 
 ---
 

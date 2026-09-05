@@ -31,6 +31,7 @@ scope: utility primitives module (use-overflow-items hooks: useScrollEdges + use
 - 左右 scroll arrow → text button,ChevronLeft / ChevronRight
 - Menu trigger → text button,ChevronDown
 - **禁止**用 item 自身的視覺語言(chip 形狀、tab 底線等)來渲染 overflow trigger——overflow affordance 是「工具層」,不是「業務層」,不該跟內容爭視覺重量(「工具層必須是視覺重量最低的一層」— 本 spec codify 此原則,owner SSOT 在此)。
+- **例外:Pagination 最後一階**(owner `pagination.spec.md`「內部結構與摺疊規則」):整條分頁列橫向可捲但**不加任何 affordance** —— 那一列的 ChevronLeft / ChevronRight 已經是「上一頁 / 下一頁」,再放同形的 scroll arrow 會讓使用者分不清「捲動」與「翻頁」。此例外只拿掉 affordance,不改「工具層不得借業務層視覺」的原則(2026-09-05 補註記)。
 
 這條規則讓使用者看到向下 chevron 或向右 arrow 時,心智是一致的:「這是 overflow 的工具,不是可選內容」,不論這排 items 是什麼類型。
 

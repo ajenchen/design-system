@@ -31,7 +31,7 @@ export const Overview: Story = {
             {'nav[aria-label="Pagination"] > ul > li(shadcn 骨架);上下頁 = Button text sm iconOnly,'}
             {'未選數字 = Button text sm、當前頁 = Button secondary(等寬 min-w = field-height-sm,方形節奏對齊 Ant);'}
             {'當前頁 aria-current="page" + 選中 canonical(主色描邊+染字、不染底,semantic.css SSOT);'}
-            {'… = MoreHorizontal 純指示(aria-hidden,不可點)。格位恆 ≤ 7(boundary/sibling = 1/1)。'}
+            {'… = MoreHorizontal 純指示(aria-hidden,不可點)。格位恆 ≤ 7(boundary 1;sibling 1,窄容器階 2 起降為 0 → 5 格)。'}
           </Desc>
           <Pagination total={240} page={page} onPageChange={setPage} />
         </div>

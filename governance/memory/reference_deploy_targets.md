@@ -35,9 +35,9 @@ originSessionId: a689a78e-f264-4c1f-b881-0859a7a12135
 
 ## 部署管道
 
-- **Netlify per-branch preview** = optional asynchronous evidence(branch push 自動)，不是 standard release hard gate；產品／UI／UX SSOT 真取捨可由 user 檢視後決策，但純工程 release 不等待 preview；**Netlify production** = main(storybook)
+- **Netlify deploy preview**(PR → `deploy-preview-<n>--ajenchen-design-system.netlify.app`;branch → `<branch-slug>--ajenchen-design-system.netlify.app`,2026-09-02 實測兩者皆自動建、回 200)= **發版前 user 驗證的必經站**:agent push 分支 + draft PR → 回報 preview URL → user 看過說「發版」→ 才 merge/publish(`feedback_solo_dev_workflow.md` 5/5b;receipt gate);**Netlify production** = main(storybook)
 - **GitHub Pages production** = main push → ci.yml deploy-storybook job(2026-05-08 補;netlify.toml command = build-storybook,publish storybook-static)
-- Solo-work 對齊:agent push working branch → PR → required CI + conversations resolved → protected merge → publish → exact release readback → exact-version consumer propagation/readback；由 `npm run release:auto` 依 Standing Authorization 續跑。preview／canary／attestation 只可作 non-blocking optional assurance，不得重返標準 five-step blocking graph，也不再等 chat「push」keyword。
+- Solo-work 對齊:agent push working branch → draft PR → required CI + conversations resolved → **Netlify preview 給 user 看 → user 說「發版」(receipt)** → protected merge → publish → exact release readback → exact-version consumer propagation/readback;由 `npm run release:auto` 續跑,缺 receipt 停在 `AWAITING_USER_RELEASE_CONSENT`。canary／attestation／soak 仍是 non-blocking optional assurance。
 
 ## Anti-pattern(永久 ban,deploy URL)
 

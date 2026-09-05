@@ -10,81 +10,73 @@
   --table-cell-px: var(--field-px);  /* 預設取自 --field-px(form/cell 同 12px content gutter SSOT);仍是 DataTable-scoped named token、可獨立 override(spec field-controls.spec.md:330 scoped 決策不變) */
 }
 
+/* **`- 1px` 不是微調,是把公式的前提補回來**(2026-09-04):
+   公式假設「內容高度 = 1lh」,但 view 態的內容載體(Field / Textarea 的 `view × naked`)自帶一圈
+   1px 透明上下框(`field-wrapper.tsx` / `textarea.tsx`),那圈框是 read↔edit 零跳的幾何佔位
+   (`field-controls.spec.md`;世界級同做法:Bootstrap `.form-control-plaintext` 的
+   `border: solid transparent; border-width: $input-border-width 0`、Atlassian inline-edit read-view 的
+   `borderColor:'transparent'` + `borderWidth: token('border.width.selected')`),本身是對的。
+   於是實際內容高是 **1lh + 2px** 而不是 1lh:固定行高把這 2px 吸收掉(高度被 `h-table-row-*` 釘死
+   + `overflow-hidden`),**自動行高卻是由內容反推高度**,2px 就直接進了總高 —— 實測 md 單行
+   自動行高 cell = 42 而不是 token 的 40。
+   Field 家族的 `--field-control-py-*`(`tokens/uiSize/uiSize.css`)為了同一個理由**早就帶 `- 1px`**;
+   這裡補上之後兩邊對稱。`uiSize.css` 那句「DataTable cell 的 padding 載體無邊框,故不帶 −1px」
+   是這個缺陷的根:**載體無邊框 ≠ 內容無邊框**。
+   固定行高不受影響有代數理由:置中盒的位置 = (H − c) / 2,與 padding 無關。 */
 [data-table-size="sm"] {
-  --table-cell-py: calc((var(--table-row-sm) - 1lh) / 2);
+  --table-cell-py: calc((var(--table-row-sm) - 1lh) / 2 - 1px);
 }
 
 :root,
 [data-table-size="md"] {
-  --table-cell-py: calc((var(--table-row-md) - 1lh) / 2);
+  --table-cell-py: calc((var(--table-row-md) - 1lh) / 2 - 1px);
 }
 
 [data-table-size="lg"] {
-  --table-cell-py: calc((var(--table-row-lg) - 1lh) / 2);
+  --table-cell-py: calc((var(--table-row-lg) - 1lh) / 2 - 1px);
 }
 
 /* ────────────────────────────────────────────────────────────
-   DataTable scrollbar canonical(2026-05-07 v15.13 Bug H interim CSS parity)
+   DataTable scrollbar canonical(2026-09-04 改寫;原 2026-05-07 v15.13 的 webkit 客製整段移除)
    ────────────────────────────────────────────────────────────
-   **Problem**:Windows 原生 V scrollbar (~17px) + 圓角 outer wrapper (`rounded-md
-   overflow-hidden`)→ scrollbar 一半被圓角 mask 裁切;corner(V/H 交叉處)用
-   browser default 灰色,跟 table surface 不一致 → user 看到「scrollbar 溢出 table」。
-   macOS overlay scrollbar(0px)沒這問題。
+   **原始目標**(2026-05-07):Windows 原生 V scrollbar (~17px) 配上圓角 outer wrapper 會被圓角
+   裁掉一半;V/H 交叉的 corner 用瀏覽器預設灰,跟 table surface 不一致。做法是走
+   **原生捲軸 + CSS 客製**(不是 ScrollArea 的自繪 overlay 捲軸)—— 這條路線本身是對的,
+   AG Grid / MUI DataGrid / Polaris IndexTable 都是這一派。
 
-   **Interim fix**(non-ScrollArea 路徑;ScrollArea migration 是獨立 RFC,本案不上):
-   - V scrollbar 也 customize(width 10px 對稱 H)
-   - `::-webkit-scrollbar-corner` themed(跟 track 同色,消除 cross-OS 視覺差)
-   - Firefox `scrollbar-width: thin` + `scrollbar-color`(已 set,line 55-56)
+   **但那套 `::-webkit-scrollbar` 從來沒有生效過**(2026-09-04 逐條隔離實測):
 
-   **對齊**:AG Grid theme-level scrollbar customization / MUI DataGrid scrollbar override
-   / Polaris IndexTable native+CSS pattern(world-class 派 native+CSS,非 ScrollArea)。
+     ::-webkit-scrollbar:horizontal { height: 10px }   →  實際 15px(無效)
+     ::-webkit-scrollbar:vertical   { width: 10px }    →  實際 15px(無效)
+     ::-webkit-scrollbar            { width/height:10px } →  實際 10px(有效)
 
-   ── 關鍵 fix(2026-04-30):scope 只給 :horizontal ──
-   原本 `::-webkit-scrollbar { display:block }` 套到雙軸 → V 軸也被強制顯
-   (即使無 overflow),使 content 小時仍見 V 捲軸 + 觸發 ~2px scrollHeight
-   discrepancy 讓 hasVScroll=true。修正:`:horizontal` only,V 軸跟隨
-   browser default(只在 overflow 顯)。
+   Chrome 的捲軸**尺寸只讀不帶偽類的那條規則**;`:horizontal` / `:vertical` 只能改外觀,改不了寬高。
+   2026-04-30 之所以拆成兩條偽類,是要躲「`display:block` 讓沒溢出的軸也冒出捲軸」——
+   但實測不帶偽類、且不寫 `display` 時**不會**誤顯(只有水平溢出時 v=0;完全不溢出時 0/0),
+   當初要躲的是 `display:block`,不是不帶偽類。所以那次修正躲掉了 bug,也順手把整組尺寸關掉了。
+   (ledger 缺陷 H 原本記載的「`@supports` 重新宣告標準屬性導致 Chrome 忽略偽元素」也是錯的 ——
+    把那個組合隔離重現出來是 10px,正常。)
+
+   **現在的選擇:只留 W3C 標準屬性,webkit 那一整套刪除。** 兩個可行修法各自的代價:
+   - 讓 webkit 那套真的生效(10px + themed track / thumb / corner / hover):控制最完整,
+     但 `::-webkit-scrollbar` 會**把 overlay 捲軸的機器強制變成佔版面的捲軸**(macOS 預設
+     「自動依滑鼠顯示」的使用者,會從沒有捲軸變成永遠留 10px)。為了 corner 與 hover 兩項
+     webkit-only 的加值,付這個代價不划算。
+   - 只留 `scrollbar-width: thin` + `scrollbar-color`(本段採用):W3C 標準、Firefox 也吃、
+     **不改變任何人現有的捲軸行為模式**(overlay 的還是 overlay、classic 的變細)。
+     實測 Chrome / macOS classic 由 15px → 11px。失去的是 corner 上色與 thumb hover
+     (Firefox 本來就沒有 hover,所以那是 webkit 專屬加值,不是既有承諾)。
+
+   **跟 ScrollArea 的關係**:機制上不可能共用 —— ScrollArea 是 Radix 自繪的 DOM 拇指(不吃版面寬),
+   這裡是瀏覽器原生捲軸(吃版面寬),沒有共同的樣式表面。**能共用的顏色早就已經是 SSOT**:
+   兩邊都吃 `--scrollbar-thumb` / `--scrollbar-track`(semantic.css:383-385,2026-05-09 抽出)。
+
+   實際寬度**不寫死在任何地方**:`measureScrollbarGutters` 每次量,所以 15 → 11 的變化
+   由量測自動流過去,補償邏輯不需要改。
 */
-[data-datatable-hscroll]::-webkit-scrollbar:horizontal {
-  height: 10px;
-  /* 移 display:block — 讓 browser overflow 時自動顯,不顯示空 bar */
-}
-[data-datatable-hscroll]::-webkit-scrollbar:vertical {
-  width: 10px;
-  /* 對稱 H,Windows native ~17px → 10px,跟 table 圓角 outer 兼容 */
-}
-[data-datatable-hscroll]::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
-}
-[data-datatable-hscroll]::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 5px;
-}
-[data-datatable-hscroll]::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-}
-[data-datatable-hscroll]::-webkit-scrollbar-corner {
-  background: var(--scrollbar-track);
-  /* V/H 交叉 corner 跟 track 同色,消除 Windows default 灰格 */
-}
-/* Firefox fallback:standard scrollbar properties only(no `::-webkit-scrollbar` support)。
-   Static thumb color;Firefox 沒 hover pseudo,本來就只能 static。 */
 [data-datatable-hscroll] {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-}
-
-/* Chromium / Safari fix(2026-05-10 user-reported scrollbar-thumb hover 顏色失效)。
-   Root cause(codex Q3.10 deep-dive):Chrome 121+ 支援標準 `scrollbar-color` 後,
-   標準屬性 override `::-webkit-scrollbar-thumb:hover` 的 background → hover rule 失效。
-   Cite: MDN ::-webkit-scrollbar / developer.chrome.com/docs/css-ui/scrollbar-styling
-   Fix: `@supports selector(::-webkit-scrollbar)` 偵測 webkit 引擎 → unset 標準屬性 →
-   webkit pseudo path 接管 → `:hover` rule 重新生效。 */
-@supports selector(::-webkit-scrollbar) {
-  [data-datatable-hscroll] {
-    scrollbar-width: auto;
-    scrollbar-color: auto;
-  }
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -98,35 +90,54 @@
    - Field naked edit owns its own border(per `field-controls.spec.md` + Field state machine SSOT)
    - DataTable layer owns hover / selection / range overlay paint(measured rect,4-edge consistent)
 
-   **Implementation**:`box-shadow: inset` 4 邊 1px divider,**不佔 layout space**,**不影響
-   content 起始位置**(per user verbatim「在 cell 內容起始位置不變的前提下」原則):
+   **Implementation**(歷史:2026-05-10 用 `box-shadow: inset` 畫;2026-09-04 起改為 1px 偽元素,
+   見下方 `.dtCellGrid::after`)—— 不佔 layout space、**不影響 content 起始位置**(per user verbatim
+   「在 cell 內容起始位置不變的前提下」原則):
    - 之前 cell 用 `border-r border-divider` 只右邊 → hover overlay outline:-1px 只右邊壓
      cell border,上左下 sub-pixel 不一致(user 抓到「右 1px / 上左下 2px」bug)
-   - 改用 inset box-shadow 4 邊 → cell 4 邊都有 grid divider line → overlay outline -1px
-     在 4 邊都剛好壓 cell border line in-place → 4 邊 SSOT 視覺一致
+   - 改為 paint-only 的線(先陰影、後偽元素)→ 視覺 4 邊 grid line 由 row border + 相鄰 cell
+     合成 → overlay outline -1px 在 4 邊都剛好壓 line in-place → 4 邊 SSOT 視覺一致
 
    Cell wrapper 加此 class 取代 `border-r border-divider`(inline edit + spreadsheet mode)。
 
    World-class cite:AG Grid javascript-data-grid/cell-editing-start-stop / MUI X Data Grid
    editing — separation of grid interaction model from editor component。
    ──────────────────────────────────────────────────────────── */
+/* inlineEdit 模式的 body 欄間線。
+   2026-05-10 fix v2:只畫右邊,bottom 由 row.border-b 接管。
+   2026-05-12 fix v3(user 抓「pinned 分隔線還是 2px,不是說整個 table 格線 1px 嗎?」):
+   每個 panel(left/center/right)最右 cell 不該畫線,因為:
+     - Left panel 最右 cell 旁:凍結邊界線
+     - Center / Right panel 最右 cell 旁:outer container border(rounded-md)
+   重疊就會變成 2px 視覺,所以本區最後一欄排除。
+   **2026-09-05 排除條件從 `:last-child` 改成 `[data-dt-last-col]`**(缺陷 M 第二次修正):`:last-child`
+   判的是 DOM 位置,而列的最後一個子元素不一定是 cell —— 拖曳列時 `dropIndicatorRow.after` 接在最後
+   一格後面,最後一格瞬間不再是 `:last-child`,線就冒出來,表頭同一欄卻沒線。改由 tsx 的
+   `isLastInRegion`(表頭 `showDivider` 用的同一個函式)寫 attribute,判準只剩一份、與 DOM 位置無關。
+   **2026-09-04 從內陰影改成 1px 偽元素**:這是全表最後一處還在用陰影畫線的地方,而它正上方
+   同一欄位置的表頭欄間線是真元素(ResizeHandle 內的 `<span bg-divider>`)—— 非整數縮放 / Retina
+   下瀏覽器對「陰影」與「背景色盒」的柵格化取整不同,同規格的線會出現 1 vs 2 實體像素、上下接不起來。
+   這正是 spec「全表 1px 線一律元素/border 機制、禁用陰影」那條鐵律要防的情形(2026-08-20 立)。
+   機制與 `.dtLeftBoundary::before` / `.dtHeaderRowGroup::after` 完全同型。 */
 .dtCellGrid {
-  /* 2026-05-10 fix v2:只保 right shadow(`inset -1px 0`),bottom 由 row.border-b 接管。
-     2026-05-12 fix v3(user 抓「pinned 分隔線還是 2px,不是說整個 table 格線 1px 嗎?」):
-     每個 panel(left/center/right)最右 cell 不該 paint shadow,因為:
-       - Left panel 最右 cell 旁:panel `border-r border-divider`(data-table.tsx:2169/2213)
-       - Center panel 最右 cell 旁:outer container border(rounded-md)
-       - Right panel 最右 cell 旁:outer container border
-     若 cell shadow 跟 panel/outer border 重疊 = 2px 視覺。
-     Fix v3:`:not(:last-child)` 排除每 panel 最右 cell,讓 panel/outer border 唯一 own
-     panel-boundary 視覺。對齊 data-table.spec.md「Paint」段 grid line 1px SSOT canonical(段名指法)。 */
-  box-shadow: inset -1px 0 0 var(--divider);
+  position: relative;
 }
 
-.dtCellGrid:last-child {
-  /* 每 panel 最右 cell:panel border-r 或 outer rounded border 接管。
-     cell shadow set 為 none 避免 2px 重疊。 */
-  box-shadow: none;
+.dtCellGrid::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 1px;
+  background: var(--divider);
+  pointer-events: none;
+}
+
+.dtCellGrid[data-dt-last-col]::after {
+  /* 本區最後一欄(tsx `isLastInRegion` 判定,與表頭 `showDivider` 同源):凍結邊界線或
+     outer rounded border 接管,不重複畫。不用 `:last-child`:見上方 2026-09-05 說明。 */
+  content: none;
 }
 
 /* Phase 9 Issue 1 fix(2026-05-10):range cells bg fill — cell 自身 bg layer
@@ -148,17 +159,50 @@
    ────────────────────────────────────────────────────────────
    原 `[data-column-id="__select__"]:not(:last-child)` retire — 走 inlineEdit canonical。
 
-   Panel boundary mechanism 用 `box-shadow: inset` 畫 divider 在 panel 內側 1px,**不用**
+   Panel boundary mechanism 把 divider 畫在 panel 內側 1px(paint-only,不入 box model),**不用**
    `border-r/l border-divider` outer edge。為何:Windows V scrollbar paint 蓋 outer-edge
-   border(Roadmap demo right panel border invisible per 2026-05-12 user 抓)。inset shadow
-   paint-only 不入 box model,跟 `.dtCellGrid` SSOT pattern 一致。對齊 MUI X column pinning
-   border+shadow option / AG Grid issue #1220。Codex M31 Layer C evaluated YES。
+   border(Roadmap demo right panel border invisible per 2026-05-12 user 抓)。2026-05-12 當時用
+   `box-shadow: inset`;2026-08-20 起與 `.dtCellGrid` 一樣改為 1px 偽元素(見下),「內側 1px、不入
+   盒模型、不被捲軸蓋」的理由不變。對齊 MUI X column pinning border+shadow option / AG Grid
+   issue #1220。Codex M31 Layer C evaluated YES。
    ──────────────────────────────────────────────────────────── */
 /* 2026-08-20 機制統一(user 拍板):凍結邊界線從「內陰影」改為 1px 偽元素。
    非整數縮放/Retina 下,瀏覽器對「陰影」與「背景色盒」的柵格化取整不同,造成
    邊界線與欄間 w-px 短線粗細分家(有的 1 實體像素、有的 2)。全表 1px 線一律
    「元素」機制後,任何縮放下柵格化一致。偽元素貼齊面板內緣(與原內陰影同位置),
    不佔盒模型、不被 Windows 懸浮捲軸蓋(2026-05-12 改制原因保留)。 */
+/* 表頭下分隔線:貼齊底緣的 1px 偽元素,**不佔盒模型**。
+   用 `border-b` 的話 panel(height:auto)會變成 row 40 + border 1 = 41,比 body 每一列高 1px
+   (body row 的線含在 rowHeight 的 border-box 內)。同 `.dtPanelBoundary*` 的機制。
+
+   **畫在列群組上,不畫在三個 header panel 上**(2026-09-04 第二次修正,根因兩層):
+   1. panel 是**捲動容器**,絕對定位的子元素屬於捲動溢位內容,會跟著內容一起位移。實測 center
+      header 捲到底(scrollLeft=382)時線的左緣在 x=−265,右側 382px 完全沒有線 —— 缺口寬度
+      恆等於 scrollLeft。掛在不捲動的外層才不會被帶走。
+   2. 一個元素只有一個 `::after`。左/右 header panel 同時掛凍結邊界線,兩條規則會合併成
+      `left:0 right:0 top:0 bottom:0 width:1px height:1px`,在角落變成 1×1 的點、兩條線同時消失
+      (2026-09-04 user 回報「釘選欄 header 最右邊的分隔線消失」的直接原因)。分屬不同元素就不會撞。
+   一條線橫貫整表,也天生涵蓋讓給垂直捲軸的那條 strip,不會有分段接縫。 */
+.dtHeaderRowGroup {
+  position: relative;
+}
+
+.dtHeaderRowGroup::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--divider);
+  pointer-events: none;
+  /* 疊在凍結邊界線之上:兩條線在轉角交會時,水平線壓過去比較像一個完整的「田」字。 */
+  z-index: 1;
+}
+
+/* ── 凍結邊界線 ──
+   表頭段畫在 header panel 上(panel 高度就是 40,沒有捲軸帶要跨,`bottom:0` 即到底);
+   列區段畫在**列區外層** `.dtLeftBoundary` / `.dtRightBoundary` 上(見下)。 */
 .dtPanelBoundaryRight {
   position: relative;
 }
@@ -189,3 +233,40 @@
   pointer-events: none;
 }
 
+/* 列區段的凍結邊界線:掛在**列區外層**,不掛在釘選面板上。
+   釘選面板自己是 `overflow-hidden`,而 `overflow` 的裁切邊是 **padding box** —— 面板底部那條
+   等同水平捲軸高的透明 border 在 padding box 之外,線無論怎麼負向延伸都畫不出來
+   (前一版 `bottom: calc(-1 * var(--dt-hscroll-gutter))` 是假宣稱:版面盒延伸了、像素沒有,
+   而當時的 I13b 比的是 `getComputedStyle(::after).height`,量到的是版面不是畫面,所以假綠)。
+   外層不裁切也不捲動,高度就是三個面板的 border-box 高,線因此真的從頂到底。
+   `--dt-left-w` / `--dt-right-w` 由 tsx 寫上,與釘選面板寬同一個 state,線與面板邊緣必然同一像素。 */
+.dtLeftBoundary,
+.dtRightBoundary {
+  position: relative;
+}
+
+.dtLeftBoundary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* 佔左側面板的最後一個像素(等同原本掛在面板上的 `right: 0`)。 */
+  left: calc(var(--dt-left-w, 0px) - 1px);
+  width: 1px;
+  background: var(--divider);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.dtRightBoundary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* 佔右側面板的第一個像素(等同原本掛在面板上的 `left: 0`)。 */
+  right: calc(var(--dt-right-w, 0px) - 1px);
+  width: 1px;
+  background: var(--divider);
+  pointer-events: none;
+  z-index: 1;
+}
