@@ -1401,12 +1401,13 @@ function DataTableInner<TData>(
     // 縱軸:水平捲軸只吃掉 center 的高度,pinned 區沒有 → pinned 會比 center 多顯示一條列。
     // 補等高的 padding-bottom 給 pinned 區,三個區的可視列高才一致(AG Grid 是把水平捲軸放到
     // 三區之外,達到同一個結果)。
-    // **扣掉 body 自己的上下 border**。橫軸那邊(上面幾行)明文禁止用 `offsetWidth − clientWidth`,
-    // 理由就是「那個式子會把自己的 border 也算成捲軸寬」—— 縱軸這一行原本正好犯了同一個錯
-    // (2026-09-05 稽核抓到)。今天 center body 沒有 border 所以量出來一樣,但只要有人加一條就會多補。
-    const cs = getComputedStyle(body)
-    const borderY = (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0)
-    const hGap = Math.max(0, Math.round(body.offsetHeight - borderY - body.clientHeight))
+    // **這裡刻意用 `offsetHeight − clientHeight`,跟橫軸的禁令不同軸、不同理**(2026-09-05 撤回同日早上的
+    // δ 修正):縱軸的不變式是「pinned 與 center 的可視列高(clientHeight)相等」—— center 在內容盒之下少掉的
+    // 每一個像素,不論是捲軸還是它自己的 border,pinned 都必須讓出同樣多,否則 pinned 會多露出一條列。
+    // 所以 border 在這裡**就該算進去**;扣掉它反而少補(CI I12 實測:center 注入 15px 透明下邊框後
+    // left 300 / center 285、maxScroll 1700 vs 1715)。橫軸禁用 `offsetWidth − clientWidth` 是因為那一軸
+    // 量得到不變式本身(header.clientWidth − body.clientWidth);縱軸沒有這種對照物,這個 proxy 就是正解。
+    const hGap = Math.max(0, Math.round(body.offsetHeight - body.clientHeight))
     // 只在值真的變了才 setState:相同值 React bail out,不會遞迴。
     setHScrollbarGutter((prev) => (prev === hGap ? prev : hGap))
   }, [])
@@ -1571,9 +1572,14 @@ function DataTableInner<TData>(
    * scroll 事件是在「更新畫面」那一步的 run-the-scroll-steps 派發的,而 microtask checkpoint
    * 一定更早,所以事件到達時旗標早就被放掉了(2026-09-05 稽核抓到)。
    *
-   * v33 的做法是 `setScrollLeftForAllContainersExceptCurrent` —— 迴圈裡直接跳過事件來源那個元素,
-   * 根本不需要旗標。這裡取同樣的語意:寫進去的時候記下「這個元素的這一軸被我們寫過」,
-   * 它的下一筆 scroll 事件就消費掉這個紀錄、不回推。**跟時間無關,所以不會早放也不會晚放。**
+   * v33.3.2 的做法是「來源所有權 + 計時器」:第一個捲動的容器成為 `lastScrollSource`
+   * (`gridBodyScrollFeature.ts#L64`;`isControllingScroll` #L224-L236),其他容器的事件在它持有期間一律丟掉
+   * (#L238-L241);`setScrollLeftForAllContainersExceptCurrent`(#L205-L214)寫所有容器但跳過持有者;
+   * 所有權由 `_debounce(..., SCROLL_END_TIMEOUT = 150)` 在停止捲動 150ms 後釋放(#L41-L42、#L88-L98)。
+   * **這裡刻意不用計時器**:寫進去的時候記下「這個元素這一軸寫入後的實際值」,它的下一筆 scroll 事件
+   * 值相同才吞、並消費掉紀錄。理由:(a) 沒有 150ms 租約 —— 同步剛結束使用者立刻捲次要區也即時被接受;
+   * (b) 與時間無關,不會早放也不會晚放。
+   * (2026-09-05 稽核更正:此處先前寫「v33 不需要旗標」,與 v33 原始碼不符 —— 它是旗標 + 計時器。)
    */
   const writtenRef = React.useRef(new WeakMap<HTMLElement, { x?: number; y?: number }>())
   const writeScroll = React.useCallback((el: HTMLElement | null, axis: 'x' | 'y', value: number) => {
@@ -1603,7 +1609,9 @@ function DataTableInner<TData>(
   // 被截掉的欄寬把手 / ⌄ 選單、或 Tab 到 pinned 區被截掉的可編輯 cell),**瀏覽器會自己捲動那個盒子**。
   // 原本同步是單向的(只有 center body 的 onScroll 會推給別人),所以那種捲動會留下永久錯位。
   // 這裡把它導回唯一的真相來源:非主捲動區被捲動時,改成去捲 center body,center 的 onScroll
-  // 再把三個區一起校準。設回相同值不會再觸發 scroll 事件,不會形成迴圈。(2026-09-03 稽核抓到)
+  // 再把三個區一起校準。不形成迴圈靠的是上方 `writtenRef`:程式化寫進去的那一筆會被 `onSecondaryScroll`
+  // 認出並吞掉 ——「設回相同值不會觸發事件」這個理由**在兩邊可捲範圍不等、被夾住時不成立**,
+  // 2026-09-04 的 header 回彈正是這樣來的。(2026-09-03 稽核抓到;2026-09-05 更正理由)
   /**
    * 釘選欄要吃得到滾輪。
    *
@@ -1611,8 +1619,13 @@ function DataTableInner<TData>(
    * 使用者把游標放在釘選欄(而那正是視線落點:SKU、名稱、⋮)滾輪,表格完全不動
    * (2026-09-05 實測:wheel(0,200) 落在左/右釘選欄時三個區的 scrollTop 全是 0)。
    *
-   * 轉發到 center body 就好。**必須用原生監聽而不是 React 的 `onWheel`** —— React 把 wheel
-   * 註冊成 passive,合成事件裡呼叫 `preventDefault()` 不會生效(失敗記憶索引同款陷阱)。
+   * 轉發到 center body 就好。**必須用原生監聽而不是 React 的 `onWheel`** —— React 17 起把 `onWheel`
+   * 以 passive 註冊(release notes:「Keep onTouchStart, onTouchMove, and onWheel passive」
+   * https://legacy.reactjs.org/blog/2020/08/10/react-v17-rc.html),合成事件裡呼叫 `preventDefault()` 不會生效。
+   *
+   * 對照 v33.3.2 `gridBodyCtrl.ts#L361-L411`:它也在左右釘選容器上掛 wheel,但**只轉橫向**
+   * (`shiftKey || |dx| > |dy|` 視為橫向,`scrollBy({ left: deltaX || deltaY })`),垂直靠結構 ——
+   * 釘選欄跟中間欄在同一個垂直捲動容器裡。我們三區各自捲,所以兩軸都要轉;Shift+滾輪的解讀跟它一樣。
    */
   const wheelCleanupRef = React.useRef(new WeakMap<HTMLElement, () => void>())
   /**
@@ -1632,7 +1645,13 @@ function DataTableInner<TData>(
       const onWheel = (e: WheelEvent) => {
         const cb = centerBodyRef.current
         if (!cb) return
-        const { deltaY: dy, deltaX: dx } = e
+        let { deltaY: dy, deltaX: dx } = e
+        // Shift+滾輪 = 橫向。Firefox / Windows 給的是 deltaY + shiftKey 而不是 deltaX;center body 原生就這樣解讀,
+        // 釘選欄上不能不一樣(v33 `onHorizontalWheel` 同義,見上方註解)。
+        if (e.shiftKey && dx === 0) {
+          dx = dy
+          dy = 0
+        }
         const canY = dy !== 0 && cb.scrollHeight > cb.clientHeight
         const canX = dx !== 0 && cb.scrollWidth > cb.clientWidth
         if (!canY && !canX) return // 表格自己也捲不動 → 讓事件冒泡給頁面,不要吃掉
@@ -3226,8 +3245,9 @@ function DataTableInner<TData>(
             `overflow:hidden` 的盒子不接受滾輪/觸控板捲動,所以使用者把指標停在表頭上橫滑時表格不動;
             AG Grid v33 的 `.ag-header-viewport` 正是 `overflow-x:auto` 搭 `scrollbar-width:none`
             (它還 `implements ScrollPartner`),同時拿到「可捲」與「沒有第二條捲軸」。
-            兩邊仍由 `onCenterBodyScroll` / `onSecondaryScroll` 收斂到 center body 這個唯一真相源:
-            寫回相同值不會再觸發 scroll 事件,不會互相回打。
+            兩邊仍由 `onCenterBodyScroll` / `onSecondaryScroll` 收斂到 center body 這個唯一真相源;
+            程式化寫進去的那一筆由 `writtenRef` 認出並吞掉,不會互相回打(不是靠「相同值不觸發事件」——
+            兩邊可捲範圍不等、被夾住時那句不成立)。
             垂直捲軸的橫向補償**不在這裡**:body 出現垂直捲軸時內容盒少一個捲軸寬,補的是內層 wrapper 的
             **內容寬**(`minWidth + vScrollbarSpacer`,見下方),對應 AG Grid `CenterWidthFeature(addSpacer)`;
             2026-09-03 之前那版用 `padding-inline-end` 補,已隨「欄寬只算一次」一併移除

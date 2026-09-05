@@ -968,7 +968,9 @@ const scrollUxReport = await page.evaluate(async () => {
     cb.scrollTop = 0; cb.dispatchEvent(new Event('scroll')); await sleep(30)
     // 滾輪轉發:只有 center 真的能垂直捲時才該生效(捲不動時要讓事件冒泡給頁面)
     const canScrollY = cb.scrollHeight > cb.clientHeight
-    let wheelDelta = null
+    const canScrollX = cb.scrollWidth > cb.clientWidth
+    const right = wrap.querySelector(':scope > [data-datatable-panel="right"]')
+    let wheelDelta = null, wheelRight = null, wheelShift = null
     if (left && canScrollY) {
       cb.scrollTop = 0
       left.dispatchEvent(new WheelEvent('wheel', { deltaY: 180, bubbles: true, cancelable: true }))
@@ -976,11 +978,27 @@ const scrollUxReport = await page.evaluate(async () => {
       wheelDelta = cb.scrollTop
       cb.scrollTop = 0; cb.dispatchEvent(new Event('scroll'))
     }
+    // 右側面板是另一個監聽,不能只驗左側(2026-09-05 稽核:先前只驗左側 = 右側監聽拿掉也全綠)
+    if (right && canScrollY) {
+      cb.scrollTop = 0
+      right.dispatchEvent(new WheelEvent('wheel', { deltaY: 180, bubbles: true, cancelable: true }))
+      await sleep(50)
+      wheelRight = cb.scrollTop
+      cb.scrollTop = 0; cb.dispatchEvent(new Event('scroll'))
+    }
+    // Shift+滾輪 = 橫向(Firefox / Windows 給 deltaY + shiftKey):要跟 center body 原生與 v33 一致
+    if (left && canScrollX) {
+      cb.scrollLeft = 0; cb.scrollTop = 0
+      left.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, deltaX: 0, shiftKey: true, bubbles: true, cancelable: true }))
+      await sleep(50)
+      wheelShift = { x: cb.scrollLeft, y: cb.scrollTop }
+      cb.scrollLeft = 0; cb.scrollTop = 0; cb.dispatchEvent(new Event('scroll'))
+    }
     out.push({
       gutter, troughs: troughs.length,
       aligned: troughs.every((t) => Math.abs(t.getBoundingClientRect().top - bandTop) <= 0.5),
       stable: JSON.stringify(before) === JSON.stringify(after),
-      canScrollY, wheelDelta,
+      canScrollY, canScrollX, wheelDelta, wheelRight, wheelShift,
     })
   }
   return out
@@ -995,10 +1013,89 @@ scrollUxReport.forEach((r, i) => {
     console.log(`⏭  I17a/b 表 ${i + 1} — 本環境捲軸不佔版面(overlay),軌道不渲染,不適用`)
   }
   if (r.canScrollY) {
-    record('I17c', `表 ${i + 1}:釘選欄滾輪轉發到 center`, r.wheelDelta === 180,
+    record('I17c', `表 ${i + 1}:左釘選欄滾輪轉發到 center`, r.wheelDelta === 180,
       `wheel(0,180) 之後 center scrollTop = ${r.wheelDelta}(0 = 釘選欄吃不到滾輪)`)
+    if (r.wheelRight !== null) {
+      record('I17c', `表 ${i + 1}:右釘選欄滾輪轉發到 center`, r.wheelRight === 180,
+        `wheel(0,180) 之後 center scrollTop = ${r.wheelRight}`)
+    }
   } else {
     console.log(`⏭  I17c 表 ${i + 1} — center 沒有垂直溢出,滾輪本來就該冒泡給頁面,不適用`)
+  }
+  if (r.wheelShift) {
+    record('I17d', `表 ${i + 1}:釘選欄 Shift+滾輪 = 橫向(與 center 原生、v33 gridBodyCtrl.ts#L394-L411 同義)`,
+      r.wheelShift.x === 120 && r.wheelShift.y === 0,
+      `shift+wheel(0,120) 之後 center scrollLeft = ${r.wheelShift.x} / scrollTop = ${r.wheelShift.y}(應 120 / 0)`)
+  }
+})
+
+/* ── I18 / I19:次要區導回 center、程式化同步不回彈(2026-09-05 稽核補閘)────────────────
+ * 缺陷 C(次要區被瀏覽器捲動要導回 center)與缺陷 γ(程式化寫入不得回推 center)先前都只有
+ * 手動 Chrome 實測 —— 把 onSecondaryScroll 或 writtenRef 整段拿掉,所有既有閘照樣全綠。
+ * 這裡量 scrollLeft / scrollTop 的數值,不看屬性。頁籤隱藏時瀏覽器不派發 scroll 事件,所以每次寫入後
+ * 手動 dispatch,並等兩幀讓 React 的 onScroll 跑完。
+ */
+const syncReport = await page.evaluate(async () => {
+  const frames = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+  const kick = async (el) => { el.dispatchEvent(new Event('scroll')); await frames() }
+  const out = []
+  for (const cb of document.querySelectorAll('[data-datatable-hscroll]')) {
+    const wrap = cb.parentElement
+    const left = wrap.querySelector(':scope > [data-datatable-panel="left"]')
+    const right = wrap.querySelector(':scope > [data-datatable-panel="right"]')
+    const header = cb.closest('[role="table"]')?.querySelector('[data-datatable-header-panel="center"]')
+    const r = { canX: cb.scrollWidth > cb.clientWidth, canY: cb.scrollHeight > cb.clientHeight }
+    if (r.canX && header) {
+      cb.scrollLeft = 0; await kick(cb)
+      header.scrollLeft = 200; await kick(header)
+      r.headerRedirect = { center: cb.scrollLeft, header: header.scrollLeft }
+      const max = cb.scrollWidth - cb.clientWidth
+      cb.scrollLeft = max; await kick(cb); await kick(header)
+      r.noBounce = { max, center: cb.scrollLeft, header: header.scrollLeft }
+      // 把 header 的可捲範圍縮小 40px(縮它的內容盒,不碰 body,才不會被補償邏輯抵消):
+      // center 捲到 max → header 被夾在 max−40 → 那一筆事件值 = 被夾後的值 → 必須被認出並吞掉,center 不得被推回
+      const inner = header.firstElementChild
+      const prevMin = inner.style.minWidth
+      inner.style.minWidth = `${inner.getBoundingClientRect().width - 40}px`
+      cb.scrollLeft = 0; await kick(cb)
+      cb.scrollLeft = max; await kick(cb); await kick(header)
+      r.mismatch = { center: cb.scrollLeft, expected: max, header: header.scrollLeft }
+      inner.style.minWidth = prevMin
+      cb.scrollLeft = 0; await kick(cb)
+    }
+    if (r.canY && left) {
+      cb.scrollTop = 0; await kick(cb)
+      left.scrollTop = 300; await kick(left)
+      // 導回後 center 自己的 scroll 事件由瀏覽器派發(隱藏頁籤不派發,故手動補一次),右側才會跟上
+      await kick(cb)
+      r.leftRedirect = { center: cb.scrollTop, left: left.scrollTop, right: right ? right.scrollTop : null }
+      cb.scrollTop = 0; await kick(cb)
+    }
+    out.push(r)
+  }
+  return out
+})
+record('I18', `真的量到 center body(否則下面的斷言是空轉)`, syncReport.length > 0, `量到 ${syncReport.length} 張表`)
+syncReport.forEach((r, i) => {
+  if (r.headerRedirect) {
+    record('I18a', `表 ${i + 1}:header 被捲動 200 → 導回 center(缺陷 C)`,
+      r.headerRedirect.center === 200 && r.headerRedirect.header === 200,
+      `center ${r.headerRedirect.center} / header ${r.headerRedirect.header}(應 200 / 200)`)
+    record('I19a', `表 ${i + 1}:center 捲到最右不回彈,header 跟上`,
+      r.noBounce.center === r.noBounce.max && r.noBounce.header === r.noBounce.max,
+      `max ${r.noBounce.max}:center ${r.noBounce.center} / header ${r.noBounce.header}`)
+    record('I19b', `表 ${i + 1}:header 可捲範圍被縮小時,被夾過的那一筆被吞掉、center 不被推回(缺陷 γ)`,
+      r.mismatch.center === r.mismatch.expected,
+      `center ${r.mismatch.center}(應停在 ${r.mismatch.expected};header 被夾在 ${r.mismatch.header})`)
+  } else {
+    console.log(`⏭  I18a/I19 表 ${i + 1} — center 沒有水平溢出,不適用`)
+  }
+  if (r.leftRedirect) {
+    record('I18b', `表 ${i + 1}:左釘選欄被捲動 300 → 導回 center 並校準右側(缺陷 C)`,
+      r.leftRedirect.center === 300 && (r.leftRedirect.right === null || r.leftRedirect.right === 300),
+      `center ${r.leftRedirect.center} / right ${r.leftRedirect.right}(應 300 / 300)`)
+  } else {
+    console.log(`⏭  I18b 表 ${i + 1} — center 沒有垂直溢出,不適用`)
   }
 })
 
