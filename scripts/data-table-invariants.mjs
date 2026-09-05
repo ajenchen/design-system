@@ -27,13 +27,18 @@ if (!existsSync(STATIC)) {
 // **stale-build 守衛**(2026-09-03 補;失敗記憶索引既有條目:「storybook-smoke 驗舊 build = 假綠」):
 // 只檢查目錄存不存在會讓「改了 src 但沒重建」的情況拿到假綠 —— 量到的是上一版的 DOM。
 {
-  const SRC_DIR = join(ROOT, 'packages/design-system/src/components/DataTable')
-  const newestSrc = readdirSync(SRC_DIR)
+  // I27 量的是 PeoplePicker 的頭像串,只盯 DataTable 會讓它拿到假綠 —— 斷言依賴哪個目錄
+  // 就必須盯哪個目錄(2026-09-06 補;原本只有 DataTable)。
+  const SRC_DIRS = [
+    join(ROOT, 'packages/design-system/src/components/DataTable'),
+    join(ROOT, 'packages/design-system/src/components/PeoplePicker'),
+  ]
+  const newestSrc = SRC_DIRS.reduce((outer, dir) => Math.max(outer, readdirSync(dir)
     .filter((f) => /\.(tsx?|css)$/.test(f))
-    .reduce((max, f) => Math.max(max, statSync(join(SRC_DIR, f)).mtimeMs), 0)
+    .reduce((max, f) => Math.max(max, statSync(join(dir, f)).mtimeMs), 0)), 0)
   const builtAt = statSync(join(STATIC, 'index.json')).mtimeMs
   if (newestSrc > builtAt) {
-    console.error('✗ storybook-static 比 DataTable 原始碼舊 —— 量到的會是上一版 DOM(假綠)。')
+    console.error('✗ storybook-static 比 DataTable / PeoplePicker 原始碼舊 —— 量到的會是上一版 DOM(假綠)。')
     console.error(`   最新原始碼 ${new Date(newestSrc).toISOString()} > 建置 ${new Date(builtAt).toISOString()}`)
     console.error('   請先跑 `npm run build-storybook`。')
     process.exit(1)
@@ -1829,6 +1834,66 @@ for (const [storyName, label, steps] of [
     await page.waitForTimeout(200)
     const out = await page.evaluate(measureRowHover, HOVER_ROW)
     record('I26', `${label}:移出表格後該列 data-hovered 歸零且底色回透明`, out.hovered === 0 && out.noneHoverBg, `hovered ${out.hovered} / bgs ${JSON.stringify(out.bgs)}`)
+  }
+}
+
+/* ── I27:頭像串的溢出判斷必須量「被分配到的空間」,不得量自己 ────────────────────
+ * 根 invariant:量測結果會回頭改變量測對象時,就形成單向棘輪。原碼把 ResizeObserver 掛在
+ * stack 自己(`inline-flex`,寬度 = 目前畫了幾顆圓),於是「少畫一顆 → 量到更窄 → 再少畫一顆」;
+ * 而「0 顆 avatar + 一個 +N」正是這條公式的穩定不動點(slots ≤ 1 ⇒ visible = 0,chip 只佔
+ * 24px ⇒ 下次量到 24 ⇒ slots 仍 1),空間還回來也永遠回不去 —— 症狀就是「明明還有空間卻只剩
+ * 一顆 +N,重整才會好」。
+ *
+ * 同檔的編輯路徑(Combobox)本來就是量 `[class*="flex-1"][class*="min-w-0"]` 這個被分配到的盒子,
+ * 只有顯示路徑量自己 —— 兩條路徑對同一個 cell 寬度得到不同答案,正是 avatar-stack-overflow.ts
+ * 檔頭宣稱已經修掉的那個 SSOT 違反,實際上只修了一半。
+ *
+ * 這條閘分兩層:
+ *   (a) 原始碼層 —— 量測對象必須來自祖先,且寬度為 0 時不得拿去算(deterministic,會抓到原 bug)。
+ *   (b) DOM 層 —— 有空位時不得顯示 +N。
+ * 不寫「擠窄→還原」的 DOM 斷言:該手法在本 story 的資料量(每列最多 2 人)下無法穩定觸發收合,
+ * 寫了會是空轉的假綠。 */
+{
+  const src = readFileSync(join(ROOT, 'packages/design-system/src/components/PeoplePicker/person-display.tsx'), 'utf8')
+  // 必須先剝掉註解 —— 那段註解裡引用了舊寫法(`availablePx: el.clientWidth`)當反面教材,
+  // 不剝的話正則會打到註解,變成永遠 FAIL 的假閘。
+  const roBlock = src
+    .slice(src.indexOf('React.useLayoutEffect'), src.indexOf('React.useLayoutEffect') + 2600)
+    .split('\n').filter((l) => !l.trim().startsWith('//')).join('\n')
+  record('I27a', '顯示路徑的 ResizeObserver 觀察祖先容器,不是頭像串自己',
+    /const\s+box\s*=\s*el\.parentElement/.test(roBlock) && /ro\.observe\(box\)/.test(roBlock),
+    roBlock.match(/ro\.observe\([^)]*\)/)?.[0] ?? '找不到 ro.observe')
+  record('I27a', 'availablePx 取自該容器,而非 el.clientWidth',
+    /availablePx\b/.test(roBlock) && !/availablePx:\s*el\.clientWidth/.test(roBlock),
+    /availablePx:\s*el\.clientWidth/.test(roBlock) ? '仍在量自己(棘輪未拆)' : 'ok')
+  record('I27a', '寬度 ≤ 0(尚未佈局)時不得拿去算,否則會鎖進收縮態',
+    /if\s*\(availablePx\s*<=\s*0\)\s*return/.test(roBlock), '缺少 <=0 早退守衛')
+}
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
+await page.waitForSelector('[role="cell"]')
+await page.waitForTimeout(400)
+{
+  const st = await page.evaluate(() => {
+    const hdrs = [...document.querySelectorAll('[role="columnheader"]')]
+    const idx = hdrs.findIndex((h) => (h.innerText || '').includes('Reviewers'))
+    if (idx < 0) return null
+    const cells = [...document.querySelectorAll('[role="row"]')]
+      .map((r) => r.querySelectorAll('[role="cell"]')[idx]).filter(Boolean)
+    const cell = cells.find((c) => c.querySelectorAll('img').length >= 2)
+    if (!cell) return null
+    const grp = cell.querySelector('span.inline-flex')
+    return {
+      plus: /\+\d/.test(cell.innerText),
+      ownW: +grp.getBoundingClientRect().width.toFixed(1),
+      availW: +grp.parentElement.getBoundingClientRect().width.toFixed(1),
+    }
+  })
+  if (!st) record('I27b', 'Reviewers 欄找得到多人頭像串(否則以下斷言空轉)', false, '找不到 ≥2 人的儲存格')
+  else {
+    record('I27b', `還有空位時不得顯示 +N(可用 ${st.availW}px,只佔 ${st.ownW}px)`,
+      !st.plus, JSON.stringify(st))
+    record('I27b', '被分配到的容器確實比頭像串自身寬(兩者相等的話這條閘抓不到棘輪)',
+      st.availW > st.ownW + 1, `avail ${st.availW} / own ${st.ownW}`)
   }
 }
 

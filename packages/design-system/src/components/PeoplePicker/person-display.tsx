@@ -215,9 +215,26 @@ function MultiPersonDisplay({
     if (!measured || !value || value.length === 0) return
     const el = containerRef.current
     if (!el) return
+    // **2026-09-06 修:量測對象必須是「被分配到的空間」,不是「自己畫多寬」**。
+    //
+    // 原本 `ro.observe(el)` + `availablePx: el.clientWidth` 量的是 stack 自己 —— 它是
+    // `inline-flex`(收縮到內容),clientWidth 等於「目前畫了幾顆圓」,不是儲存格還剩多少。
+    // 於是量測與佈局互為因果,形成單向棘輪:少畫一顆 → 量到更窄 → 再少畫一顆;而
+    // 「1 顆 avatar + 1 顆 +N」本身是這條公式的穩定不動點(2 slots ⇒ visible = 1),
+    // 空間還回來也**永遠回不去**。線上實測 grpW=46 / cellW=180 即此循環的證據 ——
+    // 這就是「明明還有空間卻顯示成溢出、重整才會好」的真因(GitHub main 同樣有,非本次改壞)。
+    //
+    // 三個 `measured` 消費點(people-picker.tsx:260 / 281 / 308)的父層分別是
+    // `flex w-full min-w-0` 與 `flex-1 min-w-0`,寬度由外層決定、**不受本元件內容影響**,
+    // 量它才是 `getAvatarStackVisibleCount` jsdoc 講的 availablePx。
+    const box = el.parentElement ?? el
     const calc = () => {
+      const availablePx = box.clientWidth
+      // 尚未佈局(story 切換過渡、display:none、圖未載入)時寬度為 0 —— 用 0 去算會直接
+      // 鎖進收縮態且不再復原,所以寧可不更新,等下一次 ResizeObserver 有真實寬度再算。
+      if (availablePx <= 0) return
       const visible = getAvatarStackVisibleCount({
-        availablePx: el.clientWidth,
+        availablePx,
         total: value.length,
         avatarPx: AVATAR_STACK_AVATAR_PX[size],
         overflowChipPx: AVATAR_STACK_OVERFLOW_CHIP_PX[size],
@@ -226,7 +243,7 @@ function MultiPersonDisplay({
     }
     calc()
     const ro = new ResizeObserver(calc)
-    ro.observe(el)
+    ro.observe(box)
     return () => ro.disconnect()
   }, [measured, size, value])
 
