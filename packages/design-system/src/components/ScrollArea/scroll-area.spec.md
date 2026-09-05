@@ -37,7 +37,7 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 
 ## 何時用
 
-- **寬內容橫向捲動**——內容寬於容器的一般場景(寬表格類 demo、程式碼區塊等)。**例外:DataTable 中央捲動區不用 ScrollArea**——走 native `overflow-x-auto` + JS scrollLeft 同步(pinned column 結構需求,理由與 post-v1 重構計畫見 `data-table.spec.md`「捲軸 canonical」節;2026-06-12 收斂跨 spec 張力,以已實作且有 rationale 的 DataTable 側為準)
+- **寬內容橫向捲動**——內容寬於容器的一般場景(寬表格類 demo、程式碼區塊等)。**例外:DataTable 中央捲動區不用 ScrollArea**——走 native `overflow-x-auto` + JS scrollLeft 同步(pinned column 結構需求,理由與 post-v1 重構計畫見 `data-table.spec.md`「捲軸 canonical」節;2026-06-12 收斂跨 spec 張力,以已實作且有 rationale 的 DataTable 側為準)。**例外二:Pagination 最後一階**的整條分頁列橫向可捲同樣走 native `overflow-x-auto`、且不加任何 affordance —— 理由在 `pagination.spec.md`「內部結構與摺疊規則」(scroll arrow 與上下頁箭頭同形會混淆「捲動」與「翻頁」;代價只在捲軸佔版面的平台多一條捲軸高)
 - **Sheet / Dialog body 垂直捲動**——內容可能超出容器高度
 - **Sidebar nav 長列表**——導覽項目多於可見高度
 - **任何「內容可能溢出容器」且「跨 OS 視覺必須一致」的 sub-region**
@@ -73,14 +73,16 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 
 | 元素 | Token | 值 |
 |------|-------|----|
-| Scrollbar 寬度 | 固定 10px(`w-2.5` / `h-2.5`) | 跨 size 不變——scrollbar 是功能性元件,不隨內容尺寸變化 |
+| Scrollbar 寬度 | 固定 10px(`w-2.5` / `h-2.5`;ScrollArea 自繪的 Radix 拇指) | 跨 size 不變——scrollbar 是功能性元件,不隨內容尺寸變化。**不含 DataTable**(原生捲軸,見下段) |
 | Thumb 邊緣 inset | 1px(實作細節見 `.tsx`) | thumb 與容器邊緣保留 1px 視覺 inset,不貼死邊界 |
 | Track | 透明(無 bg) | overlay 浮層,不搶視覺 |
-| Thumb bg | `--scrollbar-thumb` → hover `--scrollbar-thumb-hover`(semantic alias,resolves to `--border` / `--border-hover` = neutral-5/-6) | 靜態時低存在感,hover 加深反饋可抓握。2026-05-09 抽 SSOT alias 跟 DataTable fake scrollbar 共享 token,避免 thumb 視覺未來演化時誤動 Field/Input/Checkbox border |
+| Thumb bg | `--scrollbar-thumb` → hover `--scrollbar-thumb-hover`(semantic alias,resolves to `--border` / `--border-hover` = neutral-5/-6) | 靜態時低存在感,hover 加深反饋可抓握。2026-05-09 抽 SSOT alias,與 DataTable **原生**捲軸的 `scrollbar-color` 共享同一組顏色 token(DataTable 沒有自繪 / fake scrollbar —— 原句「fake scrollbar」2026-09-05 更正),避免 thumb 視覺未來演化時誤動 Field/Input/Checkbox border |
 | Thumb radius | `rounded-full` | 圓形 thumb 在垂直／水平方向都保持同一端點幾何 |
 | 過渡 | `transition-colors` | 色彩變化平滑,不做尺寸動畫 |
 
-**Scrollbar 寬度固定 10px 不隨 size 變**:不同 size 的元件(sm/md/lg Button、DataTable)都消費同一個 10px scrollbar;scrollbar 是「捲動機制」不是「內容尺寸」,不需要對齊 content 字級。
+**Scrollbar 寬度固定 10px 不隨 size 變**:不同 size 的元件(sm/md/lg Button 等 ScrollArea 消費者)都消費同一個 10px scrollbar;scrollbar 是「捲動機制」不是「內容尺寸」,不需要對齊 content 字級。
+
+**DataTable 不在這個 10px 之內**(2026-09-05 更正,原寫「DataTable 都消費同一個 10px」):它不用 ScrollArea,走原生捲軸 + W3C 標準屬性 `scrollbar-width: thin`(寬度由瀏覽器決定,Chrome/macOS classic 實測 11px、Firefox 另一值)+ `scrollbar-color`,與 ScrollArea **只共用顏色 token** `--scrollbar-thumb` / `--scrollbar-track`;thumb radius 不可控。不用 `::-webkit-scrollbar` 湊成 10px 的理由見 `data-table.spec.md` 缺陷表 H(裸 `::-webkit-scrollbar` 會把 overlay 捲軸強制變成佔版面的 classic 捲軸)。
 
 ---
 

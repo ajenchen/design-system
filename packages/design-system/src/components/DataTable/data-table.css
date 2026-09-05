@@ -90,12 +90,13 @@
    - Field naked edit owns its own border(per `field-controls.spec.md` + Field state machine SSOT)
    - DataTable layer owns hover / selection / range overlay paint(measured rect,4-edge consistent)
 
-   **Implementation**:`box-shadow: inset` 4 邊 1px divider,**不佔 layout space**,**不影響
-   content 起始位置**(per user verbatim「在 cell 內容起始位置不變的前提下」原則):
+   **Implementation**(歷史:2026-05-10 用 `box-shadow: inset` 畫;2026-09-04 起改為 1px 偽元素,
+   見下方 `.dtCellGrid::after`)—— 不佔 layout space、**不影響 content 起始位置**(per user verbatim
+   「在 cell 內容起始位置不變的前提下」原則):
    - 之前 cell 用 `border-r border-divider` 只右邊 → hover overlay outline:-1px 只右邊壓
      cell border,上左下 sub-pixel 不一致(user 抓到「右 1px / 上左下 2px」bug)
-   - 改用 inset box-shadow 4 邊 → cell 4 邊都有 grid divider line → overlay outline -1px
-     在 4 邊都剛好壓 cell border line in-place → 4 邊 SSOT 視覺一致
+   - 改為 paint-only 的線(先陰影、後偽元素)→ 視覺 4 邊 grid line 由 row border + 相鄰 cell
+     合成 → overlay outline -1px 在 4 邊都剛好壓 line in-place → 4 邊 SSOT 視覺一致
 
    Cell wrapper 加此 class 取代 `border-r border-divider`(inline edit + spreadsheet mode)。
 
@@ -108,7 +109,11 @@
    每個 panel(left/center/right)最右 cell 不該畫線,因為:
      - Left panel 最右 cell 旁:凍結邊界線
      - Center / Right panel 最右 cell 旁:outer container border(rounded-md)
-   重疊就會變成 2px 視覺,所以 `:last-child` 排除。
+   重疊就會變成 2px 視覺,所以本區最後一欄排除。
+   **2026-09-05 排除條件從 `:last-child` 改成 `[data-dt-last-col]`**(缺陷 M 第二次修正):`:last-child`
+   判的是 DOM 位置,而列的最後一個子元素不一定是 cell —— 拖曳列時 `dropIndicatorRow.after` 接在最後
+   一格後面,最後一格瞬間不再是 `:last-child`,線就冒出來,表頭同一欄卻沒線。改由 tsx 的
+   `isLastInRegion`(表頭 `showDivider` 用的同一個函式)寫 attribute,判準只剩一份、與 DOM 位置無關。
    **2026-09-04 從內陰影改成 1px 偽元素**:這是全表最後一處還在用陰影畫線的地方,而它正上方
    同一欄位置的表頭欄間線是真元素(ResizeHandle 內的 `<span bg-divider>`)—— 非整數縮放 / Retina
    下瀏覽器對「陰影」與「背景色盒」的柵格化取整不同,同規格的線會出現 1 vs 2 實體像素、上下接不起來。
@@ -129,8 +134,9 @@
   pointer-events: none;
 }
 
-.dtCellGrid:last-child::after {
-  /* 每 panel 最右 cell:凍結邊界線或 outer rounded border 接管,不重複畫。 */
+.dtCellGrid[data-dt-last-col]::after {
+  /* 本區最後一欄(tsx `isLastInRegion` 判定,與表頭 `showDivider` 同源):凍結邊界線或
+     outer rounded border 接管,不重複畫。不用 `:last-child`:見上方 2026-09-05 說明。 */
   content: none;
 }
 
@@ -153,11 +159,12 @@
    ────────────────────────────────────────────────────────────
    原 `[data-column-id="__select__"]:not(:last-child)` retire — 走 inlineEdit canonical。
 
-   Panel boundary mechanism 用 `box-shadow: inset` 畫 divider 在 panel 內側 1px,**不用**
+   Panel boundary mechanism 把 divider 畫在 panel 內側 1px(paint-only,不入 box model),**不用**
    `border-r/l border-divider` outer edge。為何:Windows V scrollbar paint 蓋 outer-edge
-   border(Roadmap demo right panel border invisible per 2026-05-12 user 抓)。inset shadow
-   paint-only 不入 box model,跟 `.dtCellGrid` SSOT pattern 一致。對齊 MUI X column pinning
-   border+shadow option / AG Grid issue #1220。Codex M31 Layer C evaluated YES。
+   border(Roadmap demo right panel border invisible per 2026-05-12 user 抓)。2026-05-12 當時用
+   `box-shadow: inset`;2026-08-20 起與 `.dtCellGrid` 一樣改為 1px 偽元素(見下),「內側 1px、不入
+   盒模型、不被捲軸蓋」的理由不變。對齊 MUI X column pinning border+shadow option / AG Grid
+   issue #1220。Codex M31 Layer C evaluated YES。
    ──────────────────────────────────────────────────────────── */
 /* 2026-08-20 機制統一(user 拍板):凍結邊界線從「內陰影」改為 1px 偽元素。
    非整數縮放/Retina 下,瀏覽器對「陰影」與「背景色盒」的柵格化取整不同,造成

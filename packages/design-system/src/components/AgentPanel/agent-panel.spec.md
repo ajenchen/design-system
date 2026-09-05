@@ -306,9 +306,12 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
     [Radix Themes 800ms](https://github.com/radix-ui/themes/blob/main/packages/radix-ui-themes/src/components/spinner.css#L2)、
     [Primer 1000ms](https://github.com/primer/react/blob/main/packages/react/src/Spinner/Spinner.tsx#L10)、
     [Ant 1.2s](https://github.com/ant-design/ant-design/blob/master/components/spin/style/index.ts#L196)、
-    [Material 3 1333ms](https://github.com/material-components/material-web/blob/main/progress/internal/_circular-progress.scss#L43)、
     [Fluent 1.5s](https://github.com/microsoft/fluentui/blob/master/packages/react-components/react-spinner/library/src/components/Spinner/useSpinnerStyles.styles.ts#L58)、
-    [VS Code 1.5s](https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/ui/codicons/codicon/codicon-modifiers.css#L23)。
+    [VS Code 1.5s](https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/ui/codicons/codicon/codicon-modifiers.css#L23)、
+    [Material 3 ≈1568ms](https://github.com/material-components/material-web/blob/main/progress/internal/_circular-progress.scss#L47)
+    (單層等速旋轉的常數是 `$linear-rotate-duration: calc($arc-duration * 360 / 306)` = 1333 × 360 / 306 ≈ 1568ms;
+    `#L43` 的 `$arc-duration: 1333ms` 是弧長形變週期、不是轉速 —— 2026-09-05 更正,2026-09-02 版原本寫對,
+    Material 因此移到「由快到慢」最慢端)。
     取 **0.5s/圈**:落在最快檔 0.45–0.69s 之內,不是自創的更快值;唯一更快的出貨值 0.45s 只多 11% 速度,
     卻讓「一息 = N 圈」斷掉(3 ÷ 0.45 = 6.67),故不取。實心雙緞帶比細弧線更吃轉速,取最快檔而非中性帶。
     **閃爍**:造型無 C2 對稱(洞心繞轉軸轉 180° 不落回自身)→ 整圈才重複一次 = 2.0 Hz,低於
@@ -378,6 +381,14 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
     - **不外推**(2026-09-03 曾外推到 40×40,2026-09-04 撤回):外推會生出隱形帶,搶走底下內容的點擊,
       並把 Radix 錨點推遠(tooltip 離可視形狀 20px 而不是 8px)。tooltip 與觸發點的距離恆為 8px(`OVERLAY_SIDE_OFFSET`),
       兩者不重疊 —— 所以「點 tooltip 觸發按鈕」不是需求,也不該發生。
+    - **「會出 tooltip 的範圍」指的是觸發範圍,不是「tooltip 保持開著的範圍」**(2026-09-05 更正敘述):Radix Tooltip
+      未設 `disableHoverableContent` 時,游標離開鈕、穿過那 8px 空隙移向 tooltip 的期間 tooltip 不關
+      ([Radix Tooltip `disableHoverableContent` / hoverable content](https://www.radix-ui.com/primitives/docs/components/tooltip)),
+      這是**刻意保留**的 —— [WCAG 1.4.13 Content on Hover or Focus](https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus.html)
+      要求懸停內容可被指標到達(hoverable)。空隙上的點擊落到底下內容是正確的,tooltip 開著不代表那裡屬於鈕。
+      定位殼改 `w-fit`(2026-09-04)拿掉的是殼比鈕寬 12px 的**結構鬆弛**(殼一直是 `pointer-events-none`,從未參與命中);
+      它對「空隙上 tooltip 仍開著」沒有、也不可能有影響 —— 先前把「殼的帶讓 tooltip 開著」記為此症狀的根因是誤判,撤回。
+      命中區 ≡ 可視形狀仍是唯一契約。
     - **也不內縮**:先前寫成「按鈕保持矩形、圓角只畫內層,角落才點得到」,那是把**多**當成修正 ——
       使用者要的是相等。(同時撤回一條誤判:2026-09-03 記錄「貼邊態 dy=±12 時最左 1–3px 點不到」並歸因於圓角命中;
       複核幾何後,D 形在該高度的左緣本來就在 x≈6.8 而非 x=0,那幾點原本就在**視覺之外**,不是死區。)
@@ -445,7 +456,8 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   - **區域 → 落點表(可擴充)**:磁吸邏輯 = 依序判定指標所在區域,命中即決定「預覽 = 落點」;沒命中 = 圓鈕跟游標、
     放開回家;要加磁吸點(鏡像左緣、四角)只在 `agent-panel-fab.tsx` `SNAP_ZONES` 加一列(區域矩形同時就是帶的底色範圍),流程不變。
     判準:以指標判定、一區一落點一形狀、邊界 16px 遲滯、區域不重疊且邊帶優先於角落、無命中不做「最近磁吸點」
-    (會從放開處跳走)。上緣 / 下緣永不設區(標題列 / 分頁列)。
+    (會從放開處跳走)。上緣 / 下緣永不設區(標題列 / 分頁列)。**指標 x 夾在舞台內再判區(超出右緣讀作右緣;y 不夾)**:
+    拖曳用 pointer capture,`clientX` 可以越過視窗右緣,夾回舞台後仍落在右緣帶內 → 拖過頭一樣算貼邊;y 不夾,越過上下緣就是沒命中。
   - 位置由 consumer 受控/非受控(`placement / defaultPlacement / onPlacementChange`,`{kind:'home'}` /
     `{kind:'dock',y}`),DS 不寫 storage;要跨 session 記憶由 consumer 存。
   - 對照:[Copilot DAB 可拖到內容區側邊變小圖示、拖回畫布即展開](https://support.microsoft.com/en-us/office/foundations-experiences/copilot-dab/the-copilot-dynamic-action-button-in-word-excel-and-powerpoint)、

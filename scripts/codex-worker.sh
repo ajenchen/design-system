@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 # codex-worker — 讓沙箱內的 AI 不必請 user 剪貼,就能把 brief 交給 second opinion 執行。
 #
-# ── 為什麼需要它 ──
-# Claude Code 的沙箱把 unix socket 全關(`allowUnixSockets: []`),而 codex CLI 需要開
-# in-process app-server,所以**沙箱內起不來**(實測:`failed to initialize in-process
-# app-server client: Operation not permitted`)。這是平台安全邊界,不是我們自家的鎖,
-# 不該去解它;而讀 auth token 直接打 HTTPS 會被權限分類器擋(讀憑證 + 對外送出),
-# 那道也不該繞。
+# ── 狀態:備援(2026-09-05 起不是主路徑)──
+# **主路徑是 `node scripts/codex-exec.mjs --brief <path> --out <path>`,沙箱內直接跑,不需要
+# 任何人開終端機。** 本檔留作它失效時的備援。
+#
+# 本檔原本的理由「沙箱把 unix socket 全關,codex 起不來,那是平台安全邊界」**歸因錯了**。
+# 2026-09-05 逐項實測,兩道其實都是自家的鎖:
+#   (a) `~/.codex/config.toml` 裡有三個 MCP server(pencil 的 .app、`npx @playwright/mcp`、
+#       node_repl),codex 啟動時去 spawn 它們被沙箱擋 → app-server 初始化失敗。
+#       用一份只刪掉 `[mcp_servers.*]` 的臨時 CODEX_HOME 就正常啟動。
+#   (b) 沙箱的過濾代理做 TLS 攔截,codex(rustls)不認它的 CA → `invalid peer certificate:
+#       UnknownIssuer`。curl 用 `/etc/ssl/cert.pem` 就通,把同一份指給 rustls(`SSL_CERT_FILE`)即可。
+# 兩道都沒有放寬任何安全邊界(同一個代理、同一份系統信任庫、同一份 user 訂閱)。
 #
 # 解法是**佇列 + 常駐 worker**:user 在自己的終端機跑一次本腳本,之後 AI 只要把 brief
 # 寫進 `$QUEUE/inbox/`,worker 就會執行並把結果寫回 `$QUEUE/outbox/`,AI 自己讀。

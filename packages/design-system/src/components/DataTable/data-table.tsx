@@ -349,9 +349,9 @@ function applySelectIds(
   return { mode: 'all', excluded: Array.from(set) }
 }
 const cellPadding: React.CSSProperties = { paddingBlock: 'var(--table-cell-py)', paddingInline: 'var(--table-cell-px)' }
-// 表頭面板:底色 + 下分隔線。**畫在 panel 不畫在 row**,因為 `--muted` 是半透明,
+// 表頭面板:**只帶底色**。底色**畫在 panel 不畫在 row**,因為 `--muted` 是半透明,
 // 兩層會疊出兩種深淺(見 renderHeaderRow 的註解)。三個 panel 共用同一個常數 = 單一住所。
-// 表頭面板:底色 + 下分隔線都畫在這裡(row 不畫)。
+// 下分隔線**不在這裡**:它掛在外層列群組的 `.dtHeaderRowGroup::after`(data-table.css),見下文。
 // **分隔線用偽元素不用 `border-b`**(2026-09-04 對抗式稽核抓到):body row 的線含在 `rowHeight`
 // 的 border-box 之內(40 含線),而 panel 沒有指定高度 —— 掛 `border-b` 會讓表頭變成
 // row 40 + border 1 = **41**,比每一列高 1px、分隔線落在 40 的節奏之外,header cell 的置中
@@ -2135,10 +2135,14 @@ function DataTableInner<TData>(
   invalidRef.current = invalidDropActive
 
   // code-quality-allow: long-function — cell render 含 selection / pinned / type-aware formatter 三邏輯,拆會增 prop drilling
-  // 註:欄間線由 CSS `.dtCellGrid:last-child::after` 判定(見 data-table.css),不吃參數 ——
-  // 原本這裡有一個 `_isLastInRow` 參數從宣告日起就沒被用過,呼叫端還為它算了一段條件式,
-  // 讀起來像「列這側也有判斷」。2026-09-04 連同呼叫端一併移除(缺陷 M)。
-  const cellEl = (cell: ReturnType<typeof rows[number]['getVisibleCells']>[number]) => {
+  // 缺陷 M(2026-09-05 第二次修正):「本區最後一欄不畫欄間線」的判準**只有 `isLastInRegion` 一份**,
+  // 表頭(`showDivider`)與列(這裡的 `data-dt-last-col`)都吃它。列這側原本靠 CSS
+  // `.dtCellGrid:last-child::after{content:none}` 判 DOM 位置 —— 但列的最後一個子元素不一定是 cell:
+  // 拖曳列時 `dropIndicatorRow.after` 會接在最後一格之後,最後一格瞬間不再是 `:last-child`,
+  // 線就冒出來,而表頭同一欄沒線(2026-09-04 ledger 寫「拖曳中最後一格突然畫線」查無此事,
+  // 是只查了表頭那側的 ResizeHandle;列這側可重現,現撤回)。改成由 JS 判準寫 attribute,
+  // CSS 只認 attribute(`.dtCellGrid[data-dt-last-col]::after`),DOM 位置再也影響不到它。
+  const cellEl = (cell: ReturnType<typeof rows[number]['getVisibleCells']>[number], isLastInRegionCell: boolean) => {
     // L2 selection:__select__ 欄自訂 render
     // multi 模式 → Checkbox(可多選)
     // single 模式 → Radio(單選 visual,對齊 Material DataGrid / Polaris IndexTable canonical)
@@ -2335,6 +2339,9 @@ function DataTableInner<TData>(
         // Phase 9 Issue 1 fix(2026-05-10):range cell bg fill via CSS [data-range-cell],
         // 不在 overlay layer(避免 layer fixed-position bg 蓋 cell content)。
         data-range-cell={spreadsheetMode && rangeCellIdSet.has(`${cell.row.id}:${cell.column.id}`) ? '' : undefined}
+        // 缺陷 M:本區最後一欄 → `.dtCellGrid[data-dt-last-col]::after{content:none}` 不畫欄間線
+        // (凍結邊界線 / 外框接管)。判準與表頭 `showDivider` 同一個 `isLastInRegion`。
+        data-dt-last-col={isLastInRegionCell ? '' : undefined}
         // Issue 9 cell error(2026-05-10):aria-describedby 接 error message id 給 AT 讀
         aria-describedby={cellErrorId}
         aria-invalid={hasCellError || undefined}
@@ -2366,8 +2373,9 @@ function DataTableInner<TData>(
           // 之前 `border-r border-divider` 只 right edge → hover overlay outline:-1px 只 right
           // 邊壓 cell border,上左下 sub-pixel 不一致(user 抓「右 1px / 上左下 2px」bug)。
           // 改 `dtCellGrid`(data-table.css「dtCellGrid v2/v3」段)box-shadow inset **只保右邊**
-          // `inset -1px 0 0 var(--divider)`(bottom 由 row border-b 接管、:last-child 設 none 防 2px;
-          // 2026-07-04 對齊 css 現況 — 原「4 邊 inset」敘述已被 v2/v3 取代),不佔 layout
+          // `inset -1px 0 0 var(--divider)`(bottom 由 row border-b 接管、本區最後一欄以
+          // `[data-dt-last-col]` 設 none 防 2px;2026-07-04 對齊 css 現況 — 原「4 邊 inset」敘述已被
+          // v2/v3 取代;2026-09-04 陰影再改 1px 偽元素,見 data-table.css),不佔 layout
           // (per user verbatim「在 cell 內容起始位置不變」前提)→ 視覺 4 邊 grid line 由
           // row border + 相鄰 cell 合成 → overlay outline:-1px 壓 cell border line。
           // Field naked edit border 仍 own(per Field SSOT)— 編輯時 Field 自帶 border 1px,
@@ -2909,6 +2917,12 @@ function DataTableInner<TData>(
   const colsToIds = (cols: Column<TData, unknown>[]) =>
     cols === leftCols ? leftIds : cols === rightCols ? rightIds : centerIds
 
+  // 缺陷 M(2026-09-05):「本區最後一欄」的**唯一**判準。表頭 `showDivider = !isLastInRegion(...)`、
+  // 列 `data-dt-last-col={isLastInRegion(...)}` 都吃這一份,兩邊不可能分岔(M17「SSOT 必可傳播」)。
+  // 右釘選區帶 rowActions 時,最後一欄後面還接一格操作格,所以它**不是**本區最後一格、照畫線。
+  const isLastInRegion = (index: number, count: number, isRight: boolean) =>
+    index === count - 1 && !(isRight && hasRowActions)
+
   const getRegionHeaders = (cols: Column<TData, unknown>[]) => {
     const ids = colsToIds(cols)
     return table.getHeaderGroups()[0]?.headers.filter(h => ids.has(h.id)) ?? []
@@ -2946,7 +2960,8 @@ function DataTableInner<TData>(
     const hasVisibleChildren = headers.length > 0
     const RowTag = hasVisibleChildren ? 'div' : 'div'
     const rowRole = hasVisibleChildren ? 'row' : undefined
-    // 底色與下分隔線**不畫在 row 上**,改畫在三個 header panel 上(見 HEADER_PANEL)。
+    // 底色**不畫在 row 上**,改畫在三個 header panel 上(見 HEADER_PANEL);下分隔線則掛在
+    // 外層列群組 `.dtHeaderRowGroup::after`(data-table.css),panel 與 row 都不畫。
     // 原因:`--muted` 是半透明(light `oklch(0 0 0 / 4%)` / dark `oklch(1 0 0 / …)`),
     // panel 與 row 各畫一層會在重疊處疊成兩層 → 讓給捲軸的那條 strip(只有 panel)比欄位區
     // 淺一階,深色模式則反過來偏暗(2026-09-03 user 抓到)。只留一層,兩邊才會同色。
@@ -2959,16 +2974,23 @@ function DataTableInner<TData>(
     return (
       <RowTag role={rowRole} className={cn('flex items-center pb-px', rowHeight)}>
         {headers.map((h, i) => {
-          // 缺陷 M(2026-09-04):**表頭與列的欄間線必須用同一個判準**。列那側是 CSS
-          // `.dtCellGrid:last-child::after { content: none }` —— 判的是「DOM 上的最後一個子元素」;
-          // 右釘選區後面還接一格 rowActions,所以最後一**欄**的 cell 不是 `:last-child`,照畫線。
-          // 表頭這側原本只看欄陣列的索引(`i < headers.length - 1`),不知道後面還有 rowActions,
-          // 於是同一個位置變成「列有線、表頭沒線」。補上 rowActions 這一項,兩邊判準就同義了。
-          // (原本那個 `&& !(isRight && i === headers.length - 1)` 是死碼:前半成立時後半恆為真。)
-          // AG Grid v33 是兩邊都無條件畫(`.ag-cell{border-right}` / `.ag-header-cell::before`),
-          // 靠外框蓋住最外緣;我們的區邊界另有 `dtLeftBoundary/dtRightBoundary` 專責,所以取
-          // 「本區最後一格不畫」,但**判準只有這一份語意**。
-          const showDivider = i < headers.length - 1 || (isRight && hasRowActions)
+          // 缺陷 M(2026-09-04 / 2026-09-05 第二次修正):**表頭與列的欄間線必須用同一個判準**。
+          // 2026-09-04 那版是兩個不同種類的判準:表頭看陣列索引 + rowActions 旗標,列看 CSS
+          // `:last-child`(DOM 位置);只在「列的最後一個子元素是 cell」時碰巧同義 —— 拖曳列時
+          // `dropIndicatorRow.after` 接在最後一格之後,列那側就多畫一條線而表頭沒有。
+          // 現在兩邊都吃 `isLastInRegion`(見 getRegionHeaders 之前),列這側寫成 `data-dt-last-col`
+          // attribute、CSS 只認 attribute,判準真的只剩一份。
+          // AG Grid v33.3.2 的對照(原註解寫「兩邊都無條件畫 / `.ag-header-cell::before`」有誤,更正):
+          //   - 表頭欄間線是 `.ag-header-cell::after { border-right: var(--ag-header-column-border) }`
+          //     (`::before` 是 hover / moving 的底色層),預設 `headerColumnBorder: false` = 不畫;
+          //     https://raw.githubusercontent.com/ag-grid/ag-grid/v33.3.2/packages/ag-grid-community/src/theming/core/css/_header.css#L85-L90 (::before) / #L215-L224 (::after)
+          //   - 列欄間線是 `.ag-cell { border-right: var(--ag-column-border) }`,預設 `columnBorder.color:
+          //     'transparent'` = 也不畫;最後一欄另有 `.ag-column-last { border-right-color: transparent }`
+          //     明文壓掉 —— v33 一樣有「最後一欄不畫」的判準,不是靠外框蓋。
+          //     https://raw.githubusercontent.com/ag-grid/ag-grid/v33.3.2/packages/ag-grid-community/src/theming/core/css/_grid-layout.css#L117-L119 / #L131-L134
+          //     https://raw.githubusercontent.com/ag-grid/ag-grid/v33.3.2/packages/ag-grid-community/src/theming/core/core-css.ts#L854-L859
+          // 我們的區邊界另有 `dtLeftBoundary/dtRightBoundary` 專責,所以取「本區最後一格不畫」。
+          const showDivider = !isLastInRegion(i, headers.length, isRight)
           const colId = h.column.id
           const meta = h.column.columnDef.meta as { locked?: boolean } | undefined
           const isLocked = meta?.locked === true
@@ -3006,7 +3028,7 @@ function DataTableInner<TData>(
 
   // ── Render body rows for a region ──
   // code-quality-allow: long-function — virtualizer × sticky region × empty state × per-row drag 四正交 render path 集中,拆 sub-fn 會將 virtualItems / rows / colVirtualizer 三 closure 跨 fn 傳
-  const renderBodyRows = (cols: Column<TData, unknown>[], isCenter: boolean, isRight: boolean, regionWidth?: number) => {
+  const renderBodyRows = (cols: Column<TData, unknown>[], isCenter: boolean, isRight: boolean, regionWidth: number) => {
     if (isEmpty && isCenter) {
       // 有框容器 → 垂直置中(design principle)
       if (emptyState && typeof emptyState !== 'string') return <div className="flex-1 flex items-center justify-center py-12">{emptyState}</div>
@@ -3131,7 +3153,7 @@ function DataTableInner<TData>(
           {dropIndicator?.type === 'row' && dropIndicator.id === row.id && dropIndicator.side === 'before' && (
             <div className={dropIndicatorRow.before} aria-hidden />
           )}
-          {getRegionCells(row, cols).map((cell) => cellEl(cell))}
+          {getRegionCells(row, cols).map((cell, ci, arr) => cellEl(cell, isLastInRegion(ci, arr.length, isRight)))}
           {isRight && hasRowActions && (
             <div role="cell" className="flex items-center justify-end shrink-0 gap-2 flex-1" style={cellPadding}>
               {rowActions!(row.original)}
@@ -3172,12 +3194,20 @@ function DataTableInner<TData>(
     // 先前 non-virtual 走 `<>...</>`(無 wrapper),依靠 row 內 cells 自然寬推擠容器,
     // 跟 virtual 的 `minWidth: containerWidth` 行為不同,造成 story 1 / story 2 看起來水平
     // 捲軸出現時機不一致。現在統一靠 wrapper 的 minWidth 強制 overflow。
-    // 缺陷 N(2026-09-04):中段總寬**只有 `centerColsWidth` 一個住所**,這裡不再自己重算一次。
-    // 原本 left/right 傳 regionWidth、center 落到本地重算的同一條公式 —— 兩份平行計算,
-    // 註解卻宣稱是同一個 SSOT;今天兩邊數值相同純屬巧合,改任一邊就會分岔(表頭與列的水平
-    // 捲動範圍就會差開)。AG Grid v33 的對應解是 `CenterWidthFeature`:表頭容器與列容器
-    // 共用**同一個 feature 實例**算寬,結構上不可能有第二份。
-    const containerWidth = regionWidth ?? cols.reduce((a, c) => a + c.getSize(), 0)
+    // 缺陷 N(2026-09-04 / 2026-09-05 第二次修正):區寬**由呼叫端傳入、這裡不算**。中段吃
+    // `centerColsWidth`(與表頭 wrapper 同一個值),左右吃 `leftWidth` / `rightWidth`。
+    // 2026-09-04 那版把 `regionWidth` 留成可選、`??` 後面接同一條加總公式當 fallback —— 三個呼叫端
+    // 都傳了值,fallback 走不到,但第二份計算「還在檔案裡」,只是沒被執行;改成必填參數才是真的不存在。
+    // AG Grid v33.3.2 的對照(原註解寫「共用同一個 feature 實例」有誤,更正):`CenterWidthFeature`
+    // 是**同一個 class 的兩個實例** —— 列容器一個(rowContainerCtrl.ts#L348,無 spacer)、表頭容器
+    // 一個(headerRowContainerCtrl.ts#L256,`addSpacer = true`),兩個實例各自算、**共讀同一個資料欄位
+    // `visibleCols.bodyWidth`**(visibleColsService.ts#L53;centerWidthFeature.ts#L37)。單一來源在資料不在實例,
+    // 對應這裡的 `centerColsWidth`。
+    //   https://raw.githubusercontent.com/ag-grid/ag-grid/v33.3.2/packages/ag-grid-community/src/gridBodyComp/rowContainer/rowContainerCtrl.ts#L348
+    //   https://raw.githubusercontent.com/ag-grid/ag-grid/v33.3.2/packages/ag-grid-community/src/headerRendering/rowContainer/headerRowContainerCtrl.ts#L256
+    //   https://raw.githubusercontent.com/ag-grid/ag-grid/v33.3.2/packages/ag-grid-community/src/gridBodyComp/centerWidthFeature.ts#L5-L10 / #L33-L40
+    //   https://raw.githubusercontent.com/ag-grid/ag-grid/v33.3.2/packages/ag-grid-community/src/columns/visibleColsService.ts#L53
+    const containerWidth = regionWidth
 
     if (useVirtual) {
       // 2026-05-13 (c) scroll-defer perf(per user 拍 Path (c) Roadmap >50ms 後 escalate):
@@ -3256,9 +3286,11 @@ function DataTableInner<TData>(
           ref={centerHeaderRef}
           data-datatable-header-panel="center"
           onScroll={() => onSecondaryScroll(centerHeaderRef.current, 'x')}
-          // 底色與下分隔線由 HEADER_PANEL 帶(不是 row):讓給垂直捲軸的那條 strip 也在 panel 內,
-          // 因此自動帶到同一層底色與同一條分隔線 —— 表頭右上角不再是空白,而且因為只疊一層,
+          // 底色由 HEADER_PANEL 帶(不是 row):讓給垂直捲軸的那條 strip 也在 panel 內,
+          // 因此自動帶到同一層底色 —— 表頭右上角不再是空白,而且因為只疊一層,
           // strip 與欄位區在 light / dark 都是同一個顏色(2026-09-03 user 抓到)。
+          // 下分隔線不在 panel 上:panel 是捲動容器,線會跟著 scrollLeft 跑;它掛在外層列群組
+          // `.dtHeaderRowGroup::after`(data-table.css),一條橫貫整表。
           className={cn(
             HEADER_PANEL,
             'flex-1 min-w-0 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
@@ -3324,7 +3356,7 @@ function DataTableInner<TData>(
             // `background-clip` 預設是 border-box,所以有底色就會畫進那條帶;沒宣告的話露出的是
             // root 的底色 —— 今天兩者剛好同色所以看不出來,但只要 consumer 給列 zebra / 選取底色,
             // 最後一列的底色就不會延伸進那 15px,表格底緣會出現一條斷帶。
-            className="shrink-0 overflow-hidden bg-surface relative"
+            className="shrink-0 overflow-hidden bg-surface"
             style={{
               width: leftWidth || undefined,
               // isFillHeight 用 JS 算的 px;固定 px(300px 等)直接套
@@ -3380,8 +3412,8 @@ function DataTableInner<TData>(
           {/* 2026-05-06 v13.1:retire `w-max min-w-full` — 改 `style={{minWidth: centerColsWidth}}`
               跟 header inner wrapper 同 SSOT。renderBodyRows 內部已用同 containerWidth 公式 wrap rows,
               此外層 wrapper minWidth 跟內層一致 = 兩層都 = centerColsWidth → header / body 對齊。 */}
-          {/* 缺陷 S 的寬度觀測點 —— 0 高、不佔版面、不進無障礙樹;放在列之前,
-              不影響 `.dtCellGrid:last-child` 這類依 DOM 位置的判定(缺陷 M)。 */}
+          {/* 缺陷 S 的寬度觀測點 —— 0 高、不佔版面、不進無障礙樹。欄間線判準已改吃
+              `data-dt-last-col` attribute(缺陷 M),不再依 DOM 位置,放哪裡都不會影響它。 */}
           <div ref={widthSentinelRef} role="presentation" aria-hidden className="h-0 w-full" />
           <div style={{ minWidth: centerColsWidth }}>
             {renderBodyRows(centerCols, true, false, centerColsWidth)}
@@ -3393,7 +3425,7 @@ function DataTableInner<TData>(
             data-datatable-panel="right"
             onScroll={() => onSecondaryScroll(rightBodyRef.current, 'y')}
             // 缺陷 R:同 left panel —— 面板自己宣告底色,讓位帶才屬於表格而不是背後的東西。
-            className="shrink-0 overflow-hidden bg-surface relative"
+            className="shrink-0 overflow-hidden bg-surface"
             style={{
               width: rightWidth || undefined,
               ...(isFillHeight && bodyMaxHeight != null ? { maxHeight: bodyMaxHeight } : hasHeightConstraint ? { maxHeight: height } : {}),

@@ -304,6 +304,18 @@ const SNAP_ZONES: readonly SnapZone[] = [
 ]
 const findZone = (p: Point, s: Stage, active: SnapZone | null): SnapZone | null =>
   active && inRect(p, active.rect(s), HYSTERESIS) ? active : (SNAP_ZONES.find((z) => inRect(p, z.rect(s), 0)) ?? null)
+/**
+ * 拖曳中的指標 → 判區用的舞台座標:x 夾在 [0, 舞台寬](超出右緣讀作右緣),y 不夾(理由見 `useSnapDrag` onMove 註解)。
+ * 抽成純函式的原因:onMove 只有在 pointer capture 讓 `clientX` 超出視窗時才會走到「夾」這一步,沒有任何 story
+ * 或瀏覽器閘會產生那種座標 —— 規則要有可重跑的證據,只能在這裡直接測(`scripts/test-agent-fab-drag-zones.mjs`)。
+ */
+const dragPoint = (s: Stage, dx: number, dy: number): Point => ({ x: clamp(dx, 0, s.w), y: dy })
+
+/**
+ * @internal 拖曳磁吸的純函式與常數(無 DOM),只給 `scripts/test-agent-fab-drag-zones.mjs` 單測消費;
+ * 不是 consumer API(root barrel 排除,per-component subpath `export *` 仍看得到)。
+ */
+export const AGENT_FAB_DRAG_INTERNALS = { BAND_PX, DOCK_PX, HYSTERESIS, dockMinY, dockMaxY, dragPoint, findZone, SNAP_ZONES } as const
 
 function readPx(el: HTMLElement | null, variable: string, fallback: number) {
   if (!el) return fallback
@@ -389,7 +401,9 @@ function useSnapDrag(opts: {
       // 但使用者的心智是「我已經推到最右邊了,而且更右邊根本沒有東西」。
       // 夾在舞台內之後,「超出右緣」讀作「就在右緣」,與那個心智一致;往左拖遠仍然正常離開帶
       // (夾的是上界,不是把所有位置都拉進來)。y 不夾 —— 帶的上下確實有合法的「不在帶內」區域。
-      const p: Point = { x: clamp(ev.clientX - originX, 0, stage.w), y: ev.clientY - originY }
+      // 這條規則由純函式 `dragPoint` 承載,單測 `scripts/test-agent-fab-drag-zones.mjs` 守著
+      // (2026-09-05 稽核:修好當天唯一的證據是一次手動合成指標紀錄,拿掉「夾」所有既有閘照樣綠)。
+      const p = dragPoint(stage, ev.clientX - originX, ev.clientY - originY)
       d.zone = findZone(p, stage, d.zone)
       if (d.zone) {
         // 所見即所得:預覽就畫在放開會落的位置(貼右緣、指標高度)。

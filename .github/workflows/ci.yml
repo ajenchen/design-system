@@ -70,6 +70,14 @@ jobs:
           # AgentPanel 家族三支機械不變式一起跑(固定 anatomy / 標誌色階 / 思考動畫逐影格);
           # 原本只跑 continuity 一支,另外兩支在整個 repo 沒有任何 gate(2026-09-03 稽核抓到)。
           npm run test:agent-panel-invariants
+          # 入口鈕拖曳磁吸的純函式單測(拖過視窗右緣、y 在帶內仍算貼邊):那條路只有 pointer capture 把
+          # clientX 推出視窗時才走到,沒有任何 story 或瀏覽器閘會產生這種座標,修好當天唯一的證據是一次
+          # 手動合成指標紀錄(2026-09-05 稽核抓到)。
+          node --test scripts/test-agent-fab-drag-zones.mjs
+          # Pagination 窄容器階梯 P1–P5:本機沙箱起不了 Chromium 只會 SKIPPED-ENV,commit 寫「紅綠由 CI 補」,
+          # 但 CI 從來沒有呼叫它(2026-09-05 稽核抓到)—— 跟上面 distribute-column-widths 同一種
+          # 「宣稱有閘、其實沒人跑」;和 DataTable 一樣,pixel 閘只能在有瀏覽器的這一步跑。
+          npm run test:pagination-invariants
 
       # Cloud sessions load the committed provider config as-is; the only two ways that config has
       # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)

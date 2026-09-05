@@ -211,6 +211,7 @@ export {
   createEmptyFilterTree,
   dataTableFilterMatch,
   dataTableVariants,
+  distributeColumnWidths,
   evaluateTree,
   isFilterTreeActive,
 } from './components/DataTable/index'
@@ -644,6 +645,7 @@ export type {
 //   - patterns/overlay-surface
 // 另有 public 元件內個別標 @internal jsDoc 的符號亦排除 front-door(2026-07-18 決策3;subpath 仍有):
 //   - components/AgentPanel:AGENT_BRAND
+//   - components/AgentPanel:AGENT_FAB_DRAG_INTERNALS
 //   - components/AgentPanel:BREATH_DUR
 //   - components/AgentPanel:BREATH_KEYTIMES
 //   - components/AgentPanel:BREATH_SPLINES

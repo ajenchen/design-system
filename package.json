@@ -103,6 +103,7 @@
     "setup:all": "node scripts/setup-workspace.mjs",
     "setup:playwright": "node scripts/ensure-playwright-browsers.mjs",
     "setup:provider-cli": "node scripts/setup-provider-cli-toolchain.mjs",
+    "codex:exec": "node scripts/codex-exec.mjs",
     "codex:worker": "bash scripts/codex-worker.sh",
     "gen-ds-story-manifest": "node scripts/gen-ds-story-manifest.mjs",
     "gen-llms-txt": "node scripts/gen-llms-txt.mjs",

@@ -10,6 +10,9 @@
 //        容差只給次像素:瀏覽器對圓角的命中測試本身有抗鋸齒,超出形狀邊界 ≤1.5px 不算違規,
 //        再多就是隱形帶 —— 它會從底下的內容搶走點擊,而且 Radix 以按鈕為錨、tooltip 會被推遠
 //        (2026-09-03 外推到 40 的那版實測:tooltip 離可視形狀 20px 而不是 8px)。
+//        掃描窗 = 可視外接矩形再外擴 24px(`SCAN_PAD`),所以「命中區比可視大」是這條直接量到的,
+//        不是只靠 H5 殼寬間接推:2026-09-05 稽核抓到舊版只掃外接矩形內,外接矩形之外的隱形帶
+//        (例如舊殼 `w-10` 多出來的 12px 若真吃指標)H4 根本看不見,spec 寫的比量的強。
 //
 //        **這兩條 2026-09-04 取代了舊契約「命中矩形 = 可視形狀的外接矩形 / 四個角落都點得到」。**
 //        舊契約的依據是一次誤判:當時記錄「貼邊態 dy=±12 時最左 1–3px 點不到」並歸因於圓角命中,
@@ -21,6 +24,13 @@
 //        (user 明確要求:各種 fab 狀態都不該讓視窗突然出現水平或垂直捲軸)。
 //
 //   (H3) 舞台本身不得因為入口鈕而溢出(scrollWidth/scrollHeight 不超過 clientWidth/Height)。
+//
+//   (H6) **開著的 tooltip,本體與 Radix popper 外殼的 computed `pointer-events` 都不得是 `none`**。
+//        tooltip.tsx 2026-09-04 一天內翻了三次(加穿透 → 改 → 撤回),最後定案「刻意不設」並寫進註解與
+//        hover-card.spec.md,但沒有任何閘守它 —— 震盪(A → ¬A → A)= 必配 invariant test(M12)。
+//        穿透會命中 WCAG F95(SC 1.4.13 Hoverable:content shown on hover 必須能把指標移上去)。
+//   (H7) **真指標從鈕移進 tooltip 內容,tooltip 仍開著**(Radix grace area 真的在,不是只有 CSS 沒穿透;
+//        `disableHoverableContent` 被加回來這條就紅)。
 //
 // 掃法刻意用 `document.elementFromPoint(...).closest('button')`:量的是**瀏覽器真正的命中測試**,
 // 不是 class 或 rect 的字面值 —— rect 對了但被 pointer-events-none / overflow-clip / portal 吃掉
@@ -67,7 +77,7 @@ const passes = []
 const record = (id, label, pass, detail = '') =>
   pass ? passes.push(`✓ ${id} | ${label}`) : failures.push(`✗ ${id} | ${label} | ${detail}`)
 
-/** 掃描窗外擴量(px):要能看出「命中區比可視大」與「比可視小」兩種偏差。 */
+/** 掃描窗外擴量(px):可視外接矩形四周各多掃這麼多,H4 才量得到外接矩形之外的隱形帶(H1/H4/H2 共用同一次掃描)。 */
 const SCAN_PAD = 24
 /** 形狀外仍可點的容差(px):瀏覽器對圓角的命中測試有抗鋸齒,次像素溢出不算違規。 */
 const EDGE_TOLERANCE = 1.5
@@ -82,27 +92,6 @@ const measured = await page.evaluate((PAD) => {
   const hits = (btn) => (x, y) => {
     const el = document.elementFromPoint(x, y)
     return !!el && el.closest('button') === btn
-  }
-  const hitRect = (btn, visual) => {
-    const v = visual.getBoundingClientRect()
-    const x0 = Math.floor(v.left - PAD)
-    const x1 = Math.ceil(v.right + PAD)
-    const y0 = Math.floor(v.top - PAD)
-    const y1 = Math.ceil(v.bottom + PAD)
-    const h = hits(btn)
-    let left = Infinity, right = -Infinity, top = Infinity, bottom = -Infinity
-    for (let y = y0; y <= y1; y++) {
-      for (let x = x0; x <= x1; x++) {
-        if (!h(x, y)) continue
-        if (x < left) left = x
-        if (x > right) right = x
-        if (y < top) top = y
-        if (y > bottom) bottom = y
-      }
-    }
-    return Number.isFinite(left)
-      ? { left, right, top, bottom, w: right - left + 1, h: bottom - top + 1 }
-      : null
   }
   return [...document.querySelectorAll('[data-placement]')].map((shell) => {
     const btn = shell.querySelector('button')
@@ -120,38 +109,50 @@ const measured = await page.evaluate((PAD) => {
       tl: px(cs.borderTopLeftRadius), tr: px(cs.borderTopRightRadius),
       br: px(cs.borderBottomRightRadius), bl: px(cs.borderBottomLeftRadius),
     }
-    /** 點在圓角矩形內?回傳 [是否在內, 若在外則距形狀邊界多遠(px)]。 */
-    const inShape = (x, y) => {
-      if (x < v.left || x > v.right || y < v.top || y > v.bottom) return [false, Infinity]
-      const cs4 = [
-        [v.left + rad.tl, v.top + rad.tl, rad.tl, x < v.left + rad.tl && y < v.top + rad.tl],
-        [v.right - rad.tr, v.top + rad.tr, rad.tr, x > v.right - rad.tr && y < v.top + rad.tr],
-        [v.right - rad.br, v.bottom - rad.br, rad.br, x > v.right - rad.br && y > v.bottom - rad.br],
-        [v.left + rad.bl, v.bottom - rad.bl, rad.bl, x < v.left + rad.bl && y > v.bottom - rad.bl],
-      ]
-      for (const [cx, cy, r, inCornerBox] of cs4) {
-        if (!inCornerBox || r <= 0) continue
-        const d = Math.hypot(x - cx, y - cy)
-        return d <= r ? [true, 0] : [false, d - r]
-      }
-      return [true, 0]
+    /**
+     * 點到圓角矩形邊界的有號距離(px):≤ 0 在形狀內,> 0 就是在形狀外幾 px。
+     * 四個角各用自己的半徑(依象限選半徑的 rounded-box 距離場),對外接矩形**之外**的點一樣給真實幾何距離。
+     * **外接矩形之外必須算真實距離,不能回 Infinity**(2026-09-05 修:H4 從 2026-09-04 起在 CI 一直紅,
+     * 根因不是鈕有隱形帶 —— 實測按鈕盒 = 可視形狀盒(359–399 × 254.594–294.594)—— 而是 rect 的 top 帶小數,
+     * 掃描在 floor(top)+0.5 = 254.5 取樣,比 rect 高 0.094px,瀏覽器命中測試照四捨五入算「點得到」,
+     * 舊版卻把「在矩形外」一律回 Infinity,於是 0.094px 的次像素被判成無限遠)。同一支距離場也讓掃描窗
+     * 得以外擴到外接矩形之外(舊版根本不掃那裡,「比可視大」的隱形帶只能靠 H5 殼寬間接抓)。
+     */
+    const shapeDist = (x, y) => {
+      const cx = (v.left + v.right) / 2
+      const cy = (v.top + v.bottom) / 2
+      const r = x < cx ? (y < cy ? rad.tl : rad.bl) : (y < cy ? rad.tr : rad.br)
+      const qx = Math.abs(x - cx) - (v.width / 2 - r)
+      const qy = Math.abs(y - cy) - (v.height / 2 - r)
+      return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r
     }
+    // 一次掃描同時餵三條斷言:H1(形狀內漏點)/ H4(形狀外命中,含外接矩形之外)/ H2(真實命中矩形的外緣)。
     let inMiss = 0, inTotal = 0, outHit = 0, outWorst = 0
-    for (let y = Math.floor(v.top); y <= Math.ceil(v.bottom); y++) {
-      for (let x = Math.floor(v.left); x <= Math.ceil(v.right); x++) {
+    let left = Infinity, right = -Infinity, top = Infinity, bottom = -Infinity
+    for (let y = Math.floor(v.top - PAD); y <= Math.ceil(v.bottom + PAD); y++) {
+      for (let x = Math.floor(v.left - PAD); x <= Math.ceil(v.right + PAD); x++) {
         const sx = x + 0.5, sy = y + 0.5
-        const [inside, dist] = inShape(sx, sy)
         const hit = h(sx, sy)
-        if (inside) { inTotal++; if (!hit) inMiss++ }
-        else if (hit) { outHit++; if (dist > outWorst) outWorst = dist }
+        if (hit) {
+          if (x < left) left = x
+          if (x > right) right = x
+          if (y < top) top = y
+          if (y > bottom) bottom = y
+        }
+        const d = shapeDist(sx, sy)
+        if (d <= 0) { inTotal++; if (!hit) inMiss++ }
+        else if (hit) { outHit++; if (d > outWorst) outWorst = d }
       }
     }
     const shape = { inTotal, inMiss, outHit, outWorst: +outWorst.toFixed(2), rad }
+    const hit = Number.isFinite(left)
+      ? { left, right, top, bottom, w: right - left + 1, h: bottom - top + 1 }
+      : null
     const sh = shell.getBoundingClientRect()
     return {
       placement: shell.dataset.placement,
       visual: { l: +v.left.toFixed(1), r: +v.right.toFixed(1), t: +v.top.toFixed(1), b: +v.bottom.toFixed(1), w: +v.width.toFixed(1), h: +v.height.toFixed(1) },
-      hit: hitRect(btn, visual),
+      hit,
       shape,
       // 殼比鈕大出來的部分 = 看不見、不吃指標,卻仍在 tooltip 覆蓋範圍內的死區(H5)。
       shellSlack: { w: +(sh.width - v.width).toFixed(1), h: +(sh.height - v.height).toFixed(1) },
@@ -194,7 +195,7 @@ for (const m of measured) {
   )
   record(
     'H4',
-    `${tag} 可視形狀外不得點得到(只容次像素)`,
+    `${tag} 可視形狀外不得點得到(掃可視外接矩形外擴 ${SCAN_PAD}px,只容次像素)`,
     m.shape.outWorst <= EDGE_TOLERANCE,
     `形狀外仍可點 ${m.shape.outHit} 點,最遠超出邊界 ${m.shape.outWorst}px`
       + `(≤${EDGE_TOLERANCE} 是瀏覽器圓角命中的抗鋸齒;再多就是隱形帶,會搶走底下內容的點擊)`,
@@ -211,6 +212,48 @@ for (const m of measured) {
     m.stage.overflowX <= 0 && m.stage.overflowY <= 0,
     `overflowX=${m.stage.overflowX} overflowY=${m.stage.overflowY}`,
   )
+}
+
+// (H6)(H7) 逐顆鈕:真滑鼠 hover 開 tooltip → 量本體與 popper 外殼的 computed pointer-events →
+// 指標移進 tooltip 內容 → 仍開著。放在幾何掃描之後,hover 的微放大(`hover:scale-[1.04]`)才不會混進 H1/H4 的量測。
+// Radix Tooltip.Content 的 `data-state` 是 delayed-open / instant-open / closed;popper 外殼是它的父層。
+const TOOLTIP_OPEN = '[data-radix-popper-content-wrapper] > [data-state]:not([data-state="closed"])'
+const parkPointer = async () => {
+  await page.mouse.move(2, 2)
+  await page.waitForSelector('[data-radix-popper-content-wrapper]', { state: 'detached', timeout: 5000 }).catch(() => {})
+}
+for (const btn of await page.locator('[data-placement] button').all()) {
+  const tag = `placement=${await btn.evaluate((b) => b.closest('[data-placement]').dataset.placement)}`
+  const box = await btn.boundingBox()
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 4 })
+  let content
+  try {
+    content = await page.waitForSelector(TOOLTIP_OPEN, { state: 'attached', timeout: 5000 })
+  } catch {
+    record('H6', `${tag} hover 鈕中心開得出 tooltip`, false, '5s 內沒有 tooltip 開啟(Provider delay 500ms)')
+    await parkPointer()
+    continue
+  }
+  const pe = await content.evaluate((el) => ({
+    content: getComputedStyle(el).pointerEvents,
+    wrapper: getComputedStyle(el.closest('[data-radix-popper-content-wrapper]')).pointerEvents,
+  }))
+  record(
+    'H6',
+    `${tag} 開著的 tooltip 本體與 popper 外殼都承接指標(computed pointer-events ≠ none)`,
+    pe.content !== 'none' && pe.wrapper !== 'none',
+    `content=${pe.content} wrapper=${pe.wrapper}(none = 穿透 = WCAG F95;tooltip.tsx 明寫「刻意不設」)`,
+  )
+  const cb = await content.boundingBox()
+  await page.mouse.move(cb.x + cb.width / 2, cb.y + cb.height / 2, { steps: 8 })
+  await page.waitForTimeout(250)
+  record(
+    'H7',
+    `${tag} 指標從鈕移進 tooltip 內容後 tooltip 仍開著(Radix grace area)`,
+    await page.evaluate((sel) => !!document.querySelector(sel), TOOLTIP_OPEN),
+    '指標一進 tooltip 就關 = hoverable content 不成立(F95);`disableHoverableContent` 被加回來就是這個症狀',
+  )
+  await parkPointer()
 }
 
 await browser.close()

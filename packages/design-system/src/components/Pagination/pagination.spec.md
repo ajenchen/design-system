@@ -63,7 +63,7 @@ Pagination 是「大量資料切成多頁後的位置導覽」——顯示當前
 ◀ 上一頁   1   …   4  [5]  6   …   12   下一頁 ▶
 ```
 
-- **格位配置**:boundary 1 + sibling 1(內部常數,v1 不開 props)。最大格位 = 首尾各 1 + 當前頁左右各 1 + 當前頁 + 2 顆 ellipsis = **7 格**,超過即摺疊。若未來有多個消費者需要不同視窗，再將 boundary / sibling 設定開為受控 API。
+- **格位配置**:boundary 1 固定;sibling 隨「窄容器階梯」(下節)走 —— 階 0–1 為 1、階 2–3 為 0(兩者都是內部常數,v1 不開 props)。完整形態最大格位 = 首尾各 1 + 當前頁左右各 1 + 當前頁 + 2 顆 ellipsis = **7 格**,超過即摺疊;階 2 起 sibling 0 → **5 格**。(2026-09-05 更正:原句「sibling 1 固定、7 格」與下節階 2「sibling 1 → 0」同檔矛盾。)若未來有多個消費者需要不同視窗，再將 boundary / sibling 設定開為受控 API。
 - **Ellipsis 非互動**:純指示符號(`MoreHorizontal` icon + `aria-hidden`),不可點——對齊 MUI / shadcn(非互動 ellipsis)。**Ant 為可點 jump-5 派**(rc-pagination 預設把省略格渲染成 `jump-prev` / `jump-next`:hover 顯 «/»、click 跳 5 頁,`https://github.com/react-component/pagination`);本 DS 選非互動,快速跳頁留給未來 `showQuickJumper`。Breadcrumb 的可點 ellipsis 是 collapse dropdown 場景,語意不同。
 - **上下頁按鈕**:iconOnly(`ChevronLeft` / `ChevronRight`),在第一頁 / 最後一頁時 `disabled`。
 - 頁碼格位由內部演算法產生;兩顆省略號各自身分穩定,翻頁時不互相 remount(演算法簽名與 React key 等實作細節由 `pagination.tsx` 檔內註解單一持有,spec 不重述——職責分離)。
@@ -114,10 +114,15 @@ Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情�
   由 28px 爆成 147px(逐字斷行)。
 - **門檻不寫死**:總筆數變六位數、頁數變四位數時任何固定 px 都會錯。改成量各階的自然寬
   (子元素寬總和 + gap;子元素都 `shrink-0`、文字 `nowrap`,所以該值與容器寬無關),記進快取後
-  挑最高的可容納階;快取只增不減 → 收斂,不會在兩階間來回跳。
+  挑最高的可容納階;快取只增不減 → 收斂,不會在兩階間來回跳。**副作用(2026-09-05 登記)**:快取記的是各階曾量到的
+  最大自然寬,`total` / `totalPages` / `pageSize` 變小之後(頁數從四位數變兩位數)仍用舊的較大值判斷,可能停在比
+  實際需要更窄的階,直到重新掛載;要修就在這些 prop 變動時清快取。
 - **最後一階不加 scroll arrow**:`horizontal-overflow` 模組規定 overflow affordance 是 text iconOnly 的
   ChevronLeft/Right —— 那跟分頁自己的上下頁箭頭長得一模一樣,同一列會分不清「捲動」還是「翻頁」。
-  代價是最後一階多出一條原生捲軸的高度(實測 28px → 43px),只在 ~200px 以下才會遇到。
+  代價是最後一階多出一條原生捲軸的高度 —— **僅限捲軸佔版面的平台**(Windows / Linux classic 捲軸,實測 28px → 43px;
+  macOS overlay 捲軸與 CI headless 為 0px,2026-09-05 補此限定),只在 ~200px 以下才會遇到。不消費
+  `<ScrollArea orientation="horizontal">` 的理由同上:它的 affordance 不該出現在分頁列;`scroll-area.spec.md`「何時用」與
+  `horizontal-overflow.spec.md`「Canonical 規則」各留有指回本段的例外註記。
 - **格位是既有參數,不是新機制**:`boundary` / `sibling` 本來就是摺疊演算法的入參;
   [MUI `usePagination` 的 `boundaryCount=1` / `siblingCount=1`](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/usePagination/usePagination.js#L7)
   與 [Primer 的 `marginPageCount=1` / `surroundingPageCount=2`](https://github.com/primer/react/blob/main/packages/react/src/Pagination/Pagination.tsx#L128)

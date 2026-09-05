@@ -53,7 +53,8 @@ const DECEL = '0 0 0.7 1'
  *
  * 取 6 圈(0.5s/圈 = 720°/s)的依據全是第一手出貨值(單層等速旋轉,逐檔讀原始碼;URL 見
  * spec「AgentLogo」節):出貨最快是 Chakra v2 的 0.45s,往下 Carbon 690ms、Bootstrap .75s、
- * Radix Themes 800ms、Primer / Chakra v3 1s、Ant 1.2s、Material 3 1.333s、Fluent / VS Code 1.5s。
+ * Radix Themes 800ms、Primer / Chakra v3 1s、Ant 1.2s、Fluent / VS Code 1.5s、Material 3 ≈1.568s
+ * (`$linear-rotate-duration = $arc-duration × 360 / 306`;1.333s 是弧長形變的 `$arc-duration`,不是轉速)。
  * 0.5s 落在「最快檔 0.45–0.69s」之內,不是自創的更快值;唯一更快的出貨值 0.45s 只多 11% 速度,
  * 卻讓一息 = N 圈斷掉(3 / 0.45 = 6.67),不取。
  *
