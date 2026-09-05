@@ -940,6 +940,68 @@ sentinelReport.forEach((r, i) => {
     `${r.shrunk.sen} → ${r.restored.sen}(原 ${r.natural.sen})`)
 })
 
+/* ── I17:捲軸帶與釘選欄滾輪(2026-09-05)────────────────────────────────────────
+ * 兩個都是實測抓到、而且都是「看起來有做、其實沒作用」的那一類:
+ *   (a) 裝飾軌道原本掛在釘選面板**裡面** → `absolute; bottom:0` 解析到 padding box,而讓位用的
+ *       border 在 padding box 外面 → 軌道畫在真捲軸上方 11px;面板又是捲動盒 → 一捲就飄。
+ *       搬到不裁切也不捲動的外層之後兩個成因同時消失。
+ *   (b) 釘選欄是 `overflow:hidden`,滾輪事件在它身上什麼都不會發生 → 使用者把游標放在
+ *       SKU / 名稱 / ⋮ 上滾輪,表格完全不動。轉發到 center body。
+ * 這條閘不依賴真捲軸存在:gutter = 0 的平台(overlay 捲軸)自動跳過軌道那半,滾輪那半照驗。
+ */
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story`, { waitUntil: 'networkidle' })
+await page.waitForSelector('[data-datatable-panel="left"]')
+await page.waitForTimeout(400)
+const scrollUxReport = await page.evaluate(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+  const out = []
+  for (const cb of document.querySelectorAll('[data-datatable-hscroll]')) {
+    const wrap = cb.parentElement
+    const left = wrap.querySelector(':scope > [data-datatable-panel="left"]')
+    const troughs = [...wrap.querySelectorAll(':scope > [aria-hidden]')].filter((e) => String(e.className).includes('overflow-x-scroll'))
+    const gutter = cb.offsetHeight - cb.clientHeight
+    const bandTop = cb.getBoundingClientRect().bottom - gutter
+    cb.scrollTop = 0; cb.dispatchEvent(new Event('scroll')); await sleep(30)
+    const before = troughs.map((t) => +t.getBoundingClientRect().top.toFixed(2))
+    cb.scrollTop = 200; cb.dispatchEvent(new Event('scroll')); await sleep(60)
+    const after = troughs.map((t) => +t.getBoundingClientRect().top.toFixed(2))
+    cb.scrollTop = 0; cb.dispatchEvent(new Event('scroll')); await sleep(30)
+    // 滾輪轉發:只有 center 真的能垂直捲時才該生效(捲不動時要讓事件冒泡給頁面)
+    const canScrollY = cb.scrollHeight > cb.clientHeight
+    let wheelDelta = null
+    if (left && canScrollY) {
+      cb.scrollTop = 0
+      left.dispatchEvent(new WheelEvent('wheel', { deltaY: 180, bubbles: true, cancelable: true }))
+      await sleep(50)
+      wheelDelta = cb.scrollTop
+      cb.scrollTop = 0; cb.dispatchEvent(new Event('scroll'))
+    }
+    out.push({
+      gutter, troughs: troughs.length,
+      aligned: troughs.every((t) => Math.abs(t.getBoundingClientRect().top - bandTop) <= 0.5),
+      stable: JSON.stringify(before) === JSON.stringify(after),
+      canScrollY, wheelDelta,
+    })
+  }
+  return out
+})
+record('I17', `真的量到 center body(否則下面的斷言是空轉)`, scrollUxReport.length > 0, `量到 ${scrollUxReport.length} 張表`)
+scrollUxReport.forEach((r, i) => {
+  if (r.gutter > 0) {
+    record('I17a', `表 ${i + 1}:裝飾軌道與真捲軸帶同一條線(gutter ${r.gutter}px)`, r.troughs > 0 && r.aligned,
+      `軌道 ${r.troughs} 條,對齊 ${r.aligned}(掛錯層會差一個 gutter 的高度)`)
+    record('I17b', `表 ${i + 1}:捲動後軌道不飄`, r.stable, '掛在會捲動的盒子裡就會跟著跑掉')
+  } else {
+    console.log(`⏭  I17a/b 表 ${i + 1} — 本環境捲軸不佔版面(overlay),軌道不渲染,不適用`)
+  }
+  if (r.canScrollY) {
+    record('I17c', `表 ${i + 1}:釘選欄滾輪轉發到 center`, r.wheelDelta === 180,
+      `wheel(0,180) 之後 center scrollTop = ${r.wheelDelta}(0 = 釘選欄吃不到滾輪)`)
+  } else {
+    console.log(`⏭  I17c 表 ${i + 1} — center 沒有垂直溢出,滾輪本來就該冒泡給頁面,不適用`)
+  }
+})
+
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))

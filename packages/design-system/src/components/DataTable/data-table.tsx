@@ -939,9 +939,10 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
 //  table
 //  ├── header（固定頂部，不在 scroll 內）
 //  │   ├── left-header
-//  │   ├── center-header（overflow:hidden，JS sync scrollLeft）
+//  │   ├── center-header（overflow-x:auto + 隱藏捲軸，JS sync scrollLeft）
 //  │   └── right-header
-//  └── body-viewport（display:flex，無 overflow — AR44 後不再是 scroll container）
+//  └── body-viewport（display:flex，無 overflow；凍結邊界線與水平捲軸帶的裝飾軌道掛在這一層，
+//      │              因為它既不裁切也不捲動）
 //      ├── left-body（overflow:hidden，JS sync scrollTop）
 //      ├── center-body（overflow-x:auto, overflow-y:auto — 唯一 V scroll，
 //      │               onCenterBodyScroll 同步兩側 scrollTop + header scrollLeft）
@@ -1400,7 +1401,12 @@ function DataTableInner<TData>(
     // 縱軸:水平捲軸只吃掉 center 的高度,pinned 區沒有 → pinned 會比 center 多顯示一條列。
     // 補等高的 padding-bottom 給 pinned 區,三個區的可視列高才一致(AG Grid 是把水平捲軸放到
     // 三區之外,達到同一個結果)。
-    const hGap = Math.max(0, Math.round(body.offsetHeight - body.clientHeight))
+    // **扣掉 body 自己的上下 border**。橫軸那邊(上面幾行)明文禁止用 `offsetWidth − clientWidth`,
+    // 理由就是「那個式子會把自己的 border 也算成捲軸寬」—— 縱軸這一行原本正好犯了同一個錯
+    // (2026-09-05 稽核抓到)。今天 center body 沒有 border 所以量出來一樣,但只要有人加一條就會多補。
+    const cs = getComputedStyle(body)
+    const borderY = (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0)
+    const hGap = Math.max(0, Math.round(body.offsetHeight - borderY - body.clientHeight))
     // 只在值真的變了才 setState:相同值 React bail out,不會遞迴。
     setHScrollbarGutter((prev) => (prev === hGap ? prev : hGap))
   }, [])
@@ -1558,33 +1564,106 @@ function DataTableInner<TData>(
   // H scroll 仍在 center-body,但因 center-body 現在有自己的 maxHeight,H scrollbar 落在 visible 視窗底部 → user 一眼看到。
   const leftBodyRef = React.useRef<HTMLDivElement>(null)
   const rightBodyRef = React.useRef<HTMLDivElement>(null)
-  /** 程式化同步中:此時次要區的 scroll 事件是我們自己寫進去的,不可以再回推 center body。 */
-  const syncingRef = React.useRef(false)
+  /**
+   * 「這一筆 scroll 事件是我們自己寫進去的」的紀錄。**用身分記,不用時間記。**
+   *
+   * 舊版是一個 boolean 旗標 + `queueMicrotask` 解鎖 —— 那個守衛**實質上從來沒有生效過**:
+   * scroll 事件是在「更新畫面」那一步的 run-the-scroll-steps 派發的,而 microtask checkpoint
+   * 一定更早,所以事件到達時旗標早就被放掉了(2026-09-05 稽核抓到)。
+   *
+   * v33 的做法是 `setScrollLeftForAllContainersExceptCurrent` —— 迴圈裡直接跳過事件來源那個元素,
+   * 根本不需要旗標。這裡取同樣的語意:寫進去的時候記下「這個元素的這一軸被我們寫過」,
+   * 它的下一筆 scroll 事件就消費掉這個紀錄、不回推。**跟時間無關,所以不會早放也不會晚放。**
+   */
+  const writtenRef = React.useRef(new WeakMap<HTMLElement, { x?: number; y?: number }>())
+  const writeScroll = React.useCallback((el: HTMLElement | null, axis: 'x' | 'y', value: number) => {
+    if (!el) return
+    const cur = axis === 'x' ? el.scrollLeft : el.scrollTop
+    if (cur === value) return // 值沒變不會產生事件,寫了反而留下永遠消費不掉的紀錄
+    if (axis === 'x') el.scrollLeft = value
+    else el.scrollTop = value
+    const after = axis === 'x' ? el.scrollLeft : el.scrollTop
+    // 被夾住而實際沒動(例如兩邊可捲範圍不等)→ 一樣不會有事件 → 不留紀錄。
+    if (after === cur) return
+    // **記「寫進去之後的實際值」而不是「寫過了」**:萬一那一筆的 scroll 事件沒送達,
+    // 記號會留著;下一次使用者真的捲動時值一定不同,就不會被誤吞(只留「值剛好相同」這一種,
+    // 而那種情況推回去本來就是 no-op)。
+    const rec = writtenRef.current.get(el) ?? {}
+    rec[axis] = after
+    writtenRef.current.set(el, rec)
+  }, [])
   const onCenterBodyScroll = React.useCallback(() => {
     const cb = centerBodyRef.current
     if (!cb) return
-    syncingRef.current = true
-    if (centerHeaderRef.current) centerHeaderRef.current.scrollLeft = cb.scrollLeft
-    if (leftBodyRef.current) leftBodyRef.current.scrollTop = cb.scrollTop
-    if (rightBodyRef.current) rightBodyRef.current.scrollTop = cb.scrollTop
-    // scroll 事件是同一輪同步派發的,下一個 microtask 放行就不會擋到使用者真正的捲動。
-    queueMicrotask(() => {
-      syncingRef.current = false
-    })
-  }, [])
+    writeScroll(centerHeaderRef.current, 'x', cb.scrollLeft)
+    writeScroll(leftBodyRef.current, 'y', cb.scrollTop)
+    writeScroll(rightBodyRef.current, 'y', cb.scrollTop)
+  }, [writeScroll])
   // `overflow:hidden` 依 CSSOM 仍是 scrolling box:焦點移到視窗外的後代時(Tab 到 center header 裡
   // 被截掉的欄寬把手 / ⌄ 選單、或 Tab 到 pinned 區被截掉的可編輯 cell),**瀏覽器會自己捲動那個盒子**。
   // 原本同步是單向的(只有 center body 的 onScroll 會推給別人),所以那種捲動會留下永久錯位。
   // 這裡把它導回唯一的真相來源:非主捲動區被捲動時,改成去捲 center body,center 的 onScroll
   // 再把三個區一起校準。設回相同值不會再觸發 scroll 事件,不會形成迴圈。(2026-09-03 稽核抓到)
+  /**
+   * 釘選欄要吃得到滾輪。
+   *
+   * 左右面板是 `overflow:hidden`,所以滾輪事件在它們身上**什麼都不會發生**、直接冒泡出去 ——
+   * 使用者把游標放在釘選欄(而那正是視線落點:SKU、名稱、⋮)滾輪,表格完全不動
+   * (2026-09-05 實測:wheel(0,200) 落在左/右釘選欄時三個區的 scrollTop 全是 0)。
+   *
+   * 轉發到 center body 就好。**必須用原生監聽而不是 React 的 `onWheel`** —— React 把 wheel
+   * 註冊成 passive,合成事件裡呼叫 `preventDefault()` 不會生效(失敗記憶索引同款陷阱)。
+   */
+  const wheelCleanupRef = React.useRef(new WeakMap<HTMLElement, () => void>())
+  /**
+   * 掛在左右釘選面板上的 ref callback:設 ref + 綁滾輪轉發,元素消失時自動解綁。
+   * 用 ref callback 而不是 effect,因為面板是條件渲染的 —— callback 在掛載/卸載當下就會被呼叫,
+   * 不需要任何依賴陣列去猜它什麼時候出現。
+   */
+  const makeBindPinnedPanel = React.useCallback(
+    (target: React.MutableRefObject<HTMLDivElement | null>) => (el: HTMLDivElement | null) => {
+      const prev = target.current
+      if (prev) {
+        wheelCleanupRef.current.get(prev)?.()
+        wheelCleanupRef.current.delete(prev)
+      }
+      target.current = el
+      if (!el) return
+      const onWheel = (e: WheelEvent) => {
+        const cb = centerBodyRef.current
+        if (!cb) return
+        const { deltaY: dy, deltaX: dx } = e
+        const canY = dy !== 0 && cb.scrollHeight > cb.clientHeight
+        const canX = dx !== 0 && cb.scrollWidth > cb.clientWidth
+        if (!canY && !canX) return // 表格自己也捲不動 → 讓事件冒泡給頁面,不要吃掉
+        e.preventDefault()
+        if (canY) cb.scrollTop += dy
+        if (canX) cb.scrollLeft += dx
+      }
+      el.addEventListener('wheel', onWheel, { passive: false })
+      wheelCleanupRef.current.set(el, () => el.removeEventListener('wheel', onWheel))
+    },
+    [],
+  )
+  // 兩個 ref callback 各自只建立一次 —— 否則每次 render React 都會「舊的傳 null、新的傳元素」,
+  // 等於每一幀解綁再重綁。
+  const bindLeftPanel = React.useMemo(() => makeBindPinnedPanel(leftBodyRef), [makeBindPinnedPanel])
+  const bindRightPanel = React.useMemo(() => makeBindPinnedPanel(rightBodyRef), [makeBindPinnedPanel])
+
   const onSecondaryScroll = React.useCallback((el: HTMLDivElement | null, axis: 'x' | 'y') => {
     const cb = centerBodyRef.current
     if (!cb || !el) return
     // **只接使用者自己捲次要區的事件**:`onCenterBodyScroll` 寫 `header.scrollLeft = body.scrollLeft`
     // 也會觸發這裡,若兩邊可捲範圍剛好不等(例如補償過期,見 spec 缺陷 S),header 會把被夾過的值
-    // 推回 body → body 橫向回彈、末端捲不到。用旗標把程式化那一次濾掉,真相源永遠只有 center body。
-    // (2026-09-04 稽核抓到;header 改成可捲之後這條路徑才存在。)
-    if (syncingRef.current) return
+    // 推回 body → body 橫向回彈、末端捲不到。所以程式化寫進去的那一筆要濾掉,真相源永遠只有 center body。
+    // (2026-09-04 抓到問題,2026-09-05 把「時間旗標」換成「身分紀錄」才真的生效。)
+    const rec = writtenRef.current.get(el)
+    const now = axis === 'x' ? el.scrollLeft : el.scrollTop
+    if (rec?.[axis] !== undefined) {
+      const mine = rec[axis] === now
+      rec[axis] = undefined // 不論吞不吞,這筆紀錄都消費掉,不留過期記號
+      if (mine) return
+    }
     if (axis === 'x') {
       if (el.scrollLeft !== cb.scrollLeft) cb.scrollLeft = el.scrollLeft
     } else if (el.scrollTop !== cb.scrollTop) {
@@ -1659,12 +1738,35 @@ function DataTableInner<TData>(
    * 「讓位帶」該有的樣子(v33 的 spacer 同理,裡面也是空的)。第一版我塞了 `width:200%` 的內容,
    * 結果釘選區底下長出自己的拇指,看起來像兩條各自獨立的捲軸 —— 反而比原本的斷帶更糟。
    */
-  const scrollbarTrough = hScrollbarGutter > 0 ? (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-x-0 bottom-0 overflow-x-scroll [scrollbar-width:thin]"
-      style={{ height: hScrollbarGutter, scrollbarColor: 'var(--scrollbar-thumb) var(--scrollbar-track)' }}
-    />
+  /**
+   * 缺陷 Q 的裝飾軌道 —— **必須掛在不裁切也不捲動的那一層**(= 凍結邊界線所在的那一層)。
+   *
+   * 2026-09-04 的第一版掛在釘選面板**裡面**,結果錯了兩件事(2026-09-05 逐像素實測):
+   * (a) `absolute; bottom:0` 解析到的是 **padding box**,而讓位用的那條 border 在 padding box
+   *     **外面** → 軌道畫在真捲軸上方 11px;
+   * (b) 面板是捲動盒(即使 `overflow:hidden` 也是),絕對定位子元素屬於可捲內容 → 往下捲 150px
+   *     軌道就跟著跑掉 150px。
+   * 搬到外層之後兩個成因同時消失:外層不裁切,`bottom:0` 就是三個面板底緣(含 border);
+   * 外層不捲動,軌道就不會飄。位置用 `--dt-left-w` / `--dt-right-w`,跟邊界線同一組變數、
+   * 跟面板寬同一個 state,不可能對不齊。
+   */
+  const scrollbarTroughs = hScrollbarGutter > 0 ? (
+    <>
+      {hasLeft && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 left-0 overflow-x-scroll [scrollbar-width:thin]"
+          style={{ width: 'var(--dt-left-w)', height: hScrollbarGutter, scrollbarColor: 'var(--scrollbar-thumb) var(--scrollbar-track)' }}
+        />
+      )}
+      {hasRight && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 right-0 overflow-x-scroll [scrollbar-width:thin]"
+          style={{ width: 'var(--dt-right-w)', height: hScrollbarGutter, scrollbarColor: 'var(--scrollbar-thumb) var(--scrollbar-track)' }}
+        />
+      )}
+    </>
   ) : null
 
 
@@ -3183,7 +3285,7 @@ function DataTableInner<TData>(
       <div
         ref={bodyRef}
         className={cn(
-          'flex items-start',
+          'relative flex items-start',
           isFillHeight && 'min-h-0 min-w-0',
           hasLeft && 'dtLeftBoundary',
           hasRight && 'dtRightBoundary',
@@ -3195,7 +3297,7 @@ function DataTableInner<TData>(
       >
         {hasLeft && (
           <div
-            ref={leftBodyRef}
+            ref={bindLeftPanel}
             data-datatable-panel="left"
             onScroll={() => onSecondaryScroll(leftBodyRef.current, 'y')}
             // 缺陷 R(2026-09-04):**面板自己宣告底色**。下方讓位用的透明 border 之下,
@@ -3217,7 +3319,6 @@ function DataTableInner<TData>(
             }}
           >
             {renderBodyRows(leftCols, false, false, leftWidth)}
-            {scrollbarTrough}
           </div>
         )}
         <div
@@ -3268,7 +3369,7 @@ function DataTableInner<TData>(
         </div>
         {hasRight && (
           <div
-            ref={rightBodyRef}
+            ref={bindRightPanel}
             data-datatable-panel="right"
             onScroll={() => onSecondaryScroll(rightBodyRef.current, 'y')}
             // 缺陷 R:同 left panel —— 面板自己宣告底色,讓位帶才屬於表格而不是背後的東西。
@@ -3281,9 +3382,9 @@ function DataTableInner<TData>(
             }}
           >
             {renderBodyRows(rightCols, false, true, rightWidth)}
-            {scrollbarTrough}
           </div>
         )}
+        {scrollbarTroughs}
       </div>
       {/* Slice D Step 1B(2026-05-10):Interaction Layer singleton(`.claude/planning/datatable-spreadsheet-rfc.md`)。
           Default disabled — backward-compat。Enable 後 hover/editor/selected/range 由 layer 統一畫,

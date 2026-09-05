@@ -185,6 +185,29 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 
 **機械閘** = `scripts/data-table-invariants.mjs` I11 / I11b(橫軸)+ I12(縱軸)。CI 的 headless Chromium 是 overlay 捲軸(gutter = 0),只驗自然狀態等於空轉——把 padding 整段拿掉 CI 照樣綠;I11b / I12 因此各用一條 15px 透明邊框造出與真捲軸同值的量測(`clientWidth` 不含 border、`offsetWidth` 含),補償分支在任何環境都會被走到(2026-09-03 實測:註入 `::-webkit-scrollbar` 寬度**無法**讓 CI 的捲軸佔版面,此路不通)。對應 `scripts/data-table-invariants.mjs`(script 內 I1-I3 label 字串仍用 `display↔edit` — 2026-07-16 FieldMode display→view 更名前的歷史命名,語意同 view↔edit)。改 `columnSizeStyle` / 切 layout 必跑 invariant test 才 commit。
 
+### 六之二之零、2026-09-05 捲軸專項稽核:四條「看起來有做、其實沒作用」
+
+上一輪的缺陷清單是**結構**盤點;這一輪只盤**捲軸**,而且是逐條跟 v33.3.2 對照。
+19 條捲軸補丁的判定:**同款 9 / 半款 1 / v33 結構上用不到 6 / 我們自創 2 / 兩邊都沒解 1**。
+其中四條是「程式碼在那裡、但實際上沒有作用」,已全部修掉:
+
+| | 問題(白話) | 根因 | 修法 | 實測 |
+|---|---|---|---|---|
+| **α** | **游標放在釘選欄上滾輪,表格完全不動** —— 而釘選欄正是視線落點(SKU / 名稱 / ⋮) | 左右面板是 `overflow:hidden`,滾輪事件在它們身上什麼都不會發生,直接冒泡出去 | 原生監聽轉發到 center body。**必須原生不能用 React 的 `onWheel`** —— React 把 wheel 註冊成 passive,合成事件裡 `preventDefault()` 不生效。center 自己也捲不動時不吃事件,讓它冒泡給頁面 | 修前 `wheel(0,180)` → center `scrollTop` = **0**;修後 = **180**。center 無垂直溢出的那張表維持 0(正確) |
+| **β** | **我 2026-09-04 加的裝飾軌道畫在真捲軸上方 11px,而且一捲就跟著跑掉** | 掛在釘選面板**裡面**:(a) `absolute; bottom:0` 解析到 **padding box**,而讓位用的 border 在 padding box 外面;(b) 面板即使 `overflow:hidden` 仍是捲動盒,絕對定位子元素屬於可捲內容 | 搬到凍結邊界線所在的那一層(外層 wrapper:不裁切、不捲動),位置用同一組 `--dt-left-w` / `--dt-right-w` | 修前軌道 y **773.2**、真捲軸帶 784.2–795.2,捲 150px 後軌道跑到 623.2;修後軌道 **784.2–795.2**,捲動後不動 |
+| **γ** | **防回彈的守衛從寫下那天起就沒生效過** | 用 boolean 旗標 + `queueMicrotask` 解鎖 —— scroll 事件在「更新畫面」那一步派發,**一定晚於 microtask checkpoint**,事件到達時旗標早就放掉了 | 換成 v33 的語意(`setScrollLeftForAllContainersExceptCurrent`:跳過事件來源)。這裡記「寫進去之後的實際值」,事件值相同才吞。**不用時間、不會早放也不會晚放**;紀錄不論吞不吞都消費掉,不留過期記號 | 五條時序全綠:正向同步 / 反向導回 / 同步後緊接使用者捲動 / header 導回 / 捲到最右不回彈 |
+| **δ** | 縱軸量測把 body 自己的 border 算成捲軸高 | 橫軸那邊明文禁止 `offsetWidth − clientWidth`(理由就是會把 border 算進去),縱軸卻正好用了同一個式子 | 扣掉 computed 的上下 border | 今天 center body 無 border,量出來相同;只要有人加一條就會多補 |
+
+**機械閘 I17**:軌道與真捲軸帶同一條線(≤0.5px)、捲動後不飄、釘選欄滾輪轉發。
+gutter = 0 的平台(overlay 捲軸)自動跳過軌道那半,滾輪那半照驗。
+
+**評估後不改的三條**(理由寫在這裡,免得下一輪又重查):
+- **量測 effect 每次 commit 都跑**(`useLayoutEffect(measureScrollbarGutters)` 無依賴陣列):它是「列數變動時捲軸出現/消失」的安全網,而那個情境的觀測點(I16 的哨兵)雖然涵蓋得到,**拆掉安全網的風險大於未經量測的效能收益**。要動要先量。
+- **`hasRowActions` 時右面板寬是量出來的**:乾淨解要求 rowActions 有宣告寬度,但它的內容是 consumer 傳的任意 JSX。已登記為殘留,不強修。
+- **分頁表格預設 `height: 'auto'`**:是規格明載的決定(頁碼是唯一導覽通道,再疊 body 內捲動 = 雙重導覽),不是缺陷。
+
+---
+
 ### 六之二之一、兩容器架構的已知缺陷清單(2026-09-03 對抗式稽核)
 
 header 與 body 是**兩個容器、各自跑一次 CSS flex 分配**(見不變條件 (6));下列缺陷全部源自這一點,
