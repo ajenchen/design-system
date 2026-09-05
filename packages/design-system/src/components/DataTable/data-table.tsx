@@ -906,7 +906,14 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
         // 對所有 state(idle / hover / aria-disabled / data-state)套同 bg-surface-raised — 跟
         // row 任何 state 視覺都有 token-level 對比(在 token 差異存在的 mode;light mode --surface-raised
         // 等於 --surface 是 design token semantic,非本 fix scope)。
+        // 2026-09-06 修(user 抓「拖曳時按鈕有一個淺藍底色」— 量到 oklch(.63 .22 258/.19) = primary-subtle):
+        // dnd-kit 的 `attributes` 在拖曳中會送 `aria-pressed="true"`(a11y 用),而 Button 於
+        // 2026-05-21 e58576a6 新增 `aria-pressed:bg-primary-subtle / text-primary / border-transparent`
+        // 作為 Radix overlay trigger 的 fallback。兩者相撞 → 這顆非 toggle 的拖曳鈕在拖曳中被畫成
+        // 「toggle 按下」的藍底藍字無框,**2026-05-12「所有 state 都同 bg」那條約束被靜默打破**。
+        // 這裡把三個 aria-pressed 視覺全部釘回原樣(不能只釘 bg,否則圖示仍變藍、框仍消失)。
         'bg-surface-raised hover:bg-surface-raised aria-disabled:bg-surface-raised',
+        'aria-pressed:bg-surface-raised aria-pressed:text-foreground aria-pressed:border-border',
         'transition-opacity duration-150 ease-in-out motion-reduce:duration-0',
         canDrag && !showInvalid && 'cursor-grab',
         canDrag && showInvalid && 'cursor-not-allowed !text-error !border-error',
@@ -3338,6 +3345,14 @@ function DataTableInner<TData>(
         ref={bodyRef}
         className={cn(
           'relative flex items-start',
+          // **底色在這一層畫一次,三個面板都不自己畫**(2026-09-06 修 dark mode 捲軸接縫)。
+          // `--surface` 在 dark 是半透明白 8%,原本只有兩個釘選面板宣告 `bg-surface`、中間捲動區沒有,
+          // 於是底部那條捲軸帶在左右是「底 + 8% + 軌道 8%」、在中間是「底 + 軌道 8%」,
+          // 同一條軌道疊在不同層上 → 亮度差約 60%,接縫肉眼可見(user 2026-09-06 圖二)。
+          // 線上 A/B 實測:只補中間區無效(仍有接縫),把底色收到共同容器畫一次才消失。
+          // 缺陷 R 的性質不變 —— 面板底部那條讓位用的透明 border 之下露出的仍是同一個 surface,
+          // 只是改由這一層提供;三區同層是這條的不變式,面板不得再各自宣告底色。
+          'bg-surface',
           isFillHeight && 'min-h-0 min-w-0',
           hasLeft && 'dtLeftBoundary',
           hasRight && 'dtRightBoundary',
@@ -3361,7 +3376,7 @@ function DataTableInner<TData>(
             // 面板不是定位基準時它們會往上找到別的祖先,面板塌掉 → 量測與重繪互相追 →
             // React「Maximum update depth exceeded」。稽核那一輪的 patch 以「軌道已搬走所以用不到」為由
             // 拿掉它,那次 grep 漏掉虛擬列;實測 pinned-columns 第二張表(50 筆虛擬)整頁進入無限重繪。
-            className="shrink-0 overflow-hidden bg-surface relative"
+            className="shrink-0 overflow-hidden relative"
             style={{
               width: leftWidth || undefined,
               // isFillHeight 用 JS 算的 px;固定 px(300px 等)直接套
@@ -3435,7 +3450,7 @@ function DataTableInner<TData>(
             // 面板不是定位基準時它們會往上找到別的祖先,面板塌掉 → 量測與重繪互相追 →
             // React「Maximum update depth exceeded」。稽核那一輪的 patch 以「軌道已搬走所以用不到」為由
             // 拿掉它,那次 grep 漏掉虛擬列;實測 pinned-columns 第二張表(50 筆虛擬)整頁進入無限重繪。
-            className="shrink-0 overflow-hidden bg-surface relative"
+            className="shrink-0 overflow-hidden relative"
             style={{
               width: rightWidth || undefined,
               ...(isFillHeight && bodyMaxHeight != null ? { maxHeight: bodyMaxHeight } : hasHeightConstraint ? { maxHeight: height } : {}),
