@@ -1031,7 +1031,14 @@ await page.waitForSelector('[data-datatable-hscroll]')
 await page.waitForTimeout(400)
 const SIM_V_BORDER = 20
 const sentinelReport = await page.evaluate(async (simPx) => {
-  const frames = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+  // rAF 在被隱藏/節流的頁籤裡不會觸發,所以跟計時器賽跑:哪個先到算哪個。
+  // (只用 rAF 會在隱藏頁籤裡永遠掛住;只用計時器則在可見頁籤裡可能量在重繪之前。)
+  const frames = () => new Promise((r) => {
+    let done = false
+    const fin = () => { if (!done) { done = true; r() } }
+    requestAnimationFrame(() => requestAnimationFrame(fin))
+    setTimeout(fin, 120)
+  })
   // 等「header 內層 minWidth 連續兩次相同」—— RO 回呼 → setState → 重繪不是同步的,固定延遲會量在中途。
   const settle = async (read) => {
     let last = null, stable = 0
@@ -1197,8 +1204,28 @@ scrollUxReport.forEach((r, i) => {
  * 手動 dispatch,並等兩幀讓 React 的 onScroll 跑完。
  */
 const syncReport = await page.evaluate(async () => {
-  const frames = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
-  const kick = async (el) => { el.dispatchEvent(new Event('scroll')); await frames() }
+  // rAF 在被隱藏/節流的頁籤裡不會觸發,所以跟計時器賽跑:哪個先到算哪個。
+  // (只用 rAF 會在隱藏頁籤裡永遠掛住;只用計時器則在可見頁籤裡可能量在重繪之前。)
+  const frames = () => new Promise((r) => {
+    let done = false
+    const fin = () => { if (!done) { done = true; r() } }
+    requestAnimationFrame(() => requestAnimationFrame(fin))
+    setTimeout(fin, 120)
+  })
+  // **只有在瀏覽器沒有自己送 scroll 事件時才補送一顆**(2026-09-05 CI 紅燈修正)。
+  // 隱藏頁籤不派發 scroll 事件,所以本檔原本一律手動補送;但 CI 的頁籤是可見的,瀏覽器**會**送 ——
+  // 兩顆疊起來就變成同一次寫入產生兩個事件。元件的防回彈守衛用「一次性紀錄」擋第一顆(正確),
+  // 第二顆就沒有紀錄可比對,於是把 header 被夾過的值推回 center,造出一個現實中不存在的失敗
+  // (CI job 101317387250:I19b center 382 應 392)。真實瀏覽器一次寫入只會有一個事件。
+  const kick = async (el) => {
+    let saw = false
+    const mark = () => { saw = true }
+    el.addEventListener('scroll', mark, { once: true })
+    await frames()
+    if (!saw) el.dispatchEvent(new Event('scroll'))
+    el.removeEventListener('scroll', mark)
+    await frames()
+  }
   const out = []
   for (const cb of document.querySelectorAll('[data-datatable-hscroll]')) {
     const wrap = cb.parentElement

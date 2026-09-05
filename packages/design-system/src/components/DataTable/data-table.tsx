@@ -3356,7 +3356,12 @@ function DataTableInner<TData>(
             // `background-clip` 預設是 border-box,所以有底色就會畫進那條帶;沒宣告的話露出的是
             // root 的底色 —— 今天兩者剛好同色所以看不出來,但只要 consumer 給列 zebra / 選取底色,
             // 最後一列的底色就不會延伸進那 15px,表格底緣會出現一條斷帶。
-            className="shrink-0 overflow-hidden bg-surface"
+            // `relative` 不是給舊裝飾軌道用的,**是虛擬捲動的必要條件**(2026-09-05 回歸修正):
+            // 虛擬列是 `position:absolute`(見 renderBodyRows 的 `opts?.virtual && 'absolute w-full'`),
+            // 面板不是定位基準時它們會往上找到別的祖先,面板塌掉 → 量測與重繪互相追 →
+            // React「Maximum update depth exceeded」。稽核那一輪的 patch 以「軌道已搬走所以用不到」為由
+            // 拿掉它,那次 grep 漏掉虛擬列;實測 pinned-columns 第二張表(50 筆虛擬)整頁進入無限重繪。
+            className="shrink-0 overflow-hidden bg-surface relative"
             style={{
               width: leftWidth || undefined,
               // isFillHeight 用 JS 算的 px;固定 px(300px 等)直接套
@@ -3425,7 +3430,12 @@ function DataTableInner<TData>(
             data-datatable-panel="right"
             onScroll={() => onSecondaryScroll(rightBodyRef.current, 'y')}
             // 缺陷 R:同 left panel —— 面板自己宣告底色,讓位帶才屬於表格而不是背後的東西。
-            className="shrink-0 overflow-hidden bg-surface"
+            // `relative` 不是給舊裝飾軌道用的,**是虛擬捲動的必要條件**(2026-09-05 回歸修正):
+            // 虛擬列是 `position:absolute`(見 renderBodyRows 的 `opts?.virtual && 'absolute w-full'`),
+            // 面板不是定位基準時它們會往上找到別的祖先,面板塌掉 → 量測與重繪互相追 →
+            // React「Maximum update depth exceeded」。稽核那一輪的 patch 以「軌道已搬走所以用不到」為由
+            // 拿掉它,那次 grep 漏掉虛擬列;實測 pinned-columns 第二張表(50 筆虛擬)整頁進入無限重繪。
+            className="shrink-0 overflow-hidden bg-surface relative"
             style={{
               width: rightWidth || undefined,
               ...(isFillHeight && bodyMaxHeight != null ? { maxHeight: bodyMaxHeight } : hasHeightConstraint ? { maxHeight: height } : {}),
