@@ -7,7 +7,7 @@ import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
-import { dragSourceStyle, dragHandleCursorClass } from '@/design-system/lib/drag-visual'
+import { dragSourceStyle, dragHandleCursorClass, forwardDragActivatorAttributes } from '@/design-system/lib/drag-visual'
 import { Button } from '@/design-system/components/Button/button'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { SurfaceHeader, SurfaceBody, COMPACT_HEADER_SLOT } from '@/design-system/patterns/overlay-surface/overlay-surface'
@@ -201,7 +201,7 @@ function SortRow({
         size="sm"
         aria-label="拖曳重排"
         className={dragHandleCursorClass}
-        {...attributes}
+        {...forwardDragActivatorAttributes(attributes)}
         {...listeners}
       />
       <div className="flex-1 min-w-0">

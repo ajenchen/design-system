@@ -33,7 +33,7 @@ import { cn } from '@/lib/utils'
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { dragSourceStyle } from '@/design-system/lib/drag-visual'
+import { dragSourceStyle, forwardDragActivatorAttributes } from '@/design-system/lib/drag-visual'
 
 interface ColumnVisibilityPanelColumn {
   /** Column id(stable identifier;對齊 DataTable column.id / accessorKey)*/
@@ -258,7 +258,7 @@ function VisibilityRow({
             size="md"
             aria-label="拖曳重排"
             className="cursor-grab active:cursor-grabbing"
-            {...attributes}
+            {...forwardDragActivatorAttributes(attributes)}
             {...listeners}
           />
         ) : null}

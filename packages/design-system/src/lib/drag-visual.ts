@@ -110,6 +110,37 @@ export const dropIndicatorColumn = {
  */
 export const dropIndicatorInside = 'bg-drop-target' as const
 
+// ── dnd-kit activator 屬性:安全轉發 ──────────────────────────────────────
+
+/**
+ * 把 dnd-kit `useDraggable().attributes` / `useSortable().attributes` 灑到 DOM 之前先過這一關。
+ *
+ * **為什麼需要**:dnd-kit 在拖曳期間無條件加上 `aria-pressed="true"`
+ * (`@dnd-kit/core` core.esm.js:3432 起的 memoizedAttributes)。它假設 activator 是一顆
+ * `role="button"` 的切換鈕,但我們的 activator 有三種都不是:
+ *   1. **拖曳把手**是 `<Button>`,而本 DS 的 Button 把 `aria-pressed` 解讀成「toggle 按下」
+ *      (button.tsx `aria-pressed:bg-primary-subtle / text-primary / border-transparent`),
+ *      於是非 toggle 的把手在拖曳中被畫成藍底藍字無框 —— 沒有人決定過這個外觀。
+ *   2. **欄位表頭**是 `role="columnheader"`;`aria-pressed` 依 ARIA 只用於 `button` 角色,
+ *      放在 columnheader 上是**無效 ARIA**。
+ *   3. **面板內的排序項目**同理。
+ *
+ * **為什麼放在這裡而不是各元件自己處理**:同一個能力跨元件必進 SSOT
+ * (`ds-canonical/references/drag-canonical.md` invariant 7)。這條先前只在 DataTable 的列把手
+ * 上修過一次,結果欄位表頭與兩個面板仍在灑 —— 正是「改 A 沒改 B」。收進這裡之後,
+ * 未來任何新的 drag 消費者只要走這個 helper 就不會再踩。
+ *
+ * 保留 `role` / `tabIndex` / `aria-roledescription` / `aria-describedby`:
+ * 那些是 dnd-kit 的鍵盤與螢幕閱讀器接線,拿掉會弄壞無障礙。
+ */
+export function forwardDragActivatorAttributes(
+  attributes: object | undefined,
+): Record<string, unknown> {
+  if (!attributes) return {}
+  const { 'aria-pressed': _ariaPressed, ...rest } = attributes as Record<string, unknown>
+  return rest
+}
+
 // ── Cursor classes ────────────────────────────────────────────────────────
 
 /** Draggable element 拖中時的 cursor(grabbing)*/
