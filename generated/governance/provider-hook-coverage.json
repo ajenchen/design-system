@@ -7,7 +7,7 @@
     "providerRegistry": "packages/governance/canonical/providers.json",
     "inputSha256": {
       "hookRegistrations": "sha256:78169670a99f4bc9a991a45738bed0f5965fc10f4a68426ebbe80ce0962baded",
-      "providerRegistry": "sha256:d1ff4891ea45e6969810bd918ef1bb776c5749c40e05ede66b232661080faabe",
+      "providerRegistry": "sha256:c8c96ab26ea34a73d6223c57cad875bbc57fbb00407850f6537b8f71c5016508",
       "coverageSchema": "sha256:7320ac4cf37a731f1e79428bad46561e285a491460c3daf16b9bb42bdd1765a4"
     }
   },

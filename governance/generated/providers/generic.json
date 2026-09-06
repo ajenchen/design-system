@@ -1,6 +1,6 @@
 {
   "_provenance": {
-    "contractDigest": "sha256:9a35d2ead2de56971a9497538776094cf9c9e750839f93e9a0b449c7b4da0989",
+    "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
     "generated": true,
     "generator": "@qijenchen/governance",
     "generatorVersion": "0.1.0-beta.132",
@@ -80,7 +80,8 @@
       "hardGateComplete": false,
       "hookEnforcement": "ci-only",
       "hookTrustRequired": false,
-      "nativeHooks": false
+      "nativeHooks": false,
+      "pushNotification": false
     },
     "displayName": "Generic automation",
     "hookConfig": null,

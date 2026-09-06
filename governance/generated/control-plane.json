@@ -1,6 +1,6 @@
 {
   "_provenance": {
-    "contractDigest": "sha256:9a35d2ead2de56971a9497538776094cf9c9e750839f93e9a0b449c7b4da0989",
+    "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
     "generated": true,
     "generator": "@qijenchen/governance",
     "generatorVersion": "0.1.0-beta.132",
@@ -133,7 +133,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 230,
-      "hash": "sha256:a1e88f8ed67d60f2bbeee2ce72e386527035ade8c42be91b0cd1c86eaad231ff",
+      "hash": "sha256:1ee50e1fdda0b3142dff293bc5ae95eb58c6c2d23a7af497b238fd9ceebb3681",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1269,21 +1269,21 @@
       "type": "file"
     },
     {
-      "hash": "sha256:ca572972b2b30bcdfcfbf3712ba6b7c06f164360ac923af4326ce48c9179cb80",
+      "hash": "sha256:622bf3e0d9cbfe8be5b9f87c8835ba41b5518f5e950321f44f8b9c35bb7f2c47",
       "id": "exact-provider-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/governance/canonical/providers.json",
-      "size": 21983,
+      "size": 26295,
       "type": "file"
     },
     {
-      "hash": "sha256:355c0db175e5e05bd5af9ad774af1ba94a8bde649aec1f2419128ad0735820c6",
+      "hash": "sha256:5f672e00037df91383f402ef294df3e975157d1c6a770d14cf941bbcbdf080f3",
       "id": "exact-provider-registry-schema",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/governance/canonical/schemas/providers.schema.json",
-      "size": 34772,
+      "size": 45596,
       "type": "file"
     },
     {
@@ -2595,7 +2595,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:51b7f2f2e2049c6fe30c2c948d75c6eb75d3f85059f127743f804fc93097cce0",
+      "hash": "sha256:b46079743da510041a1f090a23b3c02fa0acf67ee3d42dea46d0477bb0f61cba",
       "id": "provider-hook-coverage-artifact",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2649,12 +2649,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:bbda21ae53ca1a9f8e1f0a5f5dc92fcc6ec80308ef6442a87245b3f91da3c4fd",
+      "hash": "sha256:8fa082aa7e0ab7a288b99fe739fc6555796205e2a6a1409f9e21c1472b57bc6f",
       "id": "provider-hook-runner",
       "mode": "0755",
       "ownerRepo": "design-system",
       "path": "scripts/run-provider-hook.mjs",
-      "size": 96634,
+      "size": 97249,
       "type": "file"
     },
     {
@@ -2808,12 +2808,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:527429c427c2da5edeb154d4253062bc547fb0f1d5ab52d3765e01ff1186493d",
+      "hash": "sha256:02d6e678b37ed1eca58f1fd0d324d4ff06bea26ac9c3ef77097474707cdd321d",
       "id": "provider-runtime-validator-artifact",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "generated/governance/provider-runtime-validator.mjs",
-      "size": 280700,
+      "size": 281490,
       "type": "file"
     },
     {
@@ -3075,7 +3075,7 @@
         "scripts/generated/"
       ],
       "files": 387,
-      "hash": "sha256:6a854f145463deefacf8e1bece1a8f235406ec1a89b91ee52978dfb0b76767e4",
+      "hash": "sha256:950bc0f70067ec6644b9a9b39f8fe69165044085853a866f20de0983130c65e9",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3279,7 +3279,7 @@
   ],
   "registryDigests": {
     "gates": "sha256:5e49fe84e81dd3062a331a8ad8efb6fd4ec232c31508242aee20afc4bf51f69e",
-    "providers": "sha256:977b3dd5eee1d5aae8d1618416dfb6a4d3ac30388199b9e82baa80eadfdbba2f",
+    "providers": "sha256:2a4b6ca5f98e1a23c096ca8b98669df3cd8300aa476f73246b6d1d165946d49f",
     "roles": "sha256:0ac09e6bfe5c59b83eca4e014def9f0ced38497b2494ef6bf11bc64169544af5",
     "rules": "sha256:8972b2acba7ca13084cadce6a86aed6f2bd8a77d24c4d8717f8c6e6b49acd204"
   },
@@ -3382,7 +3382,7 @@
     },
     "gates": "sha256:dc2264622b7346bd0af78227b26c9c3e8a9fa75dd1b556c45e12024b7915e14c",
     "manifest": "sha256:9b758454bd6db6511e647e17aed301089ed15fb22d3bfdc6b194eb678a09a190",
-    "providers": "sha256:b4ce3b571c952b2ed753ce996d3da48dc5e7f21e21f315e7d791a8ae6fcfdad7",
+    "providers": "sha256:8c0efc45da9b482c5cb91e764d9857031854127cd40e6a3639adc2edfd414030",
     "roles": "sha256:bd8cc77c445a889add55cff70f07896aa08ec74530c7cdbd51968a8bf2ed82cc",
     "rules": "sha256:213c27d459c4c4cd1be02404838532af71489d9071a95aab4483223d1797e68d"
   },

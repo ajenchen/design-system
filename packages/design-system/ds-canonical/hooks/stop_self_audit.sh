@@ -486,12 +486,12 @@ fi
 # ── Mechanism 6: capability-bound PushNotification gap ────────────────────
 # Provider-neutral runtime 不可假設 exact tool 存在。只有 adapter/registry 明確宣告
 # `push-notification` capability 時才檢查；缺宣告 = UNOBSERVED/nonblocking。
-# ⚠️ **本 mechanism 目前休眠**(2026-09-06 對抗式稽核):下面兩個環境變數在整個 repo 內
-# 只出現在本檔,沒有任何 adapter / 設定檔會設定它們,因此 `NOTIFICATION_AVAILABLE` 恆為 0、
-# 這段永遠不執行。**同日把它從 WARNING 升成 BLOCKER 因此並未實際生效** —— 該次 commit 的
-# 「機械收口」宣稱不成立,已在此據實記載。要真正武裝它,必須由 provider adapter 宣告
-# push-notification capability(`GOVERNANCE_PROVIDER` 已可用,見本檔 :56 的 SELF_PROVIDER),
-# 且必須連同 hook 測試套件一起驗證 —— 接錯會無故擋住 turn,故不在稽核當下順手改。
+# 能力來源(2026-09-06 接上):`GOVERNANCE_PUSH_NOTIFICATION_AVAILABLE` 由
+# `scripts/run-provider-hook.mjs` 依 `packages/governance/canonical/providers.json` 的
+# `capabilities.pushNotification` 匯出。registry-owned,所以沒有該工具的 provider 不會被要求 call。
+# 歷史:在接上之前,這兩個變數在整個 repo 只出現在本檔、無人設定,`NOTIFICATION_AVAILABLE` 恆為 0,
+# 因此同日「從 WARNING 升成 BLOCKER」那次 commit **並未實際生效**;該次的「機械收口」宣稱不成立,
+# 據實留檔以免再被當成已完成。
 NOTIFICATION_AVAILABLE=0
 case ",${GOVERNANCE_AVAILABLE_CAPABILITIES:-}," in
   *,push-notification,*|*,PushNotification,*) NOTIFICATION_AVAILABLE=1 ;;
