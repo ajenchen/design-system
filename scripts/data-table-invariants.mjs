@@ -1897,6 +1897,55 @@ await page.waitForTimeout(400)
   }
 }
 
+
+/* ── I28:dark mode 底色分層 —— 三區與表頭必須同層 ─────────────────────────────
+ * 根 invariant:`--surface` 在 dark 是**半透明**白 8%,所以「誰宣告 bg-surface」不是等價選擇 ——
+ * 多宣告一層就多疊一次,亮度會差。root(`dataTableVariants`)本來就宣告了 bg-surface;
+ * 若列區容器或釘選面板再宣告一次,body 就疊兩層、而 header 列群組只有 root 一層,
+ * dark mode 下表身比表頭亮(2026-09-06 實際發生過:修捲軸接縫時多加了一層)。
+ *
+ * **為什麼要專門為 dark mode 開一條**:本檔其餘所有斷言都跑在預設(亮色)主題,而 light 的
+ * `--surface` 是不透明的,疊幾層都看不出來 —— 這一整類缺陷在亮色下**結構上不可見**。
+ * 同日兩個視覺回歸(捲軸接縫、表頭表身反轉)都只在 dark mode 顯現,亮色閘全綠。 */
+await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--pinned-columns&viewMode=story&globals=theme:dark`, { waitUntil: 'networkidle' })
+await page.waitForSelector('[role="row"]')
+await page.waitForTimeout(500)
+{
+  const tone = await page.evaluate(() => {
+    const cb = document.querySelector('[data-datatable-hscroll]')
+    if (!cb) return null
+    const row = cb.parentElement
+    const hdr = document.querySelector('.dtHeaderRowGroup')
+    const root = hdr ? hdr.closest('[class*="rounded-md"]') : null
+    const bg = (el) => (el ? getComputedStyle(el).backgroundColor : null)
+    const TRANSPARENT = 'rgba(0, 0, 0, 0)'
+    return {
+      theme: document.documentElement.getAttribute('data-theme')
+        || (document.body.getAttribute('data-theme') || '(none)'),
+      rootBg: bg(root),
+      headerBg: bg(hdr),
+      bodyBg: bg(row),
+      panelBgs: [...row.children].filter((el) => !el.hasAttribute('data-datatable-hscroll')
+        && !/overflow-x-scroll/.test(el.className)).map((el) => bg(el)),
+      TRANSPARENT,
+    }
+  })
+  if (!tone) record('I28', 'dark mode 表格結構取得(否則以下斷言空轉)', false, '找不到 hscroll 容器')
+  else {
+    record('I28', `真的處在 dark 主題(theme=${tone.theme})`,
+      tone.theme === 'dark', `data-theme=${tone.theme}`)
+    record('I28', `root 是唯一宣告底色的那一層(root=${tone.rootBg})`,
+      !!tone.rootBg && tone.rootBg !== tone.TRANSPARENT, `root ${tone.rootBg}`)
+    record('I28', '列區容器不得再宣告底色(否則 body 疊兩層、表身比表頭亮)',
+      tone.bodyBg === tone.TRANSPARENT, `body ${tone.bodyBg}`)
+    record('I28', '釘選面板不得各自宣告底色(否則捲軸帶左右與中間不同色)',
+      tone.panelBgs.every((b) => b === tone.TRANSPARENT), `panels ${JSON.stringify(tone.panelBgs)}`)
+    record('I28', '表頭列群組與列區同層(兩者都不自畫,皆由 root 提供)',
+      tone.headerBg === tone.bodyBg, `header ${tone.headerBg} / body ${tone.bodyBg}`)
+  }
+}
+
+
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))

@@ -1763,14 +1763,19 @@ export const FilterPanelLabelsAndLimit: Story = {
     const canvas = within(canvasElement)
     const page = within(canvasElement.ownerDocument.body)
 
-    const childPickers = within(canvas.getByTestId('filter-label-child-pickers'))
-    const categoryValue = childPickers.getByRole('combobox', { name: 'Category filter value' })
+    // 2026-09-06:第一個斷言改用 `findBy*`(非同步)。`getByRole('combobox', { name })` 需要
+    // **無障礙名稱已經算得出來**;在慢裝置／窄視窗上,harness 的子 picker 可能比 play 的第一個 tick
+    // 晚一拍才掛上名稱,於是 play 直接丟 "Unable to find an accessible element with the role
+    // combobox and name ..."(user 2026-09-06 在手機上的預覽站遇到)。同一顆元素在桌機本機建置
+    // 實測存在,故非渲染缺陷而是 play 的時序假設。`findByRole` 內建 retry,零行為變更。
+    const childPickers = within(await canvas.findByTestId('filter-label-child-pickers'))
+    const categoryValue = await childPickers.findByRole('combobox', { name: 'Category filter value' })
     await expect(categoryValue).toHaveTextContent('Choose values…')
     await userEvent.click(categoryValue)
     await expect(page.getAllByText('No matching values')).toHaveLength(2)
     await userEvent.keyboard('{Escape}')
 
-    await userEvent.click(childPickers.getByRole('combobox', { name: 'Owner filter value' }))
+    await userEvent.click(await childPickers.findByRole('combobox', { name: 'Owner filter value' }))
     const peopleSearch = await page.findByPlaceholderText('Search people…')
     await expect(peopleSearch).toHaveAccessibleName('Search filter people')
     await expect(page.getAllByText('No matching people')).toHaveLength(2)

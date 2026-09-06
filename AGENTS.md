@@ -155,7 +155,7 @@
 | 清 unused imports 後 runtime | tsc 不充分,需 storybook |
 | shadcn compat alias 回流 | dark mode 不聯動 |
 | `asChild ? Slot : Native` 內部 JSX 仍渲染多 children | React.Children.only runtime fail;asChild 分支只傳 consumer child |
-| `tsc -b` 不 emit declaration | TS4023 漏抓;型別 surface 改動必 `npm run build:lib` |
+| `tsc -b` **在本 repo 的 composite 設定下根本不檢查 DS 原始碼** | 不只是「不 emit declaration」——2026-09-06 實證:`data-table.tsx` 少傳一個必填 prop(TS2741),`npx tsc -b --force` 回 **0**,`npm run build:lib` 才報錯。**「tsc -b 通過」不構成型別正確的證據**,任何 .tsx 改動的型別驗證一律以 `npm run build:lib` 為準 |
 | 工具靜默陷阱:`rsync -a` 等長同秒跳過 / `rg` 黏寫 `-rn` 的 `-r`=replace / `mktemp -d` 失敗回空 → `cd ""` 原地 → trap 刪掉 cwd | 必 `--checksum`、flag 分開寫;mktemp 後必 `[ -n "$V" ]` + `[ -d "$V" ]` 才可正規化／註冊 cleanup(2026-07-28) |
 | DS css 不在 tokens.css aggregator 也沒被 tsx import = orphan | consumer 靜默拿不到 |
 | storybook-smoke 驗舊 build = 假綠 | smoke script 已加 stale-build guard |

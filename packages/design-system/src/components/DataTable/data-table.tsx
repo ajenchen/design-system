@@ -514,7 +514,6 @@ const isSystemColumn = (colId: string) => SYSTEM_COL_IDS.has(colId)
 //   mirror  → MirrorRowProvider(useDroppable only),isDragging 走 useDndContext active.id 同步。
 // 無 SortableContext / useSortable(v15.0 Path B 已砍,見檔頭 import 註解)。listeners 全走
 // RowDragHandle Button(v15.6 button-only;row 本身不接 listeners)。primary = left region 若存在否則 center。
-// `invalidDrop`(cross-parent over)走 prop 廣播給 RowDragHandle 切 cursor-not-allowed。
 interface SortableRowCtxValue {
   setNodeRef: (el: HTMLElement | null) => void
   role: 'primary' | 'mirror'
@@ -535,8 +534,6 @@ interface SortableRowCtxValue {
   handleSetActivatorNodeRef: ((el: HTMLElement | null) => void) | undefined
   handleListeners: Record<string, unknown> | undefined
   handleAttributes: Record<string, unknown>
-  /** drag 進行中且當前 over target 與 active 不同 parent → invalid signal */
-  invalidDrop: boolean
 }
 const SortableRowCtx = React.createContext<SortableRowCtxValue | null>(null)
 
@@ -549,7 +546,6 @@ function SortableRowProvider(props: {
   id: string
   disabled?: boolean
   role: 'primary' | 'mirror'
-  invalidDrop: boolean
   children: (ctx: SortableRowCtxValue) => React.ReactNode
 }) {
   // **v15.4 final architectural split**:multi-instance same-id 是 dnd-kit anti-pattern。
@@ -566,13 +562,11 @@ function SourceRowProvider({
   id,
   disabled,
   role,
-  invalidDrop,
   children,
 }: {
   id: string
   disabled?: boolean
   role: 'primary' | 'mirror'
-  invalidDrop: boolean
   children: (ctx: SortableRowCtxValue) => React.ReactNode
 }) {
   const draggable = useDraggable({ id, disabled, data: { type: 'row' } })
@@ -594,7 +588,7 @@ function SourceRowProvider({
   // 2026-07-05 D3 perf fix:ctxValue useMemo — 原每 render 新 object,RowDragHandle 的
   // useLayoutEffect deps [rowEl, ctx] 在每次 DataTableInner render 都 teardown/重掛
   // MutationObserver + window scroll/resize listener(×每個 visible primary row)。
-  // memo 後 identity 只在 drag 相關值真變(isDragging / invalidDrop 等)時才換。
+  // memo 後 identity 只在 drag 相關值真變(isDragging 等)時才換。
   const ctxValue: SortableRowCtxValue = React.useMemo(() => ({
     setNodeRef: setRefs,
     role,
@@ -610,8 +604,7 @@ function SourceRowProvider({
     handleSetActivatorNodeRef: draggable.setActivatorNodeRef,
     handleListeners: draggable.listeners as unknown as Record<string, unknown> | undefined,
     handleAttributes: handleAttrs,
-    invalidDrop,
-  }), [setRefs, role, isDragging, draggable.setActivatorNodeRef, draggable.listeners, handleAttrs, invalidDrop])
+  }), [setRefs, role, isDragging, draggable.setActivatorNodeRef, draggable.listeners, handleAttrs])
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
 }
 
@@ -619,13 +612,11 @@ function MirrorRowProvider({
   id,
   disabled,
   role,
-  invalidDrop,
   children,
 }: {
   id: string
   disabled?: boolean
   role: 'primary' | 'mirror'
-  invalidDrop: boolean
   children: (ctx: SortableRowCtxValue) => React.ReactNode
 }) {
   // Mirror region(left / right pinned)只 mount useDroppable — 接受 drop target,
@@ -652,8 +643,7 @@ function MirrorRowProvider({
     handleSetActivatorNodeRef: undefined,
     handleListeners: undefined,
     handleAttributes: {},
-    invalidDrop,
-  }), [droppable.setNodeRef, role, isDragging, invalidDrop])
+  }), [droppable.setNodeRef, role, isDragging])
   return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
 }
 
@@ -2204,10 +2194,7 @@ function DataTableInner<TData>(
     activeDragIdRef.current = activeDragId
     if (enableRowDrag && useVirtual) virtualizer.measure()
   }, [activeDragId, enableRowDrag, useVirtual, virtualizer])
-  const [invalidDropActive, setInvalidDropActive] = React.useState(false)
-  // code-quality-allow: long-function — audit 誤偵測 invalidRef 為 function;真實 long-function = 下方 cellEl(L1334+,已標 markers per L1336)。type-shadow,不需 refactor
-  const invalidRef = React.useRef(false)
-  invalidRef.current = invalidDropActive
+
 
   // code-quality-allow: long-function — cell render 含 selection / pinned / type-aware formatter 三邏輯,拆會增 prop drilling
   // 缺陷 M(2026-09-05 第二次修正):「本區最後一欄不畫欄間線」的判準**只有 `isLastInRegion` 一份**,
@@ -3241,11 +3228,9 @@ function DataTableInner<TData>(
       )
 
       if (dragRowWrap) {
-        // invalidDrop 只對「正在被拖」的 row 顯示 — handle 在 active row 上,UI 警示只需該 row
         // code-quality-allow: long-function — 此 const 之下的整個 if-block 含 dnd-kit hooks + SortableRowProvider + baseRowDiv composition;audit 把 const 誤認為 function entry,實 long body 在 closure 內 dnd-kit + per-row state 多 capture,拆會破壞 hook order invariant
-        const rowInvalidDrop = isThisRowDragging && invalidDropActive
         return (
-          <SortableRowProvider key={row.id} id={row.id} disabled={dragDisabled} role={regionRole} invalidDrop={rowInvalidDrop}>
+          <SortableRowProvider key={row.id} id={row.id} disabled={dragDisabled} role={regionRole}>
             {(ctx) => baseRowDiv({
               // primary 掛 useDraggable+useDroppable 合成 ref;mirror 只掛 useDroppable ref
               // (v15.4 split — mirror 不進 drag source store,isDragging 走 useDndContext 同步)
@@ -3413,14 +3398,16 @@ function DataTableInner<TData>(
         ref={bodyRef}
         className={cn(
           'relative flex items-start',
-          // **底色在這一層畫一次,三個面板都不自己畫**(2026-09-06 修 dark mode 捲軸接縫)。
-          // `--surface` 在 dark 是半透明白 8%,原本只有兩個釘選面板宣告 `bg-surface`、中間捲動區沒有,
-          // 於是底部那條捲軸帶在左右是「底 + 8% + 軌道 8%」、在中間是「底 + 軌道 8%」,
-          // 同一條軌道疊在不同層上 → 亮度差約 60%,接縫肉眼可見(user 2026-09-06 圖二)。
-          // 線上 A/B 實測:只補中間區無效(仍有接縫),把底色收到共同容器畫一次才消失。
-          // 缺陷 R 的性質不變 —— 面板底部那條讓位用的透明 border 之下露出的仍是同一個 surface,
-          // 只是改由這一層提供;三區同層是這條的不變式,面板不得再各自宣告底色。
-          'bg-surface',
+          // **三區都不自己畫底色**(2026-09-06 修 dark mode 捲軸接縫;同日第二次修正)。
+          // `--surface` 在 dark 是半透明白 8%。原本只有兩個釘選面板宣告 `bg-surface`、中間捲動區沒有,
+          // 於是底部那條捲軸帶在左右是「底 + 8%(面板)+ 8%(軌道)」、中間是「底 + 8%(軌道)」,
+          // 亮度差約 60%,接縫肉眼可見(user 2026-09-06 圖二)。
+          // **第一版把 `bg-surface` 搬到這一層是錯的** —— root 的 `dataTableVariants`(本檔 :68)
+          // 本來就宣告了 `bg-surface`,再加一層等於 body 疊兩層、而 header 列群組只有 root 一層,
+          // dark mode 下表身比表頭亮(實測 root 與 body 皆 oklch(1 0 0 / .08),header 為 transparent)。
+          // 正解:**三區都不畫,讓 root 既有的那一層透上來** —— 三區與 header 因此完全同層,
+          // 接縫消失且不產生新的明暗差。缺陷 R 性質不變:面板底部讓位用的透明 border 之下
+          // 露出的仍是同一個 surface,只是由 root 提供。**面板不得再各自宣告底色。**
           isFillHeight && 'min-h-0 min-w-0',
           hasLeft && 'dtLeftBoundary',
           hasRight && 'dtRightBoundary',
@@ -3691,7 +3678,7 @@ function DataTableInner<TData>(
   // ── L4 Row drag DnD wrapper ───────────────────────────────────────────────
   // Sensors:Pointer(8px activation distance,避免 cell click 誤觸 drag)+ Keyboard(a11y)
   // v15.0 Path B:無 SortableContext — 每 row 各自 useDraggable / useDroppable;
-  // 同 parent level 限制由自訂 collisionDetection 過濾 cross-parent target 成立(cross-parent over → invalidDrop)。
+  // 同 parent level 限制由自訂 collisionDetection 過濾 cross-parent target 成立(cross-parent over → 不畫落點線;不另設 invalid 視覺,見 data-table.spec.md「把手不表示『不能放』」)。
   // DragEnd:active.id / over.id → 算 position(active vs over 視覺位置),呼叫 onRowReorder。
   // hooks 必呼叫(rules-of-hooks)— 即使 enableRowDrag=false 也走 useSensors;wrap 才條件化。
   // **codex P1 fix(2026-05-07 v15.13)**:KeyboardSensor 不傳 `coordinateGetter`,用
@@ -3793,7 +3780,6 @@ function DataTableInner<TData>(
   const handleDragStart = React.useCallback((e: { active: { id: string | number; data: { current?: { type?: 'row' | 'column'; columnId?: string } } } }) => {
     const id = String(e.active.id)
     const type = e.active.data?.current?.type ?? 'row'
-    setInvalidDropActive(false)
     // v15.3:drag 啟動清掉非 source row 的 data-hovered(避免其他 row 殘留 hover bg + drag button)。
     // **保留 source row 的 hover** — 對齊 Linear / Jira「source 維持 active 視覺」world-class canonical。
     if (type === 'row') {
@@ -3846,12 +3832,12 @@ function DataTableInner<TData>(
     const { active, over } = e
     if (!active) return
     if (!over) {
-      // 無 valid same-parent over → invalid drop signal(配合 v2 cross-parent visual)
-      if (!invalidRef.current) setInvalidDropActive(true)
+      // 無 valid same-parent over → 不畫落點線。**不再另外廣播 invalid 狀態**
+      // (2026-09-06:該狀態自 63a6f782 拆掉 `showInvalid` 之後零讀取者,卻仍在拖曳中
+      //  觸發 setState → 每次進出無效落點都讓 DataTableInner 重繪一次。整條鏈已移除。)
       setDropIndicator(null)
       return
     }
-    if (invalidRef.current) setInvalidDropActive(false)
     if (active.id === over.id) { setDropIndicator(null); return }
     // Drop indicator(2026-05-06 v14.6 row + column 統一 SSOT pattern):
     // 用 active vs over 在 sortable items 的相對位置判 before/after。
@@ -3879,7 +3865,6 @@ function DataTableInner<TData>(
   const handleDragCancel = React.useCallback(() => {
     setActiveDragId(null)
     setActiveDragColId(null)
-    setInvalidDropActive(false)
     setDragOverlayHtml(null)
     setDragOverlayWidth(null)
     setDropIndicator(null)
@@ -3911,7 +3896,6 @@ function DataTableInner<TData>(
     const type = (active.data?.current as { type?: 'row' | 'column' } | undefined)?.type ?? 'row'
     setActiveDragId(null)
     setActiveDragColId(null)
-    setInvalidDropActive(false)
     setDragOverlayHtml(null)
     setDragOverlayWidth(null)
     setDropIndicator(null)

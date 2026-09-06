@@ -120,6 +120,16 @@ emit_governance_block() {
   exit 0
 }
 
+# `THIS_TURN_TOOLS` = 本 turn(最後一則 user 訊息之後)的 transcript 切片。
+# **必須在所有 mechanism 之前算好**:它原本只在 Mechanism 1 的 claim 分支內賦值,而 Mechanism 6
+# 也讀它 —— 當 Mechanism 1 沒進那個分支時,Mechanism 6 就會讀到未定義變數
+# (`set -u` 下直接中止,否則 grep 空字串 → 誤判「沒 call」)。2026-09-06 對抗式稽核抓到。
+if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "${TRANSCRIPT_PATH:-}" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
+  THIS_TURN_TOOLS=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null)
+else
+  THIS_TURN_TOOLS=""
+fi
+
 # ── Mechanism 1: Claim-verification gap ─────────────────────────────────────
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
   # NOTE(2026-05-01 v3):versioned transcript contract 把 tool_result 也標 role="user"。
@@ -153,11 +163,6 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
     && ! grep -qiE "$RETRACT_RE" <<< "$LAST_ASSISTANT"; then
     # Check if any verify-class tool_use happened in THIS turn(after last user msg)
     VERIFY_RE='(npx tsc|bash packages/design-system/ds-canonical/hooks/tests|compile-stories|npm run build|npm run test|design-system-audit|visual-audit)'
-    if [ "$LAST_USER_LINE" -gt 0 ]; then
-      THIS_TURN_TOOLS=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null)
-    else
-      THIS_TURN_TOOLS=""
-    fi
     if ! grep -qE "$VERIFY_RE" <<< "$THIS_TURN_TOOLS"; then
       WARNINGS="${WARNINGS}\n  • Claim-verify gap:你說 verified / done / 完成 等,但本 turn 無 tsc / test / audit 真執行。下輪實跑驗證或撤回 claim。"
       # 標記 CRITICAL — Mechanism 1 升 BLOCKER(2026-04-30 升級):AI claim done 但無驗證
@@ -481,6 +486,12 @@ fi
 # ── Mechanism 6: capability-bound PushNotification gap ────────────────────
 # Provider-neutral runtime 不可假設 exact tool 存在。只有 adapter/registry 明確宣告
 # `push-notification` capability 時才檢查；缺宣告 = UNOBSERVED/nonblocking。
+# ⚠️ **本 mechanism 目前休眠**(2026-09-06 對抗式稽核):下面兩個環境變數在整個 repo 內
+# 只出現在本檔,沒有任何 adapter / 設定檔會設定它們,因此 `NOTIFICATION_AVAILABLE` 恆為 0、
+# 這段永遠不執行。**同日把它從 WARNING 升成 BLOCKER 因此並未實際生效** —— 該次 commit 的
+# 「機械收口」宣稱不成立,已在此據實記載。要真正武裝它,必須由 provider adapter 宣告
+# push-notification capability(`GOVERNANCE_PROVIDER` 已可用,見本檔 :56 的 SELF_PROVIDER),
+# 且必須連同 hook 測試套件一起驗證 —— 接錯會無故擋住 turn,故不在稽核當下順手改。
 NOTIFICATION_AVAILABLE=0
 case ",${GOVERNANCE_AVAILABLE_CAPABILITIES:-}," in
   *,push-notification,*|*,PushNotification,*) NOTIFICATION_AVAILABLE=1 ;;

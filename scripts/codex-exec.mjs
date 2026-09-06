@@ -38,9 +38,8 @@
 // 輸出:stdout 印 `CODEX-OUTCOME: <SUCCESS|QUOTA|AUTH|EMPTY|ERROR|TRANSPORT_MISSING>`;
 // `--out` 給定時把 codex 的回覆寫進該檔。exit code 沿用 guarded 的分類碼。
 
-import { spawn } from 'node:child_process'
+import { spawn, execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, writeFileSync, copyFileSync, rmSync, existsSync, mkdirSync } from 'node:fs'
-import { execFileSync } from 'node:child_process'
 import { tmpdir, homedir } from 'node:os'
 import { join } from 'node:path'
 import { classify } from './codex-run-guarded.mjs'
@@ -123,7 +122,13 @@ async function run(prompt, { timeoutMs = 45 * 60 * 1000, repoRoot = process.cwd(
   const home = makeSandboxHome()
   let treeHandle = null
   try { treeHandle = makeThrowawayTree(repoRoot) } catch (err) {
-    process.stderr.write(`WARN: 臨時 worktree 建不起來(${err.message});退回無 repo 讀取模式\n`)
+    // 退回 `--sandbox read-only` + 真 repo cwd —— 那正是本檔開頭記載會回 READ_DENIED 的組合。
+    // 不靜默退回:明講 codex 這一輪讀不到 repo,呼叫端才知道結論只基於 brief 文字。
+    process.stderr.write(
+      `WARN: 臨時 worktree 建不起來(${err.message})。退回 --sandbox read-only,` +
+      `該組合在本沙箱會使 codex 無法執行任何讀取指令(巢狀 Seatbelt),` +
+      `本輪結論只基於 brief 內文,不得宣稱已對照 repo。\n`,
+    )
   }
   try {
     return await new Promise((resolve) => {
