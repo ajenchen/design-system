@@ -43,7 +43,7 @@ import { DndContext, DragOverlay, useDraggable, useDroppable, useDndContext, poi
 import { cn } from '@/lib/utils'
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
-import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier } from '@/design-system/lib/drag-visual'
+import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, dragHandleCursorClass, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier } from '@/design-system/lib/drag-visual'
 import { nakedCellEditableDisplayHover, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
@@ -759,6 +759,22 @@ function DraggableHeaderCell({
  *  - 任何 row drag 進行時(activeDragId != null)整體隱藏 — 對齊 user directive:
  *    drag 期間「INDICATOR + GHOST」就夠了,所有 row 不顯 hover bg / drag button */
 // code-quality-allow: long-function — Portal escape + cross-region hover delegation + MutationObserver + scroll-tracking 4 mechanism 結合在 RowDragHandle 內;每 mechanism 獨立 hook 會破壞 row context coupling
+/**
+ * 把 dnd-kit 的 `aria-pressed` 擋在 Button 門外。
+ *
+ * `@dnd-kit/core` 在拖曳中一律送 `aria-pressed="true"`(core.esm.js:3436),那是它給
+ * `role="button"` activator 的慣例;但本 DS 的 Button 把 `aria-pressed` 解讀成 **toggle 按下**
+ * (button.tsx:194 起 `aria-pressed:bg-primary-subtle / text-primary / border-transparent`)。
+ * 拖曳把手不是 toggle —— 它沒有「開/關」兩態,壓著時的正確狀態是 `:active`。
+ * 在來源擋掉,Button 才能完全照它平常的 initial / hover / active 走(user 2026-09-06
+ * 逐字:「其 initial,hover,active 狀態都是只改底色為 bg-surface-raised,其餘不變」)。
+ */
+function stripAriaPressed(attrs: Record<string, unknown> | undefined) {
+  if (!attrs) return {}
+  const { 'aria-pressed': _ariaPressed, ...rest } = attrs
+  return rest
+}
+
 function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDragActive: boolean }) {
   const ctx = React.useContext(SortableRowCtx)
   const [rowEl, setRowEl] = React.useState<HTMLDivElement | null>(null)
@@ -851,7 +867,6 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
   if (!ctx || ctx.role !== 'primary' || !pos) return anchor
 
   const canDrag = !disabled
-  const showInvalid = !!ctx.invalidDrop && !!ctx.isDragging
   // Visibility canonical v15.3(對齊 Linear / Jira 世界級 + user directive
   // 「source 的 drag button 反倒是可以留在原本的位置維持被壓住的狀態」):
   //   - idle:rowHovered || buttonHovered → 顯示
@@ -866,6 +881,13 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
   //       Tooltip stable trigger。
   //   (b) drag button bg 透明蓋不住 row content — 加 `bg-surface-raised` overlay。
   //   (c) source row drag button 在 drag 中應 dimmed visual — `isDragging` 加 `opacity-disabled`。
+  // dnd-kit 在拖曳中會送 `aria-pressed="true"`(`@dnd-kit/core` core.esm.js:3436:
+  //   `'aria-pressed': isDragging && role === defaultRole ? true : undefined`),
+  // 而本 DS 的 Button 把 `aria-pressed` 當成 **toggle 按下**(button.tsx:194 起
+  // `aria-pressed:bg-primary-subtle / text-primary / border-transparent`,2026-05-21 e58576a6
+  // 為 Radix overlay trigger 加的 fallback)。**拖曳把手不是 toggle**,語意與視覺都不該套那組。
+  // 用 CSS 反壓會連 `:active` 一起蓋掉(違反 user「其餘不變、壓著時就是 active」),
+  // 所以在來源就把這個屬性擋掉,讓 Button 完全照它平常的 initial / hover / active 走。
   const handle = (
     <Button
       ref={canDrag ? ctx.handleSetActivatorNodeRef : undefined}
@@ -906,22 +928,23 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
         // 對所有 state(idle / hover / aria-disabled / data-state)套同 bg-surface-raised — 跟
         // row 任何 state 視覺都有 token-level 對比(在 token 差異存在的 mode;light mode --surface-raised
         // 等於 --surface 是 design token semantic,非本 fix scope)。
-        // 2026-09-06 修(user 抓「拖曳時按鈕有一個淺藍底色」— 量到 oklch(.63 .22 258/.19) = primary-subtle):
-        // dnd-kit 的 `attributes` 在拖曳中會送 `aria-pressed="true"`(a11y 用),而 Button 於
-        // 2026-05-21 e58576a6 新增 `aria-pressed:bg-primary-subtle / text-primary / border-transparent`
-        // 作為 Radix overlay trigger 的 fallback。兩者相撞 → 這顆非 toggle 的拖曳鈕在拖曳中被畫成
-        // 「toggle 按下」的藍底藍字無框,**2026-05-12「所有 state 都同 bg」那條約束被靜默打破**。
-        // 這裡把三個 aria-pressed 視覺全部釘回原樣(不能只釘 bg,否則圖示仍變藍、框仍消失)。
+        // **2026-09-06 回歸修正(user 逐字重申當初的定義)**:
+        //   「只有定義要把按鈕底色改成不透明的 bg-surface-raised,其 initial / hover / active 狀態
+        //     都是只改底色為 bg-surface-raised,**其餘不變**,壓著那顆鈕的時候狀態應該是 active,
+        //     **本來就不需要 invalid**,我們不是就已經有引導的落點線了嗎」
+        // 依此拆掉兩處從未經過 user 的東西(考古見 commit message):
+        //   (1) `cursor-not-allowed !text-error !border-error` —— 2026-05-08 4c867134 換成 Button
+        //       時實作者自己加的;`drag-visual.ts` 這個拖曳視覺 SSOT 從頭到尾沒有 invalid 這一態,
+        //       TreeView 與欄位重排兩個消費者也都沒有,DataTable 是唯一把「不能放」畫在把手上的 → M23 違反。
+        //       「不能放」的訊號本來就在目標(不出落點線),不該畫在起點。
+        //   (2) `cursor-grabbing` —— 違反 `drag-visual.ts` 的 `dragHandleCursorClass`
+        //       (2026-05-07 v15.7 user directive「只 cursor-grab,不變 grabbing」)。
         'bg-surface-raised hover:bg-surface-raised aria-disabled:bg-surface-raised',
-        'aria-pressed:bg-surface-raised aria-pressed:text-foreground aria-pressed:border-border',
         'transition-opacity duration-150 ease-in-out motion-reduce:duration-0',
-        canDrag && !showInvalid && 'cursor-grab',
-        canDrag && showInvalid && 'cursor-not-allowed !text-error !border-error',
-        // drag 進行中 source button cursor(opacity 0.5 via style;aria-disabled visual 由 Button cva 接管)
-        ctx.isDragging && 'cursor-grabbing',
+        canDrag && dragHandleCursorClass,
       )}
       {...(canDrag ? ctx.handleListeners ?? {} : {})}
-      {...(canDrag ? ctx.handleAttributes ?? {} : {})}
+      {...(canDrag ? stripAriaPressed(ctx.handleAttributes) : {})}
     />
   )
 
