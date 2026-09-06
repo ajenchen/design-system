@@ -44,7 +44,6 @@ user 問「所有未完成任務都有持續追蹤嗎」時,當場查出兩個�
 | C7 | 「明確不顯示焦點」7 處未逐一驗證 | 合法情形是指示器畫在別的元素上(如 `agent-panel-fab.tsx:744` 自身 `outline-none`、指示器在 `:778`);不合法即 WCAG 2.4.7 違規 | 中 |
 | C8 | 「四件成套」與實際值不符 | `color.spec.md:688` 稱四件;實際 `semantic.css:369-372` 中 `-focus` 與 `-active` 同為 neutral-3、`-hover` 與 `--neutral-hover` 同為 neutral-1 → 只有三個相異值,選中×焦點與選中×按壓畫面上分不出來 | 中 |
 | C9 | I27a / I27b 兩個閘可能假綠 | I27a 取固定 2600 字元視窗 + 負向正則;I27b 以 `img >= 2` 自選儲存格,已棘輪成「1 顆 + +N」的格子(只有 1 張圖)會被跳過 | 中 |
-| C12 | 日曆的兩種灰(user 2026-09-06 抓圖)| 實測 77 個日期格分成兩色:**非本月** = `oklch(0 0 0 / 0.45)`(`text-fg-muted` / neutral-7,`date-grid.tsx:143`)16 天;**disabled** = `oklch(0 0 0 / 0.25)`(`text-fg-disabled` / neutral-6,`:150`)49 天。**bug**:既是非本月又是 disabled 的日子拿到 0.45 深灰 —— 「非本月」贏過「disabled」,同樣不能點的日子在隔壁月份反而更顯眼。違反自家 M24「State 顯著性 precedence:disabled > muted > emphasis」 | 中 |
 | C13 | `ring-offset` 的間隙是寫死的白 | **數字更正**:渲染路徑 **23 處**(19 檔),先前對 user 講的「36 處」含 stories,是錯的;全部 50 行 = 23 code + 13 stories + 14 spec。機制:Tailwind 4.2.2 `@property --tw-ring-offset-color{syntax:"*";inherits:false;initial-value:#fff}`,全 repo 0 處覆寫。深色實測焦點按鈕 box-shadow = `rgb(255,255,255) 0 0 0 1px, oklch(0.63 0.22 258) 0 0 0 3px`。**關鍵限制**:`inherits:false` ⇒ 寫進 `semantic.css` 的 `:root` token 區**完全不會生效且靜默無錯**,只能用 universal selector(`*, ::before, ::after, ::backdrop`,即 Tailwind 自己 `@layer properties` 的形狀)。透明色也不行 —— box-shadow 疊序讓較寬的 ring 從透明層透出來。若改用 canvas,深色下是 `rgb(10,10,10)`(`semantic.css:427` → `--color-neutral-1-opaque`,dark `--_na1: 4%`),不是研究稿寫的 26 或 28(那是它自建 harness 硬寫的假 `#1a1a1a`)| 中 |
 | C14 | FileViewer 縮圖:選中與聚焦零像素差 | `file-viewer.tsx:639` `focus-visible:ring-2 focus-visible:ring-ring` 與 `:641` `active ? 'ring-2 ring-primary'`,而 `semantic.css:337` `--ring: var(--primary)` 是全 repo 唯一定義 → 兩者計算值相同。**已選中的縮圖被鍵盤聚焦時,畫面上 0 像素變化**。違反 APG「The selected state must be visually distinct from the focus indicator.」 | 中 |
 | C15 | `.ringtest/` 研究殘留未 gitignore | 與先前的 `scratch-probe/` 同類。untracked,不會進版本庫,但 `git add -A` 前要留意 | 低 |
@@ -64,6 +63,7 @@ user 問「所有未完成任務都有持續追蹤嗎」時,當場查出兩個�
 | D7 | `aria-pressed` 四個灑點 | 收進 `lib/drag-visual.ts` 的 `forwardDragActivatorAttributes()` |
 | D8 | 兩處永不觸發的焦點底色 | TreeView(虛擬焦點)與 MenuItem(`<div role="option">`)已移除;P0 hook 教義補上 selector 判準 |
 | D9 | 焦點指示跨元件 SSOT | `references/focus-canonical.md`。**初稿規則二判準錯誤(把「兩段式」外推到選單與按鈕,與既有 owner `menu-item.spec.md:301` 相反),同日經 user 三個提問抓出並改寫**為「底色有沒有被選中佔走」;同時修正「5 個活用法全在 Radix 系」的錯誤敘述與 A3 的 provenance 放大。現行版本 170 行 |
+| D11 | 日曆兩種灰(C12 結案)| 根因:`outside` 與 `disabled` 是 RDP 兩個獨立 modifier,className 同時串上同一格,特異性相同 → stylesheet 順序決勝,`text-fg-muted`(45%)贏過 `text-fg-disabled`(25%),導致非本月又不可選的日子反而更深。**規格本來就有答案**(`date-grid.spec.md:106` outside 的前提是「仍可 hover / 可點」、`:201` disabled → `text-fg-disabled`(M24)),是 code 沒照做。修法把 outside 的前提寫進選擇器:`[&>button:not(:disabled):not([aria-disabled="true"])]:text-fg-muted`,不用 `!important`。驗證:用 repo 自己的 tailwindcss 4.2.2 compile API 實編確認產出該選擇器(含對照組);`build:lib` exit 0;檔頭 state 表與 spec.md:106 同步 |
 | D10 | TreeView 落點底色被蓋掉(本次新抓到)| 兩個都會發生的 bug:**已選中**的列 twMerge 直接刪掉 `bg-drop-target`;**未選中**的列 hover 特異性較高蓋掉它,而游標必然就停在該列上(dnd-kit 全程不呼叫 `setPointerCapture`,0 命中,故 `:hover` 照樣命中)。修法:`dropIndicatorInside` 自帶 `hover:` 同色 + 在 `cn()` 內移到所有 `bg-*` 之後。實跑 tailwind-merge 3.5.0 四種組合全 PASS;`build:lib` exit 0 |
 
 ## E. 複現不出、因果未證(不得宣稱已解決)
@@ -77,3 +77,25 @@ user 問「所有未完成任務都有持續追蹤嗎」時,當場查出兩個�
 
 - 「上移／下移」單指標控制項(WCAG 2.5.7 + `drag-canonical.md` invariant 6)。落地形式已定:該列 `rowActions` overflow 選單多兩個項目,樣式沿用既有 menu、無新 token;僅 API 歸屬(DS 於 `enableRowDrag` 時自動注入 vs consumer 自加)待定
 - Agent 面板規格的實作(2026-08-11 隔離令仍有效:user 排定前不得寫進 `packages/design-system/src/**`、token、hook、M-rule)
+
+## G. Agent 原則的三個落地差距(2026-09-07 user 指派,跨模型對辯中)
+
+權威 = agent 原則 v14 的七條(A 內容資格 / B 呈現 / C 導航 / D 連結責任 / E 持續使用 / F 生命週期 / G 網址邊界)。
+`governance/planning/2026-08-11-agent-ui-panel-spec.md` **整份過時**,不得引用。
+
+| # | 差距 | 錨點(2026-09-07 逐一核對無誤)|
+|---|---|---|
+| G1 | Dialog 的背景隔離會把 agent 一起關掉 | `dialog.spec.md:185`:Radix 刻意不設 `aria-modal`,改用 `hideOthers()` 把背景兄弟節點設 `aria-hidden` + FocusScope trap。有 URL 的 Modal 一開,agent 就被標成隱藏、焦點進不去 → A 條落不了地。要調整的是**整個互動隔離範圍**,不能只縮遮罩 |
+| G2 | 面板關閉時整個卸載 | `agent-panel-fab.tsx:813` 附近「`defaultOpen` 非受控初始開關;**預設開**」、`:818`「面板內容;**關閉時不渲染**(與入口鈕互斥)」→ 保不住 F 條「初始化為關閉」與 E 條「閱讀位置保存」|
+| G3 | 推擠與斷點掛在 backlog | `agent-panel.spec.md:83`:「面板與 app 的推擠/斷點=backlog(本輪僅元件內規格)」→ B 條要落地得先解 |
+
+**進行方式**(user 2026-09-07 指定):與 codex 來回討論辯論至有共識。已驗證 codex 傳輸可用
+(`node scripts/codex-exec.mjs --check` → `TRANSPORT_OK`,exit 0)。workflow `wc20yypmr`:
+Claude 三路 Phase A 獨立提案 → codex 隔離 context 獨立提案 → 兩輪對辯 → 共識 → 判斷能否產出示意範例。
+
+**硬約束**(任一違反即方案不成立):不得讓 DS 元件變得不通用(沒有 agent 的 consumer 須零影響)/
+不得改壞 Dialog 對「沒有 URL 的 Modal」的既有隔離(那正是 A 條要的)/ ≥3 家世界級對照附 citation /
+優先消費既有 token pattern / 附機械驗證方案(M32:量數值不驗屬性存在)。
+
+**2026-08-11 隔離令仍有效**:user 排定前不得寫進 `packages/design-system/src/**`、token、hook、M-rule。本輪只產方案。
+
