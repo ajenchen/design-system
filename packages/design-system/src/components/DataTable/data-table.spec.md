@@ -645,6 +645,20 @@ DataTable 是 composite multi-section 元件,**不套 SizeMatrix / StateBehavior
 - Selection state(若啟用 selection mode):視覺**僅由 `__select__` 欄的 selection control(`multi`→Checkbox / `single`→Radio)呈現,不套 selected-row 底色**;control 自帶 `aria-checked` 傳達狀態(row 本身目前**未**套 `aria-selected`,`grid` root 亦未套 `aria-multiselectable` — 留待 `role="grid"` future tier)
 - 字 cell hover overlay action:overlay 為 absolute/fixed paint layer(`DataTableInteractionLayer`),trigger 目前**未**套 `aria-haspopup` / `aria-controls`(留待 future tier)
 
+**列重排的鍵盤與單指標路徑(2026-09-06 登記缺口)**:
+- **列**的鍵盤拖曳已於 2026-09-06 拆除 —— 實測 Space 會啟動、按方向鍵後落點線消失、放下順序不變,
+  屬「看似支援實則不能完成」。根因:`DndContext` 單一 sensors 由欄／列共用,而 dnd-kit 鍵盤座標
+  自 activator 矩形起算;列的 activator 是貼表格左緣的 fixed 把手,不在任何列矩形內,
+  `pointerWithin + rectIntersection` 因此永遠解不出 `over`。把手不再 spread `onKeyDown` 且 `tabIndex=-1`。
+- **欄位**的鍵盤重排**可用且保留**(同手法實測:Category 由第 3 欄移至第 5 欄);
+  其 activator 是 header cell,落在其他 header 矩形內,故 `over` 解得出。**`KeyboardSensor` 不得移除。**
+- **待補(backlog)**:(a) [WCAG 2.5.7 Dragging Movements](https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html)
+  要求拖曳功能須有「單指標、不需拖曳」的替代路徑,規範自身舉的例子即清單重排的「上移／下移」控制項;
+  DataTable 與 TreeView 目前皆無此路徑。落地形式已定(該列 `rowActions` overflow 選單多兩個項目,
+  樣式沿用既有 menu,無新 token),僅 API 歸屬(DS 於 `enableRowDrag` 時自動注入 vs consumer 自加)待定。
+  (b) 是否採用 TreeView 的 `Cmd/Ctrl+Shift+方向鍵`(`tree-view.spec.md:294-295`)作為加速器,研究中。
+  (c) 列拖曳無客製 live region,落回 dnd-kit 英文預設字串(TreeView 有自己的,`tree-view.tsx:374-378`)。
+
 **Keyboard 行為**(目前實作 — `tableKeyboardHandler`):
 - ↑↓←→:cell-to-cell navigation **僅 `spreadsheetMode` opt-in 時生效**;selection 尚未建立時按方向鍵自動選取第一個 visible cell(鍵盤可直接進入 spreadsheet 導覽,無需滑鼠 click — 對齊 Excel / Google Sheets / AG Grid「focus grid → first cell active」,2026-07-05 D4 補);預設模式方向鍵無作用
 - Enter / F2:spreadsheet 模式下進 cell editing(cell 可編輯 + 非 boolean/url 時);**Enter 確認後維持原格不下移**(2026-07-05 user 拍板;10 家實查:Excel 系 7 家下移、AG Grid 預設維持原格 — 採 AG Grid 派,數據 → `.claude/logs/deep-audit-2026-07-03/enter-commit-navigation-benchmark.json`;未來連續輸入需求可重議 opt-in);**edit 退出(commit / Esc)後 selection 還原至該 cell、焦點還給 table root**(editor unmount 後焦點掉到 body 才收回,不搶 user 點擊的新焦點 — 對齊 spreadsheet RFC Contract 11 + Excel / AG Grid,2026-07-05 D4 補)

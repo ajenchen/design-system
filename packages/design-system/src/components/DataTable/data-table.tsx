@@ -769,6 +769,31 @@ function DraggableHeaderCell({
  * 在來源擋掉,Button 才能完全照它平常的 initial / hover / active 走(user 2026-09-06
  * 逐字:「其 initial,hover,active 狀態都是只改底色為 bg-surface-raised,其餘不變」)。
  */
+/**
+ * 把 dnd-kit 的**鍵盤啟動器**從列拖曳把手上拿掉。
+ *
+ * 2026-09-06 實測(本機 storybook + 真瀏覽器,10 × ArrowDown = 250px ≈ 跨 6 列):
+ * 列的鍵盤拖曳 **Space 會啟動**(落點線出現),但**按下方向鍵後落點線消失**、放下後順序完全不變 ——
+ * 也就是它看起來有鍵盤路徑、實際不能完成重排。這比沒有更糟:a11y 稽核會判定「已支援」。
+ *
+ * 根因是 activator 的位置。`DndContext` 只有一組 sensors(見 `useSensors`),欄位與列共用;
+ * 而 dnd-kit 的鍵盤座標是從 **activator node 的矩形**起算:
+ *   - 欄位:activator = header cell,**落在其他 header 的矩形內** → `pointerWithin` 解得出 `over`
+ *     → 同樣手法實測**欄位鍵盤重排可用**(Category 由第 3 欄移到第 5 欄),所以 sensor 不能移除。
+ *   - 列:activator = 貼在表格左緣的 fixed 浮層把手,**不在任何列的矩形內** → `over` 永遠 null。
+ * 碰撞偵測是 `pointerWithin + rectIntersection`(見下方 v14.8 註解),這是它的必然結果。
+ *
+ * 所以這裡只拆列這條假路徑:不 spread 鍵盤啟動用的 `onKeyDown`,並把把手移出 tab 順序
+ * (它本來聚焦也不會顯示 —— 見 `visible` 無 focus 項)。**欄位鍵盤重排完全不受影響。**
+ * 替代路徑(WCAG 2.5.7 要求的「上移／下移」控制項、以及是否採用 TreeView 的
+ * `Cmd/Ctrl+Shift+方向鍵`)登記在 `data-table.spec.md` 的缺陷表,另案處理。
+ */
+function stripKeyboardActivator(listeners: Record<string, unknown> | undefined) {
+  if (!listeners) return {}
+  const { onKeyDown: _onKeyDown, ...rest } = listeners
+  return rest
+}
+
 function stripAriaPressed(attrs: Record<string, unknown> | undefined) {
   if (!attrs) return {}
   const { 'aria-pressed': _ariaPressed, ...rest } = attrs
@@ -897,7 +922,6 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
       startIcon={GripVertical}
       aria-label={canDrag ? '拖曳重排此列' : '排序中無法拖曳'}
       aria-disabled={!canDrag || undefined}
-      tabIndex={canDrag ? 0 : -1}
       // 2026-05-12 fix(a):移除 disabled HTML attr(改 aria-disabled);pointer events 必 fire 才能
       // 接 Tooltip pointerenter。Button cva 已 handle aria-disabled visual styling。
       onMouseEnter={() => setButtonHovered(true)}
@@ -959,8 +983,13 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
         'transition-opacity duration-150 ease-in-out motion-reduce:duration-0',
         canDrag && dragHandleCursorClass,
       )}
-      {...(canDrag ? ctx.handleListeners ?? {} : {})}
+      {...(canDrag ? stripKeyboardActivator(ctx.handleListeners) : {})}
       {...(canDrag ? stripAriaPressed(ctx.handleAttributes) : {})}
+      // 2026-09-06:鍵盤啟動已拆(見 stripKeyboardActivator),留在 tab 順序只會是一個
+      // 「看不見又按了沒反應」的死站點,故一律 -1。指標拖曳不受影響。
+      // **必須放在兩個 spread 之後** —— dnd-kit 的 attributes 自帶 `tabIndex: 0`
+      // (`@dnd-kit/core` core.esm.js:3407),放前面會被它覆蓋掉。
+      tabIndex={-1}
     />
   )
 
