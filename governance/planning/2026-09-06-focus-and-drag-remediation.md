@@ -24,7 +24,7 @@ user 問「所有未完成任務都有持續追蹤嗎」時,當場查出兩個�
 | A10 | 全 DS 焦點徹查五題 —— **已回,五題全部未通過對抗驗證**(workflow `w63027x3j`)| 驗證抓到的比研究本身重要:(1) 「outline 遷移」建議會靜默弄壞 20 處(見 C13);(2) 盤點漏一半(41 行 vs 23);(3) 「全DS對照」那份**重新提出了 2026-09-06 已撤回的版本**(要求選單畫 ring),驗證者引 `focus-canonical.md` 的勘誤段駁回 —— **SSOT 有發揮作用**;(4) 它還想把 A5 那格標成可 AUTO,被駁。(5) 各家矩陣的「(c) 常駐清單 7 家 0 例外」被駁:Ant 的常駐側欄是 `Menu mode="inline"`(rc-menu),`useActive` 無條件 `onMouseEnter → onActive`,**Ant 是「一律搬」的真實反例**(待自行複驗)|
 | A7 | 三題研究 —— **已回,三題全部未通過對抗驗證**(workflow `wkwrala0w`)| 站得住的部分已抽出到 C13/C14 與下方。**最重要的一條是程序性的**:研究稿對第一題的結論是「不該統一,兩條路都對」,而 user 2026-09-06 已逐字說過「當然是按照 tree view 啊,我們不就是要確保整個ds 有SSOT有一致的設計語言嗎?」——**驗證者抓到那是 AI 拿 benchmark 覆蓋 user 已表達的方向**。不採納。A5 仍待 user 拍板,但拍板的起點是 user 已說的話,不是研究稿的反向結論 |
 | A9 | ~~焦點框機制要收斂到哪一套~~ | **2026-09-07 user 拍板:用甲(全域 `outline`)。** 原話「A9用甲啊」。**但附條件**,原話:「甲那麼完美當初為何不直接用甲,你確定其中沒有陷阱對嗎?當初不選甲是否有合理理由?仔細研究查證,**確保在做到理想狀態後都沒有缺點且不會改壞任何東西就用甲**」→ 條件由 A11 研究滿足後才動工 |
-| A11a | ~~當初為何不用 outline~~ | **2026-09-07 已答:當初沒有選過。** git 考古:`outline-none` 與 `focus-visible:ring-2` 最早出現在 **`da71b526`「Initial commit」(2026-03-25)** —— 隨 shadcn/ui 骨架進來的第一天就在。本 DS Button 的簽名 `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1` 與 shadcn 官方預設**逐字相同,只差 offset 1 vs 2**。而全域 outline(`base.css:44-47`)是 **2026-05-29 `46147373`** 才加,commit 主旨是「ship styles/base.css SSOT — 修 consumer storybook 字體 drift」——**為了字體,不是為了焦點**,晚了兩個月。治理層(AGENTS.md / meta-patterns.md / governance/memory/**)對 outline 的失敗記錄 **0 命中**。結論:兩套是不同時期為不相干理由各自長出來的,**從未一起被檢視過**,沒有記錄在案的理由,也沒有記錄在案的事故 |
+| A11a | ~~當初為何不用 outline~~ | **2026-09-07 已答,但我先前的版本有兩處錯,已訂正(全部自行複驗)。** ①**時間錯了**:全域 outline **不是** 2026-05-29 才加 —— `git show da71b526:src/globals.css` 第 43-46 行就有 `:focus-visible{outline:2px solid var(--ring);outline-offset:2px}`,與 `outline-none` **同一個 commit、同一天**;`46147373` 是搬家(`globals.css` −39 / `base.css` +48 new file),不是新增。真相更難堪:同一次貼上裡,`button.tsx:53` 就把剛寫好的全域框關掉了。②**「0 事故」錯了**:我只掃治理文件與 commit message,沒掃原始碼註解。`data-table.tsx:3279-3286` 有一筆完整事故 —— 2026-05-12 **user 親自抓**「為什麼按 shift 那麼容易會在 table 外圈出現一層藍色邊框」,根因逐字點名 `globals.css L63「outline: 2px solid var(--ring)」`,對策就是 `outline-none`。但**該事故是「全域框對 tabIndex=0 的容器太積極」,不是「outline 這個機制不好」**。③照抄 shadcn 有逐字元鐵證:`fad4f825` 的 Dialog 關閉鈕 class 與 shadcn-ui@0.8.0 upstream 逐字元相同,含一個本 repo **從未定義過**的 token `ring-offset-background`。④當年選 ring 的唯一站得住理由:`outline` 跟隨 `border-radius` 到 Safari **16.4**(2023-03)才支援,shadcn 是 2023 初產物;本 repo 初始 commit 2026-03-25,**該理由已過期三年** |
 | A11 | **A5/A9 落地前的其餘三項查證**(2026-09-07 派出,workflow `wmd94l43i`) | (1) 當初為何選 `outline-none` + `ring` 而不用 outline —— git 考古找出引入者與當時理由,判斷是不是 shadcn 預設帶進來的、有沒有記錄過真實事故;(2) outline 的真實缺點 —— 圓角瀏覽器下限、疊層、裁切、transition、forced-colors、列印、Safari 既知問題,**須實測或規範原文,禁推論**;(3) 幾何規則 —— 何時 0/1px/2px 間隙、何時內描邊,對照世界級並逐一驗 43 處是否容得下;(4) 遷移計畫含那 20 個同行 `outline-none` |
 | A9-舊 | (原敘述保留供追溯)| 現況兩套並存、五種幾何(見 C16)。(甲) 全域 `outline`:天生透明間隙(無 C13 白邊問題)、跟隨圓角、forced-colors 下仍繪製;(乙) Tailwind `ring`:DS 現有 40 處在用,但間隙寫死白且 `inherits:false` 無法用 token 修。**遷移任一方向都必須同時處理同行的 `outline-none`(20 處),否則靜默消失**。屬產品/UI/UX SSOT 取捨,**待 user 拍板** |
 | A8 | `item-anatomy.spec.md` 消費者列表已與 code 分歧(AUTO,不需拍板)| 該表消費者仍列 TreeItem(single)／MenuItem／TimePicker 欄項,但 TreeView(`fd0aba47`)與 `menu-item.tsx:230` 已於 2026-09-06 移除該 token,TimePicker `time-columns.tsx:185` 仍在但是死碼。`git log --since=2026-09-05 -- item-anatomy.spec.md` 無 commit → spec 從未同步。屬 M29 spec↔code 分歧,純工程 |
@@ -135,4 +135,36 @@ Claude 三路 Phase A → codex 隔離 context 獨立提案 → 我方逐點反�
 4. 面板關閉期間 `aria-live` 靜音 —— 要不要在面板外補一個 polite region 說「代理已回覆」(明眼人有 FAB 招喚態,螢幕閱讀器使用者零訊號)
 5. **50% 條款的基準由「視窗」改「舞台」** —— `agent-panel.spec.md:76` 明文是「≤ **視窗**寬 50%」。兩方都認為該改成舞台,但**兩方都拿不出 user 原話**,屬 user-visible 語意變更(M36)
 6. `hostMinWidth` 預設值 —— 兩方都提 768,但理由都只是「借用既有 `use-is-narrow-viewport.ts:3` 的 breakpoint」,無世界級依據(查到 Android window size class 的 compact 界線是 600dp,Material/MUI 對 companion 場景沒給數字)
+
+### A5 幾何規則(A11(3) 產出)
+
+**規則一句話**:焦點框永遠是 `outline: 2px solid var(--ring)`,離元件 **2px**;只有當這個元件**本身就是那個格子或那塊捲動區**(四周沒有間隙、框一畫出去就被裁)時,改成畫在裡面 `outline-offset: -2px`。**不用 `ring-*`,沒有 1px,沒有 0。**
+
+**收斂:5 種幾何 → 2 種。** 外側那一種**早就寫在 `base.css:44-47`**,所以絕大多數元件是**刪掉那串 class**,不是新增樣式。
+
+世界級對照(皆查原始碼):Material 3 = 2 種(`inward` 屬性切)/ Atlassian = 2 種(`isInset` boolean)/ Adobe Spectrum = 2 種(是不是輸入框)/ **Carbon = 1 種(永遠 `outline-offset:-2`)** / **Primer = 1 種(預設 -2)** / shadcn v4 = 1 種(永遠貼邊)。**沒有一家超過 2 種。**
+
+### A9 的條件目前**尚未滿足**,不動工。五個真陷阱(全部實測或規範原文)
+
+| # | 陷阱 | 能不能繞 |
+|---|---|---|
+| T1 | **DataTable 的 hover 已經把 outline 這條通道用掉了**(`field-wrapper.tsx:311` `nakedCellEditableDisplayHover` 用 `hover:outline`)→ 那一塊「完全沒缺點」不成立 | **繞不掉**,需單獨設計 |
+| T2 | **15 處 `focus-visible:ring-2` 無 offset 只需 2px;全域規則需 4px**。實測:只留 3px 餘裕的裁切容器裡,ring-2 完整、outline-2+offset-2 **只露 1px** | 可繞(該處改 offset-0 或內描邊)|
+| T3 | **`outline` 不能淡出** —— `outline-style` 不可動畫;`getAnimations()` 實測 transition 清單只有 color/offset/width | 可接受 |
+| T4 | Safari **16.4 對 16.4**,零餘裕 | 不構成新風險 |
+| T5 | WebKit bug **311408**「Outline is not always drawn on top」仍 NEW | 重現需 `mix-blend-mode`,本 repo 用量 **0** |
+
+**反向事實**:現況 ring 有一個 **live 的無障礙 bug** —— 高對比模式下 `box-shadow` 被強制 `none`(MDN 明文),那 20 個 `outline-none + ring` 的元件**完全沒有焦點框**。**兩邊都有洞**,不是「無瑕現況 vs 有風險新方案」。
+
+**推翻研究稿一條**:「`outline` 沒有 inset 等價物」**不成立**。自驗:`outline-offset` 負值本 repo **已有 6 處 tsx 生產用法**,且正在捲動/裁切容器上(`scroll-area.tsx:69`、`data-table.tsx:3453`、`overlay-surface.tsx:187`、`resize-handle.tsx:228`、`time-columns.tsx:162`)。
+
+### G 區共識:示意範例可行性 = **是**
+
+順序 **2 → 3 → 1**(風險由低到高)。做完 2+3(不含 1)可示意 **B / E / F**;做完 1(需先過真瀏覽器 POC)才是完整 **A** 條。底子用 `agent-panel.stories.tsx:445` 的 Fab story。
+**C / D / G 三條不在這三個差距裡**,要示意需補一個 story 內的最小假路由 —— 純工程。
+待 user 拍板共 **8 條**(先前 6 條全部成立,共識稿另補 2 條)。
+
+### 研究殘留(累積 7 項,全部 untracked)
+
+`.ringprobe.tmp.mjs`、`.ringtest/`、`.tw-probe/`、`c-probe.mjs`、`scratch-probe/`、`tm-probe.mjs`、`tw-probe.mjs`。都不會進版本庫,但 `git add -A` 前必須先清。刪除指令在本 session 被權限擋下。
 
