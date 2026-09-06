@@ -106,3 +106,33 @@ Claude 三路 Phase A 獨立提案 → codex 隔離 context 獨立提案 → 兩
 
 **2026-08-11 隔離令仍有效**:user 排定前不得寫進 `packages/design-system/src/**`、token、hook、M-rule。本輪只產方案。
 
+### G 區進度(2026-09-07 跨模型對辯 workflow `wc20yypmr` 已完成兩輪)
+
+Claude 三路 Phase A → codex 隔離 context 獨立提案 → 我方逐點反駁收斂 → codex 對抗性審查。
+兩輪都成功。共識合成那步因 schema 用中文欄位名被 API 拒(我的 bug),已用 `wvfjiusp6` 補跑。
+
+**兩方互相抓到的實質錯誤(以下四條皆由主 agent 自行開檔複驗,非 pass-through)**
+
+| # | 誰抓誰 | 內容 | 自驗證據 |
+|---|---|---|---|
+| 1 | codex 抓我方 | 我方寫「非 modal 路徑 `trapFocus:false`,Tab 會自然在 dialog 與 agent 間流動」—— **錯**。Radix 把 `loop` 寫死,不隨 modal 變 | `node_modules/@radix-ui/react-dialog/dist/index.mjs:216` `loop: true`;`react-focus-scope/dist/index.mjs:104` `if (!loop && !trapped) return;` → loop=true 時即使 trapped=false 也照跑 |
+| 2 | 我方抓 codex | codex 由此跳到「必須自建 Content renderer」—— 推論過頭。我們傳給 `DialogPrimitive.Content` 的 `onKeyDown` 排在 FocusScope 之前(Slot mergeProps child-first),可先攔 Tab。**但此路尚未實測,依 M2 需先寫 POC** | `react-slot/dist/index.mjs:83-87` |
+| 3 | 我方抓 codex | codex 提「解法放進 `AppShell.asideLayout`」—— 不成立,AgentPanel 根本不住在 AppShell 裡 | `grep -rl AgentPanel packages/design-system/src --include="*.tsx"` 中 AppShell 檔案 **0 命中** |
+| 4 | codex 抓我方 | 我方誇大「關閉必然停掉回覆或清草稿」。實際 story 把 draft/timer 放在 Dock 外,關面板後照跑照留;真正救不回的只有 DOM-only 的東西 | `agent-panel.stories.tsx:445-472` |
+
+**這輪順手挖出兩個既有 bug(與 agent 原則無關,今天就在)**
+
+| # | Bug | 證據 | 嚴重度 |
+|---|---|---|---|
+| G4 | **差距 1 的現況不是「一起關掉」而是「半殘」,且已構成一筆 axe `aria-hidden-focus` 違規** | `aria-hidden/dist/es2015/index.js:131-133` 明文保留 `[aria-live]` 節點(附上游 issue 連結),而 `agent-panel.tsx:658` 正好有 `aria-live="polite"` → 訊息流逃過,但**兄弟節點**(標題列/輸入框/把手)被設 `aria-hidden="true"`,同時 `dismissable-layer` 設 `body{pointer-events:none}`,FocusScope 把焦點彈回。結果「看得到、讀得到、按不了、Tab 不進去」,而面板內控件**仍留在 tab order** = aria-hidden 節點內有可聚焦元素 | 高 |
+| G5 | **`aria-valuemax` 與實際上限不同源** | `agent-panel.tsx:198` 傳 `max={PANEL_WIDTH_MAX}`(=640,`:119`),但真正生效的是 `clampPanelWidth`(`:122-125`)= `min(640, floor(innerWidth/2))`。視窗 900 時實際上限 450,螢幕閱讀器卻念 **640**;按 End 元件宣稱跳 640、實際停 450 | 中 |
+
+**已浮現、待 user 拍板的產品/UI/UX 取捨(共識合成會再確認清單完整性)**
+
+1. 遮罩要不要蓋住 agent 那一欄(視覺語意:Material/Polaris 的整頁壓暗 vs VS Code/Copilot 的常駐區不壓暗)
+2. Modal 開著、agent 是關的時候,FAB 還能不能按開(A 條給「協作資格」,B 條說「agent 開啟且…」,兩條都沒回答「能不能新開」)
+3. 焦點在 agent 內時 Esc 歸誰(Radix layer stack 會判給最上層 = Modal → 在 agent 輸入框打字按 Esc 會關掉 Modal)
+4. 面板關閉期間 `aria-live` 靜音 —— 要不要在面板外補一個 polite region 說「代理已回覆」(明眼人有 FAB 招喚態,螢幕閱讀器使用者零訊號)
+5. **50% 條款的基準由「視窗」改「舞台」** —— `agent-panel.spec.md:76` 明文是「≤ **視窗**寬 50%」。兩方都認為該改成舞台,但**兩方都拿不出 user 原話**,屬 user-visible 語意變更(M36)
+6. `hostMinWidth` 預設值 —— 兩方都提 768,但理由都只是「借用既有 `use-is-narrow-viewport.ts:3` 的 breakpoint」,無世界級依據(查到 Android window size class 的 compact 界線是 600dp,Material/MUI 對 companion 場景沒給數字)
+
