@@ -1480,11 +1480,25 @@ export const FilterPanelEmpty: Story = {
   },
 }
 
-/* ── 進階篩選 — 已填條件 ── */
-export const FilterPanelWithConditions: Story = {
-  name: '進階篩選 — 已填條件',
+/* ── 進階篩選 — 各種狀態(2026-09-06 由五支合併,內容一字未改)──
+ *
+ * 合併理由(user 2026-09-06):七支 story 讓同一個面板有七個入口,讀的人得逐一點開才知道差別。
+ * 逐支讀完後確認**沒有任何一支是重複的** —— 平鋪 / 巢狀 / 相對時間 / 已改動 / 長標籤各自展示
+ * 不同的東西,所以這是「合併入口」不是「刪內容」:五種情境原封不動搬進同一支,各自帶標題。
+ * 「空狀態」與「標籤與條件上限」維持獨立(前者是唯一的無條件態;後者帶互動測試,不動它最安全)。
+ */
+export const FilterPanelStates: Story = {
+  name: '進階篩選 — 各種狀態',
   render: () => {
-    const [value, setValue] = React.useState<FilterTree>(() => ({
+    const Section = ({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) => (
+      <section className="w-full max-w-[680px]">
+        <h3 className="text-body font-medium mb-1">{title}</h3>
+        {note ? <p className="text-caption text-fg-muted mb-3">{note}</p> : null}
+        {children}
+      </section>
+    )
+
+    const [flat, setFlat] = React.useState<FilterTree>(() => ({
       mode: 'flat', conjunction: 'and',
       children: [
         { kind: 'cond', id: 'c1', field: 'name',     op: 'contains', value: 'phone' },
@@ -1492,24 +1506,8 @@ export const FilterPanelWithConditions: Story = {
         { kind: 'cond', id: 'c3', field: 'stock',    op: 'is',       value: ['In stock'] },
       ],
     }))
-    return (
-      <div className="w-full max-w-[680px]">
-        <DataTableFilterPanel
-          columns={[...FILTER_COLUMNS]}
-          value={value}
-          onChange={setValue}
 
-        />
-      </div>
-    )
-  },
-}
-
-/* ── 進階篩選 — 巢狀群組 ── */
-export const FilterPanelNested: Story = {
-  name: '進階篩選 — 巢狀群組',
-  render: () => {
-    const [value, setValue] = React.useState<FilterTree>(() => ({
+    const [nested, setNested] = React.useState<FilterTree>(() => ({
       mode: 'nested', conjunction: 'or',
       children: [
         {
@@ -1528,75 +1526,23 @@ export const FilterPanelNested: Story = {
         },
       ],
     }))
-    return (
-      <div className="w-full max-w-[680px]">
-        <DataTableFilterPanel
-          columns={[...FILTER_COLUMNS]}
-          value={value}
-          onChange={setValue}
 
-        />
-      </div>
-    )
-  },
-}
-
-/* ── 進階篩選 — 相對時間群組 ── */
-export const FilterPanelRelativeDate: Story = {
-  name: '進階篩選 — 相對時間群組',
-  render: () => {
-    const [value, setValue] = React.useState<FilterTree>(() => ({
+    const [relative, setRelative] = React.useState<FilterTree>(() => ({
       mode: 'flat', conjunction: 'and',
       children: [
         { kind: 'cond', id: 'c1', field: 'updatedAt', op: 'is_relative', value: 'past_7_days' },
       ],
     }))
-    return (
-      <div className="w-full max-w-[680px]">
-        <p className="text-caption text-fg-muted mb-3">時間下拉分 過去 / 目前 / 未來 三組（Linear/Notion 共識）。</p>
-        <DataTableFilterPanel
-          columns={[...FILTER_COLUMNS]}
-          value={value}
-          onChange={setValue}
 
-        />
-      </div>
-    )
-  },
-}
-
-/* ── 進階篩選 — 已改動(refresh icon)── */
-export const FilterPanelModified: Story = {
-  name: '進階篩選 — 已改動',
-  render: () => {
-    const initial: FilterTree = {
+    const modifiedInitial: FilterTree = {
       mode: 'flat', conjunction: 'and',
       children: [{ kind: 'cond', id: 'c1', field: 'category', op: 'is', value: ['Electronics'] }],
     }
-    const modified: FilterTree = {
+    const [modified, setModified] = React.useState<FilterTree>({
       mode: 'flat', conjunction: 'and',
       children: [{ kind: 'cond', id: 'c1', field: 'category', op: 'is', value: ['Furniture'] }],
-    }
-    const [value, setValue] = React.useState<FilterTree>(modified)
-    return (
-      <div className="w-full max-w-[680px]">
-        <p className="text-caption text-fg-muted mb-3">值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。</p>
-        <DataTableFilterPanel
-          columns={[...FILTER_COLUMNS]}
-          value={value}
-          defaultValue={initial}
-          onChange={setValue}
+    })
 
-        />
-      </div>
-    )
-  },
-}
-
-/* ── 進階篩選 — 長標籤溢出 ── */
-export const FilterPanelLongTagOverflow: Story = {
-  name: '進階篩選 — 長標籤溢出',
-  render: () => {
     // 製造業 ERP 的產品分類名稱普遍很長 — 示範多選後 Combobox tag 溢出時的 +N 摘要收斂
     const longLabelColumns = [
       col.accessor('category', {
@@ -1609,7 +1555,7 @@ export const FilterPanelLongTagOverflow: Story = {
         ] },
       }),
     ]
-    const [value, setValue] = React.useState<FilterTree>(() => ({
+    const [longLabel, setLongLabel] = React.useState<FilterTree>(() => ({
       mode: 'flat', conjunction: 'and',
       children: [
         { kind: 'cond', id: 'c1', field: 'category', op: 'is', value: [
@@ -1619,14 +1565,33 @@ export const FilterPanelLongTagOverflow: Story = {
         ]},
       ],
     }))
+
     return (
-      <div className="w-full max-w-[680px]">
-        <p className="text-caption text-fg-muted mb-3">產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。</p>
-        <DataTableFilterPanel
-          columns={[...longLabelColumns]}
-          value={value}
-          onChange={setValue}
-        />
+      <div className="flex flex-col gap-8">
+        <Section title="已填條件">
+          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={flat} onChange={setFlat} />
+        </Section>
+
+        <Section title="巢狀群組">
+          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={nested} onChange={setNested} />
+        </Section>
+
+        <Section title="相對時間" note="時間下拉分 過去 / 目前 / 未來 三組（Linear/Notion 共識）。">
+          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={relative} onChange={setRelative} />
+        </Section>
+
+        <Section title="已改動" note="值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。">
+          <DataTableFilterPanel
+            columns={[...FILTER_COLUMNS]}
+            value={modified}
+            defaultValue={modifiedInitial}
+            onChange={setModified}
+          />
+        </Section>
+
+        <Section title="長標籤溢出" note="產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。">
+          <DataTableFilterPanel columns={[...longLabelColumns]} value={longLabel} onChange={setLongLabel} />
+        </Section>
       </div>
     )
   },
