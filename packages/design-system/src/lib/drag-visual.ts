@@ -107,8 +107,17 @@ export const dropIndicatorColumn = {
  * Nested 拖入 highlight(TreeView / nested rows 拖到子層)。整 row 加 background。
  * 消費 DS「可放下的區域」配對的底色(`--drop-target`):它是覆蓋在該列文字之上的區域提示,
  * 依 color.spec「Drop target」段必須半透明(VS Code `list.dropBackground` 同款)。
+ *
+ * **為什麼帶 `hover:` 同色**(2026-09-06):inside-drop 的目標列**必然就是游標底下那一列**,
+ * 而 dnd-kit 全程不呼叫 `setPointerCapture`(`@dnd-kit/core` 內 0 命中),所以拖曳期間
+ * CSS `:hover` 照樣命中該列。少了這半邊,消費端的 `hover:bg-neutral-hover`(0,2,0)
+ * 會在特異性上壓過無修飾的 `bg-drop-target`(0,1,0)—— 也就是**游標一放到可放入的節點上,
+ * 「可以放這裡」的訊號就消失**,只剩一般的 hover 灰。把 hover 釘成同色即免疫。
+ *
+ * **消費端仍須負責順序**:本字串要放在 `cn()` 內所有其他 `bg-*` 之後。twMerge 同組後者勝,
+ * 排在 `bg-neutral-selected` 之前會被整條刪掉(已選中的列因此永遠看不到落點底色)。
  */
-export const dropIndicatorInside = 'bg-drop-target' as const
+export const dropIndicatorInside = 'bg-drop-target hover:bg-drop-target' as const
 
 // ── dnd-kit activator 屬性:安全轉發 ──────────────────────────────────────
 

@@ -1324,7 +1324,6 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               // multi-selected 也維持 fg-secondary(上方註解「text 不變」;原 !isSelected 條件讓 multi-selected 掉到繼承色)
               !disabled && (!isSelected || selectionMode === 'multiple') && 'text-fg-secondary',
               !disabled && isSelected && selectionMode === 'single' && 'text-foreground',
-              isDropTarget && dropTarget?.position === 'inside' && dropIndicatorInside,
               !disabled && 'hover:bg-neutral-hover hover:text-foreground',
               // 2026-08-11 修偏移(SSOT = item-anatomy「選中 × 互動疊加」):先前 hover:bg-neutral-hover
               //(0,2,0)蓋掉無修飾的 bg-neutral-selected(0,1,0)→ 選中列 hover 反而變淺 = bug。
@@ -1336,6 +1335,14 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               // 而且本元件的鍵盤游標**已經由下一行的 ring 表達**(showRing,:1154),再深一階是多餘的。
               // 判準見 item-anatomy.spec.md「虛擬焦點以 not-hover: 分流、真焦點用 focus-visible:」。
               !disabled && isSelected && selectionMode === 'single' && 'bg-neutral-selected hover:bg-neutral-selected',
+              // 落點底色排在所有其他 `bg-*` 之後 —— twMerge 同組後者勝。
+              // 2026-09-06 修:原本排在 `hover:bg-neutral-hover` 與 `bg-neutral-selected` **之前**,
+              // 造成兩個都會發生的 bug —— (1) 已選中的列 twMerge 直接把 `bg-drop-target` 刪掉,
+              // 實跑 tailwind-merge 3.5.0 輸出只剩 `hover:text-foreground bg-neutral-selected
+              // hover:bg-neutral-selected`;(2) 未選中的列兩個 class 都留著,但 hover 特異性較高、
+              // 游標又必然停在該列上,落點底色一樣看不到。`dropIndicatorInside` 自帶 `hover:` 同色治 (2),
+              // 這行的位置治 (1)。
+              isDropTarget && dropTarget?.position === 'inside' && dropIndicatorInside,
               showRing && 'ring-2 ring-ring ring-inset',
               disabled && 'pointer-events-none text-fg-disabled cursor-default',
               className,
