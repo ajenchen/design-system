@@ -227,7 +227,13 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
           !disabled && !selected && 'hover:bg-neutral-hover',
           // 2026-08-11(SSOT = item-anatomy「選中 × 互動疊加」):選中列滑鼠 hover 本就不變(上行條件互斥);
           // 補鍵盤焦點深一階 -focus(twMerge 同組蓋過 base 的 focus-visible:bg-neutral-hover)。
-          !disabled && selected && 'bg-neutral-selected focus-visible:bg-neutral-selected-focus',
+          // 2026-09-06:移除 `focus-visible:bg-neutral-selected-focus`。本元件根節點是
+      // `<div role="option">`(:218-221)—— 非可聚焦元素,`:focus-visible` 恆不 match,
+      // 該行自 2026-08-11 加入起從未生效。**且消費者已經自己做對了**:
+      // select-menu.tsx:490 用 `data-[selected=true]:not-hover:`(cmdk 的虛擬焦點屬性)、
+      // dropdown-menu.tsx:321 用 `data-[highlighted]:not-hover:`(Radix)。
+      // 游標深化屬於「誰擁有 highlight 狀態」那一層,不該在這個 presentational primitive 重複宣告。
+      !disabled && selected && 'bg-neutral-selected',
           // disabled 用 cursor-not-allowed(對齊 Button + Material/Polaris/Atlassian);
           // pointer-events-none 會讓 cursor 失效,改用 aria-disabled + onClick guard
           disabled && 'text-fg-disabled cursor-not-allowed',

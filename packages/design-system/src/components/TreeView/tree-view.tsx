@@ -1329,7 +1329,13 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               // 2026-08-11 修偏移(SSOT = item-anatomy「選中 × 互動疊加」):先前 hover:bg-neutral-hover
               //(0,2,0)蓋掉無修飾的 bg-neutral-selected(0,1,0)→ 選中列 hover 反而變淺 = bug。
               // 釘住 hover 不變(twMerge 同組後者勝)+ 鍵盤焦點深一階 -focus。
-              !disabled && isSelected && selectionMode === 'single' && 'bg-neutral-selected hover:bg-neutral-selected focus-visible:bg-neutral-selected-focus',
+              // 2026-09-06:移除 `focus-visible:bg-neutral-selected-focus`。TreeView 是**虛擬焦點**元件
+              //(tree 根 tabIndex=0 :959 / treeitem tabIndex=-1 :1292 / 本 row div 無 tabIndex,
+              // 全 DS 131 處 <TreeItem> 用法 0 處傳 tabIndex),該列永遠不是 DOM 焦點,
+              // `:focus-visible` 恆不 match —— 那行自 2026-08-11 加入起從未生效。
+              // 而且本元件的鍵盤游標**已經由下一行的 ring 表達**(showRing,:1154),再深一階是多餘的。
+              // 判準見 item-anatomy.spec.md「虛擬焦點以 not-hover: 分流、真焦點用 focus-visible:」。
+              !disabled && isSelected && selectionMode === 'single' && 'bg-neutral-selected hover:bg-neutral-selected',
               showRing && 'ring-2 ring-ring ring-inset',
               disabled && 'pointer-events-none text-fg-disabled cursor-default',
               className,

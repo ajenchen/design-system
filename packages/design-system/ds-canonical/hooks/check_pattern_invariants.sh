@@ -139,6 +139,14 @@ $SUSPECT_C6
 教義(item-anatomy.spec.md「選中 × 互動疊加」+ color.spec.md「Selected state family」):
   滑鼠 hover 選中列 → 釘住 bg-neutral-selected 不變
   鍵盤反白/焦點停在選中列 → bg-neutral-selected-focus(深一階)
+    ⚠️ **selector 必須對上該元件的焦點模型**(item-anatomy.spec.md「虛擬焦點以 not-hover: 分流、
+       真焦點用 focus-visible:」)。2026-09-06 實測:本條教義自 2026-08-11 落地的 4 個站點中,
+       有 2 個因為選錯 selector 而**從未生效** —— TreeView(虛擬焦點,列無 tabIndex)與
+       MenuItem(根節點 <div role="option">,非可聚焦)都寫了 `focus-visible:`。兩者已移除。
+       正確示範:dropdown-menu.tsx:321 `data-[highlighted]:not-hover:`(Radix)、
+       select-menu.tsx:490 `data-[selected=true]:not-hover:`(cmdk)、
+       sidebar.tsx:949 `data-[active=true]:focus-visible:`(真焦點)。
+       另:元件若已用別的機制表達鍵盤游標(如 TreeView 的 state 驅動 ring),就不該再深一階。
   bg-neutral-selected-active → 只准出現在含 active:(按壓)的修飾鏈
   bg-neutral-selected-hover  → 只准切換鈕 pressed 上 hover(變淺)
 例外:行尾 \\`// @token-state-allow: <reason>\\`
