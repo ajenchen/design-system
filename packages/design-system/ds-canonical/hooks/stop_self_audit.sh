@@ -499,6 +499,14 @@ if [ "$NOTIFICATION_AVAILABLE" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TR
     HAS_PUSH=$(grep -ciE 'PushNotification|"name":"PushNotification"' <<< "$THIS_TURN_TOOLS" 2>/dev/null)
     HAS_PUSH=${HAS_PUSH:-0}
     if [ "$HAS_PUSH" -eq 0 ]; then
+      # 2026-09-06 升 BLOCKER(user 逐字:「你他媽完成回覆後的推播到底為何又不見了?到底要講幾百次?
+      # 你他媽這個不是有定義在工作流程嗎?換言之不管是現在未來還是在任何環節任何 session,
+      # 你他媽都應該要按照工作流程規範運行才對啊」)。
+      # 原本只是 WARNING → 漏 call 時不擋 turn，於是同一條規則被反覆違反。
+      # 依 memory/feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md「SSOT canonical = 必 P0
+      # BLOCKER 機械強制；禁 P1 WARN soft signal」升級。**只要求 call**，harness 自行決定要不要
+      # 真的送出(terminal 有焦點時它會回「Not sent — redundant」，那仍算已 call)。
+      CRITICAL_PUSH_GAP=1
       WARNINGS="${WARNINGS}\n  • PushNotification gap:current adapter 已宣告 push-notification capability，但本 turn substantive output 無 tool call trace。per memory/feedback_push_always_call.md，有能力時必 call；terminal-focused suppression 由 harness 自決。"
     fi
   fi
@@ -690,6 +698,23 @@ if [ "${CRITICAL_PEER_VERIFY:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; then
     REASON=$(printf '%s' \
       "🚨 PEER-VERIFY GAP BLOCKER(M4):本 turn 讀 ${PEER_DISPLAY_NAME} reply 但無走 Step 4.5(grep cite verify)/ 4.6(regression scan)/ 5(own-version 比稿)。立刻(a) grep 對 peer 引用 file:line verify,OR(b) 跑 tsc / hook tests regression,OR(c) 明寫「撤回採納 peer」/「未採納」。否則 turn 不結束。" \
       "本機制 = dual-track markdown rule 升 mechanical BLOCKER(2026-05-09 user-authorized)。")
+    emit_governance_block "$REASON"
+  fi
+fi
+
+# ── BLOCKER for Mechanism 6 PushNotification gap(2026-09-06 user-authorized)──
+# 升級邏輯同 M1/M4/M5:第一次 block 阻 turn,同 hash 降 warn 防 loop。
+if [ "${CRITICAL_PUSH_GAP:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; then
+  PUSH_HASH=$(printf '%s' "${LAST_ASSISTANT: -200}" | governance_hash_prefix)
+  LAST_BLOCKED_PUSH_FILE="$STATE_DIR/.last-blocked-push.txt"
+  LAST_BLOCKED_PUSH=""
+  [ "$STATE_WRITES" = "1" ] && [ -f "$LAST_BLOCKED_PUSH_FILE" ] && LAST_BLOCKED_PUSH=$(cat "$LAST_BLOCKED_PUSH_FILE" 2>/dev/null || echo "")
+  if [ "$PUSH_HASH" != "$LAST_BLOCKED_PUSH" ]; then
+    [ "$STATE_WRITES" = "1" ] && { mkdir -p "$STATE_DIR" 2>/dev/null; echo "$PUSH_HASH" > "$LAST_BLOCKED_PUSH_FILE" 2>/dev/null || true; }
+    REASON=$(printf '%s' \
+      "🚨 PUSH-NOTIFICATION BLOCKER(M6):本 turn 是 substantive output 但沒有 PushNotification tool call trace。" \
+      "工作流程規範(memory/feedback_push_always_call.md):registered runtime 具 push-notification capability 時,substantive turn 結尾**必 call**。" \
+      "立刻 call PushNotification(一行、200 字內、講對方現在會想知道的事)。harness 若因 terminal 有焦點回「Not sent — redundant」仍算已 call,不必重試。否則 turn 不結束。")
     emit_governance_block "$REASON"
   fi
 fi
