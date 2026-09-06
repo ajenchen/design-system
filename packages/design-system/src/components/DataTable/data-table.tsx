@@ -911,11 +911,27 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
         // 2026-05-12 fix v2(user 抓「drag column sort 啟用時 button 不是 disable 視覺」):
         // 前 Round 4.5 加 `aria-disabled:opacity-[var(--opacity-disabled)]` 在 Button cva
         // 沒生效 — 因為 inline style `opacity` 永遠 win over Tailwind class。Fix:把 disabled
-        // state opacity 也 compute 進 inline style。priority order:invisible 0 → drag var(--opacity-disabled)
-        // 0.45(2026-07-04 修:原硬寫 0.5 違 lib/drag-visual.ts SSOT)→ canDrag=false(sort active)
-        // disabled visual var(--opacity-disabled) 0.45 → idle 1。
+        // state opacity 也 compute 進 inline style。
+        //
+        // **2026-09-06 拖曳中隱藏來源把手(user 提案,理由逐字)**:
+        //   「我們這種拖拉應該是有 ssot,像是 treeview 應該也是同樣的設計,但 table 比起 treeview
+        //     更難被發現可以拖曳,所以 hover 時加上了把手,這是他們的差異;但當使用者已知使用把手時,
+        //     其實整個設計就可以回歸 ssot」
+        // 把手存在的唯一理由是**可發現性**(表格列看不出來能拖);拖曳一旦開始,那個理由就消失,
+        // 此時回到 `lib/drag-visual.ts` 的 SSOT:來源半透明 + 落點線,畫面上沒有把手 ——
+        // 跟 TreeView(`tree-view.tsx:258`「整列可拖,無 grip handle」)完全一致。
+        // 拖影本來就不含把手(它 clone `[role="row"]`,而把手是 portal 出去的 fixed 浮層),
+        // 所以隱藏之後來源與拖影的視覺語彙才對稱;也少一個會隨自動捲動滑移的浮動物件。
+        //
+        // **鍵盤拖曳不需要例外**(user 反駁,實測證實):`visible` 沒有 focus 這一項,
+        // 而 inline opacity 蓋掉 Button 的 focus-visible 樣式 → 鍵盤使用者**在拖曳開始前就看不到把手**,
+        // 「拖曳中隱藏會害鍵盤使用者失去聚焦位置」的前提不成立。鍵盤拖曳時真正的即時回饋是
+        // 每按一次方向鍵就移動的落點線,加上 dnd-kit 的 live region 朗讀。
+        // (聚焦不顯示把手本身是**既有缺陷**,與本次改動無關,另案處理。)
+        //
+        // priority order:invisible 0 → **拖曳中 0**(本次)→ canDrag=false(sort active)0.45 → idle 1。
         opacity: visible
-          ? (ctx.isDragging ? 'var(--opacity-disabled)' as unknown as number : (canDrag ? 1 : 'var(--opacity-disabled)' as unknown as number))
+          ? (ctx.isDragging ? 0 : (canDrag ? 1 : 'var(--opacity-disabled)' as unknown as number))
           : 0,
         pointerEvents: visible ? 'auto' : 'none',
       }}
