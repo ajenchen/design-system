@@ -18,7 +18,9 @@ user 問「所有未完成任務都有持續追蹤嗎」時,當場查出兩個�
 | A1 | ~~全 DS 焦點指示 SSOT 文件~~ | **已解除並落地** → `packages/design-system/ds-canonical/references/focus-canonical.md`。研究結論:**不該外擴選單模型**,W3C 自己正在把 hover 移焦點從選單規範撤除(`w3c/aria-practices#3238` 今天仍 OPEN;2025-02-18 Task Force「Hearing none」) |
 | A2 | ~~內描邊 vs 外描邊的決定規則~~ | **已寫入 A1 文件**「內描邊 vs 外描邊」段 |
 | A3 | `--neutral-selected-focus` 的處置 | **2026-09-06 撤回先前敘述**:原本寫「user 已拍板退役」= 把 user 的話放大(M36(a))。user 原話是「把焦點底色那些**沒用到的**token該刪的就刪一刪」,授權範圍是刪死用法。本 token 有 4 個活用法且 `color.spec.md:694` 有 WCAG 理由。**要不要統一、往哪邊統一,未拍板** |
-| A5 | 「選中 × 鍵盤游標」該用深一階底色還是 ring | DS 現況兩種並存:深一階底色 4 處(DropdownMenu / SelectMenu / AgentPanel / Sidebar)vs ring 1 處(TreeView)。其中 **Sidebar 是全 DS 唯一「真 DOM 焦點卻只有底色、完全沒有 ring」**(`sidebarMenuButtonVariants` 全段無 `focus-visible:ring`)。屬產品/UI/UX SSOT 真取捨,**待 user 拍板** |
+| A5 | 「選中列 × 鍵盤游標」該用深一階底色還是 ring | DS 現況兩種並存:深一階底色 4 處(DropdownMenu / SelectMenu / AgentPanel / Sidebar)vs ring 1 處(TreeView)。屬產品/UI/UX SSOT 真取捨,**待 A7 研究回來後拍板**。注意:乙案(維持深一階底色)本身就是這題要決定的事,不能拿來當現成選項 |
+| A6 | **`item-anatomy.spec.md` 缺一格:「未選中列 × 鍵盤焦點」** | 2026-09-06 查出。`:171-175` 那張 2026-08-11 user 拍板的表三列**全部**以「選中列 ×」開頭,從未涵蓋未選中的列。7 個消費者各自填空,能查到的三處全填 `bg-neutral-hover`(= 跟滑鼠 hover 同色):`dropdown-menu.tsx:25/36`(Radix,滑鼠會搬走反白 → 只會有一個高亮,**正確**)、`sidebar.tsx:939`(常駐,兩個可同時亮 → **壞**)、`menu-item.tsx:49`(被 SelectMenu 全選列以 `tabIndex={0}` 啟用,在 cmdk 清單外 → **壞**)。**這一格才是側邊欄與全選列兩個 bug 的共同根因**;修法是在 family owner 補格(擴充 SSOT),不是在消費者端各自處理,也不是開例外 |
+| A7 | 三題研究(2026-09-06 派出,workflow `wkwrala0w`)| (1) 滑鼠會搬走反白的那類該用底色還是框 —— 含套件自身定義(Radix / cmdk / shadcn)與世界級定義;(2) `ring-offset` 那圈寫死的白怎麼修;(3) `--ring` = `--primary` 同色會不會撞。A5/A6 的填值依賴此研究 |
 | A4 | DataTable 列游標 | 依賴 A1。另有三個前提:`role="table"` 不能合法帶 `aria-activedescendant`(需遷 `grid`/`treegrid`)、虛擬捲動下 activedescendant 目標必須真實存在、同一列在三面板各渲染一次故 IDREF 歸屬未定 |
 
 ## B. 已定案、未實作
@@ -41,6 +43,8 @@ user 問「所有未完成任務都有持續追蹤嗎」時,當場查出兩個�
 | C7 | 「明確不顯示焦點」7 處未逐一驗證 | 合法情形是指示器畫在別的元素上(如 `agent-panel-fab.tsx:744` 自身 `outline-none`、指示器在 `:778`);不合法即 WCAG 2.4.7 違規 | 中 |
 | C8 | 「四件成套」與實際值不符 | `color.spec.md:688` 稱四件;實際 `semantic.css:369-372` 中 `-focus` 與 `-active` 同為 neutral-3、`-hover` 與 `--neutral-hover` 同為 neutral-1 → 只有三個相異值,選中×焦點與選中×按壓畫面上分不出來 | 中 |
 | C9 | I27a / I27b 兩個閘可能假綠 | I27a 取固定 2600 字元視窗 + 負向正則;I27b 以 `img >= 2` 自選儲存格,已棘輪成「1 顆 + +N」的格子(只有 1 張圖)會被跳過 | 中 |
+| C12 | 日曆的兩種灰(user 2026-09-06 抓圖)| 實測 77 個日期格分成兩色:**非本月** = `oklch(0 0 0 / 0.45)`(`text-fg-muted` / neutral-7,`date-grid.tsx:143`)16 天;**disabled** = `oklch(0 0 0 / 0.25)`(`text-fg-disabled` / neutral-6,`:150`)49 天。**bug**:既是非本月又是 disabled 的日子拿到 0.45 深灰 —— 「非本月」贏過「disabled」,同樣不能點的日子在隔壁月份反而更顯眼。違反自家 M24「State 顯著性 precedence:disabled > muted > emphasis」 | 中 |
+| C13 | `ring-offset` 的間隙是寫死的白,36 處在用 | Tailwind 4.2.2 `--tw-ring-offset-color` 預設 `#fff` 且宣告 `inherits:false`;全 repo 0 處覆寫。深色模式實測焦點按鈕 box-shadow = `rgb(255,255,255) 0 0 0 1px, oklch(0.63 0.22 258) 0 0 0 3px` —— 近黑底上那圈白比藍環還搶眼。修法選項待 A7(3) | 中 |
 | C11 | TimePicker 的第四個死焦點底色 | `time-columns.tsx:185` 的 `focus-visible:bg-neutral-selected-focus` 恆不 match:listbox `tabIndex=0` + option `<button tabIndex={-1}>`,全檔 `.focus()` 0 命中,導航靠 `aria-activedescendant`(`:159`)。**前一輪宣稱「兩處死用法已清完」是沒掃乾淨** —— 當時只查寫著 `focus-visible:bg-` 的列元件,沒反過來對每個用法驗「這元素拿得到 DOM 焦點嗎」 | 中 |
 | C10 | `hooks/scripts` 符號連結方向 | 版本庫記錄指向 `packages/design-system/ds-canonical/hooks`(canonical),工作區被改成指向 `.claude/hooks`(生成視圖)。內容相同故行為一致,但方向與 AGENTS.md 的 `.claude` 屬 non-authority 相反。**非本 session 造成,未裁示** | 低 |
 
