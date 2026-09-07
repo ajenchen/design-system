@@ -45,6 +45,7 @@ const menuItemVariants = cva(
     'flex items-start gap-2 px-3 w-full',
     'cursor-pointer select-none',
     'transition-colors duration-150',
+    // @focus-suppress D — D 選單未選中項;承擔者:未選中項用 hover 同色底;選中項畫框
     'outline-none',
     'focus-visible:bg-neutral-hover',
   ],

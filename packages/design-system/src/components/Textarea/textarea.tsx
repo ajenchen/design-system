@@ -37,6 +37,7 @@ const textareaVariants = cva(
   [
     'w-full rounded-md',
     'text-foreground font-normal',
+    // @focus-suppress B — B Field 家族輸入控件;承擔者:指示器是 Field wrapper 的邊框
     'outline-none resize-y',
     'placeholder:text-fg-muted',
     // K10 fix(2026-05-04):disabled 時 placeholder + text 切 fg-disabled(parallel 到 bareInputStyles)

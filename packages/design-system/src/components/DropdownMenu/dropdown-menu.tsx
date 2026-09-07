@@ -60,6 +60,7 @@ const ICON_SIZE = ROW_ICON_SIZE
 // ── Shared item classes on Radix primitive ──
 // Highlight(hover + keyboard nav): 用 Radix `data-[highlighted]` canonical(見 docblock)
 const radixItemClass = [
+  // @focus-suppress D — D 選單未選中項;承擔者:data-[highlighted] 的 hover 同色底
   'relative cursor-pointer select-none outline-none',
   'transition-colors duration-150',
   'data-[highlighted]:bg-neutral-hover',
@@ -450,6 +451,7 @@ const DropdownMenuLabel = React.forwardRef<
   return (
     <DropdownMenuPrimitive.Label
       ref={ref}
+      // @focus-suppress E — E 浮層程式落點;承擔者:浮層開啟時的程式落點;內部每個 item 各自有 D 類指示
       className={cn('outline-none', className)}
       {...props}
     >

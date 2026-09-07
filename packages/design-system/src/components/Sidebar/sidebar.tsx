@@ -752,6 +752,7 @@ const sidebarGroupLabelVariants = cva(
     "flex w-full items-start gap-2",
     "px-[var(--layout-space-loose)]",
     "font-medium text-fg-muted",
+    // @focus-suppress N — 不適用(不可操作 → 問題一);承擔者:pointer-events-none 的分組標題,不可操作 → 問題一:不該可聚焦,不用畫
     "cursor-default select-none pointer-events-none outline-none",
     // icon 模式:GroupLabel 純視覺分段 → collapsed 連 SR 一併隱藏是刻意(供名責任在各 menu button 的 sr-only label,2026-07-05 D4 修後與 MenuButton 策略分工)
     "group-data-[collapsible=icon]:hidden",
@@ -920,6 +921,7 @@ const sidebarMenuButtonVariants = cva(
     "flex w-full items-start gap-2 text-left overflow-hidden",
     "px-[var(--layout-space-loose)]",
     "font-medium text-fg-secondary",
+    // @focus-suppress D — D 選單未選中項;承擔者:未選中項用 hover 同色底當游標(:939);當前項改畫框(:949)
     "cursor-pointer select-none outline-none",
     // 2026-05-21 v4 C* refactor(per codex M31 Layer C 比稿 final architecture):
     //   撤回所有 `group-data-[collapsible=icon]:*` overrides。Sidebar outer overflow-x:hidden

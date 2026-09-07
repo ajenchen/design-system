@@ -185,6 +185,26 @@ SelectMenu `:490`、AgentPanel `:280`、Sidebar `:949`)。補完框再退役。
 | **B. Field 家族的輸入控件** | 文字輸入、Textarea、以及 `role=combobox` 的觸發器 | **整個欄位的邊框轉 primary**(`field-wrapper.tsx:49` `focus-within:!border-primary`)—— 這是規則二第三列「滑鼠與鍵盤共用同一套 focus 樣式」的落地 | Input / DatePicker / TimePicker / Select / Combobox |
 | **C. 隱形的整列觸發器** | 為了讓整列可用鍵盤啟動而疊一顆 `opacity-0` 的滿版鈕 | 畫在**列**上,由該鈕觸發 | FileItem(`file-item.tsx` 的 `data-row-focus-target`)/ InlineEdit(`:409`,承擔者在 `:402` 註明的外層) |
 | **D. 選單／清單的未選中項** | 底色空著,就用底色當游標 | `bg-neutral-hover` 本身 | MenuItem / DropdownMenu / cmdk / SidebarMenuButton 的非當前項(規則二第一列)|
+| **E. 浮層開啟時的程式聚焦落點** | 浮層打開時把焦點送進容器本身(讓 AT 讀到),使用者**不是**自己 Tab 過去的 | 不畫。容器內每個可操作元素各自有自己的指示器 | Popover / HoverCard / DropdownMenuContent / FileViewer 的 dialog 殼(皆 `tabIndex=-1`)|
+
+> **這張表只收「可操作、但自己不畫」的情況。**
+> 「**不可操作**的東西」不在這裡 —— 問題一已經答完了:它根本不該可聚焦,自然也不用畫。
+> 那類寫 `outline-none` 純粹是消瀏覽器預設外框的防禦(例如 `pointer-events-none` 的分組標題、
+> 不可點的步驟、圖表內層的 SVG group)。**遇到這種先回問題一,不要來這張表找位置。**
+
+### 判斷程序(照順序問,問到有答案就停)
+
+1. **它可以被操作嗎?** 不行 → 不畫,而且要**拿掉 tabIndex**(問題一)。這張表不適用。
+2. **它是浮層被打開時的程式落點嗎?**(`tabIndex=-1` + 開啟時 `.focus()`)→ **E**,不畫。
+3. **焦點停在容器、由 `aria-activedescendant` 指出目前是哪一個嗎?** → **A**,容器不畫、那一列畫。
+4. **它是 Field 家族的輸入控件嗎?**(整個欄位的邊框轉 primary 就是指示)→ **B**,不畫。
+5. **它是為了整列可鍵盤啟動而疊的隱形滿版鈕嗎?** → **C**,自己不畫、列上畫。
+6. **它是選單/清單裡**未被選中**的項嗎?**(底色空著)→ **D**,用 hover 同色底當游標。
+7. **以上都不是** → **要畫**。沒有第八條。
+
+每一步都是「看得出來就答得出來」的問句,不需要判斷者自行權衡。
+落在 A–E 任一類時,**必須在該處寫下承擔者是誰**(file:line 或 class 名)——
+寫不出來就代表其實不屬於那一類。
 
 ### B 類為什麼合法 —— 有量過,不是宣稱
 

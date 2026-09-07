@@ -337,6 +337,7 @@ export interface StepItemProps
   disabled?: boolean
 }
 
+// @focus-suppress N — 不適用(不可操作 → 問題一);承擔者:li 根節點不可聚焦(可點的是裡面的 header)
 const stepItemVariants = cva('group/step-item outline-none', {
   variants: {
     orientation: {
@@ -500,6 +501,7 @@ function StepItemHeader({ children, className, style, contentId }: { children: R
         // 與它們逐字等價,本地重寫一份只是把全域抄一遍(同 H1c 那類冗餘)。
         item.clickable
           ? 'cursor-pointer rounded-md'
+          // @focus-suppress N — 不適用(不可操作 → 問題一);承擔者:不可點的步驟 → 問題一
           : 'outline-none cursor-not-allowed',
         className,
       )}

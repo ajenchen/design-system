@@ -957,6 +957,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           // 畫一圈 +2px 外框 → 同一次互動兩個焦點指示。
           // 條件寫成「有 aria-activedescendant 才抑制」:空樹(找不到任何 treeitem → 該屬性不渲染,
           // 見 :939)時全域框仍會畫,不會變成「聚焦了卻完全沒有指示」。
+          // @focus-suppress A — A 虛擬游標;承擔者:指示器畫在 aria-activedescendant 指到的那一列(showRing → focus-ring-inset,:1381)
           '[&[aria-activedescendant]:focus-visible]:outline-none',
           className,
         )}

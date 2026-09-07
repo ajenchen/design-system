@@ -416,6 +416,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
                 value={search}
                 onValueChange={setSearch}
                 className={cn(
+                  // @focus-suppress B — B Field 家族輸入控件;承擔者:外層 Field wrapper 的邊框
                   'flex w-full bg-transparent outline-none placeholder:text-fg-muted',
                   // M24 disabled state precedence:disabled 時 placeholder 切 fg-disabled(audit dim 34)
                   'disabled:placeholder:text-fg-disabled disabled:text-fg-disabled disabled:cursor-not-allowed',

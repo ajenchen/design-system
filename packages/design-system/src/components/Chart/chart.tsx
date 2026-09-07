@@ -74,8 +74,10 @@ const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
             "[&_.recharts-polar-grid_[stroke='#ccc']]:stroke-divider",
             "[&_.recharts-reference-line_[stroke='#ccc']]:stroke-divider",
             "[&_.recharts-dot[stroke='#fff']]:stroke-transparent",
+            // @focus-suppress N — 不適用(不可操作 → 問題一);承擔者:SVG 內層 group,不是 tab stop(tab stop 是 .recharts-surface)
             "[&_.recharts-layer]:outline-none",
             "[&_.recharts-sector[stroke='#fff']]:stroke-transparent",
+            // @focus-suppress N — 不適用(不可操作 → 問題一);承擔者:同上,SVG 扇形不是 tab stop
             "[&_.recharts-sector]:outline-none",
             // 2026-09-07 刪:recharts 3.x 的 accessibilityLayer 預設為 true,
         // RootSurface.js:54 `tabIndex = hasAccessibilityLayer ? 0 : undefined`、:59 `role = 'application'`

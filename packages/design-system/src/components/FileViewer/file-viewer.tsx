@@ -973,6 +973,7 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
           tabIndex={-1}
           className={cn(
             // Edge-to-edge fullscreen,無 inset / 無 radius(與一般 Dialog 差別的所在)
+            // @focus-suppress E — E 浮層程式落點;承擔者:dialog 殼,開啟時程式聚焦;內部工具列/縮圖各自有指示
             'fixed inset-0 z-50 outline-none',
             surfaceMotion,
             'data-[state=open]:animate-in data-[state=closed]:animate-out',

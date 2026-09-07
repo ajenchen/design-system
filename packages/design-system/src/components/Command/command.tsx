@@ -53,6 +53,7 @@ const CommandInput = React.forwardRef<
     <CommandPrimitive.Input
       ref={ref}
       className={cn(
+        // @focus-suppress B — B Field 家族輸入控件;承擔者:指示器是 Command 殼
         "flex h-11 w-full rounded-md bg-transparent py-3 text-body outline-none placeholder:text-fg-muted disabled:cursor-not-allowed disabled:text-fg-disabled disabled:placeholder:text-fg-disabled",
         className
       )}
@@ -145,6 +146,7 @@ const CommandItem = React.forwardRef<
   <CommandPrimitive.Item
     ref={ref}
     className={cn(
+      // @focus-suppress D — D 選單未選中項;承擔者:data-[selected=true] 的 hover 同色底
       "relative flex cursor-default gap-2 select-none items-center rounded-md px-3 py-1.5 text-body outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-neutral-hover data-[selected=true]:text-foreground data-[disabled=true]:text-fg-disabled [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
       className
     )}

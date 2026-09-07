@@ -3296,6 +3296,11 @@ function DataTableInner<TData>(
       // (SelectionRect z 2)IS the visual focus indicator per spreadsheet canonical
       // (對齊 Excel / Google Sheets / Notion / Airtable — focused cell own active border,
       // table 容器無 focus ring)。
+      // @focus-suppress A — A 虛擬游標;承擔者:spreadsheet 模式的儲存格選取框
+      //   (1px primary outline,Tab 進場由上方 onFocus 初始化到第一格)。
+      //   ⚠ **純選取模式(非 spreadsheet)目前沒有承擔者** —— 焦點落在這裡什麼都不畫。
+      //   那正是總帳 A4「DataTable 列游標」,仍卡在三個技術前提(role=grid 已解、
+      //   虛擬捲動下 activedescendant 目標要真實存在、同一列在三面板的 IDREF 歸屬未定)。
       className={cn(dataTableVariants({ bordered }), isFillHeight && 'flex flex-col', 'outline-none focus:outline-none focus-visible:outline-none', className)}
       // isFillHeight:`maxHeight: 100%`(不是 height:100%)— content 小 → outer = intrinsic
       // (hug rows);content 大或 window 縮 < content → outer cap 到 100% of parent。
@@ -3317,6 +3322,21 @@ function DataTableInner<TData>(
       tabIndex={enabled || spreadsheetMode ? 0 : undefined}
       // 2026-05-10:`enabled || spreadsheetMode` — spreadsheet keyboard nav 跨 row-selection-disabled 場景也要 fire
       onKeyDown={enabled || spreadsheetMode ? tableKeyboardHandler : undefined}
+      // 2026-09-07:**Tab 進場就把游標放上去**。
+      // 上面那段註解說「儲存格選取框 IS the visual focus indicator」—— 但那只在使用者
+      // **已經選過一格之後**才成立。實測 Tab 落在這個根節點時,根節點自己不畫(outline-none)、
+      // 表內也沒有任何東西被指示:**看得到焦點在表格上的線索是零**(WCAG 2.4.7)。
+      // 這跟 TreeView 的 Tab 進場缺口是同一個病 —— 容器拿到焦點,但游標還沒初始化。
+      // 判準同樣用瀏覽器自己的 `:focus-visible`:滑鼠點進來不初始化(那時使用者自己會點格子),
+      // 鍵盤進來才給一個起點。
+      onFocus={spreadsheetMode ? (e) => {
+        if (e.target !== e.currentTarget) return
+        if (selectedCellId != null) return
+        if (!e.currentTarget.matches(':focus-visible')) return
+        const first = e.currentTarget.querySelector<HTMLElement>('[data-cell-id]')
+        const id = first?.dataset.cellId
+        if (id) setSelectedCellId(id)
+      } : undefined}
       onMouseOver={enterLeaveHandlers.onMouseOver}
       onMouseOut={enterLeaveHandlers.onMouseOut}
       {...props}

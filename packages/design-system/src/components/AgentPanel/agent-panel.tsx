@@ -1071,6 +1071,7 @@ const AgentPromptInput = React.forwardRef<HTMLDivElement, AgentPromptInputProps>
           aria-label="訊息"
           className={cn(
             // 欄位家族內距:單行 32 等高鐵律((欄高−1lh)/2−1 + --field-px)。
+            // @focus-suppress B — B Field 家族輸入控件;承擔者:指示器是輸入盒外框
             'block w-full resize-none bg-transparent outline-none',
             'px-[var(--field-px)] py-[var(--field-control-py-md)] text-body text-foreground',
             'placeholder:text-fg-muted',
