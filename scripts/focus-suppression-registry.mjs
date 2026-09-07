@@ -14,9 +14,12 @@
 //   chart.tsx(圖表可 Tab 但焦點被抑制)、
 //   slider.tsx(把手根本不可 Tab —— WCAG 2.1.1 Level A)。
 //
-// 現在規則有 A–E 五類 + 七步判斷程序,這支閘要求**結論留在現場**:
-// 每一處抑制都要有 `@focus-suppress <類別> — <說明>;承擔者:<誰>` 的註解。
-// 寫不出承擔者,就代表它其實不屬於那一類 —— 那正是要被抓出來的情況。
+// 現在規則有 A–E 五類 + 七步判斷程序,這支閘做三件事:
+//   (1) 每一處抑制都要有 `@focus-suppress <類別> — <說明>;承擔者:<誰>` 的註解
+//   (2) A–E 類**必須寫出承擔者**(寫不出來就代表它其實不屬於那一類)
+//   (3) **宣告的類別要對得上證據** —— 判斷程序的每一步都指定了「要去看哪個東西」,
+//       宣告了某一類,那個東西就必須在同一個檔案裡找得到。
+//       只驗「有標記」的話標錯類別一樣過關,等於把判斷責任又丟回讀者身上。
 //
 // 類別(完整定義見 SSOT):
 //   A 虛擬游標 / B Field 家族輸入控件 / C 隱形整列觸發器 / D 選單未選中項 /
@@ -46,6 +49,18 @@ const SUPPRESS = /\boutline-none\b|\boutline-0\b|\boutline-hidden\b/
  * 例如 `field.tsx` 有一句「本區塊無 outline-none」、`inline-edit.tsx` 有一句
  * 「只需 outline-none 消瀏覽器預設外框」—— 兩句都是在**說明**,不是在抑制。
  */
+/**
+ * 承擔者若寫成 `檔名.tsx:行號`,就真的去那個檔案那一行(前後 3 行)確認畫框存在。
+ * 這讓「承擔者」從一句話變成**可驗證的指標** —— 承擔者搬家或被刪,這裡就會紅。
+ */
+function carrierPointsAt(window, re) {
+  const m = window.match(/([\w.-]+\.tsx?):(\d+)/)
+  if (!m) return false
+  const n = Number(m[2])
+  return load(ROOT).some((f) => f.path.endsWith('/' + m[1])
+    && f.src.split('\n').slice(Math.max(0, n - 4), n + 3).some((l) => re.test(l)))
+}
+
 function stripComments(text) {
   return text
     // 跨行註解要**保留換行數**,否則剝完之後行號會錯位,
@@ -70,6 +85,29 @@ export function scan(files) {
       if (!VALID.has(m[1])) { problems.push({ path, line: i + 1, why: `類別 ${m[1]} 不在 A–E / N`, text: trimmed.slice(0, 80) }); return }
       if (m[1] !== 'N' && !/承擔者[::]/.test(window)) {
         problems.push({ path, line: i + 1, why: `類別 ${m[1]} 必須寫出承擔者是誰(寫不出來就代表它不屬於那一類)`, text: trimmed.slice(0, 80) })
+        return
+      }
+      // **不只檢查有沒有寫,也檢查寫得對不對。**
+      // 判斷程序的每一步都指定了「要去看哪個東西」(SSOT「判斷程序」表),
+      // 所以宣告了某一類,那個東西就必須在同一個檔案裡找得到。
+      // 只驗「有標記」的話,標錯類別一樣過關 —— 那等於把判斷責任又丟回讀者身上。
+      // B 類的判準是「元素種類」,所以往上找這個 class 屬於哪個標籤;
+      // 其餘類別的判準是「同檔找得到那個東西」。
+      const openTag = lines.slice(Math.max(0, i - 40), i + 1).join('\n')
+      const evidence = {
+        A: { ok: () => /aria-activedescendant/.test(src), need: '同檔要找得到 `aria-activedescendant`(A 類的判準就是它)' },
+        // 判準是標籤名。class 若寫在共用 style 常數裡(cva / xxxStyles),標籤不在附近,
+        // 這時改看「本檔到底渲染什麼標籤」—— 那個常數只服務那個標籤。
+        B: { ok: () => /<(input|textarea)\b|\.Input\b|<(Input|Textarea)\b/.test(openTag)
+                    || (/\bcva\(|const \w+(Styles|Variants)\s*=/.test(openTag) && /<(input|textarea)\b/.test(src)),
+             need: '往上 40 行要找得到 `<input>` / `<textarea>`(B 類的判準是標籤名);若寫在共用 style 常數裡,本檔要真的渲染該標籤' },
+        C: { ok: () => /focus-within:|:has\(|has-\[/.test(src) || carrierPointsAt(window, /focus-within:|:has\(|has-\[|focus-visible:border-/),
+             need: '同檔要找得到 `focus-within:` / `:has(…)` 畫框,或承擔者要寫出真的有畫框的那個 `檔名.tsx:行號`' },
+        D: { ok: () => /bg-neutral-hover|data-\[highlighted\]|data-\[selected/.test(src), need: '同檔要找得到選單項的 `bg-neutral-hover` 底色游標' },
+        E: { ok: () => /Primitive\.Content|PopoverPrimitive|DialogPrimitive|HoverCardPrimitive|DropdownMenuPrimitive/.test(src), need: '同檔要找得到 Radix 的 Content 殼(E 類講的就是那個浮層殼)' },
+      }[m[1]]
+      if (evidence && !evidence.ok()) {
+        problems.push({ path, line: i + 1, why: `宣告了 ${m[1]} 類,但${evidence.need}`, text: trimmed.slice(0, 80) })
       }
     })
   }
@@ -87,18 +125,25 @@ function load(dir, out = []) {
 
 if (process.argv.includes('--selftest')) {
   const cases = [
-    { n: '有標記有承擔者', src: "// @focus-suppress B — Field;承擔者:wrapper 邊框\ncn('outline-none')", bad: false },
+    { n: '有標記有承擔者', src: "<input\n// @focus-suppress B — 文字輸入;承擔者:caret\ncn('outline-none')", bad: false },
     { n: '沒有標記', src: "cn('outline-none')", bad: true },
-    { n: '有標記但沒寫承擔者', src: "// @focus-suppress B — Field\ncn('outline-none')", bad: true },
+    { n: '有標記但沒寫承擔者', src: "<input\n// @focus-suppress B — Field\ncn('outline-none')", bad: true },
     { n: 'N 類不需要承擔者', src: "// @focus-suppress N — 不可操作\ncn('outline-none')", bad: false },
+    { n: 'A 類但同檔沒有 aria-activedescendant', src: "// @focus-suppress A — x;承擔者:y\ncn('outline-none')", bad: true },
+    { n: 'A 類且同檔有 aria-activedescendant', src: "const a = 'aria-activedescendant'\n// @focus-suppress A — x;承擔者:y\ncn('outline-none')", bad: false },
+    { n: 'B 類但不在 input/textarea 上', src: "<div\n// @focus-suppress B — x;承擔者:caret\ncn('outline-none')", bad: true },
+    { n: 'B 類且在 textarea 上', src: "<textarea\n// @focus-suppress B — x;承擔者:caret\ncn('outline-none')", bad: false },
+    { n: 'C 類但同檔沒有祖先畫框', src: "// @focus-suppress C — x;承擔者:y\ncn('outline-none')", bad: true },
+    { n: 'C 類且同檔有 :has 畫框', src: "const w = '[&:has(button:focus-visible)]:border-primary'\n// @focus-suppress C — x;承擔者:y\ncn('outline-none')", bad: false },
+    { n: 'E 類但同檔沒有 Radix Content 殼', src: "// @focus-suppress E — x;承擔者:y\ncn('outline-none')", bad: true },
     { n: '無效類別', src: "// @focus-suppress Z — 亂寫;承擔者:誰\ncn('outline-none')", bad: true },
     { n: '行尾註解裡提到不算', src: "// 原本這裡有 outline-none,已刪", bad: false },
     { n: '區塊註解裡提到不算', src: "/* 本區塊無 outline-none */", bad: false },
     { n: 'JSX 註解裡提到不算', src: "{/* 只需 outline-none 消預設外框 */}", bad: false },
     { n: '同行尾巴的區塊註解不算', src: 'className="x"  /* 本區塊無 outline-none */', bad: false },
-    { n: '跨行註解不得讓行號錯位', src: "/* 第一行\n第二行\n第三行 */\n// @focus-suppress B — x;承擔者:y\ncn('outline-none')", bad: false },
+    { n: '跨行註解不得讓行號錯位', src: "/* 第一行\n第二行\n第三行 */\n<input\n// @focus-suppress B — x;承擔者:y\ncn('outline-none')", bad: false },
     { n: '沒有抑制的一般程式碼', src: "cn('rounded-md bg-surface')", bad: false },
-    { n: '標記離太遠(超過回看範圍)', src: "// @focus-suppress B — x;承擔者:y\n1\n2\n3\n4\n5\n6\n7\n8\n9\ncn('outline-none')", bad: true },
+    { n: '標記離太遠(超過回看範圍)', src: "<input\n// @focus-suppress B — x;承擔者:y\n1\n2\n3\n4\n5\n6\n7\n8\n9\ncn('outline-none')", bad: true },
   ]
   let ok = true
   for (const c of cases) {

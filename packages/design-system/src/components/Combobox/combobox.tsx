@@ -673,7 +673,7 @@ function NativeCombobox({
       aria-required={fieldCtx?.required || undefined}
       aria-describedby={fieldCtx?.descriptionId}
       aria-errormessage={error ? fieldCtx?.errorId : undefined}
-      // @focus-suppress B — B Field 家族輸入控件;承擔者:裸 input;指示器是 wrapper 邊框
+      // @focus-suppress C — 原生 <select>,不是 input/textarea 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:49)
       className={cn('bg-transparent outline-none border-none p-0 text-[inherit] font-[inherit] leading-[inherit] text-fg-muted cursor-pointer appearance-none',
         value.length > 0 ? 'absolute inset-0 w-full h-full opacity-0 z-0 cursor-pointer' : 'relative z-10 flex-1 min-w-20')}>
       <option value="" disabled>{placeholder ?? '選擇...'}</option>
@@ -853,7 +853,7 @@ function CustomCombobox({
       // 跟 DatePicker(:608)/ TimePicker(:378)一致 —— 否則同一顆控件會有兩個焦點指示。
       // **本行不是新增抑制,是補上一直漏掉的那個**:遷移前這顆沒寫 outline-none,
       // 於是全域外描邊一直畫在它上面,是全家族唯一的例外(user 2026-09-07 抓到)。
-      // @focus-suppress B — B Field 家族輸入控件;承擔者:欄位邊框轉 primary;與 DatePicker / TimePicker 同一套 Field focus 語言
+      // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:49)
       className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:outline-none', value.length > 0 && tagPadding[size], 'relative cursor-pointer',
         wrap && 'items-start py-1',
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default

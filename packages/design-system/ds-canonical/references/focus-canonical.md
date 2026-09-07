@@ -185,32 +185,67 @@ SelectMenu `:490`、AgentPanel `:280`、Sidebar `:949`)。補完框再退役。
 
 **共同前提**:四類都要指得出**承擔者是誰**(file:line)。指不出來就是要畫,沒有第五類。
 
-| 類 | 什麼情況 | 指示器在哪 | 實例 |
+| 類 | 判準(**看什麼**) | 指示器是誰 | 實例 |
 |---|---|---|---|
-| **A. 虛擬游標** | DOM 焦點停在容器,「目前是哪一個」由 `aria-activedescendant` 指出 | 畫在被指到的那一列上 | TreeView 根容器(`tree-view.tsx:958` 抑制自己)/ TimePicker 欄 |
-| **B. Field 家族的輸入控件** | 文字輸入、Textarea、以及 `role=combobox` 的觸發器 | **整個欄位的邊框轉 primary**(`field-wrapper.tsx:49` `focus-within:!border-primary`)—— 這是規則二第三列「滑鼠與鍵盤共用同一套 focus 樣式」的落地 | Input / DatePicker / TimePicker / Select / Combobox |
-| **C. 隱形的整列觸發器** | 為了讓整列可用鍵盤啟動而疊一顆 `opacity-0` 的滿版鈕 | 畫在**列**上,由該鈕觸發 | FileItem(`file-item.tsx` 的 `data-row-focus-target`)/ InlineEdit(`:409`,承擔者在 `:402` 註明的外層) |
-| **D. 選單／清單的未選中項** | 底色空著,就用底色當游標 | `bg-neutral-hover` 本身 | MenuItem / DropdownMenu / cmdk / SidebarMenuButton 的非當前項(規則二第一列)|
-| **E. 浮層開啟時的程式聚焦落點** | 浮層打開時把焦點送進容器本身(讓 AT 讀到),使用者**不是**自己 Tab 過去的 | 不畫。容器內每個可操作元素各自有自己的指示器 | Popover / HoverCard / DropdownMenuContent / FileViewer 的 dialog 殼(皆 `tabIndex=-1`)|
+| **A. 虛擬游標** | 它身上有 `aria-activedescendant` | 被指到的那一個元素 | TreeView 根 / DataTable 根 |
+| **B. 文字輸入類** | 它是 `<input>` / `<textarea>` | **插入點(caret)本身**;外框容器若另有 focus 樣式則加成 | Input / Textarea / Combobox / DatePicker / Command 搜尋框 |
+| **C. 邊框轉色** | 從**自己往上**找,有元素在聚焦時改邊框／底色(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | 那個元素(可以是自己,也可以是祖先) | 欄位外框自己(`combobox.tsx:857` / `time-picker.tsx:379`,`focus-within:!border-primary` 落在自己身上)/ 祖先畫(`inline-edit.tsx:396`)|
+| **D. 選單未選中項** | 它是選單／清單項,而且此刻**沒有**被選中(底色空著) | `bg-neutral-hover` 本身 | MenuItem / DropdownMenu / cmdk / SidebarMenuButton 非當前項 |
+| **E. 浮層程式落點** | 它 `tabIndex=-1`,而且是浮層開啟時被程式 `.focus()` 的殼 | 不畫;內部控件各自有指示 | Popover / HoverCard / DropdownMenuContent / FileViewer |
 
 > **這張表只收「可操作、但自己不畫」的情況。**
 > 「**不可操作**的東西」不在這裡 —— 問題一已經答完了:它根本不該可聚焦,自然也不用畫。
-> 那類寫 `outline-none` 純粹是消瀏覽器預設外框的防禦(例如 `pointer-events-none` 的分組標題、
-> 不可點的步驟、圖表內層的 SVG group)。**遇到這種先回問題一,不要來這張表找位置。**
+> 那類寫 `outline-none` 純粹是消瀏覽器預設外框的防禦。**遇到這種先回問題一,不要來這張表找位置。**
 
-### 判斷程序(照順序問,問到有答案就停)
+### B 類為什麼是「元素種類」而不是「元件族」
 
-1. **它可以被操作嗎?** 不行 → 不畫,而且要**拿掉 tabIndex**(問題一)。這張表不適用。
-2. **它是浮層被打開時的程式落點嗎?**(`tabIndex=-1` + 開啟時 `.focus()`)→ **E**,不畫。
-3. **焦點停在容器、由 `aria-activedescendant` 指出目前是哪一個嗎?** → **A**,容器不畫、那一列畫。
-4. **它是 Field 家族的輸入控件嗎?**(整個欄位的邊框轉 primary 就是指示)→ **B**,不畫。
-5. **它是為了整列可鍵盤啟動而疊的隱形滿版鈕嗎?** → **C**,自己不畫、列上畫。
-6. **它是選單/清單裡**未被選中**的項嗎?**(底色空著)→ **D**,用 hover 同色底當游標。
-7. **以上都不是** → **要畫**。沒有第八條。
+**2026-09-07 第一版把 B 寫成「Field 家族的輸入控件」,那是錯的層次。**
+拿 28 個抑制點去對時當場撞牆:AgentPromptInput 的 textarea、Command 與 SelectMenu 的搜尋框
+都不是 Field 家族,但它們同樣不該自己畫框 —— 而 Command / SelectMenu 的殼**根本沒有**
+`focus-within` 樣式(只有一條靜態 `border-b border-divider`),連「祖先承擔」都不成立。
 
-每一步都是「看得出來就答得出來」的問句,不需要判斷者自行權衡。
-落在 A–E 任一類時,**必須在該處寫下承擔者是誰**(file:line 或 class 名)——
-寫不出來就代表其實不屬於那一類。
+它們共同的、真正的指示器是**文字插入點**。文字輸入框一取得焦點就有閃動的 caret,
+那本身就是「我在這裡」——這也是 WCAG 對文字欄位不另外要求外框的原因。
+所以判準應該是**「它是不是 `<input>` / `<textarea>`」**(看標籤名,一眼可答),
+不是「它屬不屬於某個元件族」(要認得出來)。
+
+Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx:49`),那是加成不是必要條件。
+
+### C 類為什麼是「從自己往上」而不是「往上」
+
+同一次對照又撞到第二面牆:`combobox.tsx:857`、`time-picker.tsx:379` 這兩行,
+**元素本身就是那圈欄位外框**(`fieldWrapperStyles` + `focus-within:!border-primary`)。
+`:focus-within` 在元素自己取得焦點時也會命中,所以它們其實**有畫**,只是用邊框轉色而不是外框。
+寫成「往上找祖先」會把這種情況判成無承擔者 —— 但它是全 Field 家族觸發器的標準寫法。
+所以檢查範圍含自己:**問的是「這圈指示存不存在」,不是「畫在誰身上」**。
+
+### 判斷程序:七個**查得到答案**的問題,照順序問,問到 yes 就停
+
+刻意不用「它是哪一類」這種要靠認知的分類題 —— 那正是舊規則失效的原因(見下一節)。
+每一步都指定**要去看哪個東西**,看了就有答案:
+
+| 步 | 問題(去看什麼) | yes → | 承擔者寫什麼 |
+|---|---|---|---|
+| 1 | **它可以被操作嗎?**(有 onClick / onKeyDown / 是原生互動元素?) | **否 → 不畫**,而且要拿掉 tabIndex。這張表不適用 | `N`,寫「不可操作」 |
+| 2 | **它的 `tabIndex` 是 `-1`,而且是某個浮層開啟時被程式 `.focus()` 的殼嗎?** | **E** — 不畫 | 「浮層開啟時的程式落點;內部控件各自有指示」 |
+| 3 | **它身上有 `aria-activedescendant` 嗎?** | **A** — 容器不畫,畫在被指到的那個元素上 | 那個元素的 file:line(例:`tree-view.tsx:1381` 的 `showRing`)|
+| 4 | **它的標籤名是 `input` 或 `textarea` 嗎?** | **B** — 不畫,插入點(caret)就是指示 | 「caret」,外框另有 focus 樣式時一併寫上 |
+| 5 | **從自己往上找,有沒有元素在聚焦時改邊框／底色?**(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **C** — 不另外畫外框,那圈邊框就是指示 | 那個元素的 file:line 與 class(自己也算)|
+| 6 | **它是選單／清單項,而且此刻**沒有**被選中(底色空著)嗎?** | **D** — 用 hover 同色底當游標,不畫框 | `bg-neutral-hover` 那條 class |
+| 7 | **以上皆否** | **要畫**(幾何走問題二) | — |
+
+**沒有第八條。** 走到第 7 步就是要畫,不能再發明理由。
+
+三個刻意的設計:
+
+1. **每一步都可以用 grep 或 DevTools 當場回答**,不需要判斷者「認得出」這是哪一族元件。
+   第 4 步尤其重要 —— 舊規則要讀者自己認出「這是 Field 家族的輸入控件」,
+   現在改成「往上找有沒有那個 wrapper」,連沒看過這個 DS 的人也答得出來。
+2. **順序不可調換**:先問「能不能操作」(問題一),再問四類例外,最後才是「要畫」。
+   浮層落點排第 2 是因為它最容易被誤判成 A(兩者都是「容器拿到焦點」)——
+   差別是浮層那個沒有 `aria-activedescendant`,一查就分得開。
+3. **每一類都要求寫出承擔者是誰**,而且承擔者是**具體的 file:line 或 class**,不是「別的元素」。
+   寫不出來就代表判斷錯了 —— `scripts/focus-suppression-registry.mjs` 機械強制這一點。
 
 ### 這張表之前是怎麼寫的(2026-09-07 user 問「未修改前到底怎麼定義」,原文保留)
 

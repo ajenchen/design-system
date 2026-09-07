@@ -1098,7 +1098,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'start'}
                   className={cn(
                     bareInputStyles,
-                    // @focus-suppress B — B Field 家族輸入控件;承擔者:欄位邊框轉 primary。⚠ 已知限制:起訖兩個 tab stop 共用同一圈邊框,分不出焦點在哪一顆(總帳 H2c,判斷題未拍板)
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:49)。⚠ 已知限制:起訖兩個 tab stop 共用同一圈邊框,分不出焦點在哪一顆(總帳 H2c,判斷題未拍板)
                     'truncate text-left cursor-pointer focus-visible:outline-none',
                     'data-[active-end=true]:underline decoration-primary underline-offset-4 decoration-2',
                     !startIso && 'text-fg-muted',
@@ -1122,7 +1122,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'end'}
                   className={cn(
                     bareInputStyles,
-                    // @focus-suppress B — B Field 家族輸入控件;承擔者:欄位邊框轉 primary。⚠ 已知限制:起訖兩個 tab stop 共用同一圈邊框,分不出焦點在哪一顆(總帳 H2c,判斷題未拍板)
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:49)。⚠ 已知限制:起訖兩個 tab stop 共用同一圈邊框,分不出焦點在哪一顆(總帳 H2c,判斷題未拍板)
                     'truncate text-left cursor-pointer focus-visible:outline-none',
                     'data-[active-end=true]:underline decoration-primary underline-offset-4 decoration-2',
                     !endIso && 'text-fg-muted',

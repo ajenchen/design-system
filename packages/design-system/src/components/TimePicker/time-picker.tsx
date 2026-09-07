@@ -375,7 +375,7 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
             className={cn(
               fieldWrapperStyles({ mode: 'edit', variant: variant, size, error }),
               'text-left cursor-pointer',
-              // @focus-suppress B — B Field 家族輸入控件;承擔者:欄位邊框轉 primary(field-wrapper.tsx:49)
+              // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:49)
               'focus-visible:outline-none',
               className,
             )}
