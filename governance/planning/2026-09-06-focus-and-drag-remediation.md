@@ -433,3 +433,97 @@ H5 說的「23 處在深色下全部露白」講的是 `ring-offset` 那一批,�
 - **追到 root cause,連相關問題一起解** —— 禁止只修症狀(對齊 M12)
 - **每一項都要有可驗證的方式,自行驗到完整完美** —— 禁止「應該沒問題」等級的收尾
 
+---
+
+# J. 接下來推什麼(2026-09-07 收斂,依「不改壞既有 + 追到 root cause + 可自驗」排序)
+
+## J0 先解鎖:三組沒過對抗驗證的必須重驗(**擋住整條主線**)
+
+| 要重驗的 | 被抓到什麼 |
+|---|---|
+| ring-offset 組的「容得下」判定 | 12 處裡有 2 處判錯,**而且錯在全 DS 消費量最高的 Button** |
+| g2(DateGrid / Checkbox) | DateGrid 淨空算錯(寫 16、實為 18,正確淨空 **0px 相切**);Checkbox 元素描述**漏掉 `w-full`**,那正是決定橫向容不容得下的關鍵 |
+| g3 | 有一個**會造成「改完焦點框完全看不見」的硬錯誤**;另一處 `fitsOutset` 沒量過 |
+
+**不重驗就動工 = 帶著錯上路。** 重驗方式:直接沿用已通過驗證的視覺稽核 harness(真 Playwright、真 Tab、fail-closed stale-build 守衛),不重造。
+
+## J1 按新規則掃修全 DS(J0 完成後)
+
+規則是三問決定程序(`ds-canonical/references/focus-canonical.md`)。**每一處都必須先回答問題一** ——
+不是「它有沒有寫焦點框」,是「**它可不可以被操作**」。這會同時抓出兩個方向的錯:
+- 可操作卻 Tab 不到 → WCAG 2.1.1,修可聚焦性
+- Tab 得到卻不能操作 → **拿掉 tabIndex**,不是補畫框
+
+## J2 已定位、可直接修的(root cause 都已查到)
+
+| # | 項目 | root cause |
+|---|---|---|
+| J2a | 7 處多餘/重複/死碼(H1a–H1g)| 各自不同:asChild 恆重複、逐字複製、抄全域、變體被涵蓋、祖先與自身雙指示 |
+| J2b | `steps.tsx:494` 焦點框從未畫過 | 同 `cn()` 的 `:493` 無條件 `outline-none` 把 `outline-style` 設成 none。**修法是刪 outline-none,不是加東西** |
+| J2c | `chart.tsx:80` 圖表可 Tab 但焦點被抑制 | recharts 3.x `accessibilityLayer` 預設就是 true |
+| J2d | FileViewer 選中/聚焦零像素差(C14)| 選中用 `ring-primary`、聚焦用 `ring-ring`,而 `--ring: var(--primary)` 是全 repo 唯一定義 → 同值 |
+| J2e | `person-display.tsx:360-361` 註解與實測相反 | 註解說白環不被蓋掉,實測是整層被藍環取代 |
+| J2f | RadioGroup 唯讀盒的三條死 class | `fieldWrapperStyles` 帶進 `[&:has(:focus-visible)]:ring-*`,但盒內只有 `<span>` → 恆不 match |
+| J2g | G5 `aria-valuemax` 與實際上限不同源 | `:198` 傳寫死的 640,實際 clamp 是 `min(640, floor(W/3))` |
+
+## J3 便宜且已解鎖的(不等任何人)
+
+- **Esc 寫進 spec 當不變量**(零程式碼):作用域封閉在焦點所在區的最內層暫時性 UI;不關 agent、不跨區關浮層
+- **一條負向鐵律 + ~40 行 invariant script**:`AgentPanel` 永不註冊進 Radix 的 DismissableLayer 疊。這是桌上**唯一真正的單向門**,值得那 40 行。照 `scripts/agent-panel-fixed-anatomy-invariant.mjs`(73 行)的形狀
+
+## J4 仍卡住的
+
+| # | 卡在哪 |
+|---|---|
+| J4a | **跨區 Tab 的鍵位** —— 研究建議的 `Ctrl+F6` 與裸 `F6` **在 Chrome 裡都已有主人**(驗證者打開研究自己引的那頁,發現同頁還有一列 `Ctrl+F6 = Skip to web contents`)。架構答案有了(Modal 開著就不往返),鍵位要重找 |
+| J4b | **Agent 差距 1 的 Tab 接力 POC** —— 需真瀏覽器,本機 sandbox 起不了(已登記於 `agent-panel.spec.md:410-412`)。POC 不過的話差距 1 整條路要重估 |
+| J4c | A3 `--neutral-selected-focus` 的處置 —— 依賴 J1 掃完 |
+| J4d | A4 DataTable 列游標 —— 另有三個技術前提未解 |
+
+## J5 可驗證方式(每一項都要能自己驗到完美)
+
+1. **靜態**:三問決定程序可機械執行 —— 判準 B(祖先鏈有無非-visible overflow)與判準 A(四周最小淨空 ≥ 4px)都能靜態掃。寫成 invariant script,照 `scripts/data-table-invariants.mjs` 的形狀(含 stale-build guard、SKIPPED-ENV)
+2. **動態**:沿用已通過驗證的視覺稽核 harness —— 真 Playwright、真 `keyboard.press('Tab')`、驗 `el.matches(':focus-visible')`、量 computed style 與四周淨空、1× 與 4× 截圖
+3. **回歸**:聚焦前後 computed style 差異**集合必須非空**(這條直接抓 C14 那類「零像素變化」)
+4. **防回流**:遷移完後禁止新增 `ring-offset-*` 與不配對的 `outline-none`
+
+## J6 不得違反的三條(user 2026-09-07 逐字要求)
+
+- **不改壞既有好的東西** —— 每一項改動都要列出「可能弄壞什麼、為什麼不會」
+- **追到 root cause,連相關問題一起解** —— 禁止只修症狀(對齊 M12)
+- **每一項都要有可驗證的方式,自行驗到完整完美** —— 禁止「應該沒問題」等級的收尾
+
+## K. 三個收斂結論(2026-09-07,回答 user「卡住的趕快討論出結論」)
+
+### K1 FileViewer 的解法 —— 我先前那版是錯的,已由規則自己判掉
+
+先前提「選中維持貼著圖的環、焦點改成**離一格的外圈**」。**錯**:`file-viewer.tsx:605` 的縮圖列是
+`scrollbar-none overflow-x-auto overflow-y-hidden` = **捲動容器,判準 B 直接命中 → 該內描邊**。
+(縮圖自己 `:638` 的 `overflow-hidden` 不算 —— 元素自身的 overflow 不裁自己的 outline,只有祖先會裁,已實測。)
+
+**正解**:
+- **選中**維持 `ring-2 ring-primary`(box-shadow 通道,貼著圖)
+- **鍵盤焦點**改成 `outline-2 outline-ring outline-offset-[-2px]`(outline 通道,畫在圖內)
+
+兩者**不同通道 + 不同位置** → 可同時看見且可區分,C14 的「零像素變化」從根消失。
+而且不需要新 token:`outline-ring` 是既有 semantic utility,DS 內已有 9 處在用。
+
+### K2 四項「卡住」裡只有一項真的卡住 —— 我先前標錯了
+
+| 原標記 | 真實狀態 |
+|---|---|
+| J4a 跨區 Tab 鍵位 | **不卡。** 架構結論是「Modal 開著時就不往返」→ **modal 情境根本不需要切區鍵**。鍵位只在未來要支援 `modal={false}` 的並存浮層時才需要,那是後續功能,不擋現在 |
+| J4b 差距 1 的 Tab 接力 POC | **不卡。** 視覺稽核那份已實證本機 Playwright Chromium 可跑(`--single-process` 繞過 sandbox 的 mach port 限制),POC 有環境可跑 |
+| J4c `--neutral-selected-focus` 退役 | **不卡,是排序。** user 已拍板畫框 → 補完框它自然沒人用 → 再退役。順序不可顛倒(先刪會讓 4 處退化) |
+| **J4d DataTable 列游標** | **真的還卡著。** 三個前提未解:`role="table"` 不能合法帶 `aria-activedescendant`(需遷 `grid`/`treegrid`)、虛擬捲動下 activedescendant 目標必須真實存在、同一列在三面板各渲染一次故 IDREF 歸屬未定 |
+
+### K3 需要 user 拍板的清單(收斂後)
+
+**焦點框這條線:0 項。** 三問決定程序已由 user 2026-09-07 逐字拍完(畫框 / 4.00px 算放得下 /
+祖先寫了 overflow 就算裁 / 疊層徽章不算鄰居 / 內描邊優先不多開一種)。剩下全是工程執行。
+
+**Agent 那條線:1 項。** 原 8 項 user 已裁 6 項;Esc 那題研究已給明確建議(三題全答「不關」、
+零程式碼、只寫進 spec),**待 user 認可即可結案**;跨區 Tab 依 K2 已不擋路。
+
+**其餘:0 項需拍板**,C 區 15 項、B 區 2 項、E 區 2 項全屬工程或複現問題。
+
