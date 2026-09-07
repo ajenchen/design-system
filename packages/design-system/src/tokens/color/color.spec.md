@@ -685,7 +685,10 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 ### Selected state family
 
-用於持續 toggle on / 選中 element 的互動回饋。**四件成套（2026-08-11 user 拍板補 `-focus`；疊加行為 owner = `item-anatomy.spec.md`「選中 × 互動疊加」格）**：
+用於持續 toggle on / 選中 element 的互動回饋。**三件（疊加行為 owner = `item-anatomy.spec.md`「選中 × 互動疊加」格)**:
+
+> **2026-09-07 從四件變三件**:`-focus` 退役。原本它表示「鍵盤焦點停在選中列 → 底色深一階」,user 拍板改為**畫框**。同時修正一件先前的錯誤宣稱 —— 舊文寫「四件成套」,但實際上 `-focus` 與 `-active` 都是 neutral-3、`-hover` 與 `--neutral-hover` 都是 neutral-1,**四個名字只有三個相異值**,選中×焦點與選中×按壓在畫面上根本分不出來。退役後名字與值一一對應,宣稱與真實一致。
+
 
 | Utility | Token | 用途 |
 |---|---|---|

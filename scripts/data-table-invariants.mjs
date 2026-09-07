@@ -66,7 +66,11 @@ try {
   // (chromium/src `third_party/blink/renderer/core/scroll/scrollbar_theme_aura.cc`
   //  `kThinProportion = 2.f / 3.f`、`ScrollbarThickness()`)。
   // 既有的透明邊框模擬全部保留,但期望值一律改寫成「注入前 + 注入量」的相對式,真 gutter 存在時照樣成立。
-  browser = await chromium.launch({ headless: true, ignoreDefaultArgs: ['--hide-scrollbars'] })
+  // 2026-09-07:補 `--single-process --no-sandbox`。少了這兩個,本 repo 的沙箱起不了 Chromium,
+  // 這支就一路回 SKIPPED-ENV(exit 0)—— 也就是**這一整套 DataTable 不變條件從來沒真的跑過**,
+  // 而且因為它 exit 0,看起來還是綠的。同 repo 的 agent-fab / focus-indicator 早就這樣啟動了。
+  // `ignoreDefaultArgs: ['--hide-scrollbars']` 保留:本套件要量真實捲軸寬度。
+  browser = await chromium.launch({ headless: true, args: ['--single-process', '--no-sandbox'], ignoreDefaultArgs: ['--hide-scrollbars'] })
 } catch (error) {
   // 受限沙箱(Mach lookup 封閉)裡 Chromium 結構上起不來(bootstrap_check_in Permission
   // denied)——這是「環境開不了瀏覽器」,不是「不變條件失敗」,比照 hooks/tests/run-all.sh 的
@@ -1857,8 +1861,18 @@ for (const [storyName, label, steps] of [
   const src = readFileSync(join(ROOT, 'packages/design-system/src/components/PeoplePicker/person-display.tsx'), 'utf8')
   // 必須先剝掉註解 —— 那段註解裡引用了舊寫法(`availablePx: el.clientWidth`)當反面教材,
   // 不剝的話正則會打到註解,變成永遠 FAIL 的假閘。
-  const roBlock = src
-    .slice(src.indexOf('React.useLayoutEffect'), src.indexOf('React.useLayoutEffect') + 2600)
+  // 2026-09-07 C9 修:原本取「第一個 React.useLayoutEffect 起算固定 2600 字元」——
+  //   (1) `indexOf` 抓第一個,有人在前面加一個 effect 錨點就整個漂掉;
+  //   (2) 2600 是憑經驗的長度,程式一長視窗就切在半路。
+  // 改成以 `ro.observe` 這個**這條閘真正關心的東西**為錨,往前後各取到最近的空行邊界,
+  // 而且**找不到錨點就當場 FAIL**(fail closed)——先前找不到只會讓正則全部 miss,
+  // 那是「閘沒跑到」被記成「閘通過」。
+  const roIdx = src.indexOf('ro.observe')
+  record('I27a', '找得到 ResizeObserver 的 observe 呼叫(找不到 = 這條閘根本沒驗到東西)',
+    roIdx >= 0, roIdx < 0 ? 'person-display.tsx 內找不到 ro.observe' : 'ok')
+  const winStart = roIdx < 0 ? 0 : Math.max(0, src.lastIndexOf('React.useLayoutEffect', roIdx))
+  const winEnd = roIdx < 0 ? 0 : Math.min(src.length, roIdx + 1200)
+  const roBlock = src.slice(winStart, winEnd)
     .split('\n').filter((l) => !l.trim().startsWith('//')).join('\n')
   record('I27a', '顯示路徑的 ResizeObserver 觀察祖先容器,不是頭像串自己',
     /const\s+box\s*=\s*el\.parentElement/.test(roBlock) && /ro\.observe\(box\)/.test(roBlock),
@@ -1879,19 +1893,29 @@ await page.waitForTimeout(400)
     if (idx < 0) return null
     const cells = [...document.querySelectorAll('[role="row"]')]
       .map((r) => r.querySelectorAll('[role="cell"]')[idx]).filter(Boolean)
-    const cell = cells.find((c) => c.querySelectorAll('img').length >= 2)
-    if (!cell) return null
-    const grp = cell.querySelector('span.inline-flex')
-    return {
-      plus: /\+\d/.test(cell.innerText),
-      ownW: +grp.getBoundingClientRect().width.toFixed(1),
-      availW: +grp.parentElement.getBoundingClientRect().width.toFixed(1),
-    }
+    // 2026-09-07 C9 修:原本用 `img >= 2` 挑儲存格 —— 但這條閘要抓的**正是**「棘輪成
+    // 1 顆頭像 + 一個 +N」的狀態,那種儲存格只有 1 張圖,會被這個條件跳過。
+    // 也就是它結構上看不見自己要抓的 bug。改成:凡是有頭像串的儲存格全部檢查。
+    const withStack = cells.filter((c) => c.querySelector('span.inline-flex'))
+    if (!withStack.length) return null
+    const rows = withStack.map((c) => {
+      const grp = c.querySelector('span.inline-flex')
+      return {
+        plus: /\+\d/.test(c.innerText),
+        imgs: c.querySelectorAll('img').length,
+        ownW: +grp.getBoundingClientRect().width.toFixed(1),
+        availW: +grp.parentElement.getBoundingClientRect().width.toFixed(1),
+      }
+    })
+    // 回報「最糟的一列」:有 +N 而且還有空位的那一列最能代表棘輪
+    const worst = rows.filter((r) => r.plus).sort((a, b) => (b.availW - b.ownW) - (a.availW - a.ownW))[0] || rows[0]
+    return { ...worst, examined: rows.length, plusRows: rows.filter((r) => r.plus).length }
   })
-  if (!st) record('I27b', 'Reviewers 欄找得到多人頭像串(否則以下斷言空轉)', false, '找不到 ≥2 人的儲存格')
+  if (!st) record('I27b', 'Reviewers 欄找得到頭像串(否則以下斷言空轉)', false, '找不到任何有頭像串的儲存格')
   else {
+    record('I27b', `檢查了 ${st.examined} 個有頭像串的儲存格(0 個 = 這條閘空轉)`, st.examined > 0, JSON.stringify(st))
     record('I27b', `還有空位時不得顯示 +N(可用 ${st.availW}px,只佔 ${st.ownW}px)`,
-      !st.plus, JSON.stringify(st))
+      !st.plus || st.availW <= st.ownW + 1, JSON.stringify(st))
     record('I27b', '被分配到的容器確實比頭像串自身寬(兩者相等的話這條閘抓不到棘輪)',
       st.availW > st.ownW + 1, `avail ${st.availW} / own ${st.ownW}`)
   }
