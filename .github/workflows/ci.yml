@@ -22,10 +22,7 @@ jobs:
   verify:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
-    # 2026-09-08 15 → 30:這個 job 現在多跑十幾支瀏覽器閘(焦點幾何全掃 + 對照組、
-    # 「+N」溢出兩段式、虛擬捲動壓力、拖曳執行期…)。15 分鐘是在它做的事少很多的時候訂的,
-    # 連續兩次跑滿 15 分被判 cancelled——那是逾時不是被誰取消,查 run 的建立/更新時間差才看得出來。
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -96,11 +93,10 @@ jobs:
           npm run test:pagination-invariants
           # 焦點幾何/指示/拖曳執行期/DatePicker 開啟行為/共用承擔者 —— 這幾支都要真瀏覽器,
           # 併在這一步是因為 storybook 與 chromium 已經備好,不必再裝一次。
-          node scripts/focus-geometry-browser-audit.mjs
-          # 對照組:把焦點視覺全部釘死,承擔者證明必須整批變紅。
-          # 不跑這一步的話,「15 處無框但都有承擔者」這個綠燈不算證據(M32 sub-invariant)。
-          # 只掃前 4 個元件,證明儀器會紅就夠,不必為此全掃一次。
-          node scripts/focus-geometry-browser-audit.mjs --selftest
+          # 焦點幾何全掃(58 元件 × 2 主題)與「+N」溢出全寬度掃描**不在這裡** ——
+          # 兩支合計約 7.5 分鐘,會把 15 分鐘的 PR 閘撐爆(2026-09-08 實際撞過兩次逾時),
+          # 而 ci-workflow-scope.test.mjs 把這個 15 分鐘釘成不變式。
+          # 它們搬到 focus-deep-gates.yml(排程 + 手動),對應 AGENTS.md 的 Tier 3 週期性 deep audit。
           npm run test:focus-indicator-invariants
           npm run test:drag-runtime
           npm run test:datepicker-typeable-open
@@ -109,7 +105,6 @@ jobs:
           # 虛擬捲動壓力(排序、捲動、視窗高度交錯,驗無例外**且畫面不空**)、
           # 「+N」不得溢出容器(107 story × 6 寬度 = 642 次量測)。兩支都自帶對照組。
           npm run test:virtual-scroll-stress
-          npm run test:overflow-indicator
 
       # Cloud sessions load the committed provider config as-is; the only two ways that config has
       # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)

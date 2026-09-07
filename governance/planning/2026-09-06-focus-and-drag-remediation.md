@@ -1867,9 +1867,25 @@ DS 單元測試該不該進十分鐘的治理套件),我沒有把握不改壞它
 載入 642 → 269 次,103 秒(原本兩百多秒),有「+N」的 story 一個都沒少掃。
 對照組再加早退(抓到一筆就停、探測到一個候選就停):45 秒。
 
-**(2) 逾時 15 → 30 分鐘**。15 是在這個 job 做的事少很多的時候訂的;
-現在它要建 storybook 再跑十幾支瀏覽器閘。上調的同時把理由寫在 yml 裡,
-免得下一個人看到 30 以為是隨手放寬的。
+**(2) 我第一版把逾時 15 → 30 —— 那是錯的,已撤回。**
+推上去之後 CI 直接紅在 `ci-workflow-scope.test.mjs`:`30 !== 15`。
+那 15 分鐘不是隨手訂的數字,是**寫進治理不變式的** ——
+測試名字就叫「CI is the only PR/push gate and **stays within the fast deterministic scope**」,
+而且同一支測試還明文禁止 PR 閘出現 `setup:playwright` / `test:governance-harnesses` /
+`visual-audit` 這些重家伙。既有的瀏覽器 workflow(visual-regression / composition-fidelity /
+story-screenshots)也全部是排程 + 手動,不掛 PR —— 那就是這套 canonical 的設計。
+
+**我為了塞自己的東西去放寬它,方向就反了。**正解是讓東西去適應閘,不是讓閘去適應東西。
+所以改成:**兩支重的搬出 PR 閘**,進新的 `focus-deep-gates.yml`(排程 + 手動,30 分鐘),
+對應 AGENTS.md 稽核分層的 Tier 3(週期性 deep,全 DS 掃)。
+
+留在 PR 閘的是輕的那幾支,實測合計 **63 秒**:
+`focus-indicator-invariants` 19s / `drag-runtime` 14s / `datepicker-typeable-open` 5s /
+`shared-carrier-focus` 7s / `virtual-scroll-stress` 9s + 對照組 9s。加上靜態四組,PR 閘回到原本的量級。
+
+**留下的取捨要說清楚**:全 DS 焦點幾何與「+N」全寬度掃描,現在是**每週跑**而不是每個 PR 跑。
+更好的做法是讓它們支援 `--scope=changed`(對齊 AGENTS.md Tier 2「日常開發走 changed scope」),
+那樣兩層都顧得到。這件事登記為後續,沒做完不假裝做完。
 
 ## AD7 剩下兩項
 
