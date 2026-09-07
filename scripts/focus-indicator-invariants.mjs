@@ -206,5 +206,24 @@ await go('design-system-components-slider-設計規格--overview')
   }
 }
 
+// ══ F6:單獨的表單控件不得 Tab 不到(WCAG 2.1.1)══
+// Slider 那件的 M10 延伸掃描。**刻意只挑「不走 roving tabindex」的三種 role** ——
+// option / treeitem / tab / radio / menuitem 在 APG 就是 roving(整組只有一個可 Tab),
+// 把它們一起掃只會產生大量合法噪音,閘一吵就沒人看。
+// 唯一合法的 tabIndex < 0 是「唯讀或停用」:那時它本來就不該在 Tab 順序裡。
+// 2026-09-07 全 DS 465 個 story 掃過一次,除 Slider 外沒有第二處違規。
+for (const story of ['design-system-components-switch-展示--modes',
+                     'design-system-components-checkbox-展示--modes',
+                     'design-system-components-slider-設計規格--overview']) {
+  await go(story)
+  const rows = await pg.evaluate(()=>[...document.querySelectorAll('[role="switch"],[role="checkbox"],[role="slider"]')]
+    .map(x=>({ role:x.getAttribute('role'), tab:x.tabIndex,
+      excused: x.getAttribute('aria-readonly')==='true' || x.getAttribute('aria-disabled')==='true' || x.hasAttribute('disabled') })))
+  const violations = rows.filter(r=>r.tab<0 && !r.excused)
+  check(`F6 ${story.split('--')[0].replace('design-system-components-','')}:控件都在 Tab 順序裡(唯讀/停用除外)`,
+        rows.length>0 && violations.length===0,
+        `${rows.length} 個控件,違規 ${violations.length} 個${violations.length?' → '+JSON.stringify(violations.slice(0,3)):''}`)
+}
+
 console.log(out.join('\n')); console.log(fails?`\n✗ ${fails} 項未通過`:'\n✓ 全部通過')
 await br.close(); server.close(); process.exit(fails?1:0)

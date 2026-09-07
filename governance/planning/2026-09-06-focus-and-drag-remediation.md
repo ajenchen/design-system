@@ -1157,6 +1157,23 @@ React 於是不輸出 `tabindex` 屬性。
 **又一個量測時機的坑**:thumb 有 `transition-all duration-150`,**連 outline-offset 也一起過渡** ——
 70ms 時量到 `@1px`,看起來像多出第三種幾何,其實是動畫跑到一半。等 300ms 後是 `@2px`,正確。
 
+## V5 M10 延伸掃描:同款 `tabIndex` 陷阱只有 Slider 一處
+
+`tabIndex={cond ? -1 : undefined}` 這個寫法在 DS 內共 3 處同款(RadioGroup / Checkbox / Switch)。
+它們底層是原生 `<button>`(天生可聚焦),所以 `undefined` 無害 —— 但這正是我剛才推論錯的那一類,
+所以實測而不是推論:**全 DS 465 個 story 掃過一次**,列出所有「有互動 role 但 `tabIndex < 0`」的元素。
+
+| role | 數量 | 判定 |
+|---|---|---|
+| option / treeitem / tab / radio / menuitem | 181 / 59 / 47 / 35 / 9 | **合法** —— APG roving tabindex(整組只有一個可 Tab)|
+| button | 194 | 多為懸停才現身的行內動作與 roving 群組內成員 |
+| **switch / checkbox / slider** | 3 / 1 / 1 | 逐一查:**全部都是 `aria-readonly="true"`**,那時本來就該 -1 |
+
+結論:**Slider 是唯一真的違規**,其餘沒有第二處。
+
+閘 F6 刻意**只挑不走 roving 的三種 role**(switch / checkbox / slider):
+把 roving 的一起掃只會產生大量合法噪音,閘一吵就沒人看。
+
 ## V4 順帶確認 a11y 全掃的 4997 個 color-contrast 不是本輪造成的
 
 CI 跑的是 `a11y:check --gate`(baseline-diff,**只在新增/增量時 fail**),
