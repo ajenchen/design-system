@@ -58,6 +58,19 @@ jobs:
       # own files while the regression came from a PeoplePicker edit. This CI step closes both gaps:
       # it runs on every PR regardless of which component changed (2026-08-20 user directive:
       # 「所有 table-cell 內容都要合規,閘門要夠通用」).
+      # 這 7 組閘是 2026-09-06〜09-08 焦點／拖曳整治建的,全部含 selftest 或對照組,
+      # 但**沒有任何一組被 CI 呼叫過** —— 跟上面 distribute-column-widths、pagination
+      # 同一種「宣稱有閘、其實沒人跑」(2026-09-08 自己回頭盤 CI 引用時抓到:
+      # `grep -rl test:focus-suppression .github` 回 0)。靜態的放前面快速失敗,
+      # 需要瀏覽器的併進上一步(那裡已經有 storybook 與 chromium)。
+      - name: Focus and drag invariants (static)
+        run: |
+          npm run test:focus-suppression
+          node scripts/focus-geometry-invariant.mjs
+          node scripts/focus-geometry-invariant.mjs --selftest
+          npm run test:interaction-ladder
+          npm run test:drag-announcements
+
       - name: DataTable pixel invariants (browser)
         run: |
           npx --no-install playwright install chromium
@@ -94,19 +107,6 @@ jobs:
           # 「+N」不得溢出容器(107 story × 6 寬度 = 642 次量測)。兩支都自帶對照組。
           npm run test:virtual-scroll-stress
           npm run test:overflow-indicator
-
-      # 這 7 組閘是 2026-09-06〜09-08 焦點／拖曳整治建的,全部含 selftest 或對照組,
-      # 但**沒有任何一組被 CI 呼叫過** —— 跟上面 distribute-column-widths、pagination
-      # 同一種「宣稱有閘、其實沒人跑」(2026-09-08 自己回頭盤 CI 引用時抓到:
-      # `grep -rl test:focus-suppression .github` 回 0)。靜態的放前面快速失敗,
-      # 需要瀏覽器的併進上一步(那裡已經有 storybook 與 chromium)。
-      - name: Focus and drag invariants (static)
-        run: |
-          npm run test:focus-suppression
-          node scripts/focus-geometry-invariant.mjs
-          node scripts/focus-geometry-invariant.mjs --selftest
-          npm run test:interaction-ladder
-          npm run test:drag-announcements
 
       # Cloud sessions load the committed provider config as-is; the only two ways that config has
       # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)

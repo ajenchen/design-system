@@ -30,6 +30,7 @@ import { chromium } from 'playwright'
 import http from 'node:http'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, extname } from 'node:path'
+import { tmpdir } from 'node:os'
 
 const STATIC=join(process.cwd(),'storybook-static')
 const MIME={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.woff':'font/woff','.woff2':'font/woff2'}
@@ -212,7 +213,10 @@ for (const theme of ['light','dark']) {
   }
 }
 await pg.close()
-writeFileSync(process.env.TMPDIR+'/clipdetect.json', JSON.stringify(report,null,1))
+// Linux runner 沒有 TMPDIR 這個環境變數(只有 macOS 一定有),
+// 直接串接會寫到字面上的 `undefined/clipdetect.json` 而整支掛掉 ——
+// 這支被接進 CI 的第一次執行就是這樣紅的(2026-09-08)。用 os.tmpdir() 才可攜。
+writeFileSync(join(tmpdir(), 'clipdetect.json'), JSON.stringify(report,null,1))
 
 let noFrame=0, clipped=0, ok=0
 const noCarrier=[]

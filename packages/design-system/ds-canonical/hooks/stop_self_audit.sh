@@ -120,10 +120,22 @@ emit_governance_block() {
   exit 0
 }
 
+# `LAST_USER_LINE` = 最後一則**真** user 訊息的行號(versioned transcript contract 把
+# tool_result 也標 role="user",所以要濾掉)。整份 transcript 掃,不用 tail 視窗,避免邊界情況。
+#
+# **順序很重要**:2026-09-06 把 `THIS_TURN_TOOLS` 搬到所有 mechanism 之前(因為 Mechanism 6
+# 也要讀它),但那時 `LAST_USER_LINE` 還在 Mechanism 1 裡面算 —— 搬過頭之後它讀到的永遠是
+# 初始值 0,於是 `THIS_TURN_TOOLS` **恆為空字串**,驗證偵測看不到本 turn 跑過的 tsc,
+# Test 3(claim + tsc → 不該擋)因此一直紅。修法是把行號計算一起提前(2026-09-08)。
+if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "${TRANSCRIPT_PATH:-}" ]; then
+  LAST_USER_LINE=$(grep -n '"role":"user"' "$TRANSCRIPT_PATH" 2>/dev/null | \
+    grep -v '"type":"tool_result"' | tail -1 | cut -d: -f1)
+  LAST_USER_LINE=${LAST_USER_LINE:-0}
+fi
+
 # `THIS_TURN_TOOLS` = 本 turn(最後一則 user 訊息之後)的 transcript 切片。
-# **必須在所有 mechanism 之前算好**:它原本只在 Mechanism 1 的 claim 分支內賦值,而 Mechanism 6
-# 也讀它 —— 當 Mechanism 1 沒進那個分支時,Mechanism 6 就會讀到未定義變數
-# (`set -u` 下直接中止,否則 grep 空字串 → 誤判「沒 call」)。2026-09-06 對抗式稽核抓到。
+# 必須在所有 mechanism 之前算好:它原本只在 Mechanism 1 的 claim 分支內賦值,而 Mechanism 6
+# 也讀它 —— 當 Mechanism 1 沒進那個分支時,Mechanism 6 就會讀到未定義變數。
 if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "${TRANSCRIPT_PATH:-}" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
   THIS_TURN_TOOLS=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null)
 else
@@ -132,14 +144,8 @@ fi
 
 # ── Mechanism 1: Claim-verification gap ─────────────────────────────────────
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
-  # NOTE(2026-05-01 v3):versioned transcript contract 把 tool_result 也標 role="user"。
-  # 之前 awk 抓到 tool_result line 當「真 user prompt」→ scope window 算錯
-  # → fire false positive。
-  # 修:grep filter 真 user prompt(role=user 且 content 不是 tool_result),
-  # 整 transcript scan(不 tail 500 windowed,避免 edge case)。
-  LAST_USER_LINE=$(grep -n '"role":"user"' "$TRANSCRIPT_PATH" 2>/dev/null | \
-    grep -v '"type":"tool_result"' | tail -1 | cut -d: -f1)
-  LAST_USER_LINE=${LAST_USER_LINE:-0}
+  # LAST_USER_LINE 已在上面(所有 mechanism 之前)算好,這裡不重算 ——
+  # 重算會讓「提前計算」那段變成裝飾,順序 bug 也就看不出來。
   if [ "$LAST_USER_LINE" -gt 0 ]; then
     TRANSCRIPT_LAST_ASSISTANT=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null | \
       jq -r 'select(.message.role=="assistant") | .message.content[]?.text // empty' 2>/dev/null)

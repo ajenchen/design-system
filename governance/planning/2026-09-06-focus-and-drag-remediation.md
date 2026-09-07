@@ -1774,6 +1774,38 @@ EPERM 其實已經足以推論「不是我們的擁有者」(我們自己 spawn 
 當下那把 8 分鐘大的鎖用新規則還收不掉(未達視窗),手動清掉 ——
 它只是 `$TMPDIR` 裡的暫存目錄,不含任何 repo 狀態,而建立它的執行已確認結束。
 
+## AD12 接進 CI 的第一跑就紅三個 —— 逐一查證,兩個是既有 bug、一個不是我的
+
+`release:auto` 建了 PR #124,`Verify(tsc + tests + compile + build)` 紅。三個失敗逐一查:
+
+**(1) 必要檢查紅:`ENOENT: undefined/clipdetect.json`**
+`focus-geometry-browser-audit.mjs` 用 `process.env.TMPDIR` 串路徑,而 **Linux runner 沒有這個環境變數**
+(只有 macOS 一定有)→ 寫到字面上的 `undefined/clipdetect.json` 整支掛掉。
+這是那支腳本的既有可攜性 bug,接進 CI 的第一次執行才暴露 —— 也正是 AD5「沒人跑的閘」的代價:
+沒人跑,就沒人知道它在別的作業系統跑不起來。改用 `os.tmpdir()`。
+順帶修 CI 步驟順序:靜態四組原本排在瀏覽器步驟**之後**,瀏覽器步驟一掛就整個沒跑到 ——
+快速失敗的步驟要排前面。
+
+**(2) Governance hooks(Linux portability)紅:Test 3 / Test 14**
+本機重跑同樣 45 PASS / 2 FAIL,**不是我造成的**。根因是變數順序:
+`THIS_TURN_TOOLS`(第 127 行)在 `LAST_USER_LINE`(第 140 行)算出來**之前**就取值,
+於是它讀到初始值 0 → 切片恆為空字串 → 驗證偵測看不到本 turn 跑過的 tsc → Test 3 一直被擋。
+成因是 2026-09-06 那次修正把 `THIS_TURN_TOOLS` 搬到所有 mechanism 之前(因為 Mechanism 6 也要讀),
+但沒把行號計算一起搬。修法是兩個一起提前,Mechanism 1 內不再重算(重算會讓提前計算變裝飾)。
+修完 **47 PASS / 0 FAIL** —— Test 14 是同一個根因。
+
+本機要跑這支測試得先放 `mktemp` shim(macOS 的 `mktemp -d` 不吃 TMPDIR,沙箱裡 EPERM)——
+這條在 `feedback_anti_self_lock_release_transport` 對照表裡已有解,照用沒有重新發明。
+
+**(3) Verify authority candidate 紅:`fast-uri` 未修補 —— 查證後不是我的問題**
+逐層查:GitHub 公告 API 對 fast-uri 共 9 筆,**全部在 3.1.6 以前修好**;
+npm 自己的公告端點對 `fast-uri@3.1.7` 回報 **0 筆**。而我的 lock 就是 3.1.7。
+再比對 main 的 lock:**3.1.5** —— 那個版本確實命中四筆 high。
+所以紅的是那份 job 在稽核的 **main 這棵樹**,不是我的分支;我的分支反而帶著修補。
+這跟 `feedback_anti_self_lock_release_transport` 記過的一條完全吻合:
+「protected-base(main)自身被新資安公告擊穿 → 合掉含 lock 升級的 PR 即治 main」。
+ruleset 實查:required 只有 `Verify(tsc + tests + compile + build)` 一項,這兩支都不擋合併。
+
 ## AD7 剩下兩項
 
 | # | 卡在哪 |
