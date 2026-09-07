@@ -256,3 +256,57 @@ RadioGroup / Sidebar ×2(GroupAction、MenuAction)/ Calendar ×3 / DateGrid / Fi
 
 其餘全部工程自決,不佔 user 時間:720/1080 的算術、量哪個容器、`contain:layout` 選型、宿主掛載時機、Branch 替代接線、沿用 `z-50`、48px inset 沿用既有 token。
 
+## H. 焦點框必要性徹查結果(workflow `wpgrig5fa`,四組全未過對抗驗證但更正有料)
+
+user 2026-09-07 原話:「所有要有焦點框的地方都應該仔細確認它到底該不該有才對吧?」「不要明明不需要還多加」。
+
+**實際規模比先前講的大**:抑制側是 **72 處**不是 71(全庫 103 行 = 81 tsx + 21 md + 1 mjs;81 tsx 扣 9 行說明/註解 = 72)。
+驗證者另跑 `outline-0` / `outline:none` / `outline-transparent` / `outline-hidden` / `outlineStyle` 全庫 0 筆 → **抑制面完整,無冰山**。
+
+### H1 多餘 / 重複 / 死碼(= user 說的「明明不需要還多加」)
+
+| # | 位置 | 問題 |
+|---|---|---|
+| H1a | `dropdown-menu.tsx:122` | DS 內 **20 個宿主全部是 asChild**,承接者自帶指示器 → 恆重複。其中 `agent-panel-fab.tsx:683` 的承接者是 `aria-hidden pointer-events-none` 的 span(`:684`)= **該路徑死碼**。但**不可直接刪**:裸用 DropdownMenuTrigger 的外部 consumer 仍靠它 |
+| H1b | `account-menu.tsx:140` | 與 `dropdown-menu.tsx:122` **逐字相同**,經 Radix Slot 併起來 = 同一顆按鈕掛兩份一樣的宣告 |
+| H1c | `item-anatomy.tsx:711`、`field.tsx:441` | `focus-visible:outline-2 + outline-ring` 值與全域 `base.css:44-47` **完全相同**,offset 也吃全域 → 把全域規則抄了一遍,**刪了行為不變** |
+| H1d | `cell-registry.tsx:473`、`person-display.tsx:371` | 同一行既寫 `group-focus-within/x:opacity-100` 又寫 `focus-visible:opacity-100`;按鈕自己聚焦時祖先必然 `:focus-within` → 後者恆被涵蓋,純贅字 |
+| H1e | `field-control-group.tsx:85` | `[&>*:focus]:z-[3]` 被同行 `[&>*:focus-within]:z-[3]` 完全吃掉(`:focus` 是 `:focus-within` 的子集)|
+| H1f | **TreeView 根容器 + 列** | `tree-view.tsx:959`(`role=tree tabIndex=0`)**沒有抑制全域框** → Tab 進去整棵樹被畫 +2px 外框,同時列上又有 inset ring = **同一次互動兩個焦點指示** |
+| H1g | **FileItem 按鈕 + 整列** | 列上的下載/重試/移除鈕一被鍵盤聚焦,同時出現**按鈕自己的 ring**(`button.tsx:66`)+ **整列的 ring**(`file-item.tsx:266/313`)= 兩個框,違反 focus-canonical「一個項目只有一個指示器」 |
+
+### H2 該有卻沒有(WCAG 2.4.7 違規)
+
+| # | 位置 | 證據 |
+|---|---|---|
+| H2a | **`steps.tsx:494`** | 同一個 `cn()` 的 `:493` 無條件寫了 `outline-none`。用本 repo tailwindcss 4.2.2 **實際編譯驗證**:`.outline-none` 設 `--tw-outline-style:none`,而 `.focus-visible\:outline-2` 只寫 `outline-style:var(--tw-outline-style)` → 聚焦時解析成 `none`。**那三個 focus-visible outline class 從寫下起就沒畫過任何東西**。修法是**刪掉 outline-none**,不是加東西。驗證者獨立複驗成立 |
+| H2b | **`chart.tsx:80`** | `[&_.recharts-surface]:outline-none`。recharts 3.x 的 `accessibilityLayer` **預設就是 true**(`CartesianChart.js:31` / `PolarChart.js:39` / `accessibilityContext.js:10` 的 `?? true`)→ 圖表可 Tab 但焦點被抑制。**驗證者指出徹查低估了範圍**(它以為只在有顯式帶該 prop 的 story) |
+| H2c | DatePicker 起訖日 `:1069`/`:1092` | **降級**:徹查原稱「沒有任何可見指示」,驗證者複驗 `field-wrapper.tsx:49` 的 `focus-within:!border-primary` **對兩顆都會 fire** → 確實有可見指示。真正的問題降級為「**一個框罩住兩個 tab stop,分不出焦點在起日還是迄日**」,是判斷題不是硬違規 |
+
+### H3 一個重要的分類更正:那 21 處大多不是焦點框
+
+`focus-within:` 12 處 + `has-[:focus-visible]` 9 處裡,**12 處根本不是焦點指示,是「顯形開關」** ——
+掛在不可聚焦的 `<div>`/`<span>` 上,作用只是 `opacity-0 → 100` / `hidden → inline-flex` / `z-2 → z-3`,
+**讓藏起來的按鈕在鍵盤 Tab 進來時現身**;真正的框畫在那顆按鈕自己身上。
+真的在畫框的是 **6 處**(徹查說 5 處,驗證者抓到它漏了 `[&:has(:focus-visible)]` 這種寫法 → `field-wrapper.tsx:55` 是活的、SSOT 記載的祖先 ring):
+`field-wrapper.tsx:49/55/59/190` + `file-item.tsx:266/313`。
+
+### H4 幾何歸屬(依已拍板規則:預設外 +2px,放不下改內 −2px)
+
+- **23 處 ring-offset**:12 處外 +2px、**11 處必須內 −2px**(tabs:479/662、carousel:413、overflow-indicator:109/122、accordion:52、segmented-control:172、agent-panel-fab:778、chip:60、avatar:271、tag:197)。
+  **驗證者抓到 12 處「容得下」裡有 2 處判錯,而且錯在全 DS 消費量最高的 Button** —— 需重驗。
+- **兩處 `ring-inset` 遷到 `outline-offset:-2px` 視覺等價**(box-shadow inset 0 0 0 2px 與 outline 2px @ offset −2px 佔的都是邊界往內 0→2px 那條帶,兩者都跟 border-radius)。
+- 已經是 outline 的 9 處:7 處值與規則一致、1 處是 H2a、1 處(`steps.stories.tsx:269`)寫成內 −2 但無裁切祖先、依規則應為外 +2。
+- **FileItem 那兩條放不下**:compact 列間 gap 只有 4px(`file-item.spec.md:282`),外框 2+2=4px 會讓上下兩列的框直接疊在一起。
+
+### H5 深色露白(全部查證成立)
+
+`--tw-ring-offset-color` 預設 `#fff`(`node_modules/tailwindcss/dist/lib.js` 實查)、全 repo 0 處覆寫、`[data-theme="dark"]` 確在 `primitives.css:259` 與 `semantic.css:424`
+→ **這 23 處在深色主題下全部露 1–2px 不透明白邊**。
+另有 **3 處連淺色主題也永遠露白**:`carousel:413`(dots 疊在照片/影片上)、`tag:197`、`overflow-indicator` 的隱藏項(渲染在 `bg-tooltip + data-theme="dark"` 的 HoverCard 浮層內,`hover-card.tsx:19`)。
+遷到 outline 後間隙變透明 —— **是修正不是回歸**。
+
+### H6 抑制側 72 處的判定
+
+合法 66(A 同區塊有替代指示 49 / B 畫在別的元素 11 / C 元素不可聚焦、純防禦 5 / D 有明文記錄的刻意決策 1 = `data-table.tsx:3286`,即 2026-05-12 user 親自抓的那次)、**違規 4**(見 H2)、邊界待拍板 2。
+
