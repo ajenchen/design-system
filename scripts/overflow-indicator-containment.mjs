@@ -37,7 +37,35 @@ const page = await browser.newPage()
 const bad = []
 let scanned = 0, withPlus = 0
 
+// 兩段式:107 個 story × 6 個寬度 = 642 次載入,在 CI 上就是好幾分鐘(本機也慢)。
+// 但實測只有 11 個 story 會出現「+N」—— 其餘 96 個量六次是純粹浪費。
+// 先用**最窄的寬度**掃一遍找出哪些 story 有「+N」(最窄最容易擠出來),再只對那些跑滿全部寬度。
+// 覆蓋率不變(有「+N」的都掃過全部寬度),載入次數從 642 降到 107 + 11×5 = 162。
+// 探測用**兩端**而不是只有最窄:窄的時候比較容易擠出「+N」,但響應式 story 也可能
+// 反過來(窄版少渲染幾個 item 就不溢出,寬版塞得多才出現)。只掃一端會漏掉那一類。
+const PROBE_WIDTHS = [WIDTHS[0], WIDTHS[WIDTHS.length - 1]]
+const hasPlus = async (id, w) => {
+  await page.setViewportSize({ width: w, height: 900 })
+  try { await page.goto(`http://localhost:${sv.address().port}/iframe.html?id=` + encodeURIComponent(id), { waitUntil: 'load', timeout: 15000 }) }
+  catch { return false }
+  await page.waitForTimeout(320)
+  return page.evaluate(() => {
+    const root = document.querySelector('#storybook-root') || document.body
+    return [...root.querySelectorAll('*')].some((e) => !e.children.length && /^\+\s*\d+$/.test((e.textContent || '').trim()))
+  })
+}
+const CANDIDATES = []
 for (const id of IDS) {
+  let found = false
+  for (const w of PROBE_WIDTHS) { scanned++; if (await hasPlus(id, w)) { found = true; break } }
+  if (found) CANDIDATES.push(id)
+  // 對照組只要一個有「+N」的 story 就證得出來,不必把 107 個探測完(省 CI 一分鐘)。
+  if (SELFTEST && CANDIDATES.length) break
+}
+console.log(`第一段:${IDS.length} 個 story 在 ${PROBE_WIDTHS.join(' / ')}px 探測,${CANDIDATES.length} 個有「+N」`)
+
+for (const id of CANDIDATES) {
+  if (SELFTEST && bad.length) break
   let sawPlus = false
   for (const w of WIDTHS) {
     await page.setViewportSize({ width: w, height: 900 })
@@ -77,13 +105,15 @@ for (const id of IDS) {
         bad.push(`${id.replace('design-system-components-', '')} @${w}px  「${h.text}」超出${h.host} 右${h.overRight}px 左${h.overLeft}px  (${h.tag})`)
       }
     }
+    // 對照組只需要證明「該紅的時候會紅」,抓到一筆就夠 —— 掃完全部只是讓 CI 多等一分鐘。
+    if (SELFTEST && bad.length) break
   }
   if (sawPlus) withPlus++
 }
 
 await browser.close(); sv.close()
 
-console.log(`掃了 ${IDS.length} 個 story × ${WIDTHS.length} 個寬度 = ${scanned} 次量測,其中 ${withPlus} 個 story 有「+N」`)
+console.log(`第二段:${CANDIDATES.length} 個候選 × ${WIDTHS.length} 個寬度;合計載入 ${scanned} 次,${withPlus} 個 story 確認有「+N」`)
 if (SELFTEST) {
   console.log(bad.length ? '\n✓ selftest:把「+N」硬推出去時這支確實會紅(' + bad.length + ' 筆)' : '\n✗ selftest:推出去了卻沒抓到 —— 這支的綠燈不算證據')
   process.exit(bad.length ? 0 : 1)

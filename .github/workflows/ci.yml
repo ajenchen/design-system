@@ -22,7 +22,10 @@ jobs:
   verify:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # 2026-09-08 15 → 30:這個 job 現在多跑十幾支瀏覽器閘(焦點幾何全掃 + 對照組、
+    # 「+N」溢出兩段式、虛擬捲動壓力、拖曳執行期…)。15 分鐘是在它做的事少很多的時候訂的,
+    # 連續兩次跑滿 15 分被判 cancelled——那是逾時不是被誰取消,查 run 的建立/更新時間差才看得出來。
+    timeout-minutes: 30
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
