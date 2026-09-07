@@ -2082,7 +2082,14 @@ function DataTableInner<TData>(
     // 2026-05-09 D-path:date / time 加入(showDisplayEndIcon → Field naked-view 需 full width 才能
     //   右對齊 ItemSuffix。TruncatedText 的 `<span truncate min-w-0>` block-display 會 collapse Field
     //   to content size,讓 Calendar / Clock icon 緊貼 value text 而非右邊緣)。
-    const isKnownCompound = colType === 'select' || colType === 'multiSelect' || colType === 'person' || colType === 'multiPerson' || colType === 'url' || colType === 'date' || colType === 'time'
+    // 2026-09-07 補 'boolean'(user 追問「四周視覺明明是空的,為何要往內描邊」查出的根因):
+    // boolean 欄渲染的是 <Checkbox>(cell-registry.tsx:432/435)—— 一個互動元素,
+    // 但它不在本清單裡,於是掉進下方的 <TruncatedText>,被一個 `truncate min-w-0`
+    // (padding 0、overflow hidden、四邊剛好貼死 16px 勾選框)的**文字截斷** span 包住。
+    // 實測:勾選框到該 wrapper 四邊都是 0px,但到儲存格邊其實有 11.5 / 12 / 62px 空白。
+    // 也就是焦點框不是「沒空間」,是被一個**用錯地方的文字截斷 wrapper** 裁掉 ——
+    // 勾選框永遠不需要文字截斷。修根因(不包)而不是讓焦點框改成內描邊去遷就它。
+    const isKnownCompound = colType === 'select' || colType === 'multiSelect' || colType === 'person' || colType === 'multiPerson' || colType === 'url' || colType === 'date' || colType === 'time' || colType === 'boolean'
     const rowId = cell.row.id
     const colId = cell.column.id
     const editable = isCellEditable(meta, cell.row.original)
