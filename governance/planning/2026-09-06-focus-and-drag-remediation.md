@@ -310,3 +310,66 @@ user 2026-09-07 原話:「所有要有焦點框的地方都應該仔細確認它
 
 合法 66(A 同區塊有替代指示 49 / B 畫在別的元素 11 / C 元素不可聚焦、純防禦 5 / D 有明文記錄的刻意決策 1 = `data-table.tsx:3286`,即 2026-05-12 user 親自抓的那次)、**違規 4**(見 H2)、邊界待拍板 2。
 
+## I. 視覺稽核結果(workflow `wvw8cz1sc`,**唯一通過對抗驗證的一份**)
+
+方法(驗證者逐條複驗成立):本機重建 storybook-static → 先過 fail-closed stale-build 守衛
+(`focus-audit-scripts/lib.mjs:14-22` 走訪 src 任何比 `storybook-static/index.json` 新的 .tsx/.css 就 `exit(1)`)
+→ Playwright Chromium(沙箱內須 `--single-process`)→ **每一處用真的 `page.keyboard.press('Tab')` 從文件開頭連按**
+直到 `document.activeElement` 命中,再驗 `el.matches(':focus-visible')`。15 處有 14 處在瀏覽器量到(全部 `:focus-visible=true`)。
+**91 張截圖**(1× 與 4×)+ `results.json` / `specials.json` / `dark.json` 原始數值,腳本已移出 repo。
+
+### I1 我對 RadioGroup 的懷疑是**錯的**(撤回)
+
+我先前說「RadioGroup 一個元件兩個焦點框,很可能一個是死的」。**兩個都是活的,而且不會同時出現** ——
+它們住在**互斥的 render 分支**:`radio-group.tsx:155` 的 readonly-in-Field 分支直接 return 一個只裝 `<span>` 的灰框,
+**完全不渲染任何 radio item**。而互動主路徑的 Radix Root(`:187`)身上既無 ring 也無 tabIndex,
+焦點由 roving tabindex 落在單顆 radio —— **這正是 W3C APG radio pattern 的原文要求**(「focus is set on the checked button」)。
+真 Tab 第一下直接落在單顆 radio,群組容器不是「看得見的空焦點站」。**兩者都留,都需要。**
+
+**但真的有死碼,在別的地方**:`:171` 消費的 `fieldWrapperStyles` 帶進三條
+`[&:has(:focus-visible)]:ring-2 / ring-ring / ring-offset-1`(`field-wrapper.tsx:55`),
+而這個盒子唯一的子節點是 `<span>` → `:has(:focus-visible)` **恆不 match,三條全死**。
+因為死掉的那組才帶 `ring-offset-1`,所以實際渲染出來是 0 間隙。改幾何時要一併清掉,否則留下「看起來有 offset 其實沒有」的假象。
+
+### I2 量出來跟原始碼註解不一致的兩處
+
+| 位置 | 註解怎麼寫 | 實測 |
+|---|---|---|
+| `person-display.tsx:360-361` | 白色分隔環「不被 focus-visible ring 蓋掉」 | **錯**。聚焦瞬間白環**整層被藍環取代,直接消失** |
+| FileViewer 縮圖(C14) | ledger 說「選中與聚焦計算值相同」 | **比那更死**:兩張 4× 截圖 **SHA-256 完全相同、`cmp` 差 0 bytes** —— 不是幾乎一樣,是同一張圖 |
+
+### I3 我先前「五種幾何」的說法要限定範圍
+
+**在這 15 處內部,14 處 ring 幾何完全一致**(外緣 2px、offset 0、`--tw-ring-color = --ring = --primary`),
+**唯一例外是 RadioGroup item**(`ring-offset-1`)。所以「不一致」在這一批裡只差這一根。
+先前講的「五種幾何」是把 `ring-offset` 那 23 處一起算進來才成立 —— 兩個說法不衝突,但範圍要講清楚。
+
+**深色白線同理要限定**:實測量到 `rgb(255,255,255)` 1px、身後父層 `srgb 0.04 0.04 0.04`(接近全黑),
+但**這 15 處裡只有 RadioGroup item 這一處**(`ring-offset-width=1px`),另外 14 處都是 0px。
+H5 說的「23 處在深色下全部露白」講的是 `ring-offset` 那一批,兩者不衝突。
+
+### I4 改成外 +2px 之後會出問題的(以 outline 2px + offset 2px = 對外長 4px 計)
+
+| 判定 | 位置 | 實測數值 |
+|---|---|---|
+| **一定撞** | PeoplePicker 移除鈕 | 右鄰居只剩 **1.64px**、左鄰居 **−0.02px 已經相接**;元素本身才 12×12,長完變 20×20。4× 截圖看得到紅框壓在隔壁 avatar 上 |
+| **一定撞** | AgentPanel 思考過程 | 下方鄰居間距 **0.00px**,直接侵入下方內容 4px |
+| **剛好貼死、0 呼吸** | DateGrid 日期格 | 上右下三面各 **4.00px** |
+| **剛好貼死** | Field readonly 三兄弟(Checkbox / Switch / RadioGroup)| 上方 FieldLabel **4.00px** |
+| **剛好貼死** | Calendar 兩種事件塊 | 上方日期數字列 **4.00px** |
+| 放得下 | SidebarMenuAction 等 | 四周皆有餘 |
+
+→ 依已拍板規則,「一定撞」與「剛好貼死」的一律歸**內 −2px**。
+
+### I5 三組必要性徹查的驗證結果
+
+- **g1(RadioGroup×2 / Sidebar×2 / Calendar:170)通過** —— 驗證者說「想推翻但推翻不了」,五處結論全部站得住。
+- **g2 被駁**:`DateGrid:130` 的鄰居淨空**算錯**(它寫「14+2+2=16」,實際 = 18,正確淨空是 **0px 正好相切**);`Checkbox:298` 的元素描述**漏掉 `w-full`**,而那正是決定橫向容不容得下的關鍵。
+- **g3 被駁**:有一個**會造成「改完焦點框完全看不見」的硬錯誤**,另有一處 `fitsOutset` 其實沒量過。
+
+### I6 順手抓到、不在 15 處內但同源
+
+- **SidebarMenuButton 自己根本沒有焦點框**,只有 `focus-visible:bg-neutral-hover` 換底色(`sidebar.tsx:938`),
+  而同一列的 SidebarMenuAction 卻用 ring —— **同一個元件內兩種焦點語言**。(這正是 C16/A5 那題。)
+- **SidebarGroupAction 全 repo 零消費者**(只有定義處與兩個 barrel export,無任何 story)→ 改完**沒有畫面可驗**。
+
