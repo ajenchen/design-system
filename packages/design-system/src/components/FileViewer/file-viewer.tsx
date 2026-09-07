@@ -636,7 +636,15 @@ const Filmstrip = React.memo(function Filmstrip({ files, activeIndex, onSelect, 
               onClick={() => onSelect(i)}
               className={cn(
                 'shrink-0 rounded-md bg-muted overflow-hidden',
-                'outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                // 2026-09-07 C14:選中與鍵盤焦點原本都是 `ring-2` + `--ring: var(--primary)`
+                // (semantic.css:337 是全 repo 唯一定義)→ 已選中的縮圖被聚焦時 **0 像素變化**,
+                // 違反 APG「selected 必須與 focus 指示器在視覺上可區分」。
+                // 解法:兩者走不同通道 + 不同位置 —— 選中留在 ring(box-shadow,貼著圖),
+                // 焦點改走 outline 並**往內**畫。往內的理由是 focus-canonical 問題二:
+                // 縮圖列(:605)是 `overflow-x-auto` 捲動容器,往外畫會被裁掉。
+                // 不可寫 `outline-none`(它把 --tw-outline-style 設成 none,會讓下面三條靜默失效,
+                // 見 steps.tsx 同款事故)。
+                'focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px]',
                 'transition-shadow duration-150',
                 active
                   ? 'ring-2 ring-primary'

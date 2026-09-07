@@ -168,7 +168,11 @@ const RadioGroup = React.forwardRef<
         tabIndex={0}
         className={cn(
           fieldWrapperStyles({ size: boxSize, mode: 'readonly', variant: 'default' }),
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          // 2026-09-07:刪掉本地重抄的 `ring-2 ring-ring` —— fieldWrapperStyles 的 readonly
+          // 非-wrapper 分支(field-wrapper.tsx:56)已經給了同樣的兩條、外加 `ring-offset-1`,
+          // 本地那份只是把它抄一遍還漏掉 offset。`outline-none` 留著:此盒的指示器走 ring
+          // 通道,不抑制的話全域 outline 會再畫一圈。
+          'focus-visible:outline-none',
           className,
         )}
       >

@@ -150,3 +150,13 @@ story-screenshots/
 
 # 治理 build graph 暫態 journal(commit 鏈產物,post-commit 自清;誤入 47e1515a 後出庫)
 .governance-build-graph-journal.json
+
+# 一次性研究/量測殘留(2026-09-07 C15):焦點框與 tailwind 行為的 probe 腳本與輸出。
+# 它們是「當場實測而不是憑推論」的副產品,留在工作區方便重跑,但不屬於版本庫。
+# 命名規範:根目錄的 `.*-probe`/`*-probe.mjs`/`.*.tmp.mjs` 一律視為殘留。
+/.ringtest/
+/.tw-probe/
+/scratch-probe/
+/.*.tmp.mjs
+/*-probe.mjs
+/.ringprobe.tmp.mjs

@@ -245,6 +245,9 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
       <button
         type="button"
         aria-label={actionAriaLabel}
+        // 整列焦點框的唯一觸發者(見上方兩處 has-[[data-row-focus-target]:focus-visible])。
+        // 它自己不畫框(opacity-0),指示器畫在列上 —— focus-canonical 認可的「指示器畫在別的元素上」。
+        data-row-focus-target=""
         className="absolute inset-0 opacity-0 pointer-events-none"
         onClick={(event) => {
           event.stopPropagation()
@@ -263,7 +266,11 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
           ref={ref}
           className={cn(
             'group/row relative flex items-start gap-2 w-full text-body leading-compact transition-colors',
-            'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring',
+            // 2026-09-07 H1g:限定只接下面那顆隱形整列鈕(keyboardPrimaryAction)。
+            // 原本裸寫 `has-[:focus-visible]` 不分對象,trailing action 的 <Button> 自帶
+            // ring(button.tsx:66)被聚焦時整列也跟著畫 → 一次互動兩個焦點框,
+            // 違反 focus-canonical「一個項目只有一個指示器」。
+            'has-[[data-row-focus-target]:focus-visible]:ring-2 has-[[data-row-focus-target]:focus-visible]:ring-ring',
             // surface=form → border card(自立輪廓);surface=upload-manager → 無邊框(box 自身是容器,
             // avatar 作 item 邊界)。2026-06-03 codify rich-borderless(原僅 spec 旁註,consumer 自己移除)。
             // 2026-06-03 圖五:upload-manager rich 拿掉 px+py(卡片移除後 py 多餘,列高靠 avatar 48 的 content minHeight;
@@ -310,7 +317,8 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
         className={cn(
           'group/row relative flex items-start gap-2 py-2 w-full text-body leading-compact transition-colors rounded-md',
           compactStaticBg,
-          'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring',
+          // 2026-09-07 H1g:同 rich —— 只接隱形整列鈕,不接自帶 ring 的 trailing <Button>
+          'has-[[data-row-focus-target]:focus-visible]:ring-2 has-[[data-row-focus-target]:focus-visible]:ring-ring',
           hoverClass,
           className,
         )}

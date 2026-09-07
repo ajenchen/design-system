@@ -119,9 +119,20 @@ const PANEL_WIDTH_MIN = 360
 const PANEL_WIDTH_MAX = 640
 const PANEL_RESIZE_KEY_STEP = 16
 
+/**
+ * 目前視窗下真正生效的面板寬上限。
+ *
+ * clampPanelWidth 與 ResizeHandle 的 `max`(→ aria-valuemax)**必須讀同一個函式** ——
+ * 2026-09-07 G5:先前 `max` 寫死 PANEL_WIDTH_MAX(640),但實際 clamp 是 min(640, ⌊W/2⌋),
+ * 視窗 900 時真正上限只有 450,螢幕閱讀器卻念 640、按 End 也宣稱跳 640 實際停 450。
+ */
+function resolvePanelWidthMax() {
+  if (typeof window === 'undefined') return PANEL_WIDTH_MAX
+  return Math.min(PANEL_WIDTH_MAX, Math.max(Math.floor(window.innerWidth / 2), PANEL_WIDTH_MIN))
+}
+
 function clampPanelWidth(width: number) {
-  const viewportCap = typeof window === 'undefined' ? PANEL_WIDTH_MAX : Math.floor(window.innerWidth / 2)
-  return Math.min(Math.max(width, PANEL_WIDTH_MIN), Math.min(PANEL_WIDTH_MAX, Math.max(viewportCap, PANEL_WIDTH_MIN)))
+  return Math.min(Math.max(width, PANEL_WIDTH_MIN), resolvePanelWidthMax())
 }
 
 export interface AgentPanelProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -155,6 +166,15 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     },
     ref,
   ) => {
+    // aria-valuemax 必須跟著視窗變 —— 只在初次 render 算一次的話,使用者縮視窗後
+    // 螢幕閱讀器念的仍是舊上限(G5 的另一半)。
+    const [widthMax, setWidthMax] = React.useState(resolvePanelWidthMax)
+    React.useEffect(() => {
+      const sync = () => setWidthMax(resolvePanelWidthMax())
+      sync()
+      window.addEventListener('resize', sync)
+      return () => window.removeEventListener('resize', sync)
+    }, [])
     const [uncontrolledWidth, setUncontrolledWidth] = React.useState(() => clampPanelWidth(defaultWidth))
     const resolvedWidth = clampPanelWidth(width ?? uncontrolledWidth)
 
@@ -195,7 +215,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
             position="start"
             value={resolvedWidth}
             min={PANEL_WIDTH_MIN}
-            max={PANEL_WIDTH_MAX}
+            max={widthMax}
             step={PANEL_RESIZE_KEY_STEP}
             ariaLabel="調整面板寬度" // i18n-allow: DS 預設文案
             className="z-10"

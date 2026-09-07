@@ -433,66 +433,6 @@ H5 說的「23 處在深色下全部露白」講的是 `ring-offset` 那一批,�
 - **追到 root cause,連相關問題一起解** —— 禁止只修症狀(對齊 M12)
 - **每一項都要有可驗證的方式,自行驗到完整完美** —— 禁止「應該沒問題」等級的收尾
 
----
-
-# J. 接下來推什麼(2026-09-07 收斂,依「不改壞既有 + 追到 root cause + 可自驗」排序)
-
-## J0 先解鎖:三組沒過對抗驗證的必須重驗(**擋住整條主線**)
-
-| 要重驗的 | 被抓到什麼 |
-|---|---|
-| ring-offset 組的「容得下」判定 | 12 處裡有 2 處判錯,**而且錯在全 DS 消費量最高的 Button** |
-| g2(DateGrid / Checkbox) | DateGrid 淨空算錯(寫 16、實為 18,正確淨空 **0px 相切**);Checkbox 元素描述**漏掉 `w-full`**,那正是決定橫向容不容得下的關鍵 |
-| g3 | 有一個**會造成「改完焦點框完全看不見」的硬錯誤**;另一處 `fitsOutset` 沒量過 |
-
-**不重驗就動工 = 帶著錯上路。** 重驗方式:直接沿用已通過驗證的視覺稽核 harness(真 Playwright、真 Tab、fail-closed stale-build 守衛),不重造。
-
-## J1 按新規則掃修全 DS(J0 完成後)
-
-規則是三問決定程序(`ds-canonical/references/focus-canonical.md`)。**每一處都必須先回答問題一** ——
-不是「它有沒有寫焦點框」,是「**它可不可以被操作**」。這會同時抓出兩個方向的錯:
-- 可操作卻 Tab 不到 → WCAG 2.1.1,修可聚焦性
-- Tab 得到卻不能操作 → **拿掉 tabIndex**,不是補畫框
-
-## J2 已定位、可直接修的(root cause 都已查到)
-
-| # | 項目 | root cause |
-|---|---|---|
-| J2a | 7 處多餘/重複/死碼(H1a–H1g)| 各自不同:asChild 恆重複、逐字複製、抄全域、變體被涵蓋、祖先與自身雙指示 |
-| J2b | `steps.tsx:494` 焦點框從未畫過 | 同 `cn()` 的 `:493` 無條件 `outline-none` 把 `outline-style` 設成 none。**修法是刪 outline-none,不是加東西** |
-| J2c | `chart.tsx:80` 圖表可 Tab 但焦點被抑制 | recharts 3.x `accessibilityLayer` 預設就是 true |
-| J2d | FileViewer 選中/聚焦零像素差(C14)| 選中用 `ring-primary`、聚焦用 `ring-ring`,而 `--ring: var(--primary)` 是全 repo 唯一定義 → 同值 |
-| J2e | `person-display.tsx:360-361` 註解與實測相反 | 註解說白環不被蓋掉,實測是整層被藍環取代 |
-| J2f | RadioGroup 唯讀盒的三條死 class | `fieldWrapperStyles` 帶進 `[&:has(:focus-visible)]:ring-*`,但盒內只有 `<span>` → 恆不 match |
-| J2g | G5 `aria-valuemax` 與實際上限不同源 | `:198` 傳寫死的 640,實際 clamp 是 `min(640, floor(W/3))` |
-
-## J3 便宜且已解鎖的(不等任何人)
-
-- **Esc 寫進 spec 當不變量**(零程式碼):作用域封閉在焦點所在區的最內層暫時性 UI;不關 agent、不跨區關浮層
-- **一條負向鐵律 + ~40 行 invariant script**:`AgentPanel` 永不註冊進 Radix 的 DismissableLayer 疊。這是桌上**唯一真正的單向門**,值得那 40 行。照 `scripts/agent-panel-fixed-anatomy-invariant.mjs`(73 行)的形狀
-
-## J4 仍卡住的
-
-| # | 卡在哪 |
-|---|---|
-| J4a | **跨區 Tab 的鍵位** —— 研究建議的 `Ctrl+F6` 與裸 `F6` **在 Chrome 裡都已有主人**(驗證者打開研究自己引的那頁,發現同頁還有一列 `Ctrl+F6 = Skip to web contents`)。架構答案有了(Modal 開著就不往返),鍵位要重找 |
-| J4b | **Agent 差距 1 的 Tab 接力 POC** —— 需真瀏覽器,本機 sandbox 起不了(已登記於 `agent-panel.spec.md:410-412`)。POC 不過的話差距 1 整條路要重估 |
-| J4c | A3 `--neutral-selected-focus` 的處置 —— 依賴 J1 掃完 |
-| J4d | A4 DataTable 列游標 —— 另有三個技術前提未解 |
-
-## J5 可驗證方式(每一項都要能自己驗到完美)
-
-1. **靜態**:三問決定程序可機械執行 —— 判準 B(祖先鏈有無非-visible overflow)與判準 A(四周最小淨空 ≥ 4px)都能靜態掃。寫成 invariant script,照 `scripts/data-table-invariants.mjs` 的形狀(含 stale-build guard、SKIPPED-ENV)
-2. **動態**:沿用已通過驗證的視覺稽核 harness —— 真 Playwright、真 `keyboard.press('Tab')`、驗 `el.matches(':focus-visible')`、量 computed style 與四周淨空、1× 與 4× 截圖
-3. **回歸**:聚焦前後 computed style 差異**集合必須非空**(這條直接抓 C14 那類「零像素變化」)
-4. **防回流**:遷移完後禁止新增 `ring-offset-*` 與不配對的 `outline-none`
-
-## J6 不得違反的三條(user 2026-09-07 逐字要求)
-
-- **不改壞既有好的東西** —— 每一項改動都要列出「可能弄壞什麼、為什麼不會」
-- **追到 root cause,連相關問題一起解** —— 禁止只修症狀(對齊 M12)
-- **每一項都要有可驗證的方式,自行驗到完整完美** —— 禁止「應該沒問題」等級的收尾
-
 ## K. 三個收斂結論(2026-09-07,回答 user「卡住的趕快討論出結論」)
 
 ### K1 FileViewer 的解法 —— 我先前那版是錯的,已由規則自己判掉
@@ -737,3 +677,56 @@ J0 判「往內」的 11 處中,凡是**理由為「被某個裁切祖先貼死�
 但 `disabled: false`、`tabIndex: 0`、DOM 結構與尺寸皆正常,且該分支 code path 未被本次修改觸及
 (只改了「要不要包 wrapper」,沒動 `onCheckedChange`)。
 
+---
+
+# N. 2026-09-07 已完成並自驗(本輪)
+
+**驗證方式全部是真瀏覽器實測,不是 grep class**;三支新閘 + 一支既有 build 全綠。
+
+## N1 拖曳播報(C1 + C2 + B2 一次收,commit `d5ba39d3`)
+
+一個根因三項待辦:全 DS 4 個 `DndContext` 沒有任何一個傳過 `accessibility` prop
+(排除 stories 後 0 命中),全部吃 dnd-kit 英文預設,而且它從自己的生命週期發 ——
+不知道我們的守衛已經 return、根本沒重排。
+
+- 新增 `lib/drag-announcements.ts` 作四處共用 SSOT;呼叫端開頭清空 outcomeRef、真 commit 才設值
+- 呼叫順序不是猜的:`core.esm.js:3166-3170` 實查 `handler?.(event)` 先於 `dispatchMonitorEvent`
+- 防回流閘 `scripts/drag-announcement-invariant.mjs`(selftest 4/4)
+- **仍未驗**:播報「文字內容」需真實滑鼠拖曳,合成 pointer 事件過不了 dnd-kit 感測器門檻(沙箱限制)
+
+## N2 焦點指示器六項(J2 區)
+
+| # | 改了什麼 | 可驗證證據 |
+|---|---|---|
+| J2d / C14 | FileViewer 縮圖:選中留在 ring(貼著圖)、鍵盤焦點改走 outline 並**往內**畫 | 真 Tab 實測 `:focus-visible=true`、`outline: solid 2px oklch(0.63 0.22 258) @ -2px`、box-shadow 同時仍在。往內的前提也複驗了:縮圖列確實是 `overflow-x-auto` |
+| H1g | FileItem 一次互動兩個框 | 根因是 `has-[:focus-visible]` **不分對象**,連自帶 ring 的 trailing `<Button>` 一起接。改成 `has-[[data-row-focus-target]:focus-visible]` 只認那顆隱形整列鈕。實測:整列鈕聚焦→列上有框;trailing 聚焦→列上 `boxShadow: none`、按鈕自己的框仍在 |
+| H1f | TreeView 根容器 + 列 兩個框 | 根容器改為「**有** aria-activedescendant 才抑制」(空樹仍會畫,不會變成聚焦了卻沒指示)。實測根 `outline: none`、activedescendant 指到真實列 |
+| **H1f 連帶挖出的真缺口** | **Tab 進場當下那列沒有任何指示** | `showRing = isFocused && isKeyboardRef.current`(`:1174`),而 `isKeyboardRef` 只在**樹內** keydown 才變 true —— Tab 的 keydown 發生在上一個元素上,永遠傳不到。原本被根容器那圈大框遮住,我抑制掉才暴露。修法:`onFocus` 用瀏覽器自己的 `:focus-visible` 當判準打開鍵盤模式(滑鼠進場它不成立,且 mousedown 已先把 ref 設回 false)。違反的是 APG aria-activedescendant 模式明文要求 |
+| J2f | RadioGroup readonly 盒重複宣告 | **訂正先前總帳的錯誤判斷**:原寫「fieldWrapperStyles 帶進 `[&:has(:focus-visible)]` 但盒內只有 `<span>` 故恆不 match」是**錯的** —— 此處未傳 `wrapper`,走的是 else 分支(宿主自己可聚焦),而盒子確實 `tabIndex={0}`,該分支是活的且正確。真正的問題是下一行把它又抄一遍還漏掉 `ring-offset-1`。用真 tailwind-merge 3.5.0 實跑:刪除前後**類別集合完全相同**(只有順序差)→ 證明是純去重、零視覺改變 |
+| J2g / G5 | `aria-valuemax` 與實際上限不同源 | 抽出 `resolvePanelWidthMax()` 讓 clamp 與 `max` 讀同一函式,並加 resize 監聽(否則首次 render 後就固定住)。三個視窗寬實測:1280→640 / 900→450 / 700→360,全部等於真正生效的上限 |
+| J2e | person-display 註解與實測相反 | 只改註解。原寫「白環不被 focus ring 蓋掉(不同 layer)」——實測兩者最終都寫同一個 `box-shadow`,`focus-visible:ring-2` 帶偽類特異性較高,聚焦當下白環**整層被藍環取代**。這不是缺陷,但註解不能寫成相反的事實 |
+
+## N3 J3 兩項(零依賴)
+
+- **Esc 語意寫進 `agent-panel.spec.md`**(零程式碼):三條表 + 一句話。依據是
+  [Microsoft 平台鍵盤指引](https://learn.microsoft.com/en-us/windows/apps/design/input/keyboard-interactions)逐字
+  「The Esc key only affects transient UI, it does not close, or back navigate through, app UI.」
+- **負向鐵律 + 機械閘** `scripts/agent-panel-dismissable-layer-invariant.mjs`(selftest 5/5):
+  AgentPanel 永不進入 Radix 的 DismissableLayer 疊。這是桌上唯一真正的**單向門**,而且靜默 ——
+  一旦入疊,`dismissable-layer.tsx:59-61` 會把 Esc 送給它、外點也會關,面板就從常駐 app UI
+  變成暫時性浮層,沒有任何錯誤訊息。
+
+## N4 新增的三支常駐閘
+
+| 閘 | 守什麼 | selftest |
+|---|---|---|
+| `scripts/drag-announcement-invariant.mjs` | 有 `<DndContext` 就必須傳 `accessibility={{ announcements` | 4/4 |
+| `scripts/agent-panel-dismissable-layer-invariant.mjs` | 面板殼不得進 dismiss 疊 | 5/5 |
+| `scripts/focus-indicator-invariants.mjs` | F1 聚焦前後 computed style 差異非空 / F2 一次互動一個框 / F3 虛擬焦點容器不畫、目前列必畫 / F4 宣稱上限=真上限 | stale-build 守衛 fail-closed 實測 exit 2,rebuild 後 exit 0 |
+
+三支都已接進 `package.json`(`test:drag-announcements` / `test:agent-panel-invariants` /
+`test:focus-indicator-invariants`)。
+
+## N5 順手清掉的
+
+總帳原本有一整份 J0–J6 貼了兩次(第 378–436 行與第 438 行起完全重複),已刪前者。

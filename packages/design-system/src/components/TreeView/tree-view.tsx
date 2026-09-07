@@ -950,6 +950,12 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           //   - 獨立使用(story demo): consumer 自己加 py-2
           // 這樣才能跟 DropdownMenu / MenuGroup 的結構一致(group 是容器,row 是內容)。
           'flex flex-col',
+          // 2026-09-07 H1f:DOM 焦點永遠停在這個 role=tree 容器(:369),視覺指示器畫在
+          // aria-activedescendant 指到的那一列上。若不抑制,全域 base.css:44-47 會再給容器
+          // 畫一圈 +2px 外框 → 同一次互動兩個焦點指示。
+          // 條件寫成「有 aria-activedescendant 才抑制」:空樹(找不到任何 treeitem → 該屬性不渲染,
+          // 見 :939)時全域框仍會畫,不會變成「聚焦了卻完全沒有指示」。
+          '[&[aria-activedescendant]:focus-visible]:outline-none',
           className,
         )}
         style={{
@@ -962,6 +968,16 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         // 原本無 onFocus init → focusedId=null → aria-activedescendant undefined,AT 讀不到目前節點
         onFocus={(e) => {
           ;(props as React.HTMLAttributes<HTMLDivElement>).onFocus?.(e)
+          // 2026-09-07:Tab 進場時把鍵盤模式打開。
+          // 原本 `isKeyboardRef` 只在**樹內** keydown 才變 true(:814),但 Tab 的 keydown
+          // 發生在上一個元素上、根本不會傳到這裡 → 進場當下 `showRing`(:1174)恆為 false,
+          // 於是 aria-activedescendant 已經指向某一列、那列卻沒有任何可見指示,
+          // 違反 APG aria-activedescendant 模式(作者必須自己畫出目前節點)。
+          // 判準用瀏覽器自己的 `:focus-visible` —— 它就是「這次聚焦該不該給可見指示」的權威答案:
+          // 滑鼠按下進場時它不成立(且 mousedown 已先把 ref 設回 false),鍵盤進場才成立。
+          if (e.target === e.currentTarget && e.currentTarget.matches(':focus-visible')) {
+            isKeyboardRef.current = true
+          }
           if (e.target === e.currentTarget && !focusedId && treeRef.current) {
             const first =
               treeRef.current.querySelector<HTMLElement>('[role="treeitem"][aria-selected="true"]:not([hidden]):not([aria-disabled="true"])') ??

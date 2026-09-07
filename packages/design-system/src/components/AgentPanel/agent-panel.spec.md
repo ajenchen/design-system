@@ -493,6 +493,31 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 | 思考 chevron / 輸入框邊框 | transition | `--motion-duration-overlay` 150ms |
 | 減動作 | 互動觸發必可停;常駐 loop 全停、淡入停 | 見 AgentLogo 節 |
 
+## Esc 與關閉語意(不變量;2026-09-07 訂)
+
+**一句話**:Esc 只關「暫時性的東西」,而且只關**焦點所在那一區裡最內層**的那一個。面板本身是常駐 app UI,不是暫時性的東西,所以 Esc 永遠不關它。
+
+依據不是我們自己想的 —— [Microsoft 平台鍵盤指引](https://learn.microsoft.com/en-us/windows/apps/design/input/keyboard-interactions)逐字:「The Esc key only affects transient UI, it does not close, or back navigate through, app UI.」同一判準在 [W3C APG dialog 模式](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)(Esc 關 dialog)與 [Material 的 dismiss 語意](https://m3.material.io/components/dialogs/guidelines)一致。
+
+三條:
+
+| 情境 | Esc 關誰 | 為什麼 |
+|---|---|---|
+| 焦點在面板內,面板內開著選單/浮層/Tooltip | **關那個最內層的浮層,面板不動** | 浮層是暫時性 UI,面板不是 |
+| 焦點在面板內,面板內沒有任何浮層 | **什麼都不關** | 沒有暫時性 UI 可關;關掉面板等於關 app UI |
+| 焦點在面板外(側邊欄 / 主內容 / Dialog)且那裡開著浮層 | **關該區自己的浮層,不跨區碰面板** | 作用域封閉在焦點所在區,跨區關會讓使用者失去他沒在看的東西 |
+
+**推論(不必另外訂)**:面板的關閉只有兩條路 —— header 的 `×`、以及 FAB 的切換。沒有第三條。
+
+### 負向鐵律:AgentPanel 永不進入 Radix 的 DismissableLayer 疊
+
+這是本家族**唯一的單向門** —— 一旦哪天有人把面板包進 `DismissableLayer`(或任何自帶 dismiss 的 Radix primitive:`Popover.Content` / `DropdownMenu.Content` / `Dialog.Content` / `HoverCard.Content`),上表三條會同時失效,而且**是靜默失效**:
+
+- `dismissable-layer.tsx:59-61` 把 Esc 只送給疊最上層 → 面板一旦入疊,就會在「它剛好是最上層」時被 Esc 關掉,和上表第二列直接相反;
+- 入疊還連帶吃到 `disableOutsidePointerEvents`(外點關閉)與焦點 trap,面板會從常駐 app UI 變成暫時性浮層。
+
+因為靜默,所以配一支機械閘:`scripts/agent-panel-dismissable-layer-invariant.mjs`。
+
 ## 禁止事項
 
 - ❌ 手刻 chrome header / 浮層殼 / row 結構(必消費 ChromeHeader / overlay-surface /
@@ -502,6 +527,9 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 - ❌ 附件在氣泡內用 Tag 或 FileItem(送出後=Chip assist 視覺;輸入中才是 Tag)。
 - ❌ 思考塊微光套到已完成步驟(僅標題+最新一行)。
 - ❌ 繞過 `--agent-panel-width` 寫死面板寬。
+- ❌ 讓 AgentPanel 進入 Radix 的 DismissableLayer 疊(見上節負向鐵律;機械閘
+  `scripts/agent-panel-dismissable-layer-invariant.mjs`)。
+- ❌ 用 Esc 關閉面板本身(面板是常駐 app UI,不是暫時性 UI)。
 
 ## 邊界案例 scope
 
