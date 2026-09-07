@@ -124,6 +124,9 @@ jobs:
           node --test infra/governance/test/workflow-identity-sync.test.mjs
           node --test infra/governance/test/release-workflow.test.mjs
           node --test scripts/test-deterministic-vite-output.mjs
+          # 殘留鎖回收的三態判斷:EPERM(pid 被回收或沙箱擋訊號)原本被當成「還活著」,
+          # 於是那把鎖永遠清不掉 —— 2026-09-08 連兩次提交被自己的機制擋住。
+          node scripts/test-authority-generation-reaper.mjs
           node scripts/governance-build-graph.mjs --check
 
       - name: Build React 19 consumer template

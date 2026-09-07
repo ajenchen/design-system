@@ -1721,6 +1721,59 @@ root 子節點 0),必須起本機靜態站;CSSOM 對含 `var()` 的簡寫回空�
 對照組:`--selftest` 把所有焦點視覺釘死(transition/border/outline 全部 !important 固定),
 承擔者證明必須整批變紅 —— 不然這一段的綠燈不算證據。
 
+## AD10 提交訊息與內容對不上的更正(留檔,不改寫歷史)
+
+`3d7a9c4d` 的標題只寫了「補上承擔者現場證明」,但它實際夾帶了**本輪六項改動全部**:
+H2c 底線、A4 結案、7 組閘接 CI、M32 折入、「+N」被裁修復、E1/E2 兩支新閘、承擔者證明。
+
+成因是我自己的操作:前一次背景提交比我查 HEAD 的時間晚落地,我以為它失敗了,
+於是把後續改動繼續累積,結果全部被那一次的 `git add -A` 一起收走。
+`--amend` 改標題被權限擋下(改寫歷史本來就該擋),所以不繞過,把事實記在這裡。
+該提交的完整內容以本文件 AD1–AD9 為準。
+
+**教訓**:背景提交要等到 HEAD 真的變了才算數,`git log` 查一次不夠 —— 這條已經讓我
+連續三次提交出問題(兩次因為我在 hook 跑的時候還在改檔案,一次是標題錯配)。
+
+## AD11 自家的殘留鎖把自己鎖死 —— 三態修掉(M36(b))
+
+連續兩次提交被同一個錯誤擋住:
+`✗ governance build graph: authority generation transaction is still active on pid 68298 / 69257`。
+
+現場:`/private/tmp/claude-501/.governance-build-graph-<uuid>/` 留著一個 owner marker,
+而建立它的那次執行早就結束了。回收器(`canonical-sync-transaction.mjs`)卻不肯收。
+
+根因是**兩態判斷**:
+
+```js
+try { process.kill(pid, 0); return true }        // 送得動 → 活著
+catch (e) { return e.code === 'ESRCH' ? false : true }   // 不是 ESRCH 就當活著
+```
+
+`kill(69257, 0)` 實測回 **EPERM** —— 那個 pid 上確實有程序,但我們送不了訊號
+(pid 被回收給別的使用者,或沙箱擋跨界訊號)。EPERM 被當成「還活著」,
+於是**這把鎖永遠清不掉**,每一次提交都會被它擋住。
+
+修法(三態):
+
+| liveness | 判定 |
+|---|---|
+| `alive`(送得動) | 還在跑,不准收 —— 就算馬克很舊也不收 |
+| `gone`(ESRCH) | 立刻可收 |
+| `unprovable`(EPERM) | **改用馬克有多舊判斷**:超過 30 分鐘才收 |
+
+EPERM 其實已經足以推論「不是我們的擁有者」(我們自己 spawn 的程序跟我們同 uid,一定送得動),
+但為了對付「沙箱擋掉所有訊號」的極端情況,仍然保留時間視窗:
+一次生成實測 2–8 分鐘,30 分鐘的視窗不可能誤收正在跑的交易。
+
+判斷抽成純函式 `authorityGenerationOwnerVerdict` 才測得動 ——
+要在測試裡造一個「存在但送不了訊號」的 pid 沒有可攜做法。
+`scripts/test-authority-generation-reaper.mjs` 7/7 通過,含對照組
+(把視窗設 0,原本該「等」的必須變成可收 → 證明視窗真的在起作用,
+不是靠 liveness 一個變數就決定了結果)。既有兩支交易測試也重跑確認沒改壞。
+
+當下那把 8 分鐘大的鎖用新規則還收不掉(未達視窗),手動清掉 ——
+它只是 `$TMPDIR` 裡的暫存目錄,不含任何 repo 狀態,而建立它的執行已確認結束。
+
 ## AD7 剩下兩項
 
 | # | 卡在哪 |

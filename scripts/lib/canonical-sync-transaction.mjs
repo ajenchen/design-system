@@ -116,14 +116,36 @@ function fsyncAuthorityTree(path) {
   }
 }
 
-function processIsAlive(pid) {
+function processLiveness(pid) {
   try {
     process.kill(pid, 0)
-    return true
+    return 'alive'
   } catch (error) {
-    if (error?.code === 'ESRCH') return false
-    return true
+    if (error?.code === 'ESRCH') return 'gone'
+    // EPERM = 這個 pid 上確實有程序,但我們送不了訊號。**那就不可能是我們自己的擁有者** ——
+    // 我們自己 spawn 的程序跟我們同一個 uid,一定送得動。所以它要嘛是 pid 被回收給別人,
+    // 要嘛是沙箱擋掉了跨界訊號。兩種都無法證明「我們的交易還活著」,只能說「證不出來」。
+    return 'unprovable'
   }
+}
+
+function processIsAlive(pid) {
+  return processLiveness(pid) !== 'gone'
+}
+
+// 一次 authority generation 實測 2–8 分鐘。用遠大於它的視窗,確保永遠不會誤收正在跑的交易。
+export const ABANDONED_UNPROVABLE_OWNER_MS = 30 * 60 * 1000
+
+/**
+ * 擁有者是不是已經被遺棄?抽成純函式是為了可測 —— 要在測試裡造出一個
+ * 「存在但送不了訊號」的 pid 沒有可攜的做法,但這個決策本身必須有對照組。
+ *
+ * 回傳:'reap'(可回收)/ 'active'(還在跑)/ 'wait'(證不出死活,還沒到視窗)
+ */
+export function authorityGenerationOwnerVerdict(liveness, ageMs, windowMs = ABANDONED_UNPROVABLE_OWNER_MS) {
+  if (liveness === 'alive') return 'active'
+  if (liveness === 'gone') return 'reap'
+  return ageMs > windowMs ? 'reap' : 'wait'
 }
 
 function absentRepositoryParents(root, repositoryPath) {
@@ -475,7 +497,20 @@ export function reapAbandonedAuthorityGenerationStaging({ root = MODULE_ROOT } =
     exactKeys(marker.owner, ['host', 'pid'], 'abandoned authority generation owner')
     invariant(marker.owner.host === hostname(), `abandoned authority generation owner host cannot be proven inactive:${marker.owner.host}`)
     invariant(Number.isSafeInteger(marker.owner.pid) && marker.owner.pid > 0, 'abandoned authority generation owner pid is invalid')
-    invariant(!processIsAlive(marker.owner.pid), `authority generation transaction is still active on pid ${marker.owner.pid}`)
+    // 三態,不是兩態。原本 EPERM 被當成「還活著」,於是只要 pid 被回收(或沙箱擋訊號),
+    // 這把鎖就**永遠**清不掉 —— 2026-09-08 連續兩次提交被自己的殘留鎖擋住,
+    // pid 68298 / 69257 都是 EPERM,而建立它們的那次執行早已結束。
+    // 修法:證不出死活時,改用「馬克有多舊」判斷。一次生成實測 2–8 分鐘,
+    // 用 30 分鐘的視窗,正在跑的交易不可能被誤收;真正被遺棄的則一定收得掉。
+    const liveness = processLiveness(marker.owner.pid)
+    const ageMs = Date.now() - markerInfo.mtimeMs
+    const verdict = authorityGenerationOwnerVerdict(liveness, ageMs)
+    invariant(verdict !== 'active', `authority generation transaction is still active on pid ${marker.owner.pid}`)
+    invariant(
+      verdict === 'reap',
+      `authority generation owner pid ${marker.owner.pid} cannot be signalled and the marker is only `
+        + `${Math.round(ageMs / 1000)}s old(< ${ABANDONED_UNPROVABLE_OWNER_MS / 60000} 分鐘,先當它還在跑)`,
+    )
     invariant(realpathSync(transactionRoot) === transactionRoot, 'abandoned authority generation root is not a real directory')
     rmSync(transactionRoot, { recursive: true, force: true })
     fsyncDirectory(parent)
