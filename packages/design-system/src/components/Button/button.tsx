@@ -63,7 +63,6 @@ const buttonVariants = cva(
     'border border-transparent',
     'transition-colors duration-150',
     'cursor-pointer select-none disabled:cursor-not-allowed aria-disabled:cursor-not-allowed',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
     // 2026-05-12 Round 4.5 fix(codex M31 Layer C 抓):`aria-disabled` visual 分支補(per WAI-ARIA APG —
     // aria-disabled 給語意 + visual,但不 suppress functionality;functionality 由 consumer 阻 e.g.
     // RowDragHandle listeners 只在 canDrag spread)。**故意不加** `aria-disabled:pointer-events-none`

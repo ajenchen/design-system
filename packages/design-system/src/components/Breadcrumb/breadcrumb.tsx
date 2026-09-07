@@ -408,7 +408,6 @@ const BreadcrumbLink = React.forwardRef<HTMLAnchorElement, BreadcrumbLinkProps>(
       'text-fg-secondary',
       'hover:text-primary-hover',
       'transition-colors duration-150',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
       'rounded-md',
       className
     )

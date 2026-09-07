@@ -170,13 +170,17 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 - **Active / selected**: `bg-neutral-selected` + `text-foreground`；字重維持不變，避免 label metrics reflow
 - **選中 × 互動疊加（2026-08-11 user 拍板；本格是全家族唯一 owner，消費者禁自行發明）**：
 
-  | 疊加 | 底色 | 理由 |
+  | 疊加 | 指示 | 理由 |
   |---|---|---|
   | 選中列 × 滑鼠 hover | `bg-neutral-selected`（**釘住不變**） | hover 回饋 = 誠實回答「再點會發生什麼」；選中列再點無效果，且滑鼠使用者自有游標不需底色指位。對齊 Polaris Navigation / Carbon side-nav（兩家皆明文釘住） |
-  | 選中列 × 鍵盤焦點／反白 | `bg-neutral-selected-focus`（深一階） | 鍵盤使用者螢幕上沒有游標，深一階就是游標（WCAG 2.4.7）。虛擬焦點選單（cmdk／Radix 反白）以 `not-hover:` 分流滑鼠；真焦點元件用 `focus-visible:` |
+  | **未選中列 × 鍵盤焦點／反白** | `bg-neutral-hover`（**與滑鼠 hover 同色，不畫框**） | 底色空著，就用底色當游標——這是選單家族既有 canonical（`menu-item.spec.md`「以背景高亮而非畫 outline ring」，附 Material／Radix／cmdk 三家對照）。**2026-09-07 補格**：本表原本三列全部以「選中列 ×」開頭，從未涵蓋未選中的列，七個消費者只好各自填空 |
+  | 選中列 × 鍵盤焦點／反白 | **畫框**（`focus-ring-inset`，2px 內描邊） | **2026-09-07 user 拍板**，原話「A5畫框」。底色已經被「選中」佔走，不能再把「游標在這裡」這第二個意義擠進同一個通道——**同一個元素上不得有兩種焦點指示**。原本的 `bg-neutral-selected-focus`（深一階）已隨此格退役。虛擬焦點選單（cmdk／Radix 反白）以 `not-hover:` 分流滑鼠；真焦點元件用 `focus-visible:` |
   | 選中列 × 按壓 | 列元件不設按壓底色；`--neutral-selected-active` 為**按壓專屬**（唯一消費者 Button toggle） | active = 瞬時按壓（2026-04-10 誕生教義）。2026-07-05 D4 借 `-active` 裝反白 + 訊號漏到滑鼠，2026-08-11 糾正歸位 |
 
-  消費者：SelectMenu／DropdownMenu（含 RadioItem）／SidebarMenuButton／TreeItem(single)／TimePicker 欄項／MenuItem／FileViewer 縮放選單。歷史偏移錨：TreeItem hover 反被洗淺、sidebar 靠編譯順序運氣不變、選單滑鼠 hover 搭鍵盤規則便車深化——同題四種即興，根因即本格缺席。
+  幾何為什麼是**內**描邊：列撐滿容器寬度，左右沒有 2px 可以往外長。跨元件判準的 owner 是
+  `ds-canonical/references/focus-canonical.md`「問題二」，本表不重述。
+
+  消費者：SelectMenu／DropdownMenu（含 RadioItem）／SidebarMenuButton／TreeItem(single)／MenuItem／FileViewer 縮放選單。**TimePicker 欄項 2026-09-07 移出**：它的 `aria-activedescendant` 永遠指向 `selected`（selection-follows-focus），游標與選中不會分離，選中底色本身就是唯一且足夠的指示器，沒有「疊加」可言。歷史偏移錨：TreeItem hover 反被洗淺、sidebar 靠編譯順序運氣不變、選單滑鼠 hover 搭鍵盤規則便車深化——同題四種即興，根因即本格缺席。
 - **無 rounded**: full-width fill
 - **無 gap 在 items 之間**: items 緊貼(SidebarMenu / TreeView / DropdownMenuGroup 容器不設 flex gap)
 - **Size variants**: sm / md / lg 跟 `--field-height-*` family 一致

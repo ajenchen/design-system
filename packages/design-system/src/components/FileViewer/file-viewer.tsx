@@ -644,7 +644,7 @@ const Filmstrip = React.memo(function Filmstrip({ files, activeIndex, onSelect, 
                 // 縮圖列(:605)是 `overflow-x-auto` 捲動容器,往外畫會被裁掉。
                 // 不可寫 `outline-none`(它把 --tw-outline-style 設成 none,會讓下面三條靜默失效,
                 // 見 steps.tsx 同款事故)。
-                'focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px]',
+                'focus-visible:focus-ring-inset',
                 'transition-shadow duration-150',
                 active
                   ? 'ring-2 ring-primary'

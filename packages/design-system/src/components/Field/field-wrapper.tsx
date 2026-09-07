@@ -52,8 +52,8 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
       mode: 'readonly' as const,
       variant: 'default' as const,
       className: wrapper
-        ? 'bg-readonly border border-transparent [&:has(:focus-visible)]:ring-2 [&:has(:focus-visible)]:ring-ring [&:has(:focus-visible)]:ring-offset-1'
-        : 'bg-readonly border border-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+        ? 'bg-readonly border border-transparent'
+        : 'bg-readonly border border-transparent',
     },
     { mode: 'disabled' as const, variant: 'default' as const, className: 'bg-disabled border border-transparent cursor-not-allowed' },
     { mode: 'edit' as const, error: true as const, className: 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },

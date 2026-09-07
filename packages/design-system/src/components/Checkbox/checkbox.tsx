@@ -24,7 +24,6 @@ const checkboxVariants = cva(
     'border border-border bg-surface',
     'transition-colors duration-150',
     'hover:border-border-hover',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
     'data-[state=checked]:bg-primary data-[state=checked]:text-on-emphasis data-[state=checked]:border-primary',
     'data-[state=checked]:hover:bg-primary-hover data-[state=checked]:hover:border-primary-hover',
     'data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-on-emphasis data-[state=indeterminate]:border-primary',
@@ -295,7 +294,6 @@ const Checkbox = React.forwardRef<
           tabIndex={0}
           className={cn(
             fieldWrapperStyles({ size: boxSize, mode: 'readonly', variant: 'default' }),
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             className,
           )}
         >

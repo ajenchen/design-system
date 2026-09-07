@@ -730,3 +730,76 @@ J0 判「往內」的 11 處中,凡是**理由為「被某個裁切祖先貼死�
 ## N5 順手清掉的
 
 總帳原本有一整份 J0–J6 貼了兩次(第 378–436 行與第 438 行起完全重複),已刪前者。
+
+---
+
+# O. A9 / C16 焦點框機制收斂 —— 已完成並自驗(2026-09-07)
+
+user 拍板「A9用甲啊」的附條件是「確保在做到理想狀態後都沒有缺點且不會改壞任何東西」。
+下面是那個條件的交代;完整技術紀錄在 `ds-canonical/references/focus-canonical.md` 末章。
+
+## O1 收斂結果
+
+**5 種幾何 → 2 種**,而且兩種都不需要元件自己寫值:外描邊 = 全域 `base.css`(什麼都不寫);
+內描邊 = `focus-ring-inset` utility。50 行焦點表面全數處理完畢。
+
+## O2 我沒有逐站用猜的 —— 判準是機械跑出來的
+
+先把**全部**改成外描邊(全域規則),再用真瀏覽器逐站算出「框實際佔到的外框」,
+檢查它有沒有越過**會裁切的**祖先、或壓到不重疊的鄰居;會的才翻成內描邊。
+這樣避開了「我覺得這裡很擠」那種靠印象的判定 —— 也正是 J0 要求重驗的原因。
+
+結果:**72 站外描邊正確 / 1 站已知殘留 / 10 站無框(指示器都在別的元素上)**。
+翻成內描邊的 8 站:Calendar 日期格、Calendar 事件方塊、Accordion trigger、
+AgentPanel 思考塊 trigger、Combobox 根、ItemAnatomy 行內動作鈕、DataTable 可編輯儲存格、
+DataTable 可排序表頭。
+
+### 量法第一版是錯的,記著
+
+把「祖先的內容邊」一律當障礙 → 全 DS 每一站都量到淨空 0(flex 容器的內容框本來就剛好包住子元素)。
+**錯在:不裁切的祖先根本不會切到框。** 修正後分佈才合理。
+這也反過來印證判準把 `overflow` 踢出去是對的 —— 需要的不是那個布林,是「會不會真的被切」的量測。
+
+## O3 順帶修掉三件既有缺陷(遷移的必然結果,不是額外工作)
+
+| # | 缺陷 | 證據 |
+|---|---|---|
+| H5 深色露白 | `--tw-ring-offset-color` 預設 `#fff` 且 `inherits:false`(寫進 `:root` 完全不生效還靜默無錯),全 repo 0 處覆寫 → 22 處在深色下露一圈不透明白 | 遷移前 22 站有,遷移後 **0 站**(剩下唯一的 box-shadow 是 skip link 的正當投影) |
+| 高對比模式全裸 | `box-shadow` 在 forced-colors 下被強制 `none`(MDN 明文),`outline` 會照畫 → 原本 20 個「`outline-none` + ring」的元件在那個模式沒有任何焦點框 | 機制層必然,遷移後全部改走 outline |
+| A3 token 退役 | user 拍板畫框後 `--neutral-selected-focus` 5 處全遷 → 0 用法(含 template 與 WM 都查過)→ 已刪。順序是「先補框再退役」,先刪會讓 4 處退化 | `grep` 全 repo 0 命中 |
+
+## O4 同時關掉的總帳項目
+
+- **A9 / C16** 收斂完成;**A3** token 退役;**A6** `item-anatomy.spec.md` 補上缺的那一格
+  (「未選中列 × 鍵盤焦點」= 與滑鼠 hover 同色底、不畫框);**C11** TimePicker 死用法刪除
+- **H2a / H2b**(steps.tsx 與 chart.tsx 的靜默失效)先前已修;**H1a–H1g** 七項冗餘/死碼處理完畢
+- **T2** 的 15 處依 user 裁示「內描邊沒問題就內描邊」實測歸位;**T1** 的 DataTable hover 與 focus
+  同搶 outline 通道:焦點壓過 hover(WCAG 1.4.11「指標本身就是 hover 的指示器」)
+
+## O5 新增兩支閘
+
+- **靜態** `scripts/focus-geometry-invariant.mjs`(selftest 9/9):R1 禁 `ring-offset-*` /
+  R2 禁 `focus-visible:ring-*` / R3 禁 `outline-none` 與 `focus-ring-inset` 同字串打架 /
+  R4 禁抄全域 / R5 禁手寫內描邊三件組
+- **動態** `scripts/focus-geometry-browser-audit.mjs`:真 Playwright 逐站量框有沒有越界
+
+兩支合起來才完整 —— 靜態掃不出「這個元素四周有沒有空間」。已接 `npm run test:focus-geometry`。
+
+## O6 **一件要 user 拍板的事**(唯一一件)
+
+**Field 家族的焦點指示有兩種做法,而且其中一種可能不過 WCAG 2.2 AA。**
+
+| 元件 | 焦點時 |
+|---|---|
+| Combobox | 1px 邊框轉 primary **+ 2px 內描邊** |
+| Input / DatePicker / TimePicker / Select | **只有** 1px 邊框轉 primary |
+
+WCAG 2.4.11 Focus Appearance(2.2 的 AA)要求焦點指示器面積至少相當於 **2px 厚的周長**;
+1px 邊框變色不滿足。
+
+- **(甲)維持現狀** —— 零風險零工作量,但家族內不一致,嚴格說不過 2.2 AA
+- **(乙)全家統一加 2px 內描邊** —— 對齊 Carbon 與 Primer(兩家的輸入控件本來就一律
+  `outline-offset: -2px`),過 2.2 AA;代價是**每個表單欄位的長相都會變**
+
+**建議乙**:它同時解掉「家族不一致」與「不過 AA」;甲只是把問題留著。
+沒有自己做是因為它改的是最常見元件的視覺語言。

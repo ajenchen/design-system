@@ -209,7 +209,7 @@ DropdownMenu 是掃描模式——使用者快速瀏覽選項，所有尺寸使�
 
 ## StateBehavior(DropdownMenu 層級特有)
 
-Item-level default / hover / focused / selected / disabled **色彩**由 MenuItem primitive SSOT 擁有(`patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」),在本元件 `ColorMatrix` story 承載並直接引用 MenuItem token。**selected × highlighted 疊加**:owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)——**滑鼠 hover 釘住 `bg-neutral-selected` 不變;鍵盤反白(highlighted 且非 :hover)深一階 `bg-neutral-selected-focus`**(`not-hover:` 分流;2026-07-05 D4 原意即鍵盤 cursor,先前實作漏了滑鼠也觸發 highlighted 這條縫,且借用按壓專屬 `-active`,皆已糾正);**僅 RadioItem checked 走此 selected-bg 規則**(checked 底色套外層 Radix RadioItem)。CheckboxItem checked **不套 row bg**——checked 由內層 checkbox 控件表達,highlighted 時仍為 neutral-hover。DropdownMenu 的 `StateBehavior` story 展示**浮層層級特有的動態行為**:open / close 動畫(Radix `data-state` 驅動)、Submenu 展開 / 收起、CheckboxItem toggle(多選不 close)——這些是 item primitive 沒有的維度。
+Item-level default / hover / focused / selected / disabled **色彩**由 MenuItem primitive SSOT 擁有(`patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」),在本元件 `ColorMatrix` story 承載並直接引用 MenuItem token。**selected × highlighted 疊加**:owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)——**滑鼠 hover 釘住 `bg-neutral-selected` 不變;鍵盤反白(highlighted 且非 :hover)畫框 `focus-ring-inset`**(2026-09-07 user 拍板「A5畫框」;原深一階底色已退役)(`not-hover:` 分流;2026-07-05 D4 原意即鍵盤 cursor,先前實作漏了滑鼠也觸發 highlighted 這條縫,且借用按壓專屬 `-active`,皆已糾正);**僅 RadioItem checked 走此 selected-bg 規則**(checked 底色套外層 Radix RadioItem)。CheckboxItem checked **不套 row bg**——checked 由內層 checkbox 控件表達,highlighted 時仍為 neutral-hover。DropdownMenu 的 `StateBehavior` story 展示**浮層層級特有的動態行為**:open / close 動畫(Radix `data-state` 驅動)、Submenu 展開 / 收起、CheckboxItem toggle(多選不 close)——這些是 item primitive 沒有的維度。
 
 ---
 

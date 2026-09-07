@@ -110,20 +110,22 @@ else {
 // ══ H1g FileItem ══
 await go('design-system-components-fileitem-展示--clickable')
 const fi=await pg.evaluate(()=>{
+  // 指示器要**通道無關**地量:DS 兩種幾何都走 outline,但列上的框歷史上是 box-shadow,
+  // 而且未來還可能改。寫死通道的測試會在遷移時假紅(2026-09-07 就發生過)。
+  const ind=el=>{const c=getComputedStyle(el);return (c.outlineStyle!=='none'&&parseFloat(c.outlineWidth)>0?`outline:${c.outlineWidth}@${c.outlineOffset}`:'')+(c.boxShadow!=='none'?'|shadow':'')}
   const row=[...document.querySelectorAll('.group\\/row')].find(r=>r.querySelector('[data-row-focus-target]'))
   if(!row)return{err:'找不到列'}
-  const sh=()=>getComputedStyle(row).boxShadow
-  const base=sh(); const prim=row.querySelector('[data-row-focus-target]')
+  const base=ind(row); const prim=row.querySelector('[data-row-focus-target]')
   const trail=[...row.querySelectorAll('button')].filter(b=>b!==prim)
-  prim.focus(); const onP=sh(); prim.blur()
+  prim.focus(); const onP=ind(row); prim.blur()
   let onT=null,tOwn=null
-  if(trail.length){trail[0].focus();onT=sh();tOwn=getComputedStyle(trail[0]).boxShadow}
+  if(trail.length){trail[0].focus();onT=ind(row);tOwn=ind(trail[0])}
   return{base,onP,onT,tOwn,n:trail.length}})
 if(fi.err)check('H1g FileItem',false,fi.err)
 else{
   check('H1g 隱形整列鈕聚焦 → 列上出現框',fi.onP!==fi.base)
   if(fi.n){check('H1g trailing <Button> 聚焦 → 列上不再多畫一個框',fi.onT===fi.base,`列=${String(fi.onT).slice(0,30)}`)
-    check('H1g trailing <Button> 自己的框仍在',fi.tOwn!=='none')}
+    check('H1g trailing <Button> 自己的框仍在',!!fi.tOwn,fi.tOwn||'(無)')}
   else out.push('… H1g 該 story 無 trailing action')}
 
 // ══ H1f TreeView:Tab 進場 ══
@@ -136,15 +138,15 @@ const tv=await pg.evaluate(()=>{
   const rs=getComputedStyle(root); const ad=root.getAttribute('aria-activedescendant')
   const li=ad?document.getElementById(ad):null
   const rowEl=li?li.querySelector('[data-tree-row]'):null
-  const rowStyle=rowEl?getComputedStyle(rowEl):null
-  return{rootOutline:`${rs.outlineStyle} ${rs.outlineWidth}`,ad,liFound:!!li,
-    rowShadow:rowStyle?rowStyle.boxShadow:null,rowBg:rowStyle?rowStyle.backgroundColor:null}})
+  const c=rowEl?getComputedStyle(rowEl):null
+  // 通道無關:outline 或 box-shadow 任一有畫就算有游標
+  const drawn=c?((c.outlineStyle!=='none'&&parseFloat(c.outlineWidth)>0)?`outline ${c.outlineWidth}@${c.outlineOffset}`:(c.boxShadow!=='none'&&!/^(rgba\(0, 0, 0, 0\) 0px 0px 0px 0px(, )?)+$/.test(c.boxShadow)?'shadow':'')):''
+  return{rootOutline:`${rs.outlineStyle} ${rs.outlineWidth}`,ad,liFound:!!li,rowIndicator:drawn}})
 if(tv.err)check('H1f TreeView',false,tv.err)
 else{
   check('H1f 根容器不再被全域框畫一圈',tv.rootOutline.startsWith('none'),tv.rootOutline)
   check('H1f aria-activedescendant 指到真實的列',tv.liFound,String(tv.ad))
-  const hasRing = tv.rowShadow && tv.rowShadow!=='none' && !/^(rgba\(0, 0, 0, 0\) 0px 0px 0px 0px, ){1,}rgba\(0, 0, 0, 0\) 0px 0px 0px 0px$/.test(tv.rowShadow)
-  check('H1f **Tab 進場當下**那列就有可見的鍵盤游標(APG 要求)',hasRing,`shadow=${String(tv.rowShadow).slice(0,80)}`)}
+  check('H1f **Tab 進場當下**那列就有可見的鍵盤游標(APG 要求)',!!tv.rowIndicator,tv.rowIndicator||'(什麼都沒畫)')}
 
 // ══ J2g AgentPanel ══
 for(const vw of [1280,900,700]){

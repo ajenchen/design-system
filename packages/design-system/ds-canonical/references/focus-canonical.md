@@ -245,9 +245,15 @@ DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「
 | DateGrid 日期格 | 上右下三面各 **4.00px** | 都不命中(4 ≥ 4、無裁切祖先) | **外 +2px** |
 | Calendar 事件 tile | 上方 4.00px,但 **tile 之間 `gap-0.5` = 2px** | A(取最小 2 < 4) | **內 −2px** |
 | Field 唯讀三兄弟 | 上方 FieldLabel **4.00px** | 都不命中 | **外 +2px** |
-| SidebarMenuAction | 四周有餘,**但住在 `SidebarContent` 的 ScrollArea 內**(`sidebar.tsx:613-616`,Root 為 `overflow-hidden`)| **B** | **內 −2px** |
-| Tabs trigger | 捲動殼 `overflow-y-hidden` | **B** | **內 −2px** |
-| Avatar 內的 × | 槽 `w-4 h-4 overflow-hidden` | **B** | **內 −2px** |
+| SidebarMenuAction | 四周有餘 | 淨空 ≥ 4 | **外 +2px** |
+| Tabs trigger | tab 高 = 分頁列高(`tabs.tsx:502-504`)→ 上下淨空 **0** | 淨空 < 4 | **內 −2px** |
+| Avatar 內的 × | 填滿 `w-4 h-4` 槽 → 四周淨空 **0** | 淨空 < 4 | **內 −2px** |
+
+> **2026-09-07 訂正**:上面這三列原本是用「判準 B(祖先有非-visible overflow)」判的,
+> 而判準 B 在同一份文件上一節已經被**撤回**(v3 把 `overflow` 完全踢出判準)——
+> 文件裡同時存在「overflow 不進判準」與「因為 overflow 所以往內」兩個結論,兩兩不相容。
+> 改用 v3 的唯一判準(量淨空)重判:Tabs 與 Avatar 結論不變(它們本來就淨空 0),
+> **SidebarMenuAction 反轉為外描邊** —— 它四周有餘,先前純粹是被撤回的判準判進去的。
 
 ### 判準演進紀錄(三次訂正,全部由 user 抓出)
 
@@ -259,6 +265,11 @@ DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「
 
 v3 之所以能把 `overflow` 完全踢出判準,是因為**裁切邊只有在元素貼著它時才成為障礙**,
 而那種情況「淨空 < 4px」本來就涵蓋了。一條尺量到底。
+
+**v3 上線時漏做的一件事(2026-09-07 補)**:換判準之後,**先前用舊判準判過的結論必須整批重判**,
+不能只改判準的敘述。實際漏了三列(SidebarMenuAction / Tabs / Avatar),其中一列結論因此是錯的。
+往後任何判準改版,一律連帶重跑既有結論表 —— 判準與結論不同步 = 文件自我矛盾,
+而矛盾在單句層級恆為隱形(每一句單看都成立)。
 
 ## 不需要為它開分支的兩件事
 
@@ -278,3 +289,70 @@ v3 之所以能把 `overflow` 完全踢出判準,是因為**裁切邊只有在�
 | 「取四周最小值、不逐邊混搭」 | **AI 推導**,為了讓判準有唯一解;user 未逐字裁示 |
 | 「元素 < 8px 不開分支」 | **AI 依實測**:DS 內不存在該尺寸的可聚焦元素 |
 
+---
+
+# 遷移完成紀錄(2026-09-07)
+
+user 2026-09-07 拍板「A9用甲啊」(全域 `outline`),附條件是「確保在做到理想狀態後都沒有缺點
+且不會改壞任何東西」。下面是那個條件的交代。
+
+## 收斂結果:5 種幾何 → 2 種,而且兩種都不用元件自己寫值
+
+| | 怎麼寫 | 住在哪 |
+|---|---|---|
+| **外描邊**(預設) | **什麼都不寫** | `styles/base.css` 的 `:focus-visible` |
+| **內描邊** | `focus-visible:focus-ring-inset`(真焦點)/ `focus-ring-inset`(虛擬游標) | `styles/base.css` 的 `@utility` |
+
+遷移前是:全域 outline + `ring-offset-1`(17 處)+ `ring-offset-2`(6 處)+ `ring-2` 無 offset(15 處)
++ `ring-inset`(2 處)。**絕大多數元件的改法是「刪掉那串 class」**,不是新增樣式。
+
+## 順帶修掉的三件事(都不是為了修它們才做,是遷移的必然結果)
+
+1. **深色主題露白邊**:`--tw-ring-offset-color` 預設 `#fff` 且 `inherits:false`
+   (寫進 `:root` 完全不生效、還靜默無錯),全 repo 0 處覆寫 → 那 22 處在深色下都露一圈不透明白。
+   遷移後間隙是透明的。實測:遷移前 22 站有白邊,遷移後 **0 站**(唯一剩下的 box-shadow 是
+   skip link 的正當投影)。
+2. **高對比模式下完全沒有焦點框**:`box-shadow` 在 forced-colors 下被強制 `none`(MDN 明文),
+   而 `outline` 會照畫。原本 20 個「`outline-none` + ring」的元件在那個模式是全裸的。
+3. **`--neutral-selected-focus` 退役**:user 拍板畫框之後它自然沒人用(5 處全遷),token 已刪。
+   順序是「先補框、再退役」——先刪會讓 4 處退化。
+
+## 「不會改壞」是怎麼驗的
+
+不是逐站用眼睛看,是兩支機械閘:
+
+- **靜態** `scripts/focus-geometry-invariant.mjs`(selftest 9/9):守「只准兩種幾何」。
+  R1 禁 `ring-offset-*` / R2 禁 `focus-visible:ring-*` / R3 禁 `outline-none` 與
+  `focus-ring-inset` 同字串打架 / R4 禁抄全域 / R5 禁手寫內描邊三件組(必須消費 utility)。
+- **動態** `scripts/focus-geometry-browser-audit.mjs`:真 Playwright、真 Tab、逐站算出框實際
+  佔到的外框,再檢查它有沒有越過**會裁切的**祖先、或壓到不重疊的鄰居。
+  結果:**72 站外描邊正確 / 1 站已知殘留 / 10 站無框且指示器都在別的元素上**。
+
+### 量法踩過的坑(記著,不然下次還會犯)
+
+第一版把「祖先的內容邊」一律當障礙,結果全 DS 每一站都量到淨空 0 —— 因為 flex 容器的內容框
+本來就剛好包住子元素。**錯在:不裁切的祖先根本不會切到框**,框畫過它的內容邊什麼事都不會發生。
+修正成「只有會裁切的祖先才算障礙」之後,分佈才合理(72 外 / 1 內)。
+
+這也反過來印證了判準把 `overflow` 踢出去是對的:需要的不是「有沒有 overflow」這個布林,
+而是「框畫出去會不會真的被切」這個量測。
+
+## 一件留給 user 拍板的事
+
+**Field 家族的焦點指示目前有兩種做法,而且其中一種可能不符合 WCAG 2.2 AA。**
+
+| 元件 | 焦點時 |
+|---|---|
+| Combobox | 1px 邊框轉 primary **+ 2px 內描邊** |
+| Input / DatePicker / TimePicker / Select | **只有** 1px 邊框轉 primary(`focus-visible:outline-none`) |
+
+WCAG 2.4.11 Focus Appearance(2.2 的 AA)要求焦點指示器的面積至少相當於**2px 厚的周長**。
+1px 的邊框變色**不滿足**那個面積要求。
+
+- **(甲)維持現狀**:Field 家族沿用 1px 邊框語言,只有 Combobox 例外。零風險、零工作量,
+  但家族內不一致,而且嚴格說不過 2.2 AA。
+- **(乙)全家統一加 2px 內描邊**:對齊 Carbon 與 Primer(兩家的輸入控件本來就一律
+  `outline-offset: -2px`),過 2.2 AA。代價是**每一個表單欄位的長相都會變**。
+
+這題我沒有自己決定,因為它改的是最常見元件的視覺語言。**建議乙** —— 理由是它同時解決
+「家族不一致」與「不過 AA」兩件事,而且有兩家世界級的現成前例;甲只是把問題留著。

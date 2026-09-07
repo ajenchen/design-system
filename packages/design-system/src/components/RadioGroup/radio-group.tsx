@@ -169,10 +169,8 @@ const RadioGroup = React.forwardRef<
         className={cn(
           fieldWrapperStyles({ size: boxSize, mode: 'readonly', variant: 'default' }),
           // 2026-09-07:刪掉本地重抄的 `ring-2 ring-ring` —— fieldWrapperStyles 的 readonly
-          // 非-wrapper 分支(field-wrapper.tsx:56)已經給了同樣的兩條、外加 `ring-offset-1`,
-          // 本地那份只是把它抄一遍還漏掉 offset。`outline-none` 留著:此盒的指示器走 ring
-          // 通道,不抑制的話全域 outline 會再畫一圈。
-          'focus-visible:outline-none',
+          // 2026-09-07 遷移後:整條焦點 ring 已由全域外描邊接手(base.css),
+          // 這裡連 `outline-none` 都不能留 —— 留著就把唯一的框關掉了。
           className,
         )}
       >
@@ -229,7 +227,6 @@ const radioItemVariants = cva(
     'border border-border bg-surface',
     'transition-colors duration-150',
     'hover:border-border-hover',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
     'data-[state=checked]:border-primary data-[state=checked]:text-primary',
     'data-[state=checked]:hover:border-primary-hover data-[state=checked]:hover:text-primary-hover',
     'disabled:cursor-not-allowed disabled:bg-disabled disabled:border-transparent disabled:hover:border-transparent',

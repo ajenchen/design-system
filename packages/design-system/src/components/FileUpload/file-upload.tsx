@@ -319,7 +319,6 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           // 不再硬寫 px-6 py-10(不對稱+非 token)。內容物(icon + title + description)垂直堆疊由 gap-2 控制
           'rounded-md border-2 border-dashed p-[var(--layout-space-loose)]',
           'cursor-pointer transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           // idle:--border(元件邊框,非 --divider 分隔線 — 2026-06-03 Q2 token 修正)+ surface 底
           'border-border bg-surface',
           // hover = drag-over 統一(2026-06-03 Q2-A 純 border-driven,對齊 Ant Dragger colorPrimaryHover):

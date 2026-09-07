@@ -181,7 +181,7 @@ const Rating = React.forwardRef<HTMLDivElement, RatingProps>(
           'inline-flex items-center gap-1',
           // Container 對齊 field-height family,讓 Rating 可與 Input/Select/Button 並排 row-align
           CONTAINER_HEIGHT[size],
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md',
+          'rounded-md',
           // disabled 跟 loading 視覺相同(composite uniform dim),semantic 由 aria-disabled / aria-busy 區分
           (disabled || loading) && 'opacity-disabled pointer-events-none',
           className,

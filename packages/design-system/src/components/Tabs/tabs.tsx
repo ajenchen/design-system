@@ -476,7 +476,6 @@ const tabsTriggerVariants = cva(
     'font-medium text-fg-secondary',
     'transition-colors duration-150',
     'cursor-pointer select-none',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
     // Trigger 無水平 padding — 寬度 = 內容寬度。triggers 間的分隔靠 TabsList 的 gap-[var(--layout-space-loose)]
     // selected underline：::after 絕對定位在 bottom:-1px，2px primary（持續選中 base）
     // left-0/right-0 因為 trigger 已無 padding，底線等於內容寬度
@@ -659,7 +658,6 @@ const TabsContent = React.forwardRef<
       // 收斂原 DS-wide 四種土法(無間距 / mt-4 / p-4 / pt-4 — M17 假 SSOT)。
       // full-height 佈局(AppShell pane)用 className="mt-0" 覆寫(tailwind-merge)。
       'mt-[var(--layout-space-tight)]',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
       className
     )}
     {...props}

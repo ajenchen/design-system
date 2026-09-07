@@ -847,7 +847,7 @@ const SidebarGroupAction = React.forwardRef<
       ref={ref}
       data-sidebar="group-action"
       className={cn(
-        "absolute right-[var(--layout-space-loose)] top-2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted outline-none ring-ring transition-colors hover:bg-neutral-hover hover:text-fg-secondary focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-[var(--layout-space-loose)] top-2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted transition-colors hover:bg-neutral-hover hover:text-fg-secondary [&>svg]:size-4 [&>svg]:shrink-0",
         "after:absolute after:-inset-2 after:md:hidden",
         "group-data-[collapsible=icon]:hidden",
         className
@@ -946,7 +946,11 @@ const sidebarMenuButtonVariants = cva(
     // 2026-08-11 user 拍板(SSOT = item-anatomy「選中 × 互動疊加」):滑鼠 hover 當前項釘住不變
     //(先前無規則,靠編譯順序運氣;現寫成顯式,釘住 (0,3,0) > hover (0,2,0));
     // 鍵盤焦點停在當前項 → -focus 深一階(游標可見;非當前項維持上方 focus-visible 的 hover 色)。
-    "data-[active=true]:hover:bg-neutral-selected data-[active=true]:focus-visible:bg-neutral-selected-focus",
+    // 2026-09-07 user 拍板「A5畫框」:選中項的底色已經被 `bg-neutral-selected` 佔走,
+    // 鍵盤游標不能再用「同一個底色深一階」表達(那是第二個意義擠進同一個通道)——改畫框。
+    // 未選中項維持上面的 focus-visible:bg-neutral-hover 不畫框(底色空著,規則二第一列)。
+    // 內描邊:選單鈕撐滿側欄寬度,左右沒有 2px 可長。
+    "data-[active=true]:hover:bg-neutral-selected data-[active=true]:focus-visible:bg-neutral-selected data-[active=true]:focus-visible:focus-ring-inset",
     "group-has-[[data-sidebar=menu-action]]/menu-item:pr-8",
     // 2026-05-21 v5 restore label 硬隱藏(user 抓「label 沒消失」):
     // C* outer overflow-x:hidden 理論 clip,但 label.x=40 在 sidebar-width-icon=48 內 → 首字
@@ -1216,7 +1220,7 @@ const SidebarMenuAction = React.forwardRef<
       ref={ref}
       data-sidebar="menu-action"
       className={cn(
-        "absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted outline-none ring-ring transition-colors hover:bg-neutral-hover hover:text-fg-secondary focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted transition-colors hover:bg-neutral-hover hover:text-fg-secondary [&>svg]:size-4 [&>svg]:shrink-0",
         "after:absolute after:-inset-2 after:md:hidden",
         "group-data-[collapsible=icon]:hidden",
         showOnHover &&

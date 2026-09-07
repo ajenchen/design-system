@@ -1059,7 +1059,9 @@ const treeItemVariants = cva(
     'flex items-start gap-2 w-full',
     'cursor-pointer select-none',
     'transition-colors duration-150',
-    'outline-none',
+    // 2026-09-07 刪 `outline-none`:虛擬游標(showRing → focus-ring-inset)也寫 outline,
+    // 兩者特異性同階,留著等於讓「誰贏」取決於 Tailwind 的排序。這一列本來就不可聚焦
+    // (tabIndex 在 li 上且為 -1),不需要防禦性抑制。
     // Label 字重 500(跟 SidebarMenuButton 一致)
     'font-medium',
   ],
@@ -1373,7 +1375,12 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               // 游標又必然停在該列上,落點底色一樣看不到。`dropIndicatorInside` 自帶 `hover:` 同色治 (2),
               // 這行的位置治 (1)。
               isDropTarget && dropTarget?.position === 'inside' && dropIndicatorInside,
-              showRing && 'ring-2 ring-ring ring-inset',
+              // 2026-09-07 遷到 outline 通道(全 DS 兩種幾何的 SSOT,base.css @utility)。
+              // **不加 `focus-visible:`** —— 這一列永遠不是 DOM 焦點(焦點停在 role=tree 容器,
+              // 見 :369),加了變體會變成永不生效的死用法(TimePicker 就是這樣死的)。
+              // 順帶修掉 box-shadow 通道的既有缺陷:高對比模式下 box-shadow 被強制 none,
+              // 原本的 ring 在那個模式完全看不見;outline 會照畫。
+              showRing && 'focus-ring-inset',
               disabled && 'pointer-events-none text-fg-disabled cursor-default',
               className,
             )}

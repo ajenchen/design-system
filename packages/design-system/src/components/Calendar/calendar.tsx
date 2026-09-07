@@ -167,7 +167,6 @@ function MonthEventTile({
             'rounded-md px-1.5 py-0.5 text-caption truncate cursor-pointer transition-colors',
             // 2026-05-31 #22:事件 tile 是 focusable(tabIndex=0 role=button)但原無 focus ring
             // → WCAG 2.4.7 不合規。補 focus-visible ring 對齊日期格按鈕。
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             colorClass,
           )}
         >
@@ -386,8 +385,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                     onDateClick?.(date)
                   }}
                   className={cn(
-                    'inline-flex items-center justify-center min-w-6 h-6 rounded-full text-body font-medium',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    // 內描邊:日期格在網格內彼此相鄰,往外 +2px 實測會壓到隔壁格(2026-09-07 瀏覽器量測)
+                    'inline-flex items-center justify-center min-w-6 h-6 rounded-full text-body font-medium focus-visible:focus-ring-inset',
                     isToday && 'px-2 bg-info text-on-emphasis',
                     !isToday && !inMonth && 'text-fg-disabled',
                   )}
@@ -422,7 +421,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                             onEventClick?.(event)
                           }
                         }}
-                        className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        // 內描邊:事件方塊之間 gap-0.5(2px),往外 +2px 會壓到上下相鄰的方塊
+                        className="rounded-md focus-visible:focus-ring-inset"
                       >
                         {renderEventTile(event)}
                       </div>

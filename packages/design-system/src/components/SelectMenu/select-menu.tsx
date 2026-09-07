@@ -487,7 +487,9 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
                         // 鍵盤反白(data-selected 且非 :hover)→ -focus 深一階(游標可見,WCAG 2.4.7)。
                         // not-hover 編譯為 :not(*:hover) + @media not (hover:hover)(POC 已驗),
                         // 深化 (0,3,0) > 釘住 (0,2,0),與 CSS 順序無關;token 從借用的 -active 歸位 -focus。
-                        !multiple && isSelected(opt.value) && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected data-[selected=true]:not-hover:bg-neutral-selected-focus',
+                        // 2026-09-07「A5畫框」:選中項底色已被佔走,鍵盤反白改畫框(不再深一階底色)。
+                        // `not-hover:` 保留 —— 滑鼠停在上面時不畫框(規則一:滑鼠只上色)。
+                        !multiple && isSelected(opt.value) && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected data-[selected=true]:not-hover:focus-ring-inset',
                       )}
                     >
                       <MenuItem
@@ -604,13 +606,13 @@ export const selectMenuMeta = {
   sizes: {
 
   },
-  // 'selected' = 單選 option 持續選中(bg-neutral-selected);'active' 保留 — cmdk virtual-focus on
-  // selected(鍵盤反白,非 hover)走 bg-neutral-selected-focus(2026-08-11 token 歸位:-active 回歸按壓專屬)。
+  // 'selected' = 單選 option 持續選中(bg-neutral-selected);選中項的鍵盤反白(cmdk virtual-focus,
+  // 非 hover)自 2026-09-07 起**畫框**而非深一階底色(user 拍板「A5畫框」;底色已被選中佔走)。
   states: ['default', 'hover', 'active', 'selected', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-neutral-selected', 'bg-neutral-selected-focus', 'bg-surface-raised', 'bg-transparent'],
+    bg: ['bg-neutral-selected', 'bg-surface-raised', 'bg-transparent'],
     fg: ['text-fg-muted'],
-    ring: [],
+    ring: ['focus-ring-inset'],
   },
 } as const
 

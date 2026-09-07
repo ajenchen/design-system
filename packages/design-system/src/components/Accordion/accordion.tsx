@@ -49,7 +49,8 @@ const AccordionTrigger = React.forwardRef<
         'flex flex-1 items-center justify-between gap-2',
         'py-4 text-body font-medium text-foreground text-left',
         'transition-colors hover:text-fg-secondary',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        // 內描邊:trigger 撐滿標題列高,往外 +2px 實測會壓到下方的內容區(2026-09-07 量測)
+        'focus-visible:focus-ring-inset',
         // AccordionTrigger 單一 text-style 列 → semantic `text-fg-disabled`(非 opacity);Button canonical 對齊
         'disabled:text-fg-disabled disabled:pointer-events-none',
         // 2026-05-31 M24:disabled 時 chevron(icon 載體)亦降 text-fg-disabled,不停留 text-fg-muted

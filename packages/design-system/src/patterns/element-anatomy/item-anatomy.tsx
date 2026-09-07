@@ -698,7 +698,8 @@ export const ItemInlineActionButton = React.forwardRef<
       ref={ref}
       type={type}
       className={cn(
-        "group/action relative grid place-content-center shrink-0 cursor-pointer",
+        // 內描邊:行內動作鈕住在列裡(常常還在截斷文字旁邊),往外 +2px 實測上下各被裁 1px
+        "group/action relative grid place-content-center shrink-0 cursor-pointer focus-visible:focus-ring-inset",
         // 弱化 icon hover 階梯 SSOT(2026-07-30 user 拍板):fg-muted(neutral-7)→ 一階 fg-secondary
         // (neutral-8),不跳到 foreground(neutral-9)。inline-action.spec.md「Icon 色彩」+
         // tokens/color/semantic.css:53 為 rule owner;世界級對照 Fluent 2

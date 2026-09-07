@@ -55,7 +55,6 @@ const switchVariants = cva(
   [
     'group peer inline-flex shrink-0 cursor-pointer items-center rounded-full',
     'transition-colors duration-150',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
     'disabled:cursor-not-allowed disabled:opacity-disabled',
     // readOnly：鎖定互動但視覺正常
     'data-[readonly=true]:pointer-events-none data-[readonly=true]:cursor-default',
@@ -269,7 +268,6 @@ const Switch = React.forwardRef<
           tabIndex={0}
           className={cn(
             fieldWrapperStyles({ size: boxSize, mode: 'readonly', variant: 'default' }),
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             className,
           )}
         >

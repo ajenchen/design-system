@@ -41,6 +41,10 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* 焦點框 —— 全 DS 唯一的**外描邊**來源。
+     SSOT:`ds-canonical/references/focus-canonical.md`「問題二」。
+     元件端**不需要也不應該**再寫一次(抄一遍 = H1c 那類贅碼);
+     要改成往內畫的才加 `focus-ring-inset`(見下方 @utility)。 */
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
@@ -58,6 +62,33 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+}
+
+/* 焦點框(內描邊)—— 兩種幾何裡的另一種。
+ *
+ * SSOT:`ds-canonical/references/focus-canonical.md`「問題二:畫在外面還是裡面?」
+ *   預設往外(上面 `:focus-visible` 全域規則);
+ *   **只有**被聚焦元素四邊到最近正當障礙的最小淨空 < 4px 時,改用這一條往內畫。
+ *
+ * 為什麼是一條 utility 而不是三個 class 併寫:
+ *   `focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px]`
+ *   這串在 DS 內已有 6 處逐字重複,加上遷移後會到 20 處以上 —— 同值散在 3+ 個消費者
+ *   就該抽成單一來源(M17),否則哪天寬度或顏色要改就得改二十處。
+ *
+ * 為什麼直接寫 `outline` 簡寫而不是走 Tailwind 的 `--tw-outline-style`:
+ *   `outline-none` 會把 `--tw-outline-style` 設成 `none`,讓同元素上的 outline utility
+ *   **靜默失效**(steps.tsx 與 FileViewer 都被這個咬過)。寫死簡寫就繞開那個變數;
+ *   加上 `focus-visible:` 變體後特異性 (0,2,0) 也高過 `.outline-none` 的 (0,1,0)。
+ *
+ * 用法兩種,因為 DS 有兩種「目前在哪裡」:
+ *   - **真 DOM 焦點** → `focus-visible:focus-ring-inset`
+ *   - **虛擬游標**(焦點停在容器、指示畫在某一列,如 TreeView)→ 直接用 `focus-ring-inset`,
+ *     由元件自己的 state 決定何時掛上;那種列拿不到 `:focus-visible`,加變體反而永不生效
+ *     (TimePicker 的死用法就是這樣來的)。
+ */
+@utility focus-ring-inset {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
 }
 
 /* Radix Collapsible height animation — consumed by TreeView. */

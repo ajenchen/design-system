@@ -194,7 +194,7 @@ function TagInner(
         tagVariants({ color, size }),
         solidClass,
         'w-fit min-w-0 overflow-hidden',
-        isTruncated && 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+        isTruncated && '',
         className,
       )}
       // 2026-05-18 Round 5 fix(per Codex M31 Round 5 verdict + user 拍板「那就開始做」):

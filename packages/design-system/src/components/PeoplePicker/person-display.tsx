@@ -356,10 +356,10 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         'inline-flex items-center justify-center',
         // **12×12 + 2px white ring**(SSOT match stacked avatar,Slack/Material/iOS
         // notification badge 2px ring canonical)。改用 `[box-shadow:...]` 而非 `ring-2`
-        // 避免跟下方 `focus-visible:ring-2` 在 tailwind-merge 衝突(同 ring family
+        // 避免跟焦點指示在 tailwind-merge 衝突(同 ring family
         // override 互殺)。
         // **2026-09-07 訂正**:原註解寫「也不被 focus-visible ring 蓋掉(不同 layer)」——
-        // 實測相反。兩者最終都寫同一個 CSS `box-shadow` 屬性,而 `focus-visible:ring-2`
+        // 實測相反(當時焦點還走 ring 通道)。兩者最終都寫同一個 CSS `box-shadow` 屬性,而帶偽類的那條
         // 帶偽類、特異性較高 → 聚焦當下白環**整層被藍環取代**。
         // 這不是缺陷(聚焦時本來就該讓焦點指示器出線),但註解不能寫成相反的事實。
         'w-3 h-3 rounded-full [box-shadow:0_0_0_2px_var(--surface)]',
@@ -377,7 +377,6 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         // pill 型態(Combobox tag SSOT,每顆 pill 自帶 X)承擔 — 見 people-picker.spec.md
         // 「觸控裝置(native 分支)」。本 overlay 維持 hover / focus 才顯的桌機語意。
         'transition-opacity duration-150 motion-reduce:duration-0',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       ].join(' ')}
     >
       <X size={12} strokeWidth={3} aria-hidden />

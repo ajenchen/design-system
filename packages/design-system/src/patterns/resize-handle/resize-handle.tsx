@@ -225,7 +225,7 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
         style={{ ...hitZoneStyle, ...extraStyle }}
         className={cn(
           'group/resize',
-          !disabled && 'select-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
+          !disabled && 'select-none focus-visible:focus-ring-inset',
           className,
         )}
       >

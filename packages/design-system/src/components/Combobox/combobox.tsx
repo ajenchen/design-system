@@ -846,7 +846,10 @@ function CustomCombobox({
       aria-required={fieldCtx?.required || undefined}
       aria-describedby={fieldCtx?.descriptionId}
       aria-errormessage={error ? fieldCtx?.errorId : undefined}
-      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), value.length > 0 && tagPadding[size], 'relative cursor-pointer',
+      // 內描邊:本元件的焦點停在這顆 wrapper 自己(role=combobox + tabIndex=0),
+      // 往外 +2px 實測會壓到同排的相鄰控件(2026-09-07 瀏覽器量測)。
+      // 世界級對照:Carbon 與 Primer 的輸入類控件本來就一律 `outline-offset: -2px`。
+      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:focus-ring-inset', value.length > 0 && tagPadding[size], 'relative cursor-pointer',
         wrap && 'items-start py-1',
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
         // 統一處理 — open=灰深(data-state)/ focus=藍;2026-07-04 Q1:error 亦收進 error variant。

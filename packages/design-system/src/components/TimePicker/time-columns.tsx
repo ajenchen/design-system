@@ -159,7 +159,7 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
         aria-activedescendant={selected != null && values.includes(selected) ? `${baseId}-opt-${selected}` : undefined}
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        className="flex flex-col py-2 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px]"
+        className="flex flex-col py-2 focus-visible:focus-ring-inset"
       >
         {values.map((v) => {
           const isSelected = v === selected
@@ -182,7 +182,13 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
                 'cursor-pointer transition-colors',
                 'hover:bg-neutral-hover',
                 // 2026-08-11(SSOT = item-anatomy「選中 × 互動疊加」):滑鼠釘住本就正確;補鍵盤焦點深一階。
-                isSelected && 'bg-neutral-selected text-foreground hover:bg-neutral-selected focus-visible:bg-neutral-selected-focus',
+                // 2026-09-07 C11:刪掉 `focus-visible:bg-neutral-selected-focus` —— 本元件走
+                // aria-activedescendant 虛擬焦點(listbox tabIndex=0 :162 / option tabIndex=-1),
+                // 這顆 button 永遠拿不到 DOM 焦點,那條自寫下起從未 match 過。
+                // 而且這裡**不需要**另外的游標框:本元件的 aria-activedescendant 永遠指向
+                // `selected`(:159),即「鍵盤游標位置 = 目前選中值」(selection-follows-focus),
+                // 兩者不會分離 → 選中底色本身就是唯一且足夠的指示器(規則二第一列)。
+                isSelected && 'bg-neutral-selected text-foreground hover:bg-neutral-selected',
                 isDisabled && 'text-fg-disabled cursor-not-allowed hover:bg-transparent',
               )}
             >

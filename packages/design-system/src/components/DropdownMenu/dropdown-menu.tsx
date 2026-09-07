@@ -119,7 +119,6 @@ const DropdownMenuTrigger = React.forwardRef<
       // 完全無 focus ring。消費 Button focus canonical(button.tsx buttonVariants base)。
       // asChild+Button 場景同名 class 重複,無影響。
       className={cn(
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
         className,
       )}
       {...props}
@@ -318,7 +317,9 @@ const DropdownMenuItem = React.forwardRef<
         //(WCAG 2.4.7)。2026-08-11 user 拍板糾正兩處(SSOT = item-anatomy「選中 × 互動疊加」):
         //(1) Radix highlighted 滑鼠也觸發,深化僅限鍵盤 — 滑鼠 hover 釘住不變(not-hover 分流,
         //     深化 (0,3,0) > 釘住 (0,2,0));(2) token 從借用的 -active(按壓專屬)歸位 -focus。
-        selected && 'bg-neutral-selected data-[highlighted]:bg-neutral-selected data-[highlighted]:not-hover:bg-neutral-selected-focus',
+        // 2026-09-07「A5畫框」:選中項底色已被佔走,鍵盤反白改畫框。
+        // `not-hover:` 保留 —— 滑鼠停在上面時不畫框(規則一)。
+        selected && 'bg-neutral-selected data-[highlighted]:bg-neutral-selected data-[highlighted]:not-hover:focus-ring-inset',
         className,
       )}
       {...props}
@@ -510,7 +511,7 @@ const DropdownMenuRadioItem = React.forwardRef<
       // 因內層 MenuItem 自帶 `!bg-transparent` 會蓋掉子層 bg → 選中底色從不顯示。
       // 改 parent-bg pattern(對齊 DropdownMenuItem selected):RadioItem 上底色,MenuItem 透明讓它透出。
       // 2026-07-04 Q2:checked 亦勝 highlighted(同 DropdownMenuItem selected 規則)
-      className={cn(radixItemClass, 'data-[state=checked]:bg-neutral-selected data-[state=checked]:data-[highlighted]:bg-neutral-selected data-[state=checked]:data-[highlighted]:not-hover:bg-neutral-selected-focus', className)}
+      className={cn(radixItemClass, 'data-[state=checked]:bg-neutral-selected data-[state=checked]:data-[highlighted]:bg-neutral-selected data-[state=checked]:data-[highlighted]:not-hover:focus-ring-inset', className)}
       {...props}
     >
       <MenuItem
@@ -557,13 +558,14 @@ export const dropdownMenuMeta = {
   sizes: {
 
   },
-  // 'selected' = 單選/checked item 持續選中(bg-neutral-selected);'active' 保留 — highlight-on-selected
-  // 走 bg-neutral-selected-focus(2026-08-11 token 歸位:-active 回歸按壓專屬;深化僅限鍵盤反白)。
+  // 'selected' = 單選/checked item 持續選中(bg-neutral-selected);選中項的鍵盤反白自 2026-09-07 起
+  // **畫框**而非深一階底色(user 拍板「A5畫框」;底色已被選中佔走,不能再擠第二個意義進同一通道)。
   states: ['default', 'hover', 'active', 'selected', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-neutral-selected-focus', 'bg-surface-raised', 'bg-transparent'],
+    bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-surface-raised', 'bg-transparent'],
     fg: ['text-fg-disabled', 'text-fg-muted'],
-    ring: ['ring-ring'], // 2026-07-05:Trigger focus canonical ring(對齊 Checkbox/Tabs 等 meta 慣例)
+    // Trigger 的焦點框走全域外描邊(base.css);選中項的鍵盤游標走內描邊。
+    ring: ['focus-ring-inset'],
   },
 } as const
 

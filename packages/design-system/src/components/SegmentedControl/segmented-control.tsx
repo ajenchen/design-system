@@ -169,7 +169,7 @@ const itemVariants = cva(
     'border border-border bg-surface text-fg-secondary',
     'transition-colors duration-150',
     'cursor-pointer select-none',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:z-20',
+    'focus-visible:z-20',
     // disabled：cursor-not-allowed + 鎖住 hover 色（不用 pointer-events-none，否則 cursor 無法變）
     // button[disabled] 本身擋 click，不需靠 pointer-events: none
     'disabled:cursor-not-allowed disabled:text-fg-disabled',

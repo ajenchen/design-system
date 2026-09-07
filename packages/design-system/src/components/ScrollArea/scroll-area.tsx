@@ -66,7 +66,7 @@ const ScrollArea = React.forwardRef<
     <ScrollAreaPrimitive.Viewport
       tabIndex={viewportTabIndex ?? undefined}
       className={cn(
-        'flex-1 min-h-0 w-full rounded-[inherit] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring',
+        'flex-1 min-h-0 w-full rounded-[inherit] focus-visible:focus-ring-inset',
         fillX && '[&>div]:!block [&>div]:!w-full [&>div]:!min-w-0',
       )}
     >

@@ -127,7 +127,6 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // 2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階(FileUpload dropzone /
           // Slider thumb hover 同族;base 專屬持續選中與 focus)——ring-primary → ring-primary-hover
           'hover:ring-[1.5px] hover:ring-primary-hover hover:bg-transparent',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         ),
         // today:藍色 underline bar 貼近數字
         today: cn(

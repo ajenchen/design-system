@@ -297,7 +297,8 @@ function HistoryRow({
       className={cn(
         'group/menu-item p-0 rounded-none',
         // 選中 × 鍵盤游標疊加(select-menu.tsx 2026-08-11 拍板:滑鼠釘住、鍵盤反白深一階)。
-        selected && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected data-[selected=true]:not-hover:bg-neutral-selected-focus',
+        // 2026-09-07「A5畫框」:同 DropdownMenu / SelectMenu。
+        selected && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected data-[selected=true]:not-hover:focus-ring-inset',
       )}
     >
       <MenuItem
@@ -429,7 +430,7 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                 aria-expanded={historyOpen}
                 className={cn(
                   'flex min-w-0 max-w-full cursor-pointer items-center gap-2 p-0 text-left',
-                  'rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  'rounded-sm ',
                 )}
               >
                 {/* 單行截斷 → 截斷時才顯 tooltip 補全(tooltip.spec.md:32;引擎 truncated-text.spec.md),
@@ -803,7 +804,9 @@ const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
         <CollapsiblePrimitive.Trigger
           className={cn(
             'group/agent-thinking flex cursor-pointer items-center gap-1 text-fg-secondary hover:text-foreground',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm',
+            // 內描邊:往外 +2px 實測會壓到下方展開的思考內容(overflow-hidden 的 collapsible)
+            'focus-visible:focus-ring-inset',
+            'rounded-sm',
           )}
         >
           <span className={cn(thinking && 'agent-shimmer')}>

@@ -151,7 +151,6 @@ const AgentFab = React.forwardRef<HTMLButtonElement, AgentFabProps>(
             'inline-flex size-10 cursor-pointer items-center justify-center rounded-full border-none p-[2px]',
             'shadow-[var(--elevation-200)] transition-[transform,box-shadow] duration-[var(--motion-duration-overlay)]',
             'hover:scale-[1.04] hover:shadow-[var(--elevation-200-hover)] motion-reduce:transition-none motion-reduce:hover:scale-100',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             className,
           )}
           style={{ background: RING_GRADIENT }}
@@ -741,7 +740,11 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
                   // 懸停微放大掛在**按鈕**上:命中盒與可視形狀一起放大,兩者永遠同步
                   // (掛在內層的話,放大後可視會比命中盒大一圈)。值與獨立 AgentFab 同一組。
                   !dragging && 'hover:scale-[1.04] motion-reduce:hover:scale-100',
-                  'focus-visible:outline-none',
+                  // 2026-09-07:拿掉 `focus-visible:outline-none` + 內層 span 的 group-ring。
+                  // 舊註解說「焦點圈要畫在可視形狀上,不是那個沒有圓角的按鈕盒」——
+                  // 但按鈕上面第 3 行就有 `spec.radius`,而且 `p-0` 讓按鈕盒與可視形狀是**同一個框**,
+                  // 那個理由早就不成立了。改由全域外描邊直接畫在按鈕上:圓角正確、間隙透明
+                  // (原本 ring-offset-2 的間隙寫死白色,深色主題會露一圈白)。
                 )}
                 {...buttonProps}
                 // **尺寸寫在 spread 之後**:可視形狀改成 `h-full w-full` 之後,寬高的唯一住所就是這裡;
@@ -774,8 +777,6 @@ const AgentFabDock = React.forwardRef<HTMLDivElement, AgentFabDockProps>(
                     spec.radius,
                     // 陰影升一級(微放大由按鈕負責,見上)。與獨立 AgentFab 同一組 token。
                     !dragging && 'group-hover/fab:shadow-[var(--elevation-200-hover)]',
-                    // 焦點圈畫在可視形狀上,不是那個沒有圓角的按鈕盒(否則焦點圈會是方的)。
-                    'group-focus-visible/fab:ring-2 group-focus-visible/fab:ring-ring group-focus-visible/fab:ring-offset-2',
                   )}
                   style={{ background: RING_GRADIENT }}
                 >

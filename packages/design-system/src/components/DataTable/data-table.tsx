@@ -2432,7 +2432,7 @@ function DataTableInner<TData>(
           onEditableCellClick && ['cursor-pointer', nakedCellEditableDisplayHover],  // editable cell view hover affordance(對齊 Notion / Airtable hover-cell-shows-border canonical)
           // a11y(2026-07-14 dim-10 修):非 spreadsheet inlineEdit cell 可 Tab 聚焦(見下方
           // tabIndex/onKeyDown)— focus-visible ring 對齊本檔 expand button / sortable header canonical。
-          onEditableCellClick && !spreadsheetMode && 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+          onEditableCellClick && !spreadsheetMode && 'focus-visible:focus-ring-inset',
           // z-10 raise inline-edit cell;portal mode 不需(layer z-3 already on top)。
           isEditingThisCell && !experimentalActiveEditorController && 'z-10',
         )}
@@ -2792,12 +2792,14 @@ function DataTableInner<TData>(
           // any-allow: event-cast — TanStack getToggleSortingHandler 內部會 narrow,接受 KeyboardEvent
           onKeyDown={canSort ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sortHandler?.(e as any) } } : undefined}
           className={cn(
-            'flex items-center min-w-0 flex-1 gap-1 outline-none',
+            // 焦點框由下面 canSort 那行的 focus-ring-inset 負責;這裡不能留 outline-none ——
+            // 兩者特異性同階,誰贏要看 Tailwind 內部排序,那是靜默失效的溫床(H2a 同款)。
+            'flex items-center min-w-0 flex-1 gap-1',
             // 這一層**不再跟著欄位 align 走**(見外層說明):表頭一律靠左。
             // 排序點擊區維持 `flex-1` 撐滿,點擊範圍不縮水。
             canSort && 'cursor-pointer hover:text-foreground transition-colors',
             // 2026-07-04:rounded-sm → rounded-md(radius.spec.md 設計哲學(4)rounded-sm 保留未使用,4px 一律 rounded-md)
-            canSort && 'focus-visible:ring-2 focus-visible:ring-ring rounded-md',
+            canSort && 'focus-visible:focus-ring-inset rounded-md',
           )}
         >
           <TruncatedText className="min-w-0">
@@ -3458,7 +3460,7 @@ function DataTableInner<TData>(
           // content fit 時看起來像「永遠有 V 捲軸」(Image #5 bug)。
           // 對齊不靠補償:欄寬由 `distributeColumnWidths` 算一次、header 與 body 寫同一個整數,
           // 容器寬差只會變成 header 尾端空白(由 panel 的表頭底色蓋住)。
-          className="flex-1 min-w-0 overflow-x-auto overflow-y-auto focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
+          className="flex-1 min-w-0 overflow-x-auto overflow-y-auto focus-visible:focus-ring-inset"
           // isFillHeight:用 JS 算的 px(bodyMaxHeight),bypass CSS % 在 flex 場景的不可靠 shrink。
           // 固定 px(300px etc):直接套 height。
           style={
