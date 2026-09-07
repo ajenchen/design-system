@@ -1119,3 +1119,46 @@ F 條「初始化為關閉」都落不了地。改成一直渲染、關閉時 `d
 
 正解是**等狀態、量結果**分開:先等 `aria-valuenow` 追上 `aria-valuemax`(End 真的套用了),
 再獨立量渲染寬度。不能拿自己要斷言的東西當等待條件。
+
+---
+
+# V. C6 Slider —— 查下去發現的比原本登記的嚴重(2026-09-07)
+
+## V1 原本登記的:用邊框變色當焦點,可能違反規則二
+
+量化之後確認是真的:把手**平常就是藍邊**(`border-2 border-primary`),
+聚焦只換成 `--primary-hover`,兩色對比僅 **1.46:1(淺)/ 1.33:1(深)** ——
+等於看不出來,而且與 hover 完全同色,鍵盤使用者分不出「我在這裡」與「滑鼠經過」。
+
+它不屬「明確不用畫框」四類任何一類,依問題一「可操作 → 必須畫」要畫。
+修法是**拿掉 `outline-none`** 讓全域外描邊畫上去(元件不需要自己寫任何東西)。
+
+## V2 查的過程中發現更嚴重的:**滑桿完全不能用鍵盤操作**
+
+想驗焦點框時發現 Tab 根本走不到 slider。逐 story 掃:
+**全 DS 每一個 slider thumb 的 `tabIndex` 都是 -1**,連按 15 次 Tab 焦點始終停在 body。
+這是 **WCAG 2.1.1 Keyboard(Level A)** 違規 —— 比原本登記的顏色問題嚴重得多。
+
+根因(讀 Radix 原始碼確認,不是推測):`slider.tsx` 寫
+`tabIndex={fieldReadonly ? -1 : undefined}`,本意是「非唯讀時不管、讓 Radix 用它的預設」。
+但 Radix 是 `tabIndex: context.disabled ? void 0 : 0` **之後**才 spread 我們的 props
+(`@radix-ui/react-slider/dist/index.mjs:440-441`),所以 `undefined` 是把它**覆蓋掉**,
+React 於是不輸出 `tabindex` 屬性。
+
+**「傳 undefined = 不干預」是錯的直覺** —— 同 M2「消費第三方元件必驗真實 DOM」。
+改成 `tabIndex={fieldReadonly ? -1 : 0}`。實測:Tab 停靠序列從全是 `(body)` 變成
+`SPAN[slider] → SPAN[slider] → SPAN[slider] → (body) → …`。
+
+## V3 閘
+
+`focus-indicator-invariants.mjs` 新增 F5:每個 `[role=slider]` 都要可 Tab、真的用 Tab 走得到、
+而且聚焦時真的畫出框。
+
+**又一個量測時機的坑**:thumb 有 `transition-all duration-150`,**連 outline-offset 也一起過渡** ——
+70ms 時量到 `@1px`,看起來像多出第三種幾何,其實是動畫跑到一半。等 300ms 後是 `@2px`,正確。
+
+## V4 順帶確認 a11y 全掃的 4997 個 color-contrast 不是本輪造成的
+
+CI 跑的是 `a11y:check --gate`(baseline-diff,**只在新增/增量時 fail**),
+所以那 4997 是既有 baseline。本輪另跑一次 `--gate` 做回歸檢查。
+(這支腳本本身也是「從沒在本機跑過」那批之一 —— 補上沙箱參數後才第一次跑起來。)

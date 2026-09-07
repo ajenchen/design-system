@@ -151,7 +151,14 @@ const Slider = React.forwardRef<
       {Array.from({ length: thumbCount }).map((_, i) => (
         <SliderPrimitive.Thumb
           key={i}
-          tabIndex={fieldReadonly ? -1 : undefined}
+          // 2026-09-07 **WCAG 2.1.1(Level A)修**:原本非唯讀時傳 `undefined`,本意是
+          // 「不管、讓 Radix 用它的預設 0」——但 Radix 是 `tabIndex: disabled ? void 0 : 0`
+          // **之後**才 spread 我們的 props(`react-slider/dist/index.mjs:440-441` 實查),
+          // 所以 `undefined` 是把它**覆蓋掉**,React 於是不輸出 tabindex 屬性。
+          // 實測:全 DS 每一個 slider thumb 的 `tabIndex` 都是 -1,連按 15 次 Tab 焦點
+          // 始終停在 body —— **滑桿完全不能用鍵盤操作**。
+          // 教訓同 M2:消費第三方元件要驗真實 DOM,不能假設「傳 undefined = 不干預」。
+          tabIndex={fieldReadonly ? -1 : 0}
           aria-readonly={fieldReadonly || undefined}
           className={cn(
             'block h-4 w-4 shrink-0 rounded-full cursor-grab',
@@ -164,8 +171,15 @@ const Slider = React.forwardRef<
             // Active(按壓拖曳):深一階 primary-active(= Button active 邏輯 button.tsx active:*-active
             // 對照組;原誤用 hover 階 = 全 DS 唯一 active-用-hover 偏移,2026-07-06 雙向全掃修正)
             'active:cursor-grabbing active:border-primary-active active:[box-shadow:var(--elevation-200)]',
-            // Focus:跟 hover 同視覺(hover 階),不加 ring 或 halo
-            'outline-none focus-visible:border-primary-hover',
+            // Focus(2026-09-07 C6 修):原本是「跟 hover 同視覺,不加 ring 或 halo」——
+            // 但把手**平常就是藍邊**(上面 `border-2 border-primary`),聚焦只換成 primary-hover,
+            // 實測兩色的對比只有 **1.46:1(淺)/ 1.33:1(深)**:等於看不出來,
+            // 而且與 hover 完全同色 —— 鍵盤使用者分不出「我在這裡」與「滑鼠經過」。
+            // WCAG 2.4.7 要的是**看得見**的焦點指示;把手是可操作元件,依 focus-canonical
+            // 問題一「可操作 → 必須畫」,而且它不屬「明確不用畫框」四類的任何一類。
+            // 改法是**拿掉 outline-none**,讓全域外描邊畫上去(元件不需要自己寫任何東西);
+            // hover 那條保留 —— 它表達的是 hover,不是焦點。
+            'focus-visible:border-primary-hover',
             // Disabled:border 跟 Range 一起退成 border(n-5),bg 沉回 canvas(不透明背景色)
             'data-[disabled]:cursor-not-allowed data-[disabled]:border-border data-[disabled]:bg-canvas',
             'data-[disabled]:hover:[box-shadow:none]',

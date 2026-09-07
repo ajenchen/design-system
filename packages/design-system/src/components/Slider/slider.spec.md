@@ -168,6 +168,8 @@ Slider 不是 button——它是「當前位置指示器」,底色不該動(動�
 | Hover(thumb) | thumb border 升 hover 階 `primary-hover` + 加 `--elevation-100` 陰影 | 滑鼠 hover 在 thumb 上 |
 | Active(拖曳中) | border 深一階 `primary-active` + 加 `--elevation-200` 陰影 | 按住拖曳 |
 | Focus | thumb border 升 hover 階 `primary-hover`(跟 hover 同視覺,不加 ring / halo)| 鍵盤 Tab 聚焦 |
+
+> **2026-09-07 訂正**:上面那句已不成立。把手**平常就是藍邊**(`border-2 border-primary`),聚焦只換成 `primary-hover`,實測兩色對比僅 **1.46:1(淺)/ 1.33:1(深)** —— 看不出來,而且與 hover 完全同色,鍵盤使用者分不出「我在這裡」與「滑鼠經過」。現改為讓全域外描邊畫上去(元件只需**不要**寫 `outline-none`)。同時修一個更嚴重的:thumb 先前 `tabIndex` 是 -1,**滑桿完全不能用鍵盤操作**(WCAG 2.1.1,Level A)。
 | Disabled | 灰階降級:range `bg-border`、thumb `border-border`(= range 同 token)、thumb bg 沉回 `bg-canvas`(不透明背景色)、`cursor-not-allowed`、hover 陰影關閉 | `disabled` prop 或 Field context disabled |
 
 **Mode / readonly / dark mode / density** 詳見 `../Field/field-controls.spec.md`(Slider 作為 Field 家族整合時繼承其 canonical;semantic token 自動處理 dark mode,無需元件內特殊 handling)。

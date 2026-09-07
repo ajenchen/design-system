@@ -177,5 +177,34 @@ for(const vw of [1600,1280,1080]){
   check(`J2g @視窗${vw} 按 End 之後 aria-valuenow 等於宣稱的上限`, ap.now===ap.max, `now=${ap.now} max=${ap.max}`)
   check(`J2g @視窗${vw} 而且面板真的變成那麼寬(宣稱 = 真實)`, Math.abs(ap.realW-ap.max)<=1, `實寬=${ap.realW} 宣稱=${ap.max}`)}
 
+// ══ F5:可操作的元件必須 Tab 得到,而且要畫框(Slider 錨例)══
+// 2026-09-07 抓到:全 DS 每一個 slider thumb 的 tabIndex 都是 -1,連按 15 次 Tab 焦點
+// 始終停在 body —— **滑桿完全不能用鍵盤操作**(WCAG 2.1.1,Level A)。
+// 根因是 `tabIndex={readonly ? -1 : undefined}`:Radix 是 `tabIndex: 0` **之後**才 spread
+// 我們的 props(react-slider/dist/index.mjs:440-441 實查),`undefined` 是把它覆蓋掉。
+// 「傳 undefined = 不干預」是錯的直覺,所以這條要有閘守著。
+await go('design-system-components-slider-設計規格--overview')
+{
+  const before = await pg.evaluate(()=>({
+    total: document.querySelectorAll('[role="slider"]').length,
+    tabbable: [...document.querySelectorAll('[role="slider"]')].filter(t=>t.tabIndex>=0).length }))
+  check('F5 前提:這個 story 有 slider(沒有的話以下空轉)', before.total>0, JSON.stringify(before))
+  check('F5 每個 slider thumb 都可 Tab(WCAG 2.1.1)', before.total>0 && before.tabbable===before.total,
+        `${before.tabbable}/${before.total} 可 Tab`)
+  let landed=false
+  for(let i=0;i<20;i++){ await pg.keyboard.press('Tab'); await pg.waitForTimeout(70)
+    if(await pg.evaluate(()=>document.activeElement?.getAttribute('role')==='slider')){landed=true;break} }
+  check('F5 真的用 Tab 走得到 slider', landed)
+  // thumb 有 `transition-all duration-150`,連 outline-offset 也一起過渡 ——
+  // 太早量會拿到中途值(實測 70ms 時是 1px,看起來像多出第三種幾何,其實是動畫中途)
+  await pg.waitForTimeout(300)
+  if (landed) {
+    const st = await pg.evaluate(()=>{const t=document.activeElement; const c=getComputedStyle(t)
+      return { fv:t.matches(':focus-visible'), outline:`${c.outlineStyle} ${c.outlineWidth}@${c.outlineOffset}`,
+        drawn: c.outlineStyle!=='none' && parseFloat(c.outlineWidth)>0 }})
+    check('F5 聚焦時真的畫出框(不是只換一個看不出來的顏色)', st.drawn, st.outline)
+  }
+}
+
 console.log(out.join('\n')); console.log(fails?`\n✗ ${fails} 項未通過`:'\n✓ 全部通過')
 await br.close(); server.close(); process.exit(fails?1:0)
