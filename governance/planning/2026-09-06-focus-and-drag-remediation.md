@@ -1499,3 +1499,51 @@ user 說「明明這個元件是允許同時出現 focus+日期選單的啊…�
 所以同類問題只有 DatePicker 一處。
 
 機械閘:`scripts/datepicker-typeable-open.mjs`(兩條路都驗,少驗一條就會把另一條弄壞)。
+
+---
+
+# AC. 收盤:剩下什麼(2026-09-07)
+
+## AC1 真正還沒完成的,只剩五項,而且每一項都寫得出「卡在哪」
+
+| # | 項目 | 卡在哪 | 能不能自己解 |
+|---|---|---|---|
+| **A4** | DataTable **列**層級的鍵盤游標 | `role=grid` 前提**本日已解**;表格層級的框**本日已補**(內描邊,鍵盤畫、滑鼠不畫)。仍缺的是「游標停在哪一列」—— 卡在:(1) 虛擬捲動下 `aria-activedescendant` 指到的列必須真實存在(捲出視窗會被卸載);(2) 同一列在左/中/右三個面板各渲染一次,IDREF 該歸誰未定 | (1) 有解法方向(釘住 active 列不卸載,同 DragOverlay 的處理);(2) 需要定一條「中央面板擁有 id」之類的規則。**兩者都是工程判斷,不需要拍板**,但份量不小 |
+| **H2c** | DatePicker 起訖兩個 tab stop 共用同一圈邊框,分不出焦點在起日還是迄日 | **判斷題**:要不要為此讓兩顆各自畫框(那會在同一個欄位裡出現兩種指示) | 已標在程式碼現場。屬產品/UI/UX 取捨 |
+| **E1** | 虛擬捲動崩潰(user 曾報「50 筆虛擬表捲一捲就會出錯」) | **複現不出**:12 次全高來回、欄位釘選、拖曳中大幅捲動 10 次,皆 0 錯誤 | 再遇到需要截圖從該狀態反推 |
+| **E2** | Reviewers「+2」溢出 | 量測基準已修(B1),但**未能重現 user 截圖的觸發時機** | 同上 |
+| **G1** | Dialog 背景隔離會把 agent 一起關掉 | POC 已做完,結論是「**今天問不到這一題**」—— Modal Dialog 開著時舞台浮層根本打不開(body `pointer-events:none` + 焦點被拉回),所以「並存會不會破壞焦點鎖」還不存在。要先把隔離範圍縮到舞台(`suppressOthers(targets, stageEl)`,見 L1)才驗得到 | 隔離縮範圍是明確的工程動作,但會改變 Dialog 的行為邊界,份量大 |
+
+**user 已裁示 backlog**:agent 鍵盤往返(「agent 鍵盤的互動很次要,我已經講過了」)。
+
+## AC2 本輪新增/修好的閘(全部含 selftest 或對抗驗證)
+
+| 閘 | 守什麼 |
+|---|---|
+| `focus-suppression-registry.mjs` | 每處焦點抑制必須表態類別 + 承擔者(selftest 12/12)|
+| `focus-geometry-invariant.mjs` | 只准兩種幾何,禁 ring-offset / 禁抄全域 / 禁手寫內描邊(selftest 9/9)|
+| `focus-geometry-browser-audit.mjs` | 真瀏覽器逐站量框有沒有越界(涵蓋 58 元件,清單自動推導)|
+| `focus-indicator-invariants.mjs` | F1 差異非空 / F2 一次一個框 / F3 虛擬游標 / F4 宣稱=真實 / F5 slider 可 Tab / F6 控件都在 Tab 順序 |
+| `interaction-ladder-invariant.mjs` | 互動階梯單調且處處不撞(selftest 4/4)|
+| `drag-announcement-invariant.mjs` | DndContext 必須接播報 + 啟動門檻(selftest 5/5)|
+| `drag-runtime-contract.mjs` | 真滑鼠驗 C1/C2/C3/C4/C5 |
+| `agent-panel-breakpoint.mjs` | 並排↔蓋板斷點(六個寬度)|
+| `agent-panel-reopen-state.mjs` | 關閉再開,閱讀位置與狀態還在 |
+| `agent-panel-dismissable-layer-invariant.mjs` | 面板殼永不進 dismiss 疊(selftest 5/5)|
+| `datepicker-typeable-open.mjs` | 滑鼠開留焦點 / 鍵盤開進日曆,兩條都驗 |
+| `dialog-focus-trap-poc.mjs` | G1 的事實取得(含對照組)|
+| `data-table-invariants.mjs` | 322 → **332** 條(+I27c hug / +I29 role 同源 / +I30 表格焦點框)|
+| `scripts/lib/launch-browser.mjs` | 沙箱啟動參數單一來源(18 支腳本遷移;先前它們全部從沒真的跑過)|
+
+## AC3 本輪我自己犯而且被抓出來的錯(留檔,不是自責)
+
+1. **WCAG 條號與等級都講錯**(說 2.4.11 AA,實為 2.4.13 AAA),並據此提了會改動 143 處的建議 —— 撤回
+2. **把 story 說明文字的對比問題算成 DS 元件的問題**(95% 的數字來自文件排版)—— 撤回,user 當場質問才發現
+3. **宣稱「全 DS」但只掃了 39/67** —— 改成自動推導 58 個,並因此抓到 Pagination
+4. **第一版 POC 印出「✓ 焦點鎖仍然成立」** —— 完全沒有根據的假綠,是對照組抓出來的
+5. **原則第一版只有四類**,拿 28 個抑制點對回去有兩類對不上
+6. **Slider 改用外描邊時忘了刪舊的邊框變色** —— 同一顆把手兩個指示器,相容性檢查抓到
+7. **機械替換 `[role="cell"]` 造成 CSS 選擇器清單 bug**(逗號在最上層分割),I23 當場紅
+8. **在治理生成 / a11y baseline 跑到一半時改檔案**,兩者各失敗兩次
+
+共同形狀:**「沒有觀察到 X」在對照組成立之前不代表任何事**,以及**閘不該複製被測對象的公式或寫死清單**。
