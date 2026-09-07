@@ -649,15 +649,32 @@ const AgentConversation = React.forwardRef<HTMLDivElement, AgentConversationProp
     const logRef = React.useRef<HTMLDivElement | null>(null)
     React.useImperativeHandle(ref, () => logRef.current as HTMLDivElement)
     const wasNearBottomRef = React.useRef(true)
+    // 上次在「面板看得見」時停在哪 —— 用來在面板從隱藏回來時把位置補回去(spec E 條「閱讀位置保存」)。
+    const savedTopRef = React.useRef<number | null>(null)
     React.useLayoutEffect(() => {
       const log = logRef.current
       const viewport = log?.closest<HTMLElement>('[data-radix-scroll-area-viewport]')
       if (!log || !viewport) return
+      // 2026-09-07 G2:面板關閉時走 `display:none`(不再卸載)。實測祖先被 display:none 之後
+      // **瀏覽器會把捲動位置歸零**,而且 ResizeObserver 會以 0×0 觸發一次 ——
+      // 那一刻量到的 scrollHeight / clientHeight / scrollTop 全是 0,拿去更新狀態就會
+      // 把「使用者剛剛在哪」洗成「貼在底部」。所以兩個 handler 都先擋掉沒有版面的情況,
+      // 這跟 person-display 的 `availablePx <= 0 → 不更新` 是同一條原則:
+      // **沒有版面時量到的數字不代表任何事,不能拿來做決定。**
+      const hasLayout = () => viewport.clientHeight > 0
       const stick = () => {
-        if (wasNearBottomRef.current) viewport.scrollTop = viewport.scrollHeight
+        if (!hasLayout()) return
+        if (wasNearBottomRef.current) { viewport.scrollTop = viewport.scrollHeight; return }
+        // 從隱藏回來:位置被歸零了,補回上次看得見時的位置。
+        // 只在「現在是 0、而且記得的不是 0」時才補 —— 使用者本來就停在頂端時 saved 也是 0,不會誤補。
+        if (savedTopRef.current !== null && savedTopRef.current > 0 && viewport.scrollTop === 0) {
+          viewport.scrollTop = savedTopRef.current
+        }
       }
       stick()
       const onScroll = () => {
+        if (!hasLayout()) return
+        savedTopRef.current = viewport.scrollTop
         wasNearBottomRef.current = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= 40
       }
       viewport.addEventListener('scroll', onScroll, { passive: true })

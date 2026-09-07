@@ -785,24 +785,19 @@ DataTable 可排序表頭。
 
 兩支合起來才完整 —— 靜態掃不出「這個元素四周有沒有空間」。已接 `npm run test:focus-geometry`。
 
-## O6 **一件要 user 拍板的事**(唯一一件)
+## O6 ~~一件要 user 拍板的事~~ —— **2026-09-07 撤回,不需要拍板**
 
-**Field 家族的焦點指示有兩種做法,而且其中一種可能不過 WCAG 2.2 AA。**
+先前在此寫「Field 家族只有 1px 邊框,不過 WCAG 2.2 AA,建議全家加 2px 內描邊」。
+**前提是錯的,整條撤回**:
 
-| 元件 | 焦點時 |
-|---|---|
-| Combobox | 1px 邊框轉 primary **+ 2px 內描邊** |
-| Input / DatePicker / TimePicker / Select | **只有** 1px 邊框轉 primary |
+- 條號與等級都講錯 —— 「面積至少相當於 2px 厚周長」是 **2.4.13 Focus Appearance,
+  WCAG 2.2 定案版屬 AAA**,不是 2.4.11、也不是 AA。AA 適用的是 2.4.7 與 1.4.11(≥3:1)。
+- 實測是過的:聚焦邊框對頁面底色 **淺色 5.19:1 / 深色 5.35:1**。
 
-WCAG 2.4.11 Focus Appearance(2.2 的 AA)要求焦點指示器面積至少相當於 **2px 厚的周長**;
-1px 邊框變色不滿足。
-
-- **(甲)維持現狀** —— 零風險零工作量,但家族內不一致,嚴格說不過 2.2 AA
-- **(乙)全家統一加 2px 內描邊** —— 對齊 Carbon 與 Primer(兩家的輸入控件本來就一律
-  `outline-offset: -2px`),過 2.2 AA;代價是**每個表單欄位的長相都會變**
-
-**建議乙**:它同時解掉「家族不一致」與「不過 AA」;甲只是把問題留著。
-沒有自己做是因為它改的是最常見元件的視覺語言。
+真正的問題只有一個且已修:Combobox 根節點漏寫 `focus-visible:outline-none`
+(user 抓到「為何突然加 combobox 內描邊」—— 查證後那圈框遷移前就在、而且是往外的,
+我只是改成往內;正解是跟家族一樣抑制掉)。判準已寫進 focus-canonical
+「問題一之二:什麼情況明確不用畫框」四類表。
 
 ---
 
@@ -992,3 +987,87 @@ DataTable 不變條件從 322 條增為 **324 條**。
 
 先前實測「整趟拖曳下來 live region 維持空字串」。接上共用播報 SSOT 後實測:
 拖曳中「移到『about』上方」、放開「未變更順序」。已納入 `drag-runtime-contract.mjs`。
+
+---
+
+# T. 2026-09-07 下半場:user 兩個追問的答案 + G2 + 一個系統性發現
+
+## T1 user 追問一:「combobox 不用有內描邊吧?到底為何突然加?」—— **我錯了兩件事**
+
+**(a) WCAG 條號與等級都講錯。** 我說「2.4.11 Focus Appearance,WCAG 2.2 的 AA,要求 2px 厚周長」。
+正確是 **2.4.13 Focus Appearance,而且在 WCAG 2.2 定案版是 AAA**。
+AA 適用的是 2.4.7(要有可見指示,無尺寸要求)與 1.4.11(對比 ≥ 3:1)。
+**整條「建議全 Field 家族加 2px 內描邊」的推力不存在,已撤回。**
+
+實測補證:Field 焦點邊框對頁面底色 **淺色 5.19:1 / 深色 5.35:1**,兩個主題都遠高於 3:1。
+現況合規。
+
+**(b) 那圈框不是我加的,但我也沒把它處理對。**
+查 `git show 1bde3ad1~1`:遷移前 Combobox 根節點就**沒有** `focus-visible:outline-none`,
+所以全域外描邊一直畫在它上面 —— 它是 Field 家族裡唯一沒抑制的。我做的是把它從外改成內,
+而正解是**跟家族一樣抑制掉**(規則二第三列:單一狀態控制項滑鼠與鍵盤共用同一套 focus 樣式,
+Field 的那一套就是邊框轉 primary)。已改成 `focus-visible:outline-none`,家族恢復一致。
+
+**(c) user 要的「明確不用畫框的原則」已寫進 `focus-canonical.md`「問題一之二」**:
+四類(虛擬游標 / Field 家族輸入控件 / 隱形整列觸發器 / 選單未選中項),
+每類都要指得出承擔者是誰(file:line),指不出來就是要畫,**沒有第五類**。
+分類不是憑印象 —— 是把瀏覽器逐站 Tab 出來的 10 個「無框站點」歸納出來的。
+
+## T2 user 追問二:切換鈕 hover token —— **是專屬的,可以改,但要連按壓一起推**
+
+`--neutral-selected-hover` 的消費者只有 `button.tsx:205/210`、`--neutral-selected-active`
+只有 `:206` —— 兩個都是**切換鈕專屬**,改動範圍就是切換鈕,如 user 所料。
+
+但直接把 hover 改 6% 會撞到按壓(它已經是 neutral-3 = 6%),問題只是從一處搬到另一處。
+所以兩個一起推:
+
+| | rest | hover | 按壓 |
+|---|---|---|---|
+| 未按下 | 透明 | `neutral-1`(淺 2% / 深 4%) | `neutral-2`(4% / 8%) |
+| **已按下** | `neutral-2`(4% / 8%) | `neutral-3`(6% / 12%)← 改 | `neutral-4`(9% / 15%)← 跟著推 |
+
+實測兩個主題都單調且處處不撞(淺色 250→245 / 245→240→232;深色 20→30 / 30→39→47)。
+方向與 Carbon / Atlassian 的同名 token 一致(兩家本來就是變深);
+放棄的是原本「變淺 = 預告釋放」的 Fluent 意圖 —— 那個意圖的實作值正好等於一般 hover,
+所以它從來沒有真的表達出來過。
+
+閘:`scripts/interaction-ladder-invariant.mjs`(selftest 4/4),守「同一條階梯內不得有兩個狀態長一樣」
+與「必須單調遞增」。
+
+## T3 G2:關閉不等於卸載
+
+原本 `if (open) return children` —— 關一次面板狀態全部歸零,E 條「閱讀位置保存」與
+F 條「初始化為關閉」都落不了地。改成一直渲染、關閉時 `display:none`。
+
+**但只做這一半是不夠的**,實測祖先被 `display:none` 之後瀏覽器**會把捲動位置歸零**,
+而且 ResizeObserver 會以 0×0 觸發一次 —— 那一刻量到的數字全是 0,拿去更新
+「使用者剛剛在哪」會被洗成「貼在底部」。所以 `AgentConversation` 的兩個 handler 都先擋掉
+「沒有版面」的情況,並記住最後一次看得見時的位置、回來時補上。
+(這跟 person-display 的 `availablePx <= 0 → 不更新` 是同一條原則。)
+
+實測:關前 63 → 開回 63。對抗驗證:改回 `{open && children}` → 關前 63 → 開回 180 而失敗。
+
+### 兩個測試設計的坑(都踩過,寫進閘的註解)
+
+1. **不要拿受控的草稿當證據**:`AgentPromptInput` 完全受控,值住在消費端 state,
+   面板卸載也不會掉 —— 它測的是 story 不是面板。第一版拿它當證據,注入舊行為測試照樣全綠。
+2. **不要捲到底**:聊天會自動捲到底,「捲到底 → 關 → 開」在有沒有保存的兩種實作下
+   都給同一個數字。必須捲到中間,而且捲動範圍要夠大(第一版 max=60 太小)。
+
+## T4 系統性發現:**20 幾支腳本的瀏覽器驗證在本機從來沒跑過**
+
+`data-table-invariants.mjs` 那件不是孤例 —— 全 repo 有 22 處各自寫
+`chromium.launch({ headless: true })`,而本 repo 沙箱**少了 `--single-process --no-sandbox`
+就起不了 Chromium**。有 SKIPPED-ENV 守衛的一路回 exit 0(看起來綠的,其實一條都沒驗)。
+
+抽成 `scripts/lib/launch-browser.mjs` 單一來源並遷移 18 支。遷完後第一次真的跑起來的:
+
+| 閘 | 結果 |
+|---|---|
+| `agent-fab-hit-area-invariant` | ✓ 15 條命中區不變條件全過 |
+| `agent-logo-continuity-invariant` | ✓ 231 影格 |
+| `pagination-narrow-ladder-invariant` | ✓ PASS |
+| `test-devmode-geometry-invariant` | ✓ 三個 DPR 全過(另修:single-process 開不了第二個 context,改成每個 DPR 重開瀏覽器)|
+
+實測三種參數組合:只給 `--no-sandbox` 起不來、什麼都不給也起不來,**兩個都要**;
+而 `--single-process` 的代價是開不了第二個 context —— 已寫進 launcher 的註解。

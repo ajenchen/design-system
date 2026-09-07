@@ -20,6 +20,7 @@
  * 沙箱起不了 Chromium → SKIPPED-ENV(exit 0),請在可開瀏覽器的環境(CI)補驗。
  */
 import { chromium } from 'playwright'
+import { launchBrowser } from './lib/launch-browser.mjs'
 import http from 'node:http'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname, extname } from 'node:path'
@@ -43,7 +44,7 @@ const BASE = `http://localhost:${server.address().port}`
 
 let browser
 try {
-  browser = await chromium.launch({ headless: true })
+  browser = await launchBrowser()
 } catch (error) {
   console.error(`⚠️  SKIPPED-ENV: 無法啟動 Chromium(${String(error?.message || error).split('\n')[0]})`)
   console.error('   請於可開瀏覽器環境執行 npm run test:pagination-invariants 補驗。')

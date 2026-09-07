@@ -26,6 +26,7 @@
  * 沙箱起不了 Chromium → C1–C6 標 SKIPPED-ENV(exit 0),C7/C8 照常判定;請在可開瀏覽器的環境(CI)補驗其餘。
  */
 import { chromium } from 'playwright'
+import { launchBrowser } from './lib/launch-browser.mjs'
 import http from 'node:http'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname, extname } from 'node:path'
@@ -96,7 +97,7 @@ const BASE = `http://localhost:${server.address().port}`
 
 let browser
 try {
-  browser = await chromium.launch({ headless: true })
+  browser = await launchBrowser()
 } catch (error) {
   console.error(`⚠️  SKIPPED-ENV: 無法啟動 Chromium(${String(error?.message || error).split('\n')[0]})`)
   console.error('   此環境(受限沙箱)結構上無法跑 C1–C6;C7/C8 已於上方靜態判定為綠。請於可開瀏覽器環境執行 npm run test:agent-panel-invariants 補驗其餘。')

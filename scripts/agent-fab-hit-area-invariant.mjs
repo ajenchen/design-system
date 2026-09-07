@@ -39,6 +39,7 @@
 // Run: `node scripts/agent-fab-hit-area-invariant.mjs`(併在 `npm run test:agent-panel-invariants`)
 
 import { chromium } from 'playwright'
+import { launchBrowser } from './lib/launch-browser.mjs'
 import http from 'node:http'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join, dirname, extname } from 'node:path'
@@ -64,7 +65,7 @@ const BASE = `http://localhost:${server.address().port}`
 
 let browser
 try {
-  browser = await chromium.launch({ headless: true })
+  browser = await launchBrowser()
 } catch (error) {
   // 受限沙箱結構上起不了 Chromium = 環境問題不是不變條件失敗(同 data-table-invariants 先例)。
   server.close()

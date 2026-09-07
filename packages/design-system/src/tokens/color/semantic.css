@@ -358,9 +358,19 @@
        --neutral-selected = 持續 toggle on / 長時間選中（persistent）
 
      選中之上的疊加(2026-08-11 user 拍板;SSOT = item-anatomy.spec.md「選中 × 互動疊加」格):
-       -hover  = 可取消切換鈕專屬「hover 預告釋放」→ 變淺(Fluent ToggleButton 同構;Carbon/Atlassian
-                 同名 token 是變深,本 DS 反向是切換鈕語意的有意設計 — 列元件禁用本 token)
+       -hover  = 可取消切換鈕專屬(列元件禁用本 token)
+                 **2026-09-07 由「變淺」改為「變深」**:原本是 neutral-1,想表達 Fluent ToggleButton
+                 的「hover 預告釋放」。但 neutral-1 正好就是 `--neutral-hover` 的值 —— 實測兩個主題
+                 皆同(淺色 2%、深色 4%),加上 `variant='text'` 按下與未按下的文字色也都是
+                 foreground,結果是**切換鈕按下與未按下,在滑鼠懸停時像素完全相同**,
+                 「這顆開著沒」的訊號在 hover 當下整個消失。
+                 改成 neutral-3 後階梯單調且處處不撞:
+                     未按下  透明 → hover neutral-1 → 按壓 neutral-2
+                     已按下  neutral-2 → hover neutral-3 → 按壓 neutral-4
+                 方向與 Carbon / Atlassian 的同名 token 一致(兩家本來就是變深)。
        -active = 只有「按住」的瞬間(按壓專屬;禁借給 hover/反白 — 2026-07-05 D4 借用已於 2026-08-11 糾正)
+                 2026-09-07 由 neutral-3 上調 neutral-4:-hover 佔走 neutral-3 後,不上調就會
+                 變成 hover 與按壓同值(問題只是從一處搬到另一處)。
 
      **`-focus` 已於 2026-09-07 退役**:它原本表示「鍵盤焦點停在選中列 → 底色深一階」,
      user 拍板改為**畫框**(`focus-ring-inset`)。理由是同一個底色通道不能同時承載
@@ -370,8 +380,8 @@
      典型消費者：Button toggle pressed(-hover 變淺/-active 按壓)、DropdownMenu/SelectMenu 單選項目、
      SidebarMenuButton/MenuItem 選中列(底色 `-selected`,鍵盤游標走框)。 */
   --neutral-selected:         var(--color-neutral-2);
-  --neutral-selected-hover:   var(--color-neutral-1);
-  --neutral-selected-active:  var(--color-neutral-3);
+  --neutral-selected-hover:   var(--color-neutral-3);
+  --neutral-selected-active:  var(--color-neutral-4);
 
   /* Static Subtle — 靜態弱化背景(2026-05-20 v3 註解濃縮原則,SSOT 詳 color.spec.md「Static Subtle Background」段)*/
   /* 判斷:「這元素是『還沒準備好 / 不可操作 / placeholder』嗎?」是 → muted / 否,只是視覺退後 → secondary */

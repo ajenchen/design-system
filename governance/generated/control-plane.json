@@ -133,7 +133,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 230,
-      "hash": "sha256:c71349c83b9f4aa744eaf197b2c0d6fba58069ad79b5ededcfd9c4efac2fa121",
+      "hash": "sha256:1ee50e1fdda0b3142dff293bc5ae95eb58c6c2d23a7af497b238fd9ceebb3681",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -154,8 +154,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 25,
-      "hash": "sha256:469757a2609685c065b409495a548dc357595c70fd900cea99d722008490168c",
+      "files": 24,
+      "hash": "sha256:23c2c1e2f7481732957eb03e5e34be22bb3381f5fb2cb8cdba40edee04021107",
       "id": "canonical-references",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2056,12 +2056,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:9af35c49aad35d8ad9eab624b4d8532c0323b4736e4f21796fa1b0532ea37ff9",
+      "hash": "sha256:1e0cca84361995c493034840d2a6a980f9199f5077bdc80732edaed4f545d6f4",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 17866,
+      "size": 17405,
       "type": "file"
     },
     {
@@ -2709,8 +2709,8 @@
     {
       "carrierProjections": [],
       "excludes": [],
-      "files": 45,
-      "hash": "sha256:37cdce314284ff7be387a6fb012ba67e3f46d5835a26c40c3791aaa095116a59",
+      "files": 44,
+      "hash": "sha256:922406336b7d1ae1a096f069588fb5739670d2a1e98e616f03cffad24da56230",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3074,8 +3074,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 392,
-      "hash": "sha256:ca413822b08656c78bc2c4fe252029b8cf5b63bcfca6d6fc52aa9b34e19cc9ed",
+      "files": 387,
+      "hash": "sha256:950bc0f70067ec6644b9a9b39f8fe69165044085853a866f20de0983130c65e9",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3083,12 +3083,12 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:29d099746dc78ce174a9dc50fd6ac7dcbdd8624e741edc49a114537647210f61",
+      "hash": "sha256:fba7d7f2ff1b50c841669af62d3b7d3d9538ec216a627b3843698655b190cf26",
       "id": "repository-ignore-boundary",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": ".gitignore",
-      "size": 3869,
+      "size": 3478,
       "type": "file"
     },
     {

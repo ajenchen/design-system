@@ -817,7 +817,11 @@ export interface AgentPanelDockProps
   onOpenChange?: (open: boolean) => void
   /** 代理狀態:面板標題列與入口鈕標誌吃同一個值(關著面板也照跑)。 */
   logoState?: AgentLogoState
-  /** 面板內容;關閉時不渲染(與入口鈕互斥)。 */
+  /**
+   * 面板內容。**關閉時仍然渲染,只是藏起來**(2026-09-07 G2)——
+   * 這樣捲動位置、輸入框草稿、展開狀態才留得住(spec E 條「閱讀位置保存」)。
+   * 視覺上仍與入口鈕互斥:關著時面板 `display:none`、只看得到入口鈕。
+   */
   children: (props: AgentPanelDockRenderProps) => React.ReactNode
 }
 
@@ -862,16 +866,38 @@ const AgentPanelDock = React.forwardRef<HTMLDivElement, AgentPanelDockProps>(
       [placementProp, onPlacementChange],
     )
     const close = React.useCallback(() => setOpen(false), [setOpen])
-    if (open) return <>{children({ close, logoState })}</>
+    // ── 2026-09-07 G2:關閉時**不再卸載面板**,改成藏起來 ──────────────────────
+    //
+    // 原本是 `if (open) return children`,關閉的瞬間整個面板連同它的 state 一起消失:
+    // 捲到哪、輸入框裡打到一半的字、展開了哪些思考塊,全部歸零。
+    // 這讓 spec 的兩條落不了地 —— E 條「閱讀位置保存」與 F 條「初始化為關閉」
+    //(初始關閉之後第一次打開會是全新的面板,等於沒有「回到原本在看的地方」可言)。
+    //
+    // 為什麼是 `display:none` 而不是別的:2026-09-07 真瀏覽器實測四種隱藏方式,
+    // **`display:none` 保住 `scrollTop`**(400 → 400)、輸入值保住、而且同時移出
+    // tab order 與無障礙樹(隱藏時 `.focus()` 不生效)。`visibility:hidden` 也保狀態
+    // 但**仍佔版面**,不能用。
+    //
+    // 為什麼外面要包一層 `display:contents`:面板通常是 flex/grid 的直接子項,
+    // 憑空多一層盒子會改變版面。`display:contents` 讓這層從盒子樹消失,
+    // 實測子項寬度與沒有 wrapper 時**逐像素相同**(472px vs 472px)。
+    // 用 wrapper 而不是把 `hidden` 交給 render prop:交出去就會有人忘記套。
     return (
-      <AgentFabDock
-        ref={ref}
-        logoState={logoState}
-        placement={placement}
-        onPlacementChange={handlePlacementChange}
-        onClick={() => setOpen(true)}
-        {...fabProps}
-      />
+      <>
+        <div style={{ display: open ? 'contents' : 'none' }}>
+          {children({ close, logoState })}
+        </div>
+        {!open && (
+          <AgentFabDock
+            ref={ref}
+            logoState={logoState}
+            placement={placement}
+            onPlacementChange={handlePlacementChange}
+            onClick={() => setOpen(true)}
+            {...fabProps}
+          />
+        )}
+      </>
     )
   },
 )

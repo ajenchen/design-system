@@ -170,6 +170,38 @@ SelectMenu `:490`、AgentPanel `:280`、Sidebar `:949`)。補完框再退役。
 判「Tab 到得了」看三件事,不是用猜的:原生可聚焦元素 / `tabIndex >= 0` / 該檔有沒有 `.focus()` 把焦點送過去。
 **`tabIndex={-1}` 是「可程式聚焦、可點擊聚焦」,不是「不可聚焦」。**
 
+## 問題一之二:**什麼情況明確不用畫框**(2026-09-07 補;user 要求「應該明確不用畫鍵盤焦點框的原則吧」)
+
+問題一給的是判準(可不可以被操作),但「可以操作卻不用自己畫框」的合法情況一直只寫成一句
+「指示器畫在別的元素上」,太抽象、每次都要重新想。下面把它拆成**四類**,是 2026-09-07
+用真瀏覽器逐站 Tab 過去、把全 DS 所有「聚焦了但自己沒畫框」的站點分類出來的結果
+(`scripts/focus-geometry-browser-audit.mjs`,當次 10 站,全部落在這四類內)。
+
+**共同前提**:四類都要指得出**承擔者是誰**(file:line)。指不出來就是要畫,沒有第五類。
+
+| 類 | 什麼情況 | 指示器在哪 | 實例 |
+|---|---|---|---|
+| **A. 虛擬游標** | DOM 焦點停在容器,「目前是哪一個」由 `aria-activedescendant` 指出 | 畫在被指到的那一列上 | TreeView 根容器(`tree-view.tsx:958` 抑制自己)/ TimePicker 欄 |
+| **B. Field 家族的輸入控件** | 文字輸入、Textarea、以及 `role=combobox` 的觸發器 | **整個欄位的邊框轉 primary**(`field-wrapper.tsx:49` `focus-within:!border-primary`)—— 這是規則二第三列「滑鼠與鍵盤共用同一套 focus 樣式」的落地 | Input / DatePicker / TimePicker / Select / Combobox |
+| **C. 隱形的整列觸發器** | 為了讓整列可用鍵盤啟動而疊一顆 `opacity-0` 的滿版鈕 | 畫在**列**上,由該鈕觸發 | FileItem(`file-item.tsx` 的 `data-row-focus-target`)/ InlineEdit(`:409`,承擔者在 `:402` 註明的外層) |
+| **D. 選單／清單的未選中項** | 底色空著,就用底色當游標 | `bg-neutral-hover` 本身 | MenuItem / DropdownMenu / cmdk / SidebarMenuButton 的非當前項(規則二第一列)|
+
+### B 類為什麼合法 —— 有量過,不是宣稱
+
+1px 邊框轉色**通過 WCAG AA**:實測聚焦邊框對頁面底色 **淺色 5.19:1 / 深色 5.35:1**,
+遠高於 [1.4.11 Non-text Contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast) 要求的 3:1;
+[2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG22/Understanding/focus-visible) 只要求「看得見」,沒有尺寸要求。
+
+**「焦點指示器面積至少相當於 2px 厚周長」那條是 [2.4.13 Focus Appearance](https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance),
+在 WCAG 2.2 定案版是 AAA,不是 AA。**(2026-09-07 勘誤:我先前把條號與等級都講錯,
+並據此建議「全 Field 家族加 2px 內描邊」—— 那個建議的前提不成立,已撤回。)
+
+所以 B 類**不需要**再加一個框;加了反而違反下一節「一個項目只有一個指示器」。
+2026-09-07 抓到的唯一例外是 Combobox 的根節點漏寫 `focus-visible:outline-none`,
+全域外描邊一直畫在它上面 —— 已補上,家族恢復一致。
+
+---
+
 ## 問題二:畫在外面還是裡面?
 
 **先講清楚:規則講的一直是「拿到焦點的那個元素」,不是它住的容器。**
@@ -337,22 +369,20 @@ user 2026-09-07 拍板「A9用甲啊」(全域 `outline`),附條件是「確保�
 這也反過來印證了判準把 `overflow` 踢出去是對的:需要的不是「有沒有 overflow」這個布林,
 而是「框畫出去會不會真的被切」這個量測。
 
-## 一件留給 user 拍板的事
+## 一件留給 user 拍板的事 —— **2026-09-07 已撤回,不需要拍板**
 
-**Field 家族的焦點指示目前有兩種做法,而且其中一種可能不符合 WCAG 2.2 AA。**
+我先前在這裡寫「Field 家族只有 1px 邊框,不過 WCAG 2.2 AA,建議全家加 2px 內描邊」。
+**那個前提是錯的,整條建議撤回**:
 
-| 元件 | 焦點時 |
-|---|---|
-| Combobox | 1px 邊框轉 primary **+ 2px 內描邊** |
-| Input / DatePicker / TimePicker / Select | **只有** 1px 邊框轉 primary(`focus-visible:outline-none`) |
+- 條號與等級都講錯了 —— 「焦點指示器面積至少相當於 2px 厚周長」是
+  **2.4.13 Focus Appearance,在 WCAG 2.2 定案版是 AAA**,不是 2.4.11、也不是 AA。
+  AA 層級適用的是 2.4.7(要有可見指示,無尺寸要求)與 1.4.11(對比 ≥ 3:1)。
+- 而且實測是過的:聚焦邊框對頁面底色 **淺色 5.19:1 / 深色 5.35:1**,遠高於 3:1。
 
-WCAG 2.4.11 Focus Appearance(2.2 的 AA)要求焦點指示器的面積至少相當於**2px 厚的周長**。
-1px 的邊框變色**不滿足**那個面積要求。
+所以 Field 家族的 1px 邊框語言**本來就合規**,不需要改。
+真正的問題只有一個而且已修:**Combobox 的根節點漏寫 `focus-visible:outline-none`**,
+全域外描邊一直畫在它上面,是家族裡唯一的例外(user 2026-09-07 抓到:
+「combobox 不用有內描邊吧?到底為何突然加 combobox 內描邊?」——
+查證後那圈框在遷移前就存在且是往外的,我只是把它改成往內;正解是跟家族一樣抑制掉)。
 
-- **(甲)維持現狀**:Field 家族沿用 1px 邊框語言,只有 Combobox 例外。零風險、零工作量,
-  但家族內不一致,而且嚴格說不過 2.2 AA。
-- **(乙)全家統一加 2px 內描邊**:對齊 Carbon 與 Primer(兩家的輸入控件本來就一律
-  `outline-offset: -2px`),過 2.2 AA。代價是**每一個表單欄位的長相都會變**。
-
-這題我沒有自己決定,因為它改的是最常見元件的視覺語言。**建議乙** —— 理由是它同時解決
-「家族不一致」與「不過 AA」兩件事,而且有兩家世界級的現成前例;甲只是把問題留著。
+判準已寫進 `focus-canonical.md`「問題一之二:什麼情況明確不用畫框」的 B 類。

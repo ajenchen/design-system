@@ -846,10 +846,13 @@ function CustomCombobox({
       aria-required={fieldCtx?.required || undefined}
       aria-describedby={fieldCtx?.descriptionId}
       aria-errormessage={error ? fieldCtx?.errorId : undefined}
-      // 內描邊:本元件的焦點停在這顆 wrapper 自己(role=combobox + tabIndex=0),
-      // 往外 +2px 實測會壓到同排的相鄰控件(2026-09-07 瀏覽器量測)。
-      // 世界級對照:Carbon 與 Primer 的輸入類控件本來就一律 `outline-offset: -2px`。
-      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:focus-ring-inset', value.length > 0 && tagPadding[size], 'relative cursor-pointer',
+      // 2026-09-07:本元件是 Field 家族的「單一狀態控制項」——依 focus-canonical 規則二第三列,
+      // 滑鼠與鍵盤**共用同一套 focus 樣式**,而 Field 的那一套就是邊框轉 primary
+      // (field-wrapper.tsx `focus-within:!border-primary`)。所以這裡要抑制全域外描邊,
+      // 跟 DatePicker(:608)/ TimePicker(:378)一致 —— 否則同一顆控件會有兩個焦點指示。
+      // **本行不是新增抑制,是補上一直漏掉的那個**:遷移前這顆沒寫 outline-none,
+      // 於是全域外描邊一直畫在它上面,是全家族唯一的例外(user 2026-09-07 抓到)。
+      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:outline-none', value.length > 0 && tagPadding[size], 'relative cursor-pointer',
         wrap && 'items-start py-1',
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
         // 統一處理 — open=灰深(data-state)/ focus=藍;2026-07-04 Q1:error 亦收進 error variant。

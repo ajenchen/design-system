@@ -34,6 +34,7 @@
  */
 
 import { chromium } from 'playwright'
+import { launchBrowser } from './lib/launch-browser.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
@@ -690,7 +691,7 @@ async function main() {
   }
   console.log(`[visual-audit] scope=${URLS ? 'urls' : SCOPE},跑 ${scopedScenarios.length} scenario`)
 
-  browser = await chromium.launch({ headless: !HEADED })
+  browser = await launchBrowser({ headless: !HEADED })
   const results = []
   let totalContrastViolations = 0
   let totalGeometryViolations = 0

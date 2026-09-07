@@ -685,6 +685,13 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 ### Selected state family
 
+**互動階梯(2026-09-07 起單調遞增,處處不撞)**:
+
+| | rest | hover | 按壓 |
+|---|---|---|---|
+| 未按下 | 透明 | `neutral-1`(淺 2% / 深 4%) | `neutral-2`(4% / 8%) |
+| **已按下** | `neutral-2`(4% / 8%) | `neutral-3`(6% / 12%) | `neutral-4`(9% / 15%) |
+
 用於持續 toggle on / 選中 element 的互動回饋。**三件（疊加行為 owner = `item-anatomy.spec.md`「選中 × 互動疊加」格)**:
 
 > **2026-09-07 從四件變三件**:`-focus` 退役。原本它表示「鍵盤焦點停在選中列 → 底色深一階」,user 拍板改為**畫框**。同時修正一件先前的錯誤宣稱 —— 舊文寫「四件成套」,但實際上 `-focus` 與 `-active` 都是 neutral-3、`-hover` 與 `--neutral-hover` 都是 neutral-1,**四個名字只有三個相異值**,選中×焦點與選中×按壓在畫面上根本分不出來。退役後名字與值一一對應,宣稱與真實一致。
@@ -693,9 +700,9 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 | Utility | Token | 用途 |
 |---|---|---|
 | `bg-neutral-selected` | neutral-2 | 持續 selected rest；**選中列被滑鼠 hover 時亦釘住此值不變** |
-| `bg-neutral-selected-hover` | neutral-1 | **可取消切換鈕專屬**：pressed 上 hover 反向變淺，暗示「再點會釋放」（Fluent ToggleButton 同構；Carbon/Atlassian 同名 token 是變深，本 DS 反向為切換鈕語意的有意設計——**列元件禁用本 token**） |
+| `bg-neutral-selected-hover` | neutral-3 | **可取消切換鈕專屬**（**列元件禁用本 token**）。**2026-09-07 由 neutral-1 改為 neutral-3(變淺 → 變深)**:原值想表達 Fluent 的「hover 預告釋放」,但 neutral-1 正好等於 `--neutral-hover` —— 實測兩主題皆同(淺 2%、深 4%),加上 `variant='text'` 兩態文字色都是 foreground,結果**切換鈕按下與未按下在懸停時像素完全相同**,「這顆開著沒」的訊號在 hover 當下消失。方向改為與 Carbon / Atlassian 一致 |
 | ~~`bg-neutral-selected-focus`~~ | — | **2026-09-07 退役**。原用途是「鍵盤焦點停在選中列 → 底色深一階」；user 拍板改為**畫框**（`focus-ring-inset`），底色通道不再承載第二個意義。owner = `patterns/element-anatomy/item-anatomy.spec.md`「選中 × 互動疊加」格 |
-| `bg-neutral-selected-active` | neutral-3 | selected 上 `:active` 深一階 click 回饋（**按壓專屬，禁借給 hover／反白**——2026-07-05 D4 曾借用，2026-08-11 糾正） |
+| `bg-neutral-selected-active` | neutral-4 | selected 上 `:active` 深一階 click 回饋（**按壓專屬，禁借給 hover／反白**——2026-07-05 D4 曾借用，2026-08-11 糾正）。2026-09-07 由 neutral-3 上調:`-hover` 佔走 neutral-3 後不上調就會變成 hover 與按壓同值 |
 
 ```tsx
 // toggle button pressed 狀態

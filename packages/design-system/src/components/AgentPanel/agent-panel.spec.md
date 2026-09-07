@@ -493,6 +493,27 @@ story 檔頭):本家族沒有可切換的視覺 variant/size prop —— 面板�
 | 思考 chevron / 輸入框邊框 | transition | `--motion-duration-overlay` 150ms |
 | 減動作 | 互動觸發必可停;常駐 loop 全停、淡入停 | 見 AgentLogo 節 |
 
+## 關閉不等於卸載(2026-09-07 G2)
+
+**面板關閉時仍然渲染,只是 `display:none`。** 視覺上仍與入口鈕互斥(關著只看得到入口鈕),
+但捲到哪、展開了哪些、面板內部的狀態全部留著 —— 這是 E 條「閱讀位置保存」與 F 條
+「初始化為關閉」能成立的前提(原本 `if (open) return children`,關一次全部歸零,
+初始關閉之後第一次打開必然是全新的面板,「回到原本在看的地方」根本無從談起)。
+
+三個實作上的必要細節,少一個就不成立:
+
+1. **外面包一層 `display: contents`**:面板通常是 flex/grid 的直接子項,憑空多一層盒子會改版面。
+   `display: contents` 讓那層從盒子樹消失,實測子項寬度與沒有 wrapper 時逐像素相同。
+   用 wrapper 而不是把 `hidden` 交給 render prop —— 交出去就會有人忘記套。
+2. **`display:none` 而不是 `visibility:hidden`**:後者保狀態但**仍佔版面**。
+3. **捲動位置要自己補回去**:實測祖先被 `display:none` 之後瀏覽器會把捲動位置歸零,
+   而且 ResizeObserver 會以 0×0 觸發一次 —— 那一刻量到的數字全是 0,
+   拿去更新「使用者剛剛在哪」會被洗成「貼在底部」。所以 `AgentConversation` 的
+   自動捲動兩個 handler 都先擋掉「沒有版面」的情況,並記住最後一次看得見時的位置,
+   回來時補上。**沒有版面時量到的數字不代表任何事,不能拿來做決定。**
+
+機械閘:`scripts/agent-panel-reopen-state.mjs`。
+
 ## Esc 與關閉語意(不變量;2026-09-07 訂)
 
 **一句話**:Esc 只關「暫時性的東西」,而且只關**焦點所在那一區裡最內層**的那一個。面板本身是常駐 app UI,不是暫時性的東西,所以 Esc 永遠不關它。

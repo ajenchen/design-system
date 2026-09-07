@@ -31,6 +31,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright'
+import { launchBrowser } from './lib/launch-browser.mjs'
 import { AxeBuilder } from '@axe-core/playwright'
 import {
   createA11yFingerprintMap,
@@ -104,7 +105,7 @@ const expectedScanCorpus = createA11yStoryCorpus(stories.map(story => story.id))
 console.log(`▶ a11y audit:running axe-core against ${stories.length} stories`)
 
 const server = await startA11yStaticServer({ rootDirectory: STORYBOOK_DIR, defaultFile: 'iframe.html' })
-const browser = await chromium.launch()
+const browser = await launchBrowser()
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
 
 const results = { ts: new Date().toISOString(), total: stories.length, violationsByStory: {}, summary: { totalViolations: 0, byRule: {}, bySeverity: { critical: 0, serious: 0, moderate: 0, minor: 0 } } }

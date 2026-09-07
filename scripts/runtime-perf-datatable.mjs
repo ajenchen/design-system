@@ -12,6 +12,7 @@
  * 對標:AG Grid public benchmark / Material X-DataGrid demo / Glide DataEditor
  */
 import { chromium } from 'playwright'
+import { launchBrowser } from './lib/launch-browser.mjs'
 
 const STORYBOOK_URL = process.env.STORYBOOK_URL || 'http://localhost:6006'
 const targets = [
@@ -35,7 +36,7 @@ const targets = [
 const CPU_THROTTLE_RATE = Number(process.env.CPU_THROTTLE_RATE || 1)
 const RUNS_PER_STORY = Number(process.env.RUNS_PER_STORY || 3)
 
-const browser = await chromium.launch({ headless: true })
+const browser = await launchBrowser()
 
 function stats(arr) {
   if (arr.length === 0) return { median: 0, mean: 0, stddev: 0 }
