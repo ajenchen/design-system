@@ -11,6 +11,7 @@ import { Search } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent } from "@/design-system/components/Dialog/dialog"
+import { MenuItem } from "@/design-system/components/Menu/menu-item"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 
 const Command = React.forwardRef<
@@ -36,7 +37,10 @@ const CommandDialog = ({ children, ...props }: DialogProps) => {
   return (
     <Dialog {...props}>
       <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]">
-        <Command className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-fg-muted [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-3 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-3 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
+        {/* 2026-09-07:刪掉這裡對 `cmdk-group-heading` 的三條覆寫(px-3 / font-medium / text-fg-muted)——
+            分組標題的樣式已由 CommandGroup 消費 `MenuItem header`(SSOT:item-anatomy.spec.md:188)。
+            留著等於在第二個地方又寫一次同一件事,而且值不一定跟著改(這正是 user 抓到「漂移」的形狀)。 */}
+        <Command className="[&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-3 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-3 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
           {children}
         </Command>
       </DialogContent>
@@ -108,16 +112,34 @@ const CommandEmpty = React.forwardRef<
 
 CommandEmpty.displayName = CommandPrimitive.Empty.displayName
 
+/**
+ * 分組標題**消費 `MenuItem header`,不自己寫樣式**。
+ *
+ * 2026-09-07 修(user 抓「Command 群組標題漂移了,照理說應該跟 SelectMenu 同一種設計語言」):
+ * 這裡原本手寫 `px-3 py-1.5 text-caption font-medium text-fg-muted` ——
+ * 而 SSOT(`patterns/element-anatomy/item-anatomy.spec.md:188`「Row header(分組標題)」)寫的是
+ * 「用 `MenuItem header={true}` 模式,`font-medium text-fg-muted` + 與 items **完全相同**的
+ * row geometry(同 px / 同 py / **同 text size**)」。
+ * 差在字級:手寫的是 `text-caption`(12px),canonical 要求與項目同級(14px)。
+ *
+ * SelectMenu(`select-menu.tsx:465`)一直是照 SSOT 做的 —— 它傳
+ * `heading={<MenuItem size={size} header>…}` 並用 `[&_[cmdk-group-heading]]:p-0` 中和 cmdk 的內距。
+ * 所以這不是「兩種設計語言」,是 Command **沒有消費 SSOT**、自己抄了一份走樣的值。
+ *
+ * 現在改成:consumer 傳字串時由本元件包成 `<MenuItem header>`,樣式完全由 SSOT 決定;
+ * consumer 自己傳 element(SelectMenu 那種)則原樣尊重。兩條路徑都不再有手寫值。
+ */
 const CommandGroup = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Group>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
->(({ className, ...props }, ref) => (
+>(({ className, heading, ...props }, ref) => (
   <CommandPrimitive.Group
     ref={ref}
-    className={cn(
-      "overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-caption [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-fg-muted",
-      className
-    )}
+    // `p-0` 中和 cmdk 對 heading 容器的預設內距 —— 內距由 MenuItem 的 row geometry 提供
+    className={cn("overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:p-0", className)}
+    heading={typeof heading === 'string' || typeof heading === 'number'
+      ? <MenuItem header>{heading}</MenuItem>
+      : heading}
     {...props}
   />
 ))

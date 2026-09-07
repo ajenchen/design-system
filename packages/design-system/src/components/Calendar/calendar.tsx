@@ -332,7 +332,17 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         {weekdayNames.map((name, i) => (
           <div
             key={i}
-            className="px-2 py-1.5 text-caption text-fg-muted font-normal text-center"
+            // 2026-09-07 修(user 抓「為何星期標題要用那麼淺的顏色?」):
+            // 原本是 `text-caption text-fg-muted font-normal`(12px / 45% 灰 / 細體)。
+            // **DS 早就有 canonical 而且方向相反** —— `date-grid.spec.md:151`「Weekday header canonical」
+            //(2026-05-03 user audit):`text-foreground text-body font-medium`,理由是
+            // 「weekday 列標跟 caption 同視覺權重,都屬 calendar header 區,**不弱化**」,
+            // 而且明文「**撤銷 v3 用 `fg-secondary font-normal` 的 mistake(M23)**」。
+            // Calendar 這版比那個已被撤銷的版本**還弱**,是漂移不是設計選擇
+            //(calendar.spec.md 沒有另訂星期排版,所以那條是唯一 canonical)。
+            // 在本元件內也是孤例:月份標題 `text-body-lg font-medium`、日期數字 `text-body font-medium`,
+            // 只有星期標題是 12px 細灰。
+            className="px-2 py-1.5 text-body text-foreground font-medium text-center"
           >
             {name}
           </div>

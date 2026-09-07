@@ -1428,3 +1428,74 @@ FieldControlGroup / SelectionControl** 等,而我在報告裡寫的是「全 DS�
 Input / NumberInput / Textarea / FieldControlGroup / Combobox / DatePicker / TimePicker /
 AgentPromptInput / Slider 的欄位 / AppShell 的欄位)、C(InlineEdit)、D(AppShell 的側欄鈕未選中)——
 **沒有新的違規**。
+
+---
+
+# AB. user 2026-09-07 第二輪三問:三題都是真的漂移
+
+## AB1 Command 群組標題 —— 沒有消費 SSOT,自己抄了一份走樣的值
+
+**SSOT 在 `item-anatomy.spec.md:188`**:分組標題用 `MenuItem header={true}` 模式,
+`font-medium text-fg-muted` + 與 items **完全相同的 row geometry(同 px / 同 py / 同 text size)**。
+
+- **SelectMenu 一直照做**:`heading={<MenuItem size={size} header>…}` + `[&_[cmdk-group-heading]]:p-0` 中和 cmdk 內距
+- **Command 沒有**:`command.tsx:118` 手寫 `px-3 py-1.5 **text-caption**` —— 12px,canonical 要求與項目同級
+
+所以不是「兩種設計語言」,是 Command **沒有消費 SSOT**。而且 `CommandDialog` 還有**第二份**手寫覆寫。
+改成:consumer 傳字串時由 CommandGroup 包成 `<MenuItem header>`,樣式完全由 SSOT 決定;
+傳 element 則原樣尊重。兩份手寫全刪。實測標題 12px → **14px / 500 / fg-muted / px-12,與項目一致**。
+
+## AB2 Calendar 星期標題 —— 比一個「已被撤銷的錯誤」還弱
+
+user 問「為何要用那麼淺的顏色?用 secondary 不好嗎?有仔細研究過嗎?」
+
+**DS 早就研究過而且方向相反**。`date-grid.spec.md:151`「Weekday header canonical(2026-05-03 v9)」:
+> `text-foreground text-body font-medium`(neutral-9 + 500 weight + body size)。對齊 caption「April 2026」
+> 同視覺權重(都屬 calendar header 區),**不弱化**。**撤銷 v3 用 `fg-secondary font-normal` 的 mistake(M23)**。
+
+Calendar 用的是 `text-caption text-fg-muted font-normal`(12px / 45% 灰 / 細體)——
+**比那個已被撤銷的 `fg-secondary` 還弱**。而且 `calendar.spec.md` 沒有另訂星期排版,所以那條是唯一 canonical。
+在本元件內也是孤例:月份標題 `text-body-lg font-medium`、日期數字 `text-body font-medium`,只有星期是 12px 細灰。
+
+已改為消費 canonical。實測 **14px / 500 / 對比 19.26:1**。
+
+## AB3 可輸入的 DatePicker —— 「同時出現」其實一直沒有支援
+
+user 說「明明這個元件是允許同時出現 focus+日期選單的啊…而且我們明明也支援」。
+**實測結果與這個認知相反**:日曆一開,焦點就被搬進日曆內的按鈕,**之後打字完全進不去**(值不變)。
+也就是 `typeable` 這個 prop 的賣點在日曆開啟後就失效。而且點文字區根本不會開日曆
+(input 上有 `onClick stopPropagation` 把點擊吞掉),只有點到圖示那一小塊才會。
+
+### 查證(WebFetch 實抓,不是憑印象)
+
+- **Ant Design 官方文件**逐字:「By clicking the input box, you can select a date from a popup calendar」,
+  且 `inputReadOnly` 預設 `false`(可同時打字)。
+  → 我們程式碼註解寫的「Calendar icon 點才開(Material/**Ant** typed-date idiom)」**對 Ant 是反的**。
+- **W3C APG date-picker combobox** 逐字:「The date picker dialog is opened by activating the choose date
+  button or by moving keyboard focus to the combobox and pressing Down Arrow or Alt + Down Arrow」。
+
+### 定案:依「怎麼被打開的」分流
+
+| 怎麼開的 | 日曆 | 焦點 | 依據 |
+|---|---|---|---|
+| 點欄位任何地方 | 開 | **留在輸入框,可繼續打字** | Ant 官方文件 |
+| ArrowDown / Alt+ArrowDown | 開 | **進日曆** | W3C APG;焦點不進去就走不了日期格 |
+
+**兩條不是二選一** —— 好用的是滑鼠那條,但鍵盤那條不能為了它犧牲可操作性。
+實測 7 項全過(點文字開、焦點留、能打字、日曆不關;鍵盤開、焦點進、方向鍵能走格)。
+
+實作註記:焦點是用「開啟後下一幀 refocus」拿回來的,**不是**靠攔 `onOpenAutoFocus` ——
+實測那個事件在本組合下根本沒被派發(探針顯示 handler 從未執行,焦點卻仍被移走),
+追 Radix 內部只會愈追愈深。不依賴第三方內部行為才守得住。
+
+### 「ds 是否有其他類似問題」—— 全掃過了
+
+| 元件 | 浮層開啟後焦點 | 還能打字嗎 | 判定 |
+|---|---|---|---|
+| Command / PeoplePicker | **留在 input** | ✓ | 正確(cmdk 系) |
+| DatePicker(typeable) | 進日曆 | ✗ | **本輪已修** |
+| TimePicker / Combobox / Select | 進浮層 | ✗ | 那些觸發器**不是可輸入的**,焦點進浮層是 APG dialog 模式的正確行為 |
+
+所以同類問題只有 DatePicker 一處。
+
+機械閘:`scripts/datepicker-typeable-open.mjs`(兩條路都驗,少驗一條就會把另一條弄壞)。

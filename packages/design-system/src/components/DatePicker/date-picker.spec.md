@@ -130,6 +130,23 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 `typeable?: boolean`(default false)→ trigger 內渲 real `<input type="text" role="combobox">` 取代 `<span>`,user 可直接打字 + Calendar icon 仍開 popover(Material X DatePicker / Ant DatePicker / Notion typed-date 雙 affordance 共識)。外層 Field wrapper 只負責視覺與 Popover click anchor,不重複 `role` / `aria-*`;popup 開啟、dialog 實際掛載後,真 input 才輸出 `aria-controls` 指向該 dialog,關閉後移除,禁止把 Radix 的懸空 IDREF 留在純視覺 wrapper。Parser `parseDateInput(input, { allowTime })` 接 ISO YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD + native `Date.parse` fallback(RFC 'Mar 12 2026')。Partial input allow;`Enter`/`Blur` commit;`Esc` reset;IME `compositionstart/end` guard 不誤觸發。Invalid → `aria-invalid`。**v1 limits**:US `MM/DD/YYYY` vs EU `DD/MM/YYYY` ambiguous → Date.parse fallback;locale-aware format prop deferred v2;TimePicker typed input deferred(column picker UX 不同)。
 
+## 可輸入模式的開啟行為(2026-09-07,user 提問後查證重訂)
+
+| 怎麼開的 | 日曆 | 焦點 | 為什麼 |
+|---|---|---|---|
+| **點欄位任何地方**(文字、空白、圖示) | 開 | **留在輸入框,可繼續打字** | Ant Design 官方文件逐字「By clicking the input box, you can select a date from a popup calendar」,且 `inputReadOnly` 預設 `false` |
+| **鍵盤 ArrowDown / Alt+ArrowDown** | 開 | **進日曆** | [W3C APG date-picker combobox](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-datepicker/) 逐字「opened by activating the choose date button or by moving keyboard focus to the combobox and pressing Down Arrow or Alt + Down Arrow」;焦點不進去就走不了日期格 |
+
+**兩條路不是二選一。** 好用的是滑鼠那條(邊看日曆邊打字),但鍵盤那條不能為了它犧牲可操作性 ——
+所以依「怎麼被打開的」分流。
+
+**訂正一則舊宣稱**:先前程式碼註解寫「Calendar icon 點才開 popover(Material/**Ant** typed-date idiom)」——
+對 Ant 而言是反的。而且實測當時**日曆一開焦點就被搬進去,之後完全打不了字**,
+等於 `typeable` 這個 prop 的賣點在日曆開啟後就失效。
+
+機械閘:`scripts/datepicker-typeable-open.mjs`。
+
+
 ---
 
 ## DatePicker.Range(2026-04-21 新增,仿 Ant Design)
