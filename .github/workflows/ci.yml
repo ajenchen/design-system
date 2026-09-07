@@ -112,6 +112,25 @@ jobs:
       # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)
       # both merged without any gate exercising them. These two commands bind cloud survivability
       # to every PR (2026-08-28 user directive: 永遠確保各種環境和模型都能如期順利運行).
+      # 這 9 支都註冊成 `npm run test:*`(等於宣告「要被跑」),但沒有任何 workflow 呼叫它們。
+      # 本機逐一實跑確認全綠、合計約 21 秒才接上 —— 不是把紅燈接進 CI。
+      # 另有 4 支目前是紅的,理由寫在 scripts/ci-gate-coverage.mjs 的 NOT_A_PR_GATE(總帳 AD13)。
+      - name: Registered test scripts nothing was running
+        run: |
+          npm run test:release-consent
+          npm run test:audit-coverage-tier-sync
+          npm run test:devmode-geometry
+          npm run test:ci-evidence
+          npm run test:privileged-change-authorization
+          npm run test:hook-evidence
+          npm run test:header-tabs-slot-invariants
+          npm run test:setup-netlify
+          npm run test:deterministic-deep-audit
+          # 這條 meta 閘守「宣稱有閘、其實沒人跑」本身:
+          # 凡註冊成 test:* 的,CI 就必須觸達得到,否則紅。
+          node scripts/ci-gate-coverage.mjs
+          node scripts/ci-gate-coverage.mjs --selftest
+
       - name: Cloud portability gates (provider config survivability)
         run: |
           node --test scripts/test-cloud-portability-invariants.mjs

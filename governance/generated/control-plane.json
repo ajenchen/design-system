@@ -1614,7 +1614,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 14,
-      "hash": "sha256:76f4a423d62d8b600710fd313383c5750de1f6befee8a3d7f5856f4dfb097cd8",
+      "hash": "sha256:ac0fe4985bbb35105f0719b2254b6a1f7d521d55ccfb41ef0c6300e33d41e3d8",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1834,7 +1834,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:cbd118fe9e0c8255e8ad09b52b8e0a7f491494e08668c9de16829093643be729",
+      "hash": "sha256:5a6df4cc3b5291f070124987033d2f26cbb1d7704ef81eddbc01e721366c6822",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1897,12 +1897,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:1207ecfeb5d05e5f816218970cc49c753817b5aeda680e944306f281a9bc3904",
+      "hash": "sha256:2af27ce2e69123d2a6675c22a621bf4486cb0aaf6040b0390269b433b62e9c96",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "infra/governance/providers/harness-source-inventory.json",
-      "size": 24573,
+      "size": 24629,
       "type": "file"
     },
     {
@@ -2577,7 +2577,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:2d1f0edc2d925df5ad2263e097527655a3afa16dc8c17b075da8de83814c9c10",
+      "hash": "sha256:696496d6cd1ffb465bae685c3253d503e481ffdcb8d145474f6b406247154fe3",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2710,7 +2710,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 45,
-      "hash": "sha256:07742f321162446f6ba4a0c91f1592174f85f445d05f0202ca3d2856eba44762",
+      "hash": "sha256:bd3f966937f836c28199dcb284d80a491e557857aa77ccdb51563a41320e0b97",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3074,8 +3074,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 404,
-      "hash": "sha256:9a9d7d42da89912b5554207e9202eb1a7f8e358afb79b13a2e11ec71458d7acd",
+      "files": 405,
+      "hash": "sha256:0a4f0b6072f2b36cee60be613658f022c144f1c0878714e5fba12bed435ec2a6",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

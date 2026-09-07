@@ -325,6 +325,7 @@
         "scripts/test-action-divider-placement.mjs",
         "scripts/test-audit-coverage-tier-sync.mjs",
         "scripts/test-authority-decision-evidence.mjs",
+        "scripts/test-authority-generation-reaper.mjs",
         "scripts/test-build-fork-filesystem-safety.mjs",
         "scripts/test-canonical-path-containment.mjs",
         "scripts/test-check-codex-freshness-authorization.mjs",

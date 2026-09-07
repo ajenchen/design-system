@@ -1806,6 +1806,48 @@ npm 自己的公告端點對 `fast-uri@3.1.7` 回報 **0 筆**。而我的 lock 
 「protected-base(main)自身被新資安公告擊穿 → 合掉含 lock 升級的 PR 即治 main」。
 ruleset 實查:required 只有 `Verify(tsc + tests + compile + build)` 一項,這兩支都不擋合併。
 
+## AD13 把「宣稱有閘、其實沒人跑」本身做成閘,結果又挖出 13 支
+
+ci.yml 的註解記過四次同一件事。與其每次靠人回頭盤,不如做成閘。
+
+**判準刻意收窄到不會誤報的一條**:凡是註冊成 `npm run test:*` 的,CI 就必須觸達得到。
+理由:註冊成 test 就是宣告「這要被跑」。反過來,`scripts/` 底下會 `exit(1)` 的檔案有 **172 支**,
+其中多數是工具、或經由 build graph / deterministic chain / harness registry 執行 ——
+拿它們當母體會產生 **128 個假警報**,噪音閘比沒有閘更糟。
+
+觸達的定義要把三條真實路徑都算進去,少算一條就會誤報:
+(a) workflow 直接寫 `npm run <name>` 或它底下的 `scripts/x.mjs`;
+(b) 已觸達的 npm script 指令字串裡提到它(遞迴);
+(c) **All-Harness registry**(`governance-harnesses.yml` → `run-harnesses.mjs` →
+`harness-registry.json`)—— 漏掉這條會多出 9 個假警報。
+
+盤點結果:41 支 `test:*`,**22 支沒被 CI 觸達**;扣掉 registry 帶起來的 9 支,**真正沒人跑的 13 支**。
+逐一實跑(用 `$?` 而不是管線後的 `$?` —— 我一開始又踩了「管線結束碼屬於 tail」這個記過的坑):
+
+| 結果 | 支數 | 處置 |
+|---|---|---|
+| 綠(合計約 21 秒)| 9 | **接進 CI** |
+| 紅 | 4 | 明列在 `ci-gate-coverage.mjs` 的 `NOT_A_PR_GATE`,each 附實際錯誤 |
+
+**4 支紅的,是紅了而且沒人知道** —— 明列不是放行,是把已知紅燈寫在看得到的地方:
+
+- `test:waived-self-review`:`Harness source inventory is not source-closed;discovered=245 classified=240`。
+  實查未分類的有 6 支 `scripts/test-*.mjs`,**其中只有 1 支是我這輪新增的**
+  (`test-authority-generation-reaper.mjs`,已補進 `governance-script-remainder`),
+  另外 5 支是既有漂移(`test-agent-fab-drag-zones` / `test-cloud-portability-invariants` /
+  `test-devmode-visual` / `test-distribute-column-widths` / `test-release-consent`)。
+- `test:governance-evidence-control-plane`:`Harness source inventory digest drifted`,與上同源。
+- `test:provider-neutral-residue`:殘留掃描回報 1 筆(`assert 1 !== 0`),尚未定位。
+- `test:governance-control-plane`:`@qijenchen/governance` 套件測試 70 個斷言失敗,尚未定位。
+
+**為什麼不是現在全修**:這 4 支是與焦點／拖曳整治無關的既有治理債,
+其中兩支要動 harness inventory 的分類語意(`direct` / `suites` / `nonGovernance` 各代表什麼、
+DS 單元測試該不該進十分鐘的治理套件),我沒有把握不改壞它 ——
+在沒有把握時把既有債寫清楚,比硬改一個自己看不懂的分類表誠實。修好任一支就從 `NOT_A_PR_GATE` 刪掉,
+閘會立刻要求它進 CI。
+
+閘自帶對照組(虛構一支沒人跑的 `test:*`,必須被判為未觸達)。
+
 ## AD7 剩下兩項
 
 | # | 卡在哪 |
