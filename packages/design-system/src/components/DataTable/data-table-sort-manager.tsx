@@ -5,6 +5,7 @@ import { Plus, Trash2, X as XIcon, RotateCcw, GripVertical } from 'lucide-react'
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
 import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
 import { dragSourceStyle, dragHandleCursorClass, forwardDragActivatorAttributes } from '@/design-system/lib/drag-visual'
@@ -87,7 +88,17 @@ function DataTableSortManagerInner<TData>({
   const removeAt = (index: number) => {
     onSortingChange(sorting.filter((_, i) => i !== index))
   }
+  // C1/B2 修(2026-09-07):先前沒傳 accessibility → 吃 dnd-kit 英文預設,
+  // 且它從自己的生命週期播報,不知道下面的守衛已經 return。共用 SSOT 見
+  // `lib/drag-announcements.ts`(四個 DndContext 同一份)。
+  const outcomeRef = React.useRef<DragOutcome | null>(null)
+  const announcements = React.useMemo(
+    () => createDragAnnouncements({ getOutcome: () => outcomeRef.current, kind: '排序條件' }),
+    [],
+  )
+
   const handleDragEnd = (event: DragEndEvent) => {
+    outcomeRef.current = null
     const { active, over } = event
     if (!over || active.id === over.id) return
     const oldIndex = sorting.findIndex((s) => s.id === active.id)
@@ -96,6 +107,7 @@ function DataTableSortManagerInner<TData>({
     const next = [...sorting]
     const [moved] = next.splice(oldIndex, 1)
     next.splice(newIndex, 0, moved)
+    outcomeRef.current = { kind: '排序條件', label: String(active.id) }
     onSortingChange(next)
   }
   const addSort = () => {
@@ -133,7 +145,7 @@ function DataTableSortManagerInner<TData>({
           無條件時 CTA 直接顯示,不需要 Empty 大區塊 */}
       <SurfaceBody className="flex flex-col gap-[var(--layout-space-tight)]">
         {sorting.length > 0 && (
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={{ announcements }}>
             <SortableContext items={sorting.map(s => s.id)} strategy={verticalListSortingStrategy}>
               {sorting.map((sort, index) => {
                 const usedByOthers = new Set(sorting.filter((_, i) => i !== index).map((s) => s.id))

@@ -43,6 +43,7 @@ import { DndContext, DragOverlay, useDraggable, useDroppable, useDndContext, poi
 import { cn } from '@/lib/utils'
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
+import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
 import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, dragHandleCursorClass, forwardDragActivatorAttributes, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier } from '@/design-system/lib/drag-visual'
 import { nakedCellEditableDisplayHover, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
@@ -3886,27 +3887,13 @@ function DataTableInner<TData>(
   // 修法:dnd-kit 的 dispatch 順序是 `handler?.(event)` 先跑、`dispatchMonitorEvent`
   //(播報)後跑(core.esm.js:3166-3170 實查),所以在 handler 內記下「有沒有真的 commit」,
   // 播報時讀它即可。不需要重算一次判定,避免兩份邏輯漂移。
-  const reorderOutcomeRef = React.useRef<{ kind: 'row' | 'column'; label: string } | null>(null)
+  const reorderOutcomeRef = React.useRef<DragOutcome | null>(null)
 
-  // 繁中拖曳播報。措辭沿用 DS 既有的 reorder 播報 canonical
-  //(`TreeView` 的 `DEFAULT_REORDER_ANNOUNCEMENTS`,tree-view.tsx:130 起)——
-  // 同樣的「已將『X』…」句型與「已在最上方」這類邊界說法,不另創語氣。
-  // dnd-kit 的預設 live region 是 `aria-live="assertive"`(core.esm.js:3363 無條件渲染),
-  // 這裡只換字串與結果判定,不動它的渲染。
-  const dragAnnouncements = React.useMemo(() => ({
-    onDragStart: ({ active }: { active: { id: string | number } }) =>
-      `已提起『${String(active.id)}』,用方向鍵移動,放開或按 Enter 放下,Esc 取消`,
-    onDragOver: ({ over }: { over: { id: string | number } | null }) =>
-      over ? `移到『${String(over.id)}』上方` : '目前不在可放置的位置',
-    onDragEnd: () => {
-      const o = reorderOutcomeRef.current
-      // **關鍵**:沒有 commit 就誠實說沒變,不能沿用 dnd-kit 的「已放到 X」。
-      if (!o) return '未變更順序'
-      return o.kind === 'column' ? `已移動欄位『${o.label}』` : `已移動列『${o.label}』`
-    },
-    onDragCancel: ({ active }: { active: { id: string | number } }) =>
-      `已取消移動『${String(active.id)}』,回到原位`,
-  }), [])
+  // 消費共用 SSOT `lib/drag-announcements.ts`(四個 DndContext 同一份,見該檔檔頭)。
+  const dragAnnouncements = React.useMemo(
+    () => createDragAnnouncements({ getOutcome: () => reorderOutcomeRef.current, kind: '項目' }),
+    [],
+  )
 
   const handleDragEnd = React.useCallback((e: DragEndEvent) => {
     reorderOutcomeRef.current = null
@@ -3944,7 +3931,7 @@ function DataTableInner<TData>(
         // Moving left(oldIdx > newIdx):ghost 必過 target center(從右側)才換
         if (oldIdx > newIdx && ghostCenter > targetCenter) return
       }
-      reorderOutcomeRef.current = { kind: 'column', label: sourceId }
+      reorderOutcomeRef.current = { kind: '欄位', label: sourceId }
       onColumnReorder?.(sourceId, targetId, position)
       return
     }
@@ -3958,7 +3945,7 @@ function DataTableInner<TData>(
     if (oldIdx === -1 || newIdx === -1) return
     const position: 'before' | 'after' = oldIdx < newIdx ? 'after' : 'before'
     if (isReorderNoop(oldIdx, newIdx, position)) return
-    reorderOutcomeRef.current = { kind: 'row', label: sourceId }
+    reorderOutcomeRef.current = { kind: '列', label: sourceId }
     onRowReorder?.(sourceId, targetId, position)
   }, [allRowIds, parentMap, onRowReorder, onColumnReorder, reorderableColumnIds, isReorderNoop])
 

@@ -17,6 +17,7 @@ import { ChevronRight } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
 import { dragSourceClass, dropIndicatorRow, dropIndicatorInside } from '@/design-system/lib/drag-visual'
+import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 // Row primitive 共用常數——單一 source of truth
@@ -529,12 +530,24 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     const dropTargetRef = React.useRef(dropTarget)
     dropTargetRef.current = dropTarget
 
+    // C2/B2 修(2026-09-07):TreeView 自有的繁中播報只有**鍵盤重排**那條路在寫,
+    // 滑鼠拖曳走的是 dnd-kit 的英文預設 —— 實測整趟拖曳下來自有播報區維持空字串。
+    // 這裡把指標路徑也接上,並誠實回報結果:守衛擋下(不合法 target / 子樹內)
+    // 就播「未變更」而不是假的成功。共用 SSOT 見 `lib/drag-announcements.ts`。
+    const dragOutcomeRef = React.useRef<DragOutcome | null>(null)
+    const dndAnnouncements = React.useMemo(
+      () => createDragAnnouncements({ getOutcome: () => dragOutcomeRef.current, kind: '項目' }),
+      [],
+    )
+
     const handleDragEnd = React.useCallback((event: DragEndEvent) => {
+      dragOutcomeRef.current = null
       if (autoExpandTimerRef.current) { clearTimeout(autoExpandTimerRef.current); autoExpandTimerRef.current = null }
       const { active, over } = event
       const dt = dropTargetRef.current
       // descendant guard 同 handleDragOver(dt 已由 dragOver guard 保證為 null,此為 belt-and-braces)
       if (over && !isInSubtree(String(over.id), String(active.id)) && dt) {
+        dragOutcomeRef.current = { kind: '項目', label: String(active.id) }
         onDragEndProp?.({
           sourceId: String(active.id),
           targetId: String(over.id),
@@ -975,6 +988,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
+          accessibility={{ announcements: dndAnnouncements }}
         >
           {treeEl}
           {draggable && (
