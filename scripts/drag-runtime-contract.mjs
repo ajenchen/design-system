@@ -153,5 +153,26 @@ else {
   }
 }
 
+// ── C2:TreeView 指標拖曳也要有繁中播報(先前實測整趟是空字串)──
+{
+  await pg.goto(`${B}/iframe.html?id=design-system-components-treeview-展示--drag-and-drop&viewMode=story`,{waitUntil:'networkidle'})
+  await pg.waitForTimeout(600)
+  const item = await pg.$('[data-tree-row]')
+  if (!item) ck('C2 找得到可拖曳的樹節點', false)
+  else {
+    const b = await item.boundingBox()
+    await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2)
+    await pg.mouse.down()
+    for (const dy of [3, 12, 30, 60]) { await pg.mouse.move(b.x + b.width / 2, b.y + b.height / 2 + dy, {steps:4}); await pg.waitForTimeout(70) }
+    const mid = await live()
+    await pg.mouse.up(); await pg.waitForTimeout(300)
+    const end = await live()
+    // 先前的症狀:整趟拖曳下來 live region 維持空字串(繁中那份只有鍵盤路徑在寫,
+    // 指標路徑走 dnd-kit 英文預設,而那份預設寫進的是 dnd-kit 自己的 region)
+    ck('C2 TreeView 指標拖曳中有繁中播報', mid.some(x => /[\u4e00-\u9fff]/.test(x.t)), JSON.stringify(mid).slice(0,140))
+    ck('C2 TreeView 放開後有結果播報', end.some(x => /已移動|未變更|已取消/.test(x.t)), JSON.stringify(end).slice(0,140))
+  }
+}
+
 console.log(out.join('\n')); console.log(fail?`\n✗ ${fail} 項未通過`:'\n✓ 全部通過')
 await br.close(); sv.close(); process.exit(fail?1:0)

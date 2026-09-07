@@ -228,8 +228,31 @@ function MultiPersonDisplay({
     // `flex w-full min-w-0` 與 `flex-1 min-w-0`,寬度由外層決定、**不受本元件內容影響**,
     // 量它才是 `getAvatarStackVisibleCount` jsdoc 講的 availablePx。
     const box = el.parentElement ?? el
+    // **2026-09-07(B1)修:`width='hug'` 下量父層還是會自我回饋。**
+    //
+    // hug 的 field wrapper 是 `w-fit max-w-full`(field-wrapper.tsx:134)—— 它的寬度
+    // **就是內容決定的**,所以裡面那層 `flex-1 min-w-0` 也跟著內容縮:少畫一顆 →
+    // 父層變窄 → 再少畫一顆,棘輪只是往上搬了一層,沒有被拆掉。
+    //
+    // 拆法是找一個**不隨內容變**的量。欄位的「外框開銷」(左右 padding、邊框、同排的
+    // chevron / 清除鈕 / gap)跟畫幾顆頭像無關,所以:
+    //     可用寬 = 容器內容寬 − 外框開銷
+    //     外框開銷 = wrapper 現在的寬 − 這個 slot 現在的寬
+    // 兩個減數都在同一幀量,內容多寡同時影響兩者、相減後抵消 → 迴圈斷掉。
+    //
+    // fill 模式下這條公式與原本的「量父層」逐像素相同(wrapper 寬由容器決定,
+    // slot = wrapper − 開銷,相減回來就是容器寬 − 開銷),所以**不需要分兩條路**;
+    // 沒有 field wrapper 的用法(people-picker.tsx:256 那個 `flex w-full min-w-0`)
+    // 找不到 `[data-field-mode]`,自然落回原本的量父層。
+    const wrapper = el.closest<HTMLElement>('[data-field-mode]')
+    const containingBlock = wrapper?.parentElement ?? null
     const calc = () => {
-      const availablePx = box.clientWidth
+      const chromePx = wrapper && containingBlock
+        ? wrapper.getBoundingClientRect().width - box.getBoundingClientRect().width
+        : 0
+      const availablePx = wrapper && containingBlock
+        ? containingBlock.clientWidth - chromePx
+        : box.clientWidth
       // 尚未佈局(story 切換過渡、display:none、圖未載入)時寬度為 0 —— 用 0 去算會直接
       // 鎖進收縮態且不再復原,所以寧可不更新,等下一次 ResizeObserver 有真實寬度再算。
       if (availablePx <= 0) return
@@ -242,8 +265,10 @@ function MultiPersonDisplay({
       setMeasuredCount(visible)
     }
     calc()
+    // 觀察對象也要是不隨內容變的那個 —— hug 下 wrapper 自己會跟著內容縮,
+    // 只觀察它等於在觀察自己的輸出。
     const ro = new ResizeObserver(calc)
-    ro.observe(box)
+    ro.observe(containingBlock ?? box)
     return () => ro.disconnect()
   }, [measured, size, value])
 

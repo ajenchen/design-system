@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-06T09:28:05.732Z"
+    "generatedAt": "2026-09-07T11:50:04.811Z"
   },
   "components": {
     "accordion": {
@@ -1148,6 +1148,7 @@
           "design-system-components-peoplepicker-展示--single",
           "design-system-components-peoplepicker-展示--with-error",
           "design-system-components-peoplepicker-展示--multi",
+          "design-system-components-peoplepicker-展示--hug-width-multi-stack",
           "design-system-components-peoplepicker-展示--multi-remove-focus-contract",
           "design-system-components-peoplepicker-展示--stack-remove-overlay-probe",
           "design-system-components-peoplepicker-展示--clearable",
@@ -1790,5 +1791,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 966
+  "totalStories": 967
 }

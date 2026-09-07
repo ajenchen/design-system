@@ -1861,27 +1861,29 @@ for (const [storyName, label, steps] of [
   const src = readFileSync(join(ROOT, 'packages/design-system/src/components/PeoplePicker/person-display.tsx'), 'utf8')
   // 必須先剝掉註解 —— 那段註解裡引用了舊寫法(`availablePx: el.clientWidth`)當反面教材,
   // 不剝的話正則會打到註解,變成永遠 FAIL 的假閘。
-  // 2026-09-07 C9 修:原本取「第一個 React.useLayoutEffect 起算固定 2600 字元」——
-  //   (1) `indexOf` 抓第一個,有人在前面加一個 effect 錨點就整個漂掉;
-  //   (2) 2600 是憑經驗的長度,程式一長視窗就切在半路。
-  // 改成以 `ro.observe` 這個**這條閘真正關心的東西**為錨,往前後各取到最近的空行邊界,
-  // 而且**找不到錨點就當場 FAIL**(fail closed)——先前找不到只會讓正則全部 miss,
-  // 那是「閘沒跑到」被記成「閘通過」。
-  const roIdx = src.indexOf('ro.observe')
+  // 2026-09-07 C9 修 + 同日再修:
+  //   (1) 原本取「第一個 React.useLayoutEffect 起算固定 2600 字元」—— indexOf 抓第一個、
+  //       2600 是憑經驗的長度,程式一長視窗就切在半路;
+  //   (2) 第一版改用 `ro.observe` 當錨,但**先切窗、後剝註解**,於是被檔案上方那句
+  //       「原本 `ro.observe(el)` …」的**註解**騙走錨點,三條斷言一起假紅。
+  // 現行:**先剝註解、再找錨點**,而且找不到錨點就當場 FAIL(fail closed)。
+  const code = src.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n')
+  const roIdx = code.indexOf('ro.observe')
   record('I27a', '找得到 ResizeObserver 的 observe 呼叫(找不到 = 這條閘根本沒驗到東西)',
     roIdx >= 0, roIdx < 0 ? 'person-display.tsx 內找不到 ro.observe' : 'ok')
-  const winStart = roIdx < 0 ? 0 : Math.max(0, src.lastIndexOf('React.useLayoutEffect', roIdx))
-  const winEnd = roIdx < 0 ? 0 : Math.min(src.length, roIdx + 1200)
-  const roBlock = src.slice(winStart, winEnd)
-    .split('\n').filter((l) => !l.trim().startsWith('//')).join('\n')
-  record('I27a', '顯示路徑的 ResizeObserver 觀察祖先容器,不是頭像串自己',
-    /const\s+box\s*=\s*el\.parentElement/.test(roBlock) && /ro\.observe\(box\)/.test(roBlock),
-    roBlock.match(/ro\.observe\([^)]*\)/)?.[0] ?? '找不到 ro.observe')
-  record('I27a', 'availablePx 取自該容器,而非 el.clientWidth',
-    /availablePx\b/.test(roBlock) && !/availablePx:\s*el\.clientWidth/.test(roBlock),
-    /availablePx:\s*el\.clientWidth/.test(roBlock) ? '仍在量自己(棘輪未拆)' : 'ok')
+  const winStart = roIdx < 0 ? 0 : Math.max(0, code.lastIndexOf('React.useLayoutEffect', roIdx))
+  const roBlock = roIdx < 0 ? '' : code.slice(winStart, Math.min(code.length, roIdx + 400))
+  // 斷言改成**與寫法無關**:守的是「不得量自己」這個不變條件,不是某一版的變數名。
+  // (2026-09-07:B1 把量測改成「容器寬 − 外框開銷」之後,原本寫死 `ro.observe(box)`
+  //  的斷言就假紅了 —— 閘綁死實作寫法,實作一改進就擋路。)
+  const observed = roBlock.match(/ro\.observe\(([^)]*)\)/)?.[1]?.trim() ?? ''
+  record('I27a', '顯示路徑的 ResizeObserver 不得觀察頭像串自己(那會形成單向棘輪)',
+    observed !== '' && observed !== 'el', `ro.observe(${observed || '找不到'})`)
+  record('I27a', 'availablePx 不得取自頭像串自己的寬度',
+    /availablePx\b/.test(code) && !/availablePx[\s:=]+el\.clientWidth/.test(code),
+    /availablePx[\s:=]+el\.clientWidth/.test(code) ? '仍在量自己(棘輪未拆)' : 'ok')
   record('I27a', '寬度 ≤ 0(尚未佈局)時不得拿去算,否則會鎖進收縮態',
-    /if\s*\(availablePx\s*<=\s*0\)\s*return/.test(roBlock), '缺少 <=0 早退守衛')
+    /if\s*\(availablePx\s*<=\s*0\)\s*return/.test(code), '缺少 <=0 早退守衛')
 }
 await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
 await page.waitForSelector('[role="cell"]')
@@ -1918,6 +1920,35 @@ await page.waitForTimeout(400)
       !st.plus || st.availW <= st.ownW + 1, JSON.stringify(st))
     record('I27b', '被分配到的容器確實比頭像串自身寬(兩者相等的話這條閘抓不到棘輪)',
       st.availW > st.ownW + 1, `avail ${st.availW} / own ${st.ownW}`)
+  }
+}
+
+/* ── I27c:`width='hug'` 下量測不得自我回饋(2026-09-07 B1)────────────────────
+ * hug 的 field wrapper 是 `w-fit max-w-full` —— 寬度**由內容決定**。若量測對象是它或它裡面
+ * 那層,棘輪只是往上搬一層沒被拆掉:少畫一顆 → 欄位變窄 → 量到更窄 → 再少畫一顆。
+ * 修之前實測:720px 容器 + 6 人,hug 只畫「A|B|C|+3」、欄位縮到 116px;fill 同條件畫滿 6 人。
+ * 拆法是用**不隨內容變**的量:可用寬 = 容器內容寬 − 欄位外框開銷,
+ * 而外框開銷 = wrapper 現在的寬 − slot 現在的寬(同幀量,內容影響相減抵消)。
+ * 這條閘用同一個容器寬下的 hug / fill 對照組:兩者可用空間相同 → 顯示人數必須相同。 */
+await page.goto(`${BASE}/iframe.html?id=design-system-components-peoplepicker-展示--hug-width-multi-stack&viewMode=story`, { waitUntil: 'networkidle' })
+await page.waitForSelector('[data-field-mode]')
+await page.waitForTimeout(700)
+{
+  const st = await page.evaluate(() => {
+    const fields = [...document.querySelectorAll('[data-field-mode]')]
+    const pick = (re) => {
+      const f = fields.find((x) => re.test(x.getAttribute('aria-label') || ''))
+      if (!f) return null
+      return { w: +f.getBoundingClientRect().width.toFixed(0), plus: (f.innerText.match(/\+\d+/) || [''])[0] }
+    }
+    return { hug: pick(/hug/), fill: pick(/fill/), container: 720 }
+  })
+  if (!st.hug || !st.fill) record('I27c', 'hug / fill 對照組都在(否則以下斷言空轉)', false, JSON.stringify(st))
+  else {
+    record('I27c', `hug 與 fill 在同寬容器下顯示同樣多人(hug +N「${st.hug.plus || '無'}」/ fill +N「${st.fill.plus || '無'}」)`,
+      st.hug.plus === st.fill.plus, JSON.stringify(st))
+    record('I27c', 'hug 欄位仍是內容寬(沒退化成 fill,否則這條閘測的不是 hug)',
+      st.hug.w < st.container, `${st.hug.w}px / 容器 ${st.container}px`)
   }
 }
 

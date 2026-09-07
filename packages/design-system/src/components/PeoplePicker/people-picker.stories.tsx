@@ -136,6 +136,37 @@ export const Multi: Story = {
   render: () => <MultiPicker />,
 }
 
+/* ── hug 寬度 × 多人頭像串 ────────────────────────────────────────────────
+   為什麼需要這個 story:`width='hug'` 的欄位是 `w-fit max-w-full`(寬度由內容決定),
+   而頭像串「畫幾顆」也是量出來的 —— 兩者互為因果就會形成單向棘輪:
+   少畫一顆 → 欄位變窄 → 量到更窄 → 再少畫一顆,空間還回來也回不去。
+   (2026-09-07 修:量測改成「容器內容寬 − 欄位外框開銷」,兩個減數同幀量、內容影響互相抵消。)
+
+   讀法:容器 720px 寬、六個人。hug 欄位應該長到放得下的長度,而不是縮成「1 顆 + +5」。 */
+export const HugWidthMultiStack: Story = {
+  name: 'hug 寬度 × 多人',
+  render: () => (
+    <div className="flex flex-col gap-4" style={{ width: 720 }}>
+      <p className="text-caption text-fg-muted">
+        容器 720px。<code>width=&quot;hug&quot;</code> 的欄位寬度由內容決定,頭像串可畫幾顆則由
+        「容器還剩多少」決定 —— 兩者不可互為因果,否則會一路縮到只剩一顆。
+      </p>
+      <PeoplePicker
+        width="hug"
+        mode="readonly"
+        value={samplePeople.slice(0, 6)}
+        aria-label="協作者(hug 寬度)"
+      />
+      <PeoplePicker
+        width="fill"
+        mode="readonly"
+        value={samplePeople.slice(0, 6)}
+        aria-label="協作者(fill 寬度,對照組)"
+      />
+    </div>
+  ),
+}
+
 // Roving-focus 契約 probe:逐一移除 chip 時焦點依序落到下一個移除鈕,移除
 // 最後一人後回到 combobox。破壞性互動(清空全員)只屬測試,不得寄生在
 // reader-facing 展示 story(anchor:2026-08-05 user 抓「多人一打開就自己清空」;
