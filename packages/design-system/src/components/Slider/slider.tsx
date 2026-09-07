@@ -177,9 +177,13 @@ const Slider = React.forwardRef<
             // 而且與 hover 完全同色 —— 鍵盤使用者分不出「我在這裡」與「滑鼠經過」。
             // WCAG 2.4.7 要的是**看得見**的焦點指示;把手是可操作元件,依 focus-canonical
             // 問題一「可操作 → 必須畫」,而且它不屬「明確不用畫框」四類的任何一類。
-            // 改法是**拿掉 outline-none**,讓全域外描邊畫上去(元件不需要自己寫任何東西);
-            // hover 那條保留 —— 它表達的是 hover,不是焦點。
-            'focus-visible:border-primary-hover',
+            // 改法是**拿掉 outline-none**,讓全域外描邊畫上去(元件不需要自己寫任何東西)。
+            //
+            // 2026-09-07 再修:連 `focus-visible:border-primary-hover` 一起刪。
+            // 留著的話同一顆把手上會有**兩個**焦點指示(外描邊 + 邊框變色),
+            // 違反 focus-canonical「一個項目只有一個指示器」;而且那個變色與 hover 同色,
+            // 反而讓「鍵盤在這裡」與「滑鼠經過」看起來一樣。
+            // 上面的 `hover:border-primary-hover` 保留 —— 它表達的是 hover,那是另一件事。
             // Disabled:border 跟 Range 一起退成 border(n-5),bg 沉回 canvas(不透明背景色)
             'data-[disabled]:cursor-not-allowed data-[disabled]:border-border data-[disabled]:bg-canvas',
             'data-[disabled]:hover:[box-shadow:none]',

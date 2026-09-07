@@ -1372,3 +1372,27 @@ DropdownMenu 快捷鍵提示(`:267`/`:544`)、Command 群組標題(`:117`)、Com
 
 **一句話**:「沒有觀察到 X」在對照組成立之前不代表任何事。
 第一版的 POC 印出「✓ 焦點鎖仍然成立」——那是完全沒有根據的假綠,是對照組把它抓出來的。
+
+---
+
+# Z. C10 結案:符號連結方向(2026-09-07)
+
+`hooks/scripts` 在工作區指向 `.claude/hooks`(生成視圖),版本庫記錄的是
+`packages/design-system/ds-canonical/hooks`(canonical)。原本登記為「未裁示」。
+
+**查下去發現這件 2026-08-28 已經處理過**,而且記在失敗記憶索引裡
+(`historical-bugs.md:263`):那個連結是 **8/1 舊 generator 留下的本地殘影**,
+8/2 佈局改版後**沒有人寫得回去** —— 因為 Claude Code 對 hook 設定目錄有**平台內建**的
+防注入保護(不是我們自家沙箱設的)。當時的正解是 `git update-index --skip-worktree`,
+只寫 `.git` 的可寫區、不碰被鎖路徑。
+
+本輪狀態是那個 skip-worktree 被清掉了(所以又冒出來)。重新套用,並實測確認前提沒變:
+
+- `ln -sfn ../packages/design-system/ds-canonical/hooks hooks/scripts` → **`Operation not permitted`**(平台鎖仍在)
+- `git update-index --skip-worktree hooks/scripts` → 成功,`git ls-files -v` 顯示 `S`,`git status` 乾淨
+
+順帶記一件會誤導人的事實:兩棵樹**內容並不相同** ——
+canonical 多了 `record_release_consent.sh`、其測試、一個 retired 檔;生成視圖多了
+`lib/_approval_re.sh` 與 `tests/KNOWN-BROKEN.md`。所以總帳原本寫「內容相同故行為一致」是**不準的**。
+不過 `managed-host-assurance` 與 `npm run hooks:test` 都**直接讀 canonical**
+(`harness-source-inventory.mjs:2008` 明文),不經過這個別名,所以行為確實不受影響。
