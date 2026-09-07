@@ -311,6 +311,21 @@ function sanitizeGhostClone(el: HTMLElement, width: number): void {
   el.querySelectorAll('[data-drag-handle-portal]').forEach((n) => n.remove())
 }
 
+// ── 拖曳啟動門檻(全 DS 單一來源)────────────────────────────────────────────
+
+/**
+ * 指標要移動多少 px 才算「開始拖曳」而不是「點一下」。
+ *
+ * 為什麼要有這個常數:2026-09-07 盤點發現全 DS 有三個不同答案 ——
+ * DataTable 8、TreeView 5、AgentFab 8,而**欄位顯示面板與排序面板根本沒設**,
+ * 於是吃 dnd-kit 預設(零距離即啟動):單次 `pointerdown` 零位移就會觸發拖曳,
+ * 使用者只是想點一下核取方塊,卻收到 `aria-pressed=true` 與兩則 assertive 播報。
+ *
+ * 值取 8 —— 三處裡兩處已經是 8,其中 AgentFab 的 8 還是 user 實際用過調出來的
+ * (`agent-panel-fab.tsx` DRAG_THRESHOLD)。dnd-kit 官方範例亦落在 8–10 這一帶。
+ */
+export const DRAG_ACTIVATION_DISTANCE_PX = 8
+
 // ── Type exports for consumer ─────────────────────────────────────────────
 
 export type DropPosition = 'before' | 'after' | 'inside'

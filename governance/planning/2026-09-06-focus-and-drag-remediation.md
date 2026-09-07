@@ -840,3 +840,61 @@ WCAG 2.4.11 Focus Appearance(2.2 的 AA)要求焦點指示器面積至少相當�
   結論是:**切換鈕按下與未按下,在滑鼠懸停時像素完全相同**,「這顆開著沒」的訊號在 hover 當下消失。
 
   這是 token 取值題,有真實取捨,不自決 —— 見下方拍板清單。
+
+---
+
+# Q. C1 / C4 / C5 / B2 —— 拖曳三項改根因並在真瀏覽器驗到(2026-09-07)
+
+## Q1 C4:兩個面板的 `DndContext` **從來沒傳過 `sensors`**
+
+於是吃 dnd-kit 預設 —— PointerSensor 沒有啟動距離,**零位移的單次 `pointerdown` 就啟動拖曳**。
+使用者只想點一下核取方塊,卻收到 `aria-pressed=true` 與兩則 assertive 播報。
+
+順手挖出更上游的一件:**啟動門檻在全 DS 有三個不同答案**(DataTable 8 / TreeView 5 / AgentFab 8),
+外加這兩個面板根本沒設。抽成 `lib/drag-visual.ts` 的 `DRAG_ACTIVATION_DISTANCE_PX = 8`
+(三處裡兩處本來就是 8,其中 AgentFab 那個還是 user 實際用過調出來的),四處全部改讀同一份。
+
+## Q2 C5:overlay ghost 是 source 的完整複製,連 `role` 一起複製
+
+7 欄的表格在拖曳中查得到 **8 個 columnheader** —— 螢幕閱讀器會以為真的多一欄。
+修法是在 **DragOverlay 那一層**掛 `aria-hidden="true"`,而不是逐一 strip 每種 clone 的屬性:
+一個地方涵蓋列 ghost、欄位 ghost 與未來任何 ghost,不會有人新增一種 ghost 時忘了 strip。
+拖曳的口語回饋本來就由 live region 負責,不靠這份複製品。
+
+## Q3 C1 / B2 的執行期驗證 —— **先前登記為「卡住」,本輪做掉了**
+
+先前寫「合成 pointer 事件過不了 dnd-kit 的感測器門檻」。真正的原因不是那個 ——
+是**用 `element.click()` 打不開 Radix 浮層**(Radix 聽的是 pointer 事件),
+以及**抓錯拖曳目標**(DataTable 第一顆表頭是鎖定欄 `data-column-locked`,不可拖)。
+換成 Playwright 的真滑鼠 + 抓有 `aria-roledescription` 的表頭,全部跑得起來。
+
+實測拿到的播報(逐字):
+
+| 情境 | 播報 |
+|---|---|
+| 拖曳中 | 「移到『category』上方」 |
+| 放下並真的重排 | 「已移動欄位『name』」 |
+| **拉起來又放回原位** | **「未變更順序」** |
+
+最後一列就是 C1 的核心 —— 先前 dnd-kit 會謊稱「已放到 X」。現在不會了,而且是跑起來驗的。
+
+## Q4 兩個踩過的坑(記著)
+
+1. **拿 `aria-pressed` 當事後斷言會誤判**:它在拖曳結束後就被清掉,量到 `null`。
+   改用「播報有沒有出現」當拖曳啟動的證明。
+2. **「數量沒變」可能是假綠**:第一版 C5 測試量到「拖曳中 7 個 columnheader」以為修好了,
+   加了「拖曳真的啟動了嗎」的前提斷言才發現**根本沒啟動**(抓到鎖定欄)。
+   任何「量到沒變化」的斷言都必須先證明那個動作真的發生了。
+
+## Q5 兩支閘
+
+- `scripts/drag-announcement-invariant.mjs` 擴充:除了播報,**也要求 `sensors`**(selftest 5/5)
+- `scripts/drag-runtime-contract.mjs`(新增):真滑鼠驗 C4 正反面、C1 no-op、C5 無障礙樹,
+  含 stale-build 守衛。已接 `npm run test:drag-runtime`
+
+## Q6 一件登記但不修的
+
+dnd-kit 的 live region 寫死 `aria-live="assertive"`(`core.esm.js:3363`),API 不給改。
+assertive 會打斷螢幕閱讀器當下的朗讀。要改成 polite 得自建 region 並把 dnd-kit 的播報關掉 ——
+那會多一套平行機制。**現況登記在案,不動**;TreeView 的鍵盤重排另有自己的 polite region,
+兩條路不重疊。

@@ -16,7 +16,7 @@ import {
 import { ChevronRight } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
-import { dragSourceClass, dropIndicatorRow, dropIndicatorInside } from '@/design-system/lib/drag-visual'
+import { dragSourceClass, dropIndicatorRow, dropIndicatorInside, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
 import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
@@ -418,7 +418,9 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     )
 
     const sensors = useSensors(
-      useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+      // 2026-09-07:5 → DRAG_ACTIVATION_DISTANCE_PX(8)。全 DS 原本三個值(8/5/8)加一處沒設,
+      // 收斂到單一來源;8 是原本的多數,其中 AgentFab 那個 8 還是 user 實際用過調出來的。
+      useSensor(PointerSensor, { activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX } })
     )
 
     const handleDragStart = React.useCallback((event: DragStartEvent) => {

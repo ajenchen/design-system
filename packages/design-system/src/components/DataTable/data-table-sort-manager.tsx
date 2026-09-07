@@ -3,12 +3,12 @@
 import * as React from 'react'
 import { Plus, Trash2, X as XIcon, RotateCcw, GripVertical } from 'lucide-react'
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
-import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
+import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
 import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
-import { dragSourceStyle, dragHandleCursorClass, forwardDragActivatorAttributes } from '@/design-system/lib/drag-visual'
+import { dragSourceStyle, dragHandleCursorClass, forwardDragActivatorAttributes, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
 import { Button } from '@/design-system/components/Button/button'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { SurfaceHeader, SurfaceBody, COMPACT_HEADER_SLOT } from '@/design-system/patterns/overlay-surface/overlay-surface'
@@ -92,6 +92,13 @@ function DataTableSortManagerInner<TData>({
   // 且它從自己的生命週期播報,不知道下面的守衛已經 return。共用 SSOT 見
   // `lib/drag-announcements.ts`(四個 DndContext 同一份)。
   const outcomeRef = React.useRef<DragOutcome | null>(null)
+  // 2026-09-07 C4:先前**完全沒傳 sensors**,於是吃 dnd-kit 預設 —— 零位移的單次
+  // pointerdown 就啟動拖曳,使用者只想點一下核取方塊,卻收到 aria-pressed=true 與兩則
+  // assertive 播報。門檻值讀 `lib/drag-visual.ts` 的單一來源(全 DS 原本有三個不同答案)。
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX } }),
+    useSensor(KeyboardSensor),
+  )
   const announcements = React.useMemo(
     () => createDragAnnouncements({ getOutcome: () => outcomeRef.current, kind: '排序條件' }),
     [],
@@ -145,7 +152,7 @@ function DataTableSortManagerInner<TData>({
           無條件時 CTA 直接顯示,不需要 Empty 大區塊 */}
       <SurfaceBody className="flex flex-col gap-[var(--layout-space-tight)]">
         {sorting.length > 0 && (
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={{ announcements }}>
+          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={{ announcements }}>
             <SortableContext items={sorting.map(s => s.id)} strategy={verticalListSortingStrategy}>
               {sorting.map((sort, index) => {
                 const usedByOthers = new Set(sorting.filter((_, i) => i !== index).map((s) => s.id))

@@ -43,6 +43,7 @@ import {
 } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { ArrowLeftFromLine, ArrowRightToLine } from 'lucide-react'
+import { DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
 import {
   AGENT_BRAND,
   AgentLogo,
@@ -201,8 +202,8 @@ const FAB_PX = 40
 const DOCK_PX = 28
 /** 右緣帶寬(= --field-height-md 36;user 2026-09-03 留言由 40 改 36,框比貼邊鈕寬 8px 剛好)。 */
 const BAND_PX = 36
-/** 拖曳啟動門檻 px(小於視為點擊;dnd-kit PointerSensor activationConstraint.distance 同量級)。 */
-const DRAG_THRESHOLD = 8
+/** 拖曳啟動門檻 px(小於視為點擊)。2026-09-07 收斂:與 dnd-kit 那條路共用同一個值。 */
+const DRAG_THRESHOLD = DRAG_ACTIVATION_DISTANCE_PX
 /** 鍵盤每步 16(同 AgentPanel 調寬步長)。 */
 const KEY_STEP = 16
 /** 已在區內時再多 16px 才算離開(邊界防抖)。 */

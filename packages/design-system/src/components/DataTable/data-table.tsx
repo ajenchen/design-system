@@ -44,7 +44,7 @@ import { cn } from '@/lib/utils'
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
-import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, dragHandleCursorClass, forwardDragActivatorAttributes, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier } from '@/design-system/lib/drag-visual'
+import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, dragHandleCursorClass, forwardDragActivatorAttributes, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
 import { nakedCellEditableDisplayHover, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
@@ -3677,7 +3677,7 @@ function DataTableInner<TData>(
   // drag/reorder regression。Default getter(arrow-key Δ25px)在 useDraggable 場景是
   // dnd-kit canonical(`@dnd-kit/core/src/sensors/keyboard/defaults.ts` 預設行為)。
   const dndSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX } }),
     useSensor(KeyboardSensor),
   )
 
@@ -4043,6 +4043,14 @@ function DataTableInner<TData>(
         <DragOverlay dropAnimation={null}>
           {dragOverlayHtml ? (
             <div
+              // 2026-09-07 C5:overlay 是**純視覺** ghost,內容是 source 的 outerHTML 完整複製 ——
+              // 連 `role="row"` / `role="columnheader"` / `aria-*` / id 一起複製。不藏起來的話,
+              // 拖曳中無障礙樹會多出一整列或一個欄位(實測:7 欄的表格查得到 8 個 columnheader),
+              // 螢幕閱讀器會把它當成真的多一欄。
+              // 藏在**這一層**而不是逐一 strip clone 的屬性:一個地方涵蓋列 ghost、欄位 ghost
+              // 與未來任何 ghost,不會有人新增一種 ghost 時忘了 strip。
+              // 拖曳的口語回饋由 `lib/drag-announcements.ts` 的 live region 負責,不靠這份複製品。
+              aria-hidden="true"
               style={{ width: dragOverlayWidth ?? undefined }}
               className="bg-surface-raised shadow-[var(--elevation-200)] rounded-md border border-border pointer-events-none"
               dangerouslySetInnerHTML={{ __html: dragOverlayHtml }}
