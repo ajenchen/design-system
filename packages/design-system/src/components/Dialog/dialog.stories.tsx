@@ -5,6 +5,7 @@ import { ChevronUp, ChevronDown, MoreVertical } from 'lucide-react'
 import {
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogBody, DialogFooter, DialogTitle, DialogClose,
 } from './dialog'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import { Button } from '@/design-system/components/Button/button'
 import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'
@@ -544,5 +545,71 @@ export const OpenSnapshot = {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  ),
+}
+
+/* ── G1 POC:Modal Dialog 開著時,舞台上另一個浮層掛載會不會廢掉 Dialog 的焦點鎖 ──
+   為什麼需要這個 probe:`@radix-ui/react-focus-scope/dist/index.mjs:71-73` 的
+   `focusScopesStack.add(focusScope)` 寫在 `if (container)` 裡,**完全不看 `trapped`**;
+   而 `add` 會對前一個 scope 呼叫 `pause()`(`:184-190`)。
+   推論是「掛載任何 FocusScope(含 modal={false} 的)都會暫停正在生效的 Dialog 焦點鎖」——
+   這是 agent 面板要與有 URL 的 Modal 並存(A 條)時的硬約束,**不能只憑讀原始碼下結論**。
+
+   讀法:Dialog 開著、Popover 也開著時,連按 Tab 應該**永遠停在 Dialog 內**。
+   若焦點跑到 Dialog 外(例如背景那顆按鈕),就證實焦點鎖被廢掉了。
+   量測由 `scripts/dialog-focus-trap-poc.mjs` 執行。 */
+export const FocusTrapWithConcurrentOverlay: Story = {
+  name: '焦點鎖 × 並存浮層(POC)',
+  tags: ['test-only'],
+  render: () => (
+    <div className="flex flex-col gap-3 p-6">
+      <button type="button" id="poc-outside-before" className="w-40 rounded-md border border-border px-3 py-2">背景鈕(前)</button>
+      <Dialog defaultOpen>
+        <DialogContent>
+          <DialogHeader><DialogTitle>並存浮層測試</DialogTitle></DialogHeader>
+          <DialogBody>
+            <div className="flex flex-col gap-2">
+              <button type="button" id="poc-inside-1" className="rounded-md border border-border px-3 py-2">Dialog 內鈕 1</button>
+              <button type="button" id="poc-inside-2" className="rounded-md border border-border px-3 py-2">Dialog 內鈕 2</button>
+            </div>
+          </DialogBody>
+          <DialogFooter><DialogClose asChild><Button variant="tertiary">關閉</Button></DialogClose></DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* 舞台上的另一個浮層 —— 模擬 agent 面板內開了一個選單。
+          **用 DropdownMenu 不用 Popover**:Radix 的 PopoverContent 自己就帶 `role="dialog"`,
+          會讓「焦點在不在 Dialog 內」的判定變模糊;而且非 modal Popover 的內容不進自然 Tab 順序,
+          對照組因此建立不起來(2026-09-07 兩次都踩到)。 */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button type="button" id="poc-popover-trigger" className="w-40 rounded-md border border-border px-3 py-2">舞台浮層</button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem id="poc-popover-inner">浮層內項</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <button type="button" id="poc-outside-after" className="w-40 rounded-md border border-border px-3 py-2">背景鈕(後)</button>
+    </div>
+  ),
+}
+
+/* 上面那個 POC 的**對照組**:同樣的浮層,但沒有 Dialog。
+   沒有這一組的話,「Tab 沒跑出 Dialog」也可能只是因為那顆鈕本來就走不到 —— 那樣就什麼都沒證明。 */
+export const FocusTrapControlNoDialog: Story = {
+  name: '焦點鎖 POC 對照組(無 Dialog)',
+  tags: ['test-only'],
+  render: () => (
+    <div className="flex flex-col gap-3 p-6">
+      <button type="button" id="poc-outside-before" className="w-40 rounded-md border border-border px-3 py-2">背景鈕(前)</button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button type="button" id="poc-popover-trigger" className="w-40 rounded-md border border-border px-3 py-2">舞台浮層</button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem id="poc-popover-inner">浮層內項</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <button type="button" id="poc-outside-after" className="w-40 rounded-md border border-border px-3 py-2">背景鈕(後)</button>
+    </div>
   ),
 }

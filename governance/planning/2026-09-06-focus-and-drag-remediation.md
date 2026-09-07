@@ -1329,3 +1329,46 @@ DropdownMenu 快捷鍵提示(`:267`/`:544`)、Command 群組標題(`:117`)、Com
 | **G4** | 該情境的 axe `aria-hidden-focus` | G1 的一部分 |
 | **C10** | `hooks/scripts` 符號連結方向 | 非本 session 造成,未裁示 |
 | — | agent 鍵盤往返 | **user 已裁示 backlog**(「agent 鍵盤的互動很次要」)|
+
+---
+
+# Y. G1 POC 做完了 —— 但結論不是「通過」或「不通過」,是「今天問不到這一題」(2026-09-07)
+
+## Y1 原本要驗什麼
+
+讀 `@radix-ui/react-focus-scope` 得到的事實(三處,逐行實查):
+`:71-73` `focusScopesStack.add` 寫在 `if (container)` 裡、**不看 `trapped`**;
+`:184-190` `add` 會對前一個 scope 呼叫 `pause()`;
+`:105` Tab 守衛開頭就是 `if (focusScope.paused) return`。
+推論:掛載任何 FocusScope(含 `modal={false}` 的)都會讓 Modal Dialog 的 Tab 守衛失效。
+
+## Y2 實測結果:**那個失效今天觸發不到,因為浮層一開始就打不開**
+
+| | Modal Dialog 開著 | 對照組:沒有 Dialog |
+|---|---|---|
+| `body { pointer-events }` | **none** | auto |
+| 觸發鈕拿得到焦點嗎 | **不能** —— 焦點被拉回 `poc-inside-1` | 能 |
+| 按 Enter 開得了選單嗎 | **開不了** | 開得了 |
+
+所以「並存」這件事本身還不存在,談不上它會不會破壞焦點鎖。
+**G1 的硬約束仍未驗證**,而且要等隔離範圍縮到舞台之後(`suppressOthers(targets, stageEl)`,見 L1)才驗得到。
+這比「驗過了、沒問題」誠實,也比「憑讀原始碼宣稱它會壞」準確。
+
+## Y3 順帶量到 G4 的直接證據
+
+舞台元素是 `aria-hidden="true"` 但 **`inert=false`** —— 也就是**仍在 Tab 順序裡**。
+那正是 axe `aria-hidden-focus` 的形狀。今天沒有變成「焦點跑出去」,只是因為 FocusScope
+的 Tab 守衛還在攔;守衛一旦被 pause(就是 Y1 那條路徑),它就會現形。
+
+## Y4 這支 POC 前後改了五次才拿到可信的量測 —— 坑全部寫進腳本註解
+
+1. 判定「焦點在不在 Dialog 內」寫成 `closest('[role="dialog"]')` ——
+   **Radix 的 PopoverContent 自己就帶 `role="dialog"`**,判定是模糊的。改用 `[aria-modal="true"]`。
+2. 對照組用「把 Dialog 關掉」:找關閉鈕的文字選擇器命中不到 → 靜靜地什麼都沒關;
+   改按 Esc → 被最上層的浮層接走。**兩次都在「Dialog 還開著」的狀態下量**。改用獨立 story。
+3. 非 modal Popover 的內容不進自然 Tab 順序 → 對照組建立不起來。改用 DropdownMenu。
+4. Radix 選單是 `pointerdown` 開的,`.click()` 不會觸發。改用聚焦 + Enter。
+5. 浮層已經開著時再點一次會**關掉**它。開啟動作要冪等。
+
+**一句話**:「沒有觀察到 X」在對照組成立之前不代表任何事。
+第一版的 POC 印出「✓ 焦點鎖仍然成立」——那是完全沒有根據的假綠,是對照組把它抓出來的。
