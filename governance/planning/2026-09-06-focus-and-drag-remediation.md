@@ -168,3 +168,43 @@ Claude 三路 Phase A → codex 隔離 context 獨立提案 → 我方逐點反�
 
 `.ringprobe.tmp.mjs`、`.ringtest/`、`.tw-probe/`、`c-probe.mjs`、`scratch-probe/`、`tm-probe.mjs`、`tw-probe.mjs`。都不會進版本庫,但 `git add -A` 前必須先清。刪除指令在本 session 被權限擋下。
 
+### G 區:user 2026-09-07 對 8 條待拍板的裁示(逐字保留)
+
+| # | 題目 | user 原話 | 判定 |
+|---|---|---|---|
+| 1 | 遮罩要不要蓋住 agent 那一欄 | 「第一題,不要壓按」 | **拍板:不壓暗 agent。** 遮罩幾何從 `inset-0` 改成只蓋宿主內容區 |
+| 2 | Modal 開著時 FAB 能不能按開 | 「這題不是可以從我一開始的原則草案推導出來嗎?有提供url的modal可以同時與agent使用,那就表示此情況的fab要被可以開啟才對吧?」 | **拍板:可以開,而且這是從 A 條推導出來的、本來就不該當成新決策問。** FAB 一併登記為常駐區域 |
+| 3 | Esc 歸誰 | 「agent在此時的index是最高的吧?對吧?那你覺得esc要關誰?」 | **反問我,未拍板。** 我的答覆與 z-index 前提的查證併入 G6 對辯 |
+| 4 | 關閉期間要不要補播報 | 「不用,頂多就是跳toast」 | **拍板:不加常駐 live region;最多用既有 Toast** |
+| 5 | 50% 基準由視窗改舞台 | 「好」 | **拍板:改舞台。** `agent-panel.spec.md:76` 的「視窗」改「舞台」 |
+| 6 | `hostMinWidth` 預設值 | 見下方 G6 —— user 未給數字,而是指出這題必須跟另外四件事一起想 | **未拍板,已開對辯** |
+
+### G6:user 指出這題不能單獨決定(2026-09-07,逐字)
+
+> 「這題難道不用跟agent何時會變為蓋板的breakpoint一起討論嗎?以及舞台內容可小於最小寬度是在其中水平捲動且依然可以同時操作agent嗎?那舞台內容的aside變為sheet的時候,該sheet所運用的空間是否是舞台空間而非整個容器空間?承上述,modal是否也是?換言之,會有的現象就是modal底下的mask的視覺範圍跟舞台內容是有可能不同的,依此來確保浮層不會那麼容易溢出舞台,且其通常不會透過舞台的水平捲軸來水平捲動,是我上述說的這樣嗎?仔細跟最強codex來回討論辯論」
+
+拆成五個相扣的子題,已開跨模型對辯:
+(a) `hostMinWidth` 與「何時翻成蓋板」是不是同一個判準的兩種寫法
+(b) 舞台內容可否小於最小寬度、在舞台內水平捲動、同時仍可操作 agent
+(c) 舞台內的 aside 變 Sheet 時,Sheet 佔的是**舞台空間**還是整個視窗
+(d) Modal 是否同理
+(e) 因此 modal 遮罩的視覺範圍會與舞台內容不同 —— 用意是讓浮層不易溢出舞台、且不需靠舞台的水平捲軸捲動
+
+### T1 / T2 的答案(user 追問「怎麼修」「是哪些元件」)
+
+**T1 不是繞不掉,是要定一條優先序。** 現況同一個可編輯儲存格上兩件事都在用 outline 家族:
+- hover:`field-wrapper.tsx:311` `hover:outline hover:outline-1 hover:outline-offset-[-1px] hover:outline-[var(--cell-hover-outline-color,var(--border-hover))]` —— **1px 內描邊**
+- focus:`data-table.tsx:2427` `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset` —— **2px 內描邊(box-shadow)**
+
+兩者今天靠「不同 CSS 屬性」共存;焦點遷到 outline 後會搶同一個屬性。**解法:同一格上 focus 壓過 hover。**
+依據不是發明:WCAG 1.4.11 Understanding 明文「The pointer itself, via its location, is the indicator of whether the user is hovering on a component. Therefore, additional author-supplied visual treatments for hover are not 'required to identify' the hover state.」——
+**hover 已經有游標當指示器,focus 沒有**;而且這與 M24「state 勝 emphasis」同構。
+注意:hover 與 focus 在**不同格**時不衝突(A 格有焦點框、B 格有 hover 框),只有同一格才需要優先序。
+
+**T2 的 15 處**(現況 `focus-visible:ring-2` 無 offset 無 inset,即 0 間隙):
+RadioGroup / Sidebar ×2(GroupAction、MenuAction)/ Calendar ×3 / DateGrid / FileViewer / Checkbox / Switch / AgentPanel ×2 / PeoplePicker / DataTable。
+
+**user 的裁示(逐字):「關於t2如果內描邊沒問題就內描邊,這樣至少不會又多一種」** —— 採納。
+所以 A5 的決定程序收斂成一句:**預設外 +2px;放不下(四周沒有 2px 空間、或會被祖先裁掉)就改內 −2px。仍然只有兩種,不新增第三種。**
+待辦:逐一量這 15 處四周是否容得下 +2px,不夠的歸內描邊。
+
