@@ -2210,7 +2210,8 @@ function DataTableInner<TData>(
       return (
         <div
           key={cell.id}
-          role="cell"
+          // grid 的子代必須是 gridcell(role 跟著根節點走,見 :3303 附近說明)
+          role={spreadsheetMode ? 'gridcell' : 'cell'}
           // data-column-id 給 CSS scope:`[data-column-id="__select__"]` 在 data-table.css 加
           // border-right divider,視覺把 system selection col 跟 data col 切開(Notion / Airtable
           // / Linear idiom)。**只有 inlineEdit + selectable 模式且 select 不在 leftBody 邊界時** style
@@ -2374,7 +2375,8 @@ function DataTableInner<TData>(
     return (
       <div
         key={cell.id}
-        role="cell"
+        // grid 的子代必須是 gridcell(role 跟著根節點走)
+        role={spreadsheetMode ? 'gridcell' : 'cell'}
         // group/cell + data-row-mode:讓 Field naked 用 `group-data-[row-mode=...]/cell:items-X`
         // 從 cell 取 alignment(autoRowHeight=auto 頂對齊 / fixed=fixed 置中)。CSS propagation,
         // Field API 不變;每個 mode 內 view↔edit 同 alignment(同 Field, 同 group → 同 items)。
@@ -2869,6 +2871,7 @@ function DataTableInner<TData>(
                     // 很常見(數字欄配「上次更新時間」這種標題),不量的話 auto-fit 後反而看不到欄位名。
                     const targets = [
                       ...host.querySelectorAll<HTMLElement>(`[role="cell"]${sel}`),
+                      ...host.querySelectorAll<HTMLElement>(`[role="gridcell"]${sel}`),
                       ...host.querySelectorAll<HTMLElement>(`[role="columnheader"]${sel}`),
                     ]
                     // 量測上限取 center body 的可視內容寬:一欄不該 auto-fit 到比看得見的表格還寬。
@@ -3205,7 +3208,7 @@ function DataTableInner<TData>(
           )}
           {getRegionCells(row, cols).map((cell, ci, arr) => cellEl(cell, isLastInRegion(ci, arr.length, isRight)))}
           {isRight && hasRowActions && (
-            <div role="cell" className="flex items-center justify-end shrink-0 gap-2 flex-1" style={cellPadding}>
+            <div role={spreadsheetMode ? 'gridcell' : 'cell'} className="flex items-center justify-end shrink-0 gap-2 flex-1" style={cellPadding}>
               {rowActions!(row.original)}
             </div>
           )}
@@ -3300,7 +3303,15 @@ function DataTableInner<TData>(
       // 簡單需求:有約束 → rows 沒超就 hug;超就 cap+scroll;RWD 同理。
       style={isFillHeight ? { maxHeight: height } : undefined}
       // L5 分頁:aria-rowcount = 全集筆數非當頁(ARIA 規範;getPrePaginationRowModel = filter 後全集)
-      role="table" aria-rowcount={(paginationEnabled ? table.getPrePaginationRowModel().rows.length : rows.length) + 1}
+      // 2026-09-07:**`spreadsheetMode` 時才宣稱 grid**。
+      // ARIA 的 `grid` 是「容器管理鍵盤導覽、儲存格可聚焦」的複合元件;
+      // spreadsheet 模式正是如此(方向鍵移動儲存格游標、Enter/F2 進編輯)。
+      // 先前一律宣稱 `table` 卻同時掛 `tabIndex=0` + 方向鍵導覽 —— **宣稱與行為不一致**:
+      // 螢幕閱讀器使用者被告知這是靜態表格,不會知道要按方向鍵,而且瀏覽模式會把方向鍵
+      // 攔去朗讀而不是傳給我們。
+      // 非 spreadsheet 的表格維持 `table`:那裡儲存格不可聚焦,宣稱 grid 會讓 AT 進入
+      // 它提供不了的互動模式(比宣稱 table 更糟)。
+      role={spreadsheetMode ? 'grid' : 'table'} aria-rowcount={(paginationEnabled ? table.getPrePaginationRowModel().rows.length : rows.length) + 1}
       // Phase 9 Issue 12 fix(2026-05-10 codex 抓):**single tabIndex prop**,合併 selection
       // 跟 spreadsheet 兩 path。React 在 dup props 只 keep last 是 silent regression risk。
       tabIndex={enabled || spreadsheetMode ? 0 : undefined}

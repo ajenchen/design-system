@@ -9,6 +9,14 @@
 // 改 columnSizeStyle / 切 layout 必跑此 script,fail → exit 1 阻 commit。
 // Run: `npm run test:datatable-invariants` 或 `node scripts/data-table-invariants.mjs`
 
+// 2026-09-07:儲存格選擇器一律用 `:is([role="cell"], [role="gridcell"])` ——
+// DataTable 的 role 自即日起是條件式的(spreadsheetMode → grid/gridcell,否則 table/cell,
+// 見 data-table.tsx 根節點註解)。只寫一種的閘會在另一種模式下查不到東西而假綠。
+//
+// **必須用 `:is()` 不能寫成 `A B, C`**:CSS 選擇器清單的逗號在**最上層**分割,
+// `[role="row"][data-row-index="0"] [role="cell"], [role="gridcell"]` 的第二段會脫離
+// row 的範圍變成掃全文件 —— 2026-09-07 我自己機械替換時就踩了這個,
+// I23 當場多量到別列的儲存格、Δ 406px。
 import { chromium } from 'playwright'
 import http from 'node:http'
 import { inflateSync as zlibInflate } from 'node:zlib'
@@ -107,7 +115,7 @@ const expectedMinWidths = {
 }
 for (const [colIdx, expected] of Object.entries(expectedMinWidths)) {
   const width = await page.evaluate((idx) => {
-    const cell = document.querySelectorAll('[role="row"][data-row-index="0"] [role="cell"]')[Number(idx)]
+    const cell = document.querySelectorAll('[role="row"][data-row-index="0"] :is([role="cell"], [role="gridcell"])')[Number(idx)]
     return cell?.getBoundingClientRect().width ?? null
   }, colIdx)
   record('I5', `${expected.name} ≥ meta.width(${expected.minWidth})`, width !== null && width >= expected.minWidth - 0.5, `actual ${width}`)
@@ -125,7 +133,7 @@ const checkDisplayEditStability = async (storyId, cellTypes, waitSelector = '[ro
   for (const t of cellTypes) {
     if (t.skipEdit) continue
     const display = await page.evaluate(({ row, col }) => {
-      const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] [role="cell"]`)[col]
+      const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] :is([role="cell"], [role="gridcell"])`)[col]
       if (!cell) return null
       const r = cell.getBoundingClientRect()
       return { width: r.width, height: r.height, left: r.left, top: r.top }
@@ -140,7 +148,7 @@ const checkDisplayEditStability = async (storyId, cellTypes, waitSelector = '[ro
     await page.waitForTimeout(500)
 
     const edit = await page.evaluate(({ row, col }) => {
-      const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] [role="cell"]`)[col]
+      const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] :is([role="cell"], [role="gridcell"])`)[col]
       const field = cell.querySelector('[data-field-mode="edit"], textarea')
       if (!field) return null
       const cr = cell.getBoundingClientRect()
@@ -363,8 +371,8 @@ const alignReport = await page.evaluate(() => {
   // **`role="cell"` 不是 `gridcell`**(2026-09-03 抓到:這條寫錯選擇器 → `row` 恆為 undefined →
   // 迴圈零次 → **一條紀錄都不產生,看起來就像通過**)。DataTable 的 body cell 一律是 `role="cell"`;
   // `gridcell` 只出現在 Calendar / DateGrid。下方另加「真的量到欄」守衛,防止再次空轉。
-  const row = [...document.querySelectorAll('[role="row"]')].find((r) => r.querySelector('[role="cell"]'))
-  const cells = row ? [...row.querySelectorAll('[role="cell"]')] : []
+  const row = [...document.querySelectorAll('[role="row"]')].find((r) => r.querySelector(':is([role="cell"], [role="gridcell"])'))
+  const cells = row ? [...row.querySelectorAll(':is([role="cell"], [role="gridcell"])')] : []
   return heads.slice(0, cells.length).map((h, i) => {
     const hb = h.getBoundingClientRect()
     const cb = cells[i].getBoundingClientRect()
@@ -412,8 +420,8 @@ const widthReport = await page.evaluate(() => {
   const bp = document.querySelector('[data-datatable-panel="center"]')
   if (!hp || !bp) return null
   const heads = [...hp.querySelectorAll('[role="columnheader"]')]
-  const row = [...bp.querySelectorAll('[role="row"]')].find((r) => r.querySelector('[role="gridcell"], [role="cell"]'))
-  const cells = row ? [...row.querySelectorAll('[role="gridcell"], [role="cell"]')] : []
+  const row = [...bp.querySelectorAll('[role="row"]')].find((r) => r.querySelector(':is([role="cell"], [role="gridcell"])'))
+  const cells = row ? [...row.querySelectorAll(':is([role="cell"], [role="gridcell"])')] : []
   const n = Math.min(heads.length, cells.length)
   let worstWidth = 0
   let worstLeft = 0
@@ -480,8 +488,8 @@ const measureRegions = () => {
     const bp = document.querySelector(`[data-datatable-panel="${region}"]`)
     if (!hp || !bp) continue
     const heads = [...hp.querySelectorAll('[role="columnheader"]')]
-    const row = [...bp.querySelectorAll('[role="row"]')].find((r) => r.querySelector('[role="gridcell"], [role="cell"]'))
-    const cells = row ? [...row.querySelectorAll('[role="gridcell"], [role="cell"]')] : []
+    const row = [...bp.querySelectorAll('[role="row"]')].find((r) => r.querySelector(':is([role="cell"], [role="gridcell"])'))
+    const cells = row ? [...row.querySelectorAll(':is([role="cell"], [role="gridcell"])')] : []
     const n = Math.min(heads.length, cells.length)
     let worstWidth = 0
     let worstLeft = 0
@@ -592,8 +600,8 @@ const simulated = await page.evaluate(async (border) => {
   // **等收斂再量,不要用固定延遲**(2026-09-03:固定 250ms 會量在重排中途,CI 因此拿到
   // 「Σ 780 vs body 531」這種前後不一致的快照而誤紅)。改成輪詢到「欄寬總和連續兩次相同」為止。
   const sumNow = () => {
-    const r = [...bp.querySelectorAll('[role="row"]')].find((x) => x.querySelector('[role="cell"]'))
-    return r ? [...r.querySelectorAll('[role="cell"]')].reduce((a, c) => a + c.getBoundingClientRect().width, 0) : 0
+    const r = [...bp.querySelectorAll('[role="row"]')].find((x) => x.querySelector(':is([role="cell"], [role="gridcell"])'))
+    return r ? [...r.querySelectorAll(':is([role="cell"], [role="gridcell"])')].reduce((a, c) => a + c.getBoundingClientRect().width, 0) : 0
   }
   // 收斂條件同時看 header 內層 minWidth:欄寬總和在溢出時本來就不會變,只看它會太早判「穩定」。
   let last = ''
@@ -606,8 +614,8 @@ const simulated = await page.evaluate(async (border) => {
     last = cur
   }
   const heads = [...hp.querySelectorAll('[role="columnheader"]')]
-  const row = [...bp.querySelectorAll('[role="row"]')].find((r) => r.querySelector('[role="gridcell"], [role="cell"]'))
-  const cells = row ? [...row.querySelectorAll('[role="gridcell"], [role="cell"]')] : []
+  const row = [...bp.querySelectorAll('[role="row"]')].find((r) => r.querySelector(':is([role="cell"], [role="gridcell"])'))
+  const cells = row ? [...row.querySelectorAll(':is([role="cell"], [role="gridcell"])')] : []
   const n = Math.min(heads.length, cells.length)
   let worstWidth = 0
   let worstLeft = 0
@@ -940,7 +948,7 @@ if (passes.length > 0) console.log(passes.join('\n'))
 // (高度被 h-table-row-* 釘死 + overflow-hidden),自動行高沒有可吸收的地方,於是 md 單行量到 42 而非 40。
 // 公式補上 `- 1px` 後,這條把「單行 = token」變成可量的事實,任何人再把它拿掉就會紅。
 await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-auto-height-inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[role="cell"]')
+await page.waitForSelector(':is([role="cell"], [role="gridcell"])')
 for (const size of ['sm', 'md', 'lg']) {
   const r = await page.evaluate((sz) => {
     const t = document.querySelector('[role="table"]')
@@ -954,7 +962,7 @@ for (const size of ['sm', 'md', 'lg']) {
     t.appendChild(probe)
     const tokenPx = probe.getBoundingClientRect().height
     probe.remove()
-    const rows = [...t.querySelectorAll('[role="row"]')].filter((x) => x.querySelector('[role="cell"]'))
+    const rows = [...t.querySelectorAll('[role="row"]')].filter((x) => x.querySelector(':is([role="cell"], [role="gridcell"])'))
     const heights = rows.map((x) => x.getBoundingClientRect().height)
     const single = Math.min(...heights) // 單行列 = 最矮那列(多行列更高;末列無下分隔線)
     if (prev) host.setAttribute('data-table-size', prev)
@@ -1327,7 +1335,7 @@ const snapPinnedRegion = (sideArg) => {
   const chp = root.querySelector('[data-datatable-header-panel="center"]')
   const cbp = root.querySelector('[data-datatable-panel="center"]')
   const rects = (els) => els.map((e) => { const r = e.getBoundingClientRect(); return [+r.left.toFixed(2), +r.width.toFixed(2)] })
-  const row = [...cbp.querySelectorAll('[role="row"]')].find((r) => r.querySelector('[role="cell"]'))
+  const row = [...cbp.querySelectorAll('[role="row"]')].find((r) => r.querySelector(':is([role="cell"], [role="gridcell"])'))
   const firstHead = hp.querySelector('[role="columnheader"]')
   const menuBtn = firstHead?.querySelector('[aria-label$="欄位選單"]')
   const sortIcon = firstHead?.querySelector('[role="button"] svg')
@@ -1338,7 +1346,7 @@ const snapPinnedRegion = (sideArg) => {
     panelBodyW: +bp.getBoundingClientRect().width.toFixed(2),
     centerHeadLeft: +chp.getBoundingClientRect().left.toFixed(2),
     heads: rects([...chp.querySelectorAll('[role="columnheader"]')]),
-    cells: rects(row ? [...row.querySelectorAll('[role="cell"]')] : []),
+    cells: rects(row ? [...row.querySelectorAll(':is([role="cell"], [role="gridcell"])')] : []),
     firstHead: hr ? { left: hr.left, top: hr.top, width: hr.width, height: hr.height } : null,
     sortZone: sortZone ? { left: sortZone.left, top: sortZone.top, width: sortZone.width, height: sortZone.height } : null,
     menuW: menuBtn ? +menuBtn.getBoundingClientRect().width.toFixed(2) : 0,
@@ -1417,8 +1425,8 @@ const measureActionsPlaceholder = () => {
   const bp = root.querySelector('[data-datatable-panel="right"]')
   // header 佔位 = 右 header 列裡唯一 `aria-hidden` 的 invisible div(裡面渲染一份假 actions)
   const placeholder = [...hp.querySelectorAll('div[aria-hidden="true"]')].find((d) => d.children.length > 0) ?? hp.querySelector('div[aria-hidden="true"]')
-  const row = [...bp.querySelectorAll('[role="row"]')].find((r) => r.querySelector('[role="cell"]'))
-  const cells = row ? [...row.querySelectorAll('[role="cell"]')] : []
+  const row = [...bp.querySelectorAll('[role="row"]')].find((r) => r.querySelector(':is([role="cell"], [role="gridcell"])'))
+  const cells = row ? [...row.querySelectorAll(':is([role="cell"], [role="gridcell"])')] : []
   const actionsCell = cells[cells.length - 1] ?? null
   const r = (el) => { const b = el.getBoundingClientRect(); return { left: +b.left.toFixed(2), width: +b.width.toFixed(2) } }
   return {
@@ -1521,7 +1529,7 @@ const measureAutoFitColumn = (colId) => {
   const root = document.querySelector('[data-datatable-header-panel="center"]')?.closest('[role="table"]')
   if (!root) return null
   const head = root.querySelector(`[role="columnheader"][data-column-id="${colId}"]`)
-  const cells = [...root.querySelectorAll(`[role="cell"][data-column-id="${colId}"]`)]
+  const cells = [...root.querySelectorAll(`:is([role="cell"], [role="gridcell"])[data-column-id="${colId}"]`)]
   if (!head || cells.length === 0) return null
   const centerBody = root.querySelector('[data-datatable-panel="center"]')
   // 截斷判準 = hooks/use-truncated.ts:63 `el.scrollWidth > el.clientWidth`,套在每個 ellipsis 載體上
@@ -1613,7 +1621,7 @@ await page.waitForSelector('[role="row"][data-row-index]')
 await page.waitForTimeout(400)
 const URL_CELL = { row: 0, col: 9 } // 欄序見 data-table.stories.tsx InlineEdit editableColumns(col 9 = url)
 const urlDisplay = await page.evaluate(({ row, col }) => {
-  const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] [role="cell"]`)[col]
+  const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] :is([role="cell"], [role="gridcell"])`)[col]
   if (!cell) return null
   const r = cell.getBoundingClientRect()
   return { width: r.width, height: r.height, left: r.left, top: r.top }
@@ -1626,11 +1634,11 @@ if (!urlDisplay) {
   await page.waitForTimeout(200)
   let urlEdit = null
   try {
-    const pencil = page.locator(`[role="row"][data-row-index="${URL_CELL.row}"] [role="cell"]`).nth(URL_CELL.col).locator('[aria-label="編輯連結"]')
+    const pencil = page.locator(`[role="row"][data-row-index="${URL_CELL.row}"] :is([role="cell"], [role="gridcell"])`).nth(URL_CELL.col).locator('[aria-label="編輯連結"]')
     await pencil.click({ timeout: 3000 })
     await page.waitForTimeout(400)
     urlEdit = await page.evaluate(({ row, col }) => {
-      const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] [role="cell"]`)[col]
+      const cell = document.querySelectorAll(`[role="row"][data-row-index="${row}"] :is([role="cell"], [role="gridcell"])`)[col]
       const field = cell?.querySelector('[data-field-mode="edit"], textarea')
       if (!field) return null
       const cr = cell.getBoundingClientRect()
@@ -1668,7 +1676,7 @@ if (!urlDisplay) {
  */
 const CHEVRON_EXPECT_MD = { box: 16, hoverBg: 18 } // ICON_SIZE.md / INLINE_ACTION_HOVER_BG_SIZE.md
 await page.goto(I20_PLUS_STORY('nested-rows'), { waitUntil: 'networkidle' })
-await page.waitForSelector('[role="cell"] button[aria-expanded]')
+await page.waitForSelector(':is([role="cell"], [role="gridcell"]) button[aria-expanded]')
 await page.waitForTimeout(400)
 const nestedGeom = await page.evaluate(() => {
   const root = document.querySelector('[role="table"]')
@@ -1690,7 +1698,7 @@ const nestedGeom = await page.evaluate(() => {
     }
     return null
   }
-  const cellByText = (needle) => [...root.querySelectorAll('[role="cell"]')].find((c) => (c.textContent || '').includes(needle))
+  const cellByText = (needle) => [...root.querySelectorAll(':is([role="cell"], [role="gridcell"])')].find((c) => (c.textContent || '').includes(needle))
   const info = (needle) => {
     const cell = cellByText(needle)
     if (!cell) return null
@@ -1735,7 +1743,7 @@ if (!nestedGeom.d0?.btn || !nestedGeom.d1?.btn || !nestedGeom.d1leaf || !nestedG
   await page.mouse.move(m.x, m.y)
   await page.waitForTimeout(250)
   const hov = await page.evaluate(() => {
-    const cell = [...document.querySelectorAll('[role="cell"]')].find((c) => (c.textContent || '').includes('Q1 行銷活動'))
+    const cell = [...document.querySelectorAll(':is([role="cell"], [role="gridcell"])')].find((c) => (c.textContent || '').includes('Q1 行銷活動'))
     const btn = cell?.querySelector('button[aria-expanded]')
     const overlay = btn?.firstElementChild
     if (!btn || !overlay) return null
@@ -1796,9 +1804,9 @@ const measureRowHover = (rowIdx) => {
 const hoverTargetPoint = ({ kind, rowIdx }) => {
   const root = document.querySelector('[role="table"]')
   const el = (() => {
-    if (kind === 'center-text') return root.querySelector(`[data-datatable-panel="center"] [data-row-index="${rowIdx}"] [role="cell"]`)
+    if (kind === 'center-text') return root.querySelector(`[data-datatable-panel="center"] [data-row-index="${rowIdx}"] :is([role="cell"], [role="gridcell"])`)
     if (kind === 'actions-svg') return root.querySelector(`[data-datatable-panel="right"] [data-row-index="${rowIdx}"] button svg`)
-    if (kind === 'left-cell') return root.querySelector(`[data-datatable-panel="left"] [data-row-index="${rowIdx}"] [role="cell"]`)
+    if (kind === 'left-cell') return root.querySelector(`[data-datatable-panel="left"] [data-row-index="${rowIdx}"] :is([role="cell"], [role="gridcell"])`)
     if (kind === 'chevron-svg') return root.querySelector(`[data-row-index="${rowIdx}"] button[aria-expanded] svg`)
     return null
   })()
@@ -1886,7 +1894,7 @@ for (const [storyName, label, steps] of [
     /if\s*\(availablePx\s*<=\s*0\)\s*return/.test(code), '缺少 <=0 早退守衛')
 }
 await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
-await page.waitForSelector('[role="cell"]')
+await page.waitForSelector(':is([role="cell"], [role="gridcell"])')
 await page.waitForTimeout(400)
 {
   const st = await page.evaluate(() => {
@@ -1894,7 +1902,7 @@ await page.waitForTimeout(400)
     const idx = hdrs.findIndex((h) => (h.innerText || '').includes('Reviewers'))
     if (idx < 0) return null
     const cells = [...document.querySelectorAll('[role="row"]')]
-      .map((r) => r.querySelectorAll('[role="cell"]')[idx]).filter(Boolean)
+      .map((r) => r.querySelectorAll(':is([role="cell"], [role="gridcell"])')[idx]).filter(Boolean)
     // 2026-09-07 C9 修:原本用 `img >= 2` 挑儲存格 —— 但這條閘要抓的**正是**「棘輪成
     // 1 顆頭像 + 一個 +N」的狀態,那種儲存格只有 1 張圖,會被這個條件跳過。
     // 也就是它結構上看不見自己要抓的 bug。改成:凡是有頭像串的儲存格全部檢查。
@@ -2000,6 +2008,34 @@ await page.waitForTimeout(500)
   }
 }
 
+
+/* ── I29:根節點 role 與儲存格 role 必須同源(2026-09-07)───────────────────────
+ * `spreadsheetMode` 才宣稱 `grid`(容器管理鍵盤導覽、儲存格可聚焦 —— 方向鍵移動游標、
+ * Enter/F2 進編輯);其餘維持 `table`。
+ * 先前一律宣稱 `table` 卻同時掛 `tabIndex=0` + 方向鍵導覽 = **宣稱與行為不一致**:
+ * 螢幕閱讀器使用者被告知這是靜態表格、不會知道要按方向鍵,而且瀏覽模式會把方向鍵攔去朗讀。
+ * 反過來也不能一律 grid —— 非 spreadsheet 的儲存格不可聚焦,宣稱 grid 會讓 AT 進入
+ * 它提供不了的互動模式,比宣稱 table 更糟。
+ * 這條閘守「兩者同源」:grid ⇒ 全部 gridcell、table ⇒ 全部 cell,不得混用。 */
+for (const [storyId, expectRole] of [
+  ['design-system-components-datatable-展示--inline-edit-with-spreadsheet-overlay', 'grid'],
+  ['design-system-components-datatable-展示--inline-edit', 'table'],
+]) {
+  await page.goto(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, { waitUntil: 'networkidle' })
+  await page.waitForSelector('[role="row"]')
+  await page.waitForTimeout(400)
+  const r = await page.evaluate(() => {
+    const t = document.querySelector('[role="table"],[role="grid"]')
+    return { root: t ? t.getAttribute('role') : null,
+      cells: document.querySelectorAll('[role="cell"]').length,
+      gridcells: document.querySelectorAll('[role="gridcell"]').length }
+  })
+  const short = storyId.split('--')[1]
+  record('I29', `${short} 根節點 role = ${expectRole}`, r.root === expectRole, `實得 ${r.root}`)
+  record('I29', `${short} 儲存格 role 與根節點同源(不得混用)`,
+    expectRole === 'grid' ? (r.gridcells > 0 && r.cells === 0) : (r.cells > 0 && r.gridcells === 0),
+    `cell=${r.cells} gridcell=${r.gridcells}`)
+}
 
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')

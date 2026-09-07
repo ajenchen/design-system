@@ -1179,3 +1179,66 @@ React 於是不輸出 `tabindex` 屬性。
 CI 跑的是 `a11y:check --gate`(baseline-diff,**只在新增/增量時 fail**),
 所以那 4997 是既有 baseline。本輪另跑一次 `--gate` 做回歸檢查。
 (這支腳本本身也是「從沒在本機跑過」那批之一 —— 補上沙箱參數後才第一次跑起來。)
+
+---
+
+# W. DataTable role 誠實化 + a11y gate 歸因(2026-09-07)
+
+## W1 `role="table"` → 條件式 `grid`(A4 的前置之一)
+
+現況是**宣稱與行為不一致**:一律宣稱 `role="table"`,卻同時掛 `tabIndex=0` 與方向鍵導覽。
+螢幕閱讀器使用者被告知這是靜態表格、不會知道要按方向鍵,而且瀏覽模式會把方向鍵攔去朗讀。
+
+改成 **`spreadsheetMode` 才宣稱 `grid`**(那裡儲存格真的可聚焦、方向鍵移動游標、Enter/F2 進編輯);
+其餘維持 `table`。**不是一律改 grid** —— 非 spreadsheet 的儲存格不可聚焦,宣稱 grid 會讓 AT
+進入它提供不了的互動模式,比宣稱 table 更糟。儲存格 role 跟著根節點走(grid ⇒ gridcell)。
+
+實測三個 story:spreadsheet → `grid` + 24 gridcell / 0 cell;另兩個 → `table` + cell / 0 gridcell;
+axe 的 ARIA 結構規則(aria-required-children / parent / roles / allowed-role / allowed-attr)三個 story 皆 0 違規。
+新增 I29 守「兩者同源、不得混用」。DataTable 不變條件 324 → **328**。
+
+### 我自己踩的 CSS 選擇器坑
+
+把閘裡 24 處 `[role="cell"]` 機械替換成 `[role="cell"], [role="gridcell"]` 之後 I23 當場紅、Δ 406px。
+根因是**選擇器清單的逗號在最上層分割**:
+`[role="row"][data-row-index="0"] [role="cell"], [role="gridcell"]` 的第二段脫離了 row 的範圍,
+變成掃全文件。正解是 `:is([role="cell"], [role="gridcell"])`。已全部改掉並寫進閘註解。
+
+**A4 仍未解除**:另外兩個前提沒動 —— 虛擬捲動下 activedescendant 目標必須真實存在、
+同一列在三面板各渲染一次故 IDREF 歸屬未定。
+
+## W2 a11y gate 的 20 個「新增」逐一歸因:**沒有一個是本輪造成的**
+
+`a11y:check --gate` 是 baseline-diff。跑出 20 個新增,逐一查:
+
+- **baseline 本身過期**:它是 **2026-08-02、990 個 story** 產的,裡面 **0 個 AgentPanel**
+  (那家族 9/2 才出)。gate 自己也印了「Storybook corpus differs from the governed a11y baseline」。
+  所以 AgentPanel 全家、我新加的 `HugWidthMultiStack`、以及 8/2 之後新增的 story 的違規全算「新增」。
+- **唯一能真的比對的兩個**,做了前後對照:
+  - `tokens-color--interactive`(34→36):把 token 還原成改動前的值再跑 axe,**36 = 36,零差異** ——
+    不是我的 token 改動。那 +2 是 `9ec71fd3`(Highlight token,8/28)加的 swatch 帶的。
+  - `datatable-展示--row-auto-height`(2→4):4 個全是 **story 說明段落**
+    (`<p class="text-caption text-fg-muted">`),數量變多是因為該 story 在 baseline 之後多了兩段說明。
+- 5 個「掃描出錯」是 `document 404` 的傳輸層 transient(同批中文 id 有 1010 個掃成功;
+  其中 `slider-設計規格--overview` 我剛才才手動開過、三個 slider 都在)。
+
+## W3 順帶量出一個 DS 層級的真問題:**95% 的對比違規來自同一個 token**
+
+取樣 42 個 story、132 個 color-contrast 節點:**125 個(95%)是 `text-fg-muted`**。
+
+`--fg-muted` = neutral-7 = 45% 黑 → 淺色主題 **3.36:1**、深色主題 **4.48:1**。
+WCAG 1.4.3(AA)一般文字要 **4.5:1**(`text-caption` 是 12px = 9pt,算一般文字)。
+**兩個主題都差一點**,而這個 token 在 DS 元件內有 **142 處**在用。
+
+要多深才過(實算):
+
+| alpha | 淺色 rgb | 淺色對比 | 深色對比 |
+|---|---|---|---|
+| **45%(現況)** | 140 | **3.36:1 ✗** | **4.48:1 ✗** |
+| 50% | 128 | 3.95:1 ✗ | — |
+| **55%** | 115 | **4.74:1 ✓** | **6.28:1 ✓** |
+| 60% | 102 | 5.74:1 ✓ | 7.30:1 ✓ |
+| 對照 `fg-secondary` 65% | 89 | 7.00:1 | — |
+
+**一個重要的區分**:`fg-muted` 同時用在**文字**與**圖示**。圖示走 1.4.11 只要 3:1 —— 現況 3.36 是過的。
+不過的只有文字用途。所以有「整個調深」與「拆成兩個 token」兩條路,屬產品/UI/UX 取捨,列入拍板。
