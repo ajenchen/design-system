@@ -898,3 +898,53 @@ dnd-kit 的 live region 寫死 `aria-live="assertive"`(`core.esm.js:3363`),API �
 assertive 會打斷螢幕閱讀器當下的朗讀。要改成 polite 得自建 region 並把 dnd-kit 的播報關掉 ——
 那會多一套平行機制。**現況登記在案,不動**;TreeView 的鍵盤重排另有自己的 polite region,
 兩條路不重疊。
+
+---
+
+# R. C3 收斂 —— 「方向不對稱」是誤判,真正的問題是「一格要按 11 次」(2026-09-07)
+
+## R1 先撤回結論:**沒有方向不對稱**
+
+先前登記「我實測 ArrowRight×10 可移動;獨立研究三次向右皆不動、向左才動」,兩份相反。
+真瀏覽器逐欄實測後,兩份都不對:
+
+| 起點 | 左鄰 | ArrowLeft |
+|---|---|---|
+| `name`(位置 1)| `sku`**【鎖定】** | 不動 —— **正確**,那個方向沒有合法落點 |
+| `category`(位置 2)| `name` | 正常移動 |
+| `price`(位置 3)| `category` | 正常移動 |
+
+變數是**那個方向有沒有合法(非鎖定)落點**,不是方向。兩份先前結論都是抽樣抽到不同起點。
+
+## R2 真正的缺陷:dnd-kit 預設每按一次只移 25px
+
+欄寬 100–240px → **移一格要按 11 次**。能操作(WCAG 2.1.1 過),但難用到幾乎沒人會用。
+
+當年 `2026-05-07 v15.13` 的註解說「KeyboardSensor 不傳 coordinateGetter」,理由是
+`sortableKeyboardCoordinates` 需要 `SortableContext` 而本表格已砍掉它 ——
+**那個理由排除的是「那個 preset」,不是「不能有自訂 getter」。** 缺的就是自訂那塊。
+
+新增 `lib/drag-visual.ts` 的 `createStepToNeighborCoordinateGetter()`:沿按鍵的軸,
+在所有合法落點裡找中心點落在前方最近的那一個,回傳讓被拖曳者中心對齊它所需的座標。
+找不到就回 `undefined`(維持原位)—— 所以「左邊只剩鎖定欄」自然就是不動,不必另寫規則。
+
+實測:1 次按鍵 = 1 格 / 3 次 = 3 格 / 8 次(超過最後一欄)= 移到最右。
+
+## R3 順帶抓到兩個
+
+1. **播報的種類寫死**:起始說「已提起**項目**」、結束說「已移動**欄位**」,同一趟兩個名字。
+   根因是 DataTable 一個 `DndContext` 同時承載列與欄,而 `kind` 是建立時就固定的字串。
+   改成可傳函式,由 `active.data.current.type` 決定。
+2. **一個殘留的假成功播報**:按 8 次(拖到最後一欄)時播「已移動」但順序沒變。
+   根因是 **story 自己的 bug** —— 受控的 `columnOrder` 只列 6 欄,但表格渲染 7 欄
+   (TanStack 對沒列進去的欄位仍會渲染,排在有序的之後),於是消費者的 handler
+   `indexOf('seller')` 回 -1 直接 `return prev`。已修 story。
+
+   **契約邊界已寫進 `lib/drag-announcements.ts`**:播報的「已移動」意思是
+   **元件已送出重排且自己的守衛全過**;它看不到消費者有沒有真的把新順序寫回 state
+   (播報是同步回傳的字串,那時 React 還沒 re-render)。受控順序**必須列全**。
+
+## R4 閘
+
+`scripts/drag-runtime-contract.mjs` 補兩條:「ArrowRight×N 應該正好移動 N 格」與
+「播報與真實順序一致」。後者就是抓 R3-2 那種謊報的。

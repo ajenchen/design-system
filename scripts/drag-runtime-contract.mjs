@@ -20,6 +20,10 @@
 //   (C5) **拖曳中的 ghost 不得進無障礙樹**。overlay 是 source 的 outerHTML 完整複製,
 //        連 role 一起複製 → 7 欄的表格在拖曳中會查到 8 個 columnheader。
 //
+//   (C3) **鍵盤一次按鍵跨一格**,而且**播報要跟真實順序一致**。
+//        dnd-kit 預設每按一次只移 25px,欄寬 100–240px → 移一格要按 11 次。
+//        第二條抓的是「說已移動但其實沒動」——受控 columnOrder 漏列某一欄時就會這樣。
+//
 // 為什麼用「播報有沒有出現」當拖曳啟動的證明,而不用 `aria-pressed`:
 // 那個屬性在拖曳結束後就被清掉,拿它做事後斷言會量到 null 而誤判(2026-09-07 踩過)。
 //
@@ -117,6 +121,36 @@ else {
   ck('C5 前提:拖曳真的啟動了(否則以下數字是假綠)', during.started, JSON.stringify(during))
   ck('C5 ghost 掛了 aria-hidden', during.ah==='true', String(during.ah))
   ck('C5 AT 看得見的 columnheader 數量不變', during.at===beforeN, `平常 ${beforeN} / 拖曳中 AT 可見 ${during.at}(DOM 含 ghost ${during.dom})`)
+}
+
+// ── C3:鍵盤重排 —— 一次一格,而且播報要跟真實順序一致 ──
+{
+  const order = () => pg.evaluate(() => [...document.querySelectorAll('[role="columnheader"][data-column-id]')]
+    .filter(h => !h.closest('[aria-hidden="true"]'))   // 排除 DragOverlay 的 ghost,否則會多算一欄
+    .map(h => h.dataset.columnId).join(','))
+  for (const n of [1, 3]) {
+    await pg.goto(`${B}/iframe.html?id=design-system-components-datatable-展示--column-reorder&viewMode=story`,{waitUntil:'networkidle'})
+    await pg.waitForTimeout(500)
+    const before = await order()
+    const focused = await pg.evaluate(() => {
+      // 第一顆是鎖定欄,要抓有 aria-roledescription 的
+      const h = document.querySelector('[role="columnheader"][data-column-id][aria-roledescription]')
+      if (!h) return null; h.focus(); return h.dataset.columnId })
+    if (!focused) { ck('C3 找得到可用鍵盤拖曳的表頭', false); break }
+    await pg.keyboard.press('Space'); await pg.waitForTimeout(200)
+    for (let i = 0; i < n; i++) { await pg.keyboard.press('ArrowRight'); await pg.waitForTimeout(140) }
+    await pg.keyboard.press('Space'); await pg.waitForTimeout(400)
+    const after = await order()
+    const endLive = await live()
+    const beforeArr = before.split(','), afterArr = after.split(',')
+    const moved = afterArr.indexOf(focused) - beforeArr.indexOf(focused)
+    // 一次按鍵 = 跨一格。沒有這條的話,dnd-kit 預設每次只移 25px,欄寬 100–240px
+    // 意味著「移一格要按 11 次」—— 能操作但沒人會用(2026-09-07 實測)。
+    ck(`C3 ArrowRight×${n} 應該正好移動 ${n} 格`, moved === n, `『${focused}』移了 ${moved} 格:${after}`)
+    // 播報必須與真實順序一致 —— 「說已移動但其實沒動」正是 C1 那類謊報
+    const claimsMoved = endLive.some(x => /已移動/.test(x.t))
+    ck(`C3 ArrowRight×${n} 播報與真實順序一致`, claimsMoved === (after !== before), JSON.stringify(endLive))
+  }
 }
 
 console.log(out.join('\n')); console.log(fail?`\n✗ ${fail} 項未通過`:'\n✓ 全部通過')

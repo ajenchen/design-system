@@ -42,7 +42,7 @@
     "release:consent": "node scripts/release-orchestrator.mjs consent",
     "test:release-consent": "node scripts/test-release-consent.mjs",
     "test:datatable-invariants": "node scripts/test-distribute-column-widths.mjs && node scripts/data-table-invariants.mjs",
-    "test:drag-announcements": "node scripts/drag-announcement-invariant.mjs && node scripts/drag-announcement-invariant.mjs --selftest"
+    "test:drag-announcements": "node scripts/drag-announcement-invariant.mjs && node scripts/drag-announcement-invariant.mjs --selftest",
     "test:drag-runtime": "node scripts/drag-runtime-contract.mjs",
     "test:focus-indicator-invariants": "node scripts/focus-indicator-invariants.mjs",
     "test:focus-geometry": "node scripts/focus-geometry-invariant.mjs && node scripts/focus-geometry-invariant.mjs --selftest && node scripts/focus-geometry-browser-audit.mjs",

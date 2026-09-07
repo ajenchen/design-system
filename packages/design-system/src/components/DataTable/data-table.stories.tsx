@@ -209,7 +209,12 @@ export const ColumnResize: Story = {
 export const ColumnReorder: Story = {
   name: '欄位拖曳重排',
   render: () => {
-    const initialOrder = ['sku', 'name', 'category', 'price', 'stock', 'updatedAt']
+    // 2026-09-07 修:原本漏了 `seller`。TanStack 對沒列進 columnOrder 的欄位仍會渲染
+    // (排在有序的之後),於是畫面上有 7 欄、state 只有 6 個 —— 把某欄拖到 `seller` 上時
+    // 這個 handler 的 `indexOf` 回 -1 直接 `return prev`,順序不動,
+    // 但 DS 已經送出重排請求、螢幕閱讀器會聽到「已移動」。
+    // **列全**才是 controlled columnOrder 的正確用法。
+    const initialOrder = ['sku', 'name', 'category', 'price', 'stock', 'updatedAt', 'seller']
     const [columnOrder, setColumnOrder] = React.useState<string[]>(initialOrder)
     const lockedCols = columnsWithPrice.map((c) => {
       const ak = (c as { accessorKey?: string }).accessorKey

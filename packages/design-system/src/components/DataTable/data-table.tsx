@@ -44,7 +44,7 @@ import { cn } from '@/lib/utils'
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
-import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, dragHandleCursorClass, forwardDragActivatorAttributes, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
+import { dragSourceStyle, dropIndicatorRow, dropIndicatorColumn, dragActiveCursor, dragHandleCursorClass, forwardDragActivatorAttributes, isReorderNoop, reconstructFullRowGhost, snapToCursorModifier, DRAG_ACTIVATION_DISTANCE_PX, createStepToNeighborCoordinateGetter } from '@/design-system/lib/drag-visual'
 import { nakedCellEditableDisplayHover, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/design-system/components/Tooltip/tooltip'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
@@ -3676,9 +3676,22 @@ function DataTableInner<TData>(
   // 此 getter 在無 context 下 keyboard nav 無法 reliable resolve target → keyboard
   // drag/reorder regression。Default getter(arrow-key Δ25px)在 useDraggable 場景是
   // dnd-kit canonical(`@dnd-kit/core/src/sensors/keyboard/defaults.ts` 預設行為)。
+  // 2026-09-07:補上自訂 `coordinateGetter`。上面那段說明排除的是 **@dnd-kit/sortable 的
+  // preset**(它需要 SortableContext),不是「不能有自訂 getter」——這裡就是缺掉的那塊。
+  // 沒有它的話,dnd-kit 預設每按一次箭頭只移 25px,而欄寬 100–240px,實測「把一欄往右移一格」
+  // 要按 **11 次**(2026-09-07 真瀏覽器)。有了它就是一次一格。
+  // 落點合法性交給 getter 的 predicate:型別要相同(列不能跳到欄),鎖定欄本來就沒註冊成
+  // droppable,所以「左邊只剩鎖定欄」自然就是不動,不需要另外寫規則。
+  const keyboardCoordinateGetter = React.useMemo(
+    () => createStepToNeighborCoordinateGetter((targetId, activeId, ctx) => {
+      const type = (id: string) => ctx.droppableContainers.get(id)?.data?.current?.type
+      return type(targetId) === type(activeId)
+    }),
+    [],
+  )
   const dndSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: keyboardCoordinateGetter }),
   )
 
   // **2026-05-06 v14.8 collision detection canonical(對齊 dnd-kit official best practice)**:
@@ -3893,7 +3906,12 @@ function DataTableInner<TData>(
 
   // 消費共用 SSOT `lib/drag-announcements.ts`(四個 DndContext 同一份,見該檔檔頭)。
   const dragAnnouncements = React.useMemo(
-    () => createDragAnnouncements({ getOutcome: () => reorderOutcomeRef.current, kind: '項目' }),
+    // 本 DndContext 同時承載列與欄兩種拖曳 —— 種類要看當下拖的是什麼,不能寫死。
+    // 寫死時起始會說「已提起**項目**」而結束說「已移動**欄位**」,同一趟用兩個名字。
+    () => createDragAnnouncements({
+      getOutcome: () => reorderOutcomeRef.current,
+      kind: (active) => (active.data?.current?.type === 'column' ? '欄位' : '列'),
+    }),
     [],
   )
 

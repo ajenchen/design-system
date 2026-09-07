@@ -326,6 +326,77 @@ function sanitizeGhostClone(el: HTMLElement, width: number): void {
  */
 export const DRAG_ACTIVATION_DISTANCE_PX = 8
 
+// ── 鍵盤拖曳:一次跳一格,不是一次 25px ──────────────────────────────────────
+
+/**
+ * dnd-kit 鍵盤拖曳的座標計算 —— **跳到下一個合法落點的中心**,而不是固定位移。
+ *
+ * 為什麼要自己寫:dnd-kit 的預設 getter 每按一次箭頭只移 **25px**
+ * (`@dnd-kit/core/src/sensors/keyboard/defaults.ts`)。DataTable 的欄寬是 100–240px,
+ * 於是「把一欄往右移一格」實測要按 **11 次**才會跨進隔壁欄的矩形 —— 能操作,但難用到
+ * 幾乎沒人會用(2026-09-07 真瀏覽器實測)。
+ *
+ * 為什麼不是用 `sortableKeyboardCoordinates`:那是 `@dnd-kit/sortable` 的 preset,
+ * 需要 `<SortableContext>` 才解得出下一個目標,而本 DS 的表格走的是
+ * `useDraggable` + `useDroppable`(2026-05-07 明確砍掉 SortableContext)。
+ * 當年那個決定排除的是**那個 preset**,不是「不能有自訂 getter」——
+ * 這一份就是缺掉的那塊。
+ *
+ * 做法:沿按鍵的軸,在所有**合法**落點裡找中心點落在前方最近的那一個,
+ * 回傳讓被拖曳者中心對齊它所需的座標。找不到就回 undefined(dnd-kit 會維持原位),
+ * 這樣「左邊只剩鎖定欄」之類的情況自然就是不動,不需要另外寫規則。
+ */
+export function createStepToNeighborCoordinateGetter(
+  /** 判斷某個落點在這一趟拖曳裡合不合法(例如型別要相同、鎖定欄要排除)。 */
+  isValidTarget?: (targetId: string, activeId: string, context: StepGetterContext) => boolean,
+) {
+  return (event: KeyboardEvent, args: StepGetterArgs) => {
+    const AXIS: Record<string, 'x' | 'y'> = {
+      ArrowLeft: 'x', ArrowRight: 'x', ArrowUp: 'y', ArrowDown: 'y',
+    }
+    const axis = AXIS[event.code]
+    if (!axis) return
+    const forward = event.code === 'ArrowRight' || event.code === 'ArrowDown'
+    const { currentCoordinates, context, active } = args
+    const rect = context.collisionRect
+    if (!rect) return
+
+    const centerOf = (r: { left: number; top: number; width: number; height: number }) =>
+      axis === 'x' ? r.left + r.width / 2 : r.top + r.height / 2
+    const here = centerOf(rect)
+
+    let best: number | null = null
+    context.droppableRects.forEach((r, id) => {
+      const sid = String(id)
+      if (sid === String(active)) return
+      if (isValidTarget && !isValidTarget(sid, String(active), context)) return
+      const c = centerOf(r)
+      // 只看前方的;`+1` 的容差避開浮點與同中心的情況
+      if (forward ? c <= here + 1 : c >= here - 1) return
+      if (best === null || Math.abs(c - here) < Math.abs(best - here)) best = c
+    })
+    if (best === null) return
+
+    const delta = best - here
+    return axis === 'x'
+      ? { x: currentCoordinates.x + delta, y: currentCoordinates.y }
+      : { x: currentCoordinates.x, y: currentCoordinates.y + delta }
+  }
+}
+
+/** `createStepToNeighborCoordinateGetter` 用得到的 dnd-kit context 欄位(結構型別,不綁 dnd-kit 版本)。 */
+export interface StepGetterContext {
+  collisionRect: { left: number; top: number; width: number; height: number } | null
+  droppableRects: Map<string | number, { left: number; top: number; width: number; height: number }>
+  droppableContainers: { get(id: string | number): { data?: { current?: Record<string, unknown> } } | undefined }
+}
+
+interface StepGetterArgs {
+  active: string | number
+  currentCoordinates: { x: number; y: number }
+  context: StepGetterContext
+}
+
 // ── Type exports for consumer ─────────────────────────────────────────────
 
 export type DropPosition = 'before' | 'after' | 'inside'

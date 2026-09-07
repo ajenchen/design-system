@@ -17,6 +17,14 @@
 // `handler?.(event)` 先跑、`dispatchMonitorEvent`(播報)後跑(`core.esm.js:3166-3170`
 // 實查),所以呼叫端在自己的 `onDragEnd` 內設 ref,這裡讀它即可 —— 不重算一次
 // 判定,避免兩份邏輯漂移。
+//
+// **契約邊界(必須知道)**:這裡的「已移動」意思是**元件已經送出重排、而且自己的守衛
+// 全部通過**。它**看不到**消費者的 handler 有沒有真的把新順序寫回 state ——
+// 播報是同步回傳的字串,那時 React 還沒 re-render,量不到結果。
+// 所以受控的 `columnOrder` / 資料順序**必須列全**;漏列的那一欄會讓消費者的
+// handler 靜默 `return prev`,而螢幕閱讀器仍聽到「已移動」。
+// 2026-09-07 錨:ColumnReorder story 的 columnOrder 漏了 `seller`(畫面 7 欄、state 6 個),
+// 拖到該欄時就是這個情況;已修 story,並由 `scripts/drag-runtime-contract.mjs` 守著。
 
 /** 拖曳結果。`null` = 沒有真的重排(被守衛擋下 / 使用者放在原位)。 */
 export interface DragOutcome {
@@ -26,11 +34,24 @@ export interface DragOutcome {
   label: string
 }
 
+/** dnd-kit 傳給播報的 active 形狀(只取我們用得到的部分)。 */
+interface ActiveLike {
+  id: string | number
+  data?: { current?: { type?: string } }
+}
+
 export interface DragAnnouncementArgs {
   /** 讀取「這一趟到底有沒有 commit」。由呼叫端在自己的 onDragEnd 內設定。 */
   getOutcome: () => DragOutcome | null
-  /** 被拖曳者的種類,用於 onDragStart / onDragCancel 的措辭,例如「列」 */
-  kind: string
+  /**
+   * 被拖曳者的種類,用於 onDragStart / onDragCancel 的措辭,例如「列」。
+   *
+   * 同一個 `DndContext` 可能拖不只一種東西(DataTable 的列與欄共用一個),
+   * 所以也接受一個函式,由 `active.data.current.type` 決定當下該說什麼。
+   * 2026-09-07 錨:寫死字串時 DataTable 起始說「已提起**項目**」、結束說「已移動**欄位**」,
+   * 同一趟拖曳用了兩個名字。
+   */
+  kind: string | ((active: ActiveLike) => string)
 }
 
 /**
@@ -48,9 +69,10 @@ export interface DragAnnouncementArgs {
  * ```
  */
 export function createDragAnnouncements({ getOutcome, kind }: DragAnnouncementArgs) {
+  const kindOf = (active: ActiveLike) => (typeof kind === 'function' ? kind(active) : kind)
   return {
-    onDragStart: ({ active }: { active: { id: string | number } }) =>
-      `已提起${kind}『${String(active.id)}』,用方向鍵移動,放開或按 Enter 放下,Esc 取消`,
+    onDragStart: ({ active }: { active: ActiveLike }) =>
+      `已提起${kindOf(active)}『${String(active.id)}』,用方向鍵移動,放開或按 Enter 放下,Esc 取消`,
     onDragOver: ({ over }: { over: { id: string | number } | null }) =>
       over ? `移到『${String(over.id)}』上方` : '目前不在可放置的位置',
     onDragEnd: () => {
@@ -59,7 +81,7 @@ export function createDragAnnouncements({ getOutcome, kind }: DragAnnouncementAr
       if (!outcome) return '未變更順序'
       return `已移動${outcome.kind}『${outcome.label}』`
     },
-    onDragCancel: ({ active }: { active: { id: string | number } }) =>
-      `已取消移動${kind}『${String(active.id)}』,回到原位`,
+    onDragCancel: ({ active }: { active: ActiveLike }) =>
+      `已取消移動${kindOf(active)}『${String(active.id)}』,回到原位`,
   }
 }
