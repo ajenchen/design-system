@@ -615,3 +615,52 @@ agent 鍵盤的互動很次要,我已經講過了**」
 **G1 整個延後** —— 它正是需要鍵盤往返與 POC 的那一塊。
 連帶:「Modal 開著還能用 agent」的示意也延後,但 **B / E / F 三條的示意不受影響**。
 
+# N. 拖曳播報:C1 + C2 + B2 是**同一個根因**(2026-09-07 查出)
+
+## 根因
+
+**全 DS 4 個 `DndContext` 沒有任何一個傳過 `accessibility` prop**(`grep -rn 'accessibility=' src --include='*.tsx'` 排除 stories = **0 命中**),
+所以四處全部吃 dnd-kit 的**英文預設播報**,而且是從它自己的生命週期發的。
+
+| 位置 | |
+|---|---|
+| `tree-view.tsx:972` | TreeView |
+| `data-table.tsx:3981` | 列拖曳 |
+| `data-table-sort-manager.tsx:136` | 排序面板 |
+| `data-table-column-visibility-panel.tsx:182` | 欄位顯示面板 |
+
+三項待辦因此收斂成一個修法:
+
+| 待辦 | 症狀 | 同一根因怎麼解釋 |
+|---|---|---|
+| **C1**(高)| 播報「已放到 X」但順序其實沒變 | dnd-kit 從自己的 `onDragEnd` 播報,**不知道我們的中點守衛已經 return、沒真的重排** |
+| **C2**(高)| TreeView 的繁中播報區全程是空的 | TreeView 那份中文播報**只有鍵盤重排那條路在寫**;滑鼠拖曳走的是 dnd-kit 的預設(英文、另一個 live region)|
+| **B2** | 繁中拖曳播報未實作 | 同上,指標路徑從來沒接過中文 |
+
+## 現成的中文 SSOT 已經存在,不用發明
+
+`tree-view.tsx:130` 的 `DEFAULT_REORDER_ANNOUNCEMENTS` 就是既有的繁中措辭 canonical:
+「已將『X』移到『Y』之前,第 N 項,共 M 項」/「已將『X』移入『Y』」/「已在最上方」/「無法移入:『Y』不是資料夾」…
+而且它已經支援 consumer 覆寫(`reorderAnnouncementsProp`)。
+
+**依 M23(DS 內既有 canonical 優先)與 M17(同值出現在 3+ consumer 必抽 SSOT):**
+把它從 TreeView 搬到共用模組,四個 `DndContext` 一起消費。**不是新增字串,是把既有的那份給其他三處用。**
+
+## 修法(三步,每步可獨立驗證)
+
+1. **抽 SSOT**:`DEFAULT_REORDER_ANNOUNCEMENTS` 與其型別搬到 `lib/`,TreeView 改 import。
+   **純搬移,零行為變化**,以 `build:lib` + TreeView 既有 story 驗。
+2. **接線**:四個 `DndContext` 各傳 `accessibility={{ announcements }}`。
+   dnd-kit 的 `announcements` 介面在 `core.esm.js:88`(`announcements = defaultAnnouncements`),
+   四個 hook 是 `onDragStart` / `onDragMove` / `onDragOver` / `onDragEnd` / `onDragCancel`。
+3. **修 C1 的假播報**:`onDragEnd` 的播報必須**consult 我們自己的 commit 判定**(中點守衛),
+   沒真的重排就播「未變更」而不是「已放到 X」。這是 C1 的 root cause,不是措辭問題。
+
+## 驗證方式
+
+- 步驟 1:`build:lib` exit 0 + TreeView 拖曳 story 行為 Δ=0
+- 步驟 2、3:**真瀏覽器讀 live region 的文字內容**(先前 C2 就是這樣量到「全程空字串」的),
+  分別驗:(a) 成功重排 → 播中文且內容與實際位置相符;(b) **中點守衛擋下 → 播「未變更」而不是假的成功訊息**;
+  (c) TreeView 滑鼠拖曳的播報區不再是空的
+- 機械閘:掃「有 `DndContext` 卻沒傳 `accessibility`」→ 防回流
+
