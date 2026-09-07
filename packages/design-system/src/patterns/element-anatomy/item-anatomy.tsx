@@ -708,7 +708,9 @@ export const ItemInlineActionButton = React.forwardRef<
         // (canonical 2026-05-05:Collapsible / drag / dismiss 等 in-place 互動 ≠ overlay,
         // 不應 leak 視覺 lock。詳 inline-action.spec.md「Overlay trigger canonical」)
         overlayTrigger && "data-[state=open]:text-fg-secondary",
-        "focus-visible:outline-2 focus-visible:outline-ring",
+        // 2026-09-07:刪掉本地 focus-visible:outline-2 + outline-ring —— 與全域
+      // styles/base.css:44-47 逐字等價(同 2px、同 --ring、offset 也吃全域的 2px),
+      // 且本區塊無 outline-none,全域本來就生效。刪除為零視覺變化。
         className
       )}
       style={{ width: iconPx, height: iconPx, ...style }}

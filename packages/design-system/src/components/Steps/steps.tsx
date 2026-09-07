@@ -489,10 +489,18 @@ function StepItemHeader({ children, className, style, contentId }: { children: R
         // 設在 header 而非 li 根 → prefix h-[1lh] + 水平 connector h-[1lh] + label(StepLabel 亦 leading-compact)
         // 全用 1.3 對齊;li 根 text-body(1.5,steps.tsx:329-331)留給展開 content 的 reading 行高,不被
         // scanning 波及(避免 改A壞B)。對齊 MenuItem 把 leading-compact 放 row 容器之原則(item-anatomy.tsx:144-146)。
-        'outline-none leading-compact',
+        'leading-compact',
+        // 2026-09-07 修 WCAG 2.4.7:原本這裡是**無條件** `outline-none`,而下一行的
+        // `focus-visible:outline-2` 只設寬度、樣式吃 `var(--tw-outline-style)` —— 被上面那個
+        // outline-none 設成 none 之後,**那三個 focus-visible class 從寫下起就沒畫過任何東西**。
+        // 可點的 header 有 role="button" + tabIndex={0} + onClick + onKeyDown(:476-479)= 可操作,
+        // 依 focus-canonical「可操作就必須有可見焦點指示」必須畫。
+        // 修法是把 outline-none 收進「不可點」那一支,並刪掉本地那三個 class —— 全域
+        // `styles/base.css:44-47` 的 `outline: 2px solid var(--ring); outline-offset: 2px`
+        // 與它們逐字等價,本地重寫一份只是把全域抄一遍(同 H1c 那類冗餘)。
         item.clickable
-          ? 'cursor-pointer rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
-          : 'cursor-not-allowed',
+          ? 'cursor-pointer rounded-md'
+          : 'outline-none cursor-not-allowed',
         className,
       )}
       style={style}
