@@ -1396,3 +1396,35 @@ canonical 多了 `record_release_consent.sh`、其測試、一個 retired 檔;�
 `lib/_approval_re.sh` 與 `tests/KNOWN-BROKEN.md`。所以總帳原本寫「內容相同故行為一致」是**不準的**。
 不過 `managed-host-assurance` 與 `npm run hooks:test` 都**直接讀 canonical**
 (`harness-source-inventory.mjs:2008` 明文),不經過這個別名,所以行為確實不受影響。
+
+---
+
+# AA. 涵蓋率訂正:我先前說「全 DS」,實際只掃了 39/67(2026-09-07)
+
+user 問「確認所有 ds 內容都有按此原則沒有偏移?」。抑制側我逐一標了 28 處沒問題,
+但**正面那側**(每個可操作元素有沒有正確畫)靠的是 `focus-geometry-browser-audit.mjs`,
+而那支的元件清單是**手寫死的 39 個名字** —— DS 有 67 個元件。
+
+漏掉的 29 個包括 **Input / Select / Textarea / NumberInput / LinkInput / Dialog / Sheet /
+Pagination / Toast / AccountMenu / ProfileCard / BulkActionBar / Coachmark /
+FieldControlGroup / SelectionControl** 等,而我在報告裡寫的是「全 DS」。
+
+寫死的清單還有個更糟的性質:**新元件不會自動進來**,漏了也不會有人發現。
+已改成從 storybook 索引自動推導(`Components/<名字>`),涵蓋 **58 個**
+(其餘 9 個沒有 `Components/*` story,如 README 與內部目錄)。
+
+## 擴大後立刻抓到一個真的
+
+**Pagination 的按鈕外框三面被裁**:上 4 / 下 4 / 左 4 px。
+根因不是按鈕,是它們住的 `<nav>` 有 `overflow-x-auto`(`pagination.tsx:281` —— 那是
+「砍無可砍時整條橫向可捲」的既有 canonical,不是可以拿掉的東西);
+依 CSS 規範一軸不是 visible 時另一軸也計算成 auto,所以兩軸都裁。**框畫了等於沒畫。**
+改成內描邊,寫在 `<ul>` 那一層而不是逐顆按鈕 —— 「會被裁」是容器的性質,不是某顆按鈕的性質。
+
+## 擴大後的完整結果
+
+**85 站外描邊正確 / 1 站已知殘留(Combobox story 內與欄位相鄰的 Button,共用 primitive 可接受)
+/ 15 站無框**。15 站逐一對回類別表:全部落在已登記的 A(TreeView)、B(Field 家族裸 input:
+Input / NumberInput / Textarea / FieldControlGroup / Combobox / DatePicker / TimePicker /
+AgentPromptInput / Slider 的欄位 / AppShell 的欄位)、C(InlineEdit)、D(AppShell 的側欄鈕未選中)——
+**沒有新的違規**。

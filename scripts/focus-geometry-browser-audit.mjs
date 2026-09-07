@@ -104,7 +104,16 @@ const DETECT = `(() => {
 })()`
 
 const idx = JSON.parse(readFileSync(join(STATIC,'index.json'),'utf8'))
-const COMPS = ['Button','Checkbox','Switch','RadioGroup','Tabs','Accordion','Avatar','Tag','Chip','Carousel','Breadcrumb','Rating','SegmentedControl','OverflowIndicator','Calendar','DateGrid','Sidebar','TreeView','FileUpload','DropdownMenu','PeoplePicker','AgentPanel','DataTable','Field','TimePicker','Steps','FileItem','FileViewer','AppShell','Slider','DatePicker','Combobox','SelectMenu','Command','Popover','Menu','InlineEdit','ScrollArea','Chart']
+// **元件清單從 storybook 索引自動推導,不寫死。**
+// 2026-09-07:原本是一份手寫的 39 個名字,而 DS 有 67 個元件 —— 漏了 Input / Select /
+// Textarea / Dialog / Sheet / Pagination 等 29 個,卻在報告裡宣稱「全 DS」。
+// 寫死的清單還有個更糟的性質:**新元件不會自動進來**,漏了也不會有人發現。
+const COMPS = [...new Set(
+  Object.values(JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8')).entries)
+    .map((e) => e.title.replace(/\s/g, '').match(/Components\/([^/]+)/)?.[1])
+    .filter(Boolean),
+)]
+console.log(`涵蓋 ${COMPS.length} 個元件(清單自 storybook 索引推導,新元件自動納入)\n`)
 const report = {}
 const pg = await br.newPage({ viewport:{width:1440,height:900} })
 for (const theme of ['light','dark']) {

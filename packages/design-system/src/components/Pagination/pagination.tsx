@@ -212,8 +212,16 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
       ? (pageSizeOptions!.includes(safePageSize) ? pageSizeOptions! : [safePageSize, ...pageSizeOptions!])
       : []
 
+    // 2026-09-07:本列所有按鈕改**內**描邊。
+    // 根因不是按鈕本身,是它們住的 `<nav>` 有 `overflow-x-auto`(下方 :281 —— 那是
+    // 「砍無可砍時整條橫向可捲」的既有 canonical,不是可以拿掉的東西)。
+    // 依 CSS 規範,一軸不是 visible 時另一軸也會計算成 auto,所以那個 nav 兩軸都裁。
+    // 實測外描邊被裁掉 上 4 / 下 4 / 左 4 px —— 框畫了等於沒畫。
+    // 判準見 `ds-canonical/references/focus-canonical.md` 問題二:
+    // 元素貼著裁切邊(淨空 < 4px)就往內畫。寫在這一層而不是逐顆按鈕,
+    // 是因為「會被裁」是這個容器的性質,不是某一顆按鈕的性質。
     const pageList = (
-      <ul className="flex items-center gap-1">
+      <ul className="flex items-center gap-1 [&_button:focus-visible]:focus-ring-inset">
         <li>
           <Button
             variant="text"
