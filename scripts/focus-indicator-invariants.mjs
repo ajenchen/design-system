@@ -149,14 +149,33 @@ else{
   check('H1f **Tab 進場當下**那列就有可見的鍵盤游標(APG 要求)',!!tv.rowIndicator,tv.rowIndicator||'(什麼都沒畫)')}
 
 // ══ J2g AgentPanel ══
-for(const vw of [1280,900,700]){
+// F4 的正確測法:**不重抄公式**,而是驗「宣稱的上限」與「按 End 真正停的位置」一致。
+// 先前這裡抄了一份 `min(640, ⌊視窗/2⌋)`,G3 把幾何改成由容器推導之後就整組假紅 ——
+// **閘不該複製被測對象的公式**,那等於把同一件事寫兩遍,改一邊就壞。
+// 上限本身怎麼算由 `scripts/agent-panel-breakpoint.mjs` 負責。
+for(const vw of [1600,1280,1080]){
   await pg.setViewportSize({width:vw,height:800})
   await go('design-system-components-agentpanel-展示--task-assistant')
-  const ap=await pg.evaluate(()=>{const h=document.querySelector('[role="separator"][aria-orientation="vertical"]')
-    return h?{max:+h.getAttribute('aria-valuemax'),now:+h.getAttribute('aria-valuenow'),w:innerWidth}:{err:'無 handle'}})
-  if(ap.err){check(`J2g @${vw}`,false,ap.err);continue}
-  const exp=Math.min(640,Math.max(Math.floor(ap.w/2),360))
-  check(`J2g @視窗${vw} aria-valuemax=${ap.max} 等於真正上限 ${exp}`,ap.max===exp,`now=${ap.now}`)}
+  const h = await pg.$('[role="separator"][aria-orientation="vertical"]')
+  if(!h){ check(`J2g @視窗${vw} 有可調寬把手(並排態應該要有)`, false, '找不到 handle'); continue }
+  await h.focus()
+  await pg.keyboard.press('End')
+  // 先等 **End 真的套用**(now 追上 max),再獨立量渲染出來的寬度。
+  // 兩個踩過的坑:
+  //   固定 sleep 200ms → 量到中途值(實測 527 vs 宣稱 533,看起來像 bug 其實是量太早);
+  //   「等寬度不再變」→ 值還沒開始變時就判定成穩定,量到改變**之前**的 400。
+  // 等狀態、量結果,兩件事分開,才不會拿自己要斷言的東西當等待條件。
+  await pg.waitForFunction(() => {
+    const x = document.querySelector('[role="separator"][aria-orientation="vertical"]')
+    return x && x.getAttribute('aria-valuenow') === x.getAttribute('aria-valuemax')
+  }, null, { timeout: 3000 }).catch(() => {})
+  await pg.waitForTimeout(350)
+  const ap = await pg.evaluate(()=>{const x=document.querySelector('[role="separator"][aria-orientation="vertical"]')
+    const panel=document.querySelector('[role="complementary"]')
+    return {max:+x.getAttribute('aria-valuemax'), now:+x.getAttribute('aria-valuenow'),
+      realW:Math.round(panel.getBoundingClientRect().width)}})
+  check(`J2g @視窗${vw} 按 End 之後 aria-valuenow 等於宣稱的上限`, ap.now===ap.max, `now=${ap.now} max=${ap.max}`)
+  check(`J2g @視窗${vw} 而且面板真的變成那麼寬(宣稱 = 真實)`, Math.abs(ap.realW-ap.max)<=1, `實寬=${ap.realW} 宣稱=${ap.max}`)}
 
 console.log(out.join('\n')); console.log(fails?`\n✗ ${fails} 項未通過`:'\n✓ 全部通過')
 await br.close(); server.close(); process.exit(fails?1:0)

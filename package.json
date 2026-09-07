@@ -47,7 +47,7 @@
     "test:focus-indicator-invariants": "node scripts/focus-indicator-invariants.mjs",
     "test:interaction-ladder": "node scripts/interaction-ladder-invariant.mjs && node scripts/interaction-ladder-invariant.mjs --selftest",
     "test:focus-geometry": "node scripts/focus-geometry-invariant.mjs && node scripts/focus-geometry-invariant.mjs --selftest && node scripts/focus-geometry-browser-audit.mjs",
-    "test:agent-panel-invariants": "node scripts/agent-panel-reopen-state.mjs && node scripts/agent-panel-dismissable-layer-invariant.mjs && node scripts/agent-panel-fixed-anatomy-invariant.mjs && node scripts/agent-logo-brand-scale-invariant.mjs && node scripts/agent-logo-continuity-invariant.mjs && node scripts/agent-fab-hit-area-invariant.mjs",
+    "test:agent-panel-invariants": "node scripts/agent-panel-breakpoint.mjs && node scripts/agent-panel-reopen-state.mjs && node scripts/agent-panel-dismissable-layer-invariant.mjs && node scripts/agent-panel-fixed-anatomy-invariant.mjs && node scripts/agent-logo-brand-scale-invariant.mjs && node scripts/agent-logo-continuity-invariant.mjs && node scripts/agent-fab-hit-area-invariant.mjs",
     "test:header-tabs-slot-invariants": "node scripts/header-tabs-slot-invariants.mjs",
     "test:pagination-invariants": "node scripts/pagination-narrow-ladder-invariant.mjs",
     "check:tabs-inline-action-geometry": "node --test scripts/tabs-inline-action-geometry.test.mjs",

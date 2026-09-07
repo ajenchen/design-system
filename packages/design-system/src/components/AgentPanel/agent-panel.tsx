@@ -120,19 +120,41 @@ const PANEL_WIDTH_MAX = 640
 const PANEL_RESIZE_KEY_STEP = 16
 
 /**
- * 目前視窗下真正生效的面板寬上限。
+ * 並排時面板寬的上限,由**容器寬**推導。
+ *
+ * 三個已定的量互鎖(2026-09-07 G3):
+ *   面板 ≥ 360(`PANEL_WIDTH_MIN`)
+ *   面板 ≤ 舞台的一半(user 2026-09-07 裁示 #5:「50% 基準由視窗改舞台」)
+ *   並排時 舞台 = 容器 − 面板
+ * 三條合起來:面板 ≤ (容器 − 面板)/2 ⇒ **面板 ≤ 容器/3**。
+ * 再套下限 360 ⇒ **並排只在容器 ≥ 1080 時成立**;更窄就翻成蓋板(見 `resolveIsOverlay`)。
+ *
+ * 為什麼不是量視窗:面板住在容器裡,不是住在視窗裡。視窗 1920 但容器只有 800 的版面
+ * (側欄 + 主內容 + 面板)用視窗算會給出 640 的上限,面板一寬舞台就被擠爆。
  *
  * clampPanelWidth 與 ResizeHandle 的 `max`(→ aria-valuemax)**必須讀同一個函式** ——
- * 2026-09-07 G5:先前 `max` 寫死 PANEL_WIDTH_MAX(640),但實際 clamp 是 min(640, ⌊W/2⌋),
- * 視窗 900 時真正上限只有 450,螢幕閱讀器卻念 640、按 End 也宣稱跳 640 實際停 450。
+ * 2026-09-07 G5:先前 `max` 寫死 640,螢幕閱讀器念的數字與實際停的位置不一樣。
  */
-function resolvePanelWidthMax() {
-  if (typeof window === 'undefined') return PANEL_WIDTH_MAX
-  return Math.min(PANEL_WIDTH_MAX, Math.max(Math.floor(window.innerWidth / 2), PANEL_WIDTH_MIN))
+function resolvePanelWidthMax(containerPx: number) {
+  // 還沒佈局(0)時不能拿去算,否則會鎖進最小值且不再復原(同 person-display 的 <=0 守衛)
+  if (!containerPx || containerPx <= 0) return PANEL_WIDTH_MAX
+  return Math.min(PANEL_WIDTH_MAX, Math.max(Math.floor(containerPx / 3), PANEL_WIDTH_MIN))
 }
 
-function clampPanelWidth(width: number) {
-  return Math.min(Math.max(width, PANEL_WIDTH_MIN), resolvePanelWidthMax())
+/** 容器窄到並排放不下(面板 360 之後舞台會不足面板兩倍)→ 翻成蓋板,蓋滿舞台。 */
+function resolveIsOverlay(containerPx: number) {
+  if (!containerPx || containerPx <= 0) return false
+  return containerPx < AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER
+}
+
+/**
+ * 並排斷點:容器至少要這麼寬,面板才放得下且舞台仍有面板的兩倍(360 × 3 = 1080)。
+ * 匯出讓消費端可以用同一個數字排版,不必自己抄一個 1080。
+ */
+export const AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER = PANEL_WIDTH_MIN * 3
+
+function clampPanelWidth(width: number, containerPx: number) {
+  return Math.min(Math.max(width, PANEL_WIDTH_MIN), resolvePanelWidthMax(containerPx))
 }
 
 export interface AgentPanelProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -166,48 +188,75 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     },
     ref,
   ) => {
-    // aria-valuemax 必須跟著視窗變 —— 只在初次 render 算一次的話,使用者縮視窗後
-    // 螢幕閱讀器念的仍是舊上限(G5 的另一半)。
-    const [widthMax, setWidthMax] = React.useState(resolvePanelWidthMax)
-    React.useEffect(() => {
-      const sync = () => setWidthMax(resolvePanelWidthMax())
-      sync()
-      window.addEventListener('resize', sync)
-      return () => window.removeEventListener('resize', sync)
+    // 量**容器**(面板的父層)而不是視窗:面板住在容器裡。用 ResizeObserver 而不是
+    // window resize —— 版面可能因為側欄收合、分頁切換而改變,那些都不會發 window resize。
+    // aria-valuemax 也吃這個值(G5:先前寫死 640,螢幕閱讀器念的與實際停的位置不一樣)。
+    const rootRef = React.useRef<HTMLDivElement | null>(null)
+    const [containerPx, setContainerPx] = React.useState(0)
+    React.useLayoutEffect(() => {
+      // 往上找到**第一個有盒子的**祖先。直接抓 parentElement 會踩到 `display: contents` ——
+      // AgentPanelDock 為了「關閉時不卸載」在外面包了一層 contents(它刻意沒有盒子),
+      // 量它會得到 clientWidth = 0,於是上限永遠是 640、蓋板永遠不觸發(2026-09-07 踩過)。
+      let host = rootRef.current?.parentElement ?? null
+      while (host && getComputedStyle(host).display === 'contents') host = host.parentElement
+      if (!host) return
+      const measure = () => {
+        const w = host.clientWidth
+        // 沒有版面時量到的 0 不代表任何事,不拿去更新(同 person-display / AgentConversation)
+        if (w > 0) setContainerPx(w)
+      }
+      measure()
+      const ro = new ResizeObserver(measure)
+      ro.observe(host)
+      return () => ro.disconnect()
     }, [])
-    const [uncontrolledWidth, setUncontrolledWidth] = React.useState(() => clampPanelWidth(defaultWidth))
-    const resolvedWidth = clampPanelWidth(width ?? uncontrolledWidth)
+    const widthMax = resolvePanelWidthMax(containerPx)
+    const isOverlay = resolveIsOverlay(containerPx)
+    const [uncontrolledWidth, setUncontrolledWidth] = React.useState(defaultWidth)
+    const resolvedWidth = clampPanelWidth(width ?? uncontrolledWidth, containerPx)
 
     const applyWidth = React.useCallback(
       (next: number, commit: boolean) => {
-        const clamped = clampPanelWidth(next)
+        const clamped = clampPanelWidth(next, containerPx)
         if (width === undefined) setUncontrolledWidth(clamped)
         // 每一格都發 onWidthChange:受控 consumer 才有拖曳中的即時回饋(原本只在放開時發 = 整段拖曳畫面不動);
         // 放開 / 鍵盤一步再發 onWidthCommit,要落地儲存的接這個。
         onWidthChange?.(clamped)
         if (commit) onWidthCommit?.(clamped)
       },
-      [width, onWidthChange, onWidthCommit],
+      [width, onWidthChange, onWidthCommit, containerPx],
     )
 
     if (!open) return null
     return (
       <div
-        ref={ref}
+        ref={(node) => {
+          rootRef.current = node
+          if (typeof ref === 'function') ref(node)
+          else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+        }}
         role="complementary"
         aria-label="智慧代理" // i18n-allow: DS 預設,props 展開在後可覆寫
+        // 蓋板態要讓 AT 知道它現在是蓋在內容上的一層,不是並排的一欄
+        data-agent-panel-mode={isOverlay ? 'overlay' : 'side-by-side'}
         className={cn(
           'relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-surface',
+          // 2026-09-07 G3:容器窄到並排放不下(< 1080)就蓋滿舞台。
+          // 「蓋滿」是 B 條的原文,不是我挑的 —— 窄螢幕以抽屜蓋滿宿主。
+          // 用 absolute 而不是把宿主推走:蓋板本來就不該改變底下內容的版面,
+          // 而且回到寬螢幕時宿主不需要重新排版(避免來回切換時內容跳動)。
+          isOverlay && 'absolute inset-0 z-20 w-full shadow-[var(--elevation-300)]',
           // 分隔線只有一個 owner:可拖時由 ResizeHandle 的 1px line 擁有(DataTable 欄間同款,hover/拖曳會變色);
           // 不可拖才由容器畫 border-l(app-shell aside 前例)。兩者並存 = 2px 粗線(2026-09-02 user 抓到)。
-          !resizable && 'border-l border-divider',
+          !resizable && !isOverlay && 'border-l border-divider',
           'animate-in fade-in-0 slide-in-from-right-4 duration-[var(--motion-duration-surface)] motion-reduce:animate-none',
           className,
         )}
-        style={{ width: resolvedWidth, ...style }}
+        // 蓋板態寬度由 `w-full` 決定,不吃拖曳出來的值(拖曳把手在蓋板態也不渲染)
+        style={{ ...(isOverlay ? null : { width: resolvedWidth }), ...style }}
         {...props}
       >
-        {resizable && (
+        {resizable && !isOverlay && (
           // 同一顆 ResizeHandle 擁有視覺 / 拖拉 / 鍵盤 / ARIA(DataTable 欄寬同元件,2026-09-02 SSOT 收斂);
           // 面板寬 clamp(360–640 且 ≤50vw)由 applyWidth 負責。
           <ResizeHandle
