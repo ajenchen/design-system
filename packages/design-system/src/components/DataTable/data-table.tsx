@@ -3296,12 +3296,22 @@ function DataTableInner<TData>(
       // (SelectionRect z 2)IS the visual focus indicator per spreadsheet canonical
       // (對齊 Excel / Google Sheets / Notion / Airtable — focused cell own active border,
       // table 容器無 focus ring)。
-      // @focus-suppress A — A 虛擬游標;承擔者:spreadsheet 模式的儲存格選取框
-      //   (1px primary outline,Tab 進場由上方 onFocus 初始化到第一格)。
-      //   ⚠ **純選取模式(非 spreadsheet)目前沒有承擔者** —— 焦點落在這裡什麼都不畫。
-      //   那正是總帳 A4「DataTable 列游標」,仍卡在三個技術前提(role=grid 已解、
-      //   虛擬捲動下 activedescendant 目標要真實存在、同一列在三面板的 IDREF 歸屬未定)。
-      className={cn(dataTableVariants({ bordered }), isFillHeight && 'flex flex-col', 'outline-none focus:outline-none focus-visible:outline-none', className)}
+      // 2026-09-07:**改成內描邊,不再抑制**。
+      //
+      // 2026-05-12 抑制它的理由是 user 抓到「按 shift 那麼容易會在 table **外圈**出現一層藍色邊框」。
+      // 今天實測那個觸發條件**已經不存在**:一般點擊與 Shift+點擊都讓焦點落在列的核取方塊上,
+      // 表格根節點根本不命中 `:focus-visible`;只有**鍵盤 Tab** 會(三種情境都量過)。
+      // 而抑制的代價是:Tab 落在這裡時**什麼都不畫**,根節點與表內都沒有任何線索(WCAG 2.4.7)。
+      // 那句既有註解說「儲存格選取框 IS the visual focus indicator」只在**已選過一格之後**才成立。
+      //
+      // 用**內**描邊而不是外描邊,正好避開原始抱怨的形狀 —— 框畫在表格邊框內側,不會在外圈多一圈。
+      // spreadsheet 模式另有儲存格選取框(上方 onFocus 會在 Tab 進場時初始化到第一格),
+      // 兩者不衝突:一個說「焦點在這張表」,一個說「游標在哪一格」。
+      //
+      // **A4 仍未關閉**:純選取模式仍然沒有**列**層級的游標(只有表格層級的框)。
+      // 那還卡在:虛擬捲動下 activedescendant 目標必須真實存在、同一列在三面板各渲染一次
+      // 故 IDREF 歸屬未定(`role=grid` 那個前提已於本日解除)。
+      className={cn(dataTableVariants({ bordered }), isFillHeight && 'flex flex-col', 'focus-visible:focus-ring-inset', className)}
       // isFillHeight:`maxHeight: 100%`(不是 height:100%)— content 小 → outer = intrinsic
       // (hug rows);content 大或 window 縮 < content → outer cap 到 100% of parent。
       // 行為:**永遠 hug rows**,只在被約束時才 cap + body shrink + V scroll。

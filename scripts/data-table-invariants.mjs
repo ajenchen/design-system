@@ -2037,6 +2037,54 @@ for (const [storyId, expectRole] of [
     `cell=${r.cells} gridcell=${r.gridcells}`)
 }
 
+/* ── I30:表格根節點的焦點框 —— 鍵盤要畫、滑鼠不准畫(2026-09-07)──────────────
+ * 這條同時守兩個方向,少一個都會出事:
+ *   (a) **鍵盤 Tab 落在表格根節點時必須畫**。先前一律 `outline-none`,
+ *       實測 Tab 進來時根節點與表內**都沒有任何線索**(WCAG 2.4.7)。
+ *       那句既有註解說「儲存格選取框 IS the visual focus indicator」只在
+ *       **已選過一格之後**才成立。
+ *   (b) **滑鼠點擊(含 Shift+點擊)不准畫**。2026-05-12 user 抓過
+ *       「按 shift 那麼容易會在 table 外圈出現一層藍色邊框」——
+ *       只補 (a) 而讓 (b) 回流的話,等於把修好的東西弄回去。
+ * 今天的實測是:點擊會讓焦點落在列的核取方塊上,根節點根本不命中 `:focus-visible`;
+ * 只有鍵盤 Tab 會。框用**內**描邊,正好避開原始抱怨的「外圈多一圈」形狀。 */
+for (const storyId of ['design-system-components-datatable-展示--selection-keyboard-and-shift']) {
+  await page.goto(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, { waitUntil: 'networkidle' })
+  await page.waitForSelector('[data-data-table-outer]')
+  await page.waitForTimeout(400)
+  const drawn = () => page.evaluate(() => {
+    const t = document.querySelector('[data-data-table-outer]')
+    const cs = getComputedStyle(t)
+    return { focused: document.activeElement === t, focusVisible: t.matches(':focus-visible'),
+      outline: `${cs.outlineStyle} ${cs.outlineWidth}@${cs.outlineOffset}`,
+      drawn: cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0 }
+  })
+  // (b) 先驗滑鼠 —— 一般點擊與 Shift+點擊都不得畫
+  const rowBox = await (await page.$('[role="row"][data-row-index="1"]')).boundingBox()
+  await page.mouse.click(rowBox.x + rowBox.width / 2, rowBox.y + rowBox.height / 2)
+  await page.waitForTimeout(250)
+  const afterClick = await drawn()
+  await page.keyboard.down('Shift')
+  const rowBox2 = await (await page.$('[role="row"][data-row-index="3"]')).boundingBox()
+  await page.mouse.click(rowBox2.x + rowBox2.width / 2, rowBox2.y + rowBox2.height / 2)
+  await page.keyboard.up('Shift')
+  await page.waitForTimeout(250)
+  const afterShiftClick = await drawn()
+  record('I30', '滑鼠點擊後表格根節點不得畫焦點框', !afterClick.drawn || !afterClick.focused, JSON.stringify(afterClick))
+  record('I30', 'Shift+點擊後也不得畫(2026-05-12 user 抓過的那個)', !afterShiftClick.drawn || !afterShiftClick.focused, JSON.stringify(afterShiftClick))
+  // (a) 再驗鍵盤 —— Tab 進來必須畫
+  await page.goto(`${BASE}/iframe.html?id=${storyId}&viewMode=story`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(400)
+  let landed = false
+  for (let i = 0; i < 25; i++) {
+    await page.keyboard.press('Tab'); await page.waitForTimeout(60)
+    if ((await drawn()).focused) { landed = true; break }
+  }
+  const afterTab = await drawn()
+  record('I30', '鍵盤 Tab 走得到表格根節點', landed, JSON.stringify(afterTab))
+  record('I30', '鍵盤 Tab 落在表格根節點時必須畫焦點框(WCAG 2.4.7)', landed && afterTab.drawn, JSON.stringify(afterTab))
+}
+
 if (failures.length > 0) {
   console.log('\n--- FAILURES ---')
   console.log(failures.join('\n'))
