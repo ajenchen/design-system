@@ -61,6 +61,16 @@ function carrierPointsAt(window, re) {
     && f.src.split('\n').slice(Math.max(0, n - 4), n + 3).some((l) => re.test(l)))
 }
 
+/**
+ * 回看視窗裡可能有**不只一個**標記(兩處抑制相距 8 行以內就會)。
+ * 一律取**最靠近**這一行的那個 —— 取第一個的話,後面那處會讀到前面那處的
+ * 類別與承擔者,標錯類別就被遮住了。(2026-09-08 由對抗測試抓到)
+ */
+function nearest(window, re) {
+  const all = [...window.matchAll(new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g'))]
+  return all.length ? all[all.length - 1] : null
+}
+
 function stripComments(text) {
   return text
     // 跨行註解要**保留換行數**,否則剝完之後行號會錯位,
@@ -71,6 +81,7 @@ function stripComments(text) {
 
 export function scan(files) {
   const problems = []
+  const shared = []
   for (const { path, src } of files) {
     const stripped = stripComments(src).split('\n')
     const lines = src.split('\n')
@@ -79,11 +90,11 @@ export function scan(files) {
       if (!SUPPRESS.test(code)) return
       // 標記本身寫在註解裡,所以回看要用**原文**不是剝過的
       const window = lines.slice(Math.max(0, i - LOOKBACK), i).join('\n')
-      const m = window.match(/@focus-suppress\s+([A-EN])\b/)
+      const m = nearest(window, /@focus-suppress\s+([A-EN])\b/)
       const trimmed = line.trim()
       if (!m) { problems.push({ path, line: i + 1, why: '沒有 @focus-suppress 標記', text: trimmed.slice(0, 80) }); return }
       if (!VALID.has(m[1])) { problems.push({ path, line: i + 1, why: `類別 ${m[1]} 不在 A–E / N`, text: trimmed.slice(0, 80) }); return }
-      if (m[1] !== 'N' && !/承擔者[::]/.test(window)) {
+      if (m[1] !== 'N' && !/承擔者[::]/.test(window.slice(m.index))) {
         problems.push({ path, line: i + 1, why: `類別 ${m[1]} 必須寫出承擔者是誰(寫不出來就代表它不屬於那一類)`, text: trimmed.slice(0, 80) })
         return
       }
@@ -108,8 +119,32 @@ export function scan(files) {
       }[m[1]]
       if (evidence && !evidence.ok()) {
         problems.push({ path, line: i + 1, why: `宣告了 ${m[1]} 類,但${evidence.need}`, text: trimmed.slice(0, 80) })
+        return
+      }
+      if (m[1] === 'C') {
+        const carrier = nearest(window, /承擔者[::]([^\n]*)/)
+        if (carrier) shared.push({ path, line: i + 1, key: path + '|' + carrier[1].trim(), trimmed, after: lines.slice(i, i + 8).join('\n') })
       }
     })
+  }
+  // **一個承擔者被兩個以上 tab stop 共用時,它分不出焦點在哪一顆。**
+  // 那圈邊框只會說「焦點在這個欄位裡」,不會說「在起日還是迄日」——
+  // 於是每一顆都必須另有自己的區分指示。
+  // 錨:DatePicker range 的起訖兩顆(2026-09-08)。本元件自己早有一條主色底線
+  // (對照 Ant Design RangePicker 的 -active-bar),但被 `open &&` 擋住,
+  // 面板關著用 Tab 移動時兩顆長得一模一樣。
+  const groups = new Map()
+  for (const c of shared) groups.set(c.key, [...(groups.get(c.key) ?? []), c])
+  for (const [, members] of groups) {
+    if (members.length < 2) continue
+    for (const c of members) {
+      // outline-none 是抑制,不算指示;要有另一個 focus-visible 樣式
+      const distinguishing = /focus-visible:(?!outline-none)[\w[\]-]+/.test(c.after)
+      if (!distinguishing) {
+        problems.push({ path: c.path, line: c.line, text: c.trimmed.slice(0, 80),
+          why: `同一個承擔者被 ${members.length} 個 tab stop 共用,那圈指示分不出焦點在哪一顆;每一顆要有自己的 focus-visible 區分樣式` })
+      }
+    }
   }
   return problems
 }
@@ -142,6 +177,15 @@ if (process.argv.includes('--selftest')) {
     { n: 'JSX 註解裡提到不算', src: "{/* 只需 outline-none 消預設外框 */}", bad: false },
     { n: '同行尾巴的區塊註解不算', src: 'className="x"  /* 本區塊無 outline-none */', bad: false },
     { n: '跨行註解不得讓行號錯位', src: "/* 第一行\n第二行\n第三行 */\n<input\n// @focus-suppress B — x;承擔者:y\ncn('outline-none')", bad: false },
+    { n: '兩個 tab stop 共用承擔者但沒有區分樣式', src: "const w = 'focus-within:!border-primary'\n"
+        + "// @focus-suppress C — 起;承擔者:欄位邊框\ncn('focus-visible:outline-none')\n"
+        + "// @focus-suppress C — 迄;承擔者:欄位邊框\ncn('focus-visible:outline-none')", bad: true },
+    { n: '兩個 tab stop 共用承擔者且各有底線區分', src: "const w = 'focus-within:!border-primary'\n"
+        + "// @focus-suppress C — 起;承擔者:欄位邊框\ncn('focus-visible:outline-none focus-visible:underline')\n"
+        + "// @focus-suppress C — 迄;承擔者:欄位邊框\ncn('focus-visible:outline-none focus-visible:underline')", bad: false },
+    { n: '承擔者不同就不算共用', src: "const w = 'focus-within:!border-primary'\n"
+        + "// @focus-suppress C — 甲;承擔者:甲的框\ncn('focus-visible:outline-none')\n"
+        + "// @focus-suppress C — 乙;承擔者:乙的框\ncn('focus-visible:outline-none')", bad: false },
     { n: '沒有抑制的一般程式碼', src: "cn('rounded-md bg-surface')", bad: false },
     { n: '標記離太遠(超過回看範圍)', src: "<input\n// @focus-suppress B — x;承擔者:y\n1\n2\n3\n4\n5\n6\n7\n8\n9\ncn('outline-none')", bad: true },
   ]

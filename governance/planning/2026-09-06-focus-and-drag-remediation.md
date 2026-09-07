@@ -1547,3 +1547,208 @@ user 說「明明這個元件是允許同時出現 focus+日期選單的啊…�
 8. **在治理生成 / a11y baseline 跑到一半時改檔案**,兩者各失敗兩次
 
 共同形狀:**「沒有觀察到 X」在對照組成立之前不代表任何事**,以及**閘不該複製被測對象的公式或寫死清單**。
+
+---
+
+# 2026-09-08 收尾:五項剩下兩項,而且兩項都不是「沒做」
+
+## AD1 判準第二版 —— 我第一版還是分類題,重寫成七個「去看什麼」
+
+user 問「所以你到底加上了什麼合理且容易判斷的原則?」。回頭看第一版判準:
+「它是不是 **Field 家族**的輸入控件」—— 那要先認得出那個家族,仍然是分類題。
+改成七步,每一步都能用 grep 或 DevTools 當場答:
+
+| 步 | 去看什麼 | → |
+|---|---|---|
+| 1 | 有 onClick / onKeyDown / 是原生互動元素嗎? | 否 → 不畫,且拿掉 tabIndex |
+| 2 | `tabIndex=-1` 且是浮層開啟時被程式 `.focus()` 的殼? | **E** |
+| 3 | 身上有 `aria-activedescendant`? | **A** |
+| 4 | 標籤名是 `input` / `textarea`? | **B**(插入點 caret 就是指示)|
+| 5 | 從**自己**往上找,有元素在聚焦時改邊框／底色? | **C** |
+| 6 | 選單／清單項且此刻沒被選中? | **D** |
+| 7 | 以上皆否 | **要畫** |
+
+**拿 28 處去對,當場撞到兩面牆,兩面都是我把分類綁錯層次:**
+
+1. **B 綁在「元件族」上**。AgentPromptInput 的 textarea、Command 與 SelectMenu 的搜尋框
+   都不是 Field 家族;而 Command / SelectMenu 的殼**根本沒有** `focus-within`
+   (只有一條靜態 `border-b border-divider`),連「祖先承擔」都不成立。
+   它們共同的指示器是**文字插入點**。所以判準是**元素種類**(看標籤名),不是元件族。
+2. **C 寫成「往上找祖先」**。`combobox.tsx:857` / `time-picker.tsx:379` 那一行的元素
+   **就是**那圈欄位外框(`fieldWrapperStyles` + `focus-within:!border-primary`)。
+   `:focus-within` 在自己聚焦時也命中 —— 它們有畫,只是用邊框轉色。改成「從自己往上」。
+
+因此重新分類 6 處(全部原本標錯):combobox `<select>`、combobox 外框本身、
+time-picker 外框本身、date-picker 起訖兩顆 button。
+
+## AD2 閘從「有沒有貼標籤」升級成「貼的類別對不對」
+
+判斷程序每一步都指定了要看什麼,那個東西就必須找得到:
+
+| 類 | 閘去驗什麼 |
+|---|---|
+| A | 同檔有 `aria-activedescendant` |
+| B | 往上 40 行有 `<input>` / `<textarea>`;寫在 cva 常數裡則看本檔渲染什麼標籤 |
+| C | 同檔有 `focus-within` / `:has(…)`,**或**承擔者寫的 `檔名.tsx:行號` 去查真的有畫框 |
+| D | 同檔有 `bg-neutral-hover` / `data-[highlighted]` |
+| E | 同檔有 Radix Content 殼 |
+
+承擔者因此從一句話變成**可驗證的指標**:承擔者搬家或被刪,閘會紅。
+
+**對抗測試又抓到閘自己的 bug**:回看視窗取的是**第一個**標記而不是**最近的**,
+兩處抑制相距 8 行以內時,後面那處會讀到前面那處的類別 —— 標錯就被遮住。已改成取最近的。
+
+## AD3 H2c 不是判斷題,是漏套 —— 已修並驗證
+
+原本登記成「要不要為起訖兩顆各自畫框(那會在同一欄位出現兩種指示)」。
+**這個框架本身就錯了**:DatePicker 自己早就有正確的指示 —— 作用端下方一條主色粗線
+`decoration-primary decoration-2 underline-offset-4`,對照
+[Ant Design RangePicker 的 `-active-bar`](https://raw.githubusercontent.com/ant-design/ant-design/master/components/date-picker/style/index.ts)
+(`height: lineWidthBold; background: colorPrimary; bottom: -lineWidth`,一手 source 實抓)。
+問題只是那條線掛在 `data-active-end`,而它帶 `open &&` 條件 ——
+**面板關著用 Tab 在起訖之間移動時,兩顆長得一模一樣**。
+
+補上 `focus-visible:underline`(同一條線,不是第二種指示)。真瀏覽器驗:
+Tab 到起日 → 只有起日有底線(`oklch(0.54 0.22 258)` / 2px);再 Tab → 底線跟著移到迄日,前一顆消失。
+
+**一般化成規則寫進 SSOT**:同一個承擔者被兩個以上 tab stop 共用時,每一顆必須另有自己的區分指示。
+閘把同檔內承擔者字串相同的 C 類分組,≥2 就要求各自有 `focus-visible:` 非 `outline-none` 樣式。
+對照組驗過:拿掉修復 → 閘紅並指名兩行;補回 → 綠。
+
+## AD4 A4 問的是一個不存在的功能 —— 查證後結案
+
+「純選取模式的列游標沒有指示」。實測:
+
+- 該模式 `role="table"`(不是 grid)。依 APG,table 是**靜態結構**,不帶方向鍵游標。
+- 連按 ArrowDown / ArrowRight:`cursors=0`、`aria-activedescendant=null`
+  —— 程式碼側也對得上,方向鍵導覽整段被 `spreadsheetMode` 把關(`data-table.tsx:2628/2640`)。
+  **沒有游標,就不存在「游標指示不了」。**
+- 鍵盤路徑本身是完整的:表格根節點取得焦點時有主色內框(896×442, 2px, offset −2px);
+  每一列的核取方塊是 tab stop 且自己畫框(16×16, 2px, `oklch(0.54 0.22 258)`)。
+
+所以原本記的兩個前提(虛擬捲動下 activedescendant 目標要存在、三面板 IDREF 歸屬)
+**是為了一個 DS 沒有也不需要的功能而設的**。A4 結案;若日後真要做列游標,那是新功能不是缺陷修補。
+
+## AD5 回頭盤 CI 引用,抓到「宣稱有閘、其實沒人跑」再犯一次
+
+`ci.yml` 自己的註解記過兩次這種事(distribute-column-widths、pagination)。
+我這輪建的閘,回頭 `grep -rl test:focus-suppression .github` → **0**。逐一盤:
+
+| 閘 | 盤點前 CI 引用 |
+|---|---|
+| test:focus-suppression / focus-geometry(靜態+selftest)/ interaction-ladder / drag-announcements | 0 |
+| focus-geometry-browser-audit / focus-indicator-invariants / drag-runtime / datepicker-typeable-open | 0 |
+| test:agent-panel-invariants / test:pagination-invariants | 1(這兩組先前已接)|
+
+已接上:靜態四組獨立一步(快速失敗),需要瀏覽器的五支併進既有的 DataTable pixel 步
+(那裡 storybook 與 chromium 已備好)。全部在本機跑過一遍才接,不是把紅燈接進 CI。
+
+## AD6 兩個量測坑(都差點讓我下錯結論,寫進腳本註解)
+
+1. **`transition-colors` 的 transition-property 含 `outline-color`。**
+   聚焦後**立刻**量 `getComputedStyle().outlineColor` 會抓到**過渡中間值**。
+   我因此一度量到 Button / Checkbox 的焦點框是 `oklab(1 0 0)`(白)、`oklab(0 0 0/0.85)`(黑),
+   差點寫成「全 DS 焦點框顏色失效」這種大結論。等 600ms 後三個元件都回主色 `oklch(0.54 0.22 258)`。
+   **凡是量 focus 顏色,一律先等過渡跑完。**
+2. **`document.body.focus()` 不會重設 Tab 起點**(body 預設不可聚焦)。
+   於是 Tab 從「上一步聚焦的元素」繼續往後走,再也回不到它身上 —— 表現成「Tab 40 次沒走到」。
+   要重設只能重新載入頁面。
+
+另外兩個較小的:`file://` 開 storybook 會被 CORS 擋掉模組載入(story 整個不渲染、**不報錯**、
+root 子節點 0),必須起本機靜態站;CSSOM 對含 `var()` 的簡寫回空字串,
+用 `r.style.outline` 掃規則會全空,要用 `r.cssText`。
+
+## AD8 E1 / E2:複現不出的,改成「再發生會被抓到」
+
+複現不出就不能宣稱修好 —— 但可以留下機制。兩支閘都自帶對照組(證明它該紅時會紅)。
+
+**E1 虛擬捲動崩潰**。第三種假設也試過了:捲到 50/80/20/95/35% 各點一次欄頭改變資料集,
+再在捲動中把視窗高度 400→900→300→1000 來回改。結果 **0 個 JS 例外、列永遠有渲染、
+捲動位置一致**(10000 列的表捲到 380000px 仍正常出列)。
+過程中一度收到 84 個「錯誤」,全是 `ERR_NAME_NOT_RESOLVED` —— 沙箱擋外部頭像圖,
+不濾掉會把真錯淹掉。升級成 `scripts/virtual-scroll-stress.mjs`:判準兩條 ——
+沒有 JS 例外、**畫面不能空掉**(user 說的「出錯」也可能是空白而不是例外,所以量可見列數)。
+
+**E2「+N」溢出**。與其猜 user 截圖的觸發時機,不如把寬度窮舉:
+`scripts/overflow-indicator-containment.mjs` 掃 107 個 story × 6 個寬度 = 642 次量測,
+**當場抓到一處真的**:`datatable-展示--filter-panel-states @420px`,
+「+3」超出裁切祖先 28.4px —— 使用者完全看不到那個數字。
+
+根因不是溢出,是**消失**:標籤列是 `flex-1 min-w-0`,容器夠窄時被壓到 `clientWidth = 0`,
+而「+N」在裁切容器**內**,於是連它一起被裁掉。實測寬度隨容器 180 → 148 → 68 → **0**。
+修法:給容器一個等於「+N」寬度的下限(`combobox.tsx` 量測 hook 內,
+用 `totalCount > 0` 當條件而不是 `!ofEl.hidden`,避免「設下限→空間變夠→tag 塞得下→+N 收起→
+下限撤掉→空間又不夠」的震盪)。這跟既有設計一致 —— 欄位 160 / 運算子 120 本來就有硬下限,
+只是值欄原本可以縮到 0;現在它保留 33px 給那個計數。
+
+驗證:642 次量測全部在容器內;對照組(把「+N」硬推 400px)閘紅 33 筆;
+`data-table-invariants` 332 條全過;焦點五支閘全綠;`build:lib` exit 0。
+
+**兩支都接進 CI** —— 不接的話就是又一次「宣稱有閘、其實沒人跑」(AD5)。
+
+## AD9 「宣告有承擔者」與「承擔者真的有在畫」是兩件事 —— 補上現場證明
+
+原始碼裡每一處抑制都寫了「承擔者:<誰>」,閘也驗了類別對不對。但**宣告是人寫的**。
+瀏覽器量到的「無框」有 15 處,我一開始是用眼睛一個一個對回宣告 —— 那不是機械證明。
+
+補進 `focus-geometry-browser-audit.mjs`:每一個無框元素,聚焦前後對**鄰域**
+(往上 5 層 + 往下 30 個後代)逐屬性取樣,可見差異集合必須非空。結果 15 處全部有承擔者:
+
+| 元件 | 現場量到誰在畫 |
+|---|---|
+| Input / Field / FieldControlGroup / NumberInput / Slider×2 / AppShell input | 祖先 `div.group/field`(borderColor)|
+| Combobox / DatePicker / TimePicker | 自己就是那圈欄位外框(borderColor)|
+| Textarea | 自己(borderColor)|
+| AgentPanel textarea | 祖先輸入盒(borderColor)|
+| InlineEdit 隱形鈕 | 祖先 `div.relative.flex`(borderColor)|
+| AppShell 選單鈕 | 自己(backgroundColor)—— D 類的底色游標 |
+| TreeView | 虛擬游標,另由 H1f 直接驗 |
+
+**寫這一段時連踩三個坑,每個都會讓報告說謊,全部寫進註解:**
+
+1. **同步取樣量到過渡中間值**(第一版):blur 之後立刻取樣,量到的是過渡途中的值。
+   NumberInput 的欄位外框明明會轉主色 `oklch(0.54 0.22 258)`,卻被判成「零差異」。
+   `oklch(0 0 0/0.15)` vs `oklab(0 0 0/0.15)` 是**同一個顏色的不同序列化** —— 差一個字母,
+   結論差一整條。改成非同步、每次取樣前等 700ms。**這是本輪第二次踩同一個坑**(見 AD6),
+   所以把「等穩態」寫死進流程,不再靠記得。
+2. **看不見的差異也被算成證據**:`outline-style` 是 `none` 時,`outline-color`/`width`
+   怎麼變都畫不出來。不濾掉的話,一個根本沒有指示的元素也會「有差異」。
+3. **用順序配對承擔者**:Tab 走訪會重複經過同一個元素(列有去重,偵測沒有),
+   於是甲的承擔者被安到乙頭上 —— 報告裡 AppShell 的 input 一度掛著選單鈕的承擔者。
+   改用編號配對後又踩到:重複經過時元素**被重新編號**,列裡存的舊號碼對不到任何元素,
+   整批 continue 掉 → 報告變成一片「零差異」。最後改成「只在還沒編號時才編」。
+
+對照組:`--selftest` 把所有焦點視覺釘死(transition/border/outline 全部 !important 固定),
+承擔者證明必須整批變紅 —— 不然這一段的綠燈不算證據。
+
+## AD7 剩下兩項
+
+| # | 卡在哪 |
+|---|---|
+| **E1** 虛擬捲動崩潰 | 三種假設全複現不出;已轉成常設壓力閘(AD8),再發生會被抓到。要再往下追需要 user 截圖從該狀態反推 |
+| **G1** Dialog 背景隔離會把 agent 一起關掉 | **它其實不是工程題,是產品題**(見下)|
+
+### G1 收斂:剩下的是一個產品決定,不是一段沒寫的程式
+
+POC 已經做完,結論是「今天問不到這一題」—— Modal Dialog 開著時舞台浮層根本打不開
+(body `pointer-events:none` + 焦點被拉回)。要問得到,得先把隔離範圍縮到舞台
+(`suppressOthers(targets, stageEl)`)。
+
+但**縮隔離範圍本身就是答案的一部分**:Modal 的定義就是「其他東西全部失效」,
+Radix 的 `hideOthers()` 把背景兄弟節點標 `aria-hidden` 是**正確的 modal 語意**,不是 bug。
+所以真正待決的是一句產品問題:
+
+> **Modal 對話框開著的時候,agent 面板該不該仍然可用?**
+
+- 說「該」→ agent 面板要被排除在 `hideOthers` 之外,等於宣告它不是「背景」而是**與 modal 同層的常駐介面**。
+  代價:輔助技術眼中同時存在兩個可互動區域,modal 的「隔離」承諾被打破。
+- 說「不該」→ 現況就是對的,G1 直接結案,只需在 spec 寫明「modal 期間 agent 面板一併失效」。
+
+兩邊都成立,取捨在產品語意而不在技術 —— 依 `AGENTS.md # 自主執行 canonical`,
+這類「使用者可感知的行為語意」由 user 拍板,我不自決。
+
+順帶:**G4(該情境的 axe `aria-hidden-focus`)現在量不到** ——
+1017 個 story 掃下來 `aria-hidden-focus` **0 筆**,因為沒有任何 story 讓 Modal 與 agent 面板並存;
+而要造出那個 story,前提正是上面那個決定。
+
+agent 鍵盤往返:user 已裁示 backlog。

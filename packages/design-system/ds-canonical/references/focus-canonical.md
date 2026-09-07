@@ -211,6 +211,27 @@ SelectMenu `:490`、AgentPanel `:280`、Sidebar `:949`)。補完框再退役。
 
 Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx:49`),那是加成不是必要條件。
 
+### 一個承擔者只能服務一個 tab stop
+
+判斷程序問「有沒有人畫」,但沒問「**畫的那一個分不分得出是誰**」。
+`combobox.tsx:857` 那種自己畫的情況沒問題(一個元素一個 tab stop),
+但 **DatePicker 的範圍模式**是兩顆 button 罩在同一圈欄位邊框裡 ——
+邊框只會說「焦點在這個欄位」,不會說「在起日還是迄日」。
+
+**規則:同一個承擔者被兩個以上 tab stop 共用時,每一顆必須另有自己的區分指示。**
+
+DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
+(`decoration-primary decoration-2 underline-offset-4`),對照
+[Ant Design RangePicker 的 `-active-bar`](https://raw.githubusercontent.com/ant-design/ant-design/master/components/date-picker/style/index.ts)
+(`height: lineWidthBold, background: colorPrimary, bottom: -lineWidth`,一手 source)。
+問題只是那條線原本掛在 `data-active-end`(帶 `open &&` 條件),
+所以**面板關著用 Tab 在起訖之間移動時,兩顆長得一模一樣**。
+2026-09-08 補上 `focus-visible:underline` —— 用的是同一條線,不是第二種指示。
+
+機械強制:`scripts/focus-suppression-registry.mjs` 把同檔內承擔者字串相同的 C 類分組,
+≥2 個就要求每一處後 8 行內有 `focus-visible:` 的非 `outline-none` 樣式。
+對照組驗過:拿掉 `focus-visible:underline` → 閘紅並指名兩行;補回 → 綠。
+
 ### C 類為什麼是「從自己往上」而不是「往上」
 
 同一次對照又撞到第二面牆:`combobox.tsx:857`、`time-picker.tsx:379` 這兩行,

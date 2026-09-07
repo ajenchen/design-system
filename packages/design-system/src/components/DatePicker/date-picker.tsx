@@ -1098,9 +1098,14 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'start'}
                   className={cn(
                     bareInputStyles,
-                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:49)。⚠ 已知限制:起訖兩個 tab stop 共用同一圈邊框,分不出焦點在哪一顆(總帳 H2c,判斷題未拍板)
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:49);起訖兩顆靠下方主色底線區分(見下一行)
                     'truncate text-left cursor-pointer focus-visible:outline-none',
-                    'data-[active-end=true]:underline decoration-primary underline-offset-4 decoration-2',
+                    // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
+                    // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab
+                    // 在起訖之間移動」時兩顆長得一模一樣。補上 focus-visible 這一半 —— 用的是本元件
+                    // 既有的同一條線,不是第二種指示。對照 Ant Design RangePicker 的 -active-bar
+                    // (components/date-picker/style/index.ts:`height: lineWidthBold, background: colorPrimary`)。
+                    'data-[active-end=true]:underline focus-visible:underline decoration-primary underline-offset-4 decoration-2',
                     !startIso && 'text-fg-muted',
                   )}
                 >
@@ -1122,9 +1127,14 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'end'}
                   className={cn(
                     bareInputStyles,
-                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:49)。⚠ 已知限制:起訖兩個 tab stop 共用同一圈邊框,分不出焦點在哪一顆(總帳 H2c,判斷題未拍板)
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:49);起訖兩顆靠下方主色底線區分(見下一行)
                     'truncate text-left cursor-pointer focus-visible:outline-none',
-                    'data-[active-end=true]:underline decoration-primary underline-offset-4 decoration-2',
+                    // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
+                    // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab
+                    // 在起訖之間移動」時兩顆長得一模一樣。補上 focus-visible 這一半 —— 用的是本元件
+                    // 既有的同一條線,不是第二種指示。對照 Ant Design RangePicker 的 -active-bar
+                    // (components/date-picker/style/index.ts:`height: lineWidthBold, background: colorPrimary`)。
+                    'data-[active-end=true]:underline focus-visible:underline decoration-primary underline-offset-4 decoration-2',
                     !endIso && 'text-fg-muted',
                   )}
                 >

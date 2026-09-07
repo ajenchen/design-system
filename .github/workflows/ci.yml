@@ -78,6 +78,35 @@ jobs:
           # 但 CI 從來沒有呼叫它(2026-09-05 稽核抓到)—— 跟上面 distribute-column-widths 同一種
           # 「宣稱有閘、其實沒人跑」;和 DataTable 一樣,pixel 閘只能在有瀏覽器的這一步跑。
           npm run test:pagination-invariants
+          # 焦點幾何/指示/拖曳執行期/DatePicker 開啟行為/共用承擔者 —— 這幾支都要真瀏覽器,
+          # 併在這一步是因為 storybook 與 chromium 已經備好,不必再裝一次。
+          node scripts/focus-geometry-browser-audit.mjs
+          # 對照組:把焦點視覺全部釘死,承擔者證明必須整批變紅。
+          # 不跑這一步的話,「15 處無框但都有承擔者」這個綠燈不算證據(M32 sub-invariant)。
+          # 只掃前 4 個元件,證明儀器會紅就夠,不必為此全掃一次。
+          node scripts/focus-geometry-browser-audit.mjs --selftest
+          npm run test:focus-indicator-invariants
+          npm run test:drag-runtime
+          npm run test:datepicker-typeable-open
+          npm run test:shared-carrier-focus
+          # 兩支從「複現不出」轉成「再發生會被抓到」的閘(總帳 E1 / E2):
+          # 虛擬捲動壓力(排序、捲動、視窗高度交錯,驗無例外**且畫面不空**)、
+          # 「+N」不得溢出容器(107 story × 6 寬度 = 642 次量測)。兩支都自帶對照組。
+          npm run test:virtual-scroll-stress
+          npm run test:overflow-indicator
+
+      # 這 7 組閘是 2026-09-06〜09-08 焦點／拖曳整治建的,全部含 selftest 或對照組,
+      # 但**沒有任何一組被 CI 呼叫過** —— 跟上面 distribute-column-widths、pagination
+      # 同一種「宣稱有閘、其實沒人跑」(2026-09-08 自己回頭盤 CI 引用時抓到:
+      # `grep -rl test:focus-suppression .github` 回 0)。靜態的放前面快速失敗,
+      # 需要瀏覽器的併進上一步(那裡已經有 storybook 與 chromium)。
+      - name: Focus and drag invariants (static)
+        run: |
+          npm run test:focus-suppression
+          node scripts/focus-geometry-invariant.mjs
+          node scripts/focus-geometry-invariant.mjs --selftest
+          npm run test:interaction-ladder
+          npm run test:drag-announcements
 
       # Cloud sessions load the committed provider config as-is; the only two ways that config has
       # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)

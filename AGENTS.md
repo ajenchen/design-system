@@ -161,6 +161,8 @@
 | storybook-smoke 驗舊 build = 假綠 | smoke script 已加 stale-build guard |
 | hook 測試直跑留 fixture `.git/` 進 corpus | `git status` 不顯但 snapshot tree fingerprint 全算 → trio 漂移;測試必經 run-all.sh(自帶隔離),清 debris 用 `find -type f` 對照 `git ls-files`(2026-08-05) |
 | SMIL `begin="indefinite"` 動畫掛上後沒人 `beginElement()` = 永不起跑(靜默、base 值定格) | begin-once 守衛的觸發 key 必含每個會新掛動畫的狀態段(think→exit 同 key 漏掉 7 個 animate);驗證看 `getStartTime()` 是否丟例外,CI C6(2026-09-03) |
+| 量 focus 顏色不等 transition = 量到過渡中間值 | `transition-colors` 的 transition-property **含 `outline-color`**;聚焦後立刻 `getComputedStyle().outlineColor` 會抓到中間值(量到 currentColor,看起來像「焦點框顏色壞了」)。2026-09-08 差點據此寫成「全 DS 焦點框失效」,等 600ms 後三個元件都回主色。**凡量 focus 顏色先等過渡**;另 `document.body.focus()` 不重設 Tab 起點(body 不可聚焦),Tab 會從上一個聚焦元素繼續往後走,要重設只能 reload |
+| `file://` 開 storybook = story 整個不渲染而且不報錯 | CORS 擋掉模組載入,`#storybook-root` 子節點 0、畫面空白,探針卻拿得到 Storybook 自己的 UI(「Set string」按鈕)而誤以為有渲染。瀏覽器閘一律起本機靜態站。同場:CSSOM 對含 `var()` 的簡寫回**空字串**,用 `r.style.outline` 掃規則會全空,要用 `r.cssText`(2026-09-08)|
 
 新 bug → 歸 Meta-Pattern OR 本表 1 行;> 10 條 = 漏寫,評估 meta-merge 既有 M-rule。
 

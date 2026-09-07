@@ -176,6 +176,14 @@ function useOverflowCount(
         if (lastEl) lastEl.hidden = true
       }
       if (ofEl) ofEl.hidden = count >= totalCount
+      // 2026-09-08:標籤列是 `flex-1 min-w-0`,容器夠窄時它會被壓到 clientWidth = 0,
+      // 而「+N」本身**在裁切容器內**,於是連它一起被裁掉 —— 使用者看不到「還有幾個」,
+      // 那正是空間不足時唯一還帶資訊的元素。(實測 DataTable 篩選面板:標籤區寬度隨容器
+      // 180 → 148 → 68 → 0;420px 時「+3」超出裁切祖先 28.4px,完全不可見。)
+      // 給容器一個等於「+N」寬度的下限:它是最後才被放棄的東西。
+      // 條件用 totalCount 而不是 `!ofEl.hidden`,是為了避免震盪 —— 後者會讓
+      // 「設下限 → 空間變夠 → 一個 tag 塞得下 → +N 收起 → 下限撤掉 → 空間又不夠」來回跑。
+      container.style.minInlineSize = totalCount > 0 ? `${overflowW}px` : ''
       // 2026-05-18 A' fix functional setState value-equal guard(per Codex Round 3 verdict):
       // effect 內 calc 直跑 + ResizeObserver re-fire 同時跑 → 若每次都 new object setState
       // 觸發 re-render 即使值沒變,可能 cascade。回 prev 不更新 = avoid 抖動。
