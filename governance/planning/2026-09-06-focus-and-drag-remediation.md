@@ -208,3 +208,51 @@ RadioGroup / Sidebar ×2(GroupAction、MenuAction)/ Calendar ×3 / DateGrid / Fi
 所以 A5 的決定程序收斂成一句:**預設外 +2px;放不下(四周沒有 2px 空間、或會被祖先裁掉)就改內 −2px。仍然只有兩種,不新增第三種。**
 待辦:逐一量這 15 處四周是否容得下 +2px,不夠的歸內描邊。
 
+### G6 對辯結果(workflow `wqf761w5q`,兩輪皆成功,全程 playwright 1.59.1 實測)
+
+**(a) 不需要 user 挑數字 —— 它是推導值。** 三個已 canonical 的量互鎖:
+`A ≥ 360`(`agent-panel.tsx:119` PANEL_WIDTH_MIN)/ `A ≤ H/2`(user 9/7 裁示 #5「50% 改舞台」)/ 並排時 `H = W − A`
+⇒ `A ≤ W/3` ⇒ **並排成立 ⟺ 容器寬 W ≥ 1080**,該格 `H = 720`、`A = 360`。
+**兩份稿原本都想訂的 768,兩邊都用不上。零新魔術數字、零新 token。**
+三處修正(codex 對、我方錯):W 必須量**含 agent 的整個容器**;公式只在並排形態成立(蓋板時 H=W,不適用,必須由不變量 W 推形態,這也是臨界震盪的解);640 上限不能掉 → 新 clamp `min(640, max(360, floor(W/3)))`。
+**順手關掉 G5**:`agent-panel.tsx:198` 的 `max` 改傳同一個 clamp,`aria-valuemax` 與實際上限從此同源。
+
+**(b) 可以,今天就成立(實測)。** `app-shell.tsx:268` 的 `<main>` 只寫 `overflow-y-auto`,依 CSS Overflow L3 §3.1 `overflow-x` 已是 `auto`。實測 `min-width:900` 內容放進 360 框 → `scrollWidth=900/clientWidth=360`;`scrollLeft` 0→200 後浮層 rect **Δ=0**,對照組(故意掛進 scroller)**Δ=−200**。
+三個量永遠分開:`C` 內容最小寬(產品,每畫面不同,**完全不參與 (a) 的判準**)/ `H` 可視寬 / 720 容量樓地板。
+新增鐵律:**同一層只准一個水平捲軸** —— `min-width` 宣告在不捲的 chrome 上,不可套在 DataTable 這種自己會橫捲的元件外面。
+**但發現結構缺口**:`app-shell.tsx:257` 那層只包 header + main,**不含 aside**(aside 是根 flex row 的最後一個 child)。而 user 原話是「**舞台內容的 aside**」→ 舞台宿主必須是「含 main + aside、不含 sidebar 與 agent」的容器,**該節點今天不存在,要新建**。
+
+**(c)(d) 都是舞台,而且是同一個機制**:在「與內容 scroller 平行的浮層宿主」上建立 fixed containing block,浮層維持 `fixed`,`sheetVariants` 與 Dialog 置中 class **一個字不改**。三組實測(sidebar 240 | 舞台 360 | agent 400):
+
+| 組 | 產品內容裡的 `position:fixed` 探針 | Dialog |
+|---|---|---|
+| A. contain 放**遮罩宿主** | `x=0` 不受影響 ✅ | `x=288 w=264` ✅ |
+| B. contain 放**舞台外框** | **`x=240` 被靜默改錨** ❌ | `x=288 w=264` |
+| C. 都不放(今天) | `x=0` | **`x=368` 跑到視窗中線,不在舞台裡** |
+
+數字修正(codex 對、我方錯):Dialog inset 讀 `--layout-space-bottom` = **48px**(`dialog.tsx:37` 註解 + `layoutSpace.css:6` 三個 selector 皆 48),不是 16 → 舞台 360 時 `maxWidth = min(512, 360−96) = 264`、`x = 288`。
+另四項必要修正全部複驗成立:宿主**必須帶 z-index**(實測無 z 時舞台內 `z-20` 元素會畫在遮罩之上;沿用 Dialog/Sheet 既有 `z-50`,不是新 z 家)/ 宿主不能整片 `pointer-events:none`(`modal={false}` 時 Radix Overlay 回 null,實測點遮罩直接命中底下內容)/ Provider 必須在共同 React 祖先 / portal container 身分要穩定。
+
+**(e) user 的推測 —— 對,三句都對。**
+① 遮罩範圍與舞台內容可以不同:實測遮罩 360 vs `scrollWidth` 900 ✅
+② 不透過舞台水平捲軸捲動:**這是承重理由**,實測掛遮罩宿主 Δ=0、掛捲動容器內 Δ=−200 ✅
+③ 因此浮層不易溢出舞台 ✅
+唯一修正(更窄的讀法):**單靠把遮罩畫小不會約束 Dialog** —— C 組實測 512 寬的 Dialog 照樣跑到 x=368、完全不理會遮罩。真正約束它的是 containing block 放在遮罩宿主 + `dialog.tsx:125` 的 `100vw` 夾值換成舞台寬。
+額外好處(user 未提):遮罩 / Sheet / Modal / FAB 四個消費者**共用同一次 ResizeObserver 量測**,直接消掉「FAB 在舞台內、Sheet 卻在視窗」這一整類漂移。
+
+**(f) 前提雙重不成立。**
+① **agent 不是最高,是被壓在下面的**:AgentPanel 根節點 `:175` 起整串 class **無任何 z-index**;Dialog/Sheet 的 overlay 與 surface 都 `z-50`。
+② **agent 根本不是 `DismissableLayer`**,在 Radix layer stack 裡 `indexOf` 回 **−1**,不在那疊裡。
+⇒ 今天焦點在 agent 輸入框按 Esc **會關掉 Modal**。
+遮罩不壓暗 agent 靠**幾何**(360 寬止於 agent 左緣),不靠 z 順序 —— 但宿主自己仍必須帶 `z-50`。
+**我提的兩個解法都被證偽**:`preventDefault` 只能取消最高層、不能轉交(`react-dismissable-layer:59-61`);`DismissableLayerBranch` 是**全域豁免**(`:44-46`/`:53-54`),會連 agent 自己的 Popover 點外面也不關。
+**我方一條依據被撤回**:我用 `2026-08-11-agent-ui-panel-spec.md:311` 推「並排時 Esc 永不碰 agent」,但本文件第 90 行明文「整份過時,不得引用」→ 該證據無效。
+
+**未達共識 6 項(誠實保留,不假裝有共識)**:Esc 分派機制尚無可用替代 / Tab 跨區單向通、回程未解且與現行 APG「modal dialogs contain their tab sequence」相牴觸(APG 頁面**完全沒提 F6**,所以 F6 是新增的鍵盤契約不是無感 fallback)/ 舞台宿主節點如何引入未設計 / portal container 身分穩定性未量 / 遮罩宿主永久掛載 vs 隨浮層掛載未量 / 第 6 項見原文。
+
+**只剩 2 題要 user 拍板(都是鍵盤 UX)**
+1. 並排形態下,agent 的裸 Esc 要不要關掉它?以及焦點在 agent 時按 Esc 該不該關掉舞台上的浮層(跨區關閉)?
+2. 協作型 Dialog 與 agent 之間鍵盤怎麼往返:(甲)Tab 直接串接兩區(最直覺但偏離 APG,且回程未解)/(乙)各自區內循環 + 一個明確切區鍵(符合 APG,代價是新增鍵盤契約)。
+
+其餘全部工程自決,不佔 user 時間:720/1080 的算術、量哪個容器、`contain:layout` 選型、宿主掛載時機、Branch 替代接線、沿用 `z-50`、48px inset 沿用既有 token。
+
