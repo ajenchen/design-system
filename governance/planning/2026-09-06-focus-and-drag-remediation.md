@@ -527,3 +527,61 @@ H5 說的「23 處在深色下全部露白」講的是 `ring-offset` 那一批,�
 
 **其餘:0 項需拍板**,C 區 15 項、B 區 2 項、E 區 2 項全屬工程或複現問題。
 
+# L. Agent 施工單(workflow `w3zytctcx`,codex 兩輪皆成功)
+
+## L1 本輪最重要的發現:隔離範圍的旋鈕本來就在套件裡
+
+`aria-hidden@1.2.6` 的 `hideOthers(target, **parentNode**)` / `inertOthers` / `suppressOthers`
+—— **第二個參數就是「從哪一層開始往下藏」**,`dist/es2015/index.js:33` 的 JSDoc 逐字:
+`@param [parentNode] - top element, defaults to document.body`(已自行複驗)。
+
+**Radix 把它寫死成 body,而我們要的正好是「換成舞台」。**
+自己呼叫 `suppressOthers([dialogContent, scrim], stageEl)`,被隔離的就**精準等於遮罩蓋住的那一塊**
+—— sidebar 在舞台外、agent 在舞台外,兩個都不會被碰到。
+**不用 fork、不用發明、不用 `DismissableLayerBranch`,幾何與隔離自動同源。**
+而且 `suppressOthers` 優先用原生 `inert`(`:163-166`),`inert` 會一起拿掉 tab order
+→ **G4 那筆 axe `aria-hidden-focus` 從根消失,不是繞過。**
+
+## L2 另外兩個硬事實
+
+- **有 URL 的協作 Modal 一定得走 `modal={false}`**:`react-dialog:130-160` 的 `DialogContentModal`
+  把 `hideOthers` / `trapFocus` / `disableOutsidePointerEvents` **寫死在 `...props` 之後**,consumer 傳什麼都被蓋掉。
+  「留在 modal 路徑上微調隔離」不存在。
+- **Tab 接力的真正障礙不是 `loop` 是 `trapped`**:`focus-scope:34-52` 的 `trapped` 掛 document 級 `focusin`,
+  焦點一離開就拉回,任何 `onKeyDown` 都救不了 —— 但它只在 `modal={true}` 時開著。
+
+## L3 錨點更正(自行複驗)
+
+`PANEL_WIDTH_MIN = 360` 在 **`agent-panel.tsx:118`**,不是先前多份文件寫的 `:119`(`:119` 是 `PANEL_WIDTH_MAX = 640`)。推導不受影響。
+
+## L4 示意範例可行性:G2+G3 可以,G1 不行
+
+- **做完 G2 + G3 可示意 B / E / F 三條**,而且三個原本最不確定的地方(`hidden` 行為、捲動保存、動畫重播)本輪已用真瀏覽器量掉。
+  E 條還多拿到一件:**跨併排↔蓋板切換閱讀位置也保住**(改用 CSS-only 蓋板換來的,用 Sheet 就沒有)。
+- **G1 還缺一道 POC**:`focus-scope:72` 的 `focusScopesStack.add` **不看 `trapped`**,任何舞台浮層掛載都會廢掉正在開的 viewport modal 焦點鎖。
+  提了兩條 fail-safe 不變量,但**本輪新推導、兩方都沒實測過**。POC 過之前不得宣稱硬約束 2 成立。
+
+## L5 三個「要拍板」裡,兩個其實推導得出來(依 user 先前的提醒自查)
+
+| # | 題目 | 判定 |
+|---|---|---|
+| 1 | **蓋板態面板要多寬** | **推導得出來,不用問。** B 條原文是「窄螢幕以抽屜**蓋滿**宿主」→ **全寬**。不是選擇題 |
+| 2 | **舞台窄於 360 時怎麼辦** | **推導得出來,不用問。** 承上,「蓋滿」在舞台 < 360 時就是蓋滿那個 < 360 的舞台 —— 面板跟著變窄是**幾何逼出來的**。360 是可拖曳時的舒適下限,不是蓋板態的硬需求 |
+| 3 | **單向 Tab 跨入可不可以接受** | **真的要拍。** 見下 |
+
+### 唯一要拍的那題
+
+拍板 #6 是「Modal 開著時就不往返,**agent 在那段時間停用**」。
+實作上「Dialog → agent」擋得住;但**反方向「焦點已在 agent → Tab 走進 Dialog 而回不來」是 Radix `loop` 的既有性質**,要擋掉得另外寫程式。
+
+- **(甲) 接受單向跨入**(不寫程式):使用者若先點 agent 再按 Tab,會被吸進 Dialog 出不來
+- **(乙) 兩邊都擋**(要寫程式):agent 在 Modal 開著時完全不吃 Tab
+
+**建議乙** —— #6 的原話是「停用」,單向可進不符合「停用」的字面。
+
+## L6 未達共識 5 項(誠實保留)
+
+G1-0 兩條不變量未經實測 / `:empty` 判準在退出動畫與 `forceMount` 期間不成立 /
+`modal={false}` 失去 RemoveScroll 後舞台要不要能捲(兩方都沒討論過)/ 蓋板態寬度規則(已由 L5 推導掉)/
+舞台比面板最小寬還窄時的行為(已由 L5 推導掉)。
+
