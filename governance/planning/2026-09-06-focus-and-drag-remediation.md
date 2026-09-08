@@ -2565,3 +2565,11 @@ R12 用同一份 Chromium 重現:拖曳強制升級 → 第 13 列立即 118 / 1
 6,000px/s 700ms → 17ms(55 → 3);3,000px/s 兩邊 0、殼 0 幀。Codex 四輪(R8 儀器判定 → R9 六反例 → R10 兩 blocker → R11 一 blocker → R12 通過)全程 read-only、逐條可重現。
 剩給 user 的:在 Netlify 預覽用真 Chrome(GPU 光柵)看快甩;殼的長相是否可接受。
 
+### AD37 續七:commit `1cf5f0b0` 的 CI 讀回(2026-09-09)
+
+required 的 fan-in `Verify(tsc + tests + compile + build)` 綠;`Verify static` 綠;`Verify browser(DataTable pixel gates)` 綠 —— **新的真實呈現幀 selftest(6,000px/s)+ 閘(≤ 400ms / ≤ 1000ms)在 GitHub runner 上第一跑就過**;
+`Verify browser(component + interaction gates)` 綠;`Governance hooks(Linux portability)` 綠;Netlify header rules 綠。
+唯一紅:`Verify authority candidate without credentials`(非 required)—— `GOV-DEPENDENCY-BOOTSTRAP-001:npm audit contains an unremediated high/moderate finding:fast-uri`,
+上一個 head `91a9c3fe` 同一原因已紅,不是本 commit 造成。供應鏈閘是真警報(memory feedback_anti_self_lock_release_transport),不繞過:發版前要升級 fast-uri 或記錄豁免,登記為待辦。
+Netlify 分支預覽:https://claude-agent-panel-comment-followups--ajenchen-design-system.netlify.app 。
+
