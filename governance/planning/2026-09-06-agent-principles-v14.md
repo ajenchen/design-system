@@ -96,7 +96,7 @@
 
 | 部分 | 狀態 |
 |---|---|
-| DS 並存 primitive | **已解**:`lib/overlay-coexistence.ts` 用 `aria-hidden` 官方的 `suppressOthers([保留節點])`(支援時走原生 `inert`);`Dialog` 加中性 opt-in `persistentElements`(世界級前例:Chakra `persistentElements`),**不傳就完全是原本的 modal**。閘 `scripts/dialog-coexistence-invariant.mjs` **兩條路都驗**:並存路徑常駐區可聚焦、背景 `inert=true`;預設路徑框外仍可用 0 個 |
+| DS 並存 primitive | **已解**:`lib/overlay-coexistence.ts` 用 `aria-hidden` 官方的 `suppressOthers([保留節點])`(支援時走原生 `inert`);`Dialog` 加中性 opt-in `persistentElements`(世界級前例:Chakra `persistentElements`),**不傳就完全是原本的 modal**。閘 `scripts/dialog-coexistence-invariant.mjs` **兩條路都驗**:並存路徑常駐區可聚焦、背景 `inert=true`;預設路徑框外仍可用 0 個 **2026-09-08 補**:並存時 Radix 不畫 Overlay,DS 自畫 `CoexistenceMask`(常駐節點挖洞的遮罩,z-30);Dialog / FileViewer 加 `portalContainer` 供畫布傳送 |
 | 窄版層級 | **已解**(2026-09-08,R3 後定為三層):並存中的 modal `z-40` < agent 蓋板 `z-[45]` < 一般 modal `z-50`。實測面板祖先是 `position:relative; z-index:auto`(**不建立堆疊脈絡**),所以它直接跟 body portal 的 Dialog 比大小 —— 原本 `z-20` 會被 modal 蓋住;第一版改 `z-[60]` 又會把**不並存**的一般 modal 也蓋掉(Codex R3 抓到),所以拆成三層。大小關係由 `agent-panel-breakpoint.mjs` **讀原始碼機械比對**,不靠註解 |
 | 窄版「宿主不可操作」涵蓋 portal | **已解**(2026-09-08):原本是「對兄弟節點設 inert」,只涵蓋宿主 DOM 內的節點,**body portal 出去的浮層完全不在裡面** —— 窄版時那個 modal 會既蓋在上面又可以操作。改用共用 primitive `suppressOthers([面板])`(保留這一塊、其餘全部抑制),portal 出去的也照樣被抑制 |
 | URL 註冊表 | **未解**:誰算「有 URL 的目的地」還沒有註冊機制;`persistentElements` 只是能力,呼叫端要有依據才知道何時傳 **DS 側已示範**(2026-09-08):story `AgentPanel/展示/UrlRegistryDemo` 用**明標假資料**的目的地清單 + 模擬網址列演出「有 URL 的 modal 可並存 / 沒 URL 的確認框擋 agent / 未確認的目的地不是連結 / 草稿跨導覽與關閉重開不丟」,閘 `scripts/agent-url-registry-demo-invariant.mjs` 逐條走過;真正的註冊表(誰有 URL、由誰確認)是產品側的工作,不進 DS |

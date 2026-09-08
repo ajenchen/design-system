@@ -40,7 +40,7 @@ await page.waitForTimeout(800)
 const results = []
 const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? '✓' : '✗'} ${name}${detail ? ' | ' + detail : ''}`) }
 const $ = (sel) => page.evaluate((s) => !!document.querySelector(s), sel)
-const location = () => page.evaluate(() => document.querySelector('#demo-location')?.textContent ?? '')
+const location = () => page.evaluate(() => { const el = document.querySelector('#demo-location'); return el ? (el.value ?? el.textContent ?? '') : '' })
 const panelInput = () => page.evaluate(() => { const p = document.querySelector('[role="complementary"]'); const i = p?.querySelector('textarea, input'); return i ? { value: i.value, inert: !!p.closest('[inert]') || p.getAttribute('aria-hidden') === 'true' } : null })
 async function typeIntoPanel(text) {
   await page.evaluate(() => { const i = document.querySelector('[role="complementary"]')?.querySelector('textarea, input'); i?.focus() })

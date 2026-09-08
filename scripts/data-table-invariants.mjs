@@ -1188,9 +1188,12 @@ scrollUxReport.forEach((r, i) => {
     record('I17a', `表 ${i + 1}:裝飾軌道與真捲軸帶同一條線(gutter ${r.gutter}px)`, r.troughs > 0 && r.aligned,
       `軌道 ${r.troughs} 條,對齊 ${r.aligned}(掛錯層會差一個 gutter 的高度)`)
     record('I17b', `表 ${i + 1}:捲動後軌道不飄`, r.stable, '掛在會捲動的盒子裡就會跟著跑掉')
-    record('I17e', `表 ${i + 1}:center body 捲軸 = scrollbar-width:thin 且佔位 < 15px(缺陷 H)`,
-      r.scrollbarWidth === 'thin' && r.gutter < 15,
-      `computed scrollbar-width=${r.scrollbarWidth},gutter ${r.gutter}px(thin 應 < 15;=15 表示 webkit 客製或 auto 回來了)`)
+    // 2026-09-08 撤回缺陷 H 的「thin」主張:user 實測 GitHub 上的 main(Chromium 原生 auto)在 Windows Chrome 正常,
+    // 本分支把 Chromium 也改成 thin + 自訂色後中間區兩條捲軸各半看不到(AD27)。現行 SSOT = data-table.css:
+    // Chromium/Safari 原生(auto/auto)、Firefox thin;中間捲動區與裝飾槽吃同一組規則。這裡跑在 Chromium,故驗 auto。
+    record('I17e', `表 ${i + 1}:center body 捲軸在 Chromium 走原生(scrollbar-width:auto,撤回缺陷 H 的 thin)`,
+      r.scrollbarWidth === 'auto' && r.gutter >= 15,
+      `computed scrollbar-width=${r.scrollbarWidth},gutter ${r.gutter}px(原生 Aura 15px;thin 會是 10)`)
   } else {
     // 只剩本機 overlay 捲軸機器會走到這裡(CI 已拿掉 --hide-scrollbars)。記成看得見的 SKIPPED-ENV,不靜默。
     record('I17a', `SKIPPED-ENV 表 ${i + 1}:本環境捲軸不佔版面(gutter 0),軌道不渲染 —— 軌道對齊未驗,請在 classic 捲軸環境補驗`, true)

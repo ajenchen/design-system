@@ -10,7 +10,7 @@ import { SurfaceHeader, SurfaceFooter, type SurfaceHeaderProps } from "@/design-
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
-import { useOverlayCoexistence } from "@/design-system/lib/overlay-coexistence"
+import { useOverlayCoexistence, CoexistenceMask } from "@/design-system/lib/overlay-coexistence"
 
 /**
  * Dialog (Modal) — Radix Dialog + 設計系統 token
@@ -96,12 +96,17 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
    * 兩者並用會互相打架。
    */
   persistentElements?: () => Element[]
+  /**
+   * Portal 目的地。預設 document.body;story / 產品的「模擬瀏覽器畫布」可把 Dialog 傳送進一個帶 transform 的
+   * 容器,讓 `fixed` 定位以那個容器為準,modal 與遮罩就不會跑出畫布(2026-09-08 story 擬真需求)。
+   */
+  portalContainer?: HTMLElement | null
 }
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, maxWidth = '512px', autoHeight, persistentElements: persistentElementsProp, children, style, ...props }, ref) => {
+>(({ className, maxWidth = '512px', autoHeight, persistentElements: persistentElementsProp, portalContainer, children, style, ...props }, ref) => {
   const persistentElementsCtx = React.useContext(DialogCoexistContext)
   const persistentElements = persistentElementsProp ?? persistentElementsCtx
   // 用 **state** 而不是 ref 承接節點:並存的保留集合要「這個 Content + 常駐區域」,
@@ -177,8 +182,11 @@ const DialogContent = React.forwardRef<
   }
 
   return (
-    <DialogPortal>
-      <DialogOverlay />
+    <DialogPortal container={portalContainer ?? undefined}>
+      {/* 並存(modal={false})時 Radix 不畫 Overlay;user 2026-09-08:「為何 modal 沒有遮罩」—— 它仍是 modal,
+          宿主要被遮,只有保留節點挖洞。一般 modal 走 Radix 自己的 Overlay(z-50)。 */}
+      {/* 洞只挖給常駐節點;Content 本來就在遮罩上層(z-40 > z-30),挖給它反而會留下開場動畫縮放中量到的錯位白框 */}
+      {persistentElements ? <CoexistenceMask keep={persistentElements} /> : <DialogOverlay />}
       <DialogPrimitive.Content
         ref={composedRef}
         // Density:**全繼承 page**(layout-space + ui-size 都不自鎖)。2026-06-16 定論(撤回本 session 一度加的

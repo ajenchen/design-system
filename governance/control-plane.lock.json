@@ -10,7 +10,7 @@
   "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
   "files": [
     {
-      "hash": "sha256:b9e3f3112c39869f1a78a22245b770008b67698e94a96241f7efadff00f01fa2",
+      "hash": "sha256:a57ff87bd498cfd906e56205c9a813f3dae4d2e96edae993b7912166c765bb9d",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0277e38a2572a51e473a43b2bfad914366323791c5da19823b004d2f734ad126",
+      "hash": "sha256:d9bca55ca1d5b66de0810401deb85852780d455ccb44007e9d34707b15208af7",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:317436510db815a07926ef62fed09e6a494bf3a329839fd7f961ecef3acf8105",
+  "inputDigest": "sha256:d187f80b585142d3fbbee9fcc082a16c622fae8577f01d7d6172a136b17df14a",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:cc950eb192525b2aee3afaacb80912958edabc711e24ffa4aa0a7cffcc7d870b",
+  "snapshotDigest": "sha256:df311c336c286cbd9d8b2b7e2ab90d411cf8bc145a051de285ec396f20f5a342",
   "sources": [
     {
       "hash": "sha256:2ffae9f5d713265ed1923ddd0d0db6c8c0ceb4b2a119b753511688211a2971b4",
@@ -645,7 +645,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 230,
-      "hash": "sha256:ab983a21a47288e8f06223bda55be235d7452cc623e7697f08401d8ba3f38059",
+      "hash": "sha256:f8b0e306703ff5cf96acbbe4af56eac9961a42eb28da2863dadff150be9453e2",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -678,7 +678,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 6,
-      "hash": "sha256:3c2fe1bfd8004fc22703c3e8720f8b4a7a5a45b6cd3a4e704c8888962df28df4",
+      "hash": "sha256:69911af838378dd567955faa8c94564ecb650b63afbf37a3a0fe3c441258bdd5",
       "id": "canonical-rules",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3222,7 +3222,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 46,
-      "hash": "sha256:1352beab58fdffbe079f736e57d294fca0f662de4c7d599b55056b72ccc7e3c4",
+      "hash": "sha256:7ea96366346c8bbd1cf4eb4e325fed708c527fc38fb2b6988f4d9b48175f565c",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3587,7 +3587,7 @@
         "scripts/generated/"
       ],
       "files": 413,
-      "hash": "sha256:b666cc9156b2cbeab1e30a3b8e934ddeeb4f25b5f52ccec3c43f7ac2c746f608",
+      "hash": "sha256:8afa30152a63c94a430388f58e69700ecdf26256ec42b292170fa210f2e13fda",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

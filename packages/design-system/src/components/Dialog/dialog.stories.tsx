@@ -11,6 +11,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/compon
 import { Button } from '@/design-system/components/Button/button'
 import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
+import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
@@ -398,18 +400,12 @@ export const HeaderActions = {
             <p className="text-body">
               重新設計結帳步驟,將付款方式與發票資訊合併為單一步驟,預期提升行動端轉換率。
             </p>
-            <div className="flex flex-col gap-2">
-              {[
-                ['指派人', 'Alan Chen'],
-                ['狀態', '進行中'],
-                ['截止日', '2026-07-18'],
-              ].map(([label, value]) => (
-                <div key={label} className="flex items-center gap-3">
-                  <span className="w-16 shrink-0 text-caption text-fg-secondary">{label}</span>
-                  <span className="text-body">{value}</span>
-                </div>
-              ))}
-            </div>
+            {/* 2026-09-08:key / value 用 DescriptionList(owner:description-list.spec.md),不再手刻字級與欄寬 */}
+            <DescriptionList orientation="horizontal">
+              <DescriptionItem label="指派人">Alan Chen</DescriptionItem>
+              <DescriptionItem label="狀態">進行中</DescriptionItem>
+              <DescriptionItem label="截止日">2026-07-18</DescriptionItem>
+            </DescriptionList>
           </div>
         </DialogBody>
         <DialogFooter>
@@ -479,16 +475,11 @@ export const WithTabsInHeader = {
             </TabsContent>
             <TabsContent value="members" className="mt-0">
               <div className="flex flex-col gap-3">
-                {[
-                  ['Alan Chen', '管理員'],
-                  ['Betty Wu', '編輯者'],
-                  ['Charlie Lee', '檢視者'],
-                ].map(([name, role]) => (
-                  <div key={name} className="flex items-center justify-between">
-                    <span className="text-body">{name}</span>
-                    <span className="text-caption text-fg-secondary">{role}</span>
-                  </div>
-                ))}
+                <DescriptionList orientation="horizontal">
+                  <DescriptionItem label="Alan Chen">管理員</DescriptionItem>
+                  <DescriptionItem label="Betty Wu">編輯者</DescriptionItem>
+                  <DescriptionItem label="Charlie Lee">檢視者</DescriptionItem>
+                </DescriptionList>
               </div>
             </TabsContent>
             <TabsContent value="integrations" className="mt-0">
@@ -564,14 +555,14 @@ export const FocusTrapWithConcurrentOverlay: Story = {
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-3 p-6">
-      <button type="button" id="poc-outside-before" className="w-40 rounded-md border border-border px-3 py-2">背景鈕(前)</button>
+      <Button variant="secondary" id="poc-outside-before">背景鈕(前)</Button>
       <Dialog defaultOpen>
         <DialogContent>
           <DialogHeader><DialogTitle>並存浮層測試</DialogTitle></DialogHeader>
           <DialogBody>
             <div className="flex flex-col gap-2">
-              <button type="button" id="poc-inside-1" className="rounded-md border border-border px-3 py-2">Dialog 內鈕 1</button>
-              <button type="button" id="poc-inside-2" className="rounded-md border border-border px-3 py-2">Dialog 內鈕 2</button>
+              <Button variant="secondary" id="poc-inside-1">Dialog 內鈕 1</Button>
+              <Button variant="secondary" id="poc-inside-2">Dialog 內鈕 2</Button>
             </div>
           </DialogBody>
           <DialogFooter><DialogClose asChild><Button variant="tertiary">關閉</Button></DialogClose></DialogFooter>
@@ -583,13 +574,13 @@ export const FocusTrapWithConcurrentOverlay: Story = {
           對照組因此建立不起來(2026-09-07 兩次都踩到)。 */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button type="button" id="poc-popover-trigger" className="w-40 rounded-md border border-border px-3 py-2">舞台浮層</button>
+          <Button variant="secondary" id="poc-popover-trigger">舞台浮層</Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem id="poc-popover-inner">浮層內項</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <button type="button" id="poc-outside-after" className="w-40 rounded-md border border-border px-3 py-2">背景鈕(後)</button>
+      <Button variant="secondary" id="poc-outside-after">背景鈕(後)</Button>
     </div>
   ),
 }
@@ -601,16 +592,16 @@ export const FocusTrapControlNoDialog: Story = {
   tags: ['test-only'],
   render: () => (
     <div className="flex flex-col gap-3 p-6">
-      <button type="button" id="poc-outside-before" className="w-40 rounded-md border border-border px-3 py-2">背景鈕(前)</button>
+      <Button variant="secondary" id="poc-outside-before">背景鈕(前)</Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button type="button" id="poc-popover-trigger" className="w-40 rounded-md border border-border px-3 py-2">舞台浮層</button>
+          <Button variant="secondary" id="poc-popover-trigger">舞台浮層</Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem id="poc-popover-inner">浮層內項</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <button type="button" id="poc-outside-after" className="w-40 rounded-md border border-border px-3 py-2">背景鈕(後)</button>
+      <Button variant="secondary" id="poc-outside-after">背景鈕(後)</Button>
     </div>
   ),
 }
@@ -626,30 +617,67 @@ export const FocusTrapControlNoDialog: Story = {
  */
 export const CoexistenceContract: Story = {
   name: '設計規格 — 並存區域(persistentElements)',
+  parameters: {
+    docs: {
+      description: {
+        story: '同一個 Dialog:左邊的頁面(一般背景)被遮罩蓋住、被抑制;右邊的評論側欄是常駐區域,遮罩在那裡挖洞,仍然可以聚焦、打字。由來:代理原則 v14 條 A/B。',
+      },
+    },
+  },
   render: () => {
     const Demo = () => {
-      const asideRef = useRef<HTMLDivElement | null>(null)
-      const keep = useCallback(() => (asideRef.current ? [asideRef.current] : []), [])
+      const [canvas, setCanvas] = useState<HTMLDivElement | null>(null)
+      const asideRef = useRef<HTMLElement | null>(null)
+      const keep = useCallback(() => (asideRef.current ? [asideRef.current as Element] : []), [])
       return (
-        <div className="flex h-[520px] gap-4">
-          <div className="flex flex-1 flex-col gap-3 rounded-md border border-border p-4">
-            <p className="text-body">一般背景(Dialog 開著時應該被抑制)</p>
-            <button type="button" id="coexist-background-btn" className="w-40 rounded-md border border-border px-3 py-2">背景鈕</button>
-            <Dialog defaultOpen modal={false}>
-              <DialogContent maxWidth={420} autoHeight persistentElements={keep}>
-                <DialogHeader title="有 URL 的內容" />
-                <DialogBody>
-                  <p className="text-body">右邊那一欄在這個對話框開著時仍然可以操作。</p>
-                  <button type="button" id="coexist-inside-btn" className="mt-3 rounded-md border border-border px-3 py-2">框內鈕</button>
-                </DialogBody>
-              </DialogContent>
-            </Dialog>
-          </div>
-          <div ref={asideRef} id="coexist-aside" className="flex w-[280px] flex-col gap-3 rounded-md border border-border p-4">
-            <p className="text-body">常駐區域(應該仍然可用)</p>
-            <button type="button" id="coexist-aside-btn" className="rounded-md border border-border px-3 py-2">常駐鈕</button>
-            <input id="coexist-aside-input" className="rounded-md border border-border px-3 py-2" placeholder="可以打字" />
-          </div>
+        <div className="p-[var(--layout-space-loose)]">
+          <SimulatedBrowser url="/projects/8821/tasks/4821" canBack canvasRef={setCanvas} caption="模擬:任務詳情(有自己的網址)開著時,右側評論側欄照常可用,頁面其餘部分被遮罩蓋住。">
+            <div className="flex min-w-0 flex-1 flex-col gap-[var(--layout-space-loose)] p-[var(--layout-space-loose)]">
+              <h1 className="text-heading">結帳流程改版</h1>
+              <DescriptionList orientation="horizontal">
+                <DescriptionItem label="負責人">Alan Chen</DescriptionItem>
+                <DescriptionItem label="狀態">進行中</DescriptionItem>
+              </DescriptionList>
+              <div className="flex gap-2">
+                <Button id="coexist-background-btn" variant="secondary">新增任務</Button>
+              </div>
+              {canvas && (
+                <Dialog defaultOpen persistentElements={keep}>
+                  <DialogContent maxWidth={480} autoHeight portalContainer={canvas}>
+                    <DialogHeader><DialogTitle>任務 #4821 修正登入逾時</DialogTitle></DialogHeader>
+                    <DialogBody>
+                      <div className="flex flex-col gap-[var(--layout-space-loose)]">
+                        <DescriptionList orientation="horizontal">
+                          <DescriptionItem label="指派人">Betty Wu</DescriptionItem>
+                          <DescriptionItem label="狀態">待處理</DescriptionItem>
+                          <DescriptionItem label="截止日">2026-09-12</DescriptionItem>
+                        </DescriptionList>
+                        <p className="text-body">使用者閒置 30 分鐘後再操作會被登出,需要補上 token 續期。</p>
+                        <Field>
+                          <FieldLabel>留言</FieldLabel>
+                          <Input id="coexist-inside-input" placeholder="寫下你的更新…" />
+                        </Field>
+                      </div>
+                    </DialogBody>
+                    <DialogFooter>
+                      <Button id="coexist-inside-btn">儲存</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+            <aside ref={asideRef} id="coexist-aside" aria-label="評論" className="flex w-[300px] shrink-0 flex-col gap-[var(--layout-space-loose)] border-l border-divider bg-surface p-[var(--layout-space-loose)]">
+              <h2 className="text-body-lg font-medium">評論</h2>
+              <p className="text-body">Betty:已補伺服器 log,等 QA 的環境資訊。</p>
+              <Field>
+                <FieldLabel>新增評論</FieldLabel>
+                <Input id="coexist-aside-input" placeholder="可以打字" />
+              </Field>
+              <div>
+                <Button id="coexist-aside-btn" variant="secondary">送出</Button>
+              </div>
+            </aside>
+          </SimulatedBrowser>
         </div>
       )
     }

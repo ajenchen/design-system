@@ -10,8 +10,9 @@ import { Command as CommandPrimitive } from "cmdk"
 import { Search } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent } from "@/design-system/components/Dialog/dialog"
-import { MenuItem } from "@/design-system/components/Menu/menu-item"
+import { Dialog, DialogContent, DialogTitle } from "@/design-system/components/Dialog/dialog"
+import { MenuItem, type MenuItemProps } from "@/design-system/components/Menu/menu-item"
+import { ICON_SIZE } from "@/design-system/tokens/uiSize/icon-size"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 
 const Command = React.forwardRef<
@@ -29,18 +30,22 @@ const Command = React.forwardRef<
 ))
 Command.displayName = CommandPrimitive.displayName
 
-const CommandDialog = ({ children, ...props }: DialogProps) => {
-  // M2 verified 2026-04-25 / 2026-06-11 更正歸因(cmdk/dist source):cmdk 於 DOM 上 emit
-  // `cmdk-group-heading=""` / `cmdk-group=""` / `cmdk-input=""` / `cmdk-item=""` attributes;
-  // `cmdk-input-wrapper=""` 非 cmdk emit — 是本檔 CommandInput 自設的 wrapper div attribute(shadcn 慣例)。
-  // 下列 `[&_[cmdk-*]]:` attribute selectors 皆有對應真實 DOM。
+type CommandSize = 'sm' | 'md' | 'lg'
+
+/**
+ * CommandDialog —— Cmd+K 指令面板。內容**就是** SelectMenu 那一套(同一個 CommandInput 搜尋列、
+ * 同一個 MenuItem 項目、同一個 MenuItem header 分組),殼是 DS Dialog。
+ * 2026-09-08 刪掉這裡對 cmdk 的 8 條 `[&_[cmdk-…]]` 尺寸覆寫(input h-12 / item py-3 / svg h-5 …)——
+ * 它們就是 user 抓到的「Command 每一支 story 都跟 SelectMenu 不同一套」的來源:同一個 primitive
+ * 在面板裡被第二份樣式改寫。世界級的指令面板(Linear / Raycast / VS Code)也都是「同一份清單樣式 + 對話框殼」。
+ * 指令面板依世界級慣例不畫可見標題;`title` 只給讀屏器(Radix 要求 DialogContent 有 Title)。
+ */
+const CommandDialog = ({ children, title = '指令面板', ...props }: DialogProps & { title?: string }) => {
   return (
     <Dialog {...props}>
-      <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]">
-        {/* 2026-09-07:刪掉這裡對 `cmdk-group-heading` 的三條覆寫(px-3 / font-medium / text-fg-muted)——
-            分組標題的樣式已由 CommandGroup 消費 `MenuItem header`(SSOT:item-anatomy.spec.md:188)。
-            留著等於在第二個地方又寫一次同一件事,而且值不一定跟著改(這正是 user 抓到「漂移」的形狀)。 */}
-        <Command className="[&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-3 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-3 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
+      <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]" autoHeight>
+        <DialogTitle className="sr-only">{title}</DialogTitle>
+        <Command>
           {children}
         </Command>
       </DialogContent>
@@ -48,18 +53,37 @@ const CommandDialog = ({ children, ...props }: DialogProps) => {
   )
 }
 
+/**
+ * CommandInput —— 浮層/面板內的搜尋列。**唯一實作**:SelectMenu(Select / Combobox / PeoplePicker 的 searchable
+ * 模式)、CommandDialog、inline Command 三種形態都用它(2026-09-08 之前 SelectMenu 自己另寫一份 raw cmdk input,
+ * 這裡又一份 h-11 的,兩份漂移 —— user:「搜尋框為何不是我們的 input 的樣式?儘管是不同元件也要是相同樣式的 SSOT」)。
+ * 尺寸/字級/placeholder/disabled 全部吃 Field 輸入控件的 token(`--field-height-*` + 8px 內距、text-body(-lg)、
+ * placeholder:text-fg-muted、disabled 依 M24 切 fg-disabled);**沒有外框**(它是浮層內的一列,底部用分隔線收邊),
+ * 這是跟 `Input` 唯一的差別 —— 對齊 Linear / Raycast / Spotlight 的指令面板搜尋列。
+ */
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
->(({ className, ...props }, ref) => (
-  <div className="flex shrink-0 items-center border-b border-divider px-3" cmdk-input-wrapper="">
-    <Search className="mr-2 h-4 w-4 shrink-0 text-fg-muted" />
+  Omit<React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>, 'size'> & { size?: CommandSize }
+>(({ className, size = 'md', ...props }, ref) => (
+  <div
+    className={cn(
+      'flex shrink-0 items-center gap-2 px-3 py-1 border-b border-divider',
+      size === 'lg' ? 'min-h-[calc(var(--field-height-lg)+8px)]'
+        : size === 'sm' ? 'min-h-[calc(var(--field-height-sm)+8px)]'
+        : 'min-h-[calc(var(--field-height-md)+8px)]',
+    )}
+    cmdk-input-wrapper=""
+  >
+    <Search size={ICON_SIZE[size]} className="shrink-0 text-fg-muted" aria-hidden />
     <CommandPrimitive.Input
       ref={ref}
       className={cn(
-        // @focus-suppress B — B Field 家族輸入控件;承擔者:指示器是 Command 殼
-        "flex h-11 w-full rounded-md bg-transparent py-3 text-body outline-none placeholder:text-fg-muted disabled:cursor-not-allowed disabled:text-fg-disabled disabled:placeholder:text-fg-disabled",
-        className
+        // @focus-suppress B — B Field 家族輸入控件;承擔者:插入點(caret)本身;列底的分隔線不是焦點指示
+        'flex w-full bg-transparent outline-none placeholder:text-fg-muted',
+        // M24 disabled state precedence:disabled 時 placeholder 切 fg-disabled(audit dim 34)
+        'disabled:placeholder:text-fg-disabled disabled:text-fg-disabled disabled:cursor-not-allowed',
+        size === 'lg' ? 'text-body-lg leading-compact' : 'text-body leading-compact',
+        className,
       )}
       {...props}
     />
@@ -136,7 +160,7 @@ const CommandGroup = React.forwardRef<
   <CommandPrimitive.Group
     ref={ref}
     // `p-0` 中和 cmdk 對 heading 容器的預設內距 —— 內距由 MenuItem 的 row geometry 提供
-    className={cn("overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:p-0", className)}
+    className={cn("overflow-hidden p-0 py-2 text-foreground [&_[cmdk-group-heading]]:p-0", className)}
     heading={typeof heading === 'string' || typeof heading === 'number'
       ? <MenuItem header>{heading}</MenuItem>
       : heading}
@@ -161,20 +185,62 @@ const CommandSeparator = React.forwardRef<
 ))
 CommandSeparator.displayName = CommandPrimitive.Separator.displayName
 
+type CommandItemMenuProps = Pick<MenuItemProps,
+  'size' | 'startIcon' | 'startIconClassName' | 'avatar' | 'startContent' | 'description' | 'tag' | 'endContent' | 'selected' | 'checkbox' | 'checked'>
+export type CommandItemProps = React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item> & CommandItemMenuProps & {
+  /** 尾端快捷鍵提示(`⌘K`);跟 DropdownMenuItem 的 `shortcut` 同名同樣式(text-caption + tracking-shortcut + fg-muted)。 */
+  shortcut?: React.ReactNode
+}
+
+/**
+ * CommandItem —— 外層 cmdk Item 只負責 cmdk 的反白/停用訊號,**視覺 anatomy 一律由內層 `MenuItem` 承擔**
+ * (icon 槽 / label / description / 尾端 tag、endContent、shortcut;owner = item-anatomy.spec.md + menu-item.spec.md)。
+ * 這跟 SelectMenu 包 option 的結構完全相同(select-menu.tsx「CommandItem > MenuItem role=presentation」),
+ * 所以指令面板、inline 清單、下拉選單三種形態的每一列都長一樣。
+ * 相容:SelectMenu 自己傳 `<MenuItem>` 當 children(它要管 checkbox/selected/renderLabel),這時不再包第二層。
+ */
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive.Item
-    ref={ref}
-    className={cn(
-      // @focus-suppress D — D 選單未選中項;承擔者:data-[selected=true] 的 hover 同色底
-      "relative flex cursor-default gap-2 select-none items-center rounded-md px-3 py-1.5 text-body outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-neutral-hover data-[selected=true]:text-foreground data-[disabled=true]:text-fg-disabled [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-      className
-    )}
-    {...props}
-  />
-))
+  CommandItemProps
+>(({ className, children, size, startIcon, startIconClassName, avatar, startContent, description, tag, endContent, shortcut, selected, checkbox, checked, disabled, ...props }, ref) => {
+  const childIsMenuItem = React.isValidElement(children) && children.type === MenuItem
+  const end = shortcut != null ? <CommandShortcut>{shortcut}</CommandShortcut> : endContent
+  return (
+    <CommandPrimitive.Item
+      ref={ref}
+      disabled={disabled}
+      className={cn(
+        // @focus-suppress D — D 選單未選中項;承擔者:data-[selected=true] 的 hover 同色底
+        "relative flex cursor-default select-none items-center outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-neutral-hover data-[selected=true]:text-foreground data-[disabled=true]:text-fg-disabled",
+        // 內層 MenuItem 自帶內距與圓角;外層歸零(= SelectMenu 傳的 'p-0 rounded-none')
+        "p-0 rounded-none",
+        className
+      )}
+      {...props}
+    >
+      {childIsMenuItem ? children : (
+        <MenuItem
+          role="presentation"
+          size={size}
+          startIcon={startIcon}
+          startIconClassName={startIconClassName}
+          avatar={avatar}
+          startContent={startContent}
+          description={description}
+          tag={tag}
+          endContent={end}
+          selected={selected}
+          checkbox={checkbox}
+          checked={checked}
+          disabled={disabled}
+          className="w-full !bg-transparent hover:!bg-transparent"
+        >
+          {children}
+        </MenuItem>
+      )}
+    </CommandPrimitive.Item>
+  )
+})
 
 CommandItem.displayName = CommandPrimitive.Item.displayName
 
@@ -185,7 +251,7 @@ const CommandShortcut = ({
   return (
     <span
       className={cn(
-        "ml-auto text-caption tracking-shortcut text-fg-muted",
+        "text-caption tracking-shortcut text-fg-muted",
         className
       )}
       {...props}

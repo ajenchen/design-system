@@ -78,6 +78,13 @@ reader-facing 的 scenario 不得標 `test-only`。機械 gate=`scripts/audit-co
 
 **Principles canonical**(Polaris-aligned):ONE complete `UsageGuidance` sufficient；split style 才需 ≥ 2 個 distinct decision dimensions。額外 story 只有教不同主題且通過 earn-existence 才保留。SSOT → `/story-writing` skill `references/category-templates.md`。
 
+## 整頁情境(2026-09-08 user 拍板形狀)
+
+- **畫布 / 說明分區**:要演「整頁 + 浮層 + 常駐面板」的 story,用 `stories-helpers/scene/simulated-browser.tsx`:上方工具列(上一頁 / 下一頁 / 網址列,DS Button + Input)是**說明用**,下方畫布是**擬真的產品畫面**;Dialog / FileViewer 用 `portalContainer={canvas}` 傳送進畫布。說明只放畫布下方的 `caption`,**不放進畫布、不放進代理面板**(要解釋就寫成代理自己的回覆,用 `AgentMessage` 的樣式)。
+- **畫布裡只准 DS 元件 + 真實業務內容**:key/value 用 `DescriptionList`、欄位用 `Field` + `Input`、按鈕用 `Button`、標題用 `DialogHeader` + `DialogTitle`(`DialogHeader` 沒有 `title` prop,寫了不會渲染)。常駐面板是畫布 flex 的直接子節點,撐滿畫布高度。
+
 ## 禁止
+
+- **展示層 story 禁原生 `<button>` / `<input>` / `<textarea>` / `<select>`**(hook `check_story_invariants.sh` R1 A.5,2026-09-08):raw 控件會吃到全域 `:focus-visible` 框、樣式跟 DS 元件不一致(user 抓到 agent 並存範例用滑鼠開 modal 就出鍵盤框)。例外只有 Radix `asChild` 觸發殼、`sr-only` 測試輔助、`@anatomy-exempt-next`。
 
 ❌ 佔位符 / 抽象代號 / 極端不現實 / 視覺符號 / spec 內部代號。詳 → `/story-writing` skill。

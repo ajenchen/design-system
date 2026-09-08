@@ -38,26 +38,13 @@ export const Overview: Story = {
             <CommandList>
               <CommandEmpty>找不到結果</CommandEmpty>
               <CommandGroup heading="常用">
-                <CommandItem>
-                  <FileText className="mr-2 h-4 w-4" />
-                  建立新文件
-                </CommandItem>
-                <CommandItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  前往設定
-                  <CommandShortcut>⌘K</CommandShortcut>
-                </CommandItem>
+                <CommandItem startIcon={FileText}>建立新文件</CommandItem>
+                <CommandItem startIcon={Settings} shortcut="⌘K">前往設定</CommandItem>
               </CommandGroup>
               <CommandSeparator />
               <CommandGroup heading="帳號">
-                <CommandItem>
-                  <User className="mr-2 h-4 w-4" />
-                  個人資料
-                </CommandItem>
-                <CommandItem>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  登出
-                </CommandItem>
+                <CommandItem startIcon={User}>個人資料</CommandItem>
+                <CommandItem startIcon={LogOut}>登出</CommandItem>
               </CommandGroup>
             </CommandList>
           </Command>

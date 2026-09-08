@@ -78,9 +78,28 @@
    實際寬度**不寫死在任何地方**:`measureScrollbarGutters` 每次量,所以 15 → 11 的變化
    由量測自動流過去,補償邏輯不需要改。
 */
-[data-datatable-hscroll] {
+/* 2026-09-08 撤回 0374642a 對 Chromium 的改法(user 實測:GitHub 上的 main 在 Windows Chrome 正常,本分支同一支
+   範例的中間捲動區水平/垂直捲軸各有一半看不到、捲動明顯更慢;釘選面板下的裝飾槽反而正常)。
+   已確認的事實(本機 A/B,`git archive origin/main` 另建 storybook):main 在 Chromium 是 auto/auto(原生 15px),
+   0374642a 刪掉下方那段 `@supports` 重設,讓 Chromium 改吃 thin + 自訂色(11px)。這裡回復中央捲軸的既有設定,
+   裝飾槽(分支新增,main 沒有)共用同一組規則。**Windows 上「各半」的繪製/裁切機制與變慢的原因仍待 exact-version
+   實機驗證**(Codex R5 2026-09-08 以 Blink/cc 原始碼反證了我原本寫的「NativeThemeWin 內距 / 主執行緒重繪」推論,
+   已撤回;AD27 有兩組最小實機實驗清單)。上面 2026-09-04 那段「現在的選擇:只留 W3C 標準屬性」自此為歷史,不再是有效 CSS 的說明。 */
+[data-datatable-hscroll],
+.dtScrollbarTrough {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+@supports selector(::-webkit-scrollbar) {
+  [data-datatable-hscroll],
+  .dtScrollbarTrough {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+}
+/* V/H 交會方塊跟軌道同色(main 既有;corner 樣式在 Blink 走獨立路徑,不需要建立 CustomScrollbar)。 */
+[data-datatable-hscroll]::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
 }
 
 /* ────────────────────────────────────────────────────────────

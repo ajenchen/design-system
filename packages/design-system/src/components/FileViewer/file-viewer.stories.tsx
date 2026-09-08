@@ -3,6 +3,8 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { expect, waitFor } from '@storybook/test'
 import { FileViewer, type FileInfo } from './file-viewer'
 import { Button } from '@/design-system/components/Button/button'
+import { Input } from '@/design-system/components/Input/input'
+import { Field, FieldLabel } from '@/design-system/components/Field/field'
 import { Image as ImageIcon, Paperclip, Camera, Figma } from 'lucide-react'
 
 /**
@@ -430,7 +432,7 @@ export const CoexistenceContract: Story = {
   render: () => {
     const [open, setOpen] = React.useState(true)
     const [index, setIndex] = React.useState(0)
-    const asideRef = React.useRef<HTMLDivElement | null>(null)
+    const asideRef = React.useRef<HTMLElement | null>(null)
     const keep = React.useCallback(
       () => (asideRef.current ? [asideRef.current as Element] : []),
       [],
@@ -446,10 +448,17 @@ export const CoexistenceContract: Story = {
           onIndexChange={setIndex}
           persistentElements={keep}
         />
-        <div ref={asideRef} id="fv-aside" className="flex w-[280px] shrink-0 flex-col gap-3 border-l border-divider p-4">
-          <p className="text-body">常駐區域</p>
-          <button type="button" id="fv-aside-btn" className="rounded-md border border-border px-3 py-2">常駐鈕</button>
-        </div>
+        <aside ref={asideRef} id="fv-aside" aria-label="評論" className="flex w-[300px] shrink-0 flex-col gap-[var(--layout-space-loose)] border-l border-divider p-[var(--layout-space-loose)]">
+          <h2 className="text-body-lg font-medium">評論</h2>
+          <p className="text-body">Betty:截圖二的按鈕文案要跟規格對一下。</p>
+          <Field>
+            <FieldLabel>新增評論</FieldLabel>
+            <Input id="fv-aside-input" placeholder="可以打字" />
+          </Field>
+          <div>
+            <Button id="fv-aside-btn" variant="secondary">送出</Button>
+          </div>
+        </aside>
       </div>
     )
   },

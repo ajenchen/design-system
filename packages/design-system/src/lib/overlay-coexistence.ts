@@ -23,6 +23,7 @@
  */
 import * as React from 'react'
 import { suppressOthers } from 'aria-hidden'
+import { cn } from '@/lib/utils'
 
 export type CoexistenceTargets = () => Element[]
 
@@ -47,4 +48,67 @@ export function useOverlayCoexistence(active: boolean, keep: CoexistenceTargets 
     })
     return () => { cancelAnimationFrame(frame); undo?.() }
   }, [active, keep])
+}
+
+/**
+ * 並存遮罩 —— modal 開著時宿主要被遮住(它仍然是 modal),但保留節點不能被遮、也不能被擋住點擊。
+ * Radix 在 `modal={false}` 時不渲染 Overlay,所以這裡自己畫一層 `fixed inset-0` 的遮罩,
+ * 用 `clip-path: polygon(evenodd …)` 在每個保留節點的位置**挖洞**:洞裡沒有遮罩像素、也沒有命中區,
+ * 保留節點照常可見可點;洞外(宿主)被遮、點下去是「外部點擊」→ 關閉 modal(v14 條 A 的 modal 語意)。
+ * 不用 z-index 把保留節點抬上來:保留節點常是 `display:contents` 的殼或 flex 子節點,改它們的定位會破版。
+ * 洞的位置跟著 ResizeObserver / 視窗 resize / 捲動更新。
+ */
+export function CoexistenceMask({ keep, className, ...rest }: { keep: CoexistenceTargets } & React.HTMLAttributes<HTMLDivElement>) {
+  const [clipPath, setClipPath] = React.useState<string>('none')
+  const selfRef = React.useRef<HTMLDivElement | null>(null)
+  React.useEffect(() => {
+    let frame = 0
+    const compute = () => {
+      frame = 0
+      const self = selfRef.current
+      if (!self) return
+      // 遮罩可能被傳送進帶 transform 的畫布(fixed 以畫布為準),所以洞的座標一律相對遮罩自己的盒子算
+      const base = self.getBoundingClientRect()
+      // `display:contents` 的殼沒有自己的盒子(rect 全 0),用它的子節點當洞
+      const boxes = (el: Element): DOMRect[] => {
+        const r = el.getBoundingClientRect()
+        return r.width > 0 && r.height > 0 ? [r] : [...el.children].flatMap(boxes)
+      }
+      const rects = keep()
+        .filter((el): el is Element => !!el && el.isConnected)
+        .flatMap(boxes)
+      if (rects.length === 0 || base.width === 0) { setClipPath('none'); return }
+      // path() 支援多個子路徑,evenodd 讓內圈變成洞;polygon() 只有單一路徑,接縫會畫出斜切三角(2026-09-08 實測)
+      const W = base.width, H = base.height
+      const outer = `M0 0H${W}V${H}H0Z`
+      const holes = rects.map((r) => {
+        const x1 = Math.max(0, r.left - base.left), y1 = Math.max(0, r.top - base.top)
+        const x2 = Math.min(W, r.right - base.left), y2 = Math.min(H, r.bottom - base.top)
+        return x2 > x1 && y2 > y1 ? `M${x1} ${y1}H${x2}V${y2}H${x1}Z` : ''
+      }).join('')
+      setClipPath(`path(evenodd, '${outer}${holes}')`)
+    }
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(compute) }
+    compute()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(schedule) : null
+    for (const el of keep()) if (el && ro) ro.observe(el)
+    if (ro && selfRef.current) ro.observe(selfRef.current)
+    window.addEventListener('resize', schedule)
+    window.addEventListener('scroll', schedule, true)
+    return () => {
+      if (frame) cancelAnimationFrame(frame)
+      ro?.disconnect()
+      window.removeEventListener('resize', schedule)
+      window.removeEventListener('scroll', schedule, true)
+    }
+  }, [keep])
+  // 本檔是 .ts(不是 .tsx),用 createElement 而不是 JSX
+  return React.createElement('div', {
+    ref: selfRef,
+    'aria-hidden': true,
+    'data-coexistence-mask': '',
+    className: cn('fixed inset-0 z-30 bg-overlay', className),
+    style: { clipPath },
+    ...rest,
+  })
 }

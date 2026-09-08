@@ -65,7 +65,7 @@ SelectMenu 是 **Popover + Command 組成的完整下拉選單浮層**——提�
 ```
 Popover（浮動容器，handle 展開 / 定位）
   └─ Command（cmdk — 搜尋 + 鍵盤導覽）
-       ├─ 搜尋框（`CommandPrimitive.Input` raw cmdk + 自建 icon/min-h wrapper，非 DS `CommandInput`；searchable 模式時顯示；選項 > 5 時建議開啟）
+       ├─ 搜尋框（DS `CommandInput`,與 CommandDialog / inline Command 共用同一份實作,2026-09-08 起;searchable 模式時顯示；選項 > 5 時建議開啟）
        ├─ CommandList（捲動區）
        │    └─ CommandGroup（分組標題）
        │         └─ MenuItem（選項 row，消費 item-layout）

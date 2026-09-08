@@ -1838,15 +1838,15 @@ function DataTableInner<TData>(
       {hasLeft && (
         <div
           aria-hidden
-          className="pointer-events-none absolute bottom-0 left-0 overflow-x-scroll [scrollbar-width:thin]"
-          style={{ width: 'var(--dt-left-w)', height: hScrollbarGutter, scrollbarColor: 'var(--scrollbar-thumb) var(--scrollbar-track)' }}
+          className="pointer-events-none absolute bottom-0 left-0 overflow-x-scroll dtScrollbarTrough"
+          style={{ width: 'var(--dt-left-w)', height: hScrollbarGutter }}
         />
       )}
       {hasRight && (
         <div
           aria-hidden
-          className="pointer-events-none absolute bottom-0 right-0 overflow-x-scroll [scrollbar-width:thin]"
-          style={{ width: 'var(--dt-right-w)', height: hScrollbarGutter, scrollbarColor: 'var(--scrollbar-thumb) var(--scrollbar-track)' }}
+          className="pointer-events-none absolute bottom-0 right-0 overflow-x-scroll dtScrollbarTrough"
+          style={{ width: 'var(--dt-right-w)', height: hScrollbarGutter }}
         />
       )}
     </>

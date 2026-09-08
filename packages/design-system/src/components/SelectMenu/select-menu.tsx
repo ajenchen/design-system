@@ -4,14 +4,14 @@
  */
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
-import { Plus, Search } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
-import { Command, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator } from '@/design-system/components/Command/command'
-import { Command as CommandPrimitive, useCommandState } from 'cmdk'
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator } from '@/design-system/components/Command/command'
+import { useCommandState } from 'cmdk'
 import { MenuItem, MenuFooter } from '@/design-system/components/Menu/menu-item'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
@@ -20,7 +20,6 @@ import { getMenuListMinHeight } from '@/design-system/components/Field/field-typ
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select-ordering'
 import { useInputModality } from '@/design-system/hooks/use-input-modality'
-import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 /**
  * SelectMenu — Popover + Command 組成的完整下拉選單
@@ -32,7 +31,7 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
  * ── 架構 ──
  *   Popover（浮動容器）
  *     └── Command（cmdk，搜尋 + 鍵盤導覽）
- *           ├── CommandPrimitive.Input（搜尋框,raw cmdk + 自建 icon/min-h wrapper,非 DS CommandInput）
+ *           ├── CommandInput（搜尋列,DS 單一實作,與 CommandDialog 共用）
  *           ├── CommandList（選項列表）
  *           │     └── CommandGroup → MenuItem
  *           └── Footer（多選全選）
@@ -407,26 +406,9 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
           className="bg-transparent"
         >
           {searchable && (
-            <div className={cn(
-              'flex items-center gap-2 px-3 py-1 border-b border-divider',
-              size === 'lg' ? 'min-h-[calc(var(--field-height-lg)+8px)]'
-                : size === 'sm' ? 'min-h-[calc(var(--field-height-sm)+8px)]'
-                : 'min-h-[calc(var(--field-height-md)+8px)]',
-            )}>
-              <Search size={ICON_SIZE[size as 'sm' | 'md' | 'lg']} className="shrink-0 text-fg-muted" aria-hidden />
-              <CommandPrimitive.Input
-                placeholder={searchPlaceholder}
-                value={search}
-                onValueChange={setSearch}
-                className={cn(
-                  // @focus-suppress B — B Field 家族輸入控件;承擔者:外層 Field wrapper 的邊框
-                  'flex w-full bg-transparent outline-none placeholder:text-fg-muted',
-                  // M24 disabled state precedence:disabled 時 placeholder 切 fg-disabled(audit dim 34)
-                  'disabled:placeholder:text-fg-disabled disabled:text-fg-disabled disabled:cursor-not-allowed',
-                  size === 'lg' ? 'text-body-lg leading-compact' : 'text-body leading-compact',
-                )}
-              />
-            </div>
+            // 2026-09-08:搜尋列改用 DS `CommandInput`(與 CommandDialog / inline Command 同一份實作),
+            // 原本這裡自己寫一份 raw cmdk input + icon wrapper = 第二份 SSOT(user 抓「Command 跟 SelectMenu 不同一套」)。
+            <CommandInput size={size as 'sm' | 'md' | 'lg'} placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
           )}
           {/* **2026-05-07 v15.13 R2 fix**:minHeight 從 CommandList 搬到 CommandEmpty。
               原本 CommandList 永遠套 `minHeight = field-height × minRows + 16px`,結果

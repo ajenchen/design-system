@@ -23,10 +23,14 @@ import {
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
 import { AgentPanelDock } from './agent-panel-fab'
 import { Button } from '@/design-system/components/Button/button'
-import { Dialog, DialogContent, DialogHeader, DialogBody } from '@/design-system/components/Dialog/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/design-system/components/Dialog/dialog'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Empty } from '@/design-system/components/Empty/empty'
+import { Input } from '@/design-system/components/Input/input'
+import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
+import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
 
 const meta: Meta<typeof AgentPanel> = {
   title: 'Design System/Components/AgentPanel/展示',
@@ -553,169 +557,225 @@ export const LogoThinkStop: Story = {
  * 焦點在 agent 內、agent 內沒有浮層時 Esc **什麼都不關**(不能跨區關掉舞台的 modal)。
  * 閘:`scripts/agent-modal-coexistence-invariant.mjs`。
  */
-export const ModalCoexistence: Story = {
-  name: '並存 — 有 URL 的 modal 與 agent 同時可用',
-  render: () => {
-    const Demo = () => {
-      const panelHostRef = React.useRef<HTMLDivElement | null>(null)
-      const keep = React.useCallback(
-        () => (panelHostRef.current ? [panelHostRef.current as Element] : []),
-        [],
-      )
-      return (
-        <div className="flex h-[560px] w-full">
-          <div className="relative flex min-w-0 flex-1 flex-col gap-3 p-[var(--layout-space-loose)]">
-            <p className="text-body">舞台(宿主內容)</p>
-            <button type="button" id="coexist-stage-btn" className="w-40 rounded-md border border-border px-3 py-2">舞台鈕</button>
-            <Dialog defaultOpen modal={false}>
-              <DialogContent maxWidth={420} autoHeight persistentElements={keep}>
-                <DialogHeader title="任務詳情(有 URL)" />
+/**
+ * 並存(v14 條 A / B):有自己 URL 的內容(任務詳情)開著時,右側代理仍然可以對話、打字;
+ * 宿主其餘部分被遮罩蓋住(它還是 modal),代理那一欄在遮罩上挖了洞。
+ * 閘:`scripts/agent-modal-coexistence-invariant.mjs`。
+ */
+function CoexistenceScene() {
+  const [canvas, setCanvas] = React.useState<HTMLDivElement | null>(null)
+  const panelHostRef = React.useRef<HTMLDivElement | null>(null)
+  // 保留給代理的節點:必須是外層 flex 的直接子節點(面板量的是自己的父層),所以用 display:contents 的殼
+  const keep = React.useCallback(() => (panelHostRef.current ? [panelHostRef.current as Element] : []), [])
+  const [draft, setDraft] = React.useState('')
+  return (
+    <div className="p-[var(--layout-space-loose)]">
+      <SimulatedBrowser
+        url="/projects/8821/tasks/4821"
+        canBack
+        canvasRef={setCanvas}
+        caption="模擬:任務詳情有自己的網址,所以它開著時右側的代理照常可用;畫布上方的網址列與上下頁鈕只是示意。"
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-[var(--layout-space-loose)] p-[var(--layout-space-loose)]">
+          <h1 className="text-heading">結帳流程改版</h1>
+          <DescriptionList orientation="horizontal">
+            <DescriptionItem label="負責人">Alan Chen</DescriptionItem>
+            <DescriptionItem label="狀態">進行中</DescriptionItem>
+            <DescriptionItem label="衝刺">Sprint 24(9/2 – 9/15)</DescriptionItem>
+          </DescriptionList>
+          <div className="flex gap-2">
+            <Button id="coexist-stage-btn" variant="secondary">新增任務</Button>
+          </div>
+          {canvas && (
+            <Dialog defaultOpen persistentElements={keep}>
+              <DialogContent maxWidth={480} autoHeight portalContainer={canvas}>
+                <DialogHeader><DialogTitle>任務 #4821 修正登入逾時</DialogTitle></DialogHeader>
                 <DialogBody>
-                  <p className="text-body">這個對話框有自己的 URL,依 v14 條 A 取得協作資格。</p>
-                  <button type="button" id="coexist-modal-btn" className="mt-3 rounded-md border border-border px-3 py-2">框內鈕</button>
+                  <div className="flex flex-col gap-[var(--layout-space-loose)]">
+                    <DescriptionList orientation="horizontal">
+                      <DescriptionItem label="指派人">Betty Wu</DescriptionItem>
+                      <DescriptionItem label="狀態">待處理</DescriptionItem>
+                      <DescriptionItem label="截止日">2026-09-12</DescriptionItem>
+                    </DescriptionList>
+                    <Field>
+                      <FieldLabel>留言</FieldLabel>
+                      <Input id="coexist-modal-input" placeholder="寫下你的更新…" />
+                    </Field>
+                  </div>
                 </DialogBody>
+                <DialogFooter>
+                  <Button id="coexist-modal-btn">儲存</Button>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
-          {/* 面板必須是外層 flex 的**直接子節點**:它量的是自己的父層,
-              包一層 w-[400px] 的話它會以為容器只有 400px → 判成蓋板態 →
-              把整頁(含對話框)抑制掉(2026-09-08 寫這個 story 時當場踩到)。
-              寬度由面板自己的 --agent-panel-width 決定,不由外面包一層固定寬。 */}
-          <div ref={panelHostRef} className="contents">
-            <AgentPanel className="border-l border-divider">
-              <AgentPanelHeader title="任務助理" activeConversationId="c1" {...headerWiring} onClose={noop} />
-              <AgentConversation>
-                <AgentMessage role="agent">我在這裡,對話框開著也能用。</AgentMessage>
-              </AgentConversation>
-              <AgentPromptInput
-                value=""
-                onValueChange={noop}
-                onSubmit={noop}
-                attachments={[]}
-                onRemoveAttachment={noop}
-                onAddAttachment={noop}
-                placeholder="在這裡打字,按 Esc 不該關掉左邊的對話框"
-              />
-            </AgentPanel>
-          </div>
+          )}
         </div>
-      )
-    }
-    return <Demo />
-  },
+        <div ref={panelHostRef} className="contents">
+          <AgentPanelDock defaultOpen logoState="idle">
+            {({ close }) => (
+              <AgentPanel className="border-l border-divider">
+                <AgentPanelHeader title="任務助理" activeConversationId="c1" {...headerWiring} onClose={close} />
+                <AgentConversation>
+                  <AgentMessage role="user">幫我看一下 #4821 卡在哪</AgentMessage>
+                  <AgentMessage role="agent">
+                    這張任務卡在「登入逾時」的重現步驟:Betty 昨天補了伺服器 log,但還缺 QA 的環境資訊(瀏覽器與版本)。你可以直接在左邊的任務裡留言要,我會把結果同步到衝刺看板。
+                  </AgentMessage>
+                </AgentConversation>
+                <AgentPromptInput value={draft} onValueChange={setDraft} {...promptWiring} attachments={[]} placeholder="問我或指派工作…" />
+              </AgentPanel>
+            )}
+          </AgentPanelDock>
+        </div>
+      </SimulatedBrowser>
+    </div>
+  )
 }
 
+export const ModalCoexistence: Story = {
+  name: '並存 — 有 URL 的 modal 與 agent 同時可用',
+  parameters: {
+    docs: {
+      description: {
+        story: '任務詳情有自己的網址,依代理原則第 A 條取得並存資格:它開著時右側代理仍可對話與打字,宿主其餘部分被遮罩蓋住。畫布外的網址列與上下頁鈕是模擬用。',
+      },
+    },
+  },
+  render: () => <CoexistenceScene />,
+}
 
 /**
- * URL 註冊表示意 —— **假資料,只為了在 DS 內把 v14 條 A/B/C/D/E 的互動演出來。**
- *
- * v14 條 A:「URL 變得像是一種註冊器」——哪些內容有自己的 URL,就有資格與 agent 並存。
- * 真正的註冊表在**產品／導航層**(R2/R3 歸屬:URL 資格、目的地、換／疊由產品組合層決定),
- * DS 沒有也不該有;`persistentElements` 不讀 URL、不建立資格、不驗權限。
- * 下面的 `FAKE_DESTINATIONS` 是示意用假資料,**模擬「系統已查回／已確認」的連結**(條 D 的正向條件)。
- *
- * 這個 story 實際證明的子集合(不宣稱 23 題全演):
- *   A/B  點「有 URL 的 modal」→ 開在舞台上,agent 仍可打字(persistentElements)
- *   A    「刪除專案」(沒有 URL)→ 一般確認框疊在上面,擋住一切**包含 agent**;取消後**原 modal 與 agent 恢復**
- *   C    點「衝刺看板」→ 舞台換內容、模擬網址列跟著變;agent 不動
- *   D    「自行生成未確認」的網址 → 純文字,不是 link、Tab 走不到
- *   E    草稿跨導航／關合(header × → FAB 再開)保留
- * 閘:`scripts/agent-url-registry-demo-invariant.mjs`
+ * URL 註冊表示意 —— **假資料**,只為了在 DS 內把 v14 條 A/B/C/D/E 的互動演出來。
+ * 真正的註冊表在產品／導航層(誰有 URL、由誰確認),DS 沒有也不該有;`persistentElements` 不讀 URL、不建立資格。
+ * 演的子集合:A/B 點「有 URL 的 modal」→ 開在舞台上,代理仍可打字;A 「刪除專案」(沒有 URL)→ 確認框擋住一切
+ * 包含代理,取消後恢復;C 點「衝刺看板」→ 舞台換內容、網址列跟著變;D 系統沒確認過的網址只是純文字;
+ * E 草稿跨導覽與關閉重開都在。閘:`scripts/agent-url-registry-demo-invariant.mjs`。
  */
 type FakeDestination =
   | { id: string; label: string; url: string; presentation: 'modal' | 'host' }
   | { id: string; label: string; url: null; presentation: 'confirm' }
 
-// ⚠️ 假資料示意:真實產品的目的地註冊表住在導航層,不在 DS。這些是「模擬已查回、已確認」的連結。
+// 假資料:模擬「系統已查回、已確認」的目的地。真實產品的註冊表住在導航層。
 const FAKE_DESTINATIONS: readonly FakeDestination[] = [
-  { id: 'task-4821', label: '任務 #4821 修正登入逾時', url: '/tasks/4821', presentation: 'modal' },
+  { id: 'task-4821', label: '任務 #4821 修正登入逾時', url: '/projects/8821/tasks/4821', presentation: 'modal' },
   { id: 'sprint-board', label: '衝刺看板', url: '/projects/8821/board', presentation: 'host' },
   { id: 'delete', label: '刪除專案', url: null, presentation: 'confirm' },
 ]
+const OVERVIEW = { title: '專案總覽 — 結帳流程改版', url: '/projects/8821' }
+
+function UrlRegistryScene() {
+  type Stage = { host: { title: string; url: string }; modal: Extract<FakeDestination, { presentation: 'modal' }> | null; confirm: boolean }
+  const [stage, setStage] = React.useState<Stage>({ host: OVERVIEW, modal: null, confirm: false })
+  const [draft, setDraft] = React.useState('')
+  const [agentOpen, setAgentOpen] = React.useState(true)
+  const [canvas, setCanvas] = React.useState<HTMLDivElement | null>(null)
+  const panelRef = React.useRef<HTMLDivElement | null>(null)
+  const keep = React.useCallback(() => (panelRef.current ? [panelRef.current as Element] : []), [])
+  const location = stage.modal ? stage.modal.url : stage.host.url
+  const go = (dest: FakeDestination) => {
+    if (dest.presentation === 'confirm') setStage((s) => ({ ...s, confirm: true }))
+    else if (dest.presentation === 'modal') setStage((s) => ({ ...s, modal: dest }))
+    else setStage({ host: { title: dest.label, url: dest.url }, modal: null, confirm: false })
+  }
+  const canBack = !!stage.modal || stage.host.url !== OVERVIEW.url
+  const back = () => setStage((s) => (s.modal ? { ...s, modal: null } : { host: OVERVIEW, modal: null, confirm: false }))
+  return (
+    <div className="p-[var(--layout-space-loose)]">
+      <SimulatedBrowser
+        url={location}
+        canBack={canBack}
+        onBack={back}
+        canvasRef={setCanvas}
+        caption="示意(假資料):代理回覆裡的連結模擬「系統已查回、已確認」的目的地。有自己網址的內容能和代理並存;沒有網址的確認框會把代理一起擋住;系統沒確認過的網址只會是純文字。"
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-[var(--layout-space-loose)] p-[var(--layout-space-loose)]">
+          <h1 id="demo-stage-title" className="text-heading">{stage.host.title}</h1>
+          <DescriptionList orientation="horizontal">
+            <DescriptionItem label="擁有者">Ada Chen</DescriptionItem>
+            <DescriptionItem label="狀態">進行中</DescriptionItem>
+            <DescriptionItem label="截止日">2026-10-31</DescriptionItem>
+          </DescriptionList>
+          <div className="flex gap-2">
+            <Button id="demo-open-confirm" variant="secondary" danger onClick={() => go(FAKE_DESTINATIONS[2])}>刪除專案</Button>
+          </div>
+          {canvas && stage.modal && (
+            <Dialog open persistentElements={keep} onOpenChange={(o) => { if (!o) setStage((s) => ({ ...s, modal: null })) }}>
+              <DialogContent maxWidth={480} autoHeight portalContainer={canvas}>
+                <DialogHeader><DialogTitle>{stage.modal.label}</DialogTitle></DialogHeader>
+                <DialogBody>
+                  <div className="flex flex-col gap-[var(--layout-space-loose)]">
+                    <DescriptionList orientation="horizontal">
+                      <DescriptionItem label="指派人">Betty Wu</DescriptionItem>
+                      <DescriptionItem label="狀態">待處理</DescriptionItem>
+                      <DescriptionItem label="截止日">2026-09-12</DescriptionItem>
+                    </DescriptionList>
+                    <Field>
+                      <FieldLabel>留言</FieldLabel>
+                      <Input id="demo-modal-input" placeholder="寫下你的更新…" />
+                    </Field>
+                  </div>
+                </DialogBody>
+                <DialogFooter>
+                  <Button variant="tertiary" onClick={() => setStage((s) => ({ ...s, modal: null }))}>關閉</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+          {canvas && stage.confirm && (
+            <Dialog open onOpenChange={(o) => { if (!o) setStage((s) => ({ ...s, confirm: false })) }}>
+              <DialogContent maxWidth={400} autoHeight portalContainer={canvas}>
+                <DialogHeader><DialogTitle>確定要刪除專案?</DialogTitle></DialogHeader>
+                <DialogBody>
+                  <p className="text-body">專案內的任務、討論與附件都會被永久刪除,無法復原。</p>
+                </DialogBody>
+                <DialogFooter>
+                  <Button id="demo-confirm-cancel" variant="tertiary" onClick={() => setStage((s) => ({ ...s, confirm: false }))}>取消</Button>
+                  <Button danger onClick={() => setStage((s) => ({ ...s, confirm: false }))}>刪除</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+        <div ref={panelRef} className="contents">
+          <AgentPanelDock open={agentOpen} onOpenChange={setAgentOpen} logoState="idle">
+            {({ close }) => (
+              <AgentPanel className="border-l border-divider">
+                <AgentPanelHeader title="任務助理" activeConversationId="c1" {...headerWiring} onClose={close} />
+                <AgentConversation>
+                  <AgentMessage role="user">登入逾時那件事現在在哪裡處理?</AgentMessage>
+                  <AgentMessage role="agent">
+                    <p>跟你問的有關的有兩處:</p>
+                    <ul className="mt-2 flex flex-col gap-1">
+                      {FAKE_DESTINATIONS.filter((d) => d.url).map((d) => (
+                        <li key={d.id}>
+                          <a href={d.url ?? '#'} id={`demo-link-${d.id}`} className="text-primary underline underline-offset-4" onClick={(e) => { e.preventDefault(); go(d) }}>
+                            {d.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2">
+                      另外有人在討論串提到 <span id="demo-unconfirmed">/projects/9999</span>,但系統裡查不到這個專案,我就沒有放連結。
+                    </p>
+                  </AgentMessage>
+                </AgentConversation>
+                <AgentPromptInput value={draft} onValueChange={setDraft} {...promptWiring} attachments={[]} placeholder="問我或指派工作…" />
+              </AgentPanel>
+            )}
+          </AgentPanelDock>
+        </div>
+      </SimulatedBrowser>
+    </div>
+  )
+}
 
 export const UrlRegistryDemo: Story = {
   name: '示意(假資料)— URL 註冊表:誰能與 agent 並存',
-  render: () => {
-    const Demo = () => {
-      type Stage = { host: { title: string; url: string }; modal: Extract<FakeDestination, { presentation: 'modal' }> | null; confirm: boolean }
-      const [stage, setStage] = React.useState<Stage>({ host: { title: '專案總覽', url: '/projects/8821' }, modal: null, confirm: false })
-      const [draft, setDraft] = React.useState('')
-      const [agentOpen, setAgentOpen] = React.useState(true)
-      const panelRef = React.useRef<HTMLDivElement | null>(null)
-      const keep = React.useCallback(() => (panelRef.current ? [panelRef.current as Element] : []), [])
-      const location = stage.modal ? stage.modal.url : stage.host.url
-      const go = (dest: FakeDestination) => {
-        if (dest.presentation === 'confirm') setStage((s) => ({ ...s, confirm: true }))
-        else if (dest.presentation === 'modal') setStage((s) => ({ ...s, modal: dest }))
-        else setStage({ host: { title: dest.label, url: dest.url }, modal: null, confirm: false })
-      }
-      return (
-        <div className="relative flex h-[600px] w-full">
-          <div className="relative flex min-w-0 flex-1 flex-col gap-3 p-[var(--layout-space-loose)]">
-            <p className="text-caption text-fg-muted">⚠️ 假資料示意:目的地註冊表只為了演出互動,不是 DS 的一部分;連結模擬「系統已查回、已確認」</p>
-            <p className="text-caption">模擬網址列:<code id="demo-location">{location}</code></p>
-            <h2 id="demo-stage-title" className="text-heading">{stage.host.title}</h2>
-            <div className="flex gap-2">
-              <button type="button" id="demo-open-confirm" className="rounded-md border border-border px-3 py-2" onClick={() => go(FAKE_DESTINATIONS[2])}>
-                刪除專案(沒有 URL → 確認框)
-              </button>
-            </div>
-            {stage.modal && (
-              <Dialog open persistentElements={keep} onOpenChange={(o) => { if (!o) setStage((s) => ({ ...s, modal: null })) }}>
-                <DialogContent maxWidth={440} autoHeight>
-                  <DialogHeader title={stage.modal.label} />
-                  <DialogBody>
-                    <p className="text-body">這個內容有自己的 URL(<code>{stage.modal.url}</code>),依條 A 取得協作資格;右邊的 agent 仍然可以用。</p>
-                    <input id="demo-modal-input" className="mt-3 rounded-md border border-border px-3 py-2" placeholder="modal 內也能打字" />
-                  </DialogBody>
-                </DialogContent>
-              </Dialog>
-            )}
-            {stage.confirm && (
-              <Dialog open onOpenChange={(o) => { if (!o) setStage((s) => ({ ...s, confirm: false })) }}>
-                <DialogContent maxWidth={400} autoHeight>
-                  <DialogHeader title="確定要刪除專案?" />
-                  <DialogBody>
-                    <p className="text-body">這個確認框沒有 URL,依條 A 阻擋其餘介面,包含 agent。取消後,原本開著的 modal 與 agent 都恢復。</p>
-                    <button type="button" id="demo-confirm-cancel" className="mt-3 rounded-md border border-border px-3 py-2" onClick={() => setStage((s) => ({ ...s, confirm: false }))}>取消</button>
-                  </DialogBody>
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
-          <div ref={panelRef} className="contents">
-            <AgentPanelDock open={agentOpen} onOpenChange={setAgentOpen} logoState="idle">
-              {({ close }) => (
-                <AgentPanel className="border-l border-divider">
-                  <AgentPanelHeader title="任務助理" activeConversationId="c1" {...headerWiring} onClose={close} />
-                  <AgentConversation>
-                    <AgentMessage role="agent">
-                      <p>我找到這幾個東西(點下去看舞台怎麼反應):</p>
-                      <ul className="mt-2 flex flex-col gap-1">
-                        {FAKE_DESTINATIONS.filter((d) => d.url).map((d) => (
-                          <li key={d.id}>
-                            <a href={d.url ?? '#'} id={`demo-link-${d.id}`} className="text-primary underline underline-offset-4" onClick={(e) => { e.preventDefault(); go(d) }}>
-                              {d.label}
-                            </a>
-                            <span className="ml-2 text-caption text-fg-muted">{d.presentation === 'modal' ? '有 URL 的 modal' : '內部頁面'}</span>
-                          </li>
-                        ))}
-                        <li>
-                          {/* 條 D:自行生成、系統沒確認過 → 純文字,不是 link,Tab 走不到 */}
-                          <span id="demo-unconfirmed" className="text-fg-muted">/projects/9999(未確認,純文字)</span>
-                        </li>
-                      </ul>
-                    </AgentMessage>
-                  </AgentConversation>
-                  <AgentPromptInput value={draft} onValueChange={setDraft} onSubmit={noop} attachments={[]} onRemoveAttachment={noop} onAddAttachment={noop}
-                    placeholder="打幾個字,再去點左邊的連結或關掉再開 —— 草稿不該消失(條 E)" />
-                </AgentPanel>
-              )}
-            </AgentPanelDock>
-          </div>
-        </div>
-      )
-    }
-    return <Demo />
+  parameters: {
+    docs: {
+      description: {
+        story: '假資料示意:代理回覆裡的連結模擬「系統已確認」的目的地。點「任務 #4821」開有網址的 modal,代理仍可用;點「刪除專案」開沒有網址的確認框,代理被擋;點「衝刺看板」宿主換頁、網址列跟著變,草稿不丟。',
+      },
+    },
   },
+  render: () => <UrlRegistryScene />,
 }

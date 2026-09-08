@@ -2269,3 +2269,55 @@ DS 沒有路由,也不該有。story `UrlRegistryDemo` 用一份**明標「假�
 閘 `scripts/agent-url-registry-demo-invariant.mjs` 走完整條:面板打字 → 點 modal 目的地(網址列變、modal 與面板都能打字)→
 面板內 Esc 不關 modal、modal 內 Esc 才關 → 確認框開著面板被擋、取消恢復 → 未確認的不是連結 → 宿主導覽與關閉/重開草稿都在。
 寫閘時抓到一條我自己測錯的:焦點在面板內按 Esc 想關 modal —— 那正是 v14 Esc 分派**不該**發生的事,改成兩條斷言。
+
+## AD27 Windows 捲軸「各半」—— 我的結論錯了,user 的三個事實把根因隔離出來
+
+user:「你他媽捲軸溢出問題還是沒解決啊,你有找到 root cause 嗎?而且目前 github 上面的相同範例(專案排程全功能)的捲軸就沒溢出啊?…
+反而你目前在釘選欄位裝飾的水平捲軸反而沒有溢出的問題,然後溢出的問題只有 window 系統的 chrome 會出現…叫你跟最強 codex 來回討論…確保有給她完整脈絡」
+
+**我 AD22 寫錯的**:「不是九月大修引入」—— GitHub 上的 main 正常、本分支壞,那就是分支回歸。撤回。
+**隔離出來的變因**(本機 `git archive origin/main` 另建 storybook 做 A/B,Playwright 拿掉 `--hide-scrollbars`,CSS 不動):
+- main:`data-table.css` 對 Chromium 有 `@supports selector(::-webkit-scrollbar){ scrollbar-width:auto; scrollbar-color:auto }`
+  → Chromium 原生捲軸 15px、auto/auto。
+- 分支:0374642a(2026-09-04)刪掉那段重設,只留 `scrollbar-width: thin; scrollbar-color: …` → Chromium 第一次吃到 thin + 自訂色(11px)。
+  這正是「只在 Windows Chrome、只在大修後」的差異點;裝飾槽是分支新增的,main 沒有,它「正常」不能替任何東西背書(Codex R5)。
+**修法**:回復 main 的結構 —— 標準屬性只給 Firefox,Chromium 重設回 auto/auto,corner 同 main 上色;裝飾槽改吃同一組規則
+(原本 Tailwind `[scrollbar-width:thin]` + inline `scrollbarColor`,跟中間區各一份)。修後 A/B:分支 native 15px auto/auto = main。
+I17e(缺陷 H 的「thin 必須 < 15px」)是壞掉那條的守衛,改成驗 Chromium 原生 auto。
+**Codex R5 對辯**(brief 含 user 原話、main/分支 CSS 差異、A/B 數字、我的機制假設):
+- 判分支回歸成立、0374642a 是首要隔離變因、恢復 auto/auto 有依據 —— 但**只能稱「有依據的回復」,不能宣稱 Windows 根因已證實**。
+- 用 Blink/cc 原始碼**反證**我寫在 CSS 註解裡的機制:`UsesSolidColorThumb()` 無條件為真、Windows 網頁捲軸走 Aura/Fluent 不走 NativeThemeWin、
+  cc 把拇指置中且 `Inset` 只會縮小不會撐出、`HasCustomScrollbarStyle()` 明確排除標準屬性 —— 「自訂色 = CustomScrollbar = 主執行緒捲軸」這個等號錯。註解已改寫為「機制待實機」。
+- 「新版更慢」主因未知,不能歸給自訂色;我量的 142.7→47.1 是 getBoundingClientRect 呼叫數不是 forced layout,rAF 毫秒不是輸入延遲。
+**仍需 Windows 實機(最小兩組)**:(1) 同機同 Chrome 同縮放,在「專案排程全功能」比 main / 回歸版 / auto-auto 修版,記錄兩軸 thumb/track、corner、裝飾槽、light/dark;
+(2) 中央 wheel 與釘選區 wheel 分開的短 trace,比回歸版與修版的輸入延遲。分支預覽已含修版。
+
+## AD28 Command 的每一支 story 都跟 SelectMenu 不同一套 —— 兩份搜尋列、一份自訂尺寸覆寫
+
+user:「command 這個元件的所有 story 有超多元件和內容都偏移,他難道不是跟 select menu 相同的樣式 ssot 嗎?…搜尋框為何不是我們的 input 的樣式?…
+menu item 的組合…menu item group…都應該要完全遵守 select menu 的 ssot 吧?…為何要還重新造輪子?」
+
+**根因三處**:(1) 搜尋列有兩份實作 —— SelectMenu 自己寫 raw cmdk input + icon 殼(高度吃 `--field-height-*`+8px),DS `CommandInput` 另一份(h-11);
+(2) `CommandDialog` 用 8 條 `[&_[cmdk-…]]` 選擇器把面板裡的 input / item / svg 尺寸全部改寫(input h-12、item py-3、icon 20px);
+(3) `CommandItem` 是 raw cmdk item + 自己的 px/py/gap,stories 再手刻 `<svg className="mr-2 h-4 w-4">` + `<span>` —— 而 `command.spec.md` 明文寫著「Command 搜尋框不是 Field Control,走自身尺寸規格」,等於給漂移發了許可證。
+**修法**:`CommandInput` 成為唯一搜尋列(SelectMenu 改消費它;尺寸/字級/placeholder/disabled 全吃 Field token,無外框、底部分隔線);`CommandItem` 內包 `MenuItem`(結構 = SelectMenu 包 option),新增 `startIcon / description / tag / endContent / shortcut / size` 直通;`CommandGroup` 內距對齊 SelectMenu;`CommandDialog` 刪掉 8 條覆寫、補 sr-only 的 DialogTitle。spec 兩處撤回改寫。四支 story 重寫成消費新 API 的真實內容。
+**留給 user 的一題**:SelectMenu 的搜尋列本來就是「無外框的一列 + 底部分隔線」(Linear / Raycast / VS Code 指令面板同款);你說「跟 Input 一模一樣」——若指的是要有 Input 的外框盒,那是規範層的選擇,列在追蹤頁「需要你」。
+
+## AD29 範例用了原生 <button>/<input>、便利貼式說明、沒遮罩沒標題 —— 全部換成 DS 元件 + 模擬瀏覽器畫布
+
+user:「用滑鼠打開 modal 會在其中的輸入框出現藍色外框鍵盤焦點?主要原因是因為你亂用元件嗎?…agent 並存那個範例,我完全看不出要表達什麼…不要在範例裡面塞一堆不合規的東西…
+agent 不頂天立地…一堆說明文字…為何 modal 沒有遮罩也沒有 title…圈出一個畫布…畫布外的上方再去呈現模擬網址列甚至是模擬上下頁按鈕…dialog 裡面的並存區域範例也是…
+打開任務詳情的那個 key value 的設計樣式,字體為何不是遵循 description list 的 ssot」
+
+逐條根因與修法:
+- **藍框**:story 用 raw `<input>`,Dialog 開啟自動聚焦第一個欄位 → 程式移焦 = 瀏覽器判要畫全域 `:focus-visible` 框。換成 DS `Input`(Field 家族:插入點 + 欄位邊框是它自己的 focus 樣式,滑鼠鍵盤共用,規則二第三列)。
+  **防線**:story hook R1 新增 A.5 —— 展示層 story 出現原生 `<button>/<input>/<textarea>/<select>` 就擋(asChild 觸發殼、sr-only 測試輔助、逐行豁免除外),兩條測試(擋 / 放行)。
+- **沒遮罩**:並存走 `modal={false}`,Radix 不畫 Overlay。加 `CoexistenceMask`(`lib/overlay-coexistence.ts`):`fixed inset-0` 遮罩,用 `clip-path: path(evenodd)` 在常駐節點的位置挖洞
+  (洞的座標以遮罩自己的盒子為原點 —— 第一版用視窗座標,遮罩住在有 transform 的畫布裡就斜切成三角;第二版把 Dialog 內容也挖了洞,開場動畫縮放中量到錯位的白框;都在截圖抓到後修)。
+  z 三層不變:遮罩 30 < 並存 modal 40 < agent 45 < 一般 modal 50。FileViewer 同一支。
+- **沒標題**:我寫 `<DialogHeader title="…" />`,這個 prop 不存在,標題就不渲染;DS 的用法是 `<DialogHeader><DialogTitle>…</DialogTitle></DialogHeader>`。三支 story 全改。
+- **畫布**:新 helper `stories-helpers/scene/simulated-browser.tsx` —— 上方工具列(上一頁 / 下一頁 / 重新整理 / 網址列,DS Button + Input)是說明用,下方畫布是擬真產品畫面;
+  畫布帶 `transform`,Dialog / FileViewer 新增 `portalContainer` prop 傳送進畫布,fixed 定位以畫布為準,modal 與遮罩不會跑出畫布。說明只放畫布下方的 caption。
+- **agent 頂天立地**:面板是畫布 flex 的直接子節點,撐滿畫布高度;便利貼式文字全部移除,說明改成 agent 自己的回覆內容(真實語氣)。
+- **key/value**:Dialog「標頭操作」與「標頭 tabs」兩處手刻 label/value 改 `DescriptionList orientation="horizontal"`;file-viewer / dialog / agent 三支並存 story 的 aside 全部換 DS 元件並做成真實的「評論側欄」。
+閘:`dialog-coexistence` / `agent-modal-coexistence` / `agent-url-registry-demo` / `overlay-shortcut-scope` 四支在新 story 上全綠;五張截圖人眼核對。

@@ -228,6 +228,23 @@ export const WithEndIcon = { args: { endIcon: <Icon /> } };
 '
 expect_pass_silent "4. R2 with @story-split-rationale marker → silent"
 
+# 5a. R1 A.5: 展示層 story 用原生 <button> → BLOCK exit 2(2026-09-08)
+run_hook "PreToolUse" "Write" "$STORIES_BTN" '
+export const Demo = { render: () => <button type="button" id="x" className="rounded-md border px-3 py-2">按我</button> };
+'
+expect_block "5a. R1 A.5 raw <button> in story → BLOCK" "A.5 raw form control"
+
+# 5b. R1 A.5: asChild 觸發殼 / sr-only 測試輔助 → 放行
+run_hook "PreToolUse" "Write" "$STORIES_BTN" '
+export const Demo = { render: () => (
+  <DropdownMenuTrigger asChild>
+    <button type="button" aria-label="帳號">A</button>
+  </DropdownMenuTrigger>
+) };
+export const Aid = { render: () => <button type="button" className="sr-only">之前</button> };
+'
+expect_pass_silent "5b. R1 A.5 asChild wrapper + sr-only aid → silent"
+
 # 5. R1 anatomy: raw <table> outside DataTable → BLOCK exit 2
 run_hook "PreToolUse" "Write" "$STORIES_BTN" '
 export const Default = () => (

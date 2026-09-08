@@ -154,6 +154,19 @@ Dialog 是容器，無整體 disabled / loading / empty 狀態——這些屬於
 
 ---
 
+## 並存(`persistentElements`)
+
+由來:代理原則 v14 條 A / B(`governance/planning/2026-09-06-agent-principles-v14.md`)—— 有自己 URL 的內容開著時,指定的常駐區域(代理面板、評論側欄)要**仍然可用**;它對宿主其餘部分仍然是 modal。
+
+- **怎麼開**:`<Dialog persistentElements={() => [panelEl]}>`;Root 自動走 Radix `modal={false}`(否則 Radix 的 `hideOthers(content)` 會把常駐區域一起關掉),DS 再用 `suppressOthers([content, ...persistent])` 把其餘一切抑制(`lib/overlay-coexistence.ts`)。
+- **遮罩**:Radix 在非模態不畫 Overlay,DS 自己畫 `CoexistenceMask` —— `fixed inset-0` 的遮罩,用 `clip-path: path(evenodd)` 在每個常駐節點的位置挖洞;洞裡沒有遮罩像素也沒有命中區,常駐區域照常可見可點;洞外點下去是「外部點擊」→ 關閉(modal 語意)。洞的座標以遮罩自己的盒子為原點(遮罩可能被傳送進帶 transform 的畫布)。
+- **層級**(2026-09-08 定):遮罩 `z-30` < 並存 modal 內容 `z-40` < 代理蓋板 `z-[45]` < 一般 modal `z-50`。沒有 URL 的確認框(不傳 persistentElements)維持一般 modal,蓋在常駐區域之上。
+- **Esc 與外部互動**:焦點在常駐區域內時的 Esc / pointer / focus 不算「框外」(`onPointerDownOutside` / `onFocusOutside` / `onInteractOutside` 對常駐節點 preventDefault),否則把焦點移進代理面板就會把對話框關掉。
+- **`portalContainer`**:Content 預設傳送到 body;story 的「模擬瀏覽器畫布」或產品的嵌入式畫布可傳一個帶 transform 的容器,`fixed` 定位以它為準,modal 與遮罩不會跑出畫布。
+- **閘**:`scripts/dialog-coexistence-invariant.mjs`(常駐區可聚焦可打字、其餘背景被抑制、預設路徑照舊隔離)、`scripts/agent-modal-coexistence-invariant.mjs`(Esc 分區)。
+
+---
+
 ## 常見誤解
 
 | 誤解 | 正解 |

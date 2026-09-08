@@ -2,7 +2,7 @@
 // code-quality-allow: file-size — composite 拼裝(Toolbar / ZoomInput / InfoPanel / Filmstrip + Dialog shell + renderer registry);拆檔會把 useState/useEffect/key handler 跨檔同步過於複雜
 import * as React from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { useOverlayCoexistence } from '@/design-system/lib/overlay-coexistence'
+import { useOverlayCoexistence, CoexistenceMask } from '@/design-system/lib/overlay-coexistence'
 import {
   X as XIcon,
   Download,
@@ -759,6 +759,8 @@ export interface FileViewerProps
    * ⚠️ 傳了它,Root 會走 `modal={false}`,並擋掉來自常駐區域的 outside dismiss。
    */
   persistentElements?: () => Element[]
+  /** Portal 目的地(同 Dialog):模擬瀏覽器畫布時傳入帶 transform 的容器。 */
+  portalContainer?: HTMLElement | null
   initialIndex?: number
   /** Controlled open state。與 `defaultOpen` 二擇一。 */
   open?: boolean
@@ -785,6 +787,7 @@ export interface FileViewerProps
 const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function FileViewer({
   files,
   persistentElements,
+  portalContainer,
   initialIndex = 0,
   open: openProp,
   defaultOpen,
@@ -1006,7 +1009,8 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
   // useControllable internal state 承載,Radix Esc / dismiss 經 setOpen 同步回 mirror。
   return (
     <DialogPrimitive.Root open={open} onOpenChange={setOpen} modal={!persistentElements}>
-      <DialogPrimitive.Portal>
+      <DialogPrimitive.Portal container={portalContainer ?? undefined}>
+        {persistentElements ? <CoexistenceMask keep={persistentElements} data-theme="dark" /> : null}
         {/* Overlay — FileViewer 固定深色氛圍,與 Dialog 共用 bg-overlay。
             **data-theme="dark"**(2026-04-30):Overlay 在 Portal 內、是 Content 的 sibling,
             不繼承 Content 內層的 dark 主題 → `--overlay` 默認 resolve 成 light theme α45 黑。
