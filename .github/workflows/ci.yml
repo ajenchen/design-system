@@ -233,6 +233,9 @@ jobs:
           # 登記測試裡需要 Chromium 的(2026-09-08 拆 job 後靜態 job 沒有瀏覽器,d16baf90 的 verify-static 因此紅):
           npm run test:devmode-geometry
           npm run test:header-tabs-slot-invariants
+          # 選單訊息列(2026-09-08 user 拍板):「沒有選項 / 載入中」都是一列 MenuItem 的列幾何(md 48 = 8 + 32 + 8),
+          # 列高 / 群組留白 / 置中 / 搜尋列與觸發點的轉圈尺寸與位置 / 不可互動,每條都量像素;對照組在 focus-deep-gates.yml。
+          npm run test:menu-message-row
       # Cloud sessions load the committed provider config as-is; the only two ways that config has
       # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)
       # both merged without any gate exercising them. These two commands bind cloud survivability

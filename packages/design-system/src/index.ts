@@ -660,7 +660,6 @@ export type {
 //   - components/DropdownMenu:floatingLayerClass
 //   - components/Field:FieldVariantInternal
 //   - components/Field:WithFieldVariantInternal
-//   - components/Field:getMenuListMinHeight
 //   - components/Sheet:handleSheetOpenAutoFocus
 //   - patterns/element-anatomy:ItemInlineAction
 //   - patterns/element-anatomy:ItemInlineActionButton

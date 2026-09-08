@@ -3,6 +3,7 @@
 // @renderer-symmetry-allow: 2026-07-08 WM 戰役 A 案回歸修正 — ReadonlyDisplay 現已消費 selectedItemRenderer(view bare-span / D-path / readonly / disabled 四分支),對齊 field-controls.spec.md 共享 contract (a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」。前 note「display→edit unify deferred」已兌現(值內容層);chrome 結構 unify(D-path)仍為 opt-in showDisplayEndIcon。
 import * as React from 'react'
 import { X, ChevronDown } from 'lucide-react'
+import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
@@ -129,13 +130,11 @@ export interface SelectProps
   /** 啟用搜尋（desktop 時 field 變 input，打字即篩選） */
   searchable?: boolean
   /** Loading state(2026-05-15 audit B fix;2026-07-04 Q3 拍板措辭修訂)。
-   *  Forward 給 SelectMenu primitive SSOT;spinner 只在**無可顯示選項時**佔 empty slot(cmdk CommandEmpty
-   *  機制)— 已有 stale options 時保留顯示不清空(對齊 MUI Autocomplete「only if there are no suggestions」)。
-   *  Trigger 不變(chevron 保留 user 隨時可點開)。*/
+   *  Forward 給 SelectMenu primitive SSOT;(2026-09-08 user 拍板定稿)觸發點右側、箭頭左邊放列圖示尺寸的
+   *  CircularProgress(每次抓資料都亮;react-select / Atlassian 的順序:清除 → 轉圈 → 箭頭);選單內只在
+   *  **無可顯示選項時**才渲載入訊息列 — 已有 stale options 時保留顯示不清空(MUI / react-select / Atlassian 共識)。
+   *  選單不關,chevron 保留 user 隨時可點開。*/
   loading?: boolean
-
-  /** Menu list 最小列數(空狀態 / 選項少時的視覺一致 reserve)。預設 3 — 選項 < 3 時顯式縮(如 And/Or 兩選項) */
-  minRows?: number
   /** Initial open state(uncontrolled)。對齊 Radix Popover defaultOpen canonical;DataTable cell-as-input
    *  click → 1 step open menu(Airtable / Notion canonical),consumer pass `defaultOpen` 達成。
    *  Note:Native Select(mobile)無 popover 概念,此 prop 僅 Custom path 生效。 */
@@ -495,7 +494,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     // 2026-07-08 A 案回歸修正:selectedItemRenderer 從丟棄名單移出 — Native path 的
     // ReadonlyDisplay(view/readonly/disabled)同樣消費值內容 renderer(contract (a) 4-mode
     // 共享,值內容不因 pointer type 而異);native <select> edit 路徑仍不消費(原生 option 無法客製 render)。
-    searchable: _searchable, groups: _groups, loading: _loading, minRows: _minRows, emptyText: _emptyText, creatable: _creatable, onCreate: _onCreate, createLabel: _createLabel, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer,
+    searchable: _searchable, groups: _groups, loading: _loading, emptyText: _emptyText, creatable: _creatable, onCreate: _onCreate, createLabel: _createLabel, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer,
     ...props }, ref) => {
     const fieldCtx = useFieldContext()
     const error = useResolvedFieldInvalid(errorProp)
@@ -553,6 +552,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
 
     const chevronEl = (
       <ItemSuffix className="relative z-10 pointer-events-none">
+        {_loading && <CircularProgress size={iconSize} className="shrink-0" />}
         <ChevronDown size={iconSize} className="text-fg-muted" aria-hidden />
       </ItemSuffix>
     )
@@ -617,7 +617,7 @@ NativeSelect.displayName = 'NativeSelect'
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
-  ({ mode, variant: variantProp, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, minRows, emptyText, creatable = false, onCreate, createLabel, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, style: styleProp,
+  ({ mode, variant: variantProp, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, emptyText, creatable = false, onCreate, createLabel, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, style: styleProp,
     // 2026-07-14 API 策展 D:mobile-only props(allowlist 註記)desktop 顯式丟棄 — div trigger 無原生
     // 對應,不 spread 進 DOM(對稱 NativeSelect 丟棄 custom-path-only props 的既有 pattern)
     autoFocus: _autoFocus, autoComplete: _autoComplete, ...rest }, ref) => {
@@ -731,6 +731,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
 
     const chevronEl = (
       <ItemSuffix>
+        {loading && <CircularProgress size={iconSize} className="shrink-0" />}
         <ChevronDown size={iconSize} className={cn('text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
       </ItemSuffix>
     )
@@ -894,7 +895,6 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
           loading={loading}
           emptyText={emptyText}
           size={size}
-          minRows={minRows}
           open={open}
           onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
           contentId={listboxId}

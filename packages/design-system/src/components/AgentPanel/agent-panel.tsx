@@ -507,7 +507,7 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
       title,
       logoState = 'still',
       historySearchPlaceholder = '搜尋對話', // i18n-allow: DS 預設文案,prop 可覆寫
-      historyEmptyText = '沒有符合的對話', // i18n-allow: DS 預設文案,prop 可覆寫
+      historyEmptyText = '沒有對話', // i18n-allow: DS 預設文案(2026-09-08 一句到底,對應 No options;沒有對話與搜尋無結果共用),prop 可覆寫
       conversations = [],
       activeConversationId,
       conversationEmpty = false,

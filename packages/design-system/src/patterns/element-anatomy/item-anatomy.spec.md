@@ -187,6 +187,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 - **Icon 尺寸控制**: 用 `ICON_SIZE` 常數 `{ sm: 16, md: 16, lg: 20 }` 對齊 `--field-height-*`,並**透過 `size` prop 直接傳給 Lucide icon**(不要用 CSS selector 如 `[&>svg]:size-4`——當 icon 被包在 `h-[1lh]` wrapper 裡時,`>` 直接子選擇器失效,Lucide 會 fallback 到 24px 預設)。MenuItem / TreeView / SidebarMenuButton 都這樣做,新元件照抄
 - **Row header(分組標題)**: 用 `MenuItem header={true}` 模式,`font-medium text-fg-muted pointer-events-none` + 與 items **完全相同**的 row geometry(同 px / 同 py / 同 text size)
 - **Row header 計數 suffix**(2026-07-08 WM 戰役 codify,user 拍板):分組標題帶總數時 = **標題靠左、純數字靠右**(space-between,即 suffix slot 位置 `ml-auto`)。數字規格走既有 suffix value canonical(下方 metadata 表「fg-muted、字體大小與 label 相同」)+ `font-normal` + `tabular-nums`;count = 0 不渲染。**禁**把 count 串進 label 字串相鄰放(「Unstarted (2)」— 6 家世界級無一家括號串接:Primer CounterLabel / Ant Badge / Atlassian Badge 皆結構化 slot);字串層(aria-label / 純文字匯出)可用括號形。互動導覽元素(tab / segmented / sidebar item)的計數仍走 `badge` slot(tabs.spec.md「badge 傳達計數」),不適用本條。
+- **Row message(訊息列,2026-09-08 user 拍板)**: 用 `MenuItem message={true}` 模式——選單裡「不是選項的列」(沒有結果 / 沒有選項 / 載入中)。與 Row header 同族:`text-fg-muted pointer-events-none` + 與 items **完全相同**的 row geometry;差別是**一般字重**、內容**置中**、可帶前綴槽(列圖示尺寸的 `CircularProgress` 等)。必住在 group 裡(見「Group auto-separation」);一列訊息與一列選項等高,不撐最小高度。owner `components/SelectMenu/select-menu.spec.md`「Empty state」;樣式 `components/Menu/menu-item.spec.md`「Message row(訊息列)」
 - **可收合 section header 組合 canonical**(2026-07-08 R3-7 拍板 + 2026-07-10 codify 進 DS;**組合非元件** — SectionHeader 留產品客製,但 layout 全消費本 canonical):(1) chevron = **title 後的 suffix inline action**(非 prefix、非獨立按鈕群);(2) 可選 description 與 title 間距用 `--item-gap-label-desc-*` token;(3) endSlot(操作鈕)只有 title 一行時垂直置中;(4) 同構標題列 ≥ 2 份必抽共用元件(WM `SectionHeader.tsx` 錨例 — Description / Attachments / Child work items 三份同構收斂)。手刻簽名(Chevron + justify-between + 可點且無共用元件)由 consumer 防線攔(escape `@section-header-ok:`)。
 
 ### Prefix 垂直對齊:`items-start` + `h-[1lh]` wrapper(**永遠這樣**,不要做例外)
@@ -288,7 +289,7 @@ Row 集合是**內容(content)**,不是區段(region)。加 py 到 row 集合會
 - **相鄰 group 之間用 `border-divider` 分隔**
 - **兩個 group 之間視覺 gap = 8(上 bottom)+ 8(下 top)= 16px + border**
 
-Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分隔。
+Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分隔。**訊息列也住在 group 裡**(沒有結果 / 載入中的 `MenuItem message` 由 `CommandEmpty` 用 `MenuGroup` 包起來,`components/Command/command.tsx:165-169`),所以 0 筆時的浮層邊界留白仍是同一份 8px,不另造。
 
 ### 兩種 CSS 實作(視覺等價,差別在 padding 住哪層)
 

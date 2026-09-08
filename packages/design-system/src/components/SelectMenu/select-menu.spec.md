@@ -67,8 +67,9 @@ Popover（浮動容器，handle 展開 / 定位）
   └─ Command（cmdk — 搜尋 + 鍵盤導覽）
        ├─ 搜尋框（DS `CommandInput`,與 CommandDialog / inline Command 共用同一份實作,2026-09-08 起;searchable 模式時顯示；選項 > 5 時建議開啟）
        ├─ CommandList（捲動區）
-       │    └─ CommandGroup（分組標題）
-       │         └─ MenuItem（選項 row，消費 item-layout）
+       │    ├─ CommandGroup（分組標題;0 筆選項的群組不畫,`select-menu.tsx:408`）
+       │    │    └─ MenuItem（選項 row，消費 item-layout）
+       │    └─ CommandEmpty（清單裡沒有任何可顯示的選項時才出現:MenuGroup 包一列 `MenuItem message` —「沒有選項」或載入列 `CommandLoading`,見「Empty state」「Loading」）
        └─ Footer（多選全選 checkbox，選填）
 ```
 
@@ -120,27 +121,37 @@ Popover（浮動容器，handle 展開 / 定位）
 
 ## Empty state
 
-搜尋無結果時顯示 `Empty` 元件，可透過 `emptyText` 自訂訊息（預設「沒有符合的選項」）。
+**2026-09-08 user 拍板**:選單裡「不是選項的列」一律走 MenuItem 的列幾何。搜尋無結果 / 打開就沒選項 → 一列 **`<MenuItem message>`**,由 `CommandEmpty` own(`command.tsx:155-172`:字串 children 自動包成 `MenuGroup` + `MenuItem message`),consumer 只傳文案;SelectMenu / AgentPanel 歷史清單 / CommandDialog / inline Command 全部同一份。
 
-**空狀態最小高度(SSOT,2026-09-08 落文)**:`--field-height-{size}` × `minRows`(預設 3)+ 16px(一個 group 的 `py-2` 上下,item-anatomy.spec.md「Group auto-separation」),由 `getMenuListMinHeight` 計算、套在 `CommandEmpty`(不是 CommandList —— 有結果時清單自然貼內容,2026-05-07 起)。它等於「同一 group 內 minRows 列單行項目」的幾何,讓 0 筆與 minRows 筆結果的浮層等高,不跳動;吃 CSS 變數所以 density 切換自動跟。`minRows ≤ 1` 時 Empty 自身 `py-6` + 一行字(≈ 66px)已超過,設定無效。**Empty 的置中與最小高度由 `CommandEmpty` own**(2026-09-08 起 SelectMenu / AgentPanel 歷史面板 / CommandDialog / inline Command 全部同一份,consumer 只傳文案)。
+**訊息列規格**(`menu-item.tsx:200-219`;樣式 owner `../Menu/menu-item.spec.md`「Message row(訊息列)」):
+- 非互動:`role="presentation"` + `pointer-events-none`;次要色 `text-fg-muted`;一般字重(medium 是群組標題的辨識訊號,訊息列不用);內容水平 + 垂直置中
+- 列幾何與選項**完全相同**(`ROW_PADDING_BY_SIZE`,`item-anatomy.tsx:145-149`:`py = (field-height − 1lh) / 2`;字級 sm/md `text-body`、lg `text-body-lg`),所以一列高 = `--field-height-{size}`(sm 28 / md 32 / lg 36,`tokens/uiSize/uiSize.css:23-26`)
+- 住在 `MenuGroup`(`py-2` 上下各 8px,`../Menu/menu-item.spec.md`「Group」):**md 浮層高 = 8 + 32 + 8 = 48px,與 1 筆結果等高**;sm 44 / lg 52。density 切換跟著 token 走
+- **沒有任何最小高度**:舊的 `minRows` / `getMenuListMinHeight` 已移除(`field-types.ts:88-90` 退役註解);0 筆與 1 筆一樣高,不撐 3 列
+- 不放圖示、**不用 `Empty` 元件**:Empty 是頁面 / 區塊層級「有解釋、可帶圖示與動作」的空狀態(`../Empty/empty.spec.md`「何時用」);選單裡的 0 筆只是一句提示
 
-- **Creatable 時**：即使搜尋無結果，仍顯示 create row 讓使用者補建選項（顯示條件見「Creatable」段）
-- **非 creatable**：顯示 emptyText 提示使用者修改搜尋詞
-- **SR 播報**（2026-07-05 D4）：empty 結果經 visually-hidden `role="status"` + `aria-live="polite"` live region 播報（cmdk CommandEmpty 是 `role="presentation"`，SR 使用者原本聽不到 0 結果）；loading 則由畫面內具 `aria-label="載入選項中"` 的 `role="status"` wrapper 播報，避免雙重 announcement。SSOT 在 SelectMenu 一處，Select / Combobox / PeoplePicker 全體受益。
+**文案**:一句到底、consumer 可用 `emptyText` 覆寫。SelectMenu 預設「沒有選項」(`select-menu.tsx:167`,對應 No options;打開就沒選項與搜尋無結果共用同一句);PeoplePicker 預設「沒有人員」(`../PeoplePicker/people-picker.spec.md`「搜尋」)。
+
+**歷史**(同一題四次換皮,錨在 `command.tsx:152`):2026-04-08 一行小字 → 04-10 撐 3 列 `minRows`(`field-types.ts:89`,當時只寫「視覺一致」)→ 04-16 改用 `Empty` 元件 → **09-08 訊息列**(本段)。世界級對照(2026-09-08 逐行實查原始碼):MUI Autocomplete 的 `noOptions` / `loading` 都是一個 `padding: '14px 16px'` + `text.secondary` 的單列文字([Autocomplete.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Autocomplete/Autocomplete.js) `AutocompleteNoOptions` / `AutocompleteLoading`);react-select 的 `NoOptionsMessage` / `LoadingMessage` 共用 `noticeCSS`:`textAlign: 'center'`、`neutral40`、`padding: 8px 12px`(`baseUnit` = 4,[Menu.tsx](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/components/Menu.tsx) + [theme.ts](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/theme.ts));Ant Design 的 `-item-empty` 直接 spread 選項列的 `genItemStyle`(`minHeight: optionHeight` = `controlHeight`),只把色換成 `colorTextDisabled`([dropdown.ts](https://github.com/ant-design/ant-design/blob/master/components/select/style/dropdown.ts) + [token.ts](https://github.com/ant-design/ant-design/blob/master/components/select/style/token.ts))。三家都是「一行字 + 自家一列的留白」,**沒有任何一家撐 3 列**;本 DS 取 Ant 的做法——0 筆 = 一列選項的幾何。
+
+- **Creatable 時**:即使搜尋無結果,仍顯示 create row 讓使用者補建選項(顯示條件見「Creatable」段)
+- **非 creatable**:顯示 emptyText 提示使用者修改搜尋詞
+- **SR 播報**(2026-07-05 D4;2026-09-08 搬進 Command):0 筆經 `CommandEmptyStatus`(visually-hidden `role="status"` + `aria-live="polite"`,`command.tsx:197-203`)播報 emptyText——訊息列本身與 cmdk CommandEmpty 都是 `role="presentation"`,SR 原本聽不到 0 結果;loading 則由可見的 `CommandLoading` 訊息列自帶 `role="status"` 播報文字,`CommandEmptyStatus` 在 loading 時不重複播(`command.tsx:201`)。SSOT 在 Command 一處,SelectMenu / Select / Combobox / PeoplePicker 全體受益。
 
 ---
 
-## Loading（2026-05-15 audit B fix, codify 2026-05-16 audit Dim 7+8）
+## Loading（2026-05-15 audit B 加;2026-09-08 user 改決定:兩處載入指示）
 
-非同步載入選項時，consumer 透過 `loading={true}` 控制：
+非同步載入選項時,consumer 傳 `loading={true}`(`select-menu.tsx:107`),SelectMenu 分兩處表達:
 
-- **Trigger 不變**：dropdown 隨時可開（user 看 chevron 不會被 disable）
-- **Dropdown 開啟時**（2026-07-04 Q3 拍板措辭修訂）：spinner 只在**無可顯示選項時**佔 empty slot，渲 panel-center `<div role="status" aria-label="載入選項中" className="flex items-center justify-center py-6"><CircularProgress size={48}/></div>`（cmdk `CommandEmpty` 機制）；**已有 options 時保留顯示不清空**，避免背景更新期間抹掉仍可用的 stale results
-- **CircularProgress** 使用 48px;named status wrapper own `py-6` 與置中，不經 Empty，避免把「正在載入」誤表達成「確定沒有」及 phantom icon gap
+- **(a) 搜尋列右側,每次抓資料都亮**:`CommandInput loading`(`command.tsx:82,95,110`)在搜尋框右側放列圖示尺寸的 `CircularProgress`(`ICON_SIZE[size]`:sm/md 16、lg 20),wrapper `aria-busy`,**仍可打字**——同 Input `loading` 的 canonical(`../Field/field-controls.spec.md`「Loading state」)。SelectMenu 於 `select-menu.tsx:385` 轉發。非 searchable 路徑沒有搜尋列,載入指示在 consumer 的觸發點:Select / Combobox / PeoplePicker 在 ChevronDown 左邊放同尺寸轉圈(`../Select/select.spec.md`「Loading」/ `../Combobox/combobox.spec.md`「Loading」)
+- **(b) 選單內,只在「清單裡沒有任何可顯示的選項」時**:Empty 槽渲 `<CommandLoading label={loadingText} />`(`select-menu.tsx:402-404`;`command.tsx:182-188`)= 與「沒有結果」同一種 `MenuItem message` 訊息列,前綴槽放列圖示尺寸的轉圈 + 可見文字 `loadingText`(預設「載入選項中」,`select-menu.tsx:168`,可覆寫),`role="status"` 直接播報文字。listbox 同時標 `aria-busy`(`select-menu.tsx:396`)
+- **Trigger 不變**:dropdown 隨時可開(user 看 chevron 不會被 disable)
+- **選單不關、舊選項不清空**:已有 options 時 (b) 不出現,列表照舊可選,避免背景更新期間抹掉仍可用的結果。MUI Autocomplete 只在 `renderedOptions.length === 0` 才渲 `loadingText`([Autocomplete.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Autocomplete/Autocomplete.js) `AutocompleteLoading` 分支);react-select `renderMenu` 先 `hasOptions()` 畫選項、沒選項才依 `isLoading` 渲 `LoadingMessage`([Select.tsx](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/Select.tsx) `renderMenu`)——兩家原始碼與本段行為同構
 
-本行為對齊 DS `empty.spec.md`「禁止事項」spinner-only loading 不用 Empty 的 SSOT（SelectMenu loading 用法 canonical row 見 `empty.spec.md`「現有消費者」表）。
+**2026-09-08 user 改決定**:原 2026-07-04 Q3 的「panel-center 48px `CircularProgress` + `py-6` named status wrapper」退役——載入列改走與「沒有結果」同一種訊息列(md 48px = 8 + 32 + 8,見「Empty state」),轉圈縮到列圖示尺寸;仍**不經 Empty**(`../Empty/empty.spec.md`「禁止事項」spinner-only loading 不用 Empty)。
 
-**消費**：Select / Combobox forward `loading` prop 到 SelectMenu（PeoplePicker 尚未暴露 / 轉發 `loading`，見 `people-picker.spec.md`「邊界案例」），本元件封裝 named status + CircularProgress 組合。
+**消費**:Select / Combobox / PeoplePicker 都轉發 `loading`(PeoplePicker 2026-09-08 補,`../PeoplePicker/people-picker.spec.md`「Loading」);本元件封裝 (a)(b) 兩處。
 
 ---
 
@@ -158,8 +169,8 @@ Popover（浮動容器，handle 展開 / 定位）
 
 - **Disabled option**:individual MenuItem 透過 `disabled?: boolean` 控制(SelectMenu primitive option contract)。視覺繼承 `MenuItem` SSOT:text → `text-fg-disabled`(M24)、無 hover bg、`aria-disabled="true"`、Enter / click 不觸發 onChange、鍵盤導覽自動 skip。
 - **Disabled trigger**:trigger 由 consumer(Select / Combobox / PeoplePicker)的 `disabled` prop own,本元件不獨立 disable trigger。
-- **Loading**:已 codify(見「Loading」段),`loading=true` 且無可顯示選項時 empty slot 渲 panel-center named status + CircularProgress 48px(stale options 保留)。
-- **Empty**:已 codify(見「Empty state」段),搜尋無結果 + 非 creatable 時渲 emptyText;creatable 時保留 create row(可鍵盤選取)。
+- **Loading**:已 codify(見「Loading」段),搜尋列 / 觸發點右側轉圈每次都亮;`loading=true` 且無可顯示選項時 Empty 槽渲 `CommandLoading` 訊息列(列圖示尺寸轉圈 + loadingText;舊選項保留、選單不關)。
+- **Empty**:已 codify(見「Empty state」段),搜尋無結果 + 非 creatable 時渲一列 `MenuItem message` 的 emptyText(與 1 筆結果等高,無最小高度);creatable 時保留 create row(可鍵盤選取)。
 - **Creatable + search 與既有選項完全同名**(忽略大小寫):create row 隱藏(防重複建立,`select-menu.tsx:261-266`);選取既有選項為唯一路徑。
 - **Dark mode**:走 Popover / MenuItem semantic token 自動 adapt。
 - **Density**:row height 由 `MenuItem` SSOT 控(sm/md/lg);SelectMenu 不獨立 own density。
@@ -205,7 +216,7 @@ SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem 
 - `../Menu/menu-item.spec.md` — 選項 row 的 item-layout 共用規則（SelectMenu 消費 MenuItem）
 - `../Popover/popover.tsx` — 浮動容器（SelectMenu 消費）
 - `../Command/command.tsx` — cmdk 搜尋 + 鍵盤導覽（SelectMenu 消費）
-- `../Empty/empty.spec.md` — 搜尋無結果的 empty state
+- `../Empty/empty.spec.md` — 2026-09-08 起 SelectMenu **不再消費 Empty**(選單訊息列走 MenuItem message);留此連結只為近親分界(Empty = 頁面 / 區塊層級空狀態)
 - `../Select/select.spec.md` — 主要消費者之一（searchable 時切換到 SelectMenu）
 - `../Combobox/combobox.spec.md` — 主要消費者之一（searchable 多選時切換到 SelectMenu）
 - `../PeoplePicker/people-picker.spec.md` — 永遠使用 SelectMenu 的消費者
@@ -213,7 +224,7 @@ SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem 
 
 ## A11y 預設
 
-**ARIA / Pattern**:基於 `cmdk` library a11y(combobox / listbox / option role + aria-activedescendant)。詳 [cmdk a11y](https://cmdk.paco.me/#accessibility)。選項 row 的內層 `MenuItem` 傳 `role="presentation"`(cmdk CommandItem 是唯一 option 節點,避免 option 巢狀 option + 內外 `aria-selected` 語意相反;鏡射 DropdownMenu canonical,2026-07-05 D4)。分組標題走 cmdk `CommandGroup heading`(自動產 `cmdk-group-heading` id,選項容器 `role="group"` + `aria-labelledby` 指向之,AT 可感知);combobox accessible name 來自 `Command label`(= `searchAriaLabel`,default「搜尋選項」,僅 searchable 時傳)，與可見 `searchPlaceholder` 分離；listbox 容器經 cmdk `List label` 預設「選項」取代 cmdk 內建英文 "Suggestions"(2026-07-06)。多選 footer 全選列為 `role="checkbox"` + `aria-checked`(indeterminate → `"mixed"`)。空狀態 / loading 經 visually-hidden `role="status"` + `aria-live="polite"` live region 對 SR 播報(cmdk CommandEmpty 是 `role="presentation"`,SR 原本聽不到;2026-07-05 D4)。
+**ARIA / Pattern**:基於 `cmdk` library a11y(combobox / listbox / option role + aria-activedescendant)。詳 [cmdk a11y](https://cmdk.paco.me/#accessibility)。選項 row 的內層 `MenuItem` 傳 `role="presentation"`(cmdk CommandItem 是唯一 option 節點,避免 option 巢狀 option + 內外 `aria-selected` 語意相反;鏡射 DropdownMenu canonical,2026-07-05 D4)。分組標題走 cmdk `CommandGroup heading`(自動產 `cmdk-group-heading` id,選項容器 `role="group"` + `aria-labelledby` 指向之,AT 可感知);combobox accessible name 來自 `Command label`(= `searchAriaLabel`,default「搜尋選項」,僅 searchable 時傳)，與可見 `searchPlaceholder` 分離；listbox 容器經 cmdk `List label` 預設「選項」取代 cmdk 內建英文 "Suggestions"(2026-07-06)。多選 footer 全選列為 `role="checkbox"` + `aria-checked`(indeterminate → `"mixed"`)。空狀態經 visually-hidden `role="status"` + `aria-live="polite"` live region(`CommandEmptyStatus`)對 SR 播報,loading 由可見的 `CommandLoading` 訊息列 `role="status"` 播報(cmdk CommandEmpty 與訊息列都是 `role="presentation"`,SR 原本聽不到;2026-07-05 D4,2026-09-08 搬進 Command)。
 
 **Keyboard 行為**:
 

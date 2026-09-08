@@ -485,7 +485,7 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 - **空狀態(兩態,G fix 2026-05-04 v2)**:initial mount 且 value 空且 `maxConditions` 尚有容量 → auto-add 1 條空 condition row(field 未選 → operator / value 自動 disabled;讓 user 直接看到 row shape,不必先點 CTA;useRef gate 只 mount 一次);`maxConditions=0` 不 auto-add。user 手動刪光 → 只顯 inline `+ 加篩選` CTA、不 re-add，尊重已明確執行的清空意圖
 - **CTA 位置**:緊貼最後一條 row(**廢 SurfaceFooter**),條件與「加入」屬同一語境;root-level「加篩選 / 加入篩選器」用 `tertiary`(輕量但有邊界,符合 root-CTA 重量),group 內「加入巢狀篩選」才用 `text`(更輕,inline 於 group 內)
 - **Trash / 刪除**:row 是 form-control row → text Button(non Inline Action,違 item-anatomy canonical)
-- **And/Or Select** `minRows={2}`(2 選項顯式縮 menu 高度);**Where padding** `px-[var(--field-px)]` align Field
+- **And/Or Select**:不再需要縮選單高度(2026-09-08 起選單 0 筆走與選項等高的訊息列、無最小高度,舊 `minRows` 已退役);**Where padding** `px-[var(--field-px)]` align Field
 - Header refresh icon:`value !== defaultValue` 顯;ButtonDivider 串接 close X(對齊欄位顯示 chrome canonical)
 - **Relative date 群組**:`DATE_RELATIVE_GROUPS` Past / Current / Future,走 `<Select groups>`
 - **Labels / i18n**:所有 panel-owned 可見文字與 accessible name 經 `labels`；operator 與 relative-date maps 是 nested partial override。Column header / option label 仍由 consumer 的 `ColumnDef` 提供，不由 panel 翻譯。

@@ -106,6 +106,13 @@ export interface MenuItemProps
   /** 作為群組標題（不可選，font-medium，fg-muted） */
   header?: boolean
   /**
+   * 訊息列(2026-09-08 user 拍板):選單裡「不是選項」的提示 —— 沒有結果 / 沒有選項 / 載入中。
+   * 與 `header` 同族:非互動(`role="presentation"`、`pointer-events-none`)、次要色、**與選項完全相同的列幾何**
+   * (item-anatomy.spec.md「Row header」),差別是字重一般(medium 是群組標題的辨識訊號)、內容水平置中,
+   * 可帶前綴槽(`startContent`,例如列圖示尺寸的 CircularProgress)。owner:select-menu.spec.md「Empty state / Loading」。
+   */
+  message?: boolean
+  /**
    * Label 最大行數(line-clamp 截斷,超過顯示 ellipsis)。
    *
    * - `undefined`(預設 prop 值未傳)→ 套用元件預設 `1`(單行截斷,符合選單快速掃視需求)
@@ -161,6 +168,7 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
       endContent,
       disabled,
       header,
+      message,
       size,
       labelMaxLines = 1,
       descMaxLines = 1,
@@ -187,6 +195,28 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
       : 'inline'
 
     const hasPrefix = !!StartIcon || !!avatar || !!startContent || checkbox
+
+    // ── Message variant(沒有結果 / 沒有選項 / 載入中)──
+    if (message) {
+      return (
+        <div
+          ref={ref}
+          className={cn(
+            menuItemVariants({ size }),
+            'items-center justify-center text-fg-muted cursor-default pointer-events-none',
+            className,
+          )}
+          role="presentation"
+          {...props}
+        >
+          {startContent && (
+            <span className="shrink-0 flex items-center" style={{ width: iconPx, height: iconPx }}>{startContent}</span>
+          )}
+          {StartIcon && <StartIcon size={iconPx} className={cn('shrink-0', startIconClassName)} aria-hidden />}
+          <span className="min-w-0 truncate">{children}</span>
+        </div>
+      )
+    }
 
     // ── Header variant ──
     if (header) {

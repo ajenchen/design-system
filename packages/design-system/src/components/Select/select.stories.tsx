@@ -234,6 +234,46 @@ export const Creatable: Story = {
   },
 }
 
+/* ── 載入中 / 沒有選項(開啟態快照:defaultOpen 讓瀏覽器閘不用點擊就看得到)── */
+// Stripe 付款設定「結算幣別」:幣別清單由後端依帳戶地區回傳
+const currencyOptions = [
+  { value: 'twd', label: 'TWD 新台幣' },
+  { value: 'usd', label: 'USD 美元' },
+  { value: 'jpy', label: 'JPY 日圓' },
+  { value: 'eur', label: 'EUR 歐元' },
+  { value: 'gbp', label: 'GBP 英鎊' },
+]
+
+export const LoadingFirstOpen: Story = {
+  name: '載入中(首次開啟)',
+  parameters: { docs: { description: { story: 'Stripe 付款設定的「結算幣別」第一次展開,幣別清單還沒從後端回來:觸發點右側轉圈,選單裡只有一列「載入選項中」訊息列,與一筆結果等高。' } } },
+  render: () => (
+    <div className="max-w-xs">
+      <Select options={[]} value={null} onChange={() => {}} searchable loading defaultOpen placeholder="選擇結算幣別…" aria-label="結算幣別(首次載入)" />
+    </div>
+  ),
+}
+
+export const LoadingWithStaleOptions: Story = {
+  name: '載入中(保留舊清單)',
+  parameters: { docs: { description: { story: '幣別清單已經有五筆,使用者改了關鍵字、後端重新搜尋中:舊清單留著不清空、選單不關,只靠觸發點右側的轉圈提示還在抓資料。' } } },
+  render: () => (
+    <div className="max-w-xs">
+      <Select options={currencyOptions} value="twd" onChange={() => {}} searchable loading defaultOpen placeholder="選擇結算幣別…" aria-label="結算幣別(重新搜尋中)" />
+    </div>
+  ),
+}
+
+export const NoOptions: Story = {
+  name: '沒有選項',
+  parameters: { docs: { description: { story: 'Jira 建立議題時的 Sprint 欄位,專案還沒建立任何 Sprint:打開就是一列「沒有選項」訊息列,與一筆結果等高;不放圖示、也不用整塊空狀態。' } } },
+  render: () => (
+    <div className="max-w-xs">
+      <Select options={[]} value={null} onChange={() => {}} defaultOpen placeholder="選擇 Sprint" aria-label="Sprint(沒有選項)" />
+    </div>
+  ),
+}
+
 /* ── DataTable 整合 ── */
 export const InDataTable: Story = {
   name: 'DataTable 整合',

@@ -39,7 +39,7 @@ components/
 │   ├── field.tsx               ← Field 佈局容器(label + control + desc + error)
 │   ├── field.spec.md           ← Field 佈局容器設計原則
 │   ├── field-controls.spec.md  ← 本文件
-│   ├── field-types.ts          ← FieldMode / FieldVariant 共用型別 + getMenuListMinHeight(InlineActionConfig 住 patterns/element-anatomy/item-anatomy.tsx)
+│   ├── field-types.ts          ← FieldMode / FieldVariant 共用型別(InlineActionConfig 住 patterns/element-anatomy/item-anatomy.tsx;舊 getMenuListMinHeight 2026-09-08 退役)
 │   └── field-wrapper.tsx       ← 共用 wrapper 樣式、bareInputStyles、EMPTY_DISPLAY
 ├── Input/                      ← Input(含 mode="view";與 Field 平行的兄弟目錄,以下同)
 ├── NumberInput/                ← NumberInput(含 mode="view" + formatNumber)
@@ -112,6 +112,7 @@ Loading **不是第四個 mode**,是 `edit` mode 的子狀態,語義 = **editabl
 - API:`loading?: boolean` prop
 - 內部:`loading=true` → wrapper `aria-busy="true"` + **endAction slot 自動塞 `<CircularProgress size={iconSize}/>`**(與 `endAction` prop 互斥,loading 優先)
 - input **不進 readonly / disabled**,保持可編輯
+- Select / Combobox / PeoplePicker(trigger 不是 input):轉圈放 ChevronDown 左邊的 suffix 位置(`select.tsx:734` / `combobox.tsx:847`),選單內另有「僅空清單時」的載入列;浮層內的搜尋列 `CommandInput loading` 同 Input 走右側槽(2026-09-08,SSOT `../SelectMenu/select-menu.spec.md`「Loading」)
 - CircularProgress 尺寸:程式化 `iconSize`(sm/md=16, lg=20),消費者不用再傳
 - CircularProgress 顏色:走預設 `text-primary`(表達「正在處理,請注意」)
 - startIcon(Search 等語義 icon)**不受 loading 影響**,保留原位置
@@ -386,7 +387,7 @@ col.accessor('status', {
 **(b) Placeholder vocabulary**(3 props 對 3 UI state,**不可混用**):
 - `placeholder` — trigger empty(沒選值,例「請選擇人員」)— Ant/Polaris/Carbon canonical
 - `searchPlaceholder` — search input hint(例「搜尋人員…」)— Ant `searchPlaceholder`
-- `emptyText`/`noResultsText` — filtered menu 無結果(例「沒有符合的人員」)— Ant `notFoundContent` / Material X `localeText.noResultsOverlayLabel`
+- `emptyText`/`noResultsText` — filtered menu 無結果(例「沒有人員」)— Ant `notFoundContent` / Material X `localeText.noResultsOverlayLabel`
 
 **禁**:wrapper 把 `emptyText`(search-empty)silent forward 成 `emptyPlaceholder`(trigger-empty);**Combobox `emptyPlaceholder` deprecated**,保留 1 cycle fallback,future `placeholder` 唯一 trigger source。Hook `check_field_controls_contracts.sh` (contract b) 機械強制。
 

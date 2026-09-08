@@ -227,8 +227,7 @@ function SortRow({
         <Select size="sm" aria-label="排序欄位" options={optionsForRow} value={sort.id} onChange={onChangeId} />
       </div>
       <div className="w-32 shrink-0">
-        {/* minRows={2} — 升冪/降冪只 2 選項,顯式縮 menu 高度(Q5) */}
-        <Select size="sm" aria-label="排序方向" options={DIRECTION_OPTIONS} value={sort.desc ? 'desc' : 'asc'} onChange={onChangeDir} minRows={2} />
+        <Select size="sm" aria-label="排序方向" options={DIRECTION_OPTIONS} value={sort.desc ? 'desc' : 'asc'} onChange={onChangeDir} />
       </div>
       {/* Trash 用 text Button(Q4 對齊 filter panel)— form-control row 必 Field 同高 */}
       <Button variant="text" size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={onRemove} />

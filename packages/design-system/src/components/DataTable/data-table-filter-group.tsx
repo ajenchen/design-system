@@ -81,7 +81,6 @@ function ConjunctionLabel({
     return <div className="w-20 shrink-0 text-body text-fg-secondary px-[var(--field-px)] self-center">{label}</div>
   }
   // index === 1:可切換的 AND/OR Select
-  // minRows={2} — And/Or 2 選項,顯式縮 menu 高度避免 reserve 3 row 空白(Q5)
   return (
     <div className="w-20 shrink-0">
       <Select
@@ -92,7 +91,6 @@ function ConjunctionLabel({
         ]}
         value={conjunction}
         onChange={(v) => onChange(v as Conjunction)}
-        minRows={2}
         aria-label={labels.conjunctionAriaLabel}
       />
     </div>

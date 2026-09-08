@@ -202,6 +202,16 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 - 不可選、不可 hover
 - 尺寸與一般 item 相同
 
+### Message row(訊息列,2026-09-08 user 拍板)
+
+`message` prop(`menu-item.tsx:114,200-219`)讓 item 變為選單裡「不是選項」的提示列——沒有結果 / 沒有選項 / 載入中:
+- **用途**:搜尋無結果、打開就沒選項、清單為空時的載入中。owner:`../SelectMenu/select-menu.spec.md`「Empty state」「Loading」
+- **樣式,與 header 的差異**:同樣 `text-fg-muted`、非互動(`role="presentation"` + `pointer-events-none`)、與一般 item **完全相同的列幾何**(`ROW_PADDING_BY_SIZE`,列高 = `--field-height-{size}`);差別是**一般字重**(medium 是群組標題的辨識訊號)、內容**水平置中**(`items-center justify-center`)、可帶**前綴槽**(`startContent` / `startIcon`,節點尺寸 `ICON_SIZE[size]`,例如載入列的 `CircularProgress`)
+- **必住 `MenuGroup`**:訊息列不自帶邊界留白,由群組的 `py-2` 提供(`item-anatomy.spec.md`「Group auto-separation」)——md 一列訊息 = 8 + 32 + 8 = 48px,與 1 筆選項等高;沒有任何最小高度
+- **非互動**:不可選、不可 hover、不進 cmdk / Radix 導覽;SR 播報由外層 live region 或載入列自帶的 `role="status"` 負責(`../Command/command.spec.md`「邊界案例」Loading / Empty)
+- **消費者**:`CommandEmpty`(字串 children 自動包成訊息列)/ `CommandLoading`(前綴轉圈 + label,`role="status"`),`../Command/command.tsx:155-188`;SelectMenu / Select / Combobox / PeoplePicker / AgentPanel 歷史清單 / CommandDialog 經 Command 消費
+- **禁**:不放裝飾圖示(前綴槽只放狀態指示,如轉圈)、不用 `Empty` 元件(Empty 是頁面 / 區塊層級空狀態)、不手刻 `items-center justify-center` / 最小高度(hook `check_pattern_invariants.sh` C.7)
+
 ---
 
 ## Footer（多選）
@@ -218,7 +228,7 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 - ❌ 無 `description` 時不可使用 > 24px 的 avatar
 - ❌ disabled item 不可有 hover 效果
 - ❌ disabled item 內的子元件不可保持 enabled 外觀——文字 / `startIcon` 套 `fg-disabled`、`checkbox` 用自身 `disabled` 樣式、`tag` / `endContent` / `startContent` 套 `opacity-disabled`（`avatar` 在 MenuItem 內維持原樣，因 Avatar 僅在 disabled Field wrapper context 內自 dim）
-- ❌ header item 不可被選中
+- ❌ header / message item 不可被選中
 - ❌ 不在 item 內放獨立互動元素（如 Button）——item 本身就是互動單位
 
 ---
@@ -238,6 +248,7 @@ Menu item 的 prefix icon 跟 label 同色（foreground），不是 fg-muted。P
 
 - `../SelectMenu/select-menu.tsx` — 下拉選單浮層
 - `../DropdownMenu/dropdown-menu.tsx` — 操作選單
+- `../Command/command.tsx` — CommandItem / CommandGroup 標題(`header`)/ CommandEmpty 與 CommandLoading 訊息列(`message`)
 - 未來：ContextMenu、CommandPalette
 
 ### 近親分界

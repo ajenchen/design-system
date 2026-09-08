@@ -13,7 +13,7 @@ benchmark:
 
 # Empty 設計原則
 
-**空狀態視覺元件**——容器內沒有內容時的居中提示。Table、SelectMenu、Combobox、Page section 等所有需要空狀態的元件統一消費。
+**空狀態視覺元件**——容器內沒有內容時的居中提示。Table、Page section 等需要空狀態的元件統一消費(下拉選單的 0 筆**不是** Empty 的場景,見「何時不用」)。
 
 ## 定位
 
@@ -28,7 +28,6 @@ benchmark:
 ## 何時用
 
 - **Table / list / grid 空狀態**：DataTable 查無資料、搜尋無結果
-- **SelectMenu / Combobox 下拉空**：「無選項」「找不到符合的項目」
 - **Page section 無內容**：dashboard widget 暫無資料、設定頁未建立任何項目
 - **初次引導**：讓使用者首次使用時知道「這裡會放什麼」+ 有 CTA 建立
 - **容器級無權限提示**（2026-07-04 Q7 拍板）：卡片 / 區塊 / 面板內容因權限不可見 — **必附 request-access 類 action**（對齊 Atlassian「Request access」empty state 官方範例 + Carbon error-management scenario）；整頁級 403 / 404 仍禁用（→ 專屬錯誤頁面，見「何時不用」）
@@ -38,6 +37,7 @@ benchmark:
 | 場景 | 改用 | 原因 |
 |------|------|------|
 | Loading 中(資料還沒來) | `Skeleton` / `CircularProgress` | Empty 是「確定沒有」,Loading 是「還沒確定」 |
+| 下拉選單 0 筆 / 搜尋無結果(SelectMenu / Select / Combobox / PeoplePicker / Command) | 一列 `MenuItem message`(`CommandEmpty` own) | 選單裡的 0 筆只是一句提示,沒有解釋、圖示與動作;走選項的列幾何、與 1 筆等高(`../SelectMenu/select-menu.spec.md`「Empty state」,2026-09-08) |
 | 錯誤 / 失敗狀態 | `Alert` + 重試按鈕 | Error 需要明確告知「發生什麼問題」+ 解決途徑，Empty 是中性提示 |
 | 整頁級別的 404 / 無權限 | 專屬錯誤頁面 | Empty 是容器內提示，整頁錯誤需要完整頁面佈局 |
 | Disabled 狀態 | 禁用元件本身 | Empty 是「沒東西」，disabled 是「不能操作」 |
@@ -66,7 +66,7 @@ benchmark:
 - **Title → Description**:緊密配對(同資訊塊,對齊 item-layout canonical 的 label ↔ desc gap)
 - **Description → Action**:資訊 → 行動的視覺暫停,引導使用者注意 CTA
 
-Outer padding 由 **consumer 容器** 決定(Table 空狀態需較大留白、SelectMenu dropdown 較緊湊、Page-level 最寬鬆)。
+Outer padding 由 **consumer 容器** 決定(Table 空狀態需較大留白、Page-level 最寬鬆)。
 
 ## Typography
 
@@ -134,7 +134,7 @@ Empty primitive 不自帶 role；consumer 擁有 table、search region 或 initi
 // Table 空狀態(最簡)——文案仍點出「缺什麼資料」,避免抽象的「無資料」(見「禁止事項」)
 <Empty description="還沒有訂單" />
 
-// SelectMenu 無結果
+// 搜尋頁 / 篩選後的列表無結果(下拉選單的 0 筆不用 Empty,走 MenuItem message)
 <Empty icon={SearchX} description="找不到符合的結果" />
 
 // Page 首次引導(完整 slots)
@@ -164,8 +164,8 @@ Empty primitive 不自帶 role；consumer 擁有 table、search region 或 initi
 | 元件 | 消費方式 | Padding 落點 |
 |---|---|---|
 | DataTable | 外層 `<div className="flex-1 flex items-center justify-center py-12">` 包 `<Empty description={emptyState} />`(有框置中) | wrapper div(非 Empty className) |
-| SelectMenu | 無結果時 `<Empty description={emptyText} className="py-6" />`;spinner-only loading 改由具 accessible name 的 `role="status"` wrapper 包 `<CircularProgress size={48}/>` | Empty className / loading wrapper |
-| Combobox | 透過 SelectMenu(dropdown 即 SelectMenu primitive)→ 無結果時顯 SelectMenu 的 `<Empty>` | 同 SelectMenu |
+| SelectMenu | **不再消費 Empty**(2026-09-08):選單訊息列走 `MenuItem message`,由 `CommandEmpty` own(`../SelectMenu/select-menu.spec.md`「Empty state」);spinner-only loading 走 `CommandLoading` 訊息列(列圖示尺寸轉圈) | —(無 Empty) |
+| Select / Combobox / PeoplePicker | 透過 SelectMenu → 同上,不消費 Empty | — |
 
 ## 禁止事項
 
@@ -180,7 +180,7 @@ Empty primitive 不自帶 role；consumer 擁有 table、search region 或 initi
 Empty 是 **pure layout primitive**(排列 icon / title / description / action 成居中垂直堆疊),不是 variant-driven 元件,也無互動狀態:
 
 - **無 ColorMatrix**:Empty 自身不帶任何色彩,bg transparent,text color 全部走 semantic token(`text-foreground` title / `text-fg-secondary` description-with-title / `text-fg-muted` 孤身 description / `text-fg-disabled` disabled context)。Avatar icon 的色彩由 consumer 透過 `<Avatar color="...">` 決定,非 Empty 層級 variant。
-- **無 SizeMatrix**:Empty 無 `size` prop,垂直 padding 由 consumer 容器決定(Table `py-12` / SelectMenu `py-6` / Page `py-16`),固定間距不隨 density 變(展示性元件,見本 spec「間距」段)。
+- **無 SizeMatrix**:Empty 無 `size` prop,垂直 padding 由 consumer 容器決定(Table `py-12` / Page `py-16`),固定間距不隨 density 變(展示性元件,見本 spec「間距」段)。
 - **無 StateBehavior**:Empty 是非互動展示元件,無 hover / focus / active / selected 互動狀態。CTA button 的互動狀態屬 Button 層級,不屬 Empty。**唯一例外是 disabled context state**(`disabled?: boolean` prop):非互動狀態,但元件支援——disabled 時 title / description 轉 `text-fg-disabled`、icon glyph 轉 fg-disabled(供 FileUpload disabled 等情境消費),不影響既有 consumer(預設 false)。
 
 **Inspector**:提供互動切換式 Inspector(右側 Controls 面板切換 icon / title / description / action),讓 consumer 即時查看 Empty 在不同 slot 組合下的呈現——slot 組合(description only → full)是 Empty 唯一的關鍵決策。

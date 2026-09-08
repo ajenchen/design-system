@@ -3,6 +3,7 @@
 // code-quality-allow: file-size — Combobox 含 NativeCombobox/CustomCombobox/useOverflowCount/OverflowTagList/ComboboxTagStack 5 子元件 + 共用 helpers,split-into-files 會破壞 measurement closures + 重複 type definitions。
 import * as React from 'react'
 import { X, ChevronDown } from 'lucide-react'
+import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
@@ -403,7 +404,7 @@ export interface ComboboxProps {
   /** Loading state(2026-05-15 audit B fix per user verbatim「dropdown 隨時可開,讀取在 panel 中間 CircularProgress」)。
    *  Forward 給 SelectMenu primitive SSOT;spinner 只在無可顯示選項時佔 CommandEmpty slot 顯 CircularProgress
    *  (已有 options 保留顯示,不取代)。Trigger 不變(user 隨時可開)。
-   *  對齊 MUI Autocomplete「loading 只在無 suggestions 時顯 loadingText」+ Field SSOT + Empty 元件 compose。*/
+   *  對齊 MUI Autocomplete「loading 只在無 suggestions 時顯 loadingText」+ Field SSOT;2026-09-08 定稿:觸發點右側轉圈 + 選單內僅空清單時訊息列(不經 Empty)。*/
   loading?: boolean
   /** 搜尋框位置：menu（浮層內，預設）或 trigger（inline input） */
   searchIn?: 'menu' | 'trigger'
@@ -840,7 +841,13 @@ function CustomCombobox({
     return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
   }
 
-  const chevronEl = <ChevronDown size={iconSize} className={cn('shrink-0 text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
+  // loading(2026-09-08 user 拍板):觸發點右側、箭頭左邊放列圖示尺寸的轉圈(react-select / Atlassian 順序:清除 → 轉圈 → 箭頭)
+  const chevronEl = (
+    <>
+      {loading && <CircularProgress size={iconSize} className="shrink-0" />}
+      <ChevronDown size={iconSize} className={cn('shrink-0 text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
+    </>
+  )
 
   const trigger = (
     <div

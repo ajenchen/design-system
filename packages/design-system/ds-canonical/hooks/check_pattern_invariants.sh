@@ -158,7 +158,8 @@ EOF
 fi
 
 # ── C.7 CommandEmpty 手刻簽名(P0 BLOCK exit 2;2026-09-08)────────────────────
-# 空狀態的置中 / 最小高度 / Empty 包裝由 CommandEmpty own(select-menu.spec.md「Empty state」)。
+# 空狀態由 CommandEmpty own(select-menu.spec.md「Empty state」,2026-09-08 定稿):MenuGroup + 一列 MenuItem message,
+# 不經 Empty、沒有任何最小高度(舊 minRows / getMenuListMinHeight 已退役)。
 # 2026-09-08 之前 SelectMenu、AgentPanel 各手刻一份、Command 自家 story 是裸文字 —— 三種長相(user 抓到)。
 # 攔:`<CommandEmpty` 標籤內出現 items-center / justify-center / minHeight,或它的下一行手放 <Empty。
 # 例外:行尾 `// @command-empty-handcraft-ok: <reason>`
@@ -173,9 +174,10 @@ if ! grep -q '@command-empty-handcraft-ok' <<<"$NEW_CONTENT"; then
 偵測到在 CommandEmpty 上手刻置中 / 最小高度 / Empty:
 $SUSPECT_C7
 
-空狀態的長相由 CommandEmpty own(字串 children 自動包 Empty、flex 置中、getMenuListMinHeight);
-consumer 只傳文案:<CommandEmpty size={size} minRows={minRows}>{emptyText}</CommandEmpty>
-loading 放 <CommandLoading label=…/> 當 children。SSOT:select-menu.spec.md「Empty state」。
+空狀態的長相由 CommandEmpty own:MenuGroup 包一列 MenuItem message(非互動、次要色、字級同選項、置中),
+不經 Empty、沒有任何最小高度(舊 minRows / getMenuListMinHeight 已退役,0 筆與 1 筆結果等高);
+consumer 只傳文案:<CommandEmpty size={size}>{emptyText}</CommandEmpty>
+loading 放 <CommandLoading label=…/> 當 children(同一種訊息列 + 前綴轉圈)。SSOT:select-menu.spec.md「Empty state」「Loading」。
 例外:行尾 \`// @command-empty-handcraft-ok: <reason>\`
 
 EOF

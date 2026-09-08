@@ -76,7 +76,8 @@ export const Overview: Story = {
                 ['people', 'PersonValue[]', '[]', '可選人員清單(dropdown 顯示)'],
                 ['placeholder', 'string', "'請選擇人員'", 'trigger 未選值提示'],
                 ['searchPlaceholder', 'string', "'搜尋人員…'", '搜尋框 placeholder'],
-                ['emptyText', 'string', "'沒有符合的人員'", '搜尋無結果提示'],
+                ['emptyText', 'string', "'沒有人員'", '選單裡沒有可顯示人員時的訊息列文案(打開就沒人員與搜尋無結果共用;一句到底、可覆寫)'],
+                ['loading', 'boolean', 'false', '載入中:轉發給底層 Select / Combobox —— 觸發點右側轉圈;選單只在沒有可顯示人員時渲「載入選項中」訊息列,已載入的人員保留不清空'],
                 ['multiDisplay', "'stack' | 'pill'", "'stack'", '多選顯示樣式(stack 疊合 +N / pill 標籤;single 忽略)'],
                 ['pillShowAvatar', 'boolean', 'true', "multiDisplay='pill' 時是否顯示 avatar prefix"],
                 ['pillWrap', 'boolean', 'true', 'pill 模式是否允許換行'],
@@ -108,10 +109,11 @@ export const Inspector: Story = {
     size: 'md',
     disabled: false,
     showDisplayEndIcon: false,
+    loading: false,
     value: SAMPLE_PEOPLE[0],
     people: SAMPLE_PEOPLE,
     searchPlaceholder: '搜尋指派對象…',
-    emptyText: '沒有符合的人員',
+    emptyText: '沒有人員',
   },
   argTypes: {
     mode: { control: 'radio', options: ['edit', 'view', 'readonly', 'disabled'] },
@@ -119,6 +121,7 @@ export const Inspector: Story = {
     size: { control: 'radio', options: ['sm', 'md', 'lg'] },
     disabled: { control: 'boolean' },
     showDisplayEndIcon: { control: 'boolean' },
+    loading: { control: 'boolean' },
     searchPlaceholder: { control: 'text' },
     emptyText: { control: 'text' },
   },
@@ -339,9 +342,9 @@ export const StateBehavior: Story = {
       </div>
 
       <div>
-        <H3>空狀態 — no match found</H3>
+        <H3>沒有人員 — 搜尋無結果</H3>
         <Desc>
-          搜尋無結果時,下拉選單顯示 `emptyText` 的內容,使用全站共用的空狀態元件。可自訂提示語。
+          搜尋無結果時,下拉選單顯示一列 `emptyText` 訊息列(與人員列同一種列幾何、次要色、置中,不用 Empty 元件)。可自訂提示語。
         </Desc>
         <PeoplePicker
           people={SAMPLE_PEOPLE}

@@ -2416,3 +2416,16 @@ user:「我覺得"專案排程全功能整合"的範例的捲動還是很卡頓�
   更新走 `--propose`(local-candidate-preparation-only)→ `--apply-reviewed-proposal`,屬另一條治理流程,本 PR 只登記不代辦。
 - **d16baf90 第一次跑**:兩個瀏覽器 job 綠(DataTable 閘與互動閘各自在預算內),fan-in 照設計因 verify-static 紅而紅;verify-static 紅在「Registered test scripts」的 `test:devmode-geometry` —— 它需要 Chromium,以前靠同一 job 前面瀏覽器步驟順手裝的。需要瀏覽器的登記測試搬進互動瀏覽器 job。
 - **1727df1d 讀回**:required 的 Verify(fan-in)綠;verify-static 6 分、verify-browser-datatable 4 分、verify-browser-interaction 9 分、hooks-linux 4 分,全部平行、各在 15 分預算內(原單一 job 14–15+ 分)。「Verify authority candidate without credentials」紅是已知的 main 相依樹問題(非 required,合併後轉綠)。
+
+## AD35 選單三種畫面定稿:訊息列(MenuItem message)取代 Empty + 3 列最小高度;載入指示分兩處(user 2026-09-08 逐題拍板)
+
+user 連續追問七題(逐字要點):「為何欄位高度 × 3 列不是 × 1」「自然高度是怎樣」「沒有結果裡面還是一個 menu item 的結構吧?…你是不是亂改?」「是置中吧?我們之前也是這樣做吧?」「那就照 empty 的文字」「到底何時會在選單內出現載入中?右側轉圈時選單應該要消失吧?」「載入中還是可以放轉圈啊,menu item 不是有 prefix icon 的槽位嗎?」「所有 menu item 都必須住在群組裡,這是 DS 的規則吧?」。
+
+- **查證(11 個 agent:DS 內實測 + MUI / react-select / Atlassian / Ant / Polaris 原始碼逐行 + 五份覆核)**:× 3 來自 2026-04-10 `962cb851`,註解只有「視覺一致」;沒有任何一家世界級保留 N 列(MUI / react-select / Atlassian 一行字 + 8–14px 留白 ≈ 44–52px、Ant `min-height = 一列選項高`);
+  載入指示五家有四家放輸入框右側(MUI 20px、Atlassian 16px、react-select 三點、Ant 換掉箭頭),選單內只在「沒有任何選項可顯示」時才換成一行「Loading…」(MUI / react-select / Atlassian 是**文字**,樣式與 No options 完全相同;Polaris 是唯一清空舊選項放轉圈列的);沒有一家在載入中關選單(MUI `hasPopupContent = … || loading`)。
+- **DS 歷史(我有沒有亂改)**:04-08 `fad4f825` 一行小字 `py-4 text-center text-caption text-fg-muted`(約一列高、置中)→ 04-10 撐 3 列 → 04-16 `b442c48c` Empty 元件 + py-6 → 05-07 最小高度搬到空狀態 → 09-08 `5872835e`(我)只把所有權搬進 CommandEmpty、長相沒動。結論:沒改壞也沒改對。
+- **定稿**:(1) 沒有結果 / 沒有選項 = `MenuItem message`(非互動、次要色、字級同選項、一般字重、置中),住在 `MenuGroup`(item-anatomy「Group auto-separation」Pattern A:Command.List 無留白,8px 只由群組提供 —— user 問「所有 item 必住群組」查證為是),md 48px 與 1 筆結果等高;`minRows` / `getMenuListMinHeight` 退役;不放圖示、不用 Empty。
+  (2) 文案一句到底、可覆寫:SelectMenu「沒有選項」、PeoplePicker「沒有人員」。(3) 載入中:搜尋列 / 觸發點右側列圖示尺寸轉圈(`CommandInput loading`、Select / Combobox / PeoplePicker 觸發點 chevron 左),每次抓都亮、仍可打字、選單不關、舊選項不清空;選單內只在清單空時渲 `CommandLoading` = 同一種訊息列 + 前綴槽轉圈(16 / 20,circular-progress.spec「跟欄位高度有關的容器對齊圖示尺寸」;user 原猜 24 是獨立使用的預設)+ 可見文字。(4) 空群組不畫(修 Select 搜尋在觸發點 0 筆多 16px 的 bug)。(5) PeoplePicker 補 `loading` 轉發(之前沒有,載入前顯示「沒有人員」語意錯)。
+- **我在過程中撤回的兩句**:「載入中放 24px 轉圈」(規格是列圖示尺寸)、「沒有結果文字靠左」(DS 一路置中,Atlassian / shadcn 同)。
+- **落地**:menu-item.tsx `message` 模式;command.tsx CommandEmpty(MenuGroup + MenuItem message)/ CommandLoading / CommandInput loading;select-menu.tsx;select.tsx / combobox.tsx 觸發點轉圈;people-picker.tsx;DataTable 兩處拿掉 minRows;規格九份、hook C.7、stories(LoadingFirstOpen / LoadingWithStaleOptions / NoOptions / NoResults)、閘 `scripts/menu-message-row-invariant.mjs`(M1–M7 + selftest)登記 CI。示意圖:https://claude.ai/code/artifact/90f65784-da01-4d8f-95e6-c2d71f6ce0eb
+

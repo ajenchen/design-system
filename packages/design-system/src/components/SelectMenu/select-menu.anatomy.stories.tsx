@@ -108,13 +108,13 @@ export const Overview: Story = {
                   <Td mono>cmdk</Td>
                 </tr>
                 <tr>
-                  <Td mono>CommandPrimitive.Input</Td>
-                  <Td>搜尋框(raw cmdk input + 自建 wrapper,searchable 模式,高度對齊 field-height)</Td>
-                  <Td mono>cmdk</Td>
+                  <Td mono>CommandInput</Td>
+                  <Td>搜尋列(searchable 模式;DS 單一實作,與 CommandDialog / inline Command 共用,高度 = field-height + 8px;loading 時右側放列圖示尺寸的轉圈、仍可打字)</Td>
+                  <Td mono>Command</Td>
                 </tr>
                 <tr>
                   <Td mono>CommandList</Td>
-                  <Td>捲動區(自然 fit content;空狀態 minHeight 由 CommandEmpty 撐起)</Td>
+                  <Td>捲動區(自然貼內容;0 筆時只有 CommandEmpty 的一列訊息列,沒有最小高度)</Td>
                   <Td mono>cmdk</Td>
                 </tr>
                 <tr>
@@ -128,9 +128,9 @@ export const Overview: Story = {
                   <Td mono>Menu primitive</Td>
                 </tr>
                 <tr>
-                  <Td mono>CommandEmpty + Empty</Td>
-                  <Td>無結果的空狀態</Td>
-                  <Td mono>Empty primitive</Td>
+                  <Td mono>CommandEmpty / CommandLoading</Td>
+                  <Td>「沒有選項」/「載入選項中」訊息列(MenuItem message:非互動、次要色、字級同選項、置中,與一筆結果等高)</Td>
+                  <Td mono>Menu primitive</Td>
                 </tr>
                 <tr>
                   <Td mono>MenuFooter</Td>
@@ -198,10 +198,16 @@ export const Overview: Story = {
                   <Td>影響 MenuItem / searchInput 的高度</Td>
                 </tr>
                 <tr>
-                  <Td mono>minRows</Td>
-                  <Td mono>number</Td>
-                  <Td mono>3</Td>
-                  <Td>list 最少顯示幾行 item 高度(空狀態最小高)</Td>
+                  <Td mono>loading</Td>
+                  <Td mono>boolean</Td>
+                  <Td mono>false</Td>
+                  <Td>載入中:搜尋列右側轉圈(仍可打字);清單沒有任何可顯示選項時才渲「載入選項中」訊息列,舊選項保留不清空</Td>
+                </tr>
+                <tr>
+                  <Td mono>emptyText</Td>
+                  <Td mono>string</Td>
+                  <Td>「沒有選項」</Td>
+                  <Td>沒有可顯示選項時的訊息列文案(打開就沒選項與搜尋無結果共用;consumer 可覆寫)</Td>
                 </tr>
                 <tr>
                   <Td mono>minWidth</Td>
@@ -293,7 +299,7 @@ function SelectMenuInspector() {
                         </li>
                       )}
                       <li>
-                        <span className="font-medium text-foreground">CommandList</span> — 依內容撐高(空狀態 min-h = field × 3 + 16px)
+                        <span className="font-medium text-foreground">CommandList</span> — 依內容撐高(0 筆 = 一列訊息列,與 1 筆結果等高)
                         <ul>
                           <li>
                             <span className="font-medium text-foreground">CommandGroup</span> — p-0 py-2
@@ -711,10 +717,10 @@ export const StateBehavior: Story = {
     return (
       <div className="flex flex-col gap-10">
         <div>
-          <H3>搜尋 empty state</H3>
+          <H3>搜尋無結果</H3>
           <Desc>
-            搜尋無結果時顯示 Empty primitive,以 flex items-center justify-center + minHeight 撐高並垂直水平置中。
-            Creatable 模式會額外顯示「建立『林采潔』」option。
+            搜尋無結果時顯示一列「沒有選項」訊息列(MenuItem message:非互動、次要色、字級同選項、內容置中),住在群組裡、與一筆結果等高,沒有最小高度。
+            Creatable 模式會額外顯示「直接使用「林采潔」」option。
           </Desc>
           <div className="flex items-center gap-4">
             <SelectMenu options={reviewerOptions} value="" onValueChange={() => {}} searchable>

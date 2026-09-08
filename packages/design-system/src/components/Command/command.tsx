@@ -11,12 +11,10 @@ import { Search } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogTitle } from "@/design-system/components/Dialog/dialog"
-import { MenuItem, type MenuItemProps } from "@/design-system/components/Menu/menu-item"
+import { MenuItem, MenuGroup, type MenuItemProps } from "@/design-system/components/Menu/menu-item"
 import { ICON_SIZE } from "@/design-system/tokens/uiSize/icon-size"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
-import { Empty } from "@/design-system/components/Empty/empty"
 import { CircularProgress } from "@/design-system/components/CircularProgress/circular-progress"
-import { getMenuListMinHeight } from "@/design-system/components/Field/field-types"
 import { RowSizeProvider, useRowSize } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { useInputModality } from "@/design-system/hooks/use-input-modality"
 
@@ -75,8 +73,15 @@ const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令
  */
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
-  Omit<React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>, 'size'> & { size?: CommandSize }
->(({ className, size: sizeProp, ...props }, ref) => {
+  Omit<React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>, 'size'> & {
+    size?: CommandSize
+    /**
+     * 載入中(2026-09-08 user 拍板):右側槽放列圖示尺寸的 CircularProgress、輸入仍可編輯、wrapper `aria-busy` ——
+     * 同 Input `loading` 的 canonical(field-controls.spec.md「Loading」);每次抓資料都亮,不管清單裡有沒有舊選項。
+     */
+    loading?: boolean
+  }
+>(({ className, size: sizeProp, loading = false, ...props }, ref) => {
   const size = sizeProp ?? useRowSize('md')
   return (
   <div
@@ -87,6 +92,7 @@ const CommandInput = React.forwardRef<
         : 'min-h-[calc(var(--field-height-md)+8px)]',
     )}
     cmdk-input-wrapper=""
+    aria-busy={loading || undefined}
   >
     <Search size={ICON_SIZE[size]} className="shrink-0 text-fg-muted" aria-hidden />
     <CommandPrimitive.Input
@@ -101,6 +107,7 @@ const CommandInput = React.forwardRef<
       )}
       {...props}
     />
+    {loading && <CircularProgress size={ICON_SIZE[size]} className="shrink-0" />}
   </div>
 )
 })
@@ -139,39 +146,45 @@ const CommandList = React.forwardRef<
 CommandList.displayName = CommandPrimitive.List.displayName
 
 /**
- * CommandEmpty —— **own 空狀態**(2026-09-08 之前是純 passthrough,SelectMenu / AgentPanel 各自手刻
- * 「flex 置中 + Empty + 最小高度」,Command 自家 story 是裸文字貼左上 —— 三種長相)。
- * 字串 children 自動包 `<Empty description>`;最小高度 = `getMenuListMinHeight(size, minRows)`
- * (owner:select-menu.spec.md「Empty state」;= 同一 group 內 minRows 列單行項目的幾何,0 筆與 minRows 筆結果浮層等高)。
- * loading 時把 `<CommandLoading>` 當 children 放進來。
+ * CommandEmpty —— **own 空狀態**(2026-09-08 user 拍板定稿:選單裡「不是選項的列」一律走 MenuItem 的列幾何)。
+ * 字串 children 自動包 `<MenuItem message>`(非互動、次要色、字級同選項、置中),外層是 `MenuGroup`(一個 group 的 py-2 上下留白),
+ * 所以「沒有結果」與「1 筆結果」等高(md 48px = 8 + 32 + 8),不再有任何最小高度公式(舊的 3 列 minRows 已退役)。
+ * owner:select-menu.spec.md「Empty state」;歷史:2026-04-08 一行小字 → 04-10 撐 3 列 → 04-16 Empty 元件 → 09-08 訊息列。
+ * loading 時把 `<CommandLoading>` 當 children 放進來(同一種訊息列,前綴槽放列圖示尺寸的轉圈)。
  */
 const CommandEmpty = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Empty>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty> & { size?: CommandSize; minRows?: number }
->(({ className, style, children, size: sizeProp, minRows = 3, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty> & { size?: CommandSize }
+>(({ className, children, size: sizeProp, ...props }, ref) => {
   const size = sizeProp ?? useRowSize('md')
+  // 訊息列也住在群組裡(item-anatomy.spec.md「Group auto-separation」Pattern A:Command.List 沒有留白,8px 邊界留白
+  // 只由群組提供;SelectMenu 的選項永遠在群組裡,連可建立列也是)。用 MenuGroup(不經 cmdk Group 註冊,Empty 槽只在
+  // 0 筆時顯示、不需要 cmdk 的群組過濾)。
   return (
-    <CommandPrimitive.Empty
-      ref={ref}
-      className={cn('flex items-center justify-center', className)}
-      style={{ minHeight: getMenuListMinHeight(size, minRows), ...style }}
-      {...props}
-    >
-      {typeof children === 'string' || typeof children === 'number'
-        ? <Empty description={String(children)} className="py-6" />
-        : children}
+    <CommandPrimitive.Empty ref={ref} className={className} {...props}>
+      <MenuGroup>
+        {typeof children === 'string' || typeof children === 'number'
+          ? <MenuItem size={size} message>{String(children)}</MenuItem>
+          : children}
+      </MenuGroup>
     </CommandPrimitive.Empty>
   )
 })
 
 CommandEmpty.displayName = CommandPrimitive.Empty.displayName
 
-/** 載入區塊:具 accessible name 的 `role="status"` + 48px 進度圈(owner:select-menu.spec.md「Loading」;不經 Empty)。放進 CommandEmpty 當 children。 */
-function CommandLoading({ label }: { label: string }) {
+/**
+ * 載入中訊息列:與「沒有結果」同一種 `MenuItem message`,前綴槽放列圖示尺寸的 CircularProgress(sm/md 16、lg 20;
+ * circular-progress.spec.md「Size canonical」:跟欄位高度有關的容器對齊該容器的圖示尺寸)+ 可見文字(label),整組置中。
+ * `role="status"` 讓讀屏器直接播報文字;不經 Empty(empty.spec.md「禁止事項」)。放進 CommandEmpty 當 children。
+ * 只在清單裡沒有任何可顯示的選項時才會被看到(cmdk Empty 槽);有舊選項時載入指示在搜尋列 / 觸發點右側(CommandInput `loading`)。
+ */
+function CommandLoading({ label, size: sizeProp }: { label: string; size?: CommandSize }) {
+  const size = sizeProp ?? useRowSize('md')
   return (
-    <div role="status" aria-label={label} className="flex items-center justify-center py-6">
-      <CircularProgress size={48} />
-    </div>
+    <MenuItem size={size} message role="status" startContent={<CircularProgress size={ICON_SIZE[size]} />}>
+      {label}
+    </MenuItem>
   )
 }
 

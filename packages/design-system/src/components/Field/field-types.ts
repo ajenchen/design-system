@@ -85,22 +85,7 @@ export type WithFieldVariantInternal<C> = C extends (props: infer P) => infer R
 // SSOT:fieldWrapperStyles `width` variant(field-wrapper.tsx)+ field-controls.spec.md「寬度軸」。
 export type FieldWidth = 'fill' | 'hug'
 
-// ── Menu Empty-state Min Height ─────────────────────────────────────────────
-// CommandEmpty(不是 CommandList,2026-05-07 起)的最小高度:同一 group 內 rows 列單行項目的幾何,
-// 讓 0 筆與 rows 筆結果的浮層等高。SSOT 句在 select-menu.spec.md「Empty state」。
-
-const FIELD_HEIGHT_TOKEN: Record<string, string> = {
-  sm: 'var(--field-height-sm)',
-  md: 'var(--field-height-md)',
-  lg: 'var(--field-height-lg)',
-}
-
-/** CommandGroup 上下各 8px(`py-2`,item-anatomy.spec.md「Group auto-separation」)—— 空狀態高度公式的那個 16px 就是這裡來的。 */
-const MENU_GROUP_PADDING_Y_PX = 8
-
-/** @internal — CommandEmpty 最小高度 = `--field-height-{size}` × rows + group 上下 padding;Command 內部 helper(CommandEmpty 消費),consumer 不直接 import。root barrel 排除(subpath 仍可用)。rows ≤ 1 時 Empty 自身 py-6 + 一行字(≈66px)已超過,設定無效。 */
-export function getMenuListMinHeight(size: string, rows: number = 3): string {
-  const token = FIELD_HEIGHT_TOKEN[size] ?? FIELD_HEIGHT_TOKEN.md
-  return `calc(${token} * ${rows} + ${MENU_GROUP_PADDING_Y_PX * 2}px)`
-}
+// ── Menu Empty-state Min Height(已退役,2026-09-08 user 拍板)────────────────────────────
+// 舊的「空狀態最小高度 = 欄位高度 × minRows + 16px」公式(2026-04-10 加,只寫「視覺一致」)已移除:
+// 沒有結果 / 載入中改成 `MenuItem message` 訊息列,高度由列幾何決定,與 1 筆結果等高。owner:select-menu.spec.md「Empty state」。
 

@@ -92,6 +92,9 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   /** 搜尋無結果訊息(filtered menu empty)。**僅**用於 SelectMenu `emptyText`(菜單空狀態,
    *  2026-07-04 Q4 接線完成),不轉 trigger placeholder(2026-05-12 Issue 4 semantic fix)。 */
   emptyText?: string
+  /** 載入中(2026-09-08 補轉發;之前沒有這個 prop,非同步載入人員時開選單看到的是「沒有人員」,語意錯):
+   *  機械轉發 wrapped Select / Combobox 的 `loading` —— 觸發點右側轉圈、選單內僅空清單時渲載入訊息列、舊人員保留。 */
+  loading?: boolean
   className?: string
   disabled?: boolean
   /** Initial open state(uncontrolled)*/
@@ -148,7 +151,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   placeholder = '請選擇人員', // i18n-allow: DS default(2026-05-12 Stream C Issue 4)
   searchPlaceholder = '搜尋人員…', // i18n-allow: DS default
   searchAriaLabel = '搜尋人員', // i18n-allow: DS default
-  emptyText = '沒有符合的人員', // i18n-allow: DS default — only for SelectMenu noResultsText
+  emptyText = '沒有人員', // i18n-allow: DS default(2026-09-08 一句到底,對應 No options)— only for SelectMenu noResultsText
+  loading = false,
   className,
   disabled: disabledProp,
   defaultOpen = false,
@@ -343,6 +347,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // 2026-05-12 Issue 4:placeholder = trigger empty。2026-07-04 Q4:emptyText 走 Select →
         // SelectMenu 接線(search-empty 語意,與 trigger-empty 分離)。
         emptyText={emptyText}
+        loading={loading}
         defaultOpen={defaultOpen}
         onOpenChange={onOpenChange}
         className={className}
@@ -368,6 +373,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     }
     return (
       <Combobox
+        loading={loading}
         width={width}
         ref={ref as React.Ref<HTMLDivElement>}
         size={size}
@@ -437,6 +443,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
 
   return (
     <Combobox
+      loading={loading}
       width={width}
       ref={mergedStackRef}
       size={size}

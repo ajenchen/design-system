@@ -63,6 +63,7 @@ jobs:
           node scripts/data-table-scrollbar-visibility.mjs --selftest
           node scripts/data-table-scroll-cost.mjs --selftest
           node scripts/data-table-row-cache-deps-invariant.mjs --selftest
+          node scripts/menu-message-row-invariant.mjs --selftest
 
       - name: Overflow indicator containment(all widths)+ control group
         run: |

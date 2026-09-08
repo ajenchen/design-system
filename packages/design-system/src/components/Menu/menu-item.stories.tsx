@@ -5,6 +5,8 @@ import { Mail, Star, Bell, Settings, Plus, Folder, FileText, BarChart3, Bug, Roc
 import { MenuItem, MenuGroup, MenuFooter } from './menu-item'
 import { CAT_SOLID, type CategoricalHue } from '@/design-system/tokens/categorical-color'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
+import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
+import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 // DS-wide canonical:person avatar 必 hover → ProfileCard(含 status / statusMessage / fields
 // / actions / onViewMore,profile-card.spec.md 重要資訊)。demo helper:
@@ -191,6 +193,24 @@ export const Groups: Story = {
         <MenuItem startIcon={BarChart3}>業務儀表板</MenuItem>
       </MenuGroup>
     </MenuContainer>
+  ),
+}
+
+// ── 訊息列(沒有選項 / 載入中):與 header 同族的非互動列,列幾何同選項、次要色、內容置中 ──
+
+export const Messages: Story = {
+  name: '訊息列(沒有選項 / 載入中)',
+  render: () => (
+    // Jira 議題「指派人員」選單的兩種非選項狀態:名錄回來但沒有人 / 名錄還在載入。
+    // 前綴槽放列圖示尺寸(md = ICON_SIZE.md)的轉圈,文字仍可見。
+    <div className="flex gap-4">
+      <MenuContainer width={240}><MenuGroup>
+        <MenuItem message>沒有人員</MenuItem>
+      </MenuGroup></MenuContainer>
+      <MenuContainer width={240}><MenuGroup>
+        <MenuItem message startContent={<CircularProgress size={ICON_SIZE.md} />}>載入選項中</MenuItem>
+      </MenuGroup></MenuContainer>
+    </div>
   ),
 }
 

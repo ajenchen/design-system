@@ -155,6 +155,36 @@ export const Searchable: Story = {
   },
 }
 
+/* ── 載入中(開啟態快照:defaultOpen 讓瀏覽器閘不用點擊就看得到)── */
+// Notion 頁面「連結資料庫」:工作區的資料庫清單由 API 回傳
+const databaseOptions = [
+  { value: 'crm', label: 'CRM 客戶名單' },
+  { value: 'roadmap', label: '產品路線圖' },
+  { value: 'meetings', label: '會議記錄' },
+  { value: 'components', label: '設計系統元件' },
+  { value: 'hiring', label: '招募流程' },
+]
+
+export const LoadingFirstOpen: Story = {
+  name: '載入中(首次開啟)',
+  parameters: { docs: { description: { story: 'Notion 頁面「連結資料庫」第一次展開,工作區的資料庫清單還沒回來:觸發點右側與浮層搜尋列右側都在轉圈(仍可打字),清單裡只有一列「載入選項中」訊息列。' } } },
+  render: () => (
+    <div className="max-w-sm">
+      <Combobox options={[]} value={[]} onChange={() => {}} searchable loading defaultOpen searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(首次載入)" />
+    </div>
+  ),
+}
+
+export const LoadingWithStaleOptions: Story = {
+  name: '載入中(保留舊清單)',
+  parameters: { docs: { description: { story: '已經有五個資料庫可選,使用者改了關鍵字、後端重新搜尋中:舊清單留著不清空、選單不關,搜尋列右側的轉圈告訴你還在抓。' } } },
+  render: () => (
+    <div className="max-w-sm">
+      <Combobox options={databaseOptions} value={['crm']} onChange={() => {}} searchable loading defaultOpen searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(重新搜尋中)" />
+    </div>
+  ),
+}
+
 /* ── DataTable 整合 ── */
 export const InDataTable: Story = {
   name: 'DataTable 整合',

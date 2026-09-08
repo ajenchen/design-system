@@ -252,25 +252,35 @@ export const SizeAlignment: Story = {
   ),
 }
 
-/* ── 人員清單非同步載入（已選值先到、名錄後到） ── */
+/* ── 人員清單非同步載入（已選值先到、名錄後到;前 1.5 秒 loading） ── */
 const AsyncDirectoryPicker = () => {
   const [people, setPeople] = React.useState<PersonValue[]>([])
+  const [loading, setLoading] = React.useState(true)
   const [val, setVal] = React.useState<PersonValue[]>([samplePeople[0], samplePeople[2]])
   React.useEffect(() => {
-    const timer = window.setTimeout(() => setPeople(samplePeople), 1500)
+    const timer = window.setTimeout(() => { setPeople(samplePeople); setLoading(false) }, 1500)
     return () => window.clearTimeout(timer)
   }, [])
   return (
-    <div className="flex flex-col gap-2 max-w-xs">
-      <PeoplePicker value={val} people={people} onChange={setVal} aria-label="任務協作者" />
-      <p className="text-caption text-fg-secondary">
-        Jira 任務「協作者」欄位場景：已選成員隨任務資料先抵達，組織人員名錄約 1.5 秒後才從 API 回來——已選成員立即顯示、不報錯；名錄未到前 avatar 先以姓名縮寫 fallback 呈現，名錄載入後自動補上頭像。
-      </p>
+    <div className="max-w-xs">
+      <PeoplePicker value={val} people={people} loading={loading} onChange={setVal} aria-label="任務協作者" />
     </div>
   )
 }
 
 export const AsyncDirectoryLoad: Story = {
   name: '人員清單非同步載入',
+  parameters: { docs: { description: { story: 'Jira 任務「協作者」欄位:已選成員隨任務資料先抵達,組織人員名錄約 1.5 秒後才從 API 回來——這 1.5 秒觸發點右側轉圈、展開只看到一列「載入選項中」;已選成員立即顯示、不報錯,名錄未到前頭像先以姓名縮寫呈現,名錄載入後自動補上頭像。' } } },
   render: () => <AsyncDirectoryPicker />,
+}
+
+/* ── 載入中(首次開啟;開啟態快照,defaultOpen 讓瀏覽器閘不用點擊就看得到) ── */
+export const LoadingFirstOpen: Story = {
+  name: '載入中(首次開啟)',
+  parameters: { docs: { description: { story: 'Jira 議題「指派人員」第一次展開,組織名錄還沒從 API 回來:觸發點右側轉圈,清單只有一列「載入選項中」訊息列,與一筆人員等高;名錄回來後同一個選單直接長出人員列。' } } },
+  render: () => (
+    <div className="max-w-xs">
+      <PeoplePicker value={null} people={[]} loading defaultOpen aria-label="指派人員(首次載入)" />
+    </div>
+  ),
 }

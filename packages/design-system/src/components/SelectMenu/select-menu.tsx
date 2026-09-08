@@ -98,10 +98,11 @@ export interface SelectMenuProps {
   loadingText?: string
   /** 多選 footer 全選列文字(2026-07-05 D4:原「全部」字面 hardcode,無法覆寫也無法 i18n) */
   selectAllLabel?: string
-  /** Loading 狀態(2026-05-15 audit B fix;2026-07-04 Q3 拍板措辭修訂)
-   *  true → 無可顯示選項時 empty slot(cmdk CommandEmpty)渲可命名的
-   *  `role="status"` wrapper + 48px CircularProgress；已有 options 時保留顯示不清空
-   *  (MUI Autocomplete「only if there are no suggestions」共識)。trigger 不變,user 隨時可開 dropdown。
+  /** Loading 狀態(2026-05-15 audit B fix;2026-07-04 Q3 拍板措辭;2026-09-08 user 拍板定稿)
+   *  true → (1) 搜尋列右側放列圖示尺寸的 CircularProgress(`CommandInput loading`,仍可打字),每次抓資料都亮;
+   *  (2) 只有清單裡沒有任何可顯示的選項時,empty slot 才渲載入訊息列(`CommandLoading`:同「沒有結果」的
+   *  MenuItem 訊息列,前綴槽轉圈 + loadingText);已有 options 時保留顯示不清空(MUI / react-select / Atlassian 共識)。
+   *  trigger 不變,選單不關,user 隨時可開 dropdown。
    */
   loading?: boolean
 
@@ -109,8 +110,6 @@ export interface SelectMenuProps {
   size?: SizeKey
   /** 對齊方式 */
   align?: 'start' | 'end'
-  /** 空狀態最小高度以幾列單行項目計(預設 3;只影響空狀態)（預設 3），影響空狀態最小高度 */
-  minRows?: number
   /** 最小寬度（px），預設跟隨觸發元件 */
   minWidth?: number
 
@@ -165,13 +164,12 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   children,
   searchPlaceholder = '搜尋…', // i18n-allow: DS default; consumer override via searchPlaceholder prop
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default; consumer override via searchAriaLabel prop
-  emptyText = '沒有符合的選項', // i18n-allow: DS default; consumer override via emptyText prop
+  emptyText = '沒有選項', // i18n-allow: DS default(2026-09-08 user 拍板:一句到底,對應 No options;打開就沒選項與搜尋無結果共用);consumer override via emptyText prop
   loadingText = '載入選項中', // i18n-allow: DS default; consumer override via loadingText prop
   selectAllLabel = '全部', // i18n-allow: DS default; consumer override via selectAllLabel prop
   loading = false,
   size = 'md',
   align = 'start',
-  minRows = 3,
   minWidth,
   open: controlledOpen,
   defaultOpen,
@@ -384,7 +382,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
           {searchable && (
             // 2026-09-08:搜尋列改用 DS `CommandInput`(與 CommandDialog / inline Command 同一份實作),
             // 原本這裡自己寫一份 raw cmdk input + icon wrapper = 第二份 SSOT(user 抓「Command 跟 SelectMenu 不同一套」)。
-            <CommandInput size={size as 'sm' | 'md' | 'lg'} placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
+            <CommandInput size={size as 'sm' | 'md' | 'lg'} placeholder={searchPlaceholder} value={search} onValueChange={setSearch} loading={loading} />
           )}
           {/* **2026-05-07 v15.13 R2 fix**:minHeight 從 CommandList 搬到 CommandEmpty。
               原本 CommandList 永遠套 `minHeight = field-height × minRows + 16px`,結果
@@ -401,11 +399,13 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
             label="選項" // i18n-allow: DS default; listbox accessible name
           >
             {/* 空狀態與 loading 的置中、最小高度都由 CommandEmpty own(2026-09-08);這裡只給內容 */}
-            <CommandEmpty size={size} minRows={minRows}>
-              {loading ? <CommandLoading label={loadingText} /> : emptyText}
+            <CommandEmpty size={size}>
+              {loading ? <CommandLoading label={loadingText} size={size} /> : emptyText}
             </CommandEmpty>
 
-            {groupedOptions.map((group, gi) => (
+            {/* 選項為 0 的群組不畫(2026-09-08):cmdk 在 shouldFilter=false(搜尋在觸發點)時不會藏空群組,
+                會留下 py-2 的 16px 空白疊在「沒有選項」下面(實測 128 vs 應為 112)。 */}
+            {groupedOptions.filter((group) => group.options.length > 0).map((group, gi) => (
               <React.Fragment key={group.key}>
                 {gi > 0 && <CommandSeparator />}
                 <CommandGroup

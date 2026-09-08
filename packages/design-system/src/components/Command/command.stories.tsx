@@ -21,10 +21,10 @@ import {
   CommandInput,
   CommandList,
   CommandEmpty,
+  CommandLoading,
   CommandGroup,
   CommandItem,
   CommandSeparator,
-  CommandShortcut,
   CommandDialog,
 } from './command'
 import { Button } from '@/design-system/components/Button/button'
@@ -67,7 +67,7 @@ const PaletteDemo = () => {
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="搜尋 issue、人員,或輸入指令…" />
         <CommandList>
-          <CommandEmpty>找不到符合的結果</CommandEmpty>
+          <CommandEmpty>沒有結果</CommandEmpty>
           <CommandGroup heading="最近開啟">
             <CommandItem startIcon={FileText} description="上次開啟:2 天前" onSelect={() => setOpen(false)}>PRD:多工作區切換 v2</CommandItem>
             <CommandItem startIcon={FileText} description="上次開啟:3 天前" onSelect={() => setOpen(false)}>Q2 OKR roadmap</CommandItem>
@@ -108,7 +108,7 @@ export const InlineCommand: Story = {
       <Command>
         <CommandInput placeholder="搜尋信件或資料夾…" />
         <CommandList>
-          <CommandEmpty>沒有符合的項目</CommandEmpty>
+          <CommandEmpty>沒有結果</CommandEmpty>
           <CommandGroup heading="資料夾">
             <CommandItem startIcon={Inbox} endContent={<span className="text-caption text-fg-muted tabular-nums">124</span>}>收件匣</CommandItem>
             <CommandItem startIcon={Star} endContent={<span className="text-caption text-fg-muted tabular-nums">8</span>}>已加星號</CommandItem>
@@ -137,7 +137,7 @@ const ActionCommandDemo = () => {
         <Command>
           <CommandInput placeholder="輸入指令…" />
           <CommandList>
-            <CommandEmpty>沒有符合的指令</CommandEmpty>
+            <CommandEmpty>沒有結果</CommandEmpty>
             <CommandGroup heading="外觀">
               <CommandItem startIcon={Sun} selected={theme === 'light'} onSelect={() => { setTheme('light'); setLastAction('切換淺色模式') }}>淺色模式</CommandItem>
               <CommandItem startIcon={MoonStar} selected={theme === 'dark'} onSelect={() => { setTheme('dark'); setLastAction('切換深色模式') }}>深色模式</CommandItem>
@@ -165,21 +165,47 @@ export const ActionCommand: Story = {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Story 4:空結果狀態
+   Story 4:無結果(搜尋字預設就打到 0 筆,不用點擊就看得到訊息列)
    ═══════════════════════════════════════════════════════════════════════════ */
-export const EmptyState: Story = {
+// @story-history: EmptyState(要 user 自己輸入「zzz」才看得到空狀態)retired 2026-09-08 → NoResults
+//   (M15:stakeholder 看得到的狀態必須有不用點擊就看得到的 story;搜尋字預設就命中 0 筆)。
+const NoResultsDemo = () => {
+  const [search, setSearch] = useState('行銷活動')
+  return (
+    <div className="max-w-md rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
+      <Command>
+        <CommandInput placeholder="搜尋專案…" value={search} onValueChange={setSearch} />
+        <CommandList>
+          <CommandEmpty>沒有結果</CommandEmpty>
+          <CommandGroup heading="專案">
+            <CommandItem startIcon={Folder}>設計系統</CommandItem>
+            <CommandItem startIcon={Folder}>行動 App</CommandItem>
+            <CommandItem startIcon={Folder}>資料平台</CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    </div>
+  )
+}
+
+export const NoResults: Story = {
   name: '無結果狀態',
-  parameters: { docs: { description: { story: '在搜尋列輸入不存在的字(例如「zzz」)看空狀態文案。' } } },
+  parameters: { docs: { description: { story: 'Linear 專案切換清單搜尋「行銷活動」,但工作區沒有這個專案:清單只剩一列「沒有結果」訊息列(與一筆結果等高、次要色、置中);清掉關鍵字就回到三個專案。' } } },
+  render: () => <NoResultsDemo />,
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Story 5:載入中(首次開啟:搜尋列右側轉圈 + 清單裡一列載入訊息列)
+   ═══════════════════════════════════════════════════════════════════════════ */
+export const LoadingFirstOpen: Story = {
+  name: '載入中(首次開啟)',
+  parameters: { docs: { description: { story: 'Linear 專案切換清單剛打開,專案還沒從 API 回來:搜尋列右側轉圈(仍可打字),清單裡只有一列「載入專案中」訊息列——與一筆結果等高,不用大轉圈撐高。' } } },
   render: () => (
     <div className="max-w-md rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
       <Command>
-        <CommandInput placeholder="試著輸入「zzz」看空狀態…" />
+        <CommandInput placeholder="搜尋專案…" loading />
         <CommandList>
-          <CommandEmpty>找不到符合「zzz」的結果,試試別的關鍵字。</CommandEmpty>
-          <CommandGroup heading="可用指令">
-            <CommandItem startIcon={FileText}>新增文件</CommandItem>
-            <CommandItem startIcon={Settings}>開啟設定</CommandItem>
-          </CommandGroup>
+          <CommandEmpty><CommandLoading label="載入專案中" /></CommandEmpty>
         </CommandList>
       </Command>
     </div>

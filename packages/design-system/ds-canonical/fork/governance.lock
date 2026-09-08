@@ -743,7 +743,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_pattern_invariants.sh",
-      "sha256": "558dbd5ac8ce92f77314a074db5f3135da437a75d88e4f7fe57756faebe0b1e6",
+      "sha256": "1a71957c46a9c909cbd54e7807fb64cb9c24222128ea90ce4c75ade70d1d6351",
       "source": "check_pattern_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
