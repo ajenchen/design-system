@@ -2415,3 +2415,4 @@ user:「我覺得"專案排程全功能整合"的範例的捲動還是很卡頓�
 - **既有 drift(不是本次造成)**:`governance:workflow-identities:check` 早在 main 上就報 Verify 的 workflow identity stale(記錄的 blob 80b7155a ≠ main 的 3241bde9);
   更新走 `--propose`(local-candidate-preparation-only)→ `--apply-reviewed-proposal`,屬另一條治理流程,本 PR 只登記不代辦。
 - **d16baf90 第一次跑**:兩個瀏覽器 job 綠(DataTable 閘與互動閘各自在預算內),fan-in 照設計因 verify-static 紅而紅;verify-static 紅在「Registered test scripts」的 `test:devmode-geometry` —— 它需要 Chromium,以前靠同一 job 前面瀏覽器步驟順手裝的。需要瀏覽器的登記測試搬進互動瀏覽器 job。
+- **1727df1d 讀回**:required 的 Verify(fan-in)綠;verify-static 6 分、verify-browser-datatable 4 分、verify-browser-interaction 9 分、hooks-linux 4 分,全部平行、各在 15 分預算內(原單一 job 14–15+ 分)。「Verify authority candidate without credentials」紅是已知的 main 相依樹問題(非 required,合併後轉綠)。
