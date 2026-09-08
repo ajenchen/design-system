@@ -162,6 +162,11 @@ jobs:
           node scripts/data-table-invariants.mjs
           node scripts/data-table-scrollbar-visibility.mjs --quick
           node scripts/data-table-scroll-cost.mjs
+          # 快速捲動「中央整片白」(2026-09-09):量合成器真正送出的每一幀(CDP screencast + 合成手勢),不是 DOM、不是預估。
+          # 先跑對照組(靜態頁 0 空白 / 忙等必紅)證明儀器在該紅時會紅,再當閘:6,000px/s 手勢下中央區最長連續空白 ≤ 400ms、
+          # 停手後列殼 ≤ 1000ms 補齊。門檻是本機校準的回歸線(修前 main 684–1055ms、修後 18–34ms,留 10 倍以上機器差),不是業界標準。
+          node scripts/data-table-fast-scroll.mjs --mode=gesture --selftest --gesture-speed=6000
+          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000
           # 列/表頭元素快取的依賴完整性(靜態,TypeScript 語法樹):快取靠手列的 epochDeps,漏一個就是
           # 「舊列拿到過期資料」(2026-09-08 I2 抓到漏 resolvedWidths → 顯示↔編輯寬差 0.59px)。
           node scripts/data-table-row-cache-deps-invariant.mjs
@@ -220,15 +225,15 @@ jobs:
           # Dialog 並存契約:兩條路都驗 —— 預設路徑照舊隔離、並存路徑指定區域仍可用。
           # 只驗後者的話「把預設路徑一起弄壞」不會被發現。
           npm run test:dialog-coexistence
-          # 有 URL 的 modal 與 agent 並存 + Esc 分區:焦點在 agent 內按 Esc 不得跨區關掉
-          # 舞台的 modal(agent-panel.spec.md:545 三條表);對照組驗焦點在 modal 內時仍然關得掉。
-          npm run test:agent-modal-coexistence
           # 浮層快捷鍵的作用域:焦點在檢視器外時方向鍵不得切換檔案,
           # 對照組驗焦點在裡面時仍然切得動(否則就是把功能弄壞換綠燈)。
           npm run test:overlay-shortcut-scope
           # 虛擬游標的框只在鍵盤模態下畫:滑鼠點開 Select 不得出現鍵盤焦點框(user 2026-09-08 抓到),
           # 對照組驗鍵盤移回已選項必須有框、純鍵盤開啟立刻有框。
           npm run test:virtual-cursor-modality
+          # 代理整頁示範(2026-09-09 合併原 modal-coexistence):S1–S9 —— DataTable 清單開有 URL 的 modal 與幾何、
+          # header 垃圾桶 / footer 變體、四個 Field 存檔、新增、刪除確認框、背景位置模式、session 切換、
+          # 關 agent 遮罩仍在(根因錨)、蓋板態工具列可點 + Esc 分區(焦點在 agent 內按 Esc 不得跨區關掉舞台的 modal)。
           npm run test:agent-url-registry-demo
           # 兩支從「複現不出」轉成「再發生會被抓到」的閘(總帳 E1 / E2):
           # 虛擬捲動壓力(排序、捲動、視窗高度交錯,驗無例外**且畫面不空**)、

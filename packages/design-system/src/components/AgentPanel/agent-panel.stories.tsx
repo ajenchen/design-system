@@ -26,11 +26,13 @@ import { Button } from '@/design-system/components/Button/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from '@/design-system/components/Dialog/dialog'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Trash2 } from 'lucide-react'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { Input } from '@/design-system/components/Input/input'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
-import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
+import { Select, type SelectOption } from '@/design-system/components/Select/select'
+import { PeoplePicker, type PersonData, type PersonValue } from '@/design-system/components/PeoplePicker/people-picker'
+import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
 
 const meta: Meta<typeof AgentPanel> = {
@@ -551,29 +553,52 @@ export const LogoThinkStop: Story = {
 }
 
 
-/**
- * 並存 + Esc 分區(v14 條 A/B + `agent-panel.spec.md:545` 三條表)。
- *
- * 寬螢幕:有 URL 的 modal 與 agent **並列可操作**。Esc 的作用域封閉在焦點所在區 ——
- * 焦點在 agent 內、agent 內沒有浮層時 Esc **什麼都不關**(不能跨區關掉舞台的 modal)。
- * 閘:`scripts/agent-modal-coexistence-invariant.mjs`。
- */
 /* ═══════════════════════════════════════════════════════════════════════════
-   整頁情境共用(假資料)—— 舞台 / 任務清單 / 任務對話框 / 確認框 / 代理欄
-   規則:畫布裡只准 DS 元件 + 真實業務內容;有 URL 的 modal 傳送到「舞台」(代理不被蓋),
-   沒有 URL 的確認框傳送到「畫布」(蓋住一切含代理)。story-rules.md「整頁情境」。
+   整頁情境(假資料)—— 任務清單 / 看板 / 任務對話框 / 確認框 / 代理欄
+   規則(story-rules.md「整頁情境」):畫布裡只准 DS 元件 + 真實業務內容;有 URL 的 modal 傳送到「舞台」
+   (代理不被蓋),沒有 URL 的確認框傳送到「畫布」(蓋住一切含代理)。
+   閘:`scripts/agent-url-registry-demo-invariant.mjs`(S1–S9,兩個並排寬度 + 一個蓋板寬度)。
    ═══════════════════════════════════════════════════════════════════════════ */
-type Task = { id: string; num: number; title: string; url: string; assignee: string; status: string; due: string }
-const TASKS: readonly Task[] = [
-  { id: 'task-4821', num: 4821, title: '修正登入逾時', url: '/projects/8821/tasks/4821', assignee: 'Betty Wu', status: '待處理', due: '2026-09-12' },
-  { id: 'task-4830', num: 4830, title: '對帳批次逾時重試', url: '/projects/8821/tasks/4830', assignee: 'Alan Chen', status: '進行中', due: '2026-09-15' },
-  { id: 'task-4835', num: 4835, title: '支付失敗通知信', url: '/projects/8821/tasks/4835', assignee: 'Ada Chen', status: '待處理', due: '2026-09-19' },
+type TaskStatus = 'todo' | 'doing' | 'done'
+type Task = { id: string; num: number; title: string; assignee: string; status: TaskStatus; due: string }
+type TaskDraft = Omit<Task, 'id' | 'num'>
+const STATUS_OPTIONS: SelectOption[] = [
+  { value: 'todo', label: '待處理' },
+  { value: 'doing', label: '進行中' },
+  { value: 'done', label: '完成' },
 ]
+const statusLabel = (status: TaskStatus) => STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status
+const PEOPLE: PersonData[] = [{ name: 'Betty Wu' }, { name: 'Alan Chen' }, { name: 'Ada Chen' }]
+const personName = (p: PersonValue) => (typeof p === 'string' ? p : p.name)
+const PROJECT = '/projects/8821'
+const TASKS_PAGE = { kind: 'tasks', title: '任務 — 結帳流程改版', url: `${PROJECT}/tasks` } as const
+const BOARD_PAGE = { kind: 'board', title: '衝刺看板 — Sprint 24', url: `${PROJECT}/board` } as const
+type Page = typeof TASKS_PAGE | typeof BOARD_PAGE
+const PAGES: readonly Page[] = [TASKS_PAGE, BOARD_PAGE]
+const NEW_TASK_URL = `${PROJECT}/tasks/new`
+const taskUrl = (num: number) => `${PROJECT}/tasks/${num}`
 const taskLabel = (t: Task) => `任務 #${t.num} ${t.title}`
-type Page = { kind: 'overview' | 'board' | 'projects'; title: string; url: string }
-const OVERVIEW: Page = { kind: 'overview', title: '專案總覽 — 結帳流程改版', url: '/projects/8821' }
-const BOARD: Page = { kind: 'board', title: '衝刺看板 — Sprint 24', url: '/projects/8821/board' }
-const PROJECTS: Page = { kind: 'projects', title: '專案列表', url: '/projects' }
+const TASKS: Task[] = [
+  { id: 't4821', num: 4821, title: '修正登入逾時', assignee: 'Betty Wu', status: 'todo', due: '2026-09-12' },
+  { id: 't4830', num: 4830, title: '對帳批次逾時重試', assignee: 'Alan Chen', status: 'doing', due: '2026-09-15' },
+  { id: 't4835', num: 4835, title: '支付失敗通知信', assignee: 'Ada Chen', status: 'todo', due: '2026-09-19' },
+]
+
+/**
+ * 背景位置模式(Background location;user 2026-09-09:「若有來源頁面,則保留該頁面作為 Modal 的背景;
+ * 若無來源頁面,則將 Modal 顯示於預先定義的預設背景頁面之上」)。
+ * `url` = 網址列;`backgroundLocation` = 從哪一頁點開的(只有從頁面點開 modal 才有)。
+ * 重新整理會丟掉它(等於直接以任務網址進入)→ 預設背景 = 任務清單。
+ */
+type Location = { url: string; backgroundLocation?: string }
+type View = { page: Page; modal: null | { kind: 'task'; num: number } | { kind: 'new' } }
+const pageByUrl = (url?: string) => PAGES.find((p) => p.url === url)
+function resolveView(loc: Location): View {
+  if (loc.url === NEW_TASK_URL) return { page: pageByUrl(loc.backgroundLocation) ?? TASKS_PAGE, modal: { kind: 'new' } }
+  const m = loc.url.match(/\/tasks\/(\d+)$/)
+  if (m) return { page: pageByUrl(loc.backgroundLocation) ?? TASKS_PAGE, modal: { kind: 'task', num: Number(m[1]) } }
+  return { page: pageByUrl(loc.url) ?? TASKS_PAGE, modal: null }
+}
 
 /** 舞台 = 宿主區(容器 − 面板)。帶 transform 讓有 URL 的 modal 用 `portalContainer` 傳送進來後 fixed 以它為準。 */
 function Stage({ stageRef, children }: { stageRef: React.Ref<HTMLDivElement>; children: React.ReactNode }) {
@@ -584,69 +609,93 @@ function Stage({ stageRef, children }: { stageRef: React.Ref<HTMLDivElement>; ch
   )
 }
 
-function ProjectFacts() {
-  return (
-    <DescriptionList orientation="horizontal">
-      <DescriptionItem label="擁有者">Ada Chen</DescriptionItem>
-      <DescriptionItem label="狀態">進行中</DescriptionItem>
-      <DescriptionItem label="截止日">2026-10-31</DescriptionItem>
-    </DescriptionList>
-  )
+/** 任務清單 = DS DataTable(資料極簡:不開虛擬捲動 / 拖曳 / 篩選);標題欄是連結,點了開有 URL 的任務對話框。 */
+function TaskTable({ tasks, onOpen }: { tasks: Task[]; onOpen: (t: Task) => void }) {
+  const columns = React.useMemo<ColumnDef<Task>[]>(() => [
+    { accessorKey: 'num', header: 'ID', cell: ({ row }) => `#${row.original.num}` },
+    {
+      accessorKey: 'title',
+      header: '標題',
+      cell: ({ row }) => (
+        <Button variant="link" id={`demo-task-link-${row.original.num}`} onClick={() => onOpen(row.original)}>{row.original.title}</Button>
+      ),
+    },
+    { accessorKey: 'assignee', header: '指派人' },
+    { accessorKey: 'status', header: '狀態', cell: ({ row }) => statusLabel(row.original.status) },
+  ], [onOpen])
+  return <DataTable columns={columns} data={tasks} height="auto" getRowId={(t) => t.id} />
 }
 
-function TaskList({ tasks, onOpen, idPrefix, heading = '任務' }: { tasks: readonly Task[]; onOpen: (t: Task) => void; idPrefix: string; heading?: string }) {
+/** 看板(極簡):三欄各列任務標題連結,點了同樣開有 URL 的任務對話框 —— 背景就是看板。 */
+function Board({ tasks, onOpen }: { tasks: Task[]; onOpen: (t: Task) => void }) {
   return (
-    <div className="flex flex-col gap-1">
-      <h2 className="text-body-lg font-medium">{heading}</h2>
-      {tasks.length === 0
-        ? <p className="text-body text-fg-muted">沒有任務</p>
-        : (
-          <ul className="flex flex-col gap-1">
-            {tasks.map((t) => (
-              <li key={t.id}><Button variant="link" id={`${idPrefix}-${t.id}`} onClick={() => onOpen(t)}>{taskLabel(t)}</Button></li>
-            ))}
-          </ul>
-        )}
+    <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
+      {STATUS_OPTIONS.map((col) => {
+        const items = tasks.filter((t) => t.status === col.value)
+        // items-start:Button 是 inline-flex justify-center,被 flex-col 撐滿欄寬會把文字置中(2026-09-09 截圖抓到)
+        return (
+          <div key={col.value} className="flex flex-col items-start gap-1">
+            <h2 className="text-body-lg font-medium">{col.label}</h2>
+            {items.length === 0
+              ? <p className="text-body text-fg-muted">沒有任務</p>
+              : items.map((t) => <Button key={t.id} variant="link" id={`demo-board-task-${t.num}`} onClick={() => onOpen(t)}>{taskLabel(t)}</Button>)}
+          </div>
+        )
+      })}
     </div>
   )
 }
 
-function TaskDialog({ task, open, onOpenChange, portalContainer, persistentElements, comments, onSave, onDeleteTask, ids }: {
-  task: Task; open: boolean; onOpenChange: (open: boolean) => void; portalContainer: HTMLElement | null
-  persistentElements: () => Element[]; comments: string[]; onSave: (comment: string) => void; onDeleteTask?: () => void
-  ids: { input: string; save: string; cancel: string; delete?: string }
+/**
+ * 有 URL 的任務對話框:header **一行**(任務 id + 標題,或「新增任務」),header actions slot 放 icon-only 垃圾桶
+ * (dialog.spec.md「Header actions slot」:`<Button variant="text" iconOnly>`;button.spec.md「text + danger」=
+ * 工具列刪除 icon、有後續確認);body 照 DS 表單版面放四個 Field;footer 只有取消(tertiary)與儲存(primary)。
+ */
+function TaskDialog({ task, portalContainer, persistentElements, onSave, onCancel, onDelete }: {
+  task: Task | null
+  portalContainer: HTMLElement
+  persistentElements: () => Element[]
+  onSave: (draft: TaskDraft) => void
+  onCancel: () => void
+  onDelete?: () => void
 }) {
-  const [comment, setComment] = React.useState('')
-  React.useEffect(() => { if (!open) setComment('') }, [open])
+  const [draft, setDraft] = React.useState<TaskDraft>(() =>
+    task ? { title: task.title, assignee: task.assignee, status: task.status, due: task.due } : { title: '', assignee: '', status: 'todo', due: '' },
+  )
+  const set = <K extends keyof TaskDraft>(key: K, value: TaskDraft[K]) => setDraft((d) => ({ ...d, [key]: value }))
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} persistentElements={persistentElements}>
-      <DialogContent maxWidth={480} autoHeight portalContainer={portalContainer}>
-        <DialogHeader>
-          <DialogTitle>{taskLabel(task)}</DialogTitle>
-          <DialogDescription>Sprint 24 · 指派給 {task.assignee}</DialogDescription>
+    <Dialog open onOpenChange={(open) => { if (!open) onCancel() }} persistentElements={persistentElements}>
+      <DialogContent maxWidth={480} autoHeight portalContainer={portalContainer} aria-describedby={undefined}>
+        <DialogHeader
+          actions={task && onDelete
+            ? <Button id="demo-task-delete" variant="text" danger iconOnly size="sm" startIcon={Trash2} aria-label="刪除任務" onClick={onDelete} />
+            : undefined}
+        >
+          <DialogTitle>{task ? taskLabel(task) : '新增任務'}</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <div className="flex flex-col gap-[var(--layout-space-loose)]">
-            <DescriptionList orientation="horizontal">
-              <DescriptionItem label="指派人">{task.assignee}</DescriptionItem>
-              <DescriptionItem label="狀態">{task.status}</DescriptionItem>
-              <DescriptionItem label="截止日">{task.due}</DescriptionItem>
-            </DescriptionList>
-            {comments.length > 0 && (
-              <ul className="flex flex-col gap-1" aria-label="留言">
-                {comments.map((c, i) => <li key={i} className="text-body">{c}</li>)}
-              </ul>
-            )}
+            <Field required>
+              <FieldLabel>標題</FieldLabel>
+              <Input id="demo-task-title" value={draft.title} onChange={(e) => set('title', e.target.value)} placeholder="例:修正登入逾時" />
+            </Field>
             <Field>
-              <FieldLabel>留言</FieldLabel>
-              <Input id={ids.input} placeholder="寫下你的更新…" value={comment} onChange={(e) => setComment(e.target.value)} />
+              <FieldLabel>指派人</FieldLabel>
+              <PeoplePicker aria-label="指派人" value={draft.assignee || null} people={PEOPLE} onChange={(v) => set('assignee', v[0] ? personName(v[0]) : '')} />
+            </Field>
+            <Field>
+              <FieldLabel>狀態</FieldLabel>
+              <Select aria-label="狀態" options={STATUS_OPTIONS} value={draft.status} onChange={(v) => set('status', v as TaskStatus)} />
+            </Field>
+            <Field>
+              <FieldLabel>截止日</FieldLabel>
+              <DatePicker aria-label="截止日" typeable value={draft.due || null} onChange={(v) => set('due', v)} />
             </Field>
           </div>
         </DialogBody>
         <DialogFooter>
-          {onDeleteTask && <Button id={ids.delete} variant="secondary" danger onClick={onDeleteTask}>刪除任務</Button>}
-          <Button id={ids.cancel} variant="tertiary" onClick={() => onOpenChange(false)}>取消</Button>
-          <Button id={ids.save} variant="primary" disabled={!comment.trim()} onClick={() => { onSave(comment.trim()); onOpenChange(false) }}>儲存</Button>
+          <Button id="demo-task-cancel" variant="tertiary" onClick={onCancel}>取消</Button>
+          <Button id="demo-task-save" variant="primary" disabled={!draft.title.trim()} onClick={() => onSave({ ...draft, title: draft.title.trim() })}>儲存</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -654,54 +703,123 @@ function TaskDialog({ task, open, onOpenChange, portalContainer, persistentEleme
 }
 
 /** 沒有 URL 的確認框:一般 modal(不傳 persistentElements),傳送到畫布,蓋住一切含代理(v14 條 A)。 */
-function ConfirmDialog({ open, title, description, confirmLabel, onCancel, onConfirm, portalContainer, ids }: {
-  open: boolean; title: string; description: string; confirmLabel: string; onCancel: () => void; onConfirm: () => void
-  portalContainer: HTMLElement | null; ids: { cancel: string; confirm: string }
+function ConfirmDeleteDialog({ task, onCancel, onConfirm, portalContainer }: {
+  task: Task; onCancel: () => void; onConfirm: () => void; portalContainer: HTMLElement
 }) {
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel() }}>
+    <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
       <DialogContent maxWidth={400} autoHeight portalContainer={portalContainer}>
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogTitle>刪除{taskLabel(task)}?</DialogTitle>
+          <DialogDescription>任務與它的留言、附件都會被永久刪除,無法復原。</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button id={ids.cancel} variant="tertiary" onClick={onCancel}>取消</Button>
-          <Button id={ids.confirm} variant="primary" danger onClick={onConfirm}>{confirmLabel}</Button>
+          <Button id="demo-confirm-cancel" variant="tertiary" onClick={onCancel}>取消</Button>
+          <Button id="demo-confirm-delete" variant="primary" danger startIcon={Trash2} onClick={onConfirm}>刪除</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
 
+/* ── 代理 session(對話)模型:歷史浮層列多個 session、可切換;「+」開新 session,送出第一則後才有標題並進歷史 ── */
 type ChatMessage = { role: 'user' | 'agent'; content: React.ReactNode }
-function useAgentChat(initial: ChatMessage[]) {
-  const [messages, setMessages] = React.useState<ChatMessage[]>(initial)
-  const [draft, setDraft] = React.useState('')
-  const submit = React.useCallback(() => {
-    const text = draft.trim()
-    if (!text) return
-    setMessages((m) => [...m, { role: 'user', content: text }, { role: 'agent', content: `收到,我把「${text}」記到這個專案的討論串了,有進展會再告訴你。` }])
-    setDraft('')
-  }, [draft])
-  const reset = React.useCallback(() => { setMessages([]); setDraft('') }, [])
-  return { messages, draft, setDraft, submit, reset }
+type Session = { id: string; title: string; group: string; messages: ChatMessage[]; draft: string }
+const TITLE_MAX = 16
+function useSessions(initial: Session[]) {
+  const [state, setState] = React.useState<{ sessions: Session[]; activeId: string; seq: number }>({ sessions: initial, activeId: initial[0].id, seq: initial.length })
+  const active = state.sessions.find((s) => s.id === state.activeId) ?? state.sessions[0]
+  const update = (id: string, patch: (s: Session) => Session) =>
+    setState((st) => ({ ...st, sessions: st.sessions.map((s) => (s.id === id ? patch(s) : s)) }))
+  const newSession = (seq: number): Session => ({ id: `s${seq}`, title: '', group: '今天', messages: [], draft: '' })
+  return {
+    active,
+    /** 歷史浮層只列已送出過訊息的 session(新對話送出第一則之前不在歷史裡)。 */
+    history: state.sessions.filter((s) => s.messages.length > 0).map(({ id, title, group }): AgentConversationSummary => ({ id, title, group })),
+    select: (id: string) => setState((st) => ({ ...st, activeId: id })),
+    setDraft: (draft: string) => update(active.id, (s) => ({ ...s, draft })),
+    submit: () => {
+      const text = active.draft.trim()
+      if (!text) return
+      update(active.id, (s) => ({
+        ...s,
+        title: s.title || text.slice(0, TITLE_MAX),
+        draft: '',
+        messages: [...s.messages, { role: 'user', content: text }, { role: 'agent', content: `收到,我把「${text}」記到這個專案的討論串了,有進展會再告訴你。` }],
+      }))
+    },
+    create: () => setState((st) => {
+      const next = newSession(st.seq + 1)
+      return { sessions: [next, ...st.sessions], activeId: next.id, seq: st.seq + 1 }
+    }),
+    rename: (id: string, title: string) => update(id, (s) => ({ ...s, title })),
+    /** 刪的是目前對話 → 切到最近一則;全部刪光 → 開新的空對話(agent-panel.tsx `onDeleteConversation` 契約)。 */
+    remove: (id: string) => setState((st) => {
+      const sessions = st.sessions.filter((s) => s.id !== id)
+      if (st.activeId !== id) return { ...st, sessions }
+      const nextActive = sessions.find((s) => s.messages.length > 0) ?? sessions[0]
+      if (nextActive) return { ...st, sessions, activeId: nextActive.id }
+      const fresh = newSession(st.seq + 1)
+      return { sessions: [fresh], activeId: fresh.id, seq: st.seq + 1 }
+    }),
+    /** v14 條 F:重新整理 = 回到關閉的新對話(歷史是伺服器端的,留著;當前對話與草稿不保留)。 */
+    reset: () => setState((st) => {
+      const fresh = newSession(st.seq + 1)
+      return { sessions: [fresh, ...st.sessions.filter((s) => s.messages.length > 0)], activeId: fresh.id, seq: st.seq + 1 }
+    }),
+  }
 }
 
-function AgentColumn({ hostRef, open, onOpenChange, chat }: {
-  hostRef: React.Ref<HTMLDivElement>; open: boolean; onOpenChange: (open: boolean) => void; chat: ReturnType<typeof useAgentChat>
+function AgentColumn({ hostRef, open, onOpenChange, sessions, persistentElements }: {
+  hostRef: React.Ref<HTMLDivElement>
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  sessions: ReturnType<typeof useSessions>
+  /** 蓋板態仍要可用的宿主外節點(瀏覽器工具列)。 */
+  persistentElements: () => Element[]
 }) {
+  const { active } = sessions
+  const empty = active.messages.length === 0
   return (
     // 面板必須是畫布 flex 的**直接子節點**(它量的是自己的父層),所以殼用 display:contents
     <div ref={hostRef} className="contents">
       <AgentPanelDock open={open} onOpenChange={onOpenChange} logoState="still">
         {({ close }) => (
-          <AgentPanel className="border-l border-divider">
-            <AgentPanelHeader title={chat.messages.length ? '任務助理' : '新對話'} activeConversationId="c1" {...headerWiring} onNewConversation={chat.reset} onClose={close} />
-            <AgentConversation>
-              {chat.messages.map((m, i) => <AgentMessage key={i} role={m.role}>{m.content}</AgentMessage>)}
-            </AgentConversation>
-            <AgentPromptInput value={chat.draft} onValueChange={chat.setDraft} onSubmit={chat.submit} onRemoveAttachment={noop} onAddAttachment={noop} attachments={[]} placeholder="問我或指派工作…" />
+          <AgentPanel persistentElements={persistentElements}>
+            <AgentPanelHeader
+              title={empty ? '新對話' : active.title}
+              conversations={sessions.history}
+              activeConversationId={active.id}
+              conversationEmpty={empty}
+              onSelectConversation={sessions.select}
+              onRenameConversation={sessions.rename}
+              onDeleteConversation={sessions.remove}
+              onNewConversation={sessions.create}
+              onClose={close}
+            />
+            {empty ? (
+              // 新對話空狀態 = 「新對話(空狀態)」範例同一套:招喚態標誌 + Empty
+              <div className="flex min-h-0 flex-1 items-center justify-center">
+                <Empty
+                  icon={<AgentLogo state="attract" size={48} label="智慧代理" />}
+                  title="開始第一個對話"
+                  description="丟一個任務給代理,或把檔案拖進來。"
+                />
+              </div>
+            ) : (
+              <AgentConversation>
+                {active.messages.map((m, i) => <AgentMessage key={i} role={m.role}>{m.content}</AgentMessage>)}
+              </AgentConversation>
+            )}
+            <AgentPromptInput
+              value={active.draft}
+              onValueChange={sessions.setDraft}
+              onSubmit={sessions.submit}
+              onRemoveAttachment={noop}
+              onAddAttachment={noop}
+              attachments={[]}
+              placeholder="問我或指派工作…"
+            />
           </AgentPanel>
         )}
       </AgentPanelDock>
@@ -709,222 +827,138 @@ function AgentColumn({ hostRef, open, onOpenChange, chat }: {
   )
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   並存(v14 條 A / B):有 URL 的任務詳情開著時,右側代理仍可對話、打字;modal 與遮罩只佔舞台。
-   閘:`scripts/agent-modal-coexistence-invariant.mjs`
-   ═══════════════════════════════════════════════════════════════════════════ */
-function CoexistenceScene() {
+function UrlRegistryScene() {
   const [stage, setStage] = React.useState<HTMLDivElement | null>(null)
   const [canvas, setCanvas] = React.useState<HTMLDivElement | null>(null)
   const panelHostRef = React.useRef<HTMLDivElement | null>(null)
   const toolbarRef = React.useRef<HTMLDivElement | null>(null)
-  const keep = React.useCallback(() => [panelHostRef.current, toolbarRef.current].filter((el): el is HTMLDivElement => !!el), [])
-  const [tasks, setTasks] = React.useState<readonly Task[]>(TASKS)
-  const [openTask, setOpenTask] = React.useState<Task | null>(TASKS[0])
-  const [comments, setComments] = React.useState<Record<string, string[]>>({})
-  const [confirmTask, setConfirmTask] = React.useState(false)
+  /** 並存 modal 的保留集合:代理殼(面板或入口鈕)+ 瀏覽器工具列。 */
+  const keepForDialog = React.useCallback(() => [panelHostRef.current, toolbarRef.current].filter((el): el is HTMLDivElement => !!el), [])
+  /** 代理蓋板的保留集合:瀏覽器工具列(面板自己由元件保留)。 */
+  const keepForPanel = React.useCallback(() => [toolbarRef.current].filter((el): el is HTMLDivElement => !!el), [])
+  const [tasks, setTasks] = React.useState<Task[]>(TASKS)
+  const [confirmDelete, setConfirmDelete] = React.useState<Task | null>(null)
   const [agentOpen, setAgentOpen] = React.useState(true)
-  const chat = useAgentChat([
-    { role: 'user', content: '幫我看一下 #4821 卡在哪' },
-    { role: 'agent', content: '這張任務卡在「登入逾時」的重現步驟:Betty 昨天補了伺服器 log,但還缺 QA 的環境資訊(瀏覽器與版本)。你可以直接在左邊的任務裡留言要,我會把結果同步到衝刺看板。' },
-  ])
-  const NEW_TASK: Task = { id: 'task-new', num: 4840, title: '新任務', url: '/projects/8821/tasks/new', assignee: '未指派', status: '待處理', due: '—' }
-  return (
-    <div className="p-[var(--layout-space-loose)]">
-      <SimulatedBrowser
-        url={openTask ? openTask.url : OVERVIEW.url}
-        canBack={!!openTask}
-        onBack={() => setOpenTask(null)}
-        canvasRef={setCanvas}
-        toolbarRef={toolbarRef}
-        caption="模擬:任務詳情有自己的網址,開著時只遮住左邊的舞台,右側的代理照常可用;畫布上方的網址列與上下頁鈕只是示意。"
-      >
-        <Stage stageRef={setStage}>
-          <h1 className="text-heading">{OVERVIEW.title}</h1>
-          <ProjectFacts />
-          <TaskList tasks={tasks} onOpen={setOpenTask} idPrefix="coexist-open" />
-          <div className="flex gap-2">
-            <Button id="coexist-stage-btn" variant="primary" onClick={() => setOpenTask(NEW_TASK)}>新增任務</Button>
-          </div>
-          {stage && openTask && (
-            <TaskDialog
-              task={openTask}
-              open
-              onOpenChange={(o) => { if (!o) setOpenTask(null) }}
-              portalContainer={stage}
-              persistentElements={keep}
-              comments={comments[openTask.id] ?? []}
-              onSave={(c) => setComments((m) => ({ ...m, [openTask.id]: [...(m[openTask.id] ?? []), c] }))}
-              onDeleteTask={openTask.id === 'task-new' ? undefined : () => setConfirmTask(true)}
-              ids={{ input: 'coexist-modal-input', save: 'coexist-modal-save', cancel: 'coexist-modal-btn', delete: 'coexist-task-delete' }}
-            />
-          )}
-          {canvas && openTask && (
-            <ConfirmDialog
-              open={confirmTask}
-              title={`確定要刪除${taskLabel(openTask)}?`}
-              description="任務的留言與附件都會被永久刪除,無法復原。"
-              confirmLabel="刪除"
-              onCancel={() => setConfirmTask(false)}
-              onConfirm={() => { setTasks((ts) => ts.filter((t) => t.id !== openTask.id)); setConfirmTask(false); setOpenTask(null) }}
-              portalContainer={canvas}
-              ids={{ cancel: 'coexist-confirm-cancel', confirm: 'coexist-confirm-delete' }}
-            />
-          )}
-        </Stage>
-        <AgentColumn hostRef={panelHostRef} open={agentOpen} onOpenChange={setAgentOpen} chat={chat} />
-      </SimulatedBrowser>
-    </div>
-  )
-}
-
-export const ModalCoexistence: Story = {
-  name: '並存 — 有 URL 的 modal 與 agent 同時可用',
-  parameters: {
-    docs: {
-      description: {
-        story: '任務詳情有自己的網址,依代理原則第 A 條取得並存資格:它開著時只遮住舞台(宿主),右側代理仍可對話與打字;從任務裡按「刪除任務」開出的確認框沒有網址,會蓋住一切包含代理,取消後兩邊恢復。畫布外的網址列與上下頁鈕是模擬用。',
-      },
-    },
-  },
-  render: () => <CoexistenceScene />,
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   URL 註冊表示意 —— 假資料,把 v14 條 A/B/C/D/E/F 的互動演出來。真正的註冊表(誰有 URL、由誰確認)
-   在產品／導航層,DS 沒有也不該有;`persistentElements` 不讀 URL、不建立資格。
-   閘:`scripts/agent-url-registry-demo-invariant.mjs`
-   ═══════════════════════════════════════════════════════════════════════════ */
-type HistoryEntry = { host: Page; task: Task | null }
-
-function UrlRegistryScene() {
-  const [stage, setStage] = React.useState<HTMLDivElement | null>(null)
-  const [canvas, setCanvas] = React.useState<HTMLDivElement | null>(null)
-  const panelRef = React.useRef<HTMLDivElement | null>(null)
-  const toolbarRef = React.useRef<HTMLDivElement | null>(null)
-  const keep = React.useCallback(() => [panelRef.current, toolbarRef.current].filter((el): el is HTMLDivElement => !!el), [])
-  const [tasks, setTasks] = React.useState<readonly Task[]>(TASKS)
-  // 歷史堆疊合成一個 state,`go` 才能是穩定的 callback(初始代理回覆裡的連結閉包會抓住它;
-  // 分開兩個 state 時第一次 render 的 idx 被閉包凍住,點連結會把歷史截斷成不存在的位置)
-  const [nav, setNav] = React.useState<{ entries: HistoryEntry[]; index: number }>({ entries: [{ host: OVERVIEW, task: null }], index: 0 })
-  const hist = nav.entries, idx = nav.index
-  const go = React.useCallback((next: HistoryEntry) => setNav((n) => ({ entries: [...n.entries.slice(0, n.index + 1), next], index: n.index + 1 })), [])
+  // 歷史堆疊合成一個 state,`go` 才是穩定的 callback(代理回覆裡的連結閉包會抓住它)
+  const [nav, setNav] = React.useState<{ entries: Location[]; index: number }>({ entries: [{ url: TASKS_PAGE.url }], index: 0 })
+  const navRef = React.useRef(nav)
+  navRef.current = nav
+  const go = React.useCallback((next: Location) => setNav((n) => ({ entries: [...n.entries.slice(0, n.index + 1), next], index: n.index + 1 })), [])
   const back = React.useCallback(() => setNav((n) => ({ ...n, index: Math.max(0, n.index - 1) })), [])
   const forward = React.useCallback(() => setNav((n) => ({ ...n, index: Math.min(n.entries.length - 1, n.index + 1) })), [])
-  const [comments, setComments] = React.useState<Record<string, string[]>>({})
-  const [confirmProject, setConfirmProject] = React.useState(false)
-  const [confirmTask, setConfirmTask] = React.useState(false)
-  const [agentOpen, setAgentOpen] = React.useState(true)
-  const initialChat = React.useMemo<ChatMessage[]>(() => [
-    { role: 'user', content: '登入逾時那件事現在在哪裡處理?' },
-    { role: 'agent', content: (
-      <>
-        <p>跟你問的有關的有三處:</p>
-        <ul className="mt-2 flex flex-col gap-1">
-          <li><a href={TASKS[0].url} id="demo-link-task-4821" onClick={(e) => { e.preventDefault(); go({ host: OVERVIEW, task: TASKS[0] }) }}>{taskLabel(TASKS[0])}</a></li>
-          <li><a href={BOARD.url} id="demo-link-sprint-board" onClick={(e) => { e.preventDefault(); go({ host: BOARD, task: null }) }}>{BOARD.title}</a></li>
-          <li><a href="https://support.example.com/tickets/88213" id="demo-link-zendesk" target="_blank" rel="noopener noreferrer">Zendesk 客訴 #88213<ExternalLink size={14} className="ml-1 inline-block align-[-2px]" aria-hidden /></a></li>
-        </ul>
-        <p className="mt-2">另外有人在討論串提到 <span id="demo-unconfirmed">/projects/9999</span>,但系統裡查不到這個專案,我就沒有放連結。</p>
-      </>
-    ) },
-  ], [go])
-  const chat = useAgentChat(initialChat)
-  const cur = hist[idx]
-  const location = cur.task ? cur.task.url : cur.host.url
-  // v14 條 F:重新整理 = 宿主不變、代理回到初始關閉的新對話(草稿與對話不保留)
-  const reload = () => { setAgentOpen(false); chat.reset() }
-  const closeTask = () => { if (cur.task) go({ host: cur.host, task: null }) }
+  const cur = nav.entries[nav.index]
+  const view = resolveView(cur)
+  /** 從「目前看得到的頁面」點開 modal:來源頁成為背景(已經在 modal 裡時沿用它的背景)。 */
+  const openTask = React.useCallback((num: number) => {
+    const page = resolveView(navRef.current.entries[navRef.current.index]).page
+    go({ url: taskUrl(num), backgroundLocation: page.url })
+  }, [go])
+  const openNewTask = () => go({ url: NEW_TASK_URL, backgroundLocation: view.page.url })
+  const closeModal = () => go({ url: view.page.url })
+  const initialSessions = React.useMemo<Session[]>(() => [
+    { id: 's1', title: '登入逾時追蹤', group: '今天', draft: '', messages: [
+      { role: 'user', content: '登入逾時那件事現在在哪裡處理?' },
+      { role: 'agent', content: (
+        <>
+          <p>跟你問的有關的有三處:</p>
+          <ul className="mt-2 flex flex-col gap-1">
+            <li><a href={taskUrl(4821)} id="demo-link-task-4821" onClick={(e) => { e.preventDefault(); openTask(4821) }}>任務 #4821 修正登入逾時</a></li>
+            <li><a href={BOARD_PAGE.url} id="demo-link-board" onClick={(e) => { e.preventDefault(); go({ url: BOARD_PAGE.url }) }}>{BOARD_PAGE.title}</a></li>
+            <li><a href="https://support.example.com/tickets/88213" id="demo-link-zendesk" target="_blank" rel="noopener noreferrer">Zendesk 客訴 #88213<ExternalLink size={14} className="ml-1 inline-block align-[-2px]" aria-hidden /></a></li>
+          </ul>
+          <p className="mt-2">另外有人在討論串提到 <span id="demo-unconfirmed">/projects/9999</span>,但系統裡查不到這個專案,我就沒有放連結。</p>
+        </>
+      ) },
+    ] },
+    { id: 's2', title: '發布公告草稿', group: '今天', draft: '', messages: [
+      { role: 'user', content: '幫我擬 Sprint 24 的發布公告。' },
+      { role: 'agent', content: '草稿已放到 Notion 公告頁,用的是正式版語氣;要改成輕鬆版再跟我說。' },
+    ] },
+    { id: 's3', title: 'Q3 客訴分類', group: '過去 7 天', draft: '', messages: [
+      { role: 'user', content: '把 Q3 的客訴按原因分類。' },
+      { role: 'agent', content: '分成物流、品質、客服態度三類:物流延遲 41%、商品瑕疵 27%、回覆過慢 18%,其餘 14% 為零星原因。' },
+    ] },
+  ], [go, openTask])
+  const sessions = useSessions(initialSessions)
+  // v14 條 F:重新整理 = 宿主不變、代理回到初始關閉的新對話;瀏覽器同時丟掉記憶體裡的來源頁 →
+  // 任務網址等於「直接進入」,疊在預設背景(任務清單)上。
+  const reload = () => {
+    setNav((n) => ({ ...n, entries: n.entries.map((e, i) => (i === n.index ? { url: e.url } : e)) }))
+    setAgentOpen(false)
+    sessions.reset()
+  }
+  const modalTaskNum = view.modal?.kind === 'task' ? view.modal.num : null
+  const openTaskModal = modalTaskNum == null ? null : tasks.find((t) => t.num === modalTaskNum) ?? null
+  const nextNum = Math.max(...tasks.map((t) => t.num)) + 1
   return (
     <div className="p-[var(--layout-space-loose)]">
       <SimulatedBrowser
-        url={location}
-        canBack={idx > 0}
-        canForward={idx < hist.length - 1}
+        url={cur.url}
+        canBack={nav.index > 0}
+        canForward={nav.index < nav.entries.length - 1}
         onBack={back}
         onForward={forward}
         onReload={reload}
         canvasRef={setCanvas}
         toolbarRef={toolbarRef}
-        caption="示意(假資料):代理回覆裡的連結模擬「系統已查回、已確認」的目的地。有自己網址的內容只遮住舞台、能和代理並存;沒有網址的確認框會把代理一起擋住;系統沒確認過的網址只會是純文字;重新整理讓代理回到初始關閉。"
+        caption="示意(假資料):任務清單、看板與任務對話框都有自己的網址,對話框只遮住舞台、右側代理仍可用;從看板點任務,對話框疊在看板上,重新整理後直接以任務網址進入則疊在預設的任務清單上。沒有網址的刪除確認框會把代理一起擋住。畫布上方的網址列與上下頁鈕只是模擬。"
       >
         <Stage stageRef={setStage}>
-          <h1 id="demo-stage-title" className="text-heading">{cur.host.title}</h1>
-          {cur.host.kind === 'overview' && (
+          <h1 id="demo-stage-title" className="text-heading">{view.page.title}</h1>
+          {view.page.kind === 'tasks' && (
             <>
-              <ProjectFacts />
-              <TaskList tasks={tasks} onOpen={(t) => go({ host: cur.host, task: t })} idPrefix="demo-open" />
+              <TaskTable tasks={tasks} onOpen={(t) => openTask(t.num)} />
               <div className="flex gap-2">
-                <Button id="demo-open-confirm" variant="secondary" danger onClick={() => setConfirmProject(true)}>刪除專案</Button>
+                <Button id="demo-new-task" variant="primary" onClick={openNewTask}>新增任務</Button>
               </div>
             </>
           )}
-          {cur.host.kind === 'board' && (
-            <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
-              <TaskList heading="待處理" tasks={tasks.filter((t) => t.status === '待處理')} onOpen={(t) => go({ host: cur.host, task: t })} idPrefix="demo-board" />
-              <TaskList heading="進行中" tasks={tasks.filter((t) => t.status === '進行中')} onOpen={(t) => go({ host: cur.host, task: t })} idPrefix="demo-board" />
-              <TaskList heading="完成" tasks={[]} onOpen={() => {}} idPrefix="demo-board-done" />
-            </div>
-          )}
-          {cur.host.kind === 'projects' && (
-            <div className="flex flex-col gap-1">
-              <p className="text-body text-fg-muted">「結帳流程改版」已刪除。</p>
-              <ul className="flex flex-col gap-1">
-                <li><Button variant="link" onClick={() => go({ host: OVERVIEW, task: null })}>結帳流程改版(已封存)</Button></li>
-                <li><Button variant="link">客服平台整合</Button></li>
-              </ul>
-            </div>
-          )}
-          {stage && cur.task && (
+          {view.page.kind === 'board' && <Board tasks={tasks} onOpen={(t) => openTask(t.num)} />}
+          {stage && view.modal && (view.modal.kind === 'new' || openTaskModal) && (
             <TaskDialog
-              task={cur.task}
-              open
-              onOpenChange={(o) => { if (!o) closeTask() }}
+              key={cur.url}
+              task={openTaskModal}
               portalContainer={stage}
-              persistentElements={keep}
-              comments={comments[cur.task.id] ?? []}
-              onSave={(c) => { const id = cur.task!.id; setComments((m) => ({ ...m, [id]: [...(m[id] ?? []), c] })) }}
-              onDeleteTask={() => setConfirmTask(true)}
-              ids={{ input: 'demo-modal-input', save: 'demo-modal-save', cancel: 'demo-modal-cancel', delete: 'demo-task-delete' }}
+              persistentElements={keepForDialog}
+              onCancel={closeModal}
+              onDelete={openTaskModal ? () => setConfirmDelete(openTaskModal) : undefined}
+              onSave={(draft) => {
+                setTasks((ts) => openTaskModal
+                  ? ts.map((t) => (t.id === openTaskModal.id ? { ...t, ...draft } : t))
+                  : [...ts, { id: `t${nextNum}`, num: nextNum, ...draft }])
+                closeModal()
+              }}
             />
           )}
-          {canvas && cur.task && (
-            <ConfirmDialog
-              open={confirmTask}
-              title={`確定要刪除${taskLabel(cur.task)}?`}
-              description="任務的留言與附件都會被永久刪除,無法復原。"
-              confirmLabel="刪除"
-              onCancel={() => setConfirmTask(false)}
-              onConfirm={() => { const id = cur.task!.id; setTasks((ts) => ts.filter((t) => t.id !== id)); setConfirmTask(false); closeTask() }}
+          {canvas && confirmDelete && (
+            <ConfirmDeleteDialog
+              task={confirmDelete}
               portalContainer={canvas}
-              ids={{ cancel: 'demo-task-confirm-cancel', confirm: 'demo-task-confirm-delete' }}
-            />
-          )}
-          {canvas && (
-            <ConfirmDialog
-              open={confirmProject}
-              title="確定要刪除專案?"
-              description="專案內的任務、討論與附件都會被永久刪除,無法復原。"
-              confirmLabel="刪除"
-              onCancel={() => setConfirmProject(false)}
-              onConfirm={() => { setConfirmProject(false); go({ host: PROJECTS, task: null }) }}
-              portalContainer={canvas}
-              ids={{ cancel: 'demo-confirm-cancel', confirm: 'demo-confirm-delete' }}
+              onCancel={() => setConfirmDelete(null)}
+              onConfirm={() => {
+                setTasks((ts) => ts.filter((t) => t.id !== confirmDelete.id))
+                setConfirmDelete(null)
+                closeModal()
+              }}
             />
           )}
         </Stage>
-        <AgentColumn hostRef={panelRef} open={agentOpen} onOpenChange={setAgentOpen} chat={chat} />
+        <AgentColumn hostRef={panelHostRef} open={agentOpen} onOpenChange={setAgentOpen} sessions={sessions} persistentElements={keepForPanel} />
       </SimulatedBrowser>
     </div>
   )
 }
 
+/**
+ * 示意(假資料):v14 條 A–G 的互動一次演完。真正的註冊表(誰有 URL、由誰確認)在產品／導航層,
+ * DS 沒有也不該有;`persistentElements` 不讀 URL、不建立資格。
+ */
 export const UrlRegistryDemo: Story = {
   name: '示意(假資料)— URL 註冊表:誰能與 agent 並存',
   parameters: {
     docs: {
       description: {
-        story: '假資料示意:代理回覆裡的連結模擬「系統已確認」的目的地。點「任務 #4821」開有網址的 modal,它只遮舞台、代理仍可用;點「刪除專案」或任務裡的「刪除任務」開沒有網址的確認框,代理被擋、取消後恢復;點「衝刺看板」宿主換頁、網址列跟著變;上一頁 / 下一頁走歷史;重新整理讓代理回到初始關閉(草稿不保留),關掉再開則草稿保留。',
+        story: '假資料示意。舞台是專案的任務清單(DataTable);點任務標題或「新增任務」開有網址的對話框,它只遮舞台、右側代理仍可對話與切換 session;對話框 header 的垃圾桶開沒有網址的刪除確認框,代理被擋、取消後恢復。代理回覆裡的「衝刺看板」把宿主切到看板,再點「任務 #4821」對話框就疊在看板上(背景位置模式);重新整理等於直接以任務網址進入,對話框疊在預設的任務清單上,代理則回到初始關閉。上一頁 / 下一頁走歷史;窄畫布時代理改成蓋板,網址列與上下頁鈕仍可點,從代理點開的對話框在面板後方、按 × 收起後才能操作。',
       },
     },
   },

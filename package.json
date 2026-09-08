@@ -54,7 +54,6 @@
     "test:virtual-cursor-modality": "node scripts/virtual-cursor-modality-invariant.mjs",
     "test:agent-url-registry-demo": "node scripts/agent-url-registry-demo-invariant.mjs",
     "test:overlay-shortcut-scope": "node scripts/overlay-shortcut-scope-invariant.mjs",
-    "test:agent-modal-coexistence": "node scripts/agent-modal-coexistence-invariant.mjs",
     "test:dialog-coexistence": "node scripts/dialog-coexistence-invariant.mjs",
     "test:decided-clause-downgrade": "node scripts/decided-clause-downgrade-gate.mjs && node scripts/decided-clause-downgrade-gate.mjs --selftest",
     "test:button-variants": "node scripts/button-variant-invariant.mjs && node scripts/button-variant-invariant.mjs --selftest",

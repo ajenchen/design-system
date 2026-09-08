@@ -209,7 +209,7 @@ DropdownMenu 是掃描模式——使用者快速瀏覽選項，所有尺寸使�
 
 ## StateBehavior(DropdownMenu 層級特有)
 
-Item-level default / hover / focused / selected / disabled **色彩**由 MenuItem primitive SSOT 擁有(`patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」),在本元件 `ColorMatrix` story 承載並直接引用 MenuItem token。**selected × highlighted 疊加**:owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)——**滑鼠 hover 釘住 `bg-neutral-selected` 不變;鍵盤反白(highlighted 且非 :hover)畫框 `focus-ring-inset`**(2026-09-07 user 拍板「A5畫框」;原深一階底色已退役)(`not-hover:` 分流;2026-07-05 D4 原意即鍵盤 cursor,先前實作漏了滑鼠也觸發 highlighted 這條縫,且借用按壓專屬 `-active`,皆已糾正);**僅 RadioItem checked 走此 selected-bg 規則**(checked 底色套外層 Radix RadioItem)。CheckboxItem checked **不套 row bg**——checked 由內層 checkbox 控件表達,highlighted 時仍為 neutral-hover。DropdownMenu 的 `StateBehavior` story 展示**浮層層級特有的動態行為**:open / close 動畫(Radix `data-state` 驅動)、Submenu 展開 / 收起、CheckboxItem toggle(多選不 close)——這些是 item primitive 沒有的維度。
+Item-level default / hover / focused / selected / disabled **色彩**由 MenuItem primitive SSOT 擁有(`patterns/element-anatomy/item-anatomy.spec.md`「選擇 / 狀態視覺規則」),在本元件 `ColorMatrix` story 承載並直接引用 MenuItem token。**selected × highlighted 疊加**:owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)——**滑鼠 hover 釘住 `bg-neutral-selected` 不變;鍵盤模態的反白(highlighted)畫框 `focus-ring-inset`,框疊在選中底色上**(2026-09-07 user 拍板「A5畫框」;原深一階底色已退役;2026-09-09 起框由 `radixCursorClass` 統一畫在所有反白列上、不分選中與否,`not-hover:` 分流一併移除);**僅 RadioItem checked 走此 selected-bg 規則**(checked 底色套外層 Radix RadioItem)。CheckboxItem checked **不套 row bg**——checked 由內層 checkbox 控件表達,反白時同一般列(指標模態底色、鍵盤模態框)。DropdownMenu 的 `StateBehavior` story 展示**浮層層級特有的動態行為**:open / close 動畫(Radix `data-state` 驅動)、Submenu 展開 / 收起、CheckboxItem toggle(多選不 close)——這些是 item primitive 沒有的維度。
 
 ---
 
@@ -244,7 +244,7 @@ Item-level default / hover / focused / selected / disabled **色彩**由 MenuIte
 - Enter / Space — 選擇目前焦點的選項
 - Esc — 關閉
 
-**Focus**:Radix primitive 自管 focus trap / restoration。鍵盤導覽到的項目以 highlight **底色**標示(Radix `data-[highlighted]:bg-neutral-hover`,本元件刻意採 `data-highlighted` 而非 `:focus-visible` outline ring,跨瀏覽器一致 — 見 dropdown-menu.tsx docblock「Hover / highlight canonical」),不畫 `outline: 2px solid var(--ring)` 外框。**Trigger focus 指示**:非 asChild 裸用的 Trigger 顯示 Button focus canonical ring(`focus-visible:ring-2 ring-ring ring-offset-1`,SSOT = button.tsx);asChild 場景由子元件(通常 Button)自帶同款 ring。
+**Focus**:Radix primitive 自管 focus trap / restoration。反白(Radix `data-highlighted`)依輸入模態分流(owner = `ds-canonical/references/focus-canonical.md` 規則二,user 2026-09-09 拍板「都要畫框,不上底色」):**指標模態**反白跟著滑鼠走 = hover → `bg-neutral-hover`;**鍵盤模態**反白就是游標 → 畫框 `focus-ring-inset`(內描邊,列撐滿選單寬)、不上底色。模態由 `hooks/use-input-modality.ts` 判(本元件刻意用 `data-highlighted` + 模態而非瀏覽器 `:focus-visible`,因 Radix 對 hover 做程式化 focus、各瀏覽器 `:focus-visible` 行為不一 — 見 dropdown-menu.tsx docblock「Hover / highlight canonical」)。2026-09-09 之前鍵盤導覽到的未選中項只有底色不畫框 —— AI 推導自 Radix 慣例,已撤回。**Trigger focus 指示**:Trigger 走全域 `:focus-visible` 外描邊(`styles/base.css`,幾何 SSOT = focus-canonical「框怎麼畫」);asChild 場景由子元件(通常 Button)同樣走全域外描邊。
 
 **ARIA composite scroll wrapper**:`DropdownMenuContent` 的 viewport-aware body 仍消費 `ScrollArea`,但 viewport 傳 `viewportTabIndex={null}` 完全省略 generic wrapper 的 `tabindex`。`role="menu"` 內的 focus owner 是 Radix roving-focus `menuitem*` family；額外 `div[tabindex]` 會破壞 required-children 結構。群組 Label 是正常可讀文字,使用 `fg-secondary`(非低對比的 `fg-muted`)。
 

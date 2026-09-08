@@ -14,8 +14,8 @@
  *   M2 載入中訊息列同高 48(md),列內轉圈的 layout 寬高 = ICON_SIZE(md 16 / lg 20),文字可見(不是 sr-only)
  *   M3 訊息列內容水平置中:內容(文字,或轉圈 + 文字整組)中心 x 與列中心 x 誤差 ≤ 1px
  *   M4 搜尋列 loading:[cmdk-input-wrapper] 內 16px 轉圈 + aria-busy,input 仍可輸入;舊選項仍在、[cmdk-empty] 不顯示
- *   M5 觸發點 loading:Select / PeoplePicker 觸發點內、ChevronDown 左邊有 16px 轉圈(比兩者的 x);Combobox 浮層開著且搜尋列在浮層時
- *      觸發點不重複(只留搜尋列那顆,離打字的地方最近;關著時才在觸發點)
+ *   M4/M5 一次只有一顆轉圈(2026-09-09 定):清單空 → 只有選單裡的載入訊息列在轉,觸發點 / 搜尋列都不亮;有舊選項 → 搜尋列(浮層有搜尋列時)
+ *      或觸發點(搜尋在觸發點 / 選單關著)亮。Select / PeoplePicker 觸發點轉圈在 ChevronDown 左邊(比兩者的 x)
  *   M6 搜尋在觸發點的 Select 0 筆:整個 [cmdk-list] = 48(md),不得多 16(空群組不畫)
  *   M8 遠端搜尋(filterOption=false):打一個本機對不到的字,舊清單原封留著、搜尋列轉圈亮、沒有訊息列;後端回來後清單才換
  *   M9 群組自動分隔線:可見群組之間恰好一條 1px 線(第一個可見群組沒有),搜尋後剩一組就沒有線 —— 手插 Separator 在搜尋時會消失
@@ -247,7 +247,7 @@ let selectEmptyList = null, comboboxEmptyList = null
     const rs = await rows()
     if (rs.length !== 1) bad(`${L} 前提:恰好 1 列訊息列`, `${rs.length} 列`)
     else { assertRow(L, rs[0], { kind: 'loading', text: TEXT.loading }); await hoverCheck(L) }
-    assertTrigger(L, await triggerSpin())
+    { const t = await triggerSpin(); ck(`${L} M5 清單空時訊息列在轉 → 觸發點不重複轉圈`, t.scope && !t.spinner, t.spinner ? '觸發點還有轉圈' : '沒有') }
     const l = await list(); measured.push(l.height)
     ck(`${L} M6 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
   }
@@ -289,7 +289,7 @@ let selectEmptyList = null, comboboxEmptyList = null
     { const t = await triggerSpin(); ck(`${L} M5 浮層開著且搜尋列在浮層 → 觸發點不重複轉圈(只留搜尋列那顆)`, t.scope && !t.spinner, t.spinner ? '觸發點還有轉圈' : '沒有') }
     const l = await list(); measured.push(l.height); comboboxEmptyList = l.height
     ck(`${L} 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
-    await assertInputLoading(L)
+    { const w = await page.evaluate(() => window.__mm.spinnerIn('[cmdk-input-wrapper]')); ck(`${L} M4 清單空時訊息列在轉 → 搜尋列不重複轉圈`, !w.spinner, w.spinner ? '搜尋列還有轉圈' : '沒有') }
   }
 }
 {
@@ -325,7 +325,7 @@ let selectEmptyList = null, comboboxEmptyList = null
     const rs = await rows()
     if (rs.length !== 1) bad(`${L} 前提:恰好 1 列訊息列`, `${rs.length} 列`)
     else { assertRow(L, rs[0], { kind: 'loading', text: TEXT.loading }); await hoverCheck(L) }
-    assertTrigger(L, await triggerSpin())
+    { const t = await triggerSpin(); ck(`${L} M5 清單空時訊息列在轉 → 觸發點不重複轉圈`, t.scope && !t.spinner, t.spinner ? '觸發點還有轉圈' : '沒有') }
     const l = await list(); measured.push(l.height)
     ck(`${L} 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
   }
@@ -410,7 +410,7 @@ for (const [key, L] of [['commandInline', 'Command 行內搜尋清單'], ['comma
       const rs = await rows()
       if (rs.length !== 1) bad(`${L} 前提:名錄未到時恰好 1 列訊息列`, `${rs.length} 列`)
       else assertRow(`${L}(名錄未到)`, rs[0], { kind: 'loading', text: TEXT.loading })
-      await assertInputLoading(`${L}(名錄未到)`)
+      { const w = await page.evaluate(() => window.__mm.spinnerIn('[cmdk-input-wrapper]')); ck(`${L}(名錄未到)M4 清單空時訊息列在轉 → 搜尋列不重複轉圈`, !w.spinner, w.spinner ? '搜尋列還有轉圈' : '沒有') }
       // 名錄抵達(story 的 1.5 秒 setTimeout 由假時鐘撥過去)
       await page.clock.runFor(1600); await page.waitForTimeout(300)
       const after = await list(); const t = await triggerSpin()

@@ -23,8 +23,8 @@ import { useInputModality } from '@/design-system/hooks/use-input-modality'
  * - Radix primitives：behavior（keyboard nav, focus management, aria roles）
  * - MenuItem：visual（layout, padding, icon alignment, typography）
  *
- * Radix primitive 是外層容器,控制 `data-[highlighted]:bg-neutral-hover`。
- * MenuItem 內層只負責佈局,不加互動樣式。
+ * Radix primitive 是外層容器,擁有反白(`data-[highlighted]`)的長相:指標模態底色、鍵盤模態畫框
+ *(`radixCursorClass`,focus-canonical 規則二)。MenuItem 內層只負責佈局,不加互動樣式。
  *
  * ── Hover / highlight canonical(2026-04-22 修正)──
  * 用 Radix 官方的 `data-[highlighted]` attribute,**不用 `:focus-visible` / `:hover` /
@@ -61,12 +61,25 @@ const ICON_SIZE = ROW_ICON_SIZE
 // ── Shared item classes on Radix primitive ──
 // Highlight(hover + keyboard nav): 用 Radix `data-[highlighted]` canonical(見 docblock)
 const radixItemClass = [
-  // @focus-suppress D — D 選單未選中項;承擔者:data-[highlighted] 的 hover 同色底
+  // @focus-suppress A — Radix 用 roving focus 把 DOM 焦點放在項目上,但反白(data-highlighted)滑鼠 hover 也會觸發程式化 focus,
+  //   瀏覽器對程式化 focus 的 :focus-visible 跨瀏覽器不一致(見檔頭 docblock),所以抑制瀏覽器那圈、改由本檔依
+  //   useInputModality 判模態;承擔者:radixCursorClass 畫在 data-[highlighted] 項上的 focus-ring-inset(鍵盤模態)
   'relative cursor-pointer select-none outline-none',
   'transition-colors duration-150',
-  'data-[highlighted]:bg-neutral-hover',
   'data-[disabled]:pointer-events-none data-[disabled]:text-fg-disabled data-[disabled]:cursor-default',
 ].join(' ')
+
+/**
+ * 反白(Radix `data-highlighted`)怎麼畫 —— 依輸入模態分流(focus-canonical 規則二,user 2026-09-09 拍板「都要畫框,不上底色」):
+ *   指標模態:Radix 讓反白跟著滑鼠走(規則一的浮層例外),反白 = hover → 底色、無框。
+ *   鍵盤模態:反白就是游標 → 畫框(列撐滿選單寬 → 內描邊)、不上底色;滑鼠若停在反白列上,底色照 hover 規則另外出現。
+ * 選中 / checked 列的底色由各 item 另外釘住(item-anatomy「選中 × 互動疊加」),框照樣疊在上面。
+ * 2026-09-09 之前未選中的反白列用 hover 同色底(AI 推導自 Radix 慣例,user 撤回)。
+ */
+const radixCursorClass = (keyboardModality: boolean) =>
+  keyboardModality
+    ? 'data-[highlighted]:focus-ring-inset hover:bg-neutral-hover'
+    : 'data-[highlighted]:bg-neutral-hover'
 
 // ── Root ──
 // Radix modal menu 會在 open 時把 trigger 所在的 app subtree 設成 aria-hidden。瀏覽器仍可
@@ -313,18 +326,14 @@ const DropdownMenuItem = React.forwardRef<
       textValue={typeof children === 'string' ? children : undefined}
       className={cn(
         radixItemClass,
+        radixCursorClass(keyboardModality),
         // 2026-07-04 Q2 拍板:selected bg 勝 hover/highlighted(bg 是唯一選中指示器,被 hover 洗掉
         // = 選中資訊消失)。對齊 MenuItem(menu-item.tsx selected 時關 hover bg)+ Ant Menu
-        // `:not(-item-selected)` + VS Code list `:hover:not(.selected)`;Radix highlighted 同時是
-        // keyboard cursor,selected 項停留時維持 selected bg(DS bg 通道單一職責)。
-        // 2026-07-05 D4 補完 Q2 附帶條件:selected×highlighted(鍵盤 cursor 停留)深化一階,cursor 可感知
-        //(WCAG 2.4.7)。2026-08-11 user 拍板糾正兩處(SSOT = item-anatomy「選中 × 互動疊加」):
-        //(1) Radix highlighted 滑鼠也觸發,深化僅限鍵盤 — 滑鼠 hover 釘住不變(not-hover 分流,
-        //     深化 (0,3,0) > 釘住 (0,2,0));(2) token 從借用的 -active(按壓專屬)歸位 -focus。
-        // 2026-09-07「A5畫框」:選中項底色已被佔走,鍵盤反白改畫框。
-        // `not-hover:` 保留 —— 滑鼠停在上面時不畫框(規則一)。
-        selected && 'bg-neutral-selected data-[highlighted]:bg-neutral-selected',
-        selected && keyboardModality && 'data-[highlighted]:not-hover:focus-ring-inset',
+        // `:not(-item-selected)` + VS Code list `:hover:not(.selected)`。
+        // 2026-08-11 user 拍板(SSOT = item-anatomy「選中 × 互動疊加」):滑鼠 hover 釘住不變;
+        // 2026-09-07「A5畫框」:選中 × 鍵盤游標 = 畫框;2026-09-09:框由 radixCursorClass 統一畫在反白列上
+        //(不分選中與否),這裡只剩「選中底色釘住」—— 框直接疊在選中底色上。
+        selected && 'bg-neutral-selected hover:bg-neutral-selected data-[highlighted]:bg-neutral-selected',
         className,
       )}
       {...props}
@@ -366,6 +375,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
 >(({ className, children, startIcon, value, badge, ...props }, ref) => {
   const size = useRowSize()
   const iconPx = ICON_SIZE[size]
+  const keyboardModality = useInputModality() === 'keyboard'
 
   // SubTrigger suffix: [value?] [badge?] [ChevronRight] with gap-1
   const endContent = (
@@ -383,6 +393,8 @@ const DropdownMenuSubTrigger = React.forwardRef<
       textValue={typeof children === 'string' ? children : undefined}
       className={cn(
         radixItemClass,
+        radixCursorClass(keyboardModality),
+        // 子選單開著 = 狀態(同選中一類的持續態),用底色表達;游標的框照 radixCursorClass 疊上去
         'data-[state=open]:bg-neutral-hover',
         className,
       )}
@@ -417,6 +429,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   DropdownMenuCheckboxItemProps
 >(({ className, children, startIcon, description, checked, disabled, ...props }, ref) => {
   const size = useRowSize()
+  const keyboardModality = useInputModality() === 'keyboard'
 
   return (
     <DropdownMenuPrimitive.CheckboxItem
@@ -426,7 +439,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       // 2026-07-05:同 DropdownMenuItem——typeahead 只比對 label(M10 同 pattern:帶 description)。
       textValue={typeof children === 'string' ? children : undefined}
       onSelect={(e) => e.preventDefault()}
-      className={cn(radixItemClass, className)}
+      className={cn(radixItemClass, radixCursorClass(keyboardModality), className)}
       {...props}
     >
       <MenuItem
@@ -518,8 +531,8 @@ const DropdownMenuRadioItem = React.forwardRef<
       // 2026-05-31 #10:selected 底色套在外層 Radix RadioItem 本身(非 `[&>*]` 子 MenuItem),
       // 因內層 MenuItem 自帶 `!bg-transparent` 會蓋掉子層 bg → 選中底色從不顯示。
       // 改 parent-bg pattern(對齊 DropdownMenuItem selected):RadioItem 上底色,MenuItem 透明讓它透出。
-      // 2026-07-04 Q2:checked 亦勝 highlighted(同 DropdownMenuItem selected 規則)
-      className={cn(radixItemClass, 'data-[state=checked]:bg-neutral-selected data-[state=checked]:data-[highlighted]:bg-neutral-selected', keyboardModality && 'data-[state=checked]:data-[highlighted]:not-hover:focus-ring-inset', className)}
+      // 2026-07-04 Q2:checked 亦勝 highlighted(同 DropdownMenuItem selected 規則);鍵盤游標的框由 radixCursorClass 疊在 checked 底色上(2026-09-09)
+      className={cn(radixItemClass, radixCursorClass(keyboardModality), 'data-[state=checked]:bg-neutral-selected data-[state=checked]:hover:bg-neutral-selected data-[state=checked]:data-[highlighted]:bg-neutral-selected', className)}
       {...props}
     >
       <MenuItem

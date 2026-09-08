@@ -60,6 +60,8 @@ const ALLOW_HEADER = {
 }
 const TARGETS = [
   { name: 'renderRowFresh', depsVar: 'epochDeps', allow: ALLOW_ROW, inherit: null },
+  // 列殼(2026-09-09)也走同一份快取,依賴同樣要列全(Codex R9);白名單與真列共用,「沒人用的白名單項」只在真列那一筆檢查
+  { name: 'renderShellRow', depsVar: 'epochDeps', allow: ALLOW_ROW, inherit: null, sharedAllow: true },
   { name: 'renderHeaderRowFresh', depsVar: 'headerEpochDeps', allow: ALLOW_HEADER, inherit: 'epochDeps' },
 ]
 
@@ -155,7 +157,7 @@ function run(src) {
     const inDeps = (k) => deps.has(k) || deps.has('tableStateForEpoch.' + k) || (inherited ? inherited.has(k) || inherited.has('tableStateForEpoch.' + k) : false)
     const ALLOW = T.allow; const used = r.used
     const missing = [...used].filter((k) => !inDeps(k) && !(k in ALLOW)).sort()
-    const staleAllow = Object.keys(ALLOW).filter((k) => !used.has(k))
+    const staleAllow = T.sharedAllow ? [] : Object.keys(ALLOW).filter((k) => !used.has(k))
     const both = Object.keys(ALLOW).filter((k) => deps.has(k))
     console.log(`${T.name} 外層變數 ${used.size} 個:${T.depsVar} 命中 ${[...used].filter(inDeps).length},白名單 ${[...used].filter((k) => k in ALLOW && !inDeps(k)).length}`)
     if (missing.length) { failed++; missingAll.push(...missing); console.log(`✗ ${T.name}:未分類的外層變數(要進 ${T.depsVar} 或白名單附理由):${missing.join(', ')}`) }

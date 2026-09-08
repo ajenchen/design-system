@@ -82,6 +82,7 @@ reader-facing 的 scenario 不得標 `test-only`。機械 gate=`scripts/audit-co
 
 - **畫布 / 說明分區**:要演「整頁 + 浮層 + 常駐面板」的 story,用 `stories-helpers/scene/simulated-browser.tsx`:上方工具列(上一頁 / 下一頁 / 網址列,DS Button + Input)是**說明用**,下方畫布是**擬真的產品畫面**;Dialog / FileViewer 用 `portalContainer={canvas}` 傳送進畫布。說明只放畫布下方的 `caption`,**不放進畫布、不放進代理面板**(要解釋就寫成代理自己的回覆,用 `AgentMessage` 的樣式)。
 - **畫布裡只准 DS 元件 + 真實業務內容**:key/value 用 `DescriptionList`、欄位用 `Field` + `Input`、按鈕用 `Button`、標題用 `DialogHeader` + `DialogTitle`(`DialogHeader` 沒有 `title` prop,寫了不會渲染)。常駐面板是畫布 flex 的直接子節點,撐滿畫布高度。
+- **舞台用真元件、不縮排、不塞便條**(2026-09-09 user 指正:「為何那幾個任務清單要縮排?」「不要搞一個效能很差的 table」「dialog body 放三個像是留言的那個 field 包括標題,指派人,狀態和截止日不就好了嗎?description list 和整個留言功能都可以不用」):清單用 `DataTable`(資料極簡、不開虛擬捲動 / 拖曳 / 篩選)或 DS 清單元件,禁手刻 `<ul>` + 縮排;dialog body 照 DS 表單版面放 `Field`(`flex flex-col gap-[var(--layout-space-loose)]`,dialog.stories.tsx「建立專案」同款),不堆 `DescriptionList` + 留言區當充數;dialog header 一行標題(不用 `DialogDescription` 副標),記錄級操作走 `DialogHeader actions` 的 icon-only `text` 鈕、破壞性動作走沒有 URL 的確認框;說明一律寫在 `docs.description`,畫布與面板裡不放便條。
 
 ## 禁止
 

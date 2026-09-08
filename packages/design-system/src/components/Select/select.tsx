@@ -736,7 +736,9 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
 
     const chevronEl = (
       <ItemSuffix>
-        {loading && <CircularProgress size={iconSize} className="shrink-0" />}
+        {/* 一次只有一顆轉圈(2026-09-09 user 抓到首次開啟兩顆):選單開著且清單空時,選單裡的載入訊息列在轉,觸發點不重複;
+            有舊選項、或選單關著,才在觸發點(SSOT select-menu.spec.md「Loading」) */}
+        {loading && (!open || filteredOptions.length > 0) && <CircularProgress size={iconSize} className="shrink-0" />}
         <ChevronDown size={iconSize} className={cn('text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
       </ItemSuffix>
     )

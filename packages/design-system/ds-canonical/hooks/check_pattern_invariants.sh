@@ -139,15 +139,14 @@ $SUSPECT_C6
 
 教義(item-anatomy.spec.md「選中 × 互動疊加」+ color.spec.md「Selected state family」):
   滑鼠 hover 選中列 → 釘住 bg-neutral-selected 不變
-  鍵盤反白/焦點停在選中列 → bg-neutral-selected-focus(深一階)
-    ⚠️ **selector 必須對上該元件的焦點模型**(item-anatomy.spec.md「虛擬焦點以 not-hover: 分流、
-       真焦點用 focus-visible:」)。2026-09-06 實測:本條教義自 2026-08-11 落地的 4 個站點中,
-       有 2 個因為選錯 selector 而**從未生效** —— TreeView(虛擬焦點,列無 tabIndex)與
-       MenuItem(根節點 <div role="option">,非可聚焦)都寫了 `focus-visible:`。兩者已移除。
-       正確示範:dropdown-menu.tsx:321 `data-[highlighted]:not-hover:`(Radix)、
-       select-menu.tsx:490 `data-[selected=true]:not-hover:`(cmdk)、
-       sidebar.tsx:949 `data-[active=true]:focus-visible:`(真焦點)。
-       另:元件若已用別的機制表達鍵盤游標(如 TreeView 的 state 驅動 ring),就不該再深一階。
+  鍵盤游標停在任何列 → 畫框(focus-ring-inset)、不上底色;選中列 = 框疊在 bg-neutral-selected 上
+    (focus-canonical 規則二,user 2026-09-09 拍板;-focus 深一階 token 已於 2026-09-07 退役)
+    ⚠️ **selector 必須對上該元件的焦點模型**:虛擬游標(cmdk data-selected / Radix data-highlighted /
+       aria-activedescendant)由元件依 hooks/use-input-modality.ts 判鍵盤模態才掛 focus-ring-inset,
+       真焦點元件用 focus-visible:focus-ring-inset。2026-09-06 實測:寫錯 selector 的樣式**從未生效**
+       (TreeView 列無 tabIndex、MenuItem 根節點非可聚焦,都曾寫 focus-visible: 而永不 match)。
+       正確示範:command.tsx CommandItem 與 dropdown-menu.tsx radixCursorClass(依模態分流)、
+       sidebar.tsx focus-visible:focus-ring-inset(真焦點)、tree-view.tsx showRing(state 驅動)。
   bg-neutral-selected-active → 只准出現在含 active:(按壓)的修飾鏈
   bg-neutral-selected-hover  → 只准切換鈕 pressed 上 hover(變淺)
 例外:行尾 \\`// @token-state-allow: <reason>\\`

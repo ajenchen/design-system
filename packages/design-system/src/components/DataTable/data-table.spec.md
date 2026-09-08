@@ -271,6 +271,23 @@ header `scrollWidth` 915 = body 900 + padding 15,兩邊捲動範圍都是 397,�
 
 **機械閘** = `scripts/data-table-scroll-cost.mjs`:R0 每步真的重算的列 ≤ 換列數 + 2、R1 屬性變動、R2 節點增減、R3 commits ≤ 8(固定版本回歸預算:1 次虛擬捲動 + 5 次新列掛載副作用鏈,全在新列;Radix Tooltip / Checkbox 的 ref-state 可 batching,ref → 量測有先後依賴不能併)、**R4 單步內舊列裡被碰到的元件 fiber(含 bailout)最大值 ≤ 12(實測 0;舊列 = 步前就存在且不是最近 2 步內掛載的列,新列的掛載副作用鏈會跨到下一步的量測窗)、R5 表頭 ≤ 4(實測 0)**(fiber 歸因,React DevTools 同法;PerformedWork 會漏算「執行了但 bailout」所以另計 touched;逐步最大值不是平均;計數器丟例外即紅)、1px 步進 gBCR;`--selftest` = 預算歸零必紅 + 正向對照組(點全選 → 表頭與舊列都必須量到 render)。已知邊界:主要量連續捲動,開始/停止捲動時 `TableScrollProvider` 的 context 切換(Avatar / PersonDisplay 的 scroll-defer)不在 R4 內。
 
+**快速捲動的列殼(2026-09-09 codify;Codex R8 解法 (b))**:上面的不變條件管的是「主執行緒做了多少事」,但使用者看到的是合成器送出的幀 ——
+真實呈現幀量測(`scripts/data-table-fast-scroll.mjs --mode=gesture`,CDP screencast + 合成手勢)抓到 **main 與分支都有**的白:滾輪一甩
+(每秒 6,000–12,000px)時,每側只預掛 5 列 = 200px 緩衝,而把整窗 27 列有錢的儲存格重畫一次要 100ms 以上,合成器一幀就把視窗推到
+還沒掛任何列的區域,連續 17 幀(約 280ms)中央整片白、左右釘選面板停在舊位置。修法對齊 AG Grid `cellRendererParams.deferRender`
+(捲動中先顯示 skeleton cell,停捲後補 renderer)與 MUI X server-side lazy loading 的 skeleton rows:
+- **判準**:兩次 commit 之間的位移 ≥ overscan 緩衝(px)= 合成器已經超前緩衝。這一輪新進視窗的列先渲染成**列殼**(`[data-row-shell]`,
+  `aria-busy`;同高、同分隔線、同欄寬,每格一條 `Skeleton`),**已經完整畫過的列維持原樣**(不退回骨架);拖曳中、正在編輯 / 選取格所在的列不套殼。
+- **補齊**:位移落回緩衝內後,每次 render 依上一次 commit 量到的每列成本補真內容(預算 8ms;快的機器一兩幀補完、慢的機器分批),
+  一幀一幀補到沒有殼為止 —— 不等 `isScrollingResetDelay`(250ms)。判準自我校準:跟得上合成器的機器永遠看不到殼;正常滾輪速度下新列
+  在 overscan 區(視窗外)就補完,使用者也看不到。
+- **機械閘** = `scripts/data-table-fast-scroll.mjs --mode=gesture`:量合成器實際送出的每一幀(不是 DOM、不是預估),中央區每 40px 帶完全
+  沒有墨跡 = 空白帶;閘 = 最長連續空白 ms 與停捲後殼補齊 ms。儀器自帶對照組(`--selftest`):500 列不虛擬化的靜態頁同手勢必須 0 空白
+  (高速位移本身不會被誤判成白)、每個 scroll 事件忙等 120ms 必須量到 ≥ 3 幀空白(該紅會紅)。
+- **修後實測(2026-09-09,headless 軟體光柵,各 3 跑中位數;儀器 PNG 幀 + 骨架色可見 + 分隔線不算內容)**:12,000px/s 最長連續空白 556 → 31ms、空白幀 30 → 4;
+  6,000px/s 502 → 18ms、56 → 3 幀;3,000px/s 兩邊都 0、殼 0 幀(正常速度完全不出殼;初次載入 / 換頁也不出殼 —— 只有「上次 commit 是殼」的列吃補齊配額)。殼的 Skeleton 不做脈動動畫(幾百格透明度動畫讓光柵每幀重畫,消融實測空白幀 42 → 20);
+  合成器超前時 overscan 擴到半個視窗(每側上限 24 列)。CI 閘:6,000px/s 最長連續空白 ≤ 400ms、停手後殼 ≤ 1000ms 補齊(同句跑 main 紅 550–700ms)。
+
 ### 七、Column Type
 
 **Column type 是資料行為的預設合約。** 指定 type 自動獲得對齊 / 渲染 / 排序 / 篩選行為,可在 column 層級覆寫。

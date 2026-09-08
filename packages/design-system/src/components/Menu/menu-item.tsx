@@ -45,9 +45,11 @@ const menuItemVariants = cva(
     'flex items-start gap-2 px-3 w-full',
     'cursor-pointer select-none',
     'transition-colors duration-150',
-    // @focus-suppress D — D 選單未選中項;承擔者:未選中項用 hover 同色底;選中項畫框
-    'outline-none',
-    'focus-visible:bg-neutral-hover',
+    // 鍵盤游標一律畫框、不上底色(focus-canonical 規則二,user 2026-09-09 拍板)。
+    // 列撐滿容器、選項間無 gap → 內描邊(問題二「淨空 < 4px 往裡」)。本節點預設是 <div role="option"> 無 tabIndex,
+    // 只有 consumer 給了真焦點(如 SelectMenu 全選列 tabIndex=0)這行才會 match;巢在 Radix / cmdk 內時游標由外層畫。
+    // 2026-09-09 之前這裡是 `outline-none` + `focus-visible:bg-neutral-hover`(底色當游標,AI 推導自 cmdk 慣例,user 撤回)。
+    'focus-visible:focus-ring-inset',
   ],
   {
     variants: {
@@ -256,15 +258,12 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
         className={cn(
           menuItemVariants({ size }),
           !disabled && !selected && 'hover:bg-neutral-hover',
-          // 2026-08-11(SSOT = item-anatomy「選中 × 互動疊加」):選中列滑鼠 hover 本就不變(上行條件互斥);
-          // 補鍵盤焦點深一階 -focus(twMerge 同組蓋過 base 的 focus-visible:bg-neutral-hover)。
-          // 2026-09-06:移除 `focus-visible:bg-neutral-selected-focus`。本元件根節點是
-      // `<div role="option">`(:218-221)—— 非可聚焦元素,`:focus-visible` 恆不 match,
-      // 該行自 2026-08-11 加入起從未生效。**且消費者已經自己做對了**:
-      // select-menu.tsx:490 用 `data-[selected=true]:not-hover:`(cmdk 的虛擬焦點屬性)、
-      // dropdown-menu.tsx:321 用 `data-[highlighted]:not-hover:`(Radix)。
-      // 游標深化屬於「誰擁有 highlight 狀態」那一層,不該在這個 presentational primitive 重複宣告。
-      !disabled && selected && 'bg-neutral-selected',
+          // 選中列滑鼠 hover 釘住不變(上行條件互斥;SSOT = item-anatomy「選中 × 互動疊加」)。
+          // 鍵盤游標**不**改底色:游標一律是框(cva base 的 focus-visible:focus-ring-inset;巢在 cmdk / Radix 內時
+          // 由外層 CommandItem / DropdownMenu 依 useInputModality 畫在游標列上),選中 × 游標 = 框疊在選中底色上。
+          // 歷史:2026-08-11 曾加 `focus-visible:bg-neutral-selected-focus`(深一階),因本節點非可聚焦從未生效,
+          // 2026-09-06 移除;2026-09-09「底色當游標」整類撤回(focus-canonical 來源總帳)。
+          !disabled && selected && 'bg-neutral-selected',
           // disabled 用 cursor-not-allowed(對齊 Button + Material/Polaris/Atlassian);
           // pointer-events-none 會讓 cursor 失效,改用 aria-disabled + onClick guard
           disabled && 'text-fg-disabled cursor-not-allowed',

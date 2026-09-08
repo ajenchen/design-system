@@ -850,7 +850,7 @@ function CustomCombobox({
   const chevronEl = (
     <>
       {/* 浮層開著且裡面有搜尋列時,轉圈只留在搜尋列(離打字的地方最近),觸發點不重複;關著或搜尋在觸發點時才在這裡 */}
-      {loading && !(open && searchable && searchIn === 'menu') && <CircularProgress size={iconSize} className="shrink-0" />}
+      {loading && (!open || (searchable && searchIn === 'trigger' && options.length > 0)) && <CircularProgress size={iconSize} className="shrink-0" />}
       <ChevronDown size={iconSize} className={cn('shrink-0 text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
     </>
   )

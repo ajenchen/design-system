@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-08T15:25:03.074Z"
+    "generatedAt": "2026-09-08T17:36:38.840Z"
   },
   "components": {
     "accordion": {
@@ -76,7 +76,6 @@
           "design-system-components-agentpanel-展示--fab",
           "design-system-components-agentpanel-展示--logo-states",
           "design-system-components-agentpanel-展示--logo-think-stop",
-          "design-system-components-agentpanel-展示--modal-coexistence",
           "design-system-components-agentpanel-展示--url-registry-demo"
         ],
         "設計規格": [
@@ -1815,5 +1814,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 983
+  "totalStories": 982
 }

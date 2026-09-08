@@ -159,7 +159,10 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
         aria-activedescendant={selected != null && values.includes(selected) ? `${baseId}-opt-${selected}` : undefined}
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        className="flex flex-col py-2 focus-visible:focus-ring-inset"
+        // @focus-suppress A — 虛擬游標容器(aria-activedescendant 永遠指向 selected);承擔者:被指到的 option 在本容器
+        //   focus-visible 時畫 focus-ring-inset(下方 `group-focus-visible/listbox:aria-selected:`)。2026-09-09 之前框畫在
+        //   容器整圈上、不指名是哪一格 —— focus-canonical A 類:框畫在被指到的項目上,不畫容器。
+        className="group/listbox flex flex-col py-2 outline-none"
       >
         {values.map((v) => {
           const isSelected = v === selected
@@ -175,20 +178,23 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
               // tabIndex=-1:listbox 自身 tabbable + 用 ArrowUp/Down 切 option(WAI-ARIA roving),
               // 不讓每個 option 都進 Tab order(會 Tab 84 次過完 hours+minutes)
               tabIndex={-1}
-              onClick={() => onSelect(v)}
+              // 點選後把 DOM 焦點還給 listbox:tabIndex=-1 的 button 被點時會拿到焦點,接著用方向鍵,
+              // 瀏覽器會把 :focus-visible 的外描邊畫在**那顆停留的舊按鈕**上(游標其實已經走了)。
+              // 焦點回到 listbox,框就跟著 aria-activedescendant 走;程式化 focus 不會觸發 :focus-visible(滑鼠模態)。
+              onClick={() => { onSelect(v); listRef.current?.focus({ preventScroll: true }) }}
               className={cn(
                 'w-full h-field-sm text-body tabular-nums',
                 'flex items-center justify-center',
                 'cursor-pointer transition-colors',
                 'hover:bg-neutral-hover',
-                // 2026-08-11(SSOT = item-anatomy「選中 × 互動疊加」):滑鼠釘住本就正確;補鍵盤焦點深一階。
+                // 2026-08-11(SSOT = item-anatomy「選中 × 互動疊加」):滑鼠釘住本就正確。
                 // 2026-09-07 C11:刪掉 `focus-visible:bg-neutral-selected-focus` —— 本元件走
-                // aria-activedescendant 虛擬焦點(listbox tabIndex=0 :162 / option tabIndex=-1),
-                // 這顆 button 永遠拿不到 DOM 焦點,那條自寫下起從未 match 過。
-                // 而且這裡**不需要**另外的游標框:本元件的 aria-activedescendant 永遠指向
-                // `selected`(:159),即「鍵盤游標位置 = 目前選中值」(selection-follows-focus),
-                // 兩者不會分離 → 選中底色本身就是唯一且足夠的指示器(規則二第一列)。
+                // aria-activedescendant 虛擬焦點(listbox tabIndex=0 / option tabIndex=-1),那條從未 match 過。
+                // 本元件 selection-follows-focus(aria-activedescendant 永遠指向 `selected`),
+                // 所以「選中 × 游標」= 框疊在選中底色上(focus-canonical 規則二,user 2026-09-09 拍板):
+                // listbox 拿到鍵盤焦點時框畫在被指到的這一格、不畫容器整圈(A 類);何時畫交給瀏覽器的 :focus-visible。
                 isSelected && 'bg-neutral-selected text-foreground hover:bg-neutral-selected',
+                'group-focus-visible/listbox:aria-selected:focus-ring-inset',
                 isDisabled && 'text-fg-disabled cursor-not-allowed hover:bg-transparent',
               )}
             >

@@ -181,7 +181,7 @@ Panel 展開後的 column picker 結構:
 | 點 trigger | 開 Panel |
 | Enter / Space / ↓(focus 在 trigger)| 開 Panel(APG combobox required keys,trigger 顯式 `onKeyDown`)|
 | Esc | 關 Panel(不確認) |
-| Tab | 焦點在 column 間移動 |
+| Tab | 焦點在 column 間移動;欄拿到鍵盤焦點時,框畫在目前選中的那一格(`aria-activedescendant` 指到的 option,selection-follows-focus;owner = focus-canonical「問題一之二」A 類「框畫在被指到的項目上」),不畫容器整圈 |
 | ↑ / ↓ | 欄內上下選(每次移動即 commit,無 highlight 中間態) |
 | Home / End | 跳該欄首 / 尾 enabled 值 |
 

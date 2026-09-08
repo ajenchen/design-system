@@ -55,7 +55,10 @@ const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令
     <Dialog {...props}>
       <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]" autoHeight>
         <DialogTitle className="sr-only">{title}</DialogTitle>
-        <Command label={label}>
+        {/* data-dialog-body:讓 DialogContent 的 onOpenAutoFocus 把焦點放進搜尋列(它只認 [data-dialog-body] 內的
+            第一個 input)。2026-09-09 實測:沒有這個標記時焦點停在 dialog 殼上 —— 方向鍵到不了 cmdk(開了就是鍵盤死路,
+            WCAG 2.1.1),而且殼在鍵盤模態下會被全域 :focus-visible 外描邊畫一圈(浮層殼不該畫框,focus-canonical E 類)。 */}
+        <Command label={label} data-dialog-body>
           {children}
         </Command>
       </DialogContent>
@@ -292,15 +295,23 @@ const CommandItem = React.forwardRef<
       ref={ref}
       disabled={disabled}
       className={cn(
-        // @focus-suppress D — D 選單未選中項;承擔者:data-[selected=true] 的 hover 同色底
-        "relative flex cursor-default select-none items-center outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-neutral-hover data-[selected=true]:text-foreground data-[disabled=true]:text-fg-disabled",
+        // cmdk item 是 <div role="option"> 無 tabIndex,永遠拿不到 DOM 焦點 → 不需要 outline-none;
+        // 游標(cmdk data-selected)的長相由下方依模態分流。
+        "relative flex cursor-default select-none items-center data-[selected=true]:text-foreground data-[disabled=true]:pointer-events-none data-[disabled=true]:text-fg-disabled",
         // 內層 MenuItem 自帶內距與圓角;外層歸零
         "p-0 rounded-none",
+        // 游標依輸入模態分流(focus-canonical 規則二,user 2026-09-09 拍板「都要畫框,不上底色」):
+        //   指標模態:cmdk 讓游標跟著滑鼠走(規則一的浮層例外),游標 = hover → 底色、無框。
+        //   鍵盤模態:游標畫框(列撐滿 → 內描邊)、不上底色;滑鼠若停在游標列上,底色照 hover 規則另外出現。
+        // 2026-09-08 之前「已選 + 游標」的框沒有模態條件,滑鼠一點開就畫(user 抓到);
+        // 2026-09-09 之前未選中的游標列用 hover 同色底(AI 推導自 cmdk 慣例,user 撤回)。
+        keyboardModality
+          ? 'data-[selected=true]:focus-ring-inset hover:bg-neutral-hover'
+          : 'data-[selected=true]:bg-neutral-hover',
         // 選中 × 互動疊加(owner:item-anatomy.spec.md「選中 × 互動疊加」,2026-08-11 user 拍板):
-        // 滑鼠停在選中項 → 釘住 bg-neutral-selected;鍵盤反白 → 畫框(2026-09-07 A5),且只在鍵盤模態(2026-09-08)。
+        // 選中底色釘住(滑鼠 hover / 指標反白都不變);鍵盤游標的框直接疊在上面。
         // 2026-09-08 之前這段只在 SelectMenu / AgentPanel 各手刻一份,CommandItem 自己的 `selected` 是死的。
-        selected && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected',
-        selected && keyboardModality && 'data-[selected=true]:not-hover:focus-ring-inset',
+        selected && 'bg-neutral-selected hover:bg-neutral-selected data-[selected=true]:bg-neutral-selected',
         className
       )}
       {...props}

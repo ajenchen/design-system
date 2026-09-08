@@ -91,6 +91,10 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   | ≥ 1080 | **並排** —— 面板是 flex 兄弟,自然把舞台推窄 | 可拖,上限 `min(640, ⌊容器/3⌋)` |
   | < 1080 | **蓋板** —— `absolute inset-0` 蓋滿舞台 | 全寬,**不渲染拖曳把手**(寬度不再是可選的)|
 
+  蓋板態抑制的是**宿主**(共用 `lib/overlay-coexistence.ts` 的 `suppressOthers`,body portal 的浮層也被抑制);宿主之外仍要可用的節點
+  (瀏覽器 chrome:網址列、上一頁 / 下一頁、重新整理)由消費端以 `persistentElements` 傳入,與 Dialog 同一份契約
+  (2026-09-09 user:「範例變成滿版狀態時,上面那虛擬的網址列完全無法點擊」—— 模擬瀏覽器的工具列不是宿主)。並排態不抑制任何東西。
+
   「蓋滿」是 B 條原文(窄螢幕以抽屜蓋滿宿主),不是另外挑的做法。
   蓋板用 absolute 而不是把宿主推走:蓋板本來就不該改變底下內容的版面,回到寬螢幕時
   宿主也不必重新排版(避免來回切換內容跳動)。形態以 `data-agent-panel-mode` 標在根節點。

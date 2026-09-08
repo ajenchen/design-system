@@ -13,8 +13,8 @@
 ## 一句話
 
 **鍵盤游標只由鍵盤移動;滑鼠只上色,不搬游標。**(唯一例外:已開啟的暫時性彈出層,沿用不外擴)
-**指示器怎麼畫,看這個項目的底色有沒有被「選中」佔走** —— 沒佔走就用 hover 同色底(不畫框),
-佔走了才需要第二個通道 —— **user 2026-09-07 拍板:畫框**(原話「A5畫框」)。幾何走「決定程序」。
+**鍵盤游標一律畫框(DS 的焦點框),不上底色;底色只屬於滑鼠 hover 與「選中」。**
+唯一不畫框的例外是**插入點控件**(文字輸入框那類,閃動的 caret 就是指示)—— **user 2026-09-09 拍板**,原話見來源總帳。幾何走「框怎麼畫」。
 
 ## 為什麼要拆成兩個問題
 
@@ -24,13 +24,14 @@
 
 前半句是**問題一(誰移動游標)**,後半句是**問題二(游標長什麼樣)**。
 
-分開之後,**問題一有唯一答案**(規則一),**問題二在 2026-09-07 A5 畫框 + 2026-09-08 模態條件後已有完整答案**(規則二全部列),
-「選中 × 游標」那格原本是真取捨,**2026-09-07 user 已拍板畫框**(原話「A5畫框」),規則二那張表已經沒有空格。
+分開之後,**問題一有唯一答案**(規則一),**問題二自 2026-09-09 起也只剩一個答案**(規則二:一律畫框、不上底色;唯一例外是插入點控件)。
+2026-09-06〜09-08 之間問題二曾被寫成「看底色有沒有被選中佔走」的兩段式判準 —— 那是 AI 從 Radix / cmdk / shadcn 慣例推導出來的,
+**不是 user 的決定**,2026-09-09 已撤回(來源總帳)。
 
-一處要對這段引文誠實勘誤:引文假設選單選項會「同時有焦點框以及滑鼠 hover 上去的底色」。
-查證後**選單沒有焦點框** —— DS 既有 canonical(`menu-item.spec.md:301`)與 Material / Radix / cmdk
-一致,選單選項的鍵盤焦點就是那個 hover 底色本身,不另外畫框。引文的直覺(鍵盤在幫我移動滑鼠)是對的,
-「還會多一個框」這半不成立。
+上面引文裡「選單選項會同時有焦點框以及滑鼠 hover 上去的底色」這半句,現在成立的部分是:**框恆在**(那是鍵盤游標),
+**底色只在滑鼠真的停在那一列時**才出現(那是 hover),兩者可以同時存在但互不依賴。
+本檔舊版曾在這裡「勘誤」說選單沒有焦點框、游標就是 hover 底色本身 —— 那個勘誤的依據只是既有
+`menu-item.spec.md` 抄自 Material / Radix / cmdk 的慣例,不是 user 的話,已一併撤回。
 
 ---
 
@@ -70,32 +71,43 @@ type-ahead 的起點會跟著滑鼠亂跳;grid 內「打字即進入編輯」會
 
 ---
 
-## 規則二:游標用哪個通道
+## 規則二:游標長什麼樣 —— 一律畫框,不上底色
 
-**判準:這個項目的底色有沒有被「選中」佔走?**
+**判準只有一題:它是不是插入點控件?不是 → 畫框。**
+(user 2026-09-09 逐字:「就是基本上都是畫框,唯一不畫框的例外就是你所謂“單一狀態控制項(文字輸入框、Textarea、Field 內的輸入)”」)
 
 | 情況 | 指示器 | 依據 |
 |---|---|---|
-| **底色空著**(選單／清單選項,未被選中)| **用 hover 同色底,不畫框** | 既有 owner `menu-item.spec.md:301`「以 `bg-neutral-hover` 背景高亮…而非畫 outline ring」,附 Material / Radix / cmdk 三家對照 |
-| **底色被佔走**(該項同時是選中的)| **畫框** | **user 2026-09-07 拍板**,原話「A5畫框」。幾何走下方「決定程序」 |
-| **單一狀態控制項**(文字輸入框、Textarea、Field 內的輸入)| 滑鼠與鍵盤**共用同一套 focus 樣式** | 這類沒有「懸停候選 → 確認選它」的中間態 |
+| **鍵盤游標**停在任何可操作的東西上 —— 按鈕、選單／清單項(選中與否都一樣)、樹節點、表格格、tab、分頁鈕…;真 DOM 焦點或虛擬游標皆同 | **畫框**(DS 焦點框:2px `--ring`,外或內描邊由「框怎麼畫」決定);**不上底色** | **user 2026-09-09 拍板**:「我基本上都說以畫框為主」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧?」 |
+| **插入點控件**(`<input>` 文字類 / `<textarea>` / `[contenteditable]`;Field 家族控件另由 wrapper 邊框轉色承擔) | **不畫框**;指示 = 閃動的 caret(+ 欄位邊框轉 primary,`field-wrapper.tsx:49`) | user 同上;可機械判別的定義見「問題一之二」B 類 |
 
-**虛擬游標的框,同樣只在鍵盤模態下畫(2026-09-08 補)。** 真 DOM 焦點有瀏覽器的 `:focus-visible` 決定
+**底色只有兩個主人:滑鼠 hover 與「選中」。** 鍵盤游標不借用它們的顏色
+(user 2026-09-07:「不要一下用底色一下用邊框來標示焦點」;2026-09-09:「都不需要上底色」)。疊加時各說各的:
+
+| 疊加 | 長相 | 說明 |
+|---|---|---|
+| **選中 × 游標** | **框疊在選中底色上**(`bg-neutral-selected` + 框) | 底色說「這是選中的」,框說「游標在這裡」,兩個通道互不取消 |
+| **hover × 游標**(滑鼠停在鍵盤游標所在的那一列) | **底色 + 框都在** | 底色照 hover 規則出現、框照游標規則出現。浮層選單裡滑鼠一動游標就跟過去(規則一例外),所以這一格在浮層裡出現在「鍵盤模態下滑鼠剛好停在反白列」時 |
+| 選中 × hover | 選中底色釘住不變 | owner = `item-anatomy.spec.md`「選中 × 互動疊加」,本檔不重述 |
+
+**虛擬游標的框只在鍵盤模態下畫(2026-09-08)。** 真 DOM 焦點有瀏覽器的 `:focus-visible` 決定
 「這次要不要畫」;虛擬游標(`aria-activedescendant` / cmdk `data-selected` / Radix `data-highlighted`)
-的框畫在**沒有真焦點**的那一項上,瀏覽器幫不了,要自己判斷模態。判準逐字對齊
+的框畫在**沒有真焦點**(或焦點由程式搬動)的那一項上,瀏覽器幫不了,要自己判斷模態。判準逐字對齊
 [WICG focus-visible explainer「Example heuristic」](https://github.com/WICG/focus-visible/blob/main/explainer.md):
 「if the most recent user interaction was via the keyboard; and the key press did not include a meta,
 alt/option, or control key; then the modality is keyboard. Otherwise, the modality is not keyboard.」
-機械載體 = `hooks/use-input-modality.ts`(document capture 監聽、**模組載入即安裝**;第一版的「引用計數安裝」實測會漏掉開啟前的按鍵,見該檔註解),
-消費者:SelectMenu / DropdownMenu(Item + RadioItem)/ AgentPanel 歷史清單 / TreeView
-—— 原本四處各自實作(TreeView 有、其餘三處**沒有**),等於四份 SSOT。
+機械載體 = `hooks/use-input-modality.ts`(document capture 監聽、**模組載入即安裝**;第一版的「引用計數安裝」實測會漏掉開啟前的按鍵,見該檔註解)。
+浮層選單的反白(cmdk `data-selected` / Radix `data-highlighted`)因此有兩種長相:
+**指標模態**下反白跟著滑鼠走,它就是 hover → 底色、無框;**鍵盤模態**下反白就是游標 → 框、無底色
+(滑鼠若剛好停在上面,底色照 hover 規則另外出現)。消費者:`CommandItem`(SelectMenu / Select / Combobox /
+AgentPanel 歷史清單都經它)/ DropdownMenu 四種項目(`radixCursorClass`)/ TreeView(`showRing`)。
 錨:user 2026-09-08「為何我用滑鼠一開 select 選單明明就沒有鍵盤操作,卻會直接出現鍵盤焦點?」——
 cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selectedOption?.value}`),
-「已選 + 游標」的畫框規則沒有模態條件,滑鼠一點開就畫。閘:`scripts/virtual-cursor-modality-invariant.mjs`
-(三段:滑鼠開不畫 / 鍵盤移回必畫 / 純鍵盤開立刻畫)。
+畫框規則沒有模態條件,滑鼠一點開就畫。閘:`scripts/virtual-cursor-modality-invariant.mjs`
+(五段:滑鼠開不畫 / 鍵盤移回必畫 / 純鍵盤開立刻畫 / 鍵盤模態游標列有框且底色 = 非游標列 / 指標模態 hover 有底色無框)。
 
-**按鈕不屬於第三列。** 按鈕用滑鼠點下去不顯示焦點框(`:focus-visible` 啟發式:指標點按鈕不視覺化焦點,
-文字輸入框取得焦點要視覺化)。真正「滑鼠鍵盤共用」的只有文字輸入類。
+**按鈕不屬於例外列。** 按鈕用滑鼠點下去不顯示焦點框(`:focus-visible` 啟發式:指標點按鈕不視覺化焦點,
+文字輸入框取得焦點要視覺化)。真正「滑鼠鍵盤共用」的只有插入點控件。
 
 ### 一個項目只有一個指示器
 
@@ -111,11 +123,29 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 
 ### `--neutral-selected-focus` 的處置
 
-user 2026-09-07 拍板畫框之後,「選中 × 鍵盤游標」不再用深一階底色。
-**順序**:先把框補上,那個 token 才變成沒人用;**先刪會讓 4 處退化**(DropdownMenu `:321`/`:513`、
-SelectMenu `:490`、AgentPanel `:280`、Sidebar `:949`)。補完框再退役。
+**已於 2026-09-07 退役**(`semantic.css`「`-focus` 已於 2026-09-07 退役」註解、`color.spec.md:704`)。
+它原本表示「鍵盤焦點停在選中列 → 底色深一階」;順序是先補框、再刪 token,沒有顛倒。
+2026-09-09 全 repo 只剩歷史敘述,無活用法。
 
-## 現行盤點(2026-09-06 實測)
+## 框怎麼畫(幾何與顏色的一張表)
+
+下面每一列都已經在「問題二」或「遷移完成紀錄」裡各自成立,這裡只是把它們排在一起,方便一眼查:
+
+| 項目 | 值 | 住在哪 / 依據 |
+|---|---|---|
+| 線 | `outline: 2px solid var(--ring)` | `styles/base.css` `:focus-visible` 全域規則(外描邊)與 `@utility focus-ring-inset`(內描邊),值只寫這兩處 |
+| 顏色 | `--ring`(= primary) | token owner `tokens/color/color.spec.md`;本檔不定值 |
+| 位置(預設) | **往外** `outline-offset: 2px`;元件**什麼都不用寫** | 「問題二」:預設就是往外長(user 2026-09-07 逐字) |
+| 位置(被裁切／貼鄰居) | **往內** `outline-offset: -2px`,寫 `focus-visible:focus-ring-inset`(真焦點)或 `focus-ring-inset`(虛擬游標,由元件 state 掛上) | 「問題二」:被聚焦元素四周最小淨空 < 4px 才往內;撐滿容器寬度的列(選單項 / 側欄鈕 / tab)都屬此類 |
+| 圓角 | 跟著元素的 `border-radius` | `outline` 原生行為,不必特別處理(「不需要為它開分支」) |
+| 只准兩種幾何 | 全域外描邊 / `focus-ring-inset`;禁 `ring-offset-*`、禁 `focus-visible:ring-*`、禁手寫三件組 | `scripts/focus-geometry-invariant.mjs` R1–R5 |
+| 什麼時候畫(真焦點) | 瀏覽器 `:focus-visible` | 元件不判斷模態 |
+| 什麼時候畫(虛擬游標) | `useInputModality() === 'keyboard'` 才掛 `focus-ring-inset` | 上一節;`scripts/virtual-cursor-modality-invariant.mjs` |
+| **選中 × 游標** | 框疊在 `bg-neutral-selected` 上 | 規則二疊加表 |
+| **hover × 游標** | `bg-neutral-hover` + 框都在 | 規則二疊加表 |
+| 游標**不**帶什麼 | 不帶底色、不帶邊框變色、不帶文字變色 | 「一個項目只有一個指示器」+ user「都不需要上底色」 |
+
+## 現行盤點(2026-09-06 實測;2026-09-09 更新兩列)
 
 | 指標 | 數字 |
 |---|---|
@@ -123,16 +153,19 @@ SelectMenu `:490`、AgentPanel `:280`、Sidebar `:949`)。補完框再退役。
 | `ring-ring` 出現次數 | 85 |
 | 用 `focus-within:`(即共用 focus 那類)的元件 | 8 — AgentPanel / Carousel / DataTable / Field / FileViewer / LinkInput / PeoplePicker / Select |
 | `ring-inset` | 2(DataTable、TreeView)|
-| `--neutral-selected-focus` 的用法 | **4 活 + 1 死** —— 活:DropdownMenu / SelectMenu / AgentPanel(皆虛擬游標)、Sidebar(真 DOM 焦點且無 ring);死:TimePicker |
+| `--neutral-selected-focus` 的用法 | **0**(2026-09-07 退役;2026-09-06 當時是 4 活 + 1 死)|
+| 用底色當鍵盤游標的地方(`focus-visible:bg-` / 反白底色不分模態)| **0**(2026-09-09 清完:MenuItem / CommandItem / DropdownMenu / Sidebar;2026-09-08 當時 4 檔)|
 
-`bg-neutral-hover` 橫跨 131 處 / 56 檔,所以底色語彙本身是全 DS 共用的 —— 這正是不能再拿它加一階去表達第三個意義的原因。
+`bg-neutral-hover` 橫跨 131 處 / 56 檔,所以底色語彙本身是全 DS 共用的 —— 這正是它只能表達「滑鼠在這裡」與「選中」、不能再借給鍵盤游標當第三個意義的原因。
 
 ## 已知未收斂(不得當成已定案)
 
 - **DataTable 列游標**:目前完全沒有列層級的鍵盤游標。要補之前有三個前提要先解 ——
   `role="table"` 不能合法帶 `aria-activedescendant`(需遷 `grid`/`treegrid`);虛擬捲動下 activedescendant 指向的元素必須真實存在;
   同一列在三個面板各渲染一次,IDREF 該歸誰未定。
-- **Sidebar 選單鈕(已收斂 —— 依 2026-09-07 拍板補框:`sidebar.tsx:955` 當前項畫內描邊,`:924` 宣告 D 類)**:`sidebarMenuButtonVariants`(`sidebar.tsx:913-`)全段無 `focus-visible:ring`,鍵盤焦點**只有底色**(`:939` 非當前項用 hover 色 / `:949` 當前項深一階)。它是真 `<button>`、真 DOM 焦點,卻是全 DS 唯一「真焦點但只用底色」的地方。同檔 `SidebarGroupAction`(`:850`)反而有 ring。要不要補 ring 屬上節那題,未拍板。
+- **Sidebar 選單鈕(已收斂 2026-09-09)**:`sidebarMenuButtonVariants` 原本鍵盤焦點只有底色(非當前項 hover 色 / 當前項深一階),
+  2026-09-07 先補當前項的框,2026-09-09 依 user 拍板改成**所有項目都畫框**(`focus-visible:focus-ring-inset`)、
+  焦點不再上底色;底色只剩 hover 與 `data-active`。留在本節只為對照。
 - **Slider(已收斂 2026-09-07)**:原本 `slider.tsx` 註解明寫「不加 ring 或 halo」、以邊框變色當焦點;C6 修後改用全域外描邊,並把殘留的 `focus-visible:border-primary-hover` 一併刪除(`slider.tsx:174-182` 註解記錄兩次修正)。留在本節只為對照,不再是未收斂項。
 - **DataTable 的 hover 機制與 TreeView 不同**:TreeView 用 CSS `:hover`,DataTable 用指令式寫入的 `data-[hovered]` 屬性。
   兩者在規則一下結論相同(都不移動游標),但 DataTable 那條路沒有捲動時的重新計算。
@@ -154,14 +187,19 @@ SelectMenu `:490`、AgentPanel `:280`、Sidebar `:949`)。補完框再退役。
 
 | 條目 | 出處 |
 |---|---|
+| **「鍵盤游標一律畫框、不上底色;唯一不畫框的例外是插入點控件」(規則二現行版)** | **user 2026-09-09 拍板**,逐字:「我基本上都說以畫框為主」「會搶反白的,我當時只有說“除了畫框還要上底色來模擬滑鼠”,那就表示都要畫框吧?」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧?」「就是基本上都是畫框,唯一不畫框的例外就是你所謂“單一狀態控制項(文字輸入框、Textarea、Field 內的輸入)”」 |
+| ~~「底色空著(選單／清單選項,未被選中)→ 用 hover 同色底當游標,不畫框」(舊規則二第一列、舊 D 類、舊判斷程序第 6 步)~~ | **AI 推導自 Radix / cmdk / shadcn 慣例**(經 `menu-item.spec.md` 舊句「以背景高亮而非畫 outline ring」),**不是 user 決定**。**2026-09-09 user 撤回**,逐字:「“底色空著(選單／清單選項,未被選中) 用 hover 同色底當游標,不畫框”我們他媽到底哪有定義過這個?」「此外鍵盤焦點框怎麼畫的原則呢?“單一狀態控制項”這個又是如何具體判別?鍵盤焦點框的整理根本不完整」。本檔 2026-09-06〜09-08 三版都把這條當成「既有 canonical 本來就有的答案」寫進規則,那是把 AI 推論升格成定案(M36(a)),一併撤回 |
+| 「會搶反白的地方,鍵盤焦點 = hover 樣式 + 藍框」 | **user 2026-09-07 原話**:「反正就是會搶反白的地方的鍵盤焦點會有hover的樣式+藍框?你確認是這樣的話,那我可以接受」——這句已經是「都要畫框」;「+hover 樣式」的部分由 user 2026-09-09 自己收斂成「都不需要上底色」(底色只在滑鼠真的停在那一列時,照 hover 規則出現) |
+| 「一個藍色 focus ring 就已經夠顯眼了,同時要再加上其他樣式根本畫蛇添足」「不要一下用底色一下用邊框來標示焦點」 | **user 2026-09-06〜09-07 原話**,「一個項目只有一個指示器」與「不上底色」的立檔依據 |
 | 「按照 TreeView 的模型」 | **user 拍板**,原話「當然是按照 tree view 啊,我們不就是要確保整個ds 有SSOT有一致的設計語言嗎?」 |
-| 刪掉沒用到的焦點底色 token | **user 拍板**,原話「題一照你建議,把焦點底色那些沒用到的token該刪的就刪一刪」 |
+| 刪掉沒用到的焦點底色 token | **user 拍板**,原話「題一照你建議,把焦點底色那些沒用到的token該刪的就刪一刪」「我甚至覺得不要底色只留邊框更通用,然後可以刪掉沒用到的token?」 |
 | 「能 SSOT 就要 SSOT,不夠用就擴充 SSOT,但也要以世界級的設計擴充」「這個 SSOT 本身也不能違背世界級的設計」 | **user 原話**,本檔的立檔依據 |
 | 焦點框的粗細/顏色/圓角至少要一致;不顯示焦點也要有合理理由 | **user 原話**(「我認為焦點的邊框的基本樣式包括邊框粗細顏色圓角等等至少要是一致的」「若不顯示焦點標示也要有合理理由」)|
-| ~~「兩段式行為」作為規則二的判準~~ | **2026-09-06 撤回**。user 原話是問句(「…文字輸入框在鍵盤操作上不會有懸停再選中的兩段式行為所以可以簡單共用元件本身的 focus 狀態?」),我把問句當成判準並外推到選單與按鈕,結果與既有 owner `menu-item.spec.md:301` 相反。現行判準改為「底色有沒有被選中佔走」,那是**既有 canonical 本來就有的答案**,不是新規則 |
-| `--neutral-selected-focus` 退役 | 2026-09-06 我曾放大 user 原話(user 說的是刪「沒用到的」)並撤回;**2026-09-07 user 拍板「A5畫框」後,補完框它才會沒人用 → 屆時退役**。順序不可顛倒 |
+| ~~「兩段式行為」作為規則二的判準~~ | **2026-09-06 撤回**。user 原話是問句(「…文字輸入框在鍵盤操作上不會有懸停再選中的兩段式行為所以可以簡單共用元件本身的 focus 狀態?」),我把問句當成判準並外推到選單與按鈕。撤回後改成的「底色有沒有被選中佔走」判準,也於 2026-09-09 撤回(上表第二列)。現行判準只剩「是不是插入點控件」 |
+| `--neutral-selected-focus` 退役 | 2026-09-06 我曾放大 user 原話(user 說的是刪「沒用到的」)並撤回;2026-09-07 user 拍板「A5畫框」後補完框、token 沒人用 → 已於 2026-09-07 退役(`semantic.css` 註解 / `color.spec.md:704`)。順序沒有顛倒 |
 | 內描邊/外描邊「不統一但寫下規則」 | **AI 轉述 user 2026-09-06 裁示**,未逐字留存;規則內容(預設外描邊、祖先裁切改內描邊)為 AI 依現況歸納 |
 | 規則一及其唯一例外、不外擴的理由 | **AI 依上列一手來源歸納**,非 user 決定 |
+| A / B / C / E 四類的切法、六步判斷程序、B 類的機械判別(標籤名 + `contenteditable`) | **AI 歸納**(2026-09-07 逐站分類、2026-09-09 依 user 拍板改寫),user 拍板的只有「都畫框、例外是插入點控件、要可具體判別」 |
 
 ---
 
@@ -190,26 +228,28 @@ SelectMenu `:490`、AgentPanel `:280`、Sidebar `:949`)。補完框再退役。
 判「Tab 到得了」看三件事,不是用猜的:原生可聚焦元素 / `tabIndex >= 0` / 該檔有沒有 `.focus()` 把焦點送過去。
 **`tabIndex={-1}` 是「可程式聚焦、可點擊聚焦」,不是「不可聚焦」。**
 
-## 問題一之二:**什麼情況明確不用畫框**(2026-09-07 補;user 要求「應該明確不用畫鍵盤焦點框的原則吧」)
+## 問題一之二:**框由誰畫**(2026-09-07 補;2026-09-09 依 user 拍板改寫)
 
-問題一給的是判準(可不可以被操作),但「可以操作卻不用自己畫框」的合法情況一直只寫成一句
+問題一給的是判準(可不可以被操作),但「可以操作、卻不是自己畫瀏覽器那圈外框」的情況一直只寫成一句
 「指示器畫在別的元素上」,太抽象、每次都要重新想。下面把它拆成**四類**,是 2026-09-07
 用真瀏覽器逐站 Tab 過去、把全 DS 所有「聚焦了但自己沒畫框」的站點分類出來的結果
-(`scripts/focus-geometry-browser-audit.mjs`,當次 10 站,全部落在這四類內)。
+(`scripts/focus-geometry-browser-audit.mjs`)。**2026-09-09 改寫**:表的意思從「誰可以不畫」
+改成「**框由誰畫**」——四類裡只有 B 是真的不畫,其餘三類都有框,只是畫的人不是瀏覽器預設那圈。
+舊表的 **D 類(選單未選中項用 hover 同色底當游標)已整類撤回**(來源總帳),沒有替代品:那些列現在就是畫框。
 
 **共同前提**:四類都要指得出**承擔者是誰**(file:line)。指不出來就是要畫,沒有第五類。
 
-| 類 | 判準(**看什麼**) | 指示器是誰 | 實例 |
+| 類 | 判準(**看什麼**) | 框由誰畫 | 實例 |
 |---|---|---|---|
-| **A. 虛擬游標** | 它身上有 `aria-activedescendant` | 被指到的那一個元素 | TreeView 根 / DataTable 根 |
-| **B. 文字輸入類** | 它是 `<input>` / `<textarea>` | **插入點(caret)本身**;外框容器若另有 focus 樣式則加成 | Input / Textarea / Combobox / DatePicker / Command 搜尋框 |
-| **C. 邊框轉色** | 從**自己往上**找,有元素在聚焦時改邊框／底色(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | 那個元素(可以是自己,也可以是祖先) | 欄位外框自己(`combobox.tsx:857` / `time-picker.tsx:379`,`focus-within:!border-primary` 落在自己身上)/ 祖先畫(`inline-edit.tsx:396`)|
-| **D. 選單未選中項** | 它是選單／清單項,而且此刻**沒有**被選中(底色空著) | `bg-neutral-hover` 本身 | MenuItem / DropdownMenu / cmdk / SidebarMenuButton 非當前項 |
-| **E. 浮層程式落點** | 它 `tabIndex=-1`,而且是浮層開啟時被程式 `.focus()` 的殼 | 不畫;內部控件各自有指示 | Popover / HoverCard / DropdownMenuContent / FileViewer |
+| **A. 虛擬游標／程式游標** | 它身上有 `aria-activedescendant`;或它是函式庫管理游標的項目(cmdk `data-selected` / Radix `data-highlighted`),而瀏覽器的 `:focus-visible` 看不到那個游標 | **元件自己**,畫在**被指到的那一項**上(`focus-ring-inset`,只在鍵盤模態;容器／項目抑制瀏覽器預設外框) | TreeView 根(`tree-view.tsx:1394` showRing)/ DataTable 根 / TimePicker 欄(`time-columns.tsx` 被指到的 option)/ DropdownMenu 項(`dropdown-menu.tsx` `radixCursorClass`)/ CommandItem(`command.tsx`) |
+| **B. 插入點控件** | **可機械判別**:標籤名是 `input`(`type` 為文字類:未指定 / text / search / email / url / tel / password / number)或 `textarea`,或元素帶 `contenteditable`。Field 家族控件在此之上另有 wrapper 邊框轉色(`field-wrapper.tsx:49` `focus-within:!border-primary`)。grep 判準 = `scripts/focus-suppression-registry.mjs:125-127`(往上 40 行找得到 `<input>` / `<textarea>`,或共用 style 常數所服務的檔案真的渲染該標籤) | **唯一不畫框的例外**。指示 = 閃動的插入點(caret);Field 家族再加欄位邊框轉 primary | Input / Textarea / Combobox / DatePicker / Command 與 SelectMenu 搜尋框 / AgentPromptInput |
+| **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框 | 欄位外框自己(`combobox.tsx:857` / `time-picker.tsx:379`)/ 祖先畫(`inline-edit.tsx:396`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
+| **E. 浮層程式落點** | 它 `tabIndex=-1`,而且是浮層開啟時被程式 `.focus()` 的殼 | **回規則一(問題一)**:殼本身不可操作 → 不畫;它不在 Tab 順序裡(`-1` 是 Radix 設的,不必也不能拿掉)。若某個殼是 `tabIndex≥0` 的空焦點站,修法是**拿掉 tabIndex**,不是畫框。內部控件各自有指示 | Popover / HoverCard / DropdownMenuContent / FileViewer |
 
-> **這張表只收「可操作、但自己不畫」的情況。**
+> **這張表只收「可操作、但瀏覽器預設那圈不是它的框」的情況。**
 > 「**不可操作**的東西」不在這裡 —— 問題一已經答完了:它根本不該可聚焦,自然也不用畫。
 > 那類寫 `outline-none` 純粹是消瀏覽器預設外框的防禦。**遇到這種先回問題一,不要來這張表找位置。**
+> 「選單／清單項」也不在這裡 —— 它們就是要畫(A 類或真焦點),沒有「用底色代替」這一格。
 
 ### B 類為什麼是「元素種類」而不是「元件族」
 
@@ -220,10 +260,12 @@ SelectMenu `:490`、AgentPanel `:280`、Sidebar `:949`)。補完框再退役。
 
 它們共同的、真正的指示器是**文字插入點**。文字輸入框一取得焦點就有閃動的 caret,
 那本身就是「我在這裡」——這也是 WCAG 對文字欄位不另外要求外框的原因。
-所以判準應該是**「它是不是 `<input>` / `<textarea>`」**(看標籤名,一眼可答),
-不是「它屬不屬於某個元件族」(要認得出來)。
+所以判準應該是**「它是不是 `<input>` 文字類 / `<textarea>` / `[contenteditable]`」**(看標籤名與屬性,一眼可答),
+不是「它屬不屬於某個元件族」(要認得出來)。user 2026-09-09 追問「『單一狀態控制項』這個又是如何具體判別?」——
+答案就是這三個標籤／屬性,而且 `scripts/focus-suppression-registry.mjs` 的 B 類證據檢查(`:112-114`)就是照這個判的。
 
 Field 家族在此之上**額外**有欄位邊框轉 primary(`field-wrapper.tsx:49`),那是加成不是必要條件。
+**`type="checkbox"` / `"radio"` / `"range"` 的 `<input>` 不是插入點控件**——沒有 caret,照規則二畫框(DS 的 Checkbox / Radio / Slider 都畫)。
 
 ### 一個承擔者只能服務一個 tab stop
 
@@ -254,7 +296,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 寫成「往上找祖先」會把這種情況判成無承擔者 —— 但它是全 Field 家族觸發器的標準寫法。
 所以檢查範圍含自己:**問的是「這圈指示存不存在」,不是「畫在誰身上」**。
 
-### 判斷程序:七個**查得到答案**的問題,照順序問,問到 yes 就停
+### 判斷程序:六個**查得到答案**的問題,照順序問,問到 yes 就停
 
 刻意不用「它是哪一類」這種要靠認知的分類題 —— 那正是舊規則失效的原因(見下一節)。
 每一步都指定**要去看哪個東西**,看了就有答案:
@@ -262,21 +304,22 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 | 步 | 問題(去看什麼) | yes → | 承擔者寫什麼 |
 |---|---|---|---|
 | 1 | **它可以被操作嗎?**(有 onClick / onKeyDown / 是原生互動元素?) | **否 → 不畫**,而且要拿掉 tabIndex。這張表不適用 | `N`,寫「不可操作」 |
-| 2 | **它的 `tabIndex` 是 `-1`,而且是某個浮層開啟時被程式 `.focus()` 的殼嗎?** | **E** — 不畫 | 「浮層開啟時的程式落點;內部控件各自有指示」 |
-| 3 | **它身上有 `aria-activedescendant` 嗎?** | **A** — 容器不畫,畫在被指到的那個元素上 | 那個元素的 file:line(例:`tree-view.tsx:1381` 的 `showRing`)|
-| 4 | **它的標籤名是 `input` 或 `textarea` 嗎?** | **B** — 不畫,插入點(caret)就是指示 | 「caret」,外框另有 focus 樣式時一併寫上 |
-| 5 | **從自己往上找,有沒有元素在聚焦時改邊框／底色?**(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **C** — 不另外畫外框,那圈邊框就是指示 | 那個元素的 file:line 與 class(自己也算)|
-| 6 | **它是選單／清單項,而且此刻**沒有**被選中(底色空著)嗎?** | **D** — 用 hover 同色底當游標,不畫框 | `bg-neutral-hover` 那條 class |
-| 7 | **以上皆否** | **要畫**(幾何走問題二) | — |
+| 2 | **它的 `tabIndex` 是 `-1`,而且是某個浮層開啟時被程式 `.focus()` 的殼嗎?** | **E** — 不畫(回問題一) | 「浮層開啟時的程式落點;內部控件各自有指示」 |
+| 3 | **它身上有 `aria-activedescendant`,或它是 cmdk / Radix 管理游標的項目嗎?** | **A** — 容器不畫瀏覽器那圈,框由元件畫在被指到的那個元素上(鍵盤模態) | 那個元素／那條 class 的 file:line(例:`tree-view.tsx:1394` 的 `showRing`)|
+| 4 | **它的標籤名是 `input`(文字類)或 `textarea`,或帶 `contenteditable` 嗎?** | **B** — 不畫,插入點(caret)就是指示 | 「caret」,外框另有 focus 樣式時一併寫上 |
+| 5 | **從自己往上找,有沒有元素在聚焦時改邊框?**(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **C** — 不另外畫外框,那圈邊框就是指示 | 那個元素的 file:line 與 class(自己也算)|
+| 6 | **以上皆否** | **要畫**(幾何走「框怎麼畫」) | — |
 
-**沒有第八條。** 走到第 7 步就是要畫,不能再發明理由。
+**沒有第七條。** 走到第 6 步就是要畫,不能再發明理由。
+**2026-09-09 刪掉的那一步**是舊第 6 步「它是選單／清單項且沒被選中 → 用 hover 同色底不畫框」——
+它從來不是 user 的決定(來源總帳),而且跟規則二直接矛盾。
 
 三個刻意的設計:
 
 1. **每一步都可以用 grep 或 DevTools 當場回答**,不需要判斷者「認得出」這是哪一族元件。
    第 4 步尤其重要 —— 舊規則要讀者自己認出「這是 Field 家族的輸入控件」,
-   現在改成「往上找有沒有那個 wrapper」,連沒看過這個 DS 的人也答得出來。
-2. **順序不可調換**:先問「能不能操作」(問題一),再問四類例外,最後才是「要畫」。
+   現在改成看標籤名與屬性,連沒看過這個 DS 的人也答得出來。
+2. **順序不可調換**:先問「能不能操作」(問題一),再問四類,最後才是「要畫」。
    浮層落點排第 2 是因為它最容易被誤判成 A(兩者都是「容器拿到焦點」)——
    差別是浮層那個沒有 `aria-activedescendant`,一查就分得開。
 3. **每一類都要求寫出承擔者是誰**,而且承擔者是**具體的 file:line 或 class**,不是「別的元素」。
@@ -509,4 +552,4 @@ user 2026-09-07 拍板「A9用甲啊」(全域 `outline`),附條件是「確保�
 「combobox 不用有內描邊吧?到底為何突然加 combobox 內描邊?」——
 查證後那圈框在遷移前就存在且是往外的,我只是把它改成往內;正解是跟家族一樣抑制掉)。
 
-判準已寫進 `focus-canonical.md`「問題一之二:什麼情況明確不用畫框」的 B 類。
+判準已寫進 `focus-canonical.md`「問題一之二:框由誰畫」的 B 類。

@@ -45,7 +45,6 @@ import {
   X as XIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useInputModality } from '@/design-system/hooks/use-input-modality'
 import { useOverlayCoexistence } from '@/design-system/lib/overlay-coexistence'
 
 /**
@@ -170,6 +169,14 @@ export interface AgentPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   onWidthCommit?: (width: number) => void
   /** 可拖拉(左緣把手);預設 true。Sheet 承載時同樣可拖。 */
   resizable?: boolean
+  /**
+   * 蓋板態(容器 < 1080,面板蓋滿宿主)仍要可用的節點 —— 與 Dialog 的 `persistentElements` 同一份契約、
+   * 同一支 primitive(`lib/overlay-coexistence.ts`)。v14 條 B 說的「宿主暫不可操作」只講**宿主**;
+   * 宿主之外的瀏覽器 chrome(網址列、上一頁 / 下一頁、重新整理)不是宿主,蓋板時不得被抑制
+   * (2026-09-09 user:「範例變成滿版狀態時,上面那虛擬的網址列完全無法點擊」)。
+   * 並排態不抑制任何東西,此 prop 無作用。面板自己永遠在保留集合裡,不必傳。
+   */
+  persistentElements?: () => Element[]
 }
 
 const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
@@ -181,6 +188,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
       onWidthChange,
       onWidthCommit,
       resizable = true,
+      persistentElements,
       className,
       style,
       children,
@@ -248,9 +256,10 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // **body portal 出去的浮層(Dialog / FileViewer)完全不在裡面** ——
     // 窄版時那個 modal 會既蓋在上面又可以操作,兩條都違反條 B。
     // `suppressOthers([面板])` 是「保留這一塊、其餘全部抑制」,portal 出去的也照樣被抑制。
+    // 保留集合 = 面板自己 + 呼叫端指定的宿主外常駐區(瀏覽器 chrome 等;見 `persistentElements` 說明)。
     const keepPanel = React.useCallback(
-      () => (rootRef.current ? [rootRef.current as Element] : []),
-      [],
+      () => [rootRef.current as Element | null, ...(persistentElements?.() ?? [])].filter((el): el is Element => !!el),
+      [persistentElements],
     )
     // **量到之前不要動手**:`containerPx` 初值是 0,而 `resolveIsOverlay(0)` 會回 true
     // (0 < 1080)。若不加這個條件,面板一掛載就先把整頁(含同時開著的對話框)抑制掉,
@@ -426,20 +435,16 @@ function HistoryRow({
   onRename: () => void
   onDelete: () => void
 }) {
-  // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
-  const keyboardModality = useInputModality() === 'keyboard'
   return (
     <CommandItem
       value={conversation.id}
       keywords={[conversation.title]}
       onSelect={onSelect}
-      className={cn(
-        'group/menu-item p-0 rounded-none',
-        // 選中 × 鍵盤游標疊加(select-menu.tsx 2026-08-11 拍板:滑鼠釘住、鍵盤反白深一階)。
-        // 2026-09-07「A5畫框」:同 DropdownMenu / SelectMenu。
-        selected && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected',
-        selected && keyboardModality && 'data-[selected=true]:not-hover:focus-ring-inset',
-      )}
+      // 游標與選中的長相全部由 CommandItem 統一畫(指標模態底色 / 鍵盤模態畫框 / 選中底色釘住;
+      // focus-canonical 規則二 + item-anatomy「選中 × 互動疊加」);本列只交 `selected`,不再手刻一份
+      //(2026-09-09 之前這裡自己寫了一份 not-hover:focus-ring-inset,與 CommandItem 重複)。
+      selected={selected}
+      className="group/menu-item"
     >
       <MenuItem
         labelMaxLines={1}

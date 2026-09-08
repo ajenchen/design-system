@@ -163,7 +163,9 @@ Dialog 是容器，無整體 disabled / loading / empty 狀態——這些屬於
 - **層級**(2026-09-08 定):遮罩 `z-30` < 並存 modal 內容 `z-40` < 代理蓋板 `z-[45]` < 一般 modal `z-50`。沒有 URL 的確認框(不傳 persistentElements)維持一般 modal,蓋在常駐區域之上。
 - **Esc 與外部互動**:焦點在常駐區域內時的 Esc / pointer / focus 不算「框外」(`onPointerDownOutside` / `onFocusOutside` / `onInteractOutside` 對常駐節點 preventDefault),否則把焦點移進代理面板就會把對話框關掉。
 - **`portalContainer`**:Content 預設傳送到 body;story 的「模擬瀏覽器畫布」或產品的嵌入式畫布可傳一個帶 transform 的容器,`fixed` 定位以它為準,modal 與遮罩不會跑出畫布。
-- **閘**:`scripts/dialog-coexistence-invariant.mjs`(常駐區可聚焦可打字、其餘背景被抑制、預設路徑照舊隔離)、`scripts/agent-modal-coexistence-invariant.mjs`(Esc 分區)。
+- **遮罩的洞只挖給「點得到或畫得出來」的盒子**(2026-09-09 根因修正):常駐節點底下 `display:contents` 的殼與 `pointer-events:none` 的定位圖層都沒有資格自己當洞,往下找子節點;`<svg>` / `<img>` / `<canvas>` / `<video>` 即使 pointer-events:none 也算。錨:user 2026-09-09「為何關閉 agent 之後,原本 dialog 該有的遮罩就消失了?」—— 代理關閉後常駐殼裡換成入口鈕 Dock,它外層是與舞台等大的 `pointer-events-none absolute inset-0` 裁切圖層,舊判準「有盒子就是洞」把整層當成洞,evenodd 之下洞 = 外框、遮罩整張被挖空。
+- **背景位置模式(Background location)**(user 2026-09-09 原話:「若有來源頁面,則保留該頁面作為 Modal 的背景;若無來源頁面,則將 Modal 顯示於預先定義的預設背景頁面之上」):有 URL 的 modal 由宿主路由承載 —— 從某一頁點開時,該頁留在 modal 底下作背景(路由記 `backgroundLocation`);直接以 modal 網址進入(重新整理、上一頁回到該網址、分享連結)沒有來源頁,宿主把 modal 疊在**預先定義的預設背景頁**上。上一頁 / 下一頁 / 重新整理都維持這個模型。這是宿主路由層的責任,Dialog 只提供 `persistentElements` + `portalContainer`,不讀 URL;示範 → `AgentPanel/展示/UrlRegistryDemo`(v14 推導表「有來源頁」「直接進入 modal 網址」兩列)。
+- **閘**:`scripts/dialog-coexistence-invariant.mjs`(常駐區可聚焦可打字、其餘背景被抑制、預設路徑照舊隔離)、`scripts/agent-url-registry-demo-invariant.mjs`(S1–S9:幾何、header / footer 變體、存檔、新增、刪除確認、背景位置、session、關 agent 遮罩仍在、蓋板態工具列可點 + Esc 分區;2026-09-09 併入原 `agent-modal-coexistence-invariant.mjs`)。
 
 ---
 

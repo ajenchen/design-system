@@ -35,18 +35,27 @@ export function useOverlayCoexistence(active: boolean, keep: CoexistenceTargets 
   React.useEffect(() => {
     if (!active || !keep) return
     let undo: (() => void) | undefined
+    let frame = 0
+    const apply = () => {
+      frame = 0
+      const targets = keep().filter((el): el is Element => !!el && el.isConnected)
+      // 一個保留節點都沒有時什麼都不做:抑制「除了空集合以外的一切」等於抑制整頁。
+      if (targets.length === 0) return
+      undo = suppressOthers(targets)
+    }
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(apply) }
     // **等一個影格再套用**。保留集合通常含「浮層自己的 Content」,而 Content 走 Portal、
     // 又可能被 Radix 的 Presence 包住延後掛載 —— effect 跑的當下它不一定在 DOM 裡。
     // 少了它,`suppressOthers` 就會把**浮層自己**一起 inert 掉:實測 Dialog 的
     // `role="dialog"` 節點自己帶上 inert=true,框內按鈕完全 focus 不進去(2026-09-08)。
     // rAF 之後版面已經 commit 完,保留集合才是完整的。
-    const frame = requestAnimationFrame(() => {
-      const targets = keep().filter((el): el is Element => !!el && el.isConnected)
-      // 一個保留節點都沒有時什麼都不做:抑制「除了空集合以外的一切」等於抑制整頁。
-      if (targets.length === 0) return
-      undo = suppressOthers(targets)
-    })
-    return () => { cancelAnimationFrame(frame); undo?.() }
+    schedule()
+    // **刻意不在之後的 DOM 變動時重套**(2026-09-09 實測撤回):`suppressOthers` 只標記呼叫當下的節點,
+    // 曾想用 MutationObserver 在有新節點 portal 到 body 時重套一次,結果保留區**自己開出來的浮層**
+    // (並存 modal 裡的 PeoplePicker / Select 選單、蓋板態面板的歷史浮層,都 portal 到 body)也被抑制,
+    // 選項點不到(閘 S3 當場紅)。「之後 portal 出來的 modal 在蓋板後方仍可鍵盤到達」這個缺口
+    // 由層級(蓋板 z-[45] > 並存面 z-40)與 portal 進被抑制的宿主容器承接,不在這裡硬補。
+    return () => { if (frame) cancelAnimationFrame(frame); undo?.() }
   }, [active, keep])
 }
 
@@ -69,10 +78,21 @@ export function CoexistenceMask({ keep, className, ...rest }: { keep: Coexistenc
       if (!self) return
       // 遮罩可能被傳送進帶 transform 的畫布(fixed 以畫布為準),所以洞的座標一律相對遮罩自己的盒子算
       const base = self.getBoundingClientRect()
-      // `display:contents` 的殼沒有自己的盒子(rect 全 0),用它的子節點當洞
+      // 洞 = 常駐節點底下**點得到或畫得出來**的盒子。兩種節點沒有資格自己當洞、要往下找子節點:
+      //   - `display:contents` 的殼沒有自己的盒子(rect 全 0);
+      //   - `pointer-events:none` 的定位圖層(rect 是全舞台、卻既不吃指標也不畫東西)。
+      //     根因錨(2026-09-09 user:「為何關閉 agent 之後,原本 dialog 該有的遮罩就消失了?」):
+      //     agent 關閉後,常駐殼裡換成入口鈕的 Dock,它外層是一個與舞台等大的
+      //     `pointer-events-none absolute inset-0 overflow-clip` 裁切圖層(agent-panel-fab.tsx);
+      //     舊判準「有盒子就是洞」把整層當成洞,evenodd 之下洞 = 外框 → 遮罩整張被挖空。
+      //   例外:`<svg>` / `<img>` / `<canvas>` / `<video>` 這類自己會畫的元素即使 pointer-events:none
+      //   也算(入口鈕的招喚光圈就是 pointer-events-none 的 svg,洞要把它露出來)。
+      const PAINTS = new Set(['svg', 'img', 'canvas', 'video'])
       const boxes = (el: Element): DOMRect[] => {
         const r = el.getBoundingClientRect()
-        return r.width > 0 && r.height > 0 ? [r] : [...el.children].flatMap(boxes)
+        if (r.width <= 0 || r.height <= 0) return [...el.children].flatMap(boxes)
+        const hitTestable = getComputedStyle(el).pointerEvents !== 'none'
+        return hitTestable || PAINTS.has(el.tagName.toLowerCase()) ? [r] : [...el.children].flatMap(boxes)
       }
       const rects = keep()
         .filter((el): el is Element => !!el && el.isConnected)
@@ -93,11 +113,16 @@ export function CoexistenceMask({ keep, className, ...rest }: { keep: Coexistenc
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(schedule) : null
     for (const el of keep()) if (el && ro) ro.observe(el)
     if (ro && selfRef.current) ro.observe(selfRef.current)
+    // 常駐殼的**內容**換掉時(面板 → 入口鈕、入口鈕 → 面板)洞也要重算:殼本身是 display:contents,
+    // ResizeObserver 觀察不到它;子樹增減走 MutationObserver。
+    const mo = typeof MutationObserver !== 'undefined' ? new MutationObserver(schedule) : null
+    for (const el of keep()) if (el && mo) mo.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] })
     window.addEventListener('resize', schedule)
     window.addEventListener('scroll', schedule, true)
     return () => {
       if (frame) cancelAnimationFrame(frame)
       ro?.disconnect()
+      mo?.disconnect()
       window.removeEventListener('resize', schedule)
       window.removeEventListener('scroll', schedule, true)
     }

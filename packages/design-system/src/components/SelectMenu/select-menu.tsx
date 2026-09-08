@@ -390,7 +390,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
           {searchable && (
             // 2026-09-08:搜尋列改用 DS `CommandInput`(與 CommandDialog / inline Command 同一份實作),
             // 原本這裡自己寫一份 raw cmdk input + icon wrapper = 第二份 SSOT(user 抓「Command 跟 SelectMenu 不同一套」)。
-            <CommandInput size={size as 'sm' | 'md' | 'lg'} placeholder={searchPlaceholder} value={search} onValueChange={setSearch} loading={loading} />
+            <CommandInput size={size as 'sm' | 'md' | 'lg'} placeholder={searchPlaceholder} value={search} onValueChange={setSearch} loading={loading && options.length > 0} />
           )}
           {/* **2026-05-07 v15.13 R2 fix**:minHeight 從 CommandList 搬到 CommandEmpty。
               原本 CommandList 永遠套 `minHeight = field-height × minRows + 16px`,結果

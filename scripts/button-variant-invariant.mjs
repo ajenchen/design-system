@@ -81,6 +81,10 @@ function check(src, file) {
     const line = src.slice(0, f.index).split('\n').length
     if (primaries.length !== 1) findings.push(`${file}:${line} R2 ${f[1]}Footer 有 ${actionable.length} 顆動作鈕但 primary 有 ${primaries.length} 顆(button.spec.md:12 CTA 必 explicit primary;每區恰一顆)`)
     else if (bs[bs.length - 1].variant !== 'primary') findings.push(`${file}:${line} R2 ${f[1]}Footer 的 primary 不在最右(dialog.spec.md:190 / dialog.principles:209)`)
+    // R3(2026-09-09 user 抓到:任務 modal 的「刪除任務」放在 footer 當 secondary danger):footer 只放 confirm / cancel;
+    // 記錄級的破壞性動作(刪除這筆記錄)走 header actions slot 的 icon-only 鈕(dialog.spec.md:107-113「操作對象是 dialog 承載的記錄本身」)。
+    // footer 裡的 danger 只能是確認框那顆 primary(立即且不可逆);非 primary 的 danger 一律違規。
+    for (const b of bs) if (b.danger && b.variant !== 'primary') findings.push(`${file}:${b.line} R3 ${f[1]}Footer 內的 danger 不是 primary(${b.variant ?? '無'}):破壞性的記錄級動作走 header actions 的 icon-only 鈕(dialog.spec.md:107-113),footer 只放 confirm / cancel`)
   }
   return findings
 }
@@ -92,10 +96,15 @@ if (SELFTEST) {
   <Button danger onClick={() => x('>')}>刪除</Button>
 </DialogFooter>
 <DialogFooter><Button>儲存</Button></DialogFooter>
+<DialogFooter>
+  <Button variant="secondary" danger>刪除任務</Button>
+  <Button variant="secondary">取消</Button>
+  <Button variant="primary">儲存</Button>
+</DialogFooter>
 `
   const f = check(bad, 'selftest.stories.tsx')
-  const ok = f.some((x) => x.includes('R1')) && f.filter((x) => x.includes('R2')).length === 2
-  console.log(ok ? '✓ selftest:danger 無 variant 與 footer 無 primary 都被抓到' : '✗ selftest:閘沒抓到內建錯誤片段\n' + f.join('\n'))
+  const ok = f.some((x) => x.includes('R1')) && f.filter((x) => x.includes('R2')).length === 2 && f.filter((x) => x.includes('R3')).length === 2
+  console.log(ok ? '✓ selftest:danger 無 variant、footer 無 primary、footer 內非 primary 的 danger 都被抓到' : '✗ selftest:閘沒抓到內建錯誤片段\n' + f.join('\n'))
   process.exit(ok ? 0 : 1)
 }
 

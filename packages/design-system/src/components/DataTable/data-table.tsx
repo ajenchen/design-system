@@ -18,6 +18,7 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 import { Empty } from '@/design-system/components/Empty/empty'
+import { Skeleton } from '@/design-system/components/Skeleton/skeleton'
 // L5 分頁(2026-07-06):Pagination = 分頁完整功能 SSOT(頁碼 + showTotal + 每頁筆數選單
 // 全 own 在 Pagination;共用模式,Ant Table 消費 Pagination 同派)—— DataTable 只轉發 config
 import { Pagination } from '@/design-system/components/Pagination/pagination'
@@ -1540,12 +1541,95 @@ function DataTableInner<TData>(
   const effectiveOverscan = enableRowDrag ? Math.max(overscan, 5) : overscan
   const activeDragIdRef = React.useRef<string | null>(null)
 
+  const [activeDragId, setActiveDragId] = React.useState<string | null>(null)
+
+  // ── 快速捲動列殼(2026-09-09;Codex R8 解法 (b),對照 AG Grid `cellRendererParams.deferRender` / MUI X skeleton rows)──
+  // 根因(真實呈現幀量測 scripts/data-table-fast-scroll.mjs --mode=gesture,main 與分支相同):合成執行緒捲得比主執行緒快。
+  // 每側只預掛 overscan(5)列 = 200px,而把整窗 27 列有錢的儲存格(頭像 / 標籤 / 人員)重畫一次要 100ms 以上;滾輪一甩
+  // (每秒 6,000–12,000px)合成器一幀就把視窗推到「還沒掛任何列」的區域 → 中間整片白,左右釘選面板由 scroll 事件同步所以停在舊位置
+  // (CDP screencast 實測:連續 17 幀、約 280ms 全白)。
+  // 修法:**兩次 commit 之間的位移 ≥ overscan 緩衝(px)= 合成器已超前緩衝** → 這一輪新進視窗的列先渲染成「列殼」
+  // (同高、同欄寬、每格一條 Skeleton,`data-row-shell`),已經完整畫過的列維持原樣;位移落回緩衝內後,每次 render 依上一次
+  // 量到的每列成本補真內容(預算 SHELL_PROMOTE_BUDGET_MS:快的機器一兩幀補完、慢的機器分批),直到沒有殼為止。
+  // 判準自我校準:跟得上合成器的機器永遠看不到殼;正常滾輪速度下新列在 overscan 區(視窗外)就已補完,使用者也看不到。
+  // 不套殼:拖曳中、正在編輯 / 選取格所在的列(它們的 DOM 有人在用)。閘:scripts/data-table-fast-scroll.mjs(真實呈現幀:
+  // 中央區不得出現空白帶、停捲後補齊時間)+ scripts/data-table-scroll-cost.mjs(既有:純捲動的重算列數)。
+  const SHELL_PROMOTE_BUDGET_MS = 8
+  const shellRef = React.useRef({
+    lastOffset: null as number | null, renderStart: 0, promoted: 0, costPerRow: 3, promoteLeft: 0, ahead: false, hasShell: false,
+    decided: new Map<string, boolean>(), full: new Set<string>(), fullNow: new Set<string>(), prevShells: new Set<string>(), shellsNow: new Set<string>(), raf: 0,
+    seenOffset: null as number | null, seenAt: 0, velocity: 0, needsHeightSync: false,
+  })
+  const [, bumpShellTick] = React.useReducer((x: number) => x + 1, 0)
+  {
+    const S = shellRef.current
+    const now = typeof performance !== 'undefined' ? performance.now() : 0
+    S.renderStart = now
+    const offsetNow = centerBodyRef.current?.scrollTop ?? 0
+    // 至少一列:consumer 傳 overscan={0} 時緩衝不能是 0,否則「位移 ≥ 0」靜止也成立、殼永遠補不完(Codex R9 反例)
+    const bufferPx = Math.max(1, effectiveOverscan) * resolvedEstimate
+    // 捲動速度(px/ms,兩次 offset 變化之間);超過 64ms 沒動就歸零。
+    if (S.seenOffset == null || offsetNow !== S.seenOffset) {
+      S.velocity = S.seenOffset == null ? 0 : Math.abs(offsetNow - S.seenOffset) / Math.max(1, now - S.seenAt)
+      S.seenOffset = offsetNow; S.seenAt = now
+    } else if (now - S.seenAt > 64) S.velocity = 0
+    // 「合成器超前」有兩個訊號:(a) 兩次 commit 之間的位移 ≥ 緩衝(這一條會隨機器快慢自我校準:跟得上的機器位移永遠小);
+    // (b) 目前速度一幀(16ms)就吃掉半個緩衝 —— 固定門檻 ≈ 每秒 6,250px(200px ÷ 32ms),不是量機器能力 ——
+    // (b) 是為了甩動期間**不要邊逃邊搬家**:第一版只看 (a),每幀的補殼節拍量到位移 0 就補 1–2 列有錢的真列,
+    // Radix Tooltip / Checkbox 的 ref-state 每列再帶 5 次 commit,一幀 8–10 次 commit、主執行緒掉到 30fps(2026-09-09 實測)。
+    // 停手時最後一個 scroll 事件常只動 1px,速度瞬間歸零、立刻開始補 —— 這是**對的**:實測過「最後一次大位移後 100ms 內不補」
+    // 的版本,停手後的白反而更長(6,000px/s:最長連續 66 → 220ms),而且 3,000px/s 的正常捲動也會冒出 15 列的殼;尾巴的白是
+    // 軟體光柵畫整個視窗新內容的成本,延後補只會把殼多留在畫面上。
+    const racing = S.velocity * 16 >= bufferPx / 2
+    S.ahead = useVirtual && activeDragId == null && ((S.lastOffset != null && Math.abs(offsetNow - S.lastOffset) >= bufferPx) || racing)
+    S.promoteLeft = S.ahead ? 0 : Math.max(1, Math.min(64, Math.floor(SHELL_PROMOTE_BUDGET_MS / Math.max(0.25, S.costPerRow))))
+    S.promoted = 0; S.hasShell = false; S.decided = new Map(); S.fullNow = new Set(); S.shellsNow = new Set()
+  }
+  /** 這一輪這列要不要先出殼(三區同一列同一個答案;決定一次、三區共用)。 */
+  const decideShell = (rowId: string): boolean => {
+    const S = shellRef.current
+    const hit = S.decided.get(rowId)
+    if (hit !== undefined) return hit
+    let shell: boolean
+    // 拖曳中一律真列(殼沒有 SortableRowProvider,不是有效落點);上次 commit 完整畫過、編輯中、選取格所在的列也不套殼
+    if (!useVirtual || activeDragId != null || S.full.has(rowId) || (editingCellId != null && editingCellId.startsWith(`${rowId}__`)) || (selectedCellId != null && selectedCellId.startsWith(`${rowId}:`))) shell = false
+    else if (S.ahead) shell = true
+    // 只有「上次 commit 是殼」的列才吃補齊配額;從沒見過的新列在正常速度下照舊完整渲染 ——
+    // 初次載入、正常捲動、換頁都走這裡,行為與沒有殼機制時完全相同(Codex R9 反例:第一版把配額套到新列,初次載入 15 列只畫 2 列)
+    else if (S.prevShells.has(rowId)) { if (S.promoteLeft > 0) { S.promoteLeft -= 1; S.promoted += 1; shell = false } else shell = true }
+    else shell = false
+    if (shell) { S.hasShell = true; S.shellsNow.add(rowId) }
+    else S.fullNow.add(rowId)
+    S.decided.set(rowId, shell)
+    return shell
+  }
+  // 合成器超前時,殼的預掛範圍擴到半個視窗(每側;上限 24 列)—— 殼便宜,多掛是為了給合成器領先量;落回正常速度就縮回 overscan。
+  const shellOverscan = shellRef.current.ahead ? Math.max(effectiveOverscan, Math.min(24, Math.ceil((centerBodyRef.current?.clientHeight ?? 0) / resolvedEstimate / 2))) : effectiveOverscan
+  React.useLayoutEffect(() => {
+    const S = shellRef.current
+    const cost = (typeof performance !== 'undefined' ? performance.now() : 0) - S.renderStart
+    // 每列成本 = 這次 commit 的總時間 / 這次真的新畫的列數(指數平滑;只在有新畫列時更新,純快取命中的 commit 不算)
+    if (S.promoted > 0) S.costPerRow = 0.6 * S.costPerRow + 0.4 * (cost / S.promoted)
+    S.lastOffset = centerBodyRef.current?.scrollTop ?? 0
+    // 殼升級成真列後,三區列高同步(缺陷 F)要再跑一次 —— 那個同步只掛在虛擬視窗換列上,補真內容不會換列(Codex R9 指出)。
+    // 判「有沒有列從殼變真列」看集合差,不看配額計數:拖曳 / 編輯把殼強制升成真列不走配額,第一版只看 promoted,
+    // Codex R10 在 autoRowHeight + 左右釘選下重現三區差 60px。**先比對上一輪的殼集合,再覆寫**(R11:第二版先覆寫才比,
+    // 兩個集合是同一輪的互斥集合,永遠比不到)。
+    let upgraded = false
+    for (const id of S.prevShells) if (S.fullNow.has(id)) { upgraded = true; break }
+    if (upgraded) S.needsHeightSync = true
+    S.full = S.fullNow
+    S.prevShells = S.shellsNow
+    if (S.hasShell && !S.raf) S.raf = requestAnimationFrame(() => { S.raf = 0; bumpShellTick() })
+  })
+  React.useEffect(() => () => { if (shellRef.current.raf) cancelAnimationFrame(shellRef.current.raf) }, [])
+
   const virtualizer = useVirtualizer({
     count: useVirtual ? rows.length : 0,
     // V scroll 現在在 centerBodyRef(不是外層 bodyRef)
     getScrollElement: () => centerBodyRef.current,
     estimateSize: () => resolvedEstimate,
-    overscan: effectiveOverscan, enabled: useVirtual,
+    overscan: shellOverscan, enabled: useVirtual,
     // 2026-05-14 P3 perf tune(per codex+Layer A 共識,user 拍板「全部做完」+
     // CPU-throttle-reproducible verify infra):150ms → 250ms 減少 scroll
     // start/end flip 次數 → TableScrollContext 重 cascade visible rich cell
@@ -2072,6 +2156,8 @@ function DataTableInner<TData>(
     ? `${virtualItemsForSync[0].index}:${virtualItemsForSync[virtualItemsForSync.length - 1].index}`
     : ''
   React.useLayoutEffect(() => { syncSharedRowHeights(false) }, [syncSharedRowHeights, virtualRangeKey])
+  // 列殼補成真列的那一次 commit 也要量(見 shellRef 段 needsHeightSync)
+  React.useLayoutEffect(() => { const S = shellRef.current; if (S.needsHeightSync) { S.needsHeightSync = false; syncSharedRowHeights(false) } })
   // 全量重量的觸發用 `rows` 本身而不是 `rows.length`:同筆數但內容變短(編輯 / 排序 / 換頁換資料)
   // 時舊的 minHeight 會把列撐住、ResizeObserver 不會因「自然內容變短」而觸發,增量路徑又只量新列,
   // 列高就永遠縮不回去(Codex R4 2026-09-08 反例)。TanStack 的 rows 只在資料/狀態變時換身分。
@@ -2244,7 +2330,7 @@ function DataTableInner<TData>(
   }, [rows])
 
   // active drag state(state for invalid signal re-render;ref for fast lookup in collisionDetection)
-  const [activeDragId, setActiveDragId] = React.useState<string | null>(null)
+
   // sync ref + force virtualizer recompute so rangeExtractor 看得到新 active id(M25 chain invariant)
   React.useEffect(() => {
     activeDragIdRef.current = activeDragId
@@ -3222,11 +3308,12 @@ function DataTableInner<TData>(
 
     // code-quality-allow: long-function — virtualizer × sticky panel × drag listeners × hover delegation × per-row state 多 closure capture;拆會破壞 dnd-kit hooks 跟 row idx 的 stable binding
     const regionKey = isCenter ? 'c' : isRight ? 'r' : 'l'
-    const rowEl = (row: typeof rows[number], idx: number, opts?: { virtual?: boolean; start?: number; isLast?: boolean }) => {
+    const rowEl = (row: typeof rows[number], idx: number, opts?: { virtual?: boolean; start?: number; size?: number; isLast?: boolean }) => {
       const isThisRowDraggingNow = enableRowDrag && activeDragId === row.id
       const rowDrop = dropIndicator?.type === 'row' && dropIndicator.id === row.id ? dropIndicator.side : null
       const cacheKey = `${regionKey}:${row.id}`
-      const deps: unknown[] = [row, idx, opts?.start, !!opts?.isLast, !!opts?.virtual, cols, regionWidth, sharedRowHeights.get(idx), rowDrop, isThisRowDraggingNow, activeDragId != null, rowRenderEpoch]
+      const shell = decideShell(row.id)
+      const deps: unknown[] = [row, idx, opts?.start, !!opts?.isLast, !!opts?.virtual, cols, regionWidth, sharedRowHeights.get(idx), rowDrop, isThisRowDraggingNow, activeDragId != null, rowRenderEpoch, shell, shell ? opts?.size : 0]
       const hit = rowElCacheRef.current.get(cacheKey)
       if (hit && hit.deps.length === deps.length && hit.deps.every((d, i) => Object.is(d, deps[i]))) {
         hit.tick = rowRenderTickRef.current
@@ -3239,9 +3326,47 @@ function DataTableInner<TData>(
         stats.fresh += 1
         if (hit) deps.forEach((d, i) => { if (!Object.is(d, hit.deps[i])) stats.missIdx[i] = (stats.missIdx[i] ?? 0) + 1 })
       }
-      const el = renderRowFresh(row, idx, opts)
+      const el = shell ? renderShellRow(row, idx, opts) : renderRowFresh(row, idx, opts)
       rowElCacheRef.current.set(cacheKey, { deps, tick: rowRenderTickRef.current, el })
       return el
+    }
+    // 列殼(快速捲動時的佔位列;見 shellRef 段):跟真列同一個 wrapper 幾何(高度 / 分隔線 / translateY / 欄寬),格子裡只有一條 Skeleton。
+    // 不掛 measureElement(固定高度用估計值,升級成真列時再量)、不掛拖曳 / hover / 焦點(它不是可操作的列)。
+    const renderShellRow = (row: typeof rows[number], idx: number, opts?: { virtual?: boolean; start?: number; size?: number; isLast?: boolean }) => {
+      const showBorder = bordered !== false ? !opts?.isLast : true
+      // 高度吃 virtualizer 已知的該列高度(量過的 auto-height 列重新進窗時 placement 已經是量過的值,殼若用固定列高會留缺口;Codex R9)
+      const shellHeight = opts?.size
+      const cellRole = spreadsheetMode ? 'gridcell' : 'cell'
+      return (
+        <div
+          key={row.id}
+          data-row-index={idx}
+          data-row-shell=""
+          role="row"
+          aria-busy="true"
+          aria-rowindex={(paginationEnabled ? (currentPage - 1) * pageSizeState : 0) + idx + 2}
+          className={cn('group/row flex relative items-center overflow-hidden', shellHeight == null && rowHeight, opts?.virtual && 'absolute w-full', showBorder && 'border-b border-divider')}
+          style={{ ...(opts?.virtual ? { transform: `translateY(${opts.start}px)` } : {}), ...(shellHeight != null ? { height: shellHeight } : {}), ...(sharedRowHeights.has(idx) ? { minHeight: sharedRowHeights.get(idx) } : {}) }}
+        >
+          {getRegionCells(row, cols).map((cell) => (
+            <div
+              key={cell.id}
+              role={cellRole}
+              className="flex items-center shrink-0"
+              style={{ ...columnSizeStyle(cell.column, { resize: enableColumnResize, isSystemCol: isSystemColumn(cell.column.id), resolvedWidth: resolvedWidths.get(cell.column.id) }), ...cellPadding }}
+            >
+              {/* 不做脈動動畫:殼只活幾十到幾百毫秒,而且一次幾百格 —— 幾百個透明度動畫會讓光柵每幀重畫,
+                  合成器反而追不上(2026-09-09 消融實測:關掉後空白幀 42 → 20、最長連續 696 → 150–240ms)。 */}
+              <Skeleton className={cn('animate-none', isSystemColumn(cell.column.id) ? 'h-4 w-4' : 'h-3 w-3/5')} />
+            </div>
+          ))}
+          {isRight && hasRowActions && (
+            <div role={cellRole} className="flex items-center justify-end shrink-0 gap-2 flex-1" style={cellPadding}>
+              <Skeleton className="animate-none h-4 w-4" />
+            </div>
+          )}
+        </div>
+      )
     }
     const renderRowFresh = (row: typeof rows[number], idx: number, opts?: { virtual?: boolean; start?: number; isLast?: boolean }) => {
       const showBorder = bordered !== false ? !opts?.isLast : true
@@ -3403,7 +3528,7 @@ function DataTableInner<TData>(
     const prune = () => {
       for (const [k, v] of rowElCacheRef.current) if (k.startsWith(regionKey + ':') && v.tick !== rowRenderTickRef.current) rowElCacheRef.current.delete(k)
     }
-    const items = useVirtual ? virtualizer.getVirtualItems().map(vr => rowEl(rows[vr.index], vr.index, { virtual: true, start: vr.start, isLast: vr.index === rows.length - 1 })) : []
+    const items = useVirtual ? virtualizer.getVirtualItems().map(vr => rowEl(rows[vr.index], vr.index, { virtual: true, start: vr.start, size: vr.size, isLast: vr.index === rows.length - 1 })) : []
     const staticItems = useVirtual ? [] : rows.map((row, i) => rowEl(row, i, { isLast: i === rows.length - 1 }))
     prune()
 

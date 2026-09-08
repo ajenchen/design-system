@@ -2083,7 +2083,7 @@ FileViewer 直接建 Radix Portal 且其 window keydown 只排除輸入框、Esc
 ## AD18 並存真的走通了 —— 但過程中連撞四個坑,每個都會讓「看起來對」
 
 差距 1 的剩餘項做掉兩個(Esc 分派、並存時的 outside dismiss),
-`scripts/agent-modal-coexistence-invariant.mjs` 六條全過,含對照組。
+`scripts/agent-modal-coexistence-invariant.mjs(2026-09-09 退役,併入 agent-url-registry-demo-invariant.mjs S1)` 六條全過,含對照組。
 
 ### 四個坑(依撞到的順序)
 
@@ -2442,4 +2442,126 @@ user 連續追問七題(逐字要點):「為何欄位高度 × 3 列不是 × 1�
 - **a11y 基線**:新增 10 支 story 讓語料指紋變,`npm run a11y:check -- --baseline-write` 重建(`a11y-and-size.yml` 是排程閘,不在 PR 閘)。
 - **驗證**:build:lib / tsc -b / typecheck:stories / storybook(1031 支)綠;menu-message-row 閘 M1–M9 exit 0 + selftest 87 條紅得對;virtual-cursor / agent-panel / focus-suppression / dialog-coexistence 綠;content-quality / ci-gate-coverage / ci-workflow-scope 綠;截圖人眼核對分組線與單一轉圈。
 - **a11y 基線重建抓到結構問題**:新範例的 listbox 裡只有訊息列(role=presentation / status)→ axe `aria-required-children` 紅(這是舊結構的既有問題,以前沒有空狀態 story 所以沒被量到)。用合成頁面實測七種結構:訊息列住 listbox 裡(presentation / status)都紅;空 listbox + aria-busy 乾淨;訊息列當 option aria-disabled(Atlassian 做法)乾淨;**訊息列放 listbox 外面(MUI 同構)乾淨**。採 MUI 結構:`CommandEmpty` 改成 `CommandList` 的兄弟(SelectMenu / AgentPanel / Command 範例全搬),cmdk Empty 只讀 store 不需住在 List 裡;閘的「清單區高度」改量清單 + 訊息列,Playwright 等待改為 attached(0 筆時 listbox 高度 0 不算可見)。
+
+## AD37 2026-09-09 user 五圖糾正:範例違規、焦點框原則被我寫錯、agent 範例缺背景位置 / session / 遮罩 bug、Select 雙轉圈、DataTable 快速捲動仍白
+
+user 原話要點:「你他媽跟你講過多少次要合規用元件…刪除按鈕在這個情境明明就不是主要按鈕…header 的 x 左側就可以放 action…dialog header 的兩行設計預設是這樣設計的嗎?」「任務清單要縮排?…按儲存應該是要增加任務清單的任務吧…直接按照我們的 ds layout 原則,在 dialog body 放 field…舞台只需要任務清單…用 data table 也可以」「agent 的並存和示意範例是否可以合而為一?」「要 Background location pattern」「為何關閉 agent 之後,原本 dialog 該有的遮罩就消失了?」「agent 無法切換 session…新的 session 沒有我們設計好的狀態」「滿版狀態時,點擊內部 url 之後,並沒有自動關閉 agent?你確定原則是這樣?」「滿版時虛擬的網址列完全無法點擊?」「data table 在快速捲動仍然很慢…github 上的 storybook 是順暢的」「你不是說首次開啟且輸入框內沒文字的話,輸入框右側不會有 progress 嗎?」「“底色空著…不畫框”我們到底哪有定義過這個?…都要畫框,但都不需要上底色…唯一不畫框的例外就是單一狀態控制項」「鍵盤焦點框的整理根本不完整」
+
+### 我到底哪裡出了問題(根因,不是症狀)
+1. **範例違規(圖一 / 圖二)**:寫 story 時沒有先讀 dialog.spec.md —— 「header actions slot:操作對象是 dialog 承載的記錄本身;confirm / cancel 歸 footer」(dialog.spec.md:107-113)早就在,我把「刪除任務」(記錄級破壞動作)塞進 footer 當 secondary danger;body 用 DescriptionList + 留言功能自己發明版面,而 DS 的表單版面就是 Field 直排;舞台的清單用 link Button 疊出縮排。這是 mindset #2 / M1「寫視覺 code 前必列消費的 SSOT」沒做,而且 story 不在任何 stakeholder 閘裡(M6)。機械補洞:`button-variant-invariant.mjs` R3(footer 內非 primary 的 danger 一律紅,當場抓到本例)。dialog.spec.md:120 的 DialogDescription 副標是**允許**的,但本例不需要,改一行。
+2. **焦點框原則寫錯(M36 provenance)**:focus-canonical 規則二「底色空著 → 用 hover 同色底不畫框」是我從 Radix / cmdk / shadcn 的慣例推導的,卻寫成規則;翻整個 session,user 說的是「一個藍色 focus ring 就已經夠顯眼」「不要一下用底色一下用邊框」「不要底色只留邊框更通用」「A5 畫框」,從沒說過「底色空著不畫框」。定案:**鍵盤游標一律畫框、不上底色;唯一例外 = 插入點就是指示的文字輸入控件**,並給可機械判別的定義。
+3. **agent 範例**:並存與示意兩支各做一半;沒有背景位置模式(user 引世界級:「若有來源頁面,則保留該頁面作為 Modal 的背景;若無來源頁面,則將 Modal 顯示於預先定義的預設背景頁面之上」);session 只有假資料沒有切換;關 agent 後 Dialog 遮罩消失(根因待查:persistentElements 分支在 agent 關閉後的狀態);滿版時工具列被 suppressOthers 一起 inert(agent-panel.tsx:250-259 只保留面板)。「滿版點內部 url 不關 agent」**是照原則**(v14 推導表:窄螢幕點有 URL 的 Modal → 抽屜保持開啟、Modal 在後方;寬螢幕點內部另一頁 → agent 維持開啟),要確認實作真的如此。
+4. **Select 首次開啟兩顆轉圈**:我自己的示意圖畫的是「清單空時只有訊息列在轉」,程式卻讓觸發點也亮。定:一次只有一顆 —— 清單空 → 訊息列;有舊選項 → 搜尋列 / 觸發點。
+5. **DataTable 快速捲動仍白**:之前的儀器量 60px 步進、換列後量,量不到真實滾輪的快速捲動;要新儀器(真 wheel 事件、逐幀量中間區空白列)+ Codex R8。
+(落地與驗證結果接續記在本條下方)
+### 落地(2026-09-09,三路 agent 平行 + 我驗證)
+- **焦點框原則**:focus-canonical.md 規則二改寫為「鍵盤游標一律畫框(focus-ring-inset 或外描邊依幾何)、不上底色;底色只屬滑鼠 hover 與選中;唯一例外 = 插入點控件(input 文字類 / textarea / contenteditable;Field 家族由 wrapper focus-within 邊框承擔,判準 scripts/focus-suppression-registry.mjs:125-127)」,加「框怎麼畫」表與兩條疊加規則(選中 × 游標 = 框疊在選中底色上;hover × 游標 = 底色 + 框);D 類退役、六步判斷;來源總帳把舊 D 類標 AI 推導並貼 user 原話。元件:MenuItem / CommandItem / DropdownMenu(四種 item,radixCursorClass 依模態分流)/ Sidebar / AgentPanel 歷史列 / TimePicker(框畫在被指到的格)全改;順帶修 CommandDialog 開啟後焦點停在殼上的既有 bug。閘:focus-suppression-registry D 退役 + A 類需真有 focus-ring-inset(selftest 26/26);virtual-cursor gate 加 A2 / B2(鍵盤游標有框且底色 = 其他列;指標 hover 有底色無框)33 條全綠 + selftest 17/17 紅得對;focus-geometry 9/9;截圖五張人眼核對。
+- **代理 / Dialog 範例**:ModalCoexistence 併入 UrlRegistryDemo;舞台 = DataTable 三列 + primary 新增任務;任務 modal header 一行 + actions slot 垃圾桶(text danger iconOnly)→ 確認框(primary danger);footer 只有取消(tertiary,button.spec.md:182)/ 儲存 primary;body 四個 Field;新增 / 儲存 / 刪除都真的改清單;**背景位置模式**(來源頁當背景,直接進入用預設頁;v14 推導表 23 → 25 題,dialog.spec「並存」段);session 切換 / 當前標記 / 新 session = NewConversation 設計;窄版工具列可點(AgentPanel 新 `persistentElements` prop,SimulatedBrowser 工具列改為畫布的兄弟);**關 agent 後遮罩消失的根因**:CoexistenceMask 把「有盒子就是洞」,agent 關閉後常駐殼換成與舞台等大的 pointer-events-none 裁切圖層 → 洞 = 外框 → 遮罩整張被挖空(舊 clip `M 0 0 H 1406 V 640 H 0 Z M 0 0 H 1406 V 640 H 0 Z`);修在 primitive:洞只給「點得到或畫得出來」的盒子,並用 MutationObserver 監看常駐殼換內容(修後只剩 40×40 入口鈕的洞)。閘 agent-url-registry-demo S1–S9(86 條,1440 / 1180 並排 + 1000 蓋板)+ selftest;agent-modal-coexistence 閘退役併入。「滿版點內部 url 不關 agent」照 v14 L53–54,S9 實測 Modal 在後方、× 後顯露。
+- **DataTable 快速捲動儀器** `scripts/data-table-fast-scroll.mjs`(真 wheel / mouse 事件、逐幀量中間區 DOM 空白率、預估 paint 空白率、long task、LayoutCount;main vs 分支各 3 次 + CPU profile):headless 兩個 build 的 DOM 空白都是 0%(列與格子一直在)、預估 paint 空白都到 100%(合成器一刻 300–600px 超過 overscan 5 列 = 200px,主幀 80–180ms 追不上)—— 「左有畫、中間白」是合成執行緒超前、釘選面板由主執行緒在 scroll 事件裡同步所以停在舊位置。分支主執行緒反而較輕(script 515 vs 609ms、long task 最長 307 vs 436ms),唯一系統性變差的是 LayoutCount +60–100%(Combobox 標籤 calc() 寫→讀交錯、PeoplePicker RO、Tag 截斷量測)。→ 送 Codex R8。
+
+### AD37 續:DataTable 快速捲動「中央整片白」—— 量到真根因、修掉、閘接進 CI(2026-09-09)
+
+**儀器先修(Codex R8 三個判定全照做)**:`scripts/data-table-fast-scroll.mjs --mode=gesture` 改量**合成器實際送出的每一幀**
+(CDP `Page.startScreencast` + `Input.synthesizeScrollGesture` 走原生輸入管線),中央區每 40px 一帶、帶內完全沒墨跡 = 空白帶;
+最長連續空白按幀時間戳算;正負對照:500 列不虛擬化靜態頁同手勢 0 空白(35 幀)、每個 scroll 事件忙等 120ms → 49 幀空白(該紅會紅)。
+舊儀器的「預估 paint 空白率」降為診斷值。headed Chrome 在沙箱起不來(ProcessSingleton),所有數字都是 headless 軟體光柵。
+
+**量到的根因(main 與分支一模一樣)**:12,000px/s 手勢下 main 連續 17 幀(約 280ms;3 跑最長連續 481–562ms)中央全白、左釘選面板一直有墨跡。
+機制 = 每側只預掛 5 列 = 200px 緩衝,而把整窗 27 列有錢的儲存格重畫一次要 100ms+,合成器一幀就把視窗推到還沒掛任何列的區域。
+「main 順、分支白」在本機重現不出(R8 判定一致:H1 是共同機制,分支差異未證實),修法針對共同機制。
+
+**修法三層(每一層都是量出來才做)**:
+1. **列殼**(`data-table.tsx` shellRef 段 + `renderShellRow`):兩次 commit 之間位移 ≥ 緩衝、或瞬時速度一幀吃掉半個緩衝(≈ 6,250px/s 以上)→
+   新進視窗的列先渲染成殼(同 wrapper 幾何、每格一條 Skeleton、`data-row-shell` + `aria-busy`),已畫過的列不退回殼;速度落回後依
+   「上次 commit 總時間 ÷ 新畫列數」的自適應成本分批補真內容(8ms / render),不等 250ms。第一版只看位移,甩動中每幀 rAF 都在補 1–2 列
+   有錢的真列(Radix Tooltip / Checkbox 各再帶 5 次 commit → 一幀 8–10 次 commit、主執行緒 30fps),加速度訊號後 long task 歸零。
+2. **殼不做脈動動畫**:消融(`--css='[data-row-shell] *{animation:none}'`)空白幀 42 → 20、最長 696 → 147–237ms —— 幾百格透明度動畫讓光柵每幀重畫。
+3. **合成器超前時 overscan 擴到半個視窗**(每側上限 24 列),落回即縮回。
+- 失敗實驗(退回,註解留檔):「最後一次大位移後 100ms 內不補」→ 6,000px/s 最長 66 → 220ms 更差,且 3,000px/s 冒出 15 列可見的殼;
+  結論:停手立刻補是對的,尾巴的白是軟體光柵畫整個視窗新內容的成本。
+
+**修後(同儀器,各 3 跑,中位數)**:
+
+| 速度 | main 空白幀 / 最長連續 / 面積×ms | 分支 空白幀 / 最長連續 / 面積×ms | long task 最長 | script |
+|---|---|---|---|---|
+| 12,000px/s | 30 / 497ms / 467 | **16 / 130ms / 143** | 112 → 0ms | 516 → 270ms |
+| 6,000px/s | 55 / 599ms / 269 | **17 / 66ms / 193** | 66 → 0ms | 804 → 551ms |
+| 3,000px/s | 0 / 0 / 0 | 0 / 0 / 0(殼只在視窗外的預掛區) | — | 1535 → 1033ms |
+
+殘留(headless 軟體光柵):甩動中零星整幀全白、停手後 4–5 幀全白再淡入(`9999976431`);真機 GPU 光柵要 user 在 Netlify 預覽看。
+**CI 閘**(`verify-browser-datatable`):`--selftest` + `--runs=2 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000`;
+閘級對照:同一句跑 main 紅(700 / 550ms)、分支綠(60–70ms)。門檻是本機校準留 3 倍機器差的回歸線。
+既有閘改後仍綠:`data-table-scroll-cost.mjs` R0–R5、`data-table-row-cache-deps-invariant.mjs`;332 條不變式與捲軸可見性見本輪 commit 前的閘清單。
+規格:`data-table.spec.md`「快速捲動的列殼」段。Codex R9 對修法與驗證的對抗審查:見下一則。
+
+### AD37 續二:Codex R9 對列殼與儀器的對抗審查 —— 六個反例全部成立,全部修掉(2026-09-09)
+
+R9 結論原話:「改善方向有證據,但目前不能接受『根因已證實、CI 足夠、既有行為不受影響』」。它用工作樹裡的判準直接跑出反例,每一條都對:
+
+| 反例(R9) | 我的錯 | 修法 |
+|---|---|---|
+| `overscan={0}` → 緩衝 0 → 靜止時「位移 ≥ 0」也成立,殼永遠補不完 | 沒守公開 prop 的邊界 | 緩衝至少一列(`Math.max(1, effectiveOverscan) * resolvedEstimate`) |
+| 拖曳中新進列變殼(15 列 → 2 真 13 殼),殼沒有 SortableRowProvider = 不是有效落點 | `activeDragId` 只關掉 ahead,沒進 decideShell 的免殼條件 | 拖曳中一律真列 |
+| **初次載入也出殼**(首次 render 15 列 → 2 真 13 殼) | 補齊配額套到了「從沒見過的新列」;殼機制改變了正常路徑 | 只有「上次 commit 是殼」的列吃配額;新列在正常速度下照舊完整渲染 —— 初次載入、正常捲動、換頁與沒有殼機制時完全相同 |
+| autoRowHeight 下量過 100px 的列重新進窗,殼固定 40px → 60px 缺口 | 殼吃 `rowHeight` class,不吃 virtualizer 已知高度 | 殼高度 = `virtualItem.size`(快取 deps 加 size) |
+| 殼升級成真列後三區列高同步沒跑(同步只掛在虛擬視窗換列上) | 補真內容不換列 | 升級的那一次 commit 標 `needsHeightSync` → 再跑一次 `syncSharedRowHeights(false)` |
+| 快取依賴閘 TARGETS 沒有 `renderShellRow` | 新渲染函式沒進閘 | 加進 TARGETS(白名單與真列共用) |
+| 儀器:連續 ms 把「前一段幀距」套到當前空白幀(正常@0 / 空白@100 / 正常@110 報 100ms,實際 10ms) | 公式錯 | 每張擷取幀保持到下一張;selftest 加純函式對照(10ms / 90ms 兩例) |
+| 儀器:永久殼以 990ms 通過 1000ms 的閘(量的是「最後一次仍有殼」) | 沒分「補完」與「窗尾仍有殼」 | 觀測窗結束仍有殼 = 沒補完(Infinity);觀測窗自動長過補齊期限 + 300ms;selftest 對照 |
+| 儀器:固定帶被捲進來的 1px 分隔線騙過(3.1% 墨跡就算有內容) | 墨跡比例判內容 | 改算「有墨跡的像素列數 ≥ 3」 |
+| 儀器:只驗捲動 > 0、收到 ≥ 10 幀;pageerror / 靜止後缺列只列印 | 閘沒 fail-closed | 捲動 ≥ 80% 手勢距離、pageerror、靜止後缺列 / 格空 一律 fail |
+| 「6,250px/s 自我校準」的說法 | (b) 是固定門檻 200px ÷ 32ms,不是量機器 | 註解與規格改口:(a) 位移 ≥ 緩衝才是自我校準,(b) 是固定門檻 |
+| spark 的 `9` 被我讀成「9 帶」 | 它是比例分箱 | 圖例改正 |
+
+R9 另外指出、本輪沒做的:(1) 尾巴白「必然是軟體光柵」未證實,要用 CDP Tracing(cc / viz / PipelineReporter)分「主執行緒沒 commit / raster 沒好 / 呈現延後」—— 留待需要時做,不影響修法;
+(2) screencast 不是每個實際呈現幀(in-flight 上限會略過、時間戳不是顯示回饋)→ 儀器數字是回歸線不是精確白屏時間,已寫進註解;
+(3) 真機驗證要 user 在 Netlify 預覽同機比 main 與 preview,覆蓋正常捲、快甩、反向、釘選區滾輪、停手補齊;
+(4) CI 400ms 是回歸線不是好體驗;runner 尾部變異未校準 —— 目前 2 跑 + 明示回歸線,若 CI 假紅再校準。
+修後重量與閘結果:見下一則。
+
+### AD37 續三:R9 修正版的最終量測(2026-09-09)—— 儀器再修一處後數字才可信
+
+修完 R9 反例重量,分支數字竟比 main 差(6,000px/s 最長連續 1053ms)。DOM 層的殼行為與之前完全相同 → 是儀器:我把帶內判定改成
+「≥ 3 個有墨跡的像素列」,但 DS 骨架色 `bg-muted` = 黑 4% 透明(≈ 245),在 JPEG 幀上過不了 235 的門檻,殼整個被判成空白,分隔線又被我排除了。
+改 PNG 幀(白底純 255)、墨跡 < 250、「內容列」= ≥ 3 個墨跡點且不到 90% 寬(滿寬那種是分隔線)。補齊時間公式也修:= 殼歸零的那一幀,不是最後有殼的幀。
+
+| 速度 | main 空白幀 / 最長連續 / 面積×ms | 分支 空白幀 / 最長連續 / 面積×ms | 殼幀 / 停手後補齊 | long task 最長 | script |
+|---|---|---|---|---|---|
+| 12,000px/s | 30 / 556ms / 507 | **4 / 31ms / 11** | 36 幀 / 142ms | 108 → 0ms | 530 → 276ms |
+| 6,000px/s | 56 / 502ms(最大 850)/ 292 | **3 / 18ms / 4** | 56 幀 / 109ms | 66 → 0ms | 834 → 591ms |
+| 3,000px/s | 0 / 0 / 0 | 0 / 0 / 0(殼 0 幀:正常速度完全不出殼) | — | 0 | 1575 → 902ms |
+
+分支 12k 的空白序列只剩手勢最前 3 幀(殼第一次 commit 前)有部分空白。CI 閘句(6,000px/s):分支 33–34ms 綠、main 684–1055ms 紅。
+selftest 六項全過(公式 4 例、負對照 0 空白、正對照 59 幀空白)。既有閘(R9 修正版 build)全綠:332 條不變式、捲軸可見性、scroll-cost R0–R5、
+快取依賴閘(含 renderShellRow)、agent 範例 86 條、游標模態、訊息列;a11y 基準線以最終 build 重生(1030 支 story、738 指紋)。
+Codex R10(最終確認)見下一則。
+
+### AD37 續四:Codex R10 —— 六個 R9 反例確認關掉(五 CONFIRM、一 REFUTE),另抓兩個 blocker,已修(2026-09-09)
+
+R10 直接抽取工作樹裡的函式執行:`overscan=0` 靜止 ahead=false ✓;拖曳中 15 新列全 full ✓;首次 / 正常 15 新列全 full、殼離窗再進窗回 full ✓;
+autoRowHeight 殼 inline height=100 ✓;快取依賴閘含殼、拿掉 `resolvedWidths` 的負對照抓得到 ✓。**列高同步 REFUTE**:配額升級有同步,但**拖曳把殼強制升成真列不走配額**,
+它在 Chromium 重現(autoRowHeight + 左右釘選、estimate 58、捲 600px 後 handleDragStart):第 13 列三區 118 / 58 / 58px,等 1 秒仍差 60px;直接呼叫增量同步立刻 118 / 118 / 118。
+修:同步旗標改看集合差(上次是殼、這次是真列的任一列)而不是配額計數。
+第二個 blocker 是儀器:最後一張擷取幀的持續時間固定 0,尾幀一路白到窗尾會被當 31ms 過 400ms 的閘(它用「捲到 5900px 隱藏內容」的對照頁重現:最後兩張 17/17 全白、閘 exit 0)。
+修:最後一張幀保持到觀測窗結束(`windowEndTs` 與 screencast 時間戳同 epoch 秒);selftest 加必紅對照「空白@20、窗尾 1000 → 980ms」;缺資料(帶數 0 / DOM 取樣空)在閘裡 fail。
+R10 另兩個 RISK 記為已知限制:80% 寬的 1px 合成線會被當內容(roadmap story 沒有這種東西);Q2 的 effect 無依賴陣列可接受(每次 commit 一個布林檢查)。
+修後重跑:見 R11。
+
+### AD37 續五:Codex R11 —— 尾幀計時關掉(它的對照量到 1317ms、閘正確紅),列高同步仍沒關:我先覆寫再比對(2026-09-09)
+
+R11 用同一重現再跑:第 13 列三區仍 118 / 58 / 58px。根因是我在 layout effect 裡**先執行 `S.prevShells = S.shellsNow`,才拿 prevShells 跟 fullNow 比**——
+兩者變成同一輪的互斥集合,`upgraded` 永遠 false,連配額升級也沒同步。修:先比對上一輪集合,再覆寫。
+R10 的兩個 RISK 定案:缺資料拒絕已補並經原始閘實跑驗證;「每帶 80% 寬 1px 線被當內容」是已知限制 —— R11 實測 roadmap 原生底線覆蓋中央 100%、
+隱藏內容後儀器正確判 17/17 空白,只有人工加 80% 線才誤判,現有 story 不會踩到。
+修後重跑與 R12 確認:見下一則。
+
+### AD37 續六:Codex R12 —— 最後一個 blocker 關掉,「可以進 PR」;最終數字(2026-09-09)
+
+R12 用同一份 Chromium 重現:拖曳強制升級 → 第 13 列立即 118 / 118 / 118px;自然配額補齊 → 同樣 118 / 118 / 118;兩條路徑各追加 10 次穩定 commit,
+新增同步 0 次、量高 0 次(沒有變成每次 commit 都重量);把舊順序在記憶體裡恢復回去,兩條路徑都重現 118 / 58 / 58(負對照有效)。結論「可以進 PR,無剩餘必要 blocker」。
+
+最終版(R9 + R10 + R11 修正)全部閘綠:332 條不變式、捲軸可見性、scroll-cost R0–R5、fast-scroll selftest(公式 5 例 + 正負對照)、CI 閘句(6,000px/s 25–34ms)、
+快取依賴閘(含 renderShellRow)、agent 範例 86 條。真實呈現幀 A/B(各 3 跑中位數):12,000px/s main 567ms → 分支 31ms(空白幀 30 → 3);
+6,000px/s 700ms → 17ms(55 → 3);3,000px/s 兩邊 0、殼 0 幀。Codex 四輪(R8 儀器判定 → R9 六反例 → R10 兩 blocker → R11 一 blocker → R12 通過)全程 read-only、逐條可重現。
+剩給 user 的:在 Netlify 預覽用真 Chrome(GPU 光柵)看快甩;殼的長相是否可接受。
 
