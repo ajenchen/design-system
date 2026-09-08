@@ -86,6 +86,34 @@ if (shape.hasPanel && shape.hasDialog) {
   }
 }
 
+const GEO = `(() => {
+  const mask = document.querySelector('[data-coexistence-mask]')
+  const dialog = [...document.querySelectorAll('[role="dialog"]')].find((d) => !d.querySelector('[data-coexistence-mask]')) || document.querySelector('[role="dialog"]')
+  const panel = document.querySelector('[role="complementary"]') || document.querySelector('aside#coexist-aside, aside#fv-aside')
+  if (!mask || !dialog || !panel) return { missing: { mask: !mask, dialog: !dialog, panel: !panel } }
+  const stage = mask.parentElement
+  const R = (e) => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom } }
+  const D = R(dialog), M = R(mask), P = R(panel), S = R(stage)
+  const intersects = !(D.r <= P.l + 0.5 || D.l >= P.r - 0.5 || D.b <= P.t + 0.5 || D.t >= P.b - 0.5)
+  const eq = (a, b) => Math.abs(a - b) <= 1
+  const cx = (P.l + P.r) / 2, cy = (P.t + P.b) / 2
+  const hit = document.elementFromPoint(cx, cy)
+  const centered = Math.abs((D.l + D.r) / 2 - (S.l + S.r) / 2) <= 1
+  return { intersects, maskEqStage: eq(M.l, S.l) && eq(M.r, S.r) && eq(M.t, S.t) && eq(M.b, S.b), panelHit: !!hit && panel.contains(hit), centered, D, M, P, S }
+})()`
+
+{
+  // 幾何(2026-09-08 user:「modal 整個蓋住了 agent 是要怎樣用」):對話框不與常駐區相交、遮罩 = 舞台、常駐區中心可點
+  // 前面的 Esc 對照組已把對話框關掉,重新載入 story 再量
+  await page.goto(`http://localhost:${sv.address().port}/iframe.html?id=${encodeURIComponent('design-system-components-agentpanel-展示--modal-coexistence')}&viewMode=story`, { waitUntil: 'load' })
+  await page.waitForSelector('[data-coexistence-mask]', { timeout: 15000 }).catch(() => {})
+  await page.waitForTimeout(500)
+  const g = await page.evaluate(GEO)
+  ck('G 對話框不與常駐區相交(v14 條 B 並列可操作)', !g.missing && !g.intersects, JSON.stringify(g.missing ?? { D: g.D, P: g.P }))
+  ck('G 遮罩 = 舞台矩形(只佔宿主面積)', !g.missing && g.maskEqStage, JSON.stringify(g.missing ?? { M: g.M, S: g.S }))
+  ck('G 常駐區中心點點得到自己(沒被遮罩蓋)', !g.missing && g.panelHit)
+}
+
 await browser.close(); sv.close()
 console.log(out.join('\n'))
 console.log(fail ? `\n✗ ${fail} 項未通過` : '\n✓ 全部通過')

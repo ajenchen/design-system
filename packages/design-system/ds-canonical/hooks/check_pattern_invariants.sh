@@ -3,6 +3,7 @@
 #
 # Merges 4 PreToolUse hooks(原各檔已 retire,合併入此):
 #   C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain,P1 WARN context)
+#   C.7 CommandEmpty 手刻簽名(P0 BLOCK,2026-09-08)
 #   C.2 inline-action canonical gap(原 check_inline_action_canonical_gap,P1 WARN context)
 #   C.3 primitive wrapper padding(原 check_primitive_wrapper_padding,P0 BLOCK exit 2)
 #   C.4 row slot handcraft(原 check_row_slot_handcraft,P0 BLOCK exit 2)
@@ -150,6 +151,32 @@ $SUSPECT_C6
   bg-neutral-selected-active → 只准出現在含 active:(按壓)的修飾鏈
   bg-neutral-selected-hover  → 只准切換鈕 pressed 上 hover(變淺)
 例外:行尾 \\`// @token-state-allow: <reason>\\`
+
+EOF
+    record_worst 2
+  fi
+fi
+
+# ── C.7 CommandEmpty 手刻簽名(P0 BLOCK exit 2;2026-09-08)────────────────────
+# 空狀態的置中 / 最小高度 / Empty 包裝由 CommandEmpty own(select-menu.spec.md「Empty state」)。
+# 2026-09-08 之前 SelectMenu、AgentPanel 各手刻一份、Command 自家 story 是裸文字 —— 三種長相(user 抓到)。
+# 攔:`<CommandEmpty` 標籤內出現 items-center / justify-center / minHeight,或它的下一行手放 <Empty。
+# 例外:行尾 `// @command-empty-handcraft-ok: <reason>`
+if ! grep -q '@command-empty-handcraft-ok' <<<"$NEW_CONTENT"; then
+  SUSPECT_C7=$(printf '%s' "$NEW_CONTENT" | tr '\n' ' ' | grep -oE "<CommandEmpty[^>]*(items-center|justify-center|minHeight)[^>]*>|<CommandEmpty[^>]*>[[:space:]]*<Empty\b" | head -3)
+  if [ -n "$SUSPECT_C7" ]; then
+    cat >&2 <<EOF
+
+┄┄┄ C.7 check_pattern_invariants — CommandEmpty 手刻簽名 BLOCKER ┄┄┄
+
+[P0] ${FILE_PATH}
+偵測到在 CommandEmpty 上手刻置中 / 最小高度 / Empty:
+$SUSPECT_C7
+
+空狀態的長相由 CommandEmpty own(字串 children 自動包 Empty、flex 置中、getMenuListMinHeight);
+consumer 只傳文案:<CommandEmpty size={size} minRows={minRows}>{emptyText}</CommandEmpty>
+loading 放 <CommandLoading label=…/> 當 children。SSOT:select-menu.spec.md「Empty state」。
+例外:行尾 \`// @command-empty-handcraft-ok: <reason>\`
 
 EOF
     record_worst 2

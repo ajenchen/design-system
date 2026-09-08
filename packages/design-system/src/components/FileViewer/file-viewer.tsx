@@ -981,7 +981,10 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
   useOverlayCoexistence(open && !!persistentElements, keepCoexist)
   const insidePersistent = React.useCallback((node: EventTarget | null) => {
     if (!persistentElements || !(node instanceof Node)) return false
-    return persistentElements().some((el) => el.contains(node))
+    if (persistentElements().some((el) => el.contains(node))) return true
+    // 疊在檢視器上的另一個 dialog(沒 URL 的確認框)不算框外,同 dialog.tsx(v14 第 9 題)
+    const other = (node instanceof Element ? node : node.parentElement)?.closest('[role="dialog"]')
+    return !!other && other !== contentRef.current
   }, [persistentElements])
   const coexistGuards = persistentElements
     ? {

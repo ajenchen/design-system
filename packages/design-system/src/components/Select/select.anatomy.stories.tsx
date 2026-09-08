@@ -323,7 +323,7 @@ export const Overview = {
                 ['clearable', 'boolean', 'false', '有值時顯示 clear 按鈕（僅 edit 模式）'],
                 ['searchable', 'boolean', 'false', '啟用搜尋(desktop 時 field 變 input，打字即篩選)'],
                 ['loading', 'boolean', 'false', 'dropdown 開啟且無可顯示選項時,empty slot 顯 CircularProgress(已有選項時保留顯示、不取代;對齊 spec「Loading」2026-07-04 拍板)'],
-                ['minRows', 'number', '3', 'menu list 最小列數(空 / 選項少時視覺一致)'],
+                ['minRows', 'number', '3', '空狀態最小列數(0 筆與 minRows 筆結果浮層等高)'],
                 ['startIcon', 'LucideIcon', '—', '左側 field-level 指示 icon（muted，僅 plain 模式；代表 value 的圖示走 option.icon）'],
                 ['error', 'boolean', 'false', '紅色邊框 + aria-invalid（僅 edit 模式有視覺效果）'],
                 ['defaultOpen', 'boolean', 'false', 'uncontrolled 初始開啟(DataTable cell click→1 step open)'],

@@ -74,6 +74,7 @@ jobs:
           # 「有 URL 的內容與 agent 並存」重新交回去問 user,而 memory 早有明文禁止 ——
           # 那條規則當時只是一句給人看的話,沒有機械防線。這支就是那道防線。
           npm run test:decided-clause-downgrade
+          npm run test:button-variants
 
       - name: DataTable pixel invariants (browser)
         run: |

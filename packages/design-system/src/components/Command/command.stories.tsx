@@ -110,9 +110,9 @@ export const InlineCommand: Story = {
         <CommandList>
           <CommandEmpty>沒有符合的項目</CommandEmpty>
           <CommandGroup heading="資料夾">
-            <CommandItem startIcon={Inbox} tag="124">收件匣</CommandItem>
-            <CommandItem startIcon={Star} tag="8">已加星號</CommandItem>
-            <CommandItem startIcon={Archive} tag="2,340">封存</CommandItem>
+            <CommandItem startIcon={Inbox} endContent={<span className="text-caption text-fg-muted tabular-nums">124</span>}>收件匣</CommandItem>
+            <CommandItem startIcon={Star} endContent={<span className="text-caption text-fg-muted tabular-nums">8</span>}>已加星號</CommandItem>
+            <CommandItem startIcon={Archive} endContent={<span className="text-caption text-fg-muted tabular-nums">2,340</span>}>封存</CommandItem>
           </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="動作">

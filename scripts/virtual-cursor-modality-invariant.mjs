@@ -55,7 +55,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
 
 for (const t of TARGETS) {
   // ── (A) 真滑鼠點開 ───────────────────────────────────────────────────
-  await page.goto(story(t.id), { waitUntil: 'load' }); await page.waitForTimeout(500)
+  await page.goto(story(t.id), { waitUntil: 'load' }); await page.waitForSelector(t.trigger, { timeout: 15000 }).catch(() => {}); await page.waitForTimeout(300)
   const box = await page.evaluate((s) => { const el = document.querySelector('#storybook-root ' + s) || document.querySelector(s); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } }, t.trigger)
   if (!box) { ck(`${t.name} 前提:找得到觸發器`, false, t.trigger); continue }
   await page.mouse.click(box.x, box.y); await page.waitForTimeout(700)
@@ -70,7 +70,7 @@ for (const t of TARGETS) {
   ck(`${t.name} B 對照組:鍵盤把游標移回已選項 → **必須**有框(沒把框整個殺掉)`, drawn(b), `「${b.text}」outline=${b.style} ${b.w}px ${b.color}`)
 
   // ── (C) 純鍵盤開啟 → 立刻有框 ───────────────────────────────────────
-  await page.goto(story(t.id), { waitUntil: 'load' }); await page.waitForTimeout(500)
+  await page.goto(story(t.id), { waitUntil: 'load' }); await page.waitForSelector(t.trigger, { timeout: 15000 }).catch(() => {}); await page.waitForTimeout(300)
   let onTrigger = false
   for (let i = 0; i < 25 && !onTrigger; i++) {
     await page.keyboard.press('Tab')
@@ -98,7 +98,7 @@ for (const t of TARGETS) {
   const tid = Object.keys(idx.entries).find((i) => /treeview-展示--/.test(i))
   if (!tid) ck('TreeView 前提:找得到 story', false, '找不到 treeview-展示 story —— 沒東西可驗不能算綠')
   if (tid) {
-    await page.goto(story(tid), { waitUntil: 'load' }); await page.waitForTimeout(500)
+    await page.goto(story(tid), { waitUntil: 'load' }); await page.waitForSelector('[role="treeitem"]', { timeout: 15000 }).catch(() => {}); await page.waitForTimeout(300)
     const rowBox = await page.evaluate(() => { const el = document.querySelector('[role="treeitem"]'); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + 24, y: r.top + r.height / 2 } })
     if (rowBox) {
       await page.mouse.click(rowBox.x, rowBox.y); await page.waitForTimeout(700)

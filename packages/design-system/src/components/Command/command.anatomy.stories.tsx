@@ -31,7 +31,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Command 是 shadcn passthrough(基於 cmdk library)——搜尋 + 鍵盤導覽的指令清單。結構:CommandInput(搜尋框)+ CommandList(捲動區)+ CommandGroup(分組)+ CommandItem(項目)+ CommandEmpty(空狀態)。本 DS 在 cmdk 原結構上套用設計 token(顏色 / 字級 / 間距),並用 ScrollArea 包住清單做跨系統一致的捲軸;選項與空狀態的樣式直接寫在 Command 內,不透過其他元件。</Desc>
+        <Desc>Command 是基於 cmdk 的搜尋 + 鍵盤導覽清單;項目消費 CommandItem(內包 MenuItem)、空狀態消費 Empty、搜尋列與 SelectMenu 共用(見 command.spec.md 定位)。結構:CommandInput(搜尋框)+ CommandList(捲動區)+ CommandGroup(分組)+ CommandItem(項目)+ CommandEmpty(空狀態)。本 DS 在 cmdk 原結構上套用設計 token(顏色 / 字級 / 間距),並用 ScrollArea 包住清單做跨系統一致的捲軸;選項與空狀態的樣式直接寫在 Command 內,不透過其他元件。</Desc>
         <div className="rounded-lg border border-border max-w-md overflow-hidden">
           <Command>
             <CommandInput placeholder="輸入指令或搜尋..." />

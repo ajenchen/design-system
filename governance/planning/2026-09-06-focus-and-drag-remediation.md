@@ -2322,3 +2322,57 @@ agent 不頂天立地…一堆說明文字…為何 modal 沒有遮罩也沒有 
 - **agent 頂天立地**:面板是畫布 flex 的直接子節點,撐滿畫布高度;便利貼式文字全部移除,說明改成 agent 自己的回覆內容(真實語氣)。
 - **key/value**:Dialog「標頭操作」與「標頭 tabs」兩處手刻 label/value 改 `DescriptionList orientation="horizontal"`;file-viewer / dialog / agent 三支並存 story 的 aside 全部換 DS 元件並做成真實的「評論側欄」。
 閘:`dialog-coexistence` / `agent-modal-coexistence` / `agent-url-registry-demo` / `overlay-shortcut-scope` 四支在新 story 上全綠;五張截圖人眼核對。
+
+## AD30 Command 還有五件事沒 own(user:「無結果狀態跟 select menu 完全不一樣,是否又漏掉了其他?」)
+
+四路稽核(ultracode 工作流)第一路逐行比對 command.tsx / select-menu.tsx / agent-panel.tsx 後列出 14 條,全部落地:
+- **空狀態**(P0):CommandEmpty 原本是純 passthrough,SelectMenu 與 AgentPanel 歷史面板各手刻一份「flex 置中 + Empty + 最小高度」、
+  Command 自家 story 是裸文字貼左上(三種長相)。現在 CommandEmpty own:字串 children 自動包 `<Empty description>`、置中、
+  最小高度 `getMenuListMinHeight(size, minRows)`;loading 放 `<CommandLoading label>` 當 children。
+- **高度的 SSOT**:`getMenuListMinHeight` = `--field-height-{size}` × minRows(預設 3)+ 16px(一個 group 的 py-2 上下),
+  之前只住在 field-types.ts 的公式,沒有任何 spec 句子;現在寫進 select-menu.spec.md「Empty state」,16px 改成可追溯常數
+  `MENU_GROUP_PADDING_Y_PX * 2`,四處過時註解(field-types / select-menu prop doc / 兩支 anatomy)校正。公式本身合理:
+  等於「同一 group 內 3 列單行項目」的幾何,讓 0 筆與 3 筆結果的浮層等高;吃 CSS 變數所以 density 自動跟;minRows ≤ 1 時無效(已明寫)。
+- **selected 是死的**(P0):CommandItem 內層 MenuItem 被 `!bg-transparent` 蓋掉,外層 cmdk item 沒畫 → `selected` 零效果;
+  SelectMenu / AgentPanel 各自在外層手刻選中底色與鍵盤模態框。搬進 CommandItem 外層(item-anatomy「選中 × 互動疊加」),SelectMenu 改純消費。
+- **尺寸傳播**:Command root 收 `size` 進 RowSizeProvider,搜尋列 / 項目 / 群組標題 / 空狀態同一個值(之前群組標題永遠 md)。
+- **播報與命名**:SR 的 0 筆播報從 SelectMenu 搬進 Command(`CommandEmptyStatus`);CommandList 預設 accessible name「選項」
+  (cmdk 預設英文 Suggestions,AgentPanel 傳的 `aria-label="對話"` 會被 cmdk 靜默蓋掉 → 改 `label`);CommandDialog 補 `label`。
+- **其餘**:Command root 不再自帶 surface / radius(殼 own);AgentPanel 歷史面板刪掉第二份搜尋列幾何覆寫;`--menu-max-height`
+  從 command.tsx 的 fallback 字面值升格為 uiSize token(select.spec 早就當 token 描述);story 的計數放尾端值槽(fg-muted + tabular-nums)。
+- **防線**:pattern hook C.7 —— `<CommandEmpty` 上手刻置中 / 最小高度 / Empty 就擋(對照組:手刻 exit 2、正確用法 exit 0)。
+- 未做(可選,列此):搜尋字串非空時 cmdk Separator 不渲染 → 相鄰可見群組沒分隔線;要改 CommandGroup 用 `~` 兄弟選擇器畫線,需先截圖實測。
+
+## AD31 按鈕變體:我違反的是既有規則,而且全 DS 沒有機械防線
+
+user:「刪除專案的 dialog 的『刪除』到底為何沒有變成 primary danger?…『儲存』沒有使用 primary?我們設計原則沒有定義好?」
+
+規則早就有:`button.spec.md:12`「主要 action / CTA **必 explicit variant="primary",不靠預設**」、:204「primary + danger = 立即且不可逆」、
+:205「secondary + danger = 還有一層確認」、:415「tertiary + danger 靜默渲染成一般 tertiary」;`button.tsx` 預設 variant 是 tertiary(2026-06-06 起);
+memory `feedback_consume_existing_classification_ssot.md` 也記著「CTA 必 explicit primary」。我寫 `<Button danger>` 與 `<Button>儲存</Button>` 就是沒查規格。
+第二路稽核掃 213 支 story、780 顆 Button:違規只有我這輪的 4 處(確認框「刪除」、兩處 footer「儲存」、file-viewer 側欄「送出」),其餘 92 顆 footer 鈕合規。
+**防線**:新閘 `scripts/button-variant-invariant.mjs`(自寫 JSX 標籤解析,處理 `onClick={() => …}` 內的 `>`):R1 `danger` 必附 variant;
+R2 *Footer 內有動作鈕就必須恰一顆 `variant="primary"` 且在最右。`--selftest` 內建錯誤片段必紅;接進 ci.yml 靜態步。
+初版誤判 Button anatomy 的 `variant={v}`(動態值),已把 `variant={…}` 視為已給。
+
+## AD32 並存範例:modal 蓋住 agent、死按鈕、舞台缺觸發 —— 錯在 portal 疆界與「範例沒有行為」
+
+user:「click 任務 #4821…開啟後可以跟 agent 同時使用,但是 modal 整個蓋住了 agent 是要怎樣用???…modal 包括 mask 的面積就是 agent 左側的舞台區塊而已嗎???
+…舞台區塊也要放有 url 的 modal 的觸發按鈕吧???…一堆按鈕都無法正常反應,點了沒動作是怎樣???」
+
+第三路稽核逐句引 v14:條 B「寬螢幕讓具資格的內容與 agent **並列可操作**」、:53「Modal 在被蓋住的宿主區」、agent-panel.spec.md:85-86「並排時 舞台 = 容器 − 面板」
+→ 並存 modal 與遮罩只能佔**舞台**。我把 `portalContainer` 給了整張畫布(含面板),所以 modal 置中於畫布、蓋到面板,還得靠遮罩挖洞。
+- **修法**:story 的舞台欄(左欄)帶 transform 當 `portalContainer`,有 URL 的 modal 與遮罩天然只佔舞台、對話框置中於舞台;沒 URL 的確認框傳送到畫布(蓋住一切含代理)。
+  dialog.spec.md「並存」段與 story-rules「整頁情境」改寫成這條規則。遮罩挖洞邏輯保留給「常駐節點與宿主同一容器」的產品情境。
+- **疊在並存 modal 上的確認框會把它關掉**(寫閘時抓到):Radix 非模態分支把「焦點移進確認框」當 focus-outside → dismiss。Dialog / FileViewer 的
+  outside 守衛改成「目標在另一個 `[role=dialog]` 內就不算框外」,v14 第 9 題「取消後兩邊恢復」才成立。
+- **舞台觸發**:任務清單(三列 `Button variant="link"`)點列開同一個有 URL 的 modal;「新增任務」primary 開新任務 modal;「刪除專案」secondary danger 開確認框。
+- **行為**:儲存(primary,留言空白時停用)→ 留言存進任務、關 modal;刪除任務(secondary danger)→ 確認框(primary danger)→ 刪除並關;取消 → 恢復並存;
+  代理送出 → 我方訊息 + 代理回覆、清草稿;側欄送出 → 評論列表;上一頁 / 下一頁走歷史堆疊;重新整理 = v14 條 F(代理回到初始關閉、草稿與對話清空);
+  關閉再開草稿保留(條 E)。歷史堆疊合成單一 state 讓 `go` 穩定(初版分兩個 state,代理回覆裡連結的閉包凍住第一次 render 的 index,點連結把歷史截斷)。
+- **代理回覆的連結**:story 不再手寫 className;agent-panel.tsx 連結底線從 hover 才畫改回恆畫(agent-panel.spec.md:151「長文閱讀需要底線可掃描」)。
+  外部連結(Zendesk)`target=_blank` + rel + 外連 icon;系統沒確認過的網址是純文字(條 D)。
+- **閘**:`agent-url-registry-demo-invariant.mjs` 重寫成兩個寬度(1440 / 1180)× 七段流程(S1 舞台觸發與幾何 / S2 打字與儲存 / S3 疊確認框與取消恢復 /
+  S4 代理連結、Esc 分派、外部連結、未確認 / S5 宿主換頁與歷史 / S6 刪除專案 / S7 條 E 與條 F);三支並存閘都加幾何斷言:對話框 ∩ 面板 = ∅、遮罩 = 舞台、
+  面板中心 `elementFromPoint` 落在面板內、對話框置中於舞台。dialog / overlay 兩支閘因「儲存 / 送出 空白時停用」改成先打字再驗按鈕可聚焦。
+- 截圖人眼核對:任務 modal + 遮罩只在舞台;面板與側欄完整;標題 / 描述 / 變體正確。

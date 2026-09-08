@@ -22,6 +22,7 @@
   --field-height-xs: 1.5rem;    /* 24px — 固定，不隨 density 縮放 */
   --field-height-sm: 1.75rem;   /* 28px */
   --field-height-md: 2rem;      /* 32px */
+  --menu-max-height: 18.75rem;  /* 300px — CommandList / SelectMenu 清單捲動上限(2026-09-08 從 command.tsx 的 fallback 字面值升格為 token;select.spec.md「大量選項」引用它) */
   --field-height-lg: 2.25rem;   /* 36px */
 
   /* Field control vertical padding — 讓「單行的多行控件」與同 size 單行 Input 等高 SSOT。

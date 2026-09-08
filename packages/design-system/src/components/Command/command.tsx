@@ -6,7 +6,7 @@
 
 import * as React from "react"
 import { type DialogProps } from "@radix-ui/react-dialog"
-import { Command as CommandPrimitive } from "cmdk"
+import { Command as CommandPrimitive, useCommandState } from "cmdk"
 import { Search } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -14,23 +14,35 @@ import { Dialog, DialogContent, DialogTitle } from "@/design-system/components/D
 import { MenuItem, type MenuItemProps } from "@/design-system/components/Menu/menu-item"
 import { ICON_SIZE } from "@/design-system/tokens/uiSize/icon-size"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
-
-const Command = React.forwardRef<
-  React.ElementRef<typeof CommandPrimitive>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive
-    ref={ref}
-    className={cn(
-      "flex h-full w-full flex-col overflow-hidden rounded-md bg-surface-raised text-foreground",
-      className
-    )}
-    {...props}
-  />
-))
-Command.displayName = CommandPrimitive.displayName
+import { Empty } from "@/design-system/components/Empty/empty"
+import { CircularProgress } from "@/design-system/components/CircularProgress/circular-progress"
+import { getMenuListMinHeight } from "@/design-system/components/Field/field-types"
+import { RowSizeProvider, useRowSize } from "@/design-system/patterns/element-anatomy/item-anatomy"
+import { useInputModality } from "@/design-system/hooks/use-input-modality"
 
 type CommandSize = 'sm' | 'md' | 'lg'
+
+/**
+ * Command root —— 尺寸(sm / md / lg)在這裡進入 RowSizeProvider,搜尋列 / 項目 / 群組標題 / 空狀態全部從
+ * context 取得同一個 size(2026-09-08 之前 CommandGroup 的字串 heading 永遠是 md 列高)。
+ * 不自帶 surface / radius:殼(PopoverContent / DialogContent / inline 的邊框容器)才是 surface 的 owner。
+ */
+const Command = React.forwardRef<
+  React.ElementRef<typeof CommandPrimitive>,
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive> & { size?: CommandSize }
+>(({ className, size, ...props }, ref) => {
+  const inherited = useRowSize('md')
+  return (
+    <RowSizeProvider value={size ?? inherited}>
+      <CommandPrimitive
+        ref={ref}
+        className={cn("flex h-full w-full flex-col overflow-hidden text-foreground", className)}
+        {...props}
+      />
+    </RowSizeProvider>
+  )
+})
+Command.displayName = CommandPrimitive.displayName
 
 /**
  * CommandDialog —— Cmd+K 指令面板。內容**就是** SelectMenu 那一套(同一個 CommandInput 搜尋列、
@@ -40,12 +52,12 @@ type CommandSize = 'sm' | 'md' | 'lg'
  * 在面板裡被第二份樣式改寫。世界級的指令面板(Linear / Raycast / VS Code)也都是「同一份清單樣式 + 對話框殼」。
  * 指令面板依世界級慣例不畫可見標題;`title` 只給讀屏器(Radix 要求 DialogContent 有 Title)。
  */
-const CommandDialog = ({ children, title = '指令面板', ...props }: DialogProps & { title?: string }) => {
+const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令', ...props }: DialogProps & { title?: string; label?: string }) => { // i18n-allow: DS 預設文案,可覆寫
   return (
     <Dialog {...props}>
       <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]" autoHeight>
         <DialogTitle className="sr-only">{title}</DialogTitle>
-        <Command>
+        <Command label={label}>
           {children}
         </Command>
       </DialogContent>
@@ -64,7 +76,9 @@ const CommandDialog = ({ children, title = '指令面板', ...props }: DialogPro
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
   Omit<React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>, 'size'> & { size?: CommandSize }
->(({ className, size = 'md', ...props }, ref) => (
+>(({ className, size: sizeProp, ...props }, ref) => {
+  const size = sizeProp ?? useRowSize('md')
+  return (
   <div
     className={cn(
       'flex shrink-0 items-center gap-2 px-3 py-1 border-b border-divider',
@@ -88,7 +102,8 @@ const CommandInput = React.forwardRef<
       {...props}
     />
   </div>
-))
+)
+})
 
 CommandInput.displayName = CommandPrimitive.Input.displayName
 
@@ -108,7 +123,7 @@ CommandInput.displayName = CommandPrimitive.Input.displayName
 const CommandList = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>
->(({ className, ...props }, ref) => (
+>(({ className, label = '選項', ...props }, ref) => ( // i18n-allow: DS 預設 listbox 名稱(cmdk 預設是英文 Suggestions)
   /* @story-baseline: overlay-surface.spec.md#Viewport-aware-scroll-chain-invariant(M25 SSOT owner)
       owner spec: overlay-surface.spec.md:34/53/347-362 —— 「浮層 body 永遠 flex-1 min-h-0 overflow-y-auto;
         中間 wrapper 都必 flex flex-col h-full min-h-0;viewport 太小 body 內壓縮捲動」。
@@ -116,25 +131,65 @@ const CommandList = React.forwardRef<
         (max-h=available-height)內撐破外殼、底部選項被裁(320px viewport 實測 bottom 425 > 320 溢出)。
       修: 加 flex-1 min-h-0(對齊 M25 canonical + HoverCard/Popover),max-h-300 降為上限。Command root 已
         `flex h-full flex-col`(command.tsx:23)= chain 完整;非 flex 容器內 flex-1 為 no-op(spec:34 backward compat)。 */
-  <ScrollArea className="flex-1 min-h-0 max-h-[var(--menu-max-height,300px)]">
-    <CommandPrimitive.List ref={ref} className={cn("overflow-x-hidden", className)} {...props} />
+  <ScrollArea className="flex-1 min-h-0 max-h-[var(--menu-max-height)]">
+    <CommandPrimitive.List ref={ref} label={label} className={cn("overflow-x-hidden", className)} {...props} />
   </ScrollArea>
 ))
 
 CommandList.displayName = CommandPrimitive.List.displayName
 
+/**
+ * CommandEmpty —— **own 空狀態**(2026-09-08 之前是純 passthrough,SelectMenu / AgentPanel 各自手刻
+ * 「flex 置中 + Empty + 最小高度」,Command 自家 story 是裸文字貼左上 —— 三種長相)。
+ * 字串 children 自動包 `<Empty description>`;最小高度 = `getMenuListMinHeight(size, minRows)`
+ * (owner:select-menu.spec.md「Empty state」;= 同一 group 內 minRows 列單行項目的幾何,0 筆與 minRows 筆結果浮層等高)。
+ * loading 時把 `<CommandLoading>` 當 children 放進來。
+ */
 const CommandEmpty = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Empty>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive.Empty
-    ref={ref}
-    className={className}
-    {...props}
-  />
-))
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty> & { size?: CommandSize; minRows?: number }
+>(({ className, style, children, size: sizeProp, minRows = 3, ...props }, ref) => {
+  const size = sizeProp ?? useRowSize('md')
+  return (
+    <CommandPrimitive.Empty
+      ref={ref}
+      className={cn('flex items-center justify-center', className)}
+      style={{ minHeight: getMenuListMinHeight(size, minRows), ...style }}
+      {...props}
+    >
+      {typeof children === 'string' || typeof children === 'number'
+        ? <Empty description={String(children)} className="py-6" />
+        : children}
+    </CommandPrimitive.Empty>
+  )
+})
 
 CommandEmpty.displayName = CommandPrimitive.Empty.displayName
+
+/** 載入區塊:具 accessible name 的 `role="status"` + 48px 進度圈(owner:select-menu.spec.md「Loading」;不經 Empty)。放進 CommandEmpty 當 children。 */
+function CommandLoading({ label }: { label: string }) {
+  return (
+    <div role="status" aria-label={label} className="flex items-center justify-center py-6">
+      <CircularProgress size={48} />
+    </div>
+  )
+}
+
+// ── SR live status(2026-07-05 D4 於 SelectMenu 落地;2026-09-08 搬進 Command,CommandDialog / inline 也受益)──
+// cmdk CommandEmpty 渲染為 role="presentation" div、cmdk 全鏈無 aria-live,且 DOM focus 停在
+// combobox input(aria-activedescendant 虛擬焦點)→ SR 使用者搜尋到 0 結果或 loading 佔位時
+// 聽不到任何播報。補 visually-hidden polite live region,鏡射 CommandEmpty 的無結果文字;
+// loading 由可見的 CommandLoading `role="status"` + `aria-label` 直接宣告,避免同一狀態重複播報。
+// 對齊 react-select A11yText / APG combobox no-results 播報 + empty.spec.md「動態 filter no-results 容器需 aria-live="polite"」。
+export function CommandEmptyStatus({ loading = false, text }: { loading?: boolean; text: string }) {
+  const filteredCount = useCommandState((state) => state.filtered.count)
+  return (
+    <div role="status" aria-live="polite" className="sr-only">
+      {filteredCount === 0 ? (loading ? null : text) : null}
+    </div>
+  )
+}
+
 
 /**
  * 分組標題**消費 `MenuItem header`,不自己寫樣式**。
@@ -156,17 +211,20 @@ CommandEmpty.displayName = CommandPrimitive.Empty.displayName
 const CommandGroup = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Group>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
->(({ className, heading, ...props }, ref) => (
+>(({ className, heading, ...props }, ref) => {
+  const rowSize = useRowSize('md')
+  return (
   <CommandPrimitive.Group
     ref={ref}
     // `p-0` 中和 cmdk 對 heading 容器的預設內距 —— 內距由 MenuItem 的 row geometry 提供
     className={cn("overflow-hidden p-0 py-2 text-foreground [&_[cmdk-group-heading]]:p-0", className)}
     heading={typeof heading === 'string' || typeof heading === 'number'
-      ? <MenuItem header>{heading}</MenuItem>
+      ? <MenuItem size={rowSize} header>{heading}</MenuItem>
       : heading}
     {...props}
   />
-))
+)
+})
 
 CommandGroup.displayName = CommandPrimitive.Group.displayName
 
@@ -202,7 +260,9 @@ export type CommandItemProps = React.ComponentPropsWithoutRef<typeof CommandPrim
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
   CommandItemProps
->(({ className, children, size, startIcon, startIconClassName, avatar, startContent, description, tag, endContent, shortcut, selected, checkbox, checked, disabled, ...props }, ref) => {
+>(({ className, children, size: sizeProp, startIcon, startIconClassName, avatar, startContent, description, tag, endContent, shortcut, selected, checkbox, checked, disabled, ...props }, ref) => {
+  const size = sizeProp ?? useRowSize('md')
+  const keyboardModality = useInputModality() === 'keyboard'
   const childIsMenuItem = React.isValidElement(children) && children.type === MenuItem
   const end = shortcut != null ? <CommandShortcut>{shortcut}</CommandShortcut> : endContent
   return (
@@ -212,8 +272,13 @@ const CommandItem = React.forwardRef<
       className={cn(
         // @focus-suppress D — D 選單未選中項;承擔者:data-[selected=true] 的 hover 同色底
         "relative flex cursor-default select-none items-center outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-neutral-hover data-[selected=true]:text-foreground data-[disabled=true]:text-fg-disabled",
-        // 內層 MenuItem 自帶內距與圓角;外層歸零(= SelectMenu 傳的 'p-0 rounded-none')
+        // 內層 MenuItem 自帶內距與圓角;外層歸零
         "p-0 rounded-none",
+        // 選中 × 互動疊加(owner:item-anatomy.spec.md「選中 × 互動疊加」,2026-08-11 user 拍板):
+        // 滑鼠停在選中項 → 釘住 bg-neutral-selected;鍵盤反白 → 畫框(2026-09-07 A5),且只在鍵盤模態(2026-09-08)。
+        // 2026-09-08 之前這段只在 SelectMenu / AgentPanel 各手刻一份,CommandItem 自己的 `selected` 是死的。
+        selected && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected',
+        selected && keyboardModality && 'data-[selected=true]:not-hover:focus-ring-inset',
         className
       )}
       {...props}
@@ -286,6 +351,7 @@ export {
   CommandInput,
   CommandList,
   CommandEmpty,
+  CommandLoading,
   CommandGroup,
   CommandItem,
   CommandShortcut,

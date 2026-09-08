@@ -5,6 +5,7 @@ import { FileViewer, type FileInfo } from './file-viewer'
 import { Button } from '@/design-system/components/Button/button'
 import { Input } from '@/design-system/components/Input/input'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
 import { Image as ImageIcon, Paperclip, Camera, Figma } from 'lucide-react'
 
 /**
@@ -433,32 +434,39 @@ export const CoexistenceContract: Story = {
     const [open, setOpen] = React.useState(true)
     const [index, setIndex] = React.useState(0)
     const asideRef = React.useRef<HTMLElement | null>(null)
-    const keep = React.useCallback(
-      () => (asideRef.current ? [asideRef.current as Element] : []),
-      [],
-    )
+    const [stage, setStage] = React.useState<HTMLDivElement | null>(null)
+    const toolbarRef = React.useRef<HTMLDivElement | null>(null)
+    const keepAll = React.useCallback(() => [asideRef.current, toolbarRef.current].filter((el): el is HTMLElement => !!el), [])
+    const [aside, setAside] = React.useState('')
+    const [comments, setComments] = React.useState<string[]>(['Betty:截圖二的按鈕文案要跟規格對一下。'])
     return (
-      <div className="flex h-[560px]">
-        <div className="flex-1" />
-        <FileViewer
-          files={jiraScreenshots}
-          open={open}
-          onOpenChange={setOpen}
-          index={index}
-          onIndexChange={setIndex}
-          persistentElements={keep}
-        />
-        <aside ref={asideRef} id="fv-aside" aria-label="評論" className="flex w-[300px] shrink-0 flex-col gap-[var(--layout-space-loose)] border-l border-divider p-[var(--layout-space-loose)]">
-          <h2 className="text-body-lg font-medium">評論</h2>
-          <p className="text-body">Betty:截圖二的按鈕文案要跟規格對一下。</p>
-          <Field>
-            <FieldLabel>新增評論</FieldLabel>
-            <Input id="fv-aside-input" placeholder="可以打字" />
-          </Field>
-          <div>
-            <Button id="fv-aside-btn" variant="secondary">送出</Button>
+      <div className="p-[var(--layout-space-loose)]">
+        <SimulatedBrowser url="/projects/8821/tasks/4821/attachments" canBack toolbarRef={toolbarRef} caption="模擬:檔案檢視器(有自己的網址)開著時只佔舞台,右側評論側欄照常可用。">
+          <div ref={setStage} className="relative flex min-w-0 flex-1 flex-col overflow-hidden" style={{ transform: 'translateZ(0)' }}>
+            <FileViewer
+              files={jiraScreenshots}
+              open={open}
+              onOpenChange={setOpen}
+              index={index}
+              onIndexChange={setIndex}
+              persistentElements={keepAll}
+              portalContainer={stage}
+            />
           </div>
-        </aside>
+          <aside ref={asideRef} id="fv-aside" aria-label="評論" className="flex w-[300px] shrink-0 flex-col gap-[var(--layout-space-loose)] border-l border-divider bg-surface p-[var(--layout-space-loose)]">
+            <h2 className="text-body-lg font-medium">評論</h2>
+            <ul className="flex flex-col gap-1">
+              {comments.map((c, i) => <li key={i} className="text-body">{c}</li>)}
+            </ul>
+            <Field>
+              <FieldLabel>新增評論</FieldLabel>
+              <Input id="fv-aside-input" placeholder="可以打字" value={aside} onChange={(e) => setAside(e.target.value)} />
+            </Field>
+            <div>
+              <Button id="fv-aside-btn" variant="primary" disabled={!aside.trim()} onClick={() => { const t = aside.trim(); if (t) { setComments((c) => [...c, `你:${t}`]); setAside('') } }}>送出</Button>
+            </div>
+          </aside>
+        </SimulatedBrowser>
       </div>
     )
   },

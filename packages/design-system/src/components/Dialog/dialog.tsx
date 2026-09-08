@@ -140,8 +140,12 @@ const DialogContent = React.forwardRef<
   // 只在有傳 persistentElements 時掛,預設路徑仍然一個位元不變。
   const insidePersistent = React.useCallback((node: EventTarget | null) => {
     if (!persistentElements || !(node instanceof Node)) return false
-    return persistentElements().some((el) => el.contains(node))
-  }, [persistentElements])
+    if (persistentElements().some((el) => el.contains(node))) return true
+    // 疊在上面的另一個 dialog(例:從並存 modal 裡開出的、沒有 URL 的確認框)也不算框外:
+    // 非模態分支會把「焦點移進確認框」當 focus-outside 而把並存 modal 關掉,v14 第 9 題要的是「取消後兩邊恢復」。
+    const other = (node instanceof Element ? node : node.parentElement)?.closest('[role="dialog"]')
+    return !!other && other !== contentEl
+  }, [persistentElements, contentEl])
   const guardOutside = persistentElements
     ? {
         onPointerDownOutside: (e: CustomEvent<{ originalEvent: PointerEvent }>) => {

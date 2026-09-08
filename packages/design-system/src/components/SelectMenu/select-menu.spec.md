@@ -122,6 +122,8 @@ Popover（浮動容器，handle 展開 / 定位）
 
 搜尋無結果時顯示 `Empty` 元件，可透過 `emptyText` 自訂訊息（預設「沒有符合的選項」）。
 
+**空狀態最小高度(SSOT,2026-09-08 落文)**:`--field-height-{size}` × `minRows`(預設 3)+ 16px(一個 group 的 `py-2` 上下,item-anatomy.spec.md「Group auto-separation」),由 `getMenuListMinHeight` 計算、套在 `CommandEmpty`(不是 CommandList —— 有結果時清單自然貼內容,2026-05-07 起)。它等於「同一 group 內 minRows 列單行項目」的幾何,讓 0 筆與 minRows 筆結果的浮層等高,不跳動;吃 CSS 變數所以 density 切換自動跟。`minRows ≤ 1` 時 Empty 自身 `py-6` + 一行字(≈ 66px)已超過,設定無效。**Empty 的置中與最小高度由 `CommandEmpty` own**(2026-09-08 起 SelectMenu / AgentPanel 歷史面板 / CommandDialog / inline Command 全部同一份,consumer 只傳文案)。
+
 - **Creatable 時**：即使搜尋無結果，仍顯示 create row 讓使用者補建選項（顯示條件見「Creatable」段）
 - **非 creatable**：顯示 emptyText 提示使用者修改搜尋詞
 - **SR 播報**（2026-07-05 D4）：empty 結果經 visually-hidden `role="status"` + `aria-live="polite"` live region 播報（cmdk CommandEmpty 是 `role="presentation"`，SR 使用者原本聽不到 0 結果）；loading 則由畫面內具 `aria-label="載入選項中"` 的 `role="status"` wrapper 播報，避免雙重 announcement。SSOT 在 SelectMenu 一處，Select / Combobox / PeoplePicker 全體受益。

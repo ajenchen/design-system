@@ -56,21 +56,23 @@ const probe = (sel) => page.evaluate((s) => {
 // ── (B) 並存路徑 ────────────────────────────────────────────────────────
 await page.goto(story('design-system-components-dialog-展示--coexistence-contract'), { waitUntil: 'load' })
 await page.waitForTimeout(900)
-const asideBtn = await probe('#coexist-aside-btn')
 const asideInput = await probe('#coexist-aside-input')
 const bgBtn = await probe('#coexist-background-btn')
-const insideBtn = await probe('#coexist-inside-btn')
 
-if (asideBtn.missing) ck('B 並存路徑:story 有渲染', false, '找不到 #coexist-aside-btn')
+if (asideInput.missing) ck('B 並存路徑:story 有渲染', false, '找不到 #coexist-aside-input')
 else {
-  ck('B 常駐區域的按鈕仍可聚焦(v14 條 B「並列可操作」)', asideBtn.focused && !asideBtn.inert && !asideBtn.ariaHidden,
-     `focused=${asideBtn.focused} inert=${asideBtn.inert} ariaHidden=${asideBtn.ariaHidden}`)
   ck('B 常駐區域的輸入框仍可聚焦', asideInput.focused && !asideInput.inert,
      `focused=${asideInput.focused} inert=${asideInput.inert}`)
   // 真的打字:「可聚焦」不等於「可操作」(R3 指出只 .focus() 不夠)
   await page.focus('#coexist-aside-input'); await page.keyboard.type('hello')
   const typed = await page.evaluate(() => document.querySelector('#coexist-aside-input')?.value)
   ck('B 常駐區域的輸入框真的能打字', typed === 'hello', `value=${JSON.stringify(typed)}`)
+  // 送出 / 儲存 在輸入空白時停用(story 依規格),所以先打字再驗按鈕可聚焦
+  const asideBtn = await probe('#coexist-aside-btn')
+  ck('B 常駐區域的按鈕仍可聚焦(v14 條 B「並列可操作」)', asideBtn.focused && !asideBtn.inert && !asideBtn.ariaHidden,
+     `focused=${asideBtn.focused} inert=${asideBtn.inert} ariaHidden=${asideBtn.ariaHidden}`)
+  await page.focus('#coexist-inside-input'); await page.keyboard.type('x')
+  const insideBtn = await probe('#coexist-inside-btn')
   ck('B 對話框自己的按鈕仍可聚焦', insideBtn.focused && !insideBtn.inert,
      `focused=${insideBtn.focused} inert=${insideBtn.inert}`)
   ck('B **其餘背景仍被抑制**(並存不等於全開)', bgBtn.inert || bgBtn.ariaHidden || !bgBtn.focused,
@@ -98,6 +100,32 @@ if (defaultPath.skip) ck('A 預設路徑:背景照舊被隔離', false, defaultP
 else ck('A 預設路徑:背景照舊被隔離(沒傳 persistentElements 就是原本的 modal)',
         defaultPath.stillUsable === 0, `框外仍可用 ${defaultPath.stillUsable}/${defaultPath.total}`)
 
+const GEO = `(() => {
+  const mask = document.querySelector('[data-coexistence-mask]')
+  const dialog = [...document.querySelectorAll('[role="dialog"]')].find((d) => !d.querySelector('[data-coexistence-mask]')) || document.querySelector('[role="dialog"]')
+  const panel = document.querySelector('[role="complementary"]') || document.querySelector('aside#coexist-aside, aside#fv-aside')
+  if (!mask || !dialog || !panel) return { missing: { mask: !mask, dialog: !dialog, panel: !panel } }
+  const stage = mask.parentElement
+  const R = (e) => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom } }
+  const D = R(dialog), M = R(mask), P = R(panel), S = R(stage)
+  const intersects = !(D.r <= P.l + 0.5 || D.l >= P.r - 0.5 || D.b <= P.t + 0.5 || D.t >= P.b - 0.5)
+  const eq = (a, b) => Math.abs(a - b) <= 1
+  const cx = (P.l + P.r) / 2, cy = (P.t + P.b) / 2
+  const hit = document.elementFromPoint(cx, cy)
+  const centered = Math.abs((D.l + D.r) / 2 - (S.l + S.r) / 2) <= 1
+  return { intersects, maskEqStage: eq(M.l, S.l) && eq(M.r, S.r) && eq(M.t, S.t) && eq(M.b, S.b), panelHit: !!hit && panel.contains(hit), centered, D, M, P, S }
+})()`
+
+// 幾何(2026-09-08 user:「modal 整個蓋住了 agent 是要怎樣用」):對話框不與常駐區相交、遮罩 = 舞台、常駐區中心可點
+{
+  await page.goto(story('design-system-components-dialog-展示--coexistence-contract'), { waitUntil: 'load' }).catch(() => {})
+  await page.waitForSelector('[data-coexistence-mask]', { timeout: 15000 }).catch(() => {})
+  await page.waitForTimeout(500)
+  const g = await page.evaluate(GEO)
+  ck('G 對話框不與常駐側欄相交(v14 條 B 並列可操作)', !g.missing && !g.intersects, JSON.stringify(g.missing ?? { D: g.D, P: g.P }))
+  ck('G 遮罩 = 舞台矩形(只佔宿主面積)', !g.missing && g.maskEqStage, JSON.stringify(g.missing ?? { M: g.M, S: g.S }))
+  ck('G 側欄中心點點得到自己(沒被遮罩蓋)', !g.missing && g.panelHit)
+}
 await browser.close(); sv.close()
 console.log(out.join('\n'))
 console.log(fail ? `\n✗ ${fail} 項未通過` : '\n✓ 兩條路都通過')

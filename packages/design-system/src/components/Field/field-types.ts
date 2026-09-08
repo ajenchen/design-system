@@ -85,9 +85,9 @@ export type WithFieldVariantInternal<C> = C extends (props: infer P) => infer R
 // SSOT:fieldWrapperStyles `width` variant(field-wrapper.tsx)+ field-controls.spec.md「寬度軸」。
 export type FieldWidth = 'fill' | 'hug'
 
-// ── Menu List Min Height ─────────────────────────────────────────────────────
-// SelectMenu / Select / Combobox 共用的 CommandList minHeight 計算。
-// 確保空狀態有足夠高度讓 Empty 垂直置中(有框容器 → 置中原則)。
+// ── Menu Empty-state Min Height ─────────────────────────────────────────────
+// CommandEmpty(不是 CommandList,2026-05-07 起)的最小高度:同一 group 內 rows 列單行項目的幾何,
+// 讓 0 筆與 rows 筆結果的浮層等高。SSOT 句在 select-menu.spec.md「Empty state」。
 
 const FIELD_HEIGHT_TOKEN: Record<string, string> = {
   sm: 'var(--field-height-sm)',
@@ -95,9 +95,12 @@ const FIELD_HEIGHT_TOKEN: Record<string, string> = {
   lg: 'var(--field-height-lg)',
 }
 
-/** @internal — CommandList 最小高度 = field-height × rows + 16px(CommandGroup py-2 上下 padding);Command/Select 內部 helper,consumer 不直接 import。root barrel 排除(subpath 仍可用)。 */
+/** CommandGroup 上下各 8px(`py-2`,item-anatomy.spec.md「Group auto-separation」)—— 空狀態高度公式的那個 16px 就是這裡來的。 */
+const MENU_GROUP_PADDING_Y_PX = 8
+
+/** @internal — CommandEmpty 最小高度 = `--field-height-{size}` × rows + group 上下 padding;Command 內部 helper(CommandEmpty 消費),consumer 不直接 import。root barrel 排除(subpath 仍可用)。rows ≤ 1 時 Empty 自身 py-6 + 一行字(≈66px)已超過,設定無效。 */
 export function getMenuListMinHeight(size: string, rows: number = 3): string {
   const token = FIELD_HEIGHT_TOKEN[size] ?? FIELD_HEIGHT_TOKEN.md
-  return `calc(${token} * ${rows} + 16px)`
+  return `calc(${token} * ${rows} + ${MENU_GROUP_PADDING_Y_PX * 2}px)`
 }
 

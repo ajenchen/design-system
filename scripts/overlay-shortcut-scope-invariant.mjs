@@ -49,6 +49,8 @@ if (before) {
   // 造一個檢視器外、非輸入框的可聚焦元素(這正是舊版判準漏掉的形狀)
   // 用 story 裡真的常駐區按鈕,不自己 append 一個 —— 自己 append 的節點不在保留集合裡,
   // 會被 `suppressOthers` inert 掉而聚焦不了,那樣測到的是「探針壞了」不是「作用域對了」。
+  // 送出鈕在輸入空白時停用(story 依規格),先打字讓它可聚焦
+  await page.focus('#fv-aside-input').catch(() => {}); await page.keyboard.type('x')
   await page.evaluate(() => {
     (document.querySelector('#fv-aside-btn'))?.focus()
   })

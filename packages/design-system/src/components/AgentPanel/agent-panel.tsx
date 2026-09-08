@@ -97,7 +97,6 @@ import { SelectionItem } from '@/design-system/components/SelectionControl/selec
 import { Chip } from '@/design-system/components/Chip/chip'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { Input } from '@/design-system/components/Input/input'
-import { Empty } from '@/design-system/components/Empty/empty'
 import { Field, FieldLabel, FieldError } from '@/design-system/components/Field/field'
 import {
   Dialog,
@@ -595,17 +594,14 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
               aria-label="歷史對話" // i18n-allow: DS 預設文案
               className="overflow-hidden p-0"
             >
-              <Command label="歷史對話" className="[&_[cmdk-input-wrapper]]:py-1">
-                {/* 搜尋列 40 = 32 + 8(select-menu.tsx 搜尋列同高)。 */}
+              <Command label="歷史對話">
+                {/* 搜尋列幾何 = CommandInput SSOT(2026-09-08 刪掉這裡的第二份 py/h 覆寫) */}
                 <CommandInput
                   placeholder={historySearchPlaceholder}
                   aria-label={historySearchPlaceholder}
-                  className="h-8 py-0"
                 />
-                <CommandList aria-label="對話">
-                  <CommandEmpty className="flex items-center justify-center">
-                    <Empty description={historyEmptyText} className="py-6" />
-                  </CommandEmpty>
+                <CommandList label="對話">
+                  <CommandEmpty>{historyEmptyText}</CommandEmpty>
                   {groups.map(({ label, items }, gi) => (
                     <React.Fragment key={label || '(ungrouped)'}>
                       {gi > 0 && <CommandSeparator />}
@@ -896,7 +892,7 @@ const AgentMessage = React.forwardRef<HTMLDivElement, AgentMessageProps>(
                   'max-w-[85%] rounded-md bg-secondary px-3 py-2',
                   'animate-in fade-in-0 slide-in-from-bottom-2 duration-[var(--motion-duration-overlay)] motion-reduce:animate-none',
                 ]
-              : 'w-full [&_a]:text-primary [&_a:hover]:text-primary-hover [&_a]:underline-offset-2 [&_a:hover]:underline',
+              : 'w-full [&_a]:text-primary [&_a:hover]:text-primary-hover [&_a]:underline-offset-2 [&_a]:underline' // spec:151 長文閱讀需要底線可掃描(2026-09-08 從 hover 才畫改回恆畫),
           )}
         >
           {attachments && attachments.length > 0 && (

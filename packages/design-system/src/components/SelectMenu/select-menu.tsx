@@ -10,16 +10,11 @@ import { cn } from '@/lib/utils'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
-import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator } from '@/design-system/components/Command/command'
-import { useCommandState } from 'cmdk'
+import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandEmptyStatus, CommandGroup, CommandItem, CommandSeparator } from '@/design-system/components/Command/command'
 import { MenuItem, MenuFooter } from '@/design-system/components/Menu/menu-item'
-import { Empty } from '@/design-system/components/Empty/empty'
-import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
-import { getMenuListMinHeight } from '@/design-system/components/Field/field-types'
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select-ordering'
-import { useInputModality } from '@/design-system/hooks/use-input-modality'
 
 /**
  * SelectMenu — Popover + Command 組成的完整下拉選單
@@ -114,7 +109,7 @@ export interface SelectMenuProps {
   size?: SizeKey
   /** 對齊方式 */
   align?: 'start' | 'end'
-  /** 列表最少顯示幾行選項高度（預設 3），影響空狀態最小高度 */
+  /** 空狀態最小高度以幾列單行項目計(預設 3;只影響空狀態)（預設 3），影響空狀態最小高度 */
   minRows?: number
   /** 最小寬度（px），預設跟隨觸發元件 */
   minWidth?: number
@@ -149,25 +144,7 @@ export interface SelectMenuProps {
   className?: string
 }
 
-// ── SR live status(2026-07-05 D4:empty / loading 空狀態對 SR 不可感知修)──
-// cmdk CommandEmpty 渲染為 role="presentation" div、cmdk 全鏈無 aria-live,且 DOM focus 停在
-// combobox input(aria-activedescendant 虛擬焦點)→ SR 使用者搜尋到 0 結果或 loading 佔位時
-// 聽不到任何播報(loading spinner 的 CircularProgress 無 label 時更是 aria-hidden)。
-// 補 visually-hidden polite live region,鏡射 CommandEmpty 的無結果文字。Loading 改由可見
-// spinner 的 `role="status"` + `aria-label` 直接宣告，避免同一狀態重複播報。
-// cmdk Empty 只在 filtered.count === 0 渲染。對齊 react-select A11yText /
-// APG combobox no-results 播報 + empty.spec.md「動態 filter no-results 容器需 aria-live="polite"」。
-// SSOT 放 SelectMenu 一處 → Select / Combobox / PeoplePicker 全體受益。
-function SelectMenuLiveStatus({ loading, emptyText }: { loading: boolean; emptyText: string }) {
-  const filteredCount = useCommandState((state) => state.filtered.count)
-  return (
-    <div role="status" aria-live="polite" className="sr-only">
-      {filteredCount === 0
-        ? (loading ? null : emptyText)
-        : null}
-    </div>
-  )
-}
+// SR 播報(empty / loading)已搬進 Command:`CommandEmptyStatus`(2026-09-08)。
 
 // shadcn canonical:forwardRef + displayName 統一。SelectMenu 是 Popover + Command
 // composite,自身無 DOM host(trigger 由 consumer 以 asChild children 提供),ref 簽名
@@ -240,7 +217,6 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   )
 
   // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
-  const keyboardModality = useInputModality() === 'keyboard'
   // 2026-07-05 P2:單選已選 option — 供 cmdk defaultValue 定 cursor 起點(見下方 <Command>)
   const selectedOption = React.useMemo(
     () => (!multiple ? options.find((o) => o.value === selectedValues[0]) : undefined),
@@ -403,7 +379,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
           // 內容)。僅 searchable(真的有 input)時傳內容 = 避免 non-searchable 帶 search
           // placeholder 的 accessible name 卻無對應 input;真要消除 orphan label 需 upstream 修。
           label={searchable ? searchAriaLabel : undefined}
-          className="bg-transparent"
+          size={size}
         >
           {searchable && (
             // 2026-09-08:搜尋列改用 DS `CommandInput`(與 CommandDialog / inline Command 同一份實作),
@@ -424,83 +400,38 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
             // 直接傳 aria-label 會被 cmdk default "Suggestions" 蓋掉 silent 失效)— 必走 label prop。
             label="選項" // i18n-allow: DS default; listbox accessible name
           >
-            <CommandEmpty
-              className="flex items-center justify-center"
-              style={{ minHeight: getMenuListMinHeight(size, minRows) }}
-            >
-              {loading
-                ? (
-                    <div role="status" aria-label={loadingText} className="flex items-center justify-center py-6">
-                      <CircularProgress size={48} />
-                    </div>
-                  )
-                : <Empty description={emptyText} className="py-6" />}
+            {/* 空狀態與 loading 的置中、最小高度都由 CommandEmpty own(2026-09-08);這裡只給內容 */}
+            <CommandEmpty size={size} minRows={minRows}>
+              {loading ? <CommandLoading label={loadingText} /> : emptyText}
             </CommandEmpty>
 
             {groupedOptions.map((group, gi) => (
               <React.Fragment key={group.key}>
                 {gi > 0 && <CommandSeparator />}
                 <CommandGroup
-                  className="p-0 py-2 [&_[cmdk-group-heading]]:p-0"
-                  // 2026-07-06 A11y:群組標題走 cmdk `heading`(自動產 cmdk-group-heading id,選項容器
-                  // role="group" + aria-labelledby 指向之)取代手刻 child row(原本 AT 不可感知;
-                  // aria-label fallback 對 role="presentation" group 無效)。[&_[cmdk-group-heading]]:p-0
-                  // 中和 command.tsx base 的 px-3 py-1.5(tailwind-merge p-0 勝);字級 / 顏色由 MenuItem
-                  // header 自帶(text-body leading-compact + font-medium + text-fg-muted),視覺不變。
-                  heading={group.label ? <MenuItem size={size} header>{group.label}</MenuItem> : undefined}
+                  key={group.key}
+                  // 內距與標題(MenuItem header,吃 Command 的 size context)都由 CommandGroup own(2026-09-08)
+                  heading={group.label || undefined}
                 >
                   {group.options.map((opt) => (
                     <CommandItem
                       key={opt.value}
-                      // 2026-07-06 識別值修:cmdk 以 value 當 item identity + selection state。原用
-                      // opt.label → 重複 label 時雙亮 + Enter 選錯;改唯一的 opt.value,label 移入
-                      // keywords 保搜尋照樣命中(cmdk filter 對 value + keywords 計分)。
+                      // cmdk 以 value 當 identity;label 進 keywords 保搜尋命中(2026-07-06)
                       value={opt.value}
                       keywords={opt.description ? [opt.label, opt.description] : [opt.label]}
                       disabled={opt.disabled}
                       onSelect={() => handleSelect(opt.value)}
-                      // 2026-07-05 D4 P0 修:原 data-[selected=true]:bg-transparent 蓋掉 command.tsx base
-                      // 的 data-[selected=true]:bg-neutral-hover = cmdk virtual focus(aria-activedescendant)
-                      // 鍵盤 cursor 唯一視覺通道被抹掉 → 方向鍵移動畫面零變化(影響 Select/Combobox/PeoplePicker
-                      // 全家)。鏡射 DropdownMenu wrapper pattern:互動 bg 單一 owner 在外層 CommandItem
-                      //(base highlight 恢復;persistent selection 上移;selected×cursor 加深一階 —
-                      // 對齊本日 DropdownMenu Q2 決策),內層 MenuItem 全透明。
-                      className={cn(
-                        'p-0 rounded-none',
-                        // 2026-08-11 user 拍板糾正 D4 實作縫(SSOT = item-anatomy「選中 × 互動疊加」):
-                        // cmdk 反白訊號滑鼠也觸發,深化本應僅限鍵盤(D4 原意即「鍵盤 cursor」)。
-                        // 滑鼠 hover 選中項 → 釘住 bg-neutral-selected 不變(滑鼠自有游標,不需底色指位);
-                        // 鍵盤反白(data-selected 且非 :hover)→ -focus 深一階(游標可見,WCAG 2.4.7)。
-                        // not-hover 編譯為 :not(*:hover) + @media not (hover:hover)(POC 已驗),
-                        // 深化 (0,3,0) > 釘住 (0,2,0),與 CSS 順序無關;token 從借用的 -active 歸位 -focus。
-                        // 2026-09-07「A5畫框」:選中項底色已被佔走,鍵盤反白改畫框(不再深一階底色)。
-                        // `not-hover:` 保留 —— 滑鼠停在上面時不畫框(規則一:滑鼠只上色)。
-                        // 2026-09-08:框再加**模態條件** —— cmdk 開啟時把游標放在已選項上(:395 defaultValue),
-                        // 沒有這個條件,滑鼠一點開就出現鍵盤焦點框(user 抓到)。判準 = 最近一次輸入是鍵盤。
-                        !multiple && isSelected(opt.value) && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected',
-                        !multiple && isSelected(opt.value) && keyboardModality && 'data-[selected=true]:not-hover:focus-ring-inset',
-                      )}
+                      // 視覺 anatomy(icon / avatar / description / checkbox / 選中 × 鍵盤框、內層 role=presentation)
+                      // 全在 CommandItem 內的 MenuItem(2026-09-08 收斂,原本這裡自己再包一層 MenuItem + 手刻選中框)
+                      startIcon={opt.icon}
+                      startIconClassName={opt.iconClassName}
+                      avatar={opt.avatar}
+                      description={opt.description}
+                      checkbox={multiple}
+                      checked={isSelected(opt.value)}
+                      selected={!multiple && isSelected(opt.value)}
                     >
-                      <MenuItem
-                        size={size}
-                        startIcon={opt.icon}
-                        startIconClassName={opt.iconClassName}
-                        avatar={opt.avatar}
-                        description={opt.description}
-                        checkbox={multiple}
-                        checked={isSelected(opt.value)}
-                        selected={!multiple && isSelected(opt.value)}
-                        disabled={opt.disabled}
-                        // 2026-07-05 D4:巢狀 role 修 — MenuItem 預設 role="option" + aria-selected(persistent
-                        // selection)巢狀在 cmdk CommandItem(本身 role="option" + aria-selected=cursor)內,
-                        // AT 讀到 option 包 option 且內外 aria-selected 語意相反 → 朗讀錯亂。鏡射 DropdownMenu
-                        // canonical(dropdown-menu.tsx「Pure visual — Radix parent handles role/aria」):
-                        // 內層純視覺 role="presentation",cmdk CommandItem 是唯一 option 節點。
-                        role="presentation"
-                        className="!bg-transparent hover:!bg-transparent"
-                      >
-                        {renderLabel ? renderLabel(opt) : opt.label}
-                      </MenuItem>
+                      {renderLabel ? renderLabel(opt) : opt.label}
                     </CommandItem>
                   ))}
                 </CommandGroup>
@@ -511,8 +442,9 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
             {showCreate && (
               <>
                 <CommandSeparator />
-                <CommandGroup className="p-0 py-2">
+                <CommandGroup>
                   <CommandItem
+                    startIcon={Plus}
                     // 2026-07-06:`__create__` 前綴防 identity 撞名 — 選項 row 改用 opt.value 識別後,
                     // search 恰等於某 option.value 時裸 search 會與該 row 同 value(cmdk 雙亮 + Enter
                     // 選錯)。value 含 search 子字串,cmdk filter 照樣命中;onSelect closure 讀 search
@@ -522,21 +454,16 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
                       onCreate?.(search.trim())
                       setSearch('')
                     }}
-                    className="p-0 rounded-none"
                   >
-                    {/* 2026-07-05 D4:同上方選項 row 的巢狀 role 修 — creatable row 同樣是
-                        MenuItem 巢狀在 cmdk CommandItem(option)內,內層純視覺 role="presentation"。 */}
-                    <MenuItem size={size} startIcon={Plus} role="presentation" className="!bg-transparent hover:!bg-transparent">
-                      {createLabel(search.trim())}
-                    </MenuItem>
+                    {createLabel(search.trim())}
                   </CommandItem>
                 </CommandGroup>
               </>
             )}
           </CommandList>
 
-          {/* SR 播報 empty / loading 空狀態(見 SelectMenuLiveStatus docblock,2026-07-05 D4) */}
-          <SelectMenuLiveStatus loading={loading} emptyText={emptyText} />
+          {/* SR 播報 empty / loading 空狀態(CommandEmptyStatus,2026-07-05 D4 → 2026-09-08 搬進 Command) */}
+          <CommandEmptyStatus loading={loading} text={emptyText} />
 
           {/* Multi-select footer: Select All
               - 沒有選項時不顯示(selectableOptions.length === 0)
