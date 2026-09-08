@@ -45,6 +45,7 @@ import {
   X as XIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useOverlayCoexistence } from '@/design-system/lib/overlay-coexistence'
 
 /**
  * 停止實心正方:12/24 grid(= Material Symbols `stop` 480/960)→ 8px @ Button icon 16。
@@ -239,23 +240,16 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // v14 條 B:「窄螢幕以抽屜蓋滿宿主,**宿主暫不可操作**」。
     // 「蓋滿」是視覺、「不可操作」是行為 —— 兩件事,只做前者的話鍵盤照樣走得進去。
     // 實測(2026-09-08 跨模型審查)蓋板態下宿主 20 個控件有 19 個仍可聚焦,Enter 會執行。
-    // 用原生 `inert`:它一次處理鍵盤、指標與無障礙樹,不必自己拼 aria-hidden + pointer-events
-    // (HTML 規範 inert subtrees)。只設在**不含面板**的兄弟節點上,面板自己那條路不動。
-    React.useEffect(() => {
-      if (!isOverlay) return
-      const panel = rootRef.current
-      const host = hostRef.current
-      if (!panel || !host) return
-      const touched: HTMLElement[] = []
-      for (const child of Array.from(host.children)) {
-        if (!(child instanceof HTMLElement)) continue
-        if (child.contains(panel)) continue
-        if (child.hasAttribute('inert')) continue // 別人設的不碰,也不在清理時誤拆
-        child.setAttribute('inert', '')
-        touched.push(child)
-      }
-      return () => { for (const el of touched) el.removeAttribute('inert') }
-    }, [isOverlay])
+    //
+    // 用共用的並存 primitive 而不是「對兄弟節點設 inert」:兄弟迴圈只涵蓋宿主 DOM 裡的節點,
+    // **body portal 出去的浮層(Dialog / FileViewer)完全不在裡面** ——
+    // 窄版時那個 modal 會既蓋在上面又可以操作,兩條都違反條 B。
+    // `suppressOthers([面板])` 是「保留這一塊、其餘全部抑制」,portal 出去的也照樣被抑制。
+    const keepPanel = React.useCallback(
+      () => (rootRef.current ? [rootRef.current as Element] : []),
+      [],
+    )
+    useOverlayCoexistence(isOverlay, keepPanel)
     const [uncontrolledWidth, setUncontrolledWidth] = React.useState(defaultWidth)
     const resolvedWidth = clampPanelWidth(width ?? uncontrolledWidth, containerPx)
 
@@ -289,7 +283,13 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
           // 「蓋滿」是 B 條的原文,不是我挑的 —— 窄螢幕以抽屜蓋滿宿主。
           // 用 absolute 而不是把宿主推走:蓋板本來就不該改變底下內容的版面,
           // 而且回到寬螢幕時宿主不需要重新排版(避免來回切換時內容跳動)。
-          isOverlay && 'absolute inset-0 z-20 w-full shadow-[var(--elevation-300)]',
+          // z-[60] 而不是 z-20:v14 條 B 的推導第 4 題「窄螢幕,agent 點有 URL 的 Modal →
+          // 宿主開啟 Modal;agent 抽屜保持開啟,**Modal 在被蓋住的宿主區**」——
+          // modal 必須在 agent **後方**。Dialog 是 body portal 且 `z-50`(dialog.tsx:46/113),
+          // 而這個面板的祖先是 `position:relative; z-index:auto`(不建立堆疊脈絡),
+          // 所以它直接跟 z-50 比大小 —— 用 z-20 會反過來被 modal 蓋住(2026-09-08 實測)。
+          // 兩者的大小關係由 `scripts/agent-panel-breakpoint.mjs` 機械守住,不靠這行註解。
+          isOverlay && 'absolute inset-0 z-[60] w-full shadow-[var(--elevation-300)]',
           // 分隔線只有一個 owner:可拖時由 ResizeHandle 的 1px line 擁有(DataTable 欄間同款,hover/拖曳會變色);
           // 不可拖才由容器畫 border-l(app-shell aside 前例)。兩者並存 = 2px 粗線(2026-09-02 user 抓到)。
           !resizable && !isOverlay && 'border-l border-divider',

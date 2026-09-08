@@ -95,7 +95,8 @@
 | 部分 | 狀態 |
 |---|---|
 | DS 並存 primitive | **已解**:`lib/overlay-coexistence.ts` 用 `aria-hidden` 官方的 `suppressOthers([保留節點])`(支援時走原生 `inert`);`Dialog` 加中性 opt-in `persistentElements`(世界級前例:Chakra `persistentElements`),**不傳就完全是原本的 modal**。閘 `scripts/dialog-coexistence-invariant.mjs` **兩條路都驗**:並存路徑常駐區可聚焦、背景 `inert=true`;預設路徑框外仍可用 0 個 |
-| 窄版層級 | **未解**:條 B 要 URL Modal 在 agent **後方**,但現況 agent 蓋板 `z-20`、Dialog body portal `z-50`,會反過來擋住 agent |
+| 窄版層級 | **已解**(2026-09-08):agent 蓋板 `z-20` → `z-[60]`。實測面板祖先是 `position:relative; z-index:auto`(**不建立堆疊脈絡**),所以它直接跟 body portal 的 Dialog `z-50` 比大小 —— `z-20` 會反過來被 modal 蓋住。大小關係由 `agent-panel-breakpoint.mjs` **讀原始碼機械比對**,不靠註解 |
+| 窄版「宿主不可操作」涵蓋 portal | **已解**(2026-09-08):原本是「對兄弟節點設 inert」,只涵蓋宿主 DOM 內的節點,**body portal 出去的浮層完全不在裡面** —— 窄版時那個 modal 會既蓋在上面又可以操作。改用共用 primitive `suppressOthers([面板])`(保留這一塊、其餘全部抑制),portal 出去的也照樣被抑制 |
 | URL 註冊表 | **未解**:誰算「有 URL 的目的地」還沒有註冊機制;`persistentElements` 只是能力,呼叫端要有依據才知道何時傳 |
 | FileViewer | **未解**:它直接建 Radix Root/Portal(`file-viewer.tsx:954`),不經 DS Dialog,要另外接同一個 primitive;它的 window keydown(`:883`)只排除輸入框,並列後在常駐區按方向鍵 / `i` / `f` 仍會操作它 |
 | Esc 分派 | **未解**:Radix 依全域最後入疊者分派,不看焦點所屬區 |

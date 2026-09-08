@@ -146,5 +146,21 @@ else ck('B 蓋板態:被蓋住的宿主不得留下可聚焦控件(v14 條 B「�
         reach.stillFocusable === 0,
         `宿主可聚焦控件 ${reach.stillFocusable}/${reach.total} 個${reach.sample.length?':'+reach.sample.join(', '):''}`)
 
+
+// ── 蓋板層級必須高過 Dialog(v14 條 B 推導第 4 題)────────────────────────
+// 「窄螢幕,agent 點有 URL 的 Modal → agent 抽屜保持開啟,**Modal 在被蓋住的宿主區**」
+// = modal 在 agent **後方**。Dialog 是 body portal,面板的祖先 z-index:auto 不建立堆疊脈絡,
+// 兩者直接比大小。這條用讀原始碼比,不靠註解 —— 有人把任一邊的數字改掉就會紅。
+{
+  const panelSrc = readFileSync(join(process.cwd(),'packages/design-system/src/components/AgentPanel/agent-panel.tsx'),'utf8')
+  const dialogSrc = readFileSync(join(process.cwd(),'packages/design-system/src/components/Dialog/dialog.tsx'),'utf8')
+  const panelZ = panelSrc.match(/isOverlay && '[^']*?z-\[?(\d+)\]?/)
+  const dialogZs = [...dialogSrc.matchAll(/\bz-\[?(\d+)\]?/g)].map((m) => +m[1])
+  const pz = panelZ ? +panelZ[1] : null
+  const dz = dialogZs.length ? Math.max(...dialogZs) : null
+  ck('B 蓋板層級 > Dialog 層級(modal 必須在 agent 後方)',
+     pz !== null && dz !== null && pz > dz, `agent 蓋板 z=${pz} / Dialog 最大 z=${dz}`)
+}
+
 console.log(out.join('\n')); console.log(fail?`\n✗ ${fail} 項未通過`:'\n✓ 全部通過')
 await br.close(); sv.close(); process.exit(fail?1:0)
