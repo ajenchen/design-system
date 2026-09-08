@@ -69,7 +69,7 @@ Popover（浮動容器，handle 展開 / 定位）
        ├─ CommandList（捲動區）
        │    ├─ CommandGroup（分組標題;0 筆選項的群組不畫,`select-menu.tsx:408`）
        │    │    └─ MenuItem（選項 row，消費 item-layout）
-       │    └─ CommandEmpty（清單裡沒有任何可顯示的選項時才出現:MenuGroup 包一列 `MenuItem message` —「沒有選項」或載入列 `CommandLoading`,見「Empty state」「Loading」）
+       ├─ CommandEmpty（在 CommandList 外、listbox 的兄弟 —— axe 不允許 listbox 內有非 option 子元素,MUI 同構;清單裡沒有任何可顯示的選項時才出現:MenuGroup 包一列 `MenuItem message` —「沒有選項」或載入列 `CommandLoading`,見「Empty state」「Loading」）
        └─ Footer（多選全選 checkbox，選填）
 ```
 
@@ -118,6 +118,12 @@ Popover（浮動容器，handle 展開 / 定位）
 - 選項本質平行（沒有自然分組）
 
 ---
+
+
+**群組之間的分隔線由 CommandGroup 自己畫**(item-anatomy.spec.md「Group auto-separation」:consumer 不手插 Separator):CommandGroup 用「前面還有另一個看得見的群組」的兄弟選擇器畫上邊線(cmdk 把被搜尋濾掉的群組留在 DOM、加 `hidden`,所以排除 `[hidden]`)。2026-09-08 修:原本 SelectMenu 手插 `<CommandSeparator>`,cmdk 在搜尋字非空時不渲 Separator → 搜尋時可見群組之間沒線。機械閘 M9:兩組可見恰好一條線、搜尋剩一組沒有線。
+## 遠端搜尋(`filterOption` / `onSearchChange`,2026-09-08 user 拍板「併」)
+
+預設 `filterOption = true`:有搜尋列時在本機用搜尋字過濾(cmdk `shouldFilter`)。**遠端搜尋**(每打一個字向伺服器抓、伺服器已經過濾好)傳 `filterOption={false}`:對應 cmdk `shouldFilter={false}`(README「Filter/sort items manually? Yes. Pass `shouldFilter={false}`」),行為與 react-select 非同步模式(`filterOption: null`,`useAsync` stale-while-loading)/ Ant `filterOption={false}` 同款 —— 舊結果原封留著、伺服器回什麼列什麼,不再被新的字二次過濾(本機過濾會把伺服器用別名命中的結果藏掉)。搜尋字由 `onSearchChange` 回呼(含清空),consumer 據此抓資料並切 `loading`。Select / Combobox / PeoplePicker 三個消費者都轉發這兩個 prop(`select.tsx` / `combobox.tsx` / `people-picker.tsx`)。機械閘:`scripts/menu-message-row-invariant.mjs` M8(打本機對不到的字 → 舊清單原封留著、搜尋列轉圈亮;後端回來清單才換)。
 
 ## Empty state
 

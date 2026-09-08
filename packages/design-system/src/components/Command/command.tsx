@@ -151,6 +151,8 @@ CommandList.displayName = CommandPrimitive.List.displayName
  * 所以「沒有結果」與「1 筆結果」等高(md 48px = 8 + 32 + 8),不再有任何最小高度公式(舊的 3 列 minRows 已退役)。
  * owner:select-menu.spec.md「Empty state」;歷史:2026-04-08 一行小字 → 04-10 撐 3 列 → 04-16 Empty 元件 → 09-08 訊息列。
  * loading 時把 `<CommandLoading>` 當 children 放進來(同一種訊息列,前綴槽放列圖示尺寸的轉圈)。
+ * **放在 CommandList 外面(listbox 的兄弟,MUI Autocomplete 同構)**:axe `aria-required-children` 不允許 listbox 裡有非 option 的子元素
+ * (2026-09-08 a11y 基線重建抓到);cmdk Empty 只讀 store,不需要住在 List 裡。空 listbox 載入時有 aria-busy,axe 全乾淨。
  */
 const CommandEmpty = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Empty>,
@@ -230,7 +232,14 @@ const CommandGroup = React.forwardRef<
   <CommandPrimitive.Group
     ref={ref}
     // `p-0` 中和 cmdk 對 heading 容器的預設內距 —— 內距由 MenuItem 的 row geometry 提供
-    className={cn("overflow-hidden p-0 py-2 text-foreground [&_[cmdk-group-heading]]:p-0", className)}
+    className={cn(
+      "overflow-hidden p-0 py-2 text-foreground [&_[cmdk-group-heading]]:p-0",
+      // Group auto-separation(item-anatomy.spec.md,Pattern A):前面還有另一個「看得見」的群組時畫上邊線。
+      // cmdk 把被搜尋濾掉的群組留在 DOM、加 `hidden`,所以用 :not([hidden]) 排除;consumer 不再手插 CommandSeparator
+      // (cmdk 在搜尋字非空時不渲 Separator,手插版會讓可見群組之間沒線 —— 2026-09-08 修)。
+      "[[cmdk-group]:not([hidden])~&:not([hidden])]:border-t [[cmdk-group]:not([hidden])~&:not([hidden])]:border-divider",
+      className,
+    )}
     heading={typeof heading === 'string' || typeof heading === 'number'
       ? <MenuItem size={rowSize} header>{heading}</MenuItem>
       : heading}

@@ -37,9 +37,10 @@ const meta: Meta<typeof MenuItem> = {
 export default meta
 type Story = StoryObj<typeof MenuItem>
 
-/** Menu 容器 — 模擬浮層外觀。demo 用 role='listbox' 滿足 MenuItem role='option' 的 parent 要求(axe aria-required-parent)。 */
-const MenuContainer = ({ children, width = 320 }: { children: React.ReactNode; width?: number }) => (
-  <div role="listbox" aria-label="Menu demo items" className="rounded-lg bg-surface-raised border border-border overflow-hidden"
+/** Menu 容器 — 模擬浮層外觀。demo 用 role='listbox' 滿足 MenuItem role='option' 的 parent 要求(axe aria-required-parent);
+ *  只放訊息列(非 option)的 demo 改 role='group' —— listbox 裡不得只有非 option 子元素(axe aria-required-children,2026-09-08)。 */
+const MenuContainer = ({ children, width = 320, role = 'listbox' }: { children: React.ReactNode; width?: number; role?: 'listbox' | 'group' }) => (
+  <div role={role} aria-label="Menu demo items" className="rounded-lg bg-surface-raised border border-border overflow-hidden"
     style={{ boxShadow: 'var(--elevation-200)', width }}>
     {children}
   </div>
@@ -204,10 +205,10 @@ export const Messages: Story = {
     // Jira 議題「指派人員」選單的兩種非選項狀態:名錄回來但沒有人 / 名錄還在載入。
     // 前綴槽放列圖示尺寸(md = ICON_SIZE.md)的轉圈,文字仍可見。
     <div className="flex gap-4">
-      <MenuContainer width={240}><MenuGroup>
+      <MenuContainer width={240} role="group"><MenuGroup>
         <MenuItem message>沒有人員</MenuItem>
       </MenuGroup></MenuContainer>
-      <MenuContainer width={240}><MenuGroup>
+      <MenuContainer width={240} role="group"><MenuGroup>
         <MenuItem message startContent={<CircularProgress size={ICON_SIZE.md} />}>載入選項中</MenuItem>
       </MenuGroup></MenuContainer>
     </div>

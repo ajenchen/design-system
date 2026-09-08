@@ -135,6 +135,10 @@ export interface SelectProps
    *  **無可顯示選項時**才渲載入訊息列 — 已有 stale options 時保留顯示不清空(MUI / react-select / Atlassian 共識)。
    *  選單不關,chevron 保留 user 隨時可點開。*/
   loading?: boolean
+  /** 遠端搜尋時傳 `false`:不在本機用搜尋字過濾,舊結果留著、伺服器回什麼列什麼(SSOT select-menu.spec.md「搜尋」;對應 react-select `filterOption: null` / Ant `filterOption={false}`)。 */
+  filterOption?: boolean
+  /** 搜尋字改變時回呼(含清空);遠端搜尋搭配 `filterOption={false}` + `loading`(對齊 react-select / MUI `onInputChange`)。 */
+  onSearchChange?: (value: string) => void
   /** Initial open state(uncontrolled)。對齊 Radix Popover defaultOpen canonical;DataTable cell-as-input
    *  click → 1 step open menu(Airtable / Notion canonical),consumer pass `defaultOpen` 達成。
    *  Note:Native Select(mobile)無 popover 概念,此 prop 僅 Custom path 生效。 */
@@ -494,7 +498,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     // 2026-07-08 A 案回歸修正:selectedItemRenderer 從丟棄名單移出 — Native path 的
     // ReadonlyDisplay(view/readonly/disabled)同樣消費值內容 renderer(contract (a) 4-mode
     // 共享,值內容不因 pointer type 而異);native <select> edit 路徑仍不消費(原生 option 無法客製 render)。
-    searchable: _searchable, groups: _groups, loading: _loading, emptyText: _emptyText, creatable: _creatable, onCreate: _onCreate, createLabel: _createLabel, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer,
+    searchable: _searchable, groups: _groups, loading: _loading, filterOption: _filterOption, onSearchChange: _onSearchChange, emptyText: _emptyText, creatable: _creatable, onCreate: _onCreate, createLabel: _createLabel, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer,
     ...props }, ref) => {
     const fieldCtx = useFieldContext()
     const error = useResolvedFieldInvalid(errorProp)
@@ -617,7 +621,7 @@ NativeSelect.displayName = 'NativeSelect'
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
-  ({ mode, variant: variantProp, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, emptyText, creatable = false, onCreate, createLabel, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, style: styleProp,
+  ({ mode, variant: variantProp, filterOption = true, onSearchChange, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, emptyText, creatable = false, onCreate, createLabel, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, style: styleProp,
     // 2026-07-14 API 策展 D:mobile-only props(allowlist 註記)desktop 顯式丟棄 — div trigger 無原生
     // 對應,不 spread 進 DOM(對稱 NativeSelect 丟棄 custom-path-only props 的既有 pattern)
     autoFocus: _autoFocus, autoComplete: _autoComplete, ...rest }, ref) => {
@@ -642,7 +646,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     const isTextDisplay = display === 'plain'
 
     const [open, setOpen] = React.useState(defaultOpen)
-    const [search, setSearch] = React.useState('')
+    const [search, setSearchState] = React.useState('')
+    const setSearch = React.useCallback((next: string) => { setSearchState(next); onSearchChange?.(next) }, [onSearchChange])
     const inputRef = React.useRef<HTMLInputElement>(null)
     // a11y(2026-07-04):listbox 容器 id——trigger aria-controls 指向 SelectMenu PopoverContent
     // (對齊姊妹元件 combobox.tsx:677 既有 canonical;React.useId SSR/CSR 穩定)。
@@ -680,7 +685,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // 2026-07-18:filter 用 trim 過的 search,對齊 SelectMenu creatable 的 `search.trim()` create-row 判定 —
     //   否則尾隨空白(如 "Bug ")會讓 filter 漏掉完全同名選項、SelectMenu 卻誤判「無同名」提議重複建立。
     const trimmedSearch = search.trim()
-    const filteredOptions = searchable && trimmedSearch
+    const filteredOptions = searchable && filterOption && trimmedSearch
       ? options.filter(o => o.label.toLowerCase().includes(trimmedSearch.toLowerCase()))
       : options
     // ── 轉換 SelectOption → SelectMenuOption(必在 early return 前) ──

@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
-import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandEmptyStatus, CommandGroup, CommandItem, CommandSeparator } from '@/design-system/components/Command/command'
+import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandEmptyStatus, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
 import { MenuItem, MenuFooter } from '@/design-system/components/Menu/menu-item'
 import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -70,6 +70,13 @@ export interface SelectMenuProps {
   multiple?: boolean
   /** 顯示搜尋框 */
   searchable?: boolean
+  /**
+   * 是否在本機用搜尋字過濾選項(預設 true)。**遠端搜尋**(每打一個字就向伺服器抓、伺服器已經過濾好)傳 `false`:
+   * 對應 cmdk `shouldFilter={false}`(README「Filter/sort items manually? Pass shouldFilter={false}」),行為與 react-select 非同步模式
+   * (`filterOption: null`)/ Ant `filterOption={false}` 同款 —— 舊結果原封留著、伺服器回什麼列什麼,不再被新的字二次過濾。
+   * 2026-09-08 user 拍板「併」。
+   */
+  filterOption?: boolean
   /** 可建立新選項 */
   creatable?: boolean
   /** 建立新選項 callback */
@@ -156,6 +163,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   onValueChange,
   multiple = false,
   searchable = false,
+  filterOption = true,
   creatable = false,
   onCreate,
   createLabel = (q) => `直接使用「${q}」`,
@@ -363,7 +371,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         }}
       >
         <Command
-          shouldFilter={searchable}
+          shouldFilter={searchable && filterOption}
           // 2026-07-06 cursor 起點修:單選已有值時 cmdk virtual focus 落在已選項而非第一項。
           // cmdk 1.1.1 初始 state 取 defaultValue、item mount 的 selectFirstItem 有
           // `state.value ||` guard 不覆蓋(dist source 驗證);Popover 關閉即 unmount(無
@@ -391,6 +399,9 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
               起 placeholder 視覺;有 results 時 CommandList 自然 fit content。 */}
           {/* aria-busy(2026-07-04):loading 時標注 listbox 忙碌——兌現 select.spec.md「Loading」段
               「+ aria-busy」承諾(cmdk List 本身即 role="listbox" 容器,wrapper forward props)。 */}
+          <CommandEmpty size={size}>
+            {loading ? <CommandLoading label={loadingText} size={size} /> : emptyText}
+          </CommandEmpty>
           <CommandList
             className="relative"
             aria-busy={loading || undefined}
@@ -399,15 +410,13 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
             label="選項" // i18n-allow: DS default; listbox accessible name
           >
             {/* 空狀態與 loading 的置中、最小高度都由 CommandEmpty own(2026-09-08);這裡只給內容 */}
-            <CommandEmpty size={size}>
-              {loading ? <CommandLoading label={loadingText} size={size} /> : emptyText}
-            </CommandEmpty>
 
             {/* 選項為 0 的群組不畫(2026-09-08):cmdk 在 shouldFilter=false(搜尋在觸發點)時不會藏空群組,
                 會留下 py-2 的 16px 空白疊在「沒有選項」下面(實測 128 vs 應為 112)。 */}
-            {groupedOptions.filter((group) => group.options.length > 0).map((group, gi) => (
+            {groupedOptions.filter((group) => group.options.length > 0).map((group) => (
               <React.Fragment key={group.key}>
-                {gi > 0 && <CommandSeparator />}
+                {/* 群組之間的分隔線由 CommandGroup 自動畫(item-anatomy「Group auto-separation」:consumer 不手插 Separator;
+                    2026-09-08 修:cmdk 在搜尋字非空時不渲 Separator,手插版會讓可見群組之間沒線)。 */}
                 <CommandGroup
                   key={group.key}
                   // 內距與標題(MenuItem header,吃 Command 的 size context)都由 CommandGroup own(2026-09-08)
@@ -441,7 +450,6 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
             {/* Creatable item */}
             {showCreate && (
               <>
-                <CommandSeparator />
                 <CommandGroup>
                   <CommandItem
                     startIcon={Plus}

@@ -185,6 +185,52 @@ export const LoadingWithStaleOptions: Story = {
   ),
 }
 
+/** 遠端搜尋:每打一個字就向後端要一次;`filterOption={false}` 讓浮層不再用新的字二次過濾,舊結果留到新結果回來。 */
+function RemoteSearchDemo() {
+  const directory = [
+    { value: 'crm', label: 'CRM 客戶名單', keywords: '客戶 customer' },
+    { value: 'roadmap', label: '產品路線圖', keywords: 'roadmap 路線' },
+    { value: 'meetings', label: '會議記錄', keywords: 'meeting notes' },
+    { value: 'ds', label: '設計系統元件', keywords: 'design system' },
+    { value: 'hiring', label: '招募流程', keywords: 'hiring recruit' },
+  ]
+  const [options, setOptions] = React.useState(directory)
+  const [loading, setLoading] = React.useState(false)
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onSearchChange = (q: string) => {
+    if (timer.current) clearTimeout(timer.current)
+    setLoading(true)
+    // 模擬後端:用別名(keywords)也能命中,這是本機過濾做不到的,所以必須關掉本機過濾
+    timer.current = setTimeout(() => {
+      const needle = q.trim().toLowerCase()
+      setOptions(needle ? directory.filter((o) => `${o.label} ${o.keywords}`.toLowerCase().includes(needle)) : directory)
+      setLoading(false)
+    }, 800)
+  }
+  return (
+    <div className="max-w-sm">
+      <Combobox
+        options={options}
+        value={['crm']}
+        onChange={() => {}}
+        searchable
+        filterOption={false}
+        loading={loading}
+        onSearchChange={onSearchChange}
+        defaultOpen
+        searchPlaceholder="搜尋資料庫(後端搜尋,支援別名)…"
+        aria-label="連結資料庫(遠端搜尋)"
+      />
+    </div>
+  )
+}
+
+export const RemoteSearch: Story = {
+  name: '遠端搜尋(不本機過濾)',
+  parameters: { docs: { description: { story: 'Notion 連結資料庫、名單在後端:每打一個字就向後端要一次,搜尋列右側轉圈、舊清單留著不縮,後端回什麼就列什麼(打「customer」也找得到「CRM 客戶名單」,本機過濾做不到)。對齊 react-select 非同步模式。' } } },
+  render: () => <RemoteSearchDemo />,
+}
+
 /* ── DataTable 整合 ── */
 export const InDataTable: Story = {
   name: 'DataTable 整合',

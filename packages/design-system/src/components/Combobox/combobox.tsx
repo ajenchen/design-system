@@ -408,6 +408,10 @@ export interface ComboboxProps {
   loading?: boolean
   /** 搜尋框位置：menu（浮層內，預設）或 trigger（inline input） */
   searchIn?: 'menu' | 'trigger'
+  /** 遠端搜尋時傳 `false`:不在本機用搜尋字過濾(trigger 模式與浮層模式都不過濾),舊結果留著、伺服器回什麼列什麼;SSOT select-menu.spec.md「搜尋」。 */
+  filterOption?: boolean
+  /** 搜尋字改變時回呼(含清空);遠端搜尋搭配 `filterOption={false}` + `loading`。trigger / menu 兩種搜尋位置都會回呼。 */
+  onSearchChange?: (value: string) => void
   /** 搜尋框 placeholder（未有選項時顯示)。Default: 「搜尋…」 */
   searchPlaceholder?: string
   /** 搜尋框 ARIA label。Default: 「搜尋選項」 */
@@ -752,7 +756,7 @@ function NativeCombobox({
 
 function CustomCombobox({
   mode, variant: variantProp, width, error: errorProp = false, size = 'md', options, value = [], onChange, placeholder,
-  className, disabled: disabledProp, wrap = false, clearable = false, searchable = false, loading, searchIn = 'menu',
+  className, disabled: disabledProp, wrap = false, clearable = false, searchable = false, loading, searchIn = 'menu', filterOption = true, onSearchChange,
   searchPlaceholder = '搜尋…', // i18n-allow: DS default
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default
   emptyPlaceholder = '選擇…', // i18n-allow: DS default
@@ -784,7 +788,8 @@ function CustomCombobox({
   const iconSize = getIconSize(size)
   const showClear = clearable && value.length > 0 && resolvedMode === 'edit'
   const [open, setOpen] = React.useState(defaultOpen)
-  const [search, setSearch] = React.useState('')
+  const [search, setSearchState] = React.useState('')
+  const setSearch = React.useCallback((next: string) => { setSearchState(next); onSearchChange?.(next) }, [onSearchChange])
   // 2026-05-12 Q3 fix:trigger 內 inline 搜尋 input ref,onOpenAutoFocus 時 explicit focus
   // 讓 user 看到 cursor 知道可 inline search(跟 Select inputRef SSOT 同模式)。
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -815,10 +820,10 @@ function CustomCombobox({
 
   // searchIn='trigger' 時由 trigger input 過濾，不走 SelectMenu 內建搜尋
   const filteredOptions = React.useMemo(
-    () => (searchable && searchIn === 'trigger' && search
+    () => (searchable && searchIn === 'trigger' && filterOption && search
       ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
       : options),
-    [searchable, searchIn, search, options]
+    [searchable, searchIn, filterOption, search, options]
   )
 
   // 轉換 ComboboxOption → SelectMenuOption
@@ -844,7 +849,8 @@ function CustomCombobox({
   // loading(2026-09-08 user 拍板):觸發點右側、箭頭左邊放列圖示尺寸的轉圈(react-select / Atlassian 順序:清除 → 轉圈 → 箭頭)
   const chevronEl = (
     <>
-      {loading && <CircularProgress size={iconSize} className="shrink-0" />}
+      {/* 浮層開著且裡面有搜尋列時,轉圈只留在搜尋列(離打字的地方最近),觸發點不重複;關著或搜尋在觸發點時才在這裡 */}
+      {loading && !(open && searchable && searchIn === 'menu') && <CircularProgress size={iconSize} className="shrink-0" />}
       <ChevronDown size={iconSize} className={cn('shrink-0 text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
     </>
   )
@@ -965,6 +971,8 @@ function CustomCombobox({
   return (
     <SelectMenu
       loading={loading}
+      filterOption={filterOption}
+      onSearchChange={searchIn === 'menu' ? onSearchChange : undefined}
       emptyText={emptyText}
       options={menuOptions}
       value={value}

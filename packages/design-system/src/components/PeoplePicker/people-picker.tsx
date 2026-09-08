@@ -95,6 +95,10 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   /** 載入中(2026-09-08 補轉發;之前沒有這個 prop,非同步載入人員時開選單看到的是「沒有人員」,語意錯):
    *  機械轉發 wrapped Select / Combobox 的 `loading` —— 觸發點右側轉圈、選單內僅空清單時渲載入訊息列、舊人員保留。 */
   loading?: boolean
+  /** 遠端搜尋名錄時傳 `false`:不在本機二次過濾(轉發 Select / Combobox)。 */
+  filterOption?: boolean
+  /** 搜尋字改變時回呼(遠端搜尋名錄用;轉發 Select / Combobox)。 */
+  onSearchChange?: (value: string) => void
   className?: string
   disabled?: boolean
   /** Initial open state(uncontrolled)*/
@@ -153,6 +157,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   searchAriaLabel = '搜尋人員', // i18n-allow: DS default
   emptyText = '沒有人員', // i18n-allow: DS default(2026-09-08 一句到底,對應 No options)— only for SelectMenu noResultsText
   loading = false,
+  filterOption = true,
+  onSearchChange,
   className,
   disabled: disabledProp,
   defaultOpen = false,
@@ -348,6 +354,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // SelectMenu 接線(search-empty 語意,與 trigger-empty 分離)。
         emptyText={emptyText}
         loading={loading}
+        filterOption={filterOption}
+        onSearchChange={onSearchChange}
         defaultOpen={defaultOpen}
         onOpenChange={onOpenChange}
         className={className}
@@ -374,6 +382,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     return (
       <Combobox
         loading={loading}
+        filterOption={filterOption}
+        onSearchChange={onSearchChange}
         width={width}
         ref={ref as React.Ref<HTMLDivElement>}
         size={size}
@@ -444,6 +454,8 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   return (
     <Combobox
       loading={loading}
+        filterOption={filterOption}
+        onSearchChange={onSearchChange}
       width={width}
       ref={mergedStackRef}
       size={size}

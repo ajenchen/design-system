@@ -85,8 +85,8 @@ cmdk 自動處理：
 - **List 語意**：`role="listbox"` + `aria-activedescendant` 指向目前 highlight 項
 - **搜尋框**：`role="combobox"` + `aria-expanded` / `aria-controls` 指向 list(listbox 的 accessible name 預設「選項」,cmdk 預設是英文 Suggestions;傳 `label` 覆寫,**不要**在 CommandList 上寫 `aria-label`,cmdk 會靜默蓋掉)
 - **鍵盤導覽**：cmdk 提供 ↑ / ↓ 移動 highlight、Enter 選取（另支援 vim-style Ctrl+n/p/j/k、Home/End）。cmdk 本身無 Esc handler — Esc 關閉僅在 `CommandDialog`(Cmd+K)模式由 Radix Dialog 的 DismissableLayer 提供;inline `<Command>` 模式按 Esc 無反應
-- **空狀態**：`<CommandEmpty>` 自動帶 `role="presentation"`,不干擾 screen reader 的 list 朗讀
-- **分隔線**：`<CommandSeparator>` 是純視覺分組線,固定 `role="presentation"`；不冒充 listbox 選項或其他可導覽項目
+- **空狀態**：`<CommandEmpty>` 自動帶 `role="presentation"`,不干擾 screen reader 的 list 朗讀;**放在 `<CommandList>` 外面(listbox 的兄弟)**:axe `aria-required-children` 不允許 listbox 內有非 option 子元素(2026-09-08 a11y 基線重建抓到),cmdk Empty 只讀 store、不需住在 List 裡;MUI Autocomplete 的 noOptions / loading 同樣在 listbox 外
+- **分隔線**:群組之間的線由 `<CommandGroup>` 自己畫(前面還有另一個看得見的群組才畫上邊線;cmdk 隱藏群組留在 DOM 加 `hidden`,已排除),consumer **不手插** `<CommandSeparator>`(cmdk 在搜尋字非空時不渲 Separator,手插版會讓搜尋時可見群組之間沒線,2026-09-08 修)。`<CommandSeparator>` 只留給非群組內容之間的純視覺分線,固定 `role="presentation"`;不冒充 listbox 選項或其他可導覽項目
 
 Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>` / `<CommandList>` / `<CommandItem>` 即可。
 

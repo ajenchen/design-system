@@ -34,8 +34,8 @@ export const Overview: Story = {
         <div className="rounded-lg border border-border max-w-md overflow-hidden">
           <Command>
             <CommandInput placeholder="輸入指令或搜尋..." />
+            <CommandEmpty>找不到結果</CommandEmpty>
             <CommandList>
-              <CommandEmpty>找不到結果</CommandEmpty>
               <CommandGroup heading="常用">
                 <CommandItem startIcon={FileText}>建立新文件</CommandItem>
                 <CommandItem startIcon={Settings} shortcut="⌘K">前往設定</CommandItem>

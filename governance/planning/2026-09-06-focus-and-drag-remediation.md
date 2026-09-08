@@ -2429,3 +2429,17 @@ user 連續追問七題(逐字要點):「為何欄位高度 × 3 列不是 × 1�
 - **我在過程中撤回的兩句**:「載入中放 24px 轉圈」(規格是列圖示尺寸)、「沒有結果文字靠左」(DS 一路置中,Atlassian / shadcn 同)。
 - **落地**:menu-item.tsx `message` 模式;command.tsx CommandEmpty(MenuGroup + MenuItem message)/ CommandLoading / CommandInput loading;select-menu.tsx;select.tsx / combobox.tsx 觸發點轉圈;people-picker.tsx;DataTable 兩處拿掉 minRows;規格九份、hook C.7、stories(LoadingFirstOpen / LoadingWithStaleOptions / NoOptions / NoResults)、閘 `scripts/menu-message-row-invariant.mjs`(M1–M7 + selftest)登記 CI。示意圖:https://claude.ai/code/artifact/90f65784-da01-4d8f-95e6-c2d71f6ce0eb
 
+## AD36 第二批:遠端搜尋開關 + 搜尋字回呼、群組自動分隔線取代手插 Separator、Combobox 單一轉圈、stories 型別檢查進 CI(user 2026-09-08「併」)
+
+- **遠端搜尋**:底層 cmdk 1.1.1 有 `shouldFilter={false}`(README L438),我們的包裝沒開放。補 `filterOption`(預設 true;false = 不本機過濾,對應 react-select `filterOption: null` / Ant `filterOption={false}`)
+  與 `onSearchChange`(遠端要拿得到搜尋字;對應 react-select / MUI `onInputChange`)到 SelectMenu / Select / Combobox / PeoplePicker;Select 的 native 路徑把兩個 prop 剝掉不 spread 到 `<select>`。
+- **群組分隔線**:item-anatomy「Group auto-separation」早就寫「consumer 不需手動插 Separator」,SelectMenu / AgentPanel 卻手插 `<CommandSeparator>`;cmdk 在搜尋字非空時不渲 Separator → 搜尋時可見群組之間沒線
+  (AD30 時列為「未做」的 2344 行)。根治:CommandGroup 用 `[[cmdk-group]:not([hidden])~&:not([hidden])]:border-t` 兄弟選擇器自動畫(cmdk 隱藏群組留在 DOM 加 hidden),手插全拿掉。閘 M9 實測:兩組 0,1;搜尋剩一組 0;「元」命中兩組 0,1。
+- **Combobox 開啟時只留一顆轉圈**:截圖看到觸發點 + 搜尋列兩顆同時轉;定為「浮層開著且搜尋列在浮層 → 觸發點不重複(離打字的地方最近);關著才在觸發點」。閘 M5 對 Combobox 改斷言「沒有」。
+- **stories 型別檢查**:`tsconfig.stories.json` 註解宣稱「CI gate 強制」,grep 全 workflow 為 0(M32(e) 同病);本 PR 自己寫壞 4 個 story 型別錯(agent-panel `logoState="idle"` 不在 union、dialog 缺 `Story` 型別)就是這樣溜過的。修錯 + `npm run typecheck:stories` 進 verify-static。
+- **範例**:Select `GroupedSearch`(Select 的 `groups` 之前沒有任何 story)、Combobox `RemoteSearch`(後端用別名命中,本機過濾做不到);閘 M8 用假時鐘推 800ms 驗證「舊清單留著 → 後端回來才換」。
+- **PeoplePicker**:第一批漏掉第三個 Combobox 分支的 `loading` 轉發(閘抓到 7 條紅),補齊;`filterOption` / `onSearchChange` 三分支同樣轉發。
+- **a11y 基線**:新增 10 支 story 讓語料指紋變,`npm run a11y:check -- --baseline-write` 重建(`a11y-and-size.yml` 是排程閘,不在 PR 閘)。
+- **驗證**:build:lib / tsc -b / typecheck:stories / storybook(1031 支)綠;menu-message-row 閘 M1–M9 exit 0 + selftest 87 條紅得對;virtual-cursor / agent-panel / focus-suppression / dialog-coexistence 綠;content-quality / ci-gate-coverage / ci-workflow-scope 綠;截圖人眼核對分組線與單一轉圈。
+- **a11y 基線重建抓到結構問題**:新範例的 listbox 裡只有訊息列(role=presentation / status)→ axe `aria-required-children` 紅(這是舊結構的既有問題,以前沒有空狀態 story 所以沒被量到)。用合成頁面實測七種結構:訊息列住 listbox 裡(presentation / status)都紅;空 listbox + aria-busy 乾淨;訊息列當 option aria-disabled(Atlassian 做法)乾淨;**訊息列放 listbox 外面(MUI 同構)乾淨**。採 MUI 結構:`CommandEmpty` 改成 `CommandList` 的兄弟(SelectMenu / AgentPanel / Command 範例全搬),cmdk Empty 只讀 store 不需住在 List 裡;閘的「清單區高度」改量清單 + 訊息列,Playwright 等待改為 attached(0 筆時 listbox 高度 0 不算可見)。
+

@@ -96,6 +96,7 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 ## Loading(2026-09-08 補轉發)
 
 `loading?: boolean`(`people-picker.tsx:97,155`)機械轉發 wrapped Select(single)/ Combobox(multi)的 `loading`(`:350` / `:376`),行為 SSOT 在基座,本元件不另定義:觸發點右側、ChevronDown 左邊放列圖示尺寸的轉圈(每次抓資料都亮,可照常打開)、選單內只在沒有任何可顯示的人員時渲 `CommandLoading` 訊息列(預設「載入選項中」)、舊人員保留不清空、選單不關(`../SelectMenu/select-menu.spec.md`「Loading」)。
+`filterOption?: boolean` / `onSearchChange?: (value: string) => void`:遠端搜尋名錄(人數多、只能問伺服器)時的開關與回呼,機械轉發 Select / Combobox;SSOT `select-menu.spec.md`「遠端搜尋」。
 
 **為什麼補**:之前 PeoplePicker 沒有這個 prop,consumer 只能在 fetch 完成前傳 `people=[]`——開選單看到的是「沒有人員」,把「還在載入」講成「確定沒有」,語意錯(`../Empty/empty.spec.md`「何時不用」Loading 列)。
 

@@ -1,7 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import { useCallback, useRef } from 'react'
 import { useState } from 'react'
-import type { Meta } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react'
 import { ChevronUp, ChevronDown, MoreVertical } from 'lucide-react'
 import {
   DialogDescription,
@@ -164,6 +164,8 @@ function MemberRow({ member, index }: { member: (typeof MEMBERS)[number]; index:
     </div>
   )
 }
+
+type Story = StoryObj
 
 const meta: Meta = {
   title: 'Design System/Components/Dialog/展示',

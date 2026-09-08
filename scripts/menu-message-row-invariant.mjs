@@ -14,8 +14,11 @@
  *   M2 載入中訊息列同高 48(md),列內轉圈的 layout 寬高 = ICON_SIZE(md 16 / lg 20),文字可見(不是 sr-only)
  *   M3 訊息列內容水平置中:內容(文字,或轉圈 + 文字整組)中心 x 與列中心 x 誤差 ≤ 1px
  *   M4 搜尋列 loading:[cmdk-input-wrapper] 內 16px 轉圈 + aria-busy,input 仍可輸入;舊選項仍在、[cmdk-empty] 不顯示
- *   M5 觸發點 loading:Select / Combobox / PeoplePicker 觸發點內、ChevronDown 左邊有 16px 轉圈(比兩者的 x)
+ *   M5 觸發點 loading:Select / PeoplePicker 觸發點內、ChevronDown 左邊有 16px 轉圈(比兩者的 x);Combobox 浮層開著且搜尋列在浮層時
+ *      觸發點不重複(只留搜尋列那顆,離打字的地方最近;關著時才在觸發點)
  *   M6 搜尋在觸發點的 Select 0 筆:整個 [cmdk-list] = 48(md),不得多 16(空群組不畫)
+ *   M8 遠端搜尋(filterOption=false):打一個本機對不到的字,舊清單原封留著、搜尋列轉圈亮、沒有訊息列;後端回來後清單才換
+ *   M9 群組自動分隔線:可見群組之間恰好一條 1px 線(第一個可見群組沒有),搜尋後剩一組就沒有線 —— 手插 Separator 在搜尋時會消失
  *   M7 訊息列不可互動:pointer-events none、role=presentation(沒有結果)/ role=status(載入中)、
  *      hit-test 打不到它、滑鼠移上去底色不變(等 transition-colors 150ms 過完再量)
  *
@@ -67,6 +70,8 @@ const ID = {
   commandInline: 'design-system-internal-command-展示--inline-command',
   commandAction: 'design-system-internal-command-展示--action-command',
   menuMessages: 'design-system-internal-menu-展示--messages',
+  selectGrouped: 'design-system-components-select-展示--grouped-search',
+  comboboxRemote: 'design-system-components-combobox-展示--remote-search',
 }
 // 共識文案(消費端可覆寫;這裡只驗 DS 預設值出現的 story)
 const TEXT = { selectEmpty: '沒有選項', peopleEmpty: '沒有人員', loading: '載入選項中' }
@@ -138,7 +143,9 @@ await page.addInitScript(() => {
     },
     list() {
       const l = document.querySelector('[cmdk-list]')
-      return l ? { height: rect(l).height, items: document.querySelectorAll('[cmdk-item]').length, empty: !!document.querySelector('[cmdk-empty]') } : null
+      // 訊息列(CommandEmpty)住在 listbox 外面(a11y:listbox 裡不得有非 option 子元素,MUI 同構),所以「清單區高度」= 清單 + 訊息列
+      const e = document.querySelector('[cmdk-empty]')
+      return l ? { height: rect(l).height + (e ? rect(e).height : 0), items: document.querySelectorAll('[cmdk-item]').length, empty: !!e } : null
     },
     spinnerIn(sel) {
       const scope = document.querySelector(sel); if (!scope) return { scope: false }
@@ -150,7 +157,8 @@ await page.addInitScript(() => {
 
 async function open(id, waitSel = '[cmdk-list]') {
   await page.goto(story(id), { waitUntil: 'load' })
-  const ok = await page.waitForSelector(waitSel, { timeout: 15000 }).then(() => true).catch(() => false)
+  // 訊息列在 listbox 外,0 筆時 [cmdk-list] 高度 0 → Playwright 預設等「可見」會逾時;改等「掛上 DOM」
+  const ok = await page.waitForSelector(waitSel, { timeout: 15000, state: 'attached' }).then(() => true).catch(() => false)
   // Popover / Dialog 開啟動畫(zoom-in-95)結束後才量:動畫中量到的 rect 是 0.95 倍(實測 45.6 而非 48)
   await page.waitForTimeout(600)
   return ok
@@ -278,7 +286,7 @@ let selectEmptyList = null, comboboxEmptyList = null
     const rs = await rows()
     if (rs.length !== 1) bad(`${L} 前提:恰好 1 列訊息列`, `${rs.length} 列`)
     else { assertRow(L, rs[0], { kind: 'loading', text: TEXT.loading }); await hoverCheck(L) }
-    assertTrigger(L, await triggerSpin())
+    { const t = await triggerSpin(); ck(`${L} M5 浮層開著且搜尋列在浮層 → 觸發點不重複轉圈(只留搜尋列那顆)`, t.scope && !t.spinner, t.spinner ? '觸發點還有轉圈' : '沒有') }
     const l = await list(); measured.push(l.height); comboboxEmptyList = l.height
     ck(`${L} 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
     await assertInputLoading(L)
@@ -291,7 +299,7 @@ let selectEmptyList = null, comboboxEmptyList = null
     const l0 = await list(); measured.push(l0.height)
     ck(`${L} M4 舊選項仍在、[cmdk-empty] 不顯示`, l0.items > 0 && !l0.empty, `${l0.items} 筆,empty=${l0.empty}`)
     ck(`${L} M1 ${l0.items} 筆結果 [cmdk-list] = ${listH('md', l0.items)}`, near(l0.height, listH('md', l0.items)), `${fmt(l0.height)}`)
-    assertTrigger(L, await triggerSpin())
+    { const t = await triggerSpin(); ck(`${L} M5 浮層開著且搜尋列在浮層 → 觸發點不重複轉圈(只留搜尋列那顆)`, t.scope && !t.spinner, t.spinner ? '觸發點還有轉圈' : '沒有') }
     await assertInputLoading(L)
     const one = await typeAndList('[cmdk-input]', 'CRM')
     if (!one.list || one.list.items !== 1) bad(`${L} 前提:打「CRM」過濾到 1 筆`, `${one.list?.items} 筆`)
@@ -395,7 +403,7 @@ for (const [key, L] of [['commandInline', 'Command 行內搜尋清單'], ['comma
     assertTrigger(`${L}(名錄未到)`, await triggerSpin())
     const box = await page.evaluate(() => { const r = document.querySelector('#storybook-root [role="combobox"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } })
     await page.mouse.click(box.x, box.y)
-    const opened = await page.waitForSelector('[cmdk-list]', { timeout: 5000 }).then(() => true).catch(() => false)
+    const opened = await page.waitForSelector('[cmdk-list]', { timeout: 5000, state: 'attached' }).then(() => true).catch(() => false)
     await page.waitForTimeout(600)
     if (!opened) bad(`${L} 前提:點觸發點後選單有打開`)
     else {
@@ -409,6 +417,45 @@ for (const [key, L] of [['commandInline', 'Command 行內搜尋清單'], ['comma
       ck(`${L}(名錄到了)訊息列消失、人員列長出來`, !!after && !after.empty && after.items > 0, `${after?.items} 筆,empty=${after?.empty}`)
       ck(`${L}(名錄到了)觸發點轉圈消失`, t.scope && !t.spinner, t.spinner ? '還在轉' : '已消失')
     }
+  }
+}
+
+// ═══ M8 遠端搜尋(Combobox filterOption=false)═══
+{
+  const L = 'Combobox 遠端搜尋'
+  if (!(await open(ID.comboboxRemote))) bad(`${L} 前提:選單有打開`)
+  else {
+    const before = await list()
+    await page.keyboard.type('customer')
+    await page.waitForTimeout(150)
+    const during = await list()
+    const w = await page.evaluate(() => window.__mm.spinnerIn('[cmdk-input-wrapper]'))
+    ck(`${L} M8 打了本機對不到的字,舊清單原封留著(${before?.items} 筆)`, !!during && during.items === before.items && !during.empty, `${during?.items} 筆,empty=${during?.empty}`)
+    ck(`${L} M8 抓資料中搜尋列有轉圈`, !!w.spinner, w.spinner ? '有' : '沒有')
+    await page.clock.runFor(900); await page.waitForTimeout(200)  // 假時鐘(PeoplePicker 段安裝)推過 story 的 800ms setTimeout
+    const after = await list()
+    ck(`${L} M8 後端回來後清單換成後端結果(1 筆「CRM 客戶名單」)`, !!after && after.items === 1 && !after.empty, `${after?.items} 筆,empty=${after?.empty}`)
+  }
+}
+
+// ═══ M9 群組自動分隔線(Select 分組 + 搜尋)═══
+{
+  const L = 'Select 分組搜尋'
+  if (!(await open(ID.selectGrouped))) bad(`${L} 前提:選單有打開`)
+  else {
+    const groupsInfo = () => page.evaluate(() => [...document.querySelectorAll('[cmdk-group]')].filter((g) => !g.hasAttribute('hidden')).map((g) => ({ bt: parseFloat(getComputedStyle(g).borderTopWidth), heading: g.querySelector('[cmdk-group-heading]')?.textContent?.trim() ?? '' })))
+    const g0 = await groupsInfo()
+    ck(`${L} M9 兩個可見群組`, g0.length === 2, `${g0.length} 組(${g0.map((g) => g.heading).join(' / ')})`)
+    ck(`${L} M9 第一個可見群組沒有上邊線、第二個有 1px`, g0.length === 2 && g0[0].bt === 0 && g0[1].bt === 1, g0.map((g) => g.bt).join(','))
+    await page.keyboard.type('日圓')
+    await page.waitForTimeout(200)
+    const g1 = await groupsInfo()
+    ck(`${L} M9 搜尋只剩「亞洲」一組 → 沒有線`, g1.length === 1 && g1[0].bt === 0, `${g1.length} 組,線 ${g1.map((g) => g.bt).join(',')}`)
+    for (let i = 0; i < 2; i++) await page.keyboard.press('Backspace')
+    await page.keyboard.type('元')
+    await page.waitForTimeout(200)
+    const g2 = await groupsInfo()
+    ck(`${L} M9 「元」同時命中兩組 → 恰好一條線在第二組`, g2.length === 2 && g2[0].bt === 0 && g2[1].bt === 1, `${g2.length} 組,線 ${g2.map((g) => g.bt).join(',')}`)
   }
 }
 

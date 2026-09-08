@@ -126,6 +126,7 @@ Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒�
 ## Loading
 
 `loading?: boolean`(forward 給 SelectMenu SSOT,2026-05-15 audit B 補;措辭對齊 `select.spec.md`「Loading」2026-07-04 Q3 拍板 — 不清空 stale options;**2026-09-08 user 改決定 — 48px 轉圈與 `py-6` 退役,改兩處指示**):(a) 觸發點右側、ChevronDown 左邊放列圖示尺寸的 `CircularProgress`(`combobox.tsx:847`;`iconSize` sm/md 16 / lg 20),每次抓資料都亮,dropdown 隨時可開;(b) 選單內只在**無可顯示選項時**,Empty 槽渲 `CommandLoading` 訊息列(同「沒有結果」的 `MenuItem message` 列,前綴轉圈 + 「載入選項中」,cmdk `CommandEmpty` 機制;已有 options 時保留顯示、選單不關)。這可保留仍可選的 stale options,同時只在沒有內容可呈現時讓載入列佔據 empty slot。SSOT `select-menu.spec.md`「Loading」。
+`filterOption?: boolean`(預設 true)與 `onSearchChange?: (value: string) => void`(2026-09-08 user 拍板「併」):遠端搜尋時 `filterOption={false}` 不在本機二次過濾(trigger / menu 兩種搜尋位置都不過濾),搜尋字經 `onSearchChange` 回呼;SSOT `select-menu.spec.md`「遠端搜尋」。另:浮層開著且搜尋列在浮層時,觸發點不重複轉圈(只留搜尋列那顆,離打字的地方最近;關著時才在觸發點)。
 
 ---
 

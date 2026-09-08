@@ -78,7 +78,6 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from '@/design-system/components/Command/command'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
 import {
@@ -600,13 +599,11 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
                   placeholder={historySearchPlaceholder}
                   aria-label={historySearchPlaceholder}
                 />
+                <CommandEmpty>{historyEmptyText}</CommandEmpty>
                 <CommandList label="對話">
-                  <CommandEmpty>{historyEmptyText}</CommandEmpty>
-                  {groups.map(({ label, items }, gi) => (
+                  {groups.map(({ label, items }) => (
                     <React.Fragment key={label || '(ungrouped)'}>
-                      {gi > 0 && <CommandSeparator />}
                       <CommandGroup
-                        className="p-0 py-2 [&_[cmdk-group-heading]]:p-0"
                         heading={label ? <MenuItem header>{label}</MenuItem> : undefined}
                       >
                         {items.map((conversation) => (

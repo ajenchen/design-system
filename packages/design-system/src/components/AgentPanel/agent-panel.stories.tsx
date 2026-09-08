@@ -694,7 +694,7 @@ function AgentColumn({ hostRef, open, onOpenChange, chat }: {
   return (
     // 面板必須是畫布 flex 的**直接子節點**(它量的是自己的父層),所以殼用 display:contents
     <div ref={hostRef} className="contents">
-      <AgentPanelDock open={open} onOpenChange={onOpenChange} logoState="idle">
+      <AgentPanelDock open={open} onOpenChange={onOpenChange} logoState="still">
         {({ close }) => (
           <AgentPanel className="border-l border-divider">
             <AgentPanelHeader title={chat.messages.length ? '任務助理' : '新對話'} activeConversationId="c1" {...headerWiring} onNewConversation={chat.reset} onClose={close} />

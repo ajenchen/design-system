@@ -294,6 +294,7 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 ## Loading
 
 `loading?: boolean`(forward 給 SelectMenu SSOT,2026-05-15 audit B 補;**2026-07-04 Q3 拍板 — 不清空 stale options;2026-09-08 user 改決定 — 48px 轉圈與 `py-6` 退役,改兩處指示**):(a) 觸發點右側、ChevronDown 左邊放列圖示尺寸的 `CircularProgress`(`select.tsx:734`;display 分支 `:555`;`iconSize` sm/md 16 / lg 20),每次抓資料都亮,dropdown 隨時可開;(b) 選單內只在**無可顯示選項時**,Empty 槽渲 `CommandLoading` 訊息列(同「沒有結果」的 `MenuItem message` 列,前綴轉圈 + 「載入選項中」,cmdk `CommandEmpty` 機制;已有 options 時保留顯示、選單不關)+ listbox `aria-busy`。SSOT `select-menu.spec.md`「Loading」。Benchmark 實查:MUI Autocomplete 官方逐字「shows the loadingText in place of suggestions **only if there are no suggestions to show**」([Autocomplete.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Autocomplete/Autocomplete.js) `loading && renderedOptions.length === 0` 分支)/ Ant Select 清空是 consumer 自選(demo select-users.tsx setOptions([]))非元件行為 — 原「取代 options」是過度宣稱,code 行為即世界級共識。
+`filterOption?: boolean`(預設 true)與 `onSearchChange?: (value: string) => void`(2026-09-08 user 拍板「併」):搜尋在觸發點時本機過濾由 Select 自己做,遠端搜尋傳 `filterOption={false}` 就不過濾、伺服器回什麼列什麼;搜尋字經 `onSearchChange` 回呼(含關閉時清空)。SSOT `select-menu.spec.md`「遠端搜尋」。
 
 ---
 

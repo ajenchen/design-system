@@ -274,6 +274,32 @@ export const NoOptions: Story = {
   ),
 }
 
+export const GroupedSearch: Story = {
+  name: '分組 + 搜尋',
+  parameters: { docs: { description: { story: 'Stripe 結算幣別分「亞洲」「歐美」兩組:群組之間的分隔線由群組自己畫,搜尋時只剩一組就沒有線、剩兩組就一條線 —— 不是手插分隔線(手插的在搜尋時會消失)。' } } },
+  render: () => (
+    <div className="max-w-xs">
+      <Select
+        options={[
+          { value: 'twd', label: 'TWD 新台幣', group: 'asia' },
+          { value: 'jpy', label: 'JPY 日圓', group: 'asia' },
+          { value: 'krw', label: 'KRW 韓元', group: 'asia' },
+          { value: 'usd', label: 'USD 美元', group: 'west' },
+          { value: 'eur', label: 'EUR 歐元', group: 'west' },
+          { value: 'gbp', label: 'GBP 英鎊', group: 'west' },
+        ]}
+        groups={[{ key: 'asia', label: '亞洲' }, { key: 'west', label: '歐美' }]}
+        value="twd"
+        onChange={() => {}}
+        searchable
+        defaultOpen
+        placeholder="選擇結算幣別…"
+        aria-label="結算幣別(分組)"
+      />
+    </div>
+  ),
+}
+
 /* ── DataTable 整合 ── */
 export const InDataTable: Story = {
   name: 'DataTable 整合',

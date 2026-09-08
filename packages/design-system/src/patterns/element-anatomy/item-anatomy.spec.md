@@ -296,7 +296,7 @@ Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分�
 | | **Pattern A**(Group 自帶 padding) | **Pattern B**(Container 提供邊界 padding) |
 |---|---|---|
 | 典型案例 | `MenuGroup`(menu-item.tsx) | `DropdownMenuGroup`(dropdown-menu.tsx) |
-| 何時用 | 外層容器**無** `py-2`（例:`Command.List`) | 外層容器**已有** `py-2`（例:`DropdownMenuContent`) |
+| 何時用 | 外層容器**無** `py-2`（例:`Command.List`;`CommandGroup` 的相鄰線用 `:not([hidden])` 兄弟選擇器,因 cmdk 把被搜尋濾掉的群組留在 DOM 加 `hidden`) | 外層容器**已有** `py-2`（例:`DropdownMenuContent`) |
 | CSS | `py-2 [&+&]:border-t [&+&]:border-divider` | `[&+&]:mt-2 [&+&]:pt-2 [&+&]:border-t [&+&]:border-divider` |
 | 邊界 padding 來源 | Group 自己的 py-2 | Container 的 py-2 |
 | Group 間 gap | 8 + 8 = 16 + border | 0 + 8 + 8 = 16 + border |

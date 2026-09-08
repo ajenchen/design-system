@@ -44,7 +44,11 @@ jobs:
         run: npm run build:lib
 
       - name: TypeScript project check
-        run: npx --no-install tsc -b
+        run: |
+          npx --no-install tsc -b
+          # stories 的型別檢查:tsconfig.stories.json 註解宣稱「CI gate 強制」,但 2026-09-08 盤點 grep 全 workflow 為 0 —— 本 PR 自己寫壞的
+          # 4 個 story 型別錯就是這樣溜過的(agent-panel logoState / dialog 缺 Story 型別)。
+          npm run typecheck:stories
 
       - name: Verify the shipped Storybook manifest
         run: |

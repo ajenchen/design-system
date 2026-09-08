@@ -66,8 +66,8 @@ const PaletteDemo = () => {
       <Button variant="secondary" startIcon={Search} onClick={() => setOpen(true)}>搜尋或輸入指令…(⌘K)</Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="搜尋 issue、人員,或輸入指令…" />
+        <CommandEmpty>沒有結果</CommandEmpty>
         <CommandList>
-          <CommandEmpty>沒有結果</CommandEmpty>
           <CommandGroup heading="最近開啟">
             <CommandItem startIcon={FileText} description="上次開啟:2 天前" onSelect={() => setOpen(false)}>PRD:多工作區切換 v2</CommandItem>
             <CommandItem startIcon={FileText} description="上次開啟:3 天前" onSelect={() => setOpen(false)}>Q2 OKR roadmap</CommandItem>
@@ -107,8 +107,8 @@ export const InlineCommand: Story = {
     <div className="max-w-md rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
       <Command>
         <CommandInput placeholder="搜尋信件或資料夾…" />
+        <CommandEmpty>沒有結果</CommandEmpty>
         <CommandList>
-          <CommandEmpty>沒有結果</CommandEmpty>
           <CommandGroup heading="資料夾">
             <CommandItem startIcon={Inbox} endContent={<span className="text-caption text-fg-muted tabular-nums">124</span>}>收件匣</CommandItem>
             <CommandItem startIcon={Star} endContent={<span className="text-caption text-fg-muted tabular-nums">8</span>}>已加星號</CommandItem>
@@ -136,8 +136,8 @@ const ActionCommandDemo = () => {
       <div className="rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
         <Command>
           <CommandInput placeholder="輸入指令…" />
+          <CommandEmpty>沒有結果</CommandEmpty>
           <CommandList>
-            <CommandEmpty>沒有結果</CommandEmpty>
             <CommandGroup heading="外觀">
               <CommandItem startIcon={Sun} selected={theme === 'light'} onSelect={() => { setTheme('light'); setLastAction('切換淺色模式') }}>淺色模式</CommandItem>
               <CommandItem startIcon={MoonStar} selected={theme === 'dark'} onSelect={() => { setTheme('dark'); setLastAction('切換深色模式') }}>深色模式</CommandItem>
@@ -175,8 +175,8 @@ const NoResultsDemo = () => {
     <div className="max-w-md rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
       <Command>
         <CommandInput placeholder="搜尋專案…" value={search} onValueChange={setSearch} />
+        <CommandEmpty>沒有結果</CommandEmpty>
         <CommandList>
-          <CommandEmpty>沒有結果</CommandEmpty>
           <CommandGroup heading="專案">
             <CommandItem startIcon={Folder}>設計系統</CommandItem>
             <CommandItem startIcon={Folder}>行動 App</CommandItem>
@@ -204,8 +204,8 @@ export const LoadingFirstOpen: Story = {
     <div className="max-w-md rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
       <Command>
         <CommandInput placeholder="搜尋專案…" loading />
+        <CommandEmpty><CommandLoading label="載入專案中" /></CommandEmpty>
         <CommandList>
-          <CommandEmpty><CommandLoading label="載入專案中" /></CommandEmpty>
         </CommandList>
       </Command>
     </div>
