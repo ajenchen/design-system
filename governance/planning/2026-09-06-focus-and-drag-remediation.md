@@ -2403,3 +2403,15 @@ user:「我覺得"專案排程全功能整合"的範例的捲動還是很卡頓�
   RoadmapAllInOne 平均每幀 57.3 → 17.7ms、p95 66.7 → 33.3、最長任務 87 → 0;VirtualScroll 39.5 → 16.5、p95 50.1 → 16.8;RoadmapPerfBudget 21.3 → 16.7;RowDrag 19.9 → 16.6(main build vs 本分支 build)。
 - **教訓歸 M32**:「快取零 miss」是儀器綠燈,不是使用者感受;結構斷言要量「舊列裡被 React 碰到的元件數」(含 bailout),不是量快取命中;預算用逐步最大值;每個計數器都要有會紅的對照組。
 
+## AD34 CI 15 分鐘預算:單一 Verify job 連兩次逾時被取消,拆成三個平行 job + 名字不變的 fan-in required check
+
+- **事實**:5872835e 的 Verify 被取消(不是紅):瀏覽器閘 586 秒 + 治理檢查 249 秒 + 安裝與 build,超過 timeout-minutes 15;8942240d 那次 14:02 只剩 1 分鐘餘裕。
+- **修法**:`verify-static`(tsc / manifest / 靜態閘 / 治理檢查 / template build,約 6 分鐘)、`verify-browser-datatable`(332 條 + 捲軸幾何 + 捲動成本 + 依賴閘)、
+  `verify-browser-interaction`(AgentPanel / 分頁 / 焦點 / 拖曳 / 並存 / 虛擬捲動壓力等)三個平行 job 各自 build storybook 與裝 chromium;
+  required check 的 context 名字不變,由 `verify` fan-in:`if: always()` + 上游 result 經 env 進來、原始文字明確驗三個都 = success
+  (GitHub 把 skipped 的 required check 當通過,上游紅了若讓 fan-in 被 skip 就等於沒閘;同 reconcile-github 對 publish-app-verdict 的既有要求)。
+- **治理測試**:`infra/governance/test/ci-workflow-scope.test.mjs` 原本鎖死「只有 hooks-linux + verify 兩個 job」,改成鎖新的五個 job、fan-in 的 needs / if / env 引用、
+  每個跑東西的 job 各裝一次依賴、兩個瀏覽器 job 各自 build storybook 與裝 chromium;identity-sync / release-workflow / minima / ci-gate-coverage 全過。
+- **既有 drift(不是本次造成)**:`governance:workflow-identities:check` 早在 main 上就報 Verify 的 workflow identity stale(記錄的 blob 80b7155a ≠ main 的 3241bde9);
+  更新走 `--propose`(local-candidate-preparation-only)→ `--apply-reviewed-proposal`,屬另一條治理流程,本 PR 只登記不代辦。
+
