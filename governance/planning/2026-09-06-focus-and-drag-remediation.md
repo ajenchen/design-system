@@ -2243,7 +2243,8 @@ roadmap story **每步 143.8 次 → 47.1 次**;每步毫秒 77 → 43。三個�
    重量全部 droppable。`dndCollisionDetection` 的註解早已記載 `Always` 沒解決 stale rect、真正解法是 cursor 對 live DOM 的
    fallback;`WhileDragging` 在拖曳中遇集合變動一樣重量。撤回,拖曳 runtime 閘全過。
 剩下的 47 次全是 Combobox 標籤摺疊(`[data-tag-root]` 量可見數)在**新掛載** cell 的量測 —— 每掛一次量一次,不是每捲一步,
-1px 步進(不掛新列)時為 0,留著並記在此。閘:`scripts/data-table-scroll-cost.mjs`(預算 80/步,`--selftest` 預算 0 必紅)。
+1px 步進(不掛新列)時為 0,留著並記在此。閘:`scripts/data-table-scroll-cost.mjs`(`--selftest` 預算 0 必紅)。
+**2026-09-08 補**:第一版閘用大步進,本機 47/步、CI 200/步 —— 掛載那段隨機器與字型時序變動,CI 直接紅(bfc22d16)。改成 1px 步進只量每次 render 的成本(三個根因都在這一層),預算 12/步;大步數字降為資訊列印。Codex R5 也提醒:這個數字是 getBoundingClientRect 呼叫數,不是 forced layout、不是輸入延遲。
 
 ## AD24 Combobox 四模式 story 的「重設編輯模式」鈕
 
