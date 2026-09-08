@@ -19,6 +19,7 @@ import type { LucideIcon } from 'lucide-react'
 import { dragSourceClass, dropIndicatorRow, dropIndicatorInside, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
 import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
 import { cn } from '@/lib/utils'
+import { useInputModality } from '@/design-system/hooks/use-input-modality'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 // Row primitive 共用常數——單一 source of truth
 import {
@@ -384,8 +385,12 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     const reorderInstructionsId = `${activeDescendantPrefix}tree-reorder-instructions`
 
     // ── Keyboard vs mouse detection ──
-    // focus ring 只在鍵盤操作時顯示,滑鼠點擊用 bg-neutral-selected 表達選中,不顯示 ring
+    // focus ring 只在鍵盤操作時顯示,滑鼠點擊用 bg-neutral-selected 表達選中,不顯示 ring。
+    // 2026-09-08:判斷來源改為共用的 useInputModality(SelectMenu / DropdownMenu / AgentPanel 同款,
+    // 原本四處各自實作 = 四份 SSOT)。ref 保留給 context 消費端讀,每次 render 由 hook 餵值;
+    // 模態一變 hook 觸發 root re-render,子項在 render 期讀到的就是新值。
     const isKeyboardRef = React.useRef(false)
+    isKeyboardRef.current = useInputModality() === 'keyboard'
 
     // ── Drag state ──
     const [draggingId, setDraggingId] = React.useState<string | null>(null)
@@ -806,14 +811,13 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     )
 
     // ── Keyboard handler ──
-    const handleMouseDown = React.useCallback(() => {
-      isKeyboardRef.current = false
-    }, [])
+    // 2026-09-08:mousedown 不再手動改模態 —— 由 useInputModality 的 document 監聽統一處理
+    const handleMouseDown = React.useCallback(() => {}, [])
 
     // code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜
     const handleKeyDown = React.useCallback(
       (e: React.KeyboardEvent) => {
-        isKeyboardRef.current = true
+        // 2026-09-08:模態由 useInputModality 判定(document capture 早於此 handler)
         if (!treeRef.current) return
 
         // ── 互動 descendant 自理鍵盤(先於導覽 / 重排分支)──
@@ -978,9 +982,8 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           // 違反 APG aria-activedescendant 模式(作者必須自己畫出目前節點)。
           // 判準用瀏覽器自己的 `:focus-visible` —— 它就是「這次聚焦該不該給可見指示」的權威答案:
           // 滑鼠按下進場時它不成立(且 mousedown 已先把 ref 設回 false),鍵盤進場才成立。
-          if (e.target === e.currentTarget && e.currentTarget.matches(':focus-visible')) {
-            isKeyboardRef.current = true
-          }
+          // 2026-09-08:Tab 進場的鍵盤模態改由 useInputModality 判定(Tab 的 keydown 在 document
+          // capture 就被記成鍵盤,不再依賴 :focus-visible 補位)。
           if (e.target === e.currentTarget && !focusedId && treeRef.current) {
             const first =
               treeRef.current.querySelector<HTMLElement>('[role="treeitem"][aria-selected="true"]:not([hidden]):not([aria-disabled="true"])') ??

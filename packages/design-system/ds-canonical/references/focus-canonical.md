@@ -80,6 +80,20 @@ type-ahead 的起點會跟著滑鼠亂跳;grid 內「打字即進入編輯」會
 | **底色被佔走**(該項同時是選中的)| **畫框** | **user 2026-09-07 拍板**,原話「A5畫框」。幾何走下方「決定程序」 |
 | **單一狀態控制項**(文字輸入框、Textarea、Field 內的輸入)| 滑鼠與鍵盤**共用同一套 focus 樣式** | 這類沒有「懸停候選 → 確認選它」的中間態 |
 
+**虛擬游標的框,同樣只在鍵盤模態下畫(2026-09-08 補)。** 真 DOM 焦點有瀏覽器的 `:focus-visible` 決定
+「這次要不要畫」;虛擬游標(`aria-activedescendant` / cmdk `data-selected` / Radix `data-highlighted`)
+的框畫在**沒有真焦點**的那一項上,瀏覽器幫不了,要自己判斷模態。判準逐字對齊
+[WICG focus-visible explainer「Example heuristic」](https://github.com/WICG/focus-visible/blob/main/explainer.md):
+「if the most recent user interaction was via the keyboard; and the key press did not include a meta,
+alt/option, or control key; then the modality is keyboard. Otherwise, the modality is not keyboard.」
+機械載體 = `hooks/use-input-modality.ts`(document capture 監聽、引用計數安裝),
+消費者:SelectMenu / DropdownMenu(Item + RadioItem)/ AgentPanel 歷史清單 / TreeView
+—— 原本四處各自實作(TreeView 有、其餘三處**沒有**),等於四份 SSOT。
+錨:user 2026-09-08「為何我用滑鼠一開 select 選單明明就沒有鍵盤操作,卻會直接出現鍵盤焦點?」——
+cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selectedOption?.value}`),
+「已選 + 游標」的畫框規則沒有模態條件,滑鼠一點開就畫。閘:`scripts/virtual-cursor-modality-invariant.mjs`
+(三段:滑鼠開不畫 / 鍵盤移回必畫 / 純鍵盤開立刻畫)。
+
 **按鈕不屬於第三列。** 按鈕用滑鼠點下去不顯示焦點框(`:focus-visible` 啟發式:指標點按鈕不視覺化焦點,
 文字輸入框取得焦點要視覺化)。真正「滑鼠鍵盤共用」的只有文字輸入類。
 

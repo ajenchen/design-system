@@ -45,6 +45,7 @@ import {
   X as XIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useInputModality } from '@/design-system/hooks/use-input-modality'
 import { useOverlayCoexistence } from '@/design-system/lib/overlay-coexistence'
 
 /**
@@ -418,6 +419,8 @@ function HistoryRow({
   onRename: () => void
   onDelete: () => void
 }) {
+  // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
+  const keyboardModality = useInputModality() === 'keyboard'
   return (
     <CommandItem
       value={conversation.id}
@@ -427,7 +430,8 @@ function HistoryRow({
         'group/menu-item p-0 rounded-none',
         // 選中 × 鍵盤游標疊加(select-menu.tsx 2026-08-11 拍板:滑鼠釘住、鍵盤反白深一階)。
         // 2026-09-07「A5畫框」:同 DropdownMenu / SelectMenu。
-        selected && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected data-[selected=true]:not-hover:focus-ring-inset',
+        selected && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected',
+        selected && keyboardModality && 'data-[selected=true]:not-hover:focus-ring-inset',
       )}
     >
       <MenuItem

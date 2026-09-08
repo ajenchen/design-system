@@ -19,6 +19,7 @@ import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-ge
 import { getMenuListMinHeight } from '@/design-system/components/Field/field-types'
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select-ordering'
+import { useInputModality } from '@/design-system/hooks/use-input-modality'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 /**
@@ -239,6 +240,8 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     [selectedValues]
   )
 
+  // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
+  const keyboardModality = useInputModality() === 'keyboard'
   // 2026-07-05 P2:單選已選 option — 供 cmdk defaultValue 定 cursor 起點(見下方 <Command>)
   const selectedOption = React.useMemo(
     () => (!multiple ? options.find((o) => o.value === selectedValues[0]) : undefined),
@@ -490,7 +493,10 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
                         // 深化 (0,3,0) > 釘住 (0,2,0),與 CSS 順序無關;token 從借用的 -active 歸位 -focus。
                         // 2026-09-07「A5畫框」:選中項底色已被佔走,鍵盤反白改畫框(不再深一階底色)。
                         // `not-hover:` 保留 —— 滑鼠停在上面時不畫框(規則一:滑鼠只上色)。
-                        !multiple && isSelected(opt.value) && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected data-[selected=true]:not-hover:focus-ring-inset',
+                        // 2026-09-08:框再加**模態條件** —— cmdk 開啟時把游標放在已選項上(:395 defaultValue),
+                        // 沒有這個條件,滑鼠一點開就出現鍵盤焦點框(user 抓到)。判準 = 最近一次輸入是鍵盤。
+                        !multiple && isSelected(opt.value) && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected',
+                        !multiple && isSelected(opt.value) && keyboardModality && 'data-[selected=true]:not-hover:focus-ring-inset',
                       )}
                     >
                       <MenuItem

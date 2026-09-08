@@ -14,6 +14,7 @@ import {
   type RowSize,
 } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
+import { useInputModality } from '@/design-system/hooks/use-input-modality'
 
 /**
  * DropdownMenu — Radix DropdownMenu + MenuItem visual layer
@@ -297,6 +298,8 @@ const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
   DropdownMenuItemProps
 >(({ className, children, startIcon, avatar, description, tag, badge, endIcon, shortcut, selected, disabled, ...props }, ref) => {
+  // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
+  const keyboardModality = useInputModality() === 'keyboard'
   const size = useRowSize()
   const endContent = buildEndContent(size, badge, endIcon, shortcut)
 
@@ -320,7 +323,8 @@ const DropdownMenuItem = React.forwardRef<
         //     深化 (0,3,0) > 釘住 (0,2,0));(2) token 從借用的 -active(按壓專屬)歸位 -focus。
         // 2026-09-07「A5畫框」:選中項底色已被佔走,鍵盤反白改畫框。
         // `not-hover:` 保留 —— 滑鼠停在上面時不畫框(規則一)。
-        selected && 'bg-neutral-selected data-[highlighted]:bg-neutral-selected data-[highlighted]:not-hover:focus-ring-inset',
+        selected && 'bg-neutral-selected data-[highlighted]:bg-neutral-selected',
+        selected && keyboardModality && 'data-[highlighted]:not-hover:focus-ring-inset',
         className,
       )}
       {...props}
@@ -500,6 +504,8 @@ const DropdownMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
   DropdownMenuRadioItemProps
 >(({ className, children, startIcon, description, disabled, ...props }, ref) => {
+  // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
+  const keyboardModality = useInputModality() === 'keyboard'
   const size = useRowSize()
 
   return (
@@ -513,7 +519,7 @@ const DropdownMenuRadioItem = React.forwardRef<
       // 因內層 MenuItem 自帶 `!bg-transparent` 會蓋掉子層 bg → 選中底色從不顯示。
       // 改 parent-bg pattern(對齊 DropdownMenuItem selected):RadioItem 上底色,MenuItem 透明讓它透出。
       // 2026-07-04 Q2:checked 亦勝 highlighted(同 DropdownMenuItem selected 規則)
-      className={cn(radixItemClass, 'data-[state=checked]:bg-neutral-selected data-[state=checked]:data-[highlighted]:bg-neutral-selected data-[state=checked]:data-[highlighted]:not-hover:focus-ring-inset', className)}
+      className={cn(radixItemClass, 'data-[state=checked]:bg-neutral-selected data-[state=checked]:data-[highlighted]:bg-neutral-selected', keyboardModality && 'data-[state=checked]:data-[highlighted]:not-hover:focus-ring-inset', className)}
       {...props}
     >
       <MenuItem
