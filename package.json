@@ -41,7 +41,7 @@
     "release:status": "node scripts/release-orchestrator.mjs status",
     "release:consent": "node scripts/release-orchestrator.mjs consent",
     "test:release-consent": "node scripts/test-release-consent.mjs",
-    "test:datatable-invariants": "node scripts/test-distribute-column-widths.mjs && node scripts/data-table-invariants.mjs && node scripts/data-table-scrollbar-visibility.mjs --quick && node scripts/data-table-scroll-cost.mjs",
+    "test:datatable-invariants": "node scripts/test-distribute-column-widths.mjs && node scripts/data-table-invariants.mjs && node scripts/data-table-scrollbar-visibility.mjs --quick && node scripts/data-table-scroll-cost.mjs && node scripts/data-table-row-cache-deps-invariant.mjs",
     "test:drag-announcements": "node scripts/drag-announcement-invariant.mjs && node scripts/drag-announcement-invariant.mjs --selftest",
     "test:drag-runtime": "node scripts/drag-runtime-contract.mjs",
     "test:focus-indicator-invariants": "node scripts/focus-indicator-invariants.mjs",

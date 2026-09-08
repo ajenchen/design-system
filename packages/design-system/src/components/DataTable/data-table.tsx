@@ -39,7 +39,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, EyeOff, X as XIcon, GripVertical } from 'lucide-react'
 // **v15.0 Path B**(對齊 user 「source 留原位 / indicator 為 drop preview / 不 auto-shift」directive):
 // 砍 useSortable + SortableContext 用 useDraggable + useDroppable 分離 hooks(對齊 DS 內 TreeView SSOT)。
-import { DndContext, DragOverlay, useDraggable, useDroppable, useDndContext, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
+import { DndContext, DragOverlay, useDraggable, useDroppable, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
 import { cn } from '@/lib/utils'
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
@@ -350,6 +350,8 @@ function applySelectIds(
   return { mode: 'all', excluded: Array.from(set) }
 }
 const cellPadding: React.CSSProperties = { paddingBlock: 'var(--table-cell-py)', paddingInline: 'var(--table-cell-px)' }
+// 穩定的空陣列:`?? []` 每次 render 新身分會讓 TanStack 的 pinning / columns memo 失效(Codex R6 2026-09-08)
+const EMPTY_COLUMN_IDS: string[] = []
 // 表頭面板:**只帶底色**。底色**畫在 panel 不畫在 row**,因為 `--muted` 是半透明,
 // 兩層會疊出兩種深淺(見 renderHeaderRow 的註解)。三個 panel 共用同一個常數 = 單一住所。
 // 下分隔線**不在這裡**:它掛在外層列群組的 `.dtHeaderRowGroup::after`(data-table.css),見下文。
@@ -547,6 +549,8 @@ function SortableRowProvider(props: {
   id: string
   disabled?: boolean
   role: 'primary' | 'mirror'
+  /** mirror 列用:這一列是否正在被拖(父層 activeDragId === id)。不讓 mirror 列訂閱整個 dnd PublicContext(Codex R6 2026-09-08)。 */
+  isDragging?: boolean
   children: (ctx: SortableRowCtxValue) => React.ReactNode
 }) {
   // **v15.4 final architectural split**:multi-instance same-id 是 dnd-kit anti-pattern。
@@ -606,18 +610,27 @@ function SourceRowProvider({
     handleListeners: draggable.listeners as unknown as Record<string, unknown> | undefined,
     handleAttributes: handleAttrs,
   }), [setRefs, role, isDragging, draggable.setActivatorNodeRef, draggable.listeners, handleAttrs])
-  return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
+  // 2026-09-08(捲動卡頓根因,fiber 歸因實測;Codex R7 校正鏈的歸屬):useDraggable / useDroppable 整個消費
+  // dnd-kit 的 InternalContext(無 selector),InternalContext 的 memo deps 含 activators;activators 隨 sensors
+  // 換身分(見 `dndSensorOptions` 的註解)→ 27 個舊列的 Provider 全部重繪;render-prop `children(ctxValue)` 每次
+  // 重呼叫就重產整列元素,上游的列元素快取在這裡被抵銷(每步舊列裡 2754 個元件重繪)。列掛卸造成的 droppable
+  // 集合換身分是另一條鏈(PublicContext),舊版 MirrorRowProvider 用 useDndContext 訂閱它,已改由父層傳 boolean。
+  // children 函式(來自快取元素,身分穩定)與 ctxValue(已 memo)沒變就不重產。閘:`scripts/data-table-scroll-cost.mjs` R4。
+  const content = React.useMemo(() => children(ctxValue), [children, ctxValue])
+  return <SortableRowCtx.Provider value={ctxValue}>{content}</SortableRowCtx.Provider>
 }
 
 function MirrorRowProvider({
   id,
   disabled,
   role,
+  isDragging = false,
   children,
 }: {
   id: string
   disabled?: boolean
   role: 'primary' | 'mirror'
+  isDragging?: boolean
   children: (ctx: SortableRowCtxValue) => React.ReactNode
 }) {
   // Mirror region(left / right pinned)只 mount useDroppable — 接受 drop target,
@@ -629,8 +642,9 @@ function MirrorRowProvider({
   //   視覺一致(SKU 釘選欄 + center + Updated 釘選欄整列半透明)。透過 useDndContext active
   //   判斷:any drag activated with active.id === own row id → mirror 也 isDragging。
   const droppable = useDroppable({ id, disabled, data: { type: 'row' } })
-  const dndCtx = useDndContext()
-  const isDragging = dndCtx.active?.id === id
+  
+  // 2026-09-08(Codex R6):原本 `useDndContext().active?.id === id` 讓每一列 mirror 訂閱整個 PublicContext ——
+  // 虛擬捲動每步都有列掛卸 → droppable 集合變動 → context 換身分 → 69 個 mirror 列全部重繪。改由父層傳 boolean。
   // 2026-07-05 D3 perf fix:ctxValue useMemo(同 SourceRowProvider — 消掉 RowDragHandle
   // effect 的每 render observer/listener churn;mirror 雖不渲 handle,identity 穩定仍省下游 diff)
   const ctxValue: SortableRowCtxValue = React.useMemo(() => ({
@@ -645,7 +659,14 @@ function MirrorRowProvider({
     handleListeners: undefined,
     handleAttributes: {},
   }), [droppable.setNodeRef, role, isDragging])
-  return <SortableRowCtx.Provider value={ctxValue}>{children(ctxValue)}</SortableRowCtx.Provider>
+  // 2026-09-08(捲動卡頓根因,fiber 歸因實測;Codex R7 校正鏈的歸屬):useDraggable / useDroppable 整個消費
+  // dnd-kit 的 InternalContext(無 selector),InternalContext 的 memo deps 含 activators;activators 隨 sensors
+  // 換身分(見 `dndSensorOptions` 的註解)→ 27 個舊列的 Provider 全部重繪;render-prop `children(ctxValue)` 每次
+  // 重呼叫就重產整列元素,上游的列元素快取在這裡被抵銷(每步舊列裡 2754 個元件重繪)。列掛卸造成的 droppable
+  // 集合換身分是另一條鏈(PublicContext),舊版 MirrorRowProvider 用 useDndContext 訂閱它,已改由父層傳 boolean。
+  // children 函式(來自快取元素,身分穩定)與 ctxValue(已 memo)沒變就不重產。閘:`scripts/data-table-scroll-cost.mjs` R4。
+  const content = React.useMemo(() => children(ctxValue), [children, ctxValue])
+  return <SortableRowCtx.Provider value={ctxValue}>{content}</SortableRowCtx.Provider>
 }
 
 /** DraggableHeaderCell — wrap header cell 跟 dnd-kit useDraggable + useDroppable 接軌
@@ -1195,8 +1216,12 @@ function DataTableInner<TData>(
   // ── L2 Selection state ──
   const enabled = selectable !== false
   const mode = selectable === 'single' ? 'single' : 'multi'
+  // 2026-09-08(捲動卡頓根因之一,Codex R6 第 2 步時抓到):`normalizeSelection(selectionProp)` 每次 render 都生新物件,
+  // controlled 模式下 `selection` 身分每步都變 → toggleRow / 列元素快取 / 一切依賴 selection 的 memo 每步失效 →
+  // 整張表每個滾輪刻度重繪。只在 prop 身分變時重算。
+  const normalizedSelectionProp = React.useMemo(() => normalizeSelection(selectionProp), [selectionProp])
   const [selection, setSelection] = useControllable<DataTableSelection>({
-    value: normalizeSelection(selectionProp),
+    value: normalizedSelectionProp,
     defaultValue: normalizeSelection(defaultSelection) ?? { mode: 'include', ids: [] },
     onChange: onSelectionChange,
   })
@@ -1276,7 +1301,17 @@ function DataTableInner<TData>(
     defaultValue: paginationOpts?.defaultPage ?? 1,
     onChange: paginationOpts?.onPageChange,
   })
+  const paginationState = React.useMemo(
+    () => (paginationEnabled ? { pageIndex: currentPage - 1, pageSize: pageSizeState } : undefined),
+    [paginationEnabled, currentPage, pageSizeState],
+  )
 
+  // TanStack 的 memo 用「依賴的身分」判斷要不要重算:這兩個 state 物件若每次 render 都重組,分頁 row model 每步重算 →
+  // `rows` 換身分 → 列元素快取整批失效(2026-09-08 roadmap 實測每步 84 列全部重繪的元兇);memo 成穩定身分。
+  const columnPinningState = React.useMemo(
+    () => ({ left: effectivePinnedLeft, right: pinnedRightColumns ?? EMPTY_COLUMN_IDS }),
+    [effectivePinnedLeft, pinnedRightColumns],
+  )
   const table = useReactTable({
     ...tableOptions,
     data, columns: columnsWithSelection,
@@ -1284,11 +1319,11 @@ function DataTableInner<TData>(
       sorting, columnVisibility,
       ...tableOptions?.state,
       // columnPinning + columnOrder 在 user state 後 override,確保 __select__ 永遠左
-      columnPinning: { left: effectivePinnedLeft, right: pinnedRightColumns ?? [] },
+      columnPinning: columnPinningState,
       ...(effectiveColumnOrder ? { columnOrder: effectiveColumnOrder } : {}),
       // L5 分頁:必在 ...tableOptions?.state 之後 spread(同 columnPinning override 理由——
       // 防 user state 蓋掉內建接線);頁碼變更由 <Pagination onPageChange> 驅動,不走 TanStack 內部 setter
-      ...(paginationEnabled ? { pagination: { pageIndex: currentPage - 1, pageSize: pageSizeState } } : {}),
+      ...(paginationState ? { pagination: paginationState } : {}),
     },
     enableMultiSort,
     // **#1 fix(2026-05-04)**:chain user `tableOptions.onSortingChange`(spread 在前被 override = 之前 bug)
@@ -3040,7 +3075,7 @@ function DataTableInner<TData>(
   const reorderableColumnIdsRef = React.useRef<string[]>([])
 
   // ── Render header row for a region ──
-  const renderHeaderRow = (cols: Column<TData, unknown>[], isRight: boolean) => {
+  const renderHeaderRowFresh = (cols: Column<TData, unknown>[], isRight: boolean) => {
     const headers = getRegionHeaders(cols)
     // a11y(2026-04-25 axe aria-required-children):若 region 無 visible cells(只有
     // invisible rowActions placeholder 或 region 本身空),不設 role='row' — 改為純
@@ -3116,6 +3151,54 @@ function DataTableInner<TData>(
 
   // ── Render body rows for a region ──
   // code-quality-allow: long-function — virtualizer × sticky region × empty state × per-row drag 四正交 render path 集中,拆 sub-fn 會將 virtualItems / rows / colVirtualizer 三 closure 跨 fn 傳
+  // ── 列元素快取(memo 邊界;Codex R6 第 2 步,2026-09-08)────────────────────────────
+  // 剖析:每個滾輪刻度在 scroll 事件內 flushSync 重繪整個 DataTableInner,三區 69 列 × 全部格子沒有任何
+  // 「沒變就不重畫」的邊界。列的渲染閉包(cellEl / renderCellContent)抓了幾十個外層值,直接抽成 React.memo 元件
+  // 要把整條依賴鏈搬家;這裡改用等價的做法 —— **快取每一列的 React element**:依賴全部相同就回傳同一個 element,
+  // React 對同一個 element 參照直接 bail out,整棵列子樹不重繪。依賴分兩層:
+  //   - 每列:row 身分 / idx / start / isLast / cols / 區域寬 / 該列共享高度 / 該列的落點線 / 拖曳中 / 任一拖曳中
+  //   - 全表 epoch:任何會影響格子內容的狀態(TanStack state、rows、選取、編輯、範圍、欄寬、錯誤、props)一變就整批失效。
+  // 純捲動時只有 virtual items 變 → 舊列全部命中,只有新進視窗的列真的執行。閘:scripts/data-table-scroll-cost.mjs v3。
+  const rowElCacheRef = React.useRef<Map<string, { deps: unknown[]; tick: number; el: React.ReactElement }>>(new Map())
+  const rowRenderTickRef = React.useRef(0)
+  rowRenderTickRef.current += 1
+  // 注意:不能拿 `table.getState()` 整個物件當依賴 —— 我們每次 render 都重組 state 物件(columnPinning 等),它永遠是新身分,
+  // 快取會永遠 miss(第一版就是這樣量不到差別)。只拿會變的子狀態(TanStack 內部 state 物件在沒變時保持同身分)。
+  const tableStateForEpoch = table.getState()
+  const epochDeps: unknown[] = [
+    // 由 scripts/data-table-row-cache-deps-invariant.mjs 機械對照:renderRowFresh(含 helper)用到的每個外層變數
+    // 都必須在這裡、或在該閘的「已證明穩定/已由 rowEl deps 覆蓋」白名單,否則閘紅(2026-09-08 I2 漏 resolvedWidths 的教訓)。
+    // Codex R7(2026-09-08)補:tableStateForEpoch.sorting(consumer 可經 tableOptions.state 覆蓋本地 sorting)、tableOptions(enableSorting /
+    // enableHiding / meta 等 table options 都從它來;TanStack 改 options 時 rows / cols / column 身分全不變,快取不會順便失效)、setSelection(只依 isControlled)。
+    rows, cellErrors, selection, onCellCommit, rowActions, editingCellId, editingDraft, selectedCellId, rangeAnchor, rangeFocus, columnSizingState, isResizingColumn, spreadsheetMode, size, bordered, autoRowHeight, dragDisabled, paginationEnabled, currentPage, pageSizeState, hasRowActions, enableRowDrag, sorting, columnVisibility, tableStateForEpoch.rowSelection, tableStateForEpoch.expanded, tableStateForEpoch.columnOrder, tableStateForEpoch.columnFilters, tableStateForEpoch.globalFilter, tableStateForEpoch.grouping, resolvedWidths, selectable, inlineEdit, enableColumnResize, experimentalActiveEditorController, experimentalSpreadsheetOverlay, dropIndicator, rangeCellIdSet, leftCols, rightCols, cancelCellEdit, commitCell, enterCellEdit, isCellEditable, isSelectedId, toggleRow, getRowAriaLabel, isRowSelectable, activeDragId, virtualizer, centerIds, leftIds, rightIds, enabled, mode, iconSize, rowHeight, tableStateForEpoch.sorting, tableOptions, setSelection, enableMultiSort,
+  ]
+  // 診斷(閘設 window.__dtRowRenderStats 才計):記 epoch 是被哪一個依賴換掉的
+  const prevEpochDepsRef = React.useRef<unknown[] | null>(null)
+  {
+    const stats = typeof window !== 'undefined' ? (window as unknown as { __dtRowRenderStats?: { epochIdx?: Record<number, number> } }).__dtRowRenderStats : undefined
+    if (stats && prevEpochDepsRef.current) epochDeps.forEach((d, i) => { if (!Object.is(d, prevEpochDepsRef.current![i])) { stats.epochIdx ??= {}; stats.epochIdx[i] = (stats.epochIdx[i] ?? 0) + 1 } })
+    prevEpochDepsRef.current = epochDeps
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rowRenderEpoch = React.useMemo(() => ({}), epochDeps)
+
+  // 表頭元素快取(2026-09-08):表頭不隨捲動改變,但 DataTableInner 每步 render 都重呼叫 renderHeaderRow → 每步 593 個
+  // 表頭元件重繪(fiber 歸因實測)。與列快取同款:deps 全等就回同一個元素,React 在表頭 fiber 直接 bailout。
+  // `headerEpochDeps` 由 scripts/data-table-row-cache-deps-invariant.mjs 機械對照 renderHeaderRowFresh 的外層變數。
+  const headerEpochDeps: unknown[] = [
+    rowRenderEpoch, enableColumnReorder, headerCheckedState, selectableVisibleIds, onColumnFilterTrigger, onColumnResize, toggleHeaderCheckbox,
+  ]
+  const headerRenderEpoch = React.useMemo(() => ({}), headerEpochDeps)
+  const headerElCacheRef = React.useRef<Map<string, { deps: unknown[]; el: React.ReactElement }>>(new Map())
+  const renderHeaderRow = (cols: Column<TData, unknown>[], isRight: boolean) => {
+    const key = cols === leftCols ? 'left' : cols === rightCols ? 'right' : 'center'
+    const deps: unknown[] = [cols, isRight, headerRenderEpoch]
+    const hit = headerElCacheRef.current.get(key)
+    if (hit && hit.deps.every((d, i) => Object.is(d, deps[i]))) return hit.el
+    const el = renderHeaderRowFresh(cols, isRight)
+    headerElCacheRef.current.set(key, { deps, el })
+    return el
+  }
   const renderBodyRows = (cols: Column<TData, unknown>[], isCenter: boolean, isRight: boolean, regionWidth: number) => {
     if (isEmpty && isCenter) {
       // 有框容器 → 垂直置中(design principle)
@@ -3138,7 +3221,29 @@ function DataTableInner<TData>(
     const regionRole: 'primary' | 'mirror' = isPrimaryRegion ? 'primary' : 'mirror'
 
     // code-quality-allow: long-function — virtualizer × sticky panel × drag listeners × hover delegation × per-row state 多 closure capture;拆會破壞 dnd-kit hooks 跟 row idx 的 stable binding
+    const regionKey = isCenter ? 'c' : isRight ? 'r' : 'l'
     const rowEl = (row: typeof rows[number], idx: number, opts?: { virtual?: boolean; start?: number; isLast?: boolean }) => {
+      const isThisRowDraggingNow = enableRowDrag && activeDragId === row.id
+      const rowDrop = dropIndicator?.type === 'row' && dropIndicator.id === row.id ? dropIndicator.side : null
+      const cacheKey = `${regionKey}:${row.id}`
+      const deps: unknown[] = [row, idx, opts?.start, !!opts?.isLast, !!opts?.virtual, cols, regionWidth, sharedRowHeights.get(idx), rowDrop, isThisRowDraggingNow, activeDragId != null, rowRenderEpoch]
+      const hit = rowElCacheRef.current.get(cacheKey)
+      if (hit && hit.deps.length === deps.length && hit.deps.every((d, i) => Object.is(d, deps[i]))) {
+        hit.tick = rowRenderTickRef.current
+        return hit.el
+      }
+      // 閘用的計數器(scripts/data-table-scroll-cost.mjs 設 window.__dtRowRenderStats 後才計;正常執行零成本)。
+      // missIdx 記「是哪一個依賴變了」—— 沒有它,快取失效的原因只能用猜的(2026-09-08 抓分頁 state 物件就是靠它)。
+      const stats = typeof window !== 'undefined' ? (window as unknown as { __dtRowRenderStats?: { fresh: number; missIdx: Record<number, number> } }).__dtRowRenderStats : undefined
+      if (stats) {
+        stats.fresh += 1
+        if (hit) deps.forEach((d, i) => { if (!Object.is(d, hit.deps[i])) stats.missIdx[i] = (stats.missIdx[i] ?? 0) + 1 })
+      }
+      const el = renderRowFresh(row, idx, opts)
+      rowElCacheRef.current.set(cacheKey, { deps, tick: rowRenderTickRef.current, el })
+      return el
+    }
+    const renderRowFresh = (row: typeof rows[number], idx: number, opts?: { virtual?: boolean; start?: number; isLast?: boolean }) => {
       const showBorder = bordered !== false ? !opts?.isLast : true
       // L4 row drag v2:nested rows 也可拖(配合 cross-parent collisionDetection 過濾)
       // sub-rows: depth>0 也各自掛 useDraggable/useDroppable,但 collisionDetection 只接受 same-parent over
@@ -3256,7 +3361,7 @@ function DataTableInner<TData>(
       if (dragRowWrap) {
         // code-quality-allow: long-function — 此 const 之下的整個 if-block 含 dnd-kit hooks + SortableRowProvider + baseRowDiv composition;audit 把 const 誤認為 function entry,實 long body 在 closure 內 dnd-kit + per-row state 多 capture,拆會破壞 hook order invariant
         return (
-          <SortableRowProvider key={row.id} id={row.id} disabled={dragDisabled} role={regionRole}>
+          <SortableRowProvider key={row.id} id={row.id} disabled={dragDisabled} role={regionRole} isDragging={isThisRowDragging}>
             {(ctx) => baseRowDiv({
               // primary 掛 useDraggable+useDroppable 合成 ref;mirror 只掛 useDroppable ref
               // (v15.4 split — mirror 不進 drag source store,isDragging 走 useDndContext 同步)
@@ -3294,6 +3399,13 @@ function DataTableInner<TData>(
     //   https://raw.githubusercontent.com/ag-grid/ag-grid/v33.3.2/packages/ag-grid-community/src/gridBodyComp/centerWidthFeature.ts#L5-L10 / #L33-L40
     //   https://raw.githubusercontent.com/ag-grid/ag-grid/v33.3.2/packages/ag-grid-community/src/columns/visibleColsService.ts#L53
     const containerWidth = regionWidth
+    // 這一輪沒被用到的該區快取項目丟掉(排序 / 換頁 / 捲離的列),記憶體上限 = 可見列數
+    const prune = () => {
+      for (const [k, v] of rowElCacheRef.current) if (k.startsWith(regionKey + ':') && v.tick !== rowRenderTickRef.current) rowElCacheRef.current.delete(k)
+    }
+    const items = useVirtual ? virtualizer.getVirtualItems().map(vr => rowEl(rows[vr.index], vr.index, { virtual: true, start: vr.start, isLast: vr.index === rows.length - 1 })) : []
+    const staticItems = useVirtual ? [] : rows.map((row, i) => rowEl(row, i, { isLast: i === rows.length - 1 }))
+    prune()
 
     if (useVirtual) {
       // 2026-05-13 (c) scroll-defer perf(per user 拍 Path (c) Roadmap >50ms 後 escalate):
@@ -3304,14 +3416,14 @@ function DataTableInner<TData>(
       return (
         <TableScrollProvider isScrolling={virtualizer.isScrolling}>
           <div style={{ height: virtualizer.getTotalSize(), position: 'relative', minWidth: containerWidth }}>
-            {virtualizer.getVirtualItems().map(vr => rowEl(rows[vr.index], vr.index, { virtual: true, start: vr.start, isLast: vr.index === rows.length - 1 }))}
+            {items}
           </div>
         </TableScrollProvider>
       )
     }
     return (
       <div style={{ minWidth: containerWidth }}>
-        {rows.map((row, i) => rowEl(row, i, { isLast: i === rows.length - 1 }))}
+        {staticItems}
       </div>
     )
   }
@@ -3765,9 +3877,20 @@ function DataTableInner<TData>(
     }),
     [],
   )
+  // 2026-09-08 捲動卡頓的最上游根因(fiber 歸因實測,dnd-kit 6.3.1 源碼對照):`useSensor(Sensor, options)` 是
+  // `useMemo(..., [sensor, options])`,options 若是 render 內的物件字面值就每次換新 → `useSensors` 換新 →
+  // DndContext 的 activators(`useCombineActivators` deps [sensors, ...])換新 → 每列 `useDraggable().listeners`
+  // 換新 → 每列 ctxValue 換新 → 27 個舊列每步整列重繪。options 必須身分穩定。
+  const dndSensorOptions = React.useMemo(
+    () => ({
+      pointer: { activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX } },
+      keyboard: { coordinateGetter: keyboardCoordinateGetter },
+    }),
+    [keyboardCoordinateGetter],
+  )
   const dndSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX } }),
-    useSensor(KeyboardSensor, { coordinateGetter: keyboardCoordinateGetter }),
+    useSensor(PointerSensor, dndSensorOptions.pointer),
+    useSensor(KeyboardSensor, dndSensorOptions.keyboard),
   )
 
   // **2026-05-06 v14.8 collision detection canonical(對齊 dnd-kit official best practice)**:

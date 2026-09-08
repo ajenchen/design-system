@@ -61,6 +61,8 @@ jobs:
           node scripts/focus-geometry-browser-audit.mjs --selftest
           node scripts/data-table-scrollbar-visibility.mjs
           node scripts/data-table-scrollbar-visibility.mjs --selftest
+          node scripts/data-table-scroll-cost.mjs --selftest
+          node scripts/data-table-row-cache-deps-invariant.mjs --selftest
 
       - name: Overflow indicator containment(all widths)+ control group
         run: |

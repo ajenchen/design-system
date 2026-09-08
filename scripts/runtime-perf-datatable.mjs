@@ -14,7 +14,21 @@
 import { chromium } from 'playwright'
 import { launchBrowser } from './lib/launch-browser.mjs'
 
-const STORYBOOK_URL = process.env.STORYBOOK_URL || 'http://localhost:6006'
+// 2026-09-08:沒給 STORYBOOK_URL 就直接服務 storybook-static(跟 data-table-scroll-cost.mjs 同款),不再依賴
+// 開著的 dev server —— 這支閘在沙箱裡從沒跑起來過(dev server 不在、而且 `--single-process` 沙箱一個 browser 只能開
+// 一個 context,第二次 `browser.newPage` 就炸 "browser has been closed")。每 run 重開 browser。
+import http from 'node:http'
+import { existsSync, readFileSync, statSync } from 'node:fs'
+import { join, extname, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+const STATIC_DIR = process.env.DT_STATIC || join(dirname(fileURLToPath(import.meta.url)), '..', 'storybook-static')
+const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
+let staticServer = null
+if (!process.env.STORYBOOK_URL) {
+  staticServer = http.createServer((q, s) => { let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html'; const f = join(STATIC_DIR, p); if (!existsSync(f) || statSync(f).isDirectory()) { s.writeHead(404); s.end(); return } s.writeHead(200, { 'content-type': MIME[extname(f)] || 'application/octet-stream' }); s.end(readFileSync(f)) })
+  await new Promise((r) => staticServer.listen(0, r))
+}
+const STORYBOOK_URL = process.env.STORYBOOK_URL || `http://localhost:${staticServer.address().port}`
 const targets = [
   { id: 'design-system-components-datatable-展示--virtual-scroll', label: 'VirtualScroll(10000 rows × 7 cols rich)' },
   { id: 'design-system-components-datatable-展示--roadmap-all-in-one', label: 'RoadmapAllInOne(500 × 13 rich + 全 features)' },
@@ -36,7 +50,6 @@ const targets = [
 const CPU_THROTTLE_RATE = Number(process.env.CPU_THROTTLE_RATE || 1)
 const RUNS_PER_STORY = Number(process.env.RUNS_PER_STORY || 3)
 
-const browser = await launchBrowser()
 
 function stats(arr) {
   if (arr.length === 0) return { median: 0, mean: 0, stddev: 0 }
@@ -50,6 +63,7 @@ function stats(arr) {
 for (const t of targets) {
   const runResults = []
   for (let run = 0; run < RUNS_PER_STORY; run++) {
+  const browser = await launchBrowser()
   const page = await browser.newPage({ viewport: { width: 1600, height: 900 } })
 
   // CPU throttle via CDP(必在 page mount 後 newCDPSession)
@@ -67,6 +81,7 @@ for (const t of targets) {
   } catch {
     console.log(`\n## ${t.label}: FAIL — no row[data-row-index=0] in 25s`)
     await page.close()
+    await browser.close()
     continue
   }
   const mountMs = Date.now() - mountStart
@@ -160,6 +175,7 @@ for (const t of targets) {
     initStats, afterStats, scrollResult })
 
   await page.close()
+  await browser.close()
   } // end runs
 
   // Statistical summary across runs
@@ -180,4 +196,4 @@ for (const t of targets) {
   console.log(`  All runs avg: [${avgFrames.join(', ')}] ms`)
 }
 
-await browser.close()
+if (staticServer) staticServer.close()

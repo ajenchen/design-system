@@ -87,6 +87,9 @@ jobs:
           node scripts/data-table-invariants.mjs
           node scripts/data-table-scrollbar-visibility.mjs --quick
           node scripts/data-table-scroll-cost.mjs
+          # 列/表頭元素快取的依賴完整性(靜態,TypeScript 語法樹):快取靠手列的 epochDeps,漏一個就是
+          # 「舊列拿到過期資料」(2026-09-08 I2 抓到漏 resolvedWidths → 顯示↔編輯寬差 0.59px)。
+          node scripts/data-table-row-cache-deps-invariant.mjs
           # AgentPanel 家族三支機械不變式一起跑(固定 anatomy / 標誌色階 / 思考動畫逐影格);
           # 原本只跑 continuity 一支,另外兩支在整個 repo 沒有任何 gate(2026-09-03 稽核抓到)。
           npm run test:agent-panel-invariants

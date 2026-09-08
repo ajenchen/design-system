@@ -2376,3 +2376,30 @@ user:「click 任務 #4821…開啟後可以跟 agent 同時使用,但是 modal 
   S4 代理連結、Esc 分派、外部連結、未確認 / S5 宿主換頁與歷史 / S6 刪除專案 / S7 條 E 與條 F);三支並存閘都加幾何斷言:對話框 ∩ 面板 = ∅、遮罩 = 舞台、
   面板中心 `elementFromPoint` 落在面板內、對話框置中於舞台。dialog / overlay 兩支閘因「儲存 / 送出 空白時停用」改成先打字再驗按鈕可聚焦。
 - 截圖人眼核對:任務 modal + 遮罩只在舞台;面板與側欄完整;標題 / 描述 / 變體正確。
+
+## AD33 捲動卡頓的真根因不在「列有沒有快取」,在 dnd-kit sensor options 每 render 換新 + render-prop 重產整列
+
+user:「我覺得"專案排程全功能整合"的範例的捲動還是很卡頓」(第二次,列元素快取做完之後)。
+
+- **儀器先對照組**:列快取做完、閘 R0 綠(快取零 miss),但捲動還是卡。改用 fiber 歸因(React DevTools 同法:沒被碰到的子樹沿用同一個 fiber 物件;
+  被碰到且 flags&1 = 真的 render)量到:每步 6 次 commit,第 1 次碰到 4335 個 fiber,**27 個舊列全部重繪 2754 個元件、表頭 593 個**。快取命中了,React 仍往下走。
+- **鏈**:每列 `SortableRowProvider` 的 ctxValue useMemo deps[4] = `draggable.listeners` 每步換新 ← dnd-kit `useSyntheticListeners(activators)` ← DndContext
+  `useCombineActivators(sensors)` ← 我們 `useSensor(PointerSensor, { activationConstraint: {…} })` 的 options 是 render 內字面值(dnd-kit 6.3.1 `useSensor` =
+  `useMemo(…, [sensor, options])`)。Provider 重繪就呼叫 render-prop `children(ctxValue)` 重產整列元素,列快取在它上面命中也沒用。
+- **修法**:sensor options useMemo;Provider 內 `useMemo(() => children(ctxValue), [children, ctxValue])`;表頭同款元素快取(`renderHeaderRow` 每 render 重呼叫是表頭 593 的來源);
+  `normalizeSelection(selectionProp)` useMemo(controlled 模式 selection 身分每步變)。
+- **手列依賴會漏**:332 條不變式 I2 抓到列快取 epochDeps 漏 `resolvedWidths` → 舊列欄寬過期 0.59px。新閘 `scripts/data-table-row-cache-deps-invariant.mjs`(TypeScript 語法樹列自由變數,
+  每個必須在 deps 或白名單附理由;`--selftest` 拿掉 resolvedWidths 必紅),登記 `test:datatable-invariants` / ci.yml / focus-deep-gates。
+- **量**:舊列重繪 2754 → 2.3/步、表頭 593 → 0、script 10.2 → 5.6ms/步、profile 30 步 script 595 → 295ms、每步牆鐘 82.7 → 33.2ms。閘新增 R4(舊列 ≤ 10)/ R5(表頭 ≤ 2),R3 改固定版本回歸預算 8。
+  剩 5 次 commit 全在新列的掛載副作用鏈(Radix Tooltip 觸發器 / Radix Checkbox / 把手 portal / dnd 註冊 + Popper + Tag 摺疊 / Avatar 圖片)。
+- **Codex R7(gpt-6-astra,reasoning ultra,106k tokens)總裁決 RISK**:Q1 CONFIRM 根因鏈逐環引 dnd-kit 6.3.1 行號(useSensor L190–195 → useSensors L198–204 → useCombineActivators L1933–1943 → internalContext memo L3337–3352 → useDraggable/useDroppable 整個消費 InternalContext 無 selector);
+  校正我的註解:「droppable 集合換身分」是 PublicContext 那條鏈(舊 MirrorRowProvider 訂閱),不是 InternalContext。Q2 CONFIRM render-prop memo 語意正確。
+  Q3 RISK 表頭快取漏 consumer 經 `tableOptions.state` 覆蓋的 sorting、`enableSorting` / `enableHiding` 等 table options(它用 table-core 8.21.3 在記憶體實證:改這些 options 時 rows / cols / column 身分全不變,快取不會順便失效)→ 已補 `tableStateForEpoch.sorting`、`tableOptions`、`enableMultiSort`、`setSelection`(它指出 setter 只依 isControlled,不是恆定)。
+  Q4 RISK 語法樹閘四種假陰性(巢狀作用域單一 Set 污染 / `function` 宣告的 helper 沒登記 / 同名 helper 覆蓋 / 型別位置的 `ref` 假命中)→ 閘 v2 改 scope 堆疊 + 最近宣告解析 + 排除型別位置,四種都做成合成 fixture 對照組(修前四個全空、修後全過);白名單理由逐條改寫(`table` 不是「恆定所以安全」,而是「state / options 由 deps 明列」)。
+  它明說本閘能證明的只有 lexical free variables,`ref.current` / table getter 的可變值與 useCallback 本體的 stale capture 不在保證內(後者是 exhaustive-deps lint 的事,本 repo 沒開)。
+  Q5 RISK:R3=8 合理;但「剩 5 次都不可避免」不成立(同一 commit 內的 ref setter 可 batching;ref → 量測有先後依賴不能併),兩個歸因錯誤:把手 `pos` 不是每次掛載都更新(是 `portalTarget`);**Avatar 沒有 onLoad state,只有 onError** → #5 是圖片載入失敗的 fallback(沙箱擋外網),不是「圖片晚到」。
+  Q6 RISK:`flags & 1`(PerformedWork)會漏算「函式執行了但 props 同、無更新而 bailout」;預算是平均不是逐步上限;selftest 預算 0 對本來就是 0 的 R5 永遠不會紅;計數器丟例外只印不紅;主要量連續捲動、沒涵蓋開始/停止捲動的 context 切換 → 閘改 touched(含 bailout)逐步最大值、錯誤致紅、selftest 加正向對照組(點全選 → 表頭與舊列都必須量到 render);「舊列」排除最近 2 步內掛載的列(新列的掛載鏈跨到下一步的量測窗,第一版量到 max 56 全是這個)。最終實測 roadmap / virtual-scroll 兩 story 舊列與表頭單步最大值都是 0。#4 那次 commit 最可能是同值 state 更新後 bailout(Combobox 初量後雙 rAF / RO 重算回同值),來源仍未定。
+- **同一支儀器的前後**(`runtime-perf-datatable.mjs`,1x CPU,3 runs;這支儀器本來在沙箱跑不起來:依賴 dev server + 一個 browser 開第二個分頁就炸,已修):
+  RoadmapAllInOne 平均每幀 57.3 → 17.7ms、p95 66.7 → 33.3、最長任務 87 → 0;VirtualScroll 39.5 → 16.5、p95 50.1 → 16.8;RoadmapPerfBudget 21.3 → 16.7;RowDrag 19.9 → 16.6(main build vs 本分支 build)。
+- **教訓歸 M32**:「快取零 miss」是儀器綠燈,不是使用者感受;結構斷言要量「舊列裡被 React 碰到的元件數」(含 bailout),不是量快取命中;預算用逐步最大值;每個計數器都要有會紅的對照組。
+
