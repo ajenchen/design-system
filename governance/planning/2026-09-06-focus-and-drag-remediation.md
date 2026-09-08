@@ -2204,7 +2204,8 @@ user(兩次):「經過上一次的大修正之後,在windows系統上,水平和�
 - 閘 `scripts/data-table-scrollbar-visibility.mjs`:43 支 story × 5 組幾何(17px / 11px / DPR 1.25 / 1.5 / 原生 CSS)×
   頂中底三位置 = 240 次檢查,驗裁切框包含 + hit-test + **外側一半像素真的是捲軸色**(抓 `pointer-events:none` 遮蓋)+
   slot 縮 1/2/3px 不溢出。對照組兩條:加高 2px → 裁切紅;`pointer-events:none` 白色遮蓋 → hit-test 仍綠、像素紅。
-  PR 閘跑 17px + 原生兩組,全矩陣在 `focus-deep-gates.yml`。
+  PR 閘只跑 6 支代表 story × 17px × 中段位置(≈13s;2026-09-08 CI 實測 43 支全跑讓瀏覽器閘那一步 326s → 660s,整個 job 撞 15 分鐘逾時,
+  跟 AD14 同一種病),43 支 × 5 幾何 × 3 位置的全矩陣在 `focus-deep-gates.yml`。
 - 探針自己踩的兩個坑進 M32(e)(f):Playwright headless 預設 `--hide-scrollbars`(五個月沒人量到就是它);
   同頁兩張表 `scrollIntoView` 後舊座標截到全白。
 

@@ -35,7 +35,7 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const { PNG } = createRequire(join(REPO, 'package.json'))('pngjs')
 const STATIC = join(REPO, 'storybook-static')
 const SELFTEST = process.argv.includes('--selftest')
-const QUICK = process.argv.includes('--quick') // PR 閘:Windows 預設幾何、中段位置;全矩陣(含原生組、頂/底位置)在排程閘 focus-deep-gates.yml
+const QUICK = process.argv.includes('--quick') // PR 閘:6 支代表 story、Windows 預設幾何、中段位置;全矩陣(43 story × 5 幾何 × 3 位置)在排程閘 focus-deep-gates.yml
 const ONLY = process.argv.find((a) => a.startsWith('--only='))?.slice(7)
 const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
 const TRACK = 0xee, THUMB = 0x99
@@ -44,6 +44,10 @@ if (!existsSync(join(STATIC, 'index.json'))) { console.error('storybook-static/i
 const index = JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8'))
 let ids = Object.values(index.entries).filter((e) => e.type === 'story' && /datatable/i.test(e.id)).map((e) => e.id)
 if (ONLY) ids = ids.filter((i) => i.includes(ONLY))
+// PR 閘只跑 6 支代表性 story(填滿高度雙軸 / 虛擬捲動 / 釘選欄雙表 / 容器高度 / 自動列高 / 基本);
+// 43 支全量在排程閘。2026-09-08 CI 實測:全量 --quick 讓瀏覽器閘那一步從 326s 漲到 660s,整個 job 撞 15 分鐘逾時。
+const QUICK_STORIES = ['roadmap-all-in-one', 'virtual-scroll', 'pinned-columns', 'container-height', 'row-auto-height', '--basic']
+if (QUICK && !ONLY) ids = ids.filter((i) => QUICK_STORIES.some((q) => i.endsWith(q) || i.includes(q + '-') || i.includes(q)))
 if (SELFTEST) ids = [ids.find((i) => i.includes('roadmap-all-in-one')) ?? ids[0]]
 
 const server = http.createServer((q, s) => {
