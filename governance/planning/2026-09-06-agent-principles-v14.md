@@ -88,7 +88,18 @@
 
 | # | 差距 | 現況 | 狀態(2026-09-08)|
 |---|---|---|---|
-| 1 | **Dialog 的背景隔離會把 agent 一起關掉** | `dialog.spec.md:185` —— Radix Dialog 用 `hideOthers()` 把背景兄弟節點設 `aria-hidden` 再加焦點鎖。有 URL 的 Modal 一開,agent 就被標成隱藏、焦點進不去 → **A 條落不了地**。**要調整的是整個互動隔離範圍,不能只縮遮罩** | **未解** |
+| 1 | **Dialog 的背景隔離會把 agent 一起關掉** | Radix 的 modal 分支寫死 `hideOthers(content)`(只保留 content、無白名單)+ 焦點鎖 + body 不可點;`modal={false}` 則三件全關**連 Overlay 都不渲染**。兩個預設都不是條 A/B 要的「其餘 inert、但這幾塊仍可用」 | **DS 層已解,產品層未完**(見下)|
+
+**差距 1 的現況(2026-09-08)**
+
+| 部分 | 狀態 |
+|---|---|
+| DS 並存 primitive | **已解**:`lib/overlay-coexistence.ts` 用 `aria-hidden` 官方的 `suppressOthers([保留節點])`(支援時走原生 `inert`);`Dialog` 加中性 opt-in `persistentElements`(世界級前例:Chakra `persistentElements`),**不傳就完全是原本的 modal**。閘 `scripts/dialog-coexistence-invariant.mjs` **兩條路都驗**:並存路徑常駐區可聚焦、背景 `inert=true`;預設路徑框外仍可用 0 個 |
+| 窄版層級 | **未解**:條 B 要 URL Modal 在 agent **後方**,但現況 agent 蓋板 `z-20`、Dialog body portal `z-50`,會反過來擋住 agent |
+| URL 註冊表 | **未解**:誰算「有 URL 的目的地」還沒有註冊機制;`persistentElements` 只是能力,呼叫端要有依據才知道何時傳 |
+| FileViewer | **未解**:它直接建 Radix Root/Portal(`file-viewer.tsx:954`),不經 DS Dialog,要另外接同一個 primitive;它的 window keydown(`:883`)只排除輸入框,並列後在常駐區按方向鍵 / `i` / `f` 仍會操作它 |
+| Esc 分派 | **未解**:Radix 依全域最後入疊者分派,不看焦點所屬區 |
+
 | 2 | 面板關閉時整個卸載 | `agent-panel-fab.tsx:813` 起 Dock 預設開啟、關閉時卸載面板 —— 沒辦法保證 F 條「初始化為關閉」與 E 條「閱讀位置保存」 | **已解**(2026-09-07:`display:contents` keep-mounted;閘 `agent-panel-reopen-state.mjs`)|
 | 3 | 推擠與斷點還掛在 backlog | `agent-panel.spec.md:83` 明寫「面板與 app 的推擠/斷點 = backlog」—— B 條要落地,這一條得先解 | **已解**(2026-09-07:容器基準斷點 1080 + `resolvePanelWidthMax`;閘 `agent-panel-breakpoint.mjs`)|
 

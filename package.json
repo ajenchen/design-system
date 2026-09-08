@@ -51,6 +51,8 @@
     "test:virtual-scroll-stress": "node scripts/virtual-scroll-stress.mjs && node scripts/virtual-scroll-stress.mjs --selftest",
     "test:overflow-indicator": "node scripts/overflow-indicator-containment.mjs && node scripts/overflow-indicator-containment.mjs --selftest",
     "test:shared-carrier-focus": "node scripts/shared-carrier-and-selection-focus.mjs",
+    "test:dialog-coexistence": "node scripts/dialog-coexistence-invariant.mjs",
+    "test:decided-clause-downgrade": "node scripts/decided-clause-downgrade-gate.mjs && node scripts/decided-clause-downgrade-gate.mjs --selftest",
     "test:focus-suppression": "node scripts/focus-suppression-registry.mjs && node scripts/focus-suppression-registry.mjs --selftest",
     "test:focus-geometry": "node scripts/focus-geometry-invariant.mjs && node scripts/focus-geometry-invariant.mjs --selftest && node scripts/focus-geometry-browser-audit.mjs",
     "test:agent-panel-invariants": "node scripts/agent-panel-breakpoint.mjs && node scripts/agent-panel-reopen-state.mjs && node scripts/agent-panel-dismissable-layer-invariant.mjs && node scripts/agent-panel-fixed-anatomy-invariant.mjs && node scripts/agent-logo-brand-scale-invariant.mjs && node scripts/agent-logo-continuity-invariant.mjs && node scripts/agent-fab-hit-area-invariant.mjs",

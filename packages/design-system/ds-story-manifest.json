@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-07T14:35:52.993Z"
+    "generatedAt": "2026-09-08T00:39:24.226Z"
   },
   "components": {
     "accordion": {
@@ -684,7 +684,8 @@
           "design-system-components-dialog-展示--with-tabs-in-header",
           "design-system-components-dialog-展示--open-snapshot",
           "design-system-components-dialog-展示--focus-trap-with-concurrent-overlay",
-          "design-system-components-dialog-展示--focus-trap-control-no-dialog"
+          "design-system-components-dialog-展示--focus-trap-control-no-dialog",
+          "design-system-components-dialog-展示--coexistence-contract"
         ],
         "設計規格": [
           "design-system-components-dialog-設計規格--overview",
@@ -1793,5 +1794,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 969
+  "totalStories": 970
 }

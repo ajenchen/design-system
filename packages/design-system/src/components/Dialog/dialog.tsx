@@ -10,6 +10,7 @@ import { SurfaceHeader, SurfaceFooter, type SurfaceHeaderProps } from "@/design-
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
+import { useOverlayCoexistence } from "@/design-system/lib/overlay-coexistence"
 
 /**
  * Dialog (Modal) — Radix Dialog + 設計系統 token
@@ -65,12 +66,44 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
    * - true：高度隨內容，超過 viewport 時捲動（max-height 安全帽）。
    */
   autoHeight?: boolean
+  /**
+   * **並存區域**(opt-in,中性契約)。傳入之後,這個 Dialog 開著時**這些節點仍然可用**,
+   * 其餘一切被抑制(原生 `inert`,不支援時退回 `aria-hidden`)。不傳 = 行為與過去完全相同。
+   *
+   * 為什麼是「節點清單」而不是 `modality: 'partial'`:`partial` 不說「對誰部分」就沒有意義
+   * (跨模型審查 2026-09-08 的指正)。世界級前例是 Chakra 的 `persistentElements`。
+   *
+   * **本元件不認識 agent**:誰要保留由呼叫端決定,DS 元件不被產品概念汙染。
+   * 用途來自 agent 原則 v14 條 A/B(有 URL 的內容與 agent 並列可操作),
+   * 但契約本身對任何「常駐區域」都成立。
+   *
+   * ⚠️ 傳了它就必須同時把 `Dialog`(Root)設 `modal={false}` ——
+   * Radix 的 modal 分支寫死 `hideOthers(content)` 只保留 content、且無法傳白名單,
+   * 兩者並用會互相打架。
+   */
+  persistentElements?: () => Element[]
 }
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, maxWidth = '512px', autoHeight, children, style, ...props }, ref) => {
+>(({ className, maxWidth = '512px', autoHeight, persistentElements, children, style, ...props }, ref) => {
+  const contentRef = React.useRef<HTMLDivElement | null>(null)
+  const composedRef = React.useCallback((node: HTMLDivElement | null) => {
+    contentRef.current = node
+    if (typeof ref === 'function') ref(node)
+    else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+  }, [ref])
+  // 並存:保留集合 = 這個 Content + 呼叫端指定的常駐區域。
+  // 沒傳 persistentElements 時 keep 是 undefined,hook 直接 no-op,預設路徑一個位元不變。
+  const keep = React.useMemo(
+    () => (persistentElements
+      ? () => [contentRef.current, ...persistentElements()].filter((el): el is Element => !!el)
+      : undefined),
+    [persistentElements],
+  )
+  useOverlayCoexistence(!!persistentElements, keep)
+
   const insetCalc = `${DIALOG_INSET_VAR} * 2`
   const viewportH = `calc(100vh - ${insetCalc})`
   const maxWidthCss = typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth
@@ -100,7 +133,7 @@ const DialogContent = React.forwardRef<
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Content
-        ref={ref}
+        ref={composedRef}
         // Density:**全繼承 page**(layout-space + ui-size 都不自鎖)。2026-06-16 定論(撤回本 session 一度加的
         // data-layout-space="lg"):density.spec 第 10 行親自定義 layout-space 管「dialog body padding」——
         // Dialog 鎖死它 = override 自家 dial 對它點名要管的對象失效 = 自相矛盾。有同類 padding-density dial 的

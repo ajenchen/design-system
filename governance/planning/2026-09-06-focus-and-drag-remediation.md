@@ -133,7 +133,12 @@ Claude 三路 Phase A → codex 隔離 context 獨立提案 → 我方逐點反�
 | G4 | **差距 1 的現況不是「一起關掉」而是「半殘」,且已構成一筆 axe `aria-hidden-focus` 違規** | `aria-hidden/dist/es2015/index.js:131-133` 明文保留 `[aria-live]` 節點(附上游 issue 連結),而 `agent-panel.tsx:658` 正好有 `aria-live="polite"` → 訊息流逃過,但**兄弟節點**(標題列/輸入框/把手)被設 `aria-hidden="true"`,同時 `dismissable-layer` 設 `body{pointer-events:none}`,FocusScope 把焦點彈回。結果「看得到、讀得到、按不了、Tab 不進去」,而面板內控件**仍留在 tab order** = aria-hidden 節點內有可聚焦元素 | 高 |
 | G5 | **`aria-valuemax` 與實際上限不同源** | `agent-panel.tsx:198` 傳 `max={PANEL_WIDTH_MAX}`(=640,`:119`),但真正生效的是 `clampPanelWidth`(`:122-125`)= `min(640, floor(innerWidth/2))`。視窗 900 時實際上限 450,螢幕閱讀器卻念 **640**;按 End 元件宣稱跳 640、實際停 450 | 中 |
 
-**已浮現、待 user 拍板的產品/UI/UX 取捨(共識合成會再確認清單完整性)**
+**~~已浮現、待 user 拍板的產品/UI/UX 取捨~~ —— 已被下方「G 區」裁示取代(2026-09-08 標註)**
+
+> 這份清單是 2026-09-07 裁示**之前**的狀態,保留作歷史。第 1、2、4、5 項 user 當天就拍了板
+> (見下方 G 區逐字表),第 3、6 項轉入 G6 對辯。**不得再把這裡的項目當成待拍板** ——
+> 尤其第 2 項,user 的原話是「這題不是可以從我一開始的原則草案推導出來嗎…**本來就不該當成新決策問**」。
+> 機械防線:`scripts/decided-clause-downgrade-gate.mjs`(它就是抓到這份清單過時的那支)。
 
 1. 遮罩要不要蓋住 agent 那一欄(視覺語意:Material/Polaris 的整頁壓暗 vs VS Code/Copilot 的常駐區不壓暗)
 2. Modal 開著、agent 是關的時候,FAB 還能不能按開(A 條給「協作資格」,B 條說「agent 開啟且…」,兩條都沒回答「能不能新開」)
@@ -2021,6 +2026,59 @@ R1 可以撤掉的工作:確認期間保留 agent 互動、讓 agent 新浮層�
 
 **一個量測體質問題**:`agent-logo-continuity` 的 C2(跳幀)與機器負載耦合 ——
 與 storybook 建置同時跑時 24.1°(門檻 17.9°)紅,單獨跑兩次都是 12.1° 綠。已記錄,未修。
+
+## AD17 亡羊補牢的兩件實體:防線 + 並存 primitive
+
+### 一、防線:已定案條款不得被重新寫成「待拍板」
+
+memory 早有明文「禁把 §〇 條款降級成『未決』」,但那只是一句給人看的話,**沒有任何機械防線**。
+補上 `scripts/decided-clause-downgrade-gate.mjs` + `packages/governance/canonical/decided-clauses.json`（放這裡是因為 build graph 要求 canonical-source 必須在某個 stage 的 sources 內,而 `governance/` 樹底下沒有任何檔案在 sources 裡;`packages/governance/canonical/` 有,而且那也是 AGENTS.md 指名的 canonical 資料家）。
+
+判準**刻意用關鍵詞集合而不是語意相似** —— codex 自己在對辯裡就說了「regex 無法完整判定
+任意自然語言是否與某條款同義」。所以不做同義判斷,改用可審核的契約:
+一段文字同時 (a) 帶「待拍板」類請求語 (b) 命中某條款**全部** `allOf` (c) 命中**至少一個** `anyOf` → BLOCK。
+逃生口是 `<!-- reopened: <ref> — <user 原話逐字> -->`(user 本人要重開完全正當,
+但逐字原話是必要的 —— M36(a) 禁把自己的推論寫成 user 的決定)。
+
+**selftest 的 fixture 就是我 2026-09-08 真正寫出來的那句**,7/7 通過。
+跑全庫時它當場抓到一件真的:總帳 `:136` 那份「待 user 拍板的取捨」清單**已經過時** ——
+它的第 1、2、4、5 項在同一份文件 `:177` 的「G 區 user 2026-09-07 裁示」裡都拍過板了,
+尤其第 2 項 user 的原話正是「**本來就不該當成新決策問**」。已標為被 G 區取代(保留歷史,不刪)。
+
+寫這支時自己踩了一個坑:第一版只看前後 6 行判斷「這段是不是歷史/檢討」,
+於是**把 AD15 這種記錄失誤的段落判成違規**(檢討段落一定會引用當初寫錯的原文)。
+改成看**整條標題鏈**;只記最近一個標題也不行,`## AD15 …根因…` 底下的 `### 事實鏈` 會蓋掉它。
+
+### 二、並存 primitive:v14 條 A/B 的 DS 層落地
+
+`lib/overlay-coexistence.ts` —— `aria-hidden` 官方的 `suppressOthers([保留節點])`
+(第一個參數就收陣列;支援時走原生 `inert`,一次處理鍵盤、指標、無障礙樹)。
+`Dialog` 加中性 opt-in `persistentElements`,**不傳就完全是原本的 modal,一個位元不變**。
+
+**為什麼是「節點清單」而不是 `modality: 'partial'`**:codex 指出 `partial` 不說「對誰部分」
+就沒有意義。世界級前例是 Chakra 的 `persistentElements`(Fluent 的 `modalType` 只有
+full/non-modal 兩極,MUI 的 `disableEnforceFocus` 只解焦點鎖不解 AT 隱藏)。
+**DS 元件不認識 agent**:誰要保留由呼叫端決定,產品概念不進 DS。
+
+閘 `scripts/dialog-coexistence-invariant.mjs` **兩條路都驗**——
+只驗並存路徑的話,「把預設路徑一起弄壞」不會被發現:
+
+| 路 | 實測 |
+|---|---|
+| 並存:常駐區按鈕 | `focused=true inert=false ariaHidden=false` |
+| 並存:常駐區輸入框 | `focused=true inert=false` |
+| 並存:對話框自己 | `focused=true inert=false` |
+| 並存:**其餘背景仍被抑制** | `focused=false inert=true` |
+| **預設路徑(沒傳 persistentElements)** | 框外仍可用 **0/1** —— 照舊隔離 |
+
+判準用「真的能不能聚焦」而不是「有沒有 aria-hidden 屬性」:
+`suppressOthers` 在支援 inert 的瀏覽器用原生 inert、不支援才用 aria-hidden,
+驗屬性等於綁死實作,驗行為才是驗契約(M32)。
+
+### 差距 1 還沒完的部分(已寫進 v14 檔的表,不假裝做完)
+
+窄版層級(agent 蓋板 `z-20` vs Dialog `z-50` 會反過來擋 agent)、URL 註冊表、
+FileViewer 直接建 Radix Portal 且其 window keydown 只排除輸入框、Esc 依焦點所屬區分派。
 
 ## AD7 剩下兩項
 

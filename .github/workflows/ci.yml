@@ -70,6 +70,10 @@ jobs:
           node scripts/focus-geometry-invariant.mjs --selftest
           npm run test:interaction-ladder
           npm run test:drag-announcements
+          # 已定案條款不得被重新寫成「待拍板」。2026-09-08 我把 agent 原則 v14 已定案的
+          # 「有 URL 的內容與 agent 並存」重新交回去問 user,而 memory 早有明文禁止 ——
+          # 那條規則當時只是一句給人看的話,沒有機械防線。這支就是那道防線。
+          npm run test:decided-clause-downgrade
 
       - name: DataTable pixel invariants (browser)
         run: |
@@ -101,6 +105,9 @@ jobs:
           npm run test:drag-runtime
           npm run test:datepicker-typeable-open
           npm run test:shared-carrier-focus
+          # Dialog 並存契約:兩條路都驗 —— 預設路徑照舊隔離、並存路徑指定區域仍可用。
+          # 只驗後者的話「把預設路徑一起弄壞」不會被發現。
+          npm run test:dialog-coexistence
           # 兩支從「複現不出」轉成「再發生會被抓到」的閘(總帳 E1 / E2):
           # 虛擬捲動壓力(排序、捲動、視窗高度交錯,驗無例外**且畫面不空**)、
           # 「+N」不得溢出容器(107 story × 6 寬度 = 642 次量測)。兩支都自帶對照組。

@@ -1,4 +1,5 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+import { useCallback, useRef } from 'react'
 import { useState } from 'react'
 import type { Meta } from '@storybook/react'
 import { ChevronUp, ChevronDown, MoreVertical } from 'lucide-react'
@@ -612,4 +613,46 @@ export const FocusTrapControlNoDialog: Story = {
       <button type="button" id="poc-outside-after" className="w-40 rounded-md border border-border px-3 py-2">背景鈕(後)</button>
     </div>
   ),
+}
+
+/**
+ * 並存契約(`persistentElements`)—— 對照組式的兩欄:同一個 Dialog,
+ * 左邊是「一般背景」(該被抑制),右邊是「常駐區域」(該仍然可用)。
+ *
+ * 由來:agent 原則 v14 條 A/B —— 有 URL 的內容要能與常駐側欄並列可操作。
+ * Radix 的 modal 分支寫死 `hideOthers(content)` 只保留 content,做不到;
+ * `modal={false}` 又是三件全關。這個 story 驗的是中間那個狀態。
+ * 閘:`scripts/dialog-coexistence-invariant.mjs`(兩條路都驗)。
+ */
+export const CoexistenceContract: Story = {
+  name: '設計規格 — 並存區域(persistentElements)',
+  render: () => {
+    const Demo = () => {
+      const asideRef = useRef<HTMLDivElement | null>(null)
+      const keep = useCallback(() => (asideRef.current ? [asideRef.current] : []), [])
+      return (
+        <div className="flex h-[520px] gap-4">
+          <div className="flex flex-1 flex-col gap-3 rounded-md border border-border p-4">
+            <p className="text-body">一般背景(Dialog 開著時應該被抑制)</p>
+            <button type="button" id="coexist-background-btn" className="w-40 rounded-md border border-border px-3 py-2">背景鈕</button>
+            <Dialog defaultOpen modal={false}>
+              <DialogContent maxWidth={420} autoHeight persistentElements={keep}>
+                <DialogHeader title="有 URL 的內容" />
+                <DialogBody>
+                  <p className="text-body">右邊那一欄在這個對話框開著時仍然可以操作。</p>
+                  <button type="button" id="coexist-inside-btn" className="mt-3 rounded-md border border-border px-3 py-2">框內鈕</button>
+                </DialogBody>
+              </DialogContent>
+            </Dialog>
+          </div>
+          <div ref={asideRef} id="coexist-aside" className="flex w-[280px] flex-col gap-3 rounded-md border border-border p-4">
+            <p className="text-body">常駐區域(應該仍然可用)</p>
+            <button type="button" id="coexist-aside-btn" className="rounded-md border border-border px-3 py-2">常駐鈕</button>
+            <input id="coexist-aside-input" className="rounded-md border border-border px-3 py-2" placeholder="可以打字" />
+          </div>
+        </div>
+      )
+    }
+    return <Demo />
+  },
 }
