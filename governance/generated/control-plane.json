@@ -1614,7 +1614,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:5af5b826210bdf14546e4562ac3058305ead4690e8b21c581c98e73d529516f2",
+      "hash": "sha256:759c26482692f624c2b0a8400d167f71a6c10418c2bd570f1c2d42bdcd9ac973",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2056,12 +2056,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:e3697ed3f6bade660b02a8d64184b0281b3a1903d91b639e5867a794c0a26bff",
+      "hash": "sha256:58ed1f397a21add0a8cba9a469cbfd355a07e36d93725781fd378b9060b6cb01",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 19139,
+      "size": 19227,
       "type": "file"
     },
     {
@@ -2710,7 +2710,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 46,
-      "hash": "sha256:6bcd6defa8019c44bcfffa19626ea431ce56e68f296048cf4e21bd5daa585c8d",
+      "hash": "sha256:fbf2ef69bebbbbd72958d42719536ce6d0ce13576e558d7c48ce754e738c1eef",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3074,8 +3074,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 408,
-      "hash": "sha256:b5ec226c6a518fbafca0c88abfbc3510e22ee095fa3e16269480b01867ad4790",
+      "files": 409,
+      "hash": "sha256:46663dbde38dfb2111d011695ec67e14acf2996c4c69e45fe5e4cea0b163634d",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

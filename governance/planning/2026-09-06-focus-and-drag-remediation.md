@@ -2119,6 +2119,26 @@ Radix 的 `useEscapeKeydown` 在 **document 上用 capture** 監聽。我第一�
 這支閘的最後一條是「焦點在對話框內按 Esc,對話框**該關**」。
 沒有它的話,我大可以把 Esc 整個殺掉讓前一條變綠 —— 那會是把功能弄壞來換綠燈。
 
+## AD19 FileViewer 也接上並存,快捷鍵作用域一併修掉
+
+Codex 指出的兩件,都成立:
+
+**(1) 它不經 DS Dialog。** `file-viewer.tsx` 直接建 `DialogPrimitive.Root/Portal`,
+所以我在 Dialog 加的 `persistentElements` 對它完全無效。已加上**同一份契約、同一支 primitive**
+(`lib/overlay-coexistence.ts`),不各寫一份。
+
+**(2) 快捷鍵沒有作用域。** 舊判準是「排除 input / textarea / contentEditable,其餘一律接手」——
+在「檢視器是唯一可聚焦的東西」的年代看不出問題,但那是**被 modal 遮住而剛好沒事**,不是真的有作用域。
+一旦並存,在旁邊那一區的**按鈕**上按方向鍵就會切換檔案,而使用者的視線根本不在這裡。
+改成「事件來源必須在檢視器內」(焦點不在任何地方時仍接手 —— 那是剛開、還沒 autofocus 的一瞬間)。
+
+閘 `scripts/overlay-shortcut-scope-invariant.mjs` 兩條都驗:
+外面按方向鍵**不得**切檔案 / **裡面按仍然要切得動**。
+
+**寫這支閘時的一個坑**:第一版我自己 `document.createElement` 造一顆「外部鈕」來聚焦 ——
+但那顆節點不在保留集合裡,會被 `suppressOthers` inert 掉而聚焦不了。
+那樣測到的是「探針壞了」不是「作用域對了」。改用 story 裡真正的常駐區按鈕。
+
 ## AD7 剩下兩項
 
 | # | 卡在哪 |

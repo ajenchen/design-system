@@ -111,6 +111,9 @@ jobs:
           # 有 URL 的 modal 與 agent 並存 + Esc 分區:焦點在 agent 內按 Esc 不得跨區關掉
           # 舞台的 modal(agent-panel.spec.md:545 三條表);對照組驗焦點在 modal 內時仍然關得掉。
           npm run test:agent-modal-coexistence
+          # 浮層快捷鍵的作用域:焦點在檢視器外時方向鍵不得切換檔案,
+          # 對照組驗焦點在裡面時仍然切得動(否則就是把功能弄壞換綠燈)。
+          npm run test:overlay-shortcut-scope
           # 兩支從「複現不出」轉成「再發生會被抓到」的閘(總帳 E1 / E2):
           # 虛擬捲動壓力(排序、捲動、視窗高度交錯,驗無例外**且畫面不空**)、
           # 「+N」不得溢出容器(107 story × 6 寬度 = 642 次量測)。兩支都自帶對照組。

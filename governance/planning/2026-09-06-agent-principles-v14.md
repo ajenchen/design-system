@@ -98,7 +98,7 @@
 | 窄版層級 | **已解**(2026-09-08):agent 蓋板 `z-20` → `z-[60]`。實測面板祖先是 `position:relative; z-index:auto`(**不建立堆疊脈絡**),所以它直接跟 body portal 的 Dialog `z-50` 比大小 —— `z-20` 會反過來被 modal 蓋住。大小關係由 `agent-panel-breakpoint.mjs` **讀原始碼機械比對**,不靠註解 |
 | 窄版「宿主不可操作」涵蓋 portal | **已解**(2026-09-08):原本是「對兄弟節點設 inert」,只涵蓋宿主 DOM 內的節點,**body portal 出去的浮層完全不在裡面** —— 窄版時那個 modal 會既蓋在上面又可以操作。改用共用 primitive `suppressOthers([面板])`(保留這一塊、其餘全部抑制),portal 出去的也照樣被抑制 |
 | URL 註冊表 | **未解**:誰算「有 URL 的目的地」還沒有註冊機制;`persistentElements` 只是能力,呼叫端要有依據才知道何時傳 |
-| FileViewer | **未解**:它直接建 Radix Root/Portal(`file-viewer.tsx:954`),不經 DS Dialog,要另外接同一個 primitive;它的 window keydown(`:883`)只排除輸入框,並列後在常駐區按方向鍵 / `i` / `f` 仍會操作它 |
+| FileViewer | **已解**(2026-09-08):加上與 Dialog **同一份契約、同一支 primitive** 的 `persistentElements`(它直接建 Radix Root/Portal、不經 DS Dialog,只改 Dialog 會漏掉它);快捷鍵作用域從「排除輸入框」改成「事件來源必須在檢視器內」。舊判準在「檢視器是唯一可聚焦的東西」的年代看不出問題 —— 那是**被 modal 遮住而剛好沒事**,不是真的有作用域。閘 `scripts/overlay-shortcut-scope-invariant.mjs` 兩條都驗(外面不得生效 / 裡面仍然要生效)|
 | Esc 分派 | **已解**(2026-09-08):面板在 **`window` 的 capture 階段**攔 Esc(捕獲順序 window → document,結構上一定先於 Radix 的 document capture,不靠註冊順序的僥倖),焦點在面板內時 `preventDefault()`;Radix 的 `if (!event.defaultPrevented && onDismiss)` 因此不 dismiss。對照組驗焦點在 modal 內時仍然關得掉 |
 | 並存時的 outside dismiss | **已解**(2026-09-08):非模態分支會在「焦點跑到框外」時 dismiss —— 把焦點移進常駐區域就等於框外互動,對話框當場關掉(實測連 Esc 都還沒按)。Dialog 在有 `persistentElements` 時擋掉來自常駐區域的 `onFocusOutside` / `onPointerDownOutside` / `onInteractOutside` |
 

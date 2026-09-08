@@ -415,3 +415,42 @@ export const OpenSnapshot: Story = {
     })
   },
 }
+
+/**
+ * 並存區域(`persistentElements`)—— 與 Dialog 同一份契約、同一支 primitive。
+ *
+ * FileViewer **直接建 Radix Root/Portal**、不經 DS Dialog,所以只改 Dialog 會漏掉它
+ * (2026-09-08 跨模型審查指出)。這個 story 也是「快捷鍵作用域」的驗證場:
+ * 檢視器開著時,在右邊常駐區的按鈕上按方向鍵**不得**切換檔案。
+ * 閘:`scripts/overlay-shortcut-scope-invariant.mjs`。
+ */
+export const CoexistenceContract: Story = {
+  name: '並存 — 常駐區域仍可用',
+  tags: ['test-only'],
+  render: () => {
+    const [open, setOpen] = React.useState(true)
+    const [index, setIndex] = React.useState(0)
+    const asideRef = React.useRef<HTMLDivElement | null>(null)
+    const keep = React.useCallback(
+      () => (asideRef.current ? [asideRef.current as Element] : []),
+      [],
+    )
+    return (
+      <div className="flex h-[560px]">
+        <div className="flex-1" />
+        <FileViewer
+          files={jiraScreenshots}
+          open={open}
+          onOpenChange={setOpen}
+          index={index}
+          onIndexChange={setIndex}
+          persistentElements={keep}
+        />
+        <div ref={asideRef} id="fv-aside" className="flex w-[280px] shrink-0 flex-col gap-3 border-l border-divider p-4">
+          <p className="text-body">常駐區域</p>
+          <button type="button" id="fv-aside-btn" className="rounded-md border border-border px-3 py-2">常駐鈕</button>
+        </div>
+      </div>
+    )
+  },
+}
