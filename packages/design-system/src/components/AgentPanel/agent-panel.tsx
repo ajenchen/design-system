@@ -249,7 +249,43 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
       () => (rootRef.current ? [rootRef.current as Element] : []),
       [],
     )
-    useOverlayCoexistence(isOverlay, keepPanel)
+    // **量到之前不要動手**:`containerPx` 初值是 0,而 `resolveIsOverlay(0)` 會回 true
+    // (0 < 1080)。若不加這個條件,面板一掛載就先把整頁(含同時開著的對話框)抑制掉,
+    // 等量測回來才解除 —— 實測那一下足以讓對話框帶著 inert 卡住,框內按鈕永遠 focus 不進去。
+    // 量到 0 本來就不代表任何事(同 measure 裡的 `if (w > 0)` 那條)。
+    useOverlayCoexistence(containerPx > 0 && isOverlay, keepPanel)
+
+    // Esc 的作用域封閉在焦點所在區(`agent-panel.spec.md:545` 三條表,2026-09-07 訂):
+    //   焦點在面板內、面板內開著浮層 → 關那個最內層浮層,面板不動
+    //   焦點在面板內、面板內沒有浮層 → **什麼都不關**
+    //   焦點在面板外 → 關該區自己的浮層,**不跨區碰面板**
+    // 但 Radix 的 `useEscapeKeydown` 在 **document 上用 capture** 監聽,
+    // `dismissable-layer.tsx` 只把 Esc 送給「疊最上層」而**不看焦點在哪一區**。
+    // 後果:舞台上開著 modal 時,在 agent 輸入框打字按 Esc 會關掉那個 modal —— 正是跨區。
+    //
+    // 攔法:掛在 **`window`** 的 capture 階段。捕獲順序是 window → document → …,
+    // 所以它一定跑在 Radix 的 document capture 之前 —— 這是**結構上的先後**,
+    // 不是「誰先註冊誰先跑」那種靠掛載順序的僥倖。
+    // (第一版掛在 document 上,實測失敗:Dialog 在 JSX 裡排在面板前面,
+    //  它的監聽先註冊、先跑、先 dismiss,我的 preventDefault 根本來不及。)
+    // Radix 的 handler 寫著 `if (!event.defaultPrevented && onDismiss)` —— 看到已被
+    // preventDefault 就不會 dismiss。不用 `stopImmediatePropagation`,那會連別人的合法處理一起吃掉。
+    //
+    // ⚠️ 已知取捨:面板內若正開著**不搶焦點**的 Tooltip,這一下 Esc 也不會關它
+    //(上表第一列的邊角)。Tooltip 另有 blur / pointerleave 兩條關法,不是唯一出路。
+    // 會搶焦點的浮層(Popover / DropdownMenu / Dialog)因為焦點已經不在面板內,
+    // 這裡不攔,它們照樣被自己的 layer 關掉 —— 那正是第一列要的行為。
+    React.useEffect(() => {
+      const onKeyDownCapture = (event: KeyboardEvent) => {
+        if (event.key !== 'Escape') return
+        const panel = rootRef.current
+        const active = document.activeElement
+        if (!panel || !active || !panel.contains(active)) return
+        event.preventDefault()
+      }
+      window.addEventListener('keydown', onKeyDownCapture, { capture: true })
+      return () => window.removeEventListener('keydown', onKeyDownCapture, { capture: true })
+    }, [])
     const [uncontrolledWidth, setUncontrolledWidth] = React.useState(defaultWidth)
     const resolvedWidth = clampPanelWidth(width ?? uncontrolledWidth, containerPx)
 

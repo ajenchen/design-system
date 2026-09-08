@@ -2080,6 +2080,45 @@ full/non-modal 兩極,MUI 的 `disableEnforceFocus` 只解焦點鎖不解 AT 隱
 窄版層級(agent 蓋板 `z-20` vs Dialog `z-50` 會反過來擋 agent)、URL 註冊表、
 FileViewer 直接建 Radix Portal 且其 window keydown 只排除輸入框、Esc 依焦點所屬區分派。
 
+## AD18 並存真的走通了 —— 但過程中連撞四個坑,每個都會讓「看起來對」
+
+差距 1 的剩餘項做掉兩個(Esc 分派、並存時的 outside dismiss),
+`scripts/agent-modal-coexistence-invariant.mjs` 六條全過,含對照組。
+
+### 四個坑(依撞到的順序)
+
+**(1) Esc 攔不到 —— 掛錯層級**
+Radix 的 `useEscapeKeydown` 在 **document 上用 capture** 監聽。我第一版也掛 document capture,
+想靠「面板先掛載所以先註冊」贏 —— **實測輸了**:Dialog 在 JSX 裡排在面板前面,它先註冊先跑先 dismiss。
+改掛 **`window`**:捕獲順序是 window → document,這是**結構上的先後**,不是註冊順序的僥倖。
+
+**(2) `preventDefault` 生效了,對話框還是關了 —— 真兇根本不是 Esc**
+量到 `defaultPrevented=true`(我的攔截有跑),但對話框仍消失。
+真兇是非模態 Radix Dialog 的 **outside dismiss**:把焦點移進常駐區域就算「框外互動」,
+連 Esc 都還沒按就關掉了。修法是在有 `persistentElements` 時擋掉來自常駐區域的
+`onFocusOutside` / `onPointerDownOutside` / `onInteractOutside`。
+**教訓**:量到「我的攔截有生效」不等於「症狀的原因是我以為的那個」。
+
+**(3) 對話框把自己 inert 掉 —— 保留集合少了它自己**
+`suppressOthers([content, 常駐區])` 裡的 content 走 Portal,effect 跑的當下不一定在 DOM 裡,
+保留集合只剩常駐區 → **`role="dialog"` 自己帶上 `inert=true`**,框內按鈕永遠 focus 不進去。
+修法:抑制延後一個影格(rAF)再套,並用 state 承接節點讓 effect 重跑。
+
+**(4) 面板量到 0 就先把整頁抑制掉**
+`containerPx` 初值 0,而 `resolveIsOverlay(0)` 回 true(0 < 1080)——
+面板一掛載就以為自己是蓋板態,把整頁(含同時開著的對話框)抑制掉。
+加 `containerPx > 0 &&` 條件:量到 0 本來就不代表任何事(跟 measure 裡那條 `if (w > 0)` 同理)。
+
+**還有一個是我的 story 寫錯**:我把面板包在 `w-[400px]` 裡,它量到的宿主就是那 400px →
+判成蓋板態 → 又把整頁抑制掉。真實 AppShell 裡宿主是整個應用區。
+**這條特別值得記**:同一個症狀(對話框被 inert)在四個不同層都能發生,
+只有把每一次抑制**套用了幾次、保留了哪些節點**印出來才定得了案 —— 猜是猜不到的。
+
+### 對照組是必要的,不是形式
+
+這支閘的最後一條是「焦點在對話框內按 Esc,對話框**該關**」。
+沒有它的話,我大可以把 Esc 整個殺掉讓前一條變綠 —— 那會是把功能弄壞來換綠燈。
+
 ## AD7 剩下兩項
 
 | # | 卡在哪 |

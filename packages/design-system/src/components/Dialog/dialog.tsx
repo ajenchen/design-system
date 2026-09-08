@@ -88,9 +88,13 @@ const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
 >(({ className, maxWidth = '512px', autoHeight, persistentElements, children, style, ...props }, ref) => {
-  const contentRef = React.useRef<HTMLDivElement | null>(null)
+  // 用 **state** 而不是 ref 承接節點:並存的保留集合要「這個 Content + 常駐區域」,
+  // 而 effect 跑的時候 ref 可能還沒填 —— 實測就是這樣,保留集合只剩常駐區,
+  // **對話框自己被 inert 掉**(2026-09-08,對照組那一條當場紅)。
+  // state 一變 effect 就重跑,節點掛上的那一刻保留集合才完整。
+  const [contentEl, setContentEl] = React.useState<HTMLDivElement | null>(null)
   const composedRef = React.useCallback((node: HTMLDivElement | null) => {
-    contentRef.current = node
+    setContentEl(node)
     if (typeof ref === 'function') ref(node)
     else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
   }, [ref])
@@ -98,11 +102,35 @@ const DialogContent = React.forwardRef<
   // 沒傳 persistentElements 時 keep 是 undefined,hook 直接 no-op,預設路徑一個位元不變。
   const keep = React.useMemo(
     () => (persistentElements
-      ? () => [contentRef.current, ...persistentElements()].filter((el): el is Element => !!el)
+      ? () => [contentEl, ...persistentElements()].filter((el): el is Element => !!el)
       : undefined),
-    [persistentElements],
+    [persistentElements, contentEl],
   )
   useOverlayCoexistence(!!persistentElements, keep)
+
+  // 非模態分支會在「互動或焦點跑到框外」時 dismiss(`DialogContentNonModal` 追蹤
+  // `hasInteractedOutsideRef`)。並存的時候這正好會反咬:**把焦點移進常駐區域就等於框外互動**,
+  // 對話框當場關掉 —— 實測就是這樣,連 Esc 都還沒按(2026-09-08)。
+  // 所以常駐區域內的 outside 事件要擋掉。Radix 官方對這件事的機制是 `DismissableLayer.Branch`,
+  // 但那要求消費端把常駐區包起來;在這裡擋等價而且不強迫消費端改結構。
+  // 只在有傳 persistentElements 時掛,預設路徑仍然一個位元不變。
+  const insidePersistent = React.useCallback((node: EventTarget | null) => {
+    if (!persistentElements || !(node instanceof Node)) return false
+    return persistentElements().some((el) => el.contains(node))
+  }, [persistentElements])
+  const guardOutside = persistentElements
+    ? {
+        onPointerDownOutside: (e: CustomEvent<{ originalEvent: PointerEvent }>) => {
+          if (insidePersistent(e.detail.originalEvent.target)) e.preventDefault()
+        },
+        onFocusOutside: (e: CustomEvent<{ originalEvent: FocusEvent }>) => {
+          if (insidePersistent(e.detail.originalEvent.target)) e.preventDefault()
+        },
+        onInteractOutside: (e: CustomEvent<{ originalEvent: Event }>) => {
+          if (insidePersistent(e.detail.originalEvent.target)) e.preventDefault()
+        },
+      }
+    : {}
 
   const insetCalc = `${DIALOG_INSET_VAR} * 2`
   const viewportH = `calc(100vh - ${insetCalc})`
@@ -142,6 +170,7 @@ const DialogContent = React.forwardRef<
         // 「modal 要寬鬆」需求在 lg 階自然滿足(Polaris modal 16 = 世界級下限,證明 md 16 合格);「button 不撐高
         // header」由 ui-size 繼承 page 解決(button=page sm),與 layout-space 鎖不鎖無關 → 故不需鎖。
         onOpenAutoFocus={handleOpenAutoFocus}
+        {...guardOutside}
         className={cn(
           "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
           "flex flex-col bg-surface-raised rounded-lg border border-border",

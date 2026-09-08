@@ -99,7 +99,8 @@
 | 窄版「宿主不可操作」涵蓋 portal | **已解**(2026-09-08):原本是「對兄弟節點設 inert」,只涵蓋宿主 DOM 內的節點,**body portal 出去的浮層完全不在裡面** —— 窄版時那個 modal 會既蓋在上面又可以操作。改用共用 primitive `suppressOthers([面板])`(保留這一塊、其餘全部抑制),portal 出去的也照樣被抑制 |
 | URL 註冊表 | **未解**:誰算「有 URL 的目的地」還沒有註冊機制;`persistentElements` 只是能力,呼叫端要有依據才知道何時傳 |
 | FileViewer | **未解**:它直接建 Radix Root/Portal(`file-viewer.tsx:954`),不經 DS Dialog,要另外接同一個 primitive;它的 window keydown(`:883`)只排除輸入框,並列後在常駐區按方向鍵 / `i` / `f` 仍會操作它 |
-| Esc 分派 | **未解**:Radix 依全域最後入疊者分派,不看焦點所屬區 |
+| Esc 分派 | **已解**(2026-09-08):面板在 **`window` 的 capture 階段**攔 Esc(捕獲順序 window → document,結構上一定先於 Radix 的 document capture,不靠註冊順序的僥倖),焦點在面板內時 `preventDefault()`;Radix 的 `if (!event.defaultPrevented && onDismiss)` 因此不 dismiss。對照組驗焦點在 modal 內時仍然關得掉 |
+| 並存時的 outside dismiss | **已解**(2026-09-08):非模態分支會在「焦點跑到框外」時 dismiss —— 把焦點移進常駐區域就等於框外互動,對話框當場關掉(實測連 Esc 都還沒按)。Dialog 在有 `persistentElements` 時擋掉來自常駐區域的 `onFocusOutside` / `onPointerDownOutside` / `onInteractOutside` |
 
 | 2 | 面板關閉時整個卸載 | `agent-panel-fab.tsx:813` 起 Dock 預設開啟、關閉時卸載面板 —— 沒辦法保證 F 條「初始化為關閉」與 E 條「閱讀位置保存」 | **已解**(2026-09-07:`display:contents` keep-mounted;閘 `agent-panel-reopen-state.mjs`)|
 | 3 | 推擠與斷點還掛在 backlog | `agent-panel.spec.md:83` 明寫「面板與 app 的推擠/斷點 = backlog」—— B 條要落地,這一條得先解 | **已解**(2026-09-07:容器基準斷點 1080 + `resolvePanelWidthMax`;閘 `agent-panel-breakpoint.mjs`)|

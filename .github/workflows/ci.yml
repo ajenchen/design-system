@@ -108,6 +108,9 @@ jobs:
           # Dialog 並存契約:兩條路都驗 —— 預設路徑照舊隔離、並存路徑指定區域仍可用。
           # 只驗後者的話「把預設路徑一起弄壞」不會被發現。
           npm run test:dialog-coexistence
+          # 有 URL 的 modal 與 agent 並存 + Esc 分區:焦點在 agent 內按 Esc 不得跨區關掉
+          # 舞台的 modal(agent-panel.spec.md:545 三條表);對照組驗焦點在 modal 內時仍然關得掉。
+          npm run test:agent-modal-coexistence
           # 兩支從「複現不出」轉成「再發生會被抓到」的閘(總帳 E1 / E2):
           # 虛擬捲動壓力(排序、捲動、視窗高度交錯,驗無例外**且畫面不空**)、
           # 「+N」不得溢出容器(107 story × 6 寬度 = 642 次量測)。兩支都自帶對照組。

@@ -33,10 +33,18 @@ export type CoexistenceTargets = () => Element[]
 export function useOverlayCoexistence(active: boolean, keep: CoexistenceTargets | undefined) {
   React.useEffect(() => {
     if (!active || !keep) return
-    const targets = keep().filter((el): el is Element => !!el && el.isConnected)
-    // 一個保留節點都沒有時什麼都不做:抑制「除了空集合以外的一切」等於抑制整頁,
-    // 那會把浮層自己也關掉(2026-09-08 寫這支時第一個想到的失敗模式)。
-    if (targets.length === 0) return
-    return suppressOthers(targets)
+    let undo: (() => void) | undefined
+    // **等一個影格再套用**。保留集合通常含「浮層自己的 Content」,而 Content 走 Portal、
+    // 又可能被 Radix 的 Presence 包住延後掛載 —— effect 跑的當下它不一定在 DOM 裡。
+    // 少了它,`suppressOthers` 就會把**浮層自己**一起 inert 掉:實測 Dialog 的
+    // `role="dialog"` 節點自己帶上 inert=true,框內按鈕完全 focus 不進去(2026-09-08)。
+    // rAF 之後版面已經 commit 完,保留集合才是完整的。
+    const frame = requestAnimationFrame(() => {
+      const targets = keep().filter((el): el is Element => !!el && el.isConnected)
+      // 一個保留節點都沒有時什麼都不做:抑制「除了空集合以外的一切」等於抑制整頁。
+      if (targets.length === 0) return
+      undo = suppressOthers(targets)
+    })
+    return () => { cancelAnimationFrame(frame); undo?.() }
   }, [active, keep])
 }

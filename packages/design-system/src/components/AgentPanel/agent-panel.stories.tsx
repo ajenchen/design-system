@@ -23,6 +23,7 @@ import {
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
 import { AgentPanelDock } from './agent-panel-fab'
 import { Button } from '@/design-system/components/Button/button'
+import { Dialog, DialogContent, DialogHeader, DialogBody } from '@/design-system/components/Dialog/dialog'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Empty } from '@/design-system/components/Empty/empty'
@@ -544,3 +545,62 @@ export const LogoThinkStop: Story = {
   },
 }
 
+
+/**
+ * 並存 + Esc 分區(v14 條 A/B + `agent-panel.spec.md:545` 三條表)。
+ *
+ * 寬螢幕:有 URL 的 modal 與 agent **並列可操作**。Esc 的作用域封閉在焦點所在區 ——
+ * 焦點在 agent 內、agent 內沒有浮層時 Esc **什麼都不關**(不能跨區關掉舞台的 modal)。
+ * 閘:`scripts/agent-modal-coexistence-invariant.mjs`。
+ */
+export const ModalCoexistence: Story = {
+  name: '並存 — 有 URL 的 modal 與 agent 同時可用',
+  render: () => {
+    const Demo = () => {
+      const panelHostRef = React.useRef<HTMLDivElement | null>(null)
+      const keep = React.useCallback(
+        () => (panelHostRef.current ? [panelHostRef.current as Element] : []),
+        [],
+      )
+      return (
+        <div className="flex h-[560px] w-full">
+          <div className="relative flex min-w-0 flex-1 flex-col gap-3 p-[var(--layout-space-loose)]">
+            <p className="text-body">舞台(宿主內容)</p>
+            <button type="button" id="coexist-stage-btn" className="w-40 rounded-md border border-border px-3 py-2">舞台鈕</button>
+            <Dialog defaultOpen modal={false}>
+              <DialogContent maxWidth={420} autoHeight persistentElements={keep}>
+                <DialogHeader title="任務詳情(有 URL)" />
+                <DialogBody>
+                  <p className="text-body">這個對話框有自己的 URL,依 v14 條 A 取得協作資格。</p>
+                  <button type="button" id="coexist-modal-btn" className="mt-3 rounded-md border border-border px-3 py-2">框內鈕</button>
+                </DialogBody>
+              </DialogContent>
+            </Dialog>
+          </div>
+          {/* 面板必須是外層 flex 的**直接子節點**:它量的是自己的父層,
+              包一層 w-[400px] 的話它會以為容器只有 400px → 判成蓋板態 →
+              把整頁(含對話框)抑制掉(2026-09-08 寫這個 story 時當場踩到)。
+              寬度由面板自己的 --agent-panel-width 決定,不由外面包一層固定寬。 */}
+          <div ref={panelHostRef} className="contents">
+            <AgentPanel className="border-l border-divider">
+              <AgentPanelHeader title="任務助理" activeConversationId="c1" {...headerWiring} onClose={noop} />
+              <AgentConversation>
+                <AgentMessage role="agent">我在這裡,對話框開著也能用。</AgentMessage>
+              </AgentConversation>
+              <AgentPromptInput
+                value=""
+                onValueChange={noop}
+                onSubmit={noop}
+                attachments={[]}
+                onRemoveAttachment={noop}
+                onAddAttachment={noop}
+                placeholder="在這裡打字,按 Esc 不該關掉左邊的對話框"
+              />
+            </AgentPanel>
+          </div>
+        </div>
+      )
+    }
+    return <Demo />
+  },
+}
