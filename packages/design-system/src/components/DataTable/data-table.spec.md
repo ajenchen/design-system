@@ -330,7 +330,7 @@ DataTable 只管「column + data」;Loading / Error / Disabled-整表由 consume
 
 3-panel(left-pinned / center-scroll / right-pinned),center body 用 **native `overflow-x-auto`**(非 ScrollArea),header 透過 JS `onScroll` 同步 scrollLeft。**不用 `<ScrollArea>` 的理由**:Radix viewport nested div 會 break scrollLeft 同步;pinned column 需「左右獨立 scroll + 中央共享 scroll state」,單一 viewport 不適配。
 
-**Tech debt**:macOS auto-hide vs Windows/Linux 常駐 scrollbar,cross-OS 視覺寬度差異。**consumer 不得以 `::-webkit-scrollbar` override**(2026-09-05 撤回原「consumer 可 override」建議):裸 `::-webkit-scrollbar` 會把 overlay 捲軸強制變成佔版面的 classic 捲軸,正是缺陷 H 選用標準屬性 `scrollbar-width: thin` + `scrollbar-color` 的理由;要調整只能走 `--scrollbar-thumb` / `--scrollbar-track` 顏色 token。ScrollArea 重構列 post-v1。
+**Tech debt**:macOS auto-hide vs Windows/Linux 常駐 scrollbar,cross-OS 視覺寬度差異。**consumer 不得以 `::-webkit-scrollbar` override**(2026-09-05 撤回原「consumer 可 override」建議):裸 `::-webkit-scrollbar` 會把 overlay 捲軸強制變成佔版面的 classic 捲軸,正是缺陷 H 選用標準屬性 `scrollbar-width: thin` + `scrollbar-color` 的理由;要調整只能走 `--scrollbar-thumb` / `--scrollbar-track` 顏色 token。ScrollArea 重構列 post-v1。**機械閘**(2026-09-08):`scripts/data-table-scrollbar-visibility.mjs` 在任何機器上重現 Windows 幾何(拿掉 headless 的 `--hide-scrollbars` + 根規則造 17px / 11px 傳統捲軸、DPR 1–1.5、另跑原生 CSS 組),對每支 DataTable story 驗「捲動區完整在裁切框內、捲軸外側一半的像素真的是捲軸、slot 縮 1–3px 後不溢出」;`scripts/data-table-scroll-cost.mjs` 量每捲一步的強制排版次數。**未結**:user 在 Windows 回報「兩軸各半看不到」(2026-09-08),Mac 模擬重現不了,已修的是填滿高度時漏扣外框邊框的 2px(自 2026-04-30 起),完整歸因待 Windows 截圖與環境資料(Chrome/Edge 版本、OS 縮放、瀏覽器縮放、哪支 story)。
 
 ---
 

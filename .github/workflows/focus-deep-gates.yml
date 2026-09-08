@@ -59,6 +59,8 @@ jobs:
           # 對照組:把焦點視覺全部釘死,承擔者證明必須整批變紅。
           # 不跑這一步的話,「無框但都有承擔者」那個綠燈不算證據。
           node scripts/focus-geometry-browser-audit.mjs --selftest
+          node scripts/data-table-scrollbar-visibility.mjs
+          node scripts/data-table-scrollbar-visibility.mjs --selftest
 
       - name: Overflow indicator containment(all widths)+ control group
         run: |

@@ -604,3 +604,118 @@ export const ModalCoexistence: Story = {
     return <Demo />
   },
 }
+
+
+/**
+ * URL 註冊表示意 —— **假資料,只為了在 DS 內把 v14 條 A/B/C/D/E 的互動演出來。**
+ *
+ * v14 條 A:「URL 變得像是一種註冊器」——哪些內容有自己的 URL,就有資格與 agent 並存。
+ * 真正的註冊表在**產品／導航層**(R2/R3 歸屬:URL 資格、目的地、換／疊由產品組合層決定),
+ * DS 沒有也不該有;`persistentElements` 不讀 URL、不建立資格、不驗權限。
+ * 下面的 `FAKE_DESTINATIONS` 是示意用假資料,**模擬「系統已查回／已確認」的連結**(條 D 的正向條件)。
+ *
+ * 這個 story 實際證明的子集合(不宣稱 23 題全演):
+ *   A/B  點「有 URL 的 modal」→ 開在舞台上,agent 仍可打字(persistentElements)
+ *   A    「刪除專案」(沒有 URL)→ 一般確認框疊在上面,擋住一切**包含 agent**;取消後**原 modal 與 agent 恢復**
+ *   C    點「衝刺看板」→ 舞台換內容、模擬網址列跟著變;agent 不動
+ *   D    「自行生成未確認」的網址 → 純文字,不是 link、Tab 走不到
+ *   E    草稿跨導航／關合(header × → FAB 再開)保留
+ * 閘:`scripts/agent-url-registry-demo-invariant.mjs`
+ */
+type FakeDestination =
+  | { id: string; label: string; url: string; presentation: 'modal' | 'host' }
+  | { id: string; label: string; url: null; presentation: 'confirm' }
+
+// ⚠️ 假資料示意:真實產品的目的地註冊表住在導航層,不在 DS。這些是「模擬已查回、已確認」的連結。
+const FAKE_DESTINATIONS: readonly FakeDestination[] = [
+  { id: 'task-4821', label: '任務 #4821 修正登入逾時', url: '/tasks/4821', presentation: 'modal' },
+  { id: 'sprint-board', label: '衝刺看板', url: '/projects/8821/board', presentation: 'host' },
+  { id: 'delete', label: '刪除專案', url: null, presentation: 'confirm' },
+]
+
+export const UrlRegistryDemo: Story = {
+  name: '示意(假資料)— URL 註冊表:誰能與 agent 並存',
+  render: () => {
+    const Demo = () => {
+      type Stage = { host: { title: string; url: string }; modal: Extract<FakeDestination, { presentation: 'modal' }> | null; confirm: boolean }
+      const [stage, setStage] = React.useState<Stage>({ host: { title: '專案總覽', url: '/projects/8821' }, modal: null, confirm: false })
+      const [draft, setDraft] = React.useState('')
+      const [agentOpen, setAgentOpen] = React.useState(true)
+      const panelRef = React.useRef<HTMLDivElement | null>(null)
+      const keep = React.useCallback(() => (panelRef.current ? [panelRef.current as Element] : []), [])
+      const location = stage.modal ? stage.modal.url : stage.host.url
+      const go = (dest: FakeDestination) => {
+        if (dest.presentation === 'confirm') setStage((s) => ({ ...s, confirm: true }))
+        else if (dest.presentation === 'modal') setStage((s) => ({ ...s, modal: dest }))
+        else setStage({ host: { title: dest.label, url: dest.url }, modal: null, confirm: false })
+      }
+      return (
+        <div className="relative flex h-[600px] w-full">
+          <div className="relative flex min-w-0 flex-1 flex-col gap-3 p-[var(--layout-space-loose)]">
+            <p className="text-caption text-fg-muted">⚠️ 假資料示意:目的地註冊表只為了演出互動,不是 DS 的一部分;連結模擬「系統已查回、已確認」</p>
+            <p className="text-caption">模擬網址列:<code id="demo-location">{location}</code></p>
+            <h2 id="demo-stage-title" className="text-heading">{stage.host.title}</h2>
+            <div className="flex gap-2">
+              <button type="button" id="demo-open-confirm" className="rounded-md border border-border px-3 py-2" onClick={() => go(FAKE_DESTINATIONS[2])}>
+                刪除專案(沒有 URL → 確認框)
+              </button>
+            </div>
+            {stage.modal && (
+              <Dialog open persistentElements={keep} onOpenChange={(o) => { if (!o) setStage((s) => ({ ...s, modal: null })) }}>
+                <DialogContent maxWidth={440} autoHeight>
+                  <DialogHeader title={stage.modal.label} />
+                  <DialogBody>
+                    <p className="text-body">這個內容有自己的 URL(<code>{stage.modal.url}</code>),依條 A 取得協作資格;右邊的 agent 仍然可以用。</p>
+                    <input id="demo-modal-input" className="mt-3 rounded-md border border-border px-3 py-2" placeholder="modal 內也能打字" />
+                  </DialogBody>
+                </DialogContent>
+              </Dialog>
+            )}
+            {stage.confirm && (
+              <Dialog open onOpenChange={(o) => { if (!o) setStage((s) => ({ ...s, confirm: false })) }}>
+                <DialogContent maxWidth={400} autoHeight>
+                  <DialogHeader title="確定要刪除專案?" />
+                  <DialogBody>
+                    <p className="text-body">這個確認框沒有 URL,依條 A 阻擋其餘介面,包含 agent。取消後,原本開著的 modal 與 agent 都恢復。</p>
+                    <button type="button" id="demo-confirm-cancel" className="mt-3 rounded-md border border-border px-3 py-2" onClick={() => setStage((s) => ({ ...s, confirm: false }))}>取消</button>
+                  </DialogBody>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+          <div ref={panelRef} className="contents">
+            <AgentPanelDock open={agentOpen} onOpenChange={setAgentOpen} logoState="idle">
+              {({ close }) => (
+                <AgentPanel className="border-l border-divider">
+                  <AgentPanelHeader title="任務助理" activeConversationId="c1" {...headerWiring} onClose={close} />
+                  <AgentConversation>
+                    <AgentMessage role="agent">
+                      <p>我找到這幾個東西(點下去看舞台怎麼反應):</p>
+                      <ul className="mt-2 flex flex-col gap-1">
+                        {FAKE_DESTINATIONS.filter((d) => d.url).map((d) => (
+                          <li key={d.id}>
+                            <a href={d.url ?? '#'} id={`demo-link-${d.id}`} className="text-primary underline underline-offset-4" onClick={(e) => { e.preventDefault(); go(d) }}>
+                              {d.label}
+                            </a>
+                            <span className="ml-2 text-caption text-fg-muted">{d.presentation === 'modal' ? '有 URL 的 modal' : '內部頁面'}</span>
+                          </li>
+                        ))}
+                        <li>
+                          {/* 條 D:自行生成、系統沒確認過 → 純文字,不是 link,Tab 走不到 */}
+                          <span id="demo-unconfirmed" className="text-fg-muted">/projects/9999(未確認,純文字)</span>
+                        </li>
+                      </ul>
+                    </AgentMessage>
+                  </AgentConversation>
+                  <AgentPromptInput value={draft} onValueChange={setDraft} onSubmit={noop} attachments={[]} onRemoveAttachment={noop} onAddAttachment={noop}
+                    placeholder="打幾個字,再去點左邊的連結或關掉再開 —— 草稿不該消失(條 E)" />
+                </AgentPanel>
+              )}
+            </AgentPanelDock>
+          </div>
+        </div>
+      )
+    }
+    return <Demo />
+  },
+}

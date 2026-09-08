@@ -42,7 +42,8 @@ const PENDING = /待\s*(?:user|使用者|用戶)?\s*拍板|由\s*user\s*拍板|�
 // **要看最近的標題,不能只看前後幾行** —— 記錄失誤的段落一定會引用當初寫錯的原文,
 // 那些引文與標題之間常常隔了十幾行(2026-09-08 第一版就是這樣把自己的檢討段落判成違規)。
 const HISTORICAL = /撤回|已撤回|歷史|過時|superseded|retracted|曾經的待決題|禁把|不得再|根因|失誤|檢討|裁示|已答|已拍板|逐字保留/u
-const REOPEN = /<!--\s*reopened:\s*([a-z0-9.-]+)\s*—\s*(.+?)-->/iu
+// 重開標記必須帶「」逐字引文(M36(a)):沒有引文的 reopened 不算,任意一句話也不算
+const REOPEN = /<!--\s*reopened:\s*([a-z0-9.-]+)\s*—\s*[^>]*「[^」]+」[^>]*-->/iu
 
 const WINDOW = 6 // 前後各看幾行
 
@@ -71,10 +72,11 @@ export function scan({ clauses, files }) {
       }
       if (!PENDING.test(lines[i])) continue
       // 整條標題鏈上任一層是歷史/檢討 → 豁免,否則再看前後 6 行
+      // 豁免**只看標題鏈**:R3 實測「旁邊加一句無關的『已拍板』」就能讓前後 6 行的豁免放行,
+      // 那是可以被繞過的字面漏洞。標題鏈是作者刻意的結構,不是順手的字。
       if (stack.some((x) => HISTORICAL.test(x.text))) continue
       const from = Math.max(0, i - WINDOW)
       const window = lines.slice(from, i + WINDOW + 1).join('\n')
-      if (HISTORICAL.test(window)) continue
       const reopen = window.match(REOPEN)
       for (const c of clauses) {
         if (!c.allOf.every((k) => window.toLowerCase().includes(k.toLowerCase()))) continue
@@ -97,9 +99,14 @@ function selftest(clauses) {
   const real = '**G1 需要你拍一個板**(產品語意,不是技術問題):Modal 對話框開著時,**agent 面板該不該仍然可用?**'
   const cases = [
     ['我真正寫出來的那句 → 必須擋', [{ path: 'x.md', text: real }], true],
-    ['同一句但標明已撤回 → 放行', [{ path: 'x.md', text: '本段已撤回\n' + real }], false],
+    ['同一句但放在「已撤回」標題底下 → 放行', [{ path: 'x.md', text: '## 已撤回\n' + real }], false],
+    ['同一句只在前一行寫「已撤回」(不是標題)→ 仍要擋', [{ path: 'x.md', text: '本段已撤回\n' + real }], true],
     ['同一句但有 user 逐字重開 → 放行',
       [{ path: 'x.md', text: `<!-- reopened: ${A.ref} — user 2026-09-09:「這條我要重新想」 -->\n` + real }], false],
+    ['重開標記沒有「」逐字引文 → 仍要擋',
+      [{ path: 'x.md', text: `<!-- reopened: ${A.ref} — 我覺得可以重開 -->\n` + real }], true],
+    ['旁邊塞一句無關的「已拍板」不能當豁免 → 仍要擋',
+      [{ path: 'x.md', text: '另一件事已拍板。\n' + real }], true],
     ['重開標記指到別的條款 → 仍要擋',
       [{ path: 'x.md', text: '<!-- reopened: agent-v14.F-init-closed — user:「重想」 -->\n' + real }], true],
     ['只提 modal 沒提 agent → 不擋(不是這條)', [{ path: 'x.md', text: '這個 modal 的寬度待拍板' }], false],
@@ -120,8 +127,16 @@ function selftest(clauses) {
 const { clauses } = JSON.parse(readFileSync(REGISTRY, 'utf8'))
 if (process.argv.includes('--selftest')) process.exit(selftest(clauses) ? 1 : 0)
 
+// 已被取代(registry reason 含 Superseded)的文件是歷史,不是現行請求,整份跳過 ——
+// 例:2026-08-11 舊規格通篇是當年的「待拍板」語,它已被 v14 取代並在 registry 標明。
+let superseded = new Set()
+try {
+  const reg = JSON.parse(readFileSync(join(ROOT, 'governance/planning/registry.json'), 'utf8'))
+  superseded = new Set((reg.documents ?? []).filter((d) => /superseded/i.test(d.reason ?? '')).map((d) => d.path))
+} catch { /* 沒有 registry 就不跳過任何檔 */ }
 const files = SCAN_DIRS.flatMap((d) => walk(join(ROOT, d)))
   .map((p) => ({ path: relative(ROOT, p), text: readFileSync(p, 'utf8') }))
+  .filter((f) => !superseded.has(f.path))
 const problems = scan({ clauses, files })
 
 console.log(`掃了 ${files.length} 份文件,對照 ${clauses.length} 條已定案條款`)

@@ -298,7 +298,7 @@ MenuItem 的狀態色(default / hover / selected / disabled)是**結構性的**�
 
 以上鍵盤導覽由外層選單元件(SelectMenu 走 cmdk / DropdownMenu 走 Radix)own;MenuItem 為 internal layout primitive,不重複實作鍵盤行為。
 
-**Focus**:focus-visible 時以 `bg-neutral-hover` 背景高亮標示被聚焦的選項(cva base 為 `outline-none` + `focus-visible:bg-neutral-hover`),對齊 menu/listbox option active-highlight 慣例(Material `.Mui-focusVisible` 背景色 / Radix `data-highlighted` / cmdk `[data-selected]`),而非畫 outline ring;focus management 由外層元件 own。
+**Focus**:focus-visible 時以 `bg-neutral-hover` 背景高亮標示被聚焦的選項(cva base 為 `outline-none` + `focus-visible:bg-neutral-hover`),對齊 menu/listbox option active-highlight 慣例(MUI `.Mui-focusVisible` 背景色 —— 是 MUI,不是 Google Material Web / Radix `data-highlighted` / cmdk `[data-selected]`),而非畫 outline ring;focus management 由外層元件 own。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

@@ -405,7 +405,7 @@ TreeView 真實展示需要**多層巢狀結構**才有意義(單節點無法體
 - Enter / Space — 選取目前 node
 - Cmd/Ctrl+Shift+↑/↓/→/← — 重排目前 node(僅 `draggable` 時;上下 = 同層移動、→ = 移入 folder、← = 移出到上層,詳「鍵盤重排」段)
 
-**Focus**:焦點由元件自管(`aria-activedescendant` virtual focus,非 roving tabindex)——DOM focus 固定停在 tree 容器(單一 tab stop,root `tabIndex={0}`),鍵盤移動時 `aria-activedescendant` 指向目前 node,並用內描邊高亮標示(`ring-2 ring-ring ring-inset`,非 `outline`)。**無** focus trap、**無** focus restoration(tree 不是浮層,不需要)。
+**Focus**:焦點由元件自管(`aria-activedescendant` virtual focus,非 roving tabindex)——DOM focus 固定停在 tree 容器(單一 tab stop,root `tabIndex={0}`),鍵盤移動時 `aria-activedescendant` 指向目前 node,並用內描邊高亮標示(`focus-ring-inset` outline,2026-09-06 起不再是 box-shadow ring;原文 `ring-2 ring-ring ring-inset`,非 `outline`)。**無** focus trap、**無** focus restoration(tree 不是浮層,不需要)。
 
 **「單一 tab stop」範圍限樹的 node 導覽**:auto-render checkbox 與 consumer 傳入的 `checkbox` element 都由 TreeItem 正規化為 `aria-hidden` + `tabIndex={-1}`，只鏡像 treeitem 的 `aria-selected`、不佔 tab 序；但公開 `inlineActions` / `inlineActionsSlot` 經 `ItemInlineAction` 渲染的原生 `<button>` 是各自獨立的 tab stop(對齊 GitHub / VS Code 檔案樹「row action 可 Tab」慣例)。故當某列有 inline actions 時,整頁 Tab 序會依序停在這些按鈕上——「單一 tab stop」指的是**樹形節點導覽**進出點,非「整棵樹含 action 只有一個 tab 停靠」。
 

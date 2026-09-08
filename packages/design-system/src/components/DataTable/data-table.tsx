@@ -39,7 +39,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, Filter as FilterIcon, EyeOff, X as XIcon, GripVertical } from 'lucide-react'
 // **v15.0 Path B**(對齊 user 「source 留原位 / indicator 為 drop preview / 不 auto-shift」directive):
 // 砍 useSortable + SortableContext 用 useDraggable + useDroppable 分離 hooks(對齊 DS 內 TreeView SSOT)。
-import { DndContext, DragOverlay, useDraggable, useDroppable, useDndContext, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, MeasuringStrategy, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
+import { DndContext, DragOverlay, useDraggable, useDroppable, useDndContext, pointerWithin, rectIntersection, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent, type CollisionDetection } from '@dnd-kit/core'
 import { cn } from '@/lib/utils'
 import { ResizeHandle } from '@/design-system/patterns/resize-handle/resize-handle'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
@@ -784,8 +784,15 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
     setRowEl((node?.parentElement as HTMLDivElement) ?? null)
   }, [])
 
+  // 2026-09-08 捲動成本根因:原本依賴整個 `ctx` 物件,而 ctxValue 的 memo 依賴含 `handleAttrs`/
+  // `listeners`(每次 render 可能重建)→ 虛擬捲動每一步、每一列都重跑本 effect、各量兩次
+  // getBoundingClientRect(實測 roadmap story 每步 55 次,全 DataTable 捲動成本最大宗)。
+  // 改成只依賴用到的原始值;把手沒被 hover/拖曳時根本不渲染(下方 `!pos` return anchor),
+  // 所以掛載時也只在「可能可見」才量,其餘交給 data-hovered 的 MutationObserver 與拖曳狀態。
+  const ctxRole = ctx?.role
+  const ctxDragging = ctx?.isDragging ?? false
   React.useLayoutEffect(() => {
-    if (!rowEl || !ctx || ctx.role !== 'primary') return
+    if (!rowEl || ctxRole !== 'primary') return
 
     // Portal target = table outer 的 parent(保持 CSS variable / theme scope 繼承,
     // 不 portal 到 document.body — body 沒 theme tokens 會使 Button tertiary 變透明)
@@ -811,7 +818,7 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
       )
     }
 
-    update()
+    if (rowEl.hasAttribute('data-hovered') || buttonHovered || ctxDragging) update()
 
     // Observe row data-hovered changes(cross-region hover delegation 設置 dataset.hovered)
     const observer = new MutationObserver(update)
@@ -827,7 +834,7 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
       // listener, but their hidden handles do not need rect reads. Without this guard a
       // 50-row virtual window scheduled 50 rAF callbacks + getBoundingClientRect calls
       // for every scroll frame even though only one handle can be visible.
-      if (!rowEl.hasAttribute('data-hovered') && !buttonHovered && !ctx.isDragging) return
+      if (!rowEl.hasAttribute('data-hovered') && !buttonHovered && !ctxDragging) return
       if (scrollRafId) cancelAnimationFrame(scrollRafId)
       scrollRafId = requestAnimationFrame(() => {
         scrollRafId = 0
@@ -843,7 +850,7 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
       window.removeEventListener('scroll', onScroll, true)
       window.removeEventListener('resize', onScroll)
     }
-  }, [rowEl, ctx, buttonHovered])
+  }, [rowEl, ctxRole, ctxDragging, buttonHovered])
 
   // 永遠 render anchor span(讓 anchorRef 可拿到 row element)。
   // A3 fix(2026-05-05):顯式 `top:0 left:0 pointer-events:none` — 雖 width/height=0 不該佔
@@ -1459,7 +1466,10 @@ function DataTableInner<TData>(
   // (1) 每次 render 後量 — 列數變(分頁 / 篩選 / 展開巢狀 / 載入資料)時捲軸出現或消失,
   //     這類變化不一定改變被觀察元素的 box size,ResizeObserver 未必送通知。
   // (2) ResizeObserver — 容器尺寸變(視窗、面板拖曳寬度)不經 re-render 也要跟上。
-  React.useLayoutEffect(measureScrollbarGutters)
+  // 2026-09-08:只在掛載時量一次;之後由下面的 ResizeObserver 接手(捲軸出現/消失會改 content box,
+  // RO 會 fire)。原本無依賴 → **每次 render 都讀 clientWidth/offsetHeight**(強制 layout),
+  // 捲動時虛擬列一換就 render、就量 —— 是「上一次大修正後變慢」的一半元兇。
+  React.useLayoutEffect(measureScrollbarGutters, [measureScrollbarGutters])
   React.useLayoutEffect(() => {
     const body = centerBodyRef.current
     if (!body) return
@@ -1572,9 +1582,19 @@ function DataTableInner<TData>(
         ? barEl.getBoundingClientRect().height +
           (parseFloat(getComputedStyle(barEl.parentElement as Element).rowGap) || 0)
         : 0
-      const next = Math.max(0, slotH - headerH - barFootprint)
-      // Diff guard < 4px(濾 micro-step,real resize δ 必 ≫ 4px)
-      if (lastValue != null && Math.abs(next - lastValue) < 4) return
+      // 2026-09-08 填滿高度(fill-height)的外框邊框預算修正:slotH 是 outer 所在 slot 的高,而
+      // outer 帶 `border`(預設上下各 1px;`bordered={false}` 時 computed 為 0,不會多扣);header +
+      // body 住在 outer 的 content box 裡,不扣的話三個區塊比可用高度多 2px,底部被外框
+      // `overflow:hidden` 裁掉 —— 裁在水平捲軸上(實測 roadmap story 區塊 692 / 父層 690;公式自
+      // 29c5221a 2026-04-30 起就沒扣過)。**這只解釋底部 2px**,不構成 user 回報的 Windows「兩軸各半」
+      // 的完整歸因(該症狀在 Mac 模擬 Windows 幾何重現不了,待實機截圖;Codex R4 2026-09-08 同判)。
+      const outerCs = getComputedStyle(tableRef.current)
+      const borderY = (parseFloat(outerCs.borderTopWidth) || 0) + (parseFloat(outerCs.borderBottomWidth) || 0)
+      const next = Math.max(0, slotH - headerH - barFootprint - borderY)
+      // 只濾次像素雜訊(2026-09-08 收緊;原 `< 4px` 守衛會把 slot 縮小 1–3px 整個丟掉 → 區塊比
+      // 可用高度多 1–3px、底部被外框裁掉,跟漏扣邊框是同一種病)。settle 期的多次微變由下方
+      // 100ms stability window 合併,不需要靠丟值。閘:`data-table-scrollbar-visibility.mjs` 動態縮高案例。
+      if (lastValue != null && Math.abs(next - lastValue) < 0.5) return
       lastValue = next
       pendingValue = next
       // Stability window 100ms:layout 連續 100ms 無變才 setState
@@ -1969,7 +1989,7 @@ function DataTableInner<TData>(
   const sharedRowHeightsRef = React.useRef(sharedRowHeights)
   sharedRowHeightsRef.current = sharedRowHeights
 
-  const syncSharedRowHeights = React.useCallback(() => {
+  const syncSharedRowHeights = React.useCallback((full = true) => {
     const prev = sharedRowHeightsRef.current
     if (!anyAutoRow || !multiRegion) {
       if (prev.size) setSharedRowHeights(new Map())
@@ -1980,16 +2000,21 @@ function DataTableInner<TData>(
       if (prev.size) setSharedRowHeights(new Map())
       return
     }
-    const els: HTMLElement[] = []
-    for (const panel of panels) els.push(...panel.querySelectorAll<HTMLElement>('[data-row-auto][data-row-index]'))
+    const all: HTMLElement[] = []
+    for (const panel of panels) all.push(...panel.querySelectorAll<HTMLElement>('[data-row-auto][data-row-index]'))
+    // 2026-09-08 增量:捲動只會讓**新進視窗**的列需要量,已量過的列高度不會因為捲動而變。
+    // 原本每次都清掉所有列的 minHeight → 逐列 getBoundingClientRect → 寫回,一趟三次 layout,
+    // 且掛在無依賴的 layoutEffect 上每次 render 都跑 —— 火焰圖裡 getBoundingClientRect 佔最大宗。
+    // full=true(掛載 / 尺寸 / 字型 / 資料或欄寬變動)才全量重量。
+    const els = full ? all : all.filter((el) => !prev.has(Number(el.dataset.rowIndex)))
     if (els.length === 0) {
-      if (prev.size) setSharedRowHeights(new Map())
+      if (full && prev.size) setSharedRowHeights(new Map())
       return
     }
     // 先存下現有 inline min-height(React 認為它已經寫上去了,不會替我們補寫回來),再整批清空。
     const saved = els.map((el) => el.style.minHeight)
     for (const el of els) el.style.minHeight = ''
-    const next = new Map<number, number>()
+    const next = full ? new Map<number, number>() : new Map(prev)
     for (const el of els) {
       const idx = Number(el.dataset.rowIndex)
       if (!Number.isFinite(idx)) continue
@@ -2005,7 +2030,17 @@ function DataTableInner<TData>(
     setSharedRowHeights(next)
   }, [anyAutoRow, multiRegion])
 
-  React.useLayoutEffect(() => { syncSharedRowHeights() })
+  // 2026-09-08:只在虛擬視窗換列、列數、欄寬、尺寸變動時跑,而且捲動那條走增量。
+  // 原本 `useLayoutEffect(() => sync())` 無依賴 = 每次 render 全量重量,是變慢的另一半元兇。
+  const virtualItemsForSync = virtualizer.getVirtualItems()
+  const virtualRangeKey = virtualItemsForSync.length
+    ? `${virtualItemsForSync[0].index}:${virtualItemsForSync[virtualItemsForSync.length - 1].index}`
+    : ''
+  React.useLayoutEffect(() => { syncSharedRowHeights(false) }, [syncSharedRowHeights, virtualRangeKey])
+  // 全量重量的觸發用 `rows` 本身而不是 `rows.length`:同筆數但內容變短(編輯 / 排序 / 換頁換資料)
+  // 時舊的 minHeight 會把列撐住、ResizeObserver 不會因「自然內容變短」而觸發,增量路徑又只量新列,
+  // 列高就永遠縮不回去(Codex R4 2026-09-08 反例)。TanStack 的 rows 只在資料/狀態變時換身分。
+  React.useLayoutEffect(() => { syncSharedRowHeights(true) }, [syncSharedRowHeights, rows, columnSizingState, size])
   React.useEffect(() => {
     if (!anyAutoRow || !multiRegion) return
     // 換行取決於欄寬,欄寬取決於容器寬 —— 容器寬變了就要重算(視窗、面板拖曳、字型載入)。
@@ -4070,10 +4105,12 @@ function DataTableInner<TData>(
     return (
       <DndContext
         sensors={dndSensors}
-        // **v15.8 fix**:virtualized rows mount/unmount 期間 droppable rect cache stale →
-        // rectIntersection 找不到 over → indicator/reorder 不 fire。改 `Always` 每次 collision
-        // detection 都 re-measure droppables(SSOT 對齊 dnd-kit virtualized list canonical)。
-        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+        // 量測策略用 dnd-kit 預設 `WhileDragging`(2026-09-08 撤回 v15.8 的 `Always`):
+        // `Always` 讓 dnd-kit 在**沒有拖曳**時也於每次 droppable 集合變動(虛擬捲動每步都有列
+        // 掛載/卸載)重量全部 droppable —— 實測 roadmap story 每捲一步 41 次 getBoundingClientRect。
+        // v15.8 想用它解的「虛擬列 rect 過期」問題,`dndCollisionDetection` 的註解早已記載
+        // `Always` 沒效、真正解法是 cursor 對 live DOM 的 fallback;而 `WhileDragging` 在拖曳中
+        // 遇到 droppable 集合變動一樣會重量,拖曳行為不變。閘:`scripts/data-table-scroll-cost.mjs`。
         collisionDetection={dndCollisionDetection}
         // **v15.11 Ghost-cursor SSOT 復活**:
         // - `snapToCursorModifier`(drag-visual.ts):ghost top-left 永遠對齊 cursor 位置,

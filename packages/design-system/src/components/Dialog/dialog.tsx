@@ -29,7 +29,21 @@ import { useOverlayCoexistence } from "@/design-system/lib/overlay-coexistence"
  * autoHeight（boolean）：高度隨內容，超過 viewport 時 max-height 安全帽。
  */
 
-const Dialog = DialogPrimitive.Root
+// 並存設定**一次到位**:在 Root 傳 `persistentElements`,Root 自動走 `modal={false}`,
+// Content 由 context 拿到保留集合。不再要求消費者同時改兩個地方(Content 的 opt-in 與
+// Root 的 modal 互相打架 —— 忘了 `modal={false}` 時 Radix 仍執行 hideOthers(content),
+// 保留區不會變可用;跨模型審查 2026-09-08 R3 指出)。FileViewer 已是同款自動推導。
+const DialogCoexistContext = React.createContext<(() => Element[]) | undefined>(undefined)
+type DialogRootProps = React.ComponentProps<typeof DialogPrimitive.Root> & {
+  /** 並存區域(中性契約):這個對話框開著時仍然可用的節點。傳了就自動非模態。 */
+  persistentElements?: () => Element[]
+}
+const Dialog = ({ persistentElements, modal, ...props }: DialogRootProps) => (
+  <DialogCoexistContext.Provider value={persistentElements}>
+    <DialogPrimitive.Root modal={persistentElements ? false : modal} {...props} />
+  </DialogCoexistContext.Provider>
+)
+Dialog.displayName = 'Dialog'
 const DialogTrigger = DialogPrimitive.Trigger
 const DialogPortal = DialogPrimitive.Portal
 const DialogClose = DialogPrimitive.Close
@@ -87,7 +101,9 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, maxWidth = '512px', autoHeight, persistentElements, children, style, ...props }, ref) => {
+>(({ className, maxWidth = '512px', autoHeight, persistentElements: persistentElementsProp, children, style, ...props }, ref) => {
+  const persistentElementsCtx = React.useContext(DialogCoexistContext)
+  const persistentElements = persistentElementsProp ?? persistentElementsCtx
   // 用 **state** 而不是 ref 承接節點:並存的保留集合要「這個 Content + 常駐區域」,
   // 而 effect 跑的時候 ref 可能還沒填 —— 實測就是這樣,保留集合只剩常駐區,
   // **對話框自己被 inert 掉**(2026-09-08,對照組那一條當場紅)。
@@ -106,7 +122,10 @@ const DialogContent = React.forwardRef<
       : undefined),
     [persistentElements, contentEl],
   )
-  useOverlayCoexistence(!!persistentElements, keep)
+  // 只在 **Content 真的掛著** 時抑制(contentEl 非 null)。用 `!!persistentElements` 的話,
+  // controlled `open=false` 期間 Content 已卸載但這個 wrapper 元件仍在,抑制不會解除 ——
+  // 實測初始關閉 / 開→關 背景仍 inert(R3 生命週期反例)。
+  useOverlayCoexistence(!!persistentElements && !!contentEl, keep)
 
   // 非模態分支會在「互動或焦點跑到框外」時 dismiss(`DialogContentNonModal` 追蹤
   // `hasInteractedOutsideRef`)。並存的時候這正好會反咬:**把焦點移進常駐區域就等於框外互動**,
@@ -172,7 +191,10 @@ const DialogContent = React.forwardRef<
         onOpenAutoFocus={handleOpenAutoFocus}
         {...guardOutside}
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
+          // 並存面(有 persistentElements)降到 z-40:窄版時常駐區(AgentPanel 蓋板 z-[45])要蓋在
+          // **它**上面;沒有 URL 的一般確認框維持 z-50,必須蓋在常駐區上面(v14 條 A)。
+          persistentElements ? "fixed left-1/2 top-1/2 z-40 w-full -translate-x-1/2 -translate-y-1/2"
+                             : "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
           "flex flex-col bg-surface-raised rounded-lg border border-border",
           surfaceMotion,
           "data-[state=open]:animate-in data-[state=closed]:animate-out",

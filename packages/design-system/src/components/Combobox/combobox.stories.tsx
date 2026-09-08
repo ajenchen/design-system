@@ -40,7 +40,6 @@ export const Modes: Story = {
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
           <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="類別(edit mode demo)" />
-          <Button variant="text" size="xs" onClick={() => setValue(['electronics', 'food', 'lifestyle'])}>重設編輯模式</Button>
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">view</h3>
@@ -69,7 +68,6 @@ export const Modes: Story = {
     await waitFor(() => expect(canvas.getByRole('button', { name: '移除 Lifestyle' })).toHaveFocus())
     await userEvent.click(canvas.getByRole('button', { name: '移除 Lifestyle' }))
     await waitFor(() => expect(canvas.getByRole('combobox', { name: '類別(edit mode demo)' })).toHaveFocus())
-    await userEvent.click(canvas.getByRole('button', { name: '重設編輯模式' }))
   },
 }
 

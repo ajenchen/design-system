@@ -94,7 +94,7 @@ A 內容資格 / B 呈現 / C 導航 / D 連結責任 / E 持續使用 / F 生�
 > **2026-09-08 補**:v14 定稿後**只存在於 scratchpad 的 HTML 檔,repo 內沒有副本** ——
 > 這一行當時只寫得出「權威 = v14 的七條」,寫不出它在哪。後果是 2026-09-08 我回頭處理
 > 落地差距第 1 項時,repo 能告訴我的只有「舊規格過時、不得引用」,取代它的權威讀不到,
-> 於是把**已定案**的條款重新寫成「待 user 拍板」。**已落地為上方檔案,這一行現在指得到東西。**
+> 於是把**已定案**的條款重新寫成「要 user 重新決定」。**已落地為上方檔案,這一行現在指得到東西。**
 
 | # | 差距 | 錨點(2026-09-07 逐一核對無誤)|
 |---|---|---|
@@ -136,7 +136,7 @@ Claude 三路 Phase A → codex 隔離 context 獨立提案 → 我方逐點反�
 **~~已浮現、待 user 拍板的產品/UI/UX 取捨~~ —— 已被下方「G 區」裁示取代(2026-09-08 標註)**
 
 > 這份清單是 2026-09-07 裁示**之前**的狀態,保留作歷史。第 1、2、4、5 項 user 當天就拍了板
-> (見下方 G 區逐字表),第 3、6 項轉入 G6 對辯。**不得再把這裡的項目當成待拍板** ——
+> (見下方 G 區逐字表),第 3、6 項轉入 G6 對辯。**不得再把這裡的項目當成沒定案的題目** ——
 > 尤其第 2 項,user 的原話是「這題不是可以從我一開始的原則草案推導出來嗎…**本來就不該當成新決策問**」。
 > 機械防線:`scripts/decided-clause-downgrade-gate.mjs`(它就是抓到這份清單過時的那支)。
 
@@ -2154,3 +2154,117 @@ Codex 指出的兩件,都成立:
 且 v14 自己就寫著「這三個(落地差距)都**不是產品選擇**,是現況擋著原則落不了地」。
 
 agent 鍵盤往返:user 已裁示 backlog。
+
+## AD20 用滑鼠開 Select 就出現鍵盤焦點框 —— 根因是「有游標就畫框」,沒看輸入模態
+
+user:「為何我用滑鼠一開select選單明明就沒有鍵盤操作,卻會直接出現鍵盤焦點?整個ds到底有多少類似問題的地方?」
+
+**根因**:虛擬游標(`aria-activedescendant` / cmdk 的 `data-selected` / Radix 的 highlighted item)一落在項目上,
+我們就畫鍵盤焦點框 —— 但「游標在哪」跟「使用者是不是在用鍵盤」是兩件事。瀏覽器對真焦點用
+`:focus-visible` 的啟發式(最後一次互動是鍵盤且無 meta/alt/ctrl → 鍵盤模態),虛擬游標沒有這個機制,
+所以 DS 得自己判。
+
+**修法(單一 primitive,五個消費者)**:`hooks/use-input-modality.ts` 在模組載入時就掛 document capture
+的 keydown / pointerdown 監聽,記住最後一次輸入模態;第一次訂閱時若還沒觀察到任何輸入,用
+`document.activeElement.matches(':focus-visible')` 當種子(否則 story 一載入、還沒碰任何東西就判錯)。
+消費者:SelectMenu(`select-menu.tsx:493`)、DropdownMenu Item / RadioItem、TreeView(`keyboardModality`
+進 context)、AgentPanel HistoryRow —— 全部改成「游標在此 **且** 鍵盤模態」才畫框。
+規則寫進 `focus-canonical.md` 規則二:「虛擬游標的框,同樣只在鍵盤模態下畫」(引 WICG focus-visible explainer)。
+
+閘:`scripts/virtual-cursor-modality-invariant.mjs` —— 滑鼠開 Select / DropdownMenu / TreeView / AgentPanel
+歷史面板 → 不得有框;按一次方向鍵 → 必須有框。**坑**:DropdownMenu 的 Radix 一開游標落在第一項不是勾選項,
+第一版閘假設落在勾選項,綠的是假的,改成用 ArrowDown 走到目標再量。
+
+## AD21 Codex R3 抓到的三條真 bug,已落地
+
+(1) 並存 primitive 在 `containerPx = 0`(面板尚未量到尺寸)時就把宿主 inert 掉 → 補 `active` 閘門;
+(2) agent 蓋板 `z-[60]` 會把**不並存**的一般 modal 也蓋掉 → 拆三層 `40 < 45 < 50`(v14 表已更正);
+(3) Esc 守衛在 tooltip 開著時會把 tooltip 的 Esc 也吃掉 → 有 `[role="tooltip"]` 時放行;
+(4) TreeView 的模態判斷原本傳 ref,改傳 boolean 進 context。
+
+## AD22 DataTable 捲軸在 Windows「各半看不到」—— 歷史、能證明的、不能證明的
+
+user(兩次):「經過上一次的大修正之後,在windows系統上,水平和垂直捲軸都會溢出,水平捲軸下方有一半的視覺都溢出看不到,
+垂直捲軸右邊有一半的視覺都溢出看不到,此問題以前也曾經發生過…仔細研究github歷史…重現不了…問codex」
+
+**歷史**(`git log -S` 逐條):
+- Bug H(2026-04-30 討論、05-07 v15.13)症狀跟現在一字不差(`2026-05-18-phaseB-codex-reply.md:2507`)。
+  當年記的根因「圓角外框裁原生捲軸」和 interim 修法 `::-webkit-scrollbar:horizontal{10px}` **都沒在 Windows 驗過**
+  (那份 memory 自己寫「我猜」「下一步:Windows VM 或請 user 截圖」)。
+- 高度公式 `slotH − headerH` 自 29c5221a(2026-04-30)起就**沒扣過外框自己的上下邊框**(e524dc99 換成量 parent slot、
+  eff41482 加分頁列,都沒扣);外框 `rounded-md overflow-hidden` + 預設有框自 2026-03-30 就在。
+  → 區塊比可用高度多 2px,底部被外框裁掉,裁在水平捲軸上(實測 roadmap story 692 / 690)。**這不是九月大修引入的。**
+- 0374642a(2026-09-04)刪掉整組 webkit 規則、改成對所有瀏覽器套 `scrollbar-width: thin` + `scrollbar-color`。
+  Windows Chrome 從 `auto/auto` 變 `thin/指定色`(厚度 × 2/3),corner 樣式路徑也變 —— 這是 user 感知「大修之後變了」的候選,
+  但**不能推出兩軸各半**。
+
+**做了什麼**:
+- `compute()` 扣 `borderY`(命名為「填滿高度時漏扣外框邊框的預算修正」,`bordered={false}` 時 computed 0 不會多扣);
+  舊 `<4px` 守衛改成只濾次像素雜訊(它會把 slot 縮 1–3px 整個丟掉,跟漏扣邊框同病)。
+- 閘 `scripts/data-table-scrollbar-visibility.mjs`:43 支 story × 5 組幾何(17px / 11px / DPR 1.25 / 1.5 / 原生 CSS)×
+  頂中底三位置 = 240 次檢查,驗裁切框包含 + hit-test + **外側一半像素真的是捲軸色**(抓 `pointer-events:none` 遮蓋)+
+  slot 縮 1/2/3px 不溢出。對照組兩條:加高 2px → 裁切紅;`pointer-events:none` 白色遮蓋 → hit-test 仍綠、像素紅。
+  PR 閘跑 17px + 原生兩組,全矩陣在 `focus-deep-gates.yml`。
+- 探針自己踩的兩個坑進 M32(e)(f):Playwright headless 預設 `--hide-scrollbars`(五個月沒人量到就是它);
+  同頁兩張表 `scrollIntoView` 後舊座標截到全白。
+
+**撤回的兩個假設**(都是我先猜、讀原始碼後不成立):
+- 「Windows Fluent 細捲軸把拇指畫偏」—— Blink `scrollbar_theme_fluent.cc` 拇指置中、`kThinProportion = 2/3` 只是厚度。
+- 「0374642a 讓 Chrome 從自繪切回原生」—— Codex R4:舊 CSS 少了不帶方向偽類的根規則 `::-webkit-scrollbar{}`,
+  根本沒建立過 CustomScrollbar,所以之前就是原生;css 註解「整套從沒生效」也是過度概括(corner 走獨立路徑),已改寫。
+
+**Codex R4 verdict**(`$TMPDIR/codex/r4-windows-scrollbar-reply.md`):候選 (a)–(g) 沒有一個能解釋「沿整條捲軸各半」;
+圓角在 4px 半徑、1px 邊框下每個角只削 1.93px²(占 17×17 corner 的 0.67%);borderY 可保留但只能宣稱修底部 2px;
+`thin` 不是 AG Grid / MUI / Polaris 的共同做法(三家各自另立捲軸 viewport,沒有人拿標準 `thin` 當解),維持現狀但不升格為永久最佳。
+**未知、需 Windows 實機才能定**:缺的是整條 thumb/track、還是箭頭/corner/釘選裝飾帶;Chrome/Edge 版本、Aura/Fluent、OS 縮放、
+瀏覽器縮放;哪支 story / consumer、有無右釘選、height 模式;consumer 有無全域捲軸 CSS;iframe 外層有無裁切。
+**結案範圍只能是「修正已知的底部高度預算」,不是「Windows 兩軸各半已根治」。**
+
+Codex 另列的兩個高度算法盲點,**尚未處理、明列在此**:(1) `parentElement` 不一定是 consumer slot(分頁時是內建 wrapper、單選時是
+RadioGroup wrapper),slot 自帶 padding/border 時 `slotH` 取到 border-box 會多算;(2) 只觀察 parent,`bordered` / header size 動態切換
+不會重算。兩者都沒有 story 覆蓋、也沒有 user 回報,不在這次修補內順手改整套高度機制(Codex 同判),留作下一項。
+
+## AD23 DataTable 捲動變慢 —— 三個根因,全部量出來
+
+user:「之前的大改之後也造成 data table 在專案排程全功能整合的速度變得很慢…不只這個範例變慢,其他的應該也都有」
+
+量法:monkeypatch `getBoundingClientRect` 計每捲一步的強制排版次數(毫秒受機器影響,次數不受)+ 堆疊採樣歸因。
+roadmap story **每步 143.8 次 → 47.1 次**;每步毫秒 77 → 43。三個來源:
+1. **列高同步全量重量**(九月大修引入的回歸):`syncSharedRowHeights` 掛在無依賴的 layoutEffect,每次 render 清掉所有列的
+   minHeight → 逐列量 → 寫回。改成捲動走增量(只量新進視窗的列)、全量只在 `rows` 身分 / 欄寬 / size 變時。
+   **Codex R4 反例**:全量的觸發若用 `rows.length`,同筆數但內容變短(編輯/排序/換頁換資料)時舊 minHeight 撐住、
+   ResizeObserver 不會因內容自然變短而觸發,列高永遠縮不回去 → 改用 `rows` 本身(TanStack 只在資料/狀態變時換身分;
+   scroll-cost 閘證明它在捲動中穩定,沒有退回每步全量)。
+2. **拖曳把手定位 effect**(55/步):依賴整個 `ctx` 物件,而它的 memo 依賴含每次 render 都可能重建的 `handleAttrs`/`listeners`
+   → 每步、每一列都重跑、各量兩次;而且把手沒被 hover 時根本不渲染,掛載時量是白量。改成只依賴 `role` / `isDragging`
+   兩個原始值、掛載時只在可能可見才量。
+3. **dnd-kit `MeasuringStrategy.Always`**(41/步,v15.8 起就在):不拖曳時每次 droppable 集合變動(虛擬捲動每步都有列掛載/卸載)
+   重量全部 droppable。`dndCollisionDetection` 的註解早已記載 `Always` 沒解決 stale rect、真正解法是 cursor 對 live DOM 的
+   fallback;`WhileDragging` 在拖曳中遇集合變動一樣重量。撤回,拖曳 runtime 閘全過。
+剩下的 47 次全是 Combobox 標籤摺疊(`[data-tag-root]` 量可見數)在**新掛載** cell 的量測 —— 每掛一次量一次,不是每捲一步,
+1px 步進(不掛新列)時為 0,留著並記在此。閘:`scripts/data-table-scroll-cost.mjs`(預算 80/步,`--selftest` 預算 0 必紅)。
+
+## AD24 Combobox 四模式 story 的「重設編輯模式」鈕
+
+user:「我沒有操作鍵盤,但是"重設編輯模式"按鈕卻會自動產生鍵盤焦點的藍色邊框…這其實根本不需要這顆按鈕」
+
+那顆鈕是 story 自己加的示範用重設鈕,`play()` 用程式點它;程式移焦時瀏覽器的 `:focus-visible` 啟發式在「之前沒有任何指標互動」
+的情況下會判成要畫框 —— 跟 AD20 的 Select 不同源(那是我們自己對虛擬游標畫框),但症狀同類。鈕與 play 一起移除。
+
+## AD25 decided-clause 閘的兩個誤判
+
+(1) 已被取代的舊規格(`2026-08-11-agent-ui-panel-spec.md`,registry reason 含 Superseded)通篇是當年的「待拍板」語,
+不是現行請求 → 閘讀 registry,整份跳過;(2) 撤回只認**標題鏈**(標題含「已撤回/失誤/根因…」),前一行寫「已撤回」不算,
+selftest 兩條各一(放行 / 仍擋)。v14 的補記段改成標題,讓它自己的「失誤根因」豁免。
+
+## AD26 「哪些目的地有自己的 URL」在 DS 裡怎麼示範
+
+user:「那要如何在 ds 模擬『哪些目的地有自己的URL』?story還是要有能力可以demo出來吧?可以用假的吧?但明確告知是假的?」
+
+DS 沒有路由,也不該有。story `UrlRegistryDemo` 用一份**明標「假資料示意」**的目的地清單(`FAKE_DESTINATIONS`:
+任務 4821 = 有 URL 的 modal、衝刺看板 = 宿主導覽、刪除專案 = 沒 URL 的確認框、/projects/9999 = 未確認純文字)+
+一條模擬網址列 `#demo-location`,舞台上真的開 DS 的 `Dialog`(有 URL 的用 `persistentElements` 並存;確認框不用)。
+畫面第一行就寫「假資料示意:目的地註冊表只為了演出互動,不是 DS 的一部分」。
+閘 `scripts/agent-url-registry-demo-invariant.mjs` 走完整條:面板打字 → 點 modal 目的地(網址列變、modal 與面板都能打字)→
+面板內 Esc 不關 modal、modal 內 Esc 才關 → 確認框開著面板被擋、取消恢復 → 未確認的不是連結 → 宿主導覽與關閉/重開草稿都在。
+寫閘時抓到一條我自己測錯的:焦點在面板內按 Esc 想關 modal —— 那正是 v14 Esc 分派**不該**發生的事,改成兩條斷言。

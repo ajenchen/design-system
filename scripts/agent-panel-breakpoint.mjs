@@ -147,19 +147,17 @@ else ck('B 蓋板態:被蓋住的宿主不得留下可聚焦控件(v14 條 B「�
         `宿主可聚焦控件 ${reach.stillFocusable}/${reach.total} 個${reach.sample.length?':'+reach.sample.join(', '):''}`)
 
 
-// ── 蓋板層級必須高過 Dialog(v14 條 B 推導第 4 題)────────────────────────
-// 「窄螢幕,agent 點有 URL 的 Modal → agent 抽屜保持開啟,**Modal 在被蓋住的宿主區**」
-// = modal 在 agent **後方**。Dialog 是 body portal,面板的祖先 z-index:auto 不建立堆疊脈絡,
-// 兩者直接比大小。這條用讀原始碼比,不靠註解 —— 有人把任一邊的數字改掉就會紅。
+// ── 蓋板層級:並存面 < agent 蓋板 < 一般確認框(v14 條 A + 推導第 4 題)────────────
+// 第 4 題:窄螢幕「URL Modal 在被蓋住的宿主區」→ 並存面(persistentElements,z-40)在 agent 後方;
+// 條 A:「沒有 URL 的 Modal 阻擋其餘介面,包含 agent」→ 一般確認框(z-50)在 agent 前方。
+// 第一版只守「agent > Dialog」,把確認框也壓到面板底下(R3 實測),那是把第 4 題錯推成「所有 Dialog 在後方」。
 {
   const panelSrc = readFileSync(join(process.cwd(),'packages/design-system/src/components/AgentPanel/agent-panel.tsx'),'utf8')
   const dialogSrc = readFileSync(join(process.cwd(),'packages/design-system/src/components/Dialog/dialog.tsx'),'utf8')
-  const panelZ = panelSrc.match(/isOverlay && '[^']*?z-\[?(\d+)\]?/)
-  const dialogZs = [...dialogSrc.matchAll(/\bz-\[?(\d+)\]?/g)].map((m) => +m[1])
-  const pz = panelZ ? +panelZ[1] : null
-  const dz = dialogZs.length ? Math.max(...dialogZs) : null
-  ck('B 蓋板層級 > Dialog 層級(modal 必須在 agent 後方)',
-     pz !== null && dz !== null && pz > dz, `agent 蓋板 z=${pz} / Dialog 最大 z=${dz}`)
+  const pz = +(panelSrc.match(/isOverlay && '[^']*?z-\[?(\d+)\]?/)?.[1] ?? NaN)
+  const coexist = +(dialogSrc.match(/persistentElements \? "fixed[^"]*?z-\[?(\d+)\]?/)?.[1] ?? NaN)
+  const stock = +(dialogSrc.match(/: "fixed left-1\/2 top-1\/2 z-\[?(\d+)\]?/)?.[1] ?? NaN)
+  ck('B 層級:並存面 < agent 蓋板 < 一般確認框', coexist < pz && pz < stock, `並存面 z=${coexist} / agent z=${pz} / 確認框 z=${stock}`)
 }
 
 console.log(out.join('\n')); console.log(fail?`\n✗ ${fail} 項未通過`:'\n✓ 全部通過')

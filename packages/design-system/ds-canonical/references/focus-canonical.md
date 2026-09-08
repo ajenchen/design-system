@@ -24,8 +24,8 @@
 
 前半句是**問題一(誰移動游標)**,後半句是**問題二(游標長什麼樣)**。
 
-分開之後,**問題一有唯一答案**(規則一),**問題二只有一半有答案**(規則二前兩列),
-剩下的「選中 × 游標」那格是真取捨,列在下面等拍板。
+分開之後,**問題一有唯一答案**(規則一),**問題二在 2026-09-07 A5 畫框 + 2026-09-08 模態條件後已有完整答案**(規則二全部列),
+「選中 × 游標」那格原本是真取捨,**2026-09-07 user 已拍板畫框**(原話「A5畫框」),規則二那張表已經沒有空格。
 
 一處要對這段引文誠實勘誤:引文假設選單選項會「同時有焦點框以及滑鼠 hover 上去的底色」。
 查證後**選單沒有焦點框** —— DS 既有 canonical(`menu-item.spec.md:301`)與 Material / Radix / cmdk
@@ -86,7 +86,7 @@ type-ahead 的起點會跟著滑鼠亂跳;grid 內「打字即進入編輯」會
 [WICG focus-visible explainer「Example heuristic」](https://github.com/WICG/focus-visible/blob/main/explainer.md):
 「if the most recent user interaction was via the keyboard; and the key press did not include a meta,
 alt/option, or control key; then the modality is keyboard. Otherwise, the modality is not keyboard.」
-機械載體 = `hooks/use-input-modality.ts`(document capture 監聽、引用計數安裝),
+機械載體 = `hooks/use-input-modality.ts`(document capture 監聽、**模組載入即安裝**;第一版的「引用計數安裝」實測會漏掉開啟前的按鍵,見該檔註解),
 消費者:SelectMenu / DropdownMenu(Item + RadioItem)/ AgentPanel 歷史清單 / TreeView
 —— 原本四處各自實作(TreeView 有、其餘三處**沒有**),等於四份 SSOT。
 錨:user 2026-09-08「為何我用滑鼠一開 select 選單明明就沒有鍵盤操作,卻會直接出現鍵盤焦點?」——
@@ -132,8 +132,8 @@ SelectMenu `:490`、AgentPanel `:280`、Sidebar `:949`)。補完框再退役。
 - **DataTable 列游標**:目前完全沒有列層級的鍵盤游標。要補之前有三個前提要先解 ——
   `role="table"` 不能合法帶 `aria-activedescendant`(需遷 `grid`/`treegrid`);虛擬捲動下 activedescendant 指向的元素必須真實存在;
   同一列在三個面板各渲染一次,IDREF 該歸誰未定。
-- **Sidebar 選單鈕沒有 ring(依 2026-09-07 拍板應補框)**:`sidebarMenuButtonVariants`(`sidebar.tsx:913-`)全段無 `focus-visible:ring`,鍵盤焦點**只有底色**(`:939` 非當前項用 hover 色 / `:949` 當前項深一階)。它是真 `<button>`、真 DOM 焦點,卻是全 DS 唯一「真焦點但只用底色」的地方。同檔 `SidebarGroupAction`(`:850`)反而有 ring。要不要補 ring 屬上節那題,未拍板。
-- **Slider**:`slider.tsx:167-168` 註解明寫「不加 ring 或 halo」,以邊框變色當焦點。它不是文字輸入,在規則二下需要豁免理由或改掉。
+- **Sidebar 選單鈕(已收斂 —— 依 2026-09-07 拍板補框:`sidebar.tsx:955` 當前項畫內描邊,`:924` 宣告 D 類)**:`sidebarMenuButtonVariants`(`sidebar.tsx:913-`)全段無 `focus-visible:ring`,鍵盤焦點**只有底色**(`:939` 非當前項用 hover 色 / `:949` 當前項深一階)。它是真 `<button>`、真 DOM 焦點,卻是全 DS 唯一「真焦點但只用底色」的地方。同檔 `SidebarGroupAction`(`:850`)反而有 ring。要不要補 ring 屬上節那題,未拍板。
+- **Slider(已收斂 2026-09-07)**:原本 `slider.tsx` 註解明寫「不加 ring 或 halo」、以邊框變色當焦點;C6 修後改用全域外描邊,並把殘留的 `focus-visible:border-primary-hover` 一併刪除(`slider.tsx:174-182` 註解記錄兩次修正)。留在本節只為對照,不再是未收斂項。
 - **DataTable 的 hover 機制與 TreeView 不同**:TreeView 用 CSS `:hover`,DataTable 用指令式寫入的 `data-[hovered]` 屬性。
   兩者在規則一下結論相同(都不移動游標),但 DataTable 那條路沒有捲動時的重新計算。
 

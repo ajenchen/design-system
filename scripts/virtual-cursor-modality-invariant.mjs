@@ -96,20 +96,39 @@ for (const t of TARGETS) {
 {
   const idx = JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8'))
   const tid = Object.keys(idx.entries).find((i) => /treeview-展示--/.test(i))
+  if (!tid) ck('TreeView 前提:找得到 story', false, '找不到 treeview-展示 story —— 沒東西可驗不能算綠')
   if (tid) {
     await page.goto(story(tid), { waitUntil: 'load' }); await page.waitForTimeout(500)
     const rowBox = await page.evaluate(() => { const el = document.querySelector('[role="treeitem"]'); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + 24, y: r.top + r.height / 2 } })
     if (rowBox) {
       await page.mouse.click(rowBox.x, rowBox.y); await page.waitForTimeout(700)
-      const ringed = await page.evaluate(() => [...document.querySelectorAll('[role="treeitem"] *, [role="treeitem"]')].some((e) => { const c = getComputedStyle(e); return c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0 }))
-      ck('TreeView A 滑鼠點列:不得有框', !ringed)
+      // 指到的 treeitem 是外層 wrapper,`focus-ring-inset` 畫在它裡面的那層列上(tree-view.tsx:1394);
+      // 只量 wrapper 本身會永遠 false(A/C 假綠、B 假紅,2026-09-08 抓到)—— 量目標與其子孫。
+      const cursorRing = () => page.evaluate(() => { const tree = document.querySelector('[role="tree"]'); const id = tree?.getAttribute('aria-activedescendant'); const el = id ? document.getElementById(id) : null; if (!el) return null; const drawn = (e) => { const c = getComputedStyle(e); return c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0 }; return drawn(el) || [...el.querySelectorAll('*')].some(drawn) })
+      const ringed = await cursorRing()
+      ck('TreeView A 滑鼠點列:游標列(aria-activedescendant 指到的)不得有框', ringed === false, `ring=${ringed}`)
       await page.keyboard.press('ArrowDown'); await page.waitForTimeout(700)
-      const ringed2 = await page.evaluate(() => [...document.querySelectorAll('[role="treeitem"] *, [role="treeitem"]')].some((e) => { const c = getComputedStyle(e); return c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0 }))
-      ck('TreeView B 對照組:ArrowDown 後游標列必須有框', ringed2)
+      const ringed2 = await cursorRing()
+      ck('TreeView B 對照組:ArrowDown 後游標列必須有框', ringed2 === true, `ring=${ringed2}`)
       await page.mouse.click(rowBox.x, rowBox.y); await page.waitForTimeout(700)
-      const ringed3 = await page.evaluate(() => [...document.querySelectorAll('[role="treeitem"] *, [role="treeitem"]')].some((e) => { const c = getComputedStyle(e); return c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0 }))
-      ck('TreeView C 再用滑鼠點:框必須消失(模態回到指標)', !ringed3)
+      const ringed3 = await cursorRing()
+      ck('TreeView C 再用滑鼠點:框必須消失(模態回到指標)', ringed3 === false, `ring=${ringed3}`)
     }
+  }
+}
+
+// ── AgentPanel 歷史清單(第五個消費者)──────────────────────────────────
+{
+  const hid = 'design-system-components-agentpanel-展示--history-open'
+  await page.goto(story(hid), { waitUntil: 'load' }); await page.waitForTimeout(700)
+  const sel = '[role="option"][aria-selected="true"], [role="option"][data-selected="true"], [cmdk-item][data-selected="true"]'
+  const a = await ringOf(page, sel)
+  if (a.missing) ck('AgentPanel 歷史前提:找得到已選/游標項', false, sel)
+  else {
+    ck('AgentPanel 歷史 A 開啟時(無鍵盤):已選項不得有框', !drawn(a), `「${a.text}」outline=${a.style} ${a.w}px`)
+    await page.keyboard.press('ArrowDown'); await page.waitForTimeout(80); await page.keyboard.press('ArrowUp'); await page.waitForTimeout(700)
+    const b = await ringOf(page, sel)
+    ck('AgentPanel 歷史 B 對照組:鍵盤移回已選項必須有框', drawn(b), `「${b.text}」outline=${b.style} ${b.w}px`)
   }
 }
 

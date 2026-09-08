@@ -84,6 +84,8 @@ jobs:
           # 裡,而這裡是直接呼叫 .mjs → 單測從來沒在 CI 跑過。
           node scripts/test-distribute-column-widths.mjs
           node scripts/data-table-invariants.mjs
+          node scripts/data-table-scrollbar-visibility.mjs --quick
+          node scripts/data-table-scroll-cost.mjs
           # AgentPanel 家族三支機械不變式一起跑(固定 anatomy / 標誌色階 / 思考動畫逐影格);
           # 原本只跑 continuity 一支,另外兩支在整個 repo 沒有任何 gate(2026-09-03 稽核抓到)。
           npm run test:agent-panel-invariants
@@ -117,6 +119,7 @@ jobs:
           # 虛擬游標的框只在鍵盤模態下畫:滑鼠點開 Select 不得出現鍵盤焦點框(user 2026-09-08 抓到),
           # 對照組驗鍵盤移回已選項必須有框、純鍵盤開啟立刻有框。
           npm run test:virtual-cursor-modality
+          npm run test:agent-url-registry-demo
           # 兩支從「複現不出」轉成「再發生會被抓到」的閘(總帳 E1 / E2):
           # 虛擬捲動壓力(排序、捲動、視窗高度交錯,驗無例外**且畫面不空**)、
           # 「+N」不得溢出容器(107 story × 6 寬度 = 642 次量測)。兩支都自帶對照組。

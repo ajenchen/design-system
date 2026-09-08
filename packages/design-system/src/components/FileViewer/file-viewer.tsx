@@ -974,7 +974,8 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
       : undefined),
     [persistentElements],
   )
-  useOverlayCoexistence(!!persistentElements, keepCoexist)
+  // 綁 `open`:controlled 關閉時元件仍掛著,不綁的話抑制不會解除(R3 生命週期反例)
+  useOverlayCoexistence(open && !!persistentElements, keepCoexist)
   const insidePersistent = React.useCallback((node: EventTarget | null) => {
     if (!persistentElements || !(node instanceof Node)) return false
     return persistentElements().some((el) => el.contains(node))

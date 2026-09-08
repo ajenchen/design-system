@@ -160,6 +160,8 @@ interface TreeViewContextValue {
   expandOnSelect: boolean
   draggable: boolean
   isKeyboardRef: React.RefObject<boolean>
+  /** 最近一次輸入是鍵盤(布林,隨模態變化觸發列 re-render;ref 身分不變不會) */
+  keyboardModality: boolean
   /**
    * Per-tree instance 前綴(React.useId),用來組每個 treeitem 的 DOM `id`
    * (`${prefix}treeitem-${nodeId}`),讓容器的 `aria-activedescendant` 能指向目前 focused node。
@@ -390,7 +392,8 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     // 原本四處各自實作 = 四份 SSOT)。ref 保留給 context 消費端讀,每次 render 由 hook 餵值;
     // 模態一變 hook 觸發 root re-render,子項在 render 期讀到的就是新值。
     const isKeyboardRef = React.useRef(false)
-    isKeyboardRef.current = useInputModality() === 'keyboard'
+    const keyboardModality = useInputModality() === 'keyboard'
+    isKeyboardRef.current = keyboardModality
 
     // ── Drag state ──
     const [draggingId, setDraggingId] = React.useState<string | null>(null)
@@ -773,6 +776,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         expandOnSelect,
         draggable,
         isKeyboardRef,
+        keyboardModality,
         activeDescendantPrefix,
         draggingId,
         dropTarget,
@@ -794,6 +798,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         expandOnSelect,
         draggable,
         isKeyboardRef,
+        keyboardModality,
         activeDescendantPrefix,
         draggingId,
         dropTarget,
@@ -1181,7 +1186,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
       focusTree,
       registerNode,
       unregisterNode,
-      isKeyboardRef,
+      keyboardModality,
       activeDescendantPrefix,
     } = ctx
 
@@ -1189,7 +1194,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
     const isExpanded = expandedIds.has(id)
     const isSelected = selectedIds.has(id)
     const isFocused = focusedId === id
-    const showRing = isFocused && isKeyboardRef.current
+    const showRing = isFocused && keyboardModality
     const isDragging = draggingId === id
     const isDropTarget = dropTarget?.id === id
     const visualCheckbox = checkbox && React.isValidElement<Record<string, unknown>>(checkbox)

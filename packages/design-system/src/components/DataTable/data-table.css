@@ -50,7 +50,11 @@
      ::-webkit-scrollbar:vertical   { width: 10px }    →  實際 15px(無效)
      ::-webkit-scrollbar            { width/height:10px } →  實際 10px(有效)
 
-   Chrome 的捲軸**尺寸只讀不帶偽類的那條規則**;`:horizontal` / `:vertical` 只能改外觀,改不了寬高。
+   機制(2026-09-08 Codex R4 對 Blink 原始碼的訂正):Chromium 要先有**不帶方向偽類的根規則**
+   `::-webkit-scrollbar { … }` 才會建立 CustomScrollbar(`HasCustomScrollbarStyle()`);建立之後帶
+   `:horizontal` / `:vertical` 的尺寸規則其實可以生效(`custom_scrollbar.cc`)。舊 CSS 少了根規則,
+   所以整組尺寸都沒掛上;但 `::-webkit-scrollbar-corner` 走獨立路徑,不受此限 —— 「整套從沒生效」
+   是過度概括,精確說法是「尺寸沒生效、corner 有」。
    2026-04-30 之所以拆成兩條偽類,是要躲「`display:block` 讓沒溢出的軸也冒出捲軸」——
    但實測不帶偽類、且不寫 `display` 時**不會**誤顯(只有水平溢出時 v=0;完全不溢出時 0/0),
    當初要躲的是 `display:block`,不是不帶偽類。所以那次修正躲掉了 bug,也順手把整組尺寸關掉了。

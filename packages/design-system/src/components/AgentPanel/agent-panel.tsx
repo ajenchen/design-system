@@ -196,6 +196,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     const rootRef = React.useRef<HTMLDivElement | null>(null)
     const hostRef = React.useRef<HTMLElement | null>(null)
     const [containerPx, setContainerPx] = React.useState(0)
+    const [selfVisible, setSelfVisible] = React.useState(false)
     React.useLayoutEffect(() => {
       // 往上找到**第一個有盒子的**祖先。直接抓 parentElement 會踩到兩種「沒有盒子」的包層:
       //   `display: contents` —— AgentPanelDock 為了「關閉時不卸載」包的那層(2026-09-07 踩過)
@@ -224,6 +225,9 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
           if (host && ro) ro.observe(host)
         }
         hostRef.current = host
+        // 面板自己有沒有版面:Dock 關閉時是 display:none,那時**不能**保持整頁抑制(R3 反例:
+        // 窄版 Panel 隱藏後背景仍 inert)。
+        setSelfVisible((rootRef.current?.clientWidth ?? 0) > 0)
         const w = host?.clientWidth ?? 0
         // 沒有版面時量到的 0 不代表任何事,不拿去更新(同 person-display / AgentConversation)
         if (w > 0) setContainerPx(w)
@@ -254,7 +258,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // (0 < 1080)。若不加這個條件,面板一掛載就先把整頁(含同時開著的對話框)抑制掉,
     // 等量測回來才解除 —— 實測那一下足以讓對話框帶著 inert 卡住,框內按鈕永遠 focus 不進去。
     // 量到 0 本來就不代表任何事(同 measure 裡的 `if (w > 0)` 那條)。
-    useOverlayCoexistence(containerPx > 0 && isOverlay, keepPanel)
+    useOverlayCoexistence(containerPx > 0 && isOverlay && selfVisible, keepPanel)
 
     // Esc 的作用域封閉在焦點所在區(`agent-panel.spec.md:545` 三條表,2026-09-07 訂):
     //   焦點在面板內、面板內開著浮層 → 關那個最內層浮層,面板不動
@@ -272,8 +276,6 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // Radix 的 handler 寫著 `if (!event.defaultPrevented && onDismiss)` —— 看到已被
     // preventDefault 就不會 dismiss。不用 `stopImmediatePropagation`,那會連別人的合法處理一起吃掉。
     //
-    // ⚠️ 已知取捨:面板內若正開著**不搶焦點**的 Tooltip,這一下 Esc 也不會關它
-    //(上表第一列的邊角)。Tooltip 另有 blur / pointerleave 兩條關法,不是唯一出路。
     // 會搶焦點的浮層(Popover / DropdownMenu / Dialog)因為焦點已經不在面板內,
     // 這裡不攔,它們照樣被自己的 layer 關掉 —— 那正是第一列要的行為。
     React.useEffect(() => {
@@ -282,6 +284,9 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
         const panel = rootRef.current
         const active = document.activeElement
         if (!panel || !active || !panel.contains(active)) return
+        // 面板內若正開著 Tooltip(不搶焦點的浮層),這一下 Esc 該關它(spec:545 第一列),
+        // 不能被我們吃掉 —— R3 實測 Tooltip 的 Esc 因此失效。
+        if (document.querySelector('[role="tooltip"]')) return
         event.preventDefault()
       }
       window.addEventListener('keydown', onKeyDownCapture, { capture: true })
@@ -326,7 +331,11 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
           // 而這個面板的祖先是 `position:relative; z-index:auto`(不建立堆疊脈絡),
           // 所以它直接跟 z-50 比大小 —— 用 z-20 會反過來被 modal 蓋住(2026-09-08 實測)。
           // 兩者的大小關係由 `scripts/agent-panel-breakpoint.mjs` 機械守住,不靠這行註解。
-          isOverlay && 'absolute inset-0 z-[60] w-full shadow-[var(--elevation-300)]',
+          // z-[45]:高於**並存面**(Dialog/FileViewer 有 persistentElements 時 z-40 —— v14 推導第 4 題
+          // 「窄螢幕,URL Modal 在被蓋住的宿主區」),低於**一般確認框**(z-50 —— 條 A「沒有 URL 的
+          // Modal 阻擋其餘介面,包含 agent」)。第一版寫 z-[60] 把所有 Dialog 都壓在下面,
+          // 連確認框也被面板蓋住(R3 實測),那是把「URL Modal 在後方」錯推成「所有 Dialog 在後方」。
+          isOverlay && 'absolute inset-0 z-[45] w-full shadow-[var(--elevation-300)]',
           // 分隔線只有一個 owner:可拖時由 ResizeHandle 的 1px line 擁有(DataTable 欄間同款,hover/拖曳會變色);
           // 不可拖才由容器畫 border-l(app-shell aside 前例)。兩者並存 = 2px 粗線(2026-09-02 user 抓到)。
           !resizable && !isOverlay && 'border-l border-divider',

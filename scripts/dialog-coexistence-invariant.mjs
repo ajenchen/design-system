@@ -67,6 +67,10 @@ else {
      `focused=${asideBtn.focused} inert=${asideBtn.inert} ariaHidden=${asideBtn.ariaHidden}`)
   ck('B 常駐區域的輸入框仍可聚焦', asideInput.focused && !asideInput.inert,
      `focused=${asideInput.focused} inert=${asideInput.inert}`)
+  // 真的打字:「可聚焦」不等於「可操作」(R3 指出只 .focus() 不夠)
+  await page.focus('#coexist-aside-input'); await page.keyboard.type('hello')
+  const typed = await page.evaluate(() => document.querySelector('#coexist-aside-input')?.value)
+  ck('B 常駐區域的輸入框真的能打字', typed === 'hello', `value=${JSON.stringify(typed)}`)
   ck('B 對話框自己的按鈕仍可聚焦', insideBtn.focused && !insideBtn.inert,
      `focused=${insideBtn.focused} inert=${insideBtn.inert}`)
   ck('B **其餘背景仍被抑制**(並存不等於全開)', bgBtn.inert || bgBtn.ariaHidden || !bgBtn.focused,
