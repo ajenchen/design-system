@@ -81,11 +81,9 @@ jobs:
         run: |
           npm run test:release-consent
           npm run test:audit-coverage-tier-sync
-          npm run test:devmode-geometry
           npm run test:ci-evidence
           npm run test:privileged-change-authorization
           npm run test:hook-evidence
-          npm run test:header-tabs-slot-invariants
           npm run test:setup-netlify
           npm run test:deterministic-deep-audit
           # 這條 meta 閘守「宣稱有閘、其實沒人跑」本身:
@@ -232,6 +230,9 @@ jobs:
           # 虛擬捲動壓力(排序、捲動、視窗高度交錯,驗無例外**且畫面不空**)、
           # 「+N」不得溢出容器(107 story × 6 寬度 = 642 次量測)。兩支都自帶對照組。
           npm run test:virtual-scroll-stress
+          # 登記測試裡需要 Chromium 的(2026-09-08 拆 job 後靜態 job 沒有瀏覽器,d16baf90 的 verify-static 因此紅):
+          npm run test:devmode-geometry
+          npm run test:header-tabs-slot-invariants
       # Cloud sessions load the committed provider config as-is; the only two ways that config has
       # ever broken (fatal sandbox flag in containers, hooks/scripts pointing at a retired mirror)
       # both merged without any gate exercising them. These two commands bind cloud survivability
