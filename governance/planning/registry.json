@@ -126,13 +126,19 @@
       "path": "governance/planning/2026-08-11-agent-ui-panel-spec.md",
       "status": "reference",
       "executable": false,
-      "reason": "Backlog by user directive (2026-08-11): complete ratified agent-panel spec archived with full context; must not modify DS canonical until user schedules implementation."
+      "reason": "Superseded in full by governance/planning/2026-09-06-agent-principles-v14.md (agent principles v14, ratified 2026-09-06). Retained for provenance only; must not be cited as authority."
     },
     {
       "path": "governance/planning/2026-09-04-agent-fab-hit-area-brief.md",
       "status": "reference",
       "executable": false,
       "reason": "Second-opinion brief for the AgentFab hit-area report (2026-09-04): states the measured facts and the four questions to debate; carries no plan of record and must not be executed as one."
+    },
+    {
+      "path": "governance/planning/2026-09-06-agent-principles-v14.md",
+      "status": "reference",
+      "executable": false,
+      "reason": "Sole authority for agent work (principles v14, ratified 2026-09-06 by user). Landed into the repo on 2026-09-08 after it was found to exist only in a scratchpad HTML file, which caused a settled clause to be re-listed as an undecided product question."
     },
     {
       "path": "governance/planning/2026-09-06-focus-and-drag-remediation.md",

@@ -73,5 +73,78 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 800]) {
     ck(`G3 @${W} 蓋板態不渲染拖曳把手(寬度不再是可選的)`, !r.hasHandle, `hasHandle=${r.hasHandle}`)
   }
 }
+
+// ── 初始關閉 → 打開:量測必須跟著重綁(2026-09-08,跨模型審查抓到)────────────
+// 根因:面板往上找「有盒子的祖先」時只跳過 `display: contents`,
+// 但 Dock 為了「關閉時不卸載」在關閉態是 `display: none` —— 迴圈不跳它,
+// 於是量到 clientWidth = 0、`if (w > 0)` 永不觸發、containerPx 卡在 0
+// → 上限永遠 640、蓋板永不觸發。而且 useLayoutEffect 空依賴,打開後不會重綁。
+// 這是 G2(keep-mounted)與 G3(容器斷點)互相踩到:兩支閘各自都綠,合起來才壞。
+for (const W of [800, 1600]) {
+  await pg.setViewportSize({width:W,height:800})
+  await pg.goto(`${B}/iframe.html?id=design-system-components-agentpanel-展示--fab&viewMode=story`,{waitUntil:'networkidle'})
+  await pg.waitForTimeout(400)
+  const opened = await pg.evaluate(async () => {
+    const fab = [...document.querySelectorAll('button')].find((b) => /代理|agent/i.test(b.getAttribute('aria-label') || ''))
+    if (!fab) return { err: '找不到入口鈕' }
+    fab.click()
+    await new Promise((r) => setTimeout(r, 600))
+    const p = document.querySelector('[role="complementary"]')
+    if (!p) return { err: '點了入口鈕但面板沒出現' }
+    let host = p.parentElement
+    while (host && ['contents', 'none'].includes(getComputedStyle(host).display)) host = host.parentElement
+    const handle = p.querySelector('[role="separator"][aria-orientation="vertical"]')
+    return { mode: p.dataset.agentPanelMode, container: host.clientWidth,
+             panelW: Math.round(p.getBoundingClientRect().width),
+             valuemax: handle ? +handle.getAttribute('aria-valuemax') : null }
+  })
+  if (opened.err) { ck(`G3 初始關閉 @${W}`, false, opened.err); continue }
+  const expectOverlay = opened.container < 1080
+  ck(`G3 初始關閉後打開 @視窗${W}(容器${opened.container}) 形態應為 ${expectOverlay?'蓋板':'並排'}`,
+     opened.mode === (expectOverlay ? 'overlay' : 'side-by-side'),
+     `實得 ${opened.mode} / 面板寬 ${opened.panelW} / aria-valuemax=${opened.valuemax}`)
+  if (!expectOverlay) {
+    const expMax = Math.min(640, Math.max(Math.floor(opened.container/3), 360))
+    ck(`G3 初始關閉後打開 @${W} 寬上限 = ${expMax}`, opened.valuemax === expMax, `aria-valuemax=${opened.valuemax}`)
+  }
+}
+
+
+// ── 蓋板態:宿主必須真的不可操作(v14 條 B)────────────────────────────────
+// 「窄螢幕以抽屜蓋滿宿主,**宿主暫不可操作**」——「蓋滿」是視覺,「不可操作」是行為,
+// 兩件事。實測(2026-09-08 跨模型審查)真 Tab 走得進被蓋住的宿主按鈕並且 Enter 會執行。
+// 視覺上蓋住不等於鍵盤到不了 —— 這正是 M32「宣稱 ≠ 真實」的同一種病。
+await pg.setViewportSize({width:800,height:800})
+// 用 Fab story:宿主是一張 DataTable,有大量可聚焦控件 ——
+// 拿沒有控件的 story 來驗「宿主不可操作」會得到 0/0 的空過(2026-09-08 當場踩到)。
+await pg.goto(`${B}/iframe.html?id=design-system-components-agentpanel-展示--fab&viewMode=story`,{waitUntil:'networkidle'})
+await pg.waitForTimeout(400)
+await pg.evaluate(async () => {
+  const fab = [...document.querySelectorAll('button')].find((b) => /代理|agent/i.test(b.getAttribute('aria-label') || ''))
+  fab?.click()
+  await new Promise((r) => setTimeout(r, 600))
+})
+const reach = await pg.evaluate(() => {
+  const panel = document.querySelector('[role="complementary"]')
+  if (!panel) return { skip: '面板沒出現' }
+  if (panel.dataset.agentPanelMode !== 'overlay') return { skip: `此視窗不是蓋板態(${panel.dataset.agentPanelMode})` }
+  // 宿主 = 面板的定位祖先裡,面板以外的那些內容
+  const root = document.querySelector('#storybook-root') || document.body
+  const outside = [...root.querySelectorAll('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => !panel.contains(el))
+  const focusable = outside.filter((el) => {
+    const cs = getComputedStyle(el)
+    if (cs.display === 'none' || cs.visibility === 'hidden') return false
+    if (el.closest('[inert]')) return false
+    return !el.hasAttribute('disabled')
+  })
+  return { total: outside.length, stillFocusable: focusable.length,
+           sample: focusable.slice(0, 3).map((e) => e.tagName + '.' + String(e.className).split(' ')[0]) }
+})
+if (reach.skip) ck('B 蓋板態宿主不可操作', false, reach.skip)
+else ck('B 蓋板態:被蓋住的宿主不得留下可聚焦控件(v14 條 B「宿主暫不可操作」)',
+        reach.stillFocusable === 0,
+        `宿主可聚焦控件 ${reach.stillFocusable}/${reach.total} 個${reach.sample.length?':'+reach.sample.join(', '):''}`)
+
 console.log(out.join('\n')); console.log(fail?`\n✗ ${fail} 項未通過`:'\n✓ 全部通過')
 await br.close(); sv.close(); process.exit(fail?1:0)

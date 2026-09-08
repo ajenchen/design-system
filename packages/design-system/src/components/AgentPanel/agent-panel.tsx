@@ -192,26 +192,70 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // window resize —— 版面可能因為側欄收合、分頁切換而改變,那些都不會發 window resize。
     // aria-valuemax 也吃這個值(G5:先前寫死 640,螢幕閱讀器念的與實際停的位置不一樣)。
     const rootRef = React.useRef<HTMLDivElement | null>(null)
+    const hostRef = React.useRef<HTMLElement | null>(null)
     const [containerPx, setContainerPx] = React.useState(0)
     React.useLayoutEffect(() => {
-      // 往上找到**第一個有盒子的**祖先。直接抓 parentElement 會踩到 `display: contents` ——
-      // AgentPanelDock 為了「關閉時不卸載」在外面包了一層 contents(它刻意沒有盒子),
-      // 量它會得到 clientWidth = 0,於是上限永遠是 640、蓋板永遠不觸發(2026-09-07 踩過)。
-      let host = rootRef.current?.parentElement ?? null
-      while (host && getComputedStyle(host).display === 'contents') host = host.parentElement
-      if (!host) return
+      // 往上找到**第一個有盒子的**祖先。直接抓 parentElement 會踩到兩種「沒有盒子」的包層:
+      //   `display: contents` —— AgentPanelDock 為了「關閉時不卸載」包的那層(2026-09-07 踩過)
+      //   `display: none`     —— **同一個包層在面板關閉時的樣子**(2026-09-08 跨模型審查抓到)
+      // 第一版只跳過 contents,於是「初始關閉 → 打開」這條路量到的是 display:none 那層,
+      // clientWidth = 0 → `if (w > 0)` 永不觸發 → containerPx 卡在 0
+      // → 上限永遠 640、蓋板永不觸發。實測 800px 容器仍並排 400px。
+      // **這是 G2(keep-mounted)與 G3(容器斷點)互相踩到:兩支閘各自都綠,合起來才壞。**
+      const resolveHost = () => {
+        let node = rootRef.current?.parentElement ?? null
+        while (node && (getComputedStyle(node).display === 'contents' || getComputedStyle(node).display === 'none')) {
+          node = node.parentElement
+        }
+        return node
+      }
+      let host = resolveHost()
+      let ro: ResizeObserver | null = null
       const measure = () => {
-        const w = host.clientWidth
+        // **每次都重新解析宿主**:面板從關閉變成開啟時,原本 `display: none` 的包層會變成
+        // `contents`,真正的宿主因此改變。這個 effect 是空依賴、不會重跑,
+        // 所以重綁只能發生在這裡 —— 否則打開之後永遠量著開啟前解析到的那個節點。
+        const next = resolveHost()
+        if (next !== host) {
+          if (host && ro) ro.unobserve(host)
+          host = next
+          if (host && ro) ro.observe(host)
+        }
+        hostRef.current = host
+        const w = host?.clientWidth ?? 0
         // 沒有版面時量到的 0 不代表任何事,不拿去更新(同 person-display / AgentConversation)
         if (w > 0) setContainerPx(w)
       }
+      ro = new ResizeObserver(measure)
+      if (host) ro.observe(host)
+      // 也觀察面板自己:它從隱藏變可見時尺寸 0 → N,藉此觸發上面的重綁。
+      if (rootRef.current) ro.observe(rootRef.current)
       measure()
-      const ro = new ResizeObserver(measure)
-      ro.observe(host)
-      return () => ro.disconnect()
+      return () => ro?.disconnect()
     }, [])
     const widthMax = resolvePanelWidthMax(containerPx)
     const isOverlay = resolveIsOverlay(containerPx)
+
+    // v14 條 B:「窄螢幕以抽屜蓋滿宿主,**宿主暫不可操作**」。
+    // 「蓋滿」是視覺、「不可操作」是行為 —— 兩件事,只做前者的話鍵盤照樣走得進去。
+    // 實測(2026-09-08 跨模型審查)蓋板態下宿主 20 個控件有 19 個仍可聚焦,Enter 會執行。
+    // 用原生 `inert`:它一次處理鍵盤、指標與無障礙樹,不必自己拼 aria-hidden + pointer-events
+    // (HTML 規範 inert subtrees)。只設在**不含面板**的兄弟節點上,面板自己那條路不動。
+    React.useEffect(() => {
+      if (!isOverlay) return
+      const panel = rootRef.current
+      const host = hostRef.current
+      if (!panel || !host) return
+      const touched: HTMLElement[] = []
+      for (const child of Array.from(host.children)) {
+        if (!(child instanceof HTMLElement)) continue
+        if (child.contains(panel)) continue
+        if (child.hasAttribute('inert')) continue // 別人設的不碰,也不在清理時誤拆
+        child.setAttribute('inert', '')
+        touched.push(child)
+      }
+      return () => { for (const el of touched) el.removeAttribute('inert') }
+    }, [isOverlay])
     const [uncontrolledWidth, setUncontrolledWidth] = React.useState(defaultWidth)
     const resolvedWidth = clampPanelWidth(width ?? uncontrolledWidth, containerPx)
 

@@ -834,7 +834,10 @@ const AgentPanelDock = React.forwardRef<HTMLDivElement, AgentPanelDockProps>(
   (
     {
       open: openProp,
-      defaultOpen = true,
+      // v14 條 F:「初次進入、重新整理、新開分頁…均**重新初始化為關閉的新對話**」。
+      // 先前預設 true,等於每次進宿主都自動開著 —— 直接牴觸條 F(2026-09-08 跨模型審查抓到)。
+      // 要一進來就開著的情境,由消費端顯式傳 `defaultOpen`,不靠 DS 預設。
+      defaultOpen = false,
       onOpenChange,
       logoState = 'still',
       children,

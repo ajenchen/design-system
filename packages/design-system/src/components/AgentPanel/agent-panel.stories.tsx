@@ -65,7 +65,9 @@ function PanelFrame({
       {aside && (
         <div className="flex flex-1 flex-col items-center justify-center gap-1 text-body text-fg-secondary">{aside}</div>
       )}
-      <AgentPanelDock logoState={logoState}>{children}</AgentPanelDock>
+      {/* 顯式開啟:DS 預設依 v14 條 F 是「關閉」,而 M15 要求家族展示要能截到開啟態。
+          靠預設值截圖等於讓 story 綁在某個預設上,預設一改 story 就默默變空。 */}
+      <AgentPanelDock defaultOpen logoState={logoState}>{children}</AgentPanelDock>
     </div>
   )
 }
