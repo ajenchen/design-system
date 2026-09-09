@@ -408,7 +408,21 @@ const TimePicker = React.forwardRef<HTMLDivElement, TimePickerProps>(
         </PopoverTrigger>
         {/* a11y(2026-07-14 dim-10):Radix PopoverContent 輸出 role="dialog",無 title 需
             accessible name(WAI-ARIA dialog required);對齊 date-picker.tsx:1040「日期區間選擇」同款 DS default。 */}
-        <PopoverContent className="w-auto p-0" align="start" aria-label="選擇時間" /* i18n-allow: DS default dialog label */>
+        <PopoverContent
+          className="w-auto p-0"
+          align="start"
+          aria-label="選擇時間" /* i18n-allow: DS default dialog label */
+          // 開啟時把 DOM 焦點放在第一欄的 listbox(虛擬游標容器),不是第一顆選項鈕。Popover 預設抓第一個 <button>,
+          // 那顆 tabIndex=-1 的鈕拿到焦點後方向鍵照常換值(事件冒泡到 listbox),但瀏覽器的 :focus-visible 框會留在
+          // 那顆停在原地的舊鈕上 —— 游標(aria-activedescendant)其實已經走了(2026-09-09 真瀏覽器實測:滑鼠點開後
+          // activeElement = BUTTON[role=option],按 ↓ 後選中格 outline=none)。focus-canonical A 類:框畫在被指到的那一格。
+          onOpenAutoFocus={(e) => {
+            const listbox = (e.currentTarget as HTMLElement).querySelector<HTMLElement>('[role="listbox"]')
+            if (!listbox) return
+            e.preventDefault()
+            listbox.focus({ preventScroll: true })
+          }}
+        >
           {/* Panel 對齊 ref/timepicker.png:2-3 個 SelectMenu 式欄位並排,分隔線分開。
               Width 依欄數由 TimeColumns 決定:2 欄 w-40 / 3 欄 w-60。
               Height 由 wrapper 控:216px 預設(扣 footer 後 list 約可見 5-6 items)。

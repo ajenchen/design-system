@@ -99,7 +99,7 @@ Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>`
 - **Empty 後持續打字**:cmdk 每個 keystroke 重新過濾(`filtered.count` 驅動),`<CommandEmpty>` 持續顯示直到有 match;input 不鎖、不清空。
 - **Loading**:Command 本身非 async surface。async option fetch 由 consumer(SelectMenu / Cmd+K palette)在外層處理,指示**只有一處**(2026-09-09 user 拍板;2026-09-08 的 `<CommandInput loading>` 搜尋列轉圈已退役、prop 已移除):在 `<CommandEmpty>` slot 內放 `<CommandLoading label="載入選項中" />`(`command.tsx` `CommandLoading`)= 與「沒有結果」同一種 `MenuItem message` 訊息列,前綴槽放列圖示尺寸轉圈(`ICON_SIZE[size]`:sm/md 16、lg 20)+ 可見文字,`role="status"` 直接播報,**不經 Empty**;只在清單裡沒有任何可顯示的選項時才看得到。搜尋列仍可打字、不轉圈(SSOT select-menu.spec.md「Loading」)。
 - **Empty(no results)**:`<CommandEmpty>` 在 filter result = 0 時渲;**它 own 空狀態的長相**(`command.tsx:155-172`):`MenuGroup`(`py-2`)包一列 `<MenuItem message>`——字串 children 自動包成訊息列(非互動、`text-fg-muted`、一般字重、字級同選項、置中),md 48px = 8 + 32 + 8 與 1 筆結果等高,**沒有最小高度**(舊 `minRows` / `getMenuListMinHeight` 已退役;SSOT select-menu.spec.md「Empty state」);consumer 只傳文案,不放圖示、不用 `Empty`。0 筆的讀屏播報由 `CommandEmptyStatus`(sr-only `role="status"` live region)負責,CommandDialog / SelectMenu 都渲一份。
-- **Dark mode / density**:全數經 MenuItem / CommandInput 的 token 連動(空狀態、載入列也是 MenuItem);Command 自身只剩 cmdk 反白的長相:指標模態 `data-[selected=true]:bg-neutral-hover`、鍵盤模態 `data-[selected=true]:focus-ring-inset`(focus-canonical 規則二),以及選中底色釘住(item-anatomy「選中 × 互動疊加」)。尺寸(sm / md / lg)由 Command root 的 `size` 進 RowSizeProvider,搜尋列 / 項目 / 群組標題 / 空狀態同一個值。
+- **Dark mode / density**:全數經 MenuItem / CommandInput 的 token 連動(空狀態、載入列也是 MenuItem);Command 自身只剩 cmdk 反白的長相:滑鼠搬的反白 `data-[selected=true]:bg-neutral-hover`、鍵盤搬的反白 `data-[selected=true]:focus-ring-inset`(反白來歷 `useCursorMover`;focus-canonical 規則一「兩類元件」+ 規則二;項目上沒有 `hover:` 樣式,鍵盤搬走反白後滑鼠停留列的底色一起消失),以及選中底色釘住(item-anatomy「選中 × 互動疊加」)。尺寸(sm / md / lg)由 Command root 的 `size` 進 RowSizeProvider,搜尋列 / 項目 / 群組標題 / 空狀態同一個值。
 
 ---
 
@@ -108,7 +108,7 @@ Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>`
 - 「選單一律用 Command」— < 6 項、選完即觸發動作的操作選單是 `DropdownMenu`(見「與 DropdownMenu 的分界」)。
 - 「Command 搜尋框可以自己定尺寸」— 已撤回(2026-09-08):高度 / 字級 / placeholder 都吃 Field token,只是沒有外框(浮層內的一列)。
   **搜尋列不畫外框、只有底部分隔線 = 定案**(user 2026-09-09 逐字:「跟世界級的設計一樣就維持現狀」;對照 Linear / Raycast / cmdk 的浮層搜尋列);先前「跟 Input 一模一樣」指的是尺寸、字級、提示文字、停用態同一套 token,不含外框。
-- 「cmdk `data-selected` = 持續選中態」— 它是鍵盤 / 指標的臨時 roving highlight(游標),不是選中:指標模態用 `bg-neutral-hover`(它就是 hover)、鍵盤模態畫框不上底色,永遠不用 `bg-neutral-selected`(見「為何無 StateBehavior」)。
+- 「cmdk `data-selected` = 持續選中態」— 它是鍵盤 / 指標的臨時 roving highlight(游標),不是選中:滑鼠移過搬的反白用 `bg-neutral-hover`(它就是 hover)、鍵盤搬的反白畫框不上底色,永遠不用 `bg-neutral-selected`(見「為何無 StateBehavior」)。
 
 ---
 
@@ -117,9 +117,9 @@ Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>`
 Command 是 **internal primitive**(SelectMenu 底層消費,app 不直接使用,見本 spec「分類」段),視覺**結構上**消費 MenuItem 與 CommandInput,自己沒有色彩 / 尺寸決策:
 
 - **無 Inspector**:Command 無自己的決策性 prop(variant / severity),behavior 全部由 cmdk library 處理。該讓消費者 inspect 的是 **SelectMenu**(公開消費入口),不是 Command 本身。
-- **無 ColorMatrix**:項目的色彩來自 MenuItem(hover / selected / disabled),搜尋列的來自 Field 輸入控件 token;Command 只在外層 cmdk item 上畫反白(指標模態 `data-[selected=true]:bg-neutral-hover` / 鍵盤模態 `data-[selected=true]:focus-ring-inset`)。
+- **無 ColorMatrix**:項目的色彩來自 MenuItem(hover / selected / disabled),搜尋列的來自 Field 輸入控件 token;Command 只在外層 cmdk item 上畫反白(滑鼠搬的 `data-[selected=true]:bg-neutral-hover` / 鍵盤搬的 `data-[selected=true]:focus-ring-inset`;無 `hover:`)。
 - **無 SizeMatrix**:`size`(sm / md / lg)由消費者決定並同時傳給 `CommandInput` 與 `CommandItem`(= Field 與 Menu 的同一組 tier);Command 不另定尺寸。
-- **無 StateBehavior**:cmdk `data-selected` 是「鍵盤 / 指標當前 active-highlight」(roving 臨時反白)而非持續選中態;它的長相由 CommandItem 依 `hooks/use-input-modality.ts` 分流 —— 指標模態 `bg-neutral-hover`、鍵盤模態畫框不上底色(focus-canonical 規則二,user 2026-09-09 拍板),消費者(SelectMenu / AgentPanel)不再各自手刻。
+- **無 StateBehavior**:cmdk `data-selected` 是「鍵盤 / 指標當前 active-highlight」(roving 臨時反白)而非持續選中態;它的長相由 CommandItem 依反白來歷(`hooks/use-input-modality.ts` `useCursorMover` + `markPointerGrab`)分流 —— 滑鼠移過搬的反白 `bg-neutral-hover`、鍵盤搬的反白畫框不上底色,兩者不同時出現、滑鼠停著不算搶(focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板「都要畫框,不上底色」+ 下午三問),消費者(SelectMenu / AgentPanel)不再各自手刻。
 
 對應 anatomy story:保留 `Overview`(展示 internal primitive 的 API surface——CommandInput / CommandList / CommandGroup / CommandItem / CommandEmpty)。深度視覺 / 尺寸對照請查 SelectMenu(consumer)與 MenuItem(item primitive)的 anatomy。
 

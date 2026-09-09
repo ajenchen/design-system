@@ -2786,3 +2786,11 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - **FAB 方形洞根因**:`src/lib/overlay-coexistence.ts` 的 `CoexistenceMask` 用 `clip-path: path(evenodd)` 在每個保留節點的**外接矩形**挖洞;入口鈕是 40px 圓形,洞卻是 40×40 方形,四個角露出沒被遮的底色 = user 看到的白方塊。修法:洞照元素的可視形狀挖 —— 四角各讀 computed `border-radius`(px / %,`rounded-full` 依 CSS 規則夾到邊長一半、相鄰角相加超過邊長時等比縮),用 `A` 弧線畫子路徑;直角元素路徑與舊版完全相同(既有行為不變)。閘 `agent-url-registry-demo-invariant.mjs` S8 加斷言:方框四角 `elementFromPoint` 命中遮罩、圓心命中鈕、clip 含 4 段弧線;`maskHoleRatio` 解析器改成逐子路徑走 M/H/V/L/A 算外接框(selftest 加圓洞 1600 對照)。tsc 通過;瀏覽器驗證待 a11y 掃描結束後重建再跑。
 - **hover 互斥的範圍**:「那麼多元件」與「只改五個檔」不矛盾 —— Select / Combobox / PeoplePicker / 指令面板 / 代理歷史的選單全部是同一個 CommandItem(SelectMenu 包 Command),右鍵 / 下拉選單是 DropdownMenu 的四種項目;改這兩個 primitive 等於改到全部列出的元件。五個檔 = command.tsx(CommandItem)+ dropdown-menu.tsx(四種項目)+ use-input-modality.ts(新的「誰搬誰畫」hook)+ time-picker.tsx(同類 bug)+ select-menu.tsx(只改註解)。
 - **驗證(AD53 FAB)**:重建後示範閘 123 條全綠,S8 新斷言 1440 / 1180 皆通過(四角命中 = 遠處對照點、不是鈕;圓心命中鈕;clip 含 4 段弧線);截圖 `1440-fab-hole.png` 與放大圖確認入口鈕是乾淨圓形浮在遮罩上、無白方塊。閘首版斷言「四角命中遮罩」是錯的:遮罩不吃指標,洞外命中的是被抑制的宿主,已改成與對照點相同。
+
+### AD54 hover / 鍵盤互斥落地(user 拍板「可以」)+ 真機量測第一輪結果(2026-09-09)
+
+**user 原話**:「「第一項(選單反白只有一個主人):仍等你一句「可以」或「不要」。」可以」;「我弄好了,我實在很納悶你到底為何不能自己把chrome弄成是你要的樣子」。
+
+- **hover 互斥**:patch(`cursor-mover.patch`,385 行)套上 command.tsx / dropdown-menu.tsx / select-menu.tsx / time-picker.tsx / hooks/use-input-modality.ts;規範 / spec / 閘七檔一併進本批。驗證鏈(build:lib → storybook → virtual-cursor-modality → focus-indicator → focus-geometry → 選單閘 → 示範閘 → 按鈕閘 → a11y)背景跑,結果見 commit。
+- **真機量測(Claude-in-Chrome 直接驅動 user 的 Chrome)**:第一輪因分頁隱藏無效;user 把視窗放到前面後兩邊各跑一輪,同一套合成滾輪輸入(24 wheel / 48 scroll / 24,000px、1203×592、DPR 1、60Hz)。**主執行緒上分支明顯比 main 順**:活動期間 rAF p95 main 50ms vs 分支 17.6ms;>50ms 的幀 18 vs 0;估計掉幀格 109 vs 9;長動畫幀 47(阻塞 284ms,最長 101ms,主要來自 main 的 index bundle @57295、強制排版 581ms)vs 0。與 Codex R16 headless 的 rAF / partial 方向一致。**尚未解釋 user 的體感**:這個視窗是 DPR 1、非 Retina;Codex 的光柵差異只在 DPR 2 出現;rAF 量不到 GPU。下一步:請 user 把同一視窗移到 Retina 螢幕再跑一輪;若主執行緒仍順但體感仍卡,才需要 DevTools Performance 的 GPU trace。原始摘要:scratchpad `real-device-run-1.md`。
+- **工具限制(回答 user 的納悶)**:擴充套件只能在分頁裡動作(導航、點擊、捲動、跑 JS、截圖),沒有把視窗叫到前面、切 macOS Space 或搬到另一個螢幕的 API;隱藏的分頁瀏覽器不畫格,所以那一步只能人做。

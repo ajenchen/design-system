@@ -158,7 +158,7 @@ Menu 的設計目的是「**快速掃視多個選項挑一個**」。垂直空�
 | hover | `--neutral-hover` | foreground | 滑鼠 hover |
 | selected（單選） | `--neutral-selected` | foreground | bg 高亮（不用 ✓ 勾號，避免影響 prefix 對齊） |
 | **selected × hover（疊加）** | `--neutral-selected`（**selected 勝,釘住不變**） | foreground | owner = `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11 全家族統一)。2026-07-04 Q2:bg 是唯一選中指示器,hover 不得洗掉;code = selected 時關 hover bg(menu-item.tsx)。對齊 Ant Menu `:not(-item-selected)` / VS Code list `:hover:not(.selected)` |
-| **鍵盤焦點／游標（未選中）** | transparent（**不上底色**）+ **畫框**（`focus-ring-inset`,2px 內描邊） | foreground | owner = `ds-canonical/references/focus-canonical.md` 規則二。**user 2026-09-09 拍板**「基本上都是畫框…都不需要上底色」;2026-09-09 之前這格是 `bg-neutral-hover`（與 hover 同色、不畫框,AI 推導自 Material／Radix／cmdk 慣例,已撤回）。滑鼠若停在游標列上,hover 底色照上方 hover 列另外出現（底色 + 框都在） |
+| **鍵盤焦點／游標（未選中）** | transparent（**不上底色**）+ **畫框**（`focus-ring-inset`,2px 內描邊） | foreground | owner = `ds-canonical/references/focus-canonical.md` 規則二。**user 2026-09-09 拍板**「基本上都是畫框…都不需要上底色」;2026-09-09 之前這格是 `bg-neutral-hover`（與 hover 同色、不畫框,AI 推導自 Material／Radix／cmdk 慣例,已撤回）。本節點拿真焦點的常駐用法,滑鼠若停在游標列上,hover 底色照上方 hover 列另外出現（底色 + 框都在）;巢在 cmdk／Radix 內時反白只有一個主人,鍵盤搬走反白後滑鼠停留列**沒有** hover 底色（owner = focus-canonical 規則一「兩類元件」,2026-09-09 下午）|
 | **selected × 鍵盤焦點（疊加）** | `--neutral-selected` + **畫框**（框疊在選中底色上,`focus-ring-inset` 2px 內描邊） | foreground | 同上 owner。**2026-09-07 user 拍板「A5畫框」**:底色已被選中佔走,再深一階等於把兩個意義塞進同一個通道;原 `--neutral-selected-focus` 已退役。**舊文勘誤(2026-08-11)**:先前寫 DropdownMenu「僅鍵盤 cursor 深化」用 `-active`——實作上 Radix 反白滑鼠也觸發(規範與實作不符),且 `-active` 是按壓專屬 token;現已全家統一:滑鼠釘住、鍵盤 `-focus` 深化,無消費者差異 |
 | selected（多選） | transparent | foreground | checkbox 勾選 |
 | disabled | transparent | `--fg-disabled` | disabled prop |
@@ -310,7 +310,7 @@ MenuItem 的狀態色(default / hover / selected / disabled)是**結構性的**�
 
 以上鍵盤導覽由外層選單元件(SelectMenu 走 cmdk / DropdownMenu 走 Radix)own;MenuItem 為 internal layout primitive,不重複實作鍵盤行為。
 
-**Focus**:鍵盤游標一律**畫框**、不上底色(owner = `ds-canonical/references/focus-canonical.md` 規則二,user 2026-09-09 拍板):cva base 為 `focus-visible:focus-ring-inset`(列撐滿容器 → 內描邊),只有 consumer 給本節點真焦點時才會 match;巢在 cmdk / Radix 內時,游標的框由外層 CommandItem / DropdownMenu 依 `hooks/use-input-modality.ts` 畫在游標列上(指標模態的反白才是 hover 底色)。2026-09-09 之前本段寫「以 `bg-neutral-hover` 背景高亮而非畫 outline ring」並附 MUI 對照 —— 那是 AI 推導的慣例,不是 user 決定,已撤回。focus management 由外層元件 own。
+**Focus**:鍵盤游標一律**畫框**、不上底色(owner = `ds-canonical/references/focus-canonical.md` 規則二,user 2026-09-09 拍板):cva base 為 `focus-visible:focus-ring-inset`(列撐滿容器 → 內描邊),只有 consumer 給本節點真焦點時才會 match;巢在 cmdk / Radix 內時,游標的框由外層 CommandItem / DropdownMenu 依反白來歷(`hooks/use-input-modality.ts` `useCursorMover`:滑鼠移過搬的反白 → 底色;鍵盤搬的 → 框;兩者不同時出現,外層項目不寫 `hover:`)畫在游標列上。2026-09-09 之前本段寫「以 `bg-neutral-hover` 背景高亮而非畫 outline ring」並附 MUI 對照 —— 那是 AI 推導的慣例,不是 user 決定,已撤回。focus management 由外層元件 own。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

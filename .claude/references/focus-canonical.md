@@ -15,6 +15,10 @@
 **鍵盤游標只由鍵盤移動;滑鼠只上色,不搬游標。**(唯一例外:已開啟的暫時性彈出層,沿用不外擴)
 **鍵盤游標一律畫框(DS 的焦點框),不上底色;底色只屬於滑鼠 hover 與「選中」。**
 唯一不畫框的例外是**插入點控件**(文字輸入框那類,閃動的 caret 就是指示)—— **user 2026-09-09 拍板**,原話見來源總帳。幾何走「框怎麼畫」。
+**會搶反白的浮層選單(cmdk / Radix Menu)裡,反白就是唯一的游標:滑鼠與鍵盤搶的是同一個東西,誰最後搬動它就用誰的畫法
+(滑鼠移過 → 底色;鍵盤 → 框),兩種畫法永遠不同時出現;滑鼠停著不算搶,只有移動才算。常駐清單(TreeView / Sidebar / Tabs /
+DataTable / TimePicker 欄)不搶反白:hover 底色與鍵盤框是兩個獨立狀態,可以同時出現。**(2026-09-09 下午 user 三問;
+結論由 AI 依一手來源證實,見規則一「兩類元件」、規則二疊加表與來源總帳)
 
 ## 為什麼要拆成兩個問題
 
@@ -28,8 +32,10 @@
 2026-09-06〜09-08 之間問題二曾被寫成「看底色有沒有被選中佔走」的兩段式判準 —— 那是 AI 從 Radix / cmdk / shadcn 慣例推導出來的,
 **不是 user 的決定**,2026-09-09 已撤回(來源總帳)。
 
-上面引文裡「選單選項會同時有焦點框以及滑鼠 hover 上去的底色」這半句,現在成立的部分是:**框恆在**(那是鍵盤游標),
-**底色只在滑鼠真的停在那一列時**才出現(那是 hover),兩者可以同時存在但互不依賴。
+上面引文裡「選單選項會同時有焦點框以及滑鼠 hover 上去的底色」這半句,現在要分兩類看(規則一「兩類元件」):
+**常駐清單**(不搶反白)裡框恆在(那是鍵盤游標)、底色只在滑鼠真的停在那一列時才出現(那是 hover),兩者互不依賴、可以同時存在;
+**浮層選單**(會搶反白)裡兩者**不會同時出現** —— 反白只有一個主人,鍵盤把反白搬走時滑鼠停留列的底色跟著消失,滑鼠停著不算搶
+(user 2026-09-09 下午原話:「搶回去之後原本滑鼠的 hover 樣式即會消失直到滑鼠又搶回來才會再出現」,來源總帳)。
 本檔舊版曾在這裡「勘誤」說選單沒有焦點框、游標就是 hover 底色本身 —— 那個勘誤的依據只是既有
 `menu-item.spec.md` 抄自 Material / Radix / cmdk 的慣例,不是 user 的話,已一併撤回。
 
@@ -69,6 +75,41 @@ Headless UI 更直接:它整包 66 個元件**根本沒有出樹狀、表格、g
 多選清單的 shift/ctrl 範圍選取以「目前游標」為錨點,滑鼠掃過去就會毀掉既有選取;
 type-ahead 的起點會跟著滑鼠亂跳;grid 內「打字即進入編輯」會編到錯的那一列。
 
+### 兩類元件:會搶反白的浮層選單 vs 不搶的常駐清單(2026-09-09 下午,user 三問)
+
+user 原話(問句):「滑鼠會搶反白的元件,搶完之後,那鍵盤是否可以再搶回?且搶回去之後原本滑鼠的 hover 樣式即會消失直到滑鼠又搶回來才會再出現,
+且滑鼠的搶應該是包括鍵盤焦點一起搶吧?換言之,是滑鼠操控的時候鍵盤焦點就會消失,是鍵盤操控的時候滑鼠的 hover 樣式就會消失,你明白我的意思嗎?這樣是否合理?」
+
+三題的答案都是「對」,而且理由是同一個:**在會搶反白的元件裡,反白(cmdk `data-selected` / Radix `data-highlighted`)是唯一的游標,滑鼠與鍵盤搶的是同一個 state。**
+每一家的一手來源都只有**一個** highlight 狀態,沒有「hover」與「鍵盤焦點」兩個並存的通道:
+
+| 來源 | 一個 state | 滑鼠怎麼搶 | 鍵盤怎麼搶回 | 滑鼠停留處在鍵盤搶回後 |
+|---|---|---|---|---|
+| [cmdk `cmdk/src/index.tsx`](https://github.com/pacocoursey/cmdk/blob/main/cmdk/src/index.tsx)(本 repo 1.1.1 `dist/index.mjs` 逐字對驗) | `data-selected={Boolean(selected)}`,`selected = state.value === value.current` | `onPointerMove={disabled \|\| disablePointerSelection ? undefined : select}`,`select()` = `store.setState('value', …)`;**沒有任何 onMouseEnter / hover handler** | ArrowUp/Down `updateSelectedByItem(±1)` 只改同一個 `value` | 舊列失去 `data-selected`,cmdk 本身不畫任何東西;[cmdk 官網樣式](https://github.com/pacocoursey/cmdk/blob/main/website/styles/cmdk/vercel.scss)與 [shadcn CommandItem](https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/command.tsx) 都**只畫 `data-selected`,沒有 `:hover` 規則** |
+| [Radix Menu `menu.tsx`](https://github.com/radix-ui/primitives/blob/main/packages/react/menu/src/menu.tsx)(本 repo 2.1.16 `dist/index.mjs:439-460`) | `data-highlighted={isFocused ? '' : undefined}`,`isFocused` = DOM focus(onFocus/onBlur) | `onPointerMove` 包 `whenMouse` → `item.focus({ preventScroll: true })`;`onPointerLeave` → `contentContext.onItemLeave` → 焦點回容器、反白清空 | 方向鍵 `focusFirst(candidateNodes)` 搬 DOM 焦點 | 舊列 blur → 反白清空;[shadcn DropdownMenuItem](https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dropdown-menu.tsx) 只有 `focus:bg-accent`,**沒有 `hover:`** |
+| [Radix Select `select.tsx`](https://github.com/radix-ui/primitives/blob/main/packages/react/select/src/select.tsx) | 同上 `data-highlighted` = `isFocused` | `onPointerMove`:`pointerTypeRef.current === 'mouse'` 才 `focus({ preventScroll: true })`;`onPointerLeave` 若自己是 activeElement → `onItemLeave` | `setTimeout(() => focusFirst(candidateNodes))` | 同上 |
+| [React Aria `useMenuItem.ts`](https://cdn.jsdelivr.net/npm/@react-aria/menu/src/useMenuItem.ts) | 回傳 `isFocused` / `isFocusVisible`(= `isFocused && selectionManager.isFocused && isFocusVisible() && !isTriggerExpanded`),**不回傳 `isHovered`** | `useHover` `onHoverStart`:`if (!isFocusVisible() && !(isTriggerExpanded && hasPopup)) { selectionManager.setFocused(true); selectionManager.setFocusedKey(key) }` —— hover 就是搬同一個 focusedKey | 方向鍵搬 `focusedKey` | 只有一個 `focusedKey`;對照 [`useOption.ts`](https://cdn.jsdelivr.net/npm/@react-aria/listbox/src/useOption.ts) 的 `shouldFocusOnHover` 標 `@deprecated`(常駐清單那邊正在退掉 hover 搬焦點) |
+| [Headless UI Menu](https://headlessui.com/react/menu) | `data-focus`:「Whether or not the menu item is focused」,文件明講「focused via the mouse or keyboard」;MenuItem 的 states 表**沒有 hover** | 同一個 focus | 同一個 focus | — |
+| macOS AppKit [`NSMenu.highlightedItem`](https://developer.apple.com/documentation/appkit/nsmenu/highlighteditem) | 「Indicates the currently highlighted item in the menu… If no menu is highlighted, this property has a value of nil」—— 單一 `NSMenuItem?` | 滑鼠 / 鍵盤都改同一個 highlightedItem | 同左 | 單一狀態,不可能兩個 |
+| Windows WPF [`MenuItem.IsHighlighted`](https://learn.microsoft.com/en-us/dotnet/api/system.windows.controls.menuitem.ishighlighted) | 「Gets a value that indicates whether a MenuItem is highlighted」—— 單一 boolean,不分滑鼠 / 鍵盤 | 同一個 IsHighlighted | 同左 | 單一狀態 |
+
+反過來,**不搶反白的常駐清單**用的是兩個獨立通道,所以 hover 底色與鍵盤框可以同時出現:
+
+| 來源 | hover | 鍵盤焦點 | 兩者關係 |
+|---|---|---|---|
+| 瀏覽器 `:hover` / `:focus-visible`(DS 的 Sidebar / Tabs / DataTable / TimePicker 欄走真焦點) | pseudo-class | pseudo-class | 兩個獨立 pseudo-class,同一元素可同時 match(每一顆網頁上的按鈕都是這樣) |
+| Material 3 / [material-web `_menu-item.scss`](https://raw.githubusercontent.com/material-components/material-web/main/menu/internal/menuitem/_menu-item.scss) | `md-ripple` 的 `hover-state-layer-*`([`_md-sys-state.scss`](https://raw.githubusercontent.com/material-components/material-web/main/tokens/versions/v0_192/_md-sys-state.scss):hover 0.08 / focus 0.12 / pressed 0.12) | `md-focus-ring`(獨立元素) | 兩個獨立元素,各畫各的 |
+| [VS Code `listWidget.ts`](https://raw.githubusercontent.com/microsoft/vscode/main/src/vs/base/browser/ui/list/listWidget.ts) `DefaultStyleController.style()` | `.monaco-list-row:hover:not(.selected):not(.focused) { background-color: listHoverBackground }` | `.monaco-list:focus .monaco-list-row.focused { outline: 1px solid listFocusOutline; outline-offset: -1px }` + `listFocusBackground` | **部分反例**:焦點列自帶 `listFocusBackground`(底色通道已被焦點佔走),所以 hover 底色在焦點列上被 `:not(.focused)` 排除;hover 別列時兩者同時可見。DS 的鍵盤框不佔底色通道,所以同一列上底色 + 框可疊(AI 推導,見來源總帳) |
+| TreeView(DS 自家,`aria-activedescendant` 虛擬游標) | CSS `:hover` | `showRing`(`useInputModality`) | 獨立;`scripts/virtual-cursor-modality-invariant.mjs` E1/E2 實測同一列底色 + 框都在 |
+
+**兩類怎麼分**:滑鼠移過去反白會不會跟過來(規則一的例外)。會 → 反白是唯一游標,適用本節;不會 → 常駐清單,hover 與框獨立。
+DS 內屬於前者的:`CommandItem`(Select / SelectMenu / Combobox / PeoplePicker / Command inline+dialog / AgentPanel 歷史清單都經它)與
+DropdownMenu 四種項目(Item / SubTrigger / CheckboxItem / RadioItem)。其餘全是後者。
+
+**所以修改範疇只有會搶反白的元件**(user 問「這個更改範疇應該只有會搶反白的元件吧?」——對):把它們項目上的 `hover:` 樣式全部拿掉、
+畫法改由「反白來歷」決定(`hooks/use-input-modality.ts` `useCursorMover` + `markPointerGrab`),常駐清單一行都不用改。
+唯一順手修的常駐項是 TimePicker:滑鼠點開後 DOM 焦點落在第一顆選項鈕而不是 listbox,方向鍵之後框留在舊鈕上(見「已知未收斂」)。
+
 ---
 
 ## 規則二:游標長什麼樣 —— 一律畫框,不上底色
@@ -87,24 +128,35 @@ type-ahead 的起點會跟著滑鼠亂跳;grid 內「打字即進入編輯」會
 | 疊加 | 長相 | 說明 |
 |---|---|---|
 | **選中 × 游標** | **框疊在選中底色上**(`bg-neutral-selected` + 框) | 底色說「這是選中的」,框說「游標在這裡」,兩個通道互不取消 |
-| **hover × 游標**(滑鼠停在鍵盤游標所在的那一列) | **底色 + 框都在** | 底色照 hover 規則出現、框照游標規則出現。浮層選單裡滑鼠一動游標就跟過去(規則一例外),所以這一格在浮層裡出現在「鍵盤模態下滑鼠剛好停在反白列」時 |
+| **hover × 游標 —— 不搶反白的常駐清單**(TreeView / Sidebar / Tabs / DataTable / TimePicker 欄;滑鼠停在鍵盤游標所在的那一列) | **底色 + 框都在** | 底色照 hover 規則出現、框照游標規則出現,兩個獨立狀態(瀏覽器 `:hover` / `:focus-visible` 本來就獨立;規則一「兩類元件」第二表) |
+| **hover × 游標 —— 會搶反白的浮層選單**(cmdk / Radix Menu) | **沒有這一格**:反白只有一個主人,只會是「滑鼠搬的 → 底色」或「鍵盤搬的 → 框」其中一種 | 滑鼠移過就把反白搶走(那就是 hover 的樣子);鍵盤搬走反白後,滑鼠停留列**不再有底色**(項目上沒有任何 `hover:` 樣式;滑鼠停著不算搶,只有 pointer move 才算);滑鼠再動就連框一起搶回來。規則一「兩類元件」第一表逐家對驗 |
 | 選中 × hover | 選中底色釘住不變 | owner = `item-anatomy.spec.md`「選中 × 互動疊加」,本檔不重述 |
 
-**虛擬游標的框只在鍵盤模態下畫(2026-09-08)。** 真 DOM 焦點有瀏覽器的 `:focus-visible` 決定
+**虛擬游標的框只在「鍵盤」下畫(2026-09-08;常駐清單看輸入模態,會搶反白的浮層選單看反白來歷 —— 兩個訊號,下詳)。** 真 DOM 焦點有瀏覽器的 `:focus-visible` 決定
 「這次要不要畫」;虛擬游標(`aria-activedescendant` / cmdk `data-selected` / Radix `data-highlighted`)
 的框畫在**沒有真焦點**(或焦點由程式搬動)的那一項上,瀏覽器幫不了,要自己判斷模態。判準逐字對齊
 [WICG focus-visible explainer「Example heuristic」](https://github.com/WICG/focus-visible/blob/main/explainer.md):
 「if the most recent user interaction was via the keyboard; and the key press did not include a meta,
 alt/option, or control key; then the modality is keyboard. Otherwise, the modality is not keyboard.」
 機械載體 = `hooks/use-input-modality.ts`(document capture 監聽、**模組載入即安裝**;第一版的「引用計數安裝」實測會漏掉開啟前的按鍵,見該檔註解)。
-浮層選單的反白(cmdk `data-selected` / Radix `data-highlighted`)因此有兩種長相:
-**指標模態**下反白跟著滑鼠走,它就是 hover → 底色、無框;**鍵盤模態**下反白就是游標 → 框、無底色
-(滑鼠若剛好停在上面,底色照 hover 規則另外出現)。消費者:`CommandItem`(SelectMenu / Select / Combobox /
-AgentPanel 歷史清單都經它)/ DropdownMenu 四種項目(`radixCursorClass`)/ TreeView(`showRing`)。
+**這個判準只給不搶反白的常駐虛擬游標用(TreeView `showRing`)**:WICG polyfill 只把 keydown / mousedown / pointerdown / touchstart 當輸入,
+**滑鼠移動不算**(mousemove 只在載入時用來判初始模態、第一次移動後就移除 listener —— [`src/focus-visible.js`](https://github.com/WICG/focus-visible/blob/main/src/focus-visible.js) `onInitialPointerMove`),
+所以常駐清單的鍵盤框不會被滑鼠一晃就抹掉,跟瀏覽器對真焦點的行為一致。
+
+**會搶反白的浮層選單用另一個訊號:反白來歷(`useCursorMover` + `markPointerGrab`,同一檔)。** 這裡「滑鼠移過項目」本身就是搶
+(cmdk `onPointerMove → select()` / Radix `onPointerMove → item.focus()`),必須算;停著不動沒有 pointermove,自然不算。
+兩個訊號不能共用:拿 WICG 模態畫反白,滑鼠搶走反白後模態仍是鍵盤,被搶到的列會畫框而不是底色(2026-09-09 下午閘 D3 抓到);
+拿反白來歷畫 TreeView,滑鼠一晃鍵盤框就消失。反白因此只有兩種長相:
+**滑鼠搬的**反白 = hover → 底色、無框;**鍵盤搬的**反白 = 游標 → 框、無底色,而且滑鼠停留列的底色一起消失(項目上沒有 `hover:` 樣式)。
+開啟時的落點(cmdk 放在已選項或第一項、Radix 不放)沒有人搬過,用開啟那一下的輸入畫:滑鼠點開 → 底色、鍵盤開 → 框。
+消費者:`CommandItem`(SelectMenu / Select / Combobox / PeoplePicker / Command / AgentPanel 歷史清單都經它)/ DropdownMenu 四種項目(`radixCursorClass`);
+TreeView(`showRing`)仍走 `useInputModality`。
 錨:user 2026-09-08「為何我用滑鼠一開 select 選單明明就沒有鍵盤操作,卻會直接出現鍵盤焦點?」——
 cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selectedOption?.value}`),
 畫框規則沒有模態條件,滑鼠一點開就畫。閘:`scripts/virtual-cursor-modality-invariant.mjs`
-(五段:滑鼠開不畫 / 鍵盤移回必畫 / 純鍵盤開立刻畫 / 鍵盤模態游標列有框且底色 = 非游標列 / 指標模態 hover 有底色無框)。
+(A 滑鼠開不畫 / A2 指標 hover 有底色無框 / B 鍵盤移回必畫 / B2 鍵盤游標列有框且底色 = 非游標列 / C 純鍵盤開立刻畫 /
+**D 搶來搶去四步**:滑鼠到 A(底色)→ ↓ 到 B(B 框、B 無底色、A 底色消失)→ 滑鼠到 C(B 框消失、C 底色無框)→ 停在 C 按 ↑(C 底色消失、B 框),
+11 個會搶反白的目標 + SubTrigger / **E 常駐清單**:鍵盤框在時 hover 同列或別列,底色與框同時存在;`--selftest` 對照組把兩類都釘回舊行為,全部 'new' 斷言必紅)。
 
 **按鈕不屬於例外列。** 按鈕用滑鼠點下去不顯示焦點框(`:focus-visible` 啟發式:指標點按鈕不視覺化焦點,
 文字輸入框取得焦點要視覺化)。真正「滑鼠鍵盤共用」的只有插入點控件。
@@ -140,9 +192,11 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 圓角 | 跟著元素的 `border-radius` | `outline` 原生行為,不必特別處理(「不需要為它開分支」) |
 | 只准兩種幾何 | 全域外描邊 / `focus-ring-inset`;禁 `ring-offset-*`、禁 `focus-visible:ring-*`、禁手寫三件組 | `scripts/focus-geometry-invariant.mjs` R1–R5 |
 | 什麼時候畫(真焦點) | 瀏覽器 `:focus-visible` | 元件不判斷模態 |
-| 什麼時候畫(虛擬游標) | `useInputModality() === 'keyboard'` 才掛 `focus-ring-inset` | 上一節;`scripts/virtual-cursor-modality-invariant.mjs` |
+| 什麼時候畫(常駐清單的虛擬游標,TreeView) | `useInputModality() === 'keyboard'` 才掛 `focus-ring-inset`(WICG 模態:keydown / pointerdown,滑鼠移動不算) | 上一節;`scripts/virtual-cursor-modality-invariant.mjs` |
+| 什麼時候畫(會搶反白的浮層選單,cmdk / Radix) | `useCursorMover() === 'keyboard'` 才掛 `focus-ring-inset`,否則反白上 `bg-neutral-hover`(反白來歷:鍵盤鍵 / 滑鼠移過項目 `markPointerGrab`;停著不算) | 上一節;同一支閘 D 段 |
 | **選中 × 游標** | 框疊在 `bg-neutral-selected` 上 | 規則二疊加表 |
-| **hover × 游標** | `bg-neutral-hover` + 框都在 | 規則二疊加表 |
+| **hover × 游標(常駐清單)** | `bg-neutral-hover` + 框都在 | 規則二疊加表 |
+| **hover × 游標(浮層選單)** | 不存在:反白只有一個主人,底色與框擇一;項目上不寫任何 `hover:` | 規則二疊加表 |
 | 游標**不**帶什麼 | 不帶底色、不帶邊框變色、不帶文字變色 | 「一個項目只有一個指示器」+ user「都不需要上底色」 |
 
 ## 現行盤點(2026-09-06 實測;2026-09-09 更新兩列)
@@ -155,6 +209,10 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | `ring-inset` | 2(DataTable、TreeView)|
 | `--neutral-selected-focus` 的用法 | **0**(2026-09-07 退役;2026-09-06 當時是 4 活 + 1 死)|
 | 用底色當鍵盤游標的地方(`focus-visible:bg-` / 反白底色不分模態)| **0**(2026-09-09 清完:MenuItem / CommandItem / DropdownMenu / Sidebar;2026-09-08 當時 4 檔)|
+| 會搶反白的項目上的 `hover:` 樣式(CommandItem / DropdownMenu 四種項目)| **0**(2026-09-09 下午清完;之前鍵盤分支各帶 `hover:bg-neutral-hover`、選中列另帶 `hover:bg-neutral-selected`,共 5 條)|
+| `hover:bg-` 全 DS(非 stories)| 16 檔 / 40 處 —— 其餘全是常駐元素(Sidebar 選單鈕與動作鈕 / TreeView 列與動作 / TimePicker 欄 / Calendar / DateGrid / InlineEdit / Button / Switch / Checkbox / Carousel / ScrollArea / PersonDisplay / DataTable 工具列),hover 與焦點框獨立,不在本節範疇 |
+| `data-[highlighted]` / `data-[selected=true]` 的 owner | 各只有一檔:`dropdown-menu.tsx` / `command.tsx`(反白畫法的單一來源) |
+| `focus-visible:` 的用法歸類 | `focus-visible:focus-ring-inset` 20(真焦點內描邊)/ `focus-visible:outline-none` 7(全部登記在 `focus-suppression-registry`)/ `focus-visible:underline` 2(DatePicker 範圍模式共用承擔者的區分)/ `focus-visible:!border-primary` `focus-visible:hover:!border-primary` 各 1(Textarea naked 模式,C 類邊框轉色)/ `focus-visible:z-20` 1(SegmentedControl 疊層順序,不是指示器)/ 其餘出現在註解 |
 
 `bg-neutral-hover` 橫跨 131 處 / 56 檔,所以底色語彙本身是全 DS 共用的 —— 這正是它只能表達「滑鼠在這裡」與「選中」、不能再借給鍵盤游標當第三個意義的原因。
 
@@ -169,6 +227,13 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 - **Slider(已收斂 2026-09-07)**:原本 `slider.tsx` 註解明寫「不加 ring 或 halo」、以邊框變色當焦點;C6 修後改用全域外描邊,並把殘留的 `focus-visible:border-primary-hover` 一併刪除(`slider.tsx:174-182` 註解記錄兩次修正)。留在本節只為對照,不再是未收斂項。
 - **DataTable 的 hover 機制與 TreeView 不同**:TreeView 用 CSS `:hover`,DataTable 用指令式寫入的 `data-[hovered]` 屬性。
   兩者在規則一下結論相同(都不移動游標),但 DataTable 那條路沒有捲動時的重新計算。
+- **TimePicker 欄(2026-09-09 下午通盤複查抓到,修法與「兩類元件」同一批落地)**:滑鼠點開後 DOM 焦點落在第一顆選項鈕(`Popover` 預設抓第一個 `<button>`),不是 listbox;
+  之後按方向鍵,值照常換(事件冒泡到 listbox),但瀏覽器的 `:focus-visible` 框留在那顆停在原地的舊鈕上,游標(`aria-activedescendant`)其實已經走了
+  (真瀏覽器實測:`activeElement = BUTTON[role=option]`、↓ 後選中格 `outline=none`)。修法是 `time-picker.tsx` 的 `PopoverContent` 傳 `onOpenAutoFocus`
+  把焦點放在 listbox 上 —— A 類「框畫在被指到的那一格」才成立。
+- **cmdk 對捲動後補發的 pointermove 不設防(上游行為,未驗證)**:Chromium 在內容捲動後可能補發一個座標不變的 pointermove 讓 `:hover` 重算;
+  cmdk 的 `onPointerMove` 不分真假一律 `select()`,鍵盤捲動時反白理論上可能跳回滑鼠停留格。DS 的 `markPointerGrab` 已忽略座標不變的事件
+  (不會被畫成底色),但反白跳動本身要改 cmdk。本 repo 的閘用短清單驗證,沒有覆蓋這個情境。
 
 ## Sources
 
@@ -183,10 +248,30 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 - [Sarah Higley, "aria-activedescendant is not focus"](https://sarahmhigley.com/writing/activedescendant/)
 - WAI-ARIA 1.2 §4.3.2 / Core-AAM 1.2 §3.8.3 — 這兩份才是 normative;APG 是 authoring guidance,本檔不稱其為規範
 
+2026-09-09 下午補抓(規則一「兩類元件」兩張表的一手來源,全部 WebFetch 逐字;本 repo 的 cmdk 1.1.1 / Radix Menu 2.1.16 另以 `node_modules/*/dist/index.mjs` 對驗):
+
+- [cmdk `cmdk/src/index.tsx`](https://github.com/pacocoursey/cmdk/blob/main/cmdk/src/index.tsx) — `data-selected` 單一來源、`onPointerMove → select()`、`updateSelectedByItem`、`disablePointerSelection` JSDoc「Optionally set to `true` to disable selection via pointer events」
+- [cmdk 官網樣式 `vercel.scss`](https://github.com/pacocoursey/cmdk/blob/main/website/styles/cmdk/vercel.scss) — `[cmdk-item]` 只有 `&[data-selected='true']` / `&[data-disabled='true']` / `&:active`,沒有 `:hover`
+- [shadcn `command.tsx`](https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/command.tsx) / [`dropdown-menu.tsx`](https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dropdown-menu.tsx) — CommandItem `data-[selected=true]:bg-accent`、DropdownMenuItem `focus:bg-accent`,兩者都沒有 `hover:`
+- [Radix Menu `menu.tsx`](https://github.com/radix-ui/primitives/blob/main/packages/react/menu/src/menu.tsx) — `data-highlighted={isFocused ? '' : undefined}`、`onPointerMove` + `whenMouse` → `item.focus({ preventScroll: true })`、`onPointerLeave → onItemLeave`(焦點回容器)
+- [Radix Select `select.tsx`](https://github.com/radix-ui/primitives/blob/main/packages/react/select/src/select.tsx) — 同構;`pointerTypeRef.current === 'mouse'` 才 focus
+- [React Aria `useMenuItem.ts`](https://cdn.jsdelivr.net/npm/@react-aria/menu/src/useMenuItem.ts) — `onHoverStart` 在 `!isFocusVisible()` 時 `setFocused(true); setFocusedKey(key)`;回傳無 `isHovered`;[`useOption.ts`](https://cdn.jsdelivr.net/npm/@react-aria/listbox/src/useOption.ts) `shouldFocusOnHover` 標 `@deprecated`
+- [Headless UI Menu](https://headlessui.com/react/menu) — `data-focus`「Whether or not the menu item is focused」,「focused via the mouse or keyboard」
+- [AppKit `NSMenu.highlightedItem`](https://developer.apple.com/documentation/appkit/nsmenu/highlighteditem) — 單一 highlighted item(nil 表示沒有)
+- [WPF `MenuItem.IsHighlighted`](https://learn.microsoft.com/en-us/dotnet/api/system.windows.controls.menuitem.ishighlighted) — 單一 boolean
+- [VS Code `listWidget.ts`](https://raw.githubusercontent.com/microsoft/vscode/main/src/vs/base/browser/ui/list/listWidget.ts) `DefaultStyleController.style()` + [theme-color 參考](https://code.visualstudio.com/api/references/theme-color) — `list.hoverBackground`「background when hovering over items using the mouse」/ `list.focusOutline`「outline color for the focused item when the list/tree is active」/ hover 規則 `:hover:not(.selected):not(.focused)`
+- [material-web `_menu-item.scss`](https://raw.githubusercontent.com/material-components/material-web/main/menu/internal/menuitem/_menu-item.scss) + [`_md-sys-state.scss`](https://raw.githubusercontent.com/material-components/material-web/main/tokens/versions/v0_192/_md-sys-state.scss) — `md-ripple`(hover 0.08 / pressed 0.12)與 `md-focus-ring` 是兩個獨立元素
+- [WICG focus-visible polyfill `src/focus-visible.js`](https://github.com/WICG/focus-visible/blob/main/src/focus-visible.js) — `onPointerDown` 掛 mousedown / pointerdown / touchstart;`onKeyDown` 排除 meta / alt / ctrl;mousemove 只做初始判定(`onInitialPointerMove` 觸發後 `removeInitialPointerMoveListeners()`)
+- 抓不到正文(JS 渲染,只回標題)、不列為依據:Apple HIG「Menus」頁、m3.material.io「Menus」與「States」頁;Material 的數值改引 material-web 原始碼
+
 ## 來源總帳(M36:區分 user 拍板與 AI 推導)
 
 | 條目 | 出處 |
 |---|---|
+| **「會搶反白的元件裡,反白是唯一游標:鍵盤可以搶回;搶回後滑鼠停留處的 hover 底色消失;滑鼠搶時連鍵盤框一起搶」(規則一「兩類元件」)** | **user 2026-09-09 下午原話是問句 + 委託研究**,逐字:「滑鼠會搶反白的元件,搶完之後,那鍵盤是否可以再搶回?且搶回去之後原本滑鼠的 hover 樣式即會消失直到滑鼠又搶回來才會再出現,且滑鼠的搶應該是包括鍵盤焦點一起搶吧?換言之,是滑鼠操控的時候鍵盤焦點就會消失,是鍵盤操控的時候滑鼠的 hover 樣式就會消失,你明白我的意思嗎?這樣是否合理?仔細研究查查,包括我們所使用的套件以及世界級的設計,確保我們有一致的設計語言且不違背世界級的設計且有 SSOT,有結論之後要確保整個 DS 都有遵循 SSOT 沒有偏移」。**問句 ≠ 拍板(M36(a))**:三題的「對」是 **AI 依一手來源證實**(規則一第一表七家全部單一 highlight),方向與 user 提問一致;程式落地是依這個結論的機械執行 |
+| 「滑鼠停著不算搶,只有 pointer move 才算」「兩種畫法永遠不同時出現」「開啟時的落點用開啟那一下的輸入畫」 | **AI 依 cmdk `onPointerMove` / Radix `onPointerMove` 一手來源歸納**(搶的動作就是 pointermove 事件本身);主 session 的先驗判斷,非 user 決定 |
+| 「不搶反白的常駐清單裡 hover 底色與鍵盤框是兩個獨立狀態,可以同時出現」 | **AI 歸納**:瀏覽器 `:hover` / `:focus-visible` 獨立、Material 3 hover state layer 與 focus ring 是兩個元素;VS Code 因焦點列自帶 focusBackground 才排除 hover(部分反例,DS 焦點不佔底色通道所以可疊)。user 2026-09-06 原話「鍵盤焦點若在在選單選項上會同時有焦點框以及滑鼠hover上去的底色吧?」是問句,且 2026-09-09 下午已把浮層選單那半邊改成「不同時出現」 |
+| 「修改範疇只有會搶反白的元件;TimePicker 焦點落點順手修」 | user 問「這個更改範疇應該只有會搶反白的元件吧?還是還有其他相關地方要修正?」(問句);**AI 依 DS-wide grep 回答**:`hover:` 只在 CommandItem / DropdownMenu 需要拿掉,常駐清單一行不改;TimePicker 是通盤複查抓到的既有缺口(A 類框畫錯元素),與本題無關但同屬「框畫在哪」 |
 | **「鍵盤游標一律畫框、不上底色;唯一不畫框的例外是插入點控件」(規則二現行版)** | **user 2026-09-09 拍板**,逐字:「我基本上都說以畫框為主」「會搶反白的,我當時只有說“除了畫框還要上底色來模擬滑鼠”,那就表示都要畫框吧?」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧?」「就是基本上都是畫框,唯一不畫框的例外就是你所謂“單一狀態控制項(文字輸入框、Textarea、Field 內的輸入)”」 |
 | ~~「底色空著(選單／清單選項,未被選中)→ 用 hover 同色底當游標,不畫框」(舊規則二第一列、舊 D 類、舊判斷程序第 6 步)~~ | **AI 推導自 Radix / cmdk / shadcn 慣例**(經 `menu-item.spec.md` 舊句「以背景高亮而非畫 outline ring」),**不是 user 決定**。**2026-09-09 user 撤回**,逐字:「“底色空著(選單／清單選項,未被選中) 用 hover 同色底當游標,不畫框”我們他媽到底哪有定義過這個?」「此外鍵盤焦點框怎麼畫的原則呢?“單一狀態控制項”這個又是如何具體判別?鍵盤焦點框的整理根本不完整」。本檔 2026-09-06〜09-08 三版都把這條當成「既有 canonical 本來就有的答案」寫進規則,那是把 AI 推論升格成定案(M36(a)),一併撤回 |
 | 「會搶反白的地方,鍵盤焦點 = hover 樣式 + 藍框」 | **user 2026-09-07 原話**:「反正就是會搶反白的地方的鍵盤焦點會有hover的樣式+藍框?你確認是這樣的話,那我可以接受」——這句已經是「都要畫框」;「+hover 樣式」的部分由 user 2026-09-09 自己收斂成「都不需要上底色」(底色只在滑鼠真的停在那一列時,照 hover 規則出現) |
@@ -241,7 +326,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 
 | 類 | 判準(**看什麼**) | 框由誰畫 | 實例 |
 |---|---|---|---|
-| **A. 虛擬游標／程式游標** | 它身上有 `aria-activedescendant`;或它是函式庫管理游標的項目(cmdk `data-selected` / Radix `data-highlighted`),而瀏覽器的 `:focus-visible` 看不到那個游標 | **元件自己**,畫在**被指到的那一項**上(`focus-ring-inset`,只在鍵盤模態;容器／項目抑制瀏覽器預設外框) | TreeView 根(`tree-view.tsx:1394` showRing)/ DataTable 根 / TimePicker 欄(`time-columns.tsx` 被指到的 option)/ DropdownMenu 項(`dropdown-menu.tsx` `radixCursorClass`)/ CommandItem(`command.tsx`) |
+| **A. 虛擬游標／程式游標** | 它身上有 `aria-activedescendant`;或它是函式庫管理游標的項目(cmdk `data-selected` / Radix `data-highlighted`),而瀏覽器的 `:focus-visible` 看不到那個游標 | **元件自己**,畫在**被指到的那一項**上(`focus-ring-inset`;常駐清單看 `useInputModality`、會搶反白的選單看反白來歷 `useCursorMover`;容器／項目抑制瀏覽器預設外框) | TreeView 根(`tree-view.tsx:1394` showRing)/ DataTable 根 / TimePicker 欄(`time-columns.tsx` 被指到的 option)/ DropdownMenu 項(`dropdown-menu.tsx` `radixCursorClass`)/ CommandItem(`command.tsx`) |
 | **B. 插入點控件** | **可機械判別**:標籤名是 `input`(`type` 為文字類:未指定 / text / search / email / url / tel / password / number)或 `textarea`,或元素帶 `contenteditable`。Field 家族控件在此之上另有 wrapper 邊框轉色(`field-wrapper.tsx:49` `focus-within:!border-primary`)。grep 判準 = `scripts/focus-suppression-registry.mjs:125-127`(往上 40 行找得到 `<input>` / `<textarea>`,或共用 style 常數所服務的檔案真的渲染該標籤) | **唯一不畫框的例外**。指示 = 閃動的插入點(caret);Field 家族再加欄位邊框轉 primary | Input / Textarea / Combobox / DatePicker / Command 與 SelectMenu 搜尋框 / AgentPromptInput |
 | **C. 祖先畫框(邊框轉色)** | 從**自己往上**找,有元素在聚焦時改邊框(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **那個元素**(可以是自己這圈外框,也可以是祖先);它就是這個 tab stop 的框 | 欄位外框自己(`combobox.tsx:857` / `time-picker.tsx:379`)/ 祖先畫(`inline-edit.tsx:396`)/ DatePicker 範圍模式兩顆鈕(另加底線區分,見下) |
 | **E. 浮層程式落點** | 它 `tabIndex=-1`,而且是浮層開啟時被程式 `.focus()` 的殼 | **回規則一(問題一)**:殼本身不可操作 → 不畫;它不在 Tab 順序裡(`-1` 是 Radix 設的,不必也不能拿掉)。若某個殼是 `tabIndex≥0` 的空焦點站,修法是**拿掉 tabIndex**,不是畫框。內部控件各自有指示 | Popover / HoverCard / DropdownMenuContent / FileViewer |
@@ -305,7 +390,7 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 |---|---|---|---|
 | 1 | **它可以被操作嗎?**(有 onClick / onKeyDown / 是原生互動元素?) | **否 → 不畫**,而且要拿掉 tabIndex。這張表不適用 | `N`,寫「不可操作」 |
 | 2 | **它的 `tabIndex` 是 `-1`,而且是某個浮層開啟時被程式 `.focus()` 的殼嗎?** | **E** — 不畫(回問題一) | 「浮層開啟時的程式落點;內部控件各自有指示」 |
-| 3 | **它身上有 `aria-activedescendant`,或它是 cmdk / Radix 管理游標的項目嗎?** | **A** — 容器不畫瀏覽器那圈,框由元件畫在被指到的那個元素上(鍵盤模態) | 那個元素／那條 class 的 file:line(例:`tree-view.tsx:1394` 的 `showRing`)|
+| 3 | **它身上有 `aria-activedescendant`,或它是 cmdk / Radix 管理游標的項目嗎?** | **A** — 容器不畫瀏覽器那圈,框由元件畫在被指到的那個元素上(常駐清單:鍵盤模態 `useInputModality`;會搶反白的選單:鍵盤來歷 `useCursorMover`) | 那個元素／那條 class 的 file:line(例:`tree-view.tsx:1394` 的 `showRing`)|
 | 4 | **它的標籤名是 `input`(文字類)或 `textarea`,或帶 `contenteditable` 嗎?** | **B** — 不畫,插入點(caret)就是指示 | 「caret」,外框另有 focus 樣式時一併寫上 |
 | 5 | **從自己往上找,有沒有元素在聚焦時改邊框?**(`focus-within:` / `:has(…:focus-visible)` / `focus-visible:border-`) | **C** — 不另外畫外框,那圈邊框就是指示 | 那個元素的 file:line 與 class(自己也算)|
 | 6 | **以上皆否** | **要畫**(幾何走「框怎麼畫」) | — |

@@ -263,7 +263,8 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     [selectedValues]
   )
 
-  // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
+  // 反白(cmdk 游標)的長相由 CommandItem 依反白來歷分流(滑鼠搬的 → 底色 / 鍵盤搬的 → 框;SSOT = hooks/use-input-modality.ts
+  // `useCursorMover`,focus-canonical 規則一「兩類元件」)。開啟時的落點沒有人搬過,用開啟那一下的輸入畫(滑鼠點開 → 底色、鍵盤開 → 框)。
   // 2026-07-05 P2:單選已選 option — 供 cmdk defaultValue 定 cursor 起點(見下方 <Command>)
   const selectedOption = React.useMemo(
     () => (!multiple ? visibleOptions.find((o) => o.value === selectedValues[0]) : undefined),

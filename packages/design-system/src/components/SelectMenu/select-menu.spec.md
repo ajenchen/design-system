@@ -251,7 +251,7 @@ user 原話(2026-09-09):「只有實際上真的沒有任何選項可以選的�
 SelectMenu 是**多區塊 composite primitive**,色彩全數消費 DS semantic token、不新增 token;但 2026-07-05 D4 後互動色的 **owner 分層**如下(修正舊述「視覺完全繼承內層 primitive」):
 
 - **surface / border / elevation**:`PopoverContent` 自設 `bg-surface-raised` + `border-border` + `--elevation-200`(`select-menu.tsx:308-320`)。
-- **hover / selected 互動 bg**:owner 是**外層 cmdk `CommandItem`** —— 反白依模態分流(指標模態 `data-[selected=true]:bg-neutral-hover` = hover;鍵盤模態 `data-[selected=true]:focus-ring-inset` = 游標畫框、不上底色;focus-canonical 規則二,user 2026-09-09 拍板)+ 單選 persistent selected `bg-neutral-selected`;**選中 × 疊加走 `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11)**:滑鼠 hover 釘住不變、鍵盤游標的框疊在選中底色上(2026-09-07 起,鏡射 DropdownMenu 同格)。
+- **hover / selected 互動 bg**:owner 是**外層 cmdk `CommandItem`** —— 反白依**反白來歷**分流(滑鼠移過搬的 `data-[selected=true]:bg-neutral-hover` = hover;鍵盤搬的 `data-[selected=true]:focus-ring-inset` = 游標畫框、不上底色,滑鼠停留列的底色一起消失、項目無 `hover:`;`hooks/use-input-modality.ts` `useCursorMover`;focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板 + 下午三問)+ 單選 persistent selected `bg-neutral-selected`;**選中 × 疊加走 `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11)**:滑鼠 hover 釘住不變、鍵盤游標的框疊在選中底色上(2026-09-07 起,鏡射 DropdownMenu 同格)。
 - **內層 `MenuItem`**:強制 `!bg-transparent` 純視覺排版(`select-menu.tsx:460` 選項列 / `:489` create 列),不 own 互動 bg。
 
 **無 ColorMatrix 的理由不變**:上述全是既有 token family(`neutral-hover / neutral-selected`,與 DropdownMenu / MenuItem 同組;鍵盤游標(選中與否)一律走框不走底色),SelectMenu 不擁有獨立色彩決策;加 ColorMatrix 只會重複 MenuItem / DropdownMenu / Popover 的矩陣。

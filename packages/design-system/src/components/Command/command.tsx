@@ -16,7 +16,7 @@ import { ICON_SIZE } from "@/design-system/tokens/uiSize/icon-size"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { CircularProgress } from "@/design-system/components/CircularProgress/circular-progress"
 import { RowSizeProvider, useRowSize } from "@/design-system/patterns/element-anatomy/item-anatomy"
-import { useInputModality } from "@/design-system/hooks/use-input-modality"
+import { markPointerGrab, useCursorMover } from "@/design-system/hooks/use-input-modality"
 
 type CommandSize = 'sm' | 'md' | 'lg'
 
@@ -303,7 +303,7 @@ const CommandItem = React.forwardRef<
   CommandItemProps
 >(({ className, children, size: sizeProp, startIcon, startIconClassName, avatar, startContent, description, tag, endContent, shortcut, selected, checkbox, checked, disabled, ...props }, ref) => {
   const size = sizeProp ?? useRowSize('md')
-  const keyboardModality = useInputModality() === 'keyboard'
+  const cursorByKeyboard = useCursorMover() === 'keyboard'
   const childIsMenuItem = React.isValidElement(children) && children.type === MenuItem
   const end = shortcut != null ? <CommandShortcut>{shortcut}</CommandShortcut> : endContent
   return (
@@ -312,25 +312,33 @@ const CommandItem = React.forwardRef<
       disabled={disabled}
       className={cn(
         // cmdk item 是 <div role="option"> 無 tabIndex,永遠拿不到 DOM 焦點 → 不需要 outline-none;
-        // 游標(cmdk data-selected)的長相由下方依模態分流。
+        // 游標(cmdk data-selected)的長相由下方依反白來歷分流。
         "relative flex cursor-default select-none items-center data-[selected=true]:text-foreground data-[disabled=true]:pointer-events-none data-[disabled=true]:text-fg-disabled",
         // 內層 MenuItem 自帶內距與圓角;外層歸零
         "p-0 rounded-none",
-        // 游標依輸入模態分流(focus-canonical 規則二,user 2026-09-09 拍板「都要畫框,不上底色」):
-        //   指標模態:cmdk 讓游標跟著滑鼠走(規則一的浮層例外),游標 = hover → 底色、無框。
-        //   鍵盤模態:游標畫框(列撐滿 → 內描邊)、不上底色;滑鼠若停在游標列上,底色照 hover 規則另外出現。
+        // cmdk 的反白(data-selected)是這裡**唯一的游標**:滑鼠移過就搶走(cmdk Item 的 onPointerMove → select(),
+        // https://github.com/pacocoursey/cmdk/blob/main/cmdk/src/index.tsx),鍵盤方向鍵再搶回;
+        // 誰最後搬動它就用誰的畫法(focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板「都要畫框,不上底色」):
+        //   滑鼠搬的:反白 = hover → 底色、無框。
+        //   鍵盤搬的:反白 = 游標 → 框(列撐滿 → 內描邊)、不上底色。
+        // **本節點沒有任何 `hover:` 樣式**:滑鼠停著不算搶,鍵盤把反白搬走後,滑鼠停留列的底色要跟著消失
+        //(user 2026-09-09:「搶回去之後原本滑鼠的 hover 樣式即會消失直到滑鼠又搶回來才會再出現」;
+        // shadcn CommandItem 同樣只畫 data-[selected=true],沒有 hover: —— https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/command.tsx)。
         // 2026-09-08 之前「已選 + 游標」的框沒有模態條件,滑鼠一點開就畫(user 抓到);
-        // 2026-09-09 之前未選中的游標列用 hover 同色底(AI 推導自 cmdk 慣例,user 撤回)。
-        keyboardModality
-          ? 'data-[selected=true]:focus-ring-inset hover:bg-neutral-hover'
+        // 2026-09-09 之前未選中的游標列用 hover 同色底(AI 推導自 cmdk 慣例,user 撤回);
+        // 2026-09-09 下午之前鍵盤分支多帶一條 `hover:bg-neutral-hover`,滑鼠停留列與鍵盤游標列會同時亮(user 三問抓到)。
+        cursorByKeyboard
+          ? 'data-[selected=true]:focus-ring-inset'
           : 'data-[selected=true]:bg-neutral-hover',
         // 選中 × 互動疊加(owner:item-anatomy.spec.md「選中 × 互動疊加」,2026-08-11 user 拍板):
-        // 選中底色釘住(滑鼠 hover / 指標反白都不變);鍵盤游標的框直接疊在上面。
+        // 選中底色釘住(指標反白也不變);鍵盤游標的框直接疊在上面。
         // 2026-09-08 之前這段只在 SelectMenu / AgentPanel 各手刻一份,CommandItem 自己的 `selected` 是死的。
-        selected && 'bg-neutral-selected hover:bg-neutral-selected data-[selected=true]:bg-neutral-selected',
+        selected && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected',
         className
       )}
       {...props}
+      // 滑鼠移過 = 指標搶走反白(capture 版不會被 cmdk 覆寫 consumer 的 onPointerMove;座標沒變的補發事件不算)
+      onPointerMoveCapture={(e) => { markPointerGrab(e); props.onPointerMoveCapture?.(e) }}
     >
       {childIsMenuItem ? children : (
         <MenuItem
