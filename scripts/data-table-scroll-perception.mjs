@@ -271,16 +271,20 @@ try {
         speed = peak * factor,
         distance = speed / 60;
       const wall = Date.now();
-      pending.push(
-        cdp.send("Input.dispatchMouseEvent", {
-          type: "mouseWheel",
-          x: setup.x,
-          y: setup.y,
-          deltaX: 0,
-          deltaY: distance,
-        })
-      );
-      inputs.push({ speed, distance, start: wall, end: wall });
+      // 一幀最多一個 tick:等 ack、再等頁面一個 rAF。不等的話慢機器會把多個 tick 合併成一個 scroll 事件、
+      // 一次跳過整個視窗(runner 實測 704–904px),那是極速情境,不是這個閘要測的一般速度(2026-09-10,33e77458 讀回)。
+      await cdp.send("Input.dispatchMouseEvent", {
+        type: "mouseWheel",
+        x: setup.x,
+        y: setup.y,
+        deltaX: 0,
+        deltaY: distance,
+      });
+      await cdp.send("Runtime.evaluate", {
+        expression: "new Promise((r) => requestAnimationFrame(() => r(1)))",
+        awaitPromise: true,
+      });
+      inputs.push({ speed, distance, start: wall, end: Date.now() });
       await new Promise((r) =>
         setTimeout(
           r,
@@ -432,6 +436,18 @@ try {
         domDelays.push(f.t - e.t);
       }
     }
+  // 單一 scroll 事件最大跳距:wheel 輸入下 ≥ 視窗高 = tick 被合併成整窗跳轉(驅動失效),這一跑不是一般速度的證據
+  const maxScrollEventJumpPx = (raw.scrolls ?? []).reduce(
+    (m, e, i, a) => (i > 0 ? Math.max(m, Math.abs(e.y - a[i - 1].y)) : m),
+    0
+  );
+  const wheelCoalesced =
+    arg("input", "gesture") === "wheel" &&
+    maxScrollEventJumpPx >= (setup.rect?.height ?? Infinity);
+  if (wheelCoalesced)
+    console.log(
+      `✗ wheel tick 被合併成整窗跳轉:單一 scroll 事件最大 ${maxScrollEventJumpPx}px ≥ 視窗 ${setup.rect?.height}px(驅動失效,不是表格)`
+    );
   const summary = {
     peak,
     dpr,
@@ -443,6 +459,8 @@ try {
     inputDistance: inputs.reduce((n, i) => n + i.distance, 0),
     finalY: raw.finalY,
     castFrames: cast.length,
+    maxScrollEventJumpPx,
+    wheelCoalesced,
     ...content,
     rows: undefined,
     shapeShellFrames: pixels.filter((f) => f.shellScanLines.length >= 4).length,
@@ -467,7 +485,8 @@ try {
   console.log(JSON.stringify(summary));
   if (
     arg("assert", "off") === "on" &&
-    (summary.pixelRows < 10 ||
+    (summary.wheelCoalesced ||
+      summary.pixelRows < 10 ||
       summary.castFrames < 10 ||
       summary.errors.length ||
       Math.abs(summary.finalY - summary.inputDistance) > 2 ||
