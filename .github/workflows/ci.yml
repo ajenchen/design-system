@@ -166,10 +166,10 @@ jobs:
           # 先跑對照組(靜態頁 0 空白 / 忙等必紅)證明儀器在該紅時會紅,再當閘:6,000px/s 手勢下中央區最長連續空白 ≤ 400ms、
           # 停手後列殼 ≤ 1000ms 補齊。門檻是本機校準的回歸線(修前 main 684–1055ms、修後 18–34ms,留 10 倍以上機器差),不是業界標準。
           node scripts/data-table-fast-scroll.mjs --mode=gesture --selftest --gesture-speed=6000
+          # 這台 runner 不節流就是「慢機器」:R17 判準在這裡整片白 1,301 / 1,210ms(7aad1396),自適應判準 v8 降到 64 / 103ms(d7553067)。
+          # 不在 CI 疊 CPU 節流:CDP 節流在 2 vCPU 的共享 runner 上不是線性的(d7553067 同一 job:不節流 64 / 103ms,--cpu-throttle=4 卻 1,769 / 1,585ms;
+          # 本機 4× 是 167 / 167ms),數字不能跨機器搬。2× / 4× / 6× 節流當本機重現與壓力工具(AD56 / AD62),不當 CI 閘。
           node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000
-          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 --cpu-throttle=4 --assert-max-blank-ms=400 --assert-max-fill-ms=1000
-          # 2× = 中速帶:「跟不上」旗標若無遲滯會在這一帶震盪(骨架與長 commit 交替),1× / 4× 都看不到(2026-09-10 多代理審查 P1)
-          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 --cpu-throttle=2 --assert-max-blank-ms=400 --assert-max-fill-ms=1000
           # Content readiness and still-visible fading handles need separate gates from frame cadence.
           node scripts/test-data-table-scroll-perception.mjs --out=tmp/datatable-content-controls
           node scripts/data-table-handle-position.mjs --dpr=2 --selftest --out=tmp/datatable-handle-control
