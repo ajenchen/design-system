@@ -18,6 +18,33 @@ const dir = arg("static", process.env.DT_STATIC ?? "storybook-static"),
   profile = arg("profile", "inertia"),
   markers = arg("markers", "on") === "on";
 fs.mkdirSync(out, { recursive: true });
+// ── 停頓重跑(2026-09-10,fa4fea16 讀回):共享 runner 偶發 ≥ 100ms 的主執行緒停頓,合成器一次跳過整個視窗(單一 scroll 事件 ≥ 視窗高,
+// 實測 526 / 467px)。那一跑量到的殼與延遲是「整窗跳轉」的設計反應(任何版本含 R17 都會先出殼),不是一般速度的證據。
+// 偵測到整窗跳轉就重跑(最多 3 次,每次全新頁面);三次都停頓才紅並指名原因。父程序只負責重跑,量測程式碼本身不變。
+if (!process.env.DT_PERCEPTION_ATTEMPT) {
+  const { spawnSync } = await import("node:child_process");
+  let code = 1;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const r = spawnSync(process.execPath, process.argv.slice(1), {
+      stdio: "inherit",
+      env: { ...process.env, DT_PERCEPTION_ATTEMPT: String(attempt) },
+    });
+    code = r.status ?? 1;
+    let summary = null;
+    try {
+      summary = JSON.parse(fs.readFileSync(path.join(out, "summary.json"), "utf8"));
+    } catch {}
+    if (summary?.stalled && attempt < 3) {
+      console.log(
+        `runner 停頓造成整窗跳轉(單一 scroll 事件 ${summary.maxScrollEventJumpPx}px ≥ 視窗 ${summary.setup?.rect?.height}px),第 ${attempt} 次作廢,重跑`
+      );
+      continue;
+    }
+    if (summary?.stalled) console.log("✗ 三次都碰到整窗跳轉的停頓:這台機器目前量不到一般速度(不是表格)");
+    break;
+  }
+  process.exit(code);
+}
 const server = http.createServer((req, res) => {
   try {
     const p = path.join(dir, decodeURIComponent(req.url.split("?")[0]));
@@ -446,6 +473,8 @@ try {
   const wheelCoalesced =
     arg("input", "gesture") === "wheel" &&
     maxScrollEventJumpPx >= (setup.rect?.height ?? Infinity);
+  // 任何輸入下單一 scroll 事件 ≥ 視窗高 = 整窗跳轉(主執行緒停頓或 tick 合併):父程序據此重跑
+  const stalled = maxScrollEventJumpPx >= (setup.rect?.height ?? Infinity);
   if (wheelCoalesced)
     console.log(
       `✗ wheel tick 被合併成整窗跳轉:單一 scroll 事件最大 ${maxScrollEventJumpPx}px ≥ 視窗 ${setup.rect?.height}px(驅動失效,不是表格)`
@@ -470,6 +499,8 @@ try {
     latencyLimitMs,
     maxScrollEventJumpPx,
     wheelCoalesced,
+    stalled,
+    attempt: +(process.env.DT_PERCEPTION_ATTEMPT ?? 1),
     ...content,
     rows: undefined,
     shapeShellFrames: pixels.filter((f) => f.shellScanLines.length >= 4).length,
@@ -495,6 +526,7 @@ try {
   if (
     arg("assert", "off") === "on" &&
     (summary.wheelCoalesced ||
+      summary.stalled ||
       summary.pixelRows < 10 ||
       summary.castFrames < 10 ||
       summary.errors.length ||
