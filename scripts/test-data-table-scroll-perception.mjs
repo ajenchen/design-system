@@ -176,7 +176,10 @@ if (process.argv.includes("--unit-only")) {
           process.env.DT_STATIC ?? "storybook-static"
         )}`,
         `--out=${caseOut}`,
-        "--peak=4500",
+        // 3000 而不是 4500(2026-09-10,0913057c 讀回):對照組的目的是證明「藏墨跡」與「延遲內容」兩個偵測器會紅,
+        // 不是測速度。4500 在共享 runner 上一次 100–200ms 的主執行緒停頓 = 一個 scroll 事件跳 467px = 整個視窗,
+        // 那是任何版本(含 R17)都會先出殼的「整窗跳轉」,對照組會因此誤紅;3000 要 ≥ 155ms 的停頓才會碰到。
+        "--peak=3000",
         "--dpr=2",
         `--sabotage=${mode}`,
         "--assert=on",
