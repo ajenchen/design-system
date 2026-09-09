@@ -2715,3 +2715,9 @@ push 後三個 job + 治理 hooks 在兩分鐘內全紅,共同原因是每個 jo
 本機沙箱的坑:`npm install` 寫不進 `~/.npm` 快取(EACCES)→ `--cache $TMPDIR/npm-cache`;治理 setup 閘本機跑會 `ENOTFOUND registry.npmjs.org`(它的子程序不帶沙箱代理環境),
 由 CI 驗證。另外先前一直紅的 authority-candidate 檢查是 fast-uri(moderate/high,經 ajv);本次 audit 已不再列出 fast-uri(ajv 8.20 樹上的 fast-uri 3.1.5 已不在通報範圍)。
 
+### AD46 commit `256ecc49` 的 CI 讀回(2026-09-09)
+
+required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` / `Verify browser(component + interaction)` / `Governance hooks` 全綠 —— js-yaml 修正後治理 setup 閘在四個 job 都過。
+唯一紅:`Verify authority candidate without credentials`(非 required):同一支閘在**候選安裝樹**(`scripts/install-candidate-dependencies.mjs` 走的另一份依賴樹)報 fast-uri;
+主樹的 `npm audit` 已不列 fast-uri(ajv 8.20 → fast-uri 3.1.5 不在通報範圍),所以是候選樹的 lock 較舊。這條在本 session 之前就紅(AD37 續七),不是本批造成;登記為待辦:更新候選樹的 lock / mirror 讓 fast-uri 升到通報範圍外。
+
