@@ -297,6 +297,17 @@ for (const width of [1440, 1180]) {
   await h.click('[role="row"] a[href$="/tasks/4836"]')
   await h.click('#demo-task-delete')
   check(`${W} S5 垃圾桶開出確認框,疊在任務 modal 上(兩層)`, (await h.dialogs()) === 2)
+  // 2026-09-09 user 抓到確認框沒照 Dialog 規格:標題兩行、沒有 body、偏移。斷言:標題一行、body 有那筆任務、確認框中心 = 任務對話框中心
+  const cshape = await page.evaluate(() => {
+    const ds = [...document.querySelectorAll('[role="dialog"]')]; const task = ds[0], confirm = ds[ds.length - 1]
+    const h2 = confirm.querySelector('h2'); const cs = h2 ? getComputedStyle(h2) : null
+    const lh = cs ? parseFloat(cs.lineHeight) : 0; const th = h2 ? h2.getBoundingClientRect().height : 0
+    const R = (e) => e.getBoundingClientRect(); const c = R(confirm), t = R(task)
+    return { title: h2?.textContent?.trim() ?? '', titleLines: lh ? Math.round(th / lh) : 0, body: confirm.textContent ?? '', dx: +(((c.left + c.right) / 2) - ((t.left + t.right) / 2)).toFixed(2) }
+  })
+  check(`${W} S5 確認框標題一行問句(不塞任務名)`, cshape.titleLines === 1 && /確定要刪除這個任務/.test(cshape.title), JSON.stringify(cshape))
+  check(`${W} S5 確認框 body 寫明是哪一筆(#4836)與後果`, /#4836/.test(cshape.body) && /無法復原/.test(cshape.body), cshape.body.slice(0, 80))
+  check(`${W} S5 確認框中心對齊任務對話框中心(≤ 1px;遮罩仍蓋整張畫布含代理)`, Math.abs(cshape.dx) <= 1, `dx=${cshape.dx}`)
   await h.typeIntoPanel('X')
   check(`${W} S5 確認框開著時代理被擋(打字無效)`, (await h.panelInput())?.value === 'hello world', JSON.stringify(await h.panelInput()))
   const delBg = await h.bg('#demo-confirm-delete'), delCancelBg = await h.bg('#demo-confirm-cancel')
@@ -346,6 +357,12 @@ for (const width of [1440, 1180]) {
   const mineRows = await h.rows()
   const s6 = await h.shape()
   check(`${W} S6 代理連結「我的任務」→ 切 tab(aria-selected)、網址列 /tasks/mine、清單只剩指派給自己的(#4835)、表格 aria-label 跟著換、草稿還在(條 C / E;並排態代理維持開啟)`, (await h.location()) === MINE_URL && (await h.selectedTab()) === '我的任務' && mineRows.length === 1 && /#4835/.test(mineRows[0]) && s6.tableLabel === '我的任務' && s6.tabControlsPanel && (await h.panelInput())?.value === 'hello world!?' && (await h.panelOpen()), JSON.stringify({ loc: await h.location(), tab: await h.selectedTab(), mineRows, label: s6.tableLabel, tabControlsPanel: s6.tabControlsPanel, panel: await h.panelInput(), open: await h.panelOpen() }))
+  // 2026-09-09 user:「agent 給的任務要包括 #4830,這樣我才能驗證我在我的任務開啟它的時候,背景是否仍停留在我的任務」—— #4830 是 Alan 的,不在「我的任務」清單裡
+  await h.click('#demo-link-task-4830')
+  const mineUnder4830 = await h.rows()
+  check(`${W} S6 「我的任務」上點代理的「任務 #4830」(不在這個清單裡)→ modal 疊在**我的任務**上、網址 /tasks/4830、底下清單仍是自己的(沒有 #4830 列)`, (await h.dialogs()) === 1 && (await h.location()) === '/projects/8821/tasks/4830' && (await h.selectedTab()) === '我的任務' && !mineUnder4830.some((r) => /#4830/.test(r)), JSON.stringify({ loc: await h.location(), tab: await h.selectedTab(), rows: mineUnder4830 }))
+  await page.keyboard.press('Escape')
+  check(`${W} S6 關掉 #4830 後回到「我的任務」`, (await h.dialogs()) === 0 && (await h.location()) === MINE_URL, await h.location())
   await h.click('#demo-link-task-4821')
   check(`${W} S6 「我的任務」上再點「任務 #4821」→ modal 疊在**我的任務**上(有來源頁 → 保留來源頁作背景)`, (await h.dialogs()) === 1 && (await h.location()) === TASK_4821 && (await h.selectedTab()) === '我的任務', JSON.stringify({ loc: await h.location(), tab: await h.selectedTab() }))
   await h.click('button[aria-label="重新整理"]')

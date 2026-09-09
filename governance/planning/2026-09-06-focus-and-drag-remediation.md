@@ -2721,3 +2721,11 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 唯一紅:`Verify authority candidate without credentials`(非 required):同一支閘在**候選安裝樹**(`scripts/install-candidate-dependencies.mjs` 走的另一份依賴樹)報 fast-uri;
 主樹的 `npm audit` 已不列 fast-uri(ajv 8.20 → fast-uri 3.1.5 不在通報範圍),所以是候選樹的 lock 較舊。這條在本 session 之前就紅(AD37 續七),不是本批造成;登記為待辦:更新候選樹的 lock / mirror 讓 fast-uri 升到通報範圍外。
 
+### AD47 user 2026-09-09 第三批:捲動卡頓(真機)、刪除確認框違規、代理回覆缺 #4830
+
+**user 原話**:「開啟同一個範例,專案排程全功能整合,明顯在新版的捲動上比目前在 github 上的 storybook 卡而且卡頓很多…請他(最強 codex)找到可驗證的方式,並找出 root cause,不斷改善直到通過驗證為止…不要改壞任何好的東西」「為何刪除任務的 dialog 的 header 和內容沒有按照我們 dialog 預設的 pattern??為何 header 是兩行?…為何沒有 body?…為何會偏移?…root cause 到底是甚麼?」「agent 給的任務要包括 #4830 吧?這樣我才能驗證我在我的任務開啟它的時候,背景是否仍…停留在我的任務」。
+
+- **刪除確認框**:root cause = 沒照 Dialog 的破壞性動作範本(`dialog.anatomy.stories.tsx`「破壞性動作 Dialog」:header 一行問句 / body 說明哪一筆與後果 / footer 取消 + primary danger),自己把任務名稱塞進 `DialogTitle`(兩行)、沒放 `DialogBody`、用 `DialogDescription` 硬撐;「偏移」= 確認框傳送到整張畫布(遮罩要蓋代理,v14 條 A)所以置中於畫布,而任務對話框置中於舞台,兩層中心差半個代理寬。修:標題「確定要刪除這個任務?」、body「任務 #N 標題 與它的留言、附件都會被永久刪除,無法復原。」、框對齊舞台中心(遮罩仍蓋整張畫布)。閘 S5 加三條(標題一行、body 有那筆、中心差 ≤ 1px)。截圖人眼核對通過。
+- **#4830**:代理回覆加「任務 #4830 對帳批次逾時重試」(Alan 的,不在「我的任務」清單);閘 S6 加:在「我的任務」上點它 → modal 疊在我的任務上、網址 /tasks/4830、底下清單仍只有自己的。
+- **捲動卡頓**:主執行緒與「白」的儀器都說分支比 main 輕,但 user 真機說分支明顯卡 → 本輪把完整脈絡(部署、diff 範圍、40 個 commit、已排除項、headless 限制、候選:每格偽元素陰影 / 裝飾捲軸槽 / 列 transition / 量測交錯 / 三區同步)交給 Codex R16,要求:CDP Tracing(cc / viz / devtools.timeline)量 raster / paint / 層數 / invalidation 的 main vs 分支比例、CSS 消融、必要時 bisect、以及一支能在 user 真機跑的 LoAF 探針。結果接續記於 AD48。
+

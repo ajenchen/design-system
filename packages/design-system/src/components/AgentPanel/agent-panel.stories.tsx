@@ -25,7 +25,7 @@ import {
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
 import { AgentPanelDock } from './agent-panel-fab'
 import { Button } from '@/design-system/components/Button/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from '@/design-system/components/Dialog/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/design-system/components/Dialog/dialog'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
 import { ExternalLink, Plus, Search, Trash2 } from 'lucide-react'
@@ -765,16 +765,29 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
 }
 
 /** 沒有 URL 的確認框:一般 modal(不傳 persistentElements),傳送到畫布,蓋住一切含代理(v14 條 A)。 */
-function ConfirmDeleteDialog({ task, onCancel, onConfirm, portalContainer }: {
-  task: Task; onCancel: () => void; onConfirm: () => void; portalContainer: HTMLElement
+/**
+ * 沒有網址的刪除確認框:照 Dialog 規格的破壞性動作範本(dialog.anatomy「破壞性動作 Dialog」/ dialog.spec「何時用」):
+ * header 只放一行問句、body 說明是哪一筆與後果、footer 取消(tertiary)+ 刪除(primary danger)。
+ * 2026-09-09 user 抓到:我把任務名稱塞進標題(兩行)、沒有 body、用 DialogDescription 硬撐 —— root cause 是沒照範本,自己拼。
+ * 遮罩蓋整張畫布(含代理,v14 條 A),但框本身對齊它所屬的任務對話框(舞台中心):兩層對話框中心若差半個代理寬,看起來就是偏移。
+ */
+function ConfirmDeleteDialog({ task, onCancel, onConfirm, portalContainer, centerIn }: {
+  task: Task; onCancel: () => void; onConfirm: () => void; portalContainer: HTMLElement; centerIn: HTMLElement | null
 }) {
+  const left = React.useMemo(() => {
+    if (!centerIn) return undefined
+    const c = portalContainer.getBoundingClientRect(), s = centerIn.getBoundingClientRect()
+    return s.left - c.left + s.width / 2
+  }, [centerIn, portalContainer])
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
-      <DialogContent maxWidth={400} autoHeight portalContainer={portalContainer}>
+      <DialogContent maxWidth={400} autoHeight portalContainer={portalContainer} style={left != null ? { left } : undefined} aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle>刪除{taskLabel(task)}?</DialogTitle>
-          <DialogDescription>任務與它的留言、附件都會被永久刪除,無法復原。</DialogDescription>
+          <DialogTitle>確定要刪除這個任務?</DialogTitle>
         </DialogHeader>
+        <DialogBody>
+          <p className="text-body">{taskLabel(task)} 與它的留言、附件都會被永久刪除,無法復原。</p>
+        </DialogBody>
         <DialogFooter>
           <Button id="demo-confirm-cancel" variant="tertiary" onClick={onCancel}>取消</Button>
           <Button id="demo-confirm-delete" variant="primary" danger startIcon={Trash2} onClick={onConfirm}>刪除</Button>
@@ -969,9 +982,10 @@ function UrlRegistryScene() {
       { role: 'user', content: '登入逾時那件事現在在哪裡處理?' },
       { role: 'agent', content: (
         <>
-          <p>跟你問的有關的有三處:</p>
+          <p>跟你問的有關的有四處:</p>
           <ul className="mt-2 flex flex-col gap-1">
             <li><a href={taskUrl(4821)} id="demo-link-task-4821" onClick={(e) => { e.preventDefault(); fromAgent(() => openTask(4821), 'modal') }}>任務 #4821 修正登入逾時</a></li>
+            <li><a href={taskUrl(4830)} id="demo-link-task-4830" onClick={(e) => { e.preventDefault(); fromAgent(() => openTask(4830), 'modal') }}>任務 #4830 對帳批次逾時重試</a>(Alan 的,跟登入逾時共用同一組 timeout 設定)</li>
             <li><a href={MY_TASKS.url} id="demo-link-mine" onClick={(e) => { e.preventDefault(); fromAgent(() => go({ url: MY_TASKS.url }), 'page') }}>{MY_TASKS.label}</a>(你名下的「支付失敗通知信」跟它同一條路徑)</li>
             <li><a href="https://support.example.com/tickets/88213" id="demo-link-zendesk" target="_blank" rel="noopener noreferrer">Zendesk 客訴 #88213<ExternalLink size={14} className="ml-1 inline-block align-[-2px]" aria-hidden /></a></li>
           </ul>
@@ -1057,6 +1071,7 @@ function UrlRegistryScene() {
               <ConfirmDeleteDialog
                 task={confirmDelete}
                 portalContainer={canvas}
+                centerIn={stage}
                 onCancel={() => setConfirmDelete(null)}
                 onConfirm={() => {
                   setTasks((ts) => ts.filter((t) => t.id !== confirmDelete.id))
