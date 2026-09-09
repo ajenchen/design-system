@@ -91,6 +91,8 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 
 ### 規則 2:頂部(Header → 第一個元素)
 
+**這裡的 Header 指 chrome header**(ChromeHeader / SurfaceHeader / page header / app top bar,`header-canonical.spec.md`);內容區裡用 typography 打的小標題(`text-heading` 之類)不是 chrome header,它與下方被它標示的內容走規則 3 的「跨範疇 + 直接 functional 交互 = tight」(2026-09-09 代理示範把 h1 + 表格當 parallel 兄弟用了 loose,是錯的;規則沒變,補這句是為了下次不要再誤讀)。
+
 | 第一個元素 | Header → 該元素 |
 |-----------|--------------|
 | **bounded region**(table / card / panel)| `loose` |

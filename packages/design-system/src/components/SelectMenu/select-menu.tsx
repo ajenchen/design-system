@@ -72,9 +72,11 @@ export interface SelectMenuProps {
   searchable?: boolean
   /**
    * 是否在本機用搜尋字過濾選項(預設 true)。**遠端搜尋**(每打一個字就向伺服器抓、伺服器已經過濾好)傳 `false`:
-   * 對應 cmdk `shouldFilter={false}`(README「Filter/sort items manually? Pass shouldFilter={false}」),行為與 react-select 非同步模式
-   * (`filterOption: null`)/ Ant `filterOption={false}` 同款 —— 舊結果原封留著、伺服器回什麼列什麼,不再被新的字二次過濾。
-   * 2026-09-08 user 拍板「併」。
+   * 對應 cmdk `shouldFilter={false}`(README「Filter/sort items manually? Pass shouldFilter={false}」),與 react-select 非同步模式
+   * (`filterOption: null`)/ Ant `filterOption={false}` 同款 —— 伺服器回什麼列什麼,不再被新的字二次過濾(2026-09-08 user 拍板「併」)。
+   * 遠端模式下(2026-09-09 user 拍板「遠端搜尋時清掉舊選項,我覺得可以」):`optionsLoading` 期間**舊選項不顯示**(只剩載入訊息列;
+   * Ant select-users 示範每次抓都 `setOptions([])`、Polaris Autocomplete 抓資料時藏 optionsMarkup),關鍵字空時顯示 `suggestions`
+   * (建議群組),沒建議就一列「輸入關鍵字搜尋」提示。本機過濾不清舊清單(2026-07-04 Q3 對本機模式仍成立)。
    */
   filterOption?: boolean
   /** 可建立新選項 */
@@ -99,19 +101,38 @@ export interface SelectMenuProps {
   searchPlaceholder?: string
   /** 搜尋框 accessible name；與可見 placeholder 分離。 */
   searchAriaLabel?: string
-  /** 空選項提示 */
+  /** 真的沒有任何可選項目時的訊息列文案(本機過濾無結果、或遠端回傳空);預設「沒有選項」 */
   emptyText?: string
-  /** 載入中狀態的無障礙文案(i18n:consumer 換語言時覆寫) */
+  /** 載入訊息列的可見文字(`role="status"` 直接播報;i18n:consumer 換語言時覆寫) */
   loadingText?: string
+  /**
+   * 遠端搜尋、關鍵字空、也沒有建議、也沒在載入時的提示列文案。預設「輸入關鍵字搜尋」。
+   * 2026-09-09 user 原則:「只有實際上真的沒有任何選項可以選的時候才會顯示沒有結果的狀態」→ 還沒搜尋不是「沒有選項」。
+   */
+  searchHintText?: string
   /** 多選 footer 全選列文字(2026-07-05 D4:原「全部」字面 hardcode,無法覆寫也無法 i18n) */
   selectAllLabel?: string
-  /** Loading 狀態(2026-05-15 audit B fix;2026-07-04 Q3 拍板措辭;2026-09-08 user 拍板定稿)
-   *  true → (1) 搜尋列右側放列圖示尺寸的 CircularProgress(`CommandInput loading`,仍可打字),每次抓資料都亮;
-   *  (2) 只有清單裡沒有任何可顯示的選項時,empty slot 才渲載入訊息列(`CommandLoading`:同「沒有結果」的
-   *  MenuItem 訊息列,前綴槽轉圈 + loadingText);已有 options 時保留顯示不清空(MUI / react-select / Atlassian 共識)。
-   *  trigger 不變,選單不關,user 隨時可開 dropdown。
+  /**
+   * **選項清單**載入中(2026-09-09 user 拍板改名,原 `loading`;理由:DS 內 `loading` 已被 Field 家族佔走 =
+   * 「這個值」在讀取 / 驗證 / 儲存(field-controls.spec.md「Loading state」),同字兩義是 2026-09-08 兩顆轉圈的病根)。
+   * 指示**只在選單內**:清單裡沒有任何可顯示的選項時,Empty 槽渲載入訊息列(`CommandLoading`:同「沒有結果」的
+   * MenuItem 訊息列,前綴槽轉圈 + loadingText,`role="status"`);觸發點 / 搜尋列**不**為選項轉圈(MUI Autocomplete
+   * `loading` 只在 options 空時顯 loadingText;Polaris Autocomplete `loading` → `Listbox.Loading` 在清單內,TextField 不轉)。
+   * 本機過濾(`filterOption` 預設 true)已有選項時保留顯示、選單不關;遠端(`filterOption={false}`)抓資料中舊選項不顯示
+   * (見 `filterOption`)。listbox 同時標 `aria-busy`。
    */
-  loading?: boolean
+  optionsLoading?: boolean
+  /**
+   * 遠端搜尋(`filterOption={false}`)關鍵字空時顯示的**建議清單**(部分選項:最近用過 / 常用 / 伺服器先給幾筆),
+   * 2026-09-09 user 拍板。對應 react-select `defaultOptions`(「The default set of options to show before the user starts
+   * searching」,useAsync.ts)。DS 自動包成有標題的群組(`suggestionsLabel`,預設「建議」)—— 原則:**讓使用者明確知道實際
+   * 的選項不只選單上這幾筆**;要自訂分組(「最近指派」「同團隊」)就在項目上填 `group` + `groups`,每組都有標題、沒填 group
+   * 的仍歸「建議」。關鍵字非空 → 換顯示 `options`(伺服器結果)。不傳(undefined)→ 關鍵字空時退回顯示 `options`
+   * (遠端模式下同樣加「建議」標題);本機過濾模式忽略本 prop(完整清單不需要建議,分組用 `groups`)。
+   */
+  suggestions?: SelectMenuOption[]
+  /** 建議群組的標題(預設「建議」;cmdk List 的預設 aria-label 就叫 Suggestions) */
+  suggestionsLabel?: string
 
   /** 尺寸 */
   size?: SizeKey
@@ -174,8 +195,11 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default; consumer override via searchAriaLabel prop
   emptyText = '沒有選項', // i18n-allow: DS default(2026-09-08 user 拍板:一句到底,對應 No options;打開就沒選項與搜尋無結果共用);consumer override via emptyText prop
   loadingText = '載入選項中', // i18n-allow: DS default; consumer override via loadingText prop
+  searchHintText = '輸入關鍵字搜尋', // i18n-allow: DS default(2026-09-09:遠端搜尋還沒打字、也沒建議時的提示);consumer override via searchHintText prop
   selectAllLabel = '全部', // i18n-allow: DS default; consumer override via selectAllLabel prop
-  loading = false,
+  optionsLoading = false,
+  suggestions,
+  suggestionsLabel = '建議', // i18n-allow: DS default(2026-09-09 user 拍板「群組標題名叫 Suggestion 之類的」);consumer override via suggestionsLabel prop
   size = 'md',
   align = 'start',
   minWidth,
@@ -211,6 +235,23 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     [isSearchControlled, onSearchChange],
   )
 
+  // ── 清單來源(2026-09-09 user 拍板;owner:select-menu.spec.md「遠端搜尋」「Suggestions」)──
+  // 本機過濾:永遠是 options(cmdk 自己過濾;舊清單不清)。
+  // 遠端搜尋(filterOption=false):
+  //   關鍵字空 + 有給 suggestions → 建議清單(部分選項,DS 加「建議」標題);
+  //   抓資料中 → 舊 options 不顯示(只剩載入訊息列;Ant select-users 示範 setOptions([]) / Polaris 藏 optionsMarkup;
+  //     react-select useAsync 第一次搜尋 `setPassEmptyOptions(!loadedInputValue)` 同樣清空);
+  //   其餘 → options(伺服器結果;關鍵字空時也視為部分清單,加「建議」標題)。
+  const isRemote = !filterOption
+  const isIdle = search.trim() === ''
+  const visibleOptions = React.useMemo<SelectMenuOption[]>(() => {
+    if (!isRemote) return options
+    if (isIdle && suggestions !== undefined) return suggestions
+    return optionsLoading ? [] : options
+  }, [isRemote, isIdle, suggestions, optionsLoading, options])
+  // 遠端 + 關鍵字空 + 有東西可列 = 部分清單 → 必有群組標題,讓使用者知道選項不只這些(2026-09-09 user 原則)
+  const showSuggestionHeading = isRemote && isIdle && visibleOptions.length > 0
+
   // ── Value helpers ──
   const selectedValues = React.useMemo<string[]>(() => {
     if (value == null) return []
@@ -225,8 +266,8 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
   // 2026-07-05 P2:單選已選 option — 供 cmdk defaultValue 定 cursor 起點(見下方 <Command>)
   const selectedOption = React.useMemo(
-    () => (!multiple ? options.find((o) => o.value === selectedValues[0]) : undefined),
-    [multiple, options, selectedValues]
+    () => (!multiple ? visibleOptions.find((o) => o.value === selectedValues[0]) : undefined),
+    [multiple, visibleOptions, selectedValues]
   )
 
   const handleSelect = React.useCallback(
@@ -245,9 +286,10 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   )
 
   // ── Multi-select: select all ──
+  // 遠端搜尋不提供全選(清單永遠是部分選項,「全部」會是假話;footer 條件見下方)
   const selectableOptions = React.useMemo(
-    () => options.filter((o) => !o.disabled),
-    [options]
+    () => visibleOptions.filter((o) => !o.disabled),
+    [visibleOptions]
   )
 
   const allState: boolean | 'indeterminate' = React.useMemo(() => {
@@ -281,24 +323,29 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   // ── Creatable ──
   const showCreate = React.useMemo(() => {
     if (!creatable || !search.trim()) return false
-    return !options.some(
-      (o) => o.label.toLowerCase() === search.trim().toLowerCase()
-    )
-  }, [creatable, search, options])
+    // 遠端抓資料中不出建立列:結果還沒回來,不能判斷要不要建立(否則建到伺服器已有的東西;Codex R13 反例)
+    if (isRemote && optionsLoading) return false
+    const q = search.trim().toLowerCase()
+    // 同名防重複要連建議清單一起查(建議也是真實選項;Codex R13 反例:建議有 Alice 仍出現「直接使用 Alice」)
+    // 本機過濾模式忽略 suggestions(spec「Suggestions」最後一條),所以只有遠端模式才連建議一起查(Codex R14 反例:本機 + 建議同名誤藏建立列)
+    return !options.some((o) => o.label.toLowerCase() === q) && !(isRemote && (suggestions ?? []).some((o) => o.label.toLowerCase() === q))
+  }, [creatable, search, options, suggestions, isRemote, optionsLoading])
 
   // ── Grouping ──
+  // 沒填 group 的項目歸預設群組;預設群組在「建議」情境下必有標題(suggestionsLabel),其他情境無標題。
   const groupedOptions = React.useMemo(() => {
-    if (!groups?.length) return [{ key: '__default', label: '', options }]
+    const defaultLabel = showSuggestionHeading ? suggestionsLabel : ''
+    if (!groups?.length) return [{ key: '__default', label: defaultLabel, options: visibleOptions }]
     const grouped = groups.map((g) => ({
       ...g,
-      options: options.filter((o) => o.group === g.key),
+      options: visibleOptions.filter((o) => o.group === g.key),
     }))
-    const ungrouped = options.filter((o) => !o.group)
+    const ungrouped = visibleOptions.filter((o) => !o.group)
     if (ungrouped.length) {
-      grouped.unshift({ key: '__default', label: '', options: ungrouped })
+      grouped.unshift({ key: '__default', label: defaultLabel, options: ungrouped })
     }
     return grouped
-  }, [groups, options])
+  }, [groups, visibleOptions, showSuggestionHeading, suggestionsLabel])
 
   // ── Reset search on close(僅 uncontrolled;受控時由 parent 負責 reset)──
   React.useEffect(() => {
@@ -390,21 +437,26 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
           {searchable && (
             // 2026-09-08:搜尋列改用 DS `CommandInput`(與 CommandDialog / inline Command 同一份實作),
             // 原本這裡自己寫一份 raw cmdk input + icon wrapper = 第二份 SSOT(user 抓「Command 跟 SelectMenu 不同一套」)。
-            <CommandInput size={size as 'sm' | 'md' | 'lg'} placeholder={searchPlaceholder} value={search} onValueChange={setSearch} loading={loading && options.length > 0} />
+            // 搜尋列不為「選項載入」轉圈(2026-09-09 user 拍板:選項載入的指示只在選單內;Polaris Autocomplete loading 時 TextField 不轉)
+            <CommandInput size={size as 'sm' | 'md' | 'lg'} placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
           )}
           {/* **2026-05-07 v15.13 R2 fix**:minHeight 從 CommandList 搬到 CommandEmpty。
               原本 CommandList 永遠套 `minHeight = field-height × minRows + 16px`,結果
               user 過濾出 < minRows 個 match 時 list 底下空一片(eg. 打 'c' 出 2 個 match
               卻撐高到 3 row 容量,1 row 留白)。 Fix:只有 empty state 才需要 minHeight 撐
               起 placeholder 視覺;有 results 時 CommandList 自然 fit content。 */}
-          {/* aria-busy(2026-07-04):loading 時標注 listbox 忙碌——兌現 select.spec.md「Loading」段
+          {/* aria-busy(2026-07-04):optionsLoading 時標注 listbox 忙碌——兌現 select.spec.md「Loading」段
               「+ aria-busy」承諾(cmdk List 本身即 role="listbox" 容器,wrapper forward props)。 */}
+          {/* 訊息列三態(2026-09-09 user 拍板;cmdk Empty 只在 0 筆可顯示時渲):
+              抓資料中 → 載入列;遠端 + 關鍵字空(沒建議)→ 「輸入關鍵字搜尋」;真的沒有任何可選 → emptyText */}
           <CommandEmpty size={size}>
-            {loading ? <CommandLoading label={loadingText} size={size} /> : emptyText}
+            {optionsLoading
+              ? <CommandLoading label={loadingText} size={size} />
+              : isRemote && isIdle ? searchHintText : emptyText}
           </CommandEmpty>
           <CommandList
             className="relative"
-            aria-busy={loading || undefined}
+            aria-busy={optionsLoading || undefined}
             // 2026-07-06 A11y:cmdk List 的 aria-label 由其 `label` prop 渲染(內部 spread 後 override,
             // 直接傳 aria-label 會被 cmdk default "Suggestions" 蓋掉 silent 失效)— 必走 label prop。
             label="選項" // i18n-allow: DS default; listbox accessible name
@@ -470,13 +522,14 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
             )}
           </CommandList>
 
-          {/* SR 播報 empty / loading 空狀態(CommandEmptyStatus,2026-07-05 D4 → 2026-09-08 搬進 Command) */}
-          <CommandEmptyStatus loading={loading} text={emptyText} />
+          {/* SR 播報 empty / loading 空狀態(CommandEmptyStatus,2026-07-05 D4 → 2026-09-08 搬進 Command);文字跟可見訊息列同步 */}
+          <CommandEmptyStatus loading={optionsLoading} text={isRemote && isIdle ? searchHintText : emptyText} />
 
           {/* Multi-select footer: Select All
               - 沒有選項時不顯示(selectableOptions.length === 0)
-              - 搜尋有文字時不顯示(search 非空 = 使用者在找特定項目,「全選」沒意義) */}
-          {multiple && selectableOptions.length > 0 && !search && (
+              - 搜尋有文字時不顯示(search 非空 = 使用者在找特定項目,「全選」沒意義)
+              - 遠端搜尋不顯示(2026-09-09):清單永遠是部分選項(建議 / 伺服器結果),「全部」語意不成立 */}
+          {multiple && !isRemote && selectableOptions.length > 0 && !search && (
             <MenuFooter>
               {/* 2026-07-05 D4:全選列鍵盤可達修 — 原裸 MenuItem(div 預設 role="option" 無 tabIndex)
                   位於 CommandList 之外:cmdk 方向鍵只導覽 [cmdk-item]、Tab 也到不了 div → 鍵盤使用者

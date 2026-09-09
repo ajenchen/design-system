@@ -110,7 +110,7 @@ Overlay(Tooltip/Popover/HoverCard/DropdownMenu/Dialog/Sheet/FileViewer)的 fade/
 | `--motion-enter-distance` | `0.5rem`(8px) | slide 位移 | shadcn/Radix canonical(= 現行 slide-*-2) |
 | `--motion-enter-scale` | `0.95` | zoom scale | shadcn default(= 現行 zoom-95) |
 
-**幾何原型分層(正當差異,不強行抹平)**:輕量 popup = fade+zoom+slide-side(8px);模態置中 = fade+zoom+slide-center(Dialog/FileViewer);邊緣抽屜 = slide-edge 100%、正當無 zoom(Sheet)。統一的是**時長/曲線/reduced-motion 守衛**(motion-reduce:animate-none 全 7 浮層),非幾何原型(對齊 Material standard-vs-emphasized / Carbon productive-vs-expressive tier 分層)。
+**幾何原型分層(正當差異,不強行抹平)**:輕量 popup = fade+zoom+slide-side(8px,朝觸發點);模態置中 = **fade+zoom、不位移**(Dialog/FileViewer;2026-09-09 修正 —— 原「slide-center」是 shadcn v3 在 keyframe 內重寫置中位移的 hack,Tailwind v4 的 `translate` 屬性不再被 keyframe 蓋掉,留著會變成從左上角飛入;shadcn v4 已拿掉 <https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx>,詳 `components/Dialog/dialog.spec.md`「動畫」段);邊緣抽屜 = slide-edge 100%、正當無 zoom(Sheet)。統一的是**時長/曲線/reduced-motion 守衛**(motion-reduce:animate-none 全 7 浮層),非幾何原型(對齊 Material standard-vs-emphasized / Carbon productive-vs-expressive tier 分層)。
 
 **a11y**:prefers-reduced-motion 下 `motion-reduce:animate-none` 全 7 浮層統一關進出場動畫(overlay-motion SSOT 保證,無漏)。
 

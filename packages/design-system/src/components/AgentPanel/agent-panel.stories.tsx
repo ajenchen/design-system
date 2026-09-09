@@ -1,4 +1,5 @@
 // @story-baseline: packages/design-system/src/components/DataTable/data-table.stories.tsx#WithPagination
+// @story-baseline: packages/design-system/src/components/AppShell/app-shell.stories.tsx#PrimarySidebarWithTabs(整頁示範的舞台 = AppShell 主內容 + header tabs;toolbar 同 data-table.stories.tsx#WithBulkActions)
 // @story-history: 家族展示層 = 真實業務場景 + OpenSnapshot 覆蓋(M15:defaultOpen/常駐可截圖);
 // 標誌/FAB 狀態矩陣屬本層(動態資產,anatomy 靜態矩陣載不動)。
 // 2026-09-02 review round:固定構件恆渲染(header +/×/標題觸發、輸入盒 +/Tag ×)後,每個 story
@@ -18,6 +19,7 @@ import {
   AgentDecisionCard,
   AgentDecisionSummary,
   type AgentConversationSummary,
+  type AgentPanelMode,
   type AgentPromptAttachment,
 } from './agent-panel'
 import { AgentLogo, type AgentLogoState } from './agent-panel-logo'
@@ -26,7 +28,10 @@ import { Button } from '@/design-system/components/Button/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from '@/design-system/components/Dialog/dialog'
 import { DataTable } from '@/design-system/components/DataTable/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
-import { ExternalLink, Trash2 } from 'lucide-react'
+import { ExternalLink, Plus, Search, Trash2 } from 'lucide-react'
+import { LinkInput } from '@/design-system/components/LinkInput/link-input'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
+import { PageHeader } from '@/design-system/components/AppShell/_demo-helpers'
 import { Empty } from '@/design-system/components/Empty/empty'
 import { Input } from '@/design-system/components/Input/input'
 import { Field, FieldLabel } from '@/design-system/components/Field/field'
@@ -554,10 +559,17 @@ export const LogoThinkStop: Story = {
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   整頁情境(假資料)—— 任務清單 / 看板 / 任務對話框 / 確認框 / 代理欄
-   規則(story-rules.md「整頁情境」):畫布裡只准 DS 元件 + 真實業務內容;有 URL 的 modal 傳送到「舞台」
-   (代理不被蓋),沒有 URL 的確認框傳送到「畫布」(蓋住一切含代理)。
-   閘:`scripts/agent-url-registry-demo-invariant.mjs`(S1–S9,兩個並排寬度 + 一個蓋板寬度)。
+   整頁情境(假資料)—— 專案任務頁(AppShell 主內容:page header + tabs)/ 任務對話框 / 確認框 / 代理欄
+   規則(story-rules.md「整頁情境」):畫布裡只准 DS 元件 + 真實業務內容。
+   舞台 = AppShell 主內容的樣子(2026-09-09 user:「拿 app shell 中間那塊內容的樣式來呈現…把 title 拿掉改成帶有
+   tabs 的 header…header 的 title 就是這個專案的標題」):header 消費 `PageHeader`(ChromeHeader + tabsSlot,
+   header-canonical W1–W6;`app-shell.stories.tsx#PrimarySidebarWithTabs` 同款)、tabs = 所有任務 / 我的任務(各有自己的
+   URL)、tab 內是 action-bar 靠右對齊 toolbar(左 search / 右 ops,primary「新增任務」在業務層最右;
+   `data-table.stories.tsx#WithBulkActions` 同款)+ DataTable;標題欄 = DS url 欄位同一支 primitive
+   (`<LinkInput mode="view">`,與表頭齊 —— 2026-09-09 user 抓到 Button link 自帶內距把網址推歪)。
+   有 URL 的 modal 傳送到「舞台」(並排時代理不被蓋),沒有 URL 的確認框傳送到「畫布」(蓋住一切含代理)。
+   蓋板態(容器 < 1080)下從代理導向舞台 → 代理收成入口鈕、舞台顯示目標(v14 條 B,2026-09-09 user 推翻 AI 推導)。
+   閘:`scripts/agent-url-registry-demo-invariant.mjs`(S0–S9,兩個並排寬度 + 一個蓋板寬度)。
    ═══════════════════════════════════════════════════════════════════════════ */
 type TaskStatus = 'todo' | 'doing' | 'done'
 type Task = { id: string; num: number; title: string; assignee: string; status: TaskStatus; due: string }
@@ -570,78 +582,126 @@ const STATUS_OPTIONS: SelectOption[] = [
 const statusLabel = (status: TaskStatus) => STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status
 const PEOPLE: PersonData[] = [{ name: 'Betty Wu' }, { name: 'Alan Chen' }, { name: 'Ada Chen' }]
 const personName = (p: PersonValue) => (typeof p === 'string' ? p : p.name)
+/** 目前登入的人 ——「我的任務」= 指派給她的任務。 */
+const CURRENT_USER = 'Betty Wu'
 const PROJECT = '/projects/8821'
-const TASKS_PAGE = { kind: 'tasks', title: '任務 — 結帳流程改版', url: `${PROJECT}/tasks` } as const
-const BOARD_PAGE = { kind: 'board', title: '衝刺看板 — Sprint 24', url: `${PROJECT}/board` } as const
-type Page = typeof TASKS_PAGE | typeof BOARD_PAGE
-const PAGES: readonly Page[] = [TASKS_PAGE, BOARD_PAGE]
+const PROJECT_TITLE = '結帳流程改版'
+/**
+ * header 的兩個 tab,各有自己的 URL(user 2026-09-09:「一個是『所有任務』…另一個『我的任務』,長相跟任務清單
+ * 很像,只是篩成自己的」);tab 的 URL 是同一頁的子路徑,tab 只切視圖不切路由(tabs.spec.md「何時用」頁面內切換)。
+ */
+const ALL_TASKS = { value: 'all', label: '所有任務', url: `${PROJECT}/tasks` } as const
+const MY_TASKS = { value: 'mine', label: '我的任務', url: `${PROJECT}/tasks/mine` } as const
+const TASK_TABS = [ALL_TASKS, MY_TASKS] as const
+type TaskTab = (typeof TASK_TABS)[number]
 const NEW_TASK_URL = `${PROJECT}/tasks/new`
 const taskUrl = (num: number) => `${PROJECT}/tasks/${num}`
 const taskLabel = (t: Task) => `任務 #${t.num} ${t.title}`
 const TASKS: Task[] = [
   { id: 't4821', num: 4821, title: '修正登入逾時', assignee: 'Betty Wu', status: 'todo', due: '2026-09-12' },
   { id: 't4830', num: 4830, title: '對帳批次逾時重試', assignee: 'Alan Chen', status: 'doing', due: '2026-09-15' },
-  { id: 't4835', num: 4835, title: '支付失敗通知信', assignee: 'Ada Chen', status: 'todo', due: '2026-09-19' },
+  { id: 't4835', num: 4835, title: '支付失敗通知信', assignee: 'Betty Wu', status: 'todo', due: '2026-09-19' },
 ]
 
 /**
  * 背景位置模式(Background location;user 2026-09-09:「若有來源頁面,則保留該頁面作為 Modal 的背景;
  * 若無來源頁面,則將 Modal 顯示於預先定義的預設背景頁面之上」)。
- * `url` = 網址列;`backgroundLocation` = 從哪一頁點開的(只有從頁面點開 modal 才有)。
- * 重新整理會丟掉它(等於直接以任務網址進入)→ 預設背景 = 任務清單。
+ * `url` = 網址列;`backgroundLocation` = 從哪個 tab 點開的(只有從頁面點開 modal 才有)。
+ * 重新整理會丟掉它(等於直接以任務網址進入)→ 預設背景 = 所有任務。
  */
 type Location = { url: string; backgroundLocation?: string }
-type View = { page: Page; modal: null | { kind: 'task'; num: number } | { kind: 'new' } }
-const pageByUrl = (url?: string) => PAGES.find((p) => p.url === url)
+type View = { tab: TaskTab; modal: null | { kind: 'task'; num: number } | { kind: 'new' } }
+const tabByUrl = (url?: string) => TASK_TABS.find((t) => t.url === url)
+const tabByValue = (value: string) => TASK_TABS.find((t) => t.value === value) ?? ALL_TASKS
 function resolveView(loc: Location): View {
-  if (loc.url === NEW_TASK_URL) return { page: pageByUrl(loc.backgroundLocation) ?? TASKS_PAGE, modal: { kind: 'new' } }
+  const background = tabByUrl(loc.backgroundLocation) ?? ALL_TASKS
+  if (loc.url === NEW_TASK_URL) return { tab: background, modal: { kind: 'new' } }
   const m = loc.url.match(/\/tasks\/(\d+)$/)
-  if (m) return { page: pageByUrl(loc.backgroundLocation) ?? TASKS_PAGE, modal: { kind: 'task', num: Number(m[1]) } }
-  return { page: pageByUrl(loc.url) ?? TASKS_PAGE, modal: null }
+  if (m) return { tab: background, modal: { kind: 'task', num: Number(m[1]) } }
+  return { tab: tabByUrl(loc.url) ?? ALL_TASKS, modal: null }
 }
 
-/** 舞台 = 宿主區(容器 − 面板)。帶 transform 讓有 URL 的 modal 用 `portalContainer` 傳送進來後 fixed 以它為準。 */
-function Stage({ stageRef, children }: { stageRef: React.Ref<HTMLDivElement>; children: React.ReactNode }) {
+/**
+ * 舞台 = 宿主區(容器 − 面板),長相 = AppShell 主內容(`app-shell.tsx`:header 在 `flex-shrink-0` 殼裡、
+ * `<main>` landmark `flex-1 min-h-0 overflow-y-auto`、padding=0,內容照 layoutSpace 六條規則走)。
+ * 帶 transform 讓有 URL 的 modal 用 `portalContainer` 傳送進來後 fixed 以它為準。
+ * `<main tabIndex={-1}>` 同 AppShell skip-to-main:蓋板態代理收成入口鈕、目標是頁面時,焦點交給這裡。
+ * `main` 多了 `flex flex-col`:TabsContent 要 `flex-1` 撐滿(app-shell.stories#PrimarySidebarWithTabs 的 TabsContent 同款
+ * `mt-0 flex-1 min-h-0 flex flex-col`),父層必須是 flex 才生效。
+ */
+function Stage({ stageRef, mainRef, header, children }: {
+  stageRef: React.Ref<HTMLDivElement>
+  mainRef: React.Ref<HTMLElement>
+  header: React.ReactNode
+  children: React.ReactNode
+}) {
   return (
-    <div ref={stageRef} className="relative flex min-w-0 flex-1 flex-col gap-[var(--layout-space-loose)] overflow-hidden p-[var(--layout-space-loose)]" style={{ transform: 'translateZ(0)' }}>
-      {children}
+    <div ref={stageRef} className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-canvas" style={{ transform: 'translateZ(0)' }}>
+      <div className="flex-shrink-0">{header}</div>
+      <main ref={mainRef} id="demo-stage-main" tabIndex={-1} className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto focus-visible:focus-ring-inset">
+        {children}
+      </main>
     </div>
   )
 }
 
-/** 任務清單 = DS DataTable(資料極簡:不開虛擬捲動 / 拖曳 / 篩選);標題欄是連結,點了開有 URL 的任務對話框。 */
-function TaskTable({ tasks, onOpen }: { tasks: Task[]; onOpen: (t: Task) => void }) {
+/**
+ * 一個 tab 的內容 = toolbar + DataTable。
+ * - Toolbar:`data-table.spec.md`「十、與 Toolbar 的關係」—— DataTable 不內建 toolbar,外部用 action-bar 組合;
+ *   `action-bar.spec.md`「二、標準結構」靠右對齊(標題已由 header 承載,左側是業務 search、按鈕靠右、primary 在業務層最右)。
+ *   「新增任務」開的是**有網址的對話框**(欄位複雜的 create 走 Dialog,data-table.spec「Inline create row」明列可並存),
+ *   所以家在 toolbar 的 primary,不是表格底部那條「點了就地編輯」的 inline create 列。
+ *   幾何逐字同 `data-table.stories.tsx#WithBulkActions`:toolbar `px-loose py-tight`(自帶 py = tabs→toolbar、toolbar→table
+ *   兩段 tight,layoutSpace 規則 2 / 3「toolbar → table 直接功能依賴」),table `mx-loose mb-loose`(規則 1B / 4)。
+ * - 標題欄:DS url 欄位型別(`column-types.ts` `url` → `UrlCell` → `<LinkInput mode="view">`;view 態是裸 anchor,`naked` 只在 wrapper 路徑有意義)的同一支
+ *   primitive 直接消費 —— `meta.linkLabel` 是欄位層級的固定字串,放不下每列不同的任務標題;naked view 零內距,
+ *   文字左緣 = 表頭左緣(2026-09-09 user 抓到「網址前面有一塊空」= Button link 自帶水平內距,那是自創、不是 DS 定義)。
+ *   內部連結由頁面路由攔截(`onClickCapture` + preventDefault,SPA router 的 link interception),不走 anchor 預設的新分頁。
+ */
+function TaskListView({ tab, tasks, onOpen, onCreate }: {
+  tab: TaskTab
+  tasks: Task[]
+  onOpen: (num: number) => void
+  onCreate: () => void
+}) {
+  const [search, setSearch] = React.useState('')
+  const rows = React.useMemo(() => {
+    const scoped = tab.value === 'mine' ? tasks.filter((t) => t.assignee === CURRENT_USER) : tasks
+    const q = search.trim().toLowerCase()
+    return q ? scoped.filter((t) => t.title.toLowerCase().includes(q) || String(t.num).includes(q)) : scoped
+  }, [tab, tasks, search])
   const columns = React.useMemo<ColumnDef<Task>[]>(() => [
     { accessorKey: 'num', header: 'ID', cell: ({ row }) => `#${row.original.num}` },
     {
       accessorKey: 'title',
       header: '標題',
-      cell: ({ row }) => (
-        <Button variant="link" id={`demo-task-link-${row.original.num}`} onClick={() => onOpen(row.original)}>{row.original.title}</Button>
-      ),
+      cell: ({ row }) => <LinkInput mode="view" value={taskUrl(row.original.num)} label={row.original.title} />,
     },
     { accessorKey: 'assignee', header: '指派人' },
     { accessorKey: 'status', header: '狀態', cell: ({ row }) => statusLabel(row.original.status) },
-  ], [onOpen])
-  return <DataTable columns={columns} data={tasks} height="auto" getRowId={(t) => t.id} />
-}
-
-/** 看板(極簡):三欄各列任務標題連結,點了同樣開有 URL 的任務對話框 —— 背景就是看板。 */
-function Board({ tasks, onOpen }: { tasks: Task[]; onOpen: (t: Task) => void }) {
+    { accessorKey: 'due', header: '截止日' },
+  ], [])
+  const interceptInternalLink = (e: React.MouseEvent) => {
+    const anchor = (e.target as Element).closest?.('a[href]')
+    const m = anchor?.getAttribute('href')?.match(/\/tasks\/(\d+)$/)
+    if (!m) return
+    e.preventDefault()
+    e.stopPropagation()
+    onOpen(Number(m[1]))
+  }
   return (
-    <div className="grid grid-cols-3 gap-[var(--layout-space-loose)]">
-      {STATUS_OPTIONS.map((col) => {
-        const items = tasks.filter((t) => t.status === col.value)
-        // items-start:Button 是 inline-flex justify-center,被 flex-col 撐滿欄寬會把文字置中(2026-09-09 截圖抓到)
-        return (
-          <div key={col.value} className="flex flex-col items-start gap-1">
-            <h2 className="text-body-lg font-medium">{col.label}</h2>
-            {items.length === 0
-              ? <p className="text-body text-fg-muted">沒有任務</p>
-              : items.map((t) => <Button key={t.id} variant="link" id={`demo-board-task-${t.num}`} onClick={() => onOpen(t)}>{taskLabel(t)}</Button>)}
-          </div>
-        )
-      })}
+    <div className="flex h-full min-h-0 flex-col">
+      <div data-demo-toolbar className="flex items-center justify-between gap-2 px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
+        <div className="max-w-sm flex-1">
+          <Input size="sm" placeholder="搜尋任務" aria-label="搜尋任務" startIcon={Search} value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button id="demo-new-task" variant="primary" size="sm" startIcon={Plus} onClick={onCreate}>新增任務</Button>
+        </div>
+      </div>
+      <div className="mx-[var(--layout-space-loose)] mb-[var(--layout-space-loose)] min-h-0 flex-1" onClickCapture={interceptInternalLink}>
+        <DataTable columns={columns} data={rows} height="100%" getRowId={(t) => t.id} aria-label={tab.label} />
+      </div>
     </div>
   )
 }
@@ -651,13 +711,15 @@ function Board({ tasks, onOpen }: { tasks: Task[]; onOpen: (t: Task) => void }) 
  * (dialog.spec.md「Header actions slot」:`<Button variant="text" iconOnly>`;button.spec.md「text + danger」=
  * 工具列刪除 icon、有後續確認);body 照 DS 表單版面放四個 Field;footer 只有取消(tertiary)與儲存(primary)。
  */
-function TaskDialog({ task, portalContainer, persistentElements, onSave, onCancel, onDelete }: {
+function TaskDialog({ task, portalContainer, persistentElements, onSave, onCancel, onDelete, onCloseAutoFocus }: {
   task: Task | null
   portalContainer: HTMLElement
   persistentElements: () => Element[]
   onSave: (draft: TaskDraft) => void
   onCancel: () => void
   onDelete?: () => void
+  /** 關閉後焦點回到開啟它的元素(沒有 DialogTrigger 時 Radix 會落到 body;2026-09-09 Codex R13) */
+  onCloseAutoFocus?: (e: Event) => void
 }) {
   const [draft, setDraft] = React.useState<TaskDraft>(() =>
     task ? { title: task.title, assignee: task.assignee, status: task.status, due: task.due } : { title: '', assignee: '', status: 'todo', due: '' },
@@ -665,7 +727,7 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
   const set = <K extends keyof TaskDraft>(key: K, value: TaskDraft[K]) => setDraft((d) => ({ ...d, [key]: value }))
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onCancel() }} persistentElements={persistentElements}>
-      <DialogContent maxWidth={480} autoHeight portalContainer={portalContainer} aria-describedby={undefined}>
+      <DialogContent maxWidth={480} autoHeight portalContainer={portalContainer} aria-describedby={undefined} onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader
           actions={task && onDelete
             ? <Button id="demo-task-delete" variant="text" danger iconOnly size="sm" startIcon={Trash2} aria-label="刪除任務" onClick={onDelete} />
@@ -770,10 +832,12 @@ function useSessions(initial: Session[]) {
   }
 }
 
-function AgentColumn({ hostRef, open, onOpenChange, sessions, persistentElements }: {
+function AgentColumn({ hostRef, open, onOpenChange, onModeChange, sessions, persistentElements }: {
   hostRef: React.Ref<HTMLDivElement>
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** 面板形態(並排 / 蓋板)回報 —— 宿主用它決定「從代理導向舞台」時要不要收成入口鈕。 */
+  onModeChange: (mode: AgentPanelMode) => void
   sessions: ReturnType<typeof useSessions>
   /** 蓋板態仍要可用的宿主外節點(瀏覽器工具列)。 */
   persistentElements: () => Element[]
@@ -785,7 +849,7 @@ function AgentColumn({ hostRef, open, onOpenChange, sessions, persistentElements
     <div ref={hostRef} className="contents">
       <AgentPanelDock open={open} onOpenChange={onOpenChange} logoState="still">
         {({ close }) => (
-          <AgentPanel persistentElements={persistentElements}>
+          <AgentPanel persistentElements={persistentElements} onModeChange={onModeChange}>
             <AgentPanelHeader
               title={empty ? '新對話' : active.title}
               conversations={sessions.history}
@@ -827,9 +891,20 @@ function AgentColumn({ hostRef, open, onOpenChange, sessions, persistentElements
   )
 }
 
+/**
+ * 等節點脫離 inert 再聚焦(最多等 10 影格)。代理收成入口鈕的那一刻,宿主還在蓋板的抑制裡
+ * (解除要跨一次 ResizeObserver 與 effect),這時 Dialog 的掛載自動聚焦與 `main.focus()` 都會落空。
+ */
+function focusWhenOperable(resolve: () => HTMLElement | null, frames = 10) {
+  const el = resolve()
+  if (el && !el.closest('[inert]') && !el.hasAttribute('inert')) { el.focus(); return }
+  if (frames > 0) requestAnimationFrame(() => focusWhenOperable(resolve, frames - 1))
+}
+
 function UrlRegistryScene() {
   const [stage, setStage] = React.useState<HTMLDivElement | null>(null)
   const [canvas, setCanvas] = React.useState<HTMLDivElement | null>(null)
+  const mainRef = React.useRef<HTMLElement | null>(null)
   const panelHostRef = React.useRef<HTMLDivElement | null>(null)
   const toolbarRef = React.useRef<HTMLDivElement | null>(null)
   /** 並存 modal 的保留集合:代理殼(面板或入口鈕)+ 瀏覽器工具列。 */
@@ -839,8 +914,12 @@ function UrlRegistryScene() {
   const [tasks, setTasks] = React.useState<Task[]>(TASKS)
   const [confirmDelete, setConfirmDelete] = React.useState<Task | null>(null)
   const [agentOpen, setAgentOpen] = React.useState(true)
+  /** 面板形態(並排 / 蓋板),由 AgentPanel `onModeChange` 回報;量到之前是 null。 */
+  const [agentMode, setAgentMode] = React.useState<AgentPanelMode | null>(null)
+  const agentModeRef = React.useRef(agentMode)
+  agentModeRef.current = agentMode
   // 歷史堆疊合成一個 state,`go` 才是穩定的 callback(代理回覆裡的連結閉包會抓住它)
-  const [nav, setNav] = React.useState<{ entries: Location[]; index: number }>({ entries: [{ url: TASKS_PAGE.url }], index: 0 })
+  const [nav, setNav] = React.useState<{ entries: Location[]; index: number }>({ entries: [{ url: ALL_TASKS.url }], index: 0 })
   const navRef = React.useRef(nav)
   navRef.current = nav
   const go = React.useCallback((next: Location) => setNav((n) => ({ entries: [...n.entries.slice(0, n.index + 1), next], index: n.index + 1 })), [])
@@ -848,13 +927,43 @@ function UrlRegistryScene() {
   const forward = React.useCallback(() => setNav((n) => ({ ...n, index: Math.min(n.entries.length - 1, n.index + 1) })), [])
   const cur = nav.entries[nav.index]
   const view = resolveView(cur)
-  /** 從「目前看得到的頁面」點開 modal:來源頁成為背景(已經在 modal 裡時沿用它的背景)。 */
+  /** 從「目前看得到的 tab」點開 modal:來源 tab 成為背景(已經在 modal 裡時沿用它的背景)。 */
+  // 開啟 modal 的元素(表格裡的連結 / 新增任務 / 代理裡的連結):關閉後焦點回這裡;它若已不在畫面或被抑制,退回舞台 main
+  const openerRef = React.useRef<HTMLElement | null>(null)
+  const rememberOpener = () => { const el = document.activeElement; openerRef.current = el instanceof HTMLElement && el !== document.body ? el : null }
+  const returnFocus = React.useCallback((e: Event) => {
+    e.preventDefault()
+    const el = openerRef.current
+    // 開啟元素可能在已收成的代理面板裡(display:none,蓋板讓位後):不可見或 .focus() 沒生效都退回舞台 main(Codex R14 反例)
+    const visible = !!el && el.isConnected && el.getClientRects().length > 0 && !el.closest('[inert]') && !el.closest('[aria-hidden="true"]')
+    if (visible) el!.focus()
+    if (!visible || document.activeElement !== el) mainRef.current?.focus()
+  }, [])
   const openTask = React.useCallback((num: number) => {
-    const page = resolveView(navRef.current.entries[navRef.current.index]).page
-    go({ url: taskUrl(num), backgroundLocation: page.url })
+    rememberOpener()
+    const tab = resolveView(navRef.current.entries[navRef.current.index]).tab
+    go({ url: taskUrl(num), backgroundLocation: tab.url })
   }, [go])
-  const openNewTask = () => go({ url: NEW_TASK_URL, backgroundLocation: view.page.url })
-  const closeModal = () => go({ url: view.page.url })
+  const openNewTask = () => { rememberOpener(); go({ url: NEW_TASK_URL, backgroundLocation: view.tab.url }) }
+  const closeModal = () => go({ url: view.tab.url })
+  /**
+   * 從代理發起的內部導航(v14 條 C):並排態代理維持開啟;**蓋板態代理收成入口鈕、舞台顯示目標**(條 B,2026-09-09 user:
+   * 「開啟 agent 點內部連結當然要有優先呈現該連結內容啊,怎麼可能讓 agent 還霸道佔位?」)。
+   * 收成不是卸載 —— 對話、草稿、閱讀位置都留著(AgentPanelDock keep-mounted)。目標是頁面 → 焦點交給舞台 `<main>`;
+   * 目標是 modal → Dialog 開啟時自己聚焦。面板不知道連結,所以這段住在宿主,不在 DS(agent-panel.spec 蓋板小節)。
+   */
+  const stageRef = React.useRef<HTMLDivElement | null>(null)
+  stageRef.current = stage
+  const fromAgent = React.useCallback((navigate: () => void, target: 'page' | 'modal') => {
+    navigate()
+    if (agentModeRef.current !== 'overlay') return
+    setAgentOpen(false)
+    // 目標是頁面 → 焦點交給舞台 main;目標是 modal → Dialog 掛載時的自動聚焦會撞上尚未解除的抑制而落空,
+    // 等它可操作後把焦點放到對話框容器(Radix DialogContent 帶 tabIndex=-1;APG dialog 模式允許聚焦容器)
+    requestAnimationFrame(() => focusWhenOperable(() =>
+      target === 'page' ? mainRef.current : stageRef.current?.querySelector<HTMLElement>('[role="dialog"]') ?? null,
+    ))
+  }, [])
   const initialSessions = React.useMemo<Session[]>(() => [
     { id: 's1', title: '登入逾時追蹤', group: '今天', draft: '', messages: [
       { role: 'user', content: '登入逾時那件事現在在哪裡處理?' },
@@ -862,8 +971,8 @@ function UrlRegistryScene() {
         <>
           <p>跟你問的有關的有三處:</p>
           <ul className="mt-2 flex flex-col gap-1">
-            <li><a href={taskUrl(4821)} id="demo-link-task-4821" onClick={(e) => { e.preventDefault(); openTask(4821) }}>任務 #4821 修正登入逾時</a></li>
-            <li><a href={BOARD_PAGE.url} id="demo-link-board" onClick={(e) => { e.preventDefault(); go({ url: BOARD_PAGE.url }) }}>{BOARD_PAGE.title}</a></li>
+            <li><a href={taskUrl(4821)} id="demo-link-task-4821" onClick={(e) => { e.preventDefault(); fromAgent(() => openTask(4821), 'modal') }}>任務 #4821 修正登入逾時</a></li>
+            <li><a href={MY_TASKS.url} id="demo-link-mine" onClick={(e) => { e.preventDefault(); fromAgent(() => go({ url: MY_TASKS.url }), 'page') }}>{MY_TASKS.label}</a>(你名下的「支付失敗通知信」跟它同一條路徑)</li>
             <li><a href="https://support.example.com/tickets/88213" id="demo-link-zendesk" target="_blank" rel="noopener noreferrer">Zendesk 客訴 #88213<ExternalLink size={14} className="ml-1 inline-block align-[-2px]" aria-hidden /></a></li>
           </ul>
           <p className="mt-2">另外有人在討論串提到 <span id="demo-unconfirmed">/projects/9999</span>,但系統裡查不到這個專案,我就沒有放連結。</p>
@@ -878,10 +987,10 @@ function UrlRegistryScene() {
       { role: 'user', content: '把 Q3 的客訴按原因分類。' },
       { role: 'agent', content: '分成物流、品質、客服態度三類:物流延遲 41%、商品瑕疵 27%、回覆過慢 18%,其餘 14% 為零星原因。' },
     ] },
-  ], [go, openTask])
+  ], [go, openTask, fromAgent])
   const sessions = useSessions(initialSessions)
   // v14 條 F:重新整理 = 宿主不變、代理回到初始關閉的新對話;瀏覽器同時丟掉記憶體裡的來源頁 →
-  // 任務網址等於「直接進入」,疊在預設背景(任務清單)上。
+  // 任務網址等於「直接進入」,疊在預設背景(所有任務)上。
   const reload = () => {
     setNav((n) => ({ ...n, entries: n.entries.map((e, i) => (i === n.index ? { url: e.url } : e)) }))
     setAgentOpen(false)
@@ -891,9 +1000,11 @@ function UrlRegistryScene() {
   const openTaskModal = modalTaskNum == null ? null : tasks.find((t) => t.num === modalTaskNum) ?? null
   const nextNum = Math.max(...tasks.map((t) => t.num)) + 1
   return (
-    <div className="p-[var(--layout-space-loose)]">
+    // 撐滿 story、與邊界四周留 loose(2026-09-09 user);畫布高 = 視窗高 − 上下 loose − 工具列
+    <div className="flex h-dvh flex-col p-[var(--layout-space-loose)]">
       <SimulatedBrowser
         url={cur.url}
+        height="fill"
         canBack={nav.index > 0}
         canForward={nav.index < nav.entries.length - 1}
         onBack={back}
@@ -901,49 +1012,62 @@ function UrlRegistryScene() {
         onReload={reload}
         canvasRef={setCanvas}
         toolbarRef={toolbarRef}
-        caption="示意(假資料):任務清單、看板與任務對話框都有自己的網址,對話框只遮住舞台、右側代理仍可用;從看板點任務,對話框疊在看板上,重新整理後直接以任務網址進入則疊在預設的任務清單上。沒有網址的刪除確認框會把代理一起擋住。畫布上方的網址列與上下頁鈕只是模擬。"
       >
-        <Stage stageRef={setStage}>
-          <h1 id="demo-stage-title" className="text-heading">{view.page.title}</h1>
-          {view.page.kind === 'tasks' && (
-            <>
-              <TaskTable tasks={tasks} onOpen={(t) => openTask(t.num)} />
-              <div className="flex gap-2">
-                <Button id="demo-new-task" variant="primary" onClick={openNewTask}>新增任務</Button>
-              </div>
-            </>
-          )}
-          {view.page.kind === 'board' && <Board tasks={tasks} onOpen={(t) => openTask(t.num)} />}
-          {stage && view.modal && (view.modal.kind === 'new' || openTaskModal) && (
-            <TaskDialog
-              key={cur.url}
-              task={openTaskModal}
-              portalContainer={stage}
-              persistentElements={keepForDialog}
-              onCancel={closeModal}
-              onDelete={openTaskModal ? () => setConfirmDelete(openTaskModal) : undefined}
-              onSave={(draft) => {
-                setTasks((ts) => openTaskModal
-                  ? ts.map((t) => (t.id === openTaskModal.id ? { ...t, ...draft } : t))
-                  : [...ts, { id: `t${nextNum}`, num: nextNum, ...draft }])
-                closeModal()
-              }}
-            />
-          )}
-          {canvas && confirmDelete && (
-            <ConfirmDeleteDialog
-              task={confirmDelete}
-              portalContainer={canvas}
-              onCancel={() => setConfirmDelete(null)}
-              onConfirm={() => {
-                setTasks((ts) => ts.filter((t) => t.id !== confirmDelete.id))
-                setConfirmDelete(null)
-                closeModal()
-              }}
-            />
-          )}
-        </Stage>
-        <AgentColumn hostRef={panelHostRef} open={agentOpen} onOpenChange={setAgentOpen} sessions={sessions} persistentElements={keepForPanel} />
+        {/* Tabs root 要同時包住 header 裡的 TabsList 與 main 裡的 TabsContent(Radix 同 root);
+            display:contents 讓舞台仍是畫布 flex 的直接子節點 */}
+        <Tabs value={view.tab.value} onValueChange={(v) => go({ url: tabByValue(v).url })} className="contents">
+          <Stage
+            stageRef={setStage}
+            mainRef={mainRef}
+            header={
+              <PageHeader
+                title={PROJECT_TITLE}
+                includeSidebarTrigger={false}
+                tabsSlot={
+                  <TabsList size="sm">
+                    {TASK_TABS.map((t) => <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>)}
+                  </TabsList>
+                }
+              />
+            }
+          >
+            {TASK_TABS.map((t) => (
+              <TabsContent key={t.value} value={t.value} className="mt-0 flex min-h-0 flex-1 flex-col">
+                <TaskListView tab={t} tasks={tasks} onOpen={openTask} onCreate={openNewTask} />
+              </TabsContent>
+            ))}
+            {stage && view.modal && (view.modal.kind === 'new' || openTaskModal) && (
+              <TaskDialog
+                key={cur.url}
+                task={openTaskModal}
+                portalContainer={stage}
+                persistentElements={keepForDialog}
+                onCloseAutoFocus={returnFocus}
+                onCancel={closeModal}
+                onDelete={openTaskModal ? () => setConfirmDelete(openTaskModal) : undefined}
+                onSave={(draft) => {
+                  setTasks((ts) => openTaskModal
+                    ? ts.map((t) => (t.id === openTaskModal.id ? { ...t, ...draft } : t))
+                    : [...ts, { id: `t${nextNum}`, num: nextNum, ...draft }])
+                  closeModal()
+                }}
+              />
+            )}
+            {canvas && confirmDelete && (
+              <ConfirmDeleteDialog
+                task={confirmDelete}
+                portalContainer={canvas}
+                onCancel={() => setConfirmDelete(null)}
+                onConfirm={() => {
+                  setTasks((ts) => ts.filter((t) => t.id !== confirmDelete.id))
+                  setConfirmDelete(null)
+                  closeModal()
+                }}
+              />
+            )}
+          </Stage>
+        </Tabs>
+        <AgentColumn hostRef={panelHostRef} open={agentOpen} onOpenChange={setAgentOpen} onModeChange={setAgentMode} sessions={sessions} persistentElements={keepForPanel} />
       </SimulatedBrowser>
     </div>
   )
@@ -958,7 +1082,7 @@ export const UrlRegistryDemo: Story = {
   parameters: {
     docs: {
       description: {
-        story: '假資料示意。舞台是專案的任務清單(DataTable);點任務標題或「新增任務」開有網址的對話框,它只遮舞台、右側代理仍可對話與切換 session;對話框 header 的垃圾桶開沒有網址的刪除確認框,代理被擋、取消後恢復。代理回覆裡的「衝刺看板」把宿主切到看板,再點「任務 #4821」對話框就疊在看板上(背景位置模式);重新整理等於直接以任務網址進入,對話框疊在預設的任務清單上,代理則回到初始關閉。上一頁 / 下一頁走歷史;窄畫布時代理改成蓋板,網址列與上下頁鈕仍可點,從代理點開的對話框在面板後方、按 × 收起後才能操作。',
+        story: '假資料示意。舞台 = AppShell 主內容:page header(專案標題)+ 兩個各有網址的 tab「所有任務 / 我的任務」,tab 內是 toolbar(搜尋、新增任務)與 DataTable;點標題欄的連結或「新增任務」開有網址的對話框,並排時它只遮舞台、右側代理仍可對話與切換 session;對話框 header 的垃圾桶開沒有網址的刪除確認框,代理被擋、取消後恢復。代理回覆裡的「我的任務」把宿主切到該 tab,再點「任務 #4821」對話框就疊在「我的任務」上(背景位置模式);重新整理等於直接以任務網址進入,對話框疊在預設的「所有任務」上,代理則回到初始關閉。上一頁 / 下一頁走歷史。窄畫布時代理改成蓋板:網址列與上下頁鈕仍可點;從代理點內部連結或有網址的對話框 → 代理收成右下角入口鈕、舞台顯示目標(對話與草稿都留著),點入口鈕再開回來。',
       },
     },
   },

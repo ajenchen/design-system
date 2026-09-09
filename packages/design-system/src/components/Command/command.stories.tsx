@@ -195,15 +195,15 @@ export const NoResults: Story = {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Story 5:載入中(首次開啟:搜尋列右側轉圈 + 清單裡一列載入訊息列)
+   Story 5:載入中(首次開啟:清單裡一列載入訊息列;搜尋列不轉圈)
    ═══════════════════════════════════════════════════════════════════════════ */
 export const LoadingFirstOpen: Story = {
   name: '載入中(首次開啟)',
-  parameters: { docs: { description: { story: 'Linear 專案切換清單剛打開,專案還沒從 API 回來:搜尋列右側轉圈(仍可打字),清單裡只有一列「載入專案中」訊息列——與一筆結果等高,不用大轉圈撐高。' } } },
+  parameters: { docs: { description: { story: 'Linear 專案切換清單剛打開,專案還沒從 API 回來:清單裡只有一列「載入專案中」訊息列——與一筆結果等高,不用大轉圈撐高;搜尋列照常可打字、不另外轉圈(載入指示只在清單內)。' } } },
   render: () => (
     <div className="max-w-md rounded-lg border border-border bg-surface-raised overflow-hidden" style={{ boxShadow: 'var(--elevation-100)' }}>
       <Command>
-        <CommandInput placeholder="搜尋專案…" loading />
+        <CommandInput placeholder="搜尋專案…" />
         <CommandEmpty><CommandLoading label="載入專案中" /></CommandEmpty>
         <CommandList>
         </CommandList>

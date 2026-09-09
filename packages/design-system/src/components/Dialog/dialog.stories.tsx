@@ -19,6 +19,7 @@ import { Switch } from '@/design-system/components/Switch/switch'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { openOverlayDocsStory, openOverlayParameters } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
 
 /**
  * 通知設定 — flush 中 item(title + desc + right-side Switch)
@@ -239,6 +240,8 @@ export const WithForm = {
 
 export const LongContent = {
   name: '長內容',
+  // 預設開著(視覺稽核要截到捲動中的 body);docs 頁進 iframe 才不會跟其他開著的 story 疊在一起
+  parameters: openOverlayParameters('640px'),
   render: () => (
     <Dialog defaultOpen>
       <DialogTrigger asChild>
@@ -302,6 +305,7 @@ export const Destructive = {
  */
 export const ListBody = {
   name: '主體放清單',
+  parameters: openOverlayParameters('560px'),
   render: () => (
     <div className="flex flex-col gap-6 items-start">
       {/* 大 item:avatar 40 + title + description(對齊 user 期望 + Material M3 + FileItem rich) */}
@@ -381,6 +385,7 @@ export const ListBody = {
  */
 export const HeaderActions = {
   name: '標頭操作',
+  parameters: openOverlayParameters('480px'),
   render: () => (
     <Dialog defaultOpen>
       <DialogTrigger asChild>
@@ -623,6 +628,7 @@ export const CoexistenceContract: Story = {
   parameters: {
     layout: 'fullscreen',
     docs: {
+      story: openOverlayDocsStory('800px'),
       description: {
         story: '同一個 Dialog:它傳送到左邊的舞台,遮罩只遮舞台、對話框置中於舞台;右邊的評論側欄是常駐區域,不被遮、可以聚焦與打字。由來:代理原則 v14 條 A/B。',
       },

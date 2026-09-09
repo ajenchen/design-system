@@ -80,9 +80,18 @@ reader-facing 的 scenario 不得標 `test-only`。機械 gate=`scripts/audit-co
 
 ## 整頁情境(2026-09-08 user 拍板形狀)
 
-- **畫布 / 說明分區**:要演「整頁 + 浮層 + 常駐面板」的 story,用 `stories-helpers/scene/simulated-browser.tsx`:上方工具列(上一頁 / 下一頁 / 網址列,DS Button + Input)是**說明用**,下方畫布是**擬真的產品畫面**;Dialog / FileViewer 用 `portalContainer={canvas}` 傳送進畫布。說明只放畫布下方的 `caption`,**不放進畫布、不放進代理面板**(要解釋就寫成代理自己的回覆,用 `AgentMessage` 的樣式)。
+- **畫布 / 說明分區**:要演「整頁 + 浮層 + 常駐面板」的 story,用 `stories-helpers/scene/simulated-browser.tsx`:上方工具列(上一頁 / 下一頁 / 網址列,DS Button + Input)是**說明用**,下方畫布是**擬真的產品畫面**;Dialog / FileViewer 用 `portalContainer={canvas}` 傳送進畫布。說明放 story 的 docs description,**畫布下方不放備註、不放進畫布、不放進代理面板**(user 2026-09-09:「模擬瀏覽器下方的備注可以拿掉」;要在畫面裡解釋就寫成代理自己的回覆,用 `AgentMessage` 的樣式);模擬瀏覽器撐滿 story、與 story 邊界四周各留 `--layout-space-loose`。
 - **畫布裡只准 DS 元件 + 真實業務內容**:key/value 用 `DescriptionList`、欄位用 `Field` + `Input`、按鈕用 `Button`、標題用 `DialogHeader` + `DialogTitle`(`DialogHeader` 沒有 `title` prop,寫了不會渲染)。常駐面板是畫布 flex 的直接子節點,撐滿畫布高度。
 - **舞台用真元件、不縮排、不塞便條**(2026-09-09 user 指正:「為何那幾個任務清單要縮排?」「不要搞一個效能很差的 table」「dialog body 放三個像是留言的那個 field 包括標題,指派人,狀態和截止日不就好了嗎?description list 和整個留言功能都可以不用」):清單用 `DataTable`(資料極簡、不開虛擬捲動 / 拖曳 / 篩選)或 DS 清單元件,禁手刻 `<ul>` + 縮排;dialog body 照 DS 表單版面放 `Field`(`flex flex-col gap-[var(--layout-space-loose)]`,dialog.stories.tsx「建立專案」同款),不堆 `DescriptionList` + 留言區當充數;dialog header 一行標題(不用 `DialogDescription` 副標),記錄級操作走 `DialogHeader actions` 的 icon-only `text` 鈕、破壞性動作走沒有 URL 的確認框;說明一律寫在 `docs.description`,畫布與面板裡不放便條。
+
+## 預設開啟的模態浮層 story(2026-09-09 user 抓到 docs 頁疊框)
+
+- **規則**:`Dialog` / `Sheet` / `FileViewer` / `CommandDialog` 這類 `position: fixed` 模態浮層,凡 story 一渲染就開著(`defaultOpen`、`open={true}`、`useState(true)` 餵 `open`),**必**帶 `parameters: { docs: { story: openOverlayDocsStory('<iframe 高度>') } }`(helper:`stories-helpers/overlay/open-overlay-docs.ts` = Storybook 官方 `docs.story.inline: false` + `height`,<https://storybook.js.org/docs/api/doc-blocks/doc-block-story>)。標 `tags: ['test-only']` 的 probe 已被 shared preview 的 `docs.stories.filter` 排除在 Autodocs 外,免帶。
+- **為什麼是這個機制**(三案對照後選最乾淨的一個):(a) `docs.story.inline:false` —— docs 每個 story 各自 iframe,不疊;canvas 一個位元不變,截圖 / a11y / 互動閘照跑;只加一行 parameter;(b) preview decorator 在 `viewMode==='docs'` 關掉 defaultOpen —— decorator 碰不到 story render 內部的 prop,要 DS 元件另讀 Storybook 專用 context 才做得到,把測試工具語意塞進元件;(c) 改 `play()` 開啟 + docs 不 autoplay(Storybook 預設 docs 不跑 play)—— 要改寫 30+ 檔的開啟方式,且截圖閘全部要改成「等 play 跑完」,還違背 M15 已 codify 的「Radix defaultOpen 對 Portal 自動生效」canonical。
+- **meta 是 `layout: 'centered'` 的檔案改用 `parameters: openOverlayParameters('<高度>')`**(= `layout: 'padded'` + 同一組 docs 參數):SB 8.6 Canvas block 的 layout 取值順序是 `parameters.layout` 先於 `docs.canvas.layout`,docs 專用參數蓋不過 meta;centered 的 docs 畫布是 flex 置中、iframe 縮成內建 300px(對話框被擠到 204px,2026-09-09 實測)。canvas 只差觸發鈕從置中變左上,對話框本來就 fixed 置中。
+- **不拿掉 defaultOpen**:M15 規定 stakeholder flow 必須有開著的快照 story;本規則只管 docs 的渲染方式。
+- **錨點錄**(Dialog docs 頁,1280×800):修前 4 個可見 `[role=dialog]` + 7 個 fixed 開啟節點疊在同一份文件;修後 0 個(各自進 iframe)。
+- **閘**:`scripts/dialog-coexistence-invariant.mjs`「docs 隔離」段 —— 靜態掃全部 `*.stories.tsx`(模態浮層 + 預設開啟 + 非 test-only 卻缺 `openOverlayDocsStory(` / `openOverlayParameters(` / `inline: false` → 紅)+ 瀏覽器量 Dialog docs 頁 `[role=dialog]` 可見數必 0、每個隔離 iframe ≥ 600px 寬、canvas OpenSnapshot 仍開著。
 
 ## 禁止
 

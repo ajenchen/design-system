@@ -245,21 +245,21 @@ const currencyOptions = [
 ]
 
 export const LoadingFirstOpen: Story = {
-  name: '載入中(首次開啟)',
-  parameters: { docs: { description: { story: 'Stripe 付款設定的「結算幣別」第一次展開,幣別清單還沒從後端回來:觸發點右側轉圈,選單裡只有一列「載入選項中」訊息列,與一筆結果等高。' } } },
+  name: '選項載入中(首次開啟)',
+  parameters: { docs: { description: { story: 'Stripe 付款設定的「結算幣別」第一次展開,幣別清單還沒從後端回來:選單裡只有一列「載入選項中」訊息列,與一筆結果等高;觸發點不轉圈(選項載入的指示只在選單內,觸發點的轉圈留給「這個值正在處理」)。' } } },
   render: () => (
     <div className="max-w-xs">
-      <Select options={[]} value={null} onChange={() => {}} searchable loading defaultOpen placeholder="選擇結算幣別…" aria-label="結算幣別(首次載入)" />
+      <Select options={[]} value={null} onChange={() => {}} searchable optionsLoading defaultOpen placeholder="選擇結算幣別…" aria-label="結算幣別(首次載入)" />
     </div>
   ),
 }
 
-export const LoadingWithStaleOptions: Story = {
-  name: '載入中(保留舊清單)',
-  parameters: { docs: { description: { story: '幣別清單已經有五筆,使用者改了關鍵字、後端重新搜尋中:舊清單留著不清空、選單不關,只靠觸發點右側的轉圈提示還在抓資料。' } } },
+export const ValueLoading: Story = {
+  name: '值處理中(儲存)',
+  parameters: { docs: { description: { story: '結算幣別改成 JPY 後正在寫回 Stripe:`loading` 是 Field 家族共用的「這個值在讀取 / 驗證 / 儲存」—— 觸發點右側、箭頭左邊轉圈並標 aria-busy,選單照常可開可選;跟 Input 的 loading 同一個意思,跟選項有沒有載入無關。' } } },
   render: () => (
     <div className="max-w-xs">
-      <Select options={currencyOptions} value="twd" onChange={() => {}} searchable loading defaultOpen placeholder="選擇結算幣別…" aria-label="結算幣別(重新搜尋中)" />
+      <Select options={currencyOptions} value="jpy" onChange={() => {}} loading placeholder="選擇結算幣別…" aria-label="結算幣別(儲存中)" />
     </div>
   ),
 }
@@ -298,6 +298,56 @@ export const GroupedSearch: Story = {
       />
     </div>
   ),
+}
+
+/** 遠端搜尋(Notion「移動到」):頁面在後端、關鍵字空先給「建議」(最近瀏覽);每打一個字向後端要一次,抓資料中舊清單不留、只剩載入列。 */
+function RemoteSearchDemo() {
+  const pages = [
+    { value: 'roadmap', label: '產品路線圖', keywords: 'roadmap' },
+    { value: 'okr', label: '2026 Q4 OKR', keywords: 'okr goals' },
+    { value: 'onboarding', label: '新人入職手冊', keywords: 'onboarding' },
+    { value: 'ds', label: '設計系統元件', keywords: 'design system' },
+    { value: 'meetings', label: '會議記錄', keywords: 'meeting notes' },
+  ]
+  const recentPages = pages.slice(0, 3)
+  const [options, setOptions] = React.useState<typeof pages>([])
+  const [optionsLoading, setOptionsLoading] = React.useState(false)
+  const [value, setValue] = React.useState<string | null>(null)
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onSearchChange = (q: string) => {
+    if (timer.current) clearTimeout(timer.current)
+    const needle = q.trim().toLowerCase()
+    // 關鍵字清空:回到建議群組,不用問後端
+    if (!needle) { setOptions([]); setOptionsLoading(false); return }
+    setOptionsLoading(true)
+    timer.current = setTimeout(() => {
+      setOptions(pages.filter((p) => `${p.label} ${p.keywords}`.toLowerCase().includes(needle)))
+      setOptionsLoading(false)
+    }, 800)
+  }
+  return (
+    <div className="max-w-xs">
+      <Select
+        options={options}
+        suggestions={recentPages}
+        value={value}
+        onChange={setValue}
+        searchable
+        filterOption={false}
+        optionsLoading={optionsLoading}
+        onSearchChange={onSearchChange}
+        defaultOpen
+        placeholder="移動到…"
+        aria-label="移動到(遠端搜尋)"
+      />
+    </div>
+  )
+}
+
+export const RemoteSearch: Story = {
+  name: '遠端搜尋(建議 → 載入 → 結果)',
+  parameters: { docs: { description: { story: 'Notion「移動到」、頁面在後端:還沒打字先列「建議」群組(最近瀏覽的三頁,群組標題告訴你頁面不只這些);每打一個字向後端要一次,抓資料中舊清單不留、只剩一列「載入選項中」;後端回什麼列什麼,真的沒有才顯示「沒有選項」;清掉關鍵字就回到建議。' } } },
+  render: () => <RemoteSearchDemo />,
 }
 
 /* ── DataTable 整合 ── */

@@ -109,7 +109,7 @@ export const Overview: Story = {
                 </tr>
                 <tr>
                   <Td mono>CommandInput</Td>
-                  <Td>搜尋列(searchable 模式;DS 單一實作,與 CommandDialog / inline Command 共用,高度 = field-height + 8px;loading 時右側放列圖示尺寸的轉圈、仍可打字)</Td>
+                  <Td>搜尋列(searchable 模式;DS 單一實作,與 CommandDialog / inline Command 共用,高度 = field-height + 8px;不為選項載入轉圈)</Td>
                   <Td mono>Command</Td>
                 </tr>
                 <tr>
@@ -129,7 +129,7 @@ export const Overview: Story = {
                 </tr>
                 <tr>
                   <Td mono>CommandEmpty / CommandLoading</Td>
-                  <Td>「沒有選項」/「載入選項中」訊息列(MenuItem message:非互動、次要色、字級同選項、置中,與一筆結果等高)</Td>
+                  <Td>「沒有選項」/「載入選項中」/「輸入關鍵字搜尋」訊息列(MenuItem message:非互動、次要色、字級同選項、置中,與一筆結果等高)</Td>
                   <Td mono>Menu primitive</Td>
                 </tr>
                 <tr>
@@ -198,16 +198,34 @@ export const Overview: Story = {
                   <Td>影響 MenuItem / searchInput 的高度</Td>
                 </tr>
                 <tr>
-                  <Td mono>loading</Td>
+                  <Td mono>optionsLoading</Td>
                   <Td mono>boolean</Td>
                   <Td mono>false</Td>
-                  <Td>載入中:搜尋列右側轉圈(仍可打字);清單沒有任何可顯示選項時才渲「載入選項中」訊息列,舊選項保留不清空</Td>
+                  <Td>選項清單載入中(2026-09-09 改名自 loading):只在清單沒有任何可顯示選項時渲「載入選項中」訊息列;搜尋列不轉圈;本機過濾舊選項保留、遠端搜尋抓資料中舊選項不顯示</Td>
+                </tr>
+                <tr>
+                  <Td mono>filterOption</Td>
+                  <Td mono>boolean</Td>
+                  <Td mono>true</Td>
+                  <Td>false = 遠端搜尋:不本機過濾、關鍵字空列建議群組、抓資料中清舊清單、沒有全選</Td>
+                </tr>
+                <tr>
+                  <Td mono>suggestions</Td>
+                  <Td mono>SelectMenuOption[]</Td>
+                  <Td mono>undefined</Td>
+                  <Td>遠端搜尋、關鍵字空時的建議清單(部分選項);DS 自動包成標題「建議」的群組(suggestionsLabel 可覆寫)</Td>
+                </tr>
+                <tr>
+                  <Td mono>searchHintText</Td>
+                  <Td mono>string</Td>
+                  <Td>「輸入關鍵字搜尋」</Td>
+                  <Td>遠端搜尋、關鍵字空、沒有建議也沒在載入時的提示列</Td>
                 </tr>
                 <tr>
                   <Td mono>emptyText</Td>
                   <Td mono>string</Td>
                   <Td>「沒有選項」</Td>
-                  <Td>沒有可顯示選項時的訊息列文案(打開就沒選項與搜尋無結果共用;consumer 可覆寫)</Td>
+                  <Td>真的沒有任何可選時的訊息列文案(本機過濾無結果 / 打開就沒選項 / 遠端回傳空;consumer 可覆寫)</Td>
                 </tr>
                 <tr>
                   <Td mono>minWidth</Td>

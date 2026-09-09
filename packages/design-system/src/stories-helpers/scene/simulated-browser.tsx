@@ -2,6 +2,7 @@ import * as React from 'react'
 import { ChevronLeft, ChevronRight, RotateCw } from 'lucide-react'
 import { Button } from '@/design-system/components/Button/button'
 import { Input } from '@/design-system/components/Input/input'
+import { cn } from '@/lib/utils'
 
 /**
  * 模擬瀏覽器 —— 給「整頁情境」類 story 用的畫布(2026-09-08,user:「圈出一個畫布,把整個內容塞在裡面,
@@ -14,7 +15,8 @@ import { Input } from '@/design-system/components/Input/input'
  * - **有 URL 的 modal 傳送到「舞台」**(story 自己建的左欄,帶 transform):modal 與遮罩只佔宿主面積,代理面板在舞台外、
  *   完全不被蓋(v14 條 B「並列可操作」+ agent-panel.spec「並排時 舞台 = 容器 − 面板」);
  *   **沒有 URL 的確認框傳送到畫布**(`canvasRef`),蓋住整個 app 含代理(v14 條 A)。
- * - 說明文字放 `caption`(畫布下方),不放進畫布或代理面板裡。
+ * - 說明文字放 `caption`(畫布下方),不放進畫布或代理面板裡;**整頁示範不放備註**(2026-09-09 user:「拿掉下方備註」),
+ *   說明寫在 `docs.description`,畫布用 `height="fill"` 撐滿 story(與 story 邊界四周留 `--layout-space-loose`,由外層 wrapper 給)。
  */
 export interface SimulatedBrowserProps {
   url: string
@@ -22,8 +24,8 @@ export interface SimulatedBrowserProps {
   onForward?: () => void
   canBack?: boolean
   canForward?: boolean
-  /** 畫布高度(px),預設 640 */
-  height?: number
+  /** 畫布高度(px),預設 640;`'fill'` = 撐滿父層(父層需給高度,例如 `flex h-dvh flex-col p-[var(--layout-space-loose)]`) */
+  height?: number | 'fill'
   /** 畫布節點 —— 沒有 URL 的確認框傳送到這裡(蓋住整個 app,含代理) */
   canvasRef?: React.Ref<HTMLDivElement>
   /** 工具列節點 —— 放進 `persistentElements`,瀏覽器 chrome 在 modal 開著時也不該被抑制 */
@@ -40,8 +42,9 @@ export interface SimulatedBrowserProps {
 export function SimulatedBrowser({ url, onBack, onForward, onReload, canBack = false, canForward = false, height = 640, canvasRef, toolbarRef, locationId = 'demo-location', caption, children }: SimulatedBrowserProps) {
   // 工具列與畫布是兄弟:外框的圓角與邊線拆成上半(工具列)/ 下半(畫布)各自畫,
   // 視覺仍是一個瀏覽器窗,但 DOM 上工具列不在畫布(= 代理量測與抑制的宿主容器)裡。
+  const fill = height === 'fill'
   return (
-    <div className="flex flex-col">
+    <div className={cn('flex flex-col', fill && 'min-h-0 flex-1')}>
       <div
         ref={toolbarRef}
         className="flex items-center gap-2 rounded-t-lg border border-border bg-surface px-3 py-2"
@@ -56,8 +59,8 @@ export function SimulatedBrowser({ url, onBack, onForward, onReload, canBack = f
       </div>
       <div
         ref={canvasRef}
-        className="relative flex overflow-hidden rounded-b-lg border border-t-0 border-border bg-canvas"
-        style={{ height, transform: 'translateZ(0)', boxShadow: 'var(--elevation-100)' }}
+        className={cn('relative flex overflow-hidden rounded-b-lg border border-t-0 border-border bg-canvas', fill && 'min-h-0 flex-1')}
+        style={{ height: fill ? undefined : height, transform: 'translateZ(0)', boxShadow: 'var(--elevation-100)' }}
       >
         {children}
       </div>

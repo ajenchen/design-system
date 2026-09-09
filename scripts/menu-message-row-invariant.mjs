@@ -1,47 +1,57 @@
 #!/usr/bin/env node
 /**
- * 選單訊息列閘(2026-09-08 user 拍板,不可再開題)
+ * 選單訊息列閘(2026-09-08 user 拍板;2026-09-09 user 拍板改版:兩個字兩件事 / 遠端清舊清單 / 建議群組)
  *
  * 共識:選單(SelectMenu / Command / Select / Combobox / PeoplePicker)裡「不是選項的列」一律走 MenuItem 的列幾何 ——
  *   「沒有選項 / 沒有結果」= 一列 `<MenuItem message>`(非互動、次要色、字級同選項、內容置中),住在 MenuGroup(py-2)裡,
  *   中尺寸 8 + 32 + 8 = 48,與 1 筆結果等高;沒有任何最小高度。
- *   「載入中」分兩處:搜尋列 / 觸發點右側放列圖示尺寸的轉圈(仍可打字);選單內只在清單裡沒有任何選項時,
- *   Empty 槽渲同一種訊息列(前綴轉圈 + 可見文字,role=status)。舊選項不清空、選單不關。選項為 0 的群組不畫。
+ *   兩個字兩件事(2026-09-09):
+ *     `optionsLoading` = 選項清單在抓 → 指示**只在選單內**(清單沒有任何可顯示選項時,Empty 槽渲載入訊息列:前綴轉圈 + 可見文字,
+ *       role=status);觸發點 / 搜尋列**不**轉圈。
+ *     `loading` = 這個值在讀取 / 驗證 / 儲存(Field 家族)→ 觸發點右側、ChevronDown 左邊的轉圈 + aria-busy,選單關著也在。
+ *   遠端搜尋(filterOption=false):關鍵字空 → 建議群組(必有標題「建議」);抓資料中 → 舊清單不顯示、只剩載入列;
+ *     後端回來 → 換結果;真的沒有 → 「沒有選項」;沒建議也沒在載入 → 「輸入關鍵字搜尋」提示列。選項為 0 的群組不畫。
  *
  * 這支閘把上面每一句量成像素(不看 class;每個 story 逐條印 ✓/✗):
  *   M1 「沒有選項」列高 = 一列選項高(md 32;sm 28 / lg 36),MenuGroup 上下各 8 → 整個 [cmdk-empty] = 48(md),
- *      且與同元件 1 筆結果的 [cmdk-list] 等高(用「保留舊清單」story 打字過濾到 1 筆來量;5 筆 = 8 + 32×5 + 8 = 176)
+ *      且與同元件 1 筆純文字結果的 [cmdk-list] 等高(用遠端搜尋 story 打字到 1 筆來量;人員列有頭像 + 描述比較高,只驗 8 + 列高 + 8)
  *   M2 載入中訊息列同高 48(md),列內轉圈的 layout 寬高 = ICON_SIZE(md 16 / lg 20),文字可見(不是 sr-only)
  *   M3 訊息列內容水平置中:內容(文字,或轉圈 + 文字整組)中心 x 與列中心 x 誤差 ≤ 1px
- *   M4 搜尋列 loading:[cmdk-input-wrapper] 內 16px 轉圈 + aria-busy,input 仍可輸入;舊選項仍在、[cmdk-empty] 不顯示
- *   M4/M5 一次只有一顆轉圈(2026-09-09 定):清單空 → 只有選單裡的載入訊息列在轉,觸發點 / 搜尋列都不亮;有舊選項 → 搜尋列(浮層有搜尋列時)
- *      或觸發點(搜尋在觸發點 / 選單關著)亮。Select / PeoplePicker 觸發點轉圈在 ChevronDown 左邊(比兩者的 x)
+ *   M4 選項載入中,搜尋列 [cmdk-input-wrapper] **沒有**轉圈、沒有 aria-busy,input 仍可輸入
+ *   M5 觸發點:optionsLoading → 觸發點**沒有**轉圈;loading(值處理中)→ 觸發點有 16px 轉圈在 ChevronDown 左邊 + aria-busy(選單關著也在)
  *   M6 搜尋在觸發點的 Select 0 筆:整個 [cmdk-list] = 48(md),不得多 16(空群組不畫)
- *   M8 遠端搜尋(filterOption=false):打一個本機對不到的字,舊清單原封留著、搜尋列轉圈亮、沒有訊息列;後端回來後清單才換
- *   M9 群組自動分隔線:可見群組之間恰好一條 1px 線(第一個可見群組沒有),搜尋後剩一組就沒有線 —— 手插 Separator 在搜尋時會消失
- *   M7 訊息列不可互動:pointer-events none、role=presentation(沒有結果)/ role=status(載入中)、
+ *   M7 訊息列不可互動:pointer-events none、role=presentation(沒有選項 / 提示)/ role=status(載入中)、
  *      hit-test 打不到它、滑鼠移上去底色不變(等 transition-colors 150ms 過完再量)
+ *   M8 遠端搜尋(Select / Combobox / PeoplePicker 各一):開啟 = 建議群組 → 打字 → 舊清單不見、載入列在轉、觸發點 / 搜尋列不轉圈
+ *      → 後端回來換成結果(1 筆)、沒有建議標題 → 打不存在的字 → 後端回來「沒有選項 / 沒有人員」→ 清掉關鍵字 → 建議回來
+ *   M9 群組自動分隔線:可見群組之間恰好一條 1px 線(第一個可見群組沒有),搜尋後剩一組就沒有線
+ *   M10 建議群組標題:遠端搜尋關鍵字空時恰一個可見群組、標題「建議」、[cmdk-group-heading] 有 id、
+ *      [cmdk-group-items][role=group] 的 aria-labelledby 指向它、標題列 role=presentation、字重 medium(≥ 500)
+ *   M11 提示列:遠端搜尋、沒有建議、沒在載入 → 一列「輸入關鍵字搜尋」(role=presentation、同幾何),不是「沒有選項」
  *
  * 數字出處(本檔不新造任何數字):
  *   列高 sm 28 / md 32 / lg 36 = `--field-height-{sm,md,lg}`(packages/design-system/src/tokens/uiSize/uiSize.css:23-26);
  *     訊息列吃 ROW_PADDING_BY_SIZE 的 py = (field-height − 1lh) / 2(patterns/element-anatomy/item-anatomy.tsx:145-149),所以列高 = field-height
  *   群組上下留白 8 = MenuGroup `py-2`(components/Menu/menu-item.tsx MenuGroup)
- *   轉圈 sm/md 16、lg 20 = ICON_SIZE(item-anatomy.tsx ICON_SIZE;components/Command/command.tsx CommandLoading / CommandInput 皆用 ICON_SIZE[size])
+ *   轉圈 sm/md 16、lg 20 = ICON_SIZE(item-anatomy.tsx ICON_SIZE;components/Command/command.tsx CommandLoading 用 ICON_SIZE[size])
+ *   群組標題字重 medium = MenuItem header `font-medium`(components/Menu/menu-item.tsx header 分支)
  *   置中容差 1px = 任務指定的量測容差(不是設計值)
  *
- * 對照組:`--selftest` 把期望值改成不可能的值(列高 0 / 群組留白 0 / 轉圈 0 / 置中容差 −1)必須紅;
- *   兩種模式都先把 M1 的量測值印出來並要求 > 0 —— 儀器活著才算數(M32「儀器要先有對照組」)。
- * 非同步 story(PeoplePicker 名錄 1.5 秒後才到)用 Playwright 假時鐘凍住再 runFor,不靠 wall-clock 搶拍。
+ * 對照組:`--selftest` 把期望值改成不可能的值(列高 0 / 群組留白 0 / 轉圈 0 / 置中容差 −1 / 標題與提示文案改成不存在的字 /
+ *   「該沒有轉圈」翻成「該有」)必須紅;兩種模式都先把 M1 的量測值印出來並要求 > 0 —— 儀器活著才算數(M32「儀器要先有對照組」)。
+ * 非同步 story(PeoplePicker 名錄 1.5 秒後才到;遠端搜尋 800ms 後端)用 Playwright 假時鐘凍住再 runFor,不靠 wall-clock 搶拍。
  * 瀏覽器:同一個 page 逐 story `goto`(--single-process 沙箱下不開第二個 context;參 scripts/lib/launch-browser.mjs)。
+ * 靜態站:預設 storybook-static;`--static=<dir>` 或環境變數 MENU_STATIC 指到別的 build(平行工作時不碰主 build)。
  */
 import http from 'node:http'
 import { existsSync, readFileSync, statSync } from 'node:fs'
-import { join, extname, dirname } from 'node:path'
+import { join, extname, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser } from './lib/launch-browser.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
-const STATIC = process.env.MENU_STATIC || join(REPO, 'storybook-static')
+const staticArg = process.argv.find((a) => a.startsWith('--static='))?.slice('--static='.length)
+const STATIC = staticArg ? resolve(staticArg) : (process.env.MENU_STATIC || join(REPO, 'storybook-static'))
 const SELFTEST = process.argv.includes('--selftest')
 const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
 
@@ -50,19 +60,27 @@ const ROW_H = { sm: 28, md: 32, lg: 36 }
 const GROUP_PAD = 8
 const ICON = { sm: 16, md: 16, lg: 20 }
 const CENTER_TOL = 1
+// 共識文案(消費端可覆寫;這裡只驗 DS 預設值出現的 story)
+const TEXT = { selectEmpty: '沒有選項', peopleEmpty: '沒有人員', loading: '載入選項中', hint: '輸入關鍵字搜尋', suggestions: '建議' }
 const EXPECT = SELFTEST
-  ? { row: { sm: 0, md: 0, lg: 0 }, pad: 0, icon: { sm: 0, md: 0, lg: 0 }, tol: -1 }
-  : { row: ROW_H, pad: GROUP_PAD, icon: ICON, tol: CENTER_TOL }
+  ? { row: { sm: 0, md: 0, lg: 0 }, pad: 0, icon: { sm: 0, md: 0, lg: 0 }, tol: -1, hint: '不存在的提示', suggestions: '不存在的標題', headingWeight: 9999, spinnerAbsent: false }
+  : { row: ROW_H, pad: GROUP_PAD, icon: ICON, tol: CENTER_TOL, hint: TEXT.hint, suggestions: TEXT.suggestions, headingWeight: 500, spinnerAbsent: true }
 const emptyH = (size) => EXPECT.pad * 2 + EXPECT.row[size]
 const listH = (size, n) => EXPECT.pad * 2 + EXPECT.row[size] * n
 
 const ID = {
   selectNoOptions: 'design-system-components-select-展示--no-options',
   selectLoading: 'design-system-components-select-展示--loading-first-open',
-  selectStale: 'design-system-components-select-展示--loading-with-stale-options',
+  selectValueLoading: 'design-system-components-select-展示--value-loading',
+  selectRemote: 'design-system-components-select-展示--remote-search',
+  selectGrouped: 'design-system-components-select-展示--grouped-search',
   comboboxLoading: 'design-system-components-combobox-展示--loading-first-open',
-  comboboxStale: 'design-system-components-combobox-展示--loading-with-stale-options',
+  comboboxValueLoading: 'design-system-components-combobox-展示--value-loading',
+  comboboxRemote: 'design-system-components-combobox-展示--remote-search',
+  comboboxRemoteHint: 'design-system-components-combobox-展示--remote-search-hint',
   peopleLoading: 'design-system-components-peoplepicker-展示--loading-first-open',
+  peopleValueLoading: 'design-system-components-peoplepicker-展示--value-loading',
+  peopleRemote: 'design-system-components-peoplepicker-展示--remote-search',
   peopleAsync: 'design-system-components-peoplepicker-展示--async-directory-load',
   commandNoResults: 'design-system-internal-command-展示--no-results',
   commandLoading: 'design-system-internal-command-展示--loading-first-open',
@@ -70,11 +88,7 @@ const ID = {
   commandInline: 'design-system-internal-command-展示--inline-command',
   commandAction: 'design-system-internal-command-展示--action-command',
   menuMessages: 'design-system-internal-menu-展示--messages',
-  selectGrouped: 'design-system-components-select-展示--grouped-search',
-  comboboxRemote: 'design-system-components-combobox-展示--remote-search',
 }
-// 共識文案(消費端可覆寫;這裡只驗 DS 預設值出現的 story)
-const TEXT = { selectEmpty: '沒有選項', peopleEmpty: '沒有人員', loading: '載入選項中' }
 const NONSENSE = '零零零不存在的關鍵字'
 
 const near = (a, b, tol = 0.5) => typeof a === 'number' && typeof b === 'number' && Math.abs(a - b) <= tol
@@ -85,9 +99,10 @@ const ck = (name, pass, detail = '') => { console.log(`${pass ? '✓' : '✗'} $
 const bad = (name, detail = '') => { console.log(`✗ ${name}${detail ? ':' + detail : ''} —— 前提失敗(story 沒渲染出要量的東西),閘不能當「不適用」放行`); broken++ }
 
 // ── story 存在性(先於一切)──
+if (!existsSync(join(STATIC, 'index.json'))) { console.log(`✗ 找不到 ${join(STATIC, 'index.json')},先 build storybook(或 --static=<dir>)`); process.exit(1) }
 const index = JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8')).entries
 for (const [key, id] of Object.entries(ID)) if (!index[id]) bad(`story 存在:${key}`, id)
-if (broken) { console.log('✗ storybook-static 缺 story,先 build-storybook'); process.exit(1) }
+if (broken) { console.log('✗ 靜態站缺 story,先 build storybook'); process.exit(1) }
 
 // ── 靜態站 + 瀏覽器 ──
 const server = http.createServer((q, s) => {
@@ -145,12 +160,27 @@ await page.addInitScript(() => {
       const l = document.querySelector('[cmdk-list]')
       // 訊息列(CommandEmpty)住在 listbox 外面(a11y:listbox 裡不得有非 option 子元素,MUI 同構),所以「清單區高度」= 清單 + 訊息列
       const e = document.querySelector('[cmdk-empty]')
-      return l ? { height: rect(l).height + (e ? rect(e).height : 0), items: document.querySelectorAll('[cmdk-item]').length, empty: !!e } : null
+      return l ? { height: rect(l).height + (e ? rect(e).height : 0), items: document.querySelectorAll('[cmdk-item]').length, empty: !!e, busy: l.getAttribute('aria-busy') } : null
     },
     spinnerIn(sel) {
       const scope = document.querySelector(sel); if (!scope) return { scope: false }
       const chevron = scope.querySelector('svg.lucide-chevron-down')
       return { scope: true, spinner: spinBox(scope.querySelector('.animate-spin')), chevron: chevron ? rect(chevron) : null, busy: scope.getAttribute('aria-busy') }
+    },
+    // 可見群組:標題文字 / 標題 id / 群組容器 aria-labelledby / 標題列 role 與字重 / 上邊線
+    groups() {
+      return [...document.querySelectorAll('[cmdk-group]')].filter((g) => !g.hasAttribute('hidden')).map((g) => {
+        const heading = g.querySelector('[cmdk-group-heading]')
+        const headingRow = heading ? heading.firstElementChild : null
+        const items = g.querySelector('[cmdk-group-items]')
+        return {
+          heading: heading?.textContent?.trim() ?? '', headingId: heading?.id ?? '',
+          itemsRole: items?.getAttribute('role') ?? '', labelledBy: items?.getAttribute('aria-labelledby') ?? '',
+          headingRole: headingRow?.getAttribute('role') ?? '', headingWeight: headingRow ? parseInt(getComputedStyle(headingRow).fontWeight, 10) : NaN,
+          headingHeight: headingRow ? rect(headingRow).height : NaN,
+          bt: parseFloat(getComputedStyle(g).borderTopWidth), items: g.querySelectorAll('[cmdk-item]').length,
+        }
+      })
     },
   }
 })
@@ -165,11 +195,14 @@ async function open(id, waitSel = '[cmdk-list]') {
 }
 const rows = (size = 'md') => page.evaluate((s) => window.__mm.rows().map((el) => window.__mm.info(el, s)), size)
 const list = () => page.evaluate(() => window.__mm.list())
+const groups = () => page.evaluate(() => window.__mm.groups())
 const triggerSpin = () => page.evaluate(() => window.__mm.spinnerIn('#storybook-root [role="combobox"]'))
+const inputSpin = () => page.evaluate(() => window.__mm.spinnerIn('[cmdk-input-wrapper]'))
+const TRIGGER_INPUT = '#storybook-root [role="combobox"] input:not([aria-hidden="true"])'
 
 /** 一列訊息列的全部斷言(M1/M2 高度、M3 置中、M7 不可互動;hover 另外量,要動滑鼠) */
 function assertRow(label, r, { kind, size = 'md', text, role }) {
-  const M = kind === 'loading' ? 'M2' : 'M1'
+  const M = kind === 'loading' ? 'M2' : kind === 'hint' ? 'M11' : 'M1'
   const rowH = EXPECT.row[size]
   const box = r.emptyHeight ?? r.groupHeight
   measured.push(r.height, r.groupHeight, box)
@@ -181,7 +214,8 @@ function assertRow(label, r, { kind, size = 'md', text, role }) {
     ck(`${label} M2 列內轉圈 layout 寬高 = ICON_SIZE.${size} = ${EXPECT.icon[size]}`, !!r.spinner && near(r.spinner.w, EXPECT.icon[size]) && near(r.spinner.h, EXPECT.icon[size]), r.spinner ? `${fmt(r.spinner.w)}×${fmt(r.spinner.h)}` : '列內沒有轉圈')
     ck(`${label} M2 載入文字可見(不是 sr-only)`, r.textVisible, `「${r.text}」文字框 ${fmt(r.textW)}×${fmt(r.textH)}`)
   }
-  if (text) ck(`${label} 文案 = 「${text}」(共識預設)`, r.text === text, `實際「${r.text}」`)
+  if (kind === 'hint') ck(`${label} M11 提示列文案 = 「${EXPECT.hint}」(不是「${TEXT.selectEmpty}」)`, r.text === EXPECT.hint, `實際「${r.text}」`)
+  else if (text) ck(`${label} 文案 = 「${text}」(共識預設)`, r.text === text, `實際「${r.text}」`)
   ck(`${label} M3 內容水平置中(誤差 ≤ ${EXPECT.tol}px)`, Math.abs(r.contentCx - r.cx) <= EXPECT.tol, `內容中心 ${fmt(r.contentCx)} vs 列中心 ${fmt(r.cx)},差 ${fmt(Math.abs(r.contentCx - r.cx))}`)
   const wantRole = role ?? (kind === 'loading' ? 'status' : 'presentation')
   ck(`${label} M7 pointer-events none`, r.pointerEvents === 'none', r.pointerEvents)
@@ -199,19 +233,27 @@ async function hoverCheck(label, i = 0) {
   ck(`${label} M7 滑鼠移上去沒有 hover 底色`, a.bg === after, `${a.bg} → ${after}`)
 }
 
-/** M5:觸發點內 16px 轉圈在 ChevronDown 左邊 */
-function assertTrigger(label, t, size = 'md') {
+/** M5(值處理中 loading):觸發點內 16px 轉圈在 ChevronDown 左邊 + aria-busy */
+function assertTriggerValueLoading(label, t, size = 'md') {
   if (!t.scope) { bad(`${label} M5 前提:找得到觸發點 [role=combobox]`); return }
-  ck(`${label} M5 觸發點內有 ${EXPECT.icon[size]}px 轉圈`, !!t.spinner && near(t.spinner.w, EXPECT.icon[size]) && near(t.spinner.h, EXPECT.icon[size]), t.spinner ? `${fmt(t.spinner.w)}×${fmt(t.spinner.h)}` : '觸發點內沒有轉圈')
+  ck(`${label} M5 值處理中 → 觸發點內有 ${EXPECT.icon[size]}px 轉圈`, !!t.spinner && near(t.spinner.w, EXPECT.icon[size]) && near(t.spinner.h, EXPECT.icon[size]), t.spinner ? `${fmt(t.spinner.w)}×${fmt(t.spinner.h)}` : '觸發點內沒有轉圈')
   ck(`${label} M5 轉圈在 ChevronDown 左邊`, !!t.spinner && !!t.chevron && t.spinner.right <= t.chevron.left + 0.5, t.spinner && t.chevron ? `轉圈右緣 ${fmt(t.spinner.right)} ≤ 箭頭左緣 ${fmt(t.chevron.left)}(箭頭 ${fmt(t.chevron.width)}px)` : '缺轉圈或箭頭')
+  ck(`${label} M5 觸發點 aria-busy`, t.busy === 'true', String(t.busy))
 }
-
-/** M4:搜尋列右側 16px 轉圈 + aria-busy;input 仍可輸入(輸入後清掉) */
-async function assertInputLoading(label, size = 'md') {
-  const w = await page.evaluate(() => window.__mm.spinnerIn('[cmdk-input-wrapper]'))
+/** M5(選項載入中 optionsLoading):觸發點**沒有**轉圈、沒有 aria-busy */
+async function assertTriggerNoSpinner(label) {
+  const t = await triggerSpin()
+  if (!t.scope) { bad(`${label} M5 前提:找得到觸發點 [role=combobox]`); return }
+  ck(`${label} M5 選項載入中 → 觸發點沒有轉圈(指示只在選單內)`, (!t.spinner) === EXPECT.spinnerAbsent, t.spinner ? '觸發點還有轉圈' : '沒有')
+  ck(`${label} M5 選項載入中 → 觸發點沒有 aria-busy`, (t.busy !== 'true') === EXPECT.spinnerAbsent, String(t.busy))
+}
+/** M4(選項載入中):搜尋列**沒有**轉圈、沒有 aria-busy;input 仍可輸入(輸入後清掉) */
+async function assertInputNoSpinner(label, { type = true } = {}) {
+  const w = await inputSpin()
   if (!w.scope) { bad(`${label} M4 前提:找得到 [cmdk-input-wrapper]`); return }
-  ck(`${label} M4 搜尋列右側 ${EXPECT.icon[size]}px 轉圈`, !!w.spinner && near(w.spinner.w, EXPECT.icon[size]) && near(w.spinner.h, EXPECT.icon[size]), w.spinner ? `${fmt(w.spinner.w)}×${fmt(w.spinner.h)}` : '搜尋列沒有轉圈')
-  ck(`${label} M4 搜尋列 aria-busy`, w.busy === 'true', String(w.busy))
+  ck(`${label} M4 選項載入中 → 搜尋列沒有轉圈`, (!w.spinner) === EXPECT.spinnerAbsent, w.spinner ? `搜尋列還有 ${fmt(w.spinner.w)}px 轉圈` : '沒有')
+  ck(`${label} M4 搜尋列沒有 aria-busy`, (w.busy !== 'true') === EXPECT.spinnerAbsent, String(w.busy))
+  if (!type) return
   const inp = page.locator('[cmdk-input]')
   await inp.fill('a'); await page.waitForTimeout(150)
   const v = await inp.inputValue()
@@ -219,14 +261,56 @@ async function assertInputLoading(label, size = 'md') {
   await inp.fill(''); await page.waitForTimeout(150)
 }
 
-/** 過濾到 n 筆後量 [cmdk-list] */
-async function typeAndList(locatorSel, text) {
-  const inp = page.locator(locatorSel)
-  await inp.fill(text); await page.waitForTimeout(250)
-  return { value: await inp.inputValue(), list: await list(), rows: await rows() }
+/** M10:建議群組 —— 恰一個可見群組、標題「建議」、id ↔ aria-labelledby、標題列 role=presentation、字重 medium、標題列高 = 一列 */
+function assertSuggestionGroup(label, gs, expectItems) {
+  ck(`${label} M10 關鍵字空 → 恰一個可見群組`, gs.length === 1, `${gs.length} 組(${gs.map((g) => g.heading || '(無標題)').join(' / ')})`)
+  const g = gs[0]
+  if (!g) return
+  ck(`${label} M10 群組標題 = 「${EXPECT.suggestions}」`, g.heading === EXPECT.suggestions, `實際「${g.heading}」`)
+  ck(`${label} M10 標題有 id 且 [role=group] aria-labelledby 指向它`, !!g.headingId && g.itemsRole === 'group' && g.labelledBy === g.headingId, `id=${g.headingId || '(無)'} / role=${g.itemsRole} / labelledby=${g.labelledBy || '(無)'}`)
+  ck(`${label} M10 標題列 role=presentation、字重 ≥ ${EXPECT.headingWeight}(medium 是群組標題的辨識訊號)`, g.headingRole === 'presentation' && g.headingWeight >= EXPECT.headingWeight, `role=${g.headingRole} / 字重 ${g.headingWeight}`)
+  ck(`${label} M10 標題列高 = 一列選項高(${EXPECT.row.md})`, near(g.headingHeight, EXPECT.row.md), `${fmt(g.headingHeight)}`)
+  measured.push(g.headingHeight)
+  if (expectItems != null) ck(`${label} M10 建議 ${expectItems} 筆`, g.items === expectItems, `${g.items} 筆`)
 }
 
-let selectEmptyList = null, comboboxEmptyList = null
+/** M8:遠端搜尋完整流程(建議 → 打字 → 清舊 + 載入列 → 結果 → 沒有 → 清掉關鍵字回建議)。假時鐘必須已安裝。 */
+async function remoteFlow(label, { inputSel, hit, hitLabel, emptyText, suggestionCount, plainRow = true }) {
+  const gs0 = await groups()
+  assertSuggestionGroup(label, gs0, suggestionCount)
+  const before = await list()
+  const inp = page.locator(inputSel)
+  await inp.fill(hit); await page.waitForTimeout(200)
+  const during = await list(); const rs = await rows()
+  ck(`${label} M8 打「${hit}」抓資料中 → 舊清單(建議 ${before?.items} 筆)不顯示`, !!during && during.items === 0 && during.empty, `${during?.items} 筆,empty=${during?.empty}`)
+  ck(`${label} M8 抓資料中 listbox aria-busy`, during?.busy === 'true', String(during?.busy))
+  if (rs.length !== 1) bad(`${label} M8 前提:抓資料中恰好 1 列訊息列`, `${rs.length} 列`)
+  else assertRow(`${label} 抓資料中`, rs[0], { kind: 'loading', text: TEXT.loading })
+  await assertTriggerNoSpinner(`${label} 抓資料中`)
+  { const w = await inputSpin(); if (w.scope) ck(`${label} M4 抓資料中 → 搜尋列沒有轉圈`, (!w.spinner) === EXPECT.spinnerAbsent, w.spinner ? '搜尋列還有轉圈' : '沒有') }
+  await page.clock.runFor(900); await page.waitForTimeout(250)
+  const after = await list(); const gs1 = await groups()
+  ck(`${label} M8 後端回來 → 1 筆「${hitLabel}」`, !!after && after.items === 1 && !after.empty, `${after?.items} 筆,empty=${after?.empty}`)
+  ck(`${label} M8 結果不是部分清單 → 沒有「${TEXT.suggestions}」標題`, gs1.length === 1 && gs1[0].heading === '', `${gs1.map((g) => g.heading || '(無標題)').join(' / ')}`)
+  if (after) {
+    // 1 筆結果的清單高 = 8 + 該列實際高 + 8(人員列有頭像 + 描述,比純文字列高;純文字列 = 32 → 48,與沒有選項時等高)
+    const itemH = await page.evaluate(() => document.querySelector('[cmdk-item]')?.getBoundingClientRect().height ?? NaN)
+    measured.push(after.height, itemH)
+    ck(`${label} M1 1 筆結果 [cmdk-list] = ${EXPECT.pad} + 列高 + ${EXPECT.pad}`, near(after.height, EXPECT.pad * 2 + itemH), `${fmt(after.height)}(列高 ${fmt(itemH)})`)
+    if (plainRow) ck(`${label} M1 純文字列 1 筆結果 [cmdk-list] = ${emptyH('md')}(= 沒有選項時的 [cmdk-list])`, near(after.height, emptyH('md')), `${fmt(after.height)}`)
+  }
+  await inp.fill(NONSENSE); await page.waitForTimeout(200)
+  await page.clock.runFor(900); await page.waitForTimeout(250)
+  const none = await list(); const rs2 = await rows()
+  ck(`${label} M8 後端回空 → 0 筆、訊息列`, !!none && none.items === 0 && none.empty, `${none?.items} 筆,empty=${none?.empty}`)
+  if (rs2.length !== 1) bad(`${label} M8 前提:後端回空恰好 1 列訊息列`, `${rs2.length} 列`)
+  else assertRow(`${label} 後端回空`, rs2[0], { kind: 'empty', text: emptyText })
+  await inp.fill(''); await page.waitForTimeout(250)
+  const back = await list(); const gs2 = await groups()
+  ck(`${label} M8 清掉關鍵字 → 建議回來(${suggestionCount} 筆 + 標題)`, !!back && back.items === suggestionCount && !back.empty && gs2.length === 1 && gs2[0].heading === EXPECT.suggestions, `${back?.items} 筆,標題「${gs2[0]?.heading ?? ''}」`)
+}
+
+let selectEmptyList = null
 
 // ═══ Select ═══
 {
@@ -241,94 +325,73 @@ let selectEmptyList = null, comboboxEmptyList = null
   }
 }
 {
-  const L = 'Select 載入中(首次開啟)'
+  const L = 'Select 選項載入中(首次開啟)'
   if (!(await open(ID.selectLoading))) bad(`${L} 前提:選單有打開`)
   else {
     const rs = await rows()
     if (rs.length !== 1) bad(`${L} 前提:恰好 1 列訊息列`, `${rs.length} 列`)
     else { assertRow(L, rs[0], { kind: 'loading', text: TEXT.loading }); await hoverCheck(L) }
-    { const t = await triggerSpin(); ck(`${L} M5 清單空時訊息列在轉 → 觸發點不重複轉圈`, t.scope && !t.spinner, t.spinner ? '觸發點還有轉圈' : '沒有') }
+    await assertTriggerNoSpinner(L)
     const l = await list(); measured.push(l.height)
     ck(`${L} M6 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
+    ck(`${L} listbox aria-busy`, l.busy === 'true', String(l.busy))
   }
 }
 {
-  const L = 'Select 載入中(保留舊清單,搜尋在觸發點)'
-  if (!(await open(ID.selectStale))) bad(`${L} 前提:選單有打開`)
-  else {
-    const l0 = await list(); measured.push(l0.height)
-    ck(`${L} 舊選項仍在、[cmdk-empty] 不顯示`, l0.items > 0 && !l0.empty, `${l0.items} 筆,empty=${l0.empty}`)
-    ck(`${L} M1 ${l0.items} 筆結果 [cmdk-list] = ${EXPECT.pad} + ${EXPECT.row.md}×${l0.items} + ${EXPECT.pad} = ${listH('md', l0.items)}`, near(l0.height, listH('md', l0.items)), `${fmt(l0.height)}`)
-    assertTrigger(L, await triggerSpin())
-    const inputSel = '#storybook-root [role="combobox"] input:not([aria-hidden="true"])'
-    const one = await typeAndList(inputSel, 'TWD')
-    ck(`${L} 觸發點搜尋輸入可打字`, one.value === 'TWD', `value=「${one.value}」`)
-    if (!one.list || one.list.items !== 1) bad(`${L} 前提:打「TWD」過濾到 1 筆`, `${one.list?.items} 筆`)
-    else {
-      measured.push(one.list.height)
-      ck(`${L} M1 1 筆結果 [cmdk-list] = 沒有選項時的 [cmdk-list](${fmt(selectEmptyList)})`, near(one.list.height, selectEmptyList) && near(one.list.height, emptyH('md')), `${fmt(one.list.height)} vs ${fmt(selectEmptyList)}(期望 ${emptyH('md')})`)
-    }
-    const zero = await typeAndList(inputSel, NONSENSE)
-    if (!zero.list || zero.list.items !== 0 || zero.rows.length !== 1) bad(`${L} 前提:打不存在的字過濾到 0 筆、1 列載入訊息列`, `${zero.list?.items} 筆 / ${zero.rows.length} 列`)
-    else {
-      measured.push(zero.list.height)
-      ck(`${L} M6 0 筆時整個 [cmdk-list] = ${emptyH('md')}(不得多 16 = 空群組)`, near(zero.list.height, emptyH('md')), `${fmt(zero.list.height)}`)
-      assertRow(`${L} 0 筆`, zero.rows[0], { kind: 'loading', text: TEXT.loading })
-    }
-  }
+  const L = 'Select 值處理中(選單關著)'
+  if (!(await open(ID.selectValueLoading, '#storybook-root [role="combobox"]'))) bad(`${L} 前提:觸發點有渲染`)
+  else assertTriggerValueLoading(L, await triggerSpin())
 }
 
 // ═══ Combobox ═══
 {
-  const L = 'Combobox 載入中(首次開啟)'
+  const L = 'Combobox 選項載入中(首次開啟)'
   if (!(await open(ID.comboboxLoading))) bad(`${L} 前提:選單有打開`)
   else {
     const rs = await rows()
     if (rs.length !== 1) bad(`${L} 前提:恰好 1 列訊息列`, `${rs.length} 列`)
     else { assertRow(L, rs[0], { kind: 'loading', text: TEXT.loading }); await hoverCheck(L) }
-    { const t = await triggerSpin(); ck(`${L} M5 浮層開著且搜尋列在浮層 → 觸發點不重複轉圈(只留搜尋列那顆)`, t.scope && !t.spinner, t.spinner ? '觸發點還有轉圈' : '沒有') }
-    const l = await list(); measured.push(l.height); comboboxEmptyList = l.height
+    await assertTriggerNoSpinner(L)
+    await assertInputNoSpinner(L)
+    const l = await list(); measured.push(l.height)
     ck(`${L} 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
-    { const w = await page.evaluate(() => window.__mm.spinnerIn('[cmdk-input-wrapper]')); ck(`${L} M4 清單空時訊息列在轉 → 搜尋列不重複轉圈`, !w.spinner, w.spinner ? '搜尋列還有轉圈' : '沒有') }
   }
 }
 {
-  const L = 'Combobox 載入中(保留舊清單,搜尋在選單)'
-  if (!(await open(ID.comboboxStale))) bad(`${L} 前提:選單有打開`)
+  const L = 'Combobox 值處理中(選單關著)'
+  if (!(await open(ID.comboboxValueLoading, '#storybook-root [role="combobox"]'))) bad(`${L} 前提:觸發點有渲染`)
+  else assertTriggerValueLoading(L, await triggerSpin())
+}
+{
+  const L = 'Combobox 遠端搜尋(還沒打字、沒有建議)'
+  if (!(await open(ID.comboboxRemoteHint))) bad(`${L} 前提:選單有打開`)
   else {
-    const l0 = await list(); measured.push(l0.height)
-    ck(`${L} M4 舊選項仍在、[cmdk-empty] 不顯示`, l0.items > 0 && !l0.empty, `${l0.items} 筆,empty=${l0.empty}`)
-    ck(`${L} M1 ${l0.items} 筆結果 [cmdk-list] = ${listH('md', l0.items)}`, near(l0.height, listH('md', l0.items)), `${fmt(l0.height)}`)
-    { const t = await triggerSpin(); ck(`${L} M5 浮層開著且搜尋列在浮層 → 觸發點不重複轉圈(只留搜尋列那顆)`, t.scope && !t.spinner, t.spinner ? '觸發點還有轉圈' : '沒有') }
-    await assertInputLoading(L)
-    const one = await typeAndList('[cmdk-input]', 'CRM')
-    if (!one.list || one.list.items !== 1) bad(`${L} 前提:打「CRM」過濾到 1 筆`, `${one.list?.items} 筆`)
-    else {
-      measured.push(one.list.height)
-      ck(`${L} M1 1 筆結果 [cmdk-list] = 載入訊息列時的 [cmdk-list](${fmt(comboboxEmptyList)})`, near(one.list.height, comboboxEmptyList) && near(one.list.height, emptyH('md')), `${fmt(one.list.height)} vs ${fmt(comboboxEmptyList)}(期望 ${emptyH('md')})`)
-    }
-    const zero = await typeAndList('[cmdk-input]', NONSENSE)
-    if (!zero.list || zero.list.items !== 0 || zero.rows.length !== 1) bad(`${L} 前提:打不存在的字過濾到 0 筆、1 列載入訊息列`, `${zero.list?.items} 筆 / ${zero.rows.length} 列`)
-    else {
-      measured.push(zero.list.height)
-      ck(`${L} 0 筆時整個 [cmdk-list] = ${emptyH('md')}`, near(zero.list.height, emptyH('md')), `${fmt(zero.list.height)}`)
-      assertRow(`${L} 0 筆`, zero.rows[0], { kind: 'loading', text: TEXT.loading })
-    }
+    const rs = await rows()
+    if (rs.length !== 1) bad(`${L} 前提:恰好 1 列訊息列`, `${rs.length} 列`)
+    else { assertRow(L, rs[0], { kind: 'hint' }); await hoverCheck(L) }
+    const l = await list(); measured.push(l.height)
+    ck(`${L} 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
+    await assertInputNoSpinner(L, { type: false })
   }
 }
 
 // ═══ PeoplePicker ═══
 {
-  const L = 'PeoplePicker 載入中(首次開啟)'
+  const L = 'PeoplePicker 選項載入中(首次開啟)'
   if (!(await open(ID.peopleLoading))) bad(`${L} 前提:選單有打開`)
   else {
     const rs = await rows()
     if (rs.length !== 1) bad(`${L} 前提:恰好 1 列訊息列`, `${rs.length} 列`)
     else { assertRow(L, rs[0], { kind: 'loading', text: TEXT.loading }); await hoverCheck(L) }
-    { const t = await triggerSpin(); ck(`${L} M5 清單空時訊息列在轉 → 觸發點不重複轉圈`, t.scope && !t.spinner, t.spinner ? '觸發點還有轉圈' : '沒有') }
+    await assertTriggerNoSpinner(L)
     const l = await list(); measured.push(l.height)
     ck(`${L} 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
   }
+}
+{
+  const L = 'PeoplePicker 值處理中(選單關著)'
+  if (!(await open(ID.peopleValueLoading, '#storybook-root [role="combobox"]'))) bad(`${L} 前提:觸發點有渲染`)
+  else assertTriggerValueLoading(L, await triggerSpin())
 }
 
 // ═══ Command(inline / dialog)═══
@@ -341,8 +404,9 @@ let selectEmptyList = null, comboboxEmptyList = null
     else { assertRow(L, rs[0], { kind: 'empty' }); await hoverCheck(L) }
     const l = await list(); measured.push(l.height)
     ck(`${L} 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
-    const back = await typeAndList('[cmdk-input]', '')
-    ck(`${L} 清掉關鍵字 → 結果回來、[cmdk-empty] 不顯示`, back.list.items > 0 && !back.list.empty, `${back.list.items} 筆,empty=${back.list.empty}`)
+    const inp = page.locator('[cmdk-input]'); await inp.fill(''); await page.waitForTimeout(250)
+    const back = await list()
+    ck(`${L} 清掉關鍵字 → 結果回來、[cmdk-empty] 不顯示`, back.items > 0 && !back.empty, `${back.items} 筆,empty=${back.empty}`)
   }
 }
 {
@@ -354,7 +418,7 @@ let selectEmptyList = null, comboboxEmptyList = null
     else { assertRow(L, rs[0], { kind: 'loading' }); await hoverCheck(L) }
     const l = await list(); measured.push(l.height)
     ck(`${L} 整個 [cmdk-list] = ${emptyH('md')}`, near(l.height, emptyH('md')), `${fmt(l.height)}`)
-    await assertInputLoading(L)
+    await assertInputNoSpinner(L)
   }
 }
 for (const [key, L] of [['commandInline', 'Command 行內搜尋清單'], ['commandAction', 'Command 純動作指令'], ['commandPalette', 'Command 全域指令面板']]) {
@@ -367,7 +431,8 @@ for (const [key, L] of [['commandInline', 'Command 行內搜尋清單'], ['comma
   }
   const l0 = await list()
   ck(`${L} 有結果時 [cmdk-empty] 不顯示`, l0.items > 0 && !l0.empty, `${l0.items} 筆,empty=${l0.empty}`)
-  const zero = await typeAndList('[cmdk-input]', NONSENSE)
+  const inp = page.locator('[cmdk-input]'); await inp.fill(NONSENSE); await page.waitForTimeout(250)
+  const zero = { list: await list(), rows: await rows() }
   if (!zero.list || zero.list.items !== 0 || zero.rows.length !== 1) { bad(`${L} 前提:打不存在的字 → 0 筆、1 列訊息列`, `${zero.list?.items} 筆 / ${zero.rows.length} 列`); continue }
   assertRow(L, zero.rows[0], { kind: 'empty' }); await hoverCheck(L)
   measured.push(zero.list.height)
@@ -388,19 +453,39 @@ for (const [key, L] of [['commandInline', 'Command 行內搜尋清單'], ['comma
   }
 }
 
-// ═══ PeoplePicker 名錄非同步載入(假時鐘;放最後,install 之後的導覽都會吃到假時鐘)═══
-// 首跑(2026-09-08)這段全紅:名錄未到的 1.5 秒內觸發點沒轉圈、搜尋列沒轉圈、選單裡是「沒有人員」不是「載入選項中」——
-// PeoplePicker multi 預設的 stack 分支沒把 loading 轉發給 Combobox(pill 分支有)。這是產品缺口,不是量法問題;story 文字承諾的就是這 1.5 秒。
+// ═══ M9 群組自動分隔線(Select 分組 + 搜尋;不吃時鐘,放假時鐘之前)═══
+{
+  const L = 'Select 分組搜尋'
+  if (!(await open(ID.selectGrouped))) bad(`${L} 前提:選單有打開`)
+  else {
+    const g0 = await groups()
+    ck(`${L} M9 兩個可見群組`, g0.length === 2, `${g0.length} 組(${g0.map((g) => g.heading).join(' / ')})`)
+    ck(`${L} M9 第一個可見群組沒有上邊線、第二個有 1px`, g0.length === 2 && g0[0].bt === 0 && g0[1].bt === 1, g0.map((g) => g.bt).join(','))
+    await page.keyboard.type('日圓')
+    await page.waitForTimeout(200)
+    const g1 = await groups()
+    ck(`${L} M9 搜尋只剩「亞洲」一組 → 沒有線`, g1.length === 1 && g1[0].bt === 0, `${g1.length} 組,線 ${g1.map((g) => g.bt).join(',')}`)
+    for (let i = 0; i < 2; i++) await page.keyboard.press('Backspace')
+    await page.keyboard.type('元')
+    await page.waitForTimeout(200)
+    const g2 = await groups()
+    ck(`${L} M9 「元」同時命中兩組 → 恰好一條線在第二組`, g2.length === 2 && g2[0].bt === 0 && g2[1].bt === 1, `${g2.length} 組,線 ${g2.map((g) => g.bt).join(',')}`)
+  }
+}
+
+// ═══ 假時鐘段(install 之後的導覽都吃假時鐘;非同步 story 全放這裡)═══
+const T0 = new Date('2026-09-09T00:00:00Z').getTime()
+await page.clock.install({ time: T0 })
+await page.clock.pauseAt(T0 + 1000)
+
+// PeoplePicker 名錄非同步載入(前 1.5 秒 optionsLoading:觸發點不轉圈、選單裡「載入選項中」;名錄到了長出人員列)
 {
   const L = 'PeoplePicker 名錄非同步載入'
-  const T0 = new Date('2026-09-08T00:00:00Z').getTime()
-  await page.clock.install({ time: T0 })
-  await page.clock.pauseAt(T0 + 1000)
   await page.goto(story(ID.peopleAsync), { waitUntil: 'load' })
   const ok = await page.waitForSelector('#storybook-root [role="combobox"]', { timeout: 15000 }).then(() => true).catch(() => false)
   if (!ok) bad(`${L} 前提:觸發點有渲染`)
   else {
-    assertTrigger(`${L}(名錄未到)`, await triggerSpin())
+    await assertTriggerNoSpinner(`${L}(名錄未到)`)
     const box = await page.evaluate(() => { const r = document.querySelector('#storybook-root [role="combobox"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 } })
     await page.mouse.click(box.x, box.y)
     const opened = await page.waitForSelector('[cmdk-list]', { timeout: 5000, state: 'attached' }).then(() => true).catch(() => false)
@@ -410,53 +495,30 @@ for (const [key, L] of [['commandInline', 'Command 行內搜尋清單'], ['comma
       const rs = await rows()
       if (rs.length !== 1) bad(`${L} 前提:名錄未到時恰好 1 列訊息列`, `${rs.length} 列`)
       else assertRow(`${L}(名錄未到)`, rs[0], { kind: 'loading', text: TEXT.loading })
-      { const w = await page.evaluate(() => window.__mm.spinnerIn('[cmdk-input-wrapper]')); ck(`${L}(名錄未到)M4 清單空時訊息列在轉 → 搜尋列不重複轉圈`, !w.spinner, w.spinner ? '搜尋列還有轉圈' : '沒有') }
+      await assertInputNoSpinner(`${L}(名錄未到)`, { type: false })
       // 名錄抵達(story 的 1.5 秒 setTimeout 由假時鐘撥過去)
       await page.clock.runFor(1600); await page.waitForTimeout(300)
-      const after = await list(); const t = await triggerSpin()
+      const after = await list()
       ck(`${L}(名錄到了)訊息列消失、人員列長出來`, !!after && !after.empty && after.items > 0, `${after?.items} 筆,empty=${after?.empty}`)
-      ck(`${L}(名錄到了)觸發點轉圈消失`, t.scope && !t.spinner, t.spinner ? '還在轉' : '已消失')
     }
   }
 }
 
-// ═══ M8 遠端搜尋(Combobox filterOption=false)═══
+// M8 / M10 遠端搜尋 ×3(Select:搜尋在觸發點 / Combobox:搜尋在浮層 / PeoplePicker single:搜尋在觸發點)
+{
+  const L = 'Select 遠端搜尋'
+  if (!(await open(ID.selectRemote))) bad(`${L} 前提:選單有打開`)
+  else await remoteFlow(L, { inputSel: TRIGGER_INPUT, hit: 'roadmap', hitLabel: '產品路線圖', emptyText: TEXT.selectEmpty, suggestionCount: 3 })
+}
 {
   const L = 'Combobox 遠端搜尋'
   if (!(await open(ID.comboboxRemote))) bad(`${L} 前提:選單有打開`)
-  else {
-    const before = await list()
-    await page.keyboard.type('customer')
-    await page.waitForTimeout(150)
-    const during = await list()
-    const w = await page.evaluate(() => window.__mm.spinnerIn('[cmdk-input-wrapper]'))
-    ck(`${L} M8 打了本機對不到的字,舊清單原封留著(${before?.items} 筆)`, !!during && during.items === before.items && !during.empty, `${during?.items} 筆,empty=${during?.empty}`)
-    ck(`${L} M8 抓資料中搜尋列有轉圈`, !!w.spinner, w.spinner ? '有' : '沒有')
-    await page.clock.runFor(900); await page.waitForTimeout(200)  // 假時鐘(PeoplePicker 段安裝)推過 story 的 800ms setTimeout
-    const after = await list()
-    ck(`${L} M8 後端回來後清單換成後端結果(1 筆「CRM 客戶名單」)`, !!after && after.items === 1 && !after.empty, `${after?.items} 筆,empty=${after?.empty}`)
-  }
+  else await remoteFlow(L, { inputSel: '[cmdk-input]', hit: 'customer', hitLabel: 'CRM 客戶名單', emptyText: TEXT.selectEmpty, suggestionCount: 2 })
 }
-
-// ═══ M9 群組自動分隔線(Select 分組 + 搜尋)═══
 {
-  const L = 'Select 分組搜尋'
-  if (!(await open(ID.selectGrouped))) bad(`${L} 前提:選單有打開`)
-  else {
-    const groupsInfo = () => page.evaluate(() => [...document.querySelectorAll('[cmdk-group]')].filter((g) => !g.hasAttribute('hidden')).map((g) => ({ bt: parseFloat(getComputedStyle(g).borderTopWidth), heading: g.querySelector('[cmdk-group-heading]')?.textContent?.trim() ?? '' })))
-    const g0 = await groupsInfo()
-    ck(`${L} M9 兩個可見群組`, g0.length === 2, `${g0.length} 組(${g0.map((g) => g.heading).join(' / ')})`)
-    ck(`${L} M9 第一個可見群組沒有上邊線、第二個有 1px`, g0.length === 2 && g0[0].bt === 0 && g0[1].bt === 1, g0.map((g) => g.bt).join(','))
-    await page.keyboard.type('日圓')
-    await page.waitForTimeout(200)
-    const g1 = await groupsInfo()
-    ck(`${L} M9 搜尋只剩「亞洲」一組 → 沒有線`, g1.length === 1 && g1[0].bt === 0, `${g1.length} 組,線 ${g1.map((g) => g.bt).join(',')}`)
-    for (let i = 0; i < 2; i++) await page.keyboard.press('Backspace')
-    await page.keyboard.type('元')
-    await page.waitForTimeout(200)
-    const g2 = await groupsInfo()
-    ck(`${L} M9 「元」同時命中兩組 → 恰好一條線在第二組`, g2.length === 2 && g2[0].bt === 0 && g2[1].bt === 1, `${g2.length} 組,線 ${g2.map((g) => g.bt).join(',')}`)
-  }
+  const L = 'PeoplePicker 遠端搜尋名錄'
+  if (!(await open(ID.peopleRemote))) bad(`${L} 前提:選單有打開`)
+  else await remoteFlow(L, { inputSel: TRIGGER_INPUT, hit: 'bob', hitLabel: 'Bob Lin', emptyText: TEXT.peopleEmpty, suggestionCount: 2, plainRow: false })
 }
 
 await browser.close(); server.close()
@@ -465,10 +527,10 @@ console.log(`\nM1 量測值(儀器活著檢查,${measured.length} 筆):${measure
 if (SELFTEST) {
   const ok = failed > 0 && broken === 0 && alive
   console.log(ok
-    ? `✓ selftest:期望值改成不可能的值(列高 0 / 留白 0 / 轉圈 0 / 容差 −1)後 ${failed} 條變紅,量測值都不是 0 —— 紅得對`
+    ? `✓ selftest:期望值改成不可能的值(列高 0 / 留白 0 / 轉圈 0 / 容差 −1 / 文案與標題改成不存在的字 / 「該沒有轉圈」翻成「該有」)後 ${failed} 條變紅,量測值都不是 0 —— 紅得對`
     : `✗ selftest:${failed ? '' : '期望值不可能仍全綠;'}${broken ? `前提失敗 ${broken} 條(紅得不對);` : ''}${alive ? '' : '量測值有 0'}`)
   process.exit(ok ? 0 : 1)
 }
 if (!alive) { console.log('✗ 儀器對照失敗:M1 量測值有 0,綠燈不算數'); process.exit(1) }
-console.log(failed || broken ? `✗ ${failed} 條斷言失敗、${broken} 條前提失敗` : '✓ 選單訊息列:列幾何 / 置中 / 載入指示 / 不可互動 全部符合 2026-09-08 共識')
+console.log(failed || broken ? `✗ ${failed} 條斷言失敗、${broken} 條前提失敗` : '✓ 選單訊息列:列幾何 / 置中 / 載入指示只在選單內 / 值處理中轉圈 / 遠端清舊清單 / 建議群組標題 / 提示列 / 不可互動 全部符合 2026-09-09 共識')
 process.exit(failed || broken ? 1 : 0)

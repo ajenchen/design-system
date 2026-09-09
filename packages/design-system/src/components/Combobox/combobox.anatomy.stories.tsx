@@ -314,6 +314,9 @@ export const Overview = {
                 ['error', 'boolean', 'false', '紅色邊框，只在 edit 模式有視覺效果'],
                 ['wrap', 'boolean', 'false', '換行模式——高度隨內容展開，Tags 自然換行'],
                 ['clearable', 'boolean', 'false', '有值時顯示 X clear all 按鈕'],
+                ['loading', 'boolean', 'false', '這個值在讀取 / 驗證 / 儲存(Field 家族 SSOT):觸發點右側、箭頭左邊轉圈 + aria-busy;與選項有沒有載入無關'],
+                ['optionsLoading', 'boolean', 'false', '選項清單載入中(2026-09-09 改名自 loading):指示只在選單內的「載入選項中」訊息列;觸發點 / 搜尋列不轉圈'],
+                ['suggestions', 'ComboboxOption[]', '—', '遠端搜尋(filterOption=false)、關鍵字空時的建議清單;DS 自動包成標題「建議」的群組(suggestionsLabel 可覆寫);沒建議時提示列 searchHintText'],
                 ['placeholder', 'string', '—', '無值時的提示文字；未傳時桌機 fallback 到 emptyPlaceholder（預設「選擇…」全形省略號），手機原生 select fallback「選擇...」'],
                 ['disabled', 'boolean', 'false', '原生屬性；未傳 mode 時 resolve 為 disabled 樣式（顯式 mode prop 恆優先，見 useResolvedFieldMode）'],
               ].map(([p, t, d, desc]) => (

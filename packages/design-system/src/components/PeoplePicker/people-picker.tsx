@@ -2,6 +2,7 @@
 // @placeholder-vocabulary-allow: 2026-07-04 Q4 完成 field-controls.spec.md 共享 contract b — emptyPlaceholder forward 已移除,emptyText 直達 Combobox → SelectMenu emptyText(search-empty 真住所);placeholder 為 trigger empty SSOT。
 // @cell-metric-escape-allow: comment describes RETIRED `tagAreaPaddingLeftPx={8}` magic — current code is surface-guarded (`surface === 'form'` only injects `!px-[var(--field-px)]`; table-cell context untouched, lets naked `!px-[var(--table-cell-px)]` SSOT take over). Hook regex grep'd the comment word, not the live code path. Per (a) fix 2026-05-13 user-approved Path a.
 import * as React from 'react'
+import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
@@ -92,13 +93,25 @@ export interface PeoplePickerProps extends Omit<React.HTMLAttributes<HTMLDivElem
   /** 搜尋無結果訊息(filtered menu empty)。**僅**用於 SelectMenu `emptyText`(菜單空狀態,
    *  2026-07-04 Q4 接線完成),不轉 trigger placeholder(2026-05-12 Issue 4 semantic fix)。 */
   emptyText?: string
-  /** 載入中(2026-09-08 補轉發;之前沒有這個 prop,非同步載入人員時開選單看到的是「沒有人員」,語意錯):
-   *  機械轉發 wrapped Select / Combobox 的 `loading` —— 觸發點右側轉圈、選單內僅空清單時渲載入訊息列、舊人員保留。 */
+  /** 「這個值」在讀取 / 驗證 / 儲存(Field 家族 `loading` SSOT,field-controls.spec.md「Loading state」;2026-09-09 user 拍板
+   *  收窄語意):機械轉發 wrapped Select / Combobox —— 觸發點右側、箭頭左邊的轉圈 + `aria-busy`。**不是**名錄載入;名錄載入用
+   *  `optionsLoading`。 */
   loading?: boolean
+  /** 人員名錄載入中(2026-09-08 補轉發、2026-09-09 改名自 `loading`):轉發 Select / Combobox `optionsLoading` —— 指示只在選單內
+   *  (沒有可顯示人員時一列「載入選項中」訊息列);本機過濾已載入的人員保留,遠端搜尋抓資料中舊結果不顯示。 */
+  optionsLoading?: boolean
   /** 遠端搜尋名錄時傳 `false`:不在本機二次過濾(轉發 Select / Combobox)。 */
   filterOption?: boolean
   /** 搜尋字改變時回呼(遠端搜尋名錄用;轉發 Select / Combobox)。 */
   onSearchChange?: (value: string) => void
+  /** 遠端搜尋名錄、關鍵字空時顯示的建議人員(部分名單:最近指派 / 同團隊 / 伺服器先給幾筆);DS 自動包成有標題的群組
+   *  (`suggestionsLabel`,預設「建議」),讓使用者知道名錄不只這幾位。轉發 Select / Combobox → SelectMenu(SSOT
+   *  `select-menu.spec.md`「Suggestions」)。只在 `filterOption={false}` 生效。 */
+  suggestions?: PersonValue[]
+  /** 建議群組標題(預設「建議」;轉發) */
+  suggestionsLabel?: string
+  /** 遠端搜尋、關鍵字空、沒有建議也沒在載入時的提示列(預設「輸入關鍵字搜尋」;轉發) */
+  searchHintText?: string
   className?: string
   disabled?: boolean
   /** Initial open state(uncontrolled)*/
@@ -157,8 +170,12 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   searchAriaLabel = '搜尋人員', // i18n-allow: DS default
   emptyText = '沒有人員', // i18n-allow: DS default(2026-09-08 一句到底,對應 No options)— only for SelectMenu noResultsText
   loading = false,
+  optionsLoading = false,
   filterOption = true,
   onSearchChange,
+  suggestions,
+  suggestionsLabel,
+  searchHintText,
   className,
   disabled: disabledProp,
   defaultOpen = false,
@@ -192,6 +209,16 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   // 的部分」)。cell 觸控編輯本就走原生 picker,移除成員在 picker 內完成。
   const isTouch = useIsTouchDevice()
   const effectiveMultiDisplay = isTouch && isMulti && surface === 'form' ? 'pill' : multiDisplay
+  // 已選值回查名錄 = people + suggestions(2026-09-09:從建議群組選的人不在 people 裡;hook 必在 early return 前)
+  const personKey = (p: PersonValue) => (typeof p === 'string' ? p : p.name)
+  const findKnownPerson = useKnownOptions([people, suggestions], personKey)
+  const directory = React.useMemo(() => {
+    const base = suggestions?.length ? [...people, ...suggestions] : people
+    // 已選但不在名錄裡的人(遠端搜尋關閉後結果被清掉)從「看過的人」補回,名稱與頭像才不會退成純字串
+    const names = (Array.isArray(value) ? value : value ? [value] : []).map(personKey)
+    const missing = names.map((n) => (base.some((p) => personKey(p) === n) ? undefined : findKnownPerson(n))).filter((p): p is PersonValue => !!p)
+    return missing.length ? [...base, ...missing] : base
+  }, [people, suggestions, value, findKnownPerson])
 
   // 2026-07-05 D3 P0 修:以下派生 + 4 hooks 原宣告在 view/readonly/single/pill 四個 early return
   // 之後 — 同一 mounted instance 的 resolvedMode 於 edit↔view/disabled 切換(<Field mode>/<Field
@@ -335,7 +362,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   if (!isMulti) {
     // clearable X 清空時 Select emit onChange('') — 空字串必映射為空陣列,
     // 不可進 findPerson(fallback 會回 '' 字串 = 假人員)。清除後回 placeholder 態(select.spec.md「Clearable」)。
-    const handleSingleChange = (name: string) => onChange?.(name ? [findPerson(people, name)] : [])
+    const handleSingleChange = (name: string) => onChange?.(name ? [findPerson(directory, name)] : [])
     return (
       <Select
         ref={ref as React.Ref<HTMLDivElement>}
@@ -354,13 +381,17 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // SelectMenu 接線(search-empty 語意,與 trigger-empty 分離)。
         emptyText={emptyText}
         loading={loading}
+        optionsLoading={optionsLoading}
         filterOption={filterOption}
         onSearchChange={onSearchChange}
+        suggestions={suggestions?.map(personToSelectOption)}
+        suggestionsLabel={suggestionsLabel}
+        searchHintText={searchHintText}
         defaultOpen={defaultOpen}
         onOpenChange={onOpenChange}
         className={className}
         aria-label={ariaLabel}
-        selectedItemRenderer={(opt) => <PersonDisplay value={findPerson(people, opt.value)} size={size} />}
+        selectedItemRenderer={(opt) => <PersonDisplay value={findPerson(directory, opt.value)} size={size} />}
         // **codex P2 forward**:Select 原生屬性走 allowlist(`Pick<SelectHTMLAttributes>`,
         // 2026-07-14 API 策展 D,見 select.tsx SelectProps docblock),event handler element
         // 型別跟 PeoplePicker `HTMLAttributes<HTMLDivElement>` 不一致(`onCopy` / `onChange` 等)。
@@ -377,13 +408,17 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   // 觸控多選亦走此分支(effectiveMultiDisplay,見上方 isTouch 註解)。
   if (effectiveMultiDisplay === 'pill') {
     const handleMultiChange = (next: string[]) => {
-      onChange?.(next.map(name => findPerson(people, name)))
+      onChange?.(next.map(name => findPerson(directory, name)))
     }
     return (
       <Combobox
         loading={loading}
+        optionsLoading={optionsLoading}
         filterOption={filterOption}
         onSearchChange={onSearchChange}
+        suggestions={suggestions?.map(personToSelectOption)}
+        suggestionsLabel={suggestionsLabel}
+        searchHintText={searchHintText}
         width={width}
         ref={ref as React.Ref<HTMLDivElement>}
         size={size}
@@ -415,7 +450,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
         // **Tag SSOT canonical**:用 `avatar` prop(不塞 children),Tag 內部統一
         // wrap 進 16×16 圓形 mask container(per Tag tsx line 175)。
         tagRenderer={(item, onRemove) => {
-          const p = resolvePerson(findPerson(people, item.value))
+          const p = resolvePerson(findPerson(directory, item.value))
           return (
             <Tag
               key={item.value}
@@ -446,7 +481,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   // measurement。`MultiPersonDisplay`(view path)同 primitive,view + edit 結果一致。
   // 對齊 user verbatim SSOT「同 cell width 同 overflow 判斷」+ codex Q3 consensus shared primitive。
   const handleMultiChange = (next: string[]) => {
-    onChange?.(next.map(name => findPerson(people, name)))
+    onChange?.(next.map(name => findPerson(directory, name)))
   }
   // ── edit mode ─────────────────────────────────────────────────────────────
   // (selectedNames 派生已 hoist 至檔上方 hooks 區,見 D3 P0 修註解)
@@ -454,8 +489,12 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
   return (
     <Combobox
       loading={loading}
-        filterOption={filterOption}
-        onSearchChange={onSearchChange}
+      optionsLoading={optionsLoading}
+      filterOption={filterOption}
+      onSearchChange={onSearchChange}
+      suggestions={suggestions?.map(personToSelectOption)}
+      suggestionsLabel={suggestionsLabel}
+      searchHintText={searchHintText}
       width={width}
       ref={mergedStackRef}
       size={size}
@@ -513,7 +552,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // Tag with avatar(對齊 view path MultiPersonDisplay popover SSOT,user 抓 display vs edit
       // overflow 視覺不一致)。
       renderHiddenTag={(item) => {
-        const p = resolvePerson(findPerson(people, item.value))
+        const p = resolvePerson(findPerson(directory, item.value))
         return (
           <Tag
             key={item.value}
@@ -528,7 +567,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
               />
             }
             onRemove={() => {
-              onChange?.(selectedNames.filter(n => n !== item.value).map(n => findPerson(people, n)))
+              onChange?.(selectedNames.filter(n => n !== item.value).map(n => findPerson(directory, n)))
             }}
           >
             {p.name}
@@ -539,7 +578,7 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       // any-allow: rest 含 `onChange: FormEventHandler` 跟 Combobox onChange signature 衝突 — DOM runtime spread 安全(per codex P2 forward)
       {...(rest as any)}
       tagRenderer={(item, onRemove) => {
-        const p = resolvePerson(findPerson(people, item.value))
+        const p = resolvePerson(findPerson(directory, item.value))
         // 2026-05-12 Q2 fix(user 拍板「multi 只選 1 人時 trigger = avatar + name,跟 single mode 同」):
         // selectedNames.length === 1 → PersonDisplay(avatar + name)代替 PersonAvatarTag(avatar only)。
         // SSOT 對齊 PeoplePicker single mode line 201 selectedItemRenderer。多選 1 人時視覺等同單選,

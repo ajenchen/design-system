@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-08T17:36:38.840Z"
+    "generatedAt": "2026-09-09T04:29:36.074Z"
   },
   "components": {
     "accordion": {
@@ -484,7 +484,8 @@
           "design-system-components-combobox-展示--size-alignment",
           "design-system-components-combobox-展示--searchable",
           "design-system-components-combobox-展示--loading-first-open",
-          "design-system-components-combobox-展示--loading-with-stale-options",
+          "design-system-components-combobox-展示--value-loading",
+          "design-system-components-combobox-展示--remote-search-hint",
           "design-system-components-combobox-展示--remote-search",
           "design-system-components-combobox-展示--in-data-table"
         ],
@@ -1168,7 +1169,9 @@
           "design-system-components-peoplepicker-展示--clearable",
           "design-system-components-peoplepicker-展示--size-alignment",
           "design-system-components-peoplepicker-展示--async-directory-load",
-          "design-system-components-peoplepicker-展示--loading-first-open"
+          "design-system-components-peoplepicker-展示--loading-first-open",
+          "design-system-components-peoplepicker-展示--value-loading",
+          "design-system-components-peoplepicker-展示--remote-search"
         ],
         "設計規格": [
           "design-system-components-peoplepicker-設計規格--overview",
@@ -1373,9 +1376,10 @@
           "design-system-components-select-展示--searchable",
           "design-system-components-select-展示--creatable",
           "design-system-components-select-展示--loading-first-open",
-          "design-system-components-select-展示--loading-with-stale-options",
+          "design-system-components-select-展示--value-loading",
           "design-system-components-select-展示--no-options",
           "design-system-components-select-展示--grouped-search",
+          "design-system-components-select-展示--remote-search",
           "design-system-components-select-展示--in-data-table"
         ],
         "設計規格": [
@@ -1814,5 +1818,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 982
+  "totalStories": 986
 }

@@ -2,6 +2,7 @@
 // @renderer-symmetry-allow: ComboboxTagStack(view path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer view-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx:426-444)PersonDisplay SSOT 對齊;其他 Combobox consumer 走 default `<Tag>` 純文字 backward-compat。
 // code-quality-allow: file-size — Combobox 含 NativeCombobox/CustomCombobox/useOverflowCount/OverflowTagList/ComboboxTagStack 5 子元件 + 共用 helpers,split-into-files 會破壞 measurement closures + 重複 type definitions。
 import * as React from 'react'
+import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { X, ChevronDown } from 'lucide-react'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { cn } from '@/lib/utils'
@@ -401,17 +402,28 @@ export interface ComboboxProps {
   clearable?: boolean
   /** 啟用搜尋 */
   searchable?: boolean
-  /** Loading state(2026-05-15 audit B fix per user verbatim「dropdown 隨時可開,讀取在 panel 中間 CircularProgress」)。
-   *  Forward 給 SelectMenu primitive SSOT;spinner 只在無可顯示選項時佔 CommandEmpty slot 顯 CircularProgress
-   *  (已有 options 保留顯示,不取代)。Trigger 不變(user 隨時可開)。
-   *  對齊 MUI Autocomplete「loading 只在無 suggestions 時顯 loadingText」+ Field SSOT;2026-09-08 定稿:觸發點右側轉圈 + 選單內僅空清單時訊息列(不經 Empty)。*/
+  /** 「這個值」在讀取 / 驗證 / 儲存(Field 家族 `loading` SSOT,`field-controls.spec.md`「Loading state」;2026-09-09 user 拍板
+   *  收窄語意,與 Input `loading` 同義):觸發點右側、ChevronDown 左邊放列圖示尺寸的 CircularProgress(react-select / Atlassian
+   *  的順序:清除 → 轉圈 → 箭頭)+ 觸發點 `aria-busy`;選單照常可開、可選。**不是**選項載入 —— 選項載入用 `optionsLoading`。 */
   loading?: boolean
+  /** 選項清單載入中(2026-09-09 user 拍板改名自 `loading`)。Forward 給 SelectMenu SSOT:指示**只在選單內**(沒有可顯示選項時
+   *  一列「載入選項中」訊息列 + listbox `aria-busy`),觸發點 / 搜尋列不轉圈;本機過濾已有選項時保留、遠端搜尋抓資料中舊選項
+   *  不顯示(`select-menu.spec.md`「Loading」「遠端搜尋」)。 */
+  optionsLoading?: boolean
   /** 搜尋框位置：menu（浮層內，預設）或 trigger（inline input） */
   searchIn?: 'menu' | 'trigger'
-  /** 遠端搜尋時傳 `false`:不在本機用搜尋字過濾(trigger 模式與浮層模式都不過濾),舊結果留著、伺服器回什麼列什麼;SSOT select-menu.spec.md「搜尋」。 */
+  /** 遠端搜尋時傳 `false`:不在本機用搜尋字過濾(trigger 模式與浮層模式都不過濾)、伺服器回什麼列什麼;抓資料中(`optionsLoading`)
+   *  舊結果不顯示、關鍵字空時顯示 `suggestions`;SSOT select-menu.spec.md「遠端搜尋」。 */
   filterOption?: boolean
-  /** 搜尋字改變時回呼(含清空);遠端搜尋搭配 `filterOption={false}` + `loading`。trigger / menu 兩種搜尋位置都會回呼。 */
+  /** 搜尋字改變時回呼(含清空);遠端搜尋搭配 `filterOption={false}` + `optionsLoading`。trigger / menu 兩種搜尋位置都會回呼。 */
   onSearchChange?: (value: string) => void
+  /** 遠端搜尋、關鍵字空時顯示的建議清單(部分選項;DS 自動包成「建議」群組,讓使用者知道選項不只這幾筆)。只在 `filterOption={false}`
+   *  生效;SSOT `select-menu.spec.md`「Suggestions」。 */
+  suggestions?: ComboboxOption[]
+  /** 建議群組標題(預設「建議」;forward 給 SelectMenu) */
+  suggestionsLabel?: string
+  /** 遠端搜尋、關鍵字空、沒有建議也沒在載入時的提示列文案(預設「輸入關鍵字搜尋」;forward 給 SelectMenu) */
+  searchHintText?: string
   /** 搜尋框 placeholder（未有選項時顯示)。Default: 「搜尋…」 */
   searchPlaceholder?: string
   /** 搜尋框 ARIA label。Default: 「搜尋選項」 */
@@ -752,11 +764,24 @@ function NativeCombobox({
   )
 }
 
+// 轉換 ComboboxOption → SelectMenuOption:同一份 mapping 給 options 與 suggestions(2026-09-09 建議清單),不複製第二份。
+// 2026-05-10 post-Issue-4 follow-up:forward 全 SelectMenuOption surface(avatar / description / disabled / icon / group)。
+const toMenuOption = (opt: ComboboxOption): SelectMenuOption => ({
+  value: opt.value,
+  label: opt.label,
+  icon: opt.icon,
+  avatar: opt.avatar,
+  description: opt.description,
+  disabled: opt.disabled,
+  group: opt.group,
+})
+
 // ── Custom Combobox (desktop — consumes SelectMenu) ───────────────────
 
 function CustomCombobox({
   mode, variant: variantProp, width, error: errorProp = false, size = 'md', options, value = [], onChange, placeholder,
-  className, disabled: disabledProp, wrap = false, clearable = false, searchable = false, loading, searchIn = 'menu', filterOption = true, onSearchChange,
+  className, disabled: disabledProp, wrap = false, clearable = false, searchable = false, loading, optionsLoading, searchIn = 'menu', filterOption = true, onSearchChange,
+  suggestions, suggestionsLabel, searchHintText,
   searchPlaceholder = '搜尋…', // i18n-allow: DS default
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default
   emptyPlaceholder = '選擇…', // i18n-allow: DS default
@@ -806,10 +831,18 @@ function CustomCombobox({
   // 無條件呼叫。resolvedMode 在 edit↔非edit 切換時 hook 數量不可變動,否則 Rules of Hooks
   // violation → React #310 「rendered fewer/more hooks」crash(ReadonlyMultiSelect 用不到這些值,
   // 多算無害,對齊 select.tsx hoist pattern)。
+  // 已選值的 label:先查 options,再查 suggestions(2026-09-09:從建議群組選的值不在 options 裡),最後查「看過的選項」
+  // (hooks/use-known-options.ts;遠端搜尋關閉後結果被清掉、值還在 → 不能退成 id)
+  const findKnown = useKnownOptions([options, suggestions], (o) => o.value)
   const items = React.useMemo(
-    () => value.map(v => ({ value: v, label: options.find(o => o.value === v)?.label ?? v })),
-    [value, options]
+    () => value.map(v => ({ value: v, label: (options.find(o => o.value === v) ?? suggestions?.find(o => o.value === v) ?? findKnown(v))?.label ?? v })),
+    [value, options, suggestions, findKnown]
   )
+  // 唯讀 / 檢視 / 停用分支只拿得到 options:把已選但不在 options 裡的項補上
+  const optionsForDisplay = React.useMemo(() => {
+    const missing = value.map(v => (options.some(o => o.value === v) ? undefined : (suggestions?.find(o => o.value === v) ?? findKnown(v)))).filter((o): o is ComboboxOption => !!o)
+    return missing.length ? [...options, ...missing] : options
+  }, [options, suggestions, value, findKnown])
   const tagAreaRef = React.useRef<HTMLDivElement>(null)
   const tagHeight = size === 'sm' ? 20 : 24
 
@@ -830,27 +863,23 @@ function CustomCombobox({
   // 2026-05-10 post-Issue-4 follow-up:forward 全 SelectMenuOption surface(avatar / description /
   // disabled / icon / group)— 修先前 PeoplePicker multi-mode dropdown 漏 avatar drift bug。
   const menuOptions: SelectMenuOption[] = React.useMemo(
-    () => filteredOptions.map(opt => ({
-      value: opt.value,
-      label: opt.label,
-      icon: opt.icon,
-      avatar: opt.avatar,
-      description: opt.description,
-      disabled: opt.disabled,
-      group: opt.group,
-    })),
+    () => filteredOptions.map(toMenuOption),
     [filteredOptions]
+  )
+  const menuSuggestions: SelectMenuOption[] | undefined = React.useMemo(
+    () => suggestions?.map(toMenuOption),
+    [suggestions]
   )
 
   if (resolvedMode !== 'edit') {
-    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
+    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={optionsForDisplay} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
   }
 
-  // loading(2026-09-08 user 拍板):觸發點右側、箭頭左邊放列圖示尺寸的轉圈(react-select / Atlassian 順序:清除 → 轉圈 → 箭頭)
+  // 值處理中的轉圈(Field 家族 loading,2026-09-09 user 拍板收窄):觸發點右側、箭頭左邊(react-select / Atlassian 順序:清除 → 轉圈 → 箭頭),
+  // 跟 Input 的 endAction 槽同義 —— 與選單開關、選項多寡無關;選項載入的指示在選單內(optionsLoading → SelectMenu)
   const chevronEl = (
     <>
-      {/* 浮層開著且裡面有搜尋列時,轉圈只留在搜尋列(離打字的地方最近),觸發點不重複;關著或搜尋在觸發點時才在這裡 */}
-      {loading && (!open || (searchable && searchIn === 'trigger' && options.length > 0)) && <CircularProgress size={iconSize} className="shrink-0" />}
+      {loading && <CircularProgress size={iconSize} className="shrink-0" />}
       <ChevronDown size={iconSize} className={cn('shrink-0 text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
     </>
   )
@@ -865,6 +894,8 @@ function CustomCombobox({
       // (field-context.ts labelId jsDoc);consumer aria-label 優先 — 與 sibling select.tsx:705 同款 guard。
       aria-labelledby={ariaLabel ? undefined : fieldCtx?.labelId}
       aria-invalid={error || undefined}
+      // 值處理中(Field 家族 loading):跟 Input wrapper 同樣標 aria-busy(field-controls.spec.md「Loading state」)
+      aria-busy={loading || undefined}
       aria-required={fieldCtx?.required || undefined}
       aria-describedby={fieldCtx?.descriptionId}
       aria-errormessage={error ? fieldCtx?.errorId : undefined}
@@ -970,9 +1001,15 @@ function CustomCombobox({
 
   return (
     <SelectMenu
-      loading={loading}
+      optionsLoading={optionsLoading}
       filterOption={filterOption}
-      onSearchChange={searchIn === 'menu' ? onSearchChange : undefined}
+      // 搜尋在觸發點時把搜尋字交給 SelectMenu(受控;對齊 select.tsx):遠端模式要靠它分辨「關鍵字空 → 建議 / 提示」與
+      // 「抓資料中 → 清舊清單」,creatable 的建立列也依它顯隱(2026-09-09 之前 trigger 模式沒傳,建立列永遠不出現)。
+      search={searchIn === 'trigger' ? search : undefined}
+      onSearchChange={searchIn === 'menu' ? onSearchChange : setSearch}
+      suggestions={menuSuggestions}
+      suggestionsLabel={suggestionsLabel}
+      searchHintText={searchHintText}
       emptyText={emptyText}
       options={menuOptions}
       value={value}

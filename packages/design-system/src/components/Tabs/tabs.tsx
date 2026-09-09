@@ -476,6 +476,9 @@ const tabsTriggerVariants = cva(
     'font-medium text-fg-secondary',
     'transition-colors duration-150',
     'cursor-pointer select-none',
+    // 焦點框往內:tab 高 = 分頁列高,上下淨空 0(focus-canonical「問題二」驗算表;2026-09-09 Codex R13 抓到規格寫內框、
+    // 實作卻是全域外框,在 overflow-scroll 的 TabsList 裡上下各被裁 3–4px)
+    'focus-visible:focus-ring-inset',
     // Trigger 無水平 padding — 寬度 = 內容寬度。triggers 間的分隔靠 TabsList 的 gap-[var(--layout-space-loose)]
     // selected underline：::after 絕對定位在 bottom:-1px，2px primary（持續選中 base）
     // left-0/right-0 因為 trigger 已無 padding，底線等於內容寬度

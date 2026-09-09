@@ -20,16 +20,18 @@
 // AgentPanelDock 為了「關閉時不卸載」在外面包了一層 `display: contents`(它刻意沒有盒子),
 // 量它會得到 clientWidth = 0,於是上限永遠是 640、蓋板永遠不觸發。要往上找到第一個有盒子的祖先。
 //
-// Run: `node scripts/agent-panel-breakpoint.mjs`
+// Run: `node scripts/agent-panel-breakpoint.mjs [--static=<dir>]`(預設讀 `storybook-static`;
+//      並行工作者用 `npx storybook build --output-dir <dir>` 自己的 build 時以 `--static` 指定,不覆蓋主 build)
 
 // G3:並排 ↔ 蓋板的斷點與寬度上限
 import { chromium } from 'playwright'
 import http from 'node:http'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join, extname } from 'node:path'
-const S=join(process.cwd(),'storybook-static')
+const staticArg = process.argv.find((a) => a.startsWith('--static='))?.slice('--static='.length)
+const S = staticArg ? (staticArg.startsWith('/') ? staticArg : join(process.cwd(), staticArg)) : join(process.cwd(),'storybook-static')
 if (statSync('packages/design-system/src/components/AgentPanel/agent-panel.tsx').mtimeMs > statSync(join(S,'index.html')).mtimeMs) {
-  console.error('✗ STALE-BUILD:agent-panel.tsx 比 storybook-static 新 —— 先跑 npm run build-storybook'); process.exit(2) }
+  console.error(`✗ STALE-BUILD:agent-panel.tsx 比 ${S} 新 —— 先重建該 storybook build`); process.exit(2) }
 const M={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.woff2':'font/woff2'}
 const sv=http.createServer((q,s)=>{let p=decodeURIComponent(q.url.split('?')[0]);if(p==='/')p='/index.html'
  const f=join(S,p);if(!existsSync(f)||statSync(f).isDirectory()){s.writeHead(404);s.end();return}

@@ -291,16 +291,22 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 ---
 
-## Loading
+## Loading(2026-09-09 user 拍板:兩個字、兩件事)
 
-`loading?: boolean`(forward 給 SelectMenu SSOT,2026-05-15 audit B 補;**2026-07-04 Q3 拍板 — 不清空 stale options;2026-09-08 user 改決定 — 48px 轉圈與 `py-6` 退役,改兩處指示**):(a) 觸發點右側、ChevronDown 左邊放列圖示尺寸的 `CircularProgress`(`select.tsx:734`;display 分支 `:555`;`iconSize` sm/md 16 / lg 20),每次抓資料都亮,dropdown 隨時可開;(b) 選單內只在**無可顯示選項時**,Empty 槽渲 `CommandLoading` 訊息列(同「沒有結果」的 `MenuItem message` 列,前綴轉圈 + 「載入選項中」,cmdk `CommandEmpty` 機制;已有 options 時保留顯示、選單不關)+ listbox `aria-busy`。SSOT `select-menu.spec.md`「Loading」。Benchmark 實查:MUI Autocomplete 官方逐字「shows the loadingText in place of suggestions **only if there are no suggestions to show**」([Autocomplete.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Autocomplete/Autocomplete.js) `loading && renderedOptions.length === 0` 分支)/ Ant Select 清空是 consumer 自選(demo select-users.tsx setOptions([]))非元件行為 — 原「取代 options」是過度宣稱,code 行為即世界級共識。
-`filterOption?: boolean`(預設 true)與 `onSearchChange?: (value: string) => void`(2026-09-08 user 拍板「併」):搜尋在觸發點時本機過濾由 Select 自己做,遠端搜尋傳 `filterOption={false}` 就不過濾、伺服器回什麼列什麼;搜尋字經 `onSearchChange` 回呼(含關閉時清空)。SSOT `select-menu.spec.md`「遠端搜尋」。
+| Prop | 意思 | 指示 | SSOT |
+|---|---|---|---|
+| `loading?: boolean` | **這個值**在讀取 / 驗證 / 儲存(與 Input `loading` 同義) | 觸發點右側、ChevronDown 左邊放列圖示尺寸的 `CircularProgress`(`select.tsx` `chevronEl`;native 分支同;`iconSize` sm/md 16 / lg 20)+ 觸發點 `aria-busy`;選單照常可開可選、與選項多寡無關 | `../Field/field-controls.spec.md`「Loading state」 |
+| `optionsLoading?: boolean` | **選項清單**在抓(2026-09-09 改名自 `loading`) | forward 給 SelectMenu:只在選單內,沒有可顯示選項時一列「載入選項中」訊息列 + listbox `aria-busy`;**觸發點不轉圈**。本機過濾已有選項時保留、遠端搜尋抓資料中舊選項不顯示 | `../SelectMenu/select-menu.spec.md`「Loading」 |
+
+歷史:2026-05-15 audit B 補 `loading` → 2026-07-04 Q3「不清空 stale options」→ 2026-09-08 兩處轉圈 → **2026-09-09 拆成兩個 prop、選項載入指示只在選單內**(同一時刻兩顆轉圈的病根是同字兩義,見 select-menu.spec.md「Loading」的世界級對照)。
+
+**遠端搜尋**:`filterOption?: boolean`(預設 true)與 `onSearchChange?: (value: string) => void`(2026-09-08 user 拍板「併」):搜尋在觸發點時本機過濾由 Select 自己做,遠端搜尋傳 `filterOption={false}` 就不過濾、伺服器回什麼列什麼;搜尋字經 `onSearchChange` 回呼(含關閉時清空),並以受控 `search` 交給 SelectMenu。`suggestions?: SelectOption[]` / `suggestionsLabel?: string`(預設「建議」)/ `searchHintText?: string`(預設「輸入關鍵字搜尋」)三個 prop 機械 forward(2026-09-09):關鍵字空時列建議群組(必有標題)、抓資料中舊清單不顯示、沒建議也沒在載入時顯示提示列;從建議選到的值 `selectedOpt` 同時回查 `options` 與 `suggestions`。SSOT `select-menu.spec.md`「遠端搜尋」「Suggestions」。
 
 ---
 
 ## 邊界案例
 
-- **搜尋結果空**:dropdown 顯一列 `MenuItem message` 的 `emptyText`(預設「沒有選項」,可覆寫;與 1 筆結果等高、無最小高度、不用 `Empty`)——SSOT `select-menu.spec.md`「Empty state」
+- **搜尋結果空**:dropdown 顯一列 `MenuItem message` 的 `emptyText`(預設「沒有選項」,可覆寫;與 1 筆結果等高、無最小高度、不用 `Empty`)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列,不是「沒有選項」。SSOT `select-menu.spec.md`「Empty state」「Suggestions」
 - **disabled 選項**:`option.disabled` forward 至 menu item——不可點選,鍵盤導覽自動跳過(cmdk `aria-disabled` 行為)
 - **大量選項**:選單固定最大高度內捲動(`--menu-max-height` 預設 300px),無分頁 / 虛擬捲動——長清單開 `searchable`(見「Searchable 開啟判斷」)
 - **空值**:無選擇時顯 placeholder;「無選擇是有效狀態」場景開 `clearable`(見「Clearable」)

@@ -152,6 +152,9 @@ function resolveIsOverlay(containerPx: number) {
  */
 export const AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER = PANEL_WIDTH_MIN * 3
 
+/** 面板形態:並排(flex 兄弟)或蓋板(absolute 蓋滿宿主);同時標在根節點 `data-agent-panel-mode`。 */
+export type AgentPanelMode = 'side-by-side' | 'overlay'
+
 function clampPanelWidth(width: number, containerPx: number) {
   return Math.min(Math.max(width, PANEL_WIDTH_MIN), resolvePanelWidthMax(containerPx))
 }
@@ -177,6 +180,14 @@ export interface AgentPanelProps extends React.HTMLAttributes<HTMLDivElement> {
    * 並排態不抑制任何東西,此 prop 無作用。面板自己永遠在保留集合裡,不必傳。
    */
   persistentElements?: () => Element[]
+  /**
+   * 形態(並排 / 蓋板)改變時回報;量到容器之後才發第一次,之後只在形態真的翻轉時發。
+   * 用途:蓋板態下「代理內導向舞台的動作」(內部連結、有網址的 modal)要把代理收成入口鈕、讓舞台顯示目標
+   * (v14 條 B,2026-09-09 user 推翻「抽屜保持開啟」的 AI 推導)。**面板不知道連結**,所以收合是消費端的責任:
+   * 用這個回呼記住目前形態,在自己的內部導航裡「蓋板且開著 → `onOpenChange(false)`」;並排態不收。
+   * 詳 spec「與 app 的推擠與斷點」蓋板小節。
+   */
+  onModeChange?: (mode: AgentPanelMode) => void
 }
 
 const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
@@ -189,6 +200,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
       onWidthCommit,
       resizable = true,
       persistentElements,
+      onModeChange,
       className,
       style,
       children,
@@ -247,6 +259,15 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     }, [])
     const widthMax = resolvePanelWidthMax(containerPx)
     const isOverlay = resolveIsOverlay(containerPx)
+    const mode: AgentPanelMode = isOverlay ? 'overlay' : 'side-by-side'
+    // 形態回報:**量到容器才發**(containerPx 初值 0 會被 resolveIsOverlay 讀成蓋板,那不是形態、是還沒量);
+    // 回呼走 ref,消費端傳 inline 箭頭函式也不會每次 render 重發。
+    const onModeChangeRef = React.useRef(onModeChange)
+    onModeChangeRef.current = onModeChange
+    const measured = containerPx > 0
+    React.useEffect(() => {
+      if (measured) onModeChangeRef.current?.(mode)
+    }, [mode, measured])
 
     // v14 條 B:「窄螢幕以抽屜蓋滿宿主,**宿主暫不可操作**」。
     // 「蓋滿」是視覺、「不可操作」是行為 —— 兩件事,只做前者的話鍵盤照樣走得進去。
@@ -325,7 +346,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
         role="complementary"
         aria-label="智慧代理" // i18n-allow: DS 預設,props 展開在後可覆寫
         // 蓋板態要讓 AT 知道它現在是蓋在內容上的一層,不是並排的一欄
-        data-agent-panel-mode={isOverlay ? 'overlay' : 'side-by-side'}
+        data-agent-panel-mode={mode}
         className={cn(
           'relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-surface',
           // 2026-09-07 G3:容器窄到並排放不下(< 1080)就蓋滿舞台。

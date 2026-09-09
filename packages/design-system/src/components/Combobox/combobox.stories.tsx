@@ -166,26 +166,26 @@ const databaseOptions = [
 ]
 
 export const LoadingFirstOpen: Story = {
-  name: '載入中(首次開啟)',
-  parameters: { docs: { description: { story: 'Notion 頁面「連結資料庫」第一次展開,工作區的資料庫清單還沒回來:觸發點右側與浮層搜尋列右側都在轉圈(仍可打字),清單裡只有一列「載入選項中」訊息列。' } } },
+  name: '選項載入中(首次開啟)',
+  parameters: { docs: { description: { story: 'Notion 頁面「連結資料庫」第一次展開,工作區的資料庫清單還沒回來:清單裡只有一列「載入選項中」訊息列;觸發點與搜尋列都不轉圈、搜尋列仍可打字(選項載入的指示只在選單內)。' } } },
   render: () => (
     <div className="max-w-sm">
-      <Combobox options={[]} value={[]} onChange={() => {}} searchable loading defaultOpen searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(首次載入)" />
+      <Combobox options={[]} value={[]} onChange={() => {}} searchable optionsLoading defaultOpen searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(首次載入)" />
     </div>
   ),
 }
 
-export const LoadingWithStaleOptions: Story = {
-  name: '載入中(保留舊清單)',
-  parameters: { docs: { description: { story: '已經有五個資料庫可選,使用者改了關鍵字、後端重新搜尋中:舊清單留著不清空、選單不關,搜尋列右側的轉圈告訴你還在抓。' } } },
+export const ValueLoading: Story = {
+  name: '值處理中(儲存)',
+  parameters: { docs: { description: { story: '剛把「CRM 客戶名單」連結進頁面,關聯正在寫回 Notion:`loading` 是 Field 家族共用的「這個值在讀取 / 驗證 / 儲存」—— 觸發點右側、箭頭左邊轉圈並標 aria-busy,選單照常可開;跟選項有沒有載入無關。' } } },
   render: () => (
     <div className="max-w-sm">
-      <Combobox options={databaseOptions} value={['crm']} onChange={() => {}} searchable loading defaultOpen searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(重新搜尋中)" />
+      <Combobox options={databaseOptions} value={['crm']} onChange={() => {}} searchable loading searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(儲存中)" />
     </div>
   ),
 }
 
-/** 遠端搜尋:每打一個字就向後端要一次;`filterOption={false}` 讓浮層不再用新的字二次過濾,舊結果留到新結果回來。 */
+/** 遠端搜尋(Notion「連結資料庫」):關鍵字空先給「建議」(最近用過的資料庫);每打一個字向後端要一次,抓資料中舊清單不留、只剩載入列;後端回什麼列什麼。 */
 function RemoteSearchDemo() {
   const directory = [
     { value: 'crm', label: 'CRM 客戶名單', keywords: '客戶 customer' },
@@ -194,28 +194,33 @@ function RemoteSearchDemo() {
     { value: 'ds', label: '設計系統元件', keywords: 'design system' },
     { value: 'hiring', label: '招募流程', keywords: 'hiring recruit' },
   ]
-  const [options, setOptions] = React.useState(directory)
-  const [loading, setLoading] = React.useState(false)
+  const recent = directory.slice(0, 2)
+  const [options, setOptions] = React.useState<typeof directory>([])
+  const [optionsLoading, setOptionsLoading] = React.useState(false)
+  const [value, setValue] = React.useState<string[]>(['crm'])
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const onSearchChange = (q: string) => {
     if (timer.current) clearTimeout(timer.current)
-    setLoading(true)
+    const needle = q.trim().toLowerCase()
+    // 關鍵字清空:回到建議群組,不用問後端
+    if (!needle) { setOptions([]); setOptionsLoading(false); return }
+    setOptionsLoading(true)
     // 模擬後端:用別名(keywords)也能命中,這是本機過濾做不到的,所以必須關掉本機過濾
     timer.current = setTimeout(() => {
-      const needle = q.trim().toLowerCase()
-      setOptions(needle ? directory.filter((o) => `${o.label} ${o.keywords}`.toLowerCase().includes(needle)) : directory)
-      setLoading(false)
+      setOptions(directory.filter((o) => `${o.label} ${o.keywords}`.toLowerCase().includes(needle)))
+      setOptionsLoading(false)
     }, 800)
   }
   return (
     <div className="max-w-sm">
       <Combobox
         options={options}
-        value={['crm']}
-        onChange={() => {}}
+        suggestions={recent}
+        value={value}
+        onChange={setValue}
         searchable
         filterOption={false}
-        loading={loading}
+        optionsLoading={optionsLoading}
         onSearchChange={onSearchChange}
         defaultOpen
         searchPlaceholder="搜尋資料庫(後端搜尋,支援別名)…"
@@ -225,9 +230,19 @@ function RemoteSearchDemo() {
   )
 }
 
+export const RemoteSearchHint: Story = {
+  name: '遠端搜尋(還沒打字、沒有建議)',
+  parameters: { docs: { description: { story: 'Notion 連結資料庫、名單在後端,但這個工作區還沒有「最近用過」可以當建議:展開只有一列「輸入關鍵字搜尋」提示 —— 不是「沒有選項」(那句只留給真的搜不到的時候)。' } } },
+  render: () => (
+    <div className="max-w-sm">
+      <Combobox options={[]} value={[]} onChange={() => {}} searchable filterOption={false} defaultOpen searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(還沒打字)" />
+    </div>
+  ),
+}
+
 export const RemoteSearch: Story = {
-  name: '遠端搜尋(不本機過濾)',
-  parameters: { docs: { description: { story: 'Notion 連結資料庫、名單在後端:每打一個字就向後端要一次,搜尋列右側轉圈、舊清單留著不縮,後端回什麼就列什麼(打「customer」也找得到「CRM 客戶名單」,本機過濾做不到)。對齊 react-select 非同步模式。' } } },
+  name: '遠端搜尋(建議 → 載入 → 結果)',
+  parameters: { docs: { description: { story: 'Notion 連結資料庫、名單在後端:還沒打字先列「建議」群組(最近用過的兩個,群組標題告訴你名單不只這些);每打一個字向後端要一次,抓資料中舊清單不留、只剩一列「載入選項中」;後端回什麼列什麼(打「customer」也找得到「CRM 客戶名單」,本機過濾做不到),真的沒有才顯示「沒有選項」;清掉關鍵字就回到建議。' } } },
   render: () => <RemoteSearchDemo />,
 }
 

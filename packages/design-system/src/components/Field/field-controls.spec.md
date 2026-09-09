@@ -89,9 +89,11 @@ Field 家族 = **一個 `fieldWrapperStyles` cva + 兩條正交軸**;`InlineEdit
 
 **Boolean / 單選控件的 readonly(2026-06-12 user 拍板)**:Field 內 readonly 的 Checkbox / Switch = 同一 `fieldWrapperStyles` readonly 灰框 + ✓/—(view 同款值語言);RadioGroup = 灰框 + 選中項 label(= Select readonly 同款呈現)。理由:同一張 readonly 表單中,文字控件有灰框鎖定訊號、boolean 保留全彩控件會誤導「仍可操作」(世界級 0/4 採原樣鎖互動:Salesforce = ✓ 無框靜態 glyph / SAP = 靜態文字 / Atlassian = readView / Ant Pro = 文字)。standalone readOnly(settings list / SelectionItem row)維持原樣鎖互動。**邊界**:Rating readonly = 星星本身(星星即值語言,role=img,全業界 review-stars canonical,不包灰框);Slider 在 `<Field mode="readonly">` 內 = 鎖互動保留正常視覺(value 可讀不降色,pointer-events-none + thumb tabIndex=-1)。
 
-### Loading state(async 驗證 / debounce fetch 中)
+### Loading state(這個值在讀取 / 驗證 / 儲存)
 
-Loading **不是第四個 mode**,是 `edit` mode 的子狀態,語義 = **editable 仍可輸入**(UX「邊改邊讀」:debounce search / async validation 場景中 user 常需要繼續打字修正,凍結輸入反而破壞心流)。
+Loading **不是第四個 mode**,是 `edit` mode 的子狀態,語義 = **editable 仍可輸入**(UX「邊改邊讀」:async validation / 值寫回中 user 常需要繼續修正,凍結輸入反而破壞心流)。
+
+**`loading` 的語意收窄為「這個值」在處理(2026-09-09 user 拍板)**:讀取現值 / 驗證 / 儲存中 —— 全家族一個字一個意思。**不是**「建議清單 / 選項在抓」:那是 Select / Combobox / PeoplePicker 的 `optionsLoading`(指示只在選單內,`../SelectMenu/select-menu.spec.md`「Loading」),Input 沒有選項清單所以沒有這個 prop。2026-09-08 之前兩件事共用一個字、一個槽,結果是同一時刻兩顆轉圈。
 
 **世界級流派選擇**(editable 派 vs readonly 派):
 
@@ -106,22 +108,22 @@ Loading **不是第四個 mode**,是 `edit` mode 的子狀態,語義 = **editabl
 
 **本 DS 採 editable 派**(Ant / Apple HIG):
 - **UX 理由**:debounce 搜尋場景,user 邊打邊看建議,凍結一格會卡節奏;async validation 若第一次失敗,user 該能立即改,不是等 spinner 完才能動
-- **對照 readonly 派**:readonly 派適合「提交後驗證」的場景(e.g. 表單 submit → 驗證),本 DS 的 `loading` prop 用在 debounce / inline validation,editable 更 fit
+- **對照 readonly 派**:readonly 派適合「提交後驗證」的場景(e.g. 表單 submit → 驗證),本 DS 的 `loading` prop 用在 inline validation / 值寫回中,editable 更 fit
 
 **實作 canonical(Input / Combobox 等具 async 語意的 Field 元件;NumberInput 不提供 loading——見 `number-input.spec.md`「Loading」)**:
 - API:`loading?: boolean` prop
 - 內部:`loading=true` → wrapper `aria-busy="true"` + **endAction slot 自動塞 `<CircularProgress size={iconSize}/>`**(與 `endAction` prop 互斥,loading 優先)
 - input **不進 readonly / disabled**,保持可編輯
-- Select / Combobox / PeoplePicker(trigger 不是 input):轉圈放 ChevronDown 左邊的 suffix 位置(`select.tsx:734` / `combobox.tsx:847`),選單內另有「僅空清單時」的載入列;浮層內的搜尋列 `CommandInput loading` 同 Input 走右側槽(2026-09-08,SSOT `../SelectMenu/select-menu.spec.md`「Loading」)
+- Select / Combobox / PeoplePicker(trigger 不是 input):同一個 `loading` = 值處理中,轉圈放 ChevronDown 左邊的 suffix 位置(`select.tsx` / `combobox.tsx` `chevronEl`)+ 觸發點 `aria-busy`,與選單開關、選項多寡無關;**選項載入是另一個字 `optionsLoading`**,指示只在選單內的載入訊息列,觸發點與浮層搜尋列都不轉圈(2026-09-09,SSOT `../SelectMenu/select-menu.spec.md`「Loading」)
 - CircularProgress 尺寸:程式化 `iconSize`(sm/md=16, lg=20),消費者不用再傳
 - CircularProgress 顏色:走預設 `text-primary`(表達「正在處理,請注意」)
 - startIcon(Search 等語義 icon)**不受 loading 影響**,保留原位置
 
 ```tsx
-// 世界級 canonical:search field 在 loading 中,user 仍可修改關鍵字
-<Input startIcon={Search} loading placeholder="搜尋..." />
-// → search icon 在 prefix(保留語義身分)
-// → CircularProgress 在 endAction 位置(暫時狀態)
+// 世界級 canonical:欄位值正在驗證(如帳號是否已被使用),user 仍可修改
+<Input startIcon={AtSign} loading placeholder="使用者名稱" />
+// → 語義 icon 在 prefix(保留身分)
+// → CircularProgress 在 endAction 位置(暫時狀態:這個值在處理)
 // → input editable + aria-busy,user 可繼續輸入 / 修改
 ```
 

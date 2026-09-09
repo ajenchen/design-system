@@ -2641,3 +2641,66 @@ user 說的三件事全部成立:轉圈只在選單內;舊選單先消失、選�
 5. **遠端搜尋、尚未輸入關鍵字、選項空 → 訊息列顯示「輸入關鍵字搜尋」(可覆寫)**,不顯示「沒有選項」—— 修掉 user 指出的 Ant 初始狀態問題。**需要 user 點頭。**
 沒拍板前不動 code。
 
+### AD40 user 2026-09-09 第二批(十一題)—— 分工與兩題直接回答
+
+user 原話要點:「table 的標題欄位的 url 前面有一塊空…root cause 是什麼?我們有這樣定義過嗎?」「dialog 的設計規格的範例給我拿掉…dialog 的出現動畫為何是從左上角飛到中間?」「dialog 的所有 story 不要預設開啟…docs 頁面會疊所有 story 的 dialog,你有發現嗎?」「table 上方的標題應該距離上下多少?難道不是 tight token?」「模擬瀏覽器下方的備註拿掉…寬高撐滿 story,四周 loose…滿版的 breakpoint 是否太大?」「舞台不如直接拿 app shell 中間那塊…帶有 tabs 的 header…table toolbar…新增任務在定義好的位置…所有任務 / 我的任務」「蓋板點內部連結依然沒有自動關閉 agent…原則到底是哪裡寫錯了?…翻閱整個 session,我他媽到底哪裡有這樣說過?」「Props 改名照你建議」「遠端搜尋清舊選項可以」「遠端搜尋還沒輸入關鍵字…建議選單…只有真的沒有任何選項才顯示沒有結果」「同一個元件的外框會有兩種畫法嗎?」「滑鼠會搶反白的元件指的是滑鼠可以移動鍵盤焦點的意思嗎?」「PR124 那份 artifact 為何把之前的 SSOT UI/UX 異動清掉了?…從新到舊」。
+
+**先認錯(M36)**:「蓋板時點內部連結代理保持開啟」是我從 v14 條 B 推導出來的(推導表第 53 / 57 列),**不是 user 決定**;user 8/11 規格原句(v14 第 19–21 行)是「內部連結…同頁面直接跳轉,但 Agent 保持不動。換言之,所有內部連結的內容都能夠與 agent 同時運作」—— 蓋板下「同時運作」不可能,正確推導是代理讓位(收成 FAB、狀態保留)。上一則我回 user「這是照原則」也是錯的。修正與衝突檢查交由代理示範工作流(v14 來源總帳、agent-panel.spec、S9 閘、示範實作)。
+
+**兩題直接回答(已寫進 focus-canonical.md「同一個元件會不會有兩種畫法?」段)**:
+- 同一個元件只有一種畫法;判準量的是它在設計位置上的正當淨空,不是最極端情況、也不在執行期逐實例量;底層元件被外層塞進貼邊槽時,由外層元件的規格承擔往內(Avatar 的 ×)。
+- 「滑鼠會搶反白」= 滑鼠移過去就把鍵盤游標(反白)搬走,只有已打開的暫時性選單(cmdk / Radix Menu、Select)沿用這個業界行為;常駐清單、樹狀、表格、側欄一律不搬(規則一;APG 與 w3c/aria-practices#3238 正在把 hover 移焦點從選單規範撤除)。
+
+**分工(平行)**:Dialog(動畫 root cause + docs 疊窗 DS-wide 機制 + 拿掉設計規格範例)/ 代理示範(蓋板讓位原則與衝突檢查、AppShell 主內容 + tabs header + toolbar、url 欄位型別、標題間距反省、模擬瀏覽器撐滿、斷點研究)/ SelectMenu(`optionsLoading` 改名、遠端搜尋清舊選項、建議群組 + 提示列 SSOT)/ 歷史異動總表(新→舊,人話)。結果接續記於 AD41。
+
+### AD41 第二批落地結果(2026-09-09;三路平行 + 主 session 整合)
+
+**Dialog**
+- 出場動畫從左上角飛入:根因 = shadcn v3 為 Tailwind v3 補的 `slide-in-from-left-1/2 slide-in-from-top-[48%]`(v3 的 translate 走 transform 會被 keyframe 蓋掉,所以在 keyframe 裡再寫一次置中位移);Tailwind v4 的 `-translate-x-1/2` 改走獨立 `translate` 屬性不再被蓋,兩個位移相加 → 第一幀中心偏 (−240, −91)px。shadcn v4 已拿掉那兩組 class。定案:**從中心淡入 + 輕縮放、不位移**,時長 / 曲線走既有 `surfaceMotion`(`--motion-duration-surface` 250ms、`--motion-easing-enter/exit`);對照 shadcn v4 / Radix Themes(`translateY(5px) scale(.97)`)/ Angular Material(`scale(.8)`)/ MUI(只 fade)/ M3(expressive 不採)。實測第一幀偏移 0;閘併進 `dialog-coexistence-invariant.mjs`(靜態禁「置中 translate + slide-center」同用;瀏覽器 WAAPI seek t=0 量偏移 ≤ 1px;對照組把 class 加回必紅)。`dialog.spec.md`「動畫」段、`motion.spec.md`、`overlay-motion.ts` 註解同步。
+- docs 頁疊窗:DS-wide 掃 90 個 Autodocs 頁,真的疊的只有 Dialog(4 個可見對話框、7 個 fixed 開啟節點);Combobox / Select / PeoplePicker 的預設開啟選單是 anchored,不互疊但會蓋到下一支。機制選 Storybook 官方 `parameters.docs.story.inline:false`(docs 每支 story 各自 iframe;canvas 一個位元不變,截圖 / a11y 閘照跑),封成 `stories-helpers/overlay/open-overlay-docs.ts`;`layout:'centered'` 的檔案要改 `openOverlayParameters()`(SB 8.6 的 layout 取值順序 `parameters.layout` 先於 `docs.canvas.layout`,不然 iframe 縮成 300px)。規則寫進 `story-rules.md`「預設開啟的模態浮層 story」;閘:靜態掃 213 個 stories 檔 + 瀏覽器量 Dialog docs 可見對話框 = 0。結果 4 → 0。
+- 「設計規格的範例拿掉」:`元件總覽` 的「開啟 Dialog 範例」按鈕 + 建立專案對話框已刪。**未刪候選**:`DestructiveMatrix`(只有一顆「刪除專案(含確認)」範例 + 一段規則文字)—— 需要 user 說要不要。
+
+**代理示範 + 蓋板原則**
+- 蓋板讓位:v14 條 B 末句、條 E(原「開關只由使用者明確操作改變」與新行為互斥,補「以及條 B 窄螢幕的收成」)、推導表加「蓋板,agent 點內部連結 / 有網址的 modal → 收成入口鈕、宿主顯示目標」並改寫原第 53 / 55 / 57 列;v14 新增「來源總帳」逐條標 user 原話 / AI 推導。世界級:Material NavigationDrawer(modal 抽屜選定即 close;standard 抽屜並列)、SideSheet(modal 阻擋 / standard 並存)、Angular sidenav `over` / `side`、Android canonical layouts(compact 不並排)。實作:AgentPanel 匯出 `AgentPanelMode`、新 prop `onModeChange`、根節點 `data-agent-panel-mode`;收合由消費端在內部導航做(示範 `fromAgent()`:蓋板且開著 → `setAgentOpen(false)`;頁面 → 焦點交給 `<main tabIndex={-1}>`,modal → 等宿主脫離 inert 後聚焦對話框)。衝突逐條檢查(三層 z / FAB dock / 焦點回歸 / 鍵盤 / 背景位置 / persistentElements / 寬窄切換保留)全部仍成立。閘 S9 改斷新行為;對照組(關掉收成)必紅。
+- 舞台 = AppShell 主內容殼(`app-shell.tsx:229-237`)+ `PageHeader`(ChromeHeader + tabsSlot,Tabs sm,W1–W4)+ action-bar 規格的 toolbar(標題左、primary「新增任務」業務層最右)+ DataTable;tabs「所有任務 / 我的任務」(`/projects/8821/tasks`、`/tasks/mine`,我的任務 = 指派給 Betty Wu);「新增任務」放 toolbar 的 3-column owner 表:data-table.spec:331(toolbar 外部組合)/ action-bar.spec:97-109(primary 在業務層最右)/ data-table.spec:537(inline create row 只管就地編輯,欄位複雜的 create 走 Dialog)。
+- 標題欄空白:根因 = `<Button variant="link">` 當儲存格(自帶內距),DS 早有 `url` 欄位型別(`column-types.ts:21` → `UrlCell` → `LinkInput` view 態裸 anchor 零內距);改消費同一支 primitive,內部連結 `onClickCapture` 攔截。反省:違反 mindset #2 / M1 / M23,寫儲存格前沒查「七、Column Type」;`action-bar.spec.md:119` 更明寫 link 是導覽語意不屬操作列。DS-wide `variant="link"` 只剩 `profile-card.tsx:318`(卡片 footer 按鈕語意,非同款)。
+- 標題 → 表格間距:`layoutSpace.spec.md:69` 親疏表「heading → labeled content = tight」,原本 Stage 把 h1 與表格當 parallel 兄弟用 loose 是錯的;規則 2「Header → 第一個元素 = loose」講的是 chrome header,已在規則 2 補一句「Header 指 chrome header」。
+- 模擬瀏覽器:`height="fill"`,外層 `h-dvh p-[--layout-space-loose]`,caption 拿掉(story-rules 同步)。
+- 斷點(不改常數,等拍板):1080 是三鎖(面板 ≥ 360、面板 ≤ 舞台一半、舞台 = 容器 − 面板)的唯一解;候選 1080(360/720)/ **960(360/600,把「一半」放寬到 3/5;舞台 600 = M3 medium 下緣、5 欄各 120)**/ 840(舞台 480 < 表格自然寬 496,不建議)。依據:Android window size classes、supporting pane、VS Code aux bar min 170、M3 抽屜 280、Tailwind lg 1024 / Bootstrap lg 992。
+- 閘 `agent-url-registry-demo-invariant.mjs` S0–S9 共 109 條綠(1440 / 1180 / 1000);`agent-panel-breakpoint.mjs` 綠。
+
+**SelectMenu**
+- `optionsLoading`(SelectMenu / Select / Combobox / PeoplePicker);`loading` = 值層級(觸發點 suffix 轉圈 + aria-busy,關著也在);選項載入指示只在選單內(載入列);`CommandInput` 的 `loading` prop 移除(唯一消費者是 SelectMenu)。
+- 遠端(`filterOption=false`)抓資料中 → 舊清單不顯示、只剩載入列(DS 內做);本機過濾不清。
+- 建議:`suggestions` / `suggestionsLabel`(預設「建議」)/ `searchHintText`(預設「輸入關鍵字搜尋」,AI 建議文案、user 未逐字拍板);狀態機:遠端 + 關鍵字空 + 有建議 → 建議群組(必有標題);抓資料中 → 載入列;遠端 + 空 + 無建議 → 提示列;真的沒有 → 「沒有選項」;遠端模式多選 footer 全選不渲(部分清單)。3 重 test 否決 `optionsPartial`、`defaultOptions`(DS 的 default* = uncontrolled 初始值)。對照:react-select `defaultOptions`、MUI `loading` / `noOptionsText`、Polaris `listTitle` + `Listbox.Loading`、Ant select-users 示範、cmdk List 預設 aria-label "Suggestions"。
+- 閘 `menu-message-row-invariant.mjs` 新 M4 / M5 / M8 / M10 / M11:正式 273 ✓;selftest 139 條翻紅。移除 `LoadingWithStaleOptions` story(本機模式舊清單保留且無指示,畫面與普通清單無差)。既有缺口未動:觸控 `NativeCombobox` 從不渲染 loading 轉圈。
+- 需 user 看預覽確認:建議選單的樣子與文案(第 3 題 API 形狀是 AI 設計)。
+
+**主 session**:focus-canonical「同一個元件會不會有兩種畫法?」段;story-rules caption 規則;`overlay-motion.ts` 過期註解;layoutSpace 規則 2 補句。整合建置與全部閘結果、a11y 基準線、CI 讀回:見 AD42。
+
+### AD42 第二批的 Codex R13 對抗審查 —— 判「還有 blocker」,全部修掉(2026-09-09)
+
+R13(唯讀、瀏覽器重現)抓到:
+1. **v14 推導表**四列沒限定寬度(「從某一頁點開 URL Modal → agent 維持開啟」「失去權限 → agent 不因此關閉」「hash / 頁籤」「分享網址」),與新的蓋板讓位相反;「還需要拍板:無」與總帳「上一頁不收成是 AI 推導、未拍板」表述不一致 → 四列加「並排維持、蓋板收成」,拍板句指名唯一 AI 推導列。
+2. **示範關 modal 焦點落 body**(寬窄版皆然、既有;示範沒有 DialogTrigger)→ 宿主記住開啟元素,關閉後焦點回它,不在或被抑制則回 `<main>`(`onCloseAutoFocus`)。
+3. **焦點框澄清段引錯例子**:我寫「Avatar 角上的 × 16px 槽往內」,文件實測表早寫 PeoplePicker 移除 × 是外框(12px、疊在一起的頭像不算鄰居),實作也是外框 —— 文件裡「驗算表」與「實測表」本來就互相矛盾;兩張表都改成往外並註明訂正,段落例子換成 Calendar 事件 tile(內)/ PeoplePicker ×(外)。**Tabs 規格寫內框、實作是全域外框**且在 overflow-scroll 的分頁列裡上下各被裁 3–4px → `tabs.tsx` trigger 加 `focus-visible:focus-ring-inset`;`tabs.spec.md` 與 `button.spec.md` 的舊 `ring-offset-1` 描述改成現行幾何。
+4. **已選名稱退成 ID**(遠端搜尋關閉後結果被清掉;從建議群組選的值不在 options;readonly / view / disabled 分支只拿 options)→ 新 hook `hooks/use-known-options.ts` 記住看過的選項(react-select / MUI / Ant 都是 label 跟著值走,本 DS value 是字串 id 所以由元件記),Select / Combobox / PeoplePicker 主元件最後查它並把已選但不在 options 的項補進顯示分支。**未動**:觸控原生分支(NativeCombobox / NativeSelect)沒這份記憶。
+5. **建立列沒查建議清單**(建議有 Alice 仍出現「直接使用 Alice」)→ `showCreate` 連 suggestions 一起查;遠端抓資料中不出建立列。spec 兩條邊界案例改寫成與狀態表一致。
+6. **Dialog 遮罩時長錯述**(規格 250ms、實作 tw-animate 預設 150ms)→ 遮罩也套 `surfaceMotion`;CoexistenceContract docs iframe 720 → 800px(內容 746–766 內捲)。
+R13 另列非 blocker 且未動:示範沒有「未存檔 → 取消 / 確認前往」流程(條文在 v14);上一頁 / 下一頁不收成為 AI 推導。R14 確認結果見下一則。
+
+### AD43 Codex R14:R13 六項中五項關掉,再抓五個(全修)(2026-09-09)
+
+R14 確認:v14 四列相容 ✓;Tabs 內描邊 outline-offset −2、無裁切 ✓;已選名稱保留 label(含 readonly / view / disabled)✓;遠端同名建議與抓資料中不出建立列 ✓;Overlay 250ms ✓;docs iframe 800 無內捲 ✓。
+新抓:(1) 窄版關 modal 焦點仍落 body —— 開啟元素在已收成的代理面板裡(display:none),`.focus()` 靜默失敗且沒退回 main → 加可見性檢查 + 聚焦後驗 `activeElement`,不成則回 `<main>`;
+(2) `useKnownOptions` 在 render 期間寫 ref,concurrent / Suspense 下被放棄的 render 會污染(實測 transition 取消後畫面顯示未提交的名稱)→ 改 `useEffect` commit 後才記;
+(3) 本機過濾模式 `showCreate` 也查了建議 → 誤藏建立列 → 只在遠端模式查建議;
+(4) focus-canonical 401 / 468 行仍寫「Avatar 16px 槽往內」、tabs.spec:287 仍寫 `ring-2 ring-ring` → 全改;
+(5) select-menu.spec 156 / 239 行散文與狀態表不符(沒建議但有 options 該列 options + 標題;在抓時只剩載入列)→ 改到一致。
+R15 確認見下一則。
+
+### AD44 Codex R15:五條全關,「可以進 PR」(2026-09-09)
+
+R15 同一重現:1000px 關 modal → 焦點回 `MAIN#demo-stage-main`(恢復舊邏輯的對照組仍落 body);Suspense 暫停後取消更新仍顯示已提交名稱(無快取污染);本機模式建議同名照出建立列、遠端同名與抓資料中仍不出;焦點文件三處與現行幾何一致;spec 散文與狀態表一致(13 組清單狀態測試)。effect 版 hook 的兩個疑慮(首次 render 快取空 / deps 用內層陣列引用)判可接受(三個元件都先查目前清單;清單不可原地修改)。唯一殘留 `tabs.anatomy.stories.tsx` 舊 `ring-2 ring-ring` 文案,已改。
+最終建置鏈:build:lib / 986 stories / Dialog 並存 + 進場幀 + docs 隔離 / 代理示範 109 條 / 斷點 / 選單 273 + selftest 139 紅 / 游標模態 / 焦點抑制 26 / 焦點幾何瀏覽器稽核(外描邊 85、需改內描邊 0)/ 按鈕 779 / 內容品質 / CI 閘覆蓋 / 焦點指示 F 系列 全綠;a11y 基準線以最終 build 重生。
+

@@ -93,12 +93,18 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 
 ---
 
-## Loading(2026-09-08 補轉發)
+## Loading(2026-09-08 補轉發;2026-09-09 user 拍板拆成兩個字)
 
-`loading?: boolean`(`people-picker.tsx:97,155`)機械轉發 wrapped Select(single)/ Combobox(multi)的 `loading`(`:350` / `:376`),行為 SSOT 在基座,本元件不另定義:觸發點右側、ChevronDown 左邊放列圖示尺寸的轉圈(每次抓資料都亮,可照常打開)、選單內只在沒有任何可顯示的人員時渲 `CommandLoading` 訊息列(預設「載入選項中」)、舊人員保留不清空、選單不關(`../SelectMenu/select-menu.spec.md`「Loading」)。
-`filterOption?: boolean` / `onSearchChange?: (value: string) => void`:遠端搜尋名錄(人數多、只能問伺服器)時的開關與回呼,機械轉發 Select / Combobox;SSOT `select-menu.spec.md`「遠端搜尋」。
+兩個 prop 都機械轉發 wrapped Select(single)/ Combobox(multi)三個分支(`people-picker.tsx`),行為 SSOT 在基座,本元件不另定義:
 
-**為什麼補**:之前 PeoplePicker 沒有這個 prop,consumer 只能在 fetch 完成前傳 `people=[]`——開選單看到的是「沒有人員」,把「還在載入」講成「確定沒有」,語意錯(`../Empty/empty.spec.md`「何時不用」Loading 列)。
+| Prop | 意思 | 指示 | SSOT |
+|---|---|---|---|
+| `loading?: boolean` | **這個值**(指派的人)在讀取 / 驗證 / 儲存 | 觸發點右側、ChevronDown 左邊列圖示尺寸轉圈 + `aria-busy`;選單照常可開 | `../Field/field-controls.spec.md`「Loading state」 |
+| `optionsLoading?: boolean` | **人員名錄**在抓(2026-09-09 改名自 `loading`) | 只在選單內:沒有任何可顯示的人員時一列「載入選項中」訊息列;觸發點不轉圈。本機過濾已載入的人員保留,遠端搜尋抓資料中舊結果不顯示 | `../SelectMenu/select-menu.spec.md`「Loading」 |
+
+`filterOption?: boolean` / `onSearchChange?: (value: string) => void`:遠端搜尋名錄(人數多、只能問伺服器)時的開關與回呼,機械轉發 Select / Combobox。`suggestions?: PersonValue[]` / `suggestionsLabel?: string`(預設「建議」)/ `searchHintText?: string`(預設「輸入關鍵字搜尋」)(2026-09-09):關鍵字空時列建議人員群組(最近指派 / 同團隊;必有標題,讓使用者知道名錄不只這幾位),抓資料中舊結果不顯示,沒建議也沒在載入時顯示提示列;人員經 `personToSelectOption` 轉成選項後 forward,已選的人回查 `people` + `suggestions`(`directory`)。SSOT `select-menu.spec.md`「遠端搜尋」「Suggestions」。
+
+**為什麼補 `optionsLoading`**:之前 PeoplePicker 沒有這個 prop,consumer 只能在 fetch 完成前傳 `people=[]`——開選單看到的是「沒有人員」,把「還在載入」講成「確定沒有」,語意錯(`../Empty/empty.spec.md`「何時不用」Loading 列)。
 
 ---
 
@@ -285,8 +291,8 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 ## 邊界案例
 
 - **Disabled**:`disabled` → `resolvedMode='disabled'`(`useResolvedFieldMode`),走獨立 static-display 分支(`people-picker.tsx`「readonly / disabled」段)——渲染靜態 `<div>` 包 `MultiPersonDisplay` / `PersonDisplay` + `ItemSuffix` ChevronDown 類型身份 indicator(2026-06-26:disabled 保留 chevron、readonly 不顯示;naked variant 依 `showDisplayEndIcon`),**不** wrap Select / Combobox、無 dismiss X、無 inline-search input。token 走 M24 state precedence(`text-fg-disabled`,含 chevron)。
-- **Loading(async people fetch)**:`loading` prop 2026-09-08 補轉發(見「Loading」段):觸發點轉圈 + 選單內僅空清單時載入列 + 舊人員保留。**禁**再用 `people=[]` 假裝 loading(會顯示「沒有人員」,語意錯)。
-- **Empty(no search results)**:`emptyText` 預設「沒有人員」(見「搜尋」段;渲成一列 `MenuItem message`,不用 `Empty`);無 creatable mode(人員不可建立)。
+- **Loading(async people fetch)**:`optionsLoading`(2026-09-08 補轉發、09-09 改名,見「Loading」段):選單內僅空清單時載入列、觸發點不轉圈。**禁**再用 `people=[]` 假裝 loading(會顯示「沒有人員」,語意錯);`loading` 是值處理中(觸發點轉圈),不是名錄載入。
+- **Empty(no search results)**:`emptyText` 預設「沒有人員」(見「搜尋」段;渲成一列 `MenuItem message`,不用 `Empty`);只在真的沒有任何可選時 —— 遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」;無 creatable mode(人員不可建立)。
 - **Empty(no value selected)**:single mode → trigger 顯 placeholder「請選擇人員」;multi mode `value=[]` → trigger 同 placeholder(無 avatar stack 渲);詳「Trigger display SSOT canonical table」B-D 段。
 - **`people` 清單變動(async fetch 後更新)**:已選 value 顯示不依賴 `people` 查找 — display 路徑直接渲染 value 自帶資料;edit 路徑以人名回查 `people`,查不到降級為純名字 string(initials fallback),不報錯(`people-picker-helpers.ts:74-75`)。選單選項即時跟隨 props 重渲。
 - **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。avatar overlap / inset 不在本檔另立支援決策。

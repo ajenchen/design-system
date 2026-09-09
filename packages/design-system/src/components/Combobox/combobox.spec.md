@@ -123,18 +123,24 @@ Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒�
 
 ---
 
-## Loading
+## Loading(2026-09-09 user 拍板:兩個字、兩件事)
 
-`loading?: boolean`(forward 給 SelectMenu SSOT,2026-05-15 audit B 補;措辭對齊 `select.spec.md`「Loading」2026-07-04 Q3 拍板 — 不清空 stale options;**2026-09-08 user 改決定 — 48px 轉圈與 `py-6` 退役,改兩處指示**):(a) 觸發點右側、ChevronDown 左邊放列圖示尺寸的 `CircularProgress`(`combobox.tsx:847`;`iconSize` sm/md 16 / lg 20),每次抓資料都亮,dropdown 隨時可開;(b) 選單內只在**無可顯示選項時**,Empty 槽渲 `CommandLoading` 訊息列(同「沒有結果」的 `MenuItem message` 列,前綴轉圈 + 「載入選項中」,cmdk `CommandEmpty` 機制;已有 options 時保留顯示、選單不關)。這可保留仍可選的 stale options,同時只在沒有內容可呈現時讓載入列佔據 empty slot。SSOT `select-menu.spec.md`「Loading」。
-`filterOption?: boolean`(預設 true)與 `onSearchChange?: (value: string) => void`(2026-09-08 user 拍板「併」):遠端搜尋時 `filterOption={false}` 不在本機二次過濾(trigger / menu 兩種搜尋位置都不過濾),搜尋字經 `onSearchChange` 回呼;SSOT `select-menu.spec.md`「遠端搜尋」。另:浮層開著且搜尋列在浮層時,觸發點不重複轉圈(只留搜尋列那顆,離打字的地方最近;關著時才在觸發點)。
+| Prop | 意思 | 指示 | SSOT |
+|---|---|---|---|
+| `loading?: boolean` | **這個值**在讀取 / 驗證 / 儲存(與 Input `loading` 同義) | 觸發點右側、ChevronDown 左邊放列圖示尺寸的 `CircularProgress`(`combobox.tsx` `chevronEl`;`iconSize` sm/md 16 / lg 20)+ 觸發點 `aria-busy`;選單照常可開可選、與選項多寡 / 搜尋位置無關 | `../Field/field-controls.spec.md`「Loading state」 |
+| `optionsLoading?: boolean` | **選項清單**在抓(2026-09-09 改名自 `loading`) | forward 給 SelectMenu:只在選單內,沒有可顯示選項時一列「載入選項中」訊息列 + listbox `aria-busy`;**觸發點與浮層搜尋列都不轉圈**(2026-09-08 的搜尋列轉圈與 `CommandInput loading` 已退役)。本機過濾已有選項時保留、遠端搜尋抓資料中舊選項不顯示 | `../SelectMenu/select-menu.spec.md`「Loading」 |
+
+歷史:2026-05-15 audit B 補 → 2026-07-04 Q3「不清空 stale options」→ 2026-09-08 兩處轉圈 → **2026-09-09 拆成兩個 prop、選項載入指示只在選單內**。
+
+**遠端搜尋**:`filterOption?: boolean`(預設 true)與 `onSearchChange?: (value: string) => void`(2026-09-08 user 拍板「併」):遠端搜尋時 `filterOption={false}` 不在本機二次過濾(trigger / menu 兩種搜尋位置都不過濾),搜尋字經 `onSearchChange` 回呼;`searchIn='trigger'` 時搜尋字另以受控 `search` 交給 SelectMenu(2026-09-09;順帶讓 trigger 模式的 creatable 建立列真的會出現)。`suggestions?: ComboboxOption[]` / `suggestionsLabel?: string`(預設「建議」)/ `searchHintText?: string`(預設「輸入關鍵字搜尋」)機械 forward(2026-09-09):關鍵字空時列建議群組(必有標題)、抓資料中舊清單不顯示、沒建議也沒在載入時顯示提示列;已選 tag 的 label 同時回查 `options` 與 `suggestions`(`combobox.tsx` `items`)。遠端模式多選 footer 的全選不渲(部分清單)。SSOT `select-menu.spec.md`「遠端搜尋」「Suggestions」。
 
 ---
 
 ## 邊界案例
 
 - **Disabled**:Field SSOT own(`Field/field-controls.spec.md`)。trigger / tag dismiss / 搜尋 input 全部 disabled,token 走 M24 state precedence(`text-fg-disabled`);已選 Tag 的 dismiss X 自動隱藏(見「readonly / disabled 的 Tag」段)。
-- **Loading**:已 codify(見「Loading」段)。
-- **Empty(no search results)**:dropdown body 內渲 `emptyText`(Combobox 暴露 `emptyText` prop 並 forward 給 SelectMenu;未傳時走 SelectMenu 預設「沒有選項」;渲成一列 `MenuItem message`,與 1 筆結果等高、無最小高度、不用 `Empty`,SSOT `select-menu.spec.md`「Empty state」)。Combobox **暴露 `creatable` / `onCreate` / `createLabel` prop 並 forward 給 SelectMenu**(2026-07-18 user 拍板;搜尋非空且無完全同名既有選項時,dropdown 顯 create row `Plus + createLabel`)——邏輯/顯示/互動 SSOT 住在 SelectMenu(`select-menu.tsx` :271-275 顯隱 / render)。僅 searchable 桌機路徑生效(native mobile 不支援)。對齊 Ant tags / react-select Creatable。
+- **Loading**:已 codify(見「Loading」段):`loading` = 值處理中(觸發點轉圈)/ `optionsLoading` = 選項在抓(只在選單內)。
+- **Empty(no search results)**:dropdown body 內渲 `emptyText`(Combobox 暴露 `emptyText` prop 並 forward 給 SelectMenu;未傳時走 SelectMenu 預設「沒有選項」;渲成一列 `MenuItem message`,與 1 筆結果等高、無最小高度、不用 `Empty`,SSOT `select-menu.spec.md`「Empty state」)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列(`select-menu.spec.md`「Suggestions」)。Combobox **暴露 `creatable` / `onCreate` / `createLabel` prop 並 forward 給 SelectMenu**(2026-07-18 user 拍板;搜尋非空且無完全同名既有選項時,dropdown 顯 create row `Plus + createLabel`)——邏輯/顯示/互動 SSOT 住在 SelectMenu(`select-menu.tsx` :271-275 顯隱 / render)。僅 searchable 桌機路徑生效(native mobile 不支援)。對齊 Ant tags / react-select Creatable。
 - **Empty(no value selected)**:multi mode `value=[]` 時 trigger 顯 placeholder(如「請選擇」);empty state 不渲 tag 區。
 - **Dark mode / density**:走 Field + SelectMenu SSOT 自動 adapt。
 

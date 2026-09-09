@@ -97,7 +97,22 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 
   「蓋滿」是 B 條原文(窄螢幕以抽屜蓋滿宿主),不是另外挑的做法。
   蓋板用 absolute 而不是把宿主推走:蓋板本來就不該改變底下內容的版面,回到寬螢幕時
-  宿主也不必重新排版(避免來回切換內容跳動)。形態以 `data-agent-panel-mode` 標在根節點。
+  宿主也不必重新排版(避免來回切換內容跳動)。形態以 `data-agent-panel-mode` 標在根節點,並由 `onModeChange` 回報給消費端。
+
+  **蓋板態下從代理導向舞台 → 代理收成入口鈕(2026-09-09 user 推翻 AI 推導)**:蓋板時「內容與 agent 同時運作」
+  (v14 原文)不可能成立;user 原話「開啟 agent 點內部連結當然要有優先呈現該連結內容啊,怎麼可能讓 agent 還霸道佔位?」。
+  所以代理內任何導向舞台的動作 —— 內部連結、有網址的 modal、沒有網址的確認框按「確認前往」—— 都讓代理收成入口鈕、
+  舞台顯示目標;對話、草稿、閱讀位置全部保留(下方「關閉不等於卸載」);並排態不變,代理維持開啟。
+  點入口鈕重開 → 抽屜再蓋回舞台,舞台上並存中的 modal 在它後方暫不可操作、按 × 又顯露。
+  **實作契約**:面板**不知道連結**,收合是消費端在自己的內部導航裡做的 —— 用 `onModeChange` 記住形態,
+  「蓋板且代理開著 → `onOpenChange(false)`」;目標是頁面時把焦點交給舞台(`<main tabIndex={-1}>`,AppShell skip-to-main 同款),
+  目標是 modal 時由 Dialog 開啟時自己聚焦。瀏覽器 chrome 的上一頁 / 下一頁不是「代理內的動作」,不收合。
+  示範 `agent-panel.stories.tsx` UrlRegistryDemo;閘 `scripts/agent-url-registry-demo-invariant.mjs` S9。
+  對照(同一條「模態抽屜選定目的地即讓位、常駐抽屜維持」):
+  [Material navigation drawer:modal 供手機、選定項目即 `drawerLayout.close()`;standard 供平板 / 桌機、可與內容同時互動](https://github.com/material-components/material-components-android/blob/master/docs/components/NavigationDrawer.md)、
+  [Material side sheet:standard 與主區域共存並可同時互動;modal 阻擋其餘畫面](https://github.com/material-components/material-components-android/blob/master/docs/components/SideSheet.md)、
+  [Angular Material sidenav:`over` 浮在內容上並加背幕 / `side` 與內容並排並縮內容寬](https://github.com/angular/components/blob/main/src/material/sidenav/sidenav.md)、
+  [Android supporting pane:compact 寬度把輔助內容放主內容下方或 bottom sheet,medium / expanded 才並排](https://developer.android.com/develop/ui/compose/layouts/adaptive/canonical-layouts)。
 
   **量的是容器不是視窗**:面板住在容器裡。視窗 1920 但容器只有 800 的版面
   (側欄 + 主內容 + 面板)用視窗算會給出 640 的上限,面板一寬舞台就被擠爆。

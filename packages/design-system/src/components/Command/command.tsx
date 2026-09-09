@@ -78,13 +78,10 @@ const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
   Omit<React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>, 'size'> & {
     size?: CommandSize
-    /**
-     * 載入中(2026-09-08 user 拍板):右側槽放列圖示尺寸的 CircularProgress、輸入仍可編輯、wrapper `aria-busy` ——
-     * 同 Input `loading` 的 canonical(field-controls.spec.md「Loading」);每次抓資料都亮,不管清單裡有沒有舊選項。
-     */
-    loading?: boolean
+    // 2026-09-09 user 拍板:搜尋列**沒有** `loading` prop 了 —— 選項載入的指示只在清單內(CommandEmpty 槽的 CommandLoading),
+    // 搜尋列不為抓資料轉圈(2026-09-08 曾加、同日 user 抓到兩顆轉圈、09-09 退役;Polaris Autocomplete loading 時 TextField 也不轉)。
   }
->(({ className, size: sizeProp, loading = false, ...props }, ref) => {
+>(({ className, size: sizeProp, ...props }, ref) => {
   const size = sizeProp ?? useRowSize('md')
   return (
   <div
@@ -95,7 +92,6 @@ const CommandInput = React.forwardRef<
         : 'min-h-[calc(var(--field-height-md)+8px)]',
     )}
     cmdk-input-wrapper=""
-    aria-busy={loading || undefined}
   >
     <Search size={ICON_SIZE[size]} className="shrink-0 text-fg-muted" aria-hidden />
     <CommandPrimitive.Input
@@ -110,7 +106,6 @@ const CommandInput = React.forwardRef<
       )}
       {...props}
     />
-    {loading && <CircularProgress size={ICON_SIZE[size]} className="shrink-0" />}
   </div>
 )
 })
@@ -182,7 +177,8 @@ CommandEmpty.displayName = CommandPrimitive.Empty.displayName
  * 載入中訊息列:與「沒有結果」同一種 `MenuItem message`,前綴槽放列圖示尺寸的 CircularProgress(sm/md 16、lg 20;
  * circular-progress.spec.md「Size canonical」:跟欄位高度有關的容器對齊該容器的圖示尺寸)+ 可見文字(label),整組置中。
  * `role="status"` 讓讀屏器直接播報文字;不經 Empty(empty.spec.md「禁止事項」)。放進 CommandEmpty 當 children。
- * 只在清單裡沒有任何可顯示的選項時才會被看到(cmdk Empty 槽);有舊選項時載入指示在搜尋列 / 觸發點右側(CommandInput `loading`)。
+ * 只在清單裡沒有任何可顯示的選項時才會被看到(cmdk Empty 槽)—— 這是選項載入**唯一**的指示(2026-09-09 user 拍板:
+ * 搜尋列 / 觸發點不為選項轉圈;觸發點的轉圈是 Field 家族 `loading` = 這個值在讀取 / 驗證 / 儲存,另一件事)。
  */
 function CommandLoading({ label, size: sizeProp }: { label: string; size?: CommandSize }) {
   const size = sizeProp ?? useRowSize('md')

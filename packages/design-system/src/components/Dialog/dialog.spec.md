@@ -134,8 +134,31 @@ Header 級操作(記錄 prev / next 導覽、header 級溢出選單 ⋮ 等「�
 
 ## 動畫
 
-- 進場：fade-in + zoom-in-95 + slide-in-from-center
-- 離場：fade-out + zoom-out-95 + slide-out-to-center
+**Canonical = 從中心淡入 + 輕微縮放,不位移**(2026-09-09 定;anchor:user 抓到「dialog 從左上角飛到中間」)。
+
+| 階段 | 幾何 | 時長 / 曲線(全部消費 `tokens/motion/motion.spec.md`「進出場動畫 token」,經 `overlay-motion.ts` 的 `surfaceMotion`) |
+|---|---|---|
+| 進場 | `fade-in-0` + `zoom-in-95`(opacity 0→1、scale 0.95→1,transform-origin 中心) | `--motion-duration-surface` 250ms / `--motion-easing-enter` |
+| 離場 | `fade-out-0` + `zoom-out-95` | `--motion-duration-surface` 250ms / `--motion-easing-exit` |
+| Overlay | 只 fade | 同上 |
+| `prefers-reduced-motion` | `motion-reduce:animate-none`(surfaceMotion 內建) | — |
+
+**為何不用 slide(置中位移)**:置中靠 `left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2`。shadcn v3 時代 DialogContent 另掛 `slide-in-from-left-1/2 slide-in-from-top-[48%]`,那是因為 Tailwind v3 的 `-translate-x-1/2` 走 `transform`,會被 keyframe 的 `transform` 整個蓋掉,所以要在 keyframe 裡把置中位移再寫一次(v3 dialog 原始碼:<https://ui.shadcn.com/r/styles/new-york/dialog.json>)。Tailwind v4 的 `-translate-x-1/2` 改寫進獨立的 `translate` 屬性(<https://tailwindcss.com/docs/translate>,`translate: calc(1/2 * -100%) var(--tw-translate-y)`),不再被 keyframe 蓋掉;而 tw-animate-css 的 `@keyframes enter` 仍是 `transform: translate3d(var(--tw-enter-translate-x), var(--tw-enter-translate-y), 0) scale3d(…)`(`node_modules/tw-animate-css/dist/tw-animate.css`)。兩個位移相加 → 第一幀中心落在視窗中心**左 w/2、上 0.48h**(480×189 的確認框實測 −240px / −90.72px),看起來就是從左上角飛進來。shadcn v4 版本已把這兩組 class 拿掉(<https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx>:`translate-x-[-50%] translate-y-[-50%] … data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95`,無 slide)。
+
+**世界級對照(2026-09-09 逐一開原始碼)**:
+
+| 來源 | 進場幾何 | 位移 |
+|---|---|---|
+| shadcn v4 `dialog.tsx`(<https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx>) | `fade-in-0` + `zoom-in-95`,`duration-200` | 無 |
+| Radix Themes `base-dialog.css`(<https://github.com/radix-ui/themes/blob/main/packages/radix-ui-themes/src/components/_internal/base-dialog.css>) | `rt-dialog-content-show 200ms`:`opacity 0→1; transform: translateY(5px) scale(0.97) → scale(1)` | 5px(視覺上等同不位移) |
+| Angular Material `dialog.scss`(<https://github.com/angular/components/blob/main/src/material/dialog/dialog.scss>) | `opacity 0→1; transform: scale(0.8) → none`,easing `cubic-bezier(0,0,0.2,1)` | 無 |
+| MUI `Dialog.js`(<https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Dialog/Dialog.js>) | 預設 transition = `Fade`(只 opacity) | 無 |
+| Material Web(M3)`animations.ts`(<https://github.com/material-components/material-web/blob/main/dialog/internal/animations.ts>) | scrim opacity 0→0.32、container height 35%→100% + 內容 fade | `translateY(-50px→0)`(M3 expressive 的例外,不採) |
+| Apple HIG Modality / Alerts(<https://developer.apple.com/design/human-interface-guidelines/modality>) | alert 居中、疊在所有內容之上;無「從角落滑入」 | 無 |
+
+主流四家(shadcn <https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx> / Radix Themes <https://github.com/radix-ui/themes/blob/main/packages/radix-ui-themes/src/components/_internal/base-dialog.css> / Angular Material <https://github.com/angular/components/blob/main/src/material/dialog/dialog.scss> / MUI <https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Dialog/Dialog.js>)一致 = 中心淡入 + 縮放;唯 Material Web <https://github.com/material-components/material-web/blob/main/dialog/internal/animations.ts> 帶 50px 下落,屬 expressive 風格,與本 DS 企業級中性沉穩(`--motion-easing-enter` = Material standard-decelerate,見 `tokens/motion/motion.spec.md`)不合,不採。
+
+**閘**:`scripts/dialog-coexistence-invariant.mjs`「進場第一幀」段 —— (S) 靜態禁 DS-wide 任何檔案同時出現 `slide-in-from-left-1/2` 類置中位移 class 與 `-translate-x-1/2` 置中;(M) 瀏覽器把進場動畫凍在 t=0(WAAPI seek)量 `[role=dialog]` 中心相對視窗中心偏移必 ≤ 1px;對照組把兩組 slide class 加回去必須紅。
 
 ## 狀態處理的職責邊界
 
