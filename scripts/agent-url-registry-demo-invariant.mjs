@@ -18,6 +18,10 @@
  *      重新整理 = 直接以任務網址進入 → 背景是預設的「所有任務」;上一頁 / 下一頁維持
  *   S7 session:歷史列多個 session、當前有標記、可切換、「+」新 session 空狀態、送出後才進歷史、切回內容仍在
  *   S8 關 agent → 遮罩仍在(根因錨:入口鈕 Dock 的 pointer-events-none 全舞台圖層曾被當成洞,遮罩整張被挖空)
+ *   S10 入口鈕拖去貼邊再拖回家 → 遮罩只有一個洞、洞心 = 鈕心(2026-09-09 user 抓「拖回原本的地方會在遮罩上挖出另一個圓形的洞」:
+ *       洞是飛回家的 250ms 過渡途中那一幀算的,過渡結束沒人重算 —— AD59)
+ *   S11 遮罩在時右鍵入口鈕 → 選單留著、並存對話框不關、遮罩仍在(2026-09-09 user 抓「遮罩上的 fab 右鍵無反應」:portal 出去的右鍵選單
+ *       被並存守衛當成 focus-outside → 對話框關、遮罩卸載、選單跟著卸載 —— AD59)
  *   S9 蓋板態:工具列可點、宿主被抑制、上一頁 / 下一頁不收合 agent;**agent 點有 URL 的 modal → agent 收成入口鈕、
  *      modal 顯露可操作、焦點在 modal**(2026-09-09 user 推翻「抽屜保持開啟」);入口鈕重開 → 抽屜蓋回、modal 在後方被抑制、
  *      草稿還在;× → modal 顯露;agent 點「我的任務」→ 收成入口鈕、tab 切換、焦點交給舞台 main
@@ -47,11 +51,12 @@ const TASK_4821 = '/projects/8821/tasks/4821'
  * 解析 CoexistenceMask 的 `clip-path: path(evenodd, "M0 0H W V H H0Z M x1 y1 H x2 V y2 H x1 Z …")`:
  * 第一個子路徑是外框,其餘是洞。回傳洞面積佔外框面積的比例 —— 洞跟外框一樣大 = 遮罩整張被挖空。
  */
-export function maskHoleRatio(clip) {
+/** 每個子路徑的外接框(第一個是外框,其餘是洞);圓洞算成外接方框。 */
+export function maskSubpaths(clip) {
   // 2026-09-09 洞改成「元素可視形狀」(圓角用 A 弧線),所以不再只認 M/H/V/H/Z 矩形:逐子路徑走 M / H / V / L / A 指令算外接框,
   // 面積以外接框計(圓洞算成外接方框,只用來守「洞不得整張挖空」這條上限,略高估無妨)。
   const body = /path\((?:evenodd\s*,\s*)?["']([^"']*)["']\)/.exec(String(clip))?.[1] ?? String(clip)
-  const rects = body.split(/(?=M)/).map((sub) => sub.trim()).filter(Boolean).map((sub) => {
+  return body.split(/(?=M)/).map((sub) => sub.trim()).filter(Boolean).map((sub) => {
     const tokens = sub.match(/[MHVLAZ]|-?[\d.]+/g) ?? []
     let x = 0, y = 0, minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, cmd = ''
     const mark = () => { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y) }
@@ -64,8 +69,11 @@ export function maskHoleRatio(clip) {
       else if (cmd === 'V') { y = n; mark() }
       else if (cmd === 'A') { i += 4; x = Number(tokens[++i]); y = Number(tokens[++i]); mark() } // rx ry rot large sweep x y
     }
-    return Number.isFinite(minX) ? { w: maxX - minX, h: maxY - minY } : null
+    return Number.isFinite(minX) ? { x: minX, y: minY, w: maxX - minX, h: maxY - minY, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 } : null
   }).filter(Boolean)
+}
+export function maskHoleRatio(clip) {
+  const rects = maskSubpaths(clip)
   if (rects.length === 0) return { outer: 0, holes: 0, ratio: NaN }
   const outer = rects[0].w * rects[0].h
   const holes = rects.slice(1).reduce((sum, r) => sum + r.w * r.h, 0)
@@ -73,6 +81,15 @@ export function maskHoleRatio(clip) {
 }
 /** 洞面積不得超過遮罩的 5%(入口鈕的洞 40×40 ≈ 0.2%;整張被挖空 = 100%)。 */
 const MASK_HOLE_MAX_RATIO = 0.05
+/** S10 判定:遮罩恰有一個洞,且洞心與鈕心(相對遮罩座標)相距 ≤ tol px。 */
+export function holeFollowsButton(clip, btnCenter, tol = 2) {
+  const holes = maskSubpaths(clip).slice(1)
+  if (holes.length !== 1) return { ok: false, holes: holes.length }
+  const d = Math.hypot(holes[0].cx - btnCenter.x, holes[0].cy - btnCenter.y)
+  return { ok: d <= tol, holes: 1, d: Math.round(d * 10) / 10, hole: [Math.round(holes[0].cx), Math.round(holes[0].cy)], btn: [Math.round(btnCenter.x), Math.round(btnCenter.y)] }
+}
+/** S11 判定:右鍵後選單在、並存對話框仍恰一個、遮罩仍在。 */
+export const menuSurvives = (st) => !!st && st.menu === true && st.dialogs === 1 && st.mask === true
 
 if (process.argv.includes('--selftest')) {
   // 對照組:舊 build 2026-09-09 實測抓到的壞值(洞 = 外框)必須紅;修好後的值(只有入口鈕的洞)必須綠
@@ -83,7 +100,16 @@ if (process.argv.includes('--selftest')) {
   const round = maskHoleRatio("path(evenodd, 'M0 0H1406V639H0ZM1370 583H1370A20 20 0 0 1 1390 603V603A20 20 0 0 1 1370 623H1370A20 20 0 0 1 1350 603V603A20 20 0 0 1 1370 583Z')")
   const ok = bad.ratio > MASK_HOLE_MAX_RATIO && good.ratio <= MASK_HOLE_MAX_RATIO && none.ratio === 0 && Math.abs(round.holes - 1600) < 1
   console.log(`${ok ? '✓' : '✗'} selftest:壞 clip(洞 = 外框)ratio=${bad.ratio.toFixed(3)} 判紅;好 clip ratio=${good.ratio.toFixed(4)} 判綠;無洞 ratio=${none.ratio};圓洞外接框 ${round.holes}`)
-  process.exit(ok ? 0 : 1)
+  // S10 對照組:2026-09-09 實測的壞值 —— 拖回家後洞心停在 (1364.5, 766)、鈕心在 (1387, 847)→ 必紅;洞心 = 鈕心 → 綠;兩個洞 → 紅
+  const roundAt = (cx, cy) => `M${cx - 20} ${cy - 20}H${cx - 20}A20 20 0 0 1 ${cx} ${cy - 20}V${cy - 20}A20 20 0 0 1 ${cx + 20} ${cy}H${cx + 20}A20 20 0 0 1 ${cx} ${cy + 20}V${cy + 20}A20 20 0 0 1 ${cx - 20} ${cy}Z`
+  const stale = holeFollowsButton(`path(evenodd, "M0 0H1406V900H0Z${roundAt(1364.5, 766)}")`, { x: 1387, y: 847 })
+  const fresh = holeFollowsButton(`path(evenodd, "M0 0H1406V900H0Z${roundAt(1387, 847)}")`, { x: 1387, y: 847 })
+  const twoHoles = holeFollowsButton(`path(evenodd, "M0 0H1406V900H0Z${roundAt(1364.5, 766)}${roundAt(1387, 847)}")`, { x: 1387, y: 847 })
+  // S11 對照組:選單消失 / 對話框關掉 / 遮罩沒了 → 都必紅
+  const s11 = menuSurvives({ menu: true, dialogs: 1, mask: true }) && !menuSurvives({ menu: false, dialogs: 1, mask: true }) && !menuSurvives({ menu: true, dialogs: 0, mask: false }) && !menuSurvives(null)
+  const ok2 = !stale.ok && fresh.ok && !twoHoles.ok && s11
+  console.log(`${ok2 ? '✓' : '✗'} selftest:S10 舊洞(距 ${stale.d}px)判紅、洞心 = 鈕心判綠、兩個洞判紅;S11 選單消失 / 對話框關 / 遮罩沒了判紅`)
+  process.exit(ok && ok2 ? 0 : 1)
 }
 
 // (靜態)示範原始碼不得對 <DialogContent> 傳 inline style 覆蓋位置(left / top / transform / inset):
@@ -394,6 +420,35 @@ for (const width of [1440, 1180]) {
   })
   check(`${W} S8 遮罩的洞沿著入口鈕的圓形(方框四角 = 洞外,命中與遠處對照點相同、不是鈕;圓心命中鈕;clip 含 4 段弧線)`, !hole.missing && hole.cornersHitButton.every((v) => !v) && hole.cornersSameAsFar.every(Boolean) && !hole.farIsButton && hole.centerHitButton && hole.arcs >= 4, JSON.stringify(hole))
   if (width === 1440) await h.shot('1440-fab-hole.png')
+
+  // ── S10 拖去貼邊再拖回家 → 洞跟著回家(AD59:洞是飛回家的過渡途中算的,過渡結束要重算)──
+  const fabCenter = () => page.evaluate(() => { const b = document.querySelector('button[aria-label="開啟智慧代理"]'); const m = document.querySelector('[data-coexistence-mask]'); if (!b || !m) return null; const r = b.getBoundingClientRect(); const mr = m.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, rx: r.left + r.width / 2 - mr.left, ry: r.top + r.height / 2 - mr.top } })
+  const canvas = await page.evaluate(() => document.querySelector('[data-simulated-canvas]')?.getBoundingClientRect().toJSON() ?? null)
+  const home = await fabCenter()
+  const dragTo = async (from, to) => { await page.mouse.move(from.x, from.y); await page.mouse.down(); for (let i = 1; i <= 12; i++) { await page.mouse.move(from.x + (to.x - from.x) * i / 12, from.y + (to.y - from.y) * i / 12, { steps: 2 }); await page.waitForTimeout(16) } await page.mouse.up(); await page.waitForTimeout(700) }
+  let s10 = { skipped: 'no fab / mask / canvas' }
+  if (home && canvas) {
+    await dragTo(home, { x: canvas.right - 4, y: home.y - 120 })
+    const docked = await fabCenter()
+    const dockedHole = docked ? holeFollowsButton((await h.mask())?.clip, { x: docked.rx, y: docked.ry }, 3) : { ok: false }
+    await dragTo(docked ?? home, home)
+    const back = await fabCenter()
+    const backHole = back ? holeFollowsButton((await h.mask())?.clip, { x: back.rx, y: back.ry }, 3) : { ok: false }
+    s10 = { docked: dockedHole, back: backHole, movedBack: back ? Math.hypot(back.x - home.x, back.y - home.y) <= 4 : false }
+  }
+  check(`${W} S10 入口鈕貼邊再拖回家:遮罩恰一個洞、洞心 = 鈕心(貼邊時與回家後皆然;舊 bug:回家後洞停在過渡途中、多一個洞)`, !!s10.docked?.ok && !!s10.back?.ok && s10.movedBack === true, JSON.stringify(s10))
+  if (width === 1440) await h.shot('1440-fab-hole-after-dock-undock.png')
+
+  // ── S11 遮罩在時右鍵入口鈕 → 選單留著、對話框不關、遮罩仍在(AD59:portal 出去的浮層要被並存守衛認成保留區)──
+  const fabNow = await fabCenter()
+  let s11 = null
+  if (fabNow) {
+    await page.mouse.click(fabNow.x, fabNow.y, { button: 'right' }); await page.waitForTimeout(600)
+    s11 = await page.evaluate(() => { const m = document.querySelector('[role="menu"]'); return { menu: !!m && getComputedStyle(m).visibility !== 'hidden' && m.getBoundingClientRect().width > 0, items: m ? m.querySelectorAll('[role="menuitem"]').length : 0, dialogs: document.querySelectorAll('[role="dialog"]').length, mask: !!document.querySelector('[data-coexistence-mask]') } })
+    await page.keyboard.press('Escape'); await page.waitForTimeout(300)
+  }
+  check(`${W} S11 遮罩在時右鍵入口鈕:選單留著(600ms 後)、並存對話框仍開、遮罩仍在(舊 bug:選單一聚焦就被當成點到框外,對話框與選單一起消失)`, menuSurvives(s11) && (await h.dialogs()) === 1, JSON.stringify(s11))
+
   await h.click('button[aria-label="開啟智慧代理"]')
   await h.typeIntoPanel('?')
   check(`${W} S8 由入口鈕重開 agent,並存恢復(草稿仍在、可打字)`, (await h.panelInput())?.value === 'hello world!?', JSON.stringify(await h.panelInput()))

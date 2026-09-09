@@ -262,7 +262,10 @@ jobs:
           npm run test:virtual-cursor-modality
           # 代理整頁示範(2026-09-09 合併原 modal-coexistence):S1–S9 —— DataTable 清單開有 URL 的 modal 與幾何、
           # header 垃圾桶 / footer 變體、四個 Field 存檔、新增、刪除確認框、背景位置模式、session 切換、
-          # 關 agent 遮罩仍在(根因錨)、蓋板態工具列可點 + Esc 分區(焦點在 agent 內按 Esc 不得跨區關掉舞台的 modal)。
+          # 關 agent 遮罩仍在(根因錨)、蓋板態工具列可點 + Esc 分區(焦點在 agent 內按 Esc 不得跨區關掉舞台的 modal)、
+          # S10 入口鈕貼邊再拖回家洞跟著回家、S11 遮罩在時右鍵入口鈕選單留著(2026-09-10,AD59 的兩個修正原本只有一次性探針)。
+          # selftest = 對照組:洞 = 外框 / 洞停在過渡途中 / 兩個洞 / 選單消失 都必須判紅。
+          node scripts/agent-url-registry-demo-invariant.mjs --selftest
           npm run test:agent-url-registry-demo
           # 兩支從「複現不出」轉成「再發生會被抓到」的閘(總帳 E1 / E2):
           # 虛擬捲動壓力(排序、捲動、視窗高度交錯,驗無例外**且畫面不空**)、

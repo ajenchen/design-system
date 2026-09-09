@@ -2841,6 +2841,7 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - **多一個洞(重現:`probe-fab-mask.mjs`)**:貼邊後洞正確(D 形);拖回家後洞心停在 (1364.5, 766)、鈕心在 (1387, 847),600ms 後仍不變。根因:`CoexistenceMask` 只在 ResizeObserver / MutationObserver / resize / scroll 時重算洞;入口鈕放開後有 250ms 的 `right/top` 過渡(飛回家),洞是過渡途中那一幀算的,過渡結束沒人重算。修法:算洞後若保留元素子樹有 `playState === 'running'` 的動畫 / 過渡就每幀重算到結束;另監聽 `transitionend / transitioncancel / animationend`(capture)再算一次。
 - **右鍵無反應(重現:`probe-fab-menu.mjs`)**:右鍵按下時選單有掛上(`role=menu` 存在、不 inert),但 500ms 後選單與任務對話框一起消失(dialog 數 0);無遮罩時選單正常。根因:並存對話框(`modal={false}`)的 `insidePersistent` 守衛只認保留節點子樹;入口鈕的右鍵選單是 Radix DropdownMenu,portal 到 body,焦點一進選單就被當成 focus-outside → 對話框關閉、遮罩卸載、Dock 重渲染、選單跟著卸載。左鍵不開浮層所以沒事。修法:`insidePersistent` 沿節點祖先找有 `id` 的元素,用 `[aria-controls=id] / [aria-owns=id]` 找回開它的觸發器;觸發器在保留區 → 這個浮層算保留區的一部分(Radix menu / popover / select 都會在觸發器寫 aria-controls)。
 - 兩者都是既有缺口(遮罩挖洞與並存守衛都是 9/8–9/9 新機制),驗證:重跑 `probe-fab-mask.mjs`(拖回家後洞心 = 鈕心、右鍵後選單留著、對話框不關)+ 示範閘全部。
+- **常設閘(2026-09-10,user 問「附圖的問題都追蹤到完美收尾了嗎」時發現這兩項只有一次性探針)**:`agent-url-registry-demo-invariant.mjs` 加 S10(貼邊再拖回家:遮罩恰一個洞、洞心 = 鈕心,貼邊時與回家後皆驗;1440 / 1180 實測 d = 0.3 / 0px)與 S11(遮罩在時右鍵:600ms 後選單仍在、對話框仍 1 個、遮罩仍在);`--selftest` 對照組用 9/9 實測的壞值(洞停在 (1364.5, 766)、鈕在 (1387, 847))、兩個洞、選單消失各自判紅。CI 加 selftest 一行。示範閘 127 條全綠。
 
 ### AD60 Codex 額度用盡:R18 / R19 中止(2026-09-09 23:1x)
 
