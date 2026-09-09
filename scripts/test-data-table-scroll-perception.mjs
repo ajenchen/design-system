@@ -107,6 +107,25 @@ const completeSamples = Array.from({ length: 21 }, (_, i) => ({
   scrollY: i * 50,
 }));
 assert.equal(assessContentCoverage(completeSamples, coverageInput).valid, true);
+// 亂序 7ms 的幀(runner 實測 83ea771f 第 62 幀)不是擷取壞了:排序後仍有效、亂序數記 1
+const swapped = completeSamples.slice();
+[swapped[10], swapped[11]] = [
+  { ...swapped[11], timestampMs: swapped[11].timestampMs - 7 },
+  { ...swapped[10], timestampMs: swapped[10].timestampMs + 7 },
+];
+{
+  const r = assessContentCoverage(swapped, coverageInput);
+  assert.equal(r.valid, true, "Frames delivered 7ms out of order must be sorted, not rejected");
+  assert.equal(r.reorderedSamples, 1, "The reorder must be counted");
+}
+assert.equal(
+  assessContentCoverage(
+    completeSamples.map((s, i) => (i === 5 ? { ...s, scrollY: NaN } : s)),
+    coverageInput
+  ).valid,
+  false,
+  "A sample whose marker could not be decoded must still fail"
+);
 assert.equal(
   assessContentCoverage(
     completeSamples.map((s) => ({ ...s, scrollY: 0 })),

@@ -12,9 +12,15 @@ export function quantileSummary(values) {
 // The 100 ms capture-gap bound is an instrumentation completeness check, not a
 // claim that unobserved content latencies below that bound were measured.
 export function assessContentCoverage(
-  samples,
+  rawSamples,
   { inputStart, inputEnd, inputDistance, finalY }
 ) {
+  // 依時間戳排序後評估;亂序只記數(CDP 幀送達順序不保證),非有限值才是無效樣本
+  const reorderedSamples = rawSamples.reduce(
+    (n, s, i) => n + (i > 0 && s.timestampMs < rawSamples[i - 1].timestampMs ? 1 : 0),
+    0
+  );
+  const samples = [...rawSamples].sort((a, b) => a.timestampMs - b.timestampMs);
   const active = samples.filter(
     (s) => s.timestampMs >= inputStart && s.timestampMs <= inputEnd
   );
@@ -53,13 +59,10 @@ export function assessContentCoverage(
     reasons.push("invalid input interval or distance");
   if (
     samples.some(
-      (s, i) =>
-        !Number.isFinite(s.timestampMs) ||
-        !Number.isFinite(s.scrollY) ||
-        (i > 0 && s.timestampMs < samples[i - 1].timestampMs)
+      (s) => !Number.isFinite(s.timestampMs) || !Number.isFinite(s.scrollY)
     )
   )
-    reasons.push("invalid or unordered PNG samples");
+    reasons.push("invalid PNG samples");
   if (active.length < 10) reasons.push("fewer than 10 active PNGs");
   if (activeUniqueOffsets < 10)
     reasons.push("fewer than 10 decoded scroll positions");
@@ -78,6 +81,7 @@ export function assessContentCoverage(
   return {
     valid: reasons.length === 0,
     reasons,
+    reorderedSamples,
     activeFrames: active.length,
     activeUniqueOffsets,
     activeSpanMs,
@@ -95,7 +99,9 @@ export function assessContentCoverage(
 // Row IDs are encoded in a narrow inert paint marker that moves with the actual
 // scrolling row. Decode the same PNG as its content; do not join DOM and raster
 // clocks and pretend that their states are simultaneous.
-export function analyzeContent(pixels, setup, inputEnd, input = {}) {
+export function analyzeContent(rawPixels, setup, inputEnd, input = {}) {
+  // 幀依擷取時間戳排序(perception 腳本已排過;這裡是給其他呼叫端的防線)
+  const pixels = [...rawPixels].sort((a, b) => a.ts - b.ts);
   const seen = new Map(),
     inkSeen = new Map();
   const inputStart = input.inputStart ?? pixels[0]?.ts * 1000;

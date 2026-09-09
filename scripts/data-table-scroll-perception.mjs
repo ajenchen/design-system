@@ -319,6 +319,11 @@ try {
       renders: S.renders,
     };
   });
+  // CDP screencast 的幀在負載下可能亂序送達(GitHub runner 實測:相鄰兩幀時間戳倒 7ms);依擷取時間戳排序後再解碼,
+  // 否則後面的 coverage 判定會把「亂序 7ms」當成「擷取壞了」讓整個 run 紅(2026-09-10,83ea771f 讀回)。
+  const castReordered = cast.reduce((n, f, i) => n + (i > 0 && f.ts < cast[i - 1].ts ? 1 : 0), 0);
+  cast.sort((a, b) => a.ts - b.ts);
+  if (castReordered) console.log(`screencast 幀亂序 ${castReordered} 次,已依擷取時間戳排序`);
   const pixels = [];
   for (let i = 0; i < cast.length; i++) {
     const shot = cast[i],
