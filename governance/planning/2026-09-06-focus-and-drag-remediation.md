@@ -2615,3 +2615,29 @@ Netlify 分支預覽:https://claude-agent-panel-comment-followups--ajenchen-desi
 **建議 B 的理由**:Carbon 把「動作的 inline loading」與「內容的 skeleton / 載入」明文分開;Ant 的 hasFeedback 建議只給 Input,證明兩顆轉圈在 Select 上會打架是被認知的問題;MUI / Polaris 都把選項載入留在控件 / 清單。B 讓每一種控件用同一套語言,而且能表達「已儲存」。
 **沒拍板前不動 code**(產品 / UI SSOT 真取捨,batch-at-end)。
 
+### AD39 修正(2026-09-09 user 抓錯):我引的是 Ant Select 的 `loading` prop,不是「Search and Select Users」示範;示範的做法是「轉圈只在選單裡、每次搜尋清舊選項」
+
+**user 原話**:「我剛剛看了 ant design 的 select 的 search and select users 的範例…只要 value 一改變,舊選單就會消失,緊接著出現的是只放載入中的狀態的選單,直到載入完成才會出現新的選單…我他媽研究的 ant design 為何和你研究的不同?」
+**我的錯**:上一則只引 Ant Select API 的 `loading`(取代箭頭的 suffix 轉圈),沒去看跟我們遠端搜尋最像的那支示範。第一手核對(`components/select/demo/select-users.tsx`):
+`setOptions([]); setFetching(true); fetchOptions(value).then(...)`;`notFoundContent={fetching ? <Spin size="small" /> : 'No results found'}`;`showSearch={{ filterOption: false, onSearch: debounceFetcher }}`;**`loading` prop 沒用**。
+user 說的三件事全部成立:轉圈只在選單內;舊選單先消失、選單只剩載入列、高度會跳;初始就顯示「No results found」。
+
+**四家「載入中的舊選項留不留 / 轉圈在哪」第一手**
+
+| 家 | 選項載入的轉圈 | 載入中舊選項 | 來源 |
+|---|---|---|---|
+| Ant 示範 select-users | **只在選單裡**(`notFoundContent` 放 Spin) | **清掉**(`setOptions([])`) | ant-design `components/select/demo/select-users.tsx` |
+| Polaris Autocomplete | **只在清單裡**(`Listbox.Loading`),TextField 不轉 | **藏起來**:`{optionsMarkup && (!loading \|\| willLoadMoreResults) ? optionsMarkup : null}{loadingMarkup}` | Shopify/polaris `Autocomplete.tsx` |
+| react-select Async | 控件 LoadingIndicator + 清單 loadingMessage | 第一次載入後**留**:`setPassEmptyOptions(!loadedInputValue)`,`options = passEmptyOptions ? [] : stateInputValue && loadedInputValue ? loadedOptions : defaultOptions` | JedWatson/react-select `useAsync.ts` |
+| MUI Autocomplete | TextField `endAdornment` 轉圈 + 清單 loadingText(僅選項空時) | 打字時**留**;示範關閉時清 | mui `Asynchronous.js`、API `loading` / `loadingText` |
+
+兩家兩家。user 提的「選單載入只在選單內、控件右側轉圈留給這個值的讀取 / 驗證」有 Ant 示範與 Polaris 直接背書,而且徹底解掉「同一顆轉圈兩種意思」。
+
+**討論後的結論草案(待 user 確認三個點)**
+1. **選單內容載入 → 只在選單內**:清單空時訊息列「載入中…」+ 前綴轉圈(已存在);搜尋列右側與觸發點**不再**為選項轉圈(退役 2026-09-08 的「搜尋列 / 觸發點每次抓都亮」)。
+2. **控件右側的轉圈 = 這個值的讀取 / 驗證 / 儲存**:Field 家族統一 `loading`(Input 現況即如此,field-controls.spec 只收窄措辭);Select / Combobox / PeoplePicker 的 `loading` 改成這個意思。
+3. **選項載入改名 `optionsLoading`**(Select / Combobox / PeoplePicker / SelectMenu):DS 內 `loading` 的 SSOT 已被 Field 家族佔走(M23:DS canonical 優先於 MUI / Ant 的 `loading`),同字兩義正是這次的病;repo 內只有 stories 用到,WM 沒用。—— 命名 3 重 test:對齊 `options` prop;世界級無直接對照(MUI / Ant / react-select 都叫 loading);DS 內無他義。**需要 user 點頭**。
+4. **遠端搜尋(`filterOption={false}`)時清舊選項**:Ant 示範與 Polaris 清 / 藏,react-select 與 MUI 留;清的理由是舊結果對應舊關鍵字、留著會誤導,user 實看 Ant「反而覺得反應很快」;本機過濾不存在這問題、維持不清。**這改 2026-07-04 Q3 的「不清空 stale options」,需要 user 拍板。**
+5. **遠端搜尋、尚未輸入關鍵字、選項空 → 訊息列顯示「輸入關鍵字搜尋」(可覆寫)**,不顯示「沒有選項」—— 修掉 user 指出的 Ant 初始狀態問題。**需要 user 點頭。**
+沒拍板前不動 code。
+
