@@ -167,9 +167,31 @@ jobs:
           # 停手後列殼 ≤ 1000ms 補齊。門檻是本機校準的回歸線(修前 main 684–1055ms、修後 18–34ms,留 10 倍以上機器差),不是業界標準。
           node scripts/data-table-fast-scroll.mjs --mode=gesture --selftest --gesture-speed=6000
           node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000
+          # Content readiness and still-visible fading handles need separate gates from frame cadence.
+          node scripts/test-data-table-scroll-perception.mjs --out=tmp/datatable-content-controls
+          node scripts/data-table-handle-position.mjs --dpr=2 --selftest --out=tmp/datatable-handle-control
+          for dpr in 1 2; do
+            node scripts/data-table-handle-position.mjs --dpr=$dpr --out=tmp/datatable-handle-$dpr
+            for peak in 1500 3000 4500; do
+              node scripts/data-table-scroll-perception.mjs --dpr=$dpr --peak=$peak --assert=on --out=tmp/datatable-content-$dpr-$peak
+            done
+            node scripts/data-table-scroll-perception.mjs --dpr=$dpr --peak=4500 --profile=bursts --assert=on --out=tmp/datatable-content-bursts-$dpr
+            node scripts/data-table-scroll-perception.mjs --dpr=$dpr --peak=4500 --profile=bursts --input=wheel --assert=on --out=tmp/datatable-content-wheel-$dpr
+          done
           # 列/表頭元素快取的依賴完整性(靜態,TypeScript 語法樹):快取靠手列的 epochDeps,漏一個就是
           # 「舊列拿到過期資料」(2026-09-08 I2 抓到漏 resolvedWidths → 顯示↔編輯寬差 0.59px)。
           node scripts/data-table-row-cache-deps-invariant.mjs
+
+      - name: Preserve DataTable scroll perception evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: datatable-scroll-perception
+          path: |
+            tmp/datatable-content-*/
+            tmp/datatable-handle-*/
+          if-no-files-found: ignore
+          retention-days: 14
 
   verify-browser-interaction:
     name: Verify browser(component + interaction gates)

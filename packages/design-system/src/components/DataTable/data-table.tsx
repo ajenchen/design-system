@@ -799,6 +799,25 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
   // Portal 逃逸 row DOM → cursor 移到 button 上時 row mouseleave → button hide → cycle flicker(2026-05-05)。
   // Fix:button 自帶 hover state,visibility = rowHovered || buttonHovered || isDragging。
   const [buttonHovered, setButtonHovered] = React.useState(false)
+  const handleRef = React.useRef<HTMLButtonElement | null>(null)
+  const positionRef = React.useRef<{ top: number; left: number } | null>(null)
+  // Logical hover ends before the existing opacity transition finishes painting.
+  // Track only handles that have been visible; never measure every hidden row.
+  const trackingPositionRef = React.useRef(false)
+  const setActivatorNodeRef = ctx?.handleSetActivatorNodeRef
+  const handleRefCallback = React.useCallback((node: HTMLButtonElement | null) => {
+    handleRef.current = node
+    if (!disabled) setActivatorNodeRef?.(node)
+  }, [disabled, setActivatorNodeRef])
+  const syncHandlePosition = React.useCallback(() => {
+    const handle = handleRef.current
+    const position = positionRef.current
+    if (!handle || !position) return
+    handle.style.top = `${position.top}px`
+    handle.style.left = `${position.left}px`
+  }, [])
+  // A render caused by hover/DnD must not restore an earlier scroll position.
+  React.useLayoutEffect(syncHandlePosition)
 
   // Anchor span ref callback finds the parent row element(自身位置 = row 內部,parentElement = row div)。
   // 用 useState 觸發 effect re-run(child ref callback 會 fire 在 commit phase,early enough for layout effect)
@@ -830,14 +849,12 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
       const rowHovered = rowEl.hasAttribute('data-hovered')
       const top = rRect.top + rRect.height / 2
       const left = tRect.left // table outer 左 border line position(viewport coords)
-      // 2026-07-05 D3 perf fix:prev 值比對 — 位置/hover 沒變時回傳 prev reference,
-      // React Object.is bail out(原每 scroll frame 無條件新 object → 每個 visible handle
-      // 每 frame 必 re-render Button + Tooltip + portal,即使位置根本沒動)。
-      setPos((prev) =>
-        prev && prev.top === top && prev.left === left && prev.rowHovered === rowHovered
-          ? prev
-          : { top, left, rowHovered },
-      )
+      positionRef.current = { top, left }
+      if (rowHovered || buttonHovered || ctxDragging) trackingPositionRef.current = true
+      // Position belongs to the scroll event, not to a later React render/rAF.
+      // React still owns reveal/fade state and the original Button styling.
+      syncHandlePosition()
+      setPos((prev) => prev && prev.rowHovered === rowHovered ? prev : { top, left, rowHovered })
     }
 
     if (rowEl.hasAttribute('data-hovered') || buttonHovered || ctxDragging) update()
@@ -846,33 +863,34 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
     const observer = new MutationObserver(update)
     observer.observe(rowEl, { attributes: true, attributeFilter: ['data-hovered'] })
 
-    // Update on scroll(capture phase 抓所有 scroll container)+ resize
-    // 2026-05-16 Round 5 codex audit fix:capture rAF ID + cancel on cleanup(原 uncancelled
-    // rAF 在 unmount 後可能 fire `update` → setPos on stale ref。Same race-pattern class as
-    // useOverflowCount fix `combobox.tsx:130`)。
-    let scrollRafId = 0
-    const onScroll = () => {
-      // D3 NO-SAMPLE audit(2026-08-02):non-hovered virtual rows still share the window
-      // listener, but their hidden handles do not need rect reads. Without this guard a
-      // 50-row virtual window scheduled 50 rAF callbacks + getBoundingClientRect calls
-      // for every scroll frame even though only one handle can be visible.
-      if (!rowEl.hasAttribute('data-hovered') && !buttonHovered && !ctxDragging) return
-      if (scrollRafId) cancelAnimationFrame(scrollRafId)
-      scrollRafId = requestAnimationFrame(() => {
-        scrollRafId = 0
-        update()
-      })
+    // A fading handle is still painted for the original CSS transition duration.
+    // Stopping at data-hovered removal leaves a fixed ghost while its row scrolls.
+    const onScroll = (event: Event) => {
+      // Mirrored pinned panels dispatch their own scroll events, but do not move
+      // this primary row. Ignore those and unrelated tables before any rect read.
+      if (event.target instanceof Element && !event.target.contains(rowEl)) return
+      const hovered = rowEl.hasAttribute('data-hovered') || buttonHovered || ctxDragging
+      if (!hovered) {
+        if (!trackingPositionRef.current) return
+        const handle = handleRef.current
+        // Only an active fade reaches this read. Opacity zero also settles reduced
+        // motion, where a zero-duration transition does not dispatch transitionend.
+        if (!handle || Number(getComputedStyle(handle).opacity) === 0) {
+          trackingPositionRef.current = false
+          return
+        }
+      }
+      update()
     }
     window.addEventListener('scroll', onScroll, true)
     window.addEventListener('resize', onScroll)
 
     return () => {
       observer.disconnect()
-      if (scrollRafId) cancelAnimationFrame(scrollRafId)
       window.removeEventListener('scroll', onScroll, true)
       window.removeEventListener('resize', onScroll)
     }
-  }, [rowEl, ctxRole, ctxDragging, buttonHovered])
+  }, [rowEl, ctxRole, ctxDragging, buttonHovered, syncHandlePosition])
 
   // 永遠 render anchor span(讓 anchorRef 可拿到 row element)。
   // A3 fix(2026-05-05):顯式 `top:0 left:0 pointer-events:none` — 雖 width/height=0 不該佔
@@ -913,7 +931,7 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
   // 所以在來源就把這個屬性擋掉,讓 Button 完全照它平常的 initial / hover / active 走。
   const handle = (
     <Button
-      ref={canDrag ? ctx.handleSetActivatorNodeRef : undefined}
+      ref={handleRefCallback}
       variant="tertiary"
       iconOnly
       size="xs"
@@ -926,8 +944,8 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
       onMouseLeave={() => setButtonHovered(false)}
       style={{
         position: 'fixed',
-        top: pos.top,
-        left: pos.left,
+        top: positionRef.current?.top ?? pos.top,
+        left: positionRef.current?.left ?? pos.left,
         transform: 'translate(-50%, -50%)',
         zIndex: 50,
         // 2026-05-12 fix v2(user 抓「drag column sort 啟用時 button 不是 disable 視覺」):
@@ -1543,22 +1561,15 @@ function DataTableInner<TData>(
 
   const [activeDragId, setActiveDragId] = React.useState<string | null>(null)
 
-  // ── 快速捲動列殼(2026-09-09;Codex R8 解法 (b),對照 AG Grid `cellRendererParams.deferRender` / MUI X skeleton rows)──
-  // 根因(真實呈現幀量測 scripts/data-table-fast-scroll.mjs --mode=gesture,main 與分支相同):合成執行緒捲得比主執行緒快。
-  // 每側只預掛 overscan(5)列 = 200px,而把整窗 27 列有錢的儲存格(頭像 / 標籤 / 人員)重畫一次要 100ms 以上;滾輪一甩
-  // (每秒 6,000–12,000px)合成器一幀就把視窗推到「還沒掛任何列」的區域 → 中間整片白,左右釘選面板由 scroll 事件同步所以停在舊位置
-  // (CDP screencast 實測:連續 17 幀、約 280ms 全白)。
-  // 修法:**兩次 commit 之間的位移 ≥ overscan 緩衝(px)= 合成器已超前緩衝** → 這一輪新進視窗的列先渲染成「列殼」
-  // (同高、同欄寬、每格一條 Skeleton,`data-row-shell`),已經完整畫過的列維持原樣;位移落回緩衝內後,每次 render 依上一次
-  // 量到的每列成本補真內容(預算 SHELL_PROMOTE_BUDGET_MS:快的機器一兩幀補完、慢的機器分批),直到沒有殼為止。
-  // 判準自我校準:跟得上合成器的機器永遠看不到殼;正常滾輪速度下新列在 overscan 區(視窗外)就已補完,使用者也看不到。
-  // 不套殼:拖曳中、正在編輯 / 選取格所在的列(它們的 DOM 有人在用)。閘:scripts/data-table-fast-scroll.mjs(真實呈現幀:
-  // 中央區不得出現空白帶、停捲後補齊時間)+ scripts/data-table-scroll-cost.mjs(既有:純捲動的重算列數)。
+  // 快速捲動的緊急列殼:只有兩次 commit 之間跨過整個可視窗時,新列先畫同幾何的殼。
+  // 一般捲動直接畫真列。速度取樣不能證明畫面真的缺內容:合成器與 render 節拍不同,
+  // 用兩次 render 的時間推速度會讓短促的正常捲動也先畫骨架,增加真內容的呈現延遲。
+  // 拖曳 / 編輯 / 已選格與保留中的真列不退回殼;緊急跳轉後的升級仍保留列高同步。
   const SHELL_PROMOTE_BUDGET_MS = 8
   const shellRef = React.useRef({
     lastOffset: null as number | null, renderStart: 0, promoted: 0, costPerRow: 3, promoteLeft: 0, ahead: false, hasShell: false,
     decided: new Map<string, boolean>(), full: new Set<string>(), fullNow: new Set<string>(), prevShells: new Set<string>(), shellsNow: new Set<string>(), raf: 0,
-    seenOffset: null as number | null, seenAt: 0, velocity: 0, needsHeightSync: false,
+    needsHeightSync: false, viewportTop: 0, viewportBottom: 0,
   })
   const [, bumpShellTick] = React.useReducer((x: number) => x + 1, 0)
   {
@@ -1566,27 +1577,16 @@ function DataTableInner<TData>(
     const now = typeof performance !== 'undefined' ? performance.now() : 0
     S.renderStart = now
     const offsetNow = centerBodyRef.current?.scrollTop ?? 0
-    // 至少一列:consumer 傳 overscan={0} 時緩衝不能是 0,否則「位移 ≥ 0」靜止也成立、殼永遠補不完(Codex R9 反例)
-    const bufferPx = Math.max(1, effectiveOverscan) * resolvedEstimate
-    // 捲動速度(px/ms,兩次 offset 變化之間);超過 64ms 沒動就歸零。
-    if (S.seenOffset == null || offsetNow !== S.seenOffset) {
-      S.velocity = S.seenOffset == null ? 0 : Math.abs(offsetNow - S.seenOffset) / Math.max(1, now - S.seenAt)
-      S.seenOffset = offsetNow; S.seenAt = now
-    } else if (now - S.seenAt > 64) S.velocity = 0
-    // 「合成器超前」有兩個訊號:(a) 兩次 commit 之間的位移 ≥ 緩衝(這一條會隨機器快慢自我校準:跟得上的機器位移永遠小);
-    // (b) 目前速度一幀(16ms)就吃掉半個緩衝 —— 固定門檻 ≈ 每秒 6,250px(200px ÷ 32ms),不是量機器能力 ——
-    // (b) 是為了甩動期間**不要邊逃邊搬家**:第一版只看 (a),每幀的補殼節拍量到位移 0 就補 1–2 列有錢的真列,
-    // Radix Tooltip / Checkbox 的 ref-state 每列再帶 5 次 commit,一幀 8–10 次 commit、主執行緒掉到 30fps(2026-09-09 實測)。
-    // 停手時最後一個 scroll 事件常只動 1px,速度瞬間歸零、立刻開始補 —— 這是**對的**:實測過「最後一次大位移後 100ms 內不補」
-    // 的版本,停手後的白反而更長(6,000px/s:最長連續 66 → 220ms),而且 3,000px/s 的正常捲動也會冒出 15 列的殼;尾巴的白是
-    // 軟體光柵畫整個視窗新內容的成本,延後補只會把殼多留在畫面上。
-    const racing = S.velocity * 16 >= bufferPx / 2
-    S.ahead = useVirtual && activeDragId == null && ((S.lastOffset != null && Math.abs(offsetNow - S.lastOffset) >= bufferPx) || racing)
+    // 未掛載或零高度時仍保留至少一列的非零門檻,靜止不會進入緊急殼。
+    const viewportHeight = centerBodyRef.current?.clientHeight ?? 0
+    S.viewportTop = offsetNow; S.viewportBottom = offsetNow + viewportHeight
+    const jumpThreshold = Math.max(resolvedEstimate, viewportHeight)
+    S.ahead = useVirtual && activeDragId == null && S.lastOffset != null && Math.abs(offsetNow - S.lastOffset) >= jumpThreshold
     S.promoteLeft = S.ahead ? 0 : Math.max(1, Math.min(64, Math.floor(SHELL_PROMOTE_BUDGET_MS / Math.max(0.25, S.costPerRow))))
     S.promoted = 0; S.hasShell = false; S.decided = new Map(); S.fullNow = new Set(); S.shellsNow = new Set()
   }
   /** 這一輪這列要不要先出殼(三區同一列同一個答案;決定一次、三區共用)。 */
-  const decideShell = (rowId: string): boolean => {
+  const decideShell = (rowId: string, visible: boolean): boolean => {
     const S = shellRef.current
     const hit = S.decided.get(rowId)
     if (hit !== undefined) return hit
@@ -1596,7 +1596,14 @@ function DataTableInner<TData>(
     else if (S.ahead) shell = true
     // 只有「上次 commit 是殼」的列才吃補齊配額;從沒見過的新列在正常速度下照舊完整渲染 ——
     // 初次載入、正常捲動、換頁都走這裡,行為與沒有殼機制時完全相同(Codex R9 反例:第一版把配額套到新列,初次載入 15 列只畫 2 列)
-    else if (S.prevShells.has(rowId)) { if (S.promoteLeft > 0) { S.promoteLeft -= 1; S.promoted += 1; shell = false } else shell = true }
+    else if (S.prevShells.has(rowId)) {
+      // 可見資料優先完成;每次 render 的剩餘預算只節制視窗外的預掛列。
+      // 不讓先遍歷到的頂端 overscan 吃完配額,把可見列留成骨架。
+      if (visible || S.promoteLeft > 0) {
+        if (!visible) S.promoteLeft -= 1
+        S.promoted += 1; shell = false
+      } else shell = true
+    }
     else shell = false
     if (shell) { S.hasShell = true; S.shellsNow.add(rowId) }
     else S.fullNow.add(rowId)
@@ -3312,7 +3319,9 @@ function DataTableInner<TData>(
       const isThisRowDraggingNow = enableRowDrag && activeDragId === row.id
       const rowDrop = dropIndicator?.type === 'row' && dropIndicator.id === row.id ? dropIndicator.side : null
       const cacheKey = `${regionKey}:${row.id}`
-      const shell = decideShell(row.id)
+      const S = shellRef.current
+      const visible = opts?.virtual === true && opts.start != null && opts.start < S.viewportBottom && opts.start + (opts.size ?? resolvedEstimate) > S.viewportTop
+      const shell = decideShell(row.id, visible)
       const deps: unknown[] = [row, idx, opts?.start, !!opts?.isLast, !!opts?.virtual, cols, regionWidth, sharedRowHeights.get(idx), rowDrop, isThisRowDraggingNow, activeDragId != null, rowRenderEpoch, shell, shell ? opts?.size : 0]
       const hit = rowElCacheRef.current.get(cacheKey)
       if (hit && hit.deps.length === deps.length && hit.deps.every((d, i) => Object.is(d, deps[i]))) {

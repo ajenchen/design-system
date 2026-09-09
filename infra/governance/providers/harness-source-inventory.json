@@ -408,6 +408,7 @@
       "scripts/test-checkbox-group-handcraft-invariant.mjs",
       "scripts/test-consumer-source-harness.mjs",
       "scripts/test-data-table-invariants.mjs",
+      "scripts/test-data-table-scroll-perception.mjs",
       "scripts/test-governance-anchor-preflight.mjs",
       "scripts/test-governance-build-graph.mjs",
       "scripts/test-header-tabs-slot-invariants.mjs",

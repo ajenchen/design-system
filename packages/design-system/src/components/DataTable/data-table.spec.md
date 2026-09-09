@@ -276,11 +276,13 @@ header `scrollWidth` 915 = body 900 + padding 15,兩邊捲動範圍都是 397,�
 (每秒 6,000–12,000px)時,每側只預掛 5 列 = 200px 緩衝,而把整窗 27 列有錢的儲存格重畫一次要 100ms 以上,合成器一幀就把視窗推到
 還沒掛任何列的區域,連續 17 幀(約 280ms)中央整片白、左右釘選面板停在舊位置。修法對齊 AG Grid `cellRendererParams.deferRender`
 (捲動中先顯示 skeleton cell,停捲後補 renderer)與 MUI X server-side lazy loading 的 skeleton rows:
-- **判準**:兩次 commit 之間的位移 ≥ overscan 緩衝(px)= 合成器已經超前緩衝。這一輪新進視窗的列先渲染成**列殼**(`[data-row-shell]`,
-  `aria-busy`;同高、同分隔線、同欄寬,每格一條 `Skeleton`),**已經完整畫過的列維持原樣**(不退回骨架);拖曳中、正在編輯 / 選取格所在的列不套殼。
-- **補齊**:位移落回緩衝內後,每次 render 依上一次 commit 量到的每列成本補真內容(預算 8ms;快的機器一兩幀補完、慢的機器分批),
-  一幀一幀補到沒有殼為止 —— 不等 `isScrollingResetDelay`(250ms)。判準自我校準:跟得上合成器的機器永遠看不到殼;正常滾輪速度下新列
-  在 overscan 區(視窗外)就補完,使用者也看不到。
+- **判準**:只有兩次 commit 之間跨過整個可視窗時,新列才先畫**列殼**(`[data-row-shell]`,
+  `aria-busy`;同高、同分隔線、同欄寬)。一般捲動直接畫真內容;保留中的真列、拖曳中、編輯中與選取格所在列不退回骨架。
+  不使用兩次 render 的瞬時速度判斷:主執行緒與合成器的節拍不同,會讓正常短捲被誤分成緊急狀態。
+- **補齊**:整窗跳轉後,下一次 render 優先完整補齊可見列;8ms 自適應配額只節制視窗外的預掛列。
+  不等 `isScrollingResetDelay`(250ms),不讓頂端 overscan 先吃完配額而延後畫面內的資料;升級後仍同步三區列高。
+- **一般捲動的呈現閘** = `scripts/data-table-scroll-perception.mjs`:PNG 同幀解碼列身分與骨架狀態,量首次進窗至真內容的取樣延遲、骨架幀比例與面積時間。
+  1,500/3,000/4,500px/s 的減速與連續短捲均納入對照;`--sabotage=on --assert=on` 故意延後內容,必須拒絕。
 - **機械閘** = `scripts/data-table-fast-scroll.mjs --mode=gesture`:量合成器實際送出的每一幀(不是 DOM、不是預估),中央區每 40px 帶完全
   沒有墨跡 = 空白帶;閘 = 最長連續空白 ms 與停捲後殼補齊 ms。儀器自帶對照組(`--selftest`):500 列不虛擬化的靜態頁同手勢必須 0 空白
   (高速位移本身不會被誤判成白)、每個 scroll 事件忙等 120ms 必須量到 ≥ 3 幀空白(該紅會紅)。
@@ -590,6 +592,8 @@ Row drag + column reorder + TreeView 共用 `lib/drag-visual.ts`:source `opacity
 `enableRowDrag?: boolean` + `onRowReorder?: (sourceId, targetId, 'before' | 'after')`。Library:@dnd-kit/core(v15.0 Path B 用 `useDraggable` + `useDroppable`,不用 `@dnd-kit/sortable`)。**必填 `getRowId`**(否則 dnd 用 row.index reorder 後錯位)。
 
 - **Handle**:Button tertiary iconOnly xs(GripVertical)24px chip,**只有底色被覆寫成不透明的 `bg-surface-raised`,其餘一律照 Button 平常的 initial / hover / active 走**(border / shadow 已 retire,2026-05-12 per user「我有叫你加 elevation 嗎」;2026-09-06 user 重申「其 initial,hover,active 狀態都是只改底色為 bg-surface-raised,其餘不變,壓著那顆鈕的時候狀態應該是 active」)。**dnd-kit 的 `aria-pressed` 必須在傳進 Button 前濾掉** —— 它拖曳中恆送 `true`(core.esm.js:3436),而 Button 把該屬性解讀成 toggle 按下(button.tsx:194),會讓這顆非 toggle 的把手在拖曳中變成藍底藍字無框,fixed-position 浮層貼 row 左緣、不佔 column 空間(位置 JS 計算,實作見 `data-table.tsx`);**hover-reveal** 由 JS 控 visibility / opacity(row 或 handle hover 顯示)。**拖曳進行中三個把手全部不顯示**(2026-09-06 user 提案 + 實測收斂):把手存在的唯一理由是「表格列看不出來能拖」這個可發現性問題;拖曳一旦開始理由即消失,回到 `lib/drag-visual.ts` 的 SSOT ——來源半透明 + 落點線,畫面上無把手,與 TreeView(`tree-view.tsx:258`「整列可拖,無 grip handle」)一致。拖影本就不含把手(clone `[role="row"]`,把手是 portal 出去的 fixed 浮層),隱藏後來源與拖影才對稱。**列已無鍵盤拖曳路徑**(2026-09-06 `c5d3b4c1` 拆除,詳本檔「列重排的鍵盤與單指標路徑」段):把手不再接收 dnd-kit 的 `onKeyDown`,`tabIndex` 恆為 -1、不進 tab 順序。故本條所述的隱藏只影響指標拖曳;先前此處以「拖曳中的即時回饋是落點線 + dnd-kit live region」為由,描述的是已被拆除的鍵盤路徑,已更正。(聚焦不顯示把手為**既有 a11y 缺陷**,另案)。Tertiary chip 非 ItemInlineAction 因透明背景撞 table border。
+- **捲動定位**:把手在顯示與原有 opacity 淡出期間都必須跟隨所屬列,hover 結束不代表已停止繪製。
+  `scripts/data-table-handle-position.mjs` 量所有仍可見的把手與原列中心偏差;`--selftest` 注入 20px 偏移必須拒絕。保留 fixed portal、原淡出、Button 與拖曳語意。
 - **Sort × Drag 互斥**:sort.length>0 → handle disabled+Tooltip。**Top-level only**(`row.depth>0` 不顯 handle)。**Position**:active vs over 視覺位置 → `'after'`/`'before'` 對齊 `arrayMove`。**Consumer-managed mutation**:`onRowReorder(sourceId, targetId, position)`,DS 不持 row order，因為資料排序與 persistence authority 都在 consumer。
 - **Virtualization 整合**(v3 2026-05-05):enableRowDrag 自動把 overscan 拉到 `Math.max(overscan, 5)` + drag 期 freeze `measureElement` + `modifiers={[snapToCursorModifier]}`(ghost top-left 對齊 cursor,不鎖軸)。**3-panel mirror sync**:primary 永遠 = center region(v15.4 撤銷「left 優先」— multi-instance same-id 是 dnd-kit anti-pattern,且 pinned column 是「鎖定欄」語意非 drag 起點),只有 center 掛 `useDraggable`;mirror region(left / right pinned)只掛 `useDroppable`,drag 期以 `useDndContext` 同步 source 半透視覺(Path B source 留原位,無 row transform);handle 只 render primary(center)避雙觸發。**Cross-parent drop 禁止**(已知 limit):nested 只同 top-level 重排,collisionDetection 過濾。**把手不表示「不能放」**(2026-09-06 user 逐字「本來就不需要 invalid,我們不是就已經有引導的落點線了嗎」):訊號在目標端 —— 不能放時就不出落點線、不出 `bg-drop-target`,起點不變色。與 `lib/drag-visual.ts`(拖曳視覺 SSOT,無 invalid 態)及另兩個消費者(TreeView / 欄位重排,同樣無 invalid 態)一致;外部對照:[Atlassian Pragmatic DnD 設計準則](https://github.com/atlassian/pragmatic-drag-and-drop/blob/main/packages/documentation/constellation/08-design-guidelines/index.mdx)「A background color change to communicate that dropping is possible should only be applied when a user can perform a drop operation.」、[MDN 拖放規範](https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API/Drag_operations)(游標為主要回饋,被拖元素不變外觀)、[React Aria](https://github.com/adobe/react-spectrum/blob/main/packages/dev/s2-docs/pages/react-aria/blog/drag-and-drop.mdx)(未定義 invalid 視覺)三家皆同。
 

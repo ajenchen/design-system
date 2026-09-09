@@ -19,11 +19,11 @@ export function relativeRuntimeImports(source) {
   invariant(typeof source === 'string', 'runtime module source must be text')
   // Scan conservatively without deleting comments or regex literals. A prose example may add an
   // extra fail-closed edge, but executable import evidence must survive legal comments between
-  // JavaScript tokens. Every separator alternative consumes at least one byte so the repeated
-  // expression cannot loop on an empty match.
+  // JavaScript tokens. Consume one whitespace byte per alternative: nesting \s+ inside *
+  // exponentially repartitions indented comment chains after prose "from" when no quote follows.
   const body = source
   const imports = []
-  const separatorToken = String.raw`(?:\s+|\/\*[\s\S]*?\*\/|\/\/[^\r\n]*(?:\r?\n|$))`
+  const separatorToken = String.raw`(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\r\n]*(?:\r?\n|$))`
   const separator = `(?:${separatorToken})*`
   const patterns = [
     { kind: 'esm', expression: new RegExp(String.raw`\bfrom${separator}['"]([^'"]+)['"]`, 'g') },
