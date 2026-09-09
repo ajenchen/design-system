@@ -1583,11 +1583,14 @@ function DataTableInner<TData>(
   // → 其餘先殼、不留白。兩次 commit 跨過整個 viewport 的緊急跳轉仍一律先殼(那一幀什麼都畫不完)。
   // 拖曳 / 編輯 / 已選格與保留中的真列不退回殼;升級後仍同步三區列高。
   const SHELL_FRAME_BUDGET_MS = 12
-  // 「機器跟不上」的門檻:捲動造成的 commit 平均超過這個時間才啟用預算與前掛殼;跟得上的機器(本機 6,000px/s 每次 commit ≈ 10ms)
-  // 完全走 R17 的路(一般速度零骨架、極速直接畫真列)。門檻取 20ms(> 一幀,避免單次 GC 抖動把快機器誤判成慢)。
-  const SHELL_SLOW_COMMIT_MS = 20
+  // 「機器跟不上」用真正的症狀判,不用 commit 成本:兩次 commit 之間視窗移動的距離 ÷ 預掛緩衝(overscan 列 × 列高)。
+  // 比值 > 1 = 新進視窗的列還沒掛就被捲過去(整片白)→ 進入;< 0.5 才退出(遲滯)。commit 成本不能當判準:CI runner 每次
+  // commit 本來就 > 20ms 但在 4,500px/s 跟得上(R17 在它上面零骨架、延遲 ≤ 34ms),用成本判會在一般速度出殼。
+  // 進入 = 單次位移 > 2 倍緩衝(≈ 一個視窗,單次 GC 抖動不會誤進);退出 = 平滑值 < 0.5
+  const SHELL_BEHIND_ENTER = 2
+  const SHELL_BEHIND_EXIT = 0.5
   const shellRef = React.useRef({
-    lastOffset: null as number | null, renderOffset: null as number | null, committedRenderOffset: null as number | null, committedRenderStart: 0, lastRows: null as unknown, renderStart: 0, lastCommitAt: 0, commitCost: 0, slow: false, scrollCommit: false, aheadRows: 0, scrolling: false,
+    lastOffset: null as number | null, renderOffset: null as number | null, committedRenderOffset: null as number | null, committedRenderStart: 0, lastRows: null as unknown, renderStart: 0, lastCommitAt: 0, commitCost: 0, pendingBehind: 0, behind: 0, offsetChanged: false, slow: false, scrollCommit: false, aheadRows: 0, scrolling: false,
     promoted: 0, newFull: 0, costPerRow: 3, fixedCost: 2, promoteLeft: 0, budgetRows: 64, budgeted: false, ahead: false, hasShell: false, wasScrolling: false, aheadDir: 1,
     decided: new Map<string, boolean>(), full: new Set<string>(), fullNow: new Set<string>(), prevShells: new Set<string>(), shellsNow: new Set<string>(), raf: 0,
     needsHeightSync: false, viewportTop: 0, viewportBottom: 0,
@@ -1620,11 +1623,15 @@ function DataTableInner<TData>(
     // isScrolling 直接讀實例當下的值(不是上一次 commit effect 的快照 —— 快照晚一個 commit,停捲後多等一次 150ms 的 commit 才開始補)
     const scrolling = offsetChanged || (virtualizerRef.current?.isScrolling ?? S.wasScrolling)
     S.scrolling = scrolling
+    S.offsetChanged = offsetChanged
     if (renderOffsetPrev != null && offsetNow !== renderOffsetPrev) S.aheadDir = offsetNow > renderOffsetPrev ? 1 : -1
     // rows identity 變了(排序 / 篩選 / 換資料)那一次不算捲動 commit:跟初次載入一樣全畫真列(Codex R20 修法 A)
     S.scrollCommit = useVirtual && activeDragId == null && S.lastRows === rows && (scrolling || S.prevShells.size > 0)
-    // 只有量到「機器跟不上」(捲動 commit 平均 > SHELL_SLOW_COMMIT_MS)才受預算節制;跟得上的機器完全走 R17 的路。
-    S.budgeted = S.scrollCommit && S.slow
+    // 這一次 render 距上一次 commit 的 render,視窗移了多遠(以預掛緩衝為單位);只記 pending,commit 後才進平滑值
+    S.pendingBehind = renderOffsetPrev != null ? Math.abs(offsetNow - renderOffsetPrev) / Math.max(1, effectiveOverscan * resolvedEstimate) : 0
+    // 只有量到「機器跟不上」才受預算節制;這一次 render 的位移已經超過門檻就**立刻**算(不等 commit 後的 effect ——
+    // 慢機器第二次 render 位移就 3.9 倍緩衝,再等一次全量 commit 才出殼會多白 300ms+);退出看平滑值。跟得上的機器完全走 R17 的路。
+    S.budgeted = S.scrollCommit && (S.slow || S.pendingBehind > SHELL_BEHIND_ENTER)
     // 這一幀畫得完幾列真列 =(幀預算 − 每次 commit 的固定成本)÷ 每列成本(至少 1 列,上限 64)。停捲後只剩補殼時放寬到 4 幀:
     // 每次 commit 的固定成本在慢機器很貴(4× 節流 ≈ 100ms),一次多補幾列比每幀補 1 列快得多(6× 節流補齊 1.3s → 目標 < 1s)。
     // 沒有新列進窗(scrollTop 沒變,只是還在 250ms 的 isScrolling 尾巴)的 commit 放寬到 4 幀:可能真的停了(多補幾列補得快),
@@ -1702,7 +1709,15 @@ function DataTableInner<TData>(
     // 「機器跟不跟得上」只看捲動 commit(初次掛載 / 換頁 / 靜止時資料變動的 commit 本來就重,不算):平滑後 > 門檻才算慢
     // 進入 slow 要 > 門檻,退出要 < 門檻的一半(遲滯):被預算節制過的 commit 本來就便宜,單一門檻會讓中速機器在
     // 「便宜的預算 commit → 退出 → 一次全畫的長 commit → 進入」之間震盪(多代理審查 P1;退出後的補殼另有 4 幀預算,見 draining)。
-    if (S.scrollCommit) { S.commitCost = S.commitCost > 0 ? 0.6 * S.commitCost + 0.4 * cost : cost; S.slow = S.commitCost > SHELL_SLOW_COMMIT_MS || (S.slow && S.commitCost > SHELL_SLOW_COMMIT_MS / 2) }
+    if (S.scrollCommit) {
+      S.commitCost = S.commitCost > 0 ? 0.6 * S.commitCost + 0.4 * cost : cost
+      // 只拿「scrollTop 真的變了」的 render 當樣本:rAF 補殼 tick 常讀到還沒更新的 scrollTop(位移 0),會把平滑值拖到退出。
+      // 單次樣本 > 1 就立刻進入(位移超過緩衝 = 這一段確實白了),退出看平滑值 < 0.5。
+      if (S.offsetChanged) {
+        S.behind = S.behind > 0 ? 0.6 * S.behind + 0.4 * S.pendingBehind : S.pendingBehind
+        S.slow = S.pendingBehind > SHELL_BEHIND_ENTER || S.behind > SHELL_BEHIND_ENTER || (S.slow && S.behind > SHELL_BEHIND_EXIT)
+      }
+    } else if (!S.scrolling) { S.behind = 0; S.slow = false }
     S.lastCommitAt = typeof performance !== 'undefined' ? performance.now() : 0
     S.committedRenderOffset = S.renderOffset
     S.committedRenderStart = S.renderStart
