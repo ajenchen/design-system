@@ -42,6 +42,7 @@
  *   node scripts/data-table-fast-scroll.mjs [--static=<dir>] [--label=<名>] [--runs=3] [--mode=wheel,mouse]
  *     [--builds=main=<dir>,branch=<dir>](多個 build 對照,取代 --static/--label)
  *     [--story=<id>] [--viewport=1400x800] [--dpr=1](deviceScaleFactor,Retina 用 2)[--smooth=on|off](off = --disable-smooth-scrolling)
+ *     [--cpu-throttle=1](CDP Emulation.setCPUThrottlingRate;4–6 約等於 GitHub ubuntu runner,重現慢機器的白區)
  *     [--ticks=40] [--tick-ms=16] [--settle-ms=1000] [--start=<px>](起始 scrollTop,預設 0)
  *     [--shots](mouse 模式在第 15 / 30 個滾輪事件後 + 靜止後各用 CDP 截圖,量中間區與左面板的近白像素比例 —— 直接看畫面;靜止那張是基準)
  *     [--profile=<dir>](另跑一次 CPU profile,寫 <dir>/<label>-<mode>.cpuprofile + .json,印 self time 前 15 名與 minified 原始碼片段)
@@ -80,6 +81,8 @@ const START_PX = Number(arg('start', 0))
 const DELTAS = [300, 400, 500, 600]
 const [VW, VH] = arg('viewport', '1400x800').split('x').map(Number)
 const DPR = Number(arg('dpr', 1))
+// 2026-09-09:CI(ubuntu runner)比 Mac 慢,R17 的緊急殼觸發在慢機器失效(6000px/s 白區 918–1027ms);本機用 CDP CPU 節流重現。
+const CPU_THROTTLE = Number(arg('cpu-throttle', 1))
 const SMOOTH = arg('smooth', 'on')
 const SHOTS = flag('shots')
 const PROFILE_DIR = arg('profile', '')
@@ -381,6 +384,7 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
     if (CSS_INJECT) await page.addStyleTag({ content: CSS_INJECT })
     await page.waitForTimeout(1500)
     const cdp = await page.context().newCDPSession(page)
+    if (CPU_THROTTLE > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLE })
     await cdp.send('Performance.enable')
     if (profile) { await cdp.send('Profiler.enable'); await cdp.send('Profiler.setSamplingInterval', { interval: 100 }) }
     const metrics = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value]))

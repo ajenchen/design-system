@@ -2806,3 +2806,20 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - **交付**:`R17.patch` 15 檔;我套用其中 9 檔(DataTable tsx / spec、CI caller、4 支量測 / 對照、2 支 scanner 修復),6 個 generated 治理檔交給 pre-commit 重生。本機驗證鏈(build → 332 → R0–R5 → fast-scroll → row-cache-deps → 新閘 + 對照 → a11y → governance)結果見 commit。
 - **守衛入口誤判**:`codex-run-guarded.mjs` 把這輪分類成 AUTH(regex 掃 6.9MB 輸出命中 unauthorized / forbidden 類字串),但輸出完整(tokens used、報告、patch、receipt 俱全)。依 M36(b) 不因自家分類器誤判把工作丟回 user;治理待辦(AUTO):分類器只掃 stderr / 結尾錯誤行,不掃整份輸出。
 - **未完成**:真機 GPU / 觸控板體感讀回(套用後的預覽在 user 的 Chrome 重跑儀器 + user 親手操作);極端 6,000px/s 仍有 ≤ 91ms 白區(閘 ≤ 400);dark 新增鈕 3.69:1 對比為既有問題。
+
+### AD56 R17 修補 commit 280fb703 的 CI 讀回:慢機器上快速捲動白區回歸(2026-09-09)
+
+- 本機驗證鏈(build / 332 / R0–R5 / fast-scroll / 新閘 + 對照 / 選單 / 示範 / a11y / governance)全綠後 commit、push;CI required 紅兩個(fan-in「Verify」與「Verify browser(DataTable pixel gates)」),其餘綠。
+- 失敗閘:既有 `data-table-fast-scroll.mjs --gesture-speed=6000`:中央區最長連續空白 1,027ms / 918ms(上限 400;R16 舊分支同閘 ≈ 32ms,R17 本機 91 / 52ms)。
+- 判讀:R17 把 emergency 改成「兩次 commit 跨過整個 viewport」,在慢的 CI runner 上 commit 頻繁、每次位移不到一個 viewport → 永遠不進 emergency,主執行緒畫不完真列 → 整片白。固定跳距(R17)與速度預測(R17 前)都不是自適應;正解要以量到的每列成本 × 新進列數對幀預算決定「這幀畫得完幾列、其餘先殼、可見列優先」,並在 CPU 節流下驗證。
+- 處置:證據寫進 `/private/tmp/claude-501/r18-investigation/ci-fast-scroll-failure-280fb703.md` 交 R18 第一優先;不回退(user:「找到真的 root cause 為止」),CI 在修好前維持紅。
+- **本機重現與對照(AD56 續)**:`data-table-fast-scroll.mjs` 加 `--cpu-throttle=<rate>`(CDP CPU 節流)。R17 後 build:1× 白區 52ms 綠;4× 1,288 / 1,168ms 紅(CI 1,027 / 918);6× 1,805ms 且補齊 1,288ms 雙紅。R17 前 build(03077b1d)同 4×:232 / 217ms、補齊 ~800ms,綠。→ 確認是 R17 的觸發條件在慢機器失效;節流 4× 是有效對照。證據交 R18(`ci-fast-scroll-failure-280fb703.md`),並要求修法在 1× / 4× 都過 fast-scroll 閘且 1× 過內容閘,CI 加節流一輪。
+
+### AD57 user 2026-09-09:拖曳把手出現在 table body 垂直可視範圍之外(表頭上)—— 根因:fixed 浮層不受 body 面板裁切(2026-09-09)
+
+**user 原話**:「圖一,drag button出現在table body (table rows 被呈現的地方)的垂直可視範圍之外是合理的嗎?仔細查證 root cause是什麼」
+
+- **根因**:`RowDragHandle` 是 `position: fixed` 的 portal(data-table.tsx 把手 render style),位置只算所屬列中心(`update()`:`top = rRect.top + rRect.height/2`),沒有任何對 body 面板可視矩形的裁切;表頭是 body 上方的獨立面板(不是 sticky,:1042),列滑到表頭底下時列被面板 overflow 裁掉、fixed 的把手不受該裁切 → 畫在表頭上。R17 讓把手忠實跟列(含淡出期間)後更顯眼,但缺口早已存在(hover 中捲動也會)。規格 :595 只寫「跟隨列」,漏「裁切與列相同」。
+- **修法**:`update()` 取 `rowEl.closest('[data-datatable-panel]')` 的矩形,算把手(24px 置中於列中心)超出面板上 / 下緣的量,存進 positionRef,`syncHandlePosition` 與 render style 都套 `clip-path: inset(top 0 bottom 0)`;部分露出的列 → 部分露出的把手,整列滑出 → 全裁(clip-path 同時裁掉命中區)。不改外觀、淡出、拖曳語意。spec :595 補「裁切與所屬列相同」。
+- **閘**:新 `scripts/data-table-handle-clip-invariant.mjs`(P0 無裁切且中心對列中心;P1 列半滑進表頭底下 → 上裁、未裁區在面板內;P2 整列滑出 → 全裁且不可命中;`--selftest` 注入 clip-path:none 必紅;stale-build 守衛)+ CI caller。
+- 與 Codex R18 / R19 的 worktree 可能在 RowDragHandle 區重疊,套它們的 patch 時以本修為基準 rebase。

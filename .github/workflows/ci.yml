@@ -170,6 +170,8 @@ jobs:
           # Content readiness and still-visible fading handles need separate gates from frame cadence.
           node scripts/test-data-table-scroll-perception.mjs --out=tmp/datatable-content-controls
           node scripts/data-table-handle-position.mjs --dpr=2 --selftest --out=tmp/datatable-handle-control
+          node scripts/data-table-handle-clip-invariant.mjs --selftest
+          node scripts/data-table-handle-clip-invariant.mjs
           for dpr in 1 2; do
             node scripts/data-table-handle-position.mjs --dpr=$dpr --out=tmp/datatable-handle-$dpr
             for peak in 1500 3000 4500; do

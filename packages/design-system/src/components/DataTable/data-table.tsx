@@ -800,7 +800,7 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
   // Fix:button 自帶 hover state,visibility = rowHovered || buttonHovered || isDragging。
   const [buttonHovered, setButtonHovered] = React.useState(false)
   const handleRef = React.useRef<HTMLButtonElement | null>(null)
-  const positionRef = React.useRef<{ top: number; left: number } | null>(null)
+  const positionRef = React.useRef<{ top: number; left: number; clipTop: number; clipBottom: number } | null>(null)
   // Logical hover ends before the existing opacity transition finishes painting.
   // Track only handles that have been visible; never measure every hidden row.
   const trackingPositionRef = React.useRef(false)
@@ -815,6 +815,9 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
     if (!handle || !position) return
     handle.style.top = `${position.top}px`
     handle.style.left = `${position.left}px`
+    // 裁切與所屬列相同(2026-09-09 user:「drag button 出現在 table body 的垂直可視範圍之外是合理的嗎?」):
+    // 把手是 fixed 浮層,不受 body 面板 overflow 裁切;列滑到表頭底下 / 視窗底下時,列被裁掉多少、把手就裁掉多少。
+    handle.style.clipPath = position.clipTop > 0 || position.clipBottom > 0 ? `inset(${position.clipTop}px 0 ${position.clipBottom}px 0)` : ''
   }, [])
   // A render caused by hover/DnD must not restore an earlier scroll position.
   React.useLayoutEffect(syncHandlePosition)
@@ -849,7 +852,15 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
       const rowHovered = rowEl.hasAttribute('data-hovered')
       const top = rRect.top + rRect.height / 2
       const left = tRect.left // table outer 左 border line position(viewport coords)
-      positionRef.current = { top, left }
+      // 所屬 body 面板的可視矩形 = 列真正被裁切的邊界(表頭是 body 上方的獨立面板、不是 sticky,列滑到它底下就是被裁掉)。
+      // 把手 24px 置中於列中心,超出面板上 / 下緣的部分用 clip-path 裁掉(部分露出的列 → 部分露出的把手;整列滑出 → 把手全裁)。
+      const panelEl = rowEl.closest('[data-datatable-panel]')
+      const pRect = panelEl ? panelEl.getBoundingClientRect() : tRect
+      const handleH = handleRef.current?.offsetHeight || 24
+      const half = handleH / 2
+      const clipTop = Math.min(handleH, Math.max(0, pRect.top - (top - half)))
+      const clipBottom = Math.min(handleH, Math.max(0, (top + half) - pRect.bottom))
+      positionRef.current = { top, left, clipTop, clipBottom }
       if (rowHovered || buttonHovered || ctxDragging) trackingPositionRef.current = true
       // Position belongs to the scroll event, not to a later React render/rAF.
       // React still owns reveal/fade state and the original Button styling.
@@ -946,6 +957,9 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
         position: 'fixed',
         top: positionRef.current?.top ?? pos.top,
         left: positionRef.current?.left ?? pos.left,
+        clipPath: positionRef.current && (positionRef.current.clipTop > 0 || positionRef.current.clipBottom > 0)
+          ? `inset(${positionRef.current.clipTop}px 0 ${positionRef.current.clipBottom}px 0)`
+          : undefined,
         transform: 'translate(-50%, -50%)',
         zIndex: 50,
         // 2026-05-12 fix v2(user 抓「drag column sort 啟用時 button 不是 disable 視覺」):
