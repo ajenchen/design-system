@@ -90,8 +90,8 @@
    │                                                                     │
    │  Selected state family（toggle on / 持續選中 element 的互動）       │
    │    --neutral-selected         rest 持續選中   = neutral-2            │
-   │    --neutral-selected-hover   切換鈕hover(變淺) = neutral-1          │
-   │    --neutral-selected-active  按壓專屬 深一階  = neutral-3           │
+   │    --neutral-selected-hover   切換鈕hover 深一階 = neutral-3         │
+   │    --neutral-selected-active  按壓專屬 再深一階 = neutral-4          │
    │                                                                     │
    │  --bg-disabled                互動元件 disabled 背景  = neutral-2    │
    │                                                                     │
@@ -377,7 +377,7 @@
      「這一列被選中」與「鍵盤游標在這裡」兩個意義 —— 一個元素只能有一種焦點指示。
      現行 owner = `patterns/element-anatomy/item-anatomy.spec.md`「選中 × 互動疊加」格。
 
-     典型消費者：Button toggle pressed(-hover 變淺/-active 按壓)、DropdownMenu/SelectMenu 單選項目、
+     典型消費者：Button toggle pressed(-hover 深一階 / -active 再深一階,2026-09-07)、DropdownMenu/SelectMenu 單選項目、
      SidebarMenuButton/MenuItem 選中列(底色 `-selected`,鍵盤游標走框)。 */
   --neutral-selected:         var(--color-neutral-2);
   --neutral-selected-hover:   var(--color-neutral-3);

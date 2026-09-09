@@ -14,8 +14,14 @@
  *
  * 斷言(掃 packages/design-system/src 下所有 *.stories.tsx):
  *   R1 `danger` 必附 explicit variant(primary / secondary / text);
- *   R2 *Footer(Dialog / Sheet / Popover / Surface)內的按鈕:若有任何非「取消 / 關閉 / 返回」語意的按鈕,必須恰有一顆 `variant="primary"`,且它是 footer 內最後一顆 Button。
- * 對照組:`--selftest` 用內建的錯誤片段跑同一套解析,必須紅。
+ *   R2 *Footer(Dialog / Sheet / Popover / Surface)內的按鈕:非「取消 / 關閉 / 返回」語意的動作鈕必明寫 variant(吃預設就是 9/8 那顆「儲存」
+ *      變灰的根因);primary **最多一顆**(button.spec.md:180「每個操作區最多一個」、:407),有的話必是 footer 內最後一顆 Button。
+ *      2026-09-09 收窄:首版寫「恰一顆」比規範嚴 —— 規範自己的「儲存草稿(secondary)/放棄變更(secondary danger)」配對(button.spec.md:218-219)
+ *      沒有 primary 也合法;世界級(Polaris `primaryAction?` 可省略、Carbon passive modal 無動作鈕、Apple 單鈕 Done)皆「最多一顆、可無」。
+ *      user 9/9 原話:「footer必須給 一顆primary 是否太硬？預設應該給一個？」
+ *   R3 footer 已有非 danger 的 primary(= confirm / cancel 型 footer)時,不得再放 danger 鈕:記錄級的破壞動作走 header actions 槽
+ *      (dialog.spec.md:107-113)。首版「非 primary 的 danger 一律紅」同樣比規範嚴(會誤判上述配對),9/9 一併收窄。
+ * 對照組:`--selftest` 用內建的錯誤片段跑同一套解析,必須紅;另附合法片段必須綠(0 primary 的正負配對、只有「關閉」的 footer)。
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, dirname, relative } from 'node:path'
@@ -79,12 +85,16 @@ function check(src, file) {
     if (actionable.length === 0) continue
     const primaries = bs.filter((b) => b.variant === 'primary')
     const line = src.slice(0, f.index).split('\n').length
-    if (primaries.length !== 1) findings.push(`${file}:${line} R2 ${f[1]}Footer 有 ${actionable.length} 顆動作鈕但 primary 有 ${primaries.length} 顆(button.spec.md:12 CTA 必 explicit primary;每區恰一顆)`)
-    else if (bs[bs.length - 1].variant !== 'primary') findings.push(`${file}:${line} R2 ${f[1]}Footer 的 primary 不在最右(dialog.spec.md:190 / dialog.principles:209)`)
-    // R3(2026-09-09 user 抓到:任務 modal 的「刪除任務」放在 footer 當 secondary danger):footer 只放 confirm / cancel;
-    // 記錄級的破壞性動作(刪除這筆記錄)走 header actions slot 的 icon-only 鈕(dialog.spec.md:107-113「操作對象是 dialog 承載的記錄本身」)。
-    // footer 裡的 danger 只能是確認框那顆 primary(立即且不可逆);非 primary 的 danger 一律違規。
-    for (const b of bs) if (b.danger && b.variant !== 'primary') findings.push(`${file}:${b.line} R3 ${f[1]}Footer 內的 danger 不是 primary(${b.variant ?? '無'}):破壞性的記錄級動作走 header actions 的 icon-only 鈕(dialog.spec.md:107-113),footer 只放 confirm / cancel`)
+    // R2(a) 動作鈕必明寫 variant:吃預設 = 靜默變成 tertiary 灰鈕(button.spec.md:12「必 explicit,不靠預設」);取消 / 關閉可吃預設(預設就是 tertiary)。
+    for (const b of actionable) if (!b.variant) findings.push(`${file}:${b.line} R2 ${f[1]}Footer 的動作鈕「${b.text}」沒寫 variant → 吃預設變成灰色 tertiary(button.spec.md:12 主要動作必 explicit primary;次要動作明寫 secondary)`)
+    // R2(b) primary 最多一顆(button.spec.md:180 / :407);有的話在最右(dialog.spec.md:215 / dialog.principles:209)。0 顆合法(正負配對 spec:218-219、純資訊框)。
+    if (primaries.length > 1) findings.push(`${file}:${line} R2 ${f[1]}Footer 有 ${primaries.length} 顆 primary(button.spec.md:180「每個操作區最多一個」、:407)`)
+    else if (primaries.length === 1 && bs[bs.length - 1].variant !== 'primary') findings.push(`${file}:${line} R2 ${f[1]}Footer 的 primary 不在最右(dialog.spec.md:215 / dialog.principles:209)`)
+    // R3(2026-09-09 user 抓到:任務 modal 的「刪除任務」放在 footer 當 secondary danger):confirm / cancel 型的 footer(已有非 danger 的 primary)
+    // 不得再放 danger 鈕 —— 記錄級的破壞性動作(刪除這筆記錄)走 header actions slot 的 icon-only 鈕(dialog.spec.md:107-113「操作對象是 dialog 承載的記錄本身」)。
+    // 沒有 primary 的正負配對(儲存草稿 / 放棄變更 secondary danger)與確認框的 primary danger 都合法。
+    const hasPlainPrimary = primaries.some((b) => !b.danger)
+    if (hasPlainPrimary) for (const b of bs) if (b.danger) findings.push(`${file}:${b.line} R3 ${f[1]}Footer 已有 primary「${primaries.find((x) => !x.danger).text}」卻又放 danger 鈕「${b.text}」:記錄級的破壞動作走 header actions 的 icon-only 鈕(dialog.spec.md:107-113),footer 只放 confirm / cancel`)
   }
   return findings
 }
@@ -102,9 +112,26 @@ if (SELFTEST) {
   <Button variant="primary">儲存</Button>
 </DialogFooter>
 `
+  const good = `
+<DialogFooter>
+  <Button variant="secondary">儲存草稿</Button>
+  <Button variant="secondary" danger>放棄變更</Button>
+</DialogFooter>
+<DialogFooter><Button variant="tertiary">關閉</Button></DialogFooter>
+<DialogFooter>
+  <Button variant="tertiary">取消</Button>
+  <Button variant="primary" danger>永久刪除</Button>
+</DialogFooter>
+<DialogFooter>
+  <Button>取消</Button>
+  <Button variant="primary">儲存</Button>
+</DialogFooter>
+`
   const f = check(bad, 'selftest.stories.tsx')
-  const ok = f.some((x) => x.includes('R1')) && f.filter((x) => x.includes('R2')).length === 2 && f.filter((x) => x.includes('R3')).length === 2
-  console.log(ok ? '✓ selftest:danger 無 variant、footer 無 primary、footer 內非 primary 的 danger 都被抓到' : '✗ selftest:閘沒抓到內建錯誤片段\n' + f.join('\n'))
+  const g = check(good, 'selftest-good.stories.tsx')
+  // bad:R1 ×1(danger 無 variant)、R2 ×2(儲存吃預設 + 第一片的「刪除」吃預設)、R3 ×1(有 primary 儲存卻放 secondary danger 刪除任務)
+  const ok = f.filter((x) => x.includes('R1')).length === 1 && f.filter((x) => x.includes('R2')).length === 2 && f.filter((x) => x.includes('R3')).length === 1 && g.length === 0
+  console.log(ok ? '✓ selftest:danger 無 variant、動作鈕吃預設、confirm 型 footer 再放 danger 都被抓到;0 primary 的正負配對 / 只有關閉 / 確認框 primary danger 都不誤報' : '✗ selftest 不符\n' + [...f, ...g.map((x) => '(誤報)' + x)].join('\n'))
   process.exit(ok ? 0 : 1)
 }
 
