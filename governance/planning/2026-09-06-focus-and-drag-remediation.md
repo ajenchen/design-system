@@ -2704,3 +2704,14 @@ R15 確認見下一則。
 R15 同一重現:1000px 關 modal → 焦點回 `MAIN#demo-stage-main`(恢復舊邏輯的對照組仍落 body);Suspense 暫停後取消更新仍顯示已提交名稱(無快取污染);本機模式建議同名照出建立列、遠端同名與抓資料中仍不出;焦點文件三處與現行幾何一致;spec 散文與狀態表一致(13 組清單狀態測試)。effect 版 hook 的兩個疑慮(首次 render 快取空 / deps 用內層陣列引用)判可接受(三個元件都先查目前清單;清單不可原地修改)。唯一殘留 `tabs.anatomy.stories.tsx` 舊 `ring-2 ring-ring` 文案,已改。
 最終建置鏈:build:lib / 986 stories / Dialog 並存 + 進場幀 + docs 隔離 / 代理示範 109 條 / 斷點 / 選單 273 + selftest 139 紅 / 游標模態 / 焦點抑制 26 / 焦點幾何瀏覽器稽核(外描邊 85、需改內描邊 0)/ 按鈕 779 / 內容品質 / CI 閘覆蓋 / 焦點指示 F 系列 全綠;a11y 基準線以最終 build 重生。
 
+### AD45 commit `57c51d8a` 的 CI 讀回:供應鏈閘真警報(js-yaml 新通報),已修依賴(2026-09-09)
+
+push 後三個 job + 治理 hooks 在兩分鐘內全紅,共同原因是每個 job 開頭的「DS-author governance setup」(`scripts/setup-authority-governance.mjs --dependencies-only`,
+`GOV-DEPENDENCY-BOOTSTRAP-001`):`npm audit` 多了一筆 **high** —— js-yaml GHSA-2883-xcg3-v3hh(`>=3.0.0 <3.15.2 || >=4.0.0 <4.3.2`,maxTotalMergeKeys 不限 CPU),
+今天才進通報資料庫;其餘 brace-expansion / tar / ip-address / undici / npm 是閘裡已登記、由 security overlay 處理的舊項(同一次 audit 也列 57 high,
+是同一批舊項的連鎖列表,不是新問題)。與本 commit 內容無關,但供應鏈閘是真警報(memory feedback_anti_self_lock_release_transport),不繞。
+修:根目錄直接依賴 `js-yaml ^4.1.1 → ^4.3.2`;`read-yaml-file@1.1.0`(經 @changesets/cli → @manypkg/get-packages)拉的 3.x 用 package.json `overrides`
+釘 `^3.15.2`(repo 既有 overrides 寫法);`npm install` 後樹上是 4.3.2 / 3.15.2,`npm audit --audit-level=high` 剩 4 high + 1 moderate = 閘已登記的 overlay 項。
+本機沙箱的坑:`npm install` 寫不進 `~/.npm` 快取(EACCES)→ `--cache $TMPDIR/npm-cache`;治理 setup 閘本機跑會 `ENOTFOUND registry.npmjs.org`(它的子程序不帶沙箱代理環境),
+由 CI 驗證。另外先前一直紅的 authority-candidate 檢查是 fast-uri(moderate/high,經 ajv);本次 audit 已不再列出 fast-uri(ajv 8.20 樹上的 fast-uri 3.1.5 已不在通報範圍)。
+

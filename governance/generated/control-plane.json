@@ -2056,12 +2056,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:890e2901ad52976092fed7a5b0513dabdd2b6941875530b04925bb3bb8eed583",
+      "hash": "sha256:698420e3a16775e4ed4d40aae64776af3bfeaa9e1c5ce2bd78a5acee0d410833",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 19681,
+      "size": 19739,
       "type": "file"
     },
     {
@@ -2710,7 +2710,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 46,
-      "hash": "sha256:b341f1e98e459ef8fedd0ab6d33a51dd948d3e09a03ec6dab8741c8e2a6aef13",
+      "hash": "sha256:9fa903e19f528c7cb3b02a6c3a3855727fd6a76c3845b03905548f83ff32c1be",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3255,7 +3255,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:0daa256fb0ace71f210b54cf6482696fa25255d2d04642690907dc5bf7baf16d",
+      "hash": "sha256:bf5c403dc60b2322f2b42a0d6eb4fb22958e21f5e0433731f36c4ce7eb6839f2",
       "id": "workspace-lockfile",
       "mode": "0644",
       "ownerRepo": "design-system",
