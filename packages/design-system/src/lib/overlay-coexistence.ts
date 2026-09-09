@@ -62,7 +62,7 @@ export function useOverlayCoexistence(active: boolean, keep: CoexistenceTargets 
 /**
  * 並存遮罩 —— modal 開著時宿主要被遮住(它仍然是 modal),但保留節點不能被遮、也不能被擋住點擊。
  * Radix 在 `modal={false}` 時不渲染 Overlay,所以這裡自己畫一層 `fixed inset-0` 的遮罩,
- * 用 `clip-path: polygon(evenodd …)` 在每個保留節點的位置**挖洞**:洞裡沒有遮罩像素、也沒有命中區,
+ * 用 `clip-path: path(evenodd …)` 在每個保留節點的位置**挖洞**(洞 = 元素可視形狀,含圓角;2026-09-09):洞裡沒有遮罩像素、也沒有命中區,
  * 保留節點照常可見可點;洞外(宿主)被遮、點下去是「外部點擊」→ 關閉 modal(v14 條 A 的 modal 語意)。
  * 不用 z-index 把保留節點抬上來:保留節點常是 `display:contents` 的殼或 flex 子節點,改它們的定位會破版。
  * 洞的位置跟著 ResizeObserver / 視窗 resize / 捲動更新。
@@ -88,23 +88,45 @@ export function CoexistenceMask({ keep, className, ...rest }: { keep: Coexistenc
       //   例外:`<svg>` / `<img>` / `<canvas>` / `<video>` 這類自己會畫的元素即使 pointer-events:none
       //   也算(入口鈕的招喚光圈就是 pointer-events-none 的 svg,洞要把它露出來)。
       const PAINTS = new Set(['svg', 'img', 'canvas', 'video'])
-      const boxes = (el: Element): DOMRect[] => {
+      // 洞 = 元素的**可視形狀**,不是外接矩形(2026-09-09 user:「dialog 遮罩不能在視覺上沿著 fab 的形狀?而是切出一個正方形放 fab?」):
+      // 圓形入口鈕原本挖 40×40 的方洞,四個角露出沒被遮的底色 = 那個「白方塊」。四個角各讀實際 border-radius(px / %;
+      // `rounded-full` 的 9999px 依 CSS 規則夾到邊長一半,相鄰兩角相加超過邊長時等比縮),用弧線畫子路徑;直角元素路徑與舊版相同。
+      type Hole = { r: DOMRect; radii: [number, number, number, number] }
+      const radiusPx = (value: string, w: number, h: number, axis: 'w' | 'h') => {
+        const v = value.trim().split(/\s+/)[0] ?? '0' // 「a / b」橢圓角只取水平值(DS 沒有橢圓角)
+        if (v.endsWith('%')) return (parseFloat(v) / 100) * (axis === 'w' ? w : h)
+        return parseFloat(v) || 0
+      }
+      const boxes = (el: Element): Hole[] => {
         const r = el.getBoundingClientRect()
         if (r.width <= 0 || r.height <= 0) return [...el.children].flatMap(boxes)
-        const hitTestable = getComputedStyle(el).pointerEvents !== 'none'
-        return hitTestable || PAINTS.has(el.tagName.toLowerCase()) ? [r] : [...el.children].flatMap(boxes)
+        const cs = getComputedStyle(el)
+        const hitTestable = cs.pointerEvents !== 'none'
+        if (!(hitTestable || PAINTS.has(el.tagName.toLowerCase()))) return [...el.children].flatMap(boxes)
+        let radii: [number, number, number, number] = [
+          radiusPx(cs.borderTopLeftRadius, r.width, r.height, 'w'), radiusPx(cs.borderTopRightRadius, r.width, r.height, 'w'),
+          radiusPx(cs.borderBottomRightRadius, r.width, r.height, 'w'), radiusPx(cs.borderBottomLeftRadius, r.width, r.height, 'w'),
+        ].map((v) => Math.max(0, Math.min(v, r.width / 2, r.height / 2))) as [number, number, number, number]
+        // CSS「相鄰圓角相加不得超過該邊長」:超過就全體等比縮(css-backgrounds-3 §5.5 corner-overlap)
+        const f = Math.min(1, r.width / ((radii[0] + radii[1]) || 1), r.width / ((radii[2] + radii[3]) || 1), r.height / ((radii[0] + radii[3]) || 1), r.height / ((radii[1] + radii[2]) || 1))
+        if (f < 1) radii = radii.map((v) => v * f) as [number, number, number, number]
+        return [{ r, radii }]
       }
-      const rects = keep()
+      const holesData = keep()
         .filter((el): el is Element => !!el && el.isConnected)
         .flatMap(boxes)
-      if (rects.length === 0 || base.width === 0) { setClipPath('none'); return }
+      if (holesData.length === 0 || base.width === 0) { setClipPath('none'); return }
       // path() 支援多個子路徑,evenodd 讓內圈變成洞;polygon() 只有單一路徑,接縫會畫出斜切三角(2026-09-08 實測)
       const W = base.width, H = base.height
       const outer = `M0 0H${W}V${H}H0Z`
-      const holes = rects.map((r) => {
+      const n = (v: number) => Math.round(v * 100) / 100
+      const holes = holesData.map(({ r, radii: [tl, tr, br, bl] }) => {
         const x1 = Math.max(0, r.left - base.left), y1 = Math.max(0, r.top - base.top)
         const x2 = Math.min(W, r.right - base.left), y2 = Math.min(H, r.bottom - base.top)
-        return x2 > x1 && y2 > y1 ? `M${x1} ${y1}H${x2}V${y2}H${x1}Z` : ''
+        if (!(x2 > x1 && y2 > y1)) return ''
+        if (tl + tr + br + bl === 0) return `M${n(x1)} ${n(y1)}H${n(x2)}V${n(y2)}H${n(x1)}Z`
+        const arc = (rad: number, x: number, y: number) => (rad > 0 ? `A${n(rad)} ${n(rad)} 0 0 1 ${n(x)} ${n(y)}` : `L${n(x)} ${n(y)}`)
+        return `M${n(x1 + tl)} ${n(y1)}H${n(x2 - tr)}${arc(tr, x2, y1 + tr)}V${n(y2 - br)}${arc(br, x2 - br, y2)}H${n(x1 + bl)}${arc(bl, x1, y2 - bl)}V${n(y1 + tl)}${arc(tl, x1 + tl, y1)}Z`
       }).join('')
       setClipPath(`path(evenodd, '${outer}${holes}')`)
     }

@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
-import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandEmptyStatus, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
+import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
 import { MenuItem, MenuFooter } from '@/design-system/components/Menu/menu-item'
 import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -171,7 +171,7 @@ export interface SelectMenuProps {
   className?: string
 }
 
-// SR 播報(empty / loading)已搬進 Command:`CommandEmptyStatus`(2026-09-08)。
+// SR 播報(empty)由 Command 根自動渲(2026-09-08 搬進 Command → 2026-09-09 根內建);loading 由可見的 CommandLoading role="status" 播。
 
 // shadcn canonical:forwardRef + displayName 統一。SelectMenu 是 Popover + Command
 // composite,自身無 DOM host(trigger 由 consumer 以 asChild children 提供),ref 簽名
@@ -522,8 +522,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
             )}
           </CommandList>
 
-          {/* SR 播報 empty / loading 空狀態(CommandEmptyStatus,2026-07-05 D4 → 2026-09-08 搬進 Command);文字跟可見訊息列同步 */}
-          <CommandEmptyStatus loading={optionsLoading} text={isRemote && isIdle ? searchHintText : emptyText} />
+          {/* SR 播報 0 筆(2026-09-09):由 Command 根自動渲(文字 = 上面 CommandEmpty 的字串 children),這裡不再另放,放了會播兩次 */}
 
           {/* Multi-select footer: Select All
               - 沒有選項時不顯示(selectableOptions.length === 0)

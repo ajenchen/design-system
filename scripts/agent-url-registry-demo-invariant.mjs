@@ -48,8 +48,24 @@ const TASK_4821 = '/projects/8821/tasks/4821'
  * 第一個子路徑是外框,其餘是洞。回傳洞面積佔外框面積的比例 —— 洞跟外框一樣大 = 遮罩整張被挖空。
  */
 export function maskHoleRatio(clip) {
-  const rects = [...String(clip).matchAll(/M\s*([\d.]+)\s+([\d.]+)\s*H\s*([\d.]+)\s*V\s*([\d.]+)\s*H\s*[\d.]+\s*Z/g)]
-    .map((m) => { const [x1, y1, x2, y2] = m.slice(1).map(Number); return { w: Math.abs(x2 - x1), h: Math.abs(y2 - y1) } })
+  // 2026-09-09 洞改成「元素可視形狀」(圓角用 A 弧線),所以不再只認 M/H/V/H/Z 矩形:逐子路徑走 M / H / V / L / A 指令算外接框,
+  // 面積以外接框計(圓洞算成外接方框,只用來守「洞不得整張挖空」這條上限,略高估無妨)。
+  const body = /path\((?:evenodd\s*,\s*)?["']([^"']*)["']\)/.exec(String(clip))?.[1] ?? String(clip)
+  const rects = body.split(/(?=M)/).map((sub) => sub.trim()).filter(Boolean).map((sub) => {
+    const tokens = sub.match(/[MHVLAZ]|-?[\d.]+/g) ?? []
+    let x = 0, y = 0, minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, cmd = ''
+    const mark = () => { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y) }
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i]
+      if (/[MHVLAZ]/.test(t)) { cmd = t; continue }
+      const n = Number(t)
+      if (cmd === 'M' || cmd === 'L') { x = n; y = Number(tokens[++i]); mark() }
+      else if (cmd === 'H') { x = n; mark() }
+      else if (cmd === 'V') { y = n; mark() }
+      else if (cmd === 'A') { i += 4; x = Number(tokens[++i]); y = Number(tokens[++i]); mark() } // rx ry rot large sweep x y
+    }
+    return Number.isFinite(minX) ? { w: maxX - minX, h: maxY - minY } : null
+  }).filter(Boolean)
   if (rects.length === 0) return { outer: 0, holes: 0, ratio: NaN }
   const outer = rects[0].w * rects[0].h
   const holes = rects.slice(1).reduce((sum, r) => sum + r.w * r.h, 0)
@@ -63,8 +79,10 @@ if (process.argv.includes('--selftest')) {
   const bad = maskHoleRatio('path(evenodd, "M 0 0 H 1406 V 640 H 0 Z M 0 0 H 1406 V 640 H 0 Z")')
   const good = maskHoleRatio('path(evenodd, "M 0 0 H 1406 V 639 H 0 Z M 1350 583 H 1390 V 623 H 1350 Z")')
   const none = maskHoleRatio('path(evenodd, "M 0 0 H 1006 V 639 H 0 Z")')
-  const ok = bad.ratio > MASK_HOLE_MAX_RATIO && good.ratio <= MASK_HOLE_MAX_RATIO && none.ratio === 0
-  console.log(`${ok ? '✓' : '✗'} selftest:壞 clip(洞 = 外框)ratio=${bad.ratio.toFixed(3)} 判紅;好 clip ratio=${good.ratio.toFixed(4)} 判綠;無洞 ratio=${none.ratio}`)
+  // 圓洞(2026-09-09 之後的真實輸出:四段 A 弧線)外接框 40×40 也要算得出來
+  const round = maskHoleRatio("path(evenodd, 'M0 0H1406V639H0ZM1370 583H1370A20 20 0 0 1 1390 603V603A20 20 0 0 1 1370 623H1370A20 20 0 0 1 1350 603V603A20 20 0 0 1 1370 583Z')")
+  const ok = bad.ratio > MASK_HOLE_MAX_RATIO && good.ratio <= MASK_HOLE_MAX_RATIO && none.ratio === 0 && Math.abs(round.holes - 1600) < 1
+  console.log(`${ok ? '✓' : '✗'} selftest:壞 clip(洞 = 外框)ratio=${bad.ratio.toFixed(3)} 判紅;好 clip ratio=${good.ratio.toFixed(4)} 判綠;無洞 ratio=${none.ratio};圓洞外接框 ${round.holes}`)
   process.exit(ok ? 0 : 1)
 }
 
@@ -363,6 +381,19 @@ for (const width of [1440, 1180]) {
   const ratioClosed = maskHoleRatio(maskClosed?.clip)
   check(`${W} S8 關 agent 後遮罩仍在:底色不透明、洞面積 ≤ ${MASK_HOLE_MAX_RATIO * 100}%(舊 bug:入口鈕 Dock 的全舞台圖層被當成洞,ratio=1)`, !!maskClosed && h.alpha(maskClosed.bg) > 0 && ratioClosed.ratio <= MASK_HOLE_MAX_RATIO, JSON.stringify({ open: maskOpen?.clip, closed: maskClosed?.clip, ratio: ratioClosed }))
   check(`${W} S8 關 agent 後 modal 仍開著、可操作(標題欄能聚焦)`, (await h.dialogs()) === 1 && (await page.evaluate(() => { const i = document.querySelector('#demo-task-title'); i?.focus(); return document.activeElement === i })))
+  // 2026-09-09 user:「dialog 遮罩不能在視覺上沿著 fab 的形狀?而是切出一個正方形放 fab?」—— 洞要 = 入口鈕的可視形狀(圓),
+  // 不是外接方形。斷言用命中測試(clip-path 也裁命中區):方框四角命中的是遮罩(不是鈕)、圓心命中的是鈕;clip 路徑含弧線。
+  const hole = await page.evaluate(() => {
+    const btn = document.querySelector('button[aria-label="開啟智慧代理"]'); const mask = document.querySelector('[data-coexistence-mask]')
+    if (!btn || !mask) return { missing: true }
+    const r = btn.getBoundingClientRect(); const inBtn = (x, y) => { const el = document.elementFromPoint(x, y); return !!el && (btn === el || btn.contains(el)) }
+    const corners = [[r.left + 2, r.top + 2], [r.right - 2, r.top + 2], [r.left + 2, r.bottom - 2], [r.right - 2, r.bottom - 2]]
+    // 遮罩自己不吃指標(洞外點擊要落到被抑制的宿主 = 「外部點擊」關 modal),所以「洞外」的判準 = 命中的東西跟遠離鈕的對照點一樣。
+    const far = document.elementFromPoint(r.left - 80, r.top - 80)
+    return { w: r.width, h: r.height, radius: getComputedStyle(btn).borderTopLeftRadius, cornersHitButton: corners.map(([x, y]) => inBtn(x, y)), cornersSameAsFar: corners.map(([x, y]) => document.elementFromPoint(x, y) === far), farIsButton: inBtn(r.left - 80, r.top - 80), centerHitButton: inBtn(r.left + r.width / 2, r.top + r.height / 2), arcs: (mask.style.clipPath.match(/A/g) || []).length }
+  })
+  check(`${W} S8 遮罩的洞沿著入口鈕的圓形(方框四角 = 洞外,命中與遠處對照點相同、不是鈕;圓心命中鈕;clip 含 4 段弧線)`, !hole.missing && hole.cornersHitButton.every((v) => !v) && hole.cornersSameAsFar.every(Boolean) && !hole.farIsButton && hole.centerHitButton && hole.arcs >= 4, JSON.stringify(hole))
+  if (width === 1440) await h.shot('1440-fab-hole.png')
   await h.click('button[aria-label="開啟智慧代理"]')
   await h.typeIntoPanel('?')
   check(`${W} S8 由入口鈕重開 agent,並存恢復(草稿仍在、可打字)`, (await h.panelInput())?.value === 'hello world!?', JSON.stringify(await h.panelInput()))

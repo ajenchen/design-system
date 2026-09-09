@@ -25,18 +25,32 @@ type CommandSize = 'sm' | 'md' | 'lg'
  * context 取得同一個 size(2026-09-08 之前 CommandGroup 的字串 heading 永遠是 md 列高)。
  * 不自帶 surface / radius:殼(PopoverContent / DialogContent / inline 的邊框容器)才是 surface 的 owner。
  */
+/** CommandEmpty 把它的字串文字登記到根,根的 live region 才有東西可播(見 Command root 註解)。 */
+const EmptyTextContext = React.createContext<((text: string | null) => void) | null>(null)
+
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive> & { size?: CommandSize }
->(({ className, size, ...props }, ref) => {
+>(({ className, size, children, ...props }, ref) => {
   const inherited = useRowSize('md')
+  // 0 筆結果的讀屏播報住在根(2026-09-09 user 核准「第二項如果確保是SSOT且不違背世界級的設計就照你建議做」):
+  // live region 必須一直掛著才會播(新掛上、已帶文字的 live region 讀屏器多半不念;react-select A11yText / Downshift
+  // status message 都由根元件常駐渲),文字由 CommandEmpty 的字串 children 登記進來。之前只有 SelectMenu 自己另放一份
+  // CommandEmptyStatus,CommandDialog / inline Command 沒有(command.spec.md 卻寫「都渲一份」);現在三種形態都由根
+  // 自動渲一份,消費端不必、也不得再放(放了會播兩次)。
+  const [emptyText, setEmptyText] = React.useState<string | null>(null)
   return (
     <RowSizeProvider value={size ?? inherited}>
-      <CommandPrimitive
-        ref={ref}
-        className={cn("flex h-full w-full flex-col overflow-hidden text-foreground", className)}
-        {...props}
-      />
+      <EmptyTextContext.Provider value={setEmptyText}>
+        <CommandPrimitive
+          ref={ref}
+          className={cn("flex h-full w-full flex-col overflow-hidden text-foreground", className)}
+          {...props}
+        >
+          {children}
+          <CommandEmptyStatus text={emptyText ?? ''} />
+        </CommandPrimitive>
+      </EmptyTextContext.Provider>
     </RowSizeProvider>
   )
 })
@@ -157,6 +171,11 @@ const CommandEmpty = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty> & { size?: CommandSize }
 >(({ className, children, size: sizeProp, ...props }, ref) => {
   const size = sizeProp ?? useRowSize('md')
+  // 字串訊息登記到 Command 根的 live region(sr-only;根一直掛著)。元素 children(如 CommandLoading,自帶 role="status")
+  // 不登記,避免同一狀態播兩次。本元件本身一直掛著(cmdk Empty 只在 0 筆時渲內容),所以 effect 不受筆數影響。
+  const setEmptyText = React.useContext(EmptyTextContext)
+  const text = typeof children === 'string' || typeof children === 'number' ? String(children) : null
+  React.useEffect(() => { setEmptyText?.(text); return () => setEmptyText?.(null) }, [text, setEmptyText])
   // 訊息列也住在群組裡(item-anatomy.spec.md「Group auto-separation」Pattern A:Command.List 沒有留白,8px 邊界留白
   // 只由群組提供;SelectMenu 的選項永遠在群組裡,連可建立列也是)。用 MenuGroup(不經 cmdk Group 註冊,Empty 槽只在
   // 0 筆時顯示、不需要 cmdk 的群組過濾)。
@@ -189,7 +208,8 @@ function CommandLoading({ label, size: sizeProp }: { label: string; size?: Comma
   )
 }
 
-// ── SR live status(2026-07-05 D4 於 SelectMenu 落地;2026-09-08 搬進 Command,CommandDialog / inline 也受益)──
+// ── SR live status(2026-07-05 D4 於 SelectMenu 落地;2026-09-08 搬進 Command;2026-09-09 改由 Command 根自動渲一份,
+//    文字來自 CommandEmpty 的字串 children —— 消費端(SelectMenu / CommandDialog / inline)不必也不得再放,放了會播兩次)──
 // cmdk CommandEmpty 渲染為 role="presentation" div、cmdk 全鏈無 aria-live,且 DOM focus 停在
 // combobox input(aria-activedescendant 虛擬焦點)→ SR 使用者搜尋到 0 結果或 loading 佔位時
 // 聽不到任何播報。補 visually-hidden polite live region,鏡射 CommandEmpty 的無結果文字;

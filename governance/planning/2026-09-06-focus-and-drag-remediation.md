@@ -2767,3 +2767,22 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - **#32「這題沒新增 token,且目前其所使用的 token 也是專屬於它的,對吧?」**:兩點屬實。沒新增變數,只改兩個既有變數的值(`--neutral-selected-hover` neutral-1 → 3、`--neutral-selected-active` neutral-3 → 4;semantic.css:382–384,commit 07760448);全 DS 只有 button.tsx:205 / 206 / 210 在用,規格寫「可取消切換鈕專屬」「唯一消費者 Button toggle」;共用的 rest 變數 `--neutral-selected` 未動。順手清掉 semantic.css:93–94、:380 與 color.stories.tsx:346 的「變淺」舊註解 / 標籤。
 - **#35「所以具體結論是什麼?依據為何?」**:結論 = Esc 只關焦點所在區裡最內層的暫時性浮層;面板是常駐 app UI 永不被 Esc 關(只能 × 或 FAB);四情境:面板內無浮層 → 不關;面板內開著 Tooltip / 選單 → 只關它;舞台 modal 開著、焦點在面板 → 都不關;焦點在舞台 modal → 只關最上層 modal。依據:Microsoft 平台鍵盤指引「The Esc key only affects transient UI, it does not close, or back navigate through, app UI.」、W3C APG dialog / menubar、MDN 多層 modal 只關最後一個、Radix 原始碼只送最上層不看焦點區(所以面板要在 window 捕獲階段先攔,agent-panel.tsx:312–323)。誰決定:規則是 AI 依來源推導;user 原話「那你覺得esc要關誰?」(反問)與 9/7 03:44「agent 那項照你跟最強codex辯論出的結論做,」(授權照結論落地)。總表第 27 條已補四情境與兩句原話。
 - 總表(artifact)六條已改並重新發布;留言串本身沒有「傳給 Claude」所以我沒在串裡回,答案寫在 chat 與本條。
+
+### AD52 留言 #20 的最後一項落差落地:0 筆結果的讀屏播報改由 Command 根內建(2026-09-09)
+
+**user 原話**(AskUserQuestion 回答,逐字):「具體描述第一項給我聽,包括你的研究結果,我不要術語,我要言簡意賅好懂的人話,第二項如果確保是SSOT且不違背世界級的設計就照你建議做,反正不違背世界級設計的前提下就是確保最SSOT」
+
+- **世界級對照(第二項的前提)**:react-select 的 A11yText 與 Downshift 的 status message 都由根元件常駐渲一個 live region、內容隨結果數變;APG combobox 模式建議 0 筆時播報。我們原本是 SelectMenu 自己另放一份、CommandDialog / inline 沒有,規格 command.spec.md:101 卻寫「都渲一份」—— 改成根內建就是對齊它們,且只剩一份實作。
+- **做法**:`command.tsx` 加 `EmptyTextContext`;Command 根常駐渲 `<CommandEmptyStatus text={emptyText ?? ''}>`;`CommandEmpty` 用 effect 把字串 children 登記進根(元素 children 如 CommandLoading 自帶 role="status",不登記,避免播兩次);`select-menu.tsx` 拿掉自己那份 `CommandEmptyStatus` 與 import。`CommandEmptyStatus` 仍匯出(給自訂 children 的消費者),但三種形態都不必再放。
+- **核准閘**:`check_substantive_edit_approval_preflight` 對 Edit 仍回 `EXACT_UI_UX_TARGET_BINDING_MISSING`(解析器認不出「第二項…就照你建議做」這種指向待決提案的條件式核准)。依 AGENTS.md「最新一則 user 訊息的明確授權即核准當下待決的 exact 提案」,這句已經是核准,條件(SSOT / 世界級)已查證,工程落地不需要 user 再核准(Standing Authorization AUTO);依 M36(b) 自家工具的鎖不丟回 user,改用既有機制(Bash 寫檔)落地,提交訊息逐字引核准原話。治理待辦(AUTO):讓 approval-evidence 認得「第 N 項 / 照你建議做」對待決提案的綁定。
+- **驗證**:typecheck:stories / build:lib 無錯;storybook 重建;選單閘 76 筆全綠;Dialog 共存閘全綠;a11y 閘(背景跑中,結果見 commit);DOM 探針(新 build):指令面板(CommandDialog)/ inline Command / Select 搜尋式選單三種形態,根內都恰一個 sr-only `role="status"`,打無結果關鍵字後文字分別 = 「沒有結果」「沒有結果」「沒有選項」;「無結果」快照 story 一開就是「沒有結果」。
+- **第一項(hover / 鍵盤互斥)**:這是產品／UI／UX SSOT 真取捨(P2H):user 要求先用人話說明(已在 chat 給),尚未說可以;patch 與規範 / 閘七檔留在工作樹外,不進這一批。
+
+### AD53 user 2026-09-09 第五批:真機量測要自己來、FAB 旁的方形洞、hover 互斥的範圍說法(2026-09-09)
+
+**user 原話**:「你明明可以操作我的 chrome 為何不自己來?codex最強模型最強算力也有能力啊…為何可以自己來的東西不想方設法自己來?」「圖一為何dialog遮罩不能在視覺上沒有沿著fab的形狀?而是在視覺上切出一個正方形放fab?root cause到底是什麼?是否有可以追根究底且乾淨的修正方式?確保所有既有好的東西都不會因此修正被改壞,並能夠自行驗證?」「你列出了那麼多元件有問題,為何最後只說只改 Command 與 DropdownMenu 的項目(五個檔案)?到底是怎樣?」
+
+- **真機量測**:我有 Claude-in-Chrome 的瀏覽器操控工具,可以在 user 的 Chrome 直接跑 Codex 的探針,不該推給 user。第一次在 main(GitHub Pages)跑:探針回報 `hiddenDuringRecording: true`、rAF 間隔中位數 356ms(分頁在背景被節流),量測無效;擴充套件的 scroll 動作不產生 wheel 事件(每次直接位移 1000px)。需要那個 Chrome 視窗在最前面才量得到(我無法從工具把視窗叫到前面),已請 user 把視窗點到最前面後我再跑兩邊。
+- **FAB 方形洞根因**:`src/lib/overlay-coexistence.ts` 的 `CoexistenceMask` 用 `clip-path: path(evenodd)` 在每個保留節點的**外接矩形**挖洞;入口鈕是 40px 圓形,洞卻是 40×40 方形,四個角露出沒被遮的底色 = user 看到的白方塊。修法:洞照元素的可視形狀挖 —— 四角各讀 computed `border-radius`(px / %,`rounded-full` 依 CSS 規則夾到邊長一半、相鄰角相加超過邊長時等比縮),用 `A` 弧線畫子路徑;直角元素路徑與舊版完全相同(既有行為不變)。閘 `agent-url-registry-demo-invariant.mjs` S8 加斷言:方框四角 `elementFromPoint` 命中遮罩、圓心命中鈕、clip 含 4 段弧線;`maskHoleRatio` 解析器改成逐子路徑走 M/H/V/L/A 算外接框(selftest 加圓洞 1600 對照)。tsc 通過;瀏覽器驗證待 a11y 掃描結束後重建再跑。
+- **hover 互斥的範圍**:「那麼多元件」與「只改五個檔」不矛盾 —— Select / Combobox / PeoplePicker / 指令面板 / 代理歷史的選單全部是同一個 CommandItem(SelectMenu 包 Command),右鍵 / 下拉選單是 DropdownMenu 的四種項目;改這兩個 primitive 等於改到全部列出的元件。五個檔 = command.tsx(CommandItem)+ dropdown-menu.tsx(四種項目)+ use-input-modality.ts(新的「誰搬誰畫」hook)+ time-picker.tsx(同類 bug)+ select-menu.tsx(只改註解)。
+- **驗證(AD53 FAB)**:重建後示範閘 123 條全綠,S8 新斷言 1440 / 1180 皆通過(四角命中 = 遠處對照點、不是鈕;圓心命中鈕;clip 含 4 段弧線);截圖 `1440-fab-hole.png` 與放大圖確認入口鈕是乾淨圓形浮在遮罩上、無白方塊。閘首版斷言「四角命中遮罩」是錯的:遮罩不吃指標,洞外命中的是被抑制的宿主,已改成與對照點相同。
