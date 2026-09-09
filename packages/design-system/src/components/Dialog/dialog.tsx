@@ -142,7 +142,17 @@ const DialogContent = React.forwardRef<
   // 只在有傳 persistentElements 時掛,預設路徑仍然一個位元不變。
   const insidePersistent = React.useCallback((node: EventTarget | null) => {
     if (!persistentElements || !(node instanceof Node)) return false
-    if (persistentElements().some((el) => el.contains(node))) return true
+    const kept = persistentElements()
+    if (kept.some((el) => el.contains(node))) return true
+    // 保留區自己開出來的 Radix 浮層(入口鈕的右鍵選單、面板裡的 Select / Popover)portal 到 body,不在保留區子樹裡;
+    // 焦點一進去就被當成 focus-outside,並存對話框當場關掉、選單跟著卸載(2026-09-09 user:「遮罩上的 fab 右鍵點擊都無法正常反應」)。
+    // 用 aria-controls / aria-owns 找回開它的觸發器:觸發器在保留區,那個浮層就算保留區的一部分。
+    for (let cur: Element | null = node instanceof Element ? node : node.parentElement; cur; cur = cur.parentElement) {
+      if (!cur.id) continue
+      const id = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(cur.id) : cur.id.replace(/["\\]/g, '\\$&')
+      const opener = document.querySelector(`[aria-controls="${id}"], [aria-owns="${id}"]`)
+      if (opener && kept.some((el) => el.contains(opener))) return true
+    }
     // 疊在上面的另一個 dialog(例:從並存 modal 裡開出的、沒有 URL 的確認框)也不算框外:
     // 非模態分支會把「焦點移進確認框」當 focus-outside 而把並存 modal 關掉,v14 第 9 題要的是「取消後兩邊恢復」。
     const other = (node instanceof Element ? node : node.parentElement)?.closest('[role="dialog"]')

@@ -2066,9 +2066,14 @@ function DataTableInner<TData>(
    * 這正是 v33 `PinnedColumnService` 的做法:`leftWidth` 由欄寬相加算出,再分別推給 header
    * (`setupHeaderPinnedWidth`)與 body(`SetPinnedWidthFeature`),兩邊都不量對方。
    */
+  // 拖拉欄寬模式下 `resolvedWidths` 是空 map,面板寬走 `c.getSize()`;`getSize()` 讀的是 TanStack 的 columnSizing 狀態,
+  // 但 leftCols / rightCols 的陣列身分不隨欄寬變,所以 memo 必須把 `columnSizingState` 列進依賴 ——
+  // 少了它,拖拉中與放開後面板寬都停在舊值(2026-09-09 user:「釘選欄位的欄寬調整功能被你搞壞了…實際拖拉的寬度跟視覺上顯示的完全對不起來」;
+  // 實測 main 面板 140 → 220 跟著長、本分支卡在 140 把長出來的部分裁掉。f3fe9f2e「面板寬改算不改量」引入)。
   const panelWidth = React.useCallback(
     (cols: typeof leftCols) => cols.reduce((a, c) => a + (resolvedWidths.get(c.id) ?? c.getSize()), 0),
-    [resolvedWidths],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- columnSizingState 是 getSize() 的真實輸入
+    [resolvedWidths, columnSizingState],
   )
   const leftWidth = React.useMemo(() => panelWidth(leftCols), [panelWidth, leftCols])
   const rightColsWidth = React.useMemo(() => panelWidth(rightCols), [panelWidth, rightCols])

@@ -2823,3 +2823,27 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - **修法**:`update()` 取 `rowEl.closest('[data-datatable-panel]')` 的矩形,算把手(24px 置中於列中心)超出面板上 / 下緣的量,存進 positionRef,`syncHandlePosition` 與 render style 都套 `clip-path: inset(top 0 bottom 0)`;部分露出的列 → 部分露出的把手,整列滑出 → 全裁(clip-path 同時裁掉命中區)。不改外觀、淡出、拖曳語意。spec :595 補「裁切與所屬列相同」。
 - **閘**:新 `scripts/data-table-handle-clip-invariant.mjs`(P0 無裁切且中心對列中心;P1 列半滑進表頭底下 → 上裁、未裁區在面板內;P2 整列滑出 → 全裁且不可命中;`--selftest` 注入 clip-path:none 必紅;stale-build 守衛)+ CI caller。
 - 與 Codex R18 / R19 的 worktree 可能在 RowDragHandle 區重疊,套它們的 patch 時以本修為基準 rebase。
+
+### AD58 user 2026-09-09:釘選欄拖拉欄寬壞了(沒即時回饋、有時不生效、實際寬度與畫面對不上)—— 根因:面板寬的 memo 缺欄寬狀態依賴(本分支 f3fe9f2e)(2026-09-09)
+
+**user 原話**:「釘選欄位的欄寬調整功能被你搞壞了,你自己去測試看到底是發生了什麼問題…拖拉沒有在ui上及時反應回饋之外,有時甚至不會生效,實際拖拉的寬度跟視覺上顯示的完全對不起來…千交代萬交代不要搞壞好的東西…確保你針對此問題的修正完全不會再搞壞任何原本好的東西」
+
+- **重現(探針 `probe-resize5.mjs`,拖 ID 欄把手 +80,每 20px 量)**:main:表頭格 100 → 180、儲存格同步、**釘選面板寬 140 → 220、中央區左緣 157 → 237** 跟著長;本分支(R17 前後皆同):表頭格與儲存格 100 → 180,但**面板寬卡在 140、中央區不動** → 長出來的部分被面板裁掉(看起來沒反應),放開後面板仍 140(實際欄寬 180 與畫面對不上)。三個 build 的把手命中區相同(7px 只有靠自己那格的左半可點,右半被鄰格蓋住)—— 這點 main 也一樣,不是回歸。
+- **根因**:`f3fe9f2e`「面板寬改算不改量」把 `leftWidth` 改成 `panelWidth(leftCols)` = 欄寬相加,拖拉模式下 `resolvedWidths` 為空 map、走 `c.getSize()`;但 `panelWidth` / `leftWidth` 的 memo 依賴只有 `resolvedWidths` 與 `leftCols`(陣列身分不隨欄寬變),`getSize()` 的真實輸入 `columnSizingState` 沒列進去 → 拖拉中與放開後都不重算。是我這條分支早先的改動,不是 Codex R17。
+- **修法**:`panelWidth` 依賴加 `columnSizingState`(header / body 面板與 `--dt-left-w` 全部同源更新)。不改把手命中區(與 main 相同,另案評估要不要讓右半也可點)。
+- **閘**:新 `scripts/data-table-pinned-resize-invariant.mjs`(R0 起始 / R1 拖拉中每步面板寬 = 欄寬總和且中央區左緣 = 面板右緣 / R2 放開後欄寬 = 起始 + 80;`--selftest` 用 CSS 凍住面板寬必紅)+ CI caller + `npm run test:data-table-pinned-resize`。
+- **不改壞其他東西的證據**:改動只有一個 memo 的依賴;332 不變式 / R0–R5 / fast-scroll / 把手閘 / 欄寬純函式測試全部重跑(結果見 commit)。
+
+### AD59 user 2026-09-09:入口鈕拖到邊緣再拖回來後遮罩多一個圓洞;遮罩上的入口鈕右鍵無反應(2026-09-09)
+
+**user 原話**:「當我把 fab推到邊緣去變成小fab之後又再拖回原本的地方,會在遮罩上挖出另一個圓形的洞?root cause是什麼???而且為何在遮罩上的fab不管大小被右鍵點擊都無法正常反應??點擊左鍵明明可以正常啊,root cause 是什麼????」
+
+- **多一個洞(重現:`probe-fab-mask.mjs`)**:貼邊後洞正確(D 形);拖回家後洞心停在 (1364.5, 766)、鈕心在 (1387, 847),600ms 後仍不變。根因:`CoexistenceMask` 只在 ResizeObserver / MutationObserver / resize / scroll 時重算洞;入口鈕放開後有 250ms 的 `right/top` 過渡(飛回家),洞是過渡途中那一幀算的,過渡結束沒人重算。修法:算洞後若保留元素子樹有 `playState === 'running'` 的動畫 / 過渡就每幀重算到結束;另監聽 `transitionend / transitioncancel / animationend`(capture)再算一次。
+- **右鍵無反應(重現:`probe-fab-menu.mjs`)**:右鍵按下時選單有掛上(`role=menu` 存在、不 inert),但 500ms 後選單與任務對話框一起消失(dialog 數 0);無遮罩時選單正常。根因:並存對話框(`modal={false}`)的 `insidePersistent` 守衛只認保留節點子樹;入口鈕的右鍵選單是 Radix DropdownMenu,portal 到 body,焦點一進選單就被當成 focus-outside → 對話框關閉、遮罩卸載、Dock 重渲染、選單跟著卸載。左鍵不開浮層所以沒事。修法:`insidePersistent` 沿節點祖先找有 `id` 的元素,用 `[aria-controls=id] / [aria-owns=id]` 找回開它的觸發器;觸發器在保留區 → 這個浮層算保留區的一部分(Radix menu / popover / select 都會在觸發器寫 aria-controls)。
+- 兩者都是既有缺口(遮罩挖洞與並存守衛都是 9/8–9/9 新機制),驗證:重跑 `probe-fab-mask.mjs`(拖回家後洞心 = 鈕心、右鍵後選單留著、對話框不關)+ 示範閘全部。
+
+### AD60 Codex 額度用盡:R18 / R19 中止(2026-09-09 23:1x)
+
+- R19(自適應骨架判準)第一次啟動即回 `CODEX-OUTCOME: QUOTA`:「You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at Sep 15th, 2026 11:57 AM.」;R18 接續版在 817,258 tokens 後同樣訊息中止。這是供應端額度(billing),屬 human-only 邊界:user 購買額度或等到 9/15 11:57。依禁降檔規則不換模型、不用其他 API 代跑。
+- 我的 R18 重試迴圈把 quota 誤判成 capacity 而每 5 分鐘重試,已停掉;治理待辦(AUTO):重試迴圈只認 `at capacity`,quota 一律停。
+- 期間工程不停:剩下的 CI 回歸(R17 觸發條件在慢機器失效)由我依 R19 brief 的判準自己實作 + 節流閘驗證;Codex 恢復後再做對抗審查。R18 worktree 的 H4(捲動中凍結 hover)半成品保留在 `/private/tmp/claude-501/r18-investigation/worktree`。

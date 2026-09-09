@@ -172,6 +172,8 @@ jobs:
           node scripts/data-table-handle-position.mjs --dpr=2 --selftest --out=tmp/datatable-handle-control
           node scripts/data-table-handle-clip-invariant.mjs --selftest
           node scripts/data-table-handle-clip-invariant.mjs
+          node scripts/data-table-pinned-resize-invariant.mjs --selftest
+          node scripts/data-table-pinned-resize-invariant.mjs
           for dpr in 1 2; do
             node scripts/data-table-handle-position.mjs --dpr=$dpr --out=tmp/datatable-handle-$dpr
             for peak in 1500 3000 4500; do

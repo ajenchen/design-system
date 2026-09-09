@@ -129,6 +129,12 @@ export function CoexistenceMask({ keep, className, ...rest }: { keep: Coexistenc
         return `M${n(x1 + tl)} ${n(y1)}H${n(x2 - tr)}${arc(tr, x2, y1 + tr)}V${n(y2 - br)}${arc(br, x2 - br, y2)}H${n(x1 + bl)}${arc(bl, x1, y2 - bl)}V${n(y1 + tl)}${arc(tl, x1 + tl, y1)}Z`
       }).join('')
       setClipPath(`path(evenodd, '${outer}${holes}')`)
+      // 保留元素正在動畫 / 過渡(入口鈕拖放後 250ms 飛回家、貼邊形態過渡)時,洞要每幀跟著算到動畫結束;
+      // 否則洞停在算的那一刻的位置(2026-09-09 user:「fab 推到邊緣再拖回原本的地方,會在遮罩上挖出另一個圓形的洞」:
+      // 實測洞心停在飛行途中 1364,766、鈕心已到 1387,847)。ResizeObserver / MutationObserver 都看不到位置過渡。
+      const animating = keep().some((el) => !!el && el.isConnected && typeof el.getAnimations === 'function'
+        && el.getAnimations({ subtree: true }).some((a) => a.playState === 'running'))
+      if (animating) frame = requestAnimationFrame(compute)
     }
     const schedule = () => { if (!frame) frame = requestAnimationFrame(compute) }
     compute()
@@ -141,7 +147,14 @@ export function CoexistenceMask({ keep, className, ...rest }: { keep: Coexistenc
     for (const el of keep()) if (el && mo) mo.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] })
     window.addEventListener('resize', schedule)
     window.addEventListener('scroll', schedule, true)
+    // 過渡 / 動畫結束再算最後一次(playState 掃描與結束事件互為保險)
+    document.addEventListener('transitionend', schedule, true)
+    document.addEventListener('transitioncancel', schedule, true)
+    document.addEventListener('animationend', schedule, true)
     return () => {
+      document.removeEventListener('transitionend', schedule, true)
+      document.removeEventListener('transitioncancel', schedule, true)
+      document.removeEventListener('animationend', schedule, true)
       if (frame) cancelAnimationFrame(frame)
       ro?.disconnect()
       mo?.disconnect()

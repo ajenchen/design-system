@@ -49,10 +49,12 @@ await new Promise((r) => server.listen(0, r))
 const BASE = `http://localhost:${server.address().port}`
 const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1400, height: 800 } })
-await page.addInitScript(() => {
+await page.addInitScript((traceOn) => {
+  window.__gbcrTraceOn = traceOn
   window.__gbcr = 0
   const orig = Element.prototype.getBoundingClientRect
-  Element.prototype.getBoundingClientRect = function () { window.__gbcr++; return orig.call(this) }
+  window.__gbcrBy = {}
+  Element.prototype.getBoundingClientRect = function () { window.__gbcr++; if (window.__gbcrTrace) { const l = (new Error().stack || '').split('\n').slice(2, 4).map((x) => x.trim().replace(/\(.*\//, '(')).join(' < '); window.__gbcrBy[l] = (window.__gbcrBy[l] || 0) + 1 }; return orig.call(this) }
   // React DevTools hook 的最小樁:production build 也會在每次 commit 呼叫 onCommitFiberRoot
   window.__commits = 0
   window.__rendered = {}
@@ -85,8 +87,13 @@ await page.addInitScript(() => {
     }, onCommitFiberUnmount() {}, onPostCommitFiberRoot() {},
     checkDCE() {}, on() {}, off() {}, emit() {}, sub() { return () => {} },
   }
-})
+}, process.argv.includes('--gbcr-trace'))
 const cdp = await page.context().newCDPSession(page)
+// 2026-09-09:`--cpu-throttle=<rate>` 模擬 CI 慢機器(CDP Emulation.setCPUThrottlingRate);`--gbcr-trace` 把 getBoundingClientRect 的呼叫者取樣印出(診斷用,不影響判定)
+const CPU_THROTTLE = Number((process.argv.find((a) => a.startsWith('--cpu-throttle=')) || '').split('=')[1] || 1)
+if (CPU_THROTTLE > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLE })
+const GBCR_TRACE = process.argv.includes('--gbcr-trace')
+if (GBCR_TRACE) page.on('console', (m) => { if (m.text().startsWith('GBCR-CALLERS')) console.log(m.text().slice(0, 1200)) })
 await cdp.send('Performance.enable')
 const metrics = async () => { const { metrics } = await cdp.send('Performance.getMetrics'); const m = Object.fromEntries(metrics.map((x) => [x.name, x.value])); return { script: m.ScriptDuration, layout: m.LayoutCount, style: m.RecalcStyleCount } }
 
@@ -113,9 +120,11 @@ for (const id of STORIES) {
     // 暖機到中段
     el.scrollTop = Math.floor((el.scrollHeight - el.clientHeight) / 3); await frame(); await frame()
     // 1px 步進:每次 render 的成本(不換列)
-    window.__gbcr = 0
+    window.__gbcr = 0; window.__gbcrBy = {}; window.__gbcrTrace = window.__gbcrTraceOn
     for (let i = 0; i < 30; i++) { el.scrollTop += 1; await frame() }
     const gbcrFine = window.__gbcr / 30
+    window.__gbcrTrace = false
+    if (window.__gbcrTraceOn) console.log('GBCR-CALLERS ' + JSON.stringify(Object.entries(window.__gbcrBy).sort((a, b) => b[1] - a[1]).slice(0, 8)))
     // 換列步進
     await frame(); attrs = 0; nodes = 0; window.__commits = 0; window.__rendered = {}; window.__touched = {}; window.__dtRowRenderStats.fresh = 0;
     window.__dtRowRenderStats.missIdx = {};
