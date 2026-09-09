@@ -2573,3 +2573,45 @@ required 的 fan-in `Verify(tsc + tests + compile + build)` 綠;`Verify static` 
 上一個 head `91a9c3fe` 同一原因已紅,不是本 commit 造成。供應鏈閘是真警報(memory feedback_anti_self_lock_release_transport),不繞過:發版前要升級 fast-uri 或記錄豁免,登記為待辦。
 Netlify 分支預覽:https://claude-agent-panel-comment-followups--ajenchen-design-system.netlify.app 。
 
+### AD38 user 2026-09-09 回覆:兩件拍板 + 一個新題(欄位值驗證中 vs 選單載入中)
+
+- **搜尋列外框**:user 逐字「跟世界級的設計一樣就維持現狀」→ 定案:無外框 + 底部分隔線(`command.spec.md`「常見誤解」段落已記)。
+- **列殼視覺**:user「目前視覺看起來滿正常滿 ok 的」;確認它是 DS Skeleton SSOT(元件 / 形狀 / `bg-muted` 都是),唯一偏離是關脈動動畫,已在 `skeleton.spec.md`「動畫」登記為例外並附量測理由。
+- **新題**:user 問「field control 內的值也需要驗證讀取或是更新,照理說是運用其右側那個 circular progress,但這跟選單的內容讀取是兩件事,世界級的設計怎麼做?」→ 走 M26(WebFetch ≥ 3)+ M29(owner 表)後提案,見 AD39。
+
+### AD39 提案(待 user 拍板):「值在驗證 / 儲存」與「選單內容在載入」是兩件事,轉圈該住在哪(2026-09-09;M26 五家原始來源 + M29 owner 表)
+
+**user 原話**:「有時候 field control 內的值也需要驗證讀取或是更新,照理說是運用其右側那個 circular progress,但這跟選單的內容讀取是兩件事欸,世界級的設計怎麼做?」
+
+**M29 owner 表**
+
+| candidate owner spec | canonical sentence | conflicting code / comment |
+|---|---|---|
+| `field-controls.spec.md:93-138`「Loading state」 | `loading` 是 edit mode 子狀態、editable 派;Input → endAction 槽轉圈;Select / Combobox / PeoplePicker → ChevronDown 左邊的 suffix 位置;**用途寫「debounce search / async validation」兩種混在一起** | 無衝突,但兩種語意共用一個槽、一個字 |
+| `select-menu.spec.md:149-158`「Loading」 | 選項載入分兩處:搜尋列右側 / 空清單時訊息列(2026-09-08 user 拍板);觸發點一次只一顆 | 無 |
+| `form-validation.spec.md:158` | loading 明文 N/A,指回 field-controls | 無 |
+| `field.spec.md:58` | Field 有 label / description / error 三個結構槽;error `role="alert"` | 無「驗證中 / 儲存中」的槽 |
+
+**世界級怎麼做(WebFetch 第一手)**
+
+| 家 | 選項 / 內容載入 | 值的驗證 / 儲存 | 來源 |
+|---|---|---|---|
+| MUI Autocomplete | `loading` → `CircularProgress` 放在 TextField 的 `endAdornment`(控件裡),清單另有 loadingText | TextField 沒有 loading;驗證走 helperText / error | github.com/mui/material-ui `docs/data/material/components/autocomplete/Asynchronous.js` |
+| Ant Select / Form | Select `loading` → `loadingIcon`(spin)取代箭頭(控件 suffix) | Form.Item `validateStatus="validating"` + `hasFeedback` 出回饋圖示,**但文件寫「Recommended to be used only with Input」**= Ant 自己避開 Select 上兩個轉圈打架 | ant.design/components/select、/components/form |
+| Polaris Autocomplete | `loading` → `Listbox.Loading` **在浮層清單裡**,不在 TextField | TextField 走 error / helpText | github.com/Shopify/polaris `Autocomplete.tsx` |
+| Primer TextInput | — | `loading` + `loaderPosition`(auto / leading / trailing)在 input 裡:輸入框層級的非同步(驗證、抓取) | github.com/primer/react `TextInput.docs.json` |
+| Carbon Inline loading | 內容用 skeleton | **「Use an inline loading component for any action that cannot be performed instantly」**,狀態 active / finished(1.5s)/ error,放在動作旁;「Don't trigger inline loading on more than one item at a time」 | carbondesignsystem.com/components/inline-loading/usage |
+
+**結論**:世界級的共識是「轉圈住在被載入的東西旁邊」—— 選項載入住在控件 / 清單;**值的驗證 / 儲存是對這個值做的一個動作**,Carbon 把它做成獨立的 inline loading(有 active / finished / error 三態、有文字),Ant 則乾脆不在 Select 上放第二顆轉圈。
+
+**三個選項(建議 B)**
+
+| 選項 | 做法 | 好處 | 代價 |
+|---|---|---|---|
+| A. Ant 式 | Select / Combobox / PeoplePicker 不顯示值層級的轉圈,只有 Input 有;值的驗證 / 儲存只用 helper / error 文字 | 零新槽、零衝突 | 使用者看不到「儲存中」,只看得到結果 |
+| **B. Carbon 式(建議)** | Field 家族新增 **inline status**:住在 description 槽(helper 那一列),列圖示尺寸轉圈 + 文字「驗證中…」「儲存中…」,完成 → 「已儲存」停 1.5s,失敗 → 進 FieldError。控件右側的轉圈**只留給內容載入**(選項 / 建議清單)。API 形狀:`<Field status={{ state: 'validating' \| 'saving' \| 'saved' \| 'failed', text? }}>`,wrapper `aria-busy`,status `role="status"`(polite),失敗維持 `role="alert"` | 兩件事兩個家、對 Input / Select / Combobox / PeoplePicker / DatePicker 一致;有文字比只有轉圈更清楚;多了「已儲存」與「失敗」兩個轉圈給不了的狀態;Input 既有 `loading` 收窄成「抓內容」(建議清單),不破 API | Field 多一個槽的規格與實作;field-controls.spec「async validation 用 loading」那句要改口 |
+| C. 單槽優先權 | 右側槽給值的驗證 / 儲存;選項載入**永遠只在選單內**(搜尋列 / 訊息列),觸發點關著時不轉 | 不加槽 | 觸發點關著時抓選項沒有任何指示(MUI / Ant / react-select 都會在控件轉);同一顆轉圈仍代表兩種事 |
+
+**建議 B 的理由**:Carbon 把「動作的 inline loading」與「內容的 skeleton / 載入」明文分開;Ant 的 hasFeedback 建議只給 Input,證明兩顆轉圈在 Select 上會打架是被認知的問題;MUI / Polaris 都把選項載入留在控件 / 清單。B 讓每一種控件用同一套語言,而且能表達「已儲存」。
+**沒拍板前不動 code**(產品 / UI SSOT 真取捨,batch-at-end)。
+

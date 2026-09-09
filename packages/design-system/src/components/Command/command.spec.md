@@ -107,6 +107,7 @@ Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>`
 
 - 「選單一律用 Command」— < 6 項、選完即觸發動作的操作選單是 `DropdownMenu`(見「與 DropdownMenu 的分界」)。
 - 「Command 搜尋框可以自己定尺寸」— 已撤回(2026-09-08):高度 / 字級 / placeholder 都吃 Field token,只是沒有外框(浮層內的一列)。
+  **搜尋列不畫外框、只有底部分隔線 = 定案**(user 2026-09-09 逐字:「跟世界級的設計一樣就維持現狀」;對照 Linear / Raycast / cmdk 的浮層搜尋列);先前「跟 Input 一模一樣」指的是尺寸、字級、提示文字、停用態同一套 token,不含外框。
 - 「cmdk `data-selected` = 持續選中態」— 它是鍵盤 / 指標的臨時 roving highlight(游標),不是選中:指標模態用 `bg-neutral-hover`(它就是 hover)、鍵盤模態畫框不上底色,永遠不用 `bg-neutral-selected`(見「為何無 StateBehavior」)。
 
 ---
