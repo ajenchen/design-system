@@ -1,8 +1,8 @@
 {
   "_meta": {
     "purpose": "a11y baseline-diff gate — 現存 violation 快照;gate 只 fail 新增/增量(regression)。重建:npm run a11y:check -- --baseline-write(需先 build-storybook)",
-    "generatedAt": "2026-09-09T05:48:17.528Z",
-    "stories": 1034,
+    "generatedAt": "2026-09-09T09:07:40.345Z",
+    "stories": 1033,
     "storyIds": [
       "apps-template-all-ds-components-portal--import-smoke",
       "apps-template-appshell-dashboard--default",
@@ -370,7 +370,6 @@
       "design-system-components-dialog-設計原則--usage-guidance",
       "design-system-components-dialog-設計規格--accessibility",
       "design-system-components-dialog-設計規格--color-matrix",
-      "design-system-components-dialog-設計規格--destructive-matrix",
       "design-system-components-dialog-設計規格--height-behavior",
       "design-system-components-dialog-設計規格--inspector",
       "design-system-components-dialog-設計規格--overview",
@@ -1039,8 +1038,8 @@
       "design-system-tokens-typography--type-scale",
       "design-system-tokens-uisize--overview"
     ],
-    "storyIdsSha256": "42834f8b32c28bdca6eaf0a528be1455debd6c0f9555fed342bf021aa45e5788",
-    "fingerprints": 740
+    "storyIdsSha256": "ef9b93d3c1003eda200cd84db848c006fc9e9a181b3e7287785e0a79b2c88f4c",
+    "fingerprints": 739
   },
   "fingerprints": {
     "apps-template-composition-fidelity-replica--icon-only-replica|color-contrast": 3,
@@ -1063,6 +1062,7 @@
     "design-system-components-agentpanel-展示--resizable-width|color-contrast": 1,
     "design-system-components-agentpanel-設計規格--color-matrix|color-contrast": 1,
     "design-system-components-agentpanel-設計規格--fab-placements|color-contrast": 5,
+    "design-system-components-agentpanel-設計規格--inspector|color-contrast": 12,
     "design-system-components-agentpanel-設計規格--size-matrix|color-contrast": 5,
     "design-system-components-agentpanel-設計規格--state-behavior|color-contrast": 5,
     "design-system-components-alert-展示--corner-action-group|color-contrast": 2,
@@ -1220,8 +1220,7 @@
     "design-system-components-combobox-展示--in-data-table|color-contrast": 1,
     "design-system-components-combobox-展示--loading-first-open|color-contrast": 2,
     "design-system-components-combobox-展示--modes|color-contrast": 1,
-    "design-system-components-combobox-展示--remote-search-hint|color-contrast": 2,
-    "design-system-components-combobox-展示--remote-search|color-contrast": 1,
+    "design-system-components-combobox-展示--remote-search-hint|color-contrast": 1,
     "design-system-components-combobox-展示--searchable|color-contrast": 2,
     "design-system-components-combobox-展示--size-alignment|color-contrast": 3,
     "design-system-components-combobox-展示--with-error|color-contrast": 1,
@@ -1306,7 +1305,6 @@
     "design-system-components-dialog-設計原則--height-behavior-rule|color-contrast": 6,
     "design-system-components-dialog-設計原則--usage-guidance|color-contrast": 8,
     "design-system-components-dialog-設計規格--color-matrix|color-contrast": 1,
-    "design-system-components-dialog-設計規格--destructive-matrix|color-contrast": 1,
     "design-system-components-dialog-設計規格--height-behavior|color-contrast": 2,
     "design-system-components-dialog-設計規格--overview|color-contrast": 1,
     "design-system-components-dialog-設計規格--size-matrix|color-contrast": 2,

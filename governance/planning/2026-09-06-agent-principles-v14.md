@@ -120,7 +120,7 @@
 | 並存時的 outside dismiss | **已解**(2026-09-08):非模態分支會在「焦點跑到框外」時 dismiss —— 把焦點移進常駐區域就等於框外互動,對話框當場關掉(實測連 Esc 都還沒按)。Dialog 在有 `persistentElements` 時擋掉來自常駐區域的 `onFocusOutside` / `onPointerDownOutside` / `onInteractOutside` |
 
 | 2 | 面板關閉時整個卸載 | `agent-panel-fab.tsx:813` 起 Dock 預設開啟、關閉時卸載面板 —— 沒辦法保證 F 條「初始化為關閉」與 E 條「閱讀位置保存」 | **已解**(2026-09-07:`display:contents` keep-mounted;閘 `agent-panel-reopen-state.mjs`)|
-| 3 | 推擠與斷點還掛在 backlog | `agent-panel.spec.md:83` 明寫「面板與 app 的推擠/斷點 = backlog」—— B 條要落地,這一條得先解 | **已解**(2026-09-07:容器基準斷點 1080 + `resolvePanelWidthMax`;閘 `agent-panel-breakpoint.mjs`)|
+| 3 | 推擠與斷點還掛在 backlog | `agent-panel.spec.md:83` 明寫「面板與 app 的推擠/斷點 = backlog」—— B 條要落地,這一條得先解 | **已解**(2026-09-07:容器基準斷點 1080,2026-09-09 user 拍板改 960「我覺得 960px 作為 agent 蓋板的斷點應該可以」+ `resolvePanelWidthMax`;閘 `agent-panel-breakpoint.mjs`)|
 
 ## 來源與審查紀錄
 

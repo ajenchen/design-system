@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-09T04:29:36.074Z"
+    "generatedAt": "2026-09-09T08:27:28.198Z"
   },
   "components": {
     "accordion": {
@@ -701,7 +701,6 @@
           "design-system-components-dialog-設計規格--overview",
           "design-system-components-dialog-設計規格--inspector",
           "design-system-components-dialog-設計規格--height-behavior",
-          "design-system-components-dialog-設計規格--destructive-matrix",
           "design-system-components-dialog-設計規格--size-matrix",
           "design-system-components-dialog-設計規格--state-behavior",
           "design-system-components-dialog-設計規格--color-matrix",
@@ -1818,5 +1817,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 986
+  "totalStories": 985
 }

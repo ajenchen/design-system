@@ -315,7 +315,7 @@ const RemoteDirectoryPicker = () => {
   }
   return (
     <div className="max-w-xs">
-      <PeoplePicker value={val[0] ?? null} people={people} suggestions={recent} filterOption={false} optionsLoading={optionsLoading} onSearchChange={onSearchChange} onChange={setVal} defaultOpen aria-label="指派人員(遠端搜尋)" />
+      <PeoplePicker value={val[0] ?? null} people={people} suggestions={recent} filterOption={false} optionsLoading={optionsLoading} onSearchChange={onSearchChange} onChange={setVal} aria-label="指派人員(遠端搜尋)" />
     </div>
   )
 }

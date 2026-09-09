@@ -72,7 +72,7 @@ const InspectorView = () => {
             <H3>即時預覽</H3>
             <Desc>
               拉下面的滑桿改寬度,看三段怎麼分配:標題列與輸入盒是固定高,訊息區吃掉剩下的全部。
-              寬度夾在 360 ~ 640 之間,且永遠不超過視窗寬的一半(較小者勝)。
+              寬度夾在 360 ~ 640 之間,且永遠不超過容器寬的 3/8(較小者勝);容器窄於 960 就翻成蓋板。
             </Desc>
             <div className="border border-divider rounded-lg overflow-hidden" style={{ height: 420 }}>
               <div className="flex h-full justify-end bg-canvas">

@@ -59,6 +59,7 @@ export function SimulatedBrowser({ url, onBack, onForward, onReload, canBack = f
       </div>
       <div
         ref={canvasRef}
+        data-simulated-canvas=""
         className={cn('relative flex overflow-hidden rounded-b-lg border border-t-0 border-border bg-canvas', fill && 'min-h-0 flex-1')}
         style={{ height: fill ? undefined : height, transform: 'translateZ(0)', boxShadow: 'var(--elevation-100)' }}
       >

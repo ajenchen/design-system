@@ -235,7 +235,7 @@ Consumer 必須保留 `<DialogTitle>`——即使視覺不顯示，也要用 `Vi
 
 Dialog 是 modal 浮層元件,關鍵決策維度是 `maxWidth`(400/480/512/560/720)× `autoHeight` × `destructive` × open/close 行為。互動 `Inspector`(右側 Controls 即時切 `maxWidth` / `autoHeight` 看寬度 tier 與高度模式差異)搭配結構性矩陣 side-by-side 比對,完整呈現「照情境選 size / 選 autoHeight」的決策。
 
-對應 anatomy story:`Overview` + `Inspector` + 元件特有 `HeightBehavior` / `DestructiveMatrix` + `SizeMatrix` + `StateBehavior` + `ColorMatrix` + `Accessibility`。
+對應 anatomy story:`Overview` + `Inspector` + 元件特有 `HeightBehavior` + `SizeMatrix` + `StateBehavior` + `ColorMatrix` + `Accessibility`。
 
 ---
 

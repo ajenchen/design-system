@@ -336,7 +336,6 @@ function RemoteSearchDemo() {
         filterOption={false}
         optionsLoading={optionsLoading}
         onSearchChange={onSearchChange}
-        defaultOpen
         placeholder="移動到…"
         aria-label="移動到(遠端搜尋)"
       />

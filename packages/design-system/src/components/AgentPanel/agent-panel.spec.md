@@ -82,14 +82,15 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - A11y:`role="complementary"` + `aria-label="智慧代理"`。
 - **與 app 的推擠與斷點(2026-09-07 G3 落地;數字全是推導值,不是挑的)**
 
-  三個已定的量互鎖:面板 ≥ 360、**面板 ≤ 舞台的一半**(user 2026-09-07 裁示:「50% 基準由視窗改舞台」)、
-  並排時 舞台 = 容器 − 面板。三條合起來 ⇒ **面板 ≤ 容器/3** ⇒ 並排只在**容器 ≥ 1080** 時成立
+  三個已定的量互鎖:面板 ≥ 360、**面板 ≤ 舞台的 3/5**(2026-09-07 user 裁示「50% 基準由視窗改舞台」定了「一半」;2026-09-09 user 拍板
+  「我覺得 960px 作為 agent 蓋板的斷點應該可以」→ 放寬到 3/5:舞台 600 = Material medium 視窗下緣、DataTable 5 欄各 120px;360 下限不動)、
+  並排時 舞台 = 容器 − 面板。三條合起來 ⇒ **面板 ≤ 容器 × 3/8** ⇒ 並排只在**容器 ≥ 960** 時成立
   (那一格剛好是面板 360、舞台 720)。
 
   | 容器寬 | 形態 | 面板 |
   |---|---|---|
-  | ≥ 1080 | **並排** —— 面板是 flex 兄弟,自然把舞台推窄 | 可拖,上限 `min(640, ⌊容器/3⌋)` |
-  | < 1080 | **蓋板** —— `absolute inset-0` 蓋滿舞台 | 全寬,**不渲染拖曳把手**(寬度不再是可選的)|
+  | ≥ 960 | **並排** —— 面板是 flex 兄弟,自然把舞台推窄 | 可拖,上限 `min(640, ⌊容器 × 3/8⌋)` |
+  | < 960 | **蓋板** —— `absolute inset-0` 蓋滿舞台 | 全寬,**不渲染拖曳把手**(寬度不再是可選的)|
 
   蓋板態抑制的是**宿主**(共用 `lib/overlay-coexistence.ts` 的 `suppressOthers`,body portal 的浮層也被抑制);宿主之外仍要可用的節點
   (瀏覽器 chrome:網址列、上一頁 / 下一頁、重新整理)由消費端以 `persistentElements` 傳入,與 Dialog 同一份契約
@@ -118,7 +119,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   (側欄 + 主內容 + 面板)用視窗算會給出 640 的上限,面板一寬舞台就被擠爆。
   量法用 ResizeObserver 而不是 window resize —— 側欄收合、分頁切換都不會發 window resize。
 
-  斷點常數 `AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER` 有匯出,消費端不必自己抄一個 1080。
+  斷點常數 `AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER` 有匯出,消費端不必自己抄一個 960。
   機械閘:`scripts/agent-panel-breakpoint.mjs`。
 
 ### 2. AgentPanelHeader(標題列)

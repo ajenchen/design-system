@@ -123,10 +123,12 @@ const PANEL_RESIZE_KEY_STEP = 16
  *
  * 三個已定的量互鎖(2026-09-07 G3):
  *   面板 ≥ 360(`PANEL_WIDTH_MIN`)
- *   面板 ≤ 舞台的一半(user 2026-09-07 裁示 #5:「50% 基準由視窗改舞台」)
+ *   面板 ≤ 舞台的 3/5(user 2026-09-07 裁示 #5:「50% 基準由視窗改舞台」定了「一半」;2026-09-09 放寬到 3/5,見下)
  *   並排時 舞台 = 容器 − 面板
- * 三條合起來:面板 ≤ (容器 − 面板)/2 ⇒ **面板 ≤ 容器/3**。
- * 再套下限 360 ⇒ **並排只在容器 ≥ 1080 時成立**;更窄就翻成蓋板(見 `resolveIsOverlay`)。
+ * 三條合起來:面板 ≤ (容器 − 面板) × 3/5 ⇒ **面板 ≤ 容器 × 3/8**。
+ * 再套下限 360 ⇒ **並排只在容器 ≥ 960 時成立**;更窄就翻成蓋板(見 `resolveIsOverlay`)。
+ * 2026-09-09 user 拍板「我覺得 960px 作為 agent 蓋板的斷點應該可以」:把 2026-09-07 的「面板 ≤ 舞台一半」放寬到 3/5(舞台 600 = Material
+ * medium 視窗下緣、DataTable 5 欄各 120px),360 下限不動;原本三鎖的唯一解 1080 因此變成 960。
  *
  * 為什麼不是量視窗:面板住在容器裡,不是住在視窗裡。視窗 1920 但容器只有 800 的版面
  * (側欄 + 主內容 + 面板)用視窗算會給出 640 的上限,面板一寬舞台就被擠爆。
@@ -137,7 +139,7 @@ const PANEL_RESIZE_KEY_STEP = 16
 function resolvePanelWidthMax(containerPx: number) {
   // 還沒佈局(0)時不能拿去算,否則會鎖進最小值且不再復原(同 person-display 的 <=0 守衛)
   if (!containerPx || containerPx <= 0) return PANEL_WIDTH_MAX
-  return Math.min(PANEL_WIDTH_MAX, Math.max(Math.floor(containerPx / 3), PANEL_WIDTH_MIN))
+  return Math.min(PANEL_WIDTH_MAX, Math.max(Math.floor(containerPx * 3 / 8), PANEL_WIDTH_MIN))
 }
 
 /** 容器窄到並排放不下(面板 360 之後舞台會不足面板兩倍)→ 翻成蓋板,蓋滿舞台。 */
@@ -147,10 +149,10 @@ function resolveIsOverlay(containerPx: number) {
 }
 
 /**
- * 並排斷點:容器至少要這麼寬,面板才放得下且舞台仍有面板的兩倍(360 × 3 = 1080)。
- * 匯出讓消費端可以用同一個數字排版,不必自己抄一個 1080。
+ * 並排斷點:容器至少要這麼寬,面板才放得下且舞台仍有面板的 5/3(360 × 8/3 = 960)。
+ * 匯出讓消費端可以用同一個數字排版,不必自己抄一個 960。
  */
-export const AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER = PANEL_WIDTH_MIN * 3
+export const AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER = Math.ceil(PANEL_WIDTH_MIN * 8 / 3)
 
 /** 面板形態:並排(flex 兄弟)或蓋板(absolute 蓋滿宿主);同時標在根節點 `data-agent-panel-mode`。 */
 export type AgentPanelMode = 'side-by-side' | 'overlay'
@@ -173,7 +175,7 @@ export interface AgentPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   /** 可拖拉(左緣把手);預設 true。Sheet 承載時同樣可拖。 */
   resizable?: boolean
   /**
-   * 蓋板態(容器 < 1080,面板蓋滿宿主)仍要可用的節點 —— 與 Dialog 的 `persistentElements` 同一份契約、
+   * 蓋板態(容器 < 960,面板蓋滿宿主)仍要可用的節點 —— 與 Dialog 的 `persistentElements` 同一份契約、
    * 同一支 primitive(`lib/overlay-coexistence.ts`)。v14 條 B 說的「宿主暫不可操作」只講**宿主**;
    * 宿主之外的瀏覽器 chrome(網址列、上一頁 / 下一頁、重新整理)不是宿主,蓋板時不得被抑制
    * (2026-09-09 user:「範例變成滿版狀態時,上面那虛擬的網址列完全無法點擊」)。
@@ -283,7 +285,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
       [persistentElements],
     )
     // **量到之前不要動手**:`containerPx` 初值是 0,而 `resolveIsOverlay(0)` 會回 true
-    // (0 < 1080)。若不加這個條件,面板一掛載就先把整頁(含同時開著的對話框)抑制掉,
+    // (0 < 960)。若不加這個條件,面板一掛載就先把整頁(含同時開著的對話框)抑制掉,
     // 等量測回來才解除 —— 實測那一下足以讓對話框帶著 inert 卡住,框內按鈕永遠 focus 不進去。
     // 量到 0 本來就不代表任何事(同 measure 裡的 `if (w > 0)` 那條)。
     useOverlayCoexistence(containerPx > 0 && isOverlay && selfVisible, keepPanel)
@@ -349,7 +351,7 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
         data-agent-panel-mode={mode}
         className={cn(
           'relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-surface',
-          // 2026-09-07 G3:容器窄到並排放不下(< 1080)就蓋滿舞台。
+          // 2026-09-07 G3:容器窄到並排放不下(< 960;2026-09-09 由 1080 放寬)就蓋滿舞台。
           // 「蓋滿」是 B 條的原文,不是我挑的 —— 窄螢幕以抽屜蓋滿宿主。
           // 用 absolute 而不是把宿主推走:蓋板本來就不該改變底下內容的版面,
           // 而且回到寬螢幕時宿主不需要重新排版(避免來回切換時內容跳動)。

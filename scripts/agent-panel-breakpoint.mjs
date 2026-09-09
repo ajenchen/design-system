@@ -7,11 +7,11 @@
 //
 // 三個已定的量互鎖:
 //     面板 ≥ 360(PANEL_WIDTH_MIN)
-//     面板 ≤ 舞台的一半(user 2026-09-07 裁示 #5「50% 基準由視窗改舞台」)
+//     面板 ≤ 舞台的 3/5(user 2026-09-07 裁示 #5「50% 基準由視窗改舞台」定了「一半」;2026-09-09 user 拍板 960 → 放寬到 3/5)
 //     並排時 舞台 = 容器 − 面板
-// ⇒ 面板 ≤ 容器/3 ⇒ **並排只在容器 ≥ 1080 時成立**,更窄就蓋滿舞台。
-// 1080 不是挑的數字,是這三條逼出來的唯一解;所以這支閘直接驗那三條,
-// 而不是驗「有沒有等於 1080」——數字若哪天因為 MIN 改變而變,閘會自動跟著對。
+// ⇒ 面板 ≤ 容器 × 3/8 ⇒ **並排只在容器 ≥ 960 時成立**,更窄就蓋滿舞台(2026-09-09 user 拍板 960:「一半」放寬到 3/5)。
+// 960 不是挑的數字,是這三條逼出來的唯一解;所以這支閘直接驗那三條,
+// 而不是驗「有沒有等於 960」——數字若哪天因為 MIN 或比例改變而變,閘會自動跟著對。
 //
 // 為什麼要量容器不是視窗:面板住在容器裡。視窗 1920 但容器只有 800 的版面
 // (側欄 + 主內容 + 面板)用視窗算會給出 640 的上限,面板一寬舞台就被擠爆。
@@ -44,7 +44,7 @@ catch (e) { sv.close(); console.error('⚠️  SKIPPED-ENV: 無法啟動 Chromiu
 const pg=await br.newPage({viewport:{width:1600,height:800}})
 const out=[]; let fail=0
 const ck=(t,p,d='')=>{out.push(`${p?'✓':'✗'} ${t}${d?' | '+d:''}`); if(!p)fail++}
-for (const W of [1920, 1600, 1280, 1080, 1000, 800]) {
+for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
   await pg.setViewportSize({width:W,height:800})
   await pg.goto(`${B}/iframe.html?id=design-system-components-agentpanel-展示--task-assistant&viewMode=story`,{waitUntil:'networkidle'})
   await pg.waitForTimeout(500)
@@ -63,13 +63,13 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 800]) {
       stage: host.clientWidth - (cs.position==='absolute'?0:Math.round(p.getBoundingClientRect().width)) }
   })
   if(r.err){ ck(`G3 @${W}`, false, r.err); continue }
-  const expectOverlay = r.container < 1080
+  const expectOverlay = r.container < 960
   ck(`G3 @視窗${W}(容器${r.container}) 形態應為 ${expectOverlay?'蓋板':'並排'}`,
      r.mode === (expectOverlay?'overlay':'side-by-side'), `實得 ${r.mode} / position=${r.pos} / 面板寬 ${r.panelW}`)
   if (!expectOverlay) {
-    const expMax = Math.min(640, Math.max(Math.floor(r.container/3), 360))
-    ck(`G3 @${W} 寬上限 = min(640, 容器/3) = ${expMax}`, r.valuemax === expMax, `aria-valuemax=${r.valuemax}`)
-    ck(`G3 @${W} 面板不超過舞台的一半(面板 ${r.panelW} ≤ 舞台 ${r.stage} / 2)`, r.panelW <= r.stage/2 + 1, `舞台 ${r.stage}`)
+    const expMax = Math.min(640, Math.max(Math.floor(r.container*3/8), 360))
+    ck(`G3 @${W} 寬上限 = min(640, 容器 × 3/8) = ${expMax}`, r.valuemax === expMax, `aria-valuemax=${r.valuemax}`)
+    ck(`G3 @${W} 面板不超過舞台的 3/5(面板 ${r.panelW} ≤ 舞台 ${r.stage} × 3/5)`, r.panelW <= r.stage*3/5 + 1, `舞台 ${r.stage}`)
   } else {
     ck(`G3 @${W} 蓋板蓋滿舞台`, r.panelW >= r.container - 1, `面板 ${r.panelW} / 容器 ${r.container}`)
     ck(`G3 @${W} 蓋板態不渲染拖曳把手(寬度不再是可選的)`, !r.hasHandle, `hasHandle=${r.hasHandle}`)
@@ -106,7 +106,7 @@ for (const W of [800, 1600]) {
      opened.mode === (expectOverlay ? 'overlay' : 'side-by-side'),
      `實得 ${opened.mode} / 面板寬 ${opened.panelW} / aria-valuemax=${opened.valuemax}`)
   if (!expectOverlay) {
-    const expMax = Math.min(640, Math.max(Math.floor(opened.container/3), 360))
+    const expMax = Math.min(640, Math.max(Math.floor(opened.container*3/8), 360))
     ck(`G3 初始關閉後打開 @${W} 寬上限 = ${expMax}`, opened.valuemax === expMax, `aria-valuemax=${opened.valuemax}`)
   }
 }

@@ -568,7 +568,7 @@ export const LogoThinkStop: Story = {
    `data-table.stories.tsx#WithBulkActions` 同款)+ DataTable;標題欄 = DS url 欄位同一支 primitive
    (`<LinkInput mode="view">`,與表頭齊 —— 2026-09-09 user 抓到 Button link 自帶內距把網址推歪)。
    有 URL 的 modal 傳送到「舞台」(並排時代理不被蓋),沒有 URL 的確認框傳送到「畫布」(蓋住一切含代理)。
-   蓋板態(容器 < 1080)下從代理導向舞台 → 代理收成入口鈕、舞台顯示目標(v14 條 B,2026-09-09 user 推翻 AI 推導)。
+   蓋板態(容器 < 960)下從代理導向舞台 → 代理收成入口鈕、舞台顯示目標(v14 條 B,2026-09-09 user 推翻 AI 推導)。
    閘:`scripts/agent-url-registry-demo-invariant.mjs`(S0–S9,兩個並排寬度 + 一個蓋板寬度)。
    ═══════════════════════════════════════════════════════════════════════════ */
 type TaskStatus = 'todo' | 'doing' | 'done'
@@ -769,19 +769,19 @@ function TaskDialog({ task, portalContainer, persistentElements, onSave, onCance
  * 沒有網址的刪除確認框:照 Dialog 規格的破壞性動作範本(dialog.anatomy「破壞性動作 Dialog」/ dialog.spec「何時用」):
  * header 只放一行問句、body 說明是哪一筆與後果、footer 取消(tertiary)+ 刪除(primary danger)。
  * 2026-09-09 user 抓到:我把任務名稱塞進標題(兩行)、沒有 body、用 DialogDescription 硬撐 —— root cause 是沒照範本,自己拼。
- * 遮罩蓋整張畫布(含代理,v14 條 A),但框本身對齊它所屬的任務對話框(舞台中心):兩層對話框中心若差半個代理寬,看起來就是偏移。
+ * 位置:遮罩蓋整張畫布(含代理,v14 條 A),框由 DS Dialog 自己置中於它被傳送進的容器 = 整個模擬視窗(dialog.tsx `left-1/2 top-1/2
+ * -translate-x-1/2 -translate-y-1/2`,以帶 transform 的 `portalContainer` 為準)。**消費端不算位置**。
+ * 2026-09-09 第二次 user 抓到:「他應該在整個模擬視窗中水平垂直置中才對吧?」—— 前一版我把第三批的「為何會偏移」解讀成
+ * 「要對齊後面的任務對話框」,加了 `centerIn` 用 getBoundingClientRect 手算 `left` 蓋掉 DS 置中、推到舞台中心;那是我的推導,
+ * 不是 user 說的,而且違反「置中是 Dialog 的事」這條 SSOT。任務對話框置中於舞台是並存面的定義(只蓋舞台、代理仍可用),
+ * 確認框擋住整個視窗就置中於整個視窗;兩者中心差半個代理寬是設計結果,不是 bug。閘 S5 量確認框中心 = 視窗中心。
  */
-function ConfirmDeleteDialog({ task, onCancel, onConfirm, portalContainer, centerIn }: {
-  task: Task; onCancel: () => void; onConfirm: () => void; portalContainer: HTMLElement; centerIn: HTMLElement | null
+function ConfirmDeleteDialog({ task, onCancel, onConfirm, portalContainer }: {
+  task: Task; onCancel: () => void; onConfirm: () => void; portalContainer: HTMLElement
 }) {
-  const left = React.useMemo(() => {
-    if (!centerIn) return undefined
-    const c = portalContainer.getBoundingClientRect(), s = centerIn.getBoundingClientRect()
-    return s.left - c.left + s.width / 2
-  }, [centerIn, portalContainer])
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
-      <DialogContent maxWidth={400} autoHeight portalContainer={portalContainer} style={left != null ? { left } : undefined} aria-describedby={undefined}>
+      <DialogContent maxWidth={400} autoHeight portalContainer={portalContainer} aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>確定要刪除這個任務?</DialogTitle>
         </DialogHeader>
@@ -1071,7 +1071,6 @@ function UrlRegistryScene() {
               <ConfirmDeleteDialog
                 task={confirmDelete}
                 portalContainer={canvas}
-                centerIn={stage}
                 onCancel={() => setConfirmDelete(null)}
                 onConfirm={() => {
                   setTasks((ts) => ts.filter((t) => t.id !== confirmDelete.id))

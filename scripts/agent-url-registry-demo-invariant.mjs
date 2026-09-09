@@ -3,7 +3,7 @@
  * Agent 整頁示範閘(story `AgentPanel/展示/UrlRegistryDemo`)—— 2026-09-09 重寫(舞台改 AppShell 主內容 + 蓋板收成入口鈕)
  *
  * v14 條 A/B:內容只要有自己的 URL 就能跟 agent 並存;沒有 URL 的(確認框)是純 modal,agent 被擋。
- * 本閘把示範真的走一遍,兩個並排寬度(1440 / 1180)+ 一個蓋板寬度(1000,容器 966 < 1080):
+ * 本閘把示範真的走一遍,兩個並排寬度(1440 / 1180)+ 一個蓋板寬度(900,容器 866 < 960;2026-09-09 斷點 1080 → 960):
  *   S0 舞台 = AppShell 主內容:page header(專案標題 h1)+ tabsSlot(所有任務 / 我的任務,W1 header 不畫 border、TabsList 畫;
  *      W2 tab 左緣 = 標題左緣)+ TabsContent mt-0 + toolbar(搜尋 + 新增任務 primary 在最右、右緣與表格齊)+ DataTable
  *      + 間距(tabs→toolbar 控件、toolbar→表格 = tight)+ 標題欄連結左緣 = 表頭「標題」左緣(C:Button link 內距根因)
@@ -13,7 +13,7 @@
  *   S2 header 一行標題 + 垃圾桶 icon-only 在 actions slot;footer 只有取消 / 儲存,儲存 primary 且最右
  *   S3 四個 Field(標題 / 指派人 / 狀態 / 截止日)存檔 → 清單那一列更新(含截止日欄)
  *   S4 新增任務(toolbar primary、有 URL)→ 清單多一列
- *   S5 刪除 → 沒有 URL 的確認框(primary danger)擋住代理;取消恢復並存;確認 → 清單少一列
+ *   S5 刪除 → 沒有 URL 的確認框(primary danger)擋住代理、置中於整個模擬視窗;取消恢復並存;確認 → 清單少一列
  *   S6 tab 與背景位置模式:代理連結「我的任務」→ 切 tab、清單篩成自己的;再點任務 → modal 背景是「我的任務」;
  *      重新整理 = 直接以任務網址進入 → 背景是預設的「所有任務」;上一頁 / 下一頁維持
  *   S7 session:歷史列多個 session、當前有標記、可切換、「+」新 session 空狀態、送出後才進歷史、切回內容仍在
@@ -22,7 +22,7 @@
  *      modal 顯露可操作、焦點在 modal**(2026-09-09 user 推翻「抽屜保持開啟」);入口鈕重開 → 抽屜蓋回、modal 在後方被抑制、
  *      草稿還在;× → modal 顯露;agent 點「我的任務」→ 收成入口鈕、tab 切換、焦點交給舞台 main
  * `--static=<dir>`:讀哪個 storybook build(預設 storybook-static;並行工作者用自己的 build 目錄)
- * `--shots=<dir>`:存截圖(1440 並排開 modal / 1000 蓋板前 / 蓋板收成入口鈕後)
+ * `--shots=<dir>`:存截圖(1440 並排開 modal / 900 蓋板前 / 蓋板收成入口鈕後)
  * `--selftest`:對照組 —— 把 S8 的洞判準餵舊 build 實測抓到的壞 clip-path,必須紅。
  */
 import http from 'node:http'
@@ -68,6 +68,15 @@ if (process.argv.includes('--selftest')) {
   process.exit(ok ? 0 : 1)
 }
 
+// (靜態)示範原始碼不得對 <DialogContent> 傳 inline style 覆蓋位置(left / top / transform / inset):
+// 置中是 Dialog 的事(dialog.tsx `left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2` 以 portalContainer 為準),
+// 消費端手算位置 = 這次 2026-09-09 確認框跑到舞台中心的根因。
+{
+  const src = readFileSync(join(REPO, 'packages/design-system/src/components/AgentPanel/agent-panel.stories.tsx'), 'utf8')
+  const bad = [...src.matchAll(/<DialogContent\b[^>]*?\bstyle=\{[^}]*\b(left|top|transform|inset)\b/gs)].map((m) => m[0].slice(0, 80))
+  if (bad.length) { console.error(`✗ 示範對 <DialogContent> 傳 inline 位置樣式(置中是 Dialog 的事):${bad.join(' | ')}`); process.exit(1) }
+  console.log('✓ 靜態:示範沒有對 <DialogContent> 傳 inline 位置樣式(置中由 DS Dialog 決定)')
+}
 if (!existsSync(join(STATIC, 'index.json'))) { console.error(`找不到 ${STATIC}/index.json —— 先 build storybook(或用 --static=<dir> 指定)`); process.exit(2) }
 const index = JSON.parse(readFileSync(join(STATIC, 'index.json'), 'utf8'))
 const id = Object.values(index.entries).find((e) => e.type === 'story' && /agentpanel/i.test(e.id) && /url-registry-demo/.test(e.id))?.id
@@ -297,17 +306,24 @@ for (const width of [1440, 1180]) {
   await h.click('[role="row"] a[href$="/tasks/4836"]')
   await h.click('#demo-task-delete')
   check(`${W} S5 垃圾桶開出確認框,疊在任務 modal 上(兩層)`, (await h.dialogs()) === 2)
-  // 2026-09-09 user 抓到確認框沒照 Dialog 規格:標題兩行、沒有 body、偏移。斷言:標題一行、body 有那筆任務、確認框中心 = 任務對話框中心
+  // 2026-09-09 user 抓到確認框沒照 Dialog 規格:標題兩行、沒有 body。斷言:標題一行、body 有那筆任務。
+  // 同日第二次 user 抓到位置:「他應該在整個模擬視窗中水平垂直置中才對吧?」—— 前一版閘寫「確認框中心 = 任務對話框中心」是我把
+  // 「為何會偏移」推導成「對齊任務對話框」的結果(AI 推導,非 user 原話),還加了手算 left 蓋掉 DS 置中。現在:確認框由 DS Dialog
+  // 自己置中於它被傳送進的容器 = 整個模擬視窗(`[data-simulated-canvas]`),閘量 x / y 中心都 = 視窗中心(≤ 1px)。
   const cshape = await page.evaluate(() => {
-    const ds = [...document.querySelectorAll('[role="dialog"]')]; const task = ds[0], confirm = ds[ds.length - 1]
+    const ds = [...document.querySelectorAll('[role="dialog"]')]; const confirm = ds[ds.length - 1]
+    const canvas = document.querySelector('[data-simulated-canvas]')
     const h2 = confirm.querySelector('h2'); const cs = h2 ? getComputedStyle(h2) : null
     const lh = cs ? parseFloat(cs.lineHeight) : 0; const th = h2 ? h2.getBoundingClientRect().height : 0
-    const R = (e) => e.getBoundingClientRect(); const c = R(confirm), t = R(task)
-    return { title: h2?.textContent?.trim() ?? '', titleLines: lh ? Math.round(th / lh) : 0, body: confirm.textContent ?? '', dx: +(((c.left + c.right) / 2) - ((t.left + t.right) / 2)).toFixed(2) }
+    const R = (e) => e.getBoundingClientRect(); const c = R(confirm), v = canvas ? R(canvas) : null
+    const mid = (r) => [(r.left + r.right) / 2, (r.top + r.bottom) / 2]
+    const [cx, cy] = mid(c); const [vx, vy] = v ? mid(v) : [NaN, NaN]
+    return { title: h2?.textContent?.trim() ?? '', titleLines: lh ? Math.round(th / lh) : 0, body: confirm.textContent ?? '', hasCanvas: !!v, dx: +(cx - vx).toFixed(2), dy: +(cy - vy).toFixed(2), inlineLeft: confirm.style.left || '', inlineTop: confirm.style.top || '' }
   })
   check(`${W} S5 確認框標題一行問句(不塞任務名)`, cshape.titleLines === 1 && /確定要刪除這個任務/.test(cshape.title), JSON.stringify(cshape))
   check(`${W} S5 確認框 body 寫明是哪一筆(#4836)與後果`, /#4836/.test(cshape.body) && /無法復原/.test(cshape.body), cshape.body.slice(0, 80))
-  check(`${W} S5 確認框中心對齊任務對話框中心(≤ 1px;遮罩仍蓋整張畫布含代理)`, Math.abs(cshape.dx) <= 1, `dx=${cshape.dx}`)
+  check(`${W} S5 確認框水平 + 垂直置中於整個模擬視窗(≤ 1px;遮罩蓋整張畫布含代理)`, cshape.hasCanvas && Math.abs(cshape.dx) <= 1 && Math.abs(cshape.dy) <= 1, `dx=${cshape.dx} dy=${cshape.dy} hasCanvas=${cshape.hasCanvas}`)
+  check(`${W} S5 確認框位置由 DS Dialog 決定,消費端沒有 inline left / top 覆蓋`, cshape.inlineLeft === '' && cshape.inlineTop === '', JSON.stringify({ left: cshape.inlineLeft, top: cshape.inlineTop }))
   await h.typeIntoPanel('X')
   check(`${W} S5 確認框開著時代理被擋(打字無效)`, (await h.panelInput())?.value === 'hello world', JSON.stringify(await h.panelInput()))
   const delBg = await h.bg('#demo-confirm-delete'), delCancelBg = await h.bg('#demo-confirm-cancel')
@@ -379,7 +395,7 @@ for (const width of [1440, 1180]) {
 
 // ── S9 蓋板態(容器 < 1080):工具列可點、從代理導向舞台 → 收成入口鈕、重開蓋回、× 顯露 ──
 {
-  const width = 1000
+  const width = 900
   const { browser, page } = await openStory(width)
   const W = `[${width}px 蓋板]`
   const h = bind(page)
@@ -388,7 +404,7 @@ for (const width of [1440, 1180]) {
   check(`${W} S9 蓋板時瀏覽器工具列不被抑制(上一頁 / 網址列)`, (await h.inert('button[aria-label="上一頁"]')) === false && (await h.inert('#demo-location')) === false)
   check(`${W} S9 蓋板時宿主被抑制(新增任務鈕 inert)`, (await h.inert('#demo-new-task')) === true)
   await h.typeIntoPanel('draft')
-  await h.shot('1000-overlay-before.png')
+  await h.shot('900-overlay-before.png')
   // 瀏覽器 chrome 的上一頁 / 下一頁不是「代理內的動作」:宿主依歷史導航、agent 維持開啟(v14 推導表「同分頁在宿主內按上一頁 / 下一頁」)
   await h.click('#demo-link-mine')
   const collapsedByPage = { open: await h.panelOpen(), fab: await h.$('button[aria-label="開啟智慧代理"]'), loc: await h.location(), tab: await h.selectedTab(), focusMain: await page.evaluate(() => document.activeElement?.id === 'demo-stage-main'), mainInert: await h.inert('#demo-stage-main') }
@@ -406,7 +422,7 @@ for (const width of [1440, 1180]) {
     return { d: true, p: true, panelOpen: getComputedStyle(p).display !== 'none' && p.getBoundingClientRect().width > 0, fab: !!fab, fabInert: !!fab?.closest('[inert]'), dialogInert: !!d.closest('[inert]'), hitInDialog: !!hit && d.contains(hit), focusInDialog: !!document.activeElement && d.contains(document.activeElement), tab: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim() }
   })
   check(`${W} S9 agent 點有 URL 的 modal → agent 收成入口鈕,modal 顯露、可操作(命中 modal、不 inert、焦點在 modal 內)、入口鈕不 inert、背景 = 所有任務(v14 推導表「窄螢幕,agent 點有 URL 的 Modal」,2026-09-09)`, collapsedByModal.d && collapsedByModal.p && !collapsedByModal.panelOpen && collapsedByModal.fab && !collapsedByModal.fabInert && !collapsedByModal.dialogInert && collapsedByModal.hitInDialog && collapsedByModal.focusInDialog && collapsedByModal.tab === '所有任務' && (await h.location()) === TASK_4821, JSON.stringify(collapsedByModal))
-  await h.shot('1000-overlay-after-collapse.png')
+  await h.shot('900-overlay-after-collapse.png')
   await h.click('button[aria-label="開啟智慧代理"]')
   const reopened = await page.evaluate(() => {
     const d = document.querySelector('[role="dialog"]'); const p = document.querySelector('[role="complementary"]')
@@ -428,5 +444,5 @@ for (const width of [1440, 1180]) {
 
 server.close()
 const failed = results.filter((r) => !r.ok).length
-console.log(failed ? `✗ ${failed} 條失敗` : `✓ 代理整頁示範全部通過(${results.length} 條;1440 / 1180 並排 + 1000 蓋板)`)
+console.log(failed ? `✗ ${failed} 條失敗` : `✓ 代理整頁示範全部通過(${results.length} 條;1440 / 1180 並排 + 900 蓋板)`)
 process.exit(failed ? 1 : 0)

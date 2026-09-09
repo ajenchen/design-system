@@ -222,7 +222,6 @@ function RemoteSearchDemo() {
         filterOption={false}
         optionsLoading={optionsLoading}
         onSearchChange={onSearchChange}
-        defaultOpen
         searchPlaceholder="搜尋資料庫(後端搜尋,支援別名)…"
         aria-label="連結資料庫(遠端搜尋)"
       />
@@ -235,7 +234,7 @@ export const RemoteSearchHint: Story = {
   parameters: { docs: { description: { story: 'Notion 連結資料庫、名單在後端,但這個工作區還沒有「最近用過」可以當建議:展開只有一列「輸入關鍵字搜尋」提示 —— 不是「沒有選項」(那句只留給真的搜不到的時候)。' } } },
   render: () => (
     <div className="max-w-sm">
-      <Combobox options={[]} value={[]} onChange={() => {}} searchable filterOption={false} defaultOpen searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(還沒打字)" />
+      <Combobox options={[]} value={[]} onChange={() => {}} searchable filterOption={false} searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(還沒打字)" />
     </div>
   ),
 }

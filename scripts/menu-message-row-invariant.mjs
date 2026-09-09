@@ -187,8 +187,15 @@ await page.addInitScript(() => {
 
 async function open(id, waitSel = '[cmdk-list]') {
   await page.goto(story(id), { waitUntil: 'load' })
+  await page.waitForSelector('#storybook-root [role="combobox"]', { timeout: 15000, state: 'attached' }).catch(() => {})
   // 訊息列在 listbox 外,0 筆時 [cmdk-list] 高度 0 → Playwright 預設等「可見」會逾時;改等「掛上 DOM」
-  const ok = await page.waitForSelector(waitSel, { timeout: 15000, state: 'attached' }).then(() => true).catch(() => false)
+  let ok = await page.waitForSelector(waitSel, { timeout: 1500, state: 'attached' }).then(() => true).catch(() => false)
+  if (!ok) {
+    // 2026-09-09 user:「為何遠端搜尋名錄的範例預設要打開選單?」→ 互動示範不再 defaultOpen(只有「載入中 / 沒有選項 /
+    // 值讀取中」這種開啟態快照才預設開);閘改成像使用者一樣點觸發器打開,再量。
+    await page.locator('#storybook-root [role="combobox"]').first().click()
+    ok = await page.waitForSelector(waitSel, { timeout: 15000, state: 'attached' }).then(() => true).catch(() => false)
+  }
   // Popover / Dialog 開啟動畫(zoom-in-95)結束後才量:動畫中量到的 rect 是 0.95 倍(實測 45.6 而非 48)
   await page.waitForTimeout(600)
   return ok

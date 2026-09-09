@@ -2729,3 +2729,30 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - **#4830**:代理回覆加「任務 #4830 對帳批次逾時重試」(Alan 的,不在「我的任務」清單);閘 S6 加:在「我的任務」上點它 → modal 疊在我的任務上、網址 /tasks/4830、底下清單仍只有自己的。
 - **捲動卡頓**:主執行緒與「白」的儀器都說分支比 main 輕,但 user 真機說分支明顯卡 → 本輪把完整脈絡(部署、diff 範圍、40 個 commit、已排除項、headless 限制、候選:每格偽元素陰影 / 裝飾捲軸槽 / 列 transition / 量測交錯 / 三區同步)交給 Codex R16,要求:CDP Tracing(cc / viz / devtools.timeline)量 raster / paint / 層數 / invalidation 的 main vs 分支比例、CSS 消融、必要時 bisect、以及一支能在 user 真機跑的 LoAF 探針。結果接續記於 AD48。
 
+
+### AD48 user 2026-09-09 補充:960 斷點拍板、拿掉 Dialog 破壞性範例、遠端搜尋示範不預設開、hover / 鍵盤互斥、「建議」標題字級
+
+**user 原話**:「我覺得 960px 作為 agent 蓋板的斷點應該可以,確保不會改壞任何好的東西,然後 Dialog 該拿掉的範例就拿掉 此外為何遠端搜尋名錄的範例預設要打開選單?此外滑鼠會搶反白的元件,搶完之後,那鍵盤是否可以再搶回?…是滑鼠操控的時候鍵盤焦點就會消失,是鍵盤操控的時候滑鼠的 hover 樣式就會消失…仔細研究查查,包括我們所使用的套件以及世界級的設計…另外想確認一下 select menu 上的建議選單,其 section title 那個「建議」的字體大小其實取決於 menu item 的群組標題的樣式對吧?且該 menu item 也會有大中小尺寸」
+
+- **960 斷點**(user 拍板):三鎖裡「面板 ≤ 舞台一半」放寬成「面板 ≤ 舞台 3/5」(舞台 600 = Material medium 視窗下緣、DataTable 5 欄各 120px;360 下限不動)⇒ 面板 ≤ 容器 × 3/8 ⇒ 並排只在容器 ≥ 960。落地:`agent-panel.tsx` 的 `AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER = ceil(360 × 8/3)` 與寬度上限 `min(640, ⌊容器 × 3/8⌋)`;`agent-panel.spec.md` 三鎖句、表格兩列、常數句;`agent-panel-breakpoint.mjs` 驗三條不驗數字(寬度加 960 / 959 對照);示範閘蓋板寬度 1000 → 900(容器 866 < 960);story 註解。「一半 → 3/5」的理由是 AI 推導,拍板的是 960 這個數字。
+- **Dialog 破壞性範例**:`dialog.anatomy.stories.tsx` 的 `DestructiveMatrix` 整段拿掉(user 第二批「dialog 的設計規格的範例給我拿掉」第一次只拿了總覽那個),`dialog.spec.md` 的 story 清單同步;a11y 基線因 corpus 變動重生。
+- **遠端搜尋示範不預設開**:Select「遠端搜尋」、Combobox「遠端搜尋」「還沒打字沒有建議」、PeoplePicker「遠端搜尋名錄」四支示範拿掉 `defaultOpen`;保留的只有開啟態快照(載入中 / 沒有選項 / 值讀取中,瀏覽器閘不點就看得到);`menu-message-row-invariant.mjs` 的 `open()` 改成選單沒開就點觸發器再量。
+- **「建議」標題字級**:是。SelectMenu 的建議群組是 cmdk 的 `CommandGroup`,標題由 `command.tsx:219` 包成 `<MenuItem size={size} header>`,`menu-item.tsx:224–236` 的 header 分支套 `menuItemVariants({ size })` 再加 `font-medium text-fg-muted`,所以字級與列高跟同一個選單的選項完全同一組 sm / md / lg(item-anatomy.spec.md「Row header」)。
+- **hover / 鍵盤互斥**:研究中(套件 cmdk / Radix / React Aria + 世界級),結論另立 AD49。
+
+### AD49 Codex R16 收尾:hover 底色是最大光柵訊號但 main 也有;分支多出的光柵尚無根因;真機量測改請 user 存 Chrome Performance 檔(2026-09-09)
+
+- **R16 判定 RISK**:78 份 trace。native 捲軸、DPR 2 的中位數:光柵合計 main 381ms / 分支 512ms(手勢)、362 / 412(滾輪);但 frame 間隔 p95 相當、partial frame 與 rAF 分支反而較好。消融:hovered 底色透明 → 分支 −39% / −45%,**main 同一消融也 −35% / −31%**,所以「hover 是分支新加的」不成立(`data-table.tsx:3447` 這行 main / 分支同字)。合成層中位數 main 33 / 分支 21、光柵工作次數 1567 / 2758:層變少、每次重畫面積變大,方向對得上但未定位到哪個改動。候選修法(row::before 不透明層)光柵反而更高且分隔線 5,404 像素變色 → 拒絕,production 0 變更。Bisect 0 / 6:沒有能把「分支較差」判出來的 predicate,不用假二分冒充根因。
+- **改請 user 存真機 Performance 檔**:R16 的探針只量主執行緒(LoAF / rAF),量不到 GPU / 光柵;真機 DevTools Performance「儲存設定檔」的 trace 才有 Raster / compositor 事件,而且不用貼任何程式碼。R16 的 `parse-trace.py` 讀 `traceEvents`,可直接餵。指令寫在 chat 回覆。
+- **不動 production**:依 user「不要把程式碼改得亂七八糟卻完全沒有解決問題」,沒有根因前不改 DataTable;探針 / installer 留在 `/private/tmp/claude-501/r16-real-probe/`,不進 repo。
+
+### AD50 user 2026-09-09 第二次抓刪除確認框:位置不對,應置中於整個模擬視窗 —— 根因是我用手算 left 蓋掉 DS Dialog 的置中(2026-09-09)
+
+**user 原話**:「圖一中的這個刪除 dialog 的位置不正確吧?他應該在整個模擬視窗中水平垂直置中才對吧?這個問題的 root cause 到底是什麼?」
+
+- **現象**:確認框中心 x=520(= 舞台 20–1020 的中心),視窗中心是 720;垂直剛好對(舞台與視窗同高)。
+- **根因(M12 三問)**:root invariant = 「模態框置中於它所在的視窗,位置是 Dialog 的事,消費端不算」(`dialog.spec.md:80` viewport inset;`dialog.tsx:210–211` `left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2`,以帶 transform 的 `portalContainer` 為準,`dialog.tsx:102–103`)。確認框早就傳進整個模擬視窗(`portalContainer={canvas}`),第三批之前(commit `4eb3170a` 之前)它就是置中於視窗的;第三批 user 說「為何會偏移????」,我把它解讀成「確認框要對齊後面的任務對話框」,加了 `centerIn={stage}` 用 `getBoundingClientRect` 手算一個 inline `left` 蓋掉 DS 置中、推到舞台中心,閘 S5 也跟著寫成「確認框中心 = 任務對話框中心」。**那是 AI 推導,不是 user 原話**(M36 (a));而且 fix 是 surface layer(手算位置)壓過 root layer(Dialog 自己置中)。
+- **修**:拿掉 `centerIn` 與 inline `left`,確認框完全交給 DS 置中 = 整個模擬視窗;`simulated-browser.tsx` 畫布加 `data-simulated-canvas` 讓閘找得到視窗;閘 S5 改量「確認框 x / y 中心 = 視窗中心(≤ 1px)」+「沒有 inline left / top」;閘加靜態段:示範原始碼禁對 `<DialogContent>` 傳 left / top / transform / inset 的 inline style(這次 bug 的機械防線)。
+- **設計結果要說清楚**:任務對話框是並存面(v14:只蓋舞台、代理仍可用),所以置中於舞台;確認框擋住整個視窗(含代理),置中於整個視窗。兩者中心差半個代理寬是這兩條定義的必然結果,不是 bug;第三批我把這個差當成要修的「偏移」,修錯了方向。
+- **AD47 更正**:AD47「框對齊舞台中心」那句作廢,以本條為準。
+- **驗證(AD50)**:重建後示範閘 121 條全綠,S5「確認框水平 + 垂直置中於整個模擬視窗」1440 / 1180 皆 dx=0、dy=−0.5;「沒有 inline left / top」通過;靜態段通過。斷點閘(960 / 959 對照、重開上限 600)與面板閘全綠;a11y 基線因 corpus(拿掉 destructive-matrix)與並排露出(inspector +12,同 9/7 淡灰字既有例外)重寫,遠端示範關閉後 combobox 兩支各少 1 / 2 條。

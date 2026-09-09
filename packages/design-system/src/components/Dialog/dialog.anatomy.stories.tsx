@@ -201,34 +201,6 @@ export const HeightBehavior: Story = {
   ),
 }
 
-export const DestructiveMatrix: Story = {
-  name: '破壞性動作 Dialog',
-  render: () => (
-    <div className="flex flex-col gap-8 max-w-md">
-      <div>
-        <H3>破壞性動作的 footer 配對</H3>
-        <Desc>破壞性動作用 primary + danger(立即不可逆)。必須搭配 Cancel button 讓使用者反悔。Title 用問句讓使用者意識到「這是個決策」。</Desc>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="tertiary" startIcon={Trash2}>刪除專案(含確認)</Button>
-          </DialogTrigger>
-          <DialogContent autoHeight maxWidth={440}>
-            <DialogHeader>
-              <DialogTitle>確定要永久刪除此專案?</DialogTitle>
-            </DialogHeader>
-            <DialogBody>
-              <p className="text-body">此動作無法復原,所有相關資料將一併刪除。</p>
-            </DialogBody>
-            <DialogFooter>
-              <Button variant="tertiary">取消</Button>
-              <Button variant="primary" danger startIcon={Trash2}>永久刪除</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </div>
-  ),
-}
 
 export const SizeMatrix: Story = {
   name: '尺寸對照表',
