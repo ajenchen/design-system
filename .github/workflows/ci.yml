@@ -167,6 +167,9 @@ jobs:
           # 停手後列殼 ≤ 1000ms 補齊。門檻是本機校準的回歸線(修前 main 684–1055ms、修後 18–34ms,留 10 倍以上機器差),不是業界標準。
           node scripts/data-table-fast-scroll.mjs --mode=gesture --selftest --gesture-speed=6000
           node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000
+          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 --cpu-throttle=4 --assert-max-blank-ms=400 --assert-max-fill-ms=1000
+          # 2× = 中速帶:「跟不上」旗標若無遲滯會在這一帶震盪(骨架與長 commit 交替),1× / 4× 都看不到(2026-09-10 多代理審查 P1)
+          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 --cpu-throttle=2 --assert-max-blank-ms=400 --assert-max-fill-ms=1000
           # Content readiness and still-visible fading handles need separate gates from frame cadence.
           node scripts/test-data-table-scroll-perception.mjs --out=tmp/datatable-content-controls
           node scripts/data-table-handle-position.mjs --dpr=2 --selftest --out=tmp/datatable-handle-control

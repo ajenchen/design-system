@@ -162,6 +162,13 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
     }
 
     // 命中區用 inline style(7px 是 primitive constant 非 token;避免 Tailwind v4 arbitrary class dev quirk)。
+    // `z-[1]`(2026-09-10,class 而不是 inline style,消費端 className 的 z-* 仍可覆寫):外側 3px 跨到鄰居的盒子上,
+    // 鄰居若是 DOM 順序在後的 positioned 元素(DataTable 的每個 header cell 都是 `relative`)會蓋住它 → 把手只剩自己這側 4px
+    // 可點;disabled 把手沒有行為,不該攔截鄰居的點擊 → pointer-events-none。世界級同做法:AG Grid
+    // `.ag-header-cell-resize{position:absolute;z-index:2;width:8px;right:-3px}`(https://unpkg.com/ag-grid-community/styles/ag-grid.css)、
+    // MUI X `columnSeparator` `position:'absolute', zIndex:30, right:-5`(https://github.com/mui/mui-x/blob/master/packages/x-data-grid/src/components/containers/GridRootStyles.ts)、
+    // VS Code `.monaco-sash{position:absolute;z-index:35}`(https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/ui/sash/sash.css)。
+    // 消費端另要保證容器不用 `overflow:hidden` 裁掉這 3px(見 DataTable header cell)。
     const hitZoneStyle: React.CSSProperties = isHorizontal
       ? {
           position: 'absolute',
@@ -225,7 +232,8 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
         style={{ ...hitZoneStyle, ...extraStyle }}
         className={cn(
           'group/resize',
-          !disabled && 'select-none focus-visible:focus-ring-inset',
+          !disabled && 'z-[1] select-none focus-visible:focus-ring-inset',
+          disabled && 'pointer-events-none',
           className,
         )}
       >

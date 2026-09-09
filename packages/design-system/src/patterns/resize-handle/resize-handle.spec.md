@@ -64,7 +64,7 @@ benchmark:
 
 取值依據:7px 命中區 / 1px line 非自創——來自下方「世界級對照細節」5 家共識(hit zone 7-8px fingertip-friendly / 1px line non-intrusive)+ DataTable v11 已 ship 的既有 canonical(本 primitive 抽取自它,M17)。
 
-- **命中區**:7px 寬(horizontal)/ 高(vertical),`-3px` outward offset 跨 boundary 抓得到
+- **命中區**:7px 寬(horizontal)/ 高(vertical),`-3px` outward offset 跨 boundary 抓得到。**外側 3px 必須真的抓得到**(2026-09-10):primitive 給命中區 `z-index: 1`,否則 DOM 順序在後的 positioned 鄰居會蓋住它;消費端的容器不得用 `overflow: hidden` 裁到它(要抑制 flex `min-width: auto` 時改 `min-w-0`)。面板 / 捲動容器的邊界把它裁掉是預期例外(AG Grid 同)。世界級:AG Grid `.ag-header-cell-resize{position:absolute;z-index:2;width:8px;right:-3px}`(https://unpkg.com/ag-grid-community/styles/ag-grid.css)、MUI X `columnSeparator` `position:'absolute', zIndex:30, right:-5`、目標寬 10(https://github.com/mui/mui-x/blob/master/packages/x-data-grid/src/components/containers/GridRootStyles.ts)、VS Code `.monaco-sash{position:absolute;z-index:35}`(https://github.com/microsoft/vscode/blob/main/src/vs/base/browser/ui/sash/sash.css)。閘:`scripts/data-table-pinned-resize-invariant.mjs` R3(欄界兩側各 2px 都要命中把手;`--selftest` 注入 overflow:hidden / z-index:auto 必紅)。
 - **Indicator**:消費既有 DataTable resize indicator contract，預設覆蓋完整可調整邊；確切 thickness / offset 與 source utility 由 `resize-handle.tsx` 擁有
   - **idle**:`bg-divider`
   - **disabled**:`bg-divider`(無 hover affordance)
@@ -93,7 +93,7 @@ benchmark:
 
 - **Disabled**:仍渲染 1px line(`bg-divider`,無 hover affordance),但無 cursor、無 `select-none`;所有狀態皆固定從 accessibility tree 隱藏。
 - **拖到 min / max 卡住**:primitive 不持 width state(不耦合 drag math),邊界 clamp 與卡住回饋由 consumer 的 resize handler 管;`isResizing` 期間 line 維持 `bg-primary` 不另示警。
-- **同列多 handle 並存**(多欄 column resize):各 handle 為獨立 `<span>`,無互相協調;`-3px` outward offset 使相鄰欄命中區可能相接,先命中者(DOM 順序 / pointer target)收事件,衝突仲裁屬 consumer drag math。
+- **同列多 handle 並存**(多欄 column resize):各 handle 為獨立 `<span>`,無互相協調;`-3px` outward offset 使相鄰欄命中區可能相接,先命中者(DOM 順序 / pointer target)收事件,衝突仲裁屬 consumer drag math。鄰格本身不得蓋住把手的外側(`z-index: 1`,見命中區)。
 - **RTL**:全域明定 LTR-only；本元件使用 physical `left/right` 定位，不提供 RTL 鏡像。
 
 ## Roadmap(用 user 既有的 v2 framing)

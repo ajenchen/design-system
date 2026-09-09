@@ -1575,62 +1575,139 @@ function DataTableInner<TData>(
 
   const [activeDragId, setActiveDragId] = React.useState<string | null>(null)
 
-  // 快速捲動的緊急列殼:只有兩次 commit 之間跨過整個可視窗時,新列先畫同幾何的殼。
-  // 一般捲動直接畫真列。速度取樣不能證明畫面真的缺內容:合成器與 render 節拍不同,
-  // 用兩次 render 的時間推速度會讓短促的正常捲動也先畫骨架,增加真內容的呈現延遲。
-  // 拖曳 / 編輯 / 已選格與保留中的真列不退回殼;緊急跳轉後的升級仍保留列高同步。
-  const SHELL_PROMOTE_BUDGET_MS = 8
+  // 快速捲動的列殼 —— **自適應機器畫列能力**(2026-09-09,AD56:R17 的固定判準在慢機器失效)。
+  // 不用兩次 render 的瞬時速度(快機器的正常短捲會被誤判,R17 H1),也不用固定跳距(慢機器 commit 頻繁、每次位移不到一個
+  // viewport,永遠不觸發,主執行緒畫不完真列 → CI 6,000px/s 整片白 1 秒)。改成每次 render 先算「這一幀畫得完幾列真列」=
+  // 幀預算 ÷ 量到的每列成本;要新畫的列(新進視窗的、上次是殼的)依「可見優先、再依索引」排隊,排進預算的畫真列、排不進的先畫
+  // 同幾何的殼(便宜),下一幀再補。快機器每列 1–2ms → 一般速度永遠畫得完 → 零骨架;慢機器每列 8ms+ → 極速時只畫得完 1–2 列
+  // → 其餘先殼、不留白。兩次 commit 跨過整個 viewport 的緊急跳轉仍一律先殼(那一幀什麼都畫不完)。
+  // 拖曳 / 編輯 / 已選格與保留中的真列不退回殼;升級後仍同步三區列高。
+  const SHELL_FRAME_BUDGET_MS = 12
+  // 「機器跟不上」的門檻:捲動造成的 commit 平均超過這個時間才啟用預算與前掛殼;跟得上的機器(本機 6,000px/s 每次 commit ≈ 10ms)
+  // 完全走 R17 的路(一般速度零骨架、極速直接畫真列)。門檻取 20ms(> 一幀,避免單次 GC 抖動把快機器誤判成慢)。
+  const SHELL_SLOW_COMMIT_MS = 20
   const shellRef = React.useRef({
-    lastOffset: null as number | null, renderStart: 0, promoted: 0, costPerRow: 3, promoteLeft: 0, ahead: false, hasShell: false,
+    lastOffset: null as number | null, renderOffset: null as number | null, committedRenderOffset: null as number | null, committedRenderStart: 0, lastRows: null as unknown, renderStart: 0, lastCommitAt: 0, commitCost: 0, slow: false, scrollCommit: false, aheadRows: 0, scrolling: false,
+    promoted: 0, newFull: 0, costPerRow: 3, fixedCost: 2, promoteLeft: 0, budgetRows: 64, budgeted: false, ahead: false, hasShell: false, wasScrolling: false, aheadDir: 1,
     decided: new Map<string, boolean>(), full: new Set<string>(), fullNow: new Set<string>(), prevShells: new Set<string>(), shellsNow: new Set<string>(), raf: 0,
     needsHeightSync: false, viewportTop: 0, viewportBottom: 0,
   })
   const [, bumpShellTick] = React.useReducer((x: number) => x + 1, 0)
+  // 虛擬化器實例(useVirtualizer 每次 render 回同一個實例):render 開始時要讀它當下的 isScrolling,實例在下面才建,先用 ref 拿上一輪的
+  const virtualizerRef = React.useRef<{ isScrolling: boolean } | null>(null)
   {
     const S = shellRef.current
     const now = typeof performance !== 'undefined' ? performance.now() : 0
+    // 基準一律讀「上一次真的 commit 的 render」留下的值;這一次 render 只寫 pending,layout effect 才提升為 committed ——
+    // StrictMode 雙 render、或被 TanStack flushSync 打斷而丟棄的 render 不會把基準蓋掉(多代理審查 P2)。
+    const prevRenderStart = S.committedRenderStart
     S.renderStart = now
     const offsetNow = centerBodyRef.current?.scrollTop ?? 0
     // 未掛載或零高度時仍保留至少一列的非零門檻,靜止不會進入緊急殼。
     const viewportHeight = centerBodyRef.current?.clientHeight ?? 0
     S.viewportTop = offsetNow; S.viewportBottom = offsetNow + viewportHeight
     const jumpThreshold = Math.max(resolvedEstimate, viewportHeight)
-    S.ahead = useVirtual && activeDragId == null && S.lastOffset != null && Math.abs(offsetNow - S.lastOffset) >= jumpThreshold
-    S.promoteLeft = S.ahead ? 0 : Math.max(1, Math.min(64, Math.floor(SHELL_PROMOTE_BUDGET_MS / Math.max(0.25, S.costPerRow))))
-    S.promoted = 0; S.hasShell = false; S.decided = new Map(); S.fullNow = new Set(); S.shellsNow = new Set()
+    // 緊急跳轉看「上一次 render 開始」到現在的位移 —— 含上一次 commit 自己花掉的時間。R17 看的是 commit 結束後的位移,慢機器
+    // 每次 commit 一結束下一次 render 就開始、中間位移很小,連續慢 commit 永遠觸發不了,整片白到瀏覽器偶然讓出時間為止(6× 節流 1.1s)。
+    const renderOffsetPrev = S.committedRenderOffset
+    S.renderOffset = offsetNow
+    S.ahead = useVirtual && activeDragId == null && renderOffsetPrev != null && Math.abs(offsetNow - renderOffsetPrev) >= jumpThreshold
+    // 只有「這次 commit 是捲動造成的」或「上一輪還有殼要補」才算捲動 commit;初次載入、換頁、靜止時的資料變動一律照舊全畫
+    // (Codex R9 反例:第一版把配額套到新列,初次載入 15 列只畫 2 列)。
+    // 「還在捲」= scrollTop 變了 **或** 虛擬化器仍在 isScrolling(最後一個 scroll 事件後 250ms 內)。只比 scrollTop 不夠:長 commit 之後
+    // 下一次 render 常常讀到還沒更新的 scrollTop,會被誤判成「停捲」而一次升級全部可見殼、又不前掛,視窗早捲過去(v4 在 4× 節流 871–1327ms 白)。
+    const offsetChanged = S.lastOffset != null && offsetNow !== S.lastOffset
+    // isScrolling 直接讀實例當下的值(不是上一次 commit effect 的快照 —— 快照晚一個 commit,停捲後多等一次 150ms 的 commit 才開始補)
+    const scrolling = offsetChanged || (virtualizerRef.current?.isScrolling ?? S.wasScrolling)
+    S.scrolling = scrolling
+    if (renderOffsetPrev != null && offsetNow !== renderOffsetPrev) S.aheadDir = offsetNow > renderOffsetPrev ? 1 : -1
+    // rows identity 變了(排序 / 篩選 / 換資料)那一次不算捲動 commit:跟初次載入一樣全畫真列(Codex R20 修法 A)
+    S.scrollCommit = useVirtual && activeDragId == null && S.lastRows === rows && (scrolling || S.prevShells.size > 0)
+    // 只有量到「機器跟不上」(捲動 commit 平均 > SHELL_SLOW_COMMIT_MS)才受預算節制;跟得上的機器完全走 R17 的路。
+    S.budgeted = S.scrollCommit && S.slow
+    // 這一幀畫得完幾列真列 =(幀預算 − 每次 commit 的固定成本)÷ 每列成本(至少 1 列,上限 64)。停捲後只剩補殼時放寬到 4 幀:
+    // 每次 commit 的固定成本在慢機器很貴(4× 節流 ≈ 100ms),一次多補幾列比每幀補 1 列快得多(6× 節流補齊 1.3s → 目標 < 1s)。
+    // 沒有新列進窗(scrollTop 沒變,只是還在 250ms 的 isScrolling 尾巴)的 commit 放寬到 4 幀:可能真的停了(多補幾列補得快),
+    // 也可能只是讀到還沒更新的 scrollTop(6× 節流實測 8 幀會讓一次 commit ~250ms、視窗移動超過前掛殼覆蓋 → 白 534ms),4 幀是折衷。
+    // 停捲後(旗標也掉了)可見殼一律當次全升級(見預排隊),預算只管視窗外。
+    const frameBudget = !scrolling || !offsetChanged ? SHELL_FRAME_BUDGET_MS * 4 : SHELL_FRAME_BUDGET_MS
+    // 不受預算(機器跟得上)但上一輪還有殼要補:用 4 幀預算分幾次補,不一次把整批(舊殼 + 新列)畫成一個長 commit ——
+    // 否則那個長 commit 又把成本推回門檻之上,slow 來回震盪(多代理審查 P1)。快機器每列 < 1ms,4 幀 ≈ 40+ 列,等於全補。
+    const draining = !S.budgeted && S.scrollCommit && S.prevShells.size > 0
+    S.budgetRows = S.ahead ? 0
+      : !S.budgeted && !draining ? Number.MAX_SAFE_INTEGER
+      : Math.max(1, Math.min(64, Math.floor(Math.max(1, (draining ? SHELL_FRAME_BUDGET_MS * 4 : frameBudget) - S.fixedCost) / Math.max(0.25, S.costPerRow))))
+    S.promoteLeft = S.budgetRows
+    // 慢機器捲動中:一次 commit 的時間內視窗會移動 速度 × commit 時間 這麼遠,這段距離的列先掛殼(便宜)在前面等著,
+    // 否則每次 commit 畫好的列落地時視窗早已捲過去 → 整片白直到緊急跳轉才有殼(v2 在 4× 節流量到 621–997ms 白)。
+    // 慢機器或緊急跳轉都算;上限 48 列(6× 節流:6px/ms × 300ms commit ÷ 40px ≈ 45 列)。殼便宜,多掛是為了讓合成器捲進去時有東西。
+    S.aheadRows = (S.budgeted || S.ahead || draining) && scrolling && S.lastCommitAt > 0
+      ? Math.max(0, Math.min(48, Math.ceil((Math.abs(offsetNow - (renderOffsetPrev ?? offsetNow)) / Math.max(1, now - prevRenderStart)) * Math.max(S.commitCost, now - prevRenderStart) / Math.max(1, resolvedEstimate))))
+      : 0
+    S.promoted = 0; S.newFull = 0; S.hasShell = false; S.decided = new Map(); S.fullNow = new Set(); S.shellsNow = new Set()
   }
   /** 這一輪這列要不要先出殼(三區同一列同一個答案;決定一次、三區共用)。 */
   const decideShell = (rowId: string, visible: boolean): boolean => {
     const S = shellRef.current
-    const hit = S.decided.get(rowId)
-    if (hit !== undefined) return hit
-    let shell: boolean
-    // 拖曳中一律真列(殼沒有 SortableRowProvider,不是有效落點);上次 commit 完整畫過、編輯中、選取格所在的列也不套殼
-    if (!useVirtual || activeDragId != null || S.full.has(rowId) || (editingCellId != null && editingCellId.startsWith(`${rowId}__`)) || (selectedCellId != null && selectedCellId.startsWith(`${rowId}:`))) shell = false
-    else if (S.ahead) shell = true
-    // 只有「上次 commit 是殼」的列才吃補齊配額;從沒見過的新列在正常速度下照舊完整渲染 ——
-    // 初次載入、正常捲動、換頁都走這裡,行為與沒有殼機制時完全相同(Codex R9 反例:第一版把配額套到新列,初次載入 15 列只畫 2 列)
-    else if (S.prevShells.has(rowId)) {
-      // 可見資料優先完成;每次 render 的剩餘預算只節制視窗外的預掛列。
-      // 不讓先遍歷到的頂端 overscan 吃完配額,把可見列留成骨架。
-      if (visible || S.promoteLeft > 0) {
-        if (!visible) S.promoteLeft -= 1
-        S.promoted += 1; shell = false
-      } else shell = true
+    let shell = S.decided.get(rowId)
+    if (shell === undefined) {
+      // 拖曳中一律真列(殼沒有 SortableRowProvider,不是有效落點);上次 commit 完整畫過、編輯中、選取格所在的列也不套殼
+      if (!useVirtual || activeDragId != null || S.full.has(rowId) || (editingCellId != null && editingCellId.startsWith(`${rowId}__`)) || (selectedCellId != null && selectedCellId.startsWith(`${rowId}:`))) shell = false
+      else if (S.ahead) shell = true
+      // 沒進預排隊的列(預排隊只在「機器跟不上」時跑):「上次是殼」的列吃補齊配額,可見優先;從沒見過的新列照舊完整渲染 ——
+      // 初次載入、正常捲動、換頁都走這裡,行為與沒有殼機制時完全相同(Codex R9 反例:第一版把配額套到新列,初次載入 15 列只畫 2 列)
+      else if (S.prevShells.has(rowId)) {
+        if (visible || S.promoteLeft > 0) { if (!visible) S.promoteLeft -= 1; shell = false }
+        else shell = true
+      }
+      else shell = false
+      S.decided.set(rowId, shell)
     }
-    else shell = false
+    // 記帳只在真的被某一區 render 消費時做(預排隊只做決定):規劃了卻沒被 render 的列不入帳,三區同一列只記一次(Codex R20 修法 B/C)
     if (shell) { S.hasShell = true; S.shellsNow.add(rowId) }
-    else S.fullNow.add(rowId)
-    S.decided.set(rowId, shell)
+    else if (!S.fullNow.has(rowId)) {
+      S.fullNow.add(rowId)
+      if (S.prevShells.has(rowId)) S.promoted += 1
+      else if (!S.full.has(rowId)) S.newFull += 1
+    }
     return shell
   }
   // 合成器超前時,殼的預掛範圍擴到半個視窗(每側;上限 24 列)—— 殼便宜,多掛是為了給合成器領先量;落回正常速度就縮回 overscan。
-  const shellOverscan = shellRef.current.ahead ? Math.max(effectiveOverscan, Math.min(24, Math.ceil((centerBodyRef.current?.clientHeight ?? 0) / resolvedEstimate / 2))) : effectiveOverscan
+  const shellOverscan = Math.max(effectiveOverscan, shellRef.current.ahead ? Math.min(24, Math.ceil((centerBodyRef.current?.clientHeight ?? 0) / resolvedEstimate / 2)) : 0)
+  // 前掛殼只掛在捲動方向:TanStack 的 overscan 是對稱的,一半會浪費在視窗後面(6× 節流時一次 commit 掛 115 個殼 = 475ms 長工,
+  // 落地時視窗又捲過去)。rangeExtractor 在預設範圍(含 overscan)之外,往捲動方向再延 aheadRows 列。
+  // TanStack 只在 extractor identity / overscan / count / base range 變時重跑 extractor,所以 identity 必須跟著 aheadRows / aheadDir 變
+  // (多代理審查 P2:只有 aheadRows 變、範圍沒變的 render 會拿到上一輪的索引)。
+  const aheadRowsNow = shellRef.current.aheadRows
+  const aheadDirNow = shellRef.current.aheadDir
+  const shellRangeExtractor = React.useMemo(() => (range: { startIndex: number; endIndex: number; overscan: number; count: number }) => {
+    const base = Math.max(0, range.startIndex - range.overscan)
+    const end = Math.min(range.count - 1, range.endIndex + range.overscan)
+    const from = aheadDirNow < 0 ? Math.max(0, base - aheadRowsNow) : base
+    const to = aheadDirNow > 0 ? Math.min(range.count - 1, end + aheadRowsNow) : end
+    const out: number[] = []
+    for (let i = from; i <= to; i++) out.push(i)
+    return out
+  }, [aheadRowsNow, aheadDirNow])
   React.useLayoutEffect(() => {
     const S = shellRef.current
     const cost = (typeof performance !== 'undefined' ? performance.now() : 0) - S.renderStart
-    // 每列成本 = 這次 commit 的總時間 / 這次真的新畫的列數(指數平滑;只在有新畫列時更新,純快取命中的 commit 不算)
-    if (S.promoted > 0) S.costPerRow = 0.6 * S.costPerRow + 0.4 * (cost / S.promoted)
+    // 成本模型:commit 時間 = 固定成本 + 新畫列數 × 每列成本。固定成本從「沒新畫任何列」的 commit 學(純快取命中),
+    // 每列成本 =(總時間 − 固定成本)÷ 這次真的新畫的真列數(新進 + 殼升級)。都指數平滑並夾範圍;初次掛載那一次不學(含表頭等一次性成本)。
+    const painted = S.newFull + S.promoted
+    if (S.lastOffset != null) {
+      if (painted === 0) S.fixedCost = Math.min(10, Math.max(0, 0.6 * S.fixedCost + 0.4 * cost))
+      else S.costPerRow = Math.min(50, Math.max(0.25, 0.6 * S.costPerRow + 0.4 * (Math.max(0, cost - S.fixedCost) / painted)))
+    }
+    // 「機器跟不跟得上」只看捲動 commit(初次掛載 / 換頁 / 靜止時資料變動的 commit 本來就重,不算):平滑後 > 門檻才算慢
+    // 進入 slow 要 > 門檻,退出要 < 門檻的一半(遲滯):被預算節制過的 commit 本來就便宜,單一門檻會讓中速機器在
+    // 「便宜的預算 commit → 退出 → 一次全畫的長 commit → 進入」之間震盪(多代理審查 P1;退出後的補殼另有 4 幀預算,見 draining)。
+    if (S.scrollCommit) { S.commitCost = S.commitCost > 0 ? 0.6 * S.commitCost + 0.4 * cost : cost; S.slow = S.commitCost > SHELL_SLOW_COMMIT_MS || (S.slow && S.commitCost > SHELL_SLOW_COMMIT_MS / 2) }
+    S.lastCommitAt = typeof performance !== 'undefined' ? performance.now() : 0
+    S.committedRenderOffset = S.renderOffset
+    S.committedRenderStart = S.renderStart
+    S.lastRows = rows
+    S.wasScrolling = virtualizer.isScrolling
     S.lastOffset = centerBodyRef.current?.scrollTop ?? 0
     // 殼升級成真列後,三區列高同步(缺陷 F)要再跑一次 —— 那個同步只掛在虛擬視窗換列上,補真內容不會換列(Codex R9 指出)。
     // 判「有沒有列從殼變真列」看集合差,不看配額計數:拖曳 / 編輯把殼強制升成真列不走配額,第一版只看 promoted,
@@ -1650,13 +1727,42 @@ function DataTableInner<TData>(
     // V scroll 現在在 centerBodyRef(不是外層 bodyRef)
     getScrollElement: () => centerBodyRef.current,
     estimateSize: () => resolvedEstimate,
-    overscan: shellOverscan, enabled: useVirtual,
+    overscan: shellOverscan, enabled: useVirtual, rangeExtractor: shellRangeExtractor,
     // 2026-05-14 P3 perf tune(per codex+Layer A 共識,user 拍板「全部做完」+
     // CPU-throttle-reproducible verify infra):150ms → 250ms 減少 scroll
     // start/end flip 次數 → TableScrollContext 重 cascade visible rich cell
     // tree 機會降低。對齊 TanStack Virtual `isScrollingResetDelay` API。
     isScrollingResetDelay: 250,
   })
+
+  virtualizerRef.current = virtualizer
+  // 一次 render 只取一次 virtual items(預排隊 / 列高同步 / 三區 render 共用同一份快照;Codex R20 A3)
+  const rowVirtualItems = useVirtual ? virtualizer.getVirtualItems() : []
+  // 列殼預排隊(每次 render;要在 virtualizer 建好之後、renderBodyRows 之前):把這次會掛的列裡「還不是真列」的,
+  // 依可見優先 → 索引順序排隊,前 budgetRows 列畫真列、其餘先殼;三區共用同一份決定。
+  {
+    const S = shellRef.current
+    if (useVirtual && !S.ahead && S.budgeted) {
+      const queue: { id: string; visible: boolean }[] = []
+      for (const vi of rowVirtualItems) {
+        const row = rows[vi.index]
+        if (!row || S.full.has(row.id)) continue
+        // 拖曳中 / 編輯中 / 選取格所在列由 decideShell 判真列且不吃預算(它們本來就是例外)
+        if (activeDragId != null || (editingCellId != null && editingCellId.startsWith(`${row.id}__`)) || (selectedCellId != null && selectedCellId.startsWith(`${row.id}:`))) continue
+        queue.push({ id: row.id, visible: vi.start < S.viewportBottom && vi.start + vi.size > S.viewportTop })
+      }
+      let left = S.budgetRows
+      for (const q of [...queue.filter((q) => q.visible), ...queue.filter((q) => !q.visible)]) {
+        // 停捲後(這次 commit 不是捲動造成的)可見的殼一律當次升級,預算只節制視窗外 —— 一次 commit 的固定成本在慢機器很貴,
+        // 可見列分好幾次補反而更慢(R17 原則「下一次 render 優先完整補齊可見列」)。捲動中可見列仍受預算,否則一次畫 12 列 = 120ms,
+        // 落地時視窗早捲過去了。
+        const shell = left <= 0 && (S.scrolling || !q.visible)
+        if (!shell) left -= 1
+        S.decided.set(q.id, shell)
+      }
+      S.promoteLeft = left
+    }
+  }
 
   // ── isFillHeight body maxHeight JS 計算(2026-04-30)──
   // CSS `%` height 在 flex column min-h-0 + auto basis 場景下,Chromium 不可靠 shrink
@@ -2177,7 +2283,7 @@ function DataTableInner<TData>(
 
   // 2026-09-08:只在虛擬視窗換列、列數、欄寬、尺寸變動時跑,而且捲動那條走增量。
   // 原本 `useLayoutEffect(() => sync())` 無依賴 = 每次 render 全量重量,是變慢的另一半元兇。
-  const virtualItemsForSync = virtualizer.getVirtualItems()
+  const virtualItemsForSync = rowVirtualItems
   const virtualRangeKey = virtualItemsForSync.length
     ? `${virtualItemsForSync[0].index}:${virtualItemsForSync[virtualItemsForSync.length - 1].index}`
     : ''
@@ -2957,7 +3063,11 @@ function DataTableInner<TData>(
           // cell padding 12px 由外層 cellPadding style 提供 → more 距 cell 右邊 = 12px。
           // header 字級也隨 size(原寫死 text-body → lg 表格 header 字偏小,跟 body 不一致)。
           // 對齊 cell wrapper + Field family size→font SSOT。色弱化由 text-fg-secondary 維持。
-          'group relative flex items-center gap-2 text-fg-secondary font-normal shrink-0 overflow-hidden select-none',
+          // 不再 `overflow-hidden`(2026-09-10,AD63):它會把欄寬把手跨到鄰格上的外側 3px 裁掉 → 把手只剩自己這側 4px 可點
+          // (main 也如此,resize-handle.spec.md 寫的是「跨 boundary 抓得到」)。缺陷 E 的「hover ⌄ 選單撐大釘選面板 max-content」
+          // 修正靠的是 columnSizeStyle 給的 inline width / minWidth / maxWidth 固定寬,不是裁切;下面的 `min-w-0` 只是保險
+          // (inline minWidth 一定蓋過它)。label 截斷由 TruncatedText 自管。閘:pinned-resize R3。
+          'group relative flex items-center gap-2 text-fg-secondary font-normal shrink-0 min-w-0 select-none',
           fieldDisplayTextClass(size),
           // **表頭一律靠左,不跟著欄位的 align 走**(2026-09-04 user 拍板:「header 的規格就是要一致,
           // 只有內容會置右」)。表頭是結構標籤,一整列標題對齊同一條左緣才掃得順;數值右對齊的目的是
@@ -3556,7 +3666,7 @@ function DataTableInner<TData>(
     const prune = () => {
       for (const [k, v] of rowElCacheRef.current) if (k.startsWith(regionKey + ':') && v.tick !== rowRenderTickRef.current) rowElCacheRef.current.delete(k)
     }
-    const items = useVirtual ? virtualizer.getVirtualItems().map(vr => rowEl(rows[vr.index], vr.index, { virtual: true, start: vr.start, size: vr.size, isLast: vr.index === rows.length - 1 })) : []
+    const items = useVirtual ? rowVirtualItems.map(vr => rowEl(rows[vr.index], vr.index, { virtual: true, start: vr.start, size: vr.size, isLast: vr.index === rows.length - 1 })) : []
     const staticItems = useVirtual ? [] : rows.map((row, i) => rowEl(row, i, { isLast: i === rows.length - 1 }))
     prune()
 
