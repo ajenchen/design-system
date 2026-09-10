@@ -34,6 +34,8 @@ if (!existsSync(join(STATIC, 'index.json'))) { console.error(`找不到 ${STATIC
 let fail = 0
 const check = (name, ok, detail = '') => { console.log(`${ok ? '✓' : '✗'} ${name}${detail ? ' | ' + detail : ''}`); if (!ok) fail++ }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+/** 等到 pred 成立(每 200ms 看一次),最多 timeout ms;共享 runner 上 docs 頁渲染 14 個 story 可能要十幾秒,固定等待會誤判 */
+const waitFor = async (frame, pred, timeout) => { const t0 = Date.now(); while (Date.now() - t0 < timeout) { if (await frame.evaluate(pred)) return true; await sleep(200) } return false }
 const sel = (x) => `[id="${x}"]`
 const MEASURE = () => {
   const docs = document.getElementById('storybook-docs'), root = document.getElementById('storybook-root')
@@ -65,12 +67,14 @@ try {
     if ((await page.locator(sel(DEMO)).count()) === 0) await page.locator(sel(P)).first().click()
     await sleep(500)
     await page.locator(sel(DEMO)).first().click()
+    // story 先渲染出來,再等「延遲的 chunk 到達之後」的那段時間(殭屍就是在那之後長出來的)
+    await waitFor(frame, () => (document.getElementById('storybook-root')?.childElementCount ?? 0) > 0, 20000)
     await sleep(Math.max(3500, delayMs + 1500))
     const m = await frame.evaluate(MEASURE)
-    // 對照:留在 Docs 頁時 docs 要真的渲染出來(守衛不得誤殺正常 docs)
+    // 對照:留在 Docs 頁時 docs 要真的渲染出來(守衛不得誤殺正常 docs);共享 runner 上 14 個 story 的 docs 頁可能要十幾秒
     await page.locator(sel(P)).first().click(); await sleep(300)
     if ((await page.locator(sel(DEMO)).count()) === 0) await page.locator(sel(P)).first().click()
-    await sleep(Math.max(2500, delayMs + 1500))
+    await waitFor(frame, () => (document.getElementById('storybook-docs')?.childElementCount ?? 0) > 0 && !document.getElementById('storybook-docs')?.hasAttribute('hidden'), 30000)
     const docsPage = await frame.evaluate(MEASURE)
     await browser.close()
     return { m, docsPage, routed }

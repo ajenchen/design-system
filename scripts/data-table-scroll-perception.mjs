@@ -43,7 +43,7 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
     if ((summary?.stalled || captureGap) && attempt < 3) {
       console.log(
         summary.stalled
-          ? `runner 停頓造成整窗跳轉(單一 scroll 事件 ${summary.maxScrollEventJumpPx}px ≥ 視窗 ${summary.setup?.rect?.height}px),第 ${attempt} 次作廢,重跑`
+          ? `runner 停頓造成整窗跳轉(單一 scroll 事件 ${summary.maxScrollEventJumpPx}px ≥ 視窗 ${summary.setup?.rect?.height}px 的 3/4),第 ${attempt} 次作廢,重跑`
           : `runner 送幀缺口(${summary.captureCoverage.reasons.join("; ")};最長 ${Math.round(summary.captureCoverage.maxActiveGapMs ?? 0)}ms),第 ${attempt} 次作廢,重跑`
       );
       continue;
@@ -483,7 +483,9 @@ try {
     arg("input", "gesture") === "wheel" &&
     maxScrollEventJumpPx >= (setup.rect?.height ?? Infinity);
   // 任何輸入下單一 scroll 事件 ≥ 視窗高 = 整窗跳轉(主執行緒停頓或 tick 合併):父程序據此重跑
-  const stalled = maxScrollEventJumpPx >= (setup.rect?.height ?? Infinity);
+  // 停頓判準 = 單一 scroll 事件跳過視窗高的 3/4(2026-09-10,918a2821 讀回:runner 上 4500 inertia 一次跳 464px、視窗 466px,差 2px 沒被判成停頓,
+  // 那一跑內容延遲 p95 45ms 全是那次停頓;正常 4500 的最大單步是 235–244px,3/4 視窗(350px)留有一倍以上的餘裕)
+  const stalled = maxScrollEventJumpPx >= 0.75 * (setup.rect?.height ?? Infinity);
   if (wheelCoalesced)
     console.log(
       `✗ wheel tick 被合併成整窗跳轉:單一 scroll 事件最大 ${maxScrollEventJumpPx}px ≥ 視窗 ${setup.rect?.height}px(驅動失效,不是表格)`
