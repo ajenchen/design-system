@@ -901,10 +901,9 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
     // Portal target = table outer 的 parent(保持 CSS variable / theme scope 繼承,
     // 不 portal 到 document.body — body 沒 theme tokens 會使 Button tertiary 變透明)
     const tableEl = rowEl.closest<HTMLElement>('[data-data-table-outer]')
-    setPortalTarget(tableEl?.parentElement ?? null)
-
     const update = () => {
       if (!tableEl) return
+      setPortalTarget(tableEl.parentElement)
       const rRect = rowEl.getBoundingClientRect()
       const tRect = tableEl.getBoundingClientRect()
       // v15.1:drag 期間 source button hide(visible 邏輯已 guard isDragging),
