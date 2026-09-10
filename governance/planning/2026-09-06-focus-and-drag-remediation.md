@@ -2983,3 +2983,4 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - `verify-browser-agent`:docs 競態閘的第三跑(不延遲的正常切換)在離開渲染完整的 docs 頁時撞到 Storybook 的 preview reload(StoryRender.teardown 逃生路徑)→ 舊 frame 的執行環境被銷毀「Execution context was destroyed」。修:每次 evaluate 都重取 preview iframe 的 frame、遇到導航就重試。
 - `verify-browser-datatable-dpr2`:4500 inertia dpr2 `unmappedFrames 4`(4 幀解不出任何一列完整,延遲 p95 154ms;同 peak dpr1 為 0)= 共享 runner 在 dpr2 的 raster 成本,與 AD62 不在 dpr2 斷言延遲同一理由 → unmapped 只在斷言延遲時算;零殼 / 空白 / 擷取覆蓋照斷言。
 - 9f22cc1c 讀回:dpr1 job 的 4500 inertia 三次都停頓(單步 435 / 421 / 460px、殼 11 / 16 / 6 幀、延遲 p95 66–125ms)—— runner 當下跟不上 4500px/s,這正是 AD62 列殼判準的「慢機器極速捲動先出殼、不留白」場景;三次全停頓時父程序改以慢機器判準判定(零空白、擷取有效、輸入完整),殼幀不算紅,不再宣稱「量不到」直接紅。
+- a646b6c2 讀回:元件 job 的 Dialog 並存閘 B 路徑「找不到 #coexist-aside-input」—— 導航後固定等 900ms 就量,runner 忙時 story 還沒渲染。改成 waitForSelector(15s)再量。這一輪起 DataTable / dpr2 / agent / 靜態 / 治理五個 job 已連續綠。
