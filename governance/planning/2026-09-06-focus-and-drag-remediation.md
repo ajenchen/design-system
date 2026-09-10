@@ -2962,3 +2962,9 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - **SSOT**:focus-canonical.md「反白來歷」補「在文字輸入框裡打字不算搬」+ 四家來源;規則二表格同步;`.claude/references/focus-canonical.md` 由 governance:generate 重生(check PASS)。
 - **閘**:`virtual-cursor-modality-invariant.mjs` F 段(七個有搜尋列的目標:滑鼠點進搜尋列、打一個字、Backspace → 自動落點的反白無框;接著 ↓ → 有框當對照;`--selftest` 把游標列釘成永遠有框 → F 必紅)。第一版 F 找不到 Select / SelectMenu / PeoplePicker 的搜尋列(它們的搜尋列在觸發器裡、不帶 `cmdk-input`)、Combobox「四模式」沒有文字輸入 → 改用「開啟後拿到焦點的文字輸入框」+ Combobox「搜尋」story。
 - **順手**:6fa90a71 CI 唯一紅 = perception bursts dpr1 的 128ms 送幀缺口(零殼零白零延遲),父程序對「擷取送幀缺口」比照整窗跳轉重跑最多 3 次。
+
+### AD71 CI 15 分鐘預算再次撞頂:兩個瀏覽器 job 各拆一個(2026-09-10;AD34 的同一招)
+
+- **讀回**:918a2821 —— DataTable job perception 4500 inertia dpr1 內容延遲 p95 45ms(上限 35),同一跑單一 scroll 事件跳 464px、視窗 466px,差 2px 沒被判成停頓 → 停頓判準改「≥ 視窗 3/4」(正常 4500 最大單步 235–244px);元件 job docs 競態閘的對照組固定等 4.5s 量到 docs 子節點 0 → 改輪詢等真的渲染。e12e4fa7 —— DataTable job 綠(13.6 分鐘,貼頂),元件 job 13.1 分鐘跑到 15 分鐘被取消(加了 docs 競態閘、虛擬游標 F 段、示範閘 S12 / S13 之後)。
+- **修**:`verify-browser-datatable-dpr2`(dpr2 那一組 perception 5 跑 + 把手位置)、`verify-browser-agent`(docs 競態、虛擬游標、示範閘)各自一個 job;fan-in `verify` needs 五個上游、五個 result 都要 success;`infra/governance/test/ci-workflow-scope.test.mjs` 同步(job 清單、needs、build-storybook 5 次、playwright install 4 次)。預估:DataTable ~8 分、dpr2 ~8 分、元件 ~8 分、agent ~8 分。
+- 兩條紅都不是表格或守衛:共享 runner 的一次近整窗跳轉、一次 docs 頁渲染慢;儀器判準與等待方式改了,表格與元件程式一行未動。

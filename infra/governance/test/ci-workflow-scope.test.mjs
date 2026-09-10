@@ -15,20 +15,20 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 2026-09-08:單一 verify job 連兩次 15 分鐘逾時被取消(瀏覽器閘 586 秒 + 治理檢查 249 秒 + 安裝與 build)。
   // 拆成三個平行 job;required check 的 context 名字不變,由 `verify` fan-in:它必須 `if: always()` 並明確檢查
   // 每個上游的 result —— GitHub 把 skipped 的 required check 當通過,上游紅了若讓 fan-in 被 skip 就等於沒閘。
-  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['hooks-linux', 'verify', 'verify-browser-datatable', 'verify-browser-interaction', 'verify-static'])
+  assert.deepEqual(Object.keys(workflow.jobs).sort(), ['hooks-linux', 'verify', 'verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-interaction', 'verify-static'])
   assert.equal(workflow.jobs.verify.name, 'Verify(tsc + tests + compile + build)')
   assert.equal(workflow.jobs.verify.timeoutMinutes, 15)
   assert.equal(workflow.jobs.verify.if, 'always()')
-  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['verify-browser-datatable', 'verify-browser-interaction', 'verify-static'])
+  assert.deepEqual([...workflow.jobs.verify.needs].sort(), ['verify-browser-agent', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-interaction', 'verify-static'])
   // 解析器只留 runSha256 與 env(不留 run 原文):上游 result 必須經 env 進來,再由原始文字驗它們全部 = success 才過。
   const fanInEnv = JSON.stringify(workflow.jobs.verify.steps[0].env)
-  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-interaction']) {
+  for (const upstream of ['verify-static', 'verify-browser-datatable', 'verify-browser-datatable-dpr2', 'verify-browser-interaction', 'verify-browser-agent']) {
     assert.match(fanInEnv, new RegExp(`needs\\.${upstream}\\.result`))
     assert.equal(workflow.jobs[upstream].timeoutMinutes, 15)
     assert.equal(workflow.jobs[upstream].if, null)
     assert.equal(workflow.jobs[upstream].needs, null)
   }
-  assert.match(source, /\[ "\$STATIC" = success \] && \[ "\$BROWSER_DT" = success \] && \[ "\$BROWSER_UI" = success \]/)
+  assert.match(source, /\[ "\$STATIC" = success \] && \[ "\$BROWSER_DT" = success \] && \[ "\$BROWSER_DT2" = success \] && \[ "\$BROWSER_UI" = success \] && \[ "\$BROWSER_AGENT" = success \]/)
   // The shell hooks only ever ran on macOS, which is how BSD-only `stat -c` / `date -d` fallbacks
   // shipped to Linux cloud sessions. This job is their Linux regression gate; it stays inside the
   // fast PR scope and stays out of `verify` so a hook failure reads as a hook failure.
@@ -41,8 +41,8 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   assert.equal(workflow.jobs.verify.steps.length, 1)
   // 瀏覽器閘的兩個 job 都要自己 build storybook 與裝 chromium(彼此平行,不共用 artifact):
   // build-storybook 出現 3 次(static 的 manifest 驗證 + 兩個瀏覽器 job),playwright install 2 次。
-  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 3)
-  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 2)
+  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 5)
+  assert.equal((source.match(/playwright install chromium/g) ?? []).length, 4)
   for (const command of [
     'npm run build:lib',
     'npx --no-install tsc -b',
