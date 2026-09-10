@@ -3034,6 +3034,18 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - **閘**:窄階梯 P0–P5 全過(含 P5 收斂不抖、P3 每階仍是數字頁碼);焦點幾何全掃綠(72 外 / 1 內 / 17 無框),兩個對照組照樣紅(釘死焦點視覺 → 9 處、全部釘成內描邊 → 78 處);幾何閘裡的 Pagination 例外**已刪除**(它是為捲動狀態存在的)。
 - **跨規格同步**:`scroll-area.spec.md:40` 與 `horizontal-overflow.spec.md:34` 的「Pagination 最後一階可橫向捲」兩條例外都標為 2026-09-10 撤銷並寫明理由;`pagination.spec.md` 階梯表加第 4 階、原「最後一階不加 scroll arrow」整段改寫成「為什麼不捲」。
 
+### AD83 Codex R23 獨立稽核:0/4 達標,三件它自己沒講清楚的事;順手修掉一個真的漂移(2026-09-10)
+
+- **G1**:唯一直接量到「扣掉過渡」的是 `validation/hover-motion-pilot/G1-MOTION-REPORT.md` —— 原生 final p95 **109.684ms**、拿掉過渡 **25.161ms**,判準 16.7ms,**差 8.5ms**;而且那份只有 head 臂、CPU1/DPR1、n=1。零強制同步排版那半邊站得住(兩臂 Layout 皆 0)。
+- **G2**:`tooltip-g2/G2-REPORT.md` 64/64 跑完,**16 列全部 `Every event<=4 = False`**;最好的一組 CPU1/bursts/wheel 是 0 長幀但事件 p95 **14.184ms**(判準 4ms)。而且 G2 只有 P10 一個候選跑過,其餘 5 個 0 次。
+- **G3(最重要的一件)**:報告寫「校正後 276 PASS」,但那過的是 **marker** 那一關,不是內容延遲 —— marker p95 在 **318/384 筆讀 0.000**(儀器自己畫的標記,不是文字內容)。真正的內容墨跡 p95 min **17.431** / 中位 **99.910** / max **381.941ms**,**0 / 384 通過**。殼幀候選 68、HEAD 275,都不是 0。六個候選只有 P10 跑完 384(整體 384/2304 = 16.7%)。
+- **G4**:21 條指令的計畫 `hover-geometry/g4/tooltip-final-v1/plan.json` 在 `commands.jsonl` 507 個 label 裡搜 `g4` = **0 個**,一條都沒跑。唯一跑過的視覺閘 exit 1,72 組裡 4 組失敗**全是同一份 build 自己跟自己比**(`deterministic: false`)—— R22 也栽在同一件事,兩輪未解。
+- **它自己的進度檔少報 62%**:`RUNTIME-PROGRESS.json` 顯示待辦約 1182 次,實際 1920 次;而且把 `checkbox-ab` 那 400 個 job 列成待辦,但那批的候選 build 是行為已被拒收的 V1(該註銷),同時漏列三個已完成 fast16 的 campaign。
+- **基準過期**:它的基準 4ec7eb19 落後分支頭 4 個 commit。`1ea5920e` 把列底色 150ms 過渡整條拿掉 → **所有 hover / G1 的最終色數字(109ms 那條線)整批作廢**,連那個 84.523ms 的「過渡貢獻」也不再是待決事項(user 已拍板);`7437c08a` 改了 perception 判準腳本 → 384 次的原始 PNG 仍可用但 276/108 的比數要重算;焦點框改動 → 96 張視覺基準 PNG 要重拍。不受影響的:`package-lock.json` 逐字未變(依賴實驗有效)、fast-scroll 儀器零差異、SSR / 行為 / 幾何等語意對照。
+- **交付形態的硬牆**:`PATCHES.md` 自陳 `build:lib` 把 Radix externalize,所以 P10 / P12 / P11 這些改 `node_modules` 的實驗**不會隨 npm 套件出貨**;唯一 durable 建置通過的是 Checkbox V4。
+- **順手修掉的真漂移(我們這邊,不是 Codex 的)**:root barrel `packages/design-system/src/index.ts` 少了 6 個匯出(`AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER` / `AgentPanelMode` / `use-input-modality` / `use-known-options` / `drag-announcements` / `overlay-coexistence`)。產生器跑一次就補齊、`build:lib` 綠。**根因是只有 write-time hook 在顧、沒有任何 CI 檢查**,漏 stage 就長期漂移 —— 已在 `ci.yml` 靜態步驟加「跑產生器後 `git diff --exit-code`」。(稽核另提 `combobox.anatomy.stories.tsx` 929 行超 500 預算屬 P0:**查證後不成立** —— `check_file_size_budget.sh:50-62` 只對 `*.spec.md` 與 SKILL.md 設預算,stories 直接 `exit 0`,我們沒有這條規則;DS 內超過 500 行的 stories 有 8 支,最大 2341 行。)
+- **下一輪最短路徑(9/17 額度重置後)**:重建工作樹 → 套兩個 G4 修補 → **在 HEAD 上重量 G1(32 次)當決策點**(若落在 25ms 附近,代表六個候選打的不是 G1 的靶)→ 修內容墨跡儀器並證明它該紅會紅 → **只挑一個候選跑完整 384**(不要一次 1920)→ 該候選的 G4 21 條 → G2 另開獨立調查(沒有任何 patch 碰過 scroll handler)。
+
 ### AD77 既有債(非本批造成,查證時順手盤到,登記不冒充已解)(2026-09-10)
 
 - **a11y 全掃 5038 條 serious**(color-contrast 5033、nested-interactive 4、可捲動區不可聚焦 1),分布在 737 個 story。CI 的 `a11y-and-size.yml` 走的是 baseline-diff(只擋新增),所以這是既有基線不是本批回歸;本批另跑一次 `--gate`:**0 regression vs baseline**(1033 story 全掃,critical 0)。

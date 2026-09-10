@@ -20,6 +20,7 @@ export type {
 } from './components/AccountMenu/index'
 export {
   AGENT_FAB_HOME,
+  AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER,
   AGENT_PANEL_WIDTH_DEFAULT,
   AGENT_PANEL_WIDTH_MAX,
   AGENT_PANEL_WIDTH_MIN,
@@ -54,6 +55,7 @@ export type {
   AgentPanelDockProps,
   AgentPanelDockRenderProps,
   AgentPanelHeaderProps,
+  AgentPanelMode,
   AgentPanelProps,
   AgentPromptAttachment,
   AgentPromptInputProps,
@@ -678,12 +680,16 @@ export * from './tokens/uiSize/icon-size'
 
 // ─── Hooks ────────────────────────────────────────────────────────────────
 export * from './hooks/use-controllable'
+export * from './hooks/use-input-modality'
 export * from './hooks/use-is-narrow-viewport'
 export * from './hooks/use-is-touch-device'
+export * from './hooks/use-known-options'
 export * from './hooks/use-overflow-items'
 export * from './hooks/use-truncated'
 
 // ─── Lib utilities ────────────────────────────────────────────────────────
+export * from './lib/drag-announcements'
 export * from './lib/drag-visual'
 export * from './lib/multi-select-ordering'
+export * from './lib/overlay-coexistence'
 export * from './lib/utils'

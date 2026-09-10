@@ -84,6 +84,13 @@ jobs:
           # 那顆鈕從 2026-07-18 起一次都沒渲染過;測試檔早就存在,但 `grep -rl check:tabs-inline-action-geometry .github`
           # 回 0 —— 又一支「宣稱有閘、沒人跑」。render-level 那一半在 test:header-tabs-slot-invariants(W3)。
           npm run check:tabs-inline-action-geometry
+          # 產生器產物必須與來源同步:barrel(root index.ts)與各元件 index.ts 是 generated,
+          # 只有一支 write-time hook 在顧,漏 stage 就會長期漂移 —— 2026-09-10 實測 root barrel
+          # 少了 6 個匯出(代理面板斷點常數 / 面板模式型別 / 兩支 hook / 兩支 lib),沒有任何閘會紅。
+          node scripts/gen-component-indexes.mjs
+          node scripts/gen-design-system-barrel.mjs
+          git diff --exit-code -- packages/design-system/src/index.ts 'packages/design-system/src/**/index.ts' \
+            || { echo '✗ 產生器產物與來源不同步:請在本機跑 gen-component-indexes.mjs + gen-design-system-barrel.mjs 並 commit'; exit 1; }
           # hover 底色一律瞬間(user 2026-09-10 拍板「全部瞬間」)。對照組六個正反例證明它該紅時會紅。
           node scripts/hover-instant-invariant.mjs
           node scripts/hover-instant-invariant.mjs --selftest
