@@ -9,6 +9,8 @@
  * 量法:在「專案排程全功能整合」拖左釘選面板最後一欄(ID)的把手 +80px(每 20px 量一次):
  *   R1 拖拉中每一步:表頭面板寬 = 左面板欄寬總和;body 面板寬 = 同值;中央表頭 / body 的左緣 = 面板右緣(±1px);
  *   R2 放開後:同上,且表頭格寬 = 起始 + 80。
+ *   R4(2026-09-10,user 抓「釘選欄位 resize 時分隔線沒有變藍」)釘選面板邊界欄的把手:拖拉中(等過渡結束再量)把手線 = `--primary`、
+ *     放開後回透明(idle 線由凍結邊界線畫)。舊 bug:面板邊界欄 `showLine=false` 連狀態色一起不畫,拖拉中沒有任何回饋。
  *   R3(2026-09-10,AD63)中央區非邊界欄的把手:欄界左 2px 與右 2px 用 elementFromPoint 都要命中把手 —— 7px 命中區
  *     外側 3px 不得被自己格的 overflow:hidden 裁掉、也不得被 DOM 順序在後的鄰格蓋住(main 上右半不可點)。
  * `--selftest`:注入 `[data-datatable-header-panel="left"]{width:140px!important}` 讓面板寬凍住 → R1 / R2 必須紅;R3 的兩種破法
@@ -44,6 +46,17 @@ const page = await (await browser.newContext({ viewport: { width: 1400, height: 
 await page.goto(`http://localhost:${port}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitUntil: 'load' })
 await page.waitForSelector('[data-datatable-hscroll] [role="row"]', { timeout: 20000 }); await page.waitForTimeout(600)
 if (SELFTEST) await page.addStyleTag({ content: '[data-datatable-header-panel="left"]{width:140px!important}[data-datatable-panel="left"]{width:140px!important}' })
+// R4 對照組:把把手線的底色凍成透明 → 拖拉中量不到主色,R4 必須紅(儀器要先證明它會紅)
+if (SELFTEST) await page.addStyleTag({ content: '[data-datatable-header-panel="left"] [role="separator"]>span{background-color:transparent!important}' })
+const lineColor = () => page.evaluate(() => {
+  const hp = document.querySelector('[data-datatable-header-panel="left"]'); const heads = [...hp.querySelectorAll('[role="columnheader"]')]
+  const sep = heads[heads.length - 1].querySelector('[role="separator"]'); const line = sep?.querySelector('span')
+  const probe = document.createElement('div'); probe.style.color = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || 'transparent'
+  document.body.appendChild(probe); const primary = getComputedStyle(probe).color; probe.remove()
+  const probe2 = document.createElement('div'); probe2.style.color = getComputedStyle(document.documentElement).getPropertyValue('--border-hover').trim() || 'transparent'
+  document.body.appendChild(probe2); const hover = getComputedStyle(probe2).color; probe2.remove()
+  return { line: line ? getComputedStyle(line).backgroundColor : null, primary, hover, resizing: !!sep && sep.hasAttribute('data-resizing') }
+})
 const snap = () => page.evaluate(() => {
   const hp = document.querySelector('[data-datatable-header-panel="left"]'); const bp = document.querySelector('[data-datatable-panel="left"]')
   const heads = [...hp.querySelectorAll('[role="columnheader"]')]; const sum = heads.reduce((a, h) => a + h.getBoundingClientRect().width, 0)
@@ -54,12 +67,20 @@ const snap = () => page.evaluate(() => {
 const ok = (s) => Math.abs(s.hpW - s.sum) <= 1 && Math.abs(s.bpW - s.sum) <= 1 && Math.abs(s.centerHeaderLeft - s.hpRight) <= 1 && Math.abs(s.centerBodyLeft - s.hpRight) <= 1
 const s0 = await snap()
 check('R0 起始:面板寬 = 欄寬總和、中央區左緣 = 面板右緣', ok(s0), JSON.stringify({ hpW: s0.hpW, bpW: s0.bpW, sum: s0.sum }))
-await page.mouse.move(s0.sx - 2, s0.sy); await page.mouse.down()
+// R4 之一:懸停(不按)把手線 = border-hover(先等 350ms 過渡)
+await page.mouse.move(s0.sx - 2, s0.sy); await page.waitForTimeout(350); const hovering = await lineColor()
+await page.mouse.down()
 const steps = []
 for (let i = 1; i <= 4; i++) { await page.mouse.move(s0.sx - 2 + i * 20, s0.sy, { steps: 4 }); await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))); const s = await snap(); steps.push({ dx: i * 20, lastW: Math.round(s.lastW), sum: Math.round(s.sum), hpW: Math.round(s.hpW), bpW: Math.round(s.bpW), centerLeft: Math.round(s.centerBodyLeft), ok: ok(s) }) }
 const liveOk = steps.every((x) => x.ok) && steps[3].lastW >= s0.lastW + 70
 check('R1 拖拉中每一步:面板寬與中央區左緣即時跟著欄寬變', SELFTEST ? !liveOk : liveOk, JSON.stringify(steps))
+// R4:拖拉中把手線 = primary(`transition-colors` 會過渡,先等 350ms 再量 —— 量到過渡中間值會誤判,M32)
+await page.waitForTimeout(350); const holding = await lineColor()
 await page.mouse.up(); await page.waitForTimeout(400); const s1 = await snap()
+// 放開後指標仍在把手上 = hover 色;移開再等過渡才是 idle(透明:idle 線由凍結邊界線畫)
+await page.mouse.move(5, 5); await page.waitForTimeout(350); const released = await lineColor()
+const r4ok = !!hovering.line && hovering.line === hovering.hover && !!holding.line && holding.line === holding.primary && holding.resizing === true && released.line === 'rgba(0, 0, 0, 0)' && released.resizing === false
+check('R4 釘選面板邊界欄的把手線:懸停 = border-hover、拖拉中 = primary、放開移開後回透明(idle 線由凍結邊界線畫)', SELFTEST ? !r4ok : r4ok, JSON.stringify({ hovering, holding, released }))
 // R3:中央區第一個「右邊還有欄」的可調欄,欄界兩側各 2px 都必須打到把手(或它的 1px 線)
 const hitAt = () => page.evaluate(() => {
   const heads = [...document.querySelectorAll('[data-datatable-header-panel="center"] [role="columnheader"]')]
@@ -83,5 +104,5 @@ if (SELFTEST) {
 const finalOk = ok(s1) && Math.abs(s1.lastW - (s0.lastW + 80)) <= 2
 check('R2 放開後:欄寬 = 起始 + 80,面板寬與中央區左緣一致', SELFTEST ? !finalOk : finalOk, JSON.stringify({ lastW: s1.lastW, expected: s0.lastW + 80, hpW: s1.hpW, bpW: s1.bpW, sum: s1.sum, centerLeft: s1.centerBodyLeft, hpRight: s1.hpRight }))
 await browser.close(); server.close()
-console.log(fail ? `\n✗ ${fail} 項未通過` : `\n✓ ${SELFTEST ? '對照組:面板寬凍住 / 把手被裁時 R1 / R2 / R3 如預期變紅(儀器有效)' : '釘選欄拖拉欄寬:面板寬即時跟動、放開後一致;把手兩側可點,全通過'}`)
+console.log(fail ? `\n✗ ${fail} 項未通過` : `\n✓ ${SELFTEST ? '對照組:面板寬凍住 / 把手被裁 / 把手線凍成透明時 R1 / R2 / R3 / R4 如預期變紅(儀器有效)' : '釘選欄拖拉欄寬:面板寬即時跟動、放開後一致;把手兩側可點;邊界欄拖拉中把手線變主色,全通過'}`)
 process.exit(fail ? 1 : 0)

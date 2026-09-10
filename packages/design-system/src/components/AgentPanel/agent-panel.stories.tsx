@@ -39,6 +39,7 @@ import { Select, type SelectOption } from '@/design-system/components/Select/sel
 import { PeoplePicker, type PersonData, type PersonValue } from '@/design-system/components/PeoplePicker/people-picker'
 import { DatePicker } from '@/design-system/components/DatePicker/date-picker'
 import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
+import { openOverlayDocsStory } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
 
 const meta: Meta<typeof AgentPanel> = {
   title: 'Design System/Components/AgentPanel/展示',
@@ -236,6 +237,10 @@ export const MultipleReplies: Story = {
 /** 歷史浮層開啟(OpenSnapshot):分組、搜尋、思考中列、目前對話高亮、懸停/鍵盤浮出改名與刪除。 */
 export const HistoryOpen: Story = {
   name: '歷史浮層開啟',
+  // 預設開啟的浮層快照在 Autodocs 各自進 iframe(story-rules「預設開啟的模態浮層 story」):浮層 portal 到 body,
+  // 與同一份 docs 文件裡其他 story 共用 body;2026-09-10 實測 Storybook docs 生命週期競態會把整頁 docs 留成殭屍,
+  // 這個浮層就飄到別的 story 的左上角。隔離後它與錨點同屬一份 Document,殭屍也帶不走它(第二道防線;第一道在 storybook-config 的 docs.renderer)。
+  parameters: { docs: { story: openOverlayDocsStory('560px') } },
   render: () => (
     <PanelFrame>
       {({ close }) => (

@@ -172,7 +172,12 @@ jobs:
           node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000
           # Content readiness and still-visible fading handles need separate gates from frame cadence.
           node scripts/test-data-table-scroll-perception.mjs --out=tmp/datatable-content-controls
+          # 把手捲動閂鎖(2026-09-10,data-table.spec.md「捲動與可視帶」):指標不動的捲動 → 第一個 scroll 事件後零把手;對照組 unlatch(每次 scroll 派發座標遞增的
+          # 合成 pointermove = 指標真的在動)把手必須回來。--hover=follow:指標有動時可見把手貼原列中心 ±1px;對照組注入 20px 偏移必被抓到。
           node scripts/data-table-handle-position.mjs --dpr=2 --selftest --out=tmp/datatable-handle-control
+          node scripts/data-table-handle-position.mjs --dpr=2 --hover=follow --selftest --out=tmp/datatable-handle-follow-control
+          node scripts/data-table-handle-position.mjs --dpr=2 --hover=follow --out=tmp/datatable-handle-follow
+          # 把手可視帶:整顆放得進 body client box 才顯示、不再 clip-path 切殘片;半露的列不出把手;傳統 17px 捲軸下不坐到捲軌上;對照組強制顯示必紅
           node scripts/data-table-handle-clip-invariant.mjs --selftest
           node scripts/data-table-handle-clip-invariant.mjs
           node scripts/data-table-pinned-resize-invariant.mjs --selftest
@@ -258,6 +263,10 @@ jobs:
           # Dialog 並存契約:兩條路都驗 —— 預設路徑照舊隔離、並存路徑指定區域仍可用。
           # 只驗後者的話「把預設路徑一起弄壞」不會被發現。
           npm run test:dialog-coexistence
+          # Storybook docs 生命週期競態(2026-09-10 user:「剛進 storybook 時,點進範例裡,很常會出現此時不應該出現的選單在左上角」):
+          # 把 DocsRenderer chunk 延遲 3 秒、在 Docs 頁載入中點進 story → 不得留下殭屍 docs 與飄在 (0,8) 的歷史浮層;對照組把守衛關掉必須重現。
+          node scripts/storybook-docs-race-invariant.mjs --selftest
+          node scripts/storybook-docs-race-invariant.mjs
           # 浮層快捷鍵的作用域:焦點在檢視器外時方向鍵不得切換檔案,
           # 對照組驗焦點在裡面時仍然切得動(否則就是把功能弄壞換綠燈)。
           npm run test:overlay-shortcut-scope

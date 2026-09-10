@@ -72,7 +72,7 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
 - 開合=淡入+自右滑入 `--motion-duration-surface`(模態面板級);減動作停。
 - **可調寬**(`resizable`,預設開):左緣 `<ResizeHandle direction="horizontal" position="start">`
   (`patterns/resize-handle` 視覺 primitive:熱區 7、線 1、idle divider / hover border-hover / 拖曳中 primary,
-  與 DataTable 欄寬把手同視覺;DataTable 尚未 migrate 到此 primitive,resize-handle.spec.md Roadmap);寬度夾在 `--agent-panel-width-min` 360 ~ `--agent-panel-width-max` 640
+  與 DataTable 欄寬把手同一顆 primitive,2026-09-02 起兩邊同元件;resize-handle.spec.md Roadmap Phase 2);寬度夾在 `--agent-panel-width-min` 360 ~ `--agent-panel-width-max` 640
   且 ≤ 視窗寬 50%(較小者勝);預設 `--agent-panel-width` 400。受控 `width` +`onWidthChange`(拖曳中每格都發,
   受控端才有即時回饋)/ `onWidthCommit`(放開或鍵盤一步發一次,要落地儲存接這個);或
   非受控 `defaultWidth`。**無雙擊重設**(2026-09-02 拍板);以 Sheet 承載時同樣可拖(不衝突)。

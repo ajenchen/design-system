@@ -2,7 +2,7 @@
 // code-quality-allow: file-size — composite 拼裝(Toolbar / ZoomInput / InfoPanel / Filmstrip + Dialog shell + renderer registry);拆檔會把 useState/useEffect/key handler 跨檔同步過於複雜
 import * as React from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { useOverlayCoexistence, CoexistenceMask } from '@/design-system/lib/overlay-coexistence'
+import { useOverlayCoexistence, CoexistenceMask, createPersistentGuard } from '@/design-system/lib/overlay-coexistence'
 import {
   X as XIcon,
   Download,
@@ -979,13 +979,13 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
   )
   // 綁 `open`:controlled 關閉時元件仍掛著,不綁的話抑制不會解除(R3 生命週期反例)
   useOverlayCoexistence(open && !!persistentElements, keepCoexist)
-  const insidePersistent = React.useCallback((node: EventTarget | null) => {
-    if (!persistentElements || !(node instanceof Node)) return false
-    if (persistentElements().some((el) => el.contains(node))) return true
-    // 疊在檢視器上的另一個 dialog(沒 URL 的確認框)不算框外,同 dialog.tsx(v14 第 9 題)
-    const other = (node instanceof Element ? node : node.parentElement)?.closest('[role="dialog"]')
-    return !!other && other !== contentRef.current
-  }, [persistentElements])
+  // 框外事件守衛與 Dialog 共用同一份(`lib/overlay-coexistence.ts` createPersistentGuard):保留區子樹 /
+  // 保留區自己開出來的浮層(含關閉中)/ 疊在上面的另一個 dialog 都不算框外。2026-09-10 前這裡少了第 2 條(只在 dialog.tsx 修),
+  // 同款缺口一次收掉。
+  const insidePersistent = React.useMemo(
+    () => (persistentElements ? createPersistentGuard(persistentElements, () => contentRef.current) : () => false),
+    [persistentElements],
+  )
   const coexistGuards = persistentElements
     ? {
         onPointerDownOutside: (e: CustomEvent<{ originalEvent: PointerEvent }>) => {

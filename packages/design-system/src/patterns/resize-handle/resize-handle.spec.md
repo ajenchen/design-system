@@ -44,7 +44,7 @@ benchmark:
   ariaLabel="調整欄寬"       // 必填(APG separator 必有 aria-label / aria-labelledby)
   ariaControls?: string     // 指向被調整的 pane
   disabled?: boolean        // 只畫線;無 role / tabIndex / cursor / 拖拉
-  showLine?: boolean        // default true,false = consumer 已自己畫線
+  showLine?: boolean        // default true,false = consumer 已自己畫 idle 線;hover / 拖拉的狀態色仍由本元件畫
   lineInsetStart?: string   // line 起點 inset(eg. var(--table-cell-py))
   lineInsetEnd?: string
   onValueChange={(next) => …}   // 拖拉中每次移動 + 鍵盤每步(live)
@@ -69,7 +69,8 @@ benchmark:
   - **idle**:`bg-divider`
   - **disabled**:`bg-divider`(無 hover affordance)
   - **hover**:`bg-[var(--border-hover)]`(via `group/resize` selector)
-  - **dragging**:`bg-primary`(consumer 傳 `isResizing=true`)
+  - **dragging**:`bg-primary`(拖拉中由元件自己判定 —— pointerdown 到 pointerup / cancel;沒有 `isResizing` prop,舊寫法已更正 2026-09-10)
+  - **idle 線的歸屬**(2026-09-10,user 抓「釘選欄位 resize 時分隔線沒有變藍」):`showLine=false` 只把 **idle** 線交給消費端(DataTable 面板邊界欄由凍結邊界線 `dtPanelBoundaryRight::after` 畫、表格外框欄由外框畫),**hover 與拖拉的狀態色仍由本元件畫**,畫在同一個像素上 —— 左釘選面板的邊界線在面板最後一個像素、與把手線同位,狀態色剛好蓋在它上面;右釘選面板的邊界線與外框在鄰面板 / 外框那一像素,把手線只能畫在自己面板內側相鄰的一像素(面板 `overflow` 裁切,越界不可見),拖拉中看起來是「主色線緊貼灰線」。舊行為:`showLine=false` 連狀態色一起不畫,面板邊界欄拖拉中沒有任何回饋 = 違反本表。閘:`scripts/data-table-pinned-resize-invariant.mjs` R4(釘選邊界欄拖拉中把手線 = primary、放開後回透明)。
 - **Cursor**:`col-resize` / `row-resize`(`disabled` 時無)
 - **`select-none`**:防 drag 時 text select(`disabled` 時關閉)
 
@@ -85,14 +86,14 @@ benchmark:
 ✅ **用**:水平 column / vertical row / sidebar / panel 拖拉調整尺寸
 
 ❌ **不用**:
-- Modal / Dialog 大小(那是 `<Sheet>` 自帶 handle,不該重發明)
+- Modal / Dialog / Sheet 大小(固定或相對視窗的尺寸檔位,沒有拖拉調整;`sheet.tsx` 沒有任何把手實作,2026-09-10 核實,舊句「Sheet 自帶 handle」已撤回)
 - Image crop 邊界(專用 `<ImageCropTool>` 領域)
 - Splitter pane (`resizable-panes` style)— 雙端 drag with linked state(future 評估抽 `<SplitPane>` 上層 primitive 消費本 handle)
 
 ## 邊界案例
 
 - **Disabled**:仍渲染 1px line(`bg-divider`,無 hover affordance),但無 cursor、無 `select-none`;所有狀態皆固定從 accessibility tree 隱藏。
-- **拖到 min / max 卡住**:primitive 不持 width state(不耦合 drag math),邊界 clamp 與卡住回饋由 consumer 的 resize handler 管;`isResizing` 期間 line 維持 `bg-primary` 不另示警。
+- **拖到 min / max 卡住**:primitive 不持 width state(不耦合 drag math),邊界 clamp 與卡住回饋由 consumer 的 resize handler 管;拖拉期間 line 維持 `bg-primary` 不另示警。
 - **同列多 handle 並存**(多欄 column resize):各 handle 為獨立 `<span>`,無互相協調;`-3px` outward offset 使相鄰欄命中區可能相接,先命中者(DOM 順序 / pointer target)收事件,衝突仲裁屬 consumer drag math。鄰格本身不得蓋住把手的外側(`z-index: 1`,見命中區)。
 - **RTL**:全域明定 LTR-only；本元件使用 physical `left/right` 定位，不提供 RTL 鏡像。
 
@@ -101,11 +102,11 @@ benchmark:
 | Phase | Scope | Status |
 |---|---|---|
 | **Phase 1** | Ship primitive `<ResizeHandle>` + spec.md | ✅ 2026-05-21 |
-| Phase 2 | DataTable column resize migrate consume primitive(TanStack `header.getResizeHandler()` 接) | Pending |
+| Phase 2 | DataTable column resize 消費本 primitive(value-driven,`data-table.tsx` 欄寬把手 = 同一顆元件,不再經 TanStack `getResizeHandler`) | ✅ 2026-09-02 |
 | Phase 3 | Sidebar drag-resize enable(consume primitive + localStorage 持久化) | Pending |
 | Phase 4 | AppShell Aside drag-resize enable(consume primitive) | Pending |
 
-Phase 2-4 需獨立 RFC + 各別 user approval,本 spec 只 ship Phase 1 + 鎖住視覺 canonical。
+Phase 3-4 需獨立 RFC + user 拍板(2026-09-10 盤點:Sidebar / AppShell Aside 目前**沒有任何**拖拉調寬實作,只有寬度 token / prop);Phase 1-2 已 ship,本 spec 鎖住視覺 canonical 與 splitter 語意。
 
 ## 世界級對照細節
 
@@ -117,11 +118,11 @@ Phase 2-4 需獨立 RFC + 各別 user approval,本 spec 只 ship Phase 1 + 鎖�
 | **VS Code** | 8px(activity bar)| bg highlight on drag | col-resize | aria-label "Resize" |
 | **Figma** | 8px | 1px line | col-resize | role separator |
 
-視覺共識是 7-8px hit zone / 1px line / cursor 對應 direction；各產品 a11y contract 不一致。本 primitive 只收斂視覺，不把未實作的 splitter behavior 偽裝成 separator。
+視覺共識是 7-8px hit zone / 1px line / cursor 對應 direction;各產品 a11y contract 不一致,本 primitive 採 APG Window Splitter 完整語意(`role="separator"` + `aria-value*` + 方向鍵 / Home / End,見「a11y」;2026-09-10 更正:v1 時期「只收斂視覺、不偽裝 separator」的句子已與實作不符)。
 
 ## 禁止事項
 
 - ❌ 自畫 resize handle 視覺(`<div className="cursor-col-resize">`)— 必消費本 primitive
-- ❌ 直接給 ResizeHandle 加 drag state hook(eg. `useColumnResize`)— drag math 是 consumer concern,不污染 primitive
-- ❌ Phase 2/3/4 不走 RFC + user approval 自動 migrate — Audit-vs-execute 分權違反
-- ❌ 在本 pointer-only primitive 加 `role="separator"` / `aria-*value*`——完整 splitter 語意必須連同 keyboard/value/controls 一次實作
+- ❌ 在 consumer 另寫拖拉算法(eg. `useColumnResize`)— 拖拉 / 鍵盤 / clamp 由本 primitive 擁有(value-driven),consumer 只接 `onValueChange` / `onValueCommit`
+- ❌ Phase 3/4 不走 RFC + user 拍板自動 migrate — Audit-vs-execute 分權違反
+- ❌ 消費端自己再補 `role="separator"` / `aria-*value*`——本 primitive 已完整實作 splitter 語意,重複宣告會讓讀屏念兩次

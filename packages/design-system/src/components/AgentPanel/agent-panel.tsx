@@ -558,6 +558,19 @@ const AgentPanelHeader = React.forwardRef<HTMLElement, AgentPanelHeaderProps>(
     // → 延到下一個 macrotask 回標題觸發(晚於 FocusScope 還原到已消失元素 → body 的動作,2026-09-02 實測)。
     const historyOpenRef = React.useRef(historyOpen)
     historyOpenRef.current = historyOpen
+    // 觸發器失去版面時關掉歷史浮層(2026-09-10 實測兩條路徑):宿主用 display:none 收起 keep-mounted 的面板
+    // (AgentPanelDock,路由切換 / 全域快捷鍵這類不經指標與焦點的關閉)、或 Storybook 把整頁 docs 藏起來 —— 浮層 portal 到 body
+    // 不會跟著消失,Radix 對 0×0 的錨點會把它定位到視窗左上角 (0, 8),焦點還留在裡面。ResizeObserver 在元素變成
+    // display:none 時會回報 0×0;掛上時的第一次回呼帶真實尺寸,可見的觸發器不會被誤關。
+    React.useEffect(() => {
+      const el = triggerRef.current
+      if (!historyOpen || !el || typeof ResizeObserver === 'undefined') return
+      const ro = new ResizeObserver(() => {
+        if (el.getClientRects().length === 0) setHistoryOpen(false)
+      })
+      ro.observe(el)
+      return () => ro.disconnect()
+    }, [historyOpen])
     const returnFocus = () => {
       window.setTimeout(() => {
         if (historyOpenRef.current) return

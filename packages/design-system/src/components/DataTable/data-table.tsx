@@ -791,19 +791,82 @@ function stripKeyboardActivator(listeners: Record<string, unknown> | undefined) 
   return rest
 }
 
+/**
+ * 列把手的捲動閂鎖(2026-09-10;user:「jira 在捲動 table 的時候會把 drag button 藏起來直到滑鼠再次滑到其他 table row」)。
+ *
+ * 任何捲動(表格 body、釘選面板、頁面)一發生,正在畫的列把手**立即**隱藏(不淡出、不跟列走),直到指標**真的移動**
+ * (座標改變)才依 hover 重新顯示。Chromium 在捲動後會用**同一座標**補發 mouseover / mousemove(實測 scroll 事件前 1–2ms
+ * 就把 data-hovered 換到指標底下的新列),那不算移動 —— 否則把手會在 user 沒有任何意圖下換列(實測 row 3 → row 6),
+ * 舊把手還會半裁地掛在表頭線下淡出(殘影)。世界級對照:Atlassian Pragmatic DnD 設計準則的 hover 把手用 CSS :hover 顯隱、
+ * 本來就不追列;MUI X / AG Grid 的把手是列內儲存格、隨列被捲動容器裁切;沒有任何一家讓浮層把手在捲動中追著列跑。
+ *
+ * 模組層一份:同一時間畫面上只有一顆把手在管,多表時捲任一張都藏、下一次真實移動就恢復;座標追蹤是 document 上一個
+ * listener(ref-count),訂閱者只有渲染過把手的實例(有 pos),不會為 200 列各掛一個。
+ */
+const rowDragScrollLatch = {
+  active: false,
+  lastX: NaN,
+  lastY: NaN,
+  anchorX: NaN,
+  anchorY: NaN,
+  subscribers: new Set<(engaged: boolean) => void>(),
+  tracked: 0,
+  onPointer(e: PointerEvent | MouseEvent) {
+    const L = rowDragScrollLatch
+    const moved = e.clientX !== L.lastX || e.clientY !== L.lastY
+    L.lastX = e.clientX
+    L.lastY = e.clientY
+    if (L.active && moved && (e.clientX !== L.anchorX || e.clientY !== L.anchorY)) {
+      L.active = false
+      L.subscribers.forEach((cb) => cb(false))
+    }
+  },
+  /** 捲動發生:記下當下座標當基準,閂上並通知(已閂上時只更新基準)。 */
+  engage() {
+    const L = rowDragScrollLatch
+    L.anchorX = L.lastX
+    L.anchorY = L.lastY
+    if (L.active) return
+    L.active = true
+    L.subscribers.forEach((cb) => cb(true))
+  },
+  /** 座標追蹤(每個 primary 列掛載時 ref-count 一次;listener 只有一個)。 */
+  track() {
+    const L = rowDragScrollLatch
+    if (L.tracked++ === 0) {
+      window.addEventListener('pointermove', L.onPointer, true)
+      window.addEventListener('mousemove', L.onPointer, true)
+    }
+    return () => {
+      if (--L.tracked === 0) {
+        window.removeEventListener('pointermove', L.onPointer, true)
+        window.removeEventListener('mousemove', L.onPointer, true)
+        L.active = false
+      }
+    }
+  },
+  subscribe(cb: (engaged: boolean) => void) {
+    rowDragScrollLatch.subscribers.add(cb)
+    return () => { rowDragScrollLatch.subscribers.delete(cb) }
+  },
+}
+
 function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDragActive: boolean }) {
   const ctx = React.useContext(SortableRowCtx)
   const [rowEl, setRowEl] = React.useState<HTMLDivElement | null>(null)
   const [portalTarget, setPortalTarget] = React.useState<HTMLElement | null>(null)
-  const [pos, setPos] = React.useState<{ top: number; left: number; rowHovered: boolean } | null>(null)
+  // fits = 24px 把手整顆落在所屬 body 面板的可視帶(client box,不含水平捲軸)內;放不下就不顯示(見 update())
+  const [pos, setPos] = React.useState<{ top: number; left: number; rowHovered: boolean; fits: boolean } | null>(null)
   // Portal 逃逸 row DOM → cursor 移到 button 上時 row mouseleave → button hide → cycle flicker(2026-05-05)。
   // Fix:button 自帶 hover state,visibility = rowHovered || buttonHovered || isDragging。
   const [buttonHovered, setButtonHovered] = React.useState(false)
   const handleRef = React.useRef<HTMLButtonElement | null>(null)
-  const positionRef = React.useRef<{ top: number; left: number; clipTop: number; clipBottom: number } | null>(null)
+  const positionRef = React.useRef<{ top: number; left: number; fits: boolean } | null>(null)
   // Logical hover ends before the existing opacity transition finishes painting.
   // Track only handles that have been visible; never measure every hidden row.
   const trackingPositionRef = React.useRef(false)
+  const updateRef = React.useRef<(() => void) | null>(null)
+  const [, forceRender] = React.useReducer((n: number) => n + 1, 0)
   const setActivatorNodeRef = ctx?.handleSetActivatorNodeRef
   const handleRefCallback = React.useCallback((node: HTMLButtonElement | null) => {
     handleRef.current = node
@@ -815,9 +878,6 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
     if (!handle || !position) return
     handle.style.top = `${position.top}px`
     handle.style.left = `${position.left}px`
-    // 裁切與所屬列相同(2026-09-09 user:「drag button 出現在 table body 的垂直可視範圍之外是合理的嗎?」):
-    // 把手是 fixed 浮層,不受 body 面板 overflow 裁切;列滑到表頭底下 / 視窗底下時,列被裁掉多少、把手就裁掉多少。
-    handle.style.clipPath = position.clipTop > 0 || position.clipBottom > 0 ? `inset(${position.clipTop}px 0 ${position.clipBottom}px 0)` : ''
   }, [])
   // A render caused by hover/DnD must not restore an earlier scroll position.
   React.useLayoutEffect(syncHandlePosition)
@@ -852,21 +912,25 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
       const rowHovered = rowEl.hasAttribute('data-hovered')
       const top = rRect.top + rRect.height / 2
       const left = tRect.left // table outer 左 border line position(viewport coords)
-      // 所屬 body 面板的可視矩形 = 列真正被裁切的邊界(表頭是 body 上方的獨立面板、不是 sticky,列滑到它底下就是被裁掉)。
-      // 把手 24px 置中於列中心,超出面板上 / 下緣的部分用 clip-path 裁掉(部分露出的列 → 部分露出的把手;整列滑出 → 把手全裁)。
-      const panelEl = rowEl.closest('[data-datatable-panel]')
+      // 所屬 body 面板的可視帶 = 列真正被裁切的邊界(表頭是 body 上方的獨立面板、不是 sticky,列滑到它底下就是被裁掉);
+      // 用 **client box**(padding box 減掉水平捲軸;2026-09-09 用 border-box 讓把手在傳統 17px 捲軸下坐到捲軌上)。
+      // 把手 24px 置中於列中心,**整顆放得進可視帶才顯示**(2026-09-10):2026-09-09 的做法是列被裁多少把手就 clip-path 裁多少,
+      // 一顆有邊框、圓角、不透明底色的 24px chip 被切成 9–12px 殘片看起來是壞掉(user:「這樣的效果看起來好醜,drag button 會直接被裁掉」);
+      // 部分露出的列不出把手(捲進一點就有),把手也永遠不會出現在 body 可視帶之外(user 2026-09-09 的規則不變)。
+      const panelEl = rowEl.closest<HTMLElement>('[data-datatable-panel]')
       const pRect = panelEl ? panelEl.getBoundingClientRect() : tRect
-      const handleH = handleRef.current?.offsetHeight || 24
-      const half = handleH / 2
-      const clipTop = Math.min(handleH, Math.max(0, pRect.top - (top - half)))
-      const clipBottom = Math.min(handleH, Math.max(0, (top + half) - pRect.bottom))
-      positionRef.current = { top, left, clipTop, clipBottom }
-      if (rowHovered || buttonHovered || ctxDragging) trackingPositionRef.current = true
+      const bandTop = panelEl ? pRect.top + panelEl.clientTop : pRect.top
+      const bandBottom = panelEl ? bandTop + panelEl.clientHeight : pRect.bottom
+      const half = (handleRef.current?.offsetHeight || 24) / 2
+      const fits = top - half >= bandTop - 0.5 && top + half <= bandBottom + 0.5
+      positionRef.current = { top, left, fits }
+      if (fits && (rowHovered || buttonHovered || ctxDragging)) trackingPositionRef.current = true
       // Position belongs to the scroll event, not to a later React render/rAF.
       // React still owns reveal/fade state and the original Button styling.
       syncHandlePosition()
-      setPos((prev) => prev && prev.rowHovered === rowHovered ? prev : { top, left, rowHovered })
+      setPos((prev) => prev && prev.rowHovered === rowHovered && prev.fits === fits ? prev : { top, left, rowHovered, fits })
     }
+    updateRef.current = update
 
     if (rowEl.hasAttribute('data-hovered') || buttonHovered || ctxDragging) update()
 
@@ -874,8 +938,8 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
     const observer = new MutationObserver(update)
     observer.observe(rowEl, { attributes: true, attributeFilter: ['data-hovered'] })
 
-    // A fading handle is still painted for the original CSS transition duration.
-    // Stopping at data-hovered removal leaves a fixed ghost while its row scrolls.
+    // 捲動:正在畫的把手(hover 中、或 hover 剛結束還在淡出)立即閂上隱藏,不跟列走、不淡出(rowDragScrollLatch 註解)。
+    // 沒在畫的列連 rect 都不讀。
     const onScroll = (event: Event) => {
       // Mirrored pinned panels dispatch their own scroll events, but do not move
       // this primary row. Ignore those and unrelated tables before any rect read.
@@ -891,17 +955,38 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
           return
         }
       }
-      update()
+      rowDragScrollLatch.engage()
     }
     window.addEventListener('scroll', onScroll, true)
     window.addEventListener('resize', onScroll)
+    const untrack = rowDragScrollLatch.track()
 
     return () => {
       observer.disconnect()
       window.removeEventListener('scroll', onScroll, true)
       window.removeEventListener('resize', onScroll)
+      untrack()
+      updateRef.current = null
     }
   }, [rowEl, ctxRole, ctxDragging, buttonHovered, syncHandlePosition])
+
+  // 閂鎖訂閱:只有渲染過把手的實例(pos 非 null)訂閱。閂上 → 直接把 DOM 藏掉(不等 React commit、不淡出);
+  // 鬆開 → 這列若仍被 hover 就重量位置(列在捲動期間移動過)再顯示;React 的 visible 也讀同一個閂鎖,兩邊一致。
+  const hasPos = pos != null
+  React.useEffect(() => {
+    if (!hasPos) return
+    return rowDragScrollLatch.subscribe((engaged) => {
+      const handle = handleRef.current
+      if (engaged && handle) {
+        handle.style.transitionDuration = '0s'
+        handle.style.opacity = '0'
+        handle.style.pointerEvents = 'none'
+        trackingPositionRef.current = false
+      }
+      if (!engaged && rowEl?.hasAttribute('data-hovered')) updateRef.current?.()
+      forceRender()
+    })
+  }, [hasPos, rowEl])
 
   // 永遠 render anchor span(讓 anchorRef 可拿到 row element)。
   // A3 fix(2026-05-05):顯式 `top:0 left:0 pointer-events:none` — 雖 width/height=0 不該佔
@@ -924,7 +1009,9 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
   //   - idle:rowHovered || buttonHovered → 顯示
   //   - drag 進行中:**source row 強制顯示 + active 視覺**(讓 user 知道哪個被壓住)
   //                  其他 row 的 button 隱藏(由 anyDragActive guard)
-  const visible = ctx.isDragging || (!anyDragActive && (pos.rowHovered || buttonHovered))
+  //   - 捲動閂鎖(2026-09-10):捲動後、指標未真的移動前一律隱藏;放不進 body 可視帶(fits=false)也不顯示
+  const latched = rowDragScrollLatch.active
+  const visible = ctx.isDragging || (!anyDragActive && !latched && pos.fits && (pos.rowHovered || buttonHovered))
 
   // 2026-05-12 fix(user 抓 image 1):
   //   (a) tooltip 偶爾不出 — root cause:`disabled={!canDrag}` HTML attribute 阻 pointer events
@@ -957,9 +1044,8 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
         position: 'fixed',
         top: positionRef.current?.top ?? pos.top,
         left: positionRef.current?.left ?? pos.left,
-        clipPath: positionRef.current && (positionRef.current.clipTop > 0 || positionRef.current.clipBottom > 0)
-          ? `inset(${positionRef.current.clipTop}px 0 ${positionRef.current.clipBottom}px 0)`
-          : undefined,
+        // 閂鎖期間隱藏是瞬時的(捲動中留一顆停在舊座標淡出的把手就是殘影);鬆開後回到 150ms 淡入
+        transitionDuration: latched ? '0s' : undefined,
         transform: 'translate(-50%, -50%)',
         zIndex: 50,
         // 2026-05-12 fix v2(user 抓「drag column sort 啟用時 button 不是 disable 視覺」):
@@ -3209,9 +3295,10 @@ function DataTableInner<TData>(
         </div>
         {/* Header divider + resize handle(2026-05-06 v11,**2026-05-10 H2+H3 重構**):
             - **2026-05-10 split**(per user 抓「pinned 欄位右邊分隔線無法 resize」):
-              `showDivider` 只 gate **視覺 1px line**(panel boundary col 由 panel border-r 接,
-              不重複);**resize hot zone** 改 gate by `isResizable` 獨立,panel boundary col
-              仍可拖 resize(hot zone 視覺 invisible,跟 panel border-r 不衝突)。
+              `showDivider` 只 gate **idle 的 1px line**(panel boundary col 的 idle 線由凍結邊界線
+              `dtPanelBoundaryRight/Left::after` 接,不重複;hover / 拖拉的狀態色仍由 ResizeHandle 畫在同一像素,
+              2026-09-10 修「釘選欄 resize 分隔線不變藍」);**resize hot zone** 改 gate by `isResizable` 獨立,
+              panel boundary col 仍可拖 resize。
             - **2026-05-10 H3**:per-column `meta.resizable === false` opt-out — consumer 可標
               「此 col 寬度由內容決定不允許 resize」(對齊 AG Grid `colDef.resizable` /
               Material X-DataGrid 同 API)。System cols(__select__ / __drag__ / __actions__

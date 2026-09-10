@@ -55,6 +55,7 @@
     "test:agent-url-registry-demo": "node scripts/agent-url-registry-demo-invariant.mjs",
     "test:overlay-shortcut-scope": "node scripts/overlay-shortcut-scope-invariant.mjs",
     "test:dialog-coexistence": "node scripts/dialog-coexistence-invariant.mjs",
+    "test:storybook-docs-race": "node scripts/storybook-docs-race-invariant.mjs --selftest && node scripts/storybook-docs-race-invariant.mjs",
     "test:decided-clause-downgrade": "node scripts/decided-clause-downgrade-gate.mjs && node scripts/decided-clause-downgrade-gate.mjs --selftest",
     "test:button-variants": "node scripts/button-variant-invariant.mjs && node scripts/button-variant-invariant.mjs --selftest",
     "test:focus-suppression": "node scripts/focus-suppression-registry.mjs && node scripts/focus-suppression-registry.mjs --selftest",

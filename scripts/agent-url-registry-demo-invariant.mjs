@@ -27,6 +27,10 @@
  *      草稿還在;× → modal 顯露;agent 點「我的任務」→ 收成入口鈕、tab 切換、焦點交給舞台 main
  * `--static=<dir>`:讀哪個 storybook build(預設 storybook-static;並行工作者用自己的 build 目錄)
  * `--shots=<dir>`:存截圖(1440 並排開 modal / 900 蓋板前 / 蓋板收成入口鈕後)
+ *   S12 遮罩在時滑鼠點右鍵選單的選項 → 選項執行、對話框不關、遮罩仍在(2026-09-10 user 抓「點擊展開後的選單選項…會直接關閉當前開啟的 dialog」:
+ *       守衛只認開著時的 aria-controls,選單關閉中 Radix 還焦點給選單容器那一次被當成框外;鍵盤 Enter 是對照)
+ *   S13 歷史浮層開著時宿主不經指標收起面板(keep-mounted display:none)→ 浮層關了、焦點不在裡面、再開面板浮層仍關、再點標題開在觸發鈕下方
+ *       (AD68 產品側變體:portal 浮層對 0×0 錨點只會定位到 (0,8) 還搶焦點;修法 = 觸發鈕失去版面就關)
  * `--selftest`:對照組 —— 把 S8 的洞判準餵舊 build 實測抓到的壞 clip-path,必須紅。
  */
 import http from 'node:http'
@@ -90,6 +94,10 @@ export function holeFollowsButton(clip, btnCenter, tol = 2) {
 }
 /** S11 判定:右鍵後選單在、並存對話框仍恰一個、遮罩仍在。 */
 export const menuSurvives = (st) => !!st && st.menu === true && st.dialogs === 1 && st.mask === true
+/** S12 判定:滑鼠點選單項後 —— 選項執行(鈕移位)、選單關了、並存對話框仍恰一個、遮罩仍在。 */
+export const menuItemActionKeepsDialog = (st) => !!st && st.moved === true && st.menu === false && st.dialogs === 1 && st.mask === true
+/** S13 判定:歷史浮層開著時宿主不經指標把面板收起(display:none)→ 浮層關了、焦點不在浮層裡、面板再開時浮層仍關著、再點標題能正常開在觸發鈕下方(不是 (0,8))。 */
+export const popoverFollowsHiddenAnchor = (st) => !!st && st.popoverAfterHide === 0 && st.focusInPopover === false && st.popoverAfterReopen === 0 && st.reopenedAtTrigger === true
 
 if (process.argv.includes('--selftest')) {
   // 對照組:舊 build 2026-09-09 實測抓到的壞值(洞 = 外框)必須紅;修好後的值(只有入口鈕的洞)必須綠
@@ -107,8 +115,12 @@ if (process.argv.includes('--selftest')) {
   const twoHoles = holeFollowsButton(`path(evenodd, "M0 0H1406V900H0Z${roundAt(1364.5, 766)}${roundAt(1387, 847)}")`, { x: 1387, y: 847 })
   // S11 對照組:選單消失 / 對話框關掉 / 遮罩沒了 → 都必紅
   const s11 = menuSurvives({ menu: true, dialogs: 1, mask: true }) && !menuSurvives({ menu: false, dialogs: 1, mask: true }) && !menuSurvives({ menu: true, dialogs: 0, mask: false }) && !menuSurvives(null)
-  const ok2 = !stale.ok && fresh.ok && !twoHoles.ok && s11
-  console.log(`${ok2 ? '✓' : '✗'} selftest:S10 舊洞(距 ${stale.d}px)判紅、洞心 = 鈕心判綠、兩個洞判紅;S11 選單消失 / 對話框關 / 遮罩沒了判紅`)
+  // S12 對照組:2026-09-10 實測的壞值 —— 選項有執行(鈕移位)但對話框關了、遮罩沒了 → 必紅;鈕沒移位(選項沒執行)→ 紅;全對 → 綠
+  const s12 = menuItemActionKeepsDialog({ moved: true, menu: false, dialogs: 1, mask: true }) && !menuItemActionKeepsDialog({ moved: true, menu: false, dialogs: 0, mask: false }) && !menuItemActionKeepsDialog({ moved: false, menu: false, dialogs: 1, mask: true }) && !menuItemActionKeepsDialog({ moved: true, menu: true, dialogs: 1, mask: true }) && !menuItemActionKeepsDialog(null)
+  // S13 對照組:2026-09-10 實測的壞值 —— 面板收起後浮層還在 (0,8) 且焦點留在搜尋框 → 必紅;全對 → 綠
+  const s13 = popoverFollowsHiddenAnchor({ popoverAfterHide: 0, focusInPopover: false, popoverAfterReopen: 0, reopenedAtTrigger: true }) && !popoverFollowsHiddenAnchor({ popoverAfterHide: 1, focusInPopover: true, popoverAfterReopen: 1, reopenedAtTrigger: true }) && !popoverFollowsHiddenAnchor({ popoverAfterHide: 0, focusInPopover: false, popoverAfterReopen: 0, reopenedAtTrigger: false }) && !popoverFollowsHiddenAnchor(null)
+  const ok2 = !stale.ok && fresh.ok && !twoHoles.ok && s11 && s12 && s13
+  console.log(`${ok2 ? '✓' : '✗'} selftest:S10 舊洞(距 ${stale.d}px)判紅、洞心 = 鈕心判綠、兩個洞判紅;S11 選單消失 / 對話框關 / 遮罩沒了判紅;S12 對話框關 / 選項沒執行 / 選單沒關判紅;S13 浮層留在 (0,8) / 再開不在觸發鈕下判紅`)
   process.exit(ok && ok2 ? 0 : 1)
 }
 
@@ -449,6 +461,25 @@ for (const width of [1440, 1180]) {
   }
   check(`${W} S11 遮罩在時右鍵入口鈕:選單留著(600ms 後)、並存對話框仍開、遮罩仍在(舊 bug:選單一聚焦就被當成點到框外,對話框與選單一起消失)`, menuSurvives(s11) && (await h.dialogs()) === 1, JSON.stringify(s11))
 
+  // ── S12 遮罩在時右鍵入口鈕 → **滑鼠**點選單項:選項執行(鈕移位)、對話框不關、遮罩仍在(AD66:守衛只認開著時的 aria-controls,
+  //    選單關閉中 Radix 還一次焦點給選單容器,那次 focus-outside 沒被認出來 → 對話框關掉;鍵盤 Enter 沒有那次還焦點,是對照組)──
+  const clickMenuItemByMouse = async () => {
+    const at = await fabCenter(); if (!at) return null
+    await page.mouse.click(at.x, at.y, { button: 'right' }); await page.waitForTimeout(400)
+    const item = await page.evaluate(() => { const it = document.querySelector('[role="menu"] [role="menuitem"]'); if (!it) return null; const r = it.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, text: it.textContent } })
+    if (!item) return { noItem: true }
+    await page.mouse.move(item.x, item.y); await page.waitForTimeout(80); await page.mouse.click(item.x, item.y); await page.waitForTimeout(800)
+    const after = await fabCenter()
+    const menu = await page.evaluate(() => !!document.querySelector('[role="menu"]'))
+    return { item: item.text, moved: !!after && Math.hypot(after.x - at.x, after.y - at.y) > 8, menu, dialogs: await h.dialogs(), mask: !!(await h.mask()) }
+  }
+  const s12start = await fabCenter()
+  const s12a = await clickMenuItemByMouse()   // 家 → 貼邊
+  const s12b = await clickMenuItemByMouse()   // 貼邊 → 回家
+  const s12end = await fabCenter()
+  const s12home = !!s12start && !!s12end && Math.hypot(s12end.x - s12start.x, s12end.y - s12start.y) <= 4
+  check(`${W} S12 遮罩在時滑鼠點入口鈕右鍵選單的選項(貼邊、再回家):兩次選項都執行、選單關了、並存對話框仍開、遮罩仍在、鈕回到原位(舊 bug:選項執行的同時對話框被關掉)`, menuItemActionKeepsDialog(s12a) && menuItemActionKeepsDialog(s12b) && s12home, JSON.stringify({ a: s12a, b: s12b, home: s12home }))
+
   await h.click('button[aria-label="開啟智慧代理"]')
   await h.typeIntoPanel('?')
   check(`${W} S8 由入口鈕重開 agent,並存恢復(草稿仍在、可打字)`, (await h.panelInput())?.value === 'hello world!?', JSON.stringify(await h.panelInput()))
@@ -476,6 +507,25 @@ for (const width of [1440, 1180]) {
   check(`${W} S6 下一頁回到任務網址,仍以預設背景頁承載(重新整理已丟掉來源頁)`, (await h.location()) === TASK_4821 && (await h.selectedTab()) === '所有任務' && (await h.dialogs()) === 1, JSON.stringify({ loc: await h.location(), tab: await h.selectedTab() }))
   await h.click('button[aria-label="開啟智慧代理"]')
   check(`${W} S6 重新整理後再開代理是空的新對話(條 F),歷史仍列舊 session`, (await h.panelInput())?.value === '' && (await h.panelTitle()) === '新對話' && (await h.history()).rows.length >= 3, JSON.stringify({ panel: await h.panelInput(), title: await h.panelTitle() }))
+
+  // ── S13 歷史浮層開著時,宿主不經指標 / 焦點把面板收起(合成 click 重新整理 → 代理回初始關閉 = keep-mounted display:none)──
+  //    AD68 產品側變體:浮層 portal 到 body 不會跟著消失,Radix 對 0×0 錨點只會定位到 (0,8)、焦點留在搜尋框;修法 = 觸發鈕失去版面就關浮層。
+  const popoverState = () => page.evaluate(() => {
+    const pops = [...document.querySelectorAll('[aria-label="歷史對話"]')]
+    const a = document.activeElement
+    return { count: pops.length, rects: pops.map((el) => { const b = el.getBoundingClientRect(); return [Math.round(b.x), Math.round(b.y)] }), focusIn: pops.some((el) => el.contains(a)) }
+  })
+  await h.click('[role="complementary"] button[aria-haspopup="dialog"]'); await page.waitForTimeout(400)
+  const s13open = await popoverState()
+  await page.evaluate(() => document.querySelector('button[aria-label="重新整理"]').click()); await page.waitForTimeout(500)
+  const s13hidden = await popoverState()
+  await h.click('button[aria-label="開啟智慧代理"]'); await page.waitForTimeout(400)
+  const s13reopen = await popoverState()
+  await h.click('[role="complementary"] button[aria-haspopup="dialog"]'); await page.waitForTimeout(400)
+  const s13again = await page.evaluate(() => { const pop = document.querySelector('[aria-label="歷史對話"]'); const trig = document.querySelector('[role="complementary"] button[aria-haspopup="dialog"]'); if (!pop || !trig) return { pop: !!pop, trig: !!trig }; const p = pop.getBoundingClientRect(), t = trig.getBoundingClientRect(); return { pop: true, trig: true, atTrigger: Math.abs(p.left - t.left) <= 2 && p.top >= t.bottom && p.top <= t.bottom + 16, popRect: [Math.round(p.x), Math.round(p.y)], trigRect: [Math.round(t.x), Math.round(t.bottom)] } })
+  const s13 = { popoverBefore: s13open.count, popoverAfterHide: s13hidden.count, focusInPopover: s13hidden.focusIn, popoverAfterReopen: s13reopen.count, reopenedAtTrigger: s13again.atTrigger === true, hiddenRects: s13hidden.rects, again: s13again }
+  check(`${W} S13 歷史浮層開著時宿主不經指標收起面板 → 浮層關了、焦點不在浮層裡、面板再開仍關著、再點標題浮層開在觸發鈕下方(舊 bug:浮層飄到 (0,8)、焦點留在搜尋框)`, s13open.count === 1 && popoverFollowsHiddenAnchor(s13), JSON.stringify(s13))
+  await page.keyboard.press('Escape')
   await browser.close()
 }
 

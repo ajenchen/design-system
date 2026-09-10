@@ -82,8 +82,9 @@ function staticMotionScan() {
 }
 
 // (D-static) 模態浮層預設開啟的 story 必帶 docs 隔離參數。
-const MODAL_TAG = /<(Dialog|Sheet|FileViewer|CommandDialog|AlertDialog)\b/
-const MODAL_OPEN_PROP = /<(?:Dialog|Sheet|FileViewer|CommandDialog|AlertDialog)\b[^>]*?\b(?:defaultOpen(?![=\w])|defaultOpen=\{true\}|open=\{true\})/s
+// AgentPanelHeader 的 `defaultHistoryOpen`(歷史浮層快照)也算:非模態、但 portal 到 body,2026-09-10 實測 docs 殭屍會把它帶到別的 story 左上角
+const MODAL_TAG = /<(Dialog|Sheet|FileViewer|CommandDialog|AlertDialog|AgentPanelHeader)\b/
+const MODAL_OPEN_PROP = /<(?:Dialog|Sheet|FileViewer|CommandDialog|AlertDialog)\b[^>]*?\b(?:defaultOpen(?![=\w])|defaultOpen=\{true\}|open=\{true\})|<AgentPanelHeader\b[^>]*?\b(?:defaultHistoryOpen(?![=\w])|defaultHistoryOpen=\{true\})/s
 export function storyBlocks(src) {
   // 以 `export const X` 切塊;每塊到下一個 export const 或檔尾
   const idx = [...src.matchAll(/^export const (\w+)/gm)].map((m) => ({ name: m[1], at: m.index }))

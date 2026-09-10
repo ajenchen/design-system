@@ -2904,3 +2904,48 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - 已收成的東西(全在 `/private/tmp/claude-501/r18-investigation/r20/`):(1) `adaptive-review-peer.md` 對抗審查 —— 已吸收進 v4b / v8;(2) `NEXT-RUNTIME.md` 續跑狀態:「ACTIVE, NOT COMPLETE… No final selection」,Combo v4 候選在 6× fast 六次全紅(白區 450–485ms);(3) 儀器與矩陣基礎建設(serial-runner、shell-cost-diagnostic、guard、A5 PNG 計畫,估 125 閘 + 864 矩陣要 3.2–5.6 小時串行機器時間);(4) 候選 patch:`combined-v3-tail-settled.patch`(H4 hover 凍結 + 把手 transform + active-settled + C1 / C3)、`source-candidate-v3-after-adaptive.UNVERIFIED.patch`(標明未驗證)、`b1-active-cell-row-identity.patch`、`adaptive-shell-gate.patch`(自適應殼的獨立閘,含對照組)。
 - 對 user 兩個現象的回答狀態:「資料從無到有比舊版慢」—— 已由 v9c 列殼判準處理(CI runner 上 R17 1,301ms → 64 / 103ms;快機器一般速度零骨架);「把手殘影卡頓」—— R18 找到的成本根因(hover 鏈每 scroll event 寫入、把手同步每 scroll event 強制 layout;候選 H4 / transform 把 scroll callback 7,404 → 355)**尚未進 PR**,候選在 Codex worktree,最終矩陣沒跑完。
 - 接手(AUTO,不等額度):在暫存 worktree 對 HEAD 套 Codex 的候選 patch,用既有閘當仲裁(同窗 main / v9c / 候選 於 1× / 2× / 4×、perception 全組合、把手三閘、332、R0–R5、a11y);過就以獨立一批進 PR,不過就記錄數字、留給 9/17 後的 Codex 續跑。
+
+### AD66 user 2026-09-10:並存對話框開著時,右鍵入口鈕 → 滑鼠點選單選項 → 對話框關掉 —— 根因:並存守衛只認「開著時」的 aria-controls,選單關閉中收到的那一次焦點被當成框外(2026-09-10)
+
+**user 原話**:「我在開啟dialog時,點擊 agent fab的右鍵再點擊展開後的選單選項,並無法執行選項,而是會直接關閉當前開啟的dialog,這個問題的root cause到底是什麼???右鍵選單修好了,結果選單的選項沒修好,這是否表示沒有追根究底的解決根本問題呢?所以才有那麼多相關類似問題還存在?」
+
+- **重現(`probe-fab-menu-item.mjs`,同一 build 兩條路徑)**:滑鼠點「縮小按鈕」→ mouseup 當下 `dialogs 1 → 0`、遮罩消失、入口鈕有移位(選項其實有執行,但對話框被關掉、焦點回到開它的連結);鍵盤 ArrowDown + Enter → 對話框仍 1、入口鈕移位。事件序(Radix 自訂事件 `dismissableLayer.focusOutside` 加監聽):`click@menuitem` → `focusin@menu(容器)` → `focusOutside target=menu, 觸發器 aria-controls=null, 選單 data-state=closed` → 對話框關。
+- **根因**:AD59 把「保留區自己開出來的浮層」認回來的方法是「沿祖先找有 id 的元素 → `[aria-controls=id]` 找回觸發器 → 觸發器在保留區」;但 Radix 只在**開著時**寫 `aria-controls`。滑鼠點選單項:選單進入關閉態(屬性已拿掉)→ 指標仍在選單項上,Radix 把焦點還給選單容器一次 → 這次 focus-outside 認不出來 → 並存框(非模態分支)關閉。鍵盤路徑沒有那次還焦點,所以不會關。**對 user 問題的誠實回答**:AD59 的根因類別是對的(保留區開出來的浮層要算保留區),但實作綁在一個只在開著時存在的屬性上,關閉中的階段漏掉 —— 同一個根因、實作不完整,不是新的根因。同一份守衛在 `FileViewer` 完全沒有第 2 條(AD59 只修了 dialog.tsx)= 同款缺口。
+- **修法(根因層,兩處合一)**:`lib/overlay-coexistence.ts` 新增 `createPersistentGuard(keep, getSelf)`:(1) 保留節點子樹;(2) 保留區開出來的浮層 —— 屬性在時以屬性為準,認過一次的浮層 id 記住,屬性不在(關閉中)時用記憶;(3) 疊在上面的另一個 dialog。`dialog.tsx` 與 `file-viewer.tsx` 都改消費這一份(守衛跨 render 存活:contentEl 走 ref、memo 只綁 persistentElements)。`dialog.spec.md`「並存」補「框外事件的守衛」一條。
+- **閘**:`agent-url-registry-demo-invariant.mjs` S12(遮罩在時滑鼠點右鍵選單的選項兩次:貼邊、再回家 —— 選項執行、選單關、對話框仍 1、遮罩仍在、鈕回原位;`--selftest` 對照組:對話框關 / 選項沒執行 / 選單沒關各自判紅)。新 build 上示範閘 131 條全綠(1440 / 1180)。
+
+### AD67 user 2026-09-10:釘選欄位 resize 時分隔線沒變藍 —— 根因:面板邊界欄 `showLine=false` 把狀態色連同 idle 線一起關掉;spec 另有兩處寫著不存在的 `isResizing` prop(2026-09-10)
+
+**user 原話**:「為何釘選欄位resize時拖拉的那個分隔線沒有變成藍色??有按照我們resize的ssot嗎????是否是漂移?????我們的ssot到底是怎樣??還是我們ssot有遺漏需要更新????請確保整個 ds 類似的resize功能都有ssot沒有漂移,同款問題就一起一次修正好」
+
+- **SSOT**:`resize-handle.spec.md` 視覺 canonical:idle `divider` / hover `border-hover` / dragging `primary`。實作 `resize-handle.tsx` 的 `dragging` 是元件內部狀態(pointerdown → pointerup),但 spec 寫「dragging:`bg-primary`(consumer 傳 `isResizing=true`)」與「`isResizing` 期間」—— **不存在的 prop**,spec 漂移(已更正)。
+- **根因**:DataTable 表頭的 `<ResizeHandle showLine={showDivider}>`,`showDivider = !isLastInRegion(...)`;釘選面板的最後一欄(邊界欄)`showLine=false`,舊實作 `showLine=false` 時**整條線不渲染** → hover / 拖拉都沒有回饋。中央區最後一欄(表格右緣)同款。內側欄正常。
+- **修法(primitive 層)**:`showLine=false` 改成只把 **idle 線**交給消費端(透明),hover / 拖拉的狀態色仍由 ResizeHandle 畫在同一像素;`disabled + showLine=false` 才完全不畫。幾何:左釘選面板的凍結邊界線 `dtPanelBoundaryRight::after` 在面板最後一像素、與把手線同位 → 狀態色剛好蓋在它上面(像素精確);右釘選面板邊界線 / 外框在鄰面板那一像素,把手線只能畫在自己面板內側相鄰一像素(面板 overflow 裁切),拖拉中是「主色線緊貼灰線」—— 已寫進 spec 當已知幾何,不另造機制。
+- **DS 內 resize 盤點**:消費 `ResizeHandle` 的只有 DataTable 欄寬與 AgentPanel 面板寬(AgentPanel 自己不畫線、由把手線當唯一 owner,原本就會變色);`Textarea` 是原生 CSS `resize`(瀏覽器抓角,非本 primitive,spec「何時不用」範圍外)。無其他手刻 resize。
+- **閘**:`data-table-pinned-resize-invariant.mjs` R4(釘選邊界欄把手:懸停 = border-hover、拖拉中(等 350ms 過渡)= primary、放開移開後回透明;`--selftest` 把線凍成透明必紅)。新 build 上 R0–R4 全綠、對照組全紅。
+
+### AD68 user 2026-09-10:剛進 Storybook 點進範例,左上角出現不該出現的「搜尋對話」選單,reload 才正常 —— 根因:Storybook 8.6 docs 生命週期競態留下殭屍 docs,裡面「歷史浮層開啟」快照的 Popover portal 到 body、錨點 0×0 → 定位到 (0, 8)(2026-09-10)
+
+**user 原話**:「圖一,為何在剛進storybook時,點進範例裡,很常會出現此時不應該出現的選單在左上角如圖所示?但重新整理又會變正常,root cause是什麼???」
+
+- **重現(四路平行調查 + Codex R21 獨立收斂同一機制;`wf-issue1-docs-race.mjs`)**:那個選單不是 URL 註冊表示範自己的歷史浮層(示範的 session 是「登入逾時追蹤 / 發布公告草稿 / Q3 客訴分類」;圖裡的是「衝刺待辦整理 / 發布公告草稿 / Q3 客訴分類 / 競品定價彙整」= `HistoryOpen` 快照的 fixture),示範的觸發鈕 `aria-expanded` 全程 false、沒有任何 click / keydown。把 DocsRenderer chunk(888 KB,第一次進站沒快取)延遲 3s、在 Docs 頁載入中點進 story:`#storybook-docs[hidden]` 裡留下 30 個 story 容器的殭屍 docs,歷史浮層 rect (0, 8, 288, 267)、wrapper `translate(0px, 8px)`、錨點 (0,0,0,0)、焦點在「搜尋對話」輸入框;切到第三個 story 仍在、reload 才消失。只延遲 MDX chunk 也重現;不延遲(快取後)12 種切換全乾淨 → 這就是「很常」但不每次、集中在剛進站。
+- **根因(Storybook 8.6.18)**:`@storybook/core/dist/preview-api/index.js:4985-5000` `CsfDocsRender.renderToElement` 先 `await renderer()` 才掛 `teardownRender`,`teardown()` 只呼叫 `teardownRender?.()`;await 之後沒人檢查 `torndown` → render 照跑。第二窗:`DocsRenderer.render` `await import('@mdx-js/react')` 期間 `unmount(element)` 是 no-op(React root 還不存在)。此時 `renderSelection` 早已把 docs 容器藏起來並渲染新 story。殭屍 docs 裡任何預設開啟、portal 到 body 的浮層(HistoryOpen 的 Popover)錨點在 hidden 容器裡 = 0×0,Radix Popper 定位到 (0, sideOffset 8)。**產品側同類變體(實測)**:AgentPanelDock 關閉時用 display:none 藏面板(keep-mounted),若宿主用不經指標 / 焦點的方式關面板(路由切換 / 全域快捷鍵)而歷史浮層開著 → 同樣飄到 (0,8)、焦點留在裡面、打字還會篩選孤兒清單。
+- **修法(三層,各有閘)**:(1) 根:`packages/storybook-config/preview.tsx` `docs.renderer` 包一層 —— render 前後看 `#storybook-docs` 是否已被 View 加上 `hidden`(`showStory()`),是就跳過 / 立即 unmount;(2) 第二道:`HistoryOpen` 快照依既有 canonical `openOverlayDocsStory` 進獨立 docs iframe(story-rules「預設開啟的模態浮層 story」;`dialog-coexistence-invariant.mjs` D-static regex 補 `AgentPanelHeader defaultHistoryOpen`);(3) 產品側:`AgentPanelHeader` 用 ResizeObserver 看觸發鈕失去版面(0×0)就關歷史浮層(Radix 對 0×0 錨點只會定位到左上角,不會自己關)。
+- **閘**:新 `scripts/storybook-docs-race-invariant.mjs`(真實 manager UI,DocsRenderer 延遲 3s 點進 story → 無殭屍 docs、無歷史浮層、story 已渲染、焦點不在浮層;切回 Docs 仍正常渲染;不延遲對照亦乾淨;`--selftest` 把 served chunk 裡的守衛換成永遠 false → 殭屍必重現)+ CI 兩行 + `npm run test:storybook-docs-race`。產品側:`wf-issue1-product-dock-close.mjs` 修後 `popover: null`(修前 (0,8,288,235) 且焦點留在輸入框)。
+- **AI 推導、非 user 拍板**:三層都是工程修法(Storybook 設定 / story 參數 / 元件對 0×0 錨點的自保),不改任何 UI 語意。
+
+### AD69 user 2026-09-10:拖曳把手被裁得很醜;Jira 捲動時藏把手直到指標再動 —— 根因:2026-09-09 的 clip-path 把 24px chip 切成殘片、淡出期間追列留下殘影、下緣用 border-box 讓把手在傳統捲軸下坐到捲軌上(2026-09-10)
+
+**user 原話**:「圖二,這樣的效果看起來好醜,drag button會直接被裁掉,我看了一下jira如圖三,它並沒有特別讓drag button不能在body之外顯示,但是jira在捲動table的時候會把drag button藏起來直到滑鼠再次滑到其他table row,你仔細研究思考一下這題要怎麼做,確保不要改壞任何好的東西」
+
+- **量到的(四路平行 + 兩個反證者 + Codex R21,數字一致)**:列完整可見時把手毫無裁切(x=4..28 全命中把手,無任何祖先 transform / contain / overflow 影響 fixed);「被裁掉」= AD57 的 `clip-path: inset()` 本身 —— 列部分滑出時 24px 有邊框、圓角、不透明底的 chip 被切成 9–12px 殘片(`inset(15px 0 0)` 只剩底部兩排點);滾輪每一格:Chromium 在 scroll 事件前 1–2ms 就把 `data-hovered` 換到指標底下的新列(trusted mouseover,沒有 mousemove),舊把手 inline opacity 落後 18–35ms 才變 0、再淡出 150ms,期間半裁 chip 掛在表頭線下 = 殘影,三格連發時同時兩顆;第二缺陷:下緣裁切用 `pRect.bottom`(border-box,含水平捲軸),傳統 17px 捲軸幾何下把手坐在捲軌上 17px(headless 預設 `--hide-scrollbars` 量不到)。反證者證明「只拿掉 clip-path、放不進就淡出」不行:整顆未裁 chip 會在表頭上畫 125–136ms(把 AD57 的原症狀請回來)。
+- **世界級對照(13 個第一手來源)**:兩個家族 —— 資料格(MUI X `__reorder__` 專用欄、AG Grid `rowDrag` 欄、TanStack、Google Sheets 列首):把手是列內儲存格、隨列被捲動容器裁切、恆顯示;清單(Atlassian Pragmatic DnD 設計準則「A visible on hover drag handle can appear outside of the bounds of an element」、Notion 左側 gutter ⋮⋮、Jira):列左側、hover 顯示、CSS :hover 顯隱、天生不追列。**沒有任何一家讓浮層把手在捲動中追著列跑**。Jira「捲動中隱藏直到指標再動」是 user 第一手觀察,官方文件未載(search-only)。本 DS 早已選清單家族(spec:612「不佔 column 空間」),位置不改。
+- **修法(`data-table.tsx` `RowDragHandle`;AI 推導的取捨、非 user 拍板)**:(1) **捲動閂鎖** `rowDragScrollLatch`(模組層一份;document 上一個座標 listener;只有渲染過把手的實例訂閱):任何捲動 / resize → 正在畫的把手(hover 中或淡出中)立即隱藏(直接寫 DOM、transitionDuration 0s,不等 React、不淡出、不跟列走),直到指標座標真的改變才鬆開,鬆開時重量位置再依 hover 顯示(150ms 淡入照舊);Chromium 同座標補發的 mouseover / mousemove 不算移動。(2) **整顆放得進可視帶才顯示**:可視帶 = body 面板 client box(不含捲軸),`fits` 進 pos;放不進不顯示,不再 clip-path。(3) 刪掉淡出期間追列的 update。拖曳中把手本來就 opacity 0、鍵盤 / focus-visible 不受影響(把手 tabIndex -1,既有 a11y 缺陷另案)。取捨:部分露出的列暫無指標把手(捲進一點就有)—— 與資料格家族在該狀態的體驗一致。
+- **SSOT**:`data-table.spec.md` 613「捲動定位 / 裁切與所屬列相同」整段改寫為「捲動與可視帶」(捲動即藏、真實移動才顯;整顆放得進才顯示;不再 clip-path),並註明是 AI 推導的取捨。
+- **閘(全部先弄壞看會紅)**:`data-table-handle-clip-invariant.mjs` 重寫(P0 顯示無裁切置中;P1a 半滑進表頭指標不動 → 零把手;P1b 指標移到半露列露出的那段 → 仍零;P1c 移到完整列 → 回來置中;P2 整列滑出 → 零;P3 傳統 17px 捲軸幾何:中心在 client 底上方 6px → 零,再捲 10px → 有且底 ≤ client 底;`--selftest` 強制 opacity 1 → P1a / P1b / P2 / P3a 必紅;只取有把手錨點的列 —— roadmap 有 4 列子任務本來就沒把手,第一版誤選);`data-table-handle-position.mjs` 改雙模式(stationary:第一個 scroll 事件 +40ms 後零把手幀,對照組 unlatch 每次 scroll 派發座標遞增的合成 pointermove 必紅;follow:可見把手貼原列 ±1px,對照組 20px 偏移必紅);CI 各加行。**儀器錨**:第一輪跑成「352 幀殘影」是我把 `--static` 打成 `--build`,量到的是舊 build(M32:先確認量的是什麼)。
+- **同批驗證**:新 build 上 332 不變式、釘選 R0–R4、示範閘 131 條、docs 競態閘、把手三閘全綠;整條 CI 對應清單本機重跑(`gate-chain-final.log`)。
+
+### AD65 補記(2026-09-10):user 重置額度後 Codex R21 已跑完(四題獨立 Phase A,SUCCESS,08:37–08:49)
+
+- 用途改為對 AD66–AD69 的獨立第二軌(唯讀、不看主 session 結論):四題根因與主 session 的四路平行調查逐一相符 —— 並存守衛的短命屬性(它另提 Radix menu content 的 `aria-labelledby` 反向關係,已採納進 `createPersistentGuard` 第二道認法)、docs 殭屍 portal 與 0×0 錨點(它未重現持續版,建議 `openOverlayDocsStory` 隔離,已採納為第二道防線)、把手 clip-path 殘片與 scroll latch(它提「捲動即藏、真移動才顯、整顆放得進才顯示」,與主 session 同一方案)、`showLine=false` 連狀態色一起關掉 + spec 六處漂移(全部已修)。報告:`scratchpad/r21-four-issues.out.md`。
+- R20 的「把手殘影卡頓」候選 patch(H4 hover 凍結 / 把手 transform)因 AD69 的閂鎖把「捲動中同步把手位置」整段拿掉而失去對象,不再 rebase;若 9/17 後 user 仍感卡頓,以新 build 重量再議。

@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 // R17: compare portal geometry, fading ghosts, row identity, and hover mutations.
+// 2026-09-10 捲動閂鎖(data-table.spec.md「捲動與可視帶」):
+//   --hover=stationary(預設):指標不動的捲動 → 第一個 scroll 事件之後不得有任何 opacity>0 的把手(殘影 = 0);
+//     --selftest 用 control=unlatch(每次 scroll 派發座標遞增的合成 pointermove,等於指標真的在動)→ 把手必須回來,證明儀器看得到把手。
+//   --hover=follow:每個手勢之間指標動 2px → 把手回到指標底下的列;可見把手中心必貼原列中心 ±1px;
+//     --selftest 用 control=offset(注入 20px 偏移)必被抓到。
 // Usage: node scripts/data-table-handle-position.mjs --static=<storybook-static> --out=<dir> --dpr=2
 // Geometry gate includes fading handles (computed opacity > 0), not just logical hover.
 // The original 150 ms fade must keep following its owning row. --selftest injects
@@ -29,8 +34,8 @@ const cfg = {
   capture: arg("capture", "false") === "true",
   trace: arg("trace", "false") === "true",
   probe: arg("probe", "true") === "true",
-  control: selftest ? "offset" : arg("control", "none"),
   hover: arg("hover", "stationary"),
+  control: selftest ? (arg("hover", "stationary") === "follow" ? "offset" : "unlatch") : arg("control", "none"),
   input: arg("input", "gesture"),
 };
 if (!cfg.build || !cfg.out) throw Error("--static and --out are required");
@@ -116,6 +121,16 @@ try {
   if (cfg.control === "offset")
     await page.addStyleTag({
       content: 'button[aria-label="拖曳重排此列"]{translate:0 20px!important}',
+    });
+  // 對照組 unlatch:每個 scroll 事件之後派發一個座標遞增的合成 pointermove(= 指標真的在動),閂鎖每次都會鬆開,
+  // 把手在捲動中回來 → stationary 斷言必須紅
+  if (cfg.control === "unlatch")
+    await page.evaluate(() => {
+      let n = 0;
+      document.querySelector("[data-datatable-hscroll]").addEventListener("scroll", () => {
+        n += 1;
+        window.dispatchEvent(new PointerEvent("pointermove", { clientX: 600 + (n % 7), clientY: 300 + (n % 5), bubbles: true }));
+      });
     });
   if (cfg.control === "track-fade")
     await page.evaluate(() => {
@@ -537,10 +552,14 @@ try {
     process.exitCode = 1;
   }
   const measured = summary.geometry["after-raf"];
-  const covered =
-    measured.all.n >= 50 &&
-    measured.fading.n >= 10 &&
-    summary.scrollEvents >= 10;
+  // 殘影幀:第一個 scroll 事件 + 40ms(兩幀寬限:mouseover → render → scroll → 閂上,在同一幀內完成)之後,還有把手在畫的幀
+  const firstScrollT = data.scrolls[0]?.t ?? Infinity;
+  const ghostFrames = data.frames.filter((f) => f.phase === "after-raf" && f.t > firstScrollT + 40 && f.handles.length > 0).length;
+  const framesAfterScroll = data.frames.filter((f) => f.phase === "after-raf" && f.t > firstScrollT + 40).length;
+  const stationary = cfg.hover !== "follow";
+  const covered = stationary
+    ? framesAfterScroll >= 50 && summary.scrollEvents >= 10
+    : measured.all.n >= 30 && summary.scrollEvents >= 10;
   const actualDistance =
     (data.scrolls.at(-1)?.y ?? setup.scrollTop) - setup.scrollTop;
   const inputComplete =
@@ -549,12 +568,13 @@ try {
       gestures.length === 5 * Math.ceil(cfg.duration / 1500));
   const validRun =
     errors.length === 0 && !traceComplete.dataLossOccurred && inputComplete;
-  const pass =
-    validRun &&
-    covered &&
-    measured.disconnected === 0 &&
-    measured.all.p95 <= maxDy &&
-    measured.all.max <= maxDy;
+  const pass = stationary
+    ? validRun && covered && ghostFrames === 0
+    : validRun &&
+      covered &&
+      measured.disconnected === 0 &&
+      measured.all.p95 <= maxDy &&
+      measured.all.max <= maxDy;
   const verdict = {
     pass,
     validRun,
@@ -562,6 +582,10 @@ try {
     expectedDistance,
     actualDistance,
     covered,
+    hover: cfg.hover,
+    control: cfg.control,
+    ghostFrames,
+    framesAfterScroll,
     maxDy,
     measured: measured.all,
     fading: measured.fading,
@@ -571,9 +595,15 @@ try {
     path.join(cfg.out, "verdict.json"),
     JSON.stringify(verdict, null, 2)
   );
-  if (selftest) {
+  if (selftest && stationary) {
+    if (!validRun || !covered || ghostFrames < 5 || pass) {
+      console.error("FAIL: control 'unlatch' (synthetic pointer movement on every scroll) did not bring handles back", JSON.stringify(verdict));
+      process.exitCode = 1;
+    } else
+      console.log(`PASS: control 'unlatch' rejected by the stationary gate (${ghostFrames} handle frames after scroll start)`);
+  } else if (selftest) {
     if (!validRun || !covered || measured.all.p95 < 19 || pass) {
-      console.error("FAIL: intentional 20 px handle offset was not detected");
+      console.error("FAIL: intentional 20 px handle offset was not detected", JSON.stringify(verdict));
       process.exitCode = 1;
     } else
       console.log(
@@ -581,15 +611,17 @@ try {
       );
   } else if (!pass) {
     console.error(
-      "FAIL: visible drag handle detached from owning row",
+      stationary
+        ? "FAIL: a drag handle was still painted while scrolling with a stationary pointer (scroll latch)"
+        : "FAIL: visible drag handle detached from owning row",
       JSON.stringify(verdict)
     );
     process.exitCode = 1;
   } else
     console.log(
-      "PASS: visible and fading drag handles follow owning rows within " +
-        maxDy +
-        " px"
+      stationary
+        ? `PASS: no drag handle painted after scroll start with a stationary pointer (${framesAfterScroll} frames)`
+        : "PASS: visible drag handles follow owning rows within " + maxDy + " px"
     );
 } finally {
   await browser?.close();

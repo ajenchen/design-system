@@ -172,3 +172,50 @@ export function CoexistenceMask({ keep, className, ...rest }: { keep: Coexistenc
     ...rest,
   })
 }
+
+/**
+ * 並存守衛 —— 判定一個「框外事件」(Radix `onPointerDownOutside` / `onFocusOutside` / `onInteractOutside`)的目標
+ * 其實屬於保留區,不該關閉並存浮層。三種情況算保留區(Dialog 與 FileViewer 共用這一份,不得各自再寫一套):
+ *   (1) 目標在保留節點子樹裡;
+ *   (2) 目標在保留區**自己開出來的浮層**裡 —— 入口鈕的右鍵選單、面板裡的 Select / Popover 都 portal 到 body,
+ *       不在保留區子樹;用觸發器的 `aria-controls` / `aria-owns` 找回開它的元素(Radix menu / popover / select 都會寫),
+ *       觸發器在保留區 → 這個浮層算保留區(2026-09-09 user:「遮罩上的 fab 右鍵點擊都無法正常反應」)。
+ *       **關閉中也算**:Radix 只在開著時寫 `aria-controls`;滑鼠點選單項 → 選單進入關閉態、屬性已拿掉、
+ *       Radix 把焦點還給選單容器 → 那一次 focus-outside 認不出來,並存框當場關掉(2026-09-10 user:
+ *       「點擊展開後的選單選項…會直接關閉當前開啟的 dialog」;鍵盤 Enter 不會,因為指標不在選單上、沒有那次還焦點)。
+ *       所以三道認法:觸發器的 `aria-controls` / `aria-owns`(開著時)→ 浮層自己的 `aria-labelledby` 指回觸發器(Radix menu
+ *       關閉中仍在)→ 認過一次的浮層 id 記憶(其他浮層的關閉階段)。屬性還在時以屬性為準(觸發器已不在保留區 → 不算)。
+ *   (3) 目標在疊在上面的另一個 dialog 裡(沒有 URL 的確認框;v14 第 9 題「取消後兩邊恢復」)。
+ * @param keep     保留節點(同 useOverlayCoexistence 的 keep)
+ * @param getSelf  並存浮層自己的內容節點(第 3 條要排除自己)
+ */
+export function createPersistentGuard(keep: CoexistenceTargets, getSelf: () => Element | null) {
+  const confirmed = new Set<string>()
+  const escapeId = (id: string) => (typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(id) : id.replace(/["\\]/g, '\\$&'))
+  return (node: EventTarget | null): boolean => {
+    if (!(node instanceof Node)) return false
+    const kept = keep().filter((el): el is Element => !!el)
+    if (kept.some((el) => el.contains(node))) return true
+    const start = node instanceof Element ? node : node.parentElement
+    for (let cur: Element | null = start; cur; cur = cur.parentElement) {
+      // 反向關係:Radix menu content 無條件寫 `aria-labelledby` = 觸發器 id(關閉中也還在),被指向者在保留區就算(Codex R21 對照)
+      const labelledBy = cur.getAttribute('aria-labelledby')
+      if (labelledBy && labelledBy.split(/\s+/).some((ref) => { const el = ref ? document.getElementById(ref) : null; return !!el && kept.some((k) => k.contains(el)) })) {
+        if (cur.id) confirmed.add(cur.id)
+        return true
+      }
+      if (!cur.id) continue
+      const opener = document.querySelector(`[aria-controls="${escapeId(cur.id)}"], [aria-owns="${escapeId(cur.id)}"]`)
+      if (opener) {
+        if (kept.some((el) => el.contains(opener))) {
+          confirmed.add(cur.id)
+          return true
+        }
+        continue
+      }
+      if (confirmed.has(cur.id)) return true
+    }
+    const other = start?.closest('[role="dialog"]')
+    return !!other && other !== getSelf()
+  }
+}

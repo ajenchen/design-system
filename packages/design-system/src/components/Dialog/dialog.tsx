@@ -10,7 +10,7 @@ import { SurfaceHeader, SurfaceFooter, type SurfaceHeaderProps } from "@/design-
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
-import { useOverlayCoexistence, CoexistenceMask } from "@/design-system/lib/overlay-coexistence"
+import { useOverlayCoexistence, CoexistenceMask, createPersistentGuard } from "@/design-system/lib/overlay-coexistence"
 
 /**
  * Dialog (Modal) — Radix Dialog + 設計系統 token
@@ -140,24 +140,15 @@ const DialogContent = React.forwardRef<
   // 所以常駐區域內的 outside 事件要擋掉。Radix 官方對這件事的機制是 `DismissableLayer.Branch`,
   // 但那要求消費端把常駐區包起來;在這裡擋等價而且不強迫消費端改結構。
   // 只在有傳 persistentElements 時掛,預設路徑仍然一個位元不變。
-  const insidePersistent = React.useCallback((node: EventTarget | null) => {
-    if (!persistentElements || !(node instanceof Node)) return false
-    const kept = persistentElements()
-    if (kept.some((el) => el.contains(node))) return true
-    // 保留區自己開出來的 Radix 浮層(入口鈕的右鍵選單、面板裡的 Select / Popover)portal 到 body,不在保留區子樹裡;
-    // 焦點一進去就被當成 focus-outside,並存對話框當場關掉、選單跟著卸載(2026-09-09 user:「遮罩上的 fab 右鍵點擊都無法正常反應」)。
-    // 用 aria-controls / aria-owns 找回開它的觸發器:觸發器在保留區,那個浮層就算保留區的一部分。
-    for (let cur: Element | null = node instanceof Element ? node : node.parentElement; cur; cur = cur.parentElement) {
-      if (!cur.id) continue
-      const id = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(cur.id) : cur.id.replace(/["\\]/g, '\\$&')
-      const opener = document.querySelector(`[aria-controls="${id}"], [aria-owns="${id}"]`)
-      if (opener && kept.some((el) => el.contains(opener))) return true
-    }
-    // 疊在上面的另一個 dialog(例:從並存 modal 裡開出的、沒有 URL 的確認框)也不算框外:
-    // 非模態分支會把「焦點移進確認框」當 focus-outside 而把並存 modal 關掉,v14 第 9 題要的是「取消後兩邊恢復」。
-    const other = (node instanceof Element ? node : node.parentElement)?.closest('[role="dialog"]')
-    return !!other && other !== contentEl
-  }, [persistentElements, contentEl])
+  // 三種目標不算框外(規則與 FileViewer 共用一份:`lib/overlay-coexistence.ts` createPersistentGuard;dialog.spec.md「並存」):
+  // (1) 保留節點子樹;(2) 保留區自己開出來的浮層 —— **含它關閉中的階段**;(3) 疊在上面的另一個 dialog(v14 第 9 題)。
+  // 守衛要跨 render 存活(它記得認過的浮層),所以 contentEl 走 ref、memo 只綁 persistentElements。
+  const contentElRef = React.useRef(contentEl)
+  contentElRef.current = contentEl
+  const insidePersistent = React.useMemo(
+    () => (persistentElements ? createPersistentGuard(persistentElements, () => contentElRef.current) : () => false),
+    [persistentElements],
+  )
   const guardOutside = persistentElements
     ? {
         onPointerDownOutside: (e: CustomEvent<{ originalEvent: PointerEvent }>) => {

@@ -49,7 +49,12 @@ export interface ResizeHandleProps
   ariaControls?: string
   /** 停用:只畫線,無 role / tabIndex / cursor / 拖拉(DataTable「不可拖但要線」分支)。 */
   disabled?: boolean
-  /** 是否畫 1px line;`false` = consumer 已自己畫線(eg. DataTable 面板邊界欄)。預設 true。 */
+  /**
+   * 是否由本元件畫 **idle** 的 1px line;`false` = consumer 已自己畫 idle 線(eg. DataTable 面板邊界欄的凍結邊界線)。
+   * 只影響 idle:hover(`border-hover`)與拖拉中(`primary`)的狀態色**永遠**由本元件畫在同一個像素上
+   * —— 拖拉中 = primary 是規格,不因誰畫 idle 線而消失(2026-09-10 user 抓「釘選欄位 resize 時分隔線沒有變藍」:
+   * 面板邊界欄 `showLine=false` 連狀態線一起不畫)。預設 true。
+   */
   showLine?: boolean
   /** line 起點 inset(horizontal 為 top / vertical 為 left);DataTable 用 `var(--table-cell-py)`。 */
   lineInsetStart?: string
@@ -190,11 +195,14 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
         }
 
     // 1px line:idle divider / hover border-hover / dragging primary(disabled 恆 divider)。
+    // showLine=false:idle 透明(消費端自己畫 idle 線),hover / 拖拉的狀態色仍畫在同一個像素上;disabled + showLine=false 才完全不畫。
     const lineColorClass = dragging
       ? 'bg-primary'
       : disabled
         ? 'bg-divider'
-        : 'bg-divider group-hover/resize:bg-[var(--border-hover)]'
+        : showLine
+          ? 'bg-divider group-hover/resize:bg-[var(--border-hover)]'
+          : 'bg-transparent group-hover/resize:bg-[var(--border-hover)]'
 
     const lineStyle: React.CSSProperties = isHorizontal
       ? {
@@ -237,7 +245,7 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
           className,
         )}
       >
-        {showLine && <span aria-hidden className={cn('transition-colors', lineColorClass)} style={lineStyle} />}
+        {(showLine || !disabled) && <span aria-hidden className={cn('transition-colors', lineColorClass)} style={lineStyle} />}
       </span>
     )
   },
