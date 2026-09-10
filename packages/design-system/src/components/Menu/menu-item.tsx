@@ -260,7 +260,7 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
           !disabled && !selected && 'hover:bg-neutral-hover',
           // 選中列滑鼠 hover 釘住不變(上行條件互斥;SSOT = item-anatomy「選中 × 互動疊加」)。
           // 鍵盤游標**不**改底色:游標一律是框(cva base 的 focus-visible:focus-ring-inset;巢在 cmdk / Radix 內時
-          // 由外層 CommandItem / DropdownMenu 依 useInputModality 畫在游標列上),選中 × 游標 = 框疊在選中底色上。
+          // 由外層 CommandItem / DropdownMenu 依反白來歷 useCursorMover 畫在游標列上),選中 × 游標 = 框疊在選中底色上。
           // 歷史:2026-08-11 曾加 `focus-visible:bg-neutral-selected-focus`(深一階),因本節點非可聚焦從未生效,
           // 2026-09-06 移除;2026-09-09「底色當游標」整類撤回(focus-canonical 來源總帳)。
           !disabled && selected && 'bg-neutral-selected',

@@ -26,6 +26,8 @@
  *        DropdownMenu 四種項目 / AgentPanel 歷史):滑鼠移到 A(底色)→ ↓ 到 B(B 框、B 無底色、**A 底色消失**)
  *        → 滑鼠移到 C(**B 框消失**、C 底色無框)→ 滑鼠停在 C 不動再按 ↑(**C 底色消失**、B 框)
  *   (E)  常駐清單(TreeView / Sidebar / Tabs / DataTable / TimePicker 欄):鍵盤框在時滑鼠 hover → **底色與框同時存在**
+ *   (F)  在文字輸入框裡打字不算搬游標(2026-09-10 user 抓到「滑鼠點輸入框、輸入 a、Backspace → 選單出現鍵盤焦點框」):
+ *        滑鼠點進搜尋列 → 打一個字 → Backspace → 自動落點的反白**無框**(底色 = 開啟那一下的指標來歷);接著 ↓ → **有框**(對照:儀器看得到框)
  * 量 outline 前等 700ms(transition-colors 含 outline-color,立刻量會抓到過渡值)。
  *
  * `--selftest` 對照組(M32「儀器要先有對照組」):每頁載入後注入一段 CSS,把游標列釘回舊行為
@@ -86,6 +88,8 @@ const OLD_BEHAVIOUR_CSS = `
   [data-sidebar="menu-button"]:hover, [role="tab"]:hover, [role="row"]:hover [role="checkbox"], [data-tree-row]:hover { outline: none !important; }
   [role="listbox"].group\\/listbox [role="option"]:hover { background-color: transparent !important; }`
 // TreeView 的游標只從 aria-activedescendant 得知,CSS 釘不到 → 觀察那個屬性,只把游標那一列釘回舊行為
+// F 的對照組:舊行為「打字後自動落點的反白畫框」—— 把游標列釘成永遠有框(蓋過 gotoStory 注入的 A–E 對照 CSS,後加者勝),F 的 'new' 斷言必紅
+const OLD_BEHAVIOUR_TYPING_CSS = `${GRAB_CURSOR} { outline: 2px solid var(--ring) !important; outline-offset: -2px !important; background-color: transparent !important; }`
 const OLD_BEHAVIOUR_TREE_JS = `(() => {
   const pin = () => {
     const tree = document.querySelector('[role="tree"]'); if (!tree) return
@@ -422,6 +426,38 @@ for (const t of GRAB_TARGETS) {
     }
   }
 }
+
+// ── (F) 在文字輸入框裡打字不算搬游標:有搜尋列的會搶反白目標各做一次 ──
+// 目標 = 有文字搜尋列的會搶反白元件(Combobox「四模式」沒有文字輸入,改用「搜尋」story);DropdownMenu 的打字跳選目標不是文字輸入框,仍算鍵盤,不在此段
+const TYPING_TARGETS = [
+  ...GRAB_TARGETS.filter((t) => /^(Select|SelectMenu|PeoplePicker|Command inline|Command dialog|AgentPanel 歷史)$/.test(t.name)),
+  { name: 'Combobox', id: 'design-system-components-combobox-展示--searchable', trigger: COMBOBOX_TRIGGER, ...CMDK },
+]
+for (const t of TYPING_TARGETS) {
+  if (!(await openGrabTarget(t))) continue
+  if (SELFTEST) await page.addStyleTag({ content: OLD_BEHAVIOUR_TYPING_CSS })
+  const n = t.name
+  // 搜尋列 = 開啟後拿到焦點的文字輸入框(Select / SelectMenu 的搜尋列在觸發器裡、PeoplePicker 的輸入框就是觸發器、cmdk 的在浮層裡)
+  await page.evaluate(() => { const a = document.activeElement; const isText = a instanceof HTMLTextAreaElement || (a instanceof HTMLInputElement && !/^(checkbox|radio|range|color|file|image|button|submit|reset|hidden)$/.test(a.type)); if (isText) a.setAttribute('data-f-input', '') })
+  const inputBox = await centerOf(page, '[data-f-input], input[cmdk-input], input[role="combobox"]')
+  if (!inputBox) { ck(`${n} F 前提:找得到搜尋列`, false, 'activeElement 不是文字輸入框,也沒有 input[cmdk-input] / input[role=combobox]'); continue }
+  // 滑鼠點進搜尋列(指標來歷),打一個保得住至少一列的字(取第一個可用列的第一個字),再 Backspace
+  const firstChar = await page.evaluate(({ items }) => { const el = [...document.querySelectorAll(items)].find((e) => !e.matches('[aria-disabled="true"],[data-disabled="true"],[data-disabled=""]')); return (el?.textContent || '').trim().charAt(0) }, t)
+  // 搜尋列若就是觸發器(Select / SelectMenu 的搜尋列在觸發器裡、PeoplePicker 的輸入框就是觸發器),開啟時已聚焦,再點一次會把浮層收起 → 已聚焦就不再點
+  const alreadyFocused = await page.evaluate(() => !!document.activeElement?.matches('[data-f-input]'))
+  if (!alreadyFocused) { await page.mouse.click(inputBox.x, inputBox.y); await page.waitForTimeout(300) }
+  if (firstChar) await page.keyboard.type(firstChar)
+  await page.waitForTimeout(700)
+  await page.keyboard.press('Backspace'); await page.waitForTimeout(700)
+  const f = await cursorVsOthers(page, t)
+  if (f.error) { ck(`${n} F 前提:打字 + Backspace 後找得到自動落點的反白`, false, f.error); continue }
+  ck(`${n} F 滑鼠點進搜尋列、打字、Backspace → 自動落點的反白**無框**(打字不是鍵盤搬游標)`, !f.ring, `「${f.text}」ring=${f.ringDesc} bg=${f.bg}`, 'new')
+  await page.keyboard.press('ArrowDown'); await page.waitForTimeout(700)
+  const g = await cursorVsOthers(page, t)
+  ck(`${n} F 接著 ↓ → 反白**有框**(對照:儀器看得到框)`, !g.error && g.ring, g.error || `「${g.text}」ring=${g.ringDesc}`)
+}
+// F 結束把滑鼠停到角落:Playwright 的指標位置跨頁保留,留在原處會讓下一段(E)的「hover 前」量到已經 hover 的底色
+await page.mouse.move(2, 2)
 
 // ── (E) 其他常駐清單:真焦點 + hover 獨立(Sidebar / Tabs / DataTable / TimePicker 欄)────────
 const drawnAt = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); if (!e) return null; const c = getComputedStyle(e); return c.outlineStyle !== 'none' && parseFloat(c.outlineWidth) > 0 }, sel)

@@ -18,7 +18,14 @@ import * as React from "react"
  *    這類選單裡反白只有一個主人:滑鼠移過項目就把反白搶走(cmdk `onPointerMove → select()` /
  *    Radix `onPointerMove → item.focus()`),鍵盤方向鍵再搶回來;兩種畫法(滑鼠 → 底色、鍵盤 → 框)永遠不同時出現。
  *    所以這裡**滑鼠移過項目要算**(那就是搶),但**滑鼠停著不算**(只有移動才會觸發 pointermove)——
- *    跟訊號一剛好相反,不能共用。項目在 `onPointerMoveCapture` 呼叫 `markPointerGrab`,keydown 統一在 document 記成鍵盤。
+ *    跟訊號一剛好相反,不能共用。項目在 `onPointerMoveCapture` 呼叫 `markPointerGrab`,keydown 統一在 document 記成鍵盤 ——
+ *    **但在文字輸入框裡打字不算搬游標**(2026-09-10 user:「滑鼠點擊輸入框然後輸入 a,再點 backspace,選單上會出現鍵盤焦點的藍色邊框」):
+ *    字元 / Backspace / Delete / 空白 是在編輯文字,反白跳到第一個符合項是函式庫的自動落點(cmdk `search` 一變就
+ *    `schedule(1, selectFirstItem)`),沒有人「搬」它;只有方向鍵 / Home / End / PageUp / PageDown / Tab / Esc 才算鍵盤搬游標。
+ *    世界級同判:React Aria `useFocusVisible` 對文字輸入框只認 Tab / Escape 為會顯示焦點的鍵(`FOCUS_VISIBLE_INPUT_KEYS`);
+ *    MUI Autocomplete 只在 `reason === 'keyboard'`(方向鍵)才加 `focusVisible`,打字後的 autoHighlight 不加;
+ *    Ant rc-select 在 searchValue 一變就 `setActive(第一項)`、樣式是 `optionActiveBg` 底色、`outline: none`。
+ *    所以打字後的自動落點用「開啟那一下」的來歷畫:滑鼠點進輸入框 → 底色;Tab 進來 → 框。
  *    2026-09-09 user:「滑鼠會搶反白的元件,搶完之後,那鍵盤是否可以再搶回?且搶回去之後原本滑鼠的 hover 樣式即會消失
  *    直到滑鼠又搶回來才會再出現,且滑鼠的搶應該是包括鍵盤焦點一起搶吧?」—— 三題都是「對」,一手來源見 focus-canonical Sources。
  *
@@ -45,6 +52,16 @@ const listeners = new Set<() => void>()
 const moverListeners = new Set<() => void>()
 /** 純修飾鍵不搬反白;其餘任何鍵(含 cmdk 的 ⌘↓ / Ctrl+N、Radix 的 typeahead)都可能搬,所以不沿用 WICG 的修飾鍵排除 */
 const MODIFIER_KEYS = new Set(["Shift", "Meta", "Alt", "Control", "CapsLock", "Fn", "OS"])
+/** 在文字輸入框裡仍算「搬游標」的鍵;其餘(字元、Backspace、Delete、空白、Enter…)是在編輯文字,不改反白來歷。 */
+const CURSOR_KEYS_IN_TEXT_ENTRY = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown", "Tab", "Escape"])
+/** 沒有文字游標的 input type(同 React Aria `nonTextInputTypes`)。 */
+const NON_TEXT_INPUT_TYPES = new Set(["checkbox", "radio", "range", "color", "file", "image", "button", "submit", "reset", "hidden"])
+function isTextEntryTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false
+  if (target instanceof HTMLTextAreaElement) return true
+  if (target instanceof HTMLInputElement) return !NON_TEXT_INPUT_TYPES.has(target.type)
+  return (target as HTMLElement).isContentEditable === true
+}
 // Chromium 在內容捲動後會補發一個**座標不變**的 pointermove(讓 :hover 重新計算),那不是使用者在搶;
 // 只有座標真的變了才算滑鼠在動。
 let lastPointer = { x: Number.NaN, y: Number.NaN }
@@ -62,7 +79,9 @@ function setMover(next: InputModality) {
 }
 function onKeyDown(e: KeyboardEvent) {
   observedAnyInput = true
-  if (!MODIFIER_KEYS.has(e.key)) setMover("keyboard")
+  // 反白來歷:修飾鍵不算;在文字輸入框裡打字(非游標鍵)不算(見檔頭 2.)
+  const typing = isTextEntryTarget(e.target) && !CURSOR_KEYS_IN_TEXT_ENTRY.has(e.key)
+  if (!MODIFIER_KEYS.has(e.key) && !typing) setMover("keyboard")
   if (e.metaKey || e.altKey || e.ctrlKey) return
   set("keyboard")
 }

@@ -145,6 +145,16 @@ alt/option, or control key; then the modality is keyboard. Otherwise, the modali
 
 **會搶反白的浮層選單用另一個訊號:反白來歷(`useCursorMover` + `markPointerGrab`,同一檔)。** 這裡「滑鼠移過項目」本身就是搶
 (cmdk `onPointerMove → select()` / Radix `onPointerMove → item.focus()`),必須算;停著不動沒有 pointermove,自然不算。
+**在文字輸入框裡打字也不算搬(2026-09-10 user:「滑鼠點擊輸入框然後輸入a,在點擊鍵盤上的backspace按鈕,之後選單上會出現鍵盤焦點的藍色邊框?這是合理的嗎?」—— 不合理)**:
+字元 / Backspace / Delete / 空白 是在編輯文字,反白跳到第一個符合項是函式庫的自動落點(cmdk `search` 一變就 `schedule(1, selectFirstItem)`,
+[cmdk/src/index.tsx](https://github.com/pacocoursey/cmdk/blob/main/cmdk/src/index.tsx)),沒有人搬它,用開啟那一下的來歷畫(滑鼠點進輸入框 → 底色;Tab 進來 → 框);
+只有方向鍵 / Home / End / PageUp / PageDown / Tab / Esc 才算鍵盤搬游標。一手來源:React Aria `useFocusVisible` 對文字輸入框只認
+`FOCUS_VISIBLE_INPUT_KEYS = { Tab, Escape }`(「Only Tab or Esc keys will make focus visible on text input elements」,
+[react-aria dist/private/interactions/useFocusVisible](https://unpkg.com/react-aria/dist/private/interactions/useFocusVisible.mjs));
+MUI Autocomplete 只在 `reason === 'keyboard'` 才加 `Mui-focusVisible`,打字後的 `autoHighlight` 是 programmatic、不加
+([useAutocomplete.js](https://unpkg.com/@mui/material/useAutocomplete/useAutocomplete.js));Ant rc-select 在 `searchValue` 一變就
+`setActive(第一項)`([rc-select OptionList](https://unpkg.com/rc-select/es/OptionList.js)),樣式是 `optionActiveBg` 底色、`outline: none`
+([antd select dropdown style](https://unpkg.com/antd/es/select/style/dropdown.js))。閘:`virtual-cursor-modality-invariant.mjs` F 段。
 兩個訊號不能共用:拿 WICG 模態畫反白,滑鼠搶走反白後模態仍是鍵盤,被搶到的列會畫框而不是底色(2026-09-09 下午閘 D3 抓到);
 拿反白來歷畫 TreeView,滑鼠一晃鍵盤框就消失。反白因此只有兩種長相:
 **滑鼠搬的**反白 = hover → 底色、無框;**鍵盤搬的**反白 = 游標 → 框、無底色,而且滑鼠停留列的底色一起消失(項目上沒有 `hover:` 樣式)。
@@ -193,7 +203,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 只准兩種幾何 | 全域外描邊 / `focus-ring-inset`;禁 `ring-offset-*`、禁 `focus-visible:ring-*`、禁手寫三件組 | `scripts/focus-geometry-invariant.mjs` R1–R5 |
 | 什麼時候畫(真焦點) | 瀏覽器 `:focus-visible` | 元件不判斷模態 |
 | 什麼時候畫(常駐清單的虛擬游標,TreeView) | `useInputModality() === 'keyboard'` 才掛 `focus-ring-inset`(WICG 模態:keydown / pointerdown,滑鼠移動不算) | 上一節;`scripts/virtual-cursor-modality-invariant.mjs` |
-| 什麼時候畫(會搶反白的浮層選單,cmdk / Radix) | `useCursorMover() === 'keyboard'` 才掛 `focus-ring-inset`,否則反白上 `bg-neutral-hover`(反白來歷:鍵盤鍵 / 滑鼠移過項目 `markPointerGrab`;停著不算) | 上一節;同一支閘 D 段 |
+| 什麼時候畫(會搶反白的浮層選單,cmdk / Radix) | `useCursorMover() === 'keyboard'` 才掛 `focus-ring-inset`,否則反白上 `bg-neutral-hover`(反白來歷:方向鍵 / Home / End / PageUp / PageDown / Tab / Esc,或非文字輸入框上的任何鍵 / 滑鼠移過項目 `markPointerGrab`;停著不算、在文字輸入框裡打字不算) | 上一節;同一支閘 D 段 |
 | **選中 × 游標** | 框疊在 `bg-neutral-selected` 上 | 規則二疊加表 |
 | **hover × 游標(常駐清單)** | `bg-neutral-hover` + 框都在 | 規則二疊加表 |
 | **hover × 游標(浮層選單)** | 不存在:反白只有一個主人,底色與框擇一;項目上不寫任何 `hover:` | 規則二疊加表 |

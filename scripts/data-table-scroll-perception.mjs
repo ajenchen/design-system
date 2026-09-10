@@ -34,13 +34,22 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
     try {
       summary = JSON.parse(fs.readFileSync(path.join(out, "summary.json"), "utf8"));
     } catch {}
-    if (summary?.stalled && attempt < 3) {
+    // 擷取送幀缺口(2026-09-10,6fa90a71 讀回):bursts dpr1 在 runner 上零殼零白零延遲,唯一紅是 captureCoverage
+    // 「active PNG gap exceeds 100 ms」(單一缺口 128ms,其餘 155 幀連續)—— CDP screencast 在共享 runner 上偶發漏送幾幀,
+    // 那一跑對表格什麼都證明不了,與整窗跳轉同一類「儀器這次量不到」,同樣重跑;三次都缺口才紅並指名原因。
+    const captureGap = summary && summary.captureCoverageValid === false &&
+      Array.isArray(summary.captureCoverage?.reasons) && summary.captureCoverage.reasons.length > 0 &&
+      summary.captureCoverage.reasons.every((r) => /active PNG gap|fewer than 10 active PNGs|PNGs cover less than 90% of the input interval/.test(r));
+    if ((summary?.stalled || captureGap) && attempt < 3) {
       console.log(
-        `runner 停頓造成整窗跳轉(單一 scroll 事件 ${summary.maxScrollEventJumpPx}px ≥ 視窗 ${summary.setup?.rect?.height}px),第 ${attempt} 次作廢,重跑`
+        summary.stalled
+          ? `runner 停頓造成整窗跳轉(單一 scroll 事件 ${summary.maxScrollEventJumpPx}px ≥ 視窗 ${summary.setup?.rect?.height}px),第 ${attempt} 次作廢,重跑`
+          : `runner 送幀缺口(${summary.captureCoverage.reasons.join("; ")};最長 ${Math.round(summary.captureCoverage.maxActiveGapMs ?? 0)}ms),第 ${attempt} 次作廢,重跑`
       );
       continue;
     }
     if (summary?.stalled) console.log("✗ 三次都碰到整窗跳轉的停頓:這台機器目前量不到一般速度(不是表格)");
+    else if (captureGap) console.log("✗ 三次都碰到擷取送幀缺口:這台機器目前擷取不完整(不是表格)");
     break;
   }
   process.exit(code);

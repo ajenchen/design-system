@@ -64,7 +64,7 @@ const ICON_SIZE = ROW_ICON_SIZE
 const radixItemClass = [
   // @focus-suppress A — Radix 用 roving focus 把 DOM 焦點放在項目上,但反白(data-highlighted)滑鼠 hover 也會觸發程式化 focus,
   //   瀏覽器對程式化 focus 的 :focus-visible 跨瀏覽器不一致(見檔頭 docblock),所以抑制瀏覽器那圈、改由本檔依
-  //   useInputModality 判模態;承擔者:radixCursorClass 畫在 data-[highlighted] 項上的 focus-ring-inset(鍵盤模態)
+  //   useCursorMover 判反白來歷(2026-09-09 起;不是 useInputModality —— 那是常駐清單的訊號);承擔者:radixCursorClass 畫在 data-[highlighted] 項上的 focus-ring-inset(鍵盤搬的反白)
   'relative cursor-pointer select-none outline-none',
   'transition-colors duration-150',
   'data-[disabled]:pointer-events-none data-[disabled]:text-fg-disabled data-[disabled]:cursor-default',

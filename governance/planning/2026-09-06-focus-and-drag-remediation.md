@@ -2949,3 +2949,16 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 
 - 用途改為對 AD66–AD69 的獨立第二軌(唯讀、不看主 session 結論):四題根因與主 session 的四路平行調查逐一相符 —— 並存守衛的短命屬性(它另提 Radix menu content 的 `aria-labelledby` 反向關係,已採納進 `createPersistentGuard` 第二道認法)、docs 殭屍 portal 與 0×0 錨點(它未重現持續版,建議 `openOverlayDocsStory` 隔離,已採納為第二道防線)、把手 clip-path 殘片與 scroll latch(它提「捲動即藏、真移動才顯、整顆放得進才顯示」,與主 session 同一方案)、`showLine=false` 連狀態色一起關掉 + spec 六處漂移(全部已修)。報告:`scratchpad/r21-four-issues.out.md`。
 - R20 的「把手殘影卡頓」候選 patch(H4 hover 凍結 / 把手 transform)因 AD69 的閂鎖把「捲動中同步把手位置」整段拿掉而失去對象,不再 rebase;若 9/17 後 user 仍感卡頓,以新 build 重量再議。
+
+### AD70 user 2026-09-10:遠端搜尋名錄 —— 滑鼠點輸入框、輸入 a、Backspace 後選單出現鍵盤焦點框 —— 根因:反白來歷把「文字輸入框裡打字」也記成鍵盤搬游標(2026-09-10)
+
+**user 原話**:「為何遠端搜尋名錄的範例中,我滑鼠點擊輸入框然後輸入a,在點擊鍵盤上的backspace按鈕,之後選單上會出現鍵盤焦點的藍色邊框?這是合理的嗎?不合理的話,root cause是什麼以及是否有其他地方有類似問題?」
+
+- **判定:不合理。** 重現(`probe-typing-ring.mjs`,PeoplePicker / Combobox / Select 三個遠端搜尋 story 相同):滑鼠點進輸入框後反白是底色(指標來歷,bg 0.02);打 a 後(Combobox 立刻、PeoplePicker 等結果回來後)反白變 `outline 2px --ring / offset -2px` = 鍵盤焦點框;Backspace 後建議清單回來、框仍在;↓ 對照有框。
+- **根因**:`hooks/use-input-modality.ts` 的 document keydown 對任何非修飾鍵都 `setMover('keyboard')`;打字 / Backspace 是在編輯文字,反白跳到第一個符合項是 cmdk 的自動落點(`search` 一變就 `schedule(1, selectFirstItem)`,cmdk/src/index.tsx),沒有人「搬」它。focus-canonical 規則二只寫「鍵盤鍵」,沒區分編輯鍵與游標鍵 = 規範遺漏 + 實作漂移。
+- **世界級(四家一手)**:React Aria `useFocusVisible` 對文字輸入框只認 `FOCUS_VISIBLE_INPUT_KEYS = { Tab, Escape }`(「Only Tab or Esc keys will make focus visible on text input elements」);MUI Autocomplete 只在 `reason === 'keyboard'` 才加 `Mui-focusVisible`,打字後的 `autoHighlight` 是 programmatic;Ant rc-select 在 `searchValue` 一變就 `setActive(第一項)`,樣式 `optionActiveBg` 底色、`outline: none`;cmdk 只換 `data-selected`。共識:打字後的自動落點畫成 hover 式底色,鍵盤焦點框只給方向鍵導覽。
+- **修(一處)**:文字輸入框(input 非 checkbox/radio/range/color/file/image/button/submit/reset/hidden、textarea、contenteditable)上的 keydown 只有方向鍵 / Home / End / PageUp / PageDown / Tab / Esc 才改反白來歷,其他鍵不動 → 自動落點用開啟那一下的來歷畫(滑鼠點進 → 底色;Tab 進來 → 框)。WICG 模態(常駐清單用)不變。
+- **類似問題範圍**:Select / SelectMenu / Combobox / PeoplePicker / Command inline + dialog / AgentPanel 歷史清單全部經同一個 tracker,同一修法一次修好;DropdownMenu 的 typeahead 目標是選單容器不是文字輸入框,仍算鍵盤(正確);TreeView 等常駐清單走 `useInputModality`,不受影響。
+- **SSOT**:focus-canonical.md「反白來歷」補「在文字輸入框裡打字不算搬」+ 四家來源;規則二表格同步;`.claude/references/focus-canonical.md` 由 governance:generate 重生(check PASS)。
+- **閘**:`virtual-cursor-modality-invariant.mjs` F 段(七個有搜尋列的目標:滑鼠點進搜尋列、打一個字、Backspace → 自動落點的反白無框;接著 ↓ → 有框當對照;`--selftest` 把游標列釘成永遠有框 → F 必紅)。第一版 F 找不到 Select / SelectMenu / PeoplePicker 的搜尋列(它們的搜尋列在觸發器裡、不帶 `cmdk-input`)、Combobox「四模式」沒有文字輸入 → 改用「開啟後拿到焦點的文字輸入框」+ Combobox「搜尋」story。
+- **順手**:6fa90a71 CI 唯一紅 = perception bursts dpr1 的 128ms 送幀缺口(零殼零白零延遲),父程序對「擷取送幀缺口」比照整窗跳轉重跑最多 3 次。
