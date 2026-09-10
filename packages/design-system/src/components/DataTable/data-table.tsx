@@ -1820,8 +1820,14 @@ function DataTableInner<TData>(
     // **隔離實證(6,000px/s,其餘條件全同、只差這一項,4 跑中位數 / 最大)**:空白幀 26 / 26 → **2.5 / 4**、
     // 空白面積 51 / 58 → **5 / 9**(最長單次空白 27 / 51 → 35 / 67ms:白的次數與面積都大減,代價是偶爾一次略長)。
     // 這是本輪捲動觀感改善的主力。
+    //
+    // **上限必須跟著機器縮(2026-09-10 CI 打臉後補)**:前掛長度 = 速度 × 間隔,而慢機器的間隔本來就長 ——
+    // 於是「愈慢的機器掛愈多列」,每次 commit 反而更久,合成的手勢被擠成整窗跳轉(CI 的 dpr2 job 8 跑有 6 跑判 stalled)。
+    // 前掛的列在這條路徑上是**真列**(視窗外的新列若先出殼,進窗那一次 render 才升級 = 看得到骨架,dpr1 感知閘實測 41 個殼幀,已撤回),
+    // 所以用量到的每列成本換算:多掛的列最多只准吃掉半幀。快機器每列 1–2ms → 允許 6–12 列;慢機器每列 8ms+ → 只允許 1 列。
+    const aheadCap = Math.max(1, Math.min(48, Math.floor((SHELL_FRAME_BUDGET_MS / 2) / Math.max(0.25, S.costPerRow))))
     S.aheadRows = scrolling && S.lastCommitAt > 0
-      ? Math.max(0, Math.min(48, Math.ceil((Math.abs(offsetNow - (renderOffsetPrev ?? offsetNow)) / Math.max(1, now - prevRenderStart)) * Math.max(S.commitCost, now - prevRenderStart) / Math.max(1, resolvedEstimate))))
+      ? Math.max(0, Math.min(aheadCap, Math.ceil((Math.abs(offsetNow - (renderOffsetPrev ?? offsetNow)) / Math.max(1, now - prevRenderStart)) * Math.max(S.commitCost, now - prevRenderStart) / Math.max(1, resolvedEstimate))))
       : 0
     S.promoted = 0; S.newFull = 0; S.hasShell = false; S.decided = new Map(); S.fullNow = new Set(); S.shellsNow = new Set()
   }

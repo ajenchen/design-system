@@ -39,20 +39,26 @@ let scrollEndTimer: ReturnType<typeof setTimeout> | undefined
 let attached = false
 
 /** 多久沒有新的 scroll 事件才算「捲完了」。TanStack Virtual 的 `isScrollingResetDelay` 預設是 150ms;
- *  這裡取 100ms —— 比它早一點恢復量測,又足以跨過慣性捲動裡的事件空隙。 */
+ *  這裡取 100ms —— 比它早一點恢復量測,又足以跨過慣性捲動裡的事件空隙。
+ *  (2026-09-10 試過調到 300ms 想讓追平避開一連串短捲之間的停頓,實測沒有幫助、反而更常量到整窗跳轉,已撤回。) */
 const SCROLL_SETTLE_MS = 100
 
-/** 一幀最多花多少時間排空佇列;超過就把剩下的留到下一幀。
+/** 一次最多花多少時間排空佇列;超過就把剩下的留到下一次。
  *
- *  **為什麼需要**(2026-09-10 4× 節流 A/B 抓到):只延後不切片,等於把整段捲動累積的量測
+ *  **為什麼需要切片**(2026-09-10 4× 節流 A/B 抓到):只延後不切片,等於把整段捲動累積的量測
  *  全部擠進「放手那一刻」的單一任務 —— 實測超過 50ms 的主執行緒任務反而從 24 個變成 32 個。
- *  切片之後,追平的成本攤在停下來後的數幀裡,使用者感覺不到,也不會擋住第一次互動。
+ *  切片之後,追平的成本攤在停下來後的數次裡,使用者感覺不到,也不會擋住第一次互動。
  *
  *  **為什麼是 8 不是 AG Grid 的 60**:AG Grid 的 `animationFrameService.ts` 用
  *  `executeFrame.bind(this, 60)`,它敢用 60 是因為它的迴圈每做完一個小任務就重新檢查捲動位置、
  *  隨時能轉向(`scrollGridIfNeeded()` 在 while 迴圈第一行);我們這裡跑的是別人的量測函式,
- *  一旦開始就不能中斷,所以取「半幀」當上限,寧可多跨幾幀。 */
+ *  一旦開始就不能中斷,所以取「半幀」當上限,寧可多跨幾次。
+ *
+ *  走閒置回呼時改用瀏覽器給的 `timeRemaining()`,只在它比這個上限少時才收緊(idle 期間本來就沒人跟我們搶)。 */
 const FRAME_BUDGET_MS = 8
+
+/** 追平量測要多晚才算太晚:超過這個時間即使機器一直忙也得做,否則 tooltip / 截斷判定會一直不準。 */
+const IDLE_TIMEOUT_MS = 500
 
 function onAnyScroll(): void {
   scrolling = true
@@ -71,26 +77,41 @@ function attach(): void {
   document.addEventListener('scroll', onAnyScroll, { capture: true, passive: true })
 }
 
+/**
+ * 排一次排空。
+ *
+ * **優先用 `requestIdleCallback`**(2026-09-10;dpr2 慢機器的 CI 紅燈根因):追平量測是全場最低優先的工作 ——
+ * 沒有人在看它,晚幾百毫秒也不影響任何畫面。用 rAF 排會讓它跟「這一幀要畫什麼」搶同一段時間,
+ * 在光柵吃緊的機器上實測把截圖串流的送幀間隔從 106ms 推到 145ms(dpr2 + 4× 節流)。
+ * 閒置回呼則是排在瀏覽器確定這一幀沒事做之後,不跟畫面搶;`timeout` 保證忙碌時也不會餓死。
+ * 沒有閒置回呼的環境(Safari 舊版 / 某些測試 runner)退回 rAF,再沒有就同步跑完 —— 不靜默丟掉工作。
+ */
 function schedule(): void {
   if (frame) return
+  if (typeof requestIdleCallback !== 'undefined') {
+    frame = requestIdleCallback(flush, { timeout: IDLE_TIMEOUT_MS })
+    return
+  }
   if (typeof requestAnimationFrame === 'undefined') {
     // 沒有 rAF 的環境(SSR / 某些測試 runner):同步跑完,行為與未排程前一致,不靜默丟掉工作。
     flush()
     return
   }
-  frame = requestAnimationFrame(flush)
+  frame = requestAnimationFrame(() => flush())
 }
 
-function flush(): void {
+function flush(deadline?: IdleDeadline): void {
   frame = 0
   // 捲動中就整批留著;`onAnyScroll` 的收尾計時器會在停下來時重排。
   if (scrolling) return
   const started = typeof performance !== 'undefined' ? performance.now() : 0
-  // 用迭代器逐一取出:做一個刪一個,超出預算時剩下的還在佇列裡,下一幀接著做。
+  // 閒置回呼給的剩餘時間比固定上限更貼近現況,取兩者較小的那個。
+  const budget = deadline ? Math.min(FRAME_BUDGET_MS, Math.max(1, deadline.timeRemaining())) : FRAME_BUDGET_MS
+  // 用迭代器逐一取出:做一個刪一個,超出預算時剩下的還在佇列裡,下一次接著做。
   for (const [key, task] of [...queue.entries()]) {
     queue.delete(key)
     task()
-    if (typeof performance !== 'undefined' && performance.now() - started >= FRAME_BUDGET_MS) break
+    if (typeof performance !== 'undefined' && performance.now() - started >= budget) break
   }
   if (queue.size) schedule()
 }
