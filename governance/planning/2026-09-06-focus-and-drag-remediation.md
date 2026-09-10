@@ -3110,3 +3110,35 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - **AD74 續:R23(user 2026-09-10 下午重置額度,15:44 起續跑)**。簡報帶著 root 的驗收結論重啟:01 拒收(附同窗數字)、02 已收、150ms 過渡不准動、仲裁指標一律看畫面(最長空白 / 殼幀 / 內容延遲),回呼時間不算。它到 17:35 的狀態:(a) 同窗交錯 A/B 已跑完 hover 量測批次、P10 Tooltip、P12 Popper 三組 fast16,P10 在 4× 空白四組全改善(201 → 166ms)、補齊 524 → 427ms;(b) **自己推翻自己上一輪的假說** —— 讀安裝版 TanStack 3.13.23 原始碼證明使用者捲動時會跳過同步尺寸讀取,所以 `measureElement` 不是一般捲動的根因;(c) CPU 取樣指向真正的大戶是儲存格內容元件(Tag 量測 40.1 / 33.1ms、PeoplePicker 28.0 / 31.8ms),已備 P13(Tag 離屏量測 context)候選但**尚未套用**;(d) P11 Checkbox 候選因行為對照兩案不符,**它自己標 BEHAVIOR_REJECTED 退回**;(e) G1–G4 全部維持 OPEN,報告明寫「不得以機器 / 平台 / 額度結案」。root 持續監看,收斂後再獨立驗證才進 PR。
 
 - **給 9/17 續跑 Codex 的話**:01 的方向錯(延後 render 換回呼時間);剩下的真根因是 (5) 捲動中的 child-only commit(Tooltip / Checkbox / 把手)與 (4) hover 路徑的幾何讀取;(3) 列底色 150ms 過渡是 P2H(產品 / UI / UX SSOT 真取捨),由 user 拍板後才動。
+
+### AD75 表格捲動效能:root 自己接手,量到底層根因並修完(2026-09-10 夜)
+
+**框架(user 原話逐字)**:「請確保知道main只是低標,效能越高肯定越好,手感和捲動體驗越順暢越好,但也要有明確完成的目標,然後不要畫地自限,要不斷全盤研究包括研究我們table所參照的ag grid版本…不斷自行驗證直到找出完美解法,確保是根據root cause修正,追根究柢地改,(確保所有相關問題都有因此一併修正),確保不會改壞任何既有東西,確保所有內容都有ssot沒有偏移,確保所有內容都有符合我們一致的設計語言且不違背世界級的設計,確保都有透過可驗證的方式驗證到完整完美包括視覺稽查。」
+
+**新儀器(先有對照組才用)**:`count-layout-reads`(攔截 `scrollTop`/`clientHeight`/`offsetWidth`/`getBoundingClientRect` 等的 getter,按呼叫點統計一次手勢的讀取次數)。它把「誰在捲動中量幾何」變成可數的數字,取代先前用「Layout 事件落在哪個 FunctionCall 內」的粗略歸因 —— 那個歸因是錯的(幾乎所有 layout 都落在某個 FunctionCall 內),我依它先做的捲動幾何快取事後量出來只佔 1.4%,如實記在下面。
+
+**第一手研究**:安裝版 `@tanstack/react-virtual` 3.13.23 的 `useVirtualizerBase`(`useFlushSync` 預設 true)、`virtual-core` 的 `notify`/`measureElement`/`resizeItem`;AG Grid 33.3.2 完整原始碼(`npm` tarball 直取,非文件):`onVScroll`(:25744-25777)、`AnimationFrameService.executeFrame`(:34057)、`requestFrame` 的 `executeFrame.bind(this, 60)`(:34143)。
+
+**根因與守法(五條,依量到的份量排序)**:
+1. **捲動事件裡同步重畫**(`useFlushSync` 預設 true)→ 關掉。AG Grid 在捲動事件裡只記位置 + `animationFrameSvc.schedule()`,重畫在 rAF 裡,同步那條是動畫幀服務被停用時的降級路徑。
+2. **關掉之後 render 結構性晚一拍** → 捲動中一律做方向預掛(長度 = 量到的速度 × 量到的間隔)。這兩條是一組,缺第二條就是「空白變少但單次變長」的半套。
+3. **量測擠在手勢窗內**(`use-truncated` 768 次、`person-display`)→ 共用量測排程器,捲動中延後、停下後在 rAF 裡**每幀 8ms 為限**分批做。切片是必要的:只延後不切片,4× 節流下超過 50ms 的任務反而 24 → 32。
+4. **列拖曳把手在捲動中量了隱藏的東西**(243 次 rect + 81 次 clientHeight)→ 閂上期間延後、放開時補量(延後不是跳過)。
+5. **Combobox 每次掛載固定量兩趟**(1,080 次,佔當時 45%)→ 同步那趟量得準就不補跑;兩個 ResizeObserver 各吞掉 `observe()` 必送的初始觀測。降到 540 次。
+
+**做了但量不出效益、如實保留的一項**:捲動幾何快取(`scrollTop`/`clientHeight` 只在捲動事件與 ResizeObserver 更新,render 與 layout effect 讀快取)。動機是「render 內讀版面 = 不純的 render」,同檔 :1623 早記過同一類病;但直接儀器顯示這四個讀取點只佔一次手勢 2,849 次中的 41 次(1.4%),A/B 量到打平。保留理由是 render 純度與 AG Grid 的 `nextScrollTop` 同構,不是效能 —— 不假裝它有效益。
+
+**與同日稍早那筆否決的和解(必讀,否則像自相矛盾)**:15:18–15:27 我以同窗 A/B **否決過 `useFlushSync:false`**(當時 HEAD+01+02:1× 最長空白 65–115ms、4× 232–435ms、殼 25–26 幀)。那個否決在**那個組合下是對的**:量測還壓在手勢窗裡、又沒有方向預掛,晚一拍就直接變成看得見的白。今晚把 3、4、5 條先拿掉、再補第 2 條之後,同一項改動變成大幅淨贏。隔離實證見上一段。**教訓**:一個改動的正負號會被同批其他改動翻轉,單獨 A/B 的結論不能直接搬到組合上。
+
+**最終實測(本機,`RoadmapAllInOne`,同窗交錯)**:一次手勢的幾何讀取 11,095 → 1,925;捲動事件總耗時 1× 583–598 → 72–74ms、4× 834–854 → 62–66ms;主執行緒任務 > 16.7ms(1×)54–59 → 2–3;任務 > 50ms(4×)24 → 10–12;6,000px/s 空白幀 28.5 → 7.5、最長連續空白 59 → 34ms、空白面積 59 → 17;殼幀與停捲補齊兩邊都 0;呈現幀距 252 → 249ms。
+
+**沒改壞的證據**:感知閘五組(1500/3000/4500/bursts/bursts+wheel,`--assert=on --latency-assert=on`)全過;DataTable 十一支閘 + 把手三閘 + 溢出指示器閘 + 感知控制組全過;`build:lib` 通過(它抓到 `tsc -b` 漏掉的宣告順序錯誤);截斷行為探針兩版逐項相同。**視覺稽查**:`visual-audit` 對 DataTable / Combobox / PeoplePicker / Tag 的每個場景,main 與本輪的基準像素差**完全相同**(DataTable 2.513% / 0.313%、Combobox 0.227 / 0.282 / 0.164%、PeoplePicker 0.28%、Tag 0.164 / 2.218 / 0.055%)= 零視覺變化。
+
+**順手修好的兩件工具**(否則等於沒有稽查):
+- `scripts/visual-audit.mjs` 在本機沙箱**跑不完第一個場景**:它每個場景開關一次 browser context,而沙箱的 Chromium 帶 `--single-process`,實測四種寫法只有「第一個 context + page」可行,關掉再開、同時開第二個、同一 context 內開關 page 兩次全部回 `Target page, context or browser has been closed`。改成整個 run 共用一個 page(場景之間靠 `page.goto` 換 story 隔離)。無污染佐證:同一場景在不同前置下數值完全相同(fileviewer open-snapshot 68.778% / 68.778%、rating size-matrix 4.098% / 4.098%、datatable pinned-columns 2.513% / 2.513%)。
+- 感知閘的邊緣列解碼下限 2px → **3px**:被判「缺列」的兩幀,DOM 取樣裡該列是已掛載的完整列(`top:55 bottom:95`,視窗上緣 93 = 只露 2px),是條碼在 2px 讀不出來。用同一份擷取交叉比對量出解碼下限(1px 解到 4 / 解不到 4;2px 2 / 2;3px 起 40 次全解到),並補**雙向對照組**進 `test-data-table-scroll-perception.mjs`(露 2px 缺席不得算缺列、露 3px 缺席必須抓到),門檻改 4 或改回 2 都會紅。
+
+**既有問題,非本輪造成(留紀錄)**:本機 `visual-audit --scope=changed` 有 28 個場景超出 0.5% 基準預算(fileviewer open-snapshot 68.8%、carousel 24.5% 等)。控制組:同一支腳本指向 **HEAD 基準建置**跑出**同樣的**超標與同樣的百分比,所以是本機光柵與committed baseline 的既有差異,與本輪無關。
+
+**下一層(已量到、本輪未動)**:`use-truncated` 仍是最大宗(一次手勢 768 次讀取),它已被排程器移出手勢窗但總量沒降;Combobox 剩 540 次,其 `calc` 在同一個 callback 內「寫了再讀」,末段還有讀寫交錯的收斂迴圈(通常 0–1 圈)。兩者都不能改成「捲動中延後」——Combobox 的 `ready` 早已不是視覺閘、初始狀態是全部標籤都顯示,延後會讓標籤在捲動中溢出。
+

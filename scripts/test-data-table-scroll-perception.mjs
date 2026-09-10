@@ -52,6 +52,19 @@ const missing = analyzeContent(
 );
 assert.equal(missing.pixelLatencyMs.max, 80);
 assert.equal(missing.pixelMissingFrames, 1);
+// 邊緣列的解碼下限:露出 < 3px 的列不列入缺列判定(量出來的解碼下限,見 lib 內註解),
+// 但只多讓那 2px —— 露出 3px 就必須抓得到。兩個方向各一個對照組,缺一就是把閘弄瞎。
+{
+  // 視窗上緣切到第 1 列只剩 2px(rect.y=0、捲到 y=78 → 第 1 列露 78..80):沒解到不算缺列
+  const sliver = { rowHeight: 40, rect: { y: 0, height: 80, width: 500 } };
+  const at78 = (index) => ({ index, shell: false, top: index * 40 - 78, bottom: index * 40 - 78 + 39, ink: 12 });
+  const thin = analyzeContent([{ ts: 0, rows: [at78(2), at78(3)] }, { ts: 0.08, rows: [at78(2), at78(3)] }], sliver, 1000);
+  assert.equal(thin.pixelMissingFrames, 0, "露出 2px 的邊緣列解不到條碼,不得算成缺列");
+  // 同一組捲到 y=77 → 第 1 列露 3px:這時解不到就是真的沒畫,必須算缺列
+  const at77 = (index) => ({ index, shell: false, top: index * 40 - 77, bottom: index * 40 - 77 + 39, ink: 12 });
+  const thick = analyzeContent([{ ts: 0, rows: [at77(2), at77(3)] }, { ts: 0.08, rows: [at77(2), at77(3)] }], sliver, 1000);
+  assert.equal(thick.pixelMissingFrames, 2, "露出 3px 的列缺席必須被抓到(門檻不得再往上放)");
+}
 const unresolved = analyzeContent(
   [{ ts: 0, rows: [row(0), row(1, true)] }],
   setup,

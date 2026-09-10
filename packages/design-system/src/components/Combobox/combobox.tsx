@@ -100,6 +100,15 @@ function useOverflowCount(
   // 改 useEffect:fires AFTER paint,所有 refs 都 attach。double-rAF guard ensures layout done。
   // Trade-off:可能 1-2 frame flicker,但 functional setState guard + paint target measurement 已 cover。
   React.useEffect(() => {
+    /**
+     * 這次量測可不可信:容器與所有標籤都量到非零寬度才算數。
+     *
+     * 雙 rAF 的 fallback(2026-05-14 I3)當初是為了「批次渲染場景 tag 還 0-width」——
+     * 那個條件在同步這一趟就量得出來,不必無條件再跑一次。實測(2026-09-10,DataTable
+     * roadmap 全功能範例、40 步滾輪):每個掛載固定跑兩趟 calc,一次手勢 180 趟、
+     * 1080 次幾何讀取,其中第二趟幾乎總是得到相同結果。改成「不可信才補跑」。
+     */
+    let trustworthy = false
     if (!enabled || totalCount === 0) { setState({ visibleCount: totalCount, ready: true }); return }
     if (visibleCountOverride !== undefined) {
       for (let i = 0; i < tagEls.current.length; i++) {
@@ -124,12 +133,14 @@ function useOverflowCount(
       }
       const ofEl = overflowEl.current
       if (ofEl) ofEl.hidden = true
+      trustworthy = true
       setState({ visibleCount: 1, ready: true }); return
     }
     const container = containerRef.current
     if (!container) return
 
     const calc = () => {
+      trustworthy = false
       const cs = getComputedStyle(container)
       const available = container.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0)
       // 2026-05-18 Round 5 fix(per user 拍板「那就開始做」+ Codex M31 Round 5 verdict):
@@ -151,11 +162,13 @@ function useOverflowCount(
       // 2026-05-18 Round 5:量 paint target `[data-tag-root]` 而非 wrapper(per codex Round 5 verdict)。
       // wrapper basis:auto 自由 grow,offsetWidth ≠ Tag actual paint width。
       let used = 0, count = 0
+      let anyZero = available <= 0
       for (let i = 0; i < totalCount; i++) {
         const el = tagEls.current[i]
         if (!el) continue
         const tagRoot = el.querySelector('[data-tag-root]') as HTMLElement | null
         const w = tagRoot ? tagRoot.getBoundingClientRect().width : el.offsetWidth
+        if (w <= 0) anyZero = true
         const next = used + (count > 0 ? gap : 0) + w
         const remaining = totalCount - count - 1
         // width check FIRST(無 `count > 0` 短路):任何超寬都 break,包含 i=0 case
@@ -189,6 +202,7 @@ function useOverflowCount(
       // 2026-05-18 A' fix functional setState value-equal guard(per Codex Round 3 verdict):
       // effect 內 calc 直跑 + ResizeObserver re-fire 同時跑 → 若每次都 new object setState
       // 觸發 re-render 即使值沒變,可能 cascade。回 prev 不更新 = avoid 抖動。
+      trustworthy = !anyZero
       setState(prev => (prev.visibleCount === count && prev.ready) ? prev : { visibleCount: count, ready: true })
     }
 
@@ -219,10 +233,17 @@ function useOverflowCount(
         })
       })
     }
-    scheduleCalc()
-    const containerObs = new ResizeObserver(scheduleCalc)
+    // 同步那趟量到 0 寬(批次渲染 / 尚未版面配置)才補跑雙 rAF;量得準就不再跑第二趟。
+    if (!trustworthy) scheduleCalc()
+    /**
+     * ResizeObserver 在 `observe()` 之後一定會先送一發「初始觀測」,那一發回報的尺寸
+     * 就是上面同步 calc 剛量過的同一個版面 —— 拿它再跑一次是純白工。每個 observer
+     * 各自吞掉自己的第一發,之後的每一發都是真的尺寸變了,照常重算。
+     */
+    const skipFirst = (fn: () => void) => { let primed = false; return () => { if (!primed) { primed = true; return } fn() } }
+    const containerObs = new ResizeObserver(skipFirst(scheduleCalc))
     containerObs.observe(container)
-    const itemObs = new ResizeObserver(scheduleCalc)
+    const itemObs = new ResizeObserver(skipFirst(scheduleCalc))
     for (const el of tagEls.current) {
       if (el) itemObs.observe(el)
     }

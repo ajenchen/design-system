@@ -1,5 +1,7 @@
 import * as React from 'react'
 
+import { cancelMeasure, scheduleMeasure } from '@/design-system/lib/measure-scheduler'
+
 // ── useTruncated — 單行文字截斷偵測引擎(SSOT)─────────────────────────────────
 // 收斂 Breadcrumb TruncatedLabel / DataTable TruncateCell(兩處 module-level shared ResizeObserver 引擎
 // **逐字重複**,僅變數名不同)+ Tag(原 per-instance `new ResizeObserver`)三處的截斷偵測 + isTruncated
@@ -86,20 +88,27 @@ export function useTruncated<E extends HTMLElement = HTMLElement>(
   useIsoEffect(() => {
     const el = ref.current
     if (!el) return
+    // 量測一律走排程器(`lib/measure-scheduler.ts`):捲動中不量、量的時候所有元件同一幀一次量完。
+    // 2026-09-10 實測根因:虛擬捲動每一幀都有新列掛載,原本每個實例在 effect 裡**同步**量一次
+    // (Tag 的 Canvas measureText 81–87ms、預設量法的 scrollWidth 37–43ms),於是捲動的每一個
+    // scroll 事件都被拖到 9–22ms。世界級對照:AG Grid 只在提示要顯示時量那一格、MUI X 的內容
+    // 儲存格完全不量,**沒有一家在掛載時量**。量法本身一行未改,只改時機。
+    const key = {}
     const check = () => {
-      const r = measureRef.current(el)
+      const node = ref.current
+      // 排到執行時元件可能已經卸載(虛擬捲動每幀換列),對 detached 節點量出來的值沒有意義。
+      if (!node || !node.isConnected) return
+      const r = measureRef.current(node)
       if (r !== undefined) setIsTruncated(r)
     }
-    check()
-    let raf = 0
+    scheduleMeasure(key, check)
     let t: ReturnType<typeof setTimeout> | undefined
-    if (recheckAfterPaint) {
-      raf = requestAnimationFrame(check)
-      t = setTimeout(check, 100)
-    }
-    const cleanup = observeShared(el, check)
+    // 首幀 layout 未完成 / 字型還在載入時的補量:原本是 rAF + setTimeout(100) 兩次,
+    // 現在第一次量本來就在 rAF 裡(排程器),所以只留 100ms 那一次,且同樣走排程器。
+    if (recheckAfterPaint) t = setTimeout(() => scheduleMeasure(key, check), 100)
+    const cleanup = observeShared(el, () => scheduleMeasure(key, check))
     return () => {
-      if (raf) cancelAnimationFrame(raf)
+      cancelMeasure(key)
       if (t) clearTimeout(t)
       cleanup()
     }

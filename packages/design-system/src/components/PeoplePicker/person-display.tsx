@@ -1,5 +1,7 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
+
+import { cancelMeasure, scheduleMeasure } from '@/design-system/lib/measure-scheduler'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFieldEmptyDisplay } from '@/design-system/components/Field/field-context'
@@ -264,12 +266,18 @@ function MultiPersonDisplay({
       })
       setMeasuredCount(visible)
     }
-    calc()
+    // 量測走排程器(`lib/measure-scheduler.ts`):捲動中不量、量的時候所有元件同一幀一次量完。
+    // 2026-09-10 實測:虛擬捲動時這支是自時間第二名(39–47ms / 1.4 秒手勢),因為每個新進視窗的
+    // 「審核」欄都在掛載當下做兩次 getBoundingClientRect。頭像堆疊要顯示幾顆是**視覺密度**問題,
+    // 晚一幀決定不影響任何互動;捲動停下前也沒有人在看那一格到底放得下幾顆。
+    const key = {}
+    const scheduled = () => scheduleMeasure(key, calc)
+    scheduled()
     // 觀察對象也要是不隨內容變的那個 —— hug 下 wrapper 自己會跟著內容縮,
     // 只觀察它等於在觀察自己的輸出。
-    const ro = new ResizeObserver(calc)
+    const ro = new ResizeObserver(scheduled)
     ro.observe(containingBlock ?? box)
-    return () => ro.disconnect()
+    return () => { cancelMeasure(key); ro.disconnect() }
   }, [measured, size, value])
 
   if (!value || value.length === 0) return <span className="text-foreground">{emptyDisplay}</span>

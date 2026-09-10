@@ -154,8 +154,13 @@ export function analyzeContent(rawPixels, setup, inputEnd, input = {}) {
       const height =
         Math.min((idx + 1) * setup.rowHeight, scrollY + setup.rect.height) -
         Math.max(idx * setup.rowHeight, scrollY);
-      // Less than 2 CSS pixels can be solely the row divider or barcode rounding.
-      if (height < 2) continue;
+      // 露出不到 3 CSS px 的邊緣列不列入判定:這不是寬容,是量出來的解碼下限。
+      // 標記條是列內 `top:0;bottom:1px` 的直條,列被視窗上下緣裁到只剩 1-2px 時,可用掃描線只剩 0-1 條,
+      // 又被裁切邊的反鋸齒染色 → 解碼成功率只有一半。2026-09-10 用同一份擷取交叉比對 DOM 取樣量到:
+      // 露出 1px 解到 4 次 / 解不到 4 次;2px 解到 2 / 解不到 2;3px 起 40 次全解到、零失手。
+      // 對照證據:被判「缺列」的那兩幀,DOM 取樣裡該列是已掛載的完整列(`top:55 bottom:95`,視窗上緣 93),
+      // 也就是畫面上真的有東西,只是 2px 讀不出條碼。門檻取 3 = 解碼可靠的最小值,不多讓一格。
+      if (height < 3) continue;
       const row = actual.get(idx),
         ready = row && !row.shell;
       if (!seen.has(idx))

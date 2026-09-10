@@ -358,11 +358,16 @@ async function auditScenario(browser, scenario, opts = {}) {
   // 超過 AI sub-agent 的 image-dimension 限制(2000px),導致 Layer B 跑不了。
   // Mechanical Layer A 用 1x 夠用(contrast / geometry 量測與 DPI 無關)。
   // 若真需 retina debug,傳 opts.retina=true。
-  const context = await browser.newContext({
-    viewport: { width: 1440, height: 900 },
-    deviceScaleFactor: opts.retina ? 2 : 1,
-  })
-  const page = await context.newPage()
+  if (!sharedContext) {
+    sharedContext = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: opts.retina ? 2 : 1,
+    })
+    sharedPage = await sharedContext.newPage()
+    await installFrozenDate(sharedPage)
+  }
+  const context = sharedContext
+  const page = sharedPage
   const renderHealth = createRenderHealthMonitor(page, {
     mode: scenario.url ? 'document' : 'storybook',
   })
@@ -376,27 +381,6 @@ async function auditScenario(browser, scenario, opts = {}) {
   // fit-to-page 排在 rAF 的邏輯永不執行,卡 100% 未 fit(vr4 run 28843769570 40.3% breach 實錘)。
   // addInitScript 只覆寫 Date / Date.now,rAF / timers / performance 全不動 — 對日期元件
   // deterministic、對動畫排程零副作用;時間與 calendar stories 釘的 2026-07-15 一致。
-  await page.addInitScript(() => {
-    // 偏移時鐘(shifted clock,2026-07-07 三修定案):時間照常流動、「日期」恆 2026-07-15。
-    // 硬凍(clock.setFixedTime / 定值 Date.now)兩案皆實測壞 FileViewer fit(elapsed 永遠 0,
-    // 動畫/佈局的時間差邏輯靜默 stall,vr4/vr5 40.3% breach);偏移 = elapsed 計算全正常、
-    // 動畫零副作用,而 Calendar today 圈 / DateGrid today bar 等日期渲染 deterministic。
-    // TARGET = 2026-07-15T02:00Z(UTC 與台北皆 7/15 正午前後,run 時長內不跨日)。
-    const TARGET = 1784080800000
-    const OrigDate = globalThis.Date
-    const delta = TARGET - OrigDate.now()
-    class ShiftedDate extends OrigDate {
-      constructor(...args) {
-        if (args.length === 0) super(OrigDate.now() + delta)
-        else super(...args)
-      }
-      static now() { return OrigDate.now() + delta }
-    }
-    ShiftedDate.parse = OrigDate.parse
-    ShiftedDate.UTC = OrigDate.UTC
-    // eslint-disable-next-line no-global-assign
-    globalThis.Date = ShiftedDate
-  })
   // scenario 可有 .url(任意 URL,for product app routes)或 .id(Storybook story id)
   // 4-cell LTR-only matrix:opts.matrixCell { theme, density }。RTL 明確不支援，不存在 dir 軸。
   // 注入 Storybook globals query params(對齊 .storybook/preview.tsx 全域 toolbar)
@@ -562,8 +546,33 @@ async function auditScenario(browser, scenario, opts = {}) {
     }
   } finally {
     renderHealth.dispose()
-    await context.close()
+    // 共用 context 不在這裡關(理由見 `sharedContext` 宣告);由 closeBrowser 收尾。
   }
+}
+
+/** 凍結「日期」的 init script(理由見原註解):共用 page 只能裝一次,裝兩次 delta 會疊加。 */
+async function installFrozenDate(page) {
+  await page.addInitScript(() => {
+    // 偏移時鐘(shifted clock,2026-07-07 三修定案):時間照常流動、「日期」恆 2026-07-15。
+    // 硬凍(clock.setFixedTime / 定值 Date.now)兩案皆實測壞 FileViewer fit(elapsed 永遠 0,
+    // 動畫/佈局的時間差邏輯靜默 stall,vr4/vr5 40.3% breach);偏移 = elapsed 計算全正常、
+    // 動畫零副作用,而 Calendar today 圈 / DateGrid today bar 等日期渲染 deterministic。
+    // TARGET = 2026-07-15T02:00Z(UTC 與台北皆 7/15 正午前後,run 時長內不跨日)。
+    const TARGET = 1784080800000
+    const OrigDate = globalThis.Date
+    const delta = TARGET - OrigDate.now()
+    class ShiftedDate extends OrigDate {
+      constructor(...args) {
+        if (args.length === 0) super(OrigDate.now() + delta)
+        else super(...args)
+      }
+      static now() { return OrigDate.now() + delta }
+    }
+    ShiftedDate.parse = OrigDate.parse
+    ShiftedDate.UTC = OrigDate.UTC
+    // eslint-disable-next-line no-global-assign
+    globalThis.Date = ShiftedDate
+  })
 }
 
 // ── Scope resolution ───────────────────────────────────────────────────────
@@ -638,6 +647,18 @@ function filterScenarios(allScenarios) {
 
 let ownedStaticServer = null
 let browser = null
+/**
+ * 整個 run 共用同一個 context / page。
+ *
+ * **為什麼不能每個 scenario 各開一個**:沙箱的 Chromium 一定帶 `--single-process`,那個模式下
+ * **同時只允許存在一個 browser context**,而且關掉之後也開不出第二個 —— 2026-09-10 實測四種寫法:
+ * 「第一個 context + page」✓ / 「同時開第二個」✗ / 「關掉第一個再開」✗ / 「同一 context 內開關 page 兩次」✗,
+ * 後三者全部回 `Target page, context or browser has been closed`。原本每個 scenario 開關一次 context,
+ * 因此在本機沙箱**永遠只跑得完第一個 scenario**,視覺稽核等於跑不了。
+ * 共用一個 page 之後,場景之間靠 `page.goto` 換 story(Storybook iframe 重載,DOM 全新)隔離。
+ */
+let sharedContext = null
+let sharedPage = null
 
 async function stopStorybook() {
   const server = ownedStaticServer
@@ -648,6 +669,7 @@ async function stopStorybook() {
 async function closeBrowser() {
   const instance = browser
   browser = null
+  if (sharedContext) { await sharedContext.close().catch(() => {}); sharedContext = null; sharedPage = null }
   if (instance) await instance.close()
 }
 
