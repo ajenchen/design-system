@@ -698,8 +698,14 @@ export const ItemInlineActionButton = React.forwardRef<
       ref={ref}
       type={type}
       className={cn(
-        // 內描邊:行內動作鈕住在列裡(常常還在截斷文字旁邊),往外 +2px 實測上下各被裁 1px
-        "group/action relative grid place-content-center shrink-0 cursor-pointer focus-visible:focus-ring-inset",
+        // 焦點框往外(= 什麼都不寫,吃 styles/base.css 全域規則)。2026-09-10 逐站點實測翻案:
+        // 26 個真實站點 × sm/md/lg,四周最小淨空 5–192px(最小值 4.00 = Breadcrumb 兩側的分隔符,
+        // canonical「4.00 算放得下」),DPR2 逐像素數框帶 → 零裁切、零遮蓋。列不會裁到它:截斷是
+        // label 自己的 `truncate`(兄弟節點),不是祖先。原註解「往外 +2px 實測上下各被裁 1px」
+        // 只在 **Tag 宿主**成立(h-6 + 1px 邊框 + overflow-hidden → 淨空 3px,sm 1px),
+        // 依 focus-canonical「同一個底層元件被另一個元件放進貼邊位置,往內由那個外層元件承擔」,
+        // 往內的 class 搬到 `tag.tsx` TagDismiss,不由 primitive 整個翻內。
+        "group/action relative grid place-content-center shrink-0 cursor-pointer",
         // 弱化 icon hover 階梯 SSOT(2026-07-30 user 拍板):fg-muted(neutral-7)→ 一階 fg-secondary
         // (neutral-8),不跳到 foreground(neutral-9)。inline-action.spec.md「Icon 色彩」+
         // tokens/color/semantic.css:53 為 rule owner;世界級對照 Fluent 2

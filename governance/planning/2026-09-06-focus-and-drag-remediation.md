@@ -2978,9 +2978,39 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 
 ### AD75 user 2026-09-10:「第二題確保所有相關地方都有SSOT不要偏移並追根究底修正,然後focus 的邊框是1px」—— Field 家族焦點規則的全 DS 漂移掃描(2026-09-10)
 
-- **範圍**:AD73 的一致化(Field 家族焦點 = 邊框轉色 1px,鍵盤滑鼠同、開闔同;輸入框 / textarea 不畫外框;readonly 保留 ring)之後,所有描述 Field 家族焦點的 canonical / spec / code / 閘 / anatomy story 文字逐處對照。結果與修正隨掃描回填於下。
+**方法**:三路平行調查(量測 / 掃描 / 一手來源)+ 每路兩個反證者(機制鏡頭、完整性鏡頭)獨立重跑探針。主線結論兩輪皆未被推翻;反證者另抓出三處漏測與一處引錯行號,已一併收進下面的清單。
+
+**一、code 層真問題(兩處,都已修並附對照組)**
+
+1. **唯讀欄位完全沒有焦點指示**(WCAG 2.4.7)。`<input readonly>` / `<textarea readonly>` 是 tab stop,但量到 outline none、邊框 transparent、滑鼠點擊零視覺變化。根因:`ring-*` idiom 於 0cad81e8 隨家族退役(`focus-geometry-invariant` R1/R2 禁)時**沒有補替代品**,而編輯態的 `outline-none`(@focus-suppress B,承擔者是「欄位邊框轉主色」)照舊生效 —— 唯讀的邊框是透明的,那個承擔者根本不存在。修:`styles/base.css` 新增具名的外描邊 `@utility focus-ring-outer`(值與全域 `:focus-visible` 逐字相同,不是第三種幾何;抄值會被 R4 擋),`bareInputStyles` 加 `group-data-[field-mode=readonly]/field:focus-visible:focus-ring-outer`(一處覆蓋 Input / NumberInput / LinkInput / DatePicker / TimePicker)、Textarea 的 control 宿主 readonly compound 同。實測:readonly Input 的 Tab 與滑鼠、readonly Textarea 皆 `solid 2px @2px` 主色;對照組(把 `outline-none` 釘回去)三處全部回到 `none`。唯讀三兄弟(Checkbox / Switch / RadioGroup)本來就吃得到全域規則,不受影響。
+2. **cmdk 殼被 `:focus-visible` 畫框**(潛在,今天畫不出來)。非搜尋的 Select / Combobox / SelectMenu 開啟時 DOM 焦點落在 `[cmdk-root]`,第一次方向鍵後 cmdk 1.1.1 自己把焦點搬到 `[cmdk-list]`,兩者 computed style 都有 `outline solid 2px @2px`。反證者用逐像素量到**畫出來是 0 個像素**(PopoverContent 的 `overflow-hidden` 把 +2px 整條裁掉;強制 `overflow: visible` 對照組 → 1768 / 2476 個框像素現形),所以這是「殼一旦被放進不裁切的宿主就會現形」的潛在缺陷,不是今天看得到的 bug —— 據實記錄,不冒充視覺修復。修:`command.tsx` 根與 `CommandList` 各加 `outline-none` + `@focus-suppress A`(承擔者 = CommandItem 的 `data-[selected=true]:focus-ring-inset`)。
+
+**二、文件 / 註解漂移(逐處修完)**
+
+`field-controls.spec.md`(readonly ring idiom → 全域外描邊 + 訂正框)、`textarea.spec.md`(naked「僅鍵盤」→ 滑鼠鍵盤同、readonly ring → 外描邊)、`field.spec.md`(「focus-visible ring 對齊 canonical」→ 邊框轉色 1px + readonly 例外)、`field-wrapper.tsx` 頂端 JSDoc(readonly 機制重寫)、`textarea.tsx` 兩處註解、`input.anatomy.stories.tsx` 兩處(`ring-2 ring-ring` → 外描邊)、`field.anatomy.stories.tsx` 人話段、`slider.spec.md` 五處(2026-09-07 已訂正的結論還留著舊句,同檔自相矛盾)、`combobox / date-picker / time-picker / select-menu` 四份 spec 各補一句 Focus(原本 0 命中,閘 H 段沒有 spec 句可對照)、`focus-canonical.md`(規則二補「唯讀」列、幾何表補 `focus-ring-outer` 列、盤點數字重數:內描邊 20 / `focus-visible:outline-none` 9 / `focus-ring-outer` 2、承擔者 cite `field-wrapper.tsx:49` → `:57` 六處)。
+**聚焦邊框維持 1px**:量到的所有 Field 家族站點都是 1px 主色;唯一提「加厚到 2px」的是 AD73 的 a11y 註記,已依 user 原話撤回(見 AD73)。反證者另指出該註記引錯條號 —— 2px 周長屬 WCAG 2.4.13 Focus Appearance(AAA),2.4.11 是 Focus Not Obscured;1px 邊框對頁底 5.19:1 / 5.35:1 已過 AA(2.4.7 + 1.4.11)。
+
+**三、反證者抓到、finder 漏掉的**:(a) 框不只在 `[cmdk-root]`,方向鍵後會移到 `[cmdk-list]`(所以兩處都要抑制,只改根會漏一半);(b) DataTable 的裸 Select 儲存格編輯器(`cell-registry.tsx:335`)走同一條路,同一修法涵蓋;(c) Combobox「純滑鼠也畫框」那一列是 story `play()` 造成的假象(程式聚焦會把 `:focus-visible` 帶進下一次程式聚焦),真的純滑鼠 `fv=false`。
+
+**四、閘**:`focus-suppression-registry`(每處抑制的類別 + 承擔者)與 `focus-geometry-invariant`(只准兩種幾何)本機綠;`focus-geometry-browser-audit` 新增反向驗證(見 AD76)。
+
+### AD76 user 2026-09-10:「我們的基本原則是元素可能合法地被塞在視覺上四周淨空不到 4px 的地方才往內吧?這題之前不是有討論過了嗎?仔細研究查證」—— 行內動作鈕的框翻案回往外,並補上「宣告往內是否必要」的反向閘(2026-09-10)
+
+**判準沒變,是套用套錯了**(`focus-canonical.md`「問題二」:量被聚焦元素四邊到最近正當障礙的最小淨空,≥ 4px 往外、< 4px 往內;4.00 算放得下)。
+
+- **實測(26 個真實站點 × sm/md/lg,DPR2 逐像素數框帶,附四組儀器對照)**:側欄動作鈕 15–192px、樹狀 8px、AgentPanel 歷史列 8–48px、DataTable 展開鈕 9–12px、欄位 endAction 5–12px、Breadcrumb 省略號 **4.00**(兩側是分隔符)。**強制往外時零裁切、零遮蓋**。儀器對照:合成宿主淨空 3px → 每側裁 0.75px、1px → 1.92px、12px → 0、overflow:visible → 0(所以「量得出 1px 的裁切」這件事本身有被證明)。
+- **原註解錯在哪**:`item-anatomy.tsx` 寫「行內動作鈕住在列裡(常常還在截斷文字旁邊),往外 +2px 實測上下各被裁 1px」——(a) 列不會裁它,截斷是 label 自己的 `truncate`,是**兄弟節點**不是祖先;(b) 「上下各被裁 1px」只在 **Tag 宿主**成立(`h-6` + 1px 邊框 + `overflow-hidden` 包 16px 的 ×,淨空 3px;sm `h-5` 淨空 1px 幾乎整圈不見)。依 canonical:527-537「同一個底層元件被另一個元件放進貼邊位置,往內由**那個外層元件**承擔」,往內的 class 應該寫在 `tag.tsx`,不是讓 primitive 整個翻內。
+- **修**:`item-anatomy.tsx` 刪 `focus-visible:focus-ring-inset`(回預設往外)、`tag.tsx` TagDismiss 加上;`inline-action.spec.md` 狀態表與 `focus-canonical.md`「套回實測值驗證」表各補實測列與訂正框。實測複驗:側欄 / Breadcrumb 的鈕 `@2px`、Tag 的 × `@-2px`。
+- **為什麼兩個月沒被抓到(真正的 root cause)**:`focus-geometry-browser-audit.mjs:83` 對「已經是內描邊」的站點**直接豁免** —— 宣告往內之後就永遠不再被重驗,錯誤的宣告在閘裡是隱形的。補**反向驗證**:內描邊的站點改用往外的幾何(offset 2 + 寬 2)重算,若這樣也不會被裁、不會撞鄰居就指名它;對照組 `--selftest-inset`(把每一站都釘成內描邊 → 實測指名 75 處,證明它會紅);兩個對照組都進 `focus-deep-gates.yml`。
+- **反向閘第一次全掃指名 13 站,逐站量完的處置**:
+  - **DataTable 排序表頭**(`data-table.tsx:3196`,2026-07-14 憑「對齊本檔其他站點」加的,沒量過):實測上 9 / 下 10 / 左 9–12 / **右 7**(右邊是排序箭頭)→ **改回往外**。水平捲動時把表頭捲到一半不算「設計上貼邊」(v3 判準已經把 overflow 踢出判準)。
+  - **Calendar 日期格**(`calendar.tsx:399`):實測上 6 / 下 4(同格的事件容器)/ 左 128 / **右 7** → **改回往外**。2026-09-07 那句「往外會壓到隔壁格」量的是**格子**邊界不是鈕的鄰居;真正貼邊的是事件方塊(彼此 `gap-0.5` = 2px),那一處維持往內。
+  - **Tabs trigger**(`tabs.tsx:481`):預設模式四周有餘(最小 13),但 `overflow=scroll` / `overflow=menu` 兩種模式實測**上 0 / 下 1 / 左 0**(貼著可捲視窗)→ 依 canonical「規格允許的位置裡有一種是貼邊的,整個元件往內」**維持往內**,登記進閘的 `JUSTIFIED_INSET` 例外表(附兩個 story 的實測數字)。例外表存在的理由:一支閘一次只看得到一個 story 的位置,沒有寫下另一個位置的量測就不准豁免。
+- **順帶查到並修好的一個真缺陷**:`Tabs` 的 `inlineAction`(分頁右緣那顆獨立動作鈕)**從 2026-07-18 改成 overlay portal 起一次都沒有渲染過**。追法:在瀏覽器裡把 `resolveTabsInlineActionPosition` 的輸入輸出打出來 —— 輸入 `trigger [131.2,16,183.2,48]` / `overlay [16,16,716,49]` / `clips []` 全部正常,輸出卻是 `null`。**根因**:`tabs-inline-action-geometry.ts:50` 寫 `const viewport = { ...overlay }`,而傳進來的是活的 `DOMRect` —— 它的 `left/top/right/bottom` 都在**原型**上,物件展開只複製自有可列舉屬性,展出來是 `{}`,於是每一項比較都是 `undefined > undefined` = false,函式永遠回 null。**為什麼單元測試一直綠**:`scripts/tabs-inline-action-geometry.test.mjs` 的 fixture 全是普通物件(展得出來)—— 又一次「儀器沒有對照組」。**修**:顯式取四個值;測試加 `protoRect`(屬性放原型,形狀等同 DOMRect)+ 那個 story 的實際數字;對照組:把修復退回去,新測試 1 紅(7 pass → 6 pass 1 fail)。另補 render-level 防線 `header-tabs-slot-invariants.mjs` W3(overlay 裡必須有那顆鈕、右緣對齊 tab 右緣 ±1px、垂直在 tab 內)。
 
 ### AD72 user 2026-09-10:遠端搜尋名錄 —— 滑鼠點輸入框、↓、Enter 後 PeoplePicker 出現鍵盤焦點的外框;「明明是可打字的輸入框,照畫框原則要畫外框嗎?」(2026-09-10)
+
+> **2026-09-10 下午已被 AD73 取代**:本段當時的判定是「關閉的觸發器照規則要畫外框、且外框看模態」,同日下午依一致性收斂為「Field 家族只用邊框轉色、不畫外框」,code / spec / 閘都照 AD73。本段以下的判定與描述僅作歷史 provenance,不得當成現行規則。
 
 **user 原話**:「為何遠端搜尋名錄的範例中,我滑鼠點擊輸入框然後點擊鍵盤上的下鍵並按enter,之後 people picker 卻會出現鍵盤焦點的藍色外框,但people picker 明明是可以打字的輸入框,按照畫框原則在此情境是要畫成外框的嗎?這是合理的嗎?不合理的話,root cause是什麼以及是否有其他地方有類似問題?」
 

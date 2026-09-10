@@ -59,6 +59,10 @@ jobs:
           # 對照組:把焦點視覺全部釘死,承擔者證明必須整批變紅。
           # 不跑這一步的話,「無框但都有承擔者」那個綠燈不算證據。
           node scripts/focus-geometry-browser-audit.mjs --selftest
+          # 反向檢查的對照組:把每一站都釘成內描邊,四周有空的那些必須被指名
+          #(2026-09-10 加:原本「已內描邊」是直接豁免,宣告往內之後就永遠不再重驗 ——
+          # 行內動作鈕因此帶著一句沒量過的註解活了兩個月)。
+          node scripts/focus-geometry-browser-audit.mjs --selftest-inset
           node scripts/data-table-scrollbar-visibility.mjs
           node scripts/data-table-scrollbar-visibility.mjs --selftest
           node scripts/data-table-scroll-cost.mjs --selftest

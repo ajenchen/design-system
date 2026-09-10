@@ -75,7 +75,7 @@ const textareaVariants = cva(
     compoundVariants: [
       // default 外框 × mode / error 全部來自 field-wrapper.tsx fieldDefaultChromeCompounds('control')
       // (單行 wrapper / 多行 Textarea / 複合輸入盒三宿主同一份;host='control' = textarea 自身可聚焦,
-      // readonly ring 用 focus-visible:、無 data-state 開啟態;Phase D 整併完成 2026-09-02)
+      // readonly 的焦點指示用 focus-visible:focus-ring-outer 解除自身 outline-none、無 data-state 開啟態;Phase D 整併完成 2026-09-02)
       ...fieldDefaultChromeCompounds('control'),
       // disabled 文字色為 Textarea 專屬追加(外框由共用 compounds 提供)
       { mode: 'disabled', variant: 'default', className: 'text-fg-disabled' },
@@ -308,7 +308,8 @@ export const textareaMeta = {
   // states 對齊 cva compoundVariants + anatomy ColorMatrix 真實 state 集合;
   //   text input 無 'active'(按下)視覺態(Material/Polaris/Carbon TextArea 共識)。
   //   'focus-visible' 泛指 focus 態:default chrome 實為 focus-within(滑鼠+鍵盤皆亮),naked chrome
-  //   為 focus-visible(鍵盤限定),readonly 有值態為 focus-visible ring(見上方 compoundVariants)。
+  //   naked chrome 寫 focus-visible: 只因宿主是控件自己(textarea 滑鼠點擊也 match :focus-visible,與 default 等價);
+  //   readonly 有值態為全域外描邊(focus-ring-outer,見上方 compoundVariants)。
   states: ['default', 'hover', 'focus-visible', 'readonly', 'disabled', 'error'],
   tokens: {
     bg: ['bg-disabled', 'bg-readonly', 'bg-surface'], // 2026-07-04 補:readonly×default cva 實際消費(spec「Readonly 特例」主打 token)

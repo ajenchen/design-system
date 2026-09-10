@@ -128,9 +128,13 @@ function TagDismiss({ onRemove, label, solid, color }: { onRemove: () => void; l
           ? 'group-hover/action:bg-[var(--dismiss-hover)] group-active/action:bg-[var(--dismiss-active)]'
           : undefined
       }
+      // 焦點框往內:Tag 是貼邊宿主 —— root `overflow-hidden`(:196)+ 1px 邊框(:30)+ h-6 / h-5(:42-44)
+      // 包住 16px 的 ×,上下淨空只有 3px(sm 1px)。2026-09-10 DPR2 實測:強制往外時每側被裁 0.7–0.9px,
+      // sm 幾乎整圈不見。依 focus-canonical「問題二」淨空 < 4px 往內 +「往內由外層元件承擔」
+      // (底層 ItemInlineActionButton 維持預設往外)。
       // colored host 才 override primitive 預設(繼承 Tag 文字色,label 同色);
       // neutral subtle 留給 primitive 的 fg-muted → hover fg-secondary 階梯。
-      className={inheritsHostColor ? 'text-current hover:text-current active:text-current' : undefined}
+      className={cn('focus-visible:focus-ring-inset', inheritsHostColor && 'text-current hover:text-current active:text-current')}
     />
   )
 }

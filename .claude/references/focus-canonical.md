@@ -120,8 +120,10 @@ DropdownMenu 四種項目(Item / SubTrigger / CheckboxItem / RadioItem)。其餘
 | 情況 | 指示器 | 依據 |
 |---|---|---|
 | **鍵盤游標**停在任何可操作的東西上 —— 按鈕、選單／清單項(選中與否都一樣)、樹節點、表格格、tab、分頁鈕…;真 DOM 焦點或虛擬游標皆同 | **畫框**(DS 焦點框:2px `--ring`,外或內描邊由「框怎麼畫」決定);**不上底色** | **user 2026-09-09 拍板**:「我基本上都說以畫框為主」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧?」 |
-| **插入點控件**(`<input>` 文字類 / `<textarea>` / `[contenteditable]`;Field 家族控件另由 wrapper 邊框轉色承擔) | **不畫框**;指示 = 閃動的 caret(+ 欄位邊框轉 primary,`field-wrapper.tsx:49`) | user 同上;可機械判別的定義見「問題一之二」B 類 |
-| **Field 家族控件本身**(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器 —— `fieldWrapperStyles` 的 wrapper 自己拿到焦點,tabIndex=0) | **不畫外框**;指示 = 邊框轉 primary,與同一個 Field 可打字時的指示相同(`field-wrapper.tsx` edit compounds:`focus-within:!border-primary` + `focus-visible:outline-none`;readonly 的 ring 不受影響) | **2026-09-10 AI 依一致性推導**(不是 user 拍板;user 原話是問句:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?一個用鍵盤選完按 esc 不會在field control出現藍色鍵盤焦點外框,另一個則會,請問這是否有SSOT…請確保追根究柢把問題按照合理的原則解決」):Combobox 焦點留在輸入框(插入點,規則本身不畫框),Select 類關閉後焦點回 wrapper 才多一圈外框 —— 同一個 Field 家族兩種長相。原則:Field 的焦點指示是邊框轉色,不分可不可打字、不分滑鼠鍵盤(C 類「它就是這個 tab stop 的框」);Material outlined Select、Ant Select 聚焦也只有欄位邊框。閘:`virtual-cursor-modality-invariant.mjs` G / H 段 |
+| **插入點控件**(`<input>` 文字類 / `<textarea>` / `[contenteditable]`;Field 家族控件另由 wrapper 邊框轉色承擔) | **不畫框**;指示 = 閃動的 caret(+ 欄位邊框轉 primary,`field-wrapper.tsx:57`) | user 同上;可機械判別的定義見「問題一之二」B 類 |
+| **Field 家族控件本身**(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器 —— `fieldWrapperStyles` 的 wrapper 自己拿到焦點,tabIndex=0) | **不畫外框**;指示 = 邊框轉 primary,與同一個 Field 可打字時的指示相同(`field-wrapper.tsx` edit compounds:`focus-within:!border-primary` + `focus-visible:outline-none`) | **2026-09-10 AI 依一致性推導**(不是 user 拍板;user 原話是問句:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?一個用鍵盤選完按 esc 不會在field control出現藍色鍵盤焦點外框,另一個則會,請問這是否有SSOT…請確保追根究柢把問題按照合理的原則解決」):Combobox 焦點留在輸入框(插入點,規則本身不畫框),Select 類關閉後焦點回 wrapper 才多一圈外框 —— 同一個 Field 家族兩種長相。原則:Field 的焦點指示是邊框轉色,不分可不可打字、不分滑鼠鍵盤(C 類「它就是這個 tab stop 的框」);Material outlined Select、Ant Select 聚焦也只有欄位邊框。閘:`virtual-cursor-modality-invariant.mjs` G / H 段 |
+
+| **唯讀的 Field 控件**(`<input readonly>` / `<textarea readonly>` / 唯讀三兄弟 Checkbox・Switch・RadioGroup —— 可 Tab、不可編輯) | **畫框**(全域外描邊,往外 2px),因為唯讀的邊框是透明的、沒有顏色可以轉 | **2026-09-10 實測修回**:`ring-*` idiom 於 0cad81e8 隨家族退役時沒有補替代品,`<input readonly>` / `<textarea readonly>` 的 `outline-none`(edit 態的 @focus-suppress B)照舊生效 → 整個可聚焦控件零指示(WCAG 2.4.7)。解除寫法 = `focus-ring-outer`(`styles/base.css` 具名的外描邊,值與全域規則逐字相同);wrapper 型宿主本來就吃得到全域規則。閘:`focus-geometry-browser-audit.mjs`(無框必須指得出承擔者) |
 
 **底色只有兩個主人:滑鼠 hover 與「選中」。** 鍵盤游標不借用它們的顏色
 (user 2026-09-07:「不要一下用底色一下用邊框來標示焦點」;2026-09-09:「都不需要上底色」)。疊加時各說各的:
@@ -202,6 +204,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 位置(被裁切／貼鄰居) | **往內** `outline-offset: -2px`,寫 `focus-visible:focus-ring-inset`(真焦點)或 `focus-ring-inset`(虛擬游標,由元件 state 掛上) | 「問題二」:被聚焦元素四周最小淨空 < 4px 才往內;撐滿容器寬度的列(選單項 / 側欄鈕 / tab)都屬此類 |
 | 圓角 | 跟著元素的 `border-radius` | `outline` 原生行為,不必特別處理(「不需要為它開分支」) |
 | 只准兩種幾何 | 全域外描邊 / `focus-ring-inset`;禁 `ring-offset-*`、禁 `focus-visible:ring-*`、禁手寫三件組 | `scripts/focus-geometry-invariant.mjs` R1–R5 |
+| 解除自己那一處抑制 | `focus-visible:focus-ring-outer`(`styles/base.css` 的具名外描邊,值與全域規則逐字相同,**不是第三種幾何**)—— 只用在「這個 mode 下承擔者不存在」的情況(唯讀的原生 input / textarea) | 「問題一之二」B 類的唯讀例外;抄值會被 R4 擋下 |
 | 什麼時候畫(真焦點) | 瀏覽器 `:focus-visible` | 元件不判斷模態 |
 | 什麼時候畫(常駐清單的虛擬游標,TreeView) | `useInputModality() === 'keyboard'` 才掛 `focus-ring-inset`(WICG 模態:keydown / pointerdown,滑鼠移動不算) | 上一節;`scripts/virtual-cursor-modality-invariant.mjs` |
 | 什麼時候畫(會搶反白的浮層選單,cmdk / Radix) | `useCursorMover() === 'keyboard'` 才掛 `focus-ring-inset`,否則反白上 `bg-neutral-hover`(反白來歷:方向鍵 / Home / End / PageUp / PageDown / Tab / Esc,或非文字輸入框上的任何鍵 / 滑鼠移過項目 `markPointerGrab`;停著不算、在文字輸入框裡打字不算) | 上一節;同一支閘 D 段 |
@@ -223,7 +226,7 @@ cmdk 開啟時把游標放在已選項上(`select-menu.tsx` `defaultValue={selec
 | 會搶反白的項目上的 `hover:` 樣式(CommandItem / DropdownMenu 四種項目)| **0**(2026-09-09 下午清完;之前鍵盤分支各帶 `hover:bg-neutral-hover`、選中列另帶 `hover:bg-neutral-selected`,共 5 條)|
 | `hover:bg-` 全 DS(非 stories)| 16 檔 / 40 處 —— 其餘全是常駐元素(Sidebar 選單鈕與動作鈕 / TreeView 列與動作 / TimePicker 欄 / Calendar / DateGrid / InlineEdit / Button / Switch / Checkbox / Carousel / ScrollArea / PersonDisplay / DataTable 工具列),hover 與焦點框獨立,不在本節範疇 |
 | `data-[highlighted]` / `data-[selected=true]` 的 owner | 各只有一檔:`dropdown-menu.tsx` / `command.tsx`(反白畫法的單一來源) |
-| `focus-visible:` 的用法歸類 | `focus-visible:focus-ring-inset` 20(真焦點內描邊)/ `focus-visible:outline-none` 7(全部登記在 `focus-suppression-registry`)/ `focus-visible:underline` 2(DatePicker 範圍模式共用承擔者的區分)/ `focus-visible:!border-primary` `focus-visible:hover:!border-primary` 各 1(Textarea naked 模式,C 類邊框轉色)/ `focus-visible:z-20` 1(SegmentedControl 疊層順序,不是指示器)/ 其餘出現在註解 |
+| `focus-visible:` 的用法歸類(非 stories;2026-09-10 重數)| `focus-visible:focus-ring-inset` 20(真焦點內描邊;行內動作鈕改回往外 −1、Tag 移除鈕 +1)/ `focus-visible:outline-none` 9(全部登記在 `focus-suppression-registry`;含 `field-wrapper.tsx` 三個 wrapper compound)/ `focus-visible:focus-ring-outer` 2(唯讀例外:`bareInputStyles` 與 Textarea control 宿主)/ `focus-visible:underline` 2(DatePicker 範圍模式共用承擔者的區分)/ `focus-visible:!border-primary` `focus-visible:hover:!border-primary` 各 1(Textarea naked 模式,C 類邊框轉色)/ `focus-visible:z-20` 1(SegmentedControl 疊層順序,不是指示器)/ 其餘出現在註解 |
 
 `bg-neutral-hover` 橫跨 131 處 / 56 檔,所以底色語彙本身是全 DS 共用的 —— 這正是它只能表達「滑鼠在這裡」與「選中」、不能再借給鍵盤游標當第三個意義的原因。
 
@@ -559,6 +562,17 @@ DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「
 | SidebarMenuAction | 四周有餘 | 淨空 ≥ 4 | **外 +2px** |
 | Tabs trigger | tab 高 = 分頁列高(`tabs.tsx:502-504`)→ 上下淨空 **0** | 淨空 < 4 | **內 −2px** |
 | Avatar 內的 × | 12px 鈕,疊在一起的頭像不算鄰居 → 無限制 | 都不命中 | **外 +2px**(2026-09-09 訂正,與上表 PeoplePicker 列一致)|
+| **行內動作鈕**(ItemInlineActionButton:側欄 / 樹 / 歷史列 / 欄位 endAction / 表頭選單 / Breadcrumb 省略號)| 26 個真實站點 × sm/md/lg,四周最小淨空 **5–192px**;最小值 **4.00**(Breadcrumb 兩側的分隔符);DPR2 逐像素數框帶 → 零裁切、零遮蓋 | 都不命中(4.00 算放得下)| **外 +2px**(2026-09-10 翻案,見下方訂正框)|
+| **Tag 的移除 ×** | 16px 鈕住在 `h-6`(sm `h-5`)+ 1px 邊框 + `overflow-hidden` 的 Tag 裡 → 上下淨空 **3px**(sm **1px**);強制往外時每側被裁 0.7–0.9px、sm 幾乎整圈不見 | A(3 < 4) | **內 −2px**,寫在 `tag.tsx` TagDismiss(宿主承擔,底層 primitive 維持往外)|
+
+> **2026-09-10 訂正(行內動作鈕)**:`item-anatomy.tsx` 的 `focus-visible:focus-ring-inset` 帶著一句沒有量過的註解 ——
+> 「行內動作鈕住在列裡(常常還在截斷文字旁邊),往外 +2px 實測上下各被裁 1px」。實測翻案:**列不會裁它**
+>(截斷是 label 自己的 `truncate`,是兄弟節點不是祖先),26 個站點四周最小淨空 5–192px,往外的框一個像素都沒被裁。
+> 「上下各被裁 1px」只在 **Tag 宿主**成立,而依本節「同一個底層元件被另一個元件放進貼邊位置」的規則,
+> 那一處的往內要寫在 `tag.tsx`,不是讓底層元件整個翻內。
+> **為什麼一直沒被抓到**:`focus-geometry-browser-audit.mjs` 對「已經是內描邊」的站點直接豁免 —— 宣告往內之後就永遠不再重驗。
+> 2026-09-10 補上**反向驗證**:內描邊的站點改用往外的幾何重算,若這樣也不會被裁、不會撞鄰居就指名它(基準線 0,對照組 `--selftest-inset`)。
+> 儀器對自己的綠燈也要有對照組(M32)。
 
 > **2026-09-07 訂正**:上面這三列原本是用「判準 B(祖先有非-visible overflow)」判的,
 > 而判準 B 在同一份文件上一節已經被**撤回**(v3 把 `overflow` 完全踢出判準)——

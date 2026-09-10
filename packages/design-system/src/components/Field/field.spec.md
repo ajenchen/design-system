@@ -457,7 +457,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 - Tab — focus 移進內部 control(Input / Select / DatePicker 等)
 - Esc 取消編輯等行為由 control 本身或放置它的 host(如 DataTable cell)實作,**不在 Field**
 
-**Focus**:focus-visible ring 對齊 DS canonical(`outline: 2px solid var(--ring)`);Field 不搶焦點,focus 由內部 control 自管。
+**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色**(1px `focus-within:!border-primary`,error 態維持紅),**不畫**全域 2px 外描邊 —— 可打字時焦點在內部 input(插入點控件),關閉的觸發器是 wrapper 自己聚焦時亦同(`fieldWrapperStyles` 以 `focus-visible:outline-none` 抑制,@focus-suppress C)。例外只有 readonly:邊框透明無可染,改由全域外描邊畫在被聚焦的控件上。owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列。Field 不搶焦點,focus 由內部 control 自管。
 
 **SR 識別路徑**(由既有 aria 接線達成,見「FieldContext」與「驗證與 aria 屬性」段):focus 進 control 時 SR 可得完整資訊——label(`htmlFor`/`id` 連結)、required(control 的 `aria-required`)、invalid(`aria-invalid`)、description(`aria-describedby`)、error(`aria-errormessage`;`<FieldError role="alert">` 另在錯誤出現時即時播報)。required 星號本身 `aria-hidden`,SR 資訊來自 `aria-required` 非 `*` 字元。
 

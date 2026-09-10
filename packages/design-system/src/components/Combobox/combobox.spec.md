@@ -178,6 +178,8 @@ Combobox 是 **4-mode field**(edit / view / readonly / disabled),各 mode 渲染
 
 ## A11y 預設
 
+**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;開啟時焦點在裡面的插入點控件、關閉時觸發器 wrapper 自己是焦點站,兩種都只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。唯讀態例外:邊框透明無可染,改由全域外描邊畫在被聚焦的控件上(`field-controls.spec.md`「Focus 行為」readonly 段)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 桌機路徑的觸發區(`role="combobox"` 容器)與行動路徑的隱藏原生 `<select>` 各自吃自己的規則:前者邊框轉色,後者是 OS 的系統框。
+
 ### 鍵盤可達性的雙路徑設計
 
 Combobox 依裝置走兩條不同實作（觸控偵測自動切換）：

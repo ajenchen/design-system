@@ -3193,7 +3193,10 @@ function DataTableInner<TData>(
             // 排序點擊區維持 `flex-1` 撐滿,點擊範圍不縮水。
             canSort && 'cursor-pointer hover:text-foreground transition-colors',
             // 2026-07-04:rounded-sm → rounded-md(radius.spec.md 設計哲學(4)rounded-sm 保留未使用,4px 一律 rounded-md)
-            canSort && 'focus-visible:focus-ring-inset rounded-md',
+            // 2026-09-10:焦點框改回往外(= 不寫)。原本的內描邊是 2026-07-14 憑「對齊本檔其他站點」加的,沒有量過。
+            // 實測(column-resize / AppShell 兩個 story、五個欄位):上 9 / 下 10 / 左 9–12 / 右 7(右邊那 7px 是排序箭頭),
+            // 四周最小 7px ≥ 4 → 依 focus-canonical「問題二」預設往外。水平捲動時把表頭捲到一半不算「設計上貼邊」(v3 判準)。
+            canSort && 'rounded-md',
           )}
         >
           <TruncatedText className="min-w-0">

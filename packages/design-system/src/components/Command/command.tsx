@@ -44,7 +44,12 @@ const Command = React.forwardRef<
       <EmptyTextContext.Provider value={setEmptyText}>
         <CommandPrimitive
           ref={ref}
-          className={cn("flex h-full w-full flex-col overflow-hidden text-foreground", className)}
+          // @focus-suppress A — 程式游標:SelectMenu 非搜尋模式把 DOM 焦點放在 cmdk 殼上
+          // (select-menu.tsx handleNonSearchableAutoFocus),cmdk 之後再把焦點搬到 [cmdk-list];
+          // 承擔者:CommandItem 的 data-[selected=true]:focus-ring-inset(command.tsx:331)畫在游標項上。
+          // 2026-09-10 實測:殼的框今天畫不出來(PopoverContent overflow-hidden 把 +2px 整條裁掉,
+          // 逐像素 0),但 computed style 確實有 outline —— 殼一旦被放進不裁切的宿主就會現形,先抑制掉。
+          className={cn("flex h-full w-full flex-col overflow-hidden text-foreground outline-none", className)}
           {...props}
         >
           {children}
@@ -151,7 +156,10 @@ const CommandList = React.forwardRef<
       修: 加 flex-1 min-h-0(對齊 M25 canonical + HoverCard/Popover),max-h-300 降為上限。Command root 已
         `flex h-full flex-col`(command.tsx:23)= chain 完整;非 flex 容器內 flex-1 為 no-op(spec:34 backward compat)。 */
   <ScrollArea className="flex-1 min-h-0 max-h-[var(--menu-max-height)]">
-    <CommandPrimitive.List ref={ref} label={label} className={cn("overflow-x-hidden", className)} {...props} />
+    {/* @focus-suppress A — 同 Command 根:cmdk 1.1.1 在第一次方向鍵後把 DOM 焦點搬到 list
+        (`document.getElementById(listId).focus()`),殼同樣不該畫框;承擔者:CommandItem 的
+        data-[selected=true]:focus-ring-inset(command.tsx:331)。 */}
+    <CommandPrimitive.List ref={ref} label={label} className={cn("overflow-x-hidden outline-none", className)} {...props} />
   </ScrollArea>
 ))
 

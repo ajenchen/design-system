@@ -395,8 +395,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                     onDateClick?.(date)
                   }}
                   className={cn(
-                    // 內描邊:日期格在網格內彼此相鄰,往外 +2px 實測會壓到隔壁格(2026-09-07 瀏覽器量測)
-                    'inline-flex items-center justify-center min-w-6 h-6 rounded-full text-body font-medium focus-visible:focus-ring-inset',
+                    // 焦點框往外(= 不寫)。2026-09-10 重量:日期數字鈕(24×24)在格子裡是**置中**的,不是撐滿 ——
+                    // 上 6 / 下 4(下方是同格的事件容器)/ 左 128 / 右 7,最小 4.00 = canonical「算放得下」。
+                    // 2026-09-07 那句「往外會壓到隔壁格」量的是**格子**邊界不是鈕的鄰居;真正貼邊的是事件方塊
+                    //(彼此 gap-0.5 = 2px),那一處仍然往內(見下方 :435)。
+                    'inline-flex items-center justify-center min-w-6 h-6 rounded-full text-body font-medium',
                     isToday && 'px-2 bg-info text-on-emphasis',
                     !isToday && !inMonth && 'text-fg-disabled',
                   )}

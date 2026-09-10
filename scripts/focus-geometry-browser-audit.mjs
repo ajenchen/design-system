@@ -12,7 +12,12 @@
 // 沒有足夠視覺空間的地方,才往內。** 機械化就是:真的畫出來,量框有沒有越界。
 //
 // 三類豁免(不是放水,是判準本來就不涵蓋):
-//   (a) 已經是內描邊(grow ≤ 0)—— 框畫在元素裡面,任何越界都是**元素自己**早就越界
+//   (a) 已經是內描邊(grow ≤ 0)—— 框畫在元素裡面,不會越界;但**改為反向驗證**:
+//       把它當成往外(offset +2 / 寬 2)重算一次,若這樣也不會被裁、不會撞鄰居,
+//       就代表這一站根本不需要往內 → 列進「宣告內描邊但其實放得下」。
+//       2026-09-10 加:這個豁免原本讓「往內」的宣告永遠不被重驗,行內動作鈕因此帶著
+//       一句沒有量過的註解(「往外 +2px 上下各被裁 1px」)整整存活到 user 追問;
+//       儀器對自己的綠燈也要有對照組(M32)。
 //   (b) 行內元素 —— 瀏覽器原生焦點框壓到相鄰文字是全網慣例
 //   (c) 浮層(fixed / absolute)—— 它本來就疊在別的東西上面
 //
@@ -80,10 +85,17 @@ const DETECT = `(() => {
     carrier = 'pending'
     flIdx = Number(el.getAttribute('data-fl-idx'))
   }
-  const exempt = grow <= 0 || inline || floating
+  const insetSite = drawn && grow <= 0
+  const exempt = inline || floating
   if (exempt) return { desc, drawn, style: cs.outlineStyle+' '+cs.outlineWidth+' @'+cs.outlineOffset,
     color: cs.outlineColor, size: r.width.toFixed(0)+'x'+r.height.toFixed(0), problems: [],
-    exempt: grow<=0?'已內描邊':inline?'行內':'浮層', boxShadow: cs.boxShadow==='none'?'':'有', carrier, flIdx }
+    exempt: inline?'行內':'浮層', boxShadow: cs.boxShadow==='none'?'':'有', carrier, flIdx }
+  if (!drawn && !insetSite) return { desc, drawn, style: cs.outlineStyle+' '+cs.outlineWidth+' @'+cs.outlineOffset,
+    color: cs.outlineColor, size: r.width.toFixed(0)+'x'+r.height.toFixed(0), problems: [],
+    boxShadow: cs.boxShadow==='none'?'':'有', carrier, flIdx }
+  // 內描邊的站點:改用**往外**的幾何(全域規則的 offset 2 + 寬 2)重算,問「如果往外畫會不會出事」
+  if (insetSite) { const g = 4
+    box.top = r.top - g; box.right = r.right + g; box.bottom = r.bottom + g; box.left = r.left - g }
   // (1) 會裁切的祖先:框有沒有超出它的 padding box
   let p = el.parentElement
   while (p && p !== document.documentElement) {
@@ -95,10 +107,15 @@ const DETECT = `(() => {
         left: pr.left + parseFloat(pcs.borderLeftWidth), right: pr.right - parseFloat(pcs.borderRightWidth) }
       const clipX = pcs.overflowX !== 'visible', clipY = pcs.overflowY !== 'visible'
       const cut = []
-      if (clipY && box.top < inner.top - EPS) cut.push('上' + (inner.top - box.top).toFixed(1))
-      if (clipY && box.bottom > inner.bottom + EPS) cut.push('下' + (box.bottom - inner.bottom).toFixed(1))
-      if (clipX && box.left < inner.left - EPS) cut.push('左' + (inner.left - box.left).toFixed(1))
-      if (clipX && box.right > inner.right + EPS) cut.push('右' + (box.right - inner.right).toFixed(1))
+      // **元素自己已經越過那條邊時不算**(與豁免 (a) 同一個道理):可捲動容器裡被捲到一半的東西,
+      // 它的文字本來就被裁掉了,框跟著被裁不是「框選錯畫法」。只有元素整個在裡面、框才凸出去,才是框的問題。
+      // (2026-09-10 加:DataTable 排序表頭改回外描邊後,AppShell story 裡被水平捲掉一半的那一欄會誤報。)
+      const selfIn = { top: r.top >= inner.top - EPS, bottom: r.bottom <= inner.bottom + EPS,
+                       left: r.left >= inner.left - EPS, right: r.right <= inner.right + EPS }
+      if (clipY && selfIn.top && box.top < inner.top - EPS) cut.push('上' + (inner.top - box.top).toFixed(1))
+      if (clipY && selfIn.bottom && box.bottom > inner.bottom + EPS) cut.push('下' + (box.bottom - inner.bottom).toFixed(1))
+      if (clipX && selfIn.left && box.left < inner.left - EPS) cut.push('左' + (inner.left - box.left).toFixed(1))
+      if (clipX && selfIn.right && box.right > inner.right + EPS) cut.push('右' + (box.right - inner.right).toFixed(1))
       if (cut.length) problems.push({ kind: '被裁', by: p.tagName.toLowerCase()+'.'+String(p.className).split(/\\s+/).filter(Boolean).slice(0,2).join('.'), detail: cut.join(' ') })
     }
     p = p.parentElement
@@ -117,7 +134,7 @@ const DETECT = `(() => {
     if (hit) { problems.push({ kind: '撞鄰居', by: o.tagName.toLowerCase()+'.'+String(o.className).split(/\\s+/).filter(Boolean).slice(0,2).join('.'), detail: '' }); break }
   }
   return { desc, drawn, style: cs.outlineStyle+' '+cs.outlineWidth+' @'+cs.outlineOffset, color: cs.outlineColor,
-    size: r.width.toFixed(0)+'x'+r.height.toFixed(0), problems, boxShadow: cs.boxShadow==='none'?'':'有', carrier, flIdx }
+    size: r.width.toFixed(0)+'x'+r.height.toFixed(0), problems, insetSite, boxShadow: cs.boxShadow==='none'?'':'有', carrier, flIdx }
 })()`
 
 const idx = JSON.parse(readFileSync(join(STATIC,'index.json'),'utf8'))
@@ -149,6 +166,9 @@ for (const theme of ['light','dark']) {
       // 綠燈要能證明它「該紅的時候會紅」,否則這一段的通過不算證據(M32 sub-invariant)。
       if (process.argv.includes('--selftest')) {
         await pg.addStyleTag({ content: `*,*::before,*::after{transition:none!important;border-color:#f00!important;background-color:transparent!important;text-decoration-color:#f00!important;box-shadow:none!important}*:focus,*:focus-visible{outline:none!important}` })
+      }
+      if (process.argv.includes('--selftest-inset')) {
+        await pg.addStyleTag({ content: `*:focus-visible{outline:2px solid var(--ring)!important;outline-offset:-2px!important}` })
       }
       await pg.waitForTimeout(400)
       const seen=new Set(), rows=[]
@@ -234,8 +254,29 @@ for (const [c,v] of Object.entries(report)) {
 console.log('\n══ 框會被裁 / 會撞到鄰居 → 應改內描邊 ══')
 for (const [c,v] of Object.entries(report)) {
   if (v.err) continue
-  for (const r of (v.light||[])) if (r.drawn && r.problems.length) {
+  for (const r of (v.light||[])) if (r.drawn && !r.insetSite && r.problems.length) {
     console.log(`  ${c.padEnd(18)} ${r.desc.slice(0,44).padEnd(44)} ${r.style.padEnd(20)} ${r.problems.map(p=>p.kind+'('+p.detail+')←'+p.by.slice(0,26)).join(' ')}`); clipped++ }
+}
+// 反向:宣告了內描邊,但用往外的幾何重算也不會被裁 / 不會撞鄰居 → 這一站不需要往內
+//
+// **例外註冊表**:canonical 的判準是「這個元件在**規格允許的所有位置**裡有沒有一種是貼邊的」,
+// 而這支閘一個 story 只看得到一種位置。所以「在這個 story 裡放得下」不必然是錯 ——
+// 但必須在這裡寫下**另一個位置的實測數字**,否則就是憑印象翻內(行內動作鈕就是這樣錯了兩個月)。
+const JUSTIFIED_INSET = [
+  { comp: 'Tabs', match: /^button\[tab\]/, why:
+    'TabsList 的 overflow=scroll / menu 兩種模式下,tab 高 = 可捲視窗高 → 實測上 0 / 下 1 / 左 0(2026-09-10,' +
+    'overflow-scroll 與 overflow-menu 兩個 story);預設模式下四周有餘(最小 13)但同一個元件只有一種畫法' },
+]
+console.log('\n══ 宣告內描邊、但往外也放得下 → 應改回外描邊(判準:淨空 ≥ 4px)══')
+const insetUnjustified = []
+for (const [c,v] of Object.entries(report)) {
+  if (v.err) continue
+  for (const r of (v.light||[])) if (r.insetSite && !r.problems.length) {
+    const waiver = JUSTIFIED_INSET.find((w) => w.comp === c && w.match.test(r.desc))
+    if (waiver) { console.log(`  ${c.padEnd(18)} ${r.desc.slice(0,46)} ${r.size}  ← 已登記:${waiver.why.slice(0,60)}…`); continue }
+    insetUnjustified.push(`${c} ${r.desc.slice(0,46)} ${r.size}`)
+    console.log(`  ${c.padEnd(18)} ${r.desc.slice(0,46)} ${r.size}`)
+  }
 }
 console.log('\n══ 深色主題下有無殘留白間隙(box-shadow 通道)══')
 for (const [c,v] of Object.entries(report)) {
@@ -253,6 +294,13 @@ if (process.argv.includes('--selftest')) {
     : '\n✗ selftest:焦點視覺都釘死了卻還說找得到承擔者 —— 這一段的綠燈不算證據')
   process.exit(noCarrier.length ? 0 : 1)
 }
+// 反向檢查的對照組:把每一站都釘成內描邊,四周有空的那些就該被指名(否則這段的綠燈不算證據)
+if (process.argv.includes('--selftest-inset')) {
+  console.log(insetUnjustified.length
+    ? `\n✓ selftest-inset:把所有焦點框釘成內描邊時,${insetUnjustified.length} 處被指名「其實放得下」`
+    : '\n✗ selftest-inset:全部釘成內描邊了卻一處都沒指名 —— 反向檢查沒有在跑')
+  process.exit(insetUnjustified.length ? 0 : 1)
+}
 if (noCarrier.length) {
   console.error(`\n✗ ${noCarrier.length} 處沒有框、而且聚焦前後鄰域零差異 —— 宣告的承擔者其實沒在畫:`)
   noCarrier.forEach((n) => console.error('  ' + n))
@@ -260,4 +308,14 @@ if (noCarrier.length) {
 }
 const BASELINE = 1
 if (clipped > BASELINE) { console.error(`\n✗ 有 ${clipped} 站的焦點框會被裁或撞到鄰居(基準線 ${BASELINE})`); process.exit(1) }
-console.log('✓ 焦點框幾何全部正確')
+// 反向門檻:2026-09-10 起 0 —— 行內動作鈕 / DataTable 排序表頭 / Calendar 日期格改回外描邊、Tabs 登記例外之後,
+// DS 內每一處 `focus-ring-inset` 都是真的貼邊(選單項 / 事件方塊 / Tag 移除鈕 / 捲動模式的 tab…)。
+// 有新的一站被指名而且不在 JUSTIFIED_INSET,就是又有人憑印象翻內。
+const BASELINE_INSET = 0
+if (insetUnjustified.length > BASELINE_INSET) {
+  console.error(`\n✗ 有 ${insetUnjustified.length} 站宣告內描邊、但四周其實放得下(基準線 ${BASELINE_INSET})——` +
+    ' 依 focus-canonical「問題二」預設往外;真的貼邊請附實測數字')
+  insetUnjustified.forEach((n) => console.error('  ' + n))
+  process.exit(1)
+}
+console.log('✓ 焦點框幾何全部正確(含「宣告內描邊是否必要」的反向驗證)')

@@ -226,7 +226,9 @@ Field 家族 wrapper 的寬度軸,與 mode / variant / size / error 全部正交
 
 **可編輯文字輸入(edit / naked mode 的 input / textarea)**:統一 `border-primary`（1px），不加 ring、不加粗。
 
-**readonly(可聚焦但不可編輯的 input,2026-07-09 補 — 消解框架地圖 cross-ref)**:用 **ring idiom**(`[&:has(:focus-visible)]:ring-2 ring-ring ring-offset-1`;native text input 的 :focus-visible 在滑鼠點擊時**亦 match** — 對齊本段開頭「文字輸入永遠 focus-visible、CSS 無法區分點擊與 Tab」,勿宣稱僅鍵盤),**非** border-primary —— readonly 邊框 transparent 無可染,且 ring 語義=「可聚焦但非文字輸入」(對齊 Button / Tab / Checkbox);滿足 WCAG 2.4.7(readonly 有值渲染可聚焦 native input 需 focus 指示)。詳 `field-wrapper.tsx` readonly compound JSDoc。
+**readonly(可聚焦但不可編輯的 input / textarea)**:指示器 = `styles/base.css` 的**全域外描邊**(`outline: 2px solid var(--ring)`,往外 2px),畫在真正被聚焦的那個元素上,**非** border-primary —— readonly 邊框 transparent 無可染。native text input 的 `:focus-visible` 在滑鼠點擊時**亦 match**(見本段開頭),所以滑鼠鍵盤都會亮,勿宣稱僅鍵盤。編輯態的 `outline-none`(@focus-suppress B,承擔者是欄位邊框轉色)在 readonly 不適用,由 `bareInputStyles` 的 `group-data-[field-mode=readonly]/field:focus-visible:focus-ring-outer` 與 Textarea control 宿主的 readonly compound 解除。滿足 WCAG 2.4.7。
+
+> **2026-09-10 訂正**:原文寫的 ring idiom(`[&:has(:focus-visible)]:ring-2 ring-ring ring-offset-1`)已於 0cad81e8 隨 `ring-*` 家族退役(`focus-geometry-invariant.mjs` R1/R2 禁),但當時**沒有補替代品** → readonly Input / Textarea 一度完全沒有焦點指示(2026-09-10 實測:outline none、邊框 transparent、滑鼠點擊零視覺變化)。焦點幾何只有兩種,readonly 用往外那一種。詳 `field-wrapper.tsx` 頂端 JSDoc。
 
 ---
 

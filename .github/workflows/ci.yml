@@ -80,6 +80,10 @@ jobs:
           # 那條規則當時只是一句給人看的話,沒有機械防線。這支就是那道防線。
           npm run test:decided-clause-downgrade
           npm run test:button-variants
+          # 分頁 inlineAction 的幾何:2026-09-10 抓到它對活的 DOMRect 做物件展開 → 永遠回 null,
+          # 那顆鈕從 2026-07-18 起一次都沒渲染過;測試檔早就存在,但 `grep -rl check:tabs-inline-action-geometry .github`
+          # 回 0 —— 又一支「宣稱有閘、沒人跑」。render-level 那一半在 test:header-tabs-slot-invariants(W3)。
+          npm run check:tabs-inline-action-geometry
 
       - name: Registered test scripts nothing was running
         run: |
@@ -324,6 +328,8 @@ jobs:
           # 登記測試裡需要 Chromium 的(2026-09-08 拆 job 後靜態 job 沒有瀏覽器,d16baf90 的 verify-static 因此紅):
           npm run test:devmode-geometry
           npm run test:header-tabs-slot-invariants
+          # 對照組:清空 overlay 後 W3(分頁 inlineAction 必須真的渲染)必須整批變紅。
+          node scripts/header-tabs-slot-invariants.mjs --selftest
           # 選單訊息列(2026-09-08 user 拍板):「沒有選項 / 載入中」都是一列 MenuItem 的列幾何(md 48 = 8 + 32 + 8),
           # 列高 / 群組留白 / 置中 / 搜尋列與觸發點的轉圈尺寸與位置 / 不可互動,每條都量像素;對照組在 focus-deep-gates.yml。
           npm run test:menu-message-row

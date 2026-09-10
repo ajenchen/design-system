@@ -626,7 +626,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                 className={cn(
                   fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }),
                   'text-left cursor-pointer',
-                  // @focus-suppress B — B Field 家族輸入控件;承擔者:欄位邊框轉 primary(field-wrapper.tsx:49)
+                  // @focus-suppress B — B Field 家族輸入控件;承擔者:欄位邊框轉 primary(field-wrapper.tsx:57)
                   'focus-visible:outline-none',
                   className,
                 )}
@@ -1098,7 +1098,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'start'}
                   className={cn(
                     bareInputStyles,
-                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:49);起訖兩顆靠下方主色底線區分(見下一行)
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:57);起訖兩顆靠下方主色底線區分(見下一行)
                     'truncate text-left cursor-pointer focus-visible:outline-none',
                     // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
                     // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab
@@ -1127,7 +1127,7 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'end'}
                   className={cn(
                     bareInputStyles,
-                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:49);起訖兩顆靠下方主色底線區分(見下一行)
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:57);起訖兩顆靠下方主色底線區分(見下一行)
                     'truncate text-left cursor-pointer focus-visible:outline-none',
                     // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
                     // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab
