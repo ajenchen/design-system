@@ -512,8 +512,42 @@ if [ "$NOTIFICATION_AVAILABLE" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TR
   if [ "$ASSISTANT_LEN" -gt 200 ]; then IS_SUBSTANTIVE=1; fi
   if grep -qiE "$SUBSTANTIVE_RE" <<< "$LAST_ASSISTANT"; then IS_SUBSTANTIVE=1; fi
   if [ "$IS_SUBSTANTIVE" = "1" ]; then
-    # Check PushNotification tool call trace in this turn
-    HAS_PUSH=$(grep -ciE 'PushNotification|"name":"PushNotification"' <<< "$THIS_TURN_TOOLS" 2>/dev/null)
+    # Check PushNotification tool call trace in this turn.
+    # **必須是真的 tool_use block,不能只是字串出現**(2026-09-10 抓到的兩個洞之一):
+    # 舊寫法 `grep -ciE 'PushNotification|"name":"PushNotification"'` 會被三種東西騙過 ——
+    #   (1) 本 hook 自己寫進 transcript 的警告文字就含「PushNotification gap」→ 一旦警告過一次,
+    #       之後每一 turn 都被自己的輸出遮蔽(實測:2026-09-10 07:17 之後五小時零 call,gate 全程靜音);
+    #   (2) `ToolSearch` 的回傳結果會把整份工具 schema(含 "name": "PushNotification")貼進 transcript;
+    #   (3) 我自己在回覆裡提到「PushNotification」也算。
+    # 改成解析 transcript 的 content block:type=tool_use 且 name=PushNotification 才算。
+    HAS_PUSH=0
+    if command -v python3 >/dev/null 2>&1; then
+      HAS_PUSH=$(TURN_START="$LAST_USER_LINE" python3 - "$TRANSCRIPT_PATH" <<'PY' 2>/dev/null || echo 0
+import json, os, sys
+start = int(os.environ.get("TURN_START", "0"))
+count = 0
+try:
+    with open(sys.argv[1], encoding="utf-8", errors="ignore") as fh:
+        for index, line in enumerate(fh, start=1):
+            if index <= start or '"PushNotification"' not in line:
+                continue
+            try:
+                record = json.loads(line)
+            except Exception:
+                continue
+            message = record.get("message") or {}
+            for block in message.get("content") or []:
+                if isinstance(block, dict) and block.get("type") == "tool_use" and block.get("name") == "PushNotification":
+                    count += 1
+except Exception:
+    pass
+print(count)
+PY
+      )
+    else
+      # 沒有 python3 的環境:退回較緊的兩段式比對(同一行同時有 tool_use 與 name),仍比舊寫法窄
+      HAS_PUSH=$(grep -E '"type"[[:space:]]*:[[:space:]]*"tool_use"' <<< "$THIS_TURN_TOOLS" 2>/dev/null | grep -cE '"name"[[:space:]]*:[[:space:]]*"PushNotification"' 2>/dev/null)
+    fi
     HAS_PUSH=${HAS_PUSH:-0}
     if [ "$HAS_PUSH" -eq 0 ]; then
       # 2026-09-06 升 BLOCKER(user 逐字:「你他媽完成回覆後的推播到底為何又不見了?到底要講幾百次?
@@ -724,10 +758,17 @@ fi
 if [ "${CRITICAL_PUSH_GAP:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; then
   PUSH_HASH=$(printf '%s' "${LAST_ASSISTANT: -200}" | governance_hash_prefix)
   LAST_BLOCKED_PUSH_FILE="$STATE_DIR/.last-blocked-push.txt"
+  PUSH_STREAK_FILE="$STATE_DIR/.blocked-push-streak.txt"
   LAST_BLOCKED_PUSH=""
+  PUSH_STREAK=0
   [ "$STATE_WRITES" = "1" ] && [ -f "$LAST_BLOCKED_PUSH_FILE" ] && LAST_BLOCKED_PUSH=$(cat "$LAST_BLOCKED_PUSH_FILE" 2>/dev/null || echo "")
-  if [ "$PUSH_HASH" != "$LAST_BLOCKED_PUSH" ]; then
-    [ "$STATE_WRITES" = "1" ] && { mkdir -p "$STATE_DIR" 2>/dev/null; echo "$PUSH_HASH" > "$LAST_BLOCKED_PUSH_FILE" 2>/dev/null || true; }
+  [ "$STATE_WRITES" = "1" ] && [ -f "$PUSH_STREAK_FILE" ] && PUSH_STREAK=$(cat "$PUSH_STREAK_FILE" 2>/dev/null || echo 0)
+  case "$PUSH_STREAK" in (*[!0-9]*|'') PUSH_STREAK=0 ;; esac
+  # 2026-09-10:同 hash 就降 warn 的舊規則等於「回覆改一個字就能逃掉」——實測今天連續五小時零 call。
+  # 改成:同一段回覆最多擋 3 次(改寫也照擋),第 4 次才降 warn 防死鎖。真的 call 過就整個重置。
+  if [ "$PUSH_HASH" != "$LAST_BLOCKED_PUSH" ] || [ "$PUSH_STREAK" -lt 3 ]; then
+    if [ "$PUSH_HASH" = "$LAST_BLOCKED_PUSH" ]; then PUSH_STREAK=$((PUSH_STREAK + 1)); else PUSH_STREAK=1; fi
+    [ "$STATE_WRITES" = "1" ] && { mkdir -p "$STATE_DIR" 2>/dev/null; echo "$PUSH_HASH" > "$LAST_BLOCKED_PUSH_FILE" 2>/dev/null || true; echo "$PUSH_STREAK" > "$PUSH_STREAK_FILE" 2>/dev/null || true; }
     REASON=$(printf '%s' \
       "🚨 PUSH-NOTIFICATION BLOCKER(M6):本 turn 是 substantive output 但沒有 PushNotification tool call trace。" \
       "工作流程規範(memory/feedback_push_always_call.md):registered runtime 具 push-notification capability 時,substantive turn 結尾**必 call**。" \

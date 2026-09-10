@@ -120,11 +120,28 @@ const DETECT = `(() => {
     }
     p = p.parentElement
   }
-  // (2) 鄰居碰撞:框有沒有壓到不重疊的可見鄰居
+  // (2) 鄰居碰撞:框有沒有壓到不重疊的**真的畫得出東西**的鄰居
+  //     「畫得出東西」= 有不透明底色 / 有可見邊框 / 自己有文字 / 是圖片類 / 有陰影。
+  //     透明的排版盒(collapsible 外框、truncate wrapper、grid 格子)**不算障礙** ——
+  //     focus-canonical「正當障礙」那節講的是「會碰撞的鄰居」,不是「任何一個矩形」。
+  //     2026-09-10 補:沒有這一條時,AgentPanel 的「思考過程」標題被它下方**全透明**的收合盒
+  //     判成撞鄰居,於是一句沒量過的註解(「往外會壓到展開內容」)在閘裡永遠是綠的。
+  const paints = (o, cs) => {
+    if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent') return true
+    for (const side of ['Top','Right','Bottom','Left']) {
+      if (parseFloat(cs['border'+side+'Width']) > 0 && cs['border'+side+'Color'] !== 'rgba(0, 0, 0, 0)') return true
+    }
+    if (cs.boxShadow && cs.boxShadow !== 'none') return true
+    if (cs.outlineStyle && cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0) return true
+    if (['IMG','SVG','CANVAS','VIDEO','INPUT','TEXTAREA','HR'].includes(o.tagName)) return true
+    for (const n of o.childNodes) if (n.nodeType === 3 && n.textContent.trim()) return true
+    return false
+  }
   for (const o of document.querySelectorAll('*')) {
     if (o === el || el.contains(o) || o.contains(el)) continue
     const ocs = getComputedStyle(o)
     if (ocs.display==='none' || ocs.visibility==='hidden' || parseFloat(ocs.opacity)===0) continue
+    if (!paints(o, ocs)) continue
     const b = o.getBoundingClientRect()
     if (b.width < 1 || b.height < 1) continue
     // 疊層的不算鄰居(user 2026-09-07:疊起來的徽章不算)

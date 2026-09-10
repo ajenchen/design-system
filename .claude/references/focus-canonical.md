@@ -562,6 +562,7 @@ DataTable 的 boolean 儲存格,量到勾選框四邊淨空 0px → 先前判「
 | Tabs trigger | tab 高 = 分頁列高(`tabs.tsx:502-504`)→ 上下淨空 **0** | 淨空 < 4 | **內 −2px** |
 | Avatar 內的 × | 12px 鈕,疊在一起的頭像不算鄰居 → 無限制 | 都不命中 | **外 +2px**(2026-09-09 訂正,與上表 PeoplePicker 列一致)|
 | **行內動作鈕**(ItemInlineActionButton:側欄 / 樹 / 歷史列 / 欄位 endAction / 表頭選單 / Breadcrumb 省略號)| 26 個真實站點 × sm/md/lg,四周最小淨空 **5–192px**;最小值 **4.00**(Breadcrumb 兩側的分隔符);DPR2 逐像素數框帶 → 零裁切、零遮蓋 | 都不命中(4.00 算放得下)| **外 +2px**(2026-09-10 翻案,見下方訂正框)|
+| **分頁列的按鈕**(上一頁 / 頁碼 / 下一頁)| **外 +2px**(2026-09-10 起)。原本判內是因為 nav 常掛 `overflow-x-auto`,鈕高又等於 nav 內高 → 上下淨空 0;但那道裁切是「砍無可砍時整條橫向可捲」的副作用,而 16 家世界級掃描顯示**沒有一家讓數字頁碼列橫向捲**(唯一命中的 `TablePagination.js:29` 是表格頁尾工具列)。改法:最後一階多砍頭尾頁碼(220 → 156px,低於 DS 最窄容器)、`overflow-x-auto` 整條拿掉 → 沒有裁切邊,四周恢復真實視覺空間(鈕間 gap 4px) | 都不命中 | **外 +2px** |
 | **Tag 的移除 ×** | 16px 鈕住在 `h-6`(sm `h-5`)+ 1px 邊框 + `overflow-hidden` 的 Tag 裡 → 上下淨空 **3px**(sm **1px**);強制往外時每側被裁 0.7–0.9px、sm 幾乎整圈不見 | A(3 < 4) | **內 −2px**,寫在 `tag.tsx` TagDismiss(宿主承擔,底層 primitive 維持往外)|
 
 > **2026-09-10 訂正(行內動作鈕)**:`item-anatomy.tsx` 的 `focus-visible:focus-ring-inset` 帶著一句沒有量過的註解 ——

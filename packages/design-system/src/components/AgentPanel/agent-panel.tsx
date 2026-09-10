@@ -997,8 +997,12 @@ const AgentThinking = React.forwardRef<HTMLDivElement, AgentThinkingProps>(
         <CollapsiblePrimitive.Trigger
           className={cn(
             'group/agent-thinking flex cursor-pointer items-center gap-1 text-fg-secondary hover:text-foreground',
-            // 內描邊:往外 +2px 實測會壓到下方展開的思考內容(overflow-hidden 的 collapsible)
-            'focus-visible:focus-ring-inset',
+            // 焦點框往外(= 什麼都不寫,吃 styles/base.css 全域規則)。
+            // 2026-09-10 翻案:原本寫「往外 +2px 實測會壓到下方展開的思考內容(overflow-hidden 的 collapsible)」——
+            // 那句沒有量過。實測(展開與收合、1440 / 700 / 420 三種寬、三個實例):上 40 / 右 322 / 下 8 / 左 15,
+            // **四周最小 8px**,往外只需要 4px。那個 collapsible 的外框確實從標題底邊 0px 開始,但它是**兄弟節點**
+            //(不裁任何東西)而且背景全透明,裡面第一個真的畫出線的元素在 8px 外 —— 依 focus-canonical「問題二」
+            // 的「正當障礙」定義(會碰撞的鄰居或會切掉框的邊界),透明的兄弟盒不是障礙。
             'rounded-sm',
           )}
         >

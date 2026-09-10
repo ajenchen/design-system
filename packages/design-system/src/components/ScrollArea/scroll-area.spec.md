@@ -37,7 +37,7 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 
 ## 何時用
 
-- **寬內容橫向捲動**——內容寬於容器的一般場景(寬表格類 demo、程式碼區塊等)。**例外:DataTable 中央捲動區不用 ScrollArea**——走 native `overflow-x-auto` + JS scrollLeft 同步(pinned column 結構需求,理由與 post-v1 重構計畫見 `data-table.spec.md`「捲軸 canonical」節;2026-06-12 收斂跨 spec 張力,以已實作且有 rationale 的 DataTable 側為準)。**例外二:Pagination 最後一階**的整條分頁列橫向可捲同樣走 native `overflow-x-auto`、且不加任何 affordance —— 理由在 `pagination.spec.md`「內部結構與摺疊規則」(scroll arrow 與上下頁箭頭同形會混淆「捲動」與「翻頁」;代價只在捲軸佔版面的平台多一條捲軸高)
+- **寬內容橫向捲動**——內容寬於容器的一般場景(寬表格類 demo、程式碼區塊等)。**例外:DataTable 中央捲動區不用 ScrollArea**——走 native `overflow-x-auto` + JS scrollLeft 同步(pinned column 結構需求,理由與 post-v1 重構計畫見 `data-table.spec.md`「捲軸 canonical」節;2026-06-12 收斂跨 spec 張力,以已實作且有 rationale 的 DataTable 側為準)。**~~例外二:Pagination 最後一階~~**(2026-09-10 撤銷):分頁列**不再有任何捲動** —— 最後一階改成砍頭尾頁碼(156px,低於 DS 最窄容器),`overflow-x-auto` 整條拿掉。查證支持:16 家世界級掃過約 20 個分頁原始檔,沒有一家讓數字頁碼列橫向捲(唯一命中的 `TablePagination.js:29` 是表格頁尾工具列)。理由與數字見 `pagination.spec.md`「為什麼不捲」
 - **Sheet / Dialog body 垂直捲動**——內容可能超出容器高度
 - **Sidebar nav 長列表**——導覽項目多於可見高度
 - **任何「內容可能溢出容器」且「跨 OS 視覺必須一致」的 sub-region**

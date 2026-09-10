@@ -641,8 +641,11 @@ const Filmstrip = React.memo(function Filmstrip({ files, activeIndex, onSelect, 
                 // (semantic.css:337 是全 repo 唯一定義)→ 已選中的縮圖被聚焦時 **0 像素變化**,
                 // 違反 APG「selected 必須與 focus 指示器在視覺上可區分」。
                 // 解法:兩者走不同通道 + 不同位置 —— 選中留在 ring(box-shadow,貼著圖),
-                // 焦點改走 outline 並**往內**畫。往內的理由是 focus-canonical 問題二:
-                // 縮圖列(:605)是 `overflow-x-auto` 捲動容器,往外畫會被裁掉。
+                // 焦點改走 outline 並**往內**畫。往內的理由(2026-09-10 重量後改寫):
+                //   縱向**不是**理由 —— 縮圖列 `h-full py-2 items-center`,縮圖上下各有 15.5px,往外的 4px 放得下。
+                //   真正的理由是**橫向捲到邊**:視窗窄到膠卷溢出時(實測 420px 寬:scrollWidth 444 > clientWidth 388),
+                //   貼在左緣(或右緣)那張的淨空是 **0.00px**,往外的 4px 會被 `overflow-x-auto`(:605)切掉;
+                //   邊緣另有 48px 漸層遮罩會再淡掉一截。依 focus-canonical「問題二」規格允許的位置裡有貼邊的 → 整個元件往內。
                 // 不可寫 `outline-none`(它把 --tw-outline-style 設成 none,會讓下面三條靜默失效,
                 // 見 steps.tsx 同款事故)。
                 'focus-visible:focus-ring-inset',

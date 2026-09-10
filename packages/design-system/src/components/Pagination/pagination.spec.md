@@ -107,7 +107,8 @@ Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情�
 | 1 | 「N 筆/頁」選單 | **設定**,不是導覽 |
 | 2 | 格位 7 → 5(`sibling` 1 → 0) | **同一模式,視窗變小** |
 | 3 | 「第 x–y 筆,共 N 筆」 | opt-in **資訊** |
-| 再窄 | — | 一列不換行不截斷,整條橫向可捲 |
+| 4 | **頭尾頁碼**(`boundary` 1 → 0;剩 上一頁 · … · 現在頁 · … · 下一頁) | **同一模式,再省一次**(2026-09-10 user 拍板「我覺得可以砍頭砍尾」)|
+| 再窄 | — | 沒有下一階,也**不捲** —— 見下方「為什麼不捲」 |
 
 - **資訊文字永遠不超過一行**(user 要求):`whitespace-nowrap` + `shrink-0`;階梯在它需要換行之前
   就先砍別的,砍到最後是整段拿掉,不會有半行。沒有這兩個 class 時實測 440px 容器下分頁列高度
@@ -117,12 +118,22 @@ Ant Pagination 的 `responsive`(`useBreakpoint`)量的都是視窗,在那個情�
   挑最高的可容納階;快取只增不減 → 收斂,不會在兩階間來回跳。**副作用(2026-09-05 登記)**:快取記的是各階曾量到的
   最大自然寬,`total` / `totalPages` / `pageSize` 變小之後(頁數從四位數變兩位數)仍用舊的較大值判斷,可能停在比
   實際需要更窄的階,直到重新掛載;要修就在這些 prop 變動時清快取。
-- **最後一階不加 scroll arrow**:`horizontal-overflow` 模組規定 overflow affordance 是 text iconOnly 的
-  ChevronLeft/Right —— 那跟分頁自己的上下頁箭頭長得一模一樣,同一列會分不清「捲動」還是「翻頁」。
-  代價是最後一階多出一條原生捲軸的高度 —— **僅限捲軸佔版面的平台**(Windows / Linux classic 捲軸,實測 28px → 43px;
-  macOS overlay 捲軸與 CI headless 為 0px,2026-09-05 補此限定),只在 ~200px 以下才會遇到。不消費
-  `<ScrollArea orientation="horizontal">` 的理由同上:它的 affordance 不該出現在分頁列;`scroll-area.spec.md`「何時用」與
-  `horizontal-overflow.spec.md`「Canonical 規則」各留有指回本段的例外註記。
+- **為什麼不捲**(2026-09-10 改;取代原本的「最後一階整條橫向可捲」):
+  - **世界級掃描 16 家、約 20 個分頁原始檔**,`overflow: auto|scroll` 全批只中一條 —— MUI `TablePagination.js:29`,
+    而那是**表格頁尾工具列**(root 是 `TableCell`,渲染的是每頁筆數選單 / 筆數文字 / 上下頁鈕,沒有數字頁碼),
+    且 `auto` 是避免表格版面被撐破的防守寫法。**沒有任何一家讓數字頁碼列橫向捲動。**
+    Carbon 反過來在 `_pagination.scss:37` 明文寫 `overflow: initial`;Ant 全檔唯一 overflow 在 `:689` 的 clearfix;
+    Primer / shadcn / Polaris / Bootstrap / Atlassian / Angular Material / GOV.UK / Mantine / EUI / Base Web / Vuetify 皆 0。
+    主流解是**收合頁碼**(Atlassian `max = 7` 插省略號、Carbon PaginationNav 在 `isSm` 砍到 4 顆、Ant `pageBufferSize`)。
+  - **我們的數字**:砍完頭尾的最後一階 = 5 格 × 28px + 4 × gap 4px = **156px**;DS 定義的最窄容器是側欄面板下限
+    240px(`app-shell.tsx:111`),扣內距約 208px —— 支援得到的寬度都放得下,不需要捲。
+  - **連帶修掉的副作用**:`overflow-x-auto` 常掛時,CSS 規範讓另一軸也算成 auto,於是**每一個寬度**都在裁上下 ——
+    焦點框(實測往外的框上下像素 0 / 0)、陰影、浮層一起被切。拿掉之後這三件同時解決,分頁按鈕的焦點框
+    因此回到預設的**往外**(`ds-canonical/references/focus-canonical.md:485`「≥ 4px 往外」)。
+  - **原本那條捲動的來歷(據實留檔)**:commit `0eff9ab6`(2026-09-04)依我們自己的 `tabs.spec.md:235` 類推而來,
+    **沒有任何 user 原話核准**;查證時另發現連 Radix Tabs 原始碼也零 overflow,那條 Tabs 規範同樣是我們自己寫的。
+  - **不消費 `<ScrollArea orientation="horizontal">`**:理由不變(它的 affordance 是 ChevronLeft/Right,跟分頁自己的
+    上下頁箭頭長得一模一樣,同一列會分不清「捲動」還是「翻頁」);現在更直接 —— 分頁列根本不捲。
 - **格位是既有參數,不是新機制**:`boundary` / `sibling` 本來就是摺疊演算法的入參;
   [MUI `usePagination` 的 `boundaryCount=1` / `siblingCount=1`](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/usePagination/usePagination.js#L7)
   與 [Primer 的 `marginPageCount=1` / `surroundingPageCount=2`](https://github.com/primer/react/blob/main/packages/react/src/Pagination/Pagination.tsx#L128)

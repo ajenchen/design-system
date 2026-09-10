@@ -20,6 +20,12 @@ import { useControllable } from '@/design-system/hooks/use-controllable'
 // 最小 API);未來若開放,命名必沿用 MUI siblingCount / boundaryCount。
 // 最大格位 = 首尾各 1 + 當前頁左右各 1 + 當前頁 + 2 顆 ellipsis = 7,超過即摺疊。
 const BOUNDARY_COUNT = 1
+/** 最後一階砍掉頭尾頁碼(user 2026-09-10 拍板「我覺得可以砍頭砍尾」)。
+ *  砍完的最後一階 = 上一頁 · … · 現在頁 · … · 下一頁 = 5 格 × 28 + 4 × gap 4 = **156px**,
+ *  低於 DS 定義的最窄容器(側欄下限 240px,扣內距約 208px),所以支援得到的寬度**都不需要捲**。
+ *  世界級對照(2026-09-10 16 家原始碼掃描):收合頁碼是絕對多數解 —— Atlassian `max = 7` 超過插 ellipsis、
+ *  Carbon PaginationNav 在 `isSm` 直接砍成 4 顆、Ant `pageBufferSize`、Primer 逐級藏。 */
+const BOUNDARY_COUNT_NARROW = 0
 const SIBLING_COUNT = 1
 /**
  * 窄容器時把 sibling 轉成 0 —— 格位 7 → 5(`1 … [5] … 12`)。
@@ -51,7 +57,7 @@ type PaginationSlot = number | 'ellipsis-start' | 'ellipsis-end'
  * (子元素寬總和 + gap —— 子元素都 `shrink-0`、文字 `nowrap`,所以那個值與容器寬無關),
  * 記進 `needRef` 再挑最高的可容納階。`Math.max` 只增不減 → 收斂,不會在兩階之間來回跳。
  */
-const NARROW_TIERS = 4 // 0 full / 1 no-sizer / 2 compact-pages / 3 pages-only
+const NARROW_TIERS = 5 // 0 full / 1 no-sizer / 2 compact-pages / 3 pages-only / 4 no-boundary(砍頭尾)
 
 function useNarrowTier(navRef: React.RefObject<HTMLElement>) {
   const [tier, setTier] = React.useState(0)
@@ -87,33 +93,38 @@ function useNarrowTier(navRef: React.RefObject<HTMLElement>) {
 
 // 摺疊演算法照 MUI usePagination(1/1 配置);兩顆 ellipsis 用 distinct 穩定 key
 // (Breadcrumb Math.random key remount 前車之鑑,breadcrumb.tsx:208-210)。
-function getPaginationRange(page: number, totalPages: number, siblingCount: number): PaginationSlot[] {
+function getPaginationRange(
+  page: number,
+  totalPages: number,
+  siblingCount: number,
+  boundaryCount: number = BOUNDARY_COUNT,
+): PaginationSlot[] {
   const range = (start: number, end: number) =>
     Array.from({ length: end - start + 1 }, (_, i) => start + i)
 
   // 全部放得下(≤ 7 頁)→ 不摺疊
-  if (totalPages <= BOUNDARY_COUNT * 2 + siblingCount * 2 + 3) return range(1, totalPages)
+  if (totalPages <= boundaryCount * 2 + siblingCount * 2 + 3) return range(1, totalPages)
 
-  const startPages = range(1, BOUNDARY_COUNT)
-  const endPages = range(totalPages - BOUNDARY_COUNT + 1, totalPages)
+  const startPages = range(1, boundaryCount)
+  const endPages = range(totalPages - boundaryCount + 1, totalPages)
   const siblingsStart = Math.max(
-    Math.min(page - siblingCount, totalPages - BOUNDARY_COUNT - siblingCount * 2 - 1),
-    BOUNDARY_COUNT + 2,
+    Math.min(page - siblingCount, totalPages - boundaryCount - siblingCount * 2 - 1),
+    boundaryCount + 2,
   )
   const siblingsEnd = Math.min(
-    Math.max(page + siblingCount, BOUNDARY_COUNT + siblingCount * 2 + 2),
-    totalPages - BOUNDARY_COUNT - 1,
+    Math.max(page + siblingCount, boundaryCount + siblingCount * 2 + 2),
+    totalPages - boundaryCount - 1,
   )
 
   return [
     ...startPages,
-    ...(siblingsStart > BOUNDARY_COUNT + 2
+    ...(siblingsStart > boundaryCount + 2
       ? (['ellipsis-start'] as const)
-      : [BOUNDARY_COUNT + 1]),
+      : [boundaryCount + 1]),
     ...range(siblingsStart, siblingsEnd),
-    ...(siblingsEnd < totalPages - BOUNDARY_COUNT - 1
+    ...(siblingsEnd < totalPages - boundaryCount - 1
       ? (['ellipsis-end'] as const)
-      : [totalPages - BOUNDARY_COUNT]),
+      : [totalPages - boundaryCount]),
     ...endPages,
   ]
 }
@@ -200,10 +211,10 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
     const totalPages = Math.max(1, Math.ceil(total / safePageSize))
     const current = Math.min(Math.max(page, 1), totalPages)
     const hasSizeChangerAtFull = !!pageSizeOptions && pageSizeOptions.length > 0
-    // 階梯:0 全開 / 1 收每頁筆數 / 2 格位 7→5 / 3 再收資訊文字
+    // 階梯:0 全開 / 1 收每頁筆數 / 2 格位 7→5 / 3 再收資訊文字 / 4 砍頭尾頁碼(最後一階)
     const hasSizeChanger = hasSizeChangerAtFull && tier < 1
     const showTotalNow = showTotal && tier < 3
-    const slots = getPaginationRange(current, totalPages, tier < 2 ? SIBLING_COUNT : SIBLING_COUNT_NARROW)
+    const slots = getPaginationRange(current, totalPages, tier < 2 ? SIBLING_COUNT : SIBLING_COUNT_NARROW, tier < 4 ? BOUNDARY_COUNT : BOUNDARY_COUNT_NARROW)
     const hasExtras = showTotal || hasSizeChangerAtFull
     const rangeStart = (current - 1) * safePageSize + 1
     const rangeEnd = Math.min(current * safePageSize, total)
@@ -212,16 +223,24 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
       ? (pageSizeOptions!.includes(safePageSize) ? pageSizeOptions! : [safePageSize, ...pageSizeOptions!])
       : []
 
-    // 2026-09-07:本列所有按鈕改**內**描邊。
-    // 根因不是按鈕本身,是它們住的 `<nav>` 有 `overflow-x-auto`(下方 :281 —— 那是
-    // 「砍無可砍時整條橫向可捲」的既有 canonical,不是可以拿掉的東西)。
-    // 依 CSS 規範,一軸不是 visible 時另一軸也會計算成 auto,所以那個 nav 兩軸都裁。
-    // 實測外描邊被裁掉 上 4 / 下 4 / 左 4 px —— 框畫了等於沒畫。
-    // 判準見 `ds-canonical/references/focus-canonical.md` 問題二:
-    // 元素貼著裁切邊(淨空 < 4px)就往內畫。寫在這一層而不是逐顆按鈕,
-    // 是因為「會被裁」是這個容器的性質,不是某一顆按鈕的性質。
+    // 2026-09-10:本列所有按鈕**回到預設的往外描邊**(= 什麼都不寫)。歷程與理由:
+    //
+    //   user 第一問「我們的 pagination 完全不會有可以捲動的情況吧?」→ 會,但很窄才會:
+    //     視窗 200px(nav 168px)起 scrollWidth 220–244 > clientWidth;280px 以上一路到 1440px 都不捲。
+    //
+    //   user 第二問「原則的重點是判斷元件**視覺上**四周是否有足夠空間吧?」→ 對,而且這一題我上一版答錯了。
+    //     我當時把「鈕高 28 = nav 內高 → 上下淨空 0」當理由,但那個 0 是 `overflow-x-auto` 的**副作用**:
+    //     CSS 規範讓另一軸從 visible 算成 auto,於是縱向也裁。可是這一列縱向**永遠不會捲**,拿掉那道裁切
+    //     畫面一點都不會壞(實測:給 nav 上下各 4px 內距 + 等量負外距 → 版面高度不變、按鈕座標不變 43.6,
+    //     往外的框上下從 0 / 0 變 224 / 178 像素)。依 focus-canonical「正當障礙」那節:
+    //     **不會壞 → 不是正當障礙**,不能拿它當往內的理由。
+    //
+    //   最後一階改成砍頭尾頁碼(156px)之後,`overflow-x-auto` 整條拿掉 —— **沒有裁切邊了**,
+    //   四周淨空恢復成真實的視覺空間(鈕與鈕之間 gap 4px、上下是頁面留白),依 focus-canonical
+    //   `:485`「≥ 4px 往外」就是往外。這也回答了 user 的原則問題:判準看的是**視覺上**的空間,
+    //   技術性的裁切副作用不算正當障礙。
     const pageList = (
-      <ul className="flex items-center gap-1 [&_button:focus-visible]:focus-ring-inset">
+      <ul className="flex items-center gap-1">
         <li>
           <Button
             variant="text"
@@ -282,11 +301,15 @@ const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
         ref={setNavRef}
         aria-label="Pagination"
         className={cn(
-          // `overflow-x-auto` 是階梯走完之後的最後一道:砍無可砍時整條橫向可捲,
-          // 不換行也不截斷(同 `tabs.spec.md` 對「整列放不下」的既有 canonical:走 overflow,
-          // 不是截斷單一 item)。**不加 scroll arrow** —— 那組 ChevronLeft/Right 跟分頁自己的
-          // 上下頁箭頭長得一模一樣,擺在同一列會分不清「捲動」還是「翻頁」。
-          'flex items-center overflow-x-auto',
+          // **2026-09-10 拿掉 `overflow-x-auto`**(user:「我覺得可以砍頭砍尾」+ 16 家原始碼查證)。
+          // 原本它是「砍無可砍時整條橫向可捲」的最後一道,由 2026-09-04 的 commit 0eff9ab6 依我們自己的
+          // Tabs canonical 類推而來,**沒有任何 user 原話核准過**。查證結果:16 家世界級設計系統掃過約 20 個
+          // 分頁原始檔,`overflow: auto|scroll` 只中一條 —— MUI 的 `TablePagination.js:29`,而那是表格頁尾
+          // 工具列(`<td>`)不是頁碼導覽;Carbon 甚至在 `_pagination.scss:37` 明文寫 `overflow: initial` 擋掉捲動。
+          // 沒有任何一家讓數字頁碼列橫向捲。改用主流解:多砍一階(見 BOUNDARY_COUNT_NARROW),
+          // 最後一階只要 156px,低於 DS 最窄容器,所以支援得到的寬度都不需要捲。
+          // 連帶好處:沒有裁切邊之後,焦點框、陰影、浮層在所有寬度都不再被切。
+          'flex items-center',
           // 完整形態 =「資訊左、操作右」(Ant 源碼結構:total 文字最左 li、size changer 最右 li)
           hasExtras && 'w-full justify-between gap-[var(--layout-space-tight)]',
           className,

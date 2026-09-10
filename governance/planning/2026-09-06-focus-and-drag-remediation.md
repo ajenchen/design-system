@@ -3017,6 +3017,23 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - **反證者的兩點修正(已採納進本條敘述)**:(a) 不能說「業界共識偏向穿透」—— 以預設值計票是 4:2 偏向擋住;正確的說法是**這是有文件、有先例的情境選擇**,而我們的情境(掛在導覽控件上的選單、user 明確定調為 popover 類)落在穿透那一側。(b) Radix 自己的預設其實**有**沿著 menu / popover 分家(`popover.tsx:76` 預設 `modal = false`、`menu.tsx:98` 預設 `true`)—— 這正好支持 user 的分類語言。
 - **取捨(改完就會有的)**:選單開著時頁面可以捲動(Radix 會讓浮層跟著錨點走)、外面不再 `aria-hidden`、沒有焦點鎖;方向鍵在選單內照舊,Esc 與外部點擊照舊關閉。`agent-panel-fab.tsx:683` 早就顯式 `modal={false}`,與新預設一致。
 
+### AD81 user 2026-09-10:「為何推播又沒了?到底是什麼時侯才能永遠修好?」—— 推播閘被自己的輸出遮蔽,兩個洞都補上(2026-09-10)
+
+- **事實**:本 session 最後一次真的呼叫 `PushNotification` 是 07:17 UTC;之後五小時的 substantive turn 一次都沒有,而 `stop_self_audit.sh` M6 的 BLOCKER **全程沒有再響**(transcript 全文只有 08-08 / 08-09 / 09-06 / 09-10 12:26 四批命中)。
+- **洞一(偵測)**:M6 用 `grep -ciE 'PushNotification|"name":"PushNotification"'` 掃本 turn 的 transcript 片段 —— 這會被三種天天發生的東西騙過:(a) **hook 自己寫進 transcript 的警告文字**就含「PushNotification gap」,警告過一次之後永久遮蔽;(b) `ToolSearch` 的回傳把整份工具 schema(含 `"name": "PushNotification"`)貼進 transcript;(c) 我自己在回覆裡提到這個字。修:解析 content block,`type=tool_use` 且 `name=PushNotification` 才算(無 python3 的環境退回「同一行同時有 tool_use 與 name」的較緊比對)。
+- **洞二(升級邏輯)**:原本「同一段回覆的 hash 擋過一次就降 warn」,回覆改一個字就能逃掉。改成同一段最多擋 3 次,第 4 次才降 warn 防死鎖;真的 call 過就整個重置。
+- **對照組**:新測試 `hooks/tests/test_stop_self_audit_push_gate.sh` 四情境 —— 真的呼叫 → 安靜(0);沒呼叫 → 擋(1);只有 ToolSearch schema 提到 → 擋(1);只有我自己文字提到 → 擋(1)。把偵測退回舊寫法重跑:後兩種變成 0(靜音),證明這正是失效的形狀。
+- **這次是「永遠修好」嗎**:機械面補完了(偵測看真呼叫、擋 3 次、有對照組、進 hook 測試套件)。仍有一個前提我說清楚:hook 只能在 turn 結束時擋,擋下之後仍要我自己去 call —— 所以它保證的是「漏掉會被擋住並且看得見」,不是「不可能漏」。
+
+### AD82 user 2026-09-10:「我覺得可以砍頭砍尾」+「我幾乎沒看過世界級的設計在 pagination 上有捲軸,有嗎?」—— 分頁列多砍一階、捲動整條拿掉、焦點框回外(2026-09-10)
+
+- **查證(16 家、約 20 個分頁原始檔,兩輪:調查 + 反證者各自重抓)**:`overflow: auto|scroll` 全批只中一條 —— MUI `TablePagination.js:29`,而那是**表格頁尾工具列**(root 是 `TableCell`,渲染每頁筆數 / 筆數文字 / 上下頁鈕,沒有數字頁碼),`auto` 是防止表格版面被撐破的防守寫法。Carbon 反過來 `_pagination.scss:37` 明文 `overflow: initial`。**沒有一家讓數字頁碼列橫向捲。** 主流解是收合頁碼(Atlassian `pagination.js:48` `max = 7`、Carbon `PaginationNav.tsx:378-398` 窄版砍到 4 顆、Ant `pageBufferSize`、Primer 逐級藏)。反證者把樣本從 9 家擴到 16 家(加 Angular Material / GOV.UK / USWDS / Bulma / Mantine / EUI / Base Web / Vuetify / Fluent v8 experiments),結論不變;並推翻原調查一條附帶建議 ——「換行只有 MUI 一家」不成立,實際 4 家用 `flex-wrap: wrap`(含 Angular Material 的表格頁尾與 GOV.UK)。
+- **出處(據實留檔)**:我們的 `overflow-x-auto` 來自 commit `0eff9ab6`(2026-09-04),理由是依我們自己的 `tabs.spec.md:235` 類推;該 commit 引的兩句 user 原話都沒提到捲動,後續兩句 user 發言都是問句(M36「問句 ≠ 同意」)。**AI 推導的工程決定,不是 user 拍板。** 反證者另查到:連 Radix Tabs 原始碼也零 overflow,那條 Tabs 捲動規範同樣是我們自己寫的。
+- **改法(user 拍板「我覺得可以砍頭砍尾」)**:階梯加第 5 階 `BOUNDARY_COUNT_NARROW = 0` —— 最後一階 = 上一頁 · … · 現在頁 · … · 下一頁 = 5 格 × 28 + 4 × gap 4 = **156px**(原本 7 格 220px);`overflow-x-auto` 與整個 `overflowing` state 移除;分頁按鈕的 `focus-ring-inset` 移除、回預設往外。
+- **實測(改前 → 改後)**:容器 208px:7 格、內容 220 > 可視 208、**會捲** → 5 格、內容 208 = 可視、**不捲**;容器 168px:內容 220、會捲 → 內容 168、不捲;容器 128px(遠低於 DS 最窄容器):內容 156、**溢出但沒有捲軸**(同 Bootstrap)。捲軸佔高在覆蓋式與傳統 17px 捲軸兩種平台都是 **0**(改前傳統捲軸下 208px 以下列高 28 → 45)。焦點框逐像素:改前往外上下 0 / 0(整條不見)→ 改後 224 / 178(完整)。
+- **閘**:窄階梯 P0–P5 全過(含 P5 收斂不抖、P3 每階仍是數字頁碼);焦點幾何全掃綠(72 外 / 1 內 / 17 無框),兩個對照組照樣紅(釘死焦點視覺 → 9 處、全部釘成內描邊 → 78 處);幾何閘裡的 Pagination 例外**已刪除**(它是為捲動狀態存在的)。
+- **跨規格同步**:`scroll-area.spec.md:40` 與 `horizontal-overflow.spec.md:34` 的「Pagination 最後一階可橫向捲」兩條例外都標為 2026-09-10 撤銷並寫明理由;`pagination.spec.md` 階梯表加第 4 階、原「最後一階不加 scroll arrow」整段改寫成「為什麼不捲」。
+
 ### AD77 既有債(非本批造成,查證時順手盤到,登記不冒充已解)(2026-09-10)
 
 - **a11y 全掃 5038 條 serious**(color-contrast 5033、nested-interactive 4、可捲動區不可聚焦 1),分布在 737 個 story。CI 的 `a11y-and-size.yml` 走的是 baseline-diff(只擋新增),所以這是既有基線不是本批回歸;本批另跑一次 `--gate`:**0 regression vs baseline**(1033 story 全掃,critical 0)。

@@ -235,6 +235,7 @@
         "packages/design-system/ds-canonical/hooks/tests/test_stop_passive_logging.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_repository_command_context.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_self_audit.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_stop_self_audit_push_gate.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_tsc_sanity.sh"
       ]
     },
