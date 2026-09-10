@@ -1810,11 +1810,16 @@ function DataTableInner<TData>(
     // 慢機器捲動中:一次 commit 的時間內視窗會移動 速度 × commit 時間 這麼遠,這段距離的列先掛殼(便宜)在前面等著,
     // 否則每次 commit 畫好的列落地時視窗早已捲過去 → 整片白直到緊急跳轉才有殼(v2 在 4× 節流量到 621–997ms 白)。
     // 慢機器或緊急跳轉都算;上限 48 列(6× 節流:6px/ms × 300ms commit ÷ 40px ≈ 45 列)。殼便宜,多掛是為了讓合成器捲進去時有東西。
-    // 捲動中一律預掛(2026-09-10):關掉捲動事件內的同步重畫之後,render 結構性地晚一拍落地 ——
-    // 這一拍裡合成器已經把視窗往前推了「速度 × 一次 render 的間隔」,那段距離的列若沒先掛就是可見的白。
-    // 實測(6,000px/s,其餘條件相同、只差同步重畫):空白幀 26 → 10、空白面積 52 → 16,但**最長單次空白 51 → 100ms**,
-    // 正是這一拍。原本這個前掛只在「量到機器跟不上」時才開,對快機器永遠是 0;現在捲動中就給,長度仍由量到的
-    // 速度 × 間隔決定(靜止時自然回到 0),所以正常速度只多掛 2–3 列。
+    // 捲動中一律往捲動方向預掛(2026-09-10)。
+    //
+    // 原本這個前掛只在「量到機器跟不上」時才開,對跟得上的機器永遠是 0 —— 但**即使跟得上**,
+    // render 落地與合成器送幀之間仍有一拍:那一拍裡視窗已經往前移了「速度 × 一次 render 的間隔」,
+    // 那段距離的列若沒先掛,合成器就送出一片白。長度仍由量到的速度 × 量到的間隔決定(靜止時自然回到 0),
+    // 正常速度只多掛 2–3 列;上限 48 列不變。
+    //
+    // **隔離實證(6,000px/s,其餘條件全同、只差這一項,4 跑中位數 / 最大)**:空白幀 26 / 26 → **2.5 / 4**、
+    // 空白面積 51 / 58 → **5 / 9**(最長單次空白 27 / 51 → 35 / 67ms:白的次數與面積都大減,代價是偶爾一次略長)。
+    // 這是本輪捲動觀感改善的主力。
     S.aheadRows = scrolling && S.lastCommitAt > 0
       ? Math.max(0, Math.min(48, Math.ceil((Math.abs(offsetNow - (renderOffsetPrev ?? offsetNow)) / Math.max(1, now - prevRenderStart)) * Math.max(S.commitCost, now - prevRenderStart) / Math.max(1, resolvedEstimate))))
       : 0
@@ -1904,6 +1909,7 @@ function DataTableInner<TData>(
   })
   React.useEffect(() => () => { if (shellRef.current.raf) cancelAnimationFrame(shellRef.current.raf) }, [])
 
+
   const virtualizer = useVirtualizer({
     count: useVirtual ? rows.length : 0,
     // V scroll 現在在 centerBodyRef(不是外層 bodyRef)
@@ -1915,22 +1921,21 @@ function DataTableInner<TData>(
     // start/end flip 次數 → TableScrollContext 重 cascade visible rich cell
     // tree 機會降低。對齊 TanStack Virtual `isScrollingResetDelay` API。
     isScrollingResetDelay: 250,
-    // 捲動事件裡不同步重畫(2026-09-10;root cause 修正)
+    // **`useFlushSync` 刻意維持預設 true(2026-09-10 量完才定案,別再拆一次)**
     //
-    // `@tanstack/react-virtual` 的 `useFlushSync` 預設是 true —— 每個 scroll 事件都在事件處理器裡
-    // `flushSync(rerender)`(`node_modules/@tanstack/react-virtual/dist/esm/index.js` 的 `useVirtualizerBase`),
-    // 也就是整棵表格的 render + commit 都算在那一次 scroll 事件的耗時裡,而且每個事件各算一次、無法合併。
-    // 實測(CDP trace,全功能整合範例):每個 scroll 事件 9-22ms;4× 節流時 p95 到 75ms。
+    // `@tanstack/react-virtual` 的預設是在每個 scroll 事件的處理器裡 `flushSync(rerender)`
+    // (`node_modules/@tanstack/react-virtual/dist/esm/index.js` 的 `useVirtualizerBase`),整棵表格的
+    // render + commit 因此算進那一次捲動事件。關掉它確實讓「捲動事件耗時」從 p95 15.5ms 掉到 1.0ms、
+    // 主執行緒長任務變少,世界級對照也支持關掉 —— AG Grid 33.3.2 `ag-grid-community.js:25744-25777` 的
+    // `onVScroll` 在捲動事件裡只記 `nextScrollTop` + `animationFrameSvc.schedule()`,重畫在 rAF 的
+    // `executeFrame(60)`(同檔 :34057),同步那條是動畫幀服務被停用時的降級路徑。
     //
-    // 世界級對照 —— AG Grid 33.3.2(我們 spec 引用的版本)`ag-grid-community.js:25744-25777` 的 `onVScroll`:
-    // 捲動事件裡只記 `nextScrollTop`、同步假捲軸,然後 `animationFrameSvc.schedule()` 就結束;
-    // 真正重畫列在 rAF 的 `executeFrame(60)` 裡(同檔 :34057)。只有動畫幀服務被停用時才走同步那條
-    // (`this.scrollGridIfNeeded(true)`,:25774)。也就是「捲動事件裡不重畫」是它的預設,不是降級路徑。
-    //
-    // 關掉之後 React 以 user-blocking 優先度排程:多個捲動事件會合併成一次 render,主執行緒也能在中間插入
-    // 合成與輸入。空窗風險由既有的殼列機制承接(殼便宜、且 `shellRangeExtractor` 往捲動方向預掛),
-    // 由 `npm run test:data-table-scroll-perception` 的未填列數守住。
-    useFlushSync: false,
+    // **但量畫面就翻盤**:6,000px/s 同窗 A/B(4 跑中位數),關掉之後空白幀 2 → 7.5、最長連續空白 17 → 27ms、
+    // 空白面積 3 → 21;dpr2 + 節流更明顯(合成器送出的幀 p95 19.2 → 32.4ms,CI 的 dpr2 job 因此變紅)。
+    // 原因:關掉之後 render 改由排程器在事件之後跑,光柵一旦吃滿幀預算,那一幀就送出沒有新列的畫面。
+    // 「捲動事件耗時」是歸因指標,不是使用者看得到的東西;**仲裁一律看畫面**(空白幀 / 最長空白 / 內容延遲)。
+    // AG Grid 能走 rAF 是因為它的儲存格是輕量 DOM 且自帶 60ms 預算的分幀佇列,不是同一個成本結構。
+    // 本輪真正有效的是下面幾條(量測移出手勢窗 + 捲動中一律方向預掛),不是這個開關。
   })
 
   virtualizerRef.current = virtualizer
