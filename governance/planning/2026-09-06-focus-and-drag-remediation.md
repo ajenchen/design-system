@@ -2977,10 +2977,11 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - **判定:合理、照規則。** focus-canonical 規則二(user 2026-09-09 拍板):「基本上都畫框,唯一不畫框的例外是插入點控件」—— 關閉的觸發器沒有插入點,不在例外內;外框看模態(鍵盤畫、滑鼠不畫)也是規則。user 的前提「可打字的輸入框」只在開啟時成立;選完後 PeoplePicker single 依設計包 `<Select searchable>`(2026-05-12 user 拍板「multi 只選 1 人時 trigger = avatar + name,跟 single mode 同」)變回關閉觸發器。世界級:Radix Select 關閉後把焦點還給觸發器、外框看 `:focus-visible`;React Aria / WICG 模態判準:最後一次互動是鍵盤就顯示焦點。
 - **真正的漂移在文件**:`select.spec.md`「Focus:…由 Field wrapper 提供」與 `people-picker.spec.md`「…非 outline ring」都寫於 2026-09-07 全域外框規則之前,只描述開啟時的輸入框,沒寫關閉觸發器 → 已改寫成兩個狀態、兩種承擔者(開啟 = 邊框轉色;關閉 = 邊框轉色 + 鍵盤模態外框)。
 - **閘**:`virtual-cursor-modality-invariant.mjs` G 段(Select / SelectMenu / PeoplePicker:滑鼠點開 → ↓ Enter → 觸發器有外框 + 邊框主色;重開 → 滑鼠點選項 → 觸發器無外框、邊框主色;`--selftest` 把觸發器的 focus-visible 外框關掉 → G1 必紅)。
-- **若 user 想改規則**(關閉觸發器只用邊框、不加外框,像 Ant 的 focused 樣式):那是 focus-canonical 規則二的產品決策,不在本次自主範圍,列為待拍板。
+- **現行規則已定案並落地**(focus-canonical 規則二,user 2026-09-09 拍板)。user 2026-09-10 問過之後**尚未表示要改**;「關閉觸發器只用邊框、不加外框(Ant 的做法)」若要採用,屬新的產品決策,要有 user 原話才動,本次沒有。
 
 ### AD71 補記(2026-09-10):6fdbd788 讀回 —— 拆分後兩個新 job 各一條 runner 時序紅
 - `verify-browser-agent`:docs 競態閘的第三跑(不延遲的正常切換)在離開渲染完整的 docs 頁時撞到 Storybook 的 preview reload(StoryRender.teardown 逃生路徑)→ 舊 frame 的執行環境被銷毀「Execution context was destroyed」。修:每次 evaluate 都重取 preview iframe 的 frame、遇到導航就重試。
 - `verify-browser-datatable-dpr2`:4500 inertia dpr2 `unmappedFrames 4`(4 幀解不出任何一列完整,延遲 p95 154ms;同 peak dpr1 為 0)= 共享 runner 在 dpr2 的 raster 成本,與 AD62 不在 dpr2 斷言延遲同一理由 → unmapped 只在斷言延遲時算;零殼 / 空白 / 擷取覆蓋照斷言。
 - 9f22cc1c 讀回:dpr1 job 的 4500 inertia 三次都停頓(單步 435 / 421 / 460px、殼 11 / 16 / 6 幀、延遲 p95 66–125ms)—— runner 當下跟不上 4500px/s,這正是 AD62 列殼判準的「慢機器極速捲動先出殼、不留白」場景;三次全停頓時父程序改以慢機器判準判定(零空白、擷取有效、輸入完整),殼幀不算紅,不再宣稱「量不到」直接紅。
 - a646b6c2 讀回:元件 job 的 Dialog 並存閘 B 路徑「找不到 #coexist-aside-input」—— 導航後固定等 900ms 就量,runner 忙時 story 還沒渲染。改成 waitForSelector(15s)再量。這一輪起 DataTable / dpr2 / agent / 靜態 / 治理五個 job 已連續綠。
+- 75d33696 讀回:靜態 job 紅 = `decided-clause-downgrade-gate` 抓到 AD72 把已定案的規則二寫成「待拍板」→ 改寫為「已定案、user 尚未表示要改」;dpr2 job 三次(609 / 586 / 454px)都在跟不上的狀態,第三次沒過整窗門檻卻有 17 幀殼 → 停頓判準統一 3/4 視窗,三次停頓時以擷取有效的那幾次判「零空白」(前兩次有送幀缺口,說不了話)。

@@ -24,6 +24,7 @@ fs.mkdirSync(out, { recursive: true });
 if (!process.env.DT_PERCEPTION_ATTEMPT) {
   const { spawnSync } = await import("node:child_process");
   let code = 1;
+  const attempts = [];
   for (let attempt = 1; attempt <= 3; attempt++) {
     const r = spawnSync(process.execPath, process.argv.slice(1), {
       stdio: "inherit",
@@ -34,6 +35,7 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
     try {
       summary = JSON.parse(fs.readFileSync(path.join(out, "summary.json"), "utf8"));
     } catch {}
+    if (summary) attempts.push(summary);
     // 擷取送幀缺口(2026-09-10,6fa90a71 讀回):bursts dpr1 在 runner 上零殼零白零延遲,唯一紅是 captureCoverage
     // 「active PNG gap exceeds 100 ms」(單一缺口 128ms,其餘 155 幀連續)—— CDP screencast 在共享 runner 上偶發漏送幾幀,
     // 那一跑對表格什麼都證明不了,與整窗跳轉同一類「儀器這次量不到」,同樣重跑;三次都缺口才紅並指名原因。
@@ -52,13 +54,15 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
       // 三次都停頓 = 這台機器現在跟不上這個速度(9f22cc1c:runner 上 4500 dpr1 三次單步 435 / 421 / 460px,殼 11 / 16 / 6 幀)。
       // 那就是 AD62 列殼判準設計要處理的「慢機器極速捲動」:允許先出殼,但**不得留白**、擷取要有效、輸入要完整;
       // 用慢機器判準判這一跑,而不是宣稱「量不到」然後紅(對照:fast-scroll 閘對慢機器的斷言也是白區 / 補齊,不是零殼)。
-      const slowOk = summary.pixelBlankFullFrames === 0 && summary.captureCoverageValid && !summary.wheelCoalesced &&
-        (summary.errors?.length ?? 0) === 0 && Math.abs(summary.finalY - summary.inputDistance) <= 2 && summary.pixelFullContentSamples >= 10 &&
-        (summary.unresolved?.length ?? 0) === 0;
+      // 三次各是全新頁面;擷取有缺口的那幾次對「有沒有留白」什麼都說不了,取有效擷取的那一次當證據(75d33696:前兩次有送幀缺口、第三次擷取有效)
+      const slowCheck = (x) => x.pixelBlankFullFrames === 0 && x.captureCoverageValid && !x.wheelCoalesced &&
+        (x.errors?.length ?? 0) === 0 && Math.abs(x.finalY - x.inputDistance) <= 2 && x.pixelFullContentSamples >= 10 && (x.unresolved?.length ?? 0) === 0;
+      const validAttempts = attempts.filter((x) => x.captureCoverageValid);
+      const slowOk = validAttempts.length > 0 && validAttempts.every(slowCheck);
       console.log(
         `${slowOk ? "✓" : "✗"} 三次都碰到整窗跳轉的停頓:這台機器目前跟不上 ${summary.peak}px/s,改以慢機器判準判定 —— ` +
-          `零空白 ${summary.pixelBlankFullFrames === 0 ? "✓" : "✗"}、擷取有效 ${summary.captureCoverageValid ? "✓" : "✗"}、輸入完整 ${Math.abs(summary.finalY - summary.inputDistance) <= 2 ? "✓" : "✗"}` +
-          `(殼 ${summary.pixelShellFrames} 幀是設計上的「先出殼不留白」,不在慢機器判準內)`
+          `擷取有效的 ${validAttempts.length} 次全部零空白、輸入完整 ${slowOk ? "✓" : "✗"}` +
+          `(殼 ${attempts.map((x) => x.pixelShellFrames).join(" / ")} 幀是設計上的「先出殼不留白」,不在慢機器判準內)`
       );
       code = slowOk ? 0 : 1;
     } else if (captureGap) console.log("✗ 三次都碰到擷取送幀缺口:這台機器目前擷取不完整(不是表格)");
@@ -495,11 +499,10 @@ try {
     arg("input", "gesture") === "wheel" &&
     maxScrollEventJumpPx >= (setup.rect?.height ?? Infinity);
   // 任何輸入下單一 scroll 事件 ≥ 視窗高 = 整窗跳轉(主執行緒停頓或 tick 合併):父程序據此重跑
-  // 停頓判準:有斷言內容延遲時(dpr1)= 單一 scroll 事件跳過視窗高的 3/4(2026-09-10,918a2821 讀回:runner 上 4500 inertia 一次跳 464px、
-  // 視窗 466px,差 2px 沒被判成停頓,那一跑延遲 p95 45ms 全是那次停頓;正常 4500 的最大單步 235–244px,350px 留一倍餘裕);
-  // 不斷言延遲時(dpr2,runner 上 raster 成本決定幀距、單步 350–550px 是常態,079748fc 三次全判停頓)= 跳過整個視窗才算
-  // (只有整窗跳轉才會讓殼 / 空白判定失真)。
-  const stallFraction = arg("latency-assert", "on") === "off" ? 1 : 0.75;
+  // 停頓判準 = 單一 scroll 事件跳過視窗高的 3/4(2026-09-10,918a2821 讀回:runner 上 4500 inertia 一次跳 464px、視窗 466px,差 2px 沒被判成停頓,
+  // 那一跑延遲 p95 45ms 全是那次停頓;正常 4500 的最大單步 235–244px,350px 留一倍餘裕)。dpr2 在共享 runner 上單步 350–600px 是常態
+  //(079748fc / 75d33696),三次都停頓不再是紅 —— 父程序改以慢機器判準判定(零空白 / 擷取有效 / 輸入完整),殼幀是設計上的「先出殼不留白」。
+  const stallFraction = 0.75;
   const stalled = maxScrollEventJumpPx >= stallFraction * (setup.rect?.height ?? Infinity);
   if (wheelCoalesced)
     console.log(
