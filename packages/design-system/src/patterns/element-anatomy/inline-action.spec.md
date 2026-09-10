@@ -21,9 +21,9 @@
 | 狀態 | 背景 | 過渡 |
 |---|---|---|
 | 預設 | transparent | — |
-| hover | `bg-neutral-hover` | transition-colors |
-| active(mouse down) | `bg-neutral-active` | transition-colors |
-| **overlay 開啟**(`data-state=open`)| **同 host hover**(該元件 hover 什麼樣就維持) | transition-colors |
+| hover | `bg-neutral-hover` | **瞬間**(不寫過渡;owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」,user 2026-09-10 拍板)|
+| active(mouse down) | `bg-neutral-active` | **瞬間**(同上,底色一律不過渡)|
+| **overlay 開啟**(`data-state=open`)| **同 host hover**(該元件 hover 什麼樣就維持) | **瞬間**(同上)|
 | focus-visible | `outline: 2px solid var(--ring)`,**往外**(offset +2px,吃 `styles/base.css` 全域規則,元件不寫任何 class) | focus-canonical「問題二」:2026-09-10 逐站點實測 —— 26 個真實站點 × sm/md/lg,四周最小淨空 5–192px(最小值 4.00 = Breadcrumb 兩側分隔符,canonical「4.00 算放得下」),DPR2 逐像素數框帶零裁切。**列不裁它**:截斷是 label 自己的 `truncate`(兄弟節點),不是祖先。先前寫「往內、上下各被裁 1px」是把 **Tag 宿主**的量測(h-6 + 1px 邊框 + `overflow-hidden` → 淨空 3px、sm 1px)套到整個元件種類;依 canonical「往內由外層元件承擔」,那一處的 `focus-ring-inset` 在 `tag.tsx` TagDismiss。對照 SidebarMenuAction 同樣往外 |
 | 宿主 disabled | 不渲染 inline action | — |
 

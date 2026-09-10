@@ -389,7 +389,8 @@ function InlineEditImpl<T = string>(
           data-editing={false}
           data-editable={editable || undefined}
           className={cn(
-            'relative flex min-w-0 rounded-md border border-transparent transition-colors duration-150',
+            // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+            'relative flex min-w-0 rounded-md border border-transparent',
             alignBleed,
             // editable 才有 hover 底色 + 鍵盤 focus 藍框(Field focus 語言,非 Button ring);
             //   editable=false = 純 view 鎖定,無入口、無藍框、不灰化。

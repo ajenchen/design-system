@@ -54,6 +54,8 @@ import { BooleanValueIcon } from '@/design-system/components/SelectionControl/bo
 const switchVariants = cva(
   [
     'group peer inline-flex shrink-0 cursor-pointer items-center rounded-full',
+    // @hover-transition-allow: 這條過渡的主人是 checked ↔ unchecked 的狀態切換(Ant / Material 的核取框與切換鈕同樣會動),
+    //   不是 hover;而且它是控件大小的點目標,不是指標掃過去的列面。hover 一律瞬間的規則見 tokens/motion/motion.spec.md。
     'transition-colors duration-150',
     'disabled:cursor-not-allowed disabled:opacity-disabled',
     // readOnly：鎖定互動但視覺正常

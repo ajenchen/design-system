@@ -122,7 +122,8 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // absolute inset-0 = 完全填滿 cell(naked button,無 inset 4px 空隙)
           // z-[1] 讓 button 疊在 range track `before:` pseudo 之上
           'absolute inset-0 z-[1] flex items-center justify-center',
-          'font-normal text-body rounded-full transition-colors',
+          // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+          'font-normal text-body rounded-full',
           // Hover 藍圈 1.5px(對齊 Apple HIG / Ant `@benchmark-unverified` visual ring measurement)— ring 在 button 之上 + 透明 bg 不擋 range track
           // 2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階(FileUpload dropzone /
           // Slider thumb hover 同族;base 專屬持續選中與 focus)——ring-primary → ring-primary-hover

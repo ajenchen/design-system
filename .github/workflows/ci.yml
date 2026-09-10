@@ -84,6 +84,9 @@ jobs:
           # 那顆鈕從 2026-07-18 起一次都沒渲染過;測試檔早就存在,但 `grep -rl check:tabs-inline-action-geometry .github`
           # 回 0 —— 又一支「宣稱有閘、沒人跑」。render-level 那一半在 test:header-tabs-slot-invariants(W3)。
           npm run check:tabs-inline-action-geometry
+          # hover 底色一律瞬間(user 2026-09-10 拍板「全部瞬間」)。對照組六個正反例證明它該紅時會紅。
+          node scripts/hover-instant-invariant.mjs
+          node scripts/hover-instant-invariant.mjs --selftest
 
       - name: Registered test scripts nothing was running
         run: |

@@ -265,7 +265,8 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
         <div
           ref={ref}
           className={cn(
-            'group/row relative flex items-start gap-2 w-full text-body leading-compact transition-colors',
+            // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+            'group/row relative flex items-start gap-2 w-full text-body leading-compact',
             // 2026-09-07 H1g:限定只接下面那顆隱形整列鈕(keyboardPrimaryAction)。
             // 原本裸寫 `has-[:focus-visible]` 不分對象,trailing action 的 <Button> 自帶
             // ring(button.tsx:66)被聚焦時整列也跟著畫 → 一次互動兩個焦點框,
@@ -315,7 +316,8 @@ const FileItem = React.forwardRef<HTMLDivElement, FileItemProps>(
       <div
         ref={ref}
         className={cn(
-          'group/row relative flex items-start gap-2 py-2 w-full text-body leading-compact transition-colors rounded-md',
+          // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+          'group/row relative flex items-start gap-2 py-2 w-full text-body leading-compact rounded-md',
           compactStaticBg,
           // 2026-09-07 H1g:同 rich —— 只接隱形整列鈕,不接自帶 ring 的 trailing <Button>
           'has-[[data-row-focus-target]:focus-visible]:ring-2 has-[[data-row-focus-target]:focus-visible]:ring-ring',

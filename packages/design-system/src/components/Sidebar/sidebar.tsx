@@ -848,7 +848,7 @@ const SidebarGroupAction = React.forwardRef<
       ref={ref}
       data-sidebar="group-action"
       className={cn(
-        "absolute right-[var(--layout-space-loose)] top-2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted transition-colors hover:bg-neutral-hover hover:text-fg-secondary [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-[var(--layout-space-loose)] top-2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted hover:bg-neutral-hover hover:text-fg-secondary [&>svg]:size-4 [&>svg]:shrink-0",
         "after:absolute after:-inset-2 after:md:hidden",
         "group-data-[collapsible=icon]:hidden",
         className
@@ -935,7 +935,7 @@ const sidebarMenuButtonVariants = cva(
     //   (per buttonWithTooltip 既有 hidden 條件),僅 hover 提示、不供名。
     //
     //   對齊 MUI MiniDrawer + shadcn canonical(width morph + overflow clip + row geometry 不變)。
-    "transition-[background-color,color] duration-200 ease-linear motion-reduce:duration-0",
+    // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
     "hover:bg-neutral-hover hover:text-foreground",
     // 鍵盤游標一律畫框、不上底色(focus-canonical 規則二,user 2026-09-09 拍板);選單鈕撐滿側欄寬度 → 內描邊。
     // 2026-09-09 之前非當前項的焦點用 hover 同色底(AI 推導,user 撤回);hover 的底色與文字色只屬於滑鼠。
@@ -1220,7 +1220,7 @@ const SidebarMenuAction = React.forwardRef<
       ref={ref}
       data-sidebar="menu-action"
       className={cn(
-        "absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted transition-colors hover:bg-neutral-hover hover:text-fg-secondary [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted hover:bg-neutral-hover hover:text-fg-secondary [&>svg]:size-4 [&>svg]:shrink-0",
         "after:absolute after:-inset-2 after:md:hidden",
         "group-data-[collapsible=icon]:hidden",
         showOnHover &&

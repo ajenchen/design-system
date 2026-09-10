@@ -22,6 +22,8 @@ const checkboxVariants = cva(
   [
     'grid place-content-center shrink-0 rounded-md',
     'border border-border bg-surface',
+    // @hover-transition-allow: 這條過渡的主人是 checked ↔ unchecked 的狀態切換(Ant / Material 的核取框與切換鈕同樣會動),
+    //   不是 hover;而且它是控件大小的點目標,不是指標掃過去的列面。hover 一律瞬間的規則見 tokens/motion/motion.spec.md。
     'transition-colors duration-150',
     'hover:border-border-hover',
     'data-[state=checked]:bg-primary data-[state=checked]:text-on-emphasis data-[state=checked]:border-primary',

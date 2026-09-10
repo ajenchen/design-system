@@ -245,7 +245,8 @@ export const ResizeHandle = React.forwardRef<HTMLSpanElement, ResizeHandleProps>
           className,
         )}
       >
-        {(showLine || !disabled) && <span aria-hidden className={cn('transition-colors', lineColorClass)} style={lineStyle} />}
+        {/* hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板;SSOT = tokens/motion/motion.spec.md) */}
+        {(showLine || !disabled) && <span aria-hidden className={cn(lineColorClass)} style={lineStyle} />}
       </span>
     )
   },

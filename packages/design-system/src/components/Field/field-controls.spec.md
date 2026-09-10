@@ -226,9 +226,9 @@ Field 家族 wrapper 的寬度軸,與 mode / variant / size / error 全部正交
 
 **可編輯文字輸入(edit / naked mode 的 input / textarea)**:統一 `border-primary`（1px），不加 ring、不加粗。
 
-**readonly(可聚焦但不可編輯的 input / textarea)**:指示器 = `styles/base.css` 的**全域外描邊**(`outline: 2px solid var(--ring)`,往外 2px),畫在真正被聚焦的那個元素上,**非** border-primary —— readonly 邊框 transparent 無可染。native text input 的 `:focus-visible` 在滑鼠點擊時**亦 match**(見本段開頭),所以滑鼠鍵盤都會亮,勿宣稱僅鍵盤。編輯態的 `outline-none`(@focus-suppress B,承擔者是欄位邊框轉色)在 readonly 不適用,由 `bareInputStyles` 的 `group-data-[field-mode=readonly]/field:focus-visible:focus-ring-outer` 與 Textarea control 宿主的 readonly compound 解除。滿足 WCAG 2.4.7。
+**readonly(可聚焦但不可編輯的 input / textarea / 唯讀三兄弟 / 唯讀觸發器)**:**與可編輯態同一種指示器 —— 欄位邊框轉主色 1px**(`focus-within:!border-primary`;宿主是控件自己時寫 `focus-visible:!border-primary`)。唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),轉成主色不會有位移,長相與可編輯欄位完全一致 —— Field 家族「一個家族一種焦點長相」(owner = `ds-canonical/references/focus-canonical.md` 規則二)。全域 2px 外描邊由同一個 compound 的 `focus-visible:outline-none` 抑制(@focus-suppress C)。native text input 的 `:focus-visible` 在滑鼠點擊時**亦 match**(見本段開頭),所以滑鼠鍵盤都會亮,勿宣稱僅鍵盤。滿足 WCAG 2.4.7。
 
-> **2026-09-10 訂正**:原文寫的 ring idiom(`[&:has(:focus-visible)]:ring-2 ring-ring ring-offset-1`)已於 0cad81e8 隨 `ring-*` 家族退役(`focus-geometry-invariant.mjs` R1/R2 禁),但當時**沒有補替代品** → readonly Input / Textarea 一度完全沒有焦點指示(2026-09-10 實測:outline none、邊框 transparent、滑鼠點擊零視覺變化)。焦點幾何只有兩種,readonly 用往外那一種。詳 `field-wrapper.tsx` 頂端 JSDoc。
+> **2026-09-10 兩次訂正**:(1) 原文寫的 ring idiom(`[&:has(:focus-visible)]:ring-2 ring-ring ring-offset-1`)已於 0cad81e8 隨 `ring-*` 家族退役(`focus-geometry-invariant.mjs` R1/R2 禁),當時**沒有補替代品** → readonly Input / Textarea 一度完全沒有焦點指示(實測:outline none、邊框 transparent、滑鼠點擊零視覺變化)。(2) 同日上午先補成全域外描邊,user 指出「為何不是模擬 field control focus 的樣式?field control focus 應該是 1px 的 border?」—— 改為現在這版。世界級同向:MUI OutlinedInput / Ant Input / Fluent Input 的 `readOnly` **完全不改焦點樣式**(它們的唯讀靜止態與可編輯態本來就一樣),Carbon `_text-input.scss` 與 Polaris TextField 雖然唯讀另有靜止樣式,焦點指示同樣**與可編輯態相同**。
 
 ---
 

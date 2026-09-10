@@ -27,12 +27,14 @@ import { cn } from '@/lib/utils'
  * 三個宿主共用同一份 compoundVariants:單行 wrapper(fieldWrapperStyles)、多行 Textarea(textareaVariants)、
  * 複合輸入盒(AgentPromptInput 等經 `fieldChromeStyles(...)` 消費)。任何新的「像欄位的容器」一律消費
  * `fieldChromeStyles`,禁自刻 border/hover/focus 字串(2026-09-02 user 抓 AgentPromptInput 與 Textarea 互動不同)。
- * **readonly 的焦點指示**(2026-09-10 修回):唯讀欄位沒有邊框可轉色(border-transparent),指示器 = `styles/base.css`
- * 的全域外描邊,畫在**真正被聚焦的那個元素**上 —— 觸發器型(Select / DatePicker / TimePicker 與唯讀三兄弟,wrapper 自己
- * tabIndex=0)本來就吃得到;原生控件型(`<input readonly>` / `<textarea readonly>`)因為自己寫了 `outline-none`
- * 而被抑制,由 `bareInputStyles` 的 `group-data-[field-mode=readonly]/field:focus-visible:focus-ring-outer`
- * 與本檔 control 宿主的 readonly compound 解除。2026-09-07 的 `ring-*` idiom 已退役(R1/R2),
- * 但 0cad81e8 刪掉它時沒有補替代品 → readonly 一度零指示(WCAG 2.4.7)。
+ * **readonly 的焦點指示**(2026-09-10 兩次修正後的定案):**跟編輯態同一種 —— 欄位邊框轉主色 1px**。
+ * 唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),所以聚焦時把它轉成主色
+ * 不會有位移,長相與可編輯的欄位完全一致。理由是 Field 家族「一個家族一種焦點長相」(focus-canonical 規則二);
+ * 世界級對照同向:MUI OutlinedInput / Ant Input / Fluent Input 的 readOnly **完全不改焦點樣式**(它們的唯讀
+ * 靜止態與可編輯態本來就長一樣),Carbon 與 Polaris 雖然唯讀另有靜止樣式,但焦點指示同樣**與可編輯態相同**。
+ * 歷程:2026-09-07 的 `ring-*` idiom 隨 R1/R2 退役,0cad81e8 刪掉時沒補替代品 → readonly 一度**零指示**
+ *(WCAG 2.4.7);2026-09-10 上午先補成全域外描邊,同日 user 指出「為何不是模擬 field control focus 的樣式?
+ * field control focus 應該是 1px 的 border?」,改為現在這版並撤回那個具名外描邊 utility。
  */
 export type FieldChromeHost =
   /** 宿主是包住可聚焦控件的 wrapper(單行 Field wrapper / 複合輸入盒):readonly ring 用 `:has(:focus-visible)`,
@@ -61,7 +63,11 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
       variant: 'default' as const,
       // 唯讀:邊框保持透明(不轉色),焦點指示 = 全域外描邊。wrapper 宿主自己就是 tab stop(唯讀三兄弟 / 觸發器),
       // 全域規則直接生效;control 宿主(<textarea>)自己寫了 outline-none,在這裡解除(見本檔頂端 JSDoc)。
-      className: wrapper ? 'bg-readonly border border-transparent' : 'bg-readonly border border-transparent focus-visible:focus-ring-outer',
+      // @focus-suppress C — 唯讀的 wrapper 自己是 tab stop(唯讀三兄弟 Checkbox / Switch / RadioGroup、唯讀的 Select 類觸發器);
+      //   承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框,與編輯態同一種長相)
+      className: wrapper
+        ? 'bg-readonly border border-transparent focus-within:!border-primary focus-visible:outline-none'
+        : 'bg-readonly border border-transparent focus-visible:!border-primary',
     },
     { mode: 'disabled' as const, variant: 'default' as const, className: 'bg-disabled border border-transparent cursor-not-allowed' },
     // @focus-suppress C — error 態的 wrapper 自己拿到焦點(同上);承擔者:同一行的 focus-within:!border-error(紅框就是這個 tab stop 的框)
@@ -250,10 +256,6 @@ export const bareInputStyles = [
   'flex-1 min-w-0 truncate bg-transparent',
   // @focus-suppress B — B Field 家族輸入控件;承擔者:裸 input;指示器是 wrapper 的 focus-within:!border-primary
   'outline-none border-none p-0',
-  // 唯讀例外:那個承擔者(wrapper 邊框轉主色)只存在於 edit 態 —— readonly 的邊框是透明的,抑制若照舊生效,
-  // 整個可 Tab 到的控件就零焦點指示(2026-09-10 實測 Input / Textarea 皆是,WCAG 2.4.7)。指示改回全域外描邊,
-  // 畫在真正被聚焦的這個原生控件上。mode 來自 wrapper 的 data-field-mode(同下方 disabled 兩行的既有做法)。
-  'group-data-[field-mode=readonly]/field:focus-visible:focus-ring-outer',
   'text-[inherit] font-[inherit] leading-[inherit]',
   // A3 fix(2026-05-05):`<input>` UA stylesheet 強制 `text-align: start`,阻斷 parent 的
   //   `text-right`/`text-center` 繼承。顯式 `text-align: inherit` 復原(對齊 NumberCell /

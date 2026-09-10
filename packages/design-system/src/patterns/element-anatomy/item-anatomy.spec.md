@@ -166,7 +166,7 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 - **垂直 padding**: `py-[calc((var(--field-height-N) N∈{sm,md,lg}-1lh)/2)]` 的 item-layout 公式
 - **字重**: `font-medium`(500),**不隨 selected 變**
 - **預設文字色**: `text-fg-secondary`(neutral-8);icon 透過 currentColor 繼承
-- **Hover**: `bg-neutral-hover` + `text-foreground`
+- **Hover**: `bg-neutral-hover` + `text-foreground`,**瞬間切換不做過渡**(owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」,user 2026-09-10 拍板「全部瞬間」;機械閘 `hover-instant-invariant.mjs`)
 - **Active / selected**: `bg-neutral-selected` + `text-foreground`；字重維持不變，避免 label metrics reflow
 - **選中 × 互動疊加（2026-08-11 user 拍板；本格是全家族唯一 owner，消費者禁自行發明）**：
 

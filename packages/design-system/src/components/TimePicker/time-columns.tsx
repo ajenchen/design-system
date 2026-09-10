@@ -185,7 +185,8 @@ function TimeColumn({ values, selected, disabledSet, label, onSelect, withDivide
               className={cn(
                 'w-full h-field-sm text-body tabular-nums',
                 'flex items-center justify-center',
-                'cursor-pointer transition-colors',
+                'cursor-pointer',
+                // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
                 'hover:bg-neutral-hover',
                 // 2026-08-11(SSOT = item-anatomy「選中 × 互動疊加」):滑鼠釘住本就正確。
                 // 2026-09-07 C11:刪掉 `focus-visible:bg-neutral-selected-focus` —— 本元件走

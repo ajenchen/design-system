@@ -58,6 +58,7 @@
     "test:storybook-docs-race": "node scripts/storybook-docs-race-invariant.mjs --selftest && node scripts/storybook-docs-race-invariant.mjs",
     "test:decided-clause-downgrade": "node scripts/decided-clause-downgrade-gate.mjs && node scripts/decided-clause-downgrade-gate.mjs --selftest",
     "test:button-variants": "node scripts/button-variant-invariant.mjs && node scripts/button-variant-invariant.mjs --selftest",
+    "test:hover-instant": "node scripts/hover-instant-invariant.mjs && node scripts/hover-instant-invariant.mjs --selftest",
     "test:focus-suppression": "node scripts/focus-suppression-registry.mjs && node scripts/focus-suppression-registry.mjs --selftest",
     "test:focus-geometry": "node scripts/focus-geometry-invariant.mjs && node scripts/focus-geometry-invariant.mjs --selftest && node scripts/focus-geometry-browser-audit.mjs",
     "test:agent-panel-invariants": "node scripts/agent-panel-breakpoint.mjs && node scripts/agent-panel-reopen-state.mjs && node scripts/agent-panel-dismissable-layer-invariant.mjs && node scripts/agent-panel-fixed-anatomy-invariant.mjs && node scripts/agent-logo-brand-scale-invariant.mjs && node scripts/agent-logo-continuity-invariant.mjs && node scripts/agent-fab-hit-area-invariant.mjs",

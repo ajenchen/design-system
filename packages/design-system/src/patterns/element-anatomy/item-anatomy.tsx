@@ -710,7 +710,8 @@ export const ItemInlineActionButton = React.forwardRef<
         // (neutral-8),不跳到 foreground(neutral-9)。inline-action.spec.md「Icon 色彩」+
         // tokens/color/semantic.css:53 為 rule owner;世界級對照 Fluent 2
         // (neutralForeground3Hover === neutralForeground2 值)/ MUI Chip deleteIcon(.26 → .4)。
-        "text-fg-muted hover:text-fg-secondary active:text-fg-secondary transition-colors",
+        // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+        "text-fg-muted hover:text-fg-secondary active:text-fg-secondary",
         // Overlay trigger active state — 只在 consumer 顯式宣告 overlayTrigger=true 時生效
         // (canonical 2026-05-05:Collapsible / drag / dismiss 等 in-place 互動 ≠ overlay,
         // 不應 leak 視覺 lock。詳 inline-action.spec.md「Overlay trigger canonical」)
@@ -731,8 +732,7 @@ export const ItemInlineActionButton = React.forwardRef<
           "bg-transparent",
           hoverBgClassName ?? "group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active",
           // Overlay 開啟 = 維持 host hover bg(只在 overlayTrigger=true 時生效)
-          overlayTrigger && "group-data-[state=open]/action:bg-neutral-hover",
-          "transition-colors"
+          overlayTrigger && "group-data-[state=open]/action:bg-neutral-hover"
         )}
         style={{
           width: hoverBgPx,

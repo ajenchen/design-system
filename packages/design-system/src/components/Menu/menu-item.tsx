@@ -44,7 +44,7 @@ const menuItemVariants = cva(
   [
     'flex items-start gap-2 px-3 w-full',
     'cursor-pointer select-none',
-    'transition-colors duration-150',
+    // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
     // 鍵盤游標一律畫框、不上底色(focus-canonical 規則二,user 2026-09-09 拍板)。
     // 列撐滿容器、選項間無 gap → 內描邊(問題二「淨空 < 4px 往裡」)。本節點預設是 <div role="option"> 無 tabIndex,
     // 只有 consumer 給了真焦點(如 SelectMenu 全選列 tabIndex=0)這行才會 match;巢在 Radix / cmdk 內時游標由外層畫。

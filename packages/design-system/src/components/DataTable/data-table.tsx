@@ -3686,7 +3686,8 @@ function DataTableInner<TData>(
             // v15.3 hover bg canonical:hover class 永遠生效,但 onMouseOver delegate
             // 在 drag 期間只允許 source row 寫 data-hovered → 其他 row 自然不顯 bg。
             // (對齊 Linear / Jira:source 維持 active 視覺,其他 row 完全靜止)
-            'transition-colors data-[hovered]:bg-neutral-hover',
+            // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+            'data-[hovered]:bg-neutral-hover',
             extra?.isDragging && 'bg-neutral-hover',
             // **v15.3.1**:不變 cursor(對齊 Material / Carbon / Polaris / Notion canonical)。
             // 整列可拖的 affordance 由可見的 RowDragHandle Button 提供,不靠 cursor 暗示。

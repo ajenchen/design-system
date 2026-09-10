@@ -380,7 +380,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                 'flex flex-col gap-1 min-h-28 p-1.5 text-left',
                 'border-r border-b border-divider last:border-r-0',
                 '[&:nth-child(7n)]:border-r-0',
-                'hover:bg-neutral-hover transition-colors',
+                // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+                'hover:bg-neutral-hover',
                 !inMonth && 'bg-muted',
               )}
             >

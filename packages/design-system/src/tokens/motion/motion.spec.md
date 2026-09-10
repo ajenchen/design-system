@@ -114,6 +114,30 @@ Overlay(Tooltip/Popover/HoverCard/DropdownMenu/Dialog/Sheet/FileViewer)的 fade/
 
 **a11y**:prefers-reduced-motion 下 `motion-reduce:animate-none` 全 7 浮層統一關進出場動畫(overlay-motion SSOT 保證,無漏)。
 
+## hover 回饋不做過渡(2026-09-10 user 拍板)
+
+**規則**:凡是 hover 驅動的**底色**變化,一律**瞬間**切換 —— 不寫 `transition-colors` / `transition-all`,也不寫任何會把 `background-color` 一起過渡的宣告。
+
+**user 原話**(2026-09-10):「第三題改成全部瞬間,確保有SSOT不要有漂移」。
+
+**為什麼**:過渡的時長必須短於「指標停在一個項目上的時間」,否則底色永遠追不上指標。表格列高 36–52px,指標以 500–1000px/s 掃過時每 **40–90ms** 就換一列,150ms 的過渡在每一列都完成不了 —— 畫面上會同時有兩三列半亮的拖尾(2026-09-10 量到 hover 最終色延遲 p95 **109ms**,其中 **84ms** 是過渡本身)。浮層選單雖然是「移到目標就停」、停留時間夠,但一個 DS 裡兩種 hover 手感就是漂移的來源,所以統一瞬間。
+
+**一手來源**(三家資料格 / 清單完全不做 hover 過渡):
+
+| 來源 | 證據 |
+|---|---|
+| MUI X DataGrid | `packages/x-data-grid/src/components/containers/GridRootStyles.ts` 列 hover 只設 `backgroundColor`,整檔 `transition` 只有 icon opacity 與欄位分隔線 |
+| AG Grid | `styles/ag-grid.css` `.ag-row-hover::before` 只有 `background-color: var(--ag-row-hover-color)`;唯二含 background 的 transition 屬於「值變閃爍」 |
+| VS Code | `src/vs/base/browser/ui/list/listWidget.ts` 產生的 `.monaco-list-row:hover` 等規則完全沒有 transition |
+| (反例,不採用)Ant Design Table | `components/table/style/index.ts` td `transition: background-color ${motionDurationMid}` = 200ms |
+| (反例,不採用)MUI ListItemButton | `ListItemButton.js` `getTransitionStyles(theme,'background-color',{duration: shortest})` = 150ms |
+
+**唯一的例外(已登記)**:Checkbox 與 Switch 保留 `transition-colors` —— 那條過渡的主人是 **checked ↔ unchecked 的狀態切換**(Ant / Material 的核取框與切換鈕同樣會動),不是 hover;而且它們是控件大小的點目標,不是指標掃過去的列面。例外必須在該行上方寫 `// @hover-transition-allow: <理由>`。
+
+**機械強制**:`scripts/hover-instant-invariant.mjs`(同一段 class 同時宣告 hover 底色與顏色過渡 → 紅;`--selftest` 六個正反例證明它該紅時會紅)。
+
+**落地範圍**(2026-09-10 一次改完):MenuItem / DropdownMenu 四種項目 / TreeView 列與展開箭頭 / DataTable 列 / Sidebar 選單鈕與兩個動作鈕 / 行內動作鈕與其底色層 / TimePicker 欄 / Calendar 格 / DateGrid 日期 / Button / ScrollArea 捲軸 / InlineEdit / FileItem 兩種列 / Carousel 指示點 / 欄寬把手。箭頭旋轉(`transition-transform`)與指示點寬度(`transition-[width]`)不是顏色,保留。
+
 ## 被引用(auto-maintained,Dim 3 reciprocal audit)
 
 > 本節由 `scripts/add-reciprocal-pointers.mjs` 自動維護,列出在 SSOT 語境下指向本 spec 的其他 spec。若要手動補充,寫在本節之前。

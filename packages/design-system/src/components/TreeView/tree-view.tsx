@@ -1069,7 +1069,7 @@ const treeItemVariants = cva(
     // items-start:多行 label 時 prefix 留在第一行(item-layout 規則)
     'flex items-start gap-2 w-full',
     'cursor-pointer select-none',
-    'transition-colors duration-150',
+    // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
     // 2026-09-07 刪 `outline-none`:虛擬游標(showRing → focus-ring-inset)也寫 outline,
     // 兩者特異性同階,留著等於讓「誰贏」取決於 Tailwind 的排序。這一列本來就不可聚焦
     // (tabIndex 在 li 上且為 -1),不需要防禦性抑制。
@@ -1294,7 +1294,8 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             className={cn(
               'flex items-center justify-center rounded-md',
               'text-fg-muted hover:text-fg-secondary hover:bg-neutral-hover',
-              'transition-all duration-150 motion-reduce:duration-0',
+              // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」);只留展開箭頭的旋轉
+              'transition-transform duration-150 motion-reduce:duration-0',
               isExpanded && 'rotate-90',
               disabled && 'text-fg-disabled pointer-events-none',
             )}

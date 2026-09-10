@@ -158,7 +158,7 @@ Textarea 是 **Field Controls family 的多行變體**,共用規則由 `../Field
 - 字母鍵 — 輸入
 - Enter — 換行（不觸發 form submit，與 Input 不同）
 
-**Focus**:DS focus 邊框由 `<textarea>` 自身的 cva compoundVariants 直接套用,無 fieldWrapper composite——Textarea 是裸 native textarea(見「定位」L30)。兩種 chrome 的 focus 觸發不同:**default chrome** 用 `focus-within:!border-primary`(滑鼠點擊或鍵盤聚焦皆亮主色邊框,對齊 form 場景);**naked chrome**(cell-as-input)用 `focus-visible:!border-primary` —— `<textarea>` 在滑鼠點擊與 Tab 都 match `:focus-visible`(見 `../Field/field-controls.spec.md`「Focus 行為」開頭),所以兩種操作都亮主色邊框,與 default chrome 等價;寫 `focus-visible:` 只因為宿主就是控件自己。readonly 有值態走全域外描邊(`focus-visible:focus-ring-outer` 解除自身的 `outline-none`;ring idiom 已退役,見同一份 spec 的 readonly 段)。standalone 使用即取得對應 focus 指示。
+**Focus**:DS focus 邊框由 `<textarea>` 自身的 cva compoundVariants 直接套用,無 fieldWrapper composite——Textarea 是裸 native textarea(見「定位」L30)。兩種 chrome 的 focus 觸發不同:**default chrome** 用 `focus-within:!border-primary`(滑鼠點擊或鍵盤聚焦皆亮主色邊框,對齊 form 場景);**naked chrome**(cell-as-input)用 `focus-visible:!border-primary` —— `<textarea>` 在滑鼠點擊與 Tab 都 match `:focus-visible`(見 `../Field/field-controls.spec.md`「Focus 行為」開頭),所以兩種操作都亮主色邊框,與 default chrome 等價;寫 `focus-visible:` 只因為宿主就是控件自己。readonly 有值態同編輯態 = 邊框轉主色 1px(`focus-visible:!border-primary`;ring idiom 已退役,見 `../Field/field-controls.spec.md` 的 readonly 段)。standalone 使用即取得對應 focus 指示。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

@@ -2994,6 +2994,29 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 
 **四、閘**:`focus-suppression-registry`(每處抑制的類別 + 承擔者)與 `focus-geometry-invariant`(只准兩種幾何)本機綠;`focus-geometry-browser-audit` 新增反向驗證(見 AD76)。
 
+### AD78 user 2026-09-10:「為何不是模擬 field control focus 的樣式?field control focus 應該是 1px 的 border?對吧?查查」—— 唯讀欄位的焦點指示改成與可編輯態同一種(2026-09-10)
+
+- **改法**:唯讀的 Field 控件(`<input readonly>` / `<textarea readonly>` / 唯讀三兄弟 / 唯讀觸發器)聚焦時 = **欄位邊框轉主色 1px**,與可編輯的同一個欄位完全一樣;不畫全域外框(`field-wrapper.tsx` readonly compound 加 `focus-within:!border-primary` + `focus-visible:outline-none`,@focus-suppress C)。同日上午補的具名外描邊 utility `focus-ring-outer` **撤回**(沒有消費者了,留著就是第三種幾何的入口)。
+- **實測(對照組 = 同一個 story 裡可編輯的欄位)**:唯讀 Input 邊框 `1px rgba(0,0,0,0)` → 聚焦後 `1px oklch(0.54 0.22 258)`,鍵盤與滑鼠都是,外框 none;可編輯 Input 是 `1px oklch(0 0 0 / 0.15)` → 同一個主色,兩者長相一致。唯讀 Textarea 同。唯讀三兄弟(Field 狀態串接 story 的 176×32 盒)`1px 透明` → `1px 主色`、外框 none。
+- **一手來源(兩輪:調查 + 反證者逐條重抓,所有引文逐字命中)**:MUI OutlinedInput / Ant Input / Fluent Input / Atlassian 的 `readOnly` **完全不改焦點樣式**(它們的唯讀靜止態與可編輯態本來就長一樣);Carbon `_text-input.scss` 與 Polaris TextField 雖然唯讀另有靜止樣式,焦點指示同樣**與可編輯態相同**(它們把指示放在 `outline`,因為它們的可編輯焦點本來就是 outline)。反證者另找到一個異議者:Adobe Spectrum 的唯讀直接把焦點指示整個關掉(`outline: none` + 邊框透明)—— 那是唯一「唯讀就不畫」的家。**結論**:「唯讀與可編輯的焦點指示相同」是六家一致的做法;我們的可編輯指示就是 1px 邊框,所以唯讀也是 1px 邊框。
+- **據實記一筆(不改變已拍板的 1px)**:被調查的五家沒有任何一家「只用 1px 邊框變色」當唯一指示 —— MUI 焦點時 1px→**2px**、Ant 邊框+外暈、Carbon **2px** outline、Polaris 1px 邊框+**2px** 外環、Fluent **2px** 底線;WCAG **2.4.13 Focus Appearance 是 AAA**,不是 AA 的必要條件(AA 的 2.4.7 可見 + 1.4.11 對比 5.19:1 / 5.35:1 已過)。user 已拍板 1px,本條只作來源總帳。
+
+### AD79 user 2026-09-10:「第三題改成全部瞬間,確保有SSOT不要有漂移」—— hover 底色一律瞬間(2026-09-10)
+
+- **規則(新 SSOT)**:`tokens/motion/motion.spec.md`「hover 回饋不做過渡」—— 凡是 hover 驅動的**底色**變化一律瞬間;過渡只留給「狀態改變」(checked / selected / open)與進出場動畫。
+- **落地一次改完(17 處)**:MenuItem / DropdownMenu 四種項目 / TreeView 列與展開箭頭 / DataTable 列 / Sidebar 選單鈕與兩顆動作鈕 / 行內動作鈕與其底色層 / TimePicker 欄 / Calendar 格 / DateGrid 日期 / Button / ScrollArea 捲軸 / InlineEdit / FileItem 兩種列 / Carousel 指示點 / 欄寬把手。箭頭旋轉改 `transition-transform`、指示點寬度改 `transition-[width]`(那兩個不是顏色)。
+- **唯一例外(已登記)**:Checkbox 與 Switch 保留 `transition-colors` —— 那條過渡的主人是 checked ↔ unchecked 的狀態切換(Ant / Material 同樣會動),不是 hover;它們是控件大小的點目標。例外必須在該行上方寫 `// @hover-transition-allow: <理由>`。
+- **機械強制**:`scripts/hover-instant-invariant.mjs`(同一段 class 同時宣告 hover 底色與顏色過渡 → 紅),六個正反例對照組(正例會紅 / escape 有效 / 只有文字色 hover 不算 / 沒有過渡不算 / 相距 20 行不算),已接進 `ci.yml` 靜態步驟。
+- **文件同步**:`inline-action.spec.md` 狀態表三列(hover / active / overlay 開啟)、`item-anatomy.spec.md` Hover 行、`tree-view.spec.md` 箭頭句。Breadcrumb 的連結 hover 只換文字色、沒有底色,不在本規則範圍。
+
+### AD80 user 2026-09-10:「為何該選單打開後點擊其他 tab 沒有反應?要再點第二下才有反應…這個是 popover 類型的互動的東西不是 dialog 類型的互動的東西欸」—— DropdownMenu 預設改 non-modal(2026-09-10)
+
+- **根因**:Radix 的 modal menu 開啟時對外面整片下 `pointer-events: none`(`dismissable-layer.tsx:182`),它自己的註解就寫著這個代價:「Users will need to click twice on outside elements to interact with them」(`:33-36`);`menu.tsx:98` 的預設是 `modal = true`,shadcn 直接沿用(整份檔案 0 個 `modal`)。實測:選單開著時 `document.body` 的 `pointer-events` = `none`,Playwright 連點都點不到那顆 tab(逾時)。
+- **修**:`dropdown-menu.tsx` 的 Root 預設改 `modal = false`;consumer 仍可顯式傳 `modal`(需要擋住背景互動的情境)。實測:改完後選單開著時 body 的 `pointer-events` 維持 `auto`,**第一次**點另一個 tab 就同時關掉選單並切換分頁。
+- **一手來源(調查 + 反證者)**:Ant Design(`rc-dropdown` 全檔 0 個 `mask`、`useWinClick` 的處理函式只有 `triggerOpen(false)`,沒有 `preventDefault`)與 Atlassian(`use-close-manager` 只呼叫 `closePopup`)都是點擊穿透;MUI Menu 走 `styled(Modal)` + 全幅 backdrop,是吃掉第一次點擊那一派;Microsoft 的 WinUI 文件把「一排各自帶 flyout 的兄弟按鈕」當成開啟穿透(`OverlayInputPassThroughElement`)的示範情境,理由是使用者會連續操作多個 flyout —— 分頁列正是這個形狀。WAI-ARIA APG 對外部點擊沒有規定。
+- **反證者的兩點修正(已採納進本條敘述)**:(a) 不能說「業界共識偏向穿透」—— 以預設值計票是 4:2 偏向擋住;正確的說法是**這是有文件、有先例的情境選擇**,而我們的情境(掛在導覽控件上的選單、user 明確定調為 popover 類)落在穿透那一側。(b) Radix 自己的預設其實**有**沿著 menu / popover 分家(`popover.tsx:76` 預設 `modal = false`、`menu.tsx:98` 預設 `true`)—— 這正好支持 user 的分類語言。
+- **取捨(改完就會有的)**:選單開著時頁面可以捲動(Radix 會讓浮層跟著錨點走)、外面不再 `aria-hidden`、沒有焦點鎖;方向鍵在選單內照舊,Esc 與外部點擊照舊關閉。`agent-panel-fab.tsx:683` 早就顯式 `modal={false}`,與新預設一致。
+
 ### AD77 既有債(非本批造成,查證時順手盤到,登記不冒充已解)(2026-09-10)
 
 - **a11y 全掃 5038 條 serious**(color-contrast 5033、nested-interactive 4、可捲動區不可聚焦 1),分布在 737 個 story。CI 的 `a11y-and-size.yml` 走的是 baseline-diff(只擋新增),所以這是既有基線不是本批回歸;本批另跑一次 `--gate`:**0 regression vs baseline**(1033 story 全掃,critical 0)。

@@ -66,7 +66,7 @@ const radixItemClass = [
   //   瀏覽器對程式化 focus 的 :focus-visible 跨瀏覽器不一致(見檔頭 docblock),所以抑制瀏覽器那圈、改由本檔依
   //   useCursorMover 判反白來歷(2026-09-09 起;不是 useInputModality —— 那是常駐清單的訊號);承擔者:radixCursorClass 畫在 data-[highlighted] 項上的 focus-ring-inset(鍵盤搬的反白)
   'relative cursor-pointer select-none outline-none',
-  'transition-colors duration-150',
+  // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
   'data-[disabled]:pointer-events-none data-[disabled]:text-fg-disabled data-[disabled]:cursor-default',
 ].join(' ')
 
@@ -90,17 +90,25 @@ const radixCursorClass = (cursorByKeyboard: boolean) =>
 const radixGrab = (e: React.PointerEvent) => { if (e.pointerType === 'mouse') markPointerGrab(e) }
 
 // ── Root ──
-// Radix modal menu 會在 open 時把 trigger 所在的 app subtree 設成 aria-hidden。瀏覽器仍可
-// 讓 subtree 內原本的 trigger 留在 sequential focus order，axe 因而正確報
-// aria-hidden-focus。由 Root SSOT 對所有 DropdownMenu 統一同步 trigger tab stop；Portal
-// 仍保留 React context，所以不需要 consumer/story 各自 patch。
+// **預設 non-modal(2026-09-10 user 拍板:「這個是 popover 類型的互動的東西不是 dialog 類型的互動的東西」)**。
+// Radix 的 modal menu 會在開啟時對外面整片下 `pointer-events: none`(DismissableLayer 的
+// `disableOutsidePointerEvents`),於是選單開著時在外面點任何東西,**第一次點擊只會被拿去關選單**,
+// 要再點第二次才會生效 —— user 2026-09-10 在分頁的 inlineAction 選單上抓到:「為何該選單打開後點擊其他 tab
+// 沒有反應?要再點第二下才有反應」。選單是浮層(popover)不是對話框(dialog):它不接管整個畫面,
+// 所以外面的第一次點擊應該同時關掉它並命中目標。`modal={true}` 仍可由 consumer 顯式指定
+//(需要擋住背景互動的情境,例如破壞性確認流程)。
+//
+// modal 時另有一件要處理:Radix 會把 trigger 所在的 app subtree 設成 aria-hidden,瀏覽器仍
+// 讓 subtree 內原本的 trigger 留在 sequential focus order,axe 因而正確報 aria-hidden-focus。
+// 由 Root SSOT 對所有 DropdownMenu 統一同步 trigger tab stop;Portal 仍保留 React context,
+// 所以不需要 consumer/story 各自 patch。non-modal 沒有 aria-hidden,這段自然是 no-op。
 const DropdownMenuModalOpenContext = React.createContext(false)
 
 const DropdownMenu = ({
   open,
   defaultOpen,
   onOpenChange,
-  modal = true,
+  modal = false,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Root>) => {
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen ?? false)

@@ -99,7 +99,7 @@ const ScrollBar = React.forwardRef<
          前身直接 `bg-border` borrowing(2026-04 ship)→ semantic alias 收斂 SSOT(避免 thumb 視覺
          未來演化時誤動 Field/Input/Checkbox border 視覺)。對齊 shadcn ScrollArea source `bg-border`。 */}
     <ScrollAreaPrimitive.ScrollAreaThumb
-      className={cn('relative flex-1 rounded-full bg-[var(--scrollbar-thumb)] hover:bg-[var(--scrollbar-thumb-hover)] transition-colors')}
+      className={cn('relative flex-1 rounded-full bg-[var(--scrollbar-thumb)] hover:bg-[var(--scrollbar-thumb-hover)]')}
     />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
 ))

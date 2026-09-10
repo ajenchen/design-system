@@ -119,7 +119,7 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 
 **預設 label 不 expand**——chevron 是展開唯一控件。理由:select / expand 語意獨立(sidebar「Documents」點 label 進頁面,點 chevron 才展開子列表)。Consumer `expandOnSelect` prop 可讓整行同時 select + expand(適合 stepper)——**此連帶展開僅限指標點擊(`handleRowClick`)**;鍵盤 `Enter` / `Space` 只觸發 select,展開 / 收合一律走 `→` / `←`(對齊 WAI-ARIA treeview「Enter 啟用、方向鍵展開收合」慣例)。
 
-**動畫**:children 用 Radix `Collapsible` height animation(0 → auto);chevron `transition-all duration-150 rotate-0 → rotate-90`(`transition-all` 同時涵蓋 hover 色彩過渡)。
+**動畫**:children 用 Radix `Collapsible` height animation(0 → auto);chevron `transition-transform duration-150 rotate-0 → rotate-90`(2026-09-10:原本是 `transition-all`,連 hover 底色一起過渡;hover 底色改成瞬間後只留旋轉,owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」)。
 
 ---
 

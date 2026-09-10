@@ -91,24 +91,9 @@
   outline-offset: -2px;
 }
 
-/* 焦點框(外描邊)的具名版本 —— **不是第三種幾何**,值與上面的全域 `:focus-visible` 逐字相同。
- *
- * 為什麼需要它:有些控件在某個 mode 下必須把自己的 `outline-none` 解除。
- *   例:`<input readonly>` 是 tab stop,但編輯態的指示器是「欄位邊框轉主色」,所以 `bareInputStyles`
- *   寫了 `outline-none`(@focus-suppress B)。唯讀態沒有邊框可轉(border-transparent),那個抑制就不該生效,
- *   否則整個控件零焦點指示(2026-09-10 實測 readonly Input / Textarea 正是如此,WCAG 2.4.7)。
- *   解除的寫法只有兩種:把值抄一遍(`focus-visible:outline-2 outline-ring outline-offset-2`,
- *   `focus-geometry-invariant.mjs` R4 明文禁止,而且改全域時會漏掉),或指名這一條 utility。
- *
- * 為什麼寫 `outline` 簡寫:同 `focus-ring-inset` —— `outline-none` 會把 `--tw-outline-style` 設成 `none`,
- * 讓同元素上的 outline utility 靜默失效;簡寫繞開那個變數,`focus-visible:` 變體的特異性 (0,2,0) 也高過 `.outline-none` (0,1,0)。
- *
- * 只准用在「解除自己那一處抑制」;預設往外的元件仍然什麼都不寫(全域規則已經生效)。
- */
-@utility focus-ring-outer {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
+/* (2026-09-10 撤回 `focus-ring-outer`:當天上午為了補回「唯讀欄位零焦點指示」而加的具名外描邊,
+    同日 user 指出唯讀應該跟可編輯的欄位一樣用 1px 邊框轉主色 —— 改用既有的 `focus-within:!border-primary`
+    之後這條 utility 沒有消費者,留著就是第三種幾何的入口,刪掉。歷史見 field-wrapper.tsx 頂端 JSDoc。) */
 
 /* Radix Collapsible height animation — consumed by TreeView. */
 @keyframes collapsible-down {
