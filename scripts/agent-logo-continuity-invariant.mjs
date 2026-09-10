@@ -164,7 +164,18 @@ const fps = frames.length / ((frames[frames.length - 1].t - frames[0].t) / 1000)
 // 容差用的 ω 來自上方 C8 的靜態推導(單一住所);這裡不再有第二個數字住所。
 const maxStep = (SPIN_OMEGA / fps) * 1.5
 
-record('C1a', `靜止 → 思考起步:第一格與靜止差 ≤ 一影格(角度 ≤ ${maxStep.toFixed(1)}°、形狀 ≤ 60、疊層 ≤ 0.02)`, !!first && wrapDelta(first.body, rest.body) <= maxStep && wrapDelta(first.grad, rest.grad) <= maxStep && first.holeDist <= 60 && first.overlay < 0.02, first ? `body ${first.body.toFixed(1)} grad ${first.grad.toFixed(1)} hole ${first.holeDist.toFixed(0)} overlay ${first.overlay.toFixed(3)}` : 'no think frame')
+// C1a 的容差按**實際經過的時間**算,不按影格序號(2026-09-10 修)。
+// 舊寫法用「平均 fps 的 1.5 倍影格」當上限,隱含假設「切換到第一個 think 取樣之間沒有掉格」——
+// 共享 runner 掉一格,第一個取樣就變成兩格的旋轉量,量到 25.4° > 17.9° 而紅(本機同一支永遠是 12°、綠)。
+// 要驗的不變式是「起步從靜止位接上、沒有跳一段」,那本來就該用「轉了多少 ÷ 過了多久」判定:
+// 上限 = 角速度 × 這兩個取樣之間真正經過的時間 × 1.5,掉格時上限跟著放大,語意不變、也不會放過真的跳段。
+const firstIdx = frames.indexOf(first)
+const beforeFirst = firstIdx > 0 ? frames[firstIdx - 1] : null
+// 上限再夾 100ms:掉格可以放寬容差,但不能無限放寬 —— 100ms 對應 72°,遠小於「從隨機角度起跑」的跳段(可到 180°),
+// 所以夾住之後仍抓得到真的不連續。
+const c1aSpanMs = Math.min(100, first && beforeFirst ? Math.max(1, first.t - beforeFirst.t) : 1000 / Math.max(1, fps))
+const c1aTol = (SPIN_OMEGA * c1aSpanMs) / 1000 * 1.5
+record('C1a', `靜止 → 思考起步:第一格與靜止差 ≤ 經過時間該轉的量(${c1aSpanMs.toFixed(1)}ms → ≤ ${c1aTol.toFixed(1)}°、形狀 ≤ 60、疊層 ≤ 0.02)`, !!first && wrapDelta(first.body, rest.body) <= c1aTol && wrapDelta(first.grad, rest.grad) <= c1aTol && first.holeDist <= 60 && first.overlay < 0.02, first ? `body ${first.body.toFixed(1)} grad ${first.grad.toFixed(1)} hole ${first.holeDist.toFixed(0)} overlay ${first.overlay.toFixed(3)}` : 'no think frame')
 record('C1b', '減速停定 → 靜止:角度 ≡ 0、色場 ≡ 0、形狀 = 定稿、疊層 0', !!finalStill && wrapDelta(finalStill.body, 0) < 1 && wrapDelta(finalStill.grad, 0) < 1 && finalStill.holeDist < 1 && finalStill.overlay < 0.02, finalStill ? `body ${finalStill.body.toFixed(1)} grad ${finalStill.grad.toFixed(1)} hole ${finalStill.holeDist.toFixed(0)} overlay ${finalStill.overlay.toFixed(3)}` : 'no still frame')
 let worst = { body: 0, grad: 0, hole: 0, overlay: 0, at: -1 }
 for (let i = 1; i < frames.length; i++) {
