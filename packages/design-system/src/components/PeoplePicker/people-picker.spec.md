@@ -322,7 +322,7 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 - ↑/↓ — 導覽 people
 - Enter — 選擇 / 取消選擇
 
-**Focus**:Field 家族 focus 由 Field wrapper 提供(`focus-within:!border-primary`,`field-wrapper.tsx` v13.3 SSOT;對齊 Select / Combobox spec「Focus」段),非 outline ring;focus management 由元件 own。
+**Focus**:single mode 包 `<Select searchable>`,規則同 Select spec「Focus」段(2026-09-10 更正;user 問「people picker 明明是可以打字的輸入框,按照畫框原則在此情境是要畫成外框的嗎?」):**開啟時**是可打字的插入點控件 → 不畫外框、Field wrapper 邊框轉色;**選完(Enter / 點選)浮層關閉後**輸入框卸載、觸發器顯示已選人員並拿回焦點 —— 此時它是關閉的觸發器不是輸入框(打字沒有作用),鍵盤模態下有全域外框、滑鼠選則沒有。multi mode(Combobox 基座)焦點留在輸入框,不畫外框。focus management 由元件 own。閘:`virtual-cursor-modality-invariant.mjs` G 段。
 
 移除已選人員後的 focus order 消費 Combobox collection contract：下一個 remove control → 前一個 → owner combobox trigger，禁止 focus 掉到 `body`。Stack avatar remove button 必保留 `data-collection-remove` marker 供 owner 統一接管。
 

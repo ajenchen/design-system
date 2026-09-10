@@ -28,6 +28,8 @@
  *   (E)  常駐清單(TreeView / Sidebar / Tabs / DataTable / TimePicker 欄):鍵盤框在時滑鼠 hover → **底色與框同時存在**
  *   (F)  在文字輸入框裡打字不算搬游標(2026-09-10 user 抓到「滑鼠點輸入框、輸入 a、Backspace → 選單出現鍵盤焦點框」):
  *        滑鼠點進搜尋列 → 打一個字 → Backspace → 自動落點的反白**無框**(底色 = 開啟那一下的指標來歷);接著 ↓ → **有框**(對照:儀器看得到框)
+ *   (G)  關閉態觸發器的外框看模態(2026-09-10 user 問「people picker 明明是可以打字的輸入框…是要畫成外框的嗎?」):Select / SelectMenu / PeoplePicker
+ *        選完後輸入框卸載、焦點回觸發器 —— ↓ Enter 選完 → 觸發器**有外框 + 邊框轉主色**;滑鼠點選項選完 → 觸發器**無外框**(邊框轉主色照舊)
  * 量 outline 前等 700ms(transition-colors 含 outline-color,立刻量會抓到過渡值)。
  *
  * `--selftest` 對照組(M32「儀器要先有對照組」):每頁載入後注入一段 CSS,把游標列釘回舊行為
@@ -457,6 +459,31 @@ for (const t of TYPING_TARGETS) {
   ck(`${n} F 接著 ↓ → 反白**有框**(對照:儀器看得到框)`, !g.error && g.ring, g.error || `「${g.text}」ring=${g.ringDesc}`)
 }
 // F 結束把滑鼠停到角落:Playwright 的指標位置跨頁保留,留在原處會讓下一段(E)的「hover 前」量到已經 hover 的底色
+await page.mouse.move(2, 2)
+
+// ── (G) 關閉態觸發器的外框看模態:選完(Enter / 滑鼠)焦點回到觸發器 ──
+const OLD_BEHAVIOUR_TRIGGER_CSS = `#storybook-root [role="combobox"]:focus-visible { outline: none !important; }`
+const triggerFocus = () => page.evaluate(() => { const a = document.activeElement; const cs = getComputedStyle(a); return { tag: a.tagName, role: a.getAttribute('role'), ring: cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0, ringDesc: `${cs.outlineStyle} ${cs.outlineWidth} ${cs.outlineOffset}`, border: cs.borderColor } })
+const primaryColor = () => page.evaluate(() => { const d = document.createElement('div'); d.style.color = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(); document.body.appendChild(d); const c = getComputedStyle(d).color; d.remove(); return c })
+for (const t of TYPING_TARGETS.filter((x) => /^(Select|SelectMenu|PeoplePicker)$/.test(x.name))) {
+  const n = t.name
+  // 鍵盤路徑:滑鼠點開 → ↓ Enter → 焦點回關閉的觸發器,鍵盤模態 → 外框 + 邊框主色
+  if (!(await openGrabTarget(t))) continue
+  if (SELFTEST) await page.addStyleTag({ content: OLD_BEHAVIOUR_TRIGGER_CSS })
+  await page.keyboard.press('ArrowDown'); await page.waitForTimeout(200); await page.keyboard.press('Enter'); await page.waitForTimeout(700)
+  const k = await triggerFocus(); const prim = await primaryColor()
+  ck(`${n} G1 滑鼠點開 → ↓ Enter 選完:焦點回關閉的觸發器、鍵盤模態 → 外框(全域 :focus-visible)`, k.role === 'combobox' && k.ring, `${k.tag}[${k.role}] ring=${k.ringDesc}`, 'new')
+  ck(`${n} G1 觸發器邊框轉主色(Field wrapper focus-within)`, k.role === 'combobox' && k.border === prim, `border=${k.border} vs primary=${prim}`)
+  // 滑鼠路徑:重新點開 → 滑鼠點選項 → 焦點回觸發器但指標模態 → 無外框
+  await page.mouse.move(2, 2); await page.waitForTimeout(100)
+  const trig = await centerOf(page, t.trigger); if (!trig) continue
+  await page.mouse.click(trig.x, trig.y); await page.waitForSelector(t.items, { timeout: 5000 }).catch(() => {}); await page.waitForTimeout(500)
+  const item = await unselectedItemBox(page, t)
+  if (!item) { ck(`${n} G2 前提:找得到可點的未選中列`, false, ''); continue }
+  await page.mouse.click(item.x, item.y); await page.waitForTimeout(700)
+  const m = await triggerFocus()
+  ck(`${n} G2 滑鼠點選項選完:焦點回觸發器、指標模態 → **無外框**(邊框仍主色)`, m.role === 'combobox' && !m.ring && m.border === prim, `${m.tag}[${m.role}] ring=${m.ringDesc} border=${m.border}`)
+}
 await page.mouse.move(2, 2)
 
 // ── (E) 其他常駐清單:真焦點 + hover 獨立(Sidebar / Tabs / DataTable / TimePicker 欄)────────

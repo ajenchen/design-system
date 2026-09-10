@@ -2968,3 +2968,13 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - **讀回**:918a2821 —— DataTable job perception 4500 inertia dpr1 內容延遲 p95 45ms(上限 35),同一跑單一 scroll 事件跳 464px、視窗 466px,差 2px 沒被判成停頓 → 停頓判準改「≥ 視窗 3/4」(正常 4500 最大單步 235–244px);元件 job docs 競態閘的對照組固定等 4.5s 量到 docs 子節點 0 → 改輪詢等真的渲染。e12e4fa7 —— DataTable job 綠(13.6 分鐘,貼頂),元件 job 13.1 分鐘跑到 15 分鐘被取消(加了 docs 競態閘、虛擬游標 F 段、示範閘 S12 / S13 之後)。
 - **修**:`verify-browser-datatable-dpr2`(dpr2 那一組 perception 5 跑 + 把手位置)、`verify-browser-agent`(docs 競態、虛擬游標、示範閘)各自一個 job;fan-in `verify` needs 五個上游、五個 result 都要 success;`infra/governance/test/ci-workflow-scope.test.mjs` 同步(job 清單、needs、build-storybook 5 次、playwright install 4 次)。預估:DataTable ~8 分、dpr2 ~8 分、元件 ~8 分、agent ~8 分。
 - 兩條紅都不是表格或守衛:共享 runner 的一次近整窗跳轉、一次 docs 頁渲染慢;儀器判準與等待方式改了,表格與元件程式一行未動。
+
+### AD72 user 2026-09-10:遠端搜尋名錄 —— 滑鼠點輸入框、↓、Enter 後 PeoplePicker 出現鍵盤焦點的外框;「明明是可打字的輸入框,照畫框原則要畫外框嗎?」(2026-09-10)
+
+**user 原話**:「為何遠端搜尋名錄的範例中,我滑鼠點擊輸入框然後點擊鍵盤上的下鍵並按enter,之後 people picker 卻會出現鍵盤焦點的藍色外框,但people picker 明明是可以打字的輸入框,按照畫框原則在此情境是要畫成外框的嗎?這是合理的嗎?不合理的話,root cause是什麼以及是否有其他地方有類似問題?」
+
+- **量到的(`probe-pp-enter-ring.mjs` / `probe-pp-dom.mjs` / `probe-select-tab.mjs`)**:滑鼠點進 → 焦點在搜尋輸入框(插入點控件),無外框、Field wrapper 邊框轉主色 ✓;↓ Enter 選完 → 浮層關、**搜尋輸入框卸載**、觸發器(`div[role=combobox][tabindex=0]`)顯示已選人員並拿回焦點(Radix `onCloseAutoFocus` 的標準行為),此時打字沒有作用 —— 它是**關閉的觸發器,不是輸入框**;瀏覽器 `:focus-visible` 因最後一次互動是鍵盤而成立 → 全域外框(`styles/base.css` `:focus-visible`,2026-09-07 唯一外描邊來源)+ 邊框主色。滑鼠點選項選完 → 焦點同樣回觸發器,但指標模態 → 無外框。Select 的關閉觸發器完全相同(Tab 進來 / Esc / ↓ Enter 都有框,滑鼠沒有);Combobox(multi / 輸入框基座)焦點留在輸入框,沒有外框。
+- **判定:合理、照規則。** focus-canonical 規則二(user 2026-09-09 拍板):「基本上都畫框,唯一不畫框的例外是插入點控件」—— 關閉的觸發器沒有插入點,不在例外內;外框看模態(鍵盤畫、滑鼠不畫)也是規則。user 的前提「可打字的輸入框」只在開啟時成立;選完後 PeoplePicker single 依設計包 `<Select searchable>`(2026-05-12 user 拍板「multi 只選 1 人時 trigger = avatar + name,跟 single mode 同」)變回關閉觸發器。世界級:Radix Select 關閉後把焦點還給觸發器、外框看 `:focus-visible`;React Aria / WICG 模態判準:最後一次互動是鍵盤就顯示焦點。
+- **真正的漂移在文件**:`select.spec.md`「Focus:…由 Field wrapper 提供」與 `people-picker.spec.md`「…非 outline ring」都寫於 2026-09-07 全域外框規則之前,只描述開啟時的輸入框,沒寫關閉觸發器 → 已改寫成兩個狀態、兩種承擔者(開啟 = 邊框轉色;關閉 = 邊框轉色 + 鍵盤模態外框)。
+- **閘**:`virtual-cursor-modality-invariant.mjs` G 段(Select / SelectMenu / PeoplePicker:滑鼠點開 → ↓ Enter → 觸發器有外框 + 邊框主色;重開 → 滑鼠點選項 → 觸發器無外框、邊框主色;`--selftest` 把觸發器的 focus-visible 外框關掉 → G1 必紅)。
+- **若 user 想改規則**(關閉觸發器只用邊框、不加外框,像 Ant 的 focused 樣式):那是 focus-canonical 規則二的產品決策,不在本次自主範圍,列為待拍板。
