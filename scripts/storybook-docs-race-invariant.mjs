@@ -34,8 +34,12 @@ if (!existsSync(join(STATIC, 'index.json'))) { console.error(`找不到 ${STATIC
 let fail = 0
 const check = (name, ok, detail = '') => { console.log(`${ok ? '✓' : '✗'} ${name}${detail ? ' | ' + detail : ''}`); if (!ok) fail++ }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+/** preview iframe 的 frame 每次重取:離開渲染完整的 docs 頁時 Storybook 會整個 reload preview(StoryRender.teardown 的逃生路徑),
+ *  舊 frame 的執行環境會被銷毀(6fdbd788 runner 上「Execution context was destroyed」)。 */
+const getFrame = async (page) => (await page.waitForSelector('#storybook-preview-iframe')).contentFrame()
+const evalIn = async (page, fn) => { for (let i = 0; i < 20; i++) { try { return await (await getFrame(page)).evaluate(fn) } catch (e) { if (!/context was destroyed|navigation|detached/i.test(String(e))) throw e; await sleep(250) } } throw new Error('preview frame 一直在導航') }
 /** 等到 pred 成立(每 200ms 看一次),最多 timeout ms;共享 runner 上 docs 頁渲染 14 個 story 可能要十幾秒,固定等待會誤判 */
-const waitFor = async (frame, pred, timeout) => { const t0 = Date.now(); while (Date.now() - t0 < timeout) { if (await frame.evaluate(pred)) return true; await sleep(200) } return false }
+const waitFor = async (page, pred, timeout) => { const t0 = Date.now(); while (Date.now() - t0 < timeout) { if (await evalIn(page, pred)) return true; await sleep(200) } return false }
 const sel = (x) => `[id="${x}"]`
 const MEASURE = () => {
   const docs = document.getElementById('storybook-docs'), root = document.getElementById('storybook-root')
@@ -61,21 +65,20 @@ try {
       return route.fulfill({ response: res, body, headers: { ...res.headers(), 'content-type': 'application/javascript' } })
     })
     await page.goto(server.origin + `/index.html?path=/story/${TASK}`, { waitUntil: 'networkidle' }); await sleep(800)
-    const frame = await (await page.waitForSelector('#storybook-preview-iframe')).contentFrame()
     // 點元件節點 → 開 Docs(已展開的節點再點只會收合,收合了就再點一次)
     await page.locator(sel(P)).first().click(); await sleep(300)
     if ((await page.locator(sel(DEMO)).count()) === 0) await page.locator(sel(P)).first().click()
     await sleep(500)
     await page.locator(sel(DEMO)).first().click()
     // story 先渲染出來,再等「延遲的 chunk 到達之後」的那段時間(殭屍就是在那之後長出來的)
-    await waitFor(frame, () => (document.getElementById('storybook-root')?.childElementCount ?? 0) > 0, 20000)
+    await waitFor(page, () => (document.getElementById('storybook-root')?.childElementCount ?? 0) > 0, 20000)
     await sleep(Math.max(3500, delayMs + 1500))
-    const m = await frame.evaluate(MEASURE)
+    const m = await evalIn(page, MEASURE)
     // 對照:留在 Docs 頁時 docs 要真的渲染出來(守衛不得誤殺正常 docs);共享 runner 上 14 個 story 的 docs 頁可能要十幾秒
     await page.locator(sel(P)).first().click(); await sleep(300)
     if ((await page.locator(sel(DEMO)).count()) === 0) await page.locator(sel(P)).first().click()
-    await waitFor(frame, () => (document.getElementById('storybook-docs')?.childElementCount ?? 0) > 0 && !document.getElementById('storybook-docs')?.hasAttribute('hidden'), 30000)
-    const docsPage = await frame.evaluate(MEASURE)
+    await waitFor(page, () => (document.getElementById('storybook-docs')?.childElementCount ?? 0) > 0 && !document.getElementById('storybook-docs')?.hasAttribute('hidden'), 30000)
+    const docsPage = await evalIn(page, MEASURE)
     await browser.close()
     return { m, docsPage, routed }
   }

@@ -2978,3 +2978,7 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - **真正的漂移在文件**:`select.spec.md`「Focus:…由 Field wrapper 提供」與 `people-picker.spec.md`「…非 outline ring」都寫於 2026-09-07 全域外框規則之前,只描述開啟時的輸入框,沒寫關閉觸發器 → 已改寫成兩個狀態、兩種承擔者(開啟 = 邊框轉色;關閉 = 邊框轉色 + 鍵盤模態外框)。
 - **閘**:`virtual-cursor-modality-invariant.mjs` G 段(Select / SelectMenu / PeoplePicker:滑鼠點開 → ↓ Enter → 觸發器有外框 + 邊框主色;重開 → 滑鼠點選項 → 觸發器無外框、邊框主色;`--selftest` 把觸發器的 focus-visible 外框關掉 → G1 必紅)。
 - **若 user 想改規則**(關閉觸發器只用邊框、不加外框,像 Ant 的 focused 樣式):那是 focus-canonical 規則二的產品決策,不在本次自主範圍,列為待拍板。
+
+### AD71 補記(2026-09-10):6fdbd788 讀回 —— 拆分後兩個新 job 各一條 runner 時序紅
+- `verify-browser-agent`:docs 競態閘的第三跑(不延遲的正常切換)在離開渲染完整的 docs 頁時撞到 Storybook 的 preview reload(StoryRender.teardown 逃生路徑)→ 舊 frame 的執行環境被銷毀「Execution context was destroyed」。修:每次 evaluate 都重取 preview iframe 的 frame、遇到導航就重試。
+- `verify-browser-datatable-dpr2`:4500 inertia dpr2 `unmappedFrames 4`(4 幀解不出任何一列完整,延遲 p95 154ms;同 peak dpr1 為 0)= 共享 runner 在 dpr2 的 raster 成本,與 AD62 不在 dpr2 斷言延遲同一理由 → unmapped 只在斷言延遲時算;零殼 / 空白 / 擷取覆蓋照斷言。
