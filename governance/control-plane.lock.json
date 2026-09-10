@@ -10,7 +10,7 @@
   "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
   "files": [
     {
-      "hash": "sha256:9599f49dff4d4277968691b82613c12d467b5cbb3b4c2f811367ffb37a47c198",
+      "hash": "sha256:c7bbdc0b58812542c56fc4944e755a3f6c9cf1301ce662da4dcee7444c13d55d",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a1397beecb8d31d89e4efe7834ccfcab5a510bbc049fc8a11c2e0ce673a572e1",
+      "hash": "sha256:7e9b8276b1f7391d79fc06dfc9eb155bab4a5bcaea8dee5d2c106178a41c7246",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:1eb413d26d1b14e15eff6081c32fea9595b484d81c4f1966c1712ef8b8bfd5f7",
+  "inputDigest": "sha256:98feab5b28ee5cee1e37f852a3758903bb0a6521ad41f695427bdcb9d6b0b3d9",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:ed1857346031d0eacce08dfde8a64334aa607c500333117d586be7ee63a9bafc",
+  "snapshotDigest": "sha256:44718f17748b069acfb3a3afc438acb1e049f52cc387cf3dd6794caaf30653b1",
   "sources": [
     {
       "hash": "sha256:2ffae9f5d713265ed1923ddd0d0db6c8c0ceb4b2a119b753511688211a2971b4",
@@ -3222,7 +3222,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 46,
-      "hash": "sha256:d12a4b0bc7ffa08689f54f5853945448eb49509a566a7b76a91277616657d7ce",
+      "hash": "sha256:ba7f1dc55f2782429117b34df16993f6130b102e18f3043b03d5d8fef309b5a8",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3587,7 +3587,7 @@
         "scripts/generated/"
       ],
       "files": 423,
-      "hash": "sha256:d30eda96bd8b575dac2b415bafb8ccae92e3f6ef52f40cf08b8673d9b03b748c",
+      "hash": "sha256:2b08e7d2c1ddd4c214253db04f01bd9e880486dc26de57c7402cd38e41255ace",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
