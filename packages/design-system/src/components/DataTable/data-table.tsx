@@ -1615,7 +1615,7 @@ function DataTableInner<TData>(
    */
   const widthSentinelRef = React.useRef<HTMLDivElement>(null)
   /**
-   * 捲動幾何快取:`scrollTop` / `clientHeight` 的唯一讀取點。
+   * 捲動幾何快取:**只快取 `clientHeight`**(`scrollTop` 必須讀 DOM 現值,理由見它的讀取點)。
    *
    * **為什麼要快取**(2026-09-10,CDP trace 實測):在 render 或 layout effect 裡讀這兩個值,會逼瀏覽器
    * 把還沒算完的樣式與版面**同步**算完(forced reflow)。捲動時每次 commit 都讀 → 4× 節流的一次手勢裡
@@ -1623,16 +1623,14 @@ function DataTableInner<TData>(
    * React 的工作迴圈內(`scheduler` 的 `performWorkUntilDeadline`)—— 是當時最大的單一成本。
    *
    * **為什麼快取不會失準**:兩個值都有各自的權威更新點,而且那些地方本來就要讀它。
-   * `scrollTop` 由 `onCenterBodyScroll` 更新(每個捲動事件必經,它本來就要讀 `scrollTop` 去同步三區);
-   * `clientHeight` 由 `measureScrollbarGutters` 更新(掛載一次 + ResizeObserver,捲軸出現/消失會改內容盒 → 必 fire)。
-   * center body 沒有任何程式化捲動(全檔 grep 無 `scrollTop =` / `scrollTo` 寫入 center),
-   * 所以「值變了卻沒有事件」不存在。
+   * `clientHeight` 由 `measureScrollbarGutters` 更新(掛載一次 + ResizeObserver,捲軸出現/消失會改內容盒 → 必 fire),
+   * 它在一次手勢裡本來就不會變,快取不會失準。
    *
    * 同檔 :1623 早就記過同一類病(「原本無依賴 → 每次 render 都讀 clientWidth/offsetHeight(強制 layout)」),
    * 這裡是把剩下的四個讀取點一起收乾淨。世界級對照:AG Grid 33.3.2 `ag-grid-community.js:25758-25766`
    * 的 `onVScroll` 也是在捲動事件裡把 `scrollTop` 記進 `nextScrollTop`,畫列時讀那個記錄,不回頭問 DOM。
    */
-  const scrollGeomRef = React.useRef({ top: 0, height: 0 })
+  const scrollGeomRef = React.useRef({ height: 0 })
   const measureScrollbarGutters = React.useCallback(() => {
     const body = centerBodyRef.current
     if (!body) return
@@ -1767,7 +1765,10 @@ function DataTableInner<TData>(
     // StrictMode 雙 render、或被 TanStack flushSync 打斷而丟棄的 render 不會把基準蓋掉(多代理審查 P2)。
     const prevRenderStart = S.committedRenderStart
     S.renderStart = now
-    const offsetNow = scrollGeomRef.current.top
+    // **`scrollTop` 一定要讀 DOM 現值,不可讀快取**(2026-09-10):下面用它算的 `pendingBehind` 是「機器跟不跟得上」
+    // 的判準,而長 commit 期間捲動事件根本送不進來 —— 讀快取等於永遠看到舊位置、永遠判成跟得上,
+    // 慢機器的殼列安全網就不會啟動。這一行是安全網的輸入,不是效能熱點。
+    const offsetNow = centerBodyRef.current?.scrollTop ?? 0
     // 未掛載或零高度時仍保留至少一列的非零門檻,靜止不會進入緊急殼。
     const viewportHeight = scrollGeomRef.current.height
     S.viewportTop = offsetNow; S.viewportBottom = offsetNow + viewportHeight
@@ -1810,24 +1811,8 @@ function DataTableInner<TData>(
     // 慢機器捲動中:一次 commit 的時間內視窗會移動 速度 × commit 時間 這麼遠,這段距離的列先掛殼(便宜)在前面等著,
     // 否則每次 commit 畫好的列落地時視窗早已捲過去 → 整片白直到緊急跳轉才有殼(v2 在 4× 節流量到 621–997ms 白)。
     // 慢機器或緊急跳轉都算;上限 48 列(6× 節流:6px/ms × 300ms commit ÷ 40px ≈ 45 列)。殼便宜,多掛是為了讓合成器捲進去時有東西。
-    // 捲動中一律往捲動方向預掛(2026-09-10)。
-    //
-    // 原本這個前掛只在「量到機器跟不上」時才開,對跟得上的機器永遠是 0 —— 但**即使跟得上**,
-    // render 落地與合成器送幀之間仍有一拍:那一拍裡視窗已經往前移了「速度 × 一次 render 的間隔」,
-    // 那段距離的列若沒先掛,合成器就送出一片白。長度仍由量到的速度 × 量到的間隔決定(靜止時自然回到 0),
-    // 正常速度只多掛 2–3 列;上限 48 列不變。
-    //
-    // **隔離實證(6,000px/s,其餘條件全同、只差這一項,4 跑中位數 / 最大)**:空白幀 26 / 26 → **2.5 / 4**、
-    // 空白面積 51 / 58 → **5 / 9**(最長單次空白 27 / 51 → 35 / 67ms:白的次數與面積都大減,代價是偶爾一次略長)。
-    // 這是本輪捲動觀感改善的主力。
-    //
-    // **上限必須跟著機器縮(2026-09-10 CI 打臉後補)**:前掛長度 = 速度 × 間隔,而慢機器的間隔本來就長 ——
-    // 於是「愈慢的機器掛愈多列」,每次 commit 反而更久,合成的手勢被擠成整窗跳轉(CI 的 dpr2 job 8 跑有 6 跑判 stalled)。
-    // 前掛的列在這條路徑上是**真列**(視窗外的新列若先出殼,進窗那一次 render 才升級 = 看得到骨架,dpr1 感知閘實測 41 個殼幀,已撤回),
-    // 所以用量到的每列成本換算:多掛的列最多只准吃掉半幀。快機器每列 1–2ms → 允許 6–12 列;慢機器每列 8ms+ → 只允許 1 列。
-    const aheadCap = Math.max(1, Math.min(48, Math.floor((SHELL_FRAME_BUDGET_MS / 2) / Math.max(0.25, S.costPerRow))))
-    S.aheadRows = scrolling && S.lastCommitAt > 0
-      ? Math.max(0, Math.min(aheadCap, Math.ceil((Math.abs(offsetNow - (renderOffsetPrev ?? offsetNow)) / Math.max(1, now - prevRenderStart)) * Math.max(S.commitCost, now - prevRenderStart) / Math.max(1, resolvedEstimate))))
+    S.aheadRows = (S.budgeted || S.ahead || draining) && scrolling && S.lastCommitAt > 0
+      ? Math.max(0, Math.min(48, Math.ceil((Math.abs(offsetNow - (renderOffsetPrev ?? offsetNow)) / Math.max(1, now - prevRenderStart)) * Math.max(S.commitCost, now - prevRenderStart) / Math.max(1, resolvedEstimate))))
       : 0
     S.promoted = 0; S.newFull = 0; S.hasShell = false; S.decided = new Map(); S.fullNow = new Set(); S.shellsNow = new Set()
   }
@@ -1901,7 +1886,7 @@ function DataTableInner<TData>(
     S.committedRenderStart = S.renderStart
     S.lastRows = rows
     S.wasScrolling = virtualizer.isScrolling
-    S.lastOffset = scrollGeomRef.current.top
+    S.lastOffset = centerBodyRef.current?.scrollTop ?? 0
     // 殼升級成真列後,三區列高同步(缺陷 F)要再跑一次 —— 那個同步只掛在虛擬視窗換列上,補真內容不會換列(Codex R9 指出)。
     // 判「有沒有列從殼變真列」看集合差,不看配額計數:拖曳 / 編輯把殼強制升成真列不走配額,第一版只看 promoted,
     // Codex R10 在 autoRowHeight + 左右釘選下重現三區差 60px。**先比對上一輪的殼集合,再覆寫**(R11:第二版先覆寫才比,
@@ -2120,8 +2105,6 @@ function DataTableInner<TData>(
   const onCenterBodyScroll = React.useCallback(() => {
     const cb = centerBodyRef.current
     if (!cb) return
-    // 捲動幾何快取的權威更新點(理由見 `scrollGeomRef` 宣告):這裡本來就要讀 scrollTop 去同步三區,順手記下。
-    scrollGeomRef.current.top = cb.scrollTop
     writeScroll(centerHeaderRef.current, 'x', cb.scrollLeft)
     writeScroll(leftBodyRef.current, 'y', cb.scrollTop)
     writeScroll(rightBodyRef.current, 'y', cb.scrollTop)
