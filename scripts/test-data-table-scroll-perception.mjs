@@ -6,6 +6,7 @@ import { join, resolve } from "node:path";
 import {
   analyzeContent,
   assessContentCoverage,
+  slowMachineVerdict,
 } from "./lib/data-table-content-metrics.mjs";
 
 const arg = (key, fallback) =>
@@ -57,6 +58,55 @@ const unresolved = analyzeContent(
   1000
 );
 assert.equal(unresolved.unresolved.length, 1);
+// 慢機器判準的對照組(4ec7eb19 讀回):掃過視窗沒來得及補齊的列 ≠ 靜止後沒補齊。
+// 第三幀是輸入結束(100ms)後 400ms 的靜止畫面,捲到 scrollY 200(列 5 頂在 0)。
+const at200 = (index, shell = false) => ({ ...row(index, shell), top: index * 40 - 200, bottom: index * 40 - 161 });
+// 小 fixture 只有 2–3 幀,擷取覆蓋與滿列樣本本來就不足:這組對照只驗 settled 語意,其餘欄位由 slowBase 蓋過(spread 在後)
+const slowBase = { pixelBlankFullFrames: 0, captureCoverageValid: true, wheelCoalesced: false, errors: [], finalY: 200, inputDistance: 200, pixelFullContentSamples: 10 };
+const swept = analyzeContent(
+  [
+    { ts: 0, rows: [row(0), row(1, true)] },
+    { ts: 0.05, rows: [row(0), row(1, true)] },
+    { ts: 0.5, rows: [at200(5), at200(6)] },
+  ],
+  setup,
+  100,
+  { captureEnd: 1000 }
+);
+assert.equal(swept.unresolved.length, 1, "列 1 被捲走前一直是殼 → 仍列為掃過未補齊");
+assert.equal(swept.unresolved[0].visibleFrames, 2);
+assert.equal(swept.settled.valid, true);
+assert.equal(swept.settled.incompleteRows, 0, "靜止畫面 13 列全滿 → 補齊");
+assert.equal(slowMachineVerdict({ ...swept, ...slowBase }).ok, true, "慢機器:掃過未補齊不算,靜止後補齊即過");
+const stuckShell = analyzeContent(
+  [
+    { ts: 0, rows: [row(0), row(1)] },
+    { ts: 0.5, rows: [at200(5), at200(6, true)] },
+  ],
+  setup,
+  100,
+  { captureEnd: 1000 }
+);
+assert.equal(stuckShell.settled.shellRows.length, 1);
+assert.deepEqual(slowMachineVerdict({ ...stuckShell, ...slowBase }).reasons, ["靜止後仍未補齊:殼 1 列 / 缺列 0"], "靜止後還是殼 → 慢機器判準必紅");
+const stuckMissing = analyzeContent(
+  [
+    { ts: 0, rows: [row(0), row(1)] },
+    { ts: 0.5, rows: [at200(5)] },
+  ],
+  setup,
+  100,
+  { captureEnd: 1000 }
+);
+assert.equal(stuckMissing.settled.missingRows.length, 1);
+assert.equal(slowMachineVerdict({ ...stuckMissing, ...slowBase }).ok, false, "靜止後缺列 → 慢機器判準必紅");
+const tooEarly = analyzeContent([{ ts: 0, rows: [row(0), row(1)] }, { ts: 0.2, rows: [at200(5), at200(6)] }], setup, 100, { captureEnd: 300 });
+assert.equal(tooEarly.settled.valid, false, "擷取在輸入結束後 200ms 就停:最後一幀不能當靜止畫面");
+const lateQuiet = analyzeContent([{ ts: 0, rows: [row(0), row(1)] }, { ts: 0.2, rows: [at200(5), at200(6)] }], setup, 100, { captureEnd: 1000 });
+assert.equal(lateQuiet.settled.valid, true, "擷取跑到輸入結束後 900ms、之後沒再送幀 = 最後一幀就是靜止畫面");
+assert.equal(lateQuiet.settled.captureAfterInputMs, 900);
+assert.equal(slowMachineVerdict({ ...tooEarly, ...slowBase }).ok, false);
+assert.equal(slowMachineVerdict({ ...swept, ...slowBase, pixelBlankFullFrames: 1 }).ok, false, "留白永遠紅");
 const blank = analyzeContent(
   [{ ts: 0, rows: [{ ...row(0), ink: 0 }, row(1)] }],
   setup,

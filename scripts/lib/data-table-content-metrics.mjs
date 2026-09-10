@@ -115,6 +115,8 @@ export function analyzeContent(rawPixels, setup, inputEnd, input = {}) {
     missingAreaMs = 0,
     unmappedFrames = 0,
     missingFrames = 0;
+  // 最後一個解得出捲動位置的幀:輸入結束後的靜止畫面(perception 腳本在輸入結束後再擷取 900ms),慢機器判準看它有沒有補齊
+  let settled = null;
   for (let i = 0; i < pixels.length; i++) {
     const f = pixels[i],
       dt = ((pixels[i + 1]?.ts ?? f.ts + 0.0167) - f.ts) * 1000;
@@ -146,6 +148,8 @@ export function analyzeContent(rawPixels, setup, inputEnd, input = {}) {
     const first = Math.max(0, Math.floor(scrollY / setup.rowHeight)),
       last = Math.ceil((scrollY + setup.rect.height) / setup.rowHeight) - 1;
     let missing = false;
+    const frameShellRows = [],
+      frameMissingRows = [];
     for (let idx = first; idx <= last; idx++) {
       const height =
         Math.min((idx + 1) * setup.rowHeight, scrollY + setup.rect.height) -
@@ -160,17 +164,39 @@ export function analyzeContent(rawPixels, setup, inputEnd, input = {}) {
           entered: f.ts,
           full: null,
           initialState: row ? (row.shell ? "shell" : "content") : "missing",
+          lastSeen: f.ts,
+          visibleFrames: 0,
         });
       const e = seen.get(idx);
+      e.lastSeen = f.ts;
+      e.visibleFrames++;
       if (e.full == null && ready) e.full = f.ts;
       if (ready && row.ink > 0 && !inkSeen.has(idx)) inkSeen.set(idx, f.ts);
-      if (row?.shell) areaMs += height * setup.rect.width * dt;
+      if (row?.shell) {
+        areaMs += height * setup.rect.width * dt;
+        frameShellRows.push(idx);
+      }
       if (!row) {
         missingAreaMs += height * setup.rect.width * dt;
         missing = true;
+        frameMissingRows.push(idx);
       }
     }
     if (missing) missingFrames++;
+    settled = {
+      ts: f.ts,
+      afterInputMs: f.ts * 1000 - inputEnd,
+      shellRows: frameShellRows,
+      missingRows: frameMissingRows,
+    };
+  }
+  if (settled) {
+    // screencast 只在畫面有變化時送幀:最後一幀之後沒有新幀 = 之後沒再變,所以最後一幀就是靜止畫面 ——
+    // 前提是擷取本身有跑到輸入結束後 ≥ 250ms(perception 腳本停擷取前等 900ms,以 input.captureEnd 傳進來);
+    // 沒給 captureEnd 就保守地用最後一幀的時間(本機快機器最後一幀常在輸入結束後 ~240ms,4ec7eb19 讀回時 CI 那跑是 894ms)。
+    settled.captureAfterInputMs = (input.captureEnd ?? settled.ts * 1000) - inputEnd;
+    settled.valid = settled.captureAfterInputMs >= 250;
+    settled.incompleteRows = settled.shellRows.length + settled.missingRows.length;
   }
   const rows = [...seen.values()];
   const captureCoverage = assessContentCoverage(decodedFrames, {
@@ -203,5 +229,26 @@ export function analyzeContent(rawPixels, setup, inputEnd, input = {}) {
     captureCoverageValid: captureCoverage.valid,
     unmappedFrames,
     unresolved: rows.filter((r) => r.full == null),
+    settled,
   };
+}
+
+// 慢機器判準(三次都整窗跳轉時由 perception 父程序使用):只斷言不依賴機器速度的事 ——
+// 滿列從不留白、擷取有效、輸入完整送達、靜止後畫面補齊(無殼、無缺列)。
+// 掃過視窗期間沒來得及補齊的列(unresolved)**不在此列**:runner 凍結 240ms 後補送的 scroll 事件一次跳 300–539px,
+// 列在視窗裡只待 5–6 幀(≈90ms)就被捲走,那是機器沒趕上,不是表格(2026-09-10,4ec7eb19 dpr2 4500 讀回:
+// 列 39–41 殼 90ms 後離開視窗、列 52 殼 280ms 其中 240ms 是主執行緒凍結;輸入結束後 13 列全滿、零殼零缺列)。
+// 一般速度的路徑仍斷言 unresolved = 0(停頓的那一跑會重跑,不會走到這裡)。
+export function slowMachineVerdict(x) {
+  const reasons = [];
+  if (x.pixelBlankFullFrames !== 0) reasons.push(`滿列留白 ${x.pixelBlankFullFrames} 幀`);
+  if (!x.captureCoverageValid) reasons.push("擷取無效");
+  if (x.wheelCoalesced) reasons.push("wheel tick 合併成整窗跳轉");
+  if ((x.errors?.length ?? 0) !== 0) reasons.push(`頁面錯誤 ${x.errors.length} 則`);
+  if (!(Math.abs(x.finalY - x.inputDistance) <= 2)) reasons.push("輸入未完整送達");
+  if (!(x.pixelFullContentSamples >= 10)) reasons.push("滿列樣本不足 10");
+  if (!x.settled?.valid) reasons.push("靜止畫面未擷取(擷取在輸入結束後 < 250ms 就停了)");
+  else if (x.settled.incompleteRows > 0)
+    reasons.push(`靜止後仍未補齊:殼 ${x.settled.shellRows.length} 列 / 缺列 ${x.settled.missingRows.length}`);
+  return { ok: reasons.length === 0, reasons };
 }

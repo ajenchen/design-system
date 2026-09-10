@@ -8,6 +8,7 @@ import { PNG } from "pngjs";
 import {
   analyzeContent,
   quantileSummary as quant,
+  slowMachineVerdict,
 } from "./lib/data-table-content-metrics.mjs";
 const arg = (n, d) =>
   process.argv.find((x) => x.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d;
@@ -55,14 +56,16 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
       // 那就是 AD62 列殼判準設計要處理的「慢機器極速捲動」:允許先出殼,但**不得留白**、擷取要有效、輸入要完整;
       // 用慢機器判準判這一跑,而不是宣稱「量不到」然後紅(對照:fast-scroll 閘對慢機器的斷言也是白區 / 補齊,不是零殼)。
       // 三次各是全新頁面;擷取有缺口的那幾次對「有沒有留白」什麼都說不了,取有效擷取的那一次當證據(75d33696:前兩次有送幀缺口、第三次擷取有效)
-      const slowCheck = (x) => x.pixelBlankFullFrames === 0 && x.captureCoverageValid && !x.wheelCoalesced &&
-        (x.errors?.length ?? 0) === 0 && Math.abs(x.finalY - x.inputDistance) <= 2 && x.pixelFullContentSamples >= 10 && (x.unresolved?.length ?? 0) === 0;
+      // 判準本體 = lib 的 slowMachineVerdict(零空白 / 擷取有效 / 輸入完整 / 靜止後補齊);掃過視窗沒來得及補齊的列不算
+      //(4ec7eb19 讀回:凍結 240ms 後一次跳 539px,列只在視窗待 90ms 就被捲走 → 舊判準的 unresolved = 0 把機器凍結算成表格)
       const validAttempts = attempts.filter((x) => x.captureCoverageValid);
-      const slowOk = validAttempts.length > 0 && validAttempts.every(slowCheck);
+      const verdicts = validAttempts.map((x) => slowMachineVerdict(x));
+      const slowOk = validAttempts.length > 0 && verdicts.every((v) => v.ok);
       console.log(
         `${slowOk ? "✓" : "✗"} 三次都碰到整窗跳轉的停頓:這台機器目前跟不上 ${summary.peak}px/s,改以慢機器判準判定 —— ` +
-          `擷取有效的 ${validAttempts.length} 次全部零空白、輸入完整 ${slowOk ? "✓" : "✗"}` +
-          `(殼 ${attempts.map((x) => x.pixelShellFrames).join(" / ")} 幀是設計上的「先出殼不留白」,不在慢機器判準內)`
+          `擷取有效的 ${validAttempts.length} 次全部零空白、輸入完整、靜止後補齊 ${slowOk ? "✓" : "✗"}` +
+          (slowOk ? "" : `;未過:${verdicts.flatMap((v) => v.reasons).join(" / ")}`) +
+          `(殼 ${attempts.map((x) => x.pixelShellFrames).join(" / ")} 幀與掃過視窗未補齊的列 ${attempts.map((x) => x.unresolved?.length ?? 0).join(" / ")} 是慢機器的「先出殼不留白」,不在判準內)`
       );
       code = slowOk ? 0 : 1;
     } else if (captureGap) console.log("✗ 三次都碰到擷取送幀缺口:這台機器目前擷取不完整(不是表格)");
@@ -365,6 +368,7 @@ try {
   const inputEnd = Date.now();
   await page.waitForTimeout(900);
   await cdp.send("Page.stopScreencast");
+  const captureEnd = Date.now();
   const raw = await page.evaluate(() => {
     const S = window.__r17;
     S.on = false;
@@ -478,6 +482,7 @@ try {
       inputStart: inputs[0]?.start,
       inputDistance: inputs.reduce((n, i) => n + i.distance, 0),
       finalY: raw.finalY,
+      captureEnd,
     }),
     domDelays = [];
   const domSeen = new Map();
