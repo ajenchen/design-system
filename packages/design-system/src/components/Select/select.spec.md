@@ -350,7 +350,7 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 - ↑ / ↓ — 選單展開後在選項間移動
 - Esc — 關閉選單(清除值走右側 clear 按鈕,非 Esc)
 
-**Focus**:兩個狀態、兩種承擔者(owner = `ds-canonical/references/focus-canonical.md` 規則一「兩類元件」/ 規則二;2026-09-10 更正,舊句「非 outline ring」寫於全域外框規則之前):**開啟時**焦點在搜尋輸入框(插入點控件,B 類)→ 不畫外框,由 Field wrapper 邊框轉色(`focus-within:!border-primary`)承擔;**關閉時**觸發器本身是焦點站(`tabIndex=0`,選完 / Esc 後 Radix 把焦點還給它)→ 邊框轉色照舊,**鍵盤模態下再加全域外框**(`styles/base.css` `:focus-visible`;Tab 進來、↓ Enter 選完、Esc 關掉都算鍵盤;滑鼠點選項關掉不畫)。這與 Radix Select「關閉後焦點回觸發器、外框看 `:focus-visible`」一致。手機原生 `<select>` 另有系統 focus ring。閘:`virtual-cursor-modality-invariant.mjs` G 段。
+**Focus**:Field 家族的焦點指示 = 邊框轉主色,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列 + 「問題一之二」C 類;2026-09-10 第二次更正:上午先寫成「關閉時鍵盤模態再加全域外框」,下午依一致性收斂 —— Combobox 焦點留在輸入框本來就沒有外框,Select 類關閉後焦點回 wrapper 若再疊外框就是同一家族兩種長相)。**開啟時**焦點在搜尋輸入框(插入點控件)→ Field wrapper 邊框轉色;**關閉時**觸發器本身是焦點站(`tabIndex=0`,選完 / Esc 後 Radix 把焦點還給它)→ 同樣只有邊框轉色,全域 `:focus-visible` 外框由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制。手機原生 `<select>` 另有系統 focus ring。閘:`virtual-cursor-modality-invariant.mjs` G 段(Select / SelectMenu / PeoplePicker)、H 段(DatePicker / TimePicker / Combobox 觸發器)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

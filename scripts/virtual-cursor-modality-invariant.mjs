@@ -28,8 +28,9 @@
  *   (E)  常駐清單(TreeView / Sidebar / Tabs / DataTable / TimePicker 欄):鍵盤框在時滑鼠 hover → **底色與框同時存在**
  *   (F)  在文字輸入框裡打字不算搬游標(2026-09-10 user 抓到「滑鼠點輸入框、輸入 a、Backspace → 選單出現鍵盤焦點框」):
  *        滑鼠點進搜尋列 → 打一個字 → Backspace → 自動落點的反白**無框**(底色 = 開啟那一下的指標來歷);接著 ↓ → **有框**(對照:儀器看得到框)
- *   (G)  關閉態觸發器的外框看模態(2026-09-10 user 問「people picker 明明是可以打字的輸入框…是要畫成外框的嗎?」):Select / SelectMenu / PeoplePicker
- *        選完後輸入框卸載、焦點回觸發器 —— ↓ Enter 選完 → 觸發器**有外框 + 邊框轉主色**;滑鼠點選項選完 → 觸發器**無外框**(邊框轉主色照舊)
+ *   (G)  Field 家族關閉觸發器只用邊框轉色、不畫外框(2026-09-10 下午 user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?」):
+ *        Select / SelectMenu / PeoplePicker 選完後輸入框卸載、焦點回觸發器 —— ↓ Enter 選完 → 觸發器**無外框、邊框轉主色**;滑鼠點選項選完 → 同樣無外框、邊框主色
+ *   (H)  同一條規則的其他成員:DatePicker / TimePicker / Combobox 的 div 觸發器,Tab 進來(鍵盤模態)→ **無外框、邊框轉主色**
  * 量 outline 前等 700ms(transition-colors 含 outline-color,立刻量會抓到過渡值)。
  *
  * `--selftest` 對照組(M32「儀器要先有對照組」):每頁載入後注入一段 CSS,把游標列釘回舊行為
@@ -461,8 +462,9 @@ for (const t of TYPING_TARGETS) {
 // F 結束把滑鼠停到角落:Playwright 的指標位置跨頁保留,留在原處會讓下一段(E)的「hover 前」量到已經 hover 的底色
 await page.mouse.move(2, 2)
 
-// ── (G) 關閉態觸發器的外框看模態:選完(Enter / 滑鼠)焦點回到觸發器 ──
-const OLD_BEHAVIOUR_TRIGGER_CSS = `#storybook-root [role="combobox"]:focus-visible { outline: none !important; }`
+// ── (G) Field 家族關閉觸發器:選完(Enter / 滑鼠)焦點回到觸發器 → 只有邊框轉色、沒有外框 ──
+// 對照組 = 舊行為(全域 :focus-visible 外框疊在觸發器上)
+const OLD_BEHAVIOUR_TRIGGER_CSS = `#storybook-root [role="combobox"]:focus-visible { outline: 2px solid var(--ring) !important; outline-offset: 2px !important; }`
 const triggerFocus = () => page.evaluate(() => { const a = document.activeElement; const cs = getComputedStyle(a); return { tag: a.tagName, role: a.getAttribute('role'), ring: cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0, ringDesc: `${cs.outlineStyle} ${cs.outlineWidth} ${cs.outlineOffset}`, border: cs.borderColor } })
 const primaryColor = () => page.evaluate(() => { const d = document.createElement('div'); d.style.color = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(); document.body.appendChild(d); const c = getComputedStyle(d).color; d.remove(); return c })
 for (const t of TYPING_TARGETS.filter((x) => /^(Select|SelectMenu|PeoplePicker)$/.test(x.name))) {
@@ -472,7 +474,7 @@ for (const t of TYPING_TARGETS.filter((x) => /^(Select|SelectMenu|PeoplePicker)$
   if (SELFTEST) await page.addStyleTag({ content: OLD_BEHAVIOUR_TRIGGER_CSS })
   await page.keyboard.press('ArrowDown'); await page.waitForTimeout(200); await page.keyboard.press('Enter'); await page.waitForTimeout(700)
   const k = await triggerFocus(); const prim = await primaryColor()
-  ck(`${n} G1 滑鼠點開 → ↓ Enter 選完:焦點回關閉的觸發器、鍵盤模態 → 外框(全域 :focus-visible)`, k.role === 'combobox' && k.ring, `${k.tag}[${k.role}] ring=${k.ringDesc}`, 'new')
+  ck(`${n} G1 滑鼠點開 → ↓ Enter 選完:焦點回關閉的觸發器、鍵盤模態 → **無外框**(Field 家族只用邊框轉色;舊行為疊全域外框)`, k.role === 'combobox' && !k.ring, `${k.tag}[${k.role}] ring=${k.ringDesc}`, 'new')
   ck(`${n} G1 觸發器邊框轉主色(Field wrapper focus-within)`, k.role === 'combobox' && k.border === prim, `border=${k.border} vs primary=${prim}`)
   // 滑鼠路徑:重新點開 → 滑鼠點選項 → 焦點回觸發器但指標模態 → 無外框
   await page.mouse.move(2, 2); await page.waitForTimeout(100)
@@ -483,6 +485,27 @@ for (const t of TYPING_TARGETS.filter((x) => /^(Select|SelectMenu|PeoplePicker)$
   await page.mouse.click(item.x, item.y); await page.waitForTimeout(700)
   const m = await triggerFocus()
   ck(`${n} G2 滑鼠點選項選完:焦點回觸發器、指標模態 → **無外框**(邊框仍主色)`, m.role === 'combobox' && !m.ring && m.border === prim, `${m.tag}[${m.role}] ring=${m.ringDesc} border=${m.border}`)
+}
+await page.mouse.move(2, 2)
+
+// ── (H) 同一條規則的其他 Field 家族成員:Tab 進 div 觸發器(鍵盤模態)→ 無外框、邊框轉主色 ──
+for (const t of [
+  { name: 'DatePicker', id: 'design-system-components-datepicker-展示--default' },
+  { name: 'TimePicker', id: 'design-system-components-timepicker-展示--modes' },
+  { name: 'Combobox(div 觸發器)', id: 'design-system-components-combobox-展示--modes' },
+]) {
+  await gotoStory(page, t.id, '#storybook-root [role="combobox"]')
+  if (SELFTEST) await page.addStyleTag({ content: OLD_BEHAVIOUR_TRIGGER_CSS })
+  await page.mouse.move(2, 2)
+  let hit = null
+  for (let i = 0; i < 8 && !hit; i++) {
+    await page.keyboard.press('Tab'); await page.waitForTimeout(250)
+    hit = await page.evaluate(() => { const a = document.activeElement; return a && a.matches('#storybook-root [role="combobox"]:not(input)') ? true : null })
+  }
+  if (!hit) { ck(`${t.name} H 前提:Tab 進得了 div 觸發器`, false, 'activeElement 不是 [role=combobox] div'); continue }
+  await page.waitForTimeout(500)
+  const h = await triggerFocus(); const prim = await primaryColor()
+  ck(`${t.name} H Tab 進關閉的觸發器(鍵盤模態)→ **無外框**、邊框轉主色(Field 家族一致)`, !h.ring && h.border === prim, `${h.tag}[${h.role}] ring=${h.ringDesc} border=${h.border}`, 'new')
 }
 await page.mouse.move(2, 2)
 

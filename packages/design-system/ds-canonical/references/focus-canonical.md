@@ -121,6 +121,7 @@ DropdownMenu 四種項目(Item / SubTrigger / CheckboxItem / RadioItem)。其餘
 |---|---|---|
 | **鍵盤游標**停在任何可操作的東西上 —— 按鈕、選單／清單項(選中與否都一樣)、樹節點、表格格、tab、分頁鈕…;真 DOM 焦點或虛擬游標皆同 | **畫框**(DS 焦點框:2px `--ring`,外或內描邊由「框怎麼畫」決定);**不上底色** | **user 2026-09-09 拍板**:「我基本上都說以畫框為主」「甚至我現在覺得都要畫框,但都不需要上底色,這樣反而更乾淨簡單吧?」 |
 | **插入點控件**(`<input>` 文字類 / `<textarea>` / `[contenteditable]`;Field 家族控件另由 wrapper 邊框轉色承擔) | **不畫框**;指示 = 閃動的 caret(+ 欄位邊框轉 primary,`field-wrapper.tsx:49`) | user 同上;可機械判別的定義見「問題一之二」B 類 |
+| **Field 家族控件本身**(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器 —— `fieldWrapperStyles` 的 wrapper 自己拿到焦點,tabIndex=0) | **不畫外框**;指示 = 邊框轉 primary,與同一個 Field 可打字時的指示相同(`field-wrapper.tsx` edit compounds:`focus-within:!border-primary` + `focus-visible:outline-none`;readonly 的 ring 不受影響) | **2026-09-10 AI 依一致性推導**(不是 user 拍板;user 原話是問句:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?一個用鍵盤選完按 esc 不會在field control出現藍色鍵盤焦點外框,另一個則會,請問這是否有SSOT…請確保追根究柢把問題按照合理的原則解決」):Combobox 焦點留在輸入框(插入點,規則本身不畫框),Select 類關閉後焦點回 wrapper 才多一圈外框 —— 同一個 Field 家族兩種長相。原則:Field 的焦點指示是邊框轉色,不分可不可打字、不分滑鼠鍵盤(C 類「它就是這個 tab stop 的框」);Material outlined Select、Ant Select 聚焦也只有欄位邊框。閘:`virtual-cursor-modality-invariant.mjs` G / H 段 |
 
 **底色只有兩個主人:滑鼠 hover 與「選中」。** 鍵盤游標不借用它們的顏色
 (user 2026-09-07:「不要一下用底色一下用邊框來標示焦點」;2026-09-09:「都不需要上底色」)。疊加時各說各的:
@@ -390,6 +391,8 @@ DatePicker 自己早就有那個指示 —— 作用端下方一條主色粗線
 `:focus-within` 在元素自己取得焦點時也會命中,所以它們其實**有畫**,只是用邊框轉色而不是外框。
 寫成「往上找祖先」會把這種情況判成無承擔者 —— 但它是全 Field 家族觸發器的標準寫法。
 所以檢查範圍含自己:**問的是「這圈指示存不存在」,不是「畫在誰身上」**。
+**2026-09-10 補**:C 類元素**自己**拿到焦點(關閉的觸發器)時,邊框轉色就是它的框,全域 `:focus-visible` 外框在 edit 模式抑制
+(`field-wrapper.tsx` wrapper 宿主的 edit compounds `focus-visible:outline-none`);否則 Combobox(焦點留在輸入框)與 Select 類(焦點回 wrapper)長成兩種樣子。
 
 ### 判斷程序:六個**查得到答案**的問題,照順序問,問到 yes 就停
 

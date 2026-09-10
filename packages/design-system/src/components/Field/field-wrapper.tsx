@@ -46,7 +46,11 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
       variant: 'default' as const,
       className: ['bg-surface border border-border', 'hover:border-border-hover', wrapper ? 'data-[state=open]:border-border-hover' : ''],
     },
-    { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
+    // @focus-suppress C — Field 家族 wrapper 自己拿到焦點(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器);承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框)
+    // 2026-09-10:同一個 Field 在可打字時(焦點在裡面的 input)靠邊框轉色、沒有外框;關閉後焦點回 wrapper 若再疊全域外框,Combobox(焦點留在輸入框)與 Select 類
+    // 就長成兩種樣子(user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?」)。Field 家族的焦點指示統一 = 邊框轉色,不分開著關著、不分滑鼠鍵盤;
+    // Material outlined Select / Ant Select 聚焦也只有欄位邊框。只有 wrapper 型宿主需要(textarea 自己是插入點控件、已 outline-none)。
+    { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
     { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border border-transparent' },
     {
       mode: 'readonly' as const,
@@ -56,7 +60,8 @@ export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
         : 'bg-readonly border border-transparent',
     },
     { mode: 'disabled' as const, variant: 'default' as const, className: 'bg-disabled border border-transparent cursor-not-allowed' },
-    { mode: 'edit' as const, error: true as const, className: 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
+    // @focus-suppress C — error 態的 wrapper 自己拿到焦點(同上);承擔者:同一行的 focus-within:!border-error(紅框就是這個 tab stop 的框)
+    { mode: 'edit' as const, error: true as const, className: wrapper ? 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error focus-visible:outline-none' : 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
   ]
 }
 
@@ -187,7 +192,8 @@ export const fieldWrapperStyles = cva(
           'group-data-[row-mode=auto]/cell:!items-start',
         ],
       },
-      { mode: 'edit', variant: 'naked', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
+      // @focus-suppress C — naked wrapper 自己聚焦(DataTable 儲存格裡的 Select / DatePicker 觸發器);承擔者:同一行 focus-within:!border-primary
+      { mode: 'edit', variant: 'naked', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' },
       {
         // 2026-05-12 fix v2(M32 root invariant audit):
         //   Q1 root invariant?:cell-as-input view 視覺位置 = `cell.items-{X}` × `Field.height`

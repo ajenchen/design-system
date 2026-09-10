@@ -2985,3 +2985,14 @@ required 的 fan-in `Verify` 綠;`Verify static` / `Verify browser(DataTable)` /
 - 9f22cc1c 讀回:dpr1 job 的 4500 inertia 三次都停頓(單步 435 / 421 / 460px、殼 11 / 16 / 6 幀、延遲 p95 66–125ms)—— runner 當下跟不上 4500px/s,這正是 AD62 列殼判準的「慢機器極速捲動先出殼、不留白」場景;三次全停頓時父程序改以慢機器判準判定(零空白、擷取有效、輸入完整),殼幀不算紅,不再宣稱「量不到」直接紅。
 - a646b6c2 讀回:元件 job 的 Dialog 並存閘 B 路徑「找不到 #coexist-aside-input」—— 導航後固定等 900ms 就量,runner 忙時 story 還沒渲染。改成 waitForSelector(15s)再量。這一輪起 DataTable / dpr2 / agent / 靜態 / 治理五個 job 已連續綠。
 - 75d33696 讀回:靜態 job 紅 = `decided-clause-downgrade-gate` 抓到 AD72 把已定案的規則二寫成「待拍板」→ 改寫為「已定案、user 尚未表示要改」;dpr2 job 三次(609 / 586 / 454px)都在跟不上的狀態,第三次沒過整窗門檻卻有 17 幀殼 → 停頓判準統一 3/4 視窗,三次停頓時以擷取有效的那幾次判「零空白」(前兩次有送幀缺口,說不了話)。
+
+### AD73 user 2026-09-10 下午三問:行內動作鈕的框往內合不合理;Combobox 與 Select 的鍵盤焦點不一致有沒有 SSOT;Codex 有沒有照要求做 —— Field 家族關閉觸發器改成只用邊框、不畫外框(依一致性原則收斂 AD72 的讀法 A / B)(2026-09-10)
+
+**user 原話**:「請問 inline action 的鍵盤焦點藍色外框是往內畫的嗎?合理嗎?合理理由是?」「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?一個用鍵盤選完按 esc 不會在field control出現藍色鍵盤焦點外框,另一個則會,請問這是否有SSOT,若沒有的話,整個ds是否有其他相關或類似漂移?若有的話請確保追根究柢把問題按照合理的原則解決」「此外,Codex那邊有好好按照要求做事嗎?」
+
+- **行內動作鈕(ItemInlineActionButton)**:是往內(`item-anatomy.tsx:702` `focus-visible:focus-ring-inset`)。理由 = focus-canonical「問題二」:鈕住在列裡、列為了截斷文字會裁切,鈕的上下淨空 < 4px(實測往外 +2px 上下各被裁 1px),規格允許的位置裡有貼邊的 → 整個元件往內;同類 = 選單項 / tab / Calendar 事件 tile;SidebarMenuAction 淨空夠所以往外。合理。`inline-action.spec.md` 狀態表原本只寫 `outline: 2px solid var(--ring)` 沒寫往內 → 補上(文件漂移)。
+- **Combobox vs Select 不一致的根**:Combobox 的焦點站是 `<input role=combobox>`(插入點控件,規則二本來就不畫外框);Select / PeoplePicker / DatePicker / TimePicker / Combobox 的 div 觸發器是 `fieldWrapperStyles` 的 wrapper 自己拿焦點,關閉後全域 `:focus-visible` 外框疊在邊框轉色上 —— 同一個 Field 家族兩種長相。沒有一條 SSOT 寫過「wrapper 自己聚焦時畫不畫外框」(AD72 上午照字面判「照規則」,實際是規則沒寫到)。
+- **依原則收斂(= AD72 的讀法 B;AI 推導,不是 user 拍板 —— user 原話是問句加「按照合理的原則解決」)**:Field 家族的焦點指示 = 邊框轉色,不分可不可打字、不分滑鼠鍵盤(C 類「它就是這個 tab stop 的框」);wrapper 宿主的 edit compounds(default / naked / error)加 `focus-visible:outline-none`,並依 `focus-suppression-registry` 標 `@focus-suppress C` 與承擔者。一處改完,五個成員(Select / SelectMenu / PeoplePicker / DatePicker / TimePicker / Combobox div 觸發器)同時一致;readonly 的 ring、輸入框、textarea 不受影響。世界級:Material outlined Select、Ant Select 聚焦也只有欄位邊框。
+- **SSOT 同步**:focus-canonical 規則二表加「Field 家族控件本身」一列(來源標 AI 推導 + user 原話)、C 類補句;Select / PeoplePicker spec「Focus」第二次改寫;閘 G 段反向(選完 → 無外框、邊框主色)+ H 段(DatePicker / TimePicker / Combobox div 觸發器 Tab 進來 → 無外框、邊框主色;對照組把外框疊回去必紅)。
+- **a11y 註記(未動)**:邊框轉色 1px 作為唯一鍵盤指示,對 WCAG 2.4.11(AA,焦點外觀最小面積 = 2px 周長)偏薄;文字輸入框有 caret 補強,關閉觸發器沒有。Material 的做法是聚焦邊框 2px。要不要把 Field 的聚焦邊框加厚到 2px(視覺 token 變更)是新的產品決策,列在 PR 頁請 user 拍板。
+- **Codex R22(進行中,10:54 起)**:照簡報在做 —— 先用 trace 量 main / HEAD 基準、根因逐條附證據、一個根因一個 patch(已 8 個候選)、每輪自跑閘;中途發現 hover 底色完成延遲 p95 109ms 有 84ms 來自列的 150ms 顏色過渡(自己標明是診斷、未改產品);另在實驗 CSS anchor 取代把手 JS 定位。最終報告未交,我尚未驗收。

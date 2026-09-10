@@ -24,7 +24,7 @@
 | hover | `bg-neutral-hover` | transition-colors |
 | active(mouse down) | `bg-neutral-active` | transition-colors |
 | **overlay 開啟**(`data-state=open`)| **同 host hover**(該元件 hover 什麼樣就維持) | transition-colors |
-| focus-visible | `outline: 2px solid var(--ring)` | — |
+| focus-visible | `outline: 2px solid var(--ring)`,**往內**(`focus-ring-inset`,offset −2px;`item-anatomy.tsx` ItemInlineActionButton) | focus-canonical「問題二」:行內動作鈕住在列裡、列會為了截斷文字裁切,鈕的上下淨空 < 4px(實測往外 +2px 上下各被裁 1px)→ 規格允許的位置裡有貼邊的,整個元件往內;同類:選單項 / tab / Calendar 事件 tile。對照 SidebarMenuAction 往外(淨空 ≥ 4px) |
 | 宿主 disabled | 不渲染 inline action | — |
 
 **Loading(明文 N/A)**:inline action **無 loading 態**——icon 級靶子沒有空間承載 spinner 且換渲會位移幾何,故不設 `aria-busy` / spinner surface。async 動作(row approve / retry / API delete)兩條路:(a) 觸發後由宿主層呈現 in-flight 結果(row pending 樣式 / Toast / optimistic update);(b) 需要使用者可感知的進行中狀態 → **升級為 `<Button loading>`**(Button spec「loading」段:CircularProgress + 自動 disabled + `aria-busy`),不用 inline action。double-trigger 防護由 consumer handler 冪等 / 重入 guard 承擔(對齊 `form-validation.spec.md`「Double-submit 防護」)。
