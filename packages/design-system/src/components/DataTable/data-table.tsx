@@ -1837,6 +1837,17 @@ function DataTableInner<TData>(
     // 真的畫不完的機器(4× 節流:18 列 × 15.6ms + 10 = 291ms > 120)仍然會出殼,那是這個機制存在的理由。
     const visibleRowCount = Math.max(1, Math.ceil(viewportHeight / Math.max(1, resolvedEstimate)))
     const viewportDrawMs = visibleRowCount * S.costPerRow + S.fixedCost
+    // 判準 = 視窗列數 × 每列成本 + 每次 commit 的固定成本 ≤ `SHELL_ENGAGE_VIEWPORT_MS`(理由見該常數)。
+    // user 的機器實測:14 列 × 3.9ms + 10ms = 64.6ms ≤ 120 → 不出殼(量到 0 個骨架、DOM 89ms 穩定)。
+    // 真的畫不完的機器(4× 節流:17 列 × 15.6ms + 10 = 275ms > 120)仍然會出殼,那是這個機制存在的理由。
+    //
+    // **試過並撤回(2026-09-11)**:曾加上「估計值沒收斂前一律當畫不動」(`costSamples` 門檻),
+    // 動機是怕慢機器前幾個 commit 拿樂觀的初始種子(3 / 2)誤放行。撤回有兩個理由:
+    //   (a) 因果搞錯了 —— `04c6abe4`(同一份判準、沒開 debug 旗標)在 CI 的空白是 325 / 154 / 402ms、
+    //       **空白閘本來就是過的**;那次看起來的退步(623ms)是我自己把 `__DT_DEBUG_SHELL` 整跑開著造成的。
+    //   (b) 改用掛載 commit 當第一個樣本也不行:掛載含 React 首次掛載的開銷,估出來的每列成本偏高,
+    //       快機器第一次捲動反而整窗出殼。
+    // 保留估計式本身即可;初始種子樂觀不是問題,因為第一次捲動 commit 就會用實測值修正。
     const cannotDrawViewport = viewportDrawMs > SHELL_ENGAGE_VIEWPORT_MS
     const jumpThreshold = Math.max(resolvedEstimate, viewportHeight)
     // 緊急跳轉看「上一次 render 開始」到現在的位移 —— 含上一次 commit 自己花掉的時間。R17 看的是 commit 結束後的位移,慢機器
