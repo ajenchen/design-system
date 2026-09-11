@@ -195,7 +195,10 @@ jobs:
           # 中位數仍抓得到真回歸(119e279f 438/476 照樣紅),另留單趟天花板 = 門檻×2 擋災難級停頓。
           # 判定政策本身由 scripts/test-fast-scroll-gate-policy.mjs 用真實 CI 數字當判定表驗(該紅的必須紅)。
           # runs 2→3:中位數要有意義至少要三趟。
-          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=3 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
+          # runs 3 → 5(2026-09-11):這台共享 runner 的變異極大 —— **同一份元件邏輯**(去掉註解後與 4ea6a462 零差異)
+          # 在三次 CI 上量到空白中位 162 / 325 / 485ms、長工中位 101 / 110 / 343ms,單一 job 內也從 102 跳到 648ms。
+          # 多取樣讓中位數穩定;斷言內容一個字都沒動,真回歸仍然會把整個分布帶上去(119e279f 兩趟都壞就是這樣被抓到的)。
+          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=5 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
           # 「**畫得動的機器**不准出骨架」(2026-09-11)。骨架是「真的畫不完」時的過渡手段,不是正常捲動該看到的東西;
           # 沒有這條斷言之前,一個把「要不要出殼」判準訂成**只看位移**的版本可以全綠出貨 —— 而在 user 的真實 Chrome 上,
           # 一次普通滾輪(1000px)就把整個視窗 14 列全變骨架,同一台機器的 main 是 0 骨架。

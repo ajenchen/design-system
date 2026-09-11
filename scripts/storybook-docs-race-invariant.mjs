@@ -77,7 +77,9 @@ try {
     // 對照:留在 Docs 頁時 docs 要真的渲染出來(守衛不得誤殺正常 docs);共享 runner 上 14 個 story 的 docs 頁可能要十幾秒
     await page.locator(sel(P)).first().click(); await sleep(300)
     if ((await page.locator(sel(DEMO)).count()) === 0) await page.locator(sel(P)).first().click()
-    await waitFor(page, () => (document.getElementById('storybook-docs')?.childElementCount ?? 0) > 0 && !document.getElementById('storybook-docs')?.hasAttribute('hidden'), 30000)
+    // 30s → 60s(2026-09-11):這支閘在 546ae35b 第一次紅,而同一個 CI run 裡 DataTable 的閘也異常慢
+    // (同一份元件邏輯的空白中位從 162 跳到 485ms)—— 是那台 runner 慢,不是守衛誤殺。等久一點,判定內容不變。
+    await waitFor(page, () => (document.getElementById('storybook-docs')?.childElementCount ?? 0) > 0 && !document.getElementById('storybook-docs')?.hasAttribute('hidden'), 60000)
     const docsPage = await evalIn(page, MEASURE)
     await browser.close()
     return { m, docsPage, routed }
