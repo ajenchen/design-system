@@ -1826,9 +1826,17 @@ function DataTableInner<TData>(
     // 不受預算(機器跟得上)但上一輪還有殼要補:用 4 幀預算分幾次補,不一次把整批(舊殼 + 新列)畫成一個長 commit ——
     // 否則那個長 commit 又把成本推回門檻之上,slow 來回震盪(多代理審查 P1)。快機器每列 < 1ms,4 幀 ≈ 40+ 列,等於全補。
     const draining = !S.budgeted && S.scrollCommit && S.prevShells.size > 0
+    // **預算下限 = 四幀內把整個視窗補成真列**(2026-09-11;第二個根因)。
+    // 原式子是「(幀預算 − 固定成本) ÷ 每列成本」,在真實機器上會餓死:user 的機器量到固定成本 10ms(已達上限)、
+    // 每列 10–20ms → (12 − 10) ÷ 10.5 = 0 → 夾到 1,也就是**每幀只補一列**。視窗 13 列、殼有 30 列時永遠補不完,
+    // 再捲一下又補進更多,畫面就永遠是骨架(user:「非常卡頓」)。
+    // 「先出殼不留白」的設計意圖是**短暫**的過渡,不是穩定狀態;所以給一個與視窗大小成比例的下限:
+    // 至少要能在四幀(≈ 64ms)內把一個視窗補滿,否則這個機制本身就成了卡頓的來源。
+    const visibleRows = Math.max(1, Math.ceil(viewportHeight / Math.max(1, resolvedEstimate)))
+    const minBudgetRows = Math.ceil(visibleRows / 4)
     S.budgetRows = S.ahead ? 0
       : !S.budgeted && !draining ? Number.MAX_SAFE_INTEGER
-      : Math.max(1, Math.min(64, Math.floor(Math.max(1, (draining ? SHELL_FRAME_BUDGET_MS * 4 : frameBudget) - S.fixedCost) / Math.max(0.25, S.costPerRow))))
+      : Math.max(minBudgetRows, Math.min(64, Math.floor(Math.max(1, (draining ? SHELL_FRAME_BUDGET_MS * 4 : frameBudget) - S.fixedCost) / Math.max(0.25, S.costPerRow))))
     S.promoteLeft = S.budgetRows
     // 慢機器捲動中:一次 commit 的時間內視窗會移動 速度 × commit 時間 這麼遠,這段距離的列先掛殼(便宜)在前面等著,
     // 否則每次 commit 畫好的列落地時視窗早已捲過去 → 整片白直到緊急跳轉才有殼(v2 在 4× 節流量到 621–997ms 白)。
@@ -1902,7 +1910,14 @@ function DataTableInner<TData>(
         S.behind = S.behind > 0 ? 0.6 * S.behind + 0.4 * S.pendingBehind : S.pendingBehind
         S.slow = S.pendingBehind > SHELL_BEHIND_ENTER || S.behind > SHELL_BEHIND_ENTER || (S.slow && S.behind > SHELL_BEHIND_EXIT)
       }
-    } else if (!S.scrolling) { S.behind = 0; S.slow = false }
+    }
+    // **停捲就一定要把「跟不上」旗標解掉**(2026-09-11;user 回報「非常卡頓」的兩個根因之一)。
+    // 原本這行寫在 `if (S.scrollCommit)` 的 else 裡,而 `scrollCommit` 只要「上一輪還有殼」就恆為真
+    // (`S.prevShells.size > 0`)—— 於是一旦出過殼,重設永遠跑不到,`slow` 卡死、預算跟著卡在最低檔,
+    // 殼再也補不完、又讓 `scrollCommit` 繼續為真,自己鎖住自己。
+    // 實測(user 的機器,真實瀏覽器):停止捲動 3 秒後仍是 `slow=1 behind=5.00`、畫面上還留著 30 列骨架。
+    // 改成不論 `scrollCommit` 與否,只要不在捲動就重設。
+    if (!S.scrolling) { S.behind = 0; S.slow = false }
     S.lastCommitAt = typeof performance !== 'undefined' ? performance.now() : 0
     S.committedRenderOffset = S.renderOffset
     S.committedRenderStart = S.renderStart
@@ -4113,6 +4128,18 @@ function DataTableInner<TData>(
           // Center body 同時擁有 H + V scroll;maxHeight 限制讓 H scrollbar 落在 visible 底部
           data-datatable-hscroll
           data-datatable-panel="center"
+          /**
+           * 殼列決策的**可觀測出口**(2026-09-11;預設不掛,`window.__DT_DEBUG_SHELL = true` 才出現)。
+           *
+           * 由來:殼列機制在真實瀏覽器上大量誤啟動(user 回報「非常卡頓」,實測捲動時 100% 的幀都有骨架、
+           * 最多同時 159 列),但我在無頭環境永遠複現不出來,只能靠讀程式碼猜判準 —— 猜了三輪都沒中。
+           * 判準的輸入(跟不跟得上、每列成本、預算列數)全部只活在 ref 裡,外面看不到,這本身就是缺陷。
+           * 掛上之後可以在任何環境(含 user 自己的機器)直接讀出「它為什麼決定出殼」。
+           * 預設關閉:屬性變動會被 `data-table-scroll-cost.mjs` 的 R1 計數,不能無條件掛。
+           */
+          {...(typeof window !== 'undefined' && (window as unknown as { __DT_DEBUG_SHELL?: boolean }).__DT_DEBUG_SHELL
+            ? { 'data-shell-state': `slow=${shellRef.current.slow ? 1 : 0} budgeted=${shellRef.current.budgeted ? 1 : 0} ahead=${shellRef.current.ahead ? 1 : 0} behind=${shellRef.current.behind.toFixed(2)} pending=${shellRef.current.pendingBehind.toFixed(2)} costPerRow=${shellRef.current.costPerRow.toFixed(1)} fixed=${shellRef.current.fixedCost.toFixed(1)} budgetRows=${shellRef.current.budgetRows} aheadRows=${shellRef.current.aheadRows}` }
+            : {})}
           // a11y(scrollable-region-focusable,對齊 DS ScrollArea Viewport canonical):唯讀表格
           // 的可捲動 body 若無任何 focusable descendant,鍵盤使用者無法捲動。read-only 模式
           // (非 enabled / spreadsheet)outer table 也不 focusable → 這裡補 tabIndex=0 + 具名 +
