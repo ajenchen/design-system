@@ -104,6 +104,11 @@ const ASSERT_FILL_MS = arg('assert-max-fill-ms', '')
  *  既有斷言完全看不見它。任何超過 ~200ms 的主執行緒任務都是人感覺得到的停頓(web.dev INP 指引同一量級)。 */
 const ASSERT_LONG_TASK_MS = arg('assert-max-long-task-ms', '')
 const ASSERT_FRAME_GAP_MS = arg('assert-max-frame-gap-ms', '')
+// 「畫得動的機器不准出殼」(2026-09-11)。這支閘原本只會印殼幀數、從不判定 —— 於是一個把
+// `ahead` / `budgeted` 判準訂成「只看位移」的版本可以全綠出貨,而在 user 的真實 Chrome 上
+// **一次普通滾輪就把整個視窗 14 列全變骨架**(main 同樣操作 0 骨架)。骨架是「機器真的畫不完」時的
+// 過渡手段,不是正常捲動該看到的東西;不節流的機器上它必須是 0。
+const ASSERT_SHELL_FRAMES = arg('assert-max-shell-frames', '')
 const SCROLL_BUSY_MS = 120
 // 觀測窗必須長過補齊期限,否則「到窗尾還沒補完」會被當成補完(Codex R9)
 const SETTLE_EFFECTIVE = ASSERT_FILL_MS !== '' ? Math.max(SETTLE_MS, Number(ASSERT_FILL_MS) + 300) : SETTLE_MS
@@ -570,7 +575,7 @@ if (SELFTEST) {
   console.log(ok ? '✓ selftest:三個偵測器在該紅的時候都會紅' : '✗ selftest:儀器有偵測器沒反應')
   process.exit(ok ? 0 : 1)
 }
-if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '' || ASSERT_FRAME_GAP_MS !== '') {
+if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '' || ASSERT_FRAME_GAP_MS !== '' || ASSERT_SHELL_FRAMES !== '') {
   // 「證據有效」逐趟判(儀器沒在工作就不能當證據);「效能門檻」判同一 build 的**中位數**,不判單趟最大值。
   // 為什麼(2026-09-11,c34e035c 實測):共享 2 vCPU runner 上同一份 build 的最長連續空白跑間差很大 ——
   // eb5b42fc 兩趟 276 / 282ms 全綠,同樣的 data-table.tsx 加了 Tag/PeoplePicker 量測快取之後兩趟是 153 / 415ms。
@@ -607,6 +612,7 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
   gate(ASSERT_FILL_MS, '停捲後列殼補齊', CEILING_FACTOR.fill, (r) => r.g.fillMs)
   gate(ASSERT_LONG_TASK_MS, '主執行緒單一任務最長', CEILING_FACTOR.longTask, (r) => r.longMax, (r) => `(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms;這段期間所有 hover / 點擊都會被卡住)`)
   gate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? 0)
+  gate(ASSERT_SHELL_FRAMES, '出現列殼的幀數', 2, (r) => r.g?.shellFrames ?? 0)
 }
 if (ASSERT_PAINT !== '' || ASSERT_DOM !== '') {
   for (const r of results) {

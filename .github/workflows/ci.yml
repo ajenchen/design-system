@@ -195,7 +195,10 @@ jobs:
           # 中位數仍抓得到真回歸(119e279f 438/476 照樣紅),另留單趟天花板 = 門檻×2 擋災難級停頓。
           # 判定政策本身由 scripts/test-fast-scroll-gate-policy.mjs 用真實 CI 數字當判定表驗(該紅的必須紅)。
           # runs 2→3:中位數要有意義至少要三趟。
-          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=3 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
+          # `--assert-max-shell-frames=0`(2026-09-11):這台 runner 不節流時畫得動,就不准出骨架。
+          # 沒有這條斷言之前,一個把「要不要出殼」判準訂成只看位移的版本可以全綠出貨,而在 user 的真實 Chrome 上
+          # 一次普通滾輪就把整個視窗 14 列全變骨架(main 同樣操作 0 骨架)。
+          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=3 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600 --assert-max-shell-frames=0
           # 「指標底下那一列永遠有 hover 反應」(2026-09-11 新閘;user:「游標明明到了,table row 的反應卻要等好一陣子」)。
           # 兩個根因都在腳本檔頭:殼列原本沒有 hover 底色、以及捲動中瀏覽器不重新派送 hover。先對照組再判定。
           node scripts/data-table-row-under-pointer-invariant.mjs --selftest

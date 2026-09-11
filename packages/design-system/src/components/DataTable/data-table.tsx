@@ -1784,7 +1784,18 @@ function DataTableInner<TData>(
   // 同幾何的殼(便宜),下一幀再補。快機器每列 1–2ms → 一般速度永遠畫得完 → 零骨架;慢機器每列 8ms+ → 極速時只畫得完 1–2 列
   // → 其餘先殼、不留白。兩次 commit 跨過整個 viewport 的緊急跳轉仍一律先殼(那一幀什麼都畫不完)。
   // 拖曳 / 編輯 / 已選格與保留中的真列不退回殼;升級後仍同步三區列高。
+  // **兩個不同的問題,不能共用一個常數(2026-09-11)**:
+  //  (1)「要不要出殼?」——「這一個視窗畫得完嗎」的量尺 → `SHELL_ENGAGE_VIEWPORT_MS`
+  //  (2)「既然要出殼,一次 commit 補幾列?」—— 讓 commit 夠短、合成器追得上 → `SHELL_FRAME_BUDGET_MS`
+  // 我一度把 (2) 從 12 拉到 60(對標 AG Grid 的 `executeFrame(60)`),結果慢機器的 commit 變長
+  // (4× 節流實測長工 132 → 261ms、最長連續空白 418 → 1156ms)—— (2) 本來就該小,12 是對的。
+  // 真正該改的是 (1):它原本根本不存在,`ahead` / `budgeted` 只看位移,見下方 `cannotDrawViewport`。
   const SHELL_FRAME_BUDGET_MS = 12
+  // 「一個視窗畫得完嗎」的量尺:視窗列數 × 每列成本 + commit 固定成本 ≤ 這個值 → 不出殼,就把它畫完。
+  // 120 = AG Grid 33.3.2 每幀給建列的 60ms(`ag-grid-community.js:34143` 逐字 `executeFrame.bind(this, 60)`)的兩倍。
+  // 為什麼是兩倍:一個視窗的內容晚 120ms 出現,比先給使用者看一片灰色骨架再換成真資料好 ——
+  // 同一台機器上 main(沒有殼機制)就是花 148ms 一次畫完、全程沒有佔位,而那正是 user 說「比較順」的那一版。
+  const SHELL_ENGAGE_VIEWPORT_MS = 120
   // 「機器跟不上」用真正的症狀判,不用 commit 成本:兩次 commit 之間視窗移動的距離 ÷ 預掛緩衝(overscan 列 × 列高)。
   // 比值 > 1 = 新進視窗的列還沒掛就被捲過去(整片白)→ 進入;< 0.5 才退出(遲滯)。commit 成本不能當判準:CI runner 每次
   // commit 本來就 > 20ms 但在 4,500px/s 跟得上(R17 在它上面零骨架、延遲 ≤ 34ms),用成本判會在一般速度出殼。
@@ -1814,12 +1825,25 @@ function DataTableInner<TData>(
     // 未掛載或零高度時仍保留至少一列的非零門檻,靜止不會進入緊急殼。
     const viewportHeight = scrollGeomRef.current.height
     S.viewportTop = offsetNow; S.viewportBottom = offsetNow + viewportHeight
+    // **「機器畫不動」才出殼,「使用者捲很遠」不算(2026-09-11,在 user 的真實 Chrome 上量出來的第三個根因)。**
+    // 原本 `ahead` 與 `budgeted` 兩條路都只看**位移**:`ahead` 是「位移 ≥ 一個視窗高」、`budgeted` 是「位移 > 2 倍預掛緩衝」
+    // (緩衝 = overscan 5 列 × 40px = 200px)。但**一次普通滾輪就是 1000px** —— 兩條門檻都恆為真,
+    // 於是每次捲動第一幀 `budgetRows` 被寫死成 0、整個視窗全變骨架,跟機器快不快完全無關。
+    // 同一台機器同一個操作,main(沒有殼機制)是 0 骨架、DOM 148ms 穩定;本分支也是 124ms 穩定 —— 骨架沒換到速度。
+    //
+    // 位移是「使用者捲多遠」,不是「機器畫不動」。真正該問的是:**這一個視窗的列,畫得完嗎?**
+    // 判準 = 視窗列數 × 每列成本 + 每次 commit 的固定成本 ≤ `SHELL_ENGAGE_VIEWPORT_MS`(理由見該常數)。
+    // user 的機器實測:14 列 × 3.9ms + 10ms = 64.6ms ≤ 120 → 不出殼(量到 0 個骨架、DOM 103ms 穩定)。
+    // 真的畫不完的機器(4× 節流:18 列 × 15.6ms + 10 = 291ms > 120)仍然會出殼,那是這個機制存在的理由。
+    const visibleRowCount = Math.max(1, Math.ceil(viewportHeight / Math.max(1, resolvedEstimate)))
+    const viewportDrawMs = visibleRowCount * S.costPerRow + S.fixedCost
+    const cannotDrawViewport = viewportDrawMs > SHELL_ENGAGE_VIEWPORT_MS
     const jumpThreshold = Math.max(resolvedEstimate, viewportHeight)
     // 緊急跳轉看「上一次 render 開始」到現在的位移 —— 含上一次 commit 自己花掉的時間。R17 看的是 commit 結束後的位移,慢機器
     // 每次 commit 一結束下一次 render 就開始、中間位移很小,連續慢 commit 永遠觸發不了,整片白到瀏覽器偶然讓出時間為止(6× 節流 1.1s)。
     const renderOffsetPrev = S.committedRenderOffset
     S.renderOffset = offsetNow
-    S.ahead = useVirtual && activeDragId == null && renderOffsetPrev != null && Math.abs(offsetNow - renderOffsetPrev) >= jumpThreshold
+    S.ahead = useVirtual && activeDragId == null && cannotDrawViewport && renderOffsetPrev != null && Math.abs(offsetNow - renderOffsetPrev) >= jumpThreshold
     // 只有「這次 commit 是捲動造成的」或「上一輪還有殼要補」才算捲動 commit;初次載入、換頁、靜止時的資料變動一律照舊全畫
     // (Codex R9 反例:第一版把配額套到新列,初次載入 15 列只畫 2 列)。
     // 「還在捲」= scrollTop 變了 **或** 虛擬化器仍在 isScrolling(最後一個 scroll 事件後 250ms 內)。只比 scrollTop 不夠:長 commit 之後
@@ -1836,7 +1860,7 @@ function DataTableInner<TData>(
     S.pendingBehind = renderOffsetPrev != null ? Math.abs(offsetNow - renderOffsetPrev) / Math.max(1, effectiveOverscan * resolvedEstimate) : 0
     // 只有量到「機器跟不上」才受預算節制;這一次 render 的位移已經超過門檻就**立刻**算(不等 commit 後的 effect ——
     // 慢機器第二次 render 位移就 3.9 倍緩衝,再等一次全量 commit 才出殼會多白 300ms+);退出看平滑值。跟得上的機器完全走 R17 的路。
-    S.budgeted = S.scrollCommit && (S.slow || S.pendingBehind > SHELL_BEHIND_ENTER)
+    S.budgeted = S.scrollCommit && cannotDrawViewport && (S.slow || S.pendingBehind > SHELL_BEHIND_ENTER)
     // 這一幀畫得完幾列真列 =(幀預算 − 每次 commit 的固定成本)÷ 每列成本(至少 1 列,上限 64)。停捲後只剩補殼時放寬到 4 幀:
     // 每次 commit 的固定成本在慢機器很貴(4× 節流 ≈ 100ms),一次多補幾列比每幀補 1 列快得多(6× 節流補齊 1.3s → 目標 < 1s)。
     // 沒有新列進窗(scrollTop 沒變,只是還在 250ms 的 isScrolling 尾巴)的 commit 放寬到 4 幀:可能真的停了(多補幾列補得快),
@@ -1852,8 +1876,7 @@ function DataTableInner<TData>(
     // 再捲一下又補進更多,畫面就永遠是骨架(user:「非常卡頓」)。
     // 「先出殼不留白」的設計意圖是**短暫**的過渡,不是穩定狀態;所以給一個與視窗大小成比例的下限:
     // 至少要能在四幀(≈ 64ms)內把一個視窗補滿,否則這個機制本身就成了卡頓的來源。
-    const visibleRows = Math.max(1, Math.ceil(viewportHeight / Math.max(1, resolvedEstimate)))
-    const minBudgetRows = Math.ceil(visibleRows / 4)
+    const minBudgetRows = Math.ceil(visibleRowCount / 4)
     S.budgetRows = S.ahead ? 0
       : !S.budgeted && !draining ? Number.MAX_SAFE_INTEGER
       : Math.max(minBudgetRows, Math.min(64, Math.floor(Math.max(1, (draining ? SHELL_FRAME_BUDGET_MS * 4 : frameBudget) - S.fixedCost) / Math.max(0.25, S.costPerRow))))
