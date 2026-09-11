@@ -537,7 +537,13 @@ for (const build of BUILDS) {
         } finally { ctrl.server.close() }
       }
       for (let i = 1; i <= n; i++) {
-        const r = await runOnce({ build, mode, base, sabotage: SELFTEST, profile: false })
+        // 崩潰 / 沒溢出 = **儀器沒跑起來**(這次什麼都沒量到),不是量到壞結果 —— 重試一次再判失敗。
+        // 2026-09-11 錨例:同一個 job 多 build 一份參考 storybook 之後 runner 更熱,branch 有一趟 story 沒渲染出來。
+        let r = await runOnce({ build, mode, base, sabotage: SELFTEST, profile: false })
+        if (r.crashed || r.noOverflow || r.noTarget) {
+          console.log(`   ⟳ ${build.label}/${mode} #${i}:這一趟儀器沒跑起來(${r.crashed ? 'story 沒渲染' : r.noOverflow ? '沒有垂直溢出' : '找不到 dispatch 目標'}),重試一次`)
+          r = await runOnce({ build, mode, base, sabotage: SELFTEST, profile: false })
+        }
         if (r.crashed) { console.log(`✗ ${build.label}/${mode}:story 沒有渲染出捲動區(story 崩潰或 build 壞了)${r.errors?.length ? ':' + r.errors[0] : ''}`); failed++; continue }
         if (r.noOverflow) { console.log(`✗ ${build.label}/${mode}:沒有垂直溢出,不適用`); failed++; continue }
         if (r.noTarget) { console.log(`✗ ${build.label}/${mode}:找不到 dispatch 目標(pinned 模式需要左釘選面板)`); failed++; continue }
@@ -629,6 +635,9 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
     if (limitRaw === '') return
     const limit = Number(limitRaw)
     for (const [k, rs] of groups) {
+      // 參考建置(`--ref`)是**基準**不是受測對象:它自己慢不該把閘弄紅(CI 實測 main 長工中位 372ms)。
+      // 它唯一的用途是當比值的分母。
+      if (REF_LABEL && k.split('/')[0] === REF_LABEL) continue
       const vals = rs.map(pick)
       const mid = median(vals)
       const worst = Math.max(...vals)

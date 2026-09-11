@@ -37,7 +37,12 @@ call = line("assistant", [{"type": "tool_use", "id": "toolu_1", "name": "PushNot
     "2026-09-10T12:00:02.000Z")
 prose = line("assistant", [{"type": "text", "text": "我等一下會用 PushNotification 通知你。"}], "2026-09-10T12:00:02.500Z")
 final = line("assistant", [{"type": "text", "text": long_text}], "2026-09-10T12:00:03.000Z")
-cases = {"a": [user, call, final], "b": [user, final], "c": [user, schema, final], "d": [user, prose, final]}
+user2 = line("user", [{"type": "text", "text": "繼續"}], "2026-09-10T12:00:04.000Z")
+final2 = line("assistant", [{"type": "text", "text": long_text}], "2026-09-10T12:00:05.000Z")
+cases = {"a": [user, call, final], "b": [user, final], "c": [user, schema, final], "d": [user, prose, final],
+         # e/f:**環境變數不存在**時的能力判定(2026-09-11 補;舊測試永遠帶著變數跑,從沒覆蓋到這個洞)
+         "e": [user, call, final, user2, final2],   # 同一份 transcript 稍早真的呼叫過 = 能力被觀察證明
+         "f": [user, final]}                        # 整份 transcript 從沒呼叫過 = 不能假設有這個 tool
 for name, lines in cases.items():
     with open(os.path.join(work, name + ".jsonl"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")
@@ -62,4 +67,16 @@ check a 0 "本 turn 真的呼叫過 → 安靜"
 check b 1 "本 turn 沒呼叫 → 擋下"
 check c 1 "只有工具 schema 提到字串(ToolSearch 回傳)→ 仍要擋(舊寫法會靜音)"
 check d 1 "只有我自己在文字裡提到 → 仍要擋(舊寫法會靜音)"
-[ "$FAIL" -eq 0 ] && echo "✅ test_stop_self_audit_push_gate: 4/4" || { echo "❌ test_stop_self_audit_push_gate: $FAIL 項未過"; exit 1; }
+
+run_case_no_env() {  # 不設 GOVERNANCE_PUSH_NOTIFICATION_AVAILABLE —— 真實 Claude Code session 就是這樣
+  GOVERNANCE_SELF_PROVIDER=claude \
+  GOVERNANCE_STATE_DIR="$WORK/state-noenv-$1" \
+  CLAUDE_PROJECT_DIR="$(cd "$SCRIPT_DIR/../../../../.." && pwd)" \
+  bash "$HOOK" <<< "{\"transcript_path\":\"$WORK/$1.jsonl\",\"hook_event_name\":\"Stop\"}" 2>&1 \
+    | grep -c "PUSH-NOTIFICATION BLOCKER"
+}
+check_no_env() { local got; got=$(run_case_no_env "$1"); if [ "$got" = "$2" ]; then echo "  ✓ $3(BLOCKER $got)"; else echo "  ✗ $3:期望 $2、實得 $got"; FAIL=$((FAIL+1)); fi; }
+echo "▶ M6 能力判定:環境變數不存在時,用「這份 transcript 真的呼叫過」當證據"
+check_no_env e 1 "沒有環境變數、但稍早真的呼叫過 → 能力已證明,本 turn 沒叫就要擋(舊寫法全程靜音)"
+check_no_env f 0 "沒有環境變數、整份 transcript 從沒呼叫過 → 不假設有這個 tool,維持安靜"
+[ "$FAIL" -eq 0 ] && echo "✅ test_stop_self_audit_push_gate: 6/6" || { echo "❌ test_stop_self_audit_push_gate: $FAIL 項未過"; exit 1; }

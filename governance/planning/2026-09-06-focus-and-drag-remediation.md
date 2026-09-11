@@ -3638,3 +3638,29 @@ CI 的 DataTable job 現在會另外 build 一份 `origin/main` 的 storybook,�
 
 補齊 / 長工 / 幀距仍是絕對門檻(長工另按機器能力放大,AD90)。
 `ci-workflow-scope` 契約的 build-storybook 次數 5 → 6,理由寫在測試裡。
+
+### AD93 我又沒照 token 規範建立,而且推播閘全程靜音 —— 兩個都補上機械防線(2026-09-11)
+
+**user 逐字**:「為何你他媽又不照規範來建立 token?要講幾次?而且這個部分我們之前也有特別提醒每次建立必檢查吧?
+你他媽要如何永遠在各種環境下都能避免這個問題?此外,我又沒收到推播了,你他媽到底何時才能永遠解決這個問題?」
+
+**(一)Token:改成 A,並補上 provider-neutral 的機械閘**
+- `--overlay-viewport-inset` → **`--layout-space-viewport-inset`**,登記進 `layoutSpace.spec.md` 的 Token 表 + 拆分理由。
+- **為什麼之前攔不住**:`tokens/README.md:56` 的「建立前必 Read」是紙上紀律;
+  `ls ds-canonical/hooks/ | grep -i token` 只有 `check_opacity_token_usage.sh` —— **沒有任何機械閘管新 token 的命名與登記**。
+- **新閘 `scripts/token-creation-invariant.mjs`**(deterministic script 不是 Claude hook,所以換任何 agent / 在 CI 裡都擋得住):
+  - **T1 前綴不得跨 family** —— 錨就是我這次的錯:`--overlay` 已是 `color/semantic.css` 的 L2 Semantic 顏色 token。
+  - **T2 這次新增的 token 必須登記進所屬 family 的 spec** —— 錨:我加了 CSS 沒加 spec。
+  - 「新增」= 名字在 `origin/main` 不存在,**不是 diff 有 `+` 行**(第一版把只改值的 `--neutral-selected-hover` 誤判成新增)。
+  - 第一版還做過 T2a「住哪個 family 檔案就要帶哪個前綴」,前綴清單是我自己猜的 → 在健康的樹上誤紅
+    (uiSize 合法擁有多種前綴、typography 的 Token 表列的是 utility)。**會對正確程式碼變紅的閘比沒有還糟**,砍掉。
+  - 它上線就抓到既有 drift:`--color-drop-target` / `--color-drop-target-border` / `--menu-max-height` 三顆有 CSS 沒 spec
+    (`--menu-max-height` 正是先前 Dialog 稽核點名過的),已補登記。
+
+**(二)推播:能力判定從「環境變數」改成「觀察證據」**
+- **根因**:`stop_self_audit.sh` M6 只在 `GOVERNANCE_AVAILABLE_CAPABILITIES` / `GOVERNANCE_PUSH_NOTIFICATION_AVAILABLE`
+  宣告能力時才啟動,而**真實 Claude Code session 不會設這兩個變數** → 整道閘全程靜音,我同時忘了呼叫。
+- **環境變數是宣告,不是證據**。改成掃整份 transcript:只要**這個 session 真的成功呼叫過一次**就視為能力已證明。
+- **兩側對照(用這個 session 的真實 transcript,內含 219 筆真呼叫)**:修前 **0**(靜音)、修後 **1**(擋)。
+- 測試補兩案(環境變數缺席 + 稍早呼叫過 → 必擋;缺席 + 從沒呼叫過 → 必靜),`6/6` 通過。
+  舊測試永遠帶著環境變數跑,**從沒覆蓋到這個洞**。

@@ -277,6 +277,10 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 | `--drop-target` | `bg-drop-target` | `--primary` @ 15% 半透明(兩模式同一公式) | 合法放置 / 停靠區域的底色 |
 | `--drop-target-border` | `border-drop-target-border` | = `--primary-hover`(light blue-5 / dark blue-7) | 同一區域的邊框色 |
 
+**`@theme inline` bridge 別名**:`semantic.css` 另定義 `--color-drop-target` / `--color-drop-target-border`
+(= 同名 semantic token 的 alias),這是 Tailwind v4 產出 `bg-drop-target` / `border-drop-target-border` utility 的橋接
+(token-system.spec.md「跨 family `@theme inline` bridge」),**不是第二組語意 token**;改值一律改上面那兩顆。
+
 設計依據(2026-09-03 拍板):
 
 - **底色必半透明**:區域覆蓋在別人的內容之上,沿用 Highlight 段同一條鐵律——VS Code theme-color「The color must not be opaque so as not to hide underlying decorations」(https://code.visualstudio.com/api/references/theme-color)。這也是它與 `--primary-subtle` 的分工:`-subtle` 是**元件自己的**淡底(不透明,底下沒有別人的內容:Button toggle 持續按下、DataTable range cell);`--drop-target` 是**蓋在別人內容上的暫態區域**。

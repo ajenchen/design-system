@@ -77,7 +77,7 @@ Dialog **不自設任何 density attribute**,layout-space + ui-size 全繼承 pa
 
 ## Viewport Inset
 
-Modal 與 viewport 四邊保持 `--overlay-viewport-inset`(48px)最小間距。**這顆 token 是 2026-09-11 從
+Modal 與 viewport 四邊保持 `--layout-space-viewport-inset`(48px)最小間距。**這顆 token 是 2026-09-11 從
 `--layout-space-bottom` 拆出來的**:後者的語意是「結論留白:內容到 action buttons」(`layoutSpace.spec.md` Token 表),
 跟「浮層外殼到視窗邊」是兩個概念,值剛好都是 48 而已。耦合著會讓任何人調結論留白時,意外改掉全站 Dialog 的高度**與最大寬度**。
 

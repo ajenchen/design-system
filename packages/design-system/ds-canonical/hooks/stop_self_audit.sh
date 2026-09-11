@@ -503,6 +503,18 @@ case ",${GOVERNANCE_AVAILABLE_CAPABILITIES:-}," in
   *,push-notification,*|*,PushNotification,*) NOTIFICATION_AVAILABLE=1 ;;
 esac
 [ "${GOVERNANCE_PUSH_NOTIFICATION_AVAILABLE:-0}" = "1" ] && NOTIFICATION_AVAILABLE=1
+# **能力也可以由觀察證明(2026-09-11 user:「我又沒收到推播了,你他媽到底何時才能永遠解決這個問題?」)**。
+# 原本只認環境變數 —— 而那個變數在實際的 Claude Code session 裡沒有被設,於是這道閘**全程靜音**,
+# 我同時忘了呼叫,連續多個 substantive turn 沒有推播也沒有任何警告。
+# 環境變數是宣告,不是證據;**這個 session 裡真的成功呼叫過一次** 才是不可辯駁的證據。
+# 掃整份 transcript(不只本 turn)找 `"name":"PushNotification"` 的 tool_use:
+#   有 → 能力確定存在 → 從此每個 substantive turn 都要檢查(這正是本 session 的情況)
+#   沒有 → 維持 nonblocking(不對沒有這個 tool 的 runtime 誤報)
+if [ "$NOTIFICATION_AVAILABLE" = "0" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+  if grep -qE '"type"[[:space:]]*:[[:space:]]*"tool_use"[^}]*"name"[[:space:]]*:[[:space:]]*"PushNotification"|"name"[[:space:]]*:[[:space:]]*"PushNotification"[^}]*"type"[[:space:]]*:[[:space:]]*"tool_use"' "$TRANSCRIPT_PATH" 2>/dev/null; then
+    NOTIFICATION_AVAILABLE=1
+  fi
+fi
 if [ "$NOTIFICATION_AVAILABLE" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
   ASSISTANT_LEN=${#LAST_ASSISTANT}
   ASSISTANT_LEN=${ASSISTANT_LEN:-0}

@@ -17,6 +17,13 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 | `--field-height-sm` | 1.75rem (28px) | 2rem (32px) |
 | `--field-height-md` | 2rem (32px) | 2.25rem (36px) |
 | `--field-height-lg` | 2.25rem (36px) | 2.5rem (40px) |
+| `--menu-max-height` | 18.75rem (300px) | 18.75rem (300px) — 固定 |
+
+**`--menu-max-height`(2026-09-11 補登記)**:清單型浮層的捲動上限 —— CommandList / SelectMenu 的內容超過它就在
+清單內部捲動。2026-09-08 從 `command.tsx` 的 fallback 字面值升格為 token;消費者 `command.tsx`,
+`select.spec.md`「大量選項」段引用它。**不隨 density 變**(它是「一次看幾筆」的閱讀上限,不是控制項尺寸)。
+與 Dialog 的高度上限是兩套獨立機制:Dialog 吃 `min(100svh - inset*2, maxHeight)`,兩邊互不引用
+(CommandDialog 同時被兩者夾住,見 `dialog.spec.md`「高度」段)。
 
 ### Field-height family 清單與共享 default（SSOT）
 

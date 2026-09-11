@@ -75,11 +75,21 @@ try {
     await sleep(Math.max(3500, delayMs + 1500))
     const m = await evalIn(page, MEASURE)
     // 對照:留在 Docs 頁時 docs 要真的渲染出來(守衛不得誤殺正常 docs);共享 runner 上 14 個 story 的 docs 頁可能要十幾秒
-    await page.locator(sel(P)).first().click(); await sleep(300)
-    if ((await page.locator(sel(DEMO)).count()) === 0) await page.locator(sel(P)).first().click()
-    // 30s → 60s(2026-09-11):這支閘在 546ae35b 第一次紅,而同一個 CI run 裡 DataTable 的閘也異常慢
-    // (同一份元件邏輯的空白中位從 162 跳到 485ms)—— 是那台 runner 慢,不是守衛誤殺。等久一點,判定內容不變。
-    await waitFor(page, () => (document.getElementById('storybook-docs')?.childElementCount ?? 0) > 0 && !document.getElementById('storybook-docs')?.hasAttribute('hidden'), 60000)
+    // 等待 30s → 60s,再加一次重載重試(2026-09-11)。這支閘在慢 runner 上紅過三次,症狀都是
+    // `rootChildren: 0 / docsChildren: 0`——**什麼都沒渲染**,也就是這一趟根本沒量到東西(儀器沒跑起來),
+    // 不是守衛誤殺正常 docs。同期證據:同一輪 CI 裡 DataTable 的閘量到 main 自己的長工中位就有 372ms。
+    // 重試一次仍然空 → 照樣紅。
+    const openDocs = async () => {
+      await page.locator(sel(P)).first().click(); await sleep(300)
+      if ((await page.locator(sel(DEMO)).count()) === 0) await page.locator(sel(P)).first().click()
+      return waitFor(page, () => (document.getElementById('storybook-docs')?.childElementCount ?? 0) > 0 && !document.getElementById('storybook-docs')?.hasAttribute('hidden'), 60000)
+    }
+    if (!(await openDocs())) {
+      console.log('   ⟳ Docs 頁 60 秒內什麼都沒渲染(這一趟儀器沒跑起來),重載後重試一次')
+      await page.goto(server.origin + `/index.html?path=/story/${TASK}`, { waitUntil: 'networkidle' }).catch(() => {})
+      await sleep(1200)
+      await openDocs()
+    }
     const docsPage = await evalIn(page, MEASURE)
     await browser.close()
     return { m, docsPage, routed }
