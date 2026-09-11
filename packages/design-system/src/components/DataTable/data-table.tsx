@@ -803,10 +803,6 @@ function stripKeyboardActivator(listeners: Record<string, unknown> | undefined) 
  * 模組層一份:同一時間畫面上只有一顆把手在管,多表時捲任一張都藏、下一次真實移動就恢復;座標追蹤是 document 上一個
  * listener(ref-count),訂閱者只有渲染過把手的實例(有 pos),不會為 200 列各掛一個。
  */
-/** 休眠時共用的空容器:避免每次 render 配置新的 Map / Set(它們在休眠路徑上永遠不會被寫入)。 */
-const EMPTY_MAP: Map<string, boolean> = new Map()
-const EMPTY_SET: Set<string> = new Set()
-
 const rowDragScrollLatch = {
   active: false,
   lastX: NaN,
@@ -1774,26 +1770,12 @@ function DataTableInner<TData>(
   // commit 本來就 > 20ms 但在 4,500px/s 跟得上(R17 在它上面零骨架、延遲 ≤ 34ms),用成本判會在一般速度出殼。
   // 進入 = 單次位移 > 2 倍緩衝(≈ 一個視窗,單次 GC 抖動不會誤進);退出 = 平滑值 < 0.5
   const SHELL_BEHIND_ENTER = 2
-  /**
-   * 出殼的**必要**前提:這台機器一次 commit 就吃掉兩幀以上(2026-09-11;user 2026-09-11 拍板「照你建議」)。
-   *
-   * 原本只看「視窗移動距離 ÷ 預掛緩衝 > 2」,但那個量把「使用者甩得快」和「機器畫不動」混為一談 ——
-   * 真實滾輪一次十格就位移約 1,000px,是 200px 緩衝的 5 倍,於是**每一次正常甩動都被判成跟不上**。
-   * user 在自己的機器上實測:捲動時 100% 的幀都有骨架、最多同時 159 個骨架元素,畫面整片灰,
-   * 讀起來就是「非常卡頓」——即使幀距其實比 main 好三倍多。
-   *
-   * 加上這個前提之後,**畫得動的機器不論甩多快都不會出骨架**(行為回到 main),
-   * 只有真的畫不動(一次 commit ≥ 兩幀)才用骨架換「不留白」。兩幀 = 33ms 是「人看得出掉幀」的門檻
-   * (60fps 一幀 16.7ms;對齊 web.dev 對長任務與輸入延遲的量級)。
-   * 這是**額外的收緊**,不是取代原判準 —— 它只會讓骨架更少,不會讓骨架更多。
-   */
-  const SHELL_SLOW_COMMIT_MS = 33
   const SHELL_BEHIND_EXIT = 0.5
   const shellRef = React.useRef({
     lastOffset: null as number | null, renderOffset: null as number | null, committedRenderOffset: null as number | null, committedRenderStart: 0, lastRows: null as unknown, renderStart: 0, lastCommitAt: 0, commitCost: 0, pendingBehind: 0, behind: 0, offsetChanged: false, slow: false, scrollCommit: false, aheadRows: 0, scrolling: false,
     promoted: 0, newFull: 0, costPerRow: 3, fixedCost: 2, promoteLeft: 0, budgetRows: 64, budgeted: false, ahead: false, hasShell: false, wasScrolling: false, aheadDir: 1,
     decided: new Map<string, boolean>(), full: new Set<string>(), fullNow: new Set<string>(), prevShells: new Set<string>(), shellsNow: new Set<string>(), raf: 0,
-    needsHeightSync: false, viewportTop: 0, viewportBottom: 0, bookkeeping: false,
+    needsHeightSync: false, viewportTop: 0, viewportBottom: 0,
   })
   const [, bumpShellTick] = React.useReducer((x: number) => x + 1, 0)
   // 虛擬化器實例(useVirtualizer 每次 render 回同一個實例):render 開始時要讀它當下的 isScrolling,實例在下面才建,先用 ref 拿上一輪的
@@ -1817,9 +1799,7 @@ function DataTableInner<TData>(
     // 每次 commit 一結束下一次 render 就開始、中間位移很小,連續慢 commit 永遠觸發不了,整片白到瀏覽器偶然讓出時間為止(6× 節流 1.1s)。
     const renderOffsetPrev = S.committedRenderOffset
     S.renderOffset = offsetNow
-    // 緊急跳轉(跨過整個可視窗)同樣要求「這台機器畫不動」——畫得動的機器整窗跳轉時直接畫真列就好,
-    // 出一整窗骨架只會讓使用者覺得壞掉(同上 `SHELL_SLOW_COMMIT_MS` 的理由)。
-    S.ahead = useVirtual && activeDragId == null && renderOffsetPrev != null && shellRef.current.commitCost > SHELL_SLOW_COMMIT_MS && Math.abs(offsetNow - renderOffsetPrev) >= jumpThreshold
+    S.ahead = useVirtual && activeDragId == null && renderOffsetPrev != null && Math.abs(offsetNow - renderOffsetPrev) >= jumpThreshold
     // 只有「這次 commit 是捲動造成的」或「上一輪還有殼要補」才算捲動 commit;初次載入、換頁、靜止時的資料變動一律照舊全畫
     // (Codex R9 反例:第一版把配額套到新列,初次載入 15 列只畫 2 列)。
     // 「還在捲」= scrollTop 變了 **或** 虛擬化器仍在 isScrolling(最後一個 scroll 事件後 250ms 內)。只比 scrollTop 不夠:長 commit 之後
@@ -1836,7 +1816,7 @@ function DataTableInner<TData>(
     S.pendingBehind = renderOffsetPrev != null ? Math.abs(offsetNow - renderOffsetPrev) / Math.max(1, effectiveOverscan * resolvedEstimate) : 0
     // 只有量到「機器跟不上」才受預算節制;這一次 render 的位移已經超過門檻就**立刻**算(不等 commit 後的 effect ——
     // 慢機器第二次 render 位移就 3.9 倍緩衝,再等一次全量 commit 才出殼會多白 300ms+);退出看平滑值。跟得上的機器完全走 R17 的路。
-    S.budgeted = S.scrollCommit && S.commitCost > SHELL_SLOW_COMMIT_MS && (S.slow || S.pendingBehind > SHELL_BEHIND_ENTER)
+    S.budgeted = S.scrollCommit && (S.slow || S.pendingBehind > SHELL_BEHIND_ENTER)
     // 這一幀畫得完幾列真列 =(幀預算 − 每次 commit 的固定成本)÷ 每列成本(至少 1 列,上限 64)。停捲後只剩補殼時放寬到 4 幀:
     // 每次 commit 的固定成本在慢機器很貴(4× 節流 ≈ 100ms),一次多補幾列比每幀補 1 列快得多(6× 節流補齊 1.3s → 目標 < 1s)。
     // 沒有新列進窗(scrollTop 沒變,只是還在 250ms 的 isScrolling 尾巴)的 commit 放寬到 4 幀:可能真的停了(多補幾列補得快),
@@ -1864,25 +1844,11 @@ function DataTableInner<TData>(
     S.aheadRows = (S.budgeted || S.ahead || draining) && scrolling && S.lastCommitAt > 0
       ? Math.max(0, Math.min(48, Math.ceil((Math.abs(offsetNow - (renderOffsetPrev ?? offsetNow)) / Math.max(1, now - prevRenderStart)) * Math.max(S.commitCost, now - prevRenderStart) / Math.max(1, resolvedEstimate))))
       : 0
-    /**
-     * **機制沒在作用時,整套記帳直接休眠**(2026-09-11;CPU 剖析實測這裡是全場最貴的一項)。
-     *
-     * 殼列的記帳(每列每區一次 `Map.get/set` + `Set.add`,每次 render 重新配置三個容器,commit 時再做集合差集)
-     * 原本**無條件**跑 —— 就算一個骨架都沒出、機制完全沒啟動也照跑。5× 節流的 CPU 剖析裡,這個 layout effect
-     * 的自身時間 **307.6ms**,是整段手勢最貴的單一項目,比它要保護的「畫列」本身還貴。
-     * 休眠條件 = 這一輪不會出殼(沒被預算節制、沒有緊急跳轉、沒有補殼)且上一輪也沒有殼要處理。
-     * 快機器的一般捲動永遠走這條路,成本歸零;真的需要殼時才把記帳打開,行為完全不變。
-     */
-    S.bookkeeping = S.budgeted || S.ahead || draining || S.prevShells.size > 0
-    S.promoted = 0; S.newFull = 0; S.hasShell = false
-    if (S.bookkeeping) { S.decided = new Map(); S.fullNow = new Set(); S.shellsNow = new Set() }
-    else if (S.decided.size || S.fullNow.size || S.shellsNow.size) { S.decided = EMPTY_MAP; S.fullNow = EMPTY_SET; S.shellsNow = EMPTY_SET }
+    S.promoted = 0; S.newFull = 0; S.hasShell = false; S.decided = new Map(); S.fullNow = new Set(); S.shellsNow = new Set()
   }
   /** 這一輪這列要不要先出殼(三區同一列同一個答案;決定一次、三區共用)。 */
   const decideShell = (rowId: string, visible: boolean): boolean => {
     const S = shellRef.current
-    // 休眠中:機制這一輪不會出殼,直接回真列,不做任何記帳(理由見上方 `S.bookkeeping`)。
-    if (!S.bookkeeping) return false
     let shell = S.decided.get(rowId)
     if (shell === undefined) {
       // 拖曳中一律真列(殼沒有 SortableRowProvider,不是有效落點);上次 commit 完整畫過、編輯中、選取格所在的列也不套殼
@@ -1957,26 +1923,16 @@ function DataTableInner<TData>(
     S.committedRenderStart = S.renderStart
     S.lastRows = rows
     S.wasScrolling = virtualizer.isScrolling
-    // **不在這裡讀 DOM**(2026-09-11;CPU 剖析:這個 layout effect 自身時間 264–307ms,是整段手勢最貴的單一項目)。
-    // layout effect 跑在 React 改完 DOM 之後,此時讀 `scrollTop` 會逼瀏覽器把版面同步算完(forced reflow),
-    // 每次 commit 一次。而這個值的用途只有一個:下一次 render 判 `offsetChanged`(「這次 render 與上次 render 之間
-    // scrollTop 有沒有變」)。`S.renderOffset` 就是這次 render 開始時讀到的同一個量,直接用它,語意相同、零 DOM 讀取。
-    S.lastOffset = S.renderOffset ?? 0
+    S.lastOffset = centerBodyRef.current?.scrollTop ?? 0
     // 殼升級成真列後,三區列高同步(缺陷 F)要再跑一次 —— 那個同步只掛在虛擬視窗換列上,補真內容不會換列(Codex R9 指出)。
     // 判「有沒有列從殼變真列」看集合差,不看配額計數:拖曳 / 編輯把殼強制升成真列不走配額,第一版只看 promoted,
     // Codex R10 在 autoRowHeight + 左右釘選下重現三區差 60px。**先比對上一輪的殼集合,再覆寫**(R11:第二版先覆寫才比,
     // 兩個集合是同一輪的互斥集合,永遠比不到)。
-    if (S.bookkeeping) {
-      let upgraded = false
-      for (const id of S.prevShells) if (S.fullNow.has(id)) { upgraded = true; break }
-      if (upgraded) S.needsHeightSync = true
-      S.full = S.fullNow
-      S.prevShells = S.shellsNow
-    } else if (S.full.size || S.prevShells.size) {
-      // 休眠時把上一輪的殘留清掉,否則 `S.full` 會一直長大、也會讓 `prevShells.size > 0` 永遠把記帳叫回來。
-      S.full = EMPTY_SET
-      S.prevShells = EMPTY_SET
-    }
+    let upgraded = false
+    for (const id of S.prevShells) if (S.fullNow.has(id)) { upgraded = true; break }
+    if (upgraded) S.needsHeightSync = true
+    S.full = S.fullNow
+    S.prevShells = S.shellsNow
     if (S.hasShell && !S.raf) S.raf = requestAnimationFrame(() => { S.raf = 0; bumpShellTick() })
   })
   React.useEffect(() => () => { if (shellRef.current.raf) cancelAnimationFrame(shellRef.current.raf) }, [])
@@ -2268,14 +2224,10 @@ function DataTableInner<TData>(
       rec[axis] = undefined // 不論吞不吞,這筆紀錄都消費掉,不留過期記號
       if (mine) return
     }
-    // **重用上面已經讀到的 `now`,不再重讀 `el`**(2026-09-11;CPU 剖析:這個回呼在一次 6,000px/s 手勢裡
-    // 自身時間 266ms,是全場最貴的單一項目)。它跑在「中央區捲動 → 我們程式化寫入兩側 → 兩側回拋事件」
-    // 之後,而那時 React 剛改完 DOM,每讀一次捲動位置就逼一次同步版面;原本一次事件讀三次(`el` 兩次 + `cb` 一次),
-    // 現在讀兩次。語意完全相同 —— `now` 就是同一個事件裡同一個元素的同一個值。
     if (axis === 'x') {
-      if (now !== cb.scrollLeft) cb.scrollLeft = now
-    } else if (now !== cb.scrollTop) {
-      cb.scrollTop = now
+      if (el.scrollLeft !== cb.scrollLeft) cb.scrollLeft = el.scrollLeft
+    } else if (el.scrollTop !== cb.scrollTop) {
+      cb.scrollTop = el.scrollTop
     }
   }, [])
 
@@ -4186,7 +4138,7 @@ function DataTableInner<TData>(
            * 預設關閉:屬性變動會被 `data-table-scroll-cost.mjs` 的 R1 計數,不能無條件掛。
            */
           {...(typeof window !== 'undefined' && (window as unknown as { __DT_DEBUG_SHELL?: boolean }).__DT_DEBUG_SHELL
-            ? { 'data-shell-state': `slow=${shellRef.current.slow ? 1 : 0} budgeted=${shellRef.current.budgeted ? 1 : 0} ahead=${shellRef.current.ahead ? 1 : 0} behind=${shellRef.current.behind.toFixed(2)} pending=${shellRef.current.pendingBehind.toFixed(2)} commitCost=${shellRef.current.commitCost.toFixed(1)} costPerRow=${shellRef.current.costPerRow.toFixed(1)} fixed=${shellRef.current.fixedCost.toFixed(1)} budgetRows=${shellRef.current.budgetRows} aheadRows=${shellRef.current.aheadRows}` }
+            ? { 'data-shell-state': `slow=${shellRef.current.slow ? 1 : 0} budgeted=${shellRef.current.budgeted ? 1 : 0} ahead=${shellRef.current.ahead ? 1 : 0} behind=${shellRef.current.behind.toFixed(2)} pending=${shellRef.current.pendingBehind.toFixed(2)} costPerRow=${shellRef.current.costPerRow.toFixed(1)} fixed=${shellRef.current.fixedCost.toFixed(1)} budgetRows=${shellRef.current.budgetRows} aheadRows=${shellRef.current.aheadRows}` }
             : {})}
           // a11y(scrollable-region-focusable,對齊 DS ScrollArea Viewport canonical):唯讀表格
           // 的可捲動 body 若無任何 focusable descendant,鍵盤使用者無法捲動。read-only 模式
