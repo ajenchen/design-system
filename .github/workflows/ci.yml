@@ -353,6 +353,9 @@ jobs:
           # Dialog 並存契約:兩條路都驗 —— 預設路徑照舊隔離、並存路徑指定區域仍可用。
           # 只驗後者的話「把預設路徑一起弄壞」不會被發現。
           npm run test:dialog-coexistence
+          # Dialog 高度不變式(2026-09-11;user 重述的高度模型逐條變成斷言)。先對照組再判定。
+          node scripts/dialog-height-invariant.mjs --selftest
+          node scripts/dialog-height-invariant.mjs
           # 浮層快捷鍵的作用域:焦點在檢視器外時方向鍵不得切換檔案,
           # 對照組驗焦點在裡面時仍然切得動(否則就是把功能弄壞換綠燈)。
           npm run test:overlay-shortcut-scope

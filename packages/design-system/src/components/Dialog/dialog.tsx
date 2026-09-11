@@ -48,8 +48,9 @@ const DialogTrigger = DialogPrimitive.Trigger
 const DialogPortal = DialogPrimitive.Portal
 const DialogClose = DialogPrimitive.Close
 
-// Modal 與 viewport 四邊的最小間距 = layout-space-bottom (48px)
-const DIALOG_INSET_VAR = 'var(--layout-space-bottom)'
+// Modal 與 viewport 四邊的最小間距。2026-09-11 從 `--layout-space-bottom`(語意 = 結論留白)拆成自己的 token:
+// 兩者值都是 48px,但語意不同,耦合在一起會讓「調結論留白」意外改掉全站 Dialog 的高度與最大寬度(見 token 註解)。
+const DIALOG_INSET_VAR = 'var(--overlay-viewport-inset)'
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -77,9 +78,31 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
   /** 最大寬度。預設 512px。傳 number 視為 px。 */
   maxWidth?: string | number
   /**
-   * 高度模式。
-   * - 不傳（預設）：填滿 viewport（height = 100vh - inset*2），body 捲動。防止內容跳動。
-   * - true：高度隨內容，超過 viewport 時捲動（max-height 安全帽）。
+   * 高度軸 —— **只決定「怎麼長」,不決定「多高」**(多高由 `maxHeight` 管,兩者正交)。
+   *
+   * - `'fill'`(預設):填滿可用高度。內容多寡不改變外框幾何。
+   * - `'hug'`:隨內容長高,碰到上限才由 body 捲動。
+   *
+   * **怎麼選(判準是時間維度,不是當下看起來幾行)**:
+   * 從開啟到關閉這段期間,內容高度**會不會因為使用者的操作與互動而改變**?
+   * 會 → `'fill'`(異步載入、展開區塊、可增減的清單);不會 → `'hug'`(確認框、短表單、固定文案)。
+   * 理由:隨內容長高的浮層一旦內容變高變矮,整個對話框會上下跳動,體驗很差 —— 先把可用高度穩定下來,
+   * 讓 body 自己捲,外框就不動了。
+   *
+   * 軸名與值照 DS 既有的寬度軸(`field-types.ts` 的 `FieldWidth = 'fill' | 'hug'`,2026-07-08 拍板),
+   * 不另造詞彙。
+   */
+  height?: 'fill' | 'hug'
+  /**
+   * 最大高度 —— **只能選更矮的上限**。預設上限 = 視窗可用高度(`100svh - inset*2`);
+   * 傳值時取 `min(視窗可用高度, 此值)`,傳再大也不會超過視窗。傳 number 視為 px。
+   *
+   * 形狀照 `DropdownMenu` 的 `maxHeight`(同樣是 min(視窗剩餘, 自訂));型別照本元件自己的 `maxWidth`
+   * (`string | number`)—— 高度更需要 string,才寫得出 `60svh` / `calc(100svh - 120px)`。
+   */
+  maxHeight?: string | number
+  /**
+   * @deprecated 改用 `height="hug"`。兩者同時傳時 `height` 勝(dev 會 warn)。
    */
   autoHeight?: boolean
   /**
@@ -108,7 +131,7 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, maxWidth = '512px', autoHeight, persistentElements: persistentElementsProp, portalContainer, children, style, ...props }, ref) => {
+>(({ className, maxWidth = '512px', height, maxHeight, autoHeight, persistentElements: persistentElementsProp, portalContainer, children, style, ...props }, ref) => {
   const persistentElementsCtx = React.useContext(DialogCoexistContext)
   const persistentElements = persistentElementsProp ?? persistentElementsCtx
   // 用 **state** 而不是 ref 承接節點:並存的保留集合要「這個 Content + 常駐區域」,
@@ -164,12 +187,26 @@ const DialogContent = React.forwardRef<
     : {}
 
   const insetCalc = `${DIALOG_INSET_VAR} * 2`
-  const viewportH = `calc(100vh - ${insetCalc})`
+  // `svh`(small viewport height)不是 `vh`:行動裝置的網址列收合時 `100vh` 會大於實際可視高度,
+  // 對話框底部(通常是主要動作鈕)會被切掉。DS 其他填滿視窗的外框已經是這個選擇
+  // (`app-shell.tsx` 的 `h-svh`、`sidebar.tsx` 的 `100svh`),Dialog 跟上。桌機兩者等值。
+  const availableH = `calc(100svh - ${insetCalc})`
   const maxWidthCss = typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth
+  const maxHeightCss = typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight
+  // 上限只有一條公式,兩種模式共吃 —— 這就是「高度都不會超過最大高度」。
+  // consumer 傳的值只能讓它更矮(`min`),傳再大也不會超過視窗。
+  const heightCap = maxHeightCss ? `min(${availableH}, ${maxHeightCss})` : availableH
 
-  const heightStyle: React.CSSProperties = autoHeight
-    ? { maxHeight: viewportH }
-    : { height: viewportH }
+  const resolvedHeight: 'fill' | 'hug' = height ?? (autoHeight ? 'hug' : 'fill')
+  if (process.env.NODE_ENV !== 'production' && height != null && autoHeight != null) {
+    // eslint-disable-next-line no-console
+    console.warn('[DialogContent] `height` 與 `autoHeight` 同時傳了;`autoHeight` 已 deprecated,這次以 `height` 為準。')
+  }
+  // fill 同時寫 height 與 maxHeight 不是冗餘:(a) 讓「兩種模式回報同一個上限」可被機械驗證;
+  // (b) 擋住下方 `...style` 的逃生口 —— consumer 蓋掉 `height` 時 `maxHeight` 仍然生效。
+  const heightStyle: React.CSSProperties = resolvedHeight === 'hug'
+    ? { maxHeight: heightCap }
+    : { height: heightCap, maxHeight: heightCap }
 
   // AutoFocus canonical(對齊 Material / Polaris / Atlassian)—
   // 開啟時 focus 落在 body 第一個有意義互動元素(input / button),不是 chrome close X。

@@ -184,7 +184,8 @@ export const Default = {
       <DialogTrigger asChild>
         <Button>邀請成員加入專案</Button>
       </DialogTrigger>
-      <DialogContent>
+      {/* 邀請成員:一句說明的短表單,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
+      <DialogContent height="hug">
         <DialogHeader>
           <DialogTitle>邀請成員到「Q3 設計改版」</DialogTitle>
         </DialogHeader>
@@ -209,7 +210,8 @@ export const WithForm = {
       <DialogTrigger asChild>
         <Button>開啟 Modal</Button>
       </DialogTrigger>
-      <DialogContent>
+      {/* 建立專案:兩個欄位的短表單,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
+      <DialogContent height="hug">
         <DialogHeader>
           <DialogTitle>建立專案</DialogTitle>
         </DialogHeader>
@@ -277,7 +279,8 @@ export const Destructive = {
       <DialogTrigger asChild>
         <Button variant="primary" danger>刪除</Button>
       </DialogTrigger>
-      <DialogContent>
+      {/* 確認刪除:單一決策的確認框,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
+      <DialogContent height="hug">
         <DialogHeader>
           <DialogTitle>確認刪除</DialogTitle>
         </DialogHeader>

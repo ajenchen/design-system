@@ -77,14 +77,49 @@ Dialog **不自設任何 density attribute**,layout-space + ui-size 全繼承 pa
 
 ## Viewport Inset
 
-Modal 與 viewport 四邊保持 `--layout-space-bottom`（48px）最小間距。maxWidth 也受此限制：`min(maxWidth, 100vw - inset*2)`。
+Modal 與 viewport 四邊保持 `--overlay-viewport-inset`(48px)最小間距。**這顆 token 是 2026-09-11 從
+`--layout-space-bottom` 拆出來的**:後者的語意是「結論留白:內容到 action buttons」(`layoutSpace.spec.md` Token 表),
+跟「浮層外殼到視窗邊」是兩個概念,值剛好都是 48 而已。耦合著會讓任何人調結論留白時,意外改掉全站 Dialog 的高度**與最大寬度**。
 
-## 高度行為
+寬與高都吃同一個 inset:`min(maxWidth, 100vw - inset*2)` / `min(100svh - inset*2, maxHeight)`。
 
-| 模式 | 條件 | 行為 |
+## 高度
+
+### 最大高度(上限)—— 兩種模式共用同一條公式
+
+```
+上限 = maxHeight 有值 ? min(100svh - inset*2, maxHeight) : (100svh - inset*2)
+```
+
+- **恆小於視窗高**,所以 header 與 footer 在絕大多數情況都露得出來(超長內容由 body 自己捲,外框不動)。
+- **consumer 只能往更矮調**:`maxHeight` 傳比視窗大的值也會被 `min()` 夾住。型別 `string | number`
+  (number 視為 px;string 才寫得出 `60svh` / `calc(100svh - 120px)`),與同元件的 `maxWidth` 同型別。
+  形狀對齊 `DropdownMenu` 的 `maxHeight`(同樣是「可選更低上限」)。
+- **用 `svh` 不用 `vh`**:行動裝置網址列收合時 `100vh` 大於實際可視高度,底部主要動作鈕會被切掉。
+  DS 其他填滿視窗的外框已是這個選擇(`app-shell.tsx` 的 `h-svh`、`sidebar.tsx` 的 `100svh`)。桌機兩者等值。
+
+### 高度軸(怎麼長)—— 正交於上限
+
+| `height` | 行為 | 什麼時候用 |
 |---|---|---|
-| **預設（填滿）** | 不傳 `autoHeight` | viewport-bounded 固定高度，body 擁有捲動；動態內容不改變 dialog 外框幾何 |
-| **autoHeight** | `autoHeight={true}` | 高度隨內容，超過 viewport 時 `max-height` 安全帽。適合內容量已知且穩定的 dialog（確認框、短表單） |
+| **`'fill'`(預設)** | 高度 = 上限。內容多寡不改變外框幾何,body 擁有捲動 | 開啟到關閉期間**內容高度會變**:異步載入、可展開區塊、可增減的清單 |
+| **`'hug'`** | 高度隨內容長高,碰到上限才由 body 捲動 | 開啟到關閉期間**內容高度不會變**:確認框、短表單、固定文案 |
+
+**判準是時間維度,不是當下看起來有幾行**:從開啟到關閉,內容高度會不會因為使用者的操作與互動而改變?
+會 → `fill`;不會 → `hug`。理由:隨內容長高的浮層一旦內容變高變矮,整個對話框會上下跳動,體驗很差 ——
+先把可用高度穩定下來、讓 body 自己捲,外框就不動了。**現在預期不會變、但未來會加入異步 section 的,選 `fill`。**
+
+`autoHeight?: boolean` 已 **deprecated**,等同 `height="hug"`;兩者同時傳時 `height` 勝並在 dev 環境 warn。
+
+**世界級對照**:Material Web(`max-height: min(560px, calc(100% - 48px)); height: fit-content`)、
+Atlassian(`if (!input) return 'auto'`)、Polaris(只宣告 `max-height`)、Carbon(size 綁 48/72/84/96% 上限)、
+Ant Design(不宣告高度)—— 五家第一方原始碼**預設都是「隨內容 + 視窗為上限」**。
+本 DS 預設選 `fill` 是刻意偏離:DS 的主場景是內容會變的產品 dialog,穩定外框優先;
+需要世界級預設行為的場景顯式傳 `height="hug"`。
+
+**閘**:`scripts/dialog-height-invariant.mjs` —— H1 兩種模式回報同一個上限、H2 上限 = 視窗 − inset×2 且小於視窗且不溢出、
+H3 `hug` 真的隨內容長高而 `fill` 不隨內容變、H4 `maxHeight` 只能更矮。
+對照組把上限拿掉必須紅(實測 fill 變 99904px、溢出視窗)。
 
 ## maxWidth
 

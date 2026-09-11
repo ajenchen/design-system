@@ -3438,3 +3438,42 @@ build 出來就不一樣:本機 `data-table-BIu-rWB0.js` vs 預覽 `data-table-u
 **方法論教訓(第三次同類)**:沙箱 headless 每列 1–2ms,這套自適應機制在那裡幾乎不會啟動 ——
 **所有閘都在一個「機制不會啟動」的環境裡跑,於是它的判準錯了四個月沒人發現**(M32「儀器要先有對照組」的延伸:
 儀器還得跑在「被測機制會啟動」的條件下)。新斷言就是補這個洞。
+
+### AD84 Dialog 高度:user 的模型落地為 API + SSOT + 閘(2026-09-11)
+
+**先更正 user 的一個猜測**:他說「autoHeight 時沒有 max height 導致 dialog 可能會溢出視窗」——**實測不是**。
+`autoHeight` 一直都有 `max-height: calc(100vh - 96px)`,往 body 塞 3000px 外框仍是 704px;矮視窗 @400→304 / @300→204 / @200→104,
+精準 = `innerHeight − 96`。對照組把 `maxHeight` 設 `none` → 3371px 溢出,證明那個綠燈不是假綠。
+**真正沒有上限的是「填滿」那一邊**(用固定 `height` 撐出視覺上界,computed `max-height` = `none`)。
+
+**落地的三件**:
+1. **API**:`height?: 'fill' | 'hug'`(預設 fill)+ `maxHeight?: string | number`(只能更矮,`min()`)。
+   軸名與值照 DS 既有寬度軸 `FieldWidth = 'fill' | 'hug'`(2026-07-08 user 拍板),不另造詞;
+   `maxHeight` 型別照同元件的 `maxWidth`,形狀照 DropdownMenu 的「可選更低上限」。
+   `autoHeight` 標 deprecated、等同 `height="hug"`,同時傳時 `height` 勝並 dev warn。
+2. **公式**:上限只有一條、兩種模式共吃 —— `maxHeight ? min(100svh - inset*2, maxHeight) : 100svh - inset*2`。
+   `svh` 不是 `vh`(行動裝置網址列;DS 的 AppShell / Sidebar 已是 svh)。
+   fill 同時寫 `height` 與 `maxHeight`:讓「兩模式同上限」可機械驗證,並堵住 `...style` 的逃生口。
+3. **Token 拆分**:新增 `--overlay-viewport-inset: 48px`,Dialog 不再借用 `--layout-space-bottom`。
+   後者的 owner spec 明文把它定義成「結論留白」,還寫著「兩個不同 spacing 概念不可混為一談」——
+   耦合著會讓調結論留白意外改掉全站 Dialog 的高度**與最大寬度**(M17「同值不同義」)。
+
+**修掉的三支 story**:基本 / 危險操作 / 表單 原本吃預設「填滿」,一句話的確認框在 1280×800 恆為 **704px**。
+DS 自己的原則檔早就寫對(`dialog.principles.stories.tsx` 逐字「內容已知且穩定:使用 autoHeight…避免少量資訊佔滿視窗」),
+是展示檔沒跟上 —— 預設在 2026-04-17 的 `7d5a4c6a` 從 `maxHeight` 翻成 `height`,story 停在翻轉前。
+**實測修後**:確認框 704 → **189px**、基本 704 → **189px**、表單 704 → **323px**、長內容仍 **704px**(刻意吃預設)。
+
+**修掉的兩處 canonical 互相矛盾**:
+- `overlay-surface.spec.md:349` 宣稱 Dialog/Sheet 用 `--radix-dialog-content-available-height` ——
+  **那個變數不存在**(由 `@radix-ui/react-popper` 提供,Radix Dialog 不是 popper-based,全庫 grep 0 命中)。
+- `build-ui-canonicals.md:86` 的「例外:overlay-surface spec 明文允許 Dialog body `flex-1 overflow-y-auto`」——
+  被引的原文寫的是**禁止**。這條例外從來不存在,已撤回。
+
+**新閘** `scripts/dialog-height-invariant.mjs`(已進 CI,含對照組):
+H1 兩模式回報同一上限 / H2 上限 = 視窗 − inset×2 且小於視窗且不溢出 / H3 hug 真的隨內容長高、fill 不隨內容變 /
+H4 `maxHeight` 只能更矮。對照組把上限拿掉 → fill 變 99904px、溢出視窗,必紅。
+
+**誠實標記**:5 家第一方原始碼(Material Web / Atlassian / Polaris / Carbon / Ant)預設**都是**「隨內容 + 視窗為上限」,
+本 DS 預設選 `fill` 是刻意偏離(主場景是內容會變的產品 dialog,穩定外框優先),已寫進 spec 並註明理由。
+user 提的判準「開啟期間內容高度會不會變」**沒有任何一家有明文對照**(7 份第一手來源逐份 grep),
+它是 DS 自創、目前無 world-class benchmark —— 但它直接解釋了「為什麼要有兩種模式」,已寫進 owner spec。
