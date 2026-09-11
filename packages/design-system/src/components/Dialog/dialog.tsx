@@ -247,7 +247,12 @@ const DialogContent = React.forwardRef<
           // **它**上面;沒有 URL 的一般確認框維持 z-50,必須蓋在常駐區上面(v14 條 A)。
           persistentElements ? "fixed left-1/2 top-1/2 z-40 w-full -translate-x-1/2 -translate-y-1/2"
                              : "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
-          "flex flex-col bg-surface-raised rounded-lg border border-border",
+          // `overflow-hidden min-h-0` 是 overlay-surface primitive 明文要求的父層契約
+          // (`overlay-surface.tsx:180-182` 逐字:「parent(PopoverContent / HoverCardContent /
+          // Dialog / Sheet)是 flex flex-col + max-h + overflow-hidden」)。Popover/HoverCard 一直有,
+          // Dialog 與 Sheet 漏了 → 視窗變矮時內容直接畫到圓角容器外面(2026-09-12 user 截圖)。
+          // 少了 min-h-0,dialog 自己在 flex 容器裡也收縮不到 max-height 以下。
+          "flex flex-col overflow-hidden min-h-0 bg-surface-raised rounded-lg border border-border",
           // 進出場 = 從中心淡入 + 輕微縮放,**不位移**(dialog.spec.md「動畫」段;時長 / 曲線 / reduced-motion 由
           // surfaceMotion 消費 --motion-duration-surface / --motion-easing-enter / --motion-easing-exit)。
           // 2026-09-09 user 抓到「從左上角飛到中間」:shadcn v3 時代的 `slide-in-from-left-1/2 slide-in-from-top-[48%]`

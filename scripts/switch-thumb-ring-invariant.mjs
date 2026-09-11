@@ -44,9 +44,12 @@ if (selftest) {
 // 掃全 DS 的「設計規格」三支固定 story(跟 hover-color-pair 同一套列舉),
 // 不預先過濾元件名 —— Switch 出現在 form / field / settings 等組合 story 裡也要蓋到。
 const index = JSON.parse(readFileSync(join(root, 'index.json'), 'utf8'))
-const ids = Object.entries(index.entries)
+const allIds = Object.entries(index.entries)
   .filter(([id, e]) => e.type === 'story' && /--(state-behavior|overview|size-matrix)$/.test(id))
   .map(([id]) => id)
+// 對照組只跑「注入破壞後一定會紅」的目標(有 Switch 的那幾支),否則會為了驗 3 秒的事情跑 5 分鐘。
+// 正常掃仍然是全 DS —— Switch 會出現在 form / settings / dialog 等組合 story 裡,不能只掃 switch 目錄。
+const ids = selftest ? allIds.filter((id) => /switch|field|form|setting/i.test(id)) : allIds
 const violations = []
 let sampled = 0
 
@@ -56,6 +59,9 @@ const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) <= TOLERANCE)
 for (const id of ids) {
   await page.goto(`${server.origin}/iframe.html?id=${id}&viewMode=story`, { waitUntil: 'networkidle' }).catch(() => {})
   await page.waitForTimeout(150)
+  // 這支 story 沒有 Switch 就直接跳過:切 theme + 等過渡每支要 ~0.5s,164 支裡只有少數有 Switch,
+  // 不跳過的話光等待就多花 ~1.5 分鐘,CI 的 15 分鐘 job 會被撐爆(2026-09-12 實際被 cancel 過一次)。
+  if (await page.locator('[role="switch"]').count() === 0) continue
   for (const theme of ['light', 'dark']) {
     await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme)
     await page.waitForTimeout(250)

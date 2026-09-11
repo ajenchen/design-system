@@ -12,6 +12,13 @@
  *   H2 上限 = 視窗高 − inset×2,且**小於視窗高**
  *   H3 `height="hug"` 真的隨內容長高(內容少就矮),`fill` 不隨內容變
  *   H4 `maxHeight` 只能更矮:傳比視窗大的值不得超過視窗;傳小的值要生效
+ *   H5 視窗變矮時「內容溢出走 body 捲動」(`dialog.spec.md:128` 逐字)——**每一支 dialog story** 都要
+ *      (a) 沒有任何後代畫到容器外(容器自己 `overflow: hidden`,對齊 `overlay-surface.tsx:180-182`
+ *          明文要求的父層契約:「parent…是 flex flex-col + max-h + overflow-hidden」)
+ *      (b) 內容搆得到:捲動區 `scrollHeight > clientHeight` 時,捲到底之後最後一個互動元素要完整可見
+ *      H5 是 2026-09-12 user 截圖「dialog body 內容超出容器」的防線。當時 H1-H4 全綠 ——
+ *      因為它們只測 dialog **自己**的高度,沒測「dialog 與 body 之間夾了別的 wrapper」的情形。
+ *      根因:Tabs Root 是裸 `display:block` + `min-height:auto`,在受限的 flex column 裡收縮不了。
  *
  * 對照組(`--selftest`):把送出的 bundle 裡的上限拿掉 → H2/H4 必須紅。
  *
@@ -26,6 +33,11 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const BUILD = arg('build', join(REPO, 'storybook-static'))
 const SELFTEST = process.argv.includes('--selftest')
+// H5 需要**自己的**對照組:上面那個 --selftest 會把高度上限拿掉,dialog 變成 99904px 高,
+// 那樣任何內容都不會溢出,H5 的條件永遠觸發不了(2026-09-12 實測 溢出數 恆為 0)。
+// --selftest-h5 保留上限,只還原本次的兩個修法(容器 overflow + Tabs Root 的 flex),
+// 讓 H5 面對的是 bug 當時的真實形狀。兩個對照組在 CI 都要跑。
+const SELFTEST_H5 = process.argv.includes('--selftest-h5')
 const VH = 800
 const INSET = 48
 const AVAILABLE = VH - INSET * 2 // 704
@@ -34,11 +46,13 @@ const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 
 const browser = await launchBrowser()
 let fail = 0
 let patchedChunks = 0
+let h5CheckedTotal = 0
+let h5BadTotal = 0
 const ck = (name, ok, detail = '') => { console.log(`${ok ? '✓' : '✗'} ${name}${detail ? ' | ' + detail : ''}`); if (!ok) fail++ }
 
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: VH } })
-  if (SELFTEST) {
+  if (SELFTEST && !SELFTEST_H5) {
     // 把兩種模式共用的上限拿掉(`calc(100svh - …)` 換成一個永遠夾不住的值)。
     // **路由所有 .js 不是只路由 dialog-*.js**(2026-09-11):CI 的 chunk 切法跟本機不同,
     // 只比對檔名會整個漏掉 —— 那一跑對照組沒生效、`fail` 是 0,腳本卻印「如預期紅」並 exit 1(訊息與事實相反)。
@@ -101,9 +115,72 @@ try {
     ck('H4 傳更矮的 maxHeight 會生效(320px)', Math.abs(h4.smaller - 320) <= 2, JSON.stringify(h4))
     ck(`H4 傳比視窗大的 maxHeight 仍被視窗夾住(≤ ${AVAILABLE}px)`, h4.bigger <= AVAILABLE + 1, JSON.stringify(h4))
   }
+  // ── H5:視窗變矮 → body 內捲,不外溢、不失聯 ──
+  // 掃全部 dialog / sheet story(不是只掃幾支範例):這個 bug 的形狀就是「某個 consumer 的組合
+  // 在中間夾了一層不能收縮的 wrapper」,只有全掃才抓得到。
+  const index = JSON.parse(await (await fetch(`${server.origin}/index.json`)).text())
+  const overlayIds = Object.entries(index.entries)
+    .filter(([id, e]) => e.type === 'story' && /(dialog|sheet)/i.test(id))
+    .map(([id]) => id)
+  let h5Checked = 0
+  const h5Bad = []
+  for (const id of overlayIds) {
+    for (const vh of [240]) { // 240 是最嚴苛的一檔;跑兩檔只是把同一條斷言重跑一次,CI 時間卻加倍
+      await page.setViewportSize({ width: 1280, height: vh })
+      await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'networkidle', timeout: 60_000 }).catch(() => {})
+      // H5 的對照組:把 2026-09-12 的兩個修法同時還原 —— 容器 overflow 放開 + Tabs Root 退回裸 block。
+      // 少了這一步,H5 的綠燈只證明「現在沒壞」,不證明「壞了會被抓到」。
+      if (SELFTEST_H5) await page.addStyleTag({ content: '[role="dialog"]{overflow:visible !important} [data-orientation][dir]{display:block !important}' }).catch(() => {})
+      await page.waitForTimeout(150)
+      // 開啟:優先點 story 自己的觸發鈕(排除 Storybook 自身的控制項)
+      // 只點 story 根容器裡、有文字的按鈕(Storybook 自己的控制項在根容器外),最多兩顆、逾時 700ms:
+      // 原本掃全頁 4 顆 × 1.5s,在「這支沒有 dialog」時純粹是空等,整條 H5 從 1 分鐘變 6 分鐘。
+      const triggers = await page.locator('#storybook-root button').all().catch(() => [])
+      for (const t of triggers.slice(0, 2)) {
+        if (await page.locator('[role="dialog"]').count() > 0) break
+        await t.click({ timeout: 700 }).catch(() => {})
+        await page.waitForTimeout(180)
+      }
+      const r = await page.evaluate(() => {
+        const c = document.querySelector('[role="dialog"]')
+        if (!c) return null
+        const cr = c.getBoundingClientRect()
+        const outside = [...c.querySelectorAll('*')].filter((n) => {
+          const b = n.getBoundingClientRect()
+          if (b.height <= 0 || b.width <= 0) return false
+          // 捲動區「裡面」的內容捲出視野是正常的,只算畫在**容器外**又沒有祖先在裁切的
+          let p = n.parentElement
+          while (p && p !== c) { if (getComputedStyle(p).overflowY !== 'visible') return false; p = p.parentElement }
+          return b.bottom > cr.bottom + 1 || b.top < cr.top - 1
+        })
+        const vp = c.querySelector('[data-radix-scroll-area-viewport]')
+        let reachable = true
+        if (vp && vp.scrollHeight > vp.clientHeight + 1) {
+          vp.scrollTop = vp.scrollHeight
+          const last = [...c.querySelectorAll('input,button,label,a')].pop()
+          if (last) { const lb = last.getBoundingClientRect(); reachable = lb.bottom <= cr.bottom + 1 }
+        }
+        return { 溢出數: outside.length, 可達: reachable, 容器overflow: getComputedStyle(c).overflowY }
+      }).catch(() => null)
+      if (!r) continue
+      h5Checked++
+      if (process.env.H5_DEBUG) console.log('   [H5]', id, JSON.stringify(r))
+      if (r.溢出數 > 0 || !r.可達 || r.容器overflow === 'visible') h5Bad.push({ id, vh, ...r })
+    }
+  }
+  await page.setViewportSize({ width: 1280, height: VH })
+  h5CheckedTotal = h5Checked; h5BadTotal = h5Bad.length
+  ck(`H5 視窗變矮時內容不外溢且搆得到(掃 ${h5Checked} 個 dialog/sheet 場景)`, h5Checked > 0 && h5Bad.length === 0,
+     h5Checked === 0 ? '一個 dialog 都沒開起來 —— 這條什麼都沒驗到' : JSON.stringify(h5Bad.slice(0, 4)))
 } finally {
   await browser.close()
   await server.stop()
+}
+if (SELFTEST_H5) {
+  if (h5CheckedTotal === 0) { console.log(`\n✗ H5 對照組:一個 dialog 都沒開起來 —— 什麼都沒驗到`); process.exit(1) }
+  if (h5BadTotal === 0) { console.log(`\n✗ H5 對照組:還原了容器 overflow 與 Tabs 的 flex,H5 卻沒紅 —— 儀器失效`); process.exit(1) }
+  console.log(`\n✓ H5 對照組:還原兩個修法後,${h5BadTotal} 個場景如預期紅(儀器有效)`)
+  process.exit(0)
 }
 if (SELFTEST) {
   // 對照組要能宣稱「儀器有效」,必須同時成立:(a) 真的改寫到了 chunk (b) 改寫之後真的紅了。

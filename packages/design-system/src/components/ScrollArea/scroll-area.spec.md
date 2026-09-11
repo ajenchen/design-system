@@ -112,6 +112,13 @@ Radix primitive + 本 DS a11y 橋接:
 ## 邊界案例
 
 - **Dark mode**:`--scrollbar-thumb` / `--scrollbar-thumb-hover`(resolves to `--border` / `--border-hover`)自動由 semantic token 切換,無自訂 palette,詳見 `color.spec.md`
+- **但 DataTable 的原生捲軸不吃這組 token(2026-09-12 釐清)**:`data-table.css` 在 Chromium 上把
+  `scrollbar-color` 重設回 `auto`,所以 Chrome / Edge 的捲軸配色**完全由 `color-scheme` 決定**。
+  DS 原本從沒宣告過 `color-scheme`(計算值 `normal`)→ dark mode 下瀏覽器照樣畫亮色捲軸
+  (user 2026-09-12 截圖)。現在 `tokens/color/semantic.css` 在 `:root, [data-theme]` 宣告 `color-scheme: light`、
+  在 `[data-theme="dark"]` 宣告 `color-scheme: dark`,巢狀 theme 邊界一併翻。
+  機械閘 `scripts/color-scheme-invariant.mjs`(C1 計算值 = theme / C1b 巢狀邊界 / C2 用原生控制項當觀測器
+  確認**瀏覽器真的照做**,不只驗宣告存在)。
 - **Density**:scrollbar 寬度不受 density 影響(功能性 primitive,不隨 field-height / layout-space 放大縮小)
 - **Disabled**:ScrollArea 無互動狀態——內容是否可操作由 consumer 決定,captured 容器本身不 disable
 - **Empty**:內容為空時 scrollbar 不顯示(Radix 自動偵測 overflow,無溢出 → scrollbar 隱藏)

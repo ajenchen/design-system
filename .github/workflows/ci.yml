@@ -350,7 +350,10 @@ jobs:
   verify-browser-interaction:
     name: Verify browser(component + interaction gates)
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # 2026-09-12:15 分不夠了(上一跑剛好跑滿 15 分被 cancel,連帶讓聚合 job 判 fail)。
+    # 已先把 switch-thumb-ring 從 ~5.5 分壓到 ~2.5 分(沒有 Switch 的 story 直接跳過切 theme),
+    # 這裡再留 headroom 給新增的 color-scheme 與 H5 對照組。
+    timeout-minutes: 25
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -403,6 +406,11 @@ jobs:
           npm run test:dialog-coexistence
           # Dialog 高度不變式(2026-09-11;user 重述的高度模型逐條變成斷言)。先對照組再判定。
           node scripts/dialog-height-invariant.mjs --selftest
+          # H5 需要自己的對照組:上面那個 --selftest 把高度上限拿掉後 dialog 變 99904px 高,
+          # 任何內容都不會溢出,H5 的條件永遠觸發不了(實測 溢出數 恆為 0)。
+          # --selftest-h5 保留上限、只還原「容器 overflow-hidden」與「Tabs Root flex」兩個修法,
+          # 讓 H5 面對 bug 當時的真實形狀(實測會精準抓到 展示--with-tabs-in-header)。
+          node scripts/dialog-height-invariant.mjs --selftest-h5
           node scripts/dialog-height-invariant.mjs
           # 浮層快捷鍵的作用域:焦點在檢視器外時方向鍵不得切換檔案,
           # 「靜止時同色的顏色配對,hover 後必須還是同色」全 DS 掃描(2026-09-11;user 截圖:
@@ -417,6 +425,12 @@ jobs:
           # 對照組把 background-clip 改回 border-box 並把外圈塗白 = 原樣重放 dark mode 那次事故。
           node scripts/switch-thumb-ring-invariant.mjs --selftest
           node scripts/switch-thumb-ring-invariant.mjs
+          # `color-scheme` 必須跟著 theme 翻(2026-09-12;user 截圖:dark 的 DataTable 捲軸是亮色)。
+          # DataTable 走原生捲軸、Chromium 又把 scrollbar-color 重設回 auto,所以捲軸長相只由
+          # color-scheme 決定 —— 在這之前整個 DS 沒宣告過它,計算值是 normal → 永遠畫亮版。
+          # C2 用「完全不吃 DS 樣式的原生控制項」當觀測器,確認瀏覽器真的照做,不只驗宣告存在。
+          node scripts/color-scheme-invariant.mjs --selftest
+          node scripts/color-scheme-invariant.mjs
           # 對照組驗焦點在裡面時仍然切得動(否則就是把功能弄壞換綠燈)。
           npm run test:overlay-shortcut-scope
           # 兩支從「複現不出」轉成「再發生會被抓到」的閘(總帳 E1 / E2):

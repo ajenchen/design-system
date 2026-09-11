@@ -160,6 +160,16 @@
    所有語義 token 都在這裡。dark 要改的在 ③ 覆寫。 */
 :root, [data-theme] {
 
+  /* `color-scheme` 告訴瀏覽器「這塊區域是亮版還暗版」,決定**它自己畫的東西**的配色:
+     原生捲軸、表單控制項的預設外觀、以及沒被覆蓋時的畫布底色。
+     這不是裝飾 —— DataTable 走的是**原生捲軸**(`data-table.css` 在 Chromium 上把 `scrollbar-color`
+     重設回 `auto`,理由見該檔:裸 `::-webkit-scrollbar` 會把 overlay 捲軸強制變成佔版面的捲軸),
+     所以 Chrome 完全不看我們的 `--scrollbar-*` token,只看這個屬性。
+     少了它,`color-scheme` 的計算值是 `normal` → dark mode 下瀏覽器照樣畫**亮色捲軸**
+     (2026-09-12 user 截圖:dark 表格右側一條亮色捲軸)。
+     宣告在 `:root, [data-theme]` 而不是只在 `:root`,巢狀 theme 邊界才會一起翻。 */
+  color-scheme: light;
+
   /* Surface — 2026-05-20 fix(user 抓 raw oklch 違反 semantic 直指 primitive 規則):
      從 raw oklch(1 0 0) 改指 primitive --color-white(L66 absolute anchor) */
   --canvas:               var(--color-white);
@@ -434,6 +444,9 @@
 /* ── ③ Dark-Only — 覆寫與 light 不同的值 ──
    同 specificity，後面贏，蓋掉 ② 的預設值。 */
 [data-theme="dark"] {
+
+  /* 見 ② 的 color-scheme 說明:這一行才讓瀏覽器把原生捲軸與原生控制項畫成暗版。 */
+  color-scheme: dark;
 
   /* Surface */
   --canvas:               var(--color-neutral-1-opaque);

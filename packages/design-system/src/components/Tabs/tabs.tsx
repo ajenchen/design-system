@@ -174,6 +174,17 @@ const Tabs = React.forwardRef<
         value={currentValue}
         onValueChange={setCurrentValue}
         {...props}
+        // Root 本來是裸 Radix(`display: block`),在「高度受限的 flex column 容器」裡會**斷鏈**:
+        // Dialog / Sheet 的契約是 header/footer `shrink-0` + Body `flex-1 min-h-0` → 空間不夠時 body 內捲
+        // (`dialog.spec.md:128`「內容溢出走 body 捲動」)。但只要中間夾一層 `display: block` 且
+        // `min-height: auto` 的 wrapper,那層就收縮不了,整包內容原樣頂出容器 —— 2026-09-12 user 截圖的
+        // 「dialog body 內容超出容器」正是這個:Tabs Root 在 204px 的 dialog 裡撐到 271px。
+        // Root 自己成為可收縮的 flex column 之後,這條鏈在任何容器裡都自然接上,consumer 不需要背咒語。
+        // 不受限的容器裡 `flex: 0 1 auto` 的 basis 仍是內容高,所以一般用法幾何完全不變(已逐 story 比對 Δ=0)。
+        className={cn(
+          'flex min-h-0 data-[orientation=horizontal]:flex-col data-[orientation=vertical]:flex-row',
+          props.className
+        )}
       >
         {children}
       </TabsPrimitive.Root>

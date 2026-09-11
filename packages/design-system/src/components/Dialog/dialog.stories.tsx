@@ -484,16 +484,14 @@ export const WithTabsInHeader = {
               </div>
             </TabsContent>
             <TabsContent value="members" className="mt-0">
-              <div className="flex flex-col gap-3">
-                <DescriptionList orientation="horizontal">
-                  <DescriptionItem label="Alan Chen">管理員</DescriptionItem>
-                  <DescriptionItem label="Betty Wu">編輯者</DescriptionItem>
-                  <DescriptionItem label="Charlie Lee">檢視者</DescriptionItem>
-                </DescriptionList>
-              </div>
+              <DescriptionList orientation="horizontal">
+                <DescriptionItem label="Alan Chen">管理員</DescriptionItem>
+                <DescriptionItem label="Betty Wu">編輯者</DescriptionItem>
+                <DescriptionItem label="Charlie Lee">檢視者</DescriptionItem>
+              </DescriptionList>
             </TabsContent>
             <TabsContent value="integrations" className="mt-0">
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-[var(--layout-space-loose)]">
                 {[
                   { key: 'slack', label: 'Slack 通知', on: true },
                   { key: 'github', label: 'GitHub PR 同步', on: true },

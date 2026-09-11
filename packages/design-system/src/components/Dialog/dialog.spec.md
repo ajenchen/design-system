@@ -118,12 +118,29 @@ Ant Design(不宣告高度)—— 五家第一方原始碼**預設都是「隨�
 需要世界級預設行為的場景顯式傳 `height="hug"`。
 
 **閘**:`scripts/dialog-height-invariant.mjs` —— H1 兩種模式回報同一個上限、H2 上限 = 視窗 − inset×2 且小於視窗且不溢出、
+H5(2026-09-12 新增)在 240px 視窗下掃**每一支** dialog / sheet story,驗「沒有後代畫到容器外」+「捲到底後
+最後一個互動元素完整可見」。H5 有**自己的**對照組 `--selftest-h5`(既有 `--selftest` 會拿掉高度上限、
+把 dialog 變成 99904px 高,那樣誰都不會溢出,H5 的條件永遠觸發不了);`--selftest-h5` 還原
+容器 overflow 與 Tabs 的 flex,實測精準抓到 `展示--with-tabs-in-header`。
+H1-H4 當時全綠卻沒攔下這個 bug,因為它們只測 dialog **自己**的高度,沒測「dialog 與 body 之間夾了別的 wrapper」。
 H3 `hug` 真的隨內容長高而 `fill` 不隨內容變、H4 `maxHeight` 只能更矮。
 對照組把上限拿掉必須紅(實測 fill 變 99904px、溢出視窗)。
 
 ## maxWidth
 
 預設 512px，consumer 可透過 `maxWidth` prop 調整。型別 `string | number`（傳 number 視為 px）。
+
+**父層契約(2026-09-12 補,原本漏了)**:DialogContent 必須是 `flex flex-col` + `max-h` + **`overflow-hidden min-h-0`**。
+這不是新規定 —— `patterns/overlay-surface/overlay-surface.tsx:180-182` 逐字寫著「parent(PopoverContent /
+HoverCardContent / Dialog / Sheet)是 flex flex-col + max-h + overflow-hidden」,Popover 與 HoverCard 一直有,
+**Dialog 與 Sheet 漏了**(user 2026-09-12 截圖:視窗變矮時 dialog body 內容直接畫到圓角容器外面)。
+
+**中間 wrapper 也要能收縮**:上面那條只保證「不畫到外面」;要讓「內容溢出走 body 捲動」成立,
+DialogContent 到 DialogBody 之間的**每一層**都必須是可收縮的 flex column。實際踩到的是 `<Tabs>` ——
+Radix Tabs Root 是裸 `display: block` + `min-height: auto`,夾在中間時整包內容原樣頂出容器
+(實測 204px 的 dialog 裡 Tabs Root 撐到 271px)。修法是讓 **Tabs Root 自己**成為
+`flex min-h-0 data-[orientation=horizontal]:flex-col`(`tabs.tsx`),consumer 不需要背咒語;
+已逐 story 比對 23 支含 Tabs 的畫面幾何 Δ=0。
 
 **邊界**:上限被 viewport inset 截斷 `min(maxWidth, 100vw - inset*2)`(見「Viewport Inset」);無下限 clamp——過小值不擋,內容溢出走 body 捲動,由 consumer 自負。
 

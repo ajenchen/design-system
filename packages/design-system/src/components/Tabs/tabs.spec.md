@@ -73,6 +73,16 @@ Tabs 用於在**同一個上下文底下切換平行的視圖**——每個 tab 
 
 ## 內部結構
 
+**Root 是可收縮的 flex container(2026-09-12)**:`Tabs` Root 帶
+`flex min-h-0 data-[orientation=horizontal]:flex-col data-[orientation=vertical]:flex-row`。
+原本是裸 Radix Root(`display: block` + `min-height: auto`),在**高度受限的 flex column 容器**裡會斷鏈:
+Dialog / Sheet 的契約是 header/footer `shrink-0` + Body `flex-1 min-h-0` → 空間不夠時 body 內捲
+(`dialog.spec.md`「內容溢出走 body 捲動」)。只要中間夾一層不能收縮的 wrapper,那層就把整包內容
+原樣頂出容器 —— 2026-09-12 user 截圖的「dialog body 內容超出容器」正是這個(204px 的 dialog 裡 Tabs Root 撐到 271px)。
+Root 自己成為可收縮的 flex column 之後,這條鏈在任何容器裡都自然接上,consumer 不需要記得加 class。
+**不受限的容器裡幾何完全不變**:`flex: 0 1 auto` 的 basis 仍是內容高度,已逐 story 比對 23 支含 Tabs 的
+`root` / `tablist` / `tabpanel` 邊界框,Δ=0。
+
 ```
 TabsList ─┬─ TabsTrigger  [startIcon?] [label] [suffix?: badge? + endIcon?]
           ├─ TabsTrigger  ...

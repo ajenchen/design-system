@@ -3777,3 +3777,102 @@ user 問「為何這邊的間距是 12px 而不是 loose token」。我第一版
 
 另:成員分頁那個 16px 是 `justify-between` 的防碰撞下限(`description-list.tsx:99`),
 實際視覺距離 370px,不是「間距設定」;同層 `flex flex-col gap-3` 只有一個子元素,gap 不起作用(死 class)。
+
+---
+
+## AD99 — 撤回 AD98:12px 沒有「有家」,正確答案是 16px
+
+user 質疑我引的 `field.spec.md:306/381`。逐行核對後:**cite 逐字屬實,但我把它的權威範圍讀錯了。**
+
+| 行 | 逐字 | 我上一輪的誤讀 |
+|---|---|---|
+| `:304` | `compact`→`gap-3` / `normal`→`gap-4` / `loose`→`gap-6` | 值沒錯 |
+| `:308` | `| compact | 密集表單、dialog 內 |` | 我當成「dialog 內的規範」 |
+| `:309` | `| normal(預設) | 標準表單 |` | **漏看:預設是 normal 不是 compact** |
+| `:381` | 三級固定值「刻意不隨 density 縮放」 | 屬實,但講的是 FieldGroup,不是手刻 div |
+| `field.tsx:540` | `defaultVariants: { gap: 'normal' }` | 同上 |
+
+`normal` = `gap-4` = 16px,而 `--layout-space-loose` 在 md density 正是 16px(`density.stories.tsx:190`)——
+**user 的直覺「垂直排列 field 的表單預設 gap 是 loose token」完全正確**,只是 FieldGroup 把它寫成硬值。
+另外 `gap='compact'` 全 repo 只有一處用過(`accordion.principles.stories.tsx:280`),而且不是 dialog ——
+「密集表單、dialog 內」那行提示背後沒有任何實際慣例支撐,不足以當成規範壓過預設值。
+
+**落地**:整合分頁 `gap-3` → `gap-[var(--layout-space-loose)]`(md 16 / lg 24,與同一個 dialog 的「一般」分頁一致);
+成員分頁那個 `flex flex-col gap-3` 只包一個子元素、gap 不起作用 = 死 class,整個 wrapper 移除
+(列節奏由 `DescriptionList` 自己的 `mb-[var(--layout-space-tight)]` 管)。實測 md `{一般:16, 整合:16}` / lg `{24, 24}`。
+
+**未解的上游問題(登記,不在本次 scope)**:FieldGroup 三級用硬寫的 `gap-3/4/6`,數值上剛好等於
+`tight`(md 12)/ `loose`(md 16)/ `loose`(lg 24),但**凍結不隨 density 縮放**。
+這與 `layoutSpace.spec.md:300`「容器級 gap 走 token」的方向相反。要不要讓表單間距跟著 density 走,
+是產品層可感知決定,列待拍板。
+
+## AD100 — dark mode 捲軸是亮色:token 是對的,但 Chromium 根本沒在看它
+
+user 截圖:dark 的 DataTable 右側捲軸是亮色。**根因不在 token**:
+
+| 量測 | light | dark |
+|---|---|---|
+| `--scrollbar-track` | `oklch(0 0 0 / 4%)` | `oklch(1 0 0 / 8%)` ✓ 正確翻面 |
+| 元素的 `scrollbar-color` 計算值 | **`auto`** | **`auto`** |
+| 根層 `color-scheme` | **`normal`** | **`normal`** |
+
+`data-table.css:93-99` 在 Chromium 上把 `scrollbar-color` 重設回 `auto`(理由正當:裸 `::-webkit-scrollbar`
+會把 overlay 捲軸強制變成佔版面的捲軸)。於是捲軸配色**只由 CSS 的 `color-scheme` 決定** ——
+而整個 DS 從沒宣告過它(grep 全空),計算值 `normal` → 瀏覽器永遠畫亮版。
+
+**修法**:`semantic.css` 的 `:root, [data-theme]` 宣告 `color-scheme: light`、`[data-theme="dark"]` 宣告 `dark`
+(宣告在 `[data-theme]` 而非只在 `:root`,巢狀 theme 邊界才會一起翻)。
+**視覺實證**:放一個 `all: revert` 的原生 checkbox + progress 當觀測器,主要像素色 light `255,255,255` → dark `10,10,10`;
+對照組把 `color-scheme` 強制回 `normal`,亮色像素立刻回來 → 因果確認。
+**回歸**:164 張 dark 截圖 before/after,159 張逐像素完全相同;5 張的差異全是文字反鋸齒的邊緣位移
+(`255,255,255 → 221,221,221` 這類,每張 16–215 px)—— `color-scheme: dark` 會讓 Chrome 關掉 LCD 次像素反鋸齒,
+沒有任何 token、版面或顏色改變。機械閘 `scripts/color-scheme-invariant.mjs`(C1/C1b/C2 + 對照組)。
+
+## AD101 — dialog body 內容畫到容器外:Dialog 與 Sheet 違反自己消費的 primitive 的父層契約
+
+user 截圖:視窗矮時 dialog 內容直接畫在圓角白框外面。查下去有**兩層**根因:
+
+**第一層 — 契約漏守**。`overlay-surface.tsx:180-182` 逐字要求「parent(PopoverContent / HoverCardContent /
+Dialog / Sheet)是 flex flex-col + max-h + **overflow-hidden**」。實際:
+
+| 元件 | class | 守約 |
+|---|---|---|
+| Popover `:105` | `flex flex-col overflow-hidden min-h-0` | ✓ |
+| HoverCard `:58` | `flex flex-col overflow-hidden min-h-0` | ✓ |
+| **Sheet `:73`** | `flex flex-col` | ✗ |
+| **Dialog `:250`** | `flex flex-col` | ✗ |
+
+**第二層 — 中間 wrapper 斷鏈(才是真正的根因)**。補上 `overflow-hidden` 只讓內容不再畫到外面,
+但變成**被裁掉而搆不到**,仍違反 `dialog.spec.md:128`「內容溢出走 body 捲動」。
+逐節走鏈量出斷點:`[role=dialog]`(flex column, max-h 204)→ **一個 `display:block` + `min-height:auto` 的
+wrapper(高 271,超出 68px)** → DialogBody(`flex-1 min-h-0`,自己寫對了)。
+那個 wrapper 是 **Radix Tabs Root**(`dir=ltr | data-orientation=horizontal`),裸 block、不能收縮。
+
+**Root fix**:讓 Tabs Root 自己成為可收縮的 flex container
+(`flex min-h-0 data-[orientation=horizontal]:flex-col data-[orientation=vertical]:flex-row`),
+而不是要求每個 consumer 記得加 class。**不受限容器裡幾何不變**:23 支含 Tabs 的 story 逐一比對
+root / tablist / tabpanel 邊界框,**Δ=0**。全 repo 無 vertical tabs 用法。
+
+**驗證**(視窗高 × 捲動):
+
+| 視窗 | dialog | 捲動區 可見/總高 | 可捲 | 捲到底後最後元素完整可見 |
+|---|---|---|---|---|
+| 700 | 604 | 190/190 | 不需要 | ✓ |
+| 420 | 324 | 190/190 | 不需要 | ✓ |
+| 300 | 204 | **121/190** | 是 | ✓ |
+| 240 | 144 | **61/190** | 是 | ✓ |
+
+**閘**:`dialog-height-invariant.mjs` 新增 H5(240px 視窗下掃每一支 dialog/sheet story,驗不外溢 + 捲到底可達)。
+H5 需要**自己的**對照組:既有 `--selftest` 會拿掉高度上限讓 dialog 變 99904px 高,那樣誰都不會溢出、
+H5 的條件永遠觸發不了(實測 溢出數 恆為 0,是一個會印綠燈但什麼都沒驗的對照組)。
+`--selftest-h5` 保留上限、只還原本次兩個修法,實測精準抓到 `展示--with-tabs-in-header`(溢出數 1)。
+
+## AD102 — 我的 CI 監看腳本把 repo owner 打錯,兩小時都在印 PENDING
+
+watcher 查的是 `qijenchen/design-system`,實際是 `ajenchen/design-system`(`git remote -v`)。
+GitHub API 對不存在的 repo 回 404,腳本把空清單當成「還沒跑完」,於是永遠印 PENDING、永不結束。
+又一支「看起來在監控、其實什麼都沒監控」的儀器 —— 跟 AD97 同一類病。
+真實結果:`5c42778e` 的 `Verify browser(component + interaction gates)` 跑滿 **15 分鐘被 cancel**
+(我新加的兩支瀏覽器閘把它撐爆),連帶讓聚合 job 判 fail。
+**修**:switch-thumb-ring 加早退(沒有 Switch 的 story 直接跳過切 theme + 等待)5.5 分 → **2分23秒**;
+對照組只跑有 Switch 的 9 支 5 分 → **25 秒**;取樣數不變(44)。job timeout 15 → 25 分留 headroom。
