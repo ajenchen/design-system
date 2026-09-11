@@ -178,7 +178,7 @@ const probe = (sel) => page.evaluate((s) => {
 
 if (!SELFTEST) {
   // ── (B) 並存路徑 ────────────────────────────────────────────────────────
-  await page.goto(story('design-system-components-dialog-展示--coexistence-contract'), { waitUntil: 'load' })
+  await page.goto(story('design-system-components-dialog-展示--coexistence-poc'), { waitUntil: 'load' })
   // 等 story 真的渲染(共享 runner 上固定 900ms 不夠:a646b6c2 讀回「找不到 #coexist-aside-input」;本機與前幾次 CI 都過)
   await page.waitForSelector('#coexist-aside-input', { timeout: 15000 }).catch(() => {})
   await page.waitForTimeout(600)
@@ -244,7 +244,7 @@ if (!SELFTEST) {
 
   // 幾何(2026-09-08 user:「modal 整個蓋住了 agent 是要怎樣用」):對話框不與常駐區相交、遮罩 = 舞台、常駐區中心可點
   {
-    await page.goto(story('design-system-components-dialog-展示--coexistence-contract'), { waitUntil: 'load' }).catch(() => {})
+    await page.goto(story('design-system-components-dialog-展示--coexistence-poc'), { waitUntil: 'load' }).catch(() => {})
     await page.waitForSelector('[data-coexistence-mask]', { timeout: 15000 }).catch(() => {})
     await page.waitForTimeout(500)
     const g = await page.evaluate(GEO)

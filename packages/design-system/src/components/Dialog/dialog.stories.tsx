@@ -13,7 +13,6 @@ import { Button } from '@/design-system/components/Button/button'
 import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
 import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
-import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
@@ -615,94 +614,63 @@ export const FocusTrapControlNoDialog: Story = {
 }
 
 /**
- * 並存契約(`persistentElements`)—— 對照組式的兩欄:同一個 Dialog,
- * 左邊是「一般背景」(該被抑制),右邊是「常駐區域」(該仍然可用)。
+ * 並存契約的**測試夾具**(不是展示範例)。
  *
- * 由來:agent 原則 v14 條 A/B —— 有 URL 的內容要能與常駐側欄並列可操作。
- * Radix 的 modal 分支寫死 `hideOthers(content)` 只保留 content,做不到;
- * `modal={false}` 又是三件全關。這個 story 驗的是中間那個狀態。
- * 閘:`scripts/dialog-coexistence-invariant.mjs`(兩條路都驗)。
+ * 2026-09-11 user 逐字:「Dialog 的並存範例給我刪掉」——**側欄看得到的那支展示範例已移除**。
+ * 但 `persistentElements` 這個能力本身沒有退役(`dialog.spec.md`「並存(persistentElements)」仍然有效),
+ * 它的 8 條機械斷言(常駐區可聚焦可打字、其餘背景仍被抑制、對話框不與常駐區相交、遮罩 = 舞台、側欄中心可點)
+ * 需要一個掛載目標。所以把場景縮到**剛好夠閘用**的最小 DOM,並標 `test-only` —— 側欄與 docs 都不會出現,
+ * 跟 FileViewer 同一份契約的做法一致(`file-viewer.stories.tsx` 的 `CoexistenceContract` 也是 `test-only`)。
+ *
+ * 要連這個夾具也一起刪,就得同時退役 `scripts/dialog-coexistence-invariant.mjs` 的 (B) 與 (G) 兩段 ——
+ * 那會讓 `persistentElements` 變成沒有任何機械保護的能力,不是我可以自己決定的取捨。
  */
-export const CoexistenceContract: Story = {
-  name: '設計規格 — 並存區域(persistentElements)',
-  parameters: {
-    layout: 'fullscreen',
-    docs: {
-      story: openOverlayDocsStory('800px'),
-      description: {
-        story: '同一個 Dialog:它傳送到左邊的舞台,遮罩只遮舞台、對話框置中於舞台;右邊的評論側欄是常駐區域,不被遮、可以聚焦與打字。由來:代理原則 v14 條 A/B。',
-      },
-    },
-  },
+export const CoexistencePoc: Story = {
+  name: '測試夾具 — 並存區域(persistentElements)',
+  tags: ['test-only'],
+  parameters: { layout: 'fullscreen' },
   render: () => {
-    const Demo = () => {
+    const Fixture = () => {
       const [stage, setStage] = useState<HTMLDivElement | null>(null)
       const asideRef = useRef<HTMLElement | null>(null)
-      const toolbarRef = useRef<HTMLDivElement | null>(null)
-      const keep = useCallback(() => [asideRef.current, toolbarRef.current].filter((el): el is HTMLElement => !!el), [])
+      const keep = useCallback(() => [asideRef.current].filter((el): el is HTMLElement => !!el), [])
       const [open, setOpen] = useState(true)
-      const [comment, setComment] = useState('')
+      const [inside, setInside] = useState('')
       const [aside, setAside] = useState('')
-      const [comments, setComments] = useState<string[]>(['Betty:已補伺服器 log,等 QA 的環境資訊。'])
-      const post = (text: string) => { const t = text.trim(); if (t) setComments((c) => [...c, `你:${t}`]) }
       return (
-        <div className="p-[var(--layout-space-loose)]">
-          <SimulatedBrowser url={open ? '/projects/8821/tasks/4821' : '/projects/8821'} canBack={open} onBack={() => setOpen(false)} toolbarRef={toolbarRef} caption="模擬:任務詳情(有自己的網址)開著時只遮住舞台,右側評論側欄照常可用。">
-            <div ref={setStage} className="relative flex min-w-0 flex-1 flex-col gap-[var(--layout-space-loose)] overflow-hidden p-[var(--layout-space-loose)]" style={{ transform: 'translateZ(0)' }}>
-              <h1 className="text-heading">結帳流程改版</h1>
-              <DescriptionList orientation="horizontal">
-                <DescriptionItem label="負責人">Alan Chen</DescriptionItem>
-                <DescriptionItem label="狀態">進行中</DescriptionItem>
-              </DescriptionList>
-              <div className="flex gap-2">
-                <Button id="coexist-background-btn" variant="primary" onClick={() => setOpen(true)}>開啟任務 #4821</Button>
-              </div>
-              {stage && (
-                <Dialog open={open} onOpenChange={setOpen} persistentElements={keep}>
-                  <DialogContent maxWidth={480} autoHeight portalContainer={stage}>
-                    <DialogHeader>
-                      <DialogTitle>任務 #4821 修正登入逾時</DialogTitle>
-                      <DialogDescription>Sprint 24 · 指派給 Betty Wu</DialogDescription>
-                    </DialogHeader>
-                    <DialogBody>
-                      <div className="flex flex-col gap-[var(--layout-space-loose)]">
-                        <DescriptionList orientation="horizontal">
-                          <DescriptionItem label="指派人">Betty Wu</DescriptionItem>
-                          <DescriptionItem label="狀態">待處理</DescriptionItem>
-                          <DescriptionItem label="截止日">2026-09-12</DescriptionItem>
-                        </DescriptionList>
-                        <p className="text-body">使用者閒置 30 分鐘後再操作會被登出,需要補上 token 續期。</p>
-                        <Field>
-                          <FieldLabel>留言</FieldLabel>
-                          <Input id="coexist-inside-input" placeholder="寫下你的更新…" value={comment} onChange={(e) => setComment(e.target.value)} />
-                        </Field>
-                      </div>
-                    </DialogBody>
-                    <DialogFooter>
-                      <Button variant="tertiary" onClick={() => setOpen(false)}>取消</Button>
-                      <Button id="coexist-inside-btn" variant="primary" disabled={!comment.trim()} onClick={() => { post(comment); setComment(''); setOpen(false) }}>儲存</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              )}
-            </div>
-            <aside ref={asideRef} id="coexist-aside" aria-label="評論" className="flex w-[300px] shrink-0 flex-col gap-[var(--layout-space-loose)] border-l border-divider bg-surface p-[var(--layout-space-loose)]">
-              <h2 className="text-body-lg font-medium">評論</h2>
-              <ul className="flex flex-col gap-1">
-                {comments.map((c, i) => <li key={i} className="text-body">{c}</li>)}
-              </ul>
-              <Field>
-                <FieldLabel>新增評論</FieldLabel>
-                <Input id="coexist-aside-input" placeholder="可以打字" value={aside} onChange={(e) => setAside(e.target.value)} />
-              </Field>
-              <div>
-                <Button id="coexist-aside-btn" variant="primary" disabled={!aside.trim()} onClick={() => { post(aside); setAside('') }}>送出</Button>
-              </div>
-            </aside>
-          </SimulatedBrowser>
+        <div className="flex h-svh">
+          <div ref={setStage} className="relative flex min-w-0 flex-1 flex-col gap-2 overflow-hidden p-4" style={{ transform: 'translateZ(0)' }}>
+            <Button id="coexist-background-btn" variant="primary" onClick={() => setOpen(true)}>開啟</Button>
+            {stage && (
+              <Dialog open={open} onOpenChange={setOpen} persistentElements={keep}>
+                <DialogContent maxWidth={480} autoHeight portalContainer={stage}>
+                  <DialogHeader>
+                    <DialogTitle>任務 #4821</DialogTitle>
+                    <DialogDescription>並存契約夾具</DialogDescription>
+                  </DialogHeader>
+                  <DialogBody>
+                    <Field>
+                      <FieldLabel>留言</FieldLabel>
+                      <Input id="coexist-inside-input" value={inside} onChange={(e) => setInside(e.target.value)} />
+                    </Field>
+                  </DialogBody>
+                  <DialogFooter>
+                    <Button id="coexist-inside-btn" variant="primary" disabled={!inside.trim()} onClick={() => setOpen(false)}>儲存</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+          <aside ref={asideRef} id="coexist-aside" aria-label="評論" className="flex w-[300px] shrink-0 flex-col gap-2 border-l border-divider bg-surface p-4">
+            <Field>
+              <FieldLabel>新增評論</FieldLabel>
+              <Input id="coexist-aside-input" value={aside} onChange={(e) => setAside(e.target.value)} />
+            </Field>
+            <div><Button id="coexist-aside-btn" variant="primary" disabled={!aside.trim()} onClick={() => setAside('')}>送出</Button></div>
+          </aside>
         </div>
       )
     }
-    return <Demo />
+    return <Fixture />
   },
 }
