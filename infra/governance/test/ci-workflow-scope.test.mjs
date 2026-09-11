@@ -48,7 +48,10 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   assert.equal(workflow.jobs.verify.steps.length, 1)
   // 瀏覽器閘的兩個 job 都要自己 build storybook 與裝 chromium(彼此平行,不共用 artifact):
   // build-storybook 出現 3 次(static 的 manifest 驗證 + 兩個瀏覽器 job),playwright install 2 次。
-  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 5)
+  // 5 → 6(2026-09-11):DataTable pixel job 另外 build 一份**參考建置(main)**,
+  // 因為空白那條斷言唯一不受 runner 漂移影響的形式是「同 job 交錯比 main」——
+  // 同一份元件邏輯在 CI 上量到空白中位 162 / 325 / 485 / 471 / 687ms(4 倍散佈),絕對門檻只是在量那台機器。
+  assert.equal((source.match(/npm run build-storybook/g) ?? []).length, 6)
   assert.equal((source.match(/playwright install chromium/g) ?? []).length, 4)
   for (const command of [
     'npm run build:lib',

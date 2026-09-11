@@ -52,32 +52,28 @@ export const longTaskLimit = (absoluteLimit, viewportDrawMs) =>
     : absoluteLimit
 
 /**
- * **用固定工作量的對照組把「runner 快慢」跟「程式碼好壞」分開**(2026-09-11)。
+ * **跟同一個 job 裡的參考建置比,而不是跟絕對值比**(2026-09-11)。
  *
- * 問題:空白門檻 400ms 是絕對值,但 CI runner 的速度自己會漂。同一份元件邏輯(git diff 去掉註解後零差異)
- * 在 CI 上量到空白中位 162 / 325 / 485 / 471ms —— 3 倍散佈,絕對門檻只是在量那台機器。
+ * 問題:空白門檻 400ms 是絕對值,但 CI runner 自己會漂。**同一份元件邏輯**(git diff 去掉註解後與 4ea6a462 零差異)
+ * 在 CI 上量到空白中位 162 / 325 / 485 / 471 / 687ms —— 4 倍散佈,絕對門檻只是在量那台機器。
  *
- * 證據:這支閘本來就有一個**固定工作量**的正對照(每個 scroll 事件忙等 120ms,與我們的程式碼無關),
- * 它的最長空白是純粹的機器速度讀數。把它跟實測空白並排,相關性一目了然:
+ * **試過並撤回:用「每個 scroll 事件忙等 120ms」的固定工作量對照當正規化基準。**
+ * 它不行,因為**會飽和** —— 它的空白被注入的 120ms 主導,對機器慢度相對不敏感:
+ * 同一段期間對照只從 737 走到 1198ms(1.6×),被判定的那一跑卻從 162 走到 687ms(4.2×);
+ * 而且同一個 job 內它自己就量到 825 與 1198(1.45× 差)。拿它當分母只會把真實差距壓掉。
  *
- *   commit      忙等對照    實測空白   閘
- *   eb5b42fc     737ms        —       ✓
- *   4ea6a462     957ms      162ms     ✓
- *   04c6abe4     775ms      325ms     ✓
- *   546ae35b    1171ms      485ms     ✗
- *   50ee1d3b    1082ms      471ms     ✗
+ * **正確的參考點必須有同樣的工作量與同樣的敏感度** —— 也就是同一支 story 的另一個建置(main)。
+ * 同 job、交錯量測,機器狀態一致,比值才有意義。這也正是 user 一直要的「把 main 當低標」。
  *
- * (同一份 job 的靜態負對照呈現幀數是 55/55/56/55/52/56 —— 送幀本身沒壞,是機器慢。)
- *
- * 所以:`limit = absolute × max(1, control / CONTROL_BASELINE)`。
- * `CONTROL_BASELINE = 775ms` 取自 `04c6abe4` 那一跑 —— **門檻當初就是在那個量級的機器上校準並通過的**。
- *
- * **偵測力為什麼沒掉**:對照組的工作量是寫死的忙等,跟我們的元件無關。
- * 真回歸 = 空白漲、對照不動 → 比值上升 → 紅。機器變慢 = 兩個一起漲 → 比值不動 → 綠。
- * 這正是「把 main 當低標」要的那種相對判定,只是參考點換成一個更便宜、更穩定的固定工作量。
+ * 比值上限 1.25:允許 25% 的跑間雜訊,但擋得住任何有意義的退步。
+ * 歷史校驗(同一支閘的真實數字):`119e279f` 的骨架門檻回歸是 438 / 476ms,而同期 main 量到 801 / 884ms ——
+ * 那一版對 main 的比值是 0.55,**不會誤紅**;而把主執行緒最長任務從 66 推到 661ms 的那一版,
+ * 對應的空白會遠超過 main 的 1.25 倍。
  */
-export const CONTROL_BASELINE_MS = 775
-export const runnerScaledLimit = (absoluteLimit, controlMs, baseline = CONTROL_BASELINE_MS) =>
-  Number.isFinite(controlMs) && controlMs > 0
-    ? absoluteLimit * Math.max(1, controlMs / baseline)
-    : absoluteLimit
+export const BLANK_RATIO_LIMIT = 1.25
+
+/** 回傳 'pass' | 'fail';ref 缺席時回 'skip'(呼叫端要印出來,不可靜默)。 */
+export const refRatioVerdict = (buildMedian, refMedian, limit = BLANK_RATIO_LIMIT) => {
+  if (!Number.isFinite(refMedian) || refMedian <= 0) return 'skip'
+  return buildMedian <= refMedian * limit ? 'pass' : 'fail'
+}

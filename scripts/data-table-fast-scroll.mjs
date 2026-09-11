@@ -67,7 +67,7 @@ import { tmpdir } from 'node:os'
 import { join, extname, dirname, basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser } from './lib/launch-browser.mjs'
-import { median, gateVerdict, CEILING_FACTOR, longTaskLimit, runnerScaledLimit, CONTROL_BASELINE_MS } from './lib/fast-scroll-gate-policy.mjs'
+import { median, gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioVerdict, BLANK_RATIO_LIMIT } from './lib/fast-scroll-gate-policy.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (name, def) => { const hit = process.argv.find((a) => a.startsWith(`--${name}=`)); return hit ? hit.slice(name.length + 3) : def }
@@ -91,9 +91,9 @@ const JSON_OUT = arg('json', '')
 const ASSERT_PAINT = arg('assert-max-paint-blank', '')
 const ASSERT_DOM = arg('assert-max-dom-blank', '')
 const SELFTEST = flag('selftest')
-// `--calibrate`:判定前先跑一趟**固定工作量**的對照(每個 scroll 事件忙等 120ms,與本元件無關),
-// 用它的最長空白把「runner 快慢」跟「程式碼好壞」分開(理由與歷史數字見 lib 的 runnerScaledLimit)。
-const CALIBRATE = flag('calibrate')
+// `--ref=<label>`:把某個 build label 當成參考點(通常是 main),空白改判「本 build ÷ 參考 ≤ 比值上限」。
+// 為什麼不是絕對門檻、也不是忙等對照:見 lib 的 refRatioVerdict 註解(忙等對照會飽和,量不出真實差距)。
+const REF_LABEL = arg('ref', '')
 const BUSY_AT = 20, BUSY_MS = 150
 const GESTURE_PX = Number(arg('gesture-px', 6000))
 const GESTURE_SPEED = Number(arg('gesture-speed', 12000))
@@ -520,7 +520,6 @@ const line = (r, i) => {
 // ── 主流程 ──
 const results = []
 let failed = 0
-let controlMs = null
 for (const build of BUILDS) {
   const { server, base } = await serve(build.dir)
   try {
@@ -536,11 +535,6 @@ for (const build of BUILDS) {
           const rc = await runOnce({ build: { label: `${build.label}/負對照(靜態 500 列)`, dir: ctrlDir, url: '/control.html' }, mode, base: ctrl.base, sabotage: false, profile: false })
           if (rc.crashed || rc.noOverflow || !rc.g) { console.log(`✗ 負對照頁沒跑起來`); failed++ } else { console.log(`   ${line(rc, 'neg')}`); results.push({ ...rc, control: 'negative' }) }
         } finally { ctrl.server.close() }
-      }
-      if (CALIBRATE && !SELFTEST && mode === 'gesture') {
-        const rc = await runOnce({ build, mode, base, sabotage: true, profile: false })
-        if (rc.g?.blankLongestMs > 0) { controlMs = rc.g.blankLongestMs; console.log(`   機器校正(固定工作量:每個 scroll 忙等 ${SCROLL_BUSY_MS}ms)最長空白 ${controlMs.toFixed(0)}ms — 校準點 ${CONTROL_BASELINE_MS}ms`) }
-        else console.log(`   ⚠️  機器校正跑不出數字,門檻退回絕對值`)
       }
       for (let i = 1; i <= n; i++) {
         const r = await runOnce({ build, mode, base, sabotage: SELFTEST, profile: false })
@@ -645,12 +639,26 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
       else console.log(`✓ ${k}:${name}中位數 ${mid.toFixed(0)}ms ≤ ${limit.toFixed(0)}ms(${rs.length} 趟 ${all})`)
     }
   }
-  // 空白與補齊是使用者真的看得到的東西,門檻維持絕對值;只有在給了 `--calibrate` 時,
-  // 才用固定工作量對照組把那台機器的慢度除掉(見 lib 的 runnerScaledLimit)。
-  const scaled = (raw) => raw === '' ? '' : String(runnerScaledLimit(Number(raw), controlMs))
-  if (controlMs != null && ASSERT_BLANK_MS !== '') console.log(`   (機器校正:對照 ${controlMs.toFixed(0)}ms / 校準點 ${CONTROL_BASELINE_MS}ms → 空白門檻 ${ASSERT_BLANK_MS} → ${Number(scaled(ASSERT_BLANK_MS)).toFixed(0)}ms)`)
-  gate(scaled(ASSERT_BLANK_MS), '中央區最長連續空白', CEILING_FACTOR.blank, (r) => r.g.blankLongestMs, (r) => `(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`)
-  gate(scaled(ASSERT_FILL_MS), '停捲後列殼補齊', CEILING_FACTOR.fill, (r) => r.g.fillMs)
+  // 空白:有參考建置(`--ref`)就判「本 build ÷ 參考 ≤ 比值上限」,那是唯一不受 runner 漂移影響的形式;
+  // 沒有參考就退回絕對門檻,並**印出來說明**(不可靜默降級)。
+  if (REF_LABEL) {
+    const key = (label) => `${label}/gesture`
+    const blankOf = (label) => { const rs = groups.get(key(label)); return rs?.length ? median(rs.map((r) => r.g.blankLongestMs)) : NaN }
+    const refMs = blankOf(REF_LABEL)
+    for (const [k, rs] of groups) {
+      const label = k.split('/')[0]
+      if (label === REF_LABEL) continue
+      const mine = median(rs.map((r) => r.g.blankLongestMs))
+      const verdict = refRatioVerdict(mine, refMs)
+      if (verdict === 'skip') { console.log(`✗ 空白比值:找不到參考建置「${REF_LABEL}」的資料,無法判定(不靜默放行)`); failed++ }
+      else if (verdict === 'fail') { console.log(`✗ ${k}:中央區最長連續空白中位數 ${mine.toFixed(0)}ms > 參考「${REF_LABEL}」的 ${refMs.toFixed(0)}ms × ${BLANK_RATIO_LIMIT}(= ${(refMs * BLANK_RATIO_LIMIT).toFixed(0)}ms)`); failed++ }
+      else console.log(`✓ ${k}:中央區最長連續空白中位數 ${mine.toFixed(0)}ms ≤ 參考「${REF_LABEL}」的 ${refMs.toFixed(0)}ms × ${BLANK_RATIO_LIMIT}(= ${(refMs * BLANK_RATIO_LIMIT).toFixed(0)}ms)`)
+    }
+  } else {
+    if (ASSERT_BLANK_MS !== '') console.log(`   (沒有給 --ref,空白改用絕對門檻 ${ASSERT_BLANK_MS}ms —— 這個值會被 runner 速度影響,見 lib 註解)`)
+    gate(ASSERT_BLANK_MS, '中央區最長連續空白', CEILING_FACTOR.blank, (r) => r.g.blankLongestMs, (r) => `(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`)
+  }
+  gate(ASSERT_FILL_MS, '停捲後列殼補齊', CEILING_FACTOR.fill, (r) => r.g.fillMs)
   if (ASSERT_LONG_TASK_MS !== '') {
     // 門檻相對於這台機器自己的能力(理由見 lib 的 longTaskLimit)
     const costs = results.map((r) => r.shellCost).filter((v) => Number.isFinite(v))

@@ -8,7 +8,7 @@
  *
  *   node scripts/test-fast-scroll-gate-policy.mjs
  */
-import { gateVerdict, CEILING_FACTOR, longTaskLimit, runnerScaledLimit } from './lib/fast-scroll-gate-policy.mjs'
+import { gateVerdict, CEILING_FACTOR, longTaskLimit, refRatioVerdict, BLANK_RATIO_LIMIT } from './lib/fast-scroll-gate-policy.mjs'
 
 const LIMIT = 400 // CI 的 --assert-max-blank-ms
 const CASES = [
@@ -67,34 +67,21 @@ for (const [name, [abs, cost], want] of LIMIT_CASES) {
   if (!ok) fail++
   console.log(`${ok ? '✓' : '✗'} 長工門檻|661ms 真回歸在相對門檻下仍然紅 | → ${got}(期望 median)`)
 }
-// 用固定工作量對照組把 runner 快慢與程式碼好壞分開(數字全部取自真實 CI job)
-const SCALE_CASES = [
-  ['04c6abe4 校準點(對照 775)→ 門檻不變', [400, 775], 400],
-  ['4ea6a462(對照 957)→ 494', [400, 957], 494],
-  ['50ee1d3b(對照 1082)→ 558;實測空白 471 → 過', [400, 1082], 558],
-  ['546ae35b(對照 1171)→ 604;實測空白 485 → 過', [400, 1171], 604],
-  ['比校準點更快的機器 → 門檻不縮(仍 400)', [400, 500], 400],
-  ['讀不到對照 → 退回絕對門檻', [400, null], 400],
+// 對參考建置(main)的比值:唯一不受 runner 漂移影響的形式。數字全部取自真實量測。
+const REF_CASES = [
+  ['分支 162 vs main 801(4ea6a462 那一跑)→ 過', [162, 801], 'pass'],
+  ['分支 687 vs main 同 job 也慢到 900 → 過(機器慢是兩邊一起慢)', [687, 900], 'pass'],
+  ['分支 687 vs main 仍是 300(真退步)→ 紅', [687, 300], 'fail'],
+  ['剛好等於 1.25 倍 → 過', [375, 300], 'pass'],
+  ['超過 1.25 倍 1ms → 紅', [376, 300], 'fail'],
+  ['119e279f 的骨架回歸 438 vs 同期 main 801 → 過(那一版對 main 是 0.55,不該誤紅)', [438, 801], 'pass'],
+  ['沒有參考資料 → skip(呼叫端必須印出來,不可靜默放行)', [500, NaN], 'skip'],
 ]
-for (const [name, [abs, ctrl], want] of SCALE_CASES) {
-  const got = Math.round(runnerScaledLimit(abs, ctrl))
+for (const [name, [mine, ref], want] of REF_CASES) {
+  const got = refRatioVerdict(mine, ref)
   const ok = got === want
   if (!ok) fail++
-  console.log(`${ok ? '✓' : '✗'} 機器校正|${name} | → ${got}(期望 ${want})`)
-}
-{
-  // 真回歸:空白漲到修前 main 的量級(684/1055),而對照組停在校準點 → 必須紅
-  const got = gateVerdict([684, 1055], runnerScaledLimit(400, 775), CEILING_FACTOR.blank)
-  const ok = got === 'median'
-  if (!ok) fail++
-  console.log(`${ok ? '✓' : '✗'} 機器校正|對照不動而空白漲(真回歸)仍然紅 | → ${got}(期望 median)`)
-}
-{
-  // 即使在最慢的 runner 上(對照 1171 → 門檻 604),修前 main 的量級照樣紅
-  const got = gateVerdict([684, 1055], runnerScaledLimit(400, 1171), CEILING_FACTOR.blank)
-  const ok = got === 'median'
-  if (!ok) fail++
-  console.log(`${ok ? '✓' : '✗'} 機器校正|最慢 runner 上真回歸仍然紅 | → ${got}(期望 median)`)
+  console.log(`${ok ? '✓' : '✗'} 參考比值|${name} | → ${got}(期望 ${want})`)
 }
 console.log(fail ? `\n✗ ${fail} 項判定不符` : '\n✓ 判定政策對照組全過:該紅的紅、該綠的綠')
 process.exit(fail ? 1 : 0)

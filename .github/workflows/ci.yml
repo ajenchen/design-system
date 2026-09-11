@@ -168,6 +168,21 @@ jobs:
       - name: Build the Storybook the browser gates load
         run: npm run build-storybook
 
+      # 參考建置(main)——空白那條斷言唯一不受 runner 漂移影響的形式就是「同 job 交錯比 main」。
+      # 為什麼一定要:**同一份元件邏輯**(git diff 去掉註解後零差異)在 CI 上量到空白中位
+      # 162 / 325 / 485 / 471 / 687ms,4 倍散佈 —— 絕對門檻只是在量那台機器。
+      # 試過用「每個 scroll 忙等 120ms」的固定工作量對照當分母,不行:它會飽和
+      #(同期對照只從 737 走到 1198ms=1.6×,被判定那跑卻從 162 走到 687ms=4.2×),拿它當分母會把真實差距壓掉。
+      - name: Build the reference (main) Storybook the blank ratio compares against
+        run: |
+          set -euo pipefail
+          REF_SHA="$(git rev-parse origin/main)"
+          echo "reference = $REF_SHA"
+          git worktree add tmp/ref-src "$REF_SHA"
+          (cd tmp/ref-src && npm ci --no-audit --no-fund && npm run build:lib && npm run build-storybook)
+          mv tmp/ref-src/storybook-static tmp/ref-storybook
+          git worktree remove --force tmp/ref-src
+
       - name: DataTable pixel invariants (browser)
         run: |
           npx --no-install playwright install chromium
@@ -204,7 +219,14 @@ jobs:
           # 而同一個 job 裡那個固定工作量對照是 957/775/1171/1082ms —— 兩者同向。
           # 靜態負對照的呈現幀數(55/55/56/55/52/56)則證明送幀本身沒壞,是機器慢。
           # 偵測力沒掉:真回歸 = 空白漲、對照不動 → 比值上升 → 紅(判定表對照組有驗)。
-          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=3 --gesture-speed=6000 --calibrate --assert-max-blank-ms=400 --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
+          # 空白改判「分支 ÷ main ≤ 1.25」(2026-09-11)。兩個建置在**同一跑之內交錯量測**,機器狀態一致,
+          # 比值才有意義;`--runs=2` 是因為兩個 build 各跑 2 趟已經足夠(比值把雜訊消掉了),同時守住 job 時間預算。
+          # 判定政策由 scripts/test-fast-scroll-gate-policy.mjs 的判定表驗(含「機器兩邊一起慢 → 過」與
+          # 「main 沒慢而分支慢 → 紅」兩側,以及「119e279f 的骨架回歸對 main 是 0.55 → 不該誤紅」)。
+          # 補齊 / 長工 / 幀距仍是絕對門檻(長工另按機器能力放大,見 lib)。
+          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 \
+            --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
+            --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
           # 「**畫得動的機器**不准出骨架」(2026-09-11)。骨架是「真的畫不完」時的過渡手段,不是正常捲動該看到的東西;
           # 沒有這條斷言之前,一個把「要不要出殼」判準訂成**只看位移**的版本可以全綠出貨 —— 而在 user 的真實 Chrome 上,
           # 一次普通滾輪(1000px)就把整個視窗 14 列全變骨架,同一台機器的 main 是 0 骨架。
