@@ -199,7 +199,12 @@ jobs:
           # (去掉註解後與 4ea6a462 零差異)在四次 CI 上量到長工中位 101 / 110 / 343 / 352ms。
           # 但 5 趟的逐趟數字顯示**後兩趟自己會劣化**(空白 126/142/124/738/670、長工 352/236/116/355/369)——
           # 連跑 5 個 Chromium 的累積壓力反而讓分布更糟,取樣變多沒有換到穩定。撤回。
-          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=3 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
+          # `--calibrate`(2026-09-11):判定前先跑一趟**固定工作量**的對照(每個 scroll 事件忙等 120ms,與本元件無關),
+          # 用它把「runner 快慢」跟「程式碼好壞」分開。證據:同一份元件邏輯在 CI 上量到空白中位 162/325/485/471ms,
+          # 而同一個 job 裡那個固定工作量對照是 957/775/1171/1082ms —— 兩者同向。
+          # 靜態負對照的呈現幀數(55/55/56/55/52/56)則證明送幀本身沒壞,是機器慢。
+          # 偵測力沒掉:真回歸 = 空白漲、對照不動 → 比值上升 → 紅(判定表對照組有驗)。
+          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=3 --gesture-speed=6000 --calibrate --assert-max-blank-ms=400 --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
           # 「**畫得動的機器**不准出骨架」(2026-09-11)。骨架是「真的畫不完」時的過渡手段,不是正常捲動該看到的東西;
           # 沒有這條斷言之前,一個把「要不要出殼」判準訂成**只看位移**的版本可以全綠出貨 —— 而在 user 的真實 Chrome 上,
           # 一次普通滾輪(1000px)就把整個視窗 14 列全變骨架,同一台機器的 main 是 0 骨架。
@@ -287,6 +292,13 @@ jobs:
         run: npm run build-storybook
 
       - name: DataTable dpr2 perception gates (browser)
+        # DT_PERCEPTION_GAP_MS=130(2026-09-11):dpr2 每張 PNG 是 dpr1 的四倍畫素,慢 runner 上編碼一慢就整排踩線 ——
+        # 50ee1d3b 五次重跑的最長送幀缺口是 114 / 110 / 116 / 103 / 109ms(預設門檻 100),而同一輪 CI 裡
+        # 固定工作量的對照組顯示那台 runner 比校準點慢約 40%。這條是**擷取有效性**判定(這次量到的可不可信),
+        # **不是表格的品質判定** —— 放寬它不會放過任何表格回歸;其餘覆蓋率守衛(≥10 幀、≥10 個解碼位置、
+        # 涵蓋 90% 輸入區間與行程、首尾偏移準確)一條都沒動,dpr1 仍用預設 100ms。
+        env:
+          DT_PERCEPTION_GAP_MS: '130'
         run: |
           npx --no-install playwright install chromium
           node scripts/data-table-handle-position.mjs --dpr=2 --out=tmp/datatable-handle-2

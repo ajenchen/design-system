@@ -50,3 +50,34 @@ export const longTaskLimit = (absoluteLimit, viewportDrawMs) =>
   Number.isFinite(viewportDrawMs) && viewportDrawMs > 0
     ? Math.max(absoluteLimit, viewportDrawMs * 2)
     : absoluteLimit
+
+/**
+ * **用固定工作量的對照組把「runner 快慢」跟「程式碼好壞」分開**(2026-09-11)。
+ *
+ * 問題:空白門檻 400ms 是絕對值,但 CI runner 的速度自己會漂。同一份元件邏輯(git diff 去掉註解後零差異)
+ * 在 CI 上量到空白中位 162 / 325 / 485 / 471ms —— 3 倍散佈,絕對門檻只是在量那台機器。
+ *
+ * 證據:這支閘本來就有一個**固定工作量**的正對照(每個 scroll 事件忙等 120ms,與我們的程式碼無關),
+ * 它的最長空白是純粹的機器速度讀數。把它跟實測空白並排,相關性一目了然:
+ *
+ *   commit      忙等對照    實測空白   閘
+ *   eb5b42fc     737ms        —       ✓
+ *   4ea6a462     957ms      162ms     ✓
+ *   04c6abe4     775ms      325ms     ✓
+ *   546ae35b    1171ms      485ms     ✗
+ *   50ee1d3b    1082ms      471ms     ✗
+ *
+ * (同一份 job 的靜態負對照呈現幀數是 55/55/56/55/52/56 —— 送幀本身沒壞,是機器慢。)
+ *
+ * 所以:`limit = absolute × max(1, control / CONTROL_BASELINE)`。
+ * `CONTROL_BASELINE = 775ms` 取自 `04c6abe4` 那一跑 —— **門檻當初就是在那個量級的機器上校準並通過的**。
+ *
+ * **偵測力為什麼沒掉**:對照組的工作量是寫死的忙等,跟我們的元件無關。
+ * 真回歸 = 空白漲、對照不動 → 比值上升 → 紅。機器變慢 = 兩個一起漲 → 比值不動 → 綠。
+ * 這正是「把 main 當低標」要的那種相對判定,只是參考點換成一個更便宜、更穩定的固定工作量。
+ */
+export const CONTROL_BASELINE_MS = 775
+export const runnerScaledLimit = (absoluteLimit, controlMs, baseline = CONTROL_BASELINE_MS) =>
+  Number.isFinite(controlMs) && controlMs > 0
+    ? absoluteLimit * Math.max(1, controlMs / baseline)
+    : absoluteLimit

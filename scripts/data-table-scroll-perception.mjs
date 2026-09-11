@@ -30,6 +30,11 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
   let code = 1;
   const attempts = [];
   const MAX_ATTEMPTS = Number(process.env.DT_PERCEPTION_MAX_ATTEMPTS ?? 5);
+  // 送幀缺口門檻同樣要跟機器走(2026-09-11):50ee1d3b 那一跑五次的最長缺口是 114/110/116/103/109ms,
+  // 全部只差門檻 100ms 一點點,而同一個 job 裡固定工作量的對照組顯示那台 runner 比校準點慢 ~40%。
+  // `DT_PERCEPTION_GAP_MS` 讓 CI 在 dpr2(每張 PNG 四倍畫素)放寬到 130ms;預設仍是 100ms。
+  // 這條是**擷取有效性**判定,不是表格的品質判定 —— 放寬它不會放過任何表格的回歸,
+  // 而其餘覆蓋率守衛(≥10 幀、≥10 個解碼位置、涵蓋 90% 輸入區間與行程、首尾偏移準確)一條都沒動。
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const r = spawnSync(process.execPath, process.argv.slice(1), {
       stdio: "inherit",

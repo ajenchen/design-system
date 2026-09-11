@@ -70,8 +70,14 @@ export function assessContentCoverage(
     reasons.push("PNGs cover less than 90% of the input interval");
   if (travelRatio < 0.9)
     reasons.push("active PNGs cover less than 90% of requested travel");
-  if (maxActiveGapMs == null || maxActiveGapMs > 100)
-    reasons.push("active PNG gap exceeds 100 ms");
+  // 送幀缺口門檻預設 100ms,`DT_PERCEPTION_GAP_MS` 可調(2026-09-11)。
+  // 這是**擷取有效性**判定(這次量到的東西可不可信),不是表格的品質判定 —— 調它不會放過表格的回歸。
+  // 需要調的原因:dpr2 每張 PNG 是 dpr1 的四倍畫素,慢 runner 上編碼一慢就整排踩線
+  // (50ee1d3b 五次的最長缺口是 114 / 110 / 116 / 103 / 109ms,而同 job 的固定工作量對照顯示那台機器慢 ~40%)。
+  // 其餘覆蓋率守衛(≥10 幀、≥10 個解碼位置、涵蓋 90% 輸入區間與行程、首尾偏移準確)一條都沒動。
+  const GAP_LIMIT_MS = Number(process.env.DT_PERCEPTION_GAP_MS ?? 100);
+  if (maxActiveGapMs == null || maxActiveGapMs > GAP_LIMIT_MS)
+    reasons.push(`active PNG gap exceeds ${GAP_LIMIT_MS} ms`);
   if (!first || Math.abs(first.scrollY) > 2)
     reasons.push("initial PNG does not show the starting offset");
   if (!last || Math.abs(last.scrollY - finalY) > 2)

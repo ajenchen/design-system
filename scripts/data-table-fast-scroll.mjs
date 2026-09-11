@@ -67,7 +67,7 @@ import { tmpdir } from 'node:os'
 import { join, extname, dirname, basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser } from './lib/launch-browser.mjs'
-import { median, gateVerdict, CEILING_FACTOR, longTaskLimit } from './lib/fast-scroll-gate-policy.mjs'
+import { median, gateVerdict, CEILING_FACTOR, longTaskLimit, runnerScaledLimit, CONTROL_BASELINE_MS } from './lib/fast-scroll-gate-policy.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (name, def) => { const hit = process.argv.find((a) => a.startsWith(`--${name}=`)); return hit ? hit.slice(name.length + 3) : def }
@@ -91,6 +91,9 @@ const JSON_OUT = arg('json', '')
 const ASSERT_PAINT = arg('assert-max-paint-blank', '')
 const ASSERT_DOM = arg('assert-max-dom-blank', '')
 const SELFTEST = flag('selftest')
+// `--calibrate`:判定前先跑一趟**固定工作量**的對照(每個 scroll 事件忙等 120ms,與本元件無關),
+// 用它的最長空白把「runner 快慢」跟「程式碼好壞」分開(理由與歷史數字見 lib 的 runnerScaledLimit)。
+const CALIBRATE = flag('calibrate')
 const BUSY_AT = 20, BUSY_MS = 150
 const GESTURE_PX = Number(arg('gesture-px', 6000))
 const GESTURE_SPEED = Number(arg('gesture-speed', 12000))
@@ -517,6 +520,7 @@ const line = (r, i) => {
 // ── 主流程 ──
 const results = []
 let failed = 0
+let controlMs = null
 for (const build of BUILDS) {
   const { server, base } = await serve(build.dir)
   try {
@@ -532,6 +536,11 @@ for (const build of BUILDS) {
           const rc = await runOnce({ build: { label: `${build.label}/負對照(靜態 500 列)`, dir: ctrlDir, url: '/control.html' }, mode, base: ctrl.base, sabotage: false, profile: false })
           if (rc.crashed || rc.noOverflow || !rc.g) { console.log(`✗ 負對照頁沒跑起來`); failed++ } else { console.log(`   ${line(rc, 'neg')}`); results.push({ ...rc, control: 'negative' }) }
         } finally { ctrl.server.close() }
+      }
+      if (CALIBRATE && !SELFTEST && mode === 'gesture') {
+        const rc = await runOnce({ build, mode, base, sabotage: true, profile: false })
+        if (rc.g?.blankLongestMs > 0) { controlMs = rc.g.blankLongestMs; console.log(`   機器校正(固定工作量:每個 scroll 忙等 ${SCROLL_BUSY_MS}ms)最長空白 ${controlMs.toFixed(0)}ms — 校準點 ${CONTROL_BASELINE_MS}ms`) }
+        else console.log(`   ⚠️  機器校正跑不出數字,門檻退回絕對值`)
       }
       for (let i = 1; i <= n; i++) {
         const r = await runOnce({ build, mode, base, sabotage: SELFTEST, profile: false })
@@ -631,13 +640,17 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
       const worst = Math.max(...vals)
       const all = vals.map((v) => v.toFixed(0)).join(' / ')
       const verdict = gateVerdict(vals, limit, CEILING)
-      if (verdict === 'median') { console.log(`✗ ${k}:${name}中位數 ${mid.toFixed(0)}ms > ${limit}ms(${rs.length} 趟 ${all})${extra(rs[vals.indexOf(worst)])}`); failed++ }
-      else if (verdict === 'ceiling') { console.log(`✗ ${k}:${name}單趟 ${worst.toFixed(0)}ms > 天花板 ${limit * CEILING}ms(${rs.length} 趟 ${all};中位數 ${mid.toFixed(0)}ms 在門檻內,但這趟已是災難級)`); failed++ }
-      else console.log(`✓ ${k}:${name}中位數 ${mid.toFixed(0)}ms ≤ ${limit}ms(${rs.length} 趟 ${all})`)
+      if (verdict === 'median') { console.log(`✗ ${k}:${name}中位數 ${mid.toFixed(0)}ms > ${limit.toFixed(0)}ms(${rs.length} 趟 ${all})${extra(rs[vals.indexOf(worst)])}`); failed++ }
+      else if (verdict === 'ceiling') { console.log(`✗ ${k}:${name}單趟 ${worst.toFixed(0)}ms > 天花板 ${(limit * CEILING).toFixed(0)}ms(${rs.length} 趟 ${all};中位數 ${mid.toFixed(0)}ms 在門檻內,但這趟已是災難級)`); failed++ }
+      else console.log(`✓ ${k}:${name}中位數 ${mid.toFixed(0)}ms ≤ ${limit.toFixed(0)}ms(${rs.length} 趟 ${all})`)
     }
   }
-  gate(ASSERT_BLANK_MS, '中央區最長連續空白', CEILING_FACTOR.blank, (r) => r.g.blankLongestMs, (r) => `(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`)
-  gate(ASSERT_FILL_MS, '停捲後列殼補齊', CEILING_FACTOR.fill, (r) => r.g.fillMs)
+  // 空白與補齊是使用者真的看得到的東西,門檻維持絕對值;只有在給了 `--calibrate` 時,
+  // 才用固定工作量對照組把那台機器的慢度除掉(見 lib 的 runnerScaledLimit)。
+  const scaled = (raw) => raw === '' ? '' : String(runnerScaledLimit(Number(raw), controlMs))
+  if (controlMs != null && ASSERT_BLANK_MS !== '') console.log(`   (機器校正:對照 ${controlMs.toFixed(0)}ms / 校準點 ${CONTROL_BASELINE_MS}ms → 空白門檻 ${ASSERT_BLANK_MS} → ${Number(scaled(ASSERT_BLANK_MS)).toFixed(0)}ms)`)
+  gate(scaled(ASSERT_BLANK_MS), '中央區最長連續空白', CEILING_FACTOR.blank, (r) => r.g.blankLongestMs, (r) => `(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`)
+  gate(scaled(ASSERT_FILL_MS), '停捲後列殼補齊', CEILING_FACTOR.fill, (r) => r.g.fillMs)
   if (ASSERT_LONG_TASK_MS !== '') {
     // 門檻相對於這台機器自己的能力(理由見 lib 的 longTaskLimit)
     const costs = results.map((r) => r.shellCost).filter((v) => Number.isFinite(v))
