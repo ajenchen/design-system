@@ -68,8 +68,12 @@ const switchVariants = cva(
     // 源碼實錘;順修 meta states 宣稱 'hover' 但 code 原本零 hover 樣式的 claim-vs-code 落差)。
     // unchecked hover:border(n-5)→ border-hover(n-6)深一階,對齊 Checkbox 未選 hover
     // 加深一階慣例 + Ant unchecked hover(colorTextTertiary 加深)同方向。
-    'data-[state=unchecked]:hover:bg-border-hover',
-    'data-[state=checked]:hover:bg-primary-hover',
+    // `disabled:` 前綴把 hover 升階擋掉:Radix 的 disabled Switch 是 `<button disabled>`,
+    // 而 `:disabled` 不會關掉 `:hover` —— 沒擋的話停在一個「按不動」的 Switch 上 track 仍會變深,
+    // 等於用視覺回饋承諾了一個不存在的互動。Checkbox 早有同款守衛(`checkbox.tsx:33`
+    // `disabled:hover:border-transparent`),Ant Switch 也是 `&:hover:not(&-disabled)`。
+    'data-[state=unchecked]:hover:bg-border-hover disabled:data-[state=unchecked]:hover:bg-border',
+    'data-[state=checked]:hover:bg-primary-hover disabled:data-[state=checked]:hover:bg-primary',
   ],
   {
     variants: {
@@ -308,15 +312,18 @@ const Switch = React.forwardRef<
       >
         <SwitchPrimitives.Thumb
           className={cn(
-            'pointer-events-none flex items-center justify-center rounded-full bg-on-emphasis border-2',
+            // **那圈 2px 邊直接透出 track,不再用「跟 track 同色」去模擬(2026-09-11 root-layer 修法)**。
+            // 舊做法:邊框色 = track 色。它在三種情況會破:
+            //   (1) hover — track 升階、邊框沒跟(user 截圖的那圈灰邊)
+            //   (2) **dark mode** — 邊框色是白 25%,而 `background-clip` 預設 border-box 會把 thumb 自己的白底
+            //       鋪到邊框底下 → 白疊白、邊框消失。像素實測:白圓視覺寬度 light 15.5px vs **dark 19.5px**,
+            //       而 spec.md 的尺寸表要求白色圓 16px —— dark mode 一直是壞的,跟 hover 無關。
+            //   (3) 非白底的容器上,rest 態就會露環(邊框疊在白 thumb 上、track 疊在容器底色上,兩者只有白底時才相等)
+            // 新做法:`bg-clip-padding` 讓白底停在 padding box、`border-transparent` 讓那 2px 直接顯示 track 本身。
+            // 於是「邊框與 track 同色」不再是需要維護的巧合,而是**幾何上必然成立** —— 任何 theme、任何 hover 階、任何容器底色。
+            'pointer-events-none flex items-center justify-center rounded-full bg-on-emphasis bg-clip-padding border-2 border-transparent',
             'transition-all duration-150 motion-reduce:duration-0',
-            // **thumb 邊框必須跟著 track 的 hover 走(2026-09-11;user 截圖:hover 時白色圓浮出一圈灰邊)**。
-            // spec.md 的狀態表逐字要求 OFF thumb 邊框「neutral-5,**與 OFF track 同色**」、ON 邊框 = primary;
-            // 2026-07-06 給 track 加 hover 升階(`:71-72`)時漏了這裡 → hover 時 track 變深、邊框沒變,
-            // 「同色」這條不變式當場破掉,那圈本來看不見的邊就浮出來了。實測 hover 下 track 0.25 / 邊框 0.15。
-            // Root 已帶 `group`(switchVariants 第一行),所以用 group-hover 跟著父層的 hover 態。
-            'data-[state=unchecked]:translate-x-0 data-[state=unchecked]:border-border data-[state=unchecked]:group-hover:border-border-hover',
-            'data-[state=checked]:border-primary data-[state=checked]:group-hover:border-primary-hover',
+            'data-[state=unchecked]:translate-x-0',
             sizeKey === 'lg' ? 'data-[state=checked]:translate-x-6' : 'data-[state=checked]:translate-x-5',
           )}
           style={{ width: spec.thumb, height: spec.thumb }}

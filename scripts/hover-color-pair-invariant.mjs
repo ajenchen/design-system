@@ -46,22 +46,20 @@ const targets = SELFTEST
   ? STORIES.filter((id) => /(switch|checkbox|radio)/i.test(id))
   : LIMIT ? STORIES.slice(0, LIMIT) : STORIES
 
+// 每個 root 回**恰好一筆**,而且 root 選擇器必須跟下方 locator 完全一致 ——
+// 否則 `rest[i]` 與 `roots[i]` 指的不是同一個東西。2026-09-11 修:舊版把「所有有邊框的子元素」
+// 攤平成一維再用 root 的索引去取,一個 root 貢獻 0 或多筆時整個對不齊,綠燈與紅燈都不可信。
+const ROOT_SELECTOR = '[role="switch"],[role="checkbox"],[role="radio"]'
 const PROBE = `(() => {
   const norm = (c) => (c || '').replace(/\\s+/g, '')
-  const out = []
-  const roots = [...document.querySelectorAll('[role="switch"],[role="checkbox"],[role="radio"],[data-state]')]
-  for (const root of roots) {
+  return [...document.querySelectorAll('${ROOT_SELECTOR}')].map((root) => {
     const rs = getComputedStyle(root)
     const bg = norm(rs.backgroundColor)
-    if (!bg || bg === 'rgba(0,0,0,0)') continue
-    for (const child of root.querySelectorAll('*')) {
-      const cs = getComputedStyle(child)
-      if (parseFloat(cs.borderTopWidth) < 0.5) continue
-      out.push({ tag: child.tagName.toLowerCase(), state: root.getAttribute('data-state') || root.getAttribute('role'),
-                 parentBg: bg, childBorder: norm(cs.borderTopColor) })
-    }
-  }
-  return out
+    const child = [...root.querySelectorAll('*')].find((c) => parseFloat(getComputedStyle(c).borderTopWidth) >= 0.5)
+    return { state: root.getAttribute('data-state') || root.getAttribute('role'),
+             parentBg: bg && bg !== 'rgba(0,0,0,0)' ? bg : null,
+             childBorder: child ? norm(getComputedStyle(child).borderTopColor) : null }
+  })
 })()`
 
 const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
@@ -73,18 +71,27 @@ try {
   for (const id of targets) {
     await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'networkidle', timeout: 60_000 }).catch(() => {})
     await page.waitForTimeout(250)
-    if (SELFTEST) await page.addStyleTag({ content: '[role="switch"] > *{border-color:oklch(0 0 0 / 0.15) !important}' }).catch(() => {})
+    // 注入必須打到**真的有邊框的那個後代**。舊版寫 `> *`(直接子代)只打到一個 border-width: 0px 的
+    // 外層 wrapper,會被下方 `>= 0.5px` 過濾掉 —— 2026-09-11 Switch 改成透明外圈、DS 內真配對歸零後
+    // 才暴露出來(在那之前是真配對在扛,注入的瑕疵被掩蓋)。用後代選擇器 + 同時蓋掉 background-clip,
+    // 原樣重放「子邊框刻意等於父底色」這個反模式。
+    if (SELFTEST) await page.addStyleTag({ content: '[role="switch"] *{border-color:oklch(0 0 0 / 0.15) !important;background-clip:border-box !important}' }).catch(() => {})
+    // 注入後**必須等過渡走完**才量:`transition-colors` 的 transition-property 含 border-color,
+    // 注入完立刻讀 computed 會拿到動畫中間值(實測 oklab(0 0 0 / 0.026),既不是注入值也不是原值),
+    // 於是對照組永遠造不出「靜止同色」的配對、看起來像儀器失效。這是 M32 記過的同一個陷阱。
+    if (SELFTEST) await page.waitForTimeout(500)
     scanned++
     const rest = await page.evaluate(PROBE).catch(() => [])
     if (!rest.length) continue
     // 逐一 hover 每個 root,量同一個 (parentBg, childBorder) 對
-    const roots = await page.locator('[role="switch"],[role="checkbox"],[role="radio"]').all().catch(() => [])
+    const roots = await page.locator(ROOT_SELECTOR).all().catch(() => [])
     for (let i = 0; i < roots.length; i++) {
       const before = rest[i]
-      if (!before || before.parentBg !== before.childBorder) continue // 本來就不同色 → 不是這條不變式的對象
+      if (!before || !before.parentBg || !before.childBorder) continue // 無底色或無邊框子元素 → 不是這條不變式的對象
+      if (before.parentBg !== before.childBorder) continue // 本來就不同色 → 不是這條不變式的對象
       pairs++
       await roots[i].hover({ timeout: 3000 }).catch(() => {})
-      await page.waitForTimeout(220)
+      await page.waitForTimeout(500) // 同上:等 transition-colors 走完再量 hover 後的值
       const after = (await page.evaluate(PROBE).catch(() => []))[i]
       if (after && after.parentBg !== after.childBorder) {
         violations.push({ story: id, index: i, state: after.state, rest: before.parentBg, hoverBg: after.parentBg, hoverBorder: after.childBorder })
@@ -97,7 +104,16 @@ try {
 }
 
 console.log(`掃了 ${scanned} 支 story,找到 ${pairs} 組「靜止時同色」的 (父底色, 子邊框) 配對`)
-if (pairs === 0) { console.log(`✗ 一組配對都沒找到 —— 這次什麼都沒驗到(選的 story 裡沒有這種結構?)`); process.exit(1) }
+// 0 組的意義取決於模式:
+//   對照組 = 注入後必定造得出配對,回 0 就是儀器壞了 → 紅。
+//   正常掃 = 0 組代表「DS 內已經沒有『子邊框刻意等於父底色』這個反模式」,那是**期望狀態**。
+//     2026-09-11 Switch 改成 `bg-clip-padding` + 透明外圈後,DS 內最後一處也消失了。
+//     儀器有效性不靠這裡的計數保證,而是靠 CI 在這支之前先跑一次 --selftest(注入後必須紅)。
+if (pairs === 0) {
+  if (SELFTEST) { console.log('✗ 注入之後仍然一組配對都沒有 —— 儀器壞了'); process.exit(1) }
+  console.log('✓ DS 內已無「子邊框刻意等於父底色」的脆弱結構(儀器有效性由前一步 --selftest 保證)')
+  process.exit(0)
+}
 for (const v of violations) console.log(`  ✗ ${v.story} #${v.index}(${v.state}):hover 後 底色 ${v.hoverBg} ≠ 邊框 ${v.hoverBorder}(靜止時同為 ${v.rest})`)
 const ok = violations.length === 0
 if (SELFTEST) {

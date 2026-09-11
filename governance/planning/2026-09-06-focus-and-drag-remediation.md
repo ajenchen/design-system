@@ -3718,3 +3718,62 @@ CI 的 DataTable job 現在會另外 build 一份 `origin/main` 的 storybook,�
 `visual-audit.mjs:9-13` 的檔頭註解自稱「12 個有 hover」——**那句已經漂掉,實際是 0**。
 換言之現行「視覺稽查」實質只是「一批靜止狀態的截圖 + 像素差」,**沒有任何互動狀態、沒有任何幾何斷言**。
 user 這三張圖全部落在覆蓋範圍外,是機制問題不是運氣問題。
+
+---
+
+## AD96 — Switch 的三個缺陷,根因是「用邊框偽造內縮」這個做法本身
+
+user 截圖問「hover 時白色區塊的邊框跟底色不同?」。第一版我只把 thumb 邊框接上 `group-hover`
+讓它跟著 track 升階 —— 那是 surface fix(M12 Q3):它讓兩個值在**當下**同步,但「同步」仍然
+要靠人每次改 track 時記得也改 thumb。全盤掃完發現同一個做法還有另外兩個破法:
+
+| # | 現象 | 為什麼 computed style 檢查抓不到 |
+|---|---|---|
+| 1 | hover 時白圓浮出一圈灰邊 | track 0.25 / 邊框 0.15,兩個值都「有效」,只是不相等 |
+| 2 | **dark mode 白圓一直是 19.5px(spec 要求 16)** | 邊框色白 25% 疊在 thumb 自己的白底上(`background-clip` 預設 border-box)→ 白疊白。border-width 仍回報 2px |
+| 3 | disabled 的 Switch 仍會 hover 變色 | `:disabled` 不會關掉 `:hover`;Checkbox 早有守衛(`checkbox.tsx:33`),Switch 漏了 |
+
+**Root fix**:`bg-clip-padding`(白底停在 padding box)+ `border-transparent`(那 2px 直接顯示 track)。
+「外圈 = track」從需要維護的巧合變成幾何上必然 —— 任何 theme、任何 hover 階、任何容器底色。
+像素實測:light 15.5px / dark 15.5px(修前 dark 19.5px)。disabled 另加 `disabled:...hover:bg-*` 守衛,
+實測 4 個 disabled Switch 的 track 在 hover 下全部「不變」。
+
+**新閘** `scripts/switch-thumb-ring-invariant.mjs`:量真實像素,斷言「thumb 外圈顏色 = 同列 track 裸露處顏色」,
+涵蓋 checked/unchecked × enabled/disabled × rest/hover × light/dark,實測 44 組。
+對照組把事故 2 原樣重放(`background-clip: border-box` + 外圈塗白)→ 44/44 全紅。
+
+## AD97 — 我自己那支閘有三個真 bug,是被「0 組配對 = 判紅」守衛逼出來的
+
+`hover-color-pair-invariant.mjs` 在 AD96 的修法之後回報「0 組配對」,連對照組也是 0。
+逐層查下去,**三個都是閘本身的缺陷**,而先前那句「11 組配對、0 違規」因此是沒有意義的:
+
+1. **索引錯位**:`rest` 是「所有有邊框的子元素」攤平後的一維清單(一個 root 可貢獻 0 或多筆),
+   卻用 **root 的索引** 去取 `rest[i]`;而且探針用 `[data-state]` 收 root、locator 用 `[role=...]` 收,
+   連 root 集合都不同。改成「每個 root 恰好回一筆」且兩邊共用同一個選擇器。
+2. **對照組注入層級錯**:注入寫 `[role="switch"] > *`(直接子代)只打到 border-width 0px 的外層 wrapper,
+   真正有 2px 邊的 thumb 是孫代,從沒被注入過。改 `[role="switch"] *`。
+3. **量到過渡中間值**:注入後立刻讀 computed,拿到 `oklab(0 0 0 / 0.026)` —— 既不是注入值也不是原值,
+   是 `transition-colors`(transition-property 含 border-color)才走 17% 的動畫中間值。
+   **這是 M32 已經記過的同一個陷阱,我又踩了一次。** 注入後補等 500ms。
+
+修完對照組造出 4 組配對、抓到 2 組違規(= user 截圖那個 bug 原樣重現),儀器確認有牙齒。
+正常掃回 0 組的語意同步改正:對照組已證明儀器有效,正常掃 0 組代表**DS 內已無此反模式**(期望狀態),
+不再判紅;儀器有效性改由 CI 在它之前先跑 `--selftest` 保證。
+
+## AD98 — Dialog 分頁間距 12px:數字合法,但沒有主人
+
+user 問「為何這邊的間距是 12px 而不是 loose token」。我第一版直接把 `gap-3` 換成
+`gap-[var(--layout-space-tight)]`,**那個改法是錯的**,已撤回。查證:
+
+- `field.spec.md:306`:`FieldGroup gap="compact"` → `gap-3`,用途逐字是「密集表單、**dialog 內**」
+- `field.spec.md:381`:三級固定值「**刻意不隨 density 縮放**」
+- `layoutSpace.spec.md:300`:❌「元素間 gap 硬寫 `gap-4`」,但同句留了例外 ——「bundled family 自帶 canonical」
+
+所以 12px 在 dialog 內的設定清單是**有家的、而且刻意凍結**;換成 density-aware 的 tight token 反而牴觸 `:381`。
+真正的問題是那幾列是**手刻 div**,沒有消費 `FieldGroup` / `Field`(M23(d):最相近同目的 canonical 優先),
+於是「為什麼是 12」這題在現況下無主可答。正解是改成 `<FieldGroup gap="compact"><Field orientation="horizontal">`
+(`switch.spec.md:161` 指定的設定清單 canonical)—— 但那會改變視覺(Switch 從撐滿右緣變成 label 欄寬 + `ml-auto`),
+屬產品／UI／UX 可感知變更,**列入待 user 拍板**,不自行落地。
+
+另:成員分頁那個 16px 是 `justify-between` 的防碰撞下限(`description-list.tsx:99`),
+實際視覺距離 370px,不是「間距設定」;同層 `flex flex-col gap-3` 只有一個子元素,gap 不起作用(死 class)。

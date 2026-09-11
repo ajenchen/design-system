@@ -73,11 +73,20 @@ Track（pill 形，rounded-full）
 - Track 寬 = 2 × 高（pill 比例）
 - Thumb 直徑 = track 高度
 - ON 狀態 thumb 右滑 `translateX(trackHeight)`
-- **thumb 邊框與 track 恆同色(2026-09-11 補,user 截圖回報「hover 時白色區塊的邊框跟底色不同」)**:
-  上表的「與 OFF track 同色」是**不變式不是巧合** —— thumb 那圈 2px 邊框的作用是讓白圓與 track 之間有實體邊界感,
-  刻意調成跟 track 同色所以**看不見**。2026-07-06 給 track 加 hover 升階時漏了 thumb 邊框,
-  實測 hover 下 track `oklch(0 0 0 / 0.25)`、邊框仍 `oklch(0 0 0 / 0.15)` → 那圈邊當場現形。
-  **機械閘**:`scripts/hover-color-pair-invariant.mjs` 全 DS 掃「靜止時同色的 (父底色, 子邊框) 配對,hover 後必須仍同色」,
+- **thumb 外圈恆等於 track —— 用幾何保證,不用「調成同色」保證(2026-09-11 root-layer 改寫)**:
+  thumb 那圈 2px 的作用是讓白圓與 track 之間有實體邊界感,視覺上它**就是 track 本身**。
+  原本靠「把 border-color 調成跟 track 一樣」來達成,那是巧合不是不變式,實證兩次破法:
+  (1) 2026-07-06 給 track 加 hover 升階時漏了 thumb 邊框,實測 hover 下 track `oklch(0 0 0 / 0.25)`、
+  邊框仍 `oklch(0 0 0 / 0.15)` → 那圈邊當場現形(user 截圖回報「hover 時白色區塊的邊框跟底色不同」);
+  (2) **dark mode 一直是壞的**:邊框色 `oklch(1 0 0 / 0.25)` 是白色半透明,而 `background-clip` 預設 `border-box`
+  會把 thumb 自己的白底鋪到邊框底下 → 白疊白、整圈消失,像素實測白圓 light 15.5px vs **dark 19.5px**,
+  牴觸上方尺寸表要求的 16px。
+  **現行做法**:`bg-clip-padding`(白底停在 padding box)+ `border-transparent`(那 2px 直接顯示 track)。
+  於是「外圈 = track」在任何 theme、任何 hover 階、任何容器底色下都是幾何上必然,不需要人去維護兩處同步。
+  **機械閘**:`scripts/switch-thumb-ring-invariant.mjs` 量真實像素,斷言「thumb 外圈的顏色 = 同列 track 裸露處的顏色」,
+  涵蓋 checked/unchecked × enabled/disabled × rest/hover × light/dark(實測 44 組);
+  computed style 檢查對這兩次事故**都是綠的**(border-width 恆 2px、border-color 恆有值),所以必須量像素。
+  另有 `scripts/hover-color-pair-invariant.mjs` 全 DS 掃「靜止時同色的 (父底色, 子邊框) 配對,hover 後必須仍同色」,
   含會紅的對照組。這是一整類 bug 的防線,不只 Switch。
 - **Hover**(2026-07-06 補,「選中之上 hover 升階」家族):ON track `bg-primary → bg-primary-hover`(Checkbox checked hover 同款);OFF track `bg-border → bg-border-hover` 深一階(Checkbox 未選 hover 同慣例)
 
@@ -103,11 +112,11 @@ sm 和 md 視覺相同（純粹命名 mapping，讓消費者可直接傳同一�
 
 | 狀態 | Track | Thumb | Check icon |
 |------|-------|-------|-----------|
-| OFF | `bg-border`（neutral-5） | 白色 + 2px `border-border`（neutral-5，與 OFF track 同色） | 無 |
-| OFF · hover | `bg-border-hover`（neutral-6） | 白色 + 2px `border-border-hover`（**同步升階,維持「與 track 同色」**） | 無 |
-| ON | `bg-primary` | 白色 + 2px primary border | primary check |
-| ON · hover | `bg-primary-hover` | 白色 + 2px `border-primary-hover`（**同步升階**） | primary check |
-| Disabled | 套 `opacity-disabled`（整體透明度降級） | 同 ON/OFF | 同 ON/OFF |
+| OFF | `bg-border`（neutral-5） | 白色圓 + 2px 透出 track 的外圈 | 無 |
+| OFF · hover | `bg-border-hover`（neutral-6） | 同上（外圈跟著 track 走,**幾何上必然**） | 無 |
+| ON | `bg-primary` | 白色圓 + 2px 透出 track 的外圈 | primary check |
+| ON · hover | `bg-primary-hover` | 同上 | primary check |
+| Disabled | 套 `opacity-disabled`（整體透明度降級）;**hover 不升階** | 同 ON/OFF | 同 ON/OFF |
 | Readonly(standalone)| 視覺同一般態 | 但 `pointer-events-none` + click guard + `aria-readonly` | — |
 | Readonly(Field 內,2026-06-12 user 拍板)| 不渲染 toggle — 改渲染 `fieldWrapperStyles` readonly 灰框(= Input readonly 同源)+ 勾/叉 icon(view 同款值語言) | role="switch" + aria-checked + aria-readonly + 可 focus | — |
 

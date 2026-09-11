@@ -412,6 +412,11 @@ jobs:
           # 對照組把邊框凍回修前的值,必須抓到;掃到 0 組配對也判紅(代表什麼都沒驗到)。
           node scripts/hover-color-pair-invariant.mjs --selftest
           node scripts/hover-color-pair-invariant.mjs
+          # Switch thumb 外圈必須渲染成 track 本身(2026-09-11)。這條量真實像素,因為兩次事故
+          # (hover 漏升階 / dark mode 白疊白使外圈消失)在 computed style 下**都是綠的**。
+          # 對照組把 background-clip 改回 border-box 並把外圈塗白 = 原樣重放 dark mode 那次事故。
+          node scripts/switch-thumb-ring-invariant.mjs --selftest
+          node scripts/switch-thumb-ring-invariant.mjs
           # 對照組驗焦點在裡面時仍然切得動(否則就是把功能弄壞換綠燈)。
           npm run test:overlay-shortcut-scope
           # 兩支從「複現不出」轉成「再發生會被抓到」的閘(總帳 E1 / E2):
