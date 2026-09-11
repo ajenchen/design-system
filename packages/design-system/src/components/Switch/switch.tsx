@@ -310,8 +310,13 @@ const Switch = React.forwardRef<
           className={cn(
             'pointer-events-none flex items-center justify-center rounded-full bg-on-emphasis border-2',
             'transition-all duration-150 motion-reduce:duration-0',
-            'data-[state=unchecked]:translate-x-0 data-[state=unchecked]:border-border',
-            'data-[state=checked]:border-primary',
+            // **thumb 邊框必須跟著 track 的 hover 走(2026-09-11;user 截圖:hover 時白色圓浮出一圈灰邊)**。
+            // spec.md 的狀態表逐字要求 OFF thumb 邊框「neutral-5,**與 OFF track 同色**」、ON 邊框 = primary;
+            // 2026-07-06 給 track 加 hover 升階(`:71-72`)時漏了這裡 → hover 時 track 變深、邊框沒變,
+            // 「同色」這條不變式當場破掉,那圈本來看不見的邊就浮出來了。實測 hover 下 track 0.25 / 邊框 0.15。
+            // Root 已帶 `group`(switchVariants 第一行),所以用 group-hover 跟著父層的 hover 態。
+            'data-[state=unchecked]:translate-x-0 data-[state=unchecked]:border-border data-[state=unchecked]:group-hover:border-border-hover',
+            'data-[state=checked]:border-primary data-[state=checked]:group-hover:border-primary-hover',
             sizeKey === 'lg' ? 'data-[state=checked]:translate-x-6' : 'data-[state=checked]:translate-x-5',
           )}
           style={{ width: spec.thumb, height: spec.thumb }}

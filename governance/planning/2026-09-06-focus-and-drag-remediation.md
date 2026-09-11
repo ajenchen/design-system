@@ -3684,3 +3684,37 @@ CI 的 DataTable job 現在會另外 build 一份 `origin/main` 的 storybook,�
 絕對門檻在那台機器上量的是機器不是程式碼。既然同 job 已經有 main 當參考,這兩項一併改成比值:
 `本 build ÷ main ≤ 1.25`;參考那項是 0 或無資料時退回絕對門檻並**印出來說明**(不靜默降級)。
 本機交錯實跑:空白 50 vs 642、長工 29 vs 74、幀距 242 vs 229,全過。
+
+### AD95 Switch hover 的那圈灰邊:spec 自相矛盾,不是巧合(2026-09-11)
+
+**user 兩張圖**(hover 態 vs 一般態)+ 逐字:「這兩個明顯是就樣式不同,難道我是看到鬼?」
+
+**不是。實測(`storybook-static`,computed style)**:
+
+| 未勾選 | track 底色 | thumb 邊框色 | 結果 |
+|---|---|---|---|
+| 靜止 | `oklch(0 0 0 / 0.15)` | `oklch(0 0 0 / 0.15)` | 完全同色 → 看不見 |
+| **hover** | `oklch(0 0 0 / 0.25)` | **`oklch(0 0 0 / 0.15)`** | 邊框比 track 淺 → **浮出一圈灰邊** |
+
+**根因是 spec 內部自相矛盾**:`switch.spec.md:100` 逐字要求 OFF thumb 邊框
+「neutral-5,**與 OFF track 同色**」—— 那圈 2px 邊本來就是設計成**看不見**的;
+而同檔 `:76`(2026-07-06 補)給 track 加了 hover 升階(`switch.tsx:71-72`),
+**卻沒給 thumb 邊框對應的 hover**(`switch.tsx:313-314`)。兩條規範在 hover 態互斥,
+「同色」這條不變式當場破掉。ON 態同理(`:101` 對 `bg-primary-hover`)。
+
+**修法**:thumb 邊框跟著 track 的 hover 走(Root 本來就有 `group`,用 `group-hover:`)。
+實測修後 hover:track 0.25 / 邊框 0.25,恢復同色。spec 狀態表補上兩列 hover 並把「同色」寫成明示不變式。
+
+**這是一整類 bug,所以寫成全 DS 掃描**:`scripts/hover-color-pair-invariant.mjs` ——
+「靜止時同色的 (父底色, 子邊框) 配對,hover 之後必須仍然同色」。
+掃 164 支設計規格 story、找到 **11 組**這種配對、修後 **0 違規**;
+對照組把邊框凍回修前的值 → **抓到 3 組**(儀器有效)。
+**對照組另加一道守衛**:掃到 0 組配對一律判紅 —— 第一版對照組跑在沒有任何配對的 60 支上回報「沒抓到」,
+那不是儀器失效而是**什麼都沒驗**(跟 AD94 同一種病,一天內第二次)。
+
+**順帶查清楚視覺稽查為什麼漏掉**(`scripts/visual-assertions.json` 實測):
+124 個 scenario 裡 Switch **只有 1 支**(`--states`)且**沒有 `interaction.hover`**;
+全庫有 `interaction.hover` 的 scenario = **0**、有 `assertions`(幾何斷言)的 = **0**。
+`visual-audit.mjs:9-13` 的檔頭註解自稱「12 個有 hover」——**那句已經漂掉,實際是 0**。
+換言之現行「視覺稽查」實質只是「一批靜止狀態的截圖 + 像素差」,**沒有任何互動狀態、沒有任何幾何斷言**。
+user 這三張圖全部落在覆蓋範圍外,是機制問題不是運氣問題。

@@ -162,7 +162,8 @@
     "test:writer-evidence": "node --test scripts/test-product-template-scaffold-lock.mjs scripts/test-verify-upgrade-evidence.mjs scripts/test-verify-mirror-evidence.mjs scripts/test-verify-mirror-release.mjs",
     "peer:evidence-pack": "node scripts/build-peer-evidence-pack.mjs",
     "test:dialog-height": "node scripts/dialog-height-invariant.mjs",
-    "test:token-creation": "node scripts/token-creation-invariant.mjs"
+    "test:token-creation": "node scripts/token-creation-invariant.mjs",
+    "test:hover-color-pair": "node scripts/hover-color-pair-invariant.mjs"
   },
   "dependencies": {
     "@babel/runtime": "^7.29.2",

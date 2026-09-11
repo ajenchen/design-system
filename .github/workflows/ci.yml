@@ -405,6 +405,13 @@ jobs:
           node scripts/dialog-height-invariant.mjs --selftest
           node scripts/dialog-height-invariant.mjs
           # 浮層快捷鍵的作用域:焦點在檢視器外時方向鍵不得切換檔案,
+          # 「靜止時同色的顏色配對,hover 後必須還是同色」全 DS 掃描(2026-09-11;user 截圖:
+          # Switch hover 時白色圓浮出一圈灰邊)。根因是 spec 要求 thumb 邊框「與 OFF track 同色」,
+          # 而 track 2026-07-06 加了 hover 升階、邊框沒跟 → 那圈本來看不見的邊現形。
+          # 這是**一整類** bug 的防線(任何「子邊框刻意等於父底色」的結構都可能重犯),不只 Switch。
+          # 對照組把邊框凍回修前的值,必須抓到;掃到 0 組配對也判紅(代表什麼都沒驗到)。
+          node scripts/hover-color-pair-invariant.mjs --selftest
+          node scripts/hover-color-pair-invariant.mjs
           # 對照組驗焦點在裡面時仍然切得動(否則就是把功能弄壞換綠燈)。
           npm run test:overlay-shortcut-scope
           # 兩支從「複現不出」轉成「再發生會被抓到」的閘(總帳 E1 / E2):

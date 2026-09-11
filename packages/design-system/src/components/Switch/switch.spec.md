@@ -73,6 +73,12 @@ Track（pill 形，rounded-full）
 - Track 寬 = 2 × 高（pill 比例）
 - Thumb 直徑 = track 高度
 - ON 狀態 thumb 右滑 `translateX(trackHeight)`
+- **thumb 邊框與 track 恆同色(2026-09-11 補,user 截圖回報「hover 時白色區塊的邊框跟底色不同」)**:
+  上表的「與 OFF track 同色」是**不變式不是巧合** —— thumb 那圈 2px 邊框的作用是讓白圓與 track 之間有實體邊界感,
+  刻意調成跟 track 同色所以**看不見**。2026-07-06 給 track 加 hover 升階時漏了 thumb 邊框,
+  實測 hover 下 track `oklch(0 0 0 / 0.25)`、邊框仍 `oklch(0 0 0 / 0.15)` → 那圈邊當場現形。
+  **機械閘**:`scripts/hover-color-pair-invariant.mjs` 全 DS 掃「靜止時同色的 (父底色, 子邊框) 配對,hover 後必須仍同色」,
+  含會紅的對照組。這是一整類 bug 的防線,不只 Switch。
 - **Hover**(2026-07-06 補,「選中之上 hover 升階」家族):ON track `bg-primary → bg-primary-hover`(Checkbox checked hover 同款);OFF track `bg-border → bg-border-hover` 深一階(Checkbox 未選 hover 同慣例)
 
 ---
@@ -98,7 +104,9 @@ sm 和 md 視覺相同（純粹命名 mapping，讓消費者可直接傳同一�
 | 狀態 | Track | Thumb | Check icon |
 |------|-------|-------|-----------|
 | OFF | `bg-border`（neutral-5） | 白色 + 2px `border-border`（neutral-5，與 OFF track 同色） | 無 |
+| OFF · hover | `bg-border-hover`（neutral-6） | 白色 + 2px `border-border-hover`（**同步升階,維持「與 track 同色」**） | 無 |
 | ON | `bg-primary` | 白色 + 2px primary border | primary check |
+| ON · hover | `bg-primary-hover` | 白色 + 2px `border-primary-hover`（**同步升階**） | primary check |
 | Disabled | 套 `opacity-disabled`（整體透明度降級） | 同 ON/OFF | 同 ON/OFF |
 | Readonly(standalone)| 視覺同一般態 | 但 `pointer-events-none` + click guard + `aria-readonly` | — |
 | Readonly(Field 內,2026-06-12 user 拍板)| 不渲染 toggle — 改渲染 `fieldWrapperStyles` readonly 灰框(= Input readonly 同源)+ 勾/叉 icon(view 同款值語言) | role="switch" + aria-checked + aria-readonly + 可 focus | — |
