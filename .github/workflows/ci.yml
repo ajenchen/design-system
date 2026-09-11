@@ -183,7 +183,13 @@ jobs:
           # 這台 runner 不節流就是「慢機器」:R17 判準在這裡整片白 1,301 / 1,210ms(7aad1396),自適應判準 v8 降到 64 / 103ms(d7553067)。
           # 不在 CI 疊 CPU 節流:CDP 節流在 2 vCPU 的共享 runner 上不是線性的(d7553067 同一 job:不節流 64 / 103ms,--cpu-throttle=4 卻 1,769 / 1,585ms;
           # 本機 4× 是 167 / 167ms),數字不能跨機器搬。2× / 4× / 6× 節流當本機重現與壓力工具(AD56 / AD62),不當 CI 閘。
-          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000
+          # 長工與幀距**必須斷言**(2026-09-11 補):這支閘一直有量、卻只印在表上不判定 —— 一版把主執行緒最長任務
+          # 從 66ms 推到 661ms 的改動因此全綠放行,而那 661ms 會把 hover / 點擊一起卡住(user 回報「hover 反應延遲很久」)。
+          # 門檻 300ms:這台 runner 上 main 是 64–66ms,超過 300ms 已經是人明顯感覺得到的停頓(對齊 web.dev 對輸入延遲的量級)。
+          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
+          # 列 hover 的反應延遲(2026-09-11 新閘;先跑對照組證明儀器會紅,再跑正式判定)
+          node scripts/data-table-hover-latency.mjs --rows=8 --selftest
+          node scripts/data-table-hover-latency.mjs --rows=10 --assert=on --assert-median=60 --assert-max=600
           # Content readiness and still-visible fading handles need separate gates from frame cadence.
           node scripts/test-data-table-scroll-perception.mjs --out=tmp/datatable-content-controls
           # 把手捲動閂鎖(2026-09-10,data-table.spec.md「捲動與可視帶」):指標不動的捲動 → 第一個 scroll 事件後零把手;對照組 unlatch(每次 scroll 派發座標遞增的

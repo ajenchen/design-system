@@ -95,6 +95,14 @@ const GESTURE_PX = Number(arg('gesture-px', 6000))
 const GESTURE_SPEED = Number(arg('gesture-speed', 12000))
 const ASSERT_BLANK_MS = arg('assert-max-blank-ms', '')
 const ASSERT_FILL_MS = arg('assert-max-fill-ms', '')
+/** 主執行緒單一任務上限 / 合成器送出的幀距上限。
+ *
+ *  **為什麼要補**(2026-09-11,user:「連 hover table row 的反應都是延遲很久」):這支閘一直有量長工與幀距,
+ *  但**從來沒有斷言**,只印在表上。於是一版把主執行緒最長任務從 66ms 推到 661ms 的改動照樣全綠放行 ——
+ *  那個 661ms 會把所有輸入(hover、點擊)一起卡住,使用者感受到的就是「反應延遲很久」,而空白與補齊兩個
+ *  既有斷言完全看不見它。任何超過 ~200ms 的主執行緒任務都是人感覺得到的停頓(web.dev INP 指引同一量級)。 */
+const ASSERT_LONG_TASK_MS = arg('assert-max-long-task-ms', '')
+const ASSERT_FRAME_GAP_MS = arg('assert-max-frame-gap-ms', '')
 const SCROLL_BUSY_MS = 120
 // 觀測窗必須長過補齊期限,否則「到窗尾還沒補完」會被當成補完(Codex R9)
 const SETTLE_EFFECTIVE = ASSERT_FILL_MS !== '' ? Math.max(SETTLE_MS, Number(ASSERT_FILL_MS) + 300) : SETTLE_MS
@@ -562,7 +570,7 @@ if (SELFTEST) {
   console.log(ok ? '✓ selftest:三個偵測器在該紅的時候都會紅' : '✗ selftest:儀器有偵測器沒反應')
   process.exit(ok ? 0 : 1)
 }
-if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '') {
+if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '' || ASSERT_FRAME_GAP_MS !== '') {
   for (const r of results) {
     if (!r.g) continue
     if (r.g.presented < 10) { console.log(`✗ ${r.build}/${r.mode}:只收到 ${r.g.presented} 張呈現幀,screencast 沒在工作,不能當證據`); failed++ }
@@ -573,6 +581,8 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '') {
     if (last && (last.missing > 0 || last.empty > 0)) { console.log(`✗ ${r.build}/${r.mode}:靜止後 DOM 仍缺列 ${last.missing} / 格空 ${last.empty}`); failed++ }
     if (ASSERT_BLANK_MS !== '' && r.g.blankLongestMs > Number(ASSERT_BLANK_MS)) { console.log(`✗ ${r.build}/${r.mode}:中央區最長連續空白 ${r.g.blankLongestMs.toFixed(0)}ms > ${ASSERT_BLANK_MS}ms(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`); failed++ }
     if (ASSERT_FILL_MS !== '' && r.g.fillMs > Number(ASSERT_FILL_MS)) { console.log(`✗ ${r.build}/${r.mode}:停捲後列殼 ${r.g.fillMs.toFixed(0)}ms 才補齊 > ${ASSERT_FILL_MS}ms`); failed++ }
+    if (ASSERT_LONG_TASK_MS !== '' && r.longMax > Number(ASSERT_LONG_TASK_MS)) { console.log(`✗ ${r.build}/${r.mode}:主執行緒單一任務最長 ${r.longMax.toFixed(0)}ms > ${ASSERT_LONG_TASK_MS}ms(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms;這段期間所有 hover / 點擊都會被卡住)`); failed++ }
+    if (ASSERT_FRAME_GAP_MS !== '' && (r.g?.presentedGapMax ?? 0) > Number(ASSERT_FRAME_GAP_MS)) { console.log(`✗ ${r.build}/${r.mode}:合成器送出的幀距最大 ${(r.g.presentedGapMax).toFixed(0)}ms > ${ASSERT_FRAME_GAP_MS}ms`); failed++ }
   }
 }
 if (ASSERT_PAINT !== '' || ASSERT_DOM !== '') {

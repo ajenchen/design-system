@@ -862,13 +862,28 @@ const rowDragScrollLatch = {
    * **延後而不是跳過**:跳過會留下「指標停在同一列不動、閂鎖放開後 `data-hovered` 沒再變 →
    * 沒有任何事件重新量 → 把手回不來」的洞。延後則保證放開的那一刻補量,行為與原本完全相同。
    */
-  deferred: new Set<() => void>(),
+  /** 閂上期間被延後的位置量測:key 是量測本身,value 回答「這一筆還需要補嗎」。 */
+  deferred: new Map<() => void, () => boolean>(),
+  /**
+   * 閂鎖放開時補量。**只補「指標現在真的停在上面」的那一列**。
+   *
+   * 第一版把整批累積的更新一次全部跑完、沒有任何節制 —— 而觸發點正是「捲完之後使用者第一次移動滑鼠」。
+   * 一次捲動會經過上百列,每列都排一次更新,放手那一刻就變成一個上百列 × (4 次 getBoundingClientRect + 兩個
+   * React state 更新) 的單一任務:CI 的 2 vCPU runner 實測主執行緒最長任務 66ms → **661ms**、呈現幀距
+   * 最大 220ms → 861ms,使用者的感受就是「捲完之後 hover 要等很久才有反應」(user 2026-09-11 回報)。
+   *
+   * 正解不是切片,是**根本不用補那麼多**:把手同時只會畫一顆,其餘幾百列的位置沒有人看,補了也立刻作廢。
+   * 需要補的只有兩種列:(a) 指標現在真的停在上面的(要把把手畫到正確位置);
+   * (b) **現在有畫出把手、但已經不是 hover 中的**(要把它藏起來)—— 漏掉這種會讓舊把手停在原地不消失
+   * (`data-table-handle-clip-invariant` 的 P1b / P3a / P3b 會紅)。兩種加起來至多一兩列,其餘直接丟掉,
+   * 它們下次被 hover 時本來就會重新量。
+   */
   runDeferred() {
     const L = rowDragScrollLatch
     if (!L.deferred.size) return
-    const pending = [...L.deferred]
+    const pending = [...L.deferred.entries()]
     L.deferred.clear()
-    for (const fn of pending) fn()
+    for (const [run, needed] of pending) if (needed()) run()
   },
 }
 
@@ -878,6 +893,10 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
   const [portalTarget, setPortalTarget] = React.useState<HTMLElement | null>(null)
   // fits = 24px 把手整顆落在所屬 body 面板的可視帶(client box,不含水平捲軸)內;放不下就不顯示(見 update())
   const [pos, setPos] = React.useState<{ top: number; left: number; rowHovered: boolean; fits: boolean } | null>(null)
+  /** 這個實例現在有沒有畫出把手。延後佇列要用它判「這一筆補量能不能省」——
+   *  有畫出來的那顆即使已經不是 hover 中的列,也必須補量,否則它會停在舊位置不消失(裁切閘 P1b/P3 抓到)。 */
+  const hasPosRef = React.useRef(false)
+  hasPosRef.current = pos != null
   // Portal 逃逸 row DOM → cursor 移到 button 上時 row mouseleave → button hide → cycle flicker(2026-05-05)。
   // Fix:button 自帶 hover state,visibility = rowHovered || buttonHovered || isDragging。
   const [buttonHovered, setButtonHovered] = React.useState(false)
@@ -925,7 +944,10 @@ function RowDragHandle({ disabled, anyDragActive }: { disabled: boolean; anyDrag
     const update = () => {
       if (!tableEl) return
       // 閂上(= 把手隱藏中)且不是正在拖曳:整段量測延後到閂鎖放開,理由見 `rowDragScrollLatch.deferred`。
-      if (rowDragScrollLatch.active && !ctxDragging) { rowDragScrollLatch.deferred.add(update); return }
+      if (rowDragScrollLatch.active && !ctxDragging) {
+        rowDragScrollLatch.deferred.set(update, () => rowEl.isConnected && (rowEl.hasAttribute('data-hovered') || hasPosRef.current))
+        return
+      }
       setPortalTarget(tableEl.parentElement)
       const rRect = rowEl.getBoundingClientRect()
       const tRect = tableEl.getBoundingClientRect()
