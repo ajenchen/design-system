@@ -3322,3 +3322,56 @@ dpr2 的每張 PNG 是 dpr1 的四倍畫素,編碼一慢就踩線。改法:重�
 
 **順帶量掉兩條候選路**(寫進 `data-table.spec.md`):把 layout effect 裡那個 `scrollTop` 讀取拿掉,成本只是換一個函式背
 (292.6 → 255.0ms,手勢反而變長);`useFlushSync: false`(AG Grid 那套 animation-frame 作法)長工變好但空白與骨架全部變差。
+
+### AD80 hover 沒反應的真根因:殼列沒有 hover 可供性 + 捲動中瀏覽器不派 hover(2026-09-11)
+
+**user 逐字**:「不只捲動卡頓,連 hover table row 的反應都是延遲很久,游標明明到了,table row 的反應卻要等好一陣子」
+「同樣的問題我已經提了一百次,你還是沒修好」。
+
+**先承認量測面的問題**:前面每一輪都在量「捲動快不快」,而 user 講的是兩件事,其中 hover 那件**從來沒有被量過**。
+既有的 hover 閘(`data-table-hover-latency.mjs`)量的是「滑鼠移動到一列 → 那列變色」,前提是**指標在動**;
+user 的情境是**指標不動、內容在動**,那條路徑沒有任何閘覆蓋。
+
+**還有一件必須先講的**:user 看的那份 Netlify 預覽**不含那一輪的修正** —— 預覽的 `tag` chunk 裡 `loadingdone` 出現 0 次
+(量測快取沒進去),`data-table` 則是 `eb5b42fc`。所以「還是很卡」的那次觀察,對的是兩個 commit 之前的東西。
+
+**main vs 分支的對照(同一套儀器,這一輪才第一次做)**:用 `git worktree` 把 `origin/main`(beta.131)另外完整 build
+一份 storybook,跑同一支閘:
+
+| 條件 | main | 分支 |
+|---|---|---|
+| 1400×800 dpr1,最長連續空白 | 801 / 884ms | **18 / 50ms** |
+| 1400×800 dpr1,script | 791 / 802ms | **514 / 532ms** |
+| 2560×1400 dpr1,最長連續空白 | 1067 / 1075ms | **788 / 986ms** |
+| dpr2 hover 延遲(靜止 / 捲動後) | 109 / 108ms 中位(另有 2–6 次 1.5 秒內沒變色) | **24 / 10ms** |
+| **user 自己的 Chrome**(同一台、同一操作,只能量 JS)| 長工 3 次共 309ms(最長 115ms) | **1 次共 66ms** |
+
+分支在每一項都比 main 好。所以 user 的體感不是「做的事比較多」,是**看到的東西不一樣**。
+
+**真根因(兩層,都實測重現)**:
+1. **殼列沒有 hover 可供性**。殼列帶 `data-row-index`,hover 代理**會**把 `data-hovered` 標上去,
+   但它的 class 沒有 `data-[hovered]:bg-neutral-hover` —— 標了什麼都不顯示。4× 節流、指標完全不動:
+   底下那列當殼 505ms,期間 6 幀完全沒有 hover 底色、沒有把手。這就是「游標明明到了,列卻要等好一陣子」。
+2. **捲動中瀏覽器不重新派送 hover**。整段合成手勢期間指標底下那一列一次 `mouseover` 都沒收到,
+   `data-hovered` 留在早就捲出視窗的舊列上。CSS `:hover` 沒有這個問題(AG Grid `.ag-row:hover` / MUI X 都走 CSS);
+   本表為了跨三個捲動區同步同一「邏輯列」才用代理,代價就是得自己補上瀏覽器免費給的那一半。
+
+**修法**(`data-table.tsx`):(a) 殼列補上跟真列同一條 hover 底色(把手與動作鈕仍不畫);
+(b) `syncHoverUnderPointer` 在每次捲動 commit 後用最後已知指標座標做一次 `elementFromPoint` 對齊 `data-hovered`;
+(c) `decideShell` 與預排隊把「指標底下那一列」加進不套殼的例外(跟拖曳中 / 編輯中 / 選取格同一條不變式)。
+**踩到一個坑並修掉**:(b) 一開始只比 row id 就 return,但殼升級成真列時**換了 DOM 節點**,新節點沒有 `data-hovered`
+→ 留下 1 幀空窗;要連節點狀態一起比。
+
+**新閘**:`scripts/data-table-row-under-pointer-invariant.mjs` —— 指標不動、逐幀用 `elementFromPoint` 取底下那一列,
+不變式 = 沒有任何一幀「沒有 hover 反應」。修前 6 幀(最後一次 935ms)→ 修後 **0/140 幀**。
+`--selftest` 把殼列那條 hover class 從送出的 bundle 拿掉 → 必須紅(儀器對照組)。已接進 CI。
+
+**順帶**:`Verify browser(DataTable pixel gates)` 那次是被 15 分鐘 job 上限砍掉的(15.4 分),
+原因是同一天我把 `--runs` 2→3、感知閘重跑 3→5 —— 自己加的工作量。兩個 DataTable job 的 timeout 提到 25 分。
+
+**捲軸問題(user 同一則訊息問的)**:DataTable 走**原生捲軸**,`data-table.css` 先宣告 `scrollbar-width: thin` + 自訂色,
+再用 `@supports selector(::-webkit-scrollbar)` 在 Chromium 上**重設回 `auto`** —— 所以 Chrome / Edge 吃的是瀏覽器預設寬度
+(實測 `getComputedStyle` 回 `scrollbar-width: auto`),只有 Firefox 拿到 thin。`scroll-area.spec.md` 原本寫
+「Chrome/macOS classic 實測 11px」是 2026-09-08 撤回 0374642a 之前的舊值,已更正。
+ScrollArea 則是 Radix 自繪:軌道 10px(`w-2.5`)、內縮 `p-[1px]` + 1px 透明邊框 → 拇指 7px、`rounded-full`,
+兩者只共用顏色 token `--scrollbar-thumb` / `--scrollbar-track`。

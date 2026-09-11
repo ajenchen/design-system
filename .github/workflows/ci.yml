@@ -141,7 +141,10 @@ jobs:
   verify-browser-datatable:
     name: Verify browser(DataTable pixel gates)
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # 15 → 25(2026-09-11):這個 job 在 06:13 那跑被 15 分鐘上限砍掉(15.4 分),
+    # 原因是同一天把快速捲動閘的 --runs 2→3、感知閘重跑上限 3→5 —— 是我自己加的工作量,不是機器變慢。
+    # 逾時本身不構成品質訊號,砍掉的那次其實每一項判定都是綠的。
+    timeout-minutes: 25
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -193,6 +196,10 @@ jobs:
           # 判定政策本身由 scripts/test-fast-scroll-gate-policy.mjs 用真實 CI 數字當判定表驗(該紅的必須紅)。
           # runs 2→3:中位數要有意義至少要三趟。
           node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=3 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
+          # 「指標底下那一列永遠有 hover 反應」(2026-09-11 新閘;user:「游標明明到了,table row 的反應卻要等好一陣子」)。
+          # 兩個根因都在腳本檔頭:殼列原本沒有 hover 底色、以及捲動中瀏覽器不重新派送 hover。先對照組再判定。
+          node scripts/data-table-row-under-pointer-invariant.mjs --selftest
+          node scripts/data-table-row-under-pointer-invariant.mjs
           # 列 hover 的反應延遲(2026-09-11 新閘;先跑對照組證明儀器會紅,再跑正式判定)
           node scripts/data-table-hover-latency.mjs --rows=8 --selftest
           node scripts/data-table-hover-latency.mjs --rows=10 --assert=on --assert-median=60 --assert-max=600
@@ -241,7 +248,10 @@ jobs:
     # 重跑一次停頓就會逾時)。dpr2 的內容延遲不斷言(AD62:共享 runner 在 dpr2 是 raster 成本決定),零殼 / 擷取 / 空白照斷言。
     name: Verify browser(DataTable dpr2 gates)
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # 15 → 25(2026-09-11):這個 job 在 06:13 那跑被 15 分鐘上限砍掉(15.4 分),
+    # 原因是同一天把快速捲動閘的 --runs 2→3、感知閘重跑上限 3→5 —— 是我自己加的工作量,不是機器變慢。
+    # 逾時本身不構成品質訊號,砍掉的那次其實每一項判定都是綠的。
+    timeout-minutes: 25
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

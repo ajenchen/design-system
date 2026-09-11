@@ -82,7 +82,7 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 
 **Scrollbar 寬度固定 10px 不隨 size 變**:不同 size 的元件(sm/md/lg Button 等 ScrollArea 消費者)都消費同一個 10px scrollbar;scrollbar 是「捲動機制」不是「內容尺寸」,不需要對齊 content 字級。
 
-**DataTable 不在這個 10px 之內**(2026-09-05 更正,原寫「DataTable 都消費同一個 10px」):它不用 ScrollArea,走原生捲軸 + W3C 標準屬性 `scrollbar-width: thin`(寬度由瀏覽器決定,Chrome/macOS classic 實測 11px、Firefox 另一值)+ `scrollbar-color`,與 ScrollArea **只共用顏色 token** `--scrollbar-thumb` / `--scrollbar-track`;thumb radius 不可控。不用 `::-webkit-scrollbar` 湊成 10px 的理由見 `data-table.spec.md` 缺陷表 H(裸 `::-webkit-scrollbar` 會把 overlay 捲軸強制變成佔版面的 classic 捲軸)。
+**DataTable 不在這個 10px 之內**(2026-09-05 更正,原寫「DataTable 都消費同一個 10px」;2026-09-11 再更正 Chromium 的值):它不用 ScrollArea,走**原生捲軸**。`data-table.css` 先宣告 `scrollbar-width: thin` + `scrollbar-color`,再用 `@supports selector(::-webkit-scrollbar)` 把這兩條在 Chromium 上重設回 `auto`(2026-09-08 撤回 0374642a 時恢復 main 既有設定)—— 所以 **Chrome / Edge 吃的是瀏覽器預設寬度**(macOS classic 15px、Windows 17px、overlay 模式 0),**只有 Firefox 拿到 `thin` 與自訂色**。實際寬度不寫死在任何地方,由 `measureScrollbarGutters` 每次量。與 ScrollArea **只共用顏色 token** `--scrollbar-thumb` / `--scrollbar-track`;thumb 寬度與 radius 在 Chromium 皆不可控。不用 `::-webkit-scrollbar` 湊成 10px 的理由見 `data-table.spec.md` 缺陷表 H(裸 `::-webkit-scrollbar` 會把 overlay 捲軸強制變成佔版面的 classic 捲軸)。
 
 ---
 

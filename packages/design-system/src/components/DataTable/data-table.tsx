@@ -803,6 +803,26 @@ function stripKeyboardActivator(listeners: Record<string, unknown> | undefined) 
  * 模組層一份:同一時間畫面上只有一顆把手在管,多表時捲任一張都藏、下一次真實移動就恢復;座標追蹤是 document 上一個
  * listener(ref-count),訂閱者只有渲染過把手的實例(有 pos),不會為 200 列各掛一個。
  */
+/**
+ * 最後已知的指標座標(模組層一份)。`rowDragScrollLatch` 也在追同一件事,但它只在有列把手時才掛
+ * listener(ref-count);hover 同步需要在**沒有列拖曳**的表格上也成立,所以另開一個一樣輕的追蹤器:
+ * 一個 window listener、只寫兩個數字,由第一張啟用 hover 的表格掛上、最後一張卸載時移除。
+ */
+const rowPointerPos = { x: NaN, y: NaN, tracked: 0 }
+const onRowPointerMove = (e: PointerEvent | MouseEvent) => { rowPointerPos.x = e.clientX; rowPointerPos.y = e.clientY }
+function trackRowPointer() {
+  if (rowPointerPos.tracked++ === 0) {
+    window.addEventListener('pointermove', onRowPointerMove, true)
+    window.addEventListener('mousemove', onRowPointerMove, true)
+  }
+  return () => {
+    if (--rowPointerPos.tracked === 0) {
+      window.removeEventListener('pointermove', onRowPointerMove, true)
+      window.removeEventListener('mousemove', onRowPointerMove, true)
+    }
+  }
+}
+
 const rowDragScrollLatch = {
   active: false,
   lastX: NaN,
@@ -1852,7 +1872,7 @@ function DataTableInner<TData>(
     let shell = S.decided.get(rowId)
     if (shell === undefined) {
       // 拖曳中一律真列(殼沒有 SortableRowProvider,不是有效落點);上次 commit 完整畫過、編輯中、選取格所在的列也不套殼
-      if (!useVirtual || activeDragId != null || S.full.has(rowId) || (editingCellId != null && editingCellId.startsWith(`${rowId}__`)) || (selectedCellId != null && selectedCellId.startsWith(`${rowId}:`))) shell = false
+      if (!useVirtual || activeDragId != null || S.full.has(rowId) || hoveredRowIdRef.current === rowId || (editingCellId != null && editingCellId.startsWith(`${rowId}__`)) || (selectedCellId != null && selectedCellId.startsWith(`${rowId}:`))) shell = false
       else if (S.ahead) shell = true
       // 沒進預排隊的列(預排隊只在「機器跟不上」時跑):「上次是殼」的列吃補齊配額,可見優先;從沒見過的新列照舊完整渲染 ——
       // 初次載入、正常捲動、換頁都走這裡,行為與沒有殼機制時完全相同(Codex R9 反例:第一版把配額套到新列,初次載入 15 列只畫 2 列)
@@ -1924,6 +1944,8 @@ function DataTableInner<TData>(
     S.lastRows = rows
     S.wasScrolling = virtualizer.isScrolling
     S.lastOffset = centerBodyRef.current?.scrollTop ?? 0
+    // 捲動造成的 commit:指標底下可能已經換了一列,瀏覽器不會派 mouseover(見 syncHoverUnderPointer 註解)。
+    if (S.scrollCommit || S.prevShells.size > 0) syncHoverUnderPointer()
     // 殼升級成真列後,三區列高同步(缺陷 F)要再跑一次 —— 那個同步只掛在虛擬視窗換列上,補真內容不會換列(Codex R9 指出)。
     // 判「有沒有列從殼變真列」看集合差,不看配額計數:拖曳 / 編輯把殼強制升成真列不走配額,第一版只看 promoted,
     // Codex R10 在 autoRowHeight + 左右釘選下重現三區差 60px。**先比對上一輪的殼集合,再覆寫**(R11:第二版先覆寫才比,
@@ -1970,6 +1992,58 @@ function DataTableInner<TData>(
   // 一次 render 只取一次 virtual items(預排隊 / 列高同步 / 三區 render 共用同一份快照;Codex R20 A3)
   const rowVirtualItems = useVirtual ? virtualizer.getVirtualItems() : []
   // 列殼預排隊(每次 render;要在 virtualizer 建好之後、renderBodyRows 之前):把這次會掛的列裡「還不是真列」的,
+  /**
+   * 指標底下那一列的 id(2026-09-11;user:「游標明明到了,table row 的反應卻要等好一陣子」)。
+   *
+   * 殼列是**沒有任何互動可供性**的:`renderShellRow` 不畫 hover 底色、不畫拖曳把手、不畫動作鈕。
+   * 所以只要指標停著不動、那一列在捲動中被套上殼,使用者看到的就是「游標在上面但整列沒反應」。
+   * 4× 節流實測(scripts/data-table-row-under-pointer-invariant.mjs):指標完全不動,底下那列當殼 505ms,
+   * 期間 6 幀完全沒有 hover 反應。
+   *
+   * 不變式:**指標正在指的那一列永遠是真列**。這跟既有的「拖曳中 / 編輯中 / 選取格所在列不套殼」是同一條 ——
+   * 有使用者互動在上面的列不套殼 —— 殼只是「內容還在路上」的承諾,不能套在使用者正在互動的那一列。
+   * 成本:每一幀最多多畫一列。
+   *
+   * 用 ref 不用 state:hover 是高頻事件,改 state 會每次 mousemove 重繪整張表(delegation 當初就是為了避免這個)。
+   * 捲動中本來就每幀都在 render,例外在下一幀就會生效;停捲後的補齊 render 同理。
+   */
+  const hoveredRowIdRef = React.useRef<string | null>(null)
+  const rowsRef = React.useRef(rows)
+  rowsRef.current = rows
+
+  /**
+   * 捲動造成的「指標底下換了一列」瀏覽器不會告訴我們,所以每次捲動 commit 之後自己對一次(2026-09-11)。
+   *
+   * 實測(4× 節流、指標完全不動、`Input.synthesizeScrollGesture`):整段手勢期間指標底下那一列
+   * **一次 `mouseover` 都沒有收到** —— `data-hovered` 還留在早就捲出視窗的舊列上,指標底下的列
+   * 既沒有底色也沒有把手;手勢結束後瀏覽器才補派一次。CSS `:hover` 沒有這個問題(瀏覽器每幀自己算),
+   * AG Grid(`.ag-row:hover`)與 MUI X 都是走 CSS;本表因為要跨三個捲動區同步同一「邏輯列」才用
+   * `data-hovered` 代理,代價就是得自己補上瀏覽器免費提供的那一半。
+   *
+   * 做法:commit 之後用最後已知的指標座標做一次 `elementFromPoint`,把 `data-hovered` 與
+   * `hoveredRowIdRef` 對到真正在指標底下的那一列。一次 commit 一次;這個 effect 本來就已經讀過
+   * `scrollTop`(版面已經算過),所以不會多逼出一次版面計算。
+   */
+  // 指標座標追蹤只在啟用 hover 時掛(模組層一個 listener,多張表共用 ref-count)。
+  React.useEffect(() => (enableHover ? trackRowPointer() : undefined), [enableHover])
+
+  const syncHoverUnderPointer = React.useCallback(() => {
+    if (!enableHover) return
+    const table = tableRef.current
+    const { x, y } = rowPointerPos
+    if (!table || !Number.isFinite(x) || !Number.isFinite(y)) return
+    const el = document.elementFromPoint(x, y)
+    const rowEl = el instanceof Element ? el.closest<HTMLElement>('[data-row-index]') : null
+    const idx = rowEl && table.contains(rowEl) ? rowEl.dataset.rowIndex ?? null : null
+    const id = idx != null ? rowsRef.current[Number(idx)]?.id ?? null : null
+    // 不能只比 id:殼列升級成真列時**換了一個 DOM 節點**,新節點身上沒有 `data-hovered`,
+    // 而 id 沒變 —— 只比 id 會在那一幀直接 return,留下「真列在指標底下卻沒底色」的空窗(實測 1 幀)。
+    if (id === hoveredRowIdRef.current && (rowEl == null || rowEl.hasAttribute('data-hovered'))) return
+    table.querySelectorAll<HTMLElement>('[data-hovered]').forEach((n) => delete n.dataset.hovered)
+    hoveredRowIdRef.current = id
+    if (idx != null) table.querySelectorAll<HTMLElement>(`[data-row-index="${idx}"]`).forEach((n) => (n.dataset.hovered = ''))
+  }, [enableHover])
+
   // 依可見優先 → 索引順序排隊,前 budgetRows 列畫真列、其餘先殼;三區共用同一份決定。
   {
     const S = shellRef.current
@@ -1978,8 +2052,8 @@ function DataTableInner<TData>(
       for (const vi of rowVirtualItems) {
         const row = rows[vi.index]
         if (!row || S.full.has(row.id)) continue
-        // 拖曳中 / 編輯中 / 選取格所在列由 decideShell 判真列且不吃預算(它們本來就是例外)
-        if (activeDragId != null || (editingCellId != null && editingCellId.startsWith(`${row.id}__`)) || (selectedCellId != null && selectedCellId.startsWith(`${row.id}:`))) continue
+        // 拖曳中 / 編輯中 / 選取格 / 指標底下的列由 decideShell 判真列且不吃預算(它們本來就是例外)
+        if (activeDragId != null || hoveredRowIdRef.current === row.id || (editingCellId != null && editingCellId.startsWith(`${row.id}__`)) || (selectedCellId != null && selectedCellId.startsWith(`${row.id}:`))) continue
         queue.push({ id: row.id, visible: vi.start < S.viewportBottom && vi.start + vi.size > S.viewportTop })
       }
       let left = S.budgetRows
@@ -2575,6 +2649,7 @@ function DataTableInner<TData>(
         }
         const idx = findRowIndex(e.target)
         if (idx == null) return
+        hoveredRowIdRef.current = rowsRef.current[Number(idx)]?.id ?? null
         tableRef.current?.querySelectorAll(`[data-row-index="${idx}"]`).forEach((el) => ((el as HTMLElement).dataset.hovered = ''))
       },
       onMouseOut: (e: React.MouseEvent) => {
@@ -2583,6 +2658,7 @@ function DataTableInner<TData>(
         // 仍在同一 row 的子元素間 bubble(e.g. cell → text node)則 relatedTarget 還在 row 內
         const related = e.relatedTarget instanceof Element ? e.relatedTarget.closest<HTMLElement>('[data-row-index]') : null
         if (related?.dataset.rowIndex === idx) return
+        hoveredRowIdRef.current = related?.dataset.rowIndex != null ? (rowsRef.current[Number(related.dataset.rowIndex)]?.id ?? null) : null
         tableRef.current?.querySelectorAll(`[data-row-index="${idx}"]`).forEach((el) => delete (el as HTMLElement).dataset.hovered)
       },
     }
@@ -3718,7 +3794,11 @@ function DataTableInner<TData>(
           role="row"
           aria-busy="true"
           aria-rowindex={(paginationEnabled ? (currentPage - 1) * pageSizeState : 0) + idx + 2}
-          className={cn('group/row flex relative items-center overflow-hidden', shellHeight == null && rowHeight, opts?.virtual && 'absolute w-full', showBorder && 'border-b border-divider')}
+          // hover 底色跟真列同一條(2026-09-11):殼列也帶 `data-row-index`,所以 hover 代理本來就會把
+          // `data-hovered` 標到它身上 —— 但它原本沒有這條 class,結果就是「游標在上面、整列沒反應」。
+          // 殼是「內容還在路上」,不是「這裡沒有列」;指標指到哪一列要看得出來,對齊 Linear / Jira 的
+          // skeleton 列仍是可 hover 表面。把手與動作鈕仍不畫(那些要有真資料才有意義)。
+          className={cn('group/row flex relative items-center overflow-hidden data-[hovered]:bg-neutral-hover', shellHeight == null && rowHeight, opts?.virtual && 'absolute w-full', showBorder && 'border-b border-divider')}
           style={{ ...(opts?.virtual ? { transform: `translateY(${opts.start}px)` } : {}), ...(shellHeight != null ? { height: shellHeight } : {}), ...(sharedRowHeights.has(idx) ? { minHeight: sharedRowHeights.get(idx) } : {}) }}
         >
           {getRegionCells(row, cols).map((cell) => (

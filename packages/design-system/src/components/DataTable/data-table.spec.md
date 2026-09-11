@@ -384,6 +384,32 @@ commit 後那個 layout effect(自身時間 292.6ms / 18.7%)—— 它只讀一�
 但兩者都只是上面那筆版面成本的一部分,不是額外的。post-paint 重新量測(`useTruncated` 的 rAF + 100ms 各一次)
 實測整趟手勢共 442 + 337 次、合計 39.3ms,加了快取之後已經很便宜,不值得再動。
 
+**指標底下那一列永遠有 hover 反應(2026-09-11;user:「游標明明到了,table row 的反應卻要等好一陣子」)**
+
+這條跟「捲動快不快」是兩件事,先前每一輪都只在量捲動,所以一直沒抓到。根因有兩層,都用
+`scripts/data-table-row-under-pointer-invariant.mjs`(含會紅的對照組)實測過:
+
+1. **殼列沒有 hover 可供性**。殼列帶 `data-row-index`,所以 hover 代理**會**把 `data-hovered` 標上去 ——
+   但它的 class 裡沒有 `data-[hovered]:bg-neutral-hover`,標了也什麼都不顯示。指標停著不動、底下那列
+   在捲動中被套殼,看到的就是整列毫無反應。4× 節流實測:殼存活 505ms,期間 6 幀完全沒有 hover 反應。
+   **修法**:殼列補上跟真列同一條 hover 底色。殼是「內容還在路上」,不是「這裡沒有列」;
+   把手與動作鈕仍不畫(那兩個要有真資料才有意義)。對齊 Linear / Jira 的 skeleton 列仍是可 hover 表面。
+2. **捲動中瀏覽器不重新派送 hover**。整段合成手勢期間,指標底下那一列**一次 `mouseover` 都沒有收到**,
+   `data-hovered` 還留在早就捲出視窗的舊列上。CSS `:hover` 沒有這個問題(瀏覽器每幀自己算),
+   AG Grid(`.ag-row:hover`)與 MUI X 都走 CSS;本表為了跨三個捲動區同步同一「邏輯列」才用 `data-hovered` 代理,
+   代價就是得自己補上瀏覽器免費提供的那一半。**修法**:`syncHoverUnderPointer` 在每次捲動 commit 之後,
+   用最後已知的指標座標做一次 `elementFromPoint`,把 `data-hovered` 對到真正在指標底下的那一列。
+   這個 effect 本來就已經讀過 `scrollTop`(版面算過了),所以不多逼出一次版面計算。
+   **一定要連 DOM 節點一起比,不能只比 row id** —— 殼列升級成真列時換了節點,新節點身上沒有 `data-hovered`,
+   只比 id 會直接 return,留下「真列在指標底下卻沒底色」的一幀空窗(實測就是 1 幀)。
+
+同時,`decideShell` 與預排隊都把**指標底下那一列**加進「不套殼」的例外(原本只有拖曳中 / 編輯中 / 選取格所在列)。
+不變式是同一條:**有使用者互動在上面的列不套殼**。成本:每幀最多多畫一列。
+
+**驗證**:`data-table-row-under-pointer-invariant.mjs` —— 指標放到中央後完全不動,跑 6,000px/s 手勢,
+逐幀用 `elementFromPoint` 取指標底下那一列。修前 6 幀沒有 hover 反應(最後一次在 935ms),修後 **0/140 幀**。
+對照組把殼列那條 hover class 拿掉 → 必須量到沒反應(證明閘在該紅時會紅)。
+
 ### 七、Column Type
 
 **Column type 是資料行為的預設合約。** 指定 type 自動獲得對齊 / 渲染 / 排序 / 篩選行為,可在 column 層級覆寫。
