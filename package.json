@@ -22,7 +22,7 @@
     "test:scenarios": "node scripts/test-2-scenario-architecture.mjs",
     "preview": "vite preview",
     "storybook": "npm -w @qijenchen/storybook-config run build && storybook dev -p 6006",
-    "build-storybook": "npm -w @qijenchen/storybook-config run build && storybook build --output-dir storybook-static && node scripts/gen-ds-story-manifest.mjs",
+    "build-storybook": "npm -w @qijenchen/storybook-config run build && storybook build --output-dir storybook-static && node scripts/gen-ds-story-manifest.mjs && node scripts/gen-build-info.mjs",
     "visual-audit": "node scripts/visual-audit.mjs --auto-start",
     "visual-audit:headed": "node scripts/visual-audit.mjs --auto-start --headed",
     "ds:migrate": "node packages/design-system/tools/codemods/cli.mjs",

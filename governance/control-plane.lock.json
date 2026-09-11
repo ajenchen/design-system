@@ -10,7 +10,7 @@
   "contractDigest": "sha256:04ac2b7687c2e132a037d7c165bd151ea04a205d49ad8ac679b26aa09eba5647",
   "files": [
     {
-      "hash": "sha256:c7b19297c4c12adf6298b88d4b21100af77b626eb00291a2404e3db52e9f3f43",
+      "hash": "sha256:c8f0a1899b6c88212c3d7bca1078027bd2fb052c379ad0f2f014be32094b9810",
       "mode": "0644",
       "path": "PROVENANCE.md",
       "size": 58943,
@@ -38,7 +38,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4fd1bf6e40cece2c00b62272195a2a10fa925f0c6c58d219df4efd5cb7aea0d2",
+      "hash": "sha256:4068c34b5fb91247ea809f9c3f8f9ad9ccb6bb8cde989f9ce6525c2a8c9c0283",
       "mode": "0644",
       "path": "control-plane.json",
       "size": 139489,
@@ -66,7 +66,7 @@
       "type": "file"
     }
   ],
-  "inputDigest": "sha256:e36d5c6ff64c55d714a0ec2aa7af11082ed6e3e8720f0d22abaae60ecad85641",
+  "inputDigest": "sha256:a826edf151de963ecf5c1f7590816c07d746d8d7e07ec7947807558c16e64111",
   "outputDirectory": "governance/generated",
   "role": "ds-author",
   "schemaVersion": 2,
@@ -518,7 +518,7 @@
       ]
     }
   ],
-  "snapshotDigest": "sha256:7a5558202defd32a45ec81c847604f08d0eba398a666195b675d62c552329e34",
+  "snapshotDigest": "sha256:e2d55962139b195401ed3b691f7bfa891b647a5925826f89b52c4a43aefe1426",
   "sources": [
     {
       "hash": "sha256:2ffae9f5d713265ed1923ddd0d0db6c8c0ceb4b2a119b753511688211a2971b4",
@@ -2568,12 +2568,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:4779d4696c990cce8a0d2f73f1437c029c2821ef55d9bff0e80e7e82ac7068fd",
+      "hash": "sha256:96ba945012fcbcac308ac75ff62b8e0e8d6cc27525a66d3980b7cdfcbdc9ce0a",
       "id": "governance-root-script-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "package.json",
-      "size": 20317,
+      "size": 20352,
       "type": "file"
     },
     {
@@ -3211,7 +3211,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 20,
-      "hash": "sha256:1d13cb6236b257d29b54751552753ab037e1f4985f9502c8db89280e850f5871",
+      "hash": "sha256:8cb8c1b45add45ef1effd0a8d80279b1375ce4c9ec8ef0d13dadd7a9c7598356",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3586,8 +3586,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 428,
-      "hash": "sha256:01bd74cb31a67f8bc580adab52ee76732b15c86045d381c9704890d691cba730",
+      "files": 430,
+      "hash": "sha256:df8a2de651bfc06ea490ef8075b07a8102cd3bd73af78eb8262b6428c556782c",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
