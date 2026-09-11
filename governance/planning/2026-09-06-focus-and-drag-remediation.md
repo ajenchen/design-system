@@ -3389,3 +3389,21 @@ ScrollArea 則是 Radix 自繪:軌道 10px(`w-2.5`)、內縮 `p-[1px]` + 1px 透
 改成每個指標各自的倍數(`scripts/lib/fast-scroll-gate-policy.mjs` 的 `CEILING_FACTOR`):空白 / 補齊 ×2,
 長工 / 幀距 ×3,偵測力交給中位數 —— 真回歸會把中位數帶上去(把最長任務從 66 推到 661ms 的那一版,中位就是 661)。
 判定表對照組補上今天的真實數字:`[111,115,664]` 必須綠、`[661,658,670]` 必須紅、×3 邊界兩側各一個 case。
+
+### AD82 「預覽是不是我這版」變成機械可驗(2026-09-11)
+
+AD80 查出 user 測的是落後兩個 commit 的部署,而我當下**沒有任何機械方法**可以確認 —— 這是整件事裡
+最該先修的一環:量測再精準,拿錯建置就全部作廢。chunk 檔名的 hash 不能當身分(同一份原始碼在不同環境
+build 出來就不一樣:本機 `data-table-BIu-rWB0.js` vs 預覽 `data-table-ut_k40x6.js`)。
+
+`build-storybook` 尾端寫 `storybook-static/build-info.json`(commit / version / builtAt);
+`node scripts/verify-preview-head.mjs [--wait=600]` 比對線上與本機 HEAD,不符 exit 1 並印出線上那份的 commit。
+紀律寫進 `governance/memory/reference_deploy_targets.md`:**不符就不要說「你去看預覽」**。
+同檔壓縮既有兩節守住 100 行預算,不新增 index 條目。
+
+### 仍待 user 拍板的一題(等這次預覽看過再問)
+
+殼列(骨架列)本身是不是該存在,是**產品／UI／UX 的取捨**,不是我能自決的:
+它擋掉的是「整片白」(main 在 1400×800 是 801–884ms 的連續空白),代價是快速捲動時看得到灰色骨架。
+這一輪已經把「骨架列沒有 hover 反應」修掉(那是 bug),也把每列成本砍半(骨架出現得更少、補得更快)。
+**如果看過現在這版之後仍然覺得骨架比空白更礙眼**,那就是一個真的取捨,由 user 決定,我不自己改。
