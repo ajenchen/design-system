@@ -18,7 +18,7 @@ import { Switch } from '@/design-system/components/Switch/switch'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
-import { openOverlayDocsStory, openOverlayParameters } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
+import { openOverlayParameters } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
 
 /**
  * 通知設定 — flush 中 item(title + desc + right-side Switch)

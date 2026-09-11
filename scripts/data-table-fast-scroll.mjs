@@ -104,11 +104,16 @@ const ASSERT_FILL_MS = arg('assert-max-fill-ms', '')
  *  既有斷言完全看不見它。任何超過 ~200ms 的主執行緒任務都是人感覺得到的停頓(web.dev INP 指引同一量級)。 */
 const ASSERT_LONG_TASK_MS = arg('assert-max-long-task-ms', '')
 const ASSERT_FRAME_GAP_MS = arg('assert-max-frame-gap-ms', '')
-// 「畫得動的機器不准出殼」(2026-09-11)。這支閘原本只會印殼幀數、從不判定 —— 於是一個把
+// 「**畫得動的機器**不准出殼」(2026-09-11)。這支閘原本只會印殼幀數、從不判定 —— 於是一個把
 // `ahead` / `budgeted` 判準訂成「只看位移」的版本可以全綠出貨,而在 user 的真實 Chrome 上
-// **一次普通滾輪就把整個視窗 14 列全變骨架**(main 同樣操作 0 骨架)。骨架是「機器真的畫不完」時的
-// 過渡手段,不是正常捲動該看到的東西;不節流的機器上它必須是 0。
+// **一次普通滾輪就把整個視窗 14 列全變骨架**(main 同樣操作 0 骨架)。
+//
+// **不能無條件斷言 0**:骨架本來就是「機器真的畫不完」時的過渡手段,CI 那台 2 vCPU runner 就是畫不完的那種
+// (實測 3 趟各 9 / 10 / 10 殼幀,那是正確行為)。所以判定前先問元件自己算出來的能力值:
+// 視窗列數 × 每列成本 + commit 固定成本 ≤ `SHELL_ENGAGE_VIEWPORT_MS`(120ms)才套這條斷言,
+// 畫不動的機器印出數字並註明跳過 —— 它的白區與補齊由另外兩條斷言管。
 const ASSERT_SHELL_FRAMES = arg('assert-max-shell-frames', '')
+const SHELL_ENGAGE_VIEWPORT_MS = 120
 const SCROLL_BUSY_MS = 120
 // 觀測窗必須長過補齊期限,否則「到窗尾還沒補完」會被當成補完(Codex R9)
 const SETTLE_EFFECTIVE = ASSERT_FILL_MS !== '' ? Math.max(SETTLE_MS, Number(ASSERT_FILL_MS) + 300) : SETTLE_MS
@@ -393,6 +398,9 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
   try {
     const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: DPR })
     const errors = []; page.on('pageerror', (e) => errors.push(e.message))
+    // 打開列殼決策的可觀測旗標:結尾要讀 `data-shell-state` 算出「這台機器畫一個視窗要多久」,
+    // 才知道「不准出殼」那條斷言適不適用(CI 的 2 vCPU runner 本來就畫不動,出殼是正確行為)。
+    await page.addInitScript(() => { window.__DT_DEBUG_SHELL = true })
     await page.addInitScript(INIT)
     await page.goto(build.url ? `${base}${build.url}` : `${base}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitUntil: 'load' })
     if (CSS_INJECT) await page.addStyleTag({ content: CSS_INJECT })
@@ -458,8 +466,20 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
     let g = null
     if (gesture) { const shotsG = await page.evaluate(ANALYZE_FRAMES, { list: gesture.cast }); g = { ...analyzeGesture(shotsG, raw.frames, gesture.gestureEnd, gesture.windowEndTs), gestureWallMs: ticks.wallMs } }
     const tickTs = raw.wheelTs.map((w) => w.t); const gaps = tickTs.slice(1).map((t, i) => t - tickTs[i])
+    // 這台機器畫一個視窗要多久 = 視窗列數 × 每列成本 + commit 固定成本(全部取自元件自己量的 `data-shell-state`)。
+    // 「畫得動的機器不准出殼」那條斷言要先知道這個值才知道適不適用。
+    const shellCost = await page.evaluate(() => {
+      const el = document.querySelector('[data-datatable-hscroll]')
+      const st = el?.getAttribute('data-shell-state')
+      if (!st) return null
+      const num = (k) => { const m = st.match(new RegExp(k + '=([0-9.]+)')); return m ? Number(m[1]) : null }
+      const cpr = num('costPerRow'), fixed = num('fixed')
+      if (cpr == null || fixed == null) return null
+      const rows = Math.max(1, Math.ceil(el.getBoundingClientRect().height / 40))
+      return rows * cpr + fixed
+    }).catch(() => null)
     return {
-      build: build.label, mode, sabotage, setup, ticks, errors, shotStats, ...a, g, frames: raw.frames,
+      build: build.label, mode, sabotage, setup, ticks, errors, shotStats, shellCost, ...a, g, frames: raw.frames,
       longs: raw.longs, longCount: raw.longs.length, longMax: raw.longs.reduce((m, l) => Math.max(m, l.dur), 0), longSum: raw.longs.reduce((s, l) => s + l.dur, 0),
       commits: raw.commits, scrollEvents: raw.scrollEvents, finalScroll: raw.finalScroll, scrolled: (raw.finalScroll ?? 0) - START_PX,
       wheelSeen: raw.wheelTs.length, wheelTrusted: raw.wheelTs.filter((w) => w.trusted).length, wheelGapMean: gaps.length ? gaps.reduce((x, y) => x + y, 0) / gaps.length : 0, wheelGapMax: gaps.reduce((m, g) => Math.max(m, g), 0),
@@ -612,7 +632,14 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
   gate(ASSERT_FILL_MS, '停捲後列殼補齊', CEILING_FACTOR.fill, (r) => r.g.fillMs)
   gate(ASSERT_LONG_TASK_MS, '主執行緒單一任務最長', CEILING_FACTOR.longTask, (r) => r.longMax, (r) => `(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms;這段期間所有 hover / 點擊都會被卡住)`)
   gate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? 0)
-  gate(ASSERT_SHELL_FRAMES, '出現列殼的幀數', 2, (r) => r.g?.shellFrames ?? 0)
+  if (ASSERT_SHELL_FRAMES !== '') {
+    // 元件自己量出來的能力值(`data-shell-state`,需 window.__DT_DEBUG_SHELL);讀不到就保守跳過並說明
+    const costs = results.map((r) => r.shellCost).filter((v) => Number.isFinite(v))
+    const worst = costs.length ? Math.max(...costs) : null
+    if (worst == null) console.log(`⚠️  出現列殼的幀數:讀不到 data-shell-state(需 window.__DT_DEBUG_SHELL),這條斷言跳過`)
+    else if (worst > SHELL_ENGAGE_VIEWPORT_MS) console.log(`↷ 出現列殼的幀數:這台機器畫不動(一個視窗要 ${worst.toFixed(0)}ms > ${SHELL_ENGAGE_VIEWPORT_MS}ms),出殼是正確行為,這條斷言不適用(白區與補齊由另外兩條管)`)
+    else gate(ASSERT_SHELL_FRAMES, '出現列殼的幀數', 2, (r) => r.g?.shellFrames ?? 0)
+  }
 }
 if (ASSERT_PAINT !== '' || ASSERT_DOM !== '') {
   for (const r of results) {
