@@ -33,13 +33,19 @@ const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
 await page.goto(`http://localhost:${sv.address().port}/iframe.html?id=`
   + encodeURIComponent('design-system-components-fileviewer-展示--coexistence-contract') + '&viewMode=story', { waitUntil: 'load' })
-await page.waitForTimeout(1000)
-
 // 檢視器目前顯示哪一個檔案 —— 用標題文字當指紋
 const title = () => page.evaluate(() => {
   const dialog = document.querySelector('[role="dialog"]')
   return dialog?.querySelector('h1,h2,[data-slot="title"],header')?.textContent?.trim().slice(0, 40) ?? null
 })
+
+// 等到檢視器真的掛出來再量,不用固定睡 1 秒 —— 共享 runner 上 1 秒不夠,story 還沒 mount 就讀到 null,
+// 這支閘會以「前提不成立」翻紅(2026-09-11 c34e035c 的 component + interaction gates 就是這樣紅的)。
+// 這不是放寬判定:等不到就照樣紅,只是把「機器慢」跟「檢視器沒開」分開。
+await page.waitForFunction(() => {
+  const dialog = document.querySelector('[role="dialog"]')
+  return !!dialog?.querySelector('h1,h2,[data-slot="title"],header')?.textContent?.trim()
+}, null, { timeout: 30_000 }).catch(() => {})
 
 const before = await title()
 ck('前提:檢視器已開且讀得到目前檔名', !!before, `目前=${before}`)

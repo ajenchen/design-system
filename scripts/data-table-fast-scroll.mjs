@@ -67,6 +67,7 @@ import { tmpdir } from 'node:os'
 import { join, extname, dirname, basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser } from './lib/launch-browser.mjs'
+import { median, gateVerdict } from './lib/fast-scroll-gate-policy.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (name, def) => { const hit = process.argv.find((a) => a.startsWith(`--${name}=`)); return hit ? hit.slice(name.length + 3) : def }
@@ -479,7 +480,6 @@ const line = (r, i) => {
     (r.shotStats.length ? `;截圖近白 ${r.shotStats.map((s) => `${s.afterTick === 0 ? '靜止基準' : '第' + s.afterTick + '刻'} 中間 ${s.center == null ? '-' : pct(s.center)} / 左 ${s.left == null ? '-' : pct(s.left)}`).join(',')}` : '') +
     (r.errors.length ? `;pageerror ${r.errors.length}(${r.errors[0].slice(0, 80)})` : '')
 }
-const median = (arr) => { const s = [...arr].sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : 0 }
 
 // ── 主流程 ──
 const results = []
@@ -571,6 +571,16 @@ if (SELFTEST) {
   process.exit(ok ? 0 : 1)
 }
 if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '' || ASSERT_FRAME_GAP_MS !== '') {
+  // 「證據有效」逐趟判(儀器沒在工作就不能當證據);「效能門檻」判同一 build 的**中位數**,不判單趟最大值。
+  // 為什麼(2026-09-11,c34e035c 實測):共享 2 vCPU runner 上同一份 build 的最長連續空白跑間差很大 ——
+  // eb5b42fc 兩趟 276 / 282ms 全綠,同樣的 data-table.tsx 加了 Tag/PeoplePicker 量測快取之後兩趟是 153 / 415ms。
+  // 中位數 284 跟 276 幾乎一樣、其餘七欄也都一樣,只有那一趟 415 讓 max 判定翻紅 = 雜訊,不是回歸。
+  // 中位數仍抓得到真回歸:同一支閘在 119e279f 是 438 / 476ms(中位 438)照樣紅。
+  // 另留一道「單趟天花板 = 門檻 × 2」擋住單趟災難級停頓(119e279f 的 476 在天花板內,靠中位數擋;
+  // 真正一趟就爆掉的回歸由天花板擋),兩道合起來才不會為了穩定性放掉偵測力。
+  const CEILING = 2
+  const groups = new Map()
+  for (const r of results) { if (!r.g) continue; const k = `${r.build}/${r.mode}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r) }
   for (const r of results) {
     if (!r.g) continue
     if (r.g.presented < 10) { console.log(`✗ ${r.build}/${r.mode}:只收到 ${r.g.presented} 張呈現幀,screencast 沒在工作,不能當證據`); failed++ }
@@ -579,11 +589,25 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
     if (r.errors.length) { console.log(`✗ ${r.build}/${r.mode}:pageerror ${r.errors.length}(${r.errors[0].slice(0, 100)})`); failed++ }
     const last = r.frames[r.frames.length - 1]
     if (last && (last.missing > 0 || last.empty > 0)) { console.log(`✗ ${r.build}/${r.mode}:靜止後 DOM 仍缺列 ${last.missing} / 格空 ${last.empty}`); failed++ }
-    if (ASSERT_BLANK_MS !== '' && r.g.blankLongestMs > Number(ASSERT_BLANK_MS)) { console.log(`✗ ${r.build}/${r.mode}:中央區最長連續空白 ${r.g.blankLongestMs.toFixed(0)}ms > ${ASSERT_BLANK_MS}ms(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`); failed++ }
-    if (ASSERT_FILL_MS !== '' && r.g.fillMs > Number(ASSERT_FILL_MS)) { console.log(`✗ ${r.build}/${r.mode}:停捲後列殼 ${r.g.fillMs.toFixed(0)}ms 才補齊 > ${ASSERT_FILL_MS}ms`); failed++ }
-    if (ASSERT_LONG_TASK_MS !== '' && r.longMax > Number(ASSERT_LONG_TASK_MS)) { console.log(`✗ ${r.build}/${r.mode}:主執行緒單一任務最長 ${r.longMax.toFixed(0)}ms > ${ASSERT_LONG_TASK_MS}ms(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms;這段期間所有 hover / 點擊都會被卡住)`); failed++ }
-    if (ASSERT_FRAME_GAP_MS !== '' && (r.g?.presentedGapMax ?? 0) > Number(ASSERT_FRAME_GAP_MS)) { console.log(`✗ ${r.build}/${r.mode}:合成器送出的幀距最大 ${(r.g.presentedGapMax).toFixed(0)}ms > ${ASSERT_FRAME_GAP_MS}ms`); failed++ }
   }
+  const gate = (limitRaw, name, pick, extra = () => '') => {
+    if (limitRaw === '') return
+    const limit = Number(limitRaw)
+    for (const [k, rs] of groups) {
+      const vals = rs.map(pick)
+      const mid = median(vals)
+      const worst = Math.max(...vals)
+      const all = vals.map((v) => v.toFixed(0)).join(' / ')
+      const verdict = gateVerdict(vals, limit, CEILING)
+      if (verdict === 'median') { console.log(`✗ ${k}:${name}中位數 ${mid.toFixed(0)}ms > ${limit}ms(${rs.length} 趟 ${all})${extra(rs[vals.indexOf(worst)])}`); failed++ }
+      else if (verdict === 'ceiling') { console.log(`✗ ${k}:${name}單趟 ${worst.toFixed(0)}ms > 天花板 ${limit * CEILING}ms(${rs.length} 趟 ${all};中位數 ${mid.toFixed(0)}ms 在門檻內,但這趟已是災難級)`); failed++ }
+      else console.log(`✓ ${k}:${name}中位數 ${mid.toFixed(0)}ms ≤ ${limit}ms(${rs.length} 趟 ${all})`)
+    }
+  }
+  gate(ASSERT_BLANK_MS, '中央區最長連續空白', (r) => r.g.blankLongestMs, (r) => `(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`)
+  gate(ASSERT_FILL_MS, '停捲後列殼補齊', (r) => r.g.fillMs)
+  gate(ASSERT_LONG_TASK_MS, '主執行緒單一任務最長', (r) => r.longMax, (r) => `(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms;這段期間所有 hover / 點擊都會被卡住)`)
+  gate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', (r) => r.g?.presentedGapMax ?? 0)
 }
 if (ASSERT_PAINT !== '' || ASSERT_DOM !== '') {
   for (const r of results) {

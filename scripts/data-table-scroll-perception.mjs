@@ -21,12 +21,16 @@ const dir = arg("static", process.env.DT_STATIC ?? "storybook-static"),
 fs.mkdirSync(out, { recursive: true });
 // ── 停頓重跑(2026-09-10,fa4fea16 讀回):共享 runner 偶發 ≥ 100ms 的主執行緒停頓,合成器一次跳過整個視窗(單一 scroll 事件 ≥ 視窗高,
 // 實測 526 / 467px)。那一跑量到的殼與延遲是「整窗跳轉」的設計反應(任何版本含 R17 都會先出殼),不是一般速度的證據。
-// 偵測到整窗跳轉就重跑(最多 3 次,每次全新頁面);三次都停頓才紅並指名原因。父程序只負責重跑,量測程式碼本身不變。
+// 偵測到整窗跳轉就重跑(每次全新頁面);全部都停頓才紅並指名原因。父程序只負責重跑,量測程式碼本身不變。
+// 次數 3 → 5(2026-09-11):dpr2 的每張 PNG 是 dpr1 的四倍畫素,編碼一慢就踩到 100ms 送幀缺口門檻;
+// c34e035c 的 dpr2 job 連三次都是 104 / 104 / 123ms(其餘覆蓋率全部正常:輸入區間 99%、行程 100%、首尾偏移準確),
+// 這是 runner 擷取跟不上,不是表格。**門檻一格都沒放寬**,只是多給幾次機會;真的每次都缺口照樣紅。
 if (!process.env.DT_PERCEPTION_ATTEMPT) {
   const { spawnSync } = await import("node:child_process");
   let code = 1;
   const attempts = [];
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  const MAX_ATTEMPTS = Number(process.env.DT_PERCEPTION_MAX_ATTEMPTS ?? 5);
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const r = spawnSync(process.execPath, process.argv.slice(1), {
       stdio: "inherit",
       env: { ...process.env, DT_PERCEPTION_ATTEMPT: String(attempt) },
@@ -43,11 +47,11 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
     const captureGap = summary && summary.captureCoverageValid === false &&
       Array.isArray(summary.captureCoverage?.reasons) && summary.captureCoverage.reasons.length > 0 &&
       summary.captureCoverage.reasons.every((r) => /active PNG gap|fewer than 10 active PNGs|PNGs cover less than 90% of the input interval/.test(r));
-    if ((summary?.stalled || captureGap) && attempt < 3) {
+    if ((summary?.stalled || captureGap) && attempt < MAX_ATTEMPTS) {
       console.log(
         summary.stalled
           ? `runner 停頓造成整窗跳轉(單一 scroll 事件 ${summary.maxScrollEventJumpPx}px ≥ 視窗 ${summary.setup?.rect?.height}px 的 ${summary.stallFraction === 1 ? "整個" : "3/4"}),第 ${attempt} 次作廢,重跑`
-          : `runner 送幀缺口(${summary.captureCoverage.reasons.join("; ")};最長 ${Math.round(summary.captureCoverage.maxActiveGapMs ?? 0)}ms),第 ${attempt} 次作廢,重跑`
+          : `runner 送幀缺口(${summary.captureCoverage.reasons.join("; ")};最長 ${Math.round(summary.captureCoverage.maxActiveGapMs ?? 0)}ms),第 ${attempt}/${MAX_ATTEMPTS} 次作廢,重跑`
       );
       continue;
     }
@@ -62,13 +66,13 @@ if (!process.env.DT_PERCEPTION_ATTEMPT) {
       const verdicts = validAttempts.map((x) => slowMachineVerdict(x));
       const slowOk = validAttempts.length > 0 && verdicts.every((v) => v.ok);
       console.log(
-        `${slowOk ? "✓" : "✗"} 三次都碰到整窗跳轉的停頓:這台機器目前跟不上 ${summary.peak}px/s,改以慢機器判準判定 —— ` +
+        `${slowOk ? "✓" : "✗"} ${MAX_ATTEMPTS} 次都碰到整窗跳轉的停頓:這台機器目前跟不上 ${summary.peak}px/s,改以慢機器判準判定 —— ` +
           `擷取有效的 ${validAttempts.length} 次全部零空白、輸入完整、靜止後補齊 ${slowOk ? "✓" : "✗"}` +
           (slowOk ? "" : `;未過:${verdicts.flatMap((v) => v.reasons).join(" / ")}`) +
           `(殼 ${attempts.map((x) => x.pixelShellFrames).join(" / ")} 幀與掃過視窗未補齊的列 ${attempts.map((x) => x.unresolved?.length ?? 0).join(" / ")} 是慢機器的「先出殼不留白」,不在判準內)`
       );
       code = slowOk ? 0 : 1;
-    } else if (captureGap) console.log("✗ 三次都碰到擷取送幀缺口:這台機器目前擷取不完整(不是表格)");
+    } else if (captureGap) console.log(`✗ ${MAX_ATTEMPTS} 次都碰到擷取送幀缺口:這台機器目前擷取不完整(不是表格);各次最長缺口 ${attempts.map((x) => Math.round(x.captureCoverage?.maxActiveGapMs ?? 0)).join(" / ")}ms`);
     break;
   }
   process.exit(code);

@@ -173,6 +173,7 @@ jobs:
           # 只靠下面的瀏覽器斷言等於零證據。2026-09-04 抓到:它被串在 `npm run test:datatable-invariants`
           # 裡,而這裡是直接呼叫 .mjs → 單測從來沒在 CI 跑過。
           node scripts/test-distribute-column-widths.mjs
+          node scripts/test-fast-scroll-gate-policy.mjs
           node scripts/data-table-invariants.mjs
           node scripts/data-table-scrollbar-visibility.mjs --quick
           node scripts/data-table-scroll-cost.mjs
@@ -186,7 +187,12 @@ jobs:
           # 長工與幀距**必須斷言**(2026-09-11 補):這支閘一直有量、卻只印在表上不判定 —— 一版把主執行緒最長任務
           # 從 66ms 推到 661ms 的改動因此全綠放行,而那 661ms 會把 hover / 點擊一起卡住(user 回報「hover 反應延遲很久」)。
           # 門檻 300ms:這台 runner 上 main 是 64–66ms,超過 300ms 已經是人明顯感覺得到的停頓(對齊 web.dev 對輸入延遲的量級)。
-          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
+          # 判定用**中位數**不是單趟最大值(2026-09-11):同一份 build 在這台共享 runner 上跑間差很大
+          # (eb5b42fc 276/282 全綠,分布相同的 c34e035c 卻是 153/415 —— 那趟 415 是雜訊不是回歸)。
+          # 中位數仍抓得到真回歸(119e279f 438/476 照樣紅),另留單趟天花板 = 門檻×2 擋災難級停頓。
+          # 判定政策本身由 scripts/test-fast-scroll-gate-policy.mjs 用真實 CI 數字當判定表驗(該紅的必須紅)。
+          # runs 2→3:中位數要有意義至少要三趟。
+          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=3 --gesture-speed=6000 --assert-max-blank-ms=400 --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
           # 列 hover 的反應延遲(2026-09-11 新閘;先跑對照組證明儀器會紅,再跑正式判定)
           node scripts/data-table-hover-latency.mjs --rows=8 --selftest
           node scripts/data-table-hover-latency.mjs --rows=10 --assert=on --assert-median=60 --assert-max=600
