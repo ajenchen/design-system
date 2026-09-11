@@ -67,7 +67,7 @@ import { tmpdir } from 'node:os'
 import { join, extname, dirname, basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser } from './lib/launch-browser.mjs'
-import { median, gateVerdict } from './lib/fast-scroll-gate-policy.mjs'
+import { median, gateVerdict, CEILING_FACTOR } from './lib/fast-scroll-gate-policy.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (name, def) => { const hit = process.argv.find((a) => a.startsWith(`--${name}=`)); return hit ? hit.slice(name.length + 3) : def }
@@ -578,7 +578,6 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
   // 中位數仍抓得到真回歸:同一支閘在 119e279f 是 438 / 476ms(中位 438)照樣紅。
   // 另留一道「單趟天花板 = 門檻 × 2」擋住單趟災難級停頓(119e279f 的 476 在天花板內,靠中位數擋;
   // 真正一趟就爆掉的回歸由天花板擋),兩道合起來才不會為了穩定性放掉偵測力。
-  const CEILING = 2
   const groups = new Map()
   for (const r of results) { if (!r.g) continue; const k = `${r.build}/${r.mode}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r) }
   for (const r of results) {
@@ -590,7 +589,7 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
     const last = r.frames[r.frames.length - 1]
     if (last && (last.missing > 0 || last.empty > 0)) { console.log(`✗ ${r.build}/${r.mode}:靜止後 DOM 仍缺列 ${last.missing} / 格空 ${last.empty}`); failed++ }
   }
-  const gate = (limitRaw, name, pick, extra = () => '') => {
+  const gate = (limitRaw, name, CEILING, pick, extra = () => '') => {
     if (limitRaw === '') return
     const limit = Number(limitRaw)
     for (const [k, rs] of groups) {
@@ -604,10 +603,10 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
       else console.log(`✓ ${k}:${name}中位數 ${mid.toFixed(0)}ms ≤ ${limit}ms(${rs.length} 趟 ${all})`)
     }
   }
-  gate(ASSERT_BLANK_MS, '中央區最長連續空白', (r) => r.g.blankLongestMs, (r) => `(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`)
-  gate(ASSERT_FILL_MS, '停捲後列殼補齊', (r) => r.g.fillMs)
-  gate(ASSERT_LONG_TASK_MS, '主執行緒單一任務最長', (r) => r.longMax, (r) => `(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms;這段期間所有 hover / 點擊都會被卡住)`)
-  gate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', (r) => r.g?.presentedGapMax ?? 0)
+  gate(ASSERT_BLANK_MS, '中央區最長連續空白', CEILING_FACTOR.blank, (r) => r.g.blankLongestMs, (r) => `(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`)
+  gate(ASSERT_FILL_MS, '停捲後列殼補齊', CEILING_FACTOR.fill, (r) => r.g.fillMs)
+  gate(ASSERT_LONG_TASK_MS, '主執行緒單一任務最長', CEILING_FACTOR.longTask, (r) => r.longMax, (r) => `(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms;這段期間所有 hover / 點擊都會被卡住)`)
+  gate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? 0)
 }
 if (ASSERT_PAINT !== '' || ASSERT_DOM !== '') {
   for (const r of results) {

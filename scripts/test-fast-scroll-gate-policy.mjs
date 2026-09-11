@@ -8,7 +8,7 @@
  *
  *   node scripts/test-fast-scroll-gate-policy.mjs
  */
-import { gateVerdict } from './lib/fast-scroll-gate-policy.mjs'
+import { gateVerdict, CEILING_FACTOR } from './lib/fast-scroll-gate-policy.mjs'
 
 const LIMIT = 400 // CI 的 --assert-max-blank-ms
 const CASES = [
@@ -24,12 +24,28 @@ const CASES = [
   ['修前 main 的量級(684–1055ms)', [684, 1055], 'median'],
 ]
 
+// 長工最長 / 幀距最大本身已經是 max,天花板放寬到 ×3(理由見 lib)。門檻 300ms。
+const LONG_TASK_LIMIT = 300
+const LONG_TASK_CASES = [
+  ['68f5c9af CI:一趟被 runner 搶走(本機 5 趟 141/164,修前 135/148,分布沒變)', [111, 115, 664], 'pass'],
+  ['eb5b42fc 已發布版', [124, 136], 'pass'],
+  ['把最長任務從 66 推到 661ms 的那一版(真回歸,中位就爆)', [661, 658, 670], 'median'],
+  ['×3 天花板剛好(不得紅)', [100, 110, 900], 'pass'],
+  ['×3 天花板超過 1ms(必須紅)', [100, 110, 901], 'ceiling'],
+]
+
 let fail = 0
 for (const [name, vals, want] of CASES) {
-  const got = gateVerdict(vals, LIMIT)
+  const got = gateVerdict(vals, LIMIT, CEILING_FACTOR.blank)
   const ok = got === want
   if (!ok) fail++
   console.log(`${ok ? '✓' : '✗'} ${name} | ${vals.join(' / ')}ms → ${got}(期望 ${want})`)
+}
+for (const [name, vals, want] of LONG_TASK_CASES) {
+  const got = gateVerdict(vals, LONG_TASK_LIMIT, CEILING_FACTOR.longTask)
+  const ok = got === want
+  if (!ok) fail++
+  console.log(`${ok ? '✓' : '✗'} 長工|${name} | ${vals.join(' / ')}ms → ${got}(期望 ${want})`)
 }
 console.log(fail ? `\n✗ ${fail} 項判定不符` : '\n✓ 判定政策對照組全過:該紅的紅、該綠的綠')
 process.exit(fail ? 1 : 0)
