@@ -398,9 +398,6 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
   try {
     const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: DPR })
     const errors = []; page.on('pageerror', (e) => errors.push(e.message))
-    // 打開列殼決策的可觀測旗標:結尾要讀 `data-shell-state` 算出「這台機器畫一個視窗要多久」,
-    // 才知道「不准出殼」那條斷言適不適用(CI 的 2 vCPU runner 本來就畫不動,出殼是正確行為)。
-    await page.addInitScript(() => { window.__DT_DEBUG_SHELL = true })
     await page.addInitScript(INIT)
     await page.goto(build.url ? `${base}${build.url}` : `${base}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitUntil: 'load' })
     if (CSS_INJECT) await page.addStyleTag({ content: CSS_INJECT })
@@ -468,6 +465,17 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
     const tickTs = raw.wheelTs.map((w) => w.t); const gaps = tickTs.slice(1).map((t, i) => t - tickTs[i])
     // 這台機器畫一個視窗要多久 = 視窗列數 × 每列成本 + commit 固定成本(全部取自元件自己量的 `data-shell-state`)。
     // 「畫得動的機器不准出殼」那條斷言要先知道這個值才知道適不適用。
+    //
+    // **旗標只在量完之後才開(2026-09-11 踩過)**:`__DT_DEBUG_SHELL` 會讓元件每次 commit 都往捲動容器寫一個長字串屬性,
+    // 而 `data-table.css` 有 `[data-datatable-hscroll]` 的屬性選擇器 —— 等於每次 commit 多一輪樣式重算。
+    // 一開始我用 `addInitScript` 整跑開著,CI 的長工從 113/101/110ms 變成 105/663/359ms、script 874 → 1008-1235ms,
+    // **儀器把被量的東西弄慢了**。現在改成:量完 → 開旗標 → 推一格捲動逼出一次 commit → 讀屬性。
+    await page.evaluate(() => {
+      window.__DT_DEBUG_SHELL = true
+      const el = document.querySelector('[data-datatable-hscroll]')
+      if (el) el.scrollTop += 1
+    }).catch(() => {})
+    await page.waitForTimeout(400)
     const shellCost = await page.evaluate(() => {
       const el = document.querySelector('[data-datatable-hscroll]')
       const st = el?.getAttribute('data-shell-state')
