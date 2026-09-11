@@ -292,3 +292,14 @@ Tag 是**純視覺 indicator**(非互動 control,互動版本是 Chip),預設 AR
 - `badge.spec.md`
 - `inline-action.spec.md`
 - `overflow-indicator.spec.md`
+
+## 截斷量測的快取(2026-09-11)
+
+Tag 用 Canvas `measureText` 判截斷(flex 內 `scrollWidth` 不可靠)。一次量測做三件事:`getComputedStyle`(逼出樣式重算)、
+`measureText`、讀 `clientWidth`(逼出版面)。在 DataTable 這種一次掛載數十個 Tag 的場景,前兩件幾乎總是重複 ——
+同尺寸的 Tag 字型完全相同,表格裡的標籤文字更是少數幾種(roadmap 範例 500 列只有八種)。
+CPU 剖析實測:一次 6,000px/s 手勢裡這個 measure 自身時間 142–232ms,是 DataTable 每列成本的第二大項。
+
+**兩層快取**:(1) 字型與內距,鍵 = `class × 最近的 data-density × 根節點 data-theme × devicePixelRatio`
+(所有會改變計算字型的東西都在鍵裡);(2) 文字寬度,鍵 = `字型字串 × 文字`。
+**`document.fonts` 的 `loadingdone` 一觸發就把兩層整個清掉** —— 字體檔晚載入會改變寬度,這是這類快取最容易出錯的地方,不能省。

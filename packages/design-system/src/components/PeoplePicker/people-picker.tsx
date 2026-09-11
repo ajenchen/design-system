@@ -246,13 +246,23 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
     // tagArea=null → available=0 → setStackVisibleCount(0) → 整 stack 全 overflow → fallback 到
     // Combobox DOM-based useOverflowCount(非 deterministic 那個算法)。修:用 root 自己當 trigger,
     // 從 root 內找 tagArea(flex-1 min-w-0 div)。
+    // **元素只查一次**(2026-09-11;CPU 剖析:這個 calc 在一次 6,000px/s 手勢裡自身時間 139ms,
+    // 是 DataTable 每列成本的第三大項)。兩個 `[class*=…]` 屬性子字串選擇器很貴,而它們找的是
+    // 同一棵子樹裡固定的兩個節點 —— ResizeObserver 每次回呼重查是純浪費。查不到時不快取(第一次
+    // 掛載可能還沒渲染出來),下次回呼再查。
+    let cachedTrigger: HTMLElement | null = null
+    let cachedTagArea: HTMLElement | null = null
     const calc = () => {
       // 2026-08-05 native-parity fix(touch 實圖抓「多人只剩 +N」):NativeCombobox root 無
       // role="combobox"(a11y 在隱藏 <select> 上)→ 原查法 trigger=null → available=0 → 全
       // overflow。雙分支通用:查無 combobox role 時 root 自身就是 trigger(native __triggerRef
       // 即 field wrapper root),tagArea(flex-1 min-w-0)兩分支同構。
-      const trigger = root.matches('[role="combobox"]') ? root : (root.querySelector<HTMLElement>('[role="combobox"]') ?? root)
-      const tagArea = trigger?.querySelector<HTMLElement>('div[class*="flex-1"][class*="min-w-0"]')
+      const trigger = cachedTrigger?.isConnected
+        ? cachedTrigger
+        : (cachedTrigger = root.matches('[role="combobox"]') ? root : (root.querySelector<HTMLElement>('[role="combobox"]') ?? root))
+      const tagArea = cachedTagArea?.isConnected
+        ? cachedTagArea
+        : (cachedTagArea = trigger?.querySelector<HTMLElement>('div[class*="flex-1"][class*="min-w-0"]') ?? null)
       const available = tagArea?.clientWidth ?? trigger?.clientWidth ?? 0
       const visible = getAvatarStackVisibleCount({
         availablePx: available,
