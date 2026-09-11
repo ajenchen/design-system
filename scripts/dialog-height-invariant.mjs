@@ -127,7 +127,9 @@ try {
   for (const id of overlayIds) {
     for (const vh of [240]) { // 240 是最嚴苛的一檔;跑兩檔只是把同一條斷言重跑一次,CI 時間卻加倍
       await page.setViewportSize({ width: 1280, height: vh })
-      await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'networkidle', timeout: 60_000 }).catch(() => {})
+      // `load` + 等 story 根節點有內容:比 networkidle 快得多,而且不會量到還沒渲染的空頁面。
+      await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'load', timeout: 60_000 }).catch(() => {})
+      await page.waitForFunction(() => (document.querySelector('#storybook-root')?.children.length ?? 0) > 0, { timeout: 5000 }).catch(() => {})
       // H5 的對照組:把 2026-09-12 的兩個修法同時還原 —— 容器 overflow 放開 + Tabs Root 退回裸 block。
       // 少了這一步,H5 的綠燈只證明「現在沒壞」,不證明「壞了會被抓到」。
       if (SELFTEST_H5) await page.addStyleTag({ content: '[role="dialog"]{overflow:visible !important} [data-orientation][dir]{display:block !important}' }).catch(() => {})

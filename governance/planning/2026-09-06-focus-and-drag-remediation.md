@@ -3876,3 +3876,55 @@ GitHub API 對不存在的 repo 回 404,腳本把空清單當成「還沒跑完�
 (我新加的兩支瀏覽器閘把它撐爆),連帶讓聚合 job 判 fail。
 **修**:switch-thumb-ring 加早退(沒有 Switch 的 story 直接跳過切 theme + 等待)5.5 分 → **2分23秒**;
 對照組只跑有 Switch 的 9 支 5 分 → **25 秒**;取樣數不變(44)。job timeout 15 → 25 分留 headroom。
+
+---
+
+## AD103 — CI timeout 契約:我違反了它,正解不是調高上限
+
+`8417790b` 的 `Verify static` 紅在 `infra/governance/test/ci-workflow-scope.test.mjs:32`(`25 !== 15`)——
+我把 interaction job 的 `timeout-minutes` 從 15 改成 25。那條測試逐字定:
+「只有兩個 DataTable job 可以到 25,其餘一律 15,而且沒有任何 job 可以超過 25」,理由是「快速 deterministic 範圍」。
+
+**這是我違反既有契約,不是契約擋路。** 正解是讓閘跑得進 15 分:
+
+| 閘 | 改前 | 改後 | 做了什麼 |
+|---|---|---|---|
+| switch-thumb-ring(正常) | 5分30秒 → 2分23秒 → **48 秒** | | 沒有 Switch 的 story 早退 + `load` 取代 `networkidle` |
+| switch-thumb-ring(對照組) | 5 分 → **25 秒** | | 只跑有 Switch 的 9 支 |
+| hover-color-pair | ~1分20秒 → **37 秒** | | 同上 |
+| dialog-height ×3 | ~2分30秒 → **~1分20秒** | | 同上 |
+| **九支合計** | **8 分 00 秒** | **3 分 34 秒** | |
+
+`load` 比 `networkidle` 早觸發,所以補了一個有界守衛:等 `#storybook-root` 真的有子節點(逾時 5 秒)。
+沒有這個守衛,較慢的機器會量到還沒渲染的空頁面而**假裝沒有 Switch** —— 那是假陰性,比慢更糟。
+取樣數在提速前後都是 44,覆蓋未減。
+
+**同一跑的好消息**:`Verify browser(component + interaction gates)` 在 CI 上**綠了** ——
+新加的三支閘(switch-thumb-ring / color-scheme / H5)在 CI 真的跑得過,不只本機。
+
+## AD104 — FieldGroup 三檔 gap 的來源查證:不是 user 定的
+
+user 問「compact/normal/loose 真的是我定義的嗎?」。全盤查證結果:**不是**。
+
+| 證據 | 內容 |
+|---|---|
+| 引入 commit | `9917993e`(2026-04-10)「refactor(fields): restructure field architecture + **rename to shadcn conventions**」 |
+| shadcn 實際有沒有這個 prop | **沒有**(WebFetch `ui.shadcn.com/docs/components/field`:FieldGroup props 只有 `className`,間距由元件固定)——宣稱對齊的對象根本沒有這個設計 |
+| field.spec.md 的來源標記 | 該檔凡 user 決定都明寫「user 拍板 / user 確認 + 日期」(`:124` `:404` `:415` 等),**gap 表 `:304-310` 一個標記都沒有** |
+| 豁免那行 | `layoutSpace.spec.md:168`「元件自身刻意固定(如 FieldGroup 三級固定 gap)」來自 `31383ac4`(2026-07-02),commit body 唯一的 user 原話是「**怎麼確保以後都遵循 layout-space 沒偏移且有 SSOT**」(問防漂移機制,不是定表單間距),而且該 commit 自述那張表是「**防我再 over-reach**」 |
+
+**user 的理解與 DS 自己的規則一致**:`layoutSpace.spec.md:77` 逐字
+「跨範疇 + parallel / independent | **form fields stack(parallel inputs)** / … | 規則 3 = **loose**」。
+同一份 spec 的邊界表卻把 FieldGroup 列為豁免 —— **同一個概念同時出現在兩欄,是真矛盾**。
+
+**實際使用**(全 repo 33 個 `<FieldGroup>`):傳 `compact` 1 次、傳 `normal` 1 次(等於傳預設值)、
+**`loose` 0 次**,其餘 31 個吃預設。唯一的 compact 用例(`accordion.principles.stories.tsx:280`)
+沒有寫任何理由,同一支 story 隔壁的 item 甚至沒用 FieldGroup。
+
+**世界級對照**(三家第一手):shadcn FieldGroup 無 gap prop(元件固定)/ MUI 無 form-specific 檔位
+(泛用數值 × theme spacing,系統級)/ Ant Form 無 per-form prop(全域 token `itemMarginBottom: 24`,走 ConfigProvider)。
+**三家都把表單間距當系統級設定,沒有一家開放 per-instance 檔位。**
+
+**移除三檔的影響**(若改為消費 `--layout-space-loose`):md density 下 `normal`(16px)= loose token(16px),
+**33 個用法裡 32 個視覺零變化**;lg 下從凍結的 16px 變成 24px(即開始履行 density 的承諾);
+唯一的 compact 用例 12px → 16px。**待 user 拍板**(這是可感知的產品決定,不自行落地)。

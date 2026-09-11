@@ -350,10 +350,12 @@ jobs:
   verify-browser-interaction:
     name: Verify browser(component + interaction gates)
     runs-on: ubuntu-24.04
-    # 2026-09-12:15 分不夠了(上一跑剛好跑滿 15 分被 cancel,連帶讓聚合 job 判 fail)。
-    # 已先把 switch-thumb-ring 從 ~5.5 分壓到 ~2.5 分(沒有 Switch 的 story 直接跳過切 theme),
-    # 這裡再留 headroom 給新增的 color-scheme 與 H5 對照組。
-    timeout-minutes: 25
+    # 2026-09-12:上一跑剛好跑滿 15 分被 cancel。我一度把上限改成 25,**那是錯的** ——
+    # `infra/governance/test/ci-workflow-scope.test.mjs:32` 逐字定「只有兩個 DataTable job 可以到 25,
+    # 其餘一律 15」,那是「快速 deterministic 範圍」的契約。正解是讓閘跑得進 15 分:
+    # switch-thumb-ring 已從 ~5.5 分壓到 2分23秒(沒有 Switch 的 story 直接跳過切 theme 與等待)、
+    # 對照組從 ~5 分壓到 25 秒(只跑有 Switch 的 9 支),取樣數不變(44)。
+    timeout-minutes: 15
     steps:
       - name: Checkout reviewed source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

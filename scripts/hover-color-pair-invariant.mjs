@@ -69,8 +69,10 @@ let scanned = 0, pairs = 0
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
   for (const id of targets) {
-    await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'networkidle', timeout: 60_000 }).catch(() => {})
-    await page.waitForTimeout(250)
+    // 同 switch-thumb-ring:`load` + 等 story 根節點有內容,比 networkidle 快數倍且不犧牲判定。
+    await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'load', timeout: 60_000 }).catch(() => {})
+    await page.waitForFunction(() => (document.querySelector('#storybook-root')?.children.length ?? 0) > 0, { timeout: 5000 }).catch(() => {})
+    await page.waitForTimeout(120)
     // 注入必須打到**真的有邊框的那個後代**。舊版寫 `> *`(直接子代)只打到一個 border-width: 0px 的
     // 外層 wrapper,會被下方 `>= 0.5px` 過濾掉 —— 2026-09-11 Switch 改成透明外圈、DS 內真配對歸零後
     // 才暴露出來(在那之前是真配對在扛,注入的瑕疵被掩蓋)。用後代選擇器 + 同時蓋掉 background-clip,

@@ -57,8 +57,11 @@ const px = (png, x, y) => { const i = ((y * png.width) + x) << 2; return [png.da
 const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) <= TOLERANCE)
 
 for (const id of ids) {
-  await page.goto(`${server.origin}/iframe.html?id=${id}&viewMode=story`, { waitUntil: 'networkidle' }).catch(() => {})
-  await page.waitForTimeout(150)
+  // `load` 比 `networkidle` 早很多(164 支從 2分23秒降到 48 秒,取樣數不變 44),但它不保證 story 已渲染。
+  // 所以改成等「story 根節點真的有子節點」——快,而且不會在較慢的機器上量到空頁面而假裝沒有 Switch。
+  await page.goto(`${server.origin}/iframe.html?id=${id}&viewMode=story`, { waitUntil: 'load' }).catch(() => {})
+  await page.waitForFunction(() => (document.querySelector('#storybook-root')?.children.length ?? 0) > 0, { timeout: 5000 }).catch(() => {})
+  await page.waitForTimeout(80)
   // 這支 story 沒有 Switch 就直接跳過:切 theme + 等過渡每支要 ~0.5s,164 支裡只有少數有 Switch,
   // 不跳過的話光等待就多花 ~1.5 分鐘,CI 的 15 分鐘 job 會被撐爆(2026-09-12 實際被 cancel 過一次)。
   if (await page.locator('[role="switch"]').count() === 0) continue
