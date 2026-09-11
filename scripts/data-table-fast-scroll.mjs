@@ -67,7 +67,7 @@ import { tmpdir } from 'node:os'
 import { join, extname, dirname, basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchBrowser } from './lib/launch-browser.mjs'
-import { median, gateVerdict, CEILING_FACTOR } from './lib/fast-scroll-gate-policy.mjs'
+import { median, gateVerdict, CEILING_FACTOR, longTaskLimit } from './lib/fast-scroll-gate-policy.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 const arg = (name, def) => { const hit = process.argv.find((a) => a.startsWith(`--${name}=`)); return hit ? hit.slice(name.length + 3) : def }
@@ -638,7 +638,14 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
   }
   gate(ASSERT_BLANK_MS, '中央區最長連續空白', CEILING_FACTOR.blank, (r) => r.g.blankLongestMs, (r) => `(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`)
   gate(ASSERT_FILL_MS, '停捲後列殼補齊', CEILING_FACTOR.fill, (r) => r.g.fillMs)
-  gate(ASSERT_LONG_TASK_MS, '主執行緒單一任務最長', CEILING_FACTOR.longTask, (r) => r.longMax, (r) => `(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms;這段期間所有 hover / 點擊都會被卡住)`)
+  if (ASSERT_LONG_TASK_MS !== '') {
+    // 門檻相對於這台機器自己的能力(理由見 lib 的 longTaskLimit)
+    const costs = results.map((r) => r.shellCost).filter((v) => Number.isFinite(v))
+    const worstCost = costs.length ? Math.max(...costs) : null
+    const limit = longTaskLimit(Number(ASSERT_LONG_TASK_MS), worstCost)
+    if (limit !== Number(ASSERT_LONG_TASK_MS)) console.log(`   (這台機器畫一個視窗要 ${worstCost.toFixed(0)}ms → 長工門檻由 ${ASSERT_LONG_TASK_MS}ms 放大為 ${limit.toFixed(0)}ms)`)
+    gate(String(limit), '主執行緒單一任務最長', CEILING_FACTOR.longTask, (r) => r.longMax, (r) => `(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms;這段期間所有 hover / 點擊都會被卡住)`)
+  }
   gate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? 0)
   if (ASSERT_SHELL_FRAMES !== '') {
     // 元件自己量出來的能力值(`data-shell-state`,需 window.__DT_DEBUG_SHELL);讀不到就保守跳過並說明

@@ -8,7 +8,7 @@
  *
  *   node scripts/test-fast-scroll-gate-policy.mjs
  */
-import { gateVerdict, CEILING_FACTOR } from './lib/fast-scroll-gate-policy.mjs'
+import { gateVerdict, CEILING_FACTOR, longTaskLimit } from './lib/fast-scroll-gate-policy.mjs'
 
 const LIMIT = 400 // CI 的 --assert-max-blank-ms
 const CASES = [
@@ -46,6 +46,26 @@ for (const [name, vals, want] of LONG_TASK_CASES) {
   const ok = got === want
   if (!ok) fail++
   console.log(`${ok ? '✓' : '✗'} 長工|${name} | ${vals.join(' / ')}ms → ${got}(期望 ${want})`)
+}
+// 長工門檻的相對化:快機器仍吃絕對值、慢 runner 跟著放大、661ms 的真回歸在當時的 runner 上仍然紅
+const LIMIT_CASES = [
+  ['快機器(畫一個視窗 60ms)→ 仍吃絕對門檻 300', [300, 60], 300],
+  ['CI 基線(畫一個視窗 174ms)→ 348', [300, 174], 348],
+  ['慢 runner(畫一個視窗 350ms)→ 700', [300, 350], 700],
+  ['讀不到能力值 → 退回絕對門檻', [300, null], 300],
+]
+for (const [name, [abs, cost], want] of LIMIT_CASES) {
+  const got = longTaskLimit(abs, cost)
+  const ok = got === want
+  if (!ok) fail++
+  console.log(`${ok ? '✓' : '✗'} 長工門檻|${name} | → ${got}(期望 ${want})`)
+}
+{
+  // 661ms 的把手回歸發生在 viewportDrawMs ≈ 174ms 的 runner 上:門檻 348 → 必須紅
+  const got = gateVerdict([661, 658, 670], longTaskLimit(300, 174), CEILING_FACTOR.longTask)
+  const ok = got === 'median'
+  if (!ok) fail++
+  console.log(`${ok ? '✓' : '✗'} 長工門檻|661ms 真回歸在相對門檻下仍然紅 | → ${got}(期望 median)`)
 }
 console.log(fail ? `\n✗ ${fail} 項判定不符` : '\n✓ 判定政策對照組全過:該紅的紅、該綠的綠')
 process.exit(fail ? 1 : 0)

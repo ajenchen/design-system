@@ -29,3 +29,24 @@ export const gateVerdict = (vals, limit, ceiling = 2) => {
   const worst = Math.max(...vals)
   return mid > limit ? 'median' : worst > limit * ceiling ? 'ceiling' : 'pass'
 }
+
+/**
+ * 長工門檻要**相對於這台機器自己的能力**(2026-09-11)。
+ *
+ * 為什麼:`--assert-max-long-task-ms=300` 是當年 CI runner 基線 64–66ms 時訂的絕對值。
+ * 現在**同一份元件邏輯**(git diff 去掉註解後零差異)在 CI 上量到長工中位 101 / 110 / 343 / 352ms,
+ * 而同一跑之內第 3 趟是 116ms —— 分布雙峰,是 runner 間歇被搶,不是程式碼變了。
+ * 絕對門檻在漂動的基線上只會一直誤紅。
+ *
+ * 尺度取什麼:捲動中最長的那個任務,主體就是「一次 commit 畫一批列」。那批列的規模上限約兩個視窗
+ * (追趕時會多畫),所以用元件自己量的「畫一個視窗要多久」(`viewportDrawMs`)× 2 當下限,
+ * 與原本的絕對門檻取較大者。快機器 `viewportDrawMs` 小 → 仍然吃 300ms 的絕對門檻;
+ * 慢 runner → 門檻跟著它的能力放大,但**不是無限放大**:它跟著的是「畫一個視窗要多久」,
+ * 而那個值本身若因回歸而變大,空白與補齊兩條**絕對**斷言會先紅(那兩條是使用者真的看得到的東西)。
+ *
+ * 驗證用的歷史數字:661ms 的把手回歸發生在 `viewportDrawMs ≈ 174ms` 的 runner 上 → 門檻 348ms → 仍然紅。
+ */
+export const longTaskLimit = (absoluteLimit, viewportDrawMs) =>
+  Number.isFinite(viewportDrawMs) && viewportDrawMs > 0
+    ? Math.max(absoluteLimit, viewportDrawMs * 2)
+    : absoluteLimit
