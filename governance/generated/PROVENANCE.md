@@ -203,7 +203,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | governance-control-plane-clis | `infra/governance/bin/` | `sha256:90ea8b648deef6df59ba46f48069a551112cb41982cf9a771edeb2ad355db6ce` |
 | governance-control-plane-libraries | `infra/governance/lib/` | `sha256:9e70bb963b8bd11c74b5d2b2063802848cf33cfe63306e200b74ea31aa4e2f8d` |
 | governance-control-plane-schemas | `infra/governance/schemas/` | `sha256:e0b1de916c7199594c74f5ab8e94c84f6fe9c754f17f2340cec28696e69d1713` |
-| governance-control-plane-tests | `infra/governance/test/` | `sha256:29ad85eaefffe3da02db4b2fcb432de9fa5a81829dabf348a723b1a36872ce88` |
+| governance-control-plane-tests | `infra/governance/test/` | `sha256:1bcc79ebb42311a0d3e8dfe2e54aaa567bad652511145e2360db1f6f3544ee73` |
 | governance-counter-metadata | `generated/governance/governance-counters.json` | `sha256:f2e839116fe8dcab86bd43567d773bae336b28755e4df8ef90bfe47aef304438` |
 | governance-fleet-inventory | `infra/governance/inventory/` | `sha256:78da16ea5ac91be3d8ba1fd1df198aa251dfd4de5b2abbe2d9036b041b2341c4` |
 | governance-github-desired-state | `infra/governance/desired/` | `sha256:315edb88eedfcf22525f4bba76f9677de7c6bb233ede5fdf8f61e2ec72b73db4` |
