@@ -33,16 +33,19 @@ const AVAILABLE = VH - INSET * 2 // 704
 const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
 const browser = await launchBrowser()
 let fail = 0
+let patchedChunks = 0
 const ck = (name, ok, detail = '') => { console.log(`${ok ? '✓' : '✗'} ${name}${detail ? ' | ' + detail : ''}`); if (!ok) fail++ }
 
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: VH } })
   if (SELFTEST) {
-    // 把兩種模式共用的上限整段拿掉(min(...) 與 calc(...) 都換成一個永遠不生效的值)
-    await page.route((u) => /dialog-[^/]*\.js$/.test(u.pathname), async (route) => {
+    // 把兩種模式共用的上限拿掉(`calc(100svh - …)` 換成一個永遠夾不住的值)。
+    // **路由所有 .js 不是只路由 dialog-*.js**(2026-09-11):CI 的 chunk 切法跟本機不同,
+    // 只比對檔名會整個漏掉 —— 那一跑對照組沒生效、`fail` 是 0,腳本卻印「如預期紅」並 exit 1(訊息與事實相反)。
+    await page.route((u) => u.pathname.endsWith('.js'), async (route) => {
       const res = await route.fetch()
       let body = await res.text()
-      if (body.includes('--overlay-viewport-inset')) body = body.split('calc(100svh - ').join('calc(100000px - ')
+      if (body.includes('calc(100svh - ')) { patchedChunks++; body = body.split('calc(100svh - ').join('calc(100000px - ') }
       return route.fulfill({ response: res, body, headers: { ...res.headers(), 'content-type': 'application/javascript' } })
     })
   }
@@ -102,5 +105,13 @@ try {
   await browser.close()
   await server.stop()
 }
-console.log(fail ? `\n✗ ${fail} 項未通過` : `\n✓ ${SELFTEST ? '對照組:拿掉上限後如預期紅(儀器有效)' : 'Dialog 高度不變式:全通過'}`)
-process.exit(SELFTEST ? (fail ? 0 : 1) : (fail ? 1 : 0))
+if (SELFTEST) {
+  // 對照組要能宣稱「儀器有效」,必須同時成立:(a) 真的改寫到了 chunk (b) 改寫之後真的紅了。
+  // 少了 (a) 就只是「什麼都沒做所以沒紅」,那不是證據。
+  if (patchedChunks === 0) { console.log(`\n✗ 對照組沒有生效:沒有任何 chunk 含 \`calc(100svh - \`(chunk 切法變了?)——這次什麼都沒驗到`); process.exit(1) }
+  if (fail === 0) { console.log(`\n✗ 對照組改寫了 ${patchedChunks} 個 chunk,但斷言全過 —— 儀器該紅卻沒紅`); process.exit(1) }
+  console.log(`\n✓ 對照組:改寫 ${patchedChunks} 個 chunk 拿掉上限後,${fail} 條斷言如預期紅(儀器有效)`)
+  process.exit(0)
+}
+console.log(fail ? `\n✗ ${fail} 項未通過` : `\n✓ Dialog 高度不變式:全通過`)
+process.exit(fail ? 1 : 0)

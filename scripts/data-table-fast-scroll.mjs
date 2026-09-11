@@ -648,35 +648,47 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
       else console.log(`✓ ${k}:${name}中位數 ${mid.toFixed(0)}ms ≤ ${limit.toFixed(0)}ms(${rs.length} 趟 ${all})`)
     }
   }
-  // 空白:有參考建置(`--ref`)就判「本 build ÷ 參考 ≤ 比值上限」,那是唯一不受 runner 漂移影響的形式;
-  // 沒有參考就退回絕對門檻,並**印出來說明**(不可靜默降級)。
-  if (REF_LABEL) {
-    const key = (label) => `${label}/gesture`
-    const blankOf = (label) => { const rs = groups.get(key(label)); return rs?.length ? median(rs.map((r) => r.g.blankLongestMs)) : NaN }
-    const refMs = blankOf(REF_LABEL)
+  // 有參考建置(`--ref`)時,**會被機器速度影響的三個指標**都改判「本 build ÷ 參考 ≤ 比值上限」——
+  // 那是唯一不受 runner 漂移影響的形式。沒有參考(或參考那項是 0)就退回絕對門檻,並**印出來說明**(不可靜默降級)。
+  // 為什麼長工與幀距也要:同一輪 CI 上 main 自己就量到長工 698ms、幀距 845ms,絕對門檻在那台機器上量的是機器不是程式碼。
+  const refBlank = (pick) => {
+    const rs = groups.get(`${REF_LABEL}/gesture`)
+    return rs?.length ? median(rs.map(pick)) : NaN
+  }
+  const relGate = (rawLimit, name, ceiling, pick, extra = () => '') => {
+    if (rawLimit === '' && !REF_LABEL) return
+    const refMs = REF_LABEL ? refBlank(pick) : NaN
+    if (!Number.isFinite(refMs) || refMs <= 0) {
+      if (REF_LABEL) console.log(`   (參考「${REF_LABEL}」的${name}是 ${Number.isFinite(refMs) ? refMs.toFixed(0) : '無資料'},無法當分母 → 這項退回絕對門檻 ${rawLimit || '(未設)'}ms)`)
+      gate(rawLimit, name, ceiling, pick, extra)
+      return
+    }
     for (const [k, rs] of groups) {
       const label = k.split('/')[0]
       if (label === REF_LABEL) continue
-      const mine = median(rs.map((r) => r.g.blankLongestMs))
+      const mine = median(rs.map(pick))
       const verdict = refRatioVerdict(mine, refMs)
-      if (verdict === 'skip') { console.log(`✗ 空白比值:找不到參考建置「${REF_LABEL}」的資料,無法判定(不靜默放行)`); failed++ }
-      else if (verdict === 'fail') { console.log(`✗ ${k}:中央區最長連續空白中位數 ${mine.toFixed(0)}ms > 參考「${REF_LABEL}」的 ${refMs.toFixed(0)}ms × ${BLANK_RATIO_LIMIT}(= ${(refMs * BLANK_RATIO_LIMIT).toFixed(0)}ms)`); failed++ }
-      else console.log(`✓ ${k}:中央區最長連續空白中位數 ${mine.toFixed(0)}ms ≤ 參考「${REF_LABEL}」的 ${refMs.toFixed(0)}ms × ${BLANK_RATIO_LIMIT}(= ${(refMs * BLANK_RATIO_LIMIT).toFixed(0)}ms)`)
+      const cap = (refMs * BLANK_RATIO_LIMIT).toFixed(0)
+      if (verdict === 'fail') { console.log(`✗ ${k}:${name}中位數 ${mine.toFixed(0)}ms > 參考「${REF_LABEL}」的 ${refMs.toFixed(0)}ms × ${BLANK_RATIO_LIMIT}(= ${cap}ms)`); failed++ }
+      else console.log(`✓ ${k}:${name}中位數 ${mine.toFixed(0)}ms ≤ 參考「${REF_LABEL}」的 ${refMs.toFixed(0)}ms × ${BLANK_RATIO_LIMIT}(= ${cap}ms)`)
     }
-  } else {
-    if (ASSERT_BLANK_MS !== '') console.log(`   (沒有給 --ref,空白改用絕對門檻 ${ASSERT_BLANK_MS}ms —— 這個值會被 runner 速度影響,見 lib 註解)`)
-    gate(ASSERT_BLANK_MS, '中央區最長連續空白', CEILING_FACTOR.blank, (r) => r.g.blankLongestMs, (r) => `(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`)
   }
+  relGate(ASSERT_BLANK_MS, '中央區最長連續空白', CEILING_FACTOR.blank, (r) => r.g.blankLongestMs, (r) => `(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`)
   gate(ASSERT_FILL_MS, '停捲後列殼補齊', CEILING_FACTOR.fill, (r) => r.g.fillMs)
-  if (ASSERT_LONG_TASK_MS !== '') {
-    // 門檻相對於這台機器自己的能力(理由見 lib 的 longTaskLimit)
+  if (REF_LABEL) {
+    relGate(ASSERT_LONG_TASK_MS, '主執行緒單一任務最長', CEILING_FACTOR.longTask, (r) => r.longMax, (r) => `(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms)`)
+    relGate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? 0)
+  } else if (ASSERT_LONG_TASK_MS !== '') {
+    // 沒有參考建置時的後備:門檻相對於這台機器自己的能力(理由見 lib 的 longTaskLimit)
     const costs = results.map((r) => r.shellCost).filter((v) => Number.isFinite(v))
     const worstCost = costs.length ? Math.max(...costs) : null
     const limit = longTaskLimit(Number(ASSERT_LONG_TASK_MS), worstCost)
     if (limit !== Number(ASSERT_LONG_TASK_MS)) console.log(`   (這台機器畫一個視窗要 ${worstCost.toFixed(0)}ms → 長工門檻由 ${ASSERT_LONG_TASK_MS}ms 放大為 ${limit.toFixed(0)}ms)`)
     gate(String(limit), '主執行緒單一任務最長', CEILING_FACTOR.longTask, (r) => r.longMax, (r) => `(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms;這段期間所有 hover / 點擊都會被卡住)`)
+    gate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? 0)
+  } else {
+    gate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? 0)
   }
-  gate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? 0)
   if (ASSERT_SHELL_FRAMES !== '') {
     // 元件自己量出來的能力值(`data-shell-state`,需 window.__DT_DEBUG_SHELL);讀不到就保守跳過並說明
     const costs = results.map((r) => r.shellCost).filter((v) => Number.isFinite(v))
