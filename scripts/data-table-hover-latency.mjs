@@ -41,6 +41,10 @@ const DPR = Number(arg('dpr', 1))
 const ROWS = Number(arg('rows', 16))
 const THROTTLE = Number(arg('cpu-throttle', 1))
 const SELFTEST = has('selftest')
+const DEBUG_SAMPLES = has('debug-samples')
+/** 載入後、開始取樣前的靜置時間。用來分辨「固定在第 N 次的離群值」是**迭代**造成的還是
+ *  **載入後固定時間的一次性事件**:拉長靜置若讓離群值消失,就是後者。 */
+const WARMUP_MS = Number(arg('warmup-ms', 3000))
 /** `--manager`:量**使用者真正開的那個網址**(完整 Storybook 介面 + 外掛),不是裸 iframe。
  *  兩者差很多:manager 會載 a11y 外掛等,它們跟表格搶同一條主執行緒。 */
 const MANAGER = has('manager')
@@ -65,7 +69,25 @@ const BUILDS = URLS
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const q = (a, p) => (a.length ? a.slice().sort((x, y) => x - y)[Math.min(a.length - 1, Math.floor(a.length * p))] : NaN)
 
-/** 一次量測:回傳每一列的「送出 mousemove → 該列底色在畫面上變了」的毫秒數。 */
+/** 一次量測:回傳每一列的「送出 mousemove → 該列底色在畫面上變了」的毫秒數。
+ *
+ * **這個數字是上界,不是真值(2026-09-13 追根究柢的結論)。** 逐取樣比對發現:**每一次**命中的都是
+ * `sentAt` 之後的**第一張**幀(16/16,`延遲` 與 `首幀延遲` 逐位元相等:12=12 / 8=8 / 25=25 / 175=175)。
+ * 也就是變色在那張幀之前就完成了 —— 量到的其實是**截圖串流送出下一張幀所花的時間**。
+ *
+ * 那個「固定在第 10 次的 157-638ms 離群值」因此有解:**串流在那一次停了那麼久沒送幀**。
+ * 佐證直接印在輸出裡:`[串流靜置期送幀間隔 中位 17ms 最大 272ms]` —— 主執行緒完全閒著的靜置期,
+ * 串流自己就會停到 272ms,比那個離群值還大。
+ * 已逐條排除的其他解釋:元件本身(獨立逐點探針同座標 13-18ms、零離群)、特定面板(k=0/3/6/9/12/15
+ * 同為左釘選,只有 k=9 慢)、記憶體累積(收斂後仍在)、載入後固定時間(靜置 3s 與 12s 都在 k=9)、
+ * 週期性(32 取樣只出現一次)。
+ *
+ * 所以這支儀器的正確用法:
+ *   - **`lost`(1.5 秒內完全沒變色)是真訊號**,與串流間隔無關 —— CI 2026-09-12 抓到的 3 次是真 bug(已修)。
+ *   - 中位數只能當**上界**。注入干擾時它仍然有效(忙等會同時卡住主執行緒與送幀,所以上界跟著升),
+ *     但**不要拿它宣稱「延遲 9ms」** —— 真值低於本儀器解析度。要更細得換工具(EventTiming / trace)。
+ *   - 每行附上串流自己的靜置期間隔,用來判斷某個大數字是不是串流停頓造成的。
+  */
 async function measure(build, { afterScroll, sabotage }) {
   const server = build.origin
     ? { origin: build.origin, stop: async () => {} }
@@ -94,7 +116,7 @@ async function measure(build, { afterScroll, sabotage }) {
   } else {
     await page.goto(`${server.origin}/iframe.html?id=${encodeURIComponent(STORY)}&viewMode=story`, { waitUntil: 'load', timeout: 120000 })
     await page.waitForSelector('[data-datatable-hscroll]', { timeout: 60000 })
-    await sleep(3000)
+    await sleep(WARMUP_MS)
   }
 
   const frames = []
@@ -115,6 +137,8 @@ async function measure(build, { afterScroll, sabotage }) {
   }
 
   const samples = []
+  const idleGaps = []
+  let resolutionBound = 0
   for (let k = 0; k < ROWS; k++) {
     const target0 = await scope.evaluate(({ k }) => {
       const rows = [...document.querySelectorAll('[data-row-index]')]
@@ -127,6 +151,21 @@ async function measure(build, { afterScroll, sabotage }) {
     }, { k })
     if (!target0) continue
     const target = { x: target0.x + frameOffset.x, y: target0.y + frameOffset.y }
+    // `--debug-samples`:逐取樣印出座標 / 面板 / 命中元素 / 該次延遲,用來追「固定在第 N 次的離群值」。
+    const dbg = DEBUG_SAMPLES
+      ? await scope.evaluate(({ x, y }) => {
+        const at = document.elementFromPoint(x, y)
+        const row = at?.closest('[data-row-index]')
+        return {
+          panel: row?.closest('[data-datatable-panel]')?.getAttribute('data-datatable-panel') ?? '?',
+          rowIndex: row?.getAttribute('data-row-index') ?? '?',
+          hit: at ? `${at.tagName}.${String(at.className).slice(0, 34)}` : null,
+          shells: document.querySelectorAll('[data-row-shell]').length,
+          bands: document.querySelectorAll('[data-row-shell-band]').length,
+          scrollTop: Math.round(document.querySelector('[data-datatable-hscroll]')?.scrollTop ?? -1),
+        }
+      }, { x: target0.x, y: target0.y })
+      : null
     // 先把指標移開這一列(移到表格上緣外),等畫面靜止,再存基準
     await page.mouse.move(box.x + box.width / 2, box.y - 20)
     await sleep(260)
@@ -142,6 +181,9 @@ async function measure(build, { afterScroll, sabotage }) {
     //   (b) 特定面板 —— k=0/3/6/9/12/15 同為左釘選面板,只有 k=9 慢;
     //   (c) 記憶體累積 —— 本次收斂後仍在。
     // 影響:只污染 p95,中位數不受影響(9-10ms),所以判定用中位數(見檔頭說明)是對的。
+    // 靜置期(主執行緒閒著)的送幀間隔 —— 這是**串流自己的抖動**。
+    // 有了它才分辨得出「某次取樣量到 175ms」是產品慢還是串流本來就會停那麼久。
+    for (let i = 1; i < frames.length; i++) idleGaps.push(Math.round(frames[i].ts - frames[i - 1].ts))
     if (frames.length > 1) frames.splice(0, frames.length - 1)
     const baseline = frames.length ? frames[frames.length - 1] : null
     if (!baseline) continue
@@ -160,7 +202,17 @@ async function measure(build, { afterScroll, sabotage }) {
       if (!hit) await sleep(16)
     }
     void t0
-    samples.push(hit ? hit.ts - sentAt : NaN)
+    const took = hit ? hit.ts - sentAt : NaN
+    // **分辨「列真的慢」vs「截圖串流沒送幀」**:若 `sentAt` 之後的第一張幀本身就晚了 N 毫秒,
+    // 那 N 毫秒是串流的空窗,不是列的反應時間 —— 這是 M32「儀器要先有對照組」的同一類問題。
+    const after = frames.filter((f) => f.ts > sentAt)
+    const firstGap = after.length ? Math.round(after[0].ts - sentAt) : NaN
+    const gaps = after.slice(1).map((f, i) => Math.round(f.ts - after[i].ts))
+    // **解析度受限**:命中的就是 `sentAt` 之後的第一張幀 → 變色在那張幀之前就完成了,
+    // 真值只知道「≤ 這個數字」,量到的其實是**截圖串流的送幀間隔**。
+    if (hit && after.length && hit === after[0]) resolutionBound += 1
+    if (DEBUG_SAMPLES) console.log(`   k=${String(k).padStart(2)} ${String(Math.round(took)).padStart(5)}ms  首幀延遲=${String(firstGap).padStart(4)}ms 幀距=[${gaps.slice(0, 6).join(',')}] 幀數=${after.length}  面板=${dbg?.panel} 列=${dbg?.rowIndex}`)
+    samples.push(took)
     // 解碼後的 PNG 每張 = 寬 × 高 × 4 bytes(1400×800 約 4.5MB);原本上限 400 張 ≈ 1.8GB,
     // 那必然在某個累積量觸發一次大型垃圾回收 —— 就是上面那個固定位置的離群值。
     // 一個取樣用完就整個清掉:跨取樣沒有任何重用價值(每次都是新的一批幀)。
@@ -169,6 +221,8 @@ async function measure(build, { afterScroll, sabotage }) {
   }
   await cdp.send('Page.stopScreencast').catch(() => {})
   await browser.close(); await server.stop()
+  samples.resolutionBound = resolutionBound
+  samples.idleGaps = idleGaps
   return samples
 }
 
@@ -190,7 +244,7 @@ const report = (label, mode, s) => {
   const ok = s.filter((x) => Number.isFinite(x))
   const lost = s.length - ok.length
   const line = ok.length
-    ? `${label}/${mode}:n=${ok.length} 中位 ${q(ok, 0.5).toFixed(0)}ms p95 ${q(ok, 0.95).toFixed(0)}ms 最大 ${Math.max(...ok).toFixed(0)}ms${lost ? ` (${lost} 次 1.5s 內沒變色)` : ''} | 逐次 ${s.map((x) => (Number.isFinite(x) ? x.toFixed(0) : '—')).join(' ')}`
+    ? `${label}/${mode}:n=${ok.length} 中位 ${q(ok, 0.5).toFixed(0)}ms p95 ${q(ok, 0.95).toFixed(0)}ms 最大 ${Math.max(...ok).toFixed(0)}ms${lost ? ` (${lost} 次 1.5s 內沒變色)` : ''}${s.idleGaps?.length ? ` [串流靜置期送幀間隔 中位 ${q(s.idleGaps, 0.5)}ms 最大 ${Math.max(...s.idleGaps)}ms]` : ''} | 逐次 ${s.map((x) => (Number.isFinite(x) ? x.toFixed(0) : '—')).join(' ')}`
     : `${label}/${mode}:全部 ${s.length} 次都沒量到變色`
   console.log('  ' + line)
   // **把「沒變色」的次數一起回傳**(2026-09-12)。舊版只回 `ok`,於是 1.5 秒內沒變色的樣本
