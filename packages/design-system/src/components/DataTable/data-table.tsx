@@ -1806,7 +1806,7 @@ function DataTableInner<TData>(
   const SHELL_BEHIND_EXIT = 0.5
   const shellRef = React.useRef({
     lastOffset: null as number | null, renderOffset: null as number | null, committedRenderOffset: null as number | null, committedRenderStart: 0, lastRows: null as unknown, renderStart: 0, lastCommitAt: 0, commitCost: 0, pendingBehind: 0, behind: 0, offsetChanged: false, slow: false, scrollCommit: false, aheadRows: 0, scrolling: false,
-    promoted: 0, newFull: 0, costPerRow: 3, fixedCost: 2, overscan: 5, promoteLeft: 0, budgetRows: 64, budgeted: false, ahead: false, hasShell: false, wasScrolling: false, aheadDir: 1,
+    promoted: 0, newFull: 0, costPerRow: 3, costPeak: 0, fixedCost: 2, overscan: 5, promoteLeft: 0, budgetRows: 64, budgeted: false, ahead: false, hasShell: false, wasScrolling: false, aheadDir: 1,
     decided: new Map<string, boolean>(), full: new Set<string>(), fullNow: new Set<string>(), prevShells: new Set<string>(), shellsNow: new Set<string>(), raf: 0,
     needsHeightSync: false, viewportTop: 0, viewportBottom: 0,
   })
@@ -2004,6 +2004,11 @@ function DataTableInner<TData>(
     if (S.lastOffset != null) {
       if (painted === 0) S.fixedCost = Math.min(10, Math.max(0, 0.6 * S.fixedCost + 0.4 * cost))
       else S.costPerRow = Math.min(50, Math.max(0.25, 0.6 * S.costPerRow + 0.4 * (Math.max(0, cost - S.fixedCost) / painted)))
+      // 峰值高水位:`costPerRow` 是平滑值(0.6 舊 + 0.4 新),手勢結束後讀到的是最後那個微小 commit,
+      // 不是中途最糟的那一刻。閘的「這台機器畫得動嗎」守衛需要的是後者 ——
+      // 2026-09-12 CI 實測:守衛用事後快照判定「畫得動」而套了「不准出殼」,但那一趟中途真的畫不動、出了 2 幀殼。
+      // 每次 commit 一個 Math.max,零成本,只在 debug 旗標開啟時才輸出。
+      S.costPeak = Math.max(S.costPeak, S.costPerRow)
     }
     // 「機器跟不跟得上」只看捲動 commit(初次掛載 / 換頁 / 靜止時資料變動的 commit 本來就重,不算):平滑後 > 門檻才算慢
     // 進入 slow 要 > 門檻,退出要 < 門檻的一半(遲滯):被預算節制過的 commit 本來就便宜,單一門檻會讓中速機器在
@@ -4304,7 +4309,7 @@ function DataTableInner<TData>(
            * 預設關閉:屬性變動會被 `data-table-scroll-cost.mjs` 的 R1 計數,不能無條件掛。
            */
           {...(typeof window !== 'undefined' && (window as unknown as { __DT_DEBUG_SHELL?: boolean }).__DT_DEBUG_SHELL
-            ? { 'data-shell-state': `slow=${shellRef.current.slow ? 1 : 0} budgeted=${shellRef.current.budgeted ? 1 : 0} ahead=${shellRef.current.ahead ? 1 : 0} behind=${shellRef.current.behind.toFixed(2)} pending=${shellRef.current.pendingBehind.toFixed(2)} overscan=${shellRef.current.overscan} commitCost=${shellRef.current.commitCost.toFixed(1)} costPerRow=${shellRef.current.costPerRow.toFixed(1)} fixed=${shellRef.current.fixedCost.toFixed(1)} budgetRows=${shellRef.current.budgetRows} aheadRows=${shellRef.current.aheadRows}` }
+            ? { 'data-shell-state': `slow=${shellRef.current.slow ? 1 : 0} budgeted=${shellRef.current.budgeted ? 1 : 0} ahead=${shellRef.current.ahead ? 1 : 0} behind=${shellRef.current.behind.toFixed(2)} pending=${shellRef.current.pendingBehind.toFixed(2)} overscan=${shellRef.current.overscan} costPeak=${shellRef.current.costPeak.toFixed(1)} commitCost=${shellRef.current.commitCost.toFixed(1)} costPerRow=${shellRef.current.costPerRow.toFixed(1)} fixed=${shellRef.current.fixedCost.toFixed(1)} budgetRows=${shellRef.current.budgetRows} aheadRows=${shellRef.current.aheadRows}` }
             : {})}
           // a11y(scrollable-region-focusable,對齊 DS ScrollArea Viewport canonical):唯讀表格
           // 的可捲動 body 若無任何 focusable descendant,鍵盤使用者無法捲動。read-only 模式

@@ -484,7 +484,10 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
       const st = el?.getAttribute('data-shell-state')
       if (!st) return null
       const num = (k) => { const m = st.match(new RegExp(k + '=([0-9.]+)')); return m ? Number(m[1]) : null }
-      const cpr = num('costPerRow'), fixed = num('fixed')
+      // **用峰值不用當下值**(2026-09-12):`costPerRow` 是平滑值,手勢結束後讀到的是最後那個微小 commit。
+      // CI 上就因此發生過「守衛判定畫得動 → 套了不准出殼 → 但那一趟中途真的畫不動、出了 2 幀殼」。
+      // `costPeak` 是元件在整段手勢記的高水位;舊 build 沒有這個欄位時退回 costPerRow(行為同以前)。
+      const cpr = num('costPeak') ?? num('costPerRow'), fixed = num('fixed')
       if (cpr == null || fixed == null) return null
       const rows = Math.max(1, Math.ceil(el.getBoundingClientRect().height / 40))
       return rows * cpr + fixed
