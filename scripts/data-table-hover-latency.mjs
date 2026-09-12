@@ -171,7 +171,10 @@ const report = (label, mode, s) => {
     ? `${label}/${mode}:n=${ok.length} 中位 ${q(ok, 0.5).toFixed(0)}ms p95 ${q(ok, 0.95).toFixed(0)}ms 最大 ${Math.max(...ok).toFixed(0)}ms${lost ? ` (${lost} 次 1.5s 內沒變色)` : ''} | 逐次 ${s.map((x) => (Number.isFinite(x) ? x.toFixed(0) : '—')).join(' ')}`
     : `${label}/${mode}:全部 ${s.length} 次都沒量到變色`
   console.log('  ' + line)
-  return ok
+  // **把「沒變色」的次數一起回傳**(2026-09-12)。舊版只回 `ok`,於是 1.5 秒內沒變色的樣本
+  // 從中位數與最大值裡一起被剔除、只在括號裡印個註記 —— 也就是**最糟的那種卡死對這支閘完全隱形**,
+  // 而那正是 user 抱怨的「游標到了卻要等好一陣子」。獨立覆核 2026-09-12 指出這個洞。
+  return { ok, lost }
 }
 
 for (const b of BUILDS) {
@@ -179,8 +182,10 @@ for (const b of BUILDS) {
 }
 console.log(`列 hover 反應延遲(dpr${DPR}${THROTTLE > 1 ? ` / ${THROTTLE}× 節流` : ''},每段 ${ROWS} 列)`)
 for (const b of BUILDS) {
-  const still = report(b.label, '靜止 hover', await measure(b, { afterScroll: false, sabotage: false }))
-  const after = report(b.label, '捲動後 hover', await measure(b, { afterScroll: true, sabotage: false }))
+  const stillR = report(b.label, '靜止 hover', await measure(b, { afterScroll: false, sabotage: false }))
+  const afterR = report(b.label, '捲動後 hover', await measure(b, { afterScroll: true, sabotage: false }))
+  const still = stillR.ok
+  const after = afterR.ok
   if (SELFTEST) {
     const sab = report(b.label, '對照組(注入 120ms 忙等)', await measure(b, { afterScroll: false, sabotage: true }))
     const caught = sab.length > 0 && q(sab, 0.95) >= 120
@@ -190,11 +195,14 @@ for (const b of BUILDS) {
     if (!caught || !cleanOk) fail++
   }
   if (ASSERT) {
-    for (const [mode, s] of [['靜止 hover', still], ['捲動後 hover', after]]) {
+    for (const [mode, r] of [['靜止 hover', stillR], ['捲動後 hover', afterR]]) {
+      const s = r.ok
       const med = s.length ? q(s, 0.5) : NaN
       const mx = s.length ? Math.max(...s) : NaN
-      const bad = !s.length || med > ASSERT_MEDIAN || mx > ASSERT_MAX
-      console.log(`${bad ? '✗' : '✓'} ${b.label}/${mode} 中位 ≤ ${ASSERT_MEDIAN}ms 且最大 ≤ ${ASSERT_MAX}ms(得 中位 ${s.length ? med.toFixed(0) : 'n/a'} / 最大 ${s.length ? mx.toFixed(0) : 'n/a'}）`)
+      // `r.lost` = 1.5 秒內完全沒變色的次數。那是比任何毫秒數都嚴重的失敗態,
+      // 不能只在中位數/最大值之外靜靜消失 —— 它一出現就該紅。
+      const bad = !s.length || r.lost > 0 || med > ASSERT_MEDIAN || mx > ASSERT_MAX
+      console.log(`${bad ? '✗' : '✓'} ${b.label}/${mode} 中位 ≤ ${ASSERT_MEDIAN}ms、最大 ≤ ${ASSERT_MAX}ms、且 0 次沒變色(得 中位 ${s.length ? med.toFixed(0) : 'n/a'} / 最大 ${s.length ? mx.toFixed(0) : 'n/a'} / 沒變色 ${r.lost}）`)
       if (bad) fail++
     }
   }
