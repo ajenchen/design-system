@@ -233,7 +233,12 @@ function targetAliases(target) {
     const family = stemTokens[0] ?? ''
     if (family && componentDir.toLowerCase().startsWith(family.toLowerCase()) && stemTokens.length > 1) {
       const rest = stemTokens.slice(1)
-      aliases.add(rest.join(' '))
+      // `rest.join(' ')` 在 rest 只有一個 token 時就等於那個 token 本身(`data-table` → 「table」),
+      // 所以這條也要走同一道泛用字檢查,否則下面的過濾等於白做(2026-09-12 CI 實測 11b 仍紅)。
+      // 多個 token 的片語(「panel logo」)夠具體,不受限。
+      if (rest.length > 1 || !componentDir.toLowerCase().includes(rest[0]?.toLowerCase() ?? '')) {
+        aliases.add(rest.join(' '))
+      }
       // 單一 token 只有在它**不是元件目錄名的一部分**時才夠格單獨當別名(2026-09-12 收緊)。
       // 理由:目錄已經含有的字不提供任何辨識資訊 ——「table」之於 `DataTable`、「panel」之於
       // `AgentPanel` 都是泛用字,放進別名等於「任何一句提到 table 的話都能授權改 data-table.tsx」
