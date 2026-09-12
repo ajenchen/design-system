@@ -4353,3 +4353,23 @@ Switch 的幾何已由 `switch-thumb-ring-invariant.mjs` 按 spec 尺寸表逐�
    連兩個檔案與兩個值都指名:`60 @ data-table.tsx` / `120 @ data-table-fast-scroll.mjs`
 
 修法優先序也寫進錯誤訊息:(1) 消滅第二份(讓其中一邊從另一邊讀)(2) 真的無關才加 ALLOWLIST 並寫理由。
+
+## AD121 — 8b 世界級對照:逐一查證,抓到一個「引了但誰都驗不了」的 cite
+
+覆核組指出「符合世界級設計」這條無證據。逐一查這個 session 我動過的每個數字:
+
+| 數字 | 依據 | 這次查證結果 |
+|---|---|---|
+| 緩衝上限 **10** | AG Grid `rowBuffer` 預設 | ✓ 文件逐字「render 10 rows before… 10 rows after… a blank space can be seen as the user scrolls」(WebFetch) |
+| 長工界線 **50ms** | W3C Long Tasks API | ✓ 規範逐字「**Long task refers to any of the following occurrences whose duration exceeds 50ms**」+ 處理模型「less than the long tasks threshold of **50 ms**, abort these steps」(https://w3c.github.io/longtasks/) |
+| 出殼門檻 **60ms** | AG Grid 每幀建列預算 | ✓ 原始碼逐字 `const callback = this.executeFrame.bind(this, 60)` |
+| 表單間距 **loose token** | 自家 `layoutSpace.spec.md` 規則 3 + shadcn / MUI / Ant 三家 | ✓ 已於 AD104 查證 |
+
+**抓到的問題**:60ms 原本引的是 `ag-grid-community.js:34143`(打包後行號),
+但 **AG Grid 根本不在本 repo 的依賴裡**(`node_modules` 查無 ag-grid-community)——
+**那個 cite 誰都驗不了,等於沒有 cite**。這正是 M22 要防的「憑印象的 benchmark claim」的變形:
+數字是對的,但來源不可查證。
+
+**修**:兩處(`data-table.tsx:1795` / `data-table.spec.md:462`)都改引可驗證的原始碼路徑
+`github.com/ag-grid/ag-grid/blob/latest/packages/ag-grid-community/src/misc/animationFrameService.ts`,
+並在該處寫明「為什麼換掉」。50ms 的 W3C 來源也補進程式碼(先前只在帳本,程式碼裡沒寫)。

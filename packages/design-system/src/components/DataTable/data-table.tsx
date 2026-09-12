@@ -1792,7 +1792,12 @@ function DataTableInner<TData>(
   // 真正該改的是 (1):它原本根本不存在,`ahead` / `budgeted` 只看位移,見下方 `cannotDrawViewport`。
   const SHELL_FRAME_BUDGET_MS = 12
   // 「一個視窗畫得完嗎」的量尺:視窗列數 × 每列成本 + commit 固定成本 ≤ 這個值 → 不出殼,就把它畫完。
-  // 120 = AG Grid 33.3.2 每幀給建列的 60ms(`ag-grid-community.js:34143` 逐字 `executeFrame.bind(this, 60)`)的兩倍。
+  // 60 = AG Grid 每幀給建列的預算。**來源改成可驗證的那一份**(2026-09-12):
+  // 原本引 `ag-grid-community.js:34143`(打包後行號),但 **AG Grid 不在我們的依賴裡**
+  // (`node_modules` 查無 ag-grid-community),那個 cite 誰都驗不了。
+  // 改引原始碼:https://github.com/ag-grid/ag-grid/blob/latest/packages/ag-grid-community/src/misc/animationFrameService.ts
+  // 逐字 `const callback = this.executeFrame.bind(this, 60)`(2026-09-12 WebFetch 實證)。
+  // 原本取它的**兩倍**(120),理由是「內容晚 120ms 出現比先看骨架好」;那個取捨被實測推翻,見下方 60 的說明。
   // 為什麼是兩倍:一個視窗的內容晚 120ms 出現,比先給使用者看一片灰色骨架再換成真資料好 ——
   // 同一台機器上 main(沒有殼機制)就是花 148ms 一次畫完、全程沒有佔位,而那正是 user 說「比較順」的那一版。
   // **60,不是 120**(2026-09-12 改)。原本取 AG Grid `executeFrame.bind(this, 60)` 每幀 60ms 預算的
@@ -1908,6 +1913,11 @@ function DataTableInner<TData>(
     //   → n ≤ (50 − fixedCost − visibleRowCount × costPerRow) ÷ (2 × costPerRow)
     //
     // 實測各機器算出來的值:1× → 10(AG Grid 平手,空白歸零)/ 2× 以上 → 落回下限,由列殼機制接手。
+    //
+    // **50 的來源是規範不是我編的**(2026-09-12 WebFetch 實證):W3C Long Tasks API
+    // (https://w3c.github.io/longtasks/)逐字「Long task refers to any of the following occurrences
+    // whose duration exceeds 50ms」,處理模型另寫「If end time minus start time is less than
+    // the long tasks threshold of 50 ms, abort these steps」。
     const LONG_TASK_MS = 50
     const headroomMs = LONG_TASK_MS - S.fixedCost - visibleRowCount * S.costPerRow
     const affordableOverscan = Math.floor(headroomMs / Math.max(0.5, 2 * S.costPerRow))

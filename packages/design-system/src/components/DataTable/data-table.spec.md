@@ -459,7 +459,10 @@ costPerRow=2.1–4.6ms   fixed=10.0ms   budgetRows=4   slow=1   ahead=1
 
 **修法**:加一條前提 —— **這一個視窗畫得完嗎**。
 `視窗列數 × 每列成本 + commit 固定成本 ≤ SHELL_ENGAGE_VIEWPORT_MS(120ms)` → 畫得完就不出殼,直接畫完。
-120 = 我們對標的 AG Grid 33.3.2 每幀建列預算 60ms(`ag-grid-community.js:34143` 逐字 `executeFrame.bind(this, 60)`)的兩倍;
+60 = 我們對標的 AG Grid 每幀建列預算。**cite 換成可驗證的來源**(2026-09-12):原本引
+`ag-grid-community.js:34143`(打包後行號),但 AG Grid **不在本 repo 的依賴裡**,那個 cite 誰都驗不了;
+改引原始碼 https://github.com/ag-grid/ag-grid/blob/latest/packages/ag-grid-community/src/misc/animationFrameService.ts
+逐字 `const callback = this.executeFrame.bind(this, 60)`。原本取兩倍(120),該取捨已被實測推翻;
 取兩倍的理由是「一個視窗的內容晚 120ms 出現,比先看到一片灰色骨架再換成真資料好」—— main 在同一台機器上就是花 148ms
 一次畫完、全程沒有佔位。
 
