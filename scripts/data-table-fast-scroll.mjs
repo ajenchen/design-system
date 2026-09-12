@@ -113,10 +113,13 @@ const ASSERT_FRAME_GAP_MS = arg('assert-max-frame-gap-ms', '')
 //
 // **不能無條件斷言 0**:骨架本來就是「機器真的畫不完」時的過渡手段,CI 那台 2 vCPU runner 就是畫不完的那種
 // (實測 3 趟各 9 / 10 / 10 殼幀,那是正確行為)。所以判定前先問元件自己算出來的能力值:
-// 視窗列數 × 每列成本 + commit 固定成本 ≤ `SHELL_ENGAGE_VIEWPORT_MS`(120ms)才套這條斷言,
+// 視窗列數 × 每列成本 + commit 固定成本 ≤ 元件自己的出殼門檻才套這條斷言,
 // 畫不動的機器印出數字並註明跳過 —— 它的白區與補齊由另外兩條斷言管。
 const ASSERT_SHELL_FRAMES = arg('assert-max-shell-frames', '')
-const SHELL_ENGAGE_VIEWPORT_MS = 120
+// **門檻從元件讀,不在這裡留第二份**(2026-09-12)。原本這裡硬寫 120,元件改成 60 之後兩邊打架:
+// 閘用 120 判「畫得動 → 不准出殼」,元件用 60 判「畫不動 → 該出殼」,CI 必紅而且紅得沒道理。
+// 元件把 `engageMs` 一起寫進 `data-shell-state`,這裡讀它;舊 build 沒有該欄位時退回 120(原行為)。
+const SHELL_ENGAGE_FALLBACK_MS = 120
 const SCROLL_BUSY_MS = 120
 // 觀測窗必須長過補齊期限,否則「到窗尾還沒補完」會被當成補完(Codex R9)
 const SETTLE_EFFECTIVE = ASSERT_FILL_MS !== '' ? Math.max(SETTLE_MS, Number(ASSERT_FILL_MS) + 300) : SETTLE_MS
@@ -488,9 +491,10 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
       // CI 上就因此發生過「守衛判定畫得動 → 套了不准出殼 → 但那一趟中途真的畫不動、出了 2 幀殼」。
       // `costPeak` 是元件在整段手勢記的高水位;舊 build 沒有這個欄位時退回 costPerRow(行為同以前)。
       const cpr = num('costPeak') ?? num('costPerRow'), fixed = num('fixed')
+      const engageMs = num('engageMs')
       if (cpr == null || fixed == null) return null
       const rows = Math.max(1, Math.ceil(el.getBoundingClientRect().height / 40))
-      return rows * cpr + fixed
+      return { cost: rows * cpr + fixed, engageMs }
     }).catch(() => null)
     return {
       build: build.label, mode, sabotage, setup, ticks, errors, shotStats, shellCost, ...a, g, frames: raw.frames,
@@ -688,7 +692,7 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
     relGate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? NaN)
   } else if (ASSERT_LONG_TASK_MS !== '') {
     // 沒有參考建置時的後備:門檻相對於這台機器自己的能力(理由見 lib 的 longTaskLimit)
-    const costs = results.map((r) => r.shellCost).filter((v) => Number.isFinite(v))
+    const costs = results.map((r) => r.shellCost?.cost).filter((v) => Number.isFinite(v))
     const worstCost = costs.length ? Math.max(...costs) : null
     const limit = longTaskLimit(Number(ASSERT_LONG_TASK_MS), worstCost)
     if (limit !== Number(ASSERT_LONG_TASK_MS)) console.log(`   (這台機器畫一個視窗要 ${worstCost.toFixed(0)}ms → 長工門檻由 ${ASSERT_LONG_TASK_MS}ms 放大為 ${limit.toFixed(0)}ms)`)
@@ -699,10 +703,11 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
   }
   if (ASSERT_SHELL_FRAMES !== '') {
     // 元件自己量出來的能力值(`data-shell-state`,需 window.__DT_DEBUG_SHELL);讀不到就保守跳過並說明
-    const costs = results.map((r) => r.shellCost).filter((v) => Number.isFinite(v))
+    const costs = results.map((r) => r.shellCost?.cost).filter((v) => Number.isFinite(v))
+    const engage = results.map((r) => r.shellCost?.engageMs).find((v) => Number.isFinite(v)) ?? SHELL_ENGAGE_FALLBACK_MS
     const worst = costs.length ? Math.max(...costs) : null
     if (worst == null) console.log(`⚠️  出現列殼的幀數:讀不到 data-shell-state(需 window.__DT_DEBUG_SHELL),這條斷言跳過`)
-    else if (worst > SHELL_ENGAGE_VIEWPORT_MS) console.log(`↷ 出現列殼的幀數:這台機器畫不動(一個視窗要 ${worst.toFixed(0)}ms > ${SHELL_ENGAGE_VIEWPORT_MS}ms),出殼是正確行為,這條斷言不適用(白區與補齊由另外兩條管)`)
+    else if (worst > engage) console.log(`↷ 出現列殼的幀數:這台機器畫不動(一個視窗要 ${worst.toFixed(0)}ms > 元件門檻 ${engage}ms),出殼是正確行為,這條斷言不適用(白區與補齊由另外兩條管)`)
     else gate(ASSERT_SHELL_FRAMES, '出現列殼的幀數', 2, (r) => r.g?.shellFrames ?? 0)
   }
 }
