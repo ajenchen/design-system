@@ -247,6 +247,14 @@ jobs:
           # 列 hover 的反應延遲(2026-09-11 新閘;先跑對照組證明儀器會紅,再跑正式判定)
           node scripts/data-table-hover-latency.mjs --rows=8 --selftest
           node scripts/data-table-hover-latency.mjs --rows=10 --assert=on --assert-median=60 --assert-max=600
+          # 預掛緩衝要隨機器能力自適應(2026-09-12)。TanStack 的 rangeExtractor 沒有「保留舊列」機制,
+          # 緩衝固定 5 列 = 200px 而一次滾輪 1000px,結構上差 5 倍;AG Grid 預設每側 10 列,文件逐字說
+          # 那是為了「on some slower machines and browsers, a blank space can be seen as the user scrolls」。
+          # 我們比它多實測的每列成本,所以快機器加到 10(1× 空白 30 幀/67ms → 0–2 幀/0–17ms)、
+          # 慢機器縮回下限讓列殼接手(固定 10 在 4× 反而把最長空白從 451ms 惡化到 566ms)。
+          # 對照組把兩次取樣都跑同一個 CPU 檔位,自適應無從表現 → A3 必須紅。
+          node scripts/data-table-overscan-adaptive-invariant.mjs --selftest
+          node scripts/data-table-overscan-adaptive-invariant.mjs
           # Content readiness and still-visible fading handles need separate gates from frame cadence.
           node scripts/test-data-table-scroll-perception.mjs --out=tmp/datatable-content-controls
           # 把手捲動閂鎖(2026-09-10,data-table.spec.md「捲動與可視帶」):指標不動的捲動 → 第一個 scroll 事件後零把手;對照組 unlatch(每次 scroll 派發座標遞增的

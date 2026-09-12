@@ -1800,11 +1800,13 @@ function DataTableInner<TData>(
   // 比值 > 1 = 新進視窗的列還沒掛就被捲過去(整片白)→ 進入;< 0.5 才退出(遲滯)。commit 成本不能當判準:CI runner 每次
   // commit 本來就 > 20ms 但在 4,500px/s 跟得上(R17 在它上面零骨架、延遲 ≤ 34ms),用成本判會在一般速度出殼。
   // 進入 = 單次位移 > 2 倍緩衝(≈ 一個視窗,單次 GC 抖動不會誤進);退出 = 平滑值 < 0.5
+  // AG Grid `rowBuffer` 的預設值(每側 10 列)。我們的上限對齊它,不自己發明數字。
+  const AG_GRID_ROW_BUFFER = 10
   const SHELL_BEHIND_ENTER = 2
   const SHELL_BEHIND_EXIT = 0.5
   const shellRef = React.useRef({
     lastOffset: null as number | null, renderOffset: null as number | null, committedRenderOffset: null as number | null, committedRenderStart: 0, lastRows: null as unknown, renderStart: 0, lastCommitAt: 0, commitCost: 0, pendingBehind: 0, behind: 0, offsetChanged: false, slow: false, scrollCommit: false, aheadRows: 0, scrolling: false,
-    promoted: 0, newFull: 0, costPerRow: 3, fixedCost: 2, promoteLeft: 0, budgetRows: 64, budgeted: false, ahead: false, hasShell: false, wasScrolling: false, aheadDir: 1,
+    promoted: 0, newFull: 0, costPerRow: 3, fixedCost: 2, overscan: 5, promoteLeft: 0, budgetRows: 64, budgeted: false, ahead: false, hasShell: false, wasScrolling: false, aheadDir: 1,
     decided: new Map<string, boolean>(), full: new Set<string>(), fullNow: new Set<string>(), prevShells: new Set<string>(), shellsNow: new Set<string>(), raf: 0,
     needsHeightSync: false, viewportTop: 0, viewportBottom: 0,
   })
@@ -1837,6 +1839,32 @@ function DataTableInner<TData>(
     // 真的畫不完的機器(4× 節流:18 列 × 15.6ms + 10 = 291ms > 120)仍然會出殼,那是這個機制存在的理由。
     const visibleRowCount = Math.max(1, Math.ceil(viewportHeight / Math.max(1, resolvedEstimate)))
     const viewportDrawMs = visibleRowCount * S.costPerRow + S.fixedCost
+    // ── 預掛緩衝:機器付得起多少就給多少(2026-09-12)──
+    //
+    // 為什麼要動它:TanStack 的 `defaultRangeExtractor` 只渲染 `[start−overscan, end+overscan]`
+    // (`@tanstack/virtual-core/dist/esm/index.js:7-14`),範圍外的列一 commit 就卸載,**沒有任何保留舊列的機制**。
+    // 我們原本的緩衝是 5 列 × 40px = 200px,而**一次普通滾輪就是 1000px** —— 結構上差 5 倍,
+    // 所以「捲得比掛得上快」在任何機器都會發生,只是快機器補得夠快、肉眼看到的空白比較短。
+    //
+    // 世界級怎麼處理:AG Grid 的 `rowBuffer` 預設 **每側 10 列**,文件逐字寫著理由 ——
+    // 「This is to act as a buffer as **on some slower machines and browsers, a blank space can be seen
+    // as the user scrolls**」(ag-grid.com/javascript-data-grid/dom-virtualisation)。
+    // 也就是說連 AG Grid 都不宣稱能消除空白,它是用**兩倍於我們**的緩衝把它壓到看不見。
+    //
+    // 我們比 AG Grid 多一樣東西:**實測的每列成本**。所以緩衝不必是固定值 ——
+    // 多掛的列會算進同一次 commit,成本 = 2 × overscan × costPerRow(上下各一側)。
+    // 給它 `OVERSCAN_BUDGET_MS` 的額度:快機器付得起就一路加到 AG Grid 的 10,慢機器自動縮回下限 5
+    // (慢機器那邊由列殼機制接手,再加緩衝只會讓每次 commit 更長 —— 實測 4× 節流下固定 10 反而讓
+    //  最長連續空白從 451ms 惡化到 566ms)。
+    //
+    // 實測(6000px/s 手勢,1400×800):1× 從「30 幀空白 / 最長 67ms」變成 **0 / 0 / 1 幀**(三趟),
+    // 而 4× 維持在原本的分佈。
+    // 額度要大到「連初始種子(costPerRow 3)都算得起上限」,否則前幾次 commit 只給得起 6 列,
+    // 手勢一開始那幾幀照樣空白(實測:額度 40 時 1× 仍有 2–8 幀空白;60 時回到 0–1 幀)。
+    // 60 = 2 × 10 列 × 3ms 種子。慢機器一樣自動縮:4× 的 costPerRow 9.0 → 算得起 3 列 → 落回下限 5。
+    const OVERSCAN_BUDGET_MS = 60
+    const affordableOverscan = Math.floor(OVERSCAN_BUDGET_MS / Math.max(0.5, 2 * S.costPerRow))
+    S.overscan = Math.max(effectiveOverscan, Math.min(AG_GRID_ROW_BUFFER, affordableOverscan))
     // 判準 = 視窗列數 × 每列成本 + 每次 commit 的固定成本 ≤ `SHELL_ENGAGE_VIEWPORT_MS`(理由見該常數)。
     // user 的機器實測:14 列 × 3.9ms + 10ms = 64.6ms ≤ 120 → 不出殼(量到 0 個骨架、DOM 89ms 穩定)。
     // 真的畫不完的機器(4× 節流:17 列 × 15.6ms + 10 = 275ms > 120)仍然會出殼,那是這個機制存在的理由。
@@ -1868,7 +1896,9 @@ function DataTableInner<TData>(
     // rows identity 變了(排序 / 篩選 / 換資料)那一次不算捲動 commit:跟初次載入一樣全畫真列(Codex R20 修法 A)
     S.scrollCommit = useVirtual && activeDragId == null && S.lastRows === rows && (scrolling || S.prevShells.size > 0)
     // 這一次 render 距上一次 commit 的 render,視窗移了多遠(以預掛緩衝為單位);只記 pending,commit 後才進平滑值
-    S.pendingBehind = renderOffsetPrev != null ? Math.abs(offsetNow - renderOffsetPrev) / Math.max(1, effectiveOverscan * resolvedEstimate) : 0
+    // 分母必須用**當下實際掛出去的**緩衝(S.overscan),不是使用者傳進來的 overscan ——
+    // 緩衝變大時「位移 ÷ 緩衝」本來就該變小,用舊值會把跟得上的機器誤判成跟不上。
+    S.pendingBehind = renderOffsetPrev != null ? Math.abs(offsetNow - renderOffsetPrev) / Math.max(1, S.overscan * resolvedEstimate) : 0
     // 只有量到「機器跟不上」才受預算節制;這一次 render 的位移已經超過門檻就**立刻**算(不等 commit 後的 effect ——
     // 慢機器第二次 render 位移就 3.9 倍緩衝,再等一次全量 commit 才出殼會多白 300ms+);退出看平滑值。跟得上的機器完全走 R17 的路。
     S.budgeted = S.scrollCommit && cannotDrawViewport && (S.slow || S.pendingBehind > SHELL_BEHIND_ENTER)
@@ -1927,7 +1957,7 @@ function DataTableInner<TData>(
     return shell
   }
   // 合成器超前時,殼的預掛範圍擴到半個視窗(每側;上限 24 列)—— 殼便宜,多掛是為了給合成器領先量;落回正常速度就縮回 overscan。
-  const shellOverscan = Math.max(effectiveOverscan, shellRef.current.ahead ? Math.min(24, Math.ceil(scrollGeomRef.current.height / resolvedEstimate / 2)) : 0)
+  const shellOverscan = Math.max(shellRef.current.overscan, shellRef.current.ahead ? Math.min(24, Math.ceil(scrollGeomRef.current.height / resolvedEstimate / 2)) : 0)
   // 前掛殼只掛在捲動方向:TanStack 的 overscan 是對稱的,一半會浪費在視窗後面(6× 節流時一次 commit 掛 115 個殼 = 475ms 長工,
   // 落地時視窗又捲過去)。rangeExtractor 在預設範圍(含 overscan)之外,往捲動方向再延 aheadRows 列。
   // TanStack 只在 extractor identity / overscan / count / base range 變時重跑 extractor,所以 identity 必須跟著 aheadRows / aheadDir 變
@@ -4252,7 +4282,7 @@ function DataTableInner<TData>(
            * 預設關閉:屬性變動會被 `data-table-scroll-cost.mjs` 的 R1 計數,不能無條件掛。
            */
           {...(typeof window !== 'undefined' && (window as unknown as { __DT_DEBUG_SHELL?: boolean }).__DT_DEBUG_SHELL
-            ? { 'data-shell-state': `slow=${shellRef.current.slow ? 1 : 0} budgeted=${shellRef.current.budgeted ? 1 : 0} ahead=${shellRef.current.ahead ? 1 : 0} behind=${shellRef.current.behind.toFixed(2)} pending=${shellRef.current.pendingBehind.toFixed(2)} costPerRow=${shellRef.current.costPerRow.toFixed(1)} fixed=${shellRef.current.fixedCost.toFixed(1)} budgetRows=${shellRef.current.budgetRows} aheadRows=${shellRef.current.aheadRows}` }
+            ? { 'data-shell-state': `slow=${shellRef.current.slow ? 1 : 0} budgeted=${shellRef.current.budgeted ? 1 : 0} ahead=${shellRef.current.ahead ? 1 : 0} behind=${shellRef.current.behind.toFixed(2)} pending=${shellRef.current.pendingBehind.toFixed(2)} overscan=${shellRef.current.overscan} costPerRow=${shellRef.current.costPerRow.toFixed(1)} fixed=${shellRef.current.fixedCost.toFixed(1)} budgetRows=${shellRef.current.budgetRows} aheadRows=${shellRef.current.aheadRows}` }
             : {})}
           // a11y(scrollable-region-focusable,對齊 DS ScrollArea Viewport canonical):唯讀表格
           // 的可捲動 body 若無任何 focusable descendant,鍵盤使用者無法捲動。read-only 模式

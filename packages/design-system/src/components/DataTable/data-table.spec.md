@@ -187,6 +187,39 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 - **同型前例**(隱藏原生捲軸 + header 尾端補等寬):**MUI X DataGrid** 的 `GridScrollbarFillerCell`(寬 = `var(--DataGrid-hasScrollY) * var(--DataGrid-scrollbarSize)`)、**Handsontable** 的 `width = getWorkspaceWidth(); if (hasVerticalScroll()) width -= getScrollbarWidth()`;**Glide Data Grid** 整張表同一塊 canvas,同理免疫。
 - **仍存在的架構差異**(不是缺陷,是已知取捨):v33 的水平捲軸是 `.ag-root` 層的一條假捲軸、垂直捲軸是 `.ag-body` 的 in-flow 兄弟元素 → 捲軸落在整表最右緣、三區共用同一個 `.ag-body-viewport`,所以「pinned 多露一列」在它那邊結構上不可能;我們用原生捲軸 + 兩軸量測補償達到同一個不變條件。**2026-09-04 撤回**:此處原本寫「換到的是慣性捲動、平台一致的捲軸外觀與零額外 a11y 風險」—— 三條逐條查證都不成立(v33 的 `.ag-body-viewport` 本身就是原生 `overflow-y:auto` + `-webkit-overflow-scrolling:touch`;它的可見捲軸是**代理元素上的原生捲軸**,不是自繪;代理捲軸帶 `aria-hidden`),依 M22 撤回。**真正換到的**只有一件可證的事:不必自己實作代理捲軸元件 —— v33 為此付 `fakeHScrollComp.ts` 174 行 + `fakeVScrollComp.ts` 80 行 + `abstractFakeScrollComp.ts` 110 行 = 364 行,外加 `gridBodyScrollFeature.ts` 776 行的同步(水平 6 個 partner)。代價見缺陷表 O / P / Q。
 
+### 預掛緩衝(overscan)— 隨機器能力自適應(2026-09-12)
+
+TanStack Virtual 的 `defaultRangeExtractor` 只渲染 `[startIndex − overscan, endIndex + overscan]`
+(`@tanstack/virtual-core/dist/esm/index.js:7-14`),範圍外的列一 commit 就卸載,
+**沒有任何「保留舊列直到新列就緒」的機制**。緩衝原本固定 5 列 × 40px = 200px,
+而**一次普通滾輪就是 1000px** —— 結構上差 5 倍,所以快速捲動必然露出背景。
+
+**世界級對照**:AG Grid 的 `rowBuffer` 預設**每側 10 列**,文件逐字寫明理由 ——
+「By default the grid will render 10 rows before the first visible row and 10 rows after the last visible
+row… This is to act as a buffer as **on some slower machines and browsers, a blank space can be seen as
+the user scrolls**」(https://www.ag-grid.com/javascript-data-grid/dom-virtualisation/)。
+**連 AG Grid 都不宣稱能消除空白**,它是用兩倍於我們原值的緩衝把它壓到看不見。
+
+**我們的做法**:緩衝 = `clamp(⌊60ms ÷ (2 × costPerRow)⌋, consumer 的 overscan, 10)`。
+我們比 AG Grid 多一樣東西 —— 列殼機制實測出來的**每列成本**,所以緩衝不必是固定值:
+快機器付得起就加到 AG Grid 的 10,慢機器自動縮回下限、由列殼機制接手。
+額度 60ms = 2 × 10 列 × 3ms(`costPerRow` 的初始種子),刻意大到連種子都給得起上限 ——
+額度 40 時前幾次 commit 只算得起 6 列,手勢開頭那幾幀照樣空白(實測 1× 仍有 2–8 幀)。
+
+**實測**(6000px/s 手勢,1400×800,同機同窗):
+
+| CPU 節流 | 緩衝 | 空白幀 | 最長連續空白 |
+|---|---|---|---|
+| 1×(一般機器) | **10** | 30 → **0–2** | 67ms → **0–17ms** |
+| 2× | 10 | 59 → 54–55 | 1138 → 1086–1193ms(此檔位瓶頸是 long task,不是緩衝) |
+| 4× | **5** | 45 → 35–43 | 451 → **349–433ms** |
+
+固定 10 不行:4× 下最長空白從 451ms 惡化到 566ms(每次 commit 要掛的列變多)。
+
+**機械閘** `scripts/data-table-overscan-adaptive-invariant.mjs`:A1 快機器達到 10、A2 慢機器縮回去、
+A3 兩者必須不同(相同 = 機制沒在自適應,前兩條可能只是碰巧成立)。
+對照組把兩次取樣跑同一個 CPU 檔位 → A3 必紅。
+
 **機械閘** = `scripts/data-table-invariants.mjs` I11 / I11b(橫軸)+ I12(縱軸)。CI 的 headless Chromium 是 overlay 捲軸(gutter = 0),只驗自然狀態等於空轉——把 padding 整段拿掉 CI 照樣綠;I11b / I12 因此各用一條 15px 透明邊框造出與真捲軸同值的量測(`clientWidth` 不含 border、`offsetWidth` 含),補償分支在任何環境都會被走到(2026-09-03 實測:註入 `::-webkit-scrollbar` 寬度**無法**讓 CI 的捲軸佔版面,此路不通)。對應 `scripts/data-table-invariants.mjs`(script 內 I1-I3 label 字串仍用 `display↔edit` — 2026-07-16 FieldMode display→view 更名前的歷史命名,語意同 view↔edit)。改 `columnSizeStyle` / 切 layout 必跑 invariant test 才 commit。
 
 ### 六之二之零、2026-09-05 捲軸專項稽核:四條「看起來有做、其實沒作用」
