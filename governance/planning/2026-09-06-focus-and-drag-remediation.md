@@ -4468,3 +4468,34 @@ CI 8 個 job 全綠。`data-table-invariants` 332 條全過。hover 三輪 42 �
 - **visual-audit 基準線與本機環境不符**:全 DS 102 scenario 有 28 筆超標,其中 **22 筆是未觸碰的元件**
   (FileViewer 68.8%、Carousel 24.5%),基準線在 CI/Linux 產生 → 本機 macOS 跑基準線比對不可用,
   只能用 `snapshots/`(同 macOS)當同環境對照。登記為工具缺口。
+
+### 2026-09-12 補:branch vs main 全盤視覺 A/B(NO-SAMPLE,124 scenario)
+
+**為什麼要另外做**:`visual-audit` 的 committed baseline 在 CI/Linux 產生,本機 macOS 比它會有大量
+字型描繪誤報(實測全 DS 28 筆超標,其中 **22 筆是完全未觸碰的元件**,最大 FileViewer 68.8%)。
+`snapshots/` 也不是有效對照 —— 那是 7/19 的,本分支之後有大量改動。
+
+**方法**:`git worktree` 建 main(`2ac80297`)→ 同一台機器建 storybook → 用**主 repo 的 visual-audit +
+同一個瀏覽器**分別拍 branch 與 main(`--storybook-url` 指向 worktree 的靜態站),唯一變數是程式碼。
+(worktree 裡直接跑它自己的 visual-audit 會 SIGTRAP,Playwright 啟不起來。)
+
+**結果:124 張只有 10 張有差異,全部歸因完成**
+
+| 差異 | 檔案 | 歸因 |
+|---|---|---|
+| 2.780% / 2.312% / 1.492% | calendar ×3 | `fe9d70b2`「user 第二輪三問」,程式碼註解引 user 原話 + `date-grid.spec.md:151` canonical |
+| **1.923%** | **combobox-modes** | **真 bug,本輪修掉**(見下) |
+| 0.495% / 0.081% / 0.054% | dialog ×3 | 本輪的溢出修正,已目視確認正確 |
+| 0.379% | command-command-palette | 同 `fe9d70b2`(Command 群組標題沒消費 SSOT) |
+| 0.131% | datatable-nested-rows | 欄寬由小數(595.33/395.34/375.33)變整數(595/396/375),
+文字位移 0.33px → 反鋸齒不同、版面相同。本分支「算一次 + 前綴和取整」的既定改良 |
+| 0.066% | datepicker-range-middle-hover | 同 `fe9d70b2`(DatePicker 開啟行為) |
+
+**抓到的真 bug**:`combobox-modes` 的 tag 元素 **branch 0 個 / main 12 個**。
+rAF 時間序列:main `12 → 8 → 4 → 0 → 12`(還原);branch 停在 0。
+根因 = `ce0fc613` 刪掉「重設編輯模式」按鈕與 play() 末尾的點擊,**卻留著前面三個移除步驟**;
+該 commit 四個主題都與 Combobox 無關、說明也沒提。後果是「四模式」這個主要展示 story 最終全空。
+已回補還原步驟(`83c9533c`),修後時間序列與 main 一致。
+
+**方法本身的教訓**:拿環境不符的 baseline 當「有沒有改壞」的依據會同時產生假警報(22 筆)與**假安心** ——
+真正的 combobox 回歸被埋在那 28 筆雜訊裡,是換成同環境 A/B 之後才浮出來的。

@@ -306,7 +306,7 @@ No rule prose is copied into this snapshot. Paths and digests point to their can
 | provider-lifecycle-validator | `scripts/lib/provider-lifecycle.mjs` | `sha256:9aabb2c98efc454b8555308a34830e6590b034b10a63f76f788fbd4cf37ce7e7` |
 | provider-neutral-benchmark-policy | `governance/benchmarks` | `sha256:beb2a852c5371133b4f37e80fa69eb6719e21fc7c9153bd6feab726af44c4008` |
 | provider-neutral-memory | `governance/memory` | `sha256:c9e69ce670f928a1534a74ca63fcc50da6dd545500c8114cc5c626aadefae713` |
-| provider-neutral-planning-ledger | `governance/planning` | `sha256:a053739a6051c3382d5a1ab5d80be647b5dc5b7337b8ae06e7890b6f2a2f8b6c` |
+| provider-neutral-planning-ledger | `governance/planning` | `sha256:d5263680ac46a1087f6eaf89d5eb7663467efebb89979e4fd70d4839ff486fb9` |
 | provider-neutral-residue-guard | `scripts/check-provider-neutral-ssot-residue.mjs` | `sha256:6a880f5e07717898b27bfe723898d6601cea0a224c89fa4a9d13c1ff3c9bd225` |
 | provider-neutral-residue-guard-tests | `scripts/test-check-provider-neutral-ssot-residue.mjs` | `sha256:cea943b6508ab8c5d11fbf020e6758874f0d6f42256c8ab5c9a3020bcf09eeab` |
 | provider-review-binding-library | `packages/governance/src/provider-review-binding.mjs` | `sha256:00fd8e1f7193dc0d76b8c3d586889c51b8f8ff47e991a4682e6105937f3a3514` |
