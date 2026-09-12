@@ -198,7 +198,12 @@ TanStack Virtual 的 `defaultRangeExtractor` 只渲染 `[startIndex − overscan
 「By default the grid will render 10 rows before the first visible row and 10 rows after the last visible
 row… This is to act as a buffer as **on some slower machines and browsers, a blank space can be seen as
 the user scrolls**」(https://www.ag-grid.com/javascript-data-grid/dom-virtualisation/)。
-**連 AG Grid 都不宣稱能消除空白**,它是用兩倍於我們原值的緩衝把它壓到看不見。
+AG Grid 是用兩倍於我們原值的緩衝把空白壓到看不見 —— 但**壓小不等於消除**,緩衝再大都追不上任意快的手勢。
+
+> **2026-09-12 撤回**:這裡原本寫「**連 AG Grid 都不宣稱能消除空白**」,語氣上把「業界最好的也只能壓小」
+> 當成本 DS 的天花板。那是錯的定位 —— user 2026-09-12 原話:「你知道 main 只是低標嗎?理想上 data table
+> 整體互動和體驗越順暢越好」、「我認為任何情境『理想』上都不應該看到空白,但也不應該為了達成此目的而讓
+> 體驗和互動卡頓」。**目的地是零空白**,見下方「零空白不變條件」。緩衝與列殼都只是逼近手段,不是終點。
 
 **我們的做法**:**預測**「把緩衝加上去之後,一次全量 commit 會不會變成長工」,而不是只看每列成本。
 
@@ -319,6 +324,14 @@ header `scrollWidth` 915 = body 900 + padding 15,兩邊捲動範圍都是 397,�
 - **controlled 值不得每 render 正規化成新物件**:`normalizeSelection(selectionProp)` 改 useMemo,否則 `selection` 身分每步變、一切依賴它的 memo 每步失效。
 
 **機械閘** = `scripts/data-table-scroll-cost.mjs`:R0 每步真的重算的列 ≤ 換列數 + 2、R1 屬性變動、R2 節點增減、R3 commits ≤ 8(固定版本回歸預算:1 次虛擬捲動 + 5 次新列掛載副作用鏈,全在新列;Radix Tooltip / Checkbox 的 ref-state 可 batching,ref → 量測有先後依賴不能併)、**R4 單步內舊列裡被碰到的元件 fiber(含 bailout)最大值 ≤ 12(實測 0;舊列 = 步前就存在且不是最近 2 步內掛載的列,新列的掛載副作用鏈會跨到下一步的量測窗)、R5 表頭 ≤ 4(實測 0)**(fiber 歸因,React DevTools 同法;PerformedWork 會漏算「執行了但 bailout」所以另計 touched;逐步最大值不是平均;計數器丟例外即紅)、1px 步進 gBCR;`--selftest` = 預算歸零必紅 + 正向對照組(點全選 → 表頭與舊列都必須量到 render)。已知邊界:主要量連續捲動,開始/停止捲動時 `TableScrollProvider` 的 context 切換(Avatar / PersonDisplay 的 scroll-defer)不在 R4 內。
+
+**零空白不變條件(2026-09-12;user 拍板「確認,改 data-table.tsx」)**:**送出的任何一幀,中央捲動區都不得有任何一帶是空的** —— 而且**不得為了達成它而讓幀距或長工變差**。兩條必須同時成立,單獨任一條都可以被作弊繞過(只要零空白 → 整片蓋死;只要不卡 → 維持空白)。
+
+為什麼緩衝與列殼都不夠:捲動跑在**合成執行緒**上,跟主執行緒刻意隔離(Chromium RenderingNG:「Separating the main and compositor threads is critically important for performance isolation of animation and scrolling from main thread work.」<https://developer.chrome.com/docs/chromium/renderingng-architecture>)。主執行緒被長工佔住時,合成器照樣每 16ms 送一幀,React 不可能在那段期間把列放到新位置 —— **任何需要主執行緒的機制都輸掉這場競速**。實測 CPU×1、6000px 手勢:手勢 663ms 中長工 4 個合計 324ms,送出 38 幀有 **27 幀整片空白、17/17 帶全空、最長連續 410ms**,而列殼只出現 1 幀(舊判準 `cannotDrawViewport` 問的是「這台機器畫得完一個視窗嗎」= **能力**,快機器恆為 false)。
+
+**做法**:已掛載的列必然是連續一段 `[first.start, last.end]`;這一段以外的整個虛擬高度,在同一次 render 裡鋪成兩塊**骨架底**(`[data-row-shell-band]`,CSS `repeating` 漸層,bar = `--muted`、列底線 = `--divider`,幾何抄列殼的 `h-3 w-3/5` / 系統欄 `h-4 w-4`)。覆蓋 = 上帶 ∪ 已掛載段 ∪ 下帶 = 整個捲動區,**恆真且與時序無關**;成本是每次 render 兩個 div,之後純由合成器搬運,因此不可能造成卡頓。用漸層而非真 DOM,是因為未掛載區可達數十萬 px,鋪真列是無上限的主執行緒工作。已知落差:漸層畫不出 `Skeleton` 的 `rounded-md` 圓角(12px bar 在 9000px/s 下看不出來)。
+
+**機械閘**:`scripts/data-table-fast-scroll.mjs --assert-max-blank-frames=0`(**絕對**判準,判每趟最大值不判中位數 —— 空白幀是缺陷不是雜訊);對偶的「不得變卡」仍由同檔 `--ref=main` 的相對閘擋。
 
 **快速捲動的列殼(2026-09-09 codify;Codex R8 解法 (b))**:上面的不變條件管的是「主執行緒做了多少事」,但使用者看到的是合成器送出的幀 ——
 真實呈現幀量測(`scripts/data-table-fast-scroll.mjs --mode=gesture`,CDP screencast + 合成手勢)抓到 **main 與分支都有**的白:滾輪一甩

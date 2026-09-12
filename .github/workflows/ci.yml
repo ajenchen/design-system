@@ -237,8 +237,17 @@ jobs:
           # 判定政策由 scripts/test-fast-scroll-gate-policy.mjs 的判定表驗(含「機器兩邊一起慢 → 過」與
           # 「main 沒慢而分支慢 → 紅」兩側,以及「119e279f 的骨架回歸對 main 是 0.55 → 不該誤紅」)。
           # 補齊 / 長工 / 幀距仍是絕對門檻(長工另按機器能力放大,見 lib)。
+          # **目的地閘**(2026-09-12,user 原話「你知道 main 只是低標嗎」「任何情境理想上都不應該看到空白,
+          # 但也不應該為了達成此目的而讓體驗和互動卡頓」)。上面那些 `--ref=main` 比值判的是「別比 main 差」=
+          # 地板;`--assert-max-blank-frames=0` 是絕對的目的地:**送出的任何一幀都不得有空白帶**。
+          # 它與機器速度無關,因為滿足它的機制(未掛載區預先鋪骨架底,`data-table.tsx` 的
+          # `unmountedSkeletonStyle`)成本固定、由合成器搬運 —— 慢機器該退化的是「多久看到真資料」,不是「看到白的」。
+          # 判每趟最大值不判中位數:空白幀是缺陷不是雜訊。
+          # 本機同故事對照(gesture 6000px):改前 CPU×1 27–29 幀 / 17-17 帶 / 最長 410–511ms;
+          # 改後 CPU×1 0–1 幀、×4 0–1 幀、×8 0–1 幀,最長一律 ≤ 18ms。
           node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 \
             --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
+            --assert-max-blank-frames=0 \
             --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
           # 「**畫得動的機器**不准出骨架」(2026-09-11)。骨架是「真的畫不完」時的過渡手段,不是正常捲動該看到的東西;
           # 沒有這條斷言之前,一個把「要不要出殼」判準訂成**只看位移**的版本可以全綠出貨 —— 而在 user 的真實 Chrome 上,

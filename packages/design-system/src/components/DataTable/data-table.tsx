@@ -506,6 +506,59 @@ function measureNaturalWidth(els: HTMLElement[], host: HTMLElement, cap: number)
 const SYSTEM_COL_IDS = new Set([SELECT_COL_ID, '__drag__', '__actions__'])
 const isSystemColumn = (colId: string) => SYSTEM_COL_IDS.has(colId)
 
+// ── 未掛載區的骨架底(2026-09-12;user 拍板「確認,改 data-table.tsx」)──────────────
+// **這是「永不空白」的地板,不是加速器。** 它跟列殼(`renderShellRow`)解決的不是同一件事:
+// 列殼要主執行緒有機會跑才畫得出來;這一層在 commit 當下就畫完,之後純由合成器搬運。
+//
+// 為什麼非要有這一層:捲動跑在**合成執行緒**上,跟主執行緒是刻意隔離的 ——
+//   Chromium RenderingNG:「Separating the main and compositor threads is critically important
+//   for performance isolation of animation and scrolling from main thread work.」
+//   https://developer.chrome.com/docs/chromium/renderingng-architecture
+// 所以主執行緒被長工卡住時,合成器照樣每 16ms 送一幀,而 React 不可能在那段期間把列放到新位置。
+// 實測(CPU×1、`roadmap-all-in-one`、6000px 手勢):手勢 663ms 中有 4 個長工合計 324ms,
+// 送出的 38 幀裡 **27 幀整片空白、最嚴重 17/17 帶全空、最長連續 410ms**。
+// 這不是「殼出得不夠早」——**任何需要主執行緒的機制都輸掉這場競速**。舊判準 `cannotDrawViewport`
+// (「這台機器畫得完一個視窗嗎」)問的是**能力**,而症狀是**跟不上捲動速率**:快機器恆為 false
+// → 殼永遠不出,上面那筆數據就是它的結果。
+// 世界級對照也沒有人靠預測:react-window 官方對 overscan 只敢說「**can reduce** visual flickering
+// near the edges」(https://react-window.vercel.app/);AG Grid 未載入的列交給 cell renderer 畫佔位,
+// 重點是「列元素永遠在,只是內容是佔位」(https://www.ag-grid.com/javascript-data-grid/infinite-scrolling/)。
+//
+// 本層改成**幾何保證**:已掛載的列必然是連續一段 `[first.start, last.end]`,這段以外的整個虛擬高度
+// 一次鋪成骨架底。覆蓋 = 上帶 ∪ 已掛載段 ∪ 下帶 = 整個捲動區,**恆真,與時序無關**。
+// 用 CSS gradient 而不是真 DOM:未掛載區可以有幾十萬 px 高,鋪真列是無上限的主執行緒工作;
+// gradient 是一張貼圖,每次 render 只多兩個 div、零逐幀工作 —— 所以它不可能造成卡頓
+// (「不應該為了達成此目的而讓體驗和互動卡頓」,user 2026-09-12)。
+//
+// 視覺消費既有 SSOT,不自創:bar 用 `--muted`(= `Skeleton` 的 `bg-muted`)、幾何抄 `renderShellRow`
+// 的 `h-3 w-3/5`(系統欄 `h-4 w-4`)、列底線用 `--divider`(同真列的 `border-b border-divider`)。
+// 已知落差:gradient 畫不出 `Skeleton` 的 `rounded-md` 圓角 —— 12px 高的 bar 在 9000px/s 的捲動下
+// 看不出來,而且這一層只出現在「本來會是全白」的地方,拿圓角換合成器保證不划算。
+const unmountedSkeletonStyle = (
+  cols: { id: string; getSize: () => number }[],
+  resolvedWidths: Map<string, number>,
+  pitch: number,
+): React.CSSProperties => {
+  const image: string[] = []; const size: string[] = []; const position: string[] = []; const repeat: string[] = []
+  let x = 0
+  for (const c of cols) {
+    const w = resolvedWidths.get(c.id) ?? c.getSize()
+    const sys = isSystemColumn(c.id)
+    const bh = sys ? 16 : 12
+    const top = Math.max(0, Math.round((pitch - bh) / 2))
+    image.push(`linear-gradient(to bottom, transparent 0 ${top}px, var(--muted) ${top}px ${top + bh}px, transparent ${top + bh}px 100%)`)
+    size.push(`${sys ? '16px' : `calc((${w}px - 2 * var(--table-cell-px)) * 0.6)`} ${pitch}px`)
+    position.push(`calc(${x}px + var(--table-cell-px)) 0`)
+    repeat.push('repeat-y')
+    x += w
+  }
+  // 列分隔線:少了它整片 bar 讀不出「這是一列一列」。用真列同一條 token。
+  const line = Math.max(0, pitch - 1)
+  image.push(`linear-gradient(to bottom, transparent 0 ${line}px, var(--divider) ${line}px ${pitch}px)`)
+  size.push(`100% ${pitch}px`); position.push('0 0'); repeat.push('repeat')
+  return { backgroundImage: image.join(','), backgroundSize: size.join(','), backgroundPosition: position.join(','), backgroundRepeat: repeat.join(',') }
+}
+
 // ── TruncatedText ── 2026-07-19:truncate+tooltip 引擎 + presentation 已抽成 SSOT primitive
 // `patterns/element-anatomy/truncated-text`(`<TruncatedText>` 消費 `useTruncated` hook)。原 file-local
 // shared RO(2026-04-22 D3 perf audit 的「全 DS 共用單一 RO」特性由 hook 承接)+ TruncateCell 已移除,
@@ -4110,6 +4163,17 @@ function DataTableInner<TData>(
       for (const [k, v] of rowElCacheRef.current) if (k.startsWith(regionKey + ':') && v.tick !== rowRenderTickRef.current) rowElCacheRef.current.delete(k)
     }
     const items = useVirtual ? rowVirtualItems.map(vr => rowEl(rows[vr.index], vr.index, { virtual: true, start: vr.start, size: vr.size, isLast: vr.index === rows.length - 1 })) : []
+    // 已掛載列的連續區段 `[first.start, last.end]`;它以外的整個虛擬高度就是「一定沒有東西」的地方。
+    // 兩帶取自這一次 render 自己的幾何,不額外量 DOM、不多一次 layout。
+    const unmountedBands: { key: string; top: number; height: number }[] = []
+    if (useVirtual && rowVirtualItems.length > 0) {
+      const total = virtualizer.getTotalSize()
+      const first = rowVirtualItems[0]
+      const last = rowVirtualItems[rowVirtualItems.length - 1]
+      const mountedEnd = last.start + last.size
+      if (first.start > 0) unmountedBands.push({ key: 'before', top: 0, height: first.start })
+      if (total - mountedEnd > 0) unmountedBands.push({ key: 'after', top: mountedEnd, height: total - mountedEnd })
+    }
     const staticItems = useVirtual ? [] : rows.map((row, i) => rowEl(row, i, { isLast: i === rows.length - 1 }))
     prune()
 
@@ -4122,6 +4186,21 @@ function DataTableInner<TData>(
       return (
         <TableScrollProvider isScrolling={virtualizer.isScrolling}>
           <div style={{ height: virtualizer.getTotalSize(), position: 'relative', minWidth: containerWidth }}>
+            {/* 未掛載區的骨架底(見 `unmountedSkeletonStyle` 檔頭)。已掛載的列是連續一段,
+                這兩帶蓋掉它以外的全部高度 —— 三者聯集恆等於整個捲動區,所以任何一幀都不會是空的。
+                `aria-hidden` + `pointer-events-none`:它是背景不是內容,不進無障礙樹、不吃指標。 */}
+            {unmountedBands.map((band) => (
+              <div
+                key={band.key}
+                aria-hidden="true"
+                data-row-shell-band={band.key}
+                style={{
+                  position: 'absolute', left: 0, right: 0, top: band.top, height: band.height,
+                  pointerEvents: 'none',
+                  ...unmountedSkeletonStyle(cols, resolvedWidths, Math.max(1, Math.round(resolvedEstimate))),
+                }}
+              />
+            ))}
             {items}
           </div>
         </TableScrollProvider>
