@@ -811,6 +811,45 @@ A workflow structures work across many agents" \
 run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx" "$TX_LOGO_META"
 expect_pass_silent "10f. 技能 meta 紀錄跟在指令後 → 不算最新 user 訊息,仍 approved"
 
+# 11. 附條件委派(2026-09-12 user verbatim):user 說出判準、並明示「符合判準的解法都可以」。
+#     同一訊息裡含「對嗎?」問句 —— 舊 lexicon 因此判成 DISCUSSION_OR_QUESTION,把已授權的實作擋住(M36(b) 自鎖)。
+USER_COND_DELEG="話說你知道main只是低標嗎?理想上data table整體互動和體驗越順暢越好,你應該知道吧?
+
+我只能說,我認為任何情境「理想」上都不應該看到空白,但也不應該為了達成此目的而讓體驗和互動卡頓。所以你只要確保你的解法不違背我的理念,就是沒問題的"
+TX_COND_DELEG="$TMP_DIR/tx_cond_deleg.jsonl"
+build_transcript "$TX_COND_DELEG" "$USER_COND_DELEG"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_COND_DELEG"
+expect_pass_silent "11a. 「你只要確保…就是沒問題的」= 附條件委派 → approved"
+
+# --- 對照組:證明這條 pattern 該紅的時候會紅(M32;沒有對照組的綠燈 = 零證據)---
+TX_BARE_OK="$TMP_DIR/tx_bare_ok.jsonl"
+build_transcript "$TX_BARE_OK" "data table 的空白問題沒問題"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_BARE_OK"
+expect_block "11b. 對照組:單獨一句「沒問題」無委派句構 → 仍 fail closed" "BLOCKER"
+
+TX_COND_Q="$TMP_DIR/tx_cond_q.jsonl"
+build_transcript "$TX_COND_Q" "data table 是否不應該看到空白?"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_COND_Q"
+expect_block "11c. 對照組:單獨問句(無委派)→ 仍 fail closed" "BLOCKER"
+
+TX_COND_OTHER="$TMP_DIR/tx_cond_other.jsonl"
+build_transcript "$TX_COND_OTHER" "$USER_COND_DELEG"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/Switch/switch.tsx" "$TX_COND_OTHER"
+expect_block "11d. 對照組:同訊息對 Switch 無 exact target 綁定 → 不外溢" "BLOCKER"
+
+# 11e/11f. 中英夾雜的詞界:中文不會在英文詞後面加空格(「data table整體…」),
+#          原本前後都只認「非字母數字」當邊界 → 後面接的「整」是 \p{L} → 綁定失敗。
+#          修法只認「ASCII 英數 ↔ CJK」這一種跨字集詞界;同字集內不放寬,所以 metadata table 仍不得綁進來。
+TX_CJK_ADJ="$TMP_DIR/tx_cjk_adj.jsonl"
+build_transcript "$TX_CJK_ADJ" "data table的空白要消掉,你只要確保你的解法不違背我的理念,就是沒問題的"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_CJK_ADJ"
+expect_pass_silent "11e. 中英夾雜「data table的…」= exact target 綁定成立 → approved"
+
+TX_METADATA="$TMP_DIR/tx_metadata.jsonl"
+build_transcript "$TX_METADATA" "把 metadata table整體改順一點,你只要確保不違背我的理念就是沒問題的"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_METADATA"
+expect_block "11f. 對照組:metadata table(同字集相鄰)不得綁到 data-table" "BLOCKER"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

@@ -210,10 +210,24 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// 中英夾雜的詞界(2026-09-12)。原本前後都只認「非字母數字」當邊界,但中文**不會**在英文詞後面
+// 加空格 —— user 寫「data table整體互動和體驗越順暢越好」時,`table` 後面的「整」是 `\p{L}`,
+// 於是別名 `data table` 判成「詞還沒結束」而綁定失敗,已授權的 exact target 被當成沒綁定
+// (實測 reasonCode = EXACT_UI_UX_TARGET_BINDING_MISSING)。
+// **刻意寫窄**:只有「別名邊緣是 ASCII 英數、相鄰字是 CJK」才算詞界 —— 換字集就是換詞。
+// 同字集內一律不放寬,所以 `metadata table` 仍不會綁到 `data-table`(前面是拉丁字母)。
+const CJK_CLASS = '\\p{sc=Han}\\p{sc=Hiragana}\\p{sc=Katakana}\\p{sc=Hangul}'
+const isAsciiAlnum = (ch) => /[A-Za-z0-9]/u.test(ch || '')
+const aliasBoundaries = (alias) => ({
+  before: isAsciiAlnum(alias.at(0)) ? `(?:^|[^\\p{L}\\p{N}]|[${CJK_CLASS}])` : '(?:^|[^\\p{L}\\p{N}])',
+  after: isAsciiAlnum(alias.at(-1)) ? `(?:[^\\p{L}\\p{N}]|[${CJK_CLASS}]|$)` : '(?:[^\\p{L}\\p{N}]|$)',
+})
+
 function exactTargetBinding(message, target) {
   const normalized = normalizeText(message)
   for (const alias of targetAliases(target).sort((left, right) => right.length - left.length)) {
-    const pattern = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(alias)}([^\\p{L}\\p{N}]|$)`, 'iu')
+    const b = aliasBoundaries(alias)
+    const pattern = new RegExp(`${b.before}${escapeRegExp(alias)}${b.after}`, 'iu')
     if (pattern.test(normalized)) return alias
   }
   return null
@@ -221,8 +235,9 @@ function exactTargetBinding(message, target) {
 
 function exactAliasOccurrences(message, alias) {
   const normalized = normalizeText(message)
+  const b = aliasBoundaries(alias)
   const pattern = new RegExp(
-    `(^|[^\\p{L}\\p{N}])(${escapeRegExp(alias)})(?=[^\\p{L}\\p{N}]|$)`,
+    `${b.before}(${escapeRegExp(alias)})(?=${b.after})`,
     'giu',
   )
   return [...normalized.matchAll(pattern)].length
@@ -289,6 +304,17 @@ const UI_DELEGATED_RESEARCH_PATTERNS = [
   /(?:照|依|按)\s*(?:你|妳)(?:的)?\s*(?:建議|判斷|專業)/u,
   /反正\s*(?:你|妳).{0,12}(?:研究|處理|決定|判斷)/u,
   /\b(?:research|figure\s+out|decide)\b.{0,32}\b(?:best|optimal|most\s+(?:polished|natural|refined))\b/iu,
+  // 附條件委派(2026-09-12 補):user 說出**判準**、並明示「符合判準的任何解法都可以」——
+  // 語意等同上面的「照你建議」,只是把裁量權綁在一個條件上。錨(user 2026-09-12 verbatim):
+  //   「我認為任何情境『理想』上都不應該看到空白,但也不應該為了達成此目的而讓體驗和互動卡頓。
+  //     所以你只要確保你的解法不違背我的理念,就是沒問題的」
+  // 這在舊 lexicon 下被判成 TARGET_BOUND_DISCUSSION_OR_QUESTION(同訊息含「對嗎?」),
+  // 於是已授權的實作被自家閘擋住 = M36(b) 自鎖。
+  // **刻意寫窄**:必須有「只要 …(條件)… 就 …(放行)」或「不違背/符合 …(理念/原則/要求)… 就 …」
+  // 的完整條件句構;單獨一句「沒問題」「可以」不在此列(問句 ≠ 同意、單詞 ≠ 委派)。
+  /(?:你|妳)\s*只要.{0,60}(?:就|即)\s*(?:是)?\s*(?:沒問題|沒有問題|可以|行|OK)/u,
+  /(?:不違背|不牴觸|不違反|符合|滿足).{0,24}(?:我(?:的)?)?\s*(?:理念|原則|要求|想法|標準|期待).{0,32}(?:就|即)\s*(?:是)?\s*(?:沒問題|沒有問題|可以|行|OK)/u,
+  /\bas\s+long\s+as\b.{0,80}\b(?:it'?s|that'?s|you'?re)\s+(?:fine|ok|okay|good)\b/iu,
 ]
 
 const TARGET_BINARY_QUESTION_PATTERNS = [

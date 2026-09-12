@@ -97,6 +97,18 @@ const REF_LABEL = arg('ref', '')
 const BUSY_AT = 20, BUSY_MS = 150
 const GESTURE_PX = Number(arg('gesture-px', 6000))
 const GESTURE_SPEED = Number(arg('gesture-speed', 12000))
+// ── 目的地閘(2026-09-12)──────────────────────────────────────────────────────
+// 本檔其餘的 `--assert-*` 都是**相對**判準(本 build ÷ `--ref` ≤ 比值上限),它們擋的是「比 main 差」。
+// user 2026-09-12 原話:「你知道main只是低標嗎?理想上data table整體互動和體驗越順暢越好」
+// ——「不比 main 差」是地板,不是目的地。整份閘只有地板 = 把 main 寫成了天花板。
+//
+// 這一條是**絕對**的,而且刻意與機器速度無關:
+//   「送出的任何一幀,中央捲動區都不得有任何一帶是空的。」
+// 它做得到與機器無關,是因為滿足它的機制(未掛載區預先鋪好骨架底)成本固定、由合成器搬運,
+// 機器再慢也畫得出來 —— 慢機器該退化的是「多久看到真資料」,不是「看到白的」。
+// 對偶條件(「不應該為了達成此目的而讓體驗和互動卡頓」,同一則 user 訊息)仍由上面的相對閘擋:
+// 幀距與長工不得比 `--ref` 差 —— 兩條合起來才是完整的目的地,單獨任一條都可以被作弊繞過。
+const ASSERT_BLANK_FRAMES = arg('assert-max-blank-frames', '')
 const ASSERT_BLANK_MS = arg('assert-max-blank-ms', '')
 const ASSERT_FILL_MS = arg('assert-max-fill-ms', '')
 /** 主執行緒單一任務上限 / 合成器送出的幀距上限。
@@ -619,7 +631,7 @@ if (SELFTEST) {
   console.log(ok ? '✓ selftest:三個偵測器在該紅的時候都會紅' : '✗ selftest:儀器有偵測器沒反應')
   process.exit(ok ? 0 : 1)
 }
-if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '' || ASSERT_FRAME_GAP_MS !== '' || ASSERT_SHELL_FRAMES !== '') {
+if (ASSERT_BLANK_FRAMES !== '' || ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '' || ASSERT_FRAME_GAP_MS !== '' || ASSERT_SHELL_FRAMES !== '') {
   // 「證據有效」逐趟判(儀器沒在工作就不能當證據);「效能門檻」判同一 build 的**中位數**,不判單趟最大值。
   // 為什麼(2026-09-11,c34e035c 實測):共享 2 vCPU runner 上同一份 build 的最長連續空白跑間差很大 ——
   // eb5b42fc 兩趟 276 / 282ms 全綠,同樣的 data-table.tsx 加了 Tag/PeoplePicker 量測快取之後兩趟是 153 / 415ms。
@@ -697,21 +709,21 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
     }
     return
   }
-  const _unusedRelGate = (rawLimit, name, ceiling, pick, extra = () => '') => {
-    const refMs = NaN
-    if (!Number.isFinite(refMs) || refMs <= 0) {
-      if (REF_LABEL) console.log(`   (參考「${REF_LABEL}」的${name}是 ${Number.isFinite(refMs) ? refMs.toFixed(0) : '無資料'},無法當分母 → 這項退回絕對門檻 ${rawLimit || '(未設)'}ms)`)
-      gate(rawLimit, name, ceiling, pick, extra)
-      return
-    }
+  // 目的地閘:絕對、判**每一趟的最大值**不判中位數 —— 空白幀不是雜訊是缺陷,
+  // 「三趟裡有一趟 27 幀全白」用中位數會被蓋掉。與 `--ref` 無關:參考建置自己爛不構成放行理由。
+  if (ASSERT_BLANK_FRAMES !== '') {
+    const limit = Number(ASSERT_BLANK_FRAMES)
     for (const [k, rs] of groups) {
-      const label = k.split('/')[0]
-      if (label === REF_LABEL) continue
-      const mine = median(rs.map(pick))
-      const verdict = refRatioVerdict(mine, refMs)
-      const cap = (refMs * BLANK_RATIO_LIMIT).toFixed(0)
-      if (verdict === 'fail') { console.log(`✗ ${k}:${name}中位數 ${mine.toFixed(0)}ms > 參考「${REF_LABEL}」的 ${refMs.toFixed(0)}ms × ${BLANK_RATIO_LIMIT}(= ${cap}ms)`); failed++ }
-      else console.log(`✓ ${k}:${name}中位數 ${mine.toFixed(0)}ms ≤ 參考「${REF_LABEL}」的 ${refMs.toFixed(0)}ms × ${BLANK_RATIO_LIMIT}(= ${cap}ms)`)
+      if (REF_LABEL && k.split('/')[0] === REF_LABEL) continue
+      const vals = rs.map((r) => r.g?.blankFrames).filter((v) => Number.isFinite(v))
+      if (!vals.length) { console.log(`↷ ${k}:空白幀數——這個模式沒有截圖幾何,不適用`); continue }
+      const worst = Math.max(...vals)
+      const all = vals.join(' / ')
+      if (worst > limit) {
+        const bad = rs.find((r) => r.g?.blankFrames === worst)
+        console.log(`✗ ${k}:**目的地**呈現幀不得有空白,實測最差一趟 ${worst} 幀是空的(${rs.length} 趟 ${all};該趟最嚴重 ${bad.g.blankMaxBands}/${bad.g.bandsPerFrame} 帶、最長連續 ${bad.g.blankLongestMs.toFixed(0)}ms)`)
+        failed++
+      } else console.log(`✓ ${k}:**目的地**呈現幀零空白(${rs.length} 趟 ${all},上限 ${limit})`)
     }
   }
   relGate(ASSERT_BLANK_MS, '中央區最長連續空白', CEILING_FACTOR.blank, (r) => r.g.blankLongestMs, (r) => `(${r.g.blankFrames} 幀,最多 ${r.g.blankMaxBands} 帶)`)
