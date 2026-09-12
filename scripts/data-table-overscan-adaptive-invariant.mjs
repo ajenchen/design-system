@@ -103,11 +103,15 @@ try {
   ck(`A2 緩衝不超過 AG Grid 的 ${AG_GRID_ROW_BUFFER}`, observed.every((n) => n <= AG_GRID_ROW_BUFFER), `得 ${observed.join(' / ')}`)
   if (!SELFTEST) {
     ck('A3 能力越強、緩衝不得更小(不節流 ≥ 4× 節流)', fast.overscan >= slow.overscan, `不節流 ${fast.overscan} / 4× ${slow.overscan}`)
+    // A4 的前提必須跟元件的公式一致:光有餘裕不夠,要餘裕**算得起超過下限的列數**才會看到效果。
+    // 2026-09-12 修:原本只要求「餘裕 ≥ 一列的雙側成本」,於是機器忙碌時(餘裕 8.5ms、算得起 2 列 < 下限 5)
+    // 會誤紅 —— 元件回下限才是正確行為。
     const headroom = predictedHeadroom(fast)
-    if (headroom >= 2 * fast.costPerRow) {
-      ck('A4 有餘裕時機制真的動了(緩衝 > 下限)', fast.overscan > MIN_OVERSCAN, `餘裕 ${headroom.toFixed(1)}ms / 緩衝 ${fast.overscan}`)
+    const affordable = Math.floor(headroom / Math.max(0.5, 2 * fast.costPerRow))
+    if (affordable > MIN_OVERSCAN) {
+      ck('A4 有餘裕時機制真的動了(緩衝 > 下限)', fast.overscan > MIN_OVERSCAN, `餘裕 ${headroom.toFixed(1)}ms → 算得起 ${affordable} 列 / 實際緩衝 ${fast.overscan}`)
     } else {
-      console.log(`—  A4 不適用:這台機器沒有餘裕(預測餘裕 ${headroom.toFixed(1)}ms < 一列的雙側成本),緩衝本來就該留在下限 ${fast.overscan}`)
+      console.log(`—  A4 不適用:這台機器的餘裕 ${headroom.toFixed(1)}ms 只算得起 ${affordable} 列(≤ 下限 ${MIN_OVERSCAN}),緩衝留在下限 ${fast.overscan} 才是正確行為`)
     }
   }
 } finally {

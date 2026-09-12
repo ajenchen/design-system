@@ -1923,7 +1923,23 @@ function DataTableInner<TData>(
     S.pendingBehind = renderOffsetPrev != null ? Math.abs(offsetNow - renderOffsetPrev) / Math.max(1, S.overscan * resolvedEstimate) : 0
     // 只有量到「機器跟不上」才受預算節制;這一次 render 的位移已經超過門檻就**立刻**算(不等 commit 後的 effect ——
     // 慢機器第二次 render 位移就 3.9 倍緩衝,再等一次全量 commit 才出殼會多白 300ms+);退出看平滑值。跟得上的機器完全走 R17 的路。
-    S.budgeted = S.scrollCommit && cannotDrawViewport && (S.slow || S.pendingBehind > SHELL_BEHIND_ENTER)
+    // **兩條各自獨立的出殼理由**(2026-09-12):
+    //   (a) 這台機器連一個視窗都畫不完(`cannotDrawViewport`)—— 原本唯一的理由
+    //   (b) **持續**跟不上捲動速率(`S.behind`,平滑值)—— 新增
+    //
+    // 為什麼 (b) 以前被 AND 擋住、現在可以獨立成立:`behind` = 位移 ÷ 預掛緩衝。
+    // 緩衝以前是固定 5 列,所以 `behind` 只反映捲動速度、與機器能力無關(1× 與 4× 同樣是 2.5),
+    // 單獨用它會讓快機器也出殼 —— 那正是 AND 當初存在的理由。
+    // 自適應緩衝之後,緩衝本身就是能力的函數,`behind` 因此變成**能力感知**的:
+    // 1× 緩衝 10 → 500/(10×40) = 1.25(不出殼);2× 緩衝 5 → 500/200 = 2.5(該出殼)。
+    //
+    // 為什麼 (b) 用平滑值 `S.behind` 而不是瞬時的 `S.pendingBehind`:
+    // 瞬時值在 1× 實測三趟會出現 0/0/**1** 幀殼(單次抖動),平滑值有遲滯,單次抖動不會觸發。
+    //
+    // 這條打的是「模型說畫得完、實際卻整片白」的regime:2× 節流下模型算出一個視窗 65ms(< 120 門檻)
+    // 所以不出殼,但那 1.1 秒裡視窗移動了 165 列 —— 判準問錯了問題(問「畫得完一個視窗嗎」,
+    // 真正的問題是「跟得上速率嗎」)。實測最長連續空白 1086–1193ms → 184–218ms、長工 174–225ms → 73–82ms。
+    S.budgeted = S.scrollCommit && ((cannotDrawViewport && (S.slow || S.pendingBehind > SHELL_BEHIND_ENTER)) || S.behind > SHELL_BEHIND_ENTER)
     // 這一幀畫得完幾列真列 =(幀預算 − 每次 commit 的固定成本)÷ 每列成本(至少 1 列,上限 64)。停捲後只剩補殼時放寬到 4 幀:
     // 每次 commit 的固定成本在慢機器很貴(4× 節流 ≈ 100ms),一次多補幾列比每幀補 1 列快得多(6× 節流補齊 1.3s → 目標 < 1s)。
     // 沒有新列進窗(scrollTop 沒變,只是還在 250ms 的 isScrolling 尾巴)的 commit 放寬到 4 幀:可能真的停了(多補幾列補得快),
