@@ -3,6 +3,7 @@
 // @renderer-symmetry-allow: 2026-07-08 WM 戰役 A 案回歸修正 — ReadonlyDisplay 現已消費 selectedItemRenderer(view bare-span / D-path / readonly / disabled 四分支),對齊 field-controls.spec.md 共享 contract (a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」。前 note「display→edit unify deferred」已兌現(值內容層);chrome 結構 unify(D-path)仍為 opt-in showDisplayEndIcon。
 import * as React from 'react'
 import { X, ChevronDown } from 'lucide-react'
+import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
@@ -16,6 +17,7 @@ import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useRes
 import { SelectMenu, forwardKeyToListbox, useActiveDescendant, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
 import { useIsTouchDevice } from '@/design-system/hooks/use-is-touch-device'
 import { useControllable } from '@/design-system/hooks/use-controllable'
+import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 // ── Tag padding per size ────────────────────────────────────────────────────
@@ -128,14 +130,26 @@ export interface SelectProps
   startIcon?: LucideIcon
   /** 啟用搜尋（desktop 時 field 變 input，打字即篩選） */
   searchable?: boolean
-  /** Loading state(2026-05-15 audit B fix;2026-07-04 Q3 拍板措辭修訂)。
-   *  Forward 給 SelectMenu primitive SSOT;spinner 只在**無可顯示選項時**佔 empty slot(cmdk CommandEmpty
-   *  機制)— 已有 stale options 時保留顯示不清空(對齊 MUI Autocomplete「only if there are no suggestions」)。
-   *  Trigger 不變(chevron 保留 user 隨時可點開)。*/
+  /** 「這個值」在讀取 / 驗證 / 儲存(Field 家族 `loading` SSOT,`field-controls.spec.md`「Loading state」;2026-09-09 user 拍板
+   *  收窄語意,與 Input `loading` 同義):觸發點右側、ChevronDown 左邊放列圖示尺寸的 CircularProgress(react-select / Atlassian
+   *  的順序:清除 → 轉圈 → 箭頭)+ 觸發點 `aria-busy`;選單照常可開、可選。**不是**選項載入 —— 選項載入用 `optionsLoading`。 */
   loading?: boolean
-
-  /** Menu list 最小列數(空狀態 / 選項少時的視覺一致 reserve)。預設 3 — 選項 < 3 時顯式縮(如 And/Or 兩選項) */
-  minRows?: number
+  /** 選項清單載入中(2026-09-09 user 拍板改名自 `loading`)。Forward 給 SelectMenu SSOT:指示**只在選單內**(沒有可顯示選項時
+   *  一列「載入選項中」訊息列 + listbox `aria-busy`),觸發點不轉圈;本機過濾已有選項時保留、遠端搜尋抓資料中舊選項不顯示
+   *  (`select-menu.spec.md`「Loading」「遠端搜尋」)。 */
+  optionsLoading?: boolean
+  /** 遠端搜尋時傳 `false`:不在本機用搜尋字過濾、伺服器回什麼列什麼;抓資料中(`optionsLoading`)舊結果不顯示、關鍵字空時顯示 `suggestions`
+   *  (SSOT select-menu.spec.md「遠端搜尋」;對應 react-select `filterOption: null` / Ant `filterOption={false}`)。 */
+  filterOption?: boolean
+  /** 搜尋字改變時回呼(含清空);遠端搜尋搭配 `filterOption={false}` + `optionsLoading`(對齊 react-select / MUI `onInputChange`)。 */
+  onSearchChange?: (value: string) => void
+  /** 遠端搜尋、關鍵字空時顯示的建議清單(部分選項;DS 自動包成「建議」群組,讓使用者知道選項不只這幾筆)。只在 `filterOption={false}`
+   *  生效;SSOT `select-menu.spec.md`「Suggestions」。 */
+  suggestions?: SelectOption[]
+  /** 建議群組標題(預設「建議」;forward 給 SelectMenu) */
+  suggestionsLabel?: string
+  /** 遠端搜尋、關鍵字空、沒有建議也沒在載入時的提示列文案(預設「輸入關鍵字搜尋」;forward 給 SelectMenu) */
+  searchHintText?: string
   /** Initial open state(uncontrolled)。對齊 Radix Popover defaultOpen canonical;DataTable cell-as-input
    *  click → 1 step open menu(Airtable / Notion canonical),consumer pass `defaultOpen` 達成。
    *  Note:Native Select(mobile)無 popover 概念,此 prop 僅 Custom path 生效。 */
@@ -495,7 +509,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
     // 2026-07-08 A 案回歸修正:selectedItemRenderer 從丟棄名單移出 — Native path 的
     // ReadonlyDisplay(view/readonly/disabled)同樣消費值內容 renderer(contract (a) 4-mode
     // 共享,值內容不因 pointer type 而異);native <select> edit 路徑仍不消費(原生 option 無法客製 render)。
-    searchable: _searchable, groups: _groups, loading: _loading, minRows: _minRows, emptyText: _emptyText, creatable: _creatable, onCreate: _onCreate, createLabel: _createLabel, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer,
+    searchable: _searchable, groups: _groups, loading: _loading, optionsLoading: _optionsLoading, filterOption: _filterOption, onSearchChange: _onSearchChange, suggestions: _suggestions, suggestionsLabel: _suggestionsLabel, searchHintText: _searchHintText, emptyText: _emptyText, creatable: _creatable, onCreate: _onCreate, createLabel: _createLabel, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange, selectedItemRenderer,
     ...props }, ref) => {
     const fieldCtx = useFieldContext()
     const error = useResolvedFieldInvalid(errorProp)
@@ -534,6 +548,8 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
         value={value ?? ''}
         onChange={(e) => handleNativeChange(e.target.value)}
         disabled={disabled}
+        // 值處理中(Field 家族 loading):原生路徑同樣標 aria-busy,轉圈在 chevronEl(下方)
+        aria-busy={_loading || undefined}
         aria-invalid={error || undefined}
         aria-required={fieldCtx?.required || undefined}
         aria-describedby={ariaDescribedByProp ?? fieldCtx?.descriptionId}
@@ -553,6 +569,7 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
 
     const chevronEl = (
       <ItemSuffix className="relative z-10 pointer-events-none">
+        {_loading && <CircularProgress size={iconSize} className="shrink-0" />}
         <ChevronDown size={iconSize} className="text-fg-muted" aria-hidden />
       </ItemSuffix>
     )
@@ -617,7 +634,7 @@ NativeSelect.displayName = 'NativeSelect'
 
 // code-quality-allow: long-function — foundational composite main body — 拆 sub-fn 會複雜化 local state / ref / context binding
 const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
-  ({ mode, variant: variantProp, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, minRows, emptyText, creatable = false, onCreate, createLabel, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, style: styleProp,
+  ({ mode, variant: variantProp, filterOption = true, onSearchChange, width, error: errorProp = false, size: sizeProp, options, groups, value: valueProp, defaultValue, onChange, placeholder, className, disabled: disabledProp, name, required, form, clearable = false, display = 'plain', startIcon: StartIcon, searchable = false, loading, optionsLoading, suggestions, suggestionsLabel, searchHintText, emptyText, creatable = false, onCreate, createLabel, defaultOpen = false, onOpenChange, selectedItemRenderer, showDisplayEndIcon, id: idProp, 'aria-describedby': ariaDescribedByProp, 'aria-errormessage': ariaErrorMessageProp, 'aria-label': ariaLabel, onKeyDown: onKeyDownProp, style: styleProp,
     // 2026-07-14 API 策展 D:mobile-only props(allowlist 註記)desktop 顯式丟棄 — div trigger 無原生
     // 對應,不 spread 進 DOM(對稱 NativeSelect 丟棄 custom-path-only props 的既有 pattern)
     autoFocus: _autoFocus, autoComplete: _autoComplete, ...rest }, ref) => {
@@ -642,7 +659,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     const isTextDisplay = display === 'plain'
 
     const [open, setOpen] = React.useState(defaultOpen)
-    const [search, setSearch] = React.useState('')
+    const [search, setSearchState] = React.useState('')
+    const setSearch = React.useCallback((next: string) => { setSearchState(next); onSearchChange?.(next) }, [onSearchChange])
     const inputRef = React.useRef<HTMLInputElement>(null)
     // a11y(2026-07-04):listbox 容器 id——trigger aria-controls 指向 SelectMenu PopoverContent
     // (對齊姊妹元件 combobox.tsx:677 既有 canonical;React.useId SSR/CSR 穩定)。
@@ -658,7 +676,12 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     //   否則 disabled→edit 切換時 hook count 變動 → React 死亡。
     //   原本 useMemo(L280, L291) 在 early return 之後 = latent bug,K13 觸發(filter Op 從 disabled
     //   變 edit 當 user 選欄位)。修法:把所有 useMemo 提到 early return 之前。
-    const selectedOpt = options?.find(o => o.value === value)
+    // 已選項先查 options,再查 suggestions(2026-09-09:從建議群組選的值不在 options 裡),最後查「看過的選項」
+    // (遠端搜尋關閉後結果被清掉、值還在 → 不能退成 id;hooks/use-known-options.ts)
+    const findKnown = useKnownOptions([options, suggestions], (o) => o.value)
+    const selectedOpt = options?.find(o => o.value === value) ?? suggestions?.find(o => o.value === value) ?? findKnown(value)
+    // 唯讀 / 檢視 / 停用分支只拿得到 options:把已選但不在 options 裡的那一項補上,label 才查得到
+    const optionsForDisplay = React.useMemo(() => (selectedOpt && !options?.some(o => o.value === selectedOpt.value) ? [...(options ?? []), selectedOpt] : options), [options, selectedOpt])
     // 2026-05-06 v9.1:value 不在 options 也要顯示原值(不沉默丟失)。原 fallback `''` 致
     // SelectCell 開 edit 時若 cell value 不在當前 options(e.g. 上游資料漂移 / options async
     // 後到 / 跨 dataset),trigger 顯示空白 — user 報「value 不見」。對齊 ReadonlyDisplay 同
@@ -680,22 +703,28 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
     // 2026-07-18:filter 用 trim 過的 search,對齊 SelectMenu creatable 的 `search.trim()` create-row 判定 —
     //   否則尾隨空白(如 "Bug ")會讓 filter 漏掉完全同名選項、SelectMenu 卻誤判「無同名」提議重複建立。
     const trimmedSearch = search.trim()
-    const filteredOptions = searchable && trimmedSearch
+    const filteredOptions = searchable && filterOption && trimmedSearch
       ? options.filter(o => o.label.toLowerCase().includes(trimmedSearch.toLowerCase()))
       : options
     // ── 轉換 SelectOption → SelectMenuOption(必在 early return 前) ──
     // Issue 4(2026-05-10):forward avatar / description / disabled SSOT(per SelectMenuOption schema)。
+    // 同一份 mapping 給 options 與 suggestions(2026-09-09 建議清單),不複製第二份。
+    const toMenuOption = React.useCallback((opt: SelectOption): SelectMenuOption => ({
+      value: opt.value,
+      label: opt.label,
+      icon: isTextDisplay ? opt.icon : undefined,
+      avatar: opt.avatar,
+      description: opt.description,
+      disabled: opt.disabled,
+      group: opt.group,
+    }), [isTextDisplay])
     const menuOptions: SelectMenuOption[] = React.useMemo(
-      () => filteredOptions.map(opt => ({
-        value: opt.value,
-        label: opt.label,
-        icon: isTextDisplay ? opt.icon : undefined,
-        avatar: opt.avatar,
-        description: opt.description,
-        disabled: opt.disabled,
-        group: opt.group,
-      })),
-      [filteredOptions, isTextDisplay]
+      () => filteredOptions.map(toMenuOption),
+      [filteredOptions, toMenuOption]
+    )
+    const menuSuggestions: SelectMenuOption[] | undefined = React.useMemo(
+      () => suggestions?.map(toMenuOption),
+      [suggestions, toMenuOption]
     )
     // ── Tag display 自訂 label 渲染(必在 early return 前) ──
     const renderLabel = React.useMemo(() => {
@@ -721,7 +750,7 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
 
     // Early return AFTER all hooks(disabled / readonly / view mode 走 ReadonlyDisplay)
     if (resolvedMode !== 'edit') {
-      return <ReadonlyDisplay mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} showDisplayEndIcon={showDisplayEndIcon} selectedItemRenderer={selectedItemRenderer} />
+      return <ReadonlyDisplay mode={resolvedMode} variant={variant} width={width} size={size} options={optionsForDisplay} value={value} display={display} startIcon={StartIcon} className={className} placeholder={placeholder} showDisplayEndIcon={showDisplayEndIcon} selectedItemRenderer={selectedItemRenderer} />
     }
 
     // 2026-05-21 D3 Phase B codex 抓:Custom clear 用 setValue 不直接 onChange,uncontrolled clear 才能真清 internal state。
@@ -731,6 +760,9 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
 
     const chevronEl = (
       <ItemSuffix>
+        {/* 值處理中的轉圈(Field 家族 loading,2026-09-09 user 拍板收窄):跟 Input 的 endAction 槽同義 —— 這個值在讀取 / 驗證 / 儲存,
+            與選單開關、選項多寡無關;選項載入的指示在選單內(optionsLoading → SelectMenu),觸發點不為它轉圈 */}
+        {loading && <CircularProgress size={iconSize} className="shrink-0" />}
         <ChevronDown size={iconSize} className={cn('text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
       </ItemSuffix>
     )
@@ -822,6 +854,8 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
         // (field-context.ts labelId jsDoc 明文);consumer aria-label 優先(對齊 slider.tsx:166 guard canonical)。
         aria-labelledby={ariaLabel ? undefined : fieldCtx?.labelId}
         aria-invalid={error || undefined}
+        // 值處理中(Field 家族 loading):跟 Input wrapper 同樣標 aria-busy(field-controls.spec.md「Loading state」)
+        aria-busy={loading || undefined}
         // D2(2026-07-13):顯式 required prop 同步進 aria-required(mirror 本身 aria-hidden,
         // AT 看不到其 required;語意由 trigger 播報 — 對齊 mobile 原生 <select required> 行為)
         aria-required={(required || fieldCtx?.required) || undefined}
@@ -891,10 +925,14 @@ const CustomSelect = React.forwardRef<HTMLDivElement, SelectProps>(
           createLabel={createLabel}
           search={searchable ? search : undefined}
           onSearchChange={searchable ? setSearch : undefined}
-          loading={loading}
+          // 遠端搜尋三件套(2026-09-09):filterOption 讓 SelectMenu 知道清單是部分的(建議標題 / 抓資料中清舊清單 / 提示列)
+          filterOption={filterOption}
+          optionsLoading={optionsLoading}
+          suggestions={menuSuggestions}
+          suggestionsLabel={suggestionsLabel}
+          searchHintText={searchHintText}
           emptyText={emptyText}
           size={size}
-          minRows={minRows}
           open={open}
           onOpenChange={(o) => { setOpen(o); onOpenChange?.(o) }}
           contentId={listboxId}

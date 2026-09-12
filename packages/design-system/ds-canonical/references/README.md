@@ -13,6 +13,7 @@ Agent 在執行時按需讀的深度 reference 檔 — audit protocol / FP 記�
 | `composition-fidelity.md` | Composition fidelity SSOT — consumer 用對 DS(conformance)為主,靜態 lint 驗(對齊 Polaris/Atlassian/Carbon);pixel/DOM identity diff 改 opt-in(2026-06-02 model 修正,非追求 product-vs-showcase 一致) |
 | `cva-patterns.md` | cva 適用 / 不適用 + 例外清單(跟 canonical `packages/design-system/ds-canonical/rules/ui-development.md` shadcn 規範互補) |
 | `drag-canonical.md` | 現行 drag behavior/visual ownership、DataTable/TreeView 能力矩陣與保留中的未來擴充邊界 |
+| `focus-canonical.md` | 鍵盤游標與焦點指示的跨元件 SSOT — 誰能移動游標(只有鍵盤)、游標長什麼樣(有無「懸停→選中」兩段式決定框 vs 共用 focus)、內外描邊判準 |
 | `failure-class-registry.json` | 被抓過的 failure class → mechanical defense／judgment audit 的封閉追蹤表 |
 | `governance-audit-coverage.md` | 治理 home × 稽核機制 × 執行頻率覆蓋表 |
 | `item-anatomy-recipe.md` | 7 步建立新 row primitive workflow + audit grep guard |

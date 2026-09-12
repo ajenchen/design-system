@@ -81,15 +81,22 @@ DataTable 有三種尺寸（`sm`、`md`、`lg`），透過 `size` prop 控制。
 ### 三、三區域架構（AG Grid 模式）
 
 Table 分三層:
-- **Header**(固定頂部,結構性地在 scroll 容器外、body 上方——不用 CSS sticky,永遠固定在頂部):含 left / center / right 三區,center 區與 body center 的水平捲動 JS 同步 scrollLeft(center-header 跟隨 center-body 捲動位置,同步機制見「捲軸」段 + `data-table.tsx`)。Header bg 用 `--muted`(code `HEADER_BG = 'bg-muted'`,比 surface 深一階,同 anatomy ColorMatrix)
-- **Body viewport**:含 left / center / right 三區;center-body 是唯一的水平 scroll container、也是垂直 scroll container(`overflow-y-auto`),left / right body 不自行捲動(`overflow-hidden`,`scrollTop` 由 center 的 `onScroll` 同步兩側;AR44:V scroll 移進 region 自身,讓水平捲軸落在可視視窗底部,不必捲到內容底才看到)
-- **Left / Right 區**:寬度由凍結欄加總,不吃水平捲動;frozen 邊界線用 `.dtPanelBoundaryRight/Left` 的 **1px 偽元素**(`::after`,`width:1px background:var(--divider)` 貼齊面板內緣;不佔 box model、不被 Windows 懸浮捲軸蓋 — 2026-05-12 自 `border-divider` 改制的理由保留),header + body panel 各套,視覺整欄高度。**畫線機制統一鐵律(2026-08-20 user 拍板)**:全表 1px 線(欄間短線 / 凍結邊界 / 外框)一律「元素/border」機制,**禁用陰影畫線** — 非整數縮放與 Retina 下瀏覽器對陰影與背景色盒的柵格化取整不同,會讓同規格的線出現 1 vs 2 實體像素的粗細分家(2026-08-20 user 報修錨例);**Center 區**:flex-1,水平 overflow 自行處理
+- **Header**(固定頂部,結構性地在 scroll 容器外、body 上方——不用 CSS sticky,永遠固定在頂部):含 left / center / right 三區,center 區與 body center 的水平捲動 JS 同步 scrollLeft(center-header 跟隨 center-body 捲動位置,同步機制見「捲軸」段 + `data-table.tsx`)。
+  **底色與下分隔線分屬兩個宿主**(2026-09-04 定案,兩者的約束不同):
+  - **底色**畫在三個 header panel 上(`HEADER_PANEL = 'bg-muted'`),row 不畫 —— `--muted` 半透明,**只准疊一層**,疊兩層會出現深淺差;讓給垂直捲軸的那條 strip 因為在 center panel 內,所以自動同色。
+  - **下分隔線**畫在**表頭列群組**(`.dtHeaderRowGroup::after`)上,一條橫貫整表。三個理由缺一不可:
+    (a) 用 `border-b` 會讓 panel 從 40 變 41(body row 的線含在 `rowHeight` 的 border-box 內,而 panel 沒指定高度),表頭比每一列高 1px;
+    (b) **不能畫在 header panel 上**:center header panel 是**捲動容器**,而絕對定位的子元素屬於捲動溢位內容,會跟著內容位移 —— 實測捲到底(`scrollLeft` = 382)時線的左緣跑到 x = −265,右側 382px 完全沒有線,缺口寬度恆等於 `scrollLeft`。列群組不捲動也不裁切,線因此天生橫貫整表(含 strip),也不會有分段接縫;
+    (c) 順帶消掉一個一個元素只有一個 `::after` 的碰撞:左右 header panel 同時掛凍結邊界線 `.dtPanelBoundaryRight/Left::after`,若下分隔線也用 `::after`,兩條規則會合併成 `left:0 right:0 top:0 bottom:0 width:1px height:1px` = 角落一個 1×1 的點,**兩條線同時消失**(2026-09-04 user 回報「釘選欄 header 最右邊的分隔線消失了」「表頭下方分隔線沒延伸到底」的共同根因,由 7a8a2c3a 引入、同日修正)。
+  機械閘 `I13` 因此必須**取像素**且必須**涵蓋捲動後的狀態**:第一版 I13 比的是 `getComputedStyle(::after).height` 與 border-box 高,兩個真 bug 都從這個盲點溜過去(見不變條件 (8))。
+- **Body viewport**:含 left / center / right 三區;center-body 是唯一的水平 scroll container、也是垂直 scroll container(`overflow-y-auto`),left / right body 不自行捲動(`overflow-hidden`;`scrollTop` 由 center 的 `onScroll` 同步兩側,而任何非 center 區被瀏覽器自己捲動(焦點捲動等)都先導回 center、再由 center 校準三區 —— **雙向收斂、真相源仍只有 center**,見缺陷 C;AR44:V scroll 移進 region 自身,讓水平捲軸落在可視視窗底部,不必捲到內容底才看到)
+- **Left / Right 區**:寬度 = 該區欄寬總和,**算出來的不是量出來的**(見不變條件 (9)),不吃水平捲動;frozen 邊界線是 **1px 偽元素**(`width:1px background:var(--divider)`,不佔 box model、不被 Windows 懸浮捲軸蓋 — 2026-05-12 自 `border-divider` 改制的理由保留),分兩段畫、**宿主不同**:表頭段在 header panel 上(`.dtPanelBoundaryRight/Left::after`,panel 高就是 40,`bottom:0` 即到底);列區段在**列區外層**上(`.dtLeftBoundary::before` / `.dtRightBoundary::after`,位置由 `--dt-left-w` / `--dt-right-w` 給,與面板寬同一個數字)。**列區段不能畫在釘選面板上**:面板自己是 `overflow:hidden`,而 `overflow` 的裁切邊是 **padding box**,面板底部那條等同水平捲軸高的透明 border 在它外面 —— 線無論怎麼負向延伸都畫不出來(2026-09-04 一度用 `bottom: calc(-1 * var(--dt-hscroll-gutter))`,版面盒延伸了、像素沒有,是假宣稱)。外層不裁切也不捲動,兩段相接即為視覺整欄高度、頂天立地。**畫線機制統一鐵律(2026-08-20 user 拍板)**:全表 1px 線(欄間短線 / 凍結邊界 / 外框)一律「元素/border」機制,**禁用陰影畫線** — 非整數縮放與 Retina 下瀏覽器對陰影與背景色盒的柵格化取整不同,會讓同規格的線出現 1 vs 2 實體像素的粗細分家(2026-08-20 user 報修錨例);**Center 區**:flex-1,水平 overflow 自行處理
 
 完整 class / overflow 規則見 `data-table.tsx`。
 
 **固定行高確保跨 region 對齊。** 所有 row 用 `h-table-row-{size}`，三個 region 的 row 精確同高。
 
-**Header/body region 寬度同步。** Header region 寬度由內容決定（columns + actions），body region 量測 header 寬度同步（機制見 `data-table.tsx`）。
+**Header/body region 寬度同步。** left 與沒有 `rowActions` 的 right 面板:寬度由 Σ 解析欄寬算出,header 與 body 面板寫同一個數字(不變條件 (9));只有 `hasRowActions` 的右面板例外 —— header 面板寬由內容決定(columns + actions),body 面板量測 header 同步(登記的殘留,見六之二之零)。機制見 `data-table.tsx`。(2026-09-05 更正:原句「body region 量測 header 寬度同步」是全面量測年代的敘述,與第六節「算出來的不是量出來的」矛盾。)
 
 ### 四、行高模式
 
@@ -98,6 +105,20 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 - **固定行高（預設，適合大多數場景）**：所有 row 同高、內容垂直置中——文字、tag、badge、avatar 等不同高度的元件都自然居中，不需處理對齊；文字一律截斷不換行（column 的 `wrap: true` 被忽略）
 - **自動行高（適合描述、備註等需完整顯示的欄位）**：row 高度由最高的 cell 決定、內容頂部對齊；垂直 padding 由目標行高推導（單行時製造置中效果，多行時保持頂部對齊）；`wrap: true` 的欄位可換行撐高 row
 
+**垂直內距公式（SSOT，`data-table.css`）**:
+
+```
+--table-cell-py = (var(--table-row-{size}) - 1lh) / 2 - 1px
+```
+
+`- 1px` **不是微調,是公式的前提**:view 態的內容載體(Field / Textarea 的 `view × naked`)自帶一圈 1px 透明上下框,那是 read↔edit 零跳的幾何佔位(`field-controls.spec.md`;世界級同做法:Bootstrap `.form-control-plaintext`、Atlassian inline-edit read-view),所以實際內容高是 **1lh + 2px** 而不是 1lh。固定行高把這 2px 吸收掉(高度被 `h-table-row-*` 釘死 + `overflow-hidden`),**自動行高是由內容反推高度,2px 會直接進總高**。Field 家族的 `--field-control-py-*`(`tokens/uiSize/uiSize.css`)為了同一個理由本來就帶 `- 1px`,兩式現在同型。
+
+**固定行高不受此項影響有代數理由**:置中盒的位置 = `(H − c) / 2`,與 padding 無關;改公式只會讓 header cell 的盒子從 40 縮到 38(row 仍 40、內容仍置中),而欄寬把手的 1px 線因為 inset 也是 `--table-cell-py`,兩邊同縮、線長不變(實測 21 → 21)。
+
+**機械閘**:`scripts/data-table-invariants.mjs` I7 驗固定行高 == token、**I14 驗自動行高單行 == token**(逐 sm/md/lg)。2026-09-04 之前只有 I7,所以這 2px 靜默存在。
+
+> **已知殘差(刻意不修)**:修正後單行自動 row = token + 1(那 1px 是列的下分隔線,在 border-box 之外),固定 row = token(分隔線含在 border-box 內)。這是「分隔線在不在高度預算裡」的結構性差異,不是同一個 bug;要抹平得寫成 `- 1.5px`,公式會失去可讀性,而且同一張表內所有 row 同模式所以看不出來。
+
 ### 五、Header vs Body 的視覺區隔
 
 **兩種垂直分隔線：**
@@ -105,7 +126,7 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 | 類型 | 範圍 | 適用 |
 |------|------|------|
 | Header 分隔線 | 僅 header 區域（上下留 padding） | 一般非 frozen 欄位之間 |
-| Frozen 邊界線 | **整欄高度**（table 頂部到底部） | frozen column 與 scrollable area 的交界 |
+| Frozen 邊界線 | **整欄高度**(表頭頂端到表格底緣,**貫穿水平捲軸帶**) | frozen column 與 scrollable area 的交界。2026-09-04 起列區段畫在不裁切的列區外層上,所以有水平捲軸時線也一路畫到 border-box 底,不再停在捲軸帶上緣。與 v33.3.2 一致(它特地讓 `.ag-body-horizontal-scroll` 的 spacer 也帶 border 讓線貫穿);先前「只到列區底」的寫法連同其 DS-自有 rationale 一併作廢。|
 
 一般 column 只在 header 有短線——body 的欄位邊界由 header 引導，不需額外視覺噪音。但 frozen column 的邊界是結構性的分隔（固定區域 vs 捲動區域），需要全高度的線來明確標示。Row actions 欄本質上是 frozen right column，左邊界也使用 full-height 分隔線。
 
@@ -121,7 +142,166 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 
 **Column 數量不是品質判準。** 單欄 DataTable 是有效用法（例如只需選取名稱的清單、窄容器中的唯一核心屬性）；`columns` 的數量由業務 schema 決定，不得用「至少兩欄」類 hook 把單欄當成 minimal mock。品質應檢查欄位語意、真實資料與容器布局，不是欄位數。
 
-**命名**:`meta.width` / `meta.minWidth` / `meta.maxWidth`(px)。**不用 TanStack `size`** — DS 內 `size` 既定為 `'sm'|'md'|'lg'` density(49+ 處),避 namespace 衝突。內部 pre-process copy 到 TanStack root,resize feature 正常。No-resize default:`width` = reserve(cell ≥ width,flex 可 grow,不可 shrink)。`enableColumnResize=true`:`width` = 初始,`minWidth` = 拖拉下限(default 80)。**不變條件(invariants,L2 test + hook 守)**:(1) cell width = column width(跟 padding/state/mode 無關)(2) view↔edit cell width 0 delta (3) view↔edit cell height 0 delta(textarea `field-sizing:content`)(4) Field 填滿 cell 高度(1px 容差於 cell.border-r)(5) No-resize column ≥ meta.width。對應 `scripts/data-table-invariants.mjs`(script 內 I1-I3 label 字串仍用 `display↔edit` — 2026-07-16 FieldMode display→view 更名前的歷史命名,語意同 view↔edit)。改 `columnSizeStyle` / 切 layout 必跑 invariant test 才 commit。
+**命名**:`meta.width` / `meta.minWidth` / `meta.maxWidth`(px)。**不用 TanStack `size`** — DS 內 `size` 既定為 `'sm'|'md'|'lg'` density(49+ 處),避 namespace 衝突。內部 pre-process copy 到 TanStack root,resize feature 正常。No-resize default:`width` = reserve(cell ≥ width,flex 可 grow,不可 shrink)。`enableColumnResize=true`:`width` = 初始,`minWidth` = 拖拉下限(default 80)。**不變條件(invariants,L2 test + hook 守)**:(1) cell width = column width(跟 padding/state/mode 無關)(2) view↔edit cell width 0 delta (3) view↔edit cell height 0 delta(textarea `field-sizing:content`)(4) Field 填滿 cell 高度(1px 容差於 cell.border-r)(5) No-resize column ≥ meta.width。(6) **欄寬只算一次,header 與 body 寫同一個整數**(橫軸)。這是 AG Grid v33(= 我們對照的那一代,header 同樣是獨立 viewport 靠 JS 同步)的模型:欄寬算進 `AgColumn.actualWidth`,`headerCellCtrl` 與 `cellPositionFeature` 各自把**同一個整數**寫成 `style.width`。舊作法把分配交給 CSS flex(`flex: 1 1 baseSize`),由瀏覽器在 header 與 body **兩個容器各跑一次**;只要可用寬度差一點(垂直捲軸 15px、border、取整),`flex-grow: 1` 就把差額**平均攤到每一欄並逐欄累積**(實測 7 欄:0 / 2.1 / 4.3 / 6.4 / 8.6 / 10.7 / 12.9,增量恰為 15/7;4 欄增量恰為 15/4)。現作法:`distributeColumnWidths(bases, maxes, available)` 算一次,`available` **一律取 body 的內容寬**(較窄的那個),取整用**前綴和游標**(`round(累積理想 − 累積已配)`,同 AG Grid `columnFlexService`)讓誤差被下一欄吸收、上限 ±0.5px 不累積,餘數補給最後一欄;撞到 `maxSize` 的欄先凍結再重分配。header 比 body 多出來的寬度變成**尾端空白**,由 panel 的表頭底色蓋住 —— 對應 AG Grid `CenterWidthFeature` 的 `addSpacer`;header 內層 wrapper 的 `minWidth` 因此要 `+ vScrollbarSpacer`,否則捲到最右端 header 會少一個捲軸寬而落後(實測未補時 hMax 382 vs bMax 397)。**原本的 `padding-inline-end` 補償已於 2026-09-03 移除**——它是 flex 模型下「讓兩次計算的輸入相等」的權宜,欄寬改成算一次後不再需要。拖拉欄寬模式(`enableColumnResize`)本來就兩邊同源(同一個 `getSize()`),不進這條路。**三個區都適用**(2026-09-03 補):v33 的 `HeaderCellCtrl.setupWidth` 與 `CellPositionFeature.onWidthChanged` 不分區,釘選欄只是不參與 flex 分配、不是不走「算一次」;釘選欄的解析寬 = `round(getSize())`。**機械閘**:`scripts/test-distribute-column-widths.mjs`(純函式單測 17 條,含 story 走不到的「撞上限凍結 → 重分配」分支)+ `scripts/data-table-invariants.mjs` 的 I11 / I11b(center,含模擬捲軸佔位)與 **I11c(三區各自斷言 header 寬 === cell 寬、左緣重合)**。演算法本體抽成獨立純模組 `column-widths.ts`,才能單測。
+
+(7) **pinned 與 center 的可視列高必須一致**(縱軸,同一根因的孿生)。center body 自己有 `overflow-x:auto`,水平捲軸吃掉它 15px 高;pinned 區沒有捲軸 → pinned 比 center 多露出一條列(實測 300 vs 285),無高度限制時則是表格底緣出現 15px 階差。作法:補等高的**透明 `border-bottom`** 給 left / right body panel。**必須是 border 不是 padding**:`overflow` 的裁切邊是 **padding box**,padding 只會讓 `clientHeight` 不變、列直接畫進 padding 區(實測 padding 版本 `clientHeight` 仍 300,列從 y=784 畫到 799);border 在 padding box 外面,`clientHeight` 因此真的少 15(300 → 285),列才會被裁掉。透明 border 之下 panel 底色照樣畫(`background-clip` 預設 border-box)—— **前提是 panel 自己要宣告底色**,2026-09-04 起兩個釘選面板都帶 `bg-surface`(缺陷 R);同日起這條讓位帶上還疊一條 `overflow-x: scroll` 的裝飾帶,讓水平捲軸的凹槽在釘選區底下連續(缺陷 Q)。
+
+(8) **守兩軸不變條件的機械閘必須取像素、且涵蓋捲動後的狀態**(M32;2026-09-04 兩個真 bug 的教訓,2026-09-05 補進清單 —— 第六節與缺陷 P 早就引用本條,但清單先前只列到 (7)):`getComputedStyle(::after).height` 或版面盒數字會被「版面盒延伸了、像素沒畫」(缺陷 P 的第一次嘗試)與「線隨 `scrollLeft` 位移」(第六節 (b))騙成假綠,所以 I13 取像素、並在 `scrollLeft` = max 時再量一次;同理 I11b / I12 在 gutter = 0 的 CI 上用 15px 透明邊框造出與真捲軸同值的量測,而不是只驗自然狀態。
+
+(9) **釘選面板寬 = 該區解析寬總和,算出來的不是量出來的**(橫軸;2026-09-04 `f3fe9f2e`,2026-09-05 補進清單):left 面板與沒有 `rowActions` 的 right 面板都由 `panelWidth`(Σ `resolvedWidths`)算出,header 面板與 body 面板寫同一個數字,不再「量 header `offsetWidth` → state → 灌給 body」(首幀 0 與取整殘差一併消失)。對照 v33.3.2 [`pinnedColumnService.ts#L166-L192`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/pinnedColumns/pinnedColumnService.ts#L166-L192) `setupHeaderPinnedWidth`:寫進表頭釘選容器的是 `checkContainerWidths` 由 `visibleCols.getColsLeftWidth()` / `getDisplayedColumnsRightWidth()` 算出的 `leftWidth` / `rightWidth`([`#L40-L54`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/pinnedColumns/pinnedColumnService.ts#L40-L54)),不是量出來的。**唯一殘留**:`hasRowActions` 時右面板寬仍量 header(rowActions 是 consumer 任意 JSX、無宣告寬;見六之二之零「評估後不改」與缺陷 A / E)。**閘的邊界**(2026-09-05 稽核):I11c 斷言的是結果(三區 header 寬 === cell 寬、左緣重合),不鎖機制 —— 釘選欄若退回 `flex: 1 1 base` 而兩面板仍同寬,I11c 照樣綠;沒有斷言檢查釘選 cell 帶 `flex: 0 0 w` 或 cell 寬 === `round(getSize())`,登記為閘缺口。
+
+**兩軸的量測**都由「每次 render 後」與 ResizeObserver 兩個來源驅動:列數變(分頁/篩選/展開)走前者(這類變化不一定改變被觀察元素的 box size,ResizeObserver 未必送通知),容器尺寸變(視窗/面板拖曳)走後者;**兩軸的補償都不碰 center body 自己的尺寸**(橫軸加在 header 內層 wrapper 的內容寬、縱軸加在 pinned panel 的 border-bottom),所以不形成量測迴圈。(**2026-09-03 更正**:此處原寫「padding 只加在 header 與 pinned 區」—— 兩處 padding 補償都已移除,橫軸改內容寬、縱軸改透明 border,舊敘述已失效。)整數量測刻意用 `offsetWidth/clientWidth`(同一座標系),**不可**改用 `getBoundingClientRect()`—— 縮放時它與 `clientWidth` 不同座標系會算錯;非整數縮放下的殘差實測 ≤ 0.33px(次像素,不可見)。
+
+**表頭底色只准疊一層(2026-09-03 user 抓到視覺落差)**:`--muted` 是**半透明**(light `oklch(0 0 0 / 4%)`、dark `oklch(1 0 0 / 8%)`),所以「底色畫在 header row、讓出的 strip 補在 panel」會在重疊處疊成兩層 —— strip 只有一層,在淺色比欄位區淺一階、深色反過來偏暗。**底色與下分隔線一律畫在三個 header panel 上(`HEADER_PANEL`),row 不畫**,strip 因此天生同色、兩個主題都一致。**同一個原則的世界級對照**:v33 的底色由 `.ag-header`(`width:100%` + `--ag-header-background-color`)畫一次,header cell 是 `position:absolute` 不會延伸到加寬處,所以加寬出來的空白天生就是 header 底色 —— **沒有第二層**,和我們「由橫跨 strip 的容器畫唯一一層、row/cell 不重畫」是同一招。(**2026-09-03 撤回**:先前這裡寫「AG Grid 的 `.ag-header-row::after` 是把 filler 放進 row 裡的一格」—— v33.3.2 原始碼裡 `.ag-header-row::after` 在 pinned / 捲軸這條路徑上沒有這個角色,該句無第一手證據支持,依 M22 撤回。MUI X 的 `GridScrollbarFillerCell` 確實是 row 內一格,但不在本次證據集內,不作為背書。)我們選 panel 而非 row-cell 的理由是 DS 自己的:row 內加格會改變彈性欄寬的項目集合與水平捲動範圍。
+
+**對照基準的版本政策(2026-09-04 登記)**:我們逐條對照的是 **AG Grid v33.3.2**(2025-06-04),而
+`ag-grid-community` 現行 `latest` 是 **36.1.0**(2026-08-05)—— **我們落後三個大版本,而且 v33 不是 LTS**
+(npm 上唯一的 LTS tag 是 `v32-lts`)。這件事先前 repo 裡沒有任何一處寫下來,先補記免得被讀成「對齊現行 AG Grid」。
+
+- **架構斷點精確落在 36.0.0**,v34 / v35 與 v33 是同一套(捲動類名計數:`ag-body-viewport` 在 33/34/35 各 16/16/17,
+  在 36.1.0 是 **0**;`ag-grid-viewport` 反過來 0/0/0 → **9**)。
+- **v36 換掉的正是我們現在採用的這套模型**,官方理由逐字([升級文件](https://raw.githubusercontent.com/ag-grid/ag-grid/release-36.0.0/documentation/ag-grid-docs/src/content/docs/upgrading-to-ag-grid-36/index.mdoc) L92):
+  > The grid now uses a single container to permit both vertical and horizontal scrolling natively in the browser.
+  > Previously the header, body and pinned columns were placed in separate containers with **scrolling synchronised
+  > using JavaScript, which led to visible lag** on more complex grids or slower computers.
+
+  **我們現在做的就是那件事**(`data-table.tsx` 的 scrollLeft/scrollTop 同步)。這是「我們的架構選擇有上限」的
+  第一手證據,登記在此,不因為結論是「暫不改」就藏起來。
+- 同檔 L215:v36 把 `ag-scroller-corner` / `ag-horizontal-left-spacer` / `ag-horizontal-right-spacer` **整組刪掉**,
+  理由是「there is one large scrollable region」—— 也就是**我們的缺陷 P/Q/R 那一族在 v36 結構上不存在**。
+- **但缺陷 O 不必等 v36**:v33 的垂直捲軸就是 `.ag-body` 的 in-flow 兄弟,結構上已落在整表最右緣。
+  不要把 O 的定價綁在 v36 上,那會讓後人高估修 O 的門檻。
+- **為什麼不換基準**:v33 回答的是「這個架構的細節我們做對了嗎」,v36 回答的是「這個架構本身選對了嗎」。
+  v36 的 DOM 已經沒有可以跟我們逐條對上的東西(它沒有 header viewport 這個概念),換過去不是推翻對照,
+  是讓對照**變成不可比** —— 而不可比很容易被讀成「上游沒這個問題所以我們的缺陷不存在」。兩個問題不該同一個基準兼差。
+- **我們從未安裝過 ag-grid**(7 個 `package.json` grep `ag-grid` = 0 命中,`node_modules/ag-grid*` 不存在)——
+  **純紙上對照:讀原始碼,零執行、零 runtime 量測**。對「欄寬只算一次」這類**演算法**宣稱,讀原始碼是夠的;
+  對「捲動手感 / 捲軸外觀 / a11y」這類**行為**宣稱,讀原始碼驗不出來(上面撤回的三條正是踩在這條線上)。
+  要實測時用 CDN UMD(`https://cdn.jsdelivr.net/npm/ag-grid-community@<v>/dist/ag-grid-community.js`,兩版都取得到)
+  搭一次性 harness,**不進 `package.json`** —— 釘一個停更非 LTS 的套件進 lockfile 與供應鏈面,代價比收益大。
+
+**世界級對照**(2026-09-03 讀 **v33.3.2** 第一手 `.ts` / `.css` 原始碼;**同日更正**:先前這段把 v33 與 v36 混成一份對照,並據此推出一個錯的工程結論,已撤回):
+
+- **結構性免疫來自「寬度單一來源」,不是來自「單一捲動容器」。** v33 的 header **就是獨立 viewport**(`.ag-header-viewport`,由 `GridBodyScrollFeature.setScrollLeftForAllContainersExceptCurrent` 同步 `scrollLeft` —— 跟我們一樣),而欄寬同時只算一次存進 `AgColumn.actualWidth`(唯一寫入口 `setActualWidth`,進門先夾 min 再夾 max),`HeaderCellCtrl.setupWidth` 與 `CellPositionFeature.onWidthChanged` 各自訂閱同一個 `widthChanged`、各自讀同一個 `getActualWidth()` 寫成 inline px;`.ag-cell` 是 `position:absolute` + inline px,**兩邊都沒有任何 `flex-grow`**。`ColumnFlexService.refreshFlexedColumns` 的原始碼註解自陳是 CSS Flexbox「Resolve Flexible Lengths」的 JS 直譯(只支援 grow、不支援 flex-basis)。
+- **假捲軸 v33 就有**(`fakeVScrollComp.ts` / `fakeHScrollComp.ts` / `abstractFakeScrollComp.ts` 都在 v33.3.2 的目錄樹裡);**v36** 追加的是「header 併進 body 同一個 scroller」,它解的是**捲動同步與捲軸視覺落點**,不是欄寬分歧。所以先前寫的「要拿到結構性免疫得先改成單一捲動容器,那是另一個量級的改動、不在本次範圍」是**錯的定價**,已撤回 —— 我們現在的「算一次 + 兩邊寫同一個整數」就是 v33 的模型本身,而且 v33 對**三個區**都這麼做,我們也已於同日補上釘選區(缺陷 B)。
+- **同型前例**(隱藏原生捲軸 + header 尾端補等寬):**MUI X DataGrid** 的 `GridScrollbarFillerCell`(寬 = `var(--DataGrid-hasScrollY) * var(--DataGrid-scrollbarSize)`)、**Handsontable** 的 `width = getWorkspaceWidth(); if (hasVerticalScroll()) width -= getScrollbarWidth()`;**Glide Data Grid** 整張表同一塊 canvas,同理免疫。
+- **仍存在的架構差異**(不是缺陷,是已知取捨):v33 的水平捲軸是 `.ag-root` 層的一條假捲軸、垂直捲軸是 `.ag-body` 的 in-flow 兄弟元素 → 捲軸落在整表最右緣、三區共用同一個 `.ag-body-viewport`,所以「pinned 多露一列」在它那邊結構上不可能;我們用原生捲軸 + 兩軸量測補償達到同一個不變條件。**2026-09-04 撤回**:此處原本寫「換到的是慣性捲動、平台一致的捲軸外觀與零額外 a11y 風險」—— 三條逐條查證都不成立(v33 的 `.ag-body-viewport` 本身就是原生 `overflow-y:auto` + `-webkit-overflow-scrolling:touch`;它的可見捲軸是**代理元素上的原生捲軸**,不是自繪;代理捲軸帶 `aria-hidden`),依 M22 撤回。**真正換到的**只有一件可證的事:不必自己實作代理捲軸元件 —— v33 為此付 `fakeHScrollComp.ts` 174 行 + `fakeVScrollComp.ts` 80 行 + `abstractFakeScrollComp.ts` 110 行 = 364 行,外加 `gridBodyScrollFeature.ts` 776 行的同步(水平 6 個 partner)。代價見缺陷表 O / P / Q。
+
+### 預掛緩衝(overscan)— 隨機器能力自適應(2026-09-12)
+
+TanStack Virtual 的 `defaultRangeExtractor` 只渲染 `[startIndex − overscan, endIndex + overscan]`
+(`@tanstack/virtual-core/dist/esm/index.js:7-14`),範圍外的列一 commit 就卸載,
+**沒有任何「保留舊列直到新列就緒」的機制**。緩衝原本固定 5 列 × 40px = 200px,
+而**一次普通滾輪就是 1000px** —— 結構上差 5 倍,所以快速捲動必然露出背景。
+
+**世界級對照**:AG Grid 的 `rowBuffer` 預設**每側 10 列**,文件逐字寫明理由 ——
+「By default the grid will render 10 rows before the first visible row and 10 rows after the last visible
+row… This is to act as a buffer as **on some slower machines and browsers, a blank space can be seen as
+the user scrolls**」(https://www.ag-grid.com/javascript-data-grid/dom-virtualisation/)。
+AG Grid 是用兩倍於我們原值的緩衝把空白壓到看不見 —— 但**壓小不等於消除**,緩衝再大都追不上任意快的手勢。
+
+> **2026-09-12 撤回**:這裡原本寫「**連 AG Grid 都不宣稱能消除空白**」,語氣上把「業界最好的也只能壓小」
+> 當成本 DS 的天花板。那是錯的定位 —— user 2026-09-12 原話:「你知道 main 只是低標嗎?理想上 data table
+> 整體互動和體驗越順暢越好」、「我認為任何情境『理想』上都不應該看到空白,但也不應該為了達成此目的而讓
+> 體驗和互動卡頓」。**目的地是零空白**,見下方「零空白不變條件」。緩衝與列殼都只是逼近手段,不是終點。
+
+**我們的做法**:**預測**「把緩衝加上去之後,一次全量 commit 會不會變成長工」,而不是只看每列成本。
+
+一次全量 commit 要畫 `視窗列數 + 2 × overscan` 列(緩衝在上下各一側),成本 = 列數 × `costPerRow` + 固定成本。
+要求它留在 **Long Tasks API 的 50ms 界線**內 —— 跨過去瀏覽器就把那一段算成長工,而長工正是 user 感受到的卡頓:
+
+```
+overscan = clamp(⌊(50 − fixedCost − 視窗列數 × costPerRow) ÷ (2 × costPerRow)⌋, consumer overscan, 10)
+```
+
+我們比 AG Grid 多的就是 `costPerRow` / `fixedCost` 這兩個實測值,所以緩衝可以按機器付得起的量給。
+
+**兩個被推翻的版本(都留著,免得再走一次)**:
+
+1. **固定 10**(直接照抄 AG Grid):4× 節流下最長連續空白從 451ms 惡化到 **566ms**、面積 516 → 972 ——
+   慢機器每次 commit 要掛的列變多。
+2. **事後守衛**(`commitCost > 50ms 就不擴`):**不行,因為它是反應式的** —— `commitCost` 要先被量到變長
+   才會觸發,而那幾次變長的 commit 正是它該避免的。同機 3× 節流下 `--ref=main` 判定長工 374ms >
+   main 289×1.25;把自適應整個關掉則是 345 ≤ 379 全過。預測式才不會震盪。
+
+**實測**(6000px/s 手勢,1400×800):
+
+| CPU 節流 | 預測餘裕 | 緩衝 | 空白幀 | 最長連續空白 |
+|---|---|---|---|---|
+| 1×(一般機器) | +21.8ms | **10** | 30 → **5–9** | 67ms → **17–33ms** |
+| 2× 以上 | 負值 | **5**(下限) | 與改前相同 | 與改前相同 |
+
+也就是說:**只有真的有餘裕的機器才擴緩衝**;慢機器行為與改前一致,由列殼機制接手。
+
+**量測紀律**:3× 節流的長工在同一份程式碼上跑出 **220ms 與 404ms**(雜訊主導),
+所以這條不可用本機單跑判定,要看 CI 的同窗交錯 `--ref=main` 比值。
+
+**機械閘** `scripts/data-table-overscan-adaptive-invariant.mjs`(刻意做成**機器無關** —— 絕對門檻只是在量跑閘的那台機器):
+A1 緩衝不低於 consumer 的 overscan / A2 不超過 AG Grid 的 10 / A3 能力越強緩衝不得更小(抓公式方向反了)/
+A4 有餘裕時機制必須真的動(沒餘裕的機器明白標為不適用,不假裝驗過)。
+對照組把回報值改成 0 與 99 → A1/A2 必紅。
+
+**機械閘** = `scripts/data-table-invariants.mjs` I11 / I11b(橫軸)+ I12(縱軸)。CI 的 headless Chromium 是 overlay 捲軸(gutter = 0),只驗自然狀態等於空轉——把 padding 整段拿掉 CI 照樣綠;I11b / I12 因此各用一條 15px 透明邊框造出與真捲軸同值的量測(`clientWidth` 不含 border、`offsetWidth` 含),補償分支在任何環境都會被走到(2026-09-03 實測:註入 `::-webkit-scrollbar` 寬度**無法**讓 CI 的捲軸佔版面,此路不通)。對應 `scripts/data-table-invariants.mjs`(script 內 I1-I3 label 字串仍用 `display↔edit` — 2026-07-16 FieldMode display→view 更名前的歷史命名,語意同 view↔edit)。改 `columnSizeStyle` / 切 layout 必跑 invariant test 才 commit。
+
+### 六之二之零、2026-09-05 捲軸專項稽核:四條「看起來有做、其實沒作用」
+
+上一輪的缺陷清單是**結構**盤點;這一輪只盤**捲軸**,而且是逐條跟 v33.3.2 對照。
+19 條捲軸補丁的判定:**同款 9 / 半款 1 / v33 結構上用不到 6 / 我們自創 2 / 兩邊都沒解 1**。
+其中四條是「程式碼在那裡、但實際上沒有作用」,已全部修掉:
+
+| | 問題(白話) | 根因 | 修法 | 實測 |
+|---|---|---|---|---|
+| **α** | **游標放在釘選欄上滾輪,表格完全不動** —— 而釘選欄正是視線落點(SKU / 名稱 / ⋮) | 左右面板是 `overflow:hidden`,滾輪事件在它們身上什麼都不會發生,直接冒泡出去 | 原生監聽轉發到 center body。**必須原生不能用 React 的 `onWheel`** —— React 17 起把 `onWheel` 以 passive 註冊([release notes](https://legacy.reactjs.org/blog/2020/08/10/react-v17-rc.html)「Keep onTouchStart, onTouchMove, and onWheel passive」),合成事件裡 `preventDefault()` 不生效。center 自己也捲不動時不吃事件,讓它冒泡給頁面。**對照 v33.3.2** [`gridBodyCtrl.ts#L361-L411`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/gridBodyComp/gridBodyCtrl.ts#L361-L411):它也在釘選容器上掛 wheel,但只轉橫向(`shiftKey \|\| \|dx\| > \|dy\|` 視為橫向、`scrollBy({ left: deltaX \|\| deltaY })`),垂直靠結構(釘選欄與中間同一個垂直捲動容器);我們三區各自捲,兩軸都轉,Shift+滾輪同樣解讀為橫向(2026-09-05 稽核補齊) | 修前 `wheel(0,180)` → center `scrollTop` = **0**;修後 = **180**。center 無垂直溢出的那張表維持 0(正確) |
+| **β** | **我 2026-09-04 加的裝飾軌道畫在真捲軸上方 11px,而且一捲就跟著跑掉** | 掛在釘選面板**裡面**:(a) `absolute; bottom:0` 解析到 **padding box**,而讓位用的 border 在 padding box 外面;(b) 面板即使 `overflow:hidden` 仍是捲動盒,絕對定位子元素屬於可捲內容 | 搬到凍結邊界線所在的那一層(外層 wrapper:不裁切、不捲動),位置用同一組 `--dt-left-w` / `--dt-right-w` | 修前軌道 y **773.2**、真捲軸帶 784.2–795.2,捲 150px 後軌道跑到 623.2;修後軌道 **784.2–795.2**,捲動後不動 |
+| **γ** | **防回彈的守衛從寫下那天起就沒生效過** | 用 boolean 旗標 + `queueMicrotask` 解鎖 —— scroll 事件在「更新畫面」那一步派發,**一定晚於 microtask checkpoint**,事件到達時旗標早就放掉了 | v33.3.2 是「來源所有權 + 150ms 計時器」([`gridBodyScrollFeature.ts`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/gridBodyComp/gridBodyScrollFeature.ts) #L41-L42、#L64、#L205-L214、#L224-L241:第一個捲動的容器成為 `lastScrollSource`,其他容器的事件在持有期間丟掉,`setScrollLeftForAllContainersExceptCurrent` 寫所有容器但跳過持有者,停捲 150ms 後釋放)。**我們刻意不用計時器**:記「寫進去之後的實際值」,事件值相同才吞 —— 同步剛結束使用者立刻捲次要區也即時被接受,且與時間無關不會早放晚放;紀錄不論吞不吞都消費掉,不留過期記號。(2026-09-05 更正:此欄先前寫「換成 v33 的語意、不需要旗標」,與原始碼不符 —— v33 是旗標 + 計時器,我們是刻意的不同做法) | 五條時序全綠:正向同步 / 反向導回 / 同步後緊接使用者捲動 / header 導回 / 捲到最右不回彈 |
+| **δ**(同日撤回) | 早上以為「縱軸量測把 body 自己的 border 算成捲軸高」是 bug | **誤判**:縱軸不變式是「pinned 與 center 的可視列高相等」,center 內容盒之下少掉的每一像素(捲軸或它自己的 border)pinned 都得讓出同樣多,border 本來就該算進去;橫軸禁令的理由是那一軸量得到不變式本身(header.clientWidth − body.clientWidth),縱軸沒有對照物 | 撤回,恢復 `offsetHeight − clientHeight`;上一段 I11b / I12 的「15px 透明邊框模擬捲軸」契約也正是靠這個式子才成立 | 撤回前 CI I12 三條紅(left 300 / center 285、maxScroll 1700 vs 1715、border-bottom 0 vs 15);撤回後由 I12 守 |
+
+**機械閘 I17**:軌道與真捲軸帶同一條線(≤0.5px)、捲動後不飄、釘選欄滾輪轉發(左右兩側各驗,含 Shift+滾輪 = 橫向)。
+gutter = 0 的平台(overlay 捲軸)自動跳過軌道那半,滾輪那半照驗。
+**機械閘 I18 / I19**(2026-09-05 稽核補閘 —— 缺陷 C 的雙向導回與 γ 的身分守衛先前只有手動實測,守衛整段拿掉所有閘照樣全綠):I18 = header 被捲動 200 → center 200、左釘選欄被捲動 300 → center 300 且右側 300;I19 = center 捲到最右後 header === center === max(不回彈)、header 可捲範圍被縮小 40px 時 center 仍停在 max(被夾過的那一筆被認出並吞掉)。
+
+**評估後不改的三條**(理由寫在這裡,免得下一輪又重查):
+- **量測 effect 每次 commit 都跑**(`useLayoutEffect(measureScrollbarGutters)` 無依賴陣列):它是「列數變動時捲軸出現/消失」的安全網,而那個情境的觀測點(I16 的哨兵)雖然涵蓋得到,**拆掉安全網的風險大於未經量測的效能收益**。要動要先量。
+- **`hasRowActions` 時右面板寬是量出來的**:乾淨解要求 rowActions 有宣告寬度,但它的內容是 consumer 傳的任意 JSX。已登記為殘留,不強修。
+- **分頁表格預設 `height: 'auto'`**:是規格明載的決定(頁碼是唯一導覽通道,再疊 body 內捲動 = 雙重導覽),不是缺陷。
+
+---
+
+### 六之二之一、兩容器架構的已知缺陷清單(2026-09-03 對抗式稽核)
+
+header 與 body 是**兩個容器、各自跑一次 CSS flex 分配**(見不變條件 (6));下列缺陷全部源自這一點,
+補償只能讓「兩次計算的輸入相等」,不能讓它變成「一次計算」。已修的在上面,未修的列在這裡,
+避免下一個人以為都修完了。**AG Grid v33 對「欄寬分歧」這一類結構性免疫**(欄寬只算一次寫進 `AgColumn.actualWidth`,header 與 body 讀同一個整數,**三個區都是**);對「捲軸吃掉版面」這一類則是把捲軸**抬出資料區**(`.ag-root` 層的假水平捲軸 + `.ag-body` 的 in-flow 垂直捲軸 + 三區共用同一個 `.ag-body-viewport`),不是靠補償。我們已對第一類採用同一個模型;第二類仍用補償,代價列在 O/P/Q。
+
+| # | 缺陷 | 觸發條件 | 嚴重度 | 狀態 |
+|---|---|---|---|---|
+| A | `rowActions` 佔位欄:header 用固有寬、body 用 `flex-1`,右釘選區剩餘空間分給不同項目集合 | `pinnedRightColumns` 非空 **且** 有 `rowActions`(目前無 story 命中);真正能拉開差距的是 actions 內容**可收縮**(換行文字等)、佔位與 actions 格的 min-content 不同 | 「可達數十 px」是**推導值、未觀測**(2026-09-05 降級):現行架構右面板寬 = 量 header 固有寬 = Σ 欄寬 + 佔位寬,body 的 `flex-1` actions 格拿到的剩餘空間正好等於佔位寬,兩邊同值;推導式 (P−F)/(n+1) 假設面板寬獨立於佔位寬,在本架構不成立 | **已修**(header 佔位補 `flex-1`,防禦性對稱);**無閘覆蓋**:沒有 story 同時開 `pinnedRightColumns` + `rowActions`,I11c 對 0 欄的區直接跳過、也不比佔位寬 vs actions 格寬,把 `flex-1` 拿掉 CI 照樣綠(M15 / M32 缺口,登記) |
+| B | 釘選區:欄寬沒進「算一次」→ 整區退回 `flex: 1 1 base`,另加「量 header → state → 灌給 body」的量測旁路(`offsetWidth` 取整殘差 + 首幀 0)。**2026-09-05 更正根因敘述**:原寫「= 使用者最初回報的同一個機制,只是換個區出現」—— 釘選區 header 與 body 兩個容器寫的是**同一個寬**,flex 沒有 15px 這類可分配差額,center 的 15/n 逐欄累積機制在釘選區並不成立;釘選區的真實風險是 flex 沿用 + 量測旁路(取整殘差、首幀 0),以及 header 內容撐寬面板(缺陷 E) | 一律;非整數縮放 / DPR 1.25 放大取整殘差 | 中高 | **已修**(2026-09-03):`resolvedWidths` 現在涵蓋 left / center / right 三區(v33 的 `HeaderCellCtrl` / `CellPositionFeature` 同樣不分區,釘選欄只是不參與 flex 分配);首幀由 `useLayoutEffect` 消掉;機械閘 I11c 對三區各自斷言。**面板寬也已算出來**(2026-09-04 `f3fe9f2e`,見不變條件 (9);原「未修:面板寬度仍是量出來的」已過期),殘留只剩 `hasRowActions` 右面板量測(六之二之零)。I11c 只鎖結果不鎖機制(不變條件 (9) 末段) |
+| C | `overflow:hidden` 的面板仍會被瀏覽器因 focus 捲動,而同步是單向的 | Tab 到 center header 被截掉的欄寬把手 / 釘選區被截掉的可編輯 cell | 中高(一旦發生永久錯位) | **已修**(次要捲動區導回 center body) |
+| D | 欄位群組(`columns: [...]` 巢狀)時 header 只渲染最上層、被葉 id 濾光 → 空白 header 列 | 任一欄用 TanStack 欄位群組寫法 | 高(完全對不上) | **明確不支援 + 開發期擋下**(2026-09-04):多層表頭要處理跨欄合併與釘選／拖寬／虛擬捲動的交互,是一個功能不是一個修補,現在不做。改成偵測到帶 `columns` 的欄位定義就在開發期 `console.error` 指名筆數與後果,production 不進 bundle。**不用型別擋的理由**:收窄 `columns` prop 會讓所有把欄位宣告成 `ColumnDef<Row>[]` 的既有 consumer(含 work-management)編譯失敗 —— 那才是真的副作用 |
+| E | 釘選欄 header 的 hover ⌄ 選單與排序箭頭改變面板固有寬 → center 欄寬重排 | 預設模式 + 釘選欄 header 內容寬 ≥ 該欄 size | 中高(滑過去就跳) | **已修**(2026-09-03,由缺陷 B 的修正連帶解掉,經對抗式驗證確認):釘選欄 header cell 現在是解析出來的固定寬(inline width / minWidth / maxWidth;2026-09-10 拿掉了 `overflow-hidden` —— 它不是這個修正的一部分,卻把欄寬把手跨到鄰格的外側 3px 裁掉、右半不可點,見 `resize-handle.spec.md` 命中區),`hidden group-hover:inline-flex` 的 ⌄ 選單再也無法把面板的 max-content 撐大 —— 這個機制在現行程式碼裡已不存在。**面板寬已算出來**(2026-09-04 `f3fe9f2e`):`width: leftWidth` 字面仍在,但 `leftWidth` 現在是 Σ 解析寬(`panelWidth`),不再是量測值,量測旁路已移除(同 v33 `PinnedColumnService.setupHeaderPinnedWidth`,見不變條件 (9));**殘留** = `hasRowActions` 右面板量測(六之二之零)。**閘缺口**(2026-09-05 稽核登記):沒有任何 check 對釘選 header hover / 排序後再量面板寬與 center 欄寬,I11c 只量靜態;「機制已不存在」是對抗式讀碼的結論,不是 runtime 斷言 |
+| F | `autoRowHeight` / cell error 時同一列在三區各自算高度;虛擬捲動只量 center | `autoRowHeight`、`cellErrors`、`meta.wrap` | 中高 | **已修**(2026-09-04):照 v33「算一次、廣播給該列所有 GUI」的模型 —— 量三區同一列的**自然高度**取 max,再把同一個數字寫回三區(`sharedRowHeights`)。量測前先整批清掉上一輪寫上去的 inline height 再強制一次 reflow,所以讀到的永遠是內容的自然高度;若直接讀 `offsetHeight` 取 max,列高只會漲不會縮。清完**同步**還原,ResizeObserver 在影格結束看不到淨變化,不會被自己的量測叫醒。只在「有 auto-height 列 **且** 有第二個區」時才跑,單區表完全不付這個 reflow 成本。虛擬捲動一併解掉:center 的 `measureElement` 讀到的就是共用高度,`vr.start` 因此對三區都成立。**新增覆蓋**:`自動行高` story 第三個 pane(auto-height × 釘選欄 × Row Actions)—— 這個組合先前**沒有任何 story 命中**(M15);機械閘 `data-table-invariants.mjs` I15 逐列比對三區高度(≤0.5px),並先斷言「真的量到三個區」與「真的有被撐高的列」避免空轉 |
+| G | 右對齊欄被排序時,排序箭頭把標題推離右緣 20px(body 值仍貼右) | 該欄被單欄排序 / hover | 中 | **已失效**(2026-09-04):前提消失,不是修好 —— 2026-09-04 user 拍板「header 的規格就是要一致,只有內容會置右」後,表頭**一律靠左、不跟欄位 `align` 走**(`data-table.tsx` 表頭 cell 上的註解「表頭一律靠左,不跟著欄位的 align 走」;移除 align class 的 commit `2b805738`、清掉表頭端 `align` 變數的 `147e05a2` —— 不再引行號,會漂),系統裡不再存在「右對齊的表頭」,排序箭頭也就不可能把標題推離右緣。原敘述寫於表頭還會跟著 align 走的年代。**v33.3.2 對同一症狀的解法不同**:`numericColumn` 是表頭與儲存格**同向靠右**([`defaultColumnTypes.ts#L3-L11`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/entities/defaultColumnTypes.ts#L3-L11) 同時給 `headerClass: 'ag-right-aligned-header'` 與 `cellClass: 'ag-right-aligned-cell'`),再靠 `.ag-right-aligned-header` 把 label container 翻成 `flex-direction: row`、文字 `text-align: end`([`_general.css#L495-L501`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/theming/core/css/_general.css#L495-L501)),讓排序圖示換邊而標題仍貼右;我們依 user 拍板改為表頭恆靠左,屬**刻意偏離**(第七節) |
+| H | `data-table.css` 的 `::-webkit-scrollbar` 客製(10px、track、thumb、corner)實測未生效,瀏覽器畫的是原生 15px | 一律 | 中(死碼 + 規格與 css 數字矛盾) | **已修**(2026-09-04):**原本記載的根因是錯的**。逐條隔離實測:`::-webkit-scrollbar:horizontal{height:10px}` → 實際 15px(無效);不帶偽類的 `::-webkit-scrollbar{width/height:10px}` → 實際 10px(有效)。**機制(2026-09-05 依 Blink 原始碼校正)**:沒有裸 `::-webkit-scrollbar` 規則命中時,Chrome **根本不會建立 custom scrollbar** —— [`selector_checker.cc` `CheckScrollbarPseudoClass`](https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/renderer/core/css/selector_checker.cc) 在元素自身樣式解析階段沒有 scrollbar 物件時直接 `if (!scrollbar_) return false;`,帶 `:horizontal` / `:vertical` 偽類的規則全部不匹配,於是回到原生 15px;裸規則存在時 `:horizontal { height }` **是可以改尺寸的**,不可據此推出「偽類永遠改不了尺寸」的通則(原句「Chrome 的捲軸尺寸只讀不帶偽類的那條規則」是對此機制的近似描述,結論不變、通則不成立)。2026-04-30 拆成兩條偽類是為了躲「`display:block` 讓沒溢出的軸也冒捲軸」——但不帶偽類且不寫 `display` 時實測**不會**誤顯(只有水平溢出時 v=0、完全不溢出 0/0),當初要躲的是 `display:block`。原記載的「`@supports` 重新宣告標準屬性導致忽略偽元素」把該組合隔離重現出來是 10px,**不成立**。**修法選了「只留 W3C 標準屬性、webkit 那一整套刪除」**:讓 webkit 生效雖然控制最完整(含 corner 與 thumb hover),但 `::-webkit-scrollbar` 會把 overlay 捲軸的機器**強制變成佔版面的捲軸**,為兩項 webkit-only 加值付這個代價不划算;`scrollbar-width: thin` + `scrollbar-color` 是標準屬性、Firefox 也吃、不改變任何人現有的捲軸行為模式(實測 Chrome/macOS classic 由 15px → 11px)。實際寬度不寫死在任何地方,`measureScrollbarGutters` 每次量。**與 ScrollArea 的 SSOT**:機制不可能共用(ScrollArea 是 Radix 自繪 DOM 拇指、不吃版面寬),能共用的顏色早就是 SSOT —— 兩邊都吃 `--scrollbar-thumb`/`--scrollbar-track`(semantic.css:383-385,2026-05-09 抽出);**幾何不共用**:ScrollArea 自繪 10px,DataTable 是 `scrollbar-width: thin` 由瀏覽器決定(Chrome/macOS classic 11px),radius 不可控 —— `scroll-area.spec.md`「視覺 token」表 2026-09-05 同步,不再寫 DataTable 消費同一個 10px。**無機械閘**(登記):CI 是 overlay 捲軸(gutter = 0),還原 webkit 區塊或改回 `scrollbar-width: auto` 沒有測試會紅;可行的閘 = 以 `ignoreDefaultArgs: ['--hide-scrollbars']` 啟動 Chromium,斷言 `[data-datatable-hscroll]` 的 `offsetHeight − clientHeight` < 15 且 computed `scrollbar-width === 'thin'` |
+
+| I | 補償用實體方向屬性,RTL 下捲軸在另一邊 | `dir="rtl"` —— **DS 從未支援**(`packages/design-system/README.md` 相容矩陣「Document direction:LTR only」,consumer 不得把 `dir="rtl"` 視為已支援);程式碼裡也沒有任何 `enableRtl` 對應選項,本列是**前瞻登記**,不是今天可觸發的缺陷 | 中(僅在未來支援 RTL 時) | **原擔憂的兩處已換成方向無關機制**(2026-09-03;2026-09-05 把「已修」改成這句 —— 沒有任何 `document.dir = 'rtl'` 下的檢查,RTL 安全**未經驗證**):兩處 padding 補償都移除後,橫軸補償是內層 wrapper 的 `minWidth`(內容寬,無方向)、縱軸是 `border-bottom`(block 方向,RTL 不鏡射),與 logical property 無關。**實體方向殘留清單**(2026-09-05 補齊):表頭段面板邊界線 `.dtPanelBoundaryRight/Left::after`(`right:0` / `left:0`)、列區段 `.dtLeftBoundary::before` / `.dtRightBoundary::after`(`left` / `right` 由 `--dt-left-w` / `--dt-right-w` 定位)、裝飾軌道同用這兩個變數。**橫軸 spacer 的閘缺口**:I11 的 `headerRange === bodyRange` 在 CI(overlay 捲軸,`vScrollbarSpacer = 0`)下兩個 wrapper 同讀 `centerColsWidth`,刪掉 `+ vScrollbarSpacer` 照樣綠;I11b 注入邊框後明文不斷言捲動範圍相等(理由「RO 看不到這種變化」已被缺陷 S 的哨兵 + I16 推翻),補上斷言即可補閘,登記待補 |
+| J | 三處量測都是整數量化(`offsetWidth` / `clientWidth`),殘差餵回 flex 分配 | 縮放 110%、DPR 1.25/1.5 | 中低(≤1px) | **不修,登記為已量化的取捨**(2026-09-04 改判):本規格第六節已載明「整數量測刻意用 `offsetWidth/clientWidth`(同一座標系),**不可**改用 `getBoundingClientRect()` —— 縮放時它與 `clientWidth` 不同座標系會算錯;非整數縮放下的殘差實測 ≤ 0.33px」。也就是這條的「修法」早就評估過而且更糟,原本標「未修」是分類錯誤。**AG Grid v33 免疫的原因是結構不是精度**:`AgColumn.setActualWidth` 存的是未取整的浮點數,欄寬只在 JS 算一次寫進 DOM,**從不把量到的值回讀進版面**,所以沒有量化殘差可以回饋。那條結構解 = 缺陷 O 已登記的架構取捨 |
+| K | 拖拉下限 80 從未生效(讀 `columnDef.minSize`,而 TanStack `defaultColumnSizing.minSize = 20` 會 merge 進每個 columnDef → `??` 永不 fall back,使用者真能拖到 20px,而 cell 左右 padding 合計就 24px → 內容區變負值) | `enableColumnResize` 拖到底 | 中(契約與文件失效) | **已修**(2026-09-03):拖拉下限與 auto-fit 下限都改讀**公開契約** `meta.minWidth ?? MIN_COLUMN_WIDTH`,與旁邊 `meta.maxWidth` 的既有作法對稱。**未修的那半**:`maxSize` 預設 `MAX_SAFE_INTEGER` 仍被 `columnSizeStyle` 寫進每個 cell 的 inline style(瀏覽器當無上限,無視覺影響,屬 DOM 噪音);`columnSizeStyle` 的 resize 分支 `minSize` 也還在讀 `columnDef.minSize` |
+| L | 「自動調整寬度」三個獨立缺陷:(a) 量的元素**本身已被裁字** —— `truncate` = `overflow:hidden`,其 `scrollWidth` 不會超過自己的寬 → 量到「現在的寬」而非「需要的寬」,按一次只 +buffer,被截斷的字永遠露不出來;(b) 量 `firstElementChild`,而樹狀列的第一個子元素是縮排/chevron 前綴 span(24px)→ 欄寬塌到下限;(c) 不量 header → 標題比 cell 長時 auto-fit 後看不到欄位名(v33 `skipHeaderOnAutoSize` 預設 false 就是要避免這件事) | 用該選單項時 | 高((a) 讓功能等於無效) | **已修**(2026-09-03,照 v33 `AutoWidthCalculator.cloneItemIntoDummy`):深拷貝進離畫面 dummy、清掉 `width/minWidth/maxWidth/flex` 後量 `offsetWidth`;量 cell 本身 + header;padding 由 clone 繼承真實 CSS,`+32` 硬寫改成小 buffer(不再隨 `--table-cell-px` override 漂移) |
+| M | 欄間分隔線的歸屬 header 與 body 不對稱(右釘選 + rowActions 時同一位置 header 無線 / body 有線;拖曳中最後一格突然畫線)| 該組合;拖曳懸停路徑(見狀態欄) | 中低(1px 視覺)| **部分已修**(2026-09-04 修表頭側;2026-09-05 狀態校正):根因是**表頭與列用了兩個不同語意的判準**。列那側是 CSS `.dtCellGrid:last-child::after { content: none }`,判「DOM 上的最後一個子元素」;右釘選區後面還接一格 rowActions,所以最後一**欄**的 cell 不是 `:last-child`,照畫線。表頭那側只看欄陣列索引(`i < headers.length - 1`),不知道後面還有 rowActions → 同一位置變成列有線、表頭沒線。表頭判準補上 rowActions 這一項後,**靜態 DOM 下**兩邊結果一致;但判準仍是兩份(表頭 = JS 索引 + rowActions;列 = CSS `:last-child`),原句「判準只有一份語意」不成立,已更正。同時移除兩處死碼:表頭的 `&& !(isRight && i === headers.length - 1)`(前半成立時後半恆真)與 `cellEl` 那個從宣告日起就沒被用過的 `_isLastInRow` 參數。**「拖曳中最後一格突然畫線」撤回「查無此事」**:`ResizeHandle` 那條線確實 `showLine=false` 時不渲染(表頭側無此事),但**列側**的 drop indicator(`lib/drag-visual.ts` `dropIndicatorRow.after`)是插進列 DOM 的絕對定位子元素,拖曳懸停時它成為最後一個子元素,原本的最後一格因此失去 `:last-child`、當場畫線 —— 症狀存在,路徑在列側。乾淨解 = 兩邊共用一個 `isLastInRegion(index, isRight, hasRowActions)` 判準並以 data attribute 取代 `:last-child`(登記,未做;也沒有逐區比對表頭線 x 與列線 x 的像素閘)。**v33.3.2 的對照(2026-09-05 依原始碼校正)**:表頭欄線是 [`.ag-header-cell::after` + `border-right: var(--ag-header-column-border)`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/theming/core/css/_header.css#L215-L224)(`::before` 是 hover / moving 底色,不是線),儲存格是 [`.ag-cell { border-right: var(--ag-column-border) }`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/theming/core/css/_grid-layout.css#L117-L119);**兩者預設都關**([`core-css.ts#L854-L859`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/theming/core/core-css.ts#L854-L859):`columnBorder` 色 `transparent`、`headerColumnBorder: false`),開啟後最右欄由 [`.ag-column-last` 把 `border-right-color` 設透明](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/theming/core/css/_grid-layout.css#L131-L134)(僅 `.ag-body-horizontal-content-no-gap` 時)壓掉。原句「兩邊都無條件畫、`.ag-header-cell::before`」與原始碼不符,已更正。我們的區邊界另有 `dtLeftBoundary/dtRightBoundary` 專責,所以取「本區最後一格不畫」 |
+| N | `centerColsWidth` 被算兩次(`:1475` 與 `renderBodyRows` 內),註解宣稱是同一個 SSOT | 一律 | 低(今天數值相同)| **已修**(2026-09-04):`renderBodyRows` 不再自己重算一次中段總寬,改由呼叫端把 `centerColsWidth` 傳進去;`regionWidth ?? …` 的 fallback 三個呼叫端都傳值、已是不可達的死碼(登記,改為必填參數即可刪)。**AG Grid v33.3.2 的對應解是 `CenterWidthFeature`**(2026-09-05 依原始碼更正,原寫「共用同一個 feature 實例 + 同一段 spacer 邏輯」不符):是**同一個 class、兩個實例** —— 列容器對每個 center 容器各 `new` 一個、無 spacer([`rowContainerCtrl.ts#L348`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/gridBodyComp/rowContainer/rowContainerCtrl.ts#L348)),表頭容器另 `new` 一個、`addSpacer = true`([`headerRowContainerCtrl.ts#L256`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/headerRendering/rowContainer/headerRowContainerCtrl.ts#L256)),兩者共讀**同一個資料欄位** `visibleCols.bodyWidth`([`visibleColsService.ts#L53`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/columns/visibleColsService.ts#L53);[`centerWidthFeature.ts#L33-L57`](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/gridBodyComp/centerWidthFeature.ts#L33-L57))—— **單一來源在資料不在實例**,與我們「一個 `centerColsWidth`、兩個 wrapper 各讀」同構。**語意差**(登記):我們的 `centerColsWidth` = Σ `getSize()`(base),v33 `bodyWidth` = Σ `actualWidth`(解析寬);溢出時兩者相等、未溢出時 `minWidth` 不起作用,今天無可觀測差異。**無專屬閘**:I11 在 CI(spacer = 0)下不會因 fallback 或公式分岔而紅 |
+| O | 垂直捲軸的位置:center 持有垂直捲軸 → 有右釘選區(`pinnedRightColumns` **或** `rowActions`)時捲軸落在 center 與右釘選區**之間**;v33 與 MUI X 都把它放在整表最右緣(v33 因此把 `.ag-pinned-right-header` 加寬一個捲軸寬,原始碼註解逐字:「we add extra space to keep header aligned with the body」) | 上述組合 + 捲軸佔版面的平台(Windows / Linux;macOS 與 CI headless 是 overlay,gutter = 0 不會出現任何帶) | 低(架構取捨的可見差異,非錯誤結果) | **不修,已登記為已知取捨**。2026-09-03 對抗式驗證推翻了「這是未登記缺陷」的判定:捲軸落在 center 早已明載於本規格「center-body 是唯一的水平**與垂直** scroll container」,捲軸視覺落點的差異也已在上方「世界級對照」明示;`PinnedColumns` story 的「垂直捲動 + Pinned + Row Actions」子案例(`height="300px"` + 50 列 + `rowActions`)正是此組合,機械閘 I12 載入的就是它;而「Windows 捲軸蓋住外緣邊界線」這個實際症狀 2026-05-12 已被抓到並針對性修過(邊界線改成不佔盒模型的 1px 偽元素)|
+| P | 凍結邊界線的垂直範圍只到水平捲軸帶上緣,表格底緣少 15px | 捲軸佔版面的平台 + 有釘選欄 | 中低(1px 視覺缺口) | **已修**(2026-09-04,user 要求「頂天立地」):線的**列區段改掛在列區外層**(`.dtLeftBoundary` / `.dtRightBoundary`),那一層不裁切也不捲動,高度就是三個面板的 border-box 高。**同日的第一次嘗試是假宣稱、已作廢**:用 `bottom: calc(-1 * var(--dt-hscroll-gutter))` 把 `::after` 負向拉出 padding box —— `overflow` 的裁切邊正是 padding box,面板自己 `overflow:hidden` 會把它裁掉,**版面盒延伸了、一個像素都沒畫**;而當時的 I13b 比的是 `getComputedStyle(::after).height`(255)與 border-box 高(255),兩個都是版面數字,所以給了假綠 —— 正是 M32 禁止的那一類。現在 I13 取像素並涵蓋捲動狀態。v33.3.2 確實是讓線貫穿的(它在 spacer 上補 border),貫穿才與上游一致 |
+| Q | 水平捲軸帶在釘選區底下不連續(pinned 底下那 15px 是透明 border,露出的是 root 底色;凹槽只在 center 段)→ 表格底緣看起來是半截捲軸帶;v33 讓 spacer 帶 `overflow-x: scroll` 刻意畫出同款凹槽,只有剩角落時才關掉。兩條捲軸交會的角同源:v33 用自己控制的 `ag-scroller-corner`,我們交給瀏覽器,而想救回底色的那段 CSS 是死碼(見缺陷 H)| 捲軸佔版面的平台 | 低(純視覺)| **已修**(2026-09-04):取 v33 的**手段**而非結構 —— 我們的水平捲軸長在 center body 裡(架構取捨見缺陷 O),沒有 v33 那一列可放 spacer,所以改在釘選面板底部疊一條同高、`overflow-x: scroll` 的裝飾帶(`pointer-events: none`,只負責被瀏覽器畫出凹槽),讓整條捲軸帶在同一條線上連續。gutter = 0 的平台(overlay 捲軸)不渲染,零成本。角落交給瀏覽器這一點維持不變 |
+| U | 欄寬把手改用 `patterns/resize-handle` 後,pointerdown 多了 `preventDefault()`(舊路徑只有 `stopPropagation` 再交給 TanStack 的 handler,而那個 handler 不 preventDefault)→ **編輯中拖欄寬不再自動結算退出編輯**,cell 維持在編輯態、naked Field 隨欄寬即時變形,放開後仍在編輯 | `enableColumnResize` + 正在編輯某格時拖該欄的把手 | 低(行為變更,無資料遺失) | **不修,登記為既定行為**(2026-09-04 對抗式驗證已實機確認,非推測):拖欄寬時保住編輯內容比中途結算更合理,且與 DS 其他拖曳把手一致。列在此是為了讓下一個人知道這是刻意的,不是漏掉 |
+| T | 「自動調整寬度」的量測覆蓋與 view↔edit 0-delta 的機械斷言只涵蓋 string / select / textarea / currency 四種型別;date / time / person / multiPerson / boolean / url / multiSelect(原本還列了 avatar / tag —— 兩者不是 `meta.type` 的成員(`column-types.ts` `columnTypes`),2026-09-05 刪除)、巢狀列 cell 與 `meta.wrap` 沒有斷言 | 這些型別 | 低(覆蓋缺口,非已知缺陷) | **部分已修**(2026-09-04 擴閘;2026-09-05 狀態校正):`InlineEdit` story 本來就把 13 個欄位放進表(`data-table.stories.tsx` 的 `editableColumns`),缺的只是把閘指過去 —— 不必新增 story。I1-I4 抽成 `checkDisplayEditStability(storyId, cellTypes)` 後跑兩支 story:`InlineEdit` **13 欄中 10 欄有斷言**(SKU 唯讀 `skipEdit` 整欄跳過;boolean / url 標 `noInCellField` 跳過),加上 `RowAutoHeightInlineEdit` 的 textarea 欄,型別覆蓋 = string / number / select / multiSelect / person / multiPerson / currency / date / time / textarea **共 10 種**(原寫「11 種」與「13 格全為 0」把跳過的欄也算了進去,撤回)。**boolean 是 Checkbox 直接 toggle、沒有編輯欄位,設計上 N/A**;**url 不是**:`cell-registry.tsx` 的 url 分支有 in-cell 編輯 Field,只是入口是 hover 後的 Pencil(`aria-label="編輯連結"`),不走點格 / 鍵盤進 edit —— `data-table.tsx` 的鍵盤進 edit 判斷寫死 `meta.type !== 'boolean' && meta.type !== 'url'` 是**入口排除**,不是「沒有欄位」;閘尚未走 Pencil 路徑,**登記待補**(閘裡「設計上就沒有」的 SKIP 註解對 url 是錯的)。**仍未涵蓋**:巢狀列 cell、`meta.wrap`。**校正紀錄**:我原本憑印象把 multiSelect / person / multiPerson / date / time 標成「走 Popover 不適用」,量過才發現五種**都有** in-cell Field(date 會同時開 Popover,但 cell 內仍有 `data-field-mode="edit"`)——若照原本的猜測落地,這五種會被靜默跳過,覆蓋缺口只是換個地方存在 |
+| S | **垂直捲軸的出現/消失若沒有伴隨 React 重繪,橫向補償會過期**。量測靠兩個來源:每次 render 後的 layout effect + ResizeObserver。但 2026-09-03 在真實 Chrome 實測證明 **RO 看不到這類變化** —— 新掛一個 RO 觀察 center body,`clientWidth` 1143 → 1128 → 1143 期間它 fire **0 次**(面板的 border-box 一直是 1173 沒變;RO 實際是對 border-box 變化才通知)。body 的內層 wrapper 也救不了:它的寬度由(過期的)欄寬決定而不是由容器決定,容器變窄時它反而溢出、寬度不變 → 同樣不 fire。**症狀**:表格右端多/少一個捲軸寬的空隙;**header 與 cell 仍完全對齊**(兩邊讀同一組整數,實測 delta 0),所以不是錯位。列數變動走 React 重繪會自動修正,真正會卡住的是「捲軸因非 React 因素出現」(圖片載入撐高列、字體 swap、動畫結束) | 捲軸佔版面的平台 + 上述非 React 觸發 | 中低(≤ 一個捲軸寬的右端空隙,無錯位) | **已修**(2026-09-04):照本欄原本寫下的第一個解法做 —— center body 內放一個 0 高、`width:100%`、`role="presentation" aria-hidden` 的空元素交給 RO 觀察。`width:100%` 是相對**內容盒**算的,捲軸一出現內容盒就變窄,它的 border-box **真的**變了,RO 就一定會響。實測:容器 `clientWidth` 300 → 285 時它同步 300 → 285;釘選 story 兩張表 518/507 與各自的 `clientWidth` 完全相等。**a11y 實跑 axe**(`aria-required-children` / `aria-required-parent` / `aria-hidden-focus` / `presentation-role-conflict`)= **0 violations**(`aria-required-children` 通過 67 個節點)—— 這條是必驗的,2026-07-29 WM beta.95 錨例正是「修 `scrollable-region-focusable` 反而引爆 `aria-required-children`」。**機械閘 I16**:哨兵存在 / 0 高 / 不進無障礙樹、哨兵寬 === `clientWidth`、注入 20px 透明右邊框(與捲軸同型的內容盒縮減,同 I11b/I12 既有模擬手法)時哨兵跟著縮、還原後回原值。實測 518 → 498 → 518 與 507 → 487 → 507。**不依賴真捲軸**,所以在 overlay 捲軸的 CI 上也不是空轉 |
+| R | 「透明 border 之下 panel 底色照樣畫」的機制敘述指錯盒:pinned body panel 自己沒宣告底色,那 15px 露出的是 root 的 `bg-surface`。今天結果一樣(root 底色 = 列的視覺底色)所以看不出接縫,但**一旦 consumer 給列 zebra / 選取底色,最後一列的底色不會延伸進那 15px** | 列有自訂底色時 | 低 | **已修**(2026-09-04):兩個釘選面板自己宣告 `bg-surface`。`background-clip` 預設 border-box,所以面板有底色就會畫進下方那條透明 border 的讓位帶;沒宣告時露出的是 root 的底色 —— 今天同色所以看不出來,加上之後即使 consumer 給列 zebra／選取底色,讓位帶也永遠屬於表格表面而不是背後的東西。**今天零視覺差異**(root 本來就是 `bg-surface`)|
+
+**已用實測推翻的疑慮**:稽核擔心 header 的 `padding-right` 會讓水平捲動範圍比 body 少一個捲軸寬
+(Chromium 對區塊容器 inline-end padding 不算進 scrollable overflow)。實測相反:
+header `scrollWidth` 915 = body 900 + padding 15,兩邊捲動範圍都是 397,捲到最右端 header 與 body
+`scrollLeft` 同為 397、每欄位移 0。
 
 ### 六之三、Runtime perf budget canonical(2026-05-14 codex+Layer A)
 
@@ -138,9 +318,214 @@ Table 層級的模式切換，不是 column 層級。跟 AG Grid / Airtable 的�
 
 **Anti-pattern**:`RoadmapAllInOne`(全 features stack)≈117ms 不達 B,因 SortableRowProvider/column reorder/resize/selection/overlay 同時開。Consumer:13+ cols rich-cell → 拆 detail drawer / column visibility 預設 hide,不該期 60fps + 全 feature stack。Cite + Phase 1/2 history → `cell-registry.tsx` perf-fix JSDoc(`buildCellWithSurface` 上方)+ commits log。
 
+**捲動的結構不變條件(2026-09-08,fiber 歸因實測後 codify)**:虛擬捲動每一步**只准新掛載的列與它自己的副作用執行**,步前就存在的列與表頭不得有任何元件 render。修前 `RoadmapAllInOne` 每步舊列 2754 + 表頭 593 個元件重繪;修後舊列 ≈2(Avatar 圖片載入失敗的 fallback state,沙箱擋外網)、表頭 0。同一支 canonical 儀器(上表,1x CPU)前後:RoadmapAllInOne 平均每幀 57.3 → 17.7ms、p95 66.7 → 33.3、最長任務 87 → 0;VirtualScroll 39.5 → 16.5;RoadmapPerfBudget 21.3 → 16.7;RowDrag 19.9 → 16.6。三個根因與對應的守法(Codex R7 對抗審查校正後):
+- **dnd-kit sensor options 必須身分穩定**:`useSensor(Sensor, options)` 是 `useMemo(…, [sensor, options])`,options 寫成 render 內的字面值就每次換新 → `useSensors` → DndContext activators → 每列 `useDraggable().listeners` → 每列 ctxValue → render-prop `children(ctxValue)` 重產整列。守法 = `dndSensorOptions` useMemo + Provider 內 `useMemo(() => children(ctxValue), [children, ctxValue])`。(useDraggable / useDroppable 整個消費 InternalContext、無 selector;列掛卸造成的 droppable 集合換身分是 PublicContext 那條鏈,列層不得訂閱它。)
+- **列與表頭都是「元素快取」**:`rowElCacheRef`(per row)與 `headerElCacheRef`(per region)在 deps 全等時回同一個元素,React 在該 fiber 直接 bailout。快取的正確性完全取決於 `epochDeps` / `headerEpochDeps` 有沒有列全:漏一個 = 舊列拿到過期資料(I2 抓到漏 `resolvedWidths` → 顯示↔編輯寬差 0.59px)。守法 = `scripts/data-table-row-cache-deps-invariant.mjs` 用 TypeScript 語法樹(scope 堆疊 + 最近宣告解析 + 排除型別位置)列出 `renderRowFresh` / `renderHeaderRowFresh` 的全部外層自由變數,每個必須在 deps 或白名單(附理由),`--selftest` = 拿掉 `resolvedWidths` 必紅 + 四個假陰性合成 fixture。**它只證明 lexical free variables**:經 `ref.current` / `table.getState()` / `table.options` 讀到的可變值要靠 deps 明列對應 state 與 props(`tableStateForEpoch.*`、`tableOptions`、各 `enable*`),自訂 header / cell renderer 讀 table 其他狀態不在保證內;useCallback 本體的 stale capture 是 exhaustive-deps lint 的職責。
+- **controlled 值不得每 render 正規化成新物件**:`normalizeSelection(selectionProp)` 改 useMemo,否則 `selection` 身分每步變、一切依賴它的 memo 每步失效。
+
+**機械閘** = `scripts/data-table-scroll-cost.mjs`:R0 每步真的重算的列 ≤ 換列數 + 2、R1 屬性變動、R2 節點增減、R3 commits ≤ 8(固定版本回歸預算:1 次虛擬捲動 + 5 次新列掛載副作用鏈,全在新列;Radix Tooltip / Checkbox 的 ref-state 可 batching,ref → 量測有先後依賴不能併)、**R4 單步內舊列裡被碰到的元件 fiber(含 bailout)最大值 ≤ 12(實測 0;舊列 = 步前就存在且不是最近 2 步內掛載的列,新列的掛載副作用鏈會跨到下一步的量測窗)、R5 表頭 ≤ 4(實測 0)**(fiber 歸因,React DevTools 同法;PerformedWork 會漏算「執行了但 bailout」所以另計 touched;逐步最大值不是平均;計數器丟例外即紅)、1px 步進 gBCR;`--selftest` = 預算歸零必紅 + 正向對照組(點全選 → 表頭與舊列都必須量到 render)。已知邊界:主要量連續捲動,開始/停止捲動時 `TableScrollProvider` 的 context 切換(Avatar / PersonDisplay 的 scroll-defer)不在 R4 內。
+
+**零空白不變條件(2026-09-12;user 拍板「確認,改 data-table.tsx」)**:**送出的任何一幀,中央捲動區都不得有任何一帶是空的** —— 而且**不得為了達成它而讓幀距或長工變差**。兩條必須同時成立,單獨任一條都可以被作弊繞過(只要零空白 → 整片蓋死;只要不卡 → 維持空白)。
+
+為什麼緩衝與列殼都不夠:捲動跑在**合成執行緒**上,跟主執行緒刻意隔離(Chromium RenderingNG:「Separating the main and compositor threads is critically important for performance isolation of animation and scrolling from main thread work.」<https://developer.chrome.com/docs/chromium/renderingng-architecture>)。主執行緒被長工佔住時,合成器照樣每 16ms 送一幀,React 不可能在那段期間把列放到新位置 —— **任何需要主執行緒的機制都輸掉這場競速**。實測 CPU×1、6000px 手勢:手勢 663ms 中長工 4 個合計 324ms,送出 38 幀有 **27 幀整片空白、17/17 帶全空、最長連續 410ms**,而列殼只出現 1 幀(舊判準 `cannotDrawViewport` 問的是「這台機器畫得完一個視窗嗎」= **能力**,快機器恆為 false)。
+
+**已知殘留(2026-09-12 實測定位,非未解)**:上述覆蓋在 **DOM／幾何層恆真**,但**合成器層有例外** —— 捲動前緣新露出的圖磚偶爾在該幀送出時尚未完成光柵化,合成器就畫成圖層底色(白)。證據:把骨架底改塗單一實色後,絕大多數「空白帶」量到 **100% 該色**(幾何與繪製都對),少數幀同一區域是 **100% 白**,還有 **75% / 81% 部分覆蓋**的中間態 —— 那正是圖磚逐塊補上的簽名。發生率本機約每 6 趟 1 次、1–2 帶、16–18ms,CI 三趟皆 0。**繪製成本不是槓桿**(連純色實填也會發生),所以不是把漸層改便宜就能消除;剩下的槓桿是圖層／圖磚提示,但 6 對 6 的 A/B 沒有檢定力(對照組同樣 0/6),要宣稱修好需遠更大的樣本。
+
+**做法**:已掛載的列必然是連續一段 `[first.start, last.end]`;這一段以外的整個虛擬高度,在同一次 render 裡鋪成兩塊**骨架底**(`[data-row-shell-band]`,CSS `repeating` 漸層,bar = `--muted`、列底線 = `--divider`,幾何抄列殼的 `h-3 w-3/5` / 系統欄 `h-4 w-4`)。覆蓋 = 上帶 ∪ 已掛載段 ∪ 下帶 = 整個捲動區,在 **DOM／幾何層恆真且與時序無關**(合成器層的例外見上);成本是每次 render 兩個 div,之後純由合成器搬運,因此不可能造成卡頓。用漸層而非真 DOM,是因為未掛載區可達數十萬 px,鋪真列是無上限的主執行緒工作。已知落差:漸層畫不出 `Skeleton` 的 `rounded-md` 圓角(12px bar 在 9000px/s 下看不出來)。
+
+**機械閘**:`scripts/data-table-fast-scroll.mjs --assert-max-blank-frames=0`(**絕對**判準,判每趟最大值不判中位數 —— 空白幀是缺陷不是雜訊);對偶的「不得變卡」仍由同檔 `--ref=main` 的相對閘擋。
+
+**快速捲動的列殼(2026-09-09 codify;Codex R8 解法 (b))**:上面的不變條件管的是「主執行緒做了多少事」,但使用者看到的是合成器送出的幀 ——
+真實呈現幀量測(`scripts/data-table-fast-scroll.mjs --mode=gesture`,CDP screencast + 合成手勢)抓到 **main 與分支都有**的白:滾輪一甩
+(每秒 6,000–12,000px)時,每側只預掛 5 列 = 200px 緩衝,而把整窗 27 列有錢的儲存格重畫一次要 100ms 以上,合成器一幀就把視窗推到
+還沒掛任何列的區域,連續 17 幀(約 280ms)中央整片白、左右釘選面板停在舊位置。修法對齊 AG Grid `cellRendererParams.deferRender`
+(捲動中先顯示 skeleton cell,停捲後補 renderer)與 MUI X server-side lazy loading 的 skeleton rows:
+- **判準(自適應機器畫列能力,2026-09-10)**:只看**捲動造成的 commit**(初次載入、換頁、靜止時資料變動照舊全畫)。
+  跟得上的機器完全走原路:一般速度直接畫真列、零骨架。「跟不上」看真正的症狀 —— 兩次畫圖之間視窗移動的距離超過預掛緩衝
+  (overscan 列 × 列高;只拿 scrollTop 真的變了的畫圖當樣本;這一次的位移 > 2 倍緩衝(≈ 一個視窗)就立刻進入、平滑值 < 0.5 才退出),不看畫圖成本(CI 機器每次畫圖都超過 20ms 卻在 4,500px/s 跟得上,用成本判會
+  在一般速度出殼)。量到跟不上才啟用兩件事:
+  (1) **幀預算**:每次 render 先算「這一幀畫得完幾列真列」=(12ms − 每次 commit 固定成本)÷ 量到的每列成本(都指數平滑、夾範圍);
+  要新畫的列(新進視窗的、上次是殼的)依**可見優先、再依索引**排隊,排進預算的畫真內容,排不進的先畫**列殼**(`[data-row-shell]`,
+  `aria-busy`;同高、同分隔線、同欄寬),下一幀再補;沒有新列進窗的 commit(scrollTop 沒變、還在 isScrolling 尾巴)與停捲後預算放寬到
+  4 幀,停捲後可見殼一律當次全升級(固定成本很貴,一次多補幾列才補得快;但尾巴不能放到 8 幀 —— 讀到舊 scrollTop 時一次畫太多會讓視窗跑出前掛殼)。
+  (2) **前掛殼**:一次 commit 的時間內視窗會移動「速度 × commit 時間」這麼遠,這段距離的列先掛殼在**捲動方向**前面等著(最多 48 列;
+  只掛前方,不用對稱 overscan 浪費一半在視窗後面),
+  否則畫好的列落地時視窗早已捲過去、整片白。「跟不上」的判定有遲滯(見上),退出後殼還沒補完時用 4 幀預算
+  分幾次補、前掛不歸零(否則便宜的預算 commit 與一次全畫的長 commit 會來回震盪);停捲後(scrollTop 不再變、且虛擬化器 250ms 內沒有
+  scroll 事件)可見的殼一律當次全升級,
+  預算只節制視窗外 —— 只比 scrollTop 不夠,長 commit 之後下一次 render 讀到的 scrollTop 常常還沒更新。**緊急跳轉**看「上一次 render 開始到
+  這一次 render 開始」的位移(含上一次 commit 自己花掉的時間)跨過整個可視窗 → 新列一律先殼、殼 overscan 擴到半個視窗;不看
+  commit 結束後的位移(慢機器每次 commit 一結束下一次 render 就開始,中間位移很小,連續慢 commit 永遠觸發不了)。不用兩次 render 的瞬時速度決定
+  可見列要不要殼(快機器的正常短捲會被誤判)、也不用固定跳距(慢機器 commit 頻繁、位移不到一個 viewport 而永不觸發,CI 曾整片白 1 秒)。
+  保留中的真列、拖曳中、編輯中與選取格所在列不退回骨架;升級後仍同步三區列高。
+- **兩個閘同時守**:`scripts/data-table-fast-scroll.mjs`(極速 6,000px/s 白區 ≤ 400ms、補齊 ≤ 1,000ms,CI 的 ubuntu runner 不節流就是慢機器 —— R17 判準在它上面整片白 1.3s、v8 降到 64 / 103ms;
+  CPU 節流 2× / 4× / 6× 只當本機重現與壓力工具,不當 CI 閘:CDP 節流在 2 vCPU 的共享 runner 上不是線性的,同一 job 不節流 64ms、4× 卻 1,769ms,
+  本機 4× 是 167ms,數字不能跨機器搬;2× 是「跟不上」旗標最容易震盪的中速帶,本機必跑)與下方一般速度的呈現閘(零骨架;內容延遲 p95 ≤ 兩幀(門檻 = max(34ms, 2 × 該機器截圖幀距的中位數))且單列最長 ≤ 3 倍門檻,CI 只在 dpr1 斷言延遲 —— dpr2 在共享 runner 是 raster 成本決定(幀距正常卻 p95 72),回歸對照改用本機 CPU 節流跑 main vs 分支(2× 節流 main p95 83 vs 分支 0);不用「最長 ≤ 34」,~100 列出現一次 3 幀停頓是機器雜訊;單一 scroll 事件跳過整個視窗 = 機器停頓造成的整窗跳轉,那一跑作廢重跑最多 3 次)。列快取閘 `data-table-scroll-cost.mjs` R0
+  (「重算的列 ≤ 換進的列 + 2」)只在不節流下斷言:慢機器模式下殼 → 真列的升級本來就是同一列畫兩次(先殼後真),4× 節流實測 11.8 vs 10.8,
+  這是設計上的兩段式畫法,不是舊列被重算。
+- **一般捲動的呈現閘** = `scripts/data-table-scroll-perception.mjs`:PNG 同幀解碼列身分與骨架狀態,量首次進窗至真內容的取樣延遲、骨架幀比例與面積時間。
+  1,500/3,000/4,500px/s 的減速與連續短捲均納入對照;`--sabotage=on --assert=on` 故意延後內容,必須拒絕。
+- **機械閘** = `scripts/data-table-fast-scroll.mjs --mode=gesture`:量合成器實際送出的每一幀(不是 DOM、不是預估),中央區每 40px 帶完全
+  沒有墨跡 = 空白帶;閘 = 最長連續空白 ms 與停捲後殼補齊 ms。儀器自帶對照組(`--selftest`):500 列不虛擬化的靜態頁同手勢必須 0 空白
+  (高速位移本身不會被誤判成白)、每個 scroll 事件忙等 120ms 必須量到 ≥ 3 幀空白(該紅會紅)。
+- **修後實測(2026-09-09,headless 軟體光柵,各 3 跑中位數;儀器 PNG 幀 + 骨架色可見 + 分隔線不算內容)**:12,000px/s 最長連續空白 556 → 31ms、空白幀 30 → 4;
+  6,000px/s 502 → 18ms、56 → 3 幀;3,000px/s 兩邊都 0、殼 0 幀(正常速度完全不出殼;初次載入 / 換頁也不出殼 —— 只有「上次 commit 是殼」的列吃補齊配額)。殼的 Skeleton 不做脈動動畫(幾百格透明度動畫讓光柵每幀重畫,消融實測空白幀 42 → 20);
+  合成器超前時 overscan 擴到半個視窗(每側上限 24 列)。CI 閘:6,000px/s 最長連續空白 ≤ 400ms、停手後殼 ≤ 1000ms 補齊(同句跑 main 紅 550–700ms)。
+
+**捲動中不量沒人看的東西(2026-09-10 codify)**:這一輪處理「在捲動中量了、但畫面上沒人看得到」的幾何讀取。
+新儀器:攔截 `scrollTop` / `clientHeight` / `offsetWidth` / `getBoundingClientRect` 等的 getter,按呼叫點統計一次手勢的讀取次數
+(全功能整合範例、40 步滾輪)。**11,095 → 10,163**。
+- **列拖曳把手在閂上期間延後量測**:捲動時把手一定是隱藏的(`rowDragScrollLatch`),但 hover 代理會不停把 `data-hovered`
+  換到指標底下的新列,每換一次就量一次位置(243 次 `getBoundingClientRect` + 81 次 `clientHeight`),全算在隱藏的東西上。
+  改成延後到閂鎖放開再補量 —— **延後不是跳過**:跳過會留下「指標停在同一列不動、放開後沒有任何事件重新量 → 把手回不來」的洞。
+- **標籤溢出只量一次**(`Combobox`,1,080 → 540):細節見 `combobox.spec.md`「單行溢出」。
+- **`clientHeight` 只在權威更新點讀**(掛載 + ResizeObserver),render 與 layout effect 讀快取。
+  **`scrollTop` 反過來必須讀 DOM 現值**:下面「機器跟不跟得上」的判準用它算位移,而長 commit 期間捲動事件送不進來,
+  讀快取等於永遠看到舊位置、永遠判成跟得上,慢機器的殼列安全網就不會啟動。
+
+**同一輪量到、但**沒有**採用的三條(留檔免得重走;每條都附擋下它的數字)**:
+1. **`useFlushSync: false`**(捲動事件裡不同步重畫)。`@tanstack/react-virtual` 3.13.23 的預設是在每個 scroll 事件的處理器裡
+   `flushSync(rerender)`;關掉它讓捲動事件耗時 p95 從 15.5ms 掉到 1.0ms。世界級對照也支持關掉 —— AG Grid 33.3.2
+   [`onVScroll`(ag-grid-community.js:25744-25777)](https://www.npmjs.com/package/ag-grid-community/v/33.3.2) 在捲動事件裡只記
+   `nextScrollTop` + `animationFrameSvc.schedule()`,重畫在 rAF 的 `executeFrame(60)`(同檔 :34057)。
+   **但量畫面就翻盤**:6,000px/s 空白幀 2 → 7.5、最長連續空白 17 → 27ms;dpr2 + 節流下合成器送出的幀 p95 19.2 → 32.4ms。
+   AG Grid 能走 rAF 是因為它的儲存格是輕量 DOM 且自帶 60ms 預算的分幀佇列,**不是同一個成本結構**;
+   照抄 API 形狀而不看成本結構會壞。仲裁一律看畫面,「捲動事件耗時」是歸因指標。
+2. **共用量測排程器**(截斷偵測 / 頭像堆疊量測捲動中延後、停下後分批補)。快機器上很漂亮(幾何讀取再降 8,300 次、
+   6,000px/s 空白幀降到 2),但**慢機器上會把殼列安全網關掉**:5× 節流實測殼幀 17 → 9.5、最長連續空白 199 → 359ms,
+   CI 的 2 vCPU runner 上更是 528ms(閘上限 400ms)。
+3. **捲動中一律方向預掛**。同樣在快機器上很好、慢機器上更糟(5× 節流最長連續空白 359 → 1,080ms)。
+
+**根因(下一輪的前提條件,沒解決之前 2、3 不能上)**:殼列安全網的觸發條件是「視窗移動距離 ÷ 預掛緩衝」與「每列成本」,
+兩者都是 **commit 成本的代理值**。它們之所以在 main 上準,是因為 main 的 commit 恰好把量測也算進去、與慢光柵正相關;
+一旦把量測移出手勢窗、commit 變便宜、render 變密,同樣的速度下每次位移變小 → 判準說「跟得上」→ 安全網不啟動 →
+慢機器整片白。**代理值被自己的改善打敗了。** 兩種替代判準都試過並量過,都沒有還原殼列:
+(a)「進來的列數 × 每列成本 > 幀預算」(仍是 JS commit 時間,量不到光柵);(b)「量到的幀間隔 > 1.5 幀」(整條管線的產出,
+理論上對,但實測殼幀仍只有 10)。下一輪要先**直接觀測殼列狀態**(把 `budgeted` / `budgetRows` / `costPerRow` 暴露成可讀的
+測試訊號)再改判準,不要再靠推理猜。
+
+**每列成本(2026-09-11;user 在自己的機器上回報「非常卡頓」後,在真實瀏覽器量出來的)**
+
+**量測方式的更正**:先前所有效能結論都來自無頭瀏覽器,而它量到的每列成本是 1–2ms;**user 的真實 Chrome 上是 10–20ms**,
+兩者差一個數量級,所有以無頭數字推導的判準因此全部失準。現在的做法是:沙箱起本機靜態站(`127.0.0.1`),
+用**真實瀏覽器 + 真實滾輪事件**做 A/B;殼列的決策狀態掛成 `data-shell-state`(`window.__DT_DEBUG_SHELL = true` 才出現),
+可直接讀出 `slow / budgeted / ahead / behind / commitCost / costPerRow / budgetRows`,不必再從程式碼推測。
+
+**已落地:把每列內容量測的重複工作拿掉**(細節見各元件 spec)——
+`Tag` 的截斷量測加字型 / 文字寬度兩層快取;`PeoplePicker` 頭像串的元素查詢改快取。
+CPU 剖析(5× 節流)顯示這兩處原本是每列成本的第二、三大項(169–232ms 與 139.7ms,後者修後 48.7ms)。
+**實測**:user 的真實 Chrome 上每列成本 **13.7 → 6.4–7.8ms**;本機 5× 節流、6,000px/s、4 次交錯對照,
+最長連續空白 576 → **350ms**、空白幀 50.5 → **45.5**、停捲補齊 537 → **470ms**、主執行緒最長任務 154 → **133ms**,
+每一項都更好。
+
+**同一輪試過、被實測擋下而撤回的五項**(留檔免得重走;每項都附擋下它的數字):
+1. **用「一次 commit ≥ 兩幀」當出殼的必要前提**。動機對 —— 原判準把「使用者甩得快」和「機器畫不動」混為一談
+   (真實滾輪一次十格位移約 1,000px = 5 倍緩衝,於是每次正常甩動都被判成跟不上;user 的機器實測 100% 的幀有骨架)。
+   但擋下它的是慢機器:CI 的 2 vCPU runner 殼幀 16 → 8.5、最長連續空白 438–476ms(閘上限 400ms)。
+2. **殼列記帳休眠**(機制沒作用時不做 Map/Set 記帳)。它會把「哪些列已畫成真列」清掉,一旦轉回需要殼時所有列都被當成新列 →
+   本機 5× 節流最長連續空白衝到 2,102ms。
+3. **layout effect 不讀 DOM**(改用 render 開始時的值)。`lastOffset` 記的是 commit 結束那一刻的位置,commit 期間合成器還在捲,
+   改用 render 開始的值會少算這一段。
+4. **前掛時間基底加下限(兩幀 / 四幀)**、5. **預掛緩衝下限 10 列**。兩者都沒有改善,後者還讓 script 時間上升。
+
+**方法論(這一輪最貴的教訓)**:5× 節流的空白量測**跑間變異極大**(同一個建置量到 234 / 242 / 576 / 601 / 818ms),
+單次或兩次跑不足以判定;而且**基準一定要抓對**——我一度把 `b29fd702` 的建置當成上一版,據此連下五個「本輪更差」的結論,
+換回真正的上一版(`eb5b42fc`)並跑 4 次交錯之後,結論完全相反。判定一律用**同一跑之內的交錯對照 + 至少 4 次**。
+
+**剩下的成本是什麼(量過才寫,兩條路都實測走不通)**:5× 節流、6,000px/s 的 CPU 剖析上,最大一項是
+commit 後那個 layout effect(自身時間 292.6ms / 18.7%)—— 它只讀一個 `scrollTop`,但那是在 React 剛改完 DOM 之後,
+會**逼出整張表的版面計算**,所以整筆版面成本都記在它頭上。
+
+1. **把那個讀取拿掉(改用 render 開始時的位置)**:成本不會消失,只是換一個函式背 —— 直接改建置產物做對照,
+   292.6ms 只是搬到另一處變成 255.0ms,手勢反而從 1,556ms 變長到 1,657ms、scroll 事件處理中位數 0.47 → 53.02ms。
+   **結論:那是整張表固有的版面成本,不是多餘的讀取**;這也是前面第 3 項撤回的獨立佐證。
+2. **不要在 scroll 事件裡同步重繪**(`useFlushSync: false`,對齊 AG Grid 把捲動處理丟進 animation frame 的作法):
+   4 次交錯對照下長工最長 157 → 130ms、script 1,109 → 1,049ms 是好的,但**使用者看得到的那幾項全部變差** ——
+   空白幀 49.5 → 50.5、最長連續空白中位 516 → 608ms、殼幀 9 → 13.5、停捲後補齊 490 → 600ms。
+   user 抱怨的是空白與骨架,所以不採用。
+
+`Tag` 的截斷量測仍需讀一次 `clientWidth`、`use-truncated` 的 `scrollWidth/clientWidth` 同理,
+但兩者都只是上面那筆版面成本的一部分,不是額外的。post-paint 重新量測(`useTruncated` 的 rAF + 100ms 各一次)
+實測整趟手勢共 442 + 337 次、合計 39.3ms,加了快取之後已經很便宜,不值得再動。
+
+**出殼的判準:機器畫不動,不是使用者捲很遠(2026-09-11 根因;user:「還是非常卡頓…比 main 還明顯超多」)**
+
+**怎麼量到的**:在 user 的**真實 Chrome** 裡用 `MutationObserver`(不受背景分頁的 rAF / timer 節流影響)+ 真實滾輪輸入。
+先前每一輪都在沙箱 headless 裡量,那裡每列成本 1–2ms,這套機制幾乎不會啟動 —— 所以 bug 一直藏著。
+
+**量到的事實**:同一台機器、同一個操作(一次 10 格滾輪 = 1000px):
+
+| | main(沒有殼機制) | 修前的本分支 |
+|---|---|---|
+| 視窗內骨架列 | **0** | **14 / 14(全部)** |
+| DOM 穩定時間 | 148ms | 124ms |
+
+**骨架沒有換到任何速度,只換來使用者看得見的灰塊。** 讀出決策狀態(`data-shell-state`)才看到原因:
+
+```
+costPerRow=2.1–4.6ms   fixed=10.0ms   budgetRows=4   slow=1   ahead=1
+```
+
+兩條路都只看**位移**,跟機器快慢無關:
+1. `ahead`(緊急跳轉)門檻 = 位移 ≥ 一個視窗高(540px)—— **一次普通滾輪就是 1000px**,恆為真 → `budgetRows` 寫死 0 → 整窗全殼。
+2. `budgeted` 門檻 = 位移 > 2 倍預掛緩衝(overscan 5 列 × 40px = 200px)—— 同樣恆為真。
+   而且 `fixedCost` 卡在它的上限 10ms,幀預算 12ms 扣掉只剩 2ms,一列 4ms → 算出 0 列 → 永遠掉進
+   「可見列 ÷ 4」的下限,也就是 **3/4 視窗固定變骨架**。
+
+**修法**:加一條前提 —— **這一個視窗畫得完嗎**。
+`視窗列數 × 每列成本 + commit 固定成本 ≤ SHELL_ENGAGE_VIEWPORT_MS(120ms)` → 畫得完就不出殼,直接畫完。
+60 = 我們對標的 AG Grid 每幀建列預算。**cite 換成可驗證的來源**(2026-09-12):原本引
+`ag-grid-community.js:34143`(打包後行號),但 AG Grid **不在本 repo 的依賴裡**,那個 cite 誰都驗不了;
+改引原始碼 https://github.com/ag-grid/ag-grid/blob/latest/packages/ag-grid-community/src/misc/animationFrameService.ts
+逐字 `const callback = this.executeFrame.bind(this, 60)`。原本取兩倍(120),該取捨已被實測推翻;
+取兩倍的理由是「一個視窗的內容晚 120ms 出現,比先看到一片灰色骨架再換成真資料好」—— main 在同一台機器上就是花 148ms
+一次畫完、全程沒有佔位。
+
+**兩個常數必須分開**(我一度合併,被實測擋下):
+- `SHELL_ENGAGE_VIEWPORT_MS = 120` —— 要不要出殼的量尺。
+- `SHELL_FRAME_BUDGET_MS = 12` —— 既然要出殼,一次 commit 補幾列。把它拉到 60 會讓慢機器的 commit 變長:
+  4× 節流實測長工 132 → 261ms、最長連續空白 418 → **1156ms**。撤回。
+
+**驗證**:user 的真實 Chrome,連續三次 1000px 捲動 → **骨架 0、空列 0**,DOM 89ms 穩定(main 148ms)。
+慢機器保證沒破:4× 節流最長連續空白中位 452ms(修前 417ms)、骨架 10 幀(修前 11)、長工 131ms(修前 131)。
+不節流全閘綠(空白中位 52ms)。新增斷言 `--assert-max-shell-frames=0`:**畫得動的機器不准出殼**,
+對照組(修前建置)在同一條斷言下 11 幀、必紅。
+
+**指標底下那一列永遠有 hover 反應(2026-09-11;user:「游標明明到了,table row 的反應卻要等好一陣子」)**
+
+這條跟「捲動快不快」是兩件事,先前每一輪都只在量捲動,所以一直沒抓到。根因有兩層,都用
+`scripts/data-table-row-under-pointer-invariant.mjs`(含會紅的對照組)實測過:
+
+1. **殼列沒有 hover 可供性**。殼列帶 `data-row-index`,所以 hover 代理**會**把 `data-hovered` 標上去 ——
+   但它的 class 裡沒有 `data-[hovered]:bg-neutral-hover`,標了也什麼都不顯示。指標停著不動、底下那列
+   在捲動中被套殼,看到的就是整列毫無反應。4× 節流實測:殼存活 505ms,期間 6 幀完全沒有 hover 反應。
+   **修法**:殼列補上跟真列同一條 hover 底色。殼是「內容還在路上」,不是「這裡沒有列」;
+   把手與動作鈕仍不畫(那兩個要有真資料才有意義)。對齊 Linear / Jira 的 skeleton 列仍是可 hover 表面。
+2. **捲動中瀏覽器不重新派送 hover**。整段合成手勢期間,指標底下那一列**一次 `mouseover` 都沒有收到**,
+   `data-hovered` 還留在早就捲出視窗的舊列上。CSS `:hover` 沒有這個問題(瀏覽器每幀自己算),
+   AG Grid(`.ag-row:hover`)與 MUI X 都走 CSS;本表為了跨三個捲動區同步同一「邏輯列」才用 `data-hovered` 代理,
+   代價就是得自己補上瀏覽器免費提供的那一半。**修法**:`syncHoverUnderPointer` 在每次捲動 commit 之後,
+   用最後已知的指標座標做一次 `elementFromPoint`,把 `data-hovered` 對到真正在指標底下的那一列。
+   這個 effect 本來就已經讀過 `scrollTop`(版面算過了),所以不多逼出一次版面計算。
+   **一定要連 DOM 節點一起比,不能只比 row id** —— 殼列升級成真列時換了節點,新節點身上沒有 `data-hovered`,
+   只比 id 會直接 return,留下「真列在指標底下卻沒底色」的一幀空窗(實測就是 1 幀)。
+
+同時,`decideShell` 與預排隊都把**指標底下那一列**加進「不套殼」的例外(原本只有拖曳中 / 編輯中 / 選取格所在列)。
+不變式是同一條:**有使用者互動在上面的列不套殼**。成本:每幀最多多畫一列。
+
+**驗證**:`data-table-row-under-pointer-invariant.mjs` —— 指標放到中央後完全不動,跑 6,000px/s 手勢,
+逐幀用 `elementFromPoint` 取指標底下那一列。修前 6 幀沒有 hover 反應(最後一次在 935ms),修後 **0/140 幀**。
+對照組把殼列那條 hover class 拿掉 → 必須量到沒反應(證明閘在該紅時會紅)。
+
 ### 七、Column Type
 
-**Column type 是資料行為的預設合約。** 指定 type 自動獲得對齊 / 渲染 / 排序 / 篩選行為,可在 column 層級覆寫。Header 對齊永遠跟該欄 body cell 一致。select/multiSelect 的 `meta.options` 消費 Select 的完整 `SelectOption` schema(M30 wrapper-extends-primitive;含 icon / iconClassName / description),`meta.selectedItemRenderer` 轉發 Select 同名 API 供 status 類彩色 cell(2026-07-08 補——原 `{value,label}` 窄型別 = 假 SSOT,WM 被迫手刻 bare trigger 實證)。
+**Column type 是資料行為的預設合約。** 指定 type 自動獲得對齊 / 渲染 / 排序 / 篩選行為,可在 column 層級覆寫。
+
+**對齊只作用在儲存格內容,表頭一律靠左**(2026-09-04 user 拍板:「header 的規格就是要一致,只有內容會置右」)。表頭是結構標籤,一整列標題對齊同一條左緣才掃得順;數值右對齊的目的是讓位數在**資料之間**縱向比較,而標題不是資料、不參與那個比較。**世界級對照(2026-09-05 讀第一手後更正;原句「Polaris IndexTable 只在 body cell 右對齊數值、標題列維持左;Notion / Airtable / Linear 同樣靠左」無 cite 且與原始碼相反,已撤回)**:Polaris 與 AG Grid v33 都是**數值欄表頭與儲存格同向靠右** —— Polaris IndexTable 的 heading 有 [`alignment?: 'start' | 'center' | 'end'`(IndexTable.tsx#L47-L53)](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/IndexTable/IndexTable.tsx#L47-L53),官方指南寫「[Numeric cells and titles should be right aligned](https://github.com/Shopify/polaris/blob/main/polaris.shopify.com/content/components/tables/index-table.mdx#L173)」,Polaris DataTable 的 [`columnContentTypes: 'numeric'` 整欄靠右(DataTable.tsx#L31、#L47)](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/DataTable/DataTable.tsx#L31);AG Grid v33.3.2 的 `numericColumn` 同時給 [`headerClass: 'ag-right-aligned-header'` + `cellClass: 'ag-right-aligned-cell'`(defaultColumnTypes.ts#L3-L11)](https://github.com/ag-grid/ag-grid/blob/v33.3.2/packages/ag-grid-community/src/entities/defaultColumnTypes.ts#L3-L11)。**本 DS 刻意偏離**這兩家:authority 是 user 2026-09-04 的拍板(上引原話),DS 自有理由如前(標題是結構標籤、不參與位數比較)。Notion / Airtable / Linear 沒有可驗證的第一手原始碼,不列為對照。**機械閘** = `scripts/data-table-invariants.mjs` I10:量所有型別欄位的**標題左緣**必須落在同一條線(彼此差 ≤1.5px),同時量右對齊欄的**儲存格內容右緣**確實貼齊 cell 右內緣 —— 兩件事分開驗,任何一邊回頭去跟另一邊對齊就會紅。
+
+> **來源總帳(2026-09-04)**:2026-09-03 我曾把表頭一起推到右邊,並在此處寫成「Header 對齊永遠跟該欄 body cell 一致」——那句是**我自己推導的,不是 user 拍板**,且該次改動未經同意。已於 2026-09-04 撤回,本段為現行 SSOT。歷史事實一併記錄:`f8cec708`(2026-04-29,commit 主旨是 sort 重做)在標題與外層之間插入 `flex-1` 的排序點擊區,使外層的 `justify-end` 失去可分配空間,標題被推回最左 —— 在那之前標題文字實際上是靠右的(`text-right` 套在外層、內層 `TruncateCell` 為 `flex-1`)。也就是說「靠左」是那次副作用之後的狀態,而 user 要的正是這個狀態;現在由本段明文定為規格,不再依賴副作用。
+
+select/multiSelect 的 `meta.options` 消費 Select 的完整 `SelectOption` schema(M30 wrapper-extends-primitive;含 icon / iconClassName / description),`meta.selectedItemRenderer` 轉發 Select 同名 API 供 status 類彩色 cell(2026-07-08 補——原 `{value,label}` 窄型別 = 假 SSOT,WM 被迫手刻 bare trigger 實證)。
 
 ### 八、Row 狀態
 
@@ -186,6 +571,8 @@ Cell 已 `flex items-center`,consumer render 直接 inline-flex + gap-2。Icon s
 
 ### 十二、可推導值用 `calc()` 表達(不硬寫結果)— 上游動,下游自動跟著算
 
+行高與 cell 垂直內距的公式住在**第四節**(`--table-cell-py`),不在這裡重述——同一個公式只准有一個住所。列高 token 本身在 `tokens/uiSize`。
+
 ### 十三、狀態處理職責邊界
 
 DataTable 只管「column + data」;Loading / Error / Disabled-整表由 consumer 外層處理。Empty 自動渲 `Empty`。Dark mode / density 走 token。**Loading**(無資料 → 外層 `Skeleton × N rows`;有資料 refresh → 容器疊 `<CircularProgress/>` 24px center + table `opacity-disabled` reuse,**禁**:內建 loading prop / Empty 套 loading / 自定義 opacity)。Skeleton 表示尚無 row shape，refresh overlay 則保留目前資料與 table geometry。
@@ -196,7 +583,7 @@ DataTable 只管「column + data」;Loading / Error / Disabled-整表由 consume
 
 3-panel(left-pinned / center-scroll / right-pinned),center body 用 **native `overflow-x-auto`**(非 ScrollArea),header 透過 JS `onScroll` 同步 scrollLeft。**不用 `<ScrollArea>` 的理由**:Radix viewport nested div 會 break scrollLeft 同步;pinned column 需「左右獨立 scroll + 中央共享 scroll state」,單一 viewport 不適配。
 
-**Tech debt**:macOS auto-hide vs Windows/Linux 常駐 scrollbar,cross-OS 視覺寬度差異 — consumer 可 override `::-webkit-scrollbar` 樣式;ScrollArea 重構列 post-v1。
+**Tech debt**:macOS auto-hide vs Windows/Linux 常駐 scrollbar,cross-OS 視覺寬度差異。**consumer 不得以 `::-webkit-scrollbar` override**(2026-09-05 撤回原「consumer 可 override」建議):裸 `::-webkit-scrollbar` 會把 overlay 捲軸強制變成佔版面的 classic 捲軸,正是缺陷 H 選用標準屬性 `scrollbar-width: thin` + `scrollbar-color` 的理由;要調整只能走 `--scrollbar-thumb` / `--scrollbar-track` 顏色 token。ScrollArea 重構列 post-v1。**機械閘**(2026-09-08):`scripts/data-table-scrollbar-visibility.mjs` 在任何機器上重現 Windows 幾何(拿掉 headless 的 `--hide-scrollbars` + 根規則造 17px / 11px 傳統捲軸、DPR 1–1.5、另跑原生 CSS 組),對每支 DataTable story 驗「捲動區完整在裁切框內、捲軸外側一半的像素真的是捲軸、slot 縮 1–3px 後不溢出」;`scripts/data-table-scroll-cost.mjs` 量每捲一步的強制排版次數。**未結**:user 在 Windows 回報「兩軸各半看不到」(2026-09-08),Mac 模擬重現不了,已修的是填滿高度時漏扣外框邊框的 2px(自 2026-04-30 起),完整歸因待 Windows 截圖與環境資料(Chrome/Edge 版本、OS 縮放、瀏覽器縮放、哪支 story)。
 
 ---
 
@@ -344,7 +731,7 @@ ValueShape ↔ DS picker 對照(canonical 2026-05-02):
 - **空狀態(兩態,G fix 2026-05-04 v2)**:initial mount 且 value 空且 `maxConditions` 尚有容量 → auto-add 1 條空 condition row(field 未選 → operator / value 自動 disabled;讓 user 直接看到 row shape,不必先點 CTA;useRef gate 只 mount 一次);`maxConditions=0` 不 auto-add。user 手動刪光 → 只顯 inline `+ 加篩選` CTA、不 re-add，尊重已明確執行的清空意圖
 - **CTA 位置**:緊貼最後一條 row(**廢 SurfaceFooter**),條件與「加入」屬同一語境;root-level「加篩選 / 加入篩選器」用 `tertiary`(輕量但有邊界,符合 root-CTA 重量),group 內「加入巢狀篩選」才用 `text`(更輕,inline 於 group 內)
 - **Trash / 刪除**:row 是 form-control row → text Button(non Inline Action,違 item-anatomy canonical)
-- **And/Or Select** `minRows={2}`(2 選項顯式縮 menu 高度);**Where padding** `px-[var(--field-px)]` align Field
+- **And/Or Select**:不再需要縮選單高度(2026-09-08 起選單 0 筆走與選項等高的訊息列、無最小高度,舊 `minRows` 已退役);**Where padding** `px-[var(--field-px)]` align Field
 - Header refresh icon:`value !== defaultValue` 顯;ButtonDivider 串接 close X(對齊欄位顯示 chrome canonical)
 - **Relative date 群組**:`DATE_RELATIVE_GROUPS` Past / Current / Future,走 `<Select groups>`
 - **Labels / i18n**:所有 panel-owned 可見文字與 accessible name 經 `labels`；operator 與 relative-date maps 是 nested partial override。Column header / option label 仍由 consumer 的 `ColumnDef` 提供，不由 panel 翻譯。
@@ -431,9 +818,14 @@ Row drag + column reorder + TreeView 共用 `lib/drag-visual.ts`:source `opacity
 
 `enableRowDrag?: boolean` + `onRowReorder?: (sourceId, targetId, 'before' | 'after')`。Library:@dnd-kit/core(v15.0 Path B 用 `useDraggable` + `useDroppable`,不用 `@dnd-kit/sortable`)。**必填 `getRowId`**(否則 dnd 用 row.index reorder 後錯位)。
 
-- **Handle**:Button tertiary iconOnly xs(GripVertical)24px chip,所有 state(idle / hover / aria-disabled)統一 `bg-surface-raised`(border / shadow 已 retire,2026-05-12 per user「我有叫你加 elevation 嗎」),fixed-position 浮層貼 row 左緣、不佔 column 空間(位置 JS 計算,實作見 `data-table.tsx`);**hover-reveal** 由 JS 控 visibility / opacity(row 或 handle hover 顯示;drag 中 source 強制顯示、其他列隱藏)。Tertiary chip 非 ItemInlineAction 因透明背景撞 table border。
+- **Handle**:Button tertiary iconOnly xs(GripVertical)24px chip,**只有底色被覆寫成不透明的 `bg-surface-raised`,其餘一律照 Button 平常的 initial / hover / active 走**(border / shadow 已 retire,2026-05-12 per user「我有叫你加 elevation 嗎」;2026-09-06 user 重申「其 initial,hover,active 狀態都是只改底色為 bg-surface-raised,其餘不變,壓著那顆鈕的時候狀態應該是 active」)。**dnd-kit 的 `aria-pressed` 必須在傳進 Button 前濾掉** —— 它拖曳中恆送 `true`(core.esm.js:3436),而 Button 把該屬性解讀成 toggle 按下(button.tsx:194),會讓這顆非 toggle 的把手在拖曳中變成藍底藍字無框,fixed-position 浮層貼 row 左緣、不佔 column 空間(位置 JS 計算,實作見 `data-table.tsx`);**hover-reveal** 由 JS 控 visibility / opacity(row 或 handle hover 顯示)。**拖曳進行中三個把手全部不顯示**(2026-09-06 user 提案 + 實測收斂):把手存在的唯一理由是「表格列看不出來能拖」這個可發現性問題;拖曳一旦開始理由即消失,回到 `lib/drag-visual.ts` 的 SSOT ——來源半透明 + 落點線,畫面上無把手,與 TreeView(`tree-view.tsx:258`「整列可拖,無 grip handle」)一致。拖影本就不含把手(clone `[role="row"]`,把手是 portal 出去的 fixed 浮層),隱藏後來源與拖影才對稱。**列已無鍵盤拖曳路徑**(2026-09-06 `c5d3b4c1` 拆除,詳本檔「列重排的鍵盤與單指標路徑」段):把手不再接收 dnd-kit 的 `onKeyDown`,`tabIndex` 恆為 -1、不進 tab 順序。故本條所述的隱藏只影響指標拖曳;先前此處以「拖曳中的即時回饋是落點線 + dnd-kit live region」為由,描述的是已被拆除的鍵盤路徑,已更正。(聚焦不顯示把手為**既有 a11y 缺陷**,另案)。Tertiary chip 非 ItemInlineAction 因透明背景撞 table border。
+- **捲動與可視帶**(2026-09-10 取代 2026-09-09 的「裁切與所屬列相同」;user 原話「這樣的效果看起來好醜,drag button會直接被裁掉…jira在捲動table的時候會把drag button藏起來直到滑鼠再次滑到其他table row」):
+  - **捲動即藏、真實移動才顯**:任何捲動(body、釘選面板、頁面、resize)一發生,正在畫的把手(hover 中或淡出中)**立即**隱藏(不淡出、不跟列走),直到指標座標真的改變才依 hover 重新顯示(150ms 淡入照舊)。Chromium 捲動後用同一座標補發的 mouseover / mousemove 不算移動(否則把手會在 user 沒有意圖下換列,舊把手半裁地掛在表頭線下淡出 = 殘影)。實作:`data-table.tsx` `rowDragScrollLatch`(模組層一份、document 上一個座標 listener、只有渲染過把手的實例訂閱)。
+  - **整顆放得進 body 可視帶才顯示**:可視帶 = 所屬 body 面板的 client box(不含水平捲軸;傳統 17px 捲軸下把手不得坐在捲軌上)。24px 把手置中於列中心,上下任一邊超出可視帶就不顯示(部分露出的列沒有把手,捲進一點就有);把手永遠不出現在 body 可視帶之外。不再用 `clip-path` 把 chip 切成殘片。
+  - **AI 推導的取捨**(非 user 拍板):部分露出的列暫無指標把手 —— 與 MUI X / AG Grid(把手是列內儲存格、隨列被裁,該狀態下同樣看不到或只剩碎片)一致;Atlassian Pragmatic DnD 設計準則的 hover 把手用 CSS :hover 顯隱、天生不追列;Jira 捲動中隱藏是 user 第一手觀察(官方文件未載)。位置不變(跨左邊框的浮層 chip,清單家族),不改成列內專用欄。鍵盤 / focus-visible 不受閂鎖影響(把手目前 tabIndex -1、聚焦不顯示,既有 a11y 缺陷另案)。
+  閘:`scripts/data-table-handle-clip-invariant.mjs`(P0 整列可見 → 顯示且無 clip;P1 列半滑進表頭底下 → 指標未動不顯示、指標動了仍不顯示、移到完整列才顯示;P2 整列滑出 → 不顯示;P3 傳統捲軸幾何下把手底不越過 client 底;`--selftest` 強制 opacity 1 必紅)、`scripts/data-table-handle-position.mjs`(指標不動的捲動:第一個 scroll 事件後零把手;`--hover=follow` 指標有動:可見把手貼原列中心 ±1px,`--selftest` 注入 20px 偏移必拒)。保留 fixed portal、Button 與拖曳語意。
 - **Sort × Drag 互斥**:sort.length>0 → handle disabled+Tooltip。**Top-level only**(`row.depth>0` 不顯 handle)。**Position**:active vs over 視覺位置 → `'after'`/`'before'` 對齊 `arrayMove`。**Consumer-managed mutation**:`onRowReorder(sourceId, targetId, position)`,DS 不持 row order，因為資料排序與 persistence authority 都在 consumer。
-- **Virtualization 整合**(v3 2026-05-05):enableRowDrag 自動把 overscan 拉到 `Math.max(overscan, 5)` + drag 期 freeze `measureElement` + `modifiers={[snapToCursorModifier]}`(ghost top-left 對齊 cursor,不鎖軸)。**3-panel mirror sync**:primary 永遠 = center region(v15.4 撤銷「left 優先」— multi-instance same-id 是 dnd-kit anti-pattern,且 pinned column 是「鎖定欄」語意非 drag 起點),只有 center 掛 `useDraggable`;mirror region(left / right pinned)只掛 `useDroppable`,drag 期以 `useDndContext` 同步 source 半透視覺(Path B source 留原位,無 row transform);handle 只 render primary(center)避雙觸發。**Cross-parent drop 禁止**(已知 limit):nested 只同 top-level 重排,collisionDetection 過濾,顯 invalid signal。
+- **Virtualization 整合**(v3 2026-05-05):enableRowDrag 自動把 overscan 拉到 `Math.max(overscan, 5)` + drag 期 freeze `measureElement` + `modifiers={[snapToCursorModifier]}`(ghost top-left 對齊 cursor,不鎖軸)。**3-panel mirror sync**:primary 永遠 = center region(v15.4 撤銷「left 優先」— multi-instance same-id 是 dnd-kit anti-pattern,且 pinned column 是「鎖定欄」語意非 drag 起點),只有 center 掛 `useDraggable`;mirror region(left / right pinned)只掛 `useDroppable`,drag 期以 `useDndContext` 同步 source 半透視覺(Path B source 留原位,無 row transform);handle 只 render primary(center)避雙觸發。**Cross-parent drop 禁止**(已知 limit):nested 只同 top-level 重排,collisionDetection 過濾。**把手不表示「不能放」**(2026-09-06 user 逐字「本來就不需要 invalid,我們不是就已經有引導的落點線了嗎」):訊號在目標端 —— 不能放時就不出落點線、不出 `bg-drop-target`,起點不變色。與 `lib/drag-visual.ts`(拖曳視覺 SSOT,無 invalid 態)及另兩個消費者(TreeView / 欄位重排,同樣無 invalid 態)一致;外部對照:[Atlassian Pragmatic DnD 設計準則](https://github.com/atlassian/pragmatic-drag-and-drop/blob/main/packages/documentation/constellation/08-design-guidelines/index.mdx)「A background color change to communicate that dropping is possible should only be applied when a user can perform a drop operation.」、[MDN 拖放規範](https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API/Drag_operations)(游標為主要回饋,被拖元素不變外觀)、[React Aria](https://github.com/adobe/react-spectrum/blob/main/packages/dev/s2-docs/pages/react-aria/blog/drag-and-drop.mdx)(未定義 invalid 視覺)三家皆同。
 
 ---
 
@@ -510,6 +902,20 @@ DataTable 是 composite multi-section 元件,**不套 SizeMatrix / StateBehavior
 - Sortable column:`aria-sort="none" | "ascending" | "descending"` on 該 column header `<div role="columnheader">`
 - Selection state(若啟用 selection mode):視覺**僅由 `__select__` 欄的 selection control(`multi`→Checkbox / `single`→Radio)呈現,不套 selected-row 底色**;control 自帶 `aria-checked` 傳達狀態(row 本身目前**未**套 `aria-selected`,`grid` root 亦未套 `aria-multiselectable` — 留待 `role="grid"` future tier)
 - 字 cell hover overlay action:overlay 為 absolute/fixed paint layer(`DataTableInteractionLayer`),trigger 目前**未**套 `aria-haspopup` / `aria-controls`(留待 future tier)
+
+**列重排的鍵盤與單指標路徑(2026-09-06 登記缺口)**:
+- **列**的鍵盤拖曳已於 2026-09-06 拆除 —— 實測 Space 會啟動、按方向鍵後落點線消失、放下順序不變,
+  屬「看似支援實則不能完成」。根因:`DndContext` 單一 sensors 由欄／列共用,而 dnd-kit 鍵盤座標
+  自 activator 矩形起算;列的 activator 是貼表格左緣的 fixed 把手,不在任何列矩形內,
+  `pointerWithin + rectIntersection` 因此永遠解不出 `over`。把手不再 spread `onKeyDown` 且 `tabIndex=-1`。
+- **欄位**的鍵盤重排**可用且保留**(同手法實測:Category 由第 3 欄移至第 5 欄);
+  其 activator 是 header cell,落在其他 header 矩形內,故 `over` 解得出。**`KeyboardSensor` 不得移除。**
+- **待補(backlog)**:(a) [WCAG 2.5.7 Dragging Movements](https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html)
+  要求拖曳功能須有「單指標、不需拖曳」的替代路徑,規範自身舉的例子即清單重排的「上移／下移」控制項;
+  DataTable 與 TreeView 目前皆無此路徑。落地形式已定(該列 `rowActions` overflow 選單多兩個項目,
+  樣式沿用既有 menu,無新 token),僅 API 歸屬(DS 於 `enableRowDrag` 時自動注入 vs consumer 自加)待定。
+  (b) 是否採用 TreeView 的 `Cmd/Ctrl+Shift+方向鍵`(`tree-view.spec.md:294-295`)作為加速器,研究中。
+  (c) 列拖曳無客製 live region,落回 dnd-kit 英文預設字串(TreeView 有自己的,`tree-view.tsx:374-378`)。
 
 **Keyboard 行為**(目前實作 — `tableKeyboardHandler`):
 - ↑↓←→:cell-to-cell navigation **僅 `spreadsheetMode` opt-in 時生效**;selection 尚未建立時按方向鍵自動選取第一個 visible cell(鍵盤可直接進入 spreadsheet 導覽,無需滑鼠 click — 對齊 Excel / Google Sheets / AG Grid「focus grid → first cell active」,2026-07-05 D4 補);預設模式方向鍵無作用

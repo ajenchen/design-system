@@ -6,37 +6,78 @@
 
 import * as React from "react"
 import { type DialogProps } from "@radix-ui/react-dialog"
-import { Command as CommandPrimitive } from "cmdk"
+import { Command as CommandPrimitive, useCommandState } from "cmdk"
 import { Search } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent } from "@/design-system/components/Dialog/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/design-system/components/Dialog/dialog"
+import { MenuItem, MenuGroup, type MenuItemProps } from "@/design-system/components/Menu/menu-item"
+import { ICON_SIZE } from "@/design-system/tokens/uiSize/icon-size"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
+import { CircularProgress } from "@/design-system/components/CircularProgress/circular-progress"
+import { RowSizeProvider, useRowSize } from "@/design-system/patterns/element-anatomy/item-anatomy"
+import { markPointerGrab, useCursorMover } from "@/design-system/hooks/use-input-modality"
+
+type CommandSize = 'sm' | 'md' | 'lg'
+
+/**
+ * Command root —— 尺寸(sm / md / lg)在這裡進入 RowSizeProvider,搜尋列 / 項目 / 群組標題 / 空狀態全部從
+ * context 取得同一個 size(2026-09-08 之前 CommandGroup 的字串 heading 永遠是 md 列高)。
+ * 不自帶 surface / radius:殼(PopoverContent / DialogContent / inline 的邊框容器)才是 surface 的 owner。
+ */
+/** CommandEmpty 把它的字串文字登記到根,根的 live region 才有東西可播(見 Command root 註解)。 */
+const EmptyTextContext = React.createContext<((text: string | null) => void) | null>(null)
 
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive
-    ref={ref}
-    className={cn(
-      "flex h-full w-full flex-col overflow-hidden rounded-md bg-surface-raised text-foreground",
-      className
-    )}
-    {...props}
-  />
-))
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive> & { size?: CommandSize }
+>(({ className, size, children, ...props }, ref) => {
+  const inherited = useRowSize('md')
+  // 0 筆結果的讀屏播報住在根(2026-09-09 user 核准「第二項如果確保是SSOT且不違背世界級的設計就照你建議做」):
+  // live region 必須一直掛著才會播(新掛上、已帶文字的 live region 讀屏器多半不念;react-select A11yText / Downshift
+  // status message 都由根元件常駐渲),文字由 CommandEmpty 的字串 children 登記進來。之前只有 SelectMenu 自己另放一份
+  // CommandEmptyStatus,CommandDialog / inline Command 沒有(command.spec.md 卻寫「都渲一份」);現在三種形態都由根
+  // 自動渲一份,消費端不必、也不得再放(放了會播兩次)。
+  const [emptyText, setEmptyText] = React.useState<string | null>(null)
+  return (
+    <RowSizeProvider value={size ?? inherited}>
+      <EmptyTextContext.Provider value={setEmptyText}>
+        <CommandPrimitive
+          ref={ref}
+          // @focus-suppress A — 程式游標:SelectMenu 非搜尋模式把 DOM 焦點放在 cmdk 殼上
+          // (select-menu.tsx handleNonSearchableAutoFocus),cmdk 之後再把焦點搬到 [cmdk-list];
+          // 承擔者:CommandItem 的 data-[selected=true]:focus-ring-inset(command.tsx:331)畫在游標項上。
+          // 2026-09-10 實測:殼的框今天畫不出來(PopoverContent overflow-hidden 把 +2px 整條裁掉,
+          // 逐像素 0),但 computed style 確實有 outline —— 殼一旦被放進不裁切的宿主就會現形,先抑制掉。
+          className={cn("flex h-full w-full flex-col overflow-hidden text-foreground outline-none", className)}
+          {...props}
+        >
+          {children}
+          <CommandEmptyStatus text={emptyText ?? ''} />
+        </CommandPrimitive>
+      </EmptyTextContext.Provider>
+    </RowSizeProvider>
+  )
+})
 Command.displayName = CommandPrimitive.displayName
 
-const CommandDialog = ({ children, ...props }: DialogProps) => {
-  // M2 verified 2026-04-25 / 2026-06-11 更正歸因(cmdk/dist source):cmdk 於 DOM 上 emit
-  // `cmdk-group-heading=""` / `cmdk-group=""` / `cmdk-input=""` / `cmdk-item=""` attributes;
-  // `cmdk-input-wrapper=""` 非 cmdk emit — 是本檔 CommandInput 自設的 wrapper div attribute(shadcn 慣例)。
-  // 下列 `[&_[cmdk-*]]:` attribute selectors 皆有對應真實 DOM。
+/**
+ * CommandDialog —— Cmd+K 指令面板。內容**就是** SelectMenu 那一套(同一個 CommandInput 搜尋列、
+ * 同一個 MenuItem 項目、同一個 MenuItem header 分組),殼是 DS Dialog。
+ * 2026-09-08 刪掉這裡對 cmdk 的 8 條 `[&_[cmdk-…]]` 尺寸覆寫(input h-12 / item py-3 / svg h-5 …)——
+ * 它們就是 user 抓到的「Command 每一支 story 都跟 SelectMenu 不同一套」的來源:同一個 primitive
+ * 在面板裡被第二份樣式改寫。世界級的指令面板(Linear / Raycast / VS Code)也都是「同一份清單樣式 + 對話框殼」。
+ * 指令面板依世界級慣例不畫可見標題;`title` 只給讀屏器(Radix 要求 DialogContent 有 Title)。
+ */
+const CommandDialog = ({ children, title = '指令面板', label = '搜尋指令', ...props }: DialogProps & { title?: string; label?: string }) => { // i18n-allow: DS 預設文案,可覆寫
   return (
     <Dialog {...props}>
-      <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]">
-        <Command className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-fg-muted [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-3 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-3 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
+      <DialogContent className="overflow-hidden p-0 shadow-[var(--elevation-200)]" autoHeight>
+        <DialogTitle className="sr-only">{title}</DialogTitle>
+        {/* data-dialog-body:讓 DialogContent 的 onOpenAutoFocus 把焦點放進搜尋列(它只認 [data-dialog-body] 內的
+            第一個 input)。2026-09-09 實測:沒有這個標記時焦點停在 dialog 殼上 —— 方向鍵到不了 cmdk(開了就是鍵盤死路,
+            WCAG 2.1.1),而且殼在鍵盤模態下會被全域 :focus-visible 外描邊畫一圈(浮層殼不該畫框,focus-canonical E 類)。 */}
+        <Command label={label} data-dialog-body>
           {children}
         </Command>
       </DialogContent>
@@ -44,22 +85,49 @@ const CommandDialog = ({ children, ...props }: DialogProps) => {
   )
 }
 
+/**
+ * CommandInput —— 浮層/面板內的搜尋列。**唯一實作**:SelectMenu(Select / Combobox / PeoplePicker 的 searchable
+ * 模式)、CommandDialog、inline Command 三種形態都用它(2026-09-08 之前 SelectMenu 自己另寫一份 raw cmdk input,
+ * 這裡又一份 h-11 的,兩份漂移 —— user:「搜尋框為何不是我們的 input 的樣式?儘管是不同元件也要是相同樣式的 SSOT」)。
+ * 尺寸/字級/placeholder/disabled 全部吃 Field 輸入控件的 token(`--field-height-*` + 8px 內距、text-body(-lg)、
+ * placeholder:text-fg-muted、disabled 依 M24 切 fg-disabled);**沒有外框**(它是浮層內的一列,底部用分隔線收邊),
+ * 這是跟 `Input` 唯一的差別 —— 對齊 Linear / Raycast / Spotlight 的指令面板搜尋列。
+ */
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
->(({ className, ...props }, ref) => (
-  <div className="flex shrink-0 items-center border-b border-divider px-3" cmdk-input-wrapper="">
-    <Search className="mr-2 h-4 w-4 shrink-0 text-fg-muted" />
+  Omit<React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>, 'size'> & {
+    size?: CommandSize
+    // 2026-09-09 user 拍板:搜尋列**沒有** `loading` prop 了 —— 選項載入的指示只在清單內(CommandEmpty 槽的 CommandLoading),
+    // 搜尋列不為抓資料轉圈(2026-09-08 曾加、同日 user 抓到兩顆轉圈、09-09 退役;Polaris Autocomplete loading 時 TextField 也不轉)。
+  }
+>(({ className, size: sizeProp, ...props }, ref) => {
+  const size = sizeProp ?? useRowSize('md')
+  return (
+  <div
+    className={cn(
+      'flex shrink-0 items-center gap-2 px-3 py-1 border-b border-divider',
+      size === 'lg' ? 'min-h-[calc(var(--field-height-lg)+8px)]'
+        : size === 'sm' ? 'min-h-[calc(var(--field-height-sm)+8px)]'
+        : 'min-h-[calc(var(--field-height-md)+8px)]',
+    )}
+    cmdk-input-wrapper=""
+  >
+    <Search size={ICON_SIZE[size]} className="shrink-0 text-fg-muted" aria-hidden />
     <CommandPrimitive.Input
       ref={ref}
       className={cn(
-        "flex h-11 w-full rounded-md bg-transparent py-3 text-body outline-none placeholder:text-fg-muted disabled:cursor-not-allowed disabled:text-fg-disabled disabled:placeholder:text-fg-disabled",
-        className
+        // @focus-suppress B — B Field 家族輸入控件;承擔者:插入點(caret)本身;列底的分隔線不是焦點指示
+        'flex w-full bg-transparent outline-none placeholder:text-fg-muted',
+        // M24 disabled state precedence:disabled 時 placeholder 切 fg-disabled(audit dim 34)
+        'disabled:placeholder:text-fg-disabled disabled:text-fg-disabled disabled:cursor-not-allowed',
+        size === 'lg' ? 'text-body-lg leading-compact' : 'text-body leading-compact',
+        className,
       )}
       {...props}
     />
   </div>
-))
+)
+})
 
 CommandInput.displayName = CommandPrimitive.Input.displayName
 
@@ -79,7 +147,7 @@ CommandInput.displayName = CommandPrimitive.Input.displayName
 const CommandList = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>
->(({ className, ...props }, ref) => (
+>(({ className, label = '選項', ...props }, ref) => ( // i18n-allow: DS 預設 listbox 名稱(cmdk 預設是英文 Suggestions)
   /* @story-baseline: overlay-surface.spec.md#Viewport-aware-scroll-chain-invariant(M25 SSOT owner)
       owner spec: overlay-surface.spec.md:34/53/347-362 —— 「浮層 body 永遠 flex-1 min-h-0 overflow-y-auto;
         中間 wrapper 都必 flex flex-col h-full min-h-0;viewport 太小 body 內壓縮捲動」。
@@ -87,39 +155,125 @@ const CommandList = React.forwardRef<
         (max-h=available-height)內撐破外殼、底部選項被裁(320px viewport 實測 bottom 425 > 320 溢出)。
       修: 加 flex-1 min-h-0(對齊 M25 canonical + HoverCard/Popover),max-h-300 降為上限。Command root 已
         `flex h-full flex-col`(command.tsx:23)= chain 完整;非 flex 容器內 flex-1 為 no-op(spec:34 backward compat)。 */
-  <ScrollArea className="flex-1 min-h-0 max-h-[var(--menu-max-height,300px)]">
-    <CommandPrimitive.List ref={ref} className={cn("overflow-x-hidden", className)} {...props} />
+  <ScrollArea className="flex-1 min-h-0 max-h-[var(--menu-max-height)]">
+    {/* @focus-suppress A — 同 Command 根:cmdk 1.1.1 在第一次方向鍵後把 DOM 焦點搬到 list
+        (`document.getElementById(listId).focus()`),殼同樣不該畫框;承擔者:CommandItem 的
+        data-[selected=true]:focus-ring-inset(command.tsx:331)。 */}
+    <CommandPrimitive.List ref={ref} label={label} className={cn("overflow-x-hidden outline-none", className)} {...props} />
   </ScrollArea>
 ))
 
 CommandList.displayName = CommandPrimitive.List.displayName
 
+/**
+ * CommandEmpty —— **own 空狀態**(2026-09-08 user 拍板定稿:選單裡「不是選項的列」一律走 MenuItem 的列幾何)。
+ * 字串 children 自動包 `<MenuItem message>`(非互動、次要色、字級同選項、置中),外層是 `MenuGroup`(一個 group 的 py-2 上下留白),
+ * 所以「沒有結果」與「1 筆結果」等高(md 48px = 8 + 32 + 8),不再有任何最小高度公式(舊的 3 列 minRows 已退役)。
+ * owner:select-menu.spec.md「Empty state」;歷史:2026-04-08 一行小字 → 04-10 撐 3 列 → 04-16 Empty 元件 → 09-08 訊息列。
+ * loading 時把 `<CommandLoading>` 當 children 放進來(同一種訊息列,前綴槽放列圖示尺寸的轉圈)。
+ * **放在 CommandList 外面(listbox 的兄弟,MUI Autocomplete 同構)**:axe `aria-required-children` 不允許 listbox 裡有非 option 的子元素
+ * (2026-09-08 a11y 基線重建抓到);cmdk Empty 只讀 store,不需要住在 List 裡。空 listbox 載入時有 aria-busy,axe 全乾淨。
+ */
 const CommandEmpty = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Empty>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive.Empty
-    ref={ref}
-    className={className}
-    {...props}
-  />
-))
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty> & { size?: CommandSize }
+>(({ className, children, size: sizeProp, ...props }, ref) => {
+  const size = sizeProp ?? useRowSize('md')
+  // 字串訊息登記到 Command 根的 live region(sr-only;根一直掛著)。元素 children(如 CommandLoading,自帶 role="status")
+  // 不登記,避免同一狀態播兩次。本元件本身一直掛著(cmdk Empty 只在 0 筆時渲內容),所以 effect 不受筆數影響。
+  const setEmptyText = React.useContext(EmptyTextContext)
+  const text = typeof children === 'string' || typeof children === 'number' ? String(children) : null
+  React.useEffect(() => { setEmptyText?.(text); return () => setEmptyText?.(null) }, [text, setEmptyText])
+  // 訊息列也住在群組裡(item-anatomy.spec.md「Group auto-separation」Pattern A:Command.List 沒有留白,8px 邊界留白
+  // 只由群組提供;SelectMenu 的選項永遠在群組裡,連可建立列也是)。用 MenuGroup(不經 cmdk Group 註冊,Empty 槽只在
+  // 0 筆時顯示、不需要 cmdk 的群組過濾)。
+  return (
+    <CommandPrimitive.Empty ref={ref} className={className} {...props}>
+      <MenuGroup>
+        {typeof children === 'string' || typeof children === 'number'
+          ? <MenuItem size={size} message>{String(children)}</MenuItem>
+          : children}
+      </MenuGroup>
+    </CommandPrimitive.Empty>
+  )
+})
 
 CommandEmpty.displayName = CommandPrimitive.Empty.displayName
 
+/**
+ * 載入中訊息列:與「沒有結果」同一種 `MenuItem message`,前綴槽放列圖示尺寸的 CircularProgress(sm/md 16、lg 20;
+ * circular-progress.spec.md「Size canonical」:跟欄位高度有關的容器對齊該容器的圖示尺寸)+ 可見文字(label),整組置中。
+ * `role="status"` 讓讀屏器直接播報文字;不經 Empty(empty.spec.md「禁止事項」)。放進 CommandEmpty 當 children。
+ * 只在清單裡沒有任何可顯示的選項時才會被看到(cmdk Empty 槽)—— 這是選項載入**唯一**的指示(2026-09-09 user 拍板:
+ * 搜尋列 / 觸發點不為選項轉圈;觸發點的轉圈是 Field 家族 `loading` = 這個值在讀取 / 驗證 / 儲存,另一件事)。
+ */
+function CommandLoading({ label, size: sizeProp }: { label: string; size?: CommandSize }) {
+  const size = sizeProp ?? useRowSize('md')
+  return (
+    <MenuItem size={size} message role="status" startContent={<CircularProgress size={ICON_SIZE[size]} />}>
+      {label}
+    </MenuItem>
+  )
+}
+
+// ── SR live status(2026-07-05 D4 於 SelectMenu 落地;2026-09-08 搬進 Command;2026-09-09 改由 Command 根自動渲一份,
+//    文字來自 CommandEmpty 的字串 children —— 消費端(SelectMenu / CommandDialog / inline)不必也不得再放,放了會播兩次)──
+// cmdk CommandEmpty 渲染為 role="presentation" div、cmdk 全鏈無 aria-live,且 DOM focus 停在
+// combobox input(aria-activedescendant 虛擬焦點)→ SR 使用者搜尋到 0 結果或 loading 佔位時
+// 聽不到任何播報。補 visually-hidden polite live region,鏡射 CommandEmpty 的無結果文字;
+// loading 由可見的 CommandLoading `role="status"` + `aria-label` 直接宣告,避免同一狀態重複播報。
+// 對齊 react-select A11yText / APG combobox no-results 播報 + empty.spec.md「動態 filter no-results 容器需 aria-live="polite"」。
+export function CommandEmptyStatus({ loading = false, text }: { loading?: boolean; text: string }) {
+  const filteredCount = useCommandState((state) => state.filtered.count)
+  return (
+    <div role="status" aria-live="polite" className="sr-only">
+      {filteredCount === 0 ? (loading ? null : text) : null}
+    </div>
+  )
+}
+
+
+/**
+ * 分組標題**消費 `MenuItem header`,不自己寫樣式**。
+ *
+ * 2026-09-07 修(user 抓「Command 群組標題漂移了,照理說應該跟 SelectMenu 同一種設計語言」):
+ * 這裡原本手寫 `px-3 py-1.5 text-caption font-medium text-fg-muted` ——
+ * 而 SSOT(`patterns/element-anatomy/item-anatomy.spec.md:188`「Row header(分組標題)」)寫的是
+ * 「用 `MenuItem header={true}` 模式,`font-medium text-fg-muted` + 與 items **完全相同**的
+ * row geometry(同 px / 同 py / **同 text size**)」。
+ * 差在字級:手寫的是 `text-caption`(12px),canonical 要求與項目同級(14px)。
+ *
+ * SelectMenu(`select-menu.tsx:465`)一直是照 SSOT 做的 —— 它傳
+ * `heading={<MenuItem size={size} header>…}` 並用 `[&_[cmdk-group-heading]]:p-0` 中和 cmdk 的內距。
+ * 所以這不是「兩種設計語言」,是 Command **沒有消費 SSOT**、自己抄了一份走樣的值。
+ *
+ * 現在改成:consumer 傳字串時由本元件包成 `<MenuItem header>`,樣式完全由 SSOT 決定;
+ * consumer 自己傳 element(SelectMenu 那種)則原樣尊重。兩條路徑都不再有手寫值。
+ */
 const CommandGroup = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Group>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
->(({ className, ...props }, ref) => (
+>(({ className, heading, ...props }, ref) => {
+  const rowSize = useRowSize('md')
+  return (
   <CommandPrimitive.Group
     ref={ref}
+    // `p-0` 中和 cmdk 對 heading 容器的預設內距 —— 內距由 MenuItem 的 row geometry 提供
     className={cn(
-      "overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-caption [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-fg-muted",
-      className
+      "overflow-hidden p-0 py-2 text-foreground [&_[cmdk-group-heading]]:p-0",
+      // Group auto-separation(item-anatomy.spec.md,Pattern A):前面還有另一個「看得見」的群組時畫上邊線。
+      // cmdk 把被搜尋濾掉的群組留在 DOM、加 `hidden`,所以用 :not([hidden]) 排除;consumer 不再手插 CommandSeparator
+      // (cmdk 在搜尋字非空時不渲 Separator,手插版會讓可見群組之間沒線 —— 2026-09-08 修)。
+      "[[cmdk-group]:not([hidden])~&:not([hidden])]:border-t [[cmdk-group]:not([hidden])~&:not([hidden])]:border-divider",
+      className,
     )}
+    heading={typeof heading === 'string' || typeof heading === 'number'
+      ? <MenuItem size={rowSize} header>{heading}</MenuItem>
+      : heading}
     {...props}
   />
-))
+)
+})
 
 CommandGroup.displayName = CommandPrimitive.Group.displayName
 
@@ -138,19 +292,85 @@ const CommandSeparator = React.forwardRef<
 ))
 CommandSeparator.displayName = CommandPrimitive.Separator.displayName
 
+type CommandItemMenuProps = Pick<MenuItemProps,
+  'size' | 'startIcon' | 'startIconClassName' | 'avatar' | 'startContent' | 'description' | 'tag' | 'endContent' | 'selected' | 'checkbox' | 'checked'>
+export type CommandItemProps = React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item> & CommandItemMenuProps & {
+  /** 尾端快捷鍵提示(`⌘K`);跟 DropdownMenuItem 的 `shortcut` 同名同樣式(text-caption + tracking-shortcut + fg-muted)。 */
+  shortcut?: React.ReactNode
+}
+
+/**
+ * CommandItem —— 外層 cmdk Item 只負責 cmdk 的反白/停用訊號,**視覺 anatomy 一律由內層 `MenuItem` 承擔**
+ * (icon 槽 / label / description / 尾端 tag、endContent、shortcut;owner = item-anatomy.spec.md + menu-item.spec.md)。
+ * 這跟 SelectMenu 包 option 的結構完全相同(select-menu.tsx「CommandItem > MenuItem role=presentation」),
+ * 所以指令面板、inline 清單、下拉選單三種形態的每一列都長一樣。
+ * 相容:SelectMenu 自己傳 `<MenuItem>` 當 children(它要管 checkbox/selected/renderLabel),這時不再包第二層。
+ */
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex cursor-default gap-2 select-none items-center rounded-md px-3 py-1.5 text-body outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-neutral-hover data-[selected=true]:text-foreground data-[disabled=true]:text-fg-disabled [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-      className
-    )}
-    {...props}
-  />
-))
+  CommandItemProps
+>(({ className, children, size: sizeProp, startIcon, startIconClassName, avatar, startContent, description, tag, endContent, shortcut, selected, checkbox, checked, disabled, ...props }, ref) => {
+  const size = sizeProp ?? useRowSize('md')
+  const cursorByKeyboard = useCursorMover() === 'keyboard'
+  const childIsMenuItem = React.isValidElement(children) && children.type === MenuItem
+  const end = shortcut != null ? <CommandShortcut>{shortcut}</CommandShortcut> : endContent
+  return (
+    <CommandPrimitive.Item
+      ref={ref}
+      disabled={disabled}
+      className={cn(
+        // cmdk item 是 <div role="option"> 無 tabIndex,永遠拿不到 DOM 焦點 → 不需要 outline-none;
+        // 游標(cmdk data-selected)的長相由下方依反白來歷分流。
+        "relative flex cursor-default select-none items-center data-[selected=true]:text-foreground data-[disabled=true]:pointer-events-none data-[disabled=true]:text-fg-disabled",
+        // 內層 MenuItem 自帶內距與圓角;外層歸零
+        "p-0 rounded-none",
+        // cmdk 的反白(data-selected)是這裡**唯一的游標**:滑鼠移過就搶走(cmdk Item 的 onPointerMove → select(),
+        // https://github.com/pacocoursey/cmdk/blob/main/cmdk/src/index.tsx),鍵盤方向鍵再搶回;
+        // 誰最後搬動它就用誰的畫法(focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板「都要畫框,不上底色」):
+        //   滑鼠搬的:反白 = hover → 底色、無框。
+        //   鍵盤搬的:反白 = 游標 → 框(列撐滿 → 內描邊)、不上底色。
+        // **本節點沒有任何 `hover:` 樣式**:滑鼠停著不算搶,鍵盤把反白搬走後,滑鼠停留列的底色要跟著消失
+        //(user 2026-09-09:「搶回去之後原本滑鼠的 hover 樣式即會消失直到滑鼠又搶回來才會再出現」;
+        // shadcn CommandItem 同樣只畫 data-[selected=true],沒有 hover: —— https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/command.tsx)。
+        // 2026-09-08 之前「已選 + 游標」的框沒有模態條件,滑鼠一點開就畫(user 抓到);
+        // 2026-09-09 之前未選中的游標列用 hover 同色底(AI 推導自 cmdk 慣例,user 撤回);
+        // 2026-09-09 下午之前鍵盤分支多帶一條 `hover:bg-neutral-hover`,滑鼠停留列與鍵盤游標列會同時亮(user 三問抓到)。
+        cursorByKeyboard
+          ? 'data-[selected=true]:focus-ring-inset'
+          : 'data-[selected=true]:bg-neutral-hover',
+        // 選中 × 互動疊加(owner:item-anatomy.spec.md「選中 × 互動疊加」,2026-08-11 user 拍板):
+        // 選中底色釘住(指標反白也不變);鍵盤游標的框直接疊在上面。
+        // 2026-09-08 之前這段只在 SelectMenu / AgentPanel 各手刻一份,CommandItem 自己的 `selected` 是死的。
+        selected && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected',
+        className
+      )}
+      {...props}
+      // 滑鼠移過 = 指標搶走反白(capture 版不會被 cmdk 覆寫 consumer 的 onPointerMove;座標沒變的補發事件不算)
+      onPointerMoveCapture={(e) => { markPointerGrab(e); props.onPointerMoveCapture?.(e) }}
+    >
+      {childIsMenuItem ? children : (
+        <MenuItem
+          role="presentation"
+          size={size}
+          startIcon={startIcon}
+          startIconClassName={startIconClassName}
+          avatar={avatar}
+          startContent={startContent}
+          description={description}
+          tag={tag}
+          endContent={end}
+          selected={selected}
+          checkbox={checkbox}
+          checked={checked}
+          disabled={disabled}
+          className="w-full !bg-transparent hover:!bg-transparent"
+        >
+          {children}
+        </MenuItem>
+      )}
+    </CommandPrimitive.Item>
+  )
+})
 
 CommandItem.displayName = CommandPrimitive.Item.displayName
 
@@ -161,7 +381,7 @@ const CommandShortcut = ({
   return (
     <span
       className={cn(
-        "ml-auto text-caption tracking-shortcut text-fg-muted",
+        "text-caption tracking-shortcut text-fg-muted",
         className
       )}
       {...props}
@@ -196,6 +416,7 @@ export {
   CommandInput,
   CommandList,
   CommandEmpty,
+  CommandLoading,
   CommandGroup,
   CommandItem,
   CommandShortcut,

@@ -224,6 +224,10 @@
       "reason": "DS-author one-branch/one-PR + protected-main + required checks/readback + release-attestation workflow；工程 merge 依 Standing Authorization 自主執行。"
     },
     {
+      "hook": "record_release_consent.sh",
+      "reason": "DS-author 發版同意收據(UserPromptSubmit 讀 user 原話「發版」→ .git/governance-runtime/release-consent/<headSha>.json;release:auto merge 前必檢查)。fork consumer 不跑 DS release 五步機器,無此閘。"
+    },
+    {
       "hook": "check_spec_class_drift.sh",
       "reason": "DS-author spec.md 反向 drift。"
     },

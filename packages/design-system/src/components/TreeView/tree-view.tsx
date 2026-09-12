@@ -16,8 +16,10 @@ import {
 import { ChevronRight } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
-import { dragSourceClass, dropIndicatorRow, dropIndicatorInside } from '@/design-system/lib/drag-visual'
+import { dragSourceClass, dropIndicatorRow, dropIndicatorInside, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
+import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
 import { cn } from '@/lib/utils'
+import { useInputModality } from '@/design-system/hooks/use-input-modality'
 import { Checkbox } from '@/design-system/components/Checkbox/checkbox'
 // Row primitive 共用常數——單一 source of truth
 import {
@@ -158,6 +160,8 @@ interface TreeViewContextValue {
   expandOnSelect: boolean
   draggable: boolean
   isKeyboardRef: React.RefObject<boolean>
+  /** 最近一次輸入是鍵盤(布林,隨模態變化觸發列 re-render;ref 身分不變不會) */
+  keyboardModality: boolean
   /**
    * Per-tree instance 前綴(React.useId),用來組每個 treeitem 的 DOM `id`
    * (`${prefix}treeitem-${nodeId}`),讓容器的 `aria-activedescendant` 能指向目前 focused node。
@@ -383,8 +387,13 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     const reorderInstructionsId = `${activeDescendantPrefix}tree-reorder-instructions`
 
     // ── Keyboard vs mouse detection ──
-    // focus ring 只在鍵盤操作時顯示,滑鼠點擊用 bg-neutral-selected 表達選中,不顯示 ring
+    // focus ring 只在鍵盤操作時顯示,滑鼠點擊用 bg-neutral-selected 表達選中,不顯示 ring。
+    // 2026-09-08:判斷來源改為共用的 useInputModality(SelectMenu / DropdownMenu / AgentPanel 同款,
+    // 原本四處各自實作 = 四份 SSOT)。ref 保留給 context 消費端讀,每次 render 由 hook 餵值;
+    // 模態一變 hook 觸發 root re-render,子項在 render 期讀到的就是新值。
     const isKeyboardRef = React.useRef(false)
+    const keyboardModality = useInputModality() === 'keyboard'
+    isKeyboardRef.current = keyboardModality
 
     // ── Drag state ──
     const [draggingId, setDraggingId] = React.useState<string | null>(null)
@@ -417,7 +426,9 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     )
 
     const sensors = useSensors(
-      useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+      // 2026-09-07:5 → DRAG_ACTIVATION_DISTANCE_PX(8)。全 DS 原本三個值(8/5/8)加一處沒設,
+      // 收斂到單一來源;8 是原本的多數,其中 AgentFab 那個 8 還是 user 實際用過調出來的。
+      useSensor(PointerSensor, { activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX } })
     )
 
     const handleDragStart = React.useCallback((event: DragStartEvent) => {
@@ -529,12 +540,24 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     const dropTargetRef = React.useRef(dropTarget)
     dropTargetRef.current = dropTarget
 
+    // C2/B2 修(2026-09-07):TreeView 自有的繁中播報只有**鍵盤重排**那條路在寫,
+    // 滑鼠拖曳走的是 dnd-kit 的英文預設 —— 實測整趟拖曳下來自有播報區維持空字串。
+    // 這裡把指標路徑也接上,並誠實回報結果:守衛擋下(不合法 target / 子樹內)
+    // 就播「未變更」而不是假的成功。共用 SSOT 見 `lib/drag-announcements.ts`。
+    const dragOutcomeRef = React.useRef<DragOutcome | null>(null)
+    const dndAnnouncements = React.useMemo(
+      () => createDragAnnouncements({ getOutcome: () => dragOutcomeRef.current, kind: '項目' }),
+      [],
+    )
+
     const handleDragEnd = React.useCallback((event: DragEndEvent) => {
+      dragOutcomeRef.current = null
       if (autoExpandTimerRef.current) { clearTimeout(autoExpandTimerRef.current); autoExpandTimerRef.current = null }
       const { active, over } = event
       const dt = dropTargetRef.current
       // descendant guard 同 handleDragOver(dt 已由 dragOver guard 保證為 null,此為 belt-and-braces)
       if (over && !isInSubtree(String(over.id), String(active.id)) && dt) {
+        dragOutcomeRef.current = { kind: '項目', label: String(active.id) }
         onDragEndProp?.({
           sourceId: String(active.id),
           targetId: String(over.id),
@@ -753,6 +776,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         expandOnSelect,
         draggable,
         isKeyboardRef,
+        keyboardModality,
         activeDescendantPrefix,
         draggingId,
         dropTarget,
@@ -774,6 +798,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         expandOnSelect,
         draggable,
         isKeyboardRef,
+        keyboardModality,
         activeDescendantPrefix,
         draggingId,
         dropTarget,
@@ -791,14 +816,13 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
     )
 
     // ── Keyboard handler ──
-    const handleMouseDown = React.useCallback(() => {
-      isKeyboardRef.current = false
-    }, [])
+    // 2026-09-08:mousedown 不再手動改模態 —— 由 useInputModality 的 document 監聽統一處理
+    const handleMouseDown = React.useCallback(() => {}, [])
 
     // code-quality-allow: long-function — helper fn 結構緊密,拆 sub-fn 會跨 fn 傳 state 反而複雜
     const handleKeyDown = React.useCallback(
       (e: React.KeyboardEvent) => {
-        isKeyboardRef.current = true
+        // 2026-09-08:模態由 useInputModality 判定(document capture 早於此 handler)
         if (!treeRef.current) return
 
         // ── 互動 descendant 自理鍵盤(先於導覽 / 重排分支)──
@@ -937,6 +961,13 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           //   - 獨立使用(story demo): consumer 自己加 py-2
           // 這樣才能跟 DropdownMenu / MenuGroup 的結構一致(group 是容器,row 是內容)。
           'flex flex-col',
+          // 2026-09-07 H1f:DOM 焦點永遠停在這個 role=tree 容器(:369),視覺指示器畫在
+          // aria-activedescendant 指到的那一列上。若不抑制,全域 base.css:44-47 會再給容器
+          // 畫一圈 +2px 外框 → 同一次互動兩個焦點指示。
+          // 條件寫成「有 aria-activedescendant 才抑制」:空樹(找不到任何 treeitem → 該屬性不渲染,
+          // 見 :939)時全域框仍會畫,不會變成「聚焦了卻完全沒有指示」。
+          // @focus-suppress A — A 虛擬游標;承擔者:指示器畫在 aria-activedescendant 指到的那一列(showRing → focus-ring-inset,:1381)
+          '[&[aria-activedescendant]:focus-visible]:outline-none',
           className,
         )}
         style={{
@@ -949,6 +980,15 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
         // 原本無 onFocus init → focusedId=null → aria-activedescendant undefined,AT 讀不到目前節點
         onFocus={(e) => {
           ;(props as React.HTMLAttributes<HTMLDivElement>).onFocus?.(e)
+          // 2026-09-07:Tab 進場時把鍵盤模式打開。
+          // 原本 `isKeyboardRef` 只在**樹內** keydown 才變 true(:814),但 Tab 的 keydown
+          // 發生在上一個元素上、根本不會傳到這裡 → 進場當下 `showRing`(:1174)恆為 false,
+          // 於是 aria-activedescendant 已經指向某一列、那列卻沒有任何可見指示,
+          // 違反 APG aria-activedescendant 模式(作者必須自己畫出目前節點)。
+          // 判準用瀏覽器自己的 `:focus-visible` —— 它就是「這次聚焦該不該給可見指示」的權威答案:
+          // 滑鼠按下進場時它不成立(且 mousedown 已先把 ref 設回 false),鍵盤進場才成立。
+          // 2026-09-08:Tab 進場的鍵盤模態改由 useInputModality 判定(Tab 的 keydown 在 document
+          // capture 就被記成鍵盤,不再依賴 :focus-visible 補位)。
           if (e.target === e.currentTarget && !focusedId && treeRef.current) {
             const first =
               treeRef.current.querySelector<HTMLElement>('[role="treeitem"][aria-selected="true"]:not([hidden]):not([aria-disabled="true"])') ??
@@ -975,6 +1015,7 @@ const TreeView = React.forwardRef<HTMLDivElement, TreeViewProps>(
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
+          accessibility={{ announcements: dndAnnouncements }}
         >
           {treeEl}
           {draggable && (
@@ -1028,8 +1069,10 @@ const treeItemVariants = cva(
     // items-start:多行 label 時 prefix 留在第一行(item-layout 規則)
     'flex items-start gap-2 w-full',
     'cursor-pointer select-none',
-    'transition-colors duration-150',
-    'outline-none',
+    // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+    // 2026-09-07 刪 `outline-none`:虛擬游標(showRing → focus-ring-inset)也寫 outline,
+    // 兩者特異性同階,留著等於讓「誰贏」取決於 Tailwind 的排序。這一列本來就不可聚焦
+    // (tabIndex 在 li 上且為 -1),不需要防禦性抑制。
     // Label 字重 500(跟 SidebarMenuButton 一致)
     'font-medium',
   ],
@@ -1143,7 +1186,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
       focusTree,
       registerNode,
       unregisterNode,
-      isKeyboardRef,
+      keyboardModality,
       activeDescendantPrefix,
     } = ctx
 
@@ -1151,7 +1194,7 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
     const isExpanded = expandedIds.has(id)
     const isSelected = selectedIds.has(id)
     const isFocused = focusedId === id
-    const showRing = isFocused && isKeyboardRef.current
+    const showRing = isFocused && keyboardModality
     const isDragging = draggingId === id
     const isDropTarget = dropTarget?.id === id
     const visualCheckbox = checkbox && React.isValidElement<Record<string, unknown>>(checkbox)
@@ -1251,7 +1294,8 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
             className={cn(
               'flex items-center justify-center rounded-md',
               'text-fg-muted hover:text-fg-secondary hover:bg-neutral-hover',
-              'transition-all duration-150 motion-reduce:duration-0',
+              // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」);只留展開箭頭的旋轉
+              'transition-transform duration-150 motion-reduce:duration-0',
               isExpanded && 'rotate-90',
               disabled && 'text-fg-disabled pointer-events-none',
             )}
@@ -1324,13 +1368,31 @@ const TreeItem = React.forwardRef<HTMLDivElement, TreeItemProps>(
               // multi-selected 也維持 fg-secondary(上方註解「text 不變」;原 !isSelected 條件讓 multi-selected 掉到繼承色)
               !disabled && (!isSelected || selectionMode === 'multiple') && 'text-fg-secondary',
               !disabled && isSelected && selectionMode === 'single' && 'text-foreground',
-              isDropTarget && dropTarget?.position === 'inside' && dropIndicatorInside,
               !disabled && 'hover:bg-neutral-hover hover:text-foreground',
               // 2026-08-11 修偏移(SSOT = item-anatomy「選中 × 互動疊加」):先前 hover:bg-neutral-hover
               //(0,2,0)蓋掉無修飾的 bg-neutral-selected(0,1,0)→ 選中列 hover 反而變淺 = bug。
               // 釘住 hover 不變(twMerge 同組後者勝)+ 鍵盤焦點深一階 -focus。
-              !disabled && isSelected && selectionMode === 'single' && 'bg-neutral-selected hover:bg-neutral-selected focus-visible:bg-neutral-selected-focus',
-              showRing && 'ring-2 ring-ring ring-inset',
+              // 2026-09-06:移除 `focus-visible:bg-neutral-selected-focus`。TreeView 是**虛擬焦點**元件
+              //(tree 根 tabIndex=0 :959 / treeitem tabIndex=-1 :1292 / 本 row div 無 tabIndex,
+              // 全 DS 131 處 <TreeItem> 用法 0 處傳 tabIndex),該列永遠不是 DOM 焦點,
+              // `:focus-visible` 恆不 match —— 那行自 2026-08-11 加入起從未生效。
+              // 而且本元件的鍵盤游標**已經由下一行的 ring 表達**(showRing,:1154),再深一階是多餘的。
+              // 判準見 item-anatomy.spec.md「虛擬焦點以 not-hover: 分流、真焦點用 focus-visible:」。
+              !disabled && isSelected && selectionMode === 'single' && 'bg-neutral-selected hover:bg-neutral-selected',
+              // 落點底色排在所有其他 `bg-*` 之後 —— twMerge 同組後者勝。
+              // 2026-09-06 修:原本排在 `hover:bg-neutral-hover` 與 `bg-neutral-selected` **之前**,
+              // 造成兩個都會發生的 bug —— (1) 已選中的列 twMerge 直接把 `bg-drop-target` 刪掉,
+              // 實跑 tailwind-merge 3.5.0 輸出只剩 `hover:text-foreground bg-neutral-selected
+              // hover:bg-neutral-selected`;(2) 未選中的列兩個 class 都留著,但 hover 特異性較高、
+              // 游標又必然停在該列上,落點底色一樣看不到。`dropIndicatorInside` 自帶 `hover:` 同色治 (2),
+              // 這行的位置治 (1)。
+              isDropTarget && dropTarget?.position === 'inside' && dropIndicatorInside,
+              // 2026-09-07 遷到 outline 通道(全 DS 兩種幾何的 SSOT,base.css @utility)。
+              // **不加 `focus-visible:`** —— 這一列永遠不是 DOM 焦點(焦點停在 role=tree 容器,
+              // 見 :369),加了變體會變成永不生效的死用法(TimePicker 就是這樣死的)。
+              // 順帶修掉 box-shadow 通道的既有缺陷:高對比模式下 box-shadow 被強制 none,
+              // 原本的 ring 在那個模式完全看不見;outline 會照畫。
+              showRing && 'focus-ring-inset',
               disabled && 'pointer-events-none text-fg-disabled cursor-default',
               className,
             )}

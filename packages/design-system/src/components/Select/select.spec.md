@@ -291,15 +291,22 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 ---
 
-## Loading
+## Loading(2026-09-09 user 拍板:兩個字、兩件事)
 
-`loading?: boolean`(forward 給 SelectMenu SSOT,2026-05-15 audit B 補;**2026-07-04 Q3 拍板措辭修訂 — 不清空 stale options**):spinner 只在**無可顯示選項時**佔 empty slot 顯 `<Empty icon={<CircularProgress size={48}/>}/>`(cmdk `CommandEmpty` 機制;已有 options 時保留顯示,不取代)+ `aria-busy`。Trigger 不變(chevron 保留,user 隨時可開)。Benchmark 實查:MUI Autocomplete 官方逐字「shows the loadingText in place of suggestions **only if there are no suggestions to show**」/ Ant Select 清空是 consumer 自選(demo select-users.tsx setOptions([]))非元件行為 — 原「取代 options」是過度宣稱,code 行為即世界級共識。
+| Prop | 意思 | 指示 | SSOT |
+|---|---|---|---|
+| `loading?: boolean` | **這個值**在讀取 / 驗證 / 儲存(與 Input `loading` 同義) | 觸發點右側、ChevronDown 左邊放列圖示尺寸的 `CircularProgress`(`select.tsx` `chevronEl`;native 分支同;`iconSize` sm/md 16 / lg 20)+ 觸發點 `aria-busy`;選單照常可開可選、與選項多寡無關 | `../Field/field-controls.spec.md`「Loading state」 |
+| `optionsLoading?: boolean` | **選項清單**在抓(2026-09-09 改名自 `loading`) | forward 給 SelectMenu:只在選單內,沒有可顯示選項時一列「載入選項中」訊息列 + listbox `aria-busy`;**觸發點不轉圈**。本機過濾已有選項時保留、遠端搜尋抓資料中舊選項不顯示 | `../SelectMenu/select-menu.spec.md`「Loading」 |
+
+歷史:2026-05-15 audit B 補 `loading` → 2026-07-04 Q3「不清空 stale options」→ 2026-09-08 兩處轉圈 → **2026-09-09 拆成兩個 prop、選項載入指示只在選單內**(同一時刻兩顆轉圈的病根是同字兩義,見 select-menu.spec.md「Loading」的世界級對照)。
+
+**遠端搜尋**:`filterOption?: boolean`(預設 true)與 `onSearchChange?: (value: string) => void`(2026-09-08 user 拍板「併」):搜尋在觸發點時本機過濾由 Select 自己做,遠端搜尋傳 `filterOption={false}` 就不過濾、伺服器回什麼列什麼;搜尋字經 `onSearchChange` 回呼(含關閉時清空),並以受控 `search` 交給 SelectMenu。`suggestions?: SelectOption[]` / `suggestionsLabel?: string`(預設「建議」)/ `searchHintText?: string`(預設「輸入關鍵字搜尋」)三個 prop 機械 forward(2026-09-09):關鍵字空時列建議群組(必有標題)、抓資料中舊清單不顯示、沒建議也沒在載入時顯示提示列;從建議選到的值 `selectedOpt` 同時回查 `options` 與 `suggestions`。SSOT `select-menu.spec.md`「遠端搜尋」「Suggestions」。
 
 ---
 
 ## 邊界案例
 
-- **搜尋結果空**:dropdown 顯 `<Empty>`(`emptyText` 預設「沒有符合的選項」,可覆寫)——SSOT `select-menu.spec.md`
+- **搜尋結果空**:dropdown 顯一列 `MenuItem message` 的 `emptyText`(預設「沒有選項」,可覆寫;與 1 筆結果等高、無最小高度、不用 `Empty`)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列,不是「沒有選項」。SSOT `select-menu.spec.md`「Empty state」「Suggestions」
 - **disabled 選項**:`option.disabled` forward 至 menu item——不可點選,鍵盤導覽自動跳過(cmdk `aria-disabled` 行為)
 - **大量選項**:選單固定最大高度內捲動(`--menu-max-height` 預設 300px),無分頁 / 虛擬捲動——長清單開 `searchable`(見「Searchable 開啟判斷」)
 - **空值**:無選擇時顯 placeholder;「無選擇是有效狀態」場景開 `clearable`(見「Clearable」)
@@ -343,7 +350,7 @@ Select 是 **Field Controls family 成員**——互動狀態(focus / invalid / 
 - ↑ / ↓ — 選單展開後在選項間移動
 - Esc — 關閉選單(清除值走右側 clear 按鈕,非 Esc)
 
-**Focus**:DS focus 藍框(`focus-within:!border-primary`)由 Field wrapper 提供;手機原生 `<select>` 另有系統 focus ring。
+**Focus**:Field 家族的焦點指示 = 邊框轉主色,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列 + 「問題一之二」C 類;2026-09-10 第二次更正:上午先寫成「關閉時鍵盤模態再加全域外框」,下午依一致性收斂 —— Combobox 焦點留在輸入框本來就沒有外框,Select 類關閉後焦點回 wrapper 若再疊外框就是同一家族兩種長相)。**開啟時**焦點在搜尋輸入框(插入點控件)→ Field wrapper 邊框轉色;**關閉時**觸發器本身是焦點站(`tabIndex=0`,選完 / Esc 後 Radix 把焦點還給它)→ 同樣只有邊框轉色,全域 `:focus-visible` 外框由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制。手機原生 `<select>` 另有系統 focus ring。閘:`virtual-cursor-modality-invariant.mjs` G 段(Select / SelectMenu / PeoplePicker)、H 段(DatePicker / TimePicker / Combobox 觸發器)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

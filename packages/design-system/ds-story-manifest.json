@@ -7,7 +7,7 @@
       "scripts/composition-fidelity-visual-diff.mjs",
       "product-workspace apps/template/src/AllDsComponents.stories.tsx (ImportSmoke portal → DS Storybook link)"
     ],
-    "generatedAt": "2026-09-02T07:42:29.145Z"
+    "generatedAt": "2026-09-11T11:08:56.272Z"
   },
   "components": {
     "accordion": {
@@ -64,20 +64,27 @@
       "tiers": {
         "展示": [
           "design-system-components-agentpanel-展示--task-assistant",
+          "design-system-components-agentpanel-展示--attachments",
+          "design-system-components-agentpanel-展示--multiple-replies",
           "design-system-components-agentpanel-展示--history-open",
           "design-system-components-agentpanel-展示--new-conversation",
           "design-system-components-agentpanel-展示--decision-card-open",
+          "design-system-components-agentpanel-展示--title-truncated",
           "design-system-components-agentpanel-展示--decision-card-single",
           "design-system-components-agentpanel-展示--decision-summary-in-flow",
           "design-system-components-agentpanel-展示--resizable-width",
-          "design-system-components-agentpanel-展示--fab-panel-toggle",
+          "design-system-components-agentpanel-展示--fab",
           "design-system-components-agentpanel-展示--logo-states",
-          "design-system-components-agentpanel-展示--fab-states"
+          "design-system-components-agentpanel-展示--logo-think-stop",
+          "design-system-components-agentpanel-展示--url-registry-demo"
         ],
         "設計規格": [
           "design-system-components-agentpanel-設計規格--overview",
-          "design-system-components-agentpanel-設計規格--logo-size-ladder",
+          "design-system-components-agentpanel-設計規格--inspector",
+          "design-system-components-agentpanel-設計規格--size-matrix",
+          "design-system-components-agentpanel-設計規格--color-matrix",
           "design-system-components-agentpanel-設計規格--state-behavior",
+          "design-system-components-agentpanel-設計規格--fab-placements",
           "design-system-components-agentpanel-設計規格--accessibility"
         ],
         "設計原則": [
@@ -476,6 +483,10 @@
           "design-system-components-combobox-展示--with-error",
           "design-system-components-combobox-展示--size-alignment",
           "design-system-components-combobox-展示--searchable",
+          "design-system-components-combobox-展示--loading-first-open",
+          "design-system-components-combobox-展示--value-loading",
+          "design-system-components-combobox-展示--remote-search-hint",
+          "design-system-components-combobox-展示--remote-search",
           "design-system-components-combobox-展示--in-data-table"
         ],
         "設計規格": [
@@ -493,7 +504,9 @@
           "design-system-components-combobox-設計原則--overflow-rule"
         ]
       },
-      "openSnapshotIds": [],
+      "openSnapshotIds": [
+        "design-system-components-combobox-展示--loading-first-open"
+      ],
       "exception": null
     },
     "command": {
@@ -502,7 +515,8 @@
           "design-system-internal-command-展示--command-palette",
           "design-system-internal-command-展示--inline-command",
           "design-system-internal-command-展示--action-command",
-          "design-system-internal-command-展示--empty-state"
+          "design-system-internal-command-展示--no-results",
+          "design-system-internal-command-展示--loading-first-open"
         ],
         "設計規格": [
           "design-system-internal-command-設計規格--overview",
@@ -513,7 +527,9 @@
           "design-system-internal-command-設計原則--composition-rules"
         ]
       },
-      "openSnapshotIds": [],
+      "openSnapshotIds": [
+        "design-system-internal-command-展示--loading-first-open"
+      ],
       "exception": null
     },
     "datatable": {
@@ -540,11 +556,7 @@
           "design-system-components-datatable-展示--selection-single-mode",
           "design-system-components-datatable-展示--selection-disabled-rows",
           "design-system-components-datatable-展示--filter-panel-empty",
-          "design-system-components-datatable-展示--filter-panel-with-conditions",
-          "design-system-components-datatable-展示--filter-panel-nested",
-          "design-system-components-datatable-展示--filter-panel-relative-date",
-          "design-system-components-datatable-展示--filter-panel-modified",
-          "design-system-components-datatable-展示--filter-panel-long-tag-overflow",
+          "design-system-components-datatable-展示--filter-panel-states",
           "design-system-components-datatable-展示--filter-panel-labels-and-limit",
           "design-system-components-datatable-展示--row-drag-interactive",
           "design-system-components-datatable-展示--row-drag-with-virtualization",
@@ -680,13 +692,15 @@
           "design-system-components-dialog-展示--list-body",
           "design-system-components-dialog-展示--header-actions",
           "design-system-components-dialog-展示--with-tabs-in-header",
-          "design-system-components-dialog-展示--open-snapshot"
+          "design-system-components-dialog-展示--open-snapshot",
+          "design-system-components-dialog-展示--focus-trap-with-concurrent-overlay",
+          "design-system-components-dialog-展示--focus-trap-control-no-dialog",
+          "design-system-components-dialog-展示--coexistence-poc"
         ],
         "設計規格": [
           "design-system-components-dialog-設計規格--overview",
           "design-system-components-dialog-設計規格--inspector",
           "design-system-components-dialog-設計規格--height-behavior",
-          "design-system-components-dialog-設計規格--destructive-matrix",
           "design-system-components-dialog-設計規格--size-matrix",
           "design-system-components-dialog-設計規格--state-behavior",
           "design-system-components-dialog-設計規格--color-matrix",
@@ -884,7 +898,8 @@
           "design-system-components-fileviewer-展示--gmail-attachment-preview",
           "design-system-components-fileviewer-展示--event-photos-collection",
           "design-system-components-fileviewer-展示--fallback-unknown-type",
-          "design-system-components-fileviewer-展示--open-snapshot"
+          "design-system-components-fileviewer-展示--open-snapshot",
+          "design-system-components-fileviewer-展示--coexistence-contract"
         ],
         "設計規格": [
           "design-system-components-fileviewer-設計規格--overview",
@@ -1027,6 +1042,7 @@
           "design-system-internal-menu-展示--states",
           "design-system-internal-menu-展示--multi-select",
           "design-system-internal-menu-展示--groups",
+          "design-system-internal-menu-展示--messages",
           "design-system-internal-menu-展示--creatable",
           "design-system-internal-menu-展示--full-example"
         ],
@@ -1122,6 +1138,7 @@
         "展示": [
           "design-system-components-pagination-展示--default",
           "design-system-components-pagination-展示--full-bar",
+          "design-system-components-pagination-展示--narrow-ladder",
           "design-system-components-pagination-展示--many-pages",
           "design-system-components-pagination-展示--states"
         ],
@@ -1145,11 +1162,15 @@
           "design-system-components-peoplepicker-展示--single",
           "design-system-components-peoplepicker-展示--with-error",
           "design-system-components-peoplepicker-展示--multi",
+          "design-system-components-peoplepicker-展示--hug-width-multi-stack",
           "design-system-components-peoplepicker-展示--multi-remove-focus-contract",
           "design-system-components-peoplepicker-展示--stack-remove-overlay-probe",
           "design-system-components-peoplepicker-展示--clearable",
           "design-system-components-peoplepicker-展示--size-alignment",
-          "design-system-components-peoplepicker-展示--async-directory-load"
+          "design-system-components-peoplepicker-展示--async-directory-load",
+          "design-system-components-peoplepicker-展示--loading-first-open",
+          "design-system-components-peoplepicker-展示--value-loading",
+          "design-system-components-peoplepicker-展示--remote-search"
         ],
         "設計規格": [
           "design-system-components-peoplepicker-設計規格--overview",
@@ -1167,7 +1188,9 @@
           "design-system-components-peoplepicker-設計原則--empty-state-rule"
         ]
       },
-      "openSnapshotIds": [],
+      "openSnapshotIds": [
+        "design-system-components-peoplepicker-展示--loading-first-open"
+      ],
       "exception": null
     },
     "popover": {
@@ -1351,6 +1374,11 @@
           "design-system-components-select-展示--clearable",
           "design-system-components-select-展示--searchable",
           "design-system-components-select-展示--creatable",
+          "design-system-components-select-展示--loading-first-open",
+          "design-system-components-select-展示--value-loading",
+          "design-system-components-select-展示--no-options",
+          "design-system-components-select-展示--grouped-search",
+          "design-system-components-select-展示--remote-search",
           "design-system-components-select-展示--in-data-table"
         ],
         "設計規格": [
@@ -1368,7 +1396,9 @@
           "design-system-components-select-設計原則--native-select-rule"
         ]
       },
-      "openSnapshotIds": [],
+      "openSnapshotIds": [
+        "design-system-components-select-展示--loading-first-open"
+      ],
       "exception": null
     },
     "selectmenu": {
@@ -1787,5 +1817,5 @@
     }
   },
   "totalComponents": 66,
-  "totalStories": 963
+  "totalStories": 985
 }

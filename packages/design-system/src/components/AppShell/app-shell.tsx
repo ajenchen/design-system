@@ -136,7 +136,8 @@ function SkipToMain() {
           'focus:fixed focus:top-2 focus:left-2 focus:z-50',
           'focus:px-3 focus:py-2 focus:rounded-md',
           'focus:bg-surface focus:text-foreground focus:shadow-[var(--elevation-200)]',
-          'focus:outline-none focus:ring-2 focus:ring-primary'
+          // 焦點框走全域外描邊(base.css)—— skip link 被鍵盤聚焦時 :focus-visible 成立。
+          // 原本的 ring-primary 與 --ring 同值(semantic.css:337 `--ring: var(--primary)`),遷移零視覺差。
         )}
       >
         Skip to main content
@@ -230,7 +231,7 @@ const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
                 <main
                   id="app-shell-main"
                   tabIndex={-1}
-                  className="flex-1 min-w-0 min-h-0 overflow-y-auto focus:outline-none"
+                  className="flex-1 min-w-0 min-h-0 overflow-y-auto focus-visible:focus-ring-inset"
                 >
                   {children}
                 </main>
@@ -265,7 +266,7 @@ const AppShell = React.forwardRef<HTMLDivElement, AppShellProps>(
             <main
               id="app-shell-main"
               tabIndex={-1}
-              className="flex-1 min-h-0 overflow-y-auto focus:outline-none"
+              className="flex-1 min-h-0 overflow-y-auto focus-visible:focus-ring-inset"
             >
               {children}
             </main>

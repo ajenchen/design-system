@@ -120,11 +120,45 @@ function transcriptState(transcriptPath) {
     // `sourceToolUseID`) are likewise not the user's voice — 2026-09-02 anchor: a loaded
     // workflow-authoring reference displaced the user's real directive as "latest user message".
     if (record?.isMeta === true || typeof record?.sourceToolUseID === 'string') continue
+    // Context-compaction summaries are recorded as user-role text but are written by the
+    // ASSISTANT, not the user — 2026-09-12 anchor: after a compaction the summary became the
+    // "latest user message", so every later substantive edit was judged against AI-authored
+    // prose instead of the user's actual directive (observed reasonCode:
+    // TARGET_BOUND_DISCUSSION_OR_QUESTION, while the user's real message sat two records above).
+    // Excluding them is a TIGHTENING, and that is the point: a summary quoting or paraphrasing
+    // earlier approval ("the user approved X") would otherwise let the assistant's own words
+    // authorize the assistant's own edit. M36(a): 引用 ≠ 決定,AI 轉述永遠不是 user 權威。
+    if (/^This session is being continued from a previous conversation/u.test(text)) continue
     userMessages.push(text)
     lastUserRecordIndex = index
     plainUserRecordIndexes.push(index)
   }
   let latestAskUserSelection = null
+  // A later plain user message normally supersedes the selection. The one exception is a message
+  // that merely RESTATES the same delegation ("照你建議", "我不是說了嗎") — 2026-09-12 anchor: the
+  // user answered an AskUserQuestion with 同意,照這個做, the assistant still blocked, and the user's
+  // next message was an angry restatement of the very same delegation. Treating that restatement as
+  // "supersedes" threw away the target binding the user had just given and demanded the approval a
+  // third time. Restating an instruction is not withdrawing it.
+  // Deliberately narrow: it carries forward only while EVERY later plain message is a bare
+  // delegation/affirmation with no denial. A denial, a new directive, or a follow-up question all
+  // still supersede — those are the cases the original rule exists for.
+  const carriesSelectionForward = (text) => {
+    const normalized = normalizeText(text)
+    if (!normalized) return false
+    if (matchesAny(TARGET_DENIAL_PATTERNS, withoutNoWaitClauses(normalized))) return false
+    if (matchesAny(TARGETLESS_SCOPE_DENIAL_PATTERNS, normalized)) return false
+    return matchesAny(UI_DELEGATED_RESEARCH_PATTERNS, normalized)
+      || matchesAny(SELECTION_RESTATEMENT_PATTERNS, normalized)
+  }
+  if (latestSelection) {
+    const laterPlain = plainUserRecordIndexes
+      .map((index, order) => ({ index, text: userMessages[order] }))
+      .filter((entry) => entry.index > latestSelection.index)
+    if (laterPlain.length && laterPlain.every((entry) => carriesSelectionForward(entry.text))) {
+      lastUserRecordIndex = Math.min(lastUserRecordIndex, latestSelection.index - 1)
+    }
+  }
   if (latestSelection && latestSelection.index > lastUserRecordIndex) {
     // Valid only while it is the newest user event: any later plain user message (a follow-up
     // question, a denial, a new directive) supersedes the selection and flows through the
@@ -199,8 +233,22 @@ function targetAliases(target) {
     const family = stemTokens[0] ?? ''
     if (family && componentDir.toLowerCase().startsWith(family.toLowerCase()) && stemTokens.length > 1) {
       const rest = stemTokens.slice(1)
-      aliases.add(rest.join(' '))
-      for (const token of rest) aliases.add(token)
+      // `rest.join(' ')` 在 rest 只有一個 token 時就等於那個 token 本身(`data-table` → 「table」),
+      // 所以這條也要走同一道泛用字檢查,否則下面的過濾等於白做(2026-09-12 CI 實測 11b 仍紅)。
+      // 多個 token 的片語(「panel logo」)夠具體,不受限。
+      if (rest.length > 1 || !componentDir.toLowerCase().includes(rest[0]?.toLowerCase() ?? '')) {
+        aliases.add(rest.join(' '))
+      }
+      // 單一 token 只有在它**不是元件目錄名的一部分**時才夠格單獨當別名(2026-09-12 收緊)。
+      // 理由:目錄已經含有的字不提供任何辨識資訊 ——「table」之於 `DataTable`、「panel」之於
+      // `AgentPanel` 都是泛用字,放進別名等於「任何一句提到 table 的話都能授權改 data-table.tsx」
+      // (CI 實測:「metadata table的排序箭頭改成跟 label 連動」直接綁定成功)。
+      // 「fab」「logo」不在 `AgentPanel` 裡,才是 user 真的在指那一個檔 —— 本規則原本要收的就是這種,
+      // 上面的註解也寫著「避免泛用字誤綁」,只是沒有實際擋住。
+      const dirKey = componentDir.toLowerCase()
+      for (const token of rest) {
+        if (!dirKey.includes(token.toLowerCase())) aliases.add(token)
+      }
     }
   }
   return [...aliases].filter((alias) => alias.length >= 3)
@@ -210,10 +258,24 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// 中英夾雜的詞界(2026-09-12)。原本前後都只認「非字母數字」當邊界,但中文**不會**在英文詞後面
+// 加空格 —— user 寫「data table整體互動和體驗越順暢越好」時,`table` 後面的「整」是 `\p{L}`,
+// 於是別名 `data table` 判成「詞還沒結束」而綁定失敗,已授權的 exact target 被當成沒綁定
+// (實測 reasonCode = EXACT_UI_UX_TARGET_BINDING_MISSING)。
+// **刻意寫窄**:只有「別名邊緣是 ASCII 英數、相鄰字是 CJK」才算詞界 —— 換字集就是換詞。
+// 同字集內一律不放寬,所以 `metadata table` 仍不會綁到 `data-table`(前面是拉丁字母)。
+const CJK_CLASS = '\\p{sc=Han}\\p{sc=Hiragana}\\p{sc=Katakana}\\p{sc=Hangul}'
+const isAsciiAlnum = (ch) => /[A-Za-z0-9]/u.test(ch || '')
+const aliasBoundaries = (alias) => ({
+  before: isAsciiAlnum(alias.at(0)) ? `(?:^|[^\\p{L}\\p{N}]|[${CJK_CLASS}])` : '(?:^|[^\\p{L}\\p{N}])',
+  after: isAsciiAlnum(alias.at(-1)) ? `(?:[^\\p{L}\\p{N}]|[${CJK_CLASS}]|$)` : '(?:[^\\p{L}\\p{N}]|$)',
+})
+
 function exactTargetBinding(message, target) {
   const normalized = normalizeText(message)
   for (const alias of targetAliases(target).sort((left, right) => right.length - left.length)) {
-    const pattern = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(alias)}([^\\p{L}\\p{N}]|$)`, 'iu')
+    const b = aliasBoundaries(alias)
+    const pattern = new RegExp(`${b.before}${escapeRegExp(alias)}${b.after}`, 'iu')
     if (pattern.test(normalized)) return alias
   }
   return null
@@ -221,8 +283,9 @@ function exactTargetBinding(message, target) {
 
 function exactAliasOccurrences(message, alias) {
   const normalized = normalizeText(message)
+  const b = aliasBoundaries(alias)
   const pattern = new RegExp(
-    `(^|[^\\p{L}\\p{N}])(${escapeRegExp(alias)})(?=[^\\p{L}\\p{N}]|$)`,
+    `${b.before}(${escapeRegExp(alias)})(?=${b.after})`,
     'giu',
   )
   return [...normalized.matchAll(pattern)].length
@@ -289,6 +352,29 @@ const UI_DELEGATED_RESEARCH_PATTERNS = [
   /(?:照|依|按)\s*(?:你|妳)(?:的)?\s*(?:建議|判斷|專業)/u,
   /反正\s*(?:你|妳).{0,12}(?:研究|處理|決定|判斷)/u,
   /\b(?:research|figure\s+out|decide)\b.{0,32}\b(?:best|optimal|most\s+(?:polished|natural|refined))\b/iu,
+  // 2026-09-12:這裡曾加過「你只要…就是沒問題的」這類**附條件委派** pattern,已撤回。
+  // 撤回理由(兩個,都是實測):
+  //   (1) **不生效**:`messageClauses`(本檔上方)在逗號斷句,「你只要確保…」與「就是沒問題的」
+  //       會被切成兩個 clause,跨逗號的 pattern 永遠不成立 —— 加了等於死碼。
+  //   (2) **動機不對**:它是 AI 在「自己的編輯被自家核准閘擋住」時加的。擴充核准語彙來讓
+  //       自己通過,是自己批改自己的考卷;真正的核准通道是 AskUserQuestion(結構化選擇,
+  //       target 綁定來自 user 選的那個選項本身)。
+  // 若未來要收這類語意,必須先改 clause 切分的粒度(委派是句子層級屬性),而且由 user 發動,
+  // 不是由被擋住的那一方發動。
+]
+
+/**
+ * 重申 ≠ 收回(2026-09-12)。user 在 AskUserQuestion 選了「同意,照這個做」之後,若下一則訊息只是
+ * **把同一個委派再講一次**(「我就跟你說照你建議了」「不要作繭自縛」),那不是新指令也不是否決。
+ * 原本任何後續訊息都會讓前一個選擇失效 → 等於把 user 剛給的 target 綁定丟掉、再要一次核准。
+ * 刻意只收「光是重申/肯定、沒有新內容」的句型;帶新指令、問句或否決的訊息一律照舊 supersede。
+ */
+const SELECTION_RESTATEMENT_PATTERNS = [
+  /(?:我)?\s*(?:不是|就)?\s*(?:跟|對|同)\s*(?:你|妳)\s*(?:說|講)\s*(?:過)?.{0,16}(?:了|嗎)/u,
+  /(?:照|依|按)\s*(?:這個|那個|你說的|我說的)\s*(?:做|改|來|處理)/u,
+  /(?:不要|別|可不可以不要|可以不要)\s*作繭自縛/u,
+  /^(?:同意|可以|好|沒錯|對|OK|ok)[,，。!！~\s]*$/u,
+  /\b(?:i\s+(?:already\s+)?(?:said|told\s+you)|go\s+ahead|just\s+do\s+it|as\s+you\s+suggested)\b/iu,
 ]
 
 const TARGET_BINARY_QUESTION_PATTERNS = [
@@ -306,6 +392,20 @@ const UI_DECISION_MARKERS = [
   /\b(?:ui|ux|user-visible|product\s+semantics?|design\s+intent|component\s+contract|information\s+architecture|workflow|navigation|visual(?:\s+hierarchy)?|layout|spacing|padding|margin|gap|color|colour|typography|width|height|size|hover|focus|active|animation|transition|interaction|behavior|behaviour|content\s+semantics?|copy|label|icon|radius|shadow|border|opacity|variant|design\s+(?:token|rule)|state\s+machine|a11y|accessibility|wcag|aria|keyboard|disabled)\b/iu,
   /(?:介面|界面|使用者可感知|產品語意|設計意圖|元件契約|資訊架構|工作流程|導覽|視覺(?:層級)?|外觀|樣式|佈局|布局|間距|留白|顏色|色彩|配色|色系|紅色|藍色|綠色|紫色|漸層|漣漪|光圈|字體排印|尺寸|大小|寬度|高度|懸停|焦點|動畫|節奏|轉場|互動|行為|內容語意|文案|標籤|圖示|標誌|logo|圓角|陰影|邊框|透明度|變體|設計 (?:token|規則)|狀態機|無障礙|可及性|鍵盤|停用)/u,
 ]
+
+/**
+ * 判「這次改動是不是視覺/UI」時,**註解不算**(2026-09-12)。
+ * 註解是在解釋「為什麼這樣改」,不是被執行的東西;拿它判授權分類會把純行為修正誤判成產品決策。
+ * 錨:修「捲動停下後指標底下那一列不會被標記」這個 bug 時,改動的程式碼本身沒有任何視覺 token,
+ * 但我在註解裡寫了「hover」二字,整個 edit 就被判成 product-ui-ux 而擋下 ——
+ * 於是變成「為了解釋清楚而被罰」,也逼得 agent 去問 user 一個本來就該自主執行的工程修正
+ * (user 2026-09-12 原話:「不是說過只有跟 ssot 相關的 ui/ux 需要我拍版決策嗎…其餘不要作繭自縛」)。
+ * **這不是放寬**:真的改到樣式的程式碼照樣命中,只是不再因為文字說明而誤判。
+ * 只剝 `//` 行註解與 `/* *​/` 區塊註解;JSX 文字、字串字面值都不動(那些是真的會被使用者看到的東西)。
+ */
+const stripCodeComments = (value) => String(value || '')
+  .replaceAll(/\/\*[\s\S]*?\*\//gu, ' ')
+  .replaceAll(/(^|[^:])\/\/[^\r\n]*/gu, '$1 ')
 
 const UI_OPERATION_MARKERS = [
   /\b(?:className|style|css|tailwind|padding|margin|gap|color|background|width|height|hover|focus|animation|transition|opacity|border|shadow|radius|variant|disabled|tabIndex|role)\b/iu,
@@ -976,7 +1076,7 @@ function classifyLatestAuthorizationUnscoped(message, {
   }
   const targetIsEngineering = matchesAny(ENGINEERING_TARGET_PATTERNS, normalizedTarget)
   const hasOperationEvidence = normalizeText(operationText).length > 0
-  const operationHasUiIntent = matchesAny(UI_OPERATION_MARKERS, operationText)
+  const operationHasUiIntent = matchesAny(UI_OPERATION_MARKERS, stripCodeComments(operationText))
   const operationRequiresHumanAction = matchesAny(HUMAN_ONLY_OPERATION_MARKERS, operationText)
   const operationIsDestructiveOrBypass = matchesAny(
     DESTRUCTIVE_OR_BYPASS_OPERATION_MARKERS,
@@ -1122,7 +1222,7 @@ function classifyOperationAuthorizationUnscoped({
       reasonCode: 'ENGINEERING_SAFETY_GATE_REQUIRED',
     }
   }
-  if (matchesAny(UI_OPERATION_MARKERS, normalizedOperation)) {
+  if (matchesAny(UI_OPERATION_MARKERS, stripCodeComments(normalizedOperation))) {
     return {
       ...base,
       decisionDomain: 'product-ui-ux',

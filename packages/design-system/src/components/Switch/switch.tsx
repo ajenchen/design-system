@@ -54,8 +54,9 @@ import { BooleanValueIcon } from '@/design-system/components/SelectionControl/bo
 const switchVariants = cva(
   [
     'group peer inline-flex shrink-0 cursor-pointer items-center rounded-full',
+    // @hover-transition-allow: 這條過渡的主人是 checked ↔ unchecked 的狀態切換(Ant / Material 的核取框與切換鈕同樣會動),
+    //   不是 hover;而且它是控件大小的點目標,不是指標掃過去的列面。hover 一律瞬間的規則見 tokens/motion/motion.spec.md。
     'transition-colors duration-150',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
     'disabled:cursor-not-allowed disabled:opacity-disabled',
     // readOnly：鎖定互動但視覺正常
     'data-[readonly=true]:pointer-events-none data-[readonly=true]:cursor-default',
@@ -67,8 +68,12 @@ const switchVariants = cva(
     // 源碼實錘;順修 meta states 宣稱 'hover' 但 code 原本零 hover 樣式的 claim-vs-code 落差)。
     // unchecked hover:border(n-5)→ border-hover(n-6)深一階,對齊 Checkbox 未選 hover
     // 加深一階慣例 + Ant unchecked hover(colorTextTertiary 加深)同方向。
-    'data-[state=unchecked]:hover:bg-border-hover',
-    'data-[state=checked]:hover:bg-primary-hover',
+    // `disabled:` 前綴把 hover 升階擋掉:Radix 的 disabled Switch 是 `<button disabled>`,
+    // 而 `:disabled` 不會關掉 `:hover` —— 沒擋的話停在一個「按不動」的 Switch 上 track 仍會變深,
+    // 等於用視覺回饋承諾了一個不存在的互動。Checkbox 早有同款守衛(`checkbox.tsx:33`
+    // `disabled:hover:border-transparent`),Ant Switch 也是 `&:hover:not(&-disabled)`。
+    'data-[state=unchecked]:hover:bg-border-hover disabled:data-[state=unchecked]:hover:bg-border',
+    'data-[state=checked]:hover:bg-primary-hover disabled:data-[state=checked]:hover:bg-primary',
   ],
   {
     variants: {
@@ -269,7 +274,6 @@ const Switch = React.forwardRef<
           tabIndex={0}
           className={cn(
             fieldWrapperStyles({ size: boxSize, mode: 'readonly', variant: 'default' }),
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             className,
           )}
         >
@@ -308,10 +312,18 @@ const Switch = React.forwardRef<
       >
         <SwitchPrimitives.Thumb
           className={cn(
-            'pointer-events-none flex items-center justify-center rounded-full bg-on-emphasis border-2',
+            // **那圈 2px 邊直接透出 track,不再用「跟 track 同色」去模擬(2026-09-11 root-layer 修法)**。
+            // 舊做法:邊框色 = track 色。它在三種情況會破:
+            //   (1) hover — track 升階、邊框沒跟(user 截圖的那圈灰邊)
+            //   (2) **dark mode** — 邊框色是白 25%,而 `background-clip` 預設 border-box 會把 thumb 自己的白底
+            //       鋪到邊框底下 → 白疊白、邊框消失。像素實測:白圓視覺寬度 light 15.5px vs **dark 19.5px**,
+            //       而 spec.md 的尺寸表要求白色圓 16px —— dark mode 一直是壞的,跟 hover 無關。
+            //   (3) 非白底的容器上,rest 態就會露環(邊框疊在白 thumb 上、track 疊在容器底色上,兩者只有白底時才相等)
+            // 新做法:`bg-clip-padding` 讓白底停在 padding box、`border-transparent` 讓那 2px 直接顯示 track 本身。
+            // 於是「邊框與 track 同色」不再是需要維護的巧合,而是**幾何上必然成立** —— 任何 theme、任何 hover 階、任何容器底色。
+            'pointer-events-none flex items-center justify-center rounded-full bg-on-emphasis bg-clip-padding border-2 border-transparent',
             'transition-all duration-150 motion-reduce:duration-0',
-            'data-[state=unchecked]:translate-x-0 data-[state=unchecked]:border-border',
-            'data-[state=checked]:border-primary',
+            'data-[state=unchecked]:translate-x-0',
             sizeKey === 'lg' ? 'data-[state=checked]:translate-x-6' : 'data-[state=checked]:translate-x-5',
           )}
           style={{ width: spec.thumb, height: spec.thumb }}

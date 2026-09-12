@@ -39,7 +39,7 @@ components/
 │   ├── field.tsx               ← Field 佈局容器(label + control + desc + error)
 │   ├── field.spec.md           ← Field 佈局容器設計原則
 │   ├── field-controls.spec.md  ← 本文件
-│   ├── field-types.ts          ← FieldMode / FieldVariant 共用型別 + getMenuListMinHeight(InlineActionConfig 住 patterns/element-anatomy/item-anatomy.tsx)
+│   ├── field-types.ts          ← FieldMode / FieldVariant 共用型別(InlineActionConfig 住 patterns/element-anatomy/item-anatomy.tsx;舊 getMenuListMinHeight 2026-09-08 退役)
 │   └── field-wrapper.tsx       ← 共用 wrapper 樣式、bareInputStyles、EMPTY_DISPLAY
 ├── Input/                      ← Input(含 mode="view";與 Field 平行的兄弟目錄,以下同)
 ├── NumberInput/                ← NumberInput(含 mode="view" + formatNumber)
@@ -89,9 +89,11 @@ Field 家族 = **一個 `fieldWrapperStyles` cva + 兩條正交軸**;`InlineEdit
 
 **Boolean / 單選控件的 readonly(2026-06-12 user 拍板)**:Field 內 readonly 的 Checkbox / Switch = 同一 `fieldWrapperStyles` readonly 灰框 + ✓/—(view 同款值語言);RadioGroup = 灰框 + 選中項 label(= Select readonly 同款呈現)。理由:同一張 readonly 表單中,文字控件有灰框鎖定訊號、boolean 保留全彩控件會誤導「仍可操作」(世界級 0/4 採原樣鎖互動:Salesforce = ✓ 無框靜態 glyph / SAP = 靜態文字 / Atlassian = readView / Ant Pro = 文字)。standalone readOnly(settings list / SelectionItem row)維持原樣鎖互動。**邊界**:Rating readonly = 星星本身(星星即值語言,role=img,全業界 review-stars canonical,不包灰框);Slider 在 `<Field mode="readonly">` 內 = 鎖互動保留正常視覺(value 可讀不降色,pointer-events-none + thumb tabIndex=-1)。
 
-### Loading state(async 驗證 / debounce fetch 中)
+### Loading state(這個值在讀取 / 驗證 / 儲存)
 
-Loading **不是第四個 mode**,是 `edit` mode 的子狀態,語義 = **editable 仍可輸入**(UX「邊改邊讀」:debounce search / async validation 場景中 user 常需要繼續打字修正,凍結輸入反而破壞心流)。
+Loading **不是第四個 mode**,是 `edit` mode 的子狀態,語義 = **editable 仍可輸入**(UX「邊改邊讀」:async validation / 值寫回中 user 常需要繼續修正,凍結輸入反而破壞心流)。
+
+**`loading` 的語意收窄為「這個值」在處理(2026-09-09 user 拍板)**:讀取現值 / 驗證 / 儲存中 —— 全家族一個字一個意思。**不是**「建議清單 / 選項在抓」:那是 Select / Combobox / PeoplePicker 的 `optionsLoading`(指示只在選單內,`../SelectMenu/select-menu.spec.md`「Loading」),Input 沒有選項清單所以沒有這個 prop。2026-09-08 之前兩件事共用一個字、一個槽,結果是同一時刻兩顆轉圈。
 
 **世界級流派選擇**(editable 派 vs readonly 派):
 
@@ -106,21 +108,22 @@ Loading **不是第四個 mode**,是 `edit` mode 的子狀態,語義 = **editabl
 
 **本 DS 採 editable 派**(Ant / Apple HIG):
 - **UX 理由**:debounce 搜尋場景,user 邊打邊看建議,凍結一格會卡節奏;async validation 若第一次失敗,user 該能立即改,不是等 spinner 完才能動
-- **對照 readonly 派**:readonly 派適合「提交後驗證」的場景(e.g. 表單 submit → 驗證),本 DS 的 `loading` prop 用在 debounce / inline validation,editable 更 fit
+- **對照 readonly 派**:readonly 派適合「提交後驗證」的場景(e.g. 表單 submit → 驗證),本 DS 的 `loading` prop 用在 inline validation / 值寫回中,editable 更 fit
 
 **實作 canonical(Input / Combobox 等具 async 語意的 Field 元件;NumberInput 不提供 loading——見 `number-input.spec.md`「Loading」)**:
 - API:`loading?: boolean` prop
 - 內部:`loading=true` → wrapper `aria-busy="true"` + **endAction slot 自動塞 `<CircularProgress size={iconSize}/>`**(與 `endAction` prop 互斥,loading 優先)
 - input **不進 readonly / disabled**,保持可編輯
+- Select / Combobox / PeoplePicker(trigger 不是 input):同一個 `loading` = 值處理中,轉圈放 ChevronDown 左邊的 suffix 位置(`select.tsx` / `combobox.tsx` `chevronEl`)+ 觸發點 `aria-busy`,與選單開關、選項多寡無關;**選項載入是另一個字 `optionsLoading`**,指示只在選單內的載入訊息列,觸發點與浮層搜尋列都不轉圈(2026-09-09,SSOT `../SelectMenu/select-menu.spec.md`「Loading」)
 - CircularProgress 尺寸:程式化 `iconSize`(sm/md=16, lg=20),消費者不用再傳
 - CircularProgress 顏色:走預設 `text-primary`(表達「正在處理,請注意」)
 - startIcon(Search 等語義 icon)**不受 loading 影響**,保留原位置
 
 ```tsx
-// 世界級 canonical:search field 在 loading 中,user 仍可修改關鍵字
-<Input startIcon={Search} loading placeholder="搜尋..." />
-// → search icon 在 prefix(保留語義身分)
-// → CircularProgress 在 endAction 位置(暫時狀態)
+// 世界級 canonical:欄位值正在驗證(如帳號是否已被使用),user 仍可修改
+<Input startIcon={AtSign} loading placeholder="使用者名稱" />
+// → 語義 icon 在 prefix(保留身分)
+// → CircularProgress 在 endAction 位置(暫時狀態:這個值在處理)
 // → input editable + aria-busy,user 可繼續輸入 / 修改
 ```
 
@@ -223,7 +226,9 @@ Field 家族 wrapper 的寬度軸,與 mode / variant / size / error 全部正交
 
 **可編輯文字輸入(edit / naked mode 的 input / textarea)**:統一 `border-primary`（1px），不加 ring、不加粗。
 
-**readonly(可聚焦但不可編輯的 input,2026-07-09 補 — 消解框架地圖 cross-ref)**:用 **ring idiom**(`[&:has(:focus-visible)]:ring-2 ring-ring ring-offset-1`;native text input 的 :focus-visible 在滑鼠點擊時**亦 match** — 對齊本段開頭「文字輸入永遠 focus-visible、CSS 無法區分點擊與 Tab」,勿宣稱僅鍵盤),**非** border-primary —— readonly 邊框 transparent 無可染,且 ring 語義=「可聚焦但非文字輸入」(對齊 Button / Tab / Checkbox);滿足 WCAG 2.4.7(readonly 有值渲染可聚焦 native input 需 focus 指示)。詳 `field-wrapper.tsx` readonly compound JSDoc。
+**readonly(可聚焦但不可編輯的 input / textarea / 唯讀三兄弟 / 唯讀觸發器)**:**與可編輯態同一種指示器 —— 欄位邊框轉主色 1px**(`focus-within:!border-primary`;宿主是控件自己時寫 `focus-visible:!border-primary`)。唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),轉成主色不會有位移,長相與可編輯欄位完全一致 —— Field 家族「一個家族一種焦點長相」(owner = `ds-canonical/references/focus-canonical.md` 規則二)。全域 2px 外描邊由同一個 compound 的 `focus-visible:outline-none` 抑制(@focus-suppress C)。native text input 的 `:focus-visible` 在滑鼠點擊時**亦 match**(見本段開頭),所以滑鼠鍵盤都會亮,勿宣稱僅鍵盤。滿足 WCAG 2.4.7。
+
+> **2026-09-10 兩次訂正**:(1) 原文寫的 ring idiom(`[&:has(:focus-visible)]:ring-2 ring-ring ring-offset-1`)已於 0cad81e8 隨 `ring-*` 家族退役(`focus-geometry-invariant.mjs` R1/R2 禁),當時**沒有補替代品** → readonly Input / Textarea 一度完全沒有焦點指示(實測:outline none、邊框 transparent、滑鼠點擊零視覺變化)。(2) 同日上午先補成全域外描邊,user 指出「為何不是模擬 field control focus 的樣式?field control focus 應該是 1px 的 border?」—— 改為現在這版。世界級同向:MUI OutlinedInput / Ant Input / Fluent Input 的 `readOnly` **完全不改焦點樣式**(它們的唯讀靜止態與可編輯態本來就一樣),Carbon `_text-input.scss` 與 Polaris TextField 雖然唯讀另有靜止樣式,焦點指示同樣**與可編輯態相同**。
 
 ---
 
@@ -386,7 +391,7 @@ col.accessor('status', {
 **(b) Placeholder vocabulary**(3 props 對 3 UI state,**不可混用**):
 - `placeholder` — trigger empty(沒選值,例「請選擇人員」)— Ant/Polaris/Carbon canonical
 - `searchPlaceholder` — search input hint(例「搜尋人員…」)— Ant `searchPlaceholder`
-- `emptyText`/`noResultsText` — filtered menu 無結果(例「沒有符合的人員」)— Ant `notFoundContent` / Material X `localeText.noResultsOverlayLabel`
+- `emptyText`/`noResultsText` — filtered menu 無結果(例「沒有人員」)— Ant `notFoundContent` / Material X `localeText.noResultsOverlayLabel`
 
 **禁**:wrapper 把 `emptyText`(search-empty)silent forward 成 `emptyPlaceholder`(trigger-empty);**Combobox `emptyPlaceholder` deprecated**,保留 1 cycle fallback,future `placeholder` 唯一 trigger source。Hook `check_field_controls_contracts.sh` (contract b) 機械強制。
 

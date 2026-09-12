@@ -319,7 +319,6 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           // 不再硬寫 px-6 py-10(不對稱+非 token)。內容物(icon + title + description)垂直堆疊由 gap-2 控制
           'rounded-md border-2 border-dashed p-[var(--layout-space-loose)]',
           'cursor-pointer transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           // idle:--border(元件邊框,非 --divider 分隔線 — 2026-06-03 Q2 token 修正)+ surface 底
           'border-border bg-surface',
           // hover = drag-over 統一(2026-06-03 Q2-A 純 border-driven,對齊 Ant Dragger colorPrimaryHover):
@@ -327,7 +326,9 @@ const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           // code 卻寫 base = claim-vs-code 反向 drift;瞬時態歸 hover 階,雙向全掃唯一 B 類違規),
           // 底色維持 surface(不變 bg)。state 信號靠邊框,非底色。
           // 2026-06-11 R2(M5 狀態疊加):hover 變 primary 僅限 idle —— disabled/loading 維持原邊框(spec「disabled 邊框不變色」;dropzone 狀態機無 error 態,error 屬 files 清單 FileItem status)
-          'data-[state=idle]:hover:border-primary-hover data-[state=drag-over]:border-primary-hover',
+          // 2026-09-03:改消費 DS「可放下的區域」配對 --drop-target-border(= --primary-hover,零視覺差),
+          // 與 AgentFabDock 停靠帶同一組 token;各自的組合仍不同(常駐區只換邊框、暫態區才填色 — color.spec.md「Drop target」)
+          'data-[state=idle]:hover:border-drop-target-border data-[state=drag-over]:border-drop-target-border',
           // loading(2026-06-03 Q4:移除 pointer-events-none — 它會讓 cursor-progress 失效;
           // 互動已由 handleClick + drag/key handlers 的 isBlocked guard 擋,不需 pointer-events-none)
           'data-[state=loading]:cursor-progress',

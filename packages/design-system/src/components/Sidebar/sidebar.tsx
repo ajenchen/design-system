@@ -752,6 +752,7 @@ const sidebarGroupLabelVariants = cva(
     "flex w-full items-start gap-2",
     "px-[var(--layout-space-loose)]",
     "font-medium text-fg-muted",
+    // @focus-suppress N — 不適用(不可操作 → 問題一);承擔者:pointer-events-none 的分組標題,不可操作 → 問題一:不該可聚焦,不用畫
     "cursor-default select-none pointer-events-none outline-none",
     // icon 模式:GroupLabel 純視覺分段 → collapsed 連 SR 一併隱藏是刻意(供名責任在各 menu button 的 sr-only label,2026-07-05 D4 修後與 MenuButton 策略分工)
     "group-data-[collapsible=icon]:hidden",
@@ -847,7 +848,7 @@ const SidebarGroupAction = React.forwardRef<
       ref={ref}
       data-sidebar="group-action"
       className={cn(
-        "absolute right-[var(--layout-space-loose)] top-2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted outline-none ring-ring transition-colors hover:bg-neutral-hover hover:text-fg-secondary focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-[var(--layout-space-loose)] top-2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted hover:bg-neutral-hover hover:text-fg-secondary [&>svg]:size-4 [&>svg]:shrink-0",
         "after:absolute after:-inset-2 after:md:hidden",
         "group-data-[collapsible=icon]:hidden",
         className
@@ -920,7 +921,7 @@ const sidebarMenuButtonVariants = cva(
     "flex w-full items-start gap-2 text-left overflow-hidden",
     "px-[var(--layout-space-loose)]",
     "font-medium text-fg-secondary",
-    "cursor-pointer select-none outline-none",
+    "cursor-pointer select-none",
     // 2026-05-21 v4 C* refactor(per codex M31 Layer C 比稿 final architecture):
     //   撤回所有 `group-data-[collapsible=icon]:*` overrides。Sidebar outer overflow-x:hidden
     //   自動 clip menu button 右側 label / badge / action,左側 icon 自然顯示在 sidebar-width-icon
@@ -934,9 +935,11 @@ const sidebarMenuButtonVariants = cva(
     //   (per buttonWithTooltip 既有 hidden 條件),僅 hover 提示、不供名。
     //
     //   對齊 MUI MiniDrawer + shadcn canonical(width morph + overflow clip + row geometry 不變)。
-    "transition-[background-color,color] duration-200 ease-linear motion-reduce:duration-0",
+    // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
     "hover:bg-neutral-hover hover:text-foreground",
-    "focus-visible:bg-neutral-hover focus-visible:text-foreground",
+    // 鍵盤游標一律畫框、不上底色(focus-canonical 規則二,user 2026-09-09 拍板);選單鈕撐滿側欄寬度 → 內描邊。
+    // 2026-09-09 之前非當前項的焦點用 hover 同色底(AI 推導,user 撤回);hover 的底色與文字色只屬於滑鼠。
+    "focus-visible:focus-ring-inset",
     // 2026-05-31 M24:SidebarMenuButton 主要為 icon+label(currentColor 可改寫)→ 用 semantic
     // text-fg-disabled 對齊 MenuItem primitive(menu-item.tsx:198/221/248 + item-anatomy.tsx:374),
     // 非 opacity-disabled(opacity 保留給圖片/avatar/Switch 等無法改寫內部色者,per color.spec.md:103/118/701)。
@@ -944,9 +947,10 @@ const sidebarMenuButtonVariants = cva(
     "aria-disabled:pointer-events-none aria-disabled:text-fg-disabled",
     "data-[active=true]:bg-neutral-selected data-[active=true]:text-foreground",
     // 2026-08-11 user 拍板(SSOT = item-anatomy「選中 × 互動疊加」):滑鼠 hover 當前項釘住不變
-    //(先前無規則,靠編譯順序運氣;現寫成顯式,釘住 (0,3,0) > hover (0,2,0));
-    // 鍵盤焦點停在當前項 → -focus 深一階(游標可見;非當前項維持上方 focus-visible 的 hover 色)。
-    "data-[active=true]:hover:bg-neutral-selected data-[active=true]:focus-visible:bg-neutral-selected-focus",
+    //(先前無規則,靠編譯順序運氣;現寫成顯式,釘住 (0,3,0) > hover (0,2,0))。
+    // 鍵盤游標停在當前項 = 框疊在選中底色上(框由上方 focus-visible:focus-ring-inset 統一畫,不分當前與否;
+    // 2026-09-07「A5畫框」只補了當前項,2026-09-09 user 拍板後全部畫框、焦點不再改底色)。
+    "data-[active=true]:hover:bg-neutral-selected",
     "group-has-[[data-sidebar=menu-action]]/menu-item:pr-8",
     // 2026-05-21 v5 restore label 硬隱藏(user 抓「label 沒消失」):
     // C* outer overflow-x:hidden 理論 clip,但 label.x=40 在 sidebar-width-icon=48 內 → 首字
@@ -1216,7 +1220,7 @@ const SidebarMenuAction = React.forwardRef<
       ref={ref}
       data-sidebar="menu-action"
       className={cn(
-        "absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted outline-none ring-ring transition-colors hover:bg-neutral-hover hover:text-fg-secondary focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-[var(--layout-space-loose)] top-1/2 -translate-y-1/2 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-fg-muted hover:bg-neutral-hover hover:text-fg-secondary [&>svg]:size-4 [&>svg]:shrink-0",
         "after:absolute after:-inset-2 after:md:hidden",
         "group-data-[collapsible=icon]:hidden",
         showOnHover &&

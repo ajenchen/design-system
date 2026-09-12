@@ -73,6 +73,16 @@ Tabs 用於在**同一個上下文底下切換平行的視圖**——每個 tab 
 
 ## 內部結構
 
+**Root 是可收縮的 flex container(2026-09-12)**:`Tabs` Root 帶
+`flex min-h-0 data-[orientation=horizontal]:flex-col data-[orientation=vertical]:flex-row`。
+原本是裸 Radix Root(`display: block` + `min-height: auto`),在**高度受限的 flex column 容器**裡會斷鏈:
+Dialog / Sheet 的契約是 header/footer `shrink-0` + Body `flex-1 min-h-0` → 空間不夠時 body 內捲
+(`dialog.spec.md`「內容溢出走 body 捲動」)。只要中間夾一層不能收縮的 wrapper,那層就把整包內容
+原樣頂出容器 —— 2026-09-12 user 截圖的「dialog body 內容超出容器」正是這個(204px 的 dialog 裡 Tabs Root 撐到 271px)。
+Root 自己成為可收縮的 flex column 之後,這條鏈在任何容器裡都自然接上,consumer 不需要記得加 class。
+**不受限的容器裡幾何完全不變**:`flex: 0 1 auto` 的 basis 仍是內容高度,已逐 story 比對 23 支含 Tabs 的
+`root` / `tablist` / `tabpanel` 邊界框,Δ=0。
+
 ```
 TabsList ─┬─ TabsTrigger  [startIcon?] [label] [suffix?: badge? + endIcon?]
           ├─ TabsTrigger  ...
@@ -217,7 +227,7 @@ DS 詞彙 **selected**（持續選中）；Radix DOM attr 為 `data-state="activ
 | selected | `text-foreground` + `font-medium` + 底部 2px `bg-primary` 底線（semantic.css 選中規則；2026-07-06 拍板持續選中站 base，Ant inkBarColor = colorPrimary 同款）|
 | 未選 | `text-fg-secondary` + `font-medium`（與 selected 同 weight，差異僅文字色 + 有無底線，非 weight）、無底線；hover 時文字色轉 `text-foreground` |
 | disabled | `text-fg-disabled`；無 hover 色變化、無底線；`cursor-not-allowed`；不接受鍵盤 focus |
-| focus-visible | `ring-2 ring-ring ring-offset-1`，與 Button 一致；鍵盤導覽（左右箭頭）由 Radix 原生處理 |
+| focus-visible | 內描邊 `focus-visible:focus-ring-inset`(tab 高 = 分頁列高,上下淨空 0 → 往內;`focus-canonical.md`「問題二」;2026-09-09 訂正,原 `ring-offset-1` 是已退役的幾何);鍵盤導覽(左右箭頭)由 Radix 原生處理 |
 
 ---
 
@@ -284,7 +294,7 @@ Tabs anatomy 採 DS 標準結構 + 元件特有矩陣:
 - Home/End — 第一 / 最後 tab
 - Enter / Space — activate
 
-**Focus**:Tabs 為內嵌導覽,不困住焦點(無 focus trap);Radix `tabs` primitive 以 roving tabindex 管理 tab 之間的鍵盤移動(整組 tabs 為單一 tab stop)。選中 tab 與 TabsContent 各有 focus-visible 焦點框(`ring-2 ring-ring` per design-system focus-visible canonical)。
+**Focus**:Tabs 為內嵌導覽,不困住焦點(無 focus trap);Radix `tabs` primitive 以 roving tabindex 管理 tab 之間的鍵盤移動(整組 tabs 為單一 tab stop)。選中 tab 與 TabsContent 各有 focus-visible 焦點框(tab 內描邊 `focus-ring-inset`,TabsContent 走全域外描邊;幾何見 `focus-canonical.md`「框怎麼畫」,2026-09-09 訂正舊 `ring-2 ring-ring` 描述)。
 
 **驗證**:Tabs 元件**自身結構** axe 0 critical(nested-interactive + aria-required-children 皆已修,2026-07-18 實測 `.claude/logs/a11y-audit.json`);逐一 activate 每個 trigger 後,其 `aria-controls` 必解析到同 value 的已掛載 `TabsContent` panel;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 **非-Tabs-結構例外**:story 內 demo 內容的 color-contrast / DataTable 巢狀(appshell story)非 Tabs 元件 own,屬各自 owner;trigger ↔ panel 的 IDREF 完整性則是 Tabs composition contract,不得列為外部例外。

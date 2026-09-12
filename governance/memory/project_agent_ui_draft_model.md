@@ -10,7 +10,13 @@ metadata:
 
 # AI agent 面板規格 — 已定稿,BACKLOG(2026-08-11)
 
-**SSOT(durable)** = repo `governance/planning/2026-08-11-agent-ui-panel-spec.md`(§〇 為唯一規範:user 草案逐字 + 27 條結論 + 30 列窮舉表;§一後僅證據)。artifact 鏡像:`f22888f5-8687-450f-83b4-4db30f92e08f`。planning registry 已登記(reference / non-executable)。
+**⚠️ 2026-09-08 更新:SSOT 已換人。** 現行唯一權威 =
+`governance/planning/2026-09-06-agent-principles-v14.md`(agent 原則 v14 七條)。
+下方 2026-08-11 規格**整份過時、不得引用**(總帳 :90)。
+v14 定稿後一度只存在於 scratchpad,repo 無副本,直接造成 2026-09-08 把已定案條款重列為「待拍板」;
+**權威不落地就等於不存在**,這正是本檔「最大風險 (a) 細節散失回 scratchpad」的實現。
+
+**歷史 SSOT(已過時)** = repo `governance/planning/2026-08-11-agent-ui-panel-spec.md`(§〇 為唯一規範:user 草案逐字 + 27 條結論 + 30 列窮舉表;§一後僅證據)。artifact 鏡像:`f22888f5-8687-450f-83b4-4db30f92e08f`。planning registry 已登記(reference / non-executable)。
 
 **user 拍板定位(逐字)**:「先確保有完整有脈絡記錄下來,之後我們再安排,目前先放在 backlog,但要確保沒有遺漏我們討論的細節,也不要讓這個規格汙染目前ds不該被汙染的地方」。
 

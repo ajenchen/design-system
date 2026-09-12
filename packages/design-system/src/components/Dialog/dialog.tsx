@@ -10,6 +10,7 @@ import { SurfaceHeader, SurfaceFooter, type SurfaceHeaderProps } from "@/design-
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
+import { useOverlayCoexistence, CoexistenceMask, createPersistentGuard } from "@/design-system/lib/overlay-coexistence"
 
 /**
  * Dialog (Modal) — Radix Dialog + 設計系統 token
@@ -28,13 +29,28 @@ import { surfaceMotion } from "@/design-system/tokens/motion/overlay-motion"
  * autoHeight（boolean）：高度隨內容，超過 viewport 時 max-height 安全帽。
  */
 
-const Dialog = DialogPrimitive.Root
+// 並存設定**一次到位**:在 Root 傳 `persistentElements`,Root 自動走 `modal={false}`,
+// Content 由 context 拿到保留集合。不再要求消費者同時改兩個地方(Content 的 opt-in 與
+// Root 的 modal 互相打架 —— 忘了 `modal={false}` 時 Radix 仍執行 hideOthers(content),
+// 保留區不會變可用;跨模型審查 2026-09-08 R3 指出)。FileViewer 已是同款自動推導。
+const DialogCoexistContext = React.createContext<(() => Element[]) | undefined>(undefined)
+type DialogRootProps = React.ComponentProps<typeof DialogPrimitive.Root> & {
+  /** 並存區域(中性契約):這個對話框開著時仍然可用的節點。傳了就自動非模態。 */
+  persistentElements?: () => Element[]
+}
+const Dialog = ({ persistentElements, modal, ...props }: DialogRootProps) => (
+  <DialogCoexistContext.Provider value={persistentElements}>
+    <DialogPrimitive.Root modal={persistentElements ? false : modal} {...props} />
+  </DialogCoexistContext.Provider>
+)
+Dialog.displayName = 'Dialog'
 const DialogTrigger = DialogPrimitive.Trigger
 const DialogPortal = DialogPrimitive.Portal
 const DialogClose = DialogPrimitive.Close
 
-// Modal 與 viewport 四邊的最小間距 = layout-space-bottom (48px)
-const DIALOG_INSET_VAR = 'var(--layout-space-bottom)'
+// Modal 與 viewport 四邊的最小間距。2026-09-11 從 `--layout-space-bottom`(語意 = 結論留白)拆成同 family 的另一個 role token:
+// 兩者值都是 48px,但語意不同,耦合在一起會讓「調結論留白」意外改掉全站 Dialog 的高度與最大寬度(見 token 註解)。
+const DIALOG_INSET_VAR = 'var(--layout-space-viewport-inset)'
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -44,7 +60,9 @@ const DialogOverlay = React.forwardRef<
     ref={ref}
     className={cn(
       "fixed inset-0 z-50 bg-overlay",
-      "data-[state=open]:animate-in data-[state=closed]:animate-out motion-reduce:animate-none",
+      // 遮罩與內容同一組時長 / 曲線(dialog.spec.md「動畫」表;2026-09-09 Codex R13 抓到規格寫 250ms、遮罩實際吃 tw-animate 預設 150ms/ease)
+      surfaceMotion,
+      "data-[state=open]:animate-in data-[state=closed]:animate-out",
       "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
@@ -60,24 +78,135 @@ interface DialogContentProps extends Omit<React.ComponentPropsWithoutRef<typeof 
   /** 最大寬度。預設 512px。傳 number 視為 px。 */
   maxWidth?: string | number
   /**
-   * 高度模式。
-   * - 不傳（預設）：填滿 viewport（height = 100vh - inset*2），body 捲動。防止內容跳動。
-   * - true：高度隨內容，超過 viewport 時捲動（max-height 安全帽）。
+   * 高度軸 —— **只決定「怎麼長」,不決定「多高」**(多高由 `maxHeight` 管,兩者正交)。
+   *
+   * - `'fill'`(預設):填滿可用高度。內容多寡不改變外框幾何。
+   * - `'hug'`:隨內容長高,碰到上限才由 body 捲動。
+   *
+   * **怎麼選(判準是時間維度,不是當下看起來幾行)**:
+   * 從開啟到關閉這段期間,內容高度**會不會因為使用者的操作與互動而改變**?
+   * 會 → `'fill'`(異步載入、展開區塊、可增減的清單);不會 → `'hug'`(確認框、短表單、固定文案)。
+   * 理由:隨內容長高的浮層一旦內容變高變矮,整個對話框會上下跳動,體驗很差 —— 先把可用高度穩定下來,
+   * 讓 body 自己捲,外框就不動了。
+   *
+   * 軸名與值照 DS 既有的寬度軸(`field-types.ts` 的 `FieldWidth = 'fill' | 'hug'`,2026-07-08 拍板),
+   * 不另造詞彙。
+   */
+  height?: 'fill' | 'hug'
+  /**
+   * 最大高度 —— **只能選更矮的上限**。預設上限 = 視窗可用高度(`100svh - inset*2`);
+   * 傳值時取 `min(視窗可用高度, 此值)`,傳再大也不會超過視窗。傳 number 視為 px。
+   *
+   * 形狀照 `DropdownMenu` 的 `maxHeight`(同樣是 min(視窗剩餘, 自訂));型別照本元件自己的 `maxWidth`
+   * (`string | number`)—— 高度更需要 string,才寫得出 `60svh` / `calc(100svh - 120px)`。
+   */
+  maxHeight?: string | number
+  /**
+   * @deprecated 改用 `height="hug"`。兩者同時傳時 `height` 勝(dev 會 warn)。
    */
   autoHeight?: boolean
+  /**
+   * **並存區域**(opt-in,中性契約)。傳入之後,這個 Dialog 開著時**這些節點仍然可用**,
+   * 其餘一切被抑制(原生 `inert`,不支援時退回 `aria-hidden`)。不傳 = 行為與過去完全相同。
+   *
+   * 為什麼是「節點清單」而不是 `modality: 'partial'`:`partial` 不說「對誰部分」就沒有意義
+   * (跨模型審查 2026-09-08 的指正)。世界級前例是 Chakra 的 `persistentElements`。
+   *
+   * **本元件不認識 agent**:誰要保留由呼叫端決定,DS 元件不被產品概念汙染。
+   * 用途來自 agent 原則 v14 條 A/B(有 URL 的內容與 agent 並列可操作),
+   * 但契約本身對任何「常駐區域」都成立。
+   *
+   * ⚠️ 傳了它就必須同時把 `Dialog`(Root)設 `modal={false}` ——
+   * Radix 的 modal 分支寫死 `hideOthers(content)` 只保留 content、且無法傳白名單,
+   * 兩者並用會互相打架。
+   */
+  persistentElements?: () => Element[]
+  /**
+   * Portal 目的地。預設 document.body;story / 產品的「模擬瀏覽器畫布」可把 Dialog 傳送進一個帶 transform 的
+   * 容器,讓 `fixed` 定位以那個容器為準,modal 與遮罩就不會跑出畫布(2026-09-08 story 擬真需求)。
+   */
+  portalContainer?: HTMLElement | null
 }
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, maxWidth = '512px', autoHeight, children, style, ...props }, ref) => {
-  const insetCalc = `${DIALOG_INSET_VAR} * 2`
-  const viewportH = `calc(100vh - ${insetCalc})`
-  const maxWidthCss = typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth
+>(({ className, maxWidth = '512px', height, maxHeight, autoHeight, persistentElements: persistentElementsProp, portalContainer, children, style, ...props }, ref) => {
+  const persistentElementsCtx = React.useContext(DialogCoexistContext)
+  const persistentElements = persistentElementsProp ?? persistentElementsCtx
+  // 用 **state** 而不是 ref 承接節點:並存的保留集合要「這個 Content + 常駐區域」,
+  // 而 effect 跑的時候 ref 可能還沒填 —— 實測就是這樣,保留集合只剩常駐區,
+  // **對話框自己被 inert 掉**(2026-09-08,對照組那一條當場紅)。
+  // state 一變 effect 就重跑,節點掛上的那一刻保留集合才完整。
+  const [contentEl, setContentEl] = React.useState<HTMLDivElement | null>(null)
+  const composedRef = React.useCallback((node: HTMLDivElement | null) => {
+    setContentEl(node)
+    if (typeof ref === 'function') ref(node)
+    else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+  }, [ref])
+  // 並存:保留集合 = 這個 Content + 呼叫端指定的常駐區域。
+  // 沒傳 persistentElements 時 keep 是 undefined,hook 直接 no-op,預設路徑一個位元不變。
+  const keep = React.useMemo(
+    () => (persistentElements
+      ? () => [contentEl, ...persistentElements()].filter((el): el is Element => !!el)
+      : undefined),
+    [persistentElements, contentEl],
+  )
+  // 只在 **Content 真的掛著** 時抑制(contentEl 非 null)。用 `!!persistentElements` 的話,
+  // controlled `open=false` 期間 Content 已卸載但這個 wrapper 元件仍在,抑制不會解除 ——
+  // 實測初始關閉 / 開→關 背景仍 inert(R3 生命週期反例)。
+  useOverlayCoexistence(!!persistentElements && !!contentEl, keep)
 
-  const heightStyle: React.CSSProperties = autoHeight
-    ? { maxHeight: viewportH }
-    : { height: viewportH }
+  // 非模態分支會在「互動或焦點跑到框外」時 dismiss(`DialogContentNonModal` 追蹤
+  // `hasInteractedOutsideRef`)。並存的時候這正好會反咬:**把焦點移進常駐區域就等於框外互動**,
+  // 對話框當場關掉 —— 實測就是這樣,連 Esc 都還沒按(2026-09-08)。
+  // 所以常駐區域內的 outside 事件要擋掉。Radix 官方對這件事的機制是 `DismissableLayer.Branch`,
+  // 但那要求消費端把常駐區包起來;在這裡擋等價而且不強迫消費端改結構。
+  // 只在有傳 persistentElements 時掛,預設路徑仍然一個位元不變。
+  // 三種目標不算框外(規則與 FileViewer 共用一份:`lib/overlay-coexistence.ts` createPersistentGuard;dialog.spec.md「並存」):
+  // (1) 保留節點子樹;(2) 保留區自己開出來的浮層 —— **含它關閉中的階段**;(3) 疊在上面的另一個 dialog(v14 第 9 題)。
+  // 守衛要跨 render 存活(它記得認過的浮層),所以 contentEl 走 ref、memo 只綁 persistentElements。
+  const contentElRef = React.useRef(contentEl)
+  contentElRef.current = contentEl
+  const insidePersistent = React.useMemo(
+    () => (persistentElements ? createPersistentGuard(persistentElements, () => contentElRef.current) : () => false),
+    [persistentElements],
+  )
+  const guardOutside = persistentElements
+    ? {
+        onPointerDownOutside: (e: CustomEvent<{ originalEvent: PointerEvent }>) => {
+          if (insidePersistent(e.detail.originalEvent.target)) e.preventDefault()
+        },
+        onFocusOutside: (e: CustomEvent<{ originalEvent: FocusEvent }>) => {
+          if (insidePersistent(e.detail.originalEvent.target)) e.preventDefault()
+        },
+        onInteractOutside: (e: CustomEvent<{ originalEvent: Event }>) => {
+          if (insidePersistent(e.detail.originalEvent.target)) e.preventDefault()
+        },
+      }
+    : {}
+
+  const insetCalc = `${DIALOG_INSET_VAR} * 2`
+  // `svh`(small viewport height)不是 `vh`:行動裝置的網址列收合時 `100vh` 會大於實際可視高度,
+  // 對話框底部(通常是主要動作鈕)會被切掉。DS 其他填滿視窗的外框已經是這個選擇
+  // (`app-shell.tsx` 的 `h-svh`、`sidebar.tsx` 的 `100svh`),Dialog 跟上。桌機兩者等值。
+  const availableH = `calc(100svh - ${insetCalc})`
+  const maxWidthCss = typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth
+  const maxHeightCss = typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight
+  // 上限只有一條公式,兩種模式共吃 —— 這就是「高度都不會超過最大高度」。
+  // consumer 傳的值只能讓它更矮(`min`),傳再大也不會超過視窗。
+  const heightCap = maxHeightCss ? `min(${availableH}, ${maxHeightCss})` : availableH
+
+  const resolvedHeight: 'fill' | 'hug' = height ?? (autoHeight ? 'hug' : 'fill')
+  if (process.env.NODE_ENV !== 'production' && height != null && autoHeight != null) {
+    // eslint-disable-next-line no-console
+    console.warn('[DialogContent] `height` 與 `autoHeight` 同時傳了;`autoHeight` 已 deprecated,這次以 `height` 為準。')
+  }
+  // fill 同時寫 height 與 maxHeight 不是冗餘:(a) 讓「兩種模式回報同一個上限」可被機械驗證;
+  // (b) 擋住下方 `...style` 的逃生口 —— consumer 蓋掉 `height` 時 `maxHeight` 仍然生效。
+  const heightStyle: React.CSSProperties = resolvedHeight === 'hug'
+    ? { maxHeight: heightCap }
+    : { height: heightCap, maxHeight: heightCap }
 
   // AutoFocus canonical(對齊 Material / Polaris / Atlassian)—
   // 開啟時 focus 落在 body 第一個有意義互動元素(input / button),不是 chrome close X。
@@ -97,10 +226,13 @@ const DialogContent = React.forwardRef<
   }
 
   return (
-    <DialogPortal>
-      <DialogOverlay />
+    <DialogPortal container={portalContainer ?? undefined}>
+      {/* 並存(modal={false})時 Radix 不畫 Overlay;user 2026-09-08:「為何 modal 沒有遮罩」—— 它仍是 modal,
+          宿主要被遮,只有保留節點挖洞。一般 modal 走 Radix 自己的 Overlay(z-50)。 */}
+      {/* 洞只挖給常駐節點;Content 本來就在遮罩上層(z-40 > z-30),挖給它反而會留下開場動畫縮放中量到的錯位白框 */}
+      {persistentElements ? <CoexistenceMask keep={persistentElements} /> : <DialogOverlay />}
       <DialogPrimitive.Content
-        ref={ref}
+        ref={composedRef}
         // Density:**全繼承 page**(layout-space + ui-size 都不自鎖)。2026-06-16 定論(撤回本 session 一度加的
         // data-layout-space="lg"):density.spec 第 10 行親自定義 layout-space 管「dialog body padding」——
         // Dialog 鎖死它 = override 自家 dial 對它點名要管的對象失效 = 自相矛盾。有同類 padding-density dial 的
@@ -109,15 +241,29 @@ const DialogContent = React.forwardRef<
         // 「modal 要寬鬆」需求在 lg 階自然滿足(Polaris modal 16 = 世界級下限,證明 md 16 合格);「button 不撐高
         // header」由 ui-size 繼承 page 解決(button=page sm),與 layout-space 鎖不鎖無關 → 故不需鎖。
         onOpenAutoFocus={handleOpenAutoFocus}
+        {...guardOutside}
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
-          "flex flex-col bg-surface-raised rounded-lg border border-border",
+          // 並存面(有 persistentElements)降到 z-40:窄版時常駐區(AgentPanel 蓋板 z-[45])要蓋在
+          // **它**上面;沒有 URL 的一般確認框維持 z-50,必須蓋在常駐區上面(v14 條 A)。
+          persistentElements ? "fixed left-1/2 top-1/2 z-40 w-full -translate-x-1/2 -translate-y-1/2"
+                             : "fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
+          // `overflow-hidden min-h-0` 是 overlay-surface primitive 明文要求的父層契約
+          // (`overlay-surface.tsx:180-182` 逐字:「parent(PopoverContent / HoverCardContent /
+          // Dialog / Sheet)是 flex flex-col + max-h + overflow-hidden」)。Popover/HoverCard 一直有,
+          // Dialog 與 Sheet 漏了 → 視窗變矮時內容直接畫到圓角容器外面(2026-09-12 user 截圖)。
+          // 少了 min-h-0,dialog 自己在 flex 容器裡也收縮不到 max-height 以下。
+          "flex flex-col overflow-hidden min-h-0 bg-surface-raised rounded-lg border border-border",
+          // 進出場 = 從中心淡入 + 輕微縮放,**不位移**(dialog.spec.md「動畫」段;時長 / 曲線 / reduced-motion 由
+          // surfaceMotion 消費 --motion-duration-surface / --motion-easing-enter / --motion-easing-exit)。
+          // 2026-09-09 user 抓到「從左上角飛到中間」:shadcn v3 時代的 `slide-in-from-left-1/2 slide-in-from-top-[48%]`
+          // 是為了在 keyframe 的 `transform` 裡重寫置中位移(v3 的 -translate-x-1/2 也走 transform,會被 keyframe 蓋掉);
+          // Tailwind v4 的 -translate-x-1/2 改寫進獨立的 `translate` 屬性,不再被 keyframe 蓋掉,兩者相加 = 第一幀
+          // 中心落在視窗中心左 w/2、上 0.48h 處(實測 -240px / -90.72px)。shadcn v4 版本已把這兩組 class 拿掉。
+          // 閘:scripts/dialog-coexistence-invariant.mjs「進場第一幀」(靜態禁同用 + 第一幀幾何 + 對照組)。
           surfaceMotion,
           "data-[state=open]:animate-in data-[state=closed]:animate-out",
           "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
           "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-          "data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]",
-          "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
           className,
         )}
         style={{

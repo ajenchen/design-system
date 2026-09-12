@@ -130,6 +130,23 @@ DateGrid cell 有 5 種語意視覺,每種用不同形狀/色彩語言避免混�
 
 `typeable?: boolean`(default false)→ trigger 內渲 real `<input type="text" role="combobox">` 取代 `<span>`,user 可直接打字 + Calendar icon 仍開 popover(Material X DatePicker / Ant DatePicker / Notion typed-date 雙 affordance 共識)。外層 Field wrapper 只負責視覺與 Popover click anchor,不重複 `role` / `aria-*`;popup 開啟、dialog 實際掛載後,真 input 才輸出 `aria-controls` 指向該 dialog,關閉後移除,禁止把 Radix 的懸空 IDREF 留在純視覺 wrapper。Parser `parseDateInput(input, { allowTime })` 接 ISO YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD + native `Date.parse` fallback(RFC 'Mar 12 2026')。Partial input allow;`Enter`/`Blur` commit;`Esc` reset;IME `compositionstart/end` guard 不誤觸發。Invalid → `aria-invalid`。**v1 limits**:US `MM/DD/YYYY` vs EU `DD/MM/YYYY` ambiguous → Date.parse fallback;locale-aware format prop deferred v2;TimePicker typed input deferred(column picker UX 不同)。
 
+## 可輸入模式的開啟行為(2026-09-07,user 提問後查證重訂)
+
+| 怎麼開的 | 日曆 | 焦點 | 為什麼 |
+|---|---|---|---|
+| **點欄位任何地方**(文字、空白、圖示) | 開 | **留在輸入框,可繼續打字** | Ant Design 官方文件逐字「By clicking the input box, you can select a date from a popup calendar」,且 `inputReadOnly` 預設 `false` |
+| **鍵盤 ArrowDown / Alt+ArrowDown** | 開 | **進日曆** | [W3C APG date-picker combobox](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-datepicker/) 逐字「opened by activating the choose date button or by moving keyboard focus to the combobox and pressing Down Arrow or Alt + Down Arrow」;焦點不進去就走不了日期格 |
+
+**兩條路不是二選一。** 好用的是滑鼠那條(邊看日曆邊打字),但鍵盤那條不能為了它犧牲可操作性 ——
+所以依「怎麼被打開的」分流。
+
+**訂正一則舊宣稱**:先前程式碼註解寫「Calendar icon 點才開 popover(Material/**Ant** typed-date idiom)」——
+對 Ant 而言是反的。而且實測當時**日曆一開焦點就被搬進去,之後完全打不了字**,
+等於 `typeable` 這個 prop 的賣點在日曆開啟後就失效。
+
+機械閘:`scripts/datepicker-typeable-open.mjs`。
+
+
 ---
 
 ## DatePicker.Range(2026-04-21 新增,仿 Ant Design)
@@ -290,6 +307,8 @@ DatePicker 套 `React.forwardRef` + `displayName`;`DatePickerProps` extends `Omi
 ---
 
 ## A11y 預設
+
+**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;開啟時焦點在裡面的插入點控件、關閉時觸發器 wrapper 自己是焦點站,兩種都只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。唯讀態例外:邊框透明無可染,改由全域外描邊畫在被聚焦的控件上(`field-controls.spec.md`「Focus 行為」readonly 段)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 typeable 變體焦點在真 `<input>`(插入點控件)、非 typeable 在 wrapper,兩者同樣只有邊框轉色;Range 的起訖兩顆共用同一圈邊框,靠主色底線區分(見上方 trigger 段)。
 
 - Trigger:非 typeable 由 Field wrapper 持 `role="combobox"`;typeable 由真 `<input>` 持 combobox 語意,外層 wrapper 不重複 ARIA。兩者皆有 `aria-haspopup="dialog"` + `aria-expanded={open}` + accessible name(`aria-label` / 或外層 `<label>` / 或 fieldCtx label),並只在 popup 已掛載時輸出 `aria-controls` 指向同一個 dialog ID(關閉時移除,不得留下懸空 IDREF)
 - Popover content:`role="dialog"`;單一日期 popover 的 PopoverContent 帶 `aria-label="日期選擇"`(date-picker.tsx:650,DS default dialog label),Range popover 加 `aria-label="日期區間選擇"`

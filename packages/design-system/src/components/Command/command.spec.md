@@ -17,7 +17,7 @@ benchmark:
 
 Command 是**搜尋 + 鍵盤導覽的指令清單**——提供搜尋框、分組選項、鍵盤導覽、空狀態。多用於浮層選單內部（SelectMenu）或 Command Palette（Cmd+K）。
 
-**實作基礎**：shadcn passthrough——基於 cmdk + Radix Dialog（Command Palette 模式）。本 DS 保留 shadcn 原結構,視覺樣式以 inline Tailwind class 直接掛在 cmdk primitive 上（`command.tsx`），token 值對齊（非結構繼承）MenuItem / Input / Empty 的 canonical token——改 MenuItem 不會自動連動 Command。
+**實作基礎**：shadcn passthrough——基於 cmdk + Radix Dialog（Command Palette 模式）。**視覺結構消費 DS primitive,不另寫一份**(2026-09-08 user 抓「Command 所有 story 都偏移、跟 SelectMenu 不同一套」後改):搜尋列 = `CommandInput`(SelectMenu / CommandDialog / inline 三種形態共用同一個;高度 `--field-height-*` + 8px、字級 / placeholder / disabled token 與 Field 輸入控件相同,差別只有沒有外框、底部用分隔線收邊);項目 = `CommandItem` 內包 `MenuItem`(item-anatomy SSOT:icon 槽、label / description、尾端 tag / endContent / shortcut,跟 SelectMenu 包 option 的結構相同);分組標題 = `MenuItem header`。改 MenuItem 會連動 Command。
 
 **分類**：Internal primitive——由 SelectMenu 消費（Select / Combobox / PeoplePicker 透過 SelectMenu 使用）。App **不從 root barrel front-door 直接 import** Command 家族;若要 Command Palette 類 UX,經 per-component subpath `@qijenchen/design-system/components/Command` 取用 `CommandDialog`(自行包裝確認後使用,對齊 `.claude/rules/ui-development.md`「Root barrel front-door 排除」— internal ≠ 禁用;cmdk + Radix Dialog 包裝,showcase「CommandPalette」story 消費)。
 
@@ -73,7 +73,7 @@ Command 通常由 `SelectMenu` 或自訂 Command Palette 元件消費——直�
 
 - ❌ **不在短選單（< 6 項）用 Command**：多此一舉增加認知負擔,改用 DropdownMenu 或 RadioGroup
 - ❌ **Command 不當 form input**：它是選值浮層而非輸入框——表單內選值請用 Select / Combobox,它們會自動決定是否啟用 Command 模式
-- ❌ **Command 搜尋框不是 Field Control**：不對齊 Field size token（不配對 `--field-height-md`）——它是浮層內的搜尋輸入,走 Command 自身的尺寸規格
+- ❌ **搜尋列不得另寫一份樣式**:CommandDialog、SelectMenu、inline 三種形態都用同一個 `CommandInput`;它的高度吃 Field 的 `--field-height-*` token(+8px 內距)、字級與 placeholder 同 Field 控件,不是獨立規格。(2026-09-08 撤回原「Command 搜尋框不是 Field Control,走自身尺寸規格」—— 那句就是兩份樣式漂移的許可證)
 - ⚠️ **Inline 嵌頁面 = 次要用法,必須自帶邊框容器**(2026-06-12 user 拍板放寬,原為全面禁止):主用法仍是浮層(SelectMenu 內部 / CommandDialog Cmd+K)——實際產品幾乎都走浮層形態。Inline 嵌頁面是原廠 documented 用法(cmdk README「Render this to show the command menu inline」;shadcn 預設範例即 inline 且包 `rounded-lg border`),允許但**必須自己包有邊框的容器**(rounded + border,對齊 shadcn 同款),且不可拿來替代 SelectMenu / Select(表單選值仍走它們)
 
 ---
@@ -83,10 +83,10 @@ Command 通常由 `SelectMenu` 或自訂 Command Palette 元件消費——直�
 cmdk 自動處理：
 
 - **List 語意**：`role="listbox"` + `aria-activedescendant` 指向目前 highlight 項
-- **搜尋框**：`role="combobox"` + `aria-expanded` / `aria-controls` 指向 list
+- **搜尋框**：`role="combobox"` + `aria-expanded` / `aria-controls` 指向 list(listbox 的 accessible name 預設「選項」,cmdk 預設是英文 Suggestions;傳 `label` 覆寫,**不要**在 CommandList 上寫 `aria-label`,cmdk 會靜默蓋掉)
 - **鍵盤導覽**：cmdk 提供 ↑ / ↓ 移動 highlight、Enter 選取（另支援 vim-style Ctrl+n/p/j/k、Home/End）。cmdk 本身無 Esc handler — Esc 關閉僅在 `CommandDialog`(Cmd+K)模式由 Radix Dialog 的 DismissableLayer 提供;inline `<Command>` 模式按 Esc 無反應
-- **空狀態**：`<CommandEmpty>` 自動帶 `role="presentation"`,不干擾 screen reader 的 list 朗讀
-- **分隔線**：`<CommandSeparator>` 是純視覺分組線,固定 `role="presentation"`；不冒充 listbox 選項或其他可導覽項目
+- **空狀態**：`<CommandEmpty>` 自動帶 `role="presentation"`,不干擾 screen reader 的 list 朗讀;**放在 `<CommandList>` 外面(listbox 的兄弟)**:axe `aria-required-children` 不允許 listbox 內有非 option 子元素(2026-09-08 a11y 基線重建抓到),cmdk Empty 只讀 store、不需住在 List 裡;MUI Autocomplete 的 noOptions / loading 同樣在 listbox 外
+- **分隔線**:群組之間的線由 `<CommandGroup>` 自己畫(前面還有另一個看得見的群組才畫上邊線;cmdk 隱藏群組留在 DOM 加 `hidden`,已排除),consumer **不手插** `<CommandSeparator>`(cmdk 在搜尋字非空時不渲 Separator,手插版會讓搜尋時可見群組之間沒線,2026-09-08 修)。`<CommandSeparator>` 只留給非群組內容之間的純視覺分線,固定 `role="presentation"`;不冒充 listbox 選項或其他可導覽項目
 
 Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>` / `<CommandList>` / `<CommandItem>` 即可。
 
@@ -97,28 +97,29 @@ Consumer 無需額外處理 a11y,保留 cmdk 原結構 + 使用 `<CommandInput>`
 - **Disabled item**:`<CommandItem disabled>` 透過 cmdk 內建支援,視覺繼承 MenuItem SSOT(`text-fg-disabled` + `aria-disabled=true` + 鍵盤導覽自動 skip + Enter 不觸發 onSelect)。skip 是「不進導覽清單」(cmdk `:not([aria-disabled="true"])` selector)— ↑/↓ 直接跳到下一個可選項,無中途 highlight。
 - **Group heading 不可選中**:heading 是 `aria-hidden` 裝飾 div(group container `role="presentation"`),不參與導覽與選取;SR 經 items wrapper `role="group"` + `aria-labelledby` 取得群組語意。
 - **Empty 後持續打字**:cmdk 每個 keystroke 重新過濾(`filtered.count` 驅動),`<CommandEmpty>` 持續顯示直到有 match;input 不鎖、不清空。
-- **Loading**:Command 本身非 async surface。async option fetch 應由 consumer(SelectMenu / Cmd+K palette)在外層處理 — 在 `<CommandEmpty>` slot 內渲 `<Empty icon={<CircularProgress size={48}/>}/>`(spinner 只在無可顯示選項時出現;已有 options 保留顯示,不取代 — 對齊 `select.spec.md`「Loading」2026-07-04 拍板措辭 + `empty.spec.md`「現有消費者」SelectMenu loading SSOT,禁止事項見其「禁止事項」loading 條)。Command primitive 不獨立 own loading prop。
-- **Empty(no results)**:`<CommandEmpty>` 自動偵測 search filter result = 0 時渲;consumer 必傳 fallback 文案(預設 cmdk 不渲)。
-- **Dark mode / density**:Command 的 inline Tailwind class 直接消費 semantic token（`bg-neutral-hover` / `text-fg-muted` / `text-fg-disabled` 等），token 在 dark mode 自動切值——非透過 MenuItem / Input / Empty primitive 連動。density 不獨立 own（由 consumer SelectMenu 控）。
+- **Loading**:Command 本身非 async surface。async option fetch 由 consumer(SelectMenu / Cmd+K palette)在外層處理,指示**只有一處**(2026-09-09 user 拍板;2026-09-08 的 `<CommandInput loading>` 搜尋列轉圈已退役、prop 已移除):在 `<CommandEmpty>` slot 內放 `<CommandLoading label="載入選項中" />`(`command.tsx` `CommandLoading`)= 與「沒有結果」同一種 `MenuItem message` 訊息列,前綴槽放列圖示尺寸轉圈(`ICON_SIZE[size]`:sm/md 16、lg 20)+ 可見文字,`role="status"` 直接播報,**不經 Empty**;只在清單裡沒有任何可顯示的選項時才看得到。搜尋列仍可打字、不轉圈(SSOT select-menu.spec.md「Loading」)。
+- **Empty(no results)**:`<CommandEmpty>` 在 filter result = 0 時渲;**它 own 空狀態的長相**(`command.tsx:155-172`):`MenuGroup`(`py-2`)包一列 `<MenuItem message>`——字串 children 自動包成訊息列(非互動、`text-fg-muted`、一般字重、字級同選項、置中),md 48px = 8 + 32 + 8 與 1 筆結果等高,**沒有最小高度**(舊 `minRows` / `getMenuListMinHeight` 已退役;SSOT select-menu.spec.md「Empty state」);consumer 只傳文案,不放圖示、不用 `Empty`。0 筆的讀屏播報由 `CommandEmptyStatus`(sr-only `role="status"` live region)負責,CommandDialog / SelectMenu 都渲一份。
+- **Dark mode / density**:全數經 MenuItem / CommandInput 的 token 連動(空狀態、載入列也是 MenuItem);Command 自身只剩 cmdk 反白的長相:滑鼠搬的反白 `data-[selected=true]:bg-neutral-hover`、鍵盤搬的反白 `data-[selected=true]:focus-ring-inset`(反白來歷 `useCursorMover`;focus-canonical 規則一「兩類元件」+ 規則二;項目上沒有 `hover:` 樣式,鍵盤搬走反白後滑鼠停留列的底色一起消失),以及選中底色釘住(item-anatomy「選中 × 互動疊加」)。尺寸(sm / md / lg)由 Command root 的 `size` 進 RowSizeProvider,搜尋列 / 項目 / 群組標題 / 空狀態同一個值。
 
 ---
 
 ## 常見誤解
 
 - 「選單一律用 Command」— < 6 項、選完即觸發動作的操作選單是 `DropdownMenu`(見「與 DropdownMenu 的分界」)。
-- 「Command 搜尋框是 Field control」— 不對齊 `--field-height-*`(見「禁止事項」)。
-- 「cmdk `data-selected` = 持續選中態」— 它是鍵盤 / 指標的臨時 roving highlight,故用 `bg-neutral-hover` 而非 `bg-neutral-selected`(見「為何無 StateBehavior」)。
+- 「Command 搜尋框可以自己定尺寸」— 已撤回(2026-09-08):高度 / 字級 / placeholder 都吃 Field token,只是沒有外框(浮層內的一列)。
+  **搜尋列不畫外框、只有底部分隔線 = 定案**(user 2026-09-09 逐字:「跟世界級的設計一樣就維持現狀」;對照 Linear / Raycast / cmdk 的浮層搜尋列);先前「跟 Input 一模一樣」指的是尺寸、字級、提示文字、停用態同一套 token,不含外框。
+- 「cmdk `data-selected` = 持續選中態」— 它是鍵盤 / 指標的臨時 roving highlight(游標),不是選中:滑鼠移過搬的反白用 `bg-neutral-hover`(它就是 hover)、鍵盤搬的反白畫框不上底色,永遠不用 `bg-neutral-selected`(見「為何無 StateBehavior」)。
 
 ---
 
 ## 為何無 Inspector / ColorMatrix / SizeMatrix / StateBehavior
 
-Command 是 **internal primitive**(SelectMenu 底層消費,app 不直接使用,見本 spec「分類」段),視覺 token 對齊既有 primitive 的 canonical 值（inline 寫在 `command.tsx`,非結構消費 primitive):
+Command 是 **internal primitive**(SelectMenu 底層消費,app 不直接使用,見本 spec「分類」段),視覺**結構上**消費 MenuItem 與 CommandInput,自己沒有色彩 / 尺寸決策:
 
-- **無 Inspector**:Command 無自己的決策性 prop(variant / size / severity),behavior 全部由 cmdk library 處理。該讓消費者 inspect 的是 **SelectMenu**(公開消費入口),不是 Command 本身。
-- **無 ColorMatrix**:Command 的視覺(`CommandItem` / `CommandGroup` / `CommandInput`;`CommandEmpty` 為純 className passthrough 無自帶 class)以 inline Tailwind class 直接消費 semantic token(`bg-neutral-hover` / `text-fg-muted` / `text-fg-disabled` 等,token 值對齊 MenuItem row / Input field 的 canonical 用法),無自己的色彩決策——色彩漂移由 token layer 控制(改 token 連動,改 MenuItem 不連動)。
-- **無 SizeMatrix**:Command 搜尋框與 list items 的尺寸由 **Menu block tier**(consumer SelectMenu 決定 compact / reading),Command 自身無 size prop(見本 spec「禁止事項」:Command 搜尋框不對齊 Field size token)。
-- **無 StateBehavior**:Command item 的 highlight / disabled 由 cmdk 的 `data-[selected]` / `data-[disabled]` attribute 觸發,樣式 inline 寫在 `command.tsx`(`data-[selected='true']:bg-neutral-hover` / `data-[disabled=true]:text-fg-disabled`)。**注意 cmdk `data-selected` 是「鍵盤 / 指標當前 active-highlight」(roving 臨時反白)而非 item-anatomy 的「持續選中態(persistent selected)」**,故刻意用 `bg-neutral-hover`(hover 色)而**非** `item-anatomy.spec.md` 的 `bg-neutral-selected`——對齊 VS Code / Raycast command palette 的臨時 highlight 慣例。Command 層級僅處理 search 過濾與鍵盤導覽,那是 cmdk behavior 不是視覺 state。
+- **無 Inspector**:Command 無自己的決策性 prop(variant / severity),behavior 全部由 cmdk library 處理。該讓消費者 inspect 的是 **SelectMenu**(公開消費入口),不是 Command 本身。
+- **無 ColorMatrix**:項目的色彩來自 MenuItem(hover / selected / disabled),搜尋列的來自 Field 輸入控件 token;Command 只在外層 cmdk item 上畫反白(滑鼠搬的 `data-[selected=true]:bg-neutral-hover` / 鍵盤搬的 `data-[selected=true]:focus-ring-inset`;無 `hover:`)。
+- **無 SizeMatrix**:`size`(sm / md / lg)由消費者決定並同時傳給 `CommandInput` 與 `CommandItem`(= Field 與 Menu 的同一組 tier);Command 不另定尺寸。
+- **無 StateBehavior**:cmdk `data-selected` 是「鍵盤 / 指標當前 active-highlight」(roving 臨時反白)而非持續選中態;它的長相由 CommandItem 依反白來歷(`hooks/use-input-modality.ts` `useCursorMover` + `markPointerGrab`)分流 —— 滑鼠移過搬的反白 `bg-neutral-hover`、鍵盤搬的反白畫框不上底色,兩者不同時出現、滑鼠停著不算搶(focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板「都要畫框,不上底色」+ 下午三問),消費者(SelectMenu / AgentPanel)不再各自手刻。
 
 對應 anatomy story:保留 `Overview`(展示 internal primitive 的 API surface——CommandInput / CommandList / CommandGroup / CommandItem / CommandEmpty)。深度視覺 / 尺寸對照請查 SelectMenu(consumer)與 MenuItem(item primitive)的 anatomy。
 

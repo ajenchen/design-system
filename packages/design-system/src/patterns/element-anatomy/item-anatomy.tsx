@@ -698,17 +698,27 @@ export const ItemInlineActionButton = React.forwardRef<
       ref={ref}
       type={type}
       className={cn(
+        // 焦點框往外(= 什麼都不寫,吃 styles/base.css 全域規則)。2026-09-10 逐站點實測翻案:
+        // 26 個真實站點 × sm/md/lg,四周最小淨空 5–192px(最小值 4.00 = Breadcrumb 兩側的分隔符,
+        // canonical「4.00 算放得下」),DPR2 逐像素數框帶 → 零裁切、零遮蓋。列不會裁到它:截斷是
+        // label 自己的 `truncate`(兄弟節點),不是祖先。原註解「往外 +2px 實測上下各被裁 1px」
+        // 只在 **Tag 宿主**成立(h-6 + 1px 邊框 + overflow-hidden → 淨空 3px,sm 1px),
+        // 依 focus-canonical「同一個底層元件被另一個元件放進貼邊位置,往內由那個外層元件承擔」,
+        // 往內的 class 搬到 `tag.tsx` TagDismiss,不由 primitive 整個翻內。
         "group/action relative grid place-content-center shrink-0 cursor-pointer",
         // 弱化 icon hover 階梯 SSOT(2026-07-30 user 拍板):fg-muted(neutral-7)→ 一階 fg-secondary
         // (neutral-8),不跳到 foreground(neutral-9)。inline-action.spec.md「Icon 色彩」+
         // tokens/color/semantic.css:53 為 rule owner;世界級對照 Fluent 2
         // (neutralForeground3Hover === neutralForeground2 值)/ MUI Chip deleteIcon(.26 → .4)。
-        "text-fg-muted hover:text-fg-secondary active:text-fg-secondary transition-colors",
+        // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+        "text-fg-muted hover:text-fg-secondary active:text-fg-secondary",
         // Overlay trigger active state — 只在 consumer 顯式宣告 overlayTrigger=true 時生效
         // (canonical 2026-05-05:Collapsible / drag / dismiss 等 in-place 互動 ≠ overlay,
         // 不應 leak 視覺 lock。詳 inline-action.spec.md「Overlay trigger canonical」)
         overlayTrigger && "data-[state=open]:text-fg-secondary",
-        "focus-visible:outline-2 focus-visible:outline-ring",
+        // 2026-09-07:刪掉本地 focus-visible:outline-2 + outline-ring —— 與全域
+      // styles/base.css:44-47 逐字等價(同 2px、同 --ring、offset 也吃全域的 2px),
+      // 且本區塊無 outline-none,全域本來就生效。刪除為零視覺變化。
         className
       )}
       style={{ width: iconPx, height: iconPx, ...style }}
@@ -722,8 +732,7 @@ export const ItemInlineActionButton = React.forwardRef<
           "bg-transparent",
           hoverBgClassName ?? "group-hover/action:bg-neutral-hover group-active/action:bg-neutral-active",
           // Overlay 開啟 = 維持 host hover bg(只在 overlayTrigger=true 時生效)
-          overlayTrigger && "group-data-[state=open]/action:bg-neutral-hover",
-          "transition-colors"
+          overlayTrigger && "group-data-[state=open]/action:bg-neutral-hover"
         )}
         style={{
           width: hoverBgPx,

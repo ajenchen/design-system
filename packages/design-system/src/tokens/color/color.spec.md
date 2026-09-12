@@ -270,6 +270,54 @@ Icon 色彩 canonical 的 SSOT 住 `patterns/element-anatomy/item-anatomy.spec.m
 - ❌ 搜尋配對語意裸用 `--color-amber-3/5` — 必經 semantic token(未來調色只動一處)
 - ❌ `--search-match-current` 借給按壓 / 持續選中場景 — 那是 `--neutral-active` / `--neutral-selected` 家族的域;`--text-selection` 亦禁借給資料列選取
 
+### Drop target — 「可以放到這裡」的區域配對
+
+| Token | Utility | 值 | 用途 |
+|-------|---------|------|------|
+| `--drop-target` | `bg-drop-target` | `--primary` @ 15% 半透明(兩模式同一公式) | 合法放置 / 停靠區域的底色 |
+| `--drop-target-border` | `border-drop-target-border` | = `--primary-hover`(light blue-5 / dark blue-7) | 同一區域的邊框色 |
+
+**`@theme inline` bridge 別名**:`semantic.css` 另定義 `--color-drop-target` / `--color-drop-target-border`
+(= 同名 semantic token 的 alias),這是 Tailwind v4 產出 `bg-drop-target` / `border-drop-target-border` utility 的橋接
+(token-system.spec.md「跨 family `@theme inline` bridge」),**不是第二組語意 token**;改值一律改上面那兩顆。
+
+設計依據(2026-09-03 拍板):
+
+- **底色必半透明**:區域覆蓋在別人的內容之上,沿用 Highlight 段同一條鐵律——VS Code theme-color「The color must not be opaque so as not to hide underlying decorations」(https://code.visualstudio.com/api/references/theme-color)。這也是它與 `--primary-subtle` 的分工:`-subtle` 是**元件自己的**淡底(不透明,底下沒有別人的內容:Button toggle 持續按下、DataTable range cell);`--drop-target` 是**蓋在別人內容上的暫態區域**。
+- **為什麼是 15%(先對內、再對外)**:先取 **DS 自家 alpha 階梯上的既有階** —— `primitives.css` 的 `--_na5`(light)/ `--_na4`(dark)就是 15%,也是 `--black-a15` / `--white-a15` 用的那一階,是少數**兩個模式都存在**的階;不自創新階(`opacity.css` 禁新增)。再確認它落在世界級區間內:Material 3 `dragged` state layer 0.16(拖曳是所有狀態中最高階,https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-sys-state.scss)、VS Code light `editorGroup.dropBackground` 0.18(https://github.com/microsoft/vscode/blob/main/src/vs/workbench/common/theme.ts)、Atlassian `color.background.selected.hovered` #CCE0FF ≈ 0.20 —— 15% 是這個區間的下緣,對「暫態、只出現一兩秒、面積不小」的區域最不吵。
+  > 註:同為色相覆蓋層的 `--text-selection` 用 30%(不在階梯上),因為反白必須在文字上一眼可辨;drop target 是整片區域提示,不需要那麼重。階梯是「優先取用」不是「唯一合法」,偏離要像這樣寫明理由。
+- **一個公式兩個模式**:`--primary` 在 dark 由 primitive 階梯自動變亮,故不需 dark override,也不新開 opacity 階(`opacity.css` 禁新增)。
+- **邊框取 `--primary-hover`**:瞬時態一律歸 hover 階(同 FileUpload 拖入區 2026-07-06 的收斂);值與該元件原本硬指的 `--primary-hover` 相同 → 改消費本 token **零視覺差**,兩處從此同一 SSOT。
+
+**兩種情境,同一組 token,不同組合**(2026-09-03 user 提問「FileUpload 的邏輯不一樣吧」→ 全掃確認正確):
+
+| | 常駐拖入區(`FileUpload` dropzone) | 暫態停靠區(`AgentFabDock` 右緣帶) |
+|---|---|---|
+| 靜止時 | **看得見**:dashed `--border` 邊框 + surface 底(它是使用者要瞄準的元件) | **不存在**:只有拖曳中才出現 |
+| 進入合法區 | 邊框換成 `--drop-target-border`;**不填色** | 填 `--drop-target` + 三邊 dashed `--drop-target-border`(貼邊那側不畫,見下) |
+| 被拖的東西 | 是 OS 拖曳影像,DS 管不到 → 回饋只能長在區域上 | 是 DS 自己的鈕,**當場變成落點形狀貼在落點高度**(所見即所得)→ 區域只需回答「範圍在哪」 |
+
+所以**不統一成同一個組合**:常駐區已經看得見,再填色是多餘噪音(`file-upload.spec.md`「state 信號靠邊框,非底色」);暫態區是憑空出現的,需要「整區」訊號才讀得出範圍(Windows Snap「translucent overlay」、macOS「highlighted area」、Atlassian「droppable area 換底色」)。統一的是**顏色語言**(同一組 token)與**dashed = 可放下的暫時目標**這個語彙,不是每個像素的組合。
+
+- **貼邊那側不畫邊框、不留圓角**:區域貼齊視窗邊時只畫露出的三邊,與 Sheet / Sidebar / AppShell 側欄 / 貼邊鈕(環只畫露出三邊)同一語言。
+
+**與鄰居的分界**(避免同一件事有兩個 token):
+
+| 視覺 | Token | 誰在用 |
+|---|---|---|
+| 可放下的**區域底**(蓋在別人內容上) | `--drop-target` | `AgentFabDock` 停靠帶、TreeView / nested row 的 inside-drop 整列(`lib/drag-visual.ts`) |
+| 該區域的**邊框** | `--drop-target-border` | `AgentFabDock` 停靠帶、`FileUpload` drag-over |
+| **插入位置線**(「放在這兩者之間」) | `--primary` 2px 實線(`lib/drag-visual.ts`) | DataTable row / column 重排、TreeView before/after |
+| 元件**自己的**選中 / 命中淡底(底下沒有別人的內容) | `--primary-subtle` | Button toggle 按下、DataTable range cell(持續選取,非拖放) |
+
+> 2026-09-03 收斂:TreeView / nested row 的 inside-drop 整列**已改用 `--drop-target`** —— 它蓋在該列的文字之上,正是「覆蓋層必半透明」要管的情形(VS Code 對應 token 就叫 `list.dropBackground`),而且「可以放進這一列」與「可以停靠在這條帶」是同一件事,不該有兩個 token。視覺差極小(light 13/255、dark 8/255)。DataTable 的範圍選取維持 `--primary-subtle`:那是**持續選取**,不是拖放目標。
+
+禁止:
+
+- ❌ 元件自刻 drop / snap 區域顏色(硬寫 `border-primary-hover`、`bg-primary/10`)— 一律消費本組
+- ❌ `--drop-target` 借給持續選中 / 元件自己的淡底 — 那是 `--neutral-selected` 家族與 `--primary-subtle` 的域
+- ❌ 為了「更明顯」把底色改成不透明 — 違反上面的覆蓋層鐵律
+
 ### Identity — 品牌
 
 | Token | 用途 |
@@ -641,14 +689,24 @@ Dark mode 覆寫：hover/active 方向反轉（hover → step-7，active → ste
 
 ### Selected state family
 
-用於持續 toggle on / 選中 element 的互動回饋。**四件成套（2026-08-11 user 拍板補 `-focus`；疊加行為 owner = `item-anatomy.spec.md`「選中 × 互動疊加」格）**：
+**互動階梯(2026-09-07 起單調遞增,處處不撞)**:
+
+| | rest | hover | 按壓 |
+|---|---|---|---|
+| 未按下 | 透明 | `neutral-1`(淺 2% / 深 4%) | `neutral-2`(4% / 8%) |
+| **已按下** | `neutral-2`(4% / 8%) | `neutral-3`(6% / 12%) | `neutral-4`(9% / 15%) |
+
+用於持續 toggle on / 選中 element 的互動回饋。**三件（疊加行為 owner = `item-anatomy.spec.md`「選中 × 互動疊加」格)**:
+
+> **2026-09-07 從四件變三件**:`-focus` 退役。原本它表示「鍵盤焦點停在選中列 → 底色深一階」,user 拍板改為**畫框**。同時修正一件先前的錯誤宣稱 —— 舊文寫「四件成套」,但實際上 `-focus` 與 `-active` 都是 neutral-3、`-hover` 與 `--neutral-hover` 都是 neutral-1,**四個名字只有三個相異值**,選中×焦點與選中×按壓在畫面上根本分不出來。退役後名字與值一一對應,宣稱與真實一致。
+
 
 | Utility | Token | 用途 |
 |---|---|---|
 | `bg-neutral-selected` | neutral-2 | 持續 selected rest；**選中列被滑鼠 hover 時亦釘住此值不變** |
-| `bg-neutral-selected-hover` | neutral-1 | **可取消切換鈕專屬**：pressed 上 hover 反向變淺，暗示「再點會釋放」（Fluent ToggleButton 同構；Carbon/Atlassian 同名 token 是變深，本 DS 反向為切換鈕語意的有意設計——**列元件禁用本 token**） |
-| `bg-neutral-selected-focus` | neutral-3 | **鍵盤焦點／反白停在選中列** → 深一階（游標可見，WCAG 2.4.7；滑鼠 hover 不觸發） |
-| `bg-neutral-selected-active` | neutral-3 | selected 上 `:active` 深一階 click 回饋（**按壓專屬，禁借給 hover／反白**——2026-07-05 D4 曾借用，2026-08-11 糾正） |
+| `bg-neutral-selected-hover` | neutral-3 | **可取消切換鈕專屬**（**列元件禁用本 token**）。**2026-09-07 由 neutral-1 改為 neutral-3(變淺 → 變深)**:原值想表達 Fluent 的「hover 預告釋放」,但 neutral-1 正好等於 `--neutral-hover` —— 實測兩主題皆同(淺 2%、深 4%),加上 `variant='text'` 兩態文字色都是 foreground,結果**切換鈕按下與未按下在懸停時像素完全相同**,「這顆開著沒」的訊號在 hover 當下消失。方向改為與 Carbon / Atlassian 一致 |
+| ~~`bg-neutral-selected-focus`~~ | — | **2026-09-07 退役**。原用途是「鍵盤焦點停在選中列 → 底色深一階」；user 拍板改為**畫框**（`focus-ring-inset`），底色通道不再承載第二個意義。owner = `patterns/element-anatomy/item-anatomy.spec.md`「選中 × 互動疊加」格 |
+| `bg-neutral-selected-active` | neutral-4 | selected 上 `:active` 深一階 click 回饋（**按壓專屬，禁借給 hover／反白**——2026-07-05 D4 曾借用，2026-08-11 糾正）。2026-09-07 由 neutral-3 上調:`-hover` 佔走 neutral-3 後不上調就會變成 hover 與按壓同值 |
 
 ```tsx
 // toggle button pressed 狀態

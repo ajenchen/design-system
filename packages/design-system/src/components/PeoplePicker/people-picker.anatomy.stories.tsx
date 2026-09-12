@@ -76,7 +76,14 @@ export const Overview: Story = {
                 ['people', 'PersonValue[]', '[]', '可選人員清單(dropdown 顯示)'],
                 ['placeholder', 'string', "'請選擇人員'", 'trigger 未選值提示'],
                 ['searchPlaceholder', 'string', "'搜尋人員…'", '搜尋框 placeholder'],
-                ['emptyText', 'string', "'沒有符合的人員'", '搜尋無結果提示'],
+                ['emptyText', 'string', "'沒有人員'", '真的沒有任何可選的人時的訊息列文案(本機過濾無結果 / 遠端回傳空;一句到底、可覆寫)'],
+                ['loading', 'boolean', 'false', '這個值(指派的人)在讀取 / 驗證 / 儲存:轉發 Select / Combobox —— 觸發點右側轉圈 + aria-busy;與名錄有沒有載入無關'],
+                ['optionsLoading', 'boolean', 'false', '人員名錄載入中(2026-09-09 改名自 loading):指示只在選單內 —— 沒有可顯示人員時渲「載入選項中」訊息列,觸發點不轉圈;本機過濾已載入的人員保留,遠端搜尋抓資料中舊結果不顯示'],
+                ['filterOption', 'boolean', 'true', '遠端搜尋名錄傳 false:不在本機二次過濾(轉發 Select / Combobox)'],
+                ['onSearchChange', '(value: string) => void', '—', '搜尋字改變時回呼(遠端搜尋名錄用)'],
+                ['suggestions', 'PersonValue[]', '—', '遠端搜尋、關鍵字空時列的建議人員(最近指派 / 同團隊);DS 自動包成有標題的群組,讓使用者知道名錄不只這幾位'],
+                ['suggestionsLabel', 'string', "'建議'", '建議群組標題'],
+                ['searchHintText', 'string', "'輸入關鍵字搜尋'", '遠端搜尋、關鍵字空、沒有建議也沒在載入時的提示列'],
                 ['multiDisplay', "'stack' | 'pill'", "'stack'", '多選顯示樣式(stack 疊合 +N / pill 標籤;single 忽略)'],
                 ['pillShowAvatar', 'boolean', 'true', "multiDisplay='pill' 時是否顯示 avatar prefix"],
                 ['pillWrap', 'boolean', 'true', 'pill 模式是否允許換行'],
@@ -108,10 +115,12 @@ export const Inspector: Story = {
     size: 'md',
     disabled: false,
     showDisplayEndIcon: false,
+    loading: false,
+    optionsLoading: false,
     value: SAMPLE_PEOPLE[0],
     people: SAMPLE_PEOPLE,
     searchPlaceholder: '搜尋指派對象…',
-    emptyText: '沒有符合的人員',
+    emptyText: '沒有人員',
   },
   argTypes: {
     mode: { control: 'radio', options: ['edit', 'view', 'readonly', 'disabled'] },
@@ -119,6 +128,8 @@ export const Inspector: Story = {
     size: { control: 'radio', options: ['sm', 'md', 'lg'] },
     disabled: { control: 'boolean' },
     showDisplayEndIcon: { control: 'boolean' },
+    loading: { control: 'boolean' },
+    optionsLoading: { control: 'boolean' },
     searchPlaceholder: { control: 'text' },
     emptyText: { control: 'text' },
   },
@@ -339,9 +350,9 @@ export const StateBehavior: Story = {
       </div>
 
       <div>
-        <H3>空狀態 — no match found</H3>
+        <H3>沒有人員 — 搜尋無結果</H3>
         <Desc>
-          搜尋無結果時,下拉選單顯示 `emptyText` 的內容,使用全站共用的空狀態元件。可自訂提示語。
+          搜尋無結果時,下拉選單顯示一列 `emptyText` 訊息列(與人員列同一種列幾何、次要色、置中,不用 Empty 元件)。可自訂提示語。
         </Desc>
         <PeoplePicker
           people={SAMPLE_PEOPLE}

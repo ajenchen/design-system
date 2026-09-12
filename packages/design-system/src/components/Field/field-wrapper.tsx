@@ -22,6 +22,73 @@ import { cn } from '@/lib/utils'
 //
 // 高度:固定 h = field-height token(rem),與 Button 共用同一組 token。
 
+/**
+ * Field 家族「default 外框」互動 SSOT(mode × error → bg / border / hover / focus / ring)。
+ * 三個宿主共用同一份 compoundVariants:單行 wrapper(fieldWrapperStyles)、多行 Textarea(textareaVariants)、
+ * 複合輸入盒(AgentPromptInput 等經 `fieldChromeStyles(...)` 消費)。任何新的「像欄位的容器」一律消費
+ * `fieldChromeStyles`,禁自刻 border/hover/focus 字串(2026-09-02 user 抓 AgentPromptInput 與 Textarea 互動不同)。
+ * **readonly 的焦點指示**(2026-09-10 兩次修正後的定案):**跟編輯態同一種 —— 欄位邊框轉主色 1px**。
+ * 唯讀的靜止外框是 `border border-transparent`(1px 透明邊框,盒子在、只是看不見),所以聚焦時把它轉成主色
+ * 不會有位移,長相與可編輯的欄位完全一致。理由是 Field 家族「一個家族一種焦點長相」(focus-canonical 規則二);
+ * 世界級對照同向:MUI OutlinedInput / Ant Input / Fluent Input 的 readOnly **完全不改焦點樣式**(它們的唯讀
+ * 靜止態與可編輯態本來就長一樣),Carbon 與 Polaris 雖然唯讀另有靜止樣式,但焦點指示同樣**與可編輯態相同**。
+ * 歷程:2026-09-07 的 `ring-*` idiom 隨 R1/R2 退役,0cad81e8 刪掉時沒補替代品 → readonly 一度**零指示**
+ *(WCAG 2.4.7);2026-09-10 上午先補成全域外描邊,同日 user 指出「為何不是模擬 field control focus 的樣式?
+ * field control focus 應該是 1px 的 border?」,改為現在這版並撤回那個具名外描邊 utility。
+ */
+export type FieldChromeHost =
+  /** 宿主是包住可聚焦控件的 wrapper(單行 Field wrapper / 複合輸入盒):readonly ring 用 `:has(:focus-visible)`,
+   *  overlay trigger 開啟時維持 hover 框(`data-[state=open]`)。 */
+  | 'wrapper'
+  /** 宿主本身就是可聚焦控件(`<textarea>`):readonly ring 用 `focus-visible:`,無 overlay 開啟態。 */
+  | 'control'
+
+/** 依宿主型別產出 default 外框 compounds;字串與 2026-09-02 前各宿主自寫的版本逐字相同(class 等價證明:零增減)。 */
+export function fieldDefaultChromeCompounds(host: FieldChromeHost) {
+  const wrapper = host === 'wrapper'
+  return [
+    {
+      mode: 'edit' as const,
+      variant: 'default' as const,
+      className: ['bg-surface border border-border', 'hover:border-border-hover', wrapper ? 'data-[state=open]:border-border-hover' : ''],
+    },
+    // @focus-suppress C — Field 家族 wrapper 自己拿到焦點(Select / PeoplePicker / DatePicker / TimePicker / Combobox 的關閉觸發器);承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框)
+    // 2026-09-10:同一個 Field 在可打字時(焦點在裡面的 input)靠邊框轉色、沒有外框;關閉後焦點回 wrapper 若再疊全域外框,Combobox(焦點留在輸入框)與 Select 類
+    // 就長成兩種樣子(user:「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?」)。Field 家族的焦點指示統一 = 邊框轉色,不分開著關著、不分滑鼠鍵盤;
+    // Material outlined Select / Ant Select 聚焦也只有欄位邊框。只有 wrapper 型宿主需要(textarea 自己是插入點控件、已 outline-none)。
+    { mode: 'edit' as const, variant: 'default' as const, error: false as const, className: wrapper ? 'focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' : 'focus-within:!border-primary focus-within:hover:!border-primary' },
+    { mode: 'view' as const, variant: 'default' as const, className: 'bg-transparent border border-transparent' },
+    {
+      mode: 'readonly' as const,
+      variant: 'default' as const,
+      // 唯讀:邊框保持透明(不轉色),焦點指示 = 全域外描邊。wrapper 宿主自己就是 tab stop(唯讀三兄弟 / 觸發器),
+      // 全域規則直接生效;control 宿主(<textarea>)自己寫了 outline-none,在這裡解除(見本檔頂端 JSDoc)。
+      // @focus-suppress C — 唯讀的 wrapper 自己是 tab stop(唯讀三兄弟 Checkbox / Switch / RadioGroup、唯讀的 Select 類觸發器);
+      //   承擔者:同一行的 focus-within:!border-primary(邊框轉色就是這個 tab stop 的框,與編輯態同一種長相)
+      className: wrapper
+        ? 'bg-readonly border border-transparent focus-within:!border-primary focus-visible:outline-none'
+        : 'bg-readonly border border-transparent focus-visible:!border-primary',
+    },
+    { mode: 'disabled' as const, variant: 'default' as const, className: 'bg-disabled border border-transparent cursor-not-allowed' },
+    // @focus-suppress C — error 態的 wrapper 自己拿到焦點(同上);承擔者:同一行的 focus-within:!border-error(紅框就是這個 tab stop 的框)
+    { mode: 'edit' as const, error: true as const, className: wrapper ? 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error focus-visible:outline-none' : 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error' },
+  ]
+}
+
+/** 單行 wrapper 用的 compounds(同 host='wrapper')。 */
+export const FIELD_DEFAULT_CHROME_COMPOUNDS = fieldDefaultChromeCompounds('wrapper')
+
+/** 複合欄位宿主(AgentPromptInput 等 wrapper 型)直接消費:只回傳外框互動 class,不含尺寸/內距。 */
+export const fieldChromeStyles = cva('transition-colors duration-150', {
+  variants: {
+    mode: { edit: '', view: '', readonly: '', disabled: '' },
+    variant: { default: '', naked: '' },
+    error: { true: '', false: '' },
+  },
+  compoundVariants: FIELD_DEFAULT_CHROME_COMPOUNDS,
+  defaultVariants: { mode: 'edit', variant: 'default', error: false },
+})
+
 export const fieldWrapperStyles = cva(
   [
     // K10 fix(2026-05-04):`group/field` 讓 inner placeholder/text 可透過 `group-data-[field-mode=...]/field:` 變體
@@ -98,81 +165,9 @@ export const fieldWrapperStyles = cva(
     // Combobox trigger 用 asChild,Radix 自動 set `data-state="open"` on trigger root → trigger
     // 視覺維持 hover 樣式直到浮層關閉(對齊 inline-action.spec.md「狀態極簡派」)。
     compoundVariants: [
-      // default variant chrome by mode
-      {
-        mode: 'edit',
-        variant: 'default',
-        className: [
-          'bg-surface border border-border',
-          'hover:border-border-hover',
-          // 2026-05-06 v13.3 SSOT canonical:focus-within `!important` 強制勝過 data-state attribute
-          // selector(specificity tie at 0,2,0;source order 後者勝)。
-          //
-          // 設計原則:**focus dominates everything**(M11 fix「focus-dominates-hover」延伸成
-          // 「focus-dominates-{hover,open,error-rest}」)。Cursor 在輸入框 = user 編輯中 = 必藍。
-          //
-          // 對齊世界級三家共識:
-          //   - Material Design 3:focus → primary line color
-          //   - Polaris(Shopify):focus state border-focus(藍)overrides hover/open
-          //   - Ant Design 5:`.ant-select-focused` blue,popover open + select option close 後
-          //     trigger 仍 focused → blue stays(focus return canonical via Radix `onCloseAutoFocus`)
-          //
-          // 副作用 — Ant 風「選後藍 / 取消灰」自動達成:
-          //   - 選 option close popover → Radix focus return to trigger → focus-within fires → 藍
-          //   - 點外取消 close popover → focus 移外 → focus-within 不 fire → 灰
-          //
-          // 2026-07-04 Q1 拍板修訂:「focus dominates everything」對 error 讓位(見 error variant
-          // 註解)— focus 藍只在 error:false compound(下方),error:true 走 error compound 紅。
-          'data-[state=open]:border-border-hover',
-        ],
-      },
-      { mode: 'edit', variant: 'default', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
-      {
-        // 2026-07-16 round16 Model A(user GO,推翻 2026-05-13 Path Ⅰ 的 `!px-0 !py-0`):
-        // view×default = **edit 幾何減 chrome** — 保留 size 軸的 `px-[var(--field-px)]` + `h-field-*`,
-        // 只拔 border/bg(透明)。理由 = view 用在 cell/inline-edit/詳情,要對齊的是「edit 的值位置」
-        // (非 label 左緣),故水平垂直都留 → view 與 edit 同一顆控件、只差 chrome → read↔edit 零跳。
-        // 世界級對照:Atlassian inline-edit(read=edit 幾何,靠容器負邊距對齊)+ Bootstrap
-        // `.form-control-plaintext`(`padding: $input-padding-y 0` 留 padding);我們比 Bootstrap 更徹底
-        // (連水平 px 也留),因用例是 align-to-edit 非 align-to-label。詳 field-controls.spec.md「軸一 view mode」
-        // + planning/2026-07-15-inline-edit-field-mode-remediation.md round16。
-        // ⚠️ view×default ≠ view×naked:naked = bare(cell substrate,host TD 給 padding);default = 留幾何。
-        mode: 'view',
-        variant: 'default',
-        className: 'bg-transparent border border-transparent',
-      },
-      {
-        mode: 'readonly',
-        variant: 'default',
-        // 2026-07-09 A11y fix(WCAG 2.4.7 Focus Visible):readonly **有值** 渲染 native `<input readOnly>`
-        // = 可 Tab 聚焦、可選取/複製,但原 compound 無任何 focus 指示 → 鍵盤使用者聚焦不可見 = 違反。
-        // 補 focus ring 採 **ring idiom**(`ring-2 ring-ring ring-offset-1`,與 Button/Checkbox/Tabs/
-        // Switch 同一套 focus-visible canonical;`--ring == --primary` semantic.css:334)而非 edit mode
-        // 的 `border-primary` idiom —— readonly 邊框 transparent 無可染;且 ring 語義 = 「可聚焦但非文字
-        // 輸入」(對齊 button/tab/checkbox 這類 focusable-非-text-entry 控件的視覺語言)。
-        // `:has(:focus-visible)`:readonly 渲 native `<input readOnly>`。⚠️ 瀏覽器對 text-entry 控件的
-        // :focus-visible 啟發式在滑鼠點擊時**亦 match**(text input 恆視為 focus-visible,對齊
-        // field-controls.spec.md「Focus 行為」段『文字輸入永遠 focus-visible、CSS 無法區分點擊與 Tab』),
-        // 故點擊 readonly input 也會顯 ring,勿宣稱僅鍵盤觸發(button 的 focus-visible 才滑鼠不觸發,
-        // input 不同;真要滑鼠抑制需 JS 追蹤 input modality,屬 API 擴充)。
-        className: 'bg-readonly border border-transparent [&:has(:focus-visible)]:ring-2 [&:has(:focus-visible)]:ring-ring [&:has(:focus-visible)]:ring-offset-1',
-      },
-      {
-        // 2026-05-13 R3.5(per codex Q3 verdict + user 拍「想盡辦法 auto-handle prereq」):
-        // 移除 `opacity-disabled` blanket — Avatar 已 fieldCtx-aware self-dim(avatar.tsx self-managed
-        // via `isDisabledInField` derivation)。Field wrapper 不再 host-control Avatar opacity。
-        // Inner content(text-fg-disabled / Avatar self-opacity)走具體 disabled token per color.spec.md:729。
-        mode: 'disabled',
-        variant: 'default',
-        className: 'bg-disabled border border-transparent cursor-not-allowed',
-      },
-      // (2026-07-09 `bare` variant 退役:原 edit×bare / edit×bare×error compounds 已移除。)
-      // error chrome(mode=edit 限定,variant 不分 — naked cell 內 error 同樣紅框,保留既有控件層行為):
-      {
-        mode: 'edit',
-        error: true,
-        className: 'border-error hover:border-error-hover focus-within:!border-error focus-within:hover:!border-error',
-      },
+      // default 外框 × mode / error 全部來自 FIELD_DEFAULT_CHROME_COMPOUNDS(單行/多行/複合三宿主同一份;
+      // 原本逐條寫在此處的 edit/view/readonly/disabled/error 字串與其 rationale 註解已上移到該常數)
+      ...FIELD_DEFAULT_CHROME_COMPOUNDS,
       // (2026-07-09 `bare` variant 退役:原 display×bare / readonly×bare / disabled×bare compounds 已移除。)
       // naked variant — cell-as-input substrate(Notion / Airtable / Excel canonical)
       //
@@ -207,7 +202,8 @@ export const fieldWrapperStyles = cva(
           'group-data-[row-mode=auto]/cell:!items-start',
         ],
       },
-      { mode: 'edit', variant: 'naked', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary' },
+      // @focus-suppress C — naked wrapper 自己聚焦(DataTable 儲存格裡的 Select / DatePicker 觸發器);承擔者:同一行 focus-within:!border-primary
+      { mode: 'edit', variant: 'naked', error: false, className: 'focus-within:!border-primary focus-within:hover:!border-primary focus-visible:outline-none' },
       {
         // 2026-05-12 fix v2(M32 root invariant audit):
         //   Q1 root invariant?:cell-as-input view 視覺位置 = `cell.items-{X}` × `Field.height`
@@ -258,6 +254,7 @@ export const bareInputStyles = [
   // 該顯 ellipsis 的 SSOT。對齊 data-table.spec.md:233「禁硬裁無 ellipsis」+ field-controls.spec.md:286
   // 共享 contract(a)「view/readonly/disabled/edit 4 mode 共享同一 renderer」semantic 對齊。
   'flex-1 min-w-0 truncate bg-transparent',
+  // @focus-suppress B — B Field 家族輸入控件;承擔者:裸 input;指示器是 wrapper 的 focus-within:!border-primary
   'outline-none border-none p-0',
   'text-[inherit] font-[inherit] leading-[inherit]',
   // A3 fix(2026-05-05):`<input>` UA stylesheet 強制 `text-align: start`,阻斷 parent 的

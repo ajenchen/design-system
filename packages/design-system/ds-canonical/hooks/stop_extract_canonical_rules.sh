@@ -11,7 +11,8 @@ if [ "$STATUS" -ne 0 ]; then
   OUTPUT=$(head -8 "$RAW_OUTPUT")
   MESSAGE=$(printf 'Canonical-rule extraction Stop check execution failed (exit %s):\n%s' "$STATUS" "$OUTPUT")
 else
-  OUTPUT=$(grep -m 8 -E 'GAPS|✅|keywords missing' "$RAW_OUTPUT" || true)
+  # 同上:通過就靜默,只有缺口才出聲。
+  OUTPUT=$(grep -m 8 -E 'GAPS|keywords missing' "$RAW_OUTPUT" || true)
   [ -z "$OUTPUT" ] && exit 0
   MESSAGE=$(printf 'Canonical-rule extraction Stop check:\n%s' "$OUTPUT")
 fi

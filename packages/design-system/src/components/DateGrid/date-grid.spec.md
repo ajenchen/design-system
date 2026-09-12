@@ -103,7 +103,7 @@ DateGrid 是 internal primitive(見「定位」),一般 consumer 經 `DatePicker
 | **today**(未選) | today indicator | 消費 `primary` semantic role；確切結構與尺寸由 `date-grid.tsx` 擁有 | 與 selected background 保持不同狀態語言，兩者疊加時仍可辨識 |
 | **today + selected** | 數字下方短圓桿(白) | bar 色切 `on-emphasis` | 選中藍底上藍 bar 隱形,必切白;以 state 疊加 selector 覆寫 |
 | **disabled** | 灰底 + 淡字 | `bg-disabled` + `fg-disabled` + `cursor-not-allowed` | 跟 Button disabled token 一致,不自創 palette |
-| **outside(非本月)**| 淡字(只文字) | `fg-muted` | 比 disabled 弱:outside 仍可 hover / 可點,純是「非焦點月份」的標示 |
+| **outside(非本月)**| 淡字(只文字) | `fg-muted` —— **僅在該日仍可點時** | 比 disabled 弱:outside 的前提就是「仍可 hover / 可點」,純是「非焦點月份」的標示。**該日若同時被 disable,一律讓位給 `fg-disabled`**(M24「disabled > muted」)—— 兩者都套會讓「非本月又不可選」比「本月不可選」更深,恰好相反。實作以 `[&>button:not(:disabled):not([aria-disabled="true"])]` 表達此前提,不用 `!important` 硬壓(2026-09-07 user 抓圖修正)|
 | **selected / range 端點** | 藍底白字圓 | button `primary` 底 + `on-emphasis` 字 | range_start / range_end 共用此視覺 |
 | **range 端點 cell bg** | 灰底半圓 track,**高度 = button**,向 middle 外擴 2px bridge gap | `neutral-selected`;class 細節見「Range track canonical」+ tsx | 圓弧半徑 = button 半徑無錯位;舊版 cell-level bg 圓弧半徑 16px 比 button 14px 大 = 視覺 misalign |
 | **range track(中間)** | 灰底矩形,**高度 = button**(28×28 @ md),左右各外擴 2px 接合相鄰 cell | `neutral-selected`;button 透明顯露 track(class 細節見 tsx)| track 高度跟 selected 圓一致,不留 2px「fat」邊;相鄰 pseudo 接合連貫橫向 track |

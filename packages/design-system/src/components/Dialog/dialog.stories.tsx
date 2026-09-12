@@ -1,19 +1,24 @@
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
+import { useCallback, useRef } from 'react'
 import { useState } from 'react'
-import type { Meta } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react'
 import { ChevronUp, ChevronDown, MoreVertical } from 'lucide-react'
 import {
+  DialogDescription,
   Dialog, DialogTrigger, DialogContent, DialogHeader, DialogBody, DialogFooter, DialogTitle, DialogClose,
 } from './dialog'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/design-system/components/DropdownMenu/dropdown-menu'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/design-system/components/Tabs/tabs'
 import { Button } from '@/design-system/components/Button/button'
 import { Field, FieldLabel, FieldDescription } from '@/design-system/components/Field/field'
 import { Input } from '@/design-system/components/Input/input'
+import { DescriptionList, DescriptionItem } from '@/design-system/components/DescriptionList/description-list'
 import { Avatar } from '@/design-system/components/Avatar/avatar'
 import { Switch } from '@/design-system/components/Switch/switch'
 import { MenuItem } from '@/design-system/components/Menu/menu-item'
 import { ProfileCard, ProfileCardDefaultActions } from '@/design-system/components/ProfileCard/profile-card'
 import { ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
+import { openOverlayParameters } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
 
 /**
  * 通知設定 — flush 中 item(title + desc + right-side Switch)
@@ -160,6 +165,8 @@ function MemberRow({ member, index }: { member: (typeof MEMBERS)[number]; index:
   )
 }
 
+type Story = StoryObj
+
 const meta: Meta = {
   title: 'Design System/Components/Dialog/展示',
   tags: ['autodocs'],
@@ -177,7 +184,8 @@ export const Default = {
       <DialogTrigger asChild>
         <Button>邀請成員加入專案</Button>
       </DialogTrigger>
-      <DialogContent>
+      {/* 邀請成員:一句說明的短表單,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
+      <DialogContent height="hug">
         <DialogHeader>
           <DialogTitle>邀請成員到「Q3 設計改版」</DialogTitle>
         </DialogHeader>
@@ -202,7 +210,8 @@ export const WithForm = {
       <DialogTrigger asChild>
         <Button>開啟 Modal</Button>
       </DialogTrigger>
-      <DialogContent>
+      {/* 建立專案:兩個欄位的短表單,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
+      <DialogContent height="hug">
         <DialogHeader>
           <DialogTitle>建立專案</DialogTitle>
         </DialogHeader>
@@ -232,6 +241,8 @@ export const WithForm = {
 
 export const LongContent = {
   name: '長內容',
+  // 預設開著(視覺稽核要截到捲動中的 body);docs 頁進 iframe 才不會跟其他開著的 story 疊在一起
+  parameters: openOverlayParameters('640px'),
   render: () => (
     <Dialog defaultOpen>
       <DialogTrigger asChild>
@@ -268,7 +279,8 @@ export const Destructive = {
       <DialogTrigger asChild>
         <Button variant="primary" danger>刪除</Button>
       </DialogTrigger>
-      <DialogContent>
+      {/* 確認刪除:單一決策的確認框,開啟期間內容高度不會變 → hug(spec「高度軸」判準) */}
+      <DialogContent height="hug">
         <DialogHeader>
           <DialogTitle>確認刪除</DialogTitle>
         </DialogHeader>
@@ -295,6 +307,7 @@ export const Destructive = {
  */
 export const ListBody = {
   name: '主體放清單',
+  parameters: openOverlayParameters('560px'),
   render: () => (
     <div className="flex flex-col gap-6 items-start">
       {/* 大 item:avatar 40 + title + description(對齊 user 期望 + Material M3 + FileItem rich) */}
@@ -374,6 +387,7 @@ export const ListBody = {
  */
 export const HeaderActions = {
   name: '標頭操作',
+  parameters: openOverlayParameters('480px'),
   render: () => (
     <Dialog defaultOpen>
       <DialogTrigger asChild>
@@ -396,18 +410,12 @@ export const HeaderActions = {
             <p className="text-body">
               重新設計結帳步驟,將付款方式與發票資訊合併為單一步驟,預期提升行動端轉換率。
             </p>
-            <div className="flex flex-col gap-2">
-              {[
-                ['指派人', 'Alan Chen'],
-                ['狀態', '進行中'],
-                ['截止日', '2026-07-18'],
-              ].map(([label, value]) => (
-                <div key={label} className="flex items-center gap-3">
-                  <span className="w-16 shrink-0 text-caption text-fg-secondary">{label}</span>
-                  <span className="text-body">{value}</span>
-                </div>
-              ))}
-            </div>
+            {/* 2026-09-08:key / value 用 DescriptionList(owner:description-list.spec.md),不再手刻字級與欄寬 */}
+            <DescriptionList orientation="horizontal">
+              <DescriptionItem label="指派人">Alan Chen</DescriptionItem>
+              <DescriptionItem label="狀態">進行中</DescriptionItem>
+              <DescriptionItem label="截止日">2026-07-18</DescriptionItem>
+            </DescriptionList>
           </div>
         </DialogBody>
         <DialogFooter>
@@ -476,21 +484,14 @@ export const WithTabsInHeader = {
               </div>
             </TabsContent>
             <TabsContent value="members" className="mt-0">
-              <div className="flex flex-col gap-3">
-                {[
-                  ['Alan Chen', '管理員'],
-                  ['Betty Wu', '編輯者'],
-                  ['Charlie Lee', '檢視者'],
-                ].map(([name, role]) => (
-                  <div key={name} className="flex items-center justify-between">
-                    <span className="text-body">{name}</span>
-                    <span className="text-caption text-fg-secondary">{role}</span>
-                  </div>
-                ))}
-              </div>
+              <DescriptionList orientation="horizontal">
+                <DescriptionItem label="Alan Chen">管理員</DescriptionItem>
+                <DescriptionItem label="Betty Wu">編輯者</DescriptionItem>
+                <DescriptionItem label="Charlie Lee">檢視者</DescriptionItem>
+              </DescriptionList>
             </TabsContent>
             <TabsContent value="integrations" className="mt-0">
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-[var(--layout-space-loose)]">
                 {[
                   { key: 'slack', label: 'Slack 通知', on: true },
                   { key: 'github', label: 'GitHub PR 同步', on: true },
@@ -545,4 +546,132 @@ export const OpenSnapshot = {
       </DialogContent>
     </Dialog>
   ),
+}
+
+/* ── G1 POC:Modal Dialog 開著時,舞台上另一個浮層掛載會不會廢掉 Dialog 的焦點鎖 ──
+   為什麼需要這個 probe:`@radix-ui/react-focus-scope/dist/index.mjs:71-73` 的
+   `focusScopesStack.add(focusScope)` 寫在 `if (container)` 裡,**完全不看 `trapped`**;
+   而 `add` 會對前一個 scope 呼叫 `pause()`(`:184-190`)。
+   推論是「掛載任何 FocusScope(含 modal={false} 的)都會暫停正在生效的 Dialog 焦點鎖」——
+   這是 agent 面板要與有 URL 的 Modal 並存(A 條)時的硬約束,**不能只憑讀原始碼下結論**。
+
+   讀法:Dialog 開著、Popover 也開著時,連按 Tab 應該**永遠停在 Dialog 內**。
+   若焦點跑到 Dialog 外(例如背景那顆按鈕),就證實焦點鎖被廢掉了。
+   量測由 `scripts/dialog-focus-trap-poc.mjs` 執行。 */
+export const FocusTrapWithConcurrentOverlay: Story = {
+  name: '焦點鎖 × 並存浮層(POC)',
+  tags: ['test-only'],
+  render: () => (
+    <div className="flex flex-col gap-3 p-6">
+      <Button variant="secondary" id="poc-outside-before">背景鈕(前)</Button>
+      <Dialog defaultOpen>
+        <DialogContent>
+          <DialogHeader><DialogTitle>並存浮層測試</DialogTitle></DialogHeader>
+          <DialogBody>
+            <div className="flex flex-col gap-2">
+              <Button variant="secondary" id="poc-inside-1">Dialog 內鈕 1</Button>
+              <Button variant="secondary" id="poc-inside-2">Dialog 內鈕 2</Button>
+            </div>
+          </DialogBody>
+          <DialogFooter><DialogClose asChild><Button variant="tertiary">關閉</Button></DialogClose></DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* 舞台上的另一個浮層 —— 模擬 agent 面板內開了一個選單。
+          **用 DropdownMenu 不用 Popover**:Radix 的 PopoverContent 自己就帶 `role="dialog"`,
+          會讓「焦點在不在 Dialog 內」的判定變模糊;而且非 modal Popover 的內容不進自然 Tab 順序,
+          對照組因此建立不起來(2026-09-07 兩次都踩到)。 */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="secondary" id="poc-popover-trigger">舞台浮層</Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem id="poc-popover-inner">浮層內項</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button variant="secondary" id="poc-outside-after">背景鈕(後)</Button>
+    </div>
+  ),
+}
+
+/* 上面那個 POC 的**對照組**:同樣的浮層,但沒有 Dialog。
+   沒有這一組的話,「Tab 沒跑出 Dialog」也可能只是因為那顆鈕本來就走不到 —— 那樣就什麼都沒證明。 */
+export const FocusTrapControlNoDialog: Story = {
+  name: '焦點鎖 POC 對照組(無 Dialog)',
+  tags: ['test-only'],
+  render: () => (
+    <div className="flex flex-col gap-3 p-6">
+      <Button variant="secondary" id="poc-outside-before">背景鈕(前)</Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="secondary" id="poc-popover-trigger">舞台浮層</Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem id="poc-popover-inner">浮層內項</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button variant="secondary" id="poc-outside-after">背景鈕(後)</Button>
+    </div>
+  ),
+}
+
+/**
+ * 並存契約的**測試夾具**(不是展示範例)。
+ *
+ * 2026-09-11 user 逐字:「Dialog 的並存範例給我刪掉」——**側欄看得到的那支展示範例已移除**。
+ * 但 `persistentElements` 這個能力本身沒有退役(`dialog.spec.md`「並存(persistentElements)」仍然有效),
+ * 它的 8 條機械斷言(常駐區可聚焦可打字、其餘背景仍被抑制、對話框不與常駐區相交、遮罩 = 舞台、側欄中心可點)
+ * 需要一個掛載目標。所以把場景縮到**剛好夠閘用**的最小 DOM,並標 `test-only` —— 側欄與 docs 都不會出現,
+ * 跟 FileViewer 同一份契約的做法一致(`file-viewer.stories.tsx` 的 `CoexistenceContract` 也是 `test-only`)。
+ *
+ * 要連這個夾具也一起刪,就得同時退役 `scripts/dialog-coexistence-invariant.mjs` 的 (B) 與 (G) 兩段 ——
+ * 那會讓 `persistentElements` 變成沒有任何機械保護的能力,不是我可以自己決定的取捨。
+ */
+export const CoexistencePoc: Story = {
+  name: '測試夾具 — 並存區域(persistentElements)',
+  tags: ['test-only'],
+  parameters: { layout: 'fullscreen' },
+  render: () => {
+    const Fixture = () => {
+      const [stage, setStage] = useState<HTMLDivElement | null>(null)
+      const asideRef = useRef<HTMLElement | null>(null)
+      const keep = useCallback(() => [asideRef.current].filter((el): el is HTMLElement => !!el), [])
+      const [open, setOpen] = useState(true)
+      const [inside, setInside] = useState('')
+      const [aside, setAside] = useState('')
+      return (
+        <div className="flex h-svh">
+          <div ref={setStage} className="relative flex min-w-0 flex-1 flex-col gap-2 overflow-hidden p-4" style={{ transform: 'translateZ(0)' }}>
+            <Button id="coexist-background-btn" variant="primary" onClick={() => setOpen(true)}>開啟</Button>
+            {stage && (
+              <Dialog open={open} onOpenChange={setOpen} persistentElements={keep}>
+                <DialogContent maxWidth={480} autoHeight portalContainer={stage}>
+                  <DialogHeader>
+                    <DialogTitle>任務 #4821</DialogTitle>
+                    <DialogDescription>並存契約夾具</DialogDescription>
+                  </DialogHeader>
+                  <DialogBody>
+                    <Field>
+                      <FieldLabel>留言</FieldLabel>
+                      <Input id="coexist-inside-input" value={inside} onChange={(e) => setInside(e.target.value)} />
+                    </Field>
+                  </DialogBody>
+                  <DialogFooter>
+                    <Button id="coexist-inside-btn" variant="primary" disabled={!inside.trim()} onClick={() => setOpen(false)}>儲存</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+          <aside ref={asideRef} id="coexist-aside" aria-label="評論" className="flex w-[300px] shrink-0 flex-col gap-2 border-l border-divider bg-surface p-4">
+            <Field>
+              <FieldLabel>新增評論</FieldLabel>
+              <Input id="coexist-aside-input" value={aside} onChange={(e) => setAside(e.target.value)} />
+            </Field>
+            <div><Button id="coexist-aside-btn" variant="primary" disabled={!aside.trim()} onClick={() => setAside('')}>送出</Button></div>
+          </aside>
+        </div>
+      )
+    }
+    return <Fixture />
+  },
 }

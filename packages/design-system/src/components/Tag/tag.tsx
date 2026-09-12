@@ -26,6 +26,27 @@ function getMeasureCtx() {
   return _measureCtx
 }
 
+/**
+ * 截斷量測的兩層快取(2026-09-11;CPU 剖析:這個 measure 在一次 6,000px/s 手勢裡自身時間 142–187ms,
+ * 是 DataTable 每列成本的第二大項)。
+ *
+ * 一次量測做三件事:`getComputedStyle`(逼出樣式重算)、`measureText`、讀 `clientWidth`(逼出版面)。
+ * 前兩件在同一個畫面裡幾乎總是重複 —— 同尺寸的 Tag 字型完全相同,而表格裡的標籤文字更是少數幾種
+ * (roadmap 範例 500 列只有 frontend / design / backend / spike / ops / qa / docs / mobile 八種)。
+ *
+ * **字型快取的鍵必須涵蓋所有會改變計算字型的東西**:class(尺寸 / 變體)、最近的 `data-density`、
+ * 根節點的 `data-theme`、以及頁面縮放(`devicePixelRatio`)。**字體檔晚載入會改變寬度**,
+ * 所以 `document.fonts` 一有載入完成就把兩層快取整個清掉 —— 這是這類快取最容易出錯的地方,不能省。
+ */
+const _fontCache = new Map<string, { font: string; padL: number; padR: number }>()
+const _widthCache = new Map<string, number>()
+let _fontsHooked = false
+function hookFontInvalidation() {
+  if (_fontsHooked || typeof document === 'undefined' || !document.fonts) return
+  _fontsHooked = true
+  document.fonts.addEventListener('loadingdone', () => { _fontCache.clear(); _widthCache.clear() })
+}
+
 const tagVariants = cva(
   "inline-flex items-center rounded-md border border-transparent transition-colors cursor-text",
   {
@@ -128,9 +149,13 @@ function TagDismiss({ onRemove, label, solid, color }: { onRemove: () => void; l
           ? 'group-hover/action:bg-[var(--dismiss-hover)] group-active/action:bg-[var(--dismiss-active)]'
           : undefined
       }
+      // 焦點框往內:Tag 是貼邊宿主 —— root `overflow-hidden`(:196)+ 1px 邊框(:30)+ h-6 / h-5(:42-44)
+      // 包住 16px 的 ×,上下淨空只有 3px(sm 1px)。2026-09-10 DPR2 實測:強制往外時每側被裁 0.7–0.9px,
+      // sm 幾乎整圈不見。依 focus-canonical「問題二」淨空 < 4px 往內 +「往內由外層元件承擔」
+      // (底層 ItemInlineActionButton 維持預設往外)。
       // colored host 才 override primitive 預設(繼承 Tag 文字色,label 同色);
       // neutral subtle 留給 primitive 的 fg-muted → hover fg-secondary 階梯。
-      className={inheritsHostColor ? 'text-current hover:text-current active:text-current' : undefined}
+      className={cn('focus-visible:focus-ring-inset', inheritsHostColor && 'text-current hover:text-current active:text-current')}
     />
   )
 }
@@ -147,17 +172,29 @@ function TagInner(
   //     (Tag 原本即無 rAF/timeout 二次量)—— 三處變異全走 options,行為零漂移。
   const { ref: ownRef, isTruncated } = useTruncated<HTMLDivElement>({
     measure: (el) => {
-      const textSpan = el.querySelector('[data-tag-text]')
+      const textSpan = el.querySelector('[data-tag-text]') as HTMLElement | null
       const ctx = getMeasureCtx()
       if (!textSpan || !ctx) return undefined
+      hookFontInvalidation()
       const text = textSpan.textContent || ''
-      const cs = getComputedStyle(textSpan)
-      ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
-      const textWidth = ctx.measureText(text).width
-      const padL = parseFloat(cs.paddingLeft) || 0
-      const padR = parseFloat(cs.paddingRight) || 0
-      const needed = textWidth + padL + padR
-      return needed > (textSpan as HTMLElement).clientWidth + 1
+      // 字型 / 內距:同一組(class × density × theme × 縮放)的 Tag 完全相同,量一次就夠。
+      const styleKey = `${textSpan.className}|${el.closest('[data-density]')?.getAttribute('data-density') ?? ''}|${document.documentElement.getAttribute('data-theme') ?? ''}|${typeof devicePixelRatio === 'number' ? devicePixelRatio : 1}`
+      let st = _fontCache.get(styleKey)
+      if (!st) {
+        const cs = getComputedStyle(textSpan)
+        st = { font: `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`, padL: parseFloat(cs.paddingLeft) || 0, padR: parseFloat(cs.paddingRight) || 0 }
+        _fontCache.set(styleKey, st)
+      }
+      // 文字寬度:同一個字型 + 同一段文字必然同寬(表格裡標籤文字重複率極高)。
+      const widthKey = `${st.font}\u0000${text}`
+      let textWidth = _widthCache.get(widthKey)
+      if (textWidth === undefined) {
+        ctx.font = st.font
+        textWidth = ctx.measureText(text).width
+        if (_widthCache.size > 2000) _widthCache.clear()
+        _widthCache.set(widthKey, textWidth)
+      }
+      return textWidth + st.padL + st.padR > textSpan.clientWidth + 1
     },
     deps: [children],
     timing: 'layoutEffect',
@@ -194,7 +231,7 @@ function TagInner(
         tagVariants({ color, size }),
         solidClass,
         'w-fit min-w-0 overflow-hidden',
-        isTruncated && 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+        isTruncated && '',
         className,
       )}
       // 2026-05-18 Round 5 fix(per Codex M31 Round 5 verdict + user 拍板「那就開始做」):

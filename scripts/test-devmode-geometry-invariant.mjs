@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
 import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
+import { launchBrowser } from './lib/launch-browser.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const CANONICAL_UTILS = join(ROOT, 'packages/storybook-config/addons/ds-devmode/utils')
@@ -68,9 +69,13 @@ const authorityBundle = bundle.outputFiles[0].text
 
 let totalFail = 0
 const results = []
-const browser = await chromium.launch({ headless: true })
-try {
-  for (const dpr of DPRS) {
+// 2026-09-07:**每個 DPR 開一次瀏覽器**,不是在同一個瀏覽器裡開第二個 context。
+// 本 repo 的沙箱要 `--single-process` 才起得了 Chromium(實測只給 `--no-sandbox` 起不來),
+// 而 single-process 結構上開不了第二個 context —— 第一個 DPR 會過、第二個直接崩,
+// 症狀是「跑到一半才爆」而不是乾脆地起不來,很容易被誤讀成別的問題。
+for (const dpr of DPRS) {
+  const browser = await launchBrowser()
+  try {
     const context = await browser.newContext({ deviceScaleFactor: dpr, viewport: { width: 1280, height: 720 } })
     try {
       const page = await context.newPage()
@@ -125,9 +130,9 @@ try {
     } finally {
       await context.close()
     }
+  } finally {
+    await browser.close()
   }
-} finally {
-  await browser.close()
 }
 
 console.log('\n=== Geometry Diagnostic Matrix ===')

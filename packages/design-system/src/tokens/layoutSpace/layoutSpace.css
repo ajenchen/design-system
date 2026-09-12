@@ -4,6 +4,17 @@
   --layout-space-loose:  16px;
   --layout-space-tight:  12px;
   --layout-space-bottom: 48px; /* intentionally fixed — same in md and lg density (see spec) */
+  /* 浮層外殼到視窗邊的安全距離(2026-09-11 從 --layout-space-bottom 拆出)。
+     命名走 `--layout-space-<role>`(token-system.spec.md 規則 1 的 L4 Layout family)——
+     **不可**用 `--overlay-*`:`--overlay` 已經是 L2 Semantic 的顏色 token(dialog backdrop 遮罩,
+     color/semantic.css),同一前綴掛兩個 family = 該 spec 反 pattern 表的「1 個 token 屬 N 個 family」。
+     為什麼要拆:layoutSpace.spec.md 的 Token 表把 --layout-space-bottom 定義成「結論留白:內容到 action buttons
+     (commitment 前視覺暫停)」,同檔「規則 4」還明文寫「『內容 → action button 前留白』跟『元件 → 容器底邊』
+     是兩個不同 spacing 概念,不可混為一談」。而 Dialog 借它來當視窗 inset —— 那是第三個概念,
+     純粹因為數值剛好都是 48 才耦合在一起(M17「同值不同義」的變體)。
+     後果可驗證:任何人依 spec 語意去調「commitment 前留白」,會同時改掉全站 Dialog 的視窗 inset **與最大寬度**。
+     值維持 48px,語意各自獨立。density 不影響(跟 --layout-space-bottom 一樣固定)。 */
+  --layout-space-viewport-inset: 48px;
 
   /* Item-level label ↔ description gap — typography mode aware(2026-04-23)
      理論基礎:gap 由 **typography mode**(label + description 的 font-size / line-height 組合)決定。

@@ -215,9 +215,49 @@ function MultiPersonDisplay({
     if (!measured || !value || value.length === 0) return
     const el = containerRef.current
     if (!el) return
+    // **2026-09-06 修:量測對象必須是「被分配到的空間」,不是「自己畫多寬」**。
+    //
+    // 原本 `ro.observe(el)` + `availablePx: el.clientWidth` 量的是 stack 自己 —— 它是
+    // `inline-flex`(收縮到內容),clientWidth 等於「目前畫了幾顆圓」,不是儲存格還剩多少。
+    // 於是量測與佈局互為因果,形成單向棘輪:少畫一顆 → 量到更窄 → 再少畫一顆;而
+    // 「1 顆 avatar + 1 顆 +N」本身是這條公式的穩定不動點(2 slots ⇒ visible = 1),
+    // 空間還回來也**永遠回不去**。線上實測 grpW=46 / cellW=180 即此循環的證據 ——
+    // 這就是「明明還有空間卻顯示成溢出、重整才會好」的真因(GitHub main 同樣有,非本次改壞)。
+    //
+    // 三個 `measured` 消費點(people-picker.tsx:260 / 281 / 308)的父層分別是
+    // `flex w-full min-w-0` 與 `flex-1 min-w-0`,寬度由外層決定、**不受本元件內容影響**,
+    // 量它才是 `getAvatarStackVisibleCount` jsdoc 講的 availablePx。
+    const box = el.parentElement ?? el
+    // **2026-09-07(B1)修:`width='hug'` 下量父層還是會自我回饋。**
+    //
+    // hug 的 field wrapper 是 `w-fit max-w-full`(field-wrapper.tsx:134)—— 它的寬度
+    // **就是內容決定的**,所以裡面那層 `flex-1 min-w-0` 也跟著內容縮:少畫一顆 →
+    // 父層變窄 → 再少畫一顆,棘輪只是往上搬了一層,沒有被拆掉。
+    //
+    // 拆法是找一個**不隨內容變**的量。欄位的「外框開銷」(左右 padding、邊框、同排的
+    // chevron / 清除鈕 / gap)跟畫幾顆頭像無關,所以:
+    //     可用寬 = 容器內容寬 − 外框開銷
+    //     外框開銷 = wrapper 現在的寬 − 這個 slot 現在的寬
+    // 兩個減數都在同一幀量,內容多寡同時影響兩者、相減後抵消 → 迴圈斷掉。
+    //
+    // fill 模式下這條公式與原本的「量父層」逐像素相同(wrapper 寬由容器決定,
+    // slot = wrapper − 開銷,相減回來就是容器寬 − 開銷),所以**不需要分兩條路**;
+    // 沒有 field wrapper 的用法(people-picker.tsx:256 那個 `flex w-full min-w-0`)
+    // 找不到 `[data-field-mode]`,自然落回原本的量父層。
+    const wrapper = el.closest<HTMLElement>('[data-field-mode]')
+    const containingBlock = wrapper?.parentElement ?? null
     const calc = () => {
+      const chromePx = wrapper && containingBlock
+        ? wrapper.getBoundingClientRect().width - box.getBoundingClientRect().width
+        : 0
+      const availablePx = wrapper && containingBlock
+        ? containingBlock.clientWidth - chromePx
+        : box.clientWidth
+      // 尚未佈局(story 切換過渡、display:none、圖未載入)時寬度為 0 —— 用 0 去算會直接
+      // 鎖進收縮態且不再復原,所以寧可不更新,等下一次 ResizeObserver 有真實寬度再算。
+      if (availablePx <= 0) return
       const visible = getAvatarStackVisibleCount({
-        availablePx: el.clientWidth,
+        availablePx,
         total: value.length,
         avatarPx: AVATAR_STACK_AVATAR_PX[size],
         overflowChipPx: AVATAR_STACK_OVERFLOW_CHIP_PX[size],
@@ -225,8 +265,10 @@ function MultiPersonDisplay({
       setMeasuredCount(visible)
     }
     calc()
+    // 觀察對象也要是不隨內容變的那個 —— hug 下 wrapper 自己會跟著內容縮,
+    // 只觀察它等於在觀察自己的輸出。
     const ro = new ResizeObserver(calc)
-    ro.observe(el)
+    ro.observe(containingBlock ?? box)
     return () => ro.disconnect()
   }, [measured, size, value])
 
@@ -339,9 +381,12 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         'inline-flex items-center justify-center',
         // **12×12 + 2px white ring**(SSOT match stacked avatar,Slack/Material/iOS
         // notification badge 2px ring canonical)。改用 `[box-shadow:...]` 而非 `ring-2`
-        // 避免跟下方 `focus-visible:ring-2` 在 tailwind-merge 衝突(同 ring family
-        // override 互殺)。Box-shadow inset 0 不影響 layout,也不被 focus-visible ring
-        // 蓋掉(focus 那邊另一條 outline ring 不同 layer)。
+        // 避免跟焦點指示在 tailwind-merge 衝突(同 ring family
+        // override 互殺)。
+        // **2026-09-07 訂正**:原註解寫「也不被 focus-visible ring 蓋掉(不同 layer)」——
+        // 實測相反(當時焦點還走 ring 通道)。兩者最終都寫同一個 CSS `box-shadow` 屬性,而帶偽類的那條
+        // 帶偽類、特異性較高 → 聚焦當下白環**整層被藍環取代**。
+        // 這不是缺陷(聚焦時本來就該讓焦點指示器出線),但註解不能寫成相反的事實。
         'w-3 h-3 rounded-full [box-shadow:0_0_0_2px_var(--surface)]',
         // bg-surface-strong = neutral-6-opaque / hover = neutral-7-opaque(both modes,
         // step-7 dark 公式自動 lighter → engaged 跨 mode 對稱)
@@ -351,13 +396,12 @@ function AvatarDismissOverlay({ onRemove, label }: { onRemove: () => void; label
         // **此行是移除鈕可見性的唯一 gating,刪掉 = 全部恆顯**(2026-08-05 anchor:撤 A 案時
         // 連同本行一起刪除,造成桌機 stack 所有 avatar 的 X 無條件顯示;mechanical guard
         // 見 scripts/test-hover-revealed-affordances.mjs)。
-        'opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100 focus-visible:opacity-100',
+        'opacity-0 group-hover/avatar:opacity-100 group-focus-within/avatar:opacity-100',
         // **不加 touch 恆顯**(2026-08-05 user 否決前一版 A 案:「一般狀態直接把所有成員 avatar
         // 的 X 都秀出來,這樣看起來超亂」)。觸控的多人移除改由 PeoplePicker 自動降階為既有
         // pill 型態(Combobox tag SSOT,每顆 pill 自帶 X)承擔 — 見 people-picker.spec.md
         // 「觸控裝置(native 分支)」。本 overlay 維持 hover / focus 才顯的桌機語意。
         'transition-opacity duration-150 motion-reduce:duration-0',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       ].join(' ')}
     >
       <X size={12} strokeWidth={3} aria-hidden />

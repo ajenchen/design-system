@@ -6,7 +6,8 @@
  *
  * 幾何(fade / zoom / slide 距離方向)per-prototype 各自帶:
  *   - 輕量浮層(Tooltip/Popover/HoverCard/DropdownMenu):fade + zoom-95 + slide-side-2(8px)
- *   - 模態面板置中(Dialog/FileViewer):fade + zoom-95 + slide-center
+ *   - 模態面板置中(Dialog/FileViewer):fade + zoom-95,**不位移**(2026-09-09 修:shadcn v3 的 slide-center 在 Tailwind v4 下與置中
+ *     translate 相加,變成從左上角飛入;canonical 見 dialog.spec.md「動畫」)
  *   - 邊緣抽屜(Sheet):slide-edge(100%),正當地無 zoom
  * 本 module 只統一「時長 + 曲線 + reduced-motion」,不管幾何原型(對齊世界級 tier 分層)。
  *

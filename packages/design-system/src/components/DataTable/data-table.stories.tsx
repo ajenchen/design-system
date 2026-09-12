@@ -209,7 +209,12 @@ export const ColumnResize: Story = {
 export const ColumnReorder: Story = {
   name: '欄位拖曳重排',
   render: () => {
-    const initialOrder = ['sku', 'name', 'category', 'price', 'stock', 'updatedAt']
+    // 2026-09-07 修:原本漏了 `seller`。TanStack 對沒列進 columnOrder 的欄位仍會渲染
+    // (排在有序的之後),於是畫面上有 7 欄、state 只有 6 個 —— 把某欄拖到 `seller` 上時
+    // 這個 handler 的 `indexOf` 回 -1 直接 `return prev`,順序不動,
+    // 但 DS 已經送出重排請求、螢幕閱讀器會聽到「已移動」。
+    // **列全**才是 controlled columnOrder 的正確用法。
+    const initialOrder = ['sku', 'name', 'category', 'price', 'stock', 'updatedAt', 'seller']
     const [columnOrder, setColumnOrder] = React.useState<string[]>(initialOrder)
     const lockedCols = columnsWithPrice.map((c) => {
       const ak = (c as { accessorKey?: string }).accessorKey
@@ -298,7 +303,18 @@ export const RowAutoHeightInlineEdit: Story = {
 
 export const RowAutoHeight: Story = {
   name: '自動行高',
-  render: () => (
+  render: function RowAutoHeightStory() {
+    // 虛擬捲動 pane 的資料:50 筆(> VIRTUAL_THRESHOLD 30)+ 長短交錯的備註,讓被撐高的列
+    // 隨捲動進出視窗 —— 缺陷 F 在虛擬模式下更嚴重(`vr.start` 全由 center 的量測推出)。
+    const virtualNotes = React.useMemo<Product[]>(() => generateLargeData(50).map((p, i) => ({
+      ...p,
+      note: i % 3 === 0
+        ? 'Requires cold-chain handling and customs pre-clearance; confirm the destination warehouse can accept refrigerated pallets before dispatch.'
+        : i % 3 === 1
+          ? 'Fragile — double-wall carton required.'
+          : 'Standard delivery.',
+    })), [])
+    return (
     <div className="flex flex-col gap-8">
       <div>
         <h3 className="text-body font-bold text-foreground mb-2">固定行高（預設）</h3>
@@ -310,8 +326,52 @@ export const RowAutoHeight: Story = {
         <p className="text-caption text-fg-muted mb-3">內容頂部對齊，wrap 欄位可撐高 row</p>
         <DataTable columns={columnsWithNote} data={dataWithNotes} height="auto" autoRowHeight />
       </div>
+      {/* 缺陷 F 的覆蓋案例(2026-09-04):撐高的 Note 欄在 center，釘選的 SKU 與 Row Actions 各自在
+          另外兩個容器 —— 這是「同一列在三區各算各的高度」唯一會現形的組合，先前沒有任何 story 命中
+          (M15:沒有 story 覆蓋的狀態等於沒被截圖驗過)。三區同一列必須等高，機械閘 I15 逐列比對。 */}
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">自動行高 × 釘選欄 × Row Actions</h3>
+        <p className="text-caption text-fg-muted mb-3">
+          撐高的欄位在中段，釘選欄與 actions 在左右兩個獨立容器；同一列三區必須等高
+        </p>
+        <DataTable
+          columns={columnsWithNote}
+          data={dataWithNotes}
+          height="auto"
+          autoRowHeight
+          pinnedLeftColumns={['sku']}
+          rowActions={() => (
+            <>
+              <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
+              <Button variant="text" size="xs" iconOnly startIcon={Trash2} aria-label="刪除" />
+            </>
+          )}
+        />
+      </div>
+      {/* 同一個缺陷在虛擬模式下的版本:列的位移 `vr.start` 只由 center 的量測推出,pinned 區
+          比 center 高的列會直接壓到下一列的位置。共用列高之後 center 量到的就是共用值,三區同解。 */}
+      <div>
+        <h3 className="text-body font-bold text-foreground mb-2">自動行高 × 釘選欄 × Row Actions × 虛擬捲動</h3>
+        <p className="text-caption text-fg-muted mb-3">
+          50 筆(超過虛擬門檻 30);捲動時被撐高的列進出視窗，三區仍須逐列等高
+        </p>
+        <DataTable
+          columns={columnsWithNote}
+          data={virtualNotes}
+          height="360px"
+          autoRowHeight
+          pinnedLeftColumns={['sku']}
+          rowActions={() => (
+            <>
+              <Button variant="text" size="xs" iconOnly startIcon={Pencil} aria-label="編輯" />
+              <Button variant="text" size="xs" iconOnly startIcon={Trash2} aria-label="刪除" />
+            </>
+          )}
+        />
+      </div>
     </div>
-  ),
+    )
+  },
 }
 
 /* ── Empty State ── */
@@ -1425,11 +1485,25 @@ export const FilterPanelEmpty: Story = {
   },
 }
 
-/* ── 進階篩選 — 已填條件 ── */
-export const FilterPanelWithConditions: Story = {
-  name: '進階篩選 — 已填條件',
+/* ── 進階篩選 — 各種狀態(2026-09-06 由五支合併,內容一字未改)──
+ *
+ * 合併理由(user 2026-09-06):七支 story 讓同一個面板有七個入口,讀的人得逐一點開才知道差別。
+ * 逐支讀完後確認**沒有任何一支是重複的** —— 平鋪 / 巢狀 / 相對時間 / 已改動 / 長標籤各自展示
+ * 不同的東西,所以這是「合併入口」不是「刪內容」:五種情境原封不動搬進同一支,各自帶標題。
+ * 「空狀態」與「標籤與條件上限」維持獨立(前者是唯一的無條件態;後者帶互動測試,不動它最安全)。
+ */
+export const FilterPanelStates: Story = {
+  name: '進階篩選 — 各種狀態',
   render: () => {
-    const [value, setValue] = React.useState<FilterTree>(() => ({
+    const Section = ({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) => (
+      <section className="w-full max-w-[680px]">
+        <h3 className="text-body font-medium mb-1">{title}</h3>
+        {note ? <p className="text-caption text-fg-muted mb-3">{note}</p> : null}
+        {children}
+      </section>
+    )
+
+    const [flat, setFlat] = React.useState<FilterTree>(() => ({
       mode: 'flat', conjunction: 'and',
       children: [
         { kind: 'cond', id: 'c1', field: 'name',     op: 'contains', value: 'phone' },
@@ -1437,24 +1511,8 @@ export const FilterPanelWithConditions: Story = {
         { kind: 'cond', id: 'c3', field: 'stock',    op: 'is',       value: ['In stock'] },
       ],
     }))
-    return (
-      <div className="w-full max-w-[680px]">
-        <DataTableFilterPanel
-          columns={[...FILTER_COLUMNS]}
-          value={value}
-          onChange={setValue}
 
-        />
-      </div>
-    )
-  },
-}
-
-/* ── 進階篩選 — 巢狀群組 ── */
-export const FilterPanelNested: Story = {
-  name: '進階篩選 — 巢狀群組',
-  render: () => {
-    const [value, setValue] = React.useState<FilterTree>(() => ({
+    const [nested, setNested] = React.useState<FilterTree>(() => ({
       mode: 'nested', conjunction: 'or',
       children: [
         {
@@ -1473,75 +1531,23 @@ export const FilterPanelNested: Story = {
         },
       ],
     }))
-    return (
-      <div className="w-full max-w-[680px]">
-        <DataTableFilterPanel
-          columns={[...FILTER_COLUMNS]}
-          value={value}
-          onChange={setValue}
 
-        />
-      </div>
-    )
-  },
-}
-
-/* ── 進階篩選 — 相對時間群組 ── */
-export const FilterPanelRelativeDate: Story = {
-  name: '進階篩選 — 相對時間群組',
-  render: () => {
-    const [value, setValue] = React.useState<FilterTree>(() => ({
+    const [relative, setRelative] = React.useState<FilterTree>(() => ({
       mode: 'flat', conjunction: 'and',
       children: [
         { kind: 'cond', id: 'c1', field: 'updatedAt', op: 'is_relative', value: 'past_7_days' },
       ],
     }))
-    return (
-      <div className="w-full max-w-[680px]">
-        <p className="text-caption text-fg-muted mb-3">時間下拉分 過去 / 目前 / 未來 三組（Linear/Notion 共識）。</p>
-        <DataTableFilterPanel
-          columns={[...FILTER_COLUMNS]}
-          value={value}
-          onChange={setValue}
 
-        />
-      </div>
-    )
-  },
-}
-
-/* ── 進階篩選 — 已改動(refresh icon)── */
-export const FilterPanelModified: Story = {
-  name: '進階篩選 — 已改動',
-  render: () => {
-    const initial: FilterTree = {
+    const modifiedInitial: FilterTree = {
       mode: 'flat', conjunction: 'and',
       children: [{ kind: 'cond', id: 'c1', field: 'category', op: 'is', value: ['Electronics'] }],
     }
-    const modified: FilterTree = {
+    const [modified, setModified] = React.useState<FilterTree>({
       mode: 'flat', conjunction: 'and',
       children: [{ kind: 'cond', id: 'c1', field: 'category', op: 'is', value: ['Furniture'] }],
-    }
-    const [value, setValue] = React.useState<FilterTree>(modified)
-    return (
-      <div className="w-full max-w-[680px]">
-        <p className="text-caption text-fg-muted mb-3">值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。</p>
-        <DataTableFilterPanel
-          columns={[...FILTER_COLUMNS]}
-          value={value}
-          defaultValue={initial}
-          onChange={setValue}
+    })
 
-        />
-      </div>
-    )
-  },
-}
-
-/* ── 進階篩選 — 長標籤溢出 ── */
-export const FilterPanelLongTagOverflow: Story = {
-  name: '進階篩選 — 長標籤溢出',
-  render: () => {
     // 製造業 ERP 的產品分類名稱普遍很長 — 示範多選後 Combobox tag 溢出時的 +N 摘要收斂
     const longLabelColumns = [
       col.accessor('category', {
@@ -1554,7 +1560,7 @@ export const FilterPanelLongTagOverflow: Story = {
         ] },
       }),
     ]
-    const [value, setValue] = React.useState<FilterTree>(() => ({
+    const [longLabel, setLongLabel] = React.useState<FilterTree>(() => ({
       mode: 'flat', conjunction: 'and',
       children: [
         { kind: 'cond', id: 'c1', field: 'category', op: 'is', value: [
@@ -1564,14 +1570,33 @@ export const FilterPanelLongTagOverflow: Story = {
         ]},
       ],
     }))
+
     return (
-      <div className="w-full max-w-[680px]">
-        <p className="text-caption text-fg-muted mb-3">產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。</p>
-        <DataTableFilterPanel
-          columns={[...longLabelColumns]}
-          value={value}
-          onChange={setValue}
-        />
+      <div className="flex flex-col gap-8">
+        <Section title="已填條件">
+          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={flat} onChange={setFlat} />
+        </Section>
+
+        <Section title="巢狀群組">
+          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={nested} onChange={setNested} />
+        </Section>
+
+        <Section title="相對時間" note="時間下拉分 過去 / 目前 / 未來 三組（Linear/Notion 共識）。">
+          <DataTableFilterPanel columns={[...FILTER_COLUMNS]} value={relative} onChange={setRelative} />
+        </Section>
+
+        <Section title="已改動" note="值偏離 default 時 header 出現 ↻ — 點擊 reset 回 default。">
+          <DataTableFilterPanel
+            columns={[...FILTER_COLUMNS]}
+            value={modified}
+            defaultValue={modifiedInitial}
+            onChange={setModified}
+          />
+        </Section>
+
+        <Section title="長標籤溢出" note="產品分類名稱很長(製造業 ERP 常見)時,已選的多個標籤超出單行寬度,Combobox 自動收斂為 +N 摘要。">
+          <DataTableFilterPanel columns={[...longLabelColumns]} value={longLabel} onChange={setLongLabel} />
+        </Section>
       </div>
     )
   },
@@ -1708,14 +1733,19 @@ export const FilterPanelLabelsAndLimit: Story = {
     const canvas = within(canvasElement)
     const page = within(canvasElement.ownerDocument.body)
 
-    const childPickers = within(canvas.getByTestId('filter-label-child-pickers'))
-    const categoryValue = childPickers.getByRole('combobox', { name: 'Category filter value' })
+    // 2026-09-06:第一個斷言改用 `findBy*`(非同步)。`getByRole('combobox', { name })` 需要
+    // **無障礙名稱已經算得出來**;在慢裝置／窄視窗上,harness 的子 picker 可能比 play 的第一個 tick
+    // 晚一拍才掛上名稱,於是 play 直接丟 "Unable to find an accessible element with the role
+    // combobox and name ..."(user 2026-09-06 在手機上的預覽站遇到)。同一顆元素在桌機本機建置
+    // 實測存在,故非渲染缺陷而是 play 的時序假設。`findByRole` 內建 retry,零行為變更。
+    const childPickers = within(await canvas.findByTestId('filter-label-child-pickers'))
+    const categoryValue = await childPickers.findByRole('combobox', { name: 'Category filter value' })
     await expect(categoryValue).toHaveTextContent('Choose values…')
     await userEvent.click(categoryValue)
     await expect(page.getAllByText('No matching values')).toHaveLength(2)
     await userEvent.keyboard('{Escape}')
 
-    await userEvent.click(childPickers.getByRole('combobox', { name: 'Owner filter value' }))
+    await userEvent.click(await childPickers.findByRole('combobox', { name: 'Owner filter value' }))
     const peopleSearch = await page.findByPlaceholderText('Search people…')
     await expect(peopleSearch).toHaveAccessibleName('Search filter people')
     await expect(page.getAllByText('No matching people')).toHaveLength(2)

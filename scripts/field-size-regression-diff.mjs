@@ -11,6 +11,7 @@
 //       的 overview/size-matrix/state-behavior/mode-matrix + DataTable overview/inspector/column-types。
 
 import { chromium } from 'playwright'
+import { launchBrowser } from './lib/launch-browser.mjs'
 import http from 'node:http'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, extname } from 'node:path'
@@ -67,7 +68,7 @@ const DIFF_IDS = STORY_IDS.filter(id => baseIds.has(id))
 
 const srvB = await serve(BASELINE, 8821)
 const srvA = await serve(AFTER, 8822)
-const browser = await chromium.launch({ headless: true })
+const browser = await launchBrowser()
 
 async function shot(port, id) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 })

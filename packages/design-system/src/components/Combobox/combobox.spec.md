@@ -89,6 +89,13 @@ value 軸 controlled-only;open 軸方向相反 — **uncontrolled-only**:`defaul
 - 以量測為基礎：計算可用寬度，依序放入 Tag，放不下的隱藏
 - 溢出指示器 `+N` 顯示被隱藏的數量
 - Hover 溢出指示器時，popover 顯示完整的隱藏 Tag 清單
+- **一次掛載只量一次(2026-09-10)**:同步量一趟即定案;只有那一趟量到 0 寬(容器或任一標籤 —— 批次渲染時版面還沒算完的症狀)
+  才補跑雙 rAF 的第二趟。兩個 ResizeObserver 各自吞掉 `observe()` 必送的**初始觀測**(它回報的就是同步那趟剛量過的同一個版面),
+  之後每一發都是真的尺寸變了,照常重算。
+  由來:虛擬捲動時每個新進視窗的儲存格都掛一次 Combobox,原本固定量兩趟 —— DataTable 全功能範例一次 40 步滾輪手勢跑 180 趟 calc、
+  1,080 次幾何讀取,佔當時全表捲動幾何讀取的 45%,第二趟幾乎總是同結果。守法後同一手勢降到 540 次。
+  **不可改成「捲動中延後量測」**:`ready` 早已不是視覺閘(`combobox.tsx` 的 `void ready`),初始狀態是**全部標籤都顯示**,
+  延後會讓標籤在捲動中溢出儲存格。機械閘 = `scripts/overflow-indicator-containment.mjs`(11 個 story × 6 種容器寬度)。
 
 ---
 
@@ -123,17 +130,24 @@ Keyboard focus 在移除後依序交給下一個可見 Tag remove button；沒�
 
 ---
 
-## Loading
+## Loading(2026-09-09 user 拍板:兩個字、兩件事)
 
-`loading?: boolean`(forward 給 SelectMenu SSOT,2026-05-15 audit B 補;措辭對齊 `select.spec.md`「Loading」2026-07-04 Q3 拍板 — 不清空 stale options):spinner 只在**無可顯示選項時**佔 empty slot 顯 `<Empty icon={<CircularProgress size={48}/>}/>`(cmdk `CommandEmpty` 機制;已有 options 時保留顯示,不取代)。Trigger 不變,user 隨時可開。這可保留仍可選的 stale options，同時只在沒有內容可呈現時讓 loading 佔據 empty slot。
+| Prop | 意思 | 指示 | SSOT |
+|---|---|---|---|
+| `loading?: boolean` | **這個值**在讀取 / 驗證 / 儲存(與 Input `loading` 同義) | 觸發點右側、ChevronDown 左邊放列圖示尺寸的 `CircularProgress`(`combobox.tsx` `chevronEl`;`iconSize` sm/md 16 / lg 20)+ 觸發點 `aria-busy`;選單照常可開可選、與選項多寡 / 搜尋位置無關 | `../Field/field-controls.spec.md`「Loading state」 |
+| `optionsLoading?: boolean` | **選項清單**在抓(2026-09-09 改名自 `loading`) | forward 給 SelectMenu:只在選單內,沒有可顯示選項時一列「載入選項中」訊息列 + listbox `aria-busy`;**觸發點與浮層搜尋列都不轉圈**(2026-09-08 的搜尋列轉圈與 `CommandInput loading` 已退役)。本機過濾已有選項時保留、遠端搜尋抓資料中舊選項不顯示 | `../SelectMenu/select-menu.spec.md`「Loading」 |
+
+歷史:2026-05-15 audit B 補 → 2026-07-04 Q3「不清空 stale options」→ 2026-09-08 兩處轉圈 → **2026-09-09 拆成兩個 prop、選項載入指示只在選單內**。
+
+**遠端搜尋**:`filterOption?: boolean`(預設 true)與 `onSearchChange?: (value: string) => void`(2026-09-08 user 拍板「併」):遠端搜尋時 `filterOption={false}` 不在本機二次過濾(trigger / menu 兩種搜尋位置都不過濾),搜尋字經 `onSearchChange` 回呼;`searchIn='trigger'` 時搜尋字另以受控 `search` 交給 SelectMenu(2026-09-09;順帶讓 trigger 模式的 creatable 建立列真的會出現)。`suggestions?: ComboboxOption[]` / `suggestionsLabel?: string`(預設「建議」)/ `searchHintText?: string`(預設「輸入關鍵字搜尋」)機械 forward(2026-09-09):關鍵字空時列建議群組(必有標題)、抓資料中舊清單不顯示、沒建議也沒在載入時顯示提示列;已選 tag 的 label 同時回查 `options` 與 `suggestions`(`combobox.tsx` `items`)。遠端模式多選 footer 的全選不渲(部分清單)。SSOT `select-menu.spec.md`「遠端搜尋」「Suggestions」。
 
 ---
 
 ## 邊界案例
 
 - **Disabled**:Field SSOT own(`Field/field-controls.spec.md`)。trigger / tag dismiss / 搜尋 input 全部 disabled,token 走 M24 state precedence(`text-fg-disabled`);已選 Tag 的 dismiss X 自動隱藏(見「readonly / disabled 的 Tag」段)。
-- **Loading**:已 codify(見「Loading」段)。
-- **Empty(no search results)**:dropdown body 內渲 `emptyText`(Combobox 暴露 `emptyText` prop 並 forward 給 SelectMenu;未傳時走 SelectMenu 預設「沒有符合的選項」)。Combobox **暴露 `creatable` / `onCreate` / `createLabel` prop 並 forward 給 SelectMenu**(2026-07-18 user 拍板;搜尋非空且無完全同名既有選項時,dropdown 顯 create row `Plus + createLabel`)——邏輯/顯示/互動 SSOT 住在 SelectMenu(`select-menu.tsx` :271-275 顯隱 / render)。僅 searchable 桌機路徑生效(native mobile 不支援)。對齊 Ant tags / react-select Creatable。
+- **Loading**:已 codify(見「Loading」段):`loading` = 值處理中(觸發點轉圈)/ `optionsLoading` = 選項在抓(只在選單內)。
+- **Empty(no search results)**:dropdown body 內渲 `emptyText`(Combobox 暴露 `emptyText` prop 並 forward 給 SelectMenu;未傳時走 SelectMenu 預設「沒有選項」;渲成一列 `MenuItem message`,與 1 筆結果等高、無最小高度、不用 `Empty`,SSOT `select-menu.spec.md`「Empty state」)——只在真的沒有任何可選時;遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」提示列(`select-menu.spec.md`「Suggestions」)。Combobox **暴露 `creatable` / `onCreate` / `createLabel` prop 並 forward 給 SelectMenu**(2026-07-18 user 拍板;搜尋非空且無完全同名既有選項時,dropdown 顯 create row `Plus + createLabel`)——邏輯/顯示/互動 SSOT 住在 SelectMenu(`select-menu.tsx` :271-275 顯隱 / render)。僅 searchable 桌機路徑生效(native mobile 不支援)。對齊 Ant tags / react-select Creatable。
 - **Empty(no value selected)**:multi mode `value=[]` 時 trigger 顯 placeholder(如「請選擇」);empty state 不渲 tag 區。
 - **Dark mode / density**:走 Field + SelectMenu SSOT 自動 adapt。
 
@@ -170,6 +184,8 @@ Combobox 是 **4-mode field**(edit / view / readonly / disabled),各 mode 渲染
 ---
 
 ## A11y 預設
+
+**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;開啟時焦點在裡面的插入點控件、關閉時觸發器 wrapper 自己是焦點站,兩種都只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。唯讀態例外:邊框透明無可染,改由全域外描邊畫在被聚焦的控件上(`field-controls.spec.md`「Focus 行為」readonly 段)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 桌機路徑的觸發區(`role="combobox"` 容器)與行動路徑的隱藏原生 `<select>` 各自吃自己的規則:前者邊框轉色,後者是 OS 的系統框。
 
 ### 鍵盤可達性的雙路徑設計
 

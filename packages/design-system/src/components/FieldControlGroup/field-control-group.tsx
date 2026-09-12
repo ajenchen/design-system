@@ -82,7 +82,9 @@ const FieldControlGroup = React.forwardRef<HTMLDivElement, FieldControlGroupProp
           'items-stretch',
           // z-index baseline + active layer
           '[&>*]:relative [&>*]:z-[2]',
-          '[&>*:hover]:z-[3] [&>*:focus]:z-[3] [&>*:focus-within]:z-[3]',
+          // 2026-09-07 刪 `[&>*:focus]:z-[3]` —— `:focus` 是 `:focus-within` 的子集(元素自己聚焦時
+      // 它必然也 focus-within),同一行的 `[&>*:focus-within]:z-[3]` 已完全涵蓋,純贅字。
+      '[&>*:hover]:z-[3] [&>*:focus-within]:z-[3]',
           '[&>*[disabled]]:z-0 [&>*:has([disabled])]:z-0',
           // border overlap
           '[&>*+*]:-ml-px',

@@ -44,9 +44,12 @@ const menuItemVariants = cva(
   [
     'flex items-start gap-2 px-3 w-full',
     'cursor-pointer select-none',
-    'transition-colors duration-150',
-    'outline-none',
-    'focus-visible:bg-neutral-hover',
+    // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+    // 鍵盤游標一律畫框、不上底色(focus-canonical 規則二,user 2026-09-09 拍板)。
+    // 列撐滿容器、選項間無 gap → 內描邊(問題二「淨空 < 4px 往裡」)。本節點預設是 <div role="option"> 無 tabIndex,
+    // 只有 consumer 給了真焦點(如 SelectMenu 全選列 tabIndex=0)這行才會 match;巢在 Radix / cmdk 內時游標由外層畫。
+    // 2026-09-09 之前這裡是 `outline-none` + `focus-visible:bg-neutral-hover`(底色當游標,AI 推導自 cmdk 慣例,user 撤回)。
+    'focus-visible:focus-ring-inset',
   ],
   {
     variants: {
@@ -105,6 +108,13 @@ export interface MenuItemProps
   /** 作為群組標題（不可選，font-medium，fg-muted） */
   header?: boolean
   /**
+   * 訊息列(2026-09-08 user 拍板):選單裡「不是選項」的提示 —— 沒有結果 / 沒有選項 / 載入中。
+   * 與 `header` 同族:非互動(`role="presentation"`、`pointer-events-none`)、次要色、**與選項完全相同的列幾何**
+   * (item-anatomy.spec.md「Row header」),差別是字重一般(medium 是群組標題的辨識訊號)、內容水平置中,
+   * 可帶前綴槽(`startContent`,例如列圖示尺寸的 CircularProgress)。owner:select-menu.spec.md「Empty state / Loading」。
+   */
+  message?: boolean
+  /**
    * Label 最大行數(line-clamp 截斷,超過顯示 ellipsis)。
    *
    * - `undefined`(預設 prop 值未傳)→ 套用元件預設 `1`(單行截斷,符合選單快速掃視需求)
@@ -160,6 +170,7 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
       endContent,
       disabled,
       header,
+      message,
       size,
       labelMaxLines = 1,
       descMaxLines = 1,
@@ -186,6 +197,28 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
       : 'inline'
 
     const hasPrefix = !!StartIcon || !!avatar || !!startContent || checkbox
+
+    // ── Message variant(沒有結果 / 沒有選項 / 載入中)──
+    if (message) {
+      return (
+        <div
+          ref={ref}
+          className={cn(
+            menuItemVariants({ size }),
+            'items-center justify-center text-fg-muted cursor-default pointer-events-none',
+            className,
+          )}
+          role="presentation"
+          {...props}
+        >
+          {startContent && (
+            <span className="shrink-0 flex items-center" style={{ width: iconPx, height: iconPx }}>{startContent}</span>
+          )}
+          {StartIcon && <StartIcon size={iconPx} className={cn('shrink-0', startIconClassName)} aria-hidden />}
+          <span className="min-w-0 truncate">{children}</span>
+        </div>
+      )
+    }
 
     // ── Header variant ──
     if (header) {
@@ -225,9 +258,12 @@ const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
         className={cn(
           menuItemVariants({ size }),
           !disabled && !selected && 'hover:bg-neutral-hover',
-          // 2026-08-11(SSOT = item-anatomy「選中 × 互動疊加」):選中列滑鼠 hover 本就不變(上行條件互斥);
-          // 補鍵盤焦點深一階 -focus(twMerge 同組蓋過 base 的 focus-visible:bg-neutral-hover)。
-          !disabled && selected && 'bg-neutral-selected focus-visible:bg-neutral-selected-focus',
+          // 選中列滑鼠 hover 釘住不變(上行條件互斥;SSOT = item-anatomy「選中 × 互動疊加」)。
+          // 鍵盤游標**不**改底色:游標一律是框(cva base 的 focus-visible:focus-ring-inset;巢在 cmdk / Radix 內時
+          // 由外層 CommandItem / DropdownMenu 依反白來歷 useCursorMover 畫在游標列上),選中 × 游標 = 框疊在選中底色上。
+          // 歷史:2026-08-11 曾加 `focus-visible:bg-neutral-selected-focus`(深一階),因本節點非可聚焦從未生效,
+          // 2026-09-06 移除;2026-09-09「底色當游標」整類撤回(focus-canonical 來源總帳)。
+          !disabled && selected && 'bg-neutral-selected',
           // disabled 用 cursor-not-allowed(對齊 Button + Material/Polaris/Atlassian);
           // pointer-events-none 會讓 cursor 失效,改用 aria-disabled + onClick guard
           disabled && 'text-fg-disabled cursor-not-allowed',

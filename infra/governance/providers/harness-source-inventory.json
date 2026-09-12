@@ -25,7 +25,7 @@
     "entries": [
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
-        "sha256": "d558774c4a1b9eb213f3432c993c9e27ae4595bef8041d797587f31cd530d76c",
+        "sha256": "636fb343e22ad80f124f2e60961ba829f561b8070455bae88694aeacf21104ed",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/check_substantive_edit_approval_preflight.sh",
           "packages/design-system/ds-canonical/hooks/stop_self_audit.sh",
@@ -224,6 +224,7 @@
         "packages/design-system/ds-canonical/hooks/tests/test_log_skill_invokes.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_post_edit_dispatcher.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_provider_peer_symmetry.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_record_release_consent.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_registration_output_contracts.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_session_start_governance_check.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_audit_content_quality.sh",
@@ -234,6 +235,7 @@
         "packages/design-system/ds-canonical/hooks/tests/test_stop_passive_logging.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_repository_command_context.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_self_audit.sh",
+        "packages/design-system/ds-canonical/hooks/tests/test_stop_self_audit_push_gate.sh",
         "packages/design-system/ds-canonical/hooks/tests/test_stop_tsc_sanity.sh"
       ]
     },
@@ -324,6 +326,7 @@
         "scripts/test-action-divider-placement.mjs",
         "scripts/test-audit-coverage-tier-sync.mjs",
         "scripts/test-authority-decision-evidence.mjs",
+        "scripts/test-authority-generation-reaper.mjs",
         "scripts/test-build-fork-filesystem-safety.mjs",
         "scripts/test-canonical-path-containment.mjs",
         "scripts/test-check-codex-freshness-authorization.mjs",
@@ -406,6 +409,7 @@
       "scripts/test-checkbox-group-handcraft-invariant.mjs",
       "scripts/test-consumer-source-harness.mjs",
       "scripts/test-data-table-invariants.mjs",
+      "scripts/test-data-table-scroll-perception.mjs",
       "scripts/test-governance-anchor-preflight.mjs",
       "scripts/test-governance-build-graph.mjs",
       "scripts/test-header-tabs-slot-invariants.mjs",

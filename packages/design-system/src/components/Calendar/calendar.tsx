@@ -167,7 +167,6 @@ function MonthEventTile({
             'rounded-md px-1.5 py-0.5 text-caption truncate cursor-pointer transition-colors',
             // 2026-05-31 #22:事件 tile 是 focusable(tabIndex=0 role=button)但原無 focus ring
             // → WCAG 2.4.7 不合規。補 focus-visible ring 對齊日期格按鈕。
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             colorClass,
           )}
         >
@@ -333,7 +332,17 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
         {weekdayNames.map((name, i) => (
           <div
             key={i}
-            className="px-2 py-1.5 text-caption text-fg-muted font-normal text-center"
+            // 2026-09-07 修(user 抓「為何星期標題要用那麼淺的顏色?」):
+            // 原本是 `text-caption text-fg-muted font-normal`(12px / 45% 灰 / 細體)。
+            // **DS 早就有 canonical 而且方向相反** —— `date-grid.spec.md:151`「Weekday header canonical」
+            //(2026-05-03 user audit):`text-foreground text-body font-medium`,理由是
+            // 「weekday 列標跟 caption 同視覺權重,都屬 calendar header 區,**不弱化**」,
+            // 而且明文「**撤銷 v3 用 `fg-secondary font-normal` 的 mistake(M23)**」。
+            // Calendar 這版比那個已被撤銷的版本**還弱**,是漂移不是設計選擇
+            //(calendar.spec.md 沒有另訂星期排版,所以那條是唯一 canonical)。
+            // 在本元件內也是孤例:月份標題 `text-body-lg font-medium`、日期數字 `text-body font-medium`,
+            // 只有星期標題是 12px 細灰。
+            className="px-2 py-1.5 text-body text-foreground font-medium text-center"
           >
             {name}
           </div>
@@ -371,7 +380,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                 'flex flex-col gap-1 min-h-28 p-1.5 text-left',
                 'border-r border-b border-divider last:border-r-0',
                 '[&:nth-child(7n)]:border-r-0',
-                'hover:bg-neutral-hover transition-colors',
+                // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+                'hover:bg-neutral-hover',
                 !inMonth && 'bg-muted',
               )}
             >
@@ -386,8 +396,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                     onDateClick?.(date)
                   }}
                   className={cn(
+                    // 焦點框往外(= 不寫)。2026-09-10 重量:日期數字鈕(24×24)在格子裡是**置中**的,不是撐滿 ——
+                    // 上 6 / 下 4(下方是同格的事件容器)/ 左 128 / 右 7,最小 4.00 = canonical「算放得下」。
+                    // 2026-09-07 那句「往外會壓到隔壁格」量的是**格子**邊界不是鈕的鄰居;真正貼邊的是事件方塊
+                    //(彼此 gap-0.5 = 2px),那一處仍然往內(見下方 :435)。
                     'inline-flex items-center justify-center min-w-6 h-6 rounded-full text-body font-medium',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     isToday && 'px-2 bg-info text-on-emphasis',
                     !isToday && !inMonth && 'text-fg-disabled',
                   )}
@@ -422,7 +435,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function Calend
                             onEventClick?.(event)
                           }
                         }}
-                        className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        // 內描邊:事件方塊之間 gap-0.5(2px),往外 +2px 會壓到上下相鄰的方塊
+                        className="rounded-md focus-visible:focus-ring-inset"
                       >
                         {renderEventTile(event)}
                       </div>

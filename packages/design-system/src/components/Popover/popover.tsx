@@ -98,6 +98,7 @@ const PopoverContent = React.forwardRef<
           // accessible name 自動接線:consumer 自傳優先;無 aria-label 且有 PopoverTitle 註冊才掛 titleId
           aria-labelledby={ariaLabelledBy ?? (ariaLabel == null && hasTitle ? titleId : undefined)}
           className={cn(
+            // @focus-suppress E — E 浮層程式落點;承擔者:浮層開啟時的程式落點;內部控件各自有指示
             "z-50 w-72 rounded-lg border border-border bg-surface-raised text-foreground shadow-[var(--elevation-200)] outline-none",
             // 2026-05-04 viewport-aware max-h SSOT(從 ProfileCard 升 DS-wide):header/footer 永遠 in-viewport,body 壓縮 scroll
             // 2026-05-05 audit dim 35 補:加 `min-h-0` 完成 M25 chain invariant(flex item default min-h: auto 阻 shrink)

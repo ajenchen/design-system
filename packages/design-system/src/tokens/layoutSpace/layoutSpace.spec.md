@@ -11,8 +11,15 @@ Layout Space 定義頁面與容器的巨觀間距 token,隨 density 自動縮放
 | `--layout-space-loose` | 16px | 24px | 主間距:容器水平 padding、parallel 元素 gap、bounded region 呼吸空間 |
 | `--layout-space-tight` | 12px | 16px | 緊湊間距:Header → element、functional 交互的元素之間 |
 | `--layout-space-bottom` | 48px | 48px | 結論留白:內容到 action buttons(commitment 前視覺暫停)|
+| `--layout-space-viewport-inset` | 48px | 48px | 浮層外殼到視窗邊的安全距離(Dialog 的高度上限與最大寬度都吃它)|
 
 **Co-located:item-gap tokens** — `layoutSpace.css` 另定義 `--item-gap-label-desc-{reading,reading-lg,scanning,scanning-lg}`(皆 2px):**非**巨觀 layout token,是 item 內 label ↔ description 的 typography-mode-aware micro gap;設計 SSOT 在 `item-anatomy.spec.md`「Label ↔ Desc 間距」段,本檔只是 CSS 住所。修改值 / 加 mode → 走 item-anatomy spec。
+
+**為什麼 viewport-inset 要跟 bottom 分開**(2026-09-11):兩者值都是 48px,但語意不同 ——
+`bottom` 是「內容 → action buttons 的結論留白」,`viewport-inset` 是「浮層外殼 → 視窗邊」。
+Dialog 原本借用 `bottom` 當 inset,後果可驗證:任何人依本表語意去調結論留白,會同時改掉全站 Dialog 的
+**高度上限與最大寬度**(M17「同值不同義」)。它同樣不隨 density 變(理由同下)。
+owner spec = `components/Dialog/dialog.spec.md`「高度」段。
 
 **為什麼 bottom 不隨 density 變**:48px 是「結論前的留白」— content 到 action buttons 的視覺暫停。跟 density 無關(不論 compact 或 comfortable,使用者都需要「commitment 前」的節奏)。
 
@@ -91,6 +98,8 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 
 ### 規則 2:頂部(Header → 第一個元素)
 
+**這裡的 Header 指 chrome header**(ChromeHeader / SurfaceHeader / page header / app top bar,`header-canonical.spec.md`);內容區裡用 typography 打的小標題(`text-heading` 之類)不是 chrome header,它與下方被它標示的內容走規則 3 的「跨範疇 + 直接 functional 交互 = tight」(2026-09-09 代理示範把 h1 + 表格當 parallel 兄弟用了 loose,是錯的;規則沒變,補這句是為了下次不要再誤讀)。
+
 | 第一個元素 | Header → 該元素 |
 |-----------|--------------|
 | **bounded region**(table / card / panel)| `loose` |
@@ -156,7 +165,13 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 | 並列獨立 **區塊 / 卡片 / 表單欄位** 之間(規則 3 parallel = loose)| **同質 list 的列間距**(一串同類 rows,規則 3「同範疇 spec-own」)|
 | **Header → 內容**(規則 2 = tight)| **micro / icon / 控件內部** 間距(gap-1/2、icon padding)|
 | **Chrome 水平內距**(規則 6 = loose)| **為視覺平衡 / 對稱 刻意調的值**(設計裁量)|
-| **內容 → action button**(規則 4 = bottom 48)| **元件自身刻意固定**(如 FieldGroup 三級固定 gap,不隨 density)|
+| **內容 → action button**(規則 4 = bottom 48)| **元件自身刻意固定**(元件內部不對外的微幾何)|
+
+> **2026-09-12 更正**:右欄原本舉的例子是「FieldGroup 三級固定 gap,不隨 density」——**那個例子跟左欄第一列自相矛盾**:
+> 左欄逐字說「並列獨立 區塊 / 卡片 / **表單欄位** 之間 → 規則 3 parallel = loose」,而 FieldGroup 管的正是表單欄位之間的間距。
+> 同一個概念同時出現在兩欄,是真矛盾不是細節。該例子來自 `31383ac4`(2026-07-02)的防漂移補強,
+> 當時的 user 原話是「怎麼確保以後都遵循 layout-space 沒偏移且有 SSOT」(問防漂移機制,不是定表單間距)。
+> 2026-09-12 user 拍板移除 FieldGroup 的三檔 gap、改消費 `--layout-space-loose`,此豁免例子同步撤除。
 
 **判準一句話**:是「並列/區塊/chrome/header→content/content→action 的 macro 結構間距、規則說該縮放」→ 用 token;是「list 列間距 / micro / 刻意固定 / 元件內部決定」→ magic number 合法,**不要 token 化**。
 

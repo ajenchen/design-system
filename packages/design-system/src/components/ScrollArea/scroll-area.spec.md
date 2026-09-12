@@ -37,7 +37,7 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 
 ## 何時用
 
-- **寬內容橫向捲動**——內容寬於容器的一般場景(寬表格類 demo、程式碼區塊等)。**例外:DataTable 中央捲動區不用 ScrollArea**——走 native `overflow-x-auto` + JS scrollLeft 同步(pinned column 結構需求,理由與 post-v1 重構計畫見 `data-table.spec.md`「捲軸 canonical」節;2026-06-12 收斂跨 spec 張力,以已實作且有 rationale 的 DataTable 側為準)
+- **寬內容橫向捲動**——內容寬於容器的一般場景(寬表格類 demo、程式碼區塊等)。**例外:DataTable 中央捲動區不用 ScrollArea**——走 native `overflow-x-auto` + JS scrollLeft 同步(pinned column 結構需求,理由與 post-v1 重構計畫見 `data-table.spec.md`「捲軸 canonical」節;2026-06-12 收斂跨 spec 張力,以已實作且有 rationale 的 DataTable 側為準)。**~~例外二:Pagination 最後一階~~**(2026-09-10 撤銷):分頁列**不再有任何捲動** —— 最後一階改成砍頭尾頁碼(156px,低於 DS 最窄容器),`overflow-x-auto` 整條拿掉。查證支持:16 家世界級掃過約 20 個分頁原始檔,沒有一家讓數字頁碼列橫向捲(唯一命中的 `TablePagination.js:29` 是表格頁尾工具列)。理由與數字見 `pagination.spec.md`「為什麼不捲」
 - **Sheet / Dialog body 垂直捲動**——內容可能超出容器高度
 - **Sidebar nav 長列表**——導覽項目多於可見高度
 - **任何「內容可能溢出容器」且「跨 OS 視覺必須一致」的 sub-region**
@@ -73,14 +73,16 @@ ScrollArea 用 Radix 自訂 overlay 捲軸 → **跨 OS 一致、不吃寬度、
 
 | 元素 | Token | 值 |
 |------|-------|----|
-| Scrollbar 寬度 | 固定 10px(`w-2.5` / `h-2.5`) | 跨 size 不變——scrollbar 是功能性元件,不隨內容尺寸變化 |
+| Scrollbar 寬度 | 固定 10px(`w-2.5` / `h-2.5`;ScrollArea 自繪的 Radix 拇指) | 跨 size 不變——scrollbar 是功能性元件,不隨內容尺寸變化。**不含 DataTable**(原生捲軸,見下段) |
 | Thumb 邊緣 inset | 1px(實作細節見 `.tsx`) | thumb 與容器邊緣保留 1px 視覺 inset,不貼死邊界 |
 | Track | 透明(無 bg) | overlay 浮層,不搶視覺 |
-| Thumb bg | `--scrollbar-thumb` → hover `--scrollbar-thumb-hover`(semantic alias,resolves to `--border` / `--border-hover` = neutral-5/-6) | 靜態時低存在感,hover 加深反饋可抓握。2026-05-09 抽 SSOT alias 跟 DataTable fake scrollbar 共享 token,避免 thumb 視覺未來演化時誤動 Field/Input/Checkbox border |
+| Thumb bg | `--scrollbar-thumb` → hover `--scrollbar-thumb-hover`(semantic alias,resolves to `--border` / `--border-hover` = neutral-5/-6) | 靜態時低存在感,hover 加深反饋可抓握。2026-05-09 抽 SSOT alias,與 DataTable **原生**捲軸的 `scrollbar-color` 共享同一組顏色 token(DataTable 沒有自繪 / fake scrollbar —— 原句「fake scrollbar」2026-09-05 更正),避免 thumb 視覺未來演化時誤動 Field/Input/Checkbox border |
 | Thumb radius | `rounded-full` | 圓形 thumb 在垂直／水平方向都保持同一端點幾何 |
 | 過渡 | `transition-colors` | 色彩變化平滑,不做尺寸動畫 |
 
-**Scrollbar 寬度固定 10px 不隨 size 變**:不同 size 的元件(sm/md/lg Button、DataTable)都消費同一個 10px scrollbar;scrollbar 是「捲動機制」不是「內容尺寸」,不需要對齊 content 字級。
+**Scrollbar 寬度固定 10px 不隨 size 變**:不同 size 的元件(sm/md/lg Button 等 ScrollArea 消費者)都消費同一個 10px scrollbar;scrollbar 是「捲動機制」不是「內容尺寸」,不需要對齊 content 字級。
+
+**DataTable 不在這個 10px 之內**(2026-09-05 更正,原寫「DataTable 都消費同一個 10px」;2026-09-11 再更正 Chromium 的值):它不用 ScrollArea,走**原生捲軸**。`data-table.css` 先宣告 `scrollbar-width: thin` + `scrollbar-color`,再用 `@supports selector(::-webkit-scrollbar)` 把這兩條在 Chromium 上重設回 `auto`(2026-09-08 撤回 0374642a 時恢復 main 既有設定)—— 所以 **Chrome / Edge 吃的是瀏覽器預設寬度**(macOS classic 15px、Windows 17px、overlay 模式 0),**只有 Firefox 拿到 `thin` 與自訂色**。實際寬度不寫死在任何地方,由 `measureScrollbarGutters` 每次量。與 ScrollArea **只共用顏色 token** `--scrollbar-thumb` / `--scrollbar-track`;thumb 寬度與 radius 在 Chromium 皆不可控。不用 `::-webkit-scrollbar` 湊成 10px 的理由見 `data-table.spec.md` 缺陷表 H(裸 `::-webkit-scrollbar` 會把 overlay 捲軸強制變成佔版面的 classic 捲軸)。
 
 ---
 
@@ -110,6 +112,13 @@ Radix primitive + 本 DS a11y 橋接:
 ## 邊界案例
 
 - **Dark mode**:`--scrollbar-thumb` / `--scrollbar-thumb-hover`(resolves to `--border` / `--border-hover`)自動由 semantic token 切換,無自訂 palette,詳見 `color.spec.md`
+- **但 DataTable 的原生捲軸不吃這組 token(2026-09-12 釐清)**:`data-table.css` 在 Chromium 上把
+  `scrollbar-color` 重設回 `auto`,所以 Chrome / Edge 的捲軸配色**完全由 `color-scheme` 決定**。
+  DS 原本從沒宣告過 `color-scheme`(計算值 `normal`)→ dark mode 下瀏覽器照樣畫亮色捲軸
+  (user 2026-09-12 截圖)。現在 `tokens/color/semantic.css` 在 `:root, [data-theme]` 宣告 `color-scheme: light`、
+  在 `[data-theme="dark"]` 宣告 `color-scheme: dark`,巢狀 theme 邊界一併翻。
+  機械閘 `scripts/color-scheme-invariant.mjs`(C1 計算值 = theme / C1b 巢狀邊界 / C2 用原生控制項當觀測器
+  確認**瀏覽器真的照做**,不只驗宣告存在)。
 - **Density**:scrollbar 寬度不受 density 影響(功能性 primitive,不隨 field-height / layout-space 放大縮小)
 - **Disabled**:ScrollArea 無互動狀態——內容是否可操作由 consumer 決定,captured 容器本身不 disable
 - **Empty**:內容為空時 scrollbar 不顯示(Radix 自動偵測 overflow,無溢出 → scrollbar 隱藏)

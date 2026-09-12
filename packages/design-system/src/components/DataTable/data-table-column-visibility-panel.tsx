@@ -27,13 +27,14 @@ import { Eye, EyeOff, Lock, GripVertical, Search, RotateCcw, X as XIcon } from '
 import { Button } from '@/design-system/components/Button/button'
 import { ButtonDivider } from '@/design-system/components/Button/button-group'
 import { Input } from '@/design-system/components/Input/input'
+import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
 import { PopoverHeader, PopoverBody, PopoverFooter, PopoverTitle, PopoverClose } from '@/design-system/components/Popover/popover'
 import { ItemPrefix, ItemLabel, ItemInlineActionButton, ROW_PADDING_BY_SIZE } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { cn } from '@/lib/utils'
-import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
+import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { dragSourceStyle } from '@/design-system/lib/drag-visual'
+import { dragSourceStyle, forwardDragActivatorAttributes, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
 
 interface ColumnVisibilityPanelColumn {
   /** Column id(stable identifier;對齊 DataTable column.id / accessorKey)*/
@@ -116,7 +117,24 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
     }
   }
 
+  // C1/B2 修(2026-09-07):先前沒傳 accessibility → 吃 dnd-kit 英文預設,
+  // 且它從自己的生命週期播報,不知道下面的守衛已經 return。共用 SSOT 見
+  // `lib/drag-announcements.ts`(四個 DndContext 同一份)。
+  const outcomeRef = React.useRef<DragOutcome | null>(null)
+  // 2026-09-07 C4:先前**完全沒傳 sensors**,於是吃 dnd-kit 預設 —— 零位移的單次
+  // pointerdown 就啟動拖曳,使用者只想點一下核取方塊,卻收到 aria-pressed=true 與兩則
+  // assertive 播報。門檻值讀 `lib/drag-visual.ts` 的單一來源(全 DS 原本有三個不同答案)。
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX } }),
+    useSensor(KeyboardSensor),
+  )
+  const announcements = React.useMemo(
+    () => createDragAnnouncements({ getOutcome: () => outcomeRef.current, kind: '欄位' }),
+    [],
+  )
+
   const handleDragEnd = (e: DragEndEvent) => {
+    outcomeRef.current = null
     if (!dndEnabled) return
     const { active, over } = e
     if (!over || active.id === over.id) return
@@ -128,6 +146,7 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
     const next = [...columnOrder!]
     const [m] = next.splice(oldIdx, 1)
     next.splice(newIdx, 0, m)
+    outcomeRef.current = { kind: '欄位', label: String(active.id) }
     onColumnOrderChange!(next)
   }
 
@@ -179,7 +198,7 @@ export const DataTableColumnVisibilityPanel = React.forwardRef<HTMLDivElement, D
       <PopoverBody className="!px-0 !py-0">
         <div className="py-2 flex flex-col" style={{ '--item-prefix-slot': '16px' } as React.CSSProperties}>
           {dndEnabled ? (
-            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={{ announcements }}>
               <SortableContext
                 items={filteredEntries.map((e) => e.id).filter((id) => !lockedSet.has(id))}
                 strategy={verticalListSortingStrategy}
@@ -258,7 +277,7 @@ function VisibilityRow({
             size="md"
             aria-label="拖曳重排"
             className="cursor-grab active:cursor-grabbing"
-            {...attributes}
+            {...forwardDragActivatorAttributes(attributes)}
             {...listeners}
           />
         ) : null}

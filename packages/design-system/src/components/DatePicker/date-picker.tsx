@@ -357,7 +357,11 @@ export interface DatePickerProps
    *   - `Esc` → reset draft 回 committed value
    *   - IME composition 期間不觸發驗證(中日韓輸入法 onCompositionStart/End 攔截)
    *   - Calendar pick → 同步 input draft + commit(走原 path)
-   *   - Calendar icon 仍 click 開 popover(Material/Ant idiom)
+   *   - **點欄位任何地方都開日曆,焦點留在輸入框可繼續打字**(2026-09-07;Ant 官方文件
+   *     「By clicking the input box, you can select a date from a popup calendar」+ inputReadOnly:false)
+   *   - **鍵盤 ArrowDown / Alt+ArrowDown 開啟時焦點進日曆** —— W3C APG date-picker combobox 逐字
+   *     「opened by activating the choose date button or by moving keyboard focus to the combobox and
+   *     pressing Down Arrow or Alt + Down Arrow」;焦點不進去就走不了日期格,那條不能為了打字犧牲
    *
    * **v1 limits**:
    *   - format detection ISO YYYY-MM-DD / YYYY/MM/DD / Date.parse fallback(`parseDateInput`)
@@ -459,6 +463,23 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
     const [inputDraft, setInputDraft] = React.useState<string>(displayLive)
     const [inputInvalid, setInputInvalid] = React.useState(false)
     const composingRef = React.useRef(false)
+    // 2026-09-07:記住浮層是**怎麼被打開的**。
+    // 指標開啟 → 焦點留在輸入框(使用者正在用滑鼠,可能還想打字;日曆用點的即可)
+    // 鍵盤開啟 → 焦點進日曆(否則鍵盤使用者 navigate 不了日期格,那是 W3C APG
+    //            date-picker combobox 明文要求「focus moves into the dialog」的理由)
+    // 兩條路各自成立,不是二選一 —— 這也是 user 2026-09-07 問「同時出現不是更好用嗎」的正解:
+    // 好用的是**滑鼠那條**,鍵盤那條不能為了它犧牲可操作性。
+    const openedByPointerRef = React.useRef(false)
+    const typedInputRef = React.useRef<HTMLInputElement | null>(null)
+    // 指標開啟時把焦點送回輸入框。
+    // **不用 `onOpenAutoFocus` 攔截**:實測那個事件在本組合下根本沒被派發
+    //(探針顯示 handler 從未執行,焦點卻仍被移到日曆內的按鈕),追 Radix 內部只會愈追愈深。
+    // 這裡改成「開啟後下一幀把焦點要回來」—— 不依賴任何第三方內部行為,而且驗得到。
+    React.useEffect(() => {
+      if (!open || !typeable || !openedByPointerRef.current) return
+      const id = requestAnimationFrame(() => typedInputRef.current?.focus())
+      return () => cancelAnimationFrame(id)
+    }, [open, typeable])
     // Sync input draft from committed displayLive(value change from outside)— 不要在 user
     // 打字期間覆寫。透過 ref 比較:committed vs current draft 是否從相同 source。
     const lastDisplayLiveRef = React.useRef(displayLive)
@@ -605,6 +626,7 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                 className={cn(
                   fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }),
                   'text-left cursor-pointer',
+                  // @focus-suppress B — B Field 家族輸入控件;承擔者:欄位邊框轉 primary(field-wrapper.tsx:57)
                   'focus-visible:outline-none',
                   className,
                 )}
@@ -612,12 +634,16 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
               >
                 {typeable ? (
                   // Issue 10 typed input(2026-05-10):real `<input>` 接 user 鍵盤打字。
-                  // Click 在 input 上不 propagate 給外層 popover trigger(避免每次打字都開 popover)。
-                  // Calendar icon `<ItemSuffix>` 點才開 popover(Material/Ant typed-date idiom)。
+                  // 2026-09-07 訂正:原本這裡寫「Click 在 input 上不 propagate…Calendar icon 點才開
+                  // popover(Material/**Ant** typed-date idiom)」—— **對 Ant 而言是反的**。
+                  // Ant Design 官方文件逐字:「By clicking the input box, you can select a date from a
+                  // popup calendar」,且 `inputReadOnly` 預設 false(可同時打字)。
+                  // 現行:點欄位任何地方都開,焦點留在輸入框(見上方 openedByPointerRef)。
                   // a11y(2026-07-14 dim-10 修):input 持完整 combobox 語意(id/name/state,APG
                   // editable-combobox)— 外層 div 已讓位(見上方 role/tabIndex 註解);ArrowDown
                   // 開 popover 補鍵盤開啟路徑(原僅 icon click 可開,鍵盤 user 無入口)。
                   <input
+                    ref={typedInputRef}
                     type="text"
                     id={idProp ?? fieldCtx?.id}
                     role="combobox"
@@ -641,10 +667,16 @@ const DatePicker = React.forwardRef<HTMLDivElement, DatePickerProps>(
                       if (composingRef.current) return
                       if (e.key === 'Enter') { e.preventDefault(); handleInputCommit(inputDraft) }
                       if (e.key === 'Escape') { setInputDraft(displayLive); setInputInvalid(false); e.preventDefault() }
-                      if (e.key === 'ArrowDown' && !open) { e.preventDefault(); setOpen(true) }
+                      if (e.key === 'ArrowDown' && !open) { e.preventDefault(); openedByPointerRef.current = false; setOpen(true) }
                     }}
                     onBlur={() => { if (!composingRef.current) handleInputCommit(inputDraft) }}
-                    onClick={(e) => e.stopPropagation()}
+                    // 2026-09-07(user 抓「點下去為何不是直接開日曆同時可以打字」):
+                    // 原本這裡 `stopPropagation` 把點擊吞掉,所以只有點到圖示那一小塊才會開。
+                    // Ant Design 官方文件逐字:「By clicking the input box, you can select a date
+                    // from a popup calendar」,而且 `inputReadOnly` 預設 false(可同時打字)——
+                    // 我們原本註解寫「Calendar icon 仍 click 開 popover(Material/**Ant** idiom)」
+                    // 對 Ant 而言是**反的**。現在點欄位任何地方都開,焦點留在輸入框。
+                    onPointerDown={() => { openedByPointerRef.current = true }}
                   />
                 ) : (
                   // ref = 截斷量測點(值 span 是截斷元素;tooltip trigger 在外層 host div,見 triggerTruncationRef 註解)
@@ -1066,8 +1098,14 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'start'}
                   className={cn(
                     bareInputStyles,
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:57);起訖兩顆靠下方主色底線區分(見下一行)
                     'truncate text-left cursor-pointer focus-visible:outline-none',
-                    'data-[active-end=true]:underline decoration-primary underline-offset-4 decoration-2',
+                    // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
+                    // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab
+                    // 在起訖之間移動」時兩顆長得一模一樣。補上 focus-visible 這一半 —— 用的是本元件
+                    // 既有的同一條線,不是第二種指示。對照 Ant Design RangePicker 的 -active-bar
+                    // (components/date-picker/style/index.ts:`height: lineWidthBold, background: colorPrimary`)。
+                    'data-[active-end=true]:underline focus-visible:underline decoration-primary underline-offset-4 decoration-2',
                     !startIso && 'text-fg-muted',
                   )}
                 >
@@ -1089,8 +1127,14 @@ const DatePickerRange = React.forwardRef<HTMLDivElement, DatePickerRangeProps>(
                   aria-expanded={open && activeEnd === 'end'}
                   className={cn(
                     bareInputStyles,
+                    // @focus-suppress C — button 不是 input 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:57);起訖兩顆靠下方主色底線區分(見下一行)
                     'truncate text-left cursor-pointer focus-visible:outline-none',
-                    'data-[active-end=true]:underline decoration-primary underline-offset-4 decoration-2',
+                    // 起訖兩顆共用同一圈欄位邊框,邊框分不出焦點在哪一顆,所以作用端另有一條主色底線。
+                    // 這條線原本只在面板開著時畫(data-active-end 帶 open 條件),於是「面板關著用 Tab
+                    // 在起訖之間移動」時兩顆長得一模一樣。補上 focus-visible 這一半 —— 用的是本元件
+                    // 既有的同一條線,不是第二種指示。對照 Ant Design RangePicker 的 -active-bar
+                    // (components/date-picker/style/index.ts:`height: lineWidthBold, background: colorPrimary`)。
+                    'data-[active-end=true]:underline focus-visible:underline decoration-primary underline-offset-4 decoration-2',
                     !endIso && 'text-fg-muted',
                   )}
                 >

@@ -181,7 +181,7 @@ Panel 展開後的 column picker 結構:
 | 點 trigger | 開 Panel |
 | Enter / Space / ↓(focus 在 trigger)| 開 Panel(APG combobox required keys,trigger 顯式 `onKeyDown`)|
 | Esc | 關 Panel(不確認) |
-| Tab | 焦點在 column 間移動 |
+| Tab | 焦點在 column 間移動;欄拿到鍵盤焦點時,框畫在目前選中的那一格(`aria-activedescendant` 指到的 option,selection-follows-focus;owner = focus-canonical「問題一之二」A 類「框畫在被指到的項目上」),不畫容器整圈 |
 | ↑ / ↓ | 欄內上下選(每次移動即 commit,無 highlight 中間態) |
 | Home / End | 跳該欄首 / 尾 enabled 值 |
 
@@ -206,6 +206,8 @@ N/A — TimePicker 是純同步輸入,無 async 狀態。
 ---
 
 ## A11y 預設
+
+**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;開啟時焦點在裡面的插入點控件、關閉時觸發器 wrapper 自己是焦點站,兩種都只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。唯讀態例外:邊框透明無可染,改由全域外描邊畫在被聚焦的控件上(`field-controls.spec.md`「Focus 行為」readonly 段)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 面板開啟時焦點進到欄位 listbox(浮層殼不畫框,@focus-suppress A),選項的鍵盤游標由項目自己的內描邊承擔。
 
 - trigger `role="combobox"`,在 `<Field>` 內時以 `aria-labelledby` 指向 field label(`fieldCtx.labelId`)
 - **Standalone(無 `<Field>` 包裹)accessible name**:trigger 無預設 `aria-label`,`<Field>` 外使用時 consumer **必須**自帶 `aria-label` 或 `aria-labelledby`,否則 `role="combobox"` 成為無名稱控件(對齊 Select / Combobox / DatePicker 同家族 standalone 約定)。DS 不為 trigger 塞泛用 fallback name(如「時間」),避免遮蔽 consumer 的具體語意(如「會議開始時間」);Field 內則自動接線無需 consumer 介入。Panel 本體(Popover dialog)另有本 DS 提供的 `aria-label="選擇時間"`,與 trigger name 職責分離

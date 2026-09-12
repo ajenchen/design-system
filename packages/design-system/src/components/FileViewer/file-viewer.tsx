@@ -2,6 +2,7 @@
 // code-quality-allow: file-size — composite 拼裝(Toolbar / ZoomInput / InfoPanel / Filmstrip + Dialog shell + renderer registry);拆檔會把 useState/useEffect/key handler 跨檔同步過於複雜
 import * as React from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { useOverlayCoexistence, CoexistenceMask, createPersistentGuard } from '@/design-system/lib/overlay-coexistence'
 import {
   X as XIcon,
   Download,
@@ -636,7 +637,18 @@ const Filmstrip = React.memo(function Filmstrip({ files, activeIndex, onSelect, 
               onClick={() => onSelect(i)}
               className={cn(
                 'shrink-0 rounded-md bg-muted overflow-hidden',
-                'outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                // 2026-09-07 C14:選中與鍵盤焦點原本都是 `ring-2` + `--ring: var(--primary)`
+                // (semantic.css:337 是全 repo 唯一定義)→ 已選中的縮圖被聚焦時 **0 像素變化**,
+                // 違反 APG「selected 必須與 focus 指示器在視覺上可區分」。
+                // 解法:兩者走不同通道 + 不同位置 —— 選中留在 ring(box-shadow,貼著圖),
+                // 焦點改走 outline 並**往內**畫。往內的理由(2026-09-10 重量後改寫):
+                //   縱向**不是**理由 —— 縮圖列 `h-full py-2 items-center`,縮圖上下各有 15.5px,往外的 4px 放得下。
+                //   真正的理由是**橫向捲到邊**:視窗窄到膠卷溢出時(實測 420px 寬:scrollWidth 444 > clientWidth 388),
+                //   貼在左緣(或右緣)那張的淨空是 **0.00px**,往外的 4px 會被 `overflow-x-auto`(:605)切掉;
+                //   邊緣另有 48px 漸層遮罩會再淡掉一截。依 focus-canonical「問題二」規格允許的位置裡有貼邊的 → 整個元件往內。
+                // 不可寫 `outline-none`(它把 --tw-outline-style 設成 none,會讓下面三條靜默失效,
+                // 見 steps.tsx 同款事故)。
+                'focus-visible:focus-ring-inset',
                 'transition-shadow duration-150',
                 active
                   ? 'ring-2 ring-primary'
@@ -739,6 +751,19 @@ export interface FileViewerProps
     'onOpenChange' | 'tabIndex'
   > {
   files: FileInfo[]
+  /**
+   * **並存區域**(opt-in,中性契約)。傳入之後,這個檢視器開著時**這些節點仍然可用**,
+   * 其餘一切被抑制。不傳 = 行為與過去完全相同(標準 modal)。
+   *
+   * 與 `Dialog` 的同名 prop 是同一份契約、同一個 primitive
+   * (`lib/overlay-coexistence.ts`)—— 因為 FileViewer **直接建 Radix Root/Portal**、
+   * 不經 DS Dialog,只改 Dialog 會漏掉它(2026-09-08 跨模型審查指出)。
+   *
+   * ⚠️ 傳了它,Root 會走 `modal={false}`,並擋掉來自常駐區域的 outside dismiss。
+   */
+  persistentElements?: () => Element[]
+  /** Portal 目的地(同 Dialog):模擬瀏覽器畫布時傳入帶 transform 的容器。 */
+  portalContainer?: HTMLElement | null
   initialIndex?: number
   /** Controlled open state。與 `defaultOpen` 二擇一。 */
   open?: boolean
@@ -764,6 +789,8 @@ export interface FileViewerProps
 
 const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function FileViewer({
   files,
+  persistentElements,
+  portalContainer,
   initialIndex = 0,
   open: openProp,
   defaultOpen,
@@ -872,13 +899,26 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
     document.body.removeChild(a)
   }, [file, onDownload])
 
-  // Keyboard shortcuts(focus 在 input / textarea 時不觸發)
+  // Keyboard shortcuts —— **作用域限定在檢視器自己那一區**。
+  //
+  // 舊版只排除 input / textarea / contentEditable,其餘一律接手。在「檢視器是唯一可聚焦的
+  // 東西」的年代看不出問題,但那是**被 modal 遮住而剛好沒事**,不是真的有作用域。
+  // 一旦有東西與它並存(agent 原則 v14 條 A/B:有 URL 的內容與 agent 並列可操作),
+  // 在旁邊那一區的**按鈕**上按方向鍵 / `+` / `f`,就會操作到這個檢視器 ——
+  // 使用者的視線根本不在這裡(2026-09-08 跨模型審查指出)。
+  //
+  // 判準改成「事件來源在不在檢視器內」:不在就完全不接手。
+  // 焦點不在任何地方(activeElement 是 body)時仍接手 —— 那是檢視器剛開、還沒 autofocus 的一瞬間。
   React.useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null
       const tag = target?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return
+      const content = contentRef.current
+      const insideViewer = !!content && !!target && (content === target || content.contains(target))
+      const nothingFocused = !document.activeElement || document.activeElement === document.body
+      if (!insideViewer && !nothingFocused) return
 
       if (e.key === 'ArrowLeft' && files.length > 1) {
         e.preventDefault()
@@ -932,6 +972,37 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
   }, [])
 
+  // 並存:保留集合 = 這個檢視器的 Content + 呼叫端指定的常駐區域。
+  // 與 Dialog 走同一支 primitive,不各寫一份。
+  const keepCoexist = React.useMemo(
+    () => (persistentElements
+      ? () => [contentRef.current, ...persistentElements()].filter((el): el is Element => !!el)
+      : undefined),
+    [persistentElements],
+  )
+  // 綁 `open`:controlled 關閉時元件仍掛著,不綁的話抑制不會解除(R3 生命週期反例)
+  useOverlayCoexistence(open && !!persistentElements, keepCoexist)
+  // 框外事件守衛與 Dialog 共用同一份(`lib/overlay-coexistence.ts` createPersistentGuard):保留區子樹 /
+  // 保留區自己開出來的浮層(含關閉中)/ 疊在上面的另一個 dialog 都不算框外。2026-09-10 前這裡少了第 2 條(只在 dialog.tsx 修),
+  // 同款缺口一次收掉。
+  const insidePersistent = React.useMemo(
+    () => (persistentElements ? createPersistentGuard(persistentElements, () => contentRef.current) : () => false),
+    [persistentElements],
+  )
+  const coexistGuards = persistentElements
+    ? {
+        onPointerDownOutside: (e: CustomEvent<{ originalEvent: PointerEvent }>) => {
+          if (insidePersistent(e.detail.originalEvent.target)) e.preventDefault()
+        },
+        onFocusOutside: (e: CustomEvent<{ originalEvent: FocusEvent }>) => {
+          if (insidePersistent(e.detail.originalEvent.target)) e.preventDefault()
+        },
+        onInteractOutside: (e: CustomEvent<{ originalEvent: Event }>) => {
+          if (insidePersistent(e.detail.originalEvent.target)) e.preventDefault()
+        },
+      }
+    : {}
+
   if (!file || !Renderer) {
     // files 為空或 index 超界 — 不渲染
     return null
@@ -943,8 +1014,9 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
   // Root 永遠餵 mirror(Radix 視角 controlled);uncontrolled 的 defaultOpen 由
   // useControllable internal state 承載,Radix Esc / dismiss 經 setOpen 同步回 mirror。
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
-      <DialogPrimitive.Portal>
+    <DialogPrimitive.Root open={open} onOpenChange={setOpen} modal={!persistentElements}>
+      <DialogPrimitive.Portal container={portalContainer ?? undefined}>
+        {persistentElements ? <CoexistenceMask keep={persistentElements} data-theme="dark" /> : null}
         {/* Overlay — FileViewer 固定深色氛圍,與 Dialog 共用 bg-overlay。
             **data-theme="dark"**(2026-04-30):Overlay 在 Portal 內、是 Content 的 sibling,
             不繼承 Content 內層的 dark 主題 → `--overlay` 默認 resolve 成 light theme α45 黑。
@@ -960,11 +1032,13 @@ const FileViewer = React.forwardRef<HTMLDivElement, FileViewerProps>(function Fi
           )}
         />
         <DialogPrimitive.Content
+          {...coexistGuards}
           ref={setContentRef}
           {...props}
           tabIndex={-1}
           className={cn(
             // Edge-to-edge fullscreen,無 inset / 無 radius(與一般 Dialog 差別的所在)
+            // @focus-suppress E — E 浮層程式落點;承擔者:dialog 殼,開啟時程式聚焦;內部工具列/縮圖各自有指示
             'fixed inset-0 z-50 outline-none',
             surfaceMotion,
             'data-[state=open]:animate-in data-[state=closed]:animate-out',

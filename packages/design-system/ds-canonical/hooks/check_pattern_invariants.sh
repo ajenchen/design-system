@@ -3,6 +3,7 @@
 #
 # Merges 4 PreToolUse hooks(原各檔已 retire,合併入此):
 #   C.1 overlay panel scroll chain(原 check_overlay_panel_scroll_chain,P1 WARN context)
+#   C.7 CommandEmpty 手刻簽名(P0 BLOCK,2026-09-08)
 #   C.2 inline-action canonical gap(原 check_inline_action_canonical_gap,P1 WARN context)
 #   C.3 primitive wrapper padding(原 check_primitive_wrapper_padding,P0 BLOCK exit 2)
 #   C.4 row slot handcraft(原 check_row_slot_handcraft,P0 BLOCK exit 2)
@@ -138,10 +139,45 @@ $SUSPECT_C6
 
 教義(item-anatomy.spec.md「選中 × 互動疊加」+ color.spec.md「Selected state family」):
   滑鼠 hover 選中列 → 釘住 bg-neutral-selected 不變
-  鍵盤反白/焦點停在選中列 → bg-neutral-selected-focus(深一階)
+  鍵盤游標停在任何列 → 畫框(focus-ring-inset)、不上底色;選中列 = 框疊在 bg-neutral-selected 上
+    (focus-canonical 規則二,user 2026-09-09 拍板;-focus 深一階 token 已於 2026-09-07 退役)
+    ⚠️ **selector 必須對上該元件的焦點模型**:虛擬游標(cmdk data-selected / Radix data-highlighted /
+       aria-activedescendant)由元件依 hooks/use-input-modality.ts 判鍵盤模態才掛 focus-ring-inset,
+       真焦點元件用 focus-visible:focus-ring-inset。2026-09-06 實測:寫錯 selector 的樣式**從未生效**
+       (TreeView 列無 tabIndex、MenuItem 根節點非可聚焦,都曾寫 focus-visible: 而永不 match)。
+       正確示範:command.tsx CommandItem 與 dropdown-menu.tsx radixCursorClass(依模態分流)、
+       sidebar.tsx focus-visible:focus-ring-inset(真焦點)、tree-view.tsx showRing(state 驅動)。
   bg-neutral-selected-active → 只准出現在含 active:(按壓)的修飾鏈
   bg-neutral-selected-hover  → 只准切換鈕 pressed 上 hover(變淺)
 例外:行尾 \\`// @token-state-allow: <reason>\\`
+
+EOF
+    record_worst 2
+  fi
+fi
+
+# ── C.7 CommandEmpty 手刻簽名(P0 BLOCK exit 2;2026-09-08)────────────────────
+# 空狀態由 CommandEmpty own(select-menu.spec.md「Empty state」,2026-09-08 定稿):MenuGroup + 一列 MenuItem message,
+# 不經 Empty、沒有任何最小高度(舊 minRows / getMenuListMinHeight 已退役)。
+# 2026-09-08 之前 SelectMenu、AgentPanel 各手刻一份、Command 自家 story 是裸文字 —— 三種長相(user 抓到)。
+# 攔:`<CommandEmpty` 標籤內出現 items-center / justify-center / minHeight,或它的下一行手放 <Empty。
+# 例外:行尾 `// @command-empty-handcraft-ok: <reason>`
+if ! grep -q '@command-empty-handcraft-ok' <<<"$NEW_CONTENT"; then
+  SUSPECT_C7=$(printf '%s' "$NEW_CONTENT" | tr '\n' ' ' | grep -oE "<CommandEmpty[^>]*(items-center|justify-center|minHeight)[^>]*>|<CommandEmpty[^>]*>[[:space:]]*<Empty\b" | head -3)
+  if [ -n "$SUSPECT_C7" ]; then
+    cat >&2 <<EOF
+
+┄┄┄ C.7 check_pattern_invariants — CommandEmpty 手刻簽名 BLOCKER ┄┄┄
+
+[P0] ${FILE_PATH}
+偵測到在 CommandEmpty 上手刻置中 / 最小高度 / Empty:
+$SUSPECT_C7
+
+空狀態的長相由 CommandEmpty own:MenuGroup 包一列 MenuItem message(非互動、次要色、字級同選項、置中),
+不經 Empty、沒有任何最小高度(舊 minRows / getMenuListMinHeight 已退役,0 筆與 1 筆結果等高);
+consumer 只傳文案:<CommandEmpty size={size}>{emptyText}</CommandEmpty>
+loading 放 <CommandLoading label=…/> 當 children(同一種訊息列 + 前綴轉圈)。SSOT:select-menu.spec.md「Empty state」「Loading」。
+例外:行尾 \`// @command-empty-handcraft-ok: <reason>\`
 
 EOF
     record_worst 2

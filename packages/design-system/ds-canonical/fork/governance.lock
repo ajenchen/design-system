@@ -359,7 +359,7 @@
     {
       "schemaVersion": 1,
       "file": "consumer/managed-files/46f10bc55cdfdf834d0749eebff42ea0bb8576f361b36d2b6ba1851354c50150.blob",
-      "sha256": "0598ec2f7b2975f5948072bc9fdb7f24682f3e0abed3cca36696dd869dfc0ffc",
+      "sha256": "31192bbc68856544a2060ca8aadb9e47116c345f39a8787febd6ef56249a08ec",
       "source": "scripts/lib/governance-dependency-bootstrap.mjs",
       "classification": null,
       "destination": "scripts/lib/governance-dependency-bootstrap.mjs"
@@ -743,7 +743,7 @@
     {
       "schemaVersion": 1,
       "file": "hooks/check_pattern_invariants.sh",
-      "sha256": "781f7558b4b0fbe97d5ec2dc6aa614515c0450be0357639ccb86d75ec68610e3",
+      "sha256": "795faed2ac9d3695f43c25f652994e04c3bc631868fe19607b9fc53ee5ba194f",
       "source": "check_pattern_invariants.sh",
       "classification": "SHIP_AS_IS",
       "destination": null
@@ -823,7 +823,7 @@
     {
       "schemaVersion": 1,
       "file": "launchers/approval-evidence.mjs",
-      "sha256": "d558774c4a1b9eb213f3432c993c9e27ae4595bef8041d797587f31cd530d76c",
+      "sha256": "636fb343e22ad80f124f2e60961ba829f561b8070455bae88694aeacf21104ed",
       "source": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
       "classification": null,
       "destination": null
@@ -919,7 +919,7 @@
     {
       "schemaVersion": 1,
       "file": "manifest.json",
-      "sha256": "426802765b375525a59dc02e56a0ad5fbd73fe7d729cf23739065433b89aa6d2",
+      "sha256": "dfa62c957ef978724a3717a13d108a2d26d975187993c0210cba7a07d902629d",
       "source": null,
       "classification": null,
       "destination": null

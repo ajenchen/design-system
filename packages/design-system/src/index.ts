@@ -19,14 +19,20 @@ export type {
   AccountMenuUser,
 } from './components/AccountMenu/index'
 export {
+  AGENT_FAB_HOME,
+  AGENT_PANEL_SIDE_BY_SIDE_MIN_CONTAINER,
   AGENT_PANEL_WIDTH_DEFAULT,
   AGENT_PANEL_WIDTH_MAX,
   AGENT_PANEL_WIDTH_MIN,
   AgentConversation,
   AgentDecisionCard,
   AgentDecisionSummary,
+  AgentFab,
+  AgentFabDock,
+  AgentLogo,
   AgentMessage,
   AgentPanel,
+  AgentPanelDock,
   AgentPanelHeader,
   AgentPromptInput,
   AgentThinking,
@@ -40,8 +46,16 @@ export type {
   AgentDecisionOption,
   AgentDecisionQuestion,
   AgentDecisionSummaryProps,
+  AgentFabDockProps,
+  AgentFabPlacement,
+  AgentFabProps,
+  AgentLogoProps,
+  AgentLogoState,
   AgentMessageProps,
+  AgentPanelDockProps,
+  AgentPanelDockRenderProps,
   AgentPanelHeaderProps,
+  AgentPanelMode,
   AgentPanelProps,
   AgentPromptAttachment,
   AgentPromptInputProps,
@@ -199,6 +213,7 @@ export {
   createEmptyFilterTree,
   dataTableFilterMatch,
   dataTableVariants,
+  distributeColumnWidths,
   evaluateTree,
   isFilterTreeActive,
 } from './components/DataTable/index'
@@ -631,11 +646,22 @@ export type {
 //   - patterns/horizontal-overflow
 //   - patterns/overlay-surface
 // 另有 public 元件內個別標 @internal jsDoc 的符號亦排除 front-door(2026-07-18 決策3;subpath 仍有):
+//   - components/AgentPanel:AGENT_BRAND
+//   - components/AgentPanel:AGENT_FAB_DRAG_INTERNALS
+//   - components/AgentPanel:BREATH_DUR
+//   - components/AgentPanel:BREATH_KEYTIMES
+//   - components/AgentPanel:BREATH_SPLINES
+//   - components/AgentPanel:HoleMorphSpec
+//   - components/AgentPanel:RIPPLE_KEYTIMES
+//   - components/AgentPanel:RIPPLE_SPLINES
+//   - components/AgentPanel:SETTLE
+//   - components/AgentPanel:SWELL
+//   - components/AgentPanel:useBeginAnimationsOnMount
+//   - components/AgentPanel:usePrefersReducedMotion
 //   - components/Button:ButtonGroupContext
 //   - components/DropdownMenu:floatingLayerClass
 //   - components/Field:FieldVariantInternal
 //   - components/Field:WithFieldVariantInternal
-//   - components/Field:getMenuListMinHeight
 //   - components/Sheet:handleSheetOpenAutoFocus
 //   - patterns/element-anatomy:ItemInlineAction
 //   - patterns/element-anatomy:ItemInlineActionButton
@@ -654,12 +680,16 @@ export * from './tokens/uiSize/icon-size'
 
 // ─── Hooks ────────────────────────────────────────────────────────────────
 export * from './hooks/use-controllable'
+export * from './hooks/use-input-modality'
 export * from './hooks/use-is-narrow-viewport'
 export * from './hooks/use-is-touch-device'
+export * from './hooks/use-known-options'
 export * from './hooks/use-overflow-items'
 export * from './hooks/use-truncated'
 
 // ─── Lib utilities ────────────────────────────────────────────────────────
+export * from './lib/drag-announcements'
 export * from './lib/drag-visual'
 export * from './lib/multi-select-ordering'
+export * from './lib/overlay-coexistence'
 export * from './lib/utils'

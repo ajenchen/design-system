@@ -303,6 +303,41 @@ test('runtime dependency closure cannot hide literal imports behind legal commen
   }
 })
 
+test('runtime dependency closure terminates on prose from followed by indented comment chains', () => {
+  // The live policy source triggered approximately 2^40 whitespace partitions before the
+  // import quote failed. Isolate the deliberate broken control so its timeout cannot hang CI.
+  const source = '// surface materialized from\n'
+    + Array.from({ length: 9 }, () => '    // explanatory policy prose\n').join('')
+    + "    || policy.disabled\nimport './leaf.mjs'\n"
+  const scannerUrl = new URL('./lib/runtime-dependency-closure.mjs', import.meta.url).href
+  const orderingUrl = new URL('./lib/provider-lifecycle.mjs', import.meta.url).href
+  const program = `
+    import assert from 'node:assert/strict'
+    import { relativeRuntimeImports } from ${JSON.stringify(scannerUrl)}
+    import { compareUtf8Bytes } from ${JSON.stringify(orderingUrl)}
+    let scan = relativeRuntimeImports
+    if (process.argv[1] === 'broken-control') {
+      const original = scan.toString()
+      const broken = original.replace(String.raw\`(?:\\s|\`, String.raw\`(?:\\s+|\`)
+      assert.notEqual(broken, original, 'control must restore the nested whitespace quantifier')
+      scan = new Function('invariant', 'compareUtf8Bytes', 'return (' + broken + ')')(
+        (condition, message) => assert.ok(condition, message), compareUtf8Bytes)
+    }
+    assert.deepEqual(scan(${JSON.stringify(source)}), [{ kind: 'esm', specifier: './leaf.mjs' }])
+    console.log('SCANNER_COMPLETED')
+  `
+  const healthy = spawnSync(process.execPath, ['--input-type=module', '--eval', program, 'healthy'], {
+    encoding: 'utf8', timeout: 30_000,
+  })
+  assert.equal(healthy.status, 0, `${healthy.error || ''}\n${healthy.stderr}`)
+  assert.match(healthy.stdout, /SCANNER_COMPLETED/)
+  const broken = spawnSync(process.execPath, ['--input-type=module', '--eval', program, 'broken-control'], {
+    encoding: 'utf8', timeout: 1_000,
+  })
+  assert.equal(broken.error?.code, 'ETIMEDOUT', `deliberate nested quantifier must time out: ${broken.stderr}`)
+  assert.doesNotMatch(broken.stdout, /SCANNER_COMPLETED/)
+})
+
 test('published compatibility sources omit empty categories but retain every declared leaf', () => {
   const manifest = {
     consumer: {
