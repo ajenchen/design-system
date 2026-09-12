@@ -40,6 +40,12 @@ export const Modes: Story = {
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
           <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="類別(edit mode demo)" />
+          {/* play() 會把三個已選值逐一移除來驗「移除後焦點往下一顆、最後回觸發點」。這顆把示範狀態**還原**,
+              否則 story 停在全空 —— 而它是「四模式」的主要展示,空的就等於什麼都沒示範。
+              2026-09-12 回補:ce0fc613 把這顆與 play() 末尾的點擊一起刪掉,卻留著前面三個移除步驟
+              (該 commit 的四個主題都與 Combobox 無關,也沒有說明),四個模式因此全部顯示佔位符。
+              branch vs main 同機視覺 A/B 抓到(tag 元素 0 vs 12)。 */}
+          <Button variant="text" size="xs" onClick={() => setValue(['electronics', 'food', 'lifestyle'])}>重設編輯模式</Button>
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">view</h3>
@@ -68,6 +74,8 @@ export const Modes: Story = {
     await waitFor(() => expect(canvas.getByRole('button', { name: '移除 Lifestyle' })).toHaveFocus())
     await userEvent.click(canvas.getByRole('button', { name: '移除 Lifestyle' }))
     await waitFor(() => expect(canvas.getByRole('combobox', { name: '類別(edit mode demo)' })).toHaveFocus())
+    // 還原示範狀態(理由見上方按鈕的註解):沒有這一步,story 的最終畫面是四個空欄位。
+    await userEvent.click(canvas.getByRole('button', { name: '重設編輯模式' }))
   },
 }
 
