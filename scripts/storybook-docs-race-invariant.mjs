@@ -89,12 +89,20 @@ try {
     // 不是守衛誤殺正常 docs。已排除是自適應緩衝造成的:緩衝只在捲動中重算,docs 頁沒人捲 → 維持初始值,
     // 而且沒有那道守衛的 7f342b23(每次 render 都擴)這支閘是綠的。
     // 仍然全部落空 → 照樣紅(不靜默跳過:「沒量到」不可以偽裝成「通過」)。
-    for (let attempt = 1; attempt <= 3 && !(await openDocs()); attempt += 1) {
-      console.log(`   ⟳ Docs 頁 60 秒內什麼都沒渲染(這一趟儀器沒跑起來),重載後重試 ${attempt}/3`)
-      await page.goto(server.origin + `/index.html?path=/story/${TASK}`, { waitUntil: 'networkidle' }).catch(() => {})
-      await sleep(1200)
+    // **條件要在「量測當下」成立,不是「等待當下」成立**(2026-09-12 第五次誤紅)。
+    // 上一版只在 `openDocs()` 等不到時重試;實際 CI 的失敗是 openDocs 回報成功、接著量到 0 ——
+    // docs 渲染出來之後又被拆掉。所以改成「開 → 量 → 沒量到才重試」。
+    let docsPage = null
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      await openDocs()
+      docsPage = await evalIn(page, MEASURE)
+      if ((docsPage?.docsChildren ?? 0) > 0) break
+      if (attempt < 3) {
+        console.log(`   ⟳ Docs 頁量到 0 個子節點(這一趟儀器沒跑起來),重載後重試 ${attempt}/3`)
+        await page.goto(server.origin + `/index.html?path=/story/${TASK}`, { waitUntil: 'networkidle' }).catch(() => {})
+        await sleep(1200)
+      }
     }
-    const docsPage = await evalIn(page, MEASURE)
     await browser.close()
     return { m, docsPage, routed }
   }
