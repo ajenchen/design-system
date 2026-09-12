@@ -441,7 +441,15 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
       // PNG 而不是 JPEG:白底要是純 255 才能把 DS 骨架色(`bg-muted` = 黑 6% 透明 ≈ 240)與分隔線(neutral-4)當墨跡,JPEG 的壓縮雜訊會把白弄髒
       await cdp.send('Page.startScreencast', { format: 'png', maxWidth: VW, maxHeight: VH, everyNthFrame: 1 })
       await page.waitForTimeout(200)
-      if (sabotage) await page.evaluate((ms) => { document.querySelector('[data-datatable-hscroll]').addEventListener('scroll', () => { const b = performance.now(); while (performance.now() - b < ms) { /* busy */ } }, { passive: true }) }, SCROLL_BUSY_MS)
+      // 正對照 = 「儀器在該紅的時候會紅」。原本只忙等主執行緒,前提是「主執行緒卡住 ⇒ 一定空白」。
+      // 2026-09-12 起這個前提**不再成立**:未掛載區已經預先鋪了骨架底(`[data-row-shell-band]`),
+      // 由合成器搬運,主執行緒卡死也照樣有東西可畫 —— CI 實測忙等 120ms 之後空白 0 幀,對照組因此失效。
+      // (那不是偵測器壞了,正是這次修正要消滅的因果。)所以正對照要**連骨架底一起關掉**:
+      // 沒有地板 + 主執行緒卡死 = 真的什麼都沒有,偵測器不紅就是偵測器壞了。
+      if (sabotage) {
+        await page.addStyleTag({ content: '[data-row-shell-band]{display:none !important}' })
+        await page.evaluate((ms) => { document.querySelector('[data-datatable-hscroll]').addEventListener('scroll', () => { const b = performance.now(); while (performance.now() - b < ms) { /* busy */ } }, { passive: true }) }, SCROLL_BUSY_MS)
+      }
       const t0 = Date.now()
       await cdp.send('Input.synthesizeScrollGesture', { x: setup.cx, y: setup.cy, yDistance: -GESTURE_PX, speed: GESTURE_SPEED, gestureSourceType: 'mouse', preventFling: true })
       const wallMs = Date.now() - t0
@@ -616,7 +624,7 @@ if (SELFTEST) {
     if (r.g) {
       if (r.control === 'negative') { const pass = r.g.blankFrames === 0 && r.g.presented >= 10; console.log(`${pass ? '✓' : '✗'} selftest 負對照 ${r.build}:呈現 ${r.g.presented} 幀、空白 ${r.g.blankFrames} 幀(需 0 且幀數 ≥ 10)`); if (!pass) ok = false; continue }
       const pass = r.g.blankFrames >= 3 && r.g.presented >= 10
-      console.log(`${pass ? '✓' : '✗'} selftest 正對照 ${r.build}/${r.mode}:每個 scroll 事件忙等 ${SCROLL_BUSY_MS}ms → 空白 ${r.g.blankFrames} 幀、最長 ${r.g.blankLongestMs.toFixed(0)}ms(需 ≥ 3 幀)`)
+      console.log(`${pass ? '✓' : '✗'} selftest 正對照 ${r.build}/${r.mode}:關掉骨架底 + 每個 scroll 事件忙等 ${SCROLL_BUSY_MS}ms → 空白 ${r.g.blankFrames} 幀、最長 ${r.g.blankLongestMs.toFixed(0)}ms(需 ≥ 3 幀)`)
       if (!pass) ok = false
       continue
     }
