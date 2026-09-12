@@ -886,6 +886,35 @@ build_ask_selection_transcript "$TX_RESTATE_NEWQ" "$ASK_PROPOSAL" "$ASK_ANSWER" 
 run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_RESTATE_NEWQ"
 expect_block "13c. 對照組:拍板後提出新問句 → 仍 supersede 並 fail closed" "data-table"
 
+# 14. 判「是不是視覺改動」時註解不算(2026-09-12)。
+#     錨:修「捲動停下後指標底下那一列不會被標記」時,程式碼本身沒有任何視覺 token,
+#     但註解裡寫了 hover 二字 → 整個 edit 被判 product-ui-ux 擋下,等於「為了解釋清楚而被罰」,
+#     也逼 agent 去問 user 一個本來就該自主執行的工程修正。
+#     **對照組同時證明這不是放寬**:真的改到樣式的程式碼照樣被判成視覺。
+TX_NEUTRAL_14="$TMP_DIR/tx_neutral_14.jsonl"
+build_transcript "$TX_NEUTRAL_14" "請修好這個 bug"
+
+# 14a. 只有註解提到視覺字眼 → 不算視覺改動
+COMMENT_ONLY_OPERATION='// 這次 commit 換了捲動位置時也要同步 hover 標記
+const renderedAtNewOffset = S.committedRenderOffset !== S.renderOffset'
+run_evidence "Edit" "$PROD_TSX" "$TX_NEUTRAL_14" "$COMMENT_ONLY_OPERATION"
+if printf '%s' "$EVIDENCE_JSON" | jq -e '.decisionDomain != "product-ui-ux"' >/dev/null 2>&1; then
+  echo "  PASS  14a. 只有註解提到 hover → 不判成 product-ui-ux"; PASS=$((PASS+1))
+else
+  echo "  FAIL  14a. 只有註解提到 hover → 不判成 product-ui-ux (evidence=$EVIDENCE_JSON)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 14a. 註解不該影響 domain"
+fi
+
+# 14b. 對照組:程式碼真的改樣式 → 仍判成視覺(證明 14a 不是放寬)
+REAL_VISUAL_OPERATION='return <button className="hover:bg-blue-500" />'
+run_evidence "Edit" "$PROD_TSX" "$TX_NEUTRAL_14" "$REAL_VISUAL_OPERATION"
+if printf '%s' "$EVIDENCE_JSON" | jq -e '.decisionDomain == "product-ui-ux"' >/dev/null 2>&1; then
+  echo "  PASS  14b. 對照組:真的改 className 樣式 → 仍判 product-ui-ux"; PASS=$((PASS+1))
+else
+  echo "  FAIL  14b. 對照組:真的改 className 樣式 → 仍判 product-ui-ux (evidence=$EVIDENCE_JSON)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 14b. 真視覺改動必須仍判 UI"
+fi
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

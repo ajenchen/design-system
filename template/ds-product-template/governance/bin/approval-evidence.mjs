@@ -393,6 +393,20 @@ const UI_DECISION_MARKERS = [
   /(?:介面|界面|使用者可感知|產品語意|設計意圖|元件契約|資訊架構|工作流程|導覽|視覺(?:層級)?|外觀|樣式|佈局|布局|間距|留白|顏色|色彩|配色|色系|紅色|藍色|綠色|紫色|漸層|漣漪|光圈|字體排印|尺寸|大小|寬度|高度|懸停|焦點|動畫|節奏|轉場|互動|行為|內容語意|文案|標籤|圖示|標誌|logo|圓角|陰影|邊框|透明度|變體|設計 (?:token|規則)|狀態機|無障礙|可及性|鍵盤|停用)/u,
 ]
 
+/**
+ * 判「這次改動是不是視覺/UI」時,**註解不算**(2026-09-12)。
+ * 註解是在解釋「為什麼這樣改」,不是被執行的東西;拿它判授權分類會把純行為修正誤判成產品決策。
+ * 錨:修「捲動停下後指標底下那一列不會被標記」這個 bug 時,改動的程式碼本身沒有任何視覺 token,
+ * 但我在註解裡寫了「hover」二字,整個 edit 就被判成 product-ui-ux 而擋下 ——
+ * 於是變成「為了解釋清楚而被罰」,也逼得 agent 去問 user 一個本來就該自主執行的工程修正
+ * (user 2026-09-12 原話:「不是說過只有跟 ssot 相關的 ui/ux 需要我拍版決策嗎…其餘不要作繭自縛」)。
+ * **這不是放寬**:真的改到樣式的程式碼照樣命中,只是不再因為文字說明而誤判。
+ * 只剝 `//` 行註解與 `/* *​/` 區塊註解;JSX 文字、字串字面值都不動(那些是真的會被使用者看到的東西)。
+ */
+const stripCodeComments = (value) => String(value || '')
+  .replaceAll(/\/\*[\s\S]*?\*\//gu, ' ')
+  .replaceAll(/(^|[^:])\/\/[^\r\n]*/gu, '$1 ')
+
 const UI_OPERATION_MARKERS = [
   /\b(?:className|style|css|tailwind|padding|margin|gap|color|background|width|height|hover|focus|animation|transition|opacity|border|shadow|radius|variant|disabled|tabIndex|role)\b/iu,
   /\b(?:onClick|onChange|onSubmit|onKeyDown|onKeyUp|onPointerDown|onPointerUp|onDrag|onDrop|navigate|router|route|href|placeholder|aria-[a-z-]+|label|copy|textContent)\b/iu,
@@ -1062,7 +1076,7 @@ function classifyLatestAuthorizationUnscoped(message, {
   }
   const targetIsEngineering = matchesAny(ENGINEERING_TARGET_PATTERNS, normalizedTarget)
   const hasOperationEvidence = normalizeText(operationText).length > 0
-  const operationHasUiIntent = matchesAny(UI_OPERATION_MARKERS, operationText)
+  const operationHasUiIntent = matchesAny(UI_OPERATION_MARKERS, stripCodeComments(operationText))
   const operationRequiresHumanAction = matchesAny(HUMAN_ONLY_OPERATION_MARKERS, operationText)
   const operationIsDestructiveOrBypass = matchesAny(
     DESTRUCTIVE_OR_BYPASS_OPERATION_MARKERS,
@@ -1208,7 +1222,7 @@ function classifyOperationAuthorizationUnscoped({
       reasonCode: 'ENGINEERING_SAFETY_GATE_REQUIRED',
     }
   }
-  if (matchesAny(UI_OPERATION_MARKERS, normalizedOperation)) {
+  if (matchesAny(UI_OPERATION_MARKERS, stripCodeComments(normalizedOperation))) {
     return {
       ...base,
       decisionDomain: 'product-ui-ux',
