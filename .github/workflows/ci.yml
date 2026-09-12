@@ -273,6 +273,19 @@ jobs:
           node scripts/data-table-fast-scroll.mjs --mode=wheel --runs=3 \
             --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
             --assert-max-long-task-ms=300
+          # **真實輸入路徑**(2026-09-12 補)。`--mode=mouse` 是 CDP `Input.dispatchMouseEvent` 走原生輸入管線,
+          # 是這支腳本裡最接近「user 在 Chrome 用滾輪捲」的一條;`gesture` 是 CDP 合成手勢、
+          # `wheel` 是 JS 直接改 scrollTop(主執行緒,結構上不會有合成器超前 —— 見腳本內的空閘守衛)。
+          # **為什麼一定要加**:目的地閘原本只掛在 gesture 上,而同一份程式碼在兩條路徑差很多 ——
+          # 本機同窗 A/B(n=3):
+          #   最長連續空白  main 248/217/473ms → branch 56/40/51ms
+          #   空白幀        main  29/ 32/ 32   → branch 12/12/ 8
+          #   空白面積×時間 main 662/626/786ms → branch 157/121/77ms
+          # 也就是修正在真實路徑有效(最長連續 −89%),**但沒到零**;gesture 卻量到 0 → gesture 低報。
+          # 這裡先用相對閘鎖住這個改善不回頭,絕對零空白仍只對 gesture 宣稱(不假裝已達成)。
+          node scripts/data-table-fast-scroll.mjs --mode=mouse --runs=3 \
+            --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
+            --assert-max-blank-ms=600 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
           # 「指標底下那一列永遠有 hover 反應」(2026-09-11 新閘;user:「游標明明到了,table row 的反應卻要等好一陣子」)。
           # 兩個根因都在腳本檔頭:殼列原本沒有 hover 底色、以及捲動中瀏覽器不重新派送 hover。先對照組再判定。
           node scripts/data-table-row-under-pointer-invariant.mjs --selftest
