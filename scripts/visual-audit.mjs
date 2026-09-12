@@ -292,7 +292,14 @@ async function runGeometryAssertions(page, assertions) {
     try {
       if (a.type === 'equalHeight') {
         const heights = await page.$$eval(a.selector, (els) => els.map((el) => el.getBoundingClientRect().height))
-        if (heights.length === 0) continue
+        // **選不到元素 = 違規,不是跳過**(2026-09-12 第二處)。上一輪只修了 `catch` 那條路
+        // (`$eval` 選不到會丟例外),但 `$$eval` 選不到**只回空陣列、不丟例外** ——
+        // 於是 equalHeight 掛一個語法合法卻選不到的選擇器,仍然靜默通過。
+        // 實證:`#storybook-root button-nope-xyz` 在 equalHeight 是綠、在 gap 是 selectorMissing,兩條路不一致。
+        if (heights.length === 0) {
+          violations.push({ assertion: a.name, type: 'selectorMissing', selector: a.selector, error: 'equalHeight: 選不到任何元素' })
+          continue
+        }
         const first = heights[0]
         const mismatch = heights.filter((h) => Math.abs(h - first) > 0.5)
         if (mismatch.length > 0) {

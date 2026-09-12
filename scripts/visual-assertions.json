@@ -40,7 +40,10 @@
     {
       "id": "design-system-components-datepicker-展示--range-middle-hover-state",
       "file": "datepicker-range-middle-hover-state.png",
-      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
       "rationale": "Hover suppression capture — play() 負責開啟 Portal 並標記 range_middle date；截圖前由 visual-audit 的 Playwright locator.hover() 擁有最終 CSS :hover，驗證已選取中段維持 grey track 且不出現第二層 hover ring。"
     },
     {
@@ -164,7 +167,10 @@
     {
       "id": "design-system-components-button-展示--hover-focus-state",
       "file": "button-hover-focus-state.png",
-      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
       "rationale": "Interactive state capture — play() 建立第二顆 Button 的 focus；截圖前由 visual-audit 的 Playwright locator.hover() 維持第一顆 Button 的 CSS :hover,同張驗 hover bg + focus ring。"
     },
     {
@@ -197,7 +203,22 @@
     {
       "id": "design-system-components-dialog-展示--open-snapshot",
       "file": "dialog-open-snapshot.png",
-      "rationale": "開啟狀態 snapshot — visual-audit 專用,用 defaultOpen 讓 Playwright 抓到 Dialog chrome(Header/Body/Footer),補 Layer A/B 先前只抓到 trigger 按鈕的 MINOR gap"
+      "rationale": "開啟狀態 snapshot — visual-audit 專用,用 defaultOpen 讓 Playwright 抓到 Dialog chrome(Header/Body/Footer),補 Layer A/B 先前只抓到 trigger 按鈕的 MINOR gap",
+      "assertions": [
+        {
+          "name": "DialogFooter 按鈕間距 = 8px",
+          "type": "gap",
+          "selector": "[data-dialog-footer]",
+          "expected": 8,
+          "rationale": "覆核實測 n=1、gap 8px(md pad 12/16、lg pad 16/24 都不影響 gap);注入 12px 紅。"
+        },
+        {
+          "name": "DialogFooter 內按鈕等高(tertiary 與 danger 同高)",
+          "type": "equalHeight",
+          "selector": "[data-dialog-footer] button",
+          "rationale": "覆核實測 n=2(取消 tertiary / 確認刪除 danger),md 32+32 / lg 36+36;第一顆改 28 → [28,32] 紅。鑑別力來自兩顆是不同 variant。"
+        }
+      ]
     },
     {
       "id": "design-system-components-popover-展示--filter-panel",
@@ -206,7 +227,15 @@
     {
       "id": "design-system-components-popover-展示--open-snapshot",
       "file": "popover-open-snapshot.png",
-      "rationale": "開啟狀態 snapshot — visual-audit 專用,用 defaultOpen 讓 Playwright 抓到 Popover chrome(Header+X / Body / Footer),補 Layer A/B 先前只抓到 trigger 按鈕的 MINOR gap"
+      "rationale": "開啟狀態 snapshot — visual-audit 專用,用 defaultOpen 讓 Playwright 抓到 Popover chrome(Header+X / Body / Footer),補 Layer A/B 先前只抓到 trigger 按鈕的 MINOR gap",
+      "assertions": [
+        {
+          "name": "PopoverFooter 內按鈕等高",
+          "type": "equalHeight",
+          "selector": "[data-popover-footer] button",
+          "rationale": "覆核實測 n=2,md 28+28 / lg 32+32;第一顆改 32 → [32,28] 紅。"
+        }
+      ]
     },
     {
       "id": "design-system-components-popover-設計規格--color-matrix",
@@ -243,7 +272,10 @@
     {
       "id": "design-system-components-fileitem-展示--hover-swap",
       "file": "fileitem-hover-swap.png",
-      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
       "rationale": "Hover swap 由 visual-audit 的 Playwright locator.hover() 直接套在第一個 rich row host,讓 group-hover 將 completed 狀態圖示替換成 Download。"
     },
     {
@@ -265,12 +297,24 @@
     {
       "id": "design-system-components-dropdownmenu-展示--open-snapshot",
       "file": "dropdownmenu-open-snapshot.png",
-      "rationale": "開啟狀態 snapshot — visual-audit 專用,用 defaultOpen 讓 Playwright 抓到 Dropdown chrome(item / icon / shortcut / separator),補 Layer A/B 先前只抓到 trigger 按鈕的 MINOR gap"
+      "rationale": "開啟狀態 snapshot — visual-audit 專用,用 defaultOpen 讓 Playwright 抓到 Dropdown chrome(item / icon / shortcut / separator),補 Layer A/B 先前只抓到 trigger 按鈕的 MINOR gap",
+      "assertions": [
+        {
+          "name": "MenuItem 內部 gap = 8px(icon ↔ 文字)",
+          "type": "gap",
+          "selector": "[role=\"menuitem\"] [role=\"presentation\"]",
+          "expected": 8,
+          "rationale": "menuItemVariants base 的 gap-2。覆核實測 n=3(皆有 startIcon + 快捷鍵)gap 8px;注入 4px 紅。"
+        }
+      ]
     },
     {
       "id": "design-system-components-dropdownmenu-展示--item-hover",
       "file": "dropdownmenu-item-hover.png",
-      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
       "rationale": "Interactive state capture — defaultOpen 建立 Radix Portal；截圖前由 visual-audit 的 Playwright locator.hover() 維持第一個 menu item 的 CSS :hover highlight(bg-neutral-hover)。"
     },
     {
@@ -323,7 +367,16 @@
     },
     {
       "id": "design-system-components-chip-展示--default",
-      "file": "chip-default.png"
+      "file": "chip-default.png",
+      "assertions": [
+        {
+          "name": "ChipGroup chip 間距 = gap-2(8px)",
+          "type": "gap",
+          "selector": "#storybook-root [role=\"group\"]",
+          "expected": 8,
+          "rationale": "chip.spec.md:57 逐字「各自獨立 pill,gap-2」(Chip 之所以是 Chip,就是彼此不連體)。chip.tsx 三種 layout 都寫死 gap-2;覆核實測 md/lg 皆 8px,注入 12px 紅。"
+        }
+      ]
     },
     {
       "id": "design-system-components-circularprogress-展示--default",
@@ -351,6 +404,13 @@
           "selector": "[data-field-group]",
           "expected": 16,
           "rationale": "2026-09-12 user 拍板:表單欄位間距是系統級設定,由 density 統一決定,不開放 per-instance 選檔。實測該 story 有 1 個 [data-field-group]、gap 16px。"
+        },
+        {
+          "name": "Field vertical 內部節奏 gap = 4px",
+          "type": "gap",
+          "selector": "[data-field-orientation=\"vertical\"]",
+          "expected": 4,
+          "rationale": "field.spec.md:84 逐字「Field 內部 gap(vertical)| gap-1(4px)」。覆核實測 n=4,md 與 lg 皆 4px(非 density 函數);注入 8px 紅。與同 scenario 既有的 FieldGroup gap=16 是互補兩層(欄位內 vs 欄位間)。"
         }
       ]
     },
@@ -369,12 +429,23 @@
     {
       "id": "design-system-components-inlineedit-展示--states",
       "file": "inlineedit-states.png",
-      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
       "rationale": "play() 負責把第三列切到 edit mode 並標記第二列 view button；截圖前由 visual-audit 的 Playwright locator.hover() 維持第二列 CSS :hover。"
     },
     {
       "id": "design-system-components-input-展示--modes",
-      "file": "input-modes.png"
+      "file": "input-modes.png",
+      "assertions": [
+        {
+          "name": "Input 四模式同高 — read↔edit 零跳",
+          "type": "equalHeight",
+          "selector": "[data-field-mode]:not([data-field-orientation])",
+          "rationale": "field-controls.spec.md:66 逐字「view 與 edit 同一顆控件、只差 chrome → read↔edit 零跳」。覆核實測 n=4,md 全 32 / lg 全 36;重放 2026-05-13 已被推翻的 view 收合 → [32,23,32,32] 紅。"
+        }
+      ]
     },
     {
       "id": "design-system-components-linkinput-展示--default",
@@ -483,7 +554,15 @@
     {
       "id": "design-system-components-accountmenu-展示--open-snapshot",
       "file": "accountmenu-open-snapshot.png",
-      "rationale": "beta.97 AccountMenu public composite 的 canonical 展開狀態;defaultOpen 固定呈現 identity label、個人資料、設定與獨立登出分組。"
+      "rationale": "beta.97 AccountMenu public composite 的 canonical 展開狀態;defaultOpen 固定呈現 identity label、個人資料、設定與獨立登出分組。",
+      "assertions": [
+        {
+          "name": "AccountMenu 標題列與選項列等高",
+          "type": "equalHeight",
+          "selector": "[role=\"menu\"] [role=\"presentation\"]",
+          "rationale": "覆核實測 n=4(標題 + 3 選項)md 全 32 / lg 全 36;只給標題列加 padding-top:12px → [37.09,32,32,32] 紅,同時證實第一顆確實是 font-medium 標題列。"
+        }
+      ]
     },
     {
       "id": "design-system-patterns-header-anatomy--with-tabs",
@@ -503,43 +582,64 @@
     {
       "id": "design-system-patterns-item-anatomy--inline-action-hover-state",
       "file": "item-inline-action-hover-state.png",
-      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
       "rationale": "beta.97 弱化 icon 一階 root invariant；story 靜態標記唯一 target,截圖前由 visual-audit 的 Playwright locator.hover() 建立最終 CSS :hover,驗 fg-muted → fg-secondary + neutral-hover 背景。"
     },
     {
       "id": "design-system-components-fileupload-展示--remove-hover-state",
       "file": "fileupload-remove-hover-state.png",
-      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
       "rationale": "beta.97 FileUpload 內建 file-list remove consumer；play() 定位並標記內建按鈕,截圖前由 visual-audit 的 Playwright locator.hover() 擁有最終 CSS :hover。"
     },
     {
       "id": "design-system-components-sidebar-展示--action-hover-state",
       "file": "sidebar-action-hover-state.png",
-      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
       "rationale": "beta.97 SidebarMenuAction 手刻 consumer；story 靜態標記唯一 target,截圖前由 visual-audit 的 Playwright locator.hover() 建立最終 CSS :hover,驗 fg-muted → fg-secondary 一階。"
     },
     {
       "id": "design-system-components-treeview-展示--action-hover-state",
       "file": "treeview-action-hover-state.png",
-      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
       "rationale": "beta.97 TreeItem 展開/收合 action 直接 consumer；play() 定位並標記 chevron,截圖前由 visual-audit 的 Playwright locator.hover() 維持最終 CSS :hover,驗一階 icon 色與 neutral-hover 背景。"
     },
     {
       "id": "design-system-components-tag-展示--dismiss-hover-state",
       "file": "tag-dismiss-hover-state.png",
-      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
       "rationale": "beta.97 neutral subtle Tag remove 分支；play() 定位並標記 onRemove action,截圖前由 visual-audit 的 Playwright locator.hover() 維持最終 CSS :hover,驗 primitive fg-muted → fg-secondary。Chip dismiss 明確 N/A:chip.spec.md 禁止 Filter Chip 提供 dismiss,移除 filter 由 deselect 承擔。"
     },
     {
       "id": "design-system-components-button-展示--dismiss-hover-state",
       "file": "button-dismiss-hover-state.png",
-      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
       "rationale": "beta.97 Button dismiss 手刻 consumer；story 靜態標記唯一 target,截圖前由 visual-audit 的 Playwright locator.hover() 建立 chrome close X 的最終 CSS :hover,驗 fg-muted → fg-secondary 一階。"
     },
     {
       "id": "design-system-components-datatable-展示--nested-rows-expander-hover-state",
       "file": "datatable-nested-rows-expander-hover-state.png",
-      "interaction": { "action": "hover", "selector": "[data-visual-hover-target]" },
+      "interaction": {
+        "action": "hover",
+        "selector": "[data-visual-hover-target]"
+      },
       "rationale": "beta.97 DataTable nested row expander 手刻 consumer；story play 只驗 component pointer path 並標記唯一 target,截圖前由 visual-audit 的 Playwright locator.hover() 擁有最終 CSS :hover,驗 fg-muted → fg-secondary 一階。"
     }
   ]

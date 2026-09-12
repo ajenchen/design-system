@@ -4373,3 +4373,39 @@ Switch 的幾何已由 `switch-thumb-ring-invariant.mjs` 按 spec 尺寸表逐�
 **修**:兩處(`data-table.tsx:1795` / `data-table.spec.md:462`)都改引可驗證的原始碼路徑
 `github.com/ag-grid/ag-grid/blob/latest/packages/ag-grid-community/src/misc/animationFrameService.ts`,
 並在該處寫明「為什麼換掉」。50ms 的 W3C 來源也補進程式碼(先前只在帳本,程式碼裡沒寫)。
+
+## AD122 — 視覺稽查覆蓋:9 條斷言落地,並修掉第二處靜默通過
+
+四組平行提案 + 一個對抗式覆核。**覆核組抓到我上一輪沒修乾淨的地方**:
+
+`visual-audit.mjs:289` 的 `if (heights.length === 0) continue` —— 我 AD119 只修了 `catch` 那條路
+(`$eval` 選不到會丟例外),但 **`$$eval` 選不到只回空陣列、不丟例外** ——
+於是 `equalHeight` 掛一個語法合法卻選不到的選擇器**仍然靜默通過**。
+實證:`#storybook-root button-nope-xyz` 在 equalHeight 是綠、在 gap 是 selectorMissing,兩條路不一致。已修。
+
+**收 9 條**(每條都有覆核組自己重跑的數字 + 破壞對照;第 1 條的 story 不在 manifest,需另開 scenario 故未收):
+
+| 斷言 | 乾淨值(md/lg) | 破壞對照 |
+|---|---|---|
+| Input 四模式同高 | n=4,32 / 36 | 重放 2026-05-13 被推翻的 view 收合 → [32,23,32,32] 紅 |
+| Field vertical gap = 4 | n=4,兩 density 皆 4px | 注 8px 紅 |
+| ChipGroup gap = 8 | n=1,兩 density 皆 8px | 注 12px 紅 |
+| DialogFooter gap = 8 | n=1 | 注 12px 紅 |
+| DialogFooter 按鈕等高 | n=2(tertiary/danger) | 第一顆改 28 → 紅 |
+| PopoverFooter 按鈕等高 | n=2 | 第一顆改 32 → 紅 |
+| AccountMenu 標題列與選項列等高 | n=4 | 標題列加 padding → 紅 |
+| MenuItem gap = 8 | n=3 | 注 4px 紅 |
+
+**退 3 條,理由都是實測不是風格**:
+- Chip equalHeight:**零鑑別力** —— 5 顆 chip className 完全相同,拿掉 `h-field-sm` 後五顆一起變 20.19px、**仍然相等 → 綠**。不可能各自變動的東西不需要閘。
+- Badge equalHeight:同病,且 `equalHeight` 沒有 expected 欄位,**型別上表達不了「必須是 16px」**。要鎖得先給引擎 `fixedHeight` 型別。
+- AccountMenu gap:成立但與 MenuItem gap 是**同一條 SSOT**,且引擎 `$eval` 只量第一個(標題列無 icon,量到看不見的 gap);更關鍵是它的真正用途是「幫等高斷言當選擇器存活守衛」——**拿假斷言補引擎的洞**(M12 修症狀不修根因),根因就是上面那一行。
+
+**另外查實的兩個引擎限制**(四組獨立得到同一結論,我抽驗過):
+1. `padding4Sided` 的 `symmetric` 選項**根本沒實作**(`grep -n symmetric visual-audit.mjs` = 0 命中),
+   實作只把四邊互比全等 → 所有 Field family 候選(水平有 padding、垂直靠 flex 置中)恆假。
+2. `gap` 用 `parseFloat(getComputedStyle(el).gap)`,grid 只設 column-gap 時 computed 逐字回 `"normal 12px"`
+   → `parseFloat` NaN → `|| 0` → 0 → **必假紅**。所以 gap 斷言目前只能掛在 row/column 同值的容器;
+   收的 4 條量到的都是單值,安全。
+
+**現況**:124 個 scenario → 7 個有斷言、共 9 條(先前是 1 個 / 1 條)。仍不是 PR 閘(掛在排程的 visual-regression.yml)。
