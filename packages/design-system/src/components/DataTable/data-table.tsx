@@ -1795,7 +1795,12 @@ function DataTableInner<TData>(
   // 120 = AG Grid 33.3.2 每幀給建列的 60ms(`ag-grid-community.js:34143` 逐字 `executeFrame.bind(this, 60)`)的兩倍。
   // 為什麼是兩倍:一個視窗的內容晚 120ms 出現,比先給使用者看一片灰色骨架再換成真資料好 ——
   // 同一台機器上 main(沒有殼機制)就是花 148ms 一次畫完、全程沒有佔位,而那正是 user 說「比較順」的那一版。
-  const SHELL_ENGAGE_VIEWPORT_MS = 120
+  // **60,不是 120**(2026-09-12 改)。原本取 AG Grid `executeFrame.bind(this, 60)` 每幀 60ms 預算的
+  // **兩倍**,理由是「一個視窗的內容晚 120ms 出現,比先給使用者看一片灰骨架好」。
+  // 但實測推翻了那個取捨:2× 節流下模型算出 65ms「畫得完」所以不出殼,實際卻整片空白 **1.1 秒** ——
+  // 因為判準只問「一個視窗」,而那 1.1 秒裡視窗移動了 165 列。門檻降回一倍之後 2× 會進入,
+  // 最長連續空白 1086–1193ms → **183ms**,而 1×(27ms)仍然遠低於門檻、零骨架。
+  const SHELL_ENGAGE_VIEWPORT_MS = 60
   // 「機器跟不上」用真正的症狀判,不用 commit 成本:兩次 commit 之間視窗移動的距離 ÷ 預掛緩衝(overscan 列 × 列高)。
   // 比值 > 1 = 新進視窗的列還沒掛就被捲過去(整片白)→ 進入;< 0.5 才退出(遲滯)。commit 成本不能當判準:CI runner 每次
   // commit 本來就 > 20ms 但在 4,500px/s 跟得上(R17 在它上面零骨架、延遲 ≤ 34ms),用成本判會在一般速度出殼。
@@ -1939,7 +1944,12 @@ function DataTableInner<TData>(
     // 這條打的是「模型說畫得完、實際卻整片白」的regime:2× 節流下模型算出一個視窗 65ms(< 120 門檻)
     // 所以不出殼,但那 1.1 秒裡視窗移動了 165 列 —— 判準問錯了問題(問「畫得完一個視窗嗎」,
     // 真正的問題是「跟得上速率嗎」)。實測最長連續空白 1086–1193ms → 184–218ms、長工 174–225ms → 73–82ms。
-    S.budgeted = S.scrollCommit && ((cannotDrawViewport && (S.slow || S.pendingBehind > SHELL_BEHIND_ENTER)) || S.behind > SHELL_BEHIND_ENTER)
+    // **保留 AND(能力判準)**。2026-09-12 曾改成「速率單獨即可出殼」(`|| S.behind > ENTER`),
+    // 本機 2× 看起來更好,但 CI 的 ref 判定抓到代價:殼幀 2.5 → 10.5、**幀距 263 → 454ms**
+    // (空白 1185 → 258ms 是改善,但把 1.2 秒空白換成 0.45 秒畫面凍結不是淨勝)。
+    // 改用「降門檻」達成同一個目的:判準仍是能力,只是把「畫得完」的標準收嚴。
+    // 同機 3× 模擬 CI 實測:空白 334ms、幀距 **210ms**(main 461ms)、長工 108ms(main 281ms),四條全過。
+    S.budgeted = S.scrollCommit && cannotDrawViewport && (S.slow || S.pendingBehind > SHELL_BEHIND_ENTER)
     // 這一幀畫得完幾列真列 =(幀預算 − 每次 commit 的固定成本)÷ 每列成本(至少 1 列,上限 64)。停捲後只剩補殼時放寬到 4 幀:
     // 每次 commit 的固定成本在慢機器很貴(4× 節流 ≈ 100ms),一次多補幾列比每幀補 1 列快得多(6× 節流補齊 1.3s → 目標 < 1s)。
     // 沒有新列進窗(scrollTop 沒變,只是還在 250ms 的 isScrolling 尾巴)的 commit 放寬到 4 幀:可能真的停了(多補幾列補得快),
