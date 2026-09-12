@@ -134,6 +134,31 @@ function transcriptState(transcriptPath) {
     plainUserRecordIndexes.push(index)
   }
   let latestAskUserSelection = null
+  // A later plain user message normally supersedes the selection. The one exception is a message
+  // that merely RESTATES the same delegation ("照你建議", "我不是說了嗎") — 2026-09-12 anchor: the
+  // user answered an AskUserQuestion with 同意,照這個做, the assistant still blocked, and the user's
+  // next message was an angry restatement of the very same delegation. Treating that restatement as
+  // "supersedes" threw away the target binding the user had just given and demanded the approval a
+  // third time. Restating an instruction is not withdrawing it.
+  // Deliberately narrow: it carries forward only while EVERY later plain message is a bare
+  // delegation/affirmation with no denial. A denial, a new directive, or a follow-up question all
+  // still supersede — those are the cases the original rule exists for.
+  const carriesSelectionForward = (text) => {
+    const normalized = normalizeText(text)
+    if (!normalized) return false
+    if (matchesAny(TARGET_DENIAL_PATTERNS, withoutNoWaitClauses(normalized))) return false
+    if (matchesAny(TARGETLESS_SCOPE_DENIAL_PATTERNS, normalized)) return false
+    return matchesAny(UI_DELEGATED_RESEARCH_PATTERNS, normalized)
+      || matchesAny(SELECTION_RESTATEMENT_PATTERNS, normalized)
+  }
+  if (latestSelection) {
+    const laterPlain = plainUserRecordIndexes
+      .map((index, order) => ({ index, text: userMessages[order] }))
+      .filter((entry) => entry.index > latestSelection.index)
+    if (laterPlain.length && laterPlain.every((entry) => carriesSelectionForward(entry.text))) {
+      lastUserRecordIndex = Math.min(lastUserRecordIndex, latestSelection.index - 1)
+    }
+  }
   if (latestSelection && latestSelection.index > lastUserRecordIndex) {
     // Valid only while it is the newest user event: any later plain user message (a follow-up
     // question, a denial, a new directive) supersedes the selection and flows through the
@@ -324,6 +349,20 @@ const UI_DELEGATED_RESEARCH_PATTERNS = [
   /(?:你|妳)\s*只要.{0,60}(?:就|即)\s*(?:是)?\s*(?:沒問題|沒有問題|可以|行|OK)/u,
   /(?:不違背|不牴觸|不違反|符合|滿足).{0,24}(?:我(?:的)?)?\s*(?:理念|原則|要求|想法|標準|期待).{0,32}(?:就|即)\s*(?:是)?\s*(?:沒問題|沒有問題|可以|行|OK)/u,
   /\bas\s+long\s+as\b.{0,80}\b(?:it'?s|that'?s|you'?re)\s+(?:fine|ok|okay|good)\b/iu,
+]
+
+/**
+ * 重申 ≠ 收回(2026-09-12)。user 在 AskUserQuestion 選了「同意,照這個做」之後,若下一則訊息只是
+ * **把同一個委派再講一次**(「我就跟你說照你建議了」「不要作繭自縛」),那不是新指令也不是否決。
+ * 原本任何後續訊息都會讓前一個選擇失效 → 等於把 user 剛給的 target 綁定丟掉、再要一次核准。
+ * 刻意只收「光是重申/肯定、沒有新內容」的句型;帶新指令、問句或否決的訊息一律照舊 supersede。
+ */
+const SELECTION_RESTATEMENT_PATTERNS = [
+  /(?:我)?\s*(?:不是|就)?\s*(?:跟|對|同)\s*(?:你|妳)\s*(?:說|講)\s*(?:過)?.{0,16}(?:了|嗎)/u,
+  /(?:照|依|按)\s*(?:這個|那個|你說的|我說的)\s*(?:做|改|來|處理)/u,
+  /(?:不要|別|可不可以不要|可以不要)\s*作繭自縛/u,
+  /^(?:同意|可以|好|沒錯|對|OK|ok)[,，。!！~\s]*$/u,
+  /\b(?:i\s+(?:already\s+)?(?:said|told\s+you)|go\s+ahead|just\s+do\s+it|as\s+you\s+suggested)\b/iu,
 ]
 
 const TARGET_BINARY_QUESTION_PATTERNS = [

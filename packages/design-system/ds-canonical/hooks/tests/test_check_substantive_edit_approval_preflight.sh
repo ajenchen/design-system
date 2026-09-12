@@ -877,6 +877,30 @@ build_transcript "$TX_COMPACT_FAKE" \
 run_hook "Edit" "/foo/my-project/packages/design-system/src/components/DataTable/data-table.tsx" "$TX_COMPACT_FAKE"
 expect_block "12b. 對照組:摘要裡的「使用者已核准」是 AI 轉述 → 仍 fail closed" "BLOCKER"
 
+# 13. 重申 ≠ 收回(2026-09-12 錨):user 在選項框拍板後,下一則只是**把同一個委派再講一次**。
+#     原本任何後續訊息都讓選擇失效 → 等於把 user 剛給的 target 綁定丟掉、再要一次核准。
+ASK_PROPOSAL="提案:data-table.tsx 未掛載區鋪骨架底,快速捲動不得看到空白。"
+ASK_ANSWER='The user answered: "骨架底"="同意,照這個做(建議)"'
+
+TX_RESTATE="$TMP_DIR/tx_restate.jsonl"
+build_ask_selection_transcript "$TX_RESTATE" "$ASK_PROPOSAL" "$ASK_ANSWER" \
+  "我就跟你說照你建議了,可以不要作繭自縛嗎?"
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_RESTATE"
+expect_pass_silent "13a. 拍板後只是重申同一個委派 → 不作廢選擇,approved"
+
+# --- 對照組:證明 carry-forward 沒有把「後續訊息一律無效」寫死 ---
+TX_RESTATE_DENY="$TMP_DIR/tx_restate_deny.jsonl"
+build_ask_selection_transcript "$TX_RESTATE_DENY" "$ASK_PROPOSAL" "$ASK_ANSWER" \
+  "等一下,不可以直接改,先停手"
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_RESTATE_DENY"
+expect_block "13b. 對照組:拍板後改口否決 → 仍 supersede 並 fail closed" "data-table"
+
+TX_RESTATE_NEWQ="$TMP_DIR/tx_restate_newq.jsonl"
+build_ask_selection_transcript "$TX_RESTATE_NEWQ" "$ASK_PROPOSAL" "$ASK_ANSWER" \
+  "那骨架的顏色是不是該換一個?"
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_RESTATE_NEWQ"
+expect_block "13c. 對照組:拍板後提出新問句 → 仍 supersede 並 fail closed" "data-table"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"
