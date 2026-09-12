@@ -329,7 +329,9 @@ header `scrollWidth` 915 = body 900 + padding 15,兩邊捲動範圍都是 397,�
 
 為什麼緩衝與列殼都不夠:捲動跑在**合成執行緒**上,跟主執行緒刻意隔離(Chromium RenderingNG:「Separating the main and compositor threads is critically important for performance isolation of animation and scrolling from main thread work.」<https://developer.chrome.com/docs/chromium/renderingng-architecture>)。主執行緒被長工佔住時,合成器照樣每 16ms 送一幀,React 不可能在那段期間把列放到新位置 —— **任何需要主執行緒的機制都輸掉這場競速**。實測 CPU×1、6000px 手勢:手勢 663ms 中長工 4 個合計 324ms,送出 38 幀有 **27 幀整片空白、17/17 帶全空、最長連續 410ms**,而列殼只出現 1 幀(舊判準 `cannotDrawViewport` 問的是「這台機器畫得完一個視窗嗎」= **能力**,快機器恆為 false)。
 
-**做法**:已掛載的列必然是連續一段 `[first.start, last.end]`;這一段以外的整個虛擬高度,在同一次 render 裡鋪成兩塊**骨架底**(`[data-row-shell-band]`,CSS `repeating` 漸層,bar = `--muted`、列底線 = `--divider`,幾何抄列殼的 `h-3 w-3/5` / 系統欄 `h-4 w-4`)。覆蓋 = 上帶 ∪ 已掛載段 ∪ 下帶 = 整個捲動區,**恆真且與時序無關**;成本是每次 render 兩個 div,之後純由合成器搬運,因此不可能造成卡頓。用漸層而非真 DOM,是因為未掛載區可達數十萬 px,鋪真列是無上限的主執行緒工作。已知落差:漸層畫不出 `Skeleton` 的 `rounded-md` 圓角(12px bar 在 9000px/s 下看不出來)。
+**已知殘留(2026-09-12 實測定位,非未解)**:上述覆蓋在 **DOM／幾何層恆真**,但**合成器層有例外** —— 捲動前緣新露出的圖磚偶爾在該幀送出時尚未完成光柵化,合成器就畫成圖層底色(白)。證據:把骨架底改塗單一實色後,絕大多數「空白帶」量到 **100% 該色**(幾何與繪製都對),少數幀同一區域是 **100% 白**,還有 **75% / 81% 部分覆蓋**的中間態 —— 那正是圖磚逐塊補上的簽名。發生率本機約每 6 趟 1 次、1–2 帶、16–18ms,CI 三趟皆 0。**繪製成本不是槓桿**(連純色實填也會發生),所以不是把漸層改便宜就能消除;剩下的槓桿是圖層／圖磚提示,但 6 對 6 的 A/B 沒有檢定力(對照組同樣 0/6),要宣稱修好需遠更大的樣本。
+
+**做法**:已掛載的列必然是連續一段 `[first.start, last.end]`;這一段以外的整個虛擬高度,在同一次 render 裡鋪成兩塊**骨架底**(`[data-row-shell-band]`,CSS `repeating` 漸層,bar = `--muted`、列底線 = `--divider`,幾何抄列殼的 `h-3 w-3/5` / 系統欄 `h-4 w-4`)。覆蓋 = 上帶 ∪ 已掛載段 ∪ 下帶 = 整個捲動區,在 **DOM／幾何層恆真且與時序無關**(合成器層的例外見上);成本是每次 render 兩個 div,之後純由合成器搬運,因此不可能造成卡頓。用漸層而非真 DOM,是因為未掛載區可達數十萬 px,鋪真列是無上限的主執行緒工作。已知落差:漸層畫不出 `Skeleton` 的 `rounded-md` 圓角(12px bar 在 9000px/s 下看不出來)。
 
 **機械閘**:`scripts/data-table-fast-scroll.mjs --assert-max-blank-frames=0`(**絕對**判準,判每趟最大值不判中位數 —— 空白幀是缺陷不是雜訊);對偶的「不得變卡」仍由同檔 `--ref=main` 的相對閘擋。
 
