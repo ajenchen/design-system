@@ -86,6 +86,10 @@ Track（pill 形，rounded-full）
   **機械閘**:`scripts/switch-thumb-ring-invariant.mjs` 量真實像素,斷言「thumb 外圈的顏色 = 同列 track 裸露處的顏色」,
   涵蓋 checked/unchecked × enabled/disabled × rest/hover × light/dark(實測 44 組);
   computed style 檢查對這兩次事故**都是綠的**(border-width 恆 2px、border-color 恆有值),所以必須量像素。
+  **同一支閘另驗尺寸**(2026-09-12 補):上方尺寸表的「白色圓 sm/md = 16 / lg = 20」也由它量渲染出來的
+  連續純白寬度來斷言(只在 unchecked + enabled 上量 —— checked 的勾選圖示會切斷白段、disabled 套 opacity 後不是純白)。
+  在這之前**沒有任何腳本在斷言這個直徑**,事故二當時是靠人眼加臨時探針抓到的。
+  對照組把外圈塗白時,顏色與尺寸兩條會同時紅(外圈變白 → 白圓從 16 脹到 20)。
   另有 `scripts/hover-color-pair-invariant.mjs` 全 DS 掃「靜止時同色的 (父底色, 子邊框) 配對,hover 後必須仍同色」,
   含會紅的對照組。這是一整類 bug 的防線,不只 Switch。
 - **Hover**(2026-07-06 補,「選中之上 hover 升階」家族):ON track `bg-primary → bg-primary-hover`(Checkbox checked hover 同款);OFF track `bg-border → bg-border-hover` 深一階(Checkbox 未選 hover 同慣例)

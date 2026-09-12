@@ -4288,3 +4288,17 @@ user 的真實情境是「Chrome 開預覽、用滾輪捲」,而 CI 只跑 CDP �
 
 **驗證**:1× 400px 兩趟 0 殼(斷言套用且過)、4× 400px 明說「畫不動(73ms > 元件門檻 60ms)不適用」、
 `--selftest` 三個偵測器都紅、3× ref 四條全過(空白 334 / 幀距 216 / 長工 107 / 補齊 291)、wheel 長工 206 ≤ 300。
+
+## AD118 — CI 全綠;補上 Switch 白色圓直徑的機械閘
+
+`a0f6b6d9` **CI 全綠**(required check `Verify` = success,六個 job 全綠)。
+唯一紅的仍是驗 main base.sha 的 `Verify authority candidate`(fast-uri 3.1.5 vs 分支 3.1.7),合併後消失。
+
+**第 7 項關掉**:獨立覆核指出 `switch.spec.md:99-100` 的「白色圓 sm/md = 16 / lg = 20」
+**沒有任何腳本在斷言** —— 事故二(dark mode 白疊白讓白圓從 15.5 脹到 19.5px)當時是靠人眼加臨時探針抓到的,
+日後尺寸再走鐘不會有閘紅。
+
+修法:加進既有的 `switch-thumb-ring-invariant.mjs`(不另開一支),量**渲染出來的連續純白寬度**,
+只在 unchecked + enabled 上量(checked 的勾選圖示切斷白段;disabled 套 opacity 後不是純白)。
+正常掃 12 個直徑取樣全符合;**對照組把外圈塗白後顏色 44 組 + 尺寸 12 組同時紅**
+(外圈變白 → 白圓從 16 脹到 20),兩半各自有會紅的證據。

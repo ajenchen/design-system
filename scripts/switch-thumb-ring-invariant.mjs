@@ -10,9 +10,16 @@
  * 兩次都**通不過 computed style 檢查**(border-width 恆為 2px、border-color 恆有值),
  * 只有量真實像素才抓得到 —— 所以這支閘一律讀截圖像素,不讀 CSSOM(M32)。
  *
- * 不變式:在 thumb 垂直中心那一列,thumb 左緣往內 1px(落在那圈 2px 內)的顏色,
+ * 不變式一(顏色):在 thumb 垂直中心那一列,thumb 左緣往內 1px(落在那圈 2px 內)的顏色,
  * 必須等於同一列上 track 裸露處的顏色。這條在 checked / unchecked / disabled /
  * hover / light / dark 全部成立,因為它描述的是「那圈本來就該是 track」。
+ *
+ * 不變式二(尺寸,2026-09-12 補):`switch.spec.md:99-100` 的尺寸表逐字要求
+ * **白色圓 sm/md = 16px、lg = 20px**(thumb 外框 20 / 24,減去兩側各 2px 外圈)。
+ * 獨立覆核 2026-09-12 指出:`grep scripts/*.mjs` 找不到任何腳本在斷言這個直徑 ——
+ * 事故二(dark mode 白疊白讓白圓從 15.5 變 19.5px)當時就是靠人眼加臨時探針抓到的,
+ * 日後尺寸再經由別的機制走鐘不會有任何閘紅。這裡量**渲染出來的連續純白寬度**,
+ * 只在 unchecked + enabled 上量(checked 的勾選圖示會把白色段切斷;disabled 套 opacity 後不是純白)。
  */
 import { PNG } from 'pngjs'
 import { launchBrowser } from './lib/launch-browser.mjs'
@@ -24,6 +31,9 @@ const args = process.argv.slice(2)
 const selftest = args.includes('--selftest')
 const root = args.find((a) => a.startsWith('--root='))?.slice(7) ?? 'storybook-static'
 const TOLERANCE = 8 // 每通道 /255;截圖有子像素抗鋸齒,取樣點又貼著圓角,留一點餘裕
+// `switch.spec.md:99-100` 的尺寸表:thumb 外框 → 白色圓。±1px 容差給子像素抗鋸齒。
+const WHITE_DISC_BY_THUMB = { 20: 16, 24: 20 }
+const DISC_TOLERANCE = 1
 
 const server = await startA11yStaticServer({ rootDirectory: root, defaultFile: 'iframe.html' })
 const browser = await launchBrowser()
@@ -51,7 +61,9 @@ const allIds = Object.entries(index.entries)
 // 正常掃仍然是全 DS —— Switch 會出現在 form / settings / dialog 等組合 story 裡,不能只掃 switch 目錄。
 const ids = selftest ? allIds.filter((id) => /switch|field|form|setting/i.test(id)) : allIds
 const violations = []
+const discViolations = []
 let sampled = 0
+let discSampled = 0
 
 const px = (png, x, y) => { const i = ((y * png.width) + x) << 2; return [png.data[i], png.data[i + 1], png.data[i + 2]] }
 const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) <= TOLERANCE)
@@ -95,6 +107,21 @@ for (const id of ids) {
         const ring = px(png, ringX, 0); const track = px(png, trackX, 0)
         sampled += 1
         if (!near(ring, track)) violations.push({ id, theme, state: geo.state, disabled: geo.disabled, hovered, ring: ring.join(','), track: track.join(',') })
+        // 尺寸:量這一列上最長的連續「幾乎純白」段 = 視覺上的白色圓直徑。
+        // 只在 unchecked + enabled 量(checked 有勾選圖示切斷白段;disabled 套 opacity 後不是純白)。
+        const expectDisc = WHITE_DISC_BY_THUMB[Math.round(geo.thumb.w)]
+        if (expectDisc != null && geo.state === 'unchecked' && !geo.disabled) {
+          let best = 0, run = 0
+          for (let x = 0; x < png.width; x += 1) {
+            const q = px(png, x, 0)
+            if (q[0] >= 250 && q[1] >= 250 && q[2] >= 250) { run += 1; if (run > best) best = run } else run = 0
+          }
+          const discPx = best / scale
+          discSampled += 1
+          if (Math.abs(discPx - expectDisc) > DISC_TOLERANCE) {
+            discViolations.push({ id, theme, hovered, thumb: Math.round(geo.thumb.w), 實際: +discPx.toFixed(1), 期望: expectDisc })
+          }
+        }
       }
     }
   }
@@ -102,15 +129,22 @@ for (const id of ids) {
 await page.mouse.move(2, 2)
 await browser.close(); await server.stop()
 
-console.log(`掃過 ${ids.length} 個 story,取樣 ${sampled} 個 (switch × theme × hover) 組合`)
+console.log(`掃過 ${ids.length} 個 story,取樣 ${sampled} 個 (switch × theme × hover) 組合;其中 ${discSampled} 個量了白色圓直徑`)
 if (sampled === 0) { console.error('✗ 取樣數 0 —— 這支閘什麼都沒驗到,視同紅燈(不是綠燈)'); process.exit(1) }
 if (selftest) {
-  if (violations.length === 0) { console.error('✗ 對照組:把那圈改成白色後閘仍然綠 —— 閘失效'); process.exit(1) }
-  console.log(`✓ 對照組:如預期紅(${violations.length} 個組合被抓到)`); process.exit(0)
+  // 對照組把外圈塗白 → 顏色不變式必紅,而且白色圓會從 16 脹到 20(外圈也變白)→ 尺寸不變式也必紅。
+  if (violations.length === 0) { console.error('✗ 對照組:把那圈改成白色後顏色不變式仍然綠 —— 閘失效'); process.exit(1) }
+  if (discSampled > 0 && discViolations.length === 0) { console.error('✗ 對照組:外圈塗白後白色圓應該脹大,尺寸不變式卻沒紅 —— 那半邊失效'); process.exit(1) }
+  console.log(`✓ 對照組:如預期紅(顏色 ${violations.length} 組 / 尺寸 ${discViolations.length} 組)`); process.exit(0)
+}
+if (discViolations.length > 0) {
+  console.error(`✗ ${discViolations.length} 個組合的白色圓直徑不符 switch.spec.md 尺寸表:`)
+  for (const v of discViolations.slice(0, 12)) console.error(`  ${v.id} [${v.theme}] hover=${v.hovered} thumb ${v.thumb}px → 白圓 ${v.實際}px(期望 ${v.期望}px)`)
 }
 if (violations.length > 0) {
   console.error(`✗ ${violations.length} 個組合的 thumb 外圈顏色 ≠ track:`)
   for (const v of violations.slice(0, 20)) console.error(`  ${v.id} [${v.theme}] state=${v.state} disabled=${v.disabled} hover=${v.hovered}  圈=${v.ring}  track=${v.track}`)
   process.exit(1)
 }
-console.log('✓ 所有 Switch 的 thumb 外圈都等於 track(含 hover / disabled / dark)')
+if (violations.length > 0 || discViolations.length > 0) process.exit(1)
+console.log('✓ 所有 Switch 的 thumb 外圈都等於 track(含 hover / disabled / dark),且白色圓直徑符合 spec 尺寸表')
