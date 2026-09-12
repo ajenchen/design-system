@@ -434,24 +434,30 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
     const shots = []
     let ticks
     let gesture = null
+    // ── 像素證據不再只接 gesture(2026-09-12)────────────────────────────────────
+    // 原本只有 `mode === 'gesture'` 開 screencast,於是 wheel / mouse 兩條路徑**完全沒有像素證據**,
+    // `--assert-max-blank-frames=0` 這道目的地閘也就只守得到合成手勢。
+    // 但 user 回報「捲動卡頓」用的是**真滾輪**,驗收路徑 ≠ 回報路徑 = 閘守錯地方。
+    // 現在所有模式都開 screencast,讓同一套空白偵測(ANALYZE_FRAMES / analyzeGesture)適用於全部路徑。
+    // PNG 而不是 JPEG:白底要是純 255 才能把 DS 骨架色(`bg-muted` ≈ 240)與分隔線當墨跡,JPEG 雜訊會把白弄髒。
+    const cast = []
+    cdp.on('Page.screencastFrame', ({ data, metadata, sessionId }) => { cast.push({ data, ts: metadata.timestamp }); cdp.send('Page.screencastFrameAck', { sessionId }).catch(() => {}) })
+    await cdp.send('Page.startScreencast', { format: 'png', maxWidth: VW, maxHeight: VH, everyNthFrame: 1 })
+    await page.waitForTimeout(200)
+    // 正對照在所有模式都要把**兩層**防空白機制關掉(理由見 gesture 分支的長註解):
+    // 只忙等主執行緒已經不會產生空白,只關一層則變成在量機器快慢。
+    if (sabotage) await page.addStyleTag({ content: '[data-row-shell-band],[data-row-shell]{display:none !important}' })
     if (mode === 'gesture') {
-      // 真實呈現幀:先開 screencast(合成器每送出一幀就給一張),再用合成手勢走原生輸入管線捲中央區;正對照 = 每個 scroll 事件忙等
-      const cast = []
-      cdp.on('Page.screencastFrame', ({ data, metadata, sessionId }) => { cast.push({ data, ts: metadata.timestamp }); cdp.send('Page.screencastFrameAck', { sessionId }).catch(() => {}) })
-      // PNG 而不是 JPEG:白底要是純 255 才能把 DS 骨架色(`bg-muted` = 黑 6% 透明 ≈ 240)與分隔線(neutral-4)當墨跡,JPEG 的壓縮雜訊會把白弄髒
-      await cdp.send('Page.startScreencast', { format: 'png', maxWidth: VW, maxHeight: VH, everyNthFrame: 1 })
-      await page.waitForTimeout(200)
+      // 真實呈現幀:合成手勢走原生輸入管線捲中央區;正對照 = 每個 scroll 事件忙等
       // 正對照 = 「儀器在該紅的時候會紅」。原本只忙等主執行緒,前提是「主執行緒卡住 ⇒ 一定空白」。
       // 2026-09-12 起這個前提**不再成立**:未掛載區已經預先鋪了骨架底(`[data-row-shell-band]`),
       // 由合成器搬運,主執行緒卡死也照樣有東西可畫 —— CI 實測忙等 120ms 之後空白 0 幀,對照組因此失效。
       // (那不是偵測器壞了,正是這次修正要消滅的因果。)所以正對照要**連骨架底一起關掉**:
       // 沒有地板 + 主執行緒卡死 = 真的什麼都沒有,偵測器不紅就是偵測器壞了。
+      // **兩層都要關**(已在上面統一處理)。只關骨架底在快機器上會紅、在 CI 上不會 —— 因為 CI 慢,
+      // 真的**列殼**(`[data-row-shell]`)會大量出動把畫面填滿(實測 7–8 幀、最多 84 列),偵測器照樣看到內容。
+      // 正對照要證明的是「偵測器在什麼都沒有的時候會紅」,所以兩層一起拿掉,只留一個卡死的主執行緒。
       if (sabotage) {
-        // **兩層都要關**。只關骨架底在快機器上會紅、在 CI 上不會 —— 因為 CI 慢,真的**列殼**
-        // (`[data-row-shell]`)會大量出動把畫面填滿(實測 7–8 幀、最多 84 列),偵測器因此照樣看到內容。
-        // 正對照要證明的是「偵測器在什麼都沒有的時候會紅」,所以把兩層防空白機制一起拿掉,
-        // 只留一個卡死的主執行緒。留一層就會變成「在量那台機器的快慢」而不是在量偵測器。
-        await page.addStyleTag({ content: '[data-row-shell-band],[data-row-shell]{display:none !important}' })
         await page.evaluate((ms) => { document.querySelector('[data-datatable-hscroll]').addEventListener('scroll', () => { const b = performance.now(); while (performance.now() - b < ms) { /* busy */ } }, { passive: true }) }, SCROLL_BUSY_MS)
       }
       const t0 = Date.now()
@@ -459,10 +465,8 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
       const wallMs = Date.now() - t0
       const gestureEnd = await page.evaluate(() => performance.now())
       await page.waitForTimeout(SETTLE_EFFECTIVE)
-      await cdp.send('Page.stopScreencast')
-      const windowEndTs = Date.now() / 1000 // 與 screencast metadata.timestamp 同為 epoch 秒
       ticks = { applied: 1, wallMs }
-      gesture = { cast, gestureEnd, windowEndTs }
+      gesture = { gestureEnd }
     } else if (mode === 'mouse') {
       // 真輸入:CDP Input.dispatchMouseEvent mouseWheel(page.mouse.wheel 底層同一個呼叫),但**不等回應**——
       // 等回應會被主執行緒的忙碌拖成 60ms+ 一個事件(實測 63.7ms),OS 送滾輪事件不會等 render,所以照 16ms 節奏丟進輸入管線,最後再一起收。
@@ -482,6 +486,12 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
       if (ticks.noTarget) return { noTarget: true }
     }
     if (mode !== 'gesture') await page.waitForTimeout(SETTLE_MS)
+    // screencast 在所有模式都要收(2026-09-12):`gestureEnd` 只有 gesture 分支自己量得到,
+    // 其餘模式用「最後一次 wheel 事件時間」當等價點 —— `analyzeGesture` 內部本來就會用
+    // DOM 取樣裡最後一次 scrollTop 變動覆寫它,這裡給的是 fallback。
+    await cdp.send('Page.stopScreencast').catch(() => {})
+    const windowEndTs = Date.now() / 1000 // 與 screencast metadata.timestamp 同為 epoch 秒
+    gesture = cast.length ? { cast, gestureEnd: gesture?.gestureEnd ?? null, windowEndTs } : null
     if (SHOTS && mode === 'mouse') { const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' }); shots.push({ afterTick: 0, b64: data }) } // 靜止基準:同一位置畫完後的近白比例
     let prof = null
     if (profile) { const { profile: p } = await cdp.send('Profiler.stop'); prof = p }
@@ -491,7 +501,13 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
     for (const s of shots) shotStats.push({ afterTick: s.afterTick, ...(await page.evaluate(ANALYZE_SHOT, { b64: s.b64 })) })
     const a = analyze(raw.frames)
     let g = null
-    if (gesture) { const shotsG = await page.evaluate(ANALYZE_FRAMES, { list: gesture.cast }); g = { ...analyzeGesture(shotsG, raw.frames, gesture.gestureEnd, gesture.windowEndTs), gestureWallMs: ticks.wallMs } }
+    if (gesture) {
+      const shotsG = await page.evaluate(ANALYZE_FRAMES, { list: gesture.cast })
+      // 非 gesture 模式沒有自量的結束點:用最後一次 wheel 事件當 fallback(`analyzeGesture` 內部仍會以
+      // DOM 取樣裡最後一次 scrollTop 變動覆寫;這裡只是避免 null 傳進去讓補齊時間變 NaN)。
+      const endFallback = gesture.gestureEnd ?? (raw.wheelTs.length ? raw.wheelTs[raw.wheelTs.length - 1].t : 0)
+      g = { ...analyzeGesture(shotsG, raw.frames, endFallback, gesture.windowEndTs), gestureWallMs: ticks.wallMs }
+    }
     const tickTs = raw.wheelTs.map((w) => w.t); const gaps = tickTs.slice(1).map((t, i) => t - tickTs[i])
     // 這台機器畫一個視窗要多久 = 視窗列數 × 每列成本 + commit 固定成本(全部取自元件自己量的 `data-shell-state`)。
     // 「畫得動的機器不准出殼」那條斷言要先知道這個值才知道適不適用。
@@ -633,6 +649,17 @@ if (SELFTEST) {
       // 那等於「干擾做得最成功的時候,對照組反而失效」,邏輯是反的。
       // screencast 是否在工作,同一跑的**負對照**已經證明(靜態 500 列,實測 46 幀);
       // 而且 screencast 若真的沒工作,`blankFrames >= 3` 本身就過不了,這條不是唯一防線。
+      // **`wheel` 模式的空白偵測結構上不適用**(2026-09-12 實測 + 讀碼確認)。
+      // `RUN_TICKS`(本檔上方)是 `cb.scrollTop += dy` —— 由 JS 在**主執行緒**改捲動位置,
+      // 捲動與繪製因此永遠在同一個主執行緒回合內完成,**不可能出現「合成器已經捲過去、內容還沒畫」**。
+      // 實測:關掉骨架底與列殼再卡死主執行緒,wheel 仍是 0 幀空白;同樣的干擾在 `mouse`
+      //(CDP `Input.dispatchMouseEvent`,走真正的輸入管線)量到 18 幀 / 348ms。
+      // 所以這裡明說「不適用」而不是判失敗 —— 但**也絕不可以**把 `--assert-max-blank-frames`
+      // 掛到 wheel 上:那會是一道永遠不會紅的空閘(見下方 gate 的同名守衛)。
+      if (r.mode === 'wheel') {
+        console.log(`↷ selftest ${r.build}/${r.mode}:空白偵測不適用 —— 這個模式用 JS 改 scrollTop(主執行緒),結構上不會有合成器超前;真輸入路徑請用 --mode=mouse`)
+        continue
+      }
       const pass = r.g.blankFrames >= 3 && r.g.presented >= 5
       console.log(`${pass ? '✓' : '✗'} selftest 正對照 ${r.build}/${r.mode}:關掉骨架底與列殼 + 每個 scroll 事件忙等 ${SCROLL_BUSY_MS}ms → 空白 ${r.g.blankFrames} 幀、最長 ${r.g.blankLongestMs.toFixed(0)}ms(需 ≥ 3 幀)`)
       if (!pass) ok = false
@@ -730,6 +757,13 @@ if (ASSERT_BLANK_FRAMES !== '' || ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '
   // 目的地閘:絕對、判**每一趟的最大值**不判中位數 —— 空白幀不是雜訊是缺陷,
   // 「三趟裡有一趟 27 幀全白」用中位數會被蓋掉。與 `--ref` 無關:參考建置自己爛不構成放行理由。
   if (ASSERT_BLANK_FRAMES !== '') {
+    // 空閘守衛(2026-09-12):`wheel` 用 JS 改 scrollTop,結構上不會有合成器超前的空白 ——
+    // 把零空白斷言掛上去會是一道永遠不會紅的閘(對照組實測:兩層機制關掉 + 卡死主執行緒仍 0 幀)。
+    // 寧可明確失敗也不要假綠。真輸入路徑用 `--mode=mouse`。
+    if (MODES.includes('wheel')) {
+      console.log('✗ --assert-max-blank-frames 不可用於 --mode=wheel:該模式由 JS 改 scrollTop(主執行緒),空白偵測結構上不會紅 = 空閘。真輸入路徑請用 --mode=mouse')
+      failed++
+    }
     const limit = Number(ASSERT_BLANK_FRAMES)
     for (const [k, rs] of groups) {
       if (REF_LABEL && k.split('/')[0] === REF_LABEL) continue
