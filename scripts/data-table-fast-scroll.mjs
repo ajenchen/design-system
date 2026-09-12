@@ -627,7 +627,13 @@ if (SELFTEST) {
   for (const r of results) {
     if (r.g) {
       if (r.control === 'negative') { const pass = r.g.blankFrames === 0 && r.g.presented >= 10; console.log(`${pass ? '✓' : '✗'} selftest 負對照 ${r.build}:呈現 ${r.g.presented} 幀、空白 ${r.g.blankFrames} 幀(需 0 且幀數 ≥ 10)`); if (!pass) ok = false; continue }
-      const pass = r.g.blankFrames >= 3 && r.g.presented >= 10
+      // 幀數下限對**正對照**要放寬到 5(2026-09-12)。`presented >= 10` 原本是「screencast 有在工作」的
+      // 證明,但干擾越有效、合成器能送出的幀就越少 —— CI 實測把兩層防空白機制關掉再卡主執行緒之後,
+      // 整趟只送出 **9 幀**(空白 4 幀、最長連續 1093ms,偵測器明明紅了),卻被 `>= 10` 判成無效。
+      // 那等於「干擾做得最成功的時候,對照組反而失效」,邏輯是反的。
+      // screencast 是否在工作,同一跑的**負對照**已經證明(靜態 500 列,實測 46 幀);
+      // 而且 screencast 若真的沒工作,`blankFrames >= 3` 本身就過不了,這條不是唯一防線。
+      const pass = r.g.blankFrames >= 3 && r.g.presented >= 5
       console.log(`${pass ? '✓' : '✗'} selftest 正對照 ${r.build}/${r.mode}:關掉骨架底與列殼 + 每個 scroll 事件忙等 ${SCROLL_BUSY_MS}ms → 空白 ${r.g.blankFrames} 幀、最長 ${r.g.blankLongestMs.toFixed(0)}ms(需 ≥ 3 幀)`)
       if (!pass) ok = false
       continue
