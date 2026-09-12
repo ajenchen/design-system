@@ -6,11 +6,13 @@
  * Layer A(本 script,mechanical)
  *   1. 截圖每個關鍵 story(預設 1x PNG,`--retina` opt-in debug;neutral runtime evidence)
  *   2. WCAG 對比度掃描:每個 story 找可見文字 / icon 和底色對比,flag AA 不過(< 4.5:1 for text)
- *   3. 幾何 assertion(引擎支援 equalHeight / padding4Sided 等 type;⚠️ 現況誠實標註 2026-07-14:
- *      `scripts/visual-assertions.json` 的 124 個 scenario 中 12 個有 `interaction.hover`,
- *      仍有 0 個定義 `assertions` 陣列 → geometryViolations 恆空。該 manifest 現階段實質是
- *      「截圖場景 + 真實 hover interaction 清單」;
- *      幾何 invariant(如 toolbar slot 等高 / 四邊 padding 對稱)要生效須在 scenario 補 assertions 欄位)
+ *   3. 幾何 assertion(引擎支援 equalHeight / padding4Sided / gap 三種 type)
+ *      **2026-09-12 修了兩件事**:
+ *      (a) 選擇器找不到原本**靜默吞掉當通過** —— 那讓「選擇器打錯 / 元素改名 / story 改版後元素消失」
+ *          三種真實回歸全部變綠燈,補再多斷言都不可信。現在記成 `selectorMissing` 違規。
+ *          真的不適用就不要在該 scenario 掛那條斷言,不該靠引擎幫忙吞。
+ *      (b) 開始補真的斷言(在這之前 124 個 scenario 有 0 個 `assertions` → geometryViolations 恆空,
+ *          這條管線等於死碼)。
  *   4. 產出 <absolute-git-dir>/governance-runtime/evidence/visual/visual-audit/report.json
  *
  * Layer B(`/visual-audit` skill,AI judgement)
@@ -345,7 +347,17 @@ async function runGeometryAssertions(page, assertions) {
         }
       }
     } catch (err) {
-      // selector not found — 跳過不算 violation(story 可能沒 render 該元素)
+      // **選擇器找不到 = 違規,不是跳過**(2026-09-12 修)。
+      // 原本這裡靜默吞掉,理由寫「story 可能沒 render 該元素」——
+      // 但那讓「選擇器打錯」「元素被改名」「story 改版後元素消失」三種真實回歸全部變成綠燈,
+      // 補再多斷言都不可信。真的不適用的場景應該不要在該 scenario 掛那條斷言,
+      // 而不是靠引擎幫忙吞。
+      violations.push({
+        assertion: a.name,
+        type: 'selectorMissing',
+        selector: a.selector,
+        error: String(err?.message ?? err).slice(0, 160),
+      })
     }
   }
   return violations

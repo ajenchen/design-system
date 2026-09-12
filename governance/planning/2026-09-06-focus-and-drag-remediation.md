@@ -4302,3 +4302,34 @@ user 的真實情境是「Chrome 開預覽、用滾輪捲」,而 CI 只跑 CDP �
 只在 unchecked + enabled 上量(checked 的勾選圖示切斷白段;disabled 套 opacity 後不是純白)。
 正常掃 12 個直徑取樣全符合;**對照組把外圈塗白後顏色 44 組 + 尺寸 12 組同時紅**
 (外圈變白 → 白圓從 16 脹到 20),兩半各自有會紅的證據。
+
+## AD119 — 視覺稽查主線:修掉「選擇器找不到就靜默通過」,並補第一條真斷言
+
+獨立覆核指出 `visual-assertions.json` 124 個 scenario 有 **0 個 `assertions`** → `geometryViolations` 恆空,
+`visual-audit.mjs` 那條幾何管線等於死碼。實際去讀引擎(`scripts/visual-audit.mjs:285-355`)後發現**更嚴重的事**:
+
+```js
+} catch (err) {
+  // selector not found — 跳過不算 violation(story 可能沒 render 該元素)
+}
+```
+
+**選擇器打錯 / 元素改名 / story 改版後元素消失,三種真實回歸全部變綠燈。**
+也就是說就算補了斷言也不可信 —— 先修這個。現在記成 `selectorMissing` 違規;
+真的不適用的場景應該不要掛那條斷言,不該靠引擎幫忙吞。
+
+**補第一條真斷言**(每一條的選擇器都先實測存在才放):
+`field-展示--vertical` → `gap` on `[data-field-group]` = **16px**(= `--layout-space-loose` at md,
+2026-09-12 user 拍板的表單間距 SSOT)。實測該 story 有 1 個該元素、gap 16px。
+
+**寫錯一條、當場撤掉**(誠實登記):原本還放了 `switch-展示--states` 的
+`equalHeight on [role="switch"]`,跑起來抓到 20/20/20/20/24/24/24/24 —— 那**不是元件的 bug,是我的斷言錯**:
+那支 story 同時有 md(20)與 lg(24),而元素上沒有 size 屬性可收斂選擇器。
+Switch 的幾何已由 `switch-thumb-ring-invariant.mjs` 按 spec 尺寸表逐一驗(正確處理兩種尺寸),不需要這條。
+
+**兩個對照組都跑過**:(A)期望值改錯 16 → 24 → 1 violation;(B)**選擇器打錯字** → 1 violation
+(修之前會靜默通過)。B 是關鍵,它證明靜默吞掉的缺陷真的修好了。
+
+**誠實的邊界**:這只是開始不是關閉 —— 124 個 scenario 目前 **1 個**有斷言、**0 個** dark mode 場景,
+而且 `visual-audit` 只掛在排程的 `visual-regression.yml`、**不是 PR 閘**。
+攔下 user 那三個缺陷的仍是三支個案像素閘(它們在 PR 閘裡)。

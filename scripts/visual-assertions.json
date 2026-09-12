@@ -343,7 +343,16 @@
     },
     {
       "id": "design-system-components-field-展示--vertical",
-      "file": "field-vertical.png"
+      "file": "field-vertical.png",
+      "assertions": [
+        {
+          "name": "FieldGroup 欄位間距 = --layout-space-loose(md 16px)",
+          "type": "gap",
+          "selector": "[data-field-group]",
+          "expected": 16,
+          "rationale": "2026-09-12 user 拍板:表單欄位間距是系統級設定,由 density 統一決定,不開放 per-instance 選檔。實測該 story 有 1 個 [data-field-group]、gap 16px。"
+        }
+      ]
     },
     {
       "id": "design-system-components-fieldcontrolgroup-設計規格--overview",
