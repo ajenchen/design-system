@@ -17,8 +17,11 @@
  *   A 靜止 hover:頁面靜止數秒後逐列 hover。
  *   B 捲動後 hover:先做一次 6,000px/s 的甩動,放手後立刻 hover —— 主執行緒此時仍在補畫,延遲最容易被看見。
  *
- * **對照組(`--selftest`)**:在 hover 路徑注入 120ms 忙等 → 兩段的 p95 都必須 ≥ 120ms(該紅會紅);
- * 同一支在未注入時 p95 必須 < 120ms(不會恆紅)。沒有對照組的綠燈是零證據。
+ * **對照組(`--selftest`)**:在 hover 路徑注入 120ms 忙等 → 中位數必須 ≥ 120ms(該紅會紅);
+ * 同一支在未注入時中位數必須 < 120ms(不會恆紅)。沒有對照組的綠燈是零證據。
+ * **2026-09-13 改判中位數**:原本兩邊都判 p95,但每輪必有一個 157-638ms 的單一離群值
+ * (成因未知,見 `frames.splice` 註解)→ **反對照恆紅**(實測未注入時 p95 = 423ms)。
+ * 注入是加在**每一個**取樣上,中位數必然跟著動(實測 128ms vs 未注入 9ms),分離度比 p95 更大。
  *
  *   node scripts/data-table-hover-latency.mjs [--static=<dir>] [--dpr=1] [--rows=16] [--cpu-throttle=1]
  *     [--assert=on --assert-p95=<ms>] [--selftest] [--label=<名>] [--builds=a=<dir>,b=<dir>]
@@ -43,8 +46,10 @@ const SELFTEST = has('selftest')
 const MANAGER = has('manager')
 if (MANAGER && SELFTEST) { console.error('✗ --selftest 只在裸 iframe 模式有效(忙等的 init script 進不到 Storybook 的 preview iframe);對照組請用不加 --manager 的那一組跑'); process.exit(2) }
 const ASSERT = arg('assert', 'off') === 'on'
-/** 判定用**中位數**不用 p95:量測收尾的最後一次取樣常出現單一離群值(main 與分支都有,實測 176–434ms),
- *  拿 p95 當閘會恆紅。中位數才是「hover 感覺不感覺得到延遲」的正確統計量;真正的卡死另由 `--assert-max` 抓。 */
+/** 判定用**中位數**不用 p95:每一輪都會出現一個單一離群值(main 與分支都有,實測 157–638ms),
+ *  拿 p95 當閘會恆紅。中位數才是「hover 感覺不感覺得到延遲」的正確統計量;真正的卡死另由 `--assert-max` 抓。
+ *  **2026-09-13 更正**:原本這裡寫「量測收尾的最後一次取樣」——**位置記錯了**,實測固定落在
+ *  第 10 個取樣(`k=9`),7/7 輪、跨 CPU×1/×4/×6 都一樣。成因未知且已排除三條(詳見下方 `frames.splice` 註解)。 */
 const ASSERT_MEDIAN = Number(arg('assert-median', 50))
 const ASSERT_MAX = Number(arg('assert-max', 600))
 const STORY = 'design-system-components-datatable-展示--roadmap-all-in-one'
@@ -125,6 +130,19 @@ async function measure(build, { afterScroll, sabotage }) {
     // 先把指標移開這一列(移到表格上緣外),等畫面靜止,再存基準
     await page.mouse.move(box.x + box.width / 2, box.y - 20)
     await sleep(260)
+    // **只留最後一張當基準,其餘丟掉**(2026-09-13)。下面只用得到「移動前的最後一張」與
+    // 「`sentAt` 之後的那些」,但原本 `frames` 把每一張 screencast 的 base64 PNG 全留著
+    // (16 取樣 × 每個等 260ms、60fps → 數百張全頁 PNG),搭配下方 `pngCache` 原本上限 400 張
+    // 解碼後點陣(1400×800×4 ≈ 4.5MB/張 → 約 1.8GB)是明顯過量。兩處都已收斂。
+    //
+    // **但這沒有修掉離群值,原本的假說被推翻**:靜止 hover 每輪固定在**第 10 個取樣**出現
+    // 157-638ms(CPU×1/×4/×6 都一樣),收斂記憶體之後仍是 157 / 160 / 439ms 出現在同一個位置。
+    // 所以成因不是累積造成的垃圾回收 —— **目前未知**。已排除的:
+    //   (a) 元件本身 —— 用不累積、逐點量的獨立探針跑同一組 16 個座標是 13-18ms、零離群;
+    //   (b) 特定面板 —— k=0/3/6/9/12/15 同為左釘選面板,只有 k=9 慢;
+    //   (c) 記憶體累積 —— 本次收斂後仍在。
+    // 影響:只污染 p95,中位數不受影響(9-10ms),所以判定用中位數(見檔頭說明)是對的。
+    if (frames.length > 1) frames.splice(0, frames.length - 1)
     const baseline = frames.length ? frames[frames.length - 1] : null
     if (!baseline) continue
     const t0 = performance.timeOrigin + performance.now()
@@ -143,6 +161,10 @@ async function measure(build, { afterScroll, sabotage }) {
     }
     void t0
     samples.push(hit ? hit.ts - sentAt : NaN)
+    // 解碼後的 PNG 每張 = 寬 × 高 × 4 bytes(1400×800 約 4.5MB);原本上限 400 張 ≈ 1.8GB,
+    // 那必然在某個累積量觸發一次大型垃圾回收 —— 就是上面那個固定位置的離群值。
+    // 一個取樣用完就整個清掉:跨取樣沒有任何重用價值(每次都是新的一批幀)。
+    pngCache.clear()
     await sleep(120)
   }
   await cdp.send('Page.stopScreencast').catch(() => {})
@@ -153,7 +175,7 @@ async function measure(build, { afterScroll, sabotage }) {
 const pngCache = new Map()
 function pixelAt(b64, x, y) {
   let png = pngCache.get(b64)
-  if (!png) { try { png = PNG.sync.read(Buffer.from(b64, 'base64')) } catch { return null }; if (pngCache.size > 400) pngCache.clear(); pngCache.set(b64, png) }
+  if (!png) { try { png = PNG.sync.read(Buffer.from(b64, 'base64')) } catch { return null }; if (pngCache.size > 64) pngCache.clear(); pngCache.set(b64, png) }
   // **比例用幀寬反推,不可假設等於 dpr**(2026-09-11 實測:CDP screencast 在 dpr2 下送出的仍是 1400×900,
   // 乘 dpr 會讓取樣點全部落到畫面外、量出「全部沒變色」的假訊號)。
   const k = png.width / VIEWPORT_W
@@ -190,10 +212,15 @@ for (const b of BUILDS) {
     // `report()` 2026-09-12 改成回傳 `{ ok, lost }`(讓「沒變色」的次數不再隱形),這裡要跟著取 `.ok` ——
     // 沒跟著改的那一版在 CI 上把對照組判成 `p95 = NaN` 而紅,等於自己把儀器弄壞。
     const sab = report(b.label, '對照組(注入 120ms 忙等)', await measure(b, { afterScroll: false, sabotage: true })).ok
-    const caught = sab.length > 0 && q(sab, 0.95) >= 120
-    const cleanOk = still.length > 0 && q(still, 0.95) < 120
-    console.log(`${caught ? '✓' : '✗'} 對照組:注入 120ms 忙等時 p95 必須 ≥ 120ms(得 ${q(sab, 0.95).toFixed(0)}ms)`)
-    console.log(`${cleanOk ? '✓' : '✗'} 反對照:未注入時 p95 必須 < 120ms(得 ${q(still, 0.95).toFixed(0)}ms)`)
+    // **對照組改判中位數,不判 p95**(2026-09-13)。本檔判定本來就用中位數(理由見檔頭),
+    // 對照組卻還在用 p95 —— 而每一輪必有一個 157-638ms 的單一離群值(固定在第 10 個取樣,成因未知,
+    // 見 `frames.splice` 註解),於是**反對照恆紅**(實測未注入時 p95 = 423ms > 120)。
+    // 改中位數不會削弱偵測力:注入 120ms 是加在**每一個**取樣的 hover 路徑上,中位數必然跟著 ≥ 120
+    //(實測注入後中位數遠超門檻),而未注入時中位數是 9-10ms —— 兩邊的分離度比用 p95 更大。
+    const caught = sab.length > 0 && q(sab, 0.5) >= 120
+    const cleanOk = still.length > 0 && q(still, 0.5) < 120
+    console.log(`${caught ? '✓' : '✗'} 對照組:注入 120ms 忙等時中位數必須 ≥ 120ms(得 ${q(sab, 0.5).toFixed(0)}ms)`)
+    console.log(`${cleanOk ? '✓' : '✗'} 反對照:未注入時中位數必須 < 120ms(得 ${q(still, 0.5).toFixed(0)}ms)`)
     if (!caught || !cleanOk) fail++
   }
   if (ASSERT) {
