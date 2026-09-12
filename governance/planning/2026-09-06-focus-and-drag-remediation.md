@@ -4080,3 +4080,34 @@ A3 能力越強緩衝不得更小 / A4 有餘裕時機制必須真的動(沒餘�
 該 docs 頁要渲染 15 支 story、其中 9 支含 DataTable,共享 runner 負載高時 60 秒等不完。
 重試次數 1 → 3(仍然全部落空就照樣紅 —— 「沒量到」不可以偽裝成「通過」)。
 誤報會侵蝕整套閘的可信度,所以補強儀器而不是加豁免。
+
+## AD111 — P13 的靶是錯的:拿掉 Tag 截斷量測,對空白零效果(陰性結果)
+
+第一手 CPU profile(4× 節流,`--profile`)的 self time 前幾名:
+
+| self time | 位置 |
+|---|---|
+| **222.8ms** | `data-table` 自己的 chunk(列渲染 + commit 量測) |
+| **171.3ms** | `measure@tag`(Tag 截斷量測) |
+| 83.8ms | React beginWork |
+| 63.8ms | `removeChild` |
+| 54.7ms | `B@people-picker` |
+| 32.3ms | `getBoundingClientRect` |
+| 31.5ms | `T@use-truncated` |
+
+舊報告據此把 P13(Tag 離屏量測)列為候選。**消融實驗推翻了它** —— 把 Tag 的 `measure` 整個短路回 `false`:
+
+| CPU | Tag 量測開著 | Tag 量測關掉 |
+|---|---|---|
+| 4× 最長連續空白 | 349–433ms | **525–648ms**(沒改善) |
+| **2× 最長連續空白** | 1086–1193ms | **1123–1150ms**(完全沒改善) |
+
+也就是說:**CPU profile 的 self time 高 ≠ 它就是可見症狀的瓶頸**。Tag 的 171ms 攤在整段手勢上,
+不是造成那 1.1 秒連續空白的那一段。P13 就算做完也不會解決 user 回報的問題。
+
+Tag 的量測本身已經有兩層快取(字型 key / 文字寬度 key),剩下的 per-call 成本是
+`querySelector` + `closest('[data-density]')` 走整棵樹 + `clientWidth` 強制排版讀取 ——
+值得單獨優化,但**不是這條線的根因,不該掛在 user 的卡頓問題底下**。
+
+**下一個靶**:profile 的第一名是 `data-table` 自己的 chunk(222.8ms),也就是**列渲染本身**。
+2× 那個檔位的 long task(156–225ms,1× 是 0)要從那裡找,不是從儲存格內容元件找。
