@@ -663,13 +663,42 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
   // 有參考建置(`--ref`)時,**會被機器速度影響的三個指標**都改判「本 build ÷ 參考 ≤ 比值上限」——
   // 那是唯一不受 runner 漂移影響的形式。沒有參考(或參考那項是 0)就退回絕對門檻,並**印出來說明**(不可靜默降級)。
   // 為什麼長工與幀距也要:同一輪 CI 上 main 自己就量到長工 698ms、幀距 845ms,絕對門檻在那台機器上量的是機器不是程式碼。
-  const refBlank = (pick) => {
-    const rs = groups.get(`${REF_LABEL}/gesture`)
-    return rs?.length ? median(rs.map(pick)) : NaN
+  // **分母要取「同一個模式」的參考值**(2026-09-12 修)。原本寫死 `${REF_LABEL}/gesture`,
+  // 於是 `--mode=wheel --ref=main` 找不到分母 → 整項退回絕對門檻。
+  // 後果實例:CI 的 wheel 長工用絕對 300ms 判定,三趟 315 / 88 / 449(雜訊極大)而紅 ——
+  // 那正是本檔開頭反覆說的「絕對門檻只是在量那台機器」。
+  const refFor = (pick, mode) => {
+    const rs = groups.get(`${REF_LABEL}/${mode}`)
+    if (!rs?.length) return NaN
+    // pick 可能取不到(例:wheel 沒有截圖幾何 `r.g`),取值本身也可能丟例外 —— 一律當「沒有分母」
+    const vals = []
+    for (const r of rs) { try { const v = pick(r); if (Number.isFinite(v)) vals.push(v) } catch { /* 這項該模式沒有 */ } }
+    return vals.length ? median(vals) : NaN
   }
   const relGate = (rawLimit, name, ceiling, pick, extra = () => '') => {
     if (rawLimit === '' && !REF_LABEL) return
-    const refMs = REF_LABEL ? refBlank(pick) : NaN
+    // 每個受測 group 各自跟「同模式的參考」比
+    for (const [k, rs] of groups) {
+      const [label, mode] = k.split('/')
+      if (label === REF_LABEL) continue
+      const refMs = REF_LABEL ? refFor(pick, mode) : NaN
+      if (!Number.isFinite(refMs) || refMs <= 0) {
+        if (REF_LABEL) console.log(`   (參考「${REF_LABEL}/${mode}」的${name}是 ${Number.isFinite(refMs) ? refMs.toFixed(0) : '無資料'},無法當分母 → 這項退回絕對門檻 ${rawLimit || '(未設)'}ms)`)
+        continue
+      }
+      let vals
+      try { vals = rs.map(pick) } catch { vals = [] }
+      if (!vals.length || !vals.every((v) => Number.isFinite(v))) { console.log(`↷ ${k}:${name}——這個模式沒有這項量測,不適用`); continue }
+      const mine = median(vals)
+      const verdict = refRatioVerdict(mine, refMs)
+      const cap = (refMs * BLANK_RATIO_LIMIT).toFixed(0)
+      if (verdict === 'fail') { console.log(`✗ ${k}:${name}中位數 ${mine.toFixed(0)}ms > 參考「${REF_LABEL}/${mode}」的 ${refMs.toFixed(0)}ms × ${BLANK_RATIO_LIMIT}(= ${cap}ms)`); failed++ }
+      else console.log(`✓ ${k}:${name}中位數 ${mine.toFixed(0)}ms ≤ 參考「${REF_LABEL}/${mode}」的 ${refMs.toFixed(0)}ms × ${BLANK_RATIO_LIMIT}(= ${cap}ms)`)
+    }
+    return
+  }
+  const _unusedRelGate = (rawLimit, name, ceiling, pick, extra = () => '') => {
+    const refMs = NaN
     if (!Number.isFinite(refMs) || refMs <= 0) {
       if (REF_LABEL) console.log(`   (參考「${REF_LABEL}」的${name}是 ${Number.isFinite(refMs) ? refMs.toFixed(0) : '無資料'},無法當分母 → 這項退回絕對門檻 ${rawLimit || '(未設)'}ms)`)
       gate(rawLimit, name, ceiling, pick, extra)
