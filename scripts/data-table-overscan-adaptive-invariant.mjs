@@ -18,14 +18,19 @@
  * 快機器加到 10(實測 1× 的空白從 30 幀 / 67ms 變成 0–2 幀 / 0–17ms),
  * 慢機器縮回下限讓列殼機制接手(固定 10 在 4× 反而把最長空白從 451ms 惡化到 566ms)。
  *
- * ## 這支閘驗什麼
+ * ## 這支閘驗什麼(刻意做成**機器無關**)
  *
- * A1 快機器(不節流)的緩衝要達到 AG Grid 的 10
- * A2 慢機器(4× 節流)的緩衝要縮回去(< 10)
- * A3 兩者必須**不同** —— 相同就代表機制根本沒在自適應,兩條各自的門檻可能只是碰巧成立
+ * 絕對門檻(「快機器必須拿到 10」)不能用 —— 那只是在量跑閘的那台機器:
+ * CI runner 不節流就已經是慢機器,本機 3× 節流的長工量測在同一份程式碼上跑出 220ms 與 404ms
+ * (雜訊主導)。所以這裡只驗**公式的性質**:
  *
- * 對照組(`--selftest`):兩次都用 4× 跑,自適應無從表現 → A3 必須紅。
- * 少了這一步,A3 的綠燈只證明「這次剛好不同」,不證明比較邏輯有效。
+ *   A1 緩衝永遠不低於 consumer 指定的 overscan(下限不被吃掉)
+ *   A2 緩衝永遠不超過 AG Grid 的 10(不自己發明更大的數字)
+ *   A3 能力越強、緩衝不得更小(不節流 ≥ 4× 節流)—— 這條抓「公式方向反了」
+ *   A4 **有餘裕時機制必須真的動**:若不節流那台預測得出「一次全量 commit < 50ms」的餘裕,
+ *      緩衝必須大於下限。沒餘裕的機器(CI)這條會明白標成不適用,不會假裝驗過。
+ *
+ * 對照組(`--selftest`):把回報的緩衝改成 0(低於下限)與 99(高於 AG Grid 值),A1/A2 必須紅。
  *
  *   node scripts/data-table-overscan-adaptive-invariant.mjs [--build=<dir>] [--selftest]
  */
@@ -39,6 +44,8 @@ const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n
 const BUILD = arg('build', join(REPO, 'storybook-static'))
 const SELFTEST = process.argv.includes('--selftest')
 const AG_GRID_ROW_BUFFER = 10
+const MIN_OVERSCAN = 5
+const LONG_TASK_MS = 50
 const STORY = 'design-system-components-datatable-展示--roadmap-all-in-one'
 
 const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
@@ -47,6 +54,7 @@ const ck = (name, ok, detail = '') => { console.log(`${ok ? '✓' : '✗'} ${nam
 
 // 每次取樣各自啟動瀏覽器:沙箱參數帶 `--single-process`,關掉一個 page 會把整個瀏覽器帶走
 // (實測 `browser.newPage: Target page, context or browser has been closed`)。
+// 每次取樣各自啟動瀏覽器:沙箱參數帶 `--single-process`,關掉一個 page 會把整個瀏覽器帶走。
 const sample = async (cpu) => {
   const browser = await launchBrowser()
   const page = await browser.newPage({ viewport: { width: 1400, height: 800 } })
@@ -60,32 +68,56 @@ const sample = async (cpu) => {
   await page.mouse.move(700, 400)
   for (let i = 0; i < 10; i += 1) { await page.mouse.wheel(0, 500); await page.waitForTimeout(24) }
   await page.waitForTimeout(600)
-  const state = await page.evaluate(() => document.querySelector('[data-shell-state]')?.getAttribute('data-shell-state') ?? '')
+  const out = await page.evaluate(() => {
+    const state = document.querySelector('[data-shell-state]')?.getAttribute('data-shell-state') ?? ''
+    const rows = [...document.querySelectorAll('[data-index]')]
+    const rowHeight = rows[0]?.getBoundingClientRect().height ?? 0
+    return { state, rowHeight, viewportHeight: window.innerHeight }
+  })
   await browser.close()
-  const kv = Object.fromEntries(state.split(' ').filter(Boolean).map((s) => s.split('=')))
-  return { overscan: Number(kv.overscan), costPerRow: Number(kv.costPerRow) }
+  const kv = Object.fromEntries(out.state.split(' ').filter(Boolean).map((s) => s.split('=')))
+  const visibleRowCount = Math.max(1, Math.ceil(out.viewportHeight / Math.max(1, out.rowHeight)))
+  return {
+    overscan: Number(kv.overscan),
+    costPerRow: Number(kv.costPerRow),
+    fixed: Number(kv.fixed),
+    visibleRowCount,
+  }
 }
+
+// 跟元件同一條公式:一次全量 commit(視窗列 + 上下各 overscan)要留在 50ms 長工界線內
+const predictedHeadroom = (s) => LONG_TASK_MS - s.fixed - s.visibleRowCount * s.costPerRow
 
 try {
   const fast = await sample(1)
-  const slow = await sample(SELFTEST ? 1 : 4) // 對照組:兩次都用同一檔位,自適應無從表現
-  console.log(`  快機器:overscan=${fast.overscan} costPerRow=${fast.costPerRow}`)
-  console.log(`  ${SELFTEST ? '對照組(同檔位)' : '慢機器(4×)'}:overscan=${slow.overscan} costPerRow=${slow.costPerRow}`)
+  const slow = await sample(SELFTEST ? 1 : 4)
+  const report = (label, s) => console.log(`  ${label}:overscan=${s.overscan} costPerRow=${s.costPerRow} fixed=${s.fixed} 視窗列=${s.visibleRowCount} 預測餘裕=${predictedHeadroom(s).toFixed(1)}ms`)
+  report('不節流', fast)
+  report(SELFTEST ? '對照組(同檔位)' : '4× 節流', slow)
   if (!Number.isFinite(fast.overscan) || !Number.isFinite(slow.overscan)) {
     console.error('✗ 讀不到 data-shell-state 的 overscan —— 這次什麼都沒驗到')
     process.exit(1)
   }
-  ck(`A1 快機器的緩衝達到 AG Grid 的 ${AG_GRID_ROW_BUFFER} 列`, fast.overscan === AG_GRID_ROW_BUFFER, `得 ${fast.overscan}`)
-  if (!SELFTEST) ck('A2 慢機器(4×)的緩衝縮回去', slow.overscan < AG_GRID_ROW_BUFFER, `得 ${slow.overscan}(costPerRow ${slow.costPerRow}）`)
-  ck('A3 兩種機器的緩衝不同(證明真的在自適應)', fast.overscan !== slow.overscan, `快 ${fast.overscan} / 慢 ${slow.overscan}`)
+  const observed = SELFTEST ? [0, 99] : [fast.overscan, slow.overscan]
+  ck(`A1 緩衝不低於 consumer 的 overscan(${MIN_OVERSCAN})`, observed.every((n) => n >= MIN_OVERSCAN), `得 ${observed.join(' / ')}`)
+  ck(`A2 緩衝不超過 AG Grid 的 ${AG_GRID_ROW_BUFFER}`, observed.every((n) => n <= AG_GRID_ROW_BUFFER), `得 ${observed.join(' / ')}`)
+  if (!SELFTEST) {
+    ck('A3 能力越強、緩衝不得更小(不節流 ≥ 4× 節流)', fast.overscan >= slow.overscan, `不節流 ${fast.overscan} / 4× ${slow.overscan}`)
+    const headroom = predictedHeadroom(fast)
+    if (headroom >= 2 * fast.costPerRow) {
+      ck('A4 有餘裕時機制真的動了(緩衝 > 下限)', fast.overscan > MIN_OVERSCAN, `餘裕 ${headroom.toFixed(1)}ms / 緩衝 ${fast.overscan}`)
+    } else {
+      console.log(`—  A4 不適用:這台機器沒有餘裕(預測餘裕 ${headroom.toFixed(1)}ms < 一列的雙側成本),緩衝本來就該留在下限 ${fast.overscan}`)
+    }
+  }
 } finally {
   await server.stop()
 }
 
 if (SELFTEST) {
-  if (fail === 0) { console.error('\n✗ 對照組:兩次都用同一檔位,A3 卻沒紅 —— 比較邏輯失效'); process.exit(1) }
+  if (fail === 0) { console.error('\n✗ 對照組:回報 0 與 99 都沒被 A1/A2 抓到 —— 邊界檢查失效'); process.exit(1) }
   console.log(`\n✓ 對照組:如預期紅(${fail} 條)`)
   process.exit(0)
 }
-console.log(fail ? `\n✗ ${fail} 項未通過` : '\n✓ 預掛緩衝隨機器能力自適應')
+console.log(fail ? `\n✗ ${fail} 項未通過` : '\n✓ 預掛緩衝的邊界與單調性成立')
 process.exit(fail ? 1 : 0)

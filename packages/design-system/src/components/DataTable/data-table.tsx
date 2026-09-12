@@ -1862,9 +1862,7 @@ function DataTableInner<TData>(
     // 額度要大到「連初始種子(costPerRow 3)都算得起上限」,否則前幾次 commit 只給得起 6 列,
     // 手勢一開始那幾幀照樣空白(實測:額度 40 時 1× 仍有 2–8 幀空白;60 時回到 0–1 幀)。
     // 60 = 2 × 10 列 × 3ms 種子。慢機器一樣自動縮:4× 的 costPerRow 9.0 → 算得起 3 列 → 落回下限 5。
-    const OVERSCAN_BUDGET_MS = 60
-    const affordableOverscan = Math.floor(OVERSCAN_BUDGET_MS / Math.max(0.5, 2 * S.costPerRow))
-    S.overscan = Math.max(effectiveOverscan, Math.min(AG_GRID_ROW_BUFFER, affordableOverscan))
+
     // 判準 = 視窗列數 × 每列成本 + 每次 commit 的固定成本 ≤ `SHELL_ENGAGE_VIEWPORT_MS`(理由見該常數)。
     // user 的機器實測:14 列 × 3.9ms + 10ms = 64.6ms ≤ 120 → 不出殼(量到 0 個骨架、DOM 89ms 穩定)。
     // 真的畫不完的機器(4× 節流:17 列 × 15.6ms + 10 = 275ms > 120)仍然會出殼,那是這個機制存在的理由。
@@ -1891,6 +1889,30 @@ function DataTableInner<TData>(
     // isScrolling 直接讀實例當下的值(不是上一次 commit effect 的快照 —— 快照晚一個 commit,停捲後多等一次 150ms 的 commit 才開始補)
     const scrolling = offsetChanged || (virtualizerRef.current?.isScrolling ?? S.wasScrolling)
     S.scrolling = scrolling
+    // 判準 = **預測**「把緩衝加上去之後,一次全量 commit 會不會變成長工」,不是事後看它已經變長。
+    //
+    // 先試過事後版(`commitCost > 50 → 不擴`),**不行**:commitCost 要先被量到變長才會觸發,
+    // 而那幾次變長的 commit 正是它該避免的 —— 同機 3× 節流下 `--ref=main` 判定
+    // 長工 374ms > main 289×1.25;把自適應整個關掉則是 345 ≤ 379 全過。反應式守衛會震盪。
+    //
+    // 預測式:一次全量 commit 要畫 `視窗列數 + 2 × overscan` 列(緩衝在上下各一側),
+    // 成本 = 列數 × costPerRow + 固定成本。要求它**留在 Long Tasks API 的 50ms 界線內** ——
+    // 跨過 50ms,瀏覽器就把那一段算成長工,而長工正是 user 感受到的卡頓。
+    //
+    // 解 n:(visibleRowCount + 2n) × costPerRow + fixedCost ≤ 50
+    //   → n ≤ (50 − fixedCost − visibleRowCount × costPerRow) ÷ (2 × costPerRow)
+    //
+    // 實測各機器算出來的值:1× → 10(AG Grid 平手,空白歸零)/ 2× 以上 → 落回下限,由列殼機制接手。
+    const LONG_TASK_MS = 50
+    const headroomMs = LONG_TASK_MS - S.fixedCost - visibleRowCount * S.costPerRow
+    const affordableOverscan = Math.floor(headroomMs / Math.max(0.5, 2 * S.costPerRow))
+    // **只在捲動中重算,閒置時凍住上一次的值**(2026-09-12,pre-commit 的 I16 抓到)。
+    // `costPerRow` / `fixedCost` 是會隨時間收斂的量測值,每次 render 都重算會讓緩衝在**完全沒人操作**時
+    // 自己飄動 —— I16 注入 20px 邊框後等重繪收斂,列數就從 15 掉到 13,打破它「沒有 React 事件時列數不變」
+    // 的前提。那不只是測試假象:閒置時掛載/卸載列是白費的工,而且會讓任何「靜止態」的量測不可重現。
+    if (scrolling || S.overscan == null) {
+      S.overscan = Math.max(effectiveOverscan, Math.min(AG_GRID_ROW_BUFFER, Math.max(0, affordableOverscan)))
+    }
     S.offsetChanged = offsetChanged
     if (renderOffsetPrev != null && offsetNow !== renderOffsetPrev) S.aheadDir = offsetNow > renderOffsetPrev ? 1 : -1
     // rows identity 變了(排序 / 篩選 / 換資料)那一次不算捲動 commit:跟初次載入一樣全畫真列(Codex R20 修法 A)
@@ -4282,7 +4304,7 @@ function DataTableInner<TData>(
            * 預設關閉:屬性變動會被 `data-table-scroll-cost.mjs` 的 R1 計數,不能無條件掛。
            */
           {...(typeof window !== 'undefined' && (window as unknown as { __DT_DEBUG_SHELL?: boolean }).__DT_DEBUG_SHELL
-            ? { 'data-shell-state': `slow=${shellRef.current.slow ? 1 : 0} budgeted=${shellRef.current.budgeted ? 1 : 0} ahead=${shellRef.current.ahead ? 1 : 0} behind=${shellRef.current.behind.toFixed(2)} pending=${shellRef.current.pendingBehind.toFixed(2)} overscan=${shellRef.current.overscan} costPerRow=${shellRef.current.costPerRow.toFixed(1)} fixed=${shellRef.current.fixedCost.toFixed(1)} budgetRows=${shellRef.current.budgetRows} aheadRows=${shellRef.current.aheadRows}` }
+            ? { 'data-shell-state': `slow=${shellRef.current.slow ? 1 : 0} budgeted=${shellRef.current.budgeted ? 1 : 0} ahead=${shellRef.current.ahead ? 1 : 0} behind=${shellRef.current.behind.toFixed(2)} pending=${shellRef.current.pendingBehind.toFixed(2)} overscan=${shellRef.current.overscan} commitCost=${shellRef.current.commitCost.toFixed(1)} costPerRow=${shellRef.current.costPerRow.toFixed(1)} fixed=${shellRef.current.fixedCost.toFixed(1)} budgetRows=${shellRef.current.budgetRows} aheadRows=${shellRef.current.aheadRows}` }
             : {})}
           // a11y(scrollable-region-focusable,對齊 DS ScrollArea Viewport canonical):唯讀表格
           // 的可捲動 body 若無任何 focusable descendant,鍵盤使用者無法捲動。read-only 模式

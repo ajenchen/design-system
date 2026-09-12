@@ -200,25 +200,41 @@ row… This is to act as a buffer as **on some slower machines and browsers, a b
 the user scrolls**」(https://www.ag-grid.com/javascript-data-grid/dom-virtualisation/)。
 **連 AG Grid 都不宣稱能消除空白**,它是用兩倍於我們原值的緩衝把它壓到看不見。
 
-**我們的做法**:緩衝 = `clamp(⌊60ms ÷ (2 × costPerRow)⌋, consumer 的 overscan, 10)`。
-我們比 AG Grid 多一樣東西 —— 列殼機制實測出來的**每列成本**,所以緩衝不必是固定值:
-快機器付得起就加到 AG Grid 的 10,慢機器自動縮回下限、由列殼機制接手。
-額度 60ms = 2 × 10 列 × 3ms(`costPerRow` 的初始種子),刻意大到連種子都給得起上限 ——
-額度 40 時前幾次 commit 只算得起 6 列,手勢開頭那幾幀照樣空白(實測 1× 仍有 2–8 幀)。
+**我們的做法**:**預測**「把緩衝加上去之後,一次全量 commit 會不會變成長工」,而不是只看每列成本。
 
-**實測**(6000px/s 手勢,1400×800,同機同窗):
+一次全量 commit 要畫 `視窗列數 + 2 × overscan` 列(緩衝在上下各一側),成本 = 列數 × `costPerRow` + 固定成本。
+要求它留在 **Long Tasks API 的 50ms 界線**內 —— 跨過去瀏覽器就把那一段算成長工,而長工正是 user 感受到的卡頓:
 
-| CPU 節流 | 緩衝 | 空白幀 | 最長連續空白 |
-|---|---|---|---|
-| 1×(一般機器) | **10** | 30 → **0–2** | 67ms → **0–17ms** |
-| 2× | 10 | 59 → 54–55 | 1138 → 1086–1193ms(此檔位瓶頸是 long task,不是緩衝) |
-| 4× | **5** | 45 → 35–43 | 451 → **349–433ms** |
+```
+overscan = clamp(⌊(50 − fixedCost − 視窗列數 × costPerRow) ÷ (2 × costPerRow)⌋, consumer overscan, 10)
+```
 
-固定 10 不行:4× 下最長空白從 451ms 惡化到 566ms(每次 commit 要掛的列變多)。
+我們比 AG Grid 多的就是 `costPerRow` / `fixedCost` 這兩個實測值,所以緩衝可以按機器付得起的量給。
 
-**機械閘** `scripts/data-table-overscan-adaptive-invariant.mjs`:A1 快機器達到 10、A2 慢機器縮回去、
-A3 兩者必須不同(相同 = 機制沒在自適應,前兩條可能只是碰巧成立)。
-對照組把兩次取樣跑同一個 CPU 檔位 → A3 必紅。
+**兩個被推翻的版本(都留著,免得再走一次)**:
+
+1. **固定 10**(直接照抄 AG Grid):4× 節流下最長連續空白從 451ms 惡化到 **566ms**、面積 516 → 972 ——
+   慢機器每次 commit 要掛的列變多。
+2. **事後守衛**(`commitCost > 50ms 就不擴`):**不行,因為它是反應式的** —— `commitCost` 要先被量到變長
+   才會觸發,而那幾次變長的 commit 正是它該避免的。同機 3× 節流下 `--ref=main` 判定長工 374ms >
+   main 289×1.25;把自適應整個關掉則是 345 ≤ 379 全過。預測式才不會震盪。
+
+**實測**(6000px/s 手勢,1400×800):
+
+| CPU 節流 | 預測餘裕 | 緩衝 | 空白幀 | 最長連續空白 |
+|---|---|---|---|---|
+| 1×(一般機器) | +21.8ms | **10** | 30 → **5–9** | 67ms → **17–33ms** |
+| 2× 以上 | 負值 | **5**(下限) | 與改前相同 | 與改前相同 |
+
+也就是說:**只有真的有餘裕的機器才擴緩衝**;慢機器行為與改前一致,由列殼機制接手。
+
+**量測紀律**:3× 節流的長工在同一份程式碼上跑出 **220ms 與 404ms**(雜訊主導),
+所以這條不可用本機單跑判定,要看 CI 的同窗交錯 `--ref=main` 比值。
+
+**機械閘** `scripts/data-table-overscan-adaptive-invariant.mjs`(刻意做成**機器無關** —— 絕對門檻只是在量跑閘的那台機器):
+A1 緩衝不低於 consumer 的 overscan / A2 不超過 AG Grid 的 10 / A3 能力越強緩衝不得更小(抓公式方向反了)/
+A4 有餘裕時機制必須真的動(沒餘裕的機器明白標為不適用,不假裝驗過)。
+對照組把回報值改成 0 與 99 → A1/A2 必紅。
 
 **機械閘** = `scripts/data-table-invariants.mjs` I11 / I11b(橫軸)+ I12(縱軸)。CI 的 headless Chromium 是 overlay 捲軸(gutter = 0),只驗自然狀態等於空轉——把 padding 整段拿掉 CI 照樣綠;I11b / I12 因此各用一條 15px 透明邊框造出與真捲軸同值的量測(`clientWidth` 不含 border、`offsetWidth` 含),補償分支在任何環境都會被走到(2026-09-03 實測:註入 `::-webkit-scrollbar` 寬度**無法**讓 CI 的捲軸佔版面,此路不通)。對應 `scripts/data-table-invariants.mjs`(script 內 I1-I3 label 字串仍用 `display↔edit` — 2026-07-16 FieldMode display→view 更名前的歷史命名,語意同 view↔edit)。改 `columnSizeStyle` / 切 layout 必跑 invariant test 才 commit。
 
