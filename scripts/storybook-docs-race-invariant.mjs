@@ -58,11 +58,16 @@ try {
     await page.route((url) => /\.js$/.test(url.pathname), async (route) => {
       const url = route.request().url()
       if (/DocsRenderer-[^/]+\.js$/.test(url) && delayMs > 0) { routed.delayed++; await sleep(delayMs) }
-      if (!disableGuard) return route.continue()
-      const res = await route.fetch(); let body = await res.text()
+      if (!disableGuard) return route.continue().catch(() => {})
+      // 重載會中止進行中的請求,這時 `route.fetch()` 會丟例外 —— 2026-09-12 我加的重試就是這樣把整支腳本炸掉的
+      // (CI `storybook-docs-race-invariant.mjs:62` 未捕捉例外)。攔截器必須對「請求已被中止」免疫。
+      let res
+      try { res = await route.fetch() } catch { return route.continue().catch(() => {}) }
+      let body = await res.text().catch(() => null)
+      if (body == null) return route.continue().catch(() => {})
       // 守衛的兩處 `element.hasAttribute("hidden")`(只在含 DocsRenderer 匯入的 preview chunk 裡):換成永遠 false 的屬性名
       if (body.includes('DocsRenderer') && body.includes('hasAttribute("hidden")')) { routed.patched++; body = body.split('hasAttribute("hidden")').join('hasAttribute("data-docs-race-guard-off")') }
-      return route.fulfill({ response: res, body, headers: { ...res.headers(), 'content-type': 'application/javascript' } })
+      return route.fulfill({ response: res, body, headers: { ...res.headers(), 'content-type': 'application/javascript' } }).catch(() => {})
     })
     await page.goto(server.origin + `/index.html?path=/story/${TASK}`, { waitUntil: 'networkidle' }); await sleep(800)
     // 點元件節點 → 開 Docs(已展開的節點再點只會收合,收合了就再點一次)
