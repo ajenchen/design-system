@@ -287,7 +287,7 @@ label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel 
 ## FieldGroup — 多 Field 垂直堆疊
 
 ```tsx
-<FieldGroup gap="normal" horizontalLabelWidth="120px">
+<FieldGroup horizontalLabelWidth="120px">
   <Field><FieldLabel>姓名</FieldLabel><Input /></Field>
   <Field><FieldLabel>Email</FieldLabel><Input /></Field>
   <Field orientation="horizontal">
@@ -301,13 +301,22 @@ label 文字後可帶 info icon(ℹ)hover 出 tooltip 補充說明:`<FieldLabel 
 </FieldGroup>
 ```
 
-gap 三個語意層級(具體 gap class map 見 `field.tsx` FieldGroup,`compact`→`gap-3` / `normal`→`gap-4` / `loose`→`gap-6`):
+**欄位垂直間距 = `--layout-space-loose`,不開放 per-instance 選檔(2026-09-12 user 拍板)。**
 
-| gap | 用途 |
-|---|---|
-| `compact` | 密集表單、dialog 內 |
-| `normal`(預設) | 標準表單 |
-| `loose` | 寬鬆大表單、settings 頁 |
+`FieldGroup` 直接消費 `gap-[var(--layout-space-loose)]`(md 16px / lg 24px),**沒有 `gap` prop**。
+表單間距是**系統級**設定:要調就整個 density 一起調,不是每個表單各自挑一檔。
+依據是 DS 自己早就寫下的規則 —— `tokens/layoutSpace/layoutSpace.spec.md`「親疏 3 級」表逐字把
+「跨範疇 + parallel / independent」的例子列為「**form fields stack(parallel inputs)**」→ 規則 3 = **loose**。
+
+**退役紀錄**:原本有 `gap?: 'compact' | 'normal' | 'loose'`(硬寫 `gap-3/4/6`、凍結不隨 density)。
+它來自 2026-04-10 的 `9917993e`,commit 訊息宣稱「rename to shadcn conventions」,
+但 shadcn 的 `FieldGroup` **根本沒有 gap prop**(props 只有 `className`,間距由元件固定)——
+那三檔是重構時自己長出來的,沒有任何 user 決定背書(本檔其餘 user 決定都有「user 拍板 / user 確認」標記,
+唯獨那張表沒有)。實際使用也證實它不帶資訊:全 repo 33 個 `<FieldGroup>` 只有 2 個傳過 `gap`
+(1 個 `compact` 沒寫理由、1 個傳的就是預設值),`loose` 一次都沒用過。
+世界級同樣沒有一家開放 per-instance 檔位:shadcn 元件固定 / MUI 泛用數值 × theme spacing /
+Ant 全域 token `itemMarginBottom` 走 ConfigProvider。
+**影響**:md 下新舊值都是 16px(33 個用法裡 32 個視覺零變化),lg 下從凍結的 16px 變成 24px。
 
 ### FieldGroup `horizontalLabelWidth` cascade(2026-04-20)
 
@@ -378,7 +387,7 @@ Field 內的資料輸入控件（Input / NumberInput / DatePicker / Select / Com
 - **表單欄位的 label + control + description + error 標準佈局**：登入表單、設定頁、建立對話框
 - **需要 required 星號、disabled 狀態、invalid 驗證的統一行為**
 - **需要 `horizontal` / `vertical` 排版切換**：設定頁常用 horizontal（label 左 / control 右）
-- **多欄位垂直堆疊**：搭配 `FieldGroup` 統一管理欄位垂直間距（三級固定值 `compact` / `normal` / `loose`，刻意不隨 density 縮放；具體 gap map 見上方 gap 表）
+- **多欄位垂直堆疊**：搭配 `FieldGroup` 統一管理欄位垂直間距（單一值 `--layout-space-loose`，隨 density 縮放；無 per-instance 選檔，見上方「欄位垂直間距」段）
 
 ## 何時不用
 

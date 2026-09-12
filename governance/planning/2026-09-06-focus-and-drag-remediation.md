@@ -3928,3 +3928,46 @@ user 問「compact/normal/loose 真的是我定義的嗎?」。全盤查證結�
 **移除三檔的影響**(若改為消費 `--layout-space-loose`):md density 下 `normal`(16px)= loose token(16px),
 **33 個用法裡 32 個視覺零變化**;lg 下從凍結的 16px 變成 24px(即開始履行 density 的承諾);
 唯一的 compact 用例 12px → 16px。**待 user 拍板**(這是可感知的產品決定,不自行落地)。
+
+---
+
+## AD105 — 移除 FieldGroup 三檔 gap(user 2026-09-12 拍板「照你建議並確保整個 ds 都有 ssot,不要有任何偏移」)
+
+**改動**:`FieldGroup` 的 `gap?: 'compact' | 'normal' | 'loose'` prop 移除,元件直接消費
+`gap-[var(--layout-space-loose)]`(md 16px / lg 24px)。表單間距回歸**系統級**設定:要調就整個 density 一起調。
+
+**SSOT 同步(六處,零漂移)**:
+
+| 檔案 | 改了什麼 |
+|---|---|
+| `Field/field.tsx` | 移除 prop 與 `fieldGroupVariants` cva;順帶移除因此不再被使用的 `cva` import |
+| `Field/field.spec.md` | gap 三檔表 → 「欄位垂直間距 = `--layout-space-loose`」+ 退役紀錄;程式範例的 `gap="normal"` 拿掉;「何時用」那條的「三級固定值…刻意不隨 density」改寫 |
+| `tokens/layoutSpace/layoutSpace.spec.md` | **解掉自相矛盾**:右欄「刻意固定 OK」原本舉例「FieldGroup 三級固定 gap」,與左欄「並列獨立 區塊 / 卡片 / **表單欄位** → 規則 3 = loose」直接衝突。例子改為「元件內部不對外的微幾何」,並加註更正說明 |
+| `Field/field.anatomy.stories.tsx` | Desc 文字從「三個語意層級」改為單一 token |
+| `Accordion/accordion.principles.stories.tsx` | 唯一的 `gap='compact'` 呼叫點移除 |
+| `design-system-audit/SKILL.md`(dim 90) | 判準邊界的豁免例「元件內部固定如 FieldGroup」→「元件內部不對外的微幾何」 |
+
+**驗證**:掃 58 支相關 story 的全部 `[data-field-group]` —— md `{16px: 31}` / lg `{24px: 31}`,
+一致且跟著 density,無例外。md 下與改前同值(32/33 個用法視覺零變化),lg 下從凍結的 16px 變成 24px。
+
+**新閘** `scripts/form-gap-token-invariant.mjs`,**兩段式**:
+- **S(靜態,零成本)**:掃 312 個 `.tsx`,`<FieldGroup ... className="gap-N">` 或殘留 `gap=` prop 一律違規。
+  這段連 consumer 程式碼都蓋得到,也不需要那支 story 存在才驗得到。
+- **R(瀏覽器)**:在 canonical story 上驗元件渲染出的 computed `row-gap`(兩個 density),62 組。
+
+第一版是「全掃 1033 支 story」,2 分 22 秒(CI 約 5 分)會把新 job 逼到 14.3 分。
+改成兩段式後 **32 秒**,而且覆蓋**更完整**(靜態那半原本沒有)。對照組兩半各自證明會紅(S 抓 31 處 / R 抓 62 組)。
+
+## AD106 — CI 再拆一個平行 job(第三次歸因才對)
+
+interaction job 連兩次跑滿 15 分被 cancel。歸因錯了兩次才對:
+1. 第一次以為是「我的閘太慢」→ 提速(對,但不夠)
+2. 第二次腳本把 `dialog-coexistence` 算成 447 秒 → 差點去優化一支**只花 10 秒**的閘。
+   錯因:我用 `> node scripts` 標記算區間,但後面那幾支是**裸 `node scripts/...`**(沒有 npm 包裝、不印該標記),
+   於是它們的時間全被算到前一支頭上。**用命令標記算耗時前,要先確認每支都會印那個標記。**
+3. 第三次用每支自己的輸出時間戳,才得到真實分佈:我的浮層/主題閘合計 **437 秒 = 整步的 54%**。
+
+**正解照既有先例**(`ci-workflow-scope.test.mjs:15` 註解逐字:「2026-09-08:單一 verify job 連兩次 15 分鐘
+逾時被取消…拆成三個平行 job」):拆出第六個 job `verify-browser-overlay`(浮層 + 主題閘)。
+調高 timeout 是錯的解(撞治理契約,已撤回);搬到排程 deep gates 也不對 —— 這幾支守的是剛回報過的回歸,必須每個 PR 跑。
+治理測試同步:job 清單、fan-in `needs` 與 env、shell 斷言、`build-storybook` 計數 6→7、`playwright install` 4→5。

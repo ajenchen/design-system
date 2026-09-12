@@ -165,7 +165,13 @@ Pattern C 的視覺邏輯見 `overlay-surface.spec.md`「Hover bg 貼邊 chrome�
 | 並列獨立 **區塊 / 卡片 / 表單欄位** 之間(規則 3 parallel = loose)| **同質 list 的列間距**(一串同類 rows,規則 3「同範疇 spec-own」)|
 | **Header → 內容**(規則 2 = tight)| **micro / icon / 控件內部** 間距(gap-1/2、icon padding)|
 | **Chrome 水平內距**(規則 6 = loose)| **為視覺平衡 / 對稱 刻意調的值**(設計裁量)|
-| **內容 → action button**(規則 4 = bottom 48)| **元件自身刻意固定**(如 FieldGroup 三級固定 gap,不隨 density)|
+| **內容 → action button**(規則 4 = bottom 48)| **元件自身刻意固定**(元件內部不對外的微幾何)|
+
+> **2026-09-12 更正**:右欄原本舉的例子是「FieldGroup 三級固定 gap,不隨 density」——**那個例子跟左欄第一列自相矛盾**:
+> 左欄逐字說「並列獨立 區塊 / 卡片 / **表單欄位** 之間 → 規則 3 parallel = loose」,而 FieldGroup 管的正是表單欄位之間的間距。
+> 同一個概念同時出現在兩欄,是真矛盾不是細節。該例子來自 `31383ac4`(2026-07-02)的防漂移補強,
+> 當時的 user 原話是「怎麼確保以後都遵循 layout-space 沒偏移且有 SSOT」(問防漂移機制,不是定表單間距)。
+> 2026-09-12 user 拍板移除 FieldGroup 的三檔 gap、改消費 `--layout-space-loose`,此豁免例子同步撤除。
 
 **判準一句話**:是「並列/區塊/chrome/header→content/content→action 的 macro 結構間距、規則說該縮放」→ 用 token;是「list 列間距 / micro / 刻意固定 / 元件內部決定」→ magic number 合法,**不要 token 化**。
 

@@ -347,14 +347,78 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  verify-browser-overlay:
+    name: Verify browser(overlay + theme gates)
+    runs-on: ubuntu-24.04
+    # 2026-09-12 拆出來的第六個 job。原因照 2026-09-08 的先例:interaction job 連兩次跑滿 15 分被 cancel,
+    # 實測(CI 逐支計時)這幾支浮層 / 主題閘合計 437 秒 = 整步的 54%,而 job 的 15 分鐘是
+    # `ci-workflow-scope.test.mjs` 釘住的契約。**調高上限是錯的解**(我試過,撞測試);
+    # 搬到排程的 deep gates 也不對 —— 這幾支守的是剛回報過的回歸,必須每個 PR 都跑。
+    # 所以照既有做法拆成平行 job:兩邊各約 7-9 分鐘,都在 15 分鐘內。
+    timeout-minutes: 15
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: Overlay and theme invariants (browser)
+        run: |
+          npx --no-install playwright install chromium
+          # Dialog 高度不變式(2026-09-11;user 重述的高度模型逐條變成斷言)。先對照組再判定。
+          node scripts/dialog-height-invariant.mjs --selftest
+          # H5 需要自己的對照組:上面那個 --selftest 把高度上限拿掉後 dialog 變 99904px 高,
+          # 任何內容都不會溢出,H5 的條件永遠觸發不了(實測 溢出數 恆為 0)。
+          # --selftest-h5 保留上限、只還原「容器 overflow-hidden」與「Tabs Root flex」兩個修法,
+          # 讓 H5 面對 bug 當時的真實形狀(實測會精準抓到 展示--with-tabs-in-header)。
+          node scripts/dialog-height-invariant.mjs --selftest-h5
+          node scripts/dialog-height-invariant.mjs
+          # 浮層快捷鍵的作用域:焦點在檢視器外時方向鍵不得切換檔案,
+          # 「靜止時同色的顏色配對,hover 後必須還是同色」全 DS 掃描(2026-09-11;user 截圖:
+          # Switch hover 時白色圓浮出一圈灰邊)。根因是 spec 要求 thumb 邊框「與 OFF track 同色」,
+          # 而 track 2026-07-06 加了 hover 升階、邊框沒跟 → 那圈本來看不見的邊現形。
+          # 這是**一整類** bug 的防線(任何「子邊框刻意等於父底色」的結構都可能重犯),不只 Switch。
+          # 對照組把邊框凍回修前的值,必須抓到;掃到 0 組配對也判紅(代表什麼都沒驗到)。
+          node scripts/hover-color-pair-invariant.mjs --selftest
+          node scripts/hover-color-pair-invariant.mjs
+          # Switch thumb 外圈必須渲染成 track 本身(2026-09-11)。這條量真實像素,因為兩次事故
+          # (hover 漏升階 / dark mode 白疊白使外圈消失)在 computed style 下**都是綠的**。
+          # 對照組把 background-clip 改回 border-box 並把外圈塗白 = 原樣重放 dark mode 那次事故。
+          node scripts/switch-thumb-ring-invariant.mjs --selftest
+          node scripts/switch-thumb-ring-invariant.mjs
+          # `color-scheme` 必須跟著 theme 翻(2026-09-12;user 截圖:dark 的 DataTable 捲軸是亮色)。
+          # DataTable 走原生捲軸、Chromium 又把 scrollbar-color 重設回 auto,所以捲軸長相只由
+          # color-scheme 決定 —— 在這之前整個 DS 沒宣告過它,計算值是 normal → 永遠畫亮版。
+          # C2 用「完全不吃 DS 樣式的原生控制項」當觀測器,確認瀏覽器真的照做,不只驗宣告存在。
+          node scripts/color-scheme-invariant.mjs --selftest
+          node scripts/color-scheme-invariant.mjs
+          # 表單欄位垂直間距 = --layout-space-loose,全 DS 無例外(2026-09-12 user 拍板移除
+          # FieldGroup 的 compact/normal/loose 三檔)。兩段式:S 靜態掃 312 個 .tsx 抓 className/prop 覆寫
+          # (連 consumer 程式碼都蓋得到),R 用瀏覽器驗元件自己渲染的 computed row-gap(兩個 density)。
+          # 全掃 1033 支 story 要 2 分 22 秒,但「className 蓋掉」已由 S 全面覆蓋,不需要用 6 倍瀏覽器時間再驗。
+          node scripts/form-gap-token-invariant.mjs --selftest
+          node scripts/form-gap-token-invariant.mjs
+
+
   verify-browser-interaction:
     name: Verify browser(component + interaction gates)
     runs-on: ubuntu-24.04
-    # 2026-09-12:上一跑剛好跑滿 15 分被 cancel。我一度把上限改成 25,**那是錯的** ——
-    # `infra/governance/test/ci-workflow-scope.test.mjs:32` 逐字定「只有兩個 DataTable job 可以到 25,
-    # 其餘一律 15」,那是「快速 deterministic 範圍」的契約。正解是讓閘跑得進 15 分:
-    # switch-thumb-ring 已從 ~5.5 分壓到 2分23秒(沒有 Switch 的 story 直接跳過切 theme 與等待)、
-    # 對照組從 ~5 分壓到 25 秒(只跑有 Switch 的 9 支),取樣數不變(44)。
     timeout-minutes: 15
     steps:
       - name: Checkout reviewed source
@@ -406,33 +470,6 @@ jobs:
           # Dialog 並存契約:兩條路都驗 —— 預設路徑照舊隔離、並存路徑指定區域仍可用。
           # 只驗後者的話「把預設路徑一起弄壞」不會被發現。
           npm run test:dialog-coexistence
-          # Dialog 高度不變式(2026-09-11;user 重述的高度模型逐條變成斷言)。先對照組再判定。
-          node scripts/dialog-height-invariant.mjs --selftest
-          # H5 需要自己的對照組:上面那個 --selftest 把高度上限拿掉後 dialog 變 99904px 高,
-          # 任何內容都不會溢出,H5 的條件永遠觸發不了(實測 溢出數 恆為 0)。
-          # --selftest-h5 保留上限、只還原「容器 overflow-hidden」與「Tabs Root flex」兩個修法,
-          # 讓 H5 面對 bug 當時的真實形狀(實測會精準抓到 展示--with-tabs-in-header)。
-          node scripts/dialog-height-invariant.mjs --selftest-h5
-          node scripts/dialog-height-invariant.mjs
-          # 浮層快捷鍵的作用域:焦點在檢視器外時方向鍵不得切換檔案,
-          # 「靜止時同色的顏色配對,hover 後必須還是同色」全 DS 掃描(2026-09-11;user 截圖:
-          # Switch hover 時白色圓浮出一圈灰邊)。根因是 spec 要求 thumb 邊框「與 OFF track 同色」,
-          # 而 track 2026-07-06 加了 hover 升階、邊框沒跟 → 那圈本來看不見的邊現形。
-          # 這是**一整類** bug 的防線(任何「子邊框刻意等於父底色」的結構都可能重犯),不只 Switch。
-          # 對照組把邊框凍回修前的值,必須抓到;掃到 0 組配對也判紅(代表什麼都沒驗到)。
-          node scripts/hover-color-pair-invariant.mjs --selftest
-          node scripts/hover-color-pair-invariant.mjs
-          # Switch thumb 外圈必須渲染成 track 本身(2026-09-11)。這條量真實像素,因為兩次事故
-          # (hover 漏升階 / dark mode 白疊白使外圈消失)在 computed style 下**都是綠的**。
-          # 對照組把 background-clip 改回 border-box 並把外圈塗白 = 原樣重放 dark mode 那次事故。
-          node scripts/switch-thumb-ring-invariant.mjs --selftest
-          node scripts/switch-thumb-ring-invariant.mjs
-          # `color-scheme` 必須跟著 theme 翻(2026-09-12;user 截圖:dark 的 DataTable 捲軸是亮色)。
-          # DataTable 走原生捲軸、Chromium 又把 scrollbar-color 重設回 auto,所以捲軸長相只由
-          # color-scheme 決定 —— 在這之前整個 DS 沒宣告過它,計算值是 normal → 永遠畫亮版。
-          # C2 用「完全不吃 DS 樣式的原生控制項」當觀測器,確認瀏覽器真的照做,不只驗宣告存在。
-          node scripts/color-scheme-invariant.mjs --selftest
-          node scripts/color-scheme-invariant.mjs
           # 對照組驗焦點在裡面時仍然切得動(否則就是把功能弄壞換綠燈)。
           npm run test:overlay-shortcut-scope
           # 兩支從「複現不出」轉成「再發生會被抓到」的閘(總帳 E1 / E2):
@@ -511,7 +548,7 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-agent]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent]
     if: always()
     steps:
       - name: Every verify job must have succeeded
@@ -520,10 +557,11 @@ jobs:
           BROWSER_DT: ${{ needs.verify-browser-datatable.result }}
           BROWSER_DT2: ${{ needs.verify-browser-datatable-dpr2.result }}
           BROWSER_UI: ${{ needs.verify-browser-interaction.result }}
+          BROWSER_OVERLAY: ${{ needs.verify-browser-overlay.result }}
           BROWSER_AGENT: ${{ needs.verify-browser-agent.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-agent=$BROWSER_AGENT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_AGENT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)

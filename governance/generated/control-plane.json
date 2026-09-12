@@ -177,7 +177,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 65,
-      "hash": "sha256:a3cfb4d7c7d73cf7bb5caea01f6491e6082719b9559252fdccc4006f4e145694",
+      "hash": "sha256:3d38b5c0c6d4ea5d2f523860df3194885b5e9fe2c553404e2cf61b967bc71841",
       "id": "canonical-skills",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1614,7 +1614,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:0317f86aac814e8bd4022ab518cc0078320f73c597c2608cb80de8337bcad9a6",
+      "hash": "sha256:ca18dc1efc09c03da41f228a1bebdb7a80461da5c205abf39003af8bf9c69593",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1759,7 +1759,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 52,
-      "hash": "sha256:cca641f49b3858817e59e2bcf1cae3da388b4866dc525eb3ebc81e09d18e1577",
+      "hash": "sha256:5fe2862912dfc00640cf3d48c2d912e78c18d6b8f77a8368c7e6942545155765",
       "id": "governance-control-plane-tests",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2710,7 +2710,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 46,
-      "hash": "sha256:d8990a917215fcc6d094a2f522c6afa332ee5c0df237796f3f086e005b9b94ed",
+      "hash": "sha256:8cedda0900d048aefb67db51fc6b87237d6433ca625a50fd33dc9fbe577d9f42",
       "id": "provider-neutral-planning-ledger",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3074,8 +3074,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 436,
-      "hash": "sha256:0d62d37d5f044a4e8c6d42d2609ea94babd5292a785a92e0636ad0c2aabc951e",
+      "files": 437,
+      "hash": "sha256:c245b875ffac443f05cb89bbb4a7e937cf6b4a31e0bdd9c7d7d2a97ebcd41aa1",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3455,10 +3455,10 @@
           "targetDigest": "sha256:bc58dbf54772fee014ea0902c347e8857b3787f8502510715c383b8046818fcd"
         },
         {
-          "expectedTargetDigest": "sha256:dbeab455c84e318579d66eaf49baa389a6332cff093fb9d3387f9c621a7f2fb3",
+          "expectedTargetDigest": "sha256:d9a3b1447e194bf6686b956271f5a261ac938cd497d2122681d0e23a16de8c11",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:d1f5eef994e872a9d08a3ccb5990193d80d6a7b3db2c90a00d77ef0b0919d85e",
-          "targetDigest": "sha256:dbeab455c84e318579d66eaf49baa389a6332cff093fb9d3387f9c621a7f2fb3"
+          "sourceDigest": "sha256:0e73dbf3813de818cc159233c02f9220a2ba81b7ffaec34b222c90efb71f7e45",
+          "targetDigest": "sha256:d9a3b1447e194bf6686b956271f5a261ac938cd497d2122681d0e23a16de8c11"
         },
         {
           "expectedTargetDigest": "sha256:b71c9a39fab91baa251682be5450fb2ae974abd6f3f13bf8f3f438c8de102f63",
@@ -3678,10 +3678,10 @@
           "targetDigest": "sha256:b2a70ea7a9edc9a25fceca06cdd50dac5e6cf75e9ffa494f203d407b9591b01b"
         },
         {
-          "expectedTargetDigest": "sha256:6ff3198c04531c4ae3bbe6fc7674d664127f66055b42666d39bfceacfb21782d",
+          "expectedTargetDigest": "sha256:a4eeb1875ca1f13e4f0a054ef6057cc6003163dc8620e41ba9ea5261fa253991",
           "name": "design-system-audit",
-          "sourceDigest": "sha256:d1f5eef994e872a9d08a3ccb5990193d80d6a7b3db2c90a00d77ef0b0919d85e",
-          "targetDigest": "sha256:6ff3198c04531c4ae3bbe6fc7674d664127f66055b42666d39bfceacfb21782d"
+          "sourceDigest": "sha256:0e73dbf3813de818cc159233c02f9220a2ba81b7ffaec34b222c90efb71f7e45",
+          "targetDigest": "sha256:a4eeb1875ca1f13e4f0a054ef6057cc6003163dc8620e41ba9ea5261fa253991"
         },
         {
           "expectedTargetDigest": "sha256:b9da47c4227209a03b97581c050fac898a25e28e7d9c6dcf5754b55c5554ed37",
