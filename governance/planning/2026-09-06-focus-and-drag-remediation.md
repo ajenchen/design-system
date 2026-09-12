@@ -4065,3 +4065,18 @@ A3 能力越強緩衝不得更小 / A4 有餘裕時機制必須真的動(沒餘�
 
 修法:把緩衝計算移到 `S.scrolling = scrolling` 之後,並加 `if (scrolling || S.overscan == null)` ——
 **只在捲動中重算,閒置凍住上一次的值**。332 條不變式全過;1× 空白仍是 2–7 幀 / 17–50ms(基準 30 幀 / 67ms)。
+
+## AD110 — CI 結果:預測式通過 `--ref=main`;docs 競態閘第四次環境誤紅
+
+`4f8759b3` 的 CI:**`Verify browser(DataTable pixel gates)` 綠** —— 預測式版本通過了同窗交錯的
+`--ref=main` 比值判定(前一版 `7f342b23` 正是紅在這裡:長工 236 → 366ms)。修法有效。
+
+同一跑 `Verify browser(agent demo + cursor gates)` 紅在 `storybook-docs-race-invariant`:
+`docsChildren: 0 / rootChildren: 0` = 這一趟什麼都沒渲染。**已排除是我的改動**:
+(a) 版本 4 之後緩衝只在捲動中重算,docs 頁沒人捲 → 維持初始值 5,與改前相同;
+(b) **決定性反證** —— 沒有那道守衛的 `7f342b23`(每次 render 都擴)這支閘是**綠的**。
+腳本註解自己記著「在慢 runner 上紅過三次,症狀都是什麼都沒渲染」,這次是第四次。
+
+該 docs 頁要渲染 15 支 story、其中 9 支含 DataTable,共享 runner 負載高時 60 秒等不完。
+重試次數 1 → 3(仍然全部落空就照樣紅 —— 「沒量到」不可以偽裝成「通過」)。
+誤報會侵蝕整套閘的可信度,所以補強儀器而不是加豁免。

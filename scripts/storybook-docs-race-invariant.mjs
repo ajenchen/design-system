@@ -84,11 +84,15 @@ try {
       if ((await page.locator(sel(DEMO)).count()) === 0) await page.locator(sel(P)).first().click()
       return waitFor(page, () => (document.getElementById('storybook-docs')?.childElementCount ?? 0) > 0 && !document.getElementById('storybook-docs')?.hasAttribute('hidden'), 60000)
     }
-    if (!(await openDocs())) {
-      console.log('   ⟳ Docs 頁 60 秒內什麼都沒渲染(這一趟儀器沒跑起來),重載後重試一次')
+    // 重試 1 次 → 3 次(2026-09-12,第四次誤紅)。這個 docs 頁要渲染 15 支 story、其中 9 支含 DataTable,
+    // 共享 runner 負載高時 60 秒等不完;症狀恆為 `rootChildren: 0 / docsChildren: 0` = **這一趟根本沒量到東西**,
+    // 不是守衛誤殺正常 docs。已排除是自適應緩衝造成的:緩衝只在捲動中重算,docs 頁沒人捲 → 維持初始值,
+    // 而且沒有那道守衛的 7f342b23(每次 render 都擴)這支閘是綠的。
+    // 仍然全部落空 → 照樣紅(不靜默跳過:「沒量到」不可以偽裝成「通過」)。
+    for (let attempt = 1; attempt <= 3 && !(await openDocs()); attempt += 1) {
+      console.log(`   ⟳ Docs 頁 60 秒內什麼都沒渲染(這一趟儀器沒跑起來),重載後重試 ${attempt}/3`)
       await page.goto(server.origin + `/index.html?path=/story/${TASK}`, { waitUntil: 'networkidle' }).catch(() => {})
       await sleep(1200)
-      await openDocs()
     }
     const docsPage = await evalIn(page, MEASURE)
     await browser.close()
