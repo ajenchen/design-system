@@ -447,7 +447,11 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
       // (那不是偵測器壞了,正是這次修正要消滅的因果。)所以正對照要**連骨架底一起關掉**:
       // 沒有地板 + 主執行緒卡死 = 真的什麼都沒有,偵測器不紅就是偵測器壞了。
       if (sabotage) {
-        await page.addStyleTag({ content: '[data-row-shell-band]{display:none !important}' })
+        // **兩層都要關**。只關骨架底在快機器上會紅、在 CI 上不會 —— 因為 CI 慢,真的**列殼**
+        // (`[data-row-shell]`)會大量出動把畫面填滿(實測 7–8 幀、最多 84 列),偵測器因此照樣看到內容。
+        // 正對照要證明的是「偵測器在什麼都沒有的時候會紅」,所以把兩層防空白機制一起拿掉,
+        // 只留一個卡死的主執行緒。留一層就會變成「在量那台機器的快慢」而不是在量偵測器。
+        await page.addStyleTag({ content: '[data-row-shell-band],[data-row-shell]{display:none !important}' })
         await page.evaluate((ms) => { document.querySelector('[data-datatable-hscroll]').addEventListener('scroll', () => { const b = performance.now(); while (performance.now() - b < ms) { /* busy */ } }, { passive: true }) }, SCROLL_BUSY_MS)
       }
       const t0 = Date.now()
@@ -624,7 +628,7 @@ if (SELFTEST) {
     if (r.g) {
       if (r.control === 'negative') { const pass = r.g.blankFrames === 0 && r.g.presented >= 10; console.log(`${pass ? '✓' : '✗'} selftest 負對照 ${r.build}:呈現 ${r.g.presented} 幀、空白 ${r.g.blankFrames} 幀(需 0 且幀數 ≥ 10)`); if (!pass) ok = false; continue }
       const pass = r.g.blankFrames >= 3 && r.g.presented >= 10
-      console.log(`${pass ? '✓' : '✗'} selftest 正對照 ${r.build}/${r.mode}:關掉骨架底 + 每個 scroll 事件忙等 ${SCROLL_BUSY_MS}ms → 空白 ${r.g.blankFrames} 幀、最長 ${r.g.blankLongestMs.toFixed(0)}ms(需 ≥ 3 幀)`)
+      console.log(`${pass ? '✓' : '✗'} selftest 正對照 ${r.build}/${r.mode}:關掉骨架底與列殼 + 每個 scroll 事件忙等 ${SCROLL_BUSY_MS}ms → 空白 ${r.g.blankFrames} 幀、最長 ${r.g.blankLongestMs.toFixed(0)}ms(需 ≥ 3 幀)`)
       if (!pass) ok = false
       continue
     }
