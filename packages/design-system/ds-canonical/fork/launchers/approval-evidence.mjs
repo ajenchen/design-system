@@ -120,6 +120,15 @@ function transcriptState(transcriptPath) {
     // `sourceToolUseID`) are likewise not the user's voice — 2026-09-02 anchor: a loaded
     // workflow-authoring reference displaced the user's real directive as "latest user message".
     if (record?.isMeta === true || typeof record?.sourceToolUseID === 'string') continue
+    // Context-compaction summaries are recorded as user-role text but are written by the
+    // ASSISTANT, not the user — 2026-09-12 anchor: after a compaction the summary became the
+    // "latest user message", so every later substantive edit was judged against AI-authored
+    // prose instead of the user's actual directive (observed reasonCode:
+    // TARGET_BOUND_DISCUSSION_OR_QUESTION, while the user's real message sat two records above).
+    // Excluding them is a TIGHTENING, and that is the point: a summary quoting or paraphrasing
+    // earlier approval ("the user approved X") would otherwise let the assistant's own words
+    // authorize the assistant's own edit. M36(a): 引用 ≠ 決定,AI 轉述永遠不是 user 權威。
+    if (/^This session is being continued from a previous conversation/u.test(text)) continue
     userMessages.push(text)
     lastUserRecordIndex = index
     plainUserRecordIndexes.push(index)
