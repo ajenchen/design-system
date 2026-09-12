@@ -2119,13 +2119,20 @@ function DataTableInner<TData>(
     // 改成不論 `scrollCommit` 與否,只要不在捲動就重設。
     if (!S.scrolling) { S.behind = 0; S.slow = false }
     S.lastCommitAt = typeof performance !== 'undefined' ? performance.now() : 0
+    const renderedAtNewOffset = S.committedRenderOffset !== S.renderOffset
     S.committedRenderOffset = S.renderOffset
     S.committedRenderStart = S.renderStart
     S.lastRows = rows
     S.wasScrolling = virtualizer.isScrolling
     S.lastOffset = centerBodyRef.current?.scrollTop ?? 0
     // 捲動造成的 commit:指標底下可能已經換了一列,瀏覽器不會派 mouseover(見 syncHoverUnderPointer 註解)。
-    if (S.scrollCommit || S.prevShells.size > 0) syncHoverUnderPointer()
+    // 2026-09-12 補 `renderedAtNewOffset`:原本只在「捲動中」或「上一輪有殼」時同步,
+    // 但**捲動停下後還會再重畫一次**(虛擬視窗收斂 / 量測回填),那一次同樣會換掉指標底下那一列,
+    // 卻兩個條件都不成立 → 指標沒動、底下那一列卻永遠標不到,使用者看到的就是「滑過去沒反應」。
+    // CI(共享 2 vCPU)實測 16 次取樣有 3 次整整 1.5 秒都沒反應;本機快、量不到(3 輪 48 次全正常)。
+    // 只在「這次重畫換了捲動位置」時才跑 —— `syncHoverUnderPointer` 內部會呼叫 `elementFromPoint`,
+    // 那會逼出一次版面計算,不能每次重畫都付。
+    if (S.scrollCommit || S.prevShells.size > 0 || renderedAtNewOffset) syncHoverUnderPointer()
     // 殼升級成真列後,三區列高同步(缺陷 F)要再跑一次 —— 那個同步只掛在虛擬視窗換列上,補真內容不會換列(Codex R9 指出)。
     // 判「有沒有列從殼變真列」看集合差,不看配額計數:拖曳 / 編輯把殼強制升成真列不走配額,第一版只看 promoted,
     // Codex R10 在 autoRowHeight + 左右釘選下重現三區差 60px。**先比對上一輪的殼集合,再覆寫**(R11:第二版先覆寫才比,
