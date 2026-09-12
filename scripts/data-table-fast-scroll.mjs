@@ -79,7 +79,14 @@ const TICKS = Number(arg('ticks', 40))
 const TICK_MS = Number(arg('tick-ms', 16))
 const SETTLE_MS = Number(arg('settle-ms', 1000))
 const START_PX = Number(arg('start', 0))
-const DELTAS = [300, 400, 500, 600]
+// 預設是**壓力值**:平均 450px × 每 16ms = 約 28,000 px/s,遠超過人用滾輪捲得出來的速度
+// (Chrome 一格約 100px;連續快滾大約 500–1,000 px/s,觸控板猛甩約 3,000–5,000 px/s)。
+// 壓力值的用途是把「合成器跑在主執行緒前面」這件事放到最大,不是模擬真人。
+// `--deltas=100,120` 之類可以改成真人區間 —— 判斷「user 實際會不會看到」要用真人速度量,
+// 拿壓力值的數字宣稱「user 會看到」是誇大(2026-09-12 加,起因:本機壓力值 8-12 幀空白、CI 0 幀,
+// 差別其實是每秒捲多少 px,不是誰比較好)。
+const DELTAS = arg('deltas', '300,400,500,600').split(',').map((s) => Number(s.trim())).filter((n) => Number.isFinite(n) && n > 0)
+if (!DELTAS.length) { console.error('✗ --deltas 必須是正數清單(例:--deltas=100,120)'); process.exit(1) }
 const [VW, VH] = arg('viewport', '1400x800').split('x').map(Number)
 const DPR = Number(arg('dpr', 1))
 // 2026-09-09:CI(ubuntu runner)比 Mac 慢,R17 的緊急殼觸發在慢機器失效(6000px/s 白區 918–1027ms);本機用 CDP CPU 節流重現。
