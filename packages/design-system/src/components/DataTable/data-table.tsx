@@ -4165,6 +4165,11 @@ function DataTableInner<TData>(
     const items = useVirtual ? rowVirtualItems.map(vr => rowEl(rows[vr.index], vr.index, { virtual: true, start: vr.start, size: vr.size, isLast: vr.index === rows.length - 1 })) : []
     // 已掛載列的連續區段 `[first.start, last.end]`;它以外的整個虛擬高度就是「一定沒有東西」的地方。
     // 兩帶取自這一次 render 自己的幾何,不額外量 DOM、不多一次 layout。
+    // 骨架磚只跟欄幾何與列高有關,跟兩帶各自的位置無關 —— 一輪 render 算一次就好。
+    // 原本寫在 `.map()` 裡等於每帶各算一次(× 三區 = 六次),純浪費主執行緒。
+    const bandStyle = useVirtual
+      ? unmountedSkeletonStyle(cols, resolvedWidths, Math.max(1, Math.round(resolvedEstimate)))
+      : {}
     const unmountedBands: { key: string; top: number; height: number }[] = []
     if (useVirtual && rowVirtualItems.length > 0) {
       const total = virtualizer.getTotalSize()
@@ -4194,10 +4199,15 @@ function DataTableInner<TData>(
                 key={band.key}
                 aria-hidden="true"
                 data-row-shell-band={band.key}
+                // **寬度寫死,不用 `right: 0`**(2026-09-12,CI 抓到的回歸):`left:0 + right:0` 的寬度要
+                // 反查包含區塊,而包含區塊(虛擬高度 spacer)的寬又由內容決定 → 多一輪 layout。
+                // CI 同窗 A/B:wheel 的 layout 從 main 的 196ms 漲到 301-376ms、
+                // 主執行緒最長卡頓中位 188 → 328ms,踩到「不得為了消滅空白而讓互動卡頓」那條閘。
+                // `containerWidth` 這一輪 render 已經算好,直接寫死等值寬度,畫面完全相同。
                 style={{
-                  position: 'absolute', left: 0, right: 0, top: band.top, height: band.height,
+                  position: 'absolute', left: 0, width: containerWidth, top: band.top, height: band.height,
                   pointerEvents: 'none',
-                  ...unmountedSkeletonStyle(cols, resolvedWidths, Math.max(1, Math.round(resolvedEstimate))),
+                  ...bandStyle,
                 }}
               />
             ))}
