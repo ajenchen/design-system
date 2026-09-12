@@ -234,7 +234,16 @@ function targetAliases(target) {
     if (family && componentDir.toLowerCase().startsWith(family.toLowerCase()) && stemTokens.length > 1) {
       const rest = stemTokens.slice(1)
       aliases.add(rest.join(' '))
-      for (const token of rest) aliases.add(token)
+      // 單一 token 只有在它**不是元件目錄名的一部分**時才夠格單獨當別名(2026-09-12 收緊)。
+      // 理由:目錄已經含有的字不提供任何辨識資訊 ——「table」之於 `DataTable`、「panel」之於
+      // `AgentPanel` 都是泛用字,放進別名等於「任何一句提到 table 的話都能授權改 data-table.tsx」
+      // (CI 實測:「metadata table的排序箭頭改成跟 label 連動」直接綁定成功)。
+      // 「fab」「logo」不在 `AgentPanel` 裡,才是 user 真的在指那一個檔 —— 本規則原本要收的就是這種,
+      // 上面的註解也寫著「避免泛用字誤綁」,只是沒有實際擋住。
+      const dirKey = componentDir.toLowerCase()
+      for (const token of rest) {
+        if (!dirKey.includes(token.toLowerCase())) aliases.add(token)
+      }
     }
   }
   return [...aliases].filter((alias) => alias.length >= 3)

@@ -824,6 +824,19 @@ build_transcript "$TX_METADATA" "metadata table的排序箭頭改成跟 label �
 run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_METADATA"
 expect_block "11b. 對照組:metadata table(同字集相鄰)不得綁到 data-table" "BLOCKER"
 
+# 11c/11d. 家族檔別名收緊(2026-09-12):單一 token 只有在**不是元件目錄名的一部分**時才夠格。
+#   「table」之於 DataTable、「panel」之於 AgentPanel 都是泛用字,原本會讓任何提到它的句子取得授權;
+#   「fab」「logo」不在目錄名裡,才是 user 真的在指那一個檔(本規則原意)。
+TX_GENERIC_PANEL="$TMP_DIR/tx_generic_panel.jsonl"
+build_transcript "$TX_GENERIC_PANEL" "把 panel 的呼吸動畫改成搭配透明度"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx" "$TX_GENERIC_PANEL"
+expect_block "11c. 泛用 token「panel」(已含於 AgentPanel)不得單獨綁定家族檔" "BLOCKER"
+
+TX_SPECIFIC_FAB="$TMP_DIR/tx_specific_fab.jsonl"
+build_transcript "$TX_SPECIFIC_FAB" "把 fab 的呼吸動畫改成搭配透明度"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_SPECIFIC_FAB"
+expect_pass_silent "11d. 對照組:「fab」不在 AgentPanel 裡 → 仍是有效的家族檔別名,approved"
+
 # 12. 上下文壓縮摘要 = assistant 寫的,卻以 user role 記進 transcript。
 #     (a) 它若被當成「最新 user 訊息」會蓋掉 user 真正的指令;
 #     (b) **更危險**:摘要裡「使用者已核准 X」這種轉述會變成 AI 替自己放行。兩個方向都要有對照組。

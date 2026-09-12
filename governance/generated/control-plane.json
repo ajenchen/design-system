@@ -85,12 +85,12 @@
       "type": "directory"
     },
     {
-      "hash": "sha256:e7d461ffdf58c6c06f75630f91e68eae99f3f87a6f51b2a2575ec83badd4af7e",
+      "hash": "sha256:f39814bc9b35090c973c59e2e399cb4f4bc10261434a65957d90614d5aba3b9c",
       "id": "canonical-hook-approval-evidence-helper",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
-      "size": 65787,
+      "size": 66588,
       "type": "file"
     },
     {
@@ -133,7 +133,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 231,
-      "hash": "sha256:7b03dc5be868caf087bc12505452fc94c5427a1e975fc893d98e50fcab1e9983",
+      "hash": "sha256:4f059fa1e8c68611e8504d320338923d0c383c154aefcd775e0ce2de831aec2a",
       "id": "canonical-hooks",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -1834,7 +1834,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:a6484646976325627a866ec3018e11587e496bb1a3b6e70819aca9d6aa7e2e5d",
+      "hash": "sha256:3400dad5787eb7c869ff956546e5cda4b87120c415efc01982a1e5c777a66038",
       "id": "governance-harness-registry",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -1897,7 +1897,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:605278a24dfd8e4fce630c985988c3677363ddc58dd871495c1b01d354699cea",
+      "hash": "sha256:54e3978dfee7151179581584fadd064bb92a801d57782e3d23e02b20255b3219",
       "id": "governance-harness-source-inventory",
       "mode": "0644",
       "ownerRepo": "design-system",
@@ -2577,7 +2577,7 @@
       "type": "file"
     },
     {
-      "hash": "sha256:34fc41e7c3b9d23b91be7311fc8c20dcaff931bf5088ff80efcdbb9d8e9c3849",
+      "hash": "sha256:08bfac65b1ebb730bcbf44fb5947beb91f2ffd6d1a012685e56c1cbd0032225d",
       "id": "provider-compatibility-matrix",
       "mode": "0644",
       "ownerRepo": "design-system",
