@@ -187,7 +187,9 @@ for (const b of BUILDS) {
   const still = stillR.ok
   const after = afterR.ok
   if (SELFTEST) {
-    const sab = report(b.label, '對照組(注入 120ms 忙等)', await measure(b, { afterScroll: false, sabotage: true }))
+    // `report()` 2026-09-12 改成回傳 `{ ok, lost }`(讓「沒變色」的次數不再隱形),這裡要跟著取 `.ok` ——
+    // 沒跟著改的那一版在 CI 上把對照組判成 `p95 = NaN` 而紅,等於自己把儀器弄壞。
+    const sab = report(b.label, '對照組(注入 120ms 忙等)', await measure(b, { afterScroll: false, sabotage: true })).ok
     const caught = sab.length > 0 && q(sab, 0.95) >= 120
     const cleanOk = still.length > 0 && q(still, 0.95) < 120
     console.log(`${caught ? '✓' : '✗'} 對照組:注入 120ms 忙等時 p95 必須 ≥ 120ms(得 ${q(sab, 0.95).toFixed(0)}ms)`)
