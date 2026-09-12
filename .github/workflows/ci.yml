@@ -240,6 +240,15 @@ jobs:
           # 斷言會自動跳過 = 形同虛設。把視窗縮到 400px 讓它落進「畫得動」的區間,這條不變式才真的被驗到。
           # 本機以同一組參數兩側對照過:修前建置 11 幀必紅、修後 0 幀綠。
           node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 --viewport=1400x400 --assert-max-shell-frames=0
+          # **滾輪路徑**(2026-09-12 補,獨立覆核抓到 `grep -c "mode=wheel" ci.yml` = 0):
+          # user 的真實情境是「Chrome 開預覽、用滾輪捲」,而在這之前 CI 只跑 CDP 合成手勢(gesture),
+          # 滾輪這條路一條閘都沒有。wheel 兩趟只要 8.5 秒,沒有理由不跑。
+          # wheel 沒有截圖幾何(screencast 是 gesture 專屬),所以只判 long task —— 那正是「畫面卡住不動」的成因;
+          # 缺的那些指標會明白印「這個模式沒有這項量測,不適用」,不會靜默當成通過。
+          # 本機同機對照(n=3):long task 數 main 7 / 分支 1、合計 main 585ms / 分支 83ms、連續空白 277 → 225ms。
+          node scripts/data-table-fast-scroll.mjs --mode=wheel --runs=3 \
+            --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
+            --assert-max-long-task-ms=300
           # 「指標底下那一列永遠有 hover 反應」(2026-09-11 新閘;user:「游標明明到了,table row 的反應卻要等好一陣子」)。
           # 兩個根因都在腳本檔頭:殼列原本沒有 hover 底色、以及捲動中瀏覽器不重新派送 hover。先對照組再判定。
           node scripts/data-table-row-under-pointer-invariant.mjs --selftest

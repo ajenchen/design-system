@@ -581,7 +581,7 @@ if (!SELFTEST) {
     console.log(`   ${build.label}/${mode} 預估paint ${spark(w.paint)}\n   ${build.label}/${mode} DOM     ${spark(w.dom)}\n   ${build.label}/${mode} 幀間隔ms ${w.frames.slice(1).map((f) => Math.round(f.dt)).join(' ')}`)
   }
   console.log('\n對照表(每格 = 中位數 / 最大值,跨 runs)')
-  const gcols = [['空白幀', (r) => r.g?.blankFrames ?? 0, String], ['最長連續空白ms', (r) => r.g?.blankLongestMs ?? 0, (v) => v.toFixed(0)], ['空白面積×ms', (r) => r.g?.blankAreaMs ?? 0, (v) => v.toFixed(0)], ['殼幀', (r) => r.g?.shellFrames ?? 0, String], ['停捲後補齊ms', (r) => r.g?.fillMs ?? 0, (v) => (Number.isFinite(v) ? v.toFixed(0) : '沒補完')], ['呈現幀距max', (r) => r.g?.presentedGapMax ?? 0, (v) => v.toFixed(0)], ['long task max', (r) => r.longMax, (v) => v.toFixed(0)], ['script ms', (r) => r.perf.ScriptDuration * 1000, (v) => v.toFixed(0)]]
+  const gcols = [['空白幀', (r) => r.g?.blankFrames ?? 0, String], ['最長連續空白ms', (r) => r.g?.blankLongestMs ?? 0, (v) => v.toFixed(0)], ['空白面積×ms', (r) => r.g?.blankAreaMs ?? 0, (v) => v.toFixed(0)], ['殼幀', (r) => r.g?.shellFrames ?? 0, String], ['停捲後補齊ms', (r) => r.g?.fillMs ?? 0, (v) => (Number.isFinite(v) ? v.toFixed(0) : '沒補完')], ['呈現幀距max', (r) => r.g?.presentedGapMax ?? NaN, (v) => v.toFixed(0)], ['long task max', (r) => r.longMax, (v) => v.toFixed(0)], ['script ms', (r) => r.perf.ScriptDuration * 1000, (v) => v.toFixed(0)]]
   const cols = [['預估paint空白 max', (r) => r.paintMax, pct], ['paint 連續幀', (r) => r.paintStreak.frames, String], ['paint 連續 ms', (r) => r.paintStreak.ms, (v) => v.toFixed(0)], ['DOM空白 max', (r) => r.domMax, pct], ['主幀間隔 max ms', (r) => r.dtMax, (v) => v.toFixed(0)], ['long task 數', (r) => r.longCount, String], ['long task 最長 ms', (r) => r.longMax, (v) => v.toFixed(0)], ['long task 合計 ms', (r) => r.longSum, (v) => v.toFixed(0)], ['script ms', (r) => r.perf.ScriptDuration * 1000, (v) => v.toFixed(0)], ['commits', (r) => r.commits, String]]
   for (const build of BUILDS) for (const mode of MODES) {
     const rs = results.filter((r) => r.build === build.label && r.mode === mode); if (!rs.length) continue
@@ -624,7 +624,10 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
   // 另留一道「單趟天花板 = 門檻 × 2」擋住單趟災難級停頓(119e279f 的 476 在天花板內,靠中位數擋;
   // 真正一趟就爆掉的回歸由天花板擋),兩道合起來才不會為了穩定性放掉偵測力。
   const groups = new Map()
-  for (const r of results) { if (!r.g) continue; const k = `${r.build}/${r.mode}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r) }
+  // 收**所有模式**,不只 gesture。wheel 沒有截圖幾何(`r.g`,只有 gesture 走 screencast,見 mode === 'gesture' 分支),
+  // 但它有 long task 指標 —— 而 wheel 正是 user 真實的捲動路徑(滾輪),不該因為少了截圖就整個不判。
+  // 取不到值的指標由下方 gate / relGate 各自跳過並說明,不會靜默當成通過。
+  for (const r of results) { const k = `${r.build}/${r.mode}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r) }
   for (const r of results) {
     if (!r.g) continue
     if (r.g.presented < 10) { console.log(`✗ ${r.build}/${r.mode}:只收到 ${r.g.presented} 張呈現幀,screencast 沒在工作,不能當證據`); failed++ }
@@ -642,6 +645,8 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
       // 它唯一的用途是當比值的分母。
       if (REF_LABEL && k.split('/')[0] === REF_LABEL) continue
       const vals = rs.map(pick)
+      // 該模式沒有這個指標(例:wheel 沒有截圖幾何 → 空白/補齊類指標)→ 明說跳過,不靜默當通過
+      if (!vals.length || !vals.every((v) => Number.isFinite(v))) { console.log(`↷ ${k}:${name}——這個模式沒有這項量測,不適用`); continue }
       const mid = median(vals)
       const worst = Math.max(...vals)
       const all = vals.map((v) => v.toFixed(0)).join(' / ')
@@ -680,7 +685,7 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
   gate(ASSERT_FILL_MS, '停捲後列殼補齊', CEILING_FACTOR.fill, (r) => r.g.fillMs)
   if (REF_LABEL) {
     relGate(ASSERT_LONG_TASK_MS, '主執行緒單一任務最長', CEILING_FACTOR.longTask, (r) => r.longMax, (r) => `(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms)`)
-    relGate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? 0)
+    relGate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? NaN)
   } else if (ASSERT_LONG_TASK_MS !== '') {
     // 沒有參考建置時的後備:門檻相對於這台機器自己的能力(理由見 lib 的 longTaskLimit)
     const costs = results.map((r) => r.shellCost).filter((v) => Number.isFinite(v))
@@ -688,9 +693,9 @@ if (ASSERT_BLANK_MS !== '' || ASSERT_FILL_MS !== '' || ASSERT_LONG_TASK_MS !== '
     const limit = longTaskLimit(Number(ASSERT_LONG_TASK_MS), worstCost)
     if (limit !== Number(ASSERT_LONG_TASK_MS)) console.log(`   (這台機器畫一個視窗要 ${worstCost.toFixed(0)}ms → 長工門檻由 ${ASSERT_LONG_TASK_MS}ms 放大為 ${limit.toFixed(0)}ms)`)
     gate(String(limit), '主執行緒單一任務最長', CEILING_FACTOR.longTask, (r) => r.longMax, (r) => `(${r.longCount} 個長工、合計 ${r.longSum.toFixed(0)}ms;這段期間所有 hover / 點擊都會被卡住)`)
-    gate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? 0)
+    gate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? NaN)
   } else {
-    gate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? 0)
+    gate(ASSERT_FRAME_GAP_MS, '合成器送出的幀距最大', CEILING_FACTOR.frameGap, (r) => r.g?.presentedGapMax ?? NaN)
   }
   if (ASSERT_SHELL_FRAMES !== '') {
     // 元件自己量出來的能力值(`data-shell-state`,需 window.__DT_DEBUG_SHELL);讀不到就保守跳過並說明
