@@ -4333,3 +4333,23 @@ Switch 的幾何已由 `switch-thumb-ring-invariant.mjs` 按 spec 尺寸表逐�
 **誠實的邊界**:這只是開始不是關閉 —— 124 個 scenario 目前 **1 個**有斷言、**0 個** dark mode 場景,
 而且 `visual-audit` 只掛在排程的 `visual-regression.yml`、**不是 PR 閘**。
 攔下 user 那三個缺陷的仍是三支個案像素閘(它們在 PR 閘裡)。
+
+## AD120 — SSOT 漂移:做成機械閘(它抓得到我自己那次)
+
+覆核組指出「SSOT 無漂移」四份報告**都沒查**、目前無證據。而我這個 session 就親手製造過一次:
+出殼門檻 `SHELL_ENGAGE_VIEWPORT_MS` 在元件是 **60**、在閘是 **120**,CI 紅得莫名其妙、花一整輪才找到。
+
+**先查現況**:掃 807 個檔、172 個具名數值常數,同名不同值的有 3 筆 ——
+`AVATAR_SIZE`(FileItem 48 / ProfileCard 64)、`LOOKBACK`、`WINDOW`,**都是不同語意的巧合同名,不是漂移**。
+也就是說我那次的漂移已經修乾淨(把第二份消滅了)。
+
+**做成常駐閘** `scripts/named-constant-drift-invariant.mjs`:同名常數在不同檔案取到不同值 → 紅。
+合法的同名寫進 `ALLOWLIST` **並且每筆都要寫明為什麼不是漂移** —— 不是為了消滅紅燈,
+是為了讓「這兩個真的無關」被人審過一次。
+
+**兩個對照組**:
+1. 清空允許清單 → 如預期抓到全部 3 筆已知案例(證明偵測邏輯有效,不是恆綠)
+2. **重放我那次的真實漂移**(把 `SHELL_ENGAGE_VIEWPORT_MS = 120` 放回閘)→ 精準抓到,
+   連兩個檔案與兩個值都指名:`60 @ data-table.tsx` / `120 @ data-table-fast-scroll.mjs`
+
+修法優先序也寫進錯誤訊息:(1) 消滅第二份(讓其中一邊從另一邊讀)(2) 真的無關才加 ALLOWLIST 並寫理由。

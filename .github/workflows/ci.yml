@@ -84,6 +84,13 @@ jobs:
           # T1 前綴不得跨 family(錨:--overlay-viewport-inset 借用了顏色 token --overlay 的前綴)、
           # T2 這次新增的 token 必須登記進所屬 family 的 spec(錨:同一顆 token 加了 CSS 卻沒加 spec)。
           # 寫成 deterministic script 而不是 Claude 專屬 hook —— provider 專屬的 hook 換一個 agent 或在 CI 裡就沒人擋。
+          # 同名數值常數不得在不同檔案有不同值(2026-09-12)。2026-09-12 實際踩過:出殼門檻
+          # SHELL_ENGAGE_VIEWPORT_MS 在元件是 60、在閘是 120(改元件時沒改另一份),
+          # 結果閘判「畫得動 → 不准出殼」、元件判「畫不動 → 該出殼」,CI 紅得莫名其妙,花一整輪才找到。
+          # 同一個值只要存在第二份遲早會漂;最終修法是消滅第二份,這支是機械防線。
+          # 對照組把允許清單清空 → 三筆已知的合法同名必須被抓到(證明偵測邏輯有效,不是恆綠)。
+          node scripts/named-constant-drift-invariant.mjs --selftest
+          node scripts/named-constant-drift-invariant.mjs
           node scripts/token-creation-invariant.mjs --selftest
           npm run test:token-creation
           # 分頁 inlineAction 的幾何:2026-09-10 抓到它對活的 DOMRect 做物件展開 → 永遠回 null,
