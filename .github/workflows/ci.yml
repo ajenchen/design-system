@@ -245,7 +245,15 @@ jobs:
           # 判每趟最大值不判中位數:空白幀是缺陷不是雜訊。
           # 本機同故事對照(gesture 6000px):改前 CPU×1 27–29 幀 / 17-17 帶 / 最長 410–511ms;
           # 改後 CPU×1 0–1 幀、×4 0–1 幀、×8 0–1 幀,最長一律 ≤ 18ms。
-          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=2 --gesture-speed=6000 \
+          # **runs 2 → 3**(2026-09-12)。上面那句「兩趟已經足夠(比值把雜訊消掉了)」對**最大值**這種
+          # 重尾統計量不成立,而且被同一天的兩輪 CI 直接證偽:
+          #   b491d119(綠)branch 幀距 271 / 296 → 中位 284;main 258 / 375 → 316
+          #   fd90398a(紅)branch 幀距 **531** / 347 → 中位 439;main 299 / 292 → 295
+          # 兩版之間**沒有任何 DataTable 程式碼改動**(只有 Combobox story 與帳本文件)。
+          # 關鍵是 n=2 時「中位數」等於平均數 —— 一趟離群值直接拉著判定走,那道「中位數擋雜訊、
+          # 天花板擋災難」的設計在 n=2 退化成只剩天花板。n=3 才是真的中位數(能丟掉一個離群值),
+          # 而且偵測力更強不是更弱(樣本變多)。成本:本 job 實測 8 分鐘 / 上限 25,加一趟綽綽有餘。
+          node scripts/data-table-fast-scroll.mjs --mode=gesture --runs=3 --gesture-speed=6000 \
             --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
             --assert-max-blank-frames=0 \
             --assert-max-fill-ms=1000 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
