@@ -139,7 +139,17 @@ const ASSERT_SHELL_FRAMES = arg('assert-max-shell-frames', '')
 // 閘用 120 判「畫得動 → 不准出殼」,元件用 60 判「畫不動 → 該出殼」,CI 必紅而且紅得沒道理。
 // 元件把 `engageMs` 一起寫進 `data-shell-state`,這裡讀它;舊 build 沒有該欄位時退回 120(原行為)。
 const SHELL_ENGAGE_FALLBACK_MS = 120
-const SCROLL_BUSY_MS = 120
+// 正對照的忙等,**120 → 15ms**(2026-09-14)。
+// 120ms 是骨架底還不存在的年代訂的:那時只能靠塞住主執行緒逼出空白。現在正對照會直接把骨架底
+// 與列殼藏掉,空白主要靠那個。而過重的忙等會**把量測通道本身餓死** —— CI 上正對照一度只送出
+// **9 幀**(本機 64-68),於是一幀空白都抓不到,被報成「儀器有偵測器沒反應」,誤診成偵測器壞掉。
+// 不節流(= CI 條件)實測,每格兩跑:
+//     busy   0ms → 呈現 66-67 幀、空白 7-8 幀、最長 34ms     ← 訊號太弱,離門檻(≥3)太近
+//     busy  15ms → 呈現 66-67 幀、空白 55 幀、最長 817ms     ← 串流健康且訊號強
+//     busy  30ms → 呈現 67 幀、空白 58-59 幀、最長 990-1031ms
+//     busy  60ms → 呈現 66 幀、空白 59 幀、最長 1134-1168ms
+// 15ms 已經拿到全部訊號,再加重只是增加餓死風險。保留 `--busy-ms` 旋鈕供實驗。
+const SCROLL_BUSY_MS = Number(arg('busy-ms', 15))
 // 觀測窗必須長過補齊期限,否則「到窗尾還沒補完」會被當成補完(Codex R9)
 const SETTLE_EFFECTIVE = ASSERT_FILL_MS !== '' ? Math.max(SETTLE_MS, Number(ASSERT_FILL_MS) + 300) : SETTLE_MS
 const CSS_INJECT = arg('css', '') // 消融實驗用:載入後注入一段 CSS(例:關掉某個動畫),同一個 build 比較有無
@@ -667,8 +677,16 @@ if (SELFTEST) {
         console.log(`↷ selftest ${r.build}/${r.mode}:空白偵測不適用 —— 這個模式用 JS 改 scrollTop(主執行緒),結構上不會有合成器超前;真輸入路徑請用 --mode=mouse`)
         continue
       }
-      const pass = r.g.blankFrames >= 3 && r.g.presented >= 5
-      console.log(`${pass ? '✓' : '✗'} selftest 正對照 ${r.build}/${r.mode}:關掉骨架底與列殼 + 每個 scroll 事件忙等 ${SCROLL_BUSY_MS}ms → 空白 ${r.g.blankFrames} 幀、最長 ${r.g.blankLongestMs.toFixed(0)}ms(需 ≥ 3 幀)`)
+      // **先判「量具有沒有被餓死」,再判「偵測器有沒有反應」。** 兩者的修法完全不同,
+      // 混在一起報會把前者誤診成後者(2026-09-14 CI 實例:只送 9 幀 → 0 空白 → 報成偵測器壞掉)。
+      if (r.g.presented < 20) {
+        console.log(`✗ selftest 正對照 ${r.build}/${r.mode}:**量具被餓死** —— 整段只送出 ${r.g.presented} 幀(本機 64-68),`
+          + `幀數不足以判定有沒有空白。這不是「偵測器沒反應」,是這次根本沒觀測到東西。`)
+        ok = false
+        continue
+      }
+      const pass = r.g.blankFrames >= 3
+      console.log(`${pass ? '✓' : '✗'} selftest 正對照 ${r.build}/${r.mode}:關掉骨架底與列殼${SCROLL_BUSY_MS ? ` + 每個 scroll 事件忙等 ${SCROLL_BUSY_MS}ms` : ''} → 呈現 ${r.g.presented} 幀、空白 ${r.g.blankFrames} 幀、最長 ${r.g.blankLongestMs.toFixed(0)}ms(需 ≥ 3 幀)`)
       if (!pass) ok = false
       continue
     }
