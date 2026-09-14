@@ -1879,7 +1879,7 @@ function DataTableInner<TData>(
   const SHELL_BEHIND_EXIT = 0.5
   const shellRef = React.useRef({
     lastOffset: null as number | null, renderOffset: null as number | null, committedRenderOffset: null as number | null, committedRenderStart: 0, lastRows: null as unknown, renderStart: 0, lastCommitAt: 0, commitCost: 0, pendingBehind: 0, behind: 0, offsetChanged: false, slow: false, scrollCommit: false, aheadRows: 0, scrolling: false,
-    promoted: 0, newFull: 0, costPerRow: 3, costPeak: 0, fixedCost: 2, overscan: 5, promoteLeft: 0, budgetRows: 64, budgeted: false, ahead: false, hasShell: false, wasScrolling: false, aheadDir: 1,
+    promoted: 0, newFull: 0, costPerRow: 3, costPeak: 0, fixedCost: 2, overscan: 5, ocCostPerRow: 3, ocFixed: 2, ocRows: 0, promoteLeft: 0, budgetRows: 64, budgeted: false, ahead: false, hasShell: false, wasScrolling: false, aheadDir: 1,
     decided: new Map<string, boolean>(), full: new Set<string>(), fullNow: new Set<string>(), prevShells: new Set<string>(), shellsNow: new Set<string>(), raf: 0,
     needsHeightSync: false, viewportTop: 0, viewportBottom: 0,
   })
@@ -1990,6 +1990,15 @@ function DataTableInner<TData>(
     // 的前提。那不只是測試假象:閒置時掛載/卸載列是白費的工,而且會讓任何「靜止態」的量測不可重現。
     if (scrolling || S.overscan == null) {
       S.overscan = Math.max(effectiveOverscan, Math.min(AG_GRID_ROW_BUFFER, Math.max(0, affordableOverscan)))
+      // 把**算這個緩衝時用的那組輸入**一起記下來(只給除錯出口用)。
+      // 因為緩衝閒置時凍住、而 costPerRow / fixedCost 在捲動停止後仍會繼續收斂,
+      // 外部若拿「現在的輸入」重算公式去比「凍住的緩衝」,就會時對時錯
+      // (2026-09-14:overscan-adaptive 閘三跑二綠一紅,就是這個時間差,不是產品壞掉)。
+      // **精度要給足**:這兩個值進的是 `floor(headroom / (2 × costPerRow))`,
+      // 用 toFixed(2) 截過(1.2249 → 1.22)重算就會跨過一格,閘照樣時對時錯 —— 同日實測到的第二層。
+      S.ocCostPerRow = S.costPerRow
+      S.ocFixed = S.fixedCost
+      S.ocRows = visibleRowCount
     }
     S.offsetChanged = offsetChanged
     if (renderOffsetPrev != null && offsetNow !== renderOffsetPrev) S.aheadDir = offsetNow > renderOffsetPrev ? 1 : -1
@@ -4455,7 +4464,7 @@ function DataTableInner<TData>(
            * 預設關閉:屬性變動會被 `data-table-scroll-cost.mjs` 的 R1 計數,不能無條件掛。
            */
           {...(typeof window !== 'undefined' && (window as unknown as { __DT_DEBUG_SHELL?: boolean }).__DT_DEBUG_SHELL
-            ? { 'data-shell-state': `slow=${shellRef.current.slow ? 1 : 0} budgeted=${shellRef.current.budgeted ? 1 : 0} ahead=${shellRef.current.ahead ? 1 : 0} behind=${shellRef.current.behind.toFixed(2)} pending=${shellRef.current.pendingBehind.toFixed(2)} engageMs=${SHELL_ENGAGE_VIEWPORT_MS} overscan=${shellRef.current.overscan} costPeak=${shellRef.current.costPeak.toFixed(1)} commitCost=${shellRef.current.commitCost.toFixed(1)} costPerRow=${shellRef.current.costPerRow.toFixed(1)} fixed=${shellRef.current.fixedCost.toFixed(1)} budgetRows=${shellRef.current.budgetRows} aheadRows=${shellRef.current.aheadRows}` }
+            ? { 'data-shell-state': `slow=${shellRef.current.slow ? 1 : 0} budgeted=${shellRef.current.budgeted ? 1 : 0} ahead=${shellRef.current.ahead ? 1 : 0} behind=${shellRef.current.behind.toFixed(2)} pending=${shellRef.current.pendingBehind.toFixed(2)} engageMs=${SHELL_ENGAGE_VIEWPORT_MS} overscan=${shellRef.current.overscan} costPeak=${shellRef.current.costPeak.toFixed(1)} commitCost=${shellRef.current.commitCost.toFixed(1)} costPerRow=${shellRef.current.costPerRow.toFixed(1)} fixed=${shellRef.current.fixedCost.toFixed(1)} ocCostPerRow=${shellRef.current.ocCostPerRow.toFixed(6)} ocFixed=${shellRef.current.ocFixed.toFixed(6)} ocRows=${shellRef.current.ocRows} budgetRows=${shellRef.current.budgetRows} aheadRows=${shellRef.current.aheadRows}` }
             : {})}
           // a11y(scrollable-region-focusable,對齊 DS ScrollArea Viewport canonical):唯讀表格
           // 的可捲動 body 若無任何 focusable descendant,鍵盤使用者無法捲動。read-only 模式

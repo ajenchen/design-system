@@ -98,11 +98,15 @@ const sample = async (cpu, forcedOverscan = null) => {
   await browser.close()
   const kv = Object.fromEntries(out.state.split(' ').filter(Boolean).map((s) => s.split('=')))
   const visibleRowCount = Math.max(1, Math.ceil(out.viewportHeight / Math.max(1, out.rowHeight)))
+  // **用「算這個緩衝當下的那組輸入」(oc*),不是現在的 costPerRow / fixed。**
+  // 緩衝閒置時凍住(data-table.tsx:1991 的 `if (scrolling || …)`,那是刻意的),
+  // 而 costPerRow / fixedCost 在捲動停止後仍會繼續收斂 —— 拿現在的輸入重算公式去比凍住的緩衝,
+  // 就會時對時錯(2026-09-14 實測三跑二綠一紅)。這不是產品壞掉,是閘比較了兩個不同時刻的量。
   return {
     overscan: Number(kv.overscan),
-    costPerRow: Number(kv.costPerRow),
-    fixed: Number(kv.fixed),
-    visibleRowCount,
+    costPerRow: Number(kv.ocCostPerRow ?? kv.costPerRow),
+    fixed: Number(kv.ocFixed ?? kv.fixed),
+    visibleRowCount: Number(kv.ocRows) > 0 ? Number(kv.ocRows) : visibleRowCount,
   }
 }
 
