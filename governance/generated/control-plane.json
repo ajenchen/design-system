@@ -3074,8 +3074,8 @@
       "excludes": [
         "scripts/generated/"
       ],
-      "files": 440,
-      "hash": "sha256:cff8756c67dfd228c2062d9581d70bca83d05cf719276622b96e10ab393b3452",
+      "files": 441,
+      "hash": "sha256:5a9f515aec530186976efda16b3e6e6c5fb2169be2f62159c1b2fc830fd9fa89",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",

@@ -6,6 +6,7 @@ import { expect, userEvent, waitFor, within } from '@storybook/test'
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table'
 import { Pencil, Trash2, MoreVertical, Search, Filter, Eye, Download, Plus, ArrowUpDown } from 'lucide-react'
 import { DataTable, type DataTableSelection } from './data-table'
+import { PerfDebugOverlay } from './perf-debug-overlay'
 import { DataTableSortManager } from './data-table-sort-manager'
 import { DataTableColumnVisibilityPanel } from './data-table-column-visibility-panel'
 import {
@@ -2098,6 +2099,8 @@ export const RoadmapAllInOne: Story = {
 
     return (
       <div className="flex flex-col w-full h-screen bg-canvas">
+        {/* 效能診斷面板:只有網址帶 `?perfdebug` 才出現(見 perf-debug-overlay.tsx 檔頭的來由)。 */}
+        <PerfDebugOverlay />
         {/* Toolbar — 左 search / 右 ops(對齊 WithBulkActions canonical L922+ Gmail/Linear/Notion idiom)*/}
         <div className="flex items-center justify-between gap-2 px-[var(--layout-space-loose)] py-[var(--layout-space-tight)]">
           <div className="flex-1 max-w-sm">
