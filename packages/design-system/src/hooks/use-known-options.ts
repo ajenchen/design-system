@@ -13,9 +13,13 @@ import * as React from 'react'
  * 只記不刪:上限是曾顯示過的選項數。key 由呼叫端給(Select / Combobox 用 `value`,PeoplePicker 用 `name`)。
  */
 export function useKnownOptions<T>(lists: ReadonlyArray<ReadonlyArray<T> | undefined>, key: (o: T) => string): (k: string | null | undefined) => T | undefined {
-  const ref = React.useRef<Map<string, T>>(new Map())
+  // 惰性建立:`useRef(new Map())` 會在**每次 render** 都配置一個新 Map 再丟掉。
+  // 一格 render 一顆垃圾,乘上虛擬表格裡數十格 × 捲動時的高頻重繪就不是零。
+  const ref = React.useRef<Map<string, T> | null>(null)
+  ref.current ??= new Map()
+  const map = ref.current // 同一個物件恆定,所以下面兩處的 deps 都穩定
   // deps 就是清單本身:同一個元件的清單數固定,順序固定,所以 deps 長度穩定
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  React.useEffect(() => { for (const list of lists) if (list) for (const o of list) ref.current.set(key(o), o) }, lists as unknown[])
-  return React.useCallback((k: string | null | undefined) => (k == null ? undefined : ref.current.get(k)), [])
+  React.useEffect(() => { for (const list of lists) if (list) for (const o of list) map.set(key(o), o) }, lists as unknown[])
+  return React.useCallback((k: string | null | undefined) => (k == null ? undefined : map.get(k)), [map])
 }

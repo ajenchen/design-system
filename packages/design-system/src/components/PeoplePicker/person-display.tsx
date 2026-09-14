@@ -246,16 +246,31 @@ function MultiPersonDisplay({
     // 找不到 `[data-field-mode]`,自然落回原本的量父層。
     const wrapper = el.closest<HTMLElement>('[data-field-mode]')
     const containingBlock = wrapper?.parentElement ?? null
+    // 觀察對象是**儲存格的父層**,所以欄寬重分配、捲軸出現消失、列重掛,都會讓畫面上
+    // 每一個 reviewers 儲存格同時收到通知。若每次通知都重量一遍外框開銷,就是
+    // 「一次欄寬變動 × 視窗內幾十格 × 每格三次強制版面」。CPU 剖析(dpr2 + CPU×6)量到
+    // 這支回呼 self time 102.7ms,而 main 前 15 名裡根本沒有它。
+    //
+    // 外框開銷(field 的 padding / border / 其他 slot)**不隨欄寬改變**,量一次就夠;
+    // 真的變了(換密度、清除鈕出現)會重掛節點或讓下面的寬度判斷落到 <= 0,屆時自然重量。
+    // 寬度沒變就直接返回,連 getAvatarStackVisibleCount 與 setState 都不必跑。
+    let chromePx: number | null = null
+    let lastAvailable = -1
     const calc = () => {
-      const chromePx = wrapper && containingBlock
-        ? wrapper.getBoundingClientRect().width - box.getBoundingClientRect().width
-        : 0
-      const availablePx = wrapper && containingBlock
-        ? containingBlock.clientWidth - chromePx
-        : box.clientWidth
-      // 尚未佈局(story 切換過渡、display:none、圖未載入)時寬度為 0 —— 用 0 去算會直接
-      // 鎖進收縮態且不再復原,所以寧可不更新,等下一次 ResizeObserver 有真實寬度再算。
+      // 先用一次便宜的讀取確認版面好了沒 —— 沒好就連外框開銷都不量,否則會把還沒排版的
+      // 垃圾值快取起來、之後再也不重算(story 切換過渡、display:none、圖未載入都會走到)。
+      const rawAvail = wrapper && containingBlock ? containingBlock.clientWidth : box.clientWidth
+      if (rawAvail <= 0) { chromePx = null; lastAvailable = -1; return }
+      if (wrapper && containingBlock && chromePx === null) {
+        chromePx = wrapper.getBoundingClientRect().width - box.getBoundingClientRect().width
+      }
+      const availablePx = rawAvail - (chromePx ?? 0)
+      // (story 切換過渡、display:none、圖未載入時會走到這裡;用 0 去算會鎖進收縮態且不再復原。)
       if (availablePx <= 0) return
+      // 寬度沒變就不必再跑分配計算與 setState(觀察對象是儲存格父層,一次欄寬變動會同時
+      // 喚醒畫面上每一格)。
+      if (availablePx === lastAvailable) return
+      lastAvailable = availablePx
       const visible = getAvatarStackVisibleCount({
         availablePx,
         total: value.length,

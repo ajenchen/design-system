@@ -1859,6 +1859,16 @@ function DataTableInner<TData>(
   // 因為判準只問「一個視窗」,而那 1.1 秒裡視窗移動了 165 列。門檻降回一倍之後 2× 會進入,
   // 最長連續空白 1086–1193ms → **183ms**,而 1×(27ms)仍然遠低於門檻、零骨架。
   const SHELL_ENGAGE_VIEWPORT_MS = 60
+  // **列殼機制已由骨架帶(:510)取代,故停用。**
+  // 兩者解的是同一件事(捲動時不要看到空白),但成本落在不同執行緒:骨架帶在幾何上恆覆蓋
+  // 未掛載區、由合成執行緒貼圖,不需要主執行緒趕上捲動;列殼相反 —— 它要主執行緒**先畫出殼**,
+  // 在慢機器上就是一路輸。實測(dpr2 + CPU×6,同一台機器交錯三組):
+  //   列殼開  空白 0/1/2 幀,同時 61-67 列灰殼,停捲後 518-681ms 才補完(有一次沒補完)
+  //   列殼關  空白 0/0/1 幀,灰殼 0 列,補齊 0ms,長工最長還比 main 短
+  // 上排正是 user 回報的「非常卡頓」;元件自己在 :4437 也記過「在真實瀏覽器上大量誤啟動,
+  // 但我在無頭環境永遠複現不出來」。骨架帶把它的職責接走之後,它只剩代價。
+  // 保留程式碼一個版本供回退,下一輪連同 aheadRows / budgetRows / prevShells 一併清除。
+  const SHELL_ENGAGE_DISABLED = true
   // 「機器跟不上」用真正的症狀判,不用 commit 成本:兩次 commit 之間視窗移動的距離 ÷ 預掛緩衝(overscan 列 × 列高)。
   // 比值 > 1 = 新進視窗的列還沒掛就被捲過去(整片白)→ 進入;< 0.5 才退出(遲滯)。commit 成本不能當判準:CI runner 每次
   // commit 本來就 > 20ms 但在 4,500px/s 跟得上(R17 在它上面零骨架、延遲 ≤ 34ms),用成本判會在一般速度出殼。
@@ -1937,7 +1947,7 @@ function DataTableInner<TData>(
     //   (b) 改用掛載 commit 當第一個樣本也不行:掛載含 React 首次掛載的開銷,估出來的每列成本偏高,
     //       快機器第一次捲動反而整窗出殼。
     // 保留估計式本身即可;初始種子樂觀不是問題,因為第一次捲動 commit 就會用實測值修正。
-    const cannotDrawViewport = viewportDrawMs > SHELL_ENGAGE_VIEWPORT_MS
+    const cannotDrawViewport = !SHELL_ENGAGE_DISABLED && viewportDrawMs > SHELL_ENGAGE_VIEWPORT_MS
     const jumpThreshold = Math.max(resolvedEstimate, viewportHeight)
     // 緊急跳轉看「上一次 render 開始」到現在的位移 —— 含上一次 commit 自己花掉的時間。R17 看的是 commit 結束後的位移,慢機器
     // 每次 commit 一結束下一次 render 就開始、中間位移很小,連續慢 commit 永遠觸發不了,整片白到瀏覽器偶然讓出時間為止(6× 節流 1.1s)。
@@ -4177,6 +4187,10 @@ function DataTableInner<TData>(
     const bandStyle = useVirtual
       ? unmountedSkeletonStyle(cols, resolvedWidths, Math.max(1, Math.round(resolvedEstimate)))
       : {}
+    // **用 `top`/`height` 定位,不用 `transform`。**(2026-09-14 實測退回)
+    // 「改 transform 免掉版面失效」這條看似漂亮,實測兩項都不成立:版面計算次數原地不動
+    // (225/261 vs 改前 223/259),而且高度固定成整個捲動區的絕對定位帶子會**撐大捲動範圍**
+    // —— 可捲高度從 20160px 變成 21080px,使用者能捲過表格尾端。淨損失,故退回。
     const unmountedBands: { key: string; top: number; height: number }[] = []
     if (useVirtual && rowVirtualItems.length > 0) {
       const total = virtualizer.getTotalSize()
