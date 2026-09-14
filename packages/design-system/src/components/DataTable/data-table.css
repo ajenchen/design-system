@@ -97,10 +97,23 @@
     scrollbar-color: auto;
   }
 }
-/* V/H 交會方塊跟軌道同色(main 既有;corner 樣式在 Blink 走獨立路徑,不需要建立 CustomScrollbar)。 */
-[data-datatable-hscroll]::-webkit-scrollbar-corner {
-  background: var(--scrollbar-track);
-}
+/* V/H 交會方塊:**刻意不宣告**(2026-09-14 移除)。
+   這條規則當初(軌道也吃 `scrollbar-color: var(--scrollbar-track)` 的年代)是對的:兩邊同一個 token。
+   但上面那段 `@supports` 把 Chromium/Safari 的 `scrollbar-color` 重設回 `auto` 之後,**軌道改由瀏覽器
+   依 `color-scheme` 畫、交會方塊卻還是 `var(--muted)`** —— 兩個東西換成不同的人畫,結構上不可能一致。
+   使用者 2026-09-14 回報的就是這塊方塊跟軌道不同色。
+
+   拿掉之後,整個原生捲軸(軌道 / 滑塊 / 交會方塊)只剩**一個** owner:`tokens/color/semantic.css` 的
+   `color-scheme`(:root 為 light、`[data-theme="dark"]` 為 dark)。跨平台、跨主題恆一致,沒有第二個
+   值可以漂移。這也是世界級一致的作法:
+     - MDN `color-scheme`:UA 依 color scheme 改變「捲軸與其他互動 UI 的**預設顏色**」
+       https://developer.mozilla.org/en-US/docs/Web/CSS/color-scheme
+     - MDN `::-webkit-scrollbar`:明確 non-standard,「不建議在正式環境使用」,並附無障礙警告
+       「作者應避免自訂捲軸樣式,會破壞外部一致性」https://developer.mozilla.org/en-US/docs/Web/CSS/::-webkit-scrollbar
+     - web.dev:暗色模式要拿到正確的原生捲軸,用 `color-scheme`,不是自訂捲軸樣式
+       https://web.dev/articles/color-scheme
+   機械防線 = `scripts/color-scheme-invariant.mjs` 的 C3(禁止「軌道原生 + 交會方塊 token」的混合擁有)。
+   `--scrollbar-track` / `--scrollbar-thumb` 仍供 Firefox 那條路徑(上面沒被 `@supports` 蓋掉)使用。 */
 
 /* ────────────────────────────────────────────────────────────
    Cell grid geometry(Phase 9 Issue 8 fix,2026-05-10)

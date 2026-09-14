@@ -98,21 +98,29 @@ function onPointerMove(e: PointerEvent) {
   lastPointerY = e.clientY
 }
 
-// **有人訂閱才掛,沒有選單/樹的頁面一毛都不付。**
-// 原本這三個 capture 監聽器寫在模組頂層,只要 barrel 被 import 就掛上;其中 pointermove
-// 會隨滑鼠持續開火,和 DataTable 自己的指標同步疊在同一條事件流上(CPU 剖析在分支看得到
-// 額外的指標路徑成本,main 沒有)。
-// 掛上後不再卸載:兩個 markPointerGrab 呼叫端(command.tsx / dropdown-menu.tsx)都在同一棵樹裡
-// 呼叫 useCursorMover,TreeView 呼叫 useInputModality —— 指標搶得到反白時必定早已有訂閱者,
-// 所以「第一個訂閱者出現才掛」與原本的語意完全一樣,只是不再向無關頁面收費。
-let _listening = false
-function ensureListening() {
-  if (_listening || typeof document === "undefined") return
-  _listening = true
+// **keydown / pointerdown 掛在模組頂層;只有 pointermove 惰性掛。**
+//
+// 2026-09-14:我一度把三個都改成「有人訂閱才掛」,理由是「呼叫 markPointerGrab 的元件都在同一棵樹裡
+// 呼叫 useCursorMover,語意等價」。**那是錯的**,CI 當場抓到(test:virtual-cursor-modality 的
+// Select / SelectMenu / PeoplePicker F 三條):模組層監聽的存在意義正是**在任何元件訂閱之前就已經在看** ——
+// 使用者「點開選單」那一下的 pointerdown 發生在選單掛載之前,惰性掛就漏掉它,模態沒被記成指標,
+// 接著在搜尋列打字就被判成鍵盤,冒出不該有的焦點框。
+//
+// 這兩個只在真的按鍵 / 真的按下指標時開火,一次互動一次,成本可以忽略 —— 放回頂層。
+// 真正貴的是 pointermove(隨滑鼠持續開火),而它只餵 `lastPointerMoveWasReal` 給 markPointerGrab;
+// 呼叫 markPointerGrab 的 command.tsx / dropdown-menu.tsx 都在同一棵樹裡呼叫 useCursorMover,
+// 所以它惰性掛是安全的 —— 指標搶得到反白時必定早已有訂閱者。掛上後不再卸載。
+if (typeof document !== "undefined") {
   document.addEventListener("keydown", onKeyDown, { capture: true })
   document.addEventListener("pointerdown", onPointerDown, { capture: true })
+}
+let _movingHooked = false
+function ensureListening() {
+  if (_movingHooked || typeof document === "undefined") return
+  _movingHooked = true
   document.addEventListener("pointermove", onPointerMove, { capture: true })
 }
+
 function seedFromFocusVisible() {
   ensureListening()
   if (observedAnyInput || typeof document === "undefined") return

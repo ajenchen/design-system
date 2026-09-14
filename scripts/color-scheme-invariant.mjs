@@ -15,12 +15,18 @@
  *   C1 根層與巢狀 theme 邊界的 `color-scheme` 計算值都等於該處的 theme
  *   C2 **瀏覽器真的照做**了 —— 放一個完全不吃我們樣式的原生控制項當觀測器,
  *      light 與 dark 下它的主要像素色必須不同。只驗 C1 等於相信宣告會生效,不是證據。
+ *   C3 **捲軸沒有兩個 owner**(2026-09-14 加)。同一支捲軸的軌道與 V/H 交會方塊若一個走原生
+ *      (`@supports` 把 `scrollbar-color` 重設回 `auto`)、另一個吃 DS token
+ *      (`::-webkit-scrollbar-corner { background: var(--...) }`),兩者由不同的人畫,
+ *      **結構上不可能同色**。錨:user 2026-09-14 回報右下角方塊跟軌道不同色;根因是
+ *      2026-09-08 把軌道改回原生時,corner 那條 token 規則變成孤兒卻沒一起拿掉。
  *
  * 對照組(`--selftest`):把 `color-scheme` 強制回 `normal`,C1/C2 都必須紅。
  *
  *   node scripts/color-scheme-invariant.mjs [--build=<dir>] [--selftest]
  */
 import { join, dirname } from 'node:path'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { PNG } from 'pngjs'
 import { launchBrowser } from './lib/launch-browser.mjs'
@@ -84,6 +90,16 @@ try {
     return getComputedStyle(n).colorScheme
   })
   ck('C1b 巢狀 [data-theme="dark"] 邊界內也翻成 dark', nested === 'dark', `實際 ${nested}`)
+
+  // C3:靜態源碼檢查 —— macOS 是浮動捲軸,量不到原生軌道像素,所以這條驗「有沒有混合擁有」
+  // 而不是驗顏色相等(驗不到的東西不要假裝驗到)。
+  const css = readFileSync(join(REPO, 'packages/design-system/src/components/DataTable/data-table.css'), 'utf8')
+  const code = css.replace(/\/\*[\s\S]*?\*\//g, '') // 先剝註解,否則被說明文字騙走
+  const nativeTrack = /@supports\s+selector\(::-webkit-scrollbar\)[\s\S]*?scrollbar-color:\s*auto/.test(code)
+  const tokenCorner = /::-webkit-scrollbar-corner\s*\{[^}]*var\(--/.test(code)
+  ck('C3 捲軸軌道與交會方塊不得一個原生一個吃 token(混合擁有 = 必然不同色)',
+     !(nativeTrack && tokenCorner),
+     nativeTrack && tokenCorner ? '軌道被 @supports 重設回 auto(原生),但 ::-webkit-scrollbar-corner 仍指定 var(--…)' : `軌道原生=${nativeTrack} / 交會方塊吃 token=${tokenCorner}`)
 } finally {
   await browser.close()
   await server.stop()
