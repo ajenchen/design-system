@@ -456,6 +456,8 @@ jobs:
           # C2 用「完全不吃 DS 樣式的原生控制項」當觀測器,確認瀏覽器真的照做,不只驗宣告存在。
           node scripts/color-scheme-invariant.mjs --selftest
           node scripts/color-scheme-invariant.mjs
+          node scripts/data-table-scrollbar-color.mjs --selftest
+          node scripts/data-table-scrollbar-color.mjs
           # 表單欄位垂直間距 = --layout-space-loose,全 DS 無例外(2026-09-12 user 拍板移除
           # FieldGroup 的 compact/normal/loose 三檔)。兩段式:S 靜態掃 312 個 .tsx 抓 className/prop 覆寫
           # (連 consumer 程式碼都蓋得到),R 用瀏覽器驗元件自己渲染的 computed row-gap(兩個 density)。

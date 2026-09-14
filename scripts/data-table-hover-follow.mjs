@@ -26,6 +26,7 @@ const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 't
 const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
 const CPU = Number(arg('cpu', '6')); const STEP = Number(arg('step', '12')); const GAP = Number(arg('gap', '8'))
 const SAB = process.argv.includes('--sabotage')
+const VW = Number(arg('vw', '1440')); const VH = Number(arg('vh', '900')); const DPR = Number(arg('dpr', '2'))
 
 const serve = async (dir) => {
   const s = http.createServer((q, r) => {
@@ -43,7 +44,7 @@ const med = (a) => a.length ? [...a].sort((x, y) => x - y)[Math.floor(a.length /
 const run = async (label, dir) => {
   const { server, base } = await serve(resolve(dir))
   const browser = await launchBrowser()
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 })
+  const ctx = await browser.newContext({ viewport: { width: VW, height: VH }, deviceScaleFactor: DPR })
   const page = await ctx.newPage()
   const cdp = await ctx.newCDPSession(page)
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU })
@@ -101,7 +102,7 @@ const out = []
 for (const b of builds) {
   const r = await run(b.l, b.d)
   out.push(r)
-  console.log(`\n━━ ${r.label}${SAB ? '(對照組:mouseover 塞 60ms 忙碌)' : ''}  CPU×${CPU}、每步 ${STEP}px/${GAP}ms`)
+  console.log(`\n━━ ${r.label}${SAB ? '(對照組:mouseover 塞 60ms 忙碌)' : ''}  CPU×${CPU}、視窗 ${VW}×${VH}@${DPR}x、每步 ${STEP}px/${GAP}ms`)
   if (r.got === 0) { console.log('   ✗ 0 筆取樣 —— 樁沒裝上,不得讀成「跟得上」'); continue }
   console.log(`   送出 ${r.sent} 次移動,頁面實際收到 ${r.got} 次(合併掉 ${r.sent - r.got} 次 = ${Math.round((1 - r.got / r.sent) * 100)}%)`)
   console.log(`   **兩次收到之間:中位 ${r.gapMed}ms,最久 ${r.gapMax}ms**;超過 100ms 的空窗 ${r.over100} 次`)
