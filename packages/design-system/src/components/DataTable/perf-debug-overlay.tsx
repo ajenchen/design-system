@@ -19,6 +19,20 @@
  * 直接說明主執行緒有沒有塞車 —— 合併很多 = 真的忙;合併很少但間隔大 = 使用者本來就沒在動。
  * v1 沒有這個,所以分不出「瀏覽器餓死我」和「使用者手停著」。
  *
+ * ## v3(2026-09-14)把消融實驗搬到 user 的機器上
+ *
+ * v2 從 user 機器拿回的關鍵三筆:移動中出幀 **121ms**(閒置時 33ms)、「面板碰/不碰版面」
+ * 兩組幾乎一樣(211 vs 188ms → **不是面板在量自己**)、兩次事件之間游標移了 **182px**
+ * (→ 使用者真的在連續移動,瀏覽器要等游標跑過四五列才送得出一次事件)。
+ * 也就是:**滑鼠一動,主執行緒就真的忙 120-200ms**,而本機量到的 JS 只要 1ms ——
+ * 成本在樣式/繪製/光柵那一段,那正是本機環境(軟體光柵)量不準的地方。
+ *
+ * 所以 v3 讓面板**每 4 秒自動切換一種模式並分別統計**,一次讀數就能指出是哪一層:
+ *   A 正常
+ *   B 關掉列 hover 底色(`[data-hovered]` 的背景改透明)—— 若 B 明顯變快 = 成本在 hover 重繪
+ *   C 關掉未掛載區的骨架底(`[data-row-shell-band]` 隱藏)—— 若 C 明顯變快 = 成本在那層貼圖
+ * 只動視覺覆寫,不碰任何狀態或事件路徑;拿掉網址參數就完全不存在。
+ *
  * 面板只讀不寫,不碰 DataTable 任何狀態。
  */
 import * as React from 'react'
@@ -84,7 +98,10 @@ export function PerfDebugOverlay() {
 
     let lastRaf = 0, raf = 0
     const tick = (t: number) => {
-      if (lastRaf) (t - lastMoveAt < MOVING_WINDOW ? rafMoving : rafIdle).push(t - lastRaf)
+      if (lastRaf) {
+        const g = t - lastRaf
+        if (t - lastMoveAt < MOVING_WINDOW) { rafMoving.push(g); perMode[mode].push(g) } else rafIdle.push(g)
+      }
       lastRaf = t
       raf = requestAnimationFrame(tick)
     }
@@ -92,8 +109,22 @@ export function PerfDebugOverlay() {
 
     const phase = setInterval(() => { forcePhase = !forcePhase }, 2000)
 
+    // ── 模式輪播:每 4 秒換一種,各自統計「移動中出幀間隔」 ──
+    const MODES = [
+      { key: 'A 正常', css: '' },
+      { key: 'B 關 hover 底色', css: '[data-hovered]{background-color:transparent !important}' },
+      { key: 'C 關骨架底', css: '[data-row-shell-band]{display:none !important}' },
+    ]
+    const perMode: number[][] = MODES.map(() => [])
+    let mode = 0
+    const styleEl = document.createElement('style')
+    document.head.appendChild(styleEl)
+    const applyMode = () => { styleEl.textContent = MODES[mode].css }
+    applyMode()
+    const rot = setInterval(() => { mode = (mode + 1) % MODES.length; applyMode() }, 4000)
+
     const timer = setInterval(() => {
-      for (const a of [gapPlain, gapForced, coalesced, dist, hoverLat, rafMoving, rafIdle]) keep(a)
+      for (const a of [gapPlain, gapForced, coalesced, dist, hoverLat, rafMoving, rafIdle, ...perMode]) keep(a)
       const gp = stat(gapPlain), gf = stat(gapForced), h = stat(hoverLat)
       const rm = stat(rafMoving), ri = stat(rafIdle)
       const c = stat(coalesced), d = stat(dist)
@@ -109,6 +140,8 @@ export function PerfDebugOverlay() {
         `瀏覽器合併掉幾發    中位 ${c.med} 最多 ${c.max}`,
         `兩次之間游標移了    中位 ${d.med}px 最多 ${d.max}px`,
         `換列 → 變色        中位 ${h.med}ms 最久 ${h.max}ms (${h.n})`,
+        `── 移動中出幀,分模式(每 4 秒自動輪播)──`,
+        ...MODES.map((m, i) => { const st = stat(perMode[i]); return `  ${m.key.padEnd(14)} 中位 ${st.med}ms 最久 ${st.max}ms (${st.n})` }),
         `縮放 ${devicePixelRatio}× 視窗 ${innerWidth}×${innerHeight} 核心 ${navigator.hardwareConcurrency ?? '?'}`,
         `顯示晶片 ${gpu}`,
       ].join('\n'))
@@ -116,7 +149,8 @@ export function PerfDebugOverlay() {
 
     return () => {
       document.removeEventListener('pointermove', onMove)
-      mo.disconnect(); cancelAnimationFrame(raf); clearInterval(timer); clearInterval(phase)
+      mo.disconnect(); cancelAnimationFrame(raf); clearInterval(timer); clearInterval(phase); clearInterval(rot)
+      styleEl.remove()
     }
   }, [on])
 
