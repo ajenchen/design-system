@@ -54,6 +54,14 @@ export function PerfDebugOverlay() {
     const MOVING_WINDOW = 150
     let lastMoveAt = 0
 
+    let gpu = '(取不到)'
+    try {
+      const gl = document.createElement('canvas').getContext('webgl') as WebGLRenderingContext | null
+      const dbg = gl?.getExtension('WEBGL_debug_renderer_info')
+      if (gl && dbg) gpu = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)).slice(0, 44)
+      gl?.getExtension('WEBGL_lose_context')?.loseContext()
+    } catch { /* 取不到就算了,不值得為它冒任何風險 */ }
+
     const gapPlain: number[] = []   // 沒有額外強制版面的那半段
     const gapForced: number[] = []  // 面板刻意多做一次 elementFromPoint 的那半段
     const coalesced: number[] = []
@@ -68,8 +76,10 @@ export function PerfDebugOverlay() {
     let pendingSince = 0
     let forcePhase = false // 每 2 秒交替
 
+    let panelMoveMs = 0, panelMoves = 0, panelTickMs = 0, panelTicks = 0
     const onMove = (e: PointerEvent) => {
-      const t = performance.now()
+      const t0 = performance.now()
+      const t = t0
       if (lastMove) {
         const g = t - lastMove
         ;(forcePhase ? gapForced : gapPlain).push(g)
@@ -86,6 +96,7 @@ export function PerfDebugOverlay() {
       if (row !== lastRow) { lastRow = row; pendingSince = t }
       // 對照用:刻意多做一次強制版面的那半段
       if (forcePhase) document.elementFromPoint(e.clientX, e.clientY)
+      panelMoveMs += performance.now() - t0; panelMoves++
     }
     document.addEventListener('pointermove', onMove, { passive: true })
 
@@ -110,10 +121,19 @@ export function PerfDebugOverlay() {
     const phase = setInterval(() => { forcePhase = !forcePhase }, 2000)
 
     // ── 模式輪播:每 4 秒換一種,各自統計「移動中出幀間隔」 ──
+    // 消融四組。B/C 在 user 機器上量過:關掉反而更慢(53 / 79 / 144ms,且 C 只有 20 筆)——
+    // 因果上不成立,代表那是雜訊,兩者都不是元兇。所以換成更有針對性的組合:
+    //   D 關掉「hover 才出現的行內動作鈕」(data-table.tsx:3629 的 group-hover:inline-flex)——
+    //     它一出現就改變同列的版面,是 hover 期間唯一會動到版面的東西。
+    //   E 全關(底色 + 動作鈕 + 骨架底),當作上界:E 若還是慢,成本就不在這些視覺效果裡。
+    const OFF_BG = '[data-hovered]{background-color:transparent !important}'
+    const OFF_ACT = '[class*="group-hover:inline-flex"]{display:none !important}'
+    const OFF_BAND = '[data-row-shell-band]{display:none !important}'
     const MODES = [
       { key: 'A 正常', css: '' },
-      { key: 'B 關 hover 底色', css: '[data-hovered]{background-color:transparent !important}' },
-      { key: 'C 關骨架底', css: '[data-row-shell-band]{display:none !important}' },
+      { key: 'B 關底色', css: OFF_BG },
+      { key: 'D 關動作鈕', css: OFF_ACT },
+      { key: 'E 全關', css: `${OFF_BG}${OFF_ACT}${OFF_BAND}` },
     ]
     const perMode: number[][] = MODES.map(() => [])
     let mode = 0
@@ -124,13 +144,16 @@ export function PerfDebugOverlay() {
     const rot = setInterval(() => { mode = (mode + 1) % MODES.length; applyMode() }, 4000)
 
     const timer = setInterval(() => {
+      const tick0 = performance.now()
       for (const a of [gapPlain, gapForced, coalesced, dist, hoverLat, rafMoving, rafIdle, ...perMode]) keep(a)
       const gp = stat(gapPlain), gf = stat(gapForced), h = stat(hoverLat)
       const rm = stat(rafMoving), ri = stat(rafIdle)
       const c = stat(coalesced), d = stat(dist)
-      const gl = (document.createElement('canvas').getContext('webgl') as WebGLRenderingContext | null)
-      const dbg = gl?.getExtension('WEBGL_debug_renderer_info')
-      const gpu = dbg && gl ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)).slice(0, 44) : '(取不到)'
+      // **顯示晶片只讀一次。** v3 之前寫在這個 500ms 的 interval 裡,等於每半秒新建一個
+      // WebGL context —— 在 SwiftShader(軟體 GL)上那一下要幾十到上百毫秒,
+      // 於是「閒置時最久 270ms」「合併掉最多 11 發」這些數字有一大部分是面板自己造成的。
+      // (2026-09-14 user 第二次回報時抓到:我先前的「碰不碰版面」A/B 測錯了自己的成本,
+      //  兩組都在付這筆錢,所以看起來沒差。)
       setText([
         `【移動中】出幀間隔  中位 ${rm.med}ms 最久 ${rm.max}ms (${rm.n})`,
         `【閒置時】出幀間隔  中位 ${ri.med}ms 最久 ${ri.max}ms (${ri.n})`,
@@ -144,8 +167,10 @@ export function PerfDebugOverlay() {
         ...MODES.map((m, i) => { const st = stat(perMode[i]); return `  ${m.key.padEnd(14)} 中位 ${st.med}ms 最久 ${st.max}ms (${st.n})` }),
         `縮放 ${devicePixelRatio}× 視窗 ${innerWidth}×${innerHeight} 核心 ${navigator.hardwareConcurrency ?? '?'}`,
         `顯示晶片 ${gpu}`,
+        `面板自身耗時 每次移動 ${panelMoves ? (panelMoveMs / panelMoves).toFixed(2) : 0}ms、每次更新 ${panelTicks ? (panelTickMs / panelTicks).toFixed(1) : 0}ms`,
       ].join('\n'))
-    }, 500)
+      panelTickMs += performance.now() - tick0; panelTicks++
+    }, 1000)
 
     return () => {
       document.removeEventListener('pointermove', onMove)
