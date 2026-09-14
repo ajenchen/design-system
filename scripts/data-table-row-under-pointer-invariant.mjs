@@ -16,7 +16,14 @@
  *
  * 量法:指標放在中央捲動區正中央後**完全不動**,逐幀用 `elementFromPoint` 取指標底下那一列,
  *   記錄它有沒有 `data-hovered` 以及背景色是不是透明。不變式 = **沒有任何一幀是「沒有 hover 反應」**。
- *   對照組(`--selftest`):把送出的 bundle 裡殼列那條 hover class 拿掉 → 必須紅(證明這支閘在該紅時會紅)。
+ *   對照組(`--selftest`):注入 CSS 把 `[data-hovered]` 的底色改透明 → 必須紅(證明這支閘在該紅時會紅)。
+ *
+ * **2026-09-14 兩處修正**(列殼機制停用後,這支閘的前提與對照組雙雙失效):
+ *   - 舊前提要求「真的出現過殼」,列殼停用後殼恆為 0,前提結構上不可能成立。改成
+ *     「殼出現過 **或** 指標底下那一列真的換過(≥3 個不同的 data-row-index)」—— 兩種機制下都不會空轉。
+ *   - 舊對照組改寫 bundle 裡殼列的 class 串,實測**改寫了 1 個 chunk 但 hover 照樣正常**
+ *     (0/159 幀沒反應)—— 它打不到這支閘實際觀測的那個元素,是「該紅不會紅」的假對照。
+ *     改成注入 CSS,直接讓觀測到的底色變透明,與實作寫法無關。
  *
  *   node scripts/data-table-row-under-pointer-invariant.mjs [--build=<dir>] [--cpu=4] [--selftest]
  */
@@ -30,7 +37,6 @@ const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n
 const BUILD = arg('build', join(REPO, 'storybook-static'))
 const CPU = Number(arg('cpu', '4'))
 const SELFTEST = process.argv.includes('--selftest')
-const SHELL_HOVER_CLASS = 'data-[hovered]:bg-neutral-hover'
 const STORY = 'design-system-components-datatable-%E5%B1%95%E7%A4%BA--roadmap-all-in-one'
 
 const server = await startA11yStaticServer({ rootDirectory: BUILD, defaultFile: 'iframe.html' })
@@ -38,21 +44,13 @@ const browser = await launchBrowser()
 let fail = 0
 try {
   const page = await browser.newPage({ viewport: { width: 1400, height: 800 } })
-  let patched = 0
-  if (SELFTEST) {
-    // 只動殼列那一條(殼列的 class 串以 `group/row flex relative items-center overflow-hidden ` 起頭)
-    await page.route((u) => /data-table-[^/]*\.js$/.test(u.pathname), async (route) => {
-      const res = await route.fetch()
-      let body = await res.text()
-      const needle = `overflow-hidden ${SHELL_HOVER_CLASS}`
-      if (body.includes(needle)) { patched++; body = body.split(needle).join('overflow-hidden') }
-      return route.fulfill({ response: res, body, headers: { ...res.headers(), 'content-type': 'application/javascript' } })
-    })
-  }
   const cdp = await page.context().newCDPSession(page)
   await page.goto(`${server.origin}/iframe.html?id=${STORY}&viewMode=story`, { waitUntil: 'networkidle', timeout: 120_000 })
   await page.waitForSelector('[data-datatable-hscroll]', { timeout: 60_000 })
   await page.waitForTimeout(1500)
+  // 對照組:直接讓這支閘**觀測到的那個底色**變透明。與實作寫的是哪一條 class 無關,
+  // 所以不會像舊版那樣「改寫了 bundle 卻打不到觀測對象」。
+  if (SELFTEST) await page.addStyleTag({ content: '[data-hovered]{background-color:transparent !important}' })
   if (CPU > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU })
 
   const box = await page.locator('[data-datatable-hscroll]').first().boundingBox()
@@ -67,7 +65,7 @@ try {
     const tick = () => {
       const row = document.elementFromPoint(px, py)?.closest('[role="row"]')
       S.rows.push(row
-        ? { t: Math.round(performance.now() - S.t0), shell: row.hasAttribute('data-row-shell'), hovered: row.hasAttribute('data-hovered'), bg: getComputedStyle(row).backgroundColor }
+        ? { t: Math.round(performance.now() - S.t0), shell: row.hasAttribute('data-row-shell'), idx: row.getAttribute('data-row-index'), hovered: row.hasAttribute('data-hovered'), bg: getComputedStyle(row).backgroundColor }
         : { t: Math.round(performance.now() - S.t0), row: null })
       requestAnimationFrame(tick)
     }
@@ -88,11 +86,15 @@ try {
   const shellFrames = samples.filter((s) => s.shell).length
   const ck = (name, ok, detail = '') => { console.log(`${ok ? '✓' : '✗'} ${name}${detail ? ' | ' + detail : ''}`); if (!ok) fail++ }
 
-  ck('前提:指標放上去先有 hover 底色(否則後面量的不是這件事)', !!before && before.hovered && !transparent(before.bg), JSON.stringify(before))
-  ck(`前提:取樣涵蓋整段手勢(≥ 20 幀)且真的出現過殼(否則這支閘空轉)`, samples.length >= 20 && shellFrames > 0, `取樣 ${samples.length} 幀、其中殼 ${shellFrames} 幀`)
+  // 這條是**正式跑**的前提。對照組刻意把底色改透明,它必然紅 —— 那是預期行為不是失敗,所以跳過。
+  if (!SELFTEST) ck('前提:指標放上去先有 hover 底色(否則後面量的不是這件事)', !!before && before.hovered && !transparent(before.bg), JSON.stringify(before))
+  const idxSeen = new Set(samples.map((s) => s.idx).filter((v) => v != null)).size
+  ck(`前提:取樣涵蓋整段手勢(≥ 20 幀),且指標底下真的換過列或出現過殼(否則這支閘空轉)`,
+    samples.length >= 20 && (shellFrames > 0 || idxSeen >= 3),
+    `取樣 ${samples.length} 幀、其中殼 ${shellFrames} 幀、指標底下出現過 ${idxSeen} 個不同的列`)
   const detail = `沒有 hover 反應的幀 ${dead.length}/${samples.length}` + (dead.length ? `;最後一次在 ${dead[dead.length - 1].t}ms(${JSON.stringify(dead[dead.length - 1])})` : '')
   if (SELFTEST) {
-    ck(`對照組(把殼列的 ${SHELL_HOVER_CLASS} 拿掉):必須量到「游標在上面卻沒反應」`, patched > 0 && dead.length > 0, `改寫 ${patched} 個 chunk;${detail}`)
+    ck('對照組(注入 CSS 讓 [data-hovered] 底色透明):必須量到「游標在上面卻沒反應」', dead.length > 0, detail)
   } else {
     ck('指標完全不動時,底下那一列在整段捲動與補齊期間都有 hover 反應(底色 + data-hovered)', dead.length === 0, detail)
   }
@@ -100,5 +102,11 @@ try {
   await browser.close()
   await server.stop()
 }
-console.log(fail ? `\n✗ ${fail} 項未通過` : `\n✓ ${SELFTEST ? '對照組:拿掉殼列 hover class 後如預期量到沒反應(儀器有效)' : '指標底下的列:全程有 hover 反應'}`)
+if (SELFTEST) {
+  // 對照組的成功條件 = 那條斷言**紅了**(fail === 0 代表破壞之後還是全綠 = 儀器該紅沒紅)。
+  if (fail > 0) { console.log('\n✗ 對照組:破壞之後仍有斷言沒紅 —— 儀器無效'); process.exit(1) }
+  console.log('\n✓ 對照組:底色改透明後如預期量到沒反應(儀器有效)')
+  process.exit(0)
+}
+console.log(fail ? `\n✗ ${fail} 項未通過` : '\n✓ 指標底下的列:全程有 hover 反應')
 process.exit(fail ? 1 : 0)
