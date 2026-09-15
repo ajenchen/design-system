@@ -557,47 +557,26 @@ const isSystemColumn = (colId: string) => SYSTEM_COL_IDS.has(colId)
 //     (長工 6 vs 6 個、script 1135 vs 1158ms、平均幀距 28.8 vs 29.4ms)—— 等於什麼都沒換到。
 //     2026-09-15 退回,改用實心色條同時拿到兩者。
 //
-// **現行寫法:整個捲動區鋪一層實心色條(靜態),已掛載那段用一塊 `--surface` 覆蓋層蓋掉。**
-// 覆蓋 = 色條層(整個捲動區)− 覆蓋層(已掛載段),**恆真,與時序無關**,而且比舊的三段聯集更強:
-// 色條層鋪滿整個捲動區,合成器再怎麼超前也不可能露出底色。逐幀路徑上只剩覆蓋層的
-// `top` / `height` 兩個數字(舊版是 4-6 個帶各兩個數字)。
-// 為什麼需要覆蓋層:真列是**透明**的(實測 `rgba(0,0,0,0)`,底色來自 DataTable 外殼的 `bg-surface`),
-// 所以色條層不能只是「放在列後面」—— 會從列的縫隙透出來。
-//
+// **現行寫法:未掛載區兩帶(上帶 / 下帶),每帶鋪每欄一層漸層色條 + 一層列底線。**
+// 覆蓋 = 上帶 ∪ 已掛載段 ∪ 下帶 = 整個捲動區,**恆真,與時序無關**。逐幀路徑上只有兩帶各自的
+// `top` / `height`。光柵成本(視窗 + 預繪區 46ms)已知且接受 —— 它不是任何實測症狀的來源(見上方結案)。
 // 視覺消費既有 SSOT,不自創:bar 用 `--muted`(= `Skeleton` 的 `bg-muted`)、幾何抄 `renderShellRow`
 // 的 `h-3 w-3/5`(系統欄 `h-4 w-4`)、列底線用 `--divider`(同真列的 `border-b border-divider`)、
-// 覆蓋層用 `--surface`(= 外殼 `bg-surface` 的同一個 token)。圓角這次拿得回來:實心 div 畫得出
-// `--radius-md`(= `Skeleton` 的 `rounded-md`),漸層畫不出 —— 舊版註解記的那筆落差就此消掉。
+// 已知落差:漸層畫不出 `Skeleton` 的 `rounded-md` 圓角 —— 12px 高的 bar 在快速捲動下看不出來,而且這一層只出現在
+// 「本來會是全白」的地方。
 
 /**
- * 骨架底畫法的開關(**暫時的 A/B,不是長期 API**)。
- *
- * 兩種畫法各贏一個硬指標,而且贏的那一項都是對方輸的那一項:
- *   `gradient`(預設)每欄一層漸層鋪滿整個捲動區 —— **零空白**(4 倍降速 3 趟 0/0/0 幀),
- *                    但真實頁面「視窗 + 預繪區」的光柵成本 **46.06ms**(main 是 2.60ms)。
- *   `bars`           實心 `<div>` 色條 —— 光柵 **5.92ms**(離 main 只剩 2.3 倍),
- *                    但 4 倍降速有 10-15 幀空白(main 是 58-59 幀,所以仍遠優於低標)。
- *
- * **為什麼 DOM 骨架換不到零空白**(2026-09-15 實測,三個點連成單調關係):
- *   0 個元素(漸層)→ 0 幀空白 / 7,000 個(鋪滿再蓋)→ 10-15 幀 / 14,000 個(兩段各一池)→ 18-20 幀。
- * 拖慢的不是 Skia 光柵(那是實心矩形的強項,便宜 10 倍),是**主執行緒的繪製記錄**:
- * display list 要逐元素走一遍,元素越多每次 commit 越晚交出新 tile,合成器就越容易露出還沒畫的地方。
- * 截圖看得很清楚(`scratchpad/blank-bars-f33.png`):左右釘選欄的真列都畫好了,中央區還沒。
- *
- * **預設留在 `gradient`**:零空白是已經寫進閘門的硬不變條件,不拿它換一個還沒被證實的好處。
- * `bars` 用 `?skeleton=bars` 開啟,給「同一台機器、同一個 story」直接比手感用 ——
- * user 回報的卡頓只在他的機器上出現(Chrome 153 + Retina),本機所有量具都複製不出來,
- * 那台機器才是唯一的判準。決定之後這個開關連同輸的那條實作一起刪掉。
+ * 2026-09-15 結案:user 回報「分支 hover 33ms、main 17ms」**不是程式碼造成的**。
+ * 用 Long Animation Frames API 在他的機器上歸因(https://developer.chrome.com/docs/web-platform/long-animation-frames):
+ *   分支(netlify.app)   20 秒 82 個長幀,script 5315ms,其中 5301ms 在 `FrameRequestCallback @thin-client-min.js`
+ *   main(netlify.app)   同樣:7333ms 在 `thin-client-min.js`
+ *   main(github.io)     893 幀全 17ms,0 個長幀,來源「無」
+ * `thin-client-min.js` 不在我們的建置裡,是那台機器的網路/安全產品對 `*.netlify.app` 注入的遠端隔離 thin client
+ *(逐幀 rAF + WebSocket 同步)。github.io 在白名單、本地渲染。三個組合的唯一變數是**網域**。
+ * 因此兩天內為此做的實心色條畫法(`?skeleton=bars`)已拆除;漸層是唯一畫法。留下的量測結論仍成立
+ *(漸層 46ms vs 實心 5.9ms、DOM 骨架換不到零空白),但它們解的不是這個症狀。
+ * 教訓收進 M32 錨例 (h):**跨網域/跨主機的效能比較無效,先歸因(長幀 script 來源)再消融**。
  */
-const SKELETON_PAINT: 'gradient' | 'bars' = (() => {
-  if (typeof window === 'undefined') return 'gradient'
-  try {
-    return new URLSearchParams(window.location.search).get('skeleton') === 'bars' ? 'bars' : 'gradient'
-  } catch {
-    return 'gradient'
-  }
-})()
-
 const unmountedSkeletonStyle = (
   cols: { id: string; getSize: () => number }[],
   resolvedWidths: Map<string, number>,
@@ -621,64 +600,6 @@ const unmountedSkeletonStyle = (
   image.push(`linear-gradient(to bottom, transparent 0 ${line}px, var(--divider) ${line}px ${pitch}px)`)
   size.push(`100% ${pitch}px`); position.push('0 0'); repeat.push('repeat')
   return { backgroundImage: image.join(','), backgroundSize: size.join(','), backgroundPosition: position.join(','), backgroundRepeat: repeat.join(',') }
-}
-
-/**
- * 色條層最多鋪幾列。超過就只鋪這麼多、用 transform 跟著捲動位置走(見 `skeletonStripTop`)。
- * 1,200 列 × (欄數 + 1) ≈ 一萬多個節點,而 1,200 × 40px = 48,000px 的覆蓋遠大於任何一次甩動的
- * 合成器領先量(本機 4 倍降速實測約 5,300px),所以實務上永遠不會露出邊界。
- */
-const SKELETON_MAX_SLOTS = 1200
-
-/** 骨架色條的幾何:每欄一根 + 一條列底線。只依欄寬與 `--table-cell-px`,與捲動位置無關。 */
-const skeletonBars = (
-  cols: { id: string; getSize: () => number }[],
-  resolvedWidths: Map<string, number>,
-): { bars: { x: number; w: number; h: number }[]; width: number } => {
-  const cellPx = typeof document !== 'undefined'
-    ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--table-cell-px')) * 16 || 12
-    : 12
-  const bars: { x: number; w: number; h: number }[] = []
-  let x = 0
-  for (const c of cols) {
-    const w = resolvedWidths.get(c.id) ?? c.getSize()
-    const sys = isSystemColumn(c.id)
-    bars.push({ x: x + cellPx, w: sys ? 16 : Math.max(0, (w - 2 * cellPx) * 0.6), h: sys ? 16 : 12 })
-    x += w
-  }
-  return { bars, width: x }
-}
-
-/**
- * 把色條鋪成 `slots` 列。用 `cloneNode` 而不是 innerHTML 字串 —— 六千多個節點的 HTML 字串是 300KB 以上,
- * 複製一個列模板快得多,也不必把樣式塞進字串裡。只在 key(欄寬 / 列距 / 列數)變動時重建。
- */
-const buildSkeletonStrip = (
-  host: HTMLElement,
-  bars: { x: number; w: number; h: number }[],
-  width: number,
-  pitch: number,
-  slots: number,
-) => {
-  const tpl = document.createElement('i')
-  tpl.style.cssText = `position:absolute;left:0;width:${width}px;height:${pitch}px`
-  for (const b of bars) {
-    if (b.w <= 0) continue
-    const bar = document.createElement('i')
-    bar.style.cssText = `position:absolute;left:${b.x}px;top:${Math.max(0, Math.round((pitch - b.h) / 2))}px;`
-      + `width:${b.w}px;height:${b.h}px;border-radius:var(--radius-md);background:var(--muted)`
-    tpl.appendChild(bar)
-  }
-  const line = document.createElement('i')
-  line.style.cssText = `position:absolute;left:0;top:${Math.max(0, pitch - 1)}px;width:${width}px;height:1px;background:var(--divider)`
-  tpl.appendChild(line)
-  const frag = document.createDocumentFragment()
-  for (let i = 0; i < slots; i++) {
-    const row = tpl.cloneNode(true) as HTMLElement
-    row.style.top = `${i * pitch}px`
-    frag.appendChild(row)
-  }
-  host.replaceChildren(frag)
 }
 
 // ── TruncatedText ── 2026-07-19:truncate+tooltip 引擎 + presentation 已抽成 SSOT primitive
@@ -4318,33 +4239,17 @@ function DataTableInner<TData>(
     // 骨架色條的幾何只跟欄寬與列距有關,跟捲動位置無關 —— 一輪 render 算一次就好。
     // 原本寫在 `.map()` 裡等於每帶各算一次(× 三區 = 六次),純浪費主執行緒。
     const pitch = Math.max(1, Math.round(resolvedEstimate))
-    const skeleton = useVirtual && SKELETON_PAINT === 'bars' ? skeletonBars(cols, resolvedWidths) : null
-    // **用 `top`/`height` 定位覆蓋層,不用 `transform`。**(2026-09-14 實測退回)
-    // 「改 transform 免掉版面失效」這條看似漂亮,實測兩項都不成立:版面計算次數原地不動
-    // (225/261 vs 改前 223/259),而且高度固定成整個捲動區的絕對定位帶子會**撐大捲動範圍**
-    // —— 可捲高度從 20160px 變成 21080px,使用者能捲過表格尾端。淨損失,故退回。
-    //
-    // 色條層本身是**例外**:它的高度固定(不隨捲動變),所以用 transform 平移不會撐大捲動範圍,
-    // 而且只有在整張表比 `SKELETON_MAX_SLOTS` 高時才需要平移;一般表格 top 恆為 0、完全不動。
-    let stripSlots = 0
-    const bandStyle = useVirtual && SKELETON_PAINT === 'gradient'
-      ? unmountedSkeletonStyle(cols, resolvedWidths, pitch)
-      : {}
-    const skeletonBands: { key: string; top: number; height: number; offset: number }[] = []
+    const bandStyle = useVirtual ? unmountedSkeletonStyle(cols, resolvedWidths, pitch) : {}
+    const skeletonBands: { key: string; top: number; height: number }[] = []
     if (useVirtual && rowVirtualItems.length > 0) {
       const total = virtualizer.getTotalSize()
       const first = rowVirtualItems[0]
       const last = rowVirtualItems[rowVirtualItems.length - 1]
       const mountedEnd = last.start + last.size
-      stripSlots = Math.min(SKELETON_MAX_SLOTS, Math.max(1, Math.ceil(total / pitch)))
       // 已掛載的列是連續一段,這兩帶蓋掉它以外的全部高度 —— 三者聯集恆等於整個捲動區,
       // 所以任何一幀都不會是空的,**與時序無關**。
-      // `offset` 只有 `bars` 畫法用得到:色條池裡第 i 列畫在 `i × pitch`,而帶的起點不一定是
-      // pitch 的倍數,要往回推到最近的列格線上,色條才會跟真列對齊。
-      if (first.start > 0) skeletonBands.push({ key: 'before', top: 0, height: first.start, offset: 0 })
-      if (total > mountedEnd) {
-        skeletonBands.push({ key: 'after', top: mountedEnd, height: total - mountedEnd, offset: Math.floor(mountedEnd / pitch) * pitch - mountedEnd })
-      }
+      if (first.start > 0) skeletonBands.push({ key: 'before', top: 0, height: first.start })
+      if (total > mountedEnd) skeletonBands.push({ key: 'after', top: mountedEnd, height: total - mountedEnd })
     }
     const staticItems = useVirtual ? [] : rows.map((row, i) => rowEl(row, i, { isLast: i === rows.length - 1 }))
     prune()
@@ -4358,7 +4263,7 @@ function DataTableInner<TData>(
       return (
         <TableScrollProvider isScrolling={virtualizer.isScrolling}>
           <div style={{ height: virtualizer.getTotalSize(), position: 'relative', minWidth: containerWidth }}>
-            {/* 未掛載區的骨架底(見 `skeletonBars` / `buildSkeletonStrip` 檔頭)。
+            {/* 未掛載區的骨架底(見 `unmountedSkeletonStyle` 檔頭)。
                 已掛載的列是連續一段,這兩帶蓋掉它以外的全部高度 ——
                 三者聯集恆等於整個捲動區,所以任何一幀都不會是空的,與時序無關。
                 `aria-hidden` + `pointer-events-none`:它是背景不是內容,不進無障礙樹、不吃指標。
@@ -4375,29 +4280,9 @@ function DataTableInner<TData>(
                 style={{
                   position: 'absolute', left: 0, width: containerWidth, top: band.top, height: band.height,
                   pointerEvents: 'none',
-                  ...(SKELETON_PAINT === 'bars' ? { overflow: 'hidden' } : bandStyle),
+                  ...bandStyle,
                 }}
-              >
-                {SKELETON_PAINT === 'bars' && skeleton && (
-                  <div
-                    // 色條池:靜態 DOM,由 `buildSkeletonStrip` 直接建(見該函式檔頭),React 不碰它的子節點。
-                    // 這個 ref callback 每次 render 都會被呼叫(inline function,identity 每輪都變),
-                    // 所以用掛在元素上的 key 自比對,只有真的變了才重建。
-                    ref={(el) => {
-                      if (!el) return
-                      const key = `${skeleton.width}|${pitch}|${stripSlots}|${skeleton.bars.map((b) => `${b.x},${b.w},${b.h}`).join(';')}`
-                      if (el.dataset.skeletonKey === key) return
-                      el.dataset.skeletonKey = key
-                      buildSkeletonStrip(el, skeleton.bars, skeleton.width, pitch, stripSlots)
-                    }}
-                    style={{
-                      position: 'absolute', left: 0, top: 0, width: skeleton.width,
-                      height: stripSlots * pitch,
-                      transform: band.offset ? `translateY(${band.offset}px)` : undefined,
-                    }}
-                  />
-                )}
-              </div>
+              />
             ))}
             {items}
           </div>
