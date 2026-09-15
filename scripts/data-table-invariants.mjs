@@ -99,6 +99,22 @@ function record(invariant, label, pass, detail = '') {
   else failures.push(`✗ ${invariant} | ${label} | ${detail}`)
 }
 
+// ── S1:未掛載區骨架底只准消費 Skeleton 同一顆 token(2026-09-15,user 問「骨架底跟 Skeleton 有 SSOT 嗎」)──
+// SSOT:data-table.spec.md「骨架底」段(bar = `--muted`、列底線 = `--divider`,幾何抄列殼)+ skeleton.spec.md「bg-muted」段。
+// 這層是 CSS 漸層畫的,沒有 DOM 可以量色,所以守「原始碼消費的是 token、不是字面色值」——
+// `unmountedSkeletonStyle` 函式體必含 var(--muted) 與 var(--divider),且不得出現 #hex / rgb( / oklch( 字面色。
+{
+  const src = readFileSync(join(ROOT, 'packages/design-system/src/components/DataTable/data-table.tsx'), 'utf8')
+  const start = src.indexOf('const unmountedSkeletonStyle = (')
+  const end = start >= 0 ? src.indexOf('\n}\n', start) : -1
+  const body = start >= 0 && end > start ? src.slice(start, end) : ''
+  record('S1', '骨架底函式 unmountedSkeletonStyle 存在', body.length > 0, 'data-table.tsx 找不到 unmountedSkeletonStyle')
+  record('S1', '骨架底 bar 消費 var(--muted)(= Skeleton bg-muted 同一顆 token)', body.includes('var(--muted)'))
+  record('S1', '骨架底列底線消費 var(--divider)(= 真列 border-divider 同一顆 token)', body.includes('var(--divider)'))
+  const literal = body.match(/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\boklch\(|\bhsl\(/u)
+  record('S1', '骨架底沒有字面色值(只准 token)', !literal, literal ? `發現 ${literal[0]}` : '')
+}
+
 // ── INVARIANT (5):No-resize column width ≥ meta.width ──
 await page.goto(`${BASE}/iframe.html?id=design-system-components-datatable-展示--row-auto-height-inline-edit&viewMode=story`, { waitUntil: 'networkidle' })
 await page.waitForSelector('[role="row"][data-row-index]')
