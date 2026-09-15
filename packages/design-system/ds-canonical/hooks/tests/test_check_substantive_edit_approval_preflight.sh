@@ -1005,8 +1005,9 @@ run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
   " * 結案:真頁面光柵漸層 46.06ms vs 實心 5.92ms,DOM 骨架換不到零空白。"
 expect_pass_silent "15j. JSDoc 中段片段(片段本身無 /* */)純文字改動 → pass(整檔比)"
 
+# 15i 直接呼叫 helper 驗 evidence 契約。fixture 此時是 15j 寫入的 JSDoc 版本(15j 在前),old_string 必須取自它。
 set +e
-EVIDENCE_JSON=$(jq -n --arg fp "$COMMENT_TSX" --arg o "// 舊註解:padding 公式 (field-height - icon-size) / 2" --arg n "// 新註解" \
+EVIDENCE_JSON=$(jq -n --arg fp "$COMMENT_TSX" --arg o " * 光柵成本已知且接受。" --arg n " * 光柵成本已知且接受(真頁面 46.06ms)。" \
   '{tool_name:"Edit",tool_input:{file_path:$fp,old_string:$o,new_string:$n}}' \
   | node "$AUTH_HELPER" --transcript "$TX_CLOSURE" --target "$COMMENT_TSX" --hook-input-stdin)
 EVIDENCE_EXIT=$?
