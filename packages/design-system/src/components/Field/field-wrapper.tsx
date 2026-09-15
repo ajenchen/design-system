@@ -287,6 +287,29 @@ export const bareInputStyles = [
 //
 // Hook:`check_field_family_invariants.sh` A.1(原 check_naked_row_mode_propagation.sh 已 folded,write-time BLOCKER)
 // Audit:design-system-audit Group N(periodic batch verify)
+/**
+ * Field 內含 Tag 時的四邊內距(tag.spec.md:231「Field 的 padding 改為 (field-height − tag-height)/2,確保 tag 四邊等距」)。
+ *
+ * **公式必須扣掉 2px 邊框**(2026-09-15 像素實測修正):padding 在邊框內側量,而 Tag 垂直置中是在內高
+ *(欄高 − 2px)裡置中 —— 舊寫法沒扣邊框,水平 4/4/6、垂直 3/3/5,四邊差 1px。
+ * 現在 X / Y 同一個式子:sm (28−2−20)/2 = 3、md (32−2−24)/2 = 3、lg (36−2−24)/2 = 5。
+ *   - X:單行與 wrap 都套(取代各元件自帶的 tagPadding)。
+ *   - Y:只有 wrap 模式套(單行由 wrapper `items-center` 置中,結果與 Y 相同);第一行 tag 的 y 因此
+ *     恆等於單行時的 y,切換 wrap 不位移(舊 `py-1` 寫死 4px 會差 1px)。
+ * Tag 高度住所 = tag.tsx cva `h-5`/`h-6`(1.25rem / 1.5rem),這裡的字面值跟它綁定;改 Tag 高度必同步。
+ * 消費者:Combobox(四條路徑)、Select tag 模式。閘:`scripts/tag-field-vertical-inset.mjs`。
+ */
+export const fieldTagInsetX: Record<'sm' | 'md' | 'lg', string> = {
+  sm: 'px-[calc((var(--field-height-sm)_-_2px_-_1.25rem)_/_2)]',
+  md: 'px-[calc((var(--field-height-md)_-_2px_-_1.5rem)_/_2)]',
+  lg: 'px-[calc((var(--field-height-lg)_-_2px_-_1.5rem)_/_2)]',
+}
+export const fieldTagInsetY: Record<'sm' | 'md' | 'lg', string> = {
+  sm: 'py-[calc((var(--field-height-sm)_-_2px_-_1.25rem)_/_2)]',
+  md: 'py-[calc((var(--field-height-md)_-_2px_-_1.5rem)_/_2)]',
+  lg: 'py-[calc((var(--field-height-lg)_-_2px_-_1.5rem)_/_2)]',
+}
+
 export const nakedCellRowModeAlign = 'group-data-[row-mode=auto]/cell:items-start'
 
 // ── Cell-as-input View Hover Ring(2026-05-05 v9 — sole remaining ring const)─

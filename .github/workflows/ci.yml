@@ -517,6 +517,9 @@ jobs:
           npm run test:drag-runtime
           npm run test:datepicker-typeable-open
           npm run test:shared-carrier-focus
+          # Tag 在 Field control 裡四邊等距 + wrap 第一行不位移(2026-09-15,user 抓 Combobox sm 的 tag 沒垂直置中):
+          # 像素量 Combobox / Select 每個尺寸與 mode;對照組把量測 wrapper 改回區塊盒、wrap 改回 py-1,必紅。
+          npm run test:tag-field-inset
           # Dialog 並存契約:兩條路都驗 —— 預設路徑照舊隔離、並存路徑指定區域仍可用。
           # 只驗後者的話「把預設路徑一起弄壞」不會被發現。
           npm run test:dialog-coexistence

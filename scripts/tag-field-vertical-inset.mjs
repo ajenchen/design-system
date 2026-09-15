@@ -1,0 +1,90 @@
+#!/usr/bin/env node
+/**
+ * Tag 在 Field control 裡的垂直內距不變條件(2026-09-15,user 抓「Combobox sm 的 tag 沒垂直置中」)。
+ *
+ * 量的是像素,不是 class:
+ *   I1 單行:每個 field wrapper 裡第一個 Tag 的上隙 − 下隙 ≤ 0.5px(對稱置中)。
+ *   I2 wrap:第一行 Tag 的上隙 = 同尺寸單行的上隙(±0.5px)—— 切到 wrap 第一行不位移。
+ *   I3 Tag 內文字在 Tag 裡上下對稱(≤ 0.5px)。
+ * 對照組(--selftest):把 tag 量測 wrapper 從 flex 改回區塊盒、wrap 內距改回 py-1,I1 / I2 必須紅。
+ *
+ * 根因紀錄:Combobox 每個 tag 外的量測 wrapper 原是區塊盒,高度由欄位字型行高(21px)決定,sm 的 Tag(20px)
+ * 沿基線沉底 → 上 3.9 / 下 2.1;wrap 的 `py-1` 寫死 4px 與單行置中(3/3/5)差 1px。owner:combobox.tsx OverflowTagList。
+ *
+ * 用法:node scripts/tag-field-vertical-inset.mjs [--static=<dir>] [--selftest]
+ */
+import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { launchBrowser } from './lib/launch-browser.mjs'
+const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3) ?? d
+const SELFTEST = process.argv.includes('--selftest')
+const root = path.resolve(REPO, arg('static', 'storybook-static'))
+const STORIES = [
+  'design-system-components-combobox-設計規格--size-matrix',
+  'design-system-components-combobox-設計規格--state-behavior',
+  'design-system-components-select-設計規格--size-matrix',
+]
+const SABOTAGE = '[data-tag-root]{vertical-align:baseline}div.shrink-0.max-w-full{display:block!important}[data-field-mode]{padding-top:4px!important;padding-bottom:4px!important}'
+const MIME = { '.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.svg':'image/svg+xml','.png':'image/png','.map':'application/json' }
+const server = http.createServer((q, s) => { const u = decodeURIComponent(q.url.split('?')[0]); let f = path.join(root, u === '/' ? '/index.html' : u); if (!f.startsWith(root)) { s.writeHead(403); return s.end() }
+  fs.stat(f, (e, st) => { if (e) { s.writeHead(404); return s.end('nf') } if (st.isDirectory()) f = path.join(f, 'index.html'); fs.readFile(f, (e2, b) => { if (e2) { s.writeHead(404); return s.end('nf') } s.writeHead(200, { 'content-type': MIME[path.extname(f)] || 'application/octet-stream' }); s.end(b) }) }) })
+await new Promise((r) => server.listen(0, '127.0.0.1', r)); const port = server.address().port
+const PROBE = () => {
+  const out = []; const seen = new Set()
+  for (const t of document.querySelectorAll('[data-tag-root]')) {
+    let w = t.parentElement, wrapper = null
+    while (w && w !== document.body) { if (w.hasAttribute('data-field-mode') || /h-field-/.test(String(w.className))) { wrapper = w; break } w = w.parentElement }
+    if (!wrapper || seen.has(wrapper)) continue; seen.add(wrapper)
+    const wr = wrapper.getBoundingClientRect(), cs = getComputedStyle(wrapper)
+    const bt = parseFloat(cs.borderTopWidth) || 0, bb = parseFloat(cs.borderBottomWidth) || 0
+    const first = wrapper.querySelector('[data-tag-root]'); const tr = first.getBoundingClientRect()
+    const txt = first.querySelector('[data-tag-text]'); const xr = txt ? txt.getBoundingClientRect() : null
+    const rows = new Set([...wrapper.querySelectorAll('[data-tag-root]')].map((x) => Math.round(x.getBoundingClientRect().top))).size
+    const wrap = cs.alignItems === 'flex-start'
+    const h = Math.round(wrap ? parseFloat(cs.minHeight) || 0 : wr.height)
+    const size = wrap ? (/h-field-sm/.test(wrapper.className) ? 'sm' : /h-field-lg/.test(wrapper.className) ? 'lg' : 'md') : h === 28 ? 'sm' : h === 32 ? 'md' : h === 36 ? 'lg' : `h${h}`
+    const bl = parseFloat(cs.borderLeftWidth) || 0, br = parseFloat(cs.borderRightWidth) || 0
+    // 右側 chevron:wrapper 最後一個直接子元素裡的 svg(ItemSuffix);沒有就 null(readonly 無 chevron 的路徑)
+    // 最後一個 svg 才是 chevron —— clearable 有值時 clear X 在左、ChevronDown 在右(spec :278),取第一個會量到 X。
+    const lastChild = wrapper.lastElementChild; const svgs = lastChild && lastChild !== first ? [...lastChild.querySelectorAll('svg')] : []; const chev = svgs.length ? svgs[svgs.length - 1] : null
+    const chevRight = chev ? +(wr.right - br - chev.getBoundingClientRect().right).toFixed(2) : null
+    out.push({ chevRight, size, wrap, rows, wrapperH: +wr.height.toFixed(2), mode: wrapper.getAttribute('data-field-mode') || '?', gapTop: +(tr.top - wr.top - bt).toFixed(2), gapBottom: +(wr.bottom - bb - tr.bottom).toFixed(2),
+      gapLeft: +(tr.left - wr.left - bl).toFixed(2),
+      textTop: xr ? +(xr.top - tr.top).toFixed(2) : null, textBottom: xr ? +(tr.bottom - xr.bottom).toFixed(2) : null })
+  }
+  return out
+}
+const browser = await launchBrowser(); const ctx = await browser.newContext({ viewport: { width: 1400, height: 1600 }, deviceScaleFactor: 1 }); const page = await ctx.newPage()
+const all = []
+for (const id of STORIES) {
+  await page.goto(`http://127.0.0.1:${port}/iframe.html?id=${encodeURIComponent(id)}&viewMode=story`, { waitUntil: 'load', timeout: 90000 })
+  await page.waitForSelector('[data-tag-root]', { timeout: 30000 }); await page.waitForTimeout(600)
+  if (SELFTEST) await page.addStyleTag({ content: SABOTAGE })
+  for (const r of await page.evaluate(PROBE)) all.push({ story: id.split('--')[1], ...r })
+}
+await browser.close(); server.close()
+let failed = 0
+const rec = (ok, msg) => { console.log(`${ok ? '✓' : '✗'} ${msg}`); if (!ok) failed++ }
+const single = all.filter((r) => !r.wrap)
+rec(single.length >= 6, `取樣:單行 ${single.length} 個、wrap ${all.filter((r) => r.wrap).length} 個(需 ≥ 6 個單行)`)
+for (const r of single) rec(Math.abs(r.gapTop - r.gapBottom) <= 0.5, `I1 ${r.story} ${r.size} ${r.mode}:單行 Tag 上隙 ${r.gapTop} / 下隙 ${r.gapBottom}(|差| ≤ 0.5)`)
+for (const r of all.filter((x) => x.wrap)) {
+  const ref = single.find((s) => s.size === r.size && s.story.startsWith('size'))
+  rec(!!ref && Math.abs(r.gapTop - ref.gapTop) <= 0.5, `I2 ${r.story} ${r.size} ${r.mode}:wrap 第一行上隙 ${r.gapTop} vs 單行 ${ref ? ref.gapTop : '?'}(±0.5)`)
+}
+for (const r of single.filter((x) => x.textTop != null)) rec(Math.abs(r.textTop - r.textBottom) <= 0.5, `I3 ${r.story} ${r.size}:Tag 內文字上 ${r.textTop} / 下 ${r.textBottom}`)
+// I5 wrap 的總高是公式不是巧合:2px 邊框 + 2×內距 + 列數×Tag 高 + (列數−1)×4px 列距。
+// 1 列時就是尺寸 token(28/32/36)—— 舊 py-1 會讓 sm/md 多 2px、lg 少 2px。
+for (const r of all.filter((x) => x.wrap)) {
+  const tagH = r.size === 'sm' ? 20 : 24, inset = r.size === 'lg' ? 5 : 3
+  const expect = 2 + 2 * inset + r.rows * tagH + (r.rows - 1) * 4
+  rec(Math.abs(r.wrapperH - expect) <= 0.5, `I5 ${r.story} ${r.size} ${r.mode}(wrap ${r.rows} 列):總高 ${r.wrapperH} = 2 + 2×${inset} + ${r.rows}×${tagH} + ${r.rows - 1}×4 = ${expect}(±0.5)`)
+}
+// I6 右側 chevron 右緣 = --field-px 12px(field-controls.spec.md:279「tag 容器必 re-assert paddingRight」)。
+for (const r of all.filter((x) => x.chevRight != null)) rec(Math.abs(r.chevRight - 12) <= 0.5, `I6 ${r.story} ${r.size} ${r.mode}:chevron 右隙 ${r.chevRight}(需 12 ±0.5)`)
+// I4 四邊等距(tag.spec.md:231):左隙 = 上隙(±0.5)。PeoplePicker stack 模式刻意用 --field-px 12px 蓋掉左隙,不在本閘取樣(它沒有 [data-tag-root])。
+for (const r of all) rec(Math.abs(r.gapLeft - r.gapTop) <= 0.5, `I4 ${r.story} ${r.size} ${r.mode}${r.wrap ? '(wrap)' : ''}:Tag 左隙 ${r.gapLeft} vs 上隙 ${r.gapTop}(四邊等距 ±0.5)`)
+if (SELFTEST) { const ok = failed > 0; console.log(ok ? `✓ selftest:對照組(區塊盒 + py-1)讓 ${failed} 條紅,量具會紅` : '✗ selftest:對照組沒讓任何一條紅 —— 量具無效'); process.exit(ok ? 0 : 1) }
+console.log(failed ? `✗ tag-field-vertical-inset ${failed} 條失敗` : `✅ tag-field-vertical-inset PASS(${all.length} 個實例)`)
+process.exit(failed ? 1 : 0)

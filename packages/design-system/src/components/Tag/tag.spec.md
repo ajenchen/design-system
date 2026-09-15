@@ -228,7 +228,7 @@ Inline Action 的其他規則（尺寸、hover 背景 pattern）不變。
 
 - 圓角：統一 `rounded-md`（4px）
 - Tag 與 Tag 之間：`gap-1`（4px）
-- Field 內包含 Tag 時，Field 的 padding 改為 `(field-height - tag-height) / 2`，確保 tag 四邊等距
+- Field 內包含 Tag 時，Field 的 padding 改為 **`(field-height − 2px 邊框 − tag-height) / 2`**（sm 3 / md 3 / lg 5），確保 tag **四邊等距**。公式單一來源 = `Field/field-wrapper.tsx` `fieldTagInsetX` / `fieldTagInsetY`（Combobox 四條路徑與 Select tag 模式共用）。**必扣邊框**（2026-09-15 像素實測修正）：padding 在邊框內側量，而垂直置中發生在內高裡；舊寫法沒扣，水平 4/4/6、垂直 3/3/5，四邊差 1px。閘：`scripts/tag-field-vertical-inset.mjs` I4（左隙 = 上隙 ±0.5px，含對照組）。
 
 ---
 

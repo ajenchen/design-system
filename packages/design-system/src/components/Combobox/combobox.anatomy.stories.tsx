@@ -717,7 +717,8 @@ export const SizeMatrix = {
               <Td>wrap 上下內距</Td>
               {SIZES.map((sz) => (
                 <Td key={sz} mono>
-                  <div className="text-fg-secondary">py-1</div>
+                  <div className="text-fg-secondary">{sz === 'lg' ? 5 : 3}px</div>
+                  <div className="text-fg-muted text-[10px]">(field − 2 − tag) / 2</div>
                   <div className="text-fg-muted text-[10px]">4px (height: auto)</div>
                 </Td>
               ))}

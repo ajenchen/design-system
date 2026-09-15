@@ -7,7 +7,7 @@ import { X, ChevronDown } from 'lucide-react'
 import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
+import { fieldWrapperStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, fieldTagInsetY } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
@@ -29,11 +29,9 @@ const GAP = 4
 // auto → 生 scroll container,垂直反而可捲。
 const tagRowOverflowClass = 'overflow-x-clip'
 
-const tagPadding: Record<string, string> = {
-  sm: 'px-[calc((var(--field-height-sm)_-_1.25rem)_/_2)]',
-  md: 'px-[calc((var(--field-height-md)_-_1.5rem)_/_2)]',
-  lg: 'px-[calc((var(--field-height-lg)_-_1.5rem)_/_2)]',
-}
+// Tag 四邊內距的單一來源在 field-wrapper.tsx(`fieldTagInsetX` / `fieldTagInsetY`),Select 共用;理由與公式見該處。
+const tagPadding = fieldTagInsetX
+const tagPaddingY = fieldTagInsetY
 
 /**
  * Combobox option schema(2026-05-10 post-Issue-4 audit unify):**explicit extends
@@ -332,15 +330,21 @@ function OverflowTagList({ containerRef, items, size, wrap, renderTag, renderHid
   // `ready` state 保留供未來 instrumentation / debug,不再當 visual gate。
   // 保留 `<span className="contents">` 維持 fragment-like rendering(parent JSX 期望 single child)。
   void ready  // intentional: ready 留供 future debug,目前無 consumer
+  // **量測 wrapper 必須是 flex 容器,不能是區塊盒**(2026-09-15 user 抓「sm 的 tag 沒垂直置中」,像素實測):
+  // 區塊盒的高度由繼承的字型行高決定(欄位 text-body = 21px),sm 的 Tag 只有 20px(h-5),行內的 Tag 對齊
+  // 行盒基線、沉到底部 → tag 區 21.8px、tag 上隙 3.9 / 下隙 2.1。md/lg 的 Tag 是 24px ≥ 21,盒子被撐滿才看不出來。
+  // flex 容器沒有行盒:高度 = Tag 高度,wrapper `items-center` 直接對 Tag 的盒子置中(sm 3/3、md 3/3、lg 5/5)。
+  // Select 的 tag 模式沒有這層 wrapper,一直是正的 —— 這層 wrapper 是 useOverflowCount 量寬用的,寬度量法不變
+  //(flex 容器在 flex row 裡 shrink-0 的 max-content 寬 = 內容寬,跟區塊盒相同)。閘:`scripts/tag-field-vertical-inset.mjs`。
   return (
     <span className="contents">
       {items.map((item, i) => (
         // 2026-05-14 I5 fix(per codex M31 verdict + user 抓「avatar stack 堆疊方向不一致」):
         // 加 z-index per-index — 前 item z 高(對齊 MultiPersonDisplay zIndex: visible.length - i
         // canonical + MUI AvatarGroup surplus pattern)。view + edit stack 堆疊方向統一。
-        <div key={item.value} ref={el => { tagEls.current[i] = el }} className={cn('shrink-0 max-w-full', tagWrapperClassName)} style={{ zIndex: items.length - i }}>{renderTag(item, i)}</div>
+        <div key={item.value} ref={el => { tagEls.current[i] = el }} className={cn('shrink-0 max-w-full flex', tagWrapperClassName)} style={{ zIndex: items.length - i }}>{renderTag(item, i)}</div>
       ))}
-      <div ref={overflowEl} className={cn('shrink-0', overflowWrapperClassName)}>
+      <div ref={overflowEl} className={cn('shrink-0 flex', overflowWrapperClassName)}>
         <OverflowIndicator count={overflow} shape={overflowShape} size={size}>
           {hiddenItems.map(item => (
             renderHiddenTag
@@ -518,7 +522,7 @@ export interface ComboboxProps {
    * @internal PeoplePicker stack wrapper 內部協議 — 目前無 active consumer(PeoplePicker 傳 undefined),保留供未來精準 padding;新 consumer 請先評估。
    *
    * **2026-05-13 v2 deprecate path**:原 PeoplePicker pass `{8}` 假設「Combobox tagPadding=4px,4+8=12」
-   * 但 `tagPadding[size]` 是 density-dependent calc `(field-height - icon-size) / 2`,只在 md size +
+   * 但 `tagPadding[size]` 是 density-dependent calc `(field-height − 2px − tag-height) / 2`(3/3/5;SSOT field-wrapper.tsx fieldTagInsetX,2026-09-15 更正:舊註解寫 icon-size 是錯的),只在 md size +
    * default density 才 = 4px;其他 size/density 漂 6/8px → 4+8=12 公式破。改 PeoplePicker 直接 inject
    * `!px-[var(--field-px)]` className 到 Combobox Field wrapper(per people-picker.spec.md:94 v2),`tagAreaPaddingLeftPx`
    * 走 undefined。Future 仍保留此 prop 給其他 consumer 精準調整 padding,但 PeoplePicker 已不再用。
@@ -606,7 +610,7 @@ function ReadonlyMultiSelect({
         // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 view 不對稱。
         // 2026-06-27 對齊 edit path(L598-617):wrap 時 items-start + chevron self-start/tagHeight 鎖第一行;
         // paddingRight: var(--field-px) re-assert 右緣 12px(tagPadding 對稱 calc 會吃掉右緣,跟 edit 一致)。
-        wrap ? 'flex-wrap items-start py-1' : tagRowOverflowClass, className)}
+        wrap ? cn('flex-wrap items-start', tagPaddingY[sz]) : tagRowOverflowClass, className)}
       style={{ gap: GAP, paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode={resolvedMode}
       aria-disabled={resolvedMode === 'disabled' ? true : undefined}>
       {hasTags ? (
@@ -729,7 +733,7 @@ function NativeCombobox({
 
   return (
     <div ref={__triggerRef} className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), value.length > 0 && tagPadding[size], 'relative',
-      wrap && 'items-start py-1', className)}
+      wrap && cn('items-start', tagPaddingY[size]), className)}
       style={{ paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode="edit" data-error={error ? '' : undefined}
       onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}>
       {/* 2026-05-18 F2 sync(per user verbatim「modifying 修好 PeoplePicker stack 後改壞 Combobox tag display」
@@ -928,7 +932,7 @@ function CustomCombobox({
       // 於是全域外描邊一直畫在它上面,是全家族唯一的例外(user 2026-09-07 抓到)。
       // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:57)
       className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:outline-none', value.length > 0 && tagPadding[size], 'relative cursor-pointer',
-        wrap && 'items-start py-1',
+        wrap && cn('items-start', tagPaddingY[size]),
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
         // 統一處理 — open=灰深(data-state)/ focus=藍;2026-07-04 Q1:error 亦收進 error variant。
         className)}

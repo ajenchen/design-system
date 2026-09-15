@@ -7,7 +7,7 @@ import { CircularProgress } from '@/design-system/components/CircularProgress/ci
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
+import { fieldWrapperStyles, bareInputStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX } from '@/design-system/components/Field/field-wrapper'
 import { Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemPrefix, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { TruncatedText } from '@/design-system/patterns/element-anatomy/truncated-text'
@@ -21,11 +21,8 @@ import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 // ── Tag padding per size ────────────────────────────────────────────────────
-const tagPadding: Record<string, string> = {
-  sm: 'px-[calc((var(--field-height-sm)_-_1.25rem)_/_2)]',
-  md: 'px-[calc((var(--field-height-md)_-_1.5rem)_/_2)]',
-  lg: 'px-[calc((var(--field-height-lg)_-_1.5rem)_/_2)]',
-}
+// Tag 四邊內距的單一來源在 field-wrapper.tsx(`fieldTagInsetX`),Combobox 共用;理由與公式見該處。
+const tagPadding = fieldTagInsetX
 
 // ── Display ─────────────────────────────────────────────────────────────────
 
@@ -430,6 +427,9 @@ function ReadonlyDisplay({
     return (
       <div
         className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size: sz }), value && !isTextDisplay && tagPadding[sz], className)}
+        // tag 容器必 re-assert 右緣 = --field-px(field-controls.spec.md:279):tagPadding 的對稱 px 會把 chevron 右隙
+        // 吃成 3/3/5,readonly(:495)與 edit 早已 re-assert,view D-path 漏掉(2026-09-15 補;閘 I6)。
+        style={value && !isTextDisplay ? { paddingRight: 'var(--field-px)' } : undefined}
         data-field-mode="view"
       >
         {selectedItemRenderer && value && selectedOpt ? (
