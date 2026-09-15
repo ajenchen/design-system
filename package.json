@@ -52,6 +52,7 @@
     "test:overflow-indicator": "node scripts/overflow-indicator-containment.mjs && node scripts/overflow-indicator-containment.mjs --selftest",
     "test:shared-carrier-focus": "node scripts/shared-carrier-and-selection-focus.mjs",
     "test:tag-field-inset": "node scripts/tag-field-vertical-inset.mjs && node scripts/tag-field-vertical-inset.mjs --selftest",
+    "test:field-view-typography": "node scripts/field-view-typography-invariant.mjs && node scripts/field-view-typography-invariant.mjs --selftest",
     "test:virtual-cursor-modality": "node scripts/virtual-cursor-modality-invariant.mjs",
     "test:agent-url-registry-demo": "node scripts/agent-url-registry-demo-invariant.mjs",
     "test:overlay-shortcut-scope": "node scripts/overlay-shortcut-scope-invariant.mjs",

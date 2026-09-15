@@ -727,6 +727,23 @@ build_ask_selection_transcript "$TX_ASK_DENY" \
 run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_ASK_DENY"
 expect_block "8c. selection 答案含否決語 → fail closed" "data-table"
 
+# 8e(2026-09-15):harness 把題目原文也寫進答案(`"題目"="回答"`),題目裡的「要怎麼處理?」「(建議)」不是 user 的猶豫;
+# user 回答「照你建議做」是接受建議、「不要改壞既有」是別弄壞 —— 三者以前合起來把已選的核准判成 tentative + denial。
+TX_ASK_ACCEPT="$TMP_DIR/tx_ask_accept.jsonl"
+build_ask_selection_transcript "$TX_ASK_ACCEPT" \
+  "提案:data-table.tsx 的排序箭頭改繼承文字色(建議)。" \
+  'The user answered: "data-table.tsx 排序箭頭要怎麼處理?(建議改繼承文字色)"="照你建議做,並看整個 DS 有沒有類似問題,確保不要改壞目前好的東西,確保有驗證到完美"'
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_ASK_ACCEPT"
+expect_pass_silent "8e. 題目含「要怎麼處理?/建議」+ 回答「照你建議做…不要改壞」→ 仍 approved"
+
+# 8f 對照:真的還在評估建議 → 仍 fail closed(接受建議的字串替換不能把「評估你的建議」放行)
+TX_ASK_STILL="$TMP_DIR/tx_ask_still.jsonl"
+build_ask_selection_transcript "$TX_ASK_STILL" \
+  "提案:data-table.tsx 的排序箭頭改繼承文字色(建議)。" \
+  'The user answered: "data-table.tsx 排序箭頭要怎麼處理?"="我還在評估你的建議,先不要動"'
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_ASK_STILL"
+expect_block "8f. 回答「還在評估你的建議,先不要動」→ fail closed" "data-table"
+
 TX_ASK_SUPERSEDED="$TMP_DIR/tx_ask_superseded.jsonl"
 build_ask_selection_transcript "$TX_ASK_SUPERSEDED" \
   "提案:data-table.tsx 的排序箭頭改繼承文字色。" \

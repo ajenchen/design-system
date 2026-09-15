@@ -323,9 +323,11 @@ function withoutNoWaitClauses(message) {
   )
 }
 
+// 「不要改壞 / 別改錯」是「別弄壞」的要求,不是禁止修改 —— `改` 後面接 壞/錯/爛 不算 denial(2026-09-15:
+// user 的常態叮嚀「確保不要改壞目前好的東西」把他剛選的核准判成撤回)。
 const TARGET_DENIAL_PATTERNS = [
-  /(?:先|暫時|現在)?\s*(?:不要|別|不准|禁止|停止|暫停|擱置|取消)\s*(?:再|先|直接|馬上|立刻)?\s*(?:改|修改|變更|實作|執行|套用|採用|發布|推送|合併|做)/u,
-  /(?:不可以|不能|不可)\s*(?:再|直接)?\s*(?:改|修改|變更|做|執行|實作|採用|套用|發布)/u,
+  /(?:先|暫時|現在)?\s*(?:不要|別|不准|禁止|停止|暫停|擱置|取消)\s*(?:再|先|直接|馬上|立刻)?\s*(?:改(?![壞錯爛])|修改|變更|實作|執行|套用|採用|發布|推送|合併|做)/u,
+  /(?:不可以|不能|不可)\s*(?:再|直接)?\s*(?:改(?![壞錯爛])|修改|變更|做|執行|實作|採用|套用|發布)/u,
   /(?:不|不要|別|不可|不准|禁止)\s*(?:再)?\s*(?:採用|使用)/u,
   /(?:不要|別|不可|不准)\s*(?:再)?\s*(?:碰|動|觸碰)/u,
   /(?:保持|維持|保留).{0,24}(?:不變|原樣)/u,
@@ -601,6 +603,21 @@ const NON_AUTHORITATIVE_UI_STATEMENT_PATTERNS = [
   /(?:reviewer|審查者|別人|他人|第三方).{0,16}(?:說|表示|寫道|建議|提議|said|says?|wrote|suggested|proposed)/iu,
   /\b(?:not\s+my\s+(?:decision|approval|authorization)|not\s+an?\s+(?:decision|approval|authorization)|someone\s+else'?s\s+(?:suggestion|proposal))\b/iu,
 ]
+
+// AskUserQuestion 的 tool_result 是 harness 寫的 `The user answered: "<題目>"="<回答>"`(多題以換行串接)。
+// 判「猶豫 / 拒絕 / 討論」只能看 user 回答的那段,題目是 assistant 寫的;沒有分隔符就整段當回答(舊格式)。
+function selectionAnswerOnly(text) {
+  const raw = String(text || '')
+  if (!/^\s*The user answered:/u.test(raw)) return raw
+  const answers = raw.split(/(?=The user answered:)/u).map((chunk) => {
+    const at = chunk.indexOf('"="')
+    return at >= 0 ? chunk.slice(at + 3).replace(/"\s*$/u, '') : ''
+  }).filter(Boolean)
+  return answers.length ? answers.join('\n') : raw
+}
+// 「照 / 依 / 按 / 就(你的)建議|提議|推薦」是接受建議,不是「還在建議」—— 判 tentative 前先換成中性詞。
+const withoutAcceptancePhrases = (text) => String(text || '')
+  .replace(/(?:照|依|按|就)\s*(?:你|您)?\s*(?:的)?\s*(?:建議|提議|推薦)/gu, '照辦')
 
 const TENTATIVE_OR_CONDITIONAL_UI_PATTERNS = [
   /(?:還在|正在|先)?\s*(?:考慮|評估|思考|猶豫|未決定|尚未決定|暫定|提議|建議)/u,
@@ -1428,11 +1445,15 @@ export function authorizationEvidence(transcriptPath, {
     // falls through to the ordinary fail-closed flow). Target binding may come from the
     // answer or from the assistant proposal the question was attached to — binding alone
     // grants nothing without the genuine selection event.
-    const answerNormalized = normalizeText(selection.answerText)
+    // 只判 user 自己回答的那段:harness 把 assistant 的題目原文也寫進 tool_result(`The user answered: "題目"="回答"`),
+    // 題目裡的「要怎麼處理?」「(Recommended)」不是 user 的猶豫。「照你建議做」是接受建議,不是「還在建議」
+    //(2026-09-15:user 選了「對齊規格(Recommended)」並寫「照你建議做…確保不要改壞既有」,卻被判成 tentative + denial 擋下)。
+    const answerNormalized = normalizeText(selectionAnswerOnly(selection.answerText))
+    const answerForIntent = withoutAcceptancePhrases(answerNormalized)
     const answerIsClean = answerNormalized
-      && !matchesAny(TARGET_DENIAL_PATTERNS, withoutNoWaitClauses(answerNormalized))
-      && !matchesAny(TARGET_DISCUSSION_PATTERNS, answerNormalized)
-      && !matchesAny(TENTATIVE_OR_CONDITIONAL_UI_PATTERNS, answerNormalized)
+      && !matchesAny(TARGET_DENIAL_PATTERNS, withoutNoWaitClauses(answerForIntent))
+      && !matchesAny(TARGET_DISCUSSION_PATTERNS, answerForIntent)
+      && !matchesAny(TENTATIVE_OR_CONDITIONAL_UI_PATTERNS, answerForIntent)
     const bindingAlias = answerIsClean
       ? exactTargetBinding(`${selection.answerText}\n${selection.proposalText}`, target)
       : null

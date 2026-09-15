@@ -10,7 +10,7 @@ import { useFieldContext, useResolvedFieldMode, useResolvedFieldDisabled, useRes
 import { SelectionItem } from "@/design-system/components/SelectionControl/selection-item"
 import type { LucideIcon } from "lucide-react"
 import type { AvatarData } from "@/design-system/components/Avatar/avatar"
-import { fieldWrapperStyles } from "@/design-system/components/Field/field-wrapper"
+import { fieldWrapperStyles, fieldDisplayTextClass } from "@/design-system/components/Field/field-wrapper"
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 
@@ -137,13 +137,17 @@ const RadioGroup = React.forwardRef<
 
   if (resolvedMode === 'view') {
     const selectedValue = resolvedValue || undefined
+    // 字級走家族 SSOT field-controls.spec.md「(e) View typography canonical」:同 size 的 text-body / text-body-lg,
+    // 與 edit 選項 label 同字級。2026-09-15 前是裸 span → 吃到瀏覽器預設 16px(user 抓 view 字比選項大);
+    // 閘 scripts/field-view-typography-invariant.mjs 量 view 與 edit 字級相等。
+    const viewTextClass = fieldDisplayTextClass(resolvedBoxSize)
     if (!selectedValue) {
-      return <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}><span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span></div>
+      return <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}><span className={cn(viewTextClass, fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span></div>
     }
     const selectedLabel = findSelectedRadioLabel(children, selectedValue)
     return (
       <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}>
-        <span className="text-foreground">{selectedLabel ?? selectedValue}</span>
+        <span className={cn(viewTextClass, 'text-foreground')}>{selectedLabel ?? selectedValue}</span>
       </div>
     )
   }
