@@ -33,7 +33,7 @@ import { Button } from '@/design-system/components/Button/button'
  * |-------|------|-------|
  * | today | 數字下方藍色短桿 | `::after` pseudo bar(bg-primary,w-40% h-1.5px rounded-full,貼近數字底)|
  * | disabled | 灰底圓圈 + disabled 字色(跟 Button disabled 一致) | [&>button]:bg-disabled [&>button]:text-fg-disabled rounded-full |
- * | outside(非本月) | text-fg-muted(neutral-7) | [&>button]:text-fg-muted |
+ * | outside(非本月) | text-fg-muted(neutral-7)—— **僅在該日仍可點時**;不可點時讓位給 disabled(M24) | [&>button:not(:disabled):not([aria-disabled="true"])]:text-fg-muted |
  * | selected / range 端點 | 藍底白字圓 | [&>button]:bg-primary [&>button]:text-on-emphasis rounded-full |
  * | range middle | 灰底矩形 track(bg-neutral-selected = neutral-2),**高度 = cell 高度**(28×28 @ md) | before pseudo: `inset-y-0 -inset-x-[2px]` |
  * | range start/end 半圓 track | 左/右半圓 + selected 圓疊在上,**圓半徑 = button 半徑** | before pseudo: `rounded-l/r-full` + start `left-0 -right-[2px]` / end `-left-[2px] right-0`(向 middle 外擴 2px bridge gap)|
@@ -122,12 +122,12 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // absolute inset-0 = 完全填滿 cell(naked button,無 inset 4px 空隙)
           // z-[1] 讓 button 疊在 range track `before:` pseudo 之上
           'absolute inset-0 z-[1] flex items-center justify-center',
-          'font-normal text-body rounded-full transition-colors',
+          // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
+          'font-normal text-body rounded-full',
           // Hover 藍圈 1.5px(對齊 Apple HIG / Ant `@benchmark-unverified` visual ring measurement)— ring 在 button 之上 + 透明 bg 不擋 range track
           // 2026-07-07 user 拍板統一:瞬時 hover 進 primary 家族 = hover 階(FileUpload dropzone /
           // Slider thumb hover 同族;base 專屬持續選中與 focus)——ring-primary → ring-primary-hover
           'hover:ring-[1.5px] hover:ring-primary-hover hover:bg-transparent',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         ),
         // today:藍色 underline bar 貼近數字
         today: cn(
@@ -140,7 +140,14 @@ const DateGrid = React.forwardRef<HTMLDivElement, DateGridProps>(function DateGr
           // range 中段(淺灰底)由 range_middle 的 !bg-primary 覆寫回藍(2026-07-07 user 拍板)。
           '[&[data-selected=true]>button]:after:bg-on-emphasis',
         ),
-        outside: '[&>button]:text-fg-muted',
+        // 2026-09-07 修 M24 違反(user 抓圖:「明明都是 disabled,有些字比較深有些比較淺」):
+        // outside 與 disabled 是兩個獨立 modifier,RDP 會把兩個 className 都串上同一格。
+        // 兩條 utility 特異性相同 → 由 stylesheet 順序決勝,實測 `text-fg-muted`(neutral-7,45%)
+        // 贏過 `text-fg-disabled`(neutral-6,25%),導致**非本月又不可選的日子反而比本月不可選的更深**。
+        // 依 M24「State 顯著性 precedence:disabled > muted > emphasis」與本元件 spec.md:106
+        //(「outside…比 disabled 弱:outside 仍可 hover / 可點」)、:201(disabled → text-fg-disabled(M24)),
+        // outside 的淡化**只適用於還能點的日子**,故加 :not() 前提而非用 !important 硬壓。
+        outside: '[&>button:not(:disabled):not([aria-disabled="true"])]:text-fg-muted',
         // Selected(single 或 range 端點):button 藍底白字圓
         selected: cn(
           '[&>button]:bg-primary [&>button]:text-on-emphasis',

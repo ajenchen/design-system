@@ -3,11 +3,12 @@
 import * as React from 'react'
 import { Plus, Trash2, X as XIcon, RotateCcw, GripVertical } from 'lucide-react'
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
-import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
+import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { createDragAnnouncements, type DragOutcome } from '@/design-system/lib/drag-announcements'
 import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
-import { dragSourceStyle, dragHandleCursorClass } from '@/design-system/lib/drag-visual'
+import { dragSourceStyle, dragHandleCursorClass, forwardDragActivatorAttributes, DRAG_ACTIVATION_DISTANCE_PX } from '@/design-system/lib/drag-visual'
 import { Button } from '@/design-system/components/Button/button'
 import { Select, type SelectOption } from '@/design-system/components/Select/select'
 import { SurfaceHeader, SurfaceBody, COMPACT_HEADER_SLOT } from '@/design-system/patterns/overlay-surface/overlay-surface'
@@ -87,7 +88,24 @@ function DataTableSortManagerInner<TData>({
   const removeAt = (index: number) => {
     onSortingChange(sorting.filter((_, i) => i !== index))
   }
+  // C1/B2 修(2026-09-07):先前沒傳 accessibility → 吃 dnd-kit 英文預設,
+  // 且它從自己的生命週期播報,不知道下面的守衛已經 return。共用 SSOT 見
+  // `lib/drag-announcements.ts`(四個 DndContext 同一份)。
+  const outcomeRef = React.useRef<DragOutcome | null>(null)
+  // 2026-09-07 C4:先前**完全沒傳 sensors**,於是吃 dnd-kit 預設 —— 零位移的單次
+  // pointerdown 就啟動拖曳,使用者只想點一下核取方塊,卻收到 aria-pressed=true 與兩則
+  // assertive 播報。門檻值讀 `lib/drag-visual.ts` 的單一來源(全 DS 原本有三個不同答案)。
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE_PX } }),
+    useSensor(KeyboardSensor),
+  )
+  const announcements = React.useMemo(
+    () => createDragAnnouncements({ getOutcome: () => outcomeRef.current, kind: '排序條件' }),
+    [],
+  )
+
   const handleDragEnd = (event: DragEndEvent) => {
+    outcomeRef.current = null
     const { active, over } = event
     if (!over || active.id === over.id) return
     const oldIndex = sorting.findIndex((s) => s.id === active.id)
@@ -96,6 +114,7 @@ function DataTableSortManagerInner<TData>({
     const next = [...sorting]
     const [moved] = next.splice(oldIndex, 1)
     next.splice(newIndex, 0, moved)
+    outcomeRef.current = { kind: '排序條件', label: String(active.id) }
     onSortingChange(next)
   }
   const addSort = () => {
@@ -133,7 +152,7 @@ function DataTableSortManagerInner<TData>({
           無條件時 CTA 直接顯示,不需要 Empty 大區塊 */}
       <SurfaceBody className="flex flex-col gap-[var(--layout-space-tight)]">
         {sorting.length > 0 && (
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} accessibility={{ announcements }}>
             <SortableContext items={sorting.map(s => s.id)} strategy={verticalListSortingStrategy}>
               {sorting.map((sort, index) => {
                 const usedByOthers = new Set(sorting.filter((_, i) => i !== index).map((s) => s.id))
@@ -201,15 +220,14 @@ function SortRow({
         size="sm"
         aria-label="拖曳重排"
         className={dragHandleCursorClass}
-        {...attributes}
+        {...forwardDragActivatorAttributes(attributes)}
         {...listeners}
       />
       <div className="flex-1 min-w-0">
         <Select size="sm" aria-label="排序欄位" options={optionsForRow} value={sort.id} onChange={onChangeId} />
       </div>
       <div className="w-32 shrink-0">
-        {/* minRows={2} — 升冪/降冪只 2 選項,顯式縮 menu 高度(Q5) */}
-        <Select size="sm" aria-label="排序方向" options={DIRECTION_OPTIONS} value={sort.desc ? 'desc' : 'asc'} onChange={onChangeDir} minRows={2} />
+        <Select size="sm" aria-label="排序方向" options={DIRECTION_OPTIONS} value={sort.desc ? 'desc' : 'asc'} onChange={onChangeDir} />
       </div>
       {/* Trash 用 text Button(Q4 對齊 filter panel)— form-control row 必 Field 同高 */}
       <Button variant="text" size="sm" iconOnly startIcon={Trash2} aria-label="刪除" onClick={onRemove} />

@@ -1,0 +1,74 @@
+name: Focus and drag deep gates
+
+# 全 DS 掃描等級的焦點／溢出稽核。它們**不在 PR 閘裡**:
+# `ci-workflow-scope.test.mjs` 把 verify job 的 timeout 釘在 15 分鐘,
+# 明文要求 PR 閘留在「fast deterministic scope」。這兩支合計約 7.5 分鐘
+# (焦點幾何 58 元件 × 2 主題全掃 + 對照組;「+N」溢出 107 story 探測 + 候選跑滿寬度),
+# 塞進去會把 job 撐爆 —— 2026-09-08 實際撞過兩次逾時。
+#
+# 對應 AGENTS.md 的稽核分層:Tier 2 日常開發走 changed scope,
+# Tier 3 週期性 deep 走全 DS。這裡就是 Tier 3 的那一層。
+# PR 閘裡留的是輕量的那幾支(shared-carrier / datepicker / drag-runtime /
+# focus-indicator / virtual-scroll-stress,合計約 63 秒)。
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 2'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash -eo pipefail {0}
+
+jobs:
+  focus-deep-gates:
+    name: Focus geometry and overflow deep sweep
+    runs-on: ubuntu-24.04
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: '0'
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install and audit with the lock-verified npm runtime
+        run: npm run --silent setup:dependencies
+
+      - name: Install Playwright chromium
+        run: npm run --silent setup:playwright -- --with-deps
+
+      - name: Build DS lib + types
+        run: npm run build:lib 2>&1 | tail -10
+
+      - name: Build storybook
+        run: npm run build-storybook 2>&1 | tail -20
+
+      - name: Focus geometry full sweep(58 components × 2 themes)+ control group
+        run: |
+          node scripts/focus-geometry-browser-audit.mjs
+          # 對照組:把焦點視覺全部釘死,承擔者證明必須整批變紅。
+          # 不跑這一步的話,「無框但都有承擔者」那個綠燈不算證據。
+          node scripts/focus-geometry-browser-audit.mjs --selftest
+          # 反向檢查的對照組:把每一站都釘成內描邊,四周有空的那些必須被指名
+          #(2026-09-10 加:原本「已內描邊」是直接豁免,宣告往內之後就永遠不再重驗 ——
+          # 行內動作鈕因此帶著一句沒量過的註解活了兩個月)。
+          node scripts/focus-geometry-browser-audit.mjs --selftest-inset
+          node scripts/data-table-scrollbar-visibility.mjs
+          node scripts/data-table-scrollbar-visibility.mjs --selftest
+          node scripts/data-table-scroll-cost.mjs --selftest
+          node scripts/data-table-row-cache-deps-invariant.mjs --selftest
+          node scripts/menu-message-row-invariant.mjs --selftest
+
+      - name: Overflow indicator containment(all widths)+ control group
+        run: |
+          npm run test:overflow-indicator

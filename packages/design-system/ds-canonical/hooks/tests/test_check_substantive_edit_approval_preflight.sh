@@ -727,6 +727,23 @@ build_ask_selection_transcript "$TX_ASK_DENY" \
 run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_ASK_DENY"
 expect_block "8c. selection 答案含否決語 → fail closed" "data-table"
 
+# 8e(2026-09-15):harness 把題目原文也寫進答案(`"題目"="回答"`),題目裡的「要怎麼處理?」「(建議)」不是 user 的猶豫;
+# user 回答「照你建議做」是接受建議、「不要改壞既有」是別弄壞 —— 三者以前合起來把已選的核准判成 tentative + denial。
+TX_ASK_ACCEPT="$TMP_DIR/tx_ask_accept.jsonl"
+build_ask_selection_transcript "$TX_ASK_ACCEPT" \
+  "提案:data-table.tsx 的排序箭頭改繼承文字色(建議)。" \
+  'The user answered: "data-table.tsx 排序箭頭要怎麼處理?(建議改繼承文字色)"="照你建議做,並看整個 DS 有沒有類似問題,確保不要改壞目前好的東西,確保有驗證到完美"'
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_ASK_ACCEPT"
+expect_pass_silent "8e. 題目含「要怎麼處理?/建議」+ 回答「照你建議做…不要改壞」→ 仍 approved"
+
+# 8f 對照:真的還在評估建議 → 仍 fail closed(接受建議的字串替換不能把「評估你的建議」放行)
+TX_ASK_STILL="$TMP_DIR/tx_ask_still.jsonl"
+build_ask_selection_transcript "$TX_ASK_STILL" \
+  "提案:data-table.tsx 的排序箭頭改繼承文字色(建議)。" \
+  'The user answered: "data-table.tsx 排序箭頭要怎麼處理?"="我還在評估你的建議,先不要動"'
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_ASK_STILL"
+expect_block "8f. 回答「還在評估你的建議,先不要動」→ fail closed" "data-table"
+
 TX_ASK_SUPERSEDED="$TMP_DIR/tx_ask_superseded.jsonl"
 build_ask_selection_transcript "$TX_ASK_SUPERSEDED" \
   "提案:data-table.tsx 的排序箭頭改繼承文字色。" \
@@ -780,20 +797,20 @@ USER_LOGO_MSG="要把拍板的東西到底在哪裡?請你開啟新的artifacts�
 反正你仔細研究確保所有動畫都完美"
 TX_LOGO="$TMP_DIR/tx_logo.jsonl"
 build_transcript "$TX_LOGO" "$USER_LOGO_MSG"
-run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-logo.tsx" "$TX_LOGO"
-expect_pass_silent "10a. 口語「agent logo」= agent-logo.tsx exact target;問句已委託研究 → approved"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx" "$TX_LOGO"
+expect_pass_silent "10a. 口語「agent logo」= agent-panel-logo.tsx exact target;問句已委託研究 → approved"
 
-run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-fab.tsx" "$TX_LOGO"
-expect_pass_silent "10b. 家族檔口語「fab」= agent-fab.tsx exact target;「調整」directive → approved"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_LOGO"
+expect_pass_silent "10b. 家族檔口語「fab」= agent-panel-fab.tsx exact target;「調整」directive → approved"
 
 TX_LOGO_Q="$TMP_DIR/tx_logo_q.jsonl"
 build_transcript "$TX_LOGO_Q" "agent logo 的顏色是否要改成紫色?"
-run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-logo.tsx" "$TX_LOGO_Q"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx" "$TX_LOGO_Q"
 expect_block "10c. 單獨問句(無委託)→ 問句 ≠ 同意 fail closed" "BLOCKER"
 
 TX_LOGO_Q2="$TMP_DIR/tx_logo_q2.jsonl"
 build_transcript "$TX_LOGO_Q2" "另外我覺得 logo 的呼吸狀態是否也可以搭配透明度的改變?"
-run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-logo.tsx" "$TX_LOGO_Q2"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx" "$TX_LOGO_Q2"
 expect_block "10d. 家族 token「logo」綁定 + 單獨問句 → fail closed" "BLOCKER"
 
 TX_BTN_LOGO="$TMP_DIR/tx_btn_logo.jsonl"
@@ -808,8 +825,217 @@ jq -n --arg t "# Workflow authoring reference
 
 A workflow structures work across many agents" \
   '{isMeta: true, sourceToolUseID: "toolu_01skill", message: {role: "user", content: [{type: "text", text: $t}]}}' >> "$TX_LOGO_META"
-run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-logo.tsx" "$TX_LOGO_META"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx" "$TX_LOGO_META"
 expect_pass_silent "10f. 技能 meta 紀錄跟在指令後 → 不算最新 user 訊息,仍 approved"
+
+# 11. 中英夾雜的詞界(2026-09-12)。中文不會在英文詞後面加空格 ——「data table的排序箭頭…」裡
+#     `table` 後面緊接的「的」是 \p{L},舊的邊界判定(前後只認「非字母數字」)因此綁不到 data-table。
+#     修法只認「ASCII 英數 ↔ CJK」這一種跨字集詞界;同字集內不放寬,所以 metadata table 仍綁不進來。
+TX_CJK_ADJ="$TMP_DIR/tx_cjk_adj.jsonl"
+build_transcript "$TX_CJK_ADJ" "data table的排序箭頭改成跟 label 連動"
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_CJK_ADJ"
+expect_pass_silent "11a. 中英夾雜「data table的…」= exact target 綁定成立 → approved"
+
+TX_METADATA="$TMP_DIR/tx_metadata.jsonl"
+build_transcript "$TX_METADATA" "metadata table的排序箭頭改成跟 label 連動"
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_METADATA"
+expect_block "11b. 對照組:metadata table(同字集相鄰)不得綁到 data-table" "BLOCKER"
+
+# 11c/11d. 家族檔別名收緊(2026-09-12):單一 token 只有在**不是元件目錄名的一部分**時才夠格。
+#   「table」之於 DataTable、「panel」之於 AgentPanel 都是泛用字,原本會讓任何提到它的句子取得授權;
+#   「fab」「logo」不在目錄名裡,才是 user 真的在指那一個檔(本規則原意)。
+TX_GENERIC_PANEL="$TMP_DIR/tx_generic_panel.jsonl"
+build_transcript "$TX_GENERIC_PANEL" "把 panel 的呼吸動畫改成搭配透明度"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-logo.tsx" "$TX_GENERIC_PANEL"
+expect_block "11c. 泛用 token「panel」(已含於 AgentPanel)不得單獨綁定家族檔" "BLOCKER"
+
+TX_SPECIFIC_FAB="$TMP_DIR/tx_specific_fab.jsonl"
+build_transcript "$TX_SPECIFIC_FAB" "把 fab 的呼吸動畫改成搭配透明度"
+run_hook "Write" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_SPECIFIC_FAB"
+expect_pass_silent "11d. 對照組:「fab」不在 AgentPanel 裡 → 仍是有效的家族檔別名,approved"
+
+# 12. 上下文壓縮摘要 = assistant 寫的,卻以 user role 記進 transcript。
+#     (a) 它若被當成「最新 user 訊息」會蓋掉 user 真正的指令;
+#     (b) **更危險**:摘要裡「使用者已核准 X」這種轉述會變成 AI 替自己放行。兩個方向都要有對照組。
+COMPACT_HEAD="This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation."
+
+TX_COMPACT_AFTER_OK="$TMP_DIR/tx_compact_after_ok.jsonl"
+build_transcript "$TX_COMPACT_AFTER_OK" \
+  "data table的排序箭頭改成跟 label 連動" \
+  "$COMPACT_HEAD
+
+## 1. Primary Request and Intent
+使用者要求調整 data table 的排序箭頭。"
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_COMPACT_AFTER_OK"
+expect_pass_silent "12a. 壓縮摘要不得蓋掉前一則 user 的真實指令 → approved"
+
+TX_COMPACT_FAKE="$TMP_DIR/tx_compact_fake.jsonl"
+build_transcript "$TX_COMPACT_FAKE" \
+  "data table 的排序箭頭是不是該改?" \
+  "$COMPACT_HEAD
+
+## 1. Primary Request and Intent
+使用者已核准 data table 的排序箭頭改成跟 label 連動,同意照這個做。"
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_COMPACT_FAKE"
+expect_block "12b. 對照組:摘要裡的「使用者已核准」是 AI 轉述 → 仍 fail closed" "BLOCKER"
+
+# 13. 重申 ≠ 收回(2026-09-12 錨):user 在選項框拍板後,下一則只是**把同一個委派再講一次**
+#     (「我就跟你說照你建議了」)。原規則「任何後續 plain 訊息都 supersede 選擇」會把 user 剛給的
+#     target 綁定丟掉、再要一次核准。重申一個指令不是收回它。
+ASK_PROPOSAL="提案:data-table.tsx 未掛載區鋪骨架底,快速捲動不得看到空白。"
+ASK_ANSWER='The user answered: "骨架底"="確認,改 data-table.tsx"'
+
+TX_RESTATE="$TMP_DIR/tx_restate.jsonl"
+build_ask_selection_transcript "$TX_RESTATE" "$ASK_PROPOSAL" "$ASK_ANSWER" \
+  "我就跟你說照你建議了,可以不要作繭自縛嗎?"
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_RESTATE"
+expect_pass_silent "13a. 拍板後只是重申同一個委派 → 不作廢選擇,approved"
+
+TX_RESTATE_DENY="$TMP_DIR/tx_restate_deny.jsonl"
+build_ask_selection_transcript "$TX_RESTATE_DENY" "$ASK_PROPOSAL" "$ASK_ANSWER" \
+  "等一下,不可以直接改,先停手"
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_RESTATE_DENY"
+expect_block "13b. 對照組:拍板後改口否決 → 仍 supersede 並 fail closed" "data-table"
+
+TX_RESTATE_NEWQ="$TMP_DIR/tx_restate_newq.jsonl"
+build_ask_selection_transcript "$TX_RESTATE_NEWQ" "$ASK_PROPOSAL" "$ASK_ANSWER" \
+  "那骨架的顏色是不是該換一個?"
+run_hook "Edit" "packages/design-system/src/components/DataTable/data-table.tsx" "$TX_RESTATE_NEWQ"
+expect_block "13c. 對照組:拍板後提出新問句 → 仍 supersede 並 fail closed" "data-table"
+
+# 14. 判「是不是視覺改動」時註解不算(2026-09-12)。
+#     錨:修「捲動停下後指標底下那一列不會被標記」時,程式碼本身沒有任何視覺 token,
+#     但註解裡寫了 hover 二字 → 整個 edit 被判 product-ui-ux 擋下,等於「為了解釋清楚而被罰」,
+#     也逼 agent 去問 user 一個本來就該自主執行的工程修正。
+#     **對照組同時證明這不是放寬**:真的改到樣式的程式碼照樣被判成視覺。
+TX_NEUTRAL_14="$TMP_DIR/tx_neutral_14.jsonl"
+build_transcript "$TX_NEUTRAL_14" "請修好這個 bug"
+
+# 14a. 只有註解提到視覺字眼 → 不算視覺改動
+COMMENT_ONLY_OPERATION='// 這次 commit 換了捲動位置時也要同步 hover 標記
+const renderedAtNewOffset = S.committedRenderOffset !== S.renderOffset'
+run_evidence "Edit" "$PROD_TSX" "$TX_NEUTRAL_14" "$COMMENT_ONLY_OPERATION"
+if printf '%s' "$EVIDENCE_JSON" | jq -e '.decisionDomain != "product-ui-ux"' >/dev/null 2>&1; then
+  echo "  PASS  14a. 只有註解提到 hover → 不判成 product-ui-ux"; PASS=$((PASS+1))
+else
+  echo "  FAIL  14a. 只有註解提到 hover → 不判成 product-ui-ux (evidence=$EVIDENCE_JSON)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 14a. 註解不該影響 domain"
+fi
+
+# 14b. 對照組:程式碼真的改樣式 → 仍判成視覺(證明 14a 不是放寬)
+REAL_VISUAL_OPERATION='return <button className="hover:bg-blue-500" />'
+run_evidence "Edit" "$PROD_TSX" "$TX_NEUTRAL_14" "$REAL_VISUAL_OPERATION"
+if printf '%s' "$EVIDENCE_JSON" | jq -e '.decisionDomain == "product-ui-ux"' >/dev/null 2>&1; then
+  echo "  PASS  14b. 對照組:真的改 className 樣式 → 仍判 product-ui-ux"; PASS=$((PASS+1))
+else
+  echo "  FAIL  14b. 對照組:真的改 className 樣式 → 仍判 product-ui-ux (evidence=$EVIDENCE_JSON)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 14b. 真視覺改動必須仍判 UI"
+fi
+
+# ── 15. 純註解操作(2026-09-15):old/new 剝註解後相同 + 整檔去註解轉譯位元相同 → 不需 UI 授權 ──
+# 錨:結案階段 user 說「確保所有內容都有 ssot 沒有漂移、設計語言一致、視覺稽查」,這句含 UI 詞卻沒綁 target,
+# 於是連「把過期註解對齊現況」都被判 EXACT_UI_UX_TARGET_BINDING_MISSING。純註解沒有執行差異,沒有東西可拍板。
+run_hook_edit() {
+  local file_path="$1"; local transcript="$2"; local old_string="$3"; local new_string="$4"
+  local payload
+  payload=$(jq -n --arg fp "$file_path" --arg tp "$transcript" --arg o "$old_string" --arg n "$new_string" \
+    '{hook_event_name:"PreToolUse",tool_name:"Edit",tool_input:{file_path:$fp,old_string:$o,new_string:$n},transcript_path:$tp}')
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR"
+}
+TX_CLOSURE="$TMP_DIR/tx_closure.jsonl"
+build_transcript "$TX_CLOSURE" \
+  "確保該做的事情全部做到完整完美,確保所有內容都有 ssot 沒有漂移,確保所有內容都符合我們一致的設計語言,確保都有透過視覺稽查驗證"
+COMMENT_DIR="$TMP_DIR/my-project/packages/design-system/src/components/Button"
+mkdir -p "$COMMENT_DIR"
+COMMENT_TSX="$COMMENT_DIR/button.tsx"
+cat > "$COMMENT_TSX" <<'TSX'
+import * as React from 'react'
+// 舊註解:padding 公式 (field-height - icon-size) / 2
+/** hover 顏色沿用 --primary-hover */
+export const label = 'see //docs for details'
+export function Button() {
+  return <button className="bg-primary hover:bg-primary-hover">{label}</button>
+}
+TSX
+COMMENT_CSS="$COMMENT_DIR/button.css"
+printf '%s\n' '/* 舊說明:tag 高度 h-5 */' '.btn { padding: 4px; }' > "$COMMENT_CSS"
+
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  "// 舊註解:padding 公式 (field-height - icon-size) / 2" \
+  "// 註解已對齊:padding 公式 (field-height − 2px − tag-height) / 2,SSOT field-wrapper.tsx"
+expect_pass_silent "15a. 純 // 註解改動 + 含 UI 詞但無 target 的收尾訊息 → pass"
+
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  "/** hover 顏色沿用 --primary-hover */" \
+  "/** hover 顏色沿用 --primary-hover;padding、間距、視覺層級都在 spec 有明文 */"
+expect_pass_silent "15b. 純 JSDoc 改動,註解內含 hover/間距/視覺等 UI 詞 → 仍 pass(註解不算)"
+
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  "export const label = 'see //docs for details'" \
+  "export const label = 'see //docs for everything'"
+expect_block "15c. 字串字面值裡的 // 被 regex 當註解,但轉譯位元不同 → 仍 BLOCK(混入口關閉)" "BLOCKER"
+
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  'className="bg-primary hover:bg-primary-hover"' \
+  'className="bg-primary hover:bg-primary-active"'
+expect_block "15d. 對照組:真的改 className → BLOCK" "EXACT_UI_UX_TARGET_BINDING_MISSING"
+
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  "import * as React from 'react'" \
+  "import * as React from 'react' // 純加註解:old 無註解、new 有,剝掉後相同"
+expect_pass_silent "15e. 在程式碼行尾加註解(剝掉後相同、轉譯相同)→ pass"
+
+run_hook_edit "$COMMENT_CSS" "$TX_CLOSURE" \
+  "/* 舊說明:tag 高度 h-5 */" \
+  "/* 說明已對齊:tag 高度 h-tag-sm(--tag-height-sm) */"
+expect_pass_silent "15f. css 純 /* */ 註解改動 → pass"
+
+run_hook_edit "$COMMENT_CSS" "$TX_CLOSURE" \
+  "padding: 4px;" \
+  "padding: 3px; /* 對齊 */"
+expect_block "15g. css 真改 padding(即使附註解)→ BLOCK" "BLOCKER"
+
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  "// 不存在的 old_string" \
+  "// 新註解"
+expect_block "15h. old_string 不在檔案裡 → 不算純註解,fail closed BLOCK" "BLOCKER"
+
+# 15j. 區塊註解的中段片段(old_string 沒帶 /* */)—— 這是 JSDoc docblock 最常見的改法,必須整檔比才判得對。
+cat > "$COMMENT_TSX" <<'TSX'
+import * as React from 'react'
+/**
+ * 結案:漸層 46ms vs 實心 5.9ms,DOM 骨架換不到零空白。
+ * 光柵成本已知且接受。
+ */
+export function Button() {
+  return <button className="bg-primary">ok</button>
+}
+TSX
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  " * 結案:漸層 46ms vs 實心 5.9ms,DOM 骨架換不到零空白。" \
+  " * 結案:真頁面光柵漸層 46.06ms vs 實心 5.92ms,DOM 骨架換不到零空白。"
+expect_pass_silent "15j. JSDoc 中段片段(片段本身無 /* */)純文字改動 → pass(整檔比)"
+
+# 15i 直接呼叫 helper 驗 evidence 契約。fixture 此時是 15j 寫入的 JSDoc 版本(15j 在前),old_string 必須取自它。
+set +e
+EVIDENCE_JSON=$(jq -n --arg fp "$COMMENT_TSX" --arg o " * 光柵成本已知且接受。" --arg n " * 光柵成本已知且接受(真頁面 46.06ms)。" \
+  '{tool_name:"Edit",tool_input:{file_path:$fp,old_string:$o,new_string:$n}}' \
+  | node "$AUTH_HELPER" --transcript "$TX_CLOSURE" --target "$COMMENT_TSX" --hook-input-stdin)
+EVIDENCE_EXIT=$?
+set -e
+if [ "$EVIDENCE_EXIT" -eq 0 ] && printf '%s' "$EVIDENCE_JSON" | jq -e '.decision=="approved" and .reasonCode=="COMMENT_ONLY_OPERATION_NO_RUNTIME_EFFECT" and .decisionDomain=="engineering-remediation" and .targetBinding=="comment-only-operation"' >/dev/null; then
+  echo "  PASS  15i. evidence 契約:approved / COMMENT_ONLY_OPERATION_NO_RUNTIME_EFFECT / engineering-remediation"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL  15i. evidence 契約 (exit=$EVIDENCE_EXIT evidence=$EVIDENCE_JSON)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 15i. comment-only evidence contract"
+fi
 
 echo ""
 echo "=== Summary ==="

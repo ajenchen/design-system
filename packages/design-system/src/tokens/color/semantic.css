@@ -90,9 +90,8 @@
    │                                                                     │
    │  Selected state family（toggle on / 持續選中 element 的互動）       │
    │    --neutral-selected         rest 持續選中   = neutral-2            │
-   │    --neutral-selected-hover   切換鈕hover(變淺) = neutral-1          │
-   │    --neutral-selected-focus   鍵盤焦點 深一階  = neutral-3           │
-   │    --neutral-selected-active  按壓專屬 深一階  = neutral-3           │
+   │    --neutral-selected-hover   切換鈕hover 深一階 = neutral-3         │
+   │    --neutral-selected-active  按壓專屬 再深一階 = neutral-4          │
    │                                                                     │
    │  --bg-disabled                互動元件 disabled 背景  = neutral-2    │
    │                                                                     │
@@ -134,7 +133,7 @@
    │  On-fill     --on-emphasis（白）/ --on-emphasis-dark（深,亮底用）   │
    │  Neutral     bg-neutral-hover / bg-neutral-active / bg-disabled     │
    │              bg-neutral-selected / bg-neutral-selected-hover /       │
-   │              bg-neutral-selected-focus / bg-neutral-selected-active  │
+   │              bg-neutral-selected-active                              │
    │              bg-muted / bg-secondary                                 │
    │  Border      border-border / border-border-hover / border-divider   │
    │  Focus       ring-ring                                               │
@@ -160,6 +159,16 @@
    :root, [data-theme] 讓每個 theme 邊界重新解析。
    所有語義 token 都在這裡。dark 要改的在 ③ 覆寫。 */
 :root, [data-theme] {
+
+  /* `color-scheme` 告訴瀏覽器「這塊區域是亮版還暗版」,決定**它自己畫的東西**的配色:
+     原生捲軸、表單控制項的預設外觀、以及沒被覆蓋時的畫布底色。
+     這不是裝飾 —— DataTable 走的是**原生捲軸**(`data-table.css` 在 Chromium 上把 `scrollbar-color`
+     重設回 `auto`,理由見該檔:裸 `::-webkit-scrollbar` 會把 overlay 捲軸強制變成佔版面的捲軸),
+     所以 Chrome 完全不看我們的 `--scrollbar-*` token,只看這個屬性。
+     少了它,`color-scheme` 的計算值是 `normal` → dark mode 下瀏覽器照樣畫**亮色捲軸**
+     (2026-09-12 user 截圖:dark 表格右側一條亮色捲軸)。
+     宣告在 `:root, [data-theme]` 而不是只在 `:root`,巢狀 theme 邊界才會一起翻。 */
+  color-scheme: light;
 
   /* Surface — 2026-05-20 fix(user 抓 raw oklch 違反 semantic 直指 primitive 規則):
      從 raw oklch(1 0 0) 改指 primitive --color-white(L66 absolute anchor) */
@@ -359,17 +368,30 @@
        --neutral-selected = 持續 toggle on / 長時間選中（persistent）
 
      選中之上的疊加(2026-08-11 user 拍板;SSOT = item-anatomy.spec.md「選中 × 互動疊加」格):
-       -hover  = 可取消切換鈕專屬「hover 預告釋放」→ 變淺(Fluent ToggleButton 同構;Carbon/Atlassian
-                 同名 token 是變深,本 DS 反向是切換鈕語意的有意設計 — 列元件禁用本 token)
-       -focus  = 鍵盤焦點/反白停在「選中列」→ 深一階(游標可見性 WCAG 2.4.7;滑鼠 hover 一律釘住不變)
+       -hover  = 可取消切換鈕專屬(列元件禁用本 token)
+                 **2026-09-07 由「變淺」改為「變深」**:原本是 neutral-1,想表達 Fluent ToggleButton
+                 的「hover 預告釋放」。但 neutral-1 正好就是 `--neutral-hover` 的值 —— 實測兩個主題
+                 皆同(淺色 2%、深色 4%),加上 `variant='text'` 按下與未按下的文字色也都是
+                 foreground,結果是**切換鈕按下與未按下,在滑鼠懸停時像素完全相同**,
+                 「這顆開著沒」的訊號在 hover 當下整個消失。
+                 改成 neutral-3 後階梯單調且處處不撞:
+                     未按下  透明 → hover neutral-1 → 按壓 neutral-2
+                     已按下  neutral-2 → hover neutral-3 → 按壓 neutral-4
+                 方向與 Carbon / Atlassian 的同名 token 一致(兩家本來就是變深)。
        -active = 只有「按住」的瞬間(按壓專屬;禁借給 hover/反白 — 2026-07-05 D4 借用已於 2026-08-11 糾正)
+                 2026-09-07 由 neutral-3 上調 neutral-4:-hover 佔走 neutral-3 後,不上調就會
+                 變成 hover 與按壓同值(問題只是從一處搬到另一處)。
 
-     典型消費者：Button toggle pressed(-hover 變淺/-active 按壓)、DropdownMenu/SelectMenu 單選項目、
-     SidebarMenuButton/TreeItem/TimePicker/MenuItem 選中列(皆 -focus)。 */
+     **`-focus` 已於 2026-09-07 退役**:它原本表示「鍵盤焦點停在選中列 → 底色深一階」,
+     user 拍板改為**畫框**(`focus-ring-inset`)。理由是同一個底色通道不能同時承載
+     「這一列被選中」與「鍵盤游標在這裡」兩個意義 —— 一個元素只能有一種焦點指示。
+     現行 owner = `patterns/element-anatomy/item-anatomy.spec.md`「選中 × 互動疊加」格。
+
+     典型消費者：Button toggle pressed(-hover 深一階 / -active 再深一階,2026-09-07)、DropdownMenu/SelectMenu 單選項目、
+     SidebarMenuButton/MenuItem 選中列(底色 `-selected`,鍵盤游標走框)。 */
   --neutral-selected:         var(--color-neutral-2);
-  --neutral-selected-hover:   var(--color-neutral-1);
-  --neutral-selected-focus:   var(--color-neutral-3);
-  --neutral-selected-active:  var(--color-neutral-3);
+  --neutral-selected-hover:   var(--color-neutral-3);
+  --neutral-selected-active:  var(--color-neutral-4);
 
   /* Static Subtle — 靜態弱化背景(2026-05-20 v3 註解濃縮原則,SSOT 詳 color.spec.md「Static Subtle Background」段)*/
   /* 判斷:「這元素是『還沒準備好 / 不可操作 / placeholder』嗎?」是 → muted / 否,只是視覺退後 → secondary */
@@ -403,12 +425,28 @@
   --text-selection:       color-mix(in oklch, var(--color-blue-5) 30%, transparent);
   --search-match:         var(--color-amber-3);
   --search-match-current: var(--color-amber-5);
+
+  /* Drop target — 「可以放到這裡」的區域配對(2026-09-03 user 拍板;SSOT 詳 color.spec.md「Drop target」段)
+     一組兩個:底色 + 邊框,任何 drag & drop / 磁吸停靠的合法區域都消費同一組,不各自定義。
+     底色必半透明(同 Highlight 段的「覆蓋在內容上就不能不透明」鐵律,VS Code theme-color:
+     「The color must not be opaque so as not to hide underlying decorations」)——這是它與 --primary-subtle
+     的分工:-subtle 是元件自己的淡底(不透明、底下沒有別人的內容),drop-target 是蓋在別人內容上的暫態區域。
+     15% = **DS 自家 alpha 階梯上的既有階**(light --_na5 / dark --_na4,亦即 --black-a15 / --white-a15 用的那一階;
+     不自創新階),且落在世界級區間內(Material 3 dragged state layer 0.16 / VS Code light editorGroup.dropBackground
+     0.18 / Atlassian color.background.selected.hovered ≈ 0.20)。一個公式兩個模式(--primary 在 dark 由 primitive
+     自動變亮),不寫 dark override。
+     邊框 = --primary-hover(瞬時態歸 hover 階,與 FileUpload 拖入區既有值相同 → 該元件改消費本 token 零視覺差)。 */
+  --drop-target:          color-mix(in oklch, var(--primary) 15%, transparent);
+  --drop-target-border:   var(--primary-hover);
 }
 
 
 /* ── ③ Dark-Only — 覆寫與 light 不同的值 ──
    同 specificity，後面贏，蓋掉 ② 的預設值。 */
 [data-theme="dark"] {
+
+  /* 見 ② 的 color-scheme 說明:這一行才讓瀏覽器把原生捲軸與原生控制項畫成暗版。 */
+  color-scheme: dark;
 
   /* Surface */
   --canvas:               var(--color-neutral-1-opaque);
@@ -536,6 +574,10 @@
   --color-warning-hover:         var(--warning-hover);
   --color-warning-active:        var(--warning-active);
 
+  /* Drop target(可放下的區域:底色 + 邊框) */
+  --color-drop-target:           var(--drop-target);
+  --color-drop-target-border:    var(--drop-target-border);
+
   /* Subtle */
   --color-info-subtle:           var(--info-subtle);
   --color-primary-subtle:        var(--primary-subtle);
@@ -563,7 +605,6 @@
   /* Neutral Interaction — Selected state family */
   --color-neutral-selected:          var(--neutral-selected);
   --color-neutral-selected-hover:    var(--neutral-selected-hover);
-  --color-neutral-selected-focus:    var(--neutral-selected-focus);
   --color-neutral-selected-active:   var(--neutral-selected-active);
 
   /* Surface Utility */

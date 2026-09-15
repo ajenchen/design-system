@@ -85,19 +85,7 @@ export type WithFieldVariantInternal<C> = C extends (props: infer P) => infer R
 // SSOT:fieldWrapperStyles `width` variant(field-wrapper.tsx)+ field-controls.spec.md「寬度軸」。
 export type FieldWidth = 'fill' | 'hug'
 
-// ── Menu List Min Height ─────────────────────────────────────────────────────
-// SelectMenu / Select / Combobox 共用的 CommandList minHeight 計算。
-// 確保空狀態有足夠高度讓 Empty 垂直置中(有框容器 → 置中原則)。
-
-const FIELD_HEIGHT_TOKEN: Record<string, string> = {
-  sm: 'var(--field-height-sm)',
-  md: 'var(--field-height-md)',
-  lg: 'var(--field-height-lg)',
-}
-
-/** @internal — CommandList 最小高度 = field-height × rows + 16px(CommandGroup py-2 上下 padding);Command/Select 內部 helper,consumer 不直接 import。root barrel 排除(subpath 仍可用)。 */
-export function getMenuListMinHeight(size: string, rows: number = 3): string {
-  const token = FIELD_HEIGHT_TOKEN[size] ?? FIELD_HEIGHT_TOKEN.md
-  return `calc(${token} * ${rows} + 16px)`
-}
+// ── Menu Empty-state Min Height(已退役,2026-09-08 user 拍板)────────────────────────────
+// 舊的「空狀態最小高度 = 欄位高度 × minRows + 16px」公式(2026-04-10 加,只寫「視覺一致」)已移除:
+// 沒有結果 / 載入中改成 `MenuItem message` 訊息列,高度由列幾何決定,與 1 筆結果等高。owner:select-menu.spec.md「Empty state」。
 

@@ -2,12 +2,14 @@
 // @renderer-symmetry-allow: ComboboxTagStack(view path)接 consumer tagRenderer 是 Stream C 下 cycle 工作 — 2026-05-12 先 ship Issues 2/3/4 surgical fixes(placeholder vocabulary + cell surface metrics + placeholder truncate),tagRenderer view-path unify deferred per field-controls.spec.md 共享 contract a。當前 multi=1 顯示已透過 PeoplePicker tagRenderer(people-picker.tsx:426-444)PersonDisplay SSOT 對齊;其他 Combobox consumer 走 default `<Tag>` 純文字 backward-compat。
 // code-quality-allow: file-size — Combobox 含 NativeCombobox/CustomCombobox/useOverflowCount/OverflowTagList/ComboboxTagStack 5 子元件 + 共用 helpers,split-into-files 會破壞 measurement closures + 重複 type definitions。
 import * as React from 'react'
+import { useKnownOptions } from '@/design-system/hooks/use-known-options'
 import { X, ChevronDown } from 'lucide-react'
+import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
-import { fieldWrapperStyles, nakedCellRowModeAlign, fieldDisplayTextClass } from '@/design-system/components/Field/field-wrapper'
+import { fieldWrapperStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, fieldTagInsetY } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
-import { Tag } from '@/design-system/components/Tag/tag'
+import { TAG_HEIGHT_PX, Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
 import { SelectMenu, forwardKeyToListbox, useActiveDescendant, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
@@ -27,11 +29,9 @@ const GAP = 4
 // auto → 生 scroll container,垂直反而可捲。
 const tagRowOverflowClass = 'overflow-x-clip'
 
-const tagPadding: Record<string, string> = {
-  sm: 'px-[calc((var(--field-height-sm)_-_1.25rem)_/_2)]',
-  md: 'px-[calc((var(--field-height-md)_-_1.5rem)_/_2)]',
-  lg: 'px-[calc((var(--field-height-lg)_-_1.5rem)_/_2)]',
-}
+// Tag 四邊內距的單一來源在 field-wrapper.tsx(`fieldTagInsetX` / `fieldTagInsetY`),Select 共用;理由與公式見該處。
+const tagPadding = fieldTagInsetX
+const tagPaddingY = fieldTagInsetY
 
 /**
  * Combobox option schema(2026-05-10 post-Issue-4 audit unify):**explicit extends
@@ -98,6 +98,15 @@ function useOverflowCount(
   // 改 useEffect:fires AFTER paint,所有 refs 都 attach。double-rAF guard ensures layout done。
   // Trade-off:可能 1-2 frame flicker,但 functional setState guard + paint target measurement 已 cover。
   React.useEffect(() => {
+    /**
+     * 這次量測可不可信:容器與所有標籤都量到非零寬度才算數。
+     *
+     * 雙 rAF 的 fallback(2026-05-14 I3)當初是為了「批次渲染場景 tag 還 0-width」——
+     * 那個條件在同步這一趟就量得出來,不必無條件再跑一次。實測(2026-09-10,DataTable
+     * roadmap 全功能範例、40 步滾輪):每個掛載固定跑兩趟 calc,一次手勢 180 趟、
+     * 1080 次幾何讀取,其中第二趟幾乎總是得到相同結果。改成「不可信才補跑」。
+     */
+    let trustworthy = false
     if (!enabled || totalCount === 0) { setState({ visibleCount: totalCount, ready: true }); return }
     if (visibleCountOverride !== undefined) {
       for (let i = 0; i < tagEls.current.length; i++) {
@@ -122,12 +131,14 @@ function useOverflowCount(
       }
       const ofEl = overflowEl.current
       if (ofEl) ofEl.hidden = true
+      trustworthy = true
       setState({ visibleCount: 1, ready: true }); return
     }
     const container = containerRef.current
     if (!container) return
 
     const calc = () => {
+      trustworthy = false
       const cs = getComputedStyle(container)
       const available = container.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0)
       // 2026-05-18 Round 5 fix(per user 拍板「那就開始做」+ Codex M31 Round 5 verdict):
@@ -149,11 +160,13 @@ function useOverflowCount(
       // 2026-05-18 Round 5:量 paint target `[data-tag-root]` 而非 wrapper(per codex Round 5 verdict)。
       // wrapper basis:auto 自由 grow,offsetWidth ≠ Tag actual paint width。
       let used = 0, count = 0
+      let anyZero = available <= 0
       for (let i = 0; i < totalCount; i++) {
         const el = tagEls.current[i]
         if (!el) continue
         const tagRoot = el.querySelector('[data-tag-root]') as HTMLElement | null
         const w = tagRoot ? tagRoot.getBoundingClientRect().width : el.offsetWidth
+        if (w <= 0) anyZero = true
         const next = used + (count > 0 ? gap : 0) + w
         const remaining = totalCount - count - 1
         // width check FIRST(無 `count > 0` 短路):任何超寬都 break,包含 i=0 case
@@ -176,9 +189,18 @@ function useOverflowCount(
         if (lastEl) lastEl.hidden = true
       }
       if (ofEl) ofEl.hidden = count >= totalCount
+      // 2026-09-08:標籤列是 `flex-1 min-w-0`,容器夠窄時它會被壓到 clientWidth = 0,
+      // 而「+N」本身**在裁切容器內**,於是連它一起被裁掉 —— 使用者看不到「還有幾個」,
+      // 那正是空間不足時唯一還帶資訊的元素。(實測 DataTable 篩選面板:標籤區寬度隨容器
+      // 180 → 148 → 68 → 0;420px 時「+3」超出裁切祖先 28.4px,完全不可見。)
+      // 給容器一個等於「+N」寬度的下限:它是最後才被放棄的東西。
+      // 條件用 totalCount 而不是 `!ofEl.hidden`,是為了避免震盪 —— 後者會讓
+      // 「設下限 → 空間變夠 → 一個 tag 塞得下 → +N 收起 → 下限撤掉 → 空間又不夠」來回跑。
+      container.style.minInlineSize = totalCount > 0 ? `${overflowW}px` : ''
       // 2026-05-18 A' fix functional setState value-equal guard(per Codex Round 3 verdict):
       // effect 內 calc 直跑 + ResizeObserver re-fire 同時跑 → 若每次都 new object setState
       // 觸發 re-render 即使值沒變,可能 cascade。回 prev 不更新 = avoid 抖動。
+      trustworthy = !anyZero
       setState(prev => (prev.visibleCount === count && prev.ready) ? prev : { visibleCount: count, ready: true })
     }
 
@@ -209,10 +231,17 @@ function useOverflowCount(
         })
       })
     }
-    scheduleCalc()
-    const containerObs = new ResizeObserver(scheduleCalc)
+    // 同步那趟量到 0 寬(批次渲染 / 尚未版面配置)才補跑雙 rAF;量得準就不再跑第二趟。
+    if (!trustworthy) scheduleCalc()
+    /**
+     * ResizeObserver 在 `observe()` 之後一定會先送一發「初始觀測」,那一發回報的尺寸
+     * 就是上面同步 calc 剛量過的同一個版面 —— 拿它再跑一次是純白工。每個 observer
+     * 各自吞掉自己的第一發,之後的每一發都是真的尺寸變了,照常重算。
+     */
+    const skipFirst = (fn: () => void) => { let primed = false; return () => { if (!primed) { primed = true; return } fn() } }
+    const containerObs = new ResizeObserver(skipFirst(scheduleCalc))
     containerObs.observe(container)
-    const itemObs = new ResizeObserver(scheduleCalc)
+    const itemObs = new ResizeObserver(skipFirst(scheduleCalc))
     for (const el of tagEls.current) {
       if (el) itemObs.observe(el)
     }
@@ -301,15 +330,21 @@ function OverflowTagList({ containerRef, items, size, wrap, renderTag, renderHid
   // `ready` state 保留供未來 instrumentation / debug,不再當 visual gate。
   // 保留 `<span className="contents">` 維持 fragment-like rendering(parent JSX 期望 single child)。
   void ready  // intentional: ready 留供 future debug,目前無 consumer
+  // **量測 wrapper 必須是 flex 容器,不能是區塊盒**(2026-09-15 user 抓「sm 的 tag 沒垂直置中」,像素實測):
+  // 區塊盒的高度由繼承的字型行高決定(欄位 text-body = 21px),sm 的 Tag 只有 20px(h-5),行內的 Tag 對齊
+  // 行盒基線、沉到底部 → tag 區 21.8px、tag 上隙 3.9 / 下隙 2.1。md/lg 的 Tag 是 24px ≥ 21,盒子被撐滿才看不出來。
+  // flex 容器沒有行盒:高度 = Tag 高度,wrapper `items-center` 直接對 Tag 的盒子置中(sm 3/3、md 3/3、lg 5/5)。
+  // Select 的 tag 模式沒有這層 wrapper,一直是正的 —— 這層 wrapper 是 useOverflowCount 量寬用的,寬度量法不變
+  //(flex 容器在 flex row 裡 shrink-0 的 max-content 寬 = 內容寬,跟區塊盒相同)。閘:`scripts/tag-field-vertical-inset.mjs`。
   return (
     <span className="contents">
       {items.map((item, i) => (
         // 2026-05-14 I5 fix(per codex M31 verdict + user 抓「avatar stack 堆疊方向不一致」):
         // 加 z-index per-index — 前 item z 高(對齊 MultiPersonDisplay zIndex: visible.length - i
         // canonical + MUI AvatarGroup surplus pattern)。view + edit stack 堆疊方向統一。
-        <div key={item.value} ref={el => { tagEls.current[i] = el }} className={cn('shrink-0 max-w-full', tagWrapperClassName)} style={{ zIndex: items.length - i }}>{renderTag(item, i)}</div>
+        <div key={item.value} ref={el => { tagEls.current[i] = el }} className={cn('shrink-0 max-w-full flex', tagWrapperClassName)} style={{ zIndex: items.length - i }}>{renderTag(item, i)}</div>
       ))}
-      <div ref={overflowEl} className={cn('shrink-0', overflowWrapperClassName)}>
+      <div ref={overflowEl} className={cn('shrink-0 flex', overflowWrapperClassName)}>
         <OverflowIndicator count={overflow} shape={overflowShape} size={size}>
           {hiddenItems.map(item => (
             renderHiddenTag
@@ -392,13 +427,28 @@ export interface ComboboxProps {
   clearable?: boolean
   /** 啟用搜尋 */
   searchable?: boolean
-  /** Loading state(2026-05-15 audit B fix per user verbatim「dropdown 隨時可開,讀取在 panel 中間 CircularProgress」)。
-   *  Forward 給 SelectMenu primitive SSOT;spinner 只在無可顯示選項時佔 CommandEmpty slot 顯 CircularProgress
-   *  (已有 options 保留顯示,不取代)。Trigger 不變(user 隨時可開)。
-   *  對齊 MUI Autocomplete「loading 只在無 suggestions 時顯 loadingText」+ Field SSOT + Empty 元件 compose。*/
+  /** 「這個值」在讀取 / 驗證 / 儲存(Field 家族 `loading` SSOT,`field-controls.spec.md`「Loading state」;2026-09-09 user 拍板
+   *  收窄語意,與 Input `loading` 同義):觸發點右側、ChevronDown 左邊放列圖示尺寸的 CircularProgress(react-select / Atlassian
+   *  的順序:清除 → 轉圈 → 箭頭)+ 觸發點 `aria-busy`;選單照常可開、可選。**不是**選項載入 —— 選項載入用 `optionsLoading`。 */
   loading?: boolean
+  /** 選項清單載入中(2026-09-09 user 拍板改名自 `loading`)。Forward 給 SelectMenu SSOT:指示**只在選單內**(沒有可顯示選項時
+   *  一列「載入選項中」訊息列 + listbox `aria-busy`),觸發點 / 搜尋列不轉圈;本機過濾已有選項時保留、遠端搜尋抓資料中舊選項
+   *  不顯示(`select-menu.spec.md`「Loading」「遠端搜尋」)。 */
+  optionsLoading?: boolean
   /** 搜尋框位置：menu（浮層內，預設）或 trigger（inline input） */
   searchIn?: 'menu' | 'trigger'
+  /** 遠端搜尋時傳 `false`:不在本機用搜尋字過濾(trigger 模式與浮層模式都不過濾)、伺服器回什麼列什麼;抓資料中(`optionsLoading`)
+   *  舊結果不顯示、關鍵字空時顯示 `suggestions`;SSOT select-menu.spec.md「遠端搜尋」。 */
+  filterOption?: boolean
+  /** 搜尋字改變時回呼(含清空);遠端搜尋搭配 `filterOption={false}` + `optionsLoading`。trigger / menu 兩種搜尋位置都會回呼。 */
+  onSearchChange?: (value: string) => void
+  /** 遠端搜尋、關鍵字空時顯示的建議清單(部分選項;DS 自動包成「建議」群組,讓使用者知道選項不只這幾筆)。只在 `filterOption={false}`
+   *  生效;SSOT `select-menu.spec.md`「Suggestions」。 */
+  suggestions?: ComboboxOption[]
+  /** 建議群組標題(預設「建議」;forward 給 SelectMenu) */
+  suggestionsLabel?: string
+  /** 遠端搜尋、關鍵字空、沒有建議也沒在載入時的提示列文案(預設「輸入關鍵字搜尋」;forward 給 SelectMenu) */
+  searchHintText?: string
   /** 搜尋框 placeholder（未有選項時顯示)。Default: 「搜尋…」 */
   searchPlaceholder?: string
   /** 搜尋框 ARIA label。Default: 「搜尋選項」 */
@@ -472,7 +522,7 @@ export interface ComboboxProps {
    * @internal PeoplePicker stack wrapper 內部協議 — 目前無 active consumer(PeoplePicker 傳 undefined),保留供未來精準 padding;新 consumer 請先評估。
    *
    * **2026-05-13 v2 deprecate path**:原 PeoplePicker pass `{8}` 假設「Combobox tagPadding=4px,4+8=12」
-   * 但 `tagPadding[size]` 是 density-dependent calc `(field-height - icon-size) / 2`,只在 md size +
+   * 但 `tagPadding[size]` 是 density-dependent calc `(field-height − 2px − tag-height) / 2`(3/3/5;SSOT field-wrapper.tsx fieldTagInsetX,2026-09-15 更正:舊註解寫 icon-size 是錯的),只在 md size +
    * default density 才 = 4px;其他 size/density 漂 6/8px → 4+8=12 公式破。改 PeoplePicker 直接 inject
    * `!px-[var(--field-px)]` className 到 Combobox Field wrapper(per people-picker.spec.md:94 v2),`tagAreaPaddingLeftPx`
    * 走 undefined。Future 仍保留此 prop 給其他 consumer 精準調整 padding,但 PeoplePicker 已不再用。
@@ -518,7 +568,7 @@ function ReadonlyMultiSelect({
   const variant = variantProp ?? 'default'
   const sz = size ?? 'md'
   const iconSize = sz === 'lg' ? 20 : 16
-  const tagHeight = sz === 'sm' ? 20 : 24
+  const tagHeight = TAG_HEIGHT_PX[sz]
   const containerRef = React.useRef<HTMLDivElement>(null)
   const hasTags = (value?.length ?? 0) > 0
 
@@ -537,7 +587,11 @@ function ReadonlyMultiSelect({
     }
     return (
       <div
-        className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size: sz }), hasTags && tagPadding[sz], className)}
+        className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size: sz }), hasTags && tagPadding[sz],
+          // wrap 幾何跟 edit / readonly / disabled 全 mode 一致(2026-09-15 補漏):items-start + 同一個內距公式 + 高度放開,
+          // 否則 view 態 wrap 的 tag 會被固定的 h-field-* 裁掉;第一行 y 仍 = 單行 y(field.spec.md:147 中線錨在 field-height/2)。
+          hasTags && wrap && cn('items-start', tagPaddingY[sz]), className)}
+        style={hasTags ? { paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) } : undefined}
         data-field-mode="view"
       >
         {hasTags ? (
@@ -545,7 +599,8 @@ function ReadonlyMultiSelect({
         ) : (
           <span className={cn('flex-1 min-w-0', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>
         )}
-        <ItemSuffix className="pointer-events-none">
+        {/* wrap 時 chevron 鎖第一行 tag 中線,跟 readonly(:628)/ edit 同一招(field-controls.spec.md:280) */}
+        <ItemSuffix className={cn('pointer-events-none', wrap && 'self-start')} style={wrap ? { height: tagHeight } : undefined}>
           <ChevronDown size={iconSize} className="shrink-0 text-fg-muted" aria-hidden />
         </ItemSuffix>
       </div>
@@ -560,7 +615,7 @@ function ReadonlyMultiSelect({
         // M10 propagation:原 overflow-visible 讓 readonly tag 越界蓋 indicator,跟 view 不對稱。
         // 2026-06-27 對齊 edit path(L598-617):wrap 時 items-start + chevron self-start/tagHeight 鎖第一行;
         // paddingRight: var(--field-px) re-assert 右緣 12px(tagPadding 對稱 calc 會吃掉右緣,跟 edit 一致)。
-        wrap ? 'flex-wrap items-start py-1' : tagRowOverflowClass, className)}
+        wrap ? cn('flex-wrap items-start', tagPaddingY[sz]) : tagRowOverflowClass, className)}
       style={{ gap: GAP, paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode={resolvedMode}
       aria-disabled={resolvedMode === 'disabled' ? true : undefined}>
       {hasTags ? (
@@ -659,7 +714,7 @@ function NativeCombobox({
 
   const items = value.map(v => ({ value: v, label: options.find(o => o.value === v)?.label ?? v }))
   const unselected = options.filter(o => !value.includes(o.value))
-  const tagHeight = size === 'sm' ? 20 : 24
+  const tagHeight = TAG_HEIGHT_PX[size]
   const tagAreaGap = tagAreaGapPx ?? GAP
 
   const selectDropdown = unselected.length > 0 ? (
@@ -673,6 +728,7 @@ function NativeCombobox({
       aria-required={fieldCtx?.required || undefined}
       aria-describedby={fieldCtx?.descriptionId}
       aria-errormessage={error ? fieldCtx?.errorId : undefined}
+      // @focus-suppress C — 原生 <select>,不是 input/textarea 故無 caret;承擔者:外層欄位邊框 focus-within 轉 primary(field-wrapper.tsx:57)
       className={cn('bg-transparent outline-none border-none p-0 text-[inherit] font-[inherit] leading-[inherit] text-fg-muted cursor-pointer appearance-none',
         value.length > 0 ? 'absolute inset-0 w-full h-full opacity-0 z-0 cursor-pointer' : 'relative z-10 flex-1 min-w-20')}>
       <option value="" disabled>{placeholder ?? '選擇...'}</option>
@@ -682,7 +738,7 @@ function NativeCombobox({
 
   return (
     <div ref={__triggerRef} className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), value.length > 0 && tagPadding[size], 'relative',
-      wrap && 'items-start py-1', className)}
+      wrap && cn('items-start', tagPaddingY[size]), className)}
       style={{ paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) }} data-field-mode="edit" data-error={error ? '' : undefined}
       onClick={(e) => { if (e.target === e.currentTarget) { selectRef.current?.showPicker?.(); selectRef.current?.focus() } }}>
       {/* 2026-05-18 F2 sync(per user verbatim「modifying 修好 PeoplePicker stack 後改壞 Combobox tag display」
@@ -738,11 +794,24 @@ function NativeCombobox({
   )
 }
 
+// 轉換 ComboboxOption → SelectMenuOption:同一份 mapping 給 options 與 suggestions(2026-09-09 建議清單),不複製第二份。
+// 2026-05-10 post-Issue-4 follow-up:forward 全 SelectMenuOption surface(avatar / description / disabled / icon / group)。
+const toMenuOption = (opt: ComboboxOption): SelectMenuOption => ({
+  value: opt.value,
+  label: opt.label,
+  icon: opt.icon,
+  avatar: opt.avatar,
+  description: opt.description,
+  disabled: opt.disabled,
+  group: opt.group,
+})
+
 // ── Custom Combobox (desktop — consumes SelectMenu) ───────────────────
 
 function CustomCombobox({
   mode, variant: variantProp, width, error: errorProp = false, size = 'md', options, value = [], onChange, placeholder,
-  className, disabled: disabledProp, wrap = false, clearable = false, searchable = false, loading, searchIn = 'menu',
+  className, disabled: disabledProp, wrap = false, clearable = false, searchable = false, loading, optionsLoading, searchIn = 'menu', filterOption = true, onSearchChange,
+  suggestions, suggestionsLabel, searchHintText,
   searchPlaceholder = '搜尋…', // i18n-allow: DS default
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default
   emptyPlaceholder = '選擇…', // i18n-allow: DS default
@@ -774,7 +843,8 @@ function CustomCombobox({
   const iconSize = getIconSize(size)
   const showClear = clearable && value.length > 0 && resolvedMode === 'edit'
   const [open, setOpen] = React.useState(defaultOpen)
-  const [search, setSearch] = React.useState('')
+  const [search, setSearchState] = React.useState('')
+  const setSearch = React.useCallback((next: string) => { setSearchState(next); onSearchChange?.(next) }, [onSearchChange])
   // 2026-05-12 Q3 fix:trigger 內 inline 搜尋 input ref,onOpenAutoFocus 時 explicit focus
   // 讓 user 看到 cursor 知道可 inline search(跟 Select inputRef SSOT 同模式)。
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -791,12 +861,20 @@ function CustomCombobox({
   // 無條件呼叫。resolvedMode 在 edit↔非edit 切換時 hook 數量不可變動,否則 Rules of Hooks
   // violation → React #310 「rendered fewer/more hooks」crash(ReadonlyMultiSelect 用不到這些值,
   // 多算無害,對齊 select.tsx hoist pattern)。
+  // 已選值的 label:先查 options,再查 suggestions(2026-09-09:從建議群組選的值不在 options 裡),最後查「看過的選項」
+  // (hooks/use-known-options.ts;遠端搜尋關閉後結果被清掉、值還在 → 不能退成 id)
+  const findKnown = useKnownOptions([options, suggestions], (o) => o.value)
   const items = React.useMemo(
-    () => value.map(v => ({ value: v, label: options.find(o => o.value === v)?.label ?? v })),
-    [value, options]
+    () => value.map(v => ({ value: v, label: (options.find(o => o.value === v) ?? suggestions?.find(o => o.value === v) ?? findKnown(v))?.label ?? v })),
+    [value, options, suggestions, findKnown]
   )
+  // 唯讀 / 檢視 / 停用分支只拿得到 options:把已選但不在 options 裡的項補上
+  const optionsForDisplay = React.useMemo(() => {
+    const missing = value.map(v => (options.some(o => o.value === v) ? undefined : (suggestions?.find(o => o.value === v) ?? findKnown(v)))).filter((o): o is ComboboxOption => !!o)
+    return missing.length ? [...options, ...missing] : options
+  }, [options, suggestions, value, findKnown])
   const tagAreaRef = React.useRef<HTMLDivElement>(null)
-  const tagHeight = size === 'sm' ? 20 : 24
+  const tagHeight = TAG_HEIGHT_PX[size]
 
   const handleRemove = (v: string) => {
     focusAfterTagRemoval(tagAreaRef.current, inputRef.current)
@@ -805,33 +883,36 @@ function CustomCombobox({
 
   // searchIn='trigger' 時由 trigger input 過濾，不走 SelectMenu 內建搜尋
   const filteredOptions = React.useMemo(
-    () => (searchable && searchIn === 'trigger' && search
+    () => (searchable && searchIn === 'trigger' && filterOption && search
       ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
       : options),
-    [searchable, searchIn, search, options]
+    [searchable, searchIn, filterOption, search, options]
   )
 
   // 轉換 ComboboxOption → SelectMenuOption
   // 2026-05-10 post-Issue-4 follow-up:forward 全 SelectMenuOption surface(avatar / description /
   // disabled / icon / group)— 修先前 PeoplePicker multi-mode dropdown 漏 avatar drift bug。
   const menuOptions: SelectMenuOption[] = React.useMemo(
-    () => filteredOptions.map(opt => ({
-      value: opt.value,
-      label: opt.label,
-      icon: opt.icon,
-      avatar: opt.avatar,
-      description: opt.description,
-      disabled: opt.disabled,
-      group: opt.group,
-    })),
+    () => filteredOptions.map(toMenuOption),
     [filteredOptions]
+  )
+  const menuSuggestions: SelectMenuOption[] | undefined = React.useMemo(
+    () => suggestions?.map(toMenuOption),
+    [suggestions]
   )
 
   if (resolvedMode !== 'edit') {
-    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={options} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
+    return <ReadonlyMultiSelect mode={resolvedMode} variant={variant} width={width} size={size} options={optionsForDisplay} value={value} wrap={wrap} className={className} showDisplayEndIcon={showDisplayEndIcon} />
   }
 
-  const chevronEl = <ChevronDown size={iconSize} className={cn('shrink-0 text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
+  // 值處理中的轉圈(Field 家族 loading,2026-09-09 user 拍板收窄):觸發點右側、箭頭左邊(react-select / Atlassian 順序:清除 → 轉圈 → 箭頭),
+  // 跟 Input 的 endAction 槽同義 —— 與選單開關、選項多寡無關;選項載入的指示在選單內(optionsLoading → SelectMenu)
+  const chevronEl = (
+    <>
+      {loading && <CircularProgress size={iconSize} className="shrink-0" />}
+      <ChevronDown size={iconSize} className={cn('shrink-0 text-fg-muted transition-transform motion-reduce:duration-0', open && 'rotate-180')} aria-hidden />
+    </>
+  )
 
   const trigger = (
     <div
@@ -843,11 +924,20 @@ function CustomCombobox({
       // (field-context.ts labelId jsDoc);consumer aria-label 優先 — 與 sibling select.tsx:705 同款 guard。
       aria-labelledby={ariaLabel ? undefined : fieldCtx?.labelId}
       aria-invalid={error || undefined}
+      // 值處理中(Field 家族 loading):跟 Input wrapper 同樣標 aria-busy(field-controls.spec.md「Loading state」)
+      aria-busy={loading || undefined}
       aria-required={fieldCtx?.required || undefined}
       aria-describedby={fieldCtx?.descriptionId}
       aria-errormessage={error ? fieldCtx?.errorId : undefined}
-      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), value.length > 0 && tagPadding[size], 'relative cursor-pointer',
-        wrap && 'items-start py-1',
+      // 2026-09-07:本元件是 Field 家族的「單一狀態控制項」——依 focus-canonical 規則二第三列,
+      // 滑鼠與鍵盤**共用同一套 focus 樣式**,而 Field 的那一套就是邊框轉 primary
+      // (field-wrapper.tsx `focus-within:!border-primary`)。所以這裡要抑制全域外描邊,
+      // 跟 DatePicker(:608)/ TimePicker(:378)一致 —— 否則同一顆控件會有兩個焦點指示。
+      // **本行不是新增抑制,是補上一直漏掉的那個**:遷移前這顆沒寫 outline-none,
+      // 於是全域外描邊一直畫在它上面,是全家族唯一的例外(user 2026-09-07 抓到)。
+      // @focus-suppress C — 這一行的元素**就是**那圈欄位外框;承擔者:自己(fieldWrapperStyles 的 focus-within:!border-primary,field-wrapper.tsx:57)
+      className={cn(fieldWrapperStyles({ mode: 'edit', variant: variant, width, size, error }), 'focus-visible:outline-none', value.length > 0 && tagPadding[size], 'relative cursor-pointer',
+        wrap && cn('items-start', tagPaddingY[size]),
         // 2026-05-06 v13.3 SSOT retire:per-control `open && 'border-primary'` 移除。Field default
         // 統一處理 — open=灰深(data-state)/ focus=藍;2026-07-04 Q1:error 亦收進 error variant。
         className)}
@@ -910,6 +1000,7 @@ function CustomCombobox({
                 aria-label={searchAriaLabel}
                 // a11y(2026-07-05 D4):cmdk active item id(useActiveDescendant)→ SR 播報方向鍵導覽中的 option
                 aria-activedescendant={activeOptionId}
+                // @focus-suppress B — B Field 家族輸入控件;承擔者:裸 input;指示器是 wrapper 邊框
                 className="flex-1 min-w-[60px] bg-transparent outline-none text-body leading-compact relative z-10" />
             ) : undefined} />
         ) : (
@@ -940,7 +1031,15 @@ function CustomCombobox({
 
   return (
     <SelectMenu
-      loading={loading}
+      optionsLoading={optionsLoading}
+      filterOption={filterOption}
+      // 搜尋在觸發點時把搜尋字交給 SelectMenu(受控;對齊 select.tsx):遠端模式要靠它分辨「關鍵字空 → 建議 / 提示」與
+      // 「抓資料中 → 清舊清單」,creatable 的建立列也依它顯隱(2026-09-09 之前 trigger 模式沒傳,建立列永遠不出現)。
+      search={searchIn === 'trigger' ? search : undefined}
+      onSearchChange={searchIn === 'menu' ? onSearchChange : setSearch}
+      suggestions={menuSuggestions}
+      suggestionsLabel={suggestionsLabel}
+      searchHintText={searchHintText}
       emptyText={emptyText}
       options={menuOptions}
       value={value}

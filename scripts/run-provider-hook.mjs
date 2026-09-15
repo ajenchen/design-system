@@ -1810,6 +1810,12 @@ environment.GOVERNANCE_TELEMETRY_OPT_IN = telemetryOptIn ? '1' : '0'
 // Provider identity, peer resolution, runtime discovery, and branch namespaces are registry-owned.
 // Always overwrite inherited values so a shell profile cannot invert or spoof the review matrix.
 environment.GOVERNANCE_SELF_PROVIDER = provider.id
+// Runtime capability declared by the registry, consumed by the Stop hook's push-notification gate.
+// Registry-owned so a provider without the tool is never blocked for not calling it; overwritten
+// unconditionally for the same anti-spoof reason as the identity fields above.
+// 2026-09-06:在此之前該 gate 依賴的環境變數無人設定,整個 mechanism 形同休眠 —— 把它從 WARNING
+// 升成 BLOCKER 的那次 commit 因此並未實際生效。這一行才是真正把它接上的地方。
+environment.GOVERNANCE_PUSH_NOTIFICATION_AVAILABLE = provider.capabilities?.pushNotification ? '1' : '0'
 environment.GOVERNANCE_SELF_DISPLAY_NAME = provider.displayName
 environment.GOVERNANCE_INSTRUCTION_ENTRY = provider.instructionEntry
 environment.GOVERNANCE_SHARED_INSTRUCTION_ENTRY = provider.sharedInstructionEntry

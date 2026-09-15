@@ -77,18 +77,70 @@ Dialog **不自設任何 density attribute**,layout-space + ui-size 全繼承 pa
 
 ## Viewport Inset
 
-Modal 與 viewport 四邊保持 `--layout-space-bottom`（48px）最小間距。maxWidth 也受此限制：`min(maxWidth, 100vw - inset*2)`。
+Modal 與 viewport 四邊保持 `--layout-space-viewport-inset`(48px)最小間距。**這顆 token 是 2026-09-11 從
+`--layout-space-bottom` 拆出來的**:後者的語意是「結論留白:內容到 action buttons」(`layoutSpace.spec.md` Token 表),
+跟「浮層外殼到視窗邊」是兩個概念,值剛好都是 48 而已。耦合著會讓任何人調結論留白時,意外改掉全站 Dialog 的高度**與最大寬度**。
 
-## 高度行為
+寬與高都吃同一個 inset:`min(maxWidth, 100vw - inset*2)` / `min(100svh - inset*2, maxHeight)`。
 
-| 模式 | 條件 | 行為 |
+## 高度
+
+### 最大高度(上限)—— 兩種模式共用同一條公式
+
+```
+上限 = maxHeight 有值 ? min(100svh - inset*2, maxHeight) : (100svh - inset*2)
+```
+
+- **恆小於視窗高**,所以 header 與 footer 在絕大多數情況都露得出來(超長內容由 body 自己捲,外框不動)。
+- **consumer 只能往更矮調**:`maxHeight` 傳比視窗大的值也會被 `min()` 夾住。型別 `string | number`
+  (number 視為 px;string 才寫得出 `60svh` / `calc(100svh - 120px)`),與同元件的 `maxWidth` 同型別。
+  形狀對齊 `DropdownMenu` 的 `maxHeight`(同樣是「可選更低上限」)。
+- **用 `svh` 不用 `vh`**:行動裝置網址列收合時 `100vh` 大於實際可視高度,底部主要動作鈕會被切掉。
+  DS 其他填滿視窗的外框已是這個選擇(`app-shell.tsx` 的 `h-svh`、`sidebar.tsx` 的 `100svh`)。桌機兩者等值。
+
+### 高度軸(怎麼長)—— 正交於上限
+
+| `height` | 行為 | 什麼時候用 |
 |---|---|---|
-| **預設（填滿）** | 不傳 `autoHeight` | viewport-bounded 固定高度，body 擁有捲動；動態內容不改變 dialog 外框幾何 |
-| **autoHeight** | `autoHeight={true}` | 高度隨內容，超過 viewport 時 `max-height` 安全帽。適合內容量已知且穩定的 dialog（確認框、短表單） |
+| **`'fill'`(預設)** | 高度 = 上限。內容多寡不改變外框幾何,body 擁有捲動 | 開啟到關閉期間**內容高度會變**:異步載入、可展開區塊、可增減的清單 |
+| **`'hug'`** | 高度隨內容長高,碰到上限才由 body 捲動 | 開啟到關閉期間**內容高度不會變**:確認框、短表單、固定文案 |
+
+**判準是時間維度,不是當下看起來有幾行**:從開啟到關閉,內容高度會不會因為使用者的操作與互動而改變?
+會 → `fill`;不會 → `hug`。理由:隨內容長高的浮層一旦內容變高變矮,整個對話框會上下跳動,體驗很差 ——
+先把可用高度穩定下來、讓 body 自己捲,外框就不動了。**現在預期不會變、但未來會加入異步 section 的,選 `fill`。**
+
+`autoHeight?: boolean` 已 **deprecated**,等同 `height="hug"`;兩者同時傳時 `height` 勝並在 dev 環境 warn。
+
+**世界級對照**:Material Web(`max-height: min(560px, calc(100% - 48px)); height: fit-content`)、
+Atlassian(`if (!input) return 'auto'`)、Polaris(只宣告 `max-height`)、Carbon(size 綁 48/72/84/96% 上限)、
+Ant Design(不宣告高度)—— 五家第一方原始碼**預設都是「隨內容 + 視窗為上限」**。
+本 DS 預設選 `fill` 是刻意偏離:DS 的主場景是內容會變的產品 dialog,穩定外框優先;
+需要世界級預設行為的場景顯式傳 `height="hug"`。
+
+**閘**:`scripts/dialog-height-invariant.mjs` —— H1 兩種模式回報同一個上限、H2 上限 = 視窗 − inset×2 且小於視窗且不溢出、
+H5(2026-09-12 新增)在 240px 視窗下掃**每一支** dialog / sheet story,驗「沒有後代畫到容器外」+「捲到底後
+最後一個互動元素完整可見」。H5 有**自己的**對照組 `--selftest-h5`(既有 `--selftest` 會拿掉高度上限、
+把 dialog 變成 99904px 高,那樣誰都不會溢出,H5 的條件永遠觸發不了);`--selftest-h5` 還原
+容器 overflow 與 Tabs 的 flex,實測精準抓到 `展示--with-tabs-in-header`。
+H1-H4 當時全綠卻沒攔下這個 bug,因為它們只測 dialog **自己**的高度,沒測「dialog 與 body 之間夾了別的 wrapper」。
+H3 `hug` 真的隨內容長高而 `fill` 不隨內容變、H4 `maxHeight` 只能更矮。
+對照組把上限拿掉必須紅(實測 fill 變 99904px、溢出視窗)。
 
 ## maxWidth
 
 預設 512px，consumer 可透過 `maxWidth` prop 調整。型別 `string | number`（傳 number 視為 px）。
+
+**父層契約(2026-09-12 補,原本漏了)**:DialogContent 必須是 `flex flex-col` + `max-h` + **`overflow-hidden min-h-0`**。
+這不是新規定 —— `patterns/overlay-surface/overlay-surface.tsx:180-182` 逐字寫著「parent(PopoverContent /
+HoverCardContent / Dialog / Sheet)是 flex flex-col + max-h + overflow-hidden」,Popover 與 HoverCard 一直有,
+**Dialog 與 Sheet 漏了**(user 2026-09-12 截圖:視窗變矮時 dialog body 內容直接畫到圓角容器外面)。
+
+**中間 wrapper 也要能收縮**:上面那條只保證「不畫到外面」;要讓「內容溢出走 body 捲動」成立,
+DialogContent 到 DialogBody 之間的**每一層**都必須是可收縮的 flex column。實際踩到的是 `<Tabs>` ——
+Radix Tabs Root 是裸 `display: block` + `min-height: auto`,夾在中間時整包內容原樣頂出容器
+(實測 204px 的 dialog 裡 Tabs Root 撐到 271px)。修法是讓 **Tabs Root 自己**成為
+`flex min-h-0 data-[orientation=horizontal]:flex-col`(`tabs.tsx`),consumer 不需要背咒語;
+已逐 story 比對 23 支含 Tabs 的畫面幾何 Δ=0。
 
 **邊界**:上限被 viewport inset 截斷 `min(maxWidth, 100vw - inset*2)`(見「Viewport Inset」);無下限 clamp——過小值不擋,內容溢出走 body 捲動,由 consumer 自負。
 
@@ -134,8 +186,31 @@ Header 級操作(記錄 prev / next 導覽、header 級溢出選單 ⋮ 等「�
 
 ## 動畫
 
-- 進場：fade-in + zoom-in-95 + slide-in-from-center
-- 離場：fade-out + zoom-out-95 + slide-out-to-center
+**Canonical = 從中心淡入 + 輕微縮放,不位移**(2026-09-09 定;anchor:user 抓到「dialog 從左上角飛到中間」)。
+
+| 階段 | 幾何 | 時長 / 曲線(全部消費 `tokens/motion/motion.spec.md`「進出場動畫 token」,經 `overlay-motion.ts` 的 `surfaceMotion`) |
+|---|---|---|
+| 進場 | `fade-in-0` + `zoom-in-95`(opacity 0→1、scale 0.95→1,transform-origin 中心) | `--motion-duration-surface` 250ms / `--motion-easing-enter` |
+| 離場 | `fade-out-0` + `zoom-out-95` | `--motion-duration-surface` 250ms / `--motion-easing-exit` |
+| Overlay | 只 fade | 同上 |
+| `prefers-reduced-motion` | `motion-reduce:animate-none`(surfaceMotion 內建) | — |
+
+**為何不用 slide(置中位移)**:置中靠 `left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2`。shadcn v3 時代 DialogContent 另掛 `slide-in-from-left-1/2 slide-in-from-top-[48%]`,那是因為 Tailwind v3 的 `-translate-x-1/2` 走 `transform`,會被 keyframe 的 `transform` 整個蓋掉,所以要在 keyframe 裡把置中位移再寫一次(v3 dialog 原始碼:<https://ui.shadcn.com/r/styles/new-york/dialog.json>)。Tailwind v4 的 `-translate-x-1/2` 改寫進獨立的 `translate` 屬性(<https://tailwindcss.com/docs/translate>,`translate: calc(1/2 * -100%) var(--tw-translate-y)`),不再被 keyframe 蓋掉;而 tw-animate-css 的 `@keyframes enter` 仍是 `transform: translate3d(var(--tw-enter-translate-x), var(--tw-enter-translate-y), 0) scale3d(…)`(`node_modules/tw-animate-css/dist/tw-animate.css`)。兩個位移相加 → 第一幀中心落在視窗中心**左 w/2、上 0.48h**(480×189 的確認框實測 −240px / −90.72px),看起來就是從左上角飛進來。shadcn v4 版本已把這兩組 class 拿掉(<https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx>:`translate-x-[-50%] translate-y-[-50%] … data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95`,無 slide)。
+
+**世界級對照(2026-09-09 逐一開原始碼)**:
+
+| 來源 | 進場幾何 | 位移 |
+|---|---|---|
+| shadcn v4 `dialog.tsx`(<https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx>) | `fade-in-0` + `zoom-in-95`,`duration-200` | 無 |
+| Radix Themes `base-dialog.css`(<https://github.com/radix-ui/themes/blob/main/packages/radix-ui-themes/src/components/_internal/base-dialog.css>) | `rt-dialog-content-show 200ms`:`opacity 0→1; transform: translateY(5px) scale(0.97) → scale(1)` | 5px(視覺上等同不位移) |
+| Angular Material `dialog.scss`(<https://github.com/angular/components/blob/main/src/material/dialog/dialog.scss>) | `opacity 0→1; transform: scale(0.8) → none`,easing `cubic-bezier(0,0,0.2,1)` | 無 |
+| MUI `Dialog.js`(<https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Dialog/Dialog.js>) | 預設 transition = `Fade`(只 opacity) | 無 |
+| Material Web(M3)`animations.ts`(<https://github.com/material-components/material-web/blob/main/dialog/internal/animations.ts>) | scrim opacity 0→0.32、container height 35%→100% + 內容 fade | `translateY(-50px→0)`(M3 expressive 的例外,不採) |
+| Apple HIG Modality / Alerts(<https://developer.apple.com/design/human-interface-guidelines/modality>) | alert 居中、疊在所有內容之上;無「從角落滑入」 | 無 |
+
+主流四家(shadcn <https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dialog.tsx> / Radix Themes <https://github.com/radix-ui/themes/blob/main/packages/radix-ui-themes/src/components/_internal/base-dialog.css> / Angular Material <https://github.com/angular/components/blob/main/src/material/dialog/dialog.scss> / MUI <https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Dialog/Dialog.js>)一致 = 中心淡入 + 縮放;唯 Material Web <https://github.com/material-components/material-web/blob/main/dialog/internal/animations.ts> 帶 50px 下落,屬 expressive 風格,與本 DS 企業級中性沉穩(`--motion-easing-enter` = Material standard-decelerate,見 `tokens/motion/motion.spec.md`)不合,不採。
+
+**閘**:`scripts/dialog-coexistence-invariant.mjs`「進場第一幀」段 —— (S) 靜態禁 DS-wide 任何檔案同時出現 `slide-in-from-left-1/2` 類置中位移 class 與 `-translate-x-1/2` 置中;(M) 瀏覽器把進場動畫凍在 t=0(WAAPI seek)量 `[role=dialog]` 中心相對視窗中心偏移必 ≤ 1px;對照組把兩組 slide class 加回去必須紅。
 
 ## 狀態處理的職責邊界
 
@@ -151,6 +226,22 @@ Dialog 是容器，無整體 disabled / loading / empty 狀態——這些屬於
 **Dark mode**：由 semantic token（`bg-surface-raised` / `border-border`）自動切換，無自訂 palette。
 
 **Density**:Dialog **全繼承 page**(layout-space + ui-size 皆不自鎖),見上「Density」段。
+
+---
+
+## 並存(`persistentElements`)
+
+由來:代理原則 v14 條 A / B(`governance/planning/2026-09-06-agent-principles-v14.md`)—— 有自己 URL 的內容開著時,指定的常駐區域(代理面板、評論側欄)要**仍然可用**;它對宿主其餘部分仍然是 modal。
+
+- **怎麼開**:`<Dialog persistentElements={() => [panelEl]}>`;Root 自動走 Radix `modal={false}`(否則 Radix 的 `hideOthers(content)` 會把常駐區域一起關掉),DS 再用 `suppressOthers([content, ...persistent])` 把其餘一切抑制(`lib/overlay-coexistence.ts`)。
+- **遮罩**:Radix 在非模態不畫 Overlay,DS 自己畫 `CoexistenceMask` —— `fixed inset-0` 的遮罩,用 `clip-path: path(evenodd)` 在每個常駐節點的位置挖洞;洞裡沒有遮罩像素也沒有命中區,常駐區域照常可見可點;洞外點下去是「外部點擊」→ 關閉(modal 語意)。洞的座標以遮罩自己的盒子為原點(遮罩可能被傳送進帶 transform 的畫布)。
+- **層級**(2026-09-08 定):遮罩 `z-30` < 並存 modal 內容 `z-40` < 代理蓋板 `z-[45]` < 一般 modal `z-50`。沒有 URL 的確認框(不傳 persistentElements)維持一般 modal,蓋在常駐區域之上。
+- **框外事件的守衛**(2026-09-09 / 2026-09-10 定;`lib/overlay-coexistence.ts` `createPersistentGuard`,Dialog 與 FileViewer 共用同一份):非模態分支把「指標按在框外 / 焦點跑到框外」當關閉訊號,並存時三種目標**不算框外**:(1) 保留節點子樹;(2) 保留區**自己開出來的浮層**(入口鈕右鍵選單、面板裡的 Select / Popover;portal 到 body,用觸發器的 `aria-controls` / `aria-owns` 認回來)—— **含它關閉中的階段**(Radix 只在開著時寫 `aria-controls`,滑鼠點選單項後選單關閉中仍會收到一次焦點;認過的浮層 id 要記住,否則對話框會在選項執行的同時被關掉,2026-09-10 user 抓到);(3) 疊在上面的另一個 dialog。閘:`scripts/agent-url-registry-demo-invariant.mjs` S11(右鍵選單留著)、S12(滑鼠點選單項:選項執行、對話框不關、遮罩仍在;鍵盤路徑為對照)。
+- **Esc 與外部互動**:焦點在常駐區域內時的 Esc / pointer / focus 不算「框外」(`onPointerDownOutside` / `onFocusOutside` / `onInteractOutside` 對常駐節點 preventDefault),否則把焦點移進代理面板就會把對話框關掉。
+- **`portalContainer`**:Content 預設傳送到 body;story 的「模擬瀏覽器畫布」或產品的嵌入式畫布可傳一個帶 transform 的容器,`fixed` 定位以它為準,modal 與遮罩不會跑出畫布。
+- **遮罩的洞只挖給「點得到或畫得出來」的盒子**(2026-09-09 根因修正):常駐節點底下 `display:contents` 的殼與 `pointer-events:none` 的定位圖層都沒有資格自己當洞,往下找子節點;`<svg>` / `<img>` / `<canvas>` / `<video>` 即使 pointer-events:none 也算。錨:user 2026-09-09「為何關閉 agent 之後,原本 dialog 該有的遮罩就消失了?」—— 代理關閉後常駐殼裡換成入口鈕 Dock,它外層是與舞台等大的 `pointer-events-none absolute inset-0` 裁切圖層,舊判準「有盒子就是洞」把整層當成洞,evenodd 之下洞 = 外框、遮罩整張被挖空。
+- **背景位置模式(Background location)**(user 2026-09-09 原話:「若有來源頁面,則保留該頁面作為 Modal 的背景;若無來源頁面,則將 Modal 顯示於預先定義的預設背景頁面之上」):有 URL 的 modal 由宿主路由承載 —— 從某一頁點開時,該頁留在 modal 底下作背景(路由記 `backgroundLocation`);直接以 modal 網址進入(重新整理、上一頁回到該網址、分享連結)沒有來源頁,宿主把 modal 疊在**預先定義的預設背景頁**上。上一頁 / 下一頁 / 重新整理都維持這個模型。這是宿主路由層的責任,Dialog 只提供 `persistentElements` + `portalContainer`,不讀 URL;示範 → `AgentPanel/展示/UrlRegistryDemo`(v14 推導表「有來源頁」「直接進入 modal 網址」兩列)。
+- **閘**:`scripts/dialog-coexistence-invariant.mjs`(常駐區可聚焦可打字、其餘背景被抑制、預設路徑照舊隔離)、`scripts/agent-url-registry-demo-invariant.mjs`(S1–S9:幾何、header / footer 變體、存檔、新增、刪除確認、背景位置、session、關 agent 遮罩仍在、蓋板態工具列可點 + Esc 分區;2026-09-09 併入原 `agent-modal-coexistence-invariant.mjs`)。
 
 ---
 
@@ -197,7 +288,7 @@ Consumer 必須保留 `<DialogTitle>`——即使視覺不顯示，也要用 `Vi
 
 Dialog 是 modal 浮層元件,關鍵決策維度是 `maxWidth`(400/480/512/560/720)× `autoHeight` × `destructive` × open/close 行為。互動 `Inspector`(右側 Controls 即時切 `maxWidth` / `autoHeight` 看寬度 tier 與高度模式差異)搭配結構性矩陣 side-by-side 比對,完整呈現「照情境選 size / 選 autoHeight」的決策。
 
-對應 anatomy story:`Overview` + `Inspector` + 元件特有 `HeightBehavior` / `DestructiveMatrix` + `SizeMatrix` + `StateBehavior` + `ColorMatrix` + `Accessibility`。
+對應 anatomy story:`Overview` + `Inspector` + 元件特有 `HeightBehavior` + `SizeMatrix` + `StateBehavior` + `ColorMatrix` + `Accessibility`。
 
 ---
 

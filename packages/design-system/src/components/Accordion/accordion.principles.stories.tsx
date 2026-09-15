@@ -277,7 +277,7 @@ export const ContentRule: Story = {
           <AccordionItem value='deploy'>
             <AccordionTrigger>進階部署設定</AccordionTrigger>
             <AccordionContent>
-              <FieldGroup gap='compact'>
+              <FieldGroup>
                 <Field>
                   <FieldLabel>專案識別碼</FieldLabel>
                   <Input placeholder='例:Q2-RELEASE' />

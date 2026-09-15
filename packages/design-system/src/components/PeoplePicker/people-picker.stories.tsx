@@ -136,6 +136,37 @@ export const Multi: Story = {
   render: () => <MultiPicker />,
 }
 
+/* ── hug 寬度 × 多人頭像串 ────────────────────────────────────────────────
+   為什麼需要這個 story:`width='hug'` 的欄位是 `w-fit max-w-full`(寬度由內容決定),
+   而頭像串「畫幾顆」也是量出來的 —— 兩者互為因果就會形成單向棘輪:
+   少畫一顆 → 欄位變窄 → 量到更窄 → 再少畫一顆,空間還回來也回不去。
+   (2026-09-07 修:量測改成「容器內容寬 − 欄位外框開銷」,兩個減數同幀量、內容影響互相抵消。)
+
+   讀法:容器 720px 寬、六個人。hug 欄位應該長到放得下的長度,而不是縮成「1 顆 + +5」。 */
+export const HugWidthMultiStack: Story = {
+  name: 'hug 寬度 × 多人',
+  render: () => (
+    <div className="flex flex-col gap-4" style={{ width: 720 }}>
+      <p className="text-caption text-fg-muted">
+        容器 720px。<code>width=&quot;hug&quot;</code> 的欄位寬度由內容決定,頭像串可畫幾顆則由
+        「容器還剩多少」決定 —— 兩者不可互為因果,否則會一路縮到只剩一顆。
+      </p>
+      <PeoplePicker
+        width="hug"
+        mode="readonly"
+        value={samplePeople.slice(0, 6)}
+        aria-label="協作者(hug 寬度)"
+      />
+      <PeoplePicker
+        width="fill"
+        mode="readonly"
+        value={samplePeople.slice(0, 6)}
+        aria-label="協作者(fill 寬度,對照組)"
+      />
+    </div>
+  ),
+}
+
 // Roving-focus 契約 probe:逐一移除 chip 時焦點依序落到下一個移除鈕,移除
 // 最後一人後回到 combobox。破壞性互動(清空全員)只屬測試,不得寄生在
 // reader-facing 展示 story(anchor:2026-08-05 user 抓「多人一打開就自己清空」;
@@ -221,25 +252,76 @@ export const SizeAlignment: Story = {
   ),
 }
 
-/* ── 人員清單非同步載入（已選值先到、名錄後到） ── */
+/* ── 人員清單非同步載入（已選值先到、名錄後到;前 1.5 秒 optionsLoading） ── */
 const AsyncDirectoryPicker = () => {
   const [people, setPeople] = React.useState<PersonValue[]>([])
+  const [optionsLoading, setOptionsLoading] = React.useState(true)
   const [val, setVal] = React.useState<PersonValue[]>([samplePeople[0], samplePeople[2]])
   React.useEffect(() => {
-    const timer = window.setTimeout(() => setPeople(samplePeople), 1500)
+    const timer = window.setTimeout(() => { setPeople(samplePeople); setOptionsLoading(false) }, 1500)
     return () => window.clearTimeout(timer)
   }, [])
   return (
-    <div className="flex flex-col gap-2 max-w-xs">
-      <PeoplePicker value={val} people={people} onChange={setVal} aria-label="任務協作者" />
-      <p className="text-caption text-fg-secondary">
-        Jira 任務「協作者」欄位場景：已選成員隨任務資料先抵達，組織人員名錄約 1.5 秒後才從 API 回來——已選成員立即顯示、不報錯；名錄未到前 avatar 先以姓名縮寫 fallback 呈現，名錄載入後自動補上頭像。
-      </p>
+    <div className="max-w-xs">
+      <PeoplePicker value={val} people={people} optionsLoading={optionsLoading} onChange={setVal} aria-label="任務協作者" />
     </div>
   )
 }
 
 export const AsyncDirectoryLoad: Story = {
   name: '人員清單非同步載入',
+  parameters: { docs: { description: { story: 'Jira 任務「協作者」欄位:已選成員隨任務資料先抵達,組織人員名錄約 1.5 秒後才從 API 回來——這 1.5 秒展開只看到一列「載入選項中」,觸發點不轉圈(名錄載入的指示只在選單內);已選成員立即顯示、不報錯,名錄未到前頭像先以姓名縮寫呈現,名錄載入後自動補上頭像。' } } },
   render: () => <AsyncDirectoryPicker />,
+}
+
+/* ── 選項載入中(首次開啟;開啟態快照,defaultOpen 讓瀏覽器閘不用點擊就看得到) ── */
+export const LoadingFirstOpen: Story = {
+  name: '選項載入中(首次開啟)',
+  parameters: { docs: { description: { story: 'Jira 議題「指派人員」第一次展開,組織名錄還沒從 API 回來:清單只有一列「載入選項中」訊息列,與一筆人員等高,觸發點不轉圈;名錄回來後同一個選單直接長出人員列。' } } },
+  render: () => (
+    <div className="max-w-xs">
+      <PeoplePicker value={null} people={[]} optionsLoading defaultOpen aria-label="指派人員(首次載入)" />
+    </div>
+  ),
+}
+
+export const ValueLoading: Story = {
+  name: '值處理中(儲存)',
+  parameters: { docs: { description: { story: '指派人員改成 Bob Lin 後正在寫回 Jira:`loading` 是 Field 家族共用的「這個值在讀取 / 驗證 / 儲存」—— 觸發點右側、箭頭左邊轉圈並標 aria-busy;跟名錄有沒有載入無關。' } } },
+  render: () => (
+    <div className="max-w-xs">
+      <PeoplePicker value={samplePeople[1]} people={samplePeople} loading aria-label="指派人員(儲存中)" />
+    </div>
+  ),
+}
+
+/** 遠端搜尋名錄(Jira 指派人員):組織上萬人只能問伺服器;關鍵字空先列「建議」(最近指派過的兩位),每打一個字向後端要一次。 */
+const RemoteDirectoryPicker = () => {
+  const recent = [samplePeople[1], samplePeople[3]]
+  const [people, setPeople] = React.useState<PersonValue[]>([])
+  const [optionsLoading, setOptionsLoading] = React.useState(false)
+  const [val, setVal] = React.useState<PersonValue[]>([])
+  const timer = React.useRef<number | null>(null)
+  const onSearchChange = (q: string) => {
+    if (timer.current) window.clearTimeout(timer.current)
+    const needle = q.trim().toLowerCase()
+    // 關鍵字清空:回到建議群組,不用問後端
+    if (!needle) { setPeople([]); setOptionsLoading(false); return }
+    setOptionsLoading(true)
+    timer.current = window.setTimeout(() => {
+      setPeople(samplePeople.filter((p) => `${p.name} ${p.description}`.toLowerCase().includes(needle)))
+      setOptionsLoading(false)
+    }, 800)
+  }
+  return (
+    <div className="max-w-xs">
+      <PeoplePicker value={val[0] ?? null} people={people} suggestions={recent} filterOption={false} optionsLoading={optionsLoading} onSearchChange={onSearchChange} onChange={setVal} aria-label="指派人員(遠端搜尋)" />
+    </div>
+  )
+}
+
+export const RemoteSearch: Story = {
+  name: '遠端搜尋名錄(建議 → 載入 → 結果)',
+  parameters: { docs: { description: { story: 'Jira 指派人員、組織名錄在伺服器:還沒打字先列「建議」群組(最近指派過的兩位,群組標題告訴你名錄不只這些);每打一個字向後端要一次,抓資料中舊結果不留、只剩一列「載入選項中」;找不到才顯示「沒有人員」;清掉關鍵字回到建議。' } } },
+  render: () => <RemoteDirectoryPicker />,
 }

@@ -14,6 +14,7 @@ import {
   type RowSize,
 } from "@/design-system/patterns/element-anatomy/item-anatomy"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
+import { markPointerGrab, useCursorMover } from '@/design-system/hooks/use-input-modality'
 
 /**
  * DropdownMenu — Radix DropdownMenu + MenuItem visual layer
@@ -22,8 +23,9 @@ import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
  * - Radix primitives：behavior（keyboard nav, focus management, aria roles）
  * - MenuItem：visual（layout, padding, icon alignment, typography）
  *
- * Radix primitive 是外層容器,控制 `data-[highlighted]:bg-neutral-hover`。
- * MenuItem 內層只負責佈局,不加互動樣式。
+ * Radix primitive 是外層容器,擁有反白(`data-[highlighted]`)的長相:反白是唯一的游標,誰最後搬動它就用誰的畫法
+ *(滑鼠搬的 → 底色、鍵盤搬的 → 框;`radixCursorClass` + `useCursorMover`,focus-canonical 規則一「兩類元件」+ 規則二)。
+ * MenuItem 內層只負責佈局,不加互動樣式;項目上**沒有任何 `hover:` 樣式**(滑鼠停著不算搶)。
  *
  * ── Hover / highlight canonical(2026-04-22 修正)──
  * 用 Radix 官方的 `data-[highlighted]` attribute,**不用 `:focus-visible` / `:hover` /
@@ -60,24 +62,53 @@ const ICON_SIZE = ROW_ICON_SIZE
 // ── Shared item classes on Radix primitive ──
 // Highlight(hover + keyboard nav): 用 Radix `data-[highlighted]` canonical(見 docblock)
 const radixItemClass = [
+  // @focus-suppress A — Radix 用 roving focus 把 DOM 焦點放在項目上,但反白(data-highlighted)滑鼠 hover 也會觸發程式化 focus,
+  //   瀏覽器對程式化 focus 的 :focus-visible 跨瀏覽器不一致(見檔頭 docblock),所以抑制瀏覽器那圈、改由本檔依
+  //   useCursorMover 判反白來歷(2026-09-09 起;不是 useInputModality —— 那是常駐清單的訊號);承擔者:radixCursorClass 畫在 data-[highlighted] 項上的 focus-ring-inset(鍵盤搬的反白)
   'relative cursor-pointer select-none outline-none',
-  'transition-colors duration-150',
-  'data-[highlighted]:bg-neutral-hover',
+  // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」)
   'data-[disabled]:pointer-events-none data-[disabled]:text-fg-disabled data-[disabled]:cursor-default',
 ].join(' ')
 
+/**
+ * 反白(Radix `data-highlighted`)怎麼畫 —— 反白是這裡**唯一的游標**(Radix Menu:反白 = DOM 焦點,滑鼠移過
+ * `onPointerMove → item.focus()` 搶走、方向鍵搶回 —— https://github.com/radix-ui/primitives/blob/main/packages/react/menu/src/menu.tsx),
+ * 誰最後搬動它就用誰的畫法(focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板「都要畫框,不上底色」):
+ *   滑鼠搬的:反白 = hover → 底色、無框。
+ *   鍵盤搬的:反白 = 游標 → 畫框(列撐滿選單寬 → 內描邊)、不上底色。
+ * 兩種畫法永遠不同時出現;項目上**沒有 `hover:` 樣式**,鍵盤把反白搬走後滑鼠停留列的底色跟著消失(滑鼠停著不算搶;
+ * user 2026-09-09 三問;shadcn DropdownMenuItem 同樣只畫 focus:、沒有 hover: —— https://github.com/shadcn-ui/ui/blob/main/apps/v4/registry/new-york-v4/ui/dropdown-menu.tsx)。
+ * 選中 / checked 列的底色由各 item 另外釘住(item-anatomy「選中 × 互動疊加」),框照樣疊在上面。
+ * 2026-09-09 之前未選中的反白列用 hover 同色底(AI 推導自 Radix 慣例,user 撤回);
+ * 2026-09-09 下午之前鍵盤分支多帶 `hover:bg-neutral-hover`,滑鼠停留列與鍵盤游標列會同時亮。
+ */
+const radixCursorClass = (cursorByKeyboard: boolean) =>
+  cursorByKeyboard
+    ? 'data-[highlighted]:focus-ring-inset'
+    : 'data-[highlighted]:bg-neutral-hover'
+/** 滑鼠(只算 mouse,鏡射 Radix Menu 的 whenMouse —— https://github.com/radix-ui/primitives/blob/main/packages/react/menu/src/menu.tsx)移過項目 = 指標搶走反白;capture 版搶在 Radix 自己的 onPointerMove 之前記來歷。 */
+const radixGrab = (e: React.PointerEvent) => { if (e.pointerType === 'mouse') markPointerGrab(e) }
+
 // ── Root ──
-// Radix modal menu 會在 open 時把 trigger 所在的 app subtree 設成 aria-hidden。瀏覽器仍可
-// 讓 subtree 內原本的 trigger 留在 sequential focus order，axe 因而正確報
-// aria-hidden-focus。由 Root SSOT 對所有 DropdownMenu 統一同步 trigger tab stop；Portal
-// 仍保留 React context，所以不需要 consumer/story 各自 patch。
+// **預設 non-modal(2026-09-10 user 拍板:「這個是 popover 類型的互動的東西不是 dialog 類型的互動的東西」)**。
+// Radix 的 modal menu 會在開啟時對外面整片下 `pointer-events: none`(DismissableLayer 的
+// `disableOutsidePointerEvents`),於是選單開著時在外面點任何東西,**第一次點擊只會被拿去關選單**,
+// 要再點第二次才會生效 —— user 2026-09-10 在分頁的 inlineAction 選單上抓到:「為何該選單打開後點擊其他 tab
+// 沒有反應?要再點第二下才有反應」。選單是浮層(popover)不是對話框(dialog):它不接管整個畫面,
+// 所以外面的第一次點擊應該同時關掉它並命中目標。`modal={true}` 仍可由 consumer 顯式指定
+//(需要擋住背景互動的情境,例如破壞性確認流程)。
+//
+// modal 時另有一件要處理:Radix 會把 trigger 所在的 app subtree 設成 aria-hidden,瀏覽器仍
+// 讓 subtree 內原本的 trigger 留在 sequential focus order,axe 因而正確報 aria-hidden-focus。
+// 由 Root SSOT 對所有 DropdownMenu 統一同步 trigger tab stop;Portal 仍保留 React context,
+// 所以不需要 consumer/story 各自 patch。non-modal 沒有 aria-hidden,這段自然是 no-op。
 const DropdownMenuModalOpenContext = React.createContext(false)
 
 const DropdownMenu = ({
   open,
   defaultOpen,
   onOpenChange,
-  modal = true,
+  modal = false,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Root>) => {
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen ?? false)
@@ -119,7 +150,6 @@ const DropdownMenuTrigger = React.forwardRef<
       // 完全無 focus ring。消費 Button focus canonical(button.tsx buttonVariants base)。
       // asChild+Button 場景同名 class 重複,無影響。
       className={cn(
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
         className,
       )}
       {...props}
@@ -297,6 +327,8 @@ const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
   DropdownMenuItemProps
 >(({ className, children, startIcon, avatar, description, tag, badge, endIcon, shortcut, selected, disabled, ...props }, ref) => {
+  // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
+  const cursorByKeyboard = useCursorMover() === 'keyboard'
   const size = useRowSize()
   const endContent = buildEndContent(size, badge, endIcon, shortcut)
 
@@ -310,18 +342,18 @@ const DropdownMenuItem = React.forwardRef<
       textValue={typeof children === 'string' ? children : undefined}
       className={cn(
         radixItemClass,
+        radixCursorClass(cursorByKeyboard),
         // 2026-07-04 Q2 拍板:selected bg 勝 hover/highlighted(bg 是唯一選中指示器,被 hover 洗掉
         // = 選中資訊消失)。對齊 MenuItem(menu-item.tsx selected 時關 hover bg)+ Ant Menu
-        // `:not(-item-selected)` + VS Code list `:hover:not(.selected)`;Radix highlighted 同時是
-        // keyboard cursor,selected 項停留時維持 selected bg(DS bg 通道單一職責)。
-        // 2026-07-05 D4 補完 Q2 附帶條件:selected×highlighted(鍵盤 cursor 停留)深化一階,cursor 可感知
-        //(WCAG 2.4.7)。2026-08-11 user 拍板糾正兩處(SSOT = item-anatomy「選中 × 互動疊加」):
-        //(1) Radix highlighted 滑鼠也觸發,深化僅限鍵盤 — 滑鼠 hover 釘住不變(not-hover 分流,
-        //     深化 (0,3,0) > 釘住 (0,2,0));(2) token 從借用的 -active(按壓專屬)歸位 -focus。
-        selected && 'bg-neutral-selected data-[highlighted]:bg-neutral-selected data-[highlighted]:not-hover:bg-neutral-selected-focus',
+        // `:not(-item-selected)` + VS Code list `:hover:not(.selected)`。
+        // 2026-08-11 user 拍板(SSOT = item-anatomy「選中 × 互動疊加」):滑鼠 hover 釘住不變;
+        // 2026-09-07「A5畫框」:選中 × 鍵盤游標 = 畫框;2026-09-09:框由 radixCursorClass 統一畫在反白列上
+        //(不分選中與否),這裡只剩「選中底色釘住」—— 框直接疊在選中底色上。
+        selected && 'bg-neutral-selected data-[highlighted]:bg-neutral-selected',
         className,
       )}
       {...props}
+      onPointerMoveCapture={(e) => { radixGrab(e); props.onPointerMoveCapture?.(e) }}
     >
       <MenuItem
         size={size}
@@ -360,6 +392,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
 >(({ className, children, startIcon, value, badge, ...props }, ref) => {
   const size = useRowSize()
   const iconPx = ICON_SIZE[size]
+  const cursorByKeyboard = useCursorMover() === 'keyboard'
 
   // SubTrigger suffix: [value?] [badge?] [ChevronRight] with gap-1
   const endContent = (
@@ -377,10 +410,13 @@ const DropdownMenuSubTrigger = React.forwardRef<
       textValue={typeof children === 'string' ? children : undefined}
       className={cn(
         radixItemClass,
+        radixCursorClass(cursorByKeyboard),
+        // 子選單開著 = 狀態(同選中一類的持續態),用底色表達;游標的框照 radixCursorClass 疊上去
         'data-[state=open]:bg-neutral-hover',
         className,
       )}
       {...props}
+      onPointerMoveCapture={(e) => { radixGrab(e); props.onPointerMoveCapture?.(e) }}
     >
       <MenuItem
         size={size}
@@ -411,6 +447,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   DropdownMenuCheckboxItemProps
 >(({ className, children, startIcon, description, checked, disabled, ...props }, ref) => {
   const size = useRowSize()
+  const cursorByKeyboard = useCursorMover() === 'keyboard'
 
   return (
     <DropdownMenuPrimitive.CheckboxItem
@@ -420,8 +457,9 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       // 2026-07-05:同 DropdownMenuItem——typeahead 只比對 label(M10 同 pattern:帶 description)。
       textValue={typeof children === 'string' ? children : undefined}
       onSelect={(e) => e.preventDefault()}
-      className={cn(radixItemClass, className)}
+      className={cn(radixItemClass, radixCursorClass(cursorByKeyboard), className)}
       {...props}
+      onPointerMoveCapture={(e) => { radixGrab(e); props.onPointerMoveCapture?.(e) }}
     >
       <MenuItem
         size={size}
@@ -449,6 +487,7 @@ const DropdownMenuLabel = React.forwardRef<
   return (
     <DropdownMenuPrimitive.Label
       ref={ref}
+      // @focus-suppress E — E 浮層程式落點;承擔者:浮層開啟時的程式落點;內部每個 item 各自有 D 類指示
       className={cn('outline-none', className)}
       {...props}
     >
@@ -497,6 +536,8 @@ const DropdownMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
   DropdownMenuRadioItemProps
 >(({ className, children, startIcon, description, disabled, ...props }, ref) => {
+  // 虛擬游標的框只在鍵盤模態下畫(對齊 :focus-visible 啟發式;SSOT = hooks/use-input-modality.ts)
+  const cursorByKeyboard = useCursorMover() === 'keyboard'
   const size = useRowSize()
 
   return (
@@ -509,9 +550,10 @@ const DropdownMenuRadioItem = React.forwardRef<
       // 2026-05-31 #10:selected 底色套在外層 Radix RadioItem 本身(非 `[&>*]` 子 MenuItem),
       // 因內層 MenuItem 自帶 `!bg-transparent` 會蓋掉子層 bg → 選中底色從不顯示。
       // 改 parent-bg pattern(對齊 DropdownMenuItem selected):RadioItem 上底色,MenuItem 透明讓它透出。
-      // 2026-07-04 Q2:checked 亦勝 highlighted(同 DropdownMenuItem selected 規則)
-      className={cn(radixItemClass, 'data-[state=checked]:bg-neutral-selected data-[state=checked]:data-[highlighted]:bg-neutral-selected data-[state=checked]:data-[highlighted]:not-hover:bg-neutral-selected-focus', className)}
+      // 2026-07-04 Q2:checked 亦勝 highlighted(同 DropdownMenuItem selected 規則);鍵盤游標的框由 radixCursorClass 疊在 checked 底色上(2026-09-09)
+      className={cn(radixItemClass, radixCursorClass(cursorByKeyboard), 'data-[state=checked]:bg-neutral-selected data-[state=checked]:data-[highlighted]:bg-neutral-selected', className)}
       {...props}
+      onPointerMoveCapture={(e) => { radixGrab(e); props.onPointerMoveCapture?.(e) }}
     >
       <MenuItem
         size={size}
@@ -557,13 +599,14 @@ export const dropdownMenuMeta = {
   sizes: {
 
   },
-  // 'selected' = 單選/checked item 持續選中(bg-neutral-selected);'active' 保留 — highlight-on-selected
-  // 走 bg-neutral-selected-focus(2026-08-11 token 歸位:-active 回歸按壓專屬;深化僅限鍵盤反白)。
+  // 'selected' = 單選/checked item 持續選中(bg-neutral-selected);選中項的鍵盤反白自 2026-09-07 起
+  // **畫框**而非深一階底色(user 拍板「A5畫框」;底色已被選中佔走,不能再擠第二個意義進同一通道)。
   states: ['default', 'hover', 'active', 'selected', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-neutral-selected-focus', 'bg-surface-raised', 'bg-transparent'],
+    bg: ['bg-neutral-hover', 'bg-neutral-selected', 'bg-surface-raised', 'bg-transparent'],
     fg: ['text-fg-disabled', 'text-fg-muted'],
-    ring: ['ring-ring'], // 2026-07-05:Trigger focus canonical ring(對齊 Checkbox/Tabs 等 meta 慣例)
+    // Trigger 的焦點框走全域外描邊(base.css);選中項的鍵盤游標走內描邊。
+    ring: ['focus-ring-inset'],
   },
 } as const
 

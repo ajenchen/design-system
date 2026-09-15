@@ -487,7 +487,7 @@ export const FieldGroupBehavior: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>FieldGroup — 管理多 Field 垂直間距</H3>
-        <Desc>FieldGroup 提供三個語意層級的垂直 gap(`compact`→gap-3 / `normal`→gap-4 / `loose`→gap-6),不需 consumer 手算間距。</Desc>
+        <Desc>FieldGroup 統一管理欄位垂直間距 —— 單一值 `--layout-space-loose`(md 16px / lg 24px),隨 density 一起縮放。沒有 per-instance 選檔:表單間距是系統級設定,不需 consumer 手算,也不該每個表單各自挑。</Desc>
         <div className="grid grid-cols-2 gap-6 max-w-4xl">
           <div className="border border-dashed border-divider rounded-md p-4">
             <div className="text-caption text-fg-muted mb-3 font-mono">vertical orientation</div>
@@ -541,7 +541,7 @@ export const Accessibility = {
   render: () => (
     <div className="max-w-3xl text-body text-fg-secondary">
       <h3 className="text-h5 text-foreground mb-2">無障礙設計</h3>
-      <p className="whitespace-pre-line">{"Field 本身只是排版容器,不接管任何鍵盤事件——它把焦點、鍵盤與互動全都交給裡面的輸入控件(Input / Select / 日期選擇器等)。\n\n  鍵盤操作  :\n\n- Tab 鍵會把焦點移進裡面的輸入控件,使用者直接操作該控件,不需要滑鼠。\n- 取消編輯、按 Esc 收起等行為,由控件本身或放置它的容器(例如表格儲存格)決定,Field 不負責。\n\n  焦點外框  :焦點外框由控件自己畫(2px 實線),沿用整套設計系統一致的樣式;Field 不另外搶焦點。\n\n  驗證標準  :Storybook 的無障礙檢查面板應該沒有任何嚴重問題;只用鍵盤就能完整操作;文字對比至少 4.5:1、介面元素至少 3:1(WCAG AA)。"}</p>
+      <p className="whitespace-pre-line">{"Field 本身只是排版容器,不接管任何鍵盤事件——它把焦點、鍵盤與互動全都交給裡面的輸入控件(Input / Select / 日期選擇器等)。\n\n  鍵盤操作  :\n\n- Tab 鍵會把焦點移進裡面的輸入控件,使用者直接操作該控件,不需要滑鼠。\n- 取消編輯、按 Esc 收起等行為,由控件本身或放置它的容器(例如表格儲存格)決定,Field 不負責。\n\n  焦點指示  :欄位家族的焦點指示是「欄位邊框轉成主色」(1px),不另外畫一圈外框 —— 不論在裡面打字、還是選單關著時焦點停在欄位本身,都長同一個樣子。唯讀欄位的邊框是透明的、沒有顏色可轉,才改用整套設計系統共用的外框(往外 2px)。Field 不另外搶焦點。\n\n  驗證標準  :Storybook 的無障礙檢查面板應該沒有任何嚴重問題;只用鍵盤就能完整操作;文字對比至少 4.5:1、介面元素至少 3:1(WCAG AA)。"}</p>
     </div>
   ),
 }

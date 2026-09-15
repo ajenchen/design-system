@@ -58,7 +58,7 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 | data-state | 情境 | 視覺 |
 |------------|------|------|
 | `idle`(預設) | 使用者未互動 | dashed `border-border`（**元件邊框 `--border`,非 `--divider` 分隔線**）+ surface 底 |
-| `hover` = `drag-over`（**統一,純 border-driven,對齊 Ant Dragger `colorPrimaryHover`**)| 游標懸停 / 拖檔進入 | **`border-primary-hover`**（只變邊框;2026-07-06 修 claim-vs-code drift——spec 一直宣稱 colorPrimaryHover、code 原寫 base,瞬時態歸 hover 階）+ 底維持 surface（不變 bg）。state 信號靠邊框,非底色;兩態同視覺 |
+| `hover` = `drag-over`（**統一,純 border-driven,對齊 Ant Dragger `colorPrimaryHover`**)| 游標懸停 / 拖檔進入 | **`border-drop-target-border`**（DS「可放下的區域」配對,= `--primary-hover`,2026-09-03 起與 `AgentFabDock` 停靠帶共用同一組 token;只變邊框）+ 底維持 surface（不變 bg）。state 信號靠邊框,非底色;兩態同視覺 |
 | `loading`（**deferred**）| `loading` prop 為 true | **Deferred:其唯一用途(無清單單檔/頭像替換)場景未定義,showcase 僅呈現 3-state(idle/drag-over/disabled);prop 在 tsx 保留供未來。** 行為:CircularProgress 取代內容;`cursor-progress`(不加 `pointer-events-none`,互動由 isBlocked guard 擋);aria-busy=true。有清單的 flow 進度一律走 FileItem 自身的 progress bar（uploading status）—— FileUpload 內建 list 仍 `surface=form`(dropzone 非獨立浮層 upload manager,見 file-item.spec.md「upload-manager 浮層面板 composition」)|
 | `disabled` | `disabled` prop 為 true | **語意 token(非 opacity — dashed outline surface 走 DS outline-disabled 慣例,3/4 世界級 Ant/Polaris/Carbon 用 token)**:`bg-disabled` 底 + 邊框不變色 + 文字/icon → `fg-disabled`(由 `<Empty disabled>` 控,icon-circle 維持 muted)+ `cursor-not-allowed`(移除 `pointer-events-none` 後生效)|
 
@@ -70,6 +70,8 @@ FileUpload 是**拖放 / 點擊上傳區塊**——可拖曳檔案進入或點�
 - 混用會破壞語意 — `loading=true` 時不要同時 `disabled=true`
 
 **為什麼用 dashed border**:dashed 表示「可放下的暫時目標」，與永久容器使用的 solid boundary 區分；drag-active 再用 state token 提升可放置訊號。
+
+**為什麼這裡不填底色**（2026-09-03 user 提問「FileUpload 的邏輯不一樣吧」→ 全掃確認）:本元件是**常駐**拖入區,靜止就看得見(dashed 邊框),使用者是「瞄準它」把檔案丟進來;被拖的是 OS 拖曳影像、DS 管不到,所以回饋只能長在區域上,而換邊框色已足夠。相對地 `AgentFabDock` 的右緣停靠帶是**暫態**區域(靜止不存在、拖曳中才出現),需要 `--drop-target` 整區底色才讀得出範圍,落點回饋則由鈕自己的所見即所得預覽承擔。**兩者共用同一組 token(顏色語言統一),組合不同(情境不同)** —— SSOT 對照表在 `color.spec.md`「Drop target」段。
 
 ---
 

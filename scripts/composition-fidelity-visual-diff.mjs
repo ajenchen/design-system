@@ -25,6 +25,7 @@
  *   2 — setup error (missing tool / story / baseline marker)
  */
 import { chromium } from 'playwright'
+import { launchBrowser } from './lib/launch-browser.mjs'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
 import http from 'node:http'
@@ -259,7 +260,7 @@ if (!consumerUrl) {
 }
 
 // ── 3. Screenshot + diff per mapping ──
-const browser = await chromium.launch({ headless: true })
+const browser = await launchBrowser()
 const results = []
 let failCount = 0
 

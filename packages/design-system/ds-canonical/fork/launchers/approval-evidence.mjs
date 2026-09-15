@@ -4,6 +4,8 @@
 
 import { createHash } from 'node:crypto'
 import { readFileSync, statSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { resolve as resolvePath } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 function argument(name) {
@@ -120,11 +122,45 @@ function transcriptState(transcriptPath) {
     // `sourceToolUseID`) are likewise not the user's voice — 2026-09-02 anchor: a loaded
     // workflow-authoring reference displaced the user's real directive as "latest user message".
     if (record?.isMeta === true || typeof record?.sourceToolUseID === 'string') continue
+    // Context-compaction summaries are recorded as user-role text but are written by the
+    // ASSISTANT, not the user — 2026-09-12 anchor: after a compaction the summary became the
+    // "latest user message", so every later substantive edit was judged against AI-authored
+    // prose instead of the user's actual directive (observed reasonCode:
+    // TARGET_BOUND_DISCUSSION_OR_QUESTION, while the user's real message sat two records above).
+    // Excluding them is a TIGHTENING, and that is the point: a summary quoting or paraphrasing
+    // earlier approval ("the user approved X") would otherwise let the assistant's own words
+    // authorize the assistant's own edit. M36(a): 引用 ≠ 決定,AI 轉述永遠不是 user 權威。
+    if (/^This session is being continued from a previous conversation/u.test(text)) continue
     userMessages.push(text)
     lastUserRecordIndex = index
     plainUserRecordIndexes.push(index)
   }
   let latestAskUserSelection = null
+  // A later plain user message normally supersedes the selection. The one exception is a message
+  // that merely RESTATES the same delegation ("照你建議", "我不是說了嗎") — 2026-09-12 anchor: the
+  // user answered an AskUserQuestion with 同意,照這個做, the assistant still blocked, and the user's
+  // next message was an angry restatement of the very same delegation. Treating that restatement as
+  // "supersedes" threw away the target binding the user had just given and demanded the approval a
+  // third time. Restating an instruction is not withdrawing it.
+  // Deliberately narrow: it carries forward only while EVERY later plain message is a bare
+  // delegation/affirmation with no denial. A denial, a new directive, or a follow-up question all
+  // still supersede — those are the cases the original rule exists for.
+  const carriesSelectionForward = (text) => {
+    const normalized = normalizeText(text)
+    if (!normalized) return false
+    if (matchesAny(TARGET_DENIAL_PATTERNS, withoutNoWaitClauses(normalized))) return false
+    if (matchesAny(TARGETLESS_SCOPE_DENIAL_PATTERNS, normalized)) return false
+    return matchesAny(UI_DELEGATED_RESEARCH_PATTERNS, normalized)
+      || matchesAny(SELECTION_RESTATEMENT_PATTERNS, normalized)
+  }
+  if (latestSelection) {
+    const laterPlain = plainUserRecordIndexes
+      .map((index, order) => ({ index, text: userMessages[order] }))
+      .filter((entry) => entry.index > latestSelection.index)
+    if (laterPlain.length && laterPlain.every((entry) => carriesSelectionForward(entry.text))) {
+      lastUserRecordIndex = Math.min(lastUserRecordIndex, latestSelection.index - 1)
+    }
+  }
   if (latestSelection && latestSelection.index > lastUserRecordIndex) {
     // Valid only while it is the newest user event: any later plain user message (a follow-up
     // question, a denial, a new directive) supersedes the selection and flows through the
@@ -199,8 +235,22 @@ function targetAliases(target) {
     const family = stemTokens[0] ?? ''
     if (family && componentDir.toLowerCase().startsWith(family.toLowerCase()) && stemTokens.length > 1) {
       const rest = stemTokens.slice(1)
-      aliases.add(rest.join(' '))
-      for (const token of rest) aliases.add(token)
+      // `rest.join(' ')` 在 rest 只有一個 token 時就等於那個 token 本身(`data-table` → 「table」),
+      // 所以這條也要走同一道泛用字檢查,否則下面的過濾等於白做(2026-09-12 CI 實測 11b 仍紅)。
+      // 多個 token 的片語(「panel logo」)夠具體,不受限。
+      if (rest.length > 1 || !componentDir.toLowerCase().includes(rest[0]?.toLowerCase() ?? '')) {
+        aliases.add(rest.join(' '))
+      }
+      // 單一 token 只有在它**不是元件目錄名的一部分**時才夠格單獨當別名(2026-09-12 收緊)。
+      // 理由:目錄已經含有的字不提供任何辨識資訊 ——「table」之於 `DataTable`、「panel」之於
+      // `AgentPanel` 都是泛用字,放進別名等於「任何一句提到 table 的話都能授權改 data-table.tsx」
+      // (CI 實測:「metadata table的排序箭頭改成跟 label 連動」直接綁定成功)。
+      // 「fab」「logo」不在 `AgentPanel` 裡,才是 user 真的在指那一個檔 —— 本規則原本要收的就是這種,
+      // 上面的註解也寫著「避免泛用字誤綁」,只是沒有實際擋住。
+      const dirKey = componentDir.toLowerCase()
+      for (const token of rest) {
+        if (!dirKey.includes(token.toLowerCase())) aliases.add(token)
+      }
     }
   }
   return [...aliases].filter((alias) => alias.length >= 3)
@@ -210,10 +260,24 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// 中英夾雜的詞界(2026-09-12)。原本前後都只認「非字母數字」當邊界,但中文**不會**在英文詞後面
+// 加空格 —— user 寫「data table整體互動和體驗越順暢越好」時,`table` 後面的「整」是 `\p{L}`,
+// 於是別名 `data table` 判成「詞還沒結束」而綁定失敗,已授權的 exact target 被當成沒綁定
+// (實測 reasonCode = EXACT_UI_UX_TARGET_BINDING_MISSING)。
+// **刻意寫窄**:只有「別名邊緣是 ASCII 英數、相鄰字是 CJK」才算詞界 —— 換字集就是換詞。
+// 同字集內一律不放寬,所以 `metadata table` 仍不會綁到 `data-table`(前面是拉丁字母)。
+const CJK_CLASS = '\\p{sc=Han}\\p{sc=Hiragana}\\p{sc=Katakana}\\p{sc=Hangul}'
+const isAsciiAlnum = (ch) => /[A-Za-z0-9]/u.test(ch || '')
+const aliasBoundaries = (alias) => ({
+  before: isAsciiAlnum(alias.at(0)) ? `(?:^|[^\\p{L}\\p{N}]|[${CJK_CLASS}])` : '(?:^|[^\\p{L}\\p{N}])',
+  after: isAsciiAlnum(alias.at(-1)) ? `(?:[^\\p{L}\\p{N}]|[${CJK_CLASS}]|$)` : '(?:[^\\p{L}\\p{N}]|$)',
+})
+
 function exactTargetBinding(message, target) {
   const normalized = normalizeText(message)
   for (const alias of targetAliases(target).sort((left, right) => right.length - left.length)) {
-    const pattern = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(alias)}([^\\p{L}\\p{N}]|$)`, 'iu')
+    const b = aliasBoundaries(alias)
+    const pattern = new RegExp(`${b.before}${escapeRegExp(alias)}${b.after}`, 'iu')
     if (pattern.test(normalized)) return alias
   }
   return null
@@ -221,8 +285,9 @@ function exactTargetBinding(message, target) {
 
 function exactAliasOccurrences(message, alias) {
   const normalized = normalizeText(message)
+  const b = aliasBoundaries(alias)
   const pattern = new RegExp(
-    `(^|[^\\p{L}\\p{N}])(${escapeRegExp(alias)})(?=[^\\p{L}\\p{N}]|$)`,
+    `${b.before}(${escapeRegExp(alias)})(?=${b.after})`,
     'giu',
   )
   return [...normalized.matchAll(pattern)].length
@@ -258,9 +323,11 @@ function withoutNoWaitClauses(message) {
   )
 }
 
+// 「不要改壞 / 別改錯」是「別弄壞」的要求,不是禁止修改 —— `改` 後面接 壞/錯/爛 不算 denial(2026-09-15:
+// user 的常態叮嚀「確保不要改壞目前好的東西」把他剛選的核准判成撤回)。
 const TARGET_DENIAL_PATTERNS = [
-  /(?:先|暫時|現在)?\s*(?:不要|別|不准|禁止|停止|暫停|擱置|取消)\s*(?:再|先|直接|馬上|立刻)?\s*(?:改|修改|變更|實作|執行|套用|採用|發布|推送|合併|做)/u,
-  /(?:不可以|不能|不可)\s*(?:再|直接)?\s*(?:改|修改|變更|做|執行|實作|採用|套用|發布)/u,
+  /(?:先|暫時|現在)?\s*(?:不要|別|不准|禁止|停止|暫停|擱置|取消)\s*(?:再|先|直接|馬上|立刻)?\s*(?:改(?![壞錯爛])|修改|變更|實作|執行|套用|採用|發布|推送|合併|做)/u,
+  /(?:不可以|不能|不可)\s*(?:再|直接)?\s*(?:改(?![壞錯爛])|修改|變更|做|執行|實作|採用|套用|發布)/u,
   /(?:不|不要|別|不可|不准|禁止)\s*(?:再)?\s*(?:採用|使用)/u,
   /(?:不要|別|不可|不准)\s*(?:再)?\s*(?:碰|動|觸碰)/u,
   /(?:保持|維持|保留).{0,24}(?:不變|原樣)/u,
@@ -289,6 +356,29 @@ const UI_DELEGATED_RESEARCH_PATTERNS = [
   /(?:照|依|按)\s*(?:你|妳)(?:的)?\s*(?:建議|判斷|專業)/u,
   /反正\s*(?:你|妳).{0,12}(?:研究|處理|決定|判斷)/u,
   /\b(?:research|figure\s+out|decide)\b.{0,32}\b(?:best|optimal|most\s+(?:polished|natural|refined))\b/iu,
+  // 2026-09-12:這裡曾加過「你只要…就是沒問題的」這類**附條件委派** pattern,已撤回。
+  // 撤回理由(兩個,都是實測):
+  //   (1) **不生效**:`messageClauses`(本檔上方)在逗號斷句,「你只要確保…」與「就是沒問題的」
+  //       會被切成兩個 clause,跨逗號的 pattern 永遠不成立 —— 加了等於死碼。
+  //   (2) **動機不對**:它是 AI 在「自己的編輯被自家核准閘擋住」時加的。擴充核准語彙來讓
+  //       自己通過,是自己批改自己的考卷;真正的核准通道是 AskUserQuestion(結構化選擇,
+  //       target 綁定來自 user 選的那個選項本身)。
+  // 若未來要收這類語意,必須先改 clause 切分的粒度(委派是句子層級屬性),而且由 user 發動,
+  // 不是由被擋住的那一方發動。
+]
+
+/**
+ * 重申 ≠ 收回(2026-09-12)。user 在 AskUserQuestion 選了「同意,照這個做」之後,若下一則訊息只是
+ * **把同一個委派再講一次**(「我就跟你說照你建議了」「不要作繭自縛」),那不是新指令也不是否決。
+ * 原本任何後續訊息都會讓前一個選擇失效 → 等於把 user 剛給的 target 綁定丟掉、再要一次核准。
+ * 刻意只收「光是重申/肯定、沒有新內容」的句型;帶新指令、問句或否決的訊息一律照舊 supersede。
+ */
+const SELECTION_RESTATEMENT_PATTERNS = [
+  /(?:我)?\s*(?:不是|就)?\s*(?:跟|對|同)\s*(?:你|妳)\s*(?:說|講)\s*(?:過)?.{0,16}(?:了|嗎)/u,
+  /(?:照|依|按)\s*(?:這個|那個|你說的|我說的)\s*(?:做|改|來|處理)/u,
+  /(?:不要|別|可不可以不要|可以不要)\s*作繭自縛/u,
+  /^(?:同意|可以|好|沒錯|對|OK|ok)[,，。!！~\s]*$/u,
+  /\b(?:i\s+(?:already\s+)?(?:said|told\s+you)|go\s+ahead|just\s+do\s+it|as\s+you\s+suggested)\b/iu,
 ]
 
 const TARGET_BINARY_QUESTION_PATTERNS = [
@@ -306,6 +396,120 @@ const UI_DECISION_MARKERS = [
   /\b(?:ui|ux|user-visible|product\s+semantics?|design\s+intent|component\s+contract|information\s+architecture|workflow|navigation|visual(?:\s+hierarchy)?|layout|spacing|padding|margin|gap|color|colour|typography|width|height|size|hover|focus|active|animation|transition|interaction|behavior|behaviour|content\s+semantics?|copy|label|icon|radius|shadow|border|opacity|variant|design\s+(?:token|rule)|state\s+machine|a11y|accessibility|wcag|aria|keyboard|disabled)\b/iu,
   /(?:介面|界面|使用者可感知|產品語意|設計意圖|元件契約|資訊架構|工作流程|導覽|視覺(?:層級)?|外觀|樣式|佈局|布局|間距|留白|顏色|色彩|配色|色系|紅色|藍色|綠色|紫色|漸層|漣漪|光圈|字體排印|尺寸|大小|寬度|高度|懸停|焦點|動畫|節奏|轉場|互動|行為|內容語意|文案|標籤|圖示|標誌|logo|圓角|陰影|邊框|透明度|變體|設計 (?:token|規則)|狀態機|無障礙|可及性|鍵盤|停用)/u,
 ]
+
+/**
+ * 判「這次改動是不是視覺/UI」時,**註解不算**(2026-09-12)。
+ * 註解是在解釋「為什麼這樣改」,不是被執行的東西;拿它判授權分類會把純行為修正誤判成產品決策。
+ * 錨:修「捲動停下後指標底下那一列不會被標記」這個 bug 時,改動的程式碼本身沒有任何視覺 token,
+ * 但我在註解裡寫了「hover」二字,整個 edit 就被判成 product-ui-ux 而擋下 ——
+ * 於是變成「為了解釋清楚而被罰」,也逼得 agent 去問 user 一個本來就該自主執行的工程修正
+ * (user 2026-09-12 原話:「不是說過只有跟 ssot 相關的 ui/ux 需要我拍版決策嗎…其餘不要作繭自縛」)。
+ * **這不是放寬**:真的改到樣式的程式碼照樣命中,只是不再因為文字說明而誤判。
+ * 只剝 `//` 行註解與 `/* *​/` 區塊註解;JSX 文字、字串字面值都不動(那些是真的會被使用者看到的東西)。
+ */
+const stripCodeComments = (value) => String(value || '')
+  .replaceAll(/\/\*[\s\S]*?\*\//gu, ' ')
+  .replaceAll(/(^|[^:])\/\/[^\r\n]*/gu, '$1 ')
+
+/**
+ * 純註解操作(2026-09-15):把上面「註解不算」推到底。
+ * old / new 剝掉註解與空白後一模一樣的 Edit,執行結果零差異,不可能是產品/UI/UX 決策 ——
+ * 它唯一能改的是說明文字。這種操作不需要 exact target binding,也不需要 user 在最新訊息裡再授權一次;
+ * 否則收尾階段每一句「把過期註解對齊現況」都會因為最新訊息含「設計語言」「視覺」而被判成 UI 決策擋下
+ *(2026-09-15 錨:DataTable 結案 docblock 4 處過期敘述、PeoplePicker 舊公式註解,user 已要求
+ * 「確保所有內容都有 ssot 沒有漂移」仍被 EXACT_UI_UX_TARGET_BINDING_MISSING 擋住)。
+ *
+ * 兩道檢查缺一不可,各擋一個混入口(都在「整檔套用改動後」的 before / after 上比,不在片段上比 ——
+ * Edit 的 old_string 常是區塊註解的中段,片段本身沒有 `/*` `*​/`,逐片段剝註解會誤判成非註解):
+ *   (1) 整檔剝註解、壓空白後相同 —— 擋型別、識別字、任何非註解字元的改動;
+ *   (2) 整檔 TypeScript 去註解轉譯(transpileModule + removeComments)位元相同 ——
+ *       擋 (1) 的盲點:字串或模板字面值裡的 `//` 會被 regex 當註解,真的字串改動就混過去;轉譯器不會。
+ * `.css` 只有 `/* *​/` 註解、沒有轉譯器,只做 (1)。拿不到 typescript(消費者 repo 未安裝)→ 不算純註解(fail closed)。
+ * Write / 找不到檔案 / old 不存在或不唯一 / old === new → 一律不算。
+ */
+let typescriptModule = null
+try {
+  typescriptModule = createRequire(import.meta.url)('typescript')
+} catch {
+  typescriptModule = null
+}
+const stripCssComments = (value) => String(value || '').replaceAll(/\/\*[\s\S]*?\*\//gu, ' ')
+const collapseWhitespace = (value) => String(value || '').replace(/\s+/gu, ' ').trim()
+
+function commentOnlyOperation(hookInput, target) {
+  const toolName = hookInput?.tool_name
+  const input = hookInput?.tool_input
+  if (!input || typeof input !== 'object') return false
+  const edits = toolName === 'Edit'
+    ? [input]
+    : toolName === 'MultiEdit' && Array.isArray(input.edits) && input.edits.length
+      ? input.edits
+      : null
+  if (!edits) return false
+  const filePath = String(input.file_path ?? input.path ?? '')
+  if (!filePath || normalizeTarget(filePath) !== normalizeTarget(target)) return false
+  const isCss = /\.css$/iu.test(filePath)
+  const isScript = /\.(?:tsx|ts|jsx|js|mts|cts|mjs|cjs)$/iu.test(filePath)
+  if (!isCss && !isScript) return false
+  let before
+  try {
+    before = readFileSync(resolvePath(filePath), 'utf8')
+  } catch {
+    return false
+  }
+  const strip = isCss ? stripCssComments : stripCodeComments
+  let after = before
+  for (const edit of edits) {
+    const oldString = String(edit?.old_string ?? '')
+    const newString = String(edit?.new_string ?? '')
+    if (!oldString || oldString === newString) return false
+    const first = after.indexOf(oldString)
+    if (first < 0) return false
+    if (edit?.replace_all) {
+      after = after.split(oldString).join(newString)
+    } else {
+      if (after.indexOf(oldString, first + 1) >= 0) return false
+      after = after.slice(0, first) + newString + after.slice(first + oldString.length)
+    }
+  }
+  if (after === before) return false
+  if (collapseWhitespace(strip(before)) !== collapseWhitespace(strip(after))) return false
+  if (isCss) return true
+  if (!typescriptModule) return false
+  const emit = (source) => typescriptModule.transpileModule(source, {
+    fileName: filePath,
+    reportDiagnostics: false,
+    compilerOptions: {
+      removeComments: true,
+      jsx: typescriptModule.JsxEmit.Preserve,
+      target: typescriptModule.ScriptTarget.ESNext,
+      module: typescriptModule.ModuleKind.ESNext,
+      sourceMap: false,
+    },
+  }).outputText
+  try {
+    return emit(before) === emit(after)
+  } catch {
+    return false
+  }
+}
+
+function commentOnlyEvidence(target, { latestNormalized = null, operationText = '' } = {}) {
+  return {
+    schemaVersion: 1,
+    kind: 'latest-user-design-authorization',
+    decision: 'approved',
+    reasonCode: 'COMMENT_ONLY_OPERATION_NO_RUNTIME_EFFECT',
+    decisionDomain: 'engineering-remediation',
+    target: target ? normalizeTarget(target) : null,
+    targetBinding: 'comment-only-operation',
+    latestUserMessageSha256: latestNormalized == null
+      ? null
+      : createHash('sha256').update(latestNormalized).digest('hex'),
+    decisionMessageSha256: null,
+    operationEvidenceSha256: createHash('sha256').update(operationText).digest('hex'),
+  }
+}
 
 const UI_OPERATION_MARKERS = [
   /\b(?:className|style|css|tailwind|padding|margin|gap|color|background|width|height|hover|focus|animation|transition|opacity|border|shadow|radius|variant|disabled|tabIndex|role)\b/iu,
@@ -399,6 +603,21 @@ const NON_AUTHORITATIVE_UI_STATEMENT_PATTERNS = [
   /(?:reviewer|審查者|別人|他人|第三方).{0,16}(?:說|表示|寫道|建議|提議|said|says?|wrote|suggested|proposed)/iu,
   /\b(?:not\s+my\s+(?:decision|approval|authorization)|not\s+an?\s+(?:decision|approval|authorization)|someone\s+else'?s\s+(?:suggestion|proposal))\b/iu,
 ]
+
+// AskUserQuestion 的 tool_result 是 harness 寫的 `The user answered: "<題目>"="<回答>"`(多題以換行串接)。
+// 判「猶豫 / 拒絕 / 討論」只能看 user 回答的那段,題目是 assistant 寫的;沒有分隔符就整段當回答(舊格式)。
+function selectionAnswerOnly(text) {
+  const raw = String(text || '')
+  if (!/^\s*The user answered:/u.test(raw)) return raw
+  const answers = raw.split(/(?=The user answered:)/u).map((chunk) => {
+    const at = chunk.indexOf('"="')
+    return at >= 0 ? chunk.slice(at + 3).replace(/"\s*$/u, '') : ''
+  }).filter(Boolean)
+  return answers.length ? answers.join('\n') : raw
+}
+// 「照 / 依 / 按 / 就(你的)建議|提議|推薦」是接受建議,不是「還在建議」—— 判 tentative 前先換成中性詞。
+const withoutAcceptancePhrases = (text) => String(text || '')
+  .replace(/(?:照|依|按|就)\s*(?:你|您)?\s*(?:的)?\s*(?:建議|提議|推薦)/gu, '照辦')
 
 const TENTATIVE_OR_CONDITIONAL_UI_PATTERNS = [
   /(?:還在|正在|先)?\s*(?:考慮|評估|思考|猶豫|未決定|尚未決定|暫定|提議|建議)/u,
@@ -976,7 +1195,7 @@ function classifyLatestAuthorizationUnscoped(message, {
   }
   const targetIsEngineering = matchesAny(ENGINEERING_TARGET_PATTERNS, normalizedTarget)
   const hasOperationEvidence = normalizeText(operationText).length > 0
-  const operationHasUiIntent = matchesAny(UI_OPERATION_MARKERS, operationText)
+  const operationHasUiIntent = matchesAny(UI_OPERATION_MARKERS, stripCodeComments(operationText))
   const operationRequiresHumanAction = matchesAny(HUMAN_ONLY_OPERATION_MARKERS, operationText)
   const operationIsDestructiveOrBypass = matchesAny(
     DESTRUCTIVE_OR_BYPASS_OPERATION_MARKERS,
@@ -1122,7 +1341,7 @@ function classifyOperationAuthorizationUnscoped({
       reasonCode: 'ENGINEERING_SAFETY_GATE_REQUIRED',
     }
   }
-  if (matchesAny(UI_OPERATION_MARKERS, normalizedOperation)) {
+  if (matchesAny(UI_OPERATION_MARKERS, stripCodeComments(normalizedOperation))) {
     return {
       ...base,
       decisionDomain: 'product-ui-ux',
@@ -1214,6 +1433,10 @@ export function authorizationEvidence(transcriptPath, {
   const state = transcriptState(transcriptPath)
   const operationText = toolOperations(state.turnRecords, hookInput, target)
   const latestNormalized = normalizeText(state.latestUserMessage)
+  // 純註解操作不看訊息:它沒有任何執行差異,沒有東西可以拍板(定義與兩道檢查見 commentOnlyOperation)。
+  if (commentOnlyOperation(hookInput, target)) {
+    return commentOnlyEvidence(target, { latestNormalized, operationText })
+  }
   const selection = state.latestAskUserSelection
   if (selection) {
     // A structured AskUserQuestion selection is the user saying yes to one exact presented
@@ -1222,11 +1445,15 @@ export function authorizationEvidence(transcriptPath, {
     // falls through to the ordinary fail-closed flow). Target binding may come from the
     // answer or from the assistant proposal the question was attached to — binding alone
     // grants nothing without the genuine selection event.
-    const answerNormalized = normalizeText(selection.answerText)
+    // 只判 user 自己回答的那段:harness 把 assistant 的題目原文也寫進 tool_result(`The user answered: "題目"="回答"`),
+    // 題目裡的「要怎麼處理?」「(Recommended)」不是 user 的猶豫。「照你建議做」是接受建議,不是「還在建議」
+    //(2026-09-15:user 選了「對齊規格(Recommended)」並寫「照你建議做…確保不要改壞既有」,卻被判成 tentative + denial 擋下)。
+    const answerNormalized = normalizeText(selectionAnswerOnly(selection.answerText))
+    const answerForIntent = withoutAcceptancePhrases(answerNormalized)
     const answerIsClean = answerNormalized
-      && !matchesAny(TARGET_DENIAL_PATTERNS, withoutNoWaitClauses(answerNormalized))
-      && !matchesAny(TARGET_DISCUSSION_PATTERNS, answerNormalized)
-      && !matchesAny(TENTATIVE_OR_CONDITIONAL_UI_PATTERNS, answerNormalized)
+      && !matchesAny(TARGET_DENIAL_PATTERNS, withoutNoWaitClauses(answerForIntent))
+      && !matchesAny(TARGET_DISCUSSION_PATTERNS, answerForIntent)
+      && !matchesAny(TENTATIVE_OR_CONDITIONAL_UI_PATTERNS, answerForIntent)
     const bindingAlias = answerIsClean
       ? exactTargetBinding(`${selection.answerText}\n${selection.proposalText}`, target)
       : null
@@ -1289,14 +1516,14 @@ if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
     }
     if (operationOnly) {
       if (!hookInput) throw new Error('operation-only classification requires --hook-input-stdin')
-      evidence = {
-        schemaVersion: 1,
-        kind: 'latest-user-design-authorization',
-        ...classifyOperationAuthorization({
-          target,
-          operationText: toolOperations([], hookInput, target),
-        }),
-      }
+      const operationText = toolOperations([], hookInput, target)
+      evidence = commentOnlyOperation(hookInput, target)
+        ? commentOnlyEvidence(target, { operationText })
+        : {
+          schemaVersion: 1,
+          kind: 'latest-user-design-authorization',
+          ...classifyOperationAuthorization({ target, operationText }),
+        }
     } else {
       if (!transcriptPath) throw new Error('missing --transcript')
       evidence = authorizationEvidence(transcriptPath, { target, hookInput })

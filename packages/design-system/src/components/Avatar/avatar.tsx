@@ -268,7 +268,7 @@ const AvatarInner = React.forwardRef<HTMLDivElement, AvatarProps>(
     // 原寫死 rounded-full 會讓方形 avatar(實體)配 hoverCard 時出現圓形 ring。hoverCard 為通用行為(任意內容),
     // 方形 avatar 合法可配(內容非 ProfileCard 而已),故 ring 必跟形狀。
     const focusableClass = hoverCard
-      ? cn('focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1', shape === 'circle' ? 'rounded-full' : 'rounded-md')
+      ? cn('', shape === 'circle' ? 'rounded-full' : 'rounded-md')
       : ''
     const baseEl = !hasOverlay
       ? <div ref={ref} className={cn('inline-flex shrink-0', focusableClass, className)} style={style} {...focusableProps} {...props}>{avatarEl}</div>

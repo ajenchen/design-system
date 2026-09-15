@@ -31,6 +31,7 @@ scope: utility primitives module (use-overflow-items hooks: useScrollEdges + use
 - 左右 scroll arrow → text button,ChevronLeft / ChevronRight
 - Menu trigger → text button,ChevronDown
 - **禁止**用 item 自身的視覺語言(chip 形狀、tab 底線等)來渲染 overflow trigger——overflow affordance 是「工具層」,不是「業務層」,不該跟內容爭視覺重量(「工具層必須是視覺重量最低的一層」— 本 spec codify 此原則,owner SSOT 在此)。
+- **~~例外:Pagination 最後一階~~**(2026-09-10 撤銷,owner `pagination.spec.md`「為什麼不捲」):分頁列**不再走 overflow** —— 最後一階改成砍頭尾頁碼(需求寬度 220 → 156px,低於 DS 最窄容器 208px),整條 `overflow-x-auto` 拿掉。原本那條例外是 2026-09-04 依本模組類推來的,查證後 16 家世界級沒有一家讓數字頁碼列橫向捲(唯一命中是 MUI 表格頁尾工具列 `TablePagination.js:29`),主流解是收合頁碼。本模組的原則不變,只是分頁列不再是它的消費者。
 
 這條規則讓使用者看到向下 chevron 或向右 arrow 時,心智是一致的:「這是 overflow 的工具,不是可選內容」,不論這排 items 是什麼類型。
 

@@ -31,6 +31,10 @@ export default meta
 type Story = StoryObj<typeof Combobox>
 
 /* ── 四模式 ── */
+// 純展示:四個模式各放同一組已選值。這裡不放任何 play(),也不放為了復原而生的「重設」假 UI ——
+// 破壞性互動(逐一移除到清空)屬測試,住下方 test-only 的 ModesRemoveFocusContract
+//(anchor:2026-08-05 user「不要給錯誤的範例」抓 PeoplePicker 同款「重設協作者」;Combobox 這顆
+// ccf83b24 加、ce0fc613 拆掉但留著 play() 的清空步驟、83c9533c 我為了讓畫面不空又補回,2026-09-15 user 再抓)。
 export const Modes: Story = {
   name: '四模式',
   render: () => {
@@ -40,7 +44,6 @@ export const Modes: Story = {
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
           <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="類別(edit mode demo)" />
-          <Button variant="text" size="xs" onClick={() => setValue(['electronics', 'food', 'lifestyle'])}>重設編輯模式</Button>
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">view</h3>
@@ -61,6 +64,23 @@ export const Modes: Story = {
       </div>
     )
   },
+}
+
+// Roving-focus 契約 probe:逐一移除 tag 時焦點依序落到下一個移除鈕,移除最後一個後回到 combobox。
+// 同 PeoplePicker MultiRemoveFocusContract 的做法(story-rules「Technical probe visibility」):標 test-only,
+// 自 sidebar / Autodocs 排除,test runner 照跑;結束時欄位是空的沒關係,它不是給人看的範例。
+const EditModeProbe = () => {
+  const [value, setValue] = React.useState(['electronics', 'food', 'lifestyle'])
+  return (
+    <div className="max-w-sm">
+      <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="類別(edit mode probe)" />
+    </div>
+  )
+}
+export const ModesRemoveFocusContract: Story = {
+  name: '移除焦點接力驗證',
+  tags: ['test-only'],
+  render: () => <EditModeProbe />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(await canvas.findByRole('button', { name: '移除 Electronics' }))
@@ -68,8 +88,7 @@ export const Modes: Story = {
     await userEvent.click(canvas.getByRole('button', { name: '移除 Food' }))
     await waitFor(() => expect(canvas.getByRole('button', { name: '移除 Lifestyle' })).toHaveFocus())
     await userEvent.click(canvas.getByRole('button', { name: '移除 Lifestyle' }))
-    await waitFor(() => expect(canvas.getByRole('combobox', { name: '類別(edit mode demo)' })).toHaveFocus())
-    await userEvent.click(canvas.getByRole('button', { name: '重設編輯模式' }))
+    await waitFor(() => expect(canvas.getByRole('combobox', { name: '類別(edit mode probe)' })).toHaveFocus())
   },
 }
 
@@ -155,6 +174,96 @@ export const Searchable: Story = {
       </div>
     )
   },
+}
+
+/* ── 載入中(開啟態快照:defaultOpen 讓瀏覽器閘不用點擊就看得到)── */
+// Notion 頁面「連結資料庫」:工作區的資料庫清單由 API 回傳
+const databaseOptions = [
+  { value: 'crm', label: 'CRM 客戶名單' },
+  { value: 'roadmap', label: '產品路線圖' },
+  { value: 'meetings', label: '會議記錄' },
+  { value: 'components', label: '設計系統元件' },
+  { value: 'hiring', label: '招募流程' },
+]
+
+export const LoadingFirstOpen: Story = {
+  name: '選項載入中(首次開啟)',
+  parameters: { docs: { description: { story: 'Notion 頁面「連結資料庫」第一次展開,工作區的資料庫清單還沒回來:清單裡只有一列「載入選項中」訊息列;觸發點與搜尋列都不轉圈、搜尋列仍可打字(選項載入的指示只在選單內)。' } } },
+  render: () => (
+    <div className="max-w-sm">
+      <Combobox options={[]} value={[]} onChange={() => {}} searchable optionsLoading defaultOpen searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(首次載入)" />
+    </div>
+  ),
+}
+
+export const ValueLoading: Story = {
+  name: '值處理中(儲存)',
+  parameters: { docs: { description: { story: '剛把「CRM 客戶名單」連結進頁面,關聯正在寫回 Notion:`loading` 是 Field 家族共用的「這個值在讀取 / 驗證 / 儲存」—— 觸發點右側、箭頭左邊轉圈並標 aria-busy,選單照常可開;跟選項有沒有載入無關。' } } },
+  render: () => (
+    <div className="max-w-sm">
+      <Combobox options={databaseOptions} value={['crm']} onChange={() => {}} searchable loading searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(儲存中)" />
+    </div>
+  ),
+}
+
+/** 遠端搜尋(Notion「連結資料庫」):關鍵字空先給「建議」(最近用過的資料庫);每打一個字向後端要一次,抓資料中舊清單不留、只剩載入列;後端回什麼列什麼。 */
+function RemoteSearchDemo() {
+  const directory = [
+    { value: 'crm', label: 'CRM 客戶名單', keywords: '客戶 customer' },
+    { value: 'roadmap', label: '產品路線圖', keywords: 'roadmap 路線' },
+    { value: 'meetings', label: '會議記錄', keywords: 'meeting notes' },
+    { value: 'ds', label: '設計系統元件', keywords: 'design system' },
+    { value: 'hiring', label: '招募流程', keywords: 'hiring recruit' },
+  ]
+  const recent = directory.slice(0, 2)
+  const [options, setOptions] = React.useState<typeof directory>([])
+  const [optionsLoading, setOptionsLoading] = React.useState(false)
+  const [value, setValue] = React.useState<string[]>(['crm'])
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onSearchChange = (q: string) => {
+    if (timer.current) clearTimeout(timer.current)
+    const needle = q.trim().toLowerCase()
+    // 關鍵字清空:回到建議群組,不用問後端
+    if (!needle) { setOptions([]); setOptionsLoading(false); return }
+    setOptionsLoading(true)
+    // 模擬後端:用別名(keywords)也能命中,這是本機過濾做不到的,所以必須關掉本機過濾
+    timer.current = setTimeout(() => {
+      setOptions(directory.filter((o) => `${o.label} ${o.keywords}`.toLowerCase().includes(needle)))
+      setOptionsLoading(false)
+    }, 800)
+  }
+  return (
+    <div className="max-w-sm">
+      <Combobox
+        options={options}
+        suggestions={recent}
+        value={value}
+        onChange={setValue}
+        searchable
+        filterOption={false}
+        optionsLoading={optionsLoading}
+        onSearchChange={onSearchChange}
+        searchPlaceholder="搜尋資料庫(後端搜尋,支援別名)…"
+        aria-label="連結資料庫(遠端搜尋)"
+      />
+    </div>
+  )
+}
+
+export const RemoteSearchHint: Story = {
+  name: '遠端搜尋(還沒打字、沒有建議)',
+  parameters: { docs: { description: { story: 'Notion 連結資料庫、名單在後端,但這個工作區還沒有「最近用過」可以當建議:展開只有一列「輸入關鍵字搜尋」提示 —— 不是「沒有選項」(那句只留給真的搜不到的時候)。' } } },
+  render: () => (
+    <div className="max-w-sm">
+      <Combobox options={[]} value={[]} onChange={() => {}} searchable filterOption={false} searchPlaceholder="搜尋資料庫…" aria-label="連結資料庫(還沒打字)" />
+    </div>
+  ),
+}
+
+export const RemoteSearch: Story = {
+  name: '遠端搜尋(建議 → 載入 → 結果)',
+  parameters: { docs: { description: { story: 'Notion 連結資料庫、名單在後端:還沒打字先列「建議」群組(最近用過的兩個,群組標題告訴你名單不只這些);每打一個字向後端要一次,抓資料中舊清單不留、只剩一列「載入選項中」;後端回什麼列什麼(打「customer」也找得到「CRM 客戶名單」,本機過濾做不到),真的沒有才顯示「沒有選項」;清掉關鍵字就回到建議。' } } },
+  render: () => <RemoteSearchDemo />,
 }
 
 /* ── DataTable 整合 ── */

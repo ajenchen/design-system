@@ -3,6 +3,9 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { expect, waitFor } from '@storybook/test'
 import { FileViewer, type FileInfo } from './file-viewer'
 import { Button } from '@/design-system/components/Button/button'
+import { Input } from '@/design-system/components/Input/input'
+import { Field, FieldLabel } from '@/design-system/components/Field/field'
+import { SimulatedBrowser } from '@/design-system/stories-helpers/scene/simulated-browser'
 import { Image as ImageIcon, Paperclip, Camera, Figma } from 'lucide-react'
 
 /**
@@ -413,5 +416,58 @@ export const OpenSnapshot: Story = {
       expect(document.activeElement).toHaveAttribute('role', 'dialog')
       expect(document.activeElement).toHaveAttribute('tabindex', '-1')
     })
+  },
+}
+
+/**
+ * 並存區域(`persistentElements`)—— 與 Dialog 同一份契約、同一支 primitive。
+ *
+ * FileViewer **直接建 Radix Root/Portal**、不經 DS Dialog,所以只改 Dialog 會漏掉它
+ * (2026-09-08 跨模型審查指出)。這個 story 也是「快捷鍵作用域」的驗證場:
+ * 檢視器開著時,在右邊常駐區的按鈕上按方向鍵**不得**切換檔案。
+ * 閘:`scripts/overlay-shortcut-scope-invariant.mjs`。
+ */
+export const CoexistenceContract: Story = {
+  name: '並存 — 常駐區域仍可用',
+  tags: ['test-only'],
+  render: () => {
+    const [open, setOpen] = React.useState(true)
+    const [index, setIndex] = React.useState(0)
+    const asideRef = React.useRef<HTMLElement | null>(null)
+    const [stage, setStage] = React.useState<HTMLDivElement | null>(null)
+    const toolbarRef = React.useRef<HTMLDivElement | null>(null)
+    const keepAll = React.useCallback(() => [asideRef.current, toolbarRef.current].filter((el): el is HTMLElement => !!el), [])
+    const [aside, setAside] = React.useState('')
+    const [comments, setComments] = React.useState<string[]>(['Betty:截圖二的按鈕文案要跟規格對一下。'])
+    return (
+      <div className="p-[var(--layout-space-loose)]">
+        <SimulatedBrowser url="/projects/8821/tasks/4821/attachments" canBack toolbarRef={toolbarRef} caption="模擬:檔案檢視器(有自己的網址)開著時只佔舞台,右側評論側欄照常可用。">
+          <div ref={setStage} className="relative flex min-w-0 flex-1 flex-col overflow-hidden" style={{ transform: 'translateZ(0)' }}>
+            <FileViewer
+              files={jiraScreenshots}
+              open={open}
+              onOpenChange={setOpen}
+              index={index}
+              onIndexChange={setIndex}
+              persistentElements={keepAll}
+              portalContainer={stage}
+            />
+          </div>
+          <aside ref={asideRef} id="fv-aside" aria-label="評論" className="flex w-[300px] shrink-0 flex-col gap-[var(--layout-space-loose)] border-l border-divider bg-surface p-[var(--layout-space-loose)]">
+            <h2 className="text-body-lg font-medium">評論</h2>
+            <ul className="flex flex-col gap-1">
+              {comments.map((c, i) => <li key={i} className="text-body">{c}</li>)}
+            </ul>
+            <Field>
+              <FieldLabel>新增評論</FieldLabel>
+              <Input id="fv-aside-input" placeholder="可以打字" value={aside} onChange={(e) => setAside(e.target.value)} />
+            </Field>
+            <div>
+              <Button id="fv-aside-btn" variant="primary" disabled={!aside.trim()} onClick={() => { const t = aside.trim(); if (t) { setComments((c) => [...c, `你:${t}`]); setAside('') } }}>送出</Button>
+            </div>
+          </aside>
+        </SimulatedBrowser>
+      </div>
+    )
   },
 }

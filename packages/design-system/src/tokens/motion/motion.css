@@ -34,7 +34,7 @@
  *   - duration-shimmer 2s:思考中文字微光週期(獨立於標誌 3s 一息家族)。
  *       值=shadcn shimmer 逐字(ui.shadcn.com/docs/utils/shimmer:
  *       `animation: tw-shimmer var(--shimmer-duration, 2s) linear infinite`;2026-09-02 實開頁複核)。
- *   SMIL(SVG 動畫)無法消費 CSS var:agent-logo.tsx 內 keySplines 常數為 swell/settle
+ *   SMIL(SVG 動畫)無法消費 CSS var:agent-panel-logo.tsx 內 keySplines 常數為 swell/settle
  *   token 值的逐字鏡像(該檔檔頭註記;改值必同步兩處)。
  */
 

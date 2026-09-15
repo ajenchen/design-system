@@ -64,7 +64,7 @@
 | `--neutral-hover` / `--neutral-selected*` | L2 Semantic(neutral interaction family) | `--neutral-selected-hover` |
 | `--<hue>-hover` / `--<hue>-active` | L2 Semantic(色相互動 family) | `--blue-hover` / `--red-active` |
 | `--font-<role>-<measurement>` | L3 Family | `--font-h1-size` / `--font-body-size` |
-| `--field-height-<size>` / `--table-row-<size>` / `--tab-height-<size>` / `--tree-indent-<size>` | L3 Family | `--field-height-md` |
+| `--field-height-<size>` / `--table-row-<size>` / `--tab-height-<size>` / `--tag-height-<size>` / `--tree-indent-<size>` | L3 Family | `--field-height-md` / `--tag-height-sm`(2026-09-15,Tag 盒高;`fieldTagInsetX/Y` 四邊等距公式的另一個輸入) |
 | `--<part>-width` / `--<part>-height` / `--<part>-<measurement>` | L4 Layout | `--sidebar-width` / `--chrome-header-height` |
 | `--layout-space-<role>` | L4 Layout | `--layout-space-loose` / `--layout-space-tight` |
 | `--radius-<size>` | L3 Family(structural) | `--radius-md` |

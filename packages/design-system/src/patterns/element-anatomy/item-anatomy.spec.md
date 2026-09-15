@@ -166,23 +166,28 @@ rg 'grid-cols-\[[0-9]+px_1fr\]' packages/design-system/src -g '*.tsx'
 - **垂直 padding**: `py-[calc((var(--field-height-N) N∈{sm,md,lg}-1lh)/2)]` 的 item-layout 公式
 - **字重**: `font-medium`(500),**不隨 selected 變**
 - **預設文字色**: `text-fg-secondary`(neutral-8);icon 透過 currentColor 繼承
-- **Hover**: `bg-neutral-hover` + `text-foreground`
+- **Hover**: `bg-neutral-hover` + `text-foreground`,**瞬間切換不做過渡**(owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」,user 2026-09-10 拍板「全部瞬間」;機械閘 `hover-instant-invariant.mjs`)
 - **Active / selected**: `bg-neutral-selected` + `text-foreground`；字重維持不變，避免 label metrics reflow
 - **選中 × 互動疊加（2026-08-11 user 拍板；本格是全家族唯一 owner，消費者禁自行發明）**：
 
-  | 疊加 | 底色 | 理由 |
+  | 疊加 | 指示 | 理由 |
   |---|---|---|
   | 選中列 × 滑鼠 hover | `bg-neutral-selected`（**釘住不變**） | hover 回饋 = 誠實回答「再點會發生什麼」；選中列再點無效果，且滑鼠使用者自有游標不需底色指位。對齊 Polaris Navigation / Carbon side-nav（兩家皆明文釘住） |
-  | 選中列 × 鍵盤焦點／反白 | `bg-neutral-selected-focus`（深一階） | 鍵盤使用者螢幕上沒有游標，深一階就是游標（WCAG 2.4.7）。虛擬焦點選單（cmdk／Radix 反白）以 `not-hover:` 分流滑鼠；真焦點元件用 `focus-visible:` |
+  | **未選中列 × 鍵盤焦點／反白** | **畫框**（`focus-ring-inset`，2px 內描邊），底色**不變**（透明） | **user 2026-09-09 拍板**「基本上都是畫框…都不需要上底色」（owner = `ds-canonical/references/focus-canonical.md` 規則二）。2026-09-07〜09-08 這格寫「`bg-neutral-hover`，與滑鼠 hover 同色、不畫框」——那是 AI 從 `menu-item.spec.md` 舊句與 Material／Radix／cmdk 慣例推導的，不是 user 決定，已撤回。**常駐清單**（TreeView／Sidebar／Tabs／DataTable／TimePicker 欄，不搶反白）：滑鼠若剛好停在游標列，hover 底色照第一列另外出現（底色 + 框都在）。**會搶反白的浮層選單**（cmdk／Radix 反白）：反白只有一個主人，依**反白來歷**分流（`hooks/use-input-modality.ts` `useCursorMover`）—— 滑鼠移過搬走反白 → 底色、無框；鍵盤搬走反白 → 框、無底色，而且滑鼠停留列的 hover 底色**一起消失**（項目上沒有 `hover:` 樣式，滑鼠停著不算搶；2026-09-09 下午 user 三問，一手來源證實，owner = focus-canonical 規則一「兩類元件」）|
+  | 選中列 × 鍵盤焦點／反白 | **畫框**（`focus-ring-inset`，2px 內描邊） | **2026-09-07 user 拍板**，原話「A5畫框」。底色已經被「選中」佔走，不能再把「游標在這裡」這第二個意義擠進同一個通道——**同一個元素上不得有兩種焦點指示**。原本的 `bg-neutral-selected-focus`（深一階）已隨此格退役。**框疊在選中底色上**。虛擬焦點選單（cmdk／Radix 反白）**另加鍵盤模態條件**（`hooks/use-input-modality.ts`；滑鼠點開時已選項不畫框,2026-09-08）；滑鼠停在游標列上時底色釘住、框照畫（2026-09-09 起不再用 `not-hover:` 分流）；真焦點元件用 `focus-visible:` |
   | 選中列 × 按壓 | 列元件不設按壓底色；`--neutral-selected-active` 為**按壓專屬**（唯一消費者 Button toggle） | active = 瞬時按壓（2026-04-10 誕生教義）。2026-07-05 D4 借 `-active` 裝反白 + 訊號漏到滑鼠，2026-08-11 糾正歸位 |
 
-  消費者：SelectMenu／DropdownMenu（含 RadioItem）／SidebarMenuButton／TreeItem(single)／TimePicker 欄項／MenuItem／FileViewer 縮放選單。歷史偏移錨：TreeItem hover 反被洗淺、sidebar 靠編譯順序運氣不變、選單滑鼠 hover 搭鍵盤規則便車深化——同題四種即興，根因即本格缺席。
+  幾何為什麼是**內**描邊：列撐滿容器寬度，左右沒有 2px 可以往外長。跨元件判準的 owner 是
+  `ds-canonical/references/focus-canonical.md`「問題二」，本表不重述。
+
+  消費者：SelectMenu／DropdownMenu（含 RadioItem）／SidebarMenuButton／TreeItem(single)／MenuItem／FileViewer 縮放選單。**TimePicker 欄項 2026-09-07 移出**：它的 `aria-activedescendant` 永遠指向 `selected`（selection-follows-focus），游標與選中不會分離，選中底色本身就是唯一且足夠的指示器，沒有「疊加」可言。歷史偏移錨：TreeItem hover 反被洗淺、sidebar 靠編譯順序運氣不變、選單滑鼠 hover 搭鍵盤規則便車深化——同題四種即興，根因即本格缺席。
 - **無 rounded**: full-width fill
 - **無 gap 在 items 之間**: items 緊貼(SidebarMenu / TreeView / DropdownMenuGroup 容器不設 flex gap)
 - **Size variants**: sm / md / lg 跟 `--field-height-*` family 一致
 - **Icon 尺寸控制**: 用 `ICON_SIZE` 常數 `{ sm: 16, md: 16, lg: 20 }` 對齊 `--field-height-*`,並**透過 `size` prop 直接傳給 Lucide icon**(不要用 CSS selector 如 `[&>svg]:size-4`——當 icon 被包在 `h-[1lh]` wrapper 裡時,`>` 直接子選擇器失效,Lucide 會 fallback 到 24px 預設)。MenuItem / TreeView / SidebarMenuButton 都這樣做,新元件照抄
 - **Row header(分組標題)**: 用 `MenuItem header={true}` 模式,`font-medium text-fg-muted pointer-events-none` + 與 items **完全相同**的 row geometry(同 px / 同 py / 同 text size)
 - **Row header 計數 suffix**(2026-07-08 WM 戰役 codify,user 拍板):分組標題帶總數時 = **標題靠左、純數字靠右**(space-between,即 suffix slot 位置 `ml-auto`)。數字規格走既有 suffix value canonical(下方 metadata 表「fg-muted、字體大小與 label 相同」)+ `font-normal` + `tabular-nums`;count = 0 不渲染。**禁**把 count 串進 label 字串相鄰放(「Unstarted (2)」— 6 家世界級無一家括號串接:Primer CounterLabel / Ant Badge / Atlassian Badge 皆結構化 slot);字串層(aria-label / 純文字匯出)可用括號形。互動導覽元素(tab / segmented / sidebar item)的計數仍走 `badge` slot(tabs.spec.md「badge 傳達計數」),不適用本條。
+- **Row message(訊息列,2026-09-08 user 拍板)**: 用 `MenuItem message={true}` 模式——選單裡「不是選項的列」(沒有結果 / 沒有選項 / 載入中)。與 Row header 同族:`text-fg-muted pointer-events-none` + 與 items **完全相同**的 row geometry;差別是**一般字重**、內容**置中**、可帶前綴槽(列圖示尺寸的 `CircularProgress` 等)。必住在 group 裡(見「Group auto-separation」);一列訊息與一列選項等高,不撐最小高度。owner `components/SelectMenu/select-menu.spec.md`「Empty state」;樣式 `components/Menu/menu-item.spec.md`「Message row(訊息列)」
 - **可收合 section header 組合 canonical**(2026-07-08 R3-7 拍板 + 2026-07-10 codify 進 DS;**組合非元件** — SectionHeader 留產品客製,但 layout 全消費本 canonical):(1) chevron = **title 後的 suffix inline action**(非 prefix、非獨立按鈕群);(2) 可選 description 與 title 間距用 `--item-gap-label-desc-*` token;(3) endSlot(操作鈕)只有 title 一行時垂直置中;(4) 同構標題列 ≥ 2 份必抽共用元件(WM `SectionHeader.tsx` 錨例 — Description / Attachments / Child work items 三份同構收斂)。手刻簽名(Chevron + justify-between + 可點且無共用元件)由 consumer 防線攔(escape `@section-header-ok:`)。
 
 ### Prefix 垂直對齊:`items-start` + `h-[1lh]` wrapper(**永遠這樣**,不要做例外)
@@ -284,14 +289,14 @@ Row 集合是**內容(content)**,不是區段(region)。加 py 到 row 集合會
 - **相鄰 group 之間用 `border-divider` 分隔**
 - **兩個 group 之間視覺 gap = 8(上 bottom)+ 8(下 top)= 16px + border**
 
-Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分隔。
+Consumer 不需手動插 Separator——把同類 items 包進 Group,自動分隔。**訊息列也住在 group 裡**(沒有結果 / 載入中的 `MenuItem message` 由 `CommandEmpty` 用 `MenuGroup` 包起來,`components/Command/command.tsx:165-169`),所以 0 筆時的浮層邊界留白仍是同一份 8px,不另造。
 
 ### 兩種 CSS 實作(視覺等價,差別在 padding 住哪層)
 
 | | **Pattern A**(Group 自帶 padding) | **Pattern B**(Container 提供邊界 padding) |
 |---|---|---|
 | 典型案例 | `MenuGroup`(menu-item.tsx) | `DropdownMenuGroup`(dropdown-menu.tsx) |
-| 何時用 | 外層容器**無** `py-2`（例:`Command.List`) | 外層容器**已有** `py-2`（例:`DropdownMenuContent`) |
+| 何時用 | 外層容器**無** `py-2`（例:`Command.List`;`CommandGroup` 的相鄰線用 `:not([hidden])` 兄弟選擇器,因 cmdk 把被搜尋濾掉的群組留在 DOM 加 `hidden`) | 外層容器**已有** `py-2`（例:`DropdownMenuContent`) |
 | CSS | `py-2 [&+&]:border-t [&+&]:border-divider` | `[&+&]:mt-2 [&+&]:pt-2 [&+&]:border-t [&+&]:border-divider` |
 | 邊界 padding 來源 | Group 自己的 py-2 | Container 的 py-2 |
 | Group 間 gap | 8 + 8 = 16 + border | 0 + 8 + 8 = 16 + border |

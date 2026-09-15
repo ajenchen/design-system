@@ -4,64 +4,129 @@
   "title": "Data-driven governance provider adapter registry",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "canonical", "providers"],
+  "required": [
+    "schemaVersion",
+    "canonical",
+    "providers"
+  ],
   "properties": {
-    "$schema": { "type": "string" },
-    "schemaVersion": { "const": 9 },
+    "$schema": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": 9
+    },
     "canonical": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["roots", "hookRegistrations", "skillSemantics", "productSharedInstructionSource", "reviewSelectionPolicies", "materializers", "compatibilityProjections", "reservedDiscovery", "retiredProviders"],
+      "required": [
+        "roots",
+        "hookRegistrations",
+        "skillSemantics",
+        "productSharedInstructionSource",
+        "reviewSelectionPolicies",
+        "materializers",
+        "compatibilityProjections",
+        "reservedDiscovery",
+        "retiredProviders"
+      ],
       "properties": {
         "roots": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["contextForkAgents", "commands", "hooks", "references", "rules", "skills"],
+          "required": [
+            "contextForkAgents",
+            "commands",
+            "hooks",
+            "references",
+            "rules",
+            "skills"
+          ],
           "properties": {
-            "contextForkAgents": { "$ref": "#/$defs/repositoryPath" },
-            "commands": { "$ref": "#/$defs/repositoryPath" },
-            "hooks": { "$ref": "#/$defs/repositoryPath" },
-            "references": { "$ref": "#/$defs/repositoryPath" },
-            "rules": { "$ref": "#/$defs/repositoryPath" },
-            "skills": { "$ref": "#/$defs/repositoryPath" }
+            "contextForkAgents": {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            "commands": {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            "hooks": {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            "references": {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            "rules": {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            "skills": {
+              "$ref": "#/$defs/repositoryPath"
+            }
           }
         },
-        "hookRegistrations": { "$ref": "#/$defs/repositoryPath" },
-        "skillSemantics": { "$ref": "#/$defs/repositoryPath" },
-        "productSharedInstructionSource": { "$ref": "#/$defs/repositoryPath" },
+        "hookRegistrations": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "skillSemantics": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "productSharedInstructionSource": {
+          "$ref": "#/$defs/repositoryPath"
+        },
         "reviewSelectionPolicies": {
           "type": "object",
           "minProperties": 1,
-          "additionalProperties": { "$ref": "#/$defs/reviewSelectionPolicy" }
+          "additionalProperties": {
+            "$ref": "#/$defs/reviewSelectionPolicy"
+          }
         },
-        "materializers": { "$ref": "#/$defs/materializerCatalog" },
-        "compatibilityProjections": { "$ref": "#/$defs/compatibilityProjections" },
-        "reservedDiscovery": { "$ref": "#/$defs/discoveryInventory" },
+        "materializers": {
+          "$ref": "#/$defs/materializerCatalog"
+        },
+        "compatibilityProjections": {
+          "$ref": "#/$defs/compatibilityProjections"
+        },
+        "reservedDiscovery": {
+          "$ref": "#/$defs/discoveryInventory"
+        },
         "retiredProviders": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/retiredProvider" }
+          "items": {
+            "$ref": "#/$defs/retiredProvider"
+          }
         }
       }
     },
     "providers": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/provider" }
+      "items": {
+        "$ref": "#/$defs/provider"
+      }
     }
   },
   "$defs": {
     "repositoryPath": {
       "type": "string",
       "minLength": 1,
-      "not": { "pattern": "^(?:/|[A-Za-z]:|.*(?:^|/)\\.\\.(?:/|$))" }
+      "not": {
+        "pattern": "^(?:/|[A-Za-z]:|.*(?:^|/)\\.\\.(?:/|$))"
+      }
     },
     "adapterOutputPath": {
       "type": "string",
       "pattern": "^\\.(?!git(?:hub)?(?:/|$))[A-Za-z0-9_-]+/[A-Za-z0-9_.@/-]+$",
-      "not": { "pattern": "(?:^|/)\\.{1,2}(?:/|$)" }
+      "not": {
+        "pattern": "(?:^|/)\\.{1,2}(?:/|$)"
+      }
     },
-    "stringArray": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "stringArray": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
     "materializerId": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9-]*-v[1-9][0-9]*$"
@@ -73,52 +138,113 @@
     "compatibilityProjections": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["legacyClaudeInstruction", "legacyCodexCorpus", "marketplacePluginTransport"],
+      "required": [
+        "legacyClaudeInstruction",
+        "legacyCodexCorpus",
+        "marketplacePluginTransport"
+      ],
       "properties": {
         "legacyClaudeInstruction": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["schemaVersion", "providerId", "discoveryCategories", "legacyProductTreeTombstones"],
+          "required": [
+            "schemaVersion",
+            "providerId",
+            "discoveryCategories",
+            "legacyProductTreeTombstones"
+          ],
           "properties": {
-            "schemaVersion": { "const": 1 },
-            "providerId": { "$ref": "#/$defs/providerId" },
+            "schemaVersion": {
+              "const": 1
+            },
+            "providerId": {
+              "$ref": "#/$defs/providerId"
+            },
             "discoveryCategories": {
               "type": "array",
-              "items": { "$ref": "#/$defs/compatibilityDiscoveryCategory" }
+              "items": {
+                "$ref": "#/$defs/compatibilityDiscoveryCategory"
+              }
             },
             "legacyProductTreeTombstones": {
               "type": "array",
               "uniqueItems": true,
-              "items": { "$ref": "#/$defs/adapterOutputPath" }
+              "items": {
+                "$ref": "#/$defs/adapterOutputPath"
+              }
             }
           }
         },
         "legacyCodexCorpus": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["schemaVersion", "providerId", "hookArtifact", "skillArtifactRoot"],
+          "required": [
+            "schemaVersion",
+            "providerId",
+            "hookArtifact",
+            "skillArtifactRoot"
+          ],
           "properties": {
-            "schemaVersion": { "const": 1 },
-            "providerId": { "$ref": "#/$defs/providerId" },
-            "hookArtifact": { "$ref": "#/$defs/repositoryPath" },
-            "skillArtifactRoot": { "$ref": "#/$defs/repositoryPath" }
+            "schemaVersion": {
+              "const": 1
+            },
+            "providerId": {
+              "$ref": "#/$defs/providerId"
+            },
+            "hookArtifact": {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            "skillArtifactRoot": {
+              "$ref": "#/$defs/repositoryPath"
+            }
           }
         },
         "marketplacePluginTransport": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["schemaVersion", "profileId", "pluginFullId", "providerId", "hookOutput", "aliasRegistry", "repositoryRole", "governanceRole", "projection", "targetRoleManifest"],
+          "required": [
+            "schemaVersion",
+            "profileId",
+            "pluginFullId",
+            "providerId",
+            "hookOutput",
+            "aliasRegistry",
+            "repositoryRole",
+            "governanceRole",
+            "projection",
+            "targetRoleManifest"
+          ],
           "properties": {
-            "schemaVersion": { "const": 2 },
-            "profileId": { "const": "claude-authority-full" },
-            "pluginFullId": { "const": "design-system@qijenchen-ds" },
-            "providerId": { "$ref": "#/$defs/providerId" },
-            "hookOutput": { "$ref": "#/$defs/repositoryPath" },
-            "aliasRegistry": { "$ref": "#/$defs/repositoryPath" },
-            "repositoryRole": { "const": "authority" },
-            "governanceRole": { "const": "ds-author" },
-            "projection": { "const": "full-canonical-registrations" },
-            "targetRoleManifest": { "const": "packages/governance/canonical/manifest.json" }
+            "schemaVersion": {
+              "const": 2
+            },
+            "profileId": {
+              "const": "claude-authority-full"
+            },
+            "pluginFullId": {
+              "const": "design-system@qijenchen-ds"
+            },
+            "providerId": {
+              "$ref": "#/$defs/providerId"
+            },
+            "hookOutput": {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            "aliasRegistry": {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            "repositoryRole": {
+              "const": "authority"
+            },
+            "governanceRole": {
+              "const": "ds-author"
+            },
+            "projection": {
+              "const": "full-canonical-registrations"
+            },
+            "targetRoleManifest": {
+              "const": "packages/governance/canonical/manifest.json"
+            }
           }
         }
       }
@@ -126,15 +252,30 @@
     "compatibilityDiscoveryCategory": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "sourceRoot", "artifactRoot", "destinationRoot", "entries"],
+      "required": [
+        "name",
+        "sourceRoot",
+        "artifactRoot",
+        "destinationRoot",
+        "entries"
+      ],
       "properties": {
-        "name": { "enum": ["agents", "commands"] },
-        "sourceRoot": { "$ref": "#/$defs/repositoryPath" },
+        "name": {
+          "enum": [
+            "agents",
+            "commands"
+          ]
+        },
+        "sourceRoot": {
+          "$ref": "#/$defs/repositoryPath"
+        },
         "artifactRoot": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]*$"
         },
-        "destinationRoot": { "$ref": "#/$defs/adapterOutputPath" },
+        "destinationRoot": {
+          "$ref": "#/$defs/adapterOutputPath"
+        },
         "entries": {
           "type": "array",
           "uniqueItems": true,
@@ -154,21 +295,44 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["engine", "ownershipPolicy", "supplementPolicy"],
+          "required": [
+            "engine",
+            "ownershipPolicy",
+            "supplementPolicy"
+          ],
           "properties": {
-            "engine": { "const": "markdown-relative-at-import-v1" },
-            "ownershipPolicy": { "const": "provider-generated-projection" },
-            "supplementPolicy": { "enum": ["optional", "required"] }
+            "engine": {
+              "const": "markdown-relative-at-import-v1"
+            },
+            "ownershipPolicy": {
+              "const": "provider-generated-projection"
+            },
+            "supplementPolicy": {
+              "enum": [
+                "optional",
+                "required"
+              ]
+            }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["engine", "ownershipPolicy", "supplementPolicy"],
+          "required": [
+            "engine",
+            "ownershipPolicy",
+            "supplementPolicy"
+          ],
           "properties": {
-            "engine": { "const": "shared-instruction-v1" },
-            "ownershipPolicy": { "const": "common-authority-consumer" },
-            "supplementPolicy": { "const": "forbidden" }
+            "engine": {
+              "const": "shared-instruction-v1"
+            },
+            "ownershipPolicy": {
+              "const": "common-authority-consumer"
+            },
+            "supplementPolicy": {
+              "const": "forbidden"
+            }
           }
         }
       ]
@@ -176,47 +340,122 @@
     "hookMapMaterializer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["engine", "hooksField", "descriptionField", "mergeStrategy", "baseTemplateContract"],
+      "required": [
+        "engine",
+        "hooksField",
+        "descriptionField",
+        "mergeStrategy",
+        "baseTemplateContract"
+      ],
       "properties": {
-        "engine": { "const": "json-hook-map-v1" },
-        "hooksField": { "$ref": "#/$defs/jsonField" },
+        "engine": {
+          "const": "json-hook-map-v1"
+        },
+        "hooksField": {
+          "$ref": "#/$defs/jsonField"
+        },
         "descriptionField": {
           "oneOf": [
-            { "$ref": "#/$defs/jsonField" },
-            { "type": "null" }
+            {
+              "$ref": "#/$defs/jsonField"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
-        "mergeStrategy": { "enum": ["merge-hook-map-into-base-v1", "replace-document-v1"] },
+        "mergeStrategy": {
+          "enum": [
+            "merge-hook-map-into-base-v1",
+            "replace-document-v1"
+          ]
+        },
         "baseTemplateContract": {
           "oneOf": [
-            { "$ref": "#/$defs/materializerId" },
-            { "type": "null" }
+            {
+              "$ref": "#/$defs/materializerId"
+            },
+            {
+              "type": "null"
+            }
           ]
         }
       },
       "allOf": [
         {
-          "if": { "properties": { "mergeStrategy": { "const": "merge-hook-map-into-base-v1" } }, "required": ["mergeStrategy"] },
-          "then": { "properties": { "baseTemplateContract": { "$ref": "#/$defs/materializerId" } } },
-          "else": { "properties": { "baseTemplateContract": { "type": "null" } } }
+          "if": {
+            "properties": {
+              "mergeStrategy": {
+                "const": "merge-hook-map-into-base-v1"
+              }
+            },
+            "required": [
+              "mergeStrategy"
+            ]
+          },
+          "then": {
+            "properties": {
+              "baseTemplateContract": {
+                "$ref": "#/$defs/materializerId"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "baseTemplateContract": {
+                "type": "null"
+              }
+            }
+          }
         }
       ]
     },
     "hookEventListMaterializer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["engine", "eventsField", "eventField", "groupsField", "matcherField", "handlersField", "handlerArgvField", "descriptionField", "mergeStrategy", "baseTemplateContract"],
+      "required": [
+        "engine",
+        "eventsField",
+        "eventField",
+        "groupsField",
+        "matcherField",
+        "handlersField",
+        "handlerArgvField",
+        "descriptionField",
+        "mergeStrategy",
+        "baseTemplateContract"
+      ],
       "properties": {
-        "engine": { "const": "json-hook-event-list-v1" },
-        "eventsField": { "$ref": "#/$defs/jsonField" },
-        "eventField": { "$ref": "#/$defs/jsonField" },
-        "groupsField": { "$ref": "#/$defs/jsonField" },
-        "matcherField": { "$ref": "#/$defs/jsonField" },
-        "handlersField": { "$ref": "#/$defs/jsonField" },
-        "handlerArgvField": { "$ref": "#/$defs/jsonField" },
-        "descriptionField": { "$ref": "#/$defs/jsonField" },
-        "mergeStrategy": { "const": "replace-document-v1" },
-        "baseTemplateContract": { "type": "null" }
+        "engine": {
+          "const": "json-hook-event-list-v1"
+        },
+        "eventsField": {
+          "$ref": "#/$defs/jsonField"
+        },
+        "eventField": {
+          "$ref": "#/$defs/jsonField"
+        },
+        "groupsField": {
+          "$ref": "#/$defs/jsonField"
+        },
+        "matcherField": {
+          "$ref": "#/$defs/jsonField"
+        },
+        "handlersField": {
+          "$ref": "#/$defs/jsonField"
+        },
+        "handlerArgvField": {
+          "$ref": "#/$defs/jsonField"
+        },
+        "descriptionField": {
+          "$ref": "#/$defs/jsonField"
+        },
+        "mergeStrategy": {
+          "const": "replace-document-v1"
+        },
+        "baseTemplateContract": {
+          "type": "null"
+        }
       }
     },
     "hookBaseTemplateContract": {
@@ -224,35 +463,58 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["engine", "source", "schema"],
+          "required": [
+            "engine",
+            "source",
+            "schema"
+          ],
           "properties": {
-            "engine": { "const": "claude-permission-policy-v1" },
-            "source": { "$ref": "#/$defs/repositoryPath" },
-            "schema": { "$ref": "#/$defs/repositoryPath" }
+            "engine": {
+              "const": "claude-permission-policy-v1"
+            },
+            "source": {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            "schema": {
+              "$ref": "#/$defs/repositoryPath"
+            }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["engine"],
+          "required": [
+            "engine"
+          ],
           "properties": {
-            "engine": { "const": "static-json-object-v1" }
+            "engine": {
+              "const": "static-json-object-v1"
+            }
           }
         }
       ]
     },
     "hookMaterializer": {
       "oneOf": [
-        { "$ref": "#/$defs/hookMapMaterializer" },
-        { "$ref": "#/$defs/hookEventListMaterializer" }
+        {
+          "$ref": "#/$defs/hookMapMaterializer"
+        },
+        {
+          "$ref": "#/$defs/hookEventListMaterializer"
+        }
       ]
     },
     "skillMaterializer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["engine", "entryFile"],
+      "required": [
+        "engine",
+        "entryFile"
+      ],
       "properties": {
-        "engine": { "const": "skill-directory-v1" },
+        "engine": {
+          "const": "skill-directory-v1"
+        },
         "entryFile": {
           "type": "string",
           "pattern": "^[A-Z][A-Z0-9_-]*\\.md$"
@@ -262,12 +524,21 @@
     "treeMaterializer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["engine", "transformPolicies"],
+      "required": [
+        "engine",
+        "transformPolicies"
+      ],
       "properties": {
-        "engine": { "const": "closed-tree-copy-v1" },
+        "engine": {
+          "const": "closed-tree-copy-v1"
+        },
         "transformPolicies": {
           "type": "array",
-          "prefixItems": [{ "const": "byte-exact" }],
+          "prefixItems": [
+            {
+              "const": "byte-exact"
+            }
+          ],
           "items": false,
           "minItems": 1,
           "maxItems": 1
@@ -277,48 +548,87 @@
     "productManagedTree": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["sourceRoot", "destination", "materializerId", "transformPolicy"],
+      "required": [
+        "sourceRoot",
+        "destination",
+        "materializerId",
+        "transformPolicy"
+      ],
       "properties": {
-        "sourceRoot": { "$ref": "#/$defs/repositoryPath" },
-        "destination": { "$ref": "#/$defs/adapterOutputPath" },
-        "materializerId": { "$ref": "#/$defs/materializerId" },
-        "transformPolicy": { "const": "byte-exact" }
+        "sourceRoot": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "destination": {
+          "$ref": "#/$defs/adapterOutputPath"
+        },
+        "materializerId": {
+          "$ref": "#/$defs/materializerId"
+        },
+        "transformPolicy": {
+          "const": "byte-exact"
+        }
       }
     },
     "materializerCatalog": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["instructionViews", "hookBaseTemplateContracts", "hookViews", "skillViews", "treeViews"],
+      "required": [
+        "instructionViews",
+        "hookBaseTemplateContracts",
+        "hookViews",
+        "skillViews",
+        "treeViews"
+      ],
       "properties": {
         "instructionViews": {
           "type": "object",
           "minProperties": 1,
-          "propertyNames": { "$ref": "#/$defs/materializerId" },
-          "additionalProperties": { "$ref": "#/$defs/instructionMaterializer" }
+          "propertyNames": {
+            "$ref": "#/$defs/materializerId"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/instructionMaterializer"
+          }
         },
         "hookViews": {
           "type": "object",
           "minProperties": 1,
-          "propertyNames": { "$ref": "#/$defs/materializerId" },
-          "additionalProperties": { "$ref": "#/$defs/hookMaterializer" }
+          "propertyNames": {
+            "$ref": "#/$defs/materializerId"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/hookMaterializer"
+          }
         },
         "hookBaseTemplateContracts": {
           "type": "object",
           "minProperties": 1,
-          "propertyNames": { "$ref": "#/$defs/materializerId" },
-          "additionalProperties": { "$ref": "#/$defs/hookBaseTemplateContract" }
+          "propertyNames": {
+            "$ref": "#/$defs/materializerId"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/hookBaseTemplateContract"
+          }
         },
         "skillViews": {
           "type": "object",
           "minProperties": 1,
-          "propertyNames": { "$ref": "#/$defs/materializerId" },
-          "additionalProperties": { "$ref": "#/$defs/skillMaterializer" }
+          "propertyNames": {
+            "$ref": "#/$defs/materializerId"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/skillMaterializer"
+          }
         },
         "treeViews": {
           "type": "object",
           "minProperties": 1,
-          "propertyNames": { "$ref": "#/$defs/materializerId" },
-          "additionalProperties": { "$ref": "#/$defs/treeMaterializer" }
+          "propertyNames": {
+            "$ref": "#/$defs/materializerId"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/treeMaterializer"
+          }
         }
       }
     },
@@ -333,75 +643,171 @@
     "discoveryConfigPath": {
       "type": "string",
       "pattern": "^\\.(?:[A-Za-z0-9][A-Za-z0-9_.@-]*|[A-Za-z0-9][A-Za-z0-9_-]*/[A-Za-z0-9_.@/-]+)$",
-      "not": { "pattern": "(?:^|/)\\.{1,2}(?:/|$)" }
+      "not": {
+        "pattern": "(?:^|/)\\.{1,2}(?:/|$)"
+      }
     },
     "discoveryInventory": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["providerRootNames", "instructionNames", "instructionOverrideNames", "configPaths", "pluginRootNames"],
+      "required": [
+        "providerRootNames",
+        "instructionNames",
+        "instructionOverrideNames",
+        "configPaths",
+        "pluginRootNames"
+      ],
       "properties": {
-        "providerRootNames": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/discoveryRootName" } },
-        "instructionNames": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/discoveryInstructionName" } },
-        "instructionOverrideNames": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/discoveryInstructionName" } },
-        "configPaths": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/discoveryConfigPath" } },
-        "pluginRootNames": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/discoveryRootName" } }
+        "providerRootNames": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/discoveryRootName"
+          }
+        },
+        "instructionNames": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/discoveryInstructionName"
+          }
+        },
+        "instructionOverrideNames": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/discoveryInstructionName"
+          }
+        },
+        "configPaths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/discoveryConfigPath"
+          }
+        },
+        "pluginRootNames": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/discoveryRootName"
+          }
+        }
       }
     },
     "retiredSurface": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "kind"],
+      "required": [
+        "path",
+        "kind"
+      ],
       "properties": {
-        "path": { "$ref": "#/$defs/repositoryPath" },
-        "kind": { "enum": ["file", "tree"] }
+        "path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "kind": {
+          "enum": [
+            "file",
+            "tree"
+          ]
+        }
       }
     },
     "retiredProvider": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "replacementProviderId", "retiredInVersion", "reasonCode", "discovery", "surfaces"],
+      "required": [
+        "id",
+        "replacementProviderId",
+        "retiredInVersion",
+        "reasonCode",
+        "discovery",
+        "surfaces"
+      ],
       "properties": {
-        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
         "replacementProviderId": {
           "oneOf": [
-            { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
-            { "type": "null" }
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*$"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "retiredInVersion": {
           "type": "string",
           "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?(?:\\+[0-9A-Za-z][0-9A-Za-z.-]*)?$"
         },
-        "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
-        "discovery": { "$ref": "#/$defs/discoveryInventory" },
+        "reasonCode": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "discovery": {
+          "$ref": "#/$defs/discoveryInventory"
+        },
         "surfaces": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/retiredSurface" }
+          "items": {
+            "$ref": "#/$defs/retiredSurface"
+          }
         },
         "transfers": {
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/retiredSurface" }
+          "items": {
+            "$ref": "#/$defs/retiredSurface"
+          }
         }
       },
       "allOf": [
         {
           "anyOf": [
-            { "properties": { "surfaces": { "type": "array", "minItems": 1 } } },
             {
-              "required": ["transfers"],
-              "properties": { "transfers": { "type": "array", "minItems": 1 } }
+              "properties": {
+                "surfaces": {
+                  "type": "array",
+                  "minItems": 1
+                }
+              }
+            },
+            {
+              "required": [
+                "transfers"
+              ],
+              "properties": {
+                "transfers": {
+                  "type": "array",
+                  "minItems": 1
+                }
+              }
             }
           ]
         },
         {
           "if": {
-            "properties": { "replacementProviderId": { "type": "null" } },
-            "required": ["replacementProviderId"]
+            "properties": {
+              "replacementProviderId": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "replacementProviderId"
+            ]
           },
-          "then": { "properties": { "transfers": false } }
+          "then": {
+            "properties": {
+              "transfers": false
+            }
+          }
         }
       ]
     },
@@ -420,36 +826,63 @@
     "writeTransport": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "rawTools", "engine", "payloadFields"],
+      "required": [
+        "id",
+        "rawTools",
+        "engine",
+        "payloadFields"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/writeTransportId" },
+        "id": {
+          "$ref": "#/$defs/writeTransportId"
+        },
         "rawTools": {
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/rawToolName" }
+          "items": {
+            "$ref": "#/$defs/rawToolName"
+          }
         },
         "engine": {
-          "enum": ["full-file-v1", "exact-replace-v1", "exact-replace-list-v1", "codex-apply-patch-v1", "unified-diff-v1"]
+          "enum": [
+            "full-file-v1",
+            "exact-replace-v1",
+            "exact-replace-list-v1",
+            "codex-apply-patch-v1",
+            "unified-diff-v1"
+          ]
         },
         "payloadFields": {
           "type": "array",
-          "items": { "$ref": "#/$defs/payloadField" }
+          "items": {
+            "$ref": "#/$defs/payloadField"
+          }
         }
       },
       "allOf": [
         {
           "if": {
-            "properties": { "engine": { "const": "full-file-v1" } },
-            "required": ["engine"]
+            "properties": {
+              "engine": {
+                "const": "full-file-v1"
+              }
+            },
+            "required": [
+              "engine"
+            ]
           },
           "then": {
             "properties": {
               "payloadFields": {
                 "type": "array",
                 "prefixItems": [
-                  { "$ref": "#/$defs/payloadField" },
-                  { "$ref": "#/$defs/payloadField" }
+                  {
+                    "$ref": "#/$defs/payloadField"
+                  },
+                  {
+                    "$ref": "#/$defs/payloadField"
+                  }
                 ],
                 "items": false,
                 "minItems": 2,
@@ -460,18 +893,32 @@
         },
         {
           "if": {
-            "properties": { "engine": { "const": "exact-replace-v1" } },
-            "required": ["engine"]
+            "properties": {
+              "engine": {
+                "const": "exact-replace-v1"
+              }
+            },
+            "required": [
+              "engine"
+            ]
           },
           "then": {
             "properties": {
               "payloadFields": {
                 "type": "array",
                 "prefixItems": [
-                  { "$ref": "#/$defs/payloadField" },
-                  { "$ref": "#/$defs/payloadField" },
-                  { "$ref": "#/$defs/payloadField" },
-                  { "$ref": "#/$defs/payloadField" }
+                  {
+                    "$ref": "#/$defs/payloadField"
+                  },
+                  {
+                    "$ref": "#/$defs/payloadField"
+                  },
+                  {
+                    "$ref": "#/$defs/payloadField"
+                  },
+                  {
+                    "$ref": "#/$defs/payloadField"
+                  }
                 ],
                 "items": false,
                 "minItems": 4,
@@ -482,19 +929,35 @@
         },
         {
           "if": {
-            "properties": { "engine": { "const": "exact-replace-list-v1" } },
-            "required": ["engine"]
+            "properties": {
+              "engine": {
+                "const": "exact-replace-list-v1"
+              }
+            },
+            "required": [
+              "engine"
+            ]
           },
           "then": {
             "properties": {
               "payloadFields": {
                 "type": "array",
                 "prefixItems": [
-                  { "$ref": "#/$defs/payloadField" },
-                  { "$ref": "#/$defs/payloadField" },
-                  { "$ref": "#/$defs/payloadField" },
-                  { "$ref": "#/$defs/payloadField" },
-                  { "$ref": "#/$defs/payloadField" }
+                  {
+                    "$ref": "#/$defs/payloadField"
+                  },
+                  {
+                    "$ref": "#/$defs/payloadField"
+                  },
+                  {
+                    "$ref": "#/$defs/payloadField"
+                  },
+                  {
+                    "$ref": "#/$defs/payloadField"
+                  },
+                  {
+                    "$ref": "#/$defs/payloadField"
+                  }
                 ],
                 "items": false,
                 "minItems": 5,
@@ -505,14 +968,24 @@
         },
         {
           "if": {
-            "properties": { "engine": { "const": "codex-apply-patch-v1" } },
-            "required": ["engine"]
+            "properties": {
+              "engine": {
+                "const": "codex-apply-patch-v1"
+              }
+            },
+            "required": [
+              "engine"
+            ]
           },
           "then": {
             "properties": {
               "payloadFields": {
                 "type": "array",
-                "prefixItems": [{ "$ref": "#/$defs/payloadField" }],
+                "prefixItems": [
+                  {
+                    "$ref": "#/$defs/payloadField"
+                  }
+                ],
                 "items": false,
                 "minItems": 1,
                 "maxItems": 1
@@ -522,14 +995,24 @@
         },
         {
           "if": {
-            "properties": { "engine": { "const": "unified-diff-v1" } },
-            "required": ["engine"]
+            "properties": {
+              "engine": {
+                "const": "unified-diff-v1"
+              }
+            },
+            "required": [
+              "engine"
+            ]
           },
           "then": {
             "properties": {
               "payloadFields": {
                 "type": "array",
-                "prefixItems": [{ "$ref": "#/$defs/payloadField" }],
+                "prefixItems": [
+                  {
+                    "$ref": "#/$defs/payloadField"
+                  }
+                ],
                 "items": false,
                 "minItems": 1,
                 "maxItems": 1
@@ -542,20 +1025,51 @@
     "normalization": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["eventFields", "toolFields", "pathFields", "pathArrayFields", "writeTools", "writeTransports", "eventAliases", "toolAliases"],
+      "required": [
+        "eventFields",
+        "toolFields",
+        "pathFields",
+        "pathArrayFields",
+        "writeTools",
+        "writeTransports",
+        "eventAliases",
+        "toolAliases"
+      ],
       "properties": {
-        "eventFields": { "$ref": "#/$defs/stringArray" },
-        "toolFields": { "$ref": "#/$defs/stringArray" },
-        "pathFields": { "$ref": "#/$defs/stringArray" },
-        "pathArrayFields": { "$ref": "#/$defs/stringArray" },
-        "writeTools": { "$ref": "#/$defs/stringArray" },
+        "eventFields": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "toolFields": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "pathFields": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "pathArrayFields": {
+          "$ref": "#/$defs/stringArray"
+        },
+        "writeTools": {
+          "$ref": "#/$defs/stringArray"
+        },
         "writeTransports": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/$defs/writeTransport" }
+          "items": {
+            "$ref": "#/$defs/writeTransport"
+          }
         },
-        "eventAliases": { "type": "object", "additionalProperties": { "type": "string" } },
-        "toolAliases": { "type": "object", "additionalProperties": { "type": "string" } }
+        "eventAliases": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "toolAliases": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
       }
     },
     "skillInvocation": {
@@ -563,17 +1077,34 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["strategy"],
-          "properties": { "strategy": { "const": "main-context" } }
+          "required": [
+            "strategy"
+          ],
+          "properties": {
+            "strategy": {
+              "const": "main-context"
+            }
+          }
         },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["strategy", "context", "agent"],
+          "required": [
+            "strategy",
+            "context",
+            "agent"
+          ],
           "properties": {
-            "strategy": { "const": "native-context-fork" },
-            "context": { "const": "fork" },
-            "agent": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+            "strategy": {
+              "const": "native-context-fork"
+            },
+            "context": {
+              "const": "fork"
+            },
+            "agent": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*$"
+            }
           }
         }
       ]
@@ -594,29 +1125,55 @@
         "unavailableOutcome"
       ],
       "properties": {
-        "schemaVersion": { "const": 1 },
+        "schemaVersion": {
+          "const": 1
+        },
         "assuranceTierOrder": {
-          "const": ["standard", "high", "maximum"]
+          "const": [
+            "standard",
+            "high",
+            "maximum"
+          ]
         },
         "reasoningTierOrder": {
-          "const": ["standard", "high", "maximum"]
+          "const": [
+            "standard",
+            "high",
+            "maximum"
+          ]
         },
         "computeTierOrder": {
-          "const": ["standard", "high", "maximum"]
+          "const": [
+            "standard",
+            "high",
+            "maximum"
+          ]
         },
         "reviewClasses": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["tier-0-governance"],
+          "required": [
+            "tier-0-governance"
+          ],
           "properties": {
             "tier-0-governance": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["assuranceTier", "reasoningTier", "computeTier"],
+              "required": [
+                "assuranceTier",
+                "reasoningTier",
+                "computeTier"
+              ],
               "properties": {
-                "assuranceTier": { "const": "maximum" },
-                "reasoningTier": { "const": "maximum" },
-                "computeTier": { "const": "maximum" }
+                "assuranceTier": {
+                  "const": "maximum"
+                },
+                "reasoningTier": {
+                  "const": "maximum"
+                },
+                "computeTier": {
+                  "const": "maximum"
+                }
               }
             }
           }
@@ -636,15 +1193,33 @@
             "failClosed"
           ],
           "properties": {
-            "independentProvider": { "const": true },
-            "independentContext": { "const": true },
-            "immutableTarget": { "const": true },
-            "identicalEvidence": { "const": true },
-            "completeEvidenceVisibility": { "const": true },
-            "certifiedCapability": { "const": true },
-            "policyAllowed": { "const": true },
-            "noSelfReview": { "const": true },
-            "failClosed": { "const": true }
+            "independentProvider": {
+              "const": true
+            },
+            "independentContext": {
+              "const": true
+            },
+            "immutableTarget": {
+              "const": true
+            },
+            "identicalEvidence": {
+              "const": true
+            },
+            "completeEvidenceVisibility": {
+              "const": true
+            },
+            "certifiedCapability": {
+              "const": true
+            },
+            "policyAllowed": {
+              "const": true
+            },
+            "noSelfReview": {
+              "const": true
+            },
+            "failClosed": {
+              "const": true
+            }
           }
         },
         "ranking": {
@@ -659,75 +1234,159 @@
             "model-release-id-utf8-asc"
           ]
         },
-        "costPolicy": { "const": "batch-or-stop-never-capability-downgrade" },
-        "bindingPolicy": { "const": "freeze-exact-provider-profile-model-and-registry-digests-after-selection" },
-        "unavailableOutcome": { "const": "REVIEW-BLOCKED" }
+        "costPolicy": {
+          "const": "batch-or-stop-never-capability-downgrade"
+        },
+        "bindingPolicy": {
+          "const": "freeze-exact-provider-profile-model-and-registry-digests-after-selection"
+        },
+        "unavailableOutcome": {
+          "const": "REVIEW-BLOCKED"
+        }
       }
     },
     "skillBinding": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["self", "selectionPolicy", "reviewClass", "transport", "invocation"],
+      "required": [
+        "self",
+        "selectionPolicy",
+        "reviewClass",
+        "transport",
+        "invocation"
+      ],
       "properties": {
-        "self": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
-        "selectionPolicy": { "type": "string", "pattern": "^[a-z][a-z0-9-]*-v[1-9][0-9]*$" },
-        "reviewClass": { "const": "tier-0-governance" },
-        "transport": { "type": "string", "minLength": 1 },
-        "invocation": { "$ref": "#/$defs/skillInvocation" },
-        "certificationContract": { "const": "exact-provider-runtime-surface-role-target-v1" }
+        "self": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "selectionPolicy": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*-v[1-9][0-9]*$"
+        },
+        "reviewClass": {
+          "const": "tier-0-governance"
+        },
+        "transport": {
+          "type": "string",
+          "minLength": 1
+        },
+        "invocation": {
+          "$ref": "#/$defs/skillInvocation"
+        },
+        "certificationContract": {
+          "const": "exact-provider-runtime-surface-role-target-v1"
+        }
       },
       "allOf": [
         {
           "if": {
-            "properties": { "certificationContract": {} },
-            "required": ["certificationContract"]
+            "properties": {
+              "certificationContract": {}
+            },
+            "required": [
+              "certificationContract"
+            ]
           },
           "then": {
             "properties": {
-              "transport": { "const": "content-addressed-model-broker-exchange-v1" }
+              "transport": {
+                "const": "content-addressed-model-broker-exchange-v1"
+              }
             }
           }
         }
       ]
     },
     "providerRuntime": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "additionalProperties": false,
-      "required": ["cli", "transcript", "contextOutputTransport", "stopDecisionTransport", "branchNamespace", "memorySyncScript"],
+      "required": [
+        "cli",
+        "transcript",
+        "contextOutputTransport",
+        "stopDecisionTransport",
+        "branchNamespace",
+        "memorySyncScript"
+      ],
       "properties": {
         "cli": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["executable", "localExecutable", "briefInvocationMarkers", "discoveryMarkers", "replyArtifactPrefix"],
+          "required": [
+            "executable",
+            "localExecutable",
+            "briefInvocationMarkers",
+            "discoveryMarkers",
+            "replyArtifactPrefix"
+          ],
           "properties": {
-            "executable": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
-            "localExecutable": { "$ref": "#/$defs/repositoryPath" },
+            "executable": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*$"
+            },
+            "localExecutable": {
+              "$ref": "#/$defs/repositoryPath"
+            },
             "briefInvocationMarkers": {
               "type": "array",
               "minItems": 1,
               "uniqueItems": true,
-              "items": { "type": "string", "pattern": "^(?:[a-z][a-z0-9-]*|--?[a-z][a-z0-9-]*)$" }
+              "items": {
+                "type": "string",
+                "pattern": "^(?:[a-z][a-z0-9-]*|--?[a-z][a-z0-9-]*)$"
+              }
             },
             "discoveryMarkers": {
               "type": "array",
               "minItems": 1,
               "uniqueItems": true,
-              "items": { "type": "string", "minLength": 1 }
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
             },
-            "replyArtifactPrefix": { "type": "string", "pattern": "^[a-z][a-z0-9-]*-reply$" }
+            "replyArtifactPrefix": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*-reply$"
+            }
           }
         },
         "transcript": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["contract", "stability", "fixture", "access"],
+          "required": [
+            "contract",
+            "stability",
+            "fixture",
+            "access"
+          ],
           "properties": {
-            "contract": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9-]*-jsonl-v[0-9]+$" },
-            "stability": { "enum": ["tested-versioned", "unstable-opaque", "unavailable"] },
+            "contract": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-z][a-z0-9-]*-jsonl-v[0-9]+$"
+            },
+            "stability": {
+              "enum": [
+                "tested-versioned",
+                "unstable-opaque",
+                "unavailable"
+              ]
+            },
             "fixture": {
               "oneOf": [
-                { "$ref": "#/$defs/repositoryPath" },
-                { "type": "null" }
+                {
+                  "$ref": "#/$defs/repositoryPath"
+                },
+                {
+                  "type": "null"
+                }
               ]
             },
             "access": {
@@ -735,13 +1394,33 @@
                 {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": ["strategy", "pathPolicy", "recordFormat", "emptyState", "maximumRetainedRecordCount", "maximumRecordBytes", "maximumMaterializedBytes"],
+                  "required": [
+                    "strategy",
+                    "pathPolicy",
+                    "recordFormat",
+                    "emptyState",
+                    "maximumRetainedRecordCount",
+                    "maximumRecordBytes",
+                    "maximumMaterializedBytes"
+                  ],
                   "properties": {
-                    "strategy": { "const": "validated-jsonl-tail-v2" },
-                    "pathPolicy": { "const": "canonical-unique-regular-file-no-name-assumption" },
-                    "recordFormat": { "const": "json-lines" },
-                    "emptyState": { "const": "allowed-zero-byte" },
-                    "maximumRetainedRecordCount": { "type": "integer", "minimum": 1, "maximum": 10000 },
+                    "strategy": {
+                      "const": "validated-jsonl-tail-v2"
+                    },
+                    "pathPolicy": {
+                      "const": "canonical-unique-regular-file-no-name-assumption"
+                    },
+                    "recordFormat": {
+                      "const": "json-lines"
+                    },
+                    "emptyState": {
+                      "const": "allowed-zero-byte"
+                    },
+                    "maximumRetainedRecordCount": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000
+                    },
                     "maximumRecordBytes": {
                       "type": "integer",
                       "minimum": 1024,
@@ -756,18 +1435,39 @@
                     }
                   }
                 },
-                { "type": "null" }
+                {
+                  "type": "null"
+                }
               ]
             }
           }
         },
-        "contextOutputTransport": { "enum": ["claude-hook-specific", "system-message", "stderr"] },
-        "stopDecisionTransport": { "enum": ["claude-decision-json", "continue-json", "blocking-exit"] },
-        "branchNamespace": { "type": "string", "pattern": "^[a-z][a-z0-9-]*/$" },
+        "contextOutputTransport": {
+          "enum": [
+            "claude-hook-specific",
+            "system-message",
+            "stderr"
+          ]
+        },
+        "stopDecisionTransport": {
+          "enum": [
+            "claude-decision-json",
+            "continue-json",
+            "blocking-exit"
+          ]
+        },
+        "branchNamespace": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*/$"
+        },
         "memorySyncScript": {
           "oneOf": [
-            { "$ref": "#/$defs/repositoryPath" },
-            { "type": "null" }
+            {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            {
+              "type": "null"
+            }
           ]
         }
       }
@@ -775,87 +1475,203 @@
     "adapter": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["generate", "repositoryInstructionSource", "instructionView", "productInstructionSource", "repositoryManagedTrees", "productManagedTrees", "skillView", "hookView", "environmentMap", "skillBindings", "skillAliases", "discovery"],
+      "required": [
+        "generate",
+        "repositoryInstructionSource",
+        "instructionView",
+        "productInstructionSource",
+        "repositoryManagedTrees",
+        "productManagedTrees",
+        "skillView",
+        "hookView",
+        "environmentMap",
+        "skillBindings",
+        "skillAliases",
+        "discovery"
+      ],
       "properties": {
-        "generate": { "type": "boolean" },
+        "generate": {
+          "type": "boolean"
+        },
         "repositoryInstructionSource": {
           "oneOf": [
-            { "$ref": "#/$defs/repositoryPath" },
-            { "type": "null" }
+            {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "instructionView": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["materializerId"],
+          "required": [
+            "materializerId"
+          ],
           "properties": {
-            "materializerId": { "$ref": "#/$defs/materializerId" }
+            "materializerId": {
+              "$ref": "#/$defs/materializerId"
+            }
           }
         },
         "productInstructionSource": {
           "oneOf": [
-            { "$ref": "#/$defs/repositoryPath" },
-            { "type": "null" }
+            {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
-        "repositoryManagedTrees": { "type": "object", "additionalProperties": { "$ref": "#/$defs/adapterOutputPath" } },
-        "productManagedTrees": { "type": "object", "additionalProperties": { "$ref": "#/$defs/productManagedTree" } },
+        "repositoryManagedTrees": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/adapterOutputPath"
+          }
+        },
+        "productManagedTrees": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/productManagedTree"
+          }
+        },
         "skillView": {
-          "type": ["object", "null"],
+          "type": [
+            "object",
+            "null"
+          ],
           "additionalProperties": false,
-          "required": ["directory", "materializerId"],
+          "required": [
+            "directory",
+            "materializerId"
+          ],
           "properties": {
-            "directory": { "$ref": "#/$defs/adapterOutputPath" },
-            "materializerId": { "$ref": "#/$defs/materializerId" }
+            "directory": {
+              "$ref": "#/$defs/adapterOutputPath"
+            },
+            "materializerId": {
+              "$ref": "#/$defs/materializerId"
+            }
           }
         },
         "hookView": {
-          "type": ["object", "null"],
+          "type": [
+            "object",
+            "null"
+          ],
           "additionalProperties": false,
-          "required": ["output", "materializerId", "settingsTemplate", "supportedEvents", "eventBindings", "matcherAliases", "workingDirectoryPolicy"],
+          "required": [
+            "output",
+            "materializerId",
+            "settingsTemplate",
+            "supportedEvents",
+            "eventBindings",
+            "matcherAliases",
+            "workingDirectoryPolicy"
+          ],
           "properties": {
-            "output": { "$ref": "#/$defs/adapterOutputPath" },
-            "materializerId": { "$ref": "#/$defs/materializerId" },
-            "settingsTemplate": { "type": ["string", "null"] },
-            "supportedEvents": { "$ref": "#/$defs/stringArray" },
+            "output": {
+              "$ref": "#/$defs/adapterOutputPath"
+            },
+            "materializerId": {
+              "$ref": "#/$defs/materializerId"
+            },
+            "settingsTemplate": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "supportedEvents": {
+              "$ref": "#/$defs/stringArray"
+            },
             "eventBindings": {
               "type": "object",
-              "propertyNames": { "type": "string", "minLength": 1 },
-              "additionalProperties": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.:@/-]*$" }
+              "propertyNames": {
+                "type": "string",
+                "minLength": 1
+              },
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_.:@/-]*$"
+              }
             },
-            "matcherAliases": { "type": "object", "additionalProperties": { "$ref": "#/$defs/stringArray" } },
-            "workingDirectoryPolicy": { "const": "repository-root" }
+            "matcherAliases": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/stringArray"
+              }
+            },
+            "workingDirectoryPolicy": {
+              "const": "repository-root"
+            }
           }
         },
         "environmentMap": {
           "type": "object",
-          "propertyNames": { "pattern": "^[A-Z][A-Z0-9_]*$" },
-          "additionalProperties": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }
+          "propertyNames": {
+            "pattern": "^[A-Z][A-Z0-9_]*$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]*$"
+          }
         },
-        "skillBindings": { "type": "object", "additionalProperties": { "$ref": "#/$defs/skillBinding" } },
+        "skillBindings": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/skillBinding"
+          }
+        },
         "skillAliases": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["name", "sourceSkill"],
+            "required": [
+              "name",
+              "sourceSkill"
+            ],
             "properties": {
-              "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
-              "sourceSkill": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              },
+              "sourceSkill": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              }
             }
           }
         },
-        "discovery": { "$ref": "#/$defs/discoveryInventory" },
+        "discovery": {
+          "$ref": "#/$defs/discoveryInventory"
+        },
         "exclusions": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["scope", "reasonCode", "detail"],
+            "required": [
+              "scope",
+              "reasonCode",
+              "detail"
+            ],
             "properties": {
-              "scope": { "type": "string", "minLength": 1 },
-              "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
-              "detail": { "type": "string", "minLength": 1 }
+              "scope": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reasonCode": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9_]*$"
+              },
+              "detail": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
         }
@@ -863,11 +1679,21 @@
       "allOf": [
         {
           "if": {
-            "properties": { "generate": { "const": true } },
-            "required": ["generate"]
+            "properties": {
+              "generate": {
+                "const": true
+              }
+            },
+            "required": [
+              "generate"
+            ]
           },
           "then": {
-            "properties": { "skillView": { "type": "object" } }
+            "properties": {
+              "skillView": {
+                "type": "object"
+              }
+            }
           }
         }
       ]
@@ -875,42 +1701,116 @@
     "provider": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "displayName", "providerKind", "instructionEntry", "sharedInstructionEntry", "skillDirectory", "hookConfig", "hookConfigFormat", "hookEntrypoint", "blockingExitCode", "capabilities", "runtime", "normalization", "adapter"],
+      "required": [
+        "id",
+        "displayName",
+        "providerKind",
+        "instructionEntry",
+        "sharedInstructionEntry",
+        "skillDirectory",
+        "hookConfig",
+        "hookConfigFormat",
+        "hookEntrypoint",
+        "blockingExitCode",
+        "capabilities",
+        "runtime",
+        "normalization",
+        "adapter"
+      ],
       "properties": {
-        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
-        "displayName": { "type": "string", "minLength": 1 },
-        "providerKind": { "enum": ["concrete-runtime", "headless-protocol"] },
-        "instructionEntry": { "$ref": "#/$defs/repositoryPath" },
-        "sharedInstructionEntry": { "$ref": "#/$defs/repositoryPath" },
-        "skillDirectory": { "$ref": "#/$defs/adapterOutputPath" },
-        "hookConfig": {
-          "oneOf": [
-            { "$ref": "#/$defs/adapterOutputPath" },
-            { "type": "null" }
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providerKind": {
+          "enum": [
+            "concrete-runtime",
+            "headless-protocol"
           ]
         },
-        "hookConfigFormat": { "enum": ["json", null] },
-        "hookEntrypoint": { "type": ["string", "null"] },
+        "instructionEntry": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "sharedInstructionEntry": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "skillDirectory": {
+          "$ref": "#/$defs/adapterOutputPath"
+        },
+        "hookConfig": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/adapterOutputPath"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hookConfigFormat": {
+          "enum": [
+            "json",
+            null
+          ]
+        },
+        "hookEntrypoint": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "blockingExitCode": {
           "type": "integer",
           "minimum": 1,
           "maximum": 255,
-          "not": { "const": 70 }
+          "not": {
+            "const": 70
+          }
         },
         "capabilities": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["nativeHooks", "hookTrustRequired", "hardGateComplete", "hookEnforcement"],
+          "required": [
+            "nativeHooks",
+            "hookTrustRequired",
+            "hardGateComplete",
+            "hookEnforcement"
+          ],
           "properties": {
-            "nativeHooks": { "type": "boolean" },
-            "hookTrustRequired": { "type": "boolean" },
-            "hardGateComplete": { "type": "boolean" },
-            "hookEnforcement": { "enum": ["native-feedback-plus-ci", "ci-only"] }
+            "nativeHooks": {
+              "type": "boolean"
+            },
+            "hookTrustRequired": {
+              "type": "boolean"
+            },
+            "hardGateComplete": {
+              "type": "boolean"
+            },
+            "hookEnforcement": {
+              "enum": [
+                "native-feedback-plus-ci",
+                "ci-only"
+              ]
+            },
+            "pushNotification": {
+              "type": "boolean",
+              "description": "Runtime exposes a push/desktop notification tool the agent can call at the end of a substantive turn. Consumed by the Stop hook capability gate; absent or false = UNOBSERVED/nonblocking."
+            }
           }
         },
-        "runtime": { "$ref": "#/$defs/providerRuntime" },
-        "normalization": { "$ref": "#/$defs/normalization" },
-        "adapter": { "$ref": "#/$defs/adapter" }
+        "runtime": {
+          "$ref": "#/$defs/providerRuntime"
+        },
+        "normalization": {
+          "$ref": "#/$defs/normalization"
+        },
+        "adapter": {
+          "$ref": "#/$defs/adapter"
+        }
       }
     }
   }

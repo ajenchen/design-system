@@ -51,6 +51,7 @@ const HoverCardContent = React.forwardRef<
       sideOffset={sideOffset}
       collisionPadding={collisionPadding}
       className={cn(
+        // @focus-suppress E — E 浮層程式落點;承擔者:浮層開啟時的程式落點
         "z-50 outline-none",
         // 2026-05-04 viewport-aware max-h SSOT(對齊 Popover):header/footer 永遠 in-viewport,body 壓縮 scroll
         // 2026-05-05 audit dim 35 fix:加 `min-h-0` 完成 M25 chain invariant

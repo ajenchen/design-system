@@ -6,6 +6,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join, extname, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolveProvisionedPlaywrightRuntime } from '../infra/governance/lib/playwright-runtime.mjs'
+import { launchBrowser } from './lib/launch-browser.mjs'
 
 const ROOT = process.cwd()
 const STATIC = join(ROOT, 'storybook-static')
@@ -23,7 +24,7 @@ const server = http.createServer((req, res) => {
 })
 await new Promise((r) => server.listen(7519, r))
 
-const browser = await chromium.launch({ headless: true })
+const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 900, height: 900 } })
 const TOL = 1.5 // px 容差(1px 透明 border 等)
 let fail = 0

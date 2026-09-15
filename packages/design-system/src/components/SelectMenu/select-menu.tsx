@@ -4,22 +4,17 @@
  */
 // @benchmark-unverified-blanket: file-level retraction per M22 (d) — claims herein not individually URL-cited; treat as unverified visual/usage rumor unless retrofit per-claim. Hook escape preserved.
 import * as React from 'react'
-import { Plus, Search } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 import type { AvatarData } from '@/design-system/components/Avatar/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/design-system/components/Popover/popover'
-import { Command, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator } from '@/design-system/components/Command/command'
-import { Command as CommandPrimitive, useCommandState } from 'cmdk'
+import { Command, CommandInput, CommandList, CommandEmpty, CommandLoading, CommandGroup, CommandItem } from '@/design-system/components/Command/command'
 import { MenuItem, MenuFooter } from '@/design-system/components/Menu/menu-item'
-import { Empty } from '@/design-system/components/Empty/empty'
-import { CircularProgress } from '@/design-system/components/CircularProgress/circular-progress'
 import { OVERLAY_SIDE_OFFSET } from '@/design-system/tokens/elevation/overlay-geometry'
-import { getMenuListMinHeight } from '@/design-system/components/Field/field-types'
 import { RowSizeProvider } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { applySelectAll, clearSelection } from '@/design-system/lib/multi-select-ordering'
-import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
 
 /**
  * SelectMenu — Popover + Command 組成的完整下拉選單
@@ -31,7 +26,7 @@ import { ICON_SIZE } from '@/design-system/tokens/uiSize/icon-size'
  * ── 架構 ──
  *   Popover（浮動容器）
  *     └── Command（cmdk，搜尋 + 鍵盤導覽）
- *           ├── CommandPrimitive.Input（搜尋框,raw cmdk + 自建 icon/min-h wrapper,非 DS CommandInput）
+ *           ├── CommandInput（搜尋列,DS 單一實作,與 CommandDialog 共用）
  *           ├── CommandList（選項列表）
  *           │     └── CommandGroup → MenuItem
  *           └── Footer（多選全選）
@@ -75,6 +70,15 @@ export interface SelectMenuProps {
   multiple?: boolean
   /** 顯示搜尋框 */
   searchable?: boolean
+  /**
+   * 是否在本機用搜尋字過濾選項(預設 true)。**遠端搜尋**(每打一個字就向伺服器抓、伺服器已經過濾好)傳 `false`:
+   * 對應 cmdk `shouldFilter={false}`(README「Filter/sort items manually? Pass shouldFilter={false}」),與 react-select 非同步模式
+   * (`filterOption: null`)/ Ant `filterOption={false}` 同款 —— 伺服器回什麼列什麼,不再被新的字二次過濾(2026-09-08 user 拍板「併」)。
+   * 遠端模式下(2026-09-09 user 拍板「遠端搜尋時清掉舊選項,我覺得可以」):`optionsLoading` 期間**舊選項不顯示**(只剩載入訊息列;
+   * Ant select-users 示範每次抓都 `setOptions([])`、Polaris Autocomplete 抓資料時藏 optionsMarkup),關鍵字空時顯示 `suggestions`
+   * (建議群組),沒建議就一列「輸入關鍵字搜尋」提示。本機過濾不清舊清單(2026-07-04 Q3 對本機模式仍成立)。
+   */
+  filterOption?: boolean
   /** 可建立新選項 */
   creatable?: boolean
   /** 建立新選項 callback */
@@ -97,25 +101,43 @@ export interface SelectMenuProps {
   searchPlaceholder?: string
   /** 搜尋框 accessible name；與可見 placeholder 分離。 */
   searchAriaLabel?: string
-  /** 空選項提示 */
+  /** 真的沒有任何可選項目時的訊息列文案(本機過濾無結果、或遠端回傳空);預設「沒有選項」 */
   emptyText?: string
-  /** 載入中狀態的無障礙文案(i18n:consumer 換語言時覆寫) */
+  /** 載入訊息列的可見文字(`role="status"` 直接播報;i18n:consumer 換語言時覆寫) */
   loadingText?: string
+  /**
+   * 遠端搜尋、關鍵字空、也沒有建議、也沒在載入時的提示列文案。預設「輸入關鍵字搜尋」。
+   * 2026-09-09 user 原則:「只有實際上真的沒有任何選項可以選的時候才會顯示沒有結果的狀態」→ 還沒搜尋不是「沒有選項」。
+   */
+  searchHintText?: string
   /** 多選 footer 全選列文字(2026-07-05 D4:原「全部」字面 hardcode,無法覆寫也無法 i18n) */
   selectAllLabel?: string
-  /** Loading 狀態(2026-05-15 audit B fix;2026-07-04 Q3 拍板措辭修訂)
-   *  true → 無可顯示選項時 empty slot(cmdk CommandEmpty)渲可命名的
-   *  `role="status"` wrapper + 48px CircularProgress；已有 options 時保留顯示不清空
-   *  (MUI Autocomplete「only if there are no suggestions」共識)。trigger 不變,user 隨時可開 dropdown。
+  /**
+   * **選項清單**載入中(2026-09-09 user 拍板改名,原 `loading`;理由:DS 內 `loading` 已被 Field 家族佔走 =
+   * 「這個值」在讀取 / 驗證 / 儲存(field-controls.spec.md「Loading state」),同字兩義是 2026-09-08 兩顆轉圈的病根)。
+   * 指示**只在選單內**:清單裡沒有任何可顯示的選項時,Empty 槽渲載入訊息列(`CommandLoading`:同「沒有結果」的
+   * MenuItem 訊息列,前綴槽轉圈 + loadingText,`role="status"`);觸發點 / 搜尋列**不**為選項轉圈(MUI Autocomplete
+   * `loading` 只在 options 空時顯 loadingText;Polaris Autocomplete `loading` → `Listbox.Loading` 在清單內,TextField 不轉)。
+   * 本機過濾(`filterOption` 預設 true)已有選項時保留顯示、選單不關;遠端(`filterOption={false}`)抓資料中舊選項不顯示
+   * (見 `filterOption`)。listbox 同時標 `aria-busy`。
    */
-  loading?: boolean
+  optionsLoading?: boolean
+  /**
+   * 遠端搜尋(`filterOption={false}`)關鍵字空時顯示的**建議清單**(部分選項:最近用過 / 常用 / 伺服器先給幾筆),
+   * 2026-09-09 user 拍板。對應 react-select `defaultOptions`(「The default set of options to show before the user starts
+   * searching」,useAsync.ts)。DS 自動包成有標題的群組(`suggestionsLabel`,預設「建議」)—— 原則:**讓使用者明確知道實際
+   * 的選項不只選單上這幾筆**;要自訂分組(「最近指派」「同團隊」)就在項目上填 `group` + `groups`,每組都有標題、沒填 group
+   * 的仍歸「建議」。關鍵字非空 → 換顯示 `options`(伺服器結果)。不傳(undefined)→ 關鍵字空時退回顯示 `options`
+   * (遠端模式下同樣加「建議」標題);本機過濾模式忽略本 prop(完整清單不需要建議,分組用 `groups`)。
+   */
+  suggestions?: SelectMenuOption[]
+  /** 建議群組的標題(預設「建議」;cmdk List 的預設 aria-label 就叫 Suggestions) */
+  suggestionsLabel?: string
 
   /** 尺寸 */
   size?: SizeKey
   /** 對齊方式 */
   align?: 'start' | 'end'
-  /** 列表最少顯示幾行選項高度（預設 3），影響空狀態最小高度 */
-  minRows?: number
   /** 最小寬度（px），預設跟隨觸發元件 */
   minWidth?: number
 
@@ -149,25 +171,7 @@ export interface SelectMenuProps {
   className?: string
 }
 
-// ── SR live status(2026-07-05 D4:empty / loading 空狀態對 SR 不可感知修)──
-// cmdk CommandEmpty 渲染為 role="presentation" div、cmdk 全鏈無 aria-live,且 DOM focus 停在
-// combobox input(aria-activedescendant 虛擬焦點)→ SR 使用者搜尋到 0 結果或 loading 佔位時
-// 聽不到任何播報(loading spinner 的 CircularProgress 無 label 時更是 aria-hidden)。
-// 補 visually-hidden polite live region,鏡射 CommandEmpty 的無結果文字。Loading 改由可見
-// spinner 的 `role="status"` + `aria-label` 直接宣告，避免同一狀態重複播報。
-// cmdk Empty 只在 filtered.count === 0 渲染。對齊 react-select A11yText /
-// APG combobox no-results 播報 + empty.spec.md「動態 filter no-results 容器需 aria-live="polite"」。
-// SSOT 放 SelectMenu 一處 → Select / Combobox / PeoplePicker 全體受益。
-function SelectMenuLiveStatus({ loading, emptyText }: { loading: boolean; emptyText: string }) {
-  const filteredCount = useCommandState((state) => state.filtered.count)
-  return (
-    <div role="status" aria-live="polite" className="sr-only">
-      {filteredCount === 0
-        ? (loading ? null : emptyText)
-        : null}
-    </div>
-  )
-}
+// SR 播報(empty)由 Command 根自動渲(2026-09-08 搬進 Command → 2026-09-09 根內建);loading 由可見的 CommandLoading role="status" 播。
 
 // shadcn canonical:forwardRef + displayName 統一。SelectMenu 是 Popover + Command
 // composite,自身無 DOM host(trigger 由 consumer 以 asChild children 提供),ref 簽名
@@ -180,6 +184,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   onValueChange,
   multiple = false,
   searchable = false,
+  filterOption = true,
   creatable = false,
   onCreate,
   createLabel = (q) => `直接使用「${q}」`,
@@ -188,13 +193,15 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   children,
   searchPlaceholder = '搜尋…', // i18n-allow: DS default; consumer override via searchPlaceholder prop
   searchAriaLabel = '搜尋選項', // i18n-allow: DS default; consumer override via searchAriaLabel prop
-  emptyText = '沒有符合的選項', // i18n-allow: DS default; consumer override via emptyText prop
+  emptyText = '沒有選項', // i18n-allow: DS default(2026-09-08 user 拍板:一句到底,對應 No options;打開就沒選項與搜尋無結果共用);consumer override via emptyText prop
   loadingText = '載入選項中', // i18n-allow: DS default; consumer override via loadingText prop
+  searchHintText = '輸入關鍵字搜尋', // i18n-allow: DS default(2026-09-09:遠端搜尋還沒打字、也沒建議時的提示);consumer override via searchHintText prop
   selectAllLabel = '全部', // i18n-allow: DS default; consumer override via selectAllLabel prop
-  loading = false,
+  optionsLoading = false,
+  suggestions,
+  suggestionsLabel = '建議', // i18n-allow: DS default(2026-09-09 user 拍板「群組標題名叫 Suggestion 之類的」);consumer override via suggestionsLabel prop
   size = 'md',
   align = 'start',
-  minRows = 3,
   minWidth,
   open: controlledOpen,
   defaultOpen,
@@ -228,6 +235,23 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     [isSearchControlled, onSearchChange],
   )
 
+  // ── 清單來源(2026-09-09 user 拍板;owner:select-menu.spec.md「遠端搜尋」「Suggestions」)──
+  // 本機過濾:永遠是 options(cmdk 自己過濾;舊清單不清)。
+  // 遠端搜尋(filterOption=false):
+  //   關鍵字空 + 有給 suggestions → 建議清單(部分選項,DS 加「建議」標題);
+  //   抓資料中 → 舊 options 不顯示(只剩載入訊息列;Ant select-users 示範 setOptions([]) / Polaris 藏 optionsMarkup;
+  //     react-select useAsync 第一次搜尋 `setPassEmptyOptions(!loadedInputValue)` 同樣清空);
+  //   其餘 → options(伺服器結果;關鍵字空時也視為部分清單,加「建議」標題)。
+  const isRemote = !filterOption
+  const isIdle = search.trim() === ''
+  const visibleOptions = React.useMemo<SelectMenuOption[]>(() => {
+    if (!isRemote) return options
+    if (isIdle && suggestions !== undefined) return suggestions
+    return optionsLoading ? [] : options
+  }, [isRemote, isIdle, suggestions, optionsLoading, options])
+  // 遠端 + 關鍵字空 + 有東西可列 = 部分清單 → 必有群組標題,讓使用者知道選項不只這些(2026-09-09 user 原則)
+  const showSuggestionHeading = isRemote && isIdle && visibleOptions.length > 0
+
   // ── Value helpers ──
   const selectedValues = React.useMemo<string[]>(() => {
     if (value == null) return []
@@ -239,10 +263,12 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
     [selectedValues]
   )
 
+  // 反白(cmdk 游標)的長相由 CommandItem 依反白來歷分流(滑鼠搬的 → 底色 / 鍵盤搬的 → 框;SSOT = hooks/use-input-modality.ts
+  // `useCursorMover`,focus-canonical 規則一「兩類元件」)。開啟時的落點沒有人搬過,用開啟那一下的輸入畫(滑鼠點開 → 底色、鍵盤開 → 框)。
   // 2026-07-05 P2:單選已選 option — 供 cmdk defaultValue 定 cursor 起點(見下方 <Command>)
   const selectedOption = React.useMemo(
-    () => (!multiple ? options.find((o) => o.value === selectedValues[0]) : undefined),
-    [multiple, options, selectedValues]
+    () => (!multiple ? visibleOptions.find((o) => o.value === selectedValues[0]) : undefined),
+    [multiple, visibleOptions, selectedValues]
   )
 
   const handleSelect = React.useCallback(
@@ -261,9 +287,10 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   )
 
   // ── Multi-select: select all ──
+  // 遠端搜尋不提供全選(清單永遠是部分選項,「全部」會是假話;footer 條件見下方)
   const selectableOptions = React.useMemo(
-    () => options.filter((o) => !o.disabled),
-    [options]
+    () => visibleOptions.filter((o) => !o.disabled),
+    [visibleOptions]
   )
 
   const allState: boolean | 'indeterminate' = React.useMemo(() => {
@@ -297,24 +324,29 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
   // ── Creatable ──
   const showCreate = React.useMemo(() => {
     if (!creatable || !search.trim()) return false
-    return !options.some(
-      (o) => o.label.toLowerCase() === search.trim().toLowerCase()
-    )
-  }, [creatable, search, options])
+    // 遠端抓資料中不出建立列:結果還沒回來,不能判斷要不要建立(否則建到伺服器已有的東西;Codex R13 反例)
+    if (isRemote && optionsLoading) return false
+    const q = search.trim().toLowerCase()
+    // 同名防重複要連建議清單一起查(建議也是真實選項;Codex R13 反例:建議有 Alice 仍出現「直接使用 Alice」)
+    // 本機過濾模式忽略 suggestions(spec「Suggestions」最後一條),所以只有遠端模式才連建議一起查(Codex R14 反例:本機 + 建議同名誤藏建立列)
+    return !options.some((o) => o.label.toLowerCase() === q) && !(isRemote && (suggestions ?? []).some((o) => o.label.toLowerCase() === q))
+  }, [creatable, search, options, suggestions, isRemote, optionsLoading])
 
   // ── Grouping ──
+  // 沒填 group 的項目歸預設群組;預設群組在「建議」情境下必有標題(suggestionsLabel),其他情境無標題。
   const groupedOptions = React.useMemo(() => {
-    if (!groups?.length) return [{ key: '__default', label: '', options }]
+    const defaultLabel = showSuggestionHeading ? suggestionsLabel : ''
+    if (!groups?.length) return [{ key: '__default', label: defaultLabel, options: visibleOptions }]
     const grouped = groups.map((g) => ({
       ...g,
-      options: options.filter((o) => o.group === g.key),
+      options: visibleOptions.filter((o) => o.group === g.key),
     }))
-    const ungrouped = options.filter((o) => !o.group)
+    const ungrouped = visibleOptions.filter((o) => !o.group)
     if (ungrouped.length) {
-      grouped.unshift({ key: '__default', label: '', options: ungrouped })
+      grouped.unshift({ key: '__default', label: defaultLabel, options: ungrouped })
     }
     return grouped
-  }, [groups, options])
+  }, [groups, visibleOptions, showSuggestionHeading, suggestionsLabel])
 
   // ── Reset search on close(僅 uncontrolled;受控時由 parent 負責 reset)──
   React.useEffect(() => {
@@ -387,7 +419,7 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
         }}
       >
         <Command
-          shouldFilter={searchable}
+          shouldFilter={searchable && filterOption}
           // 2026-07-06 cursor 起點修:單選已有值時 cmdk virtual focus 落在已選項而非第一項。
           // cmdk 1.1.1 初始 state 取 defaultValue、item mount 的 selectFirstItem 有
           // `state.value ||` guard 不覆蓋(dist source 驗證);Popover 關閉即 unmount(無
@@ -401,115 +433,67 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
           // 內容)。僅 searchable(真的有 input)時傳內容 = 避免 non-searchable 帶 search
           // placeholder 的 accessible name 卻無對應 input;真要消除 orphan label 需 upstream 修。
           label={searchable ? searchAriaLabel : undefined}
-          className="bg-transparent"
+          size={size}
         >
           {searchable && (
-            <div className={cn(
-              'flex items-center gap-2 px-3 py-1 border-b border-divider',
-              size === 'lg' ? 'min-h-[calc(var(--field-height-lg)+8px)]'
-                : size === 'sm' ? 'min-h-[calc(var(--field-height-sm)+8px)]'
-                : 'min-h-[calc(var(--field-height-md)+8px)]',
-            )}>
-              <Search size={ICON_SIZE[size as 'sm' | 'md' | 'lg']} className="shrink-0 text-fg-muted" aria-hidden />
-              <CommandPrimitive.Input
-                placeholder={searchPlaceholder}
-                value={search}
-                onValueChange={setSearch}
-                className={cn(
-                  'flex w-full bg-transparent outline-none placeholder:text-fg-muted',
-                  // M24 disabled state precedence:disabled 時 placeholder 切 fg-disabled(audit dim 34)
-                  'disabled:placeholder:text-fg-disabled disabled:text-fg-disabled disabled:cursor-not-allowed',
-                  size === 'lg' ? 'text-body-lg leading-compact' : 'text-body leading-compact',
-                )}
-              />
-            </div>
+            // 2026-09-08:搜尋列改用 DS `CommandInput`(與 CommandDialog / inline Command 同一份實作),
+            // 原本這裡自己寫一份 raw cmdk input + icon wrapper = 第二份 SSOT(user 抓「Command 跟 SelectMenu 不同一套」)。
+            // 搜尋列不為「選項載入」轉圈(2026-09-09 user 拍板:選項載入的指示只在選單內;Polaris Autocomplete loading 時 TextField 不轉)
+            <CommandInput size={size as 'sm' | 'md' | 'lg'} placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
           )}
           {/* **2026-05-07 v15.13 R2 fix**:minHeight 從 CommandList 搬到 CommandEmpty。
               原本 CommandList 永遠套 `minHeight = field-height × minRows + 16px`,結果
               user 過濾出 < minRows 個 match 時 list 底下空一片(eg. 打 'c' 出 2 個 match
               卻撐高到 3 row 容量,1 row 留白)。 Fix:只有 empty state 才需要 minHeight 撐
               起 placeholder 視覺;有 results 時 CommandList 自然 fit content。 */}
-          {/* aria-busy(2026-07-04):loading 時標注 listbox 忙碌——兌現 select.spec.md「Loading」段
+          {/* aria-busy(2026-07-04):optionsLoading 時標注 listbox 忙碌——兌現 select.spec.md「Loading」段
               「+ aria-busy」承諾(cmdk List 本身即 role="listbox" 容器,wrapper forward props)。 */}
+          {/* 訊息列三態(2026-09-09 user 拍板;cmdk Empty 只在 0 筆可顯示時渲):
+              抓資料中 → 載入列;遠端 + 關鍵字空(沒建議)→ 「輸入關鍵字搜尋」;真的沒有任何可選 → emptyText */}
+          <CommandEmpty size={size}>
+            {optionsLoading
+              ? <CommandLoading label={loadingText} size={size} />
+              : isRemote && isIdle ? searchHintText : emptyText}
+          </CommandEmpty>
           <CommandList
             className="relative"
-            aria-busy={loading || undefined}
+            aria-busy={optionsLoading || undefined}
             // 2026-07-06 A11y:cmdk List 的 aria-label 由其 `label` prop 渲染(內部 spread 後 override,
             // 直接傳 aria-label 會被 cmdk default "Suggestions" 蓋掉 silent 失效)— 必走 label prop。
             label="選項" // i18n-allow: DS default; listbox accessible name
           >
-            <CommandEmpty
-              className="flex items-center justify-center"
-              style={{ minHeight: getMenuListMinHeight(size, minRows) }}
-            >
-              {loading
-                ? (
-                    <div role="status" aria-label={loadingText} className="flex items-center justify-center py-6">
-                      <CircularProgress size={48} />
-                    </div>
-                  )
-                : <Empty description={emptyText} className="py-6" />}
-            </CommandEmpty>
+            {/* 空狀態與 loading 的置中、最小高度都由 CommandEmpty own(2026-09-08);這裡只給內容 */}
 
-            {groupedOptions.map((group, gi) => (
+            {/* 選項為 0 的群組不畫(2026-09-08):cmdk 在 shouldFilter=false(搜尋在觸發點)時不會藏空群組,
+                會留下 py-2 的 16px 空白疊在「沒有選項」下面(實測 128 vs 應為 112)。 */}
+            {groupedOptions.filter((group) => group.options.length > 0).map((group) => (
               <React.Fragment key={group.key}>
-                {gi > 0 && <CommandSeparator />}
+                {/* 群組之間的分隔線由 CommandGroup 自動畫(item-anatomy「Group auto-separation」:consumer 不手插 Separator;
+                    2026-09-08 修:cmdk 在搜尋字非空時不渲 Separator,手插版會讓可見群組之間沒線)。 */}
                 <CommandGroup
-                  className="p-0 py-2 [&_[cmdk-group-heading]]:p-0"
-                  // 2026-07-06 A11y:群組標題走 cmdk `heading`(自動產 cmdk-group-heading id,選項容器
-                  // role="group" + aria-labelledby 指向之)取代手刻 child row(原本 AT 不可感知;
-                  // aria-label fallback 對 role="presentation" group 無效)。[&_[cmdk-group-heading]]:p-0
-                  // 中和 command.tsx base 的 px-3 py-1.5(tailwind-merge p-0 勝);字級 / 顏色由 MenuItem
-                  // header 自帶(text-body leading-compact + font-medium + text-fg-muted),視覺不變。
-                  heading={group.label ? <MenuItem size={size} header>{group.label}</MenuItem> : undefined}
+                  key={group.key}
+                  // 內距與標題(MenuItem header,吃 Command 的 size context)都由 CommandGroup own(2026-09-08)
+                  heading={group.label || undefined}
                 >
                   {group.options.map((opt) => (
                     <CommandItem
                       key={opt.value}
-                      // 2026-07-06 識別值修:cmdk 以 value 當 item identity + selection state。原用
-                      // opt.label → 重複 label 時雙亮 + Enter 選錯;改唯一的 opt.value,label 移入
-                      // keywords 保搜尋照樣命中(cmdk filter 對 value + keywords 計分)。
+                      // cmdk 以 value 當 identity;label 進 keywords 保搜尋命中(2026-07-06)
                       value={opt.value}
                       keywords={opt.description ? [opt.label, opt.description] : [opt.label]}
                       disabled={opt.disabled}
                       onSelect={() => handleSelect(opt.value)}
-                      // 2026-07-05 D4 P0 修:原 data-[selected=true]:bg-transparent 蓋掉 command.tsx base
-                      // 的 data-[selected=true]:bg-neutral-hover = cmdk virtual focus(aria-activedescendant)
-                      // 鍵盤 cursor 唯一視覺通道被抹掉 → 方向鍵移動畫面零變化(影響 Select/Combobox/PeoplePicker
-                      // 全家)。鏡射 DropdownMenu wrapper pattern:互動 bg 單一 owner 在外層 CommandItem
-                      //(base highlight 恢復;persistent selection 上移;selected×cursor 加深一階 —
-                      // 對齊本日 DropdownMenu Q2 決策),內層 MenuItem 全透明。
-                      className={cn(
-                        'p-0 rounded-none',
-                        // 2026-08-11 user 拍板糾正 D4 實作縫(SSOT = item-anatomy「選中 × 互動疊加」):
-                        // cmdk 反白訊號滑鼠也觸發,深化本應僅限鍵盤(D4 原意即「鍵盤 cursor」)。
-                        // 滑鼠 hover 選中項 → 釘住 bg-neutral-selected 不變(滑鼠自有游標,不需底色指位);
-                        // 鍵盤反白(data-selected 且非 :hover)→ -focus 深一階(游標可見,WCAG 2.4.7)。
-                        // not-hover 編譯為 :not(*:hover) + @media not (hover:hover)(POC 已驗),
-                        // 深化 (0,3,0) > 釘住 (0,2,0),與 CSS 順序無關;token 從借用的 -active 歸位 -focus。
-                        !multiple && isSelected(opt.value) && 'bg-neutral-selected data-[selected=true]:bg-neutral-selected data-[selected=true]:not-hover:bg-neutral-selected-focus',
-                      )}
+                      // 視覺 anatomy(icon / avatar / description / checkbox / 選中 × 鍵盤框、內層 role=presentation)
+                      // 全在 CommandItem 內的 MenuItem(2026-09-08 收斂,原本這裡自己再包一層 MenuItem + 手刻選中框)
+                      startIcon={opt.icon}
+                      startIconClassName={opt.iconClassName}
+                      avatar={opt.avatar}
+                      description={opt.description}
+                      checkbox={multiple}
+                      checked={isSelected(opt.value)}
+                      selected={!multiple && isSelected(opt.value)}
                     >
-                      <MenuItem
-                        size={size}
-                        startIcon={opt.icon}
-                        startIconClassName={opt.iconClassName}
-                        avatar={opt.avatar}
-                        description={opt.description}
-                        checkbox={multiple}
-                        checked={isSelected(opt.value)}
-                        selected={!multiple && isSelected(opt.value)}
-                        disabled={opt.disabled}
-                        // 2026-07-05 D4:巢狀 role 修 — MenuItem 預設 role="option" + aria-selected(persistent
-                        // selection)巢狀在 cmdk CommandItem(本身 role="option" + aria-selected=cursor)內,
-                        // AT 讀到 option 包 option 且內外 aria-selected 語意相反 → 朗讀錯亂。鏡射 DropdownMenu
-                        // canonical(dropdown-menu.tsx「Pure visual — Radix parent handles role/aria」):
-                        // 內層純視覺 role="presentation",cmdk CommandItem 是唯一 option 節點。
-                        role="presentation"
-                        className="!bg-transparent hover:!bg-transparent"
-                      >
-                        {renderLabel ? renderLabel(opt) : opt.label}
-                      </MenuItem>
+                      {renderLabel ? renderLabel(opt) : opt.label}
                     </CommandItem>
                   ))}
                 </CommandGroup>
@@ -519,9 +503,9 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
             {/* Creatable item */}
             {showCreate && (
               <>
-                <CommandSeparator />
-                <CommandGroup className="p-0 py-2">
+                <CommandGroup>
                   <CommandItem
+                    startIcon={Plus}
                     // 2026-07-06:`__create__` 前綴防 identity 撞名 — 選項 row 改用 opt.value 識別後,
                     // search 恰等於某 option.value 時裸 search 會與該 row 同 value(cmdk 雙亮 + Enter
                     // 選錯)。value 含 search 子字串,cmdk filter 照樣命中;onSelect closure 讀 search
@@ -531,26 +515,21 @@ const SelectMenu = React.forwardRef<HTMLElement, SelectMenuProps>(function Selec
                       onCreate?.(search.trim())
                       setSearch('')
                     }}
-                    className="p-0 rounded-none"
                   >
-                    {/* 2026-07-05 D4:同上方選項 row 的巢狀 role 修 — creatable row 同樣是
-                        MenuItem 巢狀在 cmdk CommandItem(option)內,內層純視覺 role="presentation"。 */}
-                    <MenuItem size={size} startIcon={Plus} role="presentation" className="!bg-transparent hover:!bg-transparent">
-                      {createLabel(search.trim())}
-                    </MenuItem>
+                    {createLabel(search.trim())}
                   </CommandItem>
                 </CommandGroup>
               </>
             )}
           </CommandList>
 
-          {/* SR 播報 empty / loading 空狀態(見 SelectMenuLiveStatus docblock,2026-07-05 D4) */}
-          <SelectMenuLiveStatus loading={loading} emptyText={emptyText} />
+          {/* SR 播報 0 筆(2026-09-09):由 Command 根自動渲(文字 = 上面 CommandEmpty 的字串 children),這裡不再另放,放了會播兩次 */}
 
           {/* Multi-select footer: Select All
               - 沒有選項時不顯示(selectableOptions.length === 0)
-              - 搜尋有文字時不顯示(search 非空 = 使用者在找特定項目,「全選」沒意義) */}
-          {multiple && selectableOptions.length > 0 && !search && (
+              - 搜尋有文字時不顯示(search 非空 = 使用者在找特定項目,「全選」沒意義)
+              - 遠端搜尋不顯示(2026-09-09):清單永遠是部分選項(建議 / 伺服器結果),「全部」語意不成立 */}
+          {multiple && !isRemote && selectableOptions.length > 0 && !search && (
             <MenuFooter>
               {/* 2026-07-05 D4:全選列鍵盤可達修 — 原裸 MenuItem(div 預設 role="option" 無 tabIndex)
                   位於 CommandList 之外:cmdk 方向鍵只導覽 [cmdk-item]、Tab 也到不了 div → 鍵盤使用者
@@ -604,13 +583,13 @@ export const selectMenuMeta = {
   sizes: {
 
   },
-  // 'selected' = 單選 option 持續選中(bg-neutral-selected);'active' 保留 — cmdk virtual-focus on
-  // selected(鍵盤反白,非 hover)走 bg-neutral-selected-focus(2026-08-11 token 歸位:-active 回歸按壓專屬)。
+  // 'selected' = 單選 option 持續選中(bg-neutral-selected);選中項的鍵盤反白(cmdk virtual-focus,
+  // 非 hover)自 2026-09-07 起**畫框**而非深一階底色(user 拍板「A5畫框」;底色已被選中佔走)。
   states: ['default', 'hover', 'active', 'selected', 'focus-visible', 'disabled'],
   tokens: {
-    bg: ['bg-neutral-selected', 'bg-neutral-selected-focus', 'bg-surface-raised', 'bg-transparent'],
+    bg: ['bg-neutral-selected', 'bg-surface-raised', 'bg-transparent'],
     fg: ['text-fg-muted'],
-    ring: [],
+    ring: ['focus-ring-inset'],
   },
 } as const
 

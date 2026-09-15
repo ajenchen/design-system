@@ -51,6 +51,37 @@ export const FullBar: Story = {
   },
 }
 
+/* ── 窄容器階梯 ── */
+/**
+ * 同一份分頁列放進五個固定寬度的容器 —— 每一階砍掉的都**不是導覽模型本身**,所以數字頁碼
+ * 一路活到最窄:先收「每頁筆數」(設定),再把格位 7 → 5(同一模式、視窗變小),
+ * 最後收「第 x–y 筆」(opt-in 資訊)。**資訊文字永遠不會超過一行** —— 階梯在它需要換行之前
+ * 就先砍別的。砍無可砍時整條橫向可捲,不換行也不截斷。
+ *
+ * 量的是**容器**不是視窗:表格被側欄擠窄時,視窗可能還有 1440px,視窗斷點在那個情境不會動。
+ */
+export const NarrowLadder: Story = {
+  name: '窄容器階梯',
+  render: () => {
+    const widths = [600, 480, 400, 300, 200]
+    return (
+      <div className="flex flex-col gap-6">
+        <p className="text-caption text-fg-muted">
+          由寬到窄:完整 → 收每頁筆數 → 格位 7 變 5 → 收資訊文字 → 橫向可捲。
+        </p>
+        {widths.map((w) => (
+          <div key={w} className="flex flex-col gap-1">
+            <span className="text-caption text-fg-muted tabular-nums">容器 {w}px</span>
+            <div style={{ width: w }} className="rounded-sm border border-divider p-2">
+              <Pagination total={128} defaultPage={5} showTotal pageSizeOptions={[10, 20, 50]} />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  },
+}
+
 /* ── 大量頁數摺疊 ── */
 export const ManyPages: Story = {
   name: '大量頁數摺疊',

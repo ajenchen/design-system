@@ -77,7 +77,7 @@ Multi 模式搜尋文案公開 `searchPlaceholder` / `searchAriaLabel`，分別�
 PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為人員清單通常規模較大且使用者記得人名關鍵字（符合 Select spec「Searchable 開啟判斷」的「label 性質」主判準：人名是獨特關鍵字）。
 
 - **搜尋 placeholder**：預設「搜尋人員…」，可透過 `searchPlaceholder` 覆寫。**僅 multi 模式 panel-top search（`searchIn='menu'`，default）生效**——single mode wrap `<Select searchable>` 走 inline-trigger 搜尋，提示取自 `placeholder`（Select 無 searchPlaceholder prop）；multi `searchIn='trigger'` inline 搜尋同理走 placeholder 規則（見「Trigger display SSOT canonical table」§E）
-- **空狀態**：預設「沒有符合的人員」，透過 `emptyText` 覆寫
+- **空狀態**：預設「沒有人員」(2026-09-08 一句到底,`people-picker.tsx:154`),透過 `emptyText` 覆寫;渲成選單的一列 `MenuItem message`(與 1 筆結果等高、無最小高度、不用 `Empty`),SSOT `../SelectMenu/select-menu.spec.md`「Empty state」
 
 ---
 
@@ -90,6 +90,21 @@ PeoplePicker 永遠支援搜尋（內部使用 `Command` / cmdk）——因為�
 - **多選**:clear all 一次清除所有已選人員(`../Combobox/combobox.spec.md`「全部清除」),與 per-chip 移除並存
 - **何時開**:繼承 select.spec.md「何時開 clearable」判準——「無選擇是有效狀態」(選填人員欄位如觀察者 / 可清的人員 filter)開;必須有人(assignee 必填)不開
 - 只在 edit 模式顯示;readonly / disabled 不渲(基座行為)
+
+---
+
+## Loading(2026-09-08 補轉發;2026-09-09 user 拍板拆成兩個字)
+
+兩個 prop 都機械轉發 wrapped Select(single)/ Combobox(multi)三個分支(`people-picker.tsx`),行為 SSOT 在基座,本元件不另定義:
+
+| Prop | 意思 | 指示 | SSOT |
+|---|---|---|---|
+| `loading?: boolean` | **這個值**(指派的人)在讀取 / 驗證 / 儲存 | 觸發點右側、ChevronDown 左邊列圖示尺寸轉圈 + `aria-busy`;選單照常可開 | `../Field/field-controls.spec.md`「Loading state」 |
+| `optionsLoading?: boolean` | **人員名錄**在抓(2026-09-09 改名自 `loading`) | 只在選單內:沒有任何可顯示的人員時一列「載入選項中」訊息列;觸發點不轉圈。本機過濾已載入的人員保留,遠端搜尋抓資料中舊結果不顯示 | `../SelectMenu/select-menu.spec.md`「Loading」 |
+
+`filterOption?: boolean` / `onSearchChange?: (value: string) => void`:遠端搜尋名錄(人數多、只能問伺服器)時的開關與回呼,機械轉發 Select / Combobox。`suggestions?: PersonValue[]` / `suggestionsLabel?: string`(預設「建議」)/ `searchHintText?: string`(預設「輸入關鍵字搜尋」)(2026-09-09):關鍵字空時列建議人員群組(最近指派 / 同團隊;必有標題,讓使用者知道名錄不只這幾位),抓資料中舊結果不顯示,沒建議也沒在載入時顯示提示列;人員經 `personToSelectOption` 轉成選項後 forward,已選的人回查 `people` + `suggestions`(`directory`)。SSOT `select-menu.spec.md`「遠端搜尋」「Suggestions」。
+
+**為什麼補 `optionsLoading`**:之前 PeoplePicker 沒有這個 prop,consumer 只能在 fetch 完成前傳 `people=[]`——開選單看到的是「沒有人員」,把「還在載入」講成「確定沒有」,語意錯(`../Empty/empty.spec.md`「何時不用」Loading 列)。
 
 ---
 
@@ -276,8 +291,8 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 ## 邊界案例
 
 - **Disabled**:`disabled` → `resolvedMode='disabled'`(`useResolvedFieldMode`),走獨立 static-display 分支(`people-picker.tsx`「readonly / disabled」段)——渲染靜態 `<div>` 包 `MultiPersonDisplay` / `PersonDisplay` + `ItemSuffix` ChevronDown 類型身份 indicator(2026-06-26:disabled 保留 chevron、readonly 不顯示;naked variant 依 `showDisplayEndIcon`),**不** wrap Select / Combobox、無 dismiss X、無 inline-search input。token 走 M24 state precedence(`text-fg-disabled`,含 chevron)。
-- **Loading(async people fetch)**:目前 PeoplePicker **未暴露 `loading` prop**(`PeoplePickerProps` 無此欄位,內部也未 forward 給 wrapped Select / Combobox)。consumer 若需 loading 態,在 fetch 完成前自行控制 `people=[]`(走 emptyText 空態)。底層 Select / Combobox / SelectMenu 各有自己的 loading 機制,但尚未經 PeoplePicker API 層轉發。
-- **Empty(no search results)**:`emptyText` 預設「沒有符合的人員」(本 spec L80 已 codify);無 creatable mode(人員不可建立)。
+- **Loading(async people fetch)**:`optionsLoading`(2026-09-08 補轉發、09-09 改名,見「Loading」段):選單內僅空清單時載入列、觸發點不轉圈。**禁**再用 `people=[]` 假裝 loading(會顯示「沒有人員」,語意錯);`loading` 是值處理中(觸發點轉圈),不是名錄載入。
+- **Empty(no search results)**:`emptyText` 預設「沒有人員」(見「搜尋」段;渲成一列 `MenuItem message`,不用 `Empty`);只在真的沒有任何可選時 —— 遠端搜尋還沒打字是建議群組或「輸入關鍵字搜尋」;無 creatable mode(人員不可建立)。
 - **Empty(no value selected)**:single mode → trigger 顯 placeholder「請選擇人員」;multi mode `value=[]` → trigger 同 placeholder(無 avatar stack 渲);詳「Trigger display SSOT canonical table」B-D 段。
 - **`people` 清單變動(async fetch 後更新)**:已選 value 顯示不依賴 `people` 查找 — display 路徑直接渲染 value 自帶資料;edit 路徑以人名回查 `people`,查不到降級為純名字 string(initials fallback),不報錯(`people-picker-helpers.ts:74-75`)。選單選項即時跟隨 props 重渲。
 - **RTL**:不支援；全域 LTR-only compatibility contract 見 `packages/design-system/README.md#compatibility-matrix`。avatar overlap / inset 不在本檔另立支援決策。
@@ -307,7 +322,7 @@ PeoplePicker 是 **composite 元件**(內部 wrap `<Select>`(single)/ `<Combobox
 - ↑/↓ — 導覽 people
 - Enter — 選擇 / 取消選擇
 
-**Focus**:Field 家族 focus 由 Field wrapper 提供(`focus-within:!border-primary`,`field-wrapper.tsx` v13.3 SSOT;對齊 Select / Combobox spec「Focus」段),非 outline ring;focus management 由元件 own。
+**Focus**:single mode 包 `<Select searchable>`,規則同 Select spec「Focus」段(2026-09-10 更正兩次;user 問「people picker 明明是可以打字的輸入框,按照畫框原則在此情境是要畫成外框的嗎?」與「Combobox 和 select 這兩大類的鍵盤焦點是否設計不一致?」):**開啟時**是可打字的插入點控件 → 不畫外框、Field wrapper 邊框轉色;**選完(Enter / 點選)浮層關閉後**輸入框卸載、觸發器顯示已選人員並拿回焦點 —— 此時同樣只有邊框轉色、**不畫外框**(Field 家族一致;multi mode 的 Combobox 基座焦點留在輸入框,本來就沒有外框)。focus management 由元件 own。閘:`virtual-cursor-modality-invariant.mjs` G 段。
 
 移除已選人員後的 focus order 消費 Combobox collection contract：下一個 remove control → 前一個 → owner combobox trigger，禁止 focus 掉到 `body`。Stack avatar remove button 必保留 `data-collection-remove` marker 供 owner 統一接管。
 

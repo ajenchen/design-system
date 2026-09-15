@@ -70,7 +70,8 @@ const sheetVariants = cva(
   // 對齊 overlay-surface pattern + Dialog canonical)
   // Animation canonical:panel = surfaceMotion 250ms(--motion-duration-surface)雙向一致
   // (D4 audit:500ms 太久 sluggish)+ motion-reduce 豁免
-  `fixed z-50 flex flex-col bg-surface-raised shadow-[var(--elevation-200)] transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out ${surfaceMotion}`,
+  // overflow-hidden min-h-0:同 Dialog,補上 overlay-surface primitive 要求的父層契約(2026-09-12)。
+  `fixed z-50 flex flex-col overflow-hidden min-h-0 bg-surface-raised shadow-[var(--elevation-200)] transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out ${surfaceMotion}`,
   {
     variants: {
       side: {

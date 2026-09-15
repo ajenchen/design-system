@@ -11,6 +11,10 @@ benchmark:
   - Radix Select primitive: github.com/radix-ui/primitives/tree/main/packages/react/select
   - MUI Material Select (controlled/uncontrolled API): mui.com/material-ui/api/select/
   - Ant Design DatePicker (value/defaultValue API): ant.design/components/date-picker
+  - react-select useAsync (defaultOptions / 第一次搜尋清空): github.com/JedWatson/react-select/blob/master/packages/react-select/src/useAsync.ts
+  - MUI Autocomplete API (loading / loadingText / noOptionsText): mui.com/material-ui/api/autocomplete/
+  - Polaris Autocomplete (listTitle / loading / emptyState): github.com/Shopify/polaris/blob/main/polaris-react/src/components/Autocomplete/Autocomplete.tsx
+  - Ant Design select-users demo (setOptions([]) + notFoundContent Spin): github.com/ant-design/ant-design/blob/master/components/select/demo/select-users.tsx
 ---
 
 # SelectMenu 設計原則
@@ -65,10 +69,11 @@ SelectMenu 是 **Popover + Command 組成的完整下拉選單浮層**——提�
 ```
 Popover（浮動容器，handle 展開 / 定位）
   └─ Command（cmdk — 搜尋 + 鍵盤導覽）
-       ├─ 搜尋框（`CommandPrimitive.Input` raw cmdk + 自建 icon/min-h wrapper，非 DS `CommandInput`；searchable 模式時顯示；選項 > 5 時建議開啟）
+       ├─ 搜尋框（DS `CommandInput`,與 CommandDialog / inline Command 共用同一份實作,2026-09-08 起;searchable 模式時顯示；選項 > 5 時建議開啟;**不為選項載入轉圈**,2026-09-09）
        ├─ CommandList（捲動區）
-       │    └─ CommandGroup（分組標題）
-       │         └─ MenuItem（選項 row，消費 item-layout）
+       │    ├─ CommandGroup（分組標題;0 筆選項的群組不畫;遠端搜尋關鍵字空時的建議清單必有標題「建議」,見「Suggestions」）
+       │    │    └─ MenuItem（選項 row，消費 item-layout）
+       ├─ CommandEmpty（在 CommandList 外、listbox 的兄弟 —— axe 不允許 listbox 內有非 option 子元素,MUI 同構;清單裡沒有任何可顯示的選項時才出現:MenuGroup 包一列 `MenuItem message` —「沒有選項」/ 載入列 `CommandLoading` /「輸入關鍵字搜尋」提示列,見「Empty state」「Loading」「Suggestions」）
        └─ Footer（多選全選 checkbox，選填）
 ```
 
@@ -118,27 +123,97 @@ Popover（浮動容器，handle 展開 / 定位）
 
 ---
 
+
+**群組之間的分隔線由 CommandGroup 自己畫**(item-anatomy.spec.md「Group auto-separation」:consumer 不手插 Separator):CommandGroup 用「前面還有另一個看得見的群組」的兄弟選擇器畫上邊線(cmdk 把被搜尋濾掉的群組留在 DOM、加 `hidden`,所以排除 `[hidden]`)。2026-09-08 修:原本 SelectMenu 手插 `<CommandSeparator>`,cmdk 在搜尋字非空時不渲 Separator → 搜尋時可見群組之間沒線。機械閘 M9:兩組可見恰好一條線、搜尋剩一組沒有線。
+## 遠端搜尋(`filterOption` / `onSearchChange`,2026-09-08 user 拍板「併」;2026-09-09 user 拍板抓資料中清舊清單)
+
+預設 `filterOption = true`:有搜尋列時在本機用搜尋字過濾(cmdk `shouldFilter`)。**遠端搜尋**(每打一個字向伺服器抓、伺服器已經過濾好)傳 `filterOption={false}`:對應 cmdk `shouldFilter={false}`(README「Filter/sort items manually? Yes. Pass `shouldFilter={false}`」),伺服器回什麼列什麼,不再被新的字二次過濾(本機過濾會把伺服器用別名命中的結果藏掉)。搜尋字由 `onSearchChange` 回呼(含清空),consumer 據此抓資料並切 `optionsLoading`。Select / Combobox / PeoplePicker 三個消費者都轉發(`select.tsx` / `combobox.tsx` / `people-picker.tsx`;Select 與 Combobox `searchIn='trigger'` 另把觸發點的搜尋字以受控 `search` 交給 SelectMenu,清單狀態機才分得出「關鍵字空」與「抓資料中」)。
+
+**遠端模式的清單狀態機**(SSOT = `select-menu.tsx` 的 `visibleOptions`;三個消費者不另定義):
+
+| 關鍵字 | `optionsLoading` | 清單顯示 | 訊息列(清單 0 筆時) |
+|---|---|---|---|
+| 空 | false | 有給 `suggestions` → 建議群組;沒給 → `options`(同樣加「建議」標題) | 0 筆 → 「輸入關鍵字搜尋」(`searchHintText`) |
+| 空 | true | 有給 `suggestions` → 照列(建議是明確的部分清單);沒給 → 不顯示 `options` | 「載入選項中」 |
+| 非空 | true | **不顯示舊選項** | 「載入選項中」 |
+| 非空 | false | `options`(伺服器結果) | 0 筆 → 「沒有選項」(`emptyText`) |
+
+**為什麼抓資料中清掉舊選項**(2026-09-09 user 原話「遠端搜尋時清掉舊選項,我覺得可以」;改 2026-07-04 Q3「不清空 stale options」的決定 —— Q3 對本機過濾仍成立):遠端結果跟舊關鍵字綁在一起,新關鍵字下舊清單是假結果。世界級第一手:Ant Design 官方示範每次抓都先清空(`setOptions([]); setFetching(true)`,轉圈放 `notFoundContent={fetching ? <Spin size="small" /> : 'No results found'}`,沒用 `loading` prop,`filterOption: false`,[select-users.tsx](https://github.com/ant-design/ant-design/blob/master/components/select/demo/select-users.tsx));Polaris Autocomplete 抓資料時藏掉選項只留載入列(`{optionsMarkup && (!loading || willLoadMoreResults) ? optionsMarkup : null}{loadingMarkup}`,[Autocomplete.tsx](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/Autocomplete/Autocomplete.tsx));react-select 非同步第一次搜尋同樣清空(`setPassEmptyOptions(!loadedInputValue)`,只有第一次載入後才留舊結果,[useAsync.ts](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/useAsync.ts))。由 DS 在 SelectMenu 內做,consumer 不必自己 `setOptions([])`。
+
+**遠端搜尋沒有全選**:多選 footer 的「全部」在遠端模式不渲(清單永遠是部分選項,「全部」語意不成立)。
+
+機械閘:`scripts/menu-message-row-invariant.mjs` M8(建議群組 → 打字 → 舊清單不見、載入列在轉、觸發點 / 搜尋列不轉圈 → 後端回來換結果 → 打不存在的字「沒有選項」→ 清掉關鍵字回到建議)+ M10(建議群組標題)+ M11(提示列)。
+
+## Suggestions(建議群組,2026-09-09 user 拍板)
+
+遠端搜尋還沒打字時,選單不該是空的 —— 給一份**建議**(最近用過 / 常用 / 伺服器先給幾筆),consumer 傳 `suggestions`(`SelectMenuOption[]`;Select / Combobox 同名、型別走各自 extends 的 option schema,PeoplePicker 傳 `PersonValue[]` 自動轉)。
+
+**根本原則(user 2026-09-09 原話)**:「若提供的選項並非全部而是部分選項,且只有一個群組,那需要有群組標題名叫 Suggestion 之類的,原則是要讓使用者明確知道實際上所有的選項不只選單上的內容,若消費者要自行客製化此選單也應基於此根本理念去客製化」。落地:
+
+- **預設版型 = 一個群組 + 標題「建議」**(`suggestionsLabel`,可覆寫):沒填 `group` 的建議項目由 DS 自動包成有標題的群組(`select-menu.tsx` `groupedOptions`:預設群組在建議情境下必有標題)。群組標題經 cmdk `CommandGroup heading` → `role="group"` + `aria-labelledby`,AT 可感知(見「A11y 預設」)。
+- **消費者自訂**:在建議項目上填 `group` + `groups`(「最近指派」「同團隊」)→ 每組都有標題;沒填 group 的仍歸「建議」。**不存在「沒有標題的部分清單」**:遠端模式關鍵字空時列出的任何東西(含沒給 `suggestions` 時退回的 `options`)都加標題。
+- 建議還沒抓回來:`optionsLoading` → 一列「載入選項中」(見「Loading」)。
+- 沒給建議、`options` 也空、也沒在載入:一列「輸入關鍵字搜尋」(`searchHintText`,可覆寫)—— **不是**「沒有選項」;沒給建議但 `options` 非空(且沒在抓)→ 列 options 並加「建議」標題(user:「只有實際上真的沒有任何選項可以選的時候才會顯示沒有結果的狀態」;文案「輸入關鍵字搜尋」為 AI 建議、user 未逐字拍板)。
+- 關鍵字非空 → 換顯示 `options`(伺服器結果);清掉關鍵字 → 建議回來,不需重抓(DS 保存 `suggestions`)。
+- 從建議選的值:Select / Combobox / PeoplePicker 回查 label 時同時查 `options` 與 `suggestions`(`select.tsx` `selectedOpt` / `combobox.tsx` `items` / `people-picker.tsx` `directory`)。
+- 本機過濾(`filterOption` 預設 true)忽略 `suggestions`:完整清單不需要建議;要「Recent / All」分區用 `groups`(見「分組」)。
+
+**API 命名(3 重 test,`references/naming-conventions.md`)**:候選 (a) `optionsPartial: boolean | string`(沿用 `options`,DS 只加標題;但關鍵字清空後 consumer 得自己把 `options` 換回建議)/ (b) `suggestions` + `suggestionsLabel`(獨立清單,DS 自己在關鍵字空時切回,consumer 零狀態管理)/ (c) `defaultOptions`(react-select 原名;但 DS 內 `default*` = uncontrolled 初始值(`defaultValue` / `defaultOpen`),同字異義,第 3 題不過)。**選 (b)**:(1) 對齊既有 `emptyText` / `loadingText` / `selectAllLabel` 的「名詞 + Label / Text」構詞;(2) ≥ 2 家世界級用 Suggestions 指這份清單:cmdk `Command.List` 的預設 aria-label 就是 "Suggestions"(dist `label:u="Suggestions"`,[cmdk](https://github.com/pacocoursey/cmdk)),MUI Autocomplete API 通篇稱 options 為 suggestions(「shows the loadingText in place of suggestions」,[API](https://mui.com/material-ui/api/autocomplete/));概念對應 react-select `defaultOptions`(「The default set of options to show before the user starts searching」,[useAsync.ts](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/useAsync.ts));(3) DS 內 `suggestions` 無他義(2026-09-09 grep 0 命中)。
+
+**世界級對照(2026-09-09 第一手 WebFetch)**:
+
+| 家 | 還沒打字 | 抓資料中 | 沒結果 |
+|---|---|---|---|
+| react-select Async([useAsync.ts](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/useAsync.ts)) | `defaultOptions`(部分清單;`true` 時自動抓 `loadOptions('')`) | 第一次搜尋 `passEmptyOptions` 清空;之後留舊 | `noOptionsMessage` |
+| MUI Autocomplete([docs](https://mui.com/material-ui/react-autocomplete/) / [API](https://mui.com/material-ui/api/autocomplete/)) | 「Load on open」:「It displays a progress state as long as the network request is pending.」 | `loading`「shows the loadingText in place of suggestions (only if there are no suggestions to show…)」 | `noOptionsText`「Text to display when there are no options.」 |
+| Polaris Autocomplete([Autocomplete.tsx](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/Autocomplete/Autocomplete.tsx)) | `listTitle`「Title of the list of options」→ 整份清單包成一個帶 `Listbox.Header` 的 `Listbox.Section`(單一群組有標題的先例) | `Listbox.Loading`,選項藏掉 | `emptyState` 只在 `options.length < 1 && !loading` |
+| Ant Select([select-users.tsx](https://github.com/ant-design/ant-design/blob/master/components/select/demo/select-users.tsx)) | 空 | `setOptions([])` + `notFoundContent` Spin | `notFoundContent` 'No results found' |
+| Slack 搜尋([help](https://slack.com/help/articles/202528808-Search-in-Slack)) | 「Click the search bar, then click the clock icon to show and hide your previous searches.」 | — | — |
+
+GitHub 指派人「Suggestions」標題 / Jira「Recently assigned」/ Linear 指派人 / Notion @ 提及 / Apple HIG Searching / Material 3 Search:2026-09-09 官方頁抓取 404、JS 渲染空頁或未描述此行為,**未列入證據**(只作命名靈感,不作 cite)。
+
 ## Empty state
 
-搜尋無結果時顯示 `Empty` 元件，可透過 `emptyText` 自訂訊息（預設「沒有符合的選項」）。
+**2026-09-08 user 拍板**:選單裡「不是選項的列」一律走 MenuItem 的列幾何。搜尋無結果 / 打開就沒選項 → 一列 **`<MenuItem message>`**,由 `CommandEmpty` own(`command.tsx:155-172`:字串 children 自動包成 `MenuGroup` + `MenuItem message`),consumer 只傳文案;SelectMenu / AgentPanel 歷史清單 / CommandDialog / inline Command 全部同一份。
 
-- **Creatable 時**：即使搜尋無結果，仍顯示 create row 讓使用者補建選項（顯示條件見「Creatable」段）
-- **非 creatable**：顯示 emptyText 提示使用者修改搜尋詞
-- **SR 播報**（2026-07-05 D4）：empty 結果經 visually-hidden `role="status"` + `aria-live="polite"` live region 播報（cmdk CommandEmpty 是 `role="presentation"`，SR 使用者原本聽不到 0 結果）；loading 則由畫面內具 `aria-label="載入選項中"` 的 `role="status"` wrapper 播報，避免雙重 announcement。SSOT 在 SelectMenu 一處，Select / Combobox / PeoplePicker 全體受益。
+**訊息列規格**(`menu-item.tsx:200-219`;樣式 owner `../Menu/menu-item.spec.md`「Message row(訊息列)」):
+- 非互動:`role="presentation"` + `pointer-events-none`;次要色 `text-fg-muted`;一般字重(medium 是群組標題的辨識訊號,訊息列不用);內容水平 + 垂直置中
+- 列幾何與選項**完全相同**(`ROW_PADDING_BY_SIZE`,`item-anatomy.tsx:145-149`:`py = (field-height − 1lh) / 2`;字級 sm/md `text-body`、lg `text-body-lg`),所以一列高 = `--field-height-{size}`(sm 28 / md 32 / lg 36,`tokens/uiSize/uiSize.css:23-26`)
+- 住在 `MenuGroup`(`py-2` 上下各 8px,`../Menu/menu-item.spec.md`「Group」):**md 浮層高 = 8 + 32 + 8 = 48px,與 1 筆結果等高**;sm 44 / lg 52。density 切換跟著 token 走
+- **沒有任何最小高度**:舊的 `minRows` / `getMenuListMinHeight` 已移除(`field-types.ts:88-90` 退役註解);0 筆與 1 筆一樣高,不撐 3 列
+- 不放圖示、**不用 `Empty` 元件**:Empty 是頁面 / 區塊層級「有解釋、可帶圖示與動作」的空狀態(`../Empty/empty.spec.md`「何時用」);選單裡的 0 筆只是一句提示
+
+**文案(三態,2026-09-09 user 拍板)**:一句到底、consumer 可覆寫。
+- **「沒有選項」**(`emptyText`,對應 No options;PeoplePicker 預設「沒有人員」,`../PeoplePicker/people-picker.spec.md`「搜尋」):**只在真的沒有任何可選時** —— 本機過濾無結果、打開就沒選項、或遠端回傳空(關鍵字非空且沒在載入)。
+- **「載入選項中」**(`loadingText`):`optionsLoading` 且清單裡沒有可顯示選項(見「Loading」)。
+- **「輸入關鍵字搜尋」**(`searchHintText`):遠端搜尋、關鍵字空、沒有建議也沒在載入(見「Suggestions」)。
+
+user 原話(2026-09-09):「只有實際上真的沒有任何選項可以選的時候才會顯示沒有結果的狀態,這也是之所以為何我們可以統一預設文案叫 No option 吧?」世界級對照:Polaris Autocomplete `emptyState` 只在 `options.length < 1 && !loading` 渲([Autocomplete.tsx](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/Autocomplete/Autocomplete.tsx));MUI `noOptionsText`「Text to display when there are no options.」([API](https://mui.com/material-ui/api/autocomplete/))。三列都是同一種 `MenuItem message`(「沒有選項」「輸入關鍵字搜尋」`role="presentation"`;載入列 `role="status"`),幾何同上。
+
+**歷史**(同一題四次換皮,錨在 `command.tsx:152`):2026-04-08 一行小字 → 04-10 撐 3 列 `minRows`(`field-types.ts:89`,當時只寫「視覺一致」)→ 04-16 改用 `Empty` 元件 → **09-08 訊息列**(本段)。世界級對照(2026-09-08 逐行實查原始碼):MUI Autocomplete 的 `noOptions` / `loading` 都是一個 `padding: '14px 16px'` + `text.secondary` 的單列文字([Autocomplete.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Autocomplete/Autocomplete.js) `AutocompleteNoOptions` / `AutocompleteLoading`);react-select 的 `NoOptionsMessage` / `LoadingMessage` 共用 `noticeCSS`:`textAlign: 'center'`、`neutral40`、`padding: 8px 12px`(`baseUnit` = 4,[Menu.tsx](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/components/Menu.tsx) + [theme.ts](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/theme.ts));Ant Design 的 `-item-empty` 直接 spread 選項列的 `genItemStyle`(`minHeight: optionHeight` = `controlHeight`),只把色換成 `colorTextDisabled`([dropdown.ts](https://github.com/ant-design/ant-design/blob/master/components/select/style/dropdown.ts) + [token.ts](https://github.com/ant-design/ant-design/blob/master/components/select/style/token.ts))。三家都是「一行字 + 自家一列的留白」,**沒有任何一家撐 3 列**;本 DS 取 Ant 的做法——0 筆 = 一列選項的幾何。
+
+- **Creatable 時**:即使搜尋無結果,仍顯示 create row 讓使用者補建選項(顯示條件見「Creatable」段)
+- **非 creatable**:顯示 emptyText 提示使用者修改搜尋詞
+- **SR 播報**(2026-07-05 D4;2026-09-08 搬進 Command):0 筆經 `CommandEmptyStatus`(visually-hidden `role="status"` + `aria-live="polite"`,`command.tsx:197-203`)播報 emptyText——訊息列本身與 cmdk CommandEmpty 都是 `role="presentation"`,SR 原本聽不到 0 結果;loading 則由可見的 `CommandLoading` 訊息列自帶 `role="status"` 播報文字,`CommandEmptyStatus` 在 loading 時不重複播(`command.tsx:201`)。SSOT 在 Command 一處,SelectMenu / Select / Combobox / PeoplePicker 全體受益。
 
 ---
 
-## Loading（2026-05-15 audit B fix, codify 2026-05-16 audit Dim 7+8）
+## Loading（2026-05-15 audit B 加;2026-09-09 user 拍板:兩個字、兩件事）
 
-非同步載入選項時，consumer 透過 `loading={true}` 控制：
+| Prop | 意思 | 指示 | owner |
+|---|---|---|---|
+| `optionsLoading`(SelectMenu;Select / Combobox / PeoplePicker 同名轉發) | **選項清單**在抓 | **只在選單內**:清單裡沒有任何可顯示的選項時,Empty 槽渲 `<CommandLoading label={loadingText} />`(`select-menu.tsx`;`command.tsx` `CommandLoading`)= 與「沒有結果」同一種 `MenuItem message` 訊息列,前綴槽放列圖示尺寸的轉圈(`ICON_SIZE[size]`:sm/md 16、lg 20)+ 可見文字(預設「載入選項中」,可覆寫),`role="status"` 直接播報;listbox `aria-busy`。**觸發點 / 搜尋列不轉圈** | 本 spec |
+| `loading`(Select / Combobox / PeoplePicker;SelectMenu 沒有) | **這個值**在讀取 / 驗證 / 儲存 | 觸發點右側、ChevronDown 左邊列圖示尺寸轉圈 + 觸發點 `aria-busy`,與 Input `loading` 的 endAction 槽同義;選單照常可開可選 | `../Field/field-controls.spec.md`「Loading state」 |
 
-- **Trigger 不變**：dropdown 隨時可開（user 看 chevron 不會被 disable）
-- **Dropdown 開啟時**（2026-07-04 Q3 拍板措辭修訂）：spinner 只在**無可顯示選項時**佔 empty slot，渲 panel-center `<div role="status" aria-label="載入選項中" className="flex items-center justify-center py-6"><CircularProgress size={48}/></div>`（cmdk `CommandEmpty` 機制）；**已有 options 時保留顯示不清空**，避免背景更新期間抹掉仍可用的 stale results
-- **CircularProgress** 使用 48px;named status wrapper own `py-6` 與置中，不經 Empty，避免把「正在載入」誤表達成「確定沒有」及 phantom icon gap
+**為什麼拆成兩個字**:2026-09-08 一個 `loading` 同時表達兩件事,結果是同一時刻兩顆轉圈(user 抓到),用條件式互斥只是遮症狀;DS 內 `loading` 早被 Field 家族佔走(M23:DS canonical 優先於 MUI / Ant / react-select 的 `loading`),選項載入改名 `optionsLoading`(3 重 test:對齊 `options` prop;世界級無直接對照 —— MUI / Ant / react-select 都叫 loading,但它們沒有 Field 家族那個值層級 `loading`;DS 內無他義)。user 2026-09-09 原話:「Props 改名照你建議,確保符合我們一致的設計語言且不違背世界級的設計即可」。
 
-本行為對齊 DS `empty.spec.md`「禁止事項」spinner-only loading 不用 Empty 的 SSOT（SelectMenu loading 用法 canonical row 見 `empty.spec.md`「現有消費者」表）。
+**選項載入的指示為什麼只在選單內**:MUI Autocomplete `loading`:「If `true`, the component is in a loading state. This shows the `loadingText` in place of suggestions (only if there are no suggestions to show, for example `options` are empty).」([API](https://mui.com/material-ui/api/autocomplete/));Polaris Autocomplete `loading` → 清單內 `Listbox.Loading`,TextField 不轉([Autocomplete.tsx](https://github.com/Shopify/polaris/blob/main/polaris-react/src/components/Autocomplete/Autocomplete.tsx));Ant 官方示範把 Spin 放 `notFoundContent`、不用 `loading` prop([select-users.tsx](https://github.com/ant-design/ant-design/blob/master/components/select/demo/select-users.tsx))。2026-09-08 的 (a)「搜尋列右側每次抓都亮」與觸發點為選項轉圈 **退役**;`CommandInput` 的 `loading` prop 同日移除(唯一消費者是 SelectMenu)。
 
-**消費**：Select / Combobox forward `loading` prop 到 SelectMenu（PeoplePicker 尚未暴露 / 轉發 `loading`，見 `people-picker.spec.md`「邊界案例」），本元件封裝 named status + CircularProgress 組合。
+**本機 vs 遠端**:本機過濾(`filterOption` 預設 true)已有選項時保留顯示、選單不關、沒有任何轉圈(MUI Autocomplete 只在 `renderedOptions.length === 0` 才渲 `loadingText`,[Autocomplete.js](https://github.com/mui/material-ui/blob/master/packages/mui-material/src/Autocomplete/Autocomplete.js) `AutocompleteLoading` 分支;react-select `renderMenu` 先 `hasOptions()` 畫選項,[Select.tsx](https://github.com/JedWatson/react-select/blob/master/packages/react-select/src/Select.tsx));遠端搜尋抓資料中舊選項不顯示 → 載入列必然可見(見「遠端搜尋」)。
+
+**仍不經 Empty**(`../Empty/empty.spec.md`「禁止事項」spinner-only loading 不用 Empty);載入列幾何同「Empty state」(md 48px = 8 + 32 + 8)。
+
+**歷史**:2026-07-04 Q3 panel-center 48px + `py-6` → 2026-09-08 訊息列 + 搜尋列 / 觸發點兩處轉圈 → **2026-09-09 只在選單內 + 改名 `optionsLoading`**(本段)。
 
 ---
 
@@ -148,7 +223,10 @@ Popover（浮動容器，handle 展開 / 定位）
 - ❌ 跳過 SelectMenu 自建 Popover + Command 組合——會漂移出共用 layout 與 item-layout 規則
 - ❌ 不搭配 trigger / field 使用——SelectMenu 是浮層，一定需要觸發元件
 - ❌ 超過 50 個選項不開搜尋——純捲動會變低效
-- ❌ 分組少於 2 組——分組本身是視覺成本，只有一組等於沒分組
+- ❌ 分組少於 2 組——分組本身是視覺成本,只有一組等於沒分組(**例外**:遠端搜尋關鍵字空時的建議清單是「部分選項」,一組也必有標題「建議」,見「Suggestions」)
+- ❌ 遠端搜尋關鍵字空時只列部分選項卻不加群組標題——使用者會以為選項只有這些
+- ❌ 用觸發點 / 搜尋列的轉圈表達「選項在抓」——那顆轉圈是 Field 家族 `loading`(這個值在處理);選項載入只在選單內(`optionsLoading`)
+- ❌ 遠端搜尋還沒打字就顯示「沒有選項」——要嘛建議、要嘛載入列、要嘛「輸入關鍵字搜尋」
 
 ---
 
@@ -156,8 +234,11 @@ Popover（浮動容器，handle 展開 / 定位）
 
 - **Disabled option**:individual MenuItem 透過 `disabled?: boolean` 控制(SelectMenu primitive option contract)。視覺繼承 `MenuItem` SSOT:text → `text-fg-disabled`(M24)、無 hover bg、`aria-disabled="true"`、Enter / click 不觸發 onChange、鍵盤導覽自動 skip。
 - **Disabled trigger**:trigger 由 consumer(Select / Combobox / PeoplePicker)的 `disabled` prop own,本元件不獨立 disable trigger。
-- **Loading**:已 codify(見「Loading」段),`loading=true` 且無可顯示選項時 empty slot 渲 panel-center named status + CircularProgress 48px(stale options 保留)。
-- **Empty**:已 codify(見「Empty state」段),搜尋無結果 + 非 creatable 時渲 emptyText;creatable 時保留 create row(可鍵盤選取)。
+- **Loading**:已 codify(見「Loading」段):`optionsLoading` 且無可顯示選項時 Empty 槽渲 `CommandLoading` 訊息列(列圖示尺寸轉圈 + loadingText);本機過濾舊選項保留、遠端搜尋抓資料中舊選項不顯示;觸發點 / 搜尋列不轉圈;選單不關。
+- **Empty**:已 codify(見「Empty state」段),真的沒有任何可選 + 非 creatable 時渲一列 `MenuItem message` 的 emptyText(與 1 筆結果等高,無最小高度);creatable 時保留 create row(可鍵盤選取)。
+- **遠端搜尋、關鍵字空**:有 `suggestions` → 建議群組(必有標題;此時即使 `optionsLoading` 也照列建議,不顯示載入列 —— 建議是明確的部分清單);沒有 `suggestions` 但有 `options` 且沒在抓 → 列 options 並加「建議」標題(也是部分清單;在抓時只剩載入列,不列舊 options);兩者都沒有且沒在抓 → 提示列「輸入關鍵字搜尋」,不是「沒有選項」;都沒有且在抓 → 載入列(見「Suggestions」與「遠端搜尋」狀態表)。
+- **遠端搜尋、抓資料中、creatable**:不顯示建立列 —— 結果還沒回來,不能判斷要不要建立;同名防重複連 `suggestions` 一起查(建議也是真實選項)。
+- **遠端搜尋、多選**:footer 全選不渲(部分清單)。
 - **Creatable + search 與既有選項完全同名**(忽略大小寫):create row 隱藏(防重複建立,`select-menu.tsx:261-266`);選取既有選項為唯一路徑。
 - **Dark mode**:走 Popover / MenuItem semantic token 自動 adapt。
 - **Density**:row height 由 `MenuItem` SSOT 控(sm/md/lg);SelectMenu 不獨立 own density。
@@ -170,10 +251,10 @@ Popover（浮動容器，handle 展開 / 定位）
 SelectMenu 是**多區塊 composite primitive**,色彩全數消費 DS semantic token、不新增 token;但 2026-07-05 D4 後互動色的 **owner 分層**如下(修正舊述「視覺完全繼承內層 primitive」):
 
 - **surface / border / elevation**:`PopoverContent` 自設 `bg-surface-raised` + `border-border` + `--elevation-200`(`select-menu.tsx:308-320`)。
-- **hover / selected 互動 bg**:owner 是**外層 cmdk `CommandItem`** —— 鍵盤 cursor base `bg-neutral-hover`(command.tsx `data-[selected=true]`)+ 單選 persistent selected `bg-neutral-selected`;**選中 × 疊加走 `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11)**:滑鼠 hover 釘住不變、鍵盤反白(非 :hover)深一階 `bg-neutral-selected-focus`(鏡射 DropdownMenu 同格)。
+- **hover / selected 互動 bg**:owner 是**外層 cmdk `CommandItem`** —— 反白依**反白來歷**分流(滑鼠移過搬的 `data-[selected=true]:bg-neutral-hover` = hover;鍵盤搬的 `data-[selected=true]:focus-ring-inset` = 游標畫框、不上底色,滑鼠停留列的底色一起消失、項目無 `hover:`;`hooks/use-input-modality.ts` `useCursorMover`;focus-canonical 規則一「兩類元件」+ 規則二,user 2026-09-09 拍板 + 下午三問)+ 單選 persistent selected `bg-neutral-selected`;**選中 × 疊加走 `item-anatomy.spec.md`「選中 × 互動疊加」格(2026-08-11)**:滑鼠 hover 釘住不變、鍵盤游標的框疊在選中底色上(2026-09-07 起,鏡射 DropdownMenu 同格)。
 - **內層 `MenuItem`**:強制 `!bg-transparent` 純視覺排版(`select-menu.tsx:460` 選項列 / `:489` create 列),不 own 互動 bg。
 
-**無 ColorMatrix 的理由不變**:上述全是既有 token family(`neutral-hover / neutral-selected / neutral-selected-focus`,與 DropdownMenu / MenuItem 同組),SelectMenu 不擁有獨立色彩決策;加 ColorMatrix 只會重複 MenuItem / DropdownMenu / Popover 的矩陣。
+**無 ColorMatrix 的理由不變**:上述全是既有 token family(`neutral-hover / neutral-selected`,與 DropdownMenu / MenuItem 同組;鍵盤游標(選中與否)一律走框不走底色),SelectMenu 不擁有獨立色彩決策;加 ColorMatrix 只會重複 MenuItem / DropdownMenu / Popover 的矩陣。
 
 對應 anatomy story:保留 `Overview` / `Inspector` / `SizeMatrix` / `StateBehavior`,額外追加元件特有的 `ModeMatrix`(single / multi / searchable / creatable / grouped 等功能組合矩陣,這是 SelectMenu 真正的決策面向——取代 ColorMatrix)。
 
@@ -203,7 +284,7 @@ SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem 
 - `../Menu/menu-item.spec.md` — 選項 row 的 item-layout 共用規則（SelectMenu 消費 MenuItem）
 - `../Popover/popover.tsx` — 浮動容器（SelectMenu 消費）
 - `../Command/command.tsx` — cmdk 搜尋 + 鍵盤導覽（SelectMenu 消費）
-- `../Empty/empty.spec.md` — 搜尋無結果的 empty state
+- `../Empty/empty.spec.md` — 2026-09-08 起 SelectMenu **不再消費 Empty**(選單訊息列走 MenuItem message);留此連結只為近親分界(Empty = 頁面 / 區塊層級空狀態)
 - `../Select/select.spec.md` — 主要消費者之一（searchable 時切換到 SelectMenu）
 - `../Combobox/combobox.spec.md` — 主要消費者之一（searchable 多選時切換到 SelectMenu）
 - `../PeoplePicker/people-picker.spec.md` — 永遠使用 SelectMenu 的消費者
@@ -211,7 +292,9 @@ SelectMenu 是 **composite**(Popover trigger + Command search + 滾動 MenuItem 
 
 ## A11y 預設
 
-**ARIA / Pattern**:基於 `cmdk` library a11y(combobox / listbox / option role + aria-activedescendant)。詳 [cmdk a11y](https://cmdk.paco.me/#accessibility)。選項 row 的內層 `MenuItem` 傳 `role="presentation"`(cmdk CommandItem 是唯一 option 節點,避免 option 巢狀 option + 內外 `aria-selected` 語意相反;鏡射 DropdownMenu canonical,2026-07-05 D4)。分組標題走 cmdk `CommandGroup heading`(自動產 `cmdk-group-heading` id,選項容器 `role="group"` + `aria-labelledby` 指向之,AT 可感知);combobox accessible name 來自 `Command label`(= `searchAriaLabel`,default「搜尋選項」,僅 searchable 時傳)，與可見 `searchPlaceholder` 分離；listbox 容器經 cmdk `List label` 預設「選項」取代 cmdk 內建英文 "Suggestions"(2026-07-06)。多選 footer 全選列為 `role="checkbox"` + `aria-checked`(indeterminate → `"mixed"`)。空狀態 / loading 經 visually-hidden `role="status"` + `aria-live="polite"` live region 對 SR 播報(cmdk CommandEmpty 是 `role="presentation"`,SR 原本聽不到;2026-07-05 D4)。
+**Focus**:Field 家族的焦點指示 = **欄位邊框轉主色 1px**,不畫全域 2px 外框,**不分開著關著、不分滑鼠鍵盤**(owner = `ds-canonical/references/focus-canonical.md` 規則二「Field 家族控件本身」列;開啟時焦點在裡面的插入點控件、關閉時觸發器 wrapper 自己是焦點站,兩種都只有邊框轉色 —— 全域 `:focus-visible` 由 `fieldWrapperStyles` 的 `focus-visible:outline-none` 抑制,@focus-suppress C)。唯讀態例外:邊框透明無可染,改由全域外描邊畫在被聚焦的控件上(`field-controls.spec.md`「Focus 行為」readonly 段)。閘:`virtual-cursor-modality-invariant.mjs` G / H 段。 非搜尋模式開啟時 DOM 焦點落在 cmdk 殼(`handleNonSearchableAutoFocus`),殼與 `[cmdk-list]` 都寫了 `outline-none`(@focus-suppress A,承擔者 = CommandItem 的 `data-[selected=true]:focus-ring-inset`)。
+
+**ARIA / Pattern**:基於 `cmdk` library a11y(combobox / listbox / option role + aria-activedescendant)。詳 [cmdk a11y](https://cmdk.paco.me/#accessibility)。選項 row 的內層 `MenuItem` 傳 `role="presentation"`(cmdk CommandItem 是唯一 option 節點,避免 option 巢狀 option + 內外 `aria-selected` 語意相反;鏡射 DropdownMenu canonical,2026-07-05 D4)。分組標題走 cmdk `CommandGroup heading`(自動產 `cmdk-group-heading` id,選項容器 `role="group"` + `aria-labelledby` 指向之,AT 可感知);combobox accessible name 來自 `Command label`(= `searchAriaLabel`,default「搜尋選項」,僅 searchable 時傳)，與可見 `searchPlaceholder` 分離；listbox 容器經 cmdk `List label` 預設「選項」取代 cmdk 內建英文 "Suggestions"(2026-07-06)。多選 footer 全選列為 `role="checkbox"` + `aria-checked`(indeterminate → `"mixed"`)。空狀態經 visually-hidden `role="status"` + `aria-live="polite"` live region(`CommandEmptyStatus`)對 SR 播報(文字跟可見訊息列同步:「沒有選項」或「輸入關鍵字搜尋」),loading 由可見的 `CommandLoading` 訊息列 `role="status"` 播報(cmdk CommandEmpty 與訊息列都是 `role="presentation"`,SR 原本聽不到;2026-07-05 D4,2026-09-08 搬進 Command)。建議群組的標題「建議」走同一套 cmdk `CommandGroup heading`(`role="group"` + `aria-labelledby`,2026-09-09),AT 讀到的是「建議,群組」而不是一份匿名清單。
 
 **Keyboard 行為**:
 

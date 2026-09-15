@@ -119,7 +119,7 @@ Chevron 是**展開/收合控件**,不是 prefix icon:`fg-muted`(指示色,hover
 
 **預設 label 不 expand**——chevron 是展開唯一控件。理由:select / expand 語意獨立(sidebar「Documents」點 label 進頁面,點 chevron 才展開子列表)。Consumer `expandOnSelect` prop 可讓整行同時 select + expand(適合 stepper)——**此連帶展開僅限指標點擊(`handleRowClick`)**;鍵盤 `Enter` / `Space` 只觸發 select,展開 / 收合一律走 `→` / `←`(對齊 WAI-ARIA treeview「Enter 啟用、方向鍵展開收合」慣例)。
 
-**動畫**:children 用 Radix `Collapsible` height animation(0 → auto);chevron `transition-all duration-150 rotate-0 → rotate-90`(`transition-all` 同時涵蓋 hover 色彩過渡)。
+**動畫**:children 用 Radix `Collapsible` height animation(0 → auto);chevron `transition-transform duration-150 rotate-0 → rotate-90`(2026-09-10:原本是 `transition-all`,連 hover 底色一起過渡;hover 底色改成瞬間後只留旋轉,owner = `tokens/motion/motion.spec.md`「hover 回饋不做過渡」)。
 
 ---
 
@@ -281,7 +281,7 @@ Icon 尺寸跟 size tier(sm/md=16, lg=20);色 `fg-muted` → hover `fg-secondary
 - **Auto-expand**:拖曳停留收合 folder 500ms → 自動展開(Figma 行為);離開或結束取消計時
 - **依賴**:`@dnd-kit/core`(`useDraggable` + `useDroppable` + `DragOverlay`);state 由 consumer `onDragEnd({sourceId, targetId, position})` callback 自行更新
 
-**視覺**(2026-05-06 v14.5 SSOT 抽 `lib/drag-visual.ts`):被拖 node 原位 `opacity-disabled`(45%)半透明殘影 / before-after drop indicator 為 2px primary 細線(`bg-primary` `h-0.5`,left 跟 indent 深度)/ inside drop target `bg-primary-subtle` 全行背景 / DragOverlay ghost 圓角 + icon + label + **不透明 `bg-surface`** + elevation shadow(跟 surface 拉開的視覺距離靠 shadow 不靠 opacity;半透明只用在上述原位殘影)。**TreeView 是 DS 內最早 codified 的 drag canonical**,DataTable row drag + column reorder 都 inherit 此 pattern via `drag-visual.ts` SSOT module。視覺校驗見 story `DragAndDrop`。
+**視覺**(2026-05-06 v14.5 SSOT 抽 `lib/drag-visual.ts`):被拖 node 原位 `opacity-disabled`(45%)半透明殘影 / before-after drop indicator 為 2px primary 細線(`bg-primary` `h-0.5`,left 跟 indent 深度)/ inside drop target `bg-drop-target` 全行背景 / DragOverlay ghost 圓角 + icon + label + **不透明 `bg-surface`** + elevation shadow(跟 surface 拉開的視覺距離靠 shadow 不靠 opacity;半透明只用在上述原位殘影)。**TreeView 是 DS 內最早 codified 的 drag canonical**,DataTable row drag + column reorder 都 inherit 此 pattern via `drag-visual.ts` SSOT module。視覺校驗見 story `DragAndDrop`。
 
 **結構安全(2026-07-14 修)**:`handleDragOver` / `handleDragEnd` 有 descendant guard(`isInSubtree`)——drop target 落在被拖 node 自己的子樹內時視同無效目標(原實作只擋 `over.id === active.id` 未擋 descendants,會發出 `targetId ∈ source 子樹` 的非法事件;consumer 按 remove→insert 實作時整個子樹會靜默消失)。鍵盤重排路徑共用同一 guard。
 
@@ -405,7 +405,7 @@ TreeView 真實展示需要**多層巢狀結構**才有意義(單節點無法體
 - Enter / Space — 選取目前 node
 - Cmd/Ctrl+Shift+↑/↓/→/← — 重排目前 node(僅 `draggable` 時;上下 = 同層移動、→ = 移入 folder、← = 移出到上層,詳「鍵盤重排」段)
 
-**Focus**:焦點由元件自管(`aria-activedescendant` virtual focus,非 roving tabindex)——DOM focus 固定停在 tree 容器(單一 tab stop,root `tabIndex={0}`),鍵盤移動時 `aria-activedescendant` 指向目前 node,並用內描邊高亮標示(`ring-2 ring-ring ring-inset`,非 `outline`)。**無** focus trap、**無** focus restoration(tree 不是浮層,不需要)。
+**Focus**:焦點由元件自管(`aria-activedescendant` virtual focus,非 roving tabindex)——DOM focus 固定停在 tree 容器(單一 tab stop,root `tabIndex={0}`),鍵盤移動時 `aria-activedescendant` 指向目前 node,並用內描邊高亮標示(`focus-ring-inset` outline,2026-09-06 起不再是 box-shadow ring;原文 `ring-2 ring-ring ring-inset`,非 `outline`)。**無** focus trap、**無** focus restoration(tree 不是浮層,不需要)。
 
 **「單一 tab stop」範圍限樹的 node 導覽**:auto-render checkbox 與 consumer 傳入的 `checkbox` element 都由 TreeItem 正規化為 `aria-hidden` + `tabIndex={-1}`，只鏡像 treeitem 的 `aria-selected`、不佔 tab 序；但公開 `inlineActions` / `inlineActionsSlot` 經 `ItemInlineAction` 渲染的原生 `<button>` 是各自獨立的 tab stop(對齊 GitHub / VS Code 檔案樹「row action 可 Tab」慣例)。故當某列有 inline actions 時,整頁 Tab 序會依序停在這些按鈕上——「單一 tab stop」指的是**樹形節點導覽**進出點,非「整棵樹含 action 只有一個 tab 停靠」。
 

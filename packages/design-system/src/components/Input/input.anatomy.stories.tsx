@@ -453,7 +453,7 @@ const InspectorInner = () => {
             <div className="py-2 border-b border-divider"><span className="text-[10px] font-semibold text-fg-muted uppercase tracking-wider">Style</span></div>
             <PropRow label="Radius"><TkVal token="rounded-md" value="4px" /></PropRow>
             <PropRow label="Border"><TkVal token="border" value="1px solid" /></PropRow>
-            <PropRow label="Focus"><TkVal token="border-primary" value="1px — 無 ring（readonly 例外:ring-2 ring-ring,WCAG 2.4.7）" /></PropRow>
+            <PropRow label="Focus"><TkVal token="border-primary" value="1px — 無外框（readonly 同樣是 1px 邊框轉主色,WCAG 2.4.7）" /></PropRow>
             <PropRow label="Transition"><TkVal token="transition-colors" value="150ms" /></PropRow>
           </div>
         </div>
@@ -689,7 +689,7 @@ export const StateBehavior = {
 
         {/* Focus behavior */}
         <div className="flex flex-col gap-4">
-          <span className="text-caption font-medium text-fg-secondary">Focus — border-primary（1px），無 ring（readonly 例外:ring-2 ring-ring focus 指示,WCAG 2.4.7）</span>
+          <span className="text-caption font-medium text-fg-secondary">Focus — border-primary（1px），無外框（readonly 同樣是 1px 邊框轉主色，WCAG 2.4.7）</span>
           <div className="flex flex-col gap-2 max-w-sm">
             <span className="text-[11px] text-fg-muted">文字輸入永遠 focus-visible（瀏覽器規範），click 和 Tab 觸發相同效果。點擊下方 input 或用 Tab 切換觀察。</span>
             <Input placeholder="點擊或 Tab 觀察 focus 邊框" aria-label="第一個焦點測試欄位" />

@@ -35,9 +35,9 @@ originSessionId: a689a78e-f264-4c1f-b881-0859a7a12135
 
 ## 部署管道
 
-- **Netlify per-branch preview** = optional asynchronous evidence(branch push 自動)，不是 standard release hard gate；產品／UI／UX SSOT 真取捨可由 user 檢視後決策，但純工程 release 不等待 preview；**Netlify production** = main(storybook)
+- **Netlify deploy preview**(PR → `deploy-preview-<n>--ajenchen-design-system.netlify.app`;branch → `<branch-slug>--ajenchen-design-system.netlify.app`,2026-09-02 實測兩者皆自動建、回 200)= **發版前 user 驗證的必經站**:agent push 分支 + draft PR → 回報 preview URL → user 看過說「發版」→ 才 merge/publish(`feedback_solo_dev_workflow.md` 5/5b;receipt gate);**Netlify production** = main(storybook)
 - **GitHub Pages production** = main push → ci.yml deploy-storybook job(2026-05-08 補;netlify.toml command = build-storybook,publish storybook-static)
-- Solo-work 對齊:agent push working branch → PR → required CI + conversations resolved → protected merge → publish → exact release readback → exact-version consumer propagation/readback；由 `npm run release:auto` 依 Standing Authorization 續跑。preview／canary／attestation 只可作 non-blocking optional assurance，不得重返標準 five-step blocking graph，也不再等 chat「push」keyword。
+- Solo-work 對齊:agent push working branch → draft PR → required CI + conversations resolved → **Netlify preview 給 user 看 → user 說「發版」(receipt)** → protected merge → publish → exact release readback → exact-version consumer propagation/readback;由 `npm run release:auto` 續跑,缺 receipt 停在 `AWAITING_USER_RELEASE_CONSENT`。canary／attestation／soak 仍是 non-blocking optional assurance。
 
 ## Anti-pattern(永久 ban,deploy URL)
 
@@ -86,14 +86,15 @@ Task／deliverable 明確要求 independent review 時，跨 provider audit 由 
 
 **User directive(2026-05-29 verbatim)**:「這兩個 repo 也都要能夠支援全雲端操作」。任何環境都可在授權範圍內 clone-on-demand；各 repo 自帶 `netlify.toml` + workflows，對正確 remote 的已授權變更會觸發各自部署。不得把「當下沒 checkout」誤當能力邊界，也不得把某台機器的帳號/token/scope 寫成跨環境 authority。
 
-## How to apply(密碼 / 雲端)
+## How to apply(密碼 / 雲端)+ 錨例
 
-- 被問 Netlify 密碼 / fork user 設密碼 → 免費 = Edge Function Basic Auth(`STORYBOOK_BASIC_AUTH`),Dashboard + `_headers` 都是 Pro $20/mo;Identity 未 deprecated 但不適合 simple gate
-- 寫 fork-template setup script / README / CLAUDE.md(provider-specific adapter) / audit dim 62 → 全部 edge-function canonical,套用 Rule 1 Anti-pattern 禁用詞
-- 被問「能操作 X repo 嗎」→ 先確認該 target/provider 的 certification 與授權，再走 clone-on-demand；首選已認證的 Git-connected sandbox，Codespaces 是 portable fallback
+被問 Netlify 密碼 / fork user 設密碼 → 免費只有 Edge Function Basic Auth(`STORYBOOK_BASIC_AUTH`);Dashboard 與 `_headers` 都是 Pro,
+Identity 未 deprecated 但不適合 simple gate。寫 fork-template setup / README / provider adapter / audit dim 62 一律套 Rule 1 的 canonical 與禁用詞。
+被問「能操作 X repo 嗎」→ 先確認該 target/provider 的 certification 與授權,再走 clone-on-demand(首選已認證的 Git-connected sandbox,Codespaces 是 fallback)。
+**錨例**:2026-05-29 我兩度搞錯免費密碼(先說 `_headers` 免費、又說 Dashboard Basic Password 是 free-tier 唯一可用 —— 兩者都是 Pro),還誤信 Identity deprecated;
+2026-06-05 user「仔細查查研究」→ 7 路官方 docs + 4 路對抗 refute 三證,同一輪抓到「修沒貫徹到 memory SSOT + audit dim 62」= M10 漏 governance 層。
 
-## 錨例(密碼)
+## 交預覽連結給 user 之前必驗它是不是這個 commit(2026-09-11)
 
-- 2026-05-26 我寫 setup-netlify-access.mjs 用 `netlify api provisionSiteIdentity` — Identity provision API 在新 site 不穩定(技術問題,跟 Identity 是否 deprecated 無關)
-- 2026-05-29 我兩度搞錯免費密碼:先說 `_headers` 免費(錯,Pro)、又說 Dashboard Basic Password free-tier 唯一可用(錯,Pro);還誤信 Identity deprecated(錯,2026-02 撤回)
-- 2026-06-05 user「仔細查查研究」verify-harder → 7 路平行 WebFetch 官方 docs + 4 路對抗 refute 三證(結論見 Rule 1 表);對抗稽核同時抓到「password 修沒貫徹到 memory SSOT + audit dim 62」= M10「改一處看三處」漏 governance 層
+**錨**:user 依我給的連結回報「還是非常卡頓」,那份預覽**落後兩個 commit** —— 他測的不是我修過的東西,而我當下無法確認;chunk 檔名 hash 不能當身分(同原始碼、不同環境 build 出來就不同)。
+**機制**:`build-storybook` 寫 `storybook-static/build-info.json`(`gen-build-info.mjs`);交連結前跑 `node scripts/verify-preview-head.mjs [--wait=600]`(自己推導分支網域;沙箱 node fetch 解不到外部主機名,走 curl)。**不符就不要說「你去看預覽」**。

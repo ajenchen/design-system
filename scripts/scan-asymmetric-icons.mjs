@@ -1,5 +1,6 @@
 import { chromium } from 'playwright'
-const browser = await chromium.launch()
+import { launchBrowser } from './lib/launch-browser.mjs'
+const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
 
 // Auto-discover all stories via Storybook index

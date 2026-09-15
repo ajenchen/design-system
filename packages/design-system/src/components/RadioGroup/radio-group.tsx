@@ -10,7 +10,7 @@ import { useFieldContext, useResolvedFieldMode, useResolvedFieldDisabled, useRes
 import { SelectionItem } from "@/design-system/components/SelectionControl/selection-item"
 import type { LucideIcon } from "lucide-react"
 import type { AvatarData } from "@/design-system/components/Avatar/avatar"
-import { fieldWrapperStyles } from "@/design-system/components/Field/field-wrapper"
+import { fieldWrapperStyles, fieldDisplayTextClass } from "@/design-system/components/Field/field-wrapper"
 import { useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
 import { useControllable } from '@/design-system/hooks/use-controllable'
 
@@ -137,13 +137,17 @@ const RadioGroup = React.forwardRef<
 
   if (resolvedMode === 'view') {
     const selectedValue = resolvedValue || undefined
+    // 字級走家族 SSOT field-controls.spec.md「(e) View typography canonical」:同 size 的 text-body / text-body-lg,
+    // 與 edit 選項 label 同字級。2026-09-15 前是裸 span → 吃到瀏覽器預設 16px(user 抓 view 字比選項大);
+    // 閘 scripts/field-view-typography-invariant.mjs 量 view 與 edit 字級相等。
+    const viewTextClass = fieldDisplayTextClass(resolvedBoxSize)
     if (!selectedValue) {
-      return <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}><span className={fieldEmptyColorClass(resolvedMode)}>{emptyDisplay}</span></div>
+      return <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}><span className={cn(viewTextClass, fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span></div>
     }
     const selectedLabel = findSelectedRadioLabel(children, selectedValue)
     return (
       <div {...restDomProps} ref={setRef} role="group" className={cn('grid', className)}>
-        <span className="text-foreground">{selectedLabel ?? selectedValue}</span>
+        <span className={cn(viewTextClass, 'text-foreground')}>{selectedLabel ?? selectedValue}</span>
       </div>
     )
   }
@@ -168,7 +172,9 @@ const RadioGroup = React.forwardRef<
         tabIndex={0}
         className={cn(
           fieldWrapperStyles({ size: boxSize, mode: 'readonly', variant: 'default' }),
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          // 2026-09-07:刪掉本地重抄的 `ring-2 ring-ring` —— fieldWrapperStyles 的 readonly
+          // 2026-09-07 遷移後:整條焦點 ring 已由全域外描邊接手(base.css),
+          // 這裡連 `outline-none` 都不能留 —— 留著就把唯一的框關掉了。
           className,
         )}
       >
@@ -225,7 +231,6 @@ const radioItemVariants = cva(
     'border border-border bg-surface',
     'transition-colors duration-150',
     'hover:border-border-hover',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
     'data-[state=checked]:border-primary data-[state=checked]:text-primary',
     'data-[state=checked]:hover:border-primary-hover data-[state=checked]:hover:text-primary-hover',
     'disabled:cursor-not-allowed disabled:bg-disabled disabled:border-transparent disabled:hover:border-transparent',

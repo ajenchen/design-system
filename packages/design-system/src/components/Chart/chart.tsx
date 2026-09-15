@@ -74,10 +74,16 @@ const ChartContainer = React.forwardRef<HTMLDivElement, ChartContainerProps>(
             "[&_.recharts-polar-grid_[stroke='#ccc']]:stroke-divider",
             "[&_.recharts-reference-line_[stroke='#ccc']]:stroke-divider",
             "[&_.recharts-dot[stroke='#fff']]:stroke-transparent",
+            // @focus-suppress N — 不適用(不可操作 → 問題一);承擔者:SVG 內層 group,不是 tab stop(tab stop 是 .recharts-surface)
             "[&_.recharts-layer]:outline-none",
             "[&_.recharts-sector[stroke='#fff']]:stroke-transparent",
+            // @focus-suppress N — 不適用(不可操作 → 問題一);承擔者:同上,SVG 扇形不是 tab stop
             "[&_.recharts-sector]:outline-none",
-            "[&_.recharts-surface]:outline-none",
+            // 2026-09-07 刪:recharts 3.x 的 accessibilityLayer 預設為 true,
+        // RootSurface.js:54 `tabIndex = hasAccessibilityLayer ? 0 : undefined`、:59 `role = 'application'`
+        // → surface 可 Tab、可用方向鍵瀏覽資料點 = 可操作,依 focus-canonical 必須有可見焦點指示。
+        // 原本這行把全域 base.css:44-47 的焦點框關掉 = WCAG 2.4.7 違規。
+        // 保留上一行的 .recharts-sector(扇形不可聚焦,那行是防禦性的)。
             className,
           )}
           {...props}

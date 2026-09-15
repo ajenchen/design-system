@@ -26,6 +26,12 @@ function getMeasureCtx() {
   return _measureCtx
 }
 
+/**
+ * Tag 盒高(px)。CSS 側住所是 `--tag-height-*`(tokens/uiSize/uiSize.css),兩者必須相等 ——
+ * 閘 `scripts/tag-field-vertical-inset.mjs` I7 量實際 rect 高度對齊這裡。消費者:tagMeta.sizes、Combobox(chevron 鎖第一行的高度)。
+ */
+export const TAG_HEIGHT_PX = { sm: 20, md: 24, lg: 24 } as const
+
 const tagVariants = cva(
   "inline-flex items-center rounded-md border border-transparent transition-colors cursor-text",
   {
@@ -39,9 +45,11 @@ const tagVariants = cva(
         ...CAT_SUBTLE,
       },
       size: {
-        sm: "h-5 px-1 text-caption font-medium",
-        md: "h-6 px-1 text-body font-normal",
-        lg: "h-6 px-1 text-body font-normal",
+        // 高度走 utility bridge h-tag-*(= --tag-height-*,tokens/uiSize/uiSize.css @theme inline;token-system.spec.md 規則 3,
+        // 同 Field 的 h-field-* / Tabs 的 h-tab-* idiom)。Tag 盒高唯一住所 = 該 token;JS 側 = TAG_HEIGHT_PX。
+        sm: "h-tag-sm px-1 text-caption font-medium",
+        md: "h-tag-md px-1 text-body font-normal",
+        lg: "h-tag-lg px-1 text-body font-normal",
       },
     },
     defaultVariants: {
@@ -128,9 +136,13 @@ function TagDismiss({ onRemove, label, solid, color }: { onRemove: () => void; l
           ? 'group-hover/action:bg-[var(--dismiss-hover)] group-active/action:bg-[var(--dismiss-active)]'
           : undefined
       }
+      // 焦點框往內:Tag 是貼邊宿主 —— root `overflow-hidden`(:196)+ 1px 邊框(:30)+ h-6 / h-5(:42-44)
+      // 包住 16px 的 ×,上下淨空只有 3px(sm 1px)。2026-09-10 DPR2 實測:強制往外時每側被裁 0.7–0.9px,
+      // sm 幾乎整圈不見。依 focus-canonical「問題二」淨空 < 4px 往內 +「往內由外層元件承擔」
+      // (底層 ItemInlineActionButton 維持預設往外)。
       // colored host 才 override primitive 預設(繼承 Tag 文字色,label 同色);
       // neutral subtle 留給 primitive 的 fg-muted → hover fg-secondary 階梯。
-      className={inheritsHostColor ? 'text-current hover:text-current active:text-current' : undefined}
+      className={cn('focus-visible:focus-ring-inset', inheritsHostColor && 'text-current hover:text-current active:text-current')}
     />
   )
 }
@@ -147,7 +159,13 @@ function TagInner(
   //     (Tag 原本即無 rAF/timeout 二次量)—— 三處變異全走 options,行為零漂移。
   const { ref: ownRef, isTruncated } = useTruncated<HTMLDivElement>({
     measure: (el) => {
-      const textSpan = el.querySelector('[data-tag-text]')
+      // **不要在這裡加快取。**(2026-09-14 實測退回)
+      // 分支曾為這支加兩層快取(字型 + 文字寬),想省掉 `getComputedStyle` 與 `measureText`。
+      // CPU 剖析(dpr2 + CPU×6,同機交錯)實測反而更貴:main 223ms / 加快取後 380ms /
+      // 再把快取鍵最佳化(WeakMap 省掉 closest、theme+縮放提到模組層)後 412ms。
+      // 原因:每次呼叫要組兩個字串當鍵再各查一次 Map,其中一個鍵含 Tag 的 Tailwind class
+      // (數百字元)—— 組字串加雜湊兩次,比它想省的那兩個瀏覽器呼叫還貴。
+      const textSpan = el.querySelector('[data-tag-text]') as HTMLElement | null
       const ctx = getMeasureCtx()
       if (!textSpan || !ctx) return undefined
       const text = textSpan.textContent || ''
@@ -157,7 +175,7 @@ function TagInner(
       const padL = parseFloat(cs.paddingLeft) || 0
       const padR = parseFloat(cs.paddingRight) || 0
       const needed = textWidth + padL + padR
-      return needed > (textSpan as HTMLElement).clientWidth + 1
+      return needed > textSpan.clientWidth + 1
     },
     deps: [children],
     timing: 'layoutEffect',
@@ -194,7 +212,7 @@ function TagInner(
         tagVariants({ color, size }),
         solidClass,
         'w-fit min-w-0 overflow-hidden',
-        isTruncated && 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+        isTruncated && '',
         className,
       )}
       // 2026-05-18 Round 5 fix(per Codex M31 Round 5 verdict + user 拍板「那就開始做」):
@@ -261,11 +279,11 @@ export const tagMeta = {
   },
   sizes: {
     // Tag 尺寸不引用 field-height token（spec「尺寸」段——Tag 與 Field 尺寸獨立;段名指法免行號漂移）。
-    // height = Tag 自身高度（cva h-5/h-6/h-6 = 20/24/24，lg = md alias）。
+    // height = Tag 自身高度 = TAG_HEIGHT_PX(對應 --tag-height-* token;lg = md alias)。
     // iconSize 全尺寸統一 16（本檔 CAT icon render 硬寫 size={16}）。
-    sm: { height: 20, iconSize: 16, typography: 'caption' },
-    md: { height: 24, iconSize: 16, typography: 'body' },
-    lg: { height: 24, iconSize: 16, typography: 'body' },
+    sm: { height: TAG_HEIGHT_PX.sm, iconSize: 16, typography: 'caption' },
+    md: { height: TAG_HEIGHT_PX.md, iconSize: 16, typography: 'body' },
+    lg: { height: TAG_HEIGHT_PX.lg, iconSize: 16, typography: 'body' },
   },
   // Tag 為純展示 indicator，無互動 state（spec「為何無 StateBehavior」段;段名指法免行號漂移）。
   // 唯一行為 dismiss 屬 Inline Action pattern，非 Tag 自有 state。

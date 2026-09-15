@@ -1,6 +1,5 @@
 // code-quality-allow: file-size — foundational composite(Field + FieldLabel + FieldDescription + FieldError + context + 8 layout variants),拆檔會讓 Field 家族互相 import 循環
 import * as React from 'react'
-import { cva } from 'class-variance-authority'
 import { Info as InfoIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/design-system/components/Tooltip/tooltip'
@@ -438,7 +437,7 @@ const FieldLabel = React.forwardRef<HTMLLabelElement, FieldLabelProps>(
                   type="button"
                   aria-label={info}
                   // 弱化 icon hover 一階(inline-action.spec.md「Icon 色彩」;2026-07-30 前全 DS 唯一合規處)
-                  className="inline-flex items-center text-fg-muted hover:text-fg-secondary bg-transparent border-0 p-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-ring"
+                  className="inline-flex items-center text-fg-muted hover:text-fg-secondary bg-transparent border-0 p-0 cursor-pointer"  /* 2026-09-07 刪本地 outline-* — 與全域 base.css:44-47 逐字等價,本區塊無 outline-none */
                 >
                   <InfoIcon size={16} aria-hidden />
                 </button>
@@ -511,8 +510,6 @@ FieldError.displayName = 'FieldError'
 // 用於表單中多個欄位排列。
 
 export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Field 之間的垂直間距，預設 'normal'（gap-4） */
-  gap?: 'compact' | 'normal' | 'loose'
   /**
    * 同一 group 內所有 horizontal Field 共用的 label 欄寬度。
    *
@@ -527,22 +524,24 @@ export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
   horizontalLabelWidth?: string
 }
 
-// gap variant 收進 cva(className-only 差異 → cva,per ui-development.md「cva 適用」);值仍走 Tailwind gap utility。
-const fieldGroupVariants = cva('flex flex-col min-w-0', {
-  variants: {
-    gap: {
-      compact: 'gap-3',
-      normal: 'gap-4',
-      loose: 'gap-6',
-    },
-  },
-  defaultVariants: {
-    gap: 'normal',
-  },
-})
-
+// 欄位垂直間距 = `--layout-space-loose`,**不開放 per-instance 選檔**(2026-09-12 user 拍板)。
+//
+// 這是回歸 DS 自己早就寫下的規則:`layoutSpace.spec.md:77` 逐字把
+// 「跨範疇 + parallel / independent」的例子列為「**form fields stack(parallel inputs)**」→ 規則 3 = **loose**。
+// 表單間距是**系統級**設定,要調就整個 density 一起調(md 16px / lg 24px),不是每個表單各自挑。
+//
+// 原本的 `gap?: 'compact' | 'normal' | 'loose'`(硬寫 gap-3/4/6、凍結不隨 density)來自
+// 2026-04-10 的 `9917993e`,commit 訊息宣稱「rename to shadcn conventions」——
+// 但 shadcn 的 `FieldGroup` **根本沒有 gap prop**(props 只有 className,間距由元件固定),
+// 那三檔是重構時自己長出來的,沒有任何 user 決定背書。實際使用也證實它不帶資訊:
+// 全 repo 33 個 `<FieldGroup>` 只有 2 個傳過 gap(1 個 compact 無理由、1 個傳的就是預設值),
+// `loose` 一次都沒用過。世界級同樣沒有一家開放 per-instance 檔位:
+// shadcn 元件固定 / MUI 泛用數值 × theme spacing / Ant 全域 token `itemMarginBottom` 走 ConfigProvider。
+//
+// md density 下新舊值都是 16px,所以 33 個用法裡 32 個視覺零變化;lg 下從凍結的 16px 變成 24px,
+// 也就是開始履行 density 的承諾。
 const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
-  ({ className, gap = 'normal', horizontalLabelWidth, ...props }, ref) => {
+  ({ className, horizontalLabelWidth, ...props }, ref) => {
     const groupCtxValue = React.useMemo(
       () => ({ horizontalLabelWidth }),
       [horizontalLabelWidth],
@@ -551,7 +550,7 @@ const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
       <FieldGroupContext.Provider value={groupCtxValue}>
         <div
           ref={ref}
-          className={cn(fieldGroupVariants({ gap }), className)}
+          className={cn('flex flex-col min-w-0 gap-[var(--layout-space-loose)]', className)}
           data-field-group=""
           {...props}
         />

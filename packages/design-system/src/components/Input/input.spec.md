@@ -101,7 +101,7 @@ endAction(host 內嵌 inline action)vs 獨立 `<Button iconOnly>` 的分界詳 `
 
 ## Loading
 
-`loading?: boolean`(Field SSOT,詳 `Field/field-controls.spec.md`「Loading state」段 ~L93-138):右側 endAction 自動顯 `<CircularProgress/>` + `aria-busy="true"`;input 維持可編輯(Ant Input.Search editable 派,反 Material readonly 派,適合 search debounce)。
+`loading?: boolean`(Field SSOT,詳 `Field/field-controls.spec.md`「Loading state」段):語意 = **這個值**在讀取 / 驗證 / 儲存(2026-09-09 user 拍板收窄;不是「建議清單在抓」—— 那是 Select / Combobox 的 `optionsLoading`,Input 沒有選項清單所以沒有)。右側 endAction 自動顯 `<CircularProgress/>` + `aria-busy="true"`;input 維持可編輯(Ant Input.Search editable 派,反 Material readonly 派)。
 
 ## 禁止事項
 
@@ -113,7 +113,7 @@ endAction(host 內嵌 inline action)vs 獨立 `<Button iconOnly>` 的分界詳 `
 ## 邊界案例
 
 - **Disabled**:`disabled` prop 由 Field SSOT own(`Field/field.spec.md`「Field state machine SSOT」段)。視覺 token:wrapper bg → `bg-disabled`(neutral-2)、text → `text-fg-disabled`(neutral-6,M24 state>emphasis canonical)、startIcon → `text-fg-disabled`、endAction 不渲染(僅 edit mode 渲染)、cursor → `cursor-not-allowed`、border 弱化、無 hover/focus ring。`readOnly` 與 `disabled` 視覺分離:readOnly 維持 default text color(可選取複製)、disabled 全面弱化(不可選)。
-- **Loading**:已 codify(見「Loading」段)。`loading=true` 時 endAction slot 自動切 `<CircularProgress/>`,input 仍可編輯(Ant Search 派 idiom)。
+- **Loading**:已 codify(見「Loading」段)。`loading=true`(這個值在處理)時 endAction slot 自動切 `<CircularProgress/>`,input 仍可編輯(Ant Search 派 idiom)。
 - **Empty(no value)**:placeholder 走 `text-fg-muted`(neutral-7);`disabled + empty` 時 placeholder 切 `text-fg-disabled`(M24 state precedence)。
 - **Dark mode**:走 semantic token 自動 adapt,無 per-component override。
 - **Density**:`size` 由 Field SSOT(sm/md/lg)決定 height + padding;Input 不獨立 own density。

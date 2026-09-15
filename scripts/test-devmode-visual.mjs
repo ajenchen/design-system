@@ -12,6 +12,7 @@
  *   4. Screenshot full panel + canvas
  */
 import { chromium } from 'playwright'
+import { launchBrowser } from './lib/launch-browser.mjs'
 import fs from 'fs'
 
 const PORT = process.env.SB_PORT || '6006'
@@ -50,7 +51,7 @@ const tests = [
   },
 ]
 
-const browser = await chromium.launch()
+const browser = await launchBrowser()
 fs.mkdirSync('tmp', { recursive: true })
 
 // Extra test:sibling distance(pin 1 element, hover another)

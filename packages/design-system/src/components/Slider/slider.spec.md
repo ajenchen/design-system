@@ -66,7 +66,7 @@ benchmark:
 
 **track / thumb 是單一視覺規格**(track 4px、thumb 16px、邊框 2px,皆不隨 `size` 變):thumb 是位置指示器，必須夠大才容易捕捉；等比縮小會直接降低命中率。因此 `size` 只調整容器與 Field 的對齊高度，thumb / track 保留同一操作量體。
 
-`size?: 'sm' | 'md' | 'lg'`(預設 `md`)**只控 root 容器外高 `h-field-*`**,內部視覺 `flex items-center` 垂直置中——Slider 丟進 `Field` 與 Input / Select / NumberInput 並排時對齊 field-height tier(否則一排 sm field 混一個 md 高 slider,rhythm 會崩),同時保持「一種尺寸,任何 context 長得都一樣」;API 與其他 field 元件一致(都有 `size`),消費者不需特別記「Slider 沒有 size」。focus 不加 ring / halo,改用 border 階變(詳「視覺規格」表)。
+`size?: 'sm' | 'md' | 'lg'`(預設 `md`)**只控 root 容器外高 `h-field-*`**,內部視覺 `flex items-center` 垂直置中——Slider 丟進 `Field` 與 Input / Select / NumberInput 並排時對齊 field-height tier(否則一排 sm field 混一個 md 高 slider,rhythm 會崩),同時保持「一種尺寸,任何 context 長得都一樣」;API 與其他 field 元件一致(都有 `size`),消費者不需特別記「Slider 沒有 size」。focus 走全域外描邊(元件不寫 `outline-none`;2026-09-07 訂正後的結論,詳「視覺規格」表下方的訂正框)。
 
 ---
 
@@ -86,7 +86,7 @@ benchmark:
 | **Thumb** 邊框 disabled | `border-border`(= Range disabled 同色)| `--border` |
 | **Thumb** hover | border 升 hover 階(light mode 淺一階 lift,= Button primary hover 邏輯)+ 陰影 `--elevation-100` | `--primary-hover` |
 | **Thumb** active(按壓拖曳) | border 深一階 `primary-active`(= Button active 邏輯;2026-07-06 修:原誤用 hover 階,全 DS 唯一 active-用-hover 偏移)+ 陰影 `--elevation-200` | `--primary-active` |
-| **Thumb** focus | border 同 hover 視覺(`outline-none focus-visible:border-primary-hover`,不加 ring / halo)| `--primary-hover` |
+| **Thumb** focus | 全域外描邊(`styles/base.css` `:focus-visible`,往外 2px;元件不寫 `outline-none`、不寫 `focus-visible:border-*`)| `--ring` |
 | **Disabled cursor** | `cursor-not-allowed` + hover 陰影關閉 | — |
 
 ### 為什麼 thumb 是**白底 + 邊框**,不是**實心 primary**
@@ -167,7 +167,9 @@ Slider 不是 button——它是「當前位置指示器」,底色不該動(動�
 | Rest | track `bg-secondary`,range `bg-primary`,thumb `bg-on-emphasis + border-primary` | 預設 |
 | Hover(thumb) | thumb border 升 hover 階 `primary-hover` + 加 `--elevation-100` 陰影 | 滑鼠 hover 在 thumb 上 |
 | Active(拖曳中) | border 深一階 `primary-active` + 加 `--elevation-200` 陰影 | 按住拖曳 |
-| Focus | thumb border 升 hover 階 `primary-hover`(跟 hover 同視覺,不加 ring / halo)| 鍵盤 Tab 聚焦 |
+| Focus | thumb 全域外描邊(往外 2px `--ring`);hover 的陰影/邊框階變是另一個獨立通道 | 鍵盤 Tab 聚焦 |
+
+> **2026-09-07 訂正**:上面那句已不成立。把手**平常就是藍邊**(`border-2 border-primary`),聚焦只換成 `primary-hover`,實測兩色對比僅 **1.46:1(淺)/ 1.33:1(深)** —— 看不出來,而且與 hover 完全同色,鍵盤使用者分不出「我在這裡」與「滑鼠經過」。現改為讓全域外描邊畫上去(元件只需**不要**寫 `outline-none`)。同時修一個更嚴重的:thumb 先前 `tabIndex` 是 -1,**滑桿完全不能用鍵盤操作**(WCAG 2.1.1,Level A)。
 | Disabled | 灰階降級:range `bg-border`、thumb `border-border`(= range 同 token)、thumb bg 沉回 `bg-canvas`(不透明背景色)、`cursor-not-allowed`、hover 陰影關閉 | `disabled` prop 或 Field context disabled |
 
 **Mode / readonly / dark mode / density** 詳見 `../Field/field-controls.spec.md`(Slider 作為 Field 家族整合時繼承其 canonical;semantic token 自動處理 dark mode,無需元件內特殊 handling)。
@@ -239,7 +241,7 @@ Slider 無獨立 `readOnly` prop;但在 `<Field mode="readonly">` 內(2026-06-12
 
 - 「Slider 可以當計數器」——錯。Slider 傳達 position(在哪裡),計數(多少)用 NumberInput ±step(見「何時不用」)
 - 「兩個選項可以用 Range mode」——錯。Range 是連續值區間(value = [start, end]),二元 / 布林選擇用 Switch / SegmentedControl
-- 「focus 要加 ring」——本元件 documented 例外:focus 用 border 升 hover 階(`primary-hover`,淺一階 lift;同 hover 視覺),不加 ring / halo(見「視覺規格」表,對齊上方「為什麼 hover / active 用陰影不用色變」)
+- (原「focus 用 border 升 hover 階、不加 ring」的 documented 例外已於 2026-09-07 撤回:兩色對比 1.46:1 看不出、且與 hover 同色;現與全 DS 一致走全域外描邊)
 
 ---
 
@@ -289,7 +291,7 @@ Inspector 提供 `min` / `max` / `step` / `defaultValue` × `size` 即時調整(
 
 **Keyboard 行為**:完整鍵盤對照見上方「鍵盤操作(Radix 原生,免手工)」節,不重複列。
 
-**Focus**:Radix primitive 自管 focus / restoration;thumb 鍵盤聚焦時 `outline-none focus-visible:border-primary-hover`(border 升 hover 階,跟 hover 同視覺,不加 ring / halo)。
+**Focus**:Radix primitive 自管 focus / restoration;thumb 鍵盤聚焦走全域外描邊(`styles/base.css` `:focus-visible`,往外 2px `--ring`),元件不寫 `outline-none`、不寫 `focus-visible:border-*`(2026-09-07 訂正,見「視覺規格」表下方)。
 
 **驗證**:Storybook a11y addon panel 應 0 critical violation;鍵盤完整可操作(無需滑鼠)。WCAG AA contrast ≥ 4.5:1(text)/ 3:1(UI)。
 

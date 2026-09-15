@@ -1,7 +1,7 @@
 # @qijenchen/design-system
 
 > World-class React design system(Radix/shadcn + Tailwind v4 + 自訂 design token)。
-> 58 components + 4 public patterns + design tokens。v0.1.0-beta.98。
+> 59 components + 4 public patterns + design tokens。v0.1.0-beta.132。
 
 本檔由 source(spec.md frontmatter + Storybook index)build-time 自動生成,**禁手改**(CI --check drift gate 守)。
 每元件 / pattern 的完整 variants / sizes / 禁止事項 全文見 [llms-full.txt](./llms-full.txt)。
@@ -10,6 +10,7 @@
 ## Components
 - [Accordion](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/Accordion
 - [AccountMenu](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/AccountMenu
+- [AgentPanel](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/AgentPanel
 - [Alert](https://ajenchen-design-system.netlify.app): variants:neutral/info/success/warning/error — src:components/Alert
 - [AppShell](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/AppShell
 - [AspectRatio](https://ajenchen-design-system.netlify.app): 見 Storybook / spec — src:components/AspectRatio

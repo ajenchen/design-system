@@ -106,7 +106,7 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         ref={ref}
         data-overflow-indicator=""
         tabIndex={0}
-        className={cn(tagVariants({ color: 'neutral', size }), 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1', className)}
+        className={cn(tagVariants({ color: 'neutral', size }), 'cursor-pointer ', className)}
         {...props}
       >
         <span className="px-1">+{count}</span>
@@ -119,7 +119,6 @@ const OverflowIndicator = React.forwardRef<HTMLSpanElement, OverflowIndicatorPro
         className={cn(
           'shrink-0 rounded-full inline-grid place-content-center',
           'bg-muted text-foreground font-medium leading-none cursor-pointer',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
           triggerSize[size],
           triggerText[size],
           className,

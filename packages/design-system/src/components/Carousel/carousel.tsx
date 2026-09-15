@@ -403,14 +403,14 @@ const CarouselDots = React.forwardRef<
           aria-label={`跳至第 ${i + 1} 張`}
           onClick={() => scrollTo(i)}
           className={cn(
-            'h-1.5 rounded-full transition-all motion-reduce:duration-0',
+            // hover 底色瞬間切換,不做過渡(user 2026-09-10 拍板「第三題改成全部瞬間」;SSOT = tokens/motion/motion.spec.md「hover 回饋不做過渡」);只留選中指示點的寬度變化
+            'h-1.5 rounded-full transition-[width] motion-reduce:duration-0',
             // 2026-06-11 a11y(R2;Phase B codex 修重疊):hit-area 垂直擴至 24px、水平 ±3px(dot 6px+gap 6px → 中心距 12px,±3 恰相切零重疊;再寬必互搶點擊)
             // — 視覺 dot 維持 6×6 不變,僅點擊目標擴大(anatomy story 原宣稱的 hit-area 機制補真)
             'relative before:absolute before:-inset-y-[9px] before:-inset-x-[3px] before:content-[""]',
             // Dots 疊在 media(image/video)之上,不是 token color 底——用 --on-emphasis 保持語義
             // 跟其他「於飽和色底上的淺色前景」一致
             'bg-on-emphasis/60 hover:bg-on-emphasis/80',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             // 2026-08-11 修偏移(item-anatomy「選中 × 互動疊加」同原則):現張 dot 再點 = no-op,
             // 但 base hover /80(0,2,0)蓋過 plain bg(0,1,0)→ hover 反而變淡 = 意外。釘住不變。
             i === selectedIndex ? 'w-6 bg-on-emphasis hover:bg-on-emphasis' : 'w-1.5',

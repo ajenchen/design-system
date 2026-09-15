@@ -218,7 +218,7 @@ rule_anatomy() {
     grep -qE '//[[:space:]]*@anatomy-exempt:' <<< "$ON_DISK" && return 0
   fi
 
-  TMP=$(mktemp) || governance_hook_integrity_fail 'story invariant anatomy scratch file unavailable'
+  TMP=$(mktemp "${TMPDIR:-/tmp}/check-story-invariants-anatomy.XXXXXX") || governance_hook_integrity_fail 'story invariant anatomy scratch file unavailable'
   trap 'rm -f -- "$TMP"' RETURN
   printf '%s\n' "$NEW_CONTENT" > "$TMP" \
     || governance_hook_integrity_fail 'story invariant anatomy scratch write failed'
@@ -248,6 +248,10 @@ loading_surface = re.compile(
     r'<div[^>]*className="[^"]*\babsolute\b[^"]*\binset-0\b[^"]*\bflex\b',
 )
 raw_field = re.compile(r'<input\b[^>]*className="[^"]*\bh-field-')
+# A.5(2026-09-08)展示層 story 的原生 <button>/<input>/<textarea>/<select>:user 抓到 story 用 raw 控件 →
+# 全域 :focus-visible 藍框、樣式跟 DS 元件不一致(agent 並存範例用滑鼠開 modal 就出鍵盤框)。
+# 豁免:前 3 行內有 asChild(Radix 觸發殼慣例)、同行 sr-only(測試輔助)、@anatomy-exempt-next。
+raw_control = re.compile(r'<(button|input|textarea|select)\b')
 dismiss_button = re.compile(
     r'<Button\b[^>]*>\s*(關閉|Close|Dismiss|取消|Cancel)\s*</Button>',
 )
@@ -294,6 +298,15 @@ for index, line in enumerate(lines):
                 f'\n[A.3 hand-craft loading] {file_path}:{row}\n'
                 f'  > {preview}\n'
                 '  改用 <Empty icon={<CircularProgress />} description="..." />'
+            )
+
+    if raw_control.search(line) and 'sr-only' not in line and '/anatomy' not in file_path and '.principles.' not in file_path:
+        lookbehind = '\n'.join(lines[max(0, index - 3):index + 1])
+        if 'asChild' not in lookbehind:
+            findings.append(
+                f'\n[A.5 raw form control] {file_path}:{row}\n'
+                f'  > {preview}\n'
+                '  改用 <Button> / <Input> / <Textarea> / <Select>(asChild 觸發殼與 sr-only 測試輔助除外)'
             )
 
     if raw_field.search(line):

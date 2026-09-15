@@ -18,6 +18,7 @@ import { createReadStream, statSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { extname, join, normalize, resolve as resolvePath } from 'node:path'
 import { chromium } from 'playwright'
+import { launchBrowser } from './lib/launch-browser.mjs'
 
 const arg = (name, fallback = null) => {
   const index = process.argv.indexOf(name)
@@ -107,7 +108,7 @@ const MEASURE = () => {
   })
 }
 
-const browser = await chromium.launch()
+const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: 1000, height: 760 } })
 const results = []
 for (const testCase of CASES) {

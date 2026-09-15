@@ -1,0 +1,34 @@
+{
+  "_authority": "governance/planning/registry.json",
+  "schemaVersion": 1,
+  "note": "已定案條款索引。被 scripts/decided-clause-downgrade-gate.mjs 消費,用來擋『把已定案的東西重新寫成待拍板』。新增條款要附 source(指得到的 file)與 decidedOn。",
+  "clauses": [
+    {
+      "ref": "agent-v14.A-coexistence",
+      "source": "governance/planning/2026-09-06-agent-principles-v14.md",
+      "decidedOn": "2026-09-06",
+      "statement": "內部內容以自己的 URL 取得協作資格;沒有 URL 的 Modal 阻擋其餘介面,包含 agent。",
+      "allOf": ["modal", "agent"],
+      "anyOf": ["同時", "並存", "並列", "一起使用", "仍然可用", "該不該", "能不能"],
+      "why": "2026-09-08 我把它重新寫成『產品題,由 user 拍板』。user:『這個他媽不就一開始就定義好的?』v14 自己還寫著『這三個(落地差距)都不是產品選擇』。"
+    },
+    {
+      "ref": "agent-v14.B-narrow-drawer",
+      "source": "governance/planning/2026-09-06-agent-principles-v14.md",
+      "decidedOn": "2026-09-06",
+      "statement": "寬螢幕讓具資格的內容與 agent 並列可操作;窄螢幕以抽屜蓋滿宿主,宿主暫不可操作。",
+      "allOf": ["窄", "agent"],
+      "anyOf": ["抽屜", "蓋滿", "蓋板", "兩邊都能用"],
+      "why": "v14『曾經的待決題』表明文列為已答:『窄螢幕要不要兩邊都能用 → 已答 —— 不要,窄螢幕抽屜蓋滿』。"
+    },
+    {
+      "ref": "agent-v14.F-init-closed",
+      "source": "governance/planning/2026-09-06-agent-principles-v14.md",
+      "decidedOn": "2026-09-06",
+      "statement": "初次進入、重新整理、新開分頁,以及原分頁離開宿主後返回,均重新初始化為關閉的新對話。",
+      "allOf": ["agent"],
+      "anyOf": ["初始化為關閉", "預設開啟還是關閉", "要不要延續"],
+      "why": "v14『曾經的待決題』:『離開宿主再返回要不要延續 → 已答 —— 重新進入』。"
+    }
+  ]
+}

@@ -174,6 +174,17 @@ const Tabs = React.forwardRef<
         value={currentValue}
         onValueChange={setCurrentValue}
         {...props}
+        // Root 本來是裸 Radix(`display: block`),在「高度受限的 flex column 容器」裡會**斷鏈**:
+        // Dialog / Sheet 的契約是 header/footer `shrink-0` + Body `flex-1 min-h-0` → 空間不夠時 body 內捲
+        // (`dialog.spec.md:128`「內容溢出走 body 捲動」)。但只要中間夾一層 `display: block` 且
+        // `min-height: auto` 的 wrapper,那層就收縮不了,整包內容原樣頂出容器 —— 2026-09-12 user 截圖的
+        // 「dialog body 內容超出容器」正是這個:Tabs Root 在 204px 的 dialog 裡撐到 271px。
+        // Root 自己成為可收縮的 flex column 之後,這條鏈在任何容器裡都自然接上,consumer 不需要背咒語。
+        // 不受限的容器裡 `flex: 0 1 auto` 的 basis 仍是內容高,所以一般用法幾何完全不變(已逐 story 比對 Δ=0)。
+        className={cn(
+          'flex min-h-0 data-[orientation=horizontal]:flex-col data-[orientation=vertical]:flex-row',
+          props.className
+        )}
       >
         {children}
       </TabsPrimitive.Root>
@@ -476,7 +487,9 @@ const tabsTriggerVariants = cva(
     'font-medium text-fg-secondary',
     'transition-colors duration-150',
     'cursor-pointer select-none',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+    // 焦點框往內:tab 高 = 分頁列高,上下淨空 0(focus-canonical「問題二」驗算表;2026-09-09 Codex R13 抓到規格寫內框、
+    // 實作卻是全域外框,在 overflow-scroll 的 TabsList 裡上下各被裁 3–4px)
+    'focus-visible:focus-ring-inset',
     // Trigger 無水平 padding — 寬度 = 內容寬度。triggers 間的分隔靠 TabsList 的 gap-[var(--layout-space-loose)]
     // selected underline：::after 絕對定位在 bottom:-1px，2px primary（持續選中 base）
     // left-0/right-0 因為 trigger 已無 padding，底線等於內容寬度
@@ -659,7 +672,6 @@ const TabsContent = React.forwardRef<
       // 收斂原 DS-wide 四種土法(無間距 / mt-4 / p-4 / pt-4 — M17 假 SSOT)。
       // full-height 佈局(AppShell pane)用 className="mt-0" 覆寫(tailwind-merge)。
       'mt-[var(--layout-space-tight)]',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
       className
     )}
     {...props}

@@ -57,7 +57,6 @@ const chipVariants = cva(
     'text-body leading-compact font-medium whitespace-nowrap',
     'transition-colors duration-150',
     'cursor-pointer select-none',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
     // hover（未選）：border 加深一階 + 文字轉深，對齊 Input / SegmentedControl hover
     'hover:border-border-hover hover:text-foreground',
     // selected: 文字 + 邊框都用 primary base,底色維持 bg-surface 不變

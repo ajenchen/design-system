@@ -346,7 +346,8 @@ const CHROME_UNBOUNDED_SLOT =
 
 ## Viewport-aware scroll chain invariant(2026-05-04 K11 升 SSOT)
 
-> **背景**:Popover / HoverCard / Dialog / Sheet content 設 `max-h-[var(--radix-{popover|hover-card|dialog}-content-available-height)] flex flex-col overflow-hidden`,讓 viewport 太小時 header/footer 永遠 in-viewport,body 壓縮 scroll。但**中間任何 wrapper div 沒 forward `flex flex-col h-full` 就斷鏈**,SurfaceBody flex-1 失效,body 不會 scroll。
+> **背景**:Popover / HoverCard content 設 `max-h-[var(--radix-{popover|hover-card}-content-available-height)] flex flex-col overflow-hidden`,讓 viewport 太小時 header/footer 永遠 in-viewport,body 壓縮 scroll。但**中間任何 wrapper div 沒 forward `flex flex-col h-full` 就斷鏈**,SurfaceBody flex-1 失效,body 不會 scroll。
+> **Dialog / Sheet 不走這條(2026-09-11 更正,原句把它們一起列進去是錯的)**:`--radix-dialog-content-available-height` 這個 CSS 變數**不存在** —— 它由 `@radix-ui/react-popper` 提供,而 Radix Dialog 不是 popper-based(全庫 grep 0 命中)。Dialog 的上限由 DialogContent 自己算(`min(100svh - inset*2, maxHeight)`),owner 是 `dialog.spec.md`「高度」段。
 >
 > **真實 bug(2026-05-04)**:Filter / Sort panel 內 wrapper div 設 `w-[640px]` 無 flex-col → user 縮視窗時 body 不 scroll,內容被 clip。ProfileCard 之所以 work 因為它直接是 PopoverContent 唯一 child(無 wrapper)+ 自設 max-h flex-col。
 

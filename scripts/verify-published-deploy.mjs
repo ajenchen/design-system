@@ -21,6 +21,7 @@ import { execSync } from 'node:child_process'
 import { readFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { launchBrowser } from './lib/launch-browser.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const PUBLISHED_REPO = 'ajenchen/ds-product-template'
@@ -67,7 +68,7 @@ if (WANT_LIVE) {
   else {
     try {
       const { chromium } = await import('playwright')
-      const browser = await chromium.launch()
+      const browser = await launchBrowser()
       const ctx = await browser.newContext(basicMatch ? {
         httpCredentials: { username: basicMatch[1], password: basicMatch[2] },
       } : {})

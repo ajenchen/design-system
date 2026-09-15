@@ -2,6 +2,7 @@
 // PeoplePicker baseline screenshots — Task 2 SSOT refactor 前的視覺基準
 // Refactor 後 re-run + visual diff 確認 0 regression
 import { chromium } from 'playwright'
+import { launchBrowser } from './lib/launch-browser.mjs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ensureVisualBaselineDirectory, prepareVisualBaselineFile } from './lib/governance-visual-baselines.mjs'
@@ -28,7 +29,7 @@ const STORIES = [
   ['design-system-components-peoplepicker-設計規格--state-behavior', 'anatomy-state-behavior'],
 ]
 
-const browser = await chromium.launch({ headless: true })
+const browser = await launchBrowser()
 for (const [id, label] of STORIES) {
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 })
   try {

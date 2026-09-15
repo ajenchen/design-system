@@ -88,6 +88,8 @@ Item-level default / hover / checked / disabled **色彩**與 Checkbox 共用同
 
 繼承 Field family,詳見 `../Field/field-controls.spec.md` + `../Field/form-validation.spec.md`。
 
+**view**:不渲染 radio 圈,只渲染選中項的 label 純文字(無值時顯示 Field 的空值符號);字級走家族「(e) View typography canonical」—— 同 size 的 `text-body`(sm/md)/ `text-body-lg`(lg),與 edit 選項 label 同字級,**禁**裸 span 吃瀏覽器預設 16px(2026-09-15 user 抓 view 字比選項大;閘 `scripts/field-view-typography-invariant.mjs` 量 view 與 edit 字級相等)。
+
 **Field 內 readonly(2026-06-12 user 拍板)**:不渲染 radio 群組,改渲染 `fieldWrapperStyles` readonly 灰框 + 選中項 label(= Select readonly 同款,同為單選資料的鎖定呈現);standalone readonly 維持原樣鎖互動(ReadonlyContext + item onClick preventDefault guard — 2026-07-05 D4 補:`<label htmlFor>` synthetic click 非 pointer event,`pointer-events-none` 攔不到,需 guard 才真鎖)。
 
 ---

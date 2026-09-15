@@ -25,6 +25,7 @@
 ## Reference
 - [reference_deploy_targets.md](reference_deploy_targets.md) — Deploy targets + URL 3-strategy 自動推導 + per-user override + transport self-awareness + Netlify 免費密碼 = Edge Function Basic Auth(STORYBOOK_BASIC_AUTH)+ Claude Code 直連 sandbox 雲端主路徑 + clone-on-demand(2026-06-11 合併 deploy_url_auto_detect;2026-07-07 合併 netlify_basic_password)
 - [reference_cloud_governance_loading.md](reference_cloud_governance_loading.md) — 雲端 sandbox 治理載入實證:committed .claude 全 4 hook event 會 fire / plugin 不可靠(#63028/#62174)/ --cloud 需 TTY / skills 不認 node_modules(2026-06-16)+ C-prime fork 治理 shipped beta.70；歷史單一 Claude cloud target/snapshot 曾親證 proactive 指引與機械強制生效，不構成目前或所有 cloud certification(2026-07-14 合併 project_cprime)
+- [reference_perf_validation_same_host.md](reference_perf_validation_same_host.md) — 效能驗收必同網域:user 慢機器把 *.netlify.app 送進遠端隔離 thin client(LoAF 歸因 `thin-client-min.js`),github.io 本地渲染;程式碼無退步;先歸因再消融(2026-09-15)
 
 ---
 **Prune history**(細節在 governance/archive/memory-retired/ + git log):

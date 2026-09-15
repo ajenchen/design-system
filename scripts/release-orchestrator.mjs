@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { homedir } from 'node:os'
 import { dirname, resolve, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -8,6 +9,51 @@ import { fileURLToPath } from 'node:url'
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const WORKFLOW_PATH = resolve(ROOT, 'infra/governance/release-workflow.json')
 const GITHUB_DESIRED_PATH = resolve(ROOT, 'infra/governance/desired/github.json')
+/** user 發版同意 receipt(2026-09-02 user directive:預覽 → user 確認說「發版」→ 才合併/發布)。 */
+const CONSENT_DIR = resolve(ROOT, '.git/governance-runtime/release-consent')
+
+export function readReleaseConsent(headSha) {
+  if (!/^[a-f0-9]{40}$/.test(headSha || '')) return null
+  const file = resolve(CONSENT_DIR, `${headSha}.json`)
+  if (!existsSync(file)) return null
+  try {
+    const receipt = JSON.parse(readFileSync(file, 'utf8'))
+    return receipt?.headSha === headSha && typeof receipt?.quote === 'string' && receipt.quote.trim() ? receipt : null
+  } catch {
+    return null
+  }
+}
+
+export function writeReleaseConsent({ headSha, branch, quote, source }) {
+  invariant(/^[a-f0-9]{40}$/.test(headSha || ''), 'release consent needs the exact 40-char head sha')
+  invariant(typeof quote === 'string' && quote.trim().length > 0, 'release consent needs the user\'s verbatim quote')
+  mkdirSync(CONSENT_DIR, { recursive: true })
+  const receipt = {
+    schemaVersion: 1,
+    headSha,
+    branch: branch || null,
+    quote: quote.trim(),
+    quoteSha256: createHash('sha256').update(quote.trim()).digest('hex'),
+    source: source || 'manual',
+    recordedAt: new Date().toISOString(),
+  }
+  writeFileSync(resolve(CONSENT_DIR, `${headSha}.json`), `${JSON.stringify(receipt, null, 2)}\n`)
+  return receipt
+}
+
+export function previewUrls(workflow, observation) {
+  const preview = workflow.automation?.preview
+  if (!preview) return []
+  const urls = []
+  if (observation.pullRequest?.number) {
+    urls.push(preview.pullRequestPattern.replace('{number}', String(observation.pullRequest.number)).replace('{site}', preview.site))
+  }
+  if (observation.branch) {
+    const slug = observation.branch.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    urls.push(preview.branchPattern.replace('{branchSlug}', slug).replace('{site}', preview.site))
+  }
+  return urls
+}
 const PACKAGE_PATHS = Object.freeze({
   '@qijenchen/design-system': 'packages/design-system/package.json',
   '@qijenchen/governance': 'packages/governance/package.json',
@@ -656,7 +702,12 @@ export function buildFiveStepStatus(workflow, observation) {
     : observation.pullRequest
       ? checkRollupStatus(observation.pullRequest.requiredChecks)
       : 'blocked'
-  const merge = observation.onProtectedMain || observation.pullRequest?.state === 'MERGED' ? 'complete' : 'pending'
+  // 2026-09-02 user directive:合併前必須有 user 對「當前 PR head」的發版同意 receipt;沒有 → 停在預覽階段。
+  const consentRequired = workflow.releaseConsent?.required !== false
+  const consentOk = !consentRequired || Boolean(observation.releaseConsent)
+  const merge = observation.onProtectedMain || observation.pullRequest?.state === 'MERGED'
+    ? 'complete'
+    : consentOk ? 'pending' : 'awaiting-consent'
   const publishedRelease = Boolean(
     observation.release
       && !observation.release.isDraft
@@ -729,6 +780,7 @@ export function collectLiveObservation(workflow = loadReleaseWorkflow()) {
     version,
     tag,
     pullRequest,
+    releaseConsent: readReleaseConsent(pullRequest?.headRefOid || headSha),
     tagCommitSha,
     releaseCommitSha,
     release,
@@ -849,6 +901,19 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
 
     if (incomplete.id === 'merge') {
       invariant(observation.pullRequest, 'merge readback is incomplete and no current-branch PR was found')
+      if (incomplete.status === 'awaiting-consent') {
+        // 預覽階段:PR + Netlify deploy preview 已就緒,等 user 看過後在對話說「發版」(hook 自動記 receipt,
+        // 或 `npm run release:consent -- --quote "<user 原話>"`)。不合併、不發布。
+        const urls = previewUrls(workflow, observation)
+        console.log(JSON.stringify({
+          status: 'AWAITING_USER_RELEASE_CONSENT',
+          pullRequest: observation.pullRequest.url || `https://github.com/${observation.repository}/pull/${observation.pullRequest.number}`,
+          headSha: observation.pullRequest.headRefOid,
+          preview: urls,
+          resume: 'user 在對話說「發版」→ receipt 自動落地 → npm run release:auto',
+        }, null, 2))
+        return report
+      }
       gh([
         'pr', 'merge', `${observation.pullRequest.number}`, '--repo', observation.repository,
         '--squash', '--delete-branch', '--match-head-commit', observation.pullRequest.headRefOid,
@@ -939,7 +1004,12 @@ export function executeAutomaticRelease({ json = false, noWait = false, maxWaitM
 
 function parseCli(argv) {
   const [command, ...flags] = argv
-  invariant(command === 'auto' || command === 'status', 'Usage: release-orchestrator.mjs <auto|status> [--json] [--no-wait]')
+  invariant(command === 'auto' || command === 'status' || command === 'consent', 'Usage: release-orchestrator.mjs <auto|status|consent --quote "<user verbatim>"> [--json] [--no-wait]')
+  if (command === 'consent') {
+    const index = flags.indexOf('--quote')
+    invariant(index >= 0 && flags[index + 1], 'consent needs --quote "<user verbatim>"')
+    return { command, quote: flags[index + 1] }
+  }
   invariant(flags.every(flag => flag === '--json' || flag === '--no-wait'), 'unsupported release orchestrator option')
   invariant(command === 'auto' || !flags.includes('--no-wait'), '--no-wait is only valid with auto')
   return { command, json: flags.includes('--json'), noWait: flags.includes('--no-wait') }
@@ -951,6 +1021,11 @@ function main() {
     if (options.command === 'status') {
       const workflow = loadReleaseWorkflow()
       printReport(workflow, collectLiveObservation(workflow), options.json)
+    } else if (options.command === 'consent') {
+      const branch = run('git', ['branch', '--show-current']).stdout
+      const headSha = run('git', ['rev-parse', 'HEAD^{commit}']).stdout
+      const receipt = writeReleaseConsent({ headSha, branch, quote: options.quote, source: 'manual' })
+      console.log(JSON.stringify({ status: 'RELEASE_CONSENT_RECORDED', ...receipt }, null, 2))
     } else {
       executeAutomaticRelease(options)
     }

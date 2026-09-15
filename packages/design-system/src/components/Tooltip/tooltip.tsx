@@ -75,6 +75,27 @@ const TooltipContent = React.forwardRef<
       // 不消費任何 density / layout-space token → 鎖 density 對它是 inert(原 data-density="md" 是 409b91da
       // a11y 批次「對齊 Popover」順手加,非設計決策)→ 移除,讓全浮層行為一致(全繼承 page)。
       className={cn(
+        // **刻意不設 `pointer-events: none`**(2026-09-04 撤回同日的錯誤改動;同日這檔翻了三次「加 → 改 → 撤」,
+        // 所以由機械閘守著:`scripts/agent-fab-hit-area-invariant.mjs` H6 量開著的 tooltip 本體與 Radix popper
+        // 外殼的 computed pointer-events ≠ none、H7 真指標從觸發點移進內容後仍開著):
+        // 讓 tooltip 穿透會直接命中 WCAG **F95**「Failure of SC 1.4.13 due to content shown on hover
+        // not being hoverable」—— 使用者(尤其用螢幕放大鏡的)無法把指標移上去閱讀。
+        // 世界級實證(2026-09-04 逐家查第一手 CSS,10 家;2026-09-05 逐行複核,精確到條件而不是二分「設／不設」):
+        // - 只有 Polaris 對整個 overlay 無條件設穿透(TooltipOverlay.module.css:18
+        //   https://raw.githubusercontent.com/Shopify/polaris/main/polaris-react/src/components/Tooltip/components/TooltipOverlay/TooltipOverlay.module.css)。
+        // - AG Grid v33.3.2 只對**非互動** tooltip 設,並留 `.ag-tooltip-interactive` 逃生口
+        //   (`.ag-tooltip:where(:not(.ag-tooltip-interactive)) { pointer-events: none }`,tooltip.css:17-20
+        //   https://raw.githubusercontent.com/ag-grid/ag-grid/v33.3.2/packages/ag-grid-community/src/tooltip/tooltip.css)。
+        // - MUI 基底寫 `pointerEvents: 'none'`,但 `open && !disableInteractive` 變體覆寫成 `'auto'`(Tooltip.js:60、63-67
+        //   https://raw.githubusercontent.com/mui/material-ui/master/packages/mui-material/src/Tooltip/Tooltip.js)——
+        //   預設 interactive,生效值是 auto;只有開 `disableInteractive` 才穿透。v5 遷移文件更把
+        //   「interactive by default」直接連到 WCAG 1.4.13。
+        // - Fluent 只在 `hidden` 狀態設(useTooltipStyles.styles.ts:43-46
+        //   https://raw.githubusercontent.com/microsoft/fluentui/master/packages/react-components/react-tooltip/library/src/components/Tooltip/useTooltipStyles.styles.ts),
+        //   看得見時不穿透。
+        // - Bootstrap / Ant / Radix / Carbon / shadcn / Floating UI 完全不設。
+        // 註:tooltip 與觸發點恆距 8px(`OVERLAY_SIDE_OFFSET`),兩者不重疊 ——
+        // 「tooltip 擋住觸發點的點擊」本來就不會發生,穿透解決的不是這個問題。
         "z-50 overflow-hidden rounded-md px-3 py-2 text-body font-normal text-on-emphasis bg-tooltip max-w-[280px] break-words",
         overlayMotion,
         "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",

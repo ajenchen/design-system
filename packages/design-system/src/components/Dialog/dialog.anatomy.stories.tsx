@@ -15,6 +15,7 @@ import { Button } from '@/design-system/components/Button/button'
 import { Input } from '@/design-system/components/Input/input'
 import { Field, FieldLabel, FieldGroup } from '@/design-system/components/Field/field'
 import { H3, Desc, Td, Th } from '@/design-system/stories-helpers/anatomy/anatomy-utils'
+import { openOverlayDocsStory } from '@/design-system/stories-helpers/overlay/open-overlay-docs'
 
 const meta: Meta = {
   title: 'Design System/Components/Dialog/設計規格',
@@ -29,35 +30,7 @@ export const Overview: Story = {
     <div className="flex flex-col gap-10">
       <div>
         <H3>Anatomy</H3>
-        <Desc>Dialog 由 Overlay + Content 組成。Content 分三個區塊:Header(邊框底)+ Body(可捲動 flex-1)+ Footer(邊框頂)。基於 Radix Dialog(shadcn 包裝),橋接 DS token。</Desc>
-        <div className="border border-border rounded-lg p-4 max-w-md">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="primary">開啟 Dialog 範例</Button>
-            </DialogTrigger>
-            <DialogContent autoHeight maxWidth={480}>
-              <DialogHeader>
-                <DialogTitle>建立新專案</DialogTitle>
-              </DialogHeader>
-              <DialogBody>
-                <FieldGroup>
-                  <Field required>
-                    <FieldLabel>專案名稱</FieldLabel>
-                    <Input placeholder="例:Q1 行銷活動" />
-                  </Field>
-                  <Field>
-                    <FieldLabel>描述</FieldLabel>
-                    <Input placeholder="簡短描述..." />
-                  </Field>
-                </FieldGroup>
-              </DialogBody>
-              <DialogFooter>
-                <Button variant="tertiary">取消</Button>
-                <Button variant="primary">建立</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <Desc>Dialog 由 Overlay + Content 組成。Content 分三個區塊:Header(邊框底)+ Body(可捲動 flex-1)+ Footer(邊框頂)。基於 Radix Dialog(shadcn 包裝),橋接 DS token。實際範例見「展示」頁;可調 props 的開啟態見「元件檢閱器」。</Desc>
       </div>
 
       <div>
@@ -98,7 +71,10 @@ export const Overview: Story = {
 export const Inspector: Story = {
   name: '元件檢閱器',
   parameters: {
-    docs: { description: { story: '右側 Controls 切 DialogContent props 即時 render,取代 Figma inspect。調整 `maxWidth` / `autoHeight` 看寬度 tier 與高度模式差異。Dialog 預設 open=true,直接展示內容不需 trigger。' } },
+    docs: {
+      story: openOverlayDocsStory('520px'),
+      description: { story: '右側 Controls 切 DialogContent props 即時 render,取代 Figma inspect。調整 `maxWidth` / `autoHeight` 看寬度 tier 與高度模式差異。Dialog 預設 open=true,直接展示內容不需 trigger。' },
+    },
   },
   args: {
     maxWidth: 512,
@@ -225,34 +201,6 @@ export const HeightBehavior: Story = {
   ),
 }
 
-export const DestructiveMatrix: Story = {
-  name: '破壞性動作 Dialog',
-  render: () => (
-    <div className="flex flex-col gap-8 max-w-md">
-      <div>
-        <H3>破壞性動作的 footer 配對</H3>
-        <Desc>破壞性動作用 primary + danger(立即不可逆)。必須搭配 Cancel button 讓使用者反悔。Title 用問句讓使用者意識到「這是個決策」。</Desc>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="tertiary" startIcon={Trash2}>刪除專案(含確認)</Button>
-          </DialogTrigger>
-          <DialogContent autoHeight maxWidth={440}>
-            <DialogHeader>
-              <DialogTitle>確定要永久刪除此專案?</DialogTitle>
-            </DialogHeader>
-            <DialogBody>
-              <p className="text-body">此動作無法復原,所有相關資料將一併刪除。</p>
-            </DialogBody>
-            <DialogFooter>
-              <Button variant="tertiary">取消</Button>
-              <Button variant="primary" danger startIcon={Trash2}>永久刪除</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </div>
-  ),
-}
 
 export const SizeMatrix: Story = {
   name: '尺寸對照表',
@@ -460,10 +408,11 @@ export const ColorMatrix: Story = {
         <H3>動畫</H3>
         <div className="overflow-x-auto">
           <table className="text-caption border-collapse">
-            <thead><tr><Th>階段</Th><Th>動畫</Th></tr></thead>
+            <thead><tr><Th>階段</Th><Th>幾何</Th><Th>時長 / 曲線(motion token)</Th></tr></thead>
             <tbody>
-              <tr><Td>進場</Td><Td mono>fade-in + zoom-in-95 + slide-in-from-center</Td></tr>
-              <tr><Td>離場</Td><Td mono>fade-out + zoom-out-95 + slide-out-to-center</Td></tr>
+              <tr><Td>進場</Td><Td mono>fade-in-0 + zoom-in-95(從中心淡入 + 輕微縮放,不位移)</Td><Td mono>--motion-duration-surface / --motion-easing-enter</Td></tr>
+              <tr><Td>離場</Td><Td mono>fade-out-0 + zoom-out-95</Td><Td mono>--motion-duration-surface / --motion-easing-exit</Td></tr>
+              <tr><Td>reduced-motion</Td><Td mono>motion-reduce:animate-none</Td><Td>—</Td></tr>
             </tbody>
           </table>
         </div>

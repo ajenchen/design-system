@@ -120,16 +120,32 @@ emit_governance_block() {
   exit 0
 }
 
-# ── Mechanism 1: Claim-verification gap ─────────────────────────────────────
-if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
-  # NOTE(2026-05-01 v3):versioned transcript contract 把 tool_result 也標 role="user"。
-  # 之前 awk 抓到 tool_result line 當「真 user prompt」→ scope window 算錯
-  # → fire false positive。
-  # 修:grep filter 真 user prompt(role=user 且 content 不是 tool_result),
-  # 整 transcript scan(不 tail 500 windowed,避免 edge case)。
+# `LAST_USER_LINE` = 最後一則**真** user 訊息的行號(versioned transcript contract 把
+# tool_result 也標 role="user",所以要濾掉)。整份 transcript 掃,不用 tail 視窗,避免邊界情況。
+#
+# **順序很重要**:2026-09-06 把 `THIS_TURN_TOOLS` 搬到所有 mechanism 之前(因為 Mechanism 6
+# 也要讀它),但那時 `LAST_USER_LINE` 還在 Mechanism 1 裡面算 —— 搬過頭之後它讀到的永遠是
+# 初始值 0,於是 `THIS_TURN_TOOLS` **恆為空字串**,驗證偵測看不到本 turn 跑過的 tsc,
+# Test 3(claim + tsc → 不該擋)因此一直紅。修法是把行號計算一起提前(2026-09-08)。
+if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "${TRANSCRIPT_PATH:-}" ]; then
   LAST_USER_LINE=$(grep -n '"role":"user"' "$TRANSCRIPT_PATH" 2>/dev/null | \
     grep -v '"type":"tool_result"' | tail -1 | cut -d: -f1)
   LAST_USER_LINE=${LAST_USER_LINE:-0}
+fi
+
+# `THIS_TURN_TOOLS` = 本 turn(最後一則 user 訊息之後)的 transcript 切片。
+# 必須在所有 mechanism 之前算好:它原本只在 Mechanism 1 的 claim 分支內賦值,而 Mechanism 6
+# 也讀它 —— 當 Mechanism 1 沒進那個分支時,Mechanism 6 就會讀到未定義變數。
+if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "${TRANSCRIPT_PATH:-}" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
+  THIS_TURN_TOOLS=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null)
+else
+  THIS_TURN_TOOLS=""
+fi
+
+# ── Mechanism 1: Claim-verification gap ─────────────────────────────────────
+if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+  # LAST_USER_LINE 已在上面(所有 mechanism 之前)算好,這裡不重算 ——
+  # 重算會讓「提前計算」那段變成裝飾,順序 bug 也就看不出來。
   if [ "$LAST_USER_LINE" -gt 0 ]; then
     TRANSCRIPT_LAST_ASSISTANT=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null | \
       jq -r 'select(.message.role=="assistant") | .message.content[]?.text // empty' 2>/dev/null)
@@ -153,11 +169,6 @@ if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
     && ! grep -qiE "$RETRACT_RE" <<< "$LAST_ASSISTANT"; then
     # Check if any verify-class tool_use happened in THIS turn(after last user msg)
     VERIFY_RE='(npx tsc|bash packages/design-system/ds-canonical/hooks/tests|compile-stories|npm run build|npm run test|design-system-audit|visual-audit)'
-    if [ "$LAST_USER_LINE" -gt 0 ]; then
-      THIS_TURN_TOOLS=$(tail -n +$((LAST_USER_LINE+1)) "$TRANSCRIPT_PATH" 2>/dev/null)
-    else
-      THIS_TURN_TOOLS=""
-    fi
     if ! grep -qE "$VERIFY_RE" <<< "$THIS_TURN_TOOLS"; then
       WARNINGS="${WARNINGS}\n  • Claim-verify gap:你說 verified / done / 完成 等,但本 turn 無 tsc / test / audit 真執行。下輪實跑驗證或撤回 claim。"
       # 標記 CRITICAL — Mechanism 1 升 BLOCKER(2026-04-30 升級):AI claim done 但無驗證
@@ -481,11 +492,29 @@ fi
 # ── Mechanism 6: capability-bound PushNotification gap ────────────────────
 # Provider-neutral runtime 不可假設 exact tool 存在。只有 adapter/registry 明確宣告
 # `push-notification` capability 時才檢查；缺宣告 = UNOBSERVED/nonblocking。
+# 能力來源(2026-09-06 接上):`GOVERNANCE_PUSH_NOTIFICATION_AVAILABLE` 由
+# `scripts/run-provider-hook.mjs` 依 `packages/governance/canonical/providers.json` 的
+# `capabilities.pushNotification` 匯出。registry-owned,所以沒有該工具的 provider 不會被要求 call。
+# 歷史:在接上之前,這兩個變數在整個 repo 只出現在本檔、無人設定,`NOTIFICATION_AVAILABLE` 恆為 0,
+# 因此同日「從 WARNING 升成 BLOCKER」那次 commit **並未實際生效**;該次的「機械收口」宣稱不成立,
+# 據實留檔以免再被當成已完成。
 NOTIFICATION_AVAILABLE=0
 case ",${GOVERNANCE_AVAILABLE_CAPABILITIES:-}," in
   *,push-notification,*|*,PushNotification,*) NOTIFICATION_AVAILABLE=1 ;;
 esac
 [ "${GOVERNANCE_PUSH_NOTIFICATION_AVAILABLE:-0}" = "1" ] && NOTIFICATION_AVAILABLE=1
+# **能力也可以由觀察證明(2026-09-11 user:「我又沒收到推播了,你他媽到底何時才能永遠解決這個問題?」)**。
+# 原本只認環境變數 —— 而那個變數在實際的 Claude Code session 裡沒有被設,於是這道閘**全程靜音**,
+# 我同時忘了呼叫,連續多個 substantive turn 沒有推播也沒有任何警告。
+# 環境變數是宣告,不是證據;**這個 session 裡真的成功呼叫過一次** 才是不可辯駁的證據。
+# 掃整份 transcript(不只本 turn)找 `"name":"PushNotification"` 的 tool_use:
+#   有 → 能力確定存在 → 從此每個 substantive turn 都要檢查(這正是本 session 的情況)
+#   沒有 → 維持 nonblocking(不對沒有這個 tool 的 runtime 誤報)
+if [ "$NOTIFICATION_AVAILABLE" = "0" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+  if grep -qE '"type"[[:space:]]*:[[:space:]]*"tool_use"[^}]*"name"[[:space:]]*:[[:space:]]*"PushNotification"|"name"[[:space:]]*:[[:space:]]*"PushNotification"[^}]*"type"[[:space:]]*:[[:space:]]*"tool_use"' "$TRANSCRIPT_PATH" 2>/dev/null; then
+    NOTIFICATION_AVAILABLE=1
+  fi
+fi
 if [ "$NOTIFICATION_AVAILABLE" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ] && [ "${LAST_USER_LINE:-0}" -gt 0 ]; then
   ASSISTANT_LEN=${#LAST_ASSISTANT}
   ASSISTANT_LEN=${ASSISTANT_LEN:-0}
@@ -495,10 +524,52 @@ if [ "$NOTIFICATION_AVAILABLE" = "1" ] && [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TR
   if [ "$ASSISTANT_LEN" -gt 200 ]; then IS_SUBSTANTIVE=1; fi
   if grep -qiE "$SUBSTANTIVE_RE" <<< "$LAST_ASSISTANT"; then IS_SUBSTANTIVE=1; fi
   if [ "$IS_SUBSTANTIVE" = "1" ]; then
-    # Check PushNotification tool call trace in this turn
-    HAS_PUSH=$(grep -ciE 'PushNotification|"name":"PushNotification"' <<< "$THIS_TURN_TOOLS" 2>/dev/null)
+    # Check PushNotification tool call trace in this turn.
+    # **必須是真的 tool_use block,不能只是字串出現**(2026-09-10 抓到的兩個洞之一):
+    # 舊寫法 `grep -ciE 'PushNotification|"name":"PushNotification"'` 會被三種東西騙過 ——
+    #   (1) 本 hook 自己寫進 transcript 的警告文字就含「PushNotification gap」→ 一旦警告過一次,
+    #       之後每一 turn 都被自己的輸出遮蔽(實測:2026-09-10 07:17 之後五小時零 call,gate 全程靜音);
+    #   (2) `ToolSearch` 的回傳結果會把整份工具 schema(含 "name": "PushNotification")貼進 transcript;
+    #   (3) 我自己在回覆裡提到「PushNotification」也算。
+    # 改成解析 transcript 的 content block:type=tool_use 且 name=PushNotification 才算。
+    HAS_PUSH=0
+    if command -v python3 >/dev/null 2>&1; then
+      HAS_PUSH=$(TURN_START="$LAST_USER_LINE" python3 - "$TRANSCRIPT_PATH" <<'PY' 2>/dev/null || echo 0
+import json, os, sys
+start = int(os.environ.get("TURN_START", "0"))
+count = 0
+try:
+    with open(sys.argv[1], encoding="utf-8", errors="ignore") as fh:
+        for index, line in enumerate(fh, start=1):
+            if index <= start or '"PushNotification"' not in line:
+                continue
+            try:
+                record = json.loads(line)
+            except Exception:
+                continue
+            message = record.get("message") or {}
+            for block in message.get("content") or []:
+                if isinstance(block, dict) and block.get("type") == "tool_use" and block.get("name") == "PushNotification":
+                    count += 1
+except Exception:
+    pass
+print(count)
+PY
+      )
+    else
+      # 沒有 python3 的環境:退回較緊的兩段式比對(同一行同時有 tool_use 與 name),仍比舊寫法窄
+      HAS_PUSH=$(grep -E '"type"[[:space:]]*:[[:space:]]*"tool_use"' <<< "$THIS_TURN_TOOLS" 2>/dev/null | grep -cE '"name"[[:space:]]*:[[:space:]]*"PushNotification"' 2>/dev/null)
+    fi
     HAS_PUSH=${HAS_PUSH:-0}
     if [ "$HAS_PUSH" -eq 0 ]; then
+      # 2026-09-06 升 BLOCKER(user 逐字:「你他媽完成回覆後的推播到底為何又不見了?到底要講幾百次?
+      # 你他媽這個不是有定義在工作流程嗎?換言之不管是現在未來還是在任何環節任何 session,
+      # 你他媽都應該要按照工作流程規範運行才對啊」)。
+      # 原本只是 WARNING → 漏 call 時不擋 turn，於是同一條規則被反覆違反。
+      # 依 memory/feedback_ssot_mechanical_p0_not_p1_warn_2026_05_27.md「SSOT canonical = 必 P0
+      # BLOCKER 機械強制；禁 P1 WARN soft signal」升級。**只要求 call**，harness 自行決定要不要
+      # 真的送出(terminal 有焦點時它會回「Not sent — redundant」，那仍算已 call)。
+      CRITICAL_PUSH_GAP=1
       WARNINGS="${WARNINGS}\n  • PushNotification gap:current adapter 已宣告 push-notification capability，但本 turn substantive output 無 tool call trace。per memory/feedback_push_always_call.md，有能力時必 call；terminal-focused suppression 由 harness 自決。"
     fi
   fi
@@ -690,6 +761,30 @@ if [ "${CRITICAL_PEER_VERIFY:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; then
     REASON=$(printf '%s' \
       "🚨 PEER-VERIFY GAP BLOCKER(M4):本 turn 讀 ${PEER_DISPLAY_NAME} reply 但無走 Step 4.5(grep cite verify)/ 4.6(regression scan)/ 5(own-version 比稿)。立刻(a) grep 對 peer 引用 file:line verify,OR(b) 跑 tsc / hook tests regression,OR(c) 明寫「撤回採納 peer」/「未採納」。否則 turn 不結束。" \
       "本機制 = dual-track markdown rule 升 mechanical BLOCKER(2026-05-09 user-authorized)。")
+    emit_governance_block "$REASON"
+  fi
+fi
+
+# ── BLOCKER for Mechanism 6 PushNotification gap(2026-09-06 user-authorized)──
+# 升級邏輯同 M1/M4/M5:第一次 block 阻 turn,同 hash 降 warn 防 loop。
+if [ "${CRITICAL_PUSH_GAP:-0}" = "1" ] && [ -n "$LAST_ASSISTANT" ]; then
+  PUSH_HASH=$(printf '%s' "${LAST_ASSISTANT: -200}" | governance_hash_prefix)
+  LAST_BLOCKED_PUSH_FILE="$STATE_DIR/.last-blocked-push.txt"
+  PUSH_STREAK_FILE="$STATE_DIR/.blocked-push-streak.txt"
+  LAST_BLOCKED_PUSH=""
+  PUSH_STREAK=0
+  [ "$STATE_WRITES" = "1" ] && [ -f "$LAST_BLOCKED_PUSH_FILE" ] && LAST_BLOCKED_PUSH=$(cat "$LAST_BLOCKED_PUSH_FILE" 2>/dev/null || echo "")
+  [ "$STATE_WRITES" = "1" ] && [ -f "$PUSH_STREAK_FILE" ] && PUSH_STREAK=$(cat "$PUSH_STREAK_FILE" 2>/dev/null || echo 0)
+  case "$PUSH_STREAK" in (*[!0-9]*|'') PUSH_STREAK=0 ;; esac
+  # 2026-09-10:同 hash 就降 warn 的舊規則等於「回覆改一個字就能逃掉」——實測今天連續五小時零 call。
+  # 改成:同一段回覆最多擋 3 次(改寫也照擋),第 4 次才降 warn 防死鎖。真的 call 過就整個重置。
+  if [ "$PUSH_HASH" != "$LAST_BLOCKED_PUSH" ] || [ "$PUSH_STREAK" -lt 3 ]; then
+    if [ "$PUSH_HASH" = "$LAST_BLOCKED_PUSH" ]; then PUSH_STREAK=$((PUSH_STREAK + 1)); else PUSH_STREAK=1; fi
+    [ "$STATE_WRITES" = "1" ] && { mkdir -p "$STATE_DIR" 2>/dev/null; echo "$PUSH_HASH" > "$LAST_BLOCKED_PUSH_FILE" 2>/dev/null || true; echo "$PUSH_STREAK" > "$PUSH_STREAK_FILE" 2>/dev/null || true; }
+    REASON=$(printf '%s' \
+      "🚨 PUSH-NOTIFICATION BLOCKER(M6):本 turn 是 substantive output 但沒有 PushNotification tool call trace。" \
+      "工作流程規範(memory/feedback_push_always_call.md):registered runtime 具 push-notification capability 時,substantive turn 結尾**必 call**。" \
+      "立刻 call PushNotification(一行、200 字內、講對方現在會想知道的事)。harness 若因 terminal 有焦點回「Not sent — redundant」仍算已 call,不必重試。否則 turn 不結束。")
     emit_governance_block "$REASON"
   fi
 fi

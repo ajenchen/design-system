@@ -20,6 +20,7 @@ import { mkdirSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
+import { launchBrowser } from './lib/launch-browser.mjs'
 import { startA11yStaticServer } from './lib/a11y-static-server.mjs'
 
 const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -45,7 +46,7 @@ mkdirSync(outDir, { recursive: true })
 
 const server = await startA11yStaticServer({ rootDirectory: join(PROJECT_ROOT, 'storybook-static'), defaultFile: 'iframe.html' })
 const touch = process.argv.includes('--touch')
-const browser = await chromium.launch({ headless: true })
+const browser = await launchBrowser()
 const page = await browser.newPage({ viewport: { width: vw, height: vh }, hasTouch: touch, isMobile: touch })
 let failures = 0
 for (const id of stories) {

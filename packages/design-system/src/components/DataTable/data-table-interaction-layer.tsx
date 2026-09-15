@@ -131,7 +131,18 @@ function getCellGeometry(containerEl: HTMLElement | null, cellId: CellId): CellG
   const panelR = panelEl.getBoundingClientRect()
   return {
     rect: { x: cellR.x, y: cellR.y, width: cellR.width, height: cellR.height },
-    clipRect: { x: panelR.x, y: panelR.y, width: panelR.width, height: panelR.height },
+    // 裁切視窗要的是**可視區**,所以用 client 盒而不是 border 盒:
+    // `getBoundingClientRect()` 含 border 也含捲軸,而釘選區的 body panel 帶一條等同水平捲軸高的
+    // 透明 `border-bottom`(見 data-table.tsx 的 `hScrollbarGutter` —— 那是讓三區可視列高一致的補償)。
+    // 用 border 盒的話 clipRect 會比真正看得到的區域多 15px,已經被裁掉的最後一列若成為選取格,
+    // 浮層會畫進那條邊框裡。`clientLeft/clientTop` 是 border 寬,加上去才是 padding box 的原點;
+    // `clientWidth/clientHeight` 本來就不含 border 與捲軸(2026-09-04 稽核抓到,由上述補償引入)。
+    clipRect: {
+      x: panelR.x + panelEl.clientLeft,
+      y: panelR.y + panelEl.clientTop,
+      width: panelEl.clientWidth,
+      height: panelEl.clientHeight,
+    },
     panel,
   }
 }

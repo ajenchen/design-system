@@ -18,6 +18,7 @@
 // 此 baseline = D 路徑 implement post-fix 的 diff 對照源。Acceptance:每 edge ≤ 0.5 CSS px(codex strict gate)。
 
 import { chromium } from 'playwright'
+import { launchBrowser } from './lib/launch-browser.mjs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
@@ -156,7 +157,7 @@ async function probeCellType(page, { type, colId }, rowIndex = 0) {
 
 async function main() {
   await mkdir(OUT_DIR, { recursive: true })
-  const browser = await chromium.launch({ headless: true })
+  const browser = await launchBrowser()
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 })
   const page = await ctx.newPage()
 

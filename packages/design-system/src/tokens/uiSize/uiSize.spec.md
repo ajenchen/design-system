@@ -17,6 +17,13 @@ Button、Input、Checkbox/Radio SelectionItem 等互動元件。
 | `--field-height-sm` | 1.75rem (28px) | 2rem (32px) |
 | `--field-height-md` | 2rem (32px) | 2.25rem (36px) |
 | `--field-height-lg` | 2.25rem (36px) | 2.5rem (40px) |
+| `--menu-max-height` | 18.75rem (300px) | 18.75rem (300px) — 固定 |
+
+**`--menu-max-height`(2026-09-11 補登記)**:清單型浮層的捲動上限 —— CommandList / SelectMenu 的內容超過它就在
+清單內部捲動。2026-09-08 從 `command.tsx` 的 fallback 字面值升格為 token;消費者 `command.tsx`,
+`select.spec.md`「大量選項」段引用它。**不隨 density 變**(它是「一次看幾筆」的閱讀上限,不是控制項尺寸)。
+與 Dialog 的高度上限是兩套獨立機制:Dialog 吃 `min(100svh - inset*2, maxHeight)`,兩邊互不引用
+(CommandDialog 同時被兩者夾住,見 `dialog.spec.md`「高度」段)。
 
 ### Field-height family 清單與共享 default（SSOT）
 
@@ -102,6 +109,8 @@ Form-context field 控件的左右水平內距。**固定 12px,不隨 size / den
 |-------|-----|------|
 | `--field-px` | 0.75rem (12px) | form-context field 左右內距 SSOT;固定不隨 size / density |
 
+**Tag 盒高(2026-09-15 新增,唯一住所)**:`--tag-height-sm` = 1.25rem(20px)、`--tag-height-md` = 1.5rem(24px)、`--tag-height-lg` = 1.5rem(24px,md alias)。utility bridge:`h-tag-sm` / `h-tag-md` / `h-tag-lg`(`@theme inline` 的 `--spacing-tag-sm` / `--spacing-tag-md` / `--spacing-tag-lg`,規則 3;Tag cva 消費)。消費者:`Tag` cva 的 `h-tag-sm` / `h-tag-md` / `h-tag-lg`(經上述 bridge)、`Field/field-wrapper.tsx` 的 `fieldTagInsetX/Y`(四邊等距公式 `(field-height − 2px − tag-height)/2`)。JS 側對應 `tag.tsx` `TAG_HEIGHT_PX`,閘 `scripts/tag-field-vertical-inset.mjs` I7 量實際高度對齊兩者。收斂前 Tag 高度散在 4 處字面值(tag.tsx cva / tag.tsx metrics / combobox.tsx ×3 / field-wrapper.tsx calc),那正是漂移的根(M17)。
+
 **消費者**:`Input` / `NumberInput` / `Select` / `Combobox` / `DatePicker` / `TimePicker` / `LinkInput` / `Textarea`(經 `fieldWrapperStyles` cva `px-[var(--field-px)]`)+ `PeoplePicker`(form-context inject `!px-[var(--field-px)]`)+ tag 模式右緣 re-assert(`paddingRight: var(--field-px)`,Select / Combobox readonly + edit)。
 
 **與 `--table-cell-px` 的關係**:同 `-px` 命名慣例。`--table-cell-px`(DataTable-scoped)預設 `var(--field-px)`(form / cell 同 12px content gutter SSOT),但仍是獨立 named token、可被 DataTable 單獨 override(per `components/Field/field-controls.spec.md` contract (c) scoped 決策)。
@@ -179,11 +188,13 @@ DataTable 行高。density 切換統一 +0.5rem (+8px)。
 
 Tag 有自己的尺寸定義（見 `tag.spec.md`），與 Field 的配對透過 size 直接對應：
 
-| Field size | Tag size | Tag 高度 | Tag padding (四邊等距) |
+| Field size | Tag size | Tag 高度 | Tag padding (四邊等距;SSOT `Field/field-wrapper.tsx` `fieldTagInsetX/Y`) |
 |---|---|---|---|
-| sm | sm | 20px | (field-height-sm - 1.25rem) / 2 |
-| md | md | 24px | (field-height-md - 1.5rem) / 2 |
-| lg | lg | 24px | (field-height-lg - 1.5rem) / 2 |
+| sm | sm | 20px(`--tag-height-sm`) | (field-height-sm − 2px − tag-height-sm) / 2 = 3px |
+| md | md | 24px(`--tag-height-md`) | (field-height-md − 2px − tag-height-md) / 2 = 3px |
+| lg | lg | 24px(`--tag-height-lg`) | (field-height-lg − 2px − tag-height-lg) / 2 = 5px |
+
+公式扣 2px 邊框(2026-09-15 像素實測修正,詳 `components/Tag/tag.spec.md`「與 Field 的關係」):padding 量在邊框內側,不扣會四邊差 1px。
 
 ---
 

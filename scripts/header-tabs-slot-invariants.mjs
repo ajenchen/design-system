@@ -92,6 +92,8 @@ const STORIES = [
 ]
 
 const fmt = (v) => (v == null ? 'null' : typeof v === 'number' ? v.toFixed(2) : String(v))
+/** `--selftest` 只影響 W3(見該段):把 overlay 清空,重現「那顆鈕從未渲染」的狀態,W3 必須變紅 */
+const SELFTEST = process.argv.includes('--selftest')
 
 for (const story of STORIES) {
   await page.goto(`http://localhost:7501/iframe.html?id=${story.id}&viewMode=story`, { waitUntil: 'networkidle' })
@@ -178,6 +180,48 @@ for (const story of STORIES) {
   }
 }
 
+// ── W3:分頁的 inlineAction 必須真的渲染在 overlay 裡(2026-09-10)────────────────
+// 病根:`resolveTabsInlineActionPosition` 對傳進來的活 DOMRect 做 `{ ...overlay }`,
+// 而 DOMRect 的 left/top/right/bottom 都在**原型**上 → 展出來是 `{}` → 每一項比較都是
+// `undefined > undefined` = false → 永遠回 null。從 2026-07-18 改成 overlay portal 起,
+// Tabs 的 inlineAction **一次都沒有渲染過**,而單元測試的 fixture 全是普通物件所以一直綠。
+// 這一段是 render-level 防線:帶 inlineAction 的 story,overlay 裡就必須有那顆鈕,且位置對齊 tab 右緣。
+{
+  const story = { id: 'design-system-components-tabs-展示--with-suffix', label: 'Tabs×inlineAction' }
+  await page.goto(`http://localhost:7501/iframe.html?id=${story.id}&viewMode=story`, { waitUntil: 'networkidle' })
+  let loaded = true
+  try { await page.waitForSelector('[data-slot="tabs-list"]', { timeout: 15000 }) } catch { loaded = false }
+  if (!loaded) record('W3-LOAD', `${story.label} story 載入(${story.id})`, false, 'tablist 未出現 — story 缺失/改名/render 失敗,禁 silent skip')
+  else {
+    // 對照組(`--selftest`):重現這個 bug 當時的可觀測狀態 —— overlay 裡什麼都沒有 ——
+    // W3 必須因此變紅。不跑這一步的話,「W3 綠」不算證據(儀器要先證明它該紅的時候會紅)。
+    if (SELFTEST) await page.evaluate(() => {
+      const strip = () => { const o = document.querySelector('.pointer-events-none.absolute'); if (o) o.replaceChildren() }
+      strip(); new MutationObserver(strip).observe(document.body, { childList: true, subtree: true })
+    })
+    await page.waitForTimeout(500)
+    const a = await page.evaluate(() => {
+      const list = document.querySelector('[data-slot="tabs-list"]')
+      const scope = list?.parentElement
+      const overlay = scope?.querySelector('.pointer-events-none.absolute')
+      const action = overlay?.querySelector('button')
+      const tabs = [...document.querySelectorAll('[role="tab"]')]
+      // 帶 inlineAction 的那個 tab:paddingRight 有預留(icon 16 + gap 8 = 24px)
+      const host = tabs.find((t) => Math.round(parseFloat(getComputedStyle(t).paddingRight)) === 24)
+      const ar = action?.getBoundingClientRect(), hr = host?.getBoundingClientRect()
+      return { hasOverlay: !!overlay, overlayChildren: overlay?.childElementCount ?? null, hasAction: !!action,
+        label: action?.getAttribute('aria-label') ?? null,
+        rightAligned: ar && hr ? Math.abs(ar.right - hr.right) : null,
+        insideTab: ar && hr ? (ar.top >= hr.top - 0.5 && ar.bottom <= hr.bottom + 0.5) : null }
+    })
+    record('W3-a', `${story.label} overlay 裡有 inlineAction 鈕`, a.hasOverlay && a.hasAction,
+      `overlay=${a.hasOverlay} 子節點=${fmt(a.overlayChildren)} 鈕=${a.hasAction}(null = resolver 回 null,portal 從未渲染)`)
+    record('W3-b', `${story.label} 鈕的右緣對齊 tab 右緣(±1px)且垂直在 tab 內`,
+      a.rightAligned != null && Math.abs(a.rightAligned) <= 1 && a.insideTab === true,
+      `右緣差 ${fmt(a.rightAligned)}px / 垂直在內=${fmt(a.insideTab)}`)
+  }
+}
+
 // ── Output ──
 console.log(`\n=== Header tabsSlot W2 Invariants Test ===`)
 console.log(`PASS: ${passes.length}`)
@@ -191,6 +235,13 @@ if (failures.length > 0) {
 await browser.close()
 await served.close()
 
+if (SELFTEST) {
+  const w3 = failures.filter((f) => f.includes('W3-'))
+  console.log(w3.length >= 2
+    ? `\n✓ selftest:清空 overlay 後 W3 兩條都變紅(${w3.length} 條)—— 儀器有效`
+    : '\n✗ selftest:overlay 都清空了 W3 還是綠 —— 這一段的綠燈不算證據')
+  process.exit(w3.length >= 2 ? 0 : 1)
+}
 if (failures.length > 0) {
   console.error(`\n✗ ${failures.length} invariant(s) failed. Block commit.`)
   process.exit(1)
