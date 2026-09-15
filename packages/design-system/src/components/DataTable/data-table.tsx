@@ -527,24 +527,113 @@ const isSystemColumn = (colId: string) => SYSTEM_COL_IDS.has(colId)
 // 本層改成**幾何保證**:已掛載的列必然是連續一段 `[first.start, last.end]`,這段以外的整個虛擬高度
 // 一次鋪成骨架底。覆蓋 = 上帶 ∪ 已掛載段 ∪ 下帶 = 整個捲動區,**恆真,與時序無關**。
 // 用 CSS gradient 而不是真 DOM:未掛載區可以有幾十萬 px 高,鋪真列是無上限的主執行緒工作;
-// gradient 是一張貼圖,每次 render 只多兩個 div、零逐幀工作 —— 所以它不可能造成卡頓
-// (「不應該為了達成此目的而讓體驗和互動卡頓」,user 2026-09-12)。
+// **「gradient 是一張貼圖、零逐幀工作,所以不可能造成卡頓」這句是錯的,2026-09-14 實測推翻。**
+// 它不是貼圖,是**每欄一層的 paint-time shader**(層數 = 欄數 + 1),Skia 每次光柵化都要重建並取樣。
+// 用 CDP `LayerTree.makeSnapshot` + `profileSnapshot` 重放同一份 display list,量 1680×4900
+// (視窗 + Chrome 的預繪區)這塊:**沒有骨架帶 1.0-1.4ms,13 層漸層 46.7-47.5ms —— 47 倍**。
+// 真實頁面上做同一個消融:分支 103.4 → 2.9ms,而 main 跑同一段消融命中 0 個元素、數字不動
+// (2.00 → 2.18ms),null control 成立。
+// **「看不見」不等於「不收費」**:骨架帶的 visibleArea 是 0(它在摺線下),但 Chrome 的光柵化範圍
+// 遠大於可視區,所以它照樣每次都被畫。這也是我先前所有量測都看不到它的原因 —— 我一直盯著可視區與主執行緒。
+// user 2026-09-14 在他的 Chrome 153 + Retina 上實測:純 hover 時 main 每幀 17ms、分支 33ms。
+//
+// 已實測否決的替代寫法(留檔免得有人重試):
+//   background-size 整數化              46.7 → 49.0ms(沒用;「非整數尺寸走不了快路徑」不成立)
+//   2 層:一條橫向漸層畫所有色條          91ms(更貴 —— 拉滿 19,160px 的漸層得在整片上求值)
+//   2 層 + mask-image 切列間隙           136ms(更貴得多)
+//   用底色蓋回列間隙                     做不到 —— 骨架帶背後沒有不透明底色(暗色模式 `--surface` 本身 8% 白)
+// 結構結論:**小磚重複很便宜,大面積漸層很貴**;而 CSS 單一漸層是一維的,表達不了
+// 「橫向 N 根 × 縱向一條帶」,所以純 CSS 的下限就是欄數 + 1 層。
+//
+// **現行寫法:把那塊 (表格寬 × 列距) 的圖案畫進 canvas,轉成點陣圖後單層 `repeat`。**
+// 點陣圖是快取後直接貼上的繪製原語,不跑 shader,而且層數固定為 1、與欄數無關。
+// 圖案只在「欄寬 / 列距 / 縮放 / 主題色」變動時重畫一次(見 `skeletonTileCache`),不在逐幀路徑上。
 //
 // 視覺消費既有 SSOT,不自創:bar 用 `--muted`(= `Skeleton` 的 `bg-muted`)、幾何抄 `renderShellRow`
 // 的 `h-3 w-3/5`(系統欄 `h-4 w-4`)、列底線用 `--divider`(同真列的 `border-b border-divider`)。
 // 已知落差:gradient 畫不出 `Skeleton` 的 `rounded-md` 圓角 —— 12px 高的 bar 在 9000px/s 的捲動下
 // 看不出來,而且這一層只出現在「本來會是全白」的地方,拿圓角換合成器保證不划算。
+const skeletonTileCache = new Map<string, string>()
+/**
+ * 畫一塊 (表格寬 × 列距) 的骨架圖案並轉成**單一張圖片**。只在 key 變動時重做,不在逐幀路徑上。
+ * key 含欄寬、列距與當下解析出的兩個顏色 —— 主題一換顏色就變,key 跟著變,自動重做。
+ *
+ * **用 SVG 不用 canvas/PNG**(2026-09-14 像素比對逼出來的):canvas 內部是預乘 alpha,
+ * `toDataURL` 反預乘會有捨入誤差,而色條只有 4% 不透明度 —— 低 alpha 會把誤差放大。
+ * 實測 PNG 版與原本的多層漸層差 0.05-0.2% 的像素、最大通道差 4-14。
+ * SVG 由 Skia 直接以裝置解析度光柵化,顏色字串原樣傳遞,沒有 8-bit 中介。
+ * 取不到編碼能力時回 null,呼叫端退回原本的多層漸層,功能不受影響。
+ */
+const skeletonTile = (
+  bars: { x: number; w: number; h: number }[],
+  width: number,
+  pitch: number,
+  muted: string,
+  divider: string,
+): string | null => {
+  if (width <= 0 || pitch <= 0 || typeof btoa === 'undefined') return null
+  const key = `${width}|${pitch}|${muted}|${divider}|${bars.map((b) => `${b.x},${b.w},${b.h}`).join(';')}`
+  const hit = skeletonTileCache.get(key)
+  if (hit !== undefined) return hit || null
+  try {
+    const rects = bars
+      .map((b) => `<rect x="${b.x}" y="${Math.max(0, Math.round((pitch - b.h) / 2))}" width="${b.w}" height="${b.h}" fill="${muted}"/>`)
+      .join('')
+    // 列分隔線:少了它整片 bar 讀不出「這是一列一列」。用真列同一條 token。
+    const line = `<rect x="0" y="${Math.max(0, pitch - 1)}" width="${width}" height="1" fill="${divider}"/>`
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${pitch}">${rects}${line}</svg>`
+    const url = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`
+    // 快取上限:欄寬會隨拖曳連續變動,不設上限會無限長大。
+    if (skeletonTileCache.size > 24) skeletonTileCache.clear()
+    skeletonTileCache.set(key, url)
+    return url
+  } catch {
+    skeletonTileCache.set(key, '')
+    return null
+  }
+}
+
+/**
+ * 骨架底的畫法。**2026-09-14 實測:圖案是成本來源,不是層數也不是面積。**
+ *
+ * 真實頁面 DPR2、`LayerTree.profileSnapshot` 重放同一份 display list,量「視窗 + Chrome 預繪區」:
+ *   main(沒有骨架底)              2.79ms
+ *   13 層漸層(2026-09-12 原版)    77-79ms
+ *   單層 SVG 平鋪圖(中途版)        45-47ms
+ *   **純色**                       **3.56ms**   ← 幾乎等於 main
+ *   整個關掉                       2.35ms
+ *   只留視窗高(1000px)、仍是圖案    7.52ms       ← 縮小面積也救不回來
+ * 量測腳本:`scratchpad/band-variants.mjs`(改自 cs-diff/confirm.mjs),null control = main 跑同一段
+ * 消融命中 0 個、數字不動。
+ *
+ * 也就是說:**任何需要逐像素求值的圖案(漸層或平鋪圖片)鋪在預繪區上都要付十幾倍的光柵成本**,
+ * 而「看不見」不等於「不收費」—— 骨架底的 visibleArea 是 0,Chrome 照樣光柵化它。
+ *
+ * `SKELETON_PATTERN` 選畫法:
+ *   'solid'  純色(達標:3.56ms)—— 未掛載區是一片均勻淡色
+ *   'bars'   每欄一根色條 + 列分隔線(45ms)—— 2026-09-12 起的長相
+ * 兩者的**零空白幾何保證完全相同**(見 :528 與 :4300 的覆蓋不變條件,與畫什麼無關)。
+ */
+const SKELETON_PATTERN_REACH_VIEWPORTS = 1.5
+
 const unmountedSkeletonStyle = (
   cols: { id: string; getSize: () => number }[],
   resolvedWidths: Map<string, number>,
   pitch: number,
 ): React.CSSProperties => {
+  const bars: { x: number; w: number; h: number }[] = []
   const image: string[] = []; const size: string[] = []; const position: string[] = []; const repeat: string[] = []
+  const cellPx = typeof document !== 'undefined'
+    ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--table-cell-px')) * 16 || 12
+    : 12
   let x = 0
   for (const c of cols) {
     const w = resolvedWidths.get(c.id) ?? c.getSize()
     const sys = isSystemColumn(c.id)
     const bh = sys ? 16 : 12
+    const bw = sys ? 16 : Math.max(0, (w - 2 * cellPx) * 0.6)
+    bars.push({ x: x + cellPx, w: bw, h: bh })
+    // 退路用的多層漸層(與 2026-09-14 之前完全相同的視覺);只有拿不到 canvas 時才會用到。
     const top = Math.max(0, Math.round((pitch - bh) / 2))
     image.push(`linear-gradient(to bottom, transparent 0 ${top}px, var(--muted) ${top}px ${top + bh}px, transparent ${top + bh}px 100%)`)
     size.push(`${sys ? '16px' : `calc((${w}px - 2 * var(--table-cell-px)) * 0.6)`} ${pitch}px`)
@@ -552,10 +641,19 @@ const unmountedSkeletonStyle = (
     repeat.push('repeat-y')
     x += w
   }
-  // 列分隔線:少了它整片 bar 讀不出「這是一列一列」。用真列同一條 token。
   const line = Math.max(0, pitch - 1)
   image.push(`linear-gradient(to bottom, transparent 0 ${line}px, var(--divider) ${line}px ${pitch}px)`)
   size.push(`100% ${pitch}px`); position.push('0 0'); repeat.push('repeat')
+
+  if (typeof document !== 'undefined') {
+    const root = getComputedStyle(document.documentElement)
+    const muted = root.getPropertyValue('--muted').trim()
+    const divider = root.getPropertyValue('--divider').trim()
+    const url = skeletonTile(bars, x, pitch, muted, divider)
+    if (url) {
+      return { backgroundImage: `url(${url})`, backgroundSize: `${x}px ${pitch}px`, backgroundPosition: '0 0', backgroundRepeat: 'repeat' }
+    }
+  }
   return { backgroundImage: image.join(','), backgroundSize: size.join(','), backgroundPosition: position.join(','), backgroundRepeat: repeat.join(',') }
 }
 
@@ -4200,14 +4298,29 @@ function DataTableInner<TData>(
     // 「改 transform 免掉版面失效」這條看似漂亮,實測兩項都不成立:版面計算次數原地不動
     // (225/261 vs 改前 223/259),而且高度固定成整個捲動區的絕對定位帶子會**撐大捲動範圍**
     // —— 可捲高度從 20160px 變成 21080px,使用者能捲過表格尾端。淨損失,故退回。
-    const unmountedBands: { key: string; top: number; height: number }[] = []
+    // 每一側都切成兩段:靠近已掛載列的 `near` 鋪有色條的圖案,更遠的 `far` 只有純色。
+    // 覆蓋不變條件不受影響 —— near ∪ far 仍然等於原本那一整段(見 :528 / 下方 JSX 註解)。
+    const unmountedBands: { key: string; top: number; height: number; pattern: boolean }[] = []
     if (useVirtual && rowVirtualItems.length > 0) {
       const total = virtualizer.getTotalSize()
       const first = rowVirtualItems[0]
       const last = rowVirtualItems[rowVirtualItems.length - 1]
       const mountedEnd = last.start + last.size
-      if (first.start > 0) unmountedBands.push({ key: 'before', top: 0, height: first.start })
-      if (total - mountedEnd > 0) unmountedBands.push({ key: 'after', top: mountedEnd, height: total - mountedEnd })
+      // 視窗高用已快取的捲動幾何(scrollGeomRef 由 measureScrollbarGutters 維護,見 :1829 段),
+      // 不在這裡讀 DOM —— 這條路徑每次 commit 都會跑,多一次 clientHeight 就是多一次強制版面。
+      const vh = scrollGeomRef.current.height || 800
+      const reach = Math.max(200, Math.round(vh * SKELETON_PATTERN_REACH_VIEWPORTS))
+      if (first.start > 0) {
+        const nearTop = Math.max(0, first.start - reach)
+        if (nearTop > 0) unmountedBands.push({ key: 'before-far', top: 0, height: nearTop, pattern: false })
+        unmountedBands.push({ key: 'before', top: nearTop, height: first.start - nearTop, pattern: true })
+      }
+      const afterH = total - mountedEnd
+      if (afterH > 0) {
+        const nearH = Math.min(afterH, reach)
+        unmountedBands.push({ key: 'after', top: mountedEnd, height: nearH, pattern: true })
+        if (afterH > nearH) unmountedBands.push({ key: 'after-far', top: mountedEnd + nearH, height: afterH - nearH, pattern: false })
+      }
     }
     const staticItems = useVirtual ? [] : rows.map((row, i) => rowEl(row, i, { isLast: i === rows.length - 1 }))
     prune()
@@ -4238,6 +4351,12 @@ function DataTableInner<TData>(
                   position: 'absolute', left: 0, width: containerWidth, top: band.top, height: band.height,
                   pointerEvents: 'none',
                   ...bandStyle,
+                  // **順序很重要**:這個覆寫必須在 `...bandStyle` 之後,否則 bandStyle 的
+                  // backgroundImage 會把 `none` 蓋回去,六段全都變成圖案 ——
+                  // 2026-09-14 就是這樣白量了一輪(拆段後仍 49ms,跟全高圖案一樣)。
+                  // 遠段:只有底色,沒有 background-image。**底色不能省** —— 少了它就是透明,
+                  // 那等於空白,直接破壞零空白保證。
+                  ...(band.pattern ? null : { backgroundImage: 'none', backgroundColor: 'var(--muted)' }),
                 }}
               />
             ))}
