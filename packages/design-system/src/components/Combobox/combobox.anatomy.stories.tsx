@@ -64,7 +64,7 @@ interface SizeSpec {
   fontToken: string; font: string
   icon: number
   tagSize: string; tagHeight: string
-  tagPaddingCalc: string
+  tagPaddingCalc: string; tagInset: string
   tagGap: string
 }
 
@@ -74,7 +74,8 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
     fontToken: 'text-body', font: '14px',
     icon: 16,
     tagSize: 'tag-sm', tagHeight: '20px',
-    tagPaddingCalc: '(field-height-sm - 1.25rem) / 2',
+    // 公式 SSOT = Field/field-wrapper.tsx fieldTagInsetX/Y(扣 2px 邊框;閘 scripts/tag-field-vertical-inset.mjs)
+    tagPaddingCalc: '(field-height-sm − 2px − tag-height-sm) / 2', tagInset: '3px',
     tagGap: '4px',
   },
   md: {
@@ -82,7 +83,7 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
     fontToken: 'text-body', font: '14px',
     icon: 16,
     tagSize: 'tag-md', tagHeight: '24px',
-    tagPaddingCalc: '(field-height-md - 1.5rem) / 2',
+    tagPaddingCalc: '(field-height-md − 2px − tag-height-md) / 2', tagInset: '3px',
     tagGap: '4px',
   },
   lg: {
@@ -90,7 +91,7 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
     fontToken: 'text-body-lg', font: '16px',
     icon: 20,
     tagSize: 'tag-lg (=md)', tagHeight: '24px',
-    tagPaddingCalc: '(field-height-lg - 1.5rem) / 2',
+    tagPaddingCalc: '(field-height-lg − 2px − tag-height-lg) / 2', tagInset: '5px',
     tagGap: '4px',
   },
 }
@@ -246,7 +247,7 @@ export const Overview = {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <H3>結構（Anatomy）— edit 換行 (wrap)</H3>
-          <Desc>高度隨內容展開，Tags 自然換行。右側控件 (clear + chevron) 以 self-start 固定在第一行高度位置。wrap 時 py-1 增加上下內距。</Desc>
+          <Desc>高度隨內容展開，Tags 自然換行。右側控件 (clear + chevron) 以 self-start 固定在第一行高度位置。wrap 時上下內距 = (field-height − 2px − tag-height) / 2（sm/md 3px、lg 5px，與單行置中同值，第一行 Tag 不位移）。</Desc>
         </div>
         <div className="flex flex-col gap-2 items-start">
           <div className="inline-flex items-start border-2 border-dashed border-primary/30 rounded-md px-3 py-2.5 gap-1 flex-wrap w-64">
@@ -262,7 +263,7 @@ export const Overview = {
             <span className="rounded px-2 py-1 text-[11px] font-mono border border-dashed self-start ml-auto"
               style={{ borderColor: 'var(--info)', backgroundColor: 'var(--info-subtle)', color: 'var(--info)' }}>chevron</span>
           </div>
-          <span className="text-[10px] text-fg-muted font-mono">flex-wrap · height: auto · py-1</span>
+          <span className="text-[10px] text-fg-muted font-mono">flex-wrap · height: auto · py = (field − 2 − tag) / 2</span>
         </div>
       </div>
 
@@ -487,7 +488,7 @@ const InspectorInner = () => {
             <PropRow label="Tag 間距" dot={Z.gap.text}>{s.tagGap}</PropRow>
             <PropRow label="Icon 尺寸" dot={Z.icon.text}>{s.icon}px</PropRow>
             <PropRow label="Tag 高度" dot={Z.tag.text}>{s.tagHeight} ({s.tagSize})</PropRow>
-            {wrap && <PropRow label="上下內距">py-1 (4px)</PropRow>}
+            {wrap && <PropRow label="上下內距">{s.tagInset} ({s.tagPaddingCalc})</PropRow>}
           </div>
 
           {/* TYPOGRAPHY */}
@@ -640,7 +641,7 @@ export const SizeMatrix = {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-1">
         <H3>Size Token 對照</H3>
-        <Desc>每個 size 對應的 token 一覽。tagPadding 用 calc() 計算確保 Tag 垂直置中——公式為 (field-height - tag-height) / 2。Tag 間距固定 4px (GAP constant)。</Desc>
+        <Desc>每個 size 對應的 token 一覽。tagPadding 用 calc() 計算確保 Tag 四邊等距——公式為 (field-height − 2px 邊框 − tag-height) / 2，sm/md 3px、lg 5px（SSOT：Field/field-wrapper.tsx fieldTagInsetX/Y）。Tag 間距固定 4px (GAP constant)。</Desc>
       </div>
 
       {/* Token comparison table */}
@@ -717,9 +718,9 @@ export const SizeMatrix = {
               <Td>wrap 上下內距</Td>
               {SIZES.map((sz) => (
                 <Td key={sz} mono>
-                  <div className="text-fg-secondary">{sz === 'lg' ? 5 : 3}px</div>
+                  <div className="text-fg-secondary">{SIZE_SPECS[sz].tagInset}</div>
                   <div className="text-fg-muted text-[10px]">(field − 2 − tag) / 2</div>
-                  <div className="text-fg-muted text-[10px]">4px (height: auto)</div>
+                  <div className="text-fg-muted text-[10px]">height: auto</div>
                 </Td>
               ))}
             </tr>
@@ -839,7 +840,7 @@ export const StateBehavior = {
             </div>
           </div>
           <div className="flex flex-col gap-1 text-[11px] text-fg-secondary">
-            <span>wrap 模式差異：flex-wrap · height: auto · py-1 (4px 上下內距)</span>
+            <span>wrap 模式差異：flex-wrap · height: auto · 上下內距 (field − 2 − tag) / 2（sm/md 3px、lg 5px，與單行置中同值）</span>
             <span>chevron 的容器高度固定為 tag 高度 (sm:20px, md/lg:24px)，self-start 對齊</span>
           </div>
         </div>

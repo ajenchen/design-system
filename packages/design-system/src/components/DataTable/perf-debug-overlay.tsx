@@ -1,6 +1,10 @@
 /**
  * 效能診斷面板 —— **只在網址帶 `?perfdebug` 時出現**,其餘 render 出 null,零成本。
  *
+ * **2026-09-15 結案:** user 機器上的 hover 33ms 已用 Long Animation Frames 歸因到 `*.netlify.app` 被注入的
+ * `thin-client-min.js`(見 `data-table.tsx` 的「2026-09-15 結案」docblock);下方 v2 / v3 的消融假設(成本在樣式/繪製/光柵)
+ * 已被推翻。要再量請先用 `scripts/user-probe/loaf-attribution.js` 歸因,別直接拿本面板的 A/B/C 模式消融。
+ *
  * ## v2(2026-09-14)修掉 v1 的兩個缺陷
  *
  * v1 從 user 機器拿回:移動間隔中位 245ms / 最久 3012ms,但出幀間隔中位 33ms / 最久 38ms。

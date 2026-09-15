@@ -524,9 +524,9 @@ const PeoplePicker = React.forwardRef<HTMLDivElement, PeoplePickerProps>(functio
       defaultOpen={defaultOpen}
       onOpenChange={onOpenChange}
       // 2026-05-13 (a) fix(user 拍 Path a + Layer A density-drift root-cause):
-      // 撤掉 `tagAreaPaddingLeftPx={8}` magic — Combobox `tagPadding[size]` 是 density-dependent
-      // calc 公式(`(field-height - icon-size) / 2`),只在 md size + default density 才 = 4px;
-      // 其他 size/density 漂 6px / 8px → 4+8=12 spec 公式不成立。
+      // 撤掉 `tagAreaPaddingLeftPx={8}` magic — Combobox 的 tag 內距是 size-dependent calc 公式
+      //(SSOT `fieldTagInsetX`:`(field-height − 2px − tag-height) / 2` = sm 3 / md 3 / lg 5px,2026-09-15 起含邊框),
+      // 不是固定值 → 4+8=12 這種加法不成立。
       // (a) fix:form context + 有 tag → 改 inject `!px-[var(--field-px)]`(固定 12px)直接 override `tagPadding[size]`,
       // 達成 GitHub PeoplePicker fixed 12px inset(對齊 cell context 同 13px from cell.left 含 1px border)。
       // - form + 有 tag → `!px-[var(--field-px)]`(12px 固定 inset)+ tagAreaPaddingLeftPx undefined → field.padL=12 ✓

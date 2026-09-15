@@ -152,6 +152,7 @@ const SHELL_ENGAGE_FALLBACK_MS = 120
 const SCROLL_BUSY_MS = Number(arg('busy-ms', 15))
 // 只給驗證用:強迫走第三階對照組(強制隱藏列內容),證明那一階真的會紅 ——
 // 快機器上前兩階就通過了,第三階平常跑不到,不驗就是另一個沒被證明會紅的綠燈(M32)。
+// CI 每次 PR 都另跑一趟 `--selftest --selftest-force-ink`(.github/workflows/ci.yml,緊接一般 selftest 之後)。
 const FORCE_INK_CONTROL = process.argv.includes('--selftest-force-ink')
 // 觀測窗必須長過補齊期限,否則「到窗尾還沒補完」會被當成補完(Codex R9)
 const SETTLE_EFFECTIVE = ASSERT_FILL_MS !== '' ? Math.max(SETTLE_MS, Number(ASSERT_FILL_MS) + 300) : SETTLE_MS
@@ -407,7 +408,7 @@ const analyze = (frames) => {
 const pct = (v) => `${(v * 100).toFixed(0)}%`
 const spark = (arr) => arr.map((v) => (v <= 0 ? '·' : String(Math.min(9, Math.ceil(v * 9))))).join('')
 
-// ── profile 彙總(對照 scratchpad/prof/profile-scroll-story.mjs 的寫法)──
+// ── profile 彙總(CDP Profiler.stop 的 nodes / samples / timeDeltas → self / inclusive 時間)──
 const summarizeProfile = (profile, staticDir) => {
   const byId = new Map(profile.nodes.map((n) => [n.id, n]))
   const parent = new Map(); for (const n of profile.nodes) for (const c of n.children || []) parent.set(c, n.id)

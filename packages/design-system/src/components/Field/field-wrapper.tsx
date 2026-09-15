@@ -288,7 +288,7 @@ export const bareInputStyles = [
 // Hook:`check_field_family_invariants.sh` A.1(原 check_naked_row_mode_propagation.sh 已 folded,write-time BLOCKER)
 // Audit:design-system-audit Group N(periodic batch verify)
 /**
- * Field 內含 Tag 時的四邊內距(tag.spec.md:231「Field 的 padding 改為 (field-height − tag-height)/2,確保 tag 四邊等距」)。
+ * Field 內含 Tag 時的四邊內距(tag.spec.md「與 Field 的關係」:「Field 的 padding 改為 (field-height − 2px 邊框 − tag-height) / 2(sm 3 / md 3 / lg 5)」,確保 tag 四邊等距)。
  *
  * **公式必須扣掉 2px 邊框**(2026-09-15 像素實測修正):padding 在邊框內側量,而 Tag 垂直置中是在內高
  *(欄高 − 2px)裡置中 —— 舊寫法沒扣邊框,水平 4/4/6、垂直 3/3/5,四邊差 1px。

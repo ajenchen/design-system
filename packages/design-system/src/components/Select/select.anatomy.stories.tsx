@@ -91,7 +91,8 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
     fontToken: 'text-body', font: '14px',
     icon: 16,
     tagHeight: '20px (tag-sm)',
-    tagPaddingFormula: '(field-height-sm - 1.25rem) / 2',
+    // 公式 SSOT = Field/field-wrapper.tsx fieldTagInsetX(扣 2px 邊框;閘 scripts/tag-field-vertical-inset.mjs)
+    tagPaddingFormula: '(field-height-sm − 2px − tag-height-sm) / 2 = 3px',
   },
   md: {
     heightToken: 'h-field-md', height: '32px',
@@ -100,7 +101,7 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
     fontToken: 'text-body', font: '14px',
     icon: 16,
     tagHeight: '24px (tag-md)',
-    tagPaddingFormula: '(field-height-md - 1.5rem) / 2',
+    tagPaddingFormula: '(field-height-md − 2px − tag-height-md) / 2 = 3px',
   },
   lg: {
     heightToken: 'h-field-lg', height: '36px',
@@ -109,7 +110,7 @@ const SIZE_SPECS: Record<SizeKey, SizeSpec> = {
     fontToken: 'text-body-lg', font: '16px',
     icon: 20,
     tagHeight: '24px (tag-lg)',
-    tagPaddingFormula: '(field-height-lg - 1.5rem) / 2',
+    tagPaddingFormula: '(field-height-lg − 2px − tag-height-lg) / 2 = 5px',
   },
 }
 
@@ -734,7 +735,7 @@ export const SizeMatrix = {
       {/* ── tag mode additional tokens ── */}
       <div className="flex flex-col gap-2">
         <span className="text-caption font-medium text-fg-secondary">tag 模式額外 token</span>
-        <Desc>tag 模式的 padding 用 calc() 公式置中 Tag：px = (field-height - tag-height) / 2。右側 paddingRight 固定 12px（--field-px token）。</Desc>
+        <Desc>tag 模式的 padding 用 calc() 公式讓 Tag 四邊等距：px = (field-height − 2px 邊框 − tag-height) / 2（sm/md 3px、lg 5px；SSOT：Field/field-wrapper.tsx fieldTagInsetX）。右側 paddingRight 固定 12px（--field-px token）。</Desc>
         <div className="overflow-x-auto">
           <table className="border-collapse text-caption">
             <thead><tr>

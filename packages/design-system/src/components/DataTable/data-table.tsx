@@ -526,14 +526,14 @@ const isSystemColumn = (colId: string) => SYSTEM_COL_IDS.has(colId)
 //
 // 本層改成**幾何保證**:已掛載的列必然是連續一段 `[first.start, last.end]`,這段以外的整個虛擬高度
 // 一次鋪成骨架底。覆蓋 = 上帶 ∪ 已掛載段 ∪ 下帶 = 整個捲動區,**恆真,與時序無關**。
-// 用真 DOM 而不是整片 CSS 圖案:未掛載區可以有幾十萬 px 高,鋪**真列**是無上限的主執行緒工作;
-// 但鋪**實心色條**不是 —— 色條是靜態的、建一次、不進逐幀路徑,而且 Chrome 只光柵化預繪區內的那些。
+// 用兩塊 CSS 圖案(上帶 / 下帶)而不是真列:未掛載區可以有幾十萬 px 高,鋪**真列**是無上限的主執行緒工作;
+// 圖案是靜態的、建一次、不進逐幀路徑(逐幀只動兩帶的 `top` / `height`),而且 Chrome 只光柵化預繪區內的那一段。
 //
 // **「gradient 是一張貼圖、零逐幀工作,所以不可能造成卡頓」這句是錯的,2026-09-14 實測推翻。**
 // 它不是貼圖,是**每欄一層的 paint-time shader**(層數 = 欄數 + 1),Skia 每次光柵化都要重建並取樣。
 // 用 CDP `LayerTree.makeSnapshot` + `profileSnapshot` 重放同一份 display list,量 1680×4900
-// (視窗 + Chrome 的預繪區)這塊。**同樣的視覺結果、四種畫法**
-//(`scratchpad/raster-solid-vs-gradient.mjs`,null control = 空層 1.30ms):
+// (視窗 + Chrome 的預繪區)這塊。**同樣的視覺結果、四種畫法**(合成頁面隔離實驗
+// `scripts/probe-skeleton-band-raster.mjs`,null control = 空層 1.30ms):
 //   空層(下限對照)                      1.30ms
 //   純色                                  2.97ms
 //   **13 層漸層**                         **47.80ms**
@@ -543,7 +543,8 @@ const isSystemColumn = (colId: string) => SYSTEM_COL_IDS.has(colId)
 //
 // **「看不見」不等於「不收費」**:骨架底的 visibleArea 是 0(它在摺線下),但 Chrome 的光柵化範圍
 // 遠大於可視區,所以它照樣每次都被畫。這也是先前所有量測都看不到它的原因 —— 一直盯著可視區與主執行緒。
-// user 2026-09-14 在他的 Chrome 153 + Retina 上實測:純 hover 時 main 每幀 17ms、分支 33ms。
+// user 2026-09-14 在他的機器上實測:純 hover 時 main(github.io)每幀 17ms、分支(netlify.app)33ms ——
+// 後證明差異來自網域注入,不是這一層(見下方結案)。
 //
 // 已實測否決的替代寫法(留檔免得有人重試):
 //   background-size 整數化                46.7 → 49.0ms(沒用;「非整數尺寸走不了快路徑」不成立)
@@ -555,11 +556,15 @@ const isSystemColumn = (colId: string) => SYSTEM_COL_IDS.has(colId)
 //     本機 4 倍降速實測 44-46 幀空白(鋪滿全高是 0-1 幀),CI 的 2 vCPU runner 上 37-46 幀。
 //     零空白是硬不變條件,拿它換光柵成本不成立;而且同一趟的主執行緒指標兩者在雜訊內
 //     (長工 6 vs 6 個、script 1135 vs 1158ms、平均幀距 28.8 vs 29.4ms)—— 等於什麼都沒換到。
-//     2026-09-15 退回,改用實心色條同時拿到兩者。
+//     2026-09-15 退回鋪滿全高。
+//   **實心 `<div>` 色條(DOM 骨架)**            真頁面光柵 5.92ms(漸層 46.06ms、main 2.60ms),但 DOM 骨架
+//     換不到零空白:4 倍降速 10-15 幀空白,且空白數隨元素數單調上升(0 個 → 0 幀、7,000 個 → 10-15 幀),
+//     因為鋪 DOM 本身就是主執行緒工作。2026-09-15 連同 `?skeleton=bars` 開關一起拆除(見下方結案)。
 //
 // **現行寫法:未掛載區兩帶(上帶 / 下帶),每帶鋪每欄一層漸層色條 + 一層列底線。**
 // 覆蓋 = 上帶 ∪ 已掛載段 ∪ 下帶 = 整個捲動區,**恆真,與時序無關**。逐幀路徑上只有兩帶各自的
-// `top` / `height`。光柵成本(視窗 + 預繪區 46ms)已知且接受 —— 它不是任何實測症狀的來源(見上方結案)。
+// `top` / `height`。光柵成本(真頁面 `roadmap-all-in-one` 視窗 + 預繪區 9,800px:46.06ms,main 2.60ms)
+// 已知且接受 —— 它不是任何實測症狀的來源(見下方結案)。
 // 視覺消費既有 SSOT,不自創:bar 用 `--muted`(= `Skeleton` 的 `bg-muted`)、幾何抄 `renderShellRow`
 // 的 `h-3 w-3/5`(系統欄 `h-4 w-4`)、列底線用 `--divider`(同真列的 `border-b border-divider`)、
 // 已知落差:漸層畫不出 `Skeleton` 的 `rounded-md` 圓角 —— 12px 高的 bar 在快速捲動下看不出來,而且這一層只出現在
@@ -574,7 +579,7 @@ const isSystemColumn = (colId: string) => SYSTEM_COL_IDS.has(colId)
  * `thin-client-min.js` 不在我們的建置裡,是那台機器的網路/安全產品對 `*.netlify.app` 注入的遠端隔離 thin client
  *(逐幀 rAF + WebSocket 同步)。github.io 在白名單、本地渲染。三個組合的唯一變數是**網域**。
  * 因此兩天內為此做的實心色條畫法(`?skeleton=bars`)已拆除;漸層是唯一畫法。留下的量測結論仍成立
- *(漸層 46ms vs 實心 5.9ms、DOM 骨架換不到零空白),但它們解的不是這個症狀。
+ *(真頁面光柵漸層 46.06ms vs 實心 5.92ms、DOM 骨架換不到零空白),但它們解的不是這個症狀。
  * 教訓收進 M32 錨例 (h):**跨網域/跨主機的效能比較無效,先歸因(長幀 script 來源)再消融**。
  */
 const unmountedSkeletonStyle = (

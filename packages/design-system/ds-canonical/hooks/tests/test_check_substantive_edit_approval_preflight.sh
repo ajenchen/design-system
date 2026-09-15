@@ -915,6 +915,110 @@ else
   FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 14b. 真視覺改動必須仍判 UI"
 fi
 
+# ── 15. 純註解操作(2026-09-15):old/new 剝註解後相同 + 整檔去註解轉譯位元相同 → 不需 UI 授權 ──
+# 錨:結案階段 user 說「確保所有內容都有 ssot 沒有漂移、設計語言一致、視覺稽查」,這句含 UI 詞卻沒綁 target,
+# 於是連「把過期註解對齊現況」都被判 EXACT_UI_UX_TARGET_BINDING_MISSING。純註解沒有執行差異,沒有東西可拍板。
+run_hook_edit() {
+  local file_path="$1"; local transcript="$2"; local old_string="$3"; local new_string="$4"
+  local payload
+  payload=$(jq -n --arg fp "$file_path" --arg tp "$transcript" --arg o "$old_string" --arg n "$new_string" \
+    '{hook_event_name:"PreToolUse",tool_name:"Edit",tool_input:{file_path:$fp,old_string:$o,new_string:$n},transcript_path:$tp}')
+  STDOUT=$(mktemp); STDERR=$(mktemp)
+  set +e
+  printf '%s' "$payload" | bash "$HOOK" >"$STDOUT" 2>"$STDERR"
+  EXIT=$?
+  set -e
+  STDERR_TEXT=$(cat "$STDERR")
+  rm -f "$STDOUT" "$STDERR"
+}
+TX_CLOSURE="$TMP_DIR/tx_closure.jsonl"
+build_transcript "$TX_CLOSURE" \
+  "確保該做的事情全部做到完整完美,確保所有內容都有 ssot 沒有漂移,確保所有內容都符合我們一致的設計語言,確保都有透過視覺稽查驗證"
+COMMENT_DIR="$TMP_DIR/my-project/packages/design-system/src/components/Button"
+mkdir -p "$COMMENT_DIR"
+COMMENT_TSX="$COMMENT_DIR/button.tsx"
+cat > "$COMMENT_TSX" <<'TSX'
+import * as React from 'react'
+// 舊註解:padding 公式 (field-height - icon-size) / 2
+/** hover 顏色沿用 --primary-hover */
+export const label = 'see //docs for details'
+export function Button() {
+  return <button className="bg-primary hover:bg-primary-hover">{label}</button>
+}
+TSX
+COMMENT_CSS="$COMMENT_DIR/button.css"
+printf '%s\n' '/* 舊說明:tag 高度 h-5 */' '.btn { padding: 4px; }' > "$COMMENT_CSS"
+
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  "// 舊註解:padding 公式 (field-height - icon-size) / 2" \
+  "// 註解已對齊:padding 公式 (field-height − 2px − tag-height) / 2,SSOT field-wrapper.tsx"
+expect_pass_silent "15a. 純 // 註解改動 + 含 UI 詞但無 target 的收尾訊息 → pass"
+
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  "/** hover 顏色沿用 --primary-hover */" \
+  "/** hover 顏色沿用 --primary-hover;padding、間距、視覺層級都在 spec 有明文 */"
+expect_pass_silent "15b. 純 JSDoc 改動,註解內含 hover/間距/視覺等 UI 詞 → 仍 pass(註解不算)"
+
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  "export const label = 'see //docs for details'" \
+  "export const label = 'see //docs for everything'"
+expect_block "15c. 字串字面值裡的 // 被 regex 當註解,但轉譯位元不同 → 仍 BLOCK(混入口關閉)" "BLOCKER"
+
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  'className="bg-primary hover:bg-primary-hover"' \
+  'className="bg-primary hover:bg-primary-active"'
+expect_block "15d. 對照組:真的改 className → BLOCK" "EXACT_UI_UX_TARGET_BINDING_MISSING"
+
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  "import * as React from 'react'" \
+  "import * as React from 'react' // 純加註解:old 無註解、new 有,剝掉後相同"
+expect_pass_silent "15e. 在程式碼行尾加註解(剝掉後相同、轉譯相同)→ pass"
+
+run_hook_edit "$COMMENT_CSS" "$TX_CLOSURE" \
+  "/* 舊說明:tag 高度 h-5 */" \
+  "/* 說明已對齊:tag 高度 h-tag-sm(--tag-height-sm) */"
+expect_pass_silent "15f. css 純 /* */ 註解改動 → pass"
+
+run_hook_edit "$COMMENT_CSS" "$TX_CLOSURE" \
+  "padding: 4px;" \
+  "padding: 3px; /* 對齊 */"
+expect_block "15g. css 真改 padding(即使附註解)→ BLOCK" "BLOCKER"
+
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  "// 不存在的 old_string" \
+  "// 新註解"
+expect_block "15h. old_string 不在檔案裡 → 不算純註解,fail closed BLOCK" "BLOCKER"
+
+# 15j. 區塊註解的中段片段(old_string 沒帶 /* */)—— 這是 JSDoc docblock 最常見的改法,必須整檔比才判得對。
+cat > "$COMMENT_TSX" <<'TSX'
+import * as React from 'react'
+/**
+ * 結案:漸層 46ms vs 實心 5.9ms,DOM 骨架換不到零空白。
+ * 光柵成本已知且接受。
+ */
+export function Button() {
+  return <button className="bg-primary">ok</button>
+}
+TSX
+run_hook_edit "$COMMENT_TSX" "$TX_CLOSURE" \
+  " * 結案:漸層 46ms vs 實心 5.9ms,DOM 骨架換不到零空白。" \
+  " * 結案:真頁面光柵漸層 46.06ms vs 實心 5.92ms,DOM 骨架換不到零空白。"
+expect_pass_silent "15j. JSDoc 中段片段(片段本身無 /* */)純文字改動 → pass(整檔比)"
+
+set +e
+EVIDENCE_JSON=$(jq -n --arg fp "$COMMENT_TSX" --arg o "// 舊註解:padding 公式 (field-height - icon-size) / 2" --arg n "// 新註解" \
+  '{tool_name:"Edit",tool_input:{file_path:$fp,old_string:$o,new_string:$n}}' \
+  | node "$AUTH_HELPER" --transcript "$TX_CLOSURE" --target "$COMMENT_TSX" --hook-input-stdin)
+EVIDENCE_EXIT=$?
+set -e
+if [ "$EVIDENCE_EXIT" -eq 0 ] && printf '%s' "$EVIDENCE_JSON" | jq -e '.decision=="approved" and .reasonCode=="COMMENT_ONLY_OPERATION_NO_RUNTIME_EFFECT" and .decisionDomain=="engineering-remediation" and .targetBinding=="comment-only-operation"' >/dev/null; then
+  echo "  PASS  15i. evidence 契約:approved / COMMENT_ONLY_OPERATION_NO_RUNTIME_EFFECT / engineering-remediation"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL  15i. evidence 契約 (exit=$EVIDENCE_EXIT evidence=$EVIDENCE_JSON)"
+  FAIL=$((FAIL+1)); FAILED_TESTS="${FAILED_TESTS}\n  - 15i. comment-only evidence contract"
+fi
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

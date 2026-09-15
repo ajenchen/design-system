@@ -4,6 +4,8 @@
 
 import { createHash } from 'node:crypto'
 import { readFileSync, statSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { resolve as resolvePath } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 function argument(name) {
@@ -406,6 +408,106 @@ const UI_DECISION_MARKERS = [
 const stripCodeComments = (value) => String(value || '')
   .replaceAll(/\/\*[\s\S]*?\*\//gu, ' ')
   .replaceAll(/(^|[^:])\/\/[^\r\n]*/gu, '$1 ')
+
+/**
+ * 純註解操作(2026-09-15):把上面「註解不算」推到底。
+ * old / new 剝掉註解與空白後一模一樣的 Edit,執行結果零差異,不可能是產品/UI/UX 決策 ——
+ * 它唯一能改的是說明文字。這種操作不需要 exact target binding,也不需要 user 在最新訊息裡再授權一次;
+ * 否則收尾階段每一句「把過期註解對齊現況」都會因為最新訊息含「設計語言」「視覺」而被判成 UI 決策擋下
+ *(2026-09-15 錨:DataTable 結案 docblock 4 處過期敘述、PeoplePicker 舊公式註解,user 已要求
+ * 「確保所有內容都有 ssot 沒有漂移」仍被 EXACT_UI_UX_TARGET_BINDING_MISSING 擋住)。
+ *
+ * 兩道檢查缺一不可,各擋一個混入口(都在「整檔套用改動後」的 before / after 上比,不在片段上比 ——
+ * Edit 的 old_string 常是區塊註解的中段,片段本身沒有 `/*` `*​/`,逐片段剝註解會誤判成非註解):
+ *   (1) 整檔剝註解、壓空白後相同 —— 擋型別、識別字、任何非註解字元的改動;
+ *   (2) 整檔 TypeScript 去註解轉譯(transpileModule + removeComments)位元相同 ——
+ *       擋 (1) 的盲點:字串或模板字面值裡的 `//` 會被 regex 當註解,真的字串改動就混過去;轉譯器不會。
+ * `.css` 只有 `/* *​/` 註解、沒有轉譯器,只做 (1)。拿不到 typescript(消費者 repo 未安裝)→ 不算純註解(fail closed)。
+ * Write / 找不到檔案 / old 不存在或不唯一 / old === new → 一律不算。
+ */
+let typescriptModule = null
+try {
+  typescriptModule = createRequire(import.meta.url)('typescript')
+} catch {
+  typescriptModule = null
+}
+const stripCssComments = (value) => String(value || '').replaceAll(/\/\*[\s\S]*?\*\//gu, ' ')
+const collapseWhitespace = (value) => String(value || '').replace(/\s+/gu, ' ').trim()
+
+function commentOnlyOperation(hookInput, target) {
+  const toolName = hookInput?.tool_name
+  const input = hookInput?.tool_input
+  if (!input || typeof input !== 'object') return false
+  const edits = toolName === 'Edit'
+    ? [input]
+    : toolName === 'MultiEdit' && Array.isArray(input.edits) && input.edits.length
+      ? input.edits
+      : null
+  if (!edits) return false
+  const filePath = String(input.file_path ?? input.path ?? '')
+  if (!filePath || normalizeTarget(filePath) !== normalizeTarget(target)) return false
+  const isCss = /\.css$/iu.test(filePath)
+  const isScript = /\.(?:tsx|ts|jsx|js|mts|cts|mjs|cjs)$/iu.test(filePath)
+  if (!isCss && !isScript) return false
+  let before
+  try {
+    before = readFileSync(resolvePath(filePath), 'utf8')
+  } catch {
+    return false
+  }
+  const strip = isCss ? stripCssComments : stripCodeComments
+  let after = before
+  for (const edit of edits) {
+    const oldString = String(edit?.old_string ?? '')
+    const newString = String(edit?.new_string ?? '')
+    if (!oldString || oldString === newString) return false
+    const first = after.indexOf(oldString)
+    if (first < 0) return false
+    if (edit?.replace_all) {
+      after = after.split(oldString).join(newString)
+    } else {
+      if (after.indexOf(oldString, first + 1) >= 0) return false
+      after = after.slice(0, first) + newString + after.slice(first + oldString.length)
+    }
+  }
+  if (after === before) return false
+  if (collapseWhitespace(strip(before)) !== collapseWhitespace(strip(after))) return false
+  if (isCss) return true
+  if (!typescriptModule) return false
+  const emit = (source) => typescriptModule.transpileModule(source, {
+    fileName: filePath,
+    reportDiagnostics: false,
+    compilerOptions: {
+      removeComments: true,
+      jsx: typescriptModule.JsxEmit.Preserve,
+      target: typescriptModule.ScriptTarget.ESNext,
+      module: typescriptModule.ModuleKind.ESNext,
+      sourceMap: false,
+    },
+  }).outputText
+  try {
+    return emit(before) === emit(after)
+  } catch {
+    return false
+  }
+}
+
+function commentOnlyEvidence(target, { latestNormalized = null, operationText = '' } = {}) {
+  return {
+    schemaVersion: 1,
+    kind: 'latest-user-design-authorization',
+    decision: 'approved',
+    reasonCode: 'COMMENT_ONLY_OPERATION_NO_RUNTIME_EFFECT',
+    decisionDomain: 'engineering-remediation',
+    target: target ? normalizeTarget(target) : null,
+    targetBinding: 'comment-only-operation',
+    latestUserMessageSha256: latestNormalized == null
+      ? null
+      : createHash('sha256').update(latestNormalized).digest('hex'),
+    decisionMessageSha256: null,
+    operationEvidenceSha256: createHash('sha256').update(operationText).digest('hex'),
+  }
+}
 
 const UI_OPERATION_MARKERS = [
   /\b(?:className|style|css|tailwind|padding|margin|gap|color|background|width|height|hover|focus|animation|transition|opacity|border|shadow|radius|variant|disabled|tabIndex|role)\b/iu,
@@ -1314,6 +1416,10 @@ export function authorizationEvidence(transcriptPath, {
   const state = transcriptState(transcriptPath)
   const operationText = toolOperations(state.turnRecords, hookInput, target)
   const latestNormalized = normalizeText(state.latestUserMessage)
+  // 純註解操作不看訊息:它沒有任何執行差異,沒有東西可以拍板(定義與兩道檢查見 commentOnlyOperation)。
+  if (commentOnlyOperation(hookInput, target)) {
+    return commentOnlyEvidence(target, { latestNormalized, operationText })
+  }
   const selection = state.latestAskUserSelection
   if (selection) {
     // A structured AskUserQuestion selection is the user saying yes to one exact presented
@@ -1389,14 +1495,14 @@ if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
     }
     if (operationOnly) {
       if (!hookInput) throw new Error('operation-only classification requires --hook-input-stdin')
-      evidence = {
-        schemaVersion: 1,
-        kind: 'latest-user-design-authorization',
-        ...classifyOperationAuthorization({
-          target,
-          operationText: toolOperations([], hookInput, target),
-        }),
-      }
+      const operationText = toolOperations([], hookInput, target)
+      evidence = commentOnlyOperation(hookInput, target)
+        ? commentOnlyEvidence(target, { operationText })
+        : {
+          schemaVersion: 1,
+          kind: 'latest-user-design-authorization',
+          ...classifyOperationAuthorization({ target, operationText }),
+        }
     } else {
       if (!transcriptPath) throw new Error('missing --transcript')
       evidence = authorizationEvidence(transcriptPath, { target, hookInput })

@@ -293,13 +293,14 @@ Tag 是**純視覺 indicator**(非互動 control,互動版本是 Chip),預設 AR
 - `inline-action.spec.md`
 - `overflow-indicator.spec.md`
 
-## 截斷量測的快取(2026-09-11)
+## 截斷量測不加快取(2026-09-14 退回紀錄)
 
 Tag 用 Canvas `measureText` 判截斷(flex 內 `scrollWidth` 不可靠)。一次量測做三件事:`getComputedStyle`(逼出樣式重算)、
-`measureText`、讀 `clientWidth`(逼出版面)。在 DataTable 這種一次掛載數十個 Tag 的場景,前兩件幾乎總是重複 ——
+`measureText`、讀 `clientWidth`(逼出版面)。在 DataTable 這種一次掛載數十個 Tag 的場景,前兩件看起來幾乎總是重複 ——
 同尺寸的 Tag 字型完全相同,表格裡的標籤文字更是少數幾種(roadmap 範例 500 列只有八種)。
-CPU 剖析實測:一次 6,000px/s 手勢裡這個 measure 自身時間 142–232ms,是 DataTable 每列成本的第二大項。
+CPU 剖析實測:一次 6,000px/s 手勢裡這個 measure 自身時間 142–232ms,是 DataTable 每列成本的第二大項(2026-09-11 的動機)。
 
-**兩層快取**:(1) 字型與內距,鍵 = `class × 最近的 data-density × 根節點 data-theme × devicePixelRatio`
-(所有會改變計算字型的東西都在鍵裡);(2) 文字寬度,鍵 = `字型字串 × 文字`。
-**`document.fonts` 的 `loadingdone` 一觸發就把兩層整個清掉** —— 字體檔晚載入會改變寬度,這是這類快取最容易出錯的地方,不能省。
+**2026-09-14 實測退回,禁在 measure 內加快取**(實作與理由住 `tag.tsx` `useTruncated` 的 `measure` 註解,本節只留結論):
+曾加兩層快取(字型 + 文字寬,`document.fonts` `loadingdone` 時整個清掉)。同機交錯 CPU 剖析(dpr2 + CPU×6):
+main 223ms / 加快取後 380ms / 再把快取鍵最佳化後 412ms —— 每次呼叫要組兩個字串當鍵(其中一個含 Tag 的 Tailwind class,數百字元)再各查一次 Map,
+組字串加雜湊比它想省的那兩個瀏覽器呼叫還貴。要再嘗試必先重跑同一組對照剖析,拿到比 main 低的數字才可回來。

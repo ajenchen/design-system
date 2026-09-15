@@ -25,7 +25,7 @@ originSessionId: b1e3fe19-f71f-4828-b483-cf3fe2323f47
 
 ## How to apply
 1. **效能 A/B 必同網域、同主機**:main 與分支都用 Netlify(`main--<site>` vs `<branch>--<site>`),或都用 github.io。跨網域的差異先當網路/注入,不當程式碼。
-2. **先歸因再消融**:任何「慢」先用 `long-animation-frame` 的 `scripts[].sourceURL / invoker` 看長幀裡是誰(`scratchpad/attrib.js` 型的一段貼上),再決定要不要動程式碼。不是我們的 sourceURL → 不是我們的問題。
+2. **先歸因再消融**:任何「慢」先用 `long-animation-frame` 的 `scripts[].sourceURL / invoker` 看長幀裡是誰(`scripts/user-probe/loaf-attribution.js` 貼進 Console),再決定要不要動程式碼。不是我們的 sourceURL → 不是我們的問題。
 3. 遇到 user 的機器回報 SwiftShader / 異常核心數 / 只有某網域慢:先問「這頁有沒有被注入非建置內的 script」(`document.scripts` 或 LoAF 來源),再開工。
 4. 若要在那台機器上驗收 Netlify 預覽:請 user 的 IT 把 `*.netlify.app` 加白名單,或改看 github.io。
 5. 相關:M32 錨例 (h)(`packages/design-system/ds-canonical/rules/meta-patterns.md`)。
