@@ -428,7 +428,7 @@ const summarizeProfile = (profile, staticDir) => {
 }
 
 // ── 一次 run ──
-const runOnce = async ({ build, mode, base, sabotage, profile }) => {
+const runOnce = async ({ build, mode, base, sabotage, profile, busyMs = SCROLL_BUSY_MS }) => {
   const browser = await launchBrowser({ args: SMOOTH === 'off' ? ['--disable-smooth-scrolling'] : [] })
   try {
     const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: DPR })
@@ -475,7 +475,7 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
       // 真的**列殼**(`[data-row-shell]`)會大量出動把畫面填滿(實測 7–8 幀、最多 84 列),偵測器照樣看到內容。
       // 正對照要證明的是「偵測器在什麼都沒有的時候會紅」,所以兩層一起拿掉,只留一個卡死的主執行緒。
       if (sabotage) {
-        await page.evaluate((ms) => { document.querySelector('[data-datatable-hscroll]').addEventListener('scroll', () => { const b = performance.now(); while (performance.now() - b < ms) { /* busy */ } }, { passive: true }) }, SCROLL_BUSY_MS)
+        if (busyMs > 0) await page.evaluate((ms) => { document.querySelector('[data-datatable-hscroll]').addEventListener('scroll', () => { const b = performance.now(); while (performance.now() - b < ms) { /* busy */ } }, { passive: true }) }, busyMs)
       }
       const t0 = Date.now()
       await cdp.send('Input.synthesizeScrollGesture', { x: setup.cx, y: setup.cy, yDistance: -GESTURE_PX, speed: GESTURE_SPEED, gestureSourceType: 'mouse', preventFling: true })
@@ -554,7 +554,7 @@ const runOnce = async ({ build, mode, base, sabotage, profile }) => {
       return { cost: rows * cpr + fixed, engageMs }
     }).catch(() => null)
     return {
-      build: build.label, mode, sabotage, setup, ticks, errors, shotStats, shellCost, ...a, g, frames: raw.frames,
+      build: build.label, mode, sabotage, busyUsed: sabotage ? busyMs : 0, setup, ticks, errors, shotStats, shellCost, ...a, g, frames: raw.frames,
       longs: raw.longs, longCount: raw.longs.length, longMax: raw.longs.reduce((m, l) => Math.max(m, l.dur), 0), longSum: raw.longs.reduce((s, l) => s + l.dur, 0),
       commits: raw.commits, scrollEvents: raw.scrollEvents, finalScroll: raw.finalScroll, scrolled: (raw.finalScroll ?? 0) - START_PX,
       wheelSeen: raw.wheelTs.length, wheelTrusted: raw.wheelTs.filter((w) => w.trusted).length, wheelGapMean: gaps.length ? gaps.reduce((x, y) => x + y, 0) / gaps.length : 0, wheelGapMax: gaps.reduce((m, g) => Math.max(m, g), 0),
@@ -603,10 +603,21 @@ for (const build of BUILDS) {
       for (let i = 1; i <= n; i++) {
         // 崩潰 / 沒溢出 = **儀器沒跑起來**(這次什麼都沒量到),不是量到壞結果 —— 重試一次再判失敗。
         // 2026-09-11 錨例:同一個 job 多 build 一份參考 storybook 之後 runner 更熱,branch 有一趟 story 沒渲染出來。
-        let r = await runOnce({ build, mode, base, sabotage: SELFTEST, profile: false })
+        // 正對照的干擾要**先輕後重**(2026-09-15)。干擾越重,合成器能送出的幀就越少 ——
+        // 這台 2 vCPU 的共享 runner 在忙等 15ms 時整趟只送出 16 幀(本機 64-68)且量到 **0 幀空白**,
+        // 也就是干擾把量測通道自己餓死了(上一版的 120ms 更糟,才降到 15ms;方向一致)。
+        // 所以先跑「只關掉兩層防空白機制、不忙等」:本機實測仍有 66-67 幀、7-8 幀空白,足以判定偵測器會紅。
+        // 只有輕量這趟沒發紅,才加上忙等再試 —— 退回去就是上一版的行為,不會比原本弱。
+        const firstBusy = SELFTEST ? 0 : SCROLL_BUSY_MS
+        let r = await runOnce({ build, mode, base, sabotage: SELFTEST, profile: false, busyMs: firstBusy })
         if (r.crashed || r.noOverflow || r.noTarget) {
           console.log(`   ⟳ ${build.label}/${mode} #${i}:這一趟儀器沒跑起來(${r.crashed ? 'story 沒渲染' : r.noOverflow ? '沒有垂直溢出' : '找不到 dispatch 目標'}),重試一次`)
-          r = await runOnce({ build, mode, base, sabotage: SELFTEST, profile: false })
+          r = await runOnce({ build, mode, base, sabotage: SELFTEST, profile: false, busyMs: firstBusy })
+        }
+        if (SELFTEST && SCROLL_BUSY_MS > 0 && r.g && !(r.g.presented >= 20 && r.g.blankFrames >= 3)) {
+          console.log(`   ⟳ 正對照輕量干擾(不忙等)只量到 呈現 ${r.g.presented} 幀 / 空白 ${r.g.blankFrames} 幀 —— 加上每個 scroll 事件忙等 ${SCROLL_BUSY_MS}ms 再試一次`)
+          const heavy = await runOnce({ build, mode, base, sabotage: true, profile: false, busyMs: SCROLL_BUSY_MS })
+          if (heavy.g && !heavy.crashed) r = heavy
         }
         if (r.crashed) { console.log(`✗ ${build.label}/${mode}:story 沒有渲染出捲動區(story 崩潰或 build 壞了)${r.errors?.length ? ':' + r.errors[0] : ''}`); failed++; continue }
         if (r.noOverflow) { console.log(`✗ ${build.label}/${mode}:沒有垂直溢出,不適用`); failed++; continue }
@@ -686,7 +697,7 @@ if (SELFTEST) {
         continue
       }
       const pass = r.g.blankFrames >= 3
-      console.log(`${pass ? '✓' : '✗'} selftest 正對照 ${r.build}/${r.mode}:關掉骨架底與列殼${SCROLL_BUSY_MS ? ` + 每個 scroll 事件忙等 ${SCROLL_BUSY_MS}ms` : ''} → 呈現 ${r.g.presented} 幀、空白 ${r.g.blankFrames} 幀、最長 ${r.g.blankLongestMs.toFixed(0)}ms(需 ≥ 3 幀)`)
+      console.log(`${pass ? '✓' : '✗'} selftest 正對照 ${r.build}/${r.mode}:關掉骨架底與列殼${r.busyUsed ? ` + 每個 scroll 事件忙等 ${r.busyUsed}ms` : '(不忙等)'} → 呈現 ${r.g.presented} 幀、空白 ${r.g.blankFrames} 幀、最長 ${r.g.blankLongestMs.toFixed(0)}ms(需 ≥ 3 幀)`)
       if (!pass) ok = false
       continue
     }
