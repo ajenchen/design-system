@@ -150,6 +150,9 @@ const SHELL_ENGAGE_FALLBACK_MS = 120
 //     busy  60ms → 呈現 66 幀、空白 59 幀、最長 1134-1168ms
 // 15ms 已經拿到全部訊號,再加重只是增加餓死風險。保留 `--busy-ms` 旋鈕供實驗。
 const SCROLL_BUSY_MS = Number(arg('busy-ms', 15))
+// 只給驗證用:強迫走第三階對照組(強制隱藏列內容),證明那一階真的會紅 ——
+// 快機器上前兩階就通過了,第三階平常跑不到,不驗就是另一個沒被證明會紅的綠燈(M32)。
+const FORCE_INK_CONTROL = process.argv.includes('--selftest-force-ink')
 // 觀測窗必須長過補齊期限,否則「到窗尾還沒補完」會被當成補完(Codex R9)
 const SETTLE_EFFECTIVE = ASSERT_FILL_MS !== '' ? Math.max(SETTLE_MS, Number(ASSERT_FILL_MS) + 300) : SETTLE_MS
 const CSS_INJECT = arg('css', '') // 消融實驗用:載入後注入一段 CSS(例:關掉某個動畫),同一個 build 比較有無
@@ -428,7 +431,7 @@ const summarizeProfile = (profile, staticDir) => {
 }
 
 // ── 一次 run ──
-const runOnce = async ({ build, mode, base, sabotage, profile, busyMs = SCROLL_BUSY_MS }) => {
+const runOnce = async ({ build, mode, base, sabotage, profile, busyMs = SCROLL_BUSY_MS, hideContent = false }) => {
   const browser = await launchBrowser({ args: SMOOTH === 'off' ? ['--disable-smooth-scrolling'] : [] })
   try {
     const page = await browser.newPage({ viewport: { width: VW, height: VH }, deviceScaleFactor: DPR })
@@ -464,6 +467,11 @@ const runOnce = async ({ build, mode, base, sabotage, profile, busyMs = SCROLL_B
     // 正對照在所有模式都要把**兩層**防空白機制關掉(理由見 gesture 分支的長註解):
     // 只忙等主執行緒已經不會產生空白,只關一層則變成在量機器快慢。
     if (sabotage) await page.addStyleTag({ content: '[data-row-shell-band],[data-row-shell]{display:none !important}' })
+    // 第三階對照組:直接把列內容藏掉,中央區必然沒有墨跡 —— 證明的是「偵測器會紅」,
+    // 不是「這台機器重現得出真實空白」。兩者要分開報,不可混為一談(見下方 tier 說明)。
+    // 只藏**中央量測區**的列:整頁都藏起來畫面就不再變化,合成器不送新幀(實測整趟只出 4 幀,
+    // 反而變成另一種餓死)。左右釘選欄照常渲染並跟著捲,幀就持續產生,而中央區是必然的空白。
+    if (hideContent) await page.addStyleTag({ content: '[data-datatable-hscroll] [data-row-index]{visibility:hidden !important}' })
     if (mode === 'gesture') {
       // 真實呈現幀:合成手勢走原生輸入管線捲中央區;正對照 = 每個 scroll 事件忙等
       // 正對照 = 「儀器在該紅的時候會紅」。原本只忙等主執行緒,前提是「主執行緒卡住 ⇒ 一定空白」。
@@ -554,7 +562,7 @@ const runOnce = async ({ build, mode, base, sabotage, profile, busyMs = SCROLL_B
       return { cost: rows * cpr + fixed, engageMs }
     }).catch(() => null)
     return {
-      build: build.label, mode, sabotage, busyUsed: sabotage ? busyMs : 0, setup, ticks, errors, shotStats, shellCost, ...a, g, frames: raw.frames,
+      build: build.label, mode, sabotage, busyUsed: sabotage ? busyMs : 0, forcedInk: hideContent, setup, ticks, errors, shotStats, shellCost, ...a, g, frames: raw.frames,
       longs: raw.longs, longCount: raw.longs.length, longMax: raw.longs.reduce((m, l) => Math.max(m, l.dur), 0), longSum: raw.longs.reduce((s, l) => s + l.dur, 0),
       commits: raw.commits, scrollEvents: raw.scrollEvents, finalScroll: raw.finalScroll, scrolled: (raw.finalScroll ?? 0) - START_PX,
       wheelSeen: raw.wheelTs.length, wheelTrusted: raw.wheelTs.filter((w) => w.trusted).length, wheelGapMean: gaps.length ? gaps.reduce((x, y) => x + y, 0) / gaps.length : 0, wheelGapMax: gaps.reduce((m, g) => Math.max(m, g), 0),
@@ -614,10 +622,25 @@ for (const build of BUILDS) {
           console.log(`   ⟳ ${build.label}/${mode} #${i}:這一趟儀器沒跑起來(${r.crashed ? 'story 沒渲染' : r.noOverflow ? '沒有垂直溢出' : '找不到 dispatch 目標'}),重試一次`)
           r = await runOnce({ build, mode, base, sabotage: SELFTEST, profile: false, busyMs: firstBusy })
         }
-        if (SELFTEST && SCROLL_BUSY_MS > 0 && r.g && !(r.g.presented >= 20 && r.g.blankFrames >= 3)) {
+        const fired = (x) => !FORCE_INK_CONTROL && x.g && x.g.presented >= 20 && x.g.blankFrames >= 3
+        if (SELFTEST && SCROLL_BUSY_MS > 0 && r.g && !fired(r)) {
           console.log(`   ⟳ 正對照輕量干擾(不忙等)只量到 呈現 ${r.g.presented} 幀 / 空白 ${r.g.blankFrames} 幀 —— 加上每個 scroll 事件忙等 ${SCROLL_BUSY_MS}ms 再試一次`)
           const heavy = await runOnce({ build, mode, base, sabotage: true, profile: false, busyMs: SCROLL_BUSY_MS })
           if (heavy.g && !heavy.crashed) r = heavy
+        }
+        // **第三階:這台機器重現不出真實空白時,改證明「偵測器會紅」**(2026-09-15)。
+        // CI 實測:輕量 12 幀、加忙等 16 幀,兩者都 0 幀空白。追下去發現不是干擾太重 ——
+        // 輕量反而更少幀。那台 2 vCPU runner 在虛擬化捲動下只有 8-11 fps,**合成器自己就被餓著**,
+        // 而「空白」的成因正是合成器超前內容;合成器都超前不了,這個現象在那台機器上結構上不會發生。
+        // 所以要把兩件事拆開:
+        //   (a) 這個環境能不能重現真實空白 —— 不一定,取決於機器。
+        //   (b) 偵測器在有空白時會不會紅 —— **到處都驗得了**,而 `--assert-max-blank-frames=0`
+        //       要靠的正是 (b)。把列內容直接藏掉造出必然的空白,偵測器若仍不紅就是真的壞了。
+        // 報告會明說用的是哪一階,不讓第三階被誤讀成第一階。
+        if (SELFTEST && r.g && !fired(r)) {
+          console.log(`   ⟳ 這台機器重現不出真實空白(呈現 ${r.g.presented} 幀、空白 ${r.g.blankFrames} 幀)—— 改用「強制隱藏列內容」驗偵測器本身`)
+          const forced = await runOnce({ build, mode, base, sabotage: true, profile: false, busyMs: 0, hideContent: true })
+          if (forced.g && !forced.crashed) r = forced
         }
         if (r.crashed) { console.log(`✗ ${build.label}/${mode}:story 沒有渲染出捲動區(story 崩潰或 build 壞了)${r.errors?.length ? ':' + r.errors[0] : ''}`); failed++; continue }
         if (r.noOverflow) { console.log(`✗ ${build.label}/${mode}:沒有垂直溢出,不適用`); failed++; continue }
@@ -690,14 +713,20 @@ if (SELFTEST) {
       }
       // **先判「量具有沒有被餓死」,再判「偵測器有沒有反應」。** 兩者的修法完全不同,
       // 混在一起報會把前者誤診成後者(2026-09-14 CI 實例:只送 9 幀 → 0 空白 → 報成偵測器壞掉)。
-      if (r.g.presented < 20) {
-        console.log(`✗ selftest 正對照 ${r.build}/${r.mode}:**量具被餓死** —— 整段只送出 ${r.g.presented} 幀(本機 64-68),`
+      // 幀數下限:真實空白那兩階要 ≥ 20 幀才算觀測得到;第三階(強制隱藏內容)只需 ≥ 5 幀 ——
+      // 它驗的是偵測器,不是「這台機器跑得動」,而空白是整段恆真的,5 幀足以判定。
+      const floor = r.forcedInk ? 5 : 20
+      if (r.g.presented < floor) {
+        console.log(`✗ selftest 正對照 ${r.build}/${r.mode}:**量具被餓死** —— 整段只送出 ${r.g.presented} 幀(需 ≥ ${floor};本機 64-68),`
           + `幀數不足以判定有沒有空白。這不是「偵測器沒反應」,是這次根本沒觀測到東西。`)
         ok = false
         continue
       }
       const pass = r.g.blankFrames >= 3
-      console.log(`${pass ? '✓' : '✗'} selftest 正對照 ${r.build}/${r.mode}:關掉骨架底與列殼${r.busyUsed ? ` + 每個 scroll 事件忙等 ${r.busyUsed}ms` : '(不忙等)'} → 呈現 ${r.g.presented} 幀、空白 ${r.g.blankFrames} 幀、最長 ${r.g.blankLongestMs.toFixed(0)}ms(需 ≥ 3 幀)`)
+      const how = r.forcedInk
+        ? '強制隱藏列內容(這台機器重現不出真實空白 —— 合成器本身就送不出幀;此階只證明偵測器會紅)'
+        : `關掉骨架底與列殼${r.busyUsed ? ` + 每個 scroll 事件忙等 ${r.busyUsed}ms` : '(不忙等)'}`
+      console.log(`${pass ? '✓' : '✗'} selftest 正對照 ${r.build}/${r.mode}:${how} → 呈現 ${r.g.presented} 幀、空白 ${r.g.blankFrames} 幀、最長 ${r.g.blankLongestMs.toFixed(0)}ms(需 ≥ 3 幀)`)
       if (!pass) ok = false
       continue
     }
