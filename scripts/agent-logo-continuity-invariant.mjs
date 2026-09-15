@@ -177,17 +177,49 @@ const c1aSpanMs = Math.min(100, first && beforeFirst ? Math.max(1, first.t - bef
 const c1aTol = (SPIN_OMEGA * c1aSpanMs) / 1000 * 1.5
 record('C1a', `靜止 → 思考起步:第一格與靜止差 ≤ 經過時間該轉的量(${c1aSpanMs.toFixed(1)}ms → ≤ ${c1aTol.toFixed(1)}°、形狀 ≤ 60、疊層 ≤ 0.02)`, !!first && wrapDelta(first.body, rest.body) <= c1aTol && wrapDelta(first.grad, rest.grad) <= c1aTol && first.holeDist <= 60 && first.overlay < 0.02, first ? `body ${first.body.toFixed(1)} grad ${first.grad.toFixed(1)} hole ${first.holeDist.toFixed(0)} overlay ${first.overlay.toFixed(3)}` : 'no think frame')
 record('C1b', '減速停定 → 靜止:角度 ≡ 0、色場 ≡ 0、形狀 = 定稿、疊層 0', !!finalStill && wrapDelta(finalStill.body, 0) < 1 && wrapDelta(finalStill.grad, 0) < 1 && finalStill.holeDist < 1 && finalStill.overlay < 0.02, finalStill ? `body ${finalStill.body.toFixed(1)} grad ${finalStill.grad.toFixed(1)} hole ${finalStill.holeDist.toFixed(0)} overlay ${finalStill.overlay.toFixed(3)}` : 'no still frame')
-let worst = { body: 0, grad: 0, hole: 0, overlay: 0, at: -1 }
-for (let i = 1; i < frames.length; i++) {
-  const a = frames[i - 1], b = frames[i]
-  const db = wrapDelta(b.body, a.body), dg = wrapDelta(b.grad, a.grad), dh = Math.abs(b.holeDist - a.holeDist), dov = Math.abs(b.overlay - a.overlay)
-  if (db > worst.body) worst = { ...worst, body: db, at: i }
-  if (dg > worst.grad) worst.grad = dg
-  if (dh > worst.hole) worst.hole = dh
-  if (dov > worst.overlay) worst.overlay = dov
+// C2/C3 的容差按**這一對取樣之間隔了幾個動畫影格**算,不按平均 fps(2026-09-15 修)。
+// C1a 在 2026-09-10 已經改成不吃平均值,C2/C3 是同一個 bug 的兄弟位置,當時沒一起改(M10 掃描漏網):
+// 共享 runner 掉一格,相鄰兩個取樣之間就變成兩格的旋轉量 —— CI 實測 worst 35.7° > 上限 18.1° 而紅,
+// 本機同一支永遠是 12°、綠。要驗的不變式是「有沒有跳一段」,判準該是「轉的量對不對得上中間經過的影格數」。
+//
+// 為什麼不是直接用毫秒:取樣有時相隔不到 1 毫秒(狀態交接處會連record兩筆),而角度是**按影格**跳的,
+// 兩個相隔 1ms 的取樣仍可能跨過一個影格邊界、看到一整格的轉動量。所以下限一律至少一格。
+// 上限夾 3 格(60fps ≈ 53°):掉格可以放寬,但「從隨機角度重新起跑」那種真跳段動輒 90-180°,夾住後仍抓得到。
+const oneFrameMs = 1000 / Math.max(1, fps)
+const stepTol = (a, b) => {
+  const gapFrames = Math.min(3, Math.max(1, Math.ceil(Math.max(0, b.t - a.t) / oneFrameMs)))
+  return (SPIN_OMEGA * oneFrameMs * gapFrames) / 1000 * 1.5
 }
-record('C2', `無跳幀(fps≈${fps.toFixed(0)},角度每影格 ≤ ${maxStep.toFixed(1)}°、形狀 ≤ 60、疊層 ≤ 0.08)`, worst.body <= maxStep && worst.grad <= maxStep && worst.hole <= 60 && worst.overlay <= 0.08, `worst body ${worst.body.toFixed(1)}° grad ${worst.grad.toFixed(1)}° hole ${worst.hole.toFixed(0)} overlay ${worst.overlay.toFixed(3)}`)
-record('C3', '減速起點基底 = 離開思考瞬間角度(本體與色場)', !!firstExit && !!lastThink && wrapDelta(firstExit.bodyBase, lastThink.body) <= maxStep && wrapDelta(-firstExit.gradBase, lastThink.body) <= maxStep, firstExit && lastThink ? `bodyBase ${firstExit.bodyBase.toFixed(1)} vs ${lastThink.body.toFixed(1)}; gradBase ${firstExit.gradBase.toFixed(1)}` : 'no exit frame')
+const worstStep = (fs) => {
+  let w = { body: 0, grad: 0, hole: 0, overlay: 0, at: -1, tol: 0, ratio: 0 }
+  for (let i = 1; i < fs.length; i++) {
+    const a = fs[i - 1], b = fs[i]
+    const tol = stepTol(a, b)
+    const db = wrapDelta(b.body, a.body), dg = wrapDelta(b.grad, a.grad)
+    const dh = Math.abs(b.holeDist - a.holeDist), dov = Math.abs(b.overlay - a.overlay)
+    const ratio = Math.max(db, dg) / tol
+    if (ratio > w.ratio) w = { ...w, ratio, body: db, grad: dg, at: i, tol }
+    if (dh > w.hole) w.hole = dh
+    if (dov > w.overlay) w.overlay = dov
+  }
+  return w
+}
+const worst = worstStep(frames)
+
+// 對照組:證明「放寬掉格」之後,真的跳段還是會紅(M32 —— 沒被證明會紅的綠燈是零證據)。
+// 三個案例:掉一格的正常轉動要放行、相隔不到一格的取樣要放行、真跳段(120°)必須紅。
+const probe = (dtMs, deg) => worstStep([
+  { t: 0, body: 0, grad: 0, holeDist: 0, overlay: 0 },
+  { t: dtMs, body: deg, grad: deg, holeDist: 0, overlay: 0 },
+]).ratio <= 1
+const perFrameDeg = (SPIN_OMEGA * oneFrameMs) / 1000
+const droppedOk = probe(oneFrameMs * 2, perFrameDeg * 2)
+const subFrameOk = probe(0.5, perFrameDeg)
+const jumpCaught = !probe(oneFrameMs, 120)
+record('C2-ctl', '對照組:掉一格放行、次影格取樣放行、真跳段 120° 仍紅', droppedOk && subFrameOk && jumpCaught, `掉格 ${droppedOk} / 次影格 ${subFrameOk} / 跳段抓到 ${jumpCaught}`)
+record('C2', `無跳幀(角度差 ≤ 該對取樣之間該轉的量 × 1.5、形狀 ≤ 60、疊層 ≤ 0.08)`, worst.ratio <= 1 && worst.hole <= 60 && worst.overlay <= 0.08, `worst body ${worst.body.toFixed(1)}° grad ${worst.grad.toFixed(1)}°(當時上限 ${worst.tol.toFixed(1)}°,fps≈${fps.toFixed(0)})hole ${worst.hole.toFixed(0)} overlay ${worst.overlay.toFixed(3)}`)
+const c3Tol = firstExit && lastThink ? stepTol(lastThink, firstExit) : maxStep
+record('C3', `減速起點基底 = 離開思考瞬間角度(本體與色場,容差 ${c3Tol.toFixed(1)}°)`, !!firstExit && !!lastThink && wrapDelta(firstExit.bodyBase, lastThink.body) <= c3Tol && wrapDelta(-firstExit.gradBase, lastThink.body) <= c3Tol, firstExit && lastThink ? `bodyBase ${firstExit.bodyBase.toFixed(1)} vs ${lastThink.body.toFixed(1)}; gradBase ${firstExit.gradBase.toFixed(1)}` : 'no exit frame')
 record('C4', 'still ↔ think 交接不掛淡入 class', !!first && !first.enter && !!finalStill && !finalStill.enter, `enter@think ${first?.enter} enter@still ${finalStill?.enter}`)
 record('C6', '減速起跑第一格無孤兒動畫(每個 animate 都有 current interval)', !!firstExit && firstExit.unresolved === 0, `unresolved@exit-start ${firstExit?.unresolved}(等速中 ${lastThink?.unresolved} / 停定後 ${lastExit?.unresolved} 為 freeze 結束,屬正常)`)
 record('C5', '減速段結束落在正位後才切靜止(最後一個 exit 影格角度 ≡ 0)', !!lastExit && wrapDelta(lastExit.body, 0) <= maxStep && wrapDelta(lastExit.grad, 0) <= maxStep, lastExit ? `last exit body ${lastExit.body.toFixed(1)} grad ${lastExit.grad.toFixed(1)}` : 'no exit frame')
