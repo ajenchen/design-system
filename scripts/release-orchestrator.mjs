@@ -420,6 +420,21 @@ function ghShim(args, { allowFailure = false, input = null } = {}) {
     const prResponse = curlGitHub('GET', `repos/${repository}/pulls/${args[2]}`)
     if (!prResponse.ok) return shimDone(prResponse, { allowFailure, label })
     const pull = JSON.parse(prResponse.text)
+    // 草稿 PR 是 pr-checks 步驟的常態(canonical:建立／更新唯一 PR **draft**,user 看過預覽說「發版」才合併),
+    // 所以合併前先轉正式。REST 沒有這個端點,只有 GraphQL mutation(gh pr ready 走的也是它)。
+    // 2026-09-16 錨:user 說「發版」、receipt 已落地,merge 卻被 HTTP 405「Pull Request is still a draft」擋住。
+    if (pull.draft) {
+      const ready = curlGitHub('POST', 'graphql', { body: JSON.stringify({
+        query: 'mutation($id:ID!){markPullRequestReadyForReview(input:{pullRequestId:$id}){pullRequest{isDraft}}}',
+        variables: { id: pull.node_id },
+      }) })
+      let readyBody = null
+      try { readyBody = ready.ok ? JSON.parse(ready.text) : null } catch { readyBody = null }
+      const nowDraft = readyBody?.data?.markPullRequestReadyForReview?.pullRequest?.isDraft
+      if (!ready.ok || readyBody?.errors || nowDraft !== false) {
+        return shimDone({ code: ready.code, ok: false, text: `mark draft PR ready failed: ${ready.text}` }, { allowFailure, label })
+      }
+    }
     const merge = curlGitHub('PUT', `repos/${repository}/pulls/${args[2]}/merge`,
       { body: JSON.stringify({ merge_method: 'squash', ...(matchHead ? { sha: matchHead } : {}) }) })
     if (!merge.ok) return shimDone(merge, { allowFailure, label })
