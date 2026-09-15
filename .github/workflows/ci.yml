@@ -282,24 +282,10 @@ jobs:
           node scripts/data-table-fast-scroll.mjs --mode=mouse --runs=3 \
             --ref=main --builds=main=tmp/ref-storybook,branch=storybook-static \
             --assert-max-blank-ms=600 --assert-max-long-task-ms=300 --assert-max-frame-gap-ms=600
-          # 「指標底下那一列永遠有 hover 反應」(2026-09-11 新閘;user:「游標明明到了,table row 的反應卻要等好一陣子」)。
-          # 兩個根因都在腳本檔頭:殼列原本沒有 hover 底色、以及捲動中瀏覽器不重新派送 hover。先對照組再判定。
-          node scripts/data-table-row-under-pointer-invariant.mjs --selftest
-          node scripts/data-table-row-under-pointer-invariant.mjs
-          # 列 hover 的反應延遲(2026-09-11 新閘;先跑對照組證明儀器會紅,再跑正式判定)
-          node scripts/data-table-hover-latency.mjs --rows=8 --selftest
-          node scripts/data-table-hover-latency.mjs --rows=10 --assert=on --assert-median=60 --assert-max=600
-          # 預掛緩衝要隨機器能力自適應(2026-09-12)。TanStack 的 rangeExtractor 沒有「保留舊列」機制,
-          # 緩衝固定 5 列 = 200px 而一次滾輪 1000px,結構上差 5 倍;AG Grid 預設每側 10 列,文件逐字說
-          # 那是為了「on some slower machines and browsers, a blank space can be seen as the user scrolls」。
-          # 我們比它多實測的每列成本,所以快機器加到 10(1× 空白 30 幀/67ms → 0–2 幀/0–17ms)、
-          # 慢機器縮回下限讓列殼接手(固定 10 在 4× 反而把最長空白從 451ms 惡化到 566ms)。
-          # 對照組把兩次取樣都跑同一個 CPU 檔位,自適應無從表現 → A3 必須紅。
-          node scripts/data-table-overscan-adaptive-invariant.mjs --selftest
-          node scripts/data-table-overscan-adaptive-invariant.mjs
-          # 感知 / 把手 / 釘選 resize / dpr1 感知迴圈那一段(CI 逐支計時佔本 job 10 分鐘)2026-09-15 搬到
-          # verify-browser-datatable-perception:本 job 拆前 24 分鐘貼著 25 分鐘上限(8b1137c7 就是被砍掉的那次),
-          # 照 2026-09-10 拆 dpr2 job 的先例再拆一個平行 job,兩邊各約 13-15 分鐘。
+          # 指標底下那一列的 hover / hover 反應延遲 / 預掛緩衝自適應 三支(CI 逐支計時合計 5.4 分)與
+          # 感知 / 把手 / 釘選 resize / dpr1 感知迴圈那一段(10 分)2026-09-15 搬到 verify-browser-datatable-perception:
+          # 本 job 拆前 24 分鐘貼著 25 分鐘上限(8b1137c7 就是被砍掉的那次),只搬感知段之後仍 21 分,再搬三支 hover 類的閘
+          # 才兩邊各約 15 分鐘。照 2026-09-10 拆 dpr2 job 的先例。
           # 列/表頭元素快取的依賴完整性(靜態,TypeScript 語法樹):快取靠手列的 epochDeps,漏一個就是
           # 「舊列拿到過期資料」(2026-09-08 I2 抓到漏 resolvedWidths → 顯示↔編輯寬差 0.59px)。
           node scripts/data-table-row-cache-deps-invariant.mjs
@@ -337,6 +323,21 @@ jobs:
       - name: DataTable perception + handle gates (browser)
         run: |
           npx --no-install playwright install chromium
+          # 「指標底下那一列永遠有 hover 反應」(2026-09-11 新閘;user:「游標明明到了,table row 的反應卻要等好一陣子」)。
+          # 兩個根因都在腳本檔頭:殼列原本沒有 hover 底色、以及捲動中瀏覽器不重新派送 hover。先對照組再判定。
+          node scripts/data-table-row-under-pointer-invariant.mjs --selftest
+          node scripts/data-table-row-under-pointer-invariant.mjs
+          # 列 hover 的反應延遲(2026-09-11 新閘;先跑對照組證明儀器會紅,再跑正式判定)
+          node scripts/data-table-hover-latency.mjs --rows=8 --selftest
+          node scripts/data-table-hover-latency.mjs --rows=10 --assert=on --assert-median=60 --assert-max=600
+          # 預掛緩衝要隨機器能力自適應(2026-09-12)。TanStack 的 rangeExtractor 沒有「保留舊列」機制,
+          # 緩衝固定 5 列 = 200px 而一次滾輪 1000px,結構上差 5 倍;AG Grid 預設每側 10 列,文件逐字說
+          # 那是為了「on some slower machines and browsers, a blank space can be seen as the user scrolls」。
+          # 我們比它多實測的每列成本,所以快機器加到 10(1× 空白 30 幀/67ms → 0–2 幀/0–17ms)、
+          # 慢機器縮回下限讓列殼接手(固定 10 在 4× 反而把最長空白從 451ms 惡化到 566ms)。
+          # 對照組把兩次取樣都跑同一個 CPU 檔位,自適應無從表現 → A3 必須紅。
+          node scripts/data-table-overscan-adaptive-invariant.mjs --selftest
+          node scripts/data-table-overscan-adaptive-invariant.mjs
           # Content readiness and still-visible fading handles need separate gates from frame cadence.
           node scripts/test-data-table-scroll-perception.mjs --out=tmp/datatable-content-controls
           # 把手捲動閂鎖(2026-09-10,data-table.spec.md「捲動與可視帶」):指標不動的捲動 → 第一個 scroll 事件後零把手;對照組 unlatch(每次 scroll 派發座標遞增的
