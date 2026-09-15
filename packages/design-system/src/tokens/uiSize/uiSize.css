@@ -186,6 +186,9 @@
   --spacing-table-row-sm: var(--table-row-sm);
   --spacing-table-row-md: var(--table-row-md);
   --spacing-table-row-lg: var(--table-row-lg);
+  --spacing-tag-sm: var(--tag-height-sm);   /* h-tag-sm(規則 3 utility bridge,同 h-field-* / h-tab-*)*/
+  --spacing-tag-md: var(--tag-height-md);
+  --spacing-tag-lg: var(--tag-height-lg);
   --spacing-tab-sm: var(--tab-height-sm);
   --spacing-tab-md: var(--tab-height-md);
   --spacing-tab-lg: var(--tab-height-lg);

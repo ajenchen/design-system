@@ -45,10 +45,11 @@ const tagVariants = cva(
         ...CAT_SUBTLE,
       },
       size: {
-        // 高度消費 --tag-height-*(tokens/uiSize/uiSize.css,Tag 盒高唯一住所;JS 側 = TAG_HEIGHT_PX)
-        sm: "h-[var(--tag-height-sm)] px-1 text-caption font-medium",
-        md: "h-[var(--tag-height-md)] px-1 text-body font-normal",
-        lg: "h-[var(--tag-height-lg)] px-1 text-body font-normal",
+        // 高度走 utility bridge h-tag-*(= --tag-height-*,tokens/uiSize/uiSize.css @theme inline;token-system.spec.md 規則 3,
+        // 同 Field 的 h-field-* / Tabs 的 h-tab-* idiom)。Tag 盒高唯一住所 = 該 token;JS 側 = TAG_HEIGHT_PX。
+        sm: "h-tag-sm px-1 text-caption font-medium",
+        md: "h-tag-md px-1 text-body font-normal",
+        lg: "h-tag-lg px-1 text-body font-normal",
       },
     },
     defaultVariants: {
