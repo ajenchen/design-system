@@ -113,6 +113,15 @@ function record(invariant, label, pass, detail = '') {
   record('S1', '骨架底列底線消費 var(--divider)(= 真列 border-divider 同一顆 token)', body.includes('var(--divider)'))
   const literal = body.match(/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\boklch\(|\bhsl\(/u)
   record('S1', '骨架底沒有字面色值(只准 token)', !literal, literal ? `發現 ${literal[0]}` : '')
+  // 幾何:骨架底的色條尺寸「抄」列殼 <Skeleton> 的 class(h-3 w-3/5 / 系統欄 h-4 w-4)。漸層只能吃數字、Tailwind class 只能吃
+  // 靜態字串,兩邊沒辦法共用同一個常數,所以在這裡把兩份對起來:列殼 class 改了、骨架底沒跟 → 紅。
+  const shell = src.match(/isSystemColumn\(cell\.column\.id\) \? 'h-(\d+) w-(\d+)' : 'h-(\d+) w-(\d+)\/(\d+)'/u)
+  record('S1', '列殼 <Skeleton> 的幾何 class 找得到(h-N w-N / h-N w-A/B)', !!shell, '找不到 renderShellRow 的 Skeleton class')
+  if (shell) {
+    const sysH = Number(shell[1]) * 4, barH = Number(shell[3]) * 4, ratio = Number(shell[4]) / Number(shell[5])
+    record('S1', `骨架底色條高 = 列殼 Skeleton 高(${barH}px;系統欄 ${sysH}px)`, body.includes(`sys ? ${sysH} : ${barH}`), `band 缺 "sys ? ${sysH} : ${barH}"`)
+    record('S1', `骨架底色條寬比 = 列殼 Skeleton 寬比(${ratio})`, body.includes(`* ${ratio})`), `band 缺 "* ${ratio})"`)
+  }
 }
 
 // ── INVARIANT (5):No-resize column width ≥ meta.width ──
