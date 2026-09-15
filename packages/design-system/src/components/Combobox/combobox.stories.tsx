@@ -31,6 +31,10 @@ export default meta
 type Story = StoryObj<typeof Combobox>
 
 /* ── 四模式 ── */
+// 純展示:四個模式各放同一組已選值。這裡不放任何 play(),也不放為了復原而生的「重設」假 UI ——
+// 破壞性互動(逐一移除到清空)屬測試,住下方 test-only 的 ModesRemoveFocusContract
+//(anchor:2026-08-05 user「不要給錯誤的範例」抓 PeoplePicker 同款「重設協作者」;Combobox 這顆
+// ccf83b24 加、ce0fc613 拆掉但留著 play() 的清空步驟、83c9533c 我為了讓畫面不空又補回,2026-09-15 user 再抓)。
 export const Modes: Story = {
   name: '四模式',
   render: () => {
@@ -40,12 +44,6 @@ export const Modes: Story = {
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">edit</h3>
           <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="類別(edit mode demo)" />
-          {/* play() 會把三個已選值逐一移除來驗「移除後焦點往下一顆、最後回觸發點」。這顆把示範狀態**還原**,
-              否則 story 停在全空 —— 而它是「四模式」的主要展示,空的就等於什麼都沒示範。
-              2026-09-12 回補:ce0fc613 把這顆與 play() 末尾的點擊一起刪掉,卻留著前面三個移除步驟
-              (該 commit 的四個主題都與 Combobox 無關,也沒有說明),四個模式因此全部顯示佔位符。
-              branch vs main 同機視覺 A/B 抓到(tag 元素 0 vs 12)。 */}
-          <Button variant="text" size="xs" onClick={() => setValue(['electronics', 'food', 'lifestyle'])}>重設編輯模式</Button>
         </div>
         <div>
           <h3 className="text-body font-bold text-foreground mb-2">view</h3>
@@ -66,6 +64,23 @@ export const Modes: Story = {
       </div>
     )
   },
+}
+
+// Roving-focus 契約 probe:逐一移除 tag 時焦點依序落到下一個移除鈕,移除最後一個後回到 combobox。
+// 同 PeoplePicker MultiRemoveFocusContract 的做法(story-rules「Technical probe visibility」):標 test-only,
+// 自 sidebar / Autodocs 排除,test runner 照跑;結束時欄位是空的沒關係,它不是給人看的範例。
+const EditModeProbe = () => {
+  const [value, setValue] = React.useState(['electronics', 'food', 'lifestyle'])
+  return (
+    <div className="max-w-sm">
+      <Combobox options={categoryOptions} value={value} onChange={setValue} aria-label="類別(edit mode probe)" />
+    </div>
+  )
+}
+export const ModesRemoveFocusContract: Story = {
+  name: '移除焦點接力驗證',
+  tags: ['test-only'],
+  render: () => <EditModeProbe />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(await canvas.findByRole('button', { name: '移除 Electronics' }))
@@ -73,9 +88,7 @@ export const Modes: Story = {
     await userEvent.click(canvas.getByRole('button', { name: '移除 Food' }))
     await waitFor(() => expect(canvas.getByRole('button', { name: '移除 Lifestyle' })).toHaveFocus())
     await userEvent.click(canvas.getByRole('button', { name: '移除 Lifestyle' }))
-    await waitFor(() => expect(canvas.getByRole('combobox', { name: '類別(edit mode demo)' })).toHaveFocus())
-    // 還原示範狀態(理由見上方按鈕的註解):沒有這一步,story 的最終畫面是四個空欄位。
-    await userEvent.click(canvas.getByRole('button', { name: '重設編輯模式' }))
+    await waitFor(() => expect(canvas.getByRole('combobox', { name: '類別(edit mode probe)' })).toHaveFocus())
   },
 }
 
