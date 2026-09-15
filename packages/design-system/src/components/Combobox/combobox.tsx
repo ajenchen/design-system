@@ -587,7 +587,11 @@ function ReadonlyMultiSelect({
     }
     return (
       <div
-        className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size: sz }), hasTags && tagPadding[sz], className)}
+        className={cn(fieldWrapperStyles({ mode: 'view', variant, width, size: sz }), hasTags && tagPadding[sz],
+          // wrap 幾何跟 edit / readonly / disabled 全 mode 一致(2026-09-15 補漏):items-start + 同一個內距公式 + 高度放開,
+          // 否則 view 態 wrap 的 tag 會被固定的 h-field-* 裁掉;第一行 y 仍 = 單行 y(field.spec.md:147 中線錨在 field-height/2)。
+          hasTags && wrap && cn('items-start', tagPaddingY[sz]), className)}
+        style={hasTags ? { paddingRight: 'var(--field-px)', ...(wrap ? { height: 'auto' } : undefined) } : undefined}
         data-field-mode="view"
       >
         {hasTags ? (
@@ -595,7 +599,8 @@ function ReadonlyMultiSelect({
         ) : (
           <span className={cn('flex-1 min-w-0', fieldEmptyColorClass(resolvedMode))}>{emptyDisplay}</span>
         )}
-        <ItemSuffix className="pointer-events-none">
+        {/* wrap 時 chevron 鎖第一行 tag 中線,跟 readonly(:628)/ edit 同一招(field-controls.spec.md:280) */}
+        <ItemSuffix className={cn('pointer-events-none', wrap && 'self-start')} style={wrap ? { height: tagHeight } : undefined}>
           <ChevronDown size={iconSize} className="shrink-0 text-fg-muted" aria-hidden />
         </ItemSuffix>
       </div>
