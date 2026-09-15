@@ -109,7 +109,7 @@ Form-context field 控件的左右水平內距。**固定 12px,不隨 size / den
 |-------|-----|------|
 | `--field-px` | 0.75rem (12px) | form-context field 左右內距 SSOT;固定不隨 size / density |
 
-**Tag 盒高(2026-09-15 新增,唯一住所)**:`--tag-height-sm` = 1.25rem(20px)、`--tag-height-md` = 1.5rem(24px)、`--tag-height-lg` = 1.5rem(24px,md alias)。utility bridge:`h-tag-sm` / `h-tag-md` / `h-tag-lg`(`@theme inline` `--spacing-tag-*`,規則 3;Tag cva 消費)。消費者:`Tag` cva 的 `h-[var(--tag-height-*)]`、`Field/field-wrapper.tsx` 的 `fieldTagInsetX/Y`(四邊等距公式 `(field-height − 2px − tag-height)/2`)。JS 側對應 `tag.tsx` `TAG_HEIGHT_PX`,閘 `scripts/tag-field-vertical-inset.mjs` I7 量實際高度對齊兩者。收斂前 Tag 高度散在 4 處字面值(tag.tsx cva / tag.tsx metrics / combobox.tsx ×3 / field-wrapper.tsx calc),那正是漂移的根(M17)。
+**Tag 盒高(2026-09-15 新增,唯一住所)**:`--tag-height-sm` = 1.25rem(20px)、`--tag-height-md` = 1.5rem(24px)、`--tag-height-lg` = 1.5rem(24px,md alias)。utility bridge:`h-tag-sm` / `h-tag-md` / `h-tag-lg`(`@theme inline` 的 `--spacing-tag-sm` / `--spacing-tag-md` / `--spacing-tag-lg`,規則 3;Tag cva 消費)。消費者:`Tag` cva 的 `h-[var(--tag-height-*)]`、`Field/field-wrapper.tsx` 的 `fieldTagInsetX/Y`(四邊等距公式 `(field-height − 2px − tag-height)/2`)。JS 側對應 `tag.tsx` `TAG_HEIGHT_PX`,閘 `scripts/tag-field-vertical-inset.mjs` I7 量實際高度對齊兩者。收斂前 Tag 高度散在 4 處字面值(tag.tsx cva / tag.tsx metrics / combobox.tsx ×3 / field-wrapper.tsx calc),那正是漂移的根(M17)。
 
 **消費者**:`Input` / `NumberInput` / `Select` / `Combobox` / `DatePicker` / `TimePicker` / `LinkInput` / `Textarea`(經 `fieldWrapperStyles` cva `px-[var(--field-px)]`)+ `PeoplePicker`(form-context inject `!px-[var(--field-px)]`)+ tag 模式右緣 re-assert(`paddingRight: var(--field-px)`,Select / Combobox readonly + edit)。
 
