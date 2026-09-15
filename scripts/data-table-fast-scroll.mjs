@@ -150,10 +150,10 @@ const SHELL_ENGAGE_FALLBACK_MS = 120
 //     busy  60ms → 呈現 66 幀、空白 59 幀、最長 1134-1168ms
 // 15ms 已經拿到全部訊號,再加重只是增加餓死風險。保留 `--busy-ms` 旋鈕供實驗。
 const SCROLL_BUSY_MS = Number(arg('busy-ms', 15))
-// 只給驗證用:強迫走第三階對照組(強制隱藏列內容),證明那一階真的會紅 ——
-// 快機器上前兩階就通過了,第三階平常跑不到,不驗就是另一個沒被證明會紅的綠燈(M32)。
-// CI 每次 PR 都另跑一趟 `--selftest --selftest-force-ink`(.github/workflows/ci.yml,緊接一般 selftest 之後)。
-const FORCE_INK_CONTROL = process.argv.includes('--selftest-force-ink')
+// 第三階對照組(強制隱藏列內容)在 `--selftest` 裡**每次都驗**,不管前兩階有沒有紅 —— 快機器上前兩階就通過了,
+// 第三階平常跑不到,不驗就是另一個沒被證明會紅的綠燈(M32)。它只多跑一趟 runOnce(約 20-30 秒),
+// 不是再跑一整支 selftest:2026-09-15 曾用第二次呼叫(`--selftest-force-ink`)做這件事,
+// 把 CI 的 DataTable 像素 job 從 20 分推到 25 分逾時被砍,當天拆掉。
 // 觀測窗必須長過補齊期限,否則「到窗尾還沒補完」會被當成補完(Codex R9)
 const SETTLE_EFFECTIVE = ASSERT_FILL_MS !== '' ? Math.max(SETTLE_MS, Number(ASSERT_FILL_MS) + 300) : SETTLE_MS
 const CSS_INJECT = arg('css', '') // 消融實驗用:載入後注入一段 CSS(例:關掉某個動畫),同一個 build 比較有無
@@ -623,7 +623,7 @@ for (const build of BUILDS) {
           console.log(`   ⟳ ${build.label}/${mode} #${i}:這一趟儀器沒跑起來(${r.crashed ? 'story 沒渲染' : r.noOverflow ? '沒有垂直溢出' : '找不到 dispatch 目標'}),重試一次`)
           r = await runOnce({ build, mode, base, sabotage: SELFTEST, profile: false, busyMs: firstBusy })
         }
-        const fired = (x) => !FORCE_INK_CONTROL && x.g && x.g.presented >= 20 && x.g.blankFrames >= 3
+        const fired = (x) => x.g && x.g.presented >= 20 && x.g.blankFrames >= 3
         if (SELFTEST && SCROLL_BUSY_MS > 0 && r.g && !fired(r)) {
           console.log(`   ⟳ 正對照輕量干擾(不忙等)只量到 呈現 ${r.g.presented} 幀 / 空白 ${r.g.blankFrames} 幀 —— 加上每個 scroll 事件忙等 ${SCROLL_BUSY_MS}ms 再試一次`)
           const heavy = await runOnce({ build, mode, base, sabotage: true, profile: false, busyMs: SCROLL_BUSY_MS })
@@ -642,6 +642,12 @@ for (const build of BUILDS) {
           console.log(`   ⟳ 這台機器重現不出真實空白(呈現 ${r.g.presented} 幀、空白 ${r.g.blankFrames} 幀)—— 改用「強制隱藏列內容」驗偵測器本身`)
           const forced = await runOnce({ build, mode, base, sabotage: true, profile: false, busyMs: 0, hideContent: true })
           if (forced.g && !forced.crashed) r = forced
+        }
+        // 第三階每次都驗(M32「儀器要先有對照組」):前兩階已經紅了也再跑一趟強制隱藏,證明「偵測器會紅」
+        // 這件事本身不靠機器慢。只多一趟 runOnce,結果掛在 r 上讓下方 selftest 報告多印一行(理由見檔頭 SCROLL_BUSY_MS 下方)。
+        if (SELFTEST && r.g && !r.crashed && !r.forcedInk) {
+          const forced = await runOnce({ build, mode, base, sabotage: true, profile: false, busyMs: 0, hideContent: true })
+          r.tier3 = forced.g && !forced.crashed ? { presented: forced.g.presented, blankFrames: forced.g.blankFrames } : null
         }
         if (r.crashed) { console.log(`✗ ${build.label}/${mode}:story 沒有渲染出捲動區(story 崩潰或 build 壞了)${r.errors?.length ? ':' + r.errors[0] : ''}`); failed++; continue }
         if (r.noOverflow) { console.log(`✗ ${build.label}/${mode}:沒有垂直溢出,不適用`); failed++; continue }
@@ -729,6 +735,12 @@ if (SELFTEST) {
         : `關掉骨架底與列殼${r.busyUsed ? ` + 每個 scroll 事件忙等 ${r.busyUsed}ms` : '(不忙等)'}`
       console.log(`${pass ? '✓' : '✗'} selftest 正對照 ${r.build}/${r.mode}:${how} → 呈現 ${r.g.presented} 幀、空白 ${r.g.blankFrames} 幀、最長 ${r.g.blankLongestMs.toFixed(0)}ms(需 ≥ 3 幀)`)
       if (!pass) ok = false
+      if (r.tier3 !== undefined) {
+        const t = r.tier3
+        const pass3 = !!t && t.presented >= 5 && t.blankFrames >= 3
+        console.log(`${pass3 ? '✓' : '✗'} selftest 第三階對照 ${r.build}/${r.mode}:強制隱藏列內容 → ${t ? `呈現 ${t.presented} 幀、空白 ${t.blankFrames} 幀` : '儀器沒跑起來'}(需 ≥ 5 幀且空白 ≥ 3;每次都驗,不靠機器慢)`)
+        if (!pass3) ok = false
+      }
       continue
     }
     const domHit = r.missingMax >= 5 && r.emptyMax >= 1
