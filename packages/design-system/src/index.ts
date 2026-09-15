@@ -543,6 +543,7 @@ export type {
   TabsTriggerProps,
 } from './components/Tabs/index'
 export {
+  TAG_HEIGHT_PX,
   Tag,
   tagVariants,
 } from './components/Tag/index'
