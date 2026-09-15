@@ -193,6 +193,8 @@ Select 的值套用時機是**由 onChange handler 的副作用決定**，不是
 
 `searchable` 啟用後 field 變 input，打字即篩選 options。判斷依以下順序：
 
+**searchable × tag 模式的內距(2026-09-15 user 裁定)**:searchable 是單選、關閉時框裡仍是「輸入」語意,已選的 Tag 跟其他文字選項一樣貼 `--field-px`(12px),**不套** `fieldTagInsetX` 的四邊等距公式(那是非 searchable tag 模式與 Combobox 的);開啟時同一個框放搜尋輸入,套了會在開關之間跳 9px。code:`select.tsx` `!searchable && tagPadding[size]`。
+
 ### 主判準：label 性質
 
 - ✅ **需要 searchable**：label 是獨特關鍵字 / 代碼 / 非自然語言，使用者**無法靠捲動快速定位**

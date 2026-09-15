@@ -6,7 +6,11 @@
  *   I1 單行:每個 field wrapper 裡第一個 Tag 的上隙 − 下隙 ≤ 0.5px(對稱置中)。
  *   I2 wrap:第一行 Tag 的上隙 = 同尺寸單行的上隙(±0.5px)—— 切到 wrap 第一行不位移。
  *   I3 Tag 內文字在 Tag 裡上下對稱(≤ 0.5px)。
- * 對照組(--selftest):把 tag 量測 wrapper 從 flex 改回區塊盒、wrap 內距改回 py-1,I1 / I2 必須紅。
+ *   I4 四邊等距:左隙 = 上隙(tag.spec.md:231;SSOT field-wrapper.tsx fieldTagInsetX/Y)。
+ *   I5 wrap 總高 = 2px 邊框 + 2×內距 + 列數×Tag 高 + (列數−1)×4(1 列 = 尺寸 token)。
+ *   I6 右側 chevron 右隙 = --field-px 12px(field-controls.spec.md:279 re-assert)。
+ *   I7 Tag 盒高 = TAG_HEIGHT_PX = --tag-height-*(兩住所不可漂移)。
+ * 對照組(--selftest):把 tag 量測 wrapper 從 flex 改回區塊盒、wrap 內距改回 py-1,I1 / I2 / I4 / I5 必須紅。
  *
  * 根因紀錄:Combobox 每個 tag 外的量測 wrapper 原是區塊盒,高度由欄位字型行高(21px)決定,sm 的 Tag(20px)
  * 沿基線沉底 → 上 3.9 / 下 2.1;wrap 的 `py-1` 寫死 4px 與單行置中(3/3/5)差 1px。owner:combobox.tsx OverflowTagList。
@@ -49,7 +53,7 @@ const PROBE = () => {
     // 最後一個 svg 才是 chevron —— clearable 有值時 clear X 在左、ChevronDown 在右(spec :278),取第一個會量到 X。
     const lastChild = wrapper.lastElementChild; const svgs = lastChild && lastChild !== first ? [...lastChild.querySelectorAll('svg')] : []; const chev = svgs.length ? svgs[svgs.length - 1] : null
     const chevRight = chev ? +(wr.right - br - chev.getBoundingClientRect().right).toFixed(2) : null
-    out.push({ chevRight, size, wrap, rows, wrapperH: +wr.height.toFixed(2), mode: wrapper.getAttribute('data-field-mode') || '?', gapTop: +(tr.top - wr.top - bt).toFixed(2), gapBottom: +(wr.bottom - bb - tr.bottom).toFixed(2),
+    out.push({ chevRight, tagH: +tr.height.toFixed(2), size, wrap, rows, wrapperH: +wr.height.toFixed(2), mode: wrapper.getAttribute('data-field-mode') || '?', gapTop: +(tr.top - wr.top - bt).toFixed(2), gapBottom: +(wr.bottom - bb - tr.bottom).toFixed(2),
       gapLeft: +(tr.left - wr.left - bl).toFixed(2),
       textTop: xr ? +(xr.top - tr.top).toFixed(2) : null, textBottom: xr ? +(tr.bottom - xr.bottom).toFixed(2) : null })
   }
@@ -74,6 +78,8 @@ for (const r of all.filter((x) => x.wrap)) {
   rec(!!ref && Math.abs(r.gapTop - ref.gapTop) <= 0.5, `I2 ${r.story} ${r.size} ${r.mode}:wrap 第一行上隙 ${r.gapTop} vs 單行 ${ref ? ref.gapTop : '?'}(±0.5)`)
 }
 for (const r of single.filter((x) => x.textTop != null)) rec(Math.abs(r.textTop - r.textBottom) <= 0.5, `I3 ${r.story} ${r.size}:Tag 內文字上 ${r.textTop} / 下 ${r.textBottom}`)
+// I7 Tag 盒高 = TAG_HEIGHT_PX / --tag-height-*(20/24/24):CSS token 與 JS 常數兩住所不可漂移。
+for (const r of all) rec(Math.abs(r.tagH - (r.size === 'sm' ? 20 : 24)) <= 0.5, `I7 ${r.story} ${r.size}:Tag 高 ${r.tagH}(需 ${r.size === 'sm' ? 20 : 24})`)
 // I5 wrap 的總高是公式不是巧合:2px 邊框 + 2×內距 + 列數×Tag 高 + (列數−1)×4px 列距。
 // 1 列時就是尺寸 token(28/32/36)—— 舊 py-1 會讓 sm/md 多 2px、lg 少 2px。
 for (const r of all.filter((x) => x.wrap)) {

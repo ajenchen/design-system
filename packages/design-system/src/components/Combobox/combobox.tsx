@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import type { FieldMode, FieldVariant, FieldVariantInternal, FieldWidth } from '@/design-system/components/Field/field-types'
 import { fieldWrapperStyles, nakedCellRowModeAlign, fieldDisplayTextClass, fieldTagInsetX, fieldTagInsetY } from '@/design-system/components/Field/field-wrapper'
 import { useFieldContext, useResolvedFieldSize, useResolvedFieldDisabled, useResolvedFieldMode, useResolvedFieldVariant, useResolvedFieldInvalid, useFieldEmptyDisplay, fieldEmptyColorClass } from '@/design-system/components/Field/field-context'
-import { Tag } from '@/design-system/components/Tag/tag'
+import { TAG_HEIGHT_PX, Tag } from '@/design-system/components/Tag/tag'
 import { ItemInlineAction, ItemSuffix } from '@/design-system/patterns/element-anatomy/item-anatomy'
 import { OverflowIndicator } from '@/design-system/components/OverflowIndicator/overflow-indicator'
 import { SelectMenu, forwardKeyToListbox, useActiveDescendant, type SelectMenuOption } from '@/design-system/components/SelectMenu/select-menu'
@@ -568,7 +568,7 @@ function ReadonlyMultiSelect({
   const variant = variantProp ?? 'default'
   const sz = size ?? 'md'
   const iconSize = sz === 'lg' ? 20 : 16
-  const tagHeight = sz === 'sm' ? 20 : 24
+  const tagHeight = TAG_HEIGHT_PX[sz]
   const containerRef = React.useRef<HTMLDivElement>(null)
   const hasTags = (value?.length ?? 0) > 0
 
@@ -714,7 +714,7 @@ function NativeCombobox({
 
   const items = value.map(v => ({ value: v, label: options.find(o => o.value === v)?.label ?? v }))
   const unselected = options.filter(o => !value.includes(o.value))
-  const tagHeight = size === 'sm' ? 20 : 24
+  const tagHeight = TAG_HEIGHT_PX[size]
   const tagAreaGap = tagAreaGapPx ?? GAP
 
   const selectDropdown = unselected.length > 0 ? (
@@ -874,7 +874,7 @@ function CustomCombobox({
     return missing.length ? [...options, ...missing] : options
   }, [options, suggestions, value, findKnown])
   const tagAreaRef = React.useRef<HTMLDivElement>(null)
-  const tagHeight = size === 'sm' ? 20 : 24
+  const tagHeight = TAG_HEIGHT_PX[size]
 
   const handleRemove = (v: string) => {
     focusAfterTagRemoval(tagAreaRef.current, inputRef.current)

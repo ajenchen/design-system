@@ -109,6 +109,8 @@ Form-context field 控件的左右水平內距。**固定 12px,不隨 size / den
 |-------|-----|------|
 | `--field-px` | 0.75rem (12px) | form-context field 左右內距 SSOT;固定不隨 size / density |
 
+**`--tag-height-{sm,md,lg}`(2026-09-15 新增,Tag 盒高唯一住所)**:20 / 24 / 24px(lg = md alias)。消費者:`Tag` cva 的 `h-[var(--tag-height-*)]`、`Field/field-wrapper.tsx` 的 `fieldTagInsetX/Y`(四邊等距公式 `(field-height − 2px − tag-height)/2`)。JS 側對應 `tag.tsx` `TAG_HEIGHT_PX`,閘 `scripts/tag-field-vertical-inset.mjs` I7 量實際高度對齊兩者。收斂前 Tag 高度散在 4 處字面值(tag.tsx cva / tag.tsx metrics / combobox.tsx ×3 / field-wrapper.tsx calc),那正是漂移的根(M17)。
+
 **消費者**:`Input` / `NumberInput` / `Select` / `Combobox` / `DatePicker` / `TimePicker` / `LinkInput` / `Textarea`(經 `fieldWrapperStyles` cva `px-[var(--field-px)]`)+ `PeoplePicker`(form-context inject `!px-[var(--field-px)]`)+ tag 模式右緣 re-assert(`paddingRight: var(--field-px)`,Select / Combobox readonly + edit)。
 
 **與 `--table-cell-px` 的關係**:同 `-px` 命名慣例。`--table-cell-px`(DataTable-scoped)預設 `var(--field-px)`(form / cell 同 12px content gutter SSOT),但仍是獨立 named token、可被 DataTable 單獨 override(per `components/Field/field-controls.spec.md` contract (c) scoped 決策)。

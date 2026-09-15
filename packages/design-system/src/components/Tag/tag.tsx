@@ -26,6 +26,12 @@ function getMeasureCtx() {
   return _measureCtx
 }
 
+/**
+ * Tag 盒高(px)。CSS 側住所是 `--tag-height-*`(tokens/uiSize/uiSize.css),兩者必須相等 ——
+ * 閘 `scripts/tag-field-vertical-inset.mjs` I7 量實際 rect 高度對齊這裡。消費者:tagMeta.sizes、Combobox(chevron 鎖第一行的高度)。
+ */
+export const TAG_HEIGHT_PX = { sm: 20, md: 24, lg: 24 } as const
+
 const tagVariants = cva(
   "inline-flex items-center rounded-md border border-transparent transition-colors cursor-text",
   {
@@ -39,9 +45,10 @@ const tagVariants = cva(
         ...CAT_SUBTLE,
       },
       size: {
-        sm: "h-5 px-1 text-caption font-medium",
-        md: "h-6 px-1 text-body font-normal",
-        lg: "h-6 px-1 text-body font-normal",
+        // 高度消費 --tag-height-*(tokens/uiSize/uiSize.css,Tag 盒高唯一住所;JS 側 = TAG_HEIGHT_PX)
+        sm: "h-[var(--tag-height-sm)] px-1 text-caption font-medium",
+        md: "h-[var(--tag-height-md)] px-1 text-body font-normal",
+        lg: "h-[var(--tag-height-lg)] px-1 text-body font-normal",
       },
     },
     defaultVariants: {
@@ -271,11 +278,11 @@ export const tagMeta = {
   },
   sizes: {
     // Tag 尺寸不引用 field-height token（spec「尺寸」段——Tag 與 Field 尺寸獨立;段名指法免行號漂移）。
-    // height = Tag 自身高度（cva h-5/h-6/h-6 = 20/24/24，lg = md alias）。
+    // height = Tag 自身高度 = TAG_HEIGHT_PX(對應 --tag-height-* token;lg = md alias)。
     // iconSize 全尺寸統一 16（本檔 CAT icon render 硬寫 size={16}）。
-    sm: { height: 20, iconSize: 16, typography: 'caption' },
-    md: { height: 24, iconSize: 16, typography: 'body' },
-    lg: { height: 24, iconSize: 16, typography: 'body' },
+    sm: { height: TAG_HEIGHT_PX.sm, iconSize: 16, typography: 'caption' },
+    md: { height: TAG_HEIGHT_PX.md, iconSize: 16, typography: 'body' },
+    lg: { height: TAG_HEIGHT_PX.lg, iconSize: 16, typography: 'body' },
   },
   // Tag 為純展示 indicator，無互動 state（spec「為何無 StateBehavior」段;段名指法免行號漂移）。
   // 唯一行為 dismiss 屬 Inline Action pattern，非 Tag 自有 state。

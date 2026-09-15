@@ -59,6 +59,14 @@
      + tag 模式右緣 re-assert 全消費此 token(取代散落的 px-3 / inline 0.75rem,M17 SSOT 可傳播)。 */
   --field-px: 0.75rem;          /* 12px */
 
+  /* Tag 盒高 — Tag 自身尺寸的唯一住所(2026-09-15 收斂:原本寫在 tag.tsx cva h-5/h-6、tag.tsx metrics 20/24、
+     combobox.tsx 三處 20/24、field-wrapper.tsx 內距 calc 的 1.25rem/1.5rem —— 四處各一份就是漂移的根)。
+     消費者:tag.tsx cva(h-[var(--tag-height-*)])、field-wrapper.tsx fieldTagInsetX/Y(四邊等距公式)。
+     JS 側對應常數 = tag.tsx `TAG_HEIGHT_PX`(閘 tag-field-vertical-inset I7 量實際高度對齊兩者)。lg = md alias。 */
+  --tag-height-sm: 1.25rem;     /* 20px */
+  --tag-height-md: 1.5rem;      /* 24px */
+  --tag-height-lg: 1.5rem;      /* 24px — md alias */
+
   /* Table Row Height — DataTable */
   --table-row-sm: 2rem;         /* 32px */
   --table-row-md: 2.5rem;       /* 40px */

@@ -296,18 +296,18 @@ export const bareInputStyles = [
  *   - X:單行與 wrap 都套(取代各元件自帶的 tagPadding)。
  *   - Y:只有 wrap 模式套(單行由 wrapper `items-center` 置中,結果與 Y 相同);第一行 tag 的 y 因此
  *     恆等於單行時的 y,切換 wrap 不位移(舊 `py-1` 寫死 4px 會差 1px)。
- * Tag 高度住所 = tag.tsx cva `h-5`/`h-6`(1.25rem / 1.5rem),這裡的字面值跟它綁定;改 Tag 高度必同步。
+ * Tag 高度消費同一個 token `--tag-height-*`(tokens/uiSize/uiSize.css),沒有第二份字面值。
  * 消費者:Combobox(四條路徑)、Select tag 模式。閘:`scripts/tag-field-vertical-inset.mjs`。
  */
 export const fieldTagInsetX: Record<'sm' | 'md' | 'lg', string> = {
-  sm: 'px-[calc((var(--field-height-sm)_-_2px_-_1.25rem)_/_2)]',
-  md: 'px-[calc((var(--field-height-md)_-_2px_-_1.5rem)_/_2)]',
-  lg: 'px-[calc((var(--field-height-lg)_-_2px_-_1.5rem)_/_2)]',
+  sm: 'px-[calc((var(--field-height-sm)_-_2px_-_var(--tag-height-sm))_/_2)]',
+  md: 'px-[calc((var(--field-height-md)_-_2px_-_var(--tag-height-md))_/_2)]',
+  lg: 'px-[calc((var(--field-height-lg)_-_2px_-_var(--tag-height-lg))_/_2)]',
 }
 export const fieldTagInsetY: Record<'sm' | 'md' | 'lg', string> = {
-  sm: 'py-[calc((var(--field-height-sm)_-_2px_-_1.25rem)_/_2)]',
-  md: 'py-[calc((var(--field-height-md)_-_2px_-_1.5rem)_/_2)]',
-  lg: 'py-[calc((var(--field-height-lg)_-_2px_-_1.5rem)_/_2)]',
+  sm: 'py-[calc((var(--field-height-sm)_-_2px_-_var(--tag-height-sm))_/_2)]',
+  md: 'py-[calc((var(--field-height-md)_-_2px_-_var(--tag-height-md))_/_2)]',
+  lg: 'py-[calc((var(--field-height-lg)_-_2px_-_var(--tag-height-lg))_/_2)]',
 }
 
 export const nakedCellRowModeAlign = 'group-data-[row-mode=auto]/cell:items-start'
