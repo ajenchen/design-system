@@ -116,8 +116,17 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
 
-      - name: Install locked dependencies once
-        run: npm run --silent setup:dependencies
+      # 相依只在「主分支的工具鏈」裝一次,tag 工作樹用符號連結借用它 —— 不在 tag 樹跑治理 bootstrap。
+      # 2026-09-16 錨:補建 v0.1.0-beta.131 時,tag 樹的 lockfile 帶著事後才公告的 fast-uri 漏洞,
+      # 供應鏈閘在 tag 樹 fail-closed(GOV-DEPENDENCY-BOOTSTRAP-001),任何「後來才出公告」的舊 tag 都永遠補不回來。
+      # 舊 tag 的 dev 工具鏈不會進 Release:三個 tarball 是 registry 的位元、sidecar 是 tag 樹**檔案**的確定性函式,
+      # 而 tag 樹自己的 scripts 只需要能載入相依;主分支那份 lockfile 每次 PR 都過稽核,借它最保險。
+      - name: Install locked dependencies once (protected-main toolchain)
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd "$RUNNER_TEMP/recovery-tools" && npm run --silent setup:dependencies)
+          ln -s "$RUNNER_TEMP/recovery-tools/node_modules" "$GITHUB_WORKSPACE/node_modules"
 
       - name: Rehydrate exact registry tarballs with provenance verification
         shell: bash

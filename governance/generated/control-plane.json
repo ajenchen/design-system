@@ -1614,7 +1614,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 15,
-      "hash": "sha256:95cd7beaceba6001a141beb18318fbf09b6206d30a969951dd80442a0fad8b48",
+      "hash": "sha256:e4c13d0d63338fd1e2fdc746f460863c22d0bca4350882bd04a8e683cd167ce8",
       "id": "github-repository-governance",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -2699,7 +2699,7 @@
       "carrierProjections": [],
       "excludes": [],
       "files": 21,
-      "hash": "sha256:2cd2a039a110dac8d7db2c92385fb0e8b35cc7679a14ef2c5e8d208659139ce5",
+      "hash": "sha256:2e275b208e09bc466e40fd5f2f81df8a8b86b0b475cfa028456c1382008c085c",
       "id": "provider-neutral-memory",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3075,7 +3075,7 @@
         "scripts/generated/"
       ],
       "files": 446,
-      "hash": "sha256:526de26b1b174979206b3cd43eb3e3dfdd3df4f579f45631f48337926f5422a6",
+      "hash": "sha256:169d98c3fa2a807159958b1c4c34dd3aa5d93a2422f986a520e321cbf4dada9b",
       "id": "repository-automation-corpus",
       "mode": "0755",
       "ownerRepo": "design-system",
@@ -3156,12 +3156,12 @@
       "type": "file"
     },
     {
-      "hash": "sha256:d453ebd499f009d129ce712011ea7acec5224f7242efa4d2c6bb1ef70af08475",
+      "hash": "sha256:3181948b03181c186c5c3ba35908d342e888e96db2b95981fba5c3b77012612f",
       "id": "standard-release-orchestrator",
       "mode": "0644",
       "ownerRepo": "design-system",
       "path": "scripts/release-orchestrator.mjs",
-      "size": 53507,
+      "size": 54581,
       "type": "file"
     },
     {
