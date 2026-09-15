@@ -297,6 +297,46 @@ jobs:
           # 對照組把兩次取樣都跑同一個 CPU 檔位,自適應無從表現 → A3 必須紅。
           node scripts/data-table-overscan-adaptive-invariant.mjs --selftest
           node scripts/data-table-overscan-adaptive-invariant.mjs
+          # 感知 / 把手 / 釘選 resize / dpr1 感知迴圈那一段(CI 逐支計時佔本 job 10 分鐘)2026-09-15 搬到
+          # verify-browser-datatable-perception:本 job 拆前 24 分鐘貼著 25 分鐘上限(8b1137c7 就是被砍掉的那次),
+          # 照 2026-09-10 拆 dpr2 job 的先例再拆一個平行 job,兩邊各約 13-15 分鐘。
+          # 列/表頭元素快取的依賴完整性(靜態,TypeScript 語法樹):快取靠手列的 epochDeps,漏一個就是
+          # 「舊列拿到過期資料」(2026-09-08 I2 抓到漏 resolvedWidths → 顯示↔編輯寬差 0.59px)。
+          node scripts/data-table-row-cache-deps-invariant.mjs
+
+  verify-browser-datatable-perception:
+    # 2026-09-15 拆自 verify-browser-datatable:感知 / 把手 / 釘選 resize / dpr1 感知迴圈這一段在 CI 逐支計時佔 10 分鐘,
+    # 原 job 24 分鐘貼著 25 分鐘上限(8b1137c7 那次被砍掉)。照 2026-09-10 拆 dpr2 job 的先例再拆一個平行 job。
+    # 這裡不需要參考建置(main):所有斷言都是絕對門檻或自帶對照組,不做「同 job 交錯比 main」。
+    name: Verify browser(DataTable perception gates)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # governance-build-graph --check verifies history-bound transitions.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.14.0'
+          cache: npm
+
+      - name: Install locked dependencies once
+        run: npm run --silent setup:dependencies
+
+      - name: Build publishable libraries and declarations
+        run: npm run build:lib
+
+      - name: Build the Storybook the browser gates load
+        run: npm run build-storybook
+
+      - name: DataTable perception + handle gates (browser)
+        run: |
+          npx --no-install playwright install chromium
           # Content readiness and still-visible fading handles need separate gates from frame cadence.
           node scripts/test-data-table-scroll-perception.mjs --out=tmp/datatable-content-controls
           # 把手捲動閂鎖(2026-09-10,data-table.spec.md「捲動與可視帶」):指標不動的捲動 → 第一個 scroll 事件後零把手;對照組 unlatch(每次 scroll 派發座標遞增的
@@ -312,7 +352,7 @@ jobs:
           # dpr2 的內容延遲不在 CI 斷言(零殼 / 擷取 / 空白仍斷言):共享 2 vCPU runner 在 dpr2 是 raster 成本決定延遲,幀距正常 16ms 卻
           # p95 72 / 最長 100(8277f858);本機 2× 節流對照 main p95 83 / 117 vs 本分支 0 / 17、4× 235 / 268 vs 132 / 148 ——
           # 本分支嚴格優於 main,runner 的數字是機器不是表格。延遲在 dpr1 斷言(runner 上穩定 0);dpr2 的回歸對照用本機節流跑 main vs 分支(AD62)。
-          # dpr2 那一組搬到 verify-browser-datatable-dpr2(2026-09-10:本 job 13.6 分鐘、元件 job 15 分鐘被取消 —— 兩個都貼到 AD34 釘住的 15 分鐘預算)
+          # dpr2 那一組搬到 verify-browser-datatable-dpr2(2026-09-10:原 job 13.6 分鐘、元件 job 15 分鐘被取消 —— 兩個都貼到 AD34 釘住的 15 分鐘預算)
           for dpr in 1; do
             LAT=on
             node scripts/data-table-handle-position.mjs --dpr=$dpr --out=tmp/datatable-handle-$dpr
@@ -322,9 +362,6 @@ jobs:
             node scripts/data-table-scroll-perception.mjs --dpr=$dpr --peak=4500 --profile=bursts --assert=on --latency-assert=$LAT --out=tmp/datatable-content-bursts-$dpr
             node scripts/data-table-scroll-perception.mjs --dpr=$dpr --peak=4500 --profile=bursts --input=wheel --assert=on --latency-assert=$LAT --out=tmp/datatable-content-wheel-$dpr
           done
-          # 列/表頭元素快取的依賴完整性(靜態,TypeScript 語法樹):快取靠手列的 epochDeps,漏一個就是
-          # 「舊列拿到過期資料」(2026-09-08 I2 抓到漏 resolvedWidths → 顯示↔編輯寬差 0.59px)。
-          node scripts/data-table-row-cache-deps-invariant.mjs
 
       - name: Preserve DataTable scroll perception evidence
         if: always()
@@ -606,20 +643,21 @@ jobs:
     name: Verify(tsc + tests + compile + build)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent]
+    needs: [verify-static, verify-browser-datatable, verify-browser-datatable-perception, verify-browser-datatable-dpr2, verify-browser-interaction, verify-browser-overlay, verify-browser-agent]
     if: always()
     steps:
       - name: Every verify job must have succeeded
         env:
           STATIC: ${{ needs.verify-static.result }}
           BROWSER_DT: ${{ needs.verify-browser-datatable.result }}
+          BROWSER_DT3: ${{ needs.verify-browser-datatable-perception.result }}
           BROWSER_DT2: ${{ needs.verify-browser-datatable-dpr2.result }}
           BROWSER_UI: ${{ needs.verify-browser-interaction.result }}
           BROWSER_OVERLAY: ${{ needs.verify-browser-overlay.result }}
           BROWSER_AGENT: ${{ needs.verify-browser-agent.result }}
         run: |
-          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT"
-          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ]
+          echo "verify-static=$STATIC verify-browser-datatable=$BROWSER_DT verify-browser-datatable-perception=$BROWSER_DT3 verify-browser-datatable-dpr2=$BROWSER_DT2 verify-browser-interaction=$BROWSER_UI verify-browser-overlay=$BROWSER_OVERLAY verify-browser-agent=$BROWSER_AGENT"
+          [ "$STATIC" = success ] && [ "$BROWSER_DT" = success ] && [ "$BROWSER_DT3" = success ] && [ "$BROWSER_DT2" = success ] && [ "$BROWSER_UI" = success ] && [ "$BROWSER_OVERLAY" = success ] && [ "$BROWSER_AGENT" = success ]
 
   hooks-linux:
     name: Governance hooks(Linux portability)
