@@ -102,7 +102,9 @@ SMIL keySplines 無法消費 CSS var,`agent-panel-logo.tsx` 內常數為 swell/s
   - **內距** = Dialog 的 `--layout-space-viewport-inset`(`../Dialog/dialog.spec.md`「Viewport Inset」是 owner;本元件是第二個消費者),量的是**容器**左緣(容器 = 視窗時相同);
   - **遮罩** = `lib/overlay-coexistence.ts` 的 `CoexistenceMask`,與並存 Dialog 同一層 `z-30`、同一顆 `--overlay`、同樣替 `persistentElements` 挖洞
     (層級句見 `../Dialog/dialog.spec.md`「並存」段:遮罩 z-30 < 並存 modal z-40 < 代理蓋板 z-[45] < 一般 modal z-50);它是面板根節點的**兄弟**,
-    自身 `pointer-events:none`、沒有任何點擊行為 —— 點了什麼都不會發生(底下的宿主本來就被抑制),面板的關閉仍只有 × 與入口鈕兩條路(見「Esc 與關閉語意」);
+    **接住**留白處的指標但沒有任何行為 —— 點了什麼都不會發生:不關面板、也不會穿到底下去關掉並存的 modal 或碰到宿主
+    (2026-09-16 user 第二次回報:第一版遮罩 `pointer-events:none`,點擊穿過去打到 modal 的外部點擊偵測、把 modal 關掉;修法 = 遮罩在面板的保留集合裡、
+    modal 的外部點擊守衛把常駐殼子樹裡的目標視為不關,Dialog 遮罩算洞時「遮罩不是洞」);面板的關閉仍只有 × 與入口鈕兩條路(見「Esc 與關閉語意」);
   - **淡入** = 與面板同相的 `--motion-duration-surface`(見「動畫總表」),偏好減少動態時不淡入。
   「像 Sheet」只到外觀:面板**不是** Sheet、也不用 `SheetOverlay`(Sheet 遮罩是 z-50,會壓過並存 modal;且面板永不進 Radix 的 DismissableLayer 疊,見負向鐵律)。
   世界級對照(遮罩皆可設為「點了不關」):Material Components Web dialog 的 `scrimClickAction` 設空字串即不關

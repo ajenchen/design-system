@@ -77,7 +77,9 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
       stage: host.clientWidth - (cs.position==='absolute'?0:Math.round(P.width)),
       inset, gapLeft: Math.round((P.left-H.left)*10)/10, gapRight: Math.round((H.right-P.right)*10)/10,
       scrim: !!scrim, scrimCoversHost: !!S && near(S.left,H.left) && near(S.right,H.right) && near(S.top,H.top) && near(S.bottom,H.bottom),
-      scrimBg: scs?.backgroundColor ?? null, overlayBg, scrimZ: scs?.zIndex ?? null, scrimPointer: scs?.pointerEvents ?? null,
+      scrimBg: scs?.backgroundColor ?? null, overlayBg, scrimZ: scs?.zIndex ?? null,
+      // 留白處命中的必須是遮罩本身(它接住指標、沒有行為);穿透到底下 = 會打到並存 modal 的外部點擊偵測(2026-09-16 user 第二次回報)
+      stripHitsScrim: !!scrim && Number.isFinite(inset) && document.elementFromPoint(H.left + inset/2, H.top + H.height/2) === scrim,
       // 留白正中一點:點下去什麼都不該發生
       strip: Number.isFinite(inset) ? { x: H.left + inset/2, y: H.top + H.height/2 } : null }
   })
@@ -95,9 +97,9 @@ for (const W of [1920, 1600, 1280, 1080, 1000, 960, 959, 800]) {
     // 底下鋪 CoexistenceMask(z-30、--overlay、不吃指標),點遮罩不關面板。
     ck(`G3 @${W} 蓋板左留 --layout-space-viewport-inset(token 實值 ${r.inset}px)`, Number.isFinite(r.inset) && r.inset > 0 && Math.abs(r.gapLeft - r.inset) <= 1, `面板左 − 容器左 = ${r.gapLeft}`)
     ck(`G3 @${W} 蓋板右緣貼齊容器`, Math.abs(r.gapRight) <= 1, `容器右 − 面板右 = ${r.gapRight}`)
-    ck(`G3 @${W} 蓋板底下有遮罩(data-agent-panel-scrim:覆蓋容器、底色 = --overlay、z-30、不吃指標)`,
-       r.scrim && r.scrimCoversHost && r.scrimBg === r.overlayBg && r.scrimZ === '30' && r.scrimPointer === 'none',
-       JSON.stringify({ scrim: r.scrim, covers: r.scrimCoversHost, bg: r.scrimBg, overlay: r.overlayBg, z: r.scrimZ, pointer: r.scrimPointer }))
+    ck(`G3 @${W} 蓋板底下有遮罩(data-agent-panel-scrim:覆蓋容器、底色 = --overlay、z-30、留白處命中的是遮罩本身)`,
+       r.scrim && r.scrimCoversHost && r.scrimBg === r.overlayBg && r.scrimZ === '30' && r.stripHitsScrim,
+       JSON.stringify({ scrim: r.scrim, covers: r.scrimCoversHost, bg: r.scrimBg, overlay: r.overlayBg, z: r.scrimZ, stripHitsScrim: r.stripHitsScrim }))
     if (r.strip) {
       await pg.mouse.click(r.strip.x, r.strip.y); await pg.waitForTimeout(400)
       const after = await pg.evaluate(()=>{ const p=document.querySelector('[role="complementary"]'); return { open: !!p && getComputedStyle(p).display!=='none' && p.getBoundingClientRect().width>0, mode: p?.dataset.agentPanelMode } })

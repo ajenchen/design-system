@@ -280,8 +280,12 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // 窄版時那個 modal 會既蓋在上面又可以操作,兩條都違反條 B。
     // `suppressOthers([面板])` 是「保留這一塊、其餘全部抑制」,portal 出去的也照樣被抑制。
     // 保留集合 = 面板自己 + 呼叫端指定的宿主外常駐區(瀏覽器 chrome 等;見 `persistentElements` 說明)。
+    // 蓋板態的遮罩也在保留集合裡:它必須**接住**留白處的指標(不被 suppressOthers 設成 inert),否則點擊會穿過去
+    // 打到底下 modal 的外部點擊偵測、把 modal 關掉(2026-09-16 user:「點擊露出的遮罩會關閉 agent panel 底下的 modal」)。
+    // 它在算洞時不會把自己或別的遮罩當洞(overlay-coexistence.ts boxes():遮罩不是洞)。
+    const scrimRef = React.useRef<HTMLDivElement | null>(null)
     const keepPanel = React.useCallback(
-      () => [rootRef.current as Element | null, ...(persistentElements?.() ?? [])].filter((el): el is Element => !!el),
+      () => [rootRef.current as Element | null, scrimRef.current as Element | null, ...(persistentElements?.() ?? [])].filter((el): el is Element => !!el),
       [persistentElements],
     )
     // **量到之前不要動手**:`containerPx` 初值是 0,而 `resolveIsOverlay(0)` 會回 true
@@ -341,9 +345,11 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
     // 蓋板態的遮罩(2026-09-16 user:「底下會有滿版的遮罩,若點擊到該遮罩不會有任何反應…單純只是用來讓使用者知道 agent panel 底下還有東西」):
     // 重用 Dialog 並存時的同一支 `CoexistenceMask`(z-30、`--overlay`、替 persistentElements 挖洞),不手刻第二份遮罩(M17 / M23)。
     // - `absolute`:遮罩跟面板一樣覆蓋**容器**,不是視窗(spec「量的是容器不是視窗」;tailwind-merge 讓它覆掉預設的 `fixed`);
-    // - `pointer-events-none`:遮罩純提示、不吃點擊 —— 底下的宿主本來就被 suppressOthers 設成 inert,點下去什麼都不會發生;
-    //   同時 Dialog 的並存遮罩算洞時會跳過它(overlay-coexistence.ts `boxes()`:pointer-events:none 的定位圖層不是洞),
-    //   否則常駐殼裡多了一張全舞台的盒子,Dialog 的遮罩會被整張挖空(2026-09-09 入口鈕裁切圖層的同款根因);
+    // - 遮罩**接住**指標但沒有任何行為:點留白處 = 點到遮罩本身,什麼都不發生。第一版寫成 `pointer-events-none`,點擊穿過去
+    //   打到底下並存 modal 的外部點擊偵測、把 modal 關掉(2026-09-16 user 第二次回報);所以它要在保留集合裡(不被設 inert)
+    //   而且 Dialog 的並存遮罩算洞時把它當「遮罩不是洞」跳過(overlay-coexistence.ts `boxes()`),否則常駐殼裡多了一張全舞台的盒子,
+    //   Dialog 的遮罩會被整張挖空(2026-09-09 入口鈕裁切圖層的同款根因)。modal 的外部點擊守衛(createPersistentGuard)看到
+    //   目標在保留區子樹裡就不關 —— 遮罩是常駐殼的子節點,自然在裡面。
     // - 只在量到容器且真的是蓋板時渲染(與 useOverlayCoexistence 的啟用條件同一組);
     // - 是面板根節點的**兄弟**不是子節點:根節點 z-[45] 自成堆疊脈絡,放進去遮罩就會壓過並存 modal(z-40),違反 dialog.spec 層級梯。
     // 幾何與「點了不關」由 `scripts/agent-panel-breakpoint.mjs` 機械守住。
@@ -352,9 +358,10 @@ const AgentPanel = React.forwardRef<HTMLDivElement, AgentPanelProps>(
       <>
         {showScrim && (
           <CoexistenceMask
+            ref={scrimRef}
             keep={keepPanel}
             data-agent-panel-scrim=""
-            className="pointer-events-none absolute animate-in fade-in-0 duration-[var(--motion-duration-surface)] motion-reduce:animate-none"
+            className="absolute animate-in fade-in-0 duration-[var(--motion-duration-surface)] motion-reduce:animate-none"
           />
         )}
         <div

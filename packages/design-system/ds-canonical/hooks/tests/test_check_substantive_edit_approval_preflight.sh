@@ -1090,6 +1090,25 @@ build_transcript "$TX_BUG_UI" "fab 壞掉了,順便把它的顏色改成紅色"
 run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_BUG_UI" "className='bg-red-500'"
 expect_block "15p. bug 回報 + UI 取捨字眼(顏色)→ 不走捷徑,BLOCK" "BLOCKER"
 
+# 15q. 問句形 bug 回報(「為何…??」「root cause 是甚麼??」= 問原因不是問許可)→ 綁到點名的元件,approved(2026-09-16 遮罩穿透錨)
+TX_BUG_WHY="$TMP_DIR/tx_bug_why.jsonl"
+build_transcript "$TX_BUG_WHY" "agent panel 變為近乎滿版時
+若其底下有開啟的 modal,
+為何點擊露出的遮罩會關閉agent panel底下的modal??
+照理說點擊該遮罩不應該發生任何事情吧??
+root cause 是甚麼??"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel.tsx" "$TX_BUG_WHY" "const scrimRef = React.useRef(null)"
+expect_pass_silent "15q. 問句形 bug 回報 → 綁 agent panel,engineering remediation approved"
+
+# 15r. 同一則回報:修 agent panel 的 bug 可以動它直接 import 的共用模組(lib/overlay-coexistence.ts);用真實 repo 路徑讓 import 掃描找得到
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../../../.." && pwd)"
+run_hook "Edit" "$REPO_ROOT/packages/design-system/src/lib/overlay-coexistence.ts" "$TX_BUG_WHY" "if (el.hasAttribute('data-coexistence-mask')) return []"
+expect_pass_silent "15r. 同一則 bug 回報 → 被點名元件直接依賴的 lib 也在 remediation 範圍"
+
+# 15s. 同一則回報 → 動沒被點名、也沒被依賴的元件(Button)仍擋(內容中性,擋的是綁定不是 UI 字眼)
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/Button/button.tsx" "$TX_BUG_WHY" "const noop = 1"
+expect_block "15s. bug 回報只授權被點名的元件與其依賴,不相關元件仍 BLOCK" "BLOCKER"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

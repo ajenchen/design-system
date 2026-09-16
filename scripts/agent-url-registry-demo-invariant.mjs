@@ -552,8 +552,9 @@ for (const width of [1440, 1180]) {
       scrimCoversHost: near(S.left, H.left) && near(S.right, H.right) && near(S.top, H.top) && near(S.bottom, H.bottom),
       pointer: getComputedStyle(s).pointerEvents, strip: { x: H.left + inset / 2, y: H.top + H.height / 2 } }
   })
-  check(`${W} S9 蓋板左留 --layout-space-viewport-inset(${scrimGeo.inset}px)、右貼齊容器、底下鋪不吃指標的遮罩(2026-09-16)`,
-    scrimGeo.p && scrimGeo.s && Number.isFinite(scrimGeo.inset) && Math.abs(scrimGeo.gapLeft - scrimGeo.inset) <= 1 && Math.abs(scrimGeo.gapRight) <= 1 && scrimGeo.scrimCoversHost && scrimGeo.pointer === 'none',
+  // 遮罩要**接住**指標(不是 pointer-events:none):第一版讓點擊穿透,打到底下 modal 的外部點擊偵測、把 modal 關掉(user 2026-09-16 第二次回報)
+  check(`${W} S9 蓋板左留 --layout-space-viewport-inset(${scrimGeo.inset}px)、右貼齊容器、底下鋪接住指標的遮罩(2026-09-16)`,
+    scrimGeo.p && scrimGeo.s && Number.isFinite(scrimGeo.inset) && Math.abs(scrimGeo.gapLeft - scrimGeo.inset) <= 1 && Math.abs(scrimGeo.gapRight) <= 1 && scrimGeo.scrimCoversHost && scrimGeo.pointer !== 'none',
     JSON.stringify(scrimGeo))
   if (scrimGeo.strip) { await page.mouse.click(scrimGeo.strip.x, scrimGeo.strip.y); await page.waitForTimeout(400) }
   check(`${W} S9 點遮罩(留白處)不關面板、網址列仍可點(遮罩純提示)`, (await h.panelOpen()) && (await h.inert('#demo-location')) === false)
@@ -585,6 +586,18 @@ for (const width of [1440, 1180]) {
     return { d: true, p: true, inert: !!d.closest('[inert]'), hitInPanel: !!hit && p.contains(hit), panelZ: getComputedStyle(p).zIndex, dialogZ: getComputedStyle(d).zIndex, panelOpen: getComputedStyle(p).display !== 'none' }
   })
   check(`${W} S9 入口鈕重開 → 抽屜蓋回舞台,modal 在後方(命中面板、z 面板 > modal)且被抑制;草稿還在(v14 推導表「接上題,點入口鈕重開 agent」)`, reopened.d && reopened.p && reopened.panelOpen && reopened.hitInPanel && reopened.inert && Number(reopened.panelZ) > Number(reopened.dialogZ) && (await h.panelInput())?.value === 'draft', JSON.stringify(reopened))
+  // 2026-09-16 user 第二次回報:「點擊露出的遮罩會關閉 agent panel 底下的 modal」—— 留白處點一下,面板仍開、底下 modal 仍開
+  //(遮罩接住指標、不穿透;modal 的外部點擊守衛把常駐殼子樹裡的遮罩視為不關)。
+  const stripPt = await page.evaluate(() => {
+    const p = document.querySelector('[role="complementary"]'); let host = p?.parentElement ?? null
+    while (host && ['contents', 'none'].includes(getComputedStyle(host).display)) host = host.parentElement
+    if (!p || !host) return null
+    const H = host.getBoundingClientRect(); const inset = parseFloat(getComputedStyle(host).getPropertyValue('--layout-space-viewport-inset'))
+    return { x: H.left + inset / 2, y: H.top + H.height / 2 }
+  })
+  if (stripPt) { await page.mouse.click(stripPt.x, stripPt.y); await page.waitForTimeout(400) }
+  const afterStrip = { panelOpen: await h.panelOpen(), dialogs: await h.dialogs() }
+  check(`${W} S9 蓋板留白處點一下 → 面板仍開、底下的 modal 仍開(遮罩接住指標、不穿透)`, afterStrip.panelOpen && afterStrip.dialogs === 1, JSON.stringify(afterStrip))
   await h.click('[role="complementary"] button[aria-label="關閉面板"]')
   const revealed = await page.evaluate(() => {
     const d = document.querySelector('[role="dialog"]'); if (!d) return { d: false }

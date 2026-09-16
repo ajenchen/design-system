@@ -3,7 +3,7 @@
 // machine-readable design-edit authorization evidence. Denial and uncertainty always win.
 
 import { createHash } from 'node:crypto'
-import { readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { resolve as resolvePath } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -1103,16 +1103,70 @@ function engineeringScopeDecision(message, target) {
   // 所以感覺就是你改壞了他啊 / 請你仔細查證看看到底 root cuase 是甚麼」),同句配對抓不到 → 整則訊息有 bug 回報語彙、
   // 沒有任何 UI 取捨語彙與未決選擇時,該 target 的修復是工程 remediation。有 UI 取捨字眼就不走這條(fail closed 照舊)。
   if (!matchesAny(BUG_REPORT_PATTERNS, normalized)) return null
-  // 整則訊息任何一句在問(要不要 / 是否 / 問號結尾)或帶 UI 取捨字眼 → 不是單純報缺陷,照舊 fail closed。
-  if (matchesAny(TARGET_DISCUSSION_PATTERNS, normalized)
-    || messageClauses(normalized).some((clause) => matchesAny(TARGET_DISCUSSION_PATTERNS, clause))
+  // bug 回報常以問句出現(「為何點擊遮罩會關掉 modal??」「root cause 是甚麼??」)—— 那是在問**原因**,不是在問許可;
+  // 真正要擋的是把選擇丟回來的句子(要不要 / 是否 / 該不該 / 選哪個)與任何 UI 取捨字眼 → 那些照舊 fail closed。
+  if (matchesAny(CHOICE_ASK_PATTERNS, normalized)
     || matchesAny(UI_DECISION_MARKERS, normalized)
     || matchesAny(UNRESOLVED_UI_CHOICE_PATTERNS, normalized)) return null
   for (const clause of messageClauses(normalized)) {
     const binding = actionableTargetBinding(clause, target)
-    if (binding) latest = { binding, message: normalized, clause }
+    if (binding) latest = { binding, message: normalized, clause, bugReport: true }
   }
-  return latest
+  if (latest) return latest
+  // 修 X 的 bug 可以動 X 直接依賴的共用模組(src/lib/*):target 沒被點名,但被點名的元件 import 了它 → 綁到那個元件。
+  // 2026-09-16 錨:代理蓋板遮罩讓點擊穿到 modal,修法一半在 agent-panel.tsx、一半在它 import 的 lib/overlay-coexistence.ts。
+  const viaDependent = dependentComponentBinding(normalized, target)
+  return viaDependent ? { ...viaDependent, bugReport: true } : null
+}
+
+// 「要不要 / 是否 / 選哪個」= 把選擇丟回來;單純問號結尾不算(bug 回報的「為何…??」是問原因)。
+const CHOICE_ASK_PATTERNS = [
+  /(?:是否|要不要|該不該|能不能|可不可以|怎麼想|先討論|先評估|提案|比稿|選哪|哪(?:個|一個|種).{0,12}(?:比較好|較好|更好))/u,
+  /\b(?:should\s+we|can\s+we|could\s+we|proposal|discuss|evaluate|which\s+one)\b/iu,
+]
+
+// authorizationEvidence 把 hook 傳進來的絕對路徑記在這裡,讓依賴掃描找得到 src 根(測試用假路徑時掃不到 → 自然不放行)。
+let lastAbsoluteTargetPath = ''
+function srcRootFor() {
+  const marker = 'packages/design-system/src/'
+  const abs = String(lastAbsoluteTargetPath || '').replaceAll('\\', '/')
+  const at = abs.indexOf(marker)
+  if (at >= 0) {
+    const root = abs.slice(0, at + marker.length)
+    return existsSync(root) ? root : null
+  }
+  const fallback = `${resolvePath(process.cwd(), marker)}/`
+  return existsSync(fallback) ? fallback : null
+}
+function dependentComponentBinding(normalized, target) {
+  const lib = /packages\/design-system\/src\/lib\/([^/]+)\.(?:ts|tsx)$/u.exec(target)
+  if (!lib) return null
+  const root = srcRootFor()
+  if (!root) return null
+  const needle = `lib/${lib[1]}'`
+  const files = []
+  const walk = (dir, depth) => {
+    if (depth > 4) return
+    let entries
+    try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
+    for (const entry of entries) {
+      const path = `${dir}/${entry.name}`
+      if (entry.isDirectory()) walk(path, depth + 1)
+      else if (/\.tsx?$/u.test(entry.name) && !/\.(?:stories|test|spec)\./u.test(entry.name)) files.push(path)
+    }
+  }
+  for (const sub of ['components', 'patterns']) walk(`${root}${sub}`, 0)
+  for (const file of files) {
+    let text
+    try { text = readFileSync(file, 'utf8') } catch { continue }
+    if (!text.includes(needle)) continue
+    const dependent = normalizeTarget(file)
+    for (const clause of messageClauses(normalized)) {
+      const binding = actionableTargetBinding(clause, dependent)
+      if (binding) return { binding: `${binding} (${dependent.split('/').pop()} imports lib/${lib[1]})`, message: normalized, clause }
+    }
+  }
+  return null
 }
 
 function classifyLatestAuthorizationUnscoped(message, {
@@ -1198,7 +1252,9 @@ function classifyLatestAuthorizationUnscoped(message, {
       reasonCode: 'TARGET_BOUND_DENIAL_OR_REVOCATION',
     }
   }
-  if (activeTargetDecision?.kind === 'discussion') {
+  // bug 回報的「為何…??」是問原因不是問許可(engineeringScopeDecision 已排除「要不要 / 是否」與 UI 取捨字眼),
+  // 不走這條「問句 = 討論」短路;其他問句照舊 fail closed。
+  if (activeTargetDecision?.kind === 'discussion' && !activeEngineeringScope?.bugReport) {
     return {
       ...base,
       decisionDomain: 'product-ui-ux',
@@ -1287,6 +1343,18 @@ function classifyLatestAuthorizationUnscoped(message, {
       decisionMessageSha256: activeDecisionMessageSha256,
       decision: 'approved',
       reasonCode: 'ENGINEERING_REMEDIATION_NO_HUMAN_APPROVAL',
+    }
+  }
+  // bug 回報綁定的 target(或其直接依賴的 lib):修 UI bug 的程式本來就會碰到 width / z-index / pointer 這類字眼,
+  // 不能拿「操作看起來像 UI」再擋一次 —— 訊息層已排除 UI 取捨字眼與選擇問句,這裡只剩工程 remediation。
+  if (hasOperationEvidence && activeEngineeringScope?.bugReport) {
+    return {
+      ...base,
+      decisionDomain: 'engineering-remediation',
+      targetBinding: activeEngineeringScope.binding,
+      decisionMessageSha256: activeDecisionMessageSha256,
+      decision: 'approved',
+      reasonCode: 'ENGINEERING_BUG_REPORT_REMEDIATION',
     }
   }
   if (hasOperationEvidence
@@ -1458,6 +1526,7 @@ export function authorizationEvidence(transcriptPath, {
   hookInput = null,
 } = {}) {
   const state = transcriptState(transcriptPath)
+  lastAbsoluteTargetPath = String(hookInput?.tool_input?.file_path || hookInput?.tool_input?.path || target || '')
   const operationText = toolOperations(state.turnRecords, hookInput, target)
   const latestNormalized = normalizeText(state.latestUserMessage)
   // 純註解操作不看訊息:它沒有任何執行差異,沒有東西可以拍板(定義與兩道檢查見 commentOnlyOperation)。
