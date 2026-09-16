@@ -49,8 +49,13 @@ test('CI is the only PR/push gate and stays within the fast deterministic scope'
   // 沒有任何 job 可以超過 25 分鐘(上面兩個 DataTable job 是唯一的例外值)。
   for (const [id, job] of Object.entries(workflow.jobs)) assert.ok((job.timeoutMinutes ?? 0) <= 25, `${id} timeout-minutes ${job.timeoutMinutes} > 25`)
   // Each job that runs code installs once; the fan-in job checks out nothing and installs nothing.
+  // +1(2026-09-16):DataTable pixel job 的**參考建置(main)**在 tmp/ref-src 裡另裝一次,同樣走受管的 setup:dependencies
+  //(原本是裸 `npm ci`,被 scripts/audit-workflow-security.mjs 判 WF-LIFECYCLE / SIGNATURE / VULNERABILITY,
+  // 讓「Verify authority candidate without credentials」每支 PR 都紅)。
   const installingJobs = Object.entries(workflow.jobs).filter(([id]) => id !== 'verify')
-  assert.equal((source.match(/setup:dependencies/g) ?? []).length, installingJobs.length)
+  assert.equal((source.match(/setup:dependencies/g) ?? []).length, installingJobs.length + 1)
+  const commandLines = source.split('\n').filter((line) => !/^\s*#/.test(line)).join('\n')
+  assert.equal((commandLines.match(/\bnpm ci\b/g) ?? []).length, 0, 'ci.yml 不得出現裸 npm ci(參考建置也走 setup:dependencies;註解不算)')
   assert.equal(workflow.jobs.verify.steps.length, 1)
   // 瀏覽器閘的兩個 job 都要自己 build storybook 與裝 chromium(彼此平行,不共用 artifact):
   // build-storybook 出現 3 次(static 的 manifest 驗證 + 兩個瀏覽器 job),playwright install 2 次。
