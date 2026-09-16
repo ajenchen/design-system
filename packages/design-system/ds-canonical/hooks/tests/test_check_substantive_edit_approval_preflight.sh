@@ -1065,6 +1065,31 @@ build_transcript "$TX_ACCEPT_TENTATIVE" "照你建議開工,但遮罩要不要�
 run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel.tsx" "$TX_ACCEPT_TENTATIVE" "isOverlay && 'absolute inset-y-0 right-0 z-[45]'"
 expect_block "15m. 「照你建議開工,但…要不要…還在考慮」→ 猶豫語 fail closed" "BLOCKER"
 
+# 15n. bug 回報(2026-09-16 user 原話;target「fab」與「改壞 / root cuase」分在不同句,root cause 還拼錯)→ 該 target 的修復 = 工程 remediation,approved
+TX_BUG_REPORT="$TMP_DIR/tx_bug_report.jsonl"
+build_transcript "$TX_BUG_REPORT" \
+  "然後為何現在拖拉 agent panel 的 fab
+很容易一不小心就開啟panel,但我明明就只是要移動它而已
+之前這個功能剛做完明明就沒有這問題,
+github 歷史上一定有正確的版本
+所以感覺就是你改壞了他啊
+請你仔細查證看看到底root cuase 是甚麼,
+為何它本來好好的結果壞掉了"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_BUG_REPORT" "suppressClickRef.current = false"
+expect_pass_silent "15n. bug 回報(壞掉 / 改壞 / root cuase 誤拼)+ target 在別句 → engineering remediation approved"
+
+# 15o. 同樣提到 fab,但在問 UI 取捨(門檻要不要改)→ 問句 / 討論 fail closed
+TX_BUG_Q="$TMP_DIR/tx_bug_q.jsonl"
+build_transcript "$TX_BUG_Q" "fab 拖曳好像壞掉了,門檻要不要改成 12px?"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_BUG_Q" "const DRAG_THRESHOLD = 12"
+expect_block "15o. bug 回報夾帶「要不要」UI 取捨問句 → fail closed" "BLOCKER"
+
+# 15p. bug 回報但夾帶 UI 決策字眼(顏色)→ 不走 bug 回報捷徑,照舊 fail closed
+TX_BUG_UI="$TMP_DIR/tx_bug_ui.jsonl"
+build_transcript "$TX_BUG_UI" "fab 壞掉了,順便把它的顏色改成紅色"
+run_hook "Edit" "/foo/my-project/packages/design-system/src/components/AgentPanel/agent-panel-fab.tsx" "$TX_BUG_UI" "className='bg-red-500'"
+expect_block "15p. bug 回報 + UI 取捨字眼(顏色)→ 不走捷徑,BLOCK" "BLOCKER"
+
 echo ""
 echo "=== Summary ==="
 echo "Passed: $PASS / $((PASS + FAIL))"

@@ -29,3 +29,6 @@ originSessionId: b1e3fe19-f71f-4828-b483-cf3fe2323f47
 3. 遇到 user 的機器回報 SwiftShader / 異常核心數 / 只有某網域慢:先問「這頁有沒有被注入非建置內的 script」(`document.scripts` 或 LoAF 來源),再開工。
 4. 若要在那台機器上驗收 Netlify 預覽:請 user 的 IT 把 `*.netlify.app` 加白名單,或改看 github.io。
 5. 相關:M32 錨例 (h)(`packages/design-system/ds-canonical/rules/meta-patterns.md`)。
+6. **同一個環境也會改寫輸入事件**(2026-09-16):user 在該機器上「拖一下 FAB 就開面板」,本機 135 次真滑鼠拖曳零誤開、程式碼自 9/8 起零改動;
+   唯一能重現的是「pointermove 被丟掉 / 合併」與「click 比 pointerup 晚一個 task 送達」兩種形狀 —— 正是輸入經代理轉送會發生的事。
+   互動判準不得依賴事件計數或同 task 假設(判距離、旗標到下一次 pointerdown 才清);AGENTS.md 失敗記憶索引已收一行。

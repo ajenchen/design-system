@@ -25,7 +25,7 @@
     "entries": [
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
-        "sha256": "6d06a867cd34cf4d94ccd5edf519b1660f74fbea9d274c16e5581ed72f3139e7",
+        "sha256": "26a02257298c57774637a3c5a45c1e3f3e2bfcc7899a3b42e56597cae5d69b81",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/check_substantive_edit_approval_preflight.sh",
           "packages/design-system/ds-canonical/hooks/stop_self_audit.sh",
@@ -376,6 +376,7 @@
     ],
     "members": [
       "scripts/test-action-bar-toolbar-invariant.mjs",
+      "scripts/test-agent-fab-drag-click-invariant.mjs",
       "scripts/test-audit-a11y.mjs",
       "scripts/test-audit-consumer-a11y.mjs",
       "scripts/test-audit-content-quality.mjs",

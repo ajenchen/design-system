@@ -1083,6 +1083,13 @@ function targetDecision(message, target, operationEvidenceSha256 = '') {
     ?? null
 }
 
+// bug 回報語彙(2026-09-16):user 說「壞掉 / 改壞 / 一不小心就 / 本來好好的 / root cause」是在報缺陷、要求修回既有行為,
+// 依 AGENTS.md「Bug fix → AUTO」屬工程 remediation,不是 UI/UX 取捨。root cause 容錯常見誤拼(cuase / casue)。
+const BUG_REPORT_PATTERNS = [
+  /(?:壞掉|壞了|改壞|弄壞|失效|誤觸|誤開|一不小心就|明明(?:就)?只是|本來好好的|原本好好的|退化|報錯|閃退|崩潰|卡死|卡住)/u,
+  /\b(?:broke|broken|regress(?:ed|ion)?|root\s*c[aus]{3}e|misfir(?:e|es|ing)|accidental(?:ly)?)\b/iu,
+]
+
 function engineeringScopeDecision(message, target) {
   const normalized = normalizeText(message)
   let latest = null
@@ -1090,6 +1097,20 @@ function engineeringScopeDecision(message, target) {
     const binding = actionableTargetBinding(clause, target)
     if (!binding || !matchesAny(ENGINEERING_INTENT_PATTERNS, clause)) continue
     latest = { binding, message: normalized, clause }
+  }
+  if (latest) return latest
+  // bug 回報的 target 與「壞了」常分在不同句(2026-09-16 錨:「為何現在拖拉 agent panel 的 fab / 很容易一不小心就開啟 panel /
+  // 所以感覺就是你改壞了他啊 / 請你仔細查證看看到底 root cuase 是甚麼」),同句配對抓不到 → 整則訊息有 bug 回報語彙、
+  // 沒有任何 UI 取捨語彙與未決選擇時,該 target 的修復是工程 remediation。有 UI 取捨字眼就不走這條(fail closed 照舊)。
+  if (!matchesAny(BUG_REPORT_PATTERNS, normalized)) return null
+  // 整則訊息任何一句在問(要不要 / 是否 / 問號結尾)或帶 UI 取捨字眼 → 不是單純報缺陷,照舊 fail closed。
+  if (matchesAny(TARGET_DISCUSSION_PATTERNS, normalized)
+    || messageClauses(normalized).some((clause) => matchesAny(TARGET_DISCUSSION_PATTERNS, clause))
+    || matchesAny(UI_DECISION_MARKERS, normalized)
+    || matchesAny(UNRESOLVED_UI_CHOICE_PATTERNS, normalized)) return null
+  for (const clause of messageClauses(normalized)) {
+    const binding = actionableTargetBinding(clause, target)
+    if (binding) latest = { binding, message: normalized, clause }
   }
   return latest
 }
