@@ -24,7 +24,7 @@ const arg = (n, d) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n
 const BUILD = resolve(ROOT, arg('build', 'storybook-static'))
 const SELFTEST = process.argv.includes('--selftest')
 const LIMIT = Number(arg('limit', '0'))
-const TOLERANCE = 0.5
+const BOX_TOLERANCE_PX = 0.5
 
 if (!existsSync(join(BUILD, 'index.json'))) {
   console.error(`✗ 找不到 ${join(BUILD, 'index.json')} —— 先跑 npm run build-storybook`)
@@ -99,7 +99,7 @@ try {
       }
       for (const a of await page.evaluate(PROBE)) {
         triggers += 1
-        if (a.dx > TOLERANCE || a.dy > TOLERANCE) stretched.push({ ...a, story: s.id, name: s.name })
+        if (a.dx > BOX_TOLERANCE_PX || a.dy > BOX_TOLERANCE_PX) stretched.push({ ...a, story: s.id, name: s.name })
       }
     } catch (error) {
       loadErrors += 1

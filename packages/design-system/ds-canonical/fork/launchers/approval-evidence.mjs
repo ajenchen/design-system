@@ -1663,7 +1663,10 @@ export function authorizationEvidence(transcriptPath, {
       target,
       operationText,
       // 只有這一筆待授權的操作才決定「是不是 UI 改動」(見 classifyLatestAuthorizationUnscoped 的 pendingOperationText)。
-      pendingOperationText: toolOperations([], hookInput, target),
+      // `|| null` 不可省:沒有 hook input(例如 Stop hook 的事後判定)或這一筆不是打在本 target 時,
+      // 它會是空字串 —— 空字串代表「這裡沒有待授權的操作可看」,必須回落到整體證據,
+      // 否則等於把 UI 判定整段跳過(2026-09-16 CI 對照:Test 18「常設工程授權 + UI 操作必須擋」因此漏接)。
+      pendingOperationText: toolOperations([], hookInput, target) || null,
       userMessages: state.userMessages,
     }),
   }

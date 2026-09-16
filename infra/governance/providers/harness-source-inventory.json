@@ -25,7 +25,7 @@
     "entries": [
       {
         "path": "packages/design-system/ds-canonical/hooks/lib/approval-evidence.mjs",
-        "sha256": "bdd8132b2d19f4c19edfe14e9255ff5c1049caaa930a2d3e578dc07e370d6ac4",
+        "sha256": "254205258ab66cca758801d875fa0528b5ec9f5ecd25b9997308663db734199f",
         "consumers": [
           "packages/design-system/ds-canonical/hooks/check_substantive_edit_approval_preflight.sh",
           "packages/design-system/ds-canonical/hooks/stop_self_audit.sh",
