@@ -330,6 +330,9 @@ jobs:
           # 兩個根因都在腳本檔頭:殼列原本沒有 hover 底色、以及捲動中瀏覽器不重新派送 hover。先對照組再判定。
           node scripts/data-table-row-under-pointer-invariant.mjs --selftest
           node scripts/data-table-row-under-pointer-invariant.mjs
+          # 同一時間最多一列 hover(2026-09-16 user:「捲動之後很容易會出現一個畫面同時有兩筆 row 呈現 hover」);
+          # 手勢用 CDP 合成捲動(滾輪製造不出那段落差 = 假綠),修前的 build 跑這支會紅。
+          npm run test:data-table-hover-exclusivity
           # 列 hover 的反應延遲(2026-09-11 新閘;先跑對照組證明儀器會紅,再跑正式判定)
           node scripts/data-table-hover-latency.mjs --rows=8 --selftest
           node scripts/data-table-hover-latency.mjs --rows=10 --assert=on --assert-median=60 --assert-max=600
@@ -640,6 +643,9 @@ jobs:
           # 資料工具列窄寬度(2026-09-16 user:「搜尋框在視窗小的情況會把新增任務按鈕往右推出去,導致按鈕右側無法與 table 右側對齊」):
           # 四支整頁示範 × 五個寬度,列不溢出、最後一顆操作鈕右緣 = 內容右緣、搜尋框 ≥ 160px 下限;selftest 拿掉下限必紅。
           npm run test:action-bar-toolbar
+          # 浮層錨點失去版面時不得畫在視窗左上角(2026-09-16 user:「關閉那顆按鈕的 tooltip 會跑去視窗左上角閃動一下」);
+          # 修前的 build 跑這支會紅在 translate(0px, 8px),selftest 注入假浮層驗偵測力。
+          npm run test:overlay-detached-anchor
 
   verify:
     # Required check 的名字不變(ruleset / desired/github.json 的 context 都指它)。它只做 fan-in:

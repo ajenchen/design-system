@@ -6,7 +6,7 @@ import * as React from "react"
 import * as HoverCardPrimitive from "@radix-ui/react-hover-card"
 
 import { cn } from "@/lib/utils"
-import { OVERLAY_SIDE_OFFSET } from "@/design-system/tokens/elevation/overlay-geometry"
+import { OVERLAY_SIDE_OFFSET, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
 import { MOTION_DELAY_RICH_MS, MOTION_DELAY_CLOSE_MS } from "@/design-system/tokens/motion/motion"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 
@@ -35,7 +35,7 @@ const HoverCardTrigger = HoverCardPrimitive.Trigger
 const HoverCardContent = React.forwardRef<
   React.ElementRef<typeof HoverCardPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content>
->(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = 12, ...props }, ref) => (
+>(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = 12, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, ...props }, ref) => (
   // HoverCardPrimitive.Portal(2026-04-23):把 Content 搬到 `document.body`。
   // 不 Portal 時 Content 會 DOM-nested 在 trigger subtree,如 trigger 位於 OverflowIndicator
   // `data-theme="dark"` tooltip 內部 → Avatar 自帶 HoverCard 的 Content 也卡在 dark subtree,
@@ -50,6 +50,8 @@ const HoverCardContent = React.forwardRef<
       align={align}
       sideOffset={sideOffset}
       collisionPadding={collisionPadding}
+      // 錨點失去版面時不畫(同 Tooltip;詳 tokens/elevation/overlay-geometry.ts)
+      hideWhenDetached={hideWhenDetached}
       className={cn(
         // @focus-suppress E — E 浮層程式落點;承擔者:浮層開啟時的程式落點
         "z-50 outline-none",

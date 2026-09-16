@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { SurfaceHeader, SurfaceBody, SurfaceFooter, COMPACT_HEADER_SLOT } from "@/design-system/patterns/overlay-surface/overlay-surface"
 import { TruncatedText } from "@/design-system/patterns/element-anatomy/truncated-text"
 import { Button } from "@/design-system/components/Button/button"
-import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING } from "@/design-system/tokens/elevation/overlay-geometry"
+import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 
 /**
@@ -73,7 +73,7 @@ const PopoverTitleContext = React.createContext<PopoverTitleContextValue | null>
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, onOpenAutoFocus, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
+>(({ className, align = "center", sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, onOpenAutoFocus, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy, ...props }, ref) => {
   const titleId = React.useId()
   const [hasTitle, setHasTitle] = React.useState(false)
   const titleContext = React.useMemo<PopoverTitleContextValue>(
@@ -88,6 +88,8 @@ const PopoverContent = React.forwardRef<
           align={align}
           sideOffset={sideOffset}
           collisionPadding={collisionPadding}
+          // 錨點失去版面時不畫(同 Tooltip;詳 tokens/elevation/overlay-geometry.ts)
+          hideWhenDetached={hideWhenDetached}
           // Layout-space lock(2026-06-15 canonical,原 data-density="md" 改為只鎖 layout-space):Popover 是
           // 輕量浮層,header/footer 用 py-tight(layout-space)→ 鎖 layout-space=md 保持精簡 padding;但
           // **ui-size 不鎖、繼承 page** → 內部 field 控件 / dismiss 按鈕隨 page 放大,跟觸發點一致(decouple)。

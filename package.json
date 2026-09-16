@@ -54,6 +54,8 @@
     "test:tag-field-inset": "node scripts/tag-field-vertical-inset.mjs && node scripts/tag-field-vertical-inset.mjs --selftest",
     "test:field-view-typography": "node scripts/field-view-typography-invariant.mjs && node scripts/field-view-typography-invariant.mjs --selftest",
     "test:action-bar-toolbar": "node scripts/action-bar-toolbar-invariant.mjs && node scripts/action-bar-toolbar-invariant.mjs --selftest",
+    "test:overlay-detached-anchor": "node scripts/overlay-detached-anchor-invariant.mjs && node scripts/overlay-detached-anchor-invariant.mjs --selftest",
+    "test:data-table-hover-exclusivity": "node scripts/data-table-hover-exclusivity-invariant.mjs && node scripts/data-table-hover-exclusivity-invariant.mjs --selftest",
     "test:virtual-cursor-modality": "node scripts/virtual-cursor-modality-invariant.mjs",
     "test:agent-url-registry-demo": "node scripts/agent-url-registry-demo-invariant.mjs",
     "test:overlay-shortcut-scope": "node scripts/overlay-shortcut-scope-invariant.mjs",

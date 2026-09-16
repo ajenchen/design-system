@@ -2,7 +2,7 @@ import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "@/lib/utils"
-import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING } from "@/design-system/tokens/elevation/overlay-geometry"
+import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
 import { MOTION_DELAY_PLAIN_MS } from "@/design-system/tokens/motion/motion"
 import { overlayMotion } from "@/design-system/tokens/motion/overlay-motion"
 
@@ -54,7 +54,7 @@ const TooltipTrigger = TooltipPrimitive.Trigger
 const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
->(({ className, sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, style, children, ...props }, ref) => {
+>(({ className, sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, style, children, ...props }, ref) => {
   // 空內容不掛浮層:children 為 null / undefined / false / 空字串時不渲染帶 padding 的空
   // role="tooltip" 殼(見 spec「邊界狀態」)。Tooltip 是資訊補救機制,無補充內容即不出現,
   // trigger 由 TooltipTrigger 原樣保留。
@@ -71,6 +71,9 @@ const TooltipContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       collisionPadding={collisionPadding}
+      // 錨點失去版面(被 display:none 藏起來 / 卸載 / 回收)時不畫:否則 Radix 拿 0×0 量測值把它定位到視窗左上角
+      // (0, sideOffset),關閉動畫還會讓它在那裡閃一下(2026-09-16 user 回報);詳 overlay-geometry.ts
+      hideWhenDetached={hideWhenDetached}
       // Density:繼承 page density(2026-06-15 canonical)。Tooltip padding 寫死 px-3 py-2、內容 text-body,
       // 不消費任何 density / layout-space token → 鎖 density 對它是 inert(原 data-density="md" 是 409b91da
       // a11y 批次「對齊 Popover」順手加,非設計決策)→ 移除,讓全浮層行為一致(全繼承 page)。

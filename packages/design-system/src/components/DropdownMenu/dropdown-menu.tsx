@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import type { AvatarData } from "@/design-system/components/Avatar/avatar"
 import { MenuItem } from "@/design-system/components/Menu/menu-item"
 import { ScrollArea } from "@/design-system/components/ScrollArea/scroll-area"
-import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING } from "@/design-system/tokens/elevation/overlay-geometry"
+import { OVERLAY_SIDE_OFFSET, OVERLAY_COLLISION_PADDING, OVERLAY_HIDE_WHEN_DETACHED } from "@/design-system/tokens/elevation/overlay-geometry"
 import {
   RowSizeProvider,
   useRowSize,
@@ -211,12 +211,14 @@ interface DropdownMenuContentProps
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
   DropdownMenuContentProps
->(({ className, size = 'md', sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, align = 'start', minWidth, maxHeight, children, ...props }, ref) => (
+>(({ className, size = 'md', sideOffset = OVERLAY_SIDE_OFFSET, collisionPadding = OVERLAY_COLLISION_PADDING, hideWhenDetached = OVERLAY_HIDE_WHEN_DETACHED, align = 'start', minWidth, maxHeight, children, ...props }, ref) => (
   <DropdownMenuPrimitive.Portal>
     <DropdownMenuPrimitive.Content
       ref={ref}
       sideOffset={sideOffset}
       collisionPadding={collisionPadding}
+      // 錨點失去版面時不畫(同 Tooltip;詳 tokens/elevation/overlay-geometry.ts)
+      hideWhenDetached={hideWhenDetached}
       align={align}
       // Density:繼承 page density(2026-06-15 canonical)。menu item 高度 = field-height-{size},而
       // field-height 隨 density 變(md 28/32/36 → lg 32/36/40)→ 鎖 data-density="md" 會把選單釘在 md-scale,
